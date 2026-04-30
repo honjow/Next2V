@@ -112,7 +112,7 @@ struct Index {
             }, (item: V2exTopic) => item.id.toString())
             // 底部留白：手势条(bottomAvoidHeight) + 悬浮TabBar(TAB_BAR_HEIGHT)
             ListItem() { Column() { Blank().height(this.bottomAvoidHeight + this.TAB_BAR_HEIGHT) } }
-          }.backgroundColor($r('sys.color.ohos_id_color_sub_background')).width('100%').height('100%').padding({ left: this.CARD_GAP, right: this.CARD_GAP })
+          }.scrollBar(BarState.Off).backgroundColor($r('sys.color.ohos_id_color_sub_background')).width('100%').height('100%').padding({ left: this.CARD_GAP, right: this.CARD_GAP })
         }.onRefreshing(() => this.homeVM.refresh())
       } else {
         Column() { LoadingProgress().width(32).height(32); Text(this.homeVM.errorMessage ? '加载失败' : '加载中...').fontSize(14).fontColor($r('sys.color.font_secondary')).margin({ top: 8 }); if (this.homeVM.errorMessage) Button('重试').margin({ top: 16 }).onClick(() => this.homeVM.loadData()) }.justifyContent(FlexAlign.Center).width('100%').height('100%')
