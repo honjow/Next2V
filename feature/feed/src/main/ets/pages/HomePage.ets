@@ -20,7 +20,6 @@ export struct HomePage {
       if (this.vm.dataSource.totalCount() > 0) {
         Refresh({ refreshing: $$this.vm.isRefreshing }) {
           List({ space: this.GAP }) {
-            ListItem() { Column() { Blank().height(this.topH + this.TBH) } }
             LazyForEach(this.vm.dataSource, (item: V2exTopic) => {
               ListItem() { TopicCard({ item: item }) }
                 .onClick(() => {
@@ -33,7 +32,7 @@ export struct HomePage {
             .scrollBar(BarState.Off)
             .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
             .width('100%').height('100%')
-            .padding({ left: this.GAP, right: this.GAP })
+            .padding({ left: this.GAP, right: this.GAP, top: this.topH + this.TBH })
         }.onRefreshing(() => this.vm.refresh())
       } else {
         Column() {
