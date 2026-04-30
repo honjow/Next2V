@@ -1,0 +1,9 @@
+{
+  "name": "user",
+  "version": "0.1.0",
+  "description": "Next2V user module - user profile",
+  "main": "src/main/ets/Index.ets",
+  "dependencies": {
+    "shared": "file:../../shared"
+  }
+}

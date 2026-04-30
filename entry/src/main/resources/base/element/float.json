@@ -1,0 +1,10 @@
+{
+  "float": [
+    { "name": "text_size_title",    "value": "16fp" },
+    { "name": "text_size_body",     "value": "14fp" },
+    { "name": "text_size_secondary","value": "12fp" },
+    { "name": "avatar_size_small",  "value": "24vp" },
+    { "name": "avatar_size_normal", "value": "48vp" },
+    { "name": "avatar_size_large",  "value": "73vp" }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "modelVersion": "6.1.0",
+  "name": "next2v",
+  "version": "0.1.0",
+  "description": "Next2V - HarmonyOS native V2EX client",
+  "main": "",
+  "author": "",
+  "license": "MIT",
+  "dependencies": {}
+}

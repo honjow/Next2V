@@ -1,0 +1,13 @@
+{
+  "app": {
+    "bundleName": "com.next2v.app",
+    "vendor": "next2v",
+    "versionCode": 1,
+    "versionName": "0.1.0",
+    "icon": "$media:app_icon",
+    "label": "$string:app_name",
+    "targetAPIVersion": 23,
+    "minAPIVersion": 12,
+    "apiReleaseType": "Release23"
+  }
+}

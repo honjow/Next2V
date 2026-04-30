@@ -1,0 +1,9 @@
+{
+  "string": [
+    { "name": "entry_desc", "value": "Next2V - V2EX client" },
+    { "name": "module_desc", "value": "Next2V entry module" },
+    { "name": "EntryAbility_desc", "value": "Next2V main ability" },
+    { "name": "EntryAbility_label", "value": "Next2V" },
+    { "name": "app_name", "value": "Next2V" }
+  ]
+}

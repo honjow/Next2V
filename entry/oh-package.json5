@@ -1,0 +1,13 @@
+{
+  "name": "entry",
+  "version": "0.1.0",
+  "description": "Next2V entry module",
+  "dependencies": {
+    "shared":   "file:../shared",
+    "feed":     "file:../feature/feed",
+    "detail":   "file:../feature/detail",
+    "node":     "file:../feature/node",
+    "user":     "file:../feature/user",
+    "settings": "file:../feature/settings"
+  }
+}

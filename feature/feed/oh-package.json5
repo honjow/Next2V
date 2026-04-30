@@ -1,0 +1,9 @@
+{
+  "name": "feed",
+  "version": "0.1.0",
+  "description": "Next2V feed module - latest/hot topics",
+  "main": "src/main/ets/Index.ets",
+  "dependencies": {
+    "shared": "file:../../shared"
+  }
+}

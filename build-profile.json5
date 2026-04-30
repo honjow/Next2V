@@ -1,0 +1,21 @@
+{
+  "app": {
+    "products": [
+      {
+        "name": "default",
+        "targetSdkVersion": "6.1.0(23)",
+        "compatibleSdkVersion": "6.1.0(23)",
+        "runtimeOS": "HarmonyOS"
+      }
+    ]
+  },
+  "modules": [
+    { "name": "entry",    "srcPath": "./entry" },
+    { "name": "shared",   "srcPath": "./shared" },
+    { "name": "feed",     "srcPath": "./feature/feed" },
+    { "name": "detail",   "srcPath": "./feature/detail" },
+    { "name": "node",     "srcPath": "./feature/node" },
+    { "name": "user",     "srcPath": "./feature/user" },
+    { "name": "settings", "srcPath": "./feature/settings" }
+  ]
+}

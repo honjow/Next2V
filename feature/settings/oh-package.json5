@@ -1,0 +1,9 @@
+{
+  "name": "settings",
+  "version": "0.1.0",
+  "description": "Next2V settings module",
+  "main": "src/main/ets/Index.ets",
+  "dependencies": {
+    "shared": "file:../../shared"
+  }
+}
