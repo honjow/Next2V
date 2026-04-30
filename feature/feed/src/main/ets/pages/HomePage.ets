@@ -18,7 +18,7 @@ export struct HomePage {
   build() {
     Column() {
       if (this.vm.dataSource.totalCount() > 0) {
-        Refresh({ refreshing: $$this.vm.isRefreshing, builder: this.RefreshBuilder }) {
+        Refresh({ refreshing: $$this.vm.isRefreshing }) {
           List({ space: this.GAP }) {
             ListItem() { Column() { Blank().height(this.topH + this.TBH) } }
             LazyForEach(this.vm.dataSource, (item: V2exTopic) => {
@@ -48,17 +48,5 @@ export struct HomePage {
     }
       .width('100%').height('100%')
       .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
-  }
-
-  /** 自定义刷新动画，顶部留白使其出现在 titleBar 下方 */
-  @Builder RefreshBuilder() {
-    Column() {
-      Blank().height(this.topH + this.TBH)
-      LoadingProgress()
-        .width(32).height(32)
-        .color($r('sys.color.ohos_id_color_activated'))
-    }
-      .justifyContent(FlexAlign.Center)
-      .width('100%')
   }
 }
