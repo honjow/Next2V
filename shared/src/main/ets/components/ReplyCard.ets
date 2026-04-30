@@ -20,7 +20,7 @@ export struct ReplyCard {
             if (this.isOp) {
               Text('OP')
                 .fontSize(10)
-                .fontColor('#FFFFFF')
+                .fontColor($r('sys.color.font_on_primary'))
                 .padding({ left: 4, right: 4, top: 1, bottom: 1 })
                 .borderRadius(2)
                 .backgroundColor($r('sys.color.ohos_id_color_activated'))
@@ -47,7 +47,7 @@ export struct ReplyCard {
         Row() {
           Text(`♥ ${this.reply.thanks}`)
             .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-            .fontColor('#FF6B6B')
+            .fontColor($r('sys.color.font_emphasize'))
         }
         .width('100%')
         .margin({ top: ThemeConstants.SPACE_XS })

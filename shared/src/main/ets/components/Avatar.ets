@@ -11,6 +11,6 @@ export struct Avatar {
       .width(this.avatarSize)
       .height(this.avatarSize)
       .borderRadius(this.avatarSize / 2)
-      .backgroundColor('#E8E8E8')
+      .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
   }
 }

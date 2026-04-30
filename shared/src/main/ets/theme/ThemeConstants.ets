@@ -4,8 +4,8 @@
  */
 export class ThemeConstants {
   // 品牌色
-  static readonly BRAND_PRIMARY: string = '#334455'
-  static readonly BRAND_ACCENT: string = '#778087'
+  static readonly BRAND_PRIMARY: ResourceColor = $r('sys.color.ohos_id_color_activated')
+  static readonly BRAND_ACCENT: ResourceColor = $r('sys.color.font_secondary')
 
   // 间距
   static readonly SPACE_XS: number = 4

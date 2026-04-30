@@ -8,7 +8,7 @@ export struct NodeTag {
   build() {
     Text(this.nodeTitle || this.nodeName)
       .fontSize(11)
-      .fontColor('#A0C0D8')
+      .fontColor($r('sys.color.font_secondary'))
       .padding({
         left: ThemeConstants.SPACE_SM,
         right: ThemeConstants.SPACE_SM,
@@ -16,6 +16,6 @@ export struct NodeTag {
         bottom: 2
       })
       .borderRadius(ThemeConstants.RADIUS_SM)
-      .backgroundColor('#1E3040')
+      .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
   }
 }
