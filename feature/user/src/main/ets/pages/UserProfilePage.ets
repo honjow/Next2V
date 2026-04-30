@@ -8,7 +8,7 @@ export struct UserProfilePage {
   @Prop username: string = ''
   @Consume('ns') stack: NavPathStack
   @State vm: UserViewModel = new UserViewModel(this.username)
-  @StorageProp('topAvoidHeight') topH: number = 107
+  @StorageProp('topAvoidHeight') topH: number = 0
 
   aboutToAppear(): void { this.vm.load() }
 

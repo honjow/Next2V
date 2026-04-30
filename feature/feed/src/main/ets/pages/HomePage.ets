@@ -16,6 +16,7 @@ export struct HomePage {
   private readonly FLOAT_H: number = 76
   private readonly GAP: number = 8
   private scroller: Scroller = new Scroller()
+  @State listScrollEnabled: boolean = true
 
   aboutToAppear(): void { this.vm.loadData() }
 
@@ -52,9 +53,10 @@ export struct HomePage {
           // --- 自定义 PullRefresh 组件 ---
           PullRefresh({
             scroller: this.scroller,
-            indicatorTop: this.topH + this.TBH,
+            indicatorTop: this.TBH,
             threshold: 40,
-            onRefresh: async () => { await this.vm.refresh() }
+            onRefresh: async () => { await this.vm.refresh() },
+            onScrollEnableChange: (enabled: boolean) => { this.listScrollEnabled = enabled }
           }) {
             List({ space: this.GAP, scroller: this.scroller }) {
               ListItem() { Column() { Blank().height(this.topH + this.TBH) } }
@@ -68,6 +70,7 @@ export struct HomePage {
               }, (item: V2exTopic) => item.id.toString())
               ListItem() { Column() { Blank().height(this.bottomH + this.FLOAT_H) } }
             }
+            .enableScrollInteraction(this.listScrollEnabled)
             .scrollBar(BarState.Off)
             .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
             .width('100%').height('100%')

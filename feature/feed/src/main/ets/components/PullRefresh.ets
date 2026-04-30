@@ -5,18 +5,23 @@ export struct PullRefresh {
   @BuilderParam content: () => void
   scroller: Scroller = new Scroller()
   onRefresh: () => Promise<void> = async () => {}
+  onScrollEnableChange: (enabled: boolean) => void = (_) => {}
   @Prop indicatorTop: number = 0
   @Prop threshold: number = 80
 
   @State pullOffset: number = 0
   @State refreshState: number = 0 // 0:idle 1:canRls 2:refreshing 3:done
   private hapticFired: boolean = false
+  private touchStartY: number = 0
+  private touchStartPullOffset: number = 0
+  private isTracking: boolean = false
 
   private isListAtTop(): boolean {
     return this.scroller.currentOffset().yOffset <= 0
   }
 
   private bounceBack(target: number = 0): void {
+    this.onScrollEnableChange(true)
     animateTo({ duration: 400, curve: Curve.EaseOut }, () => {
       this.pullOffset = target
     })
@@ -30,6 +35,7 @@ export struct PullRefresh {
 
   private onPullEnd(): void {
     if (this.pullOffset >= this.threshold && this.refreshState !== 2) {
+      this.onScrollEnableChange(true)
       animateTo({ duration: 400, curve: Curve.EaseOut }, () => {
         this.pullOffset = 56
       })
@@ -74,34 +80,58 @@ export struct PullRefresh {
         this.content()
       }
       .offset({ y: this.pullOffset })
-      .parallelGesture(
-        PanGesture({ direction: PanDirection.Vertical })
-          .onActionUpdate((event: GestureEvent) => {
-            if (!this.isListAtTop() || this.refreshState >= 2) return
-            let y = event.offsetY * 0.8
-            this.pullOffset = Math.max(0, y)
-            if (y >= this.threshold) {
-              this.refreshState = 1
-              this.triggerHaptic()
+      .onTouch((event: TouchEvent) => {
+        if (this.refreshState >= 2) return
+
+        if (event.type === TouchType.Down) {
+          this.touchStartY = event.touches[0].y
+          this.touchStartPullOffset = this.pullOffset
+          return
+        }
+
+        if (event.type === TouchType.Move) {
+          let deltaY = event.touches[0].y - this.touchStartY
+          if (!this.isTracking) {
+            // Only start tracking when actually pulling down at the top
+            if ( deltaY > 4 && this.isListAtTop()) {
+              this.isTracking = true
+              this.onScrollEnableChange(false)
             } else {
-              this.refreshState = 0
+              return
             }
-          })
-          .onActionEnd(() => this.onPullEnd())
-          .onActionCancel(() => this.onPullEnd())
-      )
-      .hitTestBehavior(this.pullOffset > 0 ? HitTestMode.Block : HitTestMode.Default)
+          }
+          this.pullOffset = Math.max(0, this.touchStartPullOffset + deltaY * 0.8)
+          if (this.pullOffset >= this.threshold) {
+            this.refreshState = 1
+            this.triggerHaptic()
+          } else {
+            this.refreshState = 0
+          }
+        }
+
+        if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+          if (this.isTracking) {
+            this.isTracking = false
+            if (this.pullOffset > 0) {
+              this.onPullEnd()
+            } else {
+              this.onScrollEnableChange(true)
+            }
+          }
+        }
+      })
 
       Column() {
         Row() {
           LoadingProgress()
-            .width(22).height(22)
+            .width(28).height(28)
         }
         .width('100%').height(56).justifyContent(FlexAlign.Center)
         .opacity(this.pullOffset >= this.threshold * 0.5 ?
           Math.min((this.pullOffset - this.threshold * 0.5) / (this.threshold * 0.5), 1) : 0)
       }
       .position({ y: this.indicatorTop + this.pullOffset / 2 })
+      .hitTestBehavior(HitTestMode.None)
     }
     .width('100%').height('100%')
     .clip(false)

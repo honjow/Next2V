@@ -7,7 +7,7 @@ import {
 export struct DiscoverPage {
   @Consume('ns') ns: NavPathStack
   @State vm: NodeViewModel = new NodeViewModel()
-  @StorageProp('topAvoidHeight') topH: number = 107
+  @StorageProp('topAvoidHeight') topH: number = 0
   @StorageProp('bottomAvoidHeight') bottomH: number = 0
   private readonly TBH: number = 56
   private readonly FLOAT_H: number = 76

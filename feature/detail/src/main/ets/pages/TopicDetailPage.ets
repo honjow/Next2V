@@ -8,7 +8,7 @@ export struct TopicDetailPage {
   @Prop topicId: number = 0
   @State v: DetailViewModel = new DetailViewModel(this.topicId)
   @Consume('ns') stack: NavPathStack
-  @StorageProp('topAvoidHeight') topH: number = 107
+  @StorageProp('topAvoidHeight') topH: number = 0
 
   aboutToAppear(): void { this.v.load() }
 

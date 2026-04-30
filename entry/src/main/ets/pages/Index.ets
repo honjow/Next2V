@@ -84,7 +84,7 @@ struct Index {
   }
 
   // NotifyPage 和 MePage 较为简单，保留在 Index 文件内
-  @StorageProp('topAvoidHeight') topH: number = 107
+  @StorageProp('topAvoidHeight') topH: number = 0
   @StorageProp('bottomAvoidHeight') bottomH: number = 0
   private readonly TBH: number = 56
   private readonly FLOAT_H: number = 76
