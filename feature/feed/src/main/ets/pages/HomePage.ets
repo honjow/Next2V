@@ -1,20 +1,21 @@
 import { FeedViewModel } from '../viewmodel/FeedViewModel'
 import {
-  V2exTopic, TopicCard, LoadingFooter, TopicDetailParams
+  V2exTopic, TopicCard, LoadingFooter, TopicDetailParams, ThemeConstants, StorageKeys
 } from 'shared'
 import { PullRefresh } from '../components/PullRefresh'
 
 @Component
 export struct HomePage {
-  @Consume('ns') ns: NavPathStack
+  @Consume(StorageKeys.NAV_PATH_STACK) ns: NavPathStack
   @State vm: FeedViewModel = new FeedViewModel()
-  @StorageProp('topAvoidHeight') topH: number = 107
-  @StorageProp('bottomAvoidHeight') bottomH: number = 0
+  @StorageProp(StorageKeys.TOP_AVOID_HEIGHT) topH: number = 107
+  @StorageProp(StorageKeys.BOTTOM_AVOID_HEIGHT) bottomH: number = 0
   // 🔧 Feature Flag: true=系统Refresh, false=自定义PullRefresh
   private readonly USE_SYSTEM_REFRESH: boolean = false
-  private readonly TBH: number = 56
-  private readonly FLOAT_H: number = 76
-  private readonly GAP: number = 8
+  private readonly TBH: number = ThemeConstants.TITLE_BAR_HEIGHT
+  private readonly FLOAT_H: number = ThemeConstants.FLOAT_BAR_HEIGHT
+  private readonly GAP: number = ThemeConstants.SPACE_SM
+  private readonly PULL_THRESHOLD: number = 40
   private scroller: Scroller = new Scroller()
   @State listScrollEnabled: boolean = true
 
@@ -54,7 +55,7 @@ export struct HomePage {
           PullRefresh({
             scroller: this.scroller,
             indicatorTop: this.TBH,
-            threshold: 40,
+            threshold: this.PULL_THRESHOLD,
             onRefresh: async () => { await this.vm.refresh() },
             onScrollEnableChange: (enabled: boolean) => { this.listScrollEnabled = enabled }
           }) {
@@ -82,11 +83,11 @@ export struct HomePage {
         }
       } else {
         Column() {
-          LoadingProgress().width(32).height(32)
+          LoadingProgress().width(ThemeConstants.LOADING_SIZE).height(ThemeConstants.LOADING_SIZE)
           Text(this.vm.errorMessage ? '加载失败' : '加载中...')
-            .fontSize(14).fontColor($r('sys.color.font_secondary')).margin({ top: 8 })
+            .fontSize(ThemeConstants.FONT_SIZE_BODY).fontColor($r('sys.color.font_secondary')).margin({ top: ThemeConstants.SPACE_SM })
           if (this.vm.errorMessage) Button('重试')
-            .margin({ top: 16 })
+            .margin({ top: ThemeConstants.SPACE_LG })
             .onClick(() => this.vm.loadData())
         }.justifyContent(FlexAlign.Center).width('100%').height('100%')
       }

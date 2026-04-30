@@ -1,33 +1,33 @@
 import { UserViewModel } from '../viewmodel/UserViewModel'
 import {
-  V2exTopic, TopicCard, ThemeConstants, TopicDetailParams
+  V2exTopic, TopicCard, ThemeConstants, TopicDetailParams, StorageKeys
 } from 'shared'
 
 @Component
 export struct UserProfilePage {
   @Prop username: string = ''
-  @Consume('ns') stack: NavPathStack
+  @Consume(StorageKeys.NAV_PATH_STACK) stack: NavPathStack
   @State vm: UserViewModel = new UserViewModel(this.username)
-  @StorageProp('topAvoidHeight') topH: number = 0
+  @StorageProp(StorageKeys.TOP_AVOID_HEIGHT) topH: number = 0
 
   aboutToAppear(): void { this.vm.load() }
 
   build() {
     Column() {
       if (this.vm.isLoading && this.vm.profile === null) {
-        LoadingProgress().width(32).height(32).margin({ top: 100 })
+        LoadingProgress().width(ThemeConstants.LOADING_SIZE).height(ThemeConstants.LOADING_SIZE).margin({ top: ThemeConstants.MARGIN_LOADING_TOP })
       } else if (this.vm.profile !== null) {
         List({ space: ThemeConstants.SPACE_XS }) {
-          ListItem() { Column() { Blank().height(this.topH + 56) } }
+          ListItem() { Column() { Blank().height(this.topH + ThemeConstants.TITLE_BAR_HEIGHT) } }
           ListItem() {
             Column() {
-              Text(this.vm.profile!.username).fontSize(20).fontWeight(FontWeight.Bold)
+              Text(this.vm.profile!.username).fontSize(ThemeConstants.FONT_SIZE_HEADING + 2).fontWeight(FontWeight.Bold)
                 .fontColor($r('sys.color.font_primary'))
               if (this.vm.profile!.bio)
-                Text(this.vm.profile!.bio).fontSize(14).fontColor($r('sys.color.font_secondary')).margin({ top: 12 })
-            }.padding(16).width('100%').alignItems(HorizontalAlign.Center)
+                Text(this.vm.profile!.bio).fontSize(ThemeConstants.FONT_SIZE_BODY).fontColor($r('sys.color.font_secondary')).margin({ top: ThemeConstants.SPACE_MD })
+            }.padding(ThemeConstants.SPACE_LG).width('100%').alignItems(HorizontalAlign.Center)
           }
-          ListItem() { Text('最近主题').fontSize(14).fontColor($r('sys.color.font_secondary')).padding(8) }
+          ListItem() { Text('最近主题').fontSize(ThemeConstants.FONT_SIZE_BODY).fontColor($r('sys.color.font_secondary')).padding(ThemeConstants.SPACE_SM) }
           LazyForEach(this.vm.topicDataSource, (topic: V2exTopic) => {
             ListItem() { TopicCard({ item: topic }) }
               .onClick(() => {
@@ -39,7 +39,7 @@ export struct UserProfilePage {
           .scrollBar(BarState.Off)
           .width('100%').height('100%')
       } else {
-        Text('加载失败').fontSize(14).fontColor($r('sys.color.font_secondary')).margin({ top: 100 })
+        Text('加载失败').fontSize(ThemeConstants.FONT_SIZE_BODY).fontColor($r('sys.color.font_secondary')).margin({ top: ThemeConstants.MARGIN_LOADING_TOP })
       }
     }
       .width('100%').height('100%')

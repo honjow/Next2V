@@ -1,3 +1,8 @@
+import { ApiConstants } from '../constants/ApiConstants'
+
+const PROTOCOL_RELATIVE_PREFIX: string = '//'
+const HTTP_PREFIX: string = 'http'
+
 /**
  * 图片 URL 处理工具
  */
@@ -7,12 +12,12 @@ export class ImageUtils {
     if (!path) {
       return ''
     }
-    if (path.startsWith('//')) {
+    if (path.startsWith(PROTOCOL_RELATIVE_PREFIX)) {
       return `https:${path}`
     }
-    if (path.startsWith('http')) {
+    if (path.startsWith(HTTP_PREFIX)) {
       return path
     }
-    return `https://www.v2ex.com${path}`
+    return `${ApiConstants.BASE_URL_COM}${path}`
   }
 }

@@ -1,4 +1,11 @@
 import { vibrator } from '@kit.SensorServiceKit'
+import { ThemeConstants } from 'shared'
+
+const PULL_START_DRAG_VP: number = 4
+const PULL_RESISTANCE_FACTOR: number = 0.8
+const OPACITY_THRESHOLD_FACTOR: number = 0.5
+const HAPTIC_HD_INTENSITY: number = 60
+const HAPTIC_FALLBACK_DURATION: number = 30
 
 @Component
 export struct PullRefresh {
@@ -22,22 +29,22 @@ export struct PullRefresh {
 
   private bounceBack(target: number = 0): void {
     this.onScrollEnableChange(true)
-    animateTo({ duration: 400, curve: Curve.EaseOut }, () => {
+    animateTo({ duration: ThemeConstants.ANIM_DURATION, curve: Curve.EaseOut }, () => {
       this.pullOffset = target
     })
     if (target === 0) {
       setTimeout(() => {
         this.refreshState = 0
         this.hapticFired = false
-      }, 420)
+      }, ThemeConstants.ANIM_STATE_RESET_MS)
     }
   }
 
   private onPullEnd(): void {
     if (this.pullOffset >= this.threshold && this.refreshState !== 2) {
       this.onScrollEnableChange(true)
-      animateTo({ duration: 400, curve: Curve.EaseOut }, () => {
-        this.pullOffset = 56
+      animateTo({ duration: ThemeConstants.ANIM_DURATION, curve: Curve.EaseOut }, () => {
+        this.pullOffset = ThemeConstants.TITLE_BAR_HEIGHT
       })
       this.refreshState = 2
       this.doRefresh()
@@ -49,7 +56,7 @@ export struct PullRefresh {
   private async doRefresh(): Promise<void> {
     await this.onRefresh()
     this.refreshState = 3
-    setTimeout(() => this.bounceBack(0), 200)
+    setTimeout(() => this.bounceBack(0), ThemeConstants.ANIM_DONE_DELAY_MS)
   }
 
   private triggerHaptic(): void {
@@ -61,12 +68,12 @@ export struct PullRefresh {
           type: 'preset',
           effectId: 'haptic.effect.soft',
           count: 1,
-          intensity: 60,
+          intensity: HAPTIC_HD_INTENSITY,
         }, { usage: 'physicalFeedback' })
       } else {
         vibrator.startVibration({
           type: 'time',
-          duration: 30,
+          duration: HAPTIC_FALLBACK_DURATION,
         }, { usage: 'physicalFeedback' })
       }
     } catch (e) {
@@ -92,15 +99,14 @@ export struct PullRefresh {
         if (event.type === TouchType.Move) {
           let deltaY = event.touches[0].y - this.touchStartY
           if (!this.isTracking) {
-            // Only start tracking when actually pulling down at the top
-            if ( deltaY > 4 && this.isListAtTop()) {
+            if (deltaY > PULL_START_DRAG_VP && this.isListAtTop()) {
               this.isTracking = true
               this.onScrollEnableChange(false)
             } else {
               return
             }
           }
-          this.pullOffset = Math.max(0, this.touchStartPullOffset + deltaY * 0.8)
+          this.pullOffset = Math.max(0, this.touchStartPullOffset + deltaY * PULL_RESISTANCE_FACTOR)
           if (this.pullOffset >= this.threshold) {
             this.refreshState = 1
             this.triggerHaptic()
@@ -124,11 +130,11 @@ export struct PullRefresh {
       Column() {
         Row() {
           LoadingProgress()
-            .width(28).height(28)
+            .width(ThemeConstants.INDICATOR_SIZE).height(ThemeConstants.INDICATOR_SIZE)
         }
-        .width('100%').height(56).justifyContent(FlexAlign.Center)
-        .opacity(this.pullOffset >= this.threshold * 0.5 ?
-          Math.min((this.pullOffset - this.threshold * 0.5) / (this.threshold * 0.5), 1) : 0)
+        .width('100%').height(ThemeConstants.TITLE_BAR_HEIGHT).justifyContent(FlexAlign.Center)
+        .opacity(this.pullOffset >= this.threshold * OPACITY_THRESHOLD_FACTOR ?
+          Math.min((this.pullOffset - this.threshold * OPACITY_THRESHOLD_FACTOR) / (this.threshold * OPACITY_THRESHOLD_FACTOR), 1) : 0)
       }
       .position({ y: this.indicatorTop + this.pullOffset / 2 })
       .hitTestBehavior(HitTestMode.None)

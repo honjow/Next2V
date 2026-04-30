@@ -12,7 +12,7 @@ export struct TopicCard {
 
   build() {
     Row() {
-      Avatar({ url: this.item.member.avatar_normal, avatarSize: 40 })
+      Avatar({ url: this.item.member.avatar_normal, avatarSize: ThemeConstants.AVATAR_SIZE_TOPIC })
         .margin({ right: ThemeConstants.SPACE_MD })
         .onClick(() => {
           if (this.onUserClick) { this.onUserClick() }
@@ -20,7 +20,7 @@ export struct TopicCard {
 
       Column() {
         Row({ space: ThemeConstants.SPACE_SM }) {
-          UserName({ username: this.item.member.username, fontSize: 13 })
+          UserName({ username: this.item.member.username, fontSize: ThemeConstants.FONT_SIZE_META })
           NodeTag({ nodeName: this.item.node.name, nodeTitle: this.item.node.title })
           Blank()
           TimeAgo({ timestamp: this.item.last_touched })
@@ -28,7 +28,7 @@ export struct TopicCard {
 
         Text(this.item.title)
           .fontSize(ThemeConstants.FONT_SIZE_TITLE).fontColor($r('sys.color.font_primary'))
-          .lineHeight(22).maxLines(2).textOverflow({ overflow: TextOverflow.Ellipsis })
+          .lineHeight(ThemeConstants.LINE_HEIGHT_TITLE).maxLines(2).textOverflow({ overflow: TextOverflow.Ellipsis })
           .width('100%').margin({ top: ThemeConstants.SPACE_XS })
 
         Row() {

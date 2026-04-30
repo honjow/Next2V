@@ -16,6 +16,7 @@ export interface UserProfileParams {
 export { HttpClient } from './network/HttpClient'
 export { ApiService } from './network/ApiService'
 export { ApiConstants } from './constants/ApiConstants'
+export { StorageKeys } from './constants/StorageKeys'
 export type {
   V2exTopic,
   V2exReply,

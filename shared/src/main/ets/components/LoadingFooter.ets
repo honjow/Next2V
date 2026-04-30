@@ -12,8 +12,8 @@ export struct LoadingFooter {
     Row() {
       if (this.isLoading) {
         LoadingProgress()
-          .width(24)
-          .height(24)
+          .width(ThemeConstants.LOADING_SIZE_SMALL)
+          .height(ThemeConstants.LOADING_SIZE_SMALL)
           .color($r('sys.color.font_secondary'))
         Text('加载中...')
           .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
@@ -27,6 +27,6 @@ export struct LoadingFooter {
     }
     .justifyContent(FlexAlign.Center)
     .width('100%')
-    .height(48)
+    .height(ThemeConstants.FOOTER_HEIGHT)
   }
 }

@@ -1,4 +1,5 @@
 import { DateUtils } from '../utils/DateUtils'
+import { ThemeConstants } from '../theme/ThemeConstants'
 
 @Component
 export struct TimeAgo {
@@ -6,7 +7,7 @@ export struct TimeAgo {
 
   build() {
     Text(DateUtils.toRelativeTime(this.timestamp))
-      .fontSize(12)
+      .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
       .fontColor($r('sys.color.font_secondary'))
   }
 }

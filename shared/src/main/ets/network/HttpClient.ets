@@ -1,4 +1,10 @@
 import { http } from '@kit.NetworkKit'
+import { ApiConstants } from '../constants/ApiConstants'
+
+const MAX_RETRIES: number = 3
+const CONNECT_TIMEOUT_MS: number = 10000
+const READ_TIMEOUT_MS: number = 15000
+const BACKOFF_BASE_MS: number = 1000
 
 /**
  * 通用 HTTP 客户端
@@ -9,7 +15,7 @@ import { http } from '@kit.NetworkKit'
  */
 export class HttpClient {
   private static instance: HttpClient
-  private baseUrl: string = 'https://www.v2ex.com'
+  private baseUrl: string = ApiConstants.BASE_URL_COM
 
   static getInstance(): HttpClient {
     if (!HttpClient.instance) {
@@ -29,7 +35,7 @@ export class HttpClient {
   async request<T>(
     endpoint: string,
     method?: http.RequestMethod,
-    retryCount: number = 3
+    retryCount: number = MAX_RETRIES
   ): Promise<T> {
     let httpRequest = http.createHttp()
     const url = `${this.baseUrl}${endpoint}`
@@ -42,20 +48,19 @@ export class HttpClient {
           'Content-Type': 'application/json',
           'Accept-Encoding': 'gzip'
         },
-        connectTimeout: 10000,
-        readTimeout: 15000,
+        connectTimeout: CONNECT_TIMEOUT_MS,
+        readTimeout: READ_TIMEOUT_MS,
         usingCache: true
       })
 
-      if (response.responseCode !== 200) {
+      if (response.responseCode !== http.ResponseCode.OK) {
         throw new Error(`HTTP ${response.responseCode}: ${url}`)
       }
 
       return JSON.parse(response.result as string) as T
     } catch (error) {
       if (retryCount > 0) {
-        // 指数退避: 1s → 2s → 4s
-        const delay = 1000 * Math.pow(2, 3 - retryCount)
+        const delay = BACKOFF_BASE_MS * Math.pow(2, MAX_RETRIES - retryCount)
         await new Promise<void>(resolve => setTimeout(resolve, delay))
         return this.request<T>(endpoint, method, retryCount - 1)
       }

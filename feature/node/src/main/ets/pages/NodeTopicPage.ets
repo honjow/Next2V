@@ -1,25 +1,25 @@
 import { NodeViewModel } from '../viewmodel/NodeViewModel'
 import {
-  V2exTopic, TopicCard, ThemeConstants, TopicDetailParams
+  V2exTopic, TopicCard, ThemeConstants, TopicDetailParams, StorageKeys
 } from 'shared'
 
 @Component
 export struct NodeTopicPage {
   @Prop nodeName: string = ''
   @Prop nodeTitle: string = ''
-  @Consume('ns') stack: NavPathStack
+  @Consume(StorageKeys.NAV_PATH_STACK) stack: NavPathStack
   @State vm: NodeViewModel = new NodeViewModel()
-  @StorageProp('topAvoidHeight') topH: number = 0
+  @StorageProp(StorageKeys.TOP_AVOID_HEIGHT) topH: number = 0
 
   aboutToAppear(): void { this.vm.loadNodeTopics(this.nodeName) }
 
   build() {
     Column() {
       if (this.vm.isLoading) {
-        LoadingProgress().width(32).height(32).margin({ top: 100 })
+        LoadingProgress().width(ThemeConstants.LOADING_SIZE).height(ThemeConstants.LOADING_SIZE).margin({ top: ThemeConstants.MARGIN_LOADING_TOP })
       } else {
         List({ space: ThemeConstants.SPACE_XS }) {
-          ListItem() { Column() { Blank().height(this.topH + 56) } }
+          ListItem() { Column() { Blank().height(this.topH + ThemeConstants.TITLE_BAR_HEIGHT) } }
           ForEach(this.vm.nodeTopics, (topic: V2exTopic) => {
             ListItem() { TopicCard({ item: topic }) }
               .onClick(() => {

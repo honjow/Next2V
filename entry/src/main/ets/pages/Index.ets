@@ -2,7 +2,7 @@ import {
   HdsNavigation, HdsNavDestination, HdsTabs, HdsTabsController, HdsTabsFloatingStyle,
   hdsMaterial, HdsNavigationTitleMode, ScrollEffectType, BlurStrategy
 } from '@kit.UIDesignKit'
-import { HttpClient } from 'shared'
+import { HttpClient, ThemeConstants, StorageKeys } from 'shared'
 import { HomePage } from 'feed'
 import { TopicDetailPage } from 'detail'
 import { DiscoverPage, NodeTopicPage } from 'node'
@@ -11,7 +11,7 @@ import { UserProfilePage } from 'user'
 @Entry
 @Component
 struct Index {
-  @Provide('ns') ns: NavPathStack = new NavPathStack()
+  @Provide(StorageKeys.NAV_PATH_STACK) ns: NavPathStack = new NavPathStack()
   private tc: HdsTabsController = new HdsTabsController()
   private tabTitles: string[] = ['首页', '发现', '通知', '我的']
   @State ct: number = 0
@@ -42,7 +42,7 @@ struct Index {
       }
         .barOverlap(true).barPosition(BarPosition.End).barMode(BarMode.Fixed)
         .barFloatingStyle({
-          barBottomMargin: 20,
+          barBottomMargin: ThemeConstants.SPACE_XL,
           systemMaterialEffect: { materialType: hdsMaterial.MaterialType.ADAPTIVE, materialLevel: hdsMaterial.MaterialLevel.ADAPTIVE }
         } as HdsTabsFloatingStyle)
         .onChange((i: number) => { this.ct = i })
@@ -75,24 +75,24 @@ struct Index {
         : idx === 1 ? $r('sys.symbol.square_fill_grid_2x2')
         : idx === 2 ? $r('sys.symbol.bell_fill')
         : $r('sys.symbol.person_fill'))
-        .fontSize(22).renderingStrategy(SymbolRenderingStrategy.MULTIPLE_OPACITY)
+        .fontSize(ThemeConstants.INDICATOR_SIZE - 6).renderingStrategy(SymbolRenderingStrategy.MULTIPLE_OPACITY)
         .fontColor([this.ct === idx ? $r('sys.color.ohos_id_color_activated') : $r('sys.color.font_secondary')])
-      Text(title).fontSize(10).fontColor(this.ct === idx ? $r('sys.color.ohos_id_color_activated') : $r('sys.color.font_secondary'))
+      Text(title).fontSize(ThemeConstants.FONT_SIZE_TINY).fontColor(this.ct === idx ? $r('sys.color.ohos_id_color_activated') : $r('sys.color.font_secondary'))
     }
       .alignItems(HorizontalAlign.Center).justifyContent(FlexAlign.Center).width('100%').height('100%')
-      .padding({ top: 6, bottom: 4 })
+      .padding({ top: ThemeConstants.SPACE_SM - 2, bottom: ThemeConstants.SPACE_XS })
   }
 
   // NotifyPage 和 MePage 较为简单，保留在 Index 文件内
-  @StorageProp('topAvoidHeight') topH: number = 0
-  @StorageProp('bottomAvoidHeight') bottomH: number = 0
-  private readonly TBH: number = 56
-  private readonly FLOAT_H: number = 76
+  @StorageProp(StorageKeys.TOP_AVOID_HEIGHT) topH: number = 0
+  @StorageProp(StorageKeys.BOTTOM_AVOID_HEIGHT) bottomH: number = 0
+  private readonly TBH: number = ThemeConstants.TITLE_BAR_HEIGHT
+  private readonly FLOAT_H: number = ThemeConstants.FLOAT_BAR_HEIGHT
 
   @Builder NotifyPage() {
     Column() {
-      Text('通知').fontSize(20).fontWeight(FontWeight.Bold).fontColor($r('sys.color.font_primary'))
-      Text('登录后可查看').fontSize(14).fontColor($r('sys.color.font_secondary')).margin({ top: 8 })
+      Text('通知').fontSize(ThemeConstants.FONT_SIZE_HEADING + 2).fontWeight(FontWeight.Bold).fontColor($r('sys.color.font_primary'))
+      Text('登录后可查看').fontSize(ThemeConstants.FONT_SIZE_BODY).fontColor($r('sys.color.font_secondary')).margin({ top: ThemeConstants.SPACE_SM })
     }
       .justifyContent(FlexAlign.Center).width('100%').height('100%')
       .padding({ top: this.topH + this.TBH, bottom: this.bottomH + this.FLOAT_H })
@@ -104,30 +104,30 @@ struct Index {
       List() {
         ListItem() {
           Column() {
-            Text('API 域名').fontSize(14).fontWeight(FontWeight.Medium).fontColor($r('sys.color.font_primary'))
+            Text('API 域名').fontSize(ThemeConstants.FONT_SIZE_BODY).fontWeight(FontWeight.Medium).fontColor($r('sys.color.font_primary'))
             Text(`当前: ${this.useCoDomain ? 'v2ex.co' : 'v2ex.com'}`)
-              .fontSize(12).fontColor($r('sys.color.font_secondary')).margin({ top: 4 })
-            Row({ space: 8 }) {
-              Button('v2ex.com').fontSize(11)
+              .fontSize(ThemeConstants.FONT_SIZE_CAPTION).fontColor($r('sys.color.font_secondary')).margin({ top: ThemeConstants.SPACE_XS })
+            Row({ space: ThemeConstants.SPACE_SM }) {
+              Button('v2ex.com').fontSize(ThemeConstants.FONT_SIZE_TAG)
                 .onClick(() => { this.http.setBaseUrl('https://www.v2ex.com'); this.useCoDomain = false })
-              Button('v2ex.co').fontSize(11)
+              Button('v2ex.co').fontSize(ThemeConstants.FONT_SIZE_TAG)
                 .onClick(() => { this.http.setBaseUrl('https://www.v2ex.co'); this.useCoDomain = true })
-            }.margin({ top: 8 })
+            }.margin({ top: ThemeConstants.SPACE_SM })
           }
-            .padding(16).width('100%').alignItems(HorizontalAlign.Start).borderRadius(8)
+            .padding(ThemeConstants.SPACE_LG).width('100%').alignItems(HorizontalAlign.Start).borderRadius(ThemeConstants.RADIUS_MD)
             .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
         }
-          .margin({ left: 12, right: 12, top: 12 }).height(130)
+          .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, top: ThemeConstants.SPACE_MD }).height(130)
 
         ListItem() {
           Column() {
-            Text('关于 Next2V').fontSize(14).fontWeight(FontWeight.Medium).fontColor($r('sys.color.font_primary'))
-            Text('版本 0.1.0').fontSize(11).fontColor($r('sys.color.font_secondary')).margin({ top: 4 })
+            Text('关于 Next2V').fontSize(ThemeConstants.FONT_SIZE_BODY).fontWeight(FontWeight.Medium).fontColor($r('sys.color.font_primary'))
+            Text('版本 0.1.0').fontSize(ThemeConstants.FONT_SIZE_TAG).fontColor($r('sys.color.font_secondary')).margin({ top: ThemeConstants.SPACE_XS })
           }
-            .padding(16).width('100%').alignItems(HorizontalAlign.Start).borderRadius(8)
+            .padding(ThemeConstants.SPACE_LG).width('100%').alignItems(HorizontalAlign.Start).borderRadius(ThemeConstants.RADIUS_MD)
             .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
         }
-          .margin({ left: 12, right: 12, top: 8 }).height(80)
+          .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, top: ThemeConstants.SPACE_SM }).height(80)
       }
         .scrollBar(BarState.Off)
         .padding({ top: this.topH + this.TBH, bottom: this.bottomH + this.FLOAT_H })

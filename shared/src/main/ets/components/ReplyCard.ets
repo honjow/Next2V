@@ -13,21 +13,21 @@ export struct ReplyCard {
   build() {
     Column() {
       Row({ space: ThemeConstants.SPACE_MD }) {
-        Avatar({ url: this.reply.member.avatar_mini, avatarSize: 32 })
+        Avatar({ url: this.reply.member.avatar_mini, avatarSize: ThemeConstants.AVATAR_SIZE_REPLY })
         Column() {
           Row({ space: ThemeConstants.SPACE_SM }) {
-            UserName({ username: this.reply.member.username, fontSize: 13 })
+            UserName({ username: this.reply.member.username, fontSize: ThemeConstants.FONT_SIZE_META })
             if (this.isOp) {
               Text('OP')
-                .fontSize(10)
+                .fontSize(ThemeConstants.FONT_SIZE_TINY)
                 .fontColor($r('sys.color.font_on_primary'))
-                .padding({ left: 4, right: 4, top: 1, bottom: 1 })
-                .borderRadius(2)
+                .padding({ left: ThemeConstants.SPACE_XS, right: ThemeConstants.SPACE_XS, top: 1, bottom: 1 })
+                .borderRadius(ThemeConstants.RADIUS_SM / 2)
                 .backgroundColor($r('sys.color.ohos_id_color_activated'))
             }
             Blank()
             Text(`#${this.floor}`)
-              .fontSize(11)
+              .fontSize(ThemeConstants.FONT_SIZE_TAG)
               .fontColor($r('sys.color.font_secondary'))
           }
           TimeAgo({ timestamp: this.reply.created })
@@ -39,7 +39,7 @@ export struct ReplyCard {
       Text(this.reply.content)
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
         .fontColor($r('sys.color.font_primary'))
-        .lineHeight(20)
+        .lineHeight(ThemeConstants.LINE_HEIGHT_BODY)
         .width('100%')
         .margin({ top: ThemeConstants.SPACE_SM })
 

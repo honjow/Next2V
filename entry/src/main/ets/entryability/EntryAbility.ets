@@ -1,5 +1,11 @@
 import { UIAbility, Want, AbilityConstant } from '@kit.AbilityKit'
 import { window } from '@kit.ArkUI'
+import { StorageKeys } from 'shared'
+
+const TRANSPARENT_COLOR: string = '#00FFFFFF'
+const ENTRY_PAGE: string = 'pages/Index'
+const FALLBACK_TOP_AVOID: number = 107
+const FALLBACK_BOTTOM_AVOID: number = 0
 
 export default class EntryAbility extends UIAbility {
   onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {}
@@ -8,23 +14,20 @@ export default class EntryAbility extends UIAbility {
     let win = windowStage.getMainWindowSync()
     win.setWindowLayoutFullScreen(true)
     win.setWindowSystemBarProperties({
-      statusBarColor: '#00FFFFFF',
-      navigationBarColor: '#00FFFFFF'
+      statusBarColor: TRANSPARENT_COLOR,
+      navigationBarColor: TRANSPARENT_COLOR
     })
-    // 获取系统安全区高度（px → vp）
-    windowStage.loadContent('pages/Index', (err) => {
+    windowStage.loadContent(ENTRY_PAGE, (err) => {
       if (err.code) { console.error('loadContent failed: ' + JSON.stringify(err)) }
-      // 页面加载后获取安全区高度
       try {
         let systemArea = win.getWindowAvoidArea(window.AvoidAreaType.TYPE_SYSTEM)
         let navArea = win.getWindowAvoidArea(window.AvoidAreaType.TYPE_NAVIGATION_INDICATOR)
         let uiCtx = windowStage.getMainWindowSync().getUIContext()
-        AppStorage.SetOrCreate<number>('topAvoidHeight', uiCtx.px2vp(systemArea.topRect.height))
-        AppStorage.SetOrCreate<number>('bottomAvoidHeight', uiCtx.px2vp(navArea.bottomRect.height))
+        AppStorage.SetOrCreate<number>(StorageKeys.TOP_AVOID_HEIGHT, uiCtx.px2vp(systemArea.topRect.height))
+        AppStorage.SetOrCreate<number>(StorageKeys.BOTTOM_AVOID_HEIGHT, uiCtx.px2vp(navArea.bottomRect.height))
       } catch (e) {
-        // 降级默认值
-        AppStorage.SetOrCreate<number>('topAvoidHeight', 107)
-        AppStorage.SetOrCreate<number>('bottomAvoidHeight', 0)
+        AppStorage.SetOrCreate<number>(StorageKeys.TOP_AVOID_HEIGHT, FALLBACK_TOP_AVOID)
+        AppStorage.SetOrCreate<number>(StorageKeys.BOTTOM_AVOID_HEIGHT, FALLBACK_BOTTOM_AVOID)
       }
     })
   }
