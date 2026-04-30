@@ -1,5 +1,6 @@
 import { V2exTopic, ApiService } from 'shared'
 import { FeedDataSource } from '../model/FeedModels'
+import { vibrator } from '@kit.SensorServiceKit'
 
 /**
  * Feed 页面 ViewModel
@@ -52,6 +53,50 @@ export class FeedViewModel {
       this.errorMessage = error.message || '刷新失败'
     } finally {
       this.isRefreshing = false
+    }
+  }
+
+  /**
+   * 供系统 Refresh 组件使用（$$ 绑定已设 isRefreshing=true，跳过 guard）
+   */
+  async refreshForce(): Promise<void> {
+    this.isRefreshing = true
+    this.errorMessage = ''
+    this.triggerHaptic()
+
+    try {
+      const data = await this.loader()
+      this.dataSource.setData(data)
+      this.hasMore = data.length >= 20
+    } catch (error) {
+      this.errorMessage = error.message || '刷新失败'
+    } finally {
+      this.isRefreshing = false
+    }
+  }
+
+  /** HD 震动反馈 */
+  private triggerHaptic(): void {
+    try {
+      if (vibrator.isHdHapticSupported()) {
+        vibrator.startVibration({
+          type: 'preset',
+          effectId: 'haptic.effect.soft',
+          count: 1,
+          intensity: 60,
+        }, {
+          usage: 'physicalFeedback',
+        })
+      } else {
+        vibrator.startVibration({
+          type: 'time',
+          duration: 30,
+        }, {
+          usage: 'physicalFeedback',
+        })
+      }
+    } catch (e) {
+      // 静默失败
     }
   }
 }

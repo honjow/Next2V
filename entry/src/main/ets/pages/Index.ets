@@ -50,7 +50,8 @@ struct Index {
       .titleBar(this.titleBarOptions())
       .titleMode(HdsNavigationTitleMode.MINI)
       .hideBackButton(true)
-      .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.BOTTOM])
+      .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM])
+      .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
       .navDestination(this.pm).mode(NavigationMode.Stack).width('100%').height('100%')
       .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
   }
