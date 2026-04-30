@@ -16,6 +16,7 @@ struct Index {
   @State iconEmphasize: ResourceColor = $r('sys.color.ohos_id_color_activated')
   @State iconSecondary: ResourceColor = $r('sys.color.font_secondary')
 
+  /** Push 页面路由表：name → HdsNavDestination 包裹的内容页 */
   @Builder pm(name: string, param: Object) {
     if (name === 'TopicDetail') { NavDestination() { TopicDetailContent({ topicId: (param as Record<string, Object>)['topicId'] as number }) } }
     else if (name === 'NodeTopicList') { NavDestination() { NodeTopicContent({ nodeName: (param as Record<string, Object>)['nodeName'] as string, nodeTitle: (param as Record<string, Object>)['nodeTitle'] as string }) } }
@@ -37,11 +38,15 @@ struct Index {
           systemMaterialEffect: { materialType: hdsMaterial.MaterialType.ADAPTIVE, materialLevel: hdsMaterial.MaterialLevel.ADAPTIVE }
         } as HdsTabsFloatingStyle)
         .onChange((i: number) => { this.ct = i })
-      }.width('100%').height('100%')
+      }
+      .width('100%').height('100%')
+      .padding({ top: 44 })   // 手动留出状态栏高度（全屏模式系统不自动内縮）
+      .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])  // 底部延伸至手势条
     }
     .navDestination(this.pm).mode(NavigationMode.Stack).height('100%')
   }
 
+  /** 自定义 Tab 栏：SymbolGlyph 矢量图标 + 文字，支持 active/inactive 状态 */
   @Builder TabBuilder(icon: Resource, title: string, idx: number) {
     Column() {
       SymbolGlyph(icon)
@@ -58,7 +63,8 @@ struct Index {
   }
 }
 
-// ========== Tab Pages ==========
+// ========== Tab 内容页（无 NavDestination）==========
+
 @Component struct HomePage {
   @Consume('ns') stack: NavPathStack
   @State vm: FeedViewModel = new FeedViewModel()
@@ -91,7 +97,8 @@ struct Index {
   build(){Column(){List(){ListItem(){Column(){Text('API 域名').fontSize(14).fontWeight(FontWeight.Medium).fontColor($r('sys.color.font_primary'));Text(`当前: ${this.u?'v2ex.co':'v2ex.com'}`).fontSize(12).fontColor($r('sys.color.font_secondary')).margin({top:4});Row({space:8}){Button('v2ex.com').fontSize(11).onClick(()=>{this.h.setBaseUrl('https://www.v2ex.com');this.u=false});Button('v2ex.co').fontSize(11).onClick(()=>{this.h.setBaseUrl('https://www.v2ex.co');this.u=true})}.margin({top:8})}.padding(16).width('100%').alignItems(HorizontalAlign.Start).borderRadius(8).backgroundColor($r('sys.color.ohos_id_color_foreground_contrary'))}.margin({left:12,right:12,top:12});ListItem(){Column(){Text('关于 Next2V').fontSize(14).fontWeight(FontWeight.Medium).fontColor($r('sys.color.font_primary'));Text('版本 0.1.0').fontSize(11).fontColor($r('sys.color.font_secondary')).margin({top:4})}.padding(16).width('100%').alignItems(HorizontalAlign.Start).borderRadius(8).backgroundColor($r('sys.color.ohos_id_color_foreground_contrary'))}.margin({left:12,right:12,top:8})}}.width('100%').height('100%').backgroundColor($r('sys.color.ohos_id_color_sub_background'))}
 }
 
-// ========== Push Pages (same as before) ==========
+// ========== Push 页面 ==========
+
 @Component struct TopicDetailContent {
   @Prop topicId:number=0
   @State t:V2exTopic|null=null; @State r:V2exReply[]=[]; @State l:boolean=true
