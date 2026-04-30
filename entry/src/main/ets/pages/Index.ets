@@ -1,5 +1,5 @@
 import {
-  HdsNavigation, HdsTabs, HdsTabsController, HdsTabsFloatingStyle,
+  HdsNavigation, HdsNavDestination, HdsTabs, HdsTabsController, HdsTabsFloatingStyle,
   hdsMaterial, HdsNavigationTitleMode, ScrollEffectType, BlurStrategy
 } from '@kit.UIDesignKit'
 import {
@@ -44,11 +44,14 @@ struct Index {
 
   @Builder pm(name: string, param: Object) {
     if (name === 'TopicDetail') {
-      NavDestination() { TopicDetailContent({ topicId: (param as Record<string, Object>)['topicId'] as number }) }
+      HdsNavDestination() { TopicDetailContent({ topicId: (param as Record<string, Object>)['topicId'] as number }) }
+      .titleBar(this.navDestTitleBarOpts())
     } else if (name === 'NodeTopicList') {
-      NavDestination() { NodeTopicContent({ nodeName: (param as Record<string, Object>)['nodeName'] as string, nodeTitle: (param as Record<string, Object>)['nodeTitle'] as string }) }
+      HdsNavDestination() { NodeTopicContent({ nodeName: (param as Record<string, Object>)['nodeName'] as string, nodeTitle: (param as Record<string, Object>)['nodeTitle'] as string }) }
+      .titleBar(this.navDestTitleBarOpts())
     } else if (name === 'UserProfile') {
-      NavDestination() { UserProfileContent({ username: (param as Record<string, Object>)['username'] as string }) }
+      HdsNavDestination() { UserProfileContent({ username: (param as Record<string, Object>)['username'] as string }) }
+      .titleBar(this.navDestTitleBarOpts())
     }
   }
 
@@ -70,6 +73,11 @@ struct Index {
     .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.BOTTOM])
     .navDestination(this.pm).mode(NavigationMode.Stack).width('100%').height('100%')
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
+  }
+
+  /** HdsNavDestination 的 titleBar：avoidLayoutSafeArea 使标题栏避开状态栏 */
+  private navDestTitleBarOpts(): Record<string, Object> {
+    return { 'avoidLayoutSafeArea': true }
   }
 
   private titleBarOptions(): Record<string, Object> {
@@ -132,28 +140,31 @@ struct Index {
 
 @Component struct TopicDetailContent {
   @Prop topicId:number=0; @State t:V2exTopic|null=null; @State r:V2exReply[]=[]; @State l:boolean=true
+  @StorageProp('topAvoidHeight') topH: number = 107
   private a:ApiService=new ApiService()
   aboutToAppear():void{this.load()}
   async load():Promise<void>{this.l=true;try{let x=await this.a.getTopicById(this.topicId);if(x.length>0)this.t=x[0];this.r=await this.a.getReplies(this.topicId)}catch(e){}finally{this.l=false}}
-  build(){Column(){if(this.l){Column(){LoadingProgress().width(36).height(36);Text('加载中...').fontSize(14).fontColor($r('sys.color.font_secondary')).margin({top:12})}.justifyContent(FlexAlign.Center).width('100%').height('100%')}else if(this.t!==null){List(){ListItem(){Column(){Text(this.t!.title).fontSize(20).fontWeight(FontWeight.Bold).fontColor($r('sys.color.font_primary')).lineHeight(28).width('100%');Row({space:8}){Text(this.t!.member.username).fontSize(13).fontColor($r('sys.color.font_secondary'));Text('·').fontSize(13).fontColor('#ccc');Text(this.t!.node.title).fontSize(13).fontColor('#334455')}.width('100%').margin({top:12})}.padding(16).width('100%')};ListItem(){Text('共 '+this.r.length+' 条回复').fontSize(13).fontColor($r('sys.color.font_secondary')).padding({left:12,right:12,top:16,bottom:16}).width('100%')};ForEach(this.r,(reply:V2exReply,index:number)=>{ListItem(){Column(){Row({space:8}){Text(reply.member.username).fontSize(14).fontWeight(FontWeight.Medium).fontColor($r('sys.color.font_primary'));Text('#'+(index+1)).fontSize(11).fontColor($r('sys.color.font_secondary'));Blank();if(this.t!==null&&reply.member.id===this.t!.member.id){Text('楼主').fontSize(10).fontColor('#334455').padding({left:6,right:6,top:1,bottom:1}).borderRadius(3).backgroundColor('#E5F3FF')}}.width('100%');Text(reply.content).fontSize(14).fontColor($r('sys.color.font_primary')).lineHeight(22).margin({top:12}).width('100%')}.padding(16).width('100%').borderRadius(8).backgroundColor($r('sys.color.ohos_id_color_foreground_contrary'))}.margin({left:12,right:12,bottom:6})})}.width('100%').height('100%')}else{Text('加载失败').fontSize(16).fontColor($r('sys.color.font_secondary')).margin({top:100})}}.width('100%').height('100%').backgroundColor($r('sys.color.ohos_id_color_sub_background'))}
+  build(){Column(){if(this.l){Column(){LoadingProgress().width(36).height(36);Text('加载中...').fontSize(14).fontColor($r('sys.color.font_secondary')).margin({top:12})}.justifyContent(FlexAlign.Center).width('100%').height('100%')}else if(this.t!==null){List(){ListItem(){Column(){Blank().height(this.topH + 56)}};ListItem(){Column(){Text(this.t!.title).fontSize(20).fontWeight(FontWeight.Bold).fontColor($r('sys.color.font_primary')).lineHeight(28).width('100%');Row({space:8}){Text(this.t!.member.username).fontSize(13).fontColor($r('sys.color.font_secondary'));Text('·').fontSize(13).fontColor('#ccc');Text(this.t!.node.title).fontSize(13).fontColor('#334455')}.width('100%').margin({top:12})}.padding(16).width('100%')};ListItem(){Text('共 '+this.r.length+' 条回复').fontSize(13).fontColor($r('sys.color.font_secondary')).padding({left:12,right:12,top:16,bottom:16}).width('100%')};ForEach(this.r,(reply:V2exReply,index:number)=>{ListItem(){Column(){Row({space:8}){Text(reply.member.username).fontSize(14).fontWeight(FontWeight.Medium).fontColor($r('sys.color.font_primary'));Text('#'+(index+1)).fontSize(11).fontColor($r('sys.color.font_secondary'));Blank();if(this.t!==null&&reply.member.id===this.t!.member.id){Text('楼主').fontSize(10).fontColor('#334455').padding({left:6,right:6,top:1,bottom:1}).borderRadius(3).backgroundColor('#E5F3FF')}}.width('100%');Text(reply.content).fontSize(14).fontColor($r('sys.color.font_primary')).lineHeight(22).margin({top:12}).width('100%')}.padding(16).width('100%').borderRadius(8).backgroundColor($r('sys.color.ohos_id_color_foreground_contrary'))}.margin({left:12,right:12,bottom:6})})}.width('100%').height('100%')}else{Text('加载失败').fontSize(16).fontColor($r('sys.color.font_secondary')).margin({top:100})}}.width('100%').height('100%').backgroundColor($r('sys.color.ohos_id_color_sub_background'))}
 }
 
 @Component struct NodeTopicContent {
   @Prop nodeName:string=''; @Prop nodeTitle:string=''
   @Consume('ns') stack:NavPathStack
+  @StorageProp('topAvoidHeight') topH: number = 107
   @State topics:V2exTopic[]=[]; @State loading:boolean=false
   private api:ApiService=new ApiService()
   aboutToAppear():void{this.load()}
   async load():Promise<void>{this.loading=true;try{this.topics=await this.api.getTopicsByNode(this.nodeName)}catch(e){}finally{this.loading=false}}
-  build(){Column(){if(this.loading){LoadingProgress().width(32).height(32).margin({top:100})}else{List({space:ThemeConstants.SPACE_XS}){ForEach(this.topics,(topic:V2exTopic)=>{ListItem(){TopicCard({item:topic})}.onClick(()=>{let p:TopicDetailParams={topicId:topic.id};this.stack.pushPathByName('TopicDetail',p as Object)})})}.width('100%').height('100%')}}.width('100%').height('100%').backgroundColor($r('sys.color.ohos_id_color_sub_background'))}
+  build(){Column(){if(this.loading){LoadingProgress().width(32).height(32).margin({top:100})}else{List({space:ThemeConstants.SPACE_XS}){ListItem(){Column(){Blank().height(this.topH + 56)}};ForEach(this.topics,(topic:V2exTopic)=>{ListItem(){TopicCard({item:topic})}.onClick(()=>{let p:TopicDetailParams={topicId:topic.id};this.stack.pushPathByName('TopicDetail',p as Object)})})}.width('100%').height('100%')}}.width('100%').height('100%').backgroundColor($r('sys.color.ohos_id_color_sub_background'))}
 }
 
 @Component struct UserProfileContent {
   @Prop username:string=''
   @Consume('ns') stack:NavPathStack
+  @StorageProp('topAvoidHeight') topH: number = 107
   @State profile:V2exMemberProfile|null=null; @State topics:V2exTopic[]=[]; @State loading:boolean=false
   private api:ApiService=new ApiService()
   aboutToAppear():void{this.load()}
   async load():Promise<void>{this.loading=true;try{this.profile=await this.api.getMember(this.username);this.topics=await this.api.getTopicsByUsername(this.username)}catch(e){}finally{this.loading=false}}
-  build(){Column(){if(this.loading){LoadingProgress().width(32).height(32).margin({top:100})}else if(this.profile!==null){List({space:ThemeConstants.SPACE_XS}){ListItem(){Column(){Text(this.profile!.username).fontSize(20).fontWeight(FontWeight.Bold).fontColor($r('sys.color.font_primary'));if(this.profile!.bio)Text(this.profile!.bio).fontSize(14).fontColor($r('sys.color.font_secondary')).margin({top:12})}.padding(16).width('100%').alignItems(HorizontalAlign.Center)};ListItem(){Text('最近主题').fontSize(14).fontColor($r('sys.color.font_secondary')).padding(8)};ForEach(this.topics,(topic:V2exTopic)=>{ListItem(){TopicCard({item:topic})}.onClick(()=>{let p:TopicDetailParams={topicId:topic.id};this.stack.pushPathByName('TopicDetail',p as Object)})})}.width('100%').height('100%')}else{Text('加载失败').fontSize(14).fontColor($r('sys.color.font_secondary')).margin({top:100})}}.width('100%').height('100%').backgroundColor($r('sys.color.ohos_id_color_sub_background'))}
+  build(){Column(){if(this.loading){LoadingProgress().width(32).height(32).margin({top:100})}else if(this.profile!==null){List({space:ThemeConstants.SPACE_XS}){ListItem(){Column(){Blank().height(this.topH + 56)}};ListItem(){Column(){Text(this.profile!.username).fontSize(20).fontWeight(FontWeight.Bold).fontColor($r('sys.color.font_primary'));if(this.profile!.bio)Text(this.profile!.bio).fontSize(14).fontColor($r('sys.color.font_secondary')).margin({top:12})}.padding(16).width('100%').alignItems(HorizontalAlign.Center)};ListItem(){Text('最近主题').fontSize(14).fontColor($r('sys.color.font_secondary')).padding(8)};ForEach(this.topics,(topic:V2exTopic)=>{ListItem(){TopicCard({item:topic})}.onClick(()=>{let p:TopicDetailParams={topicId:topic.id};this.stack.pushPathByName('TopicDetail',p as Object)})})}.width('100%').height('100%')}else{Text('加载失败').fontSize(14).fontColor($r('sys.color.font_secondary')).margin({top:100})}}.width('100%').height('100%').backgroundColor($r('sys.color.ohos_id_color_sub_background'))}
 }
