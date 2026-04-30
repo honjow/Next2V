@@ -100,39 +100,36 @@ struct Index {
 
   @Builder MePage() {
     Column() {
-      Scroll() {
-        List() {
-          ListItem() {
-            Column() {
-              Text('API 域名').fontSize(14).fontWeight(FontWeight.Medium).fontColor($r('sys.color.font_primary'))
-              Text(`当前: ${this.useCoDomain ? 'v2ex.co' : 'v2ex.com'}`)
-                .fontSize(12).fontColor($r('sys.color.font_secondary')).margin({ top: 4 })
-              Row({ space: 8 }) {
-                Button('v2ex.com').fontSize(11)
-                  .onClick(() => { this.http.setBaseUrl('https://www.v2ex.com'); this.useCoDomain = false })
-                Button('v2ex.co').fontSize(11)
-                  .onClick(() => { this.http.setBaseUrl('https://www.v2ex.co'); this.useCoDomain = true })
-              }.margin({ top: 8 })
-            }
-              .padding(16).width('100%').alignItems(HorizontalAlign.Start).borderRadius(8)
-              .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+      List() {
+        ListItem() {
+          Column() {
+            Text('API 域名').fontSize(14).fontWeight(FontWeight.Medium).fontColor($r('sys.color.font_primary'))
+            Text(`当前: ${this.useCoDomain ? 'v2ex.co' : 'v2ex.com'}`)
+              .fontSize(12).fontColor($r('sys.color.font_secondary')).margin({ top: 4 })
+            Row({ space: 8 }) {
+              Button('v2ex.com').fontSize(11)
+                .onClick(() => { this.http.setBaseUrl('https://www.v2ex.com'); this.useCoDomain = false })
+              Button('v2ex.co').fontSize(11)
+                .onClick(() => { this.http.setBaseUrl('https://www.v2ex.co'); this.useCoDomain = true })
+            }.margin({ top: 8 })
           }
-            .margin({ left: 12, right: 12, top: 12 }).height(130)
-
-          ListItem() {
-            Column() {
-              Text('关于 Next2V').fontSize(14).fontWeight(FontWeight.Medium).fontColor($r('sys.color.font_primary'))
-              Text('版本 0.1.0').fontSize(11).fontColor($r('sys.color.font_secondary')).margin({ top: 4 })
-            }
-              .padding(16).width('100%').alignItems(HorizontalAlign.Start).borderRadius(8)
-              .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
-          }
-            .margin({ left: 12, right: 12, top: 8 }).height(80)
+            .padding(16).width('100%').alignItems(HorizontalAlign.Start).borderRadius(8)
+            .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
         }
-          .scrollBar(BarState.Off)
-          .padding({ top: this.topH + this.TBH, bottom: this.bottomH + this.FLOAT_H })
+          .margin({ left: 12, right: 12, top: 12 }).height(130)
+
+        ListItem() {
+          Column() {
+            Text('关于 Next2V').fontSize(14).fontWeight(FontWeight.Medium).fontColor($r('sys.color.font_primary'))
+            Text('版本 0.1.0').fontSize(11).fontColor($r('sys.color.font_secondary')).margin({ top: 4 })
+          }
+            .padding(16).width('100%').alignItems(HorizontalAlign.Start).borderRadius(8)
+            .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+        }
+          .margin({ left: 12, right: 12, top: 8 }).height(80)
       }
         .scrollBar(BarState.Off)
+        .padding({ top: this.topH + this.TBH, bottom: this.bottomH + this.FLOAT_H })
     }
       .width('100%').height('100%')
       .backgroundColor($r('sys.color.ohos_id_color_sub_background'))

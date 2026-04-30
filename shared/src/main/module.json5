@@ -2,6 +2,6 @@
   "module": {
     "name": "shared",
     "type": "har",
-    "deviceTypes": ["phone"]
+    "deviceTypes": ["phone", "tablet"]
   }
 }

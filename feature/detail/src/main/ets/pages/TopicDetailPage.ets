@@ -1,6 +1,6 @@
 import { DetailViewModel } from '../viewmodel/DetailViewModel'
 import {
-  V2exTopic, V2exReply, TopicCard, ThemeConstants, TopicDetailParams
+  V2exTopic, V2exReply, TopicCard, ReplyCard, ThemeConstants, TopicDetailParams
 } from 'shared'
 
 @Component
@@ -38,25 +38,13 @@ export struct TopicDetailPage {
               .fontColor($r('sys.color.font_secondary'))
               .padding({ left: 12, right: 12, top: 16, bottom: 16 }).width('100%')
           }
-          LazyForEach(this.v.replyDataSource, (reply: V2exReply) => {
+          LazyForEach(this.v.replyDataSource, (reply: V2exReply, index: number) => {
             ListItem() {
-              Column() {
-                Row({ space: 8 }) {
-                  Text(reply.member.username).fontSize(14).fontWeight(FontWeight.Medium)
-                    .fontColor($r('sys.color.font_primary'))
-                  Text(`#${reply.id}`).fontSize(11).fontColor($r('sys.color.font_secondary'))
-                  Blank()
-                  if (this.v.topic !== null && reply.member.id === this.v.topic!.member.id) {
-                    Text('楼主').fontSize(10).fontColor($r('sys.color.ohos_id_color_activated'))
-                      .padding({ left: 6, right: 6, top: 1, bottom: 1 }).borderRadius(3)
-                      .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
-                  }
-                }.width('100%')
-                Text(reply.content).fontSize(14).fontColor($r('sys.color.font_primary'))
-                  .lineHeight(22).margin({ top: 12 }).width('100%')
-              }
-                .padding(16).width('100%').borderRadius(8)
-                .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+              ReplyCard({
+                reply: reply,
+                floor: index + 1,
+                isOp: this.v.topic !== null && reply.member.id === this.v.topic!.member.id
+              })
             }
               .margin({ left: 12, right: 12, bottom: 6 })
           }, (reply: V2exReply) => reply.id.toString())

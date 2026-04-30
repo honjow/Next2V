@@ -1,2 +1,2 @@
 export { UserProfilePage } from './pages/UserProfilePage'
-export { UserViewModel } from './viewmodel/UserViewModel'
+export { UserViewModel, TopicDataSource } from './viewmodel/UserViewModel'

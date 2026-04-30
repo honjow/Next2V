@@ -17,12 +17,12 @@ export struct DiscoverPage {
 
   build() {
     Column() {
-      if (this.vm.isLoading && this.vm.allNodes.length === 0) {
+      if (this.vm.isLoading && this.vm.nodeDataSource.totalCount() === 0) {
         LoadingProgress().width(32).height(32)
       } else {
         Scroll() {
           GridRow({ columns: { sm: 2, md: 4, lg: 6 }, gutter: { x: 8, y: 8 } }) {
-            ForEach(this.vm.allNodes, (node: V2exNode) => {
+            LazyForEach(this.vm.nodeDataSource, (node: V2exNode) => {
               GridCol({ span: { sm: 1, md: 2, lg: 2 } }) {
                 Column() {
                   Text(node.title).fontSize(14).fontColor($r('sys.color.font_primary')).maxLines(1)
@@ -35,7 +35,7 @@ export struct DiscoverPage {
                     this.ns.pushPathByName('NodeTopicList', p as Object)
                   })
               }
-            })
+            }, (node: V2exNode) => node.id.toString())
           }
             .padding({
               left: this.GAP, right: this.GAP,

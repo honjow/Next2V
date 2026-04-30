@@ -28,13 +28,13 @@ export struct UserProfilePage {
             }.padding(16).width('100%').alignItems(HorizontalAlign.Center)
           }
           ListItem() { Text('最近主题').fontSize(14).fontColor($r('sys.color.font_secondary')).padding(8) }
-          ForEach(this.vm.topics, (topic: V2exTopic) => {
+          LazyForEach(this.vm.topicDataSource, (topic: V2exTopic) => {
             ListItem() { TopicCard({ item: topic }) }
               .onClick(() => {
                 let p: TopicDetailParams = { topicId: topic.id }
                 this.stack.pushPathByName('TopicDetail', p as Object)
               })
-          })
+          }, (topic: V2exTopic) => topic.id.toString())
         }
           .scrollBar(BarState.Off)
           .width('100%').height('100%')
