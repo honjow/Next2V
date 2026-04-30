@@ -60,7 +60,7 @@ export class FeedViewModel {
    * 供系统 Refresh 组件使用（$$ 绑定已设 isRefreshing=true，跳过 guard）
    */
   async refreshForce(): Promise<void> {
-    this.isRefreshing = true
+    // $$ 绑定已设 isRefreshing=true，不重复设置
     this.errorMessage = ''
     this.triggerHaptic()
 
