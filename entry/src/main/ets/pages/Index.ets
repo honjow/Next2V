@@ -23,6 +23,9 @@ struct Index {
   // HdsNavigationTitleMode.MINI 标题栏固定高度（官方文档值，SDK 未导出常量）
   private readonly MINI_TITLE_BAR_HEIGHT: number = 56
   @StorageProp('topAvoidHeight') topAvoidHeight: number = 107
+  @StorageProp('bottomAvoidHeight') bottomAvoidHeight: number = 0
+  // 悬浮 TabBar 高度(HdsTabs barFloatingStyle) + barBottomMargin(20)
+  private readonly TAB_BAR_HEIGHT: number = 76
   @State useCoDomain: boolean = false
   private http: HttpClient = HttpClient.getInstance()
 
@@ -97,8 +100,8 @@ struct Index {
               ListItem() { TopicCard({ item: item }) }
               .onClick(() => { let p: TopicDetailParams = { topicId: item.id }; this.ns.pushPathByName('TopicDetail', p as Object) })
             }, (item: V2exTopic) => item.id.toString())
-            // 底部留白：悬浮 TabBar(~178vp) 高度，避免最后一个 item 被遮挡
-            ListItem() { Column() { Blank().height(178) } }
+            // 底部留白：手势条(bottomAvoidHeight) + 悬浮TabBar(TAB_BAR_HEIGHT)
+            ListItem() { Column() { Blank().height(this.bottomAvoidHeight + this.TAB_BAR_HEIGHT) } }
           }.backgroundColor($r('sys.color.ohos_id_color_sub_background')).width('100%').height('100%')
         }.onRefreshing(() => this.homeVM.refresh())
       } else {
@@ -110,16 +113,16 @@ struct Index {
   @Builder DiscoverPage() {
     Column() {
       if (this.discoverLoading) { LoadingProgress().width(32).height(32) }
-      else { Scroll() { GridRow({ columns: { sm: 2, md: 4, lg: 6 }, gutter: { x: 8, y: 8 } }) { ForEach(this.discoverNodes, (node: V2exNode) => { GridCol({ span: { sm: 1, md: 2, lg: 2 } }) { Column() { Text(node.title).fontSize(14).fontColor($r('sys.color.font_primary')).maxLines(1); Text(`${node.topics} 主题`).fontSize(10).fontColor($r('sys.color.font_secondary')).margin({ top: 4 }) }.alignItems(HorizontalAlign.Center).padding(12).width('100%').borderRadius(8).backgroundColor($r('sys.color.ohos_id_color_foreground_contrary')).onClick(() => { let p: NodeTopicListParams = { nodeName: node.name, nodeTitle: node.title }; this.ns.pushPathByName('NodeTopicList', p as Object) }) }}) }.padding({ left: 12, right: 12, top: 12, bottom: 178 }).width('100%') } }
+      else { Scroll() { GridRow({ columns: { sm: 2, md: 4, lg: 6 }, gutter: { x: 8, y: 8 } }) { ForEach(this.discoverNodes, (node: V2exNode) => { GridCol({ span: { sm: 1, md: 2, lg: 2 } }) { Column() { Text(node.title).fontSize(14).fontColor($r('sys.color.font_primary')).maxLines(1); Text(`${node.topics} 主题`).fontSize(10).fontColor($r('sys.color.font_secondary')).margin({ top: 4 }) }.alignItems(HorizontalAlign.Center).padding(12).width('100%').borderRadius(8).backgroundColor($r('sys.color.ohos_id_color_foreground_contrary')).onClick(() => { let p: NodeTopicListParams = { nodeName: node.name, nodeTitle: node.title }; this.ns.pushPathByName('NodeTopicList', p as Object) }) }}) }.padding({ left: 12, right: 12, top: this.topAvoidHeight + this.MINI_TITLE_BAR_HEIGHT, bottom: this.bottomAvoidHeight + this.TAB_BAR_HEIGHT }).width('100%') } }
     }.width('100%').height('100%').backgroundColor($r('sys.color.ohos_id_color_sub_background'))
   }
 
   @Builder NotifyPage() {
-    Column() { Text('通知').fontSize(20).fontWeight(FontWeight.Bold).fontColor($r('sys.color.font_primary')); Text('登录后可查看').fontSize(14).fontColor($r('sys.color.font_secondary')).margin({ top: 8 }) }.justifyContent(FlexAlign.Center).width('100%').height('100%').backgroundColor($r('sys.color.ohos_id_color_sub_background'))
+    Column() { Text('通知').fontSize(20).fontWeight(FontWeight.Bold).fontColor($r('sys.color.font_primary')); Text('登录后可查看').fontSize(14).fontColor($r('sys.color.font_secondary')).margin({ top: 8 }) }.justifyContent(FlexAlign.Center).width('100%').height('100%').padding({ top: this.topAvoidHeight + this.MINI_TITLE_BAR_HEIGHT, bottom: this.bottomAvoidHeight + this.TAB_BAR_HEIGHT }).backgroundColor($r('sys.color.ohos_id_color_sub_background'))
   }
 
   @Builder MePage() {
-    Column() { Scroll() { List() { ListItem() { Column() { Text('API 域名').fontSize(14).fontWeight(FontWeight.Medium).fontColor($r('sys.color.font_primary')); Text(`当前: ${this.useCoDomain ? 'v2ex.co' : 'v2ex.com'}`).fontSize(12).fontColor($r('sys.color.font_secondary')).margin({ top: 4 }); Row({ space: 8 }) { Button('v2ex.com').fontSize(11).onClick(() => { this.http.setBaseUrl('https://www.v2ex.com'); this.useCoDomain = false }); Button('v2ex.co').fontSize(11).onClick(() => { this.http.setBaseUrl('https://www.v2ex.co'); this.useCoDomain = true }) }.margin({ top: 8 }) }.padding(16).width('100%').alignItems(HorizontalAlign.Start).borderRadius(8).backgroundColor($r('sys.color.ohos_id_color_foreground_contrary')) }.margin({ left: 12, right: 12, top: 12 }).height(130); ListItem() { Column() { Text('关于 Next2V').fontSize(14).fontWeight(FontWeight.Medium).fontColor($r('sys.color.font_primary')); Text('版本 0.1.0').fontSize(11).fontColor($r('sys.color.font_secondary')).margin({ top: 4 }) }.padding(16).width('100%').alignItems(HorizontalAlign.Start).borderRadius(8).backgroundColor($r('sys.color.ohos_id_color_foreground_contrary')) }.margin({ left: 12, right: 12, top: 8 }).height(80) }.padding({ bottom: 178 }) } }.width('100%').height('100%').backgroundColor($r('sys.color.ohos_id_color_sub_background'))
+    Column() { Scroll() { List() { ListItem() { Column() { Text('API 域名').fontSize(14).fontWeight(FontWeight.Medium).fontColor($r('sys.color.font_primary')); Text(`当前: ${this.useCoDomain ? 'v2ex.co' : 'v2ex.com'}`).fontSize(12).fontColor($r('sys.color.font_secondary')).margin({ top: 4 }); Row({ space: 8 }) { Button('v2ex.com').fontSize(11).onClick(() => { this.http.setBaseUrl('https://www.v2ex.com'); this.useCoDomain = false }); Button('v2ex.co').fontSize(11).onClick(() => { this.http.setBaseUrl('https://www.v2ex.co'); this.useCoDomain = true }) }.margin({ top: 8 }) }.padding(16).width('100%').alignItems(HorizontalAlign.Start).borderRadius(8).backgroundColor($r('sys.color.ohos_id_color_foreground_contrary')) }.margin({ left: 12, right: 12, top: 12 }).height(130); ListItem() { Column() { Text('关于 Next2V').fontSize(14).fontWeight(FontWeight.Medium).fontColor($r('sys.color.font_primary')); Text('版本 0.1.0').fontSize(11).fontColor($r('sys.color.font_secondary')).margin({ top: 4 }) }.padding(16).width('100%').alignItems(HorizontalAlign.Start).borderRadius(8).backgroundColor($r('sys.color.ohos_id_color_foreground_contrary')) }.margin({ left: 12, right: 12, top: 8 }).height(80) }.padding({ top: this.topAvoidHeight, bottom: this.bottomAvoidHeight + this.TAB_BAR_HEIGHT }) } }.width('100%').height('100%').backgroundColor($r('sys.color.ohos_id_color_sub_background'))
   }
 }
 
