@@ -18,9 +18,10 @@ export struct HomePage {
   build() {
     Column() {
       if (this.vm.dataSource.totalCount() > 0) {
+        // 顶部留白放在 Refresh 上方，使刷新动画出现在 titleBar 下方可见区域
+        Column() { Blank().height(this.topH + this.TBH) }
         Refresh({ refreshing: $$this.vm.isRefreshing }) {
           List({ space: this.GAP }) {
-            ListItem() { Column() { Blank().height(this.topH + this.TBH) } }
             LazyForEach(this.vm.dataSource, (item: V2exTopic) => {
               ListItem() { TopicCard({ item: item }) }
                 .onClick(() => {
