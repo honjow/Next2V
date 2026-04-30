@@ -11,7 +11,7 @@ import { UserProfilePage } from 'user'
 @Entry
 @Component
 struct Index {
-  @Provide(StorageKeys.NAV_PATH_STACK) ns: NavPathStack = new NavPathStack()
+  @Provide('ns') ns: NavPathStack = new NavPathStack()
   private tc: HdsTabsController = new HdsTabsController()
   private tabTitles: string[] = ['首页', '发现', '通知', '我的']
   @State ct: number = 0
@@ -84,8 +84,8 @@ struct Index {
   }
 
   // NotifyPage 和 MePage 较为简单，保留在 Index 文件内
-  @StorageProp(StorageKeys.TOP_AVOID_HEIGHT) topH: number = 0
-  @StorageProp(StorageKeys.BOTTOM_AVOID_HEIGHT) bottomH: number = 0
+  @StorageProp('topAvoidHeight') topH: number = 0
+  @StorageProp('bottomAvoidHeight') bottomH: number = 0
   private readonly TBH: number = ThemeConstants.TITLE_BAR_HEIGHT
   private readonly FLOAT_H: number = ThemeConstants.FLOAT_BAR_HEIGHT
 

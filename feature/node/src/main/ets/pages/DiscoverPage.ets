@@ -5,10 +5,10 @@ import {
 
 @Component
 export struct DiscoverPage {
-  @Consume(StorageKeys.NAV_PATH_STACK) ns: NavPathStack
+  @Consume('ns') ns: NavPathStack
   @State vm: NodeViewModel = new NodeViewModel()
-  @StorageProp(StorageKeys.TOP_AVOID_HEIGHT) topH: number = 0
-  @StorageProp(StorageKeys.BOTTOM_AVOID_HEIGHT) bottomH: number = 0
+  @StorageProp('topAvoidHeight') topH: number = 0
+  @StorageProp('bottomAvoidHeight') bottomH: number = 0
   private readonly TBH: number = ThemeConstants.TITLE_BAR_HEIGHT
   private readonly FLOAT_H: number = ThemeConstants.FLOAT_BAR_HEIGHT
   private readonly GAP: number = ThemeConstants.SPACE_SM

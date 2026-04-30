@@ -7,9 +7,9 @@ import {
 export struct NodeTopicPage {
   @Prop nodeName: string = ''
   @Prop nodeTitle: string = ''
-  @Consume(StorageKeys.NAV_PATH_STACK) stack: NavPathStack
+  @Consume('ns') stack: NavPathStack
   @State vm: NodeViewModel = new NodeViewModel()
-  @StorageProp(StorageKeys.TOP_AVOID_HEIGHT) topH: number = 0
+  @StorageProp('topAvoidHeight') topH: number = 0
 
   aboutToAppear(): void { this.vm.loadNodeTopics(this.nodeName) }
 

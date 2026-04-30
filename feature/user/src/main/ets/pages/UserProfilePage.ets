@@ -6,9 +6,9 @@ import {
 @Component
 export struct UserProfilePage {
   @Prop username: string = ''
-  @Consume(StorageKeys.NAV_PATH_STACK) stack: NavPathStack
+  @Consume('ns') stack: NavPathStack
   @State vm: UserViewModel = new UserViewModel(this.username)
-  @StorageProp(StorageKeys.TOP_AVOID_HEIGHT) topH: number = 0
+  @StorageProp('topAvoidHeight') topH: number = 0
 
   aboutToAppear(): void { this.vm.load() }
 

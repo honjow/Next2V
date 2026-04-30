@@ -6,10 +6,10 @@ import { PullRefresh } from '../components/PullRefresh'
 
 @Component
 export struct HomePage {
-  @Consume(StorageKeys.NAV_PATH_STACK) ns: NavPathStack
+  @Consume('ns') ns: NavPathStack
   @State vm: FeedViewModel = new FeedViewModel()
-  @StorageProp(StorageKeys.TOP_AVOID_HEIGHT) topH: number = 107
-  @StorageProp(StorageKeys.BOTTOM_AVOID_HEIGHT) bottomH: number = 0
+  @StorageProp('topAvoidHeight') topH: number = 107
+  @StorageProp('bottomAvoidHeight') bottomH: number = 0
   // 🔧 Feature Flag: true=系统Refresh, false=自定义PullRefresh
   private readonly USE_SYSTEM_REFRESH: boolean = false
   private readonly TBH: number = ThemeConstants.TITLE_BAR_HEIGHT
