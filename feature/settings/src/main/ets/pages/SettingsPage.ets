@@ -48,7 +48,7 @@ export struct SettingsPage {
           .width('100%')
           .alignItems(HorizontalAlign.Start)
           .borderRadius(ThemeConstants.RADIUS_MD)
-          .backgroundColor($r('sys.color.ohos_id_color_foreground_contrary'))
+          .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
           .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, top: ThemeConstants.SPACE_MD })
         }
 
@@ -71,7 +71,7 @@ export struct SettingsPage {
           .width('100%')
           .alignItems(HorizontalAlign.Start)
           .borderRadius(ThemeConstants.RADIUS_MD)
-          .backgroundColor($r('sys.color.ohos_id_color_foreground_contrary'))
+          .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
           .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, top: ThemeConstants.SPACE_XS })
         }
       }

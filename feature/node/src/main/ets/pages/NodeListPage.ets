@@ -53,7 +53,7 @@ export struct NodeListPage {
                 .padding(ThemeConstants.SPACE_MD)
                 .width('100%')
                 .borderRadius(ThemeConstants.RADIUS_MD)
-                .backgroundColor($r('sys.color.ohos_id_color_foreground_contrary'))
+                .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
                 .onClick(() => {
                   let p: NodeTopicListParams = { nodeName: node.name, nodeTitle: node.title }
                   this.pageStack.pushPathByName('NodeTopicList', p)

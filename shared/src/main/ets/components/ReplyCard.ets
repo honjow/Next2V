@@ -60,6 +60,6 @@ export struct ReplyCard {
       bottom: ThemeConstants.SPACE_MD
     })
     .width('100%')
-    .backgroundColor($r('sys.color.ohos_id_color_foreground_contrary'))
+    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }
 }

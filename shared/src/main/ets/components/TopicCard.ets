@@ -39,6 +39,6 @@ export struct TopicCard {
       }.layoutWeight(1)
     }
     .padding(ThemeConstants.SPACE_LG).borderRadius(ThemeConstants.RADIUS_MD)
-    .backgroundColor($r('sys.color.ohos_id_color_foreground_contrary')).width('100%')
+    .backgroundColor($r('sys.color.ohos_id_color_card_bg')).width('100%')
   }
 }
