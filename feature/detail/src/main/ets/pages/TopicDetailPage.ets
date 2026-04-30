@@ -1,169 +1,73 @@
-import {
-  V2exReply,
-  V2exTopic,
-  Avatar,
-  UserName,
-  TimeAgo,
-  NodeTag,
-  ReplyCard,
-  ThemeConstants,
-  NodeTopicListParams,
-  TopicDetailParams
-} from 'shared'
-import { webview } from '@kit.ArkWeb'
 import { DetailViewModel } from '../viewmodel/DetailViewModel'
+import {
+  V2exTopic, V2exReply, TopicCard, ThemeConstants, TopicDetailParams
+} from 'shared'
 
 @Component
 export struct TopicDetailPage {
   @Prop topicId: number = 0
-  @State viewModel: DetailViewModel = new DetailViewModel(this.topicId)
-  @Consume('pageStack') pageStack: NavPathStack
-  @State headerOpacity: number = 0
-  private scroller: Scroller = new Scroller()
-  private readonly fadeThreshold: number = 120
+  @State v: DetailViewModel = new DetailViewModel(this.topicId)
+  @Consume('ns') stack: NavPathStack
+  @StorageProp('topAvoidHeight') topH: number = 107
 
-  aboutToAppear(): void {
-    this.viewModel.load()
-  }
-
-  build() {
-    NavDestination() {
-      if (this.viewModel.isLoading && this.viewModel.topic === null) {
-        Column() {
-          LoadingProgress()
-            .width(32).height(32)
-            .color($r('sys.color.font_secondary'))
-          Text('加载中...')
-            .fontSize(ThemeConstants.FONT_SIZE_BODY)
-            .fontColor($r('sys.color.font_secondary'))
-            .margin({ top: ThemeConstants.SPACE_MD })
-        }
-        .justifyContent(FlexAlign.Center)
-        .width('100%').height('100%')
-      } else {
-        Stack() {
-          List({ scroller: this.scroller }) {
-            ListItem() {
-              TopicHeader({
-                topic: this.viewModel.topic!,
-                onNodeClick: (nodeName: string, nodeTitle: string) => {
-                  let p: NodeTopicListParams = { nodeName: nodeName, nodeTitle: nodeTitle }
-                  this.pageStack.pushPathByName('NodeTopicList', p)
-                }
-              })
-            }
-
-            ListItem() {
-              Text(`共 ${this.viewModel.replyDataSource.totalCount()} 条回复`)
-                .fontSize(ThemeConstants.FONT_SIZE_BODY)
-                .fontColor($r('sys.color.font_secondary'))
-                .padding(ThemeConstants.SPACE_LG)
-                .width('100%')
-            }
-
-            LazyForEach(this.viewModel.replyDataSource, (reply: V2exReply, index: number) => {
-              ListItem() {
-                ReplyCard({
-                  reply: reply,
-                  floor: index + 1,
-                  isOp: this.viewModel.topic !== null && reply.member.id === this.viewModel.topic.member.id
-                })
-              }
-            }, (reply: V2exReply) => reply.id.toString())
-          }
-          .onScroll((_x: number, y: number) => {
-            this.headerOpacity = Math.min(y / this.fadeThreshold, 1.0)
-          })
-          .width('100%').height('100%')
-          .padding({ top: 0 })
-          .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
-
-          // floating toolbar
-          Row() {
-            Text(this.viewModel.topic?.node.title || '主题详情')
-              .fontSize(18)
-              .fontColor($r('sys.color.font_primary'))
-              .fontWeight(FontWeight.Medium)
-              .maxLines(1)
-              .textOverflow({ overflow: TextOverflow.Ellipsis })
-          }
-          .width('100%')
-          .padding({ left: 16, right: 16, top: 44, bottom: 10 })
-          .backgroundColor(`rgba(255, 255, 255, ${this.headerOpacity * 0.92})`)
-          .backgroundBlurStyle(BlurStyle.Regular, {
-            scale: this.headerOpacity
-          })
-          .opacity(this.headerOpacity > 0.05 ? 1 : 0)
-          .animation({ duration: 100, curve: Curve.EaseOut })
-          .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP])
-        }
-        .width('100%').height('100%')
-        .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
-      }
-    }
-    .hideTitleBar(true)
-  }
-}
-
-@Component
-struct TopicHeader {
-  @Prop topic: V2exTopic
-  onNodeClick: (nodeName: string, nodeTitle: string) => void = () => {}
+  aboutToAppear(): void { this.v.load() }
 
   build() {
     Column() {
-      Text(this.topic.title)
-        .fontSize(ThemeConstants.FONT_SIZE_HEADING)
-        .fontColor($r('sys.color.font_primary'))
-        .lineHeight(28)
-        .fontWeight(FontWeight.Bold)
-        .width('100%')
-        .padding({ top: 60 })
-
-      Row({ space: ThemeConstants.SPACE_MD }) {
-        Avatar({ url: this.topic.member.avatar_normal, avatarSize: 36 })
+      if (this.v.isLoading && this.v.topic === null) {
         Column() {
-          UserName({ username: this.topic.member.username })
-          TimeAgo({ timestamp: this.topic.created })
+          LoadingProgress().width(36).height(36)
+          Text('加载中...').fontSize(14).fontColor($r('sys.color.font_secondary')).margin({ top: 12 })
+        }.justifyContent(FlexAlign.Center).width('100%').height('100%')
+      } else if (this.v.topic !== null) {
+        List() {
+          ListItem() { Column() { Blank().height(this.topH + 56) } }
+          ListItem() {
+            Column() {
+              Text(this.v.topic!.title).fontSize(20).fontWeight(FontWeight.Bold)
+                .fontColor($r('sys.color.font_primary')).lineHeight(28).width('100%')
+              Row({ space: 8 }) {
+                Text(this.v.topic!.member.username).fontSize(13).fontColor($r('sys.color.font_secondary'))
+                Text('·').fontSize(13).fontColor($r('sys.color.font_secondary'))
+                Text(this.v.topic!.node.title).fontSize(13).fontColor($r('sys.color.ohos_id_color_activated'))
+              }.width('100%').margin({ top: 12 })
+            }.padding(16).width('100%')
+          }
+          ListItem() {
+            Text(`共 ${this.v.replyDataSource.totalCount()} 条回复`).fontSize(13)
+              .fontColor($r('sys.color.font_secondary'))
+              .padding({ left: 12, right: 12, top: 16, bottom: 16 }).width('100%')
+          }
+          LazyForEach(this.v.replyDataSource, (reply: V2exReply) => {
+            ListItem() {
+              Column() {
+                Row({ space: 8 }) {
+                  Text(reply.member.username).fontSize(14).fontWeight(FontWeight.Medium)
+                    .fontColor($r('sys.color.font_primary'))
+                  Text(`#${reply.id}`).fontSize(11).fontColor($r('sys.color.font_secondary'))
+                  Blank()
+                  if (this.v.topic !== null && reply.member.id === this.v.topic!.member.id) {
+                    Text('楼主').fontSize(10).fontColor($r('sys.color.ohos_id_color_activated'))
+                      .padding({ left: 6, right: 6, top: 1, bottom: 1 }).borderRadius(3)
+                      .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
+                  }
+                }.width('100%')
+                Text(reply.content).fontSize(14).fontColor($r('sys.color.font_primary'))
+                  .lineHeight(22).margin({ top: 12 }).width('100%')
+              }
+                .padding(16).width('100%').borderRadius(8)
+                .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+            }
+              .margin({ left: 12, right: 12, bottom: 6 })
+          }, (reply: V2exReply) => reply.id.toString())
         }
-        Blank()
-        NodeTag({ nodeName: this.topic.node.name, nodeTitle: this.topic.node.title })
-          .onClick(() => this.onNodeClick(this.topic.node.name, this.topic.node.title))
+          .scrollBar(BarState.Off)
+          .width('100%').height('100%')
+      } else {
+        Text('加载失败').fontSize(16).fontColor($r('sys.color.font_secondary')).margin({ top: 100 })
       }
-      .width('100%')
-      .margin({ top: ThemeConstants.SPACE_LG })
-
-      if (this.topic.content_rendered) {
-        Web({ src: wrapHtmlContent(this.topic.content_rendered), controller: new webview.WebviewController() })
-          .width('100%')
-          .height(300)
-          .darkMode(WebDarkMode.Auto)
-          .margin({ top: ThemeConstants.SPACE_LG })
-      } else if (this.topic.content) {
-        Text(this.topic.content)
-          .fontSize(ThemeConstants.FONT_SIZE_BODY)
-          .fontColor($r('sys.color.font_primary'))
-          .lineHeight(22)
-          .width('100%')
-          .margin({ top: ThemeConstants.SPACE_LG })
-      }
-
-      Divider()
-        .margin({ top: ThemeConstants.SPACE_XL, bottom: ThemeConstants.SPACE_MD })
     }
-    .padding(ThemeConstants.SPACE_LG)
+      .width('100%').height('100%')
+      .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
   }
-}
-
-function wrapHtmlContent(bodyHtml: string): string {
-  return `<html><head>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <style>
-      body { font-family: system-ui; font-size: 16px; line-height: 1.6; color: inherit; padding: 0; margin: 0; }
-      img { max-width: 100%; height: auto; }
-      a { color: #334455; }
-      pre { background: #f0f0f0; padding: 12px; border-radius: 4px; overflow-x: auto; }
-      code { font-size: 14px; }
-      blockquote { border-left: 3px solid #ccc; margin-left: 0; padding-left: 12px; color: #666; }
-    </style></head><body>${bodyHtml}</body></html>`
 }

@@ -1,33 +1,28 @@
-import { V2exNode, ThemeConstants, ApiService, NodeTopicListParams } from 'shared'
+import { NodeViewModel } from '../viewmodel/NodeViewModel'
+import {
+  V2exNode, NodeTopicListParams
+} from 'shared'
 
 @Component
 export struct DiscoverPage {
   @Consume('ns') ns: NavPathStack
-  @State nodes: V2exNode[] = []
-  @State loading: boolean = false
+  @State vm: NodeViewModel = new NodeViewModel()
   @StorageProp('topAvoidHeight') topH: number = 107
   @StorageProp('bottomAvoidHeight') bottomH: number = 0
   private readonly TBH: number = 56
   private readonly FLOAT_H: number = 76
   private readonly GAP: number = 8
-  private api: ApiService = new ApiService()
 
-  aboutToAppear(): void { this.loadNodes() }
-
-  async loadNodes(): Promise<void> {
-    this.loading = true
-    try { this.nodes = await this.api.getAllNodes() } catch (e) {}
-    this.loading = false
-  }
+  aboutToAppear(): void { this.vm.loadAllNodes() }
 
   build() {
     Column() {
-      if (this.loading) {
+      if (this.vm.isLoading && this.vm.allNodes.length === 0) {
         LoadingProgress().width(32).height(32)
       } else {
         Scroll() {
           GridRow({ columns: { sm: 2, md: 4, lg: 6 }, gutter: { x: 8, y: 8 } }) {
-            ForEach(this.nodes, (node: V2exNode) => {
+            ForEach(this.vm.allNodes, (node: V2exNode) => {
               GridCol({ span: { sm: 1, md: 2, lg: 2 } }) {
                 Column() {
                   Text(node.title).fontSize(14).fontColor($r('sys.color.font_primary')).maxLines(1)

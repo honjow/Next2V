@@ -3,11 +3,10 @@ import {
   hdsMaterial, HdsNavigationTitleMode, ScrollEffectType, BlurStrategy
 } from '@kit.UIDesignKit'
 import { HttpClient } from 'shared'
-import { HomePage } from './HomePage'
-import { DiscoverPage } from './DiscoverPage'
-import { TopicDetailPage } from './TopicDetailPage'
-import { NodeTopicPage } from './NodeTopicPage'
-import { UserProfilePage } from './UserProfilePage'
+import { HomePage } from 'feed'
+import { TopicDetailPage } from 'detail'
+import { DiscoverPage, NodeTopicPage } from 'node'
+import { UserProfilePage } from 'user'
 
 @Entry
 @Component

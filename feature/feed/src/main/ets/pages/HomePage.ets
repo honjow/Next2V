@@ -1,7 +1,6 @@
-import { FeedViewModel } from 'feed'
+import { FeedViewModel } from '../viewmodel/FeedViewModel'
 import {
-  V2exTopic, TopicCard, LoadingFooter,
-  TopicDetailParams
+  V2exTopic, TopicCard, LoadingFooter, TopicDetailParams
 } from 'shared'
 
 @Component
@@ -10,9 +9,9 @@ export struct HomePage {
   @State vm: FeedViewModel = new FeedViewModel()
   @StorageProp('topAvoidHeight') topH: number = 107
   @StorageProp('bottomAvoidHeight') bottomH: number = 0
-  private readonly TBH: number = 56   // MINI titleBar 高度
-  private readonly FLOAT_H: number = 76 // 悬浮TabBar + margin
-  private readonly GAP: number = 8    // 卡片间距
+  private readonly TBH: number = 56
+  private readonly FLOAT_H: number = 76
+  private readonly GAP: number = 8
 
   aboutToAppear(): void { this.vm.loadData() }
 

@@ -1,5 +1,2 @@
-export { FeedLatestPage } from './pages/FeedLatestPage'
-export { FeedHotPage } from './pages/FeedHotPage'
-export { FeedTabNavigation } from './pages/FeedTabNavigation'
+export { HomePage } from './pages/HomePage'
 export { FeedViewModel } from './viewmodel/FeedViewModel'
-export { FeedList } from './components/FeedList'

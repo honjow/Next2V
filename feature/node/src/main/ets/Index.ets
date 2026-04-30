@@ -1,3 +1,3 @@
-export { NodeListPage } from './pages/NodeListPage'
-export { NodeTopicListPage } from './pages/NodeTopicListPage'
+export { DiscoverPage } from './pages/DiscoverPage'
+export { NodeTopicPage } from './pages/NodeTopicPage'
 export { NodeViewModel } from './viewmodel/NodeViewModel'

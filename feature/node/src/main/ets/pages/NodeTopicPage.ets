@@ -1,5 +1,6 @@
+import { NodeViewModel } from '../viewmodel/NodeViewModel'
 import {
-  V2exTopic, TopicCard, ThemeConstants, ApiService, TopicDetailParams
+  V2exTopic, TopicCard, ThemeConstants, TopicDetailParams
 } from 'shared'
 
 @Component
@@ -7,26 +8,19 @@ export struct NodeTopicPage {
   @Prop nodeName: string = ''
   @Prop nodeTitle: string = ''
   @Consume('ns') stack: NavPathStack
+  @State vm: NodeViewModel = new NodeViewModel()
   @StorageProp('topAvoidHeight') topH: number = 107
-  @State topics: V2exTopic[] = []
-  @State loading: boolean = false
-  private api: ApiService = new ApiService()
 
-  aboutToAppear(): void { this.load() }
-  async load(): Promise<void> {
-    this.loading = true
-    try { this.topics = await this.api.getTopicsByNode(this.nodeName) } catch (e) {}
-    this.loading = false
-  }
+  aboutToAppear(): void { this.vm.loadNodeTopics(this.nodeName) }
 
   build() {
     Column() {
-      if (this.loading) {
+      if (this.vm.isLoading) {
         LoadingProgress().width(32).height(32).margin({ top: 100 })
       } else {
         List({ space: ThemeConstants.SPACE_XS }) {
           ListItem() { Column() { Blank().height(this.topH + 56) } }
-          ForEach(this.topics, (topic: V2exTopic) => {
+          ForEach(this.vm.nodeTopics, (topic: V2exTopic) => {
             ListItem() { TopicCard({ item: topic }) }
               .onClick(() => {
                 let p: TopicDetailParams = { topicId: topic.id }
