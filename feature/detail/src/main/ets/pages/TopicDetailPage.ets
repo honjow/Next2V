@@ -71,7 +71,7 @@ export struct TopicDetailPage {
   }
 
   @Builder ContentView() {
-    Refresh({ refreshing: $$this.isRefreshing }) {
+    Refresh({ refreshing: $$this.isRefreshing, builder: this.RefreshIndicator() }) {
       List() {
       // 顶部安全区占位
       ListItem() { Column() { Blank().height(this.topH + ThemeConstants.TITLE_BAR_HEIGHT) } }
@@ -190,5 +190,17 @@ export struct TopicDetailPage {
       top: ThemeConstants.SPACE_MD,
       bottom: ThemeConstants.SPACE_SM
     })
+  }
+
+  @Builder RefreshIndicator() {
+    Row() {
+      LoadingProgress()
+        .width(ThemeConstants.INDICATOR_SIZE)
+        .height(ThemeConstants.INDICATOR_SIZE)
+    }
+    .width('100%')
+    .justifyContent(FlexAlign.Center)
+    .margin({ top: this.topH + ThemeConstants.TITLE_BAR_HEIGHT })
+    .constraintSize({ minHeight: 32 })
   }
 }
