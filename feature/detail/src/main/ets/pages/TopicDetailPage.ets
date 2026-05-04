@@ -10,9 +10,17 @@ export struct TopicDetailPage {
   @Consume('ns') stack: NavPathStack
   @StorageProp('topAvoidHeight') topH: number = 0
 
+  @State isRefreshing: boolean = false
+
   aboutToAppear(): void {
     this.v = new DetailViewModel(this.topicId)
     this.v.load()
+  }
+
+  private async onRefresh(): Promise<void> {
+    this.isRefreshing = true
+    await this.v.load()
+    this.isRefreshing = false
   }
 
   build() {
@@ -63,7 +71,8 @@ export struct TopicDetailPage {
   }
 
   @Builder ContentView() {
-    List() {
+    Refresh({ refreshing: $$this.isRefreshing }) {
+      List() {
       // 顶部安全区占位
       ListItem() { Column() { Blank().height(this.topH + ThemeConstants.TITLE_BAR_HEIGHT) } }
 
@@ -104,6 +113,9 @@ export struct TopicDetailPage {
     .scrollBar(BarState.Off)
     .width('100%').height('100%')
     .edgeEffect(EdgeEffect.Spring)
+    }
+    .onRefreshing(() => { this.onRefresh() })
+    .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
   }
 
   @Builder TopicCard() {
