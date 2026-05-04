@@ -67,7 +67,7 @@ export struct TopicDetailPage {
   @Builder ContentView() {
     PullRefresh({
       scroller: this.scroller,
-      indicatorTop: this.topH + ThemeConstants.TITLE_BAR_HEIGHT,
+      indicatorTop: this.topH + ThemeConstants.TITLE_BAR_HEIGHT / 2,
       threshold: 40,
       onRefresh: async () => { await this.v.load() },
       onScrollEnableChange: (enabled: boolean) => { this.listScrollEnabled = enabled }
