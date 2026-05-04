@@ -41,6 +41,8 @@ struct Index {
         TabContent() { this.MePage() }.tabBar(this.TabIcon('我的', 3))
       }
         .barOverlap(true).barPosition(BarPosition.End).barMode(BarMode.Fixed)
+        .scrollable(false)
+        .animationDuration(0)
         .barFloatingStyle({
           barBottomMargin: ThemeConstants.SPACE_XL,
           systemMaterialEffect: { materialType: hdsMaterial.MaterialType.ADAPTIVE, materialLevel: hdsMaterial.MaterialLevel.ADAPTIVE }

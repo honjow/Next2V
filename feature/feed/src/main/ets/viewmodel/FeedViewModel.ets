@@ -13,13 +13,23 @@ export class FeedViewModel {
   isRefreshing: boolean = false
   hasMore: boolean = true
   errorMessage: string = ''
+  activeTab: string = 'tech'
 
   private api: ApiService = new ApiService()
-  // 默认加载最新，子类/hot 模式通过 setLoader 注入
-  private loader: () => Promise<V2exTopic[]> = () => this.api.getLatestTopics()
+  private loader: () => Promise<V2exTopic[]> = () => this.api.getTabTopics(this.activeTab)
 
   setLoader(loader: () => Promise<V2exTopic[]>): void {
     this.loader = loader
+  }
+
+  /** 切换 tab 并加载数据 */
+  async switchTab(tab: string): Promise<void> {
+    if (tab === this.activeTab && this.dataSource.totalCount() > 0) {
+      return
+    }
+    this.activeTab = tab
+    this.setLoader(() => this.api.getTabTopics(tab))
+    await this.loadData()
   }
 
   async loadData(): Promise<void> {

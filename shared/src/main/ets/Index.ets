@@ -16,6 +16,7 @@ export interface UserProfileParams {
 export { HttpClient } from './network/HttpClient'
 export { ApiService } from './network/ApiService'
 export { ApiConstants } from './constants/ApiConstants'
+export type { TabItem } from './constants/ApiConstants'
 export { StorageKeys } from './constants/StorageKeys'
 export type {
   V2exTopic,
@@ -25,6 +26,9 @@ export type {
   V2exMemberProfile,
   V2exSiteInfo
 } from './network/NetworkTypes'
+
+// 解析
+export { V2exTabParser } from './parser/V2exTabParser'
 
 // 工具
 export { DateUtils } from './utils/DateUtils'

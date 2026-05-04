@@ -73,4 +73,50 @@ export class HttpClient {
   async get<T>(endpoint: string): Promise<T> {
     return this.request<T>(endpoint, http.RequestMethod.GET)
   }
+
+  /** GET 请求获取纯文本（用于 HTML 抓取） */
+  async getText(endpoint: string): Promise<string> {
+    return this.requestText(endpoint, http.RequestMethod.GET)
+  }
+
+  /**
+   * 纯文本请求，返回原始字符串（不执行 JSON.parse）
+   */
+  async requestText(
+    endpoint: string,
+    method?: http.RequestMethod,
+    retryCount: number = MAX_RETRIES
+  ): Promise<string> {
+    let httpRequest = http.createHttp()
+    const url = `${this.baseUrl}${endpoint}`
+    const reqMethod = method || http.RequestMethod.GET
+
+    try {
+      const response = await httpRequest.request(url, {
+        method: reqMethod,
+        header: {
+          'Content-Type': 'text/html; charset=utf-8',
+          'Accept-Encoding': 'gzip'
+        },
+        connectTimeout: CONNECT_TIMEOUT_MS,
+        readTimeout: READ_TIMEOUT_MS,
+        usingCache: true
+      })
+
+      if (response.responseCode !== http.ResponseCode.OK) {
+        throw new Error(`HTTP ${response.responseCode}: ${url}`)
+      }
+
+      return response.result as string
+    } catch (error) {
+      if (retryCount > 0) {
+        const delay = BACKOFF_BASE_MS * Math.pow(2, MAX_RETRIES - retryCount)
+        await new Promise<void>(resolve => setTimeout(resolve, delay))
+        return this.requestText(endpoint, method, retryCount - 1)
+      }
+      throw new Error(`Network error: ${error.message}`)
+    } finally {
+      httpRequest.destroy()
+    }
+  }
 }
