@@ -1,8 +1,7 @@
 import { FeedViewModel } from '../viewmodel/FeedViewModel'
 import {
-  V2exTopic, TopicCard, LoadingFooter, TopicDetailParams, ThemeConstants, StorageKeys
+  V2exTopic, TopicCard, LoadingFooter, TopicDetailParams, ThemeConstants, StorageKeys, PullRefresh
 } from 'shared'
-import { PullRefresh } from '../components/PullRefresh'
 
 @Component
 export struct HomePage {

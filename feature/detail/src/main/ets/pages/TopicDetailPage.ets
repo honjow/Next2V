@@ -1,6 +1,6 @@
 import { DetailViewModel } from '../viewmodel/DetailViewModel'
 import {
-  V2exReply, Avatar, ReplyCard, TimeAgo, ThemeConstants
+  V2exReply, Avatar, ReplyCard, TimeAgo, PullRefresh, ThemeConstants
 } from 'shared'
 
 @Component
@@ -9,18 +9,12 @@ export struct TopicDetailPage {
   @State v: DetailViewModel = new DetailViewModel(0)
   @Consume('ns') stack: NavPathStack
   @StorageProp('topAvoidHeight') topH: number = 0
-
-  @State isRefreshing: boolean = false
+  private scroller: Scroller = new Scroller()
+  @State listScrollEnabled: boolean = true
 
   aboutToAppear(): void {
     this.v = new DetailViewModel(this.topicId)
     this.v.load()
-  }
-
-  private async onRefresh(): Promise<void> {
-    this.isRefreshing = true
-    await this.v.load()
-    this.isRefreshing = false
   }
 
   build() {
@@ -71,56 +65,53 @@ export struct TopicDetailPage {
   }
 
   @Builder ContentView() {
-    Refresh({ refreshing: $$this.isRefreshing, builder: this.RefreshIndicator() }) {
-      List() {
-      // 顶部安全区占位
-      ListItem() { Column() { Blank().height(this.topH + ThemeConstants.TITLE_BAR_HEIGHT) } }
+    PullRefresh({
+      scroller: this.scroller,
+      indicatorTop: this.topH + ThemeConstants.TITLE_BAR_HEIGHT,
+      threshold: 40,
+      onRefresh: async () => { await this.v.load() },
+      onScrollEnableChange: (enabled: boolean) => { this.listScrollEnabled = enabled }
+    }) {
+      List({ space: ThemeConstants.SPACE_SM - 2, scroller: this.scroller }) {
+        // 顶部安全区占位
+        ListItem() { Column() { Blank().height(this.topH + ThemeConstants.TITLE_BAR_HEIGHT) } }
+          .clip(false)
 
-      // 主楼卡片（标题 + 元信息 + 正文）
-      ListItem() {
-        this.TopicCard()
-      }
-      .margin({
-        left: ThemeConstants.SPACE_MD,
-        right: ThemeConstants.SPACE_MD,
-        top: ThemeConstants.SPACE_SM
-      })
-
-      // 回复分隔
-      ListItem() {
-        this.ReplyDivider()
-      }
-
-      // 回复列表
-      LazyForEach(this.v.replyDataSource, (reply: V2exReply, index: number) => {
+        // 主楼卡片
         ListItem() {
-          ReplyCard({
-            reply: reply,
-            floor: index + 1,
-            isOp: this.v.topic !== null && reply.member.id === this.v.topic!.member.id
-          })
+          this.TopicCard()
         }
-        .margin({
-          left: ThemeConstants.SPACE_MD,
-          right: ThemeConstants.SPACE_MD,
-          bottom: ThemeConstants.SPACE_SM - 2
-        })
-      }, (reply: V2exReply) => reply.id.toString())
 
-      // 底部留白
-      ListItem() { Column() { Blank().height(ThemeConstants.SPACE_XL) } }
+        // 回复分隔
+        ListItem() {
+          this.ReplyDivider()
+        }
+
+        // 回复列表
+        LazyForEach(this.v.replyDataSource, (reply: V2exReply, index: number) => {
+          ListItem() {
+            ReplyCard({
+              reply: reply,
+              floor: index + 1,
+              isOp: this.v.topic !== null && reply.member.id === this.v.topic!.member.id
+            })
+          }
+        }, (reply: V2exReply) => reply.id.toString())
+
+        // 底部留白
+        ListItem() { Column() { Blank().height(ThemeConstants.SPACE_XL) } }
+      }
+      .enableScrollInteraction(this.listScrollEnabled)
+      .scrollBar(BarState.Off)
+      .width('100%').height('100%')
+      .padding({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
+      .clip(false)
+      .edgeEffect(EdgeEffect.None)
     }
-    .scrollBar(BarState.Off)
-    .width('100%').height('100%')
-    .edgeEffect(EdgeEffect.Spring)
-    }
-    .onRefreshing(() => { this.onRefresh() })
-    .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
   }
 
   @Builder TopicCard() {
     Column() {
-      // 发布者信息
       Row({ space: ThemeConstants.SPACE_SM }) {
         Avatar({ url: this.v.topic!.member.avatar_normal, avatarSize: ThemeConstants.AVATAR_SIZE_REPLY })
 
@@ -152,7 +143,6 @@ export struct TopicDetailPage {
       .width('100%')
       .alignItems(VerticalAlign.Center)
 
-      // 标题
       Text(this.v.topic!.title)
         .fontSize(ThemeConstants.FONT_SIZE_HEADING + 2)
         .fontWeight(FontWeight.Bold)
@@ -161,7 +151,6 @@ export struct TopicDetailPage {
         .width('100%')
         .margin({ top: ThemeConstants.SPACE_MD })
 
-      // 正文
       if (this.v.topic!.content) {
         Text(this.v.topic!.content)
           .fontSize(ThemeConstants.FONT_SIZE_BODY)
@@ -190,17 +179,5 @@ export struct TopicDetailPage {
       top: ThemeConstants.SPACE_MD,
       bottom: ThemeConstants.SPACE_SM
     })
-  }
-
-  @Builder RefreshIndicator() {
-    Row() {
-      LoadingProgress()
-        .width(ThemeConstants.INDICATOR_SIZE)
-        .height(ThemeConstants.INDICATOR_SIZE)
-    }
-    .width('100%')
-    .justifyContent(FlexAlign.Center)
-    .margin({ top: this.topH + ThemeConstants.TITLE_BAR_HEIGHT })
-    .constraintSize({ minHeight: 32 })
   }
 }
