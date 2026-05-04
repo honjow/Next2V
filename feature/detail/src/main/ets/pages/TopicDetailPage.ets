@@ -1,6 +1,6 @@
 import { DetailViewModel } from '../viewmodel/DetailViewModel'
 import {
-  V2exReply, Avatar, ReplyCard, ThemeConstants
+  V2exReply, Avatar, ReplyCard, TimeAgo, ThemeConstants
 } from 'shared'
 
 @Component
@@ -116,6 +116,12 @@ export struct TopicDetailPage {
           .fontSize(ThemeConstants.FONT_SIZE_META)
           .fontWeight(FontWeight.Medium)
           .fontColor($r('sys.color.font_primary'))
+
+        Text('·')
+          .fontSize(ThemeConstants.FONT_SIZE_META)
+          .fontColor($r('sys.color.font_secondary'))
+
+        TimeAgo({ timestamp: this.v.topic!.created })
 
         Blank()
 
