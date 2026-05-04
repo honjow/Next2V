@@ -144,13 +144,14 @@ export struct TopicDetailPage {
       .alignItems(VerticalAlign.Center)
 
       Text(this.v.topic!.title)
-        .fontSize(ThemeConstants.FONT_SIZE_HEADING + 2)
-        .fontWeight(FontWeight.Bold)
+        .fontSize(ThemeConstants.FONT_SIZE_HEADING)
+        .fontWeight(FontWeight.Medium)
         .fontColor($r('sys.color.font_primary'))
         .lineHeight(28)
         .width('100%')
         .margin({ top: ThemeConstants.SPACE_MD })
 
+      // 正文
       if (this.v.topic!.content) {
         Text(this.v.topic!.content)
           .fontSize(ThemeConstants.FONT_SIZE_BODY)
