@@ -3,5 +3,7 @@
   "version": "0.1.0",
   "description": "Next2V shared library - common components, network, utils",
   "main": "src/main/ets/Index.ets",
-  "dependencies": {}
+  "dependencies": {
+    "@lidary/markdown": "^3.0.5"
+  }
 }

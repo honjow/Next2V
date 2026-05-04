@@ -1,0 +1,35 @@
+---
+description: V2Next project overview and general conventions
+alwaysApply: true
+---
+
+# V2Next Project
+
+HarmonyOS (ArkTS/ArkUI) V2EX client app.
+
+## Tech Stack
+
+- **Language**: ArkTS (TypeScript superset for HarmonyOS)
+- **UI Framework**: ArkUI declarative components
+- **SDK**: HarmonyOS NEXT, API 12+
+- **Package Manager**: ohpm
+
+## Project Structure
+
+- `entry/` — App entry module (EntryAbility, main pages)
+- `feature/` — Feature modules (feed, detail, node, user, settings)
+- `shared/` — Shared library (components, theme, utils)
+
+## Build & Deploy
+
+- Build: `hvigorw assembleHap --mode module -p product=default -p module=entry@default`
+- Sign + Install: `python3 scripts/sign.py`
+- Format: `npx @ohos-rs/oxk format <file.ets>`
+
+## Conventions
+
+- Use `ThemeConstants` for all styling values (spacing, font sizes, colors, radii)
+- Prefer system color tokens via `ThemeConstants` aliases (e.g. `TEXT_PRIMARY`) over raw `$r('sys.color.xxx')`
+- Use English for code comments — explain *why*, not *what*
+- Use English for git commit messages in `type: description` format
+- Use Chinese for user-facing strings and UI text

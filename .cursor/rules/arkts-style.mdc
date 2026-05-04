@@ -1,0 +1,44 @@
+---
+description: ArkTS/ArkUI coding style and patterns
+globs: "**/*.ets"
+alwaysApply: false
+---
+
+# ArkTS Style Guide
+
+## Formatting
+
+- Use `npx @ohos-rs/oxk format` for code formatting
+- Double quotes for strings, semicolons required (enforced by oxk)
+
+## Theme & Styling
+
+- **Never** hardcode pixel values, colors, or font sizes in components
+- All design tokens live in `shared/src/main/ets/theme/ThemeConstants.ets`
+- System colors are aliased in ThemeConstants (e.g. `TEXT_PRIMARY`, `TEXT_LINK`)
+
+```typescript
+// Bad
+.fontSize(14)
+.fontColor($r('sys.color.font_primary'))
+.padding({ top: 12 })
+
+// Good
+.fontSize(ThemeConstants.FONT_SIZE_BODY)
+.fontColor(ThemeConstants.TEXT_PRIMARY)
+.padding({ top: ThemeConstants.SPACE_MD })
+```
+
+## Comments
+
+- Write English comments that explain non-obvious intent or design decisions
+- Don't narrate what the code does — explain *why* it does it
+- Add section headers (`// ---------- Section ----------`) to group related code in large files
+- Document library workarounds and ported logic with source references
+
+## @lidary/markdown Customization Pattern
+
+When the library's built-in rendering is insufficient:
+1. Use `lexer()` to parse tokens
+2. Re-type target tokens (e.g. `'code'` → `'customCode'`) so the library doesn't recognize them
+3. Handle re-typed tokens in `customBlockBuilder`

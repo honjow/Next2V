@@ -1,6 +1,6 @@
 import { DetailViewModel } from '../viewmodel/DetailViewModel'
 import {
-  V2exReply, Avatar, ReplyCard, TimeAgo, PullRefresh, ThemeConstants
+  V2exReply, Avatar, ReplyCard, TimeAgo, PullRefresh, ThemeConstants, MarkdownContent
 } from 'shared'
 
 @Component
@@ -153,12 +153,7 @@ export struct TopicDetailPage {
 
       // 正文
       if (this.v.topic!.content) {
-        Text(this.v.topic!.content)
-          .fontSize(ThemeConstants.FONT_SIZE_BODY)
-          .fontColor($r('sys.color.font_primary'))
-          .lineHeight(ThemeConstants.LINE_HEIGHT_BODY + 2)
-          .width('100%')
-          .margin({ top: ThemeConstants.SPACE_LG })
+        MarkdownContent({ source: this.v.topic!.content })
       }
     }
     .padding(ThemeConstants.SPACE_LG)
