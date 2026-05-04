@@ -9,6 +9,7 @@ export class DetailViewModel {
   topic: V2exTopic | null = null
   replyDataSource: ReplyDataSource = new ReplyDataSource()
   isLoading: boolean = false
+  errorMessage: string = ''
   topicId: number = 0
 
   private api: ApiService = new ApiService()
@@ -18,16 +19,27 @@ export class DetailViewModel {
   }
 
   async load(): Promise<void> {
+    if (this.topicId <= 0) {
+      this.errorMessage = '无效的主题 ID'
+      return
+    }
     this.isLoading = true
+    this.errorMessage = ''
     try {
-      const topics = await this.api.getTopicById(this.topicId)
+      const results = await Promise.all([
+        this.api.getTopicById(this.topicId),
+        this.api.getReplies(this.topicId)
+      ])
+      const topics = results[0] as V2exTopic[]
+      const replies = results[1] as V2exReply[]
       if (topics.length > 0) {
         this.topic = topics[0]
       }
-      const replies = await this.api.getReplies(this.topicId)
       this.replyDataSource.setData(replies)
     } catch (error) {
-      console.error('Failed to load topic detail:', error.message)
+      const e = error as Error
+      this.errorMessage = e.message || '加载失败'
+      console.error('Failed to load topic detail:', e.message)
     } finally {
       this.isLoading = false
     }

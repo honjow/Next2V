@@ -37,6 +37,7 @@ export interface V2exTopic {
   created: number
   last_modified: number
   last_touched: number
+  last_reply_by?: string
 }
 
 export interface V2exReply {

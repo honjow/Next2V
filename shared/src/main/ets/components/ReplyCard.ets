@@ -1,7 +1,6 @@
 import { V2exReply } from '../network/NetworkTypes'
 import { ThemeConstants } from '../theme/ThemeConstants'
 import { Avatar } from './Avatar'
-import { UserName } from './UserName'
 import { TimeAgo } from './TimeAgo'
 
 @Component
@@ -12,46 +11,63 @@ export struct ReplyCard {
 
   build() {
     Column() {
-      Row({ space: ThemeConstants.SPACE_MD }) {
+      // 头部：头像 + 用户名/OP/楼层 + 时间
+      Row({ space: ThemeConstants.SPACE_SM }) {
         Avatar({ url: this.reply.member.avatar_mini, avatarSize: ThemeConstants.AVATAR_SIZE_REPLY })
-        Column() {
-          Row({ space: ThemeConstants.SPACE_SM }) {
-            UserName({ username: this.reply.member.username, fontSize: ThemeConstants.FONT_SIZE_META })
-            if (this.isOp) {
-              Text('OP')
-                .fontSize(ThemeConstants.FONT_SIZE_TINY)
-                .fontColor($r('sys.color.font_on_primary'))
-                .padding({ left: ThemeConstants.SPACE_XS, right: ThemeConstants.SPACE_XS, top: 1, bottom: 1 })
-                .borderRadius(ThemeConstants.RADIUS_SM / 2)
-                .backgroundColor($r('sys.color.ohos_id_color_activated'))
-            }
-            Blank()
-            Text(`#${this.floor}`)
-              .fontSize(ThemeConstants.FONT_SIZE_TAG)
-              .fontColor($r('sys.color.font_secondary'))
-          }
-          TimeAgo({ timestamp: this.reply.created })
+
+        Text(this.reply.member.username)
+          .fontSize(ThemeConstants.FONT_SIZE_META)
+          .fontWeight(FontWeight.Medium)
+          .fontColor($r('sys.color.font_primary'))
+
+        if (this.isOp) {
+          Text('OP')
+            .fontSize(ThemeConstants.FONT_SIZE_TINY)
+            .fontColor($r('sys.color.font_on_primary'))
+            .padding({
+              left: ThemeConstants.SPACE_XS + 2,
+              right: ThemeConstants.SPACE_XS + 2,
+              top: 1,
+              bottom: 1
+            })
+            .borderRadius(ThemeConstants.RADIUS_SM)
+            .backgroundColor($r('sys.color.ohos_id_color_activated'))
         }
-        .layoutWeight(1)
+
+        Blank()
+
+        Text(`#${this.floor}`)
+          .fontSize(ThemeConstants.FONT_SIZE_TAG)
+          .fontColor($r('sys.color.font_secondary'))
       }
       .width('100%')
+      .alignItems(VerticalAlign.Center)
 
+      // 回复内容
       Text(this.reply.content)
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
         .fontColor($r('sys.color.font_primary'))
-        .lineHeight(ThemeConstants.LINE_HEIGHT_BODY)
+        .lineHeight(ThemeConstants.LINE_HEIGHT_BODY + 2)
         .width('100%')
         .margin({ top: ThemeConstants.SPACE_SM })
 
-      if (this.reply.thanks > 0) {
-        Row() {
-          Text(`♥ ${this.reply.thanks}`)
+      // 底部：时间 + 感谢数
+      Row() {
+        TimeAgo({ timestamp: this.reply.created })
+
+        if (this.reply.thanks > 0) {
+          Blank()
+          SymbolGlyph($r('sys.symbol.heart_fill'))
+            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+            .fontColor([$r('sys.color.font_emphasize')])
+          Text(` ${this.reply.thanks}`)
             .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
             .fontColor($r('sys.color.font_emphasize'))
         }
-        .width('100%')
-        .margin({ top: ThemeConstants.SPACE_XS })
       }
+      .width('100%')
+      .margin({ top: ThemeConstants.SPACE_SM })
+      .alignItems(VerticalAlign.Center)
     }
     .padding({
       left: ThemeConstants.SPACE_LG,
@@ -60,6 +76,7 @@ export struct ReplyCard {
       bottom: ThemeConstants.SPACE_MD
     })
     .width('100%')
+    .borderRadius(ThemeConstants.RADIUS_MD)
     .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }
 }
