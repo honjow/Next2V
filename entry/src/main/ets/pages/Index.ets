@@ -10,6 +10,7 @@ import {
 }
   from 'shared'
 import type { V2exAuthenticatedMember, V2exNotification, SavedTopic, SavedNode, ViewedTopic, CacheStats } from 'shared'
+import type { V2exTokenInfo } from 'shared'
 import { HomePage } from 'feed'
 import { TopicDetailPage } from 'detail'
 import { DiscoverPage, NodeTopicPage } from 'node'
@@ -74,6 +75,8 @@ struct Index {
   @State private authToken: string = ''
   @State private tokenDraft: string = ''
   @State private authProfile: V2exAuthenticatedMember | null = null
+  @State private tokenInfo: V2exTokenInfo | null = null
+  @State private tokenInfoError: string = ''
   @State private authError: string = ''
   @State private sessionError: string = ''
   @State private isSessionValidating: boolean = false
@@ -405,6 +408,27 @@ struct Index {
         Text(this.sessionError)
           .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
           .fontColor(Color.Red)
+      }
+      if (this.tokenInfoError) {
+        Text(this.tokenInfoError)
+          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+          .fontColor(Color.Red)
+      } else if (this.tokenInfo) {
+        if (this.tokenInfo.scope) {
+          Text(`Token Scope: ${this.tokenInfo.scope}`)
+            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+            .fontColor($r('sys.color.font_secondary'))
+        }
+        if (this.tokenInfo.expiration && this.tokenInfo.expiration > 0) {
+          Text(`到期: ${DateUtils.toDateString(this.tokenInfo.expiration)}`)
+            .fontSize(ThemeConstants.FONT_SIZE_TINY)
+            .fontColor($r('sys.color.font_secondary'))
+        }
+        if (this.tokenInfo.last_used && this.tokenInfo.last_used > 0) {
+          Text(`最后使用: ${DateUtils.toDateString(this.tokenInfo.last_used)}`)
+            .fontSize(ThemeConstants.FONT_SIZE_TINY)
+            .fontColor($r('sys.color.font_secondary'))
+        }
       }
       if (this.apiRateLimitLimit > 0) {
         Text(`API Rate Limit: ${this.apiRateLimitRemaining} / ${this.apiRateLimitLimit}`)
@@ -741,6 +765,7 @@ struct Index {
         this.tokenDraft = ''
         if (snapshot.token) {
           this.refreshAuthProfile(snapshot.token)
+          this.refreshTokenInfo(snapshot.token)
         }
       })
       .catch((error: Error) => {
@@ -767,6 +792,7 @@ struct Index {
       })
       .then(() => {
         this.tokenDraft = ''
+        this.refreshTokenInfo(token)
         this.loadNotifications(true)
       })
       .catch((error: Error) => {
@@ -788,6 +814,24 @@ struct Index {
       })
   }
 
+  private refreshTokenInfo(token: string): void {
+    this.tokenInfoError = ''
+    this.api.getTokenInfo(token)
+      .then((info: V2exTokenInfo) => {
+        if (info && info.success === false) {
+          this.tokenInfo = null
+          this.tokenInfoError = info.message || 'Token 信息获取失败'
+          return
+        }
+        this.tokenInfo = info
+        this.tokenInfoError = ''
+      })
+      .catch((error: Error) => {
+        this.tokenInfo = null
+        this.tokenInfoError = error.message || 'Token 信息获取失败'
+      })
+  }
+
   private clearAuth(): void {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     AuthSettings.clear(context)
@@ -795,6 +839,8 @@ struct Index {
         this.authToken = ''
         this.tokenDraft = ''
         this.authProfile = null
+        this.tokenInfo = null
+        this.tokenInfoError = ''
         this.authError = ''
         this.notifications = []
         this.notificationError = ''
@@ -823,6 +869,8 @@ struct Index {
         this.authToken = ''
         this.tokenDraft = ''
         this.authProfile = null
+        this.tokenInfo = null
+        this.tokenInfoError = ''
         this.notifications = []
         this.notificationError = ''
         this.notificationPage = 1
