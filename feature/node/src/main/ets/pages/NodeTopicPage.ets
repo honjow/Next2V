@@ -17,6 +17,10 @@ export struct NodeTopicPage {
     Column() {
       if (this.vm.isLoading) {
         LoadingProgress().width(ThemeConstants.LOADING_SIZE).height(ThemeConstants.LOADING_SIZE).margin({ top: ThemeConstants.MARGIN_LOADING_TOP })
+      } else if (this.vm.errorMessage) {
+        this.ErrorView()
+      } else if (this.vm.nodeTopics.length === 0) {
+        this.EmptyView()
       } else {
         List({ space: ThemeConstants.SPACE_XS }) {
           ListItem() { Column() { Blank().height(this.topH + ThemeConstants.TITLE_BAR_HEIGHT) } }
@@ -42,5 +46,31 @@ export struct NodeTopicPage {
     }
       .width('100%').height('100%')
       .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
+  }
+
+  @Builder EmptyView() {
+    Column() {
+      Text('暂无主题')
+        .fontSize(ThemeConstants.FONT_SIZE_BODY)
+        .fontColor($r('sys.color.font_secondary'))
+    }
+    .justifyContent(FlexAlign.Center)
+    .width('100%')
+    .height('100%')
+  }
+
+  @Builder ErrorView() {
+    Column() {
+      Text(this.vm.errorMessage || '节点主题加载失败')
+        .fontSize(ThemeConstants.FONT_SIZE_BODY)
+        .fontColor($r('sys.color.font_secondary'))
+      Button('重试')
+        .fontSize(ThemeConstants.FONT_SIZE_BODY)
+        .margin({ top: ThemeConstants.SPACE_LG })
+        .onClick(() => { this.vm.loadNodeTopics(this.nodeName) })
+    }
+    .justifyContent(FlexAlign.Center)
+    .width('100%')
+    .height('100%')
   }
 }
