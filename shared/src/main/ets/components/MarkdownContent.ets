@@ -47,6 +47,17 @@ function _normalizeUrl(raw: string): string {
   return url;
 }
 
+function _appendCacheBust(url: string, nonce: number): string {
+  if (!url) {
+    return "";
+  }
+  if (nonce <= 0) {
+    return url;
+  }
+  const sep = url.indexOf("?") >= 0 ? "&" : "?";
+  return `${url}${sep}_r=${nonce}`;
+}
+
 function _isProbablyImageUrl(raw: string): boolean {
   const url = _normalizeUrl(raw);
   if (!url) {
@@ -265,6 +276,14 @@ interface CustomInlineParams {
   onSpanClick?: () => void;
 }
 
+interface MarkdownImageCompleteEvent {
+  loadingStatus: number;
+}
+
+interface MarkdownImageErrorEvent {
+  message?: string;
+}
+
 // ---------- Custom block rendering ----------
 // Handles token types we've hijacked from the library (code blocks, lists).
 @Builder
@@ -385,20 +404,99 @@ function InlineTokenSpans(tokens: Token[], fontSize: number) {
 struct MarkdownAutoImage {
   @Prop url: string = "";
   @Prop options: MarkdownOptions;
-  @StorageLink(StorageKeys.MEDIA_AUTO_LOAD_IMAGES) autoLoadImages: boolean = true
+  @StorageLink(StorageKeys.MEDIA_AUTO_LOAD_IMAGES) @Watch('onAutoLoadImagesChanged') autoLoadImages: boolean = true
+  @State private loadState: number = 0 // 0: idle, 1: loading, 2: loaded, 3: error
+  @State private reloadNonce: number = 0
+
+  aboutToAppear() {
+    this.syncLoadState();
+  }
+
+  onAutoLoadImagesChanged(_propName: string): void {
+    this.syncLoadState();
+  }
+
+  private syncLoadState(): void {
+    if (!this.url) {
+      this.loadState = 0;
+      return;
+    }
+    if (!this.autoLoadImages) {
+      this.loadState = 0;
+      return;
+    }
+    if (this.loadState === 0) {
+      this.loadState = 1;
+    }
+  }
+
+  private retryLoad(): void {
+    if (!this.url || !this.autoLoadImages) {
+      return;
+    }
+    this.reloadNonce += 1;
+    this.loadState = 1;
+  }
 
   build() {
     if (this.autoLoadImages) {
-      Image(this.url)
-        .width("100%")
-        .objectFit(ImageFit.Contain)
-        .borderRadius(ThemeConstants.RADIUS_SM)
-        .onClick(() => {
-          const click = this.options?.imageClick as ((url?: string) => void) | undefined;
-          if (click) {
-            click(this.url);
+      Stack({ alignContent: Alignment.Center }) {
+        Image(_appendCacheBust(this.url, this.reloadNonce))
+          .width("100%")
+          .objectFit(ImageFit.Contain)
+          .borderRadius(ThemeConstants.RADIUS_SM)
+          .onComplete((event?: MarkdownImageCompleteEvent) => {
+            if ((event?.loadingStatus ?? 0) === 1) {
+              this.loadState = 2;
+            }
+          })
+          .onError((_event?: MarkdownImageErrorEvent) => {
+            this.loadState = 3;
+          })
+          .onClick(() => {
+            const click = this.options?.imageClick as ((url?: string) => void) | undefined;
+            if (click) {
+              click(this.url);
+            }
+          });
+
+        if (this.loadState === 1) {
+          Row({ space: ThemeConstants.SPACE_SM }) {
+            LoadingProgress()
+              .width(ThemeConstants.LOADING_SIZE_SMALL)
+              .height(ThemeConstants.LOADING_SIZE_SMALL)
+            Text('加载中...')
+              .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+              .fontColor(ThemeConstants.TEXT_SECONDARY)
           }
-        });
+          .width('100%')
+          .height(160)
+          .borderRadius(ThemeConstants.RADIUS_SM)
+          .backgroundColor(ThemeConstants.BG_SUB)
+          .hitTestBehavior(HitTestMode.Transparent)
+        }
+
+        if (this.loadState === 3) {
+          Column({ space: ThemeConstants.SPACE_XS }) {
+            Text('图片加载失败')
+              .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+              .fontColor(ThemeConstants.TEXT_SECONDARY)
+            Text('点击重试')
+              .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+              .fontColor(ThemeConstants.TEXT_LINK)
+          }
+          .justifyContent(FlexAlign.Center)
+          .alignItems(HorizontalAlign.Center)
+          .width('100%')
+          .height(160)
+          .borderRadius(ThemeConstants.RADIUS_SM)
+          .backgroundColor(ThemeConstants.BG_SUB)
+          .onClick(() => {
+            this.retryLoad();
+          })
+        }
+      }
+      .width('100%')
     } else {
       Row({ space: ThemeConstants.SPACE_SM }) {
         Text('图片自动加载已关闭')
