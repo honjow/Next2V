@@ -15,6 +15,8 @@ export interface UserProfileParams {
 // 网络层
 export { HttpClient } from './network/HttpClient'
 export { ApiService } from './network/ApiService'
+export { V2exNativeAuthService } from './network/V2exNativeAuthService'
+export type { NativeLoginSnapshot } from './network/V2exNativeAuthService'
 export { ApiConstants } from './constants/ApiConstants'
 export type { TabItem } from './constants/ApiConstants'
 export { StorageKeys } from './constants/StorageKeys'
@@ -45,6 +47,8 @@ export type {
 // 解析
 export { V2exTabParser } from './parser/V2exTabParser'
 export { V2exSessionParser } from './parser/V2exSessionParser'
+export { V2exSigninParser } from './parser/V2exSigninParser'
+export type { V2exSigninForm } from './parser/V2exSigninParser'
 
 // 工具
 export { DateUtils } from './utils/DateUtils'
