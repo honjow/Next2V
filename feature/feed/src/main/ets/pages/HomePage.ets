@@ -2,8 +2,9 @@ import { FeedViewModel } from '../viewmodel/FeedViewModel'
 import {
   V2exTopic, TopicCard, LoadingFooter, TopicDetailParams, ThemeConstants,
   StorageKeys, PullRefresh, ApiConstants, TabItem, ApiService, NodeTopicListParams,
-  UserProfileParams
+  UserProfileParams, CacheSettings
 } from 'shared'
+import { common } from '@kit.AbilityKit'
 
 @Component
 export struct HomePage {
@@ -115,7 +116,13 @@ struct FeedListPage {
   private api: ApiService = new ApiService()
 
   aboutToAppear(): void {
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     this.vm.setLoader(() => this.api.getTabTopics(this.tabKey))
+    this.vm.setCacheHandlers(
+      () => CacheSettings.loadTopicList(context, `tab:${this.tabKey}`),
+      (topics: V2exTopic[]) => CacheSettings.saveTopicList(context, `tab:${this.tabKey}`, topics)
+    )
+    this.vm.loadCachedData()
     this.vm.loadData()
   }
 

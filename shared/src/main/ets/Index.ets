@@ -23,6 +23,9 @@ export { AuthSettings } from './settings/AuthSettings'
 export type { AuthSnapshot } from './settings/AuthSettings'
 export { CollectionSettings } from './settings/CollectionSettings'
 export type { SavedTopic } from './settings/CollectionSettings'
+export { CacheSettings }
+  from './settings/CacheSettings'
+export type { CacheStats, TopicDetailCache } from './settings/CacheSettings'
 export type {
   V2exTopic,
   V2exReply,

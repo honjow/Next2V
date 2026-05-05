@@ -2,7 +2,7 @@ import { DetailViewModel } from '../viewmodel/DetailViewModel'
 import { common } from '@kit.AbilityKit'
 import {
   V2exReply, Avatar, ReplyCard, TimeAgo, PullRefresh, ThemeConstants, MarkdownContent,
-  NodeTopicListParams, UserProfileParams, CollectionSettings
+  NodeTopicListParams, UserProfileParams, CollectionSettings, CacheSettings, V2exTopic
 } from 'shared'
 
 @Component
@@ -17,6 +17,12 @@ export struct TopicDetailPage {
 
   aboutToAppear(): void {
     this.v = new DetailViewModel(this.topicId)
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    this.v.setCacheHandlers(
+      () => CacheSettings.loadTopicDetail(context, this.topicId),
+      (topic: V2exTopic | null, replies: V2exReply[]) => CacheSettings.saveTopicDetail(context, this.topicId, topic, replies)
+    )
+    this.v.loadCachedData()
     this.v.load()
     this.loadSavedState()
   }

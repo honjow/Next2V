@@ -17,9 +17,31 @@ export class FeedViewModel {
 
   private api: ApiService = new ApiService()
   private loader: () => Promise<V2exTopic[]> = () => this.api.getTabTopics(this.activeTab)
+  private cacheLoader: (() => Promise<V2exTopic[]>) | null = null
+  private cacheSaver: ((topics: V2exTopic[]) => Promise<void>) | null = null
 
   setLoader(loader: () => Promise<V2exTopic[]>): void {
     this.loader = loader
+  }
+
+  setCacheHandlers(loader: () => Promise<V2exTopic[]>, saver: (topics: V2exTopic[]) => Promise<void>): void {
+    this.cacheLoader = loader
+    this.cacheSaver = saver
+  }
+
+  async loadCachedData(): Promise<void> {
+    if (!this.cacheLoader || this.dataSource.totalCount() > 0) {
+      return
+    }
+    try {
+      const data = await this.cacheLoader()
+      if (data.length > 0) {
+        this.dataSource.setData(data)
+        this.hasMore = data.length >= 20
+      }
+    } catch (error) {
+      console.error('load feed cache failed:', (error as Error).message)
+    }
   }
 
   /** 切换 tab 并加载数据 */
@@ -42,8 +64,10 @@ export class FeedViewModel {
       const data = await this.loader()
       this.dataSource.setData(data)
       this.hasMore = data.length >= 20  // 如果返回 20 条，可能还有更多
+      await this.saveCache(data)
     } catch (error) {
       this.errorMessage = error.message || '加载失败'
+      await this.loadCachedData()
     } finally {
       this.isLoading = false
     }
@@ -59,6 +83,7 @@ export class FeedViewModel {
       const data = await this.loader()
       this.dataSource.setData(data)
       this.hasMore = data.length >= 20
+      await this.saveCache(data)
     } catch (error) {
       this.errorMessage = error.message || '刷新失败'
     } finally {
@@ -78,6 +103,7 @@ export class FeedViewModel {
       const data = await this.loader()
       this.dataSource.setData(data)
       this.hasMore = data.length >= 20
+      await this.saveCache(data)
     } catch (error) {
       this.errorMessage = error.message || '刷新失败'
     } finally {
@@ -107,6 +133,17 @@ export class FeedViewModel {
       }
     } catch (e) {
       // 静默失败
+    }
+  }
+
+  private async saveCache(data: V2exTopic[]): Promise<void> {
+    if (!this.cacheSaver || data.length === 0) {
+      return
+    }
+    try {
+      await this.cacheSaver(data)
+    } catch (error) {
+      console.error('save feed cache failed:', (error as Error).message)
     }
   }
 }

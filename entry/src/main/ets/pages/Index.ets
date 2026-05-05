@@ -5,10 +5,10 @@ import {
 import { common } from '@kit.AbilityKit'
 import {
   ApiDomainSettings, HttpClient, ThemeConstants, StorageKeys, ApiConstants, TabItem,
-  AuthSettings, ApiService, DateUtils, CollectionSettings, TopicDetailParams
+  AuthSettings, ApiService, DateUtils, CollectionSettings, TopicDetailParams, CacheSettings
 }
   from 'shared'
-import type { V2exAuthenticatedMember, V2exNotification, SavedTopic } from 'shared'
+import type { V2exAuthenticatedMember, V2exNotification, SavedTopic, CacheStats } from 'shared'
 import { HomePage } from 'feed'
 import { TopicDetailPage } from 'detail'
 import { DiscoverPage, NodeTopicPage } from 'node'
@@ -67,6 +67,8 @@ struct Index {
   @State private isAuthLoading: boolean = false
   @State private notifications: V2exNotification[] = []
   @State private savedTopics: SavedTopic[] = []
+  @State private cacheStats: CacheStats = { topicListCount: 0, topicDetailCount: 0, updatedAt: 0 }
+  @State private cacheMessage: string = ''
   @State private notificationError: string = ''
   @State private isNotificationLoading: boolean = false
   private http: HttpClient = HttpClient.getInstance()
@@ -75,6 +77,7 @@ struct Index {
   aboutToAppear(): void {
     this.loadAuthSnapshot()
     this.loadSavedTopics()
+    this.loadCacheStats()
   }
 
   @Builder pm(name: string, param: Object) {
@@ -112,6 +115,7 @@ struct Index {
             this.loadNotifications()
           } else if (i === 3) {
             this.loadSavedTopics()
+            this.loadCacheStats()
           }
         })
     }
@@ -210,6 +214,11 @@ struct Index {
 
         ListItem() {
           this.SavedTopicsCard()
+        }
+          .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, top: ThemeConstants.SPACE_SM })
+
+        ListItem() {
+          this.CacheCard()
         }
           .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, top: ThemeConstants.SPACE_SM })
 
@@ -351,6 +360,48 @@ struct Index {
             this.ns.pushPathByName('TopicDetail', p as Object)
           })
         }, (item: SavedTopic) => item.id.toString())
+      }
+    }
+    .padding(ThemeConstants.SPACE_LG)
+    .width('100%')
+    .alignItems(HorizontalAlign.Start)
+    .borderRadius(ThemeConstants.RADIUS_MD)
+    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+  }
+
+  @Builder CacheCard() {
+    Column({ space: ThemeConstants.SPACE_SM }) {
+      Row() {
+        Text('离线缓存')
+          .fontSize(ThemeConstants.FONT_SIZE_BODY)
+          .fontWeight(FontWeight.Medium)
+          .fontColor($r('sys.color.font_primary'))
+        Blank()
+        Text(`${this.cacheStats.topicListCount + this.cacheStats.topicDetailCount}`)
+          .fontSize(ThemeConstants.FONT_SIZE_TAG)
+          .fontColor($r('sys.color.font_secondary'))
+      }
+      .width('100%')
+      Text(`列表 ${this.cacheStats.topicListCount} 组 · 详情 ${this.cacheStats.topicDetailCount} 篇`)
+        .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+        .fontColor($r('sys.color.font_secondary'))
+      if (this.cacheStats.updatedAt > 0) {
+        Text(`更新于 ${DateUtils.toDateString(this.cacheStats.updatedAt)}`)
+          .fontSize(ThemeConstants.FONT_SIZE_TINY)
+          .fontColor($r('sys.color.font_secondary'))
+      }
+      if (this.cacheMessage) {
+        Text(this.cacheMessage)
+          .fontSize(ThemeConstants.FONT_SIZE_TINY)
+          .fontColor(ThemeConstants.BRAND_PRIMARY)
+      }
+      Row({ space: ThemeConstants.SPACE_SM }) {
+        Button('刷新状态')
+          .fontSize(ThemeConstants.FONT_SIZE_TAG)
+          .onClick(() => { this.loadCacheStats() })
+        Button('清理缓存')
+          .fontSize(ThemeConstants.FONT_SIZE_TAG)
+          .onClick(() => { this.clearCache() })
       }
     }
     .padding(ThemeConstants.SPACE_LG)
@@ -527,6 +578,29 @@ struct Index {
       })
       .catch((error: Error) => {
         console.error('load saved topics failed: ' + error.message)
+      })
+  }
+
+  private loadCacheStats(): void {
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    CacheSettings.loadStats(context)
+      .then((stats: CacheStats) => {
+        this.cacheStats = stats
+      })
+      .catch((error: Error) => {
+        console.error('load cache stats failed: ' + error.message)
+      })
+  }
+
+  private clearCache(): void {
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    CacheSettings.clear(context)
+      .then(() => {
+        this.cacheMessage = '已清理'
+        this.loadCacheStats()
+      })
+      .catch((error: Error) => {
+        this.cacheMessage = error.message || '清理失败'
       })
   }
 
