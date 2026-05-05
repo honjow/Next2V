@@ -648,12 +648,20 @@ function CodeSpanBuilder(tokenItem: Token, params: CustomInlineParams): void {
 }
 @Component
 export struct MarkdownContent {
-  @Prop source: string = "";
+  @Prop @Watch('onSourceChanged') source: string = "";
   @Prop topMargin: number = ThemeConstants.SPACE_LG;
   onImageClick?: (url: string) => void
   @State private tokens: Token[] = [];
 
   aboutToAppear() {
+    this.refreshTokens();
+  }
+
+  onSourceChanged(_propName: string): void {
+    this.refreshTokens();
+  }
+
+  private refreshTokens(): void {
     this.tokens = MarkdownContent.processTokens(this.source);
   }
 
