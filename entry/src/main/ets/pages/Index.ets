@@ -2,7 +2,8 @@ import {
   HdsNavigation, HdsNavDestination, HdsTabs, HdsTabsController, HdsTabsFloatingStyle,
   hdsMaterial, HdsNavigationTitleMode, ScrollEffectType, BlurStrategy
 } from '@kit.UIDesignKit'
-import { HttpClient, ThemeConstants, StorageKeys, ApiConstants, TabItem } from 'shared'
+import { common } from '@kit.AbilityKit'
+import { ApiDomainSettings, HttpClient, ThemeConstants, StorageKeys, ApiConstants, TabItem } from 'shared'
 import { HomePage } from 'feed'
 import { TopicDetailPage } from 'detail'
 import { DiscoverPage, NodeTopicPage } from 'node'
@@ -51,7 +52,7 @@ struct Index {
   private tc: HdsTabsController = new HdsTabsController()
   private tabTitles: string[] = ['首页', '发现', '通知', '我的']
   @State ct: number = 0
-  @State useCoDomain: boolean = false
+  @StorageLink(StorageKeys.USE_CO_DOMAIN) useCoDomain: boolean = false
   private http: HttpClient = HttpClient.getInstance()
 
   @Builder pm(name: string, param: Object) {
@@ -157,9 +158,9 @@ struct Index {
               .fontSize(ThemeConstants.FONT_SIZE_CAPTION).fontColor($r('sys.color.font_secondary')).margin({ top: ThemeConstants.SPACE_XS })
             Row({ space: ThemeConstants.SPACE_SM }) {
               Button('v2ex.com').fontSize(ThemeConstants.FONT_SIZE_TAG)
-                .onClick(() => { this.http.setBaseUrl('https://www.v2ex.com'); this.useCoDomain = false })
+                .onClick(() => { this.updateApiDomain(false) })
               Button('v2ex.co').fontSize(ThemeConstants.FONT_SIZE_TAG)
-                .onClick(() => { this.http.setBaseUrl('https://www.v2ex.co'); this.useCoDomain = true })
+                .onClick(() => { this.updateApiDomain(true) })
             }.margin({ top: ThemeConstants.SPACE_SM })
           }
             .padding(ThemeConstants.SPACE_LG).width('100%').alignItems(HorizontalAlign.Start).borderRadius(ThemeConstants.RADIUS_MD)
@@ -182,5 +183,14 @@ struct Index {
     }
       .width('100%').height('100%')
       .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
+  }
+
+  private updateApiDomain(useCoDomain: boolean): void {
+    this.useCoDomain = useCoDomain
+    this.http.setBaseUrl(useCoDomain ? ApiConstants.BASE_URL_CO : ApiConstants.BASE_URL_COM)
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    ApiDomainSettings.save(context, useCoDomain).catch((error: Error) => {
+      console.error('save api domain failed: ' + error.message)
+    })
   }
 }

@@ -1,8 +1,9 @@
-import { HttpClient, ThemeConstants } from 'shared'
+import { common } from '@kit.AbilityKit'
+import { ApiConstants, ApiDomainSettings, HttpClient, StorageKeys, ThemeConstants } from 'shared'
 
 @Component
 export struct SettingsPage {
-  @State useCoDomain: boolean = false
+  @StorageLink(StorageKeys.USE_CO_DOMAIN) useCoDomain: boolean = false
   private http: HttpClient = HttpClient.getInstance()
 
   build() {
@@ -30,16 +31,14 @@ export struct SettingsPage {
                 .type(ButtonType.Normal)
                 .borderRadius(8)
                 .onClick(() => {
-                  this.http.setBaseUrl('https://www.v2ex.com')
-                  this.useCoDomain = false
+                  this.updateApiDomain(false)
                 })
               Button('使用 v2ex.co')
                 .fontSize(12)
                 .type(ButtonType.Normal)
                 .borderRadius(8)
                 .onClick(() => {
-                  this.http.setBaseUrl('https://www.v2ex.co')
-                  this.useCoDomain = true
+                  this.updateApiDomain(true)
                 })
             }
             .margin({ top: ThemeConstants.SPACE_MD })
@@ -80,5 +79,14 @@ export struct SettingsPage {
     }
     .hideTitleBar(false)
     .title('设置')
+  }
+
+  private updateApiDomain(useCoDomain: boolean): void {
+    this.useCoDomain = useCoDomain
+    this.http.setBaseUrl(useCoDomain ? ApiConstants.BASE_URL_CO : ApiConstants.BASE_URL_COM)
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    ApiDomainSettings.save(context, useCoDomain).catch((error: Error) => {
+      console.error('save api domain failed: ' + error.message)
+    })
   }
 }

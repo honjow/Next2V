@@ -18,6 +18,7 @@ export { ApiService } from './network/ApiService'
 export { ApiConstants } from './constants/ApiConstants'
 export type { TabItem } from './constants/ApiConstants'
 export { StorageKeys } from './constants/StorageKeys'
+export { ApiDomainSettings } from './settings/ApiDomainSettings'
 export type {
   V2exTopic,
   V2exReply,

@@ -1,6 +1,6 @@
 import { UIAbility, Want, AbilityConstant } from '@kit.AbilityKit'
 import { window } from '@kit.ArkUI'
-import { StorageKeys } from 'shared'
+import { ApiDomainSettings, StorageKeys } from 'shared'
 
 const TRANSPARENT_COLOR: string = '#00FFFFFF'
 const ENTRY_PAGE: string = 'pages/Index'
@@ -17,6 +17,17 @@ export default class EntryAbility extends UIAbility {
       statusBarColor: TRANSPARENT_COLOR,
       navigationBarColor: TRANSPARENT_COLOR
     })
+    ApiDomainSettings.load(this.context)
+      .catch((error: Error) => {
+        console.error('restore api domain failed: ' + error.message)
+        ApiDomainSettings.apply(false)
+      })
+      .finally(() => {
+        this.loadContent(windowStage, win)
+      })
+  }
+
+  private loadContent(windowStage: window.WindowStage, win: window.Window): void {
     windowStage.loadContent(ENTRY_PAGE, (err) => {
       if (err.code) { console.error('loadContent failed: ' + JSON.stringify(err)) }
       try {
