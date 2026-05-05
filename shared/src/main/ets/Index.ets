@@ -15,6 +15,8 @@ export interface UserProfileParams {
 // 网络层
 export { HttpClient } from './network/HttpClient'
 export { ApiService } from './network/ApiService'
+export { ApiV2Service } from './network/ApiV2Service'
+export type { ApiV2RateLimit, ApiV2Response } from './network/ApiV2Service'
 export { V2exNativeAuthService } from './network/V2exNativeAuthService'
 export type { NativeLoginSnapshot } from './network/V2exNativeAuthService'
 export { ApiConstants } from './constants/ApiConstants'
