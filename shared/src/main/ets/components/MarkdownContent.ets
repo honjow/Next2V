@@ -9,6 +9,53 @@ import { ThemeConstants } from "../theme/ThemeConstants";
 const CODE_MONO = "customCode";
 const LIST_MONO = "customList";
 
+const _imageExtRegex = /\.(jpe?g|png|gif|webp)(?:[?#].*)?$/i;
+const _imageHostPrefixes: string[] = [
+  "https://i.imgur.com/",
+  "http://i.imgur.com/",
+  "https://sm.ms/",
+  "http://sm.ms/",
+  "https://s2.loli.net/",
+  "http://s2.loli.net/",
+  "https://v2ex.assets.uxengine.net/",
+  "http://v2ex.assets.uxengine.net/",
+  "https://i.v2ex.co/",
+  "http://i.v2ex.co/",
+  "https://i.v2ex.com/",
+  "http://i.v2ex.com/",
+  "https://raw.githubusercontent.com/",
+  "http://raw.githubusercontent.com/",
+  "https://pbs.twimg.com/media/",
+  "http://pbs.twimg.com/media/",
+  "https://github.com/user-attachments/assets/",
+  "http://github.com/user-attachments/assets/",
+];
+
+function _normalizeUrl(raw: string): string {
+  const url = (raw ?? "").trim();
+  if (!url) {
+    return "";
+  }
+  if (url.startsWith("//")) {
+    return `https:${url}`;
+  }
+  return url;
+}
+
+function _isProbablyImageUrl(raw: string): boolean {
+  const url = _normalizeUrl(raw);
+  if (!url) {
+    return false;
+  }
+  if (url.startsWith("http://") || url.startsWith("https://")) {
+    if (_imageExtRegex.test(url)) {
+      return true;
+    }
+    return _imageHostPrefixes.some(prefix => url.startsWith(prefix));
+  }
+  return false;
+}
+
 type CodeHighLight = "string" | "text" | "keyword" | "type" | "symbol" | "number" | "boolean";
 
 interface CodeToken {
@@ -336,6 +383,13 @@ struct CustomList {
   @Prop options: MarkdownOptions;
   private fontSize: number = ThemeConstants.FONT_SIZE_BODY;
 
+  private hasImageToken(tokens: Token[]): boolean {
+    if (!tokens || tokens.length === 0) {
+      return false;
+    }
+    return tokens.some((t: Token) => t && t.type === "image");
+  }
+
   build() {
     Column({ space: this.options.lineSpace }) {
       ForEach(this.listToken.items, (item: Tokens.ListItem, index: number) => {
@@ -357,9 +411,29 @@ struct CustomList {
                   (child as Tokens.Paragraph).tokens &&
                   (child as Tokens.Paragraph).tokens.length > 0
                 ) {
-                  Text() {
-                    InlineTokenSpans((child as Tokens.Paragraph).tokens, this.fontSize)
-                  }.width("100%");
+                  const paragraphTokens = (child as Tokens.Paragraph).tokens as Token[];
+                  const imageTokens = paragraphTokens.filter((t: Token) => t && t.type === "image") as Tokens.Image[];
+                  const textTokens = paragraphTokens.filter((t: Token) => t && t.type !== "image" && t.type !== "br") as Token[];
+
+                  if (this.hasImageToken(paragraphTokens)) {
+                    Column({ space: ThemeConstants.SPACE_SM }) {
+                      if (textTokens.length > 0) {
+                        Text() {
+                          InlineTokenSpans(textTokens, this.fontSize)
+                        }.width("100%");
+                      }
+                      ForEach(imageTokens, (img: Tokens.Image, imgIdx: number) => {
+                        Image(_normalizeUrl(img.href))
+                          .width("100%")
+                          .objectFit(ImageFit.Contain)
+                          .borderRadius(ThemeConstants.RADIUS_SM);
+                      }, (img: Tokens.Image, imgIdx: number) => `${img.href}-${imgIdx}`)
+                    }.width("100%");
+                  } else {
+                    Text() {
+                      InlineTokenSpans(paragraphTokens, this.fontSize)
+                    }.width("100%");
+                  }
                 } else {
                   Text(child.text)
                     .fontSize(this.fontSize)
@@ -430,14 +504,120 @@ export struct MarkdownContent {
   // and delegates to our customBlockBuilder instead.
   private static processTokens(md: string): Token[] {
     let tokens = lexer(md, { gfm: true, breaks: true });
+    MarkdownContent.rewriteBareImageLinks(tokens);
+    MarkdownContent.retypeBlockTokens(tokens);
+    return tokens;
+  }
+
+  private static retypeBlockTokens(tokens: Token[]): void {
+    if (!tokens || tokens.length === 0) {
+      return;
+    }
     for (let i = 0; i < tokens.length; i++) {
-      if (tokens[i].type === "code") {
-        (tokens[i] as Record<string, Object>)["type"] = CODE_MONO;
-      } else if (tokens[i].type === "list") {
-        (tokens[i] as Record<string, Object>)["type"] = LIST_MONO;
+      const token = tokens[i] as unknown as Record<string, Object>;
+      const type = (token["type"] as string) || "";
+      if (type === "code") {
+        token["type"] = CODE_MONO;
+      } else if (type === "list") {
+        token["type"] = LIST_MONO;
+      }
+
+      const childTokens = token["tokens"] as unknown as Token[] | undefined;
+      if (Array.isArray(childTokens) && childTokens.length > 0) {
+        MarkdownContent.retypeBlockTokens(childTokens);
+      }
+
+      const items = token["items"] as unknown as Array<Record<string, Object>> | undefined;
+      if (Array.isArray(items) && items.length > 0) {
+        for (const item of items) {
+          const itemTokens = item["tokens"] as unknown as Token[] | undefined;
+          if (Array.isArray(itemTokens) && itemTokens.length > 0) {
+            MarkdownContent.retypeBlockTokens(itemTokens);
+          }
+        }
       }
     }
-    return tokens;
+  }
+
+  private static rewriteBareImageLinks(tokens: Token[]): void {
+    if (!tokens || tokens.length === 0) {
+      return;
+    }
+    for (let i = 0; i < tokens.length; i++) {
+      const token = tokens[i] as unknown as Record<string, Object>;
+      const type = (token["type"] as string) || "";
+
+      if (type === "paragraph") {
+        MarkdownContent.rewriteParagraphBareImageLink(token);
+      }
+
+      const childTokens = token["tokens"] as unknown as Token[] | undefined;
+      if (Array.isArray(childTokens) && childTokens.length > 0) {
+        MarkdownContent.rewriteBareImageLinks(childTokens);
+      }
+
+      const items = token["items"] as unknown as Array<Record<string, Object>> | undefined;
+      if (Array.isArray(items) && items.length > 0) {
+        for (const item of items) {
+          const itemTokens = item["tokens"] as unknown as Token[] | undefined;
+          if (Array.isArray(itemTokens) && itemTokens.length > 0) {
+            MarkdownContent.rewriteBareImageLinks(itemTokens);
+          }
+        }
+      }
+    }
+  }
+
+  private static rewriteParagraphBareImageLink(paragraph: Record<string, Object>): void {
+    const inlineTokens = paragraph["tokens"] as unknown as Token[] | undefined;
+    if (!Array.isArray(inlineTokens) || inlineTokens.length === 0) {
+      return;
+    }
+
+    const meaningful = inlineTokens.filter((t: Token) => t && t.type !== "br");
+    if (meaningful.length !== 1) {
+      return;
+    }
+
+    const only = meaningful[0] as unknown as Record<string, any>;
+    if (!only || typeof only["type"] !== "string") {
+      return;
+    }
+
+    if (only["type"] === "link") {
+      const href = _normalizeUrl(String(only["href"] ?? ""));
+      const text = String(only["text"] ?? "").trim();
+      const normalizedText = _normalizeUrl(text);
+      if (!_isProbablyImageUrl(href)) {
+        return;
+      }
+      if (text.length > 0 && normalizedText !== href) {
+        return;
+      }
+      only["type"] = "image";
+      only["href"] = href;
+      only["title"] = only["title"] ?? null;
+      only["text"] = "";
+      delete only["tokens"];
+      return;
+    }
+
+    if (only["type"] === "text") {
+      const rawText = String(only["text"] ?? "").trim();
+      const href = _normalizeUrl(rawText);
+      if (!_isProbablyImageUrl(href)) {
+        return;
+      }
+      paragraph["tokens"] = [
+        {
+          type: "image",
+          raw: only["raw"] ?? rawText,
+          href: href,
+          title: null,
+          text: "",
+        } as unknown as Token,
+      ];
+    }
   }
 
   build() {
