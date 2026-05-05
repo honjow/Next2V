@@ -6,6 +6,7 @@ const PULL_RESISTANCE_FACTOR: number = 0.8
 const OPACITY_THRESHOLD_FACTOR: number = 0.5
 const HAPTIC_HD_INTENSITY: number = 60
 const HAPTIC_FALLBACK_DURATION: number = 30
+const DIRECTION_LOCK_VP: number = 6
 
 @Component
 export struct PullRefresh {
@@ -19,9 +20,11 @@ export struct PullRefresh {
   @State pullOffset: number = 0
   @State refreshState: number = 0
   private hapticFired: boolean = false
+  private touchStartX: number = 0
   private touchStartY: number = 0
   private touchStartPullOffset: number = 0
   private isTracking: boolean = false
+  private isHorizontalGesture: boolean = false
 
   private isListAtTop(): boolean {
     return this.scroller.currentOffset().yOffset <= 0
@@ -80,6 +83,11 @@ export struct PullRefresh {
     }
   }
 
+  private resetTouchState(): void {
+    this.isTracking = false
+    this.isHorizontalGesture = false
+  }
+
   build() {
     Stack({ alignContent: Alignment.Top }) {
       Column() {
@@ -90,14 +98,24 @@ export struct PullRefresh {
         if (this.refreshState >= 2) return
 
         if (event.type === TouchType.Down) {
+          this.touchStartX = event.touches[0].x
           this.touchStartY = event.touches[0].y
           this.touchStartPullOffset = this.pullOffset
+          this.resetTouchState()
           return
         }
 
         if (event.type === TouchType.Move) {
+          let deltaX = event.touches[0].x - this.touchStartX
           let deltaY = event.touches[0].y - this.touchStartY
+          if (this.isHorizontalGesture) {
+            return
+          }
           if (!this.isTracking) {
+            if (Math.abs(deltaX) > DIRECTION_LOCK_VP && Math.abs(deltaX) > Math.abs(deltaY)) {
+              this.isHorizontalGesture = true
+              return
+            }
             if (deltaY > PULL_START_DRAG_VP && this.isListAtTop()) {
               this.isTracking = true
               this.onScrollEnableChange(false)
@@ -116,13 +134,13 @@ export struct PullRefresh {
 
         if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
           if (this.isTracking) {
-            this.isTracking = false
             if (this.pullOffset > 0) {
               this.onPullEnd()
             } else {
               this.onScrollEnableChange(true)
             }
           }
+          this.resetTouchState()
         }
       })
 
