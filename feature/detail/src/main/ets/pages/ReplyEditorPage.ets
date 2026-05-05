@@ -1,12 +1,13 @@
 import { common } from '@kit.AbilityKit'
 import { promptAction } from '@kit.ArkUI'
-import { DateUtils, DraftSettings, MarkdownContent, ThemeConstants } from 'shared'
+import { DateUtils, DraftSettings, MarkdownContent, StorageKeys, ThemeConstants } from 'shared'
 
 @Component
 export struct ReplyEditorPage {
   @Prop topicId: number = 0
   @Prop topicTitle: string = ''
   @Consume('ns') stack: NavPathStack
+  @StorageLink(StorageKeys.ACCOUNT_WRITE_ENABLED) writeEnabled: boolean = false
 
   @State private content: string = ''
   @State private isPreview: boolean = false
@@ -118,12 +119,18 @@ export struct ReplyEditorPage {
           .fontColor($r('sys.color.font_secondary'))
       }
 
+      if (!this.writeEnabled) {
+        Text('写入操作开关未开启，提交能力不会启用。')
+          .fontSize(ThemeConstants.FONT_SIZE_TINY)
+          .fontColor($r('sys.color.font_secondary'))
+      }
+
       Row({ space: ThemeConstants.SPACE_SM }) {
         Button('返回')
           .fontSize(ThemeConstants.FONT_SIZE_TAG)
           .height(40)
           .onClick(() => { this.stack.pop() })
-        Button('提交（未开放）')
+        Button(this.writeEnabled ? '提交（未开放）' : '提交（需开启写入开关）')
           .fontSize(ThemeConstants.FONT_SIZE_TAG)
           .height(40)
           .enabled(false)
