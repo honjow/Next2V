@@ -5,10 +5,10 @@ import {
 import { common } from '@kit.AbilityKit'
 import {
   ApiDomainSettings, HttpClient, ThemeConstants, StorageKeys, ApiConstants, TabItem,
-  AuthSettings, ApiService, DateUtils, CollectionSettings, TopicDetailParams, CacheSettings
+  AuthSettings, ApiService, DateUtils, CollectionSettings, TopicDetailParams, NodeTopicListParams, CacheSettings
 }
   from 'shared'
-import type { V2exAuthenticatedMember, V2exNotification, SavedTopic, CacheStats } from 'shared'
+import type { V2exAuthenticatedMember, V2exNotification, SavedTopic, SavedNode, CacheStats } from 'shared'
 import { HomePage } from 'feed'
 import { TopicDetailPage } from 'detail'
 import { DiscoverPage, NodeTopicPage } from 'node'
@@ -67,6 +67,7 @@ struct Index {
   @State private isAuthLoading: boolean = false
   @State private notifications: V2exNotification[] = []
   @State private savedTopics: SavedTopic[] = []
+  @State private savedNodes: SavedNode[] = []
   @State private cacheStats: CacheStats = { topicListCount: 0, topicDetailCount: 0, updatedAt: 0 }
   @State private cacheMessage: string = ''
   @State private notificationError: string = ''
@@ -77,6 +78,7 @@ struct Index {
   aboutToAppear(): void {
     this.loadAuthSnapshot()
     this.loadSavedTopics()
+    this.loadSavedNodes()
     this.loadCacheStats()
   }
 
@@ -115,6 +117,7 @@ struct Index {
             this.loadNotifications()
           } else if (i === 3) {
             this.loadSavedTopics()
+            this.loadSavedNodes()
             this.loadCacheStats()
           }
         })
@@ -214,6 +217,11 @@ struct Index {
 
         ListItem() {
           this.SavedTopicsCard()
+        }
+          .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, top: ThemeConstants.SPACE_SM })
+
+        ListItem() {
+          this.SavedNodesCard()
         }
           .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, top: ThemeConstants.SPACE_SM })
 
@@ -364,6 +372,58 @@ struct Index {
             this.ns.pushPathByName('TopicDetail', p as Object)
           })
         }, (item: SavedTopic) => item.id.toString())
+      }
+    }
+    .padding(ThemeConstants.SPACE_LG)
+    .width('100%')
+    .alignItems(HorizontalAlign.Start)
+    .borderRadius(ThemeConstants.RADIUS_MD)
+    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+  }
+
+  @Builder SavedNodesCard() {
+    Column({ space: ThemeConstants.SPACE_SM }) {
+      Row() {
+        Text('关注节点')
+          .fontSize(ThemeConstants.FONT_SIZE_BODY)
+          .fontWeight(FontWeight.Medium)
+          .fontColor($r('sys.color.font_primary'))
+        Blank()
+        Text(`${this.savedNodes.length}`)
+          .fontSize(ThemeConstants.FONT_SIZE_TAG)
+          .fontColor($r('sys.color.font_secondary'))
+      }
+      .width('100%')
+      if (this.savedNodes.length === 0) {
+        Text('在节点主题页关注后会显示在这里')
+          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+          .fontColor($r('sys.color.font_secondary'))
+      } else {
+        ForEach(this.savedNodes.slice(0, 4), (item: SavedNode) => {
+          Row() {
+            Column({ space: ThemeConstants.SPACE_XS }) {
+              Text(item.title)
+                .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+                .fontColor($r('sys.color.font_primary'))
+                .maxLines(1)
+                .textOverflow({ overflow: TextOverflow.Ellipsis })
+              Text(item.name)
+                .fontSize(ThemeConstants.FONT_SIZE_TINY)
+                .fontColor($r('sys.color.font_secondary'))
+            }
+            .layoutWeight(1)
+            .alignItems(HorizontalAlign.Start)
+            Text(DateUtils.toDateString(item.savedAt))
+              .fontSize(ThemeConstants.FONT_SIZE_TINY)
+              .fontColor($r('sys.color.font_secondary'))
+          }
+          .width('100%')
+          .padding({ top: ThemeConstants.SPACE_XS, bottom: ThemeConstants.SPACE_XS })
+          .onClick(() => {
+            let p: NodeTopicListParams = { nodeName: item.name, nodeTitle: item.title }
+            this.ns.pushPathByName('NodeTopicList', p as Object)
+          })
+        }, (item: SavedNode) => item.name)
       }
     }
     .padding(ThemeConstants.SPACE_LG)
@@ -584,6 +644,17 @@ struct Index {
       })
       .catch((error: Error) => {
         console.error('load saved topics failed: ' + error.message)
+      })
+  }
+
+  private loadSavedNodes(): void {
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    CollectionSettings.loadSavedNodes(context)
+      .then((items: SavedNode[]) => {
+        this.savedNodes = items
+      })
+      .catch((error: Error) => {
+        console.error('load saved nodes failed: ' + error.message)
       })
   }
 
