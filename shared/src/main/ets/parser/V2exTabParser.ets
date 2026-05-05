@@ -5,12 +5,20 @@
 export class V2exTabParser {
   /**
    * 从 HTML 中提取主题 ID 列表
-   * 匹配 <a href="/t/123456"> 格式，Set 去重
+   * 优先匹配主列表里的 topic-link，避免右栏热门主题污染不同 tab 的结果。
    */
   static extractTopicIds(html: string): number[] {
     const ids: Set<number> = new Set()
-    const regex = /\/t\/(\d+)/g
+    const topicLinkRegex = /id=["']topic-link-(\d+)["']/g
     let match: RegExpExecArray | null
+    while ((match = topicLinkRegex.exec(html)) !== null) {
+      ids.add(parseInt(match[1], 10))
+    }
+    if (ids.size > 0) {
+      return Array.from(ids)
+    }
+
+    const regex = /\/t\/(\d+)/g
     while ((match = regex.exec(html)) !== null) {
       ids.add(parseInt(match[1], 10))
     }
