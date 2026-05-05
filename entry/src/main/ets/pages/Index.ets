@@ -407,11 +407,11 @@ struct Index {
           .height(40)
           .enabled(!this.isAuthLoading)
           .onClick(() => { this.verifyAndSaveToken() })
-        if (this.authTokenConfigured) {
+        if (this.authTokenConfigured || this.authCookieConfigured) {
           Button('退出')
             .fontSize(ThemeConstants.FONT_SIZE_TAG)
             .height(40)
-            .onClick(() => { this.clearAuth() })
+            .onClick(() => { this.logoutAll() })
         }
       }
     }
@@ -761,6 +761,27 @@ struct Index {
       })
       .catch((error: Error) => {
         this.authError = error.message
+      })
+  }
+
+  private logoutAll(): void {
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    this.isAuthLoading = false
+    this.isSessionValidating = false
+    this.authError = ''
+    this.sessionError = ''
+
+    Promise.all([
+      AuthSettings.clear(context).catch((error: Error) => { this.authError = error.message || '清除 Token 失败' }),
+      AuthSessionSettings.clear(context).catch((error: Error) => { this.sessionError = error.message || '清除会话失败' }),
+      CookieJarSettings.clear(context).catch((error: Error) => { this.sessionError = error.message || '清除 Cookie 失败' })
+    ])
+      .finally(() => {
+        this.authToken = ''
+        this.tokenDraft = ''
+        this.authProfile = null
+        this.notifications = []
+        this.notificationError = ''
       })
   }
 
