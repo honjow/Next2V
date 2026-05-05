@@ -49,6 +49,13 @@ export class ApiV2Service {
     )
   }
 
+  async getTopic(token: string, topicId: number): Promise<ApiV2Response<V2exTopic>> {
+    if (topicId <= 0) {
+      throw new Error('无效的主题 ID')
+    }
+    return this.get<V2exTopic>(`${ApiConstants.API_V2_TOPIC}/${topicId}`, token)
+  }
+
   async get<T>(endpoint: string, token: string): Promise<ApiV2Response<T>> {
     return this.request<T>(endpoint, http.RequestMethod.GET, token)
   }

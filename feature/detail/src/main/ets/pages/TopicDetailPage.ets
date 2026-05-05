@@ -2,7 +2,7 @@ import { DetailViewModel } from '../viewmodel/DetailViewModel'
 import { common } from '@kit.AbilityKit'
 import {
   V2exReply, Avatar, ReplyCard, TimeAgo, PullRefresh, ThemeConstants, MarkdownContent,
-  NodeTopicListParams, UserProfileParams, CollectionSettings, CacheSettings, V2exTopic
+  NodeTopicListParams, UserProfileParams, CollectionSettings, CacheSettings, V2exTopic, AuthSettings
 } from 'shared'
 
 @Component
@@ -23,7 +23,16 @@ export struct TopicDetailPage {
       (topic: V2exTopic | null, replies: V2exReply[]) => CacheSettings.saveTopicDetail(context, this.topicId, topic, replies)
     )
     this.v.loadCachedData()
-    this.v.load().then(() => { this.recordViewedTopic() })
+    AuthSettings.load(context)
+      .then((snapshot) => {
+        this.v.setToken(snapshot.token || '')
+      })
+      .catch((_error: Error) => {
+        this.v.setToken('')
+      })
+      .finally(() => {
+        this.v.load().then(() => { this.recordViewedTopic() })
+      })
     this.loadSavedState()
   }
 

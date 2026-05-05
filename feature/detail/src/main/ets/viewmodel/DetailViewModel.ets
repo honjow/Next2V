@@ -1,4 +1,4 @@
-import { V2exTopic, V2exReply, ApiService, TopicDetailCache } from 'shared'
+import { V2exTopic, V2exReply, ApiService, ApiV2Service, TopicDetailCache } from 'shared'
 import { ReplyDataSource } from '../model/DetailModels'
 
 /**
@@ -13,11 +13,17 @@ export class DetailViewModel {
   topicId: number = 0
 
   private api: ApiService = new ApiService()
+  private apiV2: ApiV2Service = new ApiV2Service()
+  private authToken: string = ''
   private cacheLoader: (() => Promise<TopicDetailCache | null>) | null = null
   private cacheSaver: ((topic: V2exTopic | null, replies: V2exReply[]) => Promise<void>) | null = null
 
   constructor(topicId: number) {
     this.topicId = topicId
+  }
+
+  setToken(token: string): void {
+    this.authToken = token.trim()
   }
 
   setCacheHandlers(
@@ -52,17 +58,21 @@ export class DetailViewModel {
     this.isLoading = true
     this.errorMessage = ''
     try {
-      const results = await Promise.all([
-        this.api.getTopicById(this.topicId),
-        this.api.getReplies(this.topicId)
-      ])
-      const topics = results[0] as V2exTopic[]
-      const replies = results[1] as V2exReply[]
-      if (topics.length > 0) {
-        this.topic = topics[0]
+      let topic: V2exTopic | null = null
+      if (this.authToken) {
+        const res = await this.apiV2.getTopic(this.authToken, this.topicId)
+        topic = res.data
+      } else {
+        const topics = await this.api.getTopicById(this.topicId)
+        if (topics.length > 0) {
+          topic = topics[0]
+        }
       }
+
+      const replies = await this.api.getReplies(this.topicId)
+      this.topic = topic
       this.replyDataSource.setData(replies)
-      await this.saveCache(this.topic, replies)
+      await this.saveCache(topic, replies)
     } catch (error) {
       const e = error as Error
       this.errorMessage = e.message || '加载失败'
