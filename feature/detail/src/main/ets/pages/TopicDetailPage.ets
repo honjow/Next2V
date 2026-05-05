@@ -20,6 +20,18 @@ export struct TopicDetailPage {
   private scroller: Scroller = new Scroller()
   @State listScrollEnabled: boolean = true
   @State isSavedLater: boolean = false
+  @State private jumpFloorText: string = ''
+  private jumpFloorDialogController: CustomDialogController | null = new CustomDialogController({
+    builder: JumpToFloorDialog({
+      floorText: $jumpFloorText,
+      cancel: () => { },
+      confirm: (value: string) => { this.handleJumpToFloor(value) }
+    }),
+    autoCancel: true,
+    alignment: DialogAlignment.Center,
+    customStyle: false,
+    cornerRadius: ThemeConstants.RADIUS_MD
+  })
   private lastReadFloor: number = 0
   private hasRestoredReadPosition: boolean = false
 
@@ -27,6 +39,7 @@ export struct TopicDetailPage {
     this.v = new DetailViewModel(this.topicId)
     this.lastReadFloor = 0
     this.hasRestoredReadPosition = false
+    this.jumpFloorText = ''
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     this.v.setCacheHandlers(
       () => CacheSettings.loadTopicDetail(context, this.topicId),
@@ -287,6 +300,13 @@ export struct TopicDetailPage {
         .borderRadius(ThemeConstants.RADIUS_SM)
         .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
         .onClick(() => { this.toggleOnlyOp() })
+      Text('楼层')
+        .fontSize(ThemeConstants.FONT_SIZE_TAG)
+        .fontColor($r('sys.color.font_secondary'))
+        .padding({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM, top: 2, bottom: 2 })
+        .borderRadius(ThemeConstants.RADIUS_SM)
+        .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+        .onClick(() => { this.openJumpToFloorDialog() })
       Text('顶部')
         .fontSize(ThemeConstants.FONT_SIZE_TAG)
         .fontColor($r('sys.color.font_secondary'))
@@ -339,6 +359,42 @@ export struct TopicDetailPage {
   private getFloorForReply(replyId: number, index: number): number {
     const floor = this.v.getReplyFloor(replyId)
     return floor > 0 ? floor : (index + 1)
+  }
+
+  private openJumpToFloorDialog(): void {
+    if (this.v.topic === null) {
+      return
+    }
+    this.jumpFloorText = ''
+    this.jumpFloorDialogController?.open()
+  }
+
+  private handleJumpToFloor(value: string): void {
+    const raw = (value || '').trim()
+    const floor = parseInt(raw, 10)
+    if (!raw || isNaN(floor) || floor <= 0) {
+      promptAction.openToast({ message: '请输入有效楼层号' }).catch((_error: Error) => { })
+      return
+    }
+    const maxFloor = this.v.topic !== null ? this.v.topic!.replies : 0
+    const targetFloor = maxFloor > 0 && floor > maxFloor ? maxFloor : floor
+    this.ensureRepliesLoaded(targetFloor)
+      .then(() => {
+        const loaded = this.v.replyDataSource.totalCount()
+        if (loaded <= 0) {
+          return
+        }
+        const safeFloor = targetFloor <= loaded ? targetFloor : loaded
+        const listIndex = 2 + safeFloor
+        try {
+          this.scroller.scrollToIndex(listIndex)
+        } catch (_e) {
+          // ignore
+        }
+      })
+      .catch((_error: Error) => {
+        // ignore
+      })
   }
 
   private updateReadFloor(centerIndex: number): void {
@@ -524,5 +580,53 @@ export struct TopicDetailPage {
       }
     }
     return `${baseUrl}/t/${this.topicId}`
+  }
+}
+
+@CustomDialog
+struct JumpToFloorDialog {
+  controller?: CustomDialogController
+  @Link floorText: string
+  cancel: () => void = () => { }
+  confirm: (value: string) => void = (_value: string) => { }
+
+  build() {
+    Column({ space: ThemeConstants.SPACE_MD }) {
+      Text('跳转楼层')
+        .fontSize(ThemeConstants.FONT_SIZE_BODY)
+        .fontWeight(FontWeight.Medium)
+        .fontColor($r('sys.color.font_primary'))
+      TextInput({ placeholder: '输入楼层号', text: this.floorText })
+        .type(InputType.Number)
+        .fontSize(ThemeConstants.FONT_SIZE_BODY)
+        .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
+        .borderRadius(ThemeConstants.RADIUS_MD)
+        .onChange((value: string) => { this.floorText = value })
+      Row({ space: ThemeConstants.SPACE_SM }) {
+        Button('取消')
+          .layoutWeight(1)
+          .height(40)
+          .onClick(() => {
+            if (this.controller != undefined) {
+              this.controller.close()
+            }
+            this.cancel()
+          })
+        Button('跳转')
+          .layoutWeight(1)
+          .height(40)
+          .onClick(() => {
+            const value = this.floorText
+            if (this.controller != undefined) {
+              this.controller.close()
+            }
+            this.confirm(value)
+          })
+      }
+    }
+    .padding(ThemeConstants.SPACE_LG)
+    .borderRadius(ThemeConstants.RADIUS_MD)
+    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+    .width('100%')
   }
 }
