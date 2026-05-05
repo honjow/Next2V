@@ -15,6 +15,7 @@ import { TopicDetailPage } from 'detail'
 import { DiscoverPage, NodeTopicPage } from 'node'
 import { UserProfilePage } from 'user'
 import { ComponentContent } from '@kit.ArkUI'
+import { V2exWebLoginPage } from './V2exWebLoginPage'
 
 @Component
 struct FeedPills {
@@ -96,6 +97,9 @@ struct Index {
       }.titleBar(this.navDestTitleBarOpts())
     } else if (name === 'UserProfile') {
       HdsNavDestination() { UserProfilePage({ username: (param as Record<string, Object>)['username'] as string }) }
+        .titleBar(this.navDestTitleBarOpts())
+    } else if (name === 'V2exWebLogin') {
+      HdsNavDestination() { V2exWebLoginPage() }
         .titleBar(this.navDestTitleBarOpts())
     }
   }
@@ -318,6 +322,10 @@ struct Index {
           .fontWeight(FontWeight.Medium)
           .fontColor($r('sys.color.font_primary'))
       }
+      Button('网页登录（推荐）')
+        .fontSize(ThemeConstants.FONT_SIZE_TAG)
+        .height(40)
+        .onClick(() => { this.ns.pushPathByName('V2exWebLogin', null) })
       TextInput({ placeholder: 'Personal Access Token', text: this.tokenDraft })
         .height(44)
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
