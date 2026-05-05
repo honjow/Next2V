@@ -36,6 +36,8 @@ export type { AuthLoginMode, AuthSessionSnapshot } from './settings/AuthSessionS
 export { MediaSettings } from './settings/MediaSettings'
 export { CollectionSettings } from './settings/CollectionSettings'
 export type { SavedNode, SavedTopic, ViewedTopic, TopicReadPosition, TopicReadState } from './settings/CollectionSettings'
+export { DraftSettings } from './settings/DraftSettings'
+export type { ReplyDraft } from './settings/DraftSettings'
 export { CacheSettings }
   from './settings/CacheSettings'
 export type { CacheStats, TopicDetailCache } from './settings/CacheSettings'
