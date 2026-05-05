@@ -32,7 +32,7 @@ export struct PullRefresh {
 
   private bounceBack(target: number = 0): void {
     this.onScrollEnableChange(true)
-    animateTo({ duration: ThemeConstants.ANIM_DURATION, curve: Curve.EaseOut }, () => {
+    this.getUIContext().animateTo({ duration: ThemeConstants.ANIM_DURATION, curve: Curve.EaseOut }, () => {
       this.pullOffset = target
     })
     if (target === 0) {
@@ -46,7 +46,7 @@ export struct PullRefresh {
   private onPullEnd(): void {
     if (this.pullOffset >= this.threshold && this.refreshState !== 2) {
       this.onScrollEnableChange(true)
-      animateTo({ duration: ThemeConstants.ANIM_DURATION, curve: Curve.EaseOut }, () => {
+      this.getUIContext().animateTo({ duration: ThemeConstants.ANIM_DURATION, curve: Curve.EaseOut }, () => {
         this.pullOffset = ThemeConstants.TITLE_BAR_HEIGHT
       })
       this.refreshState = 2
