@@ -2,11 +2,47 @@ import {
   HdsNavigation, HdsNavDestination, HdsTabs, HdsTabsController, HdsTabsFloatingStyle,
   hdsMaterial, HdsNavigationTitleMode, ScrollEffectType, BlurStrategy
 } from '@kit.UIDesignKit'
-import { HttpClient, ThemeConstants, StorageKeys } from 'shared'
+import { HttpClient, ThemeConstants, StorageKeys, ApiConstants, TabItem } from 'shared'
 import { HomePage } from 'feed'
 import { TopicDetailPage } from 'detail'
 import { DiscoverPage, NodeTopicPage } from 'node'
 import { UserProfilePage } from 'user'
+import { ComponentContent } from '@kit.ArkUI'
+
+@Component
+struct FeedPills {
+  @StorageLink('feedTab') feedTab: string = 'tech'
+
+  build() {
+    Scroll() {
+      Row({ space: ThemeConstants.SPACE_XS }) {
+        ForEach(ApiConstants.TAB_ITEMS, (tab: TabItem) => {
+          Column({ space: 2 }) {
+            Text(tab.label)
+              .fontSize(ThemeConstants.FONT_SIZE_BODY)
+              .fontColor(this.feedTab === tab.key ? ThemeConstants.BRAND_PRIMARY : ThemeConstants.TEXT_SECONDARY)
+              .fontWeight(this.feedTab === tab.key ? FontWeight.Medium : FontWeight.Regular)
+              .padding({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, top: ThemeConstants.SPACE_SM })
+            if (this.feedTab === tab.key) {
+              Divider().strokeWidth(2).color(ThemeConstants.BRAND_PRIMARY).width(18)
+            }
+          }
+          .alignItems(HorizontalAlign.Center)
+          .padding({ bottom: ThemeConstants.SPACE_XS })
+          .onClick(() => { this.feedTab = tab.key })
+        })
+      }
+      .padding({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM })
+      .alignItems(VerticalAlign.Center).height('100%')
+    }
+    .scrollBar(BarState.Off)
+    .scrollable(ScrollDirection.Horizontal)
+    .width('100%').height('100%')
+  }
+}
+
+@Builder
+function PillCCBuilder() { FeedPills() }
 
 @Entry
 @Component
@@ -67,7 +103,9 @@ struct Index {
 
   private titleBarOptions(): Record<string, Object> {
     let titleInfo: Record<string, Object> = { 'mainTitle': this.tabTitles[this.ct] }
-    let content: Record<string, Object> = { 'title': titleInfo }
+    let cc = new ComponentContent(this.getUIContext(), wrapBuilder(PillCCBuilder))
+    let bb: Record<string, Object> = { 'builderComponent': cc, 'height': ApiConstants.TAB_BAR_HEIGHT, 'showType': 0 }
+    let content: Record<string, Object> = { 'title': titleInfo, 'bottomBuilder': bb }
     let mat: Record<string, Object> = { 'materialType': hdsMaterial.MaterialType.ADAPTIVE, 'materialLevel': hdsMaterial.MaterialLevel.ADAPTIVE }
     let scrollOpts: Record<string, Object> = { 'enableScrollEffect': true, 'scrollEffectType': ScrollEffectType.GRADIENT_BLUR }
     let style: Record<string, Object> = { 'systemMaterialEffect': mat, 'scrollEffectOpts': scrollOpts }
