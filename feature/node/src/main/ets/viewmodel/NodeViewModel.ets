@@ -43,6 +43,10 @@ export class NodeViewModel {
   nodeTopics: V2exTopic[] = []
   nodeDetail: V2exNode | null = null
   nodeDetailError: string = ''
+  nodeTopicsUseV2: boolean = false
+  nodeTopicsPage: number = 1
+  nodeTopicsHasMore: boolean = true
+  isNodeTopicsLoadingMore: boolean = false
   isLoading: boolean = false
   keyword: string = ''
   errorMessage: string = ''
@@ -51,6 +55,7 @@ export class NodeViewModel {
 
   private api: ApiService = new ApiService()
   private apiV2: ApiV2Service = new ApiV2Service()
+  private readonly V2_PAGE_SIZE: number = 20
 
   /** 加载所有节点 */
   async loadAllNodes(): Promise<void> {
@@ -90,6 +95,9 @@ export class NodeViewModel {
   async loadNodeTopics(nodeName: string): Promise<void> {
     this.isLoading = true
     this.errorMessage = ''
+    this.nodeTopicsUseV2 = false
+    this.nodeTopicsPage = 1
+    this.nodeTopicsHasMore = false
     try {
       this.nodeTopics = await this.api.getTopicsByNode(nodeName)
     } catch (error) {
@@ -115,6 +123,47 @@ export class NodeViewModel {
     } catch (error) {
       this.nodeDetail = null
       this.nodeDetailError = error.message || '节点信息加载失败'
+    }
+  }
+
+  /** 加载指定节点下的主题（API v2，支持分页，需要 Token） */
+  async loadNodeTopicsV2(nodeName: string, token: string): Promise<void> {
+    this.isLoading = true
+    this.errorMessage = ''
+    this.nodeTopicsUseV2 = true
+    this.nodeTopicsPage = 1
+    this.nodeTopicsHasMore = true
+    try {
+      const res = await this.apiV2.getNodeTopics(token, nodeName, 1)
+      const items = res.data || []
+      this.nodeTopics = items
+      this.nodeTopicsHasMore = items.length >= this.V2_PAGE_SIZE
+    } catch (error) {
+      this.errorMessage = error.message || '节点主题加载失败'
+    } finally {
+      this.isLoading = false
+    }
+  }
+
+  async loadMoreNodeTopicsV2(nodeName: string, token: string): Promise<void> {
+    if (!this.nodeTopicsUseV2 || this.isNodeTopicsLoadingMore || !this.nodeTopicsHasMore) {
+      return
+    }
+    const nextPage = this.nodeTopicsPage + 1
+    this.isNodeTopicsLoadingMore = true
+    try {
+      const res = await this.apiV2.getNodeTopics(token, nodeName, nextPage)
+      const items = res.data || []
+      const merged = this.nodeTopics.slice()
+      merged.push(...items)
+      this.nodeTopics = merged
+      this.nodeTopicsPage = nextPage
+      this.nodeTopicsHasMore = items.length >= this.V2_PAGE_SIZE
+    } catch (error) {
+      this.errorMessage = error.message || '加载更多失败'
+      this.nodeTopicsHasMore = false
+    } finally {
+      this.isNodeTopicsLoadingMore = false
     }
   }
 }

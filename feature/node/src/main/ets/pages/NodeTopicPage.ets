@@ -1,7 +1,7 @@
 import { NodeViewModel } from '../viewmodel/NodeViewModel'
 import {
   V2exTopic, TopicCard, ThemeConstants, TopicDetailParams, StorageKeys, UserProfileParams,
-  CollectionSettings, SavedNode, AuthSettings
+  CollectionSettings, SavedNode, AuthSettings, LoadingFooter
 } from 'shared'
 import { common } from '@kit.AbilityKit'
 
@@ -13,11 +13,11 @@ export struct NodeTopicPage {
   @State vm: NodeViewModel = new NodeViewModel()
   @StorageProp('topAvoidHeight') topH: number = 0
   @State private isNodeSaved: boolean = false
+  @State private token: string = ''
   private readonly GAP: number = ThemeConstants.SPACE_SM
 
   aboutToAppear(): void {
-    this.vm.loadNodeTopics(this.nodeName)
-    this.loadNodeDetailV2()
+    this.loadData()
     this.loadSavedState()
   }
 
@@ -48,7 +48,17 @@ export struct NodeTopicPage {
                 this.stack.pushPathByName('TopicDetail', p as Object)
               })
           })
+          if (this.vm.nodeTopicsUseV2) {
+            ListItem() {
+              LoadingFooter({ isLoading: this.vm.isNodeTopicsLoadingMore, hasMore: this.vm.nodeTopicsHasMore })
+            }
+          }
         }
+          .onReachEnd(() => {
+            if (this.vm.nodeTopicsUseV2 && this.token) {
+              this.vm.loadMoreNodeTopicsV2(this.nodeName, this.token)
+            }
+          })
           .scrollBar(BarState.Off)
           .padding({ left: this.GAP, right: this.GAP })
           .width('100%').height('100%')
@@ -104,7 +114,7 @@ export struct NodeTopicPage {
       Button('重试')
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
         .margin({ top: ThemeConstants.SPACE_LG })
-        .onClick(() => { this.vm.loadNodeTopics(this.nodeName) })
+        .onClick(() => { this.loadData() })
     }
     .justifyContent(FlexAlign.Center)
     .width('100%')
@@ -122,14 +132,21 @@ export struct NodeTopicPage {
       })
   }
 
-  private loadNodeDetailV2(): void {
+  private loadData(): void {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     AuthSettings.load(context)
       .then((snapshot) => {
-        return this.vm.loadNodeDetailV2(this.nodeName, snapshot.token || '')
+        this.token = snapshot.token || ''
+        this.vm.loadNodeDetailV2(this.nodeName, this.token)
+        if (this.token) {
+          return this.vm.loadNodeTopicsV2(this.nodeName, this.token)
+        }
+        return this.vm.loadNodeTopics(this.nodeName)
       })
       .catch((error: Error) => {
-        this.vm.nodeDetailError = error.message || '节点信息加载失败'
+        this.token = ''
+        this.vm.nodeDetailError = error.message || '读取 Token 失败'
+        this.vm.loadNodeTopics(this.nodeName)
       })
   }
 

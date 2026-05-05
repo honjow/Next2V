@@ -1,7 +1,7 @@
 import { http } from '@kit.NetworkKit'
 import { HttpClient } from './HttpClient'
 import { ApiConstants } from '../constants/ApiConstants'
-import type { V2exNode } from './NetworkTypes'
+import type { V2exNode, V2exTopic } from './NetworkTypes'
 
 const MAX_RETRIES: number = 3
 const CONNECT_TIMEOUT_MS: number = 10000
@@ -35,6 +35,18 @@ export class ApiV2Service {
       throw new Error('节点名称不能为空')
     }
     return this.get<V2exNode>(`${ApiConstants.API_V2_NODE}/${encodeURIComponent(cleanName)}`, token)
+  }
+
+  async getNodeTopics(token: string, nodeName: string, page: number = 1): Promise<ApiV2Response<V2exTopic[]>> {
+    const cleanName = nodeName.trim()
+    if (!cleanName) {
+      throw new Error('节点名称不能为空')
+    }
+    const cleanPage = page > 0 ? page : 1
+    return this.get<V2exTopic[]>(
+      `${ApiConstants.API_V2_NODE}/${encodeURIComponent(cleanName)}/topics?p=${cleanPage}`,
+      token
+    )
   }
 
   async get<T>(endpoint: string, token: string): Promise<ApiV2Response<T>> {
