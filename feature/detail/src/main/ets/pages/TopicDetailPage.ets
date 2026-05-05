@@ -20,9 +20,13 @@ export struct TopicDetailPage {
   private scroller: Scroller = new Scroller()
   @State listScrollEnabled: boolean = true
   @State isSavedLater: boolean = false
+  private lastReadFloor: number = 0
+  private hasRestoredReadPosition: boolean = false
 
   aboutToAppear(): void {
     this.v = new DetailViewModel(this.topicId)
+    this.lastReadFloor = 0
+    this.hasRestoredReadPosition = false
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     this.v.setCacheHandlers(
       () => CacheSettings.loadTopicDetail(context, this.topicId),
@@ -37,9 +41,16 @@ export struct TopicDetailPage {
         this.v.setToken('')
       })
       .finally(() => {
-        this.v.load().then(() => { this.recordViewedTopic() })
+        this.v.load().then(() => {
+          this.recordViewedTopic()
+          this.restoreReadPosition()
+        })
       })
     this.loadSavedState()
+  }
+
+  aboutToDisappear(): void {
+    this.persistReadPosition()
   }
 
   private openImagePreview(url: string): void {
@@ -147,6 +158,9 @@ export struct TopicDetailPage {
         ListItem() { Column() { Blank().height(ThemeConstants.SPACE_XL) } }
       }
       .enableScrollInteraction(this.listScrollEnabled)
+      .onScrollIndex((_start: number, _end: number, center: number) => {
+        this.updateReadFloor(center)
+      })
       .onReachEnd(() => {
         if (this.v.repliesUseV2) {
           this.v.loadMoreRepliesV2()
@@ -324,6 +338,75 @@ export struct TopicDetailPage {
   private getFloorForReply(replyId: number, index: number): number {
     const floor = this.v.getReplyFloor(replyId)
     return floor > 0 ? floor : (index + 1)
+  }
+
+  private updateReadFloor(centerIndex: number): void {
+    const replyIndex = centerIndex - 3
+    if (replyIndex < 0 || replyIndex >= this.v.replyDataSource.totalCount()) {
+      return
+    }
+    try {
+      const reply = this.v.replyDataSource.getData(replyIndex)
+      const floor = this.v.getReplyFloor(reply.id)
+      if (floor > 0) {
+        this.lastReadFloor = floor
+      }
+    } catch (_e) {
+      // ignore
+    }
+  }
+
+  private persistReadPosition(): void {
+    if (this.topicId <= 0 || this.lastReadFloor <= 0) {
+      return
+    }
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    CollectionSettings.saveTopicReadFloor(context, this.topicId, this.lastReadFloor)
+      .catch((error: Error) => {
+        console.error('save read position failed: ' + error.message)
+      })
+  }
+
+  private restoreReadPosition(): void {
+    if (this.hasRestoredReadPosition || this.topicId <= 0) {
+      return
+    }
+    this.hasRestoredReadPosition = true
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    CollectionSettings.getTopicReadFloor(context, this.topicId)
+      .then(async (floor: number) => {
+        if (floor <= 0) {
+          return
+        }
+        await this.ensureRepliesLoaded(floor)
+        const loaded = this.v.replyDataSource.totalCount()
+        if (loaded <= 0) {
+          return
+        }
+        const targetFloor = floor <= loaded ? floor : loaded
+        const listIndex = 2 + targetFloor
+        setTimeout(() => {
+          try {
+            this.scroller.scrollToIndex(listIndex)
+          } catch (_e) {
+            // ignore
+          }
+        }, 0)
+      })
+      .catch((_error: Error) => {
+        // ignore
+      })
+  }
+
+  private async ensureRepliesLoaded(targetFloor: number): Promise<void> {
+    if (targetFloor <= 0 || !this.v.repliesUseV2) {
+      return
+    }
+    let guard = 0
+    while (this.v.replyDataSource.totalCount() < targetFloor && this.v.repliesHasMore && guard < 20) {
+      guard++
+      await this.v.loadMoreRepliesV2()
+    }
   }
 
   private loadSavedState(): void {
