@@ -1,6 +1,6 @@
 import { UserViewModel } from '../viewmodel/UserViewModel'
 import {
-  V2exTopic, TopicCard, ThemeConstants, TopicDetailParams, StorageKeys
+  V2exTopic, TopicCard, ThemeConstants, TopicDetailParams, StorageKeys, NodeTopicListParams
 } from 'shared'
 
 @Component
@@ -29,7 +29,15 @@ export struct UserProfilePage {
           }
           ListItem() { Text('最近主题').fontSize(ThemeConstants.FONT_SIZE_BODY).fontColor($r('sys.color.font_secondary')).padding(ThemeConstants.SPACE_SM) }
           LazyForEach(this.vm.topicDataSource, (topic: V2exTopic) => {
-            ListItem() { TopicCard({ item: topic }) }
+            ListItem() {
+              TopicCard({
+                item: topic,
+                onNodeClick: () => {
+                  let p: NodeTopicListParams = { nodeName: topic.node.name, nodeTitle: topic.node.title }
+                  this.stack.pushPathByName('NodeTopicList', p as Object)
+                }
+              })
+            }
               .onClick(() => {
                 let p: TopicDetailParams = { topicId: topic.id }
                 this.stack.pushPathByName('TopicDetail', p as Object)

@@ -1,6 +1,7 @@
 import { DetailViewModel } from '../viewmodel/DetailViewModel'
 import {
-  V2exReply, Avatar, ReplyCard, TimeAgo, PullRefresh, ThemeConstants, MarkdownContent
+  V2exReply, Avatar, ReplyCard, TimeAgo, PullRefresh, ThemeConstants, MarkdownContent,
+  NodeTopicListParams, UserProfileParams
 } from 'shared'
 
 @Component
@@ -93,7 +94,11 @@ export struct TopicDetailPage {
             ReplyCard({
               reply: reply,
               floor: index + 1,
-              isOp: this.v.topic !== null && reply.member.id === this.v.topic!.member.id
+              isOp: this.v.topic !== null && reply.member.id === this.v.topic!.member.id,
+              onUserClick: () => {
+                let p: UserProfileParams = { username: reply.member.username }
+                this.stack.pushPathByName('UserProfile', p as Object)
+              }
             })
           }
         }, (reply: V2exReply) => reply.id.toString())
@@ -114,11 +119,19 @@ export struct TopicDetailPage {
     Column() {
       Row({ space: ThemeConstants.SPACE_SM }) {
         Avatar({ url: this.v.topic!.member.avatar_normal, avatarSize: ThemeConstants.AVATAR_SIZE_REPLY })
+          .onClick(() => {
+            let p: UserProfileParams = { username: this.v.topic!.member.username }
+            this.stack.pushPathByName('UserProfile', p as Object)
+          })
 
         Text(this.v.topic!.member.username)
           .fontSize(ThemeConstants.FONT_SIZE_META)
           .fontWeight(FontWeight.Medium)
           .fontColor($r('sys.color.font_primary'))
+          .onClick(() => {
+            let p: UserProfileParams = { username: this.v.topic!.member.username }
+            this.stack.pushPathByName('UserProfile', p as Object)
+          })
 
         Text('·')
           .fontSize(ThemeConstants.FONT_SIZE_META)
@@ -139,6 +152,13 @@ export struct TopicDetailPage {
           })
           .borderRadius(ThemeConstants.RADIUS_SM)
           .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+          .onClick(() => {
+            let p: NodeTopicListParams = {
+              nodeName: this.v.topic!.node.name,
+              nodeTitle: this.v.topic!.node.title
+            }
+            this.stack.pushPathByName('NodeTopicList', p as Object)
+          })
       }
       .width('100%')
       .alignItems(VerticalAlign.Center)

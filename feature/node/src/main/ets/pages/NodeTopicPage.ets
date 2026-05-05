@@ -1,6 +1,6 @@
 import { NodeViewModel } from '../viewmodel/NodeViewModel'
 import {
-  V2exTopic, TopicCard, ThemeConstants, TopicDetailParams, StorageKeys
+  V2exTopic, TopicCard, ThemeConstants, TopicDetailParams, StorageKeys, UserProfileParams
 } from 'shared'
 
 @Component
@@ -21,7 +21,15 @@ export struct NodeTopicPage {
         List({ space: ThemeConstants.SPACE_XS }) {
           ListItem() { Column() { Blank().height(this.topH + ThemeConstants.TITLE_BAR_HEIGHT) } }
           ForEach(this.vm.nodeTopics, (topic: V2exTopic) => {
-            ListItem() { TopicCard({ item: topic }) }
+            ListItem() {
+              TopicCard({
+                item: topic,
+                onUserClick: () => {
+                  let p: UserProfileParams = { username: topic.member.username }
+                  this.stack.pushPathByName('UserProfile', p as Object)
+                }
+              })
+            }
               .onClick(() => {
                 let p: TopicDetailParams = { topicId: topic.id }
                 this.stack.pushPathByName('TopicDetail', p as Object)

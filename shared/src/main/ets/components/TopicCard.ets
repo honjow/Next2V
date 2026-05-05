@@ -9,6 +9,7 @@ import { NodeTag } from './NodeTag'
 export struct TopicCard {
   @Prop item: V2exTopic
   onUserClick?: () => void
+  onNodeClick?: () => void
 
   build() {
     Column() {
@@ -18,7 +19,13 @@ export struct TopicCard {
             if (this.onUserClick) { this.onUserClick() }
           })
         UserName({ username: this.item.member.username, fontSize: ThemeConstants.FONT_SIZE_META })
+          .onClick(() => {
+            if (this.onUserClick) { this.onUserClick() }
+          })
         NodeTag({ nodeName: this.item.node.name, nodeTitle: this.item.node.title })
+          .onClick(() => {
+            if (this.onNodeClick) { this.onNodeClick() }
+          })
       }
       .width('100%')
       .alignItems(VerticalAlign.Center)

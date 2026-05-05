@@ -1,7 +1,8 @@
 import { FeedViewModel } from '../viewmodel/FeedViewModel'
 import {
   V2exTopic, TopicCard, LoadingFooter, TopicDetailParams, ThemeConstants,
-  StorageKeys, PullRefresh, ApiConstants, TabItem, ApiService
+  StorageKeys, PullRefresh, ApiConstants, TabItem, ApiService, NodeTopicListParams,
+  UserProfileParams
 } from 'shared'
 
 @Component
@@ -131,7 +132,19 @@ struct FeedListPage {
             ListItem() { Column() { Blank().height(this.topH + this.TBH + this.BB_H) } }
               .clip(false)
             LazyForEach(this.vm.dataSource, (item: V2exTopic) => {
-              ListItem() { TopicCard({ item: item }) }
+              ListItem() {
+                TopicCard({
+                  item: item,
+                  onUserClick: () => {
+                    let p: UserProfileParams = { username: item.member.username }
+                    this.ns.pushPathByName('UserProfile', p as Object)
+                  },
+                  onNodeClick: () => {
+                    let p: NodeTopicListParams = { nodeName: item.node.name, nodeTitle: item.node.title }
+                    this.ns.pushPathByName('NodeTopicList', p as Object)
+                  }
+                })
+              }
                 .onClick(() => {
                   let p: TopicDetailParams = { topicId: item.id }
                   this.ns.pushPathByName('TopicDetail', p as Object)

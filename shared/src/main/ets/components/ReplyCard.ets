@@ -2,23 +2,31 @@ import { V2exReply } from '../network/NetworkTypes'
 import { ThemeConstants } from '../theme/ThemeConstants'
 import { Avatar } from './Avatar'
 import { TimeAgo } from './TimeAgo'
+import { MarkdownContent } from './MarkdownContent'
 
 @Component
 export struct ReplyCard {
   @Prop reply: V2exReply
   @Prop floor: number = 1
   @Prop isOp: boolean = false
+  onUserClick?: () => void
 
   build() {
     Column() {
       // 头部：头像 + 用户名/OP/楼层 + 时间
       Row({ space: ThemeConstants.SPACE_SM }) {
         Avatar({ url: this.reply.member.avatar_mini, avatarSize: ThemeConstants.AVATAR_SIZE_REPLY })
+          .onClick(() => {
+            if (this.onUserClick) { this.onUserClick() }
+          })
 
         Text(this.reply.member.username)
           .fontSize(ThemeConstants.FONT_SIZE_META)
           .fontWeight(FontWeight.Medium)
           .fontColor($r('sys.color.font_primary'))
+          .onClick(() => {
+            if (this.onUserClick) { this.onUserClick() }
+          })
 
         if (this.isOp) {
           Text('OP')
@@ -43,13 +51,9 @@ export struct ReplyCard {
       .width('100%')
       .alignItems(VerticalAlign.Center)
 
-      // 回复内容
-      Text(this.reply.content)
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .fontColor($r('sys.color.font_primary'))
-        .lineHeight(ThemeConstants.LINE_HEIGHT_BODY + 2)
-        .width('100%')
-        .margin({ top: ThemeConstants.SPACE_SM })
+      if (this.reply.content) {
+        MarkdownContent({ source: this.reply.content, topMargin: ThemeConstants.SPACE_SM })
+      }
 
       // 底部：时间 + 感谢数
       Row() {

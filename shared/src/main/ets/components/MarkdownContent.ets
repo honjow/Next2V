@@ -417,6 +417,7 @@ function CodeSpanBuilder(tokenItem: Token, params: CustomInlineParams): void {
 @Component
 export struct MarkdownContent {
   @Prop source: string = "";
+  @Prop topMargin: number = ThemeConstants.SPACE_LG;
   @State private tokens: Token[] = [];
 
   aboutToAppear() {
@@ -499,6 +500,6 @@ export struct MarkdownContent {
       paddings: { left: 0, right: 0, top: 0, bottom: 0 },
     })
       .width("100%")
-      .margin({ top: ThemeConstants.SPACE_LG });
+      .margin({ top: this.topMargin });
   }
 }
