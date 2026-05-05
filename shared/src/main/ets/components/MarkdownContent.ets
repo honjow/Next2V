@@ -270,7 +270,9 @@ function CustomBlockBuilder(token: Token, options: MarkdownOptions) {
           (token as Tokens.Code).text,
         );
         pasteboard.getSystemPasteboard().setDataSync(data);
-        promptAction.showToast({ message: "已复制" });
+        promptAction.openToast({ message: "已复制" }).catch((error: Error) => {
+          console.error(`openToast failed: ${error.message}`);
+        });
       })
     }
     .width("100%")
