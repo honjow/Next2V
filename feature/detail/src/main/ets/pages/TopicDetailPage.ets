@@ -126,7 +126,7 @@ export struct TopicDetailPage {
           ListItem() {
             ReplyCard({
               reply: reply,
-              floor: index + 1,
+              floor: this.getFloorForReply(reply.id, index),
               isOp: this.v.topic !== null && reply.member.id === this.v.topic!.member.id,
               onUserClick: () => {
                 let p: UserProfileParams = { username: reply.member.username }
@@ -265,6 +265,13 @@ export struct TopicDetailPage {
           .fontColor($r('sys.color.font_secondary'))
       }
       Blank()
+      Text('只看楼主')
+        .fontSize(ThemeConstants.FONT_SIZE_TAG)
+        .fontColor(this.v.onlyOp ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.font_secondary'))
+        .padding({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM, top: 2, bottom: 2 })
+        .borderRadius(ThemeConstants.RADIUS_SM)
+        .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+        .onClick(() => { this.toggleOnlyOp() })
       Text('顶部')
         .fontSize(ThemeConstants.FONT_SIZE_TAG)
         .fontColor($r('sys.color.font_secondary'))
@@ -308,6 +315,15 @@ export struct TopicDetailPage {
     } catch (_e) {
       // ignore
     }
+  }
+
+  private toggleOnlyOp(): void {
+    this.v.setOnlyOp(!this.v.onlyOp)
+  }
+
+  private getFloorForReply(replyId: number, index: number): number {
+    const floor = this.v.getReplyFloor(replyId)
+    return floor > 0 ? floor : (index + 1)
   }
 
   private loadSavedState(): void {

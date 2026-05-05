@@ -9,6 +9,7 @@ export class DetailViewModel {
   topic: V2exTopic | null = null
   replyDataSource: ReplyDataSource = new ReplyDataSource()
   isLoading: boolean = false
+  onlyOp: boolean = false
   repliesUseV2: boolean = false
   repliesPage: number = 1
   repliesHasMore: boolean = false
@@ -27,6 +28,23 @@ export class DetailViewModel {
 
   constructor(topicId: number) {
     this.topicId = topicId
+  }
+
+  setOnlyOp(enabled: boolean): void {
+    this.onlyOp = enabled
+    this.replyDataSource.setData(this.getVisibleReplies())
+  }
+
+  getReplyFloor(replyId: number): number {
+    if (replyId <= 0) {
+      return 0
+    }
+    for (let i = 0; i < this.replies.length; i++) {
+      if (this.replies[i].id === replyId) {
+        return i + 1
+      }
+    }
+    return 0
   }
 
   setToken(token: string): void {
@@ -51,8 +69,8 @@ export class DetailViewModel {
         return
       }
       this.topic = cached.topic
-      this.replyDataSource.setData(cached.replies)
       this.replies = cached.replies
+      this.replyDataSource.setData(this.getVisibleReplies())
       this.repliesLoaded = cached.replies.length
     } catch (error) {
       console.error('load topic cache failed:', (error as Error).message)
@@ -91,8 +109,8 @@ export class DetailViewModel {
       }
 
       this.topic = topic
-      this.replyDataSource.setData(replies)
       this.replies = replies
+      this.replyDataSource.setData(this.getVisibleReplies())
       this.repliesLoaded = replies.length
       await this.saveCache(topic, replies)
     } catch (error) {
@@ -127,7 +145,15 @@ export class DetailViewModel {
       }
 
       this.replies = this.replies.concat(unique)
-      this.replyDataSource.appendData(unique)
+      if (this.onlyOp) {
+        const opId = this.topic ? this.topic.member.id : 0
+        const opUnique = opId > 0 ? unique.filter(reply => reply.member.id === opId) : unique
+        if (opUnique.length > 0) {
+          this.replyDataSource.appendData(opUnique)
+        }
+      } else {
+        this.replyDataSource.appendData(unique)
+      }
       this.repliesLoaded = this.replies.length
       this.repliesPage = nextPage
       this.repliesHasMore = items.length >= this.V2_REPLY_PAGE_SIZE
@@ -149,5 +175,16 @@ export class DetailViewModel {
     } catch (error) {
       console.error('save topic cache failed:', (error as Error).message)
     }
+  }
+
+  private getVisibleReplies(): V2exReply[] {
+    if (!this.onlyOp) {
+      return this.replies
+    }
+    const opId = this.topic ? this.topic.member.id : 0
+    if (opId <= 0) {
+      return this.replies
+    }
+    return this.replies.filter(reply => reply.member.id === opId)
   }
 }
