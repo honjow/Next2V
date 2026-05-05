@@ -44,6 +44,7 @@ export type {
 
 // 解析
 export { V2exTabParser } from './parser/V2exTabParser'
+export { V2exSessionParser } from './parser/V2exSessionParser'
 
 // 工具
 export { DateUtils } from './utils/DateUtils'

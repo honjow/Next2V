@@ -6,7 +6,7 @@ import { common } from '@kit.AbilityKit'
 import {
   ApiDomainSettings, HttpClient, ThemeConstants, StorageKeys, ApiConstants, TabItem,
   AuthSettings, ApiService, DateUtils, CollectionSettings, TopicDetailParams, NodeTopicListParams, CacheSettings,
-  CookieJarSettings, AuthSessionSettings
+  CookieJarSettings, AuthSessionSettings, V2exSessionParser
 }
   from 'shared'
 import type { V2exAuthenticatedMember, V2exNotification, SavedTopic, SavedNode, ViewedTopic, CacheStats } from 'shared'
@@ -61,11 +61,17 @@ struct Index {
   @State ct: number = 0
   @StorageLink(StorageKeys.USE_CO_DOMAIN) useCoDomain: boolean = false
   @StorageLink(StorageKeys.AUTH_TOKEN_CONFIGURED) authTokenConfigured: boolean = false
+  @StorageLink(StorageKeys.AUTH_COOKIE_CONFIGURED) authCookieConfigured: boolean = false
   @StorageLink(StorageKeys.AUTH_USERNAME) storedUsername: string = ''
+  @StorageLink(StorageKeys.AUTH_SESSION_USERNAME) sessionUsername: string = ''
+  @StorageLink(StorageKeys.AUTH_SESSION_AVATAR) sessionAvatar: string = ''
+  @StorageLink(StorageKeys.AUTH_SESSION_VALIDATED_AT) sessionValidatedAt: number = 0
   @State private authToken: string = ''
   @State private tokenDraft: string = ''
   @State private authProfile: V2exAuthenticatedMember | null = null
   @State private authError: string = ''
+  @State private sessionError: string = ''
+  @State private isSessionValidating: boolean = false
   @State private isAuthLoading: boolean = false
   @State private notifications: V2exNotification[] = []
   @State private savedTopics: SavedTopic[] = []
@@ -124,6 +130,7 @@ struct Index {
           if (i === 2) {
             this.loadNotifications()
           } else if (i === 3) {
+            this.validateCookieSession()
             this.loadSavedTopics()
             this.loadSavedNodes()
             this.loadViewedTopics()
@@ -295,12 +302,58 @@ struct Index {
 
   private loadSessionSnapshot(): void {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    CookieJarSettings.load(context).catch((error: Error) => {
-      console.error('restore cookie jar failed: ' + error.message)
-    })
+    CookieJarSettings.load(context)
+      .then(() => {
+        this.validateCookieSession()
+      })
+      .catch((error: Error) => {
+        console.error('restore cookie jar failed: ' + error.message)
+      })
     AuthSessionSettings.load(context).catch((error: Error) => {
       console.error('restore auth session failed: ' + error.message)
     })
+  }
+
+  private validateCookieSession(force: boolean = false): void {
+    if (this.isSessionValidating) {
+      return
+    }
+    const cookie = CookieJarSettings.getCurrentCookie()
+    if (!cookie) {
+      return
+    }
+    const now = Date.now()
+    if (!force && this.sessionValidatedAt > 0 && now - this.sessionValidatedAt < 10 * 60 * 1000) {
+      return
+    }
+
+    this.isSessionValidating = true
+    this.sessionError = ''
+
+    const headers: Record<string, string> = { 'Cookie': cookie }
+    this.http.getTextWithHeaders('/settings', headers)
+      .then((html: string) => {
+        const username = V2exSessionParser.extractUsername(html)
+        if (!username) {
+          throw new Error('Web 会话已失效，请重新登录')
+        }
+        return this.api.getMember(username)
+          .then((profile) => {
+            const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+            return AuthSessionSettings.save(context, {
+              loginMode: 'cookie',
+              username: username,
+              avatar: profile.avatar_normal || '',
+              validatedAt: Date.now()
+            })
+          })
+      })
+      .catch((error: Error) => {
+        this.sessionError = error.message || 'Web 会话验证失败'
+      })
+      .finally(() => {
+        this.isSessionValidating = false
+      })
   }
 
   @Builder AuthCard() {
@@ -311,16 +364,26 @@ struct Index {
           .fontWeight(FontWeight.Medium)
           .fontColor($r('sys.color.font_primary'))
         Blank()
-        Text(this.authTokenConfigured ? '已配置' : '未配置')
+        Text(this.authCookieConfigured ? 'Web 已登录' : (this.authTokenConfigured ? 'Token 已配置' : '未登录'))
           .fontSize(ThemeConstants.FONT_SIZE_TAG)
-          .fontColor(this.authTokenConfigured ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.font_secondary'))
+          .fontColor((this.authCookieConfigured || this.authTokenConfigured) ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.font_secondary'))
       }
       .width('100%')
-      if (this.authProfile || this.storedUsername) {
-        Text(this.authProfile?.username || this.storedUsername)
+      if (this.sessionUsername || this.authProfile || this.storedUsername) {
+        Text(this.sessionUsername || this.authProfile?.username || this.storedUsername)
           .fontSize(ThemeConstants.FONT_SIZE_HEADING)
           .fontWeight(FontWeight.Medium)
           .fontColor($r('sys.color.font_primary'))
+      }
+      if (this.authCookieConfigured && this.isSessionValidating) {
+        Text('Web 会话验证中…')
+          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+          .fontColor($r('sys.color.font_secondary'))
+      }
+      if (this.sessionError) {
+        Text(this.sessionError)
+          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+          .fontColor(Color.Red)
       }
       Button('网页登录（推荐）')
         .fontSize(ThemeConstants.FONT_SIZE_TAG)

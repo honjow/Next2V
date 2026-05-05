@@ -90,25 +90,37 @@ export class HttpClient {
     return this.requestText(endpoint, http.RequestMethod.GET)
   }
 
+  /** GET 请求获取纯文本（附带自定义 headers，例如 Cookie） */
+  async getTextWithHeaders(endpoint: string, headers: Record<string, string>): Promise<string> {
+    return this.requestText(endpoint, http.RequestMethod.GET, MAX_RETRIES, headers)
+  }
+
   /**
    * 纯文本请求，返回原始字符串（不执行 JSON.parse）
    */
   async requestText(
     endpoint: string,
     method?: http.RequestMethod,
-    retryCount: number = MAX_RETRIES
+    retryCount: number = MAX_RETRIES,
+    headers?: Record<string, string>
   ): Promise<string> {
     let httpRequest = http.createHttp()
     const url = `${this.baseUrl}${endpoint}`
     const reqMethod = method || http.RequestMethod.GET
+    let requestHeaders: Record<string, string> = {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Accept-Encoding': 'gzip'
+    }
+    if (headers) {
+      Object.keys(headers).forEach((key: string) => {
+        requestHeaders[key] = headers[key]
+      })
+    }
 
     try {
       const response = await httpRequest.request(url, {
         method: reqMethod,
-        header: {
-          'Content-Type': 'text/html; charset=utf-8',
-          'Accept-Encoding': 'gzip'
-        },
+        header: requestHeaders,
         connectTimeout: CONNECT_TIMEOUT_MS,
         readTimeout: READ_TIMEOUT_MS,
         usingCache: true
