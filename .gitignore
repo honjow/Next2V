@@ -9,3 +9,4 @@ scripts/xiaobai.p12
 scripts/xiaobai.csr
 *.hap
 *.signed.hap
+.env.local
