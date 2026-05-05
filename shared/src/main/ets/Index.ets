@@ -22,7 +22,7 @@ export { ApiDomainSettings } from './settings/ApiDomainSettings'
 export { AuthSettings } from './settings/AuthSettings'
 export type { AuthSnapshot } from './settings/AuthSettings'
 export { CollectionSettings } from './settings/CollectionSettings'
-export type { SavedNode, SavedTopic } from './settings/CollectionSettings'
+export type { SavedNode, SavedTopic, ViewedTopic } from './settings/CollectionSettings'
 export { CacheSettings }
   from './settings/CacheSettings'
 export type { CacheStats, TopicDetailCache } from './settings/CacheSettings'

@@ -8,7 +8,7 @@ import {
   AuthSettings, ApiService, DateUtils, CollectionSettings, TopicDetailParams, NodeTopicListParams, CacheSettings
 }
   from 'shared'
-import type { V2exAuthenticatedMember, V2exNotification, SavedTopic, SavedNode, CacheStats } from 'shared'
+import type { V2exAuthenticatedMember, V2exNotification, SavedTopic, SavedNode, ViewedTopic, CacheStats } from 'shared'
 import { HomePage } from 'feed'
 import { TopicDetailPage } from 'detail'
 import { DiscoverPage, NodeTopicPage } from 'node'
@@ -68,6 +68,7 @@ struct Index {
   @State private notifications: V2exNotification[] = []
   @State private savedTopics: SavedTopic[] = []
   @State private savedNodes: SavedNode[] = []
+  @State private viewedTopics: ViewedTopic[] = []
   @State private cacheStats: CacheStats = { topicListCount: 0, topicDetailCount: 0, updatedAt: 0 }
   @State private cacheMessage: string = ''
   @State private notificationError: string = ''
@@ -79,6 +80,7 @@ struct Index {
     this.loadAuthSnapshot()
     this.loadSavedTopics()
     this.loadSavedNodes()
+    this.loadViewedTopics()
     this.loadCacheStats()
   }
 
@@ -118,6 +120,7 @@ struct Index {
           } else if (i === 3) {
             this.loadSavedTopics()
             this.loadSavedNodes()
+            this.loadViewedTopics()
             this.loadCacheStats()
           }
         })
@@ -217,6 +220,11 @@ struct Index {
 
         ListItem() {
           this.SavedTopicsCard()
+        }
+          .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, top: ThemeConstants.SPACE_SM })
+
+        ListItem() {
+          this.ViewedTopicsCard()
         }
           .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, top: ThemeConstants.SPACE_SM })
 
@@ -424,6 +432,60 @@ struct Index {
             this.ns.pushPathByName('NodeTopicList', p as Object)
           })
         }, (item: SavedNode) => item.name)
+      }
+    }
+    .padding(ThemeConstants.SPACE_LG)
+    .width('100%')
+    .alignItems(HorizontalAlign.Start)
+    .borderRadius(ThemeConstants.RADIUS_MD)
+    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+  }
+
+  @Builder ViewedTopicsCard() {
+    Column({ space: ThemeConstants.SPACE_SM }) {
+      Row() {
+        Text('最近浏览')
+          .fontSize(ThemeConstants.FONT_SIZE_BODY)
+          .fontWeight(FontWeight.Medium)
+          .fontColor($r('sys.color.font_primary'))
+        Blank()
+        Text(`${this.viewedTopics.length}`)
+          .fontSize(ThemeConstants.FONT_SIZE_TAG)
+          .fontColor($r('sys.color.font_secondary'))
+      }
+      .width('100%')
+      if (this.viewedTopics.length === 0) {
+        Text('打开主题详情后会自动记录')
+          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+          .fontColor($r('sys.color.font_secondary'))
+      } else {
+        ForEach(this.viewedTopics.slice(0, 3), (item: ViewedTopic) => {
+          Column({ space: ThemeConstants.SPACE_XS }) {
+            Text(item.title)
+              .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+              .fontColor($r('sys.color.font_primary'))
+              .maxLines(2)
+              .textOverflow({ overflow: TextOverflow.Ellipsis })
+            Row({ space: ThemeConstants.SPACE_XS }) {
+              Text(item.nodeTitle)
+                .fontSize(ThemeConstants.FONT_SIZE_TINY)
+                .fontColor($r('sys.color.font_secondary'))
+              Text('·')
+                .fontSize(ThemeConstants.FONT_SIZE_TINY)
+                .fontColor($r('sys.color.font_secondary'))
+              Text(DateUtils.toDateString(item.viewedAt))
+                .fontSize(ThemeConstants.FONT_SIZE_TINY)
+                .fontColor($r('sys.color.font_secondary'))
+            }
+          }
+          .width('100%')
+          .alignItems(HorizontalAlign.Start)
+          .padding({ top: ThemeConstants.SPACE_XS, bottom: ThemeConstants.SPACE_XS })
+          .onClick(() => {
+            let p: TopicDetailParams = { topicId: item.id }
+            this.ns.pushPathByName('TopicDetail', p as Object)
+          })
+        }, (item: ViewedTopic) => item.id.toString())
       }
     }
     .padding(ThemeConstants.SPACE_LG)
@@ -655,6 +717,17 @@ struct Index {
       })
       .catch((error: Error) => {
         console.error('load saved nodes failed: ' + error.message)
+      })
+  }
+
+  private loadViewedTopics(): void {
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    CollectionSettings.loadViewedTopics(context)
+      .then((items: ViewedTopic[]) => {
+        this.viewedTopics = items
+      })
+      .catch((error: Error) => {
+        console.error('load viewed topics failed: ' + error.message)
       })
   }
 

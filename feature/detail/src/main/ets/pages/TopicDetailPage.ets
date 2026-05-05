@@ -23,7 +23,7 @@ export struct TopicDetailPage {
       (topic: V2exTopic | null, replies: V2exReply[]) => CacheSettings.saveTopicDetail(context, this.topicId, topic, replies)
     )
     this.v.loadCachedData()
-    this.v.load()
+    this.v.load().then(() => { this.recordViewedTopic() })
     this.loadSavedState()
   }
 
@@ -244,6 +244,17 @@ export struct TopicDetailPage {
       })
       .catch((error: Error) => {
         console.error('toggle saved topic failed: ' + error.message)
+      })
+  }
+
+  private recordViewedTopic(): void {
+    if (this.v.topic === null) {
+      return
+    }
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    CollectionSettings.recordViewedTopic(context, this.v.topic)
+      .catch((error: Error) => {
+        console.error('record viewed topic failed: ' + error.message)
       })
   }
 }

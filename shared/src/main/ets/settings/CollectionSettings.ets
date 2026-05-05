@@ -5,8 +5,10 @@ import { V2exTopic } from '../network/NetworkTypes'
 const STORE_NAME: string = 'next2v_collections'
 const KEY_SAVED_TOPICS: string = 'savedTopics'
 const KEY_SAVED_NODES: string = 'savedNodes'
+const KEY_VIEWED_TOPICS: string = 'viewedTopics'
 const MAX_SAVED_TOPICS: number = 100
 const MAX_SAVED_NODES: number = 80
+const MAX_VIEWED_TOPICS: number = 100
 
 export interface SavedTopic {
   id: number
@@ -23,6 +25,15 @@ export interface SavedNode {
   title: string
   topics: number
   savedAt: number
+}
+
+export interface ViewedTopic {
+  id: number
+  title: string
+  nodeName: string
+  nodeTitle: string
+  username: string
+  viewedAt: number
 }
 
 export class CollectionSettings {
@@ -101,6 +112,32 @@ export class CollectionSettings {
     return nodes.some((item: SavedNode) => item.name === nodeName)
   }
 
+  static async loadViewedTopics(context: common.UIAbilityContext): Promise<ViewedTopic[]> {
+    try {
+      const store = await preferences.getPreferences(context, STORE_NAME)
+      const raw = store.getSync(KEY_VIEWED_TOPICS, '[]') as string
+      return CollectionSettings.parseViewedTopics(raw)
+    } catch (error) {
+      const e = error as Error
+      throw new Error(e.message || '读取最近浏览失败')
+    }
+  }
+
+  static async recordViewedTopic(context: common.UIAbilityContext, topic: V2exTopic): Promise<ViewedTopic[]> {
+    const topics = await CollectionSettings.loadViewedTopics(context)
+    const viewed: ViewedTopic = {
+      id: topic.id,
+      title: topic.title,
+      nodeName: topic.node.name,
+      nodeTitle: topic.node.title,
+      username: topic.member.username,
+      viewedAt: Math.floor(Date.now() / 1000)
+    }
+    const next = [viewed].concat(topics.filter((item: ViewedTopic) => item.id !== topic.id)).slice(0, MAX_VIEWED_TOPICS)
+    await CollectionSettings.writeViewedTopics(context, next)
+    return next
+  }
+
   private static async writeSavedTopics(context: common.UIAbilityContext, topics: SavedTopic[]): Promise<void> {
     try {
       const store = await preferences.getPreferences(context, STORE_NAME)
@@ -123,6 +160,17 @@ export class CollectionSettings {
     }
   }
 
+  private static async writeViewedTopics(context: common.UIAbilityContext, topics: ViewedTopic[]): Promise<void> {
+    try {
+      const store = await preferences.getPreferences(context, STORE_NAME)
+      store.putSync(KEY_VIEWED_TOPICS, JSON.stringify(topics))
+      store.flushSync()
+    } catch (error) {
+      const e = error as Error
+      throw new Error(e.message || '保存最近浏览失败')
+    }
+  }
+
   private static parseTopics(raw: string): SavedTopic[] {
     try {
       const parsed = JSON.parse(raw) as SavedTopic[]
@@ -142,6 +190,18 @@ export class CollectionSettings {
         return []
       }
       return parsed.filter((item: SavedNode) => item.name.length > 0 && item.title.length > 0)
+    } catch (error) {
+      return []
+    }
+  }
+
+  private static parseViewedTopics(raw: string): ViewedTopic[] {
+    try {
+      const parsed = JSON.parse(raw) as ViewedTopic[]
+      if (!Array.isArray(parsed)) {
+        return []
+      }
+      return parsed.filter((item: ViewedTopic) => item.id > 0 && item.title.length > 0)
     } catch (error) {
       return []
     }
