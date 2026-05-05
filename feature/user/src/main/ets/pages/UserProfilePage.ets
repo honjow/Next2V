@@ -10,6 +10,7 @@ export struct UserProfilePage {
   @Consume('ns') stack: NavPathStack
   @State vm: UserViewModel = new UserViewModel(this.username)
   @StorageProp('topAvoidHeight') topH: number = 0
+  private readonly GAP: number = ThemeConstants.SPACE_SM
 
   aboutToAppear(): void { this.vm.load() }
 
@@ -18,7 +19,7 @@ export struct UserProfilePage {
       if (this.vm.isLoading && this.vm.profile === null) {
         LoadingProgress().width(ThemeConstants.LOADING_SIZE).height(ThemeConstants.LOADING_SIZE).margin({ top: ThemeConstants.MARGIN_LOADING_TOP })
       } else if (this.vm.profile !== null) {
-        List({ space: ThemeConstants.SPACE_XS }) {
+        List({ space: this.GAP }) {
           ListItem() { Column() { Blank().height(this.topH + ThemeConstants.TITLE_BAR_HEIGHT) } }
           ListItem() {
             this.ProfileCard()
@@ -41,6 +42,7 @@ export struct UserProfilePage {
           }, (topic: V2exTopic) => topic.id.toString())
         }
           .scrollBar(BarState.Off)
+          .padding({ left: this.GAP, right: this.GAP })
           .width('100%').height('100%')
       } else {
         this.ErrorView()
@@ -91,7 +93,6 @@ export struct UserProfilePage {
       this.ProfileMeta()
     }
     .padding(ThemeConstants.SPACE_LG)
-    .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
     .width('100%')
     .alignItems(HorizontalAlign.Start)
     .borderRadius(ThemeConstants.RADIUS_MD)

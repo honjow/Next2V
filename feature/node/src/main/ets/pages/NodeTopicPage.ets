@@ -10,6 +10,7 @@ export struct NodeTopicPage {
   @Consume('ns') stack: NavPathStack
   @State vm: NodeViewModel = new NodeViewModel()
   @StorageProp('topAvoidHeight') topH: number = 0
+  private readonly GAP: number = ThemeConstants.SPACE_SM
 
   aboutToAppear(): void { this.vm.loadNodeTopics(this.nodeName) }
 
@@ -22,7 +23,7 @@ export struct NodeTopicPage {
       } else if (this.vm.nodeTopics.length === 0) {
         this.EmptyView()
       } else {
-        List({ space: ThemeConstants.SPACE_XS }) {
+        List({ space: this.GAP }) {
           ListItem() { Column() { Blank().height(this.topH + ThemeConstants.TITLE_BAR_HEIGHT) } }
           ForEach(this.vm.nodeTopics, (topic: V2exTopic) => {
             ListItem() {
@@ -41,6 +42,7 @@ export struct NodeTopicPage {
           })
         }
           .scrollBar(BarState.Off)
+          .padding({ left: this.GAP, right: this.GAP })
           .width('100%').height('100%')
       }
     }

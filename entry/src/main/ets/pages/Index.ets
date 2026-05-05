@@ -229,15 +229,17 @@ struct Index {
               .fontSize(ThemeConstants.FONT_SIZE_CAPTION).fontColor($r('sys.color.font_secondary')).margin({ top: ThemeConstants.SPACE_XS })
             Row({ space: ThemeConstants.SPACE_SM }) {
               Button('v2ex.com').fontSize(ThemeConstants.FONT_SIZE_TAG)
+                .height(40)
                 .onClick(() => { this.updateApiDomain(false) })
               Button('v2ex.co').fontSize(ThemeConstants.FONT_SIZE_TAG)
+                .height(40)
                 .onClick(() => { this.updateApiDomain(true) })
             }.margin({ top: ThemeConstants.SPACE_SM })
           }
             .padding(ThemeConstants.SPACE_LG).width('100%').alignItems(HorizontalAlign.Start).borderRadius(ThemeConstants.RADIUS_MD)
             .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
         }
-          .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, top: ThemeConstants.SPACE_SM }).height(130)
+          .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, top: ThemeConstants.SPACE_SM })
 
         ListItem() {
           Column() {
@@ -247,7 +249,7 @@ struct Index {
             .padding(ThemeConstants.SPACE_LG).width('100%').alignItems(HorizontalAlign.Start).borderRadius(ThemeConstants.RADIUS_MD)
             .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
         }
-          .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, top: ThemeConstants.SPACE_SM }).height(80)
+          .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, top: ThemeConstants.SPACE_SM })
       }
         .scrollBar(BarState.Off)
         .padding({ top: this.topH + this.TBH, bottom: this.bottomH + this.FLOAT_H })
@@ -299,11 +301,13 @@ struct Index {
       Row({ space: ThemeConstants.SPACE_SM }) {
         Button(this.isAuthLoading ? '验证中' : '保存并验证')
           .fontSize(ThemeConstants.FONT_SIZE_TAG)
+          .height(40)
           .enabled(!this.isAuthLoading)
           .onClick(() => { this.verifyAndSaveToken() })
         if (this.authTokenConfigured) {
           Button('退出')
             .fontSize(ThemeConstants.FONT_SIZE_TAG)
+            .height(40)
             .onClick(() => { this.clearAuth() })
         }
       }
@@ -398,9 +402,11 @@ struct Index {
       Row({ space: ThemeConstants.SPACE_SM }) {
         Button('刷新状态')
           .fontSize(ThemeConstants.FONT_SIZE_TAG)
+          .height(40)
           .onClick(() => { this.loadCacheStats() })
         Button('清理缓存')
           .fontSize(ThemeConstants.FONT_SIZE_TAG)
+          .height(40)
           .onClick(() => { this.clearCache() })
       }
     }
