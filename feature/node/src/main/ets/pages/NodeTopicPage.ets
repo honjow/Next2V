@@ -1,7 +1,7 @@
 import { NodeViewModel } from '../viewmodel/NodeViewModel'
 import {
   V2exTopic, TopicCard, ThemeConstants, TopicDetailParams, StorageKeys, UserProfileParams,
-  CollectionSettings, SavedNode
+  CollectionSettings, SavedNode, AuthSettings
 } from 'shared'
 import { common } from '@kit.AbilityKit'
 
@@ -17,6 +17,7 @@ export struct NodeTopicPage {
 
   aboutToAppear(): void {
     this.vm.loadNodeTopics(this.nodeName)
+    this.loadNodeDetailV2()
     this.loadSavedState()
   }
 
@@ -66,7 +67,7 @@ export struct NodeTopicPage {
           .fontColor($r('sys.color.font_primary'))
           .maxLines(1)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
-        Text(`${this.nodeName} · ${this.vm.nodeTopics.length} 个当前主题`)
+        Text(`${this.nodeName} · ${(this.vm.nodeDetail?.topics || this.vm.nodeTopics.length)} 主题`)
           .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
           .fontColor($r('sys.color.font_secondary'))
       }
@@ -118,6 +119,17 @@ export struct NodeTopicPage {
       })
       .catch((error: Error) => {
         console.error('load saved node state failed: ' + error.message)
+      })
+  }
+
+  private loadNodeDetailV2(): void {
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    AuthSettings.load(context)
+      .then((snapshot) => {
+        return this.vm.loadNodeDetailV2(this.nodeName, snapshot.token || '')
+      })
+      .catch((error: Error) => {
+        this.vm.nodeDetailError = error.message || '节点信息加载失败'
       })
   }
 

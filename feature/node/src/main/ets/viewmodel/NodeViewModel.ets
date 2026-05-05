@@ -1,4 +1,4 @@
-import { V2exNode, V2exTopic, ApiService } from 'shared'
+import { V2exNode, V2exTopic, ApiService, ApiV2Service } from 'shared'
 
 /**
  * 节点数据源 — 用于 LazyForEach
@@ -41,6 +41,8 @@ export class NodeDataSource implements IDataSource {
 export class NodeViewModel {
   nodeDataSource: NodeDataSource = new NodeDataSource()
   nodeTopics: V2exTopic[] = []
+  nodeDetail: V2exNode | null = null
+  nodeDetailError: string = ''
   isLoading: boolean = false
   keyword: string = ''
   errorMessage: string = ''
@@ -48,6 +50,7 @@ export class NodeViewModel {
   private allNodes: V2exNode[] = []
 
   private api: ApiService = new ApiService()
+  private apiV2: ApiV2Service = new ApiV2Service()
 
   /** 加载所有节点 */
   async loadAllNodes(): Promise<void> {
@@ -94,6 +97,24 @@ export class NodeViewModel {
       console.error('Failed to load node topics:', error.message)
     } finally {
       this.isLoading = false
+    }
+  }
+
+  /** 加载节点详情（API v2，需要 Token） */
+  async loadNodeDetailV2(nodeName: string, token: string): Promise<void> {
+    const cleanToken = token.trim()
+    if (!cleanToken) {
+      this.nodeDetail = null
+      this.nodeDetailError = ''
+      return
+    }
+    this.nodeDetailError = ''
+    try {
+      const res = await this.apiV2.getNode(cleanToken, nodeName)
+      this.nodeDetail = res.data
+    } catch (error) {
+      this.nodeDetail = null
+      this.nodeDetailError = error.message || '节点信息加载失败'
     }
   }
 }

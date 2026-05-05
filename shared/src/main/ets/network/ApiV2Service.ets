@@ -1,5 +1,7 @@
 import { http } from '@kit.NetworkKit'
 import { HttpClient } from './HttpClient'
+import { ApiConstants } from '../constants/ApiConstants'
+import type { V2exNode } from './NetworkTypes'
 
 const MAX_RETRIES: number = 3
 const CONNECT_TIMEOUT_MS: number = 10000
@@ -26,6 +28,14 @@ export interface ApiV2Response<T> {
  */
 export class ApiV2Service {
   private httpClient: HttpClient = HttpClient.getInstance()
+
+  async getNode(token: string, nodeName: string): Promise<ApiV2Response<V2exNode>> {
+    const cleanName = nodeName.trim()
+    if (!cleanName) {
+      throw new Error('节点名称不能为空')
+    }
+    return this.get<V2exNode>(`${ApiConstants.API_V2_NODE}/${encodeURIComponent(cleanName)}`, token)
+  }
 
   async get<T>(endpoint: string, token: string): Promise<ApiV2Response<T>> {
     return this.request<T>(endpoint, http.RequestMethod.GET, token)
