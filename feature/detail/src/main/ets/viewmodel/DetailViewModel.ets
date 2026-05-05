@@ -9,14 +9,21 @@ export class DetailViewModel {
   topic: V2exTopic | null = null
   replyDataSource: ReplyDataSource = new ReplyDataSource()
   isLoading: boolean = false
+  repliesUseV2: boolean = false
+  repliesPage: number = 1
+  repliesHasMore: boolean = false
+  isRepliesLoadingMore: boolean = false
+  repliesLoaded: number = 0
   errorMessage: string = ''
   topicId: number = 0
 
   private api: ApiService = new ApiService()
   private apiV2: ApiV2Service = new ApiV2Service()
   private authToken: string = ''
+  private replies: V2exReply[] = []
   private cacheLoader: (() => Promise<TopicDetailCache | null>) | null = null
   private cacheSaver: ((topic: V2exTopic | null, replies: V2exReply[]) => Promise<void>) | null = null
+  private readonly V2_REPLY_PAGE_SIZE: number = 20
 
   constructor(topicId: number) {
     this.topicId = topicId
@@ -45,6 +52,8 @@ export class DetailViewModel {
       }
       this.topic = cached.topic
       this.replyDataSource.setData(cached.replies)
+      this.replies = cached.replies
+      this.repliesLoaded = cached.replies.length
     } catch (error) {
       console.error('load topic cache failed:', (error as Error).message)
     }
@@ -57,21 +66,34 @@ export class DetailViewModel {
     }
     this.isLoading = true
     this.errorMessage = ''
+    this.repliesUseV2 = !!this.authToken
+    this.repliesPage = 1
+    this.repliesHasMore = false
+    this.isRepliesLoadingMore = false
     try {
       let topic: V2exTopic | null = null
+      let replies: V2exReply[] = []
       if (this.authToken) {
         const res = await this.apiV2.getTopic(this.authToken, this.topicId)
         topic = res.data
+        const replyRes = await this.apiV2.getTopicReplies(this.authToken, this.topicId, 1)
+        replies = replyRes.data || []
+        this.repliesUseV2 = true
+        this.repliesHasMore = replies.length >= this.V2_REPLY_PAGE_SIZE
       } else {
         const topics = await this.api.getTopicById(this.topicId)
         if (topics.length > 0) {
           topic = topics[0]
         }
+        replies = await this.api.getReplies(this.topicId)
+        this.repliesUseV2 = false
+        this.repliesHasMore = false
       }
 
-      const replies = await this.api.getReplies(this.topicId)
       this.topic = topic
       this.replyDataSource.setData(replies)
+      this.replies = replies
+      this.repliesLoaded = replies.length
       await this.saveCache(topic, replies)
     } catch (error) {
       const e = error as Error
@@ -80,6 +102,41 @@ export class DetailViewModel {
       console.error('Failed to load topic detail:', e.message)
     } finally {
       this.isLoading = false
+    }
+  }
+
+  async loadMoreRepliesV2(): Promise<void> {
+    if (!this.repliesUseV2 || this.isLoading || this.isRepliesLoadingMore || !this.repliesHasMore || !this.authToken) {
+      return
+    }
+    const nextPage = this.repliesPage + 1
+    this.isRepliesLoadingMore = true
+    try {
+      const res = await this.apiV2.getTopicReplies(this.authToken, this.topicId, nextPage)
+      const items = res.data || []
+      if (items.length === 0) {
+        this.repliesHasMore = false
+        return
+      }
+
+      const existingIds = new Set<number>(this.replies.map(reply => reply.id))
+      const unique = items.filter(item => item && item.id > 0 && !existingIds.has(item.id))
+      if (unique.length === 0) {
+        this.repliesHasMore = false
+        return
+      }
+
+      this.replies = this.replies.concat(unique)
+      this.replyDataSource.appendData(unique)
+      this.repliesLoaded = this.replies.length
+      this.repliesPage = nextPage
+      this.repliesHasMore = items.length >= this.V2_REPLY_PAGE_SIZE
+    } catch (error) {
+      const e = error as Error
+      this.errorMessage = e.message || '加载更多失败'
+      this.repliesHasMore = false
+    } finally {
+      this.isRepliesLoadingMore = false
     }
   }
 

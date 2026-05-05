@@ -1,7 +1,7 @@
 import { http } from '@kit.NetworkKit'
 import { HttpClient } from './HttpClient'
 import { ApiConstants } from '../constants/ApiConstants'
-import type { V2exNode, V2exTopic } from './NetworkTypes'
+import type { V2exNode, V2exReply, V2exTopic } from './NetworkTypes'
 
 const MAX_RETRIES: number = 3
 const CONNECT_TIMEOUT_MS: number = 10000
@@ -54,6 +54,16 @@ export class ApiV2Service {
       throw new Error('无效的主题 ID')
     }
     return this.get<V2exTopic>(`${ApiConstants.API_V2_TOPIC}/${topicId}`, token)
+  }
+
+  async getTopicReplies(token: string, topicId: number, page: number = 1): Promise<ApiV2Response<V2exReply[]>> {
+    if (topicId <= 0) {
+      throw new Error('无效的主题 ID')
+    }
+    const cleanPage = page > 0 ? page : 1
+    const res = await this.get<Object>(`${ApiConstants.API_V2_TOPIC}/${topicId}/replies?p=${cleanPage}`, token)
+    const replies = ApiV2Service.unwrapList<V2exReply>(res.data)
+    return { data: replies, headers: res.headers, rateLimit: res.rateLimit, statusCode: res.statusCode }
   }
 
   async get<T>(endpoint: string, token: string): Promise<ApiV2Response<T>> {
@@ -156,6 +166,28 @@ export class ApiV2Service {
     } catch (e) {
       return null
     }
+  }
+
+  private static unwrapList<T>(data: Object | null): T[] {
+    if (!data) {
+      return []
+    }
+    if (Array.isArray(data)) {
+      return data as unknown as T[]
+    }
+    try {
+      const bag = data as Record<string, Object>
+      const candidates: string[] = ['result', 'items', 'replies', 'data']
+      for (const key of candidates) {
+        const v = bag[key]
+        if (Array.isArray(v)) {
+          return v as unknown as T[]
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+    return []
   }
 
   private static extractApiMessage(text: string): string {

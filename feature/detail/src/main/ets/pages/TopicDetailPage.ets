@@ -2,7 +2,7 @@ import { DetailViewModel } from '../viewmodel/DetailViewModel'
 import { common } from '@kit.AbilityKit'
 import {
   V2exReply, Avatar, ReplyCard, TimeAgo, PullRefresh, ThemeConstants, MarkdownContent,
-  NodeTopicListParams, UserProfileParams, CollectionSettings, CacheSettings, V2exTopic, AuthSettings
+  NodeTopicListParams, UserProfileParams, CollectionSettings, CacheSettings, V2exTopic, AuthSettings, LoadingFooter
 } from 'shared'
 
 @Component
@@ -121,10 +121,21 @@ export struct TopicDetailPage {
           }
         }, (reply: V2exReply) => reply.id.toString())
 
+        if (this.v.repliesUseV2) {
+          ListItem() {
+            LoadingFooter({ isLoading: this.v.isRepliesLoadingMore, hasMore: this.v.repliesHasMore })
+          }
+        }
+
         // 底部留白
         ListItem() { Column() { Blank().height(ThemeConstants.SPACE_XL) } }
       }
       .enableScrollInteraction(this.listScrollEnabled)
+      .onReachEnd(() => {
+        if (this.v.repliesUseV2) {
+          this.v.loadMoreRepliesV2()
+        }
+      })
       .scrollBar(BarState.Off)
       .width('100%').height('100%')
       .padding({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
@@ -215,9 +226,15 @@ export struct TopicDetailPage {
 
   @Builder ReplyDivider() {
     Row() {
-      Text(`共 ${this.v.replyDataSource.totalCount()} 条回复`)
-        .fontSize(ThemeConstants.FONT_SIZE_META)
-        .fontColor($r('sys.color.font_secondary'))
+      if (this.v.repliesUseV2 && this.v.topic !== null && this.v.topic!.replies > 0) {
+        Text(`已加载 ${this.v.repliesLoaded} / ${this.v.topic!.replies} 条回复`)
+          .fontSize(ThemeConstants.FONT_SIZE_META)
+          .fontColor($r('sys.color.font_secondary'))
+      } else {
+        Text(`共 ${this.v.replyDataSource.totalCount()} 条回复`)
+          .fontSize(ThemeConstants.FONT_SIZE_META)
+          .fontColor($r('sys.color.font_secondary'))
+      }
     }
     .width('100%')
     .padding({

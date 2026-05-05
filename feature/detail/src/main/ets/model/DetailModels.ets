@@ -32,4 +32,10 @@ export class ReplyDataSource implements IDataSource {
     this.dataArray = data
     this.listeners.forEach(listener => listener.onDataReloaded())
   }
+
+  appendData(data: V2exReply[]): void {
+    const start = this.dataArray.length
+    this.dataArray = this.dataArray.concat(data)
+    this.listeners.forEach(listener => listener.onDataAdd(start))
+  }
 }
