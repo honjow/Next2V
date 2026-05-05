@@ -5,10 +5,10 @@ import {
 import { common } from '@kit.AbilityKit'
 import {
   ApiDomainSettings, HttpClient, ThemeConstants, StorageKeys, ApiConstants, TabItem,
-  AuthSettings, ApiService, DateUtils
+  AuthSettings, ApiService, DateUtils, CollectionSettings, TopicDetailParams
 }
   from 'shared'
-import type { V2exAuthenticatedMember, V2exNotification } from 'shared'
+import type { V2exAuthenticatedMember, V2exNotification, SavedTopic } from 'shared'
 import { HomePage } from 'feed'
 import { TopicDetailPage } from 'detail'
 import { DiscoverPage, NodeTopicPage } from 'node'
@@ -66,6 +66,7 @@ struct Index {
   @State private authError: string = ''
   @State private isAuthLoading: boolean = false
   @State private notifications: V2exNotification[] = []
+  @State private savedTopics: SavedTopic[] = []
   @State private notificationError: string = ''
   @State private isNotificationLoading: boolean = false
   private http: HttpClient = HttpClient.getInstance()
@@ -73,6 +74,7 @@ struct Index {
 
   aboutToAppear(): void {
     this.loadAuthSnapshot()
+    this.loadSavedTopics()
   }
 
   @Builder pm(name: string, param: Object) {
@@ -108,6 +110,8 @@ struct Index {
           this.ct = i
           if (i === 2) {
             this.loadNotifications()
+          } else if (i === 3) {
+            this.loadSavedTopics()
           }
         })
     }
@@ -205,6 +209,11 @@ struct Index {
           .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, top: ThemeConstants.SPACE_MD })
 
         ListItem() {
+          this.SavedTopicsCard()
+        }
+          .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, top: ThemeConstants.SPACE_SM })
+
+        ListItem() {
           Column() {
             Text('API 域名').fontSize(ThemeConstants.FONT_SIZE_BODY).fontWeight(FontWeight.Medium).fontColor($r('sys.color.font_primary'))
             Text(`当前: ${this.useCoDomain ? 'v2ex.co' : 'v2ex.com'}`)
@@ -288,6 +297,60 @@ struct Index {
             .fontSize(ThemeConstants.FONT_SIZE_TAG)
             .onClick(() => { this.clearAuth() })
         }
+      }
+    }
+    .padding(ThemeConstants.SPACE_LG)
+    .width('100%')
+    .alignItems(HorizontalAlign.Start)
+    .borderRadius(ThemeConstants.RADIUS_MD)
+    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+  }
+
+  @Builder SavedTopicsCard() {
+    Column({ space: ThemeConstants.SPACE_SM }) {
+      Row() {
+        Text('稍后读')
+          .fontSize(ThemeConstants.FONT_SIZE_BODY)
+          .fontWeight(FontWeight.Medium)
+          .fontColor($r('sys.color.font_primary'))
+        Blank()
+        Text(`${this.savedTopics.length}`)
+          .fontSize(ThemeConstants.FONT_SIZE_TAG)
+          .fontColor($r('sys.color.font_secondary'))
+      }
+      .width('100%')
+      if (this.savedTopics.length === 0) {
+        Text('在主题详情页保存后会显示在这里')
+          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+          .fontColor($r('sys.color.font_secondary'))
+      } else {
+        ForEach(this.savedTopics.slice(0, 3), (item: SavedTopic) => {
+          Column({ space: ThemeConstants.SPACE_XS }) {
+            Text(item.title)
+              .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+              .fontColor($r('sys.color.font_primary'))
+              .maxLines(2)
+              .textOverflow({ overflow: TextOverflow.Ellipsis })
+            Row({ space: ThemeConstants.SPACE_XS }) {
+              Text(item.nodeTitle)
+                .fontSize(ThemeConstants.FONT_SIZE_TINY)
+                .fontColor($r('sys.color.font_secondary'))
+              Text('·')
+                .fontSize(ThemeConstants.FONT_SIZE_TINY)
+                .fontColor($r('sys.color.font_secondary'))
+              Text(DateUtils.toDateString(item.savedAt))
+                .fontSize(ThemeConstants.FONT_SIZE_TINY)
+                .fontColor($r('sys.color.font_secondary'))
+            }
+          }
+          .width('100%')
+          .alignItems(HorizontalAlign.Start)
+          .padding({ top: ThemeConstants.SPACE_XS, bottom: ThemeConstants.SPACE_XS })
+          .onClick(() => {
+            let p: TopicDetailParams = { topicId: item.id }
+            this.ns.pushPathByName('TopicDetail', p as Object)
+          })
+        }, (item: SavedTopic) => item.id.toString())
       }
     }
     .padding(ThemeConstants.SPACE_LG)
@@ -453,6 +516,17 @@ struct Index {
       })
       .finally(() => {
         this.isNotificationLoading = false
+      })
+  }
+
+  private loadSavedTopics(): void {
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    CollectionSettings.loadSavedTopics(context)
+      .then((items: SavedTopic[]) => {
+        this.savedTopics = items
+      })
+      .catch((error: Error) => {
+        console.error('load saved topics failed: ' + error.message)
       })
   }
 

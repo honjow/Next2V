@@ -1,7 +1,8 @@
 import { DetailViewModel } from '../viewmodel/DetailViewModel'
+import { common } from '@kit.AbilityKit'
 import {
   V2exReply, Avatar, ReplyCard, TimeAgo, PullRefresh, ThemeConstants, MarkdownContent,
-  NodeTopicListParams, UserProfileParams
+  NodeTopicListParams, UserProfileParams, CollectionSettings
 } from 'shared'
 
 @Component
@@ -12,10 +13,12 @@ export struct TopicDetailPage {
   @StorageProp('topAvoidHeight') topH: number = 0
   private scroller: Scroller = new Scroller()
   @State listScrollEnabled: boolean = true
+  @State isSavedLater: boolean = false
 
   aboutToAppear(): void {
     this.v = new DetailViewModel(this.topicId)
     this.v.load()
+    this.loadSavedState()
   }
 
   build() {
@@ -159,6 +162,19 @@ export struct TopicDetailPage {
             }
             this.stack.pushPathByName('NodeTopicList', p as Object)
           })
+
+        Text(this.isSavedLater ? '已存' : '稍后读')
+          .fontSize(ThemeConstants.FONT_SIZE_TAG)
+          .fontColor(this.isSavedLater ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.font_secondary'))
+          .padding({
+            left: ThemeConstants.SPACE_SM,
+            right: ThemeConstants.SPACE_SM,
+            top: 2,
+            bottom: 2
+          })
+          .borderRadius(ThemeConstants.RADIUS_SM)
+          .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+          .onClick(() => { this.toggleSavedLater() })
       }
       .width('100%')
       .alignItems(VerticalAlign.Center)
@@ -195,5 +211,33 @@ export struct TopicDetailPage {
       top: ThemeConstants.SPACE_MD,
       bottom: ThemeConstants.SPACE_SM
     })
+  }
+
+  private loadSavedState(): void {
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    CollectionSettings.isTopicSaved(context, this.topicId)
+      .then((saved: boolean) => {
+        this.isSavedLater = saved
+      })
+      .catch((error: Error) => {
+        console.error('load saved topic state failed: ' + error.message)
+      })
+  }
+
+  private toggleSavedLater(): void {
+    if (this.v.topic === null) {
+      return
+    }
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    const request = this.isSavedLater
+      ? CollectionSettings.removeTopic(context, this.v.topic.id)
+      : CollectionSettings.saveTopic(context, this.v.topic)
+    request
+      .then(() => {
+        this.isSavedLater = !this.isSavedLater
+      })
+      .catch((error: Error) => {
+        console.error('toggle saved topic failed: ' + error.message)
+      })
   }
 }

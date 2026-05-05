@@ -21,6 +21,8 @@ export { StorageKeys } from './constants/StorageKeys'
 export { ApiDomainSettings } from './settings/ApiDomainSettings'
 export { AuthSettings } from './settings/AuthSettings'
 export type { AuthSnapshot } from './settings/AuthSettings'
+export { CollectionSettings } from './settings/CollectionSettings'
+export type { SavedTopic } from './settings/CollectionSettings'
 export type {
   V2exTopic,
   V2exReply,
