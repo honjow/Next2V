@@ -6,7 +6,7 @@ import { common } from '@kit.AbilityKit'
 import {
   ApiDomainSettings, HttpClient, ThemeConstants, StorageKeys, ApiConstants, TabItem,
   AuthSettings, ApiService, DateUtils, CollectionSettings, TopicDetailParams, NodeTopicListParams, CacheSettings,
-  CookieJarSettings, AuthSessionSettings, V2exSessionParser
+  CookieJarSettings, AuthSessionSettings, V2exSessionParser, LoadingFooter
 }
   from 'shared'
 import type { V2exAuthenticatedMember, V2exNotification, SavedTopic, SavedNode, ViewedTopic, CacheStats } from 'shared'
@@ -82,8 +82,12 @@ struct Index {
   @State private cacheMessage: string = ''
   @State private notificationError: string = ''
   @State private isNotificationLoading: boolean = false
+  @State private notificationPage: number = 1
+  @State private notificationHasMore: boolean = true
+  @State private isNotificationLoadingMore: boolean = false
   private http: HttpClient = HttpClient.getInstance()
   private api: ApiService = new ApiService()
+  private readonly NOTIFICATION_PAGE_SIZE: number = 20
 
   aboutToAppear(): void {
     this.loadAuthSnapshot()
@@ -214,8 +218,17 @@ struct Index {
           if (this.notifications.length === 0) {
             ListItem() { this.EmptyNoticeView() }
           }
+          if (this.notifications.length > 0) {
+            ListItem() {
+              LoadingFooter({ isLoading: this.isNotificationLoadingMore, hasMore: this.notificationHasMore })
+            }
+              .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
+          }
           ListItem() { Column() { Blank().height(this.bottomH + this.FLOAT_H) } }
         }
+        .onReachEnd(() => {
+          this.loadMoreNotifications()
+        })
         .scrollBar(BarState.Off)
         .width('100%')
         .height('100%')
@@ -766,6 +779,9 @@ struct Index {
         this.authError = ''
         this.notifications = []
         this.notificationError = ''
+        this.notificationPage = 1
+        this.notificationHasMore = true
+        this.isNotificationLoadingMore = false
       })
       .catch((error: Error) => {
         this.authError = error.message
@@ -790,11 +806,14 @@ struct Index {
         this.authProfile = null
         this.notifications = []
         this.notificationError = ''
+        this.notificationPage = 1
+        this.notificationHasMore = true
+        this.isNotificationLoadingMore = false
       })
   }
 
   private loadNotifications(force: boolean = false): void {
-    if (!this.authTokenConfigured || !this.authToken || this.isNotificationLoading) {
+    if (!this.authTokenConfigured || !this.authToken || this.isNotificationLoading || this.isNotificationLoadingMore) {
       return
     }
     if (this.notifications.length > 0 && !force) {
@@ -802,15 +821,51 @@ struct Index {
     }
     this.isNotificationLoading = true
     this.notificationError = ''
-    this.api.getNotifications(this.authToken)
+    this.notificationPage = 1
+    this.notificationHasMore = true
+    this.api.getNotifications(this.authToken, 1)
       .then((items: V2exNotification[]) => {
         this.notifications = items
+        this.notificationHasMore = items.length >= this.NOTIFICATION_PAGE_SIZE
       })
       .catch((error: Error) => {
         this.notificationError = error.message || '通知加载失败'
+        this.notificationHasMore = false
       })
       .finally(() => {
         this.isNotificationLoading = false
+      })
+  }
+
+  private loadMoreNotifications(): void {
+    if (!this.authTokenConfigured || !this.authToken || this.isNotificationLoading || this.isNotificationLoadingMore || !this.notificationHasMore) {
+      return
+    }
+    const nextPage = this.notificationPage + 1
+    this.isNotificationLoadingMore = true
+    this.notificationError = ''
+    this.api.getNotifications(this.authToken, nextPage)
+      .then((items: V2exNotification[]) => {
+        if (!items || items.length === 0) {
+          this.notificationHasMore = false
+          return
+        }
+        const existing = new Set<number>(this.notifications.map(item => item.id))
+        const unique = items.filter(item => item && item.id > 0 && !existing.has(item.id))
+        if (unique.length === 0) {
+          this.notificationHasMore = false
+          return
+        }
+        this.notifications = this.notifications.concat(unique)
+        this.notificationPage = nextPage
+        this.notificationHasMore = items.length >= this.NOTIFICATION_PAGE_SIZE
+      })
+      .catch((error: Error) => {
+        this.notificationError = error.message || '加载更多失败'
+        this.notificationHasMore = false
+      })
+      .finally(() => {
+        this.isNotificationLoadingMore = false
       })
   }
 
