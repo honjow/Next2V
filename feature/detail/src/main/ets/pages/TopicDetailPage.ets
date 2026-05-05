@@ -11,6 +11,11 @@ interface ActionMenuSuccessResponse {
   index: number
 }
 
+interface ReplyEditorParams {
+  topicId: number
+  topicTitle: string
+}
+
 @Component
 export struct TopicDetailPage {
   @Prop topicId: number = 0
@@ -74,6 +79,12 @@ export struct TopicDetailPage {
     }
     let p: ImagePreviewParams = { url: normalized }
     this.stack.pushPathByName('ImagePreview', p as Object)
+  }
+
+  private openReplyEditor(): void {
+    const title = (this.v.topic?.title || '').trim()
+    let p: ReplyEditorParams = { topicId: this.topicId, topicTitle: title }
+    this.stack.pushPathByName('ReplyEditor', p as Object)
   }
 
   build() {
@@ -245,6 +256,19 @@ export struct TopicDetailPage {
           .borderRadius(ThemeConstants.RADIUS_SM)
           .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
           .onClick(() => { this.toggleSavedLater() })
+
+        Text('回复')
+          .fontSize(ThemeConstants.FONT_SIZE_TAG)
+          .fontColor($r('sys.color.font_secondary'))
+          .padding({
+            left: ThemeConstants.SPACE_SM,
+            right: ThemeConstants.SPACE_SM,
+            top: 2,
+            bottom: 2
+          })
+          .borderRadius(ThemeConstants.RADIUS_SM)
+          .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+          .onClick(() => { this.openReplyEditor() })
 
         Text('操作')
           .fontSize(ThemeConstants.FONT_SIZE_TAG)

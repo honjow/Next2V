@@ -12,7 +12,7 @@ import {
 import type { V2exAuthenticatedMember, V2exNotification, SavedTopic, SavedNode, ViewedTopic, CacheStats } from 'shared'
 import type { V2exTokenInfo } from 'shared'
 import { HomePage } from 'feed'
-import { TopicDetailPage } from 'detail'
+import { ReplyEditorPage, TopicDetailPage } from 'detail'
 import { DiscoverPage, NodeTopicPage } from 'node'
 import { UserProfilePage } from 'user'
 import { ComponentContent, promptAction } from '@kit.ArkUI'
@@ -121,6 +121,13 @@ struct Index {
     } else if (name === 'NodeTopicList') {
       HdsNavDestination() {
         NodeTopicPage({ nodeName: (param as Record<string, Object>)['nodeName'] as string, nodeTitle: (param as Record<string, Object>)['nodeTitle'] as string })
+      }.titleBar(this.navDestTitleBarOpts())
+    } else if (name === 'ReplyEditor') {
+      HdsNavDestination() {
+        ReplyEditorPage({
+          topicId: ((param as Record<string, Object>)['topicId'] as number) || 0,
+          topicTitle: ((param as Record<string, Object>)['topicTitle'] as string) || ''
+        })
       }.titleBar(this.navDestTitleBarOpts())
     } else if (name === 'UserProfile') {
       HdsNavDestination() { UserProfilePage({ username: (param as Record<string, Object>)['username'] as string }) }
