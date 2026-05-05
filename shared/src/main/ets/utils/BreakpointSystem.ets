@@ -1,4 +1,4 @@
-import mediaquery from '@ohos.mediaquery'
+import { mediaquery } from '@kit.ArkUI'
 
 const BP_SM_MAX: number = 520
 const BP_MD_MAX: number = 840
@@ -11,16 +11,17 @@ export class BreakpointSystem {
   private lgListener?: mediaquery.MediaQueryListener
   private currentBreakpoint: Breakpoint = 'sm'
 
-  register(): void {
-    this.smListener = mediaquery.matchMediaSync(`(320vp<=width<${BP_SM_MAX}vp)`)
+  register(uiContext: UIContext): void {
+    const query = uiContext.getMediaQuery()
+    this.smListener = query.matchMediaSync(`(320vp<=width<${BP_SM_MAX}vp)`)
     this.smListener.on('change', (r: mediaquery.MediaQueryResult) => {
       if (r.matches) this.update('sm')
     })
-    this.mdListener = mediaquery.matchMediaSync(`(${BP_SM_MAX}vp<=width<${BP_MD_MAX}vp)`)
+    this.mdListener = query.matchMediaSync(`(${BP_SM_MAX}vp<=width<${BP_MD_MAX}vp)`)
     this.mdListener.on('change', (r: mediaquery.MediaQueryResult) => {
       if (r.matches) this.update('md')
     })
-    this.lgListener = mediaquery.matchMediaSync(`(${BP_MD_MAX}vp<=width)`)
+    this.lgListener = query.matchMediaSync(`(${BP_MD_MAX}vp<=width)`)
     this.lgListener.on('change', (r: mediaquery.MediaQueryResult) => {
       if (r.matches) this.update('lg')
     })
@@ -39,7 +40,7 @@ export class BreakpointSystem {
   private update(bp: Breakpoint): void {
     if (this.currentBreakpoint !== bp) {
       this.currentBreakpoint = bp
-      AppStorage.Set<string>('currentBreakpoint', bp)
+      AppStorage.setOrCreate<string>('currentBreakpoint', bp)
     }
   }
 }
