@@ -8,6 +8,7 @@ import { NodeTag } from './NodeTag'
 @Component
 export struct TopicCard {
   @Prop item: V2exTopic
+  @Prop isUnread: boolean = false
   onUserClick?: () => void
   onNodeClick?: () => void
 
@@ -30,14 +31,23 @@ export struct TopicCard {
       .width('100%')
       .alignItems(VerticalAlign.Center)
 
-      Text(this.item.title)
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .fontColor($r('sys.color.font_primary'))
-        .lineHeight(ThemeConstants.LINE_HEIGHT_TITLE)
-        .maxLines(2)
-        .textOverflow({ overflow: TextOverflow.Ellipsis })
-        .width('100%')
-        .margin({ top: ThemeConstants.SPACE_XS })
+      Row({ space: 6 }) {
+        if (this.isUnread) {
+          Text('●')
+            .fontSize(8)
+            .fontColor(ThemeConstants.BRAND_PRIMARY)
+            .margin({ top: 4 })
+        }
+        Text(this.item.title)
+          .fontSize(ThemeConstants.FONT_SIZE_BODY)
+          .fontColor($r('sys.color.font_primary'))
+          .lineHeight(ThemeConstants.LINE_HEIGHT_TITLE)
+          .maxLines(2)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+          .layoutWeight(1)
+      }
+      .width('100%')
+      .margin({ top: ThemeConstants.SPACE_XS })
 
       Row({ space: ThemeConstants.SPACE_XS }) {
         Blank()

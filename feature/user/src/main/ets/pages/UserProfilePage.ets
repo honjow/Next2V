@@ -3,6 +3,7 @@ import {
   V2exTopic, TopicCard, ThemeConstants, TopicDetailParams, StorageKeys, NodeTopicListParams,
   Avatar, DateUtils
 } from 'shared'
+import type { TopicReadState } from 'shared'
 
 @Component
 export struct UserProfilePage {
@@ -10,6 +11,7 @@ export struct UserProfilePage {
   @Consume('ns') stack: NavPathStack
   @State vm: UserViewModel = new UserViewModel(this.username)
   @StorageProp('topAvoidHeight') topH: number = 0
+  @StorageLink(StorageKeys.TOPIC_READ_STATES) topicReadStates: string = '[]'
   private readonly GAP: number = ThemeConstants.SPACE_SM
 
   aboutToAppear(): void { this.vm.load() }
@@ -29,6 +31,7 @@ export struct UserProfilePage {
             ListItem() {
               TopicCard({
                 item: topic,
+                isUnread: this.isTopicUnread(topic),
                 onNodeClick: () => {
                   let p: NodeTopicListParams = { nodeName: topic.node.name, nodeTitle: topic.node.title }
                   this.stack.pushPathByName('NodeTopicList', p as Object)
@@ -148,5 +151,34 @@ export struct UserProfilePage {
     .justifyContent(FlexAlign.Center)
     .width('100%')
     .height('100%')
+  }
+
+  private isTopicUnread(topic: V2exTopic): boolean {
+    if (topic.id <= 0) {
+      return false
+    }
+    const lastTouched = topic.last_touched || topic.last_modified || topic.created
+    const state = this.findReadState(topic.id)
+    if (!state) {
+      return true
+    }
+    return lastTouched > state.touchedAt
+  }
+
+  private findReadState(topicId: number): TopicReadState | null {
+    try {
+      const parsed = JSON.parse(this.topicReadStates || '[]') as TopicReadState[]
+      if (!Array.isArray(parsed)) {
+        return null
+      }
+      for (let i = 0; i < parsed.length; i++) {
+        if (parsed[i].id === topicId) {
+          return parsed[i]
+        }
+      }
+      return null
+    } catch (_e) {
+      return null
+    }
   }
 }

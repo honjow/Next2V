@@ -5,6 +5,7 @@ export class StorageKeys {
   static readonly NAV_PATH_STACK: string = 'ns'
   static readonly USE_CO_DOMAIN: string = 'useCoDomain'
   static readonly MEDIA_AUTO_LOAD_IMAGES: string = 'mediaAutoLoadImages'
+  static readonly TOPIC_READ_STATES: string = 'topicReadStates'
   static readonly AUTH_TOKEN_CONFIGURED: string = 'authTokenConfigured'
   static readonly AUTH_USERNAME: string = 'authUsername'
   static readonly AUTH_COOKIE_CONFIGURED: string = 'authCookieConfigured'

@@ -106,6 +106,7 @@ struct Index {
     this.loadSavedTopics()
     this.loadSavedNodes()
     this.loadViewedTopics()
+    this.loadTopicReadStates()
     this.loadCacheStats()
   }
 
@@ -1076,6 +1077,14 @@ struct Index {
       })
       .catch((error: Error) => {
         console.error('load viewed topics failed: ' + error.message)
+      })
+  }
+
+  private loadTopicReadStates(): void {
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    CollectionSettings.syncTopicReadStates(context)
+      .catch((error: Error) => {
+        console.error('sync topic read states failed: ' + error.message)
       })
   }
 

@@ -3,6 +3,7 @@ import {
   V2exTopic, TopicCard, ThemeConstants, TopicDetailParams, StorageKeys, UserProfileParams,
   CollectionSettings, SavedNode, AuthSettings, LoadingFooter
 } from 'shared'
+import type { TopicReadState } from 'shared'
 import { common } from '@kit.AbilityKit'
 
 @Component
@@ -12,6 +13,7 @@ export struct NodeTopicPage {
   @Consume('ns') stack: NavPathStack
   @State vm: NodeViewModel = new NodeViewModel()
   @StorageProp('topAvoidHeight') topH: number = 0
+  @StorageLink(StorageKeys.TOPIC_READ_STATES) topicReadStates: string = '[]'
   @State private isNodeSaved: boolean = false
   @State private token: string = ''
   private readonly GAP: number = ThemeConstants.SPACE_SM
@@ -37,6 +39,7 @@ export struct NodeTopicPage {
             ListItem() {
               TopicCard({
                 item: topic,
+                isUnread: this.isTopicUnread(topic),
                 onUserClick: () => {
                   let p: UserProfileParams = { username: topic.member.username }
                   this.stack.pushPathByName('UserProfile', p as Object)
@@ -168,5 +171,34 @@ export struct NodeTopicPage {
       .catch((error: Error) => {
         console.error('toggle saved node failed: ' + error.message)
       })
+  }
+
+  private isTopicUnread(topic: V2exTopic): boolean {
+    if (topic.id <= 0) {
+      return false
+    }
+    const lastTouched = topic.last_touched || topic.last_modified || topic.created
+    const state = this.findReadState(topic.id)
+    if (!state) {
+      return true
+    }
+    return lastTouched > state.touchedAt
+  }
+
+  private findReadState(topicId: number): TopicReadState | null {
+    try {
+      const parsed = JSON.parse(this.topicReadStates || '[]') as TopicReadState[]
+      if (!Array.isArray(parsed)) {
+        return null
+      }
+      for (let i = 0; i < parsed.length; i++) {
+        if (parsed[i].id === topicId) {
+          return parsed[i]
+        }
+      }
+      return null
+    } catch (_e) {
+      return null
+    }
   }
 }

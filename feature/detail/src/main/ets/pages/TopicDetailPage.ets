@@ -43,6 +43,7 @@ export struct TopicDetailPage {
       .finally(() => {
         this.v.load().then(() => {
           this.recordViewedTopic()
+          this.markTopicReadState()
           this.restoreReadPosition()
         })
       })
@@ -445,6 +446,17 @@ export struct TopicDetailPage {
     CollectionSettings.recordViewedTopic(context, this.v.topic)
       .catch((error: Error) => {
         console.error('record viewed topic failed: ' + error.message)
+      })
+  }
+
+  private markTopicReadState(): void {
+    if (this.v.topic === null) {
+      return
+    }
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    CollectionSettings.markTopicRead(context, this.v.topic.id, this.v.topic.last_touched)
+      .catch((error: Error) => {
+        console.error('mark topic read failed: ' + error.message)
       })
   }
 

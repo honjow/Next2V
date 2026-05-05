@@ -1,5 +1,6 @@
 import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
+import { StorageKeys } from '../constants/StorageKeys'
 import { V2exTopic } from '../network/NetworkTypes'
 
 const STORE_NAME: string = 'next2v_collections'
@@ -7,10 +8,12 @@ const KEY_SAVED_TOPICS: string = 'savedTopics'
 const KEY_SAVED_NODES: string = 'savedNodes'
 const KEY_VIEWED_TOPICS: string = 'viewedTopics'
 const KEY_TOPIC_READ_POSITIONS: string = 'topicReadPositions'
+const KEY_TOPIC_READ_STATES: string = 'topicReadStates'
 const MAX_SAVED_TOPICS: number = 100
 const MAX_SAVED_NODES: number = 80
 const MAX_VIEWED_TOPICS: number = 100
 const MAX_READ_POSITIONS: number = 200
+const MAX_READ_STATES: number = 500
 
 export interface SavedTopic {
   id: number
@@ -41,6 +44,12 @@ export interface ViewedTopic {
 export interface TopicReadPosition {
   id: number
   floor: number
+  updatedAt: number
+}
+
+export interface TopicReadState {
+  id: number
+  touchedAt: number
   updatedAt: number
 }
 
@@ -182,6 +191,41 @@ export class CollectionSettings {
     }
   }
 
+  static async syncTopicReadStates(context: common.UIAbilityContext): Promise<TopicReadState[]> {
+    try {
+      const states = await CollectionSettings.loadTopicReadStates(context)
+      AppStorage.setOrCreate<string>(StorageKeys.TOPIC_READ_STATES, JSON.stringify(states))
+      return states
+    } catch (error) {
+      AppStorage.setOrCreate<string>(StorageKeys.TOPIC_READ_STATES, '[]')
+      return []
+    }
+  }
+
+  static async markTopicRead(context: common.UIAbilityContext, topicId: number, touchedAt: number): Promise<TopicReadState[]> {
+    if (topicId <= 0) {
+      return []
+    }
+    const normalizedTouchedAt = touchedAt > 0 ? touchedAt : Math.floor(Date.now() / 1000)
+    const states = await CollectionSettings.loadTopicReadStates(context)
+    const state: TopicReadState = { id: topicId, touchedAt: normalizedTouchedAt, updatedAt: Math.floor(Date.now() / 1000) }
+    const next = [state].concat(states.filter((item: TopicReadState) => item.id !== topicId)).slice(0, MAX_READ_STATES)
+    await CollectionSettings.writeTopicReadStates(context, next)
+    AppStorage.setOrCreate<string>(StorageKeys.TOPIC_READ_STATES, JSON.stringify(next))
+    return next
+  }
+
+  static async loadTopicReadStates(context: common.UIAbilityContext): Promise<TopicReadState[]> {
+    try {
+      const store = await preferences.getPreferences(context, STORE_NAME)
+      const raw = store.getSync(KEY_TOPIC_READ_STATES, '[]') as string
+      return CollectionSettings.parseTopicReadStates(raw)
+    } catch (error) {
+      const e = error as Error
+      throw new Error(e.message || '读取已读状态失败')
+    }
+  }
+
   private static async writeSavedTopics(context: common.UIAbilityContext, topics: SavedTopic[]): Promise<void> {
     try {
       const store = await preferences.getPreferences(context, STORE_NAME)
@@ -223,6 +267,17 @@ export class CollectionSettings {
     } catch (error) {
       const e = error as Error
       throw new Error(e.message || '保存阅读位置失败')
+    }
+  }
+
+  private static async writeTopicReadStates(context: common.UIAbilityContext, states: TopicReadState[]): Promise<void> {
+    try {
+      const store = await preferences.getPreferences(context, STORE_NAME)
+      store.putSync(KEY_TOPIC_READ_STATES, JSON.stringify(states))
+      store.flushSync()
+    } catch (error) {
+      const e = error as Error
+      throw new Error(e.message || '保存已读状态失败')
     }
   }
 
@@ -269,6 +324,18 @@ export class CollectionSettings {
         return []
       }
       return parsed.filter((item: TopicReadPosition) => item.id > 0 && item.floor > 0)
+    } catch (error) {
+      return []
+    }
+  }
+
+  private static parseTopicReadStates(raw: string): TopicReadState[] {
+    try {
+      const parsed = JSON.parse(raw) as TopicReadState[]
+      if (!Array.isArray(parsed)) {
+        return []
+      }
+      return parsed.filter((item: TopicReadState) => item.id > 0 && item.touchedAt > 0)
     } catch (error) {
       return []
     }

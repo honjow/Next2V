@@ -4,6 +4,7 @@ import {
   StorageKeys, PullRefresh, ApiConstants, TabItem, ApiService, NodeTopicListParams,
   UserProfileParams, CacheSettings
 } from 'shared'
+import type { TopicReadState } from 'shared'
 import { common } from '@kit.AbilityKit'
 
 @Component
@@ -103,6 +104,7 @@ export struct HomePage {
 struct FeedListPage {
   @Consume('ns') ns: NavPathStack
   @StorageLink('listScrollEnabled') listScrollEnabled: boolean = true
+  @StorageLink(StorageKeys.TOPIC_READ_STATES) topicReadStates: string = '[]'
   @Prop tabKey: string = 'tech'
   @State vm: FeedViewModel = new FeedViewModel()
   @StorageProp('topAvoidHeight') topH: number = 107
@@ -142,6 +144,7 @@ struct FeedListPage {
               ListItem() {
                 TopicCard({
                   item: item,
+                  isUnread: this.isTopicUnread(item),
                   onUserClick: () => {
                     let p: UserProfileParams = { username: item.member.username }
                     this.ns.pushPathByName('UserProfile', p as Object)
@@ -180,5 +183,34 @@ struct FeedListPage {
       }
     }
     .width('100%').height('100%')
+  }
+
+  private isTopicUnread(topic: V2exTopic): boolean {
+    if (topic.id <= 0) {
+      return false
+    }
+    const lastTouched = topic.last_touched || topic.last_modified || topic.created
+    const state = this.findReadState(topic.id)
+    if (!state) {
+      return true
+    }
+    return lastTouched > state.touchedAt
+  }
+
+  private findReadState(topicId: number): TopicReadState | null {
+    try {
+      const parsed = JSON.parse(this.topicReadStates || '[]') as TopicReadState[]
+      if (!Array.isArray(parsed)) {
+        return null
+      }
+      for (let i = 0; i < parsed.length; i++) {
+        if (parsed[i].id === topicId) {
+          return parsed[i]
+        }
+      }
+      return null
+    } catch (_e) {
+      return null
+    }
   }
 }
