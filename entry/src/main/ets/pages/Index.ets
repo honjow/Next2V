@@ -5,7 +5,8 @@ import {
 import { common } from '@kit.AbilityKit'
 import {
   ApiDomainSettings, HttpClient, ThemeConstants, StorageKeys, ApiConstants, TabItem,
-  AuthSettings, ApiService, DateUtils, CollectionSettings, TopicDetailParams, NodeTopicListParams, CacheSettings
+  AuthSettings, ApiService, DateUtils, CollectionSettings, TopicDetailParams, NodeTopicListParams, CacheSettings,
+  CookieJarSettings, AuthSessionSettings
 }
   from 'shared'
 import type { V2exAuthenticatedMember, V2exNotification, SavedTopic, SavedNode, ViewedTopic, CacheStats } from 'shared'
@@ -78,6 +79,7 @@ struct Index {
 
   aboutToAppear(): void {
     this.loadAuthSnapshot()
+    this.loadSessionSnapshot()
     this.loadSavedTopics()
     this.loadSavedNodes()
     this.loadViewedTopics()
@@ -277,9 +279,23 @@ struct Index {
   private updateApiDomain(useCoDomain: boolean): void {
     this.useCoDomain = useCoDomain
     this.http.setBaseUrl(useCoDomain ? ApiConstants.BASE_URL_CO : ApiConstants.BASE_URL_COM)
+    CookieJarSettings.refreshConfiguredState()
+    CookieJarSettings.restoreCurrentToWebCookieManager().catch((error: Error) => {
+      console.error('restore web cookie failed: ' + error.message)
+    })
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     ApiDomainSettings.save(context, useCoDomain).catch((error: Error) => {
       console.error('save api domain failed: ' + error.message)
+    })
+  }
+
+  private loadSessionSnapshot(): void {
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    CookieJarSettings.load(context).catch((error: Error) => {
+      console.error('restore cookie jar failed: ' + error.message)
+    })
+    AuthSessionSettings.load(context).catch((error: Error) => {
+      console.error('restore auth session failed: ' + error.message)
     })
   }
 
