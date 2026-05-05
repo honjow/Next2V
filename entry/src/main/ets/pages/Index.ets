@@ -5,7 +5,7 @@ import {
 import { common } from '@kit.AbilityKit'
 import {
   ApiDomainSettings, HttpClient, ThemeConstants, StorageKeys, ApiConstants, TabItem,
-  AuthSettings, MediaSettings, ApiService, ApiV2Service, DateUtils, CollectionSettings, TopicDetailParams, NodeTopicListParams, ImagePreviewParams, CacheSettings,
+  AuthSettings, MediaSettings, WriteActionSettings, ApiService, ApiV2Service, DateUtils, CollectionSettings, TopicDetailParams, NodeTopicListParams, ImagePreviewParams, CacheSettings,
   CookieJarSettings, AuthSessionSettings, V2exSessionParser, LoadingFooter
 }
   from 'shared'
@@ -66,6 +66,7 @@ struct Index {
   @StorageLink(StorageKeys.MEDIA_AUTO_LOAD_IMAGES) autoLoadImages: boolean = true
   @StorageLink(StorageKeys.AUTH_TOKEN_CONFIGURED) authTokenConfigured: boolean = false
   @StorageLink(StorageKeys.AUTH_COOKIE_CONFIGURED) authCookieConfigured: boolean = false
+  @StorageLink(StorageKeys.ACCOUNT_WRITE_ENABLED) accountWriteEnabled: boolean = false
   @StorageLink(StorageKeys.AUTH_USERNAME) storedUsername: string = ''
   @StorageLink(StorageKeys.AUTH_SESSION_USERNAME) sessionUsername: string = ''
   @StorageLink(StorageKeys.AUTH_SESSION_AVATAR) sessionAvatar: string = ''
@@ -312,6 +313,41 @@ struct Index {
 
         ListItem() {
           Column() {
+            Text('写入操作')
+              .fontSize(ThemeConstants.FONT_SIZE_BODY)
+              .fontWeight(FontWeight.Medium)
+              .fontColor($r('sys.color.font_primary'))
+            Text(`全局开关: ${this.accountWriteEnabled ? '开启' : '关闭'}`)
+              .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+              .fontColor(this.accountWriteEnabled ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.font_secondary'))
+              .margin({ top: ThemeConstants.SPACE_XS })
+            Text('开启后会显示写入相关 UI，提交仍需二次确认。')
+              .fontSize(ThemeConstants.FONT_SIZE_TINY)
+              .fontColor($r('sys.color.font_secondary'))
+              .margin({ top: ThemeConstants.SPACE_XS })
+            Row({ space: ThemeConstants.SPACE_SM }) {
+              Button('开启')
+                .fontSize(ThemeConstants.FONT_SIZE_TAG)
+                .height(40)
+                .enabled(!this.accountWriteEnabled)
+                .onClick(() => { this.confirmEnableWriteActions() })
+              Button('关闭')
+                .fontSize(ThemeConstants.FONT_SIZE_TAG)
+                .height(40)
+                .enabled(this.accountWriteEnabled)
+                .onClick(() => { this.updateWriteActions(false) })
+            }.margin({ top: ThemeConstants.SPACE_SM })
+          }
+            .padding(ThemeConstants.SPACE_LG)
+            .width('100%')
+            .alignItems(HorizontalAlign.Start)
+            .borderRadius(ThemeConstants.RADIUS_MD)
+            .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+        }
+          .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, top: ThemeConstants.SPACE_SM })
+
+        ListItem() {
+          Column() {
             Text('API 域名').fontSize(ThemeConstants.FONT_SIZE_BODY).fontWeight(FontWeight.Medium).fontColor($r('sys.color.font_primary'))
             Text(`当前: ${this.useCoDomain ? 'v2ex.co' : 'v2ex.com'}`)
               .fontSize(ThemeConstants.FONT_SIZE_CAPTION).fontColor($r('sys.color.font_secondary')).margin({ top: ThemeConstants.SPACE_XS })
@@ -364,6 +400,30 @@ struct Index {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     MediaSettings.save(context, autoLoadImages).catch((error: Error) => {
       console.error('save media settings failed: ' + error.message)
+    })
+  }
+
+  private confirmEnableWriteActions(): void {
+    if (this.accountWriteEnabled) {
+      return
+    }
+    AlertDialog.show({
+      title: '开启写入操作',
+      message: '写入操作可能导致误触或误操作。确定开启吗？',
+      primaryButton: { value: '取消', action: () => { } },
+      secondaryButton: {
+        value: '开启',
+        fontColor: ThemeConstants.BRAND_PRIMARY,
+        action: () => { this.updateWriteActions(true) }
+      }
+    })
+  }
+
+  private updateWriteActions(enabled: boolean): void {
+    this.accountWriteEnabled = enabled
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    WriteActionSettings.save(context, enabled).catch((error: Error) => {
+      console.error('save write settings failed: ' + error.message)
     })
   }
 
