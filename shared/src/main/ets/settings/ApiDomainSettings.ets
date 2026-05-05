@@ -14,8 +14,8 @@ export class ApiDomainSettings {
   }
 
   static async load(context: common.UIAbilityContext): Promise<boolean> {
-    const store = await preferences.getPreferences(context, STORE_NAME)
     try {
+      const store = await preferences.getPreferences(context, STORE_NAME)
       const useCoDomain = store.getSync(KEY_USE_CO_DOMAIN, false) as boolean
       ApiDomainSettings.apply(useCoDomain)
       return useCoDomain
@@ -27,8 +27,8 @@ export class ApiDomainSettings {
 
   static async save(context: common.UIAbilityContext, useCoDomain: boolean): Promise<void> {
     ApiDomainSettings.apply(useCoDomain)
-    const store = await preferences.getPreferences(context, STORE_NAME)
     try {
+      const store = await preferences.getPreferences(context, STORE_NAME)
       store.putSync(KEY_USE_CO_DOMAIN, useCoDomain)
       store.flushSync()
     } catch (error) {
