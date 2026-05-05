@@ -23,6 +23,11 @@ PROJ="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 HDC=/home/gamer/devtool/ohos/command-line-tools/sdk/default/openharmony/toolchains/hdc
 BUNDLE=com.next2v.app
 
+keep_awake() {
+  "$HDC" shell "power-shell wakeup" >/dev/null 2>&1 || true
+  "$HDC" shell "power-shell timeout -o 3600000" >/dev/null 2>&1 || true
+}
+
 case "$1" in
   -h|--help)
     cat <<'EOF'
@@ -47,9 +52,11 @@ dev.sh - Next2V 鸿蒙开发一键脚本
 EOF
     ;;
   --log)
+    keep_awake
     "$HDC" shell "hilog | grep -i next2v"
     ;;
   --launch)
+    keep_awake
     "$HDC" shell "aa start -a EntryAbility -b $BUNDLE"
     ;;
   --refresh)
