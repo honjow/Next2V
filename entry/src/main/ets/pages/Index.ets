@@ -13,7 +13,7 @@ import type { V2exAuthenticatedMember, V2exNotification, SavedTopic, SavedNode, 
 import type { V2exTokenInfo } from 'shared'
 import { HomePage } from 'feed'
 import { ReplyEditorPage, TopicDetailPage } from 'detail'
-import { DiscoverPage, NodeTopicPage } from 'node'
+import { DiscoverPage, NodePickerPage, NodeTopicPage } from 'node'
 import { UserProfilePage } from 'user'
 import { ComponentContent, promptAction } from '@kit.ArkUI'
 import { V2exWebLoginPage } from './V2exWebLoginPage'
@@ -138,6 +138,9 @@ struct Index {
         .titleBar(this.navDestTitleBarOpts())
     } else if (name === 'V2exNativeLogin') {
       HdsNavDestination() { V2exNativeLoginPage() }
+        .titleBar(this.navDestTitleBarOpts())
+    } else if (name === 'NodePicker') {
+      HdsNavDestination() { NodePickerPage() }
         .titleBar(this.navDestTitleBarOpts())
     } else if (name === 'TopicEditor') {
       HdsNavDestination() { TopicEditorPage() }

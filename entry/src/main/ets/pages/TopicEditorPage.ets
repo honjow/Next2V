@@ -57,15 +57,23 @@ export struct TopicEditorPage {
         .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
         .fontColor($r('sys.color.font_secondary'))
 
-      TextInput({ placeholder: '节点（如 create）', text: this.nodeName })
-        .height(44)
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
-        .borderRadius(ThemeConstants.RADIUS_MD)
-        .onChange((value: string) => {
-          this.nodeName = value
-          this.scheduleSaveDraft()
-        })
+      Row({ space: ThemeConstants.SPACE_SM }) {
+        TextInput({ placeholder: '节点（如 create）', text: this.nodeName })
+          .height(44)
+          .fontSize(ThemeConstants.FONT_SIZE_BODY)
+          .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
+          .borderRadius(ThemeConstants.RADIUS_MD)
+          .layoutWeight(1)
+          .onChange((value: string) => {
+            this.nodeName = value
+            this.scheduleSaveDraft()
+          })
+        Button('选择')
+          .fontSize(ThemeConstants.FONT_SIZE_TAG)
+          .height(44)
+          .onClick(() => { this.stack.pushPathByName('NodePicker', null) })
+      }
+      .width('100%')
 
       TextInput({ placeholder: '标题', text: this.title })
         .height(44)
@@ -234,4 +242,3 @@ export struct TopicEditorPage {
       })
   }
 }
-
