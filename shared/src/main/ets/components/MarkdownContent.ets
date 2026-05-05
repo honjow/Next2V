@@ -1,6 +1,7 @@
 import { Markdown, MarkdownOptions, Token, Tokens, lexer } from "@lidary/markdown";
 import { pasteboard } from "@kit.BasicServicesKit";
 import { promptAction } from "@kit.ArkUI";
+import { StorageKeys } from "../constants/StorageKeys";
 import { ThemeConstants } from "../theme/ThemeConstants";
 
 // Custom token types used to hijack @lidary/markdown's built-in rendering.
@@ -8,6 +9,7 @@ import { ThemeConstants } from "../theme/ThemeConstants";
 // it falls through to customBlockBuilder where we render it ourselves.
 const CODE_MONO = "customCode";
 const LIST_MONO = "customList";
+const IMAGE_BLOCK_MONO = "customImageBlock";
 
 type TokenValue = Object | null | undefined;
 type TokenRecord = Record<string, TokenValue>;
@@ -331,6 +333,8 @@ function CustomBlockBuilder(token: Token, options: MarkdownOptions) {
     .backgroundColor(options.theme?.code?.backgroundColor ?? ThemeConstants.CODE_BG);
   } else if (token.type === LIST_MONO) {
     CustomList({ listToken: token as Tokens.List, options: options });
+  } else if (token.type === IMAGE_BLOCK_MONO) {
+    MarkdownAutoImage({ url: _normalizeUrl((token as Tokens.Image).href), options: options });
   }
 }
 
@@ -375,6 +379,47 @@ function InlineTokenSpans(tokens: Token[], fontSize: number) {
         .fontColor(ThemeConstants.TEXT_PRIMARY);
     }
   });
+}
+
+@Component
+struct MarkdownAutoImage {
+  @Prop url: string = "";
+  @Prop options: MarkdownOptions;
+  @StorageLink(StorageKeys.MEDIA_AUTO_LOAD_IMAGES) autoLoadImages: boolean = true
+
+  build() {
+    if (this.autoLoadImages) {
+      Image(this.url)
+        .width("100%")
+        .objectFit(ImageFit.Contain)
+        .borderRadius(ThemeConstants.RADIUS_SM)
+        .onClick(() => {
+          const click = this.options?.imageClick as ((url?: string) => void) | undefined;
+          if (click) {
+            click(this.url);
+          }
+        });
+    } else {
+      Row({ space: ThemeConstants.SPACE_SM }) {
+        Text('图片自动加载已关闭')
+          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+          .fontColor(ThemeConstants.TEXT_SECONDARY)
+        Text('点击预览')
+          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+          .fontColor(ThemeConstants.TEXT_LINK)
+      }
+      .padding(ThemeConstants.SPACE_MD)
+      .width('100%')
+      .borderRadius(ThemeConstants.RADIUS_SM)
+      .backgroundColor(ThemeConstants.BG_SUB)
+      .onClick(() => {
+        const click = this.options?.imageClick as ((url?: string) => void) | undefined;
+        if (click) {
+          click(this.url);
+        }
+      })
+    }
+  }
 }
 
 // Replaces the library's built-in MList which has broken bullet centering.
@@ -439,16 +484,7 @@ struct CustomList {
                         }.width("100%");
                       }
                       ForEach(this.paragraphImageTokens(child), (img: Tokens.Image, imgIdx: number) => {
-                        Image(_normalizeUrl(img.href))
-                          .width("100%")
-                          .objectFit(ImageFit.Contain)
-                          .borderRadius(ThemeConstants.RADIUS_SM)
-                          .onClick(() => {
-                            const click = this.options?.imageClick as ((url?: string) => void) | undefined;
-                            if (click) {
-                              click(_normalizeUrl(img.href));
-                            }
-                          });
+                        MarkdownAutoImage({ url: _normalizeUrl(img.href), options: this.options });
                       }, (img: Tokens.Image, imgIdx: number) => `${img.href}-${imgIdx}`)
                     }.width("100%");
                   } else {
@@ -528,8 +564,41 @@ export struct MarkdownContent {
   private static processTokens(md: string): Token[] {
     let tokens = lexer(md, { gfm: true, breaks: true });
     MarkdownContent.rewriteBareImageLinks(tokens);
+    MarkdownContent.promoteStandaloneImageParagraphs(tokens);
     MarkdownContent.retypeBlockTokens(tokens);
     return tokens;
+  }
+
+  private static promoteStandaloneImageParagraphs(tokens: Token[]): void {
+    if (!tokens || tokens.length === 0) {
+      return;
+    }
+    for (let i = 0; i < tokens.length; i++) {
+      const token = tokens[i] as TokenRecord;
+      const type = (token["type"] as string) || "";
+      if (type === "paragraph") {
+        const inlineTokens = token["tokens"] as Token[] | undefined;
+        if (Array.isArray(inlineTokens) && inlineTokens.length > 0) {
+          const meaningful = inlineTokens.filter((t: Token) => t && t.type !== "br");
+          if (meaningful.length === 1 && meaningful[0].type === "image") {
+            const imageToken = meaningful[0] as Token;
+            (imageToken as TokenRecord)["type"] = IMAGE_BLOCK_MONO;
+            tokens[i] = imageToken;
+            continue;
+          }
+        }
+      }
+
+      if (type === "list") {
+        // CustomList renders list items; avoid rewriting list internals here.
+        continue;
+      }
+
+      const childTokens = token["tokens"] as Token[] | undefined;
+      if (Array.isArray(childTokens) && childTokens.length > 0) {
+        MarkdownContent.promoteStandaloneImageParagraphs(childTokens);
+      }
+    }
   }
 
   private static retypeBlockTokens(tokens: Token[]): void {

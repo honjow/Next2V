@@ -1,6 +1,6 @@
 import { UIAbility, Want, AbilityConstant } from '@kit.AbilityKit'
 import { window } from '@kit.ArkUI'
-import { ApiDomainSettings, StorageKeys } from 'shared'
+import { ApiDomainSettings, MediaSettings, StorageKeys } from 'shared'
 
 const TRANSPARENT_COLOR: string = '#00FFFFFF'
 const ENTRY_PAGE: string = 'pages/Index'
@@ -29,7 +29,14 @@ export default class EntryAbility extends UIAbility {
         ApiDomainSettings.apply(false)
       })
       .finally(() => {
-        this.loadContent(windowStage, win)
+        MediaSettings.load(this.context)
+          .catch((error: Error) => {
+            console.error('restore media settings failed: ' + error.message)
+            MediaSettings.apply(true)
+          })
+          .finally(() => {
+            this.loadContent(windowStage, win)
+          })
       })
   }
 

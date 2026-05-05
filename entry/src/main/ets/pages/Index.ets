@@ -5,7 +5,7 @@ import {
 import { common } from '@kit.AbilityKit'
 import {
   ApiDomainSettings, HttpClient, ThemeConstants, StorageKeys, ApiConstants, TabItem,
-  AuthSettings, ApiService, ApiV2Service, DateUtils, CollectionSettings, TopicDetailParams, NodeTopicListParams, ImagePreviewParams, CacheSettings,
+  AuthSettings, MediaSettings, ApiService, ApiV2Service, DateUtils, CollectionSettings, TopicDetailParams, NodeTopicListParams, ImagePreviewParams, CacheSettings,
   CookieJarSettings, AuthSessionSettings, V2exSessionParser, LoadingFooter
 }
   from 'shared'
@@ -63,6 +63,7 @@ struct Index {
   private tabTitles: string[] = ['首页', '发现', '通知', '我的']
   @State ct: number = 0
   @StorageLink(StorageKeys.USE_CO_DOMAIN) useCoDomain: boolean = false
+  @StorageLink(StorageKeys.MEDIA_AUTO_LOAD_IMAGES) autoLoadImages: boolean = true
   @StorageLink(StorageKeys.AUTH_TOKEN_CONFIGURED) authTokenConfigured: boolean = false
   @StorageLink(StorageKeys.AUTH_COOKIE_CONFIGURED) authCookieConfigured: boolean = false
   @StorageLink(StorageKeys.AUTH_USERNAME) storedUsername: string = ''
@@ -291,6 +292,25 @@ struct Index {
 
         ListItem() {
           Column() {
+            Text('图片加载').fontSize(ThemeConstants.FONT_SIZE_BODY).fontWeight(FontWeight.Medium).fontColor($r('sys.color.font_primary'))
+            Text(`自动加载: ${this.autoLoadImages ? '开启' : '关闭'}`)
+              .fontSize(ThemeConstants.FONT_SIZE_CAPTION).fontColor($r('sys.color.font_secondary')).margin({ top: ThemeConstants.SPACE_XS })
+            Row({ space: ThemeConstants.SPACE_SM }) {
+              Button('开启').fontSize(ThemeConstants.FONT_SIZE_TAG)
+                .height(40)
+                .onClick(() => { this.updateAutoLoadImages(true) })
+              Button('关闭').fontSize(ThemeConstants.FONT_SIZE_TAG)
+                .height(40)
+                .onClick(() => { this.updateAutoLoadImages(false) })
+            }.margin({ top: ThemeConstants.SPACE_SM })
+          }
+            .padding(ThemeConstants.SPACE_LG).width('100%').alignItems(HorizontalAlign.Start).borderRadius(ThemeConstants.RADIUS_MD)
+            .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+        }
+          .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, top: ThemeConstants.SPACE_SM })
+
+        ListItem() {
+          Column() {
             Text('API 域名').fontSize(ThemeConstants.FONT_SIZE_BODY).fontWeight(FontWeight.Medium).fontColor($r('sys.color.font_primary'))
             Text(`当前: ${this.useCoDomain ? 'v2ex.co' : 'v2ex.com'}`)
               .fontSize(ThemeConstants.FONT_SIZE_CAPTION).fontColor($r('sys.color.font_secondary')).margin({ top: ThemeConstants.SPACE_XS })
@@ -335,6 +355,14 @@ struct Index {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     ApiDomainSettings.save(context, useCoDomain).catch((error: Error) => {
       console.error('save api domain failed: ' + error.message)
+    })
+  }
+
+  private updateAutoLoadImages(autoLoadImages: boolean): void {
+    this.autoLoadImages = autoLoadImages
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    MediaSettings.save(context, autoLoadImages).catch((error: Error) => {
+      console.error('save media settings failed: ' + error.message)
     })
   }
 
