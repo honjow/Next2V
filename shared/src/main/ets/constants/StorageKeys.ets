@@ -11,4 +11,8 @@ export class StorageKeys {
   static readonly AUTH_SESSION_USERNAME: string = 'authSessionUsername'
   static readonly AUTH_SESSION_AVATAR: string = 'authSessionAvatar'
   static readonly AUTH_SESSION_VALIDATED_AT: string = 'authSessionValidatedAt'
+  static readonly API_RATE_LIMIT_LIMIT: string = 'apiRateLimitLimit'
+  static readonly API_RATE_LIMIT_REMAINING: string = 'apiRateLimitRemaining'
+  static readonly API_RATE_LIMIT_RESET: string = 'apiRateLimitReset'
+  static readonly API_RATE_LIMIT_UPDATED_AT: string = 'apiRateLimitUpdatedAt'
 }

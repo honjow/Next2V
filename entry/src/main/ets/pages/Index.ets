@@ -67,6 +67,10 @@ struct Index {
   @StorageLink(StorageKeys.AUTH_SESSION_USERNAME) sessionUsername: string = ''
   @StorageLink(StorageKeys.AUTH_SESSION_AVATAR) sessionAvatar: string = ''
   @StorageLink(StorageKeys.AUTH_SESSION_VALIDATED_AT) sessionValidatedAt: number = 0
+  @StorageLink(StorageKeys.API_RATE_LIMIT_LIMIT) apiRateLimitLimit: number = 0
+  @StorageLink(StorageKeys.API_RATE_LIMIT_REMAINING) apiRateLimitRemaining: number = 0
+  @StorageLink(StorageKeys.API_RATE_LIMIT_RESET) apiRateLimitReset: number = 0
+  @StorageLink(StorageKeys.API_RATE_LIMIT_UPDATED_AT) apiRateLimitUpdatedAt: number = 0
   @State private authToken: string = ''
   @State private tokenDraft: string = ''
   @State private authProfile: V2exAuthenticatedMember | null = null
@@ -401,6 +405,21 @@ struct Index {
         Text(this.sessionError)
           .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
           .fontColor(Color.Red)
+      }
+      if (this.apiRateLimitLimit > 0) {
+        Text(`API Rate Limit: ${this.apiRateLimitRemaining} / ${this.apiRateLimitLimit}`)
+          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+          .fontColor($r('sys.color.font_secondary'))
+        if (this.apiRateLimitReset > 0) {
+          Text(`重置时间: ${DateUtils.toDateString(this.apiRateLimitReset)}`)
+            .fontSize(ThemeConstants.FONT_SIZE_TINY)
+            .fontColor($r('sys.color.font_secondary'))
+        }
+        if (this.apiRateLimitUpdatedAt > 0) {
+          Text(`更新于 ${DateUtils.toDateString(this.apiRateLimitUpdatedAt)}`)
+            .fontSize(ThemeConstants.FONT_SIZE_TINY)
+            .fontColor($r('sys.color.font_secondary'))
+        }
       }
       Button('网页登录（推荐）')
         .fontSize(ThemeConstants.FONT_SIZE_TAG)

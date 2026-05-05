@@ -1,6 +1,7 @@
 import { http } from '@kit.NetworkKit'
 import { HttpClient } from './HttpClient'
 import { ApiConstants } from '../constants/ApiConstants'
+import { StorageKeys } from '../constants/StorageKeys'
 import type { V2exNode, V2exReply, V2exTopic } from './NetworkTypes'
 
 const MAX_RETRIES: number = 3
@@ -122,6 +123,7 @@ export class ApiV2Service {
       const statusCode = response.responseCode as number
       const headers = ApiV2Service.normalizeHeaders(headerBag || response.header)
       const rateLimit = ApiV2Service.parseRateLimit(headers)
+      ApiV2Service.saveRateLimitSnapshot(rateLimit)
 
       if (statusCode < 200 || statusCode >= 300) {
         const apiMessage = ApiV2Service.extractApiMessage((response.result as string) || '')
@@ -222,6 +224,20 @@ export class ApiV2Service {
       return null
     }
     return { limit, remaining, reset }
+  }
+
+  private static saveRateLimitSnapshot(rateLimit: ApiV2RateLimit | null): void {
+    if (!rateLimit) {
+      return
+    }
+    try {
+      AppStorage.setOrCreate<number>(StorageKeys.API_RATE_LIMIT_LIMIT, rateLimit.limit)
+      AppStorage.setOrCreate<number>(StorageKeys.API_RATE_LIMIT_REMAINING, rateLimit.remaining)
+      AppStorage.setOrCreate<number>(StorageKeys.API_RATE_LIMIT_RESET, rateLimit.reset)
+      AppStorage.setOrCreate<number>(StorageKeys.API_RATE_LIMIT_UPDATED_AT, Math.floor(Date.now() / 1000))
+    } catch (e) {
+      // ignore
+    }
   }
 
   private static parseIntHeader(headers: Record<string, Object>, keyLowerCase: string): number {
