@@ -221,6 +221,13 @@ struct Index {
           ForEach(this.notifications, (item: V2exNotification) => {
             ListItem() { this.NotificationCard(item) }
               .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
+              .onClick(() => {
+                const topicId = item.topic_id || 0
+                if (topicId > 0) {
+                  let p: TopicDetailParams = { topicId: topicId }
+                  this.ns.pushPathByName('TopicDetail', p as Object)
+                }
+              })
           })
           if (this.notifications.length === 0) {
             ListItem() { this.EmptyNoticeView() }
