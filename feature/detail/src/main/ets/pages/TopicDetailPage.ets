@@ -245,6 +245,21 @@ export struct TopicDetailPage {
           .fontSize(ThemeConstants.FONT_SIZE_META)
           .fontColor($r('sys.color.font_secondary'))
       }
+      Blank()
+      Text('顶部')
+        .fontSize(ThemeConstants.FONT_SIZE_TAG)
+        .fontColor($r('sys.color.font_secondary'))
+        .padding({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM, top: 2, bottom: 2 })
+        .borderRadius(ThemeConstants.RADIUS_SM)
+        .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+        .onClick(() => { this.scrollToTop() })
+      Text('最新')
+        .fontSize(ThemeConstants.FONT_SIZE_TAG)
+        .fontColor($r('sys.color.font_secondary'))
+        .padding({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM, top: 2, bottom: 2 })
+        .borderRadius(ThemeConstants.RADIUS_SM)
+        .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+        .onClick(() => { this.scrollToLatestReply() })
     }
     .width('100%')
     .padding({
@@ -253,6 +268,27 @@ export struct TopicDetailPage {
       top: ThemeConstants.SPACE_MD,
       bottom: ThemeConstants.SPACE_SM
     })
+  }
+
+  private scrollToTop(): void {
+    try {
+      this.scroller.scrollEdge(Edge.Top)
+    } catch (_e) {
+      // ignore
+    }
+  }
+
+  private scrollToLatestReply(): void {
+    const count = this.v.replyDataSource.totalCount()
+    if (count <= 0) {
+      return
+    }
+    const listIndex = 2 + count
+    try {
+      this.scroller.scrollToIndex(listIndex)
+    } catch (_e) {
+      // ignore
+    }
   }
 
   private loadSavedState(): void {
