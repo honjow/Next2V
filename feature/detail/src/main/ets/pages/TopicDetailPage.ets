@@ -1,9 +1,15 @@
 import { DetailViewModel } from '../viewmodel/DetailViewModel'
-import { common } from '@kit.AbilityKit'
+import { common, Want } from '@kit.AbilityKit'
+import { promptAction } from '@kit.ArkUI'
+import { pasteboard } from '@kit.BasicServicesKit'
 import {
   V2exReply, Avatar, ReplyCard, TimeAgo, PullRefresh, ThemeConstants, MarkdownContent,
-  NodeTopicListParams, UserProfileParams, ImagePreviewParams, CollectionSettings, CacheSettings, V2exTopic, AuthSettings, LoadingFooter
+  NodeTopicListParams, UserProfileParams, ImagePreviewParams, CollectionSettings, CacheSettings, V2exTopic, AuthSettings, LoadingFooter, HttpClient
 } from 'shared'
+
+interface ActionMenuSuccessResponse {
+  index: number
+}
 
 @Component
 export struct TopicDetailPage {
@@ -211,6 +217,19 @@ export struct TopicDetailPage {
           .borderRadius(ThemeConstants.RADIUS_SM)
           .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
           .onClick(() => { this.toggleSavedLater() })
+
+        Text('操作')
+          .fontSize(ThemeConstants.FONT_SIZE_TAG)
+          .fontColor($r('sys.color.font_secondary'))
+          .padding({
+            left: ThemeConstants.SPACE_SM,
+            right: ThemeConstants.SPACE_SM,
+            top: 2,
+            bottom: 2
+          })
+          .borderRadius(ThemeConstants.RADIUS_SM)
+          .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+          .onClick(() => { this.openTopicActionMenu() })
       }
       .width('100%')
       .alignItems(VerticalAlign.Center)
@@ -328,5 +347,71 @@ export struct TopicDetailPage {
       .catch((error: Error) => {
         console.error('record viewed topic failed: ' + error.message)
       })
+  }
+
+  private openTopicActionMenu(): void {
+    if (this.v.topic === null) {
+      return
+    }
+    promptAction.showActionMenu({
+      title: '主题操作',
+      buttons: [
+        { text: '复制标题', color: '#666666' },
+        { text: '复制链接', color: '#666666' },
+        { text: '打开浏览器', color: '#666666' },
+        { text: '复制内容', color: '#666666' }
+      ]
+    })
+      .then((data: ActionMenuSuccessResponse) => {
+        if (data.index === 0) {
+          this.copyToClipboard(this.v.topic!.title || '')
+        } else if (data.index === 1) {
+          this.copyToClipboard(this.getTopicUrl())
+        } else if (data.index === 2) {
+          this.openInSystemBrowser(this.getTopicUrl())
+        } else if (data.index === 3) {
+          this.copyToClipboard(this.v.topic!.content || '')
+        }
+      })
+      .catch((_error: Error) => {
+        // ignore
+      })
+  }
+
+  private copyToClipboard(text: string): void {
+    const content = (text || '').trim()
+    if (!content) {
+      return
+    }
+    let data = pasteboard.createData(pasteboard.MIMETYPE_TEXT_PLAIN, content)
+    pasteboard.getSystemPasteboard().setDataSync(data)
+    promptAction.openToast({ message: '已复制' }).catch((_error: Error) => { })
+  }
+
+  private openInSystemBrowser(url: string): void {
+    const target = (url || '').trim()
+    if (!target) {
+      return
+    }
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    const want: Want = { action: 'ohos.want.action.viewData', uri: target }
+    context.startAbility(want)
+      .catch((error: Error) => {
+        promptAction.openToast({ message: error.message || '打开失败' }).catch((_error: Error) => { })
+      })
+  }
+
+  private getTopicUrl(): string {
+    const baseUrl = HttpClient.getInstance().getBaseUrl()
+    if (this.v.topic !== null) {
+      const raw = (this.v.topic!.url || '').trim()
+      if (raw.startsWith('http://') || raw.startsWith('https://')) {
+        return raw
+      }
+      if (raw.startsWith('/')) {
+        return `${baseUrl}${raw}`
+      }
+    }
+    return `${baseUrl}/t/${this.topicId}`
   }
 }
