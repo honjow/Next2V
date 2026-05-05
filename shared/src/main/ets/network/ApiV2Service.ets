@@ -67,6 +67,13 @@ export class ApiV2Service {
     return { data: replies, headers: res.headers, rateLimit: res.rateLimit, statusCode: res.statusCode }
   }
 
+  async deleteNotification(token: string, notificationId: number): Promise<ApiV2Response<Object>> {
+    if (notificationId <= 0) {
+      throw new Error('无效的通知 ID')
+    }
+    return this.delete<Object>(`${ApiConstants.API_V2_NOTIFICATIONS}/${notificationId}`, token)
+  }
+
   async get<T>(endpoint: string, token: string): Promise<ApiV2Response<T>> {
     return this.request<T>(endpoint, http.RequestMethod.GET, token)
   }

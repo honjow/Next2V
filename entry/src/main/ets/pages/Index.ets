@@ -5,7 +5,7 @@ import {
 import { common } from '@kit.AbilityKit'
 import {
   ApiDomainSettings, HttpClient, ThemeConstants, StorageKeys, ApiConstants, TabItem,
-  AuthSettings, ApiService, DateUtils, CollectionSettings, TopicDetailParams, NodeTopicListParams, CacheSettings,
+  AuthSettings, ApiService, ApiV2Service, DateUtils, CollectionSettings, TopicDetailParams, NodeTopicListParams, CacheSettings,
   CookieJarSettings, AuthSessionSettings, V2exSessionParser, LoadingFooter
 }
   from 'shared'
@@ -15,7 +15,7 @@ import { HomePage } from 'feed'
 import { TopicDetailPage } from 'detail'
 import { DiscoverPage, NodeTopicPage } from 'node'
 import { UserProfilePage } from 'user'
-import { ComponentContent } from '@kit.ArkUI'
+import { ComponentContent, promptAction } from '@kit.ArkUI'
 import { V2exWebLoginPage } from './V2exWebLoginPage'
 import { V2exNativeLoginPage } from './V2exNativeLoginPage'
 
@@ -89,11 +89,13 @@ struct Index {
   @State private cacheMessage: string = ''
   @State private notificationError: string = ''
   @State private isNotificationLoading: boolean = false
+  @State private isNotificationDeleting: boolean = false
   @State private notificationPage: number = 1
   @State private notificationHasMore: boolean = true
   @State private isNotificationLoadingMore: boolean = false
   private http: HttpClient = HttpClient.getInstance()
   private api: ApiService = new ApiService()
+  private apiV2: ApiV2Service = new ApiV2Service()
   private readonly NOTIFICATION_PAGE_SIZE: number = 20
 
   aboutToAppear(): void {
@@ -228,6 +230,7 @@ struct Index {
                   this.ns.pushPathByName('TopicDetail', p as Object)
                 }
               })
+              .swipeAction({ end: this.NotificationSwipeEnd(item) })
           })
           if (this.notifications.length === 0) {
             ListItem() { this.EmptyNoticeView() }
@@ -781,6 +784,55 @@ struct Index {
     .alignItems(HorizontalAlign.Start)
     .borderRadius(ThemeConstants.RADIUS_MD)
     .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+  }
+
+  @Builder NotificationSwipeEnd(item: V2exNotification) {
+    Row() {
+      Button('删除')
+        .fontSize(ThemeConstants.FONT_SIZE_TAG)
+        .height(40)
+        .fontColor(Color.White)
+        .backgroundColor(Color.Red)
+        .onClick(() => { this.confirmDeleteNotification(item) })
+    }
+    .height('100%')
+    .padding({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
+    .justifyContent(FlexAlign.Center)
+  }
+
+  private confirmDeleteNotification(item: V2exNotification): void {
+    const id = item.id || 0
+    if (id <= 0 || this.isNotificationDeleting) {
+      return
+    }
+    AlertDialog.show({
+      title: '删除通知',
+      message: '确定删除这条通知吗？',
+      primaryButton: { value: '取消' },
+      secondaryButton: {
+        value: '删除',
+        fontColor: Color.Red,
+        action: () => { this.deleteNotification(id) }
+      }
+    })
+  }
+
+  private deleteNotification(notificationId: number): void {
+    if (!this.authTokenConfigured || !this.authToken || this.isNotificationDeleting) {
+      return
+    }
+    this.isNotificationDeleting = true
+    this.apiV2.deleteNotification(this.authToken, notificationId)
+      .then(() => {
+        this.notifications = this.notifications.filter(item => item.id !== notificationId)
+        promptAction.openToast({ message: '已删除' }).catch((_error: Error) => { })
+      })
+      .catch((error: Error) => {
+        promptAction.openToast({ message: error.message || '删除失败' }).catch((_error: Error) => { })
+      })
+      .finally(() => {
+        this.isNotificationDeleting = false
+      })
   }
 
   private loadAuthSnapshot(): void {
