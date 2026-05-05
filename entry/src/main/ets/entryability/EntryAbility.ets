@@ -11,12 +11,18 @@ export default class EntryAbility extends UIAbility {
   onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {}
 
   onWindowStageCreate(windowStage: window.WindowStage): void {
-    let win = windowStage.getMainWindowSync()
-    win.setWindowLayoutFullScreen(true)
-    win.setWindowSystemBarProperties({
-      statusBarColor: TRANSPARENT_COLOR,
-      navigationBarColor: TRANSPARENT_COLOR
-    })
+    let win: window.Window | null = null
+    try {
+      win = windowStage.getMainWindowSync()
+      win.setWindowLayoutFullScreen(true)
+      win.setWindowSystemBarProperties({
+        statusBarColor: TRANSPARENT_COLOR,
+        navigationBarColor: TRANSPARENT_COLOR
+      })
+    } catch (error) {
+      const e = error as Error
+      console.error('configure window failed: ' + e.message)
+    }
     ApiDomainSettings.load(this.context)
       .catch((error: Error) => {
         console.error('restore api domain failed: ' + error.message)
@@ -27,18 +33,21 @@ export default class EntryAbility extends UIAbility {
       })
   }
 
-  private loadContent(windowStage: window.WindowStage, win: window.Window): void {
+  private loadContent(windowStage: window.WindowStage, win: window.Window | null): void {
     windowStage.loadContent(ENTRY_PAGE, (err) => {
       if (err.code) { console.error('loadContent failed: ' + JSON.stringify(err)) }
       try {
+        if (!win) {
+          win = windowStage.getMainWindowSync()
+        }
         let systemArea = win.getWindowAvoidArea(window.AvoidAreaType.TYPE_SYSTEM)
         let navArea = win.getWindowAvoidArea(window.AvoidAreaType.TYPE_NAVIGATION_INDICATOR)
         let uiCtx = windowStage.getMainWindowSync().getUIContext()
-        AppStorage.SetOrCreate<number>(StorageKeys.TOP_AVOID_HEIGHT, uiCtx.px2vp(systemArea.topRect.height))
-        AppStorage.SetOrCreate<number>(StorageKeys.BOTTOM_AVOID_HEIGHT, uiCtx.px2vp(navArea.bottomRect.height))
+        AppStorage.setOrCreate<number>(StorageKeys.TOP_AVOID_HEIGHT, uiCtx.px2vp(systemArea.topRect.height))
+        AppStorage.setOrCreate<number>(StorageKeys.BOTTOM_AVOID_HEIGHT, uiCtx.px2vp(navArea.bottomRect.height))
       } catch (e) {
-        AppStorage.SetOrCreate<number>(StorageKeys.TOP_AVOID_HEIGHT, FALLBACK_TOP_AVOID)
-        AppStorage.SetOrCreate<number>(StorageKeys.BOTTOM_AVOID_HEIGHT, FALLBACK_BOTTOM_AVOID)
+        AppStorage.setOrCreate<number>(StorageKeys.TOP_AVOID_HEIGHT, FALLBACK_TOP_AVOID)
+        AppStorage.setOrCreate<number>(StorageKeys.BOTTOM_AVOID_HEIGHT, FALLBACK_BOTTOM_AVOID)
       }
     })
   }
