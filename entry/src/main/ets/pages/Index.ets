@@ -399,6 +399,25 @@ struct Index {
           .fontWeight(FontWeight.Medium)
           .fontColor($r('sys.color.font_primary'))
       }
+      if (this.authProfile) {
+        if (this.authProfile.tagline) {
+          Text(this.authProfile.tagline)
+            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+            .fontColor($r('sys.color.font_secondary'))
+            .maxLines(2)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
+        }
+        if (this.authProfile.location) {
+          Text(`位置: ${this.authProfile.location}`)
+            .fontSize(ThemeConstants.FONT_SIZE_TINY)
+            .fontColor($r('sys.color.font_secondary'))
+        }
+        if (this.authProfile.created && this.authProfile.created > 0) {
+          Text(`注册: ${DateUtils.toDateString(this.authProfile.created)}`)
+            .fontSize(ThemeConstants.FONT_SIZE_TINY)
+            .fontColor($r('sys.color.font_secondary'))
+        }
+      }
       if (this.authCookieConfigured && this.isSessionValidating) {
         Text('Web 会话验证中…')
           .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
