@@ -812,7 +812,7 @@ struct Index {
     AlertDialog.show({
       title: '删除通知',
       message: '确定删除这条通知吗？',
-      primaryButton: { value: '取消' },
+      primaryButton: { value: '取消', action: () => { } },
       secondaryButton: {
         value: '删除',
         fontColor: Color.Red,

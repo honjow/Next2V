@@ -9,6 +9,9 @@ import { ThemeConstants } from "../theme/ThemeConstants";
 const CODE_MONO = "customCode";
 const LIST_MONO = "customList";
 
+type TokenValue = Object | null | undefined;
+type TokenRecord = Record<string, TokenValue>;
+
 const _imageExtRegex = /\.(jpe?g|png|gif|webp)(?:[?#].*)?$/i;
 const _imageHostPrefixes: string[] = [
   "https://i.imgur.com/",
@@ -383,6 +386,23 @@ struct CustomList {
   @Prop options: MarkdownOptions;
   private fontSize: number = ThemeConstants.FONT_SIZE_BODY;
 
+  private paragraphTokens(child: Token): Token[] {
+    const paragraph = child as Tokens.Paragraph;
+    const tokens = paragraph.tokens as Token[] | undefined;
+    if (!Array.isArray(tokens) || tokens.length === 0) {
+      return [];
+    }
+    return tokens;
+  }
+
+  private paragraphTextTokens(child: Token): Token[] {
+    return this.paragraphTokens(child).filter((t: Token) => t && t.type !== "image" && t.type !== "br");
+  }
+
+  private paragraphImageTokens(child: Token): Tokens.Image[] {
+    return this.paragraphTokens(child).filter((t: Token) => t && t.type === "image") as Tokens.Image[];
+  }
+
   private hasImageToken(tokens: Token[]): boolean {
     if (!tokens || tokens.length === 0) {
       return false;
@@ -411,18 +431,14 @@ struct CustomList {
                   (child as Tokens.Paragraph).tokens &&
                   (child as Tokens.Paragraph).tokens.length > 0
                 ) {
-                  const paragraphTokens = (child as Tokens.Paragraph).tokens as Token[];
-                  const imageTokens = paragraphTokens.filter((t: Token) => t && t.type === "image") as Tokens.Image[];
-                  const textTokens = paragraphTokens.filter((t: Token) => t && t.type !== "image" && t.type !== "br") as Token[];
-
-                  if (this.hasImageToken(paragraphTokens)) {
+                  if (this.hasImageToken(this.paragraphTokens(child))) {
                     Column({ space: ThemeConstants.SPACE_SM }) {
-                      if (textTokens.length > 0) {
+                      if (this.paragraphTextTokens(child).length > 0) {
                         Text() {
-                          InlineTokenSpans(textTokens, this.fontSize)
+                          InlineTokenSpans(this.paragraphTextTokens(child), this.fontSize)
                         }.width("100%");
                       }
-                      ForEach(imageTokens, (img: Tokens.Image, imgIdx: number) => {
+                      ForEach(this.paragraphImageTokens(child), (img: Tokens.Image, imgIdx: number) => {
                         Image(_normalizeUrl(img.href))
                           .width("100%")
                           .objectFit(ImageFit.Contain)
@@ -437,7 +453,7 @@ struct CustomList {
                     }.width("100%");
                   } else {
                     Text() {
-                      InlineTokenSpans(paragraphTokens, this.fontSize)
+                      InlineTokenSpans(this.paragraphTokens(child), this.fontSize)
                     }.width("100%");
                   }
                 } else {
@@ -521,7 +537,7 @@ export struct MarkdownContent {
       return;
     }
     for (let i = 0; i < tokens.length; i++) {
-      const token = tokens[i] as unknown as Record<string, Object>;
+      const token = tokens[i] as TokenRecord;
       const type = (token["type"] as string) || "";
       if (type === "code") {
         token["type"] = CODE_MONO;
@@ -529,15 +545,15 @@ export struct MarkdownContent {
         token["type"] = LIST_MONO;
       }
 
-      const childTokens = token["tokens"] as unknown as Token[] | undefined;
+      const childTokens = token["tokens"] as Token[] | undefined;
       if (Array.isArray(childTokens) && childTokens.length > 0) {
         MarkdownContent.retypeBlockTokens(childTokens);
       }
 
-      const items = token["items"] as unknown as Array<Record<string, Object>> | undefined;
+      const items = token["items"] as Array<TokenRecord> | undefined;
       if (Array.isArray(items) && items.length > 0) {
         for (const item of items) {
-          const itemTokens = item["tokens"] as unknown as Token[] | undefined;
+          const itemTokens = item["tokens"] as Token[] | undefined;
           if (Array.isArray(itemTokens) && itemTokens.length > 0) {
             MarkdownContent.retypeBlockTokens(itemTokens);
           }
@@ -551,22 +567,22 @@ export struct MarkdownContent {
       return;
     }
     for (let i = 0; i < tokens.length; i++) {
-      const token = tokens[i] as unknown as Record<string, Object>;
+      const token = tokens[i] as TokenRecord;
       const type = (token["type"] as string) || "";
 
       if (type === "paragraph") {
         MarkdownContent.rewriteParagraphBareImageLink(token);
       }
 
-      const childTokens = token["tokens"] as unknown as Token[] | undefined;
+      const childTokens = token["tokens"] as Token[] | undefined;
       if (Array.isArray(childTokens) && childTokens.length > 0) {
         MarkdownContent.rewriteBareImageLinks(childTokens);
       }
 
-      const items = token["items"] as unknown as Array<Record<string, Object>> | undefined;
+      const items = token["items"] as Array<TokenRecord> | undefined;
       if (Array.isArray(items) && items.length > 0) {
         for (const item of items) {
-          const itemTokens = item["tokens"] as unknown as Token[] | undefined;
+          const itemTokens = item["tokens"] as Token[] | undefined;
           if (Array.isArray(itemTokens) && itemTokens.length > 0) {
             MarkdownContent.rewriteBareImageLinks(itemTokens);
           }
@@ -575,8 +591,8 @@ export struct MarkdownContent {
     }
   }
 
-  private static rewriteParagraphBareImageLink(paragraph: Record<string, Object>): void {
-    const inlineTokens = paragraph["tokens"] as unknown as Token[] | undefined;
+  private static rewriteParagraphBareImageLink(paragraph: TokenRecord): void {
+    const inlineTokens = paragraph["tokens"] as Token[] | undefined;
     if (!Array.isArray(inlineTokens) || inlineTokens.length === 0) {
       return;
     }
@@ -586,12 +602,13 @@ export struct MarkdownContent {
       return;
     }
 
-    const only = meaningful[0] as unknown as Record<string, any>;
-    if (!only || typeof only["type"] !== "string") {
+    const only = meaningful[0] as TokenRecord;
+    const onlyType = only["type"] as string;
+    if (!only || typeof onlyType !== "string") {
       return;
     }
 
-    if (only["type"] === "link") {
+    if (onlyType === "link") {
       const href = _normalizeUrl(String(only["href"] ?? ""));
       const text = String(only["text"] ?? "").trim();
       const normalizedText = _normalizeUrl(text);
@@ -605,25 +622,24 @@ export struct MarkdownContent {
       only["href"] = href;
       only["title"] = only["title"] ?? null;
       only["text"] = "";
-      delete only["tokens"];
+      only["tokens"] = [];
       return;
     }
 
-    if (only["type"] === "text") {
+    if (onlyType === "text") {
       const rawText = String(only["text"] ?? "").trim();
       const href = _normalizeUrl(rawText);
       if (!_isProbablyImageUrl(href)) {
         return;
       }
-      paragraph["tokens"] = [
-        {
-          type: "image",
-          raw: only["raw"] ?? rawText,
-          href: href,
-          title: null,
-          text: "",
-        } as unknown as Token,
-      ];
+      const imageToken: Tokens.Image = {
+        type: "image",
+        raw: String(only["raw"] ?? rawText),
+        href: href,
+        title: null,
+        text: "",
+      };
+      paragraph["tokens"] = [imageToken];
     }
   }
 

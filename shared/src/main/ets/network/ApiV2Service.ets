@@ -182,7 +182,7 @@ export class ApiV2Service {
       return []
     }
     if (Array.isArray(data)) {
-      return data as unknown as T[]
+      return data as T[]
     }
     try {
       const bag = data as Record<string, Object>
@@ -190,7 +190,7 @@ export class ApiV2Service {
       for (const key of candidates) {
         const v = bag[key]
         if (Array.isArray(v)) {
-          return v as unknown as T[]
+          return v as T[]
         }
       }
     } catch (e) {
