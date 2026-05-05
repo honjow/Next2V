@@ -103,9 +103,14 @@ struct Index {
 
   private titleBarOptions(): Record<string, Object> {
     let titleInfo: Record<string, Object> = { 'mainTitle': this.tabTitles[this.ct] }
-    let cc = new ComponentContent(this.getUIContext(), wrapBuilder(PillCCBuilder))
-    let bb: Record<string, Object> = { 'builderComponent': cc, 'height': ApiConstants.TAB_BAR_HEIGHT, 'showType': 0 }
-    let content: Record<string, Object> = { 'title': titleInfo, 'bottomBuilder': bb }
+    let content: Record<string, Object>
+    if (this.ct === 0) {
+      let cc = new ComponentContent(this.getUIContext(), wrapBuilder(PillCCBuilder))
+      let bb: Record<string, Object> = { 'builderComponent': cc, 'height': ApiConstants.TAB_BAR_HEIGHT, 'showType': 0 }
+      content = { 'title': titleInfo, 'bottomBuilder': bb }
+    } else {
+      content = { 'title': titleInfo }
+    }
     let mat: Record<string, Object> = { 'materialType': hdsMaterial.MaterialType.ADAPTIVE, 'materialLevel': hdsMaterial.MaterialLevel.ADAPTIVE }
     let scrollOpts: Record<string, Object> = { 'enableScrollEffect': true, 'scrollEffectType': ScrollEffectType.GRADIENT_BLUR }
     let style: Record<string, Object> = { 'systemMaterialEffect': mat, 'scrollEffectOpts': scrollOpts }
