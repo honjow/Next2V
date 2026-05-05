@@ -5,7 +5,7 @@ import {
 import { common } from '@kit.AbilityKit'
 import {
   ApiDomainSettings, HttpClient, ThemeConstants, StorageKeys, ApiConstants, TabItem,
-  AuthSettings, ApiService, ApiV2Service, DateUtils, CollectionSettings, TopicDetailParams, NodeTopicListParams, CacheSettings,
+  AuthSettings, ApiService, ApiV2Service, DateUtils, CollectionSettings, TopicDetailParams, NodeTopicListParams, ImagePreviewParams, CacheSettings,
   CookieJarSettings, AuthSessionSettings, V2exSessionParser, LoadingFooter
 }
   from 'shared'
@@ -18,6 +18,7 @@ import { UserProfilePage } from 'user'
 import { ComponentContent, promptAction } from '@kit.ArkUI'
 import { V2exWebLoginPage } from './V2exWebLoginPage'
 import { V2exNativeLoginPage } from './V2exNativeLoginPage'
+import { ImagePreviewPage } from './ImagePreviewPage'
 
 @Component
 struct FeedPills {
@@ -110,6 +111,9 @@ struct Index {
   @Builder pm(name: string, param: Object) {
     if (name === 'TopicDetail') {
       HdsNavDestination() { TopicDetailPage({ topicId: (param as Record<string, Object>)['topicId'] as number }) }
+        .titleBar(this.navDestTitleBarOpts())
+    } else if (name === 'ImagePreview') {
+      HdsNavDestination() { ImagePreviewPage({ url: (param as ImagePreviewParams).url }) }
         .titleBar(this.navDestTitleBarOpts())
     } else if (name === 'NodeTopicList') {
       HdsNavDestination() {

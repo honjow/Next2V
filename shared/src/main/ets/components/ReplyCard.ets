@@ -10,6 +10,7 @@ export struct ReplyCard {
   @Prop floor: number = 1
   @Prop isOp: boolean = false
   onUserClick?: () => void
+  onImageClick?: (url: string) => void
 
   build() {
     Column() {
@@ -52,7 +53,11 @@ export struct ReplyCard {
       .alignItems(VerticalAlign.Center)
 
       if (this.reply.content) {
-        MarkdownContent({ source: this.reply.content, topMargin: ThemeConstants.SPACE_SM })
+        MarkdownContent({
+          source: this.reply.content,
+          topMargin: ThemeConstants.SPACE_SM,
+          onImageClick: this.onImageClick
+        })
       }
 
       // 底部：时间 + 感谢数

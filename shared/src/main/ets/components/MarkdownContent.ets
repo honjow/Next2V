@@ -426,7 +426,13 @@ struct CustomList {
                         Image(_normalizeUrl(img.href))
                           .width("100%")
                           .objectFit(ImageFit.Contain)
-                          .borderRadius(ThemeConstants.RADIUS_SM);
+                          .borderRadius(ThemeConstants.RADIUS_SM)
+                          .onClick(() => {
+                            const click = this.options?.imageClick as ((url?: string) => void) | undefined;
+                            if (click) {
+                              click(_normalizeUrl(img.href));
+                            }
+                          });
                       }, (img: Tokens.Image, imgIdx: number) => `${img.href}-${imgIdx}`)
                     }.width("100%");
                   } else {
@@ -494,6 +500,7 @@ function CodeSpanBuilder(tokenItem: Token, params: CustomInlineParams): void {
 export struct MarkdownContent {
   @Prop source: string = "";
   @Prop topMargin: number = ThemeConstants.SPACE_LG;
+  onImageClick?: (url: string) => void
   @State private tokens: Token[] = [];
 
   aboutToAppear() {
@@ -670,6 +677,12 @@ export struct MarkdownContent {
               },
             ],
             linkColor: ThemeConstants.TEXT_LINK,
+          },
+          imageClick: (url?: string) => {
+            const normalized = _normalizeUrl(url ?? "");
+            if (normalized && this.onImageClick) {
+              this.onImageClick(normalized);
+            }
           },
           customBlockBuilder: wrapBuilder(CustomBlockBuilder),
           customInlineBuilder: CodeSpanBuilder as (tokenItem: Token, params: object) => void,

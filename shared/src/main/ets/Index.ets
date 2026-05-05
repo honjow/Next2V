@@ -12,6 +12,10 @@ export interface UserProfileParams {
   username: string
 }
 
+export interface ImagePreviewParams {
+  url: string
+}
+
 // 网络层
 export { HttpClient } from './network/HttpClient'
 export { ApiService } from './network/ApiService'

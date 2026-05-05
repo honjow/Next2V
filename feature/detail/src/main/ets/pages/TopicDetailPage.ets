@@ -2,7 +2,7 @@ import { DetailViewModel } from '../viewmodel/DetailViewModel'
 import { common } from '@kit.AbilityKit'
 import {
   V2exReply, Avatar, ReplyCard, TimeAgo, PullRefresh, ThemeConstants, MarkdownContent,
-  NodeTopicListParams, UserProfileParams, CollectionSettings, CacheSettings, V2exTopic, AuthSettings, LoadingFooter
+  NodeTopicListParams, UserProfileParams, ImagePreviewParams, CollectionSettings, CacheSettings, V2exTopic, AuthSettings, LoadingFooter
 } from 'shared'
 
 @Component
@@ -34,6 +34,15 @@ export struct TopicDetailPage {
         this.v.load().then(() => { this.recordViewedTopic() })
       })
     this.loadSavedState()
+  }
+
+  private openImagePreview(url: string): void {
+    const normalized = (url || '').trim()
+    if (!normalized) {
+      return
+    }
+    let p: ImagePreviewParams = { url: normalized }
+    this.stack.pushPathByName('ImagePreview', p as Object)
   }
 
   build() {
@@ -116,7 +125,8 @@ export struct TopicDetailPage {
               onUserClick: () => {
                 let p: UserProfileParams = { username: reply.member.username }
                 this.stack.pushPathByName('UserProfile', p as Object)
-              }
+              },
+              onImageClick: (url: string) => { this.openImagePreview(url) }
             })
           }
         }, (reply: V2exReply) => reply.id.toString())
@@ -215,7 +225,7 @@ export struct TopicDetailPage {
 
       // 正文
       if (this.v.topic!.content) {
-        MarkdownContent({ source: this.v.topic!.content })
+        MarkdownContent({ source: this.v.topic!.content, onImageClick: (url: string) => { this.openImagePreview(url) } })
       }
     }
     .padding(ThemeConstants.SPACE_LG)
