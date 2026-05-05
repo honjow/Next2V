@@ -6,7 +6,10 @@ import type {
   V2exReply,
   V2exNode,
   V2exMemberProfile,
-  V2exSiteInfo
+  V2exSiteInfo,
+  V2exAuthenticatedMember,
+  V2exNotification,
+  V2exTokenInfo
 } from './NetworkTypes'
 
 /**
@@ -68,6 +71,29 @@ export class ApiService {
     return this.http.get<V2exSiteInfo>(ApiConstants.API_SITE_INFO)
   }
 
+  // ==================== V2 Token 只读接口 ====================
+
+  async getAuthenticatedMember(token: string): Promise<V2exAuthenticatedMember> {
+    return this.http.getWithHeaders<V2exAuthenticatedMember>(
+      ApiConstants.API_V2_MEMBER,
+      ApiService.authHeaders(token)
+    )
+  }
+
+  async getTokenInfo(token: string): Promise<V2exTokenInfo> {
+    return this.http.getWithHeaders<V2exTokenInfo>(
+      ApiConstants.API_V2_TOKEN,
+      ApiService.authHeaders(token)
+    )
+  }
+
+  async getNotifications(token: string, page: number = 1): Promise<V2exNotification[]> {
+    return this.http.getWithHeaders<V2exNotification[]>(
+      `${ApiConstants.API_V2_NOTIFICATIONS}?p=${page}`,
+      ApiService.authHeaders(token)
+    )
+  }
+
   // ==================== Tab 聚合接口 ====================
 
   /**
@@ -105,5 +131,11 @@ export class ApiService {
       results.push(...batchResults.map(r => r[0]).filter(t => t !== undefined))
     }
     return results
+  }
+
+  private static authHeaders(token: string): Record<string, string> {
+    return {
+      'Authorization': `Bearer ${token.trim()}`
+    }
   }
 }

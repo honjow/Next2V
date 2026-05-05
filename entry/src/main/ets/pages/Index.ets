@@ -3,7 +3,12 @@ import {
   hdsMaterial, HdsNavigationTitleMode, ScrollEffectType, BlurStrategy
 } from '@kit.UIDesignKit'
 import { common } from '@kit.AbilityKit'
-import { ApiDomainSettings, HttpClient, ThemeConstants, StorageKeys, ApiConstants, TabItem } from 'shared'
+import {
+  ApiDomainSettings, HttpClient, ThemeConstants, StorageKeys, ApiConstants, TabItem,
+  AuthSettings, ApiService, DateUtils
+}
+  from 'shared'
+import type { V2exAuthenticatedMember, V2exNotification } from 'shared'
 import { HomePage } from 'feed'
 import { TopicDetailPage } from 'detail'
 import { DiscoverPage, NodeTopicPage } from 'node'
@@ -53,7 +58,22 @@ struct Index {
   private tabTitles: string[] = ['首页', '发现', '通知', '我的']
   @State ct: number = 0
   @StorageLink(StorageKeys.USE_CO_DOMAIN) useCoDomain: boolean = false
+  @StorageLink(StorageKeys.AUTH_TOKEN_CONFIGURED) authTokenConfigured: boolean = false
+  @StorageLink(StorageKeys.AUTH_USERNAME) storedUsername: string = ''
+  @State private authToken: string = ''
+  @State private tokenDraft: string = ''
+  @State private authProfile: V2exAuthenticatedMember | null = null
+  @State private authError: string = ''
+  @State private isAuthLoading: boolean = false
+  @State private notifications: V2exNotification[] = []
+  @State private notificationError: string = ''
+  @State private isNotificationLoading: boolean = false
   private http: HttpClient = HttpClient.getInstance()
+  private api: ApiService = new ApiService()
+
+  aboutToAppear(): void {
+    this.loadAuthSnapshot()
+  }
 
   @Builder pm(name: string, param: Object) {
     if (name === 'TopicDetail') {
@@ -84,7 +104,12 @@ struct Index {
           barBottomMargin: ThemeConstants.SPACE_XL,
           systemMaterialEffect: { materialType: hdsMaterial.MaterialType.ADAPTIVE, materialLevel: hdsMaterial.MaterialLevel.ADAPTIVE }
         } as HdsTabsFloatingStyle)
-        .onChange((i: number) => { this.ct = i })
+        .onChange((i: number) => {
+          this.ct = i
+          if (i === 2) {
+            this.loadNotifications()
+          }
+        })
     }
       .titleBar(this.titleBarOptions())
       .titleMode(HdsNavigationTitleMode.MINI)
@@ -140,10 +165,33 @@ struct Index {
 
   @Builder NotifyPage() {
     Column() {
-      Text('通知').fontSize(ThemeConstants.FONT_SIZE_HEADING + 2).fontWeight(FontWeight.Bold).fontColor($r('sys.color.font_primary'))
-      Text('登录后可查看').fontSize(ThemeConstants.FONT_SIZE_BODY).fontColor($r('sys.color.font_secondary')).margin({ top: ThemeConstants.SPACE_SM })
+      if (!this.authTokenConfigured) {
+        this.AuthRequiredView('配置 Personal Access Token 后可查看通知')
+      } else if (this.isNotificationLoading && this.notifications.length === 0) {
+        LoadingProgress()
+          .width(ThemeConstants.LOADING_SIZE)
+          .height(ThemeConstants.LOADING_SIZE)
+      } else if (this.notificationError && this.notifications.length === 0) {
+        this.NotificationErrorView()
+      } else {
+        List({ space: ThemeConstants.SPACE_SM }) {
+          ListItem() { Column() { Blank().height(this.topH + this.TBH) } }
+          ForEach(this.notifications, (item: V2exNotification) => {
+            ListItem() { this.NotificationCard(item) }
+              .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
+          })
+          if (this.notifications.length === 0) {
+            ListItem() { this.EmptyNoticeView() }
+          }
+          ListItem() { Column() { Blank().height(this.bottomH + this.FLOAT_H) } }
+        }
+        .scrollBar(BarState.Off)
+        .width('100%')
+        .height('100%')
+      }
     }
-      .justifyContent(FlexAlign.Center).width('100%').height('100%')
+      .justifyContent(FlexAlign.Center)
+      .width('100%').height('100%')
       .padding({ top: this.topH + this.TBH, bottom: this.bottomH + this.FLOAT_H })
       .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
   }
@@ -151,6 +199,11 @@ struct Index {
   @Builder MePage() {
     Column() {
       List() {
+        ListItem() {
+          this.AuthCard()
+        }
+          .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, top: ThemeConstants.SPACE_MD })
+
         ListItem() {
           Column() {
             Text('API 域名').fontSize(ThemeConstants.FONT_SIZE_BODY).fontWeight(FontWeight.Medium).fontColor($r('sys.color.font_primary'))
@@ -166,7 +219,7 @@ struct Index {
             .padding(ThemeConstants.SPACE_LG).width('100%').alignItems(HorizontalAlign.Start).borderRadius(ThemeConstants.RADIUS_MD)
             .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
         }
-          .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, top: ThemeConstants.SPACE_MD }).height(130)
+          .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, top: ThemeConstants.SPACE_SM }).height(130)
 
         ListItem() {
           Column() {
@@ -192,5 +245,222 @@ struct Index {
     ApiDomainSettings.save(context, useCoDomain).catch((error: Error) => {
       console.error('save api domain failed: ' + error.message)
     })
+  }
+
+  @Builder AuthCard() {
+    Column({ space: ThemeConstants.SPACE_SM }) {
+      Row() {
+        Text('V2EX 登录')
+          .fontSize(ThemeConstants.FONT_SIZE_BODY)
+          .fontWeight(FontWeight.Medium)
+          .fontColor($r('sys.color.font_primary'))
+        Blank()
+        Text(this.authTokenConfigured ? '已配置' : '未配置')
+          .fontSize(ThemeConstants.FONT_SIZE_TAG)
+          .fontColor(this.authTokenConfigured ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.font_secondary'))
+      }
+      .width('100%')
+      if (this.authProfile || this.storedUsername) {
+        Text(this.authProfile?.username || this.storedUsername)
+          .fontSize(ThemeConstants.FONT_SIZE_HEADING)
+          .fontWeight(FontWeight.Medium)
+          .fontColor($r('sys.color.font_primary'))
+      }
+      TextInput({ placeholder: 'Personal Access Token', text: this.tokenDraft })
+        .height(44)
+        .fontSize(ThemeConstants.FONT_SIZE_BODY)
+        .type(InputType.Password)
+        .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
+        .borderRadius(ThemeConstants.RADIUS_MD)
+        .onChange((value: string) => { this.tokenDraft = value })
+      if (this.authError) {
+        Text(this.authError)
+          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+          .fontColor(Color.Red)
+      }
+      Row({ space: ThemeConstants.SPACE_SM }) {
+        Button(this.isAuthLoading ? '验证中' : '保存并验证')
+          .fontSize(ThemeConstants.FONT_SIZE_TAG)
+          .enabled(!this.isAuthLoading)
+          .onClick(() => { this.verifyAndSaveToken() })
+        if (this.authTokenConfigured) {
+          Button('退出')
+            .fontSize(ThemeConstants.FONT_SIZE_TAG)
+            .onClick(() => { this.clearAuth() })
+        }
+      }
+    }
+    .padding(ThemeConstants.SPACE_LG)
+    .width('100%')
+    .alignItems(HorizontalAlign.Start)
+    .borderRadius(ThemeConstants.RADIUS_MD)
+    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+  }
+
+  @Builder AuthRequiredView(message: string) {
+    Column() {
+      Text(message)
+        .fontSize(ThemeConstants.FONT_SIZE_BODY)
+        .fontColor($r('sys.color.font_secondary'))
+      Button('去我的页面配置')
+        .fontSize(ThemeConstants.FONT_SIZE_BODY)
+        .margin({ top: ThemeConstants.SPACE_LG })
+        .onClick(() => { this.tc.changeIndex(3) })
+    }
+    .justifyContent(FlexAlign.Center)
+    .width('100%')
+    .height('100%')
+  }
+
+  @Builder NotificationErrorView() {
+    Column() {
+      Text(this.notificationError)
+        .fontSize(ThemeConstants.FONT_SIZE_BODY)
+        .fontColor($r('sys.color.font_secondary'))
+      Button('重试')
+        .fontSize(ThemeConstants.FONT_SIZE_BODY)
+        .margin({ top: ThemeConstants.SPACE_LG })
+        .onClick(() => { this.loadNotifications(true) })
+    }
+    .justifyContent(FlexAlign.Center)
+    .width('100%')
+    .height('100%')
+  }
+
+  @Builder EmptyNoticeView() {
+    Column() {
+      Text('暂无通知')
+        .fontSize(ThemeConstants.FONT_SIZE_BODY)
+        .fontColor($r('sys.color.font_secondary'))
+    }
+    .justifyContent(FlexAlign.Center)
+    .width('100%')
+    .height(240)
+  }
+
+  @Builder NotificationCard(item: V2exNotification) {
+    Column({ space: ThemeConstants.SPACE_XS }) {
+      Text(this.notificationTitle(item))
+        .fontSize(ThemeConstants.FONT_SIZE_BODY)
+        .fontWeight(FontWeight.Medium)
+        .fontColor($r('sys.color.font_primary'))
+        .maxLines(2)
+        .textOverflow({ overflow: TextOverflow.Ellipsis })
+      Text(this.notificationBody(item))
+        .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+        .fontColor($r('sys.color.font_secondary'))
+        .maxLines(3)
+        .textOverflow({ overflow: TextOverflow.Ellipsis })
+      if (item.created) {
+        Text(DateUtils.toDateString(item.created))
+          .fontSize(ThemeConstants.FONT_SIZE_TINY)
+          .fontColor($r('sys.color.font_secondary'))
+      }
+    }
+    .padding(ThemeConstants.SPACE_LG)
+    .width('100%')
+    .alignItems(HorizontalAlign.Start)
+    .borderRadius(ThemeConstants.RADIUS_MD)
+    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+  }
+
+  private loadAuthSnapshot(): void {
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    AuthSettings.load(context)
+      .then((snapshot) => {
+        this.authToken = snapshot.token
+        this.tokenDraft = ''
+        if (snapshot.token) {
+          this.refreshAuthProfile(snapshot.token)
+        }
+      })
+      .catch((error: Error) => {
+        this.authError = error.message
+      })
+  }
+
+  private verifyAndSaveToken(): void {
+    const token = this.tokenDraft.trim() || this.authToken
+    if (!token) {
+      this.authError = '请输入 Personal Access Token'
+      return
+    }
+    this.isAuthLoading = true
+    this.authError = ''
+    this.api.getAuthenticatedMember(token)
+      .then((profile: V2exAuthenticatedMember) => {
+        const username = profile.username || ''
+        const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+        this.authProfile = profile
+        this.authToken = token
+        this.storedUsername = username
+        return AuthSettings.saveToken(context, token, username)
+      })
+      .then(() => {
+        this.tokenDraft = ''
+        this.loadNotifications(true)
+      })
+      .catch((error: Error) => {
+        this.authError = error.message || 'Token 验证失败'
+      })
+      .finally(() => {
+        this.isAuthLoading = false
+      })
+  }
+
+  private refreshAuthProfile(token: string): void {
+    this.api.getAuthenticatedMember(token)
+      .then((profile: V2exAuthenticatedMember) => {
+        this.authProfile = profile
+        this.storedUsername = profile.username || this.storedUsername
+      })
+      .catch((error: Error) => {
+        this.authError = error.message || '登录状态验证失败'
+      })
+  }
+
+  private clearAuth(): void {
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    AuthSettings.clear(context)
+      .then(() => {
+        this.authToken = ''
+        this.tokenDraft = ''
+        this.authProfile = null
+        this.authError = ''
+        this.notifications = []
+        this.notificationError = ''
+      })
+      .catch((error: Error) => {
+        this.authError = error.message
+      })
+  }
+
+  private loadNotifications(force: boolean = false): void {
+    if (!this.authTokenConfigured || !this.authToken || this.isNotificationLoading) {
+      return
+    }
+    if (this.notifications.length > 0 && !force) {
+      return
+    }
+    this.isNotificationLoading = true
+    this.notificationError = ''
+    this.api.getNotifications(this.authToken)
+      .then((items: V2exNotification[]) => {
+        this.notifications = items
+      })
+      .catch((error: Error) => {
+        this.notificationError = error.message || '通知加载失败'
+      })
+      .finally(() => {
+        this.isNotificationLoading = false
+      })
+  }
+
+  private notificationTitle(item: V2exNotification): string {
+    return item.topic_title || item.title || item.member?.username || '通知'
+  }
+
+  private notificationBody(item: V2exNotification): string {
+    return item.text || item.content || item.payload || item.content_rendered || item.payload_rendered || ''
   }
 }

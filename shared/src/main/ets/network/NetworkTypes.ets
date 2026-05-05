@@ -75,3 +75,46 @@ export interface V2exSiteInfo {
   description: string
   domain: string
 }
+
+export interface V2exAuthenticatedMember {
+  id?: number
+  username?: string
+  url?: string
+  website?: string
+  twitter?: string
+  github?: string
+  location?: string
+  tagline?: string
+  bio?: string
+  avatar_mini?: string
+  avatar_normal?: string
+  avatar_large?: string
+  created?: number
+}
+
+export interface V2exTokenInfo {
+  id?: number
+  token?: string
+  scope?: string
+  expiration?: number
+  created?: number
+  last_used?: number
+  success?: boolean
+  message?: string
+}
+
+export interface V2exNotification {
+  id: number
+  member?: V2exMember
+  for_member_id?: number
+  text?: string
+  payload?: string
+  payload_rendered?: string
+  title?: string
+  content?: string
+  content_rendered?: string
+  topic_id?: number
+  topic_title?: string
+  created?: number
+  last_modified?: number
+}

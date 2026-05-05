@@ -26,6 +26,7 @@ export class ApiConstants {
   // V2 API（需要 Token 认证）
   static readonly API_V2_NOTIFICATIONS: string = '/api/v2/notifications'
   static readonly API_V2_MEMBER: string = '/api/v2/member'
+  static readonly API_V2_TOKEN: string = '/api/v2/token'
   static readonly API_V2_NODE: string = '/api/v2/nodes'
   static readonly API_V2_TOPIC: string = '/api/v2/topics'
 

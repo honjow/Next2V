@@ -35,19 +35,26 @@ export class HttpClient {
   async request<T>(
     endpoint: string,
     method?: http.RequestMethod,
-    retryCount: number = MAX_RETRIES
+    retryCount: number = MAX_RETRIES,
+    headers?: Record<string, string>
   ): Promise<T> {
     let httpRequest = http.createHttp()
     const url = `${this.baseUrl}${endpoint}`
     const reqMethod = method || http.RequestMethod.GET
+    let requestHeaders: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'Accept-Encoding': 'gzip'
+    }
+    if (headers) {
+      Object.keys(headers).forEach((key: string) => {
+        requestHeaders[key] = headers[key]
+      })
+    }
 
     try {
       const response = await httpRequest.request(url, {
         method: reqMethod,
-        header: {
-          'Content-Type': 'application/json',
-          'Accept-Encoding': 'gzip'
-        },
+        header: requestHeaders,
         connectTimeout: CONNECT_TIMEOUT_MS,
         readTimeout: READ_TIMEOUT_MS,
         usingCache: true
@@ -62,7 +69,7 @@ export class HttpClient {
       if (retryCount > 0) {
         const delay = BACKOFF_BASE_MS * Math.pow(2, MAX_RETRIES - retryCount)
         await new Promise<void>(resolve => setTimeout(resolve, delay))
-        return this.request<T>(endpoint, method, retryCount - 1)
+        return this.request<T>(endpoint, method, retryCount - 1, headers)
       }
       throw new Error(`Network error: ${error.message}`)
     } finally {
@@ -72,6 +79,10 @@ export class HttpClient {
 
   async get<T>(endpoint: string): Promise<T> {
     return this.request<T>(endpoint, http.RequestMethod.GET)
+  }
+
+  async getWithHeaders<T>(endpoint: string, headers: Record<string, string>): Promise<T> {
+    return this.request<T>(endpoint, http.RequestMethod.GET, MAX_RETRIES, headers)
   }
 
   /** GET 请求获取纯文本（用于 HTML 抓取） */

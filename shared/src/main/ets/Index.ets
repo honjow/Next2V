@@ -19,13 +19,18 @@ export { ApiConstants } from './constants/ApiConstants'
 export type { TabItem } from './constants/ApiConstants'
 export { StorageKeys } from './constants/StorageKeys'
 export { ApiDomainSettings } from './settings/ApiDomainSettings'
+export { AuthSettings } from './settings/AuthSettings'
+export type { AuthSnapshot } from './settings/AuthSettings'
 export type {
   V2exTopic,
   V2exReply,
   V2exNode,
   V2exMember,
   V2exMemberProfile,
-  V2exSiteInfo
+  V2exSiteInfo,
+  V2exAuthenticatedMember,
+  V2exNotification,
+  V2exTokenInfo
 } from './network/NetworkTypes'
 
 // 解析
