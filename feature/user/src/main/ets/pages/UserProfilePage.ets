@@ -1,6 +1,7 @@
 import { UserViewModel } from '../viewmodel/UserViewModel'
 import {
-  V2exTopic, TopicCard, ThemeConstants, TopicDetailParams, StorageKeys, NodeTopicListParams
+  V2exTopic, TopicCard, ThemeConstants, TopicDetailParams, StorageKeys, NodeTopicListParams,
+  Avatar, DateUtils
 } from 'shared'
 
 @Component
@@ -20,12 +21,7 @@ export struct UserProfilePage {
         List({ space: ThemeConstants.SPACE_XS }) {
           ListItem() { Column() { Blank().height(this.topH + ThemeConstants.TITLE_BAR_HEIGHT) } }
           ListItem() {
-            Column() {
-              Text(this.vm.profile!.username).fontSize(ThemeConstants.FONT_SIZE_HEADING + 2).fontWeight(FontWeight.Bold)
-                .fontColor($r('sys.color.font_primary'))
-              if (this.vm.profile!.bio)
-                Text(this.vm.profile!.bio).fontSize(ThemeConstants.FONT_SIZE_BODY).fontColor($r('sys.color.font_secondary')).margin({ top: ThemeConstants.SPACE_MD })
-            }.padding(ThemeConstants.SPACE_LG).width('100%').alignItems(HorizontalAlign.Center)
+            this.ProfileCard()
           }
           ListItem() { Text('最近主题').fontSize(ThemeConstants.FONT_SIZE_BODY).fontColor($r('sys.color.font_secondary')).padding(ThemeConstants.SPACE_SM) }
           LazyForEach(this.vm.topicDataSource, (topic: V2exTopic) => {
@@ -47,10 +43,109 @@ export struct UserProfilePage {
           .scrollBar(BarState.Off)
           .width('100%').height('100%')
       } else {
-        Text('加载失败').fontSize(ThemeConstants.FONT_SIZE_BODY).fontColor($r('sys.color.font_secondary')).margin({ top: ThemeConstants.MARGIN_LOADING_TOP })
+        this.ErrorView()
       }
     }
       .width('100%').height('100%')
       .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
+  }
+
+  @Builder ProfileCard() {
+    Column({ space: ThemeConstants.SPACE_MD }) {
+      Row({ space: ThemeConstants.SPACE_MD }) {
+        Avatar({ url: this.vm.profile!.avatar_large || this.vm.profile!.avatar_normal, avatarSize: 72 })
+        Column({ space: ThemeConstants.SPACE_XS }) {
+          Text(this.vm.profile!.username)
+            .fontSize(ThemeConstants.FONT_SIZE_HEADING + 2)
+            .fontWeight(FontWeight.Bold)
+            .fontColor($r('sys.color.font_primary'))
+            .maxLines(1)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
+          if (this.vm.profile!.tagline) {
+            Text(this.vm.profile!.tagline)
+              .fontSize(ThemeConstants.FONT_SIZE_BODY)
+              .fontColor($r('sys.color.font_secondary'))
+              .maxLines(2)
+              .textOverflow({ overflow: TextOverflow.Ellipsis })
+          }
+          Text(`第 ${this.vm.profile!.id} 号会员 · ${DateUtils.toDateString(this.vm.profile!.created)}`)
+            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+            .fontColor($r('sys.color.font_secondary'))
+            .maxLines(1)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
+        }
+        .layoutWeight(1)
+        .alignItems(HorizontalAlign.Start)
+      }
+      .width('100%')
+      .alignItems(VerticalAlign.Center)
+
+      if (this.vm.profile!.bio) {
+        Text(this.vm.profile!.bio)
+          .fontSize(ThemeConstants.FONT_SIZE_BODY)
+          .fontColor($r('sys.color.font_primary'))
+          .lineHeight(ThemeConstants.LINE_HEIGHT_BODY + 2)
+          .width('100%')
+      }
+
+      this.ProfileMeta()
+    }
+    .padding(ThemeConstants.SPACE_LG)
+    .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
+    .width('100%')
+    .alignItems(HorizontalAlign.Start)
+    .borderRadius(ThemeConstants.RADIUS_MD)
+    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+  }
+
+  @Builder ProfileMeta() {
+    Column({ space: ThemeConstants.SPACE_XS }) {
+      if (this.vm.profile!.location) {
+        this.MetaRow('位置', this.vm.profile!.location)
+      }
+      if (this.vm.profile!.website) {
+        this.MetaRow('网站', this.vm.profile!.website)
+      }
+      if (this.vm.profile!.github) {
+        this.MetaRow('GitHub', this.vm.profile!.github)
+      }
+      if (this.vm.profile!.twitter) {
+        this.MetaRow('Twitter', this.vm.profile!.twitter)
+      }
+    }
+    .width('100%')
+    .alignItems(HorizontalAlign.Start)
+  }
+
+  @Builder MetaRow(label: string, value: string) {
+    Row({ space: ThemeConstants.SPACE_SM }) {
+      Text(label)
+        .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+        .fontColor($r('sys.color.font_secondary'))
+        .width(56)
+      Text(value)
+        .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+        .fontColor($r('sys.color.font_primary'))
+        .maxLines(1)
+        .textOverflow({ overflow: TextOverflow.Ellipsis })
+        .layoutWeight(1)
+    }
+    .width('100%')
+    .alignItems(VerticalAlign.Center)
+  }
+
+  @Builder ErrorView() {
+    Column() {
+      Text(this.vm.errorMessage || '加载失败')
+        .fontSize(ThemeConstants.FONT_SIZE_BODY)
+        .fontColor($r('sys.color.font_secondary'))
+      Button('重试')
+        .fontSize(ThemeConstants.FONT_SIZE_BODY)
+        .margin({ top: ThemeConstants.SPACE_LG })
+        .onClick(() => { this.vm.load() })
+    }
+    .justifyContent(FlexAlign.Center)
+    .width('100%')
+    .height('100%')
   }
 }

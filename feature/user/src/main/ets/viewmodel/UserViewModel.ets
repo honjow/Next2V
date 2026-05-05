@@ -42,6 +42,7 @@ export class UserViewModel {
   profile: V2exMemberProfile | null = null
   topicDataSource: TopicDataSource = new TopicDataSource()
   isLoading: boolean = false
+  errorMessage: string = ''
   username: string = ''
 
   private api: ApiService = new ApiService()
@@ -52,10 +53,12 @@ export class UserViewModel {
 
   async load(): Promise<void> {
     this.isLoading = true
+    this.errorMessage = ''
     try {
       this.profile = await this.api.getMember(this.username)
       this.topicDataSource.setData(await this.api.getTopicsByUsername(this.username))
     } catch (error) {
+      this.errorMessage = error.message || '用户信息加载失败'
       console.error('Failed to load user:', error.message)
     } finally {
       this.isLoading = false
