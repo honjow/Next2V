@@ -68,121 +68,122 @@ export struct ReplyEditorPage {
   }
 
   build() {
-    Column({ space: ThemeConstants.SPACE_SM }) {
-      if (this.topicTitle) {
-        Text(this.topicTitle)
-          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-          .fontColor($r('sys.color.font_secondary'))
-          .maxLines(2)
-          .textOverflow({ overflow: TextOverflow.Ellipsis })
-      }
-
-      Flex({ direction: FlexDirection.Row, wrap: FlexWrap.Wrap }) {
-        Button('编辑')
-          .type(ButtonType.Normal)
-          .fontSize(ThemeConstants.FONT_SIZE_TAG)
-          .fontColor(!this.isPreview ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.font_secondary'))
-          .height(ThemeConstants.TOUCH_TARGET_SM)
-          .borderRadius(ThemeConstants.RADIUS_MD)
-          .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
-          .margin({ right: ThemeConstants.SPACE_SM, bottom: ThemeConstants.SPACE_SM })
-          .onClick(() => { this.isPreview = false })
-        Button('预览')
-          .type(ButtonType.Normal)
-          .fontSize(ThemeConstants.FONT_SIZE_TAG)
-          .fontColor(this.isPreview ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.font_secondary'))
-          .height(ThemeConstants.TOUCH_TARGET_SM)
-          .borderRadius(ThemeConstants.RADIUS_MD)
-          .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
-          .margin({ right: ThemeConstants.SPACE_SM, bottom: ThemeConstants.SPACE_SM })
-          .onClick(() => { this.isPreview = true })
-        Button('图片')
-          .type(ButtonType.Normal)
-          .fontSize(ThemeConstants.FONT_SIZE_TAG)
-          .fontColor($r('sys.color.font_secondary'))
-          .height(ThemeConstants.TOUCH_TARGET_SM)
-          .borderRadius(ThemeConstants.RADIUS_MD)
-          .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
-          .margin({ right: ThemeConstants.SPACE_SM, bottom: ThemeConstants.SPACE_SM })
-          .onClick(() => { this.insertImageLinkTemplate() })
-        Button('清空')
-          .type(ButtonType.Normal)
-          .fontSize(ThemeConstants.FONT_SIZE_TAG)
-          .fontColor($r('sys.color.font_secondary'))
-          .height(ThemeConstants.TOUCH_TARGET_SM)
-          .borderRadius(ThemeConstants.RADIUS_MD)
-          .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
-          .margin({ right: ThemeConstants.SPACE_SM, bottom: ThemeConstants.SPACE_SM })
-          .onClick(() => { this.confirmClearDraft() })
-      }
-      .width('100%')
-
-      if (this.errorMessage) {
-        Text(this.errorMessage)
-          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-          .fontColor(Color.Red)
-      }
-
-      if (!this.isPreview) {
-        TextArea({ placeholder: '写回复（自动保存草稿）', text: this.content, controller: this.contentController })
-          .fontSize(ThemeConstants.FONT_SIZE_BODY)
-          .height(260)
-          .borderRadius(ThemeConstants.RADIUS_MD)
-          .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
-          .onChange((value: string) => {
-            this.content = value
-            this.scheduleSaveDraft()
-          })
-          .onTextSelectionChange((selectionStart: number, selectionEnd: number) => {
-            this.contentSelectionStart = selectionStart
-            this.contentSelectionEnd = selectionEnd
-          })
-      } else {
-        if (this.content.trim().length === 0) {
-          Text('暂无内容')
-            .fontSize(ThemeConstants.FONT_SIZE_BODY)
+    Scroll() {
+      Column({ space: ThemeConstants.SPACE_SM }) {
+        if (this.topicTitle) {
+          Text(this.topicTitle)
+            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
             .fontColor($r('sys.color.font_secondary'))
-            .padding({ top: ThemeConstants.SPACE_MD, bottom: ThemeConstants.SPACE_MD })
-        } else {
-          Scroll() {
-            MarkdownContent({ source: this.content, topMargin: 0 })
-          }
-          .scrollBar(BarState.Off)
-          .height(260)
+            .maxLines(2)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
         }
-      }
 
-      if (this.savedAt > 0) {
-        Text(`已保存于 ${DateUtils.toDateString(this.savedAt)}`)
-          .fontSize(ThemeConstants.FONT_SIZE_TINY)
-          .fontColor($r('sys.color.font_secondary'))
-      }
+        Flex({ direction: FlexDirection.Row, wrap: FlexWrap.Wrap }) {
+          Button('编辑')
+            .type(ButtonType.Normal)
+            .fontSize(ThemeConstants.FONT_SIZE_TAG)
+            .fontColor(!this.isPreview ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.font_secondary'))
+            .height(ThemeConstants.TOUCH_TARGET_SM)
+            .borderRadius(ThemeConstants.RADIUS_MD)
+            .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+            .margin({ right: ThemeConstants.SPACE_SM, bottom: ThemeConstants.SPACE_SM })
+            .onClick(() => { this.isPreview = false })
+          Button('预览')
+            .type(ButtonType.Normal)
+            .fontSize(ThemeConstants.FONT_SIZE_TAG)
+            .fontColor(this.isPreview ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.font_secondary'))
+            .height(ThemeConstants.TOUCH_TARGET_SM)
+            .borderRadius(ThemeConstants.RADIUS_MD)
+            .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+            .margin({ right: ThemeConstants.SPACE_SM, bottom: ThemeConstants.SPACE_SM })
+            .onClick(() => { this.isPreview = true })
+          Button('图片')
+            .type(ButtonType.Normal)
+            .fontSize(ThemeConstants.FONT_SIZE_TAG)
+            .fontColor($r('sys.color.font_secondary'))
+            .height(ThemeConstants.TOUCH_TARGET_SM)
+            .borderRadius(ThemeConstants.RADIUS_MD)
+            .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+            .margin({ right: ThemeConstants.SPACE_SM, bottom: ThemeConstants.SPACE_SM })
+            .onClick(() => { this.insertImageLinkTemplate() })
+          Button('清空')
+            .type(ButtonType.Normal)
+            .fontSize(ThemeConstants.FONT_SIZE_TAG)
+            .fontColor($r('sys.color.font_secondary'))
+            .height(ThemeConstants.TOUCH_TARGET_SM)
+            .borderRadius(ThemeConstants.RADIUS_MD)
+            .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+            .margin({ right: ThemeConstants.SPACE_SM, bottom: ThemeConstants.SPACE_SM })
+            .onClick(() => { this.confirmClearDraft() })
+        }
+        .width('100%')
 
-      if (!this.writeEnabled) {
-        Text('写入操作开关未开启，提交能力不会启用。')
-          .fontSize(ThemeConstants.FONT_SIZE_TINY)
-          .fontColor($r('sys.color.font_secondary'))
-      }
+        if (this.errorMessage) {
+          Text(this.errorMessage)
+            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+            .fontColor(Color.Red)
+        }
 
-      Row({ space: ThemeConstants.SPACE_SM }) {
-        Button('返回')
-          .fontSize(ThemeConstants.FONT_SIZE_TAG)
-          .height(40)
-          .enabled(!this.isSubmitting)
-          .onClick(() => { this.stack.pop() })
+        if (!this.isPreview) {
+          TextArea({ placeholder: '写回复（自动保存草稿）', text: this.content, controller: this.contentController })
+            .fontSize(ThemeConstants.FONT_SIZE_BODY)
+            .height(320)
+            .borderRadius(ThemeConstants.RADIUS_MD)
+            .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
+            .onChange((value: string) => {
+              this.content = value
+              this.scheduleSaveDraft()
+            })
+            .onTextSelectionChange((selectionStart: number, selectionEnd: number) => {
+              this.contentSelectionStart = selectionStart
+              this.contentSelectionEnd = selectionEnd
+            })
+        } else {
+          if (this.content.trim().length === 0) {
+            Text('暂无内容')
+              .fontSize(ThemeConstants.FONT_SIZE_BODY)
+              .fontColor($r('sys.color.font_secondary'))
+              .padding({ top: ThemeConstants.SPACE_MD, bottom: ThemeConstants.SPACE_MD })
+          } else {
+            Scroll() {
+              MarkdownContent({ source: this.content, topMargin: 0 })
+            }
+            .scrollBar(BarState.Off)
+            .height(320)
+          }
+        }
+
+        if (this.savedAt > 0) {
+          Text(`已保存于 ${DateUtils.toDateString(this.savedAt)}`)
+            .fontSize(ThemeConstants.FONT_SIZE_TINY)
+            .fontColor($r('sys.color.font_secondary'))
+        }
+
+        if (!this.writeEnabled) {
+          Text('写入操作开关未开启，提交能力不会启用。')
+            .fontSize(ThemeConstants.FONT_SIZE_TINY)
+            .fontColor($r('sys.color.font_secondary'))
+        }
+
         Button(this.writeEnabled ? (this.isSubmitting ? '提交中...' : '提交') : '提交（需开启写入开关）')
           .fontSize(ThemeConstants.FONT_SIZE_TAG)
           .height(40)
+          .width('100%')
+          .type(ButtonType.Normal)
+          .borderRadius(ThemeConstants.RADIUS_MD)
           .enabled(this.canSubmit())
           .onClick(() => { this.confirmSubmit() })
       }
+      .padding({
+        left: ThemeConstants.SPACE_MD,
+        right: ThemeConstants.SPACE_MD,
+        top: this.topH + ThemeConstants.TITLE_BAR_HEIGHT + ThemeConstants.SPACE_MD,
+        bottom: this.bottomH + ThemeConstants.SPACE_XL
+      })
+      .width('100%')
     }
-    .padding({
-      left: ThemeConstants.SPACE_MD,
-      right: ThemeConstants.SPACE_MD,
-      top: this.topH + ThemeConstants.TITLE_BAR_HEIGHT + ThemeConstants.SPACE_MD,
-      bottom: this.bottomH + ThemeConstants.SPACE_LG
-    })
+    .scrollBar(BarState.Off)
+    .edgeEffect(EdgeEffect.None)
     .width('100%')
     .height('100%')
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
