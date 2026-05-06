@@ -3,6 +3,7 @@ import type { V2exMember, V2exNotification } from '../network/NetworkTypes'
 interface ParsedNotificationTopic {
   id: number
   title: string
+  targetFloor: number
 }
 
 interface ParsedNotificationCreatedMeta {
@@ -69,6 +70,7 @@ export class V2exNotificationParser {
       title: topic.title,
       topic_id: topic.id,
       topic_title: topic.title,
+      target_floor: topic.targetFloor,
       created: meta.created,
       last_modified: 0,
       unread: unread === null ? undefined : unread
@@ -237,15 +239,25 @@ export class V2exNotificationParser {
   }
 
   private static extractTopic(cell: string): ParsedNotificationTopic {
-    const re = /<a[^>]+href=['"]\/t\/(\d+)(?:#[^'"]*)?['"][^>]*>([\s\S]*?)<\/a>/i
+    const re = /<a[^>]+href=['"]\/t\/(\d+)([^'"]*)['"][^>]*>([\s\S]*?)<\/a>/i
     const m = cell.match(re)
     if (!m) {
-      return { id: 0, title: '' }
+      return { id: 0, title: '', targetFloor: 0 }
     }
     return {
       id: Number.parseInt(m[1] || '0'),
-      title: V2exNotificationParser.compactText(m[2] || '')
+      title: V2exNotificationParser.compactText(m[3] || ''),
+      targetFloor: V2exNotificationParser.extractTargetFloor(m[2] || '')
     }
+  }
+
+  private static extractTargetFloor(hrefTail: string): number {
+    const match = (hrefTail || '').match(/#(?:reply|r_?)(\d+)/i) || (hrefTail || '').match(/#(\d+)/)
+    if (!match || !match[1]) {
+      return 0
+    }
+    const parsed = Number.parseInt(match[1] || '0')
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 0
   }
 
   private static extractMember(cell: string): V2exMember | undefined {

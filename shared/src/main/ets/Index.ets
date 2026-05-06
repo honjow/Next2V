@@ -1,6 +1,7 @@
 // 路由参数类型
 export interface TopicDetailParams {
   topicId: number
+  targetFloor?: number
 }
 
 export interface NodeTopicListParams {

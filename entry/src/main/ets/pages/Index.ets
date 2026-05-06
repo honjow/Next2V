@@ -1388,9 +1388,10 @@ struct Index {
       ListItem() { this.NotificationCard(item) }
         .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
         .onClick(() => {
-          const topicId = this.notificationMeta(item).topicId
+          const meta = this.notificationMeta(item)
+          const topicId = meta.topicId
           if (topicId > 0) {
-            let p: TopicDetailParams = { topicId: topicId }
+            let p: TopicDetailParams = meta.targetFloor > 0 ? { topicId: topicId, targetFloor: meta.targetFloor } : { topicId: topicId }
             this.ns.pushPathByName('TopicDetail', p as Object)
           }
         })
@@ -1399,9 +1400,10 @@ struct Index {
       ListItem() { this.NotificationCard(item) }
         .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
         .onClick(() => {
-          const topicId = this.notificationMeta(item).topicId
+          const meta = this.notificationMeta(item)
+          const topicId = meta.topicId
           if (topicId > 0) {
-            let p: TopicDetailParams = { topicId: topicId }
+            let p: TopicDetailParams = meta.targetFloor > 0 ? { topicId: topicId, targetFloor: meta.targetFloor } : { topicId: topicId }
             this.ns.pushPathByName('TopicDetail', p as Object)
           }
         })

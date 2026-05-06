@@ -26,6 +26,7 @@ interface ReplyContextItem {
 @Component
 export struct TopicDetailPage {
   @Prop topicId: number = 0
+  @Prop targetFloor: number = 0
   @State v: DetailViewModel = new DetailViewModel(0)
   @Consume('ns') stack: NavPathStack
   @StorageProp('topAvoidHeight') topH: number = 0
@@ -57,11 +58,13 @@ export struct TopicDetailPage {
   })
   private lastReadFloor: number = 0
   private hasRestoredReadPosition: boolean = false
+  private hasJumpedToTargetFloor: boolean = false
 
   aboutToAppear(): void {
     this.v = new DetailViewModel(this.topicId)
     this.lastReadFloor = 0
     this.hasRestoredReadPosition = false
+    this.hasJumpedToTargetFloor = false
     this.jumpFloorText = ''
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     this.v.setCacheHandlers(
@@ -80,7 +83,7 @@ export struct TopicDetailPage {
         this.v.load().then(() => {
           this.recordViewedTopic()
           this.markTopicReadState()
-          this.restoreReadPosition()
+          this.restoreInitialPosition()
         })
       })
     this.loadSavedState()
@@ -901,6 +904,34 @@ export struct TopicDetailPage {
             // ignore
           }
         }, 0)
+      })
+      .catch((_error: Error) => {
+        // ignore
+      })
+  }
+
+  private restoreInitialPosition(): void {
+    const target = Math.floor(this.targetFloor)
+    if (target > 0) {
+      this.jumpToTargetFloor(target)
+      return
+    }
+    this.restoreReadPosition()
+  }
+
+  private jumpToTargetFloor(floor: number): void {
+    if (this.hasJumpedToTargetFloor || floor <= 0) {
+      return
+    }
+    this.hasJumpedToTargetFloor = true
+    this.ensureRepliesLoaded(floor)
+      .then(() => {
+        const loaded = this.v.replyDataSource.totalCount()
+        if (loaded <= 0) {
+          return
+        }
+        const safeFloor = floor <= loaded ? floor : loaded
+        this.jumpToLoadedReplyFloor(safeFloor)
       })
       .catch((_error: Error) => {
         // ignore

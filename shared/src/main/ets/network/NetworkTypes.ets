@@ -115,6 +115,7 @@ export interface V2exNotification {
   content_rendered?: string
   topic_id?: number
   topic_title?: string
+  target_floor?: number
   created?: number
   last_modified?: number
   unread?: boolean

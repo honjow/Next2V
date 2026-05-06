@@ -22,6 +22,7 @@ export interface NotificationMetadata {
   kindTag: string
   readTag: string
   topicId: number
+  targetFloor: number
   title: string
   body: string
 }
@@ -90,6 +91,7 @@ export class NotificationCenterViewModel {
       kindTag: this.kindTag(item, body),
       readTag: this.readTag(item),
       topicId: this.topicId(item),
+      targetFloor: this.targetFloor(item),
       title: this.title(item),
       body: body
     }
@@ -204,6 +206,19 @@ export class NotificationCenterViewModel {
     }
     const text = `${item.text || ''} ${item.content || ''} ${item.payload || ''} ${item.content_rendered || ''} ${item.payload_rendered || ''}`
     const match = text.match(/\/t\/(\d+)/)
+    if (!match || !match[1]) {
+      return 0
+    }
+    const parsed = Number(match[1])
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 0
+  }
+
+  private targetFloor(item: V2exNotification): number {
+    if (item.target_floor && item.target_floor > 0) {
+      return item.target_floor
+    }
+    const text = `${item.text || ''} ${item.content || ''} ${item.payload || ''} ${item.content_rendered || ''} ${item.payload_rendered || ''}`
+    const match = text.match(/#(?:reply|r_?)(\d+)/i) || text.match(/(?:^|\s)#(\d+)(?:\s|$)/)
     if (!match || !match[1]) {
       return 0
     }
