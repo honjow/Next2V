@@ -290,71 +290,157 @@ interface MarkdownImageErrorEvent {
 @Builder
 function CustomBlockBuilder(token: Token, options: MarkdownOptions) {
   if (token.type === CODE_MONO) {
-    Row() {
-      Column() {
-        Scroll() {
-          Column() {
-            ForEach((token as Tokens.Code).text.split("\n"), (line: string) => {
-              Text() {
-                ForEach(highlightLine(line), (ht: CodeToken) => {
-                  Span(ht.text)
-                    .fontColor(
-                      options.theme?.code?.fontColor?.[ht.type] ??
-                        _defaultCodeColors[ht.type] ??
-                        ThemeConstants.CODE_TEXT,
-                    )
-                    .fontSize(options.theme?.code?.fontSize ?? ThemeConstants.FONT_SIZE_CODE)
-                    .fontFamily("Noto Sans Mono");
-                })
-              }
-              .lineHeight(ThemeConstants.LINE_HEIGHT_CODE)
-              .maxLines(1); // prevent wrapping; parent Scroll handles overflow
-            })
-          }
-          .alignItems(HorizontalAlign.Start)
-          .padding({
-            top: ThemeConstants.SPACE_MD,
-            bottom: ThemeConstants.SPACE_MD,
-            left: ThemeConstants.SPACE_MD,
-            right: ThemeConstants.SPACE_SM,
-          })
-        }.scrollable(ScrollDirection.Horizontal)
-      }
-      .layoutWeight(1)
-      .alignItems(HorizontalAlign.Start)
-      Row() {
-        Image($r("sys.media.ohos_ic_public_copy"))
-          .width(ThemeConstants.ICON_SIZE_SM)
-          .height(ThemeConstants.ICON_SIZE_SM)
-          .fillColor(ThemeConstants.CODE_ICON)
-      }
-      .width(ThemeConstants.TOUCH_TARGET_SM)
-      .height(ThemeConstants.TOUCH_TARGET_SM)
-      .justifyContent(FlexAlign.Center)
-      .borderRadius(ThemeConstants.RADIUS_SM)
-      .stateStyles({
-        pressed: { .backgroundColor(ThemeConstants.PRESSED_OVERLAY) },
-        normal: { .backgroundColor(Color.Transparent) },
-      })
-      .onClick(() => {
-        let data = pasteboard.createData(
-          pasteboard.MIMETYPE_TEXT_PLAIN,
-          (token as Tokens.Code).text,
-        );
-        pasteboard.getSystemPasteboard().setDataSync(data);
-        promptAction.openToast({ message: "已复制" }).catch((error: Error) => {
-          console.error(`openToast failed: ${error.message}`);
-        });
-      })
-    }
-    .width("100%")
-    .alignItems(VerticalAlign.Top)
-    .borderRadius(options.theme?.code?.borderRadius ?? ThemeConstants.RADIUS_SM)
-    .backgroundColor(options.theme?.code?.backgroundColor ?? ThemeConstants.CODE_BG);
+    MarkdownCodeBlock({ codeToken: token as Tokens.Code, options: options });
   } else if (token.type === LIST_MONO) {
     CustomList({ listToken: token as Tokens.List, options: options });
   } else if (token.type === IMAGE_BLOCK_MONO) {
     MarkdownAutoImage({ url: _normalizeUrl((token as Tokens.Image).href), options: options });
+  }
+}
+
+@Component
+struct MarkdownCodeBlock {
+  @Prop codeToken: Tokens.Code;
+  @Prop options: MarkdownOptions;
+  @State private wrapLines: boolean = false;
+
+  private codeText(): string {
+    return this.codeToken.text || "";
+  }
+
+  private languageText(): string {
+    const lang = ((this.codeToken.lang || "") as string).trim();
+    return lang || "code";
+  }
+
+  private copyCode(): void {
+    try {
+      let data = pasteboard.createData(
+        pasteboard.MIMETYPE_TEXT_PLAIN,
+        this.codeText(),
+      );
+      pasteboard.getSystemPasteboard().setDataSync(data);
+      promptAction.openToast({ message: "已复制代码" }).catch((error: Error) => {
+        console.error(`openToast failed: ${error.message}`);
+      });
+    } catch (error) {
+      promptAction.openToast({ message: (error as Error).message || "复制失败" }).catch((_error: Error) => { });
+    }
+  }
+
+  @Builder CodeLineSpans(line: string) {
+    ForEach(highlightLine(line), (ht: CodeToken) => {
+      Span(ht.text)
+        .fontColor(
+          this.options.theme?.code?.fontColor?.[ht.type] ??
+            _defaultCodeColors[ht.type] ??
+            ThemeConstants.CODE_TEXT,
+        )
+        .fontSize(this.options.theme?.code?.fontSize ?? ThemeConstants.FONT_SIZE_CODE)
+        .fontFamily("Noto Sans Mono");
+    })
+  }
+
+  @Builder CodeLines(wrapLines: boolean) {
+    Column() {
+      ForEach(this.codeText().split("\n"), (line: string) => {
+        if (wrapLines) {
+          Text() {
+            this.CodeLineSpans(line);
+          }
+          .width("100%")
+          .lineHeight(ThemeConstants.LINE_HEIGHT_CODE);
+        } else {
+          Text() {
+            this.CodeLineSpans(line);
+          }
+          .lineHeight(ThemeConstants.LINE_HEIGHT_CODE)
+          .maxLines(1);
+        }
+      })
+    }
+    .alignItems(HorizontalAlign.Start)
+    .padding({
+      top: ThemeConstants.SPACE_SM,
+      bottom: ThemeConstants.SPACE_MD,
+      left: ThemeConstants.SPACE_MD,
+      right: ThemeConstants.SPACE_SM,
+    });
+  }
+
+  build() {
+    Column() {
+      Row({ space: ThemeConstants.SPACE_SM }) {
+        Text(this.languageText())
+          .fontSize(ThemeConstants.FONT_SIZE_TAG)
+          .fontColor(ThemeConstants.CODE_ICON)
+          .fontFamily("Noto Sans Mono")
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis });
+
+        Blank();
+
+        Button() {
+          Text(this.wrapLines ? "滚动" : "换行")
+            .fontSize(ThemeConstants.FONT_SIZE_TAG)
+            .fontColor(ThemeConstants.CODE_ICON);
+        }
+        .type(ButtonType.Normal)
+        .height(28)
+        .padding({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM })
+        .borderRadius(ThemeConstants.RADIUS_SM)
+        .backgroundColor(Color.Transparent)
+        .stateStyles({
+          pressed: { .backgroundColor(ThemeConstants.PRESSED_OVERLAY) },
+          normal: { .backgroundColor(Color.Transparent) },
+        })
+        .onClick(() => {
+          this.wrapLines = !this.wrapLines;
+        });
+
+        Button() {
+          Image($r("sys.media.ohos_ic_public_copy"))
+            .width(ThemeConstants.ICON_SIZE_SM)
+            .height(ThemeConstants.ICON_SIZE_SM)
+            .fillColor(ThemeConstants.CODE_ICON);
+        }
+        .type(ButtonType.Normal)
+        .width(ThemeConstants.TOUCH_TARGET_SM)
+        .height(28)
+        .borderRadius(ThemeConstants.RADIUS_SM)
+        .backgroundColor(Color.Transparent)
+        .stateStyles({
+          pressed: { .backgroundColor(ThemeConstants.PRESSED_OVERLAY) },
+          normal: { .backgroundColor(Color.Transparent) },
+        })
+        .onClick(() => {
+          this.copyCode();
+        });
+      }
+      .width("100%")
+      .padding({
+        left: ThemeConstants.SPACE_MD,
+        right: ThemeConstants.SPACE_SM,
+        top: ThemeConstants.SPACE_SM,
+        bottom: ThemeConstants.SPACE_XS,
+      })
+      .backgroundColor("#3A3D42");
+
+      if (this.wrapLines) {
+        this.CodeLines(true);
+      } else {
+        Scroll() {
+          this.CodeLines(false);
+        }
+        .width("100%")
+        .scrollable(ScrollDirection.Horizontal)
+        .scrollBar(BarState.Auto);
+      }
+    }
+    .width("100%")
+    .borderRadius(this.options.theme?.code?.borderRadius ?? ThemeConstants.RADIUS_SM)
+    .clip(true)
+    .backgroundColor(this.options.theme?.code?.backgroundColor ?? ThemeConstants.CODE_BG);
   }
 }
 
