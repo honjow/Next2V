@@ -19,6 +19,12 @@ export interface CacheStats {
   updatedAt: number
 }
 
+export interface CacheKeyIndex {
+  topicLists: string[]
+  topicDetails: number[]
+  updatedAt: number
+}
+
 interface CacheIndex {
   topicLists: string[]
   topicDetails: string[]
@@ -26,6 +32,22 @@ interface CacheIndex {
 }
 
 export class CacheSettings {
+  static async loadKeyIndex(context: common.UIAbilityContext): Promise<CacheKeyIndex> {
+    try {
+      const store = await preferences.getPreferences(context, STORE_NAME)
+      const index = CacheSettings.readIndex(store)
+      return {
+        topicLists: index.topicLists.slice(),
+        topicDetails: index.topicDetails
+          .map((key: string) => parseInt(key, 10))
+          .filter((id: number) => Number.isFinite(id) && id > 0),
+        updatedAt: index.updatedAt
+      }
+    } catch (error) {
+      const e = error as Error
+      throw new Error(e.message || '读取缓存索引失败')
+    }
+  }
   static async loadTopicList(context: common.UIAbilityContext, cacheKey: string): Promise<V2exTopic[]> {
     try {
       const store = await preferences.getPreferences(context, STORE_NAME)

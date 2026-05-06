@@ -19,6 +19,7 @@ import { ComponentContent, promptAction } from '@kit.ArkUI'
 import { V2exWebLoginPage } from './V2exWebLoginPage'
 import { V2exNativeLoginPage } from './V2exNativeLoginPage'
 import { ImagePreviewPage } from './ImagePreviewPage'
+import { SearchPage } from './SearchPage'
 import { TopicEditorPage } from './TopicEditorPage'
 
 @Component
@@ -141,6 +142,9 @@ struct Index {
         .titleBar(this.navDestTitleBarOpts())
     } else if (name === 'NodePicker') {
       HdsNavDestination() { NodePickerPage() }
+        .titleBar(this.navDestTitleBarOpts())
+    } else if (name === 'Search') {
+      HdsNavDestination() { SearchPage() }
         .titleBar(this.navDestTitleBarOpts())
     } else if (name === 'TopicEditor') {
       HdsNavDestination() { TopicEditorPage() }
@@ -293,6 +297,31 @@ struct Index {
 
         ListItem() {
           this.ViewedTopicsCard()
+        }
+          .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, top: ThemeConstants.SPACE_SM })
+
+        ListItem() {
+          Column() {
+            Text('搜索')
+              .fontSize(ThemeConstants.FONT_SIZE_BODY)
+              .fontWeight(FontWeight.Medium)
+              .fontColor($r('sys.color.font_primary'))
+            Text('在收藏 / 最近浏览 / 离线缓存中查找主题')
+              .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+              .fontColor($r('sys.color.font_secondary'))
+              .margin({ top: ThemeConstants.SPACE_XS })
+            Row({ space: ThemeConstants.SPACE_SM }) {
+              Button('打开')
+                .fontSize(ThemeConstants.FONT_SIZE_TAG)
+                .height(40)
+                .onClick(() => { this.ns.pushPathByName('Search', null) })
+            }.margin({ top: ThemeConstants.SPACE_SM })
+          }
+            .padding(ThemeConstants.SPACE_LG)
+            .width('100%')
+            .alignItems(HorizontalAlign.Start)
+            .borderRadius(ThemeConstants.RADIUS_MD)
+            .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
         }
           .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, top: ThemeConstants.SPACE_SM })
 

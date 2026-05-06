@@ -41,7 +41,7 @@ export { DraftSettings } from './settings/DraftSettings'
 export type { ReplyDraft, TopicDraft } from './settings/DraftSettings'
 export { CacheSettings }
   from './settings/CacheSettings'
-export type { CacheStats, TopicDetailCache } from './settings/CacheSettings'
+export type { CacheKeyIndex, CacheStats, TopicDetailCache } from './settings/CacheSettings'
 export type {
   V2exTopic,
   V2exReply,
