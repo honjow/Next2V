@@ -49,6 +49,16 @@ export class ApiService {
     return this.http.get<V2exTopic[]>(ApiConstants.API_HOT)
   }
 
+  /** 获取网站 hot tab 热榜主题 */
+  async getHotTabTopics(): Promise<V2exTopic[]> {
+    const html = await this.http.getText('/?tab=hot')
+    const ids = V2exTabParser.extractTopicIds(html)
+    if (ids.length === 0) {
+      throw new Error('热榜没有获取到主题，请稍后重试')
+    }
+    return this.getBatchTopics(ids)
+  }
+
   /** 获取全站最近更新主题 */
   async getRecentTopics(page: number = 1): Promise<V2exTopic[]> {
     const safePage = Math.max(1, Math.floor(page))

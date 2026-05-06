@@ -3,7 +3,7 @@ import {
   ApiService, V2exNode, V2exTopic, NodeTopicListParams, TopicDetailParams, ThemeConstants
 } from 'shared'
 
-type DiscoverTopicMode = 'hot' | 'latest' | 'recent'
+type DiscoverTopicMode = 'hot' | 'rank' | 'latest' | 'recent'
 
 @Component
 export struct DiscoverPage {
@@ -11,6 +11,7 @@ export struct DiscoverPage {
   @State vm: NodeViewModel = new NodeViewModel()
   @State private topicMode: DiscoverTopicMode = 'hot'
   @State private hotTopics: V2exTopic[] = []
+  @State private rankTopics: V2exTopic[] = []
   @State private latestTopics: V2exTopic[] = []
   @State private recentTopics: V2exTopic[] = []
   @State private hotError: string = ''
@@ -98,6 +99,7 @@ export struct DiscoverPage {
     Column({ space: ThemeConstants.SPACE_SM }) {
       Row({ space: ThemeConstants.SPACE_XS }) {
         this.TopicModeButton('hot', '热议')
+        this.TopicModeButton('rank', '热榜')
         this.TopicModeButton('latest', '最新')
         this.TopicModeButton('recent', '最近')
         Blank()
@@ -236,6 +238,9 @@ export struct DiscoverPage {
     if (this.topicMode === 'hot') {
       return this.hotTopics
     }
+    if (this.topicMode === 'rank') {
+      return this.rankTopics
+    }
     if (this.topicMode === 'recent') {
       return this.recentTopics
     }
@@ -245,6 +250,9 @@ export struct DiscoverPage {
   private topicSectionTitle(): string {
     if (this.topicMode === 'hot') {
       return '今日热议'
+    }
+    if (this.topicMode === 'rank') {
+      return '全站热榜'
     }
     if (this.topicMode === 'recent') {
       return '最近更新'
@@ -263,6 +271,8 @@ export struct DiscoverPage {
   private reloadTopicSurface(): void {
     if (this.topicMode === 'hot') {
       this.hotTopics = []
+    } else if (this.topicMode === 'rank') {
+      this.rankTopics = []
     } else if (this.topicMode === 'recent') {
       this.recentTopics = []
     } else {
@@ -283,13 +293,17 @@ export struct DiscoverPage {
     const requestedMode = this.topicMode
     const request = requestedMode === 'hot'
       ? this.api.getHotTopics()
-      : requestedMode === 'recent'
-        ? this.api.getRecentTopics()
-        : this.api.getLatestTopics()
+      : requestedMode === 'rank'
+        ? this.api.getHotTabTopics()
+        : requestedMode === 'recent'
+          ? this.api.getRecentTopics()
+          : this.api.getLatestTopics()
     request
       .then((topics: V2exTopic[]) => {
         if (requestedMode === 'hot') {
           this.hotTopics = topics || []
+        } else if (requestedMode === 'rank') {
+          this.rankTopics = topics || []
         } else if (requestedMode === 'recent') {
           this.recentTopics = topics || []
         } else {
