@@ -592,12 +592,12 @@ struct Index {
     if (this.accountBalance) {
       Row({ space: ThemeConstants.SPACE_SM }) {
         if (this.accountBalance.gold > 0) {
-          this.CoinAmount('#F3D16B', '#D59A24', '#9E6414', this.accountBalance.gold)
+          this.CoinAmount('#B97818', '#F3D16B', '#D59A24', this.accountBalance.gold)
         }
         if (this.accountBalance.silver > 0) {
-          this.CoinAmount('#EEF3F7', '#A8B1BC', '#717B86', this.accountBalance.silver)
+          this.CoinAmount('#7E8994', '#EEF3F7', '#A8B1BC', this.accountBalance.silver)
         }
-        this.CoinAmount('#D99B65', '#A66B3D', '#74401F', this.accountBalance.bronze)
+        this.CoinAmount('#7E4B27', '#D99B65', '#A66B3D', this.accountBalance.bronze)
       }
       .alignItems(VerticalAlign.Center)
       .height(22)
@@ -610,9 +610,9 @@ struct Index {
     }
   }
 
-  @Builder CoinAmount(centerColor: ResourceColor, midColor: ResourceColor, edgeColor: ResourceColor, amount: number) {
+  @Builder CoinAmount(rimColor: ResourceColor, centerColor: ResourceColor, innerEdgeColor: ResourceColor, amount: number) {
     Row({ space: 4 }) {
-      this.CoinIcon(centerColor, midColor, edgeColor)
+      this.CoinIcon(rimColor, centerColor, innerEdgeColor)
       Text(`${amount}`)
         .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
         .fontColor($r('sys.color.font_secondary'))
@@ -621,17 +621,26 @@ struct Index {
     .alignItems(VerticalAlign.Center)
   }
 
-  @Builder CoinIcon(centerColor: ResourceColor, midColor: ResourceColor, edgeColor: ResourceColor) {
-    Text('')
-      .width(16)
-      .height(16)
-      .borderRadius(ThemeConstants.RADIUS_ROUND)
-      .backgroundColor(edgeColor)
-      .radialGradient({
-        center: [5, 5],
-        radius: 13,
-        colors: [[centerColor, 0.0], [midColor, 0.58], [edgeColor, 1.0]]
-      })
+  @Builder CoinIcon(rimColor: ResourceColor, centerColor: ResourceColor, innerEdgeColor: ResourceColor) {
+    Stack() {
+      Text('')
+        .width(16)
+        .height(16)
+        .borderRadius(ThemeConstants.RADIUS_ROUND)
+        .backgroundColor(rimColor)
+      Text('')
+        .width(12)
+        .height(12)
+        .borderRadius(ThemeConstants.RADIUS_ROUND)
+        .backgroundColor(innerEdgeColor)
+      Text('')
+        .width(8)
+        .height(8)
+        .borderRadius(ThemeConstants.RADIUS_ROUND)
+        .backgroundColor(centerColor)
+    }
+    .width(16)
+    .height(16)
   }
 
   @Builder AuthSection() {
