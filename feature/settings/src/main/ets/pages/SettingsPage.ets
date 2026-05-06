@@ -31,9 +31,10 @@ export struct SettingsPage {
   build() {
     Column({ space: ThemeConstants.SPACE_SM }) {
       Text('设置')
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
+        .fontSize(ThemeConstants.FONT_SIZE_TITLE)
         .fontWeight(FontWeight.Medium)
         .fontColor($r('sys.color.font_primary'))
+        .width('100%')
 
       List({ space: ThemeConstants.SPACE_SM }) {
         ListItem() { this.SectionHeader('网络') }
@@ -108,7 +109,7 @@ export struct SettingsPage {
       Row({ space: ThemeConstants.SPACE_SM }) {
         Button('v2ex.com')
           .fontSize(ThemeConstants.FONT_SIZE_TAG)
-          .height(36)
+          .height(ThemeConstants.TOUCH_TARGET_SM)
           .type(ButtonType.Normal)
           .borderRadius(ThemeConstants.RADIUS_MD)
           .fontColor(!this.useCoDomain ? Color.White : $r('sys.color.font_primary'))
@@ -117,7 +118,7 @@ export struct SettingsPage {
           .onClick(() => { this.updateApiDomain(false) })
         Button('v2ex.co')
           .fontSize(ThemeConstants.FONT_SIZE_TAG)
-          .height(36)
+          .height(ThemeConstants.TOUCH_TARGET_SM)
           .type(ButtonType.Normal)
           .borderRadius(ThemeConstants.RADIUS_MD)
           .fontColor(this.useCoDomain ? Color.White : $r('sys.color.font_primary'))
@@ -224,7 +225,7 @@ export struct SettingsPage {
       Row({ space: ThemeConstants.SPACE_SM }) {
         Button('刷新状态')
           .fontSize(ThemeConstants.FONT_SIZE_TAG)
-          .height(36)
+          .height(ThemeConstants.TOUCH_TARGET_SM)
           .type(ButtonType.Normal)
           .borderRadius(ThemeConstants.RADIUS_MD)
           .fontColor($r('sys.color.font_primary'))
@@ -233,7 +234,7 @@ export struct SettingsPage {
           .onClick(() => { this.loadCacheStats() })
         Button('清理缓存')
           .fontSize(ThemeConstants.FONT_SIZE_TAG)
-          .height(36)
+          .height(ThemeConstants.TOUCH_TARGET_SM)
           .type(ButtonType.Normal)
           .borderRadius(ThemeConstants.RADIUS_MD)
           .fontColor($r('sys.color.font_primary'))
