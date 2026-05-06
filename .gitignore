@@ -10,3 +10,6 @@ scripts/xiaobai.csr
 *.hap
 *.signed.hap
 .env.local
+.claude/
+.cursor/skills/
+.opencode/
