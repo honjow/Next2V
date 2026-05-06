@@ -143,13 +143,21 @@ export struct SearchPage {
       .width('100%')
       .height('100%')
 
-      if (this.filterSheetVisible) {
-        this.SearchFilterOverlay()
-      }
     }
     .width('100%')
     .height('100%')
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
+    .bindSheet($$this.filterSheetVisible, this.SearchFilterSheet(), {
+      height: SheetSize.FIT_CONTENT,
+      preferType: SheetType.BOTTOM,
+      dragBar: true,
+      showClose: false,
+      maskColor: 'rgba(0,0,0,0.24)',
+      backgroundColor: $r('sys.color.ohos_id_color_card_bg'),
+      onDisappear: () => {
+        this.filterSheetVisible = false
+      }
+    })
   }
 
   @Builder SearchResultSurface() {
@@ -168,9 +176,13 @@ export struct SearchPage {
     Column({ space: ThemeConstants.SPACE_SM }) {
       TextInput({ placeholder: '搜索主题、节点、用户', text: this.keyword })
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .height(44)
+        .fontColor($r('sys.color.font_primary'))
+        .height(48)
+        .padding({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
         .borderRadius(ThemeConstants.RADIUS_MD)
-        .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
+        .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+        .border({ width: 1, color: '#D6DCE6' })
+        .shadow({ radius: 8, color: 'rgba(0,0,0,0.06)', offsetY: 2 })
         .onChange((value: string) => {
           this.keyword = value
           this.applyFilter()
@@ -620,57 +632,42 @@ export struct SearchPage {
       .onClick(() => { this.updateResultFilter(filter) })
   }
 
-  @Builder SearchFilterOverlay() {
-    Stack({ alignContent: Alignment.Bottom }) {
-      Column() {}
-      .width('100%')
-      .height('100%')
-      .backgroundColor('rgba(0,0,0,0.24)')
-      .onClick(() => {
-        this.filterSheetVisible = false
-      })
-
-      Column({ space: ThemeConstants.SPACE_MD }) {
-        Row() {
-          Text('搜索筛选')
-            .fontSize(ThemeConstants.FONT_SIZE_TITLE)
-            .fontWeight(FontWeight.Medium)
-            .fontColor($r('sys.color.font_primary'))
-          Blank()
-          Text('完成')
-            .fontSize(ThemeConstants.FONT_SIZE_TAG)
-            .fontColor(ThemeConstants.BRAND_PRIMARY)
-            .padding({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_SM, top: 7, bottom: 7 })
-            .onClick(() => {
-              this.filterSheetVisible = false
-            })
-        }
-        .width('100%')
-
-        if (this.sourceMode === 'remote') {
-          this.RemoteFilterSheetContent()
-        } else if (this.sourceMode === 'externalWeb') {
-          Text('网页搜索会在系统浏览器中打开，不额外提供站内筛选。')
-            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-            .fontColor($r('sys.color.font_secondary'))
-            .width('100%')
-        } else {
-          this.LocalFilterSheetContent()
-        }
+  @Builder SearchFilterSheet() {
+    Column({ space: ThemeConstants.SPACE_MD }) {
+      Row() {
+        Text('搜索筛选')
+          .fontSize(ThemeConstants.FONT_SIZE_TITLE)
+          .fontWeight(FontWeight.Medium)
+          .fontColor($r('sys.color.font_primary'))
+        Blank()
+        Text('完成')
+          .fontSize(ThemeConstants.FONT_SIZE_TAG)
+          .fontColor(ThemeConstants.BRAND_PRIMARY)
+          .padding({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_SM, top: 7, bottom: 7 })
+          .onClick(() => {
+            this.filterSheetVisible = false
+          })
       }
-      .padding({
-        left: ThemeConstants.SPACE_MD,
-        right: ThemeConstants.SPACE_MD,
-        top: ThemeConstants.SPACE_MD,
-        bottom: this.bottomH + ThemeConstants.SPACE_MD
-      })
       .width('100%')
-      .borderRadius({ topLeft: ThemeConstants.RADIUS_MD, topRight: ThemeConstants.RADIUS_MD })
-      .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
-      .onClick(() => {})
+
+      if (this.sourceMode === 'remote') {
+        this.RemoteFilterSheetContent()
+      } else if (this.sourceMode === 'externalWeb') {
+        Text('网页搜索会在系统浏览器中打开，不额外提供站内筛选。')
+          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+          .fontColor($r('sys.color.font_secondary'))
+          .width('100%')
+      } else {
+        this.LocalFilterSheetContent()
+      }
     }
+    .padding({
+      left: ThemeConstants.SPACE_MD,
+      right: ThemeConstants.SPACE_MD,
+      top: ThemeConstants.SPACE_MD,
+      bottom: this.bottomH + ThemeConstants.SPACE_MD
+    })
     .width('100%')
-    .height('100%')
   }
 
   @Builder LocalFilterSheetContent() {
@@ -690,7 +687,7 @@ export struct SearchPage {
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
         .height(44)
         .width('100%')
-        .borderRadius(ThemeConstants.RADIUS_MD)
+        .borderRadius(ThemeConstants.RADIUS_ROUND)
         .enabled(this.keyword.trim().length > 0)
         .onClick(() => {
           this.applyFilter()
@@ -767,7 +764,7 @@ export struct SearchPage {
             .textAlign(TextAlign.Center)
             .padding({ top: ThemeConstants.SPACE_SM, bottom: ThemeConstants.SPACE_SM })
             .layoutWeight(1)
-            .borderRadius(ThemeConstants.RADIUS_MD)
+            .borderRadius(ThemeConstants.RADIUS_ROUND)
             .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
             .onClick(() => {
               this.clearRemoteFilters()
@@ -777,7 +774,7 @@ export struct SearchPage {
           .fontSize(ThemeConstants.FONT_SIZE_BODY)
           .height(44)
           .layoutWeight(1)
-          .borderRadius(ThemeConstants.RADIUS_MD)
+          .borderRadius(ThemeConstants.RADIUS_ROUND)
           .enabled(!this.remoteLoading && this.keyword.trim().length > 0)
           .onClick(() => {
             this.executeRemoteSearch(true)

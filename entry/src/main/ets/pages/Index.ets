@@ -417,7 +417,7 @@ struct Index {
 
   private searchTitleMenu(): Record<string, Object> {
     let items: Record<string, Object>[] = [
-      this.topicActionItem('筛选', $r('sys.symbol.doc_text'), () => { this.sendSearchAction('filter') })
+      this.topicActionItem('筛选', $r('sys.symbol.funnel'), () => { this.sendSearchAction('filter') })
     ]
     return { 'value': items, 'maxCount': 1 }
   }
