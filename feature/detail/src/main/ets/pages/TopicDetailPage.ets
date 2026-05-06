@@ -335,27 +335,20 @@ export struct TopicDetailPage {
   }
 
   @Builder ReplyDivider() {
-    Column({ space: ThemeConstants.SPACE_SM }) {
-      Row() {
-        if (this.v.repliesUseV2 && this.v.topic !== null && this.v.topic!.replies > 0) {
-          Text(`已加载 ${this.v.repliesLoaded} / ${this.v.topic!.replies} 条回复`)
-            .fontSize(ThemeConstants.FONT_SIZE_META)
-            .fontColor($r('sys.color.font_secondary'))
-        } else {
-          Text(`共 ${this.v.replyDataSource.totalCount()} 条回复`)
-            .fontSize(ThemeConstants.FONT_SIZE_META)
-            .fontColor($r('sys.color.font_secondary'))
-        }
-        Blank()
-      }
-      .width('100%')
+    Row({ space: ThemeConstants.SPACE_SM }) {
+      Text(this.replyCountText())
+        .fontSize(ThemeConstants.FONT_SIZE_META)
+        .fontColor($r('sys.color.font_secondary'))
+        .maxLines(1)
+        .textOverflow({ overflow: TextOverflow.Ellipsis })
+        .layoutWeight(1)
 
-      Flex({ direction: FlexDirection.Row, wrap: FlexWrap.Wrap }) {
-        this.ReplyActionChip('只看楼主', this.v.onlyOp, () => { this.toggleOnlyOp() })
-        this.ReplyActionChip('楼层', false, () => { this.openJumpToFloorDialog() })
-        this.ReplyActionChip('最新', false, () => { this.scrollToLatestReply() })
+      Row({ space: ThemeConstants.SPACE_XS }) {
+        this.ReplyToolButton('楼层', false, 64, () => { this.openJumpToFloorDialog() })
+        this.ReplyToolButton('OP', this.v.onlyOp, 54, () => { this.toggleOnlyOp() })
+        this.ReplyToolButton('最新', false, 64, () => { this.scrollToLatestReply() })
       }
-      .width('100%')
+      .alignItems(VerticalAlign.Center)
     }
     .width('100%')
     .padding({
@@ -366,14 +359,15 @@ export struct TopicDetailPage {
     })
   }
 
-  @Builder ReplyActionChip(label: string, active: boolean, action: () => void) {
-    Text(label)
+  @Builder ReplyToolButton(label: string, active: boolean, buttonWidth: number, action: () => void) {
+    Button(label)
+      .type(ButtonType.Normal)
+      .width(buttonWidth)
+      .height(32)
       .fontSize(ThemeConstants.FONT_SIZE_TAG)
       .fontColor(active ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.font_secondary'))
-      .padding({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM, top: 4, bottom: 4 })
       .borderRadius(ThemeConstants.RADIUS_SM)
-      .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
-      .margin({ right: ThemeConstants.SPACE_SM, bottom: ThemeConstants.SPACE_SM })
+      .backgroundColor(active ? '#EAF2FF' : $r('sys.color.ohos_id_color_button_normal'))
       .onClick(action)
   }
 
@@ -805,6 +799,13 @@ export struct TopicDetailPage {
     } catch (_e) {
       // ignore
     }
+  }
+
+  private replyCountText(): string {
+    if (this.v.repliesUseV2 && this.v.topic !== null && this.v.topic!.replies > 0) {
+      return `已加载 ${this.v.repliesLoaded} / ${this.v.topic!.replies}`
+    }
+    return `共 ${this.v.replyDataSource.totalCount()} 条回复`
   }
 
   private toggleOnlyOp(): void {
