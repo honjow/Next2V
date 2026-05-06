@@ -135,7 +135,7 @@ export class HttpClient {
       if (retryCount > 0) {
         const delay = BACKOFF_BASE_MS * Math.pow(2, MAX_RETRIES - retryCount)
         await new Promise<void>(resolve => setTimeout(resolve, delay))
-        return this.requestText(endpoint, method, retryCount - 1)
+        return this.requestText(endpoint, method, retryCount - 1, headers)
       }
       throw new Error(`Network error: ${error.message}`)
     } finally {
