@@ -11,6 +11,8 @@ import {
   MediaSettings,
   ReadingSettings,
   SecondaryListScaffold,
+  SectionHeader as SharedSectionHeader,
+  ListDivider as SharedListDivider,
   StorageKeys,
   ThemeConstants,
   WriteActionSettings
@@ -57,19 +59,11 @@ export struct SettingsPage {
   }
 
   @Builder SectionHeader(title: string) {
-    Text(title)
-      .fontSize(ThemeConstants.FONT_SIZE_TAG)
-      .fontWeight(FontWeight.Medium)
-      .fontColor($r('sys.color.font_secondary'))
-      .padding({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM, top: ThemeConstants.SPACE_XS })
-      .width('100%')
+    SharedSectionHeader({ title: title })
   }
 
   @Builder SettingsDivider() {
-    Divider()
-      .strokeWidth(0.5)
-      .color($r('sys.color.ohos_id_color_list_separator'))
-      .margin({ left: ThemeConstants.SPACE_LG })
+    SharedListDivider()
   }
 
   @Builder NetworkSection() {
@@ -120,47 +114,15 @@ export struct SettingsPage {
 
   @Builder PreferenceSection() {
     Column() {
-      Row({ space: ThemeConstants.SPACE_SM }) {
-        Column({ space: ThemeConstants.SPACE_XS }) {
-          Text('图片自动加载')
-            .fontSize(ThemeConstants.FONT_SIZE_BODY)
-            .fontWeight(FontWeight.Medium)
-            .fontColor($r('sys.color.font_primary'))
-          Text(this.autoLoadImages ? '进入帖子时直接加载图片' : '仅保留图片占位与预览入口')
-            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-            .fontColor($r('sys.color.font_secondary'))
-            .maxLines(2)
-            .textOverflow({ overflow: TextOverflow.Ellipsis })
-        }
-        .layoutWeight(1)
-        .alignItems(HorizontalAlign.Start)
-        Toggle({ type: ToggleType.Switch, isOn: this.autoLoadImages })
-          .onChange((value: boolean) => { this.updateAutoLoadImages(value) })
-      }
-      .width('100%')
-      .padding(ThemeConstants.SPACE_LG)
+      this.TogglePreferenceRow('图片自动加载', this.autoLoadImages, (value: boolean) => {
+        this.updateAutoLoadImages(value)
+      })
 
       this.SettingsDivider()
 
-      Row({ space: ThemeConstants.SPACE_SM }) {
-        Column({ space: ThemeConstants.SPACE_XS }) {
-          Text('仅 Wi-Fi 加载图片')
-            .fontSize(ThemeConstants.FONT_SIZE_BODY)
-            .fontWeight(FontWeight.Medium)
-            .fontColor($r('sys.color.font_primary'))
-          Text(this.onlyLoadImagesOnWifi ? '蜂窝网络下保留图片占位' : '任意网络都自动加载图片')
-            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-            .fontColor($r('sys.color.font_secondary'))
-            .maxLines(2)
-            .textOverflow({ overflow: TextOverflow.Ellipsis })
-        }
-        .layoutWeight(1)
-        .alignItems(HorizontalAlign.Start)
-        Toggle({ type: ToggleType.Switch, isOn: this.onlyLoadImagesOnWifi })
-          .onChange((value: boolean) => { this.updateOnlyLoadImagesOnWifi(value) })
-      }
-      .width('100%')
-      .padding(ThemeConstants.SPACE_LG)
+      this.TogglePreferenceRow('仅 Wi-Fi 加载图片', this.onlyLoadImagesOnWifi, (value: boolean) => {
+        this.updateOnlyLoadImagesOnWifi(value)
+      })
 
       this.SettingsDivider()
 
@@ -168,36 +130,32 @@ export struct SettingsPage {
 
       this.SettingsDivider()
 
-      Row({ space: ThemeConstants.SPACE_SM }) {
-        Column({ space: ThemeConstants.SPACE_XS }) {
-          Text('写入操作')
-            .fontSize(ThemeConstants.FONT_SIZE_BODY)
-            .fontWeight(FontWeight.Medium)
-            .fontColor($r('sys.color.font_primary'))
-          Text(this.accountWriteEnabled ? '已开启，提交仍需二次确认' : '关闭，发帖/回复仅保存草稿')
-            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-            .fontColor($r('sys.color.font_secondary'))
-            .maxLines(2)
-            .textOverflow({ overflow: TextOverflow.Ellipsis })
+      this.TogglePreferenceRow('写入操作', this.accountWriteEnabled, (value: boolean) => {
+        if (value) {
+          this.confirmEnableWriteActions()
+        } else {
+          this.updateWriteActions(false)
         }
-        .layoutWeight(1)
-        .alignItems(HorizontalAlign.Start)
-        Toggle({ type: ToggleType.Switch, isOn: this.accountWriteEnabled })
-          .onChange((value: boolean) => {
-            if (value) {
-              this.confirmEnableWriteActions()
-            } else {
-              this.updateWriteActions(false)
-            }
-          })
-      }
-      .width('100%')
-      .padding(ThemeConstants.SPACE_LG)
+      })
     }
     .width('100%')
     .alignItems(HorizontalAlign.Start)
     .borderRadius(ThemeConstants.RADIUS_MD)
     .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+  }
+
+  @Builder TogglePreferenceRow(title: string, checked: boolean, changeAction: (value: boolean) => void) {
+    Row({ space: ThemeConstants.SPACE_SM }) {
+      Text(title)
+        .fontSize(ThemeConstants.FONT_SIZE_BODY)
+        .fontWeight(FontWeight.Medium)
+        .fontColor($r('sys.color.font_primary'))
+        .layoutWeight(1)
+      Toggle({ type: ToggleType.Switch, isOn: checked })
+        .onChange((value: boolean) => { changeAction(value) })
+    }
+    .width('100%')
+    .padding(ThemeConstants.SPACE_LG)
   }
 
   @Builder ReadingPreferenceRows() {

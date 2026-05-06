@@ -7,7 +7,7 @@ import {
   HttpClient, ThemeConstants, StorageKeys, ApiConstants, TabItem,
   AuthSettings, ApiService, ApiV2Service, DateUtils, CollectionSettings, TopicDetailParams, ImagePreviewParams, UserProfileParams,
   CookieJarSettings, AuthSessionSettings, V2exSessionParser, LoadingFooter, NotificationSettings, SecondaryListScaffold,
-  Avatar
+  Avatar, SectionHeader as SharedSectionHeader, ListDivider as SharedListDivider, ConciseListRow, EmptyState
 }
   from 'shared'
 import type {
@@ -743,19 +743,11 @@ struct Index {
   }
 
   @Builder SectionHeader(title: string) {
-    Text(title)
-      .fontSize(ThemeConstants.FONT_SIZE_TAG)
-      .fontWeight(FontWeight.Medium)
-      .fontColor($r('sys.color.font_secondary'))
-      .padding({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM, top: ThemeConstants.SPACE_XS })
-      .width('100%')
+    SharedSectionHeader({ title: title })
   }
 
   @Builder SettingsDivider() {
-    Divider()
-      .strokeWidth(0.5)
-      .color($r('sys.color.ohos_id_color_list_separator'))
-      .margin({ left: ThemeConstants.SPACE_LG })
+    SharedListDivider()
   }
 
   @Builder CoinBalance() {
@@ -765,7 +757,7 @@ struct Index {
           this.CoinAmount('#B97818', '#F6D77A', '#D59A24', this.accountBalance.gold)
         }
         if (this.accountBalance.silver > 0) {
-          this.CoinAmount('#7E8994', '#EEF3F7', '#A8B1BC', this.accountBalance.silver)
+          this.CoinAmount('#5C6978', '#F6FAFF', '#9FAFC0', this.accountBalance.silver)
         }
         this.CoinAmount('#7E4B27', '#D99B65', '#A66B3D', this.accountBalance.bronze)
       }
@@ -938,27 +930,7 @@ struct Index {
   }
 
   @Builder AuthActionRow(title: string, subtitle: string, action: () => void) {
-    Row({ space: ThemeConstants.SPACE_SM }) {
-      Column({ space: ThemeConstants.SPACE_XS }) {
-        Text(title)
-          .fontSize(ThemeConstants.FONT_SIZE_META)
-          .fontWeight(FontWeight.Medium)
-          .fontColor($r('sys.color.font_primary'))
-        Text(subtitle)
-          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-          .fontColor($r('sys.color.font_secondary'))
-          .maxLines(1)
-          .textOverflow({ overflow: TextOverflow.Ellipsis })
-      }
-      .layoutWeight(1)
-      .alignItems(HorizontalAlign.Start)
-      Text('›')
-        .fontSize(ThemeConstants.FONT_SIZE_TITLE)
-        .fontColor($r('sys.color.font_secondary'))
-    }
-    .width('100%')
-    .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG, top: ThemeConstants.SPACE_MD, bottom: ThemeConstants.SPACE_MD })
-    .onClick(action)
+    ConciseListRow({ title: title, subtitle: subtitle, action: action })
   }
 
   @Builder ProfileSummary() {
@@ -1044,15 +1016,15 @@ struct Index {
 
   @Builder AccountContentSection() {
     Column() {
-      this.AuthActionRow('收藏主题', '从 V2EX 同步你的收藏主题', () => {
+      this.AuthActionRow('收藏主题', '', () => {
         this.ns.pushPathByName('MyTopics', null)
       })
       this.SettingsDivider()
-      this.AuthActionRow('我的回复', '从 V2EX 同步你的回复记录', () => {
+      this.AuthActionRow('我的回复', '', () => {
         this.ns.pushPathByName('MyReplies', null)
       })
       this.SettingsDivider()
-      this.AuthActionRow('收藏节点', '从 V2EX 同步你收藏的节点', () => {
+      this.AuthActionRow('收藏节点', '', () => {
         this.ns.pushPathByName('MyNodes', null)
       })
     }
@@ -1135,15 +1107,15 @@ struct Index {
       this.SettingsDivider()
       this.TopicDraftEntryRow()
       this.SettingsDivider()
-      this.LocalNavigationRow('稍后读', '主题详情页保存的主题', this.savedTopics.length, () => {
+      this.LocalNavigationRow('稍后读', this.savedTopics.length, () => {
         this.ns.pushPathByName('SavedTopics', null)
       })
       this.SettingsDivider()
-      this.LocalNavigationRow('最近浏览', '打开主题详情后自动记录', this.viewedTopics.length, () => {
+      this.LocalNavigationRow('最近浏览', this.viewedTopics.length, () => {
         this.ns.pushPathByName('ViewedTopics', null)
       })
       this.SettingsDivider()
-      this.LocalNavigationRow('关注节点', '节点主题页关注的节点', this.savedNodes.length, () => {
+      this.LocalNavigationRow('关注节点', this.savedNodes.length, () => {
         this.ns.pushPathByName('SavedNodes', null)
       })
     }
@@ -1154,79 +1126,15 @@ struct Index {
   }
 
   @Builder SearchEntryRow() {
-    Row({ space: ThemeConstants.SPACE_SM }) {
-      Column({ space: ThemeConstants.SPACE_XS }) {
-        Text('搜索')
-          .fontSize(ThemeConstants.FONT_SIZE_BODY)
-          .fontWeight(FontWeight.Medium)
-          .fontColor($r('sys.color.font_primary'))
-        Text('本地数据 / 节点库 / 网页搜索')
-          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-          .fontColor($r('sys.color.font_secondary'))
-          .maxLines(1)
-          .textOverflow({ overflow: TextOverflow.Ellipsis })
-      }
-      .layoutWeight(1)
-      .alignItems(HorizontalAlign.Start)
-      Text('›')
-        .fontSize(ThemeConstants.FONT_SIZE_TITLE)
-        .fontColor($r('sys.color.font_secondary'))
-    }
-    .width('100%')
-    .padding(ThemeConstants.SPACE_LG)
-    .onClick(() => { this.ns.pushPathByName('Search', null) })
+    ConciseListRow({ title: '搜索', action: () => { this.ns.pushPathByName('Search', null) } })
   }
 
   @Builder TopicDraftEntryRow() {
-    Row({ space: ThemeConstants.SPACE_SM }) {
-      Column({ space: ThemeConstants.SPACE_XS }) {
-        Text('发帖草稿')
-          .fontSize(ThemeConstants.FONT_SIZE_BODY)
-          .fontWeight(FontWeight.Medium)
-          .fontColor($r('sys.color.font_primary'))
-        Text('编辑/预览新主题草稿，不会直接提交')
-          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-          .fontColor($r('sys.color.font_secondary'))
-          .maxLines(2)
-          .textOverflow({ overflow: TextOverflow.Ellipsis })
-      }
-      .layoutWeight(1)
-      .alignItems(HorizontalAlign.Start)
-      Text('›')
-        .fontSize(ThemeConstants.FONT_SIZE_TITLE)
-        .fontColor($r('sys.color.font_secondary'))
-    }
-    .width('100%')
-    .padding(ThemeConstants.SPACE_LG)
-    .onClick(() => { this.ns.pushPathByName('TopicEditor', null) })
+    ConciseListRow({ title: '发帖草稿', action: () => { this.ns.pushPathByName('TopicEditor', null) } })
   }
 
-  @Builder LocalNavigationRow(title: string, subtitle: string, count: number, action: () => void) {
-    Row({ space: ThemeConstants.SPACE_SM }) {
-      Column({ space: ThemeConstants.SPACE_XS }) {
-        Text(title)
-          .fontSize(ThemeConstants.FONT_SIZE_BODY)
-          .fontWeight(FontWeight.Medium)
-          .fontColor($r('sys.color.font_primary'))
-        Text(subtitle)
-          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-          .fontColor($r('sys.color.font_secondary'))
-      }
-      .layoutWeight(1)
-      .alignItems(HorizontalAlign.Start)
-      Row({ space: ThemeConstants.SPACE_XS }) {
-        Text(`${count}`)
-          .fontSize(ThemeConstants.FONT_SIZE_TAG)
-          .fontColor($r('sys.color.font_secondary'))
-        Text('›')
-          .fontSize(ThemeConstants.FONT_SIZE_TITLE)
-          .fontColor($r('sys.color.font_secondary'))
-      }
-      .alignItems(VerticalAlign.Center)
-    }
-    .width('100%')
-    .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG, top: ThemeConstants.SPACE_MD, bottom: ThemeConstants.SPACE_MD })
-    .onClick(action)
+  @Builder LocalNavigationRow(title: string, count: number, action: () => void) {
+    ConciseListRow({ title: title, count: count, action: action })
   }
 
   @Builder SavedTopicsPage() {
@@ -1344,19 +1252,13 @@ struct Index {
   }
 
   @Builder LocalEmptyView(message: string) {
-    Column({ space: ThemeConstants.SPACE_MD }) {
-      SymbolGlyph($r('sys.symbol.doc_text'))
-        .fontSize(42)
-        .fontColor([$r('sys.color.font_secondary')])
-      Text(message)
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .fontColor($r('sys.color.font_secondary'))
-    }
-    .justifyContent(FlexAlign.Center)
-    .width('100%')
-    .height(220)
-    .borderRadius(ThemeConstants.RADIUS_MD)
-    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+    EmptyState({ message: message, stateHeight: 220 })
+      .borderRadius(ThemeConstants.RADIUS_MD)
+      .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+  }
+
+  @Builder EmptyNoticeView() {
+    EmptyState({ message: '暂无通知', stateHeight: 240 })
   }
 
   @Builder StorageSection() {
@@ -1411,17 +1313,6 @@ struct Index {
     .justifyContent(FlexAlign.Center)
     .width('100%')
     .height('100%')
-  }
-
-  @Builder EmptyNoticeView() {
-    Column() {
-      Text('暂无通知')
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .fontColor($r('sys.color.font_secondary'))
-    }
-    .justifyContent(FlexAlign.Center)
-    .width('100%')
-    .height(240)
   }
 
   @Builder NotificationSummaryRow() {
