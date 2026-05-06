@@ -79,6 +79,8 @@ export struct TopicEditorPage {
           Button('选择')
             .fontSize(ThemeConstants.FONT_SIZE_TAG)
             .height(44)
+            .type(ButtonType.Normal)
+            .borderRadius(ThemeConstants.RADIUS_MD)
             .enabled(!this.isSubmitting)
             .onClick(() => { this.stack.pushPathByName('NodePicker', null) })
         }
@@ -181,18 +183,14 @@ export struct TopicEditorPage {
             .fontColor($r('sys.color.font_secondary'))
         }
 
-        Row({ space: ThemeConstants.SPACE_SM }) {
-          Button('返回')
-            .fontSize(ThemeConstants.FONT_SIZE_TAG)
-            .height(40)
-            .enabled(!this.isSubmitting)
-            .onClick(() => { this.stack.pop() })
-          Button(this.writeEnabled ? (this.isSubmitting ? '提交中...' : '提交') : '提交（需开启写入开关）')
-            .fontSize(ThemeConstants.FONT_SIZE_TAG)
-            .height(40)
-            .enabled(this.canSubmit())
-            .onClick(() => { this.confirmSubmit() })
-        }
+        Button(this.writeEnabled ? (this.isSubmitting ? '提交中...' : '提交') : '提交（需开启写入开关）')
+          .fontSize(ThemeConstants.FONT_SIZE_TAG)
+          .height(40)
+          .width('100%')
+          .type(ButtonType.Normal)
+          .borderRadius(ThemeConstants.RADIUS_MD)
+          .enabled(this.canSubmit())
+          .onClick(() => { this.confirmSubmit() })
       }
       .padding({
         left: ThemeConstants.SPACE_MD,
