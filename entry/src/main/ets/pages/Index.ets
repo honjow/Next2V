@@ -588,6 +588,47 @@ struct Index {
       .margin({ left: ThemeConstants.SPACE_LG })
   }
 
+  @Builder CoinBalance() {
+    if (this.accountBalance) {
+      Row({ space: ThemeConstants.SPACE_SM }) {
+        if (this.accountBalance.gold > 0) {
+          this.CoinAmount('金', '#C89A2B', this.accountBalance.gold)
+        }
+        if (this.accountBalance.silver > 0) {
+          this.CoinAmount('银', '#8F98A3', this.accountBalance.silver)
+        }
+        this.CoinAmount('铜', '#A66B3D', this.accountBalance.bronze)
+      }
+      .alignItems(VerticalAlign.Center)
+      .height(22)
+    } else {
+      Text(this.accountMetaText())
+        .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+        .fontColor($r('sys.color.font_secondary'))
+        .maxLines(1)
+        .textOverflow({ overflow: TextOverflow.Ellipsis })
+    }
+  }
+
+  @Builder CoinAmount(label: string, color: ResourceColor, amount: number) {
+    Row({ space: 3 }) {
+      Text(label)
+        .fontSize(9)
+        .fontColor(Color.White)
+        .fontWeight(FontWeight.Medium)
+        .textAlign(TextAlign.Center)
+        .width(16)
+        .height(16)
+        .borderRadius(ThemeConstants.RADIUS_ROUND)
+        .backgroundColor(color)
+      Text(`${amount}`)
+        .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+        .fontColor($r('sys.color.font_secondary'))
+        .maxLines(1)
+    }
+    .alignItems(VerticalAlign.Center)
+  }
+
   @Builder AuthSection() {
     Column() {
       if (!this.authCookieConfigured && !this.authTokenConfigured) {
@@ -602,11 +643,7 @@ struct Index {
               .fontColor($r('sys.color.font_primary'))
               .maxLines(1)
               .textOverflow({ overflow: TextOverflow.Ellipsis })
-            Text(this.accountMetaText())
-              .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-              .fontColor($r('sys.color.font_secondary'))
-              .maxLines(1)
-              .textOverflow({ overflow: TextOverflow.Ellipsis })
+            this.CoinBalance()
           }
           .layoutWeight(1)
           .alignItems(HorizontalAlign.Start)
@@ -649,9 +686,7 @@ struct Index {
               .fontSize(ThemeConstants.FONT_SIZE_TITLE)
               .fontWeight(FontWeight.Medium)
               .fontColor($r('sys.color.font_primary'))
-            Text(this.accountMetaText())
-              .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-              .fontColor($r('sys.color.font_secondary'))
+            this.CoinBalance()
             if (this.dailyMission) {
               Text(this.dailyMission.message)
                 .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
