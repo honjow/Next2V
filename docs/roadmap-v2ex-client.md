@@ -31,14 +31,28 @@ Implemented:
   rate-limit headers.
 - Cookie-backed balance, daily mission, and notification parsing paths.
 - Notification list pagination, cache, tap-to-topic, and single notification
-  deletion when PAT is configured.
+  deletion when PAT is configured; notification rows also expose read/unread and
+  type labels when the backing source provides enough signal.
+- Cookie-backed account content pages for collected topics, replies, and
+  collected nodes, plus browser fallback links for deeper account pages.
+- Site-synced topic favorite/unfavorite and node follow/unfollow flows using
+  Cookie-backed once-token actions with post-action state refresh.
+- Guarded Cookie-backed topic and reply submission adapters behind the
+  write-action switch, with form-token parsing, confirmation dialogs, in-flight
+  states, and draft clearing only after success.
 - Inline Markdown images, bare direct image links, common image host recognition,
   image loading states, retry, full-screen preview, pinch zoom, and image loading
   preferences. GIF, static WebP, and animated WebP rendering have been verified
   on the target device through ArkUI `Image`.
+- Standalone non-image links render as preview cards for common hosts
+  (YouTube/Vimeo/Gist/Imgur/V2EX/default URL) while direct image URLs stay on
+  the controlled inline image path.
 - Reply and topic draft editors with Markdown preview, autosave, node picker,
   image link insertion, and disabled submit controls behind the write-action
   switch.
+- Reading upgrades include reply conversation context, compact reply action
+  menus, mention/copy-user actions, raw text selection panels, code block
+  language/wrap/copy controls, and font size/line height/density preferences.
 - Local search across saved topics, viewed topics, cache, saved nodes, node index,
   history, and external web search fallback.
 - Settings page, local data reset, cache management, media settings,
@@ -68,27 +82,23 @@ and site-synced actions.
 
 Compared with mature V2EX clients, V2Next still lacks:
 
-- My topics, my replies, my site favorites, and account management surfaces.
-- Site-synced favorite/unfavorite topic and follow/unfollow node operations.
-- Real reply and topic submission.
-- Thank topic/reply, block user, edit topic, append topic, and other common
-  authenticated actions.
-- Mature notification workflow: read state, grouping, batch handling, and richer
-  navigation context.
-- Reply conversation/context view.
-- Text selection and copy behavior close to browser/Safari reading.
+- Deeper account management surfaces, multi-account switching, and optional
+  account data sync.
+- Thank topic/reply, block user, edit topic, append topic, image upload, and
+  other authenticated actions beyond favorite/follow/reply/topic creation.
+- Mature notification workflow: grouping, batch handling, richer navigation
+  context, and site-synced state changes where V2EX exposes stable paths.
 - Long-image polish and remaining edge cases in image-heavy topics.
 - In-app remote topic search.
-- Multi-account switching and optional account data sync.
-- Reading settings beyond the current image-loading preferences.
 - Consistent first-party-feeling Harmony UI across all secondary pages.
 
 Compared with the V2EX website, V2Next still lacks:
 
-- Site-native V2EX original-format rendering and automatic expansion for common
-  links such as imgur, i.v2ex.co, YouTube/Vimeo, Gist, and normal URLs.
-- Full virtual-currency-related workflows: topic creation, edit, reply, thank,
-  sticky, boost, invite-code purchase, and cost/permission explanations.
+- Full site-native V2EX original-format parity for every supported expansion
+  form; common standalone image/link cases are covered, but embedded website
+  behavior may still differ.
+- Full virtual-currency-related workflows: edit, thank, sticky, boost,
+  invite-code purchase, and deeper cost/permission explanations.
 - Block behavior that affects lists, replies, and notifications.
 - V2EX image-host upload flow.
 - Account settings, balance detail, and browser-level account pages.
@@ -124,18 +134,22 @@ Important API constraint:
 
 Goal: make normal Cookie login useful beyond showing "logged in".
 
+Status: collected topics, replies, collected nodes, account metadata, browser
+fallback links, and session invalidation paths are implemented. Remaining work is
+mostly deeper account management and multi-account polish.
+
 Tasks:
 
-- Add Cookie-backed "my topics" and "my replies".
-- Add "my favorites" or equivalent site-favorite surface if the website exposes
-  a stable parseable page.
-- Add account-detail navigation from My page, with balance detail and browser
+- [x] Add Cookie-backed "my topics" and "my replies".
+- [x] Add "my favorites" or equivalent site-favorite surface if the website
+  exposes a stable parseable page.
+- [x] Add account-detail navigation from My page, with balance detail and browser
   fallback links.
-- Make session expiration recoverable everywhere: clear error, relogin action,
-  and no stale "logged in" UI.
-- Tighten WebView cookie save validation so a random non-empty cookie is not
+- [x] Make session expiration recoverable everywhere: clear error, relogin
+  action, and no stale "logged in" UI.
+- [x] Tighten WebView cookie save validation so a random non-empty cookie is not
   treated as a valid login.
-- Keep PAT metadata visible only as advanced/debug account info.
+- [ ] Keep PAT metadata visible only as advanced/debug account info.
 
 Validation:
 
@@ -148,15 +162,23 @@ Validation:
 
 Goal: notifications work for both normal login and PAT mode.
 
+Status: PAT and Cookie notification paths, pagination/cache, type/read labels,
+tap-to-topic, PAT-only deletion, and stale-cache labeling are implemented.
+Remaining work is grouping, richer event-specific navigation, and any safe
+site-synced state changes that V2EX exposes.
+
 Tasks:
 
-- Unify PAT-backed and Cookie-backed notification loading behind one view model.
-- Preserve PAT as the structured preferred path when available.
-- Add clear state labels for unread/read/deleted where the source supports it.
-- Add better grouping or metadata for mention, reply, thank, and system events.
-- Add safe deletion behavior for PAT path; keep batch delete disabled until
+- [ ] Unify PAT-backed and Cookie-backed notification loading behind one view
+  model.
+- [x] Preserve PAT as the structured preferred path when available.
+- [x] Add clear state labels for unread/read/deleted where the source supports
+  it.
+- [ ] Add better grouping or metadata for mention, reply, thank, and system
+  events.
+- [x] Add safe deletion behavior for PAT path; keep batch delete disabled until
   confirmed and carefully tested.
-- Cache notifications without showing stale data as current.
+- [x] Cache notifications without showing stale data as current.
 
 Validation:
 
@@ -169,13 +191,17 @@ Validation:
 
 Goal: separate local convenience from real V2EX account state.
 
+Status: topic favorite/unfavorite and node follow/unfollow are implemented with
+Cookie-backed once-token actions and post-action refresh. Local save-later remains
+separate from site state.
+
 Tasks:
 
-- Implement site favorite/unfavorite topic using Cookie-backed form adapters.
-- Implement site follow/unfollow node if V2EX exposes stable actions.
-- Keep local save-later as a separate feature, named clearly.
-- Sync local state after successful site action.
-- Add failure recovery and avoid optimistic state that cannot be reconciled.
+- [x] Implement site favorite/unfavorite topic using Cookie-backed form adapters.
+- [x] Implement site follow/unfollow node if V2EX exposes stable actions.
+- [x] Keep local save-later as a separate feature, named clearly.
+- [x] Sync local state after successful site action.
+- [x] Add failure recovery and avoid optimistic state that cannot be reconciled.
 
 Validation:
 
@@ -187,17 +213,23 @@ Validation:
 
 Goal: move from drafts to manual, confirmed submission.
 
+Status: Cookie-backed reply and topic submission adapters are implemented behind
+the write-action switch with confirmation dialogs, in-flight state, failure
+messages, and draft clearing only after success. Further work should focus on
+manual production validation, clearer coin-cost explanations, and later edit or
+append flows.
+
 Tasks:
 
-- Design Cookie-backed reply submit adapter.
-- Design Cookie-backed topic submit adapter.
-- Parse and send required form tokens (`once`, hidden fields, syntax mode, node,
-  title, content) from live pages.
-- Keep submit disabled unless the global write-action switch is enabled.
-- Add confirmation dialogs showing target topic/node and possible coin cost.
-- Add in-flight state, retry guidance, and failure messages from V2EX.
-- Clear draft only after confirmed success.
-- Never submit during unattended tests.
+- [x] Design Cookie-backed reply submit adapter.
+- [x] Design Cookie-backed topic submit adapter.
+- [x] Parse and send required form tokens (`once`, hidden fields, syntax mode,
+  node, title, content) from live pages.
+- [x] Keep submit disabled unless the global write-action switch is enabled.
+- [ ] Add confirmation dialogs showing target topic/node and possible coin cost.
+- [x] Add in-flight state, retry guidance, and failure messages from V2EX.
+- [x] Clear draft only after confirmed success.
+- [x] Never submit during unattended tests.
 
 Validation:
 
@@ -210,17 +242,23 @@ Validation:
 
 Goal: match mature V2EX clients on discussion reading.
 
+Status: the listed reading upgrades are implemented in the current app: reply
+context, compact reply actions, text selection/copy, code block controls, reply
+user actions, and reading display preferences. Future work here should focus on
+performance, visual consistency, and edge-case polish.
+
 Tasks:
 
-- Add reply conversation/context view: for a selected reply, show related
+- [x] Add reply conversation/context view: for a selected reply, show related
   mentions/replies and useful surrounding context.
-- Improve reply toolbar layout. Avoid crowded chips; move rarely used actions
+- [x] Improve reply toolbar layout. Avoid crowded chips; move rarely used actions
   into appbar menu or a compact toolbar.
-- Add robust text selection/copy for topic body, replies, and code blocks.
-- Improve code block rendering, wrapping, and copy actions.
-- Add user actions from reply/user rows: open profile, copy username, mention in
-  reply draft.
-- Add reading settings: font size, line height, maybe compact/comfortable density.
+- [x] Add robust text selection/copy for topic body, replies, and code blocks.
+- [x] Improve code block rendering, wrapping, and copy actions.
+- [x] Add user actions from reply/user rows: open profile, copy username, mention
+  in reply draft.
+- [x] Add reading settings: font size, line height, maybe compact/comfortable
+  density.
 
 Validation:
 
@@ -232,21 +270,26 @@ Validation:
 
 Goal: make image-heavy and link-heavy topics comfortable.
 
+Status: image URL classification, save-image flow, GIF/WebP verification,
+standalone link cards, common host labels, direct image rendering, and non-image
+link click handling are implemented. Remaining work is long-image polish and
+deeper website-format parity where feasible.
+
 Tasks:
 
-- Move image URL classification into a shared utility if any logic is still
+- [x] Move image URL classification into a shared utility if any logic is still
   duplicated.
-- Add save-image flow with the correct Harmony picker/permission model.
-- Verify GIF/WebP behavior on target devices. Verified on
+- [x] Add save-image flow with the correct Harmony picker/permission model.
+- [x] Verify GIF/WebP behavior on target devices. Verified on
   `192.168.50.237:12345`: static WebP renders, animated GIF advances frames,
   and animated WebP advances frames through ArkUI `Image`. Platform note:
   ImageKit lists `gif` and `webp` as supported image-source formats but recommends
   querying the device's supported formats before custom decoding because some
   decode capabilities depend on device hardware.
-- Add non-direct image/link preview cards for common hosts.
-- Add V2EX original-format expansions where feasible: imgur/i.v2ex.co images,
-  Gist cards, YouTube/Vimeo link cards, and normal URL cards.
-- Keep direct image URLs rendered inline and non-image links clickable.
+- [x] Add non-direct image/link preview cards for common hosts.
+- [ ] Add V2EX original-format expansions where feasible: imgur/i.v2ex.co
+  images, Gist cards, YouTube/Vimeo link cards, and normal URL cards.
+- [x] Keep direct image URLs rendered inline and non-image links clickable.
 
 Validation:
 
