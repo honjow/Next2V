@@ -243,7 +243,7 @@ struct Index {
         .titleBar(this.navDestTitleBarOpts('选择节点'))
     } else if (name === 'Search') {
       HdsNavDestination() { SearchPage() }
-        .titleBar(this.navDestTitleBarOpts('搜索'))
+        .titleBar(this.navDestTitleBarOpts('搜索', this.searchTitleMenu()))
     } else if (name === 'TopicEditor') {
       HdsNavDestination() { TopicEditorPage() }
         .titleBar(this.navDestTitleBarOpts('发帖草稿'))
@@ -349,6 +349,10 @@ struct Index {
     AppStorage.setOrCreate<string>(StorageKeys.TOPIC_DETAIL_ACTION, `${Date.now()}:${action}`)
   }
 
+  private sendSearchAction(action: string): void {
+    AppStorage.setOrCreate<string>(StorageKeys.SEARCH_ACTION, `${Date.now()}:${action}`)
+  }
+
   private openV2exPathInSystemBrowser(path: string): void {
     const baseUrl = this.http.getBaseUrl()
     const cleanPath = (path || '').trim()
@@ -407,6 +411,13 @@ struct Index {
   private meTitleMenu(): Record<string, Object> {
     let items: Record<string, Object>[] = [
       this.topicActionItem('设置', $r('sys.symbol.gearshape'), () => { this.ns.pushPathByName('Settings', null) })
+    ]
+    return { 'value': items, 'maxCount': 1 }
+  }
+
+  private searchTitleMenu(): Record<string, Object> {
+    let items: Record<string, Object>[] = [
+      this.topicActionItem('筛选', $r('sys.symbol.doc_text'), () => { this.sendSearchAction('filter') })
     ]
     return { 'value': items, 'maxCount': 1 }
   }

@@ -335,40 +335,38 @@ export struct TopicDetailPage {
   }
 
   @Builder ReplyDivider() {
-    Column({ space: ThemeConstants.SPACE_SM }) {
+    Row({ space: ThemeConstants.SPACE_SM }) {
       Text(this.replyCountText())
         .fontSize(ThemeConstants.FONT_SIZE_META)
         .fontColor($r('sys.color.font_secondary'))
         .maxLines(1)
         .textOverflow({ overflow: TextOverflow.Ellipsis })
-        .width('100%')
+        .layoutWeight(1)
 
-      Row({ space: ThemeConstants.SPACE_SM }) {
+      Row({ space: ThemeConstants.SPACE_XS }) {
         this.ReplyToolButton('楼层', false, () => { this.openJumpToFloorDialog() })
         this.ReplyToolButton('只看楼主', this.v.onlyOp, () => { this.toggleOnlyOp() })
         this.ReplyToolButton('最新', false, () => { this.scrollToLatestReply() })
       }
       .alignItems(VerticalAlign.Center)
-      .width('100%')
     }
+    .alignItems(VerticalAlign.Center)
     .width('100%')
     .padding({
-      left: ThemeConstants.SPACE_LG,
-      right: ThemeConstants.SPACE_LG,
-      top: ThemeConstants.SPACE_MD,
-      bottom: ThemeConstants.SPACE_SM
+      left: ThemeConstants.SPACE_SM,
+      right: ThemeConstants.SPACE_SM,
+      top: ThemeConstants.SPACE_SM,
+      bottom: ThemeConstants.SPACE_XS
     })
   }
 
   @Builder ReplyToolButton(label: string, active: boolean, action: () => void) {
-    Button(label)
-      .type(ButtonType.Normal)
-      .height(32)
-      .layoutWeight(1)
-      .fontSize(ThemeConstants.FONT_SIZE_TAG)
-      .fontColor(active ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.font_secondary'))
-      .borderRadius(ThemeConstants.RADIUS_SM)
-      .backgroundColor(active ? '#EAF2FF' : $r('sys.color.ohos_id_color_button_normal'))
+    Text(label)
+      .fontSize(ThemeConstants.FONT_SIZE_TINY)
+      .fontColor(active ? Color.White : $r('sys.color.font_secondary'))
+      .padding({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM, top: 5, bottom: 5 })
+      .borderRadius(ThemeConstants.RADIUS_ROUND)
+      .backgroundColor(active ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.ohos_id_color_button_normal'))
       .onClick(action)
   }
 

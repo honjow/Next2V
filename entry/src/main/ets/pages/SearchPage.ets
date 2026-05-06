@@ -14,6 +14,7 @@ import {
   SectionHeader as SharedSectionHeader,
   ListDivider as SharedListDivider,
   EmptyState,
+  PullRefresh,
   StorageKeys,
   Sov2exService,
   type Sov2exHit,
@@ -90,11 +91,15 @@ export struct SearchPage {
   @State private remoteUsername: string = ''
   @State private remoteNode: string = ''
   @State private remoteDateRange: RemoteDateRange = 'all'
+  @State private filterSheetVisible: boolean = false
+  @State private listScrollEnabled: boolean = true
+  @StorageLink(StorageKeys.SEARCH_ACTION) @Watch('onSearchActionCommand') searchActionCommand: string = ''
   @StorageProp(StorageKeys.TOP_AVOID_HEIGHT) topH: number = 0
   @StorageProp(StorageKeys.BOTTOM_AVOID_HEIGHT) bottomH: number = 0
 
   private api: ApiService = new ApiService()
   private sov2ex: Sov2exService = new Sov2exService()
+  private scroller: Scroller = new Scroller()
 
   aboutToAppear(): void {
     this.keyword = ''
@@ -110,32 +115,53 @@ export struct SearchPage {
   }
 
   build() {
-    Column({ space: ThemeConstants.SPACE_SM }) {
-      this.SearchPanel()
-      this.HistorySection()
-
-      if (this.sourceMode !== 'externalWeb' && this.sourceMode !== 'remote' && this.keyword.trim().length > 0) {
-        this.ResultFilterControls()
+    Stack({ alignContent: Alignment.Bottom }) {
+      Column({ space: ThemeConstants.SPACE_SM }) {
+        this.SearchPanel()
+        Column() {
+          PullRefresh({
+            scroller: this.scroller,
+            indicatorTop: this.topH + ThemeConstants.TITLE_BAR_HEIGHT,
+            threshold: 56,
+            onRefresh: async () => {
+              await this.refreshSearchSurface()
+            },
+            onScrollEnableChange: (enabled: boolean) => {
+              this.listScrollEnabled = enabled
+            }
+          }) {
+            this.SearchResultSurface()
+          }
+        }
+        .layoutWeight(1)
       }
+      .padding({
+        left: ThemeConstants.SPACE_MD,
+        right: ThemeConstants.SPACE_MD,
+        top: this.topH + ThemeConstants.TITLE_BAR_HEIGHT + ThemeConstants.SPACE_MD
+      })
+      .width('100%')
+      .height('100%')
 
-      if (this.sourceMode === 'externalWeb' && this.keyword.trim().length > 0) {
-        this.ExternalWebSearchPanel()
-      } else if (this.sourceMode === 'remote' && this.keyword.trim().length > 0) {
-        this.RemoteSearchResultList()
-      } else if (this.keyword.trim().length > 0) {
-        this.LocalResultList()
+      if (this.filterSheetVisible) {
+        this.SearchFilterOverlay()
       }
-
     }
-    .padding({
-      left: ThemeConstants.SPACE_MD,
-      right: ThemeConstants.SPACE_MD,
-      top: this.topH + ThemeConstants.TITLE_BAR_HEIGHT + ThemeConstants.SPACE_MD,
-      bottom: this.bottomH + ThemeConstants.SPACE_LG
-    })
     .width('100%')
     .height('100%')
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
+  }
+
+  @Builder SearchResultSurface() {
+    if (!this.keyword.trim()) {
+      this.HistorySection()
+    } else if (this.sourceMode === 'externalWeb') {
+      this.ExternalWebSearchPanel()
+    } else if (this.sourceMode === 'remote') {
+      this.RemoteSearchResultList()
+    } else {
+      this.LocalResultList()
+    }
   }
 
   @Builder SearchPanel() {
@@ -164,14 +190,9 @@ export struct SearchPage {
       }
 
       this.SourceModeControls()
-      if (this.sourceMode === 'remote') {
-        this.RemoteSearchControls()
-      }
     }
-    .padding(ThemeConstants.SPACE_MD)
+    .padding({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM, top: ThemeConstants.SPACE_SM, bottom: ThemeConstants.SPACE_SM })
     .width('100%')
-    .borderRadius(ThemeConstants.RADIUS_MD)
-    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }
 
   @Builder HistorySection() {
@@ -213,7 +234,7 @@ export struct SearchPage {
   }
 
   @Builder LocalResultList() {
-    List({ space: ThemeConstants.SPACE_SM }) {
+    List({ space: ThemeConstants.SPACE_SM, scroller: this.scroller }) {
       if (this.showTopicResults()) {
         ListItem() {
           Column() {
@@ -271,7 +292,14 @@ export struct SearchPage {
             })
         }, (item: SearchNodeItem) => `n:${item.name}`)
       }
+
+      ListItem() {
+        Column() {
+          Blank().height(this.bottomH + ThemeConstants.SPACE_XL)
+        }
+      }
     }
+    .enableScrollInteraction(this.listScrollEnabled)
     .scrollBar(BarState.Off)
     .width('100%')
     .layoutWeight(1)
@@ -298,7 +326,7 @@ export struct SearchPage {
   }
 
   @Builder RemoteSearchResultList() {
-    List({ space: ThemeConstants.SPACE_SM }) {
+    List({ space: ThemeConstants.SPACE_SM, scroller: this.scroller }) {
       ListItem() {
         Column() {
           SharedSectionHeader({ title: `SOV2EX ${this.remoteTotal}` })
@@ -340,7 +368,14 @@ export struct SearchPage {
             .onClick(() => { this.executeRemoteSearch(false) })
         }
       }
+
+      ListItem() {
+        Column() {
+          Blank().height(this.bottomH + ThemeConstants.SPACE_XL)
+        }
+      }
     }
+    .enableScrollInteraction(this.listScrollEnabled)
     .scrollBar(BarState.Off)
     .width('100%')
     .layoutWeight(1)
@@ -451,12 +486,12 @@ export struct SearchPage {
   }
 
   @Builder SourceModeButton(mode: SearchSourceMode, label: string) {
-    Button(label)
+    Text(label)
       .fontSize(ThemeConstants.FONT_SIZE_TAG)
-      .height(ThemeConstants.TOUCH_TARGET_SM)
-      .type(ButtonType.Normal)
-      .borderRadius(ThemeConstants.RADIUS_MD)
+      .fontWeight(this.sourceMode === mode ? FontWeight.Medium : FontWeight.Regular)
       .fontColor(this.sourceMode === mode ? Color.White : $r('sys.color.font_primary'))
+      .padding({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, top: 7, bottom: 7 })
+      .borderRadius(ThemeConstants.RADIUS_ROUND)
       .backgroundColor(this.sourceMode === mode ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.ohos_id_color_button_normal'))
       .onClick(() => { this.updateSourceMode(mode) })
   }
@@ -527,23 +562,24 @@ export struct SearchPage {
   }
 
   @Builder RemoteOptionButton(label: string, selected: boolean, action: () => void) {
-    Button(label)
+    Text(label)
       .fontSize(ThemeConstants.FONT_SIZE_TAG)
-      .height(ThemeConstants.TOUCH_TARGET_SM)
-      .type(ButtonType.Normal)
-      .borderRadius(ThemeConstants.RADIUS_MD)
+      .fontWeight(selected ? FontWeight.Medium : FontWeight.Regular)
       .fontColor(selected ? Color.White : $r('sys.color.font_primary'))
+      .padding({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, top: 7, bottom: 7 })
+      .borderRadius(ThemeConstants.RADIUS_ROUND)
       .backgroundColor(selected ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.ohos_id_color_button_normal'))
       .onClick(() => { action() })
   }
 
   @Builder RemoteDateButton(range: RemoteDateRange, label: string) {
-    Button(label)
+    Text(label)
       .fontSize(ThemeConstants.FONT_SIZE_TAG)
-      .height(ThemeConstants.TOUCH_TARGET_SM)
-      .type(ButtonType.Normal)
-      .borderRadius(ThemeConstants.RADIUS_MD)
+      .fontWeight(this.remoteDateRange === range ? FontWeight.Medium : FontWeight.Regular)
+      .textAlign(TextAlign.Center)
       .fontColor(this.remoteDateRange === range ? Color.White : $r('sys.color.font_primary'))
+      .padding({ top: 7, bottom: 7 })
+      .borderRadius(ThemeConstants.RADIUS_ROUND)
       .backgroundColor(this.remoteDateRange === range ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.ohos_id_color_button_normal'))
       .layoutWeight(1)
       .onClick(() => {
@@ -573,14 +609,218 @@ export struct SearchPage {
   }
 
   @Builder ResultFilterButton(filter: SearchResultFilter, label: string) {
-    Button(label)
+    Text(label)
       .fontSize(ThemeConstants.FONT_SIZE_TAG)
-      .height(ThemeConstants.TOUCH_TARGET_SM)
-      .type(ButtonType.Normal)
-      .borderRadius(ThemeConstants.RADIUS_MD)
+      .fontWeight(this.resultFilter === filter ? FontWeight.Medium : FontWeight.Regular)
+      .textAlign(TextAlign.Center)
       .fontColor(this.resultFilter === filter ? Color.White : $r('sys.color.font_primary'))
+      .padding({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, top: 7, bottom: 7 })
+      .borderRadius(ThemeConstants.RADIUS_ROUND)
       .backgroundColor(this.resultFilter === filter ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.ohos_id_color_button_normal'))
       .onClick(() => { this.updateResultFilter(filter) })
+  }
+
+  @Builder SearchFilterOverlay() {
+    Stack({ alignContent: Alignment.Bottom }) {
+      Column() {}
+      .width('100%')
+      .height('100%')
+      .backgroundColor('rgba(0,0,0,0.24)')
+      .onClick(() => {
+        this.filterSheetVisible = false
+      })
+
+      Column({ space: ThemeConstants.SPACE_MD }) {
+        Row() {
+          Text('搜索筛选')
+            .fontSize(ThemeConstants.FONT_SIZE_TITLE)
+            .fontWeight(FontWeight.Medium)
+            .fontColor($r('sys.color.font_primary'))
+          Blank()
+          Text('完成')
+            .fontSize(ThemeConstants.FONT_SIZE_TAG)
+            .fontColor(ThemeConstants.BRAND_PRIMARY)
+            .padding({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_SM, top: 7, bottom: 7 })
+            .onClick(() => {
+              this.filterSheetVisible = false
+            })
+        }
+        .width('100%')
+
+        if (this.sourceMode === 'remote') {
+          this.RemoteFilterSheetContent()
+        } else if (this.sourceMode === 'externalWeb') {
+          Text('网页搜索会在系统浏览器中打开，不额外提供站内筛选。')
+            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+            .fontColor($r('sys.color.font_secondary'))
+            .width('100%')
+        } else {
+          this.LocalFilterSheetContent()
+        }
+      }
+      .padding({
+        left: ThemeConstants.SPACE_MD,
+        right: ThemeConstants.SPACE_MD,
+        top: ThemeConstants.SPACE_MD,
+        bottom: this.bottomH + ThemeConstants.SPACE_MD
+      })
+      .width('100%')
+      .borderRadius({ topLeft: ThemeConstants.RADIUS_MD, topRight: ThemeConstants.RADIUS_MD })
+      .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+      .onClick(() => {})
+    }
+    .width('100%')
+    .height('100%')
+  }
+
+  @Builder LocalFilterSheetContent() {
+    Column({ space: ThemeConstants.SPACE_SM }) {
+      Text('结果类型')
+        .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+        .fontColor($r('sys.color.font_secondary'))
+        .width('100%')
+      Row({ space: ThemeConstants.SPACE_XS }) {
+        this.ResultFilterButton('all', '全部')
+        this.ResultFilterButton('topics', '主题')
+        this.ResultFilterButton('nodes', '节点')
+        this.ResultFilterButton('users', '用户')
+      }
+      .width('100%')
+      Button('应用')
+        .fontSize(ThemeConstants.FONT_SIZE_BODY)
+        .height(44)
+        .width('100%')
+        .borderRadius(ThemeConstants.RADIUS_MD)
+        .enabled(this.keyword.trim().length > 0)
+        .onClick(() => {
+          this.applyFilter()
+          this.filterSheetVisible = false
+        })
+    }
+    .width('100%')
+  }
+
+  @Builder RemoteFilterSheetContent() {
+    Column({ space: ThemeConstants.SPACE_SM }) {
+      Text('排序')
+        .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+        .fontColor($r('sys.color.font_secondary'))
+        .width('100%')
+      Row({ space: ThemeConstants.SPACE_XS }) {
+        this.RemoteOptionButton('时间', this.remoteSort === 'created', () => {
+          this.remoteSort = 'created'
+          this.resetRemoteResults()
+        })
+        this.RemoteOptionButton('相关', this.remoteSort === 'sumup', () => {
+          this.remoteSort = 'sumup'
+          this.resetRemoteResults()
+        })
+        this.RemoteOptionButton(this.remoteOrder === '0' ? '倒序' : '正序', true, () => {
+          this.remoteOrder = this.remoteOrder === '0' ? '1' : '0'
+          this.resetRemoteResults()
+        })
+      }
+      .width('100%')
+
+      Row({ space: ThemeConstants.SPACE_XS }) {
+        TextInput({ placeholder: '作者', text: this.remoteUsername })
+          .fontSize(ThemeConstants.FONT_SIZE_TAG)
+          .height(ThemeConstants.TOUCH_TARGET_SM)
+          .layoutWeight(1)
+          .borderRadius(ThemeConstants.RADIUS_MD)
+          .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+          .onChange((value: string) => {
+            this.remoteUsername = value
+            this.resetRemoteResults()
+          })
+        TextInput({ placeholder: '节点', text: this.remoteNode })
+          .fontSize(ThemeConstants.FONT_SIZE_TAG)
+          .height(ThemeConstants.TOUCH_TARGET_SM)
+          .layoutWeight(1)
+          .borderRadius(ThemeConstants.RADIUS_MD)
+          .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+          .onChange((value: string) => {
+            this.remoteNode = value
+            this.resetRemoteResults()
+          })
+      }
+      .width('100%')
+
+      Text('时间范围')
+        .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+        .fontColor($r('sys.color.font_secondary'))
+        .width('100%')
+      Row({ space: ThemeConstants.SPACE_XS }) {
+        this.RemoteDateButton('all', '不限')
+        this.RemoteDateButton('day', '一天')
+        this.RemoteDateButton('week', '一周')
+        this.RemoteDateButton('month', '一月')
+        this.RemoteDateButton('year', '一年')
+      }
+      .width('100%')
+
+      Row({ space: ThemeConstants.SPACE_XS }) {
+        if (this.hasRemoteFilters()) {
+          Text('清除')
+            .fontSize(ThemeConstants.FONT_SIZE_BODY)
+            .fontColor($r('sys.color.font_primary'))
+            .textAlign(TextAlign.Center)
+            .padding({ top: ThemeConstants.SPACE_SM, bottom: ThemeConstants.SPACE_SM })
+            .layoutWeight(1)
+            .borderRadius(ThemeConstants.RADIUS_MD)
+            .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+            .onClick(() => {
+              this.clearRemoteFilters()
+            })
+        }
+        Button(this.remoteLoading ? '搜索中' : '应用搜索')
+          .fontSize(ThemeConstants.FONT_SIZE_BODY)
+          .height(44)
+          .layoutWeight(1)
+          .borderRadius(ThemeConstants.RADIUS_MD)
+          .enabled(!this.remoteLoading && this.keyword.trim().length > 0)
+          .onClick(() => {
+            this.executeRemoteSearch(true)
+            this.filterSheetVisible = false
+          })
+      }
+      .width('100%')
+    }
+    .width('100%')
+  }
+
+  private onSearchActionCommand(_propName: string): void {
+    const raw = (this.searchActionCommand || '').trim()
+    if (!raw) {
+      return
+    }
+    const parts = raw.split(':')
+    const action = parts.length > 0 ? parts[parts.length - 1] : ''
+    if (action === 'filter') {
+      this.filterSheetVisible = true
+      return
+    }
+    if (action === 'refresh') {
+      if (this.sourceMode === 'externalWeb' && this.keyword.trim().length > 0) {
+        this.openExternalTopicSearch()
+      } else {
+        this.refreshSearchSurface()
+      }
+    }
+  }
+
+  private async refreshSearchSurface(): Promise<void> {
+    if (this.sourceMode === 'remote') {
+      this.executeRemoteSearch(true)
+      return
+    }
+    if (this.usesNodeIndex()) {
+      this.allNodes = []
+      this.loadNodeIndex()
+    }
+    this.loadLocalCollections()
+    this.loadCacheCollections()
+    this.applyFilter()
   }
 
   private loadLocalCollections(): void {
