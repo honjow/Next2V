@@ -207,7 +207,12 @@ struct Index {
 
   @Builder pm(name: string, param: Object) {
     if (name === 'TopicDetail') {
-      HdsNavDestination() { TopicDetailPage({ topicId: (param as Record<string, Object>)['topicId'] as number }) }
+      HdsNavDestination() {
+        TopicDetailPage({
+          topicId: ((param as Record<string, Object>)['topicId'] as number) || 0,
+          targetFloor: ((param as Record<string, Object>)['targetFloor'] as number) || 0
+        })
+      }
         .titleBar(this.topicDetailTitleBarOpts())
     } else if (name === 'ImagePreview') {
       HdsNavDestination() { ImagePreviewPage({ url: (param as ImagePreviewParams).url }) }
