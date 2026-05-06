@@ -110,7 +110,7 @@ struct FeedListPage {
   @StorageProp('topAvoidHeight') topH: number = 107
   @StorageProp('bottomAvoidHeight') bottomH: number = 0
   private readonly FLOAT_H: number = ThemeConstants.FLOAT_BAR_HEIGHT
-  private readonly GAP: number = ThemeConstants.SPACE_SM
+  private readonly GAP: number = ThemeConstants.SPACE_SM - 2
   private readonly PULL_THRESHOLD: number = 40
   private readonly TBH: number = ThemeConstants.TITLE_BAR_HEIGHT
   private readonly BB_H: number = ApiConstants.TAB_BAR_HEIGHT
@@ -166,7 +166,7 @@ struct FeedListPage {
           .scrollBar(BarState.Off)
           .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
           .width('100%').height('100%')
-          .padding({ left: this.GAP, right: this.GAP })
+          .padding({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
           .clip(false)
           .edgeEffect(EdgeEffect.None)
           .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP])

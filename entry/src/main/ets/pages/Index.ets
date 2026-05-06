@@ -160,7 +160,7 @@ struct Index {
         .titleBar(this.navDestTitleBarOpts())
     } else if (name === 'Settings') {
       HdsNavDestination() { SettingsPage() }
-        .titleBar(this.navDestTitleBarOpts())
+        .titleBar(this.navDestTitleBarOpts('设置'))
     }
   }
 
@@ -200,10 +200,15 @@ struct Index {
       .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
   }
 
-  private navDestTitleBarOpts(): Record<string, Object> {
+  private navDestTitleBarOpts(title?: string): Record<string, Object> {
     let mat: Record<string, Object> = { 'materialType': hdsMaterial.MaterialType.ADAPTIVE, 'materialLevel': hdsMaterial.MaterialLevel.ADAPTIVE }
     let scrollOpts: Record<string, Object> = { 'enableScrollEffect': true, 'scrollEffectType': ScrollEffectType.GRADIENT_BLUR }
     let style: Record<string, Object> = { 'systemMaterialEffect': mat, 'scrollEffectOpts': scrollOpts }
+    if (title) {
+      let titleInfo: Record<string, Object> = { 'mainTitle': title }
+      let content: Record<string, Object> = { 'title': titleInfo }
+      return { 'avoidLayoutSafeArea': true, 'enableComponentSafeArea': false, 'blurStrategy': BlurStrategy.ENABLE, 'content': content, 'style': style }
+    }
     return { 'avoidLayoutSafeArea': true, 'enableComponentSafeArea': false, 'blurStrategy': BlurStrategy.ENABLE, 'style': style }
   }
 
@@ -299,7 +304,7 @@ struct Index {
       List({ space: ThemeConstants.SPACE_SM }) {
         ListItem() {
           Column() {
-            Blank().height(this.topH + this.TBH)
+            Blank().height(this.TBH + ThemeConstants.SPACE_XL + ThemeConstants.SPACE_LG)
           }
           .width('100%')
         }
@@ -510,37 +515,27 @@ struct Index {
 
       this.SettingsDivider()
 
-      Row({ space: ThemeConstants.SPACE_SM }) {
-        Button('网页登录')
-          .fontSize(ThemeConstants.FONT_SIZE_TAG)
-          .height(ThemeConstants.TOUCH_TARGET_SM)
-          .type(ButtonType.Normal)
-          .borderRadius(ThemeConstants.RADIUS_MD)
-          .fontColor($r('sys.color.font_primary'))
-          .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
-          .layoutWeight(1)
-          .onClick(() => { this.ns.pushPathByName('V2exWebLogin', null) })
-        Button('账号密码')
-          .fontSize(ThemeConstants.FONT_SIZE_TAG)
-          .height(ThemeConstants.TOUCH_TARGET_SM)
-          .type(ButtonType.Normal)
-          .borderRadius(ThemeConstants.RADIUS_MD)
-          .fontColor($r('sys.color.font_primary'))
-          .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
-          .layoutWeight(1)
-          .onClick(() => { this.ns.pushPathByName('V2exNativeLogin', null) })
-      }
-      .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG, top: ThemeConstants.SPACE_MD, bottom: ThemeConstants.SPACE_SM })
+      this.AuthActionRow('网页登录', '使用 V2EX 官方登录页', () => { this.ns.pushPathByName('V2exWebLogin', null) })
+      this.SettingsDivider()
+      this.AuthActionRow('账号密码', '解析登录表单，适合快速登录', () => { this.ns.pushPathByName('V2exNativeLogin', null) })
+      this.SettingsDivider()
 
       Row({ space: ThemeConstants.SPACE_SM }) {
-        TextInput({ placeholder: 'Personal Access Token', text: this.tokenDraft })
-          .height(ThemeConstants.TOUCH_TARGET_SM)
-          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-          .type(InputType.Password)
-          .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
-          .borderRadius(ThemeConstants.RADIUS_MD)
+        Column({ space: ThemeConstants.SPACE_XS }) {
+          Text('Personal Access Token')
+            .fontSize(ThemeConstants.FONT_SIZE_META)
+            .fontWeight(FontWeight.Medium)
+            .fontColor($r('sys.color.font_primary'))
+          TextInput({ placeholder: '粘贴 Token', text: this.tokenDraft })
+            .height(ThemeConstants.TOUCH_TARGET_SM)
+            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+            .type(InputType.Password)
+            .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
+            .borderRadius(ThemeConstants.RADIUS_MD)
+            .onChange((value: string) => { this.tokenDraft = value })
+        }
+          .alignItems(HorizontalAlign.Start)
           .layoutWeight(1)
-          .onChange((value: string) => { this.tokenDraft = value })
         Button(this.isAuthLoading ? '验证中' : '保存')
           .fontSize(ThemeConstants.FONT_SIZE_TAG)
           .height(ThemeConstants.TOUCH_TARGET_SM)
@@ -552,7 +547,8 @@ struct Index {
           .width(86)
           .onClick(() => { this.verifyAndSaveToken() })
       }
-      .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG, bottom: ThemeConstants.SPACE_SM })
+      .alignItems(VerticalAlign.Bottom)
+      .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG, top: ThemeConstants.SPACE_MD, bottom: ThemeConstants.SPACE_MD })
 
       if (this.authError) {
         this.StatusText(this.authError, true)
@@ -579,6 +575,30 @@ struct Index {
     .alignItems(HorizontalAlign.Start)
     .borderRadius(ThemeConstants.RADIUS_MD)
     .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+  }
+
+  @Builder AuthActionRow(title: string, subtitle: string, action: () => void) {
+    Row({ space: ThemeConstants.SPACE_SM }) {
+      Column({ space: ThemeConstants.SPACE_XS }) {
+        Text(title)
+          .fontSize(ThemeConstants.FONT_SIZE_META)
+          .fontWeight(FontWeight.Medium)
+          .fontColor($r('sys.color.font_primary'))
+        Text(subtitle)
+          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+          .fontColor($r('sys.color.font_secondary'))
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+      }
+      .layoutWeight(1)
+      .alignItems(HorizontalAlign.Start)
+      Text('›')
+        .fontSize(ThemeConstants.FONT_SIZE_TITLE)
+        .fontColor($r('sys.color.font_secondary'))
+    }
+    .width('100%')
+    .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG, top: ThemeConstants.SPACE_MD, bottom: ThemeConstants.SPACE_MD })
+    .onClick(action)
   }
 
   @Builder ProfileSummary() {
@@ -693,8 +713,8 @@ struct Index {
       }
       .layoutWeight(1)
       .alignItems(HorizontalAlign.Start)
-      Text('>')
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
+      Text('›')
+        .fontSize(ThemeConstants.FONT_SIZE_TITLE)
         .fontColor($r('sys.color.font_secondary'))
     }
     .width('100%')
@@ -717,8 +737,8 @@ struct Index {
       }
       .layoutWeight(1)
       .alignItems(HorizontalAlign.Start)
-      Text('>')
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
+      Text('›')
+        .fontSize(ThemeConstants.FONT_SIZE_TITLE)
         .fontColor($r('sys.color.font_secondary'))
     }
     .width('100%')
@@ -763,8 +783,8 @@ struct Index {
         }
         .layoutWeight(1)
         .alignItems(HorizontalAlign.Start)
-        Text('>')
-          .fontSize(ThemeConstants.FONT_SIZE_BODY)
+        Text('›')
+          .fontSize(ThemeConstants.FONT_SIZE_TITLE)
           .fontColor($r('sys.color.font_secondary'))
       }
       .width('100%')

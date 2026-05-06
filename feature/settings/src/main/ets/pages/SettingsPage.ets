@@ -32,14 +32,15 @@ export struct SettingsPage {
   }
 
   build() {
-    Column({ space: ThemeConstants.SPACE_SM }) {
-      Text('设置')
-        .fontSize(ThemeConstants.FONT_SIZE_TITLE)
-        .fontWeight(FontWeight.Medium)
-        .fontColor($r('sys.color.font_primary'))
-        .width('100%')
-
+    Column() {
       List({ space: ThemeConstants.SPACE_SM }) {
+        ListItem() {
+          Column() {
+            Blank().height(ThemeConstants.SPACE_SM)
+          }
+          .width('100%')
+        }
+
         ListItem() { this.SectionHeader('网络') }
         ListItem() { this.NetworkSection() }
 
@@ -61,16 +62,16 @@ export struct SettingsPage {
           }
         }
       }
-      .layoutWeight(1)
       .scrollBar(BarState.Off)
       .width('100%')
+      .height('100%')
     }
     .width('100%')
     .height('100%')
     .padding({
       left: ThemeConstants.SPACE_LG,
       right: ThemeConstants.SPACE_LG,
-      top: this.topH + ThemeConstants.TITLE_BAR_HEIGHT + ThemeConstants.SPACE_LG,
+      top: this.topH + ThemeConstants.TITLE_BAR_HEIGHT,
       bottom: this.bottomH + ThemeConstants.FLOAT_BAR_HEIGHT
     })
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
