@@ -323,11 +323,6 @@ export struct SettingsPage {
             .fontSize(ThemeConstants.FONT_SIZE_BODY)
             .fontWeight(FontWeight.Medium)
             .fontColor($r('sys.color.font_primary'))
-          Text('稍后读 / 关注节点 / 最近浏览 / 草稿 / 搜索历史')
-            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-            .fontColor($r('sys.color.font_secondary'))
-            .maxLines(2)
-            .textOverflow({ overflow: TextOverflow.Ellipsis })
           if (this.localDataMessage) {
             Text(this.localDataMessage)
               .fontSize(ThemeConstants.FONT_SIZE_TINY)

@@ -500,18 +500,6 @@ struct Index {
             .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
         }
 
-        if (this.authTokenConfigured) {
-          ListItem() {
-            this.SectionHeader('高级 API')
-          }
-            .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, top: ThemeConstants.SPACE_MD })
-
-          ListItem() {
-            this.ApiAuthorizationEntrySection()
-          }
-            .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
-        }
-
         ListItem() {
           this.SectionHeader('本地内容')
         }
@@ -1033,18 +1021,6 @@ struct Index {
       this.SettingsDivider()
       this.AuthActionRow('收藏节点', '', () => {
         this.ns.pushPathByName('MyNodes', null)
-      })
-    }
-    .width('100%')
-    .alignItems(HorizontalAlign.Start)
-    .borderRadius(ThemeConstants.RADIUS_MD)
-    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
-  }
-
-  @Builder ApiAuthorizationEntrySection() {
-    Column() {
-      this.AuthActionRow('API 授权', '用于通知删除等 API v2 高级能力', () => {
-        this.ns.pushPathByName('Account', null)
       })
     }
     .width('100%')
