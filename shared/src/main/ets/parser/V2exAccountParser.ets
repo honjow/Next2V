@@ -49,6 +49,17 @@ export class V2exAccountParser {
       return null
     }
     const text = V2exAccountParser.compactText(m[1])
+    if (text.indexOf('金币') >= 0 || text.indexOf('银币') >= 0 || text.indexOf('铜币') >= 0) {
+      return V2exAccountParser.createBalance(
+        V2exAccountParser.extractCoin(text, '金币'),
+        V2exAccountParser.extractCoin(text, '银币'),
+        V2exAccountParser.extractCoin(text, '铜币')
+      )
+    }
+    const compactBalance = V2exAccountParser.extractCompactBalance(text)
+    if (compactBalance) {
+      return compactBalance
+    }
     const nums = V2exAccountParser.extractNumbers(text)
     if (nums.length >= 3) {
       return V2exAccountParser.createBalance(nums[0], nums[1], nums[2])
@@ -58,6 +69,26 @@ export class V2exAccountParser {
     }
     if (nums.length === 1) {
       return V2exAccountParser.createBalance(0, 0, nums[0])
+    }
+    return null
+  }
+
+  private static extractCompactBalance(text: string): V2exBalance | null {
+    const withGold = text.match(/^(\d+)\s+(\d+)\s+0\.(\d+)$/)
+    if (withGold && withGold[1] && withGold[2] && withGold[3]) {
+      return V2exAccountParser.createBalance(
+        Number.parseInt(withGold[1]),
+        Number.parseInt(withGold[2]),
+        Number.parseFloat(`0.${withGold[3]}`)
+      )
+    }
+    const withoutGold = text.match(/^(\d+)\s+0\.(\d+)$/)
+    if (withoutGold && withoutGold[1] && withoutGold[2]) {
+      return V2exAccountParser.createBalance(
+        0,
+        Number.parseInt(withoutGold[1]),
+        Number.parseFloat(`0.${withoutGold[2]}`)
+      )
     }
     return null
   }
