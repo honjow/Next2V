@@ -1,10 +1,11 @@
 import { NodeViewModel } from '../viewmodel/NodeViewModel'
 import {
   V2exTopic, TopicCard, ThemeConstants, TopicDetailParams, StorageKeys, UserProfileParams,
-  CollectionSettings, SavedNode, AuthSettings, LoadingFooter
+  CollectionSettings, SavedNode, AuthSettings, LoadingFooter, ApiService, CookieJarSettings, V2exToggleAction
 } from 'shared'
 import type { TopicReadState } from 'shared'
 import { common } from '@kit.AbilityKit'
+import { promptAction } from '@kit.ArkUI'
 
 @Component
 export struct NodeTopicPage {
@@ -14,13 +15,18 @@ export struct NodeTopicPage {
   @State vm: NodeViewModel = new NodeViewModel()
   @StorageProp('topAvoidHeight') topH: number = 0
   @StorageLink(StorageKeys.TOPIC_READ_STATES) topicReadStates: string = '[]'
+  @StorageLink(StorageKeys.ACCOUNT_WRITE_ENABLED) writeEnabled: boolean = false
   @State private isNodeSaved: boolean = false
+  @State private isSiteNodeFavorited: boolean = false
+  @State private isSiteNodeFavoriteLoading: boolean = false
   @State private token: string = ''
   private readonly GAP: number = ThemeConstants.SPACE_MD
+  private api: ApiService = new ApiService()
 
   aboutToAppear(): void {
     this.loadData()
     this.loadSavedState()
+    this.loadSiteNodeFavoriteState()
   }
 
   build() {
@@ -86,10 +92,17 @@ export struct NodeTopicPage {
       }
       .layoutWeight(1)
       .alignItems(HorizontalAlign.Start)
-      Button(this.isNodeSaved ? '已关注' : '关注')
-        .fontSize(ThemeConstants.FONT_SIZE_TAG)
-        .height(40)
-        .onClick(() => { this.toggleSavedNode() })
+      Column({ space: ThemeConstants.SPACE_SM }) {
+        Button(this.isSiteNodeFavorited ? '站内已收藏' : '站内收藏')
+          .fontSize(ThemeConstants.FONT_SIZE_TAG)
+          .height(40)
+          .enabled(!this.isSiteNodeFavoriteLoading)
+          .onClick(() => { this.prepareSiteNodeFavoriteToggle() })
+        Button(this.isNodeSaved ? '已关注' : '关注')
+          .fontSize(ThemeConstants.FONT_SIZE_TAG)
+          .height(40)
+          .onClick(() => { this.toggleSavedNode() })
+      }
     }
     .padding(ThemeConstants.SPACE_LG)
     .width('100%')
@@ -132,6 +145,89 @@ export struct NodeTopicPage {
       })
       .catch((error: Error) => {
         console.error('load saved node state failed: ' + error.message)
+      })
+  }
+
+  private loadSiteNodeFavoriteState(): void {
+    if (this.isSiteNodeFavoriteLoading) {
+      return
+    }
+    const cookie = CookieJarSettings.getCurrentCookie()
+    if (!cookie || !this.nodeName) {
+      this.isSiteNodeFavorited = false
+      return
+    }
+    this.isSiteNodeFavoriteLoading = true
+    this.api.getNodeFavoriteToggleActionWithCookie(cookie, this.nodeName)
+      .then((toggle: V2exToggleAction) => {
+        this.isSiteNodeFavorited = toggle.currentlyOn
+      })
+      .catch((error: Error) => {
+        console.error('load site node favorite state failed: ' + error.message)
+      })
+      .finally(() => {
+        this.isSiteNodeFavoriteLoading = false
+      })
+  }
+
+  private prepareSiteNodeFavoriteToggle(): void {
+    if (this.isSiteNodeFavoriteLoading) {
+      return
+    }
+    if (!this.writeEnabled) {
+      promptAction.openToast({ message: '写入操作开关未开启，站内收藏不可用' }).catch((_error: Error) => { })
+      return
+    }
+    const cookie = CookieJarSettings.getCurrentCookie()
+    if (!cookie) {
+      promptAction.openToast({ message: '请先登录' }).catch((_error: Error) => { })
+      return
+    }
+    const cleanName = (this.nodeName || '').trim()
+    if (!cleanName) {
+      promptAction.openToast({ message: '节点信息缺失' }).catch((_error: Error) => { })
+      return
+    }
+    this.isSiteNodeFavoriteLoading = true
+    this.api.getNodeFavoriteToggleActionWithCookie(cookie, cleanName)
+      .then((toggle: V2exToggleAction) => {
+        this.isSiteNodeFavorited = toggle.currentlyOn
+        this.confirmSiteNodeFavoriteToggle(cookie, cleanName, toggle)
+      })
+      .catch((error: Error) => {
+        promptAction.openToast({ message: error.message || '解析站内收藏失败' }).catch((_error: Error) => { })
+      })
+      .finally(() => {
+        this.isSiteNodeFavoriteLoading = false
+      })
+  }
+
+  private confirmSiteNodeFavoriteToggle(cookie: string, nodeName: string, toggle: V2exToggleAction): void {
+    const title = (this.nodeTitle || this.nodeName || '').trim()
+    const verb = this.isSiteNodeFavorited ? '取消收藏' : '收藏'
+    AlertDialog.show({
+      title: '站内收藏',
+      message: title ? `确定${verb}节点「${title}」吗？` : `确定${verb}该节点吗？`,
+      primaryButton: { value: '取消', action: () => { } },
+      secondaryButton: { value: verb, action: () => { this.executeSiteNodeFavoriteToggle(cookie, nodeName, toggle) } }
+    })
+  }
+
+  private executeSiteNodeFavoriteToggle(cookie: string, nodeName: string, toggle: V2exToggleAction): void {
+    if (this.isSiteNodeFavoriteLoading) {
+      return
+    }
+    this.isSiteNodeFavoriteLoading = true
+    this.api.executeNodeFavoriteToggleWithCookie(cookie, nodeName, toggle)
+      .then((favorited: boolean) => {
+        this.isSiteNodeFavorited = favorited
+        promptAction.openToast({ message: favorited ? '已收藏' : '已取消收藏' }).catch((_error: Error) => { })
+      })
+      .catch((error: Error) => {
+        promptAction.openToast({ message: error.message || '操作失败' }).catch((_error: Error) => { })
+      })
+      .finally(() => {
+        this.isSiteNodeFavoriteLoading = false
       })
   }
 

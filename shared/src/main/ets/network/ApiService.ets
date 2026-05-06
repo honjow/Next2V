@@ -248,10 +248,9 @@ export class ApiService {
   }
 
   /**
-   * 站内关注/取消关注节点（依赖 Cookie 会话）
-   * - 返回操作后的关注状态
+   * 获取节点关注/取消关注的切换链接（依赖 Cookie 会话）
    */
-  async toggleNodeFavoriteWithCookie(cookie: string, nodeName: string): Promise<boolean> {
+  async getNodeFavoriteToggleActionWithCookie(cookie: string, nodeName: string): Promise<V2exToggleAction> {
     const cleanName = (nodeName || '').trim()
     if (!cookie) {
       throw new Error('请先登录')
@@ -268,6 +267,22 @@ export class ApiService {
     if (!toggle) {
       throw new Error('解析关注操作失败，请稍后重试')
     }
+    return toggle
+  }
+
+  /**
+   * 执行节点关注切换（依赖 Cookie 会话）
+   * - 返回操作后的关注状态
+   */
+  async executeNodeFavoriteToggleWithCookie(cookie: string, nodeName: string, toggle: V2exToggleAction): Promise<boolean> {
+    const cleanName = (nodeName || '').trim()
+    if (!cookie) {
+      throw new Error('请先登录')
+    }
+    if (!cleanName) {
+      throw new Error('无效节点')
+    }
+    const nodePath = `/go/${cleanName}`
     await this.requestTextWithCookieAllowRedirect(toggle.actionPath, cookie, nodePath)
 
     const verifyHtml = await this.http.getTextWithHeaders(nodePath, { 'Cookie': cookie })
@@ -279,6 +294,15 @@ export class ApiService {
       return !toggle.currentlyOn
     }
     return after.currentlyOn
+  }
+
+  /**
+   * 站内关注/取消关注节点（依赖 Cookie 会话）
+   * - 返回操作后的关注状态
+   */
+  async toggleNodeFavoriteWithCookie(cookie: string, nodeName: string): Promise<boolean> {
+    const toggle = await this.getNodeFavoriteToggleActionWithCookie(cookie, nodeName)
+    return this.executeNodeFavoriteToggleWithCookie(cookie, nodeName, toggle)
   }
 
   private async requestTextWithCookieAllowRedirect(pathOrUrl: string, cookie: string, refererPath: string): Promise<void> {
