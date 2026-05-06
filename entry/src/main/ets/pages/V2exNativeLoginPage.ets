@@ -5,7 +5,7 @@ import {
   AuthSessionSettings,
   CookieJarSettings,
   HttpClient,
-  StorageKeys,
+  SecondaryListScaffold,
   ThemeConstants,
   V2exNativeAuthService
 } from 'shared'
@@ -22,8 +22,6 @@ export struct V2exNativeLoginPage {
   @State private errorMessage: string = ''
   @State private isLoading: boolean = false
   @State private isChallengeLoading: boolean = false
-  @StorageProp(StorageKeys.TOP_AVOID_HEIGHT) topH: number = 0
-  @StorageProp(StorageKeys.BOTTOM_AVOID_HEIGHT) bottomH: number = 0
 
   private challenge: NativeLoginChallenge | null = null
   private auth: V2exNativeAuthService = new V2exNativeAuthService()
@@ -36,11 +34,19 @@ export struct V2exNativeLoginPage {
 
   build() {
     Column() {
-      Column({ space: ThemeConstants.SPACE_SM }) {
-      Text('默认使用账号密码登录。遇到验证码/2FA 或字段变化时，可以切换到网页登录。')
-        .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-        .fontColor($r('sys.color.font_secondary'))
+      SecondaryListScaffold() {
+        ListItem() {
+          this.LoginForm()
+        }
+      }
+    }
+    .width('100%')
+    .height('100%')
+    .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
+  }
 
+  @Builder LoginForm() {
+    Column({ space: ThemeConstants.SPACE_SM }) {
       TextInput({ placeholder: '用户名或邮箱', text: this.username })
         .height(44)
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
@@ -92,30 +98,26 @@ export struct V2exNativeLoginPage {
         Button(this.loginButtonText())
           .fontSize(ThemeConstants.FONT_SIZE_TAG)
           .height(40)
+          .type(ButtonType.Normal)
+          .borderRadius(ThemeConstants.RADIUS_MD)
           .enabled(!this.isLoading && !this.isChallengeLoading)
+          .layoutWeight(1)
           .onClick(() => { this.login() })
 
         Button('网页登录')
           .fontSize(ThemeConstants.FONT_SIZE_TAG)
           .height(40)
+          .type(ButtonType.Normal)
+          .borderRadius(ThemeConstants.RADIUS_MD)
           .enabled(!this.isLoading && !this.isChallengeLoading)
+          .layoutWeight(1)
           .onClick(() => { this.stack.pushPathByName('V2exWebLogin', null) })
       }
-      }
-      .width('100%')
-      .padding(ThemeConstants.SPACE_LG)
-      .borderRadius(ThemeConstants.RADIUS_MD)
-      .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
     }
-    .padding({
-      left: ThemeConstants.SPACE_MD,
-      right: ThemeConstants.SPACE_MD,
-      top: this.topH + ThemeConstants.TITLE_BAR_HEIGHT + ThemeConstants.SPACE_MD,
-      bottom: this.bottomH + ThemeConstants.SPACE_MD
-    })
     .width('100%')
-    .height('100%')
-      .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
+    .padding(ThemeConstants.SPACE_LG)
+    .borderRadius(ThemeConstants.RADIUS_MD)
+    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }
 
   private loginButtonText(): string {
