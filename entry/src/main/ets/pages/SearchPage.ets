@@ -17,6 +17,10 @@ import {
   PullRefresh,
   StorageKeys,
   Sov2exService,
+  AppActionButton,
+  AppSearchField,
+  AppTextField,
+  FilterChip,
   type Sov2exHit,
   type Sov2exOrderMode,
   type Sov2exSortMode,
@@ -174,20 +178,15 @@ export struct SearchPage {
 
   @Builder SearchPanel() {
     Column({ space: ThemeConstants.SPACE_SM }) {
-      TextInput({ placeholder: '搜索主题、节点、用户', text: this.keyword })
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .fontColor($r('sys.color.font_primary'))
-        .height(48)
-        .padding({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
-        .borderRadius(ThemeConstants.RADIUS_MD)
-        .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
-        .border({ width: 1, color: '#D6DCE6' })
-        .shadow({ radius: 8, color: 'rgba(0,0,0,0.06)', offsetY: 2 })
-        .onChange((value: string) => {
+      AppSearchField({
+        text: $keyword,
+        placeholder: '搜索主题、节点、用户',
+        onTextChange: (value: string) => {
           this.keyword = value
           this.applyFilter()
           this.resetRemoteResults()
-        })
+        }
+      })
 
       if (this.isCacheLoading || this.isNodeIndexLoading) {
         Text(this.loadingSummary())
@@ -322,13 +321,12 @@ export struct SearchPage {
       Text(this.keyword.trim() ? '使用浏览器搜索 V2EX 主题' : '输入关键词开始搜索')
         .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
         .fontColor($r('sys.color.font_secondary'))
-      Button('打开网页搜索')
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .height(44)
-        .width('100%')
-        .borderRadius(ThemeConstants.RADIUS_MD)
-        .enabled(this.keyword.trim().length > 0)
-        .onClick(() => { this.openExternalTopicSearch() })
+      AppActionButton({
+        label: '打开网页搜索',
+        primary: true,
+        isEnabled: this.keyword.trim().length > 0,
+        action: () => { this.openExternalTopicSearch() }
+      })
     }
     .padding(ThemeConstants.SPACE_MD)
     .width('100%')
@@ -372,12 +370,11 @@ export struct SearchPage {
         ListItem() { EmptyState({ message: '搜索中', stateHeight: 88 }) }
       } else if (this.remoteResults.length < this.remoteTotal) {
         ListItem() {
-          Button('加载更多')
-            .fontSize(ThemeConstants.FONT_SIZE_BODY)
-            .height(44)
-            .width('100%')
-            .borderRadius(ThemeConstants.RADIUS_MD)
-            .onClick(() => { this.executeRemoteSearch(false) })
+          AppActionButton({
+            label: '加载更多',
+            primary: false,
+            action: () => { this.executeRemoteSearch(false) }
+          })
         }
       }
 
@@ -498,14 +495,11 @@ export struct SearchPage {
   }
 
   @Builder SourceModeButton(mode: SearchSourceMode, label: string) {
-    Text(label)
-      .fontSize(ThemeConstants.FONT_SIZE_TAG)
-      .fontWeight(this.sourceMode === mode ? FontWeight.Medium : FontWeight.Regular)
-      .fontColor(this.sourceMode === mode ? Color.White : $r('sys.color.font_primary'))
-      .padding({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, top: 7, bottom: 7 })
-      .borderRadius(ThemeConstants.RADIUS_ROUND)
-      .backgroundColor(this.sourceMode === mode ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.ohos_id_color_button_normal'))
-      .onClick(() => { this.updateSourceMode(mode) })
+    FilterChip({
+      label,
+      selected: this.sourceMode === mode,
+      action: () => { this.updateSourceMode(mode) }
+    })
   }
 
   @Builder RemoteSearchControls() {
@@ -523,38 +517,32 @@ export struct SearchPage {
           this.remoteOrder = this.remoteOrder === '0' ? '1' : '0'
           this.executeRemoteSearch(true)
         })
-        Button(this.remoteLoading ? '搜索中' : '搜索')
-          .fontSize(ThemeConstants.FONT_SIZE_TAG)
-          .height(ThemeConstants.TOUCH_TARGET_SM)
-          .type(ButtonType.Normal)
-          .borderRadius(ThemeConstants.RADIUS_MD)
-          .enabled(!this.remoteLoading && this.keyword.trim().length > 0)
-          .layoutWeight(1)
-          .onClick(() => { this.executeRemoteSearch(true) })
+        AppActionButton({
+          label: this.remoteLoading ? '搜索中' : '搜索',
+          primary: true,
+          isEnabled: !this.remoteLoading && this.keyword.trim().length > 0,
+          action: () => { this.executeRemoteSearch(true) }
+        })
       }
       .width('100%')
 
       Row({ space: ThemeConstants.SPACE_XS }) {
-        TextInput({ placeholder: '作者', text: this.remoteUsername })
-          .fontSize(ThemeConstants.FONT_SIZE_TAG)
-          .height(ThemeConstants.TOUCH_TARGET_SM)
-          .layoutWeight(1)
-          .borderRadius(ThemeConstants.RADIUS_MD)
-          .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
-          .onChange((value: string) => {
+        AppTextField({
+          text: $remoteUsername,
+          placeholder: '作者',
+          onTextChange: (value: string) => {
             this.remoteUsername = value
             this.resetRemoteResults()
-          })
-        TextInput({ placeholder: '节点', text: this.remoteNode })
-          .fontSize(ThemeConstants.FONT_SIZE_TAG)
-          .height(ThemeConstants.TOUCH_TARGET_SM)
-          .layoutWeight(1)
-          .borderRadius(ThemeConstants.RADIUS_MD)
-          .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
-          .onChange((value: string) => {
+          }
+        })
+        AppTextField({
+          text: $remoteNode,
+          placeholder: '节点',
+          onTextChange: (value: string) => {
             this.remoteNode = value
             this.resetRemoteResults()
-          })
+          }
+        })
         if (this.hasRemoteFilters()) {
           this.RemoteOptionButton('清除', false, () => { this.clearRemoteFilters() })
         }
@@ -574,33 +562,26 @@ export struct SearchPage {
   }
 
   @Builder RemoteOptionButton(label: string, selected: boolean, action: () => void) {
-    Text(label)
-      .fontSize(ThemeConstants.FONT_SIZE_TAG)
-      .fontWeight(selected ? FontWeight.Medium : FontWeight.Regular)
-      .fontColor(selected ? Color.White : $r('sys.color.font_primary'))
-      .padding({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, top: 7, bottom: 7 })
-      .borderRadius(ThemeConstants.RADIUS_ROUND)
-      .backgroundColor(selected ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.ohos_id_color_button_normal'))
-      .onClick(() => { action() })
+    FilterChip({
+      label,
+      selected,
+      action
+    })
   }
 
   @Builder RemoteDateButton(range: RemoteDateRange, label: string) {
-    Text(label)
-      .fontSize(ThemeConstants.FONT_SIZE_TAG)
-      .fontWeight(this.remoteDateRange === range ? FontWeight.Medium : FontWeight.Regular)
-      .textAlign(TextAlign.Center)
-      .fontColor(this.remoteDateRange === range ? Color.White : $r('sys.color.font_primary'))
-      .padding({ top: 7, bottom: 7 })
-      .borderRadius(ThemeConstants.RADIUS_ROUND)
-      .backgroundColor(this.remoteDateRange === range ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.ohos_id_color_button_normal'))
-      .layoutWeight(1)
-      .onClick(() => {
+    FilterChip({
+      label,
+      selected: this.remoteDateRange === range,
+      fill: true,
+      action: () => {
         if (this.remoteDateRange === range) {
           return
         }
         this.remoteDateRange = range
         this.executeRemoteSearch(true)
-      })
+      }
+    })
   }
 
   @Builder ResultFilterControls() {
@@ -621,15 +602,11 @@ export struct SearchPage {
   }
 
   @Builder ResultFilterButton(filter: SearchResultFilter, label: string) {
-    Text(label)
-      .fontSize(ThemeConstants.FONT_SIZE_TAG)
-      .fontWeight(this.resultFilter === filter ? FontWeight.Medium : FontWeight.Regular)
-      .textAlign(TextAlign.Center)
-      .fontColor(this.resultFilter === filter ? Color.White : $r('sys.color.font_primary'))
-      .padding({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, top: 7, bottom: 7 })
-      .borderRadius(ThemeConstants.RADIUS_ROUND)
-      .backgroundColor(this.resultFilter === filter ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.ohos_id_color_button_normal'))
-      .onClick(() => { this.updateResultFilter(filter) })
+    FilterChip({
+      label,
+      selected: this.resultFilter === filter,
+      action: () => { this.updateResultFilter(filter) }
+    })
   }
 
   @Builder SearchFilterSheet() {
@@ -683,16 +660,15 @@ export struct SearchPage {
         this.ResultFilterButton('users', '用户')
       }
       .width('100%')
-      Button('应用')
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .height(44)
-        .width('100%')
-        .borderRadius(ThemeConstants.RADIUS_ROUND)
-        .enabled(this.keyword.trim().length > 0)
-        .onClick(() => {
+      AppActionButton({
+        label: '应用',
+        primary: true,
+        isEnabled: this.keyword.trim().length > 0,
+        action: () => {
           this.applyFilter()
           this.filterSheetVisible = false
-        })
+        }
+      })
     }
     .width('100%')
   }
@@ -720,26 +696,22 @@ export struct SearchPage {
       .width('100%')
 
       Row({ space: ThemeConstants.SPACE_XS }) {
-        TextInput({ placeholder: '作者', text: this.remoteUsername })
-          .fontSize(ThemeConstants.FONT_SIZE_TAG)
-          .height(ThemeConstants.TOUCH_TARGET_SM)
-          .layoutWeight(1)
-          .borderRadius(ThemeConstants.RADIUS_MD)
-          .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
-          .onChange((value: string) => {
+        AppTextField({
+          text: $remoteUsername,
+          placeholder: '作者',
+          onTextChange: (value: string) => {
             this.remoteUsername = value
             this.resetRemoteResults()
-          })
-        TextInput({ placeholder: '节点', text: this.remoteNode })
-          .fontSize(ThemeConstants.FONT_SIZE_TAG)
-          .height(ThemeConstants.TOUCH_TARGET_SM)
-          .layoutWeight(1)
-          .borderRadius(ThemeConstants.RADIUS_MD)
-          .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
-          .onChange((value: string) => {
+          }
+        })
+        AppTextField({
+          text: $remoteNode,
+          placeholder: '节点',
+          onTextChange: (value: string) => {
             this.remoteNode = value
             this.resetRemoteResults()
-          })
+          }
+        })
       }
       .width('100%')
 
@@ -758,28 +730,23 @@ export struct SearchPage {
 
       Row({ space: ThemeConstants.SPACE_XS }) {
         if (this.hasRemoteFilters()) {
-          Text('清除')
-            .fontSize(ThemeConstants.FONT_SIZE_BODY)
-            .fontColor($r('sys.color.font_primary'))
-            .textAlign(TextAlign.Center)
-            .padding({ top: ThemeConstants.SPACE_SM, bottom: ThemeConstants.SPACE_SM })
-            .layoutWeight(1)
-            .borderRadius(ThemeConstants.RADIUS_ROUND)
-            .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
-            .onClick(() => {
+          AppActionButton({
+            label: '清除',
+            primary: false,
+            action: () => {
               this.clearRemoteFilters()
-            })
+            }
+          })
         }
-        Button(this.remoteLoading ? '搜索中' : '应用搜索')
-          .fontSize(ThemeConstants.FONT_SIZE_BODY)
-          .height(44)
-          .layoutWeight(1)
-          .borderRadius(ThemeConstants.RADIUS_ROUND)
-          .enabled(!this.remoteLoading && this.keyword.trim().length > 0)
-          .onClick(() => {
+        AppActionButton({
+          label: this.remoteLoading ? '搜索中' : '应用搜索',
+          primary: true,
+          isEnabled: !this.remoteLoading && this.keyword.trim().length > 0,
+          action: () => {
             this.executeRemoteSearch(true)
             this.filterSheetVisible = false
-          })
+          }
+        })
       }
       .width('100%')
     }
