@@ -1,11 +1,12 @@
 import { Markdown, MarkdownOptions, Token, Tokens, lexer } from "@lidary/markdown";
+import { common, Want } from "@kit.AbilityKit";
 import { pasteboard } from "@kit.BasicServicesKit";
 import { connection } from "@kit.NetworkKit";
 import { LengthMetrics, promptAction } from "@kit.ArkUI";
 import { StorageKeys } from "../constants/StorageKeys";
 import { ReadingSettings } from "../settings/ReadingSettings";
 import { ThemeConstants } from "../theme/ThemeConstants";
-import { MediaUrlUtils } from "../utils/MediaUrlUtils";
+import { MediaLinkPreview, MediaUrlUtils } from "../utils/MediaUrlUtils";
 
 // Custom token types used to hijack @lidary/markdown's built-in rendering.
 // By changing a token's type before passing it to the Markdown component,
@@ -13,9 +14,18 @@ import { MediaUrlUtils } from "../utils/MediaUrlUtils";
 const CODE_MONO = "customCode";
 const LIST_MONO = "customList";
 const IMAGE_BLOCK_MONO = "customImageBlock";
+const LINK_PREVIEW_MONO = "customLinkPreview";
 
 type TokenValue = Object | null | undefined;
 type TokenRecord = Record<string, TokenValue>;
+
+interface LinkPreviewTokenShape {
+  type: string;
+  raw: string;
+  href: string;
+  text: string;
+  title: string | null;
+}
 
 function _appendCacheBust(url: string, nonce: number): string {
   if (!url) {
@@ -250,6 +260,78 @@ function CustomBlockBuilder(token: Token, options: MarkdownOptions) {
     CustomList({ listToken: token as Tokens.List, options: options });
   } else if (token.type === IMAGE_BLOCK_MONO) {
     MarkdownAutoImage({ url: MediaUrlUtils.normalizeUrl((token as Tokens.Image).href), options: options });
+  } else if (token.type === LINK_PREVIEW_MONO) {
+    MarkdownLinkPreviewCard({ token: token, options: options });
+  }
+}
+
+@Component
+struct MarkdownLinkPreviewCard {
+  @Prop token: Token;
+  @Prop options: MarkdownOptions;
+
+  private preview(): MediaLinkPreview {
+    const record = this.token as TokenRecord;
+    const href = MediaUrlUtils.normalizeUrl(String(record["href"] ?? record["raw"] ?? ""));
+    const text = String(record["text"] ?? "");
+    return MediaUrlUtils.buildLinkPreview(href, text);
+  }
+
+  private openLink(): void {
+    const url = MediaUrlUtils.normalizeUrl(this.preview().url);
+    if (!url) {
+      return;
+    }
+    const click = this.options?.linkClick as ((url?: string) => void) | undefined;
+    if (click) {
+      click(url);
+      return;
+    }
+
+    try {
+      const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
+      const want: Want = { action: "ohos.want.action.viewData", uri: url };
+      context.startAbility(want)
+        .catch((error: Error) => {
+          promptAction.openToast({ message: error.message || "打开失败" }).catch((_error: Error) => { });
+        });
+    } catch (error) {
+      promptAction.openToast({ message: (error as Error).message || "打开失败" }).catch((_error: Error) => { });
+    }
+  }
+
+  build() {
+    Row({ space: ThemeConstants.SPACE_MD }) {
+      Column({ space: ThemeConstants.SPACE_XS }) {
+        Text(this.preview().label)
+          .fontSize(ThemeConstants.FONT_SIZE_TINY)
+          .fontColor(ThemeConstants.TEXT_LINK)
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis });
+
+        Text(this.preview().title)
+          .fontSize(ThemeConstants.FONT_SIZE_BODY)
+          .fontWeight(FontWeight.Medium)
+          .fontColor(ThemeConstants.TEXT_PRIMARY)
+          .maxLines(2)
+          .textOverflow({ overflow: TextOverflow.Ellipsis });
+
+        Text(this.preview().subtitle)
+          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+          .fontColor(ThemeConstants.TEXT_SECONDARY)
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis });
+      }
+      .layoutWeight(1)
+      .alignItems(HorizontalAlign.Start);
+    }
+    .width("100%")
+    .padding(ThemeConstants.SPACE_MD)
+    .borderRadius(ThemeConstants.RADIUS_MD)
+    .backgroundColor(ThemeConstants.BG_SUB)
+    .onClick(() => {
+      this.openLink();
+    });
   }
 }
 
@@ -779,6 +861,7 @@ export struct MarkdownContent {
   @Prop @Watch('onSourceChanged') source: string = "";
   @Prop topMargin: number = ThemeConstants.SPACE_LG;
   onImageClick?: (url: string) => void
+  onLinkClick?: (url: string) => void
   @StorageLink(StorageKeys.READING_FONT_SIZE) readingFontSize: number = ThemeConstants.FONT_SIZE_BODY;
   @StorageLink(StorageKeys.READING_LINE_HEIGHT) readingLineHeight: number = ThemeConstants.LINE_HEIGHT_BODY;
   @StorageLink(StorageKeys.READING_DENSITY) readingDensity: string = ReadingSettings.DENSITY_STANDARD;
@@ -831,12 +914,35 @@ export struct MarkdownContent {
     return this.topMargin;
   }
 
+  private openLink(url: string): void {
+    const normalized = MediaUrlUtils.normalizeUrl(url);
+    if (!normalized) {
+      return;
+    }
+    if (this.onLinkClick) {
+      this.onLinkClick(normalized);
+      return;
+    }
+
+    try {
+      const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
+      const want: Want = { action: "ohos.want.action.viewData", uri: normalized };
+      context.startAbility(want)
+        .catch((error: Error) => {
+          promptAction.openToast({ message: error.message || "打开失败" }).catch((_error: Error) => { });
+        });
+    } catch (error) {
+      promptAction.openToast({ message: (error as Error).message || "打开失败" }).catch((_error: Error) => { });
+    }
+  }
+
   // Re-type certain tokens so the Markdown component doesn't recognize them
   // and delegates to our customBlockBuilder instead.
   private static processTokens(md: string): Token[] {
     let tokens = lexer(md, { gfm: true, breaks: true });
     MarkdownContent.rewriteBareImageLinks(tokens);
     MarkdownContent.promoteStandaloneImageParagraphs(tokens);
+    MarkdownContent.promoteStandaloneLinkParagraphs(tokens);
     MarkdownContent.retypeBlockTokens(tokens);
     return tokens;
   }
@@ -901,6 +1007,88 @@ export struct MarkdownContent {
         }
       }
     }
+  }
+
+  private static promoteStandaloneLinkParagraphs(tokens: Token[]): void {
+    if (!tokens || tokens.length === 0) {
+      return;
+    }
+    for (let i = 0; i < tokens.length; i++) {
+      const token = tokens[i] as TokenRecord;
+      const type = (token["type"] as string) || "";
+      if (type === "paragraph") {
+        const previewToken = MarkdownContent.standaloneLinkPreviewToken(token);
+        if (previewToken) {
+          tokens[i] = previewToken;
+          continue;
+        }
+      }
+
+      if (type === "list") {
+        continue;
+      }
+
+      const childTokens = token["tokens"] as Token[] | undefined;
+      if (Array.isArray(childTokens) && childTokens.length > 0) {
+        MarkdownContent.promoteStandaloneLinkParagraphs(childTokens);
+      }
+    }
+  }
+
+  private static standaloneLinkPreviewToken(paragraph: TokenRecord): Token | null {
+    const inlineTokens = paragraph["tokens"] as Token[] | undefined;
+    if (!Array.isArray(inlineTokens) || inlineTokens.length === 0) {
+      return null;
+    }
+
+    const meaningful = inlineTokens.filter((t: Token) => t && t.type !== "br");
+    if (meaningful.length !== 1) {
+      return null;
+    }
+
+    const only = meaningful[0] as TokenRecord;
+    const onlyType = only["type"] as string;
+    if (!only || typeof onlyType !== "string") {
+      return null;
+    }
+
+    if (onlyType === "link") {
+      const href = MediaUrlUtils.normalizeUrl(String(only["href"] ?? ""));
+      if (!MediaUrlUtils.isHttpUrl(href) || MediaUrlUtils.isProbablyImageUrl(href)) {
+        return null;
+      }
+      return MarkdownContent.createLinkPreviewToken(
+        href,
+        String(only["text"] ?? ""),
+        String(only["raw"] ?? href),
+      );
+    }
+
+    if (onlyType === "text") {
+      const rawText = String(only["text"] ?? "").trim();
+      const href = MediaUrlUtils.normalizeUrl(rawText);
+      if (!MediaUrlUtils.isStandaloneHttpUrl(rawText) || MediaUrlUtils.isProbablyImageUrl(href)) {
+        return null;
+      }
+      return MarkdownContent.createLinkPreviewToken(
+        href,
+        rawText,
+        String(only["raw"] ?? rawText),
+      );
+    }
+
+    return null;
+  }
+
+  private static createLinkPreviewToken(href: string, text: string, raw: string): Token {
+    const token: LinkPreviewTokenShape = {
+      type: LINK_PREVIEW_MONO,
+      raw: raw,
+      href: href,
+      text: text,
+      title: null,
+    };
+    return token as Token;
   }
 
   private static rewriteBareImageLinks(tokens: Token[]): void {
@@ -1040,6 +1228,12 @@ export struct MarkdownContent {
             const normalized = MediaUrlUtils.normalizeUrl(url ?? "");
             if (normalized && this.onImageClick) {
               this.onImageClick(normalized);
+            }
+          },
+          linkClick: (url?: string) => {
+            const normalized = MediaUrlUtils.normalizeUrl(url ?? "");
+            if (normalized) {
+              this.openLink(normalized);
             }
           },
           customBlockBuilder: wrapBuilder(CustomBlockBuilder),

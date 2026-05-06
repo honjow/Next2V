@@ -218,6 +218,7 @@ export struct TopicDetailPage {
               },
               onActionsClick: () => { this.openReplyActionMenu(reply) },
               onImageClick: (url: string) => { this.openImagePreview(url) },
+              onLinkClick: (url: string) => { this.openInSystemBrowser(url) },
               onContentLongPress: () => { this.openTextSelection(this.replySelectionTitle(reply), reply.content || '') }
             })
           }
@@ -309,7 +310,11 @@ export struct TopicDetailPage {
       // 正文
       if (this.v.topic!.content) {
         Column() {
-          MarkdownContent({ source: this.v.topic!.content, onImageClick: (url: string) => { this.openImagePreview(url) } })
+          MarkdownContent({
+            source: this.v.topic!.content,
+            onImageClick: (url: string) => { this.openImagePreview(url) },
+            onLinkClick: (url: string) => { this.openInSystemBrowser(url) }
+          })
         }
         .width('100%')
         .gesture(

@@ -17,6 +17,7 @@ export struct ReplyCard {
   onMentionClick?: () => void
   onCopyUserClick?: () => void
   onImageClick?: (url: string) => void
+  onLinkClick?: (url: string) => void
   onContentLongPress?: () => void
   @StorageLink(StorageKeys.READING_DENSITY) readingDensity: string = ReadingSettings.DENSITY_STANDARD
 
@@ -85,7 +86,8 @@ export struct ReplyCard {
           MarkdownContent({
             source: this.reply.content,
             topMargin: this.contentTopMargin(),
-            onImageClick: this.onImageClick
+            onImageClick: this.onImageClick,
+            onLinkClick: this.onLinkClick
           })
         }
         .width('100%')

@@ -1,6 +1,10 @@
 const IMAGE_EXT_REGEX: RegExp = /\.(jpe?g|png|gif|webp)(?:[?#].*)?$/i
 const IMAGE_QUERY_EXT_REGEX: RegExp = /[?&](?:format|fm|ext)=([a-z0-9]+)/i
 const ILLEGAL_TITLE_CHARS: RegExp = /[\\/:*?"<>|]/g
+const YOUTUBE_ID_REGEX: RegExp = /(?:youtube\.com\/(?:watch\?[^#]*v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{6,})/i
+const VIMEO_ID_REGEX: RegExp = /vimeo\.com\/(?:.*\/)?([0-9]{6,})/i
+const GIST_REGEX: RegExp = /gist\.github\.com\/([^/?#]+)\/([A-Za-z0-9]+)/i
+const IMGUR_PAGE_REGEX: RegExp = /^https?:\/\/(?:www\.)?imgur\.com\/(?:gallery\/|a\/)?([A-Za-z0-9]+)(?:[/?#]|$)/i
 
 const IMAGE_HOST_PREFIXES: string[] = [
   'https://i.imgur.com/',
@@ -23,6 +27,13 @@ const IMAGE_HOST_PREFIXES: string[] = [
   'http://github.com/user-attachments/assets/',
 ]
 
+export interface MediaLinkPreview {
+  url: string
+  title: string
+  subtitle: string
+  label: string
+}
+
 export class MediaUrlUtils {
   static normalizeUrl(raw: string): string {
     const url = (raw ?? '').trim()
@@ -38,6 +49,14 @@ export class MediaUrlUtils {
   static isHttpUrl(raw: string): boolean {
     const url = MediaUrlUtils.normalizeUrl(raw)
     return url.startsWith('http://') || url.startsWith('https://')
+  }
+
+  static isStandaloneHttpUrl(raw: string): boolean {
+    const clean = (raw ?? '').trim()
+    if (!clean || /\s/.test(clean)) {
+      return false
+    }
+    return MediaUrlUtils.isHttpUrl(clean)
   }
 
   static isProbablyImageUrl(raw: string): boolean {
@@ -103,6 +122,73 @@ export class MediaUrlUtils {
     return `${fallbackPrefix}_${Date.now()}`
   }
 
+  static buildLinkPreview(raw: string, text: string = ''): MediaLinkPreview {
+    const url = MediaUrlUtils.normalizeUrl(raw)
+    const host = MediaUrlUtils.hostFromUrl(url)
+    const displayText = (text || '').trim()
+    const titleFromText = displayText && MediaUrlUtils.normalizeUrl(displayText) !== url ? displayText : ''
+    const youtubeId = MediaUrlUtils.youtubeVideoId(url)
+    if (youtubeId) {
+      return {
+        url: url,
+        title: titleFromText || 'YouTube 视频',
+        subtitle: host || url,
+        label: 'YouTube'
+      }
+    }
+
+    const vimeoId = MediaUrlUtils.vimeoVideoId(url)
+    if (vimeoId) {
+      return {
+        url: url,
+        title: titleFromText || 'Vimeo 视频',
+        subtitle: host || url,
+        label: 'Vimeo'
+      }
+    }
+
+    const gistName = MediaUrlUtils.gistName(url)
+    if (gistName) {
+      return {
+        url: url,
+        title: titleFromText || gistName,
+        subtitle: host || url,
+        label: 'Gist'
+      }
+    }
+
+    if (MediaUrlUtils.isImgurPage(url)) {
+      return {
+        url: url,
+        title: titleFromText || 'Imgur 图片页',
+        subtitle: host || url,
+        label: 'Imgur'
+      }
+    }
+
+    if (MediaUrlUtils.isHostOrSubdomain(host, 'v2ex.com') || MediaUrlUtils.isHostOrSubdomain(host, 'v2ex.co')) {
+      return {
+        url: url,
+        title: titleFromText || 'V2EX 链接',
+        subtitle: host || url,
+        label: 'V2EX'
+      }
+    }
+
+    return {
+      url: url,
+      title: titleFromText || host || url,
+      subtitle: url,
+      label: '链接'
+    }
+  }
+
+  static hostFromUrl(raw: string): string {
+    const url = MediaUrlUtils.normalizeUrl(raw)
+    const match = url.match(/^https?:\/\/([^/?#]+)/i)
+    return (match?.[1] || '').toLowerCase()
+  }
+
   private static normalizeImageExtension(raw: string): string {
     const ext = (raw || '').toLowerCase()
     if (ext === 'jpeg' || ext === 'jpg') {
@@ -112,5 +198,35 @@ export class MediaUrlUtils {
       return ext
     }
     return ''
+  }
+
+  private static youtubeVideoId(url: string): string {
+    const match = url.match(YOUTUBE_ID_REGEX)
+    return match?.[1] || ''
+  }
+
+  private static vimeoVideoId(url: string): string {
+    const match = url.match(VIMEO_ID_REGEX)
+    return match?.[1] || ''
+  }
+
+  private static gistName(url: string): string {
+    const match = url.match(GIST_REGEX)
+    if (!match || !match[1] || !match[2]) {
+      return ''
+    }
+    return `${match[1]}/${match[2]}`
+  }
+
+  private static isImgurPage(url: string): boolean {
+    const host = MediaUrlUtils.hostFromUrl(url)
+    if (host === 'i.imgur.com') {
+      return false
+    }
+    return IMGUR_PAGE_REGEX.test(url)
+  }
+
+  private static isHostOrSubdomain(host: string, domain: string): boolean {
+    return host === domain || host.endsWith(`.${domain}`)
   }
 }
