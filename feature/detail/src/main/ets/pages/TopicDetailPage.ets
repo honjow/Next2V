@@ -335,20 +335,21 @@ export struct TopicDetailPage {
   }
 
   @Builder ReplyDivider() {
-    Row({ space: ThemeConstants.SPACE_SM }) {
+    Column({ space: ThemeConstants.SPACE_SM }) {
       Text(this.replyCountText())
         .fontSize(ThemeConstants.FONT_SIZE_META)
         .fontColor($r('sys.color.font_secondary'))
         .maxLines(1)
         .textOverflow({ overflow: TextOverflow.Ellipsis })
-        .layoutWeight(1)
+        .width('100%')
 
-      Row({ space: ThemeConstants.SPACE_XS }) {
-        this.ReplyToolButton('楼层', false, 64, () => { this.openJumpToFloorDialog() })
-        this.ReplyToolButton('OP', this.v.onlyOp, 54, () => { this.toggleOnlyOp() })
-        this.ReplyToolButton('最新', false, 64, () => { this.scrollToLatestReply() })
+      Row({ space: ThemeConstants.SPACE_SM }) {
+        this.ReplyToolButton('楼层', false, () => { this.openJumpToFloorDialog() })
+        this.ReplyToolButton('只看楼主', this.v.onlyOp, () => { this.toggleOnlyOp() })
+        this.ReplyToolButton('最新', false, () => { this.scrollToLatestReply() })
       }
       .alignItems(VerticalAlign.Center)
+      .width('100%')
     }
     .width('100%')
     .padding({
@@ -359,11 +360,11 @@ export struct TopicDetailPage {
     })
   }
 
-  @Builder ReplyToolButton(label: string, active: boolean, buttonWidth: number, action: () => void) {
+  @Builder ReplyToolButton(label: string, active: boolean, action: () => void) {
     Button(label)
       .type(ButtonType.Normal)
-      .width(buttonWidth)
       .height(32)
+      .layoutWeight(1)
       .fontSize(ThemeConstants.FONT_SIZE_TAG)
       .fontColor(active ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.font_secondary'))
       .borderRadius(ThemeConstants.RADIUS_SM)
