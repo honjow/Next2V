@@ -1,0 +1,40 @@
+import { StorageKeys } from '../constants/StorageKeys'
+import { ThemeConstants } from '../theme/ThemeConstants'
+
+@Component
+export struct SecondaryListScaffold {
+  @BuilderParam content: () => void
+  @StorageProp(StorageKeys.TOP_AVOID_HEIGHT) topH: number = 0
+  @StorageProp(StorageKeys.BOTTOM_AVOID_HEIGHT) bottomH: number = 0
+  scroller: Scroller = new Scroller()
+  @Prop listSpace: number = ThemeConstants.SPACE_SM - 2
+  @Prop horizontalPadding: number = ThemeConstants.SPACE_MD
+  @Prop bottomPadding: number = ThemeConstants.SPACE_XL
+
+  build() {
+    List({ space: this.listSpace, scroller: this.scroller }) {
+      ListItem() {
+        Column() {
+          Blank().height(this.topH + ThemeConstants.TITLE_BAR_HEIGHT)
+        }
+        .width('100%')
+      }
+      .clip(false)
+
+      this.content()
+
+      ListItem() {
+        Column() {
+          Blank().height(this.bottomH + this.bottomPadding)
+        }
+        .width('100%')
+      }
+    }
+    .scrollBar(BarState.Off)
+    .width('100%')
+    .height('100%')
+    .padding({ left: this.horizontalPadding, right: this.horizontalPadding })
+    .clip(false)
+    .edgeEffect(EdgeEffect.None)
+  }
+}

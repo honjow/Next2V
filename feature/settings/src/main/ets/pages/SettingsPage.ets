@@ -9,6 +9,7 @@ import {
   HttpClient,
   LocalDataSettings,
   MediaSettings,
+  SecondaryListScaffold,
   StorageKeys,
   ThemeConstants,
   WriteActionSettings
@@ -33,14 +34,7 @@ export struct SettingsPage {
 
   build() {
     Column() {
-      List({ space: ThemeConstants.SPACE_SM }) {
-        ListItem() {
-          Column() {
-            Blank().height(ThemeConstants.SPACE_SM)
-          }
-          .width('100%')
-        }
-
+      SecondaryListScaffold() {
         ListItem() { this.SectionHeader('网络') }
         ListItem() { this.NetworkSection() }
 
@@ -55,25 +49,10 @@ export struct SettingsPage {
         ListItem() { this.SectionHeader('关于') }
           .margin({ top: ThemeConstants.SPACE_MD })
         ListItem() { this.AboutSection() }
-
-        ListItem() {
-          Column() {
-            Blank().height(ThemeConstants.SPACE_MD)
-          }
-        }
       }
-      .scrollBar(BarState.Off)
-      .width('100%')
-      .height('100%')
     }
     .width('100%')
     .height('100%')
-    .padding({
-      left: ThemeConstants.SPACE_MD,
-      right: ThemeConstants.SPACE_MD,
-      top: this.topH + ThemeConstants.TITLE_BAR_HEIGHT,
-      bottom: this.bottomH + ThemeConstants.SPACE_LG
-    })
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
   }
 
