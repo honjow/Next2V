@@ -15,6 +15,7 @@ import { HomePage } from 'feed'
 import { ReplyEditorPage, TopicDetailPage } from 'detail'
 import { DiscoverPage, NodePickerPage, NodeTopicPage } from 'node'
 import { UserProfilePage } from 'user'
+import { SettingsPage } from 'settings'
 import { ComponentContent, promptAction } from '@kit.ArkUI'
 import { V2exWebLoginPage } from './V2exWebLoginPage'
 import { V2exNativeLoginPage } from './V2exNativeLoginPage'
@@ -148,6 +149,9 @@ struct Index {
         .titleBar(this.navDestTitleBarOpts())
     } else if (name === 'TopicEditor') {
       HdsNavDestination() { TopicEditorPage() }
+        .titleBar(this.navDestTitleBarOpts())
+    } else if (name === 'Settings') {
+      HdsNavDestination() { SettingsPage() }
         .titleBar(this.navDestTitleBarOpts())
     }
   }
@@ -1042,6 +1046,30 @@ struct Index {
           .onClick(() => { this.clearCache() })
       }
       .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG, bottom: ThemeConstants.SPACE_MD })
+
+      this.SettingsDivider()
+
+      Row({ space: ThemeConstants.SPACE_SM }) {
+        Column({ space: ThemeConstants.SPACE_XS }) {
+          Text('设置')
+            .fontSize(ThemeConstants.FONT_SIZE_BODY)
+            .fontWeight(FontWeight.Medium)
+            .fontColor($r('sys.color.font_primary'))
+          Text('集中管理域名 / 图片 / 写入 / 缓存')
+            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+            .fontColor($r('sys.color.font_secondary'))
+            .maxLines(2)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
+        }
+        .layoutWeight(1)
+        .alignItems(HorizontalAlign.Start)
+        Text('>')
+          .fontSize(ThemeConstants.FONT_SIZE_BODY)
+          .fontColor($r('sys.color.font_secondary'))
+      }
+      .width('100%')
+      .padding(ThemeConstants.SPACE_LG)
+      .onClick(() => { this.ns.pushPathByName('Settings', null) })
 
       this.SettingsDivider()
 
