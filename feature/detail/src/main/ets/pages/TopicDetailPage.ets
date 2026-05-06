@@ -1,7 +1,9 @@
 import { DetailViewModel } from '../viewmodel/DetailViewModel'
 import { common, Want } from '@kit.AbilityKit'
 import { promptAction } from '@kit.ArkUI'
+import { uniformTypeDescriptor as utd } from '@kit.ArkData'
 import { pasteboard } from '@kit.BasicServicesKit'
+import { systemShare } from '@kit.ShareKit'
 import {
   V2exReply, Avatar, ReplyCard, TimeAgo, PullRefresh, ThemeConstants, MarkdownContent,
   NodeTopicListParams, UserProfileParams, ImagePreviewParams, CollectionSettings, CacheSettings, V2exTopic, AuthSettings, LoadingFooter, HttpClient
@@ -549,6 +551,7 @@ export struct TopicDetailPage {
       buttons: [
         { text: '复制标题', color: '#666666' },
         { text: '复制链接', color: '#666666' },
+        { text: '分享链接', color: '#666666' },
         { text: '打开浏览器', color: '#666666' },
         { text: '复制内容', color: '#666666' }
       ]
@@ -559,8 +562,10 @@ export struct TopicDetailPage {
         } else if (data.index === 1) {
           this.copyToClipboard(this.getTopicUrl())
         } else if (data.index === 2) {
-          this.openInSystemBrowser(this.getTopicUrl())
+          this.shareTopic()
         } else if (data.index === 3) {
+          this.openInSystemBrowser(this.getTopicUrl())
+        } else if (data.index === 4) {
           this.copyToClipboard(this.v.topic!.content || '')
         }
       })
@@ -589,6 +594,29 @@ export struct TopicDetailPage {
     context.startAbility(want)
       .catch((error: Error) => {
         promptAction.openToast({ message: error.message || '打开失败' }).catch((_error: Error) => { })
+      })
+  }
+
+  private shareTopic(): void {
+    if (this.v.topic === null) {
+      return
+    }
+    const title = (this.v.topic.title || 'V2EX 主题').trim()
+    const url = this.getTopicUrl()
+    const data = new systemShare.SharedData({
+      utd: utd.UniformDataType.HYPERLINK,
+      title: title,
+      description: title,
+      content: url
+    })
+    const controller = new systemShare.ShareController(data)
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    controller.show(context, {
+      selectionMode: systemShare.SelectionMode.SINGLE,
+      previewMode: systemShare.SharePreviewMode.DEFAULT
+    })
+      .catch((error: Error) => {
+        promptAction.openToast({ message: error.message || '分享失败' }).catch((_error: Error) => { })
       })
   }
 
