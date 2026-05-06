@@ -556,6 +556,16 @@ struct Index {
     return this.authCookieConfigured && !!CookieJarSettings.getCurrentCookie()
   }
 
+  private formatCoinAmount(amount: number, asFraction: boolean = false): string {
+    if (asFraction && amount >= 1) {
+      return (amount / 100).toFixed(2)
+    }
+    if (amount > 0 && amount < 1) {
+      return amount.toFixed(2)
+    }
+    return `${amount}`
+  }
+
   private canDeleteNotifications(): boolean {
     return this.notificationVm.canDelete(this.notificationAuthContext())
   }
@@ -759,7 +769,7 @@ struct Index {
         if (this.accountBalance.silver > 0) {
           this.CoinAmount('#5C6978', '#F6FAFF', '#9FAFC0', this.accountBalance.silver)
         }
-        this.CoinAmount('#7E4B27', '#D99B65', '#A66B3D', this.accountBalance.bronze)
+        this.CoinAmount('#7E4B27', '#D99B65', '#A66B3D', this.accountBalance.bronze, true)
       }
       .alignItems(VerticalAlign.Center)
       .height(22)
@@ -772,10 +782,10 @@ struct Index {
     }
   }
 
-  @Builder CoinAmount(rimColor: string, faceColor: string, edgeColor: string, amount: number) {
+  @Builder CoinAmount(rimColor: string, faceColor: string, edgeColor: string, amount: number, asFraction: boolean = false) {
     Row({ space: 4 }) {
       CoinIconCanvas({ rimColor, faceColor, edgeColor })
-      Text(`${amount}`)
+      Text(this.formatCoinAmount(amount, asFraction))
         .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
         .fontColor($r('sys.color.font_secondary'))
         .maxLines(1)

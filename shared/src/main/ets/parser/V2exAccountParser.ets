@@ -28,12 +28,12 @@ export class V2exAccountParser {
   }
 
   private static extractCoin(text: string, label: string): number {
-    const re = new RegExp(`(\\d+)\\s*${label}`)
+    const re = new RegExp(`(\\d+(?:\\.\\d+)?)\\s*${label}`)
     const m = text.match(re)
     if (!m || !m[1]) {
       return 0
     }
-    return Number.parseInt(m[1])
+    return Number.parseFloat(m[1])
   }
 
   private static extractRedeemPath(html: string): string {
