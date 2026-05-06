@@ -1,4 +1,6 @@
 import { V2exReply } from '../network/NetworkTypes'
+import { StorageKeys } from '../constants/StorageKeys'
+import { ReadingSettings } from '../settings/ReadingSettings'
 import { ThemeConstants } from '../theme/ThemeConstants'
 import { Avatar } from './Avatar'
 import { TimeAgo } from './TimeAgo'
@@ -16,6 +18,27 @@ export struct ReplyCard {
   onCopyUserClick?: () => void
   onImageClick?: (url: string) => void
   onContentLongPress?: () => void
+  @StorageLink(StorageKeys.READING_DENSITY) readingDensity: string = ReadingSettings.DENSITY_STANDARD
+
+  private verticalPadding(): number {
+    if (this.readingDensity === ReadingSettings.DENSITY_COMPACT) {
+      return ThemeConstants.SPACE_SM
+    }
+    if (this.readingDensity === ReadingSettings.DENSITY_COMFORTABLE) {
+      return ThemeConstants.SPACE_LG
+    }
+    return ThemeConstants.SPACE_MD
+  }
+
+  private contentTopMargin(): number {
+    if (this.readingDensity === ReadingSettings.DENSITY_COMPACT) {
+      return ThemeConstants.SPACE_XS
+    }
+    if (this.readingDensity === ReadingSettings.DENSITY_COMFORTABLE) {
+      return ThemeConstants.SPACE_MD
+    }
+    return ThemeConstants.SPACE_SM
+  }
 
   build() {
     Column() {
@@ -61,7 +84,7 @@ export struct ReplyCard {
         Column() {
           MarkdownContent({
             source: this.reply.content,
-            topMargin: ThemeConstants.SPACE_SM,
+            topMargin: this.contentTopMargin(),
             onImageClick: this.onImageClick
           })
         }
@@ -167,8 +190,8 @@ export struct ReplyCard {
     .padding({
       left: ThemeConstants.SPACE_LG,
       right: ThemeConstants.SPACE_LG,
-      top: ThemeConstants.SPACE_MD,
-      bottom: ThemeConstants.SPACE_MD
+      top: this.verticalPadding(),
+      bottom: this.verticalPadding()
     })
     .width('100%')
     .borderRadius(ThemeConstants.RADIUS_MD)

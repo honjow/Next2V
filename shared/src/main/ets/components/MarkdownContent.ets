@@ -1,8 +1,9 @@
 import { Markdown, MarkdownOptions, Token, Tokens, lexer } from "@lidary/markdown";
 import { pasteboard } from "@kit.BasicServicesKit";
 import { connection } from "@kit.NetworkKit";
-import { promptAction } from "@kit.ArkUI";
+import { LengthMetrics, promptAction } from "@kit.ArkUI";
 import { StorageKeys } from "../constants/StorageKeys";
+import { ReadingSettings } from "../settings/ReadingSettings";
 import { ThemeConstants } from "../theme/ThemeConstants";
 
 // Custom token types used to hijack @lidary/markdown's built-in rendering.
@@ -302,6 +303,8 @@ function CustomBlockBuilder(token: Token, options: MarkdownOptions) {
 struct MarkdownCodeBlock {
   @Prop codeToken: Tokens.Code;
   @Prop options: MarkdownOptions;
+  @StorageLink(StorageKeys.READING_FONT_SIZE) readingFontSize: number = ThemeConstants.FONT_SIZE_BODY;
+  @StorageLink(StorageKeys.READING_LINE_HEIGHT) readingLineHeight: number = ThemeConstants.LINE_HEIGHT_BODY;
   @State private wrapLines: boolean = false;
 
   private codeText(): string {
@@ -328,6 +331,16 @@ struct MarkdownCodeBlock {
     }
   }
 
+  private codeFontSize(): number {
+    const fontSize = ReadingSettings.normalizeFontSize(this.readingFontSize) - 2;
+    return fontSize < ThemeConstants.FONT_SIZE_CODE ? ThemeConstants.FONT_SIZE_CODE : fontSize;
+  }
+
+  private codeLineHeight(): number {
+    const lineHeight = ReadingSettings.normalizeLineHeight(this.readingLineHeight, ReadingSettings.normalizeFontSize(this.readingFontSize)) - 2;
+    return lineHeight < ThemeConstants.LINE_HEIGHT_CODE ? ThemeConstants.LINE_HEIGHT_CODE : lineHeight;
+  }
+
   @Builder CodeLineSpans(line: string) {
     ForEach(highlightLine(line), (ht: CodeToken) => {
       Span(ht.text)
@@ -336,7 +349,7 @@ struct MarkdownCodeBlock {
             _defaultCodeColors[ht.type] ??
             ThemeConstants.CODE_TEXT,
         )
-        .fontSize(this.options.theme?.code?.fontSize ?? ThemeConstants.FONT_SIZE_CODE)
+        .fontSize(this.options.theme?.code?.fontSize ?? this.codeFontSize())
         .fontFamily("Noto Sans Mono");
     })
   }
@@ -349,12 +362,12 @@ struct MarkdownCodeBlock {
             this.CodeLineSpans(line);
           }
           .width("100%")
-          .lineHeight(ThemeConstants.LINE_HEIGHT_CODE);
+          .lineHeight(this.codeLineHeight());
         } else {
           Text() {
             this.CodeLineSpans(line);
           }
-          .lineHeight(ThemeConstants.LINE_HEIGHT_CODE)
+          .lineHeight(this.codeLineHeight())
           .maxLines(1);
         }
       })
@@ -661,7 +674,27 @@ struct MarkdownAutoImage {
 struct CustomList {
   @Prop listToken: Tokens.List;
   @Prop options: MarkdownOptions;
-  private fontSize: number = ThemeConstants.FONT_SIZE_BODY;
+  @StorageLink(StorageKeys.READING_FONT_SIZE) readingFontSize: number = ThemeConstants.FONT_SIZE_BODY;
+  @StorageLink(StorageKeys.READING_LINE_HEIGHT) readingLineHeight: number = ThemeConstants.LINE_HEIGHT_BODY;
+  @StorageLink(StorageKeys.READING_DENSITY) readingDensity: string = ReadingSettings.DENSITY_STANDARD;
+
+  private bodyFontSize(): number {
+    return ReadingSettings.normalizeFontSize(this.readingFontSize);
+  }
+
+  private bodyLineHeight(): number {
+    return ReadingSettings.normalizeLineHeight(this.readingLineHeight, this.bodyFontSize());
+  }
+
+  private blockSpace(): number {
+    if (this.readingDensity === ReadingSettings.DENSITY_COMPACT) {
+      return ThemeConstants.SPACE_XS;
+    }
+    if (this.readingDensity === ReadingSettings.DENSITY_COMFORTABLE) {
+      return ThemeConstants.SPACE_MD;
+    }
+    return ThemeConstants.SPACE_SM;
+  }
 
   private paragraphTokens(child: Token): Token[] {
     const paragraph = child as Tokens.Paragraph;
@@ -688,20 +721,22 @@ struct CustomList {
   }
 
   build() {
-    Column({ space: this.options.lineSpace }) {
+    Column({ space: this.blockSpace() }) {
       ForEach(this.listToken.items, (item: Tokens.ListItem, index: number) => {
         Row({ space: ThemeConstants.SPACE_SM }) {
           if (this.listToken.ordered) {
             Text(`${(this.listToken.start as number) + index}.`)
-              .fontSize(this.fontSize)
+              .fontSize(this.bodyFontSize())
+              .lineHeight(this.bodyLineHeight())
               .fontColor(ThemeConstants.TEXT_PRIMARY);
           } else {
             Text("•")
-              .fontSize(this.fontSize)
+              .fontSize(this.bodyFontSize())
+              .lineHeight(this.bodyLineHeight())
               .fontWeight(FontWeight.Bold)
               .fontColor(ThemeConstants.TEXT_SECONDARY);
           }
-          Column({ space: this.options.lineSpace }) {
+          Column({ space: this.blockSpace() }) {
             ForEach(item.tokens, (child: Token) => {
               if (child.type === "text" || child.type === "paragraph") {
                 if (
@@ -712,8 +747,10 @@ struct CustomList {
                     Column({ space: ThemeConstants.SPACE_SM }) {
                       if (this.paragraphTextTokens(child).length > 0) {
                         Text() {
-                          InlineTokenSpans(this.paragraphTextTokens(child), this.fontSize)
-                        }.width("100%");
+                          InlineTokenSpans(this.paragraphTextTokens(child), this.bodyFontSize())
+                        }
+                        .lineHeight(this.bodyLineHeight())
+                        .width("100%");
                       }
                       ForEach(this.paragraphImageTokens(child), (img: Tokens.Image, imgIdx: number) => {
                         MarkdownAutoImage({ url: _normalizeUrl(img.href), options: this.options });
@@ -721,12 +758,15 @@ struct CustomList {
                     }.width("100%");
                   } else {
                     Text() {
-                      InlineTokenSpans(this.paragraphTokens(child), this.fontSize)
-                    }.width("100%");
+                      InlineTokenSpans(this.paragraphTokens(child), this.bodyFontSize())
+                    }
+                    .lineHeight(this.bodyLineHeight())
+                    .width("100%");
                   }
                 } else {
                   Text(child.text)
-                    .fontSize(this.fontSize)
+                    .fontSize(this.bodyFontSize())
+                    .lineHeight(this.bodyLineHeight())
                     .fontColor(ThemeConstants.TEXT_PRIMARY)
                     .width("100%");
                 }
@@ -785,6 +825,9 @@ export struct MarkdownContent {
   @Prop @Watch('onSourceChanged') source: string = "";
   @Prop topMargin: number = ThemeConstants.SPACE_LG;
   onImageClick?: (url: string) => void
+  @StorageLink(StorageKeys.READING_FONT_SIZE) readingFontSize: number = ThemeConstants.FONT_SIZE_BODY;
+  @StorageLink(StorageKeys.READING_LINE_HEIGHT) readingLineHeight: number = ThemeConstants.LINE_HEIGHT_BODY;
+  @StorageLink(StorageKeys.READING_DENSITY) readingDensity: string = ReadingSettings.DENSITY_STANDARD;
   @State private tokens: Token[] = [];
 
   aboutToAppear() {
@@ -797,6 +840,41 @@ export struct MarkdownContent {
 
   private refreshTokens(): void {
     this.tokens = MarkdownContent.processTokens(this.source);
+  }
+
+  private bodyFontSize(): number {
+    return ReadingSettings.normalizeFontSize(this.readingFontSize);
+  }
+
+  private bodyLineHeight(): number {
+    return ReadingSettings.normalizeLineHeight(this.readingLineHeight, this.bodyFontSize());
+  }
+
+  private headingFontSize(delta: number): number {
+    return this.bodyFontSize() + delta;
+  }
+
+  private blockSpace(): number {
+    if (this.readingDensity === ReadingSettings.DENSITY_COMPACT) {
+      return ThemeConstants.SPACE_XS;
+    }
+    if (this.readingDensity === ReadingSettings.DENSITY_COMFORTABLE) {
+      return ThemeConstants.SPACE_MD;
+    }
+    return ThemeConstants.SPACE_SM;
+  }
+
+  private effectiveTopMargin(): number {
+    if (this.topMargin <= 0) {
+      return 0;
+    }
+    if (this.readingDensity === ReadingSettings.DENSITY_COMPACT) {
+      return this.topMargin > ThemeConstants.SPACE_XS ? this.topMargin - ThemeConstants.SPACE_XS : this.topMargin;
+    }
+    if (this.readingDensity === ReadingSettings.DENSITY_COMFORTABLE) {
+      return this.topMargin + ThemeConstants.SPACE_XS;
+    }
+    return this.topMargin;
   }
 
   // Re-type certain tokens so the Markdown component doesn't recognize them
@@ -956,7 +1034,8 @@ export struct MarkdownContent {
     Markdown({
       token: this.tokens,
       options: {
-          lineSpace: ThemeConstants.SPACE_SM,
+          lineSpace: this.blockSpace(),
+          textLineSpace: LengthMetrics.vp(this.bodyLineHeight()),
           options: {
             gfm: true,
             breaks: true,
@@ -965,38 +1044,38 @@ export struct MarkdownContent {
             // overrides blue default for list bullets etc.
             themeColor: ThemeConstants.TEXT_SECONDARY,
             fontStyle: {
-              fontSize: ThemeConstants.FONT_SIZE_BODY,
+              fontSize: this.bodyFontSize(),
               fontColor: ThemeConstants.TEXT_PRIMARY,
             },
             // one level smaller than library defaults
             headingStyle: [
               {
-                fontSize: ThemeConstants.FONT_SIZE_H1,
+                fontSize: this.headingFontSize(10),
                 fontWeight: FontWeight.Bold,
                 fontColor: ThemeConstants.TEXT_PRIMARY,
               },
               {
-                fontSize: ThemeConstants.FONT_SIZE_H2,
+                fontSize: this.headingFontSize(8),
                 fontWeight: FontWeight.Bold,
                 fontColor: ThemeConstants.TEXT_PRIMARY,
               },
               {
-                fontSize: ThemeConstants.FONT_SIZE_H3,
+                fontSize: this.headingFontSize(6),
                 fontWeight: FontWeight.Medium,
                 fontColor: ThemeConstants.TEXT_PRIMARY,
               },
               {
-                fontSize: ThemeConstants.FONT_SIZE_HEADING,
+                fontSize: this.headingFontSize(4),
                 fontWeight: FontWeight.Medium,
                 fontColor: ThemeConstants.TEXT_PRIMARY,
               },
               {
-                fontSize: ThemeConstants.FONT_SIZE_TITLE,
+                fontSize: this.headingFontSize(2),
                 fontWeight: FontWeight.Normal,
                 fontColor: ThemeConstants.TEXT_PRIMARY,
               },
               {
-                fontSize: ThemeConstants.FONT_SIZE_BODY,
+                fontSize: this.bodyFontSize(),
                 fontWeight: FontWeight.Normal,
                 fontColor: ThemeConstants.TEXT_PRIMARY,
               },
@@ -1020,6 +1099,6 @@ export struct MarkdownContent {
       paddings: { left: 0, right: 0, top: 0, bottom: 0 },
     })
       .width("100%")
-      .margin({ top: this.topMargin });
+      .margin({ top: this.effectiveTopMargin() });
   }
 }

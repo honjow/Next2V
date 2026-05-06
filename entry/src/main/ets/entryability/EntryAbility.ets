@@ -1,6 +1,6 @@
 import { UIAbility, Want, AbilityConstant } from '@kit.AbilityKit'
 import { window } from '@kit.ArkUI'
-import { ApiDomainSettings, MediaSettings, StorageKeys, WriteActionSettings } from 'shared'
+import { ApiDomainSettings, MediaSettings, ReadingSettings, StorageKeys, WriteActionSettings } from 'shared'
 
 const TRANSPARENT_COLOR: string = '#00FFFFFF'
 const ENTRY_PAGE: string = 'pages/Index'
@@ -35,13 +35,20 @@ export default class EntryAbility extends UIAbility {
             MediaSettings.apply(true, false)
           })
           .finally(() => {
-            WriteActionSettings.load(this.context)
+            ReadingSettings.load(this.context)
               .catch((error: Error) => {
-                console.error('restore write settings failed: ' + error.message)
-                WriteActionSettings.apply(false)
+                console.error('restore reading settings failed: ' + error.message)
+                ReadingSettings.apply(14, 20, ReadingSettings.DENSITY_STANDARD)
               })
               .finally(() => {
-                this.loadContent(windowStage, win)
+                WriteActionSettings.load(this.context)
+                  .catch((error: Error) => {
+                    console.error('restore write settings failed: ' + error.message)
+                    WriteActionSettings.apply(false)
+                  })
+                  .finally(() => {
+                    this.loadContent(windowStage, win)
+                  })
               })
           })
       })

@@ -7,7 +7,7 @@ import { systemShare } from '@kit.ShareKit'
 import {
   V2exReply, Avatar, ReplyCard, TimeAgo, PullRefresh, ThemeConstants, MarkdownContent,
   NodeTopicListParams, UserProfileParams, ImagePreviewParams, CollectionSettings, CacheSettings, V2exTopic, AuthSettings,
-  LoadingFooter, HttpClient, StorageKeys, ApiService, CookieJarSettings, V2exToggleAction
+  LoadingFooter, HttpClient, StorageKeys, ApiService, CookieJarSettings, V2exToggleAction, ReadingSettings
 } from 'shared'
 
 interface ReplyEditorParams {
@@ -31,6 +31,9 @@ export struct TopicDetailPage {
   @StorageProp('topAvoidHeight') topH: number = 0
   @StorageLink(StorageKeys.TOPIC_DETAIL_ACTION) @Watch('onTopicActionCommand') topicActionCommand: string = ''
   @StorageLink(StorageKeys.ACCOUNT_WRITE_ENABLED) writeEnabled: boolean = false
+  @StorageLink(StorageKeys.READING_FONT_SIZE) readingFontSize: number = ThemeConstants.FONT_SIZE_BODY
+  @StorageLink(StorageKeys.READING_LINE_HEIGHT) readingLineHeight: number = ThemeConstants.LINE_HEIGHT_BODY
+  @StorageLink(StorageKeys.READING_DENSITY) readingDensity: string = ReadingSettings.DENSITY_STANDARD
   private scroller: Scroller = new Scroller()
   @State listScrollEnabled: boolean = true
   @State isSavedLater: boolean = false
@@ -100,6 +103,24 @@ export struct TopicDetailPage {
     const title = (this.v.topic?.title || '').trim()
     let p: ReplyEditorParams = { topicId: this.topicId, topicTitle: title, initialContent: initialContent }
     this.stack.pushPathByName('ReplyEditor', p as Object)
+  }
+
+  private bodyFontSize(): number {
+    return ReadingSettings.normalizeFontSize(this.readingFontSize)
+  }
+
+  private bodyLineHeight(): number {
+    return ReadingSettings.normalizeLineHeight(this.readingLineHeight, this.bodyFontSize())
+  }
+
+  private topicCardPadding(): number {
+    if (this.readingDensity === ReadingSettings.DENSITY_COMPACT) {
+      return ThemeConstants.SPACE_MD
+    }
+    if (this.readingDensity === ReadingSettings.DENSITY_COMFORTABLE) {
+      return ThemeConstants.SPACE_XL
+    }
+    return ThemeConstants.SPACE_LG
   }
 
   build() {
@@ -299,7 +320,7 @@ export struct TopicDetailPage {
         )
       }
     }
-    .padding(ThemeConstants.SPACE_LG)
+    .padding(this.topicCardPadding())
     .width('100%')
     .borderRadius(ThemeConstants.RADIUS_MD)
     .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
@@ -445,9 +466,9 @@ export struct TopicDetailPage {
         .alignItems(VerticalAlign.Center)
 
         Scroll() {
-          Text(this.selectionText)
-            .fontSize(ThemeConstants.FONT_SIZE_BODY)
-            .lineHeight(ThemeConstants.LINE_HEIGHT_BODY)
+        Text(this.selectionText)
+            .fontSize(this.bodyFontSize())
+            .lineHeight(this.bodyLineHeight())
             .fontColor($r('sys.color.font_primary'))
             .width('100%')
             .copyOption(CopyOptions.LocalDevice)
@@ -505,8 +526,8 @@ export struct TopicDetailPage {
       .alignItems(VerticalAlign.Center)
 
       Text(this.replySnippet(item.reply.content))
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .lineHeight(ThemeConstants.LINE_HEIGHT_BODY)
+        .fontSize(this.bodyFontSize())
+        .lineHeight(this.bodyLineHeight())
         .fontColor($r('sys.color.font_primary'))
         .maxLines(4)
         .textOverflow({ overflow: TextOverflow.Ellipsis })

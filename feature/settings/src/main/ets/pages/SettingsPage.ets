@@ -9,6 +9,7 @@ import {
   HttpClient,
   LocalDataSettings,
   MediaSettings,
+  ReadingSettings,
   SecondaryListScaffold,
   StorageKeys,
   ThemeConstants,
@@ -20,6 +21,9 @@ export struct SettingsPage {
   @StorageLink(StorageKeys.USE_CO_DOMAIN) useCoDomain: boolean = false
   @StorageLink(StorageKeys.MEDIA_AUTO_LOAD_IMAGES) autoLoadImages: boolean = true
   @StorageLink(StorageKeys.MEDIA_ONLY_LOAD_IMAGES_ON_WIFI) onlyLoadImagesOnWifi: boolean = false
+  @StorageLink(StorageKeys.READING_FONT_SIZE) readingFontSize: number = ThemeConstants.FONT_SIZE_BODY
+  @StorageLink(StorageKeys.READING_LINE_HEIGHT) readingLineHeight: number = ThemeConstants.LINE_HEIGHT_BODY
+  @StorageLink(StorageKeys.READING_DENSITY) readingDensity: string = ReadingSettings.DENSITY_STANDARD
   @StorageLink(StorageKeys.ACCOUNT_WRITE_ENABLED) accountWriteEnabled: boolean = false
   @StorageProp(StorageKeys.TOP_AVOID_HEIGHT) topH: number = 0
   @StorageProp(StorageKeys.BOTTOM_AVOID_HEIGHT) bottomH: number = 0
@@ -160,6 +164,10 @@ export struct SettingsPage {
 
       this.SettingsDivider()
 
+      this.ReadingPreferenceRows()
+
+      this.SettingsDivider()
+
       Row({ space: ThemeConstants.SPACE_SM }) {
         Column({ space: ThemeConstants.SPACE_XS }) {
           Text('写入操作')
@@ -190,6 +198,110 @@ export struct SettingsPage {
     .alignItems(HorizontalAlign.Start)
     .borderRadius(ThemeConstants.RADIUS_MD)
     .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+  }
+
+  @Builder ReadingPreferenceRows() {
+    Column({ space: ThemeConstants.SPACE_MD }) {
+      Row({ space: ThemeConstants.SPACE_SM }) {
+        Column({ space: ThemeConstants.SPACE_XS }) {
+          Text('阅读显示')
+            .fontSize(ThemeConstants.FONT_SIZE_BODY)
+            .fontWeight(FontWeight.Medium)
+            .fontColor($r('sys.color.font_primary'))
+          Text(`${this.readingFontSize}fp / ${this.readingLineHeight}vp · ${this.readingDensityText(this.readingDensity)}`)
+            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+            .fontColor($r('sys.color.font_secondary'))
+            .maxLines(2)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
+        }
+        .layoutWeight(1)
+        .alignItems(HorizontalAlign.Start)
+      }
+      .width('100%')
+
+      Row({ space: ThemeConstants.SPACE_SM }) {
+        Button('A-')
+          .fontSize(ThemeConstants.FONT_SIZE_TAG)
+          .height(ThemeConstants.TOUCH_TARGET_SM)
+          .type(ButtonType.Normal)
+          .borderRadius(ThemeConstants.RADIUS_MD)
+          .fontColor($r('sys.color.font_primary'))
+          .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+          .layoutWeight(1)
+          .onClick(() => { this.updateReadingFontSize(this.readingFontSize - 1) })
+        Button('默认字号')
+          .fontSize(ThemeConstants.FONT_SIZE_TAG)
+          .height(ThemeConstants.TOUCH_TARGET_SM)
+          .type(ButtonType.Normal)
+          .borderRadius(ThemeConstants.RADIUS_MD)
+          .fontColor($r('sys.color.font_primary'))
+          .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+          .layoutWeight(1)
+          .onClick(() => { this.updateReadingFontSize(ThemeConstants.FONT_SIZE_BODY) })
+        Button('A+')
+          .fontSize(ThemeConstants.FONT_SIZE_TAG)
+          .height(ThemeConstants.TOUCH_TARGET_SM)
+          .type(ButtonType.Normal)
+          .borderRadius(ThemeConstants.RADIUS_MD)
+          .fontColor($r('sys.color.font_primary'))
+          .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+          .layoutWeight(1)
+          .onClick(() => { this.updateReadingFontSize(this.readingFontSize + 1) })
+      }
+      .width('100%')
+
+      Row({ space: ThemeConstants.SPACE_SM }) {
+        Button('行距-')
+          .fontSize(ThemeConstants.FONT_SIZE_TAG)
+          .height(ThemeConstants.TOUCH_TARGET_SM)
+          .type(ButtonType.Normal)
+          .borderRadius(ThemeConstants.RADIUS_MD)
+          .fontColor($r('sys.color.font_primary'))
+          .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+          .layoutWeight(1)
+          .onClick(() => { this.updateReadingLineHeight(this.readingLineHeight - 1) })
+        Button('默认行距')
+          .fontSize(ThemeConstants.FONT_SIZE_TAG)
+          .height(ThemeConstants.TOUCH_TARGET_SM)
+          .type(ButtonType.Normal)
+          .borderRadius(ThemeConstants.RADIUS_MD)
+          .fontColor($r('sys.color.font_primary'))
+          .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+          .layoutWeight(1)
+          .onClick(() => { this.updateReadingLineHeight(ThemeConstants.LINE_HEIGHT_BODY) })
+        Button('行距+')
+          .fontSize(ThemeConstants.FONT_SIZE_TAG)
+          .height(ThemeConstants.TOUCH_TARGET_SM)
+          .type(ButtonType.Normal)
+          .borderRadius(ThemeConstants.RADIUS_MD)
+          .fontColor($r('sys.color.font_primary'))
+          .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+          .layoutWeight(1)
+          .onClick(() => { this.updateReadingLineHeight(this.readingLineHeight + 1) })
+      }
+      .width('100%')
+
+      Row({ space: ThemeConstants.SPACE_SM }) {
+        this.DensityButton('紧凑', ReadingSettings.DENSITY_COMPACT)
+        this.DensityButton('标准', ReadingSettings.DENSITY_STANDARD)
+        this.DensityButton('宽松', ReadingSettings.DENSITY_COMFORTABLE)
+      }
+      .width('100%')
+    }
+    .width('100%')
+    .padding(ThemeConstants.SPACE_LG)
+  }
+
+  @Builder DensityButton(label: string, density: string) {
+    Button(label)
+      .fontSize(ThemeConstants.FONT_SIZE_TAG)
+      .height(ThemeConstants.TOUCH_TARGET_SM)
+      .type(ButtonType.Normal)
+      .borderRadius(ThemeConstants.RADIUS_MD)
+      .fontColor(this.readingDensity === density ? Color.White : $r('sys.color.font_primary'))
+      .backgroundColor(this.readingDensity === density ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.ohos_id_color_button_normal'))
+      .layoutWeight(1)
+      .onClick(() => { this.updateReadingDensity(density) })
   }
 
   @Builder CacheSection() {
@@ -311,6 +423,40 @@ export struct SettingsPage {
     MediaSettings.save(context, this.autoLoadImages, onlyLoadImagesOnWifi).catch((error: Error) => {
       console.error('save media settings failed: ' + error.message)
     })
+  }
+
+  private updateReadingFontSize(fontSize: number): void {
+    const nextFontSize = ReadingSettings.normalizeFontSize(fontSize)
+    const nextLineHeight = ReadingSettings.normalizeLineHeight(this.readingLineHeight, nextFontSize)
+    this.saveReadingSettings(nextFontSize, nextLineHeight, this.readingDensity)
+  }
+
+  private updateReadingLineHeight(lineHeight: number): void {
+    this.saveReadingSettings(this.readingFontSize, ReadingSettings.normalizeLineHeight(lineHeight, this.readingFontSize), this.readingDensity)
+  }
+
+  private updateReadingDensity(density: string): void {
+    this.saveReadingSettings(this.readingFontSize, this.readingLineHeight, density)
+  }
+
+  private saveReadingSettings(fontSize: number, lineHeight: number, density: string): void {
+    this.readingFontSize = ReadingSettings.normalizeFontSize(fontSize)
+    this.readingLineHeight = ReadingSettings.normalizeLineHeight(lineHeight, this.readingFontSize)
+    this.readingDensity = ReadingSettings.normalizeDensity(density)
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    ReadingSettings.save(context, this.readingFontSize, this.readingLineHeight, this.readingDensity).catch((error: Error) => {
+      console.error('save reading settings failed: ' + error.message)
+    })
+  }
+
+  private readingDensityText(density: string): string {
+    if (density === ReadingSettings.DENSITY_COMPACT) {
+      return '紧凑'
+    }
+    if (density === ReadingSettings.DENSITY_COMFORTABLE) {
+      return '宽松'
+    }
+    return '标准'
   }
 
   private confirmEnableWriteActions(): void {
