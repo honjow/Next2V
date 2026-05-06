@@ -66,11 +66,6 @@ struct CoinIconCanvas {
     ctx.fillStyle = face
     ctx.fillRect(2, 2, 12, 12)
 
-    ctx.fillStyle = 'rgba(255,255,255,0.16)'
-    ctx.beginPath()
-    ctx.arc(5.8, 5.2, 2.8, 0, Math.PI * 2)
-    ctx.fill()
-
     ctx.fillStyle = 'rgba(0,0,0,0.10)'
     ctx.beginPath()
     ctx.moveTo(2.2, 10.8)
