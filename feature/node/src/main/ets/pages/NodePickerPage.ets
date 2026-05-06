@@ -1,7 +1,7 @@
 import { common } from '@kit.AbilityKit'
 import { promptAction } from '@kit.ArkUI'
 import { NodeViewModel } from '../viewmodel/NodeViewModel'
-import { DraftSettings, ThemeConstants, V2exNode } from 'shared'
+import { DraftSettings, StorageKeys, ThemeConstants, V2exNode } from 'shared'
 
 @Component
 export struct NodePickerPage {
@@ -12,6 +12,8 @@ export struct NodePickerPage {
   @State private selectedNodeName: string = ''
   @State private isSaving: boolean = false
   @State private errorMessage: string = ''
+  @StorageProp(StorageKeys.TOP_AVOID_HEIGHT) topH: number = 0
+  @StorageProp(StorageKeys.BOTTOM_AVOID_HEIGHT) bottomH: number = 0
 
   aboutToAppear(): void {
     this.loadSelectedNode()
@@ -115,7 +117,12 @@ export struct NodePickerPage {
       }
       .width('100%')
     }
-    .padding(ThemeConstants.SPACE_LG)
+    .padding({
+      left: ThemeConstants.SPACE_MD,
+      right: ThemeConstants.SPACE_MD,
+      top: this.topH + ThemeConstants.TITLE_BAR_HEIGHT + ThemeConstants.SPACE_MD,
+      bottom: this.bottomH + ThemeConstants.SPACE_MD
+    })
     .width('100%')
     .height('100%')
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
@@ -214,4 +221,3 @@ export struct NodePickerPage {
       })
   }
 }
-

@@ -16,7 +16,7 @@ export struct NodeTopicPage {
   @StorageLink(StorageKeys.TOPIC_READ_STATES) topicReadStates: string = '[]'
   @State private isNodeSaved: boolean = false
   @State private token: string = ''
-  private readonly GAP: number = ThemeConstants.SPACE_SM
+  private readonly GAP: number = ThemeConstants.SPACE_MD
 
   aboutToAppear(): void {
     this.loadData()

@@ -11,7 +11,7 @@ export struct DiscoverPage {
   @StorageProp('bottomAvoidHeight') bottomH: number = 0
   private readonly TBH: number = ThemeConstants.TITLE_BAR_HEIGHT
   private readonly FLOAT_H: number = ThemeConstants.FLOAT_BAR_HEIGHT
-  private readonly GAP: number = ThemeConstants.SPACE_SM
+  private readonly GAP: number = ThemeConstants.SPACE_MD
 
   aboutToAppear(): void { this.vm.loadAllNodes() }
 

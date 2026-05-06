@@ -5,6 +5,7 @@ import {
   AuthSessionSettings,
   CookieJarSettings,
   HttpClient,
+  StorageKeys,
   ThemeConstants,
   V2exNativeAuthService
 } from 'shared'
@@ -17,6 +18,8 @@ export struct V2exNativeLoginPage {
   @State private password: string = ''
   @State private errorMessage: string = ''
   @State private isLoading: boolean = false
+  @StorageProp(StorageKeys.TOP_AVOID_HEIGHT) topH: number = 0
+  @StorageProp(StorageKeys.BOTTOM_AVOID_HEIGHT) bottomH: number = 0
 
   private auth: V2exNativeAuthService = new V2exNativeAuthService()
   private api: ApiService = new ApiService()
@@ -68,7 +71,12 @@ export struct V2exNativeLoginPage {
           .onClick(() => { this.stack.pop() })
       }
     }
-    .padding(ThemeConstants.SPACE_LG)
+    .padding({
+      left: ThemeConstants.SPACE_MD,
+      right: ThemeConstants.SPACE_MD,
+      top: this.topH + ThemeConstants.TITLE_BAR_HEIGHT + ThemeConstants.SPACE_MD,
+      bottom: this.bottomH + ThemeConstants.SPACE_MD
+    })
     .width('100%')
     .height('100%')
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
@@ -118,4 +126,3 @@ export struct V2exNativeLoginPage {
       })
   }
 }
-

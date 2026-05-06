@@ -192,8 +192,8 @@ export struct TopicEditorPage {
         }
       }
       .padding({
-        left: ThemeConstants.SPACE_LG,
-        right: ThemeConstants.SPACE_LG,
+        left: ThemeConstants.SPACE_MD,
+        right: ThemeConstants.SPACE_MD,
         top: this.topH + ThemeConstants.TITLE_BAR_HEIGHT + ThemeConstants.SPACE_LG,
         bottom: this.bottomH + ThemeConstants.SPACE_XL
       })

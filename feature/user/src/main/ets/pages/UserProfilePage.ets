@@ -12,7 +12,7 @@ export struct UserProfilePage {
   @State vm: UserViewModel = new UserViewModel(this.username)
   @StorageProp('topAvoidHeight') topH: number = 0
   @StorageLink(StorageKeys.TOPIC_READ_STATES) topicReadStates: string = '[]'
-  private readonly GAP: number = ThemeConstants.SPACE_SM
+  private readonly GAP: number = ThemeConstants.SPACE_MD
 
   aboutToAppear(): void { this.vm.load() }
 

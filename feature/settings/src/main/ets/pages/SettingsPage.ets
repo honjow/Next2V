@@ -69,10 +69,10 @@ export struct SettingsPage {
     .width('100%')
     .height('100%')
     .padding({
-      left: ThemeConstants.SPACE_LG,
-      right: ThemeConstants.SPACE_LG,
+      left: ThemeConstants.SPACE_MD,
+      right: ThemeConstants.SPACE_MD,
       top: this.topH + ThemeConstants.TITLE_BAR_HEIGHT,
-      bottom: this.bottomH + ThemeConstants.FLOAT_BAR_HEIGHT
+      bottom: this.bottomH + ThemeConstants.SPACE_LG
     })
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
   }

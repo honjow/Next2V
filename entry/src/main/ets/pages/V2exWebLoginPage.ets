@@ -1,7 +1,7 @@
 import { common } from '@kit.AbilityKit'
 import { promptAction } from '@kit.ArkUI'
 import { webview } from '@kit.ArkWeb'
-import { AuthSessionSettings, CookieJarSettings, HttpClient, ThemeConstants } from 'shared'
+import { AuthSessionSettings, CookieJarSettings, HttpClient, StorageKeys, ThemeConstants } from 'shared'
 
 interface PageEndEvent {
   url: string
@@ -17,6 +17,7 @@ export struct V2exWebLoginPage {
   @State private errorMessage: string = ''
   @State private isSaving: boolean = false
   @State private lastUrl: string = ''
+  @StorageProp(StorageKeys.TOP_AVOID_HEIGHT) topH: number = 0
 
   private get baseUrl(): string {
     return this.http.getBaseUrl()
@@ -62,7 +63,12 @@ export struct V2exWebLoginPage {
             .onClick(() => { this.controller.refresh() })
         }
       }
-      .padding(ThemeConstants.SPACE_LG)
+      .padding({
+        left: ThemeConstants.SPACE_MD,
+        right: ThemeConstants.SPACE_MD,
+        top: this.topH + ThemeConstants.TITLE_BAR_HEIGHT + ThemeConstants.SPACE_MD,
+        bottom: ThemeConstants.SPACE_MD
+      })
       .width('100%')
 
       Web({ src: this.signinUrl, controller: this.controller })
