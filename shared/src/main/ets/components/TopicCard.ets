@@ -13,74 +13,71 @@ export struct TopicCard {
   onNodeClick?: () => void
 
   build() {
-    Row({ space: ThemeConstants.SPACE_MD }) {
-      Column() {
+    Column({ space: ThemeConstants.SPACE_XS }) {
+      Row({ space: ThemeConstants.SPACE_SM }) {
         Avatar({ url: this.item.member.avatar_normal, avatarSize: ThemeConstants.AVATAR_SIZE_REPLY })
           .onClick(() => {
             if (this.onUserClick) { this.onUserClick() }
           })
-      }
-      .padding({ top: 2 })
-
-      Column({ space: ThemeConstants.SPACE_XS }) {
-        Row({ space: ThemeConstants.SPACE_SM }) {
+        Column() {
           UserName({ username: this.item.member.username, fontSize: ThemeConstants.FONT_SIZE_META })
             .onClick(() => {
               if (this.onUserClick) { this.onUserClick() }
             })
-          NodeTag({ nodeName: this.item.node.name, nodeTitle: this.item.node.title })
-            .onClick(() => {
-              if (this.onNodeClick) { this.onNodeClick() }
-            })
         }
-        .width('100%')
-        .alignItems(VerticalAlign.Center)
+        .layoutWeight(1)
+        .alignItems(HorizontalAlign.Start)
+        NodeTag({ nodeName: this.item.node.name, nodeTitle: this.item.node.title })
+          .onClick(() => {
+            if (this.onNodeClick) { this.onNodeClick() }
+          })
+      }
+      .width('100%')
+      .alignItems(VerticalAlign.Center)
 
-        Row({ space: 6 }) {
-          if (this.isUnread) {
-            Text('●')
-              .fontSize(8)
-              .fontColor(ThemeConstants.BRAND_PRIMARY)
-              .margin({ top: 4 })
-          }
-          Text(this.item.title)
-            .fontSize(ThemeConstants.FONT_SIZE_BODY)
-            .fontColor($r('sys.color.font_primary'))
-            .lineHeight(ThemeConstants.LINE_HEIGHT_TITLE)
-            .maxLines(2)
+      Row({ space: 6 }) {
+        if (this.isUnread) {
+          Text('●')
+            .fontSize(8)
+            .fontColor(ThemeConstants.BRAND_PRIMARY)
+            .margin({ top: 4 })
+        }
+        Text(this.item.title)
+          .fontSize(ThemeConstants.FONT_SIZE_BODY)
+          .fontColor($r('sys.color.font_primary'))
+          .lineHeight(ThemeConstants.LINE_HEIGHT_TITLE)
+          .maxLines(2)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+          .layoutWeight(1)
+      }
+      .width('100%')
+
+      Row({ space: ThemeConstants.SPACE_XS }) {
+        if (this.item.replies > 0) {
+          Text('最后回复')
+            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+            .fontColor($r('sys.color.font_secondary'))
+          Text(this.item.last_reply_by || this.item.member.username)
+            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+            .fontColor($r('sys.color.font_emphasize'))
+            .maxLines(1)
             .textOverflow({ overflow: TextOverflow.Ellipsis })
-            .layoutWeight(1)
-        }
-        .width('100%')
-
-        Row({ space: ThemeConstants.SPACE_XS }) {
-          if (this.item.replies > 0) {
-            Text('最后回复')
-              .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-              .fontColor($r('sys.color.font_secondary'))
-            Text(this.item.last_reply_by || this.item.member.username)
-              .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-              .fontColor($r('sys.color.font_emphasize'))
-              .maxLines(1)
-              .textOverflow({ overflow: TextOverflow.Ellipsis })
-            Text('·')
-              .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-              .fontColor($r('sys.color.font_secondary'))
-            TimeAgo({ timestamp: this.item.last_touched })
-            Text('·')
-              .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-              .fontColor($r('sys.color.font_secondary'))
-          }
-          Text(`${this.item.replies} 回复`)
+          Text('·')
+            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+            .fontColor($r('sys.color.font_secondary'))
+          TimeAgo({ timestamp: this.item.last_touched })
+          Text('·')
             .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
             .fontColor($r('sys.color.font_secondary'))
         }
-        .width('100%')
+        Text(`${this.item.replies} 回复`)
+          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+          .fontColor($r('sys.color.font_secondary'))
       }
-      .layoutWeight(1)
-      .alignItems(HorizontalAlign.Start)
+      .width('100%')
+      .alignItems(VerticalAlign.Center)
     }
-    .alignItems(VerticalAlign.Top)
+    .alignItems(HorizontalAlign.Start)
     .padding({
       left: ThemeConstants.SPACE_MD,
       right: ThemeConstants.SPACE_MD,
