@@ -6,7 +6,7 @@ import { common } from '@kit.AbilityKit'
 import {
   ApiDomainSettings, HttpClient, ThemeConstants, StorageKeys, ApiConstants, TabItem,
   AuthSettings, MediaSettings, WriteActionSettings, ApiService, ApiV2Service, DateUtils, CollectionSettings, TopicDetailParams, NodeTopicListParams, ImagePreviewParams, CacheSettings,
-  CookieJarSettings, AuthSessionSettings, V2exSessionParser, LoadingFooter
+  CookieJarSettings, AuthSessionSettings, V2exSessionParser, LoadingFooter, NotificationSettings
 }
   from 'shared'
 import type { V2exAuthenticatedMember, V2exNotification, SavedTopic, SavedNode, ViewedTopic, CacheStats } from 'shared'
@@ -99,6 +99,8 @@ struct Index {
   @State private notificationPage: number = 1
   @State private notificationHasMore: boolean = true
   @State private isNotificationLoadingMore: boolean = false
+  @State private notificationCacheUpdatedAt: number = 0
+  @State private notificationLoadedFromCache: boolean = false
   private http: HttpClient = HttpClient.getInstance()
   private api: ApiService = new ApiService()
   private apiV2: ApiV2Service = new ApiV2Service()
@@ -249,6 +251,8 @@ struct Index {
       } else {
         List({ space: ThemeConstants.SPACE_SM }) {
           ListItem() { Column() { Blank().height(this.topH + this.TBH) } }
+          ListItem() { this.NotificationSummaryRow() }
+            .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
           ForEach(this.notifications, (item: V2exNotification) => {
             ListItem() { this.NotificationCard(item) }
               .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
@@ -1136,6 +1140,52 @@ struct Index {
     .height(240)
   }
 
+  @Builder NotificationSummaryRow() {
+    Row({ space: ThemeConstants.SPACE_MD }) {
+      Column({ space: ThemeConstants.SPACE_XS }) {
+        Text(`${this.notifications.length} 条通知`)
+          .fontSize(ThemeConstants.FONT_SIZE_TITLE)
+          .fontWeight(FontWeight.Medium)
+          .fontColor($r('sys.color.font_primary'))
+        if (this.notificationError && this.notifications.length > 0) {
+          Text(this.notificationError)
+            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+            .fontColor($r('sys.color.font_secondary'))
+            .maxLines(1)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
+        } else if (this.notificationCacheUpdatedAt > 0) {
+          Text(`缓存于 ${DateUtils.toDateString(this.notificationCacheUpdatedAt)}`)
+            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+            .fontColor($r('sys.color.font_secondary'))
+            .maxLines(1)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
+        }
+      }
+      .layoutWeight(1)
+      .alignItems(HorizontalAlign.Start)
+
+      Button('刷新')
+        .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+        .height(ThemeConstants.TOUCH_TARGET_SM)
+        .type(ButtonType.Normal)
+        .borderRadius(ThemeConstants.RADIUS_MD)
+        .enabled(!this.isNotificationLoading && !this.isNotificationLoadingMore)
+        .onClick(() => { this.loadNotifications(true) })
+
+      Button('批量清除')
+        .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+        .height(ThemeConstants.TOUCH_TARGET_SM)
+        .type(ButtonType.Normal)
+        .borderRadius(ThemeConstants.RADIUS_MD)
+        .enabled(false)
+    }
+    .width('100%')
+    .alignItems(VerticalAlign.Center)
+    .padding(ThemeConstants.SPACE_LG)
+    .borderRadius(ThemeConstants.RADIUS_MD)
+    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+  }
+
   @Builder NotificationCard(item: V2exNotification) {
     Column({ space: ThemeConstants.SPACE_XS }) {
       Text(this.notificationTitle(item))
@@ -1201,6 +1251,7 @@ struct Index {
     this.apiV2.deleteNotification(this.authToken, notificationId)
       .then(() => {
         this.notifications = this.notifications.filter(item => item.id !== notificationId)
+        this.saveNotificationCache()
         promptAction.openToast({ message: '已删除' }).catch((_error: Error) => { })
       })
       .catch((error: Error) => {
@@ -1216,8 +1267,10 @@ struct Index {
     AuthSettings.load(context)
       .then((snapshot) => {
         this.authToken = snapshot.token
+        this.storedUsername = snapshot.username
         this.tokenDraft = ''
         if (snapshot.token) {
+          this.loadNotificationCache(snapshot.username)
           this.refreshAuthProfile(snapshot.token)
           this.refreshTokenInfo(snapshot.token)
         }
@@ -1242,6 +1295,7 @@ struct Index {
         this.authProfile = profile
         this.authToken = token
         this.storedUsername = username
+        this.resetNotificationState()
         return AuthSettings.saveToken(context, token, username)
       })
       .then(() => {
@@ -1262,6 +1316,7 @@ struct Index {
       .then((profile: V2exAuthenticatedMember) => {
         this.authProfile = profile
         this.storedUsername = profile.username || this.storedUsername
+        this.loadNotificationCache(this.storedUsername)
       })
       .catch((error: Error) => {
         this.authError = error.message || '登录状态验证失败'
@@ -1289,6 +1344,9 @@ struct Index {
   private clearAuth(): void {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     AuthSettings.clear(context)
+      .then(() => NotificationSettings.clearCache(context).catch((error: Error) => {
+        this.notificationError = error.message || '清除通知缓存失败'
+      }))
       .then(() => {
         this.authToken = ''
         this.tokenDraft = ''
@@ -1296,11 +1354,7 @@ struct Index {
         this.tokenInfo = null
         this.tokenInfoError = ''
         this.authError = ''
-        this.notifications = []
-        this.notificationError = ''
-        this.notificationPage = 1
-        this.notificationHasMore = true
-        this.isNotificationLoadingMore = false
+        this.resetNotificationState()
       })
       .catch((error: Error) => {
         this.authError = error.message
@@ -1317,7 +1371,8 @@ struct Index {
     Promise.all([
       AuthSettings.clear(context).catch((error: Error) => { this.authError = error.message || '清除 Token 失败' }),
       AuthSessionSettings.clear(context).catch((error: Error) => { this.sessionError = error.message || '清除会话失败' }),
-      CookieJarSettings.clear(context).catch((error: Error) => { this.sessionError = error.message || '清除 Cookie 失败' })
+      CookieJarSettings.clear(context).catch((error: Error) => { this.sessionError = error.message || '清除 Cookie 失败' }),
+      NotificationSettings.clearCache(context).catch((error: Error) => { this.notificationError = error.message || '清除通知缓存失败' })
     ])
       .finally(() => {
         this.authToken = ''
@@ -1325,11 +1380,7 @@ struct Index {
         this.authProfile = null
         this.tokenInfo = null
         this.tokenInfoError = ''
-        this.notifications = []
-        this.notificationError = ''
-        this.notificationPage = 1
-        this.notificationHasMore = true
-        this.isNotificationLoadingMore = false
+        this.resetNotificationState()
       })
   }
 
@@ -1337,7 +1388,7 @@ struct Index {
     if (!this.authTokenConfigured || !this.authToken || this.isNotificationLoading || this.isNotificationLoadingMore) {
       return
     }
-    if (this.notifications.length > 0 && !force) {
+    if (this.notifications.length > 0 && !force && !this.notificationLoadedFromCache) {
       return
     }
     this.isNotificationLoading = true
@@ -1347,7 +1398,10 @@ struct Index {
     this.api.getNotifications(this.authToken, 1)
       .then((items: V2exNotification[]) => {
         this.notifications = items
+        this.notificationPage = 1
         this.notificationHasMore = items.length >= this.NOTIFICATION_PAGE_SIZE
+        this.notificationLoadedFromCache = false
+        this.saveNotificationCache()
       })
       .catch((error: Error) => {
         this.notificationError = error.message || '通知加载失败'
@@ -1380,6 +1434,8 @@ struct Index {
         this.notifications = this.notifications.concat(unique)
         this.notificationPage = nextPage
         this.notificationHasMore = items.length >= this.NOTIFICATION_PAGE_SIZE
+        this.notificationLoadedFromCache = false
+        this.saveNotificationCache()
       })
       .catch((error: Error) => {
         this.notificationError = error.message || '加载更多失败'
@@ -1388,6 +1444,65 @@ struct Index {
       .finally(() => {
         this.isNotificationLoadingMore = false
       })
+  }
+
+  private resetNotificationState(): void {
+    this.notifications = []
+    this.notificationError = ''
+    this.isNotificationLoading = false
+    this.notificationPage = 1
+    this.notificationHasMore = true
+    this.isNotificationLoadingMore = false
+    this.notificationCacheUpdatedAt = 0
+    this.notificationLoadedFromCache = false
+  }
+
+  private loadNotificationCache(username: string): void {
+    const ownerKey = this.notificationOwnerKey(username)
+    if (!ownerKey || (this.notifications.length > 0 && !this.notificationLoadedFromCache)) {
+      return
+    }
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    NotificationSettings.loadCache(context, ownerKey)
+      .then((snapshot) => {
+        this.notificationCacheUpdatedAt = snapshot.updatedAt
+        if (snapshot.items.length === 0 || (this.notifications.length > 0 && !this.notificationLoadedFromCache)) {
+          return
+        }
+        this.notifications = snapshot.items
+        this.notificationPage = snapshot.page
+        this.notificationHasMore = snapshot.hasMore
+        this.notificationLoadedFromCache = true
+      })
+      .catch((error: Error) => {
+        console.error('load notification cache failed: ' + error.message)
+      })
+  }
+
+  private saveNotificationCache(): void {
+    const ownerKey = this.notificationOwnerKey('')
+    if (!ownerKey) {
+      return
+    }
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    NotificationSettings.saveCache(context, ownerKey, this.notifications, this.notificationPage, this.notificationHasMore)
+      .then((snapshot) => {
+        this.notificationCacheUpdatedAt = snapshot.updatedAt
+      })
+      .catch((error: Error) => {
+        console.error('save notification cache failed: ' + error.message)
+      })
+  }
+
+  private notificationOwnerKey(username: string): string {
+    let owner = username.trim()
+    if (!owner) {
+      owner = (this.storedUsername || '').trim()
+    }
+    if (!owner && this.authProfile) {
+      owner = (this.authProfile.username || '').trim()
+    }
+    return owner ? 'member:' + owner : ''
   }
 
   private loadSavedTopics(): void {

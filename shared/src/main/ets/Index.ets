@@ -41,6 +41,8 @@ export { DraftSettings } from './settings/DraftSettings'
 export type { ReplyDraft, TopicDraft } from './settings/DraftSettings'
 export { SearchSettings } from './settings/SearchSettings'
 export type { SearchSourceMode } from './settings/SearchSettings'
+export { NotificationSettings } from './settings/NotificationSettings'
+export type { NotificationCacheSnapshot } from './settings/NotificationSettings'
 export { CacheSettings }
   from './settings/CacheSettings'
 export type { CacheKeyIndex, CacheStats, TopicDetailCache } from './settings/CacheSettings'
