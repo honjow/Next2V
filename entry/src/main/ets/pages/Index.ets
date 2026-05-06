@@ -556,10 +556,7 @@ struct Index {
     return this.authCookieConfigured && !!CookieJarSettings.getCurrentCookie()
   }
 
-  private formatCoinAmount(amount: number, asFraction: boolean = false): string {
-    if (asFraction && amount >= 1) {
-      return (amount / 100).toFixed(2)
-    }
+  private formatCoinAmount(amount: number): string {
     if (amount > 0 && amount < 1) {
       return amount.toFixed(2)
     }
@@ -769,7 +766,7 @@ struct Index {
         if (this.accountBalance.silver > 0) {
           this.CoinAmount('#5C6978', '#F6FAFF', '#9FAFC0', this.accountBalance.silver)
         }
-        this.CoinAmount('#7E4B27', '#D99B65', '#A66B3D', this.accountBalance.bronze, true)
+        this.CoinAmount('#7E4B27', '#D99B65', '#A66B3D', this.accountBalance.bronze)
       }
       .alignItems(VerticalAlign.Center)
       .height(22)
@@ -782,10 +779,10 @@ struct Index {
     }
   }
 
-  @Builder CoinAmount(rimColor: string, faceColor: string, edgeColor: string, amount: number, asFraction: boolean = false) {
+  @Builder CoinAmount(rimColor: string, faceColor: string, edgeColor: string, amount: number) {
     Row({ space: 4 }) {
       CoinIconCanvas({ rimColor, faceColor, edgeColor })
-      Text(this.formatCoinAmount(amount, asFraction))
+      Text(this.formatCoinAmount(amount))
         .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
         .fontColor($r('sys.color.font_secondary'))
         .maxLines(1)
@@ -877,7 +874,7 @@ struct Index {
 
         ListItem() {
           Column() {
-            this.AuthActionRow('查看个人主页', '打开 V2EX 个人资料页', () => {
+            this.AuthActionRow('个人主页', '', () => {
               const username = this.currentUsername()
               if (username) {
                 let p: UserProfileParams = { username: username }
@@ -885,15 +882,15 @@ struct Index {
               }
             })
             this.SettingsDivider()
-            this.AuthActionRow('余额明细', '在浏览器中打开 V2EX 余额页面', () => {
+            this.AuthActionRow('余额明细', '', () => {
               this.openV2exPathInSystemBrowser('/balance')
             })
             this.SettingsDivider()
-            this.AuthActionRow('网页账号设置', '在浏览器中打开 V2EX 设置页面', () => {
+            this.AuthActionRow('网页账号设置', '', () => {
               this.openV2exPathInSystemBrowser('/settings')
             })
             this.SettingsDivider()
-            this.AuthActionRow('重新登录', '账号密码登录或切换到网页登录', () => { this.ns.pushPathByName('V2exNativeLogin', null) })
+            this.AuthActionRow('重新登录', '', () => { this.ns.pushPathByName('V2exNativeLogin', null) })
             this.SettingsDivider()
             Row() {
               Text('退出登录')
