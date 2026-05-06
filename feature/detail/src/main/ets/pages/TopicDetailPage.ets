@@ -286,7 +286,6 @@ export struct TopicDetailPage {
       Flex({ direction: FlexDirection.Row, wrap: FlexWrap.Wrap }) {
         this.ReplyActionChip('只看楼主', this.v.onlyOp, () => { this.toggleOnlyOp() })
         this.ReplyActionChip('楼层', false, () => { this.openJumpToFloorDialog() })
-        this.ReplyActionChip('顶部', false, () => { this.scrollToTop() })
         this.ReplyActionChip('最新', false, () => { this.scrollToLatestReply() })
       }
       .width('100%')
