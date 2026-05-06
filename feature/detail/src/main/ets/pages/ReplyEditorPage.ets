@@ -6,6 +6,7 @@ import { ApiService, CookieJarSettings, DateUtils, DraftSettings, MarkdownConten
 export struct ReplyEditorPage {
   @Prop topicId: number = 0
   @Prop topicTitle: string = ''
+  @Prop initialContent: string = ''
   @Consume('ns') stack: NavPathStack
   @StorageLink(StorageKeys.ACCOUNT_WRITE_ENABLED) writeEnabled: boolean = false
   @StorageProp(StorageKeys.TOP_AVOID_HEIGHT) topH: number = 0
@@ -38,11 +39,20 @@ export struct ReplyEditorPage {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     DraftSettings.loadReplyDraft(context, this.topicId)
       .then((draft) => {
+        const seed = this.normalizeInitialContent(this.initialContent)
+        const draftContent = draft ? (draft.content || '') : ''
+        const merged = this.mergeInitialContent(draftContent, seed)
         if (draft) {
-          this.content = draft.content || ''
+          this.content = merged
           this.savedAt = draft.updatedAt || 0
-          this.contentSelectionStart = this.content.length
-          this.contentSelectionEnd = this.content.length
+        } else {
+          this.content = merged
+          this.savedAt = 0
+        }
+        this.contentSelectionStart = this.content.length
+        this.contentSelectionEnd = this.content.length
+        if (seed && merged !== draftContent) {
+          this.scheduleSaveDraft()
         }
       })
       .catch((error: Error) => {
@@ -194,6 +204,39 @@ export struct ReplyEditorPage {
     setTimeout(() => {
       this.contentController.caretPosition(caret)
     }, 0)
+  }
+
+  private normalizeInitialContent(value: string): string {
+    const clean = (value || '').trim()
+    return clean ? `${clean} ` : ''
+  }
+
+  private mergeInitialContent(draftContent: string, seed: string): string {
+    const draft = draftContent || ''
+    if (!seed) {
+      return draft
+    }
+    if (this.containsInitialSeed(draft, seed)) {
+      return draft
+    }
+    if (draft.trim().length === 0) {
+      return seed
+    }
+    return `${draft.replace(/\s+$/g, '')}\n\n${seed}`
+  }
+
+  private containsInitialSeed(draftContent: string, seed: string): boolean {
+    const target = seed.trim()
+    if (!target) {
+      return false
+    }
+    const parts = (draftContent || '').split(/\s+/)
+    for (let i = 0; i < parts.length; i++) {
+      if (parts[i] === target) {
+        return true
+      }
+    }
+    return false
   }
 
   private scheduleSaveDraft(): void {

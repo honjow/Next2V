@@ -13,6 +13,7 @@ import {
 interface ReplyEditorParams {
   topicId: number
   topicTitle: string
+  initialContent?: string
 }
 
 @Component
@@ -85,9 +86,9 @@ export struct TopicDetailPage {
     this.stack.pushPathByName('ImagePreview', p as Object)
   }
 
-  private openReplyEditor(): void {
+  private openReplyEditor(initialContent: string = ''): void {
     const title = (this.v.topic?.title || '').trim()
-    let p: ReplyEditorParams = { topicId: this.topicId, topicTitle: title }
+    let p: ReplyEditorParams = { topicId: this.topicId, topicTitle: title, initialContent: initialContent }
     this.stack.pushPathByName('ReplyEditor', p as Object)
   }
 
@@ -172,6 +173,8 @@ export struct TopicDetailPage {
                 let p: UserProfileParams = { username: reply.member.username }
                 this.stack.pushPathByName('UserProfile', p as Object)
               },
+              onMentionClick: () => { this.openReplyEditor(this.getMentionText(reply.member.username)) },
+              onCopyUserClick: () => { this.copyToClipboard(reply.member.username || '') },
               onImageClick: (url: string) => { this.openImagePreview(url) }
             })
           }
@@ -603,6 +606,11 @@ export struct TopicDetailPage {
     let data = pasteboard.createData(pasteboard.MIMETYPE_TEXT_PLAIN, content)
     pasteboard.getSystemPasteboard().setDataSync(data)
     promptAction.openToast({ message: '已复制' }).catch((_error: Error) => { })
+  }
+
+  private getMentionText(username: string): string {
+    const clean = (username || '').trim()
+    return clean ? `@${clean} ` : ''
   }
 
   private openInSystemBrowser(url: string): void {

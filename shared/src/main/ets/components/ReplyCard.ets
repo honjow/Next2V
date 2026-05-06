@@ -10,6 +10,8 @@ export struct ReplyCard {
   @Prop floor: number = 1
   @Prop isOp: boolean = false
   onUserClick?: () => void
+  onMentionClick?: () => void
+  onCopyUserClick?: () => void
   onImageClick?: (url: string) => void
 
   build() {
@@ -65,13 +67,52 @@ export struct ReplyCard {
         TimeAgo({ timestamp: this.reply.created })
 
         if (this.reply.thanks > 0) {
-          Blank()
+          Text('·')
+            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+            .fontColor($r('sys.color.font_secondary'))
+            .margin({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM })
           SymbolGlyph($r('sys.symbol.heart_fill'))
             .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
             .fontColor([$r('sys.color.font_emphasize')])
           Text(` ${this.reply.thanks}`)
             .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
             .fontColor($r('sys.color.font_emphasize'))
+        }
+
+        Blank()
+
+        if (this.onMentionClick) {
+          Button() {
+            Text('@')
+              .fontSize(ThemeConstants.FONT_SIZE_META)
+              .fontWeight(FontWeight.Medium)
+              .fontColor($r('sys.color.font_secondary'))
+          }
+          .type(ButtonType.Normal)
+          .width(30)
+          .height(28)
+          .borderRadius(ThemeConstants.RADIUS_SM)
+          .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+          .onClick(() => {
+            if (this.onMentionClick) { this.onMentionClick() }
+          })
+        }
+
+        if (this.onCopyUserClick) {
+          Button() {
+            SymbolGlyph($r('sys.symbol.plus_square_on_square'))
+              .fontSize(ThemeConstants.FONT_SIZE_META)
+              .fontColor([$r('sys.color.font_secondary')])
+          }
+          .type(ButtonType.Normal)
+          .width(30)
+          .height(28)
+          .borderRadius(ThemeConstants.RADIUS_SM)
+          .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+          .margin({ left: ThemeConstants.SPACE_XS })
+          .onClick(() => {
+            if (this.onCopyUserClick) { this.onCopyUserClick() }
+          })
         }
       }
       .width('100%')

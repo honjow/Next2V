@@ -221,7 +221,8 @@ struct Index {
       HdsNavDestination() {
         ReplyEditorPage({
           topicId: ((param as Record<string, Object>)['topicId'] as number) || 0,
-          topicTitle: ((param as Record<string, Object>)['topicTitle'] as string) || ''
+          topicTitle: ((param as Record<string, Object>)['topicTitle'] as string) || '',
+          initialContent: ((param as Record<string, Object>)['initialContent'] as string) || ''
         })
       }.titleBar(this.navDestTitleBarOpts('回复'))
     } else if (name === 'UserProfile') {
