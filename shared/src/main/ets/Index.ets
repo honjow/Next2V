@@ -69,6 +69,8 @@ export { V2exNotificationParser } from './parser/V2exNotificationParser'
 export { V2exSessionParser } from './parser/V2exSessionParser'
 export { V2exSigninParser } from './parser/V2exSigninParser'
 export type { V2exSigninForm } from './parser/V2exSigninParser'
+export { V2exNodeParser } from './parser/V2exNodeParser'
+export type { V2exFavoriteNode } from './parser/V2exNodeParser'
 
 // 工具
 export { DateUtils } from './utils/DateUtils'

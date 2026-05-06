@@ -27,6 +27,7 @@ import { SearchPage } from './SearchPage'
 import { TopicEditorPage } from './TopicEditorPage'
 import { MyTopicsPage } from './MyTopicsPage'
 import { MyRepliesPage } from './MyRepliesPage'
+import { MyNodesPage } from './MyNodesPage'
 
 @Component
 struct CoinIconCanvas {
@@ -232,12 +233,15 @@ struct Index {
     } else if (name === 'TopicEditor') {
       HdsNavDestination() { TopicEditorPage() }
         .titleBar(this.navDestTitleBarOpts('发帖草稿'))
-      } else if (name === 'MyTopics') {
-        HdsNavDestination() { MyTopicsPage() }
+    } else if (name === 'MyTopics') {
+      HdsNavDestination() { MyTopicsPage() }
         .titleBar(this.navDestTitleBarOpts('收藏主题'))
-      } else if (name === 'MyReplies') {
-        HdsNavDestination() { MyRepliesPage() }
+    } else if (name === 'MyReplies') {
+      HdsNavDestination() { MyRepliesPage() }
         .titleBar(this.navDestTitleBarOpts('我的回复'))
+    } else if (name === 'MyNodes') {
+      HdsNavDestination() { MyNodesPage() }
+        .titleBar(this.navDestTitleBarOpts('收藏节点'))
     } else if (name === 'Settings') {
       HdsNavDestination() { SettingsPage() }
         .titleBar(this.navDestTitleBarOpts('设置'))
@@ -947,6 +951,10 @@ struct Index {
       this.SettingsDivider()
       this.AuthActionRow('我的回复', '从 V2EX 同步你的回复记录', () => {
         this.ns.pushPathByName('MyReplies', null)
+      })
+      this.SettingsDivider()
+      this.AuthActionRow('收藏节点', '从 V2EX 同步你收藏的节点', () => {
+        this.ns.pushPathByName('MyNodes', null)
       })
     }
     .width('100%')

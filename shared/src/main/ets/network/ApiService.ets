@@ -4,6 +4,7 @@ import { V2exTabParser } from '../parser/V2exTabParser'
 import { V2exNotificationParser } from '../parser/V2exNotificationParser'
 import { V2exAccountParser } from '../parser/V2exAccountParser'
 import { V2exSessionParser } from '../parser/V2exSessionParser'
+import { V2exNodeParser, type V2exFavoriteNode } from '../parser/V2exNodeParser'
 import type {
   V2exTopic,
   V2exReply,
@@ -152,6 +153,17 @@ export class ApiService {
       return []
     }
     return this.getTopicsByIds(ids)
+  }
+
+  async getMyFavoriteNodesWithCookie(cookie: string): Promise<V2exFavoriteNode[]> {
+    if (!cookie) {
+      throw new Error('请先登录')
+    }
+    const html = await this.http.getTextWithHeaders('/my/nodes', { 'Cookie': cookie })
+    if (!V2exSessionParser.extractUsername(html)) {
+      throw new Error('Web 会话已失效，请重新登录')
+    }
+    return V2exNodeParser.extractFavoriteNodes(html)
   }
 
   // ==================== Tab 聚合接口 ====================
