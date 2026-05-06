@@ -79,6 +79,7 @@ export type { V2exToggleAction } from './parser/V2exCollectionActionParser'
 // 工具
 export { DateUtils } from './utils/DateUtils'
 export { ImageUtils } from './utils/ImageUtils'
+export { MediaUrlUtils } from './utils/MediaUrlUtils'
 export { NodeSearchUtils } from './utils/NodeSearchUtils'
 export type { NodeSearchMatch } from './utils/NodeSearchUtils'
 

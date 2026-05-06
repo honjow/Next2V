@@ -5,6 +5,7 @@ import { LengthMetrics, promptAction } from "@kit.ArkUI";
 import { StorageKeys } from "../constants/StorageKeys";
 import { ReadingSettings } from "../settings/ReadingSettings";
 import { ThemeConstants } from "../theme/ThemeConstants";
+import { MediaUrlUtils } from "../utils/MediaUrlUtils";
 
 // Custom token types used to hijack @lidary/markdown's built-in rendering.
 // By changing a token's type before passing it to the Markdown component,
@@ -16,39 +17,6 @@ const IMAGE_BLOCK_MONO = "customImageBlock";
 type TokenValue = Object | null | undefined;
 type TokenRecord = Record<string, TokenValue>;
 
-const _imageExtRegex = /\.(jpe?g|png|gif|webp)(?:[?#].*)?$/i;
-const _imageHostPrefixes: string[] = [
-  "https://i.imgur.com/",
-  "http://i.imgur.com/",
-  "https://sm.ms/",
-  "http://sm.ms/",
-  "https://s2.loli.net/",
-  "http://s2.loli.net/",
-  "https://v2ex.assets.uxengine.net/",
-  "http://v2ex.assets.uxengine.net/",
-  "https://i.v2ex.co/",
-  "http://i.v2ex.co/",
-  "https://i.v2ex.com/",
-  "http://i.v2ex.com/",
-  "https://raw.githubusercontent.com/",
-  "http://raw.githubusercontent.com/",
-  "https://pbs.twimg.com/media/",
-  "http://pbs.twimg.com/media/",
-  "https://github.com/user-attachments/assets/",
-  "http://github.com/user-attachments/assets/",
-];
-
-function _normalizeUrl(raw: string): string {
-  const url = (raw ?? "").trim();
-  if (!url) {
-    return "";
-  }
-  if (url.startsWith("//")) {
-    return `https:${url}`;
-  }
-  return url;
-}
-
 function _appendCacheBust(url: string, nonce: number): string {
   if (!url) {
     return "";
@@ -58,20 +26,6 @@ function _appendCacheBust(url: string, nonce: number): string {
   }
   const sep = url.indexOf("?") >= 0 ? "&" : "?";
   return `${url}${sep}_r=${nonce}`;
-}
-
-function _isProbablyImageUrl(raw: string): boolean {
-  const url = _normalizeUrl(raw);
-  if (!url) {
-    return false;
-  }
-  if (url.startsWith("http://") || url.startsWith("https://")) {
-    if (_imageExtRegex.test(url)) {
-      return true;
-    }
-    return _imageHostPrefixes.some(prefix => url.startsWith(prefix));
-  }
-  return false;
 }
 
 type CodeHighLight = "string" | "text" | "keyword" | "type" | "symbol" | "number" | "boolean";
@@ -295,7 +249,7 @@ function CustomBlockBuilder(token: Token, options: MarkdownOptions) {
   } else if (token.type === LIST_MONO) {
     CustomList({ listToken: token as Tokens.List, options: options });
   } else if (token.type === IMAGE_BLOCK_MONO) {
-    MarkdownAutoImage({ url: _normalizeUrl((token as Tokens.Image).href), options: options });
+    MarkdownAutoImage({ url: MediaUrlUtils.normalizeUrl((token as Tokens.Image).href), options: options });
   }
 }
 
@@ -753,7 +707,7 @@ struct CustomList {
                         .width("100%");
                       }
                       ForEach(this.paragraphImageTokens(child), (img: Tokens.Image, imgIdx: number) => {
-                        MarkdownAutoImage({ url: _normalizeUrl(img.href), options: this.options });
+                        MarkdownAutoImage({ url: MediaUrlUtils.normalizeUrl(img.href), options: this.options });
                       }, (img: Tokens.Image, imgIdx: number) => `${img.href}-${imgIdx}`)
                     }.width("100%");
                   } else {
@@ -996,10 +950,10 @@ export struct MarkdownContent {
     }
 
     if (onlyType === "link") {
-      const href = _normalizeUrl(String(only["href"] ?? ""));
+      const href = MediaUrlUtils.normalizeUrl(String(only["href"] ?? ""));
       const text = String(only["text"] ?? "").trim();
-      const normalizedText = _normalizeUrl(text);
-      if (!_isProbablyImageUrl(href)) {
+      const normalizedText = MediaUrlUtils.normalizeUrl(text);
+      if (!MediaUrlUtils.isProbablyImageUrl(href)) {
         return;
       }
       if (text.length > 0 && normalizedText !== href) {
@@ -1015,8 +969,8 @@ export struct MarkdownContent {
 
     if (onlyType === "text") {
       const rawText = String(only["text"] ?? "").trim();
-      const href = _normalizeUrl(rawText);
-      if (!_isProbablyImageUrl(href)) {
+      const href = MediaUrlUtils.normalizeUrl(rawText);
+      if (!MediaUrlUtils.isProbablyImageUrl(href)) {
         return;
       }
       const imageToken: Tokens.Image = {
@@ -1083,7 +1037,7 @@ export struct MarkdownContent {
             linkColor: ThemeConstants.TEXT_LINK,
           },
           imageClick: (url?: string) => {
-            const normalized = _normalizeUrl(url ?? "");
+            const normalized = MediaUrlUtils.normalizeUrl(url ?? "");
             if (normalized && this.onImageClick) {
               this.onImageClick(normalized);
             }
