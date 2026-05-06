@@ -55,6 +55,7 @@ interface RemoteTopicItem {
 }
 
 type SearchResultFilter = 'all' | 'topics' | 'nodes' | 'users'
+type RemoteDateRange = 'all' | 'day' | 'week' | 'month' | 'year'
 
 @Component
 export struct SearchPage {
@@ -88,6 +89,7 @@ export struct SearchPage {
   @State private remoteOrder: Sov2exOrderMode = '0'
   @State private remoteUsername: string = ''
   @State private remoteNode: string = ''
+  @State private remoteDateRange: RemoteDateRange = 'all'
   @StorageProp(StorageKeys.TOP_AVOID_HEIGHT) topH: number = 0
   @StorageProp(StorageKeys.BOTTOM_AVOID_HEIGHT) bottomH: number = 0
 
@@ -511,6 +513,15 @@ export struct SearchPage {
         }
       }
       .width('100%')
+
+      Row({ space: ThemeConstants.SPACE_XS }) {
+        this.RemoteDateButton('all', '不限')
+        this.RemoteDateButton('day', '一天')
+        this.RemoteDateButton('week', '一周')
+        this.RemoteDateButton('month', '一月')
+        this.RemoteDateButton('year', '一年')
+      }
+      .width('100%')
     }
     .width('100%')
   }
@@ -524,6 +535,24 @@ export struct SearchPage {
       .fontColor(selected ? Color.White : $r('sys.color.font_primary'))
       .backgroundColor(selected ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.ohos_id_color_button_normal'))
       .onClick(() => { action() })
+  }
+
+  @Builder RemoteDateButton(range: RemoteDateRange, label: string) {
+    Button(label)
+      .fontSize(ThemeConstants.FONT_SIZE_TAG)
+      .height(ThemeConstants.TOUCH_TARGET_SM)
+      .type(ButtonType.Normal)
+      .borderRadius(ThemeConstants.RADIUS_MD)
+      .fontColor(this.remoteDateRange === range ? Color.White : $r('sys.color.font_primary'))
+      .backgroundColor(this.remoteDateRange === range ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.ohos_id_color_button_normal'))
+      .layoutWeight(1)
+      .onClick(() => {
+        if (this.remoteDateRange === range) {
+          return
+        }
+        this.remoteDateRange = range
+        this.executeRemoteSearch(true)
+      })
   }
 
   @Builder ResultFilterControls() {
@@ -1020,7 +1049,8 @@ export struct SearchPage {
       sort: this.remoteSort,
       order: this.remoteOrder,
       username: this.remoteUsername.trim(),
-      node: this.remoteNode.trim()
+      node: this.remoteNode.trim(),
+      gte: this.remoteGte()
     })
       .then((response) => {
         const hits = response.hits || []
@@ -1083,14 +1113,33 @@ export struct SearchPage {
   }
 
   private hasRemoteFilters(): boolean {
-    return this.remoteUsername.trim().length > 0 || this.remoteNode.trim().length > 0
+    return this.remoteUsername.trim().length > 0 || this.remoteNode.trim().length > 0 || this.remoteDateRange !== 'all'
   }
 
   private clearRemoteFilters(): void {
     this.remoteUsername = ''
     this.remoteNode = ''
+    this.remoteDateRange = 'all'
     this.resetRemoteResults()
     this.executeRemoteSearch(true)
+  }
+
+  private remoteGte(): number {
+    if (this.remoteDateRange === 'all') {
+      return 0
+    }
+    const now = Math.floor(Date.now() / 1000)
+    const day = 24 * 60 * 60
+    if (this.remoteDateRange === 'day') {
+      return now - day
+    }
+    if (this.remoteDateRange === 'week') {
+      return now - 7 * day
+    }
+    if (this.remoteDateRange === 'month') {
+      return now - 30 * day
+    }
+    return now - 365 * day
   }
 
   private static savedNodeToV2exNode(item: SavedNode): V2exNode {
