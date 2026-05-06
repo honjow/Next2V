@@ -489,15 +489,29 @@ struct Index {
         }
           .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
 
-        ListItem() {
-          this.SectionHeader('账号内容')
-        }
-          .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, top: ThemeConstants.SPACE_MD })
+        if (this.hasCookieAccount()) {
+          ListItem() {
+            this.SectionHeader('账号内容')
+          }
+            .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, top: ThemeConstants.SPACE_MD })
 
-        ListItem() {
-          this.AccountContentSection()
+          ListItem() {
+            this.AccountContentSection()
+          }
+            .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
         }
-          .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
+
+        if (this.authTokenConfigured) {
+          ListItem() {
+            this.SectionHeader('高级 API')
+          }
+            .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, top: ThemeConstants.SPACE_MD })
+
+          ListItem() {
+            this.ApiAuthorizationEntrySection()
+          }
+            .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
+        }
 
         ListItem() {
           this.SectionHeader('本地内容')
@@ -539,6 +553,10 @@ struct Index {
     return (this.authTokenConfigured && !!this.authToken) || (this.authCookieConfigured && !!CookieJarSettings.getCurrentCookie())
   }
 
+  private hasCookieAccount(): boolean {
+    return this.authCookieConfigured && !!CookieJarSettings.getCurrentCookie()
+  }
+
   private canDeleteNotifications(): boolean {
     return this.authTokenConfigured && !!this.authToken
   }
@@ -569,6 +587,12 @@ struct Index {
   }
 
   private accountMetaText(): string {
+    if (!this.hasCookieAccount()) {
+      if (this.authTokenConfigured) {
+        return 'API 授权已配置'
+      }
+      return ''
+    }
     if (this.accountBalance) {
       return this.accountBalance.summary
     }
@@ -592,7 +616,7 @@ struct Index {
   }
 
   private dailyMissionEnabled(): boolean {
-    return this.authCookieConfigured && !!CookieJarSettings.getCurrentCookie() &&
+    return this.hasCookieAccount() &&
       !this.isAccountMetaLoading && !this.isDailyRedeeming &&
       (!this.dailyMission || this.dailyMission.canRedeem)
   }
@@ -619,6 +643,10 @@ struct Index {
 
   private tokenLastUsed(): number {
     return this.tokenInfo?.last_used || 0
+  }
+
+  private hasApiRateLimitSnapshot(): boolean {
+    return this.apiRateLimitLimit > 0 || this.apiRateLimitUpdatedAt > 0 || this.apiRateLimitReset > 0
   }
 
   private loadSessionSnapshot(): void {
@@ -878,6 +906,18 @@ struct Index {
         }
         .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
 
+        if (this.authTokenConfigured) {
+          ListItem() {
+            this.SectionHeader('高级 API')
+          }
+            .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, top: ThemeConstants.SPACE_MD })
+
+          ListItem() {
+            this.ApiDiagnosticsSection()
+          }
+            .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
+        }
+
         ListItem() { Column() { Blank().height(this.bottomH + ThemeConstants.SPACE_MD) } }
       }
       .scrollBar(BarState.Off)
@@ -944,7 +984,7 @@ struct Index {
   @Builder TokenSummary() {
     Column({ space: ThemeConstants.SPACE_XS }) {
       if (this.tokenScope()) {
-        Text(`Token Scope: ${this.tokenScope()}`)
+        Text(`Token 权限: ${this.tokenScope()}`)
           .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
           .fontColor($r('sys.color.font_secondary'))
       }
@@ -966,9 +1006,11 @@ struct Index {
 
   @Builder RateLimitSummary() {
     Column({ space: ThemeConstants.SPACE_XS }) {
-      Text(`API Rate Limit: ${this.apiRateLimitRemaining} / ${this.apiRateLimitLimit}`)
-        .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-        .fontColor($r('sys.color.font_secondary'))
+      if (this.apiRateLimitLimit > 0) {
+        Text(`API 额度: ${this.apiRateLimitRemaining} / ${this.apiRateLimitLimit}`)
+          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+          .fontColor($r('sys.color.font_secondary'))
+      }
       if (this.apiRateLimitReset > 0) {
         Text(`重置时间: ${DateUtils.toDateString(this.apiRateLimitReset)}`)
           .fontSize(ThemeConstants.FONT_SIZE_TINY)
@@ -1005,6 +1047,73 @@ struct Index {
       this.AuthActionRow('收藏节点', '从 V2EX 同步你收藏的节点', () => {
         this.ns.pushPathByName('MyNodes', null)
       })
+    }
+    .width('100%')
+    .alignItems(HorizontalAlign.Start)
+    .borderRadius(ThemeConstants.RADIUS_MD)
+    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+  }
+
+  @Builder ApiAuthorizationEntrySection() {
+    Column() {
+      this.AuthActionRow('API 授权', '用于通知删除等 API v2 高级能力', () => {
+        this.ns.pushPathByName('Account', null)
+      })
+    }
+    .width('100%')
+    .alignItems(HorizontalAlign.Start)
+    .borderRadius(ThemeConstants.RADIUS_MD)
+    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+  }
+
+  @Builder ApiDiagnosticsSection() {
+    Column() {
+      Row({ space: ThemeConstants.SPACE_SM }) {
+        Column({ space: ThemeConstants.SPACE_XS }) {
+          Text('Personal Access Token')
+            .fontSize(ThemeConstants.FONT_SIZE_META)
+            .fontWeight(FontWeight.Medium)
+            .fontColor($r('sys.color.font_primary'))
+          Text('已保存，仅用于 V2EX API v2 高级能力')
+            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+            .fontColor($r('sys.color.font_secondary'))
+        }
+        .layoutWeight(1)
+        .alignItems(HorizontalAlign.Start)
+      }
+      .width('100%')
+      .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG, top: ThemeConstants.SPACE_MD, bottom: ThemeConstants.SPACE_SM })
+
+      if (this.tokenInfoError) {
+        Text(this.tokenInfoError)
+          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+          .fontColor(Color.Red)
+          .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG, bottom: ThemeConstants.SPACE_SM })
+      }
+
+      if (this.tokenInfo) {
+        this.TokenSummary()
+      }
+
+      if (this.hasApiRateLimitSnapshot()) {
+        this.SettingsDivider()
+        this.RateLimitSummary()
+      }
+
+      this.SettingsDivider()
+      Row() {
+        Text('清除 API 授权')
+          .fontSize(ThemeConstants.FONT_SIZE_BODY)
+          .fontWeight(FontWeight.Medium)
+          .fontColor(Color.Red)
+          .layoutWeight(1)
+        Text('›')
+          .fontSize(ThemeConstants.FONT_SIZE_TITLE)
+          .fontColor($r('sys.color.font_secondary'))
+      }
+      .width('100%')
+      .padding(ThemeConstants.SPACE_LG)
+      .onClick(() => { this.confirmClearAuth() })
     }
     .width('100%')
     .alignItems(HorizontalAlign.Start)
@@ -1629,7 +1738,24 @@ struct Index {
       })
   }
 
+  private confirmClearAuth(): void {
+    if (!this.authTokenConfigured || this.isAuthLoading) {
+      return
+    }
+    AlertDialog.show({
+      title: '清除 API 授权',
+      message: '仅清除本地保存的 Personal Access Token，不会退出网页登录。',
+      primaryButton: { value: '取消', action: () => { } },
+      secondaryButton: {
+        value: '清除',
+        fontColor: Color.Red,
+        action: () => { this.clearAuth() }
+      }
+    })
+  }
+
   private clearAuth(): void {
+    const keepCookieAccount = this.hasCookieAccount()
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     AuthSettings.clear(context)
       .then(() => NotificationSettings.clearCache(context).catch((error: Error) => {
@@ -1642,10 +1768,18 @@ struct Index {
         this.tokenInfo = null
         this.tokenInfoError = ''
         this.authError = ''
-        this.accountBalance = null
-        this.dailyMission = null
-        this.accountMetaError = ''
+        if (!keepCookieAccount) {
+          this.accountBalance = null
+          this.dailyMission = null
+          this.accountMetaError = ''
+        }
         this.resetNotificationState()
+        if (keepCookieAccount) {
+          this.loadAccountMeta(true)
+          if (this.ct === 2) {
+            this.loadNotifications(true)
+          }
+        }
       })
       .catch((error: Error) => {
         this.authError = error.message

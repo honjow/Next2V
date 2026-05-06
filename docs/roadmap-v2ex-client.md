@@ -135,8 +135,9 @@ Important API constraint:
 Goal: make normal Cookie login useful beyond showing "logged in".
 
 Status: collected topics, replies, collected nodes, account metadata, browser
-fallback links, and session invalidation paths are implemented. Remaining work is
-mostly deeper account management and multi-account polish.
+fallback links, session invalidation paths, and advanced-only PAT diagnostics are
+implemented. Remaining work is mostly deeper account management and multi-account
+polish.
 
 Tasks:
 
@@ -149,7 +150,7 @@ Tasks:
   action, and no stale "logged in" UI.
 - [x] Tighten WebView cookie save validation so a random non-empty cookie is not
   treated as a valid login.
-- [ ] Keep PAT metadata visible only as advanced/debug account info.
+- [x] Keep PAT metadata visible only as advanced/debug account info.
 
 Validation:
 
