@@ -64,6 +64,8 @@ export type { V2exSigninForm } from './parser/V2exSigninParser'
 // 工具
 export { DateUtils } from './utils/DateUtils'
 export { ImageUtils } from './utils/ImageUtils'
+export { NodeSearchUtils } from './utils/NodeSearchUtils'
+export type { NodeSearchMatch } from './utils/NodeSearchUtils'
 
 // 自适应工具
 export { BreakpointSystem } from './utils/BreakpointSystem'

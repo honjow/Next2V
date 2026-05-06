@@ -3,12 +3,16 @@ import {
   CacheSettings,
   type CacheKeyIndex,
   CollectionSettings,
+  ApiService,
+  NodeSearchUtils,
   type NodeTopicListParams,
   type SavedNode,
   type SavedTopic,
   SearchSettings,
+  StorageKeys,
   ThemeConstants,
   type TopicDetailParams,
+  type V2exNode,
   type ViewedTopic
 } from 'shared'
 
@@ -28,6 +32,7 @@ interface SearchNodeItem {
   topics: number
   source: string
   updatedAt: number
+  score: number
 }
 
 @Component
@@ -40,6 +45,8 @@ export struct SearchPage {
   @State private savedTopics: SavedTopic[] = []
   @State private viewedTopics: ViewedTopic[] = []
   @State private savedNodes: SavedNode[] = []
+  @State private allNodes: V2exNode[] = []
+  @State private isNodeIndexLoading: boolean = false
 
   @State private cacheTopicLists: SearchTopicItem[] = []
   @State private cacheTopicDetails: SearchTopicItem[] = []
@@ -49,12 +56,17 @@ export struct SearchPage {
 
   @State private topicResults: SearchTopicItem[] = []
   @State private nodeResults: SearchNodeItem[] = []
+  @StorageProp(StorageKeys.TOP_AVOID_HEIGHT) topH: number = 0
+  @StorageProp(StorageKeys.BOTTOM_AVOID_HEIGHT) bottomH: number = 0
+
+  private api: ApiService = new ApiService()
 
   aboutToAppear(): void {
     this.keyword = ''
     this.errorMessage = ''
     this.loadLocalCollections()
     this.loadCacheCollections()
+    this.loadNodeIndex()
     this.loadHistory()
   }
 
@@ -69,12 +81,17 @@ export struct SearchPage {
         .fontWeight(FontWeight.Medium)
         .fontColor($r('sys.color.font_primary'))
 
-      Text('在收藏 / 最近浏览 / 关注节点 / 离线缓存中搜索')
+      Text('在收藏 / 最近浏览 / 关注节点 / 离线缓存 / 节点库中搜索')
         .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
         .fontColor($r('sys.color.font_secondary'))
 
       if (this.isCacheLoading) {
         Text('正在加载离线缓存索引…')
+          .fontSize(ThemeConstants.FONT_SIZE_TINY)
+          .fontColor($r('sys.color.font_secondary'))
+      }
+      if (this.isNodeIndexLoading) {
+        Text('正在加载节点索引…')
           .fontSize(ThemeConstants.FONT_SIZE_TINY)
           .fontColor($r('sys.color.font_secondary'))
       }
@@ -163,7 +180,7 @@ export struct SearchPage {
               .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
               .fontColor($r('sys.color.font_secondary'))
             if (this.nodeResults.length === 0) {
-              Text(this.keyword.trim() ? '没有匹配的节点' : '你关注的节点会出现在这里')
+              Text(this.keyword.trim() ? '没有匹配的节点' : '节点库和你关注的节点会出现在这里')
                 .fontSize(ThemeConstants.FONT_SIZE_BODY)
                 .fontColor($r('sys.color.font_secondary'))
                 .padding({ top: ThemeConstants.SPACE_SM, bottom: ThemeConstants.SPACE_SM })
@@ -192,7 +209,12 @@ export struct SearchPage {
       }
       .width('100%')
     }
-    .padding(ThemeConstants.SPACE_LG)
+    .padding({
+      left: ThemeConstants.SPACE_LG,
+      right: ThemeConstants.SPACE_LG,
+      top: this.topH + ThemeConstants.TITLE_BAR_HEIGHT + ThemeConstants.SPACE_LG,
+      bottom: this.bottomH + ThemeConstants.SPACE_LG
+    })
     .width('100%')
     .height('100%')
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
@@ -326,6 +348,21 @@ export struct SearchPage {
       })
   }
 
+  private loadNodeIndex(): void {
+    this.isNodeIndexLoading = true
+    this.api.getAllNodes()
+      .then((nodes: V2exNode[]) => {
+        this.allNodes = NodeSearchUtils.sortByPopularity(nodes)
+        this.applyFilter()
+      })
+      .catch((_error: Error) => {
+        this.allNodes = []
+      })
+      .finally(() => {
+        this.isNodeIndexLoading = false
+      })
+  }
+
   private loadHistory(): void {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     SearchSettings.loadHistory(context)
@@ -450,21 +487,54 @@ export struct SearchPage {
     this.topicResults = Array.from(bag.values())
       .sort((a: SearchTopicItem, b: SearchTopicItem) => b.updatedAt - a.updatedAt)
 
-    const nodeBag: SearchNodeItem[] = []
+    const nodeBag = new Map<string, SearchNodeItem>()
     for (const item of this.savedNodes) {
+      const node = SearchPage.savedNodeToV2exNode(item)
+      const score = NodeSearchUtils.scoreNode(node, q)
+      if (score <= 0) {
+        continue
+      }
       const n: SearchNodeItem = {
         name: item.name,
         title: item.title,
         topics: item.topics,
         source: '关注',
-        updatedAt: item.savedAt || 0
+        updatedAt: item.savedAt || 0,
+        score: score + 1200
       }
-      if (!SearchPage.nodeMatches(n, q)) {
-        continue
-      }
-      nodeBag.push(n)
+      nodeBag.set(n.name, n)
     }
-    this.nodeResults = nodeBag.sort((a: SearchNodeItem, b: SearchNodeItem) => b.updatedAt - a.updatedAt)
+
+    for (const match of NodeSearchUtils.search(this.allNodes, q).slice(0, 120)) {
+      const node = match.node
+      const existing = nodeBag.get(node.name)
+      if (!existing) {
+        nodeBag.set(node.name, {
+          name: node.name,
+          title: node.title,
+          topics: node.topics,
+          source: '节点库',
+          updatedAt: 0,
+          score: match.score
+        })
+      } else {
+        existing.title = existing.title || node.title
+        existing.topics = Math.max(existing.topics, node.topics)
+        existing.source = SearchPage.mergeSource(existing.source, '节点库')
+        existing.score = Math.max(existing.score, match.score + 1200)
+      }
+    }
+
+    this.nodeResults = Array.from(nodeBag.values())
+      .sort((a: SearchNodeItem, b: SearchNodeItem) => {
+        if (b.score !== a.score) {
+          return b.score - a.score
+        }
+        if (b.updatedAt !== a.updatedAt) {
+          return b.updatedAt - a.updatedAt
+        }
+        return b.topics - a.topics
+      })
   }
 
   private static topicMatches(item: SearchTopicItem, q: string): boolean {
@@ -483,13 +553,6 @@ export struct SearchPage {
     return item.username.toLowerCase().includes(q)
   }
 
-  private static nodeMatches(item: SearchNodeItem, q: string): boolean {
-    if (item.name.toLowerCase().includes(q)) {
-      return true
-    }
-    return item.title.toLowerCase().includes(q)
-  }
-
   private static mergeSource(existing: string, incoming: string): string {
     const parts = existing.split(' · ').map(s => s.trim()).filter(s => s.length > 0)
     if (parts.indexOf(incoming) >= 0) {
@@ -497,5 +560,19 @@ export struct SearchPage {
     }
     parts.push(incoming)
     return parts.join(' · ')
+  }
+
+  private static savedNodeToV2exNode(item: SavedNode): V2exNode {
+    return {
+      id: 0,
+      name: item.name,
+      title: item.title,
+      title_alternative: '',
+      url: '',
+      topics: item.topics,
+      avatar_mini: '',
+      avatar_normal: '',
+      avatar_large: ''
+    }
   }
 }

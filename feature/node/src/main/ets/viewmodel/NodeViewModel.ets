@@ -1,4 +1,4 @@
-import { V2exNode, V2exTopic, ApiService, ApiV2Service } from 'shared'
+import { V2exNode, V2exTopic, ApiService, ApiV2Service, NodeSearchUtils } from 'shared'
 
 /**
  * 节点数据源 — 用于 LazyForEach
@@ -63,7 +63,7 @@ export class NodeViewModel {
     this.errorMessage = ''
     try {
       const nodes = await this.api.getAllNodes()
-      this.allNodes = nodes.sort((a: V2exNode, b: V2exNode) => b.topics - a.topics)
+      this.allNodes = NodeSearchUtils.sortByPopularity(nodes)
       this.applyNodeFilter()
     } catch (error) {
       this.errorMessage = error.message || '节点加载失败'
@@ -79,16 +79,7 @@ export class NodeViewModel {
   }
 
   private applyNodeFilter(): void {
-    const q = this.keyword.trim().toLowerCase()
-    if (q.length === 0) {
-      this.nodeDataSource.setData(this.allNodes)
-      return
-    }
-    this.nodeDataSource.setData(this.allNodes.filter((node: V2exNode) => {
-      return node.name.toLowerCase().includes(q) ||
-        node.title.toLowerCase().includes(q) ||
-        node.title_alternative.toLowerCase().includes(q)
-    }))
+    this.nodeDataSource.setData(NodeSearchUtils.filter(this.allNodes, this.keyword))
   }
 
   /** 加载指定节点下的主题 */
