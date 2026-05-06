@@ -3,7 +3,11 @@ import { preferences } from '@kit.ArkData'
 
 const STORE_NAME: string = 'next2v_search'
 const KEY_HISTORY: string = 'searchHistory'
+const KEY_SOURCE_MODE: string = 'sourceMode'
 const MAX_HISTORY: number = 20
+
+export type SearchSourceMode = 'local' | 'localWithNodes'
+const DEFAULT_SOURCE_MODE: SearchSourceMode = 'localWithNodes'
 
 export class SearchSettings {
   static async loadHistory(context: common.UIAbilityContext): Promise<string[]> {
@@ -46,6 +50,30 @@ export class SearchSettings {
     }
   }
 
+  static async loadSourceMode(context: common.UIAbilityContext): Promise<SearchSourceMode> {
+    try {
+      const store = await preferences.getPreferences(context, STORE_NAME)
+      const raw = store.getSync(KEY_SOURCE_MODE, DEFAULT_SOURCE_MODE) as string
+      return SearchSettings.parseSourceMode(raw)
+    } catch (error) {
+      const e = error as Error
+      throw new Error(e.message || '读取搜索来源失败')
+    }
+  }
+
+  static async saveSourceMode(context: common.UIAbilityContext, mode: SearchSourceMode): Promise<SearchSourceMode> {
+    const next = SearchSettings.parseSourceMode(mode)
+    try {
+      const store = await preferences.getPreferences(context, STORE_NAME)
+      store.putSync(KEY_SOURCE_MODE, next)
+      store.flushSync()
+      return next
+    } catch (error) {
+      const e = error as Error
+      throw new Error(e.message || '保存搜索来源失败')
+    }
+  }
+
   private static parseHistory(raw: string): string[] {
     try {
       const parsed = JSON.parse(raw) as string[]
@@ -73,5 +101,11 @@ export class SearchSettings {
       return []
     }
   }
-}
 
+  private static parseSourceMode(raw: string): SearchSourceMode {
+    if (raw === 'local') {
+      return 'local'
+    }
+    return DEFAULT_SOURCE_MODE
+  }
+}

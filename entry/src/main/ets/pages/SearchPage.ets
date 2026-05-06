@@ -9,6 +9,7 @@ import {
   type SavedNode,
   type SavedTopic,
   SearchSettings,
+  type SearchSourceMode,
   StorageKeys,
   ThemeConstants,
   type TopicDetailParams,
@@ -53,6 +54,7 @@ export struct SearchPage {
   @State private isCacheLoading: boolean = false
 
   @State private history: string[] = []
+  @State private sourceMode: SearchSourceMode = 'localWithNodes'
 
   @State private topicResults: SearchTopicItem[] = []
   @State private nodeResults: SearchNodeItem[] = []
@@ -66,7 +68,7 @@ export struct SearchPage {
     this.errorMessage = ''
     this.loadLocalCollections()
     this.loadCacheCollections()
-    this.loadNodeIndex()
+    this.loadSourceMode()
     this.loadHistory()
   }
 
@@ -81,7 +83,7 @@ export struct SearchPage {
         .fontWeight(FontWeight.Medium)
         .fontColor($r('sys.color.font_primary'))
 
-      Text('在收藏 / 最近浏览 / 关注节点 / 离线缓存 / 节点库中搜索')
+      Text(this.sourceModeSummary())
         .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
         .fontColor($r('sys.color.font_secondary'))
 
@@ -111,6 +113,8 @@ export struct SearchPage {
           this.keyword = value
           this.applyFilter()
         })
+
+      this.SourceModeControls()
 
       if (!this.keyword.trim() && this.history.length > 0) {
         Column({ space: ThemeConstants.SPACE_XS }) {
@@ -180,7 +184,7 @@ export struct SearchPage {
               .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
               .fontColor($r('sys.color.font_secondary'))
             if (this.nodeResults.length === 0) {
-              Text(this.keyword.trim() ? '没有匹配的节点' : '节点库和你关注的节点会出现在这里')
+              Text(this.keyword.trim() ? '没有匹配的节点' : this.emptyNodeHint())
                 .fontSize(ThemeConstants.FONT_SIZE_BODY)
                 .fontColor($r('sys.color.font_secondary'))
                 .padding({ top: ThemeConstants.SPACE_SM, bottom: ThemeConstants.SPACE_SM })
@@ -275,6 +279,22 @@ export struct SearchPage {
     .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }
 
+  @Builder SourceModeControls() {
+    Row({ space: ThemeConstants.SPACE_SM }) {
+      Button(this.sourceMode === 'local' ? '本地（当前）' : '本地')
+        .fontSize(ThemeConstants.FONT_SIZE_TAG)
+        .height(36)
+        .type(ButtonType.Normal)
+        .onClick(() => { this.updateSourceMode('local') })
+      Button(this.sourceMode === 'localWithNodes' ? '本地 + 节点库（当前）' : '本地 + 节点库')
+        .fontSize(ThemeConstants.FONT_SIZE_TAG)
+        .height(36)
+        .type(ButtonType.Normal)
+        .onClick(() => { this.updateSourceMode('localWithNodes') })
+    }
+    .width('100%')
+  }
+
   private loadLocalCollections(): void {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     Promise.all([
@@ -349,6 +369,13 @@ export struct SearchPage {
   }
 
   private loadNodeIndex(): void {
+    if (!this.usesNodeIndex()) {
+      return
+    }
+    if (this.allNodes.length > 0) {
+      this.applyFilter()
+      return
+    }
     this.isNodeIndexLoading = true
     this.api.getAllNodes()
       .then((nodes: V2exNode[]) => {
@@ -360,6 +387,23 @@ export struct SearchPage {
       })
       .finally(() => {
         this.isNodeIndexLoading = false
+      })
+  }
+
+  private loadSourceMode(): void {
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    SearchSettings.loadSourceMode(context)
+      .then((mode: SearchSourceMode) => {
+        this.sourceMode = mode
+        if (this.usesNodeIndex()) {
+          this.loadNodeIndex()
+        } else {
+          this.applyFilter()
+        }
+      })
+      .catch((_error: Error) => {
+        this.sourceMode = 'localWithNodes'
+        this.loadNodeIndex()
       })
   }
 
@@ -505,23 +549,25 @@ export struct SearchPage {
       nodeBag.set(n.name, n)
     }
 
-    for (const match of NodeSearchUtils.search(this.allNodes, q).slice(0, 120)) {
-      const node = match.node
-      const existing = nodeBag.get(node.name)
-      if (!existing) {
-        nodeBag.set(node.name, {
-          name: node.name,
-          title: node.title,
-          topics: node.topics,
-          source: '节点库',
-          updatedAt: 0,
-          score: match.score
-        })
-      } else {
-        existing.title = existing.title || node.title
-        existing.topics = Math.max(existing.topics, node.topics)
-        existing.source = SearchPage.mergeSource(existing.source, '节点库')
-        existing.score = Math.max(existing.score, match.score + 1200)
+    if (this.usesNodeIndex()) {
+      for (const match of NodeSearchUtils.search(this.allNodes, q).slice(0, 120)) {
+        const node = match.node
+        const existing = nodeBag.get(node.name)
+        if (!existing) {
+          nodeBag.set(node.name, {
+            name: node.name,
+            title: node.title,
+            topics: node.topics,
+            source: '节点库',
+            updatedAt: 0,
+            score: match.score
+          })
+        } else {
+          existing.title = existing.title || node.title
+          existing.topics = Math.max(existing.topics, node.topics)
+          existing.source = SearchPage.mergeSource(existing.source, '节点库')
+          existing.score = Math.max(existing.score, match.score + 1200)
+        }
       }
     }
 
@@ -560,6 +606,41 @@ export struct SearchPage {
     }
     parts.push(incoming)
     return parts.join(' · ')
+  }
+
+  private updateSourceMode(mode: SearchSourceMode): void {
+    if (this.sourceMode === mode) {
+      return
+    }
+    this.sourceMode = mode
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    SearchSettings.saveSourceMode(context, mode)
+      .catch((error: Error) => {
+        this.errorMessage = error.message || '保存搜索来源失败'
+      })
+    if (this.usesNodeIndex()) {
+      this.loadNodeIndex()
+    } else {
+      this.applyFilter()
+    }
+  }
+
+  private usesNodeIndex(): boolean {
+    return this.sourceMode === 'localWithNodes'
+  }
+
+  private sourceModeSummary(): string {
+    if (this.usesNodeIndex()) {
+      return '在收藏 / 最近浏览 / 关注节点 / 离线缓存 / 节点库中搜索'
+    }
+    return '在收藏 / 最近浏览 / 关注节点 / 离线缓存中搜索'
+  }
+
+  private emptyNodeHint(): string {
+    if (this.usesNodeIndex()) {
+      return '节点库和你关注的节点会出现在这里'
+    }
+    return '你关注的节点会出现在这里'
   }
 
   private static savedNodeToV2exNode(item: SavedNode): V2exNode {
