@@ -6,6 +6,10 @@ Date: 2026-05-06
 
 These notes describe how Next2V currently uses Harmony Design System components in the app shell and settings-style screens. They are implementation rules for this repository, not a general HDS reference.
 
+For general UI implementation rules, see `docs/ui-guidelines.md`. Those
+guidelines are the stronger contract for control roles, page-level consistency,
+and screenshot validation.
+
 ## App Shell
 
 - `entry/src/main/ets/pages/Index.ets` owns the HDS shell.
@@ -27,7 +31,10 @@ These notes describe how Next2V currently uses Harmony Design System components 
 - Use grouped list sections for settings-like surfaces: section header, card background, rows, inset divider.
 - Keep cards for grouped content or repeated content items. Do not wrap every single setting in its own standalone card.
 - Binary settings use `Toggle({ type: ToggleType.Switch })`.
-- Small command groups and segmented choices use `ButtonType.Normal`, `ThemeConstants.RADIUS_MD`, and `ThemeConstants.TOUCH_TARGET_SM`.
+- Small command groups, segmented choices, and filter controls must use the
+  role-specific rules in `docs/ui-guidelines.md`. Do not hand-style generic
+  rounded rectangles for selectable filters, and do not mix `Text`
+  pseudo-buttons with `Button` in the same action row.
 - Destructive actions require explicit user confirmation before changing persisted state or clearing data.
 
 ## Tokens
@@ -46,5 +53,6 @@ Before adding or changing an HDS route:
 2. Keep the page body as a standalone content component.
 3. Use shared top/bottom safe-area storage props.
 4. Use `ThemeConstants` instead of local numeric spacing or button dimensions.
-5. Run `bash dev.sh --build-only`.
-6. Install on the debug device and capture screenshots for overlap, scrolling, and dark-mode readability.
+5. Confirm that changed controls follow `docs/ui-guidelines.md`.
+6. Run `bash dev.sh --build-only`.
+7. Install on the debug device and capture screenshots for overlap, scrolling, and dark-mode readability.

@@ -14,6 +14,10 @@ the immediate decision.
 
 ## Non-Negotiable UI Rules
 
+The detailed implementation contract is `docs/ui-guidelines.md`. Follow that
+document before changing page UI. This roadmap describes product direction; the
+UI guidelines define the control-level rules and commit gate.
+
 ### HDS First
 
 All new UI work must prefer Harmony Design System / `@kit.UIDesignKit` first.
