@@ -23,7 +23,7 @@
         "label": "$string:EntryAbility_label",
         "launchType": "singleton",
         "exported": true,
-        "startWindowIcon": "$media:app_icon",
+        "startWindowIcon": "$media:start_icon",
         "startWindowBackground": "$color:start_window_background",
         "skills": [
           {
