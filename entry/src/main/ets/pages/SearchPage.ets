@@ -6,6 +6,7 @@ import {
   type NodeTopicListParams,
   type SavedNode,
   type SavedTopic,
+  SearchSettings,
   ThemeConstants,
   type TopicDetailParams,
   type ViewedTopic
@@ -44,6 +45,8 @@ export struct SearchPage {
   @State private cacheTopicDetails: SearchTopicItem[] = []
   @State private isCacheLoading: boolean = false
 
+  @State private history: string[] = []
+
   @State private topicResults: SearchTopicItem[] = []
   @State private nodeResults: SearchNodeItem[] = []
 
@@ -52,6 +55,11 @@ export struct SearchPage {
     this.errorMessage = ''
     this.loadLocalCollections()
     this.loadCacheCollections()
+    this.loadHistory()
+  }
+
+  aboutToDisappear(): void {
+    this.recordHistory()
   }
 
   build() {
@@ -86,6 +94,40 @@ export struct SearchPage {
           this.keyword = value
           this.applyFilter()
         })
+
+      if (!this.keyword.trim() && this.history.length > 0) {
+        Column({ space: ThemeConstants.SPACE_XS }) {
+          Row() {
+            Text('搜索历史')
+              .fontSize(ThemeConstants.FONT_SIZE_TINY)
+              .fontColor($r('sys.color.font_secondary'))
+            Blank()
+            Text('清空')
+              .fontSize(ThemeConstants.FONT_SIZE_TINY)
+              .fontColor(ThemeConstants.BRAND_PRIMARY)
+              .onClick(() => { this.clearHistory() })
+          }
+          .width('100%')
+
+          Scroll() {
+            Row({ space: ThemeConstants.SPACE_XS }) {
+              ForEach(this.history, (q: string) => {
+                Text(q)
+                  .fontSize(ThemeConstants.FONT_SIZE_TINY)
+                  .fontColor($r('sys.color.font_primary'))
+                  .padding({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM, top: 6, bottom: 6 })
+                  .borderRadius(ThemeConstants.RADIUS_SM)
+                  .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+                  .onClick(() => { this.applyHistory(q) })
+              }, (q: string) => q)
+            }
+          }
+          .scrollable(ScrollDirection.Horizontal)
+          .scrollBar(BarState.Off)
+          .width('100%')
+        }
+        .width('100%')
+      }
 
       List({ space: ThemeConstants.SPACE_SM }) {
         ListItem() {
@@ -282,6 +324,54 @@ export struct SearchPage {
       .finally(() => {
         this.isCacheLoading = false
       })
+  }
+
+  private loadHistory(): void {
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    SearchSettings.loadHistory(context)
+      .then((items: string[]) => {
+        this.history = items
+      })
+      .catch((_error: Error) => {
+        this.history = []
+      })
+  }
+
+  private recordHistory(): void {
+    const q = this.keyword.trim()
+    if (!q) {
+      return
+    }
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    SearchSettings.recordQuery(context, q)
+      .then((items: string[]) => {
+        this.history = items
+      })
+      .catch((_error: Error) => { })
+  }
+
+  private clearHistory(): void {
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    SearchSettings.clearHistory(context)
+      .then(() => {
+        this.history = []
+      })
+      .catch((_error: Error) => { })
+  }
+
+  private applyHistory(q: string): void {
+    const clean = (q ?? '').trim()
+    if (!clean) {
+      return
+    }
+    this.keyword = clean
+    this.applyFilter()
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    SearchSettings.recordQuery(context, clean)
+      .then((items: string[]) => {
+        this.history = items
+      })
+      .catch((_error: Error) => { })
   }
 
   private applyFilter(): void {
