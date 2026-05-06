@@ -329,6 +329,7 @@ struct Index {
     let items: Record<string, Object>[] = [
       this.topicActionItem('回复', $r('sys.symbol.ellipsis_bubble'), () => { this.sendTopicAction('reply') }),
       this.topicActionItem('稍后读', $r('sys.symbol.star'), () => { this.sendTopicAction('saveLater') }),
+      this.topicActionItem('站内收藏', $r('sys.symbol.heart_fill'), () => { this.sendTopicAction('siteFavorite') }),
       this.topicActionItem('复制标题', $r('sys.symbol.doc_plaintext'), () => { this.sendTopicAction('copyTitle') }),
       this.topicActionItem('复制链接', $r('sys.symbol.plus_square_on_square'), () => { this.sendTopicAction('copyLink') }),
       this.topicActionItem('分享链接', $r('sys.symbol.share'), () => { this.sendTopicAction('share') }),

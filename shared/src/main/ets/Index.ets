@@ -71,6 +71,8 @@ export { V2exSigninParser } from './parser/V2exSigninParser'
 export type { V2exSigninForm } from './parser/V2exSigninParser'
 export { V2exNodeParser } from './parser/V2exNodeParser'
 export type { V2exFavoriteNode } from './parser/V2exNodeParser'
+export { V2exCollectionActionParser } from './parser/V2exCollectionActionParser'
+export type { V2exToggleAction } from './parser/V2exCollectionActionParser'
 
 // 工具
 export { DateUtils } from './utils/DateUtils'

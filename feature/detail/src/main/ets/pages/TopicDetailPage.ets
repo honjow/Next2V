@@ -7,7 +7,7 @@ import { systemShare } from '@kit.ShareKit'
 import {
   V2exReply, Avatar, ReplyCard, TimeAgo, PullRefresh, ThemeConstants, MarkdownContent,
   NodeTopicListParams, UserProfileParams, ImagePreviewParams, CollectionSettings, CacheSettings, V2exTopic, AuthSettings,
-  LoadingFooter, HttpClient, StorageKeys
+  LoadingFooter, HttpClient, StorageKeys, ApiService, CookieJarSettings, V2exToggleAction
 } from 'shared'
 
 interface ReplyEditorParams {
@@ -22,10 +22,14 @@ export struct TopicDetailPage {
   @Consume('ns') stack: NavPathStack
   @StorageProp('topAvoidHeight') topH: number = 0
   @StorageLink(StorageKeys.TOPIC_DETAIL_ACTION) @Watch('onTopicActionCommand') topicActionCommand: string = ''
+  @StorageLink(StorageKeys.ACCOUNT_WRITE_ENABLED) writeEnabled: boolean = false
   private scroller: Scroller = new Scroller()
   @State listScrollEnabled: boolean = true
   @State isSavedLater: boolean = false
+  @State private isSiteFavorited: boolean = false
+  @State private isSiteFavoriteLoading: boolean = false
   @State private jumpFloorText: string = ''
+  private api: ApiService = new ApiService()
   private jumpFloorDialogController: CustomDialogController | null = new CustomDialogController({
     builder: JumpToFloorDialog({
       floorText: $jumpFloorText,
@@ -513,6 +517,10 @@ export struct TopicDetailPage {
       promptAction.openToast({ message: '主题仍在加载' }).catch((_error: Error) => { })
       return
     }
+    if (action === 'siteFavorite') {
+      this.prepareSiteFavoriteToggle()
+      return
+    }
     if (action === 'saveLater') {
       this.toggleSavedLater()
     } else if (action === 'copyTitle') {
@@ -526,6 +534,65 @@ export struct TopicDetailPage {
     } else if (action === 'copyContent') {
       this.copyToClipboard(this.v.topic!.content || '')
     }
+  }
+
+  private prepareSiteFavoriteToggle(): void {
+    if (this.isSiteFavoriteLoading) {
+      return
+    }
+    if (!this.writeEnabled) {
+      promptAction.openToast({ message: '写入操作开关未开启，站内收藏不可用' }).catch((_error: Error) => { })
+      return
+    }
+    const cookie = CookieJarSettings.getCurrentCookie()
+    if (!cookie) {
+      promptAction.openToast({ message: '请先登录' }).catch((_error: Error) => { })
+      return
+    }
+    this.isSiteFavoriteLoading = true
+    this.api.getTopicFavoriteToggleActionWithCookie(cookie, this.topicId)
+      .then((toggle) => {
+        this.isSiteFavorited = toggle.currentlyOn
+        this.confirmSiteFavoriteToggle(cookie, toggle)
+      })
+      .catch((error: Error) => {
+        promptAction.openToast({ message: error.message || '解析站内收藏失败' }).catch((_error: Error) => { })
+      })
+      .finally(() => {
+        this.isSiteFavoriteLoading = false
+      })
+  }
+
+  private confirmSiteFavoriteToggle(cookie: string, toggle: V2exToggleAction): void {
+    const title = (this.v.topic?.title || '').trim()
+    const verb = this.isSiteFavorited ? '取消收藏' : '收藏'
+    AlertDialog.show({
+      title: '站内收藏',
+      message: title ? `确定${verb}《${title}》吗？` : `确定${verb}该主题吗？`,
+      primaryButton: { value: '取消', action: () => { } },
+      secondaryButton: {
+        value: verb,
+        action: () => { this.executeSiteFavoriteToggle(cookie, toggle) }
+      }
+    })
+  }
+
+  private executeSiteFavoriteToggle(cookie: string, toggle: V2exToggleAction): void {
+    if (this.isSiteFavoriteLoading) {
+      return
+    }
+    this.isSiteFavoriteLoading = true
+    this.api.executeTopicFavoriteToggleWithCookie(cookie, this.topicId, toggle)
+      .then((favorited: boolean) => {
+        this.isSiteFavorited = favorited
+        promptAction.openToast({ message: favorited ? '已收藏' : '已取消收藏' }).catch((_error: Error) => { })
+      })
+      .catch((error: Error) => {
+        promptAction.openToast({ message: error.message || '操作失败' }).catch((_error: Error) => { })
+      })
+      .finally(() => {
+        this.isSiteFavoriteLoading = false
+      })
   }
 
   private copyToClipboard(text: string): void {

@@ -1,3 +1,4 @@
+import { http } from '@kit.NetworkKit'
 import { HttpClient } from './HttpClient'
 import { ApiConstants } from '../constants/ApiConstants'
 import { V2exTabParser } from '../parser/V2exTabParser'
@@ -5,6 +6,7 @@ import { V2exNotificationParser } from '../parser/V2exNotificationParser'
 import { V2exAccountParser } from '../parser/V2exAccountParser'
 import { V2exSessionParser } from '../parser/V2exSessionParser'
 import { V2exNodeParser, type V2exFavoriteNode } from '../parser/V2exNodeParser'
+import { V2exCollectionActionParser, type V2exToggleAction } from '../parser/V2exCollectionActionParser'
 import type {
   V2exTopic,
   V2exReply,
@@ -24,6 +26,8 @@ import type {
  */
 export class ApiService {
   private http: HttpClient = HttpClient.getInstance()
+  private readonly CONNECT_TIMEOUT_MS: number = 10000
+  private readonly READ_TIMEOUT_MS: number = 15000
 
   // ==================== V1 公开接口 ====================
 
@@ -182,6 +186,146 @@ export class ApiService {
       throw new Error('Web 会话已失效，请重新登录')
     }
     return V2exNodeParser.extractFavoriteNodes(html)
+  }
+
+  // ==================== Cookie 写入操作（站内收藏/关注） ====================
+
+  /**
+   * 获取主题收藏/取消收藏的切换链接（依赖 Cookie 会话）
+   */
+  async getTopicFavoriteToggleActionWithCookie(cookie: string, topicId: number): Promise<V2exToggleAction> {
+    if (!cookie) {
+      throw new Error('请先登录')
+    }
+    if (topicId <= 0) {
+      throw new Error('无效主题 ID')
+    }
+    const topicPath = `/t/${topicId}`
+    const html = await this.http.getTextWithHeaders(topicPath, { 'Cookie': cookie })
+    if (!V2exSessionParser.extractUsername(html)) {
+      throw new Error('Web 会话已失效，请重新登录')
+    }
+
+    const toggle = V2exCollectionActionParser.extractTopicFavoriteToggle(html, topicId)
+    if (!toggle) {
+      throw new Error('解析收藏操作失败，请稍后重试')
+    }
+    return toggle
+  }
+
+  /**
+   * 执行主题收藏切换（依赖 Cookie 会话）
+   * - 返回操作后的收藏状态
+   */
+  async executeTopicFavoriteToggleWithCookie(cookie: string, topicId: number, toggle: V2exToggleAction): Promise<boolean> {
+    if (!cookie) {
+      throw new Error('请先登录')
+    }
+    if (topicId <= 0) {
+      throw new Error('无效主题 ID')
+    }
+    const topicPath = `/t/${topicId}`
+    await this.requestTextWithCookieAllowRedirect(toggle.actionPath, cookie, topicPath)
+
+    const verifyHtml = await this.http.getTextWithHeaders(topicPath, { 'Cookie': cookie })
+    if (!V2exSessionParser.extractUsername(verifyHtml)) {
+      throw new Error('Web 会话已失效，请重新登录')
+    }
+    const after = V2exCollectionActionParser.extractTopicFavoriteToggle(verifyHtml, topicId)
+    if (!after) {
+      return !toggle.currentlyOn
+    }
+    return after.currentlyOn
+  }
+
+  /**
+   * 站内收藏/取消收藏主题（依赖 Cookie 会话）
+   * - 返回操作后的收藏状态
+   */
+  async toggleTopicFavoriteWithCookie(cookie: string, topicId: number): Promise<boolean> {
+    const toggle = await this.getTopicFavoriteToggleActionWithCookie(cookie, topicId)
+    return this.executeTopicFavoriteToggleWithCookie(cookie, topicId, toggle)
+  }
+
+  /**
+   * 站内关注/取消关注节点（依赖 Cookie 会话）
+   * - 返回操作后的关注状态
+   */
+  async toggleNodeFavoriteWithCookie(cookie: string, nodeName: string): Promise<boolean> {
+    const cleanName = (nodeName || '').trim()
+    if (!cookie) {
+      throw new Error('请先登录')
+    }
+    if (!cleanName) {
+      throw new Error('无效节点')
+    }
+    const nodePath = `/go/${cleanName}`
+    const html = await this.http.getTextWithHeaders(nodePath, { 'Cookie': cookie })
+    if (!V2exSessionParser.extractUsername(html)) {
+      throw new Error('Web 会话已失效，请重新登录')
+    }
+    const toggle = V2exCollectionActionParser.extractNodeFavoriteToggle(html)
+    if (!toggle) {
+      throw new Error('解析关注操作失败，请稍后重试')
+    }
+    await this.requestTextWithCookieAllowRedirect(toggle.actionPath, cookie, nodePath)
+
+    const verifyHtml = await this.http.getTextWithHeaders(nodePath, { 'Cookie': cookie })
+    if (!V2exSessionParser.extractUsername(verifyHtml)) {
+      throw new Error('Web 会话已失效，请重新登录')
+    }
+    const after = V2exCollectionActionParser.extractNodeFavoriteToggle(verifyHtml)
+    if (!after) {
+      return !toggle.currentlyOn
+    }
+    return after.currentlyOn
+  }
+
+  private async requestTextWithCookieAllowRedirect(pathOrUrl: string, cookie: string, refererPath: string): Promise<void> {
+    const clean = (pathOrUrl || '').trim()
+    if (!clean) {
+      throw new Error('缺少操作路径')
+    }
+    const baseUrl = this.http.getBaseUrl()
+    const url = clean.startsWith('http://') || clean.startsWith('https://')
+      ? clean
+      : clean.startsWith('/') ? `${baseUrl}${clean}` : `${baseUrl}/${clean}`
+
+    const refererClean = (refererPath || '').trim()
+    const refererUrl = !refererClean
+      ? ''
+      : (refererClean.startsWith('http://') || refererClean.startsWith('https://'))
+          ? refererClean
+          : refererClean.startsWith('/') ? `${baseUrl}${refererClean}` : `${baseUrl}/${refererClean}`
+
+    let httpRequest = http.createHttp()
+    try {
+      const requestHeaders: Record<string, string> = {
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Encoding': 'gzip',
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cookie': cookie,
+        'User-Agent': 'Mozilla/5.0'
+      }
+      if (refererUrl) {
+        requestHeaders['Referer'] = refererUrl
+      }
+
+      const response = await httpRequest.request(url, {
+        method: http.RequestMethod.GET,
+        header: requestHeaders,
+        connectTimeout: this.CONNECT_TIMEOUT_MS,
+        readTimeout: this.READ_TIMEOUT_MS,
+        usingCache: false,
+        expectDataType: http.HttpDataType.STRING
+      })
+      const statusCode = response.responseCode as number
+      if (statusCode < 200 || statusCode >= 400) {
+        throw new Error(`HTTP ${statusCode}: ${url}`)
+      }
+    } finally {
+      httpRequest.destroy()
+    }
   }
 
   // ==================== Tab 聚合接口 ====================
