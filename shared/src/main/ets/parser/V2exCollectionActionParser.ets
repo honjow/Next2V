@@ -83,4 +83,3 @@ export class V2exCollectionActionParser {
       .replace(/&gt;/g, '>')
   }
 }
-
