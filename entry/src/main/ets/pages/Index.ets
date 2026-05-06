@@ -2,7 +2,7 @@ import {
   HdsNavigation, HdsNavDestination, HdsTabs, HdsTabsController, HdsTabsFloatingStyle,
   hdsMaterial, HdsNavigationTitleMode, ScrollEffectType, BlurStrategy
 } from '@kit.UIDesignKit'
-import { common } from '@kit.AbilityKit'
+import { common, Want } from '@kit.AbilityKit'
 import {
   HttpClient, ThemeConstants, StorageKeys, ApiConstants, TabItem,
   AuthSettings, ApiService, ApiV2Service, DateUtils, CollectionSettings, TopicDetailParams, ImagePreviewParams, UserProfileParams,
@@ -331,6 +331,29 @@ struct Index {
 
   private sendTopicAction(action: string): void {
     AppStorage.setOrCreate<string>(StorageKeys.TOPIC_DETAIL_ACTION, `${Date.now()}:${action}`)
+  }
+
+  private openV2exPathInSystemBrowser(path: string): void {
+    const baseUrl = this.http.getBaseUrl()
+    const cleanPath = (path || '').trim()
+    if (!baseUrl || !cleanPath) {
+      return
+    }
+    const url = cleanPath.startsWith('/') ? `${baseUrl}${cleanPath}` : `${baseUrl}/${cleanPath}`
+    this.openInSystemBrowser(url)
+  }
+
+  private openInSystemBrowser(url: string): void {
+    const target = (url || '').trim()
+    if (!target) {
+      return
+    }
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    const want: Want = { action: 'ohos.want.action.viewData', uri: target }
+    context.startAbility(want)
+      .catch((error: Error) => {
+        promptAction.openToast({ message: error.message || '打开失败' }).catch((_error: Error) => { })
+      })
   }
 
   private topicActionItem(label: string, icon: Resource, action: () => void): Record<string, Object> {
@@ -804,6 +827,14 @@ struct Index {
                 let p: UserProfileParams = { username: username }
                 this.ns.pushPathByName('UserProfile', p as Object)
               }
+            })
+            this.SettingsDivider()
+            this.AuthActionRow('余额明细', '在浏览器中打开 V2EX 余额页面', () => {
+              this.openV2exPathInSystemBrowser('/balance')
+            })
+            this.SettingsDivider()
+            this.AuthActionRow('网页账号设置', '在浏览器中打开 V2EX 设置页面', () => {
+              this.openV2exPathInSystemBrowser('/settings')
             })
             this.SettingsDivider()
             this.AuthActionRow('重新登录', '账号密码登录或切换到网页登录', () => { this.ns.pushPathByName('V2exNativeLogin', null) })
