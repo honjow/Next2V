@@ -334,9 +334,12 @@ export struct ReplyEditorPage {
       return
     }
     const title = (this.topicTitle || '').trim()
+    const target = title ? `《${title}》` : '当前主题'
+    const message = `确定向${target}提交回复吗？\n\n` +
+      'V2EX 回复通常至少消耗 5 铜币，提交后会修改你的账号状态。'
     AlertDialog.show({
       title: '提交回复',
-      message: title ? `确定向《${title}》提交回复吗？` : '确定提交回复吗？',
+      message: message,
       primaryButton: { value: '取消', action: () => { } },
       secondaryButton: { value: '提交', action: () => { this.submit() } }
     })

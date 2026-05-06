@@ -216,8 +216,8 @@ Goal: move from drafts to manual, confirmed submission.
 Status: Cookie-backed reply and topic submission adapters are implemented behind
 the write-action switch with confirmation dialogs, in-flight state, failure
 messages, and draft clearing only after success. Further work should focus on
-manual production validation, clearer coin-cost explanations, and later edit or
-append flows.
+manual production validation and later edit or append flows. Submit confirmations
+show the target topic/node and likely V2EX coin cost before sending.
 
 Tasks:
 
@@ -226,7 +226,7 @@ Tasks:
 - [x] Parse and send required form tokens (`once`, hidden fields, syntax mode,
   node, title, content) from live pages.
 - [x] Keep submit disabled unless the global write-action switch is enabled.
-- [ ] Add confirmation dialogs showing target topic/node and possible coin cost.
+- [x] Add confirmation dialogs showing target topic/node and possible coin cost.
 - [x] Add in-flight state, retry guidance, and failure messages from V2EX.
 - [x] Clear draft only after confirmed success.
 - [x] Never submit during unattended tests.
@@ -287,7 +287,7 @@ Tasks:
   querying the device's supported formats before custom decoding because some
   decode capabilities depend on device hardware.
 - [x] Add non-direct image/link preview cards for common hosts.
-- [ ] Add V2EX original-format expansions where feasible: imgur/i.v2ex.co
+- [x] Add V2EX original-format expansions where feasible: imgur/i.v2ex.co
   images, Gist cards, YouTube/Vimeo link cards, and normal URL cards.
 - [x] Keep direct image URLs rendered inline and non-image links clickable.
 
