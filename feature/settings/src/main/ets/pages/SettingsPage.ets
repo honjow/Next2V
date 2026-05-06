@@ -45,10 +45,6 @@ export struct SettingsPage {
         ListItem() { this.SectionHeader('存储') }
           .margin({ top: ThemeConstants.SPACE_MD })
         ListItem() { this.CacheSection() }
-
-        ListItem() { this.SectionHeader('关于') }
-          .margin({ top: ThemeConstants.SPACE_MD })
-        ListItem() { this.AboutSection() }
       }
     }
     .width('100%')
@@ -284,26 +280,6 @@ export struct SettingsPage {
     }
     .width('100%')
     .alignItems(HorizontalAlign.Start)
-    .borderRadius(ThemeConstants.RADIUS_MD)
-    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
-  }
-
-  @Builder AboutSection() {
-    Column({ space: ThemeConstants.SPACE_XS }) {
-      Text('Next2V')
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .fontWeight(FontWeight.Medium)
-        .fontColor($r('sys.color.font_primary'))
-      Text('版本 0.1.0')
-        .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-        .fontColor($r('sys.color.font_secondary'))
-      Text('基于 ArkTS + ArkUI + HDS 构建的 V2EX 客户端')
-        .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-        .fontColor($r('sys.color.font_secondary'))
-    }
-    .width('100%')
-    .alignItems(HorizontalAlign.Start)
-    .padding(ThemeConstants.SPACE_LG)
     .borderRadius(ThemeConstants.RADIUS_MD)
     .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }

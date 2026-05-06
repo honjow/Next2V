@@ -6,12 +6,9 @@ import { pasteboard } from '@kit.BasicServicesKit'
 import { systemShare } from '@kit.ShareKit'
 import {
   V2exReply, Avatar, ReplyCard, TimeAgo, PullRefresh, ThemeConstants, MarkdownContent,
-  NodeTopicListParams, UserProfileParams, ImagePreviewParams, CollectionSettings, CacheSettings, V2exTopic, AuthSettings, LoadingFooter, HttpClient
+  NodeTopicListParams, UserProfileParams, ImagePreviewParams, CollectionSettings, CacheSettings, V2exTopic, AuthSettings,
+  LoadingFooter, HttpClient, StorageKeys
 } from 'shared'
-
-interface ActionMenuSuccessResponse {
-  index: number
-}
 
 interface ReplyEditorParams {
   topicId: number
@@ -24,6 +21,7 @@ export struct TopicDetailPage {
   @State v: DetailViewModel = new DetailViewModel(0)
   @Consume('ns') stack: NavPathStack
   @StorageProp('topAvoidHeight') topH: number = 0
+  @StorageLink(StorageKeys.TOPIC_DETAIL_ACTION) @Watch('onTopicActionCommand') topicActionCommand: string = ''
   private scroller: Scroller = new Scroller()
   @State listScrollEnabled: boolean = true
   @State isSavedLater: boolean = false
@@ -246,44 +244,6 @@ export struct TopicDetailPage {
             this.stack.pushPathByName('NodeTopicList', p as Object)
           })
 
-        Text(this.isSavedLater ? '已存' : '稍后读')
-          .fontSize(ThemeConstants.FONT_SIZE_TAG)
-          .fontColor(this.isSavedLater ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.font_secondary'))
-          .padding({
-            left: ThemeConstants.SPACE_SM,
-            right: ThemeConstants.SPACE_SM,
-            top: 2,
-            bottom: 2
-          })
-          .borderRadius(ThemeConstants.RADIUS_SM)
-          .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
-          .onClick(() => { this.toggleSavedLater() })
-
-        Text('回复')
-          .fontSize(ThemeConstants.FONT_SIZE_TAG)
-          .fontColor($r('sys.color.font_secondary'))
-          .padding({
-            left: ThemeConstants.SPACE_SM,
-            right: ThemeConstants.SPACE_SM,
-            top: 2,
-            bottom: 2
-          })
-          .borderRadius(ThemeConstants.RADIUS_SM)
-          .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
-          .onClick(() => { this.openReplyEditor() })
-
-        Text('操作')
-          .fontSize(ThemeConstants.FONT_SIZE_TAG)
-          .fontColor($r('sys.color.font_secondary'))
-          .padding({
-            left: ThemeConstants.SPACE_SM,
-            right: ThemeConstants.SPACE_SM,
-            top: 2,
-            bottom: 2
-          })
-          .borderRadius(ThemeConstants.RADIUS_SM)
-          .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
-          .onClick(() => { this.openTopicActionMenu() })
       }
       .width('100%')
       .alignItems(VerticalAlign.Center)
@@ -308,45 +268,28 @@ export struct TopicDetailPage {
   }
 
   @Builder ReplyDivider() {
-    Row() {
-      if (this.v.repliesUseV2 && this.v.topic !== null && this.v.topic!.replies > 0) {
-        Text(`已加载 ${this.v.repliesLoaded} / ${this.v.topic!.replies} 条回复`)
-          .fontSize(ThemeConstants.FONT_SIZE_META)
-          .fontColor($r('sys.color.font_secondary'))
-      } else {
-        Text(`共 ${this.v.replyDataSource.totalCount()} 条回复`)
-          .fontSize(ThemeConstants.FONT_SIZE_META)
-          .fontColor($r('sys.color.font_secondary'))
+    Column({ space: ThemeConstants.SPACE_SM }) {
+      Row() {
+        if (this.v.repliesUseV2 && this.v.topic !== null && this.v.topic!.replies > 0) {
+          Text(`已加载 ${this.v.repliesLoaded} / ${this.v.topic!.replies} 条回复`)
+            .fontSize(ThemeConstants.FONT_SIZE_META)
+            .fontColor($r('sys.color.font_secondary'))
+        } else {
+          Text(`共 ${this.v.replyDataSource.totalCount()} 条回复`)
+            .fontSize(ThemeConstants.FONT_SIZE_META)
+            .fontColor($r('sys.color.font_secondary'))
+        }
+        Blank()
       }
-      Blank()
-      Text('只看楼主')
-        .fontSize(ThemeConstants.FONT_SIZE_TAG)
-        .fontColor(this.v.onlyOp ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.font_secondary'))
-        .padding({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM, top: 2, bottom: 2 })
-        .borderRadius(ThemeConstants.RADIUS_SM)
-        .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
-        .onClick(() => { this.toggleOnlyOp() })
-      Text('楼层')
-        .fontSize(ThemeConstants.FONT_SIZE_TAG)
-        .fontColor($r('sys.color.font_secondary'))
-        .padding({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM, top: 2, bottom: 2 })
-        .borderRadius(ThemeConstants.RADIUS_SM)
-        .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
-        .onClick(() => { this.openJumpToFloorDialog() })
-      Text('顶部')
-        .fontSize(ThemeConstants.FONT_SIZE_TAG)
-        .fontColor($r('sys.color.font_secondary'))
-        .padding({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM, top: 2, bottom: 2 })
-        .borderRadius(ThemeConstants.RADIUS_SM)
-        .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
-        .onClick(() => { this.scrollToTop() })
-      Text('最新')
-        .fontSize(ThemeConstants.FONT_SIZE_TAG)
-        .fontColor($r('sys.color.font_secondary'))
-        .padding({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM, top: 2, bottom: 2 })
-        .borderRadius(ThemeConstants.RADIUS_SM)
-        .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
-        .onClick(() => { this.scrollToLatestReply() })
+      .width('100%')
+
+      Flex({ direction: FlexDirection.Row, wrap: FlexWrap.Wrap }) {
+        this.ReplyActionChip('只看楼主', this.v.onlyOp, () => { this.toggleOnlyOp() })
+        this.ReplyActionChip('楼层', false, () => { this.openJumpToFloorDialog() })
+        this.ReplyActionChip('顶部', false, () => { this.scrollToTop() })
+        this.ReplyActionChip('最新', false, () => { this.scrollToLatestReply() })
+      }
+      .width('100%')
     }
     .width('100%')
     .padding({
@@ -355,6 +298,17 @@ export struct TopicDetailPage {
       top: ThemeConstants.SPACE_MD,
       bottom: ThemeConstants.SPACE_SM
     })
+  }
+
+  @Builder ReplyActionChip(label: string, active: boolean, action: () => void) {
+    Text(label)
+      .fontSize(ThemeConstants.FONT_SIZE_TAG)
+      .fontColor(active ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.font_secondary'))
+      .padding({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM, top: 4, bottom: 4 })
+      .borderRadius(ThemeConstants.RADIUS_SM)
+      .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+      .margin({ right: ThemeConstants.SPACE_SM, bottom: ThemeConstants.SPACE_SM })
+      .onClick(action)
   }
 
   private scrollToTop(): void {
@@ -542,36 +496,37 @@ export struct TopicDetailPage {
       })
   }
 
-  private openTopicActionMenu(): void {
-    if (this.v.topic === null) {
+  onTopicActionCommand(_propName: string): void {
+    const raw = (this.topicActionCommand || '').trim()
+    if (!raw) {
       return
     }
-    promptAction.showActionMenu({
-      title: '主题操作',
-      buttons: [
-        { text: '复制标题', color: '#666666' },
-        { text: '复制链接', color: '#666666' },
-        { text: '分享链接', color: '#666666' },
-        { text: '打开浏览器', color: '#666666' },
-        { text: '复制内容', color: '#666666' }
-      ]
-    })
-      .then((data: ActionMenuSuccessResponse) => {
-        if (data.index === 0) {
-          this.copyToClipboard(this.v.topic!.title || '')
-        } else if (data.index === 1) {
-          this.copyToClipboard(this.getTopicUrl())
-        } else if (data.index === 2) {
-          this.shareTopic()
-        } else if (data.index === 3) {
-          this.openInSystemBrowser(this.getTopicUrl())
-        } else if (data.index === 4) {
-          this.copyToClipboard(this.v.topic!.content || '')
-        }
-      })
-      .catch((_error: Error) => {
-        // ignore
-      })
+    const action = raw.split(':').pop() || ''
+    this.handleTopicAction(action)
+  }
+
+  private handleTopicAction(action: string): void {
+    if (action === 'reply') {
+      this.openReplyEditor()
+      return
+    }
+    if (this.v.topic === null) {
+      promptAction.openToast({ message: '主题仍在加载' }).catch((_error: Error) => { })
+      return
+    }
+    if (action === 'saveLater') {
+      this.toggleSavedLater()
+    } else if (action === 'copyTitle') {
+      this.copyToClipboard(this.v.topic!.title || '')
+    } else if (action === 'copyLink') {
+      this.copyToClipboard(this.getTopicUrl())
+    } else if (action === 'share') {
+      this.shareTopic()
+    } else if (action === 'openBrowser') {
+      this.openInSystemBrowser(this.getTopicUrl())
+    } else if (action === 'copyContent') {
+      this.copyToClipboard(this.v.topic!.content || '')
+    }
   }
 
   private copyToClipboard(text: string): void {

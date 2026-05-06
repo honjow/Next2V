@@ -52,11 +52,6 @@ export struct ReplyEditorPage {
 
   build() {
     Column({ space: ThemeConstants.SPACE_SM }) {
-      Text('回复草稿')
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .fontWeight(FontWeight.Medium)
-        .fontColor($r('sys.color.font_primary'))
-
       if (this.topicTitle) {
         Text(this.topicTitle)
           .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
@@ -65,7 +60,7 @@ export struct ReplyEditorPage {
           .textOverflow({ overflow: TextOverflow.Ellipsis })
       }
 
-      Row({ space: ThemeConstants.SPACE_SM }) {
+      Flex({ direction: FlexDirection.Row, wrap: FlexWrap.Wrap }) {
         Button('编辑')
           .type(ButtonType.Normal)
           .fontSize(ThemeConstants.FONT_SIZE_TAG)
@@ -73,6 +68,7 @@ export struct ReplyEditorPage {
           .height(ThemeConstants.TOUCH_TARGET_SM)
           .borderRadius(ThemeConstants.RADIUS_MD)
           .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+          .margin({ right: ThemeConstants.SPACE_SM, bottom: ThemeConstants.SPACE_SM })
           .onClick(() => { this.isPreview = false })
         Button('预览')
           .type(ButtonType.Normal)
@@ -81,6 +77,7 @@ export struct ReplyEditorPage {
           .height(ThemeConstants.TOUCH_TARGET_SM)
           .borderRadius(ThemeConstants.RADIUS_MD)
           .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+          .margin({ right: ThemeConstants.SPACE_SM, bottom: ThemeConstants.SPACE_SM })
           .onClick(() => { this.isPreview = true })
         Button('图片')
           .type(ButtonType.Normal)
@@ -89,8 +86,8 @@ export struct ReplyEditorPage {
           .height(ThemeConstants.TOUCH_TARGET_SM)
           .borderRadius(ThemeConstants.RADIUS_MD)
           .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+          .margin({ right: ThemeConstants.SPACE_SM, bottom: ThemeConstants.SPACE_SM })
           .onClick(() => { this.insertImageLinkTemplate() })
-        Blank()
         Button('清空')
           .type(ButtonType.Normal)
           .fontSize(ThemeConstants.FONT_SIZE_TAG)
@@ -98,6 +95,7 @@ export struct ReplyEditorPage {
           .height(ThemeConstants.TOUCH_TARGET_SM)
           .borderRadius(ThemeConstants.RADIUS_MD)
           .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+          .margin({ right: ThemeConstants.SPACE_SM, bottom: ThemeConstants.SPACE_SM })
           .onClick(() => { this.confirmClearDraft() })
       }
       .width('100%')
@@ -164,7 +162,7 @@ export struct ReplyEditorPage {
     .padding({
       left: ThemeConstants.SPACE_MD,
       right: ThemeConstants.SPACE_MD,
-      top: this.topH + ThemeConstants.TITLE_BAR_HEIGHT + ThemeConstants.SPACE_LG,
+      top: this.topH + ThemeConstants.TITLE_BAR_HEIGHT + ThemeConstants.SPACE_MD,
       bottom: this.bottomH + ThemeConstants.SPACE_LG
     })
     .width('100%')

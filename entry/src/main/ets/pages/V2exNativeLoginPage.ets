@@ -26,12 +26,8 @@ export struct V2exNativeLoginPage {
   private http: HttpClient = HttpClient.getInstance()
 
   build() {
-    Column({ space: ThemeConstants.SPACE_SM }) {
-      Text('账号密码登录（实验性）')
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .fontWeight(FontWeight.Medium)
-        .fontColor($r('sys.color.font_primary'))
-
+    Column() {
+      Column({ space: ThemeConstants.SPACE_SM }) {
       Text('如果出现验证码/2FA 或表单字段变化，建议使用网页登录。')
         .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
         .fontColor($r('sys.color.font_secondary'))
@@ -70,6 +66,11 @@ export struct V2exNativeLoginPage {
           .enabled(!this.isLoading)
           .onClick(() => { this.stack.pop() })
       }
+      }
+      .width('100%')
+      .padding(ThemeConstants.SPACE_LG)
+      .borderRadius(ThemeConstants.RADIUS_MD)
+      .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
     }
     .padding({
       left: ThemeConstants.SPACE_MD,

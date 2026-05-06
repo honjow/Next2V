@@ -6,7 +6,7 @@ import { common } from '@kit.AbilityKit'
 import {
   HttpClient, ThemeConstants, StorageKeys, ApiConstants, TabItem,
   AuthSettings, ApiService, ApiV2Service, DateUtils, CollectionSettings, TopicDetailParams, ImagePreviewParams,
-  CookieJarSettings, AuthSessionSettings, V2exSessionParser, LoadingFooter, NotificationSettings
+  CookieJarSettings, AuthSessionSettings, V2exSessionParser, LoadingFooter, NotificationSettings, SecondaryListScaffold
 }
   from 'shared'
 import type { V2exAuthenticatedMember, V2exNotification, SavedTopic, SavedNode, ViewedTopic } from 'shared'
@@ -125,7 +125,7 @@ struct Index {
   @Builder pm(name: string, param: Object) {
     if (name === 'TopicDetail') {
       HdsNavDestination() { TopicDetailPage({ topicId: (param as Record<string, Object>)['topicId'] as number }) }
-        .titleBar(this.navDestTitleBarOpts())
+        .titleBar(this.topicDetailTitleBarOpts())
     } else if (name === 'ImagePreview') {
       HdsNavDestination() { ImagePreviewPage({ url: (param as ImagePreviewParams).url }) }
         .titleBar(this.navDestTitleBarOpts())
@@ -139,28 +139,37 @@ struct Index {
           topicId: ((param as Record<string, Object>)['topicId'] as number) || 0,
           topicTitle: ((param as Record<string, Object>)['topicTitle'] as string) || ''
         })
-      }.titleBar(this.navDestTitleBarOpts())
+      }.titleBar(this.navDestTitleBarOpts('回复'))
     } else if (name === 'UserProfile') {
       HdsNavDestination() { UserProfilePage({ username: (param as Record<string, Object>)['username'] as string }) }
         .titleBar(this.navDestTitleBarOpts())
     } else if (name === 'V2exWebLogin') {
       HdsNavDestination() { V2exWebLoginPage() }
-        .titleBar(this.navDestTitleBarOpts())
+        .titleBar(this.navDestTitleBarOpts('网页登录'))
     } else if (name === 'V2exNativeLogin') {
       HdsNavDestination() { V2exNativeLoginPage() }
-        .titleBar(this.navDestTitleBarOpts())
+        .titleBar(this.navDestTitleBarOpts('账号密码登录'))
     } else if (name === 'NodePicker') {
       HdsNavDestination() { NodePickerPage() }
-        .titleBar(this.navDestTitleBarOpts())
+        .titleBar(this.navDestTitleBarOpts('选择节点'))
     } else if (name === 'Search') {
       HdsNavDestination() { SearchPage() }
-        .titleBar(this.navDestTitleBarOpts())
+        .titleBar(this.navDestTitleBarOpts('搜索'))
     } else if (name === 'TopicEditor') {
       HdsNavDestination() { TopicEditorPage() }
-        .titleBar(this.navDestTitleBarOpts())
+        .titleBar(this.navDestTitleBarOpts('发帖草稿'))
     } else if (name === 'Settings') {
       HdsNavDestination() { SettingsPage() }
         .titleBar(this.navDestTitleBarOpts('设置'))
+    } else if (name === 'SavedTopics') {
+      HdsNavDestination() { this.SavedTopicsPage() }
+        .titleBar(this.navDestTitleBarOpts('稍后读'))
+    } else if (name === 'ViewedTopics') {
+      HdsNavDestination() { this.ViewedTopicsPage() }
+        .titleBar(this.navDestTitleBarOpts('最近浏览'))
+    } else if (name === 'SavedNodes') {
+      HdsNavDestination() { this.SavedNodesPage() }
+        .titleBar(this.navDestTitleBarOpts('关注节点'))
     }
   }
 
@@ -200,16 +209,50 @@ struct Index {
       .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
   }
 
-  private navDestTitleBarOpts(title?: string): Record<string, Object> {
+  private navDestTitleBarOpts(title?: string, menu?: Record<string, Object>): Record<string, Object> {
     let mat: Record<string, Object> = { 'materialType': hdsMaterial.MaterialType.ADAPTIVE, 'materialLevel': hdsMaterial.MaterialLevel.ADAPTIVE }
     let scrollOpts: Record<string, Object> = { 'enableScrollEffect': true, 'scrollEffectType': ScrollEffectType.GRADIENT_BLUR }
     let style: Record<string, Object> = { 'systemMaterialEffect': mat, 'scrollEffectOpts': scrollOpts }
-    if (title) {
+    if (title || menu) {
+      let content: Record<string, Object> = {}
+      if (menu) {
+        content['menu'] = menu
+      }
+      if (!title) {
+        return { 'avoidLayoutSafeArea': true, 'enableComponentSafeArea': false, 'blurStrategy': BlurStrategy.ENABLE, 'content': content, 'style': style }
+      }
       let titleInfo: Record<string, Object> = { 'mainTitle': title }
-      let content: Record<string, Object> = { 'title': titleInfo }
+      content['title'] = titleInfo
       return { 'avoidLayoutSafeArea': true, 'enableComponentSafeArea': false, 'blurStrategy': BlurStrategy.ENABLE, 'content': content, 'style': style }
     }
     return { 'avoidLayoutSafeArea': true, 'enableComponentSafeArea': false, 'blurStrategy': BlurStrategy.ENABLE, 'style': style }
+  }
+
+  private topicDetailTitleBarOpts(): Record<string, Object> {
+    let items: Record<string, Object>[] = [
+      this.topicActionItem('回复', $r('sys.symbol.ellipsis_bubble'), () => { this.sendTopicAction('reply') }),
+      this.topicActionItem('稍后读', $r('sys.symbol.star'), () => { this.sendTopicAction('saveLater') }),
+      this.topicActionItem('复制标题', $r('sys.symbol.doc_plaintext'), () => { this.sendTopicAction('copyTitle') }),
+      this.topicActionItem('复制链接', $r('sys.symbol.plus_square_on_square'), () => { this.sendTopicAction('copyLink') }),
+      this.topicActionItem('分享链接', $r('sys.symbol.share'), () => { this.sendTopicAction('share') }),
+      this.topicActionItem('浏览器打开', $r('sys.symbol.search_things'), () => { this.sendTopicAction('openBrowser') })
+    ]
+    let menu: Record<string, Object> = { 'value': items, 'maxCount': 3 }
+    return this.navDestTitleBarOpts(undefined, menu)
+  }
+
+  private sendTopicAction(action: string): void {
+    AppStorage.setOrCreate<string>(StorageKeys.TOPIC_DETAIL_ACTION, `${Date.now()}:${action}`)
+  }
+
+  private topicActionItem(label: string, icon: Resource, action: () => void): Record<string, Object> {
+    let content: Record<string, Object> = {
+      'label': label,
+      'icon': icon,
+      'isEnabled': true,
+      'action': action
+    }
+    return { 'content': content }
   }
 
   private titleBarOptions(): Record<string, Object> {
@@ -686,11 +729,17 @@ struct Index {
       this.SettingsDivider()
       this.TopicDraftEntryRow()
       this.SettingsDivider()
-      this.LocalSummaryRow('稍后读', '主题详情页保存的主题', this.savedTopics.length)
+      this.LocalNavigationRow('稍后读', '主题详情页保存的主题', this.savedTopics.length, () => {
+        this.ns.pushPathByName('SavedTopics', null)
+      })
       this.SettingsDivider()
-      this.LocalSummaryRow('最近浏览', '打开主题详情后自动记录', this.viewedTopics.length)
+      this.LocalNavigationRow('最近浏览', '打开主题详情后自动记录', this.viewedTopics.length, () => {
+        this.ns.pushPathByName('ViewedTopics', null)
+      })
       this.SettingsDivider()
-      this.LocalSummaryRow('关注节点', '节点主题页关注的节点', this.savedNodes.length)
+      this.LocalNavigationRow('关注节点', '节点主题页关注的节点', this.savedNodes.length, () => {
+        this.ns.pushPathByName('SavedNodes', null)
+      })
     }
     .width('100%')
     .alignItems(HorizontalAlign.Start)
@@ -746,7 +795,7 @@ struct Index {
     .onClick(() => { this.ns.pushPathByName('TopicEditor', null) })
   }
 
-  @Builder LocalSummaryRow(title: string, subtitle: string, count: number) {
+  @Builder LocalNavigationRow(title: string, subtitle: string, count: number, action: () => void) {
     Row({ space: ThemeConstants.SPACE_SM }) {
       Column({ space: ThemeConstants.SPACE_XS }) {
         Text(title)
@@ -759,12 +808,149 @@ struct Index {
       }
       .layoutWeight(1)
       .alignItems(HorizontalAlign.Start)
-      Text(`${count}`)
-        .fontSize(ThemeConstants.FONT_SIZE_TAG)
-        .fontColor($r('sys.color.font_secondary'))
+      Row({ space: ThemeConstants.SPACE_XS }) {
+        Text(`${count}`)
+          .fontSize(ThemeConstants.FONT_SIZE_TAG)
+          .fontColor($r('sys.color.font_secondary'))
+        Text('›')
+          .fontSize(ThemeConstants.FONT_SIZE_TITLE)
+          .fontColor($r('sys.color.font_secondary'))
+      }
+      .alignItems(VerticalAlign.Center)
     }
     .width('100%')
     .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG, top: ThemeConstants.SPACE_MD, bottom: ThemeConstants.SPACE_MD })
+    .onClick(action)
+  }
+
+  @Builder SavedTopicsPage() {
+    SecondaryListScaffold() {
+      if (this.savedTopics.length === 0) {
+        ListItem() { this.LocalEmptyView('还没有稍后读主题') }
+      } else {
+        ForEach(this.savedTopics, (item: SavedTopic) => {
+          ListItem() {
+            this.LocalTopicRow(item.title, item.nodeTitle, item.nodeName, item.username, item.savedAt, '保存于')
+          }
+          .onClick(() => {
+            let p: TopicDetailParams = { topicId: item.id }
+            this.ns.pushPathByName('TopicDetail', p as Object)
+          })
+        }, (item: SavedTopic) => `saved-${item.id}`)
+      }
+    }
+  }
+
+  @Builder ViewedTopicsPage() {
+    SecondaryListScaffold() {
+      if (this.viewedTopics.length === 0) {
+        ListItem() { this.LocalEmptyView('还没有最近浏览记录') }
+      } else {
+        ForEach(this.viewedTopics, (item: ViewedTopic) => {
+          ListItem() {
+            this.LocalTopicRow(item.title, item.nodeTitle, item.nodeName, item.username, item.viewedAt, '浏览于')
+          }
+          .onClick(() => {
+            let p: TopicDetailParams = { topicId: item.id }
+            this.ns.pushPathByName('TopicDetail', p as Object)
+          })
+        }, (item: ViewedTopic) => `viewed-${item.id}`)
+      }
+    }
+  }
+
+  @Builder SavedNodesPage() {
+    SecondaryListScaffold() {
+      if (this.savedNodes.length === 0) {
+        ListItem() { this.LocalEmptyView('还没有关注节点') }
+      } else {
+        ForEach(this.savedNodes, (item: SavedNode) => {
+          ListItem() {
+            this.LocalNodeRow(item)
+          }
+          .onClick(() => {
+            let p: Record<string, Object> = { 'nodeName': item.name, 'nodeTitle': item.title }
+            this.ns.pushPathByName('NodeTopicList', p as Object)
+          })
+        }, (item: SavedNode) => `node-${item.name}`)
+      }
+    }
+  }
+
+  @Builder LocalTopicRow(title: string, nodeTitle: string, nodeName: string, username: string, timestamp: number, prefix: string) {
+    Column({ space: ThemeConstants.SPACE_SM }) {
+      Text(title)
+        .fontSize(ThemeConstants.FONT_SIZE_BODY)
+        .fontWeight(FontWeight.Medium)
+        .fontColor($r('sys.color.font_primary'))
+        .maxLines(2)
+        .textOverflow({ overflow: TextOverflow.Ellipsis })
+      Row({ space: ThemeConstants.SPACE_SM }) {
+        Text(nodeTitle || nodeName)
+          .fontSize(ThemeConstants.FONT_SIZE_TAG)
+          .fontColor($r('sys.color.ohos_id_color_activated'))
+          .padding({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM, top: 2, bottom: 2 })
+          .borderRadius(ThemeConstants.RADIUS_SM)
+          .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+        Text(username)
+          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+          .fontColor($r('sys.color.font_secondary'))
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+        Text(`${prefix} ${DateUtils.toDateString(timestamp)}`)
+          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+          .fontColor($r('sys.color.font_secondary'))
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+      }
+      .width('100%')
+    }
+    .alignItems(HorizontalAlign.Start)
+    .width('100%')
+    .padding(ThemeConstants.SPACE_LG)
+    .borderRadius(ThemeConstants.RADIUS_MD)
+    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+  }
+
+  @Builder LocalNodeRow(item: SavedNode) {
+    Row({ space: ThemeConstants.SPACE_SM }) {
+      Column({ space: ThemeConstants.SPACE_XS }) {
+        Text(item.title || item.name)
+          .fontSize(ThemeConstants.FONT_SIZE_BODY)
+          .fontWeight(FontWeight.Medium)
+          .fontColor($r('sys.color.font_primary'))
+        Text(`${item.name} · ${item.topics} 个主题 · 关注于 ${DateUtils.toDateString(item.savedAt)}`)
+          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+          .fontColor($r('sys.color.font_secondary'))
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+      }
+      .layoutWeight(1)
+      .alignItems(HorizontalAlign.Start)
+      Text('›')
+        .fontSize(ThemeConstants.FONT_SIZE_TITLE)
+        .fontColor($r('sys.color.font_secondary'))
+    }
+    .width('100%')
+    .padding(ThemeConstants.SPACE_LG)
+    .borderRadius(ThemeConstants.RADIUS_MD)
+    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+  }
+
+  @Builder LocalEmptyView(message: string) {
+    Column({ space: ThemeConstants.SPACE_MD }) {
+      SymbolGlyph($r('sys.symbol.doc_text'))
+        .fontSize(42)
+        .fontColor([$r('sys.color.font_secondary')])
+      Text(message)
+        .fontSize(ThemeConstants.FONT_SIZE_BODY)
+        .fontColor($r('sys.color.font_secondary'))
+    }
+    .justifyContent(FlexAlign.Center)
+    .width('100%')
+    .height(220)
+    .borderRadius(ThemeConstants.RADIUS_MD)
+    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }
 
   @Builder StorageSection() {

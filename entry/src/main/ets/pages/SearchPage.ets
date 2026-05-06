@@ -79,11 +79,6 @@ export struct SearchPage {
 
   build() {
     Column({ space: ThemeConstants.SPACE_SM }) {
-      Text('搜索')
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .fontWeight(FontWeight.Medium)
-        .fontColor($r('sys.color.font_primary'))
-
       Text(this.sourceModeSummary())
         .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
         .fontColor($r('sys.color.font_secondary'))
@@ -168,7 +163,7 @@ export struct SearchPage {
     .padding({
       left: ThemeConstants.SPACE_MD,
       right: ThemeConstants.SPACE_MD,
-      top: this.topH + ThemeConstants.TITLE_BAR_HEIGHT + ThemeConstants.SPACE_LG,
+      top: this.topH + ThemeConstants.TITLE_BAR_HEIGHT + ThemeConstants.SPACE_MD,
       bottom: this.bottomH + ThemeConstants.SPACE_LG
     })
     .width('100%')

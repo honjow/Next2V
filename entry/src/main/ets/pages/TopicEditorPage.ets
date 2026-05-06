@@ -58,15 +58,6 @@ export struct TopicEditorPage {
   build() {
     Scroll() {
       Column({ space: ThemeConstants.SPACE_SM }) {
-        Text('发帖草稿')
-          .fontSize(ThemeConstants.FONT_SIZE_BODY)
-          .fontWeight(FontWeight.Medium)
-          .fontColor($r('sys.color.font_primary'))
-
-        Text('此页面仅编辑/预览草稿，不会提交到 V2EX。')
-          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-          .fontColor($r('sys.color.font_secondary'))
-
         Row({ space: ThemeConstants.SPACE_SM }) {
           TextInput({ placeholder: '节点（如 create）', text: this.nodeName })
             .height(44)
@@ -95,7 +86,7 @@ export struct TopicEditorPage {
             this.scheduleSaveDraft()
           })
 
-        Row({ space: ThemeConstants.SPACE_SM }) {
+        Flex({ direction: FlexDirection.Row, wrap: FlexWrap.Wrap }) {
           Button('编辑')
             .type(ButtonType.Normal)
             .fontSize(ThemeConstants.FONT_SIZE_TAG)
@@ -103,6 +94,7 @@ export struct TopicEditorPage {
             .height(ThemeConstants.TOUCH_TARGET_SM)
             .borderRadius(ThemeConstants.RADIUS_MD)
             .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+            .margin({ right: ThemeConstants.SPACE_SM, bottom: ThemeConstants.SPACE_SM })
             .onClick(() => { this.isPreview = false })
           Button('预览')
             .type(ButtonType.Normal)
@@ -111,6 +103,7 @@ export struct TopicEditorPage {
             .height(ThemeConstants.TOUCH_TARGET_SM)
             .borderRadius(ThemeConstants.RADIUS_MD)
             .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+            .margin({ right: ThemeConstants.SPACE_SM, bottom: ThemeConstants.SPACE_SM })
             .onClick(() => { this.isPreview = true })
           Button('图片')
             .type(ButtonType.Normal)
@@ -119,8 +112,8 @@ export struct TopicEditorPage {
             .height(ThemeConstants.TOUCH_TARGET_SM)
             .borderRadius(ThemeConstants.RADIUS_MD)
             .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+            .margin({ right: ThemeConstants.SPACE_SM, bottom: ThemeConstants.SPACE_SM })
             .onClick(() => { this.insertImageLinkTemplate() })
-          Blank()
           Button('清空')
             .type(ButtonType.Normal)
             .fontSize(ThemeConstants.FONT_SIZE_TAG)
@@ -128,6 +121,7 @@ export struct TopicEditorPage {
             .height(ThemeConstants.TOUCH_TARGET_SM)
             .borderRadius(ThemeConstants.RADIUS_MD)
             .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+            .margin({ right: ThemeConstants.SPACE_SM, bottom: ThemeConstants.SPACE_SM })
             .onClick(() => { this.confirmClearDraft() })
         }
         .width('100%')
@@ -194,7 +188,7 @@ export struct TopicEditorPage {
       .padding({
         left: ThemeConstants.SPACE_MD,
         right: ThemeConstants.SPACE_MD,
-        top: this.topH + ThemeConstants.TITLE_BAR_HEIGHT + ThemeConstants.SPACE_LG,
+        top: this.topH + ThemeConstants.TITLE_BAR_HEIGHT + ThemeConstants.SPACE_MD,
         bottom: this.bottomH + ThemeConstants.SPACE_XL
       })
       .width('100%')
