@@ -118,3 +118,16 @@ export interface V2exNotification {
   created?: number
   last_modified?: number
 }
+
+export interface V2exBalance {
+  gold: number
+  silver: number
+  bronze: number
+  summary: string
+}
+
+export interface V2exDailyMission {
+  canRedeem: boolean
+  redeemPath: string
+  message: string
+}

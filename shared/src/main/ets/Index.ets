@@ -57,11 +57,14 @@ export type {
   V2exSiteInfo,
   V2exAuthenticatedMember,
   V2exNotification,
-  V2exTokenInfo
+  V2exTokenInfo,
+  V2exBalance,
+  V2exDailyMission
 } from './network/NetworkTypes'
 
 // 解析
 export { V2exTabParser } from './parser/V2exTabParser'
+export { V2exAccountParser } from './parser/V2exAccountParser'
 export { V2exNotificationParser } from './parser/V2exNotificationParser'
 export { V2exSessionParser } from './parser/V2exSessionParser'
 export { V2exSigninParser } from './parser/V2exSigninParser'

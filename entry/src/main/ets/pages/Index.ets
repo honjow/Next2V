@@ -10,7 +10,9 @@ import {
   Avatar
 }
   from 'shared'
-import type { V2exAuthenticatedMember, V2exNotification, SavedTopic, SavedNode, ViewedTopic } from 'shared'
+import type {
+  V2exAuthenticatedMember, V2exNotification, SavedTopic, SavedNode, ViewedTopic, V2exBalance, V2exDailyMission
+} from 'shared'
 import type { V2exTokenInfo } from 'shared'
 import { HomePage } from 'feed'
 import { ReplyEditorPage, TopicDetailPage } from 'detail'
@@ -98,6 +100,11 @@ struct Index {
   @State private isNotificationLoadingMore: boolean = false
   @State private notificationCacheUpdatedAt: number = 0
   @State private notificationLoadedFromCache: boolean = false
+  @State private accountBalance: V2exBalance | null = null
+  @State private dailyMission: V2exDailyMission | null = null
+  @State private accountMetaError: string = ''
+  @State private isAccountMetaLoading: boolean = false
+  @State private isDailyRedeeming: boolean = false
   private http: HttpClient = HttpClient.getInstance()
   private api: ApiService = new ApiService()
   private apiV2: ApiV2Service = new ApiV2Service()
@@ -198,6 +205,7 @@ struct Index {
             this.loadNotifications()
           } else if (i === 3) {
             this.validateCookieSession()
+            this.loadAccountMeta()
             this.loadSavedTopics()
             this.loadSavedNodes()
             this.loadViewedTopics()
@@ -269,8 +277,11 @@ struct Index {
     } else {
       content = { 'title': titleInfo }
     }
-    if (this.ct === 3) {
+    if (this.tabTitles[this.ct] === '我的') {
       content['menu'] = this.meTitleMenu()
+    } else {
+      let emptyMenu: Record<string, Object> = { 'value': [], 'maxCount': 0 }
+      content['menu'] = emptyMenu
     }
     let mat: Record<string, Object> = { 'materialType': hdsMaterial.MaterialType.ADAPTIVE, 'materialLevel': hdsMaterial.MaterialLevel.ADAPTIVE }
     let scrollOpts: Record<string, Object> = { 'enableScrollEffect': true, 'scrollEffectType': ScrollEffectType.GRADIENT_BLUR }
@@ -441,17 +452,33 @@ struct Index {
     return this.sessionAvatar || this.authProfile?.avatar_normal || this.authProfile?.avatar_large || ''
   }
 
-  private accountSubtitle(): string {
-    if (this.authCookieConfigured && this.isSessionValidating) {
-      return '会话验证中'
+  private accountMetaText(): string {
+    if (this.accountBalance) {
+      return this.accountBalance.summary
     }
-    if (this.authCookieConfigured) {
-      return '已通过账号登录'
+    if (this.isAccountMetaLoading) {
+      return '虚拟币同步中'
     }
-    if (this.authTokenConfigured) {
-      return '已配置 V2 API 授权'
+    if (this.accountMetaError) {
+      return '虚拟币信息不可用'
     }
-    return '未登录'
+    return '金币 0 · 银币 0 · 铜币 0'
+  }
+
+  private dailyMissionButtonText(): string {
+    if (this.isDailyRedeeming) {
+      return '签到中'
+    }
+    if (this.dailyMission && !this.dailyMission.canRedeem) {
+      return '已签到'
+    }
+    return '签到'
+  }
+
+  private dailyMissionEnabled(): boolean {
+    return this.authCookieConfigured && !!CookieJarSettings.getCurrentCookie() &&
+      !this.isAccountMetaLoading && !this.isDailyRedeeming &&
+      (!this.dailyMission || this.dailyMission.canRedeem)
   }
 
   private profileTagline(): string {
@@ -483,6 +510,7 @@ struct Index {
     CookieJarSettings.load(context)
       .then(() => {
         this.validateCookieSession()
+        this.loadAccountMeta()
       })
       .catch((error: Error) => {
         console.error('restore cookie jar failed: ' + error.message)
@@ -529,6 +557,7 @@ struct Index {
               validatedAt: Date.now()
             }).then(() => {
               this.loadNotificationCache(username)
+              this.loadAccountMeta(true)
               if (this.ct === 2) {
                 this.loadNotifications(true)
               }
@@ -573,7 +602,7 @@ struct Index {
               .fontColor($r('sys.color.font_primary'))
               .maxLines(1)
               .textOverflow({ overflow: TextOverflow.Ellipsis })
-            Text(this.accountSubtitle())
+            Text(this.accountMetaText())
               .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
               .fontColor($r('sys.color.font_secondary'))
               .maxLines(1)
@@ -581,6 +610,16 @@ struct Index {
           }
           .layoutWeight(1)
           .alignItems(HorizontalAlign.Start)
+
+          Button(this.dailyMissionButtonText())
+            .fontSize(ThemeConstants.FONT_SIZE_TAG)
+            .height(ThemeConstants.TOUCH_TARGET_SM)
+            .type(ButtonType.Normal)
+            .borderRadius(ThemeConstants.RADIUS_MD)
+            .fontColor(this.dailyMissionEnabled() ? Color.White : $r('sys.color.font_secondary'))
+            .backgroundColor(this.dailyMissionEnabled() ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.ohos_id_color_button_normal'))
+            .enabled(this.dailyMissionEnabled())
+            .onClick(() => { this.redeemDailyMission() })
 
           Text('›')
             .fontSize(ThemeConstants.FONT_SIZE_TITLE)
@@ -610,11 +649,21 @@ struct Index {
               .fontSize(ThemeConstants.FONT_SIZE_TITLE)
               .fontWeight(FontWeight.Medium)
               .fontColor($r('sys.color.font_primary'))
-            Text(this.accountSubtitle())
+            Text(this.accountMetaText())
               .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
               .fontColor($r('sys.color.font_secondary'))
+            if (this.dailyMission) {
+              Text(this.dailyMission.message)
+                .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+                .fontColor($r('sys.color.font_secondary'))
+            }
             if (this.sessionError) {
               Text(this.sessionError)
+                .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+                .fontColor(Color.Red)
+            }
+            if (this.accountMetaError) {
+              Text(this.accountMetaError)
                 .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
                 .fontColor(Color.Red)
             }
@@ -1284,6 +1333,9 @@ struct Index {
         this.tokenInfo = null
         this.tokenInfoError = ''
         this.authError = ''
+        this.accountBalance = null
+        this.dailyMission = null
+        this.accountMetaError = ''
         this.resetNotificationState()
       })
       .catch((error: Error) => {
@@ -1310,7 +1362,62 @@ struct Index {
         this.authProfile = null
         this.tokenInfo = null
         this.tokenInfoError = ''
+        this.accountBalance = null
+        this.dailyMission = null
+        this.accountMetaError = ''
         this.resetNotificationState()
+      })
+  }
+
+  private loadAccountMeta(force: boolean = false): void {
+    const cookie = CookieJarSettings.getCurrentCookie()
+    if (!this.authCookieConfigured || !cookie || this.isAccountMetaLoading) {
+      return
+    }
+    if (!force && this.accountBalance && this.dailyMission) {
+      return
+    }
+    this.isAccountMetaLoading = true
+    this.accountMetaError = ''
+    Promise.all([
+      this.api.getBalanceWithCookie(cookie),
+      this.api.getDailyMissionWithCookie(cookie)
+    ])
+      .then((results) => {
+        this.accountBalance = results[0]
+        this.dailyMission = results[1]
+      })
+      .catch((error: Error) => {
+        this.accountMetaError = error.message || '读取账号信息失败'
+      })
+      .finally(() => {
+        this.isAccountMetaLoading = false
+      })
+  }
+
+  private redeemDailyMission(): void {
+    const cookie = CookieJarSettings.getCurrentCookie()
+    if (!this.authCookieConfigured || !cookie || this.isDailyRedeeming) {
+      return
+    }
+    if (!this.dailyMission || !this.dailyMission.canRedeem || !this.dailyMission.redeemPath) {
+      promptAction.openToast({ message: '今日已签到' }).catch((_error: Error) => { })
+      return
+    }
+    this.isDailyRedeeming = true
+    this.accountMetaError = ''
+    this.api.redeemDailyMissionWithCookie(cookie, this.dailyMission.redeemPath)
+      .then((mission: V2exDailyMission) => {
+        this.dailyMission = mission
+        promptAction.openToast({ message: mission.message || '签到完成' }).catch((_error: Error) => { })
+        this.loadAccountMeta(true)
+      })
+      .catch((error: Error) => {
+        this.accountMetaError = error.message || '签到失败'
+        promptAction.openToast({ message: this.accountMetaError }).catch((_error: Error) => { })
+      })
+      .finally(() => {
+        this.isDailyRedeeming = false
       })
   }
 

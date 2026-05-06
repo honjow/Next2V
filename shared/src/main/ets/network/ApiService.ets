@@ -2,6 +2,7 @@ import { HttpClient } from './HttpClient'
 import { ApiConstants } from '../constants/ApiConstants'
 import { V2exTabParser } from '../parser/V2exTabParser'
 import { V2exNotificationParser } from '../parser/V2exNotificationParser'
+import { V2exAccountParser } from '../parser/V2exAccountParser'
 import type {
   V2exTopic,
   V2exReply,
@@ -10,7 +11,9 @@ import type {
   V2exSiteInfo,
   V2exAuthenticatedMember,
   V2exNotification,
-  V2exTokenInfo
+  V2exTokenInfo,
+  V2exBalance,
+  V2exDailyMission
 } from './NetworkTypes'
 
 /**
@@ -98,6 +101,24 @@ export class ApiService {
   async getNotificationsWithCookie(cookie: string, page: number = 1): Promise<V2exNotification[]> {
     const html = await this.http.getTextWithHeaders(`/notifications?p=${page}`, { 'Cookie': cookie })
     return V2exNotificationParser.extractNotifications(html)
+  }
+
+  async getBalanceWithCookie(cookie: string): Promise<V2exBalance> {
+    const html = await this.http.getTextWithHeaders('/balance', { 'Cookie': cookie })
+    return V2exAccountParser.extractBalance(html)
+  }
+
+  async getDailyMissionWithCookie(cookie: string): Promise<V2exDailyMission> {
+    const html = await this.http.getTextWithHeaders('/mission/daily', { 'Cookie': cookie })
+    return V2exAccountParser.extractDailyMission(html)
+  }
+
+  async redeemDailyMissionWithCookie(cookie: string, redeemPath: string): Promise<V2exDailyMission> {
+    if (!redeemPath) {
+      throw new Error('今日不可签到')
+    }
+    await this.http.getTextWithHeaders(redeemPath, { 'Cookie': cookie })
+    return this.getDailyMissionWithCookie(cookie)
   }
 
   // ==================== Tab 聚合接口 ====================
