@@ -25,7 +25,7 @@ BUNDLE=com.next2v.app
 
 keep_awake() {
   "$HDC" shell "power-shell wakeup" >/dev/null 2>&1 || true
-  "$HDC" shell "power-shell timeout -o 3600000" >/dev/null 2>&1 || true
+  "$HDC" shell "power-shell timeout -o 13600000" >/dev/null 2>&1 || true
 }
 
 case "$1" in
