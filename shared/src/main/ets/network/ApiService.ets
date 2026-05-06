@@ -377,7 +377,11 @@ export class ApiService {
     }
 
     const composePath = `/new/${cleanNode}`
-    const html = await this.http.getTextWithHeaders(composePath, { 'Cookie': cookie })
+    const composeRes = await this.requestHtmlWithCookieAllowRedirect(composePath, cookie, composePath, http.RequestMethod.GET)
+    if (composeRes.location.indexOf('/signin') >= 0) {
+      throw new Error('Web 会话已失效，请重新登录')
+    }
+    const html = composeRes.text
     if (!V2exSessionParser.extractUsername(html)) {
       throw new Error('Web 会话已失效，请重新登录')
     }
