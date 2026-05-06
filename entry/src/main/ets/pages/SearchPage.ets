@@ -18,6 +18,7 @@ import {
   StorageKeys,
   Sov2exService,
   AppActionButton,
+  AppModalScaffold,
   AppSearchField,
   AppTextField,
   FilterChip,
@@ -152,9 +153,9 @@ export struct SearchPage {
     .height('100%')
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
     .bindSheet($$this.filterSheetVisible, this.SearchFilterSheet(), {
-      height: SheetSize.FIT_CONTENT,
+      height: SheetSize.MEDIUM,
       preferType: SheetType.BOTTOM,
-      dragBar: true,
+      dragBar: false,
       showClose: false,
       maskColor: 'rgba(0,0,0,0.24)',
       backgroundColor: $r('sys.color.ohos_id_color_card_bg'),
@@ -610,41 +611,26 @@ export struct SearchPage {
   }
 
   @Builder SearchFilterSheet() {
-    Column({ space: ThemeConstants.SPACE_MD }) {
-      Row() {
-        Text('搜索筛选')
-          .fontSize(ThemeConstants.FONT_SIZE_TITLE)
-          .fontWeight(FontWeight.Medium)
-          .fontColor($r('sys.color.font_primary'))
-        Blank()
-        Text('完成')
-          .fontSize(ThemeConstants.FONT_SIZE_TAG)
-          .fontColor(ThemeConstants.BRAND_PRIMARY)
-          .padding({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_SM, top: 7, bottom: 7 })
-          .onClick(() => {
-            this.filterSheetVisible = false
-          })
+    AppModalScaffold({
+      title: '搜索筛选',
+      closeAction: () => {
+        this.filterSheetVisible = false
       }
-      .width('100%')
-
+    }) {
       if (this.sourceMode === 'remote') {
-        this.RemoteFilterSheetContent()
+        ListItem() { this.RemoteFilterSheetContent() }
       } else if (this.sourceMode === 'externalWeb') {
-        Text('网页搜索会在系统浏览器中打开，不额外提供站内筛选。')
-          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-          .fontColor($r('sys.color.font_secondary'))
-          .width('100%')
+        ListItem() {
+          Text('网页搜索会在系统浏览器中打开，不额外提供站内筛选。')
+            .fontSize(ThemeConstants.FONT_SIZE_BODY)
+            .fontColor($r('sys.color.font_secondary'))
+            .width('100%')
+            .padding({ top: ThemeConstants.SPACE_SM })
+        }
       } else {
-        this.LocalFilterSheetContent()
+        ListItem() { this.LocalFilterSheetContent() }
       }
     }
-    .padding({
-      left: ThemeConstants.SPACE_MD,
-      right: ThemeConstants.SPACE_MD,
-      top: ThemeConstants.SPACE_MD,
-      bottom: this.bottomH + ThemeConstants.SPACE_MD
-    })
-    .width('100%')
   }
 
   @Builder LocalFilterSheetContent() {

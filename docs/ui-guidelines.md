@@ -118,6 +118,11 @@ Rules:
 
 - Prefer system/HDS sheet/dialog APIs such as `bindSheet` over custom overlay
   stacks.
+- Multi-section sheets must use a standard modal scaffold: fixed-height sheet,
+  app-bar style title row, top-right close icon, and a `List` content body.
+- If a modal needs secondary choices or drill-in settings, keep the scaffold and
+  add an internal navigation stack instead of replacing the sheet with ad hoc
+  nested columns.
 - Back must dismiss the top sheet/modal before leaving the page.
 - The sheet content builder must not use percentage height with
   `SheetSize.FIT_CONTENT`.
