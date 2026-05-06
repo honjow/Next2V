@@ -592,12 +592,12 @@ struct Index {
     if (this.accountBalance) {
       Row({ space: ThemeConstants.SPACE_SM }) {
         if (this.accountBalance.gold > 0) {
-          this.CoinAmount('#C79424', '#F4D67A', '#FFF4C5', this.accountBalance.gold)
+          this.CoinAmount('#F3D16B', '#D59A24', '#9E6414', this.accountBalance.gold)
         }
         if (this.accountBalance.silver > 0) {
-          this.CoinAmount('#8F98A3', '#D8DEE5', '#FFFFFF', this.accountBalance.silver)
+          this.CoinAmount('#EEF3F7', '#A8B1BC', '#717B86', this.accountBalance.silver)
         }
-        this.CoinAmount('#A66B3D', '#D99B65', '#F4D2AA', this.accountBalance.bronze)
+        this.CoinAmount('#D99B65', '#A66B3D', '#74401F', this.accountBalance.bronze)
       }
       .alignItems(VerticalAlign.Center)
       .height(22)
@@ -610,9 +610,9 @@ struct Index {
     }
   }
 
-  @Builder CoinAmount(baseColor: ResourceColor, innerColor: ResourceColor, shineColor: ResourceColor, amount: number) {
+  @Builder CoinAmount(centerColor: ResourceColor, midColor: ResourceColor, edgeColor: ResourceColor, amount: number) {
     Row({ space: 4 }) {
-      this.CoinIcon(baseColor, innerColor, shineColor)
+      this.CoinIcon(centerColor, midColor, edgeColor)
       Text(`${amount}`)
         .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
         .fontColor($r('sys.color.font_secondary'))
@@ -621,29 +621,17 @@ struct Index {
     .alignItems(VerticalAlign.Center)
   }
 
-  @Builder CoinIcon(baseColor: ResourceColor, innerColor: ResourceColor, shineColor: ResourceColor) {
-    Stack() {
-      Text('')
-        .width(16)
-        .height(16)
-        .borderRadius(ThemeConstants.RADIUS_ROUND)
-        .backgroundColor(baseColor)
-      Text('')
-        .width(10)
-        .height(10)
-        .borderRadius(ThemeConstants.RADIUS_ROUND)
-        .backgroundColor(innerColor)
-        .opacity(0.56)
-      Text('')
-        .width(4)
-        .height(4)
-        .borderRadius(ThemeConstants.RADIUS_ROUND)
-        .backgroundColor(shineColor)
-        .opacity(0.82)
-        .position({ x: 3, y: 3 })
-    }
-    .width(16)
-    .height(16)
+  @Builder CoinIcon(centerColor: ResourceColor, midColor: ResourceColor, edgeColor: ResourceColor) {
+    Text('')
+      .width(16)
+      .height(16)
+      .borderRadius(ThemeConstants.RADIUS_ROUND)
+      .backgroundColor(edgeColor)
+      .radialGradient({
+        center: [5, 5],
+        radius: 13,
+        colors: [[centerColor, 0.0], [midColor, 0.58], [edgeColor, 1.0]]
+      })
   }
 
   @Builder AuthSection() {
