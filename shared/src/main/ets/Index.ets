@@ -62,6 +62,7 @@ export type {
 
 // 解析
 export { V2exTabParser } from './parser/V2exTabParser'
+export { V2exNotificationParser } from './parser/V2exNotificationParser'
 export { V2exSessionParser } from './parser/V2exSessionParser'
 export { V2exSigninParser } from './parser/V2exSigninParser'
 export type { V2exSigninForm } from './parser/V2exSigninParser'

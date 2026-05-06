@@ -1,6 +1,7 @@
 import { HttpClient } from './HttpClient'
 import { ApiConstants } from '../constants/ApiConstants'
 import { V2exTabParser } from '../parser/V2exTabParser'
+import { V2exNotificationParser } from '../parser/V2exNotificationParser'
 import type {
   V2exTopic,
   V2exReply,
@@ -92,6 +93,11 @@ export class ApiService {
       `${ApiConstants.API_V2_NOTIFICATIONS}?p=${page}`,
       ApiService.authHeaders(token)
     )
+  }
+
+  async getNotificationsWithCookie(cookie: string, page: number = 1): Promise<V2exNotification[]> {
+    const html = await this.http.getTextWithHeaders(`/notifications?p=${page}`, { 'Cookie': cookie })
+    return V2exNotificationParser.extractNotifications(html)
   }
 
   // ==================== Tab 聚合接口 ====================

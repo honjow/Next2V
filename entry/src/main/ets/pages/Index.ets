@@ -5,8 +5,9 @@ import {
 import { common } from '@kit.AbilityKit'
 import {
   HttpClient, ThemeConstants, StorageKeys, ApiConstants, TabItem,
-  AuthSettings, ApiService, ApiV2Service, DateUtils, CollectionSettings, TopicDetailParams, ImagePreviewParams,
-  CookieJarSettings, AuthSessionSettings, V2exSessionParser, LoadingFooter, NotificationSettings, SecondaryListScaffold
+  AuthSettings, ApiService, ApiV2Service, DateUtils, CollectionSettings, TopicDetailParams, ImagePreviewParams, UserProfileParams,
+  CookieJarSettings, AuthSessionSettings, V2exSessionParser, LoadingFooter, NotificationSettings, SecondaryListScaffold,
+  Avatar
 }
   from 'shared'
 import type { V2exAuthenticatedMember, V2exNotification, SavedTopic, SavedNode, ViewedTopic } from 'shared'
@@ -161,6 +162,9 @@ struct Index {
     } else if (name === 'Settings') {
       HdsNavDestination() { SettingsPage() }
         .titleBar(this.navDestTitleBarOpts('设置'))
+    } else if (name === 'Account') {
+      HdsNavDestination() { this.AccountPage() }
+        .titleBar(this.navDestTitleBarOpts('账号'))
     } else if (name === 'SavedTopics') {
       HdsNavDestination() { this.SavedTopicsPage() }
         .titleBar(this.navDestTitleBarOpts('稍后读'))
@@ -265,10 +269,20 @@ struct Index {
     } else {
       content = { 'title': titleInfo }
     }
+    if (this.ct === 3) {
+      content['menu'] = this.meTitleMenu()
+    }
     let mat: Record<string, Object> = { 'materialType': hdsMaterial.MaterialType.ADAPTIVE, 'materialLevel': hdsMaterial.MaterialLevel.ADAPTIVE }
     let scrollOpts: Record<string, Object> = { 'enableScrollEffect': true, 'scrollEffectType': ScrollEffectType.GRADIENT_BLUR }
     let style: Record<string, Object> = { 'systemMaterialEffect': mat, 'scrollEffectOpts': scrollOpts }
     return { 'avoidLayoutSafeArea': true, 'enableComponentSafeArea': false, 'blurStrategy': BlurStrategy.ENABLE, 'content': content, 'style': style }
+  }
+
+  private meTitleMenu(): Record<string, Object> {
+    let items: Record<string, Object>[] = [
+      this.topicActionItem('设置', $r('sys.symbol.gearshape'), () => { this.ns.pushPathByName('Settings', null) })
+    ]
+    return { 'value': items, 'maxCount': 1 }
   }
 
   @Builder TabIcon(title: string, idx: number) {
@@ -293,8 +307,8 @@ struct Index {
 
   @Builder NotifyPage() {
     Column() {
-      if (!this.authTokenConfigured) {
-        this.AuthRequiredView('通知功能需要 V2 API 授权')
+      if (!this.hasNotificationAuth()) {
+        this.AuthRequiredView('登录后可查看通知')
       } else if (this.isNotificationLoading && this.notifications.length === 0) {
         LoadingProgress()
           .width(ThemeConstants.LOADING_SIZE)
@@ -398,6 +412,10 @@ struct Index {
       .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
   }
 
+  private hasNotificationAuth(): boolean {
+    return (this.authTokenConfigured && !!this.authToken) || (this.authCookieConfigured && !!CookieJarSettings.getCurrentCookie())
+  }
+
   private loginStatusText(): string {
     if (this.authCookieConfigured) {
       return '已登录'
@@ -413,6 +431,27 @@ struct Index {
       return ThemeConstants.BRAND_PRIMARY
     }
     return $r('sys.color.font_secondary')
+  }
+
+  private currentUsername(): string {
+    return this.sessionUsername || this.authProfile?.username || this.storedUsername || ''
+  }
+
+  private currentAvatar(): string {
+    return this.sessionAvatar || this.authProfile?.avatar_normal || this.authProfile?.avatar_large || ''
+  }
+
+  private accountSubtitle(): string {
+    if (this.authCookieConfigured && this.isSessionValidating) {
+      return '会话验证中'
+    }
+    if (this.authCookieConfigured) {
+      return '已通过账号登录'
+    }
+    if (this.authTokenConfigured) {
+      return '已配置 V2 API 授权'
+    }
+    return '未登录'
   }
 
   private profileTagline(): string {
@@ -448,9 +487,13 @@ struct Index {
       .catch((error: Error) => {
         console.error('restore cookie jar failed: ' + error.message)
       })
-    AuthSessionSettings.load(context).catch((error: Error) => {
-      console.error('restore auth session failed: ' + error.message)
-    })
+    AuthSessionSettings.load(context)
+      .then((snapshot) => {
+        this.loadNotificationCache(snapshot.username)
+      })
+      .catch((error: Error) => {
+        console.error('restore auth session failed: ' + error.message)
+      })
   }
 
   private validateCookieSession(force: boolean = false): void {
@@ -484,6 +527,11 @@ struct Index {
               username: username,
               avatar: profile.avatar_normal || '',
               validatedAt: Date.now()
+            }).then(() => {
+              this.loadNotificationCache(username)
+              if (this.ct === 2) {
+                this.loadNotifications(true)
+              }
             })
           })
       })
@@ -516,66 +564,111 @@ struct Index {
       if (!this.authCookieConfigured && !this.authTokenConfigured) {
         this.AuthActionRow('未登录', '点击登录 V2EX', () => { this.ns.pushPathByName('V2exNativeLogin', null) })
       } else {
-        Row({ space: ThemeConstants.SPACE_SM }) {
+        Row({ space: ThemeConstants.SPACE_MD }) {
+          Avatar({ url: this.currentAvatar(), avatarSize: 54 })
           Column({ space: ThemeConstants.SPACE_XS }) {
-            Text('V2EX 登录')
-              .fontSize(ThemeConstants.FONT_SIZE_BODY)
-              .fontWeight(FontWeight.Medium)
-              .fontColor($r('sys.color.font_primary'))
-            Text(this.loginStatusText())
-              .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-              .fontColor(this.loginStatusColor())
-          }
-          .layoutWeight(1)
-          .alignItems(HorizontalAlign.Start)
-
-          if (this.sessionUsername || this.authProfile || this.storedUsername) {
-            Text(this.sessionUsername || this.authProfile?.username || this.storedUsername)
-              .fontSize(ThemeConstants.FONT_SIZE_BODY)
+            Text(this.currentUsername() || 'V2EX 用户')
+              .fontSize(ThemeConstants.FONT_SIZE_TITLE)
               .fontWeight(FontWeight.Medium)
               .fontColor($r('sys.color.font_primary'))
               .maxLines(1)
               .textOverflow({ overflow: TextOverflow.Ellipsis })
+            Text(this.accountSubtitle())
+              .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+              .fontColor($r('sys.color.font_secondary'))
+              .maxLines(1)
+              .textOverflow({ overflow: TextOverflow.Ellipsis })
           }
+          .layoutWeight(1)
+          .alignItems(HorizontalAlign.Start)
+
+          Text('›')
+            .fontSize(ThemeConstants.FONT_SIZE_TITLE)
+            .fontColor($r('sys.color.font_secondary'))
         }
+        .alignItems(VerticalAlign.Center)
         .width('100%')
-        .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG, top: ThemeConstants.SPACE_LG, bottom: ThemeConstants.SPACE_MD })
-
-        if (this.authProfile) {
-          this.ProfileSummary()
-        }
-        if (this.authCookieConfigured && this.isSessionValidating) {
-          this.StatusText('会话验证中...', false)
-        }
-        if (this.sessionError) {
-          this.StatusText(this.sessionError, true)
-        }
-        if (this.apiRateLimitLimit > 0) {
-          this.RateLimitSummary()
-        }
-
-        this.SettingsDivider()
-        this.AuthActionRow('账号密码', '重新登录或切换账号', () => { this.ns.pushPathByName('V2exNativeLogin', null) })
-        this.SettingsDivider()
-
-        Row() {
-          Button('退出登录')
-            .fontSize(ThemeConstants.FONT_SIZE_TAG)
-            .height(ThemeConstants.TOUCH_TARGET_SM)
-            .type(ButtonType.Normal)
-            .borderRadius(ThemeConstants.RADIUS_MD)
-            .fontColor($r('sys.color.font_primary'))
-            .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
-            .layoutWeight(1)
-            .onClick(() => { this.logoutAll() })
-        }
-        .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG, bottom: ThemeConstants.SPACE_LG })
+        .padding(ThemeConstants.SPACE_LG)
+        .onClick(() => { this.ns.pushPathByName('Account', null) })
       }
     }
     .width('100%')
     .alignItems(HorizontalAlign.Start)
     .borderRadius(ThemeConstants.RADIUS_MD)
     .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+  }
+
+  @Builder AccountPage() {
+    Column() {
+      List({ space: ThemeConstants.SPACE_SM }) {
+        ListItem() { Column() { Blank().height(this.topH + this.TBH + ThemeConstants.SPACE_MD) } }
+
+        ListItem() {
+          Column({ space: ThemeConstants.SPACE_MD }) {
+            Avatar({ url: this.currentAvatar(), avatarSize: 72 })
+            Text(this.currentUsername() || 'V2EX 用户')
+              .fontSize(ThemeConstants.FONT_SIZE_TITLE)
+              .fontWeight(FontWeight.Medium)
+              .fontColor($r('sys.color.font_primary'))
+            Text(this.accountSubtitle())
+              .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+              .fontColor($r('sys.color.font_secondary'))
+            if (this.sessionError) {
+              Text(this.sessionError)
+                .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+                .fontColor(Color.Red)
+            }
+          }
+          .alignItems(HorizontalAlign.Center)
+          .width('100%')
+          .padding(ThemeConstants.SPACE_LG)
+          .borderRadius(ThemeConstants.RADIUS_MD)
+          .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+        }
+        .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
+
+        ListItem() {
+          Column() {
+            this.AuthActionRow('查看个人主页', '打开 V2EX 个人资料页', () => {
+              const username = this.currentUsername()
+              if (username) {
+                let p: UserProfileParams = { username: username }
+                this.ns.pushPathByName('UserProfile', p as Object)
+              }
+            })
+            this.SettingsDivider()
+            this.AuthActionRow('重新登录', '账号密码登录或切换到网页登录', () => { this.ns.pushPathByName('V2exNativeLogin', null) })
+            this.SettingsDivider()
+            Row() {
+              Text('退出登录')
+                .fontSize(ThemeConstants.FONT_SIZE_BODY)
+                .fontWeight(FontWeight.Medium)
+                .fontColor(Color.Red)
+                .layoutWeight(1)
+              Text('›')
+                .fontSize(ThemeConstants.FONT_SIZE_TITLE)
+                .fontColor($r('sys.color.font_secondary'))
+            }
+            .width('100%')
+            .padding(ThemeConstants.SPACE_LG)
+            .onClick(() => { this.logoutAll(); this.ns.pop() })
+          }
+          .width('100%')
+          .alignItems(HorizontalAlign.Start)
+          .borderRadius(ThemeConstants.RADIUS_MD)
+          .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+        }
+        .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
+
+        ListItem() { Column() { Blank().height(this.bottomH + ThemeConstants.SPACE_MD) } }
+      }
+      .scrollBar(BarState.Off)
+      .width('100%')
+      .height('100%')
+    }
+    .width('100%')
+    .height('100%')
+    .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
   }
 
   @Builder AuthActionRow(title: string, subtitle: string, action: () => void) {
@@ -913,30 +1006,6 @@ struct Index {
 
   @Builder StorageSection() {
     Column() {
-      Row({ space: ThemeConstants.SPACE_SM }) {
-        Column({ space: ThemeConstants.SPACE_XS }) {
-          Text('设置')
-            .fontSize(ThemeConstants.FONT_SIZE_BODY)
-            .fontWeight(FontWeight.Medium)
-            .fontColor($r('sys.color.font_primary'))
-          Text('集中管理域名 / 图片 / 写入 / 缓存')
-            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-            .fontColor($r('sys.color.font_secondary'))
-            .maxLines(2)
-            .textOverflow({ overflow: TextOverflow.Ellipsis })
-        }
-        .layoutWeight(1)
-        .alignItems(HorizontalAlign.Start)
-        Text('›')
-          .fontSize(ThemeConstants.FONT_SIZE_TITLE)
-          .fontColor($r('sys.color.font_secondary'))
-      }
-      .width('100%')
-      .padding(ThemeConstants.SPACE_LG)
-      .onClick(() => { this.ns.pushPathByName('Settings', null) })
-
-      this.SettingsDivider()
-
       Row() {
         Column({ space: ThemeConstants.SPACE_XS }) {
           Text('关于 Next2V')
@@ -1105,6 +1174,7 @@ struct Index {
 
   private deleteNotification(notificationId: number): void {
     if (!this.authTokenConfigured || !this.authToken || this.isNotificationDeleting) {
+      promptAction.openToast({ message: '删除通知需要 V2 API 授权' }).catch((_error: Error) => { })
       return
     }
     this.isNotificationDeleting = true
@@ -1245,7 +1315,11 @@ struct Index {
   }
 
   private loadNotifications(force: boolean = false): void {
-    if (!this.authTokenConfigured || !this.authToken || this.isNotificationLoading || this.isNotificationLoadingMore) {
+    const cookie = CookieJarSettings.getCurrentCookie()
+    if ((!this.authTokenConfigured || !this.authToken) && (!this.authCookieConfigured || !cookie)) {
+      return
+    }
+    if (this.isNotificationLoading || this.isNotificationLoadingMore) {
       return
     }
     if (this.notifications.length > 0 && !force && !this.notificationLoadedFromCache) {
@@ -1255,7 +1329,10 @@ struct Index {
     this.notificationError = ''
     this.notificationPage = 1
     this.notificationHasMore = true
-    this.api.getNotifications(this.authToken, 1)
+    const request = this.authTokenConfigured && this.authToken
+      ? this.api.getNotifications(this.authToken, 1)
+      : this.api.getNotificationsWithCookie(cookie, 1)
+    request
       .then((items: V2exNotification[]) => {
         this.notifications = items
         this.notificationPage = 1
@@ -1273,13 +1350,20 @@ struct Index {
   }
 
   private loadMoreNotifications(): void {
-    if (!this.authTokenConfigured || !this.authToken || this.isNotificationLoading || this.isNotificationLoadingMore || !this.notificationHasMore) {
+    const cookie = CookieJarSettings.getCurrentCookie()
+    if ((!this.authTokenConfigured || !this.authToken) && (!this.authCookieConfigured || !cookie)) {
+      return
+    }
+    if (this.isNotificationLoading || this.isNotificationLoadingMore || !this.notificationHasMore) {
       return
     }
     const nextPage = this.notificationPage + 1
     this.isNotificationLoadingMore = true
     this.notificationError = ''
-    this.api.getNotifications(this.authToken, nextPage)
+    const request = this.authTokenConfigured && this.authToken
+      ? this.api.getNotifications(this.authToken, nextPage)
+      : this.api.getNotificationsWithCookie(cookie, nextPage)
+    request
       .then((items: V2exNotification[]) => {
         if (!items || items.length === 0) {
           this.notificationHasMore = false
@@ -1358,6 +1442,9 @@ struct Index {
     let owner = username.trim()
     if (!owner) {
       owner = (this.storedUsername || '').trim()
+    }
+    if (!owner) {
+      owner = (this.sessionUsername || '').trim()
     }
     if (!owner && this.authProfile) {
       owner = (this.authProfile.username || '').trim()
