@@ -438,9 +438,9 @@ export struct SearchPage {
     Scroll() {
       Row({ space: ThemeConstants.SPACE_SM }) {
         this.SourceModeButton('local', '本地')
-        this.SourceModeButton('localWithNodes', '本地+节点库')
+        this.SourceModeButton('localWithNodes', '节点库')
         this.SourceModeButton('remote', 'SOV2EX')
-        this.SourceModeButton('externalWeb', '网页搜索')
+        this.SourceModeButton('externalWeb', '网页')
       }
     }
     .scrollable(ScrollDirection.Horizontal)
@@ -449,12 +449,13 @@ export struct SearchPage {
   }
 
   @Builder SourceModeButton(mode: SearchSourceMode, label: string) {
-    Text(label)
+    Button(label)
       .fontSize(ThemeConstants.FONT_SIZE_TAG)
-      .fontColor(this.sourceMode === mode ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.font_primary'))
-      .padding({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM, top: 5, bottom: 5 })
-      .borderRadius(ThemeConstants.RADIUS_ROUND)
-      .backgroundColor(this.sourceMode === mode ? '#EAF2FF' : $r('sys.color.ohos_id_color_button_normal'))
+      .height(ThemeConstants.TOUCH_TARGET_SM)
+      .type(ButtonType.Normal)
+      .borderRadius(ThemeConstants.RADIUS_MD)
+      .fontColor(this.sourceMode === mode ? Color.White : $r('sys.color.font_primary'))
+      .backgroundColor(this.sourceMode === mode ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.ohos_id_color_button_normal'))
       .onClick(() => { this.updateSourceMode(mode) })
   }
 
@@ -475,8 +476,9 @@ export struct SearchPage {
         })
         Button(this.remoteLoading ? '搜索中' : '搜索')
           .fontSize(ThemeConstants.FONT_SIZE_TAG)
-          .height(34)
-          .borderRadius(ThemeConstants.RADIUS_ROUND)
+          .height(ThemeConstants.TOUCH_TARGET_SM)
+          .type(ButtonType.Normal)
+          .borderRadius(ThemeConstants.RADIUS_MD)
           .enabled(!this.remoteLoading && this.keyword.trim().length > 0)
           .layoutWeight(1)
           .onClick(() => { this.executeRemoteSearch(true) })
@@ -486,9 +488,9 @@ export struct SearchPage {
       Row({ space: ThemeConstants.SPACE_XS }) {
         TextInput({ placeholder: '作者', text: this.remoteUsername })
           .fontSize(ThemeConstants.FONT_SIZE_TAG)
-          .height(34)
+          .height(ThemeConstants.TOUCH_TARGET_SM)
           .layoutWeight(1)
-          .borderRadius(ThemeConstants.RADIUS_ROUND)
+          .borderRadius(ThemeConstants.RADIUS_MD)
           .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
           .onChange((value: string) => {
             this.remoteUsername = value
@@ -496,9 +498,9 @@ export struct SearchPage {
           })
         TextInput({ placeholder: '节点', text: this.remoteNode })
           .fontSize(ThemeConstants.FONT_SIZE_TAG)
-          .height(34)
+          .height(ThemeConstants.TOUCH_TARGET_SM)
           .layoutWeight(1)
-          .borderRadius(ThemeConstants.RADIUS_ROUND)
+          .borderRadius(ThemeConstants.RADIUS_MD)
           .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
           .onChange((value: string) => {
             this.remoteNode = value
@@ -514,12 +516,13 @@ export struct SearchPage {
   }
 
   @Builder RemoteOptionButton(label: string, selected: boolean, action: () => void) {
-    Text(label)
+    Button(label)
       .fontSize(ThemeConstants.FONT_SIZE_TAG)
-      .fontColor(selected ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.font_primary'))
-      .padding({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM, top: 5, bottom: 5 })
-      .borderRadius(ThemeConstants.RADIUS_ROUND)
-      .backgroundColor(selected ? '#EAF2FF' : $r('sys.color.ohos_id_color_button_normal'))
+      .height(ThemeConstants.TOUCH_TARGET_SM)
+      .type(ButtonType.Normal)
+      .borderRadius(ThemeConstants.RADIUS_MD)
+      .fontColor(selected ? Color.White : $r('sys.color.font_primary'))
+      .backgroundColor(selected ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.ohos_id_color_button_normal'))
       .onClick(() => { action() })
   }
 
@@ -541,12 +544,13 @@ export struct SearchPage {
   }
 
   @Builder ResultFilterButton(filter: SearchResultFilter, label: string) {
-    Text(label)
+    Button(label)
       .fontSize(ThemeConstants.FONT_SIZE_TAG)
-      .fontColor(this.resultFilter === filter ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.font_primary'))
-      .padding({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM, top: 5, bottom: 5 })
-      .borderRadius(ThemeConstants.RADIUS_ROUND)
-      .backgroundColor(this.resultFilter === filter ? '#EAF2FF' : $r('sys.color.ohos_id_color_button_normal'))
+      .height(ThemeConstants.TOUCH_TARGET_SM)
+      .type(ButtonType.Normal)
+      .borderRadius(ThemeConstants.RADIUS_MD)
+      .fontColor(this.resultFilter === filter ? Color.White : $r('sys.color.font_primary'))
+      .backgroundColor(this.resultFilter === filter ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.ohos_id_color_button_normal'))
       .onClick(() => { this.updateResultFilter(filter) })
   }
 
