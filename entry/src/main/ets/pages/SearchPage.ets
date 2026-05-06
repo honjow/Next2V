@@ -86,6 +86,8 @@ export struct SearchPage {
   @State private remoteError: string = ''
   @State private remoteSort: Sov2exSortMode = 'created'
   @State private remoteOrder: Sov2exOrderMode = '0'
+  @State private remoteUsername: string = ''
+  @State private remoteNode: string = ''
   @StorageProp(StorageKeys.TOP_AVOID_HEIGHT) topH: number = 0
   @StorageProp(StorageKeys.BOTTOM_AVOID_HEIGHT) bottomH: number = 0
 
@@ -457,23 +459,56 @@ export struct SearchPage {
   }
 
   @Builder RemoteSearchControls() {
-    Row({ space: ThemeConstants.SPACE_XS }) {
-      this.RemoteOptionButton('时间', this.remoteSort === 'created' && this.remoteOrder === '0', () => {
-        this.remoteSort = 'created'
-        this.remoteOrder = '0'
-        this.executeRemoteSearch(true)
-      })
-      this.RemoteOptionButton('相关', this.remoteSort === 'sumup', () => {
-        this.remoteSort = 'sumup'
-        this.remoteOrder = '0'
-        this.executeRemoteSearch(true)
-      })
-      Button(this.remoteLoading ? '搜索中' : '搜索')
-        .fontSize(ThemeConstants.FONT_SIZE_TAG)
-        .height(34)
-        .borderRadius(ThemeConstants.RADIUS_ROUND)
-        .enabled(!this.remoteLoading && this.keyword.trim().length > 0)
-        .onClick(() => { this.executeRemoteSearch(true) })
+    Column({ space: ThemeConstants.SPACE_XS }) {
+      Row({ space: ThemeConstants.SPACE_XS }) {
+        this.RemoteOptionButton('时间', this.remoteSort === 'created', () => {
+          this.remoteSort = 'created'
+          this.executeRemoteSearch(true)
+        })
+        this.RemoteOptionButton('相关', this.remoteSort === 'sumup', () => {
+          this.remoteSort = 'sumup'
+          this.executeRemoteSearch(true)
+        })
+        this.RemoteOptionButton(this.remoteOrder === '0' ? '倒序' : '正序', true, () => {
+          this.remoteOrder = this.remoteOrder === '0' ? '1' : '0'
+          this.executeRemoteSearch(true)
+        })
+        Button(this.remoteLoading ? '搜索中' : '搜索')
+          .fontSize(ThemeConstants.FONT_SIZE_TAG)
+          .height(34)
+          .borderRadius(ThemeConstants.RADIUS_ROUND)
+          .enabled(!this.remoteLoading && this.keyword.trim().length > 0)
+          .layoutWeight(1)
+          .onClick(() => { this.executeRemoteSearch(true) })
+      }
+      .width('100%')
+
+      Row({ space: ThemeConstants.SPACE_XS }) {
+        TextInput({ placeholder: '作者', text: this.remoteUsername })
+          .fontSize(ThemeConstants.FONT_SIZE_TAG)
+          .height(34)
+          .layoutWeight(1)
+          .borderRadius(ThemeConstants.RADIUS_ROUND)
+          .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+          .onChange((value: string) => {
+            this.remoteUsername = value
+            this.resetRemoteResults()
+          })
+        TextInput({ placeholder: '节点', text: this.remoteNode })
+          .fontSize(ThemeConstants.FONT_SIZE_TAG)
+          .height(34)
+          .layoutWeight(1)
+          .borderRadius(ThemeConstants.RADIUS_ROUND)
+          .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+          .onChange((value: string) => {
+            this.remoteNode = value
+            this.resetRemoteResults()
+          })
+        if (this.hasRemoteFilters()) {
+          this.RemoteOptionButton('清除', false, () => { this.clearRemoteFilters() })
+        }
+      }
+      .width('100%')
     }
     .width('100%')
   }
@@ -979,7 +1014,9 @@ export struct SearchPage {
       from: from,
       size: 20,
       sort: this.remoteSort,
-      order: this.remoteOrder
+      order: this.remoteOrder,
+      username: this.remoteUsername.trim(),
+      node: this.remoteNode.trim()
     })
       .then((response) => {
         const hits = response.hits || []
@@ -1039,6 +1076,17 @@ export struct SearchPage {
 
   private static cleanCreated(created: string): string {
     return (created ?? '').replace('T', ' ').slice(0, 16)
+  }
+
+  private hasRemoteFilters(): boolean {
+    return this.remoteUsername.trim().length > 0 || this.remoteNode.trim().length > 0
+  }
+
+  private clearRemoteFilters(): void {
+    this.remoteUsername = ''
+    this.remoteNode = ''
+    this.resetRemoteResults()
+    this.executeRemoteSearch(true)
   }
 
   private static savedNodeToV2exNode(item: SavedNode): V2exNode {
