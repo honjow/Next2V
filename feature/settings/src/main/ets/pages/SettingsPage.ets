@@ -7,6 +7,7 @@ import {
   CookieJarSettings,
   DateUtils,
   HttpClient,
+  LocalDataSettings,
   MediaSettings,
   StorageKeys,
   ThemeConstants,
@@ -22,6 +23,7 @@ export struct SettingsPage {
   @StorageProp(StorageKeys.BOTTOM_AVOID_HEIGHT) bottomH: number = 0
   @State private cacheStats: CacheStats = { topicListCount: 0, topicDetailCount: 0, updatedAt: 0 }
   @State private cacheMessage: string = ''
+  @State private localDataMessage: string = ''
   private http: HttpClient = HttpClient.getInstance()
 
   aboutToAppear(): void {
@@ -242,7 +244,40 @@ export struct SettingsPage {
           .layoutWeight(1)
           .onClick(() => { this.clearCache() })
       }
-      .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG, bottom: ThemeConstants.SPACE_LG })
+      .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG, bottom: ThemeConstants.SPACE_MD })
+
+      this.SettingsDivider()
+
+      Row({ space: ThemeConstants.SPACE_SM }) {
+        Column({ space: ThemeConstants.SPACE_XS }) {
+          Text('本地数据')
+            .fontSize(ThemeConstants.FONT_SIZE_BODY)
+            .fontWeight(FontWeight.Medium)
+            .fontColor($r('sys.color.font_primary'))
+          Text('稍后读 / 关注节点 / 最近浏览 / 草稿 / 搜索历史')
+            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+            .fontColor($r('sys.color.font_secondary'))
+            .maxLines(2)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
+          if (this.localDataMessage) {
+            Text(this.localDataMessage)
+              .fontSize(ThemeConstants.FONT_SIZE_TINY)
+              .fontColor(ThemeConstants.BRAND_PRIMARY)
+          }
+        }
+        .layoutWeight(1)
+        .alignItems(HorizontalAlign.Start)
+        Button('清理本地数据')
+          .fontSize(ThemeConstants.FONT_SIZE_TAG)
+          .height(ThemeConstants.TOUCH_TARGET_SM)
+          .type(ButtonType.Normal)
+          .borderRadius(ThemeConstants.RADIUS_MD)
+          .fontColor(Color.Red)
+          .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+          .onClick(() => { this.confirmClearLocalData() })
+      }
+      .width('100%')
+      .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG, top: ThemeConstants.SPACE_MD, bottom: ThemeConstants.SPACE_LG })
     }
     .width('100%')
     .alignItems(HorizontalAlign.Start)
@@ -335,6 +370,32 @@ export struct SettingsPage {
       })
       .catch((error: Error) => {
         this.cacheMessage = error.message || '清理失败'
+      })
+  }
+
+  private confirmClearLocalData(): void {
+    AlertDialog.show({
+      title: '清理本地数据',
+      message: '将清理本机保存的稍后读、关注节点、最近浏览、已读状态、草稿、搜索历史、通知缓存和离线缓存。登录状态与偏好设置会保留。确定继续吗？',
+      primaryButton: { value: '取消', action: () => { } },
+      secondaryButton: {
+        value: '清理',
+        fontColor: Color.Red,
+        action: () => { this.clearLocalData() }
+      }
+    })
+  }
+
+  private clearLocalData(): void {
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    LocalDataSettings.clearAll(context)
+      .then(() => {
+        this.cacheMessage = '已清理'
+        this.localDataMessage = '已清理'
+        this.loadCacheStats()
+      })
+      .catch((error: Error) => {
+        this.localDataMessage = error.message || '清理失败'
       })
   }
 }

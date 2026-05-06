@@ -226,6 +226,22 @@ export class CollectionSettings {
     }
   }
 
+  static async clearAll(context: common.UIAbilityContext): Promise<void> {
+    try {
+      const store = await preferences.getPreferences(context, STORE_NAME)
+      store.deleteSync(KEY_SAVED_TOPICS)
+      store.deleteSync(KEY_SAVED_NODES)
+      store.deleteSync(KEY_VIEWED_TOPICS)
+      store.deleteSync(KEY_TOPIC_READ_POSITIONS)
+      store.deleteSync(KEY_TOPIC_READ_STATES)
+      store.flushSync()
+      AppStorage.setOrCreate<string>(StorageKeys.TOPIC_READ_STATES, '[]')
+    } catch (error) {
+      const e = error as Error
+      throw new Error(e.message || '清理本地收藏与阅读记录失败')
+    }
+  }
+
   private static async writeSavedTopics(context: common.UIAbilityContext, topics: SavedTopic[]): Promise<void> {
     try {
       const store = await preferences.getPreferences(context, STORE_NAME)

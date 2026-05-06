@@ -103,6 +103,18 @@ export class DraftSettings {
     await DraftSettings.writeAllReplyDrafts(context, next)
   }
 
+  static async clearAll(context: common.UIAbilityContext): Promise<void> {
+    try {
+      const store = await preferences.getPreferences(context, STORE_NAME)
+      store.deleteSync(KEY_TOPIC_DRAFT)
+      store.deleteSync(KEY_REPLY_DRAFTS)
+      store.flushSync()
+    } catch (error) {
+      const e = error as Error
+      throw new Error(e.message || '清理草稿失败')
+    }
+  }
+
   private static async loadAllReplyDrafts(context: common.UIAbilityContext): Promise<ReplyDraft[]> {
     try {
       const store = await preferences.getPreferences(context, STORE_NAME)

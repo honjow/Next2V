@@ -18,4 +18,5 @@ export class StorageKeys {
   static readonly API_RATE_LIMIT_REMAINING: string = 'apiRateLimitRemaining'
   static readonly API_RATE_LIMIT_RESET: string = 'apiRateLimitReset'
   static readonly API_RATE_LIMIT_UPDATED_AT: string = 'apiRateLimitUpdatedAt'
+  static readonly LOCAL_DATA_UPDATED_AT: string = 'localDataUpdatedAt'
 }

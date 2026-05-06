@@ -78,6 +78,7 @@ struct Index {
   @StorageLink(StorageKeys.API_RATE_LIMIT_REMAINING) apiRateLimitRemaining: number = 0
   @StorageLink(StorageKeys.API_RATE_LIMIT_RESET) apiRateLimitReset: number = 0
   @StorageLink(StorageKeys.API_RATE_LIMIT_UPDATED_AT) apiRateLimitUpdatedAt: number = 0
+  @StorageLink(StorageKeys.LOCAL_DATA_UPDATED_AT) @Watch('onLocalDataUpdated') localDataUpdatedAt: number = 0
   @State private authToken: string = ''
   @State private tokenDraft: string = ''
   @State private authProfile: V2exAuthenticatedMember | null = null
@@ -109,6 +110,18 @@ struct Index {
   aboutToAppear(): void {
     this.loadAuthSnapshot()
     this.loadSessionSnapshot()
+    this.loadSavedTopics()
+    this.loadSavedNodes()
+    this.loadViewedTopics()
+    this.loadTopicReadStates()
+    this.loadCacheStats()
+  }
+
+  onLocalDataUpdated(_propName: string): void {
+    this.savedTopics = []
+    this.savedNodes = []
+    this.viewedTopics = []
+    this.resetNotificationState()
     this.loadSavedTopics()
     this.loadSavedNodes()
     this.loadViewedTopics()

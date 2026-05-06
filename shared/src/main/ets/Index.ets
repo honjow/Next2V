@@ -43,6 +43,7 @@ export { SearchSettings } from './settings/SearchSettings'
 export type { SearchSourceMode } from './settings/SearchSettings'
 export { NotificationSettings } from './settings/NotificationSettings'
 export type { NotificationCacheSnapshot } from './settings/NotificationSettings'
+export { LocalDataSettings } from './settings/LocalDataSettings'
 export { CacheSettings }
   from './settings/CacheSettings'
 export type { CacheKeyIndex, CacheStats, TopicDetailCache } from './settings/CacheSettings'
