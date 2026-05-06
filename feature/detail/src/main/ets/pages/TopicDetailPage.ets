@@ -16,6 +16,13 @@ interface ReplyEditorParams {
   initialContent?: string
 }
 
+interface ReplyContextItem {
+  reply: V2exReply
+  floor: number
+  label: string
+  selected: boolean
+}
+
 @Component
 export struct TopicDetailPage {
   @Prop topicId: number = 0
@@ -30,6 +37,7 @@ export struct TopicDetailPage {
   @State private isSiteFavorited: boolean = false
   @State private isSiteFavoriteLoading: boolean = false
   @State private jumpFloorText: string = ''
+  @State private contextReply: V2exReply | null = null
   private api: ApiService = new ApiService()
   private jumpFloorDialogController: CustomDialogController | null = new CustomDialogController({
     builder: JumpToFloorDialog({
@@ -93,16 +101,24 @@ export struct TopicDetailPage {
   }
 
   build() {
-    Column() {
-      if (this.v.isLoading && this.v.topic === null) {
-        this.LoadingView()
-      } else if (this.v.errorMessage && this.v.topic === null) {
-        this.ErrorView()
-      } else if (this.v.topic !== null) {
-        this.ContentView()
+    Stack() {
+      Column() {
+        if (this.v.isLoading && this.v.topic === null) {
+          this.LoadingView()
+        } else if (this.v.errorMessage && this.v.topic === null) {
+          this.ErrorView()
+        } else if (this.v.topic !== null) {
+          this.ContentView()
+        }
+      }
+      .width('100%').height('100%')
+
+      if (this.contextReply !== null) {
+        this.ReplyContextOverlay()
       }
     }
-    .width('100%').height('100%')
+    .width('100%')
+    .height('100%')
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
   }
 
@@ -173,6 +189,7 @@ export struct TopicDetailPage {
                 let p: UserProfileParams = { username: reply.member.username }
                 this.stack.pushPathByName('UserProfile', p as Object)
               },
+              onContextClick: () => { this.openReplyContext(reply) },
               onMentionClick: () => { this.openReplyEditor(this.getMentionText(reply.member.username)) },
               onCopyUserClick: () => { this.copyToClipboard(reply.member.username || '') },
               onImageClick: (url: string) => { this.openImagePreview(url) }
@@ -315,6 +332,285 @@ export struct TopicDetailPage {
       .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
       .margin({ right: ThemeConstants.SPACE_SM, bottom: ThemeConstants.SPACE_SM })
       .onClick(action)
+  }
+
+  @Builder ReplyContextOverlay() {
+    Column() {
+      Blank()
+        .width('100%')
+        .layoutWeight(1)
+        .onClick(() => { this.closeReplyContext() })
+
+      Column({ space: ThemeConstants.SPACE_MD }) {
+        Row({ space: ThemeConstants.SPACE_SM }) {
+          Text(this.replyContextTitle())
+            .fontSize(ThemeConstants.FONT_SIZE_TITLE)
+            .fontWeight(FontWeight.Medium)
+            .fontColor($r('sys.color.font_primary'))
+            .maxLines(1)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
+
+          Blank()
+
+          Button('关闭')
+            .type(ButtonType.Normal)
+            .height(32)
+            .fontSize(ThemeConstants.FONT_SIZE_META)
+            .fontColor($r('sys.color.font_secondary'))
+            .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+            .borderRadius(ThemeConstants.RADIUS_SM)
+            .onClick(() => { this.closeReplyContext() })
+        }
+        .width('100%')
+        .alignItems(VerticalAlign.Center)
+
+        Scroll() {
+          Column({ space: ThemeConstants.SPACE_SM }) {
+            ForEach(this.buildReplyContextItems(), (item: ReplyContextItem) => {
+              this.ReplyContextItemView(item)
+            }, (item: ReplyContextItem) => `${item.reply.id}-${item.floor}-${item.label}`)
+          }
+          .width('100%')
+        }
+        .layoutWeight(1)
+        .scrollBar(BarState.Off)
+      }
+      .width('100%')
+      .height('72%')
+      .padding({
+        left: ThemeConstants.SPACE_LG,
+        right: ThemeConstants.SPACE_LG,
+        top: ThemeConstants.SPACE_LG,
+        bottom: ThemeConstants.SPACE_LG
+      })
+      .borderRadius({ topLeft: ThemeConstants.RADIUS_MD, topRight: ThemeConstants.RADIUS_MD })
+      .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+    }
+    .width('100%')
+    .height('100%')
+    .backgroundColor('#66000000')
+  }
+
+  @Builder ReplyContextItemView(item: ReplyContextItem) {
+    Column({ space: ThemeConstants.SPACE_SM }) {
+      Row({ space: ThemeConstants.SPACE_SM }) {
+        Text(item.label)
+          .fontSize(ThemeConstants.FONT_SIZE_TAG)
+          .fontColor(item.selected ? $r('sys.color.ohos_id_color_activated') : $r('sys.color.font_secondary'))
+          .padding({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM, top: 2, bottom: 2 })
+          .borderRadius(ThemeConstants.RADIUS_SM)
+          .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+
+        Text(`#${item.floor}`)
+          .fontSize(ThemeConstants.FONT_SIZE_TAG)
+          .fontColor($r('sys.color.font_secondary'))
+
+        Text(item.reply.member.username)
+          .fontSize(ThemeConstants.FONT_SIZE_META)
+          .fontWeight(FontWeight.Medium)
+          .fontColor($r('sys.color.font_primary'))
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+
+        Blank()
+
+        TimeAgo({ timestamp: item.reply.created })
+      }
+      .width('100%')
+      .alignItems(VerticalAlign.Center)
+
+      Text(this.replySnippet(item.reply.content))
+        .fontSize(ThemeConstants.FONT_SIZE_BODY)
+        .lineHeight(ThemeConstants.LINE_HEIGHT_BODY)
+        .fontColor($r('sys.color.font_primary'))
+        .maxLines(4)
+        .textOverflow({ overflow: TextOverflow.Ellipsis })
+        .width('100%')
+    }
+    .width('100%')
+    .padding(ThemeConstants.SPACE_MD)
+    .borderRadius(ThemeConstants.RADIUS_MD)
+    .backgroundColor(item.selected ? $r('sys.color.ohos_id_color_button_normal') : $r('sys.color.ohos_id_color_sub_background'))
+    .onClick(() => {
+      this.jumpToLoadedReplyFloor(item.floor)
+      this.closeReplyContext()
+    })
+  }
+
+  private openReplyContext(reply: V2exReply): void {
+    this.contextReply = reply
+  }
+
+  private closeReplyContext(): void {
+    this.contextReply = null
+  }
+
+  private replyContextTitle(): string {
+    if (this.contextReply === null) {
+      return '回复上下文'
+    }
+    const floor = this.v.getReplyFloor(this.contextReply.id)
+    return floor > 0 ? `#${floor} 回复上下文` : '回复上下文'
+  }
+
+  private buildReplyContextItems(): ReplyContextItem[] {
+    if (this.contextReply === null) {
+      return []
+    }
+    const selected = this.contextReply
+    const selectedFloor = this.v.getReplyFloor(selected.id)
+    const replies = this.v.getLoadedRepliesSnapshot()
+    const items: ReplyContextItem[] = []
+    const seen = new Set<number>()
+
+    const addReply = (reply: V2exReply | null, label: string, selectedItem: boolean): void => {
+      if (reply === null || reply.id <= 0 || seen.has(reply.id)) {
+        return
+      }
+      const floor = this.v.getReplyFloor(reply.id)
+      if (floor <= 0) {
+        return
+      }
+      seen.add(reply.id)
+      items.push({ reply: reply, floor: floor, label: label, selected: selectedItem })
+    }
+
+    this.addContextReplyByFloor(replies, selectedFloor - 2, '上文', addReply)
+    this.addContextReplyByFloor(replies, selectedFloor - 1, '上文', addReply)
+    this.addMentionTargetsBeforeSelection(replies, selectedFloor, selected.content, addReply)
+    addReply(selected, '当前回复', true)
+    this.addRepliesMentioningSelectedAuthor(replies, selectedFloor, selected.member.username, addReply)
+    this.addContextReplyByFloor(replies, selectedFloor + 1, '下文', addReply)
+    this.addContextReplyByFloor(replies, selectedFloor + 2, '下文', addReply)
+
+    return items.sort((left: ReplyContextItem, right: ReplyContextItem) => left.floor - right.floor)
+  }
+
+  private addContextReplyByFloor(
+    replies: V2exReply[],
+    floor: number,
+    label: string,
+    addReply: (reply: V2exReply | null, label: string, selectedItem: boolean) => void
+  ): void {
+    if (floor <= 0 || floor > replies.length) {
+      return
+    }
+    addReply(replies[floor - 1], label, false)
+  }
+
+  private addMentionTargetsBeforeSelection(
+    replies: V2exReply[],
+    selectedFloor: number,
+    content: string,
+    addReply: (reply: V2exReply | null, label: string, selectedItem: boolean) => void
+  ): void {
+    const names = this.extractMentionedUsernames(content)
+    names.forEach((name: string) => {
+      const target = this.findPreviousReplyByUsername(replies, selectedFloor, name)
+      addReply(target, `@${name}`, false)
+    })
+  }
+
+  private addRepliesMentioningSelectedAuthor(
+    replies: V2exReply[],
+    selectedFloor: number,
+    username: string,
+    addReply: (reply: V2exReply | null, label: string, selectedItem: boolean) => void
+  ): void {
+    const clean = (username || '').trim()
+    if (!clean) {
+      return
+    }
+    let added = 0
+    for (let i = selectedFloor; i < replies.length && added < 2; i++) {
+      const reply = replies[i]
+      if (reply && this.contentMentionsUsername(reply.content, clean)) {
+        addReply(reply, `提到 @${clean}`, false)
+        added++
+      }
+    }
+  }
+
+  private findPreviousReplyByUsername(replies: V2exReply[], selectedFloor: number, username: string): V2exReply | null {
+    const clean = (username || '').trim().toLowerCase()
+    if (!clean) {
+      return null
+    }
+    for (let i = selectedFloor - 2; i >= 0; i--) {
+      const reply = replies[i]
+      if (reply && (reply.member.username || '').trim().toLowerCase() === clean) {
+        return reply
+      }
+    }
+    return null
+  }
+
+  private contentMentionsUsername(content: string, username: string): boolean {
+    const clean = (username || '').trim().toLowerCase()
+    if (!clean) {
+      return false
+    }
+    return this.extractMentionedUsernames(content).some((name: string) => name.toLowerCase() === clean)
+  }
+
+  private extractMentionedUsernames(content: string): string[] {
+    const names: string[] = []
+    const seen = new Set<string>()
+    const parts = (content || '').split('@')
+    for (let i = 1; i < parts.length; i++) {
+      const name = this.readMentionName(parts[i] || '')
+      const key = name.toLowerCase()
+      if (name && !seen.has(key)) {
+        seen.add(key)
+        names.push(name)
+      }
+    }
+    return names
+  }
+
+  private readMentionName(raw: string): string {
+    let name = ''
+    for (let i = 0; i < raw.length; i++) {
+      const ch = raw.charAt(i)
+      if (this.isMentionNameChar(ch)) {
+        name += ch
+      } else {
+        break
+      }
+    }
+    return name
+  }
+
+  private isMentionNameChar(ch: string): boolean {
+    return (ch >= 'a' && ch <= 'z') ||
+      (ch >= 'A' && ch <= 'Z') ||
+      (ch >= '0' && ch <= '9') ||
+      ch === '_'
+  }
+
+  private replySnippet(content: string): string {
+    const text = (content || '')
+      .replace(/\r/g, '\n')
+      .replace(/\n+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+    return text || '（无内容）'
+  }
+
+  private jumpToLoadedReplyFloor(floor: number): void {
+    if (floor <= 0) {
+      return
+    }
+    if (this.v.onlyOp) {
+      this.v.setOnlyOp(false)
+    }
+    setTimeout(() => {
+      try {
+        this.scroller.scrollToIndex(2 + floor)
+      } catch (_e) {
+        // ignore
+      }
+    }, 0)
   }
 
   private scrollToTop(): void {

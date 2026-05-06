@@ -47,6 +47,10 @@ export class DetailViewModel {
     return 0
   }
 
+  getLoadedRepliesSnapshot(): V2exReply[] {
+    return this.replies.slice()
+  }
+
   setToken(token: string): void {
     this.authToken = token.trim()
   }

@@ -10,6 +10,7 @@ export struct ReplyCard {
   @Prop floor: number = 1
   @Prop isOp: boolean = false
   onUserClick?: () => void
+  onContextClick?: () => void
   onMentionClick?: () => void
   onCopyUserClick?: () => void
   onImageClick?: (url: string) => void
@@ -81,6 +82,22 @@ export struct ReplyCard {
 
         Blank()
 
+        if (this.onContextClick) {
+          Button() {
+            SymbolGlyph($r('sys.symbol.ellipsis_bubble'))
+              .fontSize(ThemeConstants.FONT_SIZE_META)
+              .fontColor([$r('sys.color.font_secondary')])
+          }
+          .type(ButtonType.Normal)
+          .width(30)
+          .height(28)
+          .borderRadius(ThemeConstants.RADIUS_SM)
+          .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+          .onClick(() => {
+            if (this.onContextClick) { this.onContextClick() }
+          })
+        }
+
         if (this.onMentionClick) {
           Button() {
             Text('@')
@@ -93,6 +110,7 @@ export struct ReplyCard {
           .height(28)
           .borderRadius(ThemeConstants.RADIUS_SM)
           .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+          .margin({ left: ThemeConstants.SPACE_XS })
           .onClick(() => {
             if (this.onMentionClick) { this.onMentionClick() }
           })
