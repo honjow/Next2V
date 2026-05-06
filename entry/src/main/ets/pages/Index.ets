@@ -26,6 +26,7 @@ import { ImagePreviewPage } from './ImagePreviewPage'
 import { SearchPage } from './SearchPage'
 import { TopicEditorPage } from './TopicEditorPage'
 import { MyTopicsPage } from './MyTopicsPage'
+import { MyRepliesPage } from './MyRepliesPage'
 
 @Component
 struct CoinIconCanvas {
@@ -234,6 +235,9 @@ struct Index {
     } else if (name === 'MyTopics') {
       HdsNavDestination() { MyTopicsPage() }
         .titleBar(this.navDestTitleBarOpts('我的主题'))
+    } else if (name === 'MyReplies') {
+      HdsNavDestination() { MyRepliesPage() }
+        .titleBar(this.navDestTitleBarOpts('我的回复'))
     } else if (name === 'Settings') {
       HdsNavDestination() { SettingsPage() }
         .titleBar(this.navDestTitleBarOpts('设置'))
