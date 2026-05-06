@@ -28,15 +28,12 @@ import { TopicEditorPage } from './TopicEditorPage'
 import { MyTopicsPage } from './MyTopicsPage'
 import { MyRepliesPage } from './MyRepliesPage'
 import { MyNodesPage } from './MyNodesPage'
-
-interface NotificationReadStateBag {
-  unread?: boolean | number
-  is_unread?: boolean | number
-  isUnread?: boolean | number
-  read?: boolean | number
-  is_read?: boolean | number
-  isRead?: boolean | number
-}
+import {
+  NotificationAuthContext,
+  NotificationCenterViewModel,
+  NotificationMetadata,
+  NotificationPageResult
+} from '../viewmodel/NotificationCenterViewModel'
 
 @Component
 struct CoinIconCanvas {
@@ -176,6 +173,7 @@ struct Index {
   @State private isNotificationLoadingMore: boolean = false
   @State private notificationCacheUpdatedAt: number = 0
   @State private notificationLoadedFromCache: boolean = false
+  @State private notificationSourceLabel: string = ''
   @State private accountBalance: V2exBalance | null = null
   @State private dailyMission: V2exDailyMission | null = null
   @State private accountMetaError: string = ''
@@ -184,6 +182,7 @@ struct Index {
   private http: HttpClient = HttpClient.getInstance()
   private api: ApiService = new ApiService()
   private apiV2: ApiV2Service = new ApiV2Service()
+  private notificationVm: NotificationCenterViewModel = new NotificationCenterViewModel(this.api)
   private readonly NOTIFICATION_PAGE_SIZE: number = 20
 
   aboutToAppear(): void {
@@ -550,7 +549,7 @@ struct Index {
   }
 
   private hasNotificationAuth(): boolean {
-    return (this.authTokenConfigured && !!this.authToken) || (this.authCookieConfigured && !!CookieJarSettings.getCurrentCookie())
+    return this.notificationVm.hasAuth(this.notificationAuthContext())
   }
 
   private hasCookieAccount(): boolean {
@@ -558,7 +557,16 @@ struct Index {
   }
 
   private canDeleteNotifications(): boolean {
-    return this.authTokenConfigured && !!this.authToken
+    return this.notificationVm.canDelete(this.notificationAuthContext())
+  }
+
+  private notificationAuthContext(): NotificationAuthContext {
+    return {
+      tokenConfigured: this.authTokenConfigured,
+      token: this.authToken,
+      cookieConfigured: this.authCookieConfigured,
+      cookie: CookieJarSettings.getCurrentCookie()
+    }
   }
 
   private loginStatusText(): string {
@@ -1429,12 +1437,27 @@ struct Index {
             .fontColor($r('sys.color.font_secondary'))
             .maxLines(1)
             .textOverflow({ overflow: TextOverflow.Ellipsis })
-        } else if (this.notificationCacheUpdatedAt > 0) {
-          Text(`${this.notificationLoadedFromCache ? '缓存于' : '更新于'} ${DateUtils.toDateString(this.notificationCacheUpdatedAt)}`)
-            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-            .fontColor($r('sys.color.font_secondary'))
-            .maxLines(1)
-            .textOverflow({ overflow: TextOverflow.Ellipsis })
+        } else {
+          if (this.notificationKindSummary()) {
+            Text(this.notificationKindSummary())
+              .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+              .fontColor($r('sys.color.font_secondary'))
+              .maxLines(1)
+              .textOverflow({ overflow: TextOverflow.Ellipsis })
+          }
+          if (this.notificationCacheUpdatedAt > 0) {
+            Text(`${this.notificationLoadedFromCache ? '缓存于' : '更新于'} ${DateUtils.toDateString(this.notificationCacheUpdatedAt)}${this.notificationSourceLabel ? ' · ' + this.notificationSourceLabel : ''}`)
+              .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+              .fontColor($r('sys.color.font_secondary'))
+              .maxLines(1)
+              .textOverflow({ overflow: TextOverflow.Ellipsis })
+          } else if (this.notificationSourceLabel) {
+            Text(`来源: ${this.notificationSourceLabel}`)
+              .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+              .fontColor($r('sys.color.font_secondary'))
+              .maxLines(1)
+              .textOverflow({ overflow: TextOverflow.Ellipsis })
+          }
         }
       }
       .layoutWeight(1)
@@ -1467,7 +1490,7 @@ struct Index {
       ListItem() { this.NotificationCard(item) }
         .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
         .onClick(() => {
-          const topicId = item.topic_id || 0
+          const topicId = this.notificationMeta(item).topicId
           if (topicId > 0) {
             let p: TopicDetailParams = { topicId: topicId }
             this.ns.pushPathByName('TopicDetail', p as Object)
@@ -1478,7 +1501,7 @@ struct Index {
       ListItem() { this.NotificationCard(item) }
         .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
         .onClick(() => {
-          const topicId = item.topic_id || 0
+          const topicId = this.notificationMeta(item).topicId
           if (topicId > 0) {
             let p: TopicDetailParams = { topicId: topicId }
             this.ns.pushPathByName('TopicDetail', p as Object)
@@ -1487,68 +1510,20 @@ struct Index {
     }
   }
 
-  private notificationFlag(value?: boolean | number): boolean | null {
-    if (typeof value === 'boolean') {
-      return value
-    }
-    if (typeof value === 'number') {
-      return value > 0
-    }
-    return null
+  private notificationMeta(item: V2exNotification): NotificationMetadata {
+    return this.notificationVm.metadata(item)
+  }
+
+  private notificationKindSummary(): string {
+    return this.notificationVm.kindSummary(this.notifications)
   }
 
   private notificationReadTag(item: V2exNotification): string {
-    const bag = item as NotificationReadStateBag
-
-    const unread = this.notificationFlag(bag.unread)
-    if (unread !== null) {
-      return unread ? '未读' : '已读'
-    }
-    const isUnread = this.notificationFlag(bag.is_unread)
-    if (isUnread !== null) {
-      return isUnread ? '未读' : '已读'
-    }
-    const isUnreadCamel = this.notificationFlag(bag.isUnread)
-    if (isUnreadCamel !== null) {
-      return isUnreadCamel ? '未读' : '已读'
-    }
-
-    const read = this.notificationFlag(bag.read)
-    if (read !== null) {
-      return read ? '已读' : '未读'
-    }
-    const isRead = this.notificationFlag(bag.is_read)
-    if (isRead !== null) {
-      return isRead ? '已读' : '未读'
-    }
-    const isReadCamel = this.notificationFlag(bag.isRead)
-    if (isReadCamel !== null) {
-      return isReadCamel ? '已读' : '未读'
-    }
-    return ''
+    return this.notificationMeta(item).readTag
   }
 
   private notificationKindTag(item: V2exNotification): string {
-    const text = this.notificationBody(item)
-    if (!text) {
-      return '通知'
-    }
-    if (text.indexOf('提到了你') >= 0) {
-      return '提及'
-    }
-    if (text.indexOf('回复了你') >= 0) {
-      return '回复'
-    }
-    if (text.indexOf('感谢了你') >= 0) {
-      return '感谢'
-    }
-    if (text.indexOf('收藏了你') >= 0) {
-      return '收藏'
-    }
-    if (text.indexOf('关注了你') >= 0) {
-      return '关注'
-    }
-    return '系统'
+    return this.notificationMeta(item).kindTag
   }
 
   @Builder NotificationTag(text: string, backgroundColor: ResourceColor, foregroundColor: ResourceColor) {
@@ -1869,8 +1844,8 @@ struct Index {
   }
 
   private loadNotifications(force: boolean = false): void {
-    const cookie = CookieJarSettings.getCurrentCookie()
-    if ((!this.authTokenConfigured || !this.authToken) && (!this.authCookieConfigured || !cookie)) {
+    const authContext = this.notificationAuthContext()
+    if (!this.notificationVm.hasAuth(authContext)) {
       return
     }
     if (this.isNotificationLoading || this.isNotificationLoadingMore) {
@@ -1883,14 +1858,12 @@ struct Index {
     this.notificationError = ''
     this.notificationPage = 1
     this.notificationHasMore = true
-    const request = this.authTokenConfigured && this.authToken
-      ? this.api.getNotifications(this.authToken, 1)
-      : this.api.getNotificationsWithCookie(cookie, 1)
-    request
-      .then((items: V2exNotification[]) => {
-        this.notifications = items
-        this.notificationPage = 1
-        this.notificationHasMore = items.length >= this.NOTIFICATION_PAGE_SIZE
+    this.notificationVm.loadPage(authContext, 1, this.NOTIFICATION_PAGE_SIZE)
+      .then((result: NotificationPageResult) => {
+        this.notifications = result.items
+        this.notificationPage = result.page
+        this.notificationHasMore = result.hasMore
+        this.notificationSourceLabel = result.sourceLabel
         this.notificationLoadedFromCache = false
         this.saveNotificationCache()
       })
@@ -1906,8 +1879,8 @@ struct Index {
   }
 
   private loadMoreNotifications(): void {
-    const cookie = CookieJarSettings.getCurrentCookie()
-    if ((!this.authTokenConfigured || !this.authToken) && (!this.authCookieConfigured || !cookie)) {
+    const authContext = this.notificationAuthContext()
+    if (!this.notificationVm.hasAuth(authContext)) {
       return
     }
     if (this.isNotificationLoading || this.isNotificationLoadingMore || !this.notificationHasMore) {
@@ -1916,24 +1889,21 @@ struct Index {
     const nextPage = this.notificationPage + 1
     this.isNotificationLoadingMore = true
     this.notificationError = ''
-    const request = this.authTokenConfigured && this.authToken
-      ? this.api.getNotifications(this.authToken, nextPage)
-      : this.api.getNotificationsWithCookie(cookie, nextPage)
-    request
-      .then((items: V2exNotification[]) => {
-        if (!items || items.length === 0) {
+    this.notificationVm.loadPage(authContext, nextPage, this.NOTIFICATION_PAGE_SIZE)
+      .then((result: NotificationPageResult) => {
+        if (!result.items || result.items.length === 0) {
           this.notificationHasMore = false
           return
         }
-        const existing = new Set<number>(this.notifications.map(item => item.id))
-        const unique = items.filter(item => item && item.id > 0 && !existing.has(item.id))
-        if (unique.length === 0) {
+        const merged = this.notificationVm.mergeUnique(this.notifications, result.items)
+        if (merged.length === this.notifications.length) {
           this.notificationHasMore = false
           return
         }
-        this.notifications = this.notifications.concat(unique)
-        this.notificationPage = nextPage
-        this.notificationHasMore = items.length >= this.NOTIFICATION_PAGE_SIZE
+        this.notifications = merged
+        this.notificationPage = result.page
+        this.notificationHasMore = result.hasMore
+        this.notificationSourceLabel = result.sourceLabel
         this.notificationLoadedFromCache = false
         this.saveNotificationCache()
       })
@@ -1957,6 +1927,7 @@ struct Index {
     this.isNotificationLoadingMore = false
     this.notificationCacheUpdatedAt = 0
     this.notificationLoadedFromCache = false
+    this.notificationSourceLabel = ''
   }
 
   private loadNotificationCache(username: string): void {
@@ -1975,6 +1946,7 @@ struct Index {
         this.notificationPage = snapshot.page
         this.notificationHasMore = snapshot.hasMore
         this.notificationLoadedFromCache = true
+        this.notificationSourceLabel = this.notificationVm.sourceLabelFor(this.notificationAuthContext())
       })
       .catch((error: Error) => {
         console.error('load notification cache failed: ' + error.message)
@@ -2052,10 +2024,10 @@ struct Index {
   }
 
   private notificationTitle(item: V2exNotification): string {
-    return item.topic_title || item.title || item.member?.username || '通知'
+    return this.notificationMeta(item).title
   }
 
   private notificationBody(item: V2exNotification): string {
-    return item.text || item.content || item.payload || item.content_rendered || item.payload_rendered || ''
+    return this.notificationMeta(item).body
   }
 }

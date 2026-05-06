@@ -163,19 +163,19 @@ Validation:
 
 Goal: notifications work for both normal login and PAT mode.
 
-Status: PAT and Cookie notification paths, pagination/cache, type/read labels,
-tap-to-topic, PAT-only deletion, and stale-cache labeling are implemented.
-Remaining work is grouping, richer event-specific navigation, and any safe
-site-synced state changes that V2EX exposes.
+Status: PAT and Cookie notification paths are unified behind a page view model
+with pagination/cache, source labels, grouped kind summaries, type/read labels,
+tap-to-topic, PAT-only deletion, and stale-cache labeling. Remaining work is any
+safe site-synced state changes that V2EX exposes.
 
 Tasks:
 
-- [ ] Unify PAT-backed and Cookie-backed notification loading behind one view
+- [x] Unify PAT-backed and Cookie-backed notification loading behind one view
   model.
 - [x] Preserve PAT as the structured preferred path when available.
 - [x] Add clear state labels for unread/read/deleted where the source supports
   it.
-- [ ] Add better grouping or metadata for mention, reply, thank, and system
+- [x] Add better grouping or metadata for mention, reply, thank, and system
   events.
 - [x] Add safe deletion behavior for PAT path; keep batch delete disabled until
   confirmed and carefully tested.
