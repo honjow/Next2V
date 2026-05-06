@@ -294,7 +294,7 @@ struct Index {
   @Builder NotifyPage() {
     Column() {
       if (!this.authTokenConfigured) {
-        this.AuthRequiredView('配置 Personal Access Token 后可查看通知')
+        this.AuthRequiredView('通知功能需要 V2 API 授权')
       } else if (this.isNotificationLoading && this.notifications.length === 0) {
         LoadingProgress()
           .width(ThemeConstants.LOADING_SIZE)
@@ -400,7 +400,7 @@ struct Index {
 
   private loginStatusText(): string {
     if (this.authCookieConfigured) {
-      return 'Web 已登录'
+      return '已登录'
     }
     if (this.authTokenConfigured) {
       return 'Token 已配置'
@@ -513,91 +513,51 @@ struct Index {
 
   @Builder AuthSection() {
     Column() {
-      Row({ space: ThemeConstants.SPACE_SM }) {
-        Column({ space: ThemeConstants.SPACE_XS }) {
-          Text('V2EX 登录')
-            .fontSize(ThemeConstants.FONT_SIZE_BODY)
-            .fontWeight(FontWeight.Medium)
-            .fontColor($r('sys.color.font_primary'))
-          Text(this.loginStatusText())
-            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-            .fontColor(this.loginStatusColor())
-        }
-        .layoutWeight(1)
-        .alignItems(HorizontalAlign.Start)
-
-        if (this.sessionUsername || this.authProfile || this.storedUsername) {
-          Text(this.sessionUsername || this.authProfile?.username || this.storedUsername)
-            .fontSize(ThemeConstants.FONT_SIZE_BODY)
-            .fontWeight(FontWeight.Medium)
-            .fontColor($r('sys.color.font_primary'))
-            .maxLines(1)
-            .textOverflow({ overflow: TextOverflow.Ellipsis })
-        }
-      }
-      .width('100%')
-      .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG, top: ThemeConstants.SPACE_LG, bottom: ThemeConstants.SPACE_MD })
-
-      if (this.authProfile) {
-        this.ProfileSummary()
-      }
-      if (this.authCookieConfigured && this.isSessionValidating) {
-        this.StatusText('Web 会话验证中...', false)
-      }
-      if (this.sessionError) {
-        this.StatusText(this.sessionError, true)
-      }
-      if (this.tokenInfoError) {
-        this.StatusText(this.tokenInfoError, true)
-      } else if (this.tokenInfo) {
-        this.TokenSummary()
-      }
-      if (this.apiRateLimitLimit > 0) {
-        this.RateLimitSummary()
-      }
-
-      this.SettingsDivider()
-
-      this.AuthActionRow('网页登录', '使用 V2EX 官方登录页', () => { this.ns.pushPathByName('V2exWebLogin', null) })
-      this.SettingsDivider()
-      this.AuthActionRow('账号密码', '解析登录表单，适合快速登录', () => { this.ns.pushPathByName('V2exNativeLogin', null) })
-      this.SettingsDivider()
-
-      Row({ space: ThemeConstants.SPACE_SM }) {
-        Column({ space: ThemeConstants.SPACE_XS }) {
-          Text('Personal Access Token')
-            .fontSize(ThemeConstants.FONT_SIZE_META)
-            .fontWeight(FontWeight.Medium)
-            .fontColor($r('sys.color.font_primary'))
-          TextInput({ placeholder: '粘贴 Token', text: this.tokenDraft })
-            .height(ThemeConstants.TOUCH_TARGET_SM)
-            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-            .type(InputType.Password)
-            .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
-            .borderRadius(ThemeConstants.RADIUS_MD)
-            .onChange((value: string) => { this.tokenDraft = value })
-        }
-          .alignItems(HorizontalAlign.Start)
+      if (!this.authCookieConfigured && !this.authTokenConfigured) {
+        this.AuthActionRow('未登录', '点击登录 V2EX', () => { this.ns.pushPathByName('V2exNativeLogin', null) })
+      } else {
+        Row({ space: ThemeConstants.SPACE_SM }) {
+          Column({ space: ThemeConstants.SPACE_XS }) {
+            Text('V2EX 登录')
+              .fontSize(ThemeConstants.FONT_SIZE_BODY)
+              .fontWeight(FontWeight.Medium)
+              .fontColor($r('sys.color.font_primary'))
+            Text(this.loginStatusText())
+              .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+              .fontColor(this.loginStatusColor())
+          }
           .layoutWeight(1)
-        Button(this.isAuthLoading ? '验证中' : '保存')
-          .fontSize(ThemeConstants.FONT_SIZE_TAG)
-          .height(ThemeConstants.TOUCH_TARGET_SM)
-          .type(ButtonType.Normal)
-          .borderRadius(ThemeConstants.RADIUS_MD)
-          .fontColor(Color.White)
-          .backgroundColor(ThemeConstants.BRAND_PRIMARY)
-          .enabled(!this.isAuthLoading)
-          .width(86)
-          .onClick(() => { this.verifyAndSaveToken() })
-      }
-      .alignItems(VerticalAlign.Bottom)
-      .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG, top: ThemeConstants.SPACE_MD, bottom: ThemeConstants.SPACE_MD })
+          .alignItems(HorizontalAlign.Start)
 
-      if (this.authError) {
-        this.StatusText(this.authError, true)
-      }
+          if (this.sessionUsername || this.authProfile || this.storedUsername) {
+            Text(this.sessionUsername || this.authProfile?.username || this.storedUsername)
+              .fontSize(ThemeConstants.FONT_SIZE_BODY)
+              .fontWeight(FontWeight.Medium)
+              .fontColor($r('sys.color.font_primary'))
+              .maxLines(1)
+              .textOverflow({ overflow: TextOverflow.Ellipsis })
+          }
+        }
+        .width('100%')
+        .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG, top: ThemeConstants.SPACE_LG, bottom: ThemeConstants.SPACE_MD })
 
-      if (this.authTokenConfigured || this.authCookieConfigured) {
+        if (this.authProfile) {
+          this.ProfileSummary()
+        }
+        if (this.authCookieConfigured && this.isSessionValidating) {
+          this.StatusText('会话验证中...', false)
+        }
+        if (this.sessionError) {
+          this.StatusText(this.sessionError, true)
+        }
+        if (this.apiRateLimitLimit > 0) {
+          this.RateLimitSummary()
+        }
+
+        this.SettingsDivider()
+        this.AuthActionRow('账号密码', '重新登录或切换账号', () => { this.ns.pushPathByName('V2exNativeLogin', null) })
+        this.SettingsDivider()
+
         Row() {
           Button('退出登录')
             .fontSize(ThemeConstants.FONT_SIZE_TAG)
@@ -610,8 +570,6 @@ struct Index {
             .onClick(() => { this.logoutAll() })
         }
         .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG, bottom: ThemeConstants.SPACE_LG })
-      } else {
-        Blank().height(ThemeConstants.SPACE_SM)
       }
     }
     .width('100%')
