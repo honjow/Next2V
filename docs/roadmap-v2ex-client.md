@@ -49,9 +49,9 @@ Known product gaps:
 - Reply/topic submission is intentionally disabled. Submit adapters still need to
   be designed, gated, confirmed, and tested.
 - Image saving and non-direct image link preview cards are not implemented.
-- UI is functional but not yet system-grade. Current issues include duplicated
-  settings surfaces, inconsistent page padding, imperfect immersive safe-area
-  handling, and some card-heavy layouts.
+- UI is functional but not yet system-grade. My page has been simplified and
+  settings have been centralized once, but profile spacing, cross-page safe-area
+  handling, and some card-heavy layouts still need continued audit.
 
 ## Product Principles
 
@@ -78,8 +78,8 @@ Tasks:
 - Fix immersive safe-area handling for navigation title bars, tab bar blur, and
   page content in Home, Discover, Notifications, My, Detail, Node, User, Search,
   Login, and Settings.
-- Remove redundant settings controls from My or Settings so each preference has a
-  single primary home.
+- Keep settings centralized in Settings and avoid reintroducing duplicate
+  preference controls in My or other summary pages.
 - Convert settings-like surfaces to dense list rows and reserve cards for real
   content items.
 - Audit page horizontal padding, section spacing, empty states, button heights,
