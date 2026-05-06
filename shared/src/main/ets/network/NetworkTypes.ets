@@ -132,3 +132,52 @@ export interface V2exDailyMission {
   redeemPath: string
   message: string
 }
+
+export type Sov2exSortMode = 'sumup' | 'created'
+export type Sov2exOrderMode = '0' | '1'
+
+export interface Sov2exSearchOptions {
+  q: string
+  from?: number
+  size?: number
+  sort?: Sov2exSortMode
+  order?: Sov2exOrderMode
+  username?: string
+  node?: string
+  gte?: number
+  lte?: number
+}
+
+export interface Sov2exTopicSource {
+  node?: number
+  replies?: number
+  created?: string
+  member?: string
+  id?: number
+  title?: string
+  content?: string
+}
+
+export interface Sov2exHighlight {
+  title?: string[]
+  content?: string[]
+  replyListContent?: string[]
+  postscript_list?: string[]
+}
+
+export interface Sov2exHit {
+  _score?: number | null
+  _index?: string
+  _type?: string
+  _id?: string
+  sort?: number[]
+  highlight?: Sov2exHighlight
+  _source?: Sov2exTopicSource
+}
+
+export interface Sov2exSearchResponse {
+  took?: number
+  timed_out?: boolean
+  total?: number
+  hits?: Sov2exHit[]
+}

@@ -20,6 +20,7 @@ export interface ImagePreviewParams {
 export { HttpClient } from './network/HttpClient'
 export { ApiService } from './network/ApiService'
 export { ApiV2Service } from './network/ApiV2Service'
+export { Sov2exService } from './network/Sov2exService'
 export type { ApiV2RateLimit, ApiV2Response } from './network/ApiV2Service'
 export { V2exNativeAuthService } from './network/V2exNativeAuthService'
 export type { NativeLoginChallenge, NativeLoginSnapshot } from './network/V2exNativeAuthService'
@@ -61,7 +62,14 @@ export type {
   V2exNotification,
   V2exTokenInfo,
   V2exBalance,
-  V2exDailyMission
+  V2exDailyMission,
+  Sov2exSortMode,
+  Sov2exOrderMode,
+  Sov2exSearchOptions,
+  Sov2exTopicSource,
+  Sov2exHighlight,
+  Sov2exHit,
+  Sov2exSearchResponse
 } from './network/NetworkTypes'
 
 // 解析

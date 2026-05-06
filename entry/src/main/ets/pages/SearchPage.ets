@@ -15,6 +15,10 @@ import {
   ListDivider as SharedListDivider,
   EmptyState,
   StorageKeys,
+  Sov2exService,
+  type Sov2exHit,
+  type Sov2exOrderMode,
+  type Sov2exSortMode,
   ThemeConstants,
   type TopicDetailParams,
   type V2exNode,
@@ -38,6 +42,16 @@ interface SearchNodeItem {
   source: string
   updatedAt: number
   score: number
+}
+
+interface RemoteTopicItem {
+  id: number
+  title: string
+  username: string
+  content: string
+  created: string
+  replies: number
+  nodeId: number
 }
 
 type SearchResultFilter = 'all' | 'topics' | 'nodes' | 'users'
@@ -65,10 +79,18 @@ export struct SearchPage {
 
   @State private topicResults: SearchTopicItem[] = []
   @State private nodeResults: SearchNodeItem[] = []
+  @State private remoteResults: RemoteTopicItem[] = []
+  @State private remoteTotal: number = 0
+  @State private remoteFrom: number = 0
+  @State private remoteLoading: boolean = false
+  @State private remoteError: string = ''
+  @State private remoteSort: Sov2exSortMode = 'created'
+  @State private remoteOrder: Sov2exOrderMode = '0'
   @StorageProp(StorageKeys.TOP_AVOID_HEIGHT) topH: number = 0
   @StorageProp(StorageKeys.BOTTOM_AVOID_HEIGHT) bottomH: number = 0
 
   private api: ApiService = new ApiService()
+  private sov2ex: Sov2exService = new Sov2exService()
 
   aboutToAppear(): void {
     this.keyword = ''
@@ -88,12 +110,14 @@ export struct SearchPage {
       this.SearchPanel()
       this.HistorySection()
 
-      if (this.sourceMode !== 'externalWeb' && this.keyword.trim().length > 0) {
+      if (this.sourceMode !== 'externalWeb' && this.sourceMode !== 'remote' && this.keyword.trim().length > 0) {
         this.ResultFilterControls()
       }
 
       if (this.sourceMode === 'externalWeb' && this.keyword.trim().length > 0) {
         this.ExternalWebSearchPanel()
+      } else if (this.sourceMode === 'remote' && this.keyword.trim().length > 0) {
+        this.RemoteSearchResultList()
       } else if (this.keyword.trim().length > 0) {
         this.LocalResultList()
       }
@@ -120,6 +144,7 @@ export struct SearchPage {
         .onChange((value: string) => {
           this.keyword = value
           this.applyFilter()
+          this.resetRemoteResults()
         })
 
       if (this.isCacheLoading || this.isNodeIndexLoading) {
@@ -135,6 +160,9 @@ export struct SearchPage {
       }
 
       this.SourceModeControls()
+      if (this.sourceMode === 'remote') {
+        this.RemoteSearchControls()
+      }
     }
     .padding(ThemeConstants.SPACE_MD)
     .width('100%')
@@ -265,6 +293,90 @@ export struct SearchPage {
     .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }
 
+  @Builder RemoteSearchResultList() {
+    List({ space: ThemeConstants.SPACE_SM }) {
+      ListItem() {
+        Column() {
+          SharedSectionHeader({ title: `SOV2EX ${this.remoteTotal}` })
+          if (this.remoteError) {
+            Text(this.remoteError)
+              .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+              .fontColor(Color.Red)
+              .padding(ThemeConstants.SPACE_MD)
+              .width('100%')
+              .borderRadius(ThemeConstants.RADIUS_MD)
+              .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+          } else if (!this.remoteLoading && this.remoteResults.length === 0) {
+            EmptyState({ message: '点击搜索获取远程结果', stateHeight: 96 })
+              .borderRadius(ThemeConstants.RADIUS_MD)
+              .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+              .margin({ top: ThemeConstants.SPACE_XS })
+          }
+        }
+        .width('100%')
+      }
+
+      ForEach(this.remoteResults, (item: RemoteTopicItem) => {
+        ListItem() { this.RemoteTopicRow(item) }
+          .onClick(() => {
+            let p: TopicDetailParams = { topicId: item.id }
+            this.stack.pushPathByName('TopicDetail', p as Object)
+          })
+      }, (item: RemoteTopicItem) => `r:${item.id}`)
+
+      if (this.remoteLoading) {
+        ListItem() { EmptyState({ message: '搜索中', stateHeight: 88 }) }
+      } else if (this.remoteResults.length < this.remoteTotal) {
+        ListItem() {
+          Button('加载更多')
+            .fontSize(ThemeConstants.FONT_SIZE_BODY)
+            .height(44)
+            .width('100%')
+            .borderRadius(ThemeConstants.RADIUS_MD)
+            .onClick(() => { this.executeRemoteSearch(false) })
+        }
+      }
+    }
+    .scrollBar(BarState.Off)
+    .width('100%')
+    .layoutWeight(1)
+  }
+
+  @Builder RemoteTopicRow(item: RemoteTopicItem) {
+    Column({ space: ThemeConstants.SPACE_XS }) {
+      Text(item.title)
+        .fontSize(ThemeConstants.FONT_SIZE_BODY)
+        .fontWeight(FontWeight.Medium)
+        .fontColor($r('sys.color.font_primary'))
+        .maxLines(2)
+        .textOverflow({ overflow: TextOverflow.Ellipsis })
+      if (item.content) {
+        Text(item.content)
+          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+          .fontColor($r('sys.color.font_secondary'))
+          .maxLines(2)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+      }
+      Row({ space: ThemeConstants.SPACE_SM }) {
+        Text(`@${item.username}`)
+          .fontSize(ThemeConstants.FONT_SIZE_TINY)
+          .fontColor($r('sys.color.font_secondary'))
+          .layoutWeight(1)
+        Text(`${item.replies} 回复`)
+          .fontSize(ThemeConstants.FONT_SIZE_TINY)
+          .fontColor($r('sys.color.font_secondary'))
+        Text(item.created)
+          .fontSize(ThemeConstants.FONT_SIZE_TINY)
+          .fontColor($r('sys.color.font_secondary'))
+      }
+      .width('100%')
+    }
+    .padding(ThemeConstants.SPACE_MD)
+    .width('100%')
+    .borderRadius(ThemeConstants.RADIUS_MD)
+    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+  }
+
   @Builder TopicRow(item: SearchTopicItem) {
     Column({ space: ThemeConstants.SPACE_XS }) {
       Text(item.title)
@@ -325,6 +437,7 @@ export struct SearchPage {
       Row({ space: ThemeConstants.SPACE_SM }) {
         this.SourceModeButton('local', '本地')
         this.SourceModeButton('localWithNodes', '本地+节点库')
+        this.SourceModeButton('remote', 'SOV2EX')
         this.SourceModeButton('externalWeb', '网页搜索')
       }
     }
@@ -341,6 +454,38 @@ export struct SearchPage {
       .borderRadius(ThemeConstants.RADIUS_ROUND)
       .backgroundColor(this.sourceMode === mode ? '#EAF2FF' : $r('sys.color.ohos_id_color_button_normal'))
       .onClick(() => { this.updateSourceMode(mode) })
+  }
+
+  @Builder RemoteSearchControls() {
+    Row({ space: ThemeConstants.SPACE_XS }) {
+      this.RemoteOptionButton('时间', this.remoteSort === 'created' && this.remoteOrder === '0', () => {
+        this.remoteSort = 'created'
+        this.remoteOrder = '0'
+        this.executeRemoteSearch(true)
+      })
+      this.RemoteOptionButton('相关', this.remoteSort === 'sumup', () => {
+        this.remoteSort = 'sumup'
+        this.remoteOrder = '0'
+        this.executeRemoteSearch(true)
+      })
+      Button(this.remoteLoading ? '搜索中' : '搜索')
+        .fontSize(ThemeConstants.FONT_SIZE_TAG)
+        .height(34)
+        .borderRadius(ThemeConstants.RADIUS_ROUND)
+        .enabled(!this.remoteLoading && this.keyword.trim().length > 0)
+        .onClick(() => { this.executeRemoteSearch(true) })
+    }
+    .width('100%')
+  }
+
+  @Builder RemoteOptionButton(label: string, selected: boolean, action: () => void) {
+    Text(label)
+      .fontSize(ThemeConstants.FONT_SIZE_TAG)
+      .fontColor(selected ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.font_primary'))
+      .padding({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM, top: 5, bottom: 5 })
+      .borderRadius(ThemeConstants.RADIUS_ROUND)
+      .backgroundColor(selected ? '#EAF2FF' : $r('sys.color.ohos_id_color_button_normal'))
+      .onClick(() => { action() })
   }
 
   @Builder ResultFilterControls() {
@@ -522,6 +667,10 @@ export struct SearchPage {
     }
     this.keyword = clean
     this.applyFilter()
+    this.resetRemoteResults()
+    if (this.sourceMode === 'remote') {
+      this.executeRemoteSearch(true)
+    }
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     SearchSettings.recordQuery(context, clean)
       .then((items: string[]) => {
@@ -703,6 +852,7 @@ export struct SearchPage {
       return
     }
     this.sourceMode = mode
+    this.resetRemoteResults()
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     SearchSettings.saveSourceMode(context, mode)
       .catch((error: Error) => {
@@ -710,6 +860,8 @@ export struct SearchPage {
       })
     if (this.usesNodeIndex()) {
       this.loadNodeIndex()
+    } else if (mode === 'remote' && this.keyword.trim().length > 0) {
+      this.executeRemoteSearch(true)
     } else {
       this.applyFilter()
     }
@@ -744,6 +896,9 @@ export struct SearchPage {
   }
 
   private sourceModeSummary(): string {
+    if (this.sourceMode === 'remote') {
+      return '使用 SOV2EX 站内搜索'
+    }
     if (this.sourceMode === 'externalWeb') {
       return '官方 API 暂无主题搜索，使用系统浏览器搜索 V2EX 主题'
     }
@@ -791,6 +946,99 @@ export struct SearchPage {
 
   private static buildExternalTopicSearchUrl(query: string): string {
     return `https://www.bing.com/search?q=${encodeURIComponent(`site:v2ex.com/t ${query}`)}`
+  }
+
+  private resetRemoteResults(): void {
+    this.remoteResults = []
+    this.remoteTotal = 0
+    this.remoteFrom = 0
+    this.remoteError = ''
+  }
+
+  private executeRemoteSearch(reset: boolean): void {
+    const q = this.keyword.trim()
+    if (!q || this.remoteLoading) {
+      return
+    }
+    if (reset) {
+      this.remoteResults = []
+      this.remoteTotal = 0
+      this.remoteFrom = 0
+      this.remoteError = ''
+    }
+    const from = reset ? 0 : this.remoteFrom
+    this.remoteLoading = true
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    SearchSettings.recordQuery(context, q)
+      .then((items: string[]) => {
+        this.history = items
+      })
+      .catch((_error: Error) => { })
+    this.sov2ex.search({
+      q: q,
+      from: from,
+      size: 20,
+      sort: this.remoteSort,
+      order: this.remoteOrder
+    })
+      .then((response) => {
+        const hits = response.hits || []
+        const next = hits.map((hit: Sov2exHit) => SearchPage.remoteHitToItem(hit))
+          .filter((item: RemoteTopicItem) => item.id > 0)
+        this.remoteResults = reset ? next : this.remoteResults.concat(next)
+        this.remoteTotal = response.total || this.remoteResults.length
+        this.remoteFrom = this.remoteResults.length
+      })
+      .catch((error: Error) => {
+        this.remoteError = error.message || '远程搜索失败'
+      })
+      .finally(() => {
+        this.remoteLoading = false
+      })
+  }
+
+  private static remoteHitToItem(hit: Sov2exHit): RemoteTopicItem {
+    const source = hit._source || {}
+    const rawId = source.id || Number.parseInt(hit._id || '0')
+    return {
+      id: rawId || 0,
+      title: SearchPage.cleanHighlightText(source.title || ''),
+      username: source.member || '',
+      content: SearchPage.cleanHighlightText(SearchPage.firstHighlight(hit) || source.content || ''),
+      created: SearchPage.cleanCreated(source.created || ''),
+      replies: source.replies || 0,
+      nodeId: source.node || 0
+    }
+  }
+
+  private static firstHighlight(hit: Sov2exHit): string {
+    const highlight = hit.highlight
+    if (!highlight) {
+      return ''
+    }
+    const reply = highlight.replyListContent
+    if (reply && reply.length > 0) {
+      return reply[0]
+    }
+    if (highlight.content && highlight.content.length > 0) {
+      return highlight.content[0]
+    }
+    if (highlight.title && highlight.title.length > 0) {
+      return highlight.title[0]
+    }
+    return ''
+  }
+
+  private static cleanHighlightText(text: string): string {
+    return (text ?? '')
+      .replace(/<em>/g, '')
+      .replace(/<\/em>/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+  }
+
+  private static cleanCreated(created: string): string {
+    return (created ?? '').replace('T', ' ').slice(0, 16)
   }
 
   private static savedNodeToV2exNode(item: SavedNode): V2exNode {
