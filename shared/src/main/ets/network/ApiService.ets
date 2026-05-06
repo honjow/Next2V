@@ -7,6 +7,8 @@ import { V2exAccountParser } from '../parser/V2exAccountParser'
 import { V2exSessionParser } from '../parser/V2exSessionParser'
 import { V2exNodeParser, type V2exFavoriteNode } from '../parser/V2exNodeParser'
 import { V2exCollectionActionParser, type V2exToggleAction } from '../parser/V2exCollectionActionParser'
+import { V2exWriteFormParser } from '../parser/V2exWriteFormParser'
+import { V2exSigninParser } from '../parser/V2exSigninParser'
 import type {
   V2exTopic,
   V2exReply,
@@ -19,6 +21,12 @@ import type {
   V2exBalance,
   V2exDailyMission
 } from './NetworkTypes'
+
+interface CookieHtmlResponse {
+  statusCode: number
+  text: string
+  location: string
+}
 
 /**
  * V2EX API 调用层
@@ -305,6 +313,104 @@ export class ApiService {
     return this.executeNodeFavoriteToggleWithCookie(cookie, nodeName, toggle)
   }
 
+  /**
+   * 提交主题回复（依赖 Cookie 会话）
+   */
+  async submitReplyWithCookie(cookie: string, topicId: number, content: string): Promise<void> {
+    const cleanContent = (content || '').trim()
+    if (!cookie) {
+      throw new Error('请先登录')
+    }
+    if (topicId <= 0) {
+      throw new Error('无效主题 ID')
+    }
+    if (!cleanContent) {
+      throw new Error('回复内容不能为空')
+    }
+    const topicPath = `/t/${topicId}`
+    const html = await this.http.getTextWithHeaders(topicPath, { 'Cookie': cookie })
+    if (!V2exSessionParser.extractUsername(html)) {
+      throw new Error('Web 会话已失效，请重新登录')
+    }
+    const form = V2exWriteFormParser.extractReplyForm(html)
+    if (!form) {
+      throw new Error('解析回复表单失败，请改用浏览器')
+    }
+
+    const fields: Record<string, string> = {}
+    const hiddenKeys = Object.keys(form.hiddenFields)
+    for (const key of hiddenKeys) {
+      fields[key] = form.hiddenFields[key]
+    }
+    fields[form.contentField] = cleanContent
+    const body = ApiService.encodeFormFields(fields)
+
+    const res = await this.requestHtmlWithCookieAllowRedirect(form.actionPath, cookie, topicPath, http.RequestMethod.POST, body)
+    if (res.location.indexOf('/signin') >= 0) {
+      throw new Error('Web 会话已失效，请重新登录')
+    }
+    const problem = V2exSigninParser.extractProblemMessage(res.text)
+    if (problem) {
+      throw new Error(`提交失败：${problem}`)
+    }
+  }
+
+  /**
+   * 提交新主题（依赖 Cookie 会话）
+   * - 返回新主题 ID（无法解析时返回 0）
+   */
+  async createTopicWithCookie(cookie: string, nodeName: string, title: string, content: string): Promise<number> {
+    const cleanNode = (nodeName || '').trim()
+    const cleanTitle = (title || '').trim()
+    const cleanContent = (content || '').trim()
+    if (!cookie) {
+      throw new Error('请先登录')
+    }
+    if (!cleanNode) {
+      throw new Error('请选择节点')
+    }
+    if (!cleanTitle) {
+      throw new Error('请输入标题')
+    }
+    if (!cleanContent) {
+      throw new Error('请输入正文')
+    }
+
+    const composePath = `/new/${cleanNode}`
+    const html = await this.http.getTextWithHeaders(composePath, { 'Cookie': cookie })
+    if (!V2exSessionParser.extractUsername(html)) {
+      throw new Error('Web 会话已失效，请重新登录')
+    }
+    const form = V2exWriteFormParser.extractTopicCreateForm(html)
+    if (!form) {
+      throw new Error('解析发帖表单失败，请改用浏览器')
+    }
+
+    const fields: Record<string, string> = {}
+    const hiddenKeys = Object.keys(form.hiddenFields)
+    for (const key of hiddenKeys) {
+      fields[key] = form.hiddenFields[key]
+    }
+    fields[form.titleField] = cleanTitle
+    fields[form.contentField] = cleanContent
+    const body = ApiService.encodeFormFields(fields)
+
+    const res = await this.requestHtmlWithCookieAllowRedirect(form.actionPath, cookie, composePath, http.RequestMethod.POST, body)
+    if (res.location.indexOf('/signin') >= 0) {
+      throw new Error('Web 会话已失效，请重新登录')
+    }
+    const problem = V2exSigninParser.extractProblemMessage(res.text)
+    if (problem) {
+      throw new Error(`提交失败：${problem}`)
+    }
+
+    const topicFromLocation = ApiService.extractTopicId(res.location)
+    if (topicFromLocation > 0) {
+      return topicFromLocation
+    }
+    return ApiService.extractTopicId(res.text)
+  }
+
   private async requestTextWithCookieAllowRedirect(pathOrUrl: string, cookie: string, refererPath: string): Promise<void> {
     const clean = (pathOrUrl || '').trim()
     if (!clean) {
@@ -350,6 +456,112 @@ export class ApiService {
     } finally {
       httpRequest.destroy()
     }
+  }
+
+  private async requestHtmlWithCookieAllowRedirect(
+    pathOrUrl: string,
+    cookie: string,
+    refererPath: string,
+    method: http.RequestMethod,
+    extraData: string = ''
+  ): Promise<CookieHtmlResponse> {
+    const clean = (pathOrUrl || '').trim()
+    if (!clean) {
+      throw new Error('缺少操作路径')
+    }
+    const baseUrl = this.http.getBaseUrl()
+    const url = clean.startsWith('http://') || clean.startsWith('https://')
+      ? clean
+      : clean.startsWith('/') ? `${baseUrl}${clean}` : `${baseUrl}/${clean}`
+
+    const refererClean = (refererPath || '').trim()
+    const refererUrl = !refererClean
+      ? ''
+      : (refererClean.startsWith('http://') || refererClean.startsWith('https://'))
+          ? refererClean
+          : refererClean.startsWith('/') ? `${baseUrl}${refererClean}` : `${baseUrl}/${refererClean}`
+
+    let httpRequest = http.createHttp()
+    let headerBag: Object | null = null
+    httpRequest.on('headersReceive', (headers: Object) => {
+      headerBag = headers
+    })
+    try {
+      const requestHeaders: Record<string, string> = {
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Encoding': 'gzip',
+        'Content-Type': method === http.RequestMethod.POST ? 'application/x-www-form-urlencoded' : 'text/html; charset=utf-8',
+        'Cookie': cookie,
+        'User-Agent': 'Mozilla/5.0'
+      }
+      if (refererUrl) {
+        requestHeaders['Referer'] = refererUrl
+      }
+
+      const options: http.HttpRequestOptions = {
+        method: method,
+        header: requestHeaders,
+        connectTimeout: this.CONNECT_TIMEOUT_MS,
+        readTimeout: this.READ_TIMEOUT_MS,
+        usingCache: false,
+        expectDataType: http.HttpDataType.STRING
+      }
+      if (method === http.RequestMethod.POST) {
+        options.extraData = extraData
+      }
+      const response = await httpRequest.request(url, options)
+      const statusCode = response.responseCode as number
+      if (statusCode < 200 || statusCode >= 400) {
+        throw new Error(`HTTP ${statusCode}: ${url}`)
+      }
+      const text = (response.result as string) || ''
+      const location = ApiService.extractHeaderValue(headerBag || response.header, 'location')
+      return { statusCode, text, location }
+    } finally {
+      httpRequest.destroy()
+    }
+  }
+
+  private static extractHeaderValue(headers: Object, key: string): string {
+    const cleanKey = (key || '').trim().toLowerCase()
+    if (!cleanKey) {
+      return ''
+    }
+    try {
+      const bag = headers as Record<string, Object>
+      const value = bag[cleanKey] || bag[key] || bag[cleanKey.toUpperCase()] || bag[key.toUpperCase()] || ''
+      if (typeof value === 'string') {
+        return value
+      }
+      if (Array.isArray(value)) {
+        const items = value.filter((v: Object) => typeof v === 'string') as string[]
+        return items.length > 0 ? items[0] : ''
+      }
+      return ''
+    } catch (_e) {
+      return ''
+    }
+  }
+
+  private static extractTopicId(text: string): number {
+    const m = (text || '').match(/\/t\/(\d+)/i)
+    if (!m || !m[1]) {
+      return 0
+    }
+    const parsed = parseInt(m[1], 10)
+    return Number.isFinite(parsed) ? parsed : 0
+  }
+
+  private static encodeFormFields(fields: Record<string, string>): string {
+    const keys = Object.keys(fields)
+    if (keys.length === 0) {
+      return ''
+    }
+    const encodedPairs: string[] = []
+    for (const key of keys) {
+      encodedPairs.push(`${encodeURIComponent(key)}=${encodeURIComponent(fields[key] || '')}`)
+    }
+    return encodedPairs.join('&')
   }
 
   // ==================== Tab 聚合接口 ====================

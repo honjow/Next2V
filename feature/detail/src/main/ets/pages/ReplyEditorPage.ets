@@ -1,6 +1,6 @@
 import { common } from '@kit.AbilityKit'
 import { promptAction } from '@kit.ArkUI'
-import { DateUtils, DraftSettings, MarkdownContent, StorageKeys, ThemeConstants } from 'shared'
+import { ApiService, CookieJarSettings, DateUtils, DraftSettings, MarkdownContent, StorageKeys, ThemeConstants } from 'shared'
 
 @Component
 export struct ReplyEditorPage {
@@ -15,20 +15,25 @@ export struct ReplyEditorPage {
   @State private isPreview: boolean = false
   @State private errorMessage: string = ''
   @State private savedAt: number = 0
+  @State private isSubmitting: boolean = false
   @State private contentSelectionStart: number = 0
   @State private contentSelectionEnd: number = 0
 
   private contentController: TextAreaController = new TextAreaController()
   private saveTimerId: number = 0
   private isSaving: boolean = false
+  private hasSubmitted: boolean = false
+  private api: ApiService = new ApiService()
 
   aboutToAppear(): void {
     this.content = ''
     this.isPreview = false
     this.errorMessage = ''
     this.savedAt = 0
+    this.isSubmitting = false
     this.contentSelectionStart = 0
     this.contentSelectionEnd = 0
+    this.hasSubmitted = false
 
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     DraftSettings.loadReplyDraft(context, this.topicId)
@@ -47,7 +52,9 @@ export struct ReplyEditorPage {
 
   aboutToDisappear(): void {
     this.clearSaveTimer()
-    this.persistDraft()
+    if (!this.hasSubmitted) {
+      this.persistDraft()
+    }
   }
 
   build() {
@@ -107,7 +114,7 @@ export struct ReplyEditorPage {
       }
 
       if (!this.isPreview) {
-        TextArea({ placeholder: '写回复（仅保存草稿，不会提交）', text: this.content, controller: this.contentController })
+        TextArea({ placeholder: '写回复（自动保存草稿）', text: this.content, controller: this.contentController })
           .fontSize(ThemeConstants.FONT_SIZE_BODY)
           .height(260)
           .borderRadius(ThemeConstants.RADIUS_MD)
@@ -151,12 +158,13 @@ export struct ReplyEditorPage {
         Button('返回')
           .fontSize(ThemeConstants.FONT_SIZE_TAG)
           .height(40)
+          .enabled(!this.isSubmitting)
           .onClick(() => { this.stack.pop() })
-        Button(this.writeEnabled ? '提交（未开放）' : '提交（需开启写入开关）')
+        Button(this.writeEnabled ? (this.isSubmitting ? '提交中...' : '提交') : '提交（需开启写入开关）')
           .fontSize(ThemeConstants.FONT_SIZE_TAG)
           .height(40)
-          .enabled(false)
-          .onClick(() => { })
+          .enabled(this.canSubmit())
+          .onClick(() => { this.confirmSubmit() })
       }
     }
     .padding({
@@ -253,6 +261,69 @@ export struct ReplyEditorPage {
       })
       .catch((_error: Error) => {
         promptAction.openToast({ message: '清空失败' }).catch((_error2: Error) => { })
+      })
+  }
+
+  private canSubmit(): boolean {
+    if (!this.writeEnabled || this.isSubmitting || this.topicId <= 0) {
+      return false
+    }
+    if (this.content.trim().length === 0) {
+      return false
+    }
+    return !!CookieJarSettings.getCurrentCookie()
+  }
+
+  private confirmSubmit(): void {
+    if (this.isSubmitting) {
+      return
+    }
+    if (!this.writeEnabled) {
+      promptAction.openToast({ message: '写入操作开关未开启' }).catch((_error: Error) => { })
+      return
+    }
+    if (this.content.trim().length === 0) {
+      promptAction.openToast({ message: '回复内容不能为空' }).catch((_error: Error) => { })
+      return
+    }
+    if (!CookieJarSettings.getCurrentCookie()) {
+      promptAction.openToast({ message: '请先登录' }).catch((_error: Error) => { })
+      return
+    }
+    const title = (this.topicTitle || '').trim()
+    AlertDialog.show({
+      title: '提交回复',
+      message: title ? `确定向《${title}》提交回复吗？` : '确定提交回复吗？',
+      primaryButton: { value: '取消', action: () => { } },
+      secondaryButton: { value: '提交', action: () => { this.submit() } }
+    })
+  }
+
+  private submit(): void {
+    if (this.isSubmitting) {
+      return
+    }
+    const cookie = CookieJarSettings.getCurrentCookie()
+    if (!cookie) {
+      promptAction.openToast({ message: '请先登录' }).catch((_error: Error) => { })
+      return
+    }
+    this.isSubmitting = true
+    this.errorMessage = ''
+    this.api.submitReplyWithCookie(cookie, this.topicId, this.content)
+      .then(() => {
+        this.hasSubmitted = true
+        const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+        DraftSettings.clearReplyDraft(context, this.topicId).catch((_error: Error) => { })
+        promptAction.openToast({ message: '已提交' }).catch((_error: Error) => { })
+        this.stack.pop()
+      })
+      .catch((error: Error) => {
+        this.errorMessage = error.message || '提交失败'
+        promptAction.openToast({ message: this.errorMessage }).catch((_error2: Error) => { })
+      })
+      .finally(() => {
+        this.isSubmitting = false
       })
   }
 }

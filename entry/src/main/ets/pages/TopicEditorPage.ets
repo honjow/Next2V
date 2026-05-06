@@ -1,6 +1,6 @@
 import { common } from '@kit.AbilityKit'
 import { promptAction } from '@kit.ArkUI'
-import { DateUtils, DraftSettings, MarkdownContent, StorageKeys, ThemeConstants } from 'shared'
+import { ApiService, CookieJarSettings, DateUtils, DraftSettings, MarkdownContent, StorageKeys, ThemeConstants } from 'shared'
 
 @Component
 export struct TopicEditorPage {
@@ -16,12 +16,15 @@ export struct TopicEditorPage {
   @State private isPreview: boolean = false
   @State private errorMessage: string = ''
   @State private savedAt: number = 0
+  @State private isSubmitting: boolean = false
   @State private contentSelectionStart: number = 0
   @State private contentSelectionEnd: number = 0
 
   private contentController: TextAreaController = new TextAreaController()
   private saveTimerId: number = 0
   private isSaving: boolean = false
+  private hasSubmitted: boolean = false
+  private api: ApiService = new ApiService()
 
   aboutToAppear(): void {
     this.nodeName = ''
@@ -30,8 +33,10 @@ export struct TopicEditorPage {
     this.isPreview = false
     this.errorMessage = ''
     this.savedAt = 0
+    this.isSubmitting = false
     this.contentSelectionStart = 0
     this.contentSelectionEnd = 0
+    this.hasSubmitted = false
 
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     DraftSettings.loadTopicDraft(context)
@@ -52,7 +57,9 @@ export struct TopicEditorPage {
 
   aboutToDisappear(): void {
     this.clearSaveTimer()
-    this.persistDraft()
+    if (!this.hasSubmitted) {
+      this.persistDraft()
+    }
   }
 
   build() {
@@ -72,6 +79,7 @@ export struct TopicEditorPage {
           Button('选择')
             .fontSize(ThemeConstants.FONT_SIZE_TAG)
             .height(44)
+            .enabled(!this.isSubmitting)
             .onClick(() => { this.stack.pushPathByName('NodePicker', null) })
         }
         .width('100%')
@@ -177,12 +185,13 @@ export struct TopicEditorPage {
           Button('返回')
             .fontSize(ThemeConstants.FONT_SIZE_TAG)
             .height(40)
+            .enabled(!this.isSubmitting)
             .onClick(() => { this.stack.pop() })
-          Button('提交（未开放）')
+          Button(this.writeEnabled ? (this.isSubmitting ? '提交中...' : '提交') : '提交（需开启写入开关）')
             .fontSize(ThemeConstants.FONT_SIZE_TAG)
             .height(40)
-            .enabled(false)
-            .onClick(() => { })
+            .enabled(this.canSubmit())
+            .onClick(() => { this.confirmSubmit() })
         }
       }
       .padding({
@@ -287,6 +296,78 @@ export struct TopicEditorPage {
       })
       .catch((_error: Error) => {
         promptAction.openToast({ message: '清空失败' }).catch((_error2: Error) => { })
+      })
+  }
+
+  private canSubmit(): boolean {
+    if (!this.writeEnabled || this.isSubmitting) {
+      return false
+    }
+    if (!this.nodeName.trim() || !this.title.trim() || this.content.trim().length === 0) {
+      return false
+    }
+    return !!CookieJarSettings.getCurrentCookie()
+  }
+
+  private confirmSubmit(): void {
+    if (this.isSubmitting) {
+      return
+    }
+    if (!this.writeEnabled) {
+      promptAction.openToast({ message: '写入操作开关未开启' }).catch((_error: Error) => { })
+      return
+    }
+    if (!this.nodeName.trim()) {
+      promptAction.openToast({ message: '请选择节点' }).catch((_error: Error) => { })
+      return
+    }
+    if (!this.title.trim()) {
+      promptAction.openToast({ message: '请输入标题' }).catch((_error: Error) => { })
+      return
+    }
+    if (this.content.trim().length === 0) {
+      promptAction.openToast({ message: '请输入正文' }).catch((_error: Error) => { })
+      return
+    }
+    if (!CookieJarSettings.getCurrentCookie()) {
+      promptAction.openToast({ message: '请先登录' }).catch((_error: Error) => { })
+      return
+    }
+    const cleanNode = this.nodeName.trim()
+    const cleanTitle = this.title.trim()
+    AlertDialog.show({
+      title: '确认发帖',
+      message: `确定在节点「${cleanNode}」发布主题《${cleanTitle}》吗？`,
+      primaryButton: { value: '取消', action: () => { } },
+      secondaryButton: { value: '发布', action: () => { this.submit() } }
+    })
+  }
+
+  private submit(): void {
+    if (this.isSubmitting) {
+      return
+    }
+    const cookie = CookieJarSettings.getCurrentCookie()
+    if (!cookie) {
+      promptAction.openToast({ message: '请先登录' }).catch((_error: Error) => { })
+      return
+    }
+    this.isSubmitting = true
+    this.errorMessage = ''
+    this.api.createTopicWithCookie(cookie, this.nodeName, this.title, this.content)
+      .then((topicId: number) => {
+        this.hasSubmitted = true
+        const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+        DraftSettings.clearTopicDraft(context).catch((_error: Error) => { })
+        promptAction.openToast({ message: topicId > 0 ? `已发帖：${topicId}` : '已发帖' }).catch((_error: Error) => { })
+        this.stack.pop()
+      })
+      .catch((error: Error) => {
+        this.errorMessage = error.message || '提交失败'
+        promptAction.openToast({ message: this.errorMessage }).catch((_error2: Error) => { })
+      })
+      .finally(() => {
+        this.isSubmitting = false
       })
   }
 }
