@@ -1313,7 +1313,7 @@ struct Index {
             .maxLines(1)
             .textOverflow({ overflow: TextOverflow.Ellipsis })
         } else if (this.notificationCacheUpdatedAt > 0) {
-          Text(`缓存于 ${DateUtils.toDateString(this.notificationCacheUpdatedAt)}`)
+          Text(`${this.notificationLoadedFromCache ? '缓存于' : '更新于'} ${DateUtils.toDateString(this.notificationCacheUpdatedAt)}`)
             .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
             .fontColor($r('sys.color.font_secondary'))
             .maxLines(1)
