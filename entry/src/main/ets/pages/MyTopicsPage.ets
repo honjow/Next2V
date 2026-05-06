@@ -76,7 +76,7 @@ export struct MyTopicsPage {
 
   @Builder private LoginRequiredView() {
     Column({ space: ThemeConstants.SPACE_SM }) {
-      Text('登录后可查看我的主题')
+      Text('登录后可查看收藏主题')
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
         .fontColor($r('sys.color.font_secondary'))
       Button('去登录')
@@ -110,7 +110,7 @@ export struct MyTopicsPage {
 
   @Builder private EmptyView() {
     Column() {
-      Text('还没有主题')
+      Text('还没有收藏主题')
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
         .fontColor($r('sys.color.font_secondary'))
     }

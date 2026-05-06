@@ -232,11 +232,11 @@ struct Index {
     } else if (name === 'TopicEditor') {
       HdsNavDestination() { TopicEditorPage() }
         .titleBar(this.navDestTitleBarOpts('发帖草稿'))
-    } else if (name === 'MyTopics') {
-      HdsNavDestination() { MyTopicsPage() }
-        .titleBar(this.navDestTitleBarOpts('我的主题'))
-    } else if (name === 'MyReplies') {
-      HdsNavDestination() { MyRepliesPage() }
+      } else if (name === 'MyTopics') {
+        HdsNavDestination() { MyTopicsPage() }
+        .titleBar(this.navDestTitleBarOpts('收藏主题'))
+      } else if (name === 'MyReplies') {
+        HdsNavDestination() { MyRepliesPage() }
         .titleBar(this.navDestTitleBarOpts('我的回复'))
     } else if (name === 'Settings') {
       HdsNavDestination() { SettingsPage() }
@@ -941,7 +941,7 @@ struct Index {
 
   @Builder AccountContentSection() {
     Column() {
-      this.AuthActionRow('我的主题', '从 V2EX 同步你的发帖记录', () => {
+      this.AuthActionRow('收藏主题', '从 V2EX 同步你的收藏主题', () => {
         this.ns.pushPathByName('MyTopics', null)
       })
       this.SettingsDivider()
