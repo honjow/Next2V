@@ -37,6 +37,8 @@ interface SearchNodeItem {
   score: number
 }
 
+type SearchResultFilter = 'all' | 'topics' | 'nodes' | 'users'
+
 @Component
 export struct SearchPage {
   @Consume('ns') stack: NavPathStack
@@ -56,6 +58,7 @@ export struct SearchPage {
 
   @State private history: string[] = []
   @State private sourceMode: SearchSourceMode = 'localWithNodes'
+  @State private resultFilter: SearchResultFilter = 'all'
 
   @State private topicResults: SearchTopicItem[] = []
   @State private nodeResults: SearchNodeItem[] = []
@@ -111,6 +114,9 @@ export struct SearchPage {
         })
 
       this.SourceModeControls()
+      if (this.sourceMode !== 'externalWeb') {
+        this.ResultFilterControls()
+      }
 
       if (!this.keyword.trim() && this.history.length > 0) {
         Column({ space: ThemeConstants.SPACE_XS }) {
@@ -173,55 +179,61 @@ export struct SearchPage {
 
   @Builder LocalResultList() {
     List({ space: ThemeConstants.SPACE_SM }) {
-      ListItem() {
-        Column({ space: ThemeConstants.SPACE_XS }) {
-          Text(`主题结果 ${this.topicResults.length}`)
-            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-            .fontColor($r('sys.color.font_secondary'))
-          if (this.topicResults.length === 0) {
-            Text(this.keyword.trim() ? '没有匹配的主题' : '输入关键词开始搜索')
-              .fontSize(ThemeConstants.FONT_SIZE_BODY)
+      if (this.showTopicResults()) {
+        ListItem() {
+          Column({ space: ThemeConstants.SPACE_XS }) {
+            Text(`${this.topicSectionTitle()} ${this.topicResults.length}`)
+              .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
               .fontColor($r('sys.color.font_secondary'))
-              .padding({ top: ThemeConstants.SPACE_SM, bottom: ThemeConstants.SPACE_SM })
+            if (this.topicResults.length === 0) {
+              Text(this.keyword.trim() ? this.emptyTopicHint() : '输入关键词开始搜索')
+                .fontSize(ThemeConstants.FONT_SIZE_BODY)
+                .fontColor($r('sys.color.font_secondary'))
+                .padding({ top: ThemeConstants.SPACE_SM, bottom: ThemeConstants.SPACE_SM })
+            }
           }
+          .width('100%')
         }
-        .width('100%')
+
+        ForEach(this.topicResults.slice(0, 80), (item: SearchTopicItem) => {
+          ListItem() { this.TopicRow(item) }
+            .onClick(() => {
+              let p: TopicDetailParams = { topicId: item.id }
+              this.stack.pushPathByName('TopicDetail', p as Object)
+            })
+        }, (item: SearchTopicItem) => `t:${item.id}`)
       }
 
-      ForEach(this.topicResults.slice(0, 80), (item: SearchTopicItem) => {
-        ListItem() { this.TopicRow(item) }
-          .onClick(() => {
-            let p: TopicDetailParams = { topicId: item.id }
-            this.stack.pushPathByName('TopicDetail', p as Object)
-          })
-      }, (item: SearchTopicItem) => `t:${item.id}`)
-
-      ListItem() {
-        Divider().strokeWidth(0.5).color($r('sys.color.ohos_id_color_list_separator'))
+      if (this.showTopicResults() && this.showNodeResults()) {
+        ListItem() {
+          Divider().strokeWidth(0.5).color($r('sys.color.ohos_id_color_list_separator'))
+        }
       }
 
-      ListItem() {
-        Column({ space: ThemeConstants.SPACE_XS }) {
-          Text(`节点结果 ${this.nodeResults.length}`)
-            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-            .fontColor($r('sys.color.font_secondary'))
-          if (this.nodeResults.length === 0) {
-            Text(this.keyword.trim() ? '没有匹配的节点' : this.emptyNodeHint())
-              .fontSize(ThemeConstants.FONT_SIZE_BODY)
+      if (this.showNodeResults()) {
+        ListItem() {
+          Column({ space: ThemeConstants.SPACE_XS }) {
+            Text(`节点结果 ${this.nodeResults.length}`)
+              .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
               .fontColor($r('sys.color.font_secondary'))
-              .padding({ top: ThemeConstants.SPACE_SM, bottom: ThemeConstants.SPACE_SM })
+            if (this.nodeResults.length === 0) {
+              Text(this.keyword.trim() ? '没有匹配的节点' : this.emptyNodeHint())
+                .fontSize(ThemeConstants.FONT_SIZE_BODY)
+                .fontColor($r('sys.color.font_secondary'))
+                .padding({ top: ThemeConstants.SPACE_SM, bottom: ThemeConstants.SPACE_SM })
+            }
           }
+          .width('100%')
         }
-        .width('100%')
-      }
 
-      ForEach(this.nodeResults.slice(0, 80), (item: SearchNodeItem) => {
-        ListItem() { this.NodeRow(item) }
-          .onClick(() => {
-            let p: NodeTopicListParams = { nodeName: item.name, nodeTitle: item.title }
-            this.stack.pushPathByName('NodeTopicList', p as Object)
-          })
-      }, (item: SearchNodeItem) => `n:${item.name}`)
+        ForEach(this.nodeResults.slice(0, 80), (item: SearchNodeItem) => {
+          ListItem() { this.NodeRow(item) }
+            .onClick(() => {
+              let p: NodeTopicListParams = { nodeName: item.name, nodeTitle: item.title }
+              this.stack.pushPathByName('NodeTopicList', p as Object)
+            })
+        }, (item: SearchNodeItem) => `n:${item.name}`)
+      }
     }
     .scrollBar(BarState.Off)
     .width('100%')
@@ -253,7 +265,7 @@ export struct SearchPage {
         .maxLines(2)
         .textOverflow({ overflow: TextOverflow.Ellipsis })
       Row({ space: ThemeConstants.SPACE_SM }) {
-        Text(`${item.nodeTitle} / ${item.nodeName}`)
+        Text(`${item.nodeTitle} / ${item.nodeName} · @${item.username}`)
           .fontSize(ThemeConstants.FONT_SIZE_TINY)
           .fontColor($r('sys.color.font_secondary'))
           .maxLines(1)
@@ -322,6 +334,31 @@ export struct SearchPage {
       .type(ButtonType.Normal)
       .backgroundColor(this.sourceMode === mode ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.ohos_id_color_button_normal'))
       .onClick(() => { this.updateSourceMode(mode) })
+  }
+
+  @Builder ResultFilterControls() {
+    Scroll() {
+      Row({ space: ThemeConstants.SPACE_SM }) {
+        this.ResultFilterButton('all', '全部', 68)
+        this.ResultFilterButton('topics', '主题', 68)
+        this.ResultFilterButton('nodes', '节点', 68)
+        this.ResultFilterButton('users', '用户', 68)
+      }
+    }
+    .scrollable(ScrollDirection.Horizontal)
+    .scrollBar(BarState.Off)
+    .width('100%')
+  }
+
+  @Builder ResultFilterButton(filter: SearchResultFilter, label: string, width: number) {
+    Button(label)
+      .fontSize(ThemeConstants.FONT_SIZE_TAG)
+      .fontColor(this.resultFilter === filter ? Color.White : $r('sys.color.font_primary'))
+      .height(34)
+      .width(width)
+      .type(ButtonType.Normal)
+      .backgroundColor(this.resultFilter === filter ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.ohos_id_color_button_normal'))
+      .onClick(() => { this.updateResultFilter(filter) })
   }
 
   private loadLocalCollections(): void {
@@ -497,68 +534,72 @@ export struct SearchPage {
       return
     }
 
+    const includeTopics = this.showTopicResults()
+    const includeNodes = this.showNodeResults()
     const bag = new Map<number, SearchTopicItem>()
 
-    for (const item of this.savedTopics) {
-      const t: SearchTopicItem = {
-        id: item.id,
-        title: item.title,
-        nodeName: item.nodeName,
-        nodeTitle: item.nodeTitle,
-        username: item.username,
-        source: '收藏',
-        updatedAt: item.savedAt || 0
+    if (includeTopics) {
+      for (const item of this.savedTopics) {
+        const t: SearchTopicItem = {
+          id: item.id,
+          title: item.title,
+          nodeName: item.nodeName,
+          nodeTitle: item.nodeTitle,
+          username: item.username,
+          source: '收藏',
+          updatedAt: item.savedAt || 0
+        }
+        if (SearchPage.topicMatches(t, q, this.resultFilter)) {
+          bag.set(t.id, t)
+        }
       }
-      if (SearchPage.topicMatches(t, q)) {
-        bag.set(t.id, t)
-      }
-    }
 
-    for (const item of this.viewedTopics) {
-      const existing = bag.get(item.id)
-      const t: SearchTopicItem = existing ? existing : {
-        id: item.id,
-        title: item.title,
-        nodeName: item.nodeName,
-        nodeTitle: item.nodeTitle,
-        username: item.username,
-        source: '最近',
-        updatedAt: item.viewedAt || 0
+      for (const item of this.viewedTopics) {
+        const existing = bag.get(item.id)
+        const t: SearchTopicItem = existing ? existing : {
+          id: item.id,
+          title: item.title,
+          nodeName: item.nodeName,
+          nodeTitle: item.nodeTitle,
+          username: item.username,
+          source: '最近',
+          updatedAt: item.viewedAt || 0
+        }
+        if (!SearchPage.topicMatches(t, q, this.resultFilter)) {
+          continue
+        }
+        if (!existing) {
+          bag.set(t.id, t)
+        } else {
+          existing.source = SearchPage.mergeSource(existing.source, '最近')
+          existing.updatedAt = Math.max(existing.updatedAt, item.viewedAt || 0)
+        }
       }
-      if (!SearchPage.topicMatches(t, q)) {
-        continue
-      }
-      if (!existing) {
-        bag.set(t.id, t)
-      } else {
-        existing.source = SearchPage.mergeSource(existing.source, '最近')
-        existing.updatedAt = Math.max(existing.updatedAt, item.viewedAt || 0)
-      }
-    }
 
-    for (const item of this.cacheTopicDetails) {
-      if (!SearchPage.topicMatches(item, q)) {
-        continue
+      for (const item of this.cacheTopicDetails) {
+        if (!SearchPage.topicMatches(item, q, this.resultFilter)) {
+          continue
+        }
+        const existing = bag.get(item.id)
+        if (!existing) {
+          bag.set(item.id, item)
+        } else {
+          existing.source = SearchPage.mergeSource(existing.source, item.source)
+          existing.updatedAt = Math.max(existing.updatedAt, item.updatedAt)
+        }
       }
-      const existing = bag.get(item.id)
-      if (!existing) {
-        bag.set(item.id, item)
-      } else {
-        existing.source = SearchPage.mergeSource(existing.source, item.source)
-        existing.updatedAt = Math.max(existing.updatedAt, item.updatedAt)
-      }
-    }
 
-    for (const item of this.cacheTopicLists) {
-      if (!SearchPage.topicMatches(item, q)) {
-        continue
-      }
-      const existing = bag.get(item.id)
-      if (!existing) {
-        bag.set(item.id, item)
-      } else {
-        existing.source = SearchPage.mergeSource(existing.source, item.source)
-        existing.updatedAt = Math.max(existing.updatedAt, item.updatedAt)
+      for (const item of this.cacheTopicLists) {
+        if (!SearchPage.topicMatches(item, q, this.resultFilter)) {
+          continue
+        }
+        const existing = bag.get(item.id)
+        if (!existing) {
+          bag.set(item.id, item)
+        } else {
+          existing.source = SearchPage.mergeSource(existing.source, item.source)
+          existing.updatedAt = Math.max(existing.updatedAt, item.updatedAt)
+        }
       }
     }
 
@@ -566,41 +607,44 @@ export struct SearchPage {
       .sort((a: SearchTopicItem, b: SearchTopicItem) => b.updatedAt - a.updatedAt)
 
     const nodeBag = new Map<string, SearchNodeItem>()
-    for (const item of this.savedNodes) {
-      const node = SearchPage.savedNodeToV2exNode(item)
-      const score = NodeSearchUtils.scoreNode(node, q)
-      if (score <= 0) {
-        continue
-      }
-      const n: SearchNodeItem = {
-        name: item.name,
-        title: item.title,
-        topics: item.topics,
-        source: '关注',
-        updatedAt: item.savedAt || 0,
-        score: score + 1200
-      }
-      nodeBag.set(n.name, n)
-    }
 
-    if (this.usesNodeIndex()) {
-      for (const match of NodeSearchUtils.search(this.allNodes, q).slice(0, 120)) {
-        const node = match.node
-        const existing = nodeBag.get(node.name)
-        if (!existing) {
-          nodeBag.set(node.name, {
-            name: node.name,
-            title: node.title,
-            topics: node.topics,
-            source: '节点库',
-            updatedAt: 0,
-            score: match.score
-          })
-        } else {
-          existing.title = existing.title || node.title
-          existing.topics = Math.max(existing.topics, node.topics)
-          existing.source = SearchPage.mergeSource(existing.source, '节点库')
-          existing.score = Math.max(existing.score, match.score + 1200)
+    if (includeNodes) {
+      for (const item of this.savedNodes) {
+        const node = SearchPage.savedNodeToV2exNode(item)
+        const score = NodeSearchUtils.scoreNode(node, q)
+        if (score <= 0) {
+          continue
+        }
+        const n: SearchNodeItem = {
+          name: item.name,
+          title: item.title,
+          topics: item.topics,
+          source: '关注',
+          updatedAt: item.savedAt || 0,
+          score: score + 1200
+        }
+        nodeBag.set(n.name, n)
+      }
+
+      if (this.usesNodeIndex()) {
+        for (const match of NodeSearchUtils.search(this.allNodes, q).slice(0, 120)) {
+          const node = match.node
+          const existing = nodeBag.get(node.name)
+          if (!existing) {
+            nodeBag.set(node.name, {
+              name: node.name,
+              title: node.title,
+              topics: node.topics,
+              source: '节点库',
+              updatedAt: 0,
+              score: match.score
+            })
+          } else {
+            existing.title = existing.title || node.title
+            existing.topics = Math.max(existing.topics, node.topics)
+            existing.source = SearchPage.mergeSource(existing.source, '节点库')
+            existing.score = Math.max(existing.score, match.score + 1200)
+          }
         }
       }
     }
@@ -617,7 +661,10 @@ export struct SearchPage {
       })
   }
 
-  private static topicMatches(item: SearchTopicItem, q: string): boolean {
+  private static topicMatches(item: SearchTopicItem, q: string, filter: SearchResultFilter): boolean {
+    if (filter === 'users') {
+      return item.username.toLowerCase().includes(q)
+    }
     if (item.id.toString().includes(q)) {
       return true
     }
@@ -657,6 +704,30 @@ export struct SearchPage {
     } else {
       this.applyFilter()
     }
+  }
+
+  private updateResultFilter(filter: SearchResultFilter): void {
+    if (this.resultFilter === filter) {
+      return
+    }
+    this.resultFilter = filter
+    this.applyFilter()
+  }
+
+  private showTopicResults(): boolean {
+    return this.resultFilter === 'all' || this.resultFilter === 'topics' || this.resultFilter === 'users'
+  }
+
+  private showNodeResults(): boolean {
+    return this.resultFilter === 'all' || this.resultFilter === 'nodes'
+  }
+
+  private topicSectionTitle(): string {
+    return this.resultFilter === 'users' ? '用户相关主题' : '主题结果'
+  }
+
+  private emptyTopicHint(): string {
+    return this.resultFilter === 'users' ? '没有匹配该用户的本地主题' : '没有匹配的主题'
   }
 
   private usesNodeIndex(): boolean {

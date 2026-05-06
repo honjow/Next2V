@@ -303,14 +303,19 @@ Validation:
 
 Goal: improve discovery without brittle scraping.
 
+Status: instant local search, source-specific labels/error isolation,
+topic/node/user filters, external web fallback, and recent query history are
+implemented. In-app remote topic search remains a future task until a stable
+official source is selected.
+
 Tasks:
 
-- Keep local search as instant default.
-- Evaluate in-app remote source options. If there is no stable official topic
+- [x] Keep local search as instant default.
+- [ ] Evaluate in-app remote source options. If there is no stable official topic
   search API, keep external web fallback and make the UX clearer.
-- Add source-specific result labels and error isolation.
-- Add topic/node/user filters.
-- Add better recent query management.
+- [x] Add source-specific result labels and error isolation.
+- [x] Add topic/node/user filters.
+- [x] Add better recent query management.
 
 Validation:
 
