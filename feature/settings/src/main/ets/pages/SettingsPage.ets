@@ -18,6 +18,7 @@ import {
 export struct SettingsPage {
   @StorageLink(StorageKeys.USE_CO_DOMAIN) useCoDomain: boolean = false
   @StorageLink(StorageKeys.MEDIA_AUTO_LOAD_IMAGES) autoLoadImages: boolean = true
+  @StorageLink(StorageKeys.MEDIA_ONLY_LOAD_IMAGES_ON_WIFI) onlyLoadImagesOnWifi: boolean = false
   @StorageLink(StorageKeys.ACCOUNT_WRITE_ENABLED) accountWriteEnabled: boolean = false
   @StorageProp(StorageKeys.TOP_AVOID_HEIGHT) topH: number = 0
   @StorageProp(StorageKeys.BOTTOM_AVOID_HEIGHT) bottomH: number = 0
@@ -155,6 +156,28 @@ export struct SettingsPage {
         .alignItems(HorizontalAlign.Start)
         Toggle({ type: ToggleType.Switch, isOn: this.autoLoadImages })
           .onChange((value: boolean) => { this.updateAutoLoadImages(value) })
+      }
+      .width('100%')
+      .padding(ThemeConstants.SPACE_LG)
+
+      this.SettingsDivider()
+
+      Row({ space: ThemeConstants.SPACE_SM }) {
+        Column({ space: ThemeConstants.SPACE_XS }) {
+          Text('仅 Wi-Fi 加载图片')
+            .fontSize(ThemeConstants.FONT_SIZE_BODY)
+            .fontWeight(FontWeight.Medium)
+            .fontColor($r('sys.color.font_primary'))
+          Text(this.onlyLoadImagesOnWifi ? '蜂窝网络下保留图片占位' : '任意网络都自动加载图片')
+            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+            .fontColor($r('sys.color.font_secondary'))
+            .maxLines(2)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
+        }
+        .layoutWeight(1)
+        .alignItems(HorizontalAlign.Start)
+        Toggle({ type: ToggleType.Switch, isOn: this.onlyLoadImagesOnWifi })
+          .onChange((value: boolean) => { this.updateOnlyLoadImagesOnWifi(value) })
       }
       .width('100%')
       .padding(ThemeConstants.SPACE_LG)
@@ -321,7 +344,15 @@ export struct SettingsPage {
   private updateAutoLoadImages(autoLoadImages: boolean): void {
     this.autoLoadImages = autoLoadImages
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    MediaSettings.save(context, autoLoadImages).catch((error: Error) => {
+    MediaSettings.save(context, autoLoadImages, this.onlyLoadImagesOnWifi).catch((error: Error) => {
+      console.error('save media settings failed: ' + error.message)
+    })
+  }
+
+  private updateOnlyLoadImagesOnWifi(onlyLoadImagesOnWifi: boolean): void {
+    this.onlyLoadImagesOnWifi = onlyLoadImagesOnWifi
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    MediaSettings.save(context, this.autoLoadImages, onlyLoadImagesOnWifi).catch((error: Error) => {
       console.error('save media settings failed: ' + error.message)
     })
   }

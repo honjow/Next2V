@@ -32,7 +32,7 @@ export default class EntryAbility extends UIAbility {
         MediaSettings.load(this.context)
           .catch((error: Error) => {
             console.error('restore media settings failed: ' + error.message)
-            MediaSettings.apply(true)
+            MediaSettings.apply(true, false)
           })
           .finally(() => {
             WriteActionSettings.load(this.context)

@@ -1,5 +1,6 @@
 import { Markdown, MarkdownOptions, Token, Tokens, lexer } from "@lidary/markdown";
 import { pasteboard } from "@kit.BasicServicesKit";
+import { connection } from "@kit.NetworkKit";
 import { promptAction } from "@kit.ArkUI";
 import { StorageKeys } from "../constants/StorageKeys";
 import { ThemeConstants } from "../theme/ThemeConstants";
@@ -404,16 +405,63 @@ function InlineTokenSpans(tokens: Token[], fontSize: number) {
 struct MarkdownAutoImage {
   @Prop url: string = "";
   @Prop options: MarkdownOptions;
-  @StorageLink(StorageKeys.MEDIA_AUTO_LOAD_IMAGES) @Watch('onAutoLoadImagesChanged') autoLoadImages: boolean = true
+  @StorageLink(StorageKeys.MEDIA_AUTO_LOAD_IMAGES) @Watch('onImageLoadPolicyChanged') autoLoadImages: boolean = true
+  @StorageLink(StorageKeys.MEDIA_ONLY_LOAD_IMAGES_ON_WIFI) @Watch('onImageLoadPolicyChanged') onlyLoadImagesOnWifi: boolean = false
   @State private loadState: number = 0 // 0: idle, 1: loading, 2: loaded, 3: error
   @State private reloadNonce: number = 0
+  @State private networkChecked: boolean = false
+  @State private isWifiNetwork: boolean = false
 
   aboutToAppear() {
+    this.refreshNetworkState();
     this.syncLoadState();
   }
 
-  onAutoLoadImagesChanged(_propName: string): void {
+  onImageLoadPolicyChanged(_propName: string): void {
+    this.refreshNetworkState();
     this.syncLoadState();
+  }
+
+  private refreshNetworkState(): void {
+    if (!this.autoLoadImages || !this.onlyLoadImagesOnWifi) {
+      this.networkChecked = true;
+      this.isWifiNetwork = false;
+      return;
+    }
+    this.networkChecked = false;
+    connection.getDefaultNet()
+      .then((netHandle: connection.NetHandle) => connection.getNetCapabilities(netHandle))
+      .then((capabilities: connection.NetCapabilities) => {
+        const bearerTypes = capabilities.bearerTypes;
+        this.isWifiNetwork = Array.isArray(bearerTypes) && bearerTypes.indexOf(connection.NetBearType.BEARER_WIFI) >= 0;
+        this.networkChecked = true;
+        this.syncLoadState();
+      })
+      .catch((_error: Error) => {
+        this.isWifiNetwork = false;
+        this.networkChecked = true;
+        this.syncLoadState();
+      });
+  }
+
+  private imageLoadingAllowed(): boolean {
+    if (!this.autoLoadImages) {
+      return false;
+    }
+    if (!this.onlyLoadImagesOnWifi) {
+      return true;
+    }
+    return this.networkChecked && this.isWifiNetwork;
+  }
+
+  private imagePlaceholderText(): string {
+    if (!this.autoLoadImages) {
+      return "图片自动加载已关闭";
+    }
+    if (this.onlyLoadImagesOnWifi && !this.networkChecked) {
+      return "正在检查网络";
+    }
+    return "仅 Wi-Fi 时自动加载图片";
   }
 
   private syncLoadState(): void {
@@ -421,7 +469,7 @@ struct MarkdownAutoImage {
       this.loadState = 0;
       return;
     }
-    if (!this.autoLoadImages) {
+    if (!this.imageLoadingAllowed()) {
       this.loadState = 0;
       return;
     }
@@ -431,7 +479,7 @@ struct MarkdownAutoImage {
   }
 
   private retryLoad(): void {
-    if (!this.url || !this.autoLoadImages) {
+    if (!this.url || !this.imageLoadingAllowed()) {
       return;
     }
     this.reloadNonce += 1;
@@ -439,7 +487,7 @@ struct MarkdownAutoImage {
   }
 
   build() {
-    if (this.autoLoadImages) {
+    if (this.imageLoadingAllowed()) {
       Stack({ alignContent: Alignment.Center }) {
         Image(_appendCacheBust(this.url, this.reloadNonce))
           .width("100%")
@@ -499,7 +547,7 @@ struct MarkdownAutoImage {
       .width('100%')
     } else {
       Row({ space: ThemeConstants.SPACE_SM }) {
-        Text('图片自动加载已关闭')
+        Text(this.imagePlaceholderText())
           .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
           .fontColor(ThemeConstants.TEXT_SECONDARY)
         Text('点击预览')
