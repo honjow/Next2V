@@ -4,12 +4,12 @@ import {
 } from '@kit.UIDesignKit'
 import { common } from '@kit.AbilityKit'
 import {
-  ApiDomainSettings, HttpClient, ThemeConstants, StorageKeys, ApiConstants, TabItem,
-  AuthSettings, MediaSettings, WriteActionSettings, ApiService, ApiV2Service, DateUtils, CollectionSettings, TopicDetailParams, NodeTopicListParams, ImagePreviewParams, CacheSettings,
+  HttpClient, ThemeConstants, StorageKeys, ApiConstants, TabItem,
+  AuthSettings, ApiService, ApiV2Service, DateUtils, CollectionSettings, TopicDetailParams, ImagePreviewParams,
   CookieJarSettings, AuthSessionSettings, V2exSessionParser, LoadingFooter, NotificationSettings
 }
   from 'shared'
-import type { V2exAuthenticatedMember, V2exNotification, SavedTopic, SavedNode, ViewedTopic, CacheStats } from 'shared'
+import type { V2exAuthenticatedMember, V2exNotification, SavedTopic, SavedNode, ViewedTopic } from 'shared'
 import type { V2exTokenInfo } from 'shared'
 import { HomePage } from 'feed'
 import { ReplyEditorPage, TopicDetailPage } from 'detail'
@@ -65,12 +65,8 @@ struct Index {
   private tc: HdsTabsController = new HdsTabsController()
   private tabTitles: string[] = ['首页', '发现', '通知', '我的']
   @State ct: number = 0
-  @StorageLink(StorageKeys.USE_CO_DOMAIN) useCoDomain: boolean = false
-  @StorageLink(StorageKeys.MEDIA_AUTO_LOAD_IMAGES) autoLoadImages: boolean = true
-  @StorageLink(StorageKeys.MEDIA_ONLY_LOAD_IMAGES_ON_WIFI) onlyLoadImagesOnWifi: boolean = false
   @StorageLink(StorageKeys.AUTH_TOKEN_CONFIGURED) authTokenConfigured: boolean = false
   @StorageLink(StorageKeys.AUTH_COOKIE_CONFIGURED) authCookieConfigured: boolean = false
-  @StorageLink(StorageKeys.ACCOUNT_WRITE_ENABLED) accountWriteEnabled: boolean = false
   @StorageLink(StorageKeys.AUTH_USERNAME) storedUsername: string = ''
   @StorageLink(StorageKeys.AUTH_SESSION_USERNAME) sessionUsername: string = ''
   @StorageLink(StorageKeys.AUTH_SESSION_AVATAR) sessionAvatar: string = ''
@@ -93,8 +89,6 @@ struct Index {
   @State private savedTopics: SavedTopic[] = []
   @State private savedNodes: SavedNode[] = []
   @State private viewedTopics: ViewedTopic[] = []
-  @State private cacheStats: CacheStats = { topicListCount: 0, topicDetailCount: 0, updatedAt: 0 }
-  @State private cacheMessage: string = ''
   @State private notificationError: string = ''
   @State private isNotificationLoading: boolean = false
   @State private isNotificationDeleting: boolean = false
@@ -115,7 +109,6 @@ struct Index {
     this.loadSavedNodes()
     this.loadViewedTopics()
     this.loadTopicReadStates()
-    this.loadCacheStats()
   }
 
   onLocalDataUpdated(_propName: string): void {
@@ -127,7 +120,6 @@ struct Index {
     this.loadSavedNodes()
     this.loadViewedTopics()
     this.loadTopicReadStates()
-    this.loadCacheStats()
   }
 
   @Builder pm(name: string, param: Object) {
@@ -196,7 +188,6 @@ struct Index {
             this.loadSavedTopics()
             this.loadSavedNodes()
             this.loadViewedTopics()
-            this.loadCacheStats()
           }
         })
     }
@@ -300,13 +291,19 @@ struct Index {
     }
       .justifyContent(FlexAlign.Center)
       .width('100%').height('100%')
-      .padding({ top: this.topH + this.TBH, bottom: this.bottomH + this.FLOAT_H })
       .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
   }
 
   @Builder MePage() {
     Column() {
       List({ space: ThemeConstants.SPACE_SM }) {
+        ListItem() {
+          Column() {
+            Blank().height(this.topH + this.TBH)
+          }
+          .width('100%')
+        }
+
         ListItem() {
           this.SectionHeader('账号')
         }
@@ -328,17 +325,7 @@ struct Index {
           .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
 
         ListItem() {
-          this.SectionHeader('偏好')
-        }
-          .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, top: ThemeConstants.SPACE_MD })
-
-        ListItem() {
-          this.PreferenceSection()
-        }
-          .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
-
-        ListItem() {
-          this.SectionHeader('存储与关于')
+          this.SectionHeader('更多')
         }
           .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, top: ThemeConstants.SPACE_MD })
 
@@ -349,68 +336,18 @@ struct Index {
 
         ListItem() {
           Column() {
-            Blank().height(ThemeConstants.SPACE_MD)
+            Blank().height(this.bottomH + this.FLOAT_H + ThemeConstants.SPACE_MD)
           }
+          .width('100%')
         }
       }
         .scrollBar(BarState.Off)
-        .padding({ top: this.topH + this.TBH, bottom: this.bottomH + this.FLOAT_H })
+        .edgeEffect(EdgeEffect.None)
+        .width('100%')
+        .height('100%')
     }
       .width('100%').height('100%')
       .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
-  }
-
-  private updateApiDomain(useCoDomain: boolean): void {
-    this.useCoDomain = useCoDomain
-    this.http.setBaseUrl(useCoDomain ? ApiConstants.BASE_URL_CO : ApiConstants.BASE_URL_COM)
-    CookieJarSettings.refreshConfiguredState()
-    CookieJarSettings.restoreCurrentToWebCookieManager().catch((error: Error) => {
-      console.error('restore web cookie failed: ' + error.message)
-    })
-    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    ApiDomainSettings.save(context, useCoDomain).catch((error: Error) => {
-      console.error('save api domain failed: ' + error.message)
-    })
-  }
-
-  private updateAutoLoadImages(autoLoadImages: boolean): void {
-    this.autoLoadImages = autoLoadImages
-    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    MediaSettings.save(context, autoLoadImages, this.onlyLoadImagesOnWifi).catch((error: Error) => {
-      console.error('save media settings failed: ' + error.message)
-    })
-  }
-
-  private updateOnlyLoadImagesOnWifi(onlyLoadImagesOnWifi: boolean): void {
-    this.onlyLoadImagesOnWifi = onlyLoadImagesOnWifi
-    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    MediaSettings.save(context, this.autoLoadImages, onlyLoadImagesOnWifi).catch((error: Error) => {
-      console.error('save media settings failed: ' + error.message)
-    })
-  }
-
-  private confirmEnableWriteActions(): void {
-    if (this.accountWriteEnabled) {
-      return
-    }
-    AlertDialog.show({
-      title: '开启写入操作',
-      message: '写入操作可能导致误触或误操作。确定开启吗？',
-      primaryButton: { value: '取消', action: () => { } },
-      secondaryButton: {
-        value: '开启',
-        fontColor: ThemeConstants.BRAND_PRIMARY,
-        action: () => { this.updateWriteActions(true) }
-      }
-    })
-  }
-
-  private updateWriteActions(enabled: boolean): void {
-    this.accountWriteEnabled = enabled
-    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    WriteActionSettings.save(context, enabled).catch((error: Error) => {
-      console.error('save write settings failed: ' + error.message)
-    })
   }
 
   private loginStatusText(): string {
@@ -595,21 +532,16 @@ struct Index {
       }
       .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG, top: ThemeConstants.SPACE_MD, bottom: ThemeConstants.SPACE_SM })
 
-      TextInput({ placeholder: 'Personal Access Token', text: this.tokenDraft })
-        .height(42)
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .type(InputType.Password)
-        .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
-        .borderRadius(ThemeConstants.RADIUS_MD)
-        .onChange((value: string) => { this.tokenDraft = value })
-        .margin({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG, bottom: ThemeConstants.SPACE_SM })
-
-      if (this.authError) {
-        this.StatusText(this.authError, true)
-      }
-
       Row({ space: ThemeConstants.SPACE_SM }) {
-        Button(this.isAuthLoading ? '验证中' : '保存 Token')
+        TextInput({ placeholder: 'Personal Access Token', text: this.tokenDraft })
+          .height(ThemeConstants.TOUCH_TARGET_SM)
+          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+          .type(InputType.Password)
+          .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
+          .borderRadius(ThemeConstants.RADIUS_MD)
+          .layoutWeight(1)
+          .onChange((value: string) => { this.tokenDraft = value })
+        Button(this.isAuthLoading ? '验证中' : '保存')
           .fontSize(ThemeConstants.FONT_SIZE_TAG)
           .height(ThemeConstants.TOUCH_TARGET_SM)
           .type(ButtonType.Normal)
@@ -617,9 +549,17 @@ struct Index {
           .fontColor(Color.White)
           .backgroundColor(ThemeConstants.BRAND_PRIMARY)
           .enabled(!this.isAuthLoading)
-          .layoutWeight(1)
+          .width(86)
           .onClick(() => { this.verifyAndSaveToken() })
-        if (this.authTokenConfigured || this.authCookieConfigured) {
+      }
+      .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG, bottom: ThemeConstants.SPACE_SM })
+
+      if (this.authError) {
+        this.StatusText(this.authError, true)
+      }
+
+      if (this.authTokenConfigured || this.authCookieConfigured) {
+        Row() {
           Button('退出登录')
             .fontSize(ThemeConstants.FONT_SIZE_TAG)
             .height(ThemeConstants.TOUCH_TARGET_SM)
@@ -630,8 +570,10 @@ struct Index {
             .layoutWeight(1)
             .onClick(() => { this.logoutAll() })
         }
+        .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG, bottom: ThemeConstants.SPACE_LG })
+      } else {
+        Blank().height(ThemeConstants.SPACE_SM)
       }
-      .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG, bottom: ThemeConstants.SPACE_LG })
     }
     .width('100%')
     .alignItems(HorizontalAlign.Start)
@@ -720,32 +662,15 @@ struct Index {
 
   @Builder LocalContentSection() {
     Column() {
-      Row() {
-        Column({ space: ThemeConstants.SPACE_XS }) {
-          Text('搜索')
-            .fontSize(ThemeConstants.FONT_SIZE_BODY)
-            .fontWeight(FontWeight.Medium)
-            .fontColor($r('sys.color.font_primary'))
-          Text('本地数据 / 节点库 / 网页搜索')
-            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-            .fontColor($r('sys.color.font_secondary'))
-        }
-        .layoutWeight(1)
-        .alignItems(HorizontalAlign.Start)
-        Text('>')
-          .fontSize(ThemeConstants.FONT_SIZE_BODY)
-          .fontColor($r('sys.color.font_secondary'))
-      }
-      .width('100%')
-      .padding(ThemeConstants.SPACE_LG)
-      .onClick(() => { this.ns.pushPathByName('Search', null) })
-
+      this.SearchEntryRow()
       this.SettingsDivider()
-      this.SavedTopicsBlock()
+      this.TopicDraftEntryRow()
       this.SettingsDivider()
-      this.ViewedTopicsBlock()
+      this.LocalSummaryRow('稍后读', '主题详情页保存的主题', this.savedTopics.length)
       this.SettingsDivider()
-      this.SavedNodesBlock()
+      this.LocalSummaryRow('最近浏览', '打开主题详情后自动记录', this.viewedTopics.length)
+      this.SettingsDivider()
+      this.LocalSummaryRow('关注节点', '节点主题页关注的节点', this.savedNodes.length)
     }
     .width('100%')
     .alignItems(HorizontalAlign.Start)
@@ -753,52 +678,55 @@ struct Index {
     .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }
 
-  @Builder SavedTopicsBlock() {
-    Column() {
-      this.CountRow('稍后读', '主题详情页保存的主题', this.savedTopics.length)
-      if (this.savedTopics.length === 0) {
-        this.EmptyInlineText('在主题详情页保存后会显示在这里')
-      } else {
-        ForEach(this.savedTopics.slice(0, 3), (item: SavedTopic) => {
-          this.SavedTopicRow(item)
-        }, (item: SavedTopic) => item.id.toString())
+  @Builder SearchEntryRow() {
+    Row({ space: ThemeConstants.SPACE_SM }) {
+      Column({ space: ThemeConstants.SPACE_XS }) {
+        Text('搜索')
+          .fontSize(ThemeConstants.FONT_SIZE_BODY)
+          .fontWeight(FontWeight.Medium)
+          .fontColor($r('sys.color.font_primary'))
+        Text('本地数据 / 节点库 / 网页搜索')
+          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+          .fontColor($r('sys.color.font_secondary'))
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
       }
+      .layoutWeight(1)
+      .alignItems(HorizontalAlign.Start)
+      Text('>')
+        .fontSize(ThemeConstants.FONT_SIZE_BODY)
+        .fontColor($r('sys.color.font_secondary'))
     }
     .width('100%')
-    .alignItems(HorizontalAlign.Start)
+    .padding(ThemeConstants.SPACE_LG)
+    .onClick(() => { this.ns.pushPathByName('Search', null) })
   }
 
-  @Builder ViewedTopicsBlock() {
-    Column() {
-      this.CountRow('最近浏览', '打开主题详情后自动记录', this.viewedTopics.length)
-      if (this.viewedTopics.length === 0) {
-        this.EmptyInlineText('打开主题详情后会自动记录')
-      } else {
-        ForEach(this.viewedTopics.slice(0, 3), (item: ViewedTopic) => {
-          this.ViewedTopicRow(item)
-        }, (item: ViewedTopic) => item.id.toString())
+  @Builder TopicDraftEntryRow() {
+    Row({ space: ThemeConstants.SPACE_SM }) {
+      Column({ space: ThemeConstants.SPACE_XS }) {
+        Text('发帖草稿')
+          .fontSize(ThemeConstants.FONT_SIZE_BODY)
+          .fontWeight(FontWeight.Medium)
+          .fontColor($r('sys.color.font_primary'))
+        Text('编辑/预览新主题草稿，不会直接提交')
+          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+          .fontColor($r('sys.color.font_secondary'))
+          .maxLines(2)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
       }
+      .layoutWeight(1)
+      .alignItems(HorizontalAlign.Start)
+      Text('>')
+        .fontSize(ThemeConstants.FONT_SIZE_BODY)
+        .fontColor($r('sys.color.font_secondary'))
     }
     .width('100%')
-    .alignItems(HorizontalAlign.Start)
+    .padding(ThemeConstants.SPACE_LG)
+    .onClick(() => { this.ns.pushPathByName('TopicEditor', null) })
   }
 
-  @Builder SavedNodesBlock() {
-    Column() {
-      this.CountRow('关注节点', '节点主题页关注的节点', this.savedNodes.length)
-      if (this.savedNodes.length === 0) {
-        this.EmptyInlineText('在节点主题页关注后会显示在这里')
-      } else {
-        ForEach(this.savedNodes.slice(0, 4), (item: SavedNode) => {
-          this.SavedNodeRow(item)
-        }, (item: SavedNode) => item.name)
-      }
-    }
-    .width('100%')
-    .alignItems(HorizontalAlign.Start)
-  }
-
-  @Builder CountRow(title: string, subtitle: string, count: number) {
+  @Builder LocalSummaryRow(title: string, subtitle: string, count: number) {
     Row({ space: ThemeConstants.SPACE_SM }) {
       Column({ space: ThemeConstants.SPACE_XS }) {
         Text(title)
@@ -816,287 +744,11 @@ struct Index {
         .fontColor($r('sys.color.font_secondary'))
     }
     .width('100%')
-    .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG, top: ThemeConstants.SPACE_MD, bottom: ThemeConstants.SPACE_SM })
-  }
-
-  @Builder EmptyInlineText(message: string) {
-    Text(message)
-      .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-      .fontColor($r('sys.color.font_secondary'))
-      .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG, bottom: ThemeConstants.SPACE_MD })
-  }
-
-  @Builder SavedTopicRow(item: SavedTopic) {
-    Column({ space: ThemeConstants.SPACE_XS }) {
-      Text(item.title)
-        .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-        .fontColor($r('sys.color.font_primary'))
-        .maxLines(2)
-        .textOverflow({ overflow: TextOverflow.Ellipsis })
-      Text(`${item.nodeTitle} · ${DateUtils.toDateString(item.savedAt)}`)
-        .fontSize(ThemeConstants.FONT_SIZE_TINY)
-        .fontColor($r('sys.color.font_secondary'))
-        .maxLines(1)
-        .textOverflow({ overflow: TextOverflow.Ellipsis })
-    }
-    .width('100%')
-    .alignItems(HorizontalAlign.Start)
-    .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG, top: ThemeConstants.SPACE_XS, bottom: ThemeConstants.SPACE_SM })
-    .onClick(() => {
-      let p: TopicDetailParams = { topicId: item.id }
-      this.ns.pushPathByName('TopicDetail', p as Object)
-    })
-  }
-
-  @Builder ViewedTopicRow(item: ViewedTopic) {
-    Column({ space: ThemeConstants.SPACE_XS }) {
-      Text(item.title)
-        .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-        .fontColor($r('sys.color.font_primary'))
-        .maxLines(2)
-        .textOverflow({ overflow: TextOverflow.Ellipsis })
-      Text(`${item.nodeTitle} · ${DateUtils.toDateString(item.viewedAt)}`)
-        .fontSize(ThemeConstants.FONT_SIZE_TINY)
-        .fontColor($r('sys.color.font_secondary'))
-        .maxLines(1)
-        .textOverflow({ overflow: TextOverflow.Ellipsis })
-    }
-    .width('100%')
-    .alignItems(HorizontalAlign.Start)
-    .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG, top: ThemeConstants.SPACE_XS, bottom: ThemeConstants.SPACE_SM })
-    .onClick(() => {
-      let p: TopicDetailParams = { topicId: item.id }
-      this.ns.pushPathByName('TopicDetail', p as Object)
-    })
-  }
-
-  @Builder SavedNodeRow(item: SavedNode) {
-    Row({ space: ThemeConstants.SPACE_SM }) {
-      Column({ space: ThemeConstants.SPACE_XS }) {
-        Text(item.title)
-          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-          .fontColor($r('sys.color.font_primary'))
-          .maxLines(1)
-          .textOverflow({ overflow: TextOverflow.Ellipsis })
-        Text(item.name)
-          .fontSize(ThemeConstants.FONT_SIZE_TINY)
-          .fontColor($r('sys.color.font_secondary'))
-      }
-      .layoutWeight(1)
-      .alignItems(HorizontalAlign.Start)
-      Text(DateUtils.toDateString(item.savedAt))
-        .fontSize(ThemeConstants.FONT_SIZE_TINY)
-        .fontColor($r('sys.color.font_secondary'))
-    }
-    .width('100%')
-    .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG, top: ThemeConstants.SPACE_XS, bottom: ThemeConstants.SPACE_SM })
-    .onClick(() => {
-      let p: NodeTopicListParams = { nodeName: item.name, nodeTitle: item.title }
-      this.ns.pushPathByName('NodeTopicList', p as Object)
-    })
-  }
-
-  @Builder PreferenceSection() {
-    Column() {
-      Row({ space: ThemeConstants.SPACE_SM }) {
-        Column({ space: ThemeConstants.SPACE_XS }) {
-          Text('图片自动加载')
-            .fontSize(ThemeConstants.FONT_SIZE_BODY)
-            .fontWeight(FontWeight.Medium)
-            .fontColor($r('sys.color.font_primary'))
-          Text(this.autoLoadImages ? '进入帖子时直接加载图片' : '仅保留图片占位与预览入口')
-            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-            .fontColor($r('sys.color.font_secondary'))
-            .maxLines(2)
-            .textOverflow({ overflow: TextOverflow.Ellipsis })
-        }
-        .layoutWeight(1)
-        .alignItems(HorizontalAlign.Start)
-        Toggle({ type: ToggleType.Switch, isOn: this.autoLoadImages })
-          .onChange((value: boolean) => { this.updateAutoLoadImages(value) })
-      }
-      .width('100%')
-      .padding(ThemeConstants.SPACE_LG)
-
-      this.SettingsDivider()
-
-      Row({ space: ThemeConstants.SPACE_SM }) {
-        Column({ space: ThemeConstants.SPACE_XS }) {
-          Text('仅 Wi-Fi 加载图片')
-            .fontSize(ThemeConstants.FONT_SIZE_BODY)
-            .fontWeight(FontWeight.Medium)
-            .fontColor($r('sys.color.font_primary'))
-          Text(this.onlyLoadImagesOnWifi ? '蜂窝网络下保留图片占位' : '任意网络都自动加载图片')
-            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-            .fontColor($r('sys.color.font_secondary'))
-            .maxLines(2)
-            .textOverflow({ overflow: TextOverflow.Ellipsis })
-        }
-        .layoutWeight(1)
-        .alignItems(HorizontalAlign.Start)
-        Toggle({ type: ToggleType.Switch, isOn: this.onlyLoadImagesOnWifi })
-          .onChange((value: boolean) => { this.updateOnlyLoadImagesOnWifi(value) })
-      }
-      .width('100%')
-      .padding(ThemeConstants.SPACE_LG)
-
-      this.SettingsDivider()
-
-      Row({ space: ThemeConstants.SPACE_SM }) {
-        Column({ space: ThemeConstants.SPACE_XS }) {
-          Text('写入操作')
-            .fontSize(ThemeConstants.FONT_SIZE_BODY)
-            .fontWeight(FontWeight.Medium)
-            .fontColor($r('sys.color.font_primary'))
-          Text(this.accountWriteEnabled ? '已开启，提交仍需二次确认' : '关闭，发帖/回复仅保存草稿')
-            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-            .fontColor($r('sys.color.font_secondary'))
-            .maxLines(2)
-            .textOverflow({ overflow: TextOverflow.Ellipsis })
-        }
-        .layoutWeight(1)
-        .alignItems(HorizontalAlign.Start)
-        Toggle({ type: ToggleType.Switch, isOn: this.accountWriteEnabled })
-          .onChange((value: boolean) => {
-            if (value) {
-              this.confirmEnableWriteActions()
-            } else {
-              this.updateWriteActions(false)
-            }
-          })
-      }
-      .width('100%')
-      .padding(ThemeConstants.SPACE_LG)
-
-      this.SettingsDivider()
-
-      Row({ space: ThemeConstants.SPACE_SM }) {
-        Column({ space: ThemeConstants.SPACE_XS }) {
-          Text('发帖草稿')
-            .fontSize(ThemeConstants.FONT_SIZE_BODY)
-            .fontWeight(FontWeight.Medium)
-            .fontColor($r('sys.color.font_primary'))
-          Text('编辑/预览新主题草稿，不会直接提交')
-            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-            .fontColor($r('sys.color.font_secondary'))
-            .maxLines(2)
-            .textOverflow({ overflow: TextOverflow.Ellipsis })
-        }
-        .layoutWeight(1)
-        .alignItems(HorizontalAlign.Start)
-        Text('>')
-          .fontSize(ThemeConstants.FONT_SIZE_BODY)
-          .fontColor($r('sys.color.font_secondary'))
-      }
-      .width('100%')
-      .padding(ThemeConstants.SPACE_LG)
-      .onClick(() => { this.ns.pushPathByName('TopicEditor', null) })
-
-      this.SettingsDivider()
-
-      Column({ space: ThemeConstants.SPACE_SM }) {
-        Row() {
-          Column({ space: ThemeConstants.SPACE_XS }) {
-            Text('API 域名')
-              .fontSize(ThemeConstants.FONT_SIZE_BODY)
-              .fontWeight(FontWeight.Medium)
-              .fontColor($r('sys.color.font_primary'))
-            Text(`当前: ${this.useCoDomain ? 'v2ex.co' : 'v2ex.com'}`)
-              .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-              .fontColor($r('sys.color.font_secondary'))
-          }
-          .layoutWeight(1)
-          .alignItems(HorizontalAlign.Start)
-        }
-        .width('100%')
-
-        Row({ space: ThemeConstants.SPACE_SM }) {
-          Button('v2ex.com')
-            .fontSize(ThemeConstants.FONT_SIZE_TAG)
-            .height(ThemeConstants.TOUCH_TARGET_SM)
-            .type(ButtonType.Normal)
-            .borderRadius(ThemeConstants.RADIUS_MD)
-            .layoutWeight(1)
-            .fontColor(!this.useCoDomain ? Color.White : $r('sys.color.font_primary'))
-            .backgroundColor(!this.useCoDomain ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.ohos_id_color_button_normal'))
-            .onClick(() => { this.updateApiDomain(false) })
-          Button('v2ex.co')
-            .fontSize(ThemeConstants.FONT_SIZE_TAG)
-            .height(ThemeConstants.TOUCH_TARGET_SM)
-            .type(ButtonType.Normal)
-            .borderRadius(ThemeConstants.RADIUS_MD)
-            .layoutWeight(1)
-            .fontColor(this.useCoDomain ? Color.White : $r('sys.color.font_primary'))
-            .backgroundColor(this.useCoDomain ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.ohos_id_color_button_normal'))
-            .onClick(() => { this.updateApiDomain(true) })
-        }
-        .width('100%')
-      }
-      .width('100%')
-      .alignItems(HorizontalAlign.Start)
-      .padding(ThemeConstants.SPACE_LG)
-    }
-    .width('100%')
-    .alignItems(HorizontalAlign.Start)
-    .borderRadius(ThemeConstants.RADIUS_MD)
-    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+    .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG, top: ThemeConstants.SPACE_MD, bottom: ThemeConstants.SPACE_MD })
   }
 
   @Builder StorageSection() {
     Column() {
-      Row({ space: ThemeConstants.SPACE_SM }) {
-        Column({ space: ThemeConstants.SPACE_XS }) {
-          Text('离线缓存')
-            .fontSize(ThemeConstants.FONT_SIZE_BODY)
-            .fontWeight(FontWeight.Medium)
-            .fontColor($r('sys.color.font_primary'))
-          Text(`列表 ${this.cacheStats.topicListCount} 组 · 详情 ${this.cacheStats.topicDetailCount} 篇`)
-            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-            .fontColor($r('sys.color.font_secondary'))
-          if (this.cacheStats.updatedAt > 0) {
-            Text(`更新于 ${DateUtils.toDateString(this.cacheStats.updatedAt)}`)
-              .fontSize(ThemeConstants.FONT_SIZE_TINY)
-              .fontColor($r('sys.color.font_secondary'))
-          }
-          if (this.cacheMessage) {
-            Text(this.cacheMessage)
-              .fontSize(ThemeConstants.FONT_SIZE_TINY)
-              .fontColor(ThemeConstants.BRAND_PRIMARY)
-          }
-        }
-        .layoutWeight(1)
-        .alignItems(HorizontalAlign.Start)
-        Text(`${this.cacheStats.topicListCount + this.cacheStats.topicDetailCount}`)
-          .fontSize(ThemeConstants.FONT_SIZE_TAG)
-          .fontColor($r('sys.color.font_secondary'))
-      }
-      .width('100%')
-      .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG, top: ThemeConstants.SPACE_LG, bottom: ThemeConstants.SPACE_SM })
-
-      Row({ space: ThemeConstants.SPACE_SM }) {
-        Button('刷新状态')
-          .fontSize(ThemeConstants.FONT_SIZE_TAG)
-          .height(ThemeConstants.TOUCH_TARGET_SM)
-          .type(ButtonType.Normal)
-          .borderRadius(ThemeConstants.RADIUS_MD)
-          .fontColor($r('sys.color.font_primary'))
-          .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
-          .layoutWeight(1)
-          .onClick(() => { this.loadCacheStats() })
-        Button('清理缓存')
-          .fontSize(ThemeConstants.FONT_SIZE_TAG)
-          .height(ThemeConstants.TOUCH_TARGET_SM)
-          .type(ButtonType.Normal)
-          .borderRadius(ThemeConstants.RADIUS_MD)
-          .fontColor($r('sys.color.font_primary'))
-          .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
-          .layoutWeight(1)
-          .onClick(() => { this.clearCache() })
-      }
-      .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG, bottom: ThemeConstants.SPACE_MD })
-
-      this.SettingsDivider()
-
       Row({ space: ThemeConstants.SPACE_SM }) {
         Column({ space: ThemeConstants.SPACE_XS }) {
           Text('设置')
@@ -1587,29 +1239,6 @@ struct Index {
     CollectionSettings.syncTopicReadStates(context)
       .catch((error: Error) => {
         console.error('sync topic read states failed: ' + error.message)
-      })
-  }
-
-  private loadCacheStats(): void {
-    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    CacheSettings.loadStats(context)
-      .then((stats: CacheStats) => {
-        this.cacheStats = stats
-      })
-      .catch((error: Error) => {
-        console.error('load cache stats failed: ' + error.message)
-      })
-  }
-
-  private clearCache(): void {
-    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    CacheSettings.clear(context)
-      .then(() => {
-        this.cacheMessage = '已清理'
-        this.loadCacheStats()
-      })
-      .catch((error: Error) => {
-        this.cacheMessage = error.message || '清理失败'
       })
   }
 
