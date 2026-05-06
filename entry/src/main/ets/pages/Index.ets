@@ -333,6 +333,7 @@ struct Index {
       this.topicActionItem('站内收藏', $r('sys.symbol.heart_fill'), () => { this.sendTopicAction('siteFavorite') }),
       this.topicActionItem('复制标题', $r('sys.symbol.doc_plaintext'), () => { this.sendTopicAction('copyTitle') }),
       this.topicActionItem('复制链接', $r('sys.symbol.plus_square_on_square'), () => { this.sendTopicAction('copyLink') }),
+      this.topicActionItem('选择正文', $r('sys.symbol.doc_text'), () => { this.sendTopicAction('selectContent') }),
       this.topicActionItem('分享链接', $r('sys.symbol.share'), () => { this.sendTopicAction('share') }),
       this.topicActionItem('浏览器打开', $r('sys.symbol.search_things'), () => { this.sendTopicAction('openBrowser') })
     ]

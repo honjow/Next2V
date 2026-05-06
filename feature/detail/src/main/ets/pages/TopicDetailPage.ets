@@ -38,6 +38,8 @@ export struct TopicDetailPage {
   @State private isSiteFavoriteLoading: boolean = false
   @State private jumpFloorText: string = ''
   @State private contextReply: V2exReply | null = null
+  @State private selectionTitle: string = ''
+  @State private selectionText: string = ''
   private api: ApiService = new ApiService()
   private jumpFloorDialogController: CustomDialogController | null = new CustomDialogController({
     builder: JumpToFloorDialog({
@@ -116,6 +118,10 @@ export struct TopicDetailPage {
       if (this.contextReply !== null) {
         this.ReplyContextOverlay()
       }
+
+      if (this.selectionText) {
+        this.TextSelectionOverlay()
+      }
     }
     .width('100%')
     .height('100%')
@@ -190,7 +196,8 @@ export struct TopicDetailPage {
                 this.stack.pushPathByName('UserProfile', p as Object)
               },
               onActionsClick: () => { this.openReplyActionMenu(reply) },
-              onImageClick: (url: string) => { this.openImagePreview(url) }
+              onImageClick: (url: string) => { this.openImagePreview(url) },
+              onContentLongPress: () => { this.openTextSelection(this.replySelectionTitle(reply), reply.content || '') }
             })
           }
         }, (reply: V2exReply) => reply.id.toString())
@@ -280,7 +287,16 @@ export struct TopicDetailPage {
 
       // 正文
       if (this.v.topic!.content) {
-        MarkdownContent({ source: this.v.topic!.content, onImageClick: (url: string) => { this.openImagePreview(url) } })
+        Column() {
+          MarkdownContent({ source: this.v.topic!.content, onImageClick: (url: string) => { this.openImagePreview(url) } })
+        }
+        .width('100%')
+        .gesture(
+          LongPressGesture({ duration: 650 })
+            .onAction(() => {
+              this.openTextSelection('主题正文', this.v.topic!.content || '')
+            })
+        )
       }
     }
     .padding(ThemeConstants.SPACE_LG)
@@ -389,6 +405,77 @@ export struct TopicDetailPage {
     .backgroundColor('#66000000')
   }
 
+  @Builder TextSelectionOverlay() {
+    Column() {
+      Blank()
+        .width('100%')
+        .layoutWeight(1)
+        .onClick(() => { this.closeTextSelection() })
+
+      Column({ space: ThemeConstants.SPACE_MD }) {
+        Row({ space: ThemeConstants.SPACE_SM }) {
+          Text(this.selectionTitle || '选择文本')
+            .fontSize(ThemeConstants.FONT_SIZE_TITLE)
+            .fontWeight(FontWeight.Medium)
+            .fontColor($r('sys.color.font_primary'))
+            .maxLines(1)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
+
+          Blank()
+
+          Button('复制全部')
+            .type(ButtonType.Normal)
+            .height(32)
+            .fontSize(ThemeConstants.FONT_SIZE_META)
+            .fontColor($r('sys.color.font_primary'))
+            .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+            .borderRadius(ThemeConstants.RADIUS_SM)
+            .onClick(() => { this.copyToClipboard(this.selectionText) })
+
+          Button('关闭')
+            .type(ButtonType.Normal)
+            .height(32)
+            .fontSize(ThemeConstants.FONT_SIZE_META)
+            .fontColor($r('sys.color.font_secondary'))
+            .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+            .borderRadius(ThemeConstants.RADIUS_SM)
+            .onClick(() => { this.closeTextSelection() })
+        }
+        .width('100%')
+        .alignItems(VerticalAlign.Center)
+
+        Scroll() {
+          Text(this.selectionText)
+            .fontSize(ThemeConstants.FONT_SIZE_BODY)
+            .lineHeight(ThemeConstants.LINE_HEIGHT_BODY)
+            .fontColor($r('sys.color.font_primary'))
+            .width('100%')
+            .copyOption(CopyOptions.LocalDevice)
+            .textSelectable(TextSelectableMode.SELECTABLE_FOCUSABLE)
+            .draggable(false)
+            .padding(ThemeConstants.SPACE_MD)
+            .borderRadius(ThemeConstants.RADIUS_MD)
+            .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
+        }
+        .layoutWeight(1)
+        .scrollBar(BarState.Auto)
+      }
+      .width('100%')
+      .height('72%')
+      .padding({
+        left: ThemeConstants.SPACE_LG,
+        right: ThemeConstants.SPACE_LG,
+        top: ThemeConstants.SPACE_LG,
+        bottom: ThemeConstants.SPACE_LG
+      })
+      .borderRadius({ topLeft: ThemeConstants.RADIUS_MD, topRight: ThemeConstants.RADIUS_MD })
+      .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+    }
+    .width('100%')
+    .height('100%')
+    .backgroundColor('#66000000')
+  }
+
   @Builder ReplyContextItemView(item: ReplyContextItem) {
     Column({ space: ThemeConstants.SPACE_SM }) {
       Row({ space: ThemeConstants.SPACE_SM }) {
@@ -449,6 +536,7 @@ export struct TopicDetailPage {
         { text: '查看上下文', color: $r('sys.color.font_primary') },
         { text: '提到用户', color: $r('sys.color.font_primary') },
         { text: '复制用户名', color: $r('sys.color.font_primary') },
+        { text: '选择回复内容', color: $r('sys.color.font_primary') },
         { text: '复制回复内容', color: $r('sys.color.font_primary') }
       ]
     })
@@ -460,6 +548,8 @@ export struct TopicDetailPage {
         } else if (result.index === 2) {
           this.copyToClipboard(username)
         } else if (result.index === 3) {
+          this.openTextSelection(this.replySelectionTitle(reply), reply.content || '')
+        } else if (result.index === 4) {
           this.copyToClipboard(reply.content || '')
         }
       })
@@ -470,6 +560,33 @@ export struct TopicDetailPage {
 
   private closeReplyContext(): void {
     this.contextReply = null
+  }
+
+  private openTextSelection(title: string, content: string): void {
+    const text = (content || '').trim()
+    if (!text) {
+      promptAction.openToast({ message: '暂无可选择内容' }).catch((_error: Error) => { })
+      return
+    }
+    this.selectionTitle = title || '选择文本'
+    this.selectionText = text
+  }
+
+  private closeTextSelection(): void {
+    this.selectionTitle = ''
+    this.selectionText = ''
+  }
+
+  private replySelectionTitle(reply: V2exReply): string {
+    const username = (reply.member.username || '').trim()
+    const floor = this.v.getReplyFloor(reply.id)
+    if (floor > 0 && username) {
+      return `#${floor} ${username}`
+    }
+    if (floor > 0) {
+      return `#${floor} 回复`
+    }
+    return username || '回复内容'
   }
 
   private replyContextTitle(): string {
@@ -857,6 +974,8 @@ export struct TopicDetailPage {
       this.shareTopic()
     } else if (action === 'openBrowser') {
       this.openInSystemBrowser(this.getTopicUrl())
+    } else if (action === 'selectContent') {
+      this.openTextSelection('主题正文', this.v.topic!.content || '')
     } else if (action === 'copyContent') {
       this.copyToClipboard(this.v.topic!.content || '')
     }
@@ -926,9 +1045,13 @@ export struct TopicDetailPage {
     if (!content) {
       return
     }
-    let data = pasteboard.createData(pasteboard.MIMETYPE_TEXT_PLAIN, content)
-    pasteboard.getSystemPasteboard().setDataSync(data)
-    promptAction.openToast({ message: '已复制' }).catch((_error: Error) => { })
+    try {
+      let data = pasteboard.createData(pasteboard.MIMETYPE_TEXT_PLAIN, content)
+      pasteboard.getSystemPasteboard().setDataSync(data)
+      promptAction.openToast({ message: '已复制' }).catch((_error: Error) => { })
+    } catch (error) {
+      promptAction.openToast({ message: (error as Error).message || '复制失败' }).catch((_error: Error) => { })
+    }
   }
 
   private getMentionText(username: string): string {

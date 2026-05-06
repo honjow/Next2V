@@ -15,6 +15,7 @@ export struct ReplyCard {
   onMentionClick?: () => void
   onCopyUserClick?: () => void
   onImageClick?: (url: string) => void
+  onContentLongPress?: () => void
 
   build() {
     Column() {
@@ -57,11 +58,20 @@ export struct ReplyCard {
       .alignItems(VerticalAlign.Center)
 
       if (this.reply.content) {
-        MarkdownContent({
-          source: this.reply.content,
-          topMargin: ThemeConstants.SPACE_SM,
-          onImageClick: this.onImageClick
-        })
+        Column() {
+          MarkdownContent({
+            source: this.reply.content,
+            topMargin: ThemeConstants.SPACE_SM,
+            onImageClick: this.onImageClick
+          })
+        }
+        .width('100%')
+        .gesture(
+          LongPressGesture({ duration: 650 })
+            .onAction(() => {
+              if (this.onContentLongPress) { this.onContentLongPress() }
+            })
+        )
       }
 
       // 底部：时间 + 感谢数
