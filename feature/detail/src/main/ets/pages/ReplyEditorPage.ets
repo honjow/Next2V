@@ -8,12 +8,17 @@ export struct ReplyEditorPage {
   @Prop topicTitle: string = ''
   @Consume('ns') stack: NavPathStack
   @StorageLink(StorageKeys.ACCOUNT_WRITE_ENABLED) writeEnabled: boolean = false
+  @StorageProp(StorageKeys.TOP_AVOID_HEIGHT) topH: number = 0
+  @StorageProp(StorageKeys.BOTTOM_AVOID_HEIGHT) bottomH: number = 0
 
   @State private content: string = ''
   @State private isPreview: boolean = false
   @State private errorMessage: string = ''
   @State private savedAt: number = 0
+  @State private contentSelectionStart: number = 0
+  @State private contentSelectionEnd: number = 0
 
+  private contentController: TextAreaController = new TextAreaController()
   private saveTimerId: number = 0
   private isSaving: boolean = false
 
@@ -22,6 +27,8 @@ export struct ReplyEditorPage {
     this.isPreview = false
     this.errorMessage = ''
     this.savedAt = 0
+    this.contentSelectionStart = 0
+    this.contentSelectionEnd = 0
 
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     DraftSettings.loadReplyDraft(context, this.topicId)
@@ -29,6 +36,8 @@ export struct ReplyEditorPage {
         if (draft) {
           this.content = draft.content || ''
           this.savedAt = draft.updatedAt || 0
+          this.contentSelectionStart = this.content.length
+          this.contentSelectionEnd = this.content.length
         }
       })
       .catch((error: Error) => {
@@ -57,26 +66,37 @@ export struct ReplyEditorPage {
       }
 
       Row({ space: ThemeConstants.SPACE_SM }) {
-        Text('编辑')
+        Button('编辑')
+          .type(ButtonType.Normal)
           .fontSize(ThemeConstants.FONT_SIZE_TAG)
           .fontColor(!this.isPreview ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.font_secondary'))
-          .padding({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM, top: 6, bottom: 6 })
-          .borderRadius(ThemeConstants.RADIUS_SM)
+          .height(ThemeConstants.TOUCH_TARGET_SM)
+          .borderRadius(ThemeConstants.RADIUS_MD)
           .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
           .onClick(() => { this.isPreview = false })
-        Text('预览')
+        Button('预览')
+          .type(ButtonType.Normal)
           .fontSize(ThemeConstants.FONT_SIZE_TAG)
           .fontColor(this.isPreview ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.font_secondary'))
-          .padding({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM, top: 6, bottom: 6 })
-          .borderRadius(ThemeConstants.RADIUS_SM)
+          .height(ThemeConstants.TOUCH_TARGET_SM)
+          .borderRadius(ThemeConstants.RADIUS_MD)
           .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
           .onClick(() => { this.isPreview = true })
-        Blank()
-        Text('清空')
+        Button('图片')
+          .type(ButtonType.Normal)
           .fontSize(ThemeConstants.FONT_SIZE_TAG)
           .fontColor($r('sys.color.font_secondary'))
-          .padding({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM, top: 6, bottom: 6 })
-          .borderRadius(ThemeConstants.RADIUS_SM)
+          .height(ThemeConstants.TOUCH_TARGET_SM)
+          .borderRadius(ThemeConstants.RADIUS_MD)
+          .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+          .onClick(() => { this.insertImageLinkTemplate() })
+        Blank()
+        Button('清空')
+          .type(ButtonType.Normal)
+          .fontSize(ThemeConstants.FONT_SIZE_TAG)
+          .fontColor($r('sys.color.font_secondary'))
+          .height(ThemeConstants.TOUCH_TARGET_SM)
+          .borderRadius(ThemeConstants.RADIUS_MD)
           .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
           .onClick(() => { this.confirmClearDraft() })
       }
@@ -89,7 +109,7 @@ export struct ReplyEditorPage {
       }
 
       if (!this.isPreview) {
-        TextArea({ placeholder: '写回复（仅保存草稿，不会提交）', text: this.content })
+        TextArea({ placeholder: '写回复（仅保存草稿，不会提交）', text: this.content, controller: this.contentController })
           .fontSize(ThemeConstants.FONT_SIZE_BODY)
           .height(260)
           .borderRadius(ThemeConstants.RADIUS_MD)
@@ -97,6 +117,10 @@ export struct ReplyEditorPage {
           .onChange((value: string) => {
             this.content = value
             this.scheduleSaveDraft()
+          })
+          .onTextSelectionChange((selectionStart: number, selectionEnd: number) => {
+            this.contentSelectionStart = selectionStart
+            this.contentSelectionEnd = selectionEnd
           })
       } else {
         if (this.content.trim().length === 0) {
@@ -137,10 +161,33 @@ export struct ReplyEditorPage {
           .onClick(() => { })
       }
     }
-    .padding(ThemeConstants.SPACE_LG)
+    .padding({
+      left: ThemeConstants.SPACE_LG,
+      right: ThemeConstants.SPACE_LG,
+      top: this.topH + ThemeConstants.TITLE_BAR_HEIGHT + ThemeConstants.SPACE_LG,
+      bottom: this.bottomH + ThemeConstants.SPACE_LG
+    })
     .width('100%')
     .height('100%')
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
+  }
+
+  private insertImageLinkTemplate(): void {
+    const template = '![图片](https://)'
+    const caretOffset = '![图片](https://'.length
+    const contentLength = this.content.length
+    const start = Math.min(Math.max(this.contentSelectionStart, 0), contentLength)
+    const rawEnd = Math.min(Math.max(this.contentSelectionEnd, 0), contentLength)
+    const end = rawEnd >= start ? rawEnd : start
+    this.content = `${this.content.substring(0, start)}${template}${this.content.substring(end)}`
+    const caret = start + caretOffset
+    this.contentSelectionStart = caret
+    this.contentSelectionEnd = caret
+    this.isPreview = false
+    this.scheduleSaveDraft()
+    setTimeout(() => {
+      this.contentController.caretPosition(caret)
+    }, 0)
   }
 
   private scheduleSaveDraft(): void {
@@ -197,6 +244,8 @@ export struct ReplyEditorPage {
 
   private clearDraft(): void {
     this.content = ''
+    this.contentSelectionStart = 0
+    this.contentSelectionEnd = 0
     this.savedAt = 0
     this.clearSaveTimer()
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
