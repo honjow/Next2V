@@ -1,454 +1,200 @@
-# V2Next Long-Term Roadmap
+# V2Next V2EX Client Roadmap
 
-This document defines the product and engineering plan for turning V2Next into a full V2EX client on HarmonyOS NEXT. It is intentionally broader than the current implementation, and should be used as the working checklist for long unattended development sessions.
+This document tracks the current product state and the next development plan for
+V2Next. It replaces the older phase-only checklist because several foundational
+features have already landed.
 
-## Baseline
+## Current State
 
-Current implemented capabilities:
+Implemented baseline:
 
-- Public topic browsing through existing V2EX v1 endpoints and parsed tab pages.
-- Topic detail page with Markdown rendering.
-- User profile page and node topic page.
-- Personal Access Token storage and read-only verification.
-- Read-only notification list.
-- Local saved topics.
-- Local saved nodes.
-- Recently viewed topics.
-- Topic list/detail cache and cache status.
-- Basic UI spacing pass for profile and settings cards.
+- Public browsing through parsed V2EX tabs and public API endpoints.
+- Home tabs with category-specific content and horizontal tab switching.
+- Topic detail page with Markdown rendering, reply list, pull refresh, cache,
+  read/unread state, last read floor, jump to latest, jump to floor, and
+  original-poster filter.
+- User profile page, node discovery, node topic page, saved nodes, saved topics,
+  and recently viewed topics.
+- Personal Access Token storage, verification, token metadata, and API rate-limit
+  snapshot.
+- Cookie session storage, WebView login flow, native username/password login
+  prototype, session validation, and logout.
+- API v2 wrapper for node detail, node topics, topic detail, topic replies,
+  notification deletion, generic GET/POST/DELETE, and rate-limit headers.
+- Notification list pagination, cache, tap-to-topic, and single notification
+  deletion with confirmation when PAT is configured.
+- Inline Markdown images, bare direct image links, common image host recognition,
+  image loading states, retry, full-screen preview, pinch zoom, and image loading
+  preferences.
+- Reply and topic draft editors with Markdown preview, autosave, node picker,
+  image link insertion, and disabled submit controls behind the write-action
+  switch.
+- Local search across saved topics, viewed topics, cache, saved nodes, node index,
+  history, and external web search fallback.
+- Settings page, local data reset, cache management, media settings, write-action
+  switch, API domain switch, and HDS usage notes.
 
-Important gaps:
+Known product gaps:
 
-- No username/password login flow.
-- No WebView-based official login flow.
-- API v2 is only partially wrapped.
-- Cookie session is not implemented.
-- Account write operations are not implemented.
-- Topic/reply pagination is incomplete.
-- Image links and common image hosts are not rendered inline.
-- Search is incomplete.
-- UI still feels like a functional prototype rather than a system-grade Harmony app.
-
-## External References
-
-- V2EX API 2.0 Beta: https://v2ex.com/help/api
-- V2EX Personal Access Token: https://www.v2ex.com/help/personal-access-token
-- V2er product page: https://v2er.app/
-- V2er App Store description: https://apps.apple.com/cn/app/v2er-%E5%A5%BD%E7%94%A8%E7%9A%84v2ex%E5%AE%A2%E6%88%B7%E7%AB%AF/id1596137027
-- Historical V2EX login discussion: https://v2ex.com/t/379024
-- Historical Android login implementation notes: https://blog.csdn.net/u012339794/article/details/53264129
-
-The official API v2 uses Personal Access Token authentication. It exposes `member`, `token`, `notifications`, `nodes/:node_name`, `nodes/:node_name/topics`, `topics/:topic_id`, and `topics/:topic_id/replies`, plus limited write operations such as deleting notifications, creating tokens, sticky, and boost. It does not provide a public username/password login API.
+- Cookie login is not yet used for full account features such as my topics, my
+  replies, favorite/unfavorite, thank, ignore, daily sign-in reward, balance, or
+  account navigation.
+- Notification reading is still PAT-first. Cookie login alone does not unlock the
+  notification center.
+- WebView login can save any non-empty cookie before strong validation; the app
+  validates afterwards, but the save step should be stricter.
+- Native username/password login is fragile because it parses V2EX HTML with
+  regular expressions.
+- In-app remote topic search is not implemented. External search opens a browser.
+- Reply/topic submission is intentionally disabled. Submit adapters still need to
+  be designed, gated, confirmed, and tested.
+- Image saving and non-direct image link preview cards are not implemented.
+- UI is functional but not yet system-grade. Current issues include duplicated
+  settings surfaces, inconsistent page padding, imperfect immersive safe-area
+  handling, and some card-heavy layouts.
 
 ## Product Principles
 
-1. Normal users should be able to log in with their V2EX username and password or through the official web login page.
-2. Personal Access Token should remain available, but it is an advanced/API mode, not the only login path.
-3. All account write operations must be explicit, visible, and guarded by confirmation. Reply/post submission stays disabled until the user asks to enable it.
-4. Prefer official API v2 when it provides a feature. Use webpage parsing only for user-facing features that V2EX clients commonly support and that the API does not expose.
-5. Keep credentials and session material out of git, logs, screenshots, and commit messages.
-6. Device validation is required for every shipped phase.
+1. Normal users should be able to use username/password or official WebView
+   login. PAT remains an advanced/API mode.
+2. Prefer official API v2 when available. Use Cookie-backed page parsing only for
+   client features that API v2 does not expose.
+3. Write operations must be explicit, visible, confirmed, and protected by the
+   global write-action switch.
+4. Passwords, tokens, and cookies must never be committed, logged, or shown in
+   screenshots.
+5. Every shipped feature must pass build, install, device interaction, screenshot
+   review, `git diff --check`, and diff review before commit.
 
-## Login Architecture
+## Next Roadmap
 
-### Login Methods
+### 1. UI System Stabilization
 
-1. WebView login, recommended default:
-   - Open `https://www.v2ex.com/signin` inside a controlled WebView.
-   - Let the user complete the official login page.
-   - Extract and persist session cookies after success.
-   - Validate by loading a known signed-in page or profile signal.
-   - This path should tolerate captcha, 2FA, anti-flood changes, and field changes.
-
-2. Native username/password login:
-   - Fetch `/signin`.
-   - Parse hidden fields, especially `once` and `next`.
-   - POST username, password, `once`, and `next`.
-   - Persist returned cookies through a shared CookieJar.
-   - Detect failure by response URL, page text, and absence of signed-in user signals.
-   - This path is convenient but fragile; keep WebView login as fallback.
-
-3. Personal Access Token login:
-   - Store token securely.
-   - Verify with `GET /api/v2/member`.
-   - Show token scope and expiration with `GET /api/v2/token`.
-   - Use it for API v2 read-only operations when available.
-
-### Session Storage
-
-Required storage units:
-
-- `AuthSessionSettings`: login mode, username, avatar, session validation time.
-- `CookieJar`: V2EX session cookies, domain, path, expiration.
-- `AuthSettings`: PAT token, token metadata, expiration.
-
-Security requirements:
-
-- Never commit credentials, tokens, or cookies.
-- Never log full token, password, or cookie values.
-- Mask sensitive values in UI.
-- Provide logout that clears cookies, PAT, cached account profile, and notification state.
-
-## API v2 Coverage Plan
-
-| Feature | API v2 endpoint | Status | Priority |
-| --- | --- | --- | --- |
-| Me profile | `GET /api/v2/member` | partial | P0 |
-| Token info | `GET /api/v2/token` | partial | P0 |
-| Notifications | `GET /api/v2/notifications?p=` | partial, no pagination | P0 |
-| Delete notification | `DELETE /api/v2/notifications/:id` | missing | P1 |
-| Node detail | `GET /api/v2/nodes/:name` | missing | P0 |
-| Node topics | `GET /api/v2/nodes/:name/topics?p=` | missing | P0 |
-| Topic detail | `GET /api/v2/topics/:id` | missing | P0 |
-| Topic replies | `GET /api/v2/topics/:id/replies?p=` | missing | P0 |
-| Create token | `POST /api/v2/tokens` | missing | P2 |
-| Sticky own topic | `POST /api/v2/topics/:id/set-sticky` | missing, gated | P3 |
-| Boost own topic | `POST /api/v2/topics/:id/boost` | missing, gated | P3 |
-
-Implementation notes:
-
-- Introduce `ApiV2Service` separate from the current public `ApiService`.
-- Keep v1 public endpoints where they are still useful.
-- Normalize v1/v2 topic/reply models at repository boundaries.
-- Read rate-limit headers and expose remaining quota in debug/settings UI.
-
-## Cookie/Web Capabilities
-
-Capabilities likely requiring Cookie session and/or HTML parsing:
-
-- Username/password login.
-- Daily sign-in reward.
-- Reply submission.
-- Topic creation.
-- Thank reply/topic.
-- Favorite/unfavorite topic.
-- Ignore topic.
-- My topics.
-- My replies.
-- Balance and account navigation.
-- Web settings links.
-
-Safety policy:
-
-- Login and read operations can be automated after implementation.
-- Destructive or write operations require confirmation.
-- Reply/post submit buttons stay behind a global `Enable account write actions` setting until explicitly approved.
-- Drafts and previews can be built before submit is enabled.
-
-## Feature Gap Matrix
-
-### Browse
-
-- Home tabs with correct category content.
-- Hot/latest support.
-- Node discovery and search.
-- Node topic pagination.
-- Topic detail pagination.
-- Reply pagination.
-- Pull refresh.
-- Load more.
-- Empty/error/retry states.
-- Rate-limit and network degradation display.
-
-### Account
-
-- Username/password login.
-- WebView login fallback.
-- PAT login advanced mode.
-- Account profile.
-- Notifications with pagination.
-- Notification tap-to-topic.
-- Delete notification with confirmation.
-- My topics.
-- My replies.
-- Local account data clear.
-
-### Reading
-
-- Recently viewed topics.
-- Saved topics.
-- Saved nodes.
-- Local read/unread state.
-- Last read position.
-- Jump to latest reply.
-- Jump to floor.
-- Only original poster.
-- Copy title/link/content.
-- Share topic.
-- Open in browser.
-
-### Writing
-
-- Reply editor.
-- Topic editor.
-- Markdown preview.
-- Draft autosave.
-- Node picker.
-- Image link insertion.
-- Submit confirmation.
-- Failure recovery.
-- Write action kill switch.
-
-### Media
-
-- Inline Markdown images.
-- Inline bare image URLs.
-- Common image host recognition.
-- Full-screen image viewer.
-- Pinch zoom.
-- Long image support.
-- GIF/WebP support where platform allows.
-- Save image, after permission research.
-- Setting: auto-load images on/off.
-- Setting: only load images on Wi-Fi.
-
-Common URL patterns to support first:
-
-- `.jpg`, `.jpeg`, `.png`, `.webp`, `.gif`
-- `i.imgur.com`
-- `sm.ms`
-- `s2.loli.net`
-- `v2ex.assets.uxengine.net`
-- `github.com/user-attachments/assets`
-- `raw.githubusercontent.com`
-- `pbs.twimg.com`
-
-Non-direct image pages such as `postimg.cc` should become link preview cards first. Do not build brittle host-specific scraping until needed.
-
-### Search
-
-- Local search across saved topics, recently viewed topics, cached topics, and saved nodes.
-- Node search.
-- Topic search through V2EX web or third-party source after reliability review.
-- Search history.
-- Search source setting.
-
-### UI and Settings
-
-- Replace large card-heavy settings with system-style list rows.
-- Keep cards for actual content items, not every setting.
-- HDS component usage notes.
-- Dark mode audit.
-- Font size setting.
-- Image loading setting.
-- Cache settings.
-- Account settings.
-- Developer/debug settings.
-- Error and empty-state design language.
-
-## Development Phases
-
-### Phase 1: Login Foundation
-
-Goal: a normal user can sign in without manually creating PAT.
+Goal: make the app shell feel closer to a first-party Harmony app before adding
+more account surfaces.
 
 Tasks:
 
-- Add CookieJar and session persistence.
-- Implement WebView login flow.
-- Implement login-state detection.
-- Implement logout.
-- Implement native username/password login prototype.
-- Add account status card/page.
-- Keep PAT login as advanced option.
+- Fix immersive safe-area handling for navigation title bars, tab bar blur, and
+  page content in Home, Discover, Notifications, My, Detail, Node, User, Search,
+  Login, and Settings.
+- Remove redundant settings controls from My or Settings so each preference has a
+  single primary home.
+- Convert settings-like surfaces to dense list rows and reserve cards for real
+  content items.
+- Audit page horizontal padding, section spacing, empty states, button heights,
+  and text overflow.
+- Recheck user profile spacing and metadata rows.
+- Verify light/dark mode, top title blur, bottom floating tab blur, and no content
+  hidden behind system areas.
 
 Validation:
 
-- Fresh install shows logged-out state.
-- WebView login succeeds and persists across app restart.
-- Username/password login succeeds for a test account when no captcha is required.
-- Logout clears cookies and account state.
-- No password/cookie/token appears in logs, git diff, screenshots, or commits.
+- Build and install on `192.168.50.237:12345`.
+- Capture layout dumps/screenshots for Home, Discover, Notifications, My,
+  Settings, Detail, Node, User, Search, and Login.
+- Confirm title bar and floating tab material effects are visible and not covered
+  by manual blank padding.
 
-### Phase 2: API v2 Read Completion
+### 2. Cookie Account Read Features
 
-Goal: all read endpoints exposed by API v2 are implemented.
+Goal: make Cookie login useful beyond "logged in" status.
 
 Tasks:
 
-- Create `ApiV2Service`.
-- Add v2 node detail.
-- Add v2 node topics pagination.
-- Add v2 topic detail.
-- Add v2 replies pagination.
-- Add notifications pagination.
-- Normalize model mapping.
-- Add rate-limit parsing.
+- Add a Cookie-backed account page parser/repository.
+- Add my topics and my replies.
+- Add account links for balance, settings, and browser fallback.
+- Add daily sign-in reward detection and a guarded manual action.
+- Add clear error states for captcha/session expiration.
 
 Validation:
 
-- Node page loads page 1 and page 2.
-- Topic detail loads replies page 1 and page 2.
-- Notifications load multiple pages when available.
-- Build and device screenshots for home, node, detail, notification.
+- Cookie login persists across restart.
+- My topics and my replies load with a real Cookie session.
+- Session expiration leads to a recoverable login state.
 
-### Phase 3: Notification Actions
+### 3. Notification Center Upgrade
 
-Goal: notification center behaves like a client, not a placeholder.
+Goal: notification center works for normal login and PAT mode.
 
 Tasks:
 
-- Notification card tap opens topic.
-- Show actor, action text, topic title, and time.
-- Add delete notification with confirmation.
-- Add batch clear draft UI, disabled by default.
-- Cache last loaded notifications.
+- Decide whether Cookie notification parsing is reliable enough.
+- If yes, add Cookie-backed notification loading.
+- Keep PAT API v2 path as the preferred structured path when PAT exists.
+- Add better notification grouping and read/delete state.
+- Keep batch clear disabled until confirmed by the user.
 
 Validation:
 
-- Tapping a notification opens the correct topic.
-- Delete requires confirmation.
-- Deleting one notification updates list without full reload.
+- PAT notifications still page and delete correctly.
+- Cookie login either loads notifications or clearly explains why PAT is needed.
 
-### Phase 4: Media Rendering
+### 4. Search Upgrade
 
-Goal: V2EX topics with image links are readable inside the app.
+Goal: improve discovery without brittle scraping.
 
 Tasks:
 
-- Add URL extraction for Markdown and bare links.
-- Add image URL classifier.
-- Render inline images in topic and reply content.
-- Add placeholder, loading, failure, retry.
-- Add full-screen image preview.
-- Add image auto-load setting.
+- Keep local search as instant default.
+- Evaluate in-app remote source options.
+- Add source-specific error isolation and result labels.
+- Add node/topic filters and recent query management.
 
 Validation:
 
-- Markdown images render.
-- Bare direct image links render.
-- Non-image links remain links.
-- Full-screen preview works on device.
-- Image failure does not break content layout.
+- Local search remains fast with cache and node index.
+- Remote failures never break local results.
 
-### Phase 5: Reading Experience
+### 5. Writing Flow
 
-Goal: efficient repeated use.
+Goal: move from drafts to manual, guarded submission.
 
 Tasks:
 
-- Last read position.
-- Read/unread state.
-- Jump to latest reply.
-- Jump to floor.
-- Only original poster filter.
-- Topic action menu.
-- Share/copy/open browser.
-- Improve local saved topics/nodes/history management.
+- Design reply submit adapter using Cookie session.
+- Design topic submit adapter using Cookie session.
+- Keep submit disabled unless the global write-action switch is enabled.
+- Add confirmation dialogs, in-flight state, retry, and failure recovery.
+- Never auto-submit during unattended validation.
 
 Validation:
 
-- Reopening a topic can restore position.
-- Topic menu actions work.
-- Filters do not corrupt reply order.
+- Drafts survive restart.
+- Preview remains accurate for common Markdown.
+- Submit UI cannot be triggered when write actions are disabled.
 
-### Phase 6: Writing Drafts
+### 6. Media Polish
 
-Goal: prepare account write UI without unsafe auto-submission.
+Goal: make image-heavy topics comfortable to read.
 
 Tasks:
 
-- Reply editor.
-- Topic editor.
-- Markdown preview.
-- Draft autosave.
-- Node picker.
-- Submit API/web adapter behind disabled global switch.
-- Explicit confirmation dialog.
+- Move image URL classification into a shared utility.
+- Add non-direct image link preview cards for common page links.
+- Research and implement save-image flow with the correct system picker or
+  permission model.
+- Verify GIF/WebP behavior on target devices.
 
 Validation:
 
-- Draft survives app restart.
-- Preview matches basic Markdown.
-- Submit controls remain disabled unless write switch is enabled.
-
-### Phase 7: Search
-
-Goal: fast discovery.
-
-Tasks:
-
-- Local search page.
-- Node search improvements.
-- Topic search source research.
-- Pluggable search source.
-- Search history.
-
-Validation:
-
-- Local search returns saved/history/cache results.
-- Node search remains fast.
-- Remote search failures are isolated.
-
-### Phase 8: UI System Pass
-
-Goal: closer to a first-party Harmony app.
-
-Tasks:
-
-- Rebuild My page as a settings/list layout.
-- Rebuild Settings page.
-- Audit all paddings and text sizes.
-- Dark mode screenshots.
-- Compact and regular density variants.
-- HDS usage document.
-
-Validation:
-
-- Screenshots for home, discover, notifications, my, detail, node, user.
-- No overlapping text.
-- Buttons and controls use stable dimensions.
-- UI does not read as a one-off card stack.
+- Direct image URLs render inline.
+- Non-image links remain normal links.
+- Preview handles long images and zoom without layout breakage.
 
 ## Verification Protocol
 
-Every implementation phase must include:
+For every coherent feature or UI pass:
 
 1. `bash dev.sh --build-only`
 2. Install to `192.168.50.237:12345`
 3. Launch app
-4. Device screenshot checks
-5. At least one interaction test for the feature
+4. Device interaction tests
+5. Screenshot/layout review
 6. `git diff --check`
-7. Review actual diff before commit
-8. Accurate commit message
+7. Review actual diff
+8. Commit with a message describing the actual diff
 
-Suggested screenshot set:
-
-- Home tab list
-- Topic detail
-- Reply area
-- Node list
-- Node topic page
-- User profile
-- Notification page
-- My page
-- Login page
-- Settings page
-
-## Commit Policy
-
-- One coherent phase per commit.
-- Commit messages must describe the actual diff, not the intended roadmap.
-- Do not commit `.env.local`, cookies, tokens, screenshots, device dumps, or external tool folders.
-- Keep generated or external directories such as `.claude/`, `.cursor/skills/`, and `.opencode/` out of commits unless explicitly requested.
-
-## Open Questions
-
-- Which Harmony WebView Cookie API is stable on the current SDK?
-- Whether V2EX login sometimes requires captcha or 2FA for this account/device.
-- Whether native username/password login should store password at all; preferred answer is no, only use password for the immediate login request.
-- Which HTML parser strategy is safest in ArkTS for login and account pages.
-- Whether image saving requires photo permissions or system picker integration.
-- Which remote search source is acceptable, if any.
-
-## Near-Term Next Step
-
-Start Phase 1 with a narrow vertical slice:
-
-1. Add CookieJar storage.
-2. Add a login service that can fetch `/signin` and parse `once`.
-3. Add native username/password login request.
-4. Add session validation.
-5. Add WebView login fallback if native login hits anti-flood/captcha.
-6. Build, install, screenshot, and commit.
+Do not commit `.env.local`, cookies, tokens, screenshots, device dumps, or
+external tool folders such as `.claude/`, `.cursor/skills/`, and `.opencode/`.
