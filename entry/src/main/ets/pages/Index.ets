@@ -676,15 +676,25 @@ struct Index {
       .catch((error: Error) => {
         const message = error.message || 'Web 会话验证失败'
         this.sessionError = message
-        if (message.indexOf('会话已失效') >= 0) {
-          const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-          CookieJarSettings.clear(context)
-            .then(() => AuthSessionSettings.clear(context))
-            .catch((_error: Error) => { })
-        }
+        this.handleExpiredCookieSession(message)
       })
       .finally(() => {
         this.isSessionValidating = false
+      })
+  }
+
+  private handleExpiredCookieSession(message: string): void {
+    if (!message || message.indexOf('会话已失效') < 0) {
+      return
+    }
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    CookieJarSettings.clear(context)
+      .then(() => AuthSessionSettings.clear(context))
+      .catch((_error: Error) => { })
+      .finally(() => {
+        this.accountBalance = null
+        this.dailyMission = null
+        this.resetNotificationState()
       })
   }
 
@@ -1559,7 +1569,9 @@ struct Index {
         this.dailyMission = results[1]
       })
       .catch((error: Error) => {
-        this.accountMetaError = error.message || '读取账号信息失败'
+        const message = error.message || '读取账号信息失败'
+        this.accountMetaError = message
+        this.handleExpiredCookieSession(message)
       })
       .finally(() => {
         this.isAccountMetaLoading = false
@@ -1584,8 +1596,10 @@ struct Index {
         this.loadAccountMeta(true)
       })
       .catch((error: Error) => {
-        this.accountMetaError = error.message || '签到失败'
-        promptAction.openToast({ message: this.accountMetaError }).catch((_error: Error) => { })
+        const message = error.message || '签到失败'
+        this.accountMetaError = message
+        this.handleExpiredCookieSession(message)
+        promptAction.openToast({ message: message }).catch((_error: Error) => { })
       })
       .finally(() => {
         this.isDailyRedeeming = false
@@ -1619,8 +1633,10 @@ struct Index {
         this.saveNotificationCache()
       })
       .catch((error: Error) => {
-        this.notificationError = error.message || '通知加载失败'
+        const message = error.message || '通知加载失败'
+        this.notificationError = message
         this.notificationHasMore = false
+        this.handleExpiredCookieSession(message)
       })
       .finally(() => {
         this.isNotificationLoading = false
@@ -1660,8 +1676,10 @@ struct Index {
         this.saveNotificationCache()
       })
       .catch((error: Error) => {
-        this.notificationError = error.message || '加载更多失败'
+        const message = error.message || '加载更多失败'
+        this.notificationError = message
         this.notificationHasMore = false
+        this.handleExpiredCookieSession(message)
       })
       .finally(() => {
         this.isNotificationLoadingMore = false

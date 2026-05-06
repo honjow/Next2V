@@ -101,17 +101,35 @@ export class ApiService {
   }
 
   async getNotificationsWithCookie(cookie: string, page: number = 1): Promise<V2exNotification[]> {
+    if (!cookie) {
+      throw new Error('请先登录')
+    }
     const html = await this.http.getTextWithHeaders(`/notifications?p=${page}`, { 'Cookie': cookie })
+    if (!V2exSessionParser.extractUsername(html)) {
+      throw new Error('Web 会话已失效，请重新登录')
+    }
     return V2exNotificationParser.extractNotifications(html)
   }
 
   async getBalanceWithCookie(cookie: string): Promise<V2exBalance> {
+    if (!cookie) {
+      throw new Error('请先登录')
+    }
     const html = await this.http.getTextWithHeaders('/balance', { 'Cookie': cookie })
+    if (!V2exSessionParser.extractUsername(html)) {
+      throw new Error('Web 会话已失效，请重新登录')
+    }
     return V2exAccountParser.extractBalance(html)
   }
 
   async getDailyMissionWithCookie(cookie: string): Promise<V2exDailyMission> {
+    if (!cookie) {
+      throw new Error('请先登录')
+    }
     const html = await this.http.getTextWithHeaders('/mission/daily', { 'Cookie': cookie })
+    if (!V2exSessionParser.extractUsername(html)) {
+      throw new Error('Web 会话已失效，请重新登录')
+    }
     return V2exAccountParser.extractDailyMission(html)
   }
 
