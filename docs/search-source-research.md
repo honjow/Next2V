@@ -19,7 +19,7 @@ V2Next should keep in-app topic search local-first for now. The current official
 
 - Do not parse Google/Bing/360 result pages inside the app. It is brittle, can fail by region/login/captcha, and would make failures look like app failures.
 - Keep `localWithNodes` as the default source because it is deterministic and fast enough for client-side use.
-- A future "remote" source should be an external-open action first, for example opening a browser search for `site:v2ex.com/t <query>`, not a parsed in-app provider.
+- The "remote" source is an external-open action: the app opens a browser search for `site:v2ex.com/t <query>` and does not parse or merge remote results.
 - If an official V2EX topic-search API appears later, add it behind the existing `SearchSettings.sourceMode` shape instead of coupling it directly into `SearchPage`.
 
 ## Implementation Boundary
@@ -28,7 +28,4 @@ Current source modes:
 
 - `local`: saved topics, viewed topics, saved nodes, offline cache.
 - `localWithNodes`: local plus the public all-nodes index.
-
-Potential future mode:
-
-- `externalWeb`: opens the system browser with a site-search query and does not merge results into the app list.
+- `externalWeb`: opens the system browser with a Bing site-search query and does not merge results into the app list.

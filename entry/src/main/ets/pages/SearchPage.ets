@@ -1,4 +1,5 @@
-import { common } from '@kit.AbilityKit'
+import { common, Want } from '@kit.AbilityKit'
+import { promptAction } from '@kit.ArkUI'
 import {
   CacheSettings,
   type CacheKeyIndex,
@@ -150,60 +151,11 @@ export struct SearchPage {
         .width('100%')
       }
 
-      List({ space: ThemeConstants.SPACE_SM }) {
-        ListItem() {
-          Column({ space: ThemeConstants.SPACE_XS }) {
-            Text(`主题结果 ${this.topicResults.length}`)
-              .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-              .fontColor($r('sys.color.font_secondary'))
-            if (this.topicResults.length === 0) {
-              Text(this.keyword.trim() ? '没有匹配的主题' : '输入关键词开始搜索')
-                .fontSize(ThemeConstants.FONT_SIZE_BODY)
-                .fontColor($r('sys.color.font_secondary'))
-                .padding({ top: ThemeConstants.SPACE_SM, bottom: ThemeConstants.SPACE_SM })
-            }
-          }
-          .width('100%')
-        }
-
-        ForEach(this.topicResults.slice(0, 80), (item: SearchTopicItem) => {
-          ListItem() { this.TopicRow(item) }
-            .onClick(() => {
-              let p: TopicDetailParams = { topicId: item.id }
-              this.stack.pushPathByName('TopicDetail', p as Object)
-            })
-        }, (item: SearchTopicItem) => `t:${item.id}`)
-
-        ListItem() {
-          Divider().strokeWidth(0.5).color($r('sys.color.ohos_id_color_list_separator'))
-        }
-
-        ListItem() {
-          Column({ space: ThemeConstants.SPACE_XS }) {
-            Text(`节点结果 ${this.nodeResults.length}`)
-              .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-              .fontColor($r('sys.color.font_secondary'))
-            if (this.nodeResults.length === 0) {
-              Text(this.keyword.trim() ? '没有匹配的节点' : this.emptyNodeHint())
-                .fontSize(ThemeConstants.FONT_SIZE_BODY)
-                .fontColor($r('sys.color.font_secondary'))
-                .padding({ top: ThemeConstants.SPACE_SM, bottom: ThemeConstants.SPACE_SM })
-            }
-          }
-          .width('100%')
-        }
-
-        ForEach(this.nodeResults.slice(0, 80), (item: SearchNodeItem) => {
-          ListItem() { this.NodeRow(item) }
-            .onClick(() => {
-              let p: NodeTopicListParams = { nodeName: item.name, nodeTitle: item.title }
-              this.stack.pushPathByName('NodeTopicList', p as Object)
-            })
-        }, (item: SearchNodeItem) => `n:${item.name}`)
+      if (this.sourceMode === 'externalWeb') {
+        this.ExternalWebSearchPanel()
+      } else {
+        this.LocalResultList()
       }
-      .scrollBar(BarState.Off)
-      .width('100%')
-      .layoutWeight(1)
 
       Row({ space: ThemeConstants.SPACE_SM }) {
         Button('返回')
@@ -222,6 +174,80 @@ export struct SearchPage {
     .width('100%')
     .height('100%')
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
+  }
+
+  @Builder LocalResultList() {
+    List({ space: ThemeConstants.SPACE_SM }) {
+      ListItem() {
+        Column({ space: ThemeConstants.SPACE_XS }) {
+          Text(`主题结果 ${this.topicResults.length}`)
+            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+            .fontColor($r('sys.color.font_secondary'))
+          if (this.topicResults.length === 0) {
+            Text(this.keyword.trim() ? '没有匹配的主题' : '输入关键词开始搜索')
+              .fontSize(ThemeConstants.FONT_SIZE_BODY)
+              .fontColor($r('sys.color.font_secondary'))
+              .padding({ top: ThemeConstants.SPACE_SM, bottom: ThemeConstants.SPACE_SM })
+          }
+        }
+        .width('100%')
+      }
+
+      ForEach(this.topicResults.slice(0, 80), (item: SearchTopicItem) => {
+        ListItem() { this.TopicRow(item) }
+          .onClick(() => {
+            let p: TopicDetailParams = { topicId: item.id }
+            this.stack.pushPathByName('TopicDetail', p as Object)
+          })
+      }, (item: SearchTopicItem) => `t:${item.id}`)
+
+      ListItem() {
+        Divider().strokeWidth(0.5).color($r('sys.color.ohos_id_color_list_separator'))
+      }
+
+      ListItem() {
+        Column({ space: ThemeConstants.SPACE_XS }) {
+          Text(`节点结果 ${this.nodeResults.length}`)
+            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+            .fontColor($r('sys.color.font_secondary'))
+          if (this.nodeResults.length === 0) {
+            Text(this.keyword.trim() ? '没有匹配的节点' : this.emptyNodeHint())
+              .fontSize(ThemeConstants.FONT_SIZE_BODY)
+              .fontColor($r('sys.color.font_secondary'))
+              .padding({ top: ThemeConstants.SPACE_SM, bottom: ThemeConstants.SPACE_SM })
+          }
+        }
+        .width('100%')
+      }
+
+      ForEach(this.nodeResults.slice(0, 80), (item: SearchNodeItem) => {
+        ListItem() { this.NodeRow(item) }
+          .onClick(() => {
+            let p: NodeTopicListParams = { nodeName: item.name, nodeTitle: item.title }
+            this.stack.pushPathByName('NodeTopicList', p as Object)
+          })
+      }, (item: SearchNodeItem) => `n:${item.name}`)
+    }
+    .scrollBar(BarState.Off)
+    .width('100%')
+    .layoutWeight(1)
+  }
+
+  @Builder ExternalWebSearchPanel() {
+    Column({ space: ThemeConstants.SPACE_MD }) {
+      Text(this.keyword.trim() ? '网页搜索' : '输入关键词开始搜索')
+        .fontSize(ThemeConstants.FONT_SIZE_BODY)
+        .fontColor($r('sys.color.font_secondary'))
+      Button('打开网页搜索')
+        .fontSize(ThemeConstants.FONT_SIZE_BODY)
+        .height(44)
+        .enabled(this.keyword.trim().length > 0)
+        .onClick(() => { this.openExternalTopicSearch() })
+    }
+    .width('100%')
+    .layoutWeight(1)
+    .justifyContent(FlexAlign.Center)
+    .alignItems(HorizontalAlign.Center)
   }
 
   @Builder TopicRow(item: SearchTopicItem) {
@@ -280,19 +306,27 @@ export struct SearchPage {
   }
 
   @Builder SourceModeControls() {
-    Row({ space: ThemeConstants.SPACE_SM }) {
-      Button(this.sourceMode === 'local' ? '本地（当前）' : '本地')
-        .fontSize(ThemeConstants.FONT_SIZE_TAG)
-        .height(36)
-        .type(ButtonType.Normal)
-        .onClick(() => { this.updateSourceMode('local') })
-      Button(this.sourceMode === 'localWithNodes' ? '本地 + 节点库（当前）' : '本地 + 节点库')
-        .fontSize(ThemeConstants.FONT_SIZE_TAG)
-        .height(36)
-        .type(ButtonType.Normal)
-        .onClick(() => { this.updateSourceMode('localWithNodes') })
+    Scroll() {
+      Row({ space: ThemeConstants.SPACE_SM }) {
+        this.SourceModeButton('local', '本地', 76)
+        this.SourceModeButton('localWithNodes', '本地+节点库', 120)
+        this.SourceModeButton('externalWeb', '网页搜索', 92)
+      }
     }
+    .scrollable(ScrollDirection.Horizontal)
+    .scrollBar(BarState.Off)
     .width('100%')
+  }
+
+  @Builder SourceModeButton(mode: SearchSourceMode, label: string, width: number) {
+    Button(label)
+      .fontSize(ThemeConstants.FONT_SIZE_TAG)
+      .fontColor(this.sourceMode === mode ? Color.White : $r('sys.color.font_primary'))
+      .height(36)
+      .width(width)
+      .type(ButtonType.Normal)
+      .backgroundColor(this.sourceMode === mode ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.ohos_id_color_button_normal'))
+      .onClick(() => { this.updateSourceMode(mode) })
   }
 
   private loadLocalCollections(): void {
@@ -458,6 +492,11 @@ export struct SearchPage {
   private applyFilter(): void {
     const q = this.keyword.trim().toLowerCase()
     if (!q) {
+      this.topicResults = []
+      this.nodeResults = []
+      return
+    }
+    if (this.sourceMode === 'externalWeb') {
       this.topicResults = []
       this.nodeResults = []
       return
@@ -630,6 +669,9 @@ export struct SearchPage {
   }
 
   private sourceModeSummary(): string {
+    if (this.sourceMode === 'externalWeb') {
+      return '用系统浏览器搜索 V2EX 主题'
+    }
     if (this.usesNodeIndex()) {
       return '在收藏 / 最近浏览 / 关注节点 / 离线缓存 / 节点库中搜索'
     }
@@ -641,6 +683,29 @@ export struct SearchPage {
       return '节点库和你关注的节点会出现在这里'
     }
     return '你关注的节点会出现在这里'
+  }
+
+  private openExternalTopicSearch(): void {
+    const q = this.keyword.trim()
+    if (!q) {
+      return
+    }
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    SearchSettings.recordQuery(context, q)
+      .then((items: string[]) => {
+        this.history = items
+      })
+      .catch((_error: Error) => { })
+    const url = SearchPage.buildExternalTopicSearchUrl(q)
+    const want: Want = { action: 'ohos.want.action.viewData', uri: url }
+    context.startAbility(want)
+      .catch((error: Error) => {
+        promptAction.openToast({ message: error.message || '打开失败' }).catch((_error: Error) => { })
+      })
+  }
+
+  private static buildExternalTopicSearchUrl(query: string): string {
+    return `https://www.bing.com/search?q=${encodeURIComponent(`site:v2ex.com/t ${query}`)}`
   }
 
   private static savedNodeToV2exNode(item: SavedNode): V2exNode {

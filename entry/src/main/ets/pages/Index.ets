@@ -306,7 +306,7 @@ struct Index {
               .fontSize(ThemeConstants.FONT_SIZE_BODY)
               .fontWeight(FontWeight.Medium)
               .fontColor($r('sys.color.font_primary'))
-            Text('在收藏 / 最近浏览 / 离线缓存 / 节点库中查找')
+            Text('在本地数据 / 节点库 / 网页搜索中查找')
               .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
               .fontColor($r('sys.color.font_secondary'))
               .margin({ top: ThemeConstants.SPACE_XS })

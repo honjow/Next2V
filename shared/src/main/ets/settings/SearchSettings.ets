@@ -6,7 +6,7 @@ const KEY_HISTORY: string = 'searchHistory'
 const KEY_SOURCE_MODE: string = 'sourceMode'
 const MAX_HISTORY: number = 20
 
-export type SearchSourceMode = 'local' | 'localWithNodes'
+export type SearchSourceMode = 'local' | 'localWithNodes' | 'externalWeb'
 const DEFAULT_SOURCE_MODE: SearchSourceMode = 'localWithNodes'
 
 export class SearchSettings {
@@ -105,6 +105,9 @@ export class SearchSettings {
   private static parseSourceMode(raw: string): SearchSourceMode {
     if (raw === 'local') {
       return 'local'
+    }
+    if (raw === 'externalWeb') {
+      return 'externalWeb'
     }
     return DEFAULT_SOURCE_MODE
   }
