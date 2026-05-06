@@ -460,6 +460,16 @@ struct Index {
           .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
 
         ListItem() {
+          this.SectionHeader('账号内容')
+        }
+          .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, top: ThemeConstants.SPACE_MD })
+
+        ListItem() {
+          this.AccountContentSection()
+        }
+          .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
+
+        ListItem() {
           this.SectionHeader('本地内容')
         }
           .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, top: ThemeConstants.SPACE_MD })
@@ -637,7 +647,14 @@ struct Index {
           })
       })
       .catch((error: Error) => {
-        this.sessionError = error.message || 'Web 会话验证失败'
+        const message = error.message || 'Web 会话验证失败'
+        this.sessionError = message
+        if (message.indexOf('会话已失效') >= 0) {
+          const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+          CookieJarSettings.clear(context)
+            .then(() => AuthSessionSettings.clear(context))
+            .catch((_error: Error) => { })
+        }
       })
       .finally(() => {
         this.isSessionValidating = false
@@ -920,6 +937,22 @@ struct Index {
       .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
       .fontColor(isError ? Color.Red : $r('sys.color.font_secondary'))
       .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG, bottom: ThemeConstants.SPACE_SM })
+  }
+
+  @Builder AccountContentSection() {
+    Column() {
+      this.AuthActionRow('我的主题', '从 V2EX 同步你的发帖记录', () => {
+        this.ns.pushPathByName('MyTopics', null)
+      })
+      this.SettingsDivider()
+      this.AuthActionRow('我的回复', '从 V2EX 同步你的回复记录', () => {
+        this.ns.pushPathByName('MyReplies', null)
+      })
+    }
+    .width('100%')
+    .alignItems(HorizontalAlign.Start)
+    .borderRadius(ThemeConstants.RADIUS_MD)
+    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }
 
   @Builder LocalContentSection() {

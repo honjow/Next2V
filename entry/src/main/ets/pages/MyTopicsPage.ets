@@ -93,9 +93,15 @@ export struct MyTopicsPage {
       Text(this.errorMessage)
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
         .fontColor($r('sys.color.font_secondary'))
-      Button('重试')
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .onClick(() => { this.refresh(true) })
+      Row({ space: ThemeConstants.SPACE_SM }) {
+        Button('重试')
+          .fontSize(ThemeConstants.FONT_SIZE_BODY)
+          .onClick(() => { this.refresh(true) })
+        Button('去登录')
+          .fontSize(ThemeConstants.FONT_SIZE_BODY)
+          .onClick(() => { this.stack.pushPathByName('V2exNativeLogin', null) })
+      }
+      .justifyContent(FlexAlign.Center)
     }
     .justifyContent(FlexAlign.Center)
     .width('100%')
@@ -176,4 +182,3 @@ export struct MyTopicsPage {
       })
   }
 }
-

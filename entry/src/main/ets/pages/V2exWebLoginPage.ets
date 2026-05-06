@@ -1,10 +1,15 @@
 import { common } from '@kit.AbilityKit'
 import { promptAction } from '@kit.ArkUI'
 import { webview } from '@kit.ArkWeb'
-import { AuthSessionSettings, CookieJarSettings, HttpClient, StorageKeys, ThemeConstants } from 'shared'
+import { ApiService, AuthSessionSettings, CookieJarSettings, HttpClient, StorageKeys, ThemeConstants, V2exSessionParser } from 'shared'
 
 interface PageEndEvent {
   url: string
+}
+
+interface ValidatedCookie {
+  cookie: string
+  username: string
 }
 
 @Component
@@ -13,6 +18,7 @@ export struct V2exWebLoginPage {
 
   private controller: webview.WebviewController = new webview.WebviewController()
   private http: HttpClient = HttpClient.getInstance()
+  private api: ApiService = new ApiService()
 
   @State private errorMessage: string = ''
   @State private isSaving: boolean = false
@@ -92,14 +98,30 @@ export struct V2exWebLoginPage {
     this.isSaving = true
     this.errorMessage = ''
     webview.WebCookieManager.fetchCookie(baseUrl)
-      .then((cookie: string) => {
-        if (!cookie || cookie.trim().length === 0) {
+      .then(async (cookie: string) => {
+        const cleanCookie = cookie?.trim() || ''
+        if (!cleanCookie) {
           throw new Error('未获取到登录 Cookie，请确认已完成登录')
         }
-        return CookieJarSettings.saveForBaseUrl(context, baseUrl, cookie)
+        const html = await this.http.getTextWithHeaders('/settings', { 'Cookie': cleanCookie })
+        const username = V2exSessionParser.extractUsername(html)
+        if (!username) {
+          throw new Error('Cookie 登录态无效，请确认已完成登录')
+        }
+        const validated: ValidatedCookie = { cookie: cleanCookie, username }
+        return validated
       })
-      .then(() => {
-        return AuthSessionSettings.save(context, { loginMode: 'cookie', username: '', avatar: '', validatedAt: Date.now() })
+      .then(async (validated: ValidatedCookie) => {
+        const username = validated.username
+        await CookieJarSettings.saveForBaseUrl(context, baseUrl, validated.cookie)
+        let avatar = ''
+        try {
+          const profile = await this.api.getMember(username)
+          avatar = profile.avatar_normal || profile.avatar_large || profile.avatar_mini || ''
+        } catch (_error) {
+          avatar = ''
+        }
+        await AuthSessionSettings.save(context, { loginMode: 'cookie', username, avatar, validatedAt: Date.now() })
       })
       .then(() => {
         promptAction.openToast({ message: '登录已保存' }).catch((error: Error) => {
