@@ -10,6 +10,7 @@ export struct ReplyCard {
   @Prop floor: number = 1
   @Prop isOp: boolean = false
   onUserClick?: () => void
+  onActionsClick?: () => void
   onContextClick?: () => void
   onMentionClick?: () => void
   onCopyUserClick?: () => void
@@ -82,7 +83,7 @@ export struct ReplyCard {
 
         Blank()
 
-        if (this.onContextClick) {
+        if (this.onActionsClick) {
           Button() {
             SymbolGlyph($r('sys.symbol.ellipsis_bubble'))
               .fontSize(ThemeConstants.FONT_SIZE_META)
@@ -94,43 +95,59 @@ export struct ReplyCard {
           .borderRadius(ThemeConstants.RADIUS_SM)
           .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
           .onClick(() => {
-            if (this.onContextClick) { this.onContextClick() }
+            if (this.onActionsClick) { this.onActionsClick() }
           })
-        }
-
-        if (this.onMentionClick) {
-          Button() {
-            Text('@')
-              .fontSize(ThemeConstants.FONT_SIZE_META)
-              .fontWeight(FontWeight.Medium)
-              .fontColor($r('sys.color.font_secondary'))
+        } else {
+          if (this.onContextClick) {
+            Button() {
+              SymbolGlyph($r('sys.symbol.ellipsis_bubble'))
+                .fontSize(ThemeConstants.FONT_SIZE_META)
+                .fontColor([$r('sys.color.font_secondary')])
+            }
+            .type(ButtonType.Normal)
+            .width(30)
+            .height(28)
+            .borderRadius(ThemeConstants.RADIUS_SM)
+            .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+            .onClick(() => {
+              if (this.onContextClick) { this.onContextClick() }
+            })
           }
-          .type(ButtonType.Normal)
-          .width(30)
-          .height(28)
-          .borderRadius(ThemeConstants.RADIUS_SM)
-          .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
-          .margin({ left: ThemeConstants.SPACE_XS })
-          .onClick(() => {
-            if (this.onMentionClick) { this.onMentionClick() }
-          })
-        }
 
-        if (this.onCopyUserClick) {
-          Button() {
-            SymbolGlyph($r('sys.symbol.plus_square_on_square'))
-              .fontSize(ThemeConstants.FONT_SIZE_META)
-              .fontColor([$r('sys.color.font_secondary')])
+          if (this.onMentionClick) {
+            Button() {
+              Text('@')
+                .fontSize(ThemeConstants.FONT_SIZE_META)
+                .fontWeight(FontWeight.Medium)
+                .fontColor($r('sys.color.font_secondary'))
+            }
+            .type(ButtonType.Normal)
+            .width(30)
+            .height(28)
+            .borderRadius(ThemeConstants.RADIUS_SM)
+            .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+            .margin({ left: ThemeConstants.SPACE_XS })
+            .onClick(() => {
+              if (this.onMentionClick) { this.onMentionClick() }
+            })
           }
-          .type(ButtonType.Normal)
-          .width(30)
-          .height(28)
-          .borderRadius(ThemeConstants.RADIUS_SM)
-          .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
-          .margin({ left: ThemeConstants.SPACE_XS })
-          .onClick(() => {
-            if (this.onCopyUserClick) { this.onCopyUserClick() }
-          })
+
+          if (this.onCopyUserClick) {
+            Button() {
+              SymbolGlyph($r('sys.symbol.plus_square_on_square'))
+                .fontSize(ThemeConstants.FONT_SIZE_META)
+                .fontColor([$r('sys.color.font_secondary')])
+            }
+            .type(ButtonType.Normal)
+            .width(30)
+            .height(28)
+            .borderRadius(ThemeConstants.RADIUS_SM)
+            .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+            .margin({ left: ThemeConstants.SPACE_XS })
+            .onClick(() => {
+              if (this.onCopyUserClick) { this.onCopyUserClick() }
+            })
+          }
         }
       }
       .width('100%')
