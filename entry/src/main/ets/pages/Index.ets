@@ -687,6 +687,7 @@ struct Index {
     if (!message || message.indexOf('会话已失效') < 0) {
       return
     }
+    this.sessionError = message
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     CookieJarSettings.clear(context)
       .then(() => AuthSessionSettings.clear(context))
