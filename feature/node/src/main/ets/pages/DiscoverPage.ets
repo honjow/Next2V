@@ -3,7 +3,7 @@ import {
   ApiService, V2exNode, V2exTopic, NodeTopicListParams, TopicDetailParams, ThemeConstants
 } from 'shared'
 
-type DiscoverTopicMode = 'hot' | 'latest'
+type DiscoverTopicMode = 'hot' | 'latest' | 'recent'
 
 @Component
 export struct DiscoverPage {
@@ -12,6 +12,7 @@ export struct DiscoverPage {
   @State private topicMode: DiscoverTopicMode = 'hot'
   @State private hotTopics: V2exTopic[] = []
   @State private latestTopics: V2exTopic[] = []
+  @State private recentTopics: V2exTopic[] = []
   @State private hotError: string = ''
   @State private isHotLoading: boolean = false
   @StorageProp('topAvoidHeight') topH: number = 0
@@ -98,6 +99,7 @@ export struct DiscoverPage {
       Row({ space: ThemeConstants.SPACE_XS }) {
         this.TopicModeButton('hot', '热议')
         this.TopicModeButton('latest', '最新')
+        this.TopicModeButton('recent', '最近')
         Blank()
         Button('刷新')
           .type(ButtonType.Normal)
@@ -111,7 +113,7 @@ export struct DiscoverPage {
       .width('100%')
       .alignItems(VerticalAlign.Center)
 
-      Text(this.topicMode === 'hot' ? '今日热议' : '最新主题')
+      Text(this.topicSectionTitle())
         .fontSize(ThemeConstants.FONT_SIZE_TITLE)
         .fontWeight(FontWeight.Medium)
         .fontColor($r('sys.color.font_primary'))
@@ -231,7 +233,23 @@ export struct DiscoverPage {
   }
 
   private topicSurfaceItems(): V2exTopic[] {
-    return this.topicMode === 'hot' ? this.hotTopics : this.latestTopics
+    if (this.topicMode === 'hot') {
+      return this.hotTopics
+    }
+    if (this.topicMode === 'recent') {
+      return this.recentTopics
+    }
+    return this.latestTopics
+  }
+
+  private topicSectionTitle(): string {
+    if (this.topicMode === 'hot') {
+      return '今日热议'
+    }
+    if (this.topicMode === 'recent') {
+      return '最近更新'
+    }
+    return '最新主题'
   }
 
   private setTopicMode(mode: DiscoverTopicMode): void {
@@ -245,6 +263,8 @@ export struct DiscoverPage {
   private reloadTopicSurface(): void {
     if (this.topicMode === 'hot') {
       this.hotTopics = []
+    } else if (this.topicMode === 'recent') {
+      this.recentTopics = []
     } else {
       this.latestTopics = []
     }
@@ -261,11 +281,17 @@ export struct DiscoverPage {
     this.isHotLoading = true
     this.hotError = ''
     const requestedMode = this.topicMode
-    const request = requestedMode === 'hot' ? this.api.getHotTopics() : this.api.getLatestTopics()
+    const request = requestedMode === 'hot'
+      ? this.api.getHotTopics()
+      : requestedMode === 'recent'
+        ? this.api.getRecentTopics()
+        : this.api.getLatestTopics()
     request
       .then((topics: V2exTopic[]) => {
         if (requestedMode === 'hot') {
           this.hotTopics = topics || []
+        } else if (requestedMode === 'recent') {
+          this.recentTopics = topics || []
         } else {
           this.latestTopics = topics || []
         }

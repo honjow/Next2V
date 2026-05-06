@@ -49,6 +49,17 @@ export class ApiService {
     return this.http.get<V2exTopic[]>(ApiConstants.API_HOT)
   }
 
+  /** 获取全站最近更新主题 */
+  async getRecentTopics(page: number = 1): Promise<V2exTopic[]> {
+    const safePage = Math.max(1, Math.floor(page))
+    const html = await this.http.getText(`/recent?p=${safePage}`)
+    const ids = V2exTabParser.extractTopicIds(html)
+    if (ids.length === 0) {
+      throw new Error('最近更新没有获取到主题，请稍后重试')
+    }
+    return this.getBatchTopics(ids)
+  }
+
   /** 根据 ID 获取单条主题 */
   async getTopicById(topicId: number): Promise<V2exTopic[]> {
     return this.http.get<V2exTopic[]>(`${ApiConstants.API_TOPIC_SHOW}?id=${topicId}`)
