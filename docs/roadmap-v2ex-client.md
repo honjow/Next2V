@@ -34,7 +34,8 @@ Implemented:
   deletion when PAT is configured.
 - Inline Markdown images, bare direct image links, common image host recognition,
   image loading states, retry, full-screen preview, pinch zoom, and image loading
-  preferences.
+  preferences. GIF, static WebP, and animated WebP rendering have been verified
+  on the target device through ArkUI `Image`.
 - Reply and topic draft editors with Markdown preview, autosave, node picker,
   image link insertion, and disabled submit controls behind the write-action
   switch.
@@ -76,8 +77,7 @@ Compared with mature V2EX clients, V2Next still lacks:
   navigation context.
 - Reply conversation/context view.
 - Text selection and copy behavior close to browser/Safari reading.
-- Image saving, long-image polish, GIF/WebP verification, and non-direct image
-  preview cards.
+- Long-image polish and remaining edge cases in image-heavy topics.
 - In-app remote topic search.
 - Multi-account switching and optional account data sync.
 - Reading settings beyond the current image-loading preferences.
@@ -237,7 +237,12 @@ Tasks:
 - Move image URL classification into a shared utility if any logic is still
   duplicated.
 - Add save-image flow with the correct Harmony picker/permission model.
-- Verify GIF/WebP behavior on target devices.
+- Verify GIF/WebP behavior on target devices. Verified on
+  `192.168.50.237:12345`: static WebP renders, animated GIF advances frames,
+  and animated WebP advances frames through ArkUI `Image`. Platform note:
+  ImageKit lists `gif` and `webp` as supported image-source formats but recommends
+  querying the device's supported formats before custom decoding because some
+  decode capabilities depend on device hardware.
 - Add non-direct image/link preview cards for common hosts.
 - Add V2EX original-format expansions where feasible: imgur/i.v2ex.co images,
   Gist cards, YouTube/Vimeo link cards, and normal URL cards.
