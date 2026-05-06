@@ -306,12 +306,15 @@ Goal: improve discovery without brittle scraping.
 Status: instant local search, source-specific labels/error isolation,
 topic/node/user filters, external web fallback, and recent query history are
 implemented. In-app remote topic search remains a future task until a stable
-official source is selected.
+official source is selected. Official API 2.0 was checked on 2026-05-06; the
+API page last updated on 2026-04-17 lists notification, member/token, node,
+topic-by-id/replies, sticky, and boost endpoints, but no topic search endpoint:
+https://v2ex.com/help/api
 
 Tasks:
 
 - [x] Keep local search as instant default.
-- [ ] Evaluate in-app remote source options. If there is no stable official topic
+- [x] Evaluate in-app remote source options. If there is no stable official topic
   search API, keep external web fallback and make the UX clearer.
 - [x] Add source-specific result labels and error isolation.
 - [x] Add topic/node/user filters.

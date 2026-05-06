@@ -736,7 +736,7 @@ export struct SearchPage {
 
   private sourceModeSummary(): string {
     if (this.sourceMode === 'externalWeb') {
-      return '用系统浏览器搜索 V2EX 主题'
+      return '官方 API 暂无主题搜索，使用系统浏览器搜索 V2EX 主题'
     }
     if (this.usesNodeIndex()) {
       return '在收藏 / 最近浏览 / 关注节点 / 离线缓存 / 节点库中搜索'
