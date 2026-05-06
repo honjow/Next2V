@@ -76,6 +76,7 @@ export struct TopicCard {
       }
       .width('100%')
       .alignItems(VerticalAlign.Center)
+      .justifyContent(FlexAlign.End)
     }
     .alignItems(HorizontalAlign.Start)
     .padding({
