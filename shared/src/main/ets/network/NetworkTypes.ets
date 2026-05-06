@@ -117,6 +117,7 @@ export interface V2exNotification {
   topic_title?: string
   created?: number
   last_modified?: number
+  unread?: boolean
 }
 
 export interface V2exBalance {

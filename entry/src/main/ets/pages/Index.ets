@@ -29,6 +29,15 @@ import { MyTopicsPage } from './MyTopicsPage'
 import { MyRepliesPage } from './MyRepliesPage'
 import { MyNodesPage } from './MyNodesPage'
 
+interface NotificationReadStateBag {
+  unread?: boolean | number
+  is_unread?: boolean | number
+  isUnread?: boolean | number
+  read?: boolean | number
+  is_read?: boolean | number
+  isRead?: boolean | number
+}
+
 @Component
 struct CoinIconCanvas {
   @Prop rimColor: string
@@ -431,16 +440,7 @@ struct Index {
           ListItem() { this.NotificationSummaryRow() }
             .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
           ForEach(this.notifications, (item: V2exNotification) => {
-            ListItem() { this.NotificationCard(item) }
-              .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
-              .onClick(() => {
-                const topicId = item.topic_id || 0
-                if (topicId > 0) {
-                  let p: TopicDetailParams = { topicId: topicId }
-                  this.ns.pushPathByName('TopicDetail', p as Object)
-                }
-              })
-              .swipeAction({ end: this.NotificationSwipeEnd(item) })
+            this.NotificationListItem(item)
           })
           if (this.notifications.length === 0) {
             ListItem() { this.EmptyNoticeView() }
@@ -534,6 +534,10 @@ struct Index {
 
   private hasNotificationAuth(): boolean {
     return (this.authTokenConfigured && !!this.authToken) || (this.authCookieConfigured && !!CookieJarSettings.getCurrentCookie())
+  }
+
+  private canDeleteNotifications(): boolean {
+    return this.authTokenConfigured && !!this.authToken
   }
 
   private loginStatusText(): string {
@@ -1346,8 +1350,128 @@ struct Index {
     .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }
 
+  @Builder NotificationListItem(item: V2exNotification) {
+    if (this.canDeleteNotifications()) {
+      ListItem() { this.NotificationCard(item) }
+        .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
+        .onClick(() => {
+          const topicId = item.topic_id || 0
+          if (topicId > 0) {
+            let p: TopicDetailParams = { topicId: topicId }
+            this.ns.pushPathByName('TopicDetail', p as Object)
+          }
+        })
+        .swipeAction({ end: this.NotificationSwipeEnd(item) })
+    } else {
+      ListItem() { this.NotificationCard(item) }
+        .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
+        .onClick(() => {
+          const topicId = item.topic_id || 0
+          if (topicId > 0) {
+            let p: TopicDetailParams = { topicId: topicId }
+            this.ns.pushPathByName('TopicDetail', p as Object)
+          }
+        })
+    }
+  }
+
+  private notificationFlag(value?: boolean | number): boolean | null {
+    if (typeof value === 'boolean') {
+      return value
+    }
+    if (typeof value === 'number') {
+      return value > 0
+    }
+    return null
+  }
+
+  private notificationReadTag(item: V2exNotification): string {
+    const bag = item as NotificationReadStateBag
+
+    const unread = this.notificationFlag(bag.unread)
+    if (unread !== null) {
+      return unread ? '未读' : '已读'
+    }
+    const isUnread = this.notificationFlag(bag.is_unread)
+    if (isUnread !== null) {
+      return isUnread ? '未读' : '已读'
+    }
+    const isUnreadCamel = this.notificationFlag(bag.isUnread)
+    if (isUnreadCamel !== null) {
+      return isUnreadCamel ? '未读' : '已读'
+    }
+
+    const read = this.notificationFlag(bag.read)
+    if (read !== null) {
+      return read ? '已读' : '未读'
+    }
+    const isRead = this.notificationFlag(bag.is_read)
+    if (isRead !== null) {
+      return isRead ? '已读' : '未读'
+    }
+    const isReadCamel = this.notificationFlag(bag.isRead)
+    if (isReadCamel !== null) {
+      return isReadCamel ? '已读' : '未读'
+    }
+    return ''
+  }
+
+  private notificationKindTag(item: V2exNotification): string {
+    const text = this.notificationBody(item)
+    if (!text) {
+      return '通知'
+    }
+    if (text.indexOf('提到了你') >= 0) {
+      return '提及'
+    }
+    if (text.indexOf('回复了你') >= 0) {
+      return '回复'
+    }
+    if (text.indexOf('感谢了你') >= 0) {
+      return '感谢'
+    }
+    if (text.indexOf('收藏了你') >= 0) {
+      return '收藏'
+    }
+    if (text.indexOf('关注了你') >= 0) {
+      return '关注'
+    }
+    return '系统'
+  }
+
+  @Builder NotificationTag(text: string, backgroundColor: ResourceColor, foregroundColor: ResourceColor) {
+    Text(text)
+      .fontSize(ThemeConstants.FONT_SIZE_TAG)
+      .fontColor(foregroundColor)
+      .padding({
+        left: ThemeConstants.SPACE_SM,
+        right: ThemeConstants.SPACE_SM,
+        top: ThemeConstants.SPACE_XS / 2,
+        bottom: ThemeConstants.SPACE_XS / 2
+      })
+      .borderRadius(ThemeConstants.RADIUS_SM)
+      .backgroundColor(backgroundColor)
+  }
+
   @Builder NotificationCard(item: V2exNotification) {
     Column({ space: ThemeConstants.SPACE_XS }) {
+      Row({ space: ThemeConstants.SPACE_SM }) {
+        this.NotificationTag(
+          this.notificationKindTag(item),
+          $r('sys.color.ohos_id_color_sub_background'),
+          $r('sys.color.font_secondary')
+        )
+        if (this.notificationReadTag(item)) {
+          this.NotificationTag(
+            this.notificationReadTag(item),
+            this.notificationReadTag(item) === '未读' ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.ohos_id_color_sub_background'),
+            this.notificationReadTag(item) === '未读' ? Color.White : $r('sys.color.font_secondary')
+          )
+        }
+      }
+      .width('100%')
+      .justifyContent(FlexAlign.Start)
+
       Text(this.notificationTitle(item))
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
         .fontWeight(FontWeight.Medium)
@@ -1360,7 +1484,7 @@ struct Index {
         .maxLines(3)
         .textOverflow({ overflow: TextOverflow.Ellipsis })
       if (item.created) {
-        Text(DateUtils.toDateString(item.created))
+        Text(DateUtils.toRelativeTime(item.created))
           .fontSize(ThemeConstants.FONT_SIZE_TINY)
           .fontColor($r('sys.color.font_secondary'))
       }
