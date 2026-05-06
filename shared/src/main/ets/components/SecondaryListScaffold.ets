@@ -10,6 +10,7 @@ export struct SecondaryListScaffold {
   @Prop listSpace: number = ThemeConstants.SPACE_SM - 2
   @Prop horizontalPadding: number = ThemeConstants.SPACE_MD
   @Prop bottomPadding: number = ThemeConstants.SPACE_XL
+  onReachEnd?: () => void
 
   build() {
     List({ space: this.listSpace, scroller: this.scroller }) {
@@ -36,5 +37,10 @@ export struct SecondaryListScaffold {
     .padding({ left: this.horizontalPadding, right: this.horizontalPadding })
     .clip(false)
     .edgeEffect(EdgeEffect.None)
+    .onReachEnd(() => {
+      if (this.onReachEnd) {
+        this.onReachEnd()
+      }
+    })
   }
 }

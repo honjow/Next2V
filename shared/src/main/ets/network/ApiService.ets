@@ -3,6 +3,7 @@ import { ApiConstants } from '../constants/ApiConstants'
 import { V2exTabParser } from '../parser/V2exTabParser'
 import { V2exNotificationParser } from '../parser/V2exNotificationParser'
 import { V2exAccountParser } from '../parser/V2exAccountParser'
+import { V2exSessionParser } from '../parser/V2exSessionParser'
 import type {
   V2exTopic,
   V2exReply,
@@ -121,6 +122,38 @@ export class ApiService {
     return this.getDailyMissionWithCookie(cookie)
   }
 
+  async getMyTopicsWithCookie(cookie: string, page: number = 1): Promise<V2exTopic[]> {
+    if (!cookie) {
+      throw new Error('请先登录')
+    }
+    const path = page > 1 ? `/my/topics?p=${page}` : '/my/topics'
+    const html = await this.http.getTextWithHeaders(path, { 'Cookie': cookie })
+    if (!V2exSessionParser.extractUsername(html)) {
+      throw new Error('Web 会话已失效，请重新登录')
+    }
+    const ids = V2exTabParser.extractTopicIds(html)
+    if (ids.length === 0) {
+      return []
+    }
+    return this.getTopicsByIds(ids)
+  }
+
+  async getMyRepliesWithCookie(cookie: string, page: number = 1): Promise<V2exTopic[]> {
+    if (!cookie) {
+      throw new Error('请先登录')
+    }
+    const path = page > 1 ? `/my/replies?p=${page}` : '/my/replies'
+    const html = await this.http.getTextWithHeaders(path, { 'Cookie': cookie })
+    if (!V2exSessionParser.extractUsername(html)) {
+      throw new Error('Web 会话已失效，请重新登录')
+    }
+    const ids = V2exTabParser.extractTopicIds(html)
+    if (ids.length === 0) {
+      return []
+    }
+    return this.getTopicsByIds(ids)
+  }
+
   // ==================== Tab 聚合接口 ====================
 
   /**
@@ -140,6 +173,13 @@ export class ApiService {
     const ids = V2exTabParser.extractTopicIds(html)
     if (ids.length === 0) {
       throw new Error(`Tab "${tab}" 没有获取到主题，请稍后重试`)
+    }
+    return this.getBatchTopics(ids)
+  }
+
+  async getTopicsByIds(ids: number[]): Promise<V2exTopic[]> {
+    if (ids.length === 0) {
+      return []
     }
     return this.getBatchTopics(ids)
   }

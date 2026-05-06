@@ -25,6 +25,7 @@ import { V2exNativeLoginPage } from './V2exNativeLoginPage'
 import { ImagePreviewPage } from './ImagePreviewPage'
 import { SearchPage } from './SearchPage'
 import { TopicEditorPage } from './TopicEditorPage'
+import { MyTopicsPage } from './MyTopicsPage'
 
 @Component
 struct CoinIconCanvas {
@@ -230,6 +231,9 @@ struct Index {
     } else if (name === 'TopicEditor') {
       HdsNavDestination() { TopicEditorPage() }
         .titleBar(this.navDestTitleBarOpts('发帖草稿'))
+    } else if (name === 'MyTopics') {
+      HdsNavDestination() { MyTopicsPage() }
+        .titleBar(this.navDestTitleBarOpts('我的主题'))
     } else if (name === 'Settings') {
       HdsNavDestination() { SettingsPage() }
         .titleBar(this.navDestTitleBarOpts('设置'))
