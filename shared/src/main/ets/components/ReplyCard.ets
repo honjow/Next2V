@@ -16,11 +16,9 @@ export struct ReplyCard {
   onContextClick?: () => void
   onMentionClick?: () => void
   onCopyUserClick?: () => void
-  onSelectContentClick?: () => void
   onCopyContentClick?: () => void
   onImageClick?: (url: string) => void
   onLinkClick?: (url: string) => void
-  onContentLongPress?: () => void
   @StorageLink(StorageKeys.READING_DENSITY) readingDensity: string = ReadingSettings.DENSITY_STANDARD
   @State private actionsMenuShown: boolean = false
 
@@ -46,7 +44,7 @@ export struct ReplyCard {
 
   private hasContextMenuActions(): boolean {
     return !!(this.onContextClick || this.onMentionClick || this.onCopyUserClick ||
-      this.onSelectContentClick || this.onCopyContentClick)
+      this.onCopyContentClick)
   }
 
   private runContextAction(action?: () => void): void {
@@ -79,11 +77,6 @@ export struct ReplyCard {
       if (this.onCopyUserClick) {
         MenuItem({ content: '复制用户名' })
           .onClick(() => { this.runContextAction(this.onCopyUserClick) })
-      }
-
-      if (this.onSelectContentClick) {
-        MenuItem({ content: '选择回复内容' })
-          .onClick(() => { this.runContextAction(this.onSelectContentClick) })
       }
 
       if (this.onCopyContentClick) {
@@ -143,12 +136,6 @@ export struct ReplyCard {
           })
         }
         .width('100%')
-        .gesture(
-          LongPressGesture({ duration: 650 })
-            .onAction(() => {
-              if (this.onContentLongPress) { this.onContentLongPress() }
-            })
-        )
       }
 
       // 底部：时间 + 感谢数

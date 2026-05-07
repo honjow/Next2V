@@ -13,6 +13,7 @@ import { MediaLinkPreview, MediaUrlUtils } from "../utils/MediaUrlUtils";
 // it falls through to customBlockBuilder where we render it ourselves.
 const CODE_MONO = "customCode";
 const LIST_MONO = "customList";
+const PARAGRAPH_MONO = "customParagraph";
 const IMAGE_BLOCK_MONO = "customImageBlock";
 const LINK_PREVIEW_MONO = "customLinkPreview";
 
@@ -258,10 +259,102 @@ function CustomBlockBuilder(token: Token, options: MarkdownOptions) {
     MarkdownCodeBlock({ codeToken: token as Tokens.Code, options: options });
   } else if (token.type === LIST_MONO) {
     CustomList({ listToken: token as Tokens.List, options: options });
+  } else if (token.type === PARAGRAPH_MONO) {
+    MarkdownParagraph({ paragraphToken: token as Tokens.Paragraph, options: options });
   } else if (token.type === IMAGE_BLOCK_MONO) {
     MarkdownAutoImage({ url: MediaUrlUtils.normalizeUrl((token as Tokens.Image).href), options: options });
   } else if (token.type === LINK_PREVIEW_MONO) {
     MarkdownLinkPreviewCard({ token: token, options: options });
+  }
+}
+
+function _openInlineLink(options: MarkdownOptions, url: string): void {
+  const normalized = MediaUrlUtils.normalizeUrl(url);
+  if (!normalized) {
+    return;
+  }
+  const click = options?.linkClick as ((url?: string) => void) | undefined;
+  if (click) {
+    click(normalized);
+  }
+}
+
+@Builder
+function SelectableInlineTokenSpans(tokens: Token[], fontSize: number, options: MarkdownOptions) {
+  ForEach(tokens, (t: Token) => {
+    if (t.type === "strong") {
+      Span((t as Tokens.Strong).text)
+        .fontSize(fontSize)
+        .fontWeight(FontWeight.Bold)
+        .fontColor(ThemeConstants.TEXT_PRIMARY);
+    } else if (t.type === "em") {
+      Span((t as Tokens.Em).text)
+        .fontSize(fontSize)
+        .fontStyle(FontStyle.Italic)
+        .fontColor(ThemeConstants.TEXT_PRIMARY);
+    } else if (t.type === "codespan") {
+      Span(` ${(t as Tokens.Codespan).text} `)
+        .fontSize(fontSize)
+        .fontFamily("Noto Sans Mono")
+        .fontColor(ThemeConstants.TEXT_PRIMARY)
+        .textBackgroundStyle({
+          color: ThemeConstants.BG_SUB,
+          radius: ThemeConstants.RADIUS_SM,
+        });
+    } else if (t.type === "link") {
+      Span((t as Tokens.Link).text)
+        .fontSize(fontSize)
+        .fontColor(ThemeConstants.TEXT_LINK)
+        .decoration({ type: TextDecorationType.Underline, color: ThemeConstants.TEXT_LINK })
+        .onClick(() => {
+          _openInlineLink(options, (t as Tokens.Link).href);
+        });
+    } else if (t.type === "del") {
+      Span((t as Tokens.Del).text)
+        .fontSize(fontSize)
+        .fontColor(ThemeConstants.TEXT_SECONDARY)
+        .decoration({ type: TextDecorationType.LineThrough });
+    } else {
+      Span((t as Tokens.Text).text ?? t.raw ?? "")
+        .fontSize(fontSize)
+        .fontColor(ThemeConstants.TEXT_PRIMARY);
+    }
+  });
+}
+
+@Component
+struct MarkdownParagraph {
+  @Prop paragraphToken: Tokens.Paragraph;
+  @Prop options: MarkdownOptions;
+  @StorageLink(StorageKeys.READING_FONT_SIZE) readingFontSize: number = ThemeConstants.FONT_SIZE_BODY;
+  @StorageLink(StorageKeys.READING_LINE_HEIGHT) readingLineHeight: number = ThemeConstants.LINE_HEIGHT_BODY;
+
+  private bodyFontSize(): number {
+    return ReadingSettings.normalizeFontSize(this.readingFontSize);
+  }
+
+  private bodyLineHeight(): number {
+    return ReadingSettings.normalizeLineHeight(this.readingLineHeight, this.bodyFontSize());
+  }
+
+  private inlineTokens(): Token[] {
+    const tokens = this.paragraphToken.tokens as Token[] | undefined;
+    if (!Array.isArray(tokens) || tokens.length === 0) {
+      return [];
+    }
+    return tokens;
+  }
+
+  build() {
+    Text() {
+      SelectableInlineTokenSpans(this.inlineTokens(), this.bodyFontSize(), this.options);
+    }
+    .fontSize(this.bodyFontSize())
+    .fontColor(ThemeConstants.TEXT_PRIMARY)
+    .lineHeight(this.bodyLineHeight())
+    .width("100%")
+    .copyOption(CopyOptions.LocalDevice)
+    .textSelectable(TextSelectableMode.SELECTABLE_FOCUSABLE)
   }
 }
 
@@ -992,6 +1085,8 @@ export struct MarkdownContent {
         token["type"] = CODE_MONO;
       } else if (type === "list") {
         token["type"] = LIST_MONO;
+      } else if (type === "paragraph") {
+        token["type"] = PARAGRAPH_MONO;
       }
 
       const childTokens = token["tokens"] as Token[] | undefined;

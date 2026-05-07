@@ -576,9 +576,6 @@ struct Index {
       this.topicActionItem('复制链接', $r('sys.symbol.plus_square_on_square'), () => {
         this.sendTopicAction('copyLink')
       }),
-      this.topicActionItem('选择正文', $r('sys.symbol.doc_text'), () => {
-        this.sendTopicAction('selectContent')
-      }),
       this.topicActionItem('分享链接', $r('sys.symbol.share'), () => {
         this.sendTopicAction('share')
       }),
