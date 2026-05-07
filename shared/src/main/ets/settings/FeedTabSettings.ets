@@ -5,6 +5,7 @@ import { StorageKeys } from '../constants/StorageKeys'
 
 const STORE_NAME: string = 'next2v_feed_tabs'
 const KEY_VISIBLE_KEYS: string = 'visibleKeys'
+const NODE_KEY_PREFIX: string = 'node:'
 
 export class FeedTabSettings {
   static defaultKeys(): string[] {
@@ -21,8 +22,19 @@ export class FeedTabSettings {
 
   static tabsFromKeys(keys: string[]): TabItem[] {
     const normalized = FeedTabSettings.normalizeKeys(keys)
-    return normalized.map((key: string) => ApiConstants.TAB_ITEMS.find((tab: TabItem) => tab.key === key))
-      .filter((tab: TabItem | undefined) => !!tab) as TabItem[]
+    const tabs: TabItem[] = []
+    for (const key of normalized) {
+      const builtIn = ApiConstants.TAB_ITEMS.find((tab: TabItem) => tab.key === key)
+      if (builtIn) {
+        tabs.push(builtIn)
+        continue
+      }
+      const nodeName = FeedTabSettings.nodeNameFromKey(key)
+      if (nodeName) {
+        tabs.push({ key, label: nodeName })
+      }
+    }
+    return tabs
   }
 
   static isDefault(keysJson: string): boolean {
@@ -45,6 +57,51 @@ export class FeedTabSettings {
       keys.push(key)
     }
     return JSON.stringify(FeedTabSettings.normalizeKeys(keys))
+  }
+
+  static moveKey(keysJson: string, key: string, direction: number): string {
+    const keys = FeedTabSettings.normalizeKeys(FeedTabSettings.parseKeys(keysJson))
+    const idx = keys.indexOf(key)
+    if (idx < 0) {
+      return JSON.stringify(keys)
+    }
+    const nextIdx = idx + direction
+    if (nextIdx < 0 || nextIdx >= keys.length) {
+      return JSON.stringify(keys)
+    }
+    const item = keys[idx]
+    keys.splice(idx, 1)
+    keys.splice(nextIdx, 0, item)
+    return JSON.stringify(FeedTabSettings.normalizeKeys(keys))
+  }
+
+  static addNode(keysJson: string, nodeName: string): string {
+    const cleanName = FeedTabSettings.normalizeNodeName(nodeName)
+    if (!cleanName) {
+      return keysJson
+    }
+    const keys = FeedTabSettings.normalizeKeys(FeedTabSettings.parseKeys(keysJson))
+    const key = FeedTabSettings.nodeKey(cleanName)
+    if (keys.indexOf(key) < 0) {
+      keys.push(key)
+    }
+    return JSON.stringify(FeedTabSettings.normalizeKeys(keys))
+  }
+
+  static isNodeKey(key: string): boolean {
+    return FeedTabSettings.nodeNameFromKey(key).length > 0
+  }
+
+  static nodeNameFromKey(key: string): string {
+    if (!key || key.indexOf(NODE_KEY_PREFIX) !== 0) {
+      return ''
+    }
+    return FeedTabSettings.normalizeNodeName(key.slice(NODE_KEY_PREFIX.length))
+  }
+
+  static normalizeNodeName(nodeName: string): string {
+    const clean = (nodeName || '').trim().toLowerCase()
+    return /^[a-z0-9_-]{1,48}$/.test(clean) ? clean : ''
   }
 
   static async load(context: common.UIAbilityContext): Promise<string> {
@@ -91,7 +148,8 @@ export class FeedTabSettings {
     const valid = ApiConstants.TAB_ITEMS.map((tab: TabItem) => tab.key)
     const result: string[] = []
     for (const key of keys) {
-      if (valid.indexOf(key) < 0 || result.indexOf(key) >= 0) {
+      const validKey = valid.indexOf(key) >= 0 || FeedTabSettings.isNodeKey(key)
+      if (!validKey || result.indexOf(key) >= 0) {
         continue
       }
       result.push(key)
@@ -100,5 +158,9 @@ export class FeedTabSettings {
       return FeedTabSettings.defaultKeys()
     }
     return result
+  }
+
+  private static nodeKey(nodeName: string): string {
+    return `${NODE_KEY_PREFIX}${nodeName}`
   }
 }

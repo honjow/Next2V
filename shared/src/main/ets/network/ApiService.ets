@@ -1,5 +1,6 @@
 import { http } from '@kit.NetworkKit'
 import { HttpClient } from './HttpClient'
+import { FeedTabSettings } from '../settings/FeedTabSettings'
 import { ApiConstants } from '../constants/ApiConstants'
 import { V2exTabParser } from '../parser/V2exTabParser'
 import { V2exNotificationParser } from '../parser/V2exNotificationParser'
@@ -700,6 +701,10 @@ export class ApiService {
    * - 其余 tab 先 HTML 抓取 ID，再逐个并发获取详情
    */
   async getTabTopics(tab: string): Promise<V2exTopic[]> {
+    const nodeName = FeedTabSettings.nodeNameFromKey(tab)
+    if (nodeName) {
+      return this.getTopicsByNode(nodeName)
+    }
     if (tab === 'latest') {
       return this.getLatestTopics()
     }
