@@ -35,6 +35,9 @@ export struct V2exWebLoginPage {
   @State private isSaving: boolean = false
   @State private isSaved: boolean = false
   @State private lastUrl: string = ''
+  private autoSaveTimerId: number = 0
+  private autoSaveAttempt: number = 0
+  private isAutoSaving: boolean = false
   @StorageLink(StorageKeys.WEB_LOGIN_ACTION) @Watch('onWebLoginAction') webLoginAction: string = ''
 
   private get baseUrl(): string {
@@ -65,13 +68,23 @@ export struct V2exWebLoginPage {
         })
         .onPageBegin((event?: PageEndEvent) => {
           this.pageMessage = event?.url ? `正在加载 ${event.url}` : '正在加载网页登录...'
+          if (event && event.url) {
+            this.lastUrl = event.url
+          }
+          this.scheduleAutoSave()
         })
         .onPageEnd((event?: PageEndEvent) => {
           this.pageMessage = ''
           if (event && event.url) {
             this.lastUrl = event.url
-            this.tryAutoSave(event.url)
           }
+          this.scheduleAutoSave()
+        })
+        .onLoadFinished((event?: PageEndEvent) => {
+          if (event && event.url) {
+            this.lastUrl = event.url
+          }
+          this.scheduleAutoSave()
         })
         .onErrorReceive((event) => {
           if (event?.request?.isMainFrame()) {
@@ -150,18 +163,32 @@ export struct V2exWebLoginPage {
     }
   }
 
-  private tryAutoSave(url: string): void {
-    const cleanUrl = (url || '').trim()
-    if (this.isSaving || this.isSaved || !cleanUrl || cleanUrl.indexOf('/signin') >= 0) {
+  private scheduleAutoSave(delay: number = 900): void {
+    if (this.isSaving || this.isAutoSaving || this.isSaved) {
       return
     }
-    this.saveLogin(true)
+    if (this.autoSaveTimerId) {
+      clearTimeout(this.autoSaveTimerId)
+      this.autoSaveTimerId = 0
+    }
+    this.autoSaveTimerId = setTimeout(() => {
+      this.autoSaveTimerId = 0
+      this.autoSaveAttempt += 1
+      this.saveLogin(true, this.autoSaveAttempt)
+    }, delay)
   }
 
-  private saveLogin(silent: boolean): void {
+  private saveLogin(silent: boolean, autoAttempt: number = 0): void {
+    if (this.isSaved || this.isSaving || this.isAutoSaving) {
+      return
+    }
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     const baseUrl = this.baseUrl
-    this.isSaving = true
+    if (silent) {
+      this.isAutoSaving = true
+    } else {
+      this.isSaving = true
+    }
     if (!silent) {
       this.errorMessage = ''
     }
@@ -170,6 +197,9 @@ export struct V2exWebLoginPage {
         const cleanCookie = cookie?.trim() || ''
         if (!cleanCookie) {
           throw new Error('未获取到登录 Cookie，请确认已完成登录')
+        }
+        if (silent && !this.hasLikelyAuthCookie(cleanCookie)) {
+          throw new Error('网页登录尚未完成')
         }
         const html = await this.http.getTextWithHeaders('/settings', { 'Cookie': cleanCookie })
         const username = V2exSessionParser.extractUsername(html)
@@ -201,10 +231,20 @@ export struct V2exWebLoginPage {
       .catch((error: Error) => {
         if (!silent) {
           this.errorMessage = error.message || '保存登录失败'
+        } else if (!this.isSaved && autoAttempt > 0 && autoAttempt < 12) {
+          setTimeout(() => {
+            if (!this.isSaved) {
+              this.saveLogin(true, autoAttempt + 1)
+            }
+          }, 1200)
         }
       })
       .finally(() => {
-        this.isSaving = false
+        if (silent) {
+          this.isAutoSaving = false
+        } else {
+          this.isSaving = false
+        }
       })
   }
 
@@ -260,5 +300,21 @@ export struct V2exWebLoginPage {
       }
       target.set(name, value)
     }
+  }
+
+  private hasLikelyAuthCookie(cookieHeader: string): boolean {
+    const names: string[] = []
+    const parts = cookieHeader.split(';').map((part: string) => part.trim()).filter((part: string) => part.length > 0)
+    for (const part of parts) {
+      const idx = part.indexOf('=')
+      if (idx <= 0) {
+        continue
+      }
+      names.push(part.slice(0, idx).trim().toUpperCase())
+    }
+    return names.indexOf('A2') >= 0 ||
+      names.indexOf('PB3_SESSION') >= 0 ||
+      names.indexOf('PB3_AUTH') >= 0 ||
+      names.indexOf('V2EX_SESSION') >= 0
   }
 }
