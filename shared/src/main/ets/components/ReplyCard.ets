@@ -16,10 +16,13 @@ export struct ReplyCard {
   onContextClick?: () => void
   onMentionClick?: () => void
   onCopyUserClick?: () => void
+  onSelectContentClick?: () => void
+  onCopyContentClick?: () => void
   onImageClick?: (url: string) => void
   onLinkClick?: (url: string) => void
   onContentLongPress?: () => void
   @StorageLink(StorageKeys.READING_DENSITY) readingDensity: string = ReadingSettings.DENSITY_STANDARD
+  @State private actionsMenuShown: boolean = false
 
   private verticalPadding(): number {
     if (this.readingDensity === ReadingSettings.DENSITY_COMPACT) {
@@ -39,6 +42,48 @@ export struct ReplyCard {
       return ThemeConstants.SPACE_MD
     }
     return ThemeConstants.SPACE_SM
+  }
+
+  private hasContextMenuActions(): boolean {
+    return !!(this.onContextClick || this.onMentionClick || this.onCopyUserClick ||
+      this.onSelectContentClick || this.onCopyContentClick)
+  }
+
+  private runContextAction(action?: () => void): void {
+    this.actionsMenuShown = false
+    if (action) {
+      action()
+    }
+  }
+
+  @Builder
+  ReplyActionMenu() {
+    Menu() {
+      if (this.onContextClick) {
+        MenuItem({ content: '查看上下文' })
+          .onClick(() => { this.runContextAction(this.onContextClick) })
+      }
+
+      if (this.onMentionClick) {
+        MenuItem({ content: '提到用户' })
+          .onClick(() => { this.runContextAction(this.onMentionClick) })
+      }
+
+      if (this.onCopyUserClick) {
+        MenuItem({ content: '复制用户名' })
+          .onClick(() => { this.runContextAction(this.onCopyUserClick) })
+      }
+
+      if (this.onSelectContentClick) {
+        MenuItem({ content: '选择回复内容' })
+          .onClick(() => { this.runContextAction(this.onSelectContentClick) })
+      }
+
+      if (this.onCopyContentClick) {
+        MenuItem({ content: '复制回复内容' })
+          .onClick(() => { this.runContextAction(this.onCopyContentClick) })
+      }
+    }
   }
 
   build() {
@@ -118,71 +163,40 @@ export struct ReplyCard {
 
         Blank()
 
-        if (this.onActionsClick) {
+        if (this.hasContextMenuActions()) {
           Button() {
             SymbolGlyph($r('sys.symbol.ellipsis_bubble'))
-              .fontSize(ThemeConstants.FONT_SIZE_META)
+              .fontSize(ThemeConstants.FONT_SIZE_TITLE)
               .fontColor([$r('sys.color.font_secondary')])
           }
           .type(ButtonType.Normal)
-          .width(30)
-          .height(28)
-          .borderRadius(ThemeConstants.RADIUS_SM)
-          .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+          .width(ThemeConstants.TOUCH_TARGET_SM)
+          .height(ThemeConstants.TOUCH_TARGET_SM)
+          .borderRadius(ThemeConstants.RADIUS_ROUND)
+          .backgroundColor(Color.Transparent)
+          .onClick(() => {
+            this.actionsMenuShown = true
+          })
+          .bindContextMenu(this.actionsMenuShown, this.ReplyActionMenu, {
+            placement: Placement.TopRight,
+            aboutToDisappear: () => {
+              this.actionsMenuShown = false
+            }
+          })
+        } else if (this.onActionsClick) {
+          Button() {
+            SymbolGlyph($r('sys.symbol.ellipsis_bubble'))
+              .fontSize(ThemeConstants.FONT_SIZE_TITLE)
+              .fontColor([$r('sys.color.font_secondary')])
+          }
+          .type(ButtonType.Normal)
+          .width(ThemeConstants.TOUCH_TARGET_SM)
+          .height(ThemeConstants.TOUCH_TARGET_SM)
+          .borderRadius(ThemeConstants.RADIUS_ROUND)
+          .backgroundColor(Color.Transparent)
           .onClick(() => {
             if (this.onActionsClick) { this.onActionsClick() }
           })
-        } else {
-          if (this.onContextClick) {
-            Button() {
-              SymbolGlyph($r('sys.symbol.ellipsis_bubble'))
-                .fontSize(ThemeConstants.FONT_SIZE_META)
-                .fontColor([$r('sys.color.font_secondary')])
-            }
-            .type(ButtonType.Normal)
-            .width(30)
-            .height(28)
-            .borderRadius(ThemeConstants.RADIUS_SM)
-            .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
-            .onClick(() => {
-              if (this.onContextClick) { this.onContextClick() }
-            })
-          }
-
-          if (this.onMentionClick) {
-            Button() {
-              Text('@')
-                .fontSize(ThemeConstants.FONT_SIZE_META)
-                .fontWeight(FontWeight.Medium)
-                .fontColor($r('sys.color.font_secondary'))
-            }
-            .type(ButtonType.Normal)
-            .width(30)
-            .height(28)
-            .borderRadius(ThemeConstants.RADIUS_SM)
-            .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
-            .margin({ left: ThemeConstants.SPACE_XS })
-            .onClick(() => {
-              if (this.onMentionClick) { this.onMentionClick() }
-            })
-          }
-
-          if (this.onCopyUserClick) {
-            Button() {
-              SymbolGlyph($r('sys.symbol.plus_square_on_square'))
-                .fontSize(ThemeConstants.FONT_SIZE_META)
-                .fontColor([$r('sys.color.font_secondary')])
-            }
-            .type(ButtonType.Normal)
-            .width(30)
-            .height(28)
-            .borderRadius(ThemeConstants.RADIUS_SM)
-            .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
-            .margin({ left: ThemeConstants.SPACE_XS })
-            .onClick(() => {
-              if (this.onCopyUserClick) { this.onCopyUserClick() }
-            })
-          }
         }
       }
       .width('100%')

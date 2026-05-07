@@ -213,7 +213,11 @@ export struct TopicDetailPage {
                 let p: UserProfileParams = { username: reply.member.username }
                 this.stack.pushPathByName('UserProfile', p as Object)
               },
-              onActionsClick: () => { this.openReplyActionMenu(reply) },
+              onContextClick: () => { this.openReplyContext(reply) },
+              onMentionClick: () => { this.openReplyEditor(this.getMentionText(reply.member.username)) },
+              onCopyUserClick: () => { this.copyToClipboard(reply.member.username || '') },
+              onSelectContentClick: () => { this.openTextSelection(this.replySelectionTitle(reply), reply.content || '') },
+              onCopyContentClick: () => { this.copyToClipboard(reply.content || '') },
               onImageClick: (url: string) => { this.openImagePreview(url) },
               onLinkClick: (url: string) => { this.openInSystemBrowser(url) },
               onContentLongPress: () => { this.openTextSelection(this.replySelectionTitle(reply), reply.content || '') }
@@ -522,38 +526,6 @@ export struct TopicDetailPage {
 
   private openReplyContext(reply: V2exReply): void {
     this.contextReply = reply
-  }
-
-  private openReplyActionMenu(reply: V2exReply): void {
-    const username = (reply.member.username || '').trim()
-    const floor = this.v.getReplyFloor(reply.id)
-    const title = floor > 0 && username ? `#${floor} ${username}` : '回复操作'
-    this.getUIContext().getPromptAction().showActionMenu({
-      title: title,
-      buttons: [
-        { text: '查看上下文', color: $r('sys.color.font_primary') },
-        { text: '提到用户', color: $r('sys.color.font_primary') },
-        { text: '复制用户名', color: $r('sys.color.font_primary') },
-        { text: '选择回复内容', color: $r('sys.color.font_primary') },
-        { text: '复制回复内容', color: $r('sys.color.font_primary') }
-      ]
-    })
-      .then((result) => {
-        if (result.index === 0) {
-          this.openReplyContext(reply)
-        } else if (result.index === 1) {
-          this.openReplyEditor(this.getMentionText(username))
-        } else if (result.index === 2) {
-          this.copyToClipboard(username)
-        } else if (result.index === 3) {
-          this.openTextSelection(this.replySelectionTitle(reply), reply.content || '')
-        } else if (result.index === 4) {
-          this.copyToClipboard(reply.content || '')
-        }
-      })
-      .catch((_error: Error) => {
-        // user cancelled
-      })
   }
 
   private closeReplyContext(): void {
