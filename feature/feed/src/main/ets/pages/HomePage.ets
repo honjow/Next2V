@@ -11,7 +11,9 @@ import { common } from '@kit.AbilityKit'
 export struct HomePage {
   @Consume('ns') ns: NavPathStack
   @StorageLink('feedTab') @Watch('onFeedTabChanged') feedTab: string = 'tech'
+  @StorageLink(StorageKeys.FEED_TAB_VISUAL_INDEX) feedTabVisualIndex: number = 0
   @State private currentTabIndex: number = 0
+  @State private swiperWidth: number = 0
   private readonly TAB_ITEMS: TabItem[] = ApiConstants.TAB_ITEMS
   private swiperController: SwiperController = new SwiperController()
   private horizontalPan: PanGestureOptions = new PanGestureOptions({
@@ -23,6 +25,7 @@ export struct HomePage {
   aboutToAppear(): void {
     AppStorage.setOrCreate('listScrollEnabled', true)
     this.currentTabIndex = this.tabKeyToIndex(this.feedTab)
+    this.feedTabVisualIndex = this.currentTabIndex
   }
 
   private setListScrollEnabled(enabled: boolean): void {
@@ -56,7 +59,31 @@ export struct HomePage {
       return
     }
     this.currentTabIndex = nextIndex
+    this.animateVisualTabIndex(nextIndex)
     this.swiperController.changeIndex(nextIndex, true)
+  }
+
+  private clampVisualIndex(index: number): number {
+    return Math.max(0, Math.min(this.TAB_ITEMS.length - 1, index))
+  }
+
+  private setVisualTabIndex(index: number): void {
+    this.feedTabVisualIndex = this.clampVisualIndex(index)
+  }
+
+  private animateVisualTabIndex(index: number): void {
+    this.getUIContext().animateTo({ duration: ThemeConstants.ANIM_DURATION, curve: Curve.EaseOut }, () => {
+      this.setVisualTabIndex(index)
+    })
+  }
+
+  private syncVisualTabFromOffset(index: number, extraInfo: SwiperAnimationEvent): void {
+    if (this.swiperWidth <= 0) {
+      this.setVisualTabIndex(index)
+      return
+    }
+    const progress = -extraInfo.currentOffset / this.swiperWidth
+    this.setVisualTabIndex(index + progress)
   }
 
   build() {
@@ -72,19 +99,26 @@ export struct HomePage {
       .indicator(false)
       .onAnimationStart((index: number, targetIndex: number, extraInfo: SwiperAnimationEvent) => {
         this.setListScrollEnabled(false)
+        this.animateVisualTabIndex(targetIndex)
       })
       .onGestureSwipe((index: number, extraInfo: SwiperAnimationEvent) => {
         this.setListScrollEnabled(false)
+        this.syncVisualTabFromOffset(index, extraInfo)
       })
       .onAnimationEnd((index: number, extraInfo: SwiperAnimationEvent) => {
         this.setListScrollEnabled(true)
+        this.setVisualTabIndex(index)
       })
       .onChange((i: number) => {
         this.currentTabIndex = i
+        this.setVisualTabIndex(i)
         const key = this.TAB_ITEMS[i].key
         if (key !== this.feedTab) {
           this.feedTab = key
         }
+      })
+      .onAreaChange((_oldValue: Area, newValue: Area) => {
+        this.swiperWidth = (newValue?.width as number) || 0
       })
       .layoutWeight(1)
     }

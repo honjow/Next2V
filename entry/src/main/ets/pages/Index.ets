@@ -134,50 +134,136 @@ struct CoinIconCanvas {
 @Component
 struct FeedPills {
   @StorageLink('feedTab') @Watch('onFeedTabChanged') feedTab: string = 'tech'
+  @StorageLink(StorageKeys.FEED_TAB_VISUAL_INDEX) feedTabVisualIndex: number = 0
+  @State private tabLefts: number[] = []
+  @State private tabWidths: number[] = []
+  @State private containerGlobalLeft: number = 0
   private scroller: Scroller = new Scroller()
 
   aboutToAppear(): void {
+    this.feedTabVisualIndex = this.selectedTabIndex()
     this.centerCurrentTab(false)
   }
 
   build() {
-    List({ space: ThemeConstants.SPACE_XS, scroller: this.scroller }) {
-      ForEach(ApiConstants.TAB_ITEMS, (tab: TabItem) => {
-        ListItem() {
-          Column({ space: 2 }) {
-            Text(tab.label)
-              .fontSize(ThemeConstants.FONT_SIZE_BODY)
-              .fontColor(this.feedTab === tab.key ? ThemeConstants.BRAND_PRIMARY : ThemeConstants.TEXT_SECONDARY)
-              .fontWeight(this.feedTab === tab.key ? FontWeight.Medium : FontWeight.Regular)
-              .padding({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, top: ThemeConstants.SPACE_SM })
-            if (this.feedTab === tab.key) {
-              Divider().strokeWidth(2).color(ThemeConstants.BRAND_PRIMARY).width(18)
+    Stack({ alignContent: Alignment.TopStart }) {
+      List({ space: ThemeConstants.SPACE_XS, scroller: this.scroller }) {
+        ForEach(ApiConstants.TAB_ITEMS, (tab: TabItem, index: number) => {
+          ListItem() {
+            Column({ space: 2 }) {
+              Text(tab.label)
+                .fontSize(ThemeConstants.FONT_SIZE_BODY)
+                .fontColor(this.visualSelectedIndex() === index ? ThemeConstants.BRAND_PRIMARY : ThemeConstants.TEXT_SECONDARY)
+                .fontWeight(this.visualSelectedIndex() === index ? FontWeight.Medium : FontWeight.Regular)
+                .padding({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, top: ThemeConstants.SPACE_SM })
+              Blank().height(2).width(18)
             }
+            .alignItems(HorizontalAlign.Center)
+            .padding({ bottom: ThemeConstants.SPACE_XS })
+            .onClick(() => {
+              this.animateVisualTabIndex(index)
+              this.feedTab = tab.key
+            })
+            .onAreaChange((_oldValue: Area, newValue: Area) => {
+              this.updateTabLayout(index, newValue)
+            })
           }
-          .alignItems(HorizontalAlign.Center)
-          .padding({ bottom: ThemeConstants.SPACE_XS })
-          .onClick(() => {
-            this.feedTab = tab.key
-          })
-        }
-      })
+        })
+      }
+      .scrollBar(BarState.Off)
+      .listDirection(Axis.Horizontal)
+      .padding({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM })
+      .width('100%').height('100%')
+
+      Divider()
+        .strokeWidth(2)
+        .color(ThemeConstants.BRAND_PRIMARY)
+        .width(this.indicatorWidth())
+        .position({ x: this.indicatorLeft(), y: ApiConstants.TAB_BAR_HEIGHT - 8 })
+        .hitTestBehavior(HitTestMode.None)
     }
-    .scrollBar(BarState.Off)
-    .listDirection(Axis.Horizontal)
-    .padding({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM })
     .width('100%').height('100%')
+    .onAreaChange((_oldValue: Area, newValue: Area) => {
+      this.containerGlobalLeft = this.areaX(newValue?.globalPosition?.x)
+    })
   }
 
   private onFeedTabChanged(_propName: string): void {
+    this.animateVisualTabIndex(this.selectedTabIndex())
     this.centerCurrentTab(true)
   }
 
-  private centerCurrentTab(smooth: boolean): void {
+  private selectedTabIndex(): number {
     const index = ApiConstants.TAB_ITEMS.findIndex((tab: TabItem) => tab.key === this.feedTab)
-    if (index < 0) {
+    return index < 0 ? 0 : index
+  }
+
+  private visualSelectedIndex(): number {
+    return Math.max(0, Math.min(ApiConstants.TAB_ITEMS.length - 1, Math.round(this.feedTabVisualIndex)))
+  }
+
+  private animateVisualTabIndex(index: number): void {
+    this.getUIContext().animateTo({ duration: ThemeConstants.ANIM_DURATION, curve: Curve.EaseOut }, () => {
+      this.feedTabVisualIndex = Math.max(0, Math.min(ApiConstants.TAB_ITEMS.length - 1, index))
+    })
+  }
+
+  private updateTabLayout(index: number, area: Area): void {
+    const width = (area?.width as number) || 0
+    const left = this.areaX(area?.globalPosition?.x) - this.containerGlobalLeft
+    if (width <= 0) {
       return
     }
-    this.scroller.scrollToIndex(index, smooth, ScrollAlign.CENTER)
+    const nextLefts = this.tabLefts.slice()
+    const nextWidths = this.tabWidths.slice()
+    nextLefts[index] = left
+    nextWidths[index] = width
+    this.tabLefts = nextLefts
+    this.tabWidths = nextWidths
+  }
+
+  private indicatorWidth(): number {
+    return 18
+  }
+
+  private indicatorLeft(): number {
+    const visualIndex = Math.max(0, Math.min(ApiConstants.TAB_ITEMS.length - 1, this.feedTabVisualIndex))
+    const fromIndex = Math.floor(visualIndex)
+    const toIndex = Math.min(ApiConstants.TAB_ITEMS.length - 1, fromIndex + 1)
+    const fraction = visualIndex - fromIndex
+    const fromCenter = this.tabCenter(fromIndex)
+    const toCenter = this.tabCenter(toIndex)
+    return fromCenter + (toCenter - fromCenter) * fraction - this.indicatorWidth() / 2
+  }
+
+  private tabCenter(index: number): number {
+    const left = this.tabLefts[index]
+    const width = this.tabWidths[index]
+    if (left !== undefined && width !== undefined && width > 0) {
+      return left + width / 2
+    }
+    const fallbackIndex = this.selectedTabIndex()
+    const fallbackLeft = this.tabLefts[fallbackIndex]
+    const fallbackWidth = this.tabWidths[fallbackIndex]
+    if (fallbackLeft !== undefined && fallbackWidth !== undefined && fallbackWidth > 0) {
+      return fallbackLeft + fallbackWidth / 2
+    }
+    return ThemeConstants.SPACE_SM + this.indicatorWidth() / 2
+  }
+
+  private areaX(value: Length | undefined): number {
+    if (typeof value === 'number') {
+      return value
+    }
+    if (typeof value === 'string') {
+      const parsed = Number.parseFloat(value)
+      return Number.isNaN(parsed) ? 0 : parsed
+    }
+    return 0
+  }
+
+  private centerCurrentTab(smooth: boolean): void {
+    this.scroller.scrollToIndex(this.selectedTabIndex(), smooth, ScrollAlign.CENTER)
   }
 }
 

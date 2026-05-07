@@ -25,6 +25,7 @@ export class StorageKeys {
   static readonly API_RATE_LIMIT_RESET: string = 'apiRateLimitReset'
   static readonly API_RATE_LIMIT_UPDATED_AT: string = 'apiRateLimitUpdatedAt'
   static readonly LOCAL_DATA_UPDATED_AT: string = 'localDataUpdatedAt'
+  static readonly FEED_TAB_VISUAL_INDEX: string = 'feedTabVisualIndex'
   static readonly TOPIC_DETAIL_ACTION: string = 'topicDetailAction'
   static readonly SEARCH_ACTION: string = 'searchAction'
   static readonly WEB_LOGIN_ACTION: string = 'webLoginAction'
