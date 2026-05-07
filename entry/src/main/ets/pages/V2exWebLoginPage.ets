@@ -6,6 +6,7 @@ import {
   AuthSessionSettings,
   CookieJarSettings,
   HttpClient,
+  SecondaryListScaffold,
   StorageKeys,
   ThemeConstants,
   V2exSessionParser
@@ -38,8 +39,6 @@ export struct V2exWebLoginPage {
   private autoSaveTimerId: number = 0
   private autoSaveAttempt: number = 0
   private isAutoSaving: boolean = false
-  @StorageProp(StorageKeys.TOP_AVOID_HEIGHT) topH: number = 0
-  @StorageProp(StorageKeys.BOTTOM_AVOID_HEIGHT) bottomH: number = 0
   @StorageLink(StorageKeys.WEB_LOGIN_ACTION) @Watch('onWebLoginAction') webLoginAction: string = ''
 
   private get baseUrl(): string {
@@ -58,44 +57,52 @@ export struct V2exWebLoginPage {
 
   build() {
     Column() {
-      Web({ src: '', controller: this.controller })
-        .darkMode(WebDarkMode.Off)
-        .backgroundColor(Color.White)
-        .javaScriptAccess(true)
-        .domStorageAccess(true)
-        .onlineImageAccess(true)
-        .width('100%')
-        .layoutWeight(1)
-        .onControllerAttached(() => {
-          this.loadSigninPage()
-        })
-        .onPageBegin((event?: PageEndEvent) => {
-          this.pageMessage = event?.url ? `正在加载 ${event.url}` : '正在加载网页登录...'
-          if (event && event.url) {
-            this.lastUrl = event.url
+      Column() {
+        SecondaryListScaffold({ horizontalPadding: 0, bottomPadding: 0, listSpace: 0 }) {
+          ListItem() {
+            Web({ src: '', controller: this.controller })
+              .darkMode(WebDarkMode.Off)
+              .backgroundColor(Color.White)
+              .javaScriptAccess(true)
+              .domStorageAccess(true)
+              .onlineImageAccess(true)
+              .width('100%')
+              .height('100%')
+              .onControllerAttached(() => {
+                this.loadSigninPage()
+              })
+              .onPageBegin((event?: PageEndEvent) => {
+                this.pageMessage = event?.url ? `正在加载 ${event.url}` : '正在加载网页登录...'
+                if (event && event.url) {
+                  this.lastUrl = event.url
+                }
+                this.scheduleAutoSave()
+              })
+              .onPageEnd((event?: PageEndEvent) => {
+                this.pageMessage = ''
+                if (event && event.url) {
+                  this.lastUrl = event.url
+                }
+                this.scheduleAutoSave()
+              })
+              .onLoadFinished((event?: PageEndEvent) => {
+                if (event && event.url) {
+                  this.lastUrl = event.url
+                }
+                this.scheduleAutoSave()
+              })
+              .onErrorReceive((event) => {
+                if (event?.request?.isMainFrame()) {
+                  this.pageMessage = event.error.getErrorInfo() || '网页登录加载失败'
+                }
+              })
           }
-          this.scheduleAutoSave()
-        })
-        .onPageEnd((event?: PageEndEvent) => {
-          this.pageMessage = ''
-          if (event && event.url) {
-            this.lastUrl = event.url
-          }
-          this.applyWebContentInsets()
-          this.scheduleAutoSave()
-        })
-        .onLoadFinished((event?: PageEndEvent) => {
-          if (event && event.url) {
-            this.lastUrl = event.url
-          }
-          this.applyWebContentInsets()
-          this.scheduleAutoSave()
-        })
-        .onErrorReceive((event) => {
-          if (event?.request?.isMainFrame()) {
-            this.pageMessage = event.error.getErrorInfo() || '网页登录加载失败'
-          }
-        })
+          .height('100%')
+          .clip(false)
+        }
+      }
+      .width('100%')
+      .layoutWeight(1)
 
       this.StatusBar()
     }
@@ -166,32 +173,6 @@ export struct V2exWebLoginPage {
       const e = error as Error
       this.errorMessage = `${e.message || '网页登录加载失败'}: ${url}`
     }
-  }
-
-  private applyWebContentInsets(): void {
-    const top = Math.round(Math.max(0, this.topH + ThemeConstants.TITLE_BAR_HEIGHT))
-    const bottom = Math.round(Math.max(0, this.bottomH))
-    const script = `
-      (function() {
-        var styleId = 'next2v-web-login-insets';
-        var style = document.getElementById(styleId);
-        if (!style) {
-          style = document.createElement('style');
-          style.id = styleId;
-          var target = document.head || document.documentElement;
-          if (!target) {
-            return 'no-target';
-          }
-          target.appendChild(style);
-        }
-        style.textContent =
-          'html{scroll-padding-top:${top}px!important;scroll-padding-bottom:${bottom}px!important;}' +
-          'body{box-sizing:border-box!important;padding-top:${top}px!important;padding-bottom:${bottom}px!important;}';
-        return 'ok';
-      })();
-    `
-    this.controller.runJavaScript(script).catch((_error: Error) => {
-    })
   }
 
   private scheduleAutoSave(delay: number = 900): void {
