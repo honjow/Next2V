@@ -627,11 +627,6 @@ struct Index {
   }
 
   // NotifyPage 和 MePage 较为简单，保留在 Index 文件内
-  @StorageProp('topAvoidHeight') topH: number = 0
-  @StorageProp('bottomAvoidHeight') bottomH: number = 0
-  private readonly TBH: number = ThemeConstants.TITLE_BAR_HEIGHT
-  private readonly FLOAT_H: number = ThemeConstants.FLOAT_BAR_HEIGHT
-
   @Builder
   NotifyPage() {
     Column() {
@@ -644,17 +639,15 @@ struct Index {
       } else if (this.notificationError && this.notifications.length === 0) {
         this.NotificationErrorView()
       } else {
-        List({ space: ThemeConstants.SPACE_SM }) {
-          ListItem() {
-            Column() {
-              Blank().height(this.topH + this.TBH)
-            }
+        SecondaryListScaffold({
+          bottomPadding: ThemeConstants.FLOAT_BAR_HEIGHT,
+          onReachEnd: () => {
+            this.loadMoreNotifications()
           }
-
+        }) {
           ListItem() {
             this.NotificationSummaryRow()
           }
-          .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
 
           ForEach(this.notifications, (item: V2exNotification) => {
             this.NotificationListItem(item)
@@ -668,20 +661,8 @@ struct Index {
             ListItem() {
               LoadingFooter({ isLoading: this.isNotificationLoadingMore, hasMore: this.notificationHasMore })
             }
-            .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
-          }
-          ListItem() {
-            Column() {
-              Blank().height(this.bottomH + this.FLOAT_H)
-            }
           }
         }
-        .onReachEnd(() => {
-          this.loadMoreNotifications()
-        })
-        .scrollBar(BarState.Off)
-        .width('100%')
-        .height('100%')
       }
     }
     .justifyContent(FlexAlign.Center)
@@ -1628,7 +1609,6 @@ struct Index {
       ListItem() {
         this.NotificationCard(item)
       }
-      .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
       .onClick(() => {
         const meta = this.notificationMeta(item)
         const topicId = meta.topicId
@@ -1643,7 +1623,6 @@ struct Index {
       ListItem() {
         this.NotificationCard(item)
       }
-      .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
       .onClick(() => {
         const meta = this.notificationMeta(item)
         const topicId = meta.topicId
