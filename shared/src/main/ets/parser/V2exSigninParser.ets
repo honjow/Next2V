@@ -7,6 +7,12 @@ export interface V2exSigninForm {
   next: string
 }
 
+export interface V2exTwoFactorForm {
+  action: string
+  codeField: string
+  hiddenFields: Record<string, string>
+}
+
 interface V2exSigninInput {
   type: string
   name: string
@@ -49,6 +55,67 @@ export class V2exSigninParser {
       return V2exSigninParser.compactText(problem[1])
     }
     return ''
+  }
+
+  static extractTwoFactorForm(html: string): V2exTwoFactorForm | null {
+    if (!html) {
+      return null
+    }
+    const forms = V2exSigninParser.extractForms(html)
+    const preferred = forms.find((form: string) => V2exSigninParser.looksLikeTwoFactorForm(form)) ||
+      (V2exSigninParser.looksLikeTwoFactorForm(html) ? html : '')
+    if (!preferred) {
+      return null
+    }
+
+    const inputs = V2exSigninParser.extractInputs(preferred)
+    const codeField = V2exSigninParser.findTwoFactorCodeField(inputs)
+    if (!codeField) {
+      return null
+    }
+
+    const hiddenFields: Record<string, string> = {}
+    inputs
+      .filter((input: V2exSigninInput) => input.type.toLowerCase() === 'hidden' && input.name)
+      .forEach((input: V2exSigninInput) => {
+        hiddenFields[input.name] = input.value
+      })
+
+    return {
+      action: V2exSigninParser.extractFormAction(preferred) || '/signin',
+      codeField,
+      hiddenFields
+    }
+  }
+
+  private static extractForms(html: string): string[] {
+    const forms: string[] = []
+    const re = /<form\b[^>]*>[\s\S]*?<\/form>/gi
+    let m: RegExpExecArray | null = re.exec(html)
+    while (m) {
+      forms.push(m[0])
+      m = re.exec(html)
+    }
+    return forms
+  }
+
+  private static looksLikeTwoFactorForm(html: string): boolean {
+    const text = V2exSigninParser.compactText(html).toLowerCase()
+    return text.indexOf('2fa') >= 0 ||
+      text.indexOf('two-factor') >= 0 ||
+      text.indexOf('two factor') >= 0 ||
+      text.indexOf('authentication code') >= 0 ||
+      text.indexOf('one-time') >= 0 ||
+      text.indexOf('totp') >= 0 ||
+      text.indexOf('两步') >= 0 ||
+      text.indexOf('二步') >= 0 ||
+      text.indexOf('动态验证码') >= 0 ||
+      text.indexOf('安全码') >= 0
+  }
+
+  private static extractFormAction(formHtml: string): string {
+    const formTag = formHtml.match(/<form\b[^>]*>/i)
+    return formTag ? V2exSigninParser.extractAttr(formTag[0], 'action') : ''
   }
 
   private static extractInputs(html: string): V2exSigninInput[] {
@@ -100,6 +167,27 @@ export class V2exSigninParser {
         (placeholder.indexOf('captcha') >= 0 || placeholder.indexOf('code') >= 0)
     })
     return found ? found.name : ''
+  }
+
+  private static findTwoFactorCodeField(inputs: V2exSigninInput[]): string {
+    const candidates = inputs.filter((input: V2exSigninInput) => {
+      const type = input.type.toLowerCase()
+      return input.name && (type === 'text' || type === 'tel' || type === 'number' || type === '')
+    })
+    const preferred = candidates.find((input: V2exSigninInput) => {
+      const name = input.name.toLowerCase()
+      const placeholder = input.placeholder.toLowerCase()
+      return name.indexOf('2fa') >= 0 ||
+        name.indexOf('otp') >= 0 ||
+        name.indexOf('code') >= 0 ||
+        placeholder.indexOf('2fa') >= 0 ||
+        placeholder.indexOf('otp') >= 0 ||
+        placeholder.indexOf('code') >= 0 ||
+        placeholder.indexOf('验证码') >= 0 ||
+        placeholder.indexOf('动态') >= 0 ||
+        placeholder.indexOf('安全码') >= 0
+    })
+    return preferred ? preferred.name : (candidates.length === 1 ? candidates[0].name : '')
   }
 
   private static extractCaptchaUrl(html: string): string {

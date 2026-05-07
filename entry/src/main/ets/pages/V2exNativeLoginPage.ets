@@ -9,11 +9,12 @@ import {
   CookieJarSettings,
   GroupedListSection,
   HttpClient,
+  NativeTwoFactorRequiredError,
   SecondaryListScaffold,
   ThemeConstants,
   V2exNativeAuthService
 } from 'shared'
-import type { NativeLoginChallenge } from 'shared'
+import type { NativeLoginChallenge, NativeLoginSnapshot, NativeTwoFactorChallenge } from 'shared'
 
 @Component
 export struct V2exNativeLoginPage {
@@ -23,11 +24,13 @@ export struct V2exNativeLoginPage {
   @State private password: string = ''
   @State private captchaCode: string = ''
   @State private captchaUrl: string = ''
+  @State private twoFactorCode: string = ''
   @State private errorMessage: string = ''
   @State private isLoading: boolean = false
   @State private isChallengeLoading: boolean = false
 
   private challenge: NativeLoginChallenge | null = null
+  private twoFactorChallenge: NativeTwoFactorChallenge | null = null
   private auth: V2exNativeAuthService = new V2exNativeAuthService()
   private api: ApiService = new ApiService()
   private http: HttpClient = HttpClient.getInstance()
@@ -96,6 +99,14 @@ export struct V2exNativeLoginPage {
         })
       }
 
+      if (this.twoFactorChallenge) {
+        AppTextField({
+          text: $twoFactorCode,
+          placeholder: '两步验证码',
+          onTextChange: (value: string) => { this.twoFactorCode = value }
+        })
+      }
+
       if (this.errorMessage) {
         Text(this.errorMessage)
           .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
@@ -120,7 +131,10 @@ export struct V2exNativeLoginPage {
       return '准备中…'
     }
     if (this.isLoading) {
-      return '登录中…'
+      return this.twoFactorChallenge ? '验证中…' : '登录中…'
+    }
+    if (this.twoFactorChallenge) {
+      return '完成两步验证'
     }
     return '登录'
   }
@@ -129,6 +143,8 @@ export struct V2exNativeLoginPage {
     this.isChallengeLoading = true
     this.errorMessage = message
     this.captchaCode = ''
+    this.twoFactorCode = ''
+    this.twoFactorChallenge = null
     this.auth.prepareLogin()
       .then((challenge: NativeLoginChallenge) => {
         this.challenge = challenge
@@ -149,6 +165,10 @@ export struct V2exNativeLoginPage {
   }
 
   private login(): void {
+    if (this.twoFactorChallenge) {
+      this.completeTwoFactor()
+      return
+    }
     const cleanUsername = this.username.trim()
     const pwd = this.password
     if (!cleanUsername || !pwd) {
@@ -166,11 +186,50 @@ export struct V2exNativeLoginPage {
     const baseUrl = this.http.getBaseUrl()
 
     this.auth.loginWithChallenge(this.challenge, cleanUsername, pwd, this.captchaCode)
-      .then((snapshot) => {
-        return CookieJarSettings.saveForBaseUrl(context, baseUrl, snapshot.cookie)
-          .then(() => snapshot)
+      .then((snapshot: NativeLoginSnapshot) => this.finishLogin(context, baseUrl, snapshot))
+      .catch((error: Error) => {
+        if (error instanceof NativeTwoFactorRequiredError) {
+          this.twoFactorChallenge = error.challenge
+          this.twoFactorCode = ''
+          this.errorMessage = '请输入两步验证码'
+          return
+        }
+        this.errorMessage = error.message || '登录失败'
+        if (this.challenge?.captchaField) {
+          this.loadChallenge(this.errorMessage)
+        }
       })
-      .then((snapshot) => {
+      .finally(() => {
+        this.isLoading = false
+      })
+  }
+
+  private completeTwoFactor(): void {
+    if (!this.twoFactorChallenge) {
+      return
+    }
+    this.isLoading = true
+    this.errorMessage = ''
+
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    const baseUrl = this.http.getBaseUrl()
+    this.auth.completeTwoFactor(this.twoFactorChallenge, this.twoFactorCode)
+      .then((snapshot: NativeLoginSnapshot) => this.finishLogin(context, baseUrl, snapshot))
+      .catch((error: Error) => {
+        this.errorMessage = error.message || '两步验证失败'
+      })
+      .finally(() => {
+        this.isLoading = false
+      })
+  }
+
+  private finishLogin(
+    context: common.UIAbilityContext,
+    baseUrl: string,
+    snapshot: NativeLoginSnapshot
+  ): Promise<void> {
+    return CookieJarSettings.saveForBaseUrl(context, baseUrl, snapshot.cookie)
+      .then(() => {
         return this.api.getMember(snapshot.username)
           .then((profile) => {
             return AuthSessionSettings.save(context, {
@@ -183,19 +242,12 @@ export struct V2exNativeLoginPage {
       })
       .then(() => {
         this.password = ''
+        this.twoFactorCode = ''
+        this.twoFactorChallenge = null
         promptAction.openToast({ message: '登录成功' }).catch((error: Error) => {
           console.error('openToast failed: ' + error.message)
         })
         this.stack.pop()
-      })
-      .catch((error: Error) => {
-        this.errorMessage = error.message || '登录失败'
-        if (this.challenge?.captchaField) {
-          this.loadChallenge(this.errorMessage)
-        }
-      })
-      .finally(() => {
-        this.isLoading = false
       })
   }
 }

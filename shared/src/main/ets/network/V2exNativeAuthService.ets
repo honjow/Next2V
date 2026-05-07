@@ -37,6 +37,23 @@ export interface NativeLoginChallenge {
   next: string
 }
 
+export interface NativeTwoFactorChallenge {
+  cookie: string
+  action: string
+  codeField: string
+  hiddenFields: Record<string, string>
+}
+
+export class NativeTwoFactorRequiredError extends Error {
+  challenge: NativeTwoFactorChallenge
+
+  constructor(challenge: NativeTwoFactorChallenge) {
+    super('需要两步验证码')
+    this.name = 'NativeTwoFactorRequiredError'
+    this.challenge = challenge
+  }
+}
+
 export class V2exNativeAuthService {
   private httpClient: HttpClient = HttpClient.getInstance()
 
@@ -102,9 +119,52 @@ export class V2exNativeAuthService {
     const settingsHtml = await this.httpClient.getTextWithHeaders('/settings', { 'Cookie': cookieAfterPost })
     const signedInUser = V2exSessionParser.extractUsername(settingsHtml)
     if (!signedInUser) {
-      throw new Error('登录失败：可能需要验证码/2FA，请改用网页登录')
+      const twoFactor = V2exSigninParser.extractTwoFactorForm(postRes.text) ||
+        V2exSigninParser.extractTwoFactorForm(settingsHtml)
+      if (twoFactor) {
+        throw new NativeTwoFactorRequiredError({
+          cookie: cookieAfterPost,
+          action: twoFactor.action,
+          codeField: twoFactor.codeField,
+          hiddenFields: twoFactor.hiddenFields
+        })
+      }
+      throw new Error('登录失败：可能需要验证码或两步验证，请改用网页登录')
     }
 
+    return { cookie: cookieAfterPost, username: signedInUser }
+  }
+
+  async completeTwoFactor(challenge: NativeTwoFactorChallenge, code: string): Promise<NativeLoginSnapshot> {
+    const cleanCode = code.trim()
+    if (!cleanCode) {
+      throw new Error('请输入两步验证码')
+    }
+
+    const pairs: FormPair[] = []
+    Object.keys(challenge.hiddenFields).forEach((key: string) => {
+      pairs.push({ key, value: challenge.hiddenFields[key] })
+    })
+    pairs.push({ key: challenge.codeField, value: cleanCode })
+
+    const actionUrl = V2exNativeAuthService.absoluteUrl(this.httpClient.getBaseUrl(), challenge.action || '/signin')
+    const postRes = await this.requestText(
+      actionUrl,
+      http.RequestMethod.POST,
+      challenge.cookie,
+      V2exNativeAuthService.encodeFormPairs(pairs)
+    )
+    const cookieAfterPost = V2exNativeAuthService.mergeCookieHeader(challenge.cookie, postRes.setCookie)
+    const loginError = V2exSigninParser.extractProblemMessage(postRes.text)
+    if (loginError) {
+      throw new Error(`两步验证失败：${loginError}`)
+    }
+
+    const settingsHtml = await this.httpClient.getTextWithHeaders('/settings', { 'Cookie': cookieAfterPost })
+    const signedInUser = V2exSessionParser.extractUsername(settingsHtml)
+    if (!signedInUser) {
+      throw new Error('两步验证失败，请检查验证码或改用网页登录')
+    }
     return { cookie: cookieAfterPost, username: signedInUser }
   }
 
