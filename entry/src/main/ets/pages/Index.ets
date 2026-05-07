@@ -1048,13 +1048,7 @@ struct Index {
   @Builder
   AccountPage() {
     Column() {
-      List({ space: ThemeConstants.SPACE_SM }) {
-        ListItem() {
-          Column() {
-            Blank().height(this.topH + this.TBH + ThemeConstants.SPACE_MD)
-          }
-        }
-
+      SecondaryListScaffold({ bottomPadding: ThemeConstants.SPACE_MD }) {
         ListItem() {
           Column({ space: ThemeConstants.SPACE_MD }) {
             Avatar({ url: this.currentAvatar(), avatarSize: 72 })
@@ -1085,7 +1079,6 @@ struct Index {
           .borderRadius(ThemeConstants.RADIUS_CARD)
           .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
         }
-        .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
 
         ListItem() {
           GroupedListSection() {
@@ -1106,7 +1099,6 @@ struct Index {
             })
           }
         }
-        .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
 
         ListItem() {
           GroupedListSection() {
@@ -1121,29 +1113,18 @@ struct Index {
             })
           }
         }
-        .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
 
         if (this.authTokenConfigured) {
           ListItem() {
             this.SectionHeader('高级 API')
           }
-          .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, top: ThemeConstants.SPACE_MD })
+          .margin({ top: ThemeConstants.SPACE_MD })
 
           ListItem() {
             this.ApiDiagnosticsSection()
           }
-          .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
-        }
-
-        ListItem() {
-          Column() {
-            Blank().height(this.bottomH + ThemeConstants.SPACE_MD)
-          }
         }
       }
-      .scrollBar(BarState.Off)
-      .width('100%')
-      .height('100%')
     }
     .width('100%')
     .height('100%')
