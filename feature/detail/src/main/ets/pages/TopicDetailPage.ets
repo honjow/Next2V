@@ -7,7 +7,8 @@ import { systemShare } from '@kit.ShareKit'
 import {
   V2exReply, Avatar, ReplyCard, TimeAgo, ThemeConstants, MarkdownContent, PullRefreshListScaffold,
   NodeTopicListParams, UserProfileParams, ImagePreviewParams, CollectionSettings, CacheSettings, V2exTopic, AuthSettings,
-  LoadingFooter, HttpClient, StorageKeys, ApiService, CookieJarSettings, V2exToggleAction, ReadingSettings
+  LoadingFooter, HttpClient, StorageKeys, ApiService, CookieJarSettings, V2exToggleAction, ReadingSettings,
+  AppModalScaffold
 } from 'shared'
 
 interface ReplyEditorParams {
@@ -41,6 +42,7 @@ export struct TopicDetailPage {
   @State private isSiteFavoriteLoading: boolean = false
   @State private jumpFloorText: string = ''
   @State private contextReply: V2exReply | null = null
+  @State private contextSheetVisible: boolean = false
   @State private selectionTitle: string = ''
   @State private selectionText: string = ''
   private api: ApiService = new ApiService()
@@ -138,10 +140,6 @@ export struct TopicDetailPage {
       }
       .width('100%').height('100%')
 
-      if (this.contextReply !== null) {
-        this.ReplyContextOverlay()
-      }
-
       if (this.selectionText) {
         this.TextSelectionOverlay()
       }
@@ -149,6 +147,18 @@ export struct TopicDetailPage {
     .width('100%')
     .height('100%')
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
+    .bindSheet($$this.contextSheetVisible, this.ReplyContextSheet(), {
+      height: SheetSize.LARGE,
+      preferType: SheetType.BOTTOM,
+      dragBar: false,
+      showClose: false,
+      maskColor: 'rgba(0,0,0,0.24)',
+      backgroundColor: $r('sys.color.ohos_id_color_card_bg'),
+      onDisappear: () => {
+        this.contextSheetVisible = false
+        this.contextReply = null
+      }
+    })
   }
 
   @Builder LoadingView() {
@@ -350,61 +360,17 @@ export struct TopicDetailPage {
       .onClick(action)
   }
 
-  @Builder ReplyContextOverlay() {
-    Column() {
-      Blank()
-        .width('100%')
-        .layoutWeight(1)
-        .onClick(() => { this.closeReplyContext() })
-
-      Column({ space: ThemeConstants.SPACE_MD }) {
-        Row({ space: ThemeConstants.SPACE_SM }) {
-          Text(this.replyContextTitle())
-            .fontSize(ThemeConstants.FONT_SIZE_TITLE)
-            .fontWeight(FontWeight.Medium)
-            .fontColor($r('sys.color.font_primary'))
-            .maxLines(1)
-            .textOverflow({ overflow: TextOverflow.Ellipsis })
-
-          Blank()
-
-          Button('关闭')
-            .type(ButtonType.Normal)
-            .height(32)
-            .fontSize(ThemeConstants.FONT_SIZE_META)
-            .fontColor($r('sys.color.font_secondary'))
-            .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
-            .borderRadius(ThemeConstants.RADIUS_SM)
-            .onClick(() => { this.closeReplyContext() })
+  @Builder ReplyContextSheet() {
+    AppModalScaffold({
+      title: this.replyContextTitle(),
+      closeAction: () => { this.closeReplyContext() }
+    }) {
+      ForEach(this.buildReplyContextItems(), (item: ReplyContextItem) => {
+        ListItem() {
+          this.ReplyContextItemView(item)
         }
-        .width('100%')
-        .alignItems(VerticalAlign.Center)
-
-        Scroll() {
-          Column({ space: ThemeConstants.SPACE_SM }) {
-            ForEach(this.buildReplyContextItems(), (item: ReplyContextItem) => {
-              this.ReplyContextItemView(item)
-            }, (item: ReplyContextItem) => `${item.reply.id}-${item.floor}-${item.label}`)
-          }
-          .width('100%')
-        }
-        .layoutWeight(1)
-        .scrollBar(BarState.Off)
-      }
-      .width('100%')
-      .height('72%')
-      .padding({
-        left: ThemeConstants.SPACE_LG,
-        right: ThemeConstants.SPACE_LG,
-        top: ThemeConstants.SPACE_LG,
-        bottom: ThemeConstants.SPACE_LG
-      })
-      .borderRadius({ topLeft: ThemeConstants.RADIUS_MD, topRight: ThemeConstants.RADIUS_MD })
-      .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+      }, (item: ReplyContextItem) => `${item.reply.id}-${item.floor}-${item.label}`)
     }
-    .width('100%')
-    .height('100%')
-    .backgroundColor('#66000000')
   }
 
   @Builder TextSelectionOverlay() {
@@ -526,10 +492,11 @@ export struct TopicDetailPage {
 
   private openReplyContext(reply: V2exReply): void {
     this.contextReply = reply
+    this.contextSheetVisible = true
   }
 
   private closeReplyContext(): void {
-    this.contextReply = null
+    this.contextSheetVisible = false
   }
 
   private openTextSelection(title: string, content: string): void {

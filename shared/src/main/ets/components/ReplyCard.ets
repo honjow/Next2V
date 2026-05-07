@@ -56,6 +56,13 @@ export struct ReplyCard {
     }
   }
 
+  private showContextMenu(): void {
+    this.actionsMenuShown = false
+    setTimeout(() => {
+      this.actionsMenuShown = true
+    }, 20)
+  }
+
   @Builder
   ReplyActionMenu() {
     Menu() {
@@ -175,7 +182,7 @@ export struct ReplyCard {
           .borderRadius(ThemeConstants.RADIUS_ROUND)
           .backgroundColor(Color.Transparent)
           .onClick(() => {
-            this.actionsMenuShown = true
+            this.showContextMenu()
           })
           .bindContextMenu(this.actionsMenuShown, this.ReplyActionMenu, {
             placement: Placement.TopRight,
