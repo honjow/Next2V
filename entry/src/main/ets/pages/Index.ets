@@ -1,19 +1,51 @@
 import {
-  HdsNavigation, HdsNavDestination, HdsTabs, HdsTabsController, HdsTabsFloatingStyle,
-  hdsMaterial, HdsNavigationTitleMode, ScrollEffectType, BlurStrategy
+  BlurStrategy,
+  hdsMaterial,
+  HdsNavDestination,
+  HdsNavigation,
+  HdsNavigationTitleMode,
+  HdsTabs,
+  HdsTabsController,
+  HdsTabsFloatingStyle,
+  ScrollEffectType
 } from '@kit.UIDesignKit'
 import { common, Want } from '@kit.AbilityKit'
-import {
-  HttpClient, ThemeConstants, StorageKeys, ApiConstants, TabItem,
-  AuthSettings, ApiService, ApiV2Service, DateUtils, CollectionSettings, TopicDetailParams, ImagePreviewParams, UserProfileParams,
-  CookieJarSettings, AuthSessionSettings, V2exSessionParser, LoadingFooter, NotificationSettings, SecondaryListScaffold,
-  Avatar, SectionHeader as SharedSectionHeader, ListDivider as SharedListDivider, ConciseListRow, EmptyState
-}
-  from 'shared'
 import type {
-  V2exAuthenticatedMember, V2exNotification, SavedTopic, SavedNode, ViewedTopic, V2exBalance, V2exDailyMission
+  SavedNode,
+  SavedTopic,
+  V2exAuthenticatedMember,
+  V2exBalance,
+  V2exDailyMission,
+  V2exNotification,
+  V2exTokenInfo,
+  ViewedTopic
 } from 'shared'
-import type { V2exTokenInfo } from 'shared'
+import {
+  ApiConstants,
+  ApiService,
+  ApiV2Service,
+  AuthSessionSettings,
+  AuthSettings,
+  Avatar,
+  CollectionSettings,
+  ConciseListRow,
+  CookieJarSettings,
+  DateUtils,
+  EmptyState,
+  HttpClient,
+  ImagePreviewParams,
+  ListDivider as SharedListDivider,
+  LoadingFooter,
+  NotificationSettings,
+  SecondaryListScaffold,
+  SectionHeader as SharedSectionHeader,
+  StorageKeys,
+  TabItem,
+  ThemeConstants,
+  TopicDetailParams,
+  UserProfileParams,
+  V2exSessionParser
+} from 'shared'
 import { HomePage } from 'feed'
 import { ReplyEditorPage, TopicDetailPage } from 'detail'
 import { DiscoverPage, NodePickerPage, NodeTopicPage } from 'node'
@@ -40,7 +72,6 @@ struct CoinIconCanvas {
   @Prop rimColor: string
   @Prop faceColor: string
   @Prop edgeColor: string
-
   private settings: RenderingContextSettings = new RenderingContextSettings(true)
   private context: CanvasRenderingContext2D = new CanvasRenderingContext2D(this.settings)
 
@@ -119,7 +150,9 @@ struct FeedPills {
           }
           .alignItems(HorizontalAlign.Center)
           .padding({ bottom: ThemeConstants.SPACE_XS })
-          .onClick(() => { this.feedTab = tab.key })
+          .onClick(() => {
+            this.feedTab = tab.key
+          })
         })
       }
       .padding({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM })
@@ -132,7 +165,9 @@ struct FeedPills {
 }
 
 @Builder
-function PillCCBuilder() { FeedPills() }
+function PillCCBuilder() {
+  FeedPills()
+}
 
 @Entry
 @Component
@@ -205,7 +240,8 @@ struct Index {
     this.loadTopicReadStates()
   }
 
-  @Builder pm(name: string, param: Object) {
+  @Builder
+  pm(name: string, param: Object) {
     if (name === 'TopicDetail') {
       HdsNavDestination() {
         TopicDetailPage({
@@ -213,13 +249,18 @@ struct Index {
           targetFloor: ((param as Record<string, Object>)['targetFloor'] as number) || 0
         })
       }
-        .titleBar(this.topicDetailTitleBarOpts())
+      .titleBar(this.topicDetailTitleBarOpts())
     } else if (name === 'ImagePreview') {
-      HdsNavDestination() { ImagePreviewPage({ url: (param as ImagePreviewParams).url }) }
-        .titleBar(this.navDestTitleBarOpts())
+      HdsNavDestination() {
+        ImagePreviewPage({ url: (param as ImagePreviewParams).url })
+      }
+      .titleBar(this.navDestTitleBarOpts())
     } else if (name === 'NodeTopicList') {
       HdsNavDestination() {
-        NodeTopicPage({ nodeName: (param as Record<string, Object>)['nodeName'] as string, nodeTitle: (param as Record<string, Object>)['nodeTitle'] as string })
+        NodeTopicPage({
+          nodeName: (param as Record<string, Object>)['nodeName'] as string,
+          nodeTitle: (param as Record<string, Object>)['nodeTitle'] as string
+        })
       }.titleBar(this.navDestTitleBarOpts())
     } else if (name === 'ReplyEditor') {
       HdsNavDestination() {
@@ -230,90 +271,139 @@ struct Index {
         })
       }.titleBar(this.navDestTitleBarOpts('回复'))
     } else if (name === 'UserProfile') {
-      HdsNavDestination() { UserProfilePage({ username: (param as Record<string, Object>)['username'] as string }) }
-        .titleBar(this.navDestTitleBarOpts())
+      HdsNavDestination() {
+        UserProfilePage({ username: (param as Record<string, Object>)['username'] as string })
+      }
+      .titleBar(this.navDestTitleBarOpts())
     } else if (name === 'V2exWebLogin') {
-      HdsNavDestination() { V2exWebLoginPage() }
-        .titleBar(this.navDestTitleBarOpts('网页登录'))
+      HdsNavDestination() {
+        V2exWebLoginPage()
+      }
+      .titleBar(this.navDestTitleBarOpts('网页登录'))
     } else if (name === 'V2exNativeLogin') {
-      HdsNavDestination() { V2exNativeLoginPage() }
-        .titleBar(this.navDestTitleBarOpts('账号密码登录'))
+      HdsNavDestination() {
+        V2exNativeLoginPage()
+      }
+      .titleBar(this.navDestTitleBarOpts('账号密码登录'))
     } else if (name === 'NodePicker') {
-      HdsNavDestination() { NodePickerPage() }
-        .titleBar(this.navDestTitleBarOpts('选择节点'))
+      HdsNavDestination() {
+        NodePickerPage()
+      }
+      .titleBar(this.navDestTitleBarOpts('选择节点'))
     } else if (name === 'Search') {
-      HdsNavDestination() { SearchPage() }
-        .titleBar(this.navDestTitleBarOpts('搜索', this.searchTitleMenu()))
+      HdsNavDestination() {
+        SearchPage()
+      }
+      .titleBar(this.navDestTitleBarOpts('搜索', this.searchTitleMenu()))
     } else if (name === 'TopicEditor') {
-      HdsNavDestination() { TopicEditorPage() }
-        .titleBar(this.navDestTitleBarOpts('发帖草稿'))
+      HdsNavDestination() {
+        TopicEditorPage()
+      }
+      .titleBar(this.navDestTitleBarOpts('发帖草稿'))
     } else if (name === 'MyTopics') {
-      HdsNavDestination() { MyTopicsPage() }
-        .titleBar(this.navDestTitleBarOpts('收藏主题'))
+      HdsNavDestination() {
+        MyTopicsPage()
+      }
+      .titleBar(this.navDestTitleBarOpts('收藏主题'))
     } else if (name === 'MyReplies') {
-      HdsNavDestination() { MyRepliesPage() }
-        .titleBar(this.navDestTitleBarOpts('我的回复'))
+      HdsNavDestination() {
+        MyRepliesPage()
+      }
+      .titleBar(this.navDestTitleBarOpts('我的回复'))
     } else if (name === 'MyNodes') {
-      HdsNavDestination() { MyNodesPage() }
-        .titleBar(this.navDestTitleBarOpts('收藏节点'))
+      HdsNavDestination() {
+        MyNodesPage()
+      }
+      .titleBar(this.navDestTitleBarOpts('收藏节点'))
     } else if (name === 'Settings') {
-      HdsNavDestination() { SettingsPage() }
-        .titleBar(this.navDestTitleBarOpts('设置'))
+      HdsNavDestination() {
+        SettingsPage()
+      }
+      .titleBar(this.navDestTitleBarOpts('设置'))
     } else if (name === 'Account') {
-      HdsNavDestination() { this.AccountPage() }
-        .titleBar(this.navDestTitleBarOpts('账号'))
+      HdsNavDestination() {
+        this.AccountPage()
+      }
+      .titleBar(this.navDestTitleBarOpts('账号'))
     } else if (name === 'SavedTopics') {
-      HdsNavDestination() { this.SavedTopicsPage() }
-        .titleBar(this.navDestTitleBarOpts('稍后读'))
+      HdsNavDestination() {
+        this.SavedTopicsPage()
+      }
+      .titleBar(this.navDestTitleBarOpts('稍后读'))
     } else if (name === 'ViewedTopics') {
-      HdsNavDestination() { this.ViewedTopicsPage() }
-        .titleBar(this.navDestTitleBarOpts('最近浏览'))
+      HdsNavDestination() {
+        this.ViewedTopicsPage()
+      }
+      .titleBar(this.navDestTitleBarOpts('最近浏览'))
     } else if (name === 'SavedNodes') {
-      HdsNavDestination() { this.SavedNodesPage() }
-        .titleBar(this.navDestTitleBarOpts('关注节点'))
+      HdsNavDestination() {
+        this.SavedNodesPage()
+      }
+      .titleBar(this.navDestTitleBarOpts('关注节点'))
     }
   }
 
   build() {
     HdsNavigation(this.ns) {
       HdsTabs({ controller: this.tc, index: this.ct }) {
-        TabContent() { HomePage() }.tabBar(this.TabIcon('首页', 0))
-        TabContent() { DiscoverPage() }.tabBar(this.TabIcon('发现', 1))
-        TabContent() { this.NotifyPage() }.tabBar(this.TabIcon('通知', 2))
-        TabContent() { this.MePage() }.tabBar(this.TabIcon('我的', 3))
+        TabContent() {
+          HomePage()
+        }.tabBar(this.TabIcon('首页', 0))
+
+        TabContent() {
+          DiscoverPage()
+        }.tabBar(this.TabIcon('发现', 1))
+
+        TabContent() {
+          this.NotifyPage()
+        }.tabBar(this.TabIcon('通知', 2))
+
+        TabContent() {
+          this.MePage()
+        }.tabBar(this.TabIcon('我的', 3))
       }
-        .barOverlap(true).barPosition(BarPosition.End).barMode(BarMode.Fixed)
-        .scrollable(false)
-        .animationDuration(0)
-        .barFloatingStyle({
-          barBottomMargin: ThemeConstants.SPACE_XL,
-          systemMaterialEffect: { materialType: hdsMaterial.MaterialType.ADAPTIVE, materialLevel: hdsMaterial.MaterialLevel.ADAPTIVE }
-        } as HdsTabsFloatingStyle)
-        .onChange((i: number) => {
-          this.ct = i
-          if (i === 2) {
-            this.loadNotifications()
-          } else if (i === 3) {
-            this.validateCookieSession()
-            this.loadAccountMeta()
-            this.loadSavedTopics()
-            this.loadSavedNodes()
-            this.loadViewedTopics()
-          }
-        })
+      .barOverlap(true)
+      .barPosition(BarPosition.End)
+      .barMode(BarMode.Fixed)
+      .scrollable(false)
+      .animationDuration(0)
+      .barFloatingStyle({
+        barBottomMargin: ThemeConstants.SPACE_XL,
+        systemMaterialEffect: {
+          materialType: hdsMaterial.MaterialType.ADAPTIVE,
+          materialLevel: hdsMaterial.MaterialLevel.ADAPTIVE
+        }
+      } as HdsTabsFloatingStyle)
+      .onChange((i: number) => {
+        this.ct = i
+        if (i === 2) {
+          this.loadNotifications()
+        } else if (i === 3) {
+          this.validateCookieSession()
+          this.loadAccountMeta()
+          this.loadSavedTopics()
+          this.loadSavedNodes()
+          this.loadViewedTopics()
+        }
+      })
     }
-      .titleBar(this.titleBarOptions())
-      .titleMode(HdsNavigationTitleMode.MINI)
-      .hideBackButton(true)
-      .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM])
-      .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
-      .navDestination(this.pm).mode(NavigationMode.Stack).width('100%').height('100%')
-      .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
+    .titleBar(this.titleBarOptions())
+    .titleMode(HdsNavigationTitleMode.MINI)
+    .hideBackButton(true)
+    .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM])
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
+    .navDestination(this.pm)
+    .mode(NavigationMode.Stack)
+    .width('100%')
+    .height('100%')
+    .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
   }
 
   private navDestTitleBarOpts(title?: string, menu?: Record<string, Object>): Record<string, Object> {
-    let mat: Record<string, Object> = { 'materialType': hdsMaterial.MaterialType.ADAPTIVE, 'materialLevel': hdsMaterial.MaterialLevel.ADAPTIVE }
-    let scrollOpts: Record<string, Object> = { 'enableScrollEffect': true, 'scrollEffectType': ScrollEffectType.GRADIENT_BLUR }
+    let mat: Record<string, Object> =
+      { 'materialType': hdsMaterial.MaterialType.ADAPTIVE, 'materialLevel': hdsMaterial.MaterialLevel.ADAPTIVE }
+    let scrollOpts: Record<string, Object> =
+      { 'enableScrollEffect': true, 'scrollEffectType': ScrollEffectType.GRADIENT_BLUR }
     let style: Record<string, Object> = { 'systemMaterialEffect': mat, 'scrollEffectOpts': scrollOpts }
     if (title || menu) {
       let content: Record<string, Object> = {}
@@ -321,25 +411,58 @@ struct Index {
         content['menu'] = menu
       }
       if (!title) {
-        return { 'avoidLayoutSafeArea': true, 'enableComponentSafeArea': false, 'blurStrategy': BlurStrategy.ENABLE, 'content': content, 'style': style }
+        return {
+          'avoidLayoutSafeArea': true,
+          'enableComponentSafeArea': false,
+          'blurStrategy': BlurStrategy.ENABLE,
+          'content': content,
+          'style': style
+        }
       }
       let titleInfo: Record<string, Object> = { 'mainTitle': title }
       content['title'] = titleInfo
-      return { 'avoidLayoutSafeArea': true, 'enableComponentSafeArea': false, 'blurStrategy': BlurStrategy.ENABLE, 'content': content, 'style': style }
+      return {
+        'avoidLayoutSafeArea': true,
+        'enableComponentSafeArea': false,
+        'blurStrategy': BlurStrategy.ENABLE,
+        'content': content,
+        'style': style
+      }
     }
-    return { 'avoidLayoutSafeArea': true, 'enableComponentSafeArea': false, 'blurStrategy': BlurStrategy.ENABLE, 'style': style }
+    return {
+      'avoidLayoutSafeArea': true,
+      'enableComponentSafeArea': false,
+      'blurStrategy': BlurStrategy.ENABLE,
+      'style': style
+    }
   }
 
   private topicDetailTitleBarOpts(): Record<string, Object> {
     let items: Record<string, Object>[] = [
-      this.topicActionItem('回复', $r('sys.symbol.ellipsis_bubble'), () => { this.sendTopicAction('reply') }),
-      this.topicActionItem('稍后读', $r('sys.symbol.star'), () => { this.sendTopicAction('saveLater') }),
-      this.topicActionItem('站内收藏', $r('sys.symbol.heart_fill'), () => { this.sendTopicAction('siteFavorite') }),
-      this.topicActionItem('复制标题', $r('sys.symbol.doc_plaintext'), () => { this.sendTopicAction('copyTitle') }),
-      this.topicActionItem('复制链接', $r('sys.symbol.plus_square_on_square'), () => { this.sendTopicAction('copyLink') }),
-      this.topicActionItem('选择正文', $r('sys.symbol.doc_text'), () => { this.sendTopicAction('selectContent') }),
-      this.topicActionItem('分享链接', $r('sys.symbol.share'), () => { this.sendTopicAction('share') }),
-      this.topicActionItem('浏览器打开', $r('sys.symbol.search_things'), () => { this.sendTopicAction('openBrowser') })
+      this.topicActionItem('回复', $r('sys.symbol.ellipsis_bubble'), () => {
+        this.sendTopicAction('reply')
+      }),
+      this.topicActionItem('稍后读', $r('sys.symbol.star'), () => {
+        this.sendTopicAction('saveLater')
+      }),
+      this.topicActionItem('站内收藏', $r('sys.symbol.heart_fill'), () => {
+        this.sendTopicAction('siteFavorite')
+      }),
+      this.topicActionItem('复制标题', $r('sys.symbol.doc_plaintext'), () => {
+        this.sendTopicAction('copyTitle')
+      }),
+      this.topicActionItem('复制链接', $r('sys.symbol.plus_square_on_square'), () => {
+        this.sendTopicAction('copyLink')
+      }),
+      this.topicActionItem('选择正文', $r('sys.symbol.doc_text'), () => {
+        this.sendTopicAction('selectContent')
+      }),
+      this.topicActionItem('分享链接', $r('sys.symbol.share'), () => {
+        this.sendTopicAction('share')
+      }),
+      this.topicActionItem('浏览器打开', $r('sys.symbol.search_things'), () => {
+        this.sendTopicAction('openBrowser')
+      })
     ]
     let menu: Record<string, Object> = { 'value': items, 'maxCount': 3 }
     return this.navDestTitleBarOpts(undefined, menu)
@@ -372,7 +495,8 @@ struct Index {
     const want: Want = { action: 'ohos.want.action.viewData', uri: target }
     context.startAbility(want)
       .catch((error: Error) => {
-        promptAction.openToast({ message: error.message || '打开失败' }).catch((_error: Error) => { })
+        promptAction.openToast({ message: error.message || '打开失败' }).catch((_error: Error) => {
+        })
       })
   }
 
@@ -402,38 +526,56 @@ struct Index {
       let emptyMenu: Record<string, Object> = { 'value': [], 'maxCount': 0 }
       content['menu'] = emptyMenu
     }
-    let mat: Record<string, Object> = { 'materialType': hdsMaterial.MaterialType.ADAPTIVE, 'materialLevel': hdsMaterial.MaterialLevel.ADAPTIVE }
-    let scrollOpts: Record<string, Object> = { 'enableScrollEffect': true, 'scrollEffectType': ScrollEffectType.GRADIENT_BLUR }
+    let mat: Record<string, Object> =
+      { 'materialType': hdsMaterial.MaterialType.ADAPTIVE, 'materialLevel': hdsMaterial.MaterialLevel.ADAPTIVE }
+    let scrollOpts: Record<string, Object> =
+      { 'enableScrollEffect': true, 'scrollEffectType': ScrollEffectType.GRADIENT_BLUR }
     let style: Record<string, Object> = { 'systemMaterialEffect': mat, 'scrollEffectOpts': scrollOpts }
-    return { 'avoidLayoutSafeArea': true, 'enableComponentSafeArea': false, 'blurStrategy': BlurStrategy.ENABLE, 'content': content, 'style': style }
+    return {
+      'avoidLayoutSafeArea': true,
+      'enableComponentSafeArea': false,
+      'blurStrategy': BlurStrategy.ENABLE,
+      'content': content,
+      'style': style
+    }
   }
 
   private meTitleMenu(): Record<string, Object> {
     let items: Record<string, Object>[] = [
-      this.topicActionItem('设置', $r('sys.symbol.gearshape'), () => { this.ns.pushPathByName('Settings', null) })
+      this.topicActionItem('设置', $r('sys.symbol.gearshape'), () => {
+        this.ns.pushPathByName('Settings', null)
+      })
     ]
     return { 'value': items, 'maxCount': 1 }
   }
 
   private searchTitleMenu(): Record<string, Object> {
     let items: Record<string, Object>[] = [
-      this.topicActionItem('筛选', $r('sys.symbol.funnel'), () => { this.sendSearchAction('filter') })
+      this.topicActionItem('筛选', $r('sys.symbol.funnel'), () => {
+        this.sendSearchAction('filter')
+      })
     ]
     return { 'value': items, 'maxCount': 1 }
   }
 
-  @Builder TabIcon(title: string, idx: number) {
+  @Builder
+  TabIcon(title: string, idx: number) {
     Column() {
       SymbolGlyph(idx === 0 ? $r('sys.symbol.house_fill')
         : idx === 1 ? $r('sys.symbol.square_fill_grid_2x2')
-        : idx === 2 ? $r('sys.symbol.bell_fill')
-        : $r('sys.symbol.person_fill'))
+          : idx === 2 ? $r('sys.symbol.bell_fill')
+            : $r('sys.symbol.person_fill'))
         .fontSize(ThemeConstants.INDICATOR_SIZE - 6).renderingStrategy(SymbolRenderingStrategy.MULTIPLE_OPACITY)
         .fontColor([this.ct === idx ? $r('sys.color.ohos_id_color_activated') : $r('sys.color.font_secondary')])
-      Text(title).fontSize(ThemeConstants.FONT_SIZE_TINY).fontColor(this.ct === idx ? $r('sys.color.ohos_id_color_activated') : $r('sys.color.font_secondary'))
+      Text(title)
+        .fontSize(ThemeConstants.FONT_SIZE_TINY)
+        .fontColor(this.ct === idx ? $r('sys.color.ohos_id_color_activated') : $r('sys.color.font_secondary'))
     }
-      .alignItems(HorizontalAlign.Center).justifyContent(FlexAlign.Center).width('100%').height('100%')
-      .padding({ top: ThemeConstants.SPACE_SM - 2, bottom: ThemeConstants.SPACE_XS })
+    .alignItems(HorizontalAlign.Center)
+    .justifyContent(FlexAlign.Center)
+    .width('100%')
+    .height('100%')
+    .padding({ top: ThemeConstants.SPACE_SM - 2, bottom: ThemeConstants.SPACE_XS })
   }
 
   // NotifyPage 和 MePage 较为简单，保留在 Index 文件内
@@ -442,7 +584,8 @@ struct Index {
   private readonly TBH: number = ThemeConstants.TITLE_BAR_HEIGHT
   private readonly FLOAT_H: number = ThemeConstants.FLOAT_BAR_HEIGHT
 
-  @Builder NotifyPage() {
+  @Builder
+  NotifyPage() {
     Column() {
       if (!this.hasNotificationAuth()) {
         this.AuthRequiredView('登录后可查看通知')
@@ -454,22 +597,36 @@ struct Index {
         this.NotificationErrorView()
       } else {
         List({ space: ThemeConstants.SPACE_SM }) {
-          ListItem() { Column() { Blank().height(this.topH + this.TBH) } }
-          ListItem() { this.NotificationSummaryRow() }
-            .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
+          ListItem() {
+            Column() {
+              Blank().height(this.topH + this.TBH)
+            }
+          }
+
+          ListItem() {
+            this.NotificationSummaryRow()
+          }
+          .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
+
           ForEach(this.notifications, (item: V2exNotification) => {
             this.NotificationListItem(item)
           })
           if (this.notifications.length === 0) {
-            ListItem() { this.EmptyNoticeView() }
+            ListItem() {
+              this.EmptyNoticeView()
+            }
           }
           if (this.notifications.length > 0) {
             ListItem() {
               LoadingFooter({ isLoading: this.isNotificationLoadingMore, hasMore: this.notificationHasMore })
             }
-              .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
+            .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
           }
-          ListItem() { Column() { Blank().height(this.bottomH + this.FLOAT_H) } }
+          ListItem() {
+            Column() {
+              Blank().height(this.bottomH + this.FLOAT_H)
+            }
+          }
         }
         .onReachEnd(() => {
           this.loadMoreNotifications()
@@ -479,12 +636,13 @@ struct Index {
         .height('100%')
       }
     }
-      .justifyContent(FlexAlign.Center)
-      .width('100%').height('100%')
-      .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
+    .justifyContent(FlexAlign.Center)
+    .width('100%').height('100%')
+    .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
   }
 
-  @Builder MePage() {
+  @Builder
+  MePage() {
     Column() {
       List({ space: ThemeConstants.SPACE_SM }) {
         ListItem() {
@@ -497,44 +655,44 @@ struct Index {
         ListItem() {
           this.SectionHeader('账号')
         }
-          .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, top: ThemeConstants.SPACE_MD })
+        .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, top: ThemeConstants.SPACE_MD })
 
         ListItem() {
           this.AuthSection()
         }
-          .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
+        .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
 
         if (this.hasCookieAccount()) {
           ListItem() {
             this.SectionHeader('账号内容')
           }
-            .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, top: ThemeConstants.SPACE_MD })
+          .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, top: ThemeConstants.SPACE_MD })
 
           ListItem() {
             this.AccountContentSection()
           }
-            .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
+          .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
         }
 
         ListItem() {
           this.SectionHeader('本地内容')
         }
-          .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, top: ThemeConstants.SPACE_MD })
+        .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, top: ThemeConstants.SPACE_MD })
 
         ListItem() {
           this.LocalContentSection()
         }
-          .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
+        .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
 
         ListItem() {
           this.SectionHeader('更多')
         }
-          .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, top: ThemeConstants.SPACE_MD })
+        .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, top: ThemeConstants.SPACE_MD })
 
         ListItem() {
           this.StorageSection()
         }
-          .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
+        .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
 
         ListItem() {
           Column() {
@@ -543,13 +701,13 @@ struct Index {
           .width('100%')
         }
       }
-        .scrollBar(BarState.Off)
-        .edgeEffect(EdgeEffect.None)
-        .width('100%')
-        .height('100%')
+      .scrollBar(BarState.Off)
+      .edgeEffect(EdgeEffect.None)
+      .width('100%')
+      .height('100%')
     }
-      .width('100%').height('100%')
-      .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
+    .width('100%').height('100%')
+    .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
   }
 
   private hasNotificationAuth(): boolean {
@@ -745,7 +903,8 @@ struct Index {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     CookieJarSettings.clear(context)
       .then(() => AuthSessionSettings.clear(context))
-      .catch((_error: Error) => { })
+      .catch((_error: Error) => {
+      })
       .finally(() => {
         this.accountBalance = null
         this.dailyMission = null
@@ -753,15 +912,18 @@ struct Index {
       })
   }
 
-  @Builder SectionHeader(title: string) {
+  @Builder
+  SectionHeader(title: string) {
     SharedSectionHeader({ title: title })
   }
 
-  @Builder SettingsDivider() {
+  @Builder
+  SettingsDivider() {
     SharedListDivider()
   }
 
-  @Builder CoinBalance() {
+  @Builder
+  CoinBalance() {
     if (this.accountBalance) {
       Row({ space: ThemeConstants.SPACE_SM }) {
         if (this.accountBalance.gold > 0) {
@@ -783,7 +945,8 @@ struct Index {
     }
   }
 
-  @Builder CoinAmount(rimColor: string, faceColor: string, edgeColor: string, amount: number) {
+  @Builder
+  CoinAmount(rimColor: string, faceColor: string, edgeColor: string, amount: number) {
     Row({ space: 4 }) {
       CoinIconCanvas({ rimColor, faceColor, edgeColor })
       Text(this.formatCoinAmount(amount))
@@ -794,10 +957,13 @@ struct Index {
     .alignItems(VerticalAlign.Center)
   }
 
-  @Builder AuthSection() {
+  @Builder
+  AuthSection() {
     Column() {
       if (!this.authCookieConfigured && !this.authTokenConfigured) {
-        this.AuthActionRow('未登录', '点击登录 V2EX', () => { this.ns.pushPathByName('V2exNativeLogin', null) })
+        this.AuthActionRow('未登录', '点击登录 V2EX', () => {
+          this.ns.pushPathByName('V2exNativeLogin', null)
+        })
       } else {
         Row({ space: ThemeConstants.SPACE_MD }) {
           Avatar({ url: this.currentAvatar(), avatarSize: 54 })
@@ -819,9 +985,12 @@ struct Index {
             .type(ButtonType.Normal)
             .borderRadius(ThemeConstants.RADIUS_MD)
             .fontColor(this.dailyMissionEnabled() ? Color.White : $r('sys.color.font_secondary'))
-            .backgroundColor(this.dailyMissionEnabled() ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.ohos_id_color_button_normal'))
+            .backgroundColor(this.dailyMissionEnabled() ? ThemeConstants.BRAND_PRIMARY :
+              $r('sys.color.ohos_id_color_button_normal'))
             .enabled(this.dailyMissionEnabled())
-            .onClick(() => { this.redeemDailyMission() })
+            .onClick(() => {
+              this.redeemDailyMission()
+            })
 
           Text('›')
             .fontSize(ThemeConstants.FONT_SIZE_TITLE)
@@ -830,20 +999,27 @@ struct Index {
         .alignItems(VerticalAlign.Center)
         .width('100%')
         .padding(ThemeConstants.SPACE_LG)
-        .onClick(() => { this.ns.pushPathByName('Account', null) })
+        .onClick(() => {
+          this.ns.pushPathByName('Account', null)
+        })
       }
     }
     .width('100%')
     .alignItems(HorizontalAlign.Start)
     .borderRadius(ThemeConstants.RADIUS_CARD)
-    .clip(true)
+    .padding(4)
     .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }
 
-  @Builder AccountPage() {
+  @Builder
+  AccountPage() {
     Column() {
       List({ space: ThemeConstants.SPACE_SM }) {
-        ListItem() { Column() { Blank().height(this.topH + this.TBH + ThemeConstants.SPACE_MD) } }
+        ListItem() {
+          Column() {
+            Blank().height(this.topH + this.TBH + ThemeConstants.SPACE_MD)
+          }
+        }
 
         ListItem() {
           Column({ space: ThemeConstants.SPACE_MD }) {
@@ -894,26 +1070,33 @@ struct Index {
             this.AuthActionRow('网页账号设置', '', () => {
               this.openV2exPathInSystemBrowser('/settings')
             })
-            this.SettingsDivider()
-            this.AuthActionRow('重新登录', '', () => { this.ns.pushPathByName('V2exNativeLogin', null) })
-            this.SettingsDivider()
-            Row() {
-              Text('退出登录')
-                .fontSize(ThemeConstants.FONT_SIZE_LIST_ITEM)
-                .fontWeight(FontWeight.Medium)
-                .fontColor(Color.Red)
-                .layoutWeight(1)
-              Text('›')
-                .fontSize(ThemeConstants.FONT_SIZE_TITLE)
-                .fontColor($r('sys.color.font_secondary'))
-            }
-            .width('100%')
-            .padding(ThemeConstants.SPACE_LG)
-            .onClick(() => { this.logoutAll(); this.ns.pop() })
+            // this.SettingsDivider()
+            // ConciseListRow({title:'退出登录', primaryColor: Color.Red, action: () => { this.logoutAll(); this.ns.pop() }})
           }
           .width('100%')
           .alignItems(HorizontalAlign.Start)
           .borderRadius(ThemeConstants.RADIUS_CARD)
+          .padding(4)
+          .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+        }
+        .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
+
+        ListItem() {
+          Column() {
+            ConciseListRow({
+              title: '退出登录',
+              showChevron: false,
+              primaryColor: Color.Red,
+              action: () => {
+                this.logoutAll();
+                this.ns.pop()
+              }
+            })
+          }
+          .width('100%')
+          .alignItems(HorizontalAlign.Start)
+          .borderRadius(ThemeConstants.RADIUS_CARD)
+          .padding(4)
           .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
         }
         .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
@@ -922,15 +1105,19 @@ struct Index {
           ListItem() {
             this.SectionHeader('高级 API')
           }
-            .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, top: ThemeConstants.SPACE_MD })
+          .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, top: ThemeConstants.SPACE_MD })
 
           ListItem() {
             this.ApiDiagnosticsSection()
           }
-            .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
+          .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
         }
 
-        ListItem() { Column() { Blank().height(this.bottomH + ThemeConstants.SPACE_MD) } }
+        ListItem() {
+          Column() {
+            Blank().height(this.bottomH + ThemeConstants.SPACE_MD)
+          }
+        }
       }
       .scrollBar(BarState.Off)
       .width('100%')
@@ -941,11 +1128,13 @@ struct Index {
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
   }
 
-  @Builder AuthActionRow(title: string, subtitle: string, action: () => void) {
+  @Builder
+  AuthActionRow(title: string, subtitle: string, action: () => void) {
     ConciseListRow({ title: title, subtitle: subtitle, action: action })
   }
 
-  @Builder ProfileSummary() {
+  @Builder
+  ProfileSummary() {
     Column({ space: ThemeConstants.SPACE_XS }) {
       if (this.profileTagline()) {
         Text(this.profileTagline())
@@ -973,7 +1162,8 @@ struct Index {
     .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG, bottom: ThemeConstants.SPACE_SM })
   }
 
-  @Builder TokenSummary() {
+  @Builder
+  TokenSummary() {
     Column({ space: ThemeConstants.SPACE_XS }) {
       if (this.tokenScope()) {
         Text(`Token 权限: ${this.tokenScope()}`)
@@ -996,7 +1186,8 @@ struct Index {
     .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG, bottom: ThemeConstants.SPACE_SM })
   }
 
-  @Builder RateLimitSummary() {
+  @Builder
+  RateLimitSummary() {
     Column({ space: ThemeConstants.SPACE_XS }) {
       if (this.apiRateLimitLimit > 0) {
         Text(`API 额度: ${this.apiRateLimitRemaining} / ${this.apiRateLimitLimit}`)
@@ -1019,14 +1210,16 @@ struct Index {
     .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG, bottom: ThemeConstants.SPACE_SM })
   }
 
-  @Builder StatusText(message: string, isError: boolean) {
+  @Builder
+  StatusText(message: string, isError: boolean) {
     Text(message)
       .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
       .fontColor(isError ? Color.Red : $r('sys.color.font_secondary'))
       .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG, bottom: ThemeConstants.SPACE_SM })
   }
 
-  @Builder AccountContentSection() {
+  @Builder
+  AccountContentSection() {
     Column() {
       this.AuthActionRow('收藏主题', '', () => {
         this.ns.pushPathByName('MyTopics', null)
@@ -1047,7 +1240,8 @@ struct Index {
     .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }
 
-  @Builder ApiDiagnosticsSection() {
+  @Builder
+  ApiDiagnosticsSection() {
     Column() {
       Row({ space: ThemeConstants.SPACE_SM }) {
         Column({ space: ThemeConstants.SPACE_XS }) {
@@ -1063,7 +1257,12 @@ struct Index {
         .alignItems(HorizontalAlign.Start)
       }
       .width('100%')
-      .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG, top: ThemeConstants.SPACE_MD, bottom: ThemeConstants.SPACE_SM })
+      .padding({
+        left: ThemeConstants.SPACE_LG,
+        right: ThemeConstants.SPACE_LG,
+        top: ThemeConstants.SPACE_MD,
+        bottom: ThemeConstants.SPACE_SM
+      })
 
       if (this.tokenInfoError) {
         Text(this.tokenInfoError)
@@ -1094,7 +1293,9 @@ struct Index {
       }
       .width('100%')
       .padding(ThemeConstants.SPACE_LG)
-      .onClick(() => { this.confirmClearAuth() })
+      .onClick(() => {
+        this.confirmClearAuth()
+      })
     }
     .width('100%')
     .alignItems(HorizontalAlign.Start)
@@ -1103,7 +1304,8 @@ struct Index {
     .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }
 
-  @Builder LocalContentSection() {
+  @Builder
+  LocalContentSection() {
     Column() {
       this.SearchEntryRow()
       this.SettingsDivider()
@@ -1124,26 +1326,45 @@ struct Index {
     .width('100%')
     .alignItems(HorizontalAlign.Start)
     .borderRadius(ThemeConstants.RADIUS_CARD)
-    .clip(true)
+    .padding(4)
     .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }
 
-  @Builder SearchEntryRow() {
-    ConciseListRow({ title: '搜索', action: () => { this.ns.pushPathByName('Search', null) } })
+  @Builder
+  SearchEntryRow() {
+    ConciseListRow({
+      title: '搜索', action: () => {
+        this.ns.pushPathByName('Search', null)
+      }
+    })
   }
 
-  @Builder TopicDraftEntryRow() {
-    ConciseListRow({ title: '发帖草稿', action: () => { this.ns.pushPathByName('TopicEditor', null) } })
+  @Builder
+  TopicDraftEntryRow() {
+    ConciseListRow({
+      title: '发帖草稿', action: () => {
+        this.ns.pushPathByName('TopicEditor', null)
+      }
+    })
   }
 
-  @Builder LocalNavigationRow(title: string, count: number, action: () => void) {
-    ConciseListRow({ title: title, count: count, action: action })
+  @Builder
+  LocalNavigationRow(title: string, count: number, action: () => void) {
+    ConciseListRow({
+      title: title,
+      count: count,
+      action: action,
+      showChevron: true
+    })
   }
 
-  @Builder SavedTopicsPage() {
+  @Builder
+  SavedTopicsPage() {
     SecondaryListScaffold() {
       if (this.savedTopics.length === 0) {
-        ListItem() { this.LocalEmptyView('还没有稍后读主题') }
+        ListItem() {
+          this.LocalEmptyView('还没有稍后读主题')
+        }
       } else {
         ForEach(this.savedTopics, (item: SavedTopic) => {
           ListItem() {
@@ -1158,10 +1379,13 @@ struct Index {
     }
   }
 
-  @Builder ViewedTopicsPage() {
+  @Builder
+  ViewedTopicsPage() {
     SecondaryListScaffold() {
       if (this.viewedTopics.length === 0) {
-        ListItem() { this.LocalEmptyView('还没有最近浏览记录') }
+        ListItem() {
+          this.LocalEmptyView('还没有最近浏览记录')
+        }
       } else {
         ForEach(this.viewedTopics, (item: ViewedTopic) => {
           ListItem() {
@@ -1176,10 +1400,13 @@ struct Index {
     }
   }
 
-  @Builder SavedNodesPage() {
+  @Builder
+  SavedNodesPage() {
     SecondaryListScaffold() {
       if (this.savedNodes.length === 0) {
-        ListItem() { this.LocalEmptyView('还没有关注节点') }
+        ListItem() {
+          this.LocalEmptyView('还没有关注节点')
+        }
       } else {
         ForEach(this.savedNodes, (item: SavedNode) => {
           ListItem() {
@@ -1194,7 +1421,9 @@ struct Index {
     }
   }
 
-  @Builder LocalTopicRow(title: string, nodeTitle: string, nodeName: string, username: string, timestamp: number, prefix: string) {
+  @Builder
+  LocalTopicRow(title: string, nodeTitle: string, nodeName: string, username: string, timestamp: number,
+    prefix: string) {
     Column({ space: ThemeConstants.SPACE_SM }) {
       Text(title)
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
@@ -1206,7 +1435,12 @@ struct Index {
         Text(nodeTitle || nodeName)
           .fontSize(ThemeConstants.FONT_SIZE_TAG)
           .fontColor($r('sys.color.ohos_id_color_activated'))
-          .padding({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM, top: 2, bottom: 2 })
+          .padding({
+            left: ThemeConstants.SPACE_SM,
+            right: ThemeConstants.SPACE_SM,
+            top: 2,
+            bottom: 2
+          })
           .borderRadius(ThemeConstants.RADIUS_SM)
           .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
         Text(username)
@@ -1229,7 +1463,8 @@ struct Index {
     .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }
 
-  @Builder LocalNodeRow(item: SavedNode) {
+  @Builder
+  LocalNodeRow(item: SavedNode) {
     Row({ space: ThemeConstants.SPACE_SM }) {
       Column({ space: ThemeConstants.SPACE_XS }) {
         Text(item.title || item.name)
@@ -1244,6 +1479,7 @@ struct Index {
       }
       .layoutWeight(1)
       .alignItems(HorizontalAlign.Start)
+
       Text('›')
         .fontSize(ThemeConstants.FONT_SIZE_TITLE)
         .fontColor($r('sys.color.font_secondary'))
@@ -1254,17 +1490,20 @@ struct Index {
     .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }
 
-  @Builder LocalEmptyView(message: string) {
+  @Builder
+  LocalEmptyView(message: string) {
     EmptyState({ message: message, stateHeight: 220 })
       .borderRadius(ThemeConstants.RADIUS_MD)
       .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }
 
-  @Builder EmptyNoticeView() {
+  @Builder
+  EmptyNoticeView() {
     EmptyState({ message: '暂无通知', stateHeight: 240 })
   }
 
-  @Builder StorageSection() {
+  @Builder
+  StorageSection() {
     Column() {
       Row() {
         Column({ space: ThemeConstants.SPACE_XS }) {
@@ -1288,7 +1527,8 @@ struct Index {
     .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }
 
-  @Builder AuthRequiredView(message: string) {
+  @Builder
+  AuthRequiredView(message: string) {
     Column() {
       Text(message)
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
@@ -1296,14 +1536,17 @@ struct Index {
       Button('去我的页面配置')
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
         .margin({ top: ThemeConstants.SPACE_LG })
-        .onClick(() => { this.tc.changeIndex(3) })
+        .onClick(() => {
+          this.tc.changeIndex(3)
+        })
     }
     .justifyContent(FlexAlign.Center)
     .width('100%')
     .height('100%')
   }
 
-  @Builder NotificationErrorView() {
+  @Builder
+  NotificationErrorView() {
     Column() {
       Text(this.notificationError)
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
@@ -1311,14 +1554,17 @@ struct Index {
       Button('重试')
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
         .margin({ top: ThemeConstants.SPACE_LG })
-        .onClick(() => { this.loadNotifications(true) })
+        .onClick(() => {
+          this.loadNotifications(true)
+        })
     }
     .justifyContent(FlexAlign.Center)
     .width('100%')
     .height('100%')
   }
 
-  @Builder NotificationSummaryRow() {
+  @Builder
+  NotificationSummaryRow() {
     Row({ space: ThemeConstants.SPACE_MD }) {
       Column({ space: ThemeConstants.SPACE_XS }) {
         Text(`${this.notifications.length} 条通知`)
@@ -1340,7 +1586,9 @@ struct Index {
               .textOverflow({ overflow: TextOverflow.Ellipsis })
           }
           if (this.notificationCacheUpdatedAt > 0) {
-            Text(`${this.notificationLoadedFromCache ? '缓存于' : '更新于'} ${DateUtils.toDateString(this.notificationCacheUpdatedAt)}${this.notificationSourceLabel ? ' · ' + this.notificationSourceLabel : ''}`)
+            Text(`${this.notificationLoadedFromCache ? '缓存于' :
+              '更新于'} ${DateUtils.toDateString(this.notificationCacheUpdatedAt)}${this.notificationSourceLabel ?
+              ' · ' + this.notificationSourceLabel : ''}`)
               .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
               .fontColor($r('sys.color.font_secondary'))
               .maxLines(1)
@@ -1363,7 +1611,9 @@ struct Index {
         .type(ButtonType.Normal)
         .borderRadius(ThemeConstants.RADIUS_MD)
         .enabled(!this.isNotificationLoading && !this.isNotificationLoadingMore)
-        .onClick(() => { this.loadNotifications(true) })
+        .onClick(() => {
+          this.loadNotifications(true)
+        })
 
       Button('批量清除')
         .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
@@ -1379,30 +1629,37 @@ struct Index {
     .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }
 
-  @Builder NotificationListItem(item: V2exNotification) {
+  @Builder
+  NotificationListItem(item: V2exNotification) {
     if (this.canDeleteNotifications()) {
-      ListItem() { this.NotificationCard(item) }
-        .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
-        .onClick(() => {
-          const meta = this.notificationMeta(item)
-          const topicId = meta.topicId
-          if (topicId > 0) {
-            let p: TopicDetailParams = meta.targetFloor > 0 ? { topicId: topicId, targetFloor: meta.targetFloor } : { topicId: topicId }
-            this.ns.pushPathByName('TopicDetail', p as Object)
-          }
-        })
-        .swipeAction({ end: this.NotificationSwipeEnd(item) })
+      ListItem() {
+        this.NotificationCard(item)
+      }
+      .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
+      .onClick(() => {
+        const meta = this.notificationMeta(item)
+        const topicId = meta.topicId
+        if (topicId > 0) {
+          let p: TopicDetailParams =
+            meta.targetFloor > 0 ? { topicId: topicId, targetFloor: meta.targetFloor } : { topicId: topicId }
+          this.ns.pushPathByName('TopicDetail', p as Object)
+        }
+      })
+      .swipeAction({ end: this.NotificationSwipeEnd(item) })
     } else {
-      ListItem() { this.NotificationCard(item) }
-        .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
-        .onClick(() => {
-          const meta = this.notificationMeta(item)
-          const topicId = meta.topicId
-          if (topicId > 0) {
-            let p: TopicDetailParams = meta.targetFloor > 0 ? { topicId: topicId, targetFloor: meta.targetFloor } : { topicId: topicId }
-            this.ns.pushPathByName('TopicDetail', p as Object)
-          }
-        })
+      ListItem() {
+        this.NotificationCard(item)
+      }
+      .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
+      .onClick(() => {
+        const meta = this.notificationMeta(item)
+        const topicId = meta.topicId
+        if (topicId > 0) {
+          let p: TopicDetailParams =
+            meta.targetFloor > 0 ? { topicId: topicId, targetFloor: meta.targetFloor } : { topicId: topicId }
+          this.ns.pushPathByName('TopicDetail', p as Object)
+        }
+      })
     }
   }
 
@@ -1422,7 +1679,8 @@ struct Index {
     return this.notificationMeta(item).kindTag
   }
 
-  @Builder NotificationTag(text: string, backgroundColor: ResourceColor, foregroundColor: ResourceColor) {
+  @Builder
+  NotificationTag(text: string, backgroundColor: ResourceColor, foregroundColor: ResourceColor) {
     Text(text)
       .fontSize(ThemeConstants.FONT_SIZE_TAG)
       .fontColor(foregroundColor)
@@ -1436,7 +1694,8 @@ struct Index {
       .backgroundColor(backgroundColor)
   }
 
-  @Builder NotificationCard(item: V2exNotification) {
+  @Builder
+  NotificationCard(item: V2exNotification) {
     Column({ space: ThemeConstants.SPACE_XS }) {
       Row({ space: ThemeConstants.SPACE_SM }) {
         this.NotificationTag(
@@ -1447,7 +1706,8 @@ struct Index {
         if (this.notificationReadTag(item)) {
           this.NotificationTag(
             this.notificationReadTag(item),
-            this.notificationReadTag(item) === '未读' ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.ohos_id_color_sub_background'),
+            this.notificationReadTag(item) === '未读' ? ThemeConstants.BRAND_PRIMARY :
+              $r('sys.color.ohos_id_color_sub_background'),
             this.notificationReadTag(item) === '未读' ? Color.White : $r('sys.color.font_secondary')
           )
         }
@@ -1479,14 +1739,17 @@ struct Index {
     .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }
 
-  @Builder NotificationSwipeEnd(item: V2exNotification) {
+  @Builder
+  NotificationSwipeEnd(item: V2exNotification) {
     Row() {
       Button('删除')
         .fontSize(ThemeConstants.FONT_SIZE_TAG)
         .height(40)
         .fontColor(Color.White)
         .backgroundColor(Color.Red)
-        .onClick(() => { this.confirmDeleteNotification(item) })
+        .onClick(() => {
+          this.confirmDeleteNotification(item)
+        })
     }
     .height('100%')
     .padding({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
@@ -1501,18 +1764,24 @@ struct Index {
     AlertDialog.show({
       title: '删除通知',
       message: '确定删除这条通知吗？',
-      primaryButton: { value: '取消', action: () => { } },
+      primaryButton: {
+        value: '取消', action: () => {
+        }
+      },
       secondaryButton: {
         value: '删除',
         fontColor: Color.Red,
-        action: () => { this.deleteNotification(id) }
+        action: () => {
+          this.deleteNotification(id)
+        }
       }
     })
   }
 
   private deleteNotification(notificationId: number): void {
     if (!this.authTokenConfigured || !this.authToken || this.isNotificationDeleting) {
-      promptAction.openToast({ message: '删除通知需要 V2 API 授权' }).catch((_error: Error) => { })
+      promptAction.openToast({ message: '删除通知需要 V2 API 授权' }).catch((_error: Error) => {
+      })
       return
     }
     this.isNotificationDeleting = true
@@ -1520,10 +1789,12 @@ struct Index {
       .then(() => {
         this.notifications = this.notifications.filter(item => item.id !== notificationId)
         this.saveNotificationCache()
-        promptAction.openToast({ message: '已删除' }).catch((_error: Error) => { })
+        promptAction.openToast({ message: '已删除' }).catch((_error: Error) => {
+        })
       })
       .catch((error: Error) => {
-        promptAction.openToast({ message: error.message || '删除失败' }).catch((_error: Error) => { })
+        promptAction.openToast({ message: error.message || '删除失败' }).catch((_error: Error) => {
+        })
       })
       .finally(() => {
         this.isNotificationDeleting = false
@@ -1616,11 +1887,16 @@ struct Index {
     AlertDialog.show({
       title: '清除 API 授权',
       message: '仅清除本地保存的 Personal Access Token，不会退出网页登录。',
-      primaryButton: { value: '取消', action: () => { } },
+      primaryButton: {
+        value: '取消', action: () => {
+        }
+      },
       secondaryButton: {
         value: '清除',
         fontColor: Color.Red,
-        action: () => { this.clearAuth() }
+        action: () => {
+          this.clearAuth()
+        }
       }
     })
   }
@@ -1665,10 +1941,18 @@ struct Index {
     this.sessionError = ''
 
     Promise.all([
-      AuthSettings.clear(context).catch((error: Error) => { this.authError = error.message || '清除 Token 失败' }),
-      AuthSessionSettings.clear(context).catch((error: Error) => { this.sessionError = error.message || '清除会话失败' }),
-      CookieJarSettings.clear(context).catch((error: Error) => { this.sessionError = error.message || '清除 Cookie 失败' }),
-      NotificationSettings.clearCache(context).catch((error: Error) => { this.notificationError = error.message || '清除通知缓存失败' })
+      AuthSettings.clear(context).catch((error: Error) => {
+        this.authError = error.message || '清除 Token 失败'
+      }),
+      AuthSessionSettings.clear(context).catch((error: Error) => {
+        this.sessionError = error.message || '清除会话失败'
+      }),
+      CookieJarSettings.clear(context).catch((error: Error) => {
+        this.sessionError = error.message || '清除 Cookie 失败'
+      }),
+      NotificationSettings.clearCache(context).catch((error: Error) => {
+        this.notificationError = error.message || '清除通知缓存失败'
+      })
     ])
       .finally(() => {
         this.authToken = ''
@@ -1717,7 +2001,8 @@ struct Index {
       return
     }
     if (!this.dailyMission || !this.dailyMission.canRedeem || !this.dailyMission.redeemPath) {
-      promptAction.openToast({ message: '今日已签到' }).catch((_error: Error) => { })
+      promptAction.openToast({ message: '今日已签到' }).catch((_error: Error) => {
+      })
       return
     }
     this.isDailyRedeeming = true
@@ -1725,14 +2010,16 @@ struct Index {
     this.api.redeemDailyMissionWithCookie(cookie, this.dailyMission.redeemPath)
       .then((mission: V2exDailyMission) => {
         this.dailyMission = mission
-        promptAction.openToast({ message: mission.message || '签到完成' }).catch((_error: Error) => { })
+        promptAction.openToast({ message: mission.message || '签到完成' }).catch((_error: Error) => {
+        })
         this.loadAccountMeta(true)
       })
       .catch((error: Error) => {
         const message = error.message || '签到失败'
         this.accountMetaError = message
         this.handleExpiredCookieSession(message)
-        promptAction.openToast({ message: message }).catch((_error: Error) => { })
+        promptAction.openToast({ message: message }).catch((_error: Error) => {
+        })
       })
       .finally(() => {
         this.isDailyRedeeming = false
@@ -1855,7 +2142,8 @@ struct Index {
       return
     }
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    NotificationSettings.saveCache(context, ownerKey, this.notifications, this.notificationPage, this.notificationHasMore)
+    NotificationSettings.saveCache(context, ownerKey, this.notifications, this.notificationPage,
+      this.notificationHasMore)
       .then((snapshot) => {
         this.notificationCacheUpdatedAt = snapshot.updatedAt
       })

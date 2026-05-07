@@ -13,3 +13,5 @@ scripts/xiaobai.csr
 .claude/
 .cursor/skills/
 .opencode/
+.idea/
+.appanalyzer/

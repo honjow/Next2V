@@ -101,7 +101,7 @@ export struct SettingsPage {
     .width('100%')
     .alignItems(HorizontalAlign.Start)
     .borderRadius(ThemeConstants.RADIUS_MD)
-    .clip(true)
+    .padding(4)
     .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }
 
@@ -134,7 +134,7 @@ export struct SettingsPage {
     .width('100%')
     .alignItems(HorizontalAlign.Start)
     .borderRadius(ThemeConstants.RADIUS_MD)
-    .clip(true)
+    .padding(4)
     .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }
 
@@ -272,20 +272,12 @@ export struct SettingsPage {
 
       Column() {
         ConciseListRow({
-          title: '本地数据',
+          title: '清理本地数据',
+          primaryColor: Color.Red,
           subtitle: this.localDataMessage,
-          showChevron: false
+          showChevron: false,
+          action: () => { this.confirmClearLocalData() }
         })
-        Button('清理本地数据')
-          .fontSize(ThemeConstants.FONT_SIZE_TAG)
-          .height(ThemeConstants.TOUCH_TARGET_SM)
-          .type(ButtonType.Normal)
-          .borderRadius(ThemeConstants.RADIUS_MD)
-          .fontColor(Color.Red)
-          .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
-          .width('100%')
-          .margin({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG, bottom: ThemeConstants.SPACE_LG })
-          .onClick(() => { this.confirmClearLocalData() })
       }
       .width('100%')
       .alignItems(HorizontalAlign.Start)
@@ -293,7 +285,7 @@ export struct SettingsPage {
     .width('100%')
     .alignItems(HorizontalAlign.Start)
     .borderRadius(ThemeConstants.RADIUS_MD)
-    .clip(true)
+    .padding(4)
     .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }
 

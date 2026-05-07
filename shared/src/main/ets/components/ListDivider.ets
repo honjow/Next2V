@@ -8,6 +8,6 @@ export struct ListDivider {
     Divider()
       .strokeWidth(0.5)
       .color($r('sys.color.ohos_id_color_list_separator'))
-      .margin({ left: this.inset })
+      .margin({ left: this.inset, right: this.inset/2 })
   }
 }

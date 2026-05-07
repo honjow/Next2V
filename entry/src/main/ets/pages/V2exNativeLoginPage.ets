@@ -3,6 +3,7 @@ import { promptAction } from '@kit.ArkUI'
 import {
   ApiService,
   AuthSessionSettings,
+  ConciseListRow,
   CookieJarSettings,
   HttpClient,
   SecondaryListScaffold,
@@ -36,13 +37,30 @@ export struct V2exNativeLoginPage {
     Column() {
       SecondaryListScaffold() {
         ListItem() {
-          this.LoginForm()
+          Column({ space: ThemeConstants.SPACE_SM }) {
+            this.LoginForm()
+            this.WebLoginForm()
+          }
         }
       }
     }
     .width('100%')
     .height('100%')
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
+  }
+
+  @Builder WebLoginForm() {
+    Column({ space: ThemeConstants.SPACE_SM }) {
+      ConciseListRow({
+        title: '网页登录',
+        showChevron: true,
+        action: () => { this.stack.pushPathByName('V2exWebLogin', null) }
+      })
+    }
+    .width('100%')
+    .padding(4)
+    .borderRadius(ThemeConstants.RADIUS_MD)
+    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }
 
   @Builder LoginForm() {
@@ -63,30 +81,21 @@ export struct V2exNativeLoginPage {
         .onChange((value: string) => { this.password = value })
 
       if (this.captchaUrl) {
-        Row({ space: ThemeConstants.SPACE_SM }) {
-          Image(this.captchaUrl)
-            .width(160)
-            .height(40)
-            .objectFit(ImageFit.Contain)
-            .backgroundColor(Color.White)
-            .borderRadius(ThemeConstants.RADIUS_SM)
-          TextInput({ placeholder: '验证码', text: this.captchaCode })
-            .height(44)
-            .fontSize(ThemeConstants.FONT_SIZE_BODY)
-            .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
-            .borderRadius(ThemeConstants.RADIUS_MD)
-            .layoutWeight(1)
-            .onChange((value: string) => { this.captchaCode = value })
-          Button('刷新')
-            .fontSize(ThemeConstants.FONT_SIZE_TAG)
-            .height(40)
-            .type(ButtonType.Normal)
-            .enabled(!this.isLoading && !this.isChallengeLoading)
-            .onClick(() => { this.loadChallenge() })
-        }
-        .width('100%')
-        .alignItems(VerticalAlign.Center)
+        Image(this.captchaUrl)
+          .width('100%')
+          .objectFit(ImageFit.Contain)
+          .backgroundColor(Color.White)
+          .borderRadius(ThemeConstants.RADIUS_MD)
+          .margin(ThemeConstants.SPACE_SM)
+          .onClick(() => { this.loadChallenge() })
       }
+
+      TextInput({ placeholder: '验证码', text: this.captchaCode })
+        .height(44)
+        .fontSize(ThemeConstants.FONT_SIZE_BODY)
+        .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
+        .borderRadius(ThemeConstants.RADIUS_MD)
+        .onChange((value: string) => { this.captchaCode = value })
 
       if (this.errorMessage) {
         Text(this.errorMessage)
@@ -94,25 +103,24 @@ export struct V2exNativeLoginPage {
           .fontColor(Color.Red)
       }
 
-      Row({ space: ThemeConstants.SPACE_SM }) {
-        Button(this.loginButtonText())
-          .fontSize(ThemeConstants.FONT_SIZE_TAG)
-          .height(40)
-          .type(ButtonType.Normal)
-          .borderRadius(ThemeConstants.RADIUS_MD)
-          .enabled(!this.isLoading && !this.isChallengeLoading)
-          .layoutWeight(1)
-          .onClick(() => { this.login() })
+      Button(this.loginButtonText())
+        .fontSize(ThemeConstants.FONT_SIZE_BODY)
+        // .height(40)
+        .type(ButtonType.Capsule)
+        .width("100%")
+        // .borderRadius(ThemeConstants.RADIUS_MD)
+        .enabled(!this.isLoading && !this.isChallengeLoading)
+        .onClick(() => { this.login() })
 
-        Button('网页登录')
-          .fontSize(ThemeConstants.FONT_SIZE_TAG)
-          .height(40)
-          .type(ButtonType.Normal)
-          .borderRadius(ThemeConstants.RADIUS_MD)
-          .enabled(!this.isLoading && !this.isChallengeLoading)
-          .layoutWeight(1)
-          .onClick(() => { this.stack.pushPathByName('V2exWebLogin', null) })
-      }
+      // Button('网页登录')
+      //   .fontSize(ThemeConstants.FONT_SIZE_BODY)
+      //   // .backgroundColor(Color.Gray)
+      //   // .height(40)
+      //   .type(ButtonType.Capsule)
+      //   // .borderRadius(ThemeConstants.RADIUS_MD)
+      //   .width("100%")
+      //   .enabled(!this.isLoading && !this.isChallengeLoading)
+      //   .onClick(() => { this.stack.pushPathByName('V2exWebLogin', null) })
     }
     .width('100%')
     .padding(ThemeConstants.SPACE_LG)
