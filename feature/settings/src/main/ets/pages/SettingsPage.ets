@@ -41,16 +41,32 @@ export struct SettingsPage {
   build() {
     Column() {
       SecondaryListScaffold() {
-        ListItem() { this.SectionHeader('网络') }
-        ListItem() { this.NetworkSection() }
+        ListItem() { this.SectionHeader('账号') }
+        ListItem() { this.AccountSection() }
 
-        ListItem() { this.SectionHeader('偏好') }
+        ListItem() { this.SectionHeader('阅读') }
           .margin({ top: ThemeConstants.SPACE_MD })
-        ListItem() { this.PreferenceSection() }
+        ListItem() { this.ReadingSection() }
+
+        ListItem() { this.SectionHeader('内容与媒体') }
+          .margin({ top: ThemeConstants.SPACE_MD })
+        ListItem() { this.MediaSection() }
+
+        ListItem() { this.SectionHeader('通知') }
+          .margin({ top: ThemeConstants.SPACE_MD })
+        ListItem() { this.NotificationSection() }
+
+        ListItem() { this.SectionHeader('写作') }
+          .margin({ top: ThemeConstants.SPACE_MD })
+        ListItem() { this.WritingSection() }
 
         ListItem() { this.SectionHeader('存储') }
           .margin({ top: ThemeConstants.SPACE_MD })
         ListItem() { this.CacheSection() }
+
+        ListItem() { this.SectionHeader('高级') }
+          .margin({ top: ThemeConstants.SPACE_MD })
+        ListItem() { this.AdvancedSection() }
       }
     }
     .width('100%')
@@ -66,7 +82,115 @@ export struct SettingsPage {
     SharedListDivider()
   }
 
-  @Builder NetworkSection() {
+  @Builder AccountSection() {
+    GroupedListSection() {
+      ConciseListRow({
+        title: '账号管理',
+        subtitle: '登录、签到、收藏和屏蔽列表由我的页面管理',
+        showChevron: false
+      })
+    }
+  }
+
+  @Builder ReadingSection() {
+    GroupedListSection() {
+      this.ReadingPreferenceRows()
+
+      this.SettingsDivider()
+
+      ConciseListRow({
+        title: '回复排序',
+        subtitle: '按 V2EX 默认顺序',
+        showChevron: false
+      })
+
+      this.SettingsDivider()
+
+      ConciseListRow({
+        title: '只看楼主',
+        subtitle: '主题详情内手动切换',
+        showChevron: false
+      })
+
+      this.SettingsDivider()
+
+      ConciseListRow({
+        title: '代码换行',
+        subtitle: '跟随 Markdown 渲染器',
+        showChevron: false
+      })
+    }
+  }
+
+  @Builder MediaSection() {
+    GroupedListSection() {
+      this.TogglePreferenceRow('图片自动加载', this.autoLoadImages, (value: boolean) => {
+        this.updateAutoLoadImages(value)
+      })
+
+      this.SettingsDivider()
+
+      this.TogglePreferenceRow('仅 Wi-Fi 加载图片', this.onlyLoadImagesOnWifi, (value: boolean) => {
+        this.updateOnlyLoadImagesOnWifi(value)
+      })
+
+      this.SettingsDivider()
+
+      ConciseListRow({
+        title: '图片主机识别',
+        subtitle: '已启用保守识别',
+        showChevron: false
+      })
+
+      this.SettingsDivider()
+
+      ConciseListRow({
+        title: '链接打开',
+        subtitle: '外部浏览器为主',
+        showChevron: false
+      })
+    }
+  }
+
+  @Builder NotificationSection() {
+    GroupedListSection() {
+      ConciseListRow({
+        title: '通知同步',
+        subtitle: '打开通知页时刷新',
+        showChevron: false
+      })
+
+      this.SettingsDivider()
+
+      ConciseListRow({
+        title: '本地通知',
+        subtitle: '未开启系统推送',
+        showChevron: false
+      })
+
+      this.SettingsDivider()
+
+      ConciseListRow({
+        title: '安静时段',
+        subtitle: '未配置',
+        showChevron: false
+      })
+    }
+  }
+
+  @Builder WritingSection() {
+    GroupedListSection() {
+      this.TogglePreferenceRow('写入操作', this.accountWriteEnabled, (value: boolean) => {
+        if (value) {
+          this.confirmEnableWriteActions()
+        } else {
+          this.updateWriteActions(false)
+        }
+      })
+    }
+  }
+
+  @Builder AdvancedSection() {
     GroupedListSection() {
       Column({ space: ThemeConstants.SPACE_SM }) {
         ConciseListRow({
@@ -99,34 +223,6 @@ export struct SettingsPage {
         .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG, bottom: ThemeConstants.SPACE_LG })
       }
       .width('100%')
-    }
-  }
-
-  @Builder PreferenceSection() {
-    GroupedListSection() {
-      this.TogglePreferenceRow('图片自动加载', this.autoLoadImages, (value: boolean) => {
-        this.updateAutoLoadImages(value)
-      })
-
-      this.SettingsDivider()
-
-      this.TogglePreferenceRow('仅 Wi-Fi 加载图片', this.onlyLoadImagesOnWifi, (value: boolean) => {
-        this.updateOnlyLoadImagesOnWifi(value)
-      })
-
-      this.SettingsDivider()
-
-      this.ReadingPreferenceRows()
-
-      this.SettingsDivider()
-
-      this.TogglePreferenceRow('写入操作', this.accountWriteEnabled, (value: boolean) => {
-        if (value) {
-          this.confirmEnableWriteActions()
-        } else {
-          this.updateWriteActions(false)
-        }
-      })
     }
   }
 
