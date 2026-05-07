@@ -19,6 +19,7 @@ export struct ReplyCard {
   onCopyContentClick?: () => void
   onImageClick?: (url: string) => void
   onLinkClick?: (url: string) => void
+  onMentionUserClick?: (username: string) => void
   @StorageLink(StorageKeys.READING_DENSITY) readingDensity: string = ReadingSettings.DENSITY_STANDARD
   @State private actionsMenuShown: boolean = false
 
@@ -142,7 +143,8 @@ export struct ReplyCard {
             source: this.reply.content,
             topMargin: this.contentTopMargin(),
             onImageClick: this.onImageClick,
-            onLinkClick: this.onLinkClick
+            onLinkClick: this.onLinkClick,
+            onMentionClick: this.onMentionUserClick
           })
         }
         .width('100%')

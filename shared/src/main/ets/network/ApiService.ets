@@ -9,6 +9,7 @@ import { V2exNodeParser, type V2exFavoriteNode } from '../parser/V2exNodeParser'
 import { V2exCollectionActionParser, type V2exToggleAction } from '../parser/V2exCollectionActionParser'
 import { V2exWriteFormParser } from '../parser/V2exWriteFormParser'
 import { V2exSigninParser } from '../parser/V2exSigninParser'
+import { V2exMemberPageParser } from '../parser/V2exMemberPageParser'
 import type {
   V2exTopic,
   V2exReply,
@@ -19,7 +20,10 @@ import type {
   V2exNotification,
   V2exTokenInfo,
   V2exBalance,
-  V2exDailyMission
+  V2exDailyMission,
+  V2exMemberPageSnapshot,
+  V2exMemberRepliesPageSnapshot,
+  V2exMemberTopicsPageSnapshot
 } from './NetworkTypes'
 
 interface CookieHtmlResponse {
@@ -103,6 +107,45 @@ export class ApiService {
   /** 获取用户信息 */
   async getMember(username: string): Promise<V2exMemberProfile> {
     return this.http.get<V2exMemberProfile>(`${ApiConstants.API_MEMBER_SHOW}?username=${username}`)
+  }
+
+  /** 获取成员页实际展示的主题、回复和可用操作。主题列表遵循用户网页隐藏设置。 */
+  async getMemberPageSnapshot(username: string, cookie: string = ''): Promise<V2exMemberPageSnapshot> {
+    const clean = (username || '').trim()
+    if (!clean) {
+      throw new Error('无效用户名')
+    }
+    const path = `/member/${encodeURIComponent(clean)}`
+    const html = cookie
+      ? await this.http.getTextWithHeaders(path, { 'Cookie': cookie })
+      : await this.http.getText(path)
+    return V2exMemberPageParser.parse(html, clean)
+  }
+
+  async getMemberTopicsPage(username: string, page: number = 1, cookie: string = ''): Promise<V2exMemberTopicsPageSnapshot> {
+    const clean = (username || '').trim()
+    if (!clean) {
+      throw new Error('无效用户名')
+    }
+    const safePage = Math.max(1, Math.floor(page))
+    const path = `/member/${encodeURIComponent(clean)}/topics?p=${safePage}`
+    const html = cookie
+      ? await this.http.getTextWithHeaders(path, { 'Cookie': cookie })
+      : await this.http.getText(path)
+    return V2exMemberPageParser.parseTopicsPage(html)
+  }
+
+  async getMemberRepliesPage(username: string, page: number = 1, cookie: string = ''): Promise<V2exMemberRepliesPageSnapshot> {
+    const clean = (username || '').trim()
+    if (!clean) {
+      throw new Error('无效用户名')
+    }
+    const safePage = Math.max(1, Math.floor(page))
+    const path = `/member/${encodeURIComponent(clean)}/replies?p=${safePage}`
+    const html = cookie
+      ? await this.http.getTextWithHeaders(path, { 'Cookie': cookie })
+      : await this.http.getText(path)
+    return V2exMemberPageParser.parseRepliesPage(html)
   }
 
   /** 获取站点信息 */
@@ -340,6 +383,20 @@ export class ApiService {
   async toggleNodeFavoriteWithCookie(cookie: string, nodeName: string): Promise<boolean> {
     const toggle = await this.getNodeFavoriteToggleActionWithCookie(cookie, nodeName)
     return this.executeNodeFavoriteToggleWithCookie(cookie, nodeName, toggle)
+  }
+
+  async executeMemberActionWithCookie(cookie: string, username: string, actionPath: string): Promise<V2exMemberPageSnapshot> {
+    const cleanName = (username || '').trim()
+    const cleanPath = (actionPath || '').trim()
+    if (!cookie) {
+      throw new Error('请先登录')
+    }
+    if (!cleanName || !cleanPath) {
+      throw new Error('缺少用户操作')
+    }
+    const memberPath = `/member/${encodeURIComponent(cleanName)}`
+    await this.requestTextWithCookieAllowRedirect(cleanPath, cookie, memberPath)
+    return this.getMemberPageSnapshot(cleanName, cookie)
   }
 
   /**

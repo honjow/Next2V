@@ -101,6 +101,26 @@ export struct TopicDetailPage {
     this.stack.pushPathByName('ImagePreview', p as Object)
   }
 
+  private openUserProfile(username: string): void {
+    const clean = (username || '').trim()
+    if (!clean) {
+      return
+    }
+    let p: UserProfileParams = { username: clean }
+    this.stack.pushPathByName('UserProfile', p as Object)
+  }
+
+  private openContentLink(url: string): void {
+    const clean = (url || '').trim()
+    const memberMatch = clean.match(/^https?:\/\/(?:www\.)?v2ex\.(?:com|co)\/member\/([0-9A-Za-z_]+)$/i) ||
+      clean.match(/^\/member\/([0-9A-Za-z_]+)$/i)
+    if (memberMatch && memberMatch[1]) {
+      this.openUserProfile(memberMatch[1])
+      return
+    }
+    this.openInSystemBrowser(clean)
+  }
+
   private openReplyEditor(initialContent: string = ''): void {
     const title = (this.v.topic?.title || '').trim()
     let p: ReplyEditorParams = { topicId: this.topicId, topicTitle: title, initialContent: initialContent }
@@ -223,7 +243,8 @@ export struct TopicDetailPage {
               onCopyUserClick: () => { this.copyToClipboard(reply.member.username || '') },
               onCopyContentClick: () => { this.copyToClipboard(reply.content || '') },
               onImageClick: (url: string) => { this.openImagePreview(url) },
-              onLinkClick: (url: string) => { this.openInSystemBrowser(url) }
+              onLinkClick: (url: string) => { this.openContentLink(url) },
+              onMentionUserClick: (username: string) => { this.openUserProfile(username) }
             })
           }
         }, (reply: V2exReply) => reply.id.toString())
@@ -298,7 +319,8 @@ export struct TopicDetailPage {
         MarkdownContent({
           source: this.v.topic!.content,
           onImageClick: (url: string) => { this.openImagePreview(url) },
-          onLinkClick: (url: string) => { this.openInSystemBrowser(url) }
+          onLinkClick: (url: string) => { this.openContentLink(url) },
+          onMentionClick: (username: string) => { this.openUserProfile(username) }
         })
       }
     }

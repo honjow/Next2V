@@ -80,8 +80,8 @@ export struct TopicCard {
     }
     .alignItems(HorizontalAlign.Start)
     .padding({
-      left: ThemeConstants.SPACE_MD,
-      right: ThemeConstants.SPACE_MD,
+      left: ThemeConstants.SPACE_LG,
+      right: ThemeConstants.SPACE_LG,
       top: ThemeConstants.SPACE_SM + 2,
       bottom: ThemeConstants.SPACE_SM + 2
     })

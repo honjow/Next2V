@@ -134,6 +134,42 @@ export interface V2exDailyMission {
   message: string
 }
 
+export interface V2exUserReply {
+  topic_id: number
+  topic_title: string
+  target_floor: number
+  node_name: string
+  node_title: string
+  topic_author: string
+  content: string
+  created: number
+}
+
+export interface V2exMemberActionState {
+  following: boolean
+  followPath: string
+  blocked: boolean
+  blockPath: string
+}
+
+export interface V2exMemberPageSnapshot {
+  topicIds: number[]
+  topicsHidden: boolean
+  replies: V2exUserReply[]
+  actions: V2exMemberActionState | null
+}
+
+export interface V2exMemberTopicsPageSnapshot {
+  topicIds: number[]
+  topicsHidden: boolean
+  hasMore: boolean
+}
+
+export interface V2exMemberRepliesPageSnapshot {
+  replies: V2exUserReply[]
+  hasMore: boolean
+}
+
 export type Sov2exSortMode = 'sumup' | 'created'
 export type Sov2exOrderMode = '0' | '1'
 

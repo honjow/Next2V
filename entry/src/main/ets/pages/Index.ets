@@ -50,7 +50,7 @@ import {
 import { HomePage } from 'feed'
 import { ReplyEditorPage, TopicDetailPage } from 'detail'
 import { DiscoverPage, NodePickerPage, NodeTopicPage } from 'node'
-import { UserProfilePage } from 'user'
+import { UserProfilePage, UserRepliesPage, UserTopicsPage } from 'user'
 import { SettingsPage } from 'settings'
 import { ComponentContent, promptAction } from '@kit.ArkUI'
 import { V2exWebLoginPage } from './V2exWebLoginPage'
@@ -397,6 +397,16 @@ struct Index {
         UserProfilePage({ username: (param as Record<string, Object>)['username'] as string })
       }
       .titleBar(this.navDestTitleBarOpts())
+    } else if (name === 'UserTopics') {
+      HdsNavDestination() {
+        UserTopicsPage({ username: (param as Record<string, Object>)['username'] as string })
+      }
+      .titleBar(this.navDestTitleBarOpts('全部主题'))
+    } else if (name === 'UserReplies') {
+      HdsNavDestination() {
+        UserRepliesPage({ username: (param as Record<string, Object>)['username'] as string })
+      }
+      .titleBar(this.navDestTitleBarOpts('全部回复'))
     } else if (name === 'V2exWebLogin') {
       HdsNavDestination() {
         V2exWebLoginPage()
@@ -1307,10 +1317,6 @@ struct Index {
     GroupedListSection() {
       this.AuthActionRow('收藏主题', '', () => {
         this.ns.pushPathByName('MyTopics', null)
-      })
-      this.SettingsDivider()
-      this.AuthActionRow('我的回复', '', () => {
-        this.ns.pushPathByName('MyReplies', null)
       })
       this.SettingsDivider()
       this.AuthActionRow('收藏节点', '', () => {

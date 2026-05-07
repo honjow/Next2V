@@ -1,15 +1,17 @@
 import { UserViewModel } from '../viewmodel/UserViewModel'
 import {
-  V2exTopic, TopicCard, ThemeConstants, TopicDetailParams, StorageKeys, NodeTopicListParams,
-  Avatar, DateUtils, SecondaryListScaffold
+  V2exTopic, V2exUserReply, TopicCard, ThemeConstants, TopicDetailParams, StorageKeys, NodeTopicListParams,
+  Avatar, DateUtils, SecondaryListScaffold, MarkdownContent, UserProfileParams
 } from 'shared'
 import type { TopicReadState } from 'shared'
+import { promptAction } from '@kit.ArkUI'
 
 @Component
 export struct UserProfilePage {
   @Prop username: string = ''
   @Consume('ns') stack: NavPathStack
   @State vm: UserViewModel = new UserViewModel(this.username)
+  @State private activityTab: number = 0
   @StorageLink(StorageKeys.TOPIC_READ_STATES) topicReadStates: string = '[]'
 
   aboutToAppear(): void { this.vm.load() }
@@ -24,27 +26,52 @@ export struct UserProfilePage {
             this.ProfileCard()
           }
           ListItem() {
-            Text('最近主题')
-              .fontSize(ThemeConstants.FONT_SIZE_BODY)
-              .fontColor($r('sys.color.font_secondary'))
-              .padding(ThemeConstants.SPACE_SM)
+            this.ActivityTabs()
           }
-          LazyForEach(this.vm.topicDataSource, (topic: V2exTopic) => {
-            ListItem() {
-              TopicCard({
-                item: topic,
-                isUnread: this.isTopicUnread(topic),
-                onNodeClick: () => {
-                  let p: NodeTopicListParams = { nodeName: topic.node.name, nodeTitle: topic.node.title }
-                  this.stack.pushPathByName('NodeTopicList', p as Object)
+          if (this.activityTab === 0) {
+            if (this.vm.topicsHidden) {
+              ListItem() {
+                this.EmptyText('主题列表已隐藏')
+              }
+            } else if (this.vm.recentTopicCount === 0) {
+              ListItem() {
+                this.EmptyText('暂无主题')
+              }
+            } else {
+              LazyForEach(this.vm.topicDataSource, (topic: V2exTopic) => {
+                ListItem() {
+                  TopicCard({
+                    item: topic,
+                    isUnread: this.isTopicUnread(topic),
+                    onNodeClick: () => {
+                      let p: NodeTopicListParams = { nodeName: topic.node.name, nodeTitle: topic.node.title }
+                      this.stack.pushPathByName('NodeTopicList', p as Object)
+                    }
+                  })
                 }
-              })
+                .onClick(() => {
+                  let p: TopicDetailParams = { topicId: topic.id }
+                  this.stack.pushPathByName('TopicDetail', p as Object)
+                })
+              }, (topic: V2exTopic) => topic.id.toString())
             }
-              .onClick(() => {
-                let p: TopicDetailParams = { topicId: topic.id }
-                this.stack.pushPathByName('TopicDetail', p as Object)
-              })
-          }, (topic: V2exTopic) => topic.id.toString())
+          } else {
+            if (this.vm.recentReplyCount === 0) {
+              ListItem() {
+                this.EmptyText('暂无回复')
+              }
+            } else {
+              LazyForEach(this.vm.replyDataSource, (reply: V2exUserReply) => {
+                ListItem() {
+                  this.ReplyItem(reply)
+                }
+                .onClick(() => {
+                  let p: TopicDetailParams = { topicId: reply.topic_id, targetFloor: reply.target_floor }
+                  this.stack.pushPathByName('TopicDetail', p as Object)
+                })
+              }, (reply: V2exUserReply) => `${reply.topic_id}-${reply.target_floor}-${reply.created}`)
+            }
+          }
         } else {
           ListItem() { this.ErrorView() }
         }
@@ -104,11 +131,121 @@ export struct UserProfilePage {
       }
 
       this.ProfileMeta()
+
+      if (this.vm.actions !== null) {
+        Row({ space: ThemeConstants.SPACE_SM }) {
+          Button(this.vm.actions!.following ? '取消关注' : '关注')
+            .type(ButtonType.Capsule)
+            .fontSize(ThemeConstants.FONT_SIZE_META)
+            .enabled(!this.vm.isActionLoading)
+            .onClick(() => { this.toggleFollow() })
+          Button(this.vm.actions!.blocked ? '取消屏蔽' : '屏蔽')
+            .type(ButtonType.Capsule)
+            .fontSize(ThemeConstants.FONT_SIZE_META)
+            .fontColor(this.vm.actions!.blocked ? $r('sys.color.font_primary') : Color.Red)
+            .enabled(!this.vm.isActionLoading)
+            .onClick(() => { this.toggleBlock() })
+        }
+        .width('100%')
+        .justifyContent(FlexAlign.End)
+      }
     }
     .padding(ThemeConstants.SPACE_LG)
     .width('100%')
     .alignItems(HorizontalAlign.Start)
     .borderRadius(ThemeConstants.RADIUS_MD)
+    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+  }
+
+  @Builder ActivityTabs() {
+    Row() {
+      Row({ space: ThemeConstants.SPACE_XS }) {
+        this.ActivityTabButton('主题', 0, this.vm.recentTopicCount)
+        this.ActivityTabButton('回复', 1, this.vm.recentReplyCount)
+      }
+      Blank()
+      if (this.shouldShowAllActivityButton()) {
+        Button('全部')
+          .type(ButtonType.Capsule)
+          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+          .height(32)
+          .onClick(() => {
+            let p: UserProfileParams = { username: this.username }
+            this.stack.pushPathByName(this.activityTab === 0 ? 'UserTopics' : 'UserReplies', p as Object)
+          })
+      }
+    }
+    .width('100%')
+    .alignItems(VerticalAlign.Center)
+    .padding(ThemeConstants.SPACE_SM)
+  }
+
+  @Builder ActivityTabButton(label: string, tab: number, count: number) {
+    Button(`${label}${count > 0 ? ` ${count}` : ''}`)
+      .type(ButtonType.Capsule)
+      .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+      .height(32)
+      .fontColor(this.activityTab === tab ? $r('sys.color.font_on_primary') : $r('sys.color.font_primary'))
+      .backgroundColor(this.activityTab === tab ? $r('sys.color.ohos_id_color_activated') : $r('sys.color.ohos_id_color_card_bg'))
+      .onClick(() => {
+        this.activityTab = tab
+      })
+  }
+
+  @Builder EmptyText(text: string) {
+    Text(text)
+      .fontSize(ThemeConstants.FONT_SIZE_BODY)
+      .fontColor($r('sys.color.font_secondary'))
+      .width('100%')
+      .textAlign(TextAlign.Center)
+      .padding(ThemeConstants.SPACE_LG)
+      .borderRadius(ThemeConstants.RADIUS_CARD)
+      .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+  }
+
+  @Builder ReplyItem(reply: V2exUserReply) {
+    Column({ space: ThemeConstants.SPACE_SM }) {
+      Row({ space: ThemeConstants.SPACE_XS }) {
+        Text(reply.topic_author || this.vm.profile!.username)
+          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+          .fontColor($r('sys.color.font_secondary'))
+        Text('›')
+          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+          .fontColor($r('sys.color.font_secondary'))
+        Text(reply.node_title || reply.node_name)
+          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+          .fontColor($r('sys.color.font_secondary'))
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+        Blank()
+        if (reply.created > 0) {
+          Text(DateUtils.toDateString(reply.created))
+            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+            .fontColor($r('sys.color.font_secondary'))
+        }
+      }
+      .width('100%')
+
+      Text(reply.topic_title)
+        .fontSize(ThemeConstants.FONT_SIZE_BODY)
+        .fontWeight(FontWeight.Medium)
+        .fontColor($r('sys.color.font_primary'))
+        .maxLines(2)
+        .textOverflow({ overflow: TextOverflow.Ellipsis })
+        .width('100%')
+
+      if (reply.content) {
+        MarkdownContent({
+          source: reply.content,
+          topMargin: 0,
+          onLinkClick: (url: string) => { this.openContentLink(url) },
+          onMentionClick: (username: string) => { this.openUserProfile(username) }
+        })
+      }
+    }
+    .padding(ThemeConstants.SPACE_MD)
+    .width('100%')
+    .borderRadius(ThemeConstants.RADIUS_CARD)
     .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }
 
@@ -161,6 +298,45 @@ export struct UserProfilePage {
     .justifyContent(FlexAlign.Center)
     .width('100%')
     .height('100%')
+  }
+
+  private openUserProfile(username: string): void {
+    const clean = (username || '').trim()
+    if (!clean) {
+      return
+    }
+    let p: UserProfileParams = { username: clean }
+    this.stack.pushPathByName('UserProfile', p as Object)
+  }
+
+  private openContentLink(url: string): void {
+    const clean = (url || '').trim()
+    const memberMatch = clean.match(/^https?:\/\/(?:www\.)?v2ex\.(?:com|co)\/member\/([0-9A-Za-z_]+)$/i) ||
+      clean.match(/^\/member\/([0-9A-Za-z_]+)$/i)
+    if (memberMatch && memberMatch[1]) {
+      this.openUserProfile(memberMatch[1])
+    }
+  }
+
+  private shouldShowAllActivityButton(): boolean {
+    if (this.activityTab === 0) {
+      return this.vm.recentTopicCount > 0 && !this.vm.topicsHidden
+    }
+    return this.vm.recentReplyCount > 0
+  }
+
+  private toggleFollow(): void {
+    this.vm.toggleFollow()
+      .catch((error: Error) => {
+        promptAction.openToast({ message: error.message || '操作失败' }).catch((_e: Error) => {})
+      })
+  }
+
+  private toggleBlock(): void {
+    this.vm.toggleBlock()
+      .catch((error: Error) => {
+        promptAction.openToast({ message: error.message || '操作失败' }).catch((_e: Error) => {})
+      })
   }
 
   private isTopicUnread(topic: V2exTopic): boolean {

@@ -251,6 +251,8 @@ interface MarkdownImageErrorEvent {
   message?: string;
 }
 
+type MentionClick = (username: string) => void;
+
 // ---------- Custom block rendering ----------
 // Handles token types we've hijacked from the library (code blocks, lists).
 @Builder
@@ -277,6 +279,59 @@ function _openInlineLink(options: MarkdownOptions, url: string): void {
   if (click) {
     click(normalized);
   }
+}
+
+function _openMention(options: MarkdownOptions, username: string): void {
+  const clean = (username || "").trim();
+  if (!clean) {
+    return;
+  }
+  const record = options as Record<string, Object>;
+  const click = record["mentionClick"] as MentionClick | undefined;
+  if (click) {
+    click(clean);
+  }
+}
+
+@Builder
+function SelectableTextWithMentions(text: string, fontSize: number, options: MarkdownOptions) {
+  ForEach(_splitMentionText(text), (part: string) => {
+    if (part.startsWith("@") && part.length > 1) {
+      Span(part)
+        .fontSize(fontSize)
+        .fontColor(ThemeConstants.TEXT_LINK)
+        .onClick(() => {
+          _openMention(options, part.slice(1));
+        });
+    } else {
+      Span(part)
+        .fontSize(fontSize)
+        .fontColor(ThemeConstants.TEXT_PRIMARY);
+    }
+  });
+}
+
+function _splitMentionText(text: string): string[] {
+  const raw = text || "";
+  if (!raw) {
+    return [""];
+  }
+  const parts: string[] = [];
+  const re = /@([0-9A-Za-z_]{2,32})/g;
+  let last = 0;
+  let m: RegExpExecArray | null = re.exec(raw);
+  while (m) {
+    if (m.index > last) {
+      parts.push(raw.slice(last, m.index));
+    }
+    parts.push(m[0]);
+    last = m.index + m[0].length;
+    m = re.exec(raw);
+  }
+  if (last < raw.length) {
+    parts.push(raw.slice(last));
+  }
+  return parts.length > 0 ? parts : [raw];
 }
 
 @Builder
@@ -315,9 +370,7 @@ function SelectableInlineTokenSpans(tokens: Token[], fontSize: number, options: 
         .fontColor(ThemeConstants.TEXT_SECONDARY)
         .decoration({ type: TextDecorationType.LineThrough });
     } else {
-      Span((t as Tokens.Text).text ?? t.raw ?? "")
-        .fontSize(fontSize)
-        .fontColor(ThemeConstants.TEXT_PRIMARY);
+      SelectableTextWithMentions((t as Tokens.Text).text ?? t.raw ?? "", fontSize, options);
     }
   });
 }
@@ -957,6 +1010,7 @@ export struct MarkdownContent {
   @Prop topMargin: number = ThemeConstants.SPACE_LG;
   onImageClick?: (url: string) => void
   onLinkClick?: (url: string) => void
+  onMentionClick?: (username: string) => void
   @StorageLink(StorageKeys.READING_FONT_SIZE) readingFontSize: number = ThemeConstants.FONT_SIZE_BODY;
   @StorageLink(StorageKeys.READING_LINE_HEIGHT) readingLineHeight: number = ThemeConstants.LINE_HEIGHT_BODY;
   @StorageLink(StorageKeys.READING_DENSITY) readingDensity: string = ReadingSettings.DENSITY_STANDARD;
@@ -1331,6 +1385,11 @@ export struct MarkdownContent {
             const normalized = MediaUrlUtils.normalizeUrl(url ?? "");
             if (normalized) {
               this.openLink(normalized);
+            }
+          },
+          mentionClick: (username: string) => {
+            if (this.onMentionClick) {
+              this.onMentionClick(username);
             }
           },
           customBlockBuilder: wrapBuilder(CustomBlockBuilder),

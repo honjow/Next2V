@@ -64,6 +64,11 @@ export type {
   V2exTokenInfo,
   V2exBalance,
   V2exDailyMission,
+  V2exUserReply,
+  V2exMemberActionState,
+  V2exMemberPageSnapshot,
+  V2exMemberRepliesPageSnapshot,
+  V2exMemberTopicsPageSnapshot,
   Sov2exSortMode,
   Sov2exOrderMode,
   Sov2exSearchOptions,
@@ -84,6 +89,7 @@ export { V2exNodeParser } from './parser/V2exNodeParser'
 export type { V2exFavoriteNode } from './parser/V2exNodeParser'
 export { V2exCollectionActionParser } from './parser/V2exCollectionActionParser'
 export type { V2exToggleAction } from './parser/V2exCollectionActionParser'
+export { V2exMemberPageParser } from './parser/V2exMemberPageParser'
 
 // 工具
 export { DateUtils } from './utils/DateUtils'
