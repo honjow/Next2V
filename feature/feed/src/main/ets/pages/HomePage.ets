@@ -1,7 +1,7 @@
 import { FeedViewModel } from '../viewmodel/FeedViewModel'
 import {
   V2exTopic, TopicCard, LoadingFooter, TopicDetailParams, ThemeConstants,
-  StorageKeys, PullRefresh, ApiConstants, TabItem, ApiService, NodeTopicListParams,
+  StorageKeys, PullRefreshListScaffold, ApiConstants, TabItem, ApiService, NodeTopicListParams,
   UserProfileParams, CacheSettings
 } from 'shared'
 import type { TopicReadState } from 'shared'
@@ -11,10 +11,7 @@ import { common } from '@kit.AbilityKit'
 export struct HomePage {
   @Consume('ns') ns: NavPathStack
   @StorageLink('feedTab') feedTab: string = 'tech'
-  @StorageProp('topAvoidHeight') topH: number = 107
   private readonly TAB_ITEMS: TabItem[] = ApiConstants.TAB_ITEMS
-  private readonly TBH: number = ThemeConstants.TITLE_BAR_HEIGHT
-  private readonly BB_H: number = ApiConstants.TAB_BAR_HEIGHT
   private swiperController: SwiperController = new SwiperController()
   private horizontalPan: PanGestureOptions = new PanGestureOptions({
     direction: PanDirection.Horizontal,
@@ -107,8 +104,6 @@ struct FeedListPage {
   @StorageLink(StorageKeys.TOPIC_READ_STATES) topicReadStates: string = '[]'
   @Prop tabKey: string = 'tech'
   @State vm: FeedViewModel = new FeedViewModel()
-  @StorageProp('topAvoidHeight') topH: number = 107
-  @StorageProp('bottomAvoidHeight') bottomH: number = 0
   private readonly FLOAT_H: number = ThemeConstants.FLOAT_BAR_HEIGHT
   private readonly GAP: number = ThemeConstants.SPACE_SM - 2
   private readonly PULL_THRESHOLD: number = 40
@@ -131,15 +126,16 @@ struct FeedListPage {
   build() {
     Column() {
       if (this.vm.dataSource.totalCount() > 0) {
-        PullRefresh({
+        PullRefreshListScaffold({
           scroller: this.scroller,
+          listSpace: this.GAP,
+          topPadding: this.BB_H,
+          bottomPadding: this.FLOAT_H,
           indicatorTop: this.TBH + this.BB_H,
-          threshold: this.PULL_THRESHOLD,
+          refreshThreshold: this.PULL_THRESHOLD,
+          scrollEnabled: this.listScrollEnabled,
           onRefresh: async () => { await this.vm.refresh() }
         }) {
-          List({ space: this.GAP, scroller: this.scroller }) {
-            ListItem() { Column() { Blank().height(this.topH + this.TBH + this.BB_H) } }
-              .clip(false)
             LazyForEach(this.vm.dataSource, (item: V2exTopic) => {
               ListItem() {
                 TopicCard({
@@ -160,16 +156,6 @@ struct FeedListPage {
                   this.ns.pushPathByName('TopicDetail', p as Object)
                 })
             }, (item: V2exTopic) => item.id.toString())
-            ListItem() { Column() { Blank().height(this.bottomH + this.FLOAT_H) } }
-          }
-          .enableScrollInteraction(this.listScrollEnabled)
-          .scrollBar(BarState.Off)
-          .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
-          .width('100%').height('100%')
-          .padding({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
-          .clip(false)
-          .edgeEffect(EdgeEffect.None)
-          .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP])
         }
       } else {
         Column() {

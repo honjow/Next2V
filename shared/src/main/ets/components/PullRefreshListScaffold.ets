@@ -10,7 +10,9 @@ export struct PullRefreshListScaffold {
   scroller: Scroller = new Scroller()
   @Prop listSpace: number = ThemeConstants.SPACE_SM - 2
   @Prop horizontalPadding: number = ThemeConstants.SPACE_MD
+  @Prop topPadding: number = 0
   @Prop bottomPadding: number = ThemeConstants.SPACE_XL
+  @Prop indicatorTop: number = -1
   @Prop refreshThreshold: number = 40
   @Prop scrollEnabled: boolean = true
   onRefresh?: () => Promise<void>
@@ -21,7 +23,7 @@ export struct PullRefreshListScaffold {
   build() {
     PullRefresh({
       scroller: this.scroller,
-      indicatorTop: this.topH + ThemeConstants.TITLE_BAR_HEIGHT / 2,
+      indicatorTop: this.resolvedIndicatorTop(),
       threshold: this.refreshThreshold,
       onRefresh: async () => {
         if (this.onRefresh) {
@@ -37,7 +39,7 @@ export struct PullRefreshListScaffold {
       List({ space: this.listSpace, scroller: this.scroller }) {
         ListItem() {
           Column() {
-            Blank().height(this.topH + ThemeConstants.TITLE_BAR_HEIGHT)
+            Blank().height(this.topH + ThemeConstants.TITLE_BAR_HEIGHT + this.topPadding)
           }
           .width('100%')
         }
@@ -70,5 +72,12 @@ export struct PullRefreshListScaffold {
       .clip(false)
       .edgeEffect(EdgeEffect.None)
     }
+  }
+
+  private resolvedIndicatorTop(): number {
+    if (this.indicatorTop >= 0) {
+      return this.indicatorTop
+    }
+    return this.topH + ThemeConstants.TITLE_BAR_HEIGHT / 2 + this.topPadding
   }
 }
