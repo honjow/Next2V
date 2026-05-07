@@ -63,5 +63,5 @@ export class ApiConstants {
   static readonly TAB_HTML_BATCH_SIZE: number = 5
 
   /** TabBar 高度 */
-  static readonly TAB_BAR_HEIGHT: number = 44
+  static readonly TAB_BAR_HEIGHT: number = 38
 }

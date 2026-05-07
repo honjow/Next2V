@@ -150,16 +150,16 @@ struct FeedPills {
       List({ space: ThemeConstants.SPACE_XS, scroller: this.scroller }) {
         ForEach(ApiConstants.TAB_ITEMS, (tab: TabItem, index: number) => {
           ListItem() {
-            Column({ space: 2 }) {
+            Column({ space: 1 }) {
               Text(tab.label)
                 .fontSize(ThemeConstants.FONT_SIZE_BODY)
                 .fontColor(this.visualSelectedIndex() === index ? ThemeConstants.BRAND_PRIMARY : ThemeConstants.TEXT_SECONDARY)
                 .fontWeight(this.visualSelectedIndex() === index ? FontWeight.Medium : FontWeight.Regular)
-                .padding({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, top: ThemeConstants.SPACE_SM })
+                .padding({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, top: ThemeConstants.SPACE_XS })
               Blank().height(2).width(18)
             }
             .alignItems(HorizontalAlign.Center)
-            .padding({ bottom: ThemeConstants.SPACE_XS })
+            .padding({ bottom: 0 })
             .onClick(() => {
               this.animateVisualTabIndex(index)
               this.feedTab = tab.key
@@ -175,11 +175,12 @@ struct FeedPills {
       .padding({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM })
       .width('100%').height('100%')
 
-      Divider()
-        .strokeWidth(2)
-        .color(ThemeConstants.BRAND_PRIMARY)
+      Row()
         .width(this.indicatorWidth())
-        .position({ x: this.indicatorLeft(), y: ApiConstants.TAB_BAR_HEIGHT - 8 })
+        .height(2)
+        .backgroundColor(ThemeConstants.BRAND_PRIMARY)
+        .borderRadius(1)
+        .position({ x: this.indicatorLeft(), y: ApiConstants.TAB_BAR_HEIGHT - 13 })
         .hitTestBehavior(HitTestMode.None)
     }
     .width('100%').height('100%')
