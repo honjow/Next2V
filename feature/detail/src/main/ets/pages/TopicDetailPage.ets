@@ -5,7 +5,7 @@ import { uniformTypeDescriptor as utd } from '@kit.ArkData'
 import { pasteboard } from '@kit.BasicServicesKit'
 import { systemShare } from '@kit.ShareKit'
 import {
-  V2exReply, Avatar, ReplyCard, TimeAgo, PullRefresh, ThemeConstants, MarkdownContent,
+  V2exReply, Avatar, ReplyCard, TimeAgo, ThemeConstants, MarkdownContent, PullRefreshListScaffold,
   NodeTopicListParams, UserProfileParams, ImagePreviewParams, CollectionSettings, CacheSettings, V2exTopic, AuthSettings,
   LoadingFooter, HttpClient, StorageKeys, ApiService, CookieJarSettings, V2exToggleAction, ReadingSettings
 } from 'shared'
@@ -29,7 +29,6 @@ export struct TopicDetailPage {
   @Prop targetFloor: number = 0
   @State v: DetailViewModel = new DetailViewModel(0)
   @Consume('ns') stack: NavPathStack
-  @StorageProp('topAvoidHeight') topH: number = 0
   @StorageLink(StorageKeys.TOPIC_DETAIL_ACTION) @Watch('onTopicActionCommand') topicActionCommand: string = ''
   @StorageLink(StorageKeys.ACCOUNT_WRITE_ENABLED) writeEnabled: boolean = false
   @StorageLink(StorageKeys.READING_FONT_SIZE) readingFontSize: number = ThemeConstants.FONT_SIZE_BODY
@@ -186,19 +185,14 @@ export struct TopicDetailPage {
   }
 
   @Builder ContentView() {
-    PullRefresh({
+    PullRefreshListScaffold({
       scroller: this.scroller,
-      indicatorTop: this.topH + ThemeConstants.TITLE_BAR_HEIGHT / 2,
-      threshold: 40,
+      scrollEnabled: this.listScrollEnabled,
       onRefresh: async () => { await this.v.load() },
-      onScrollEnableChange: (enabled: boolean) => { this.listScrollEnabled = enabled }
+      onScrollEnableChange: (enabled: boolean) => { this.listScrollEnabled = enabled },
+      onScrollIndex: (_start: number, _end: number, center: number) => { this.updateReadFloor(center) },
+      onReachEnd: () => { this.loadMoreReplies() }
     }) {
-      List({ space: ThemeConstants.SPACE_SM - 2, scroller: this.scroller }) {
-        // 顶部安全区占位
-        ListItem() { Column() { Blank().height(this.topH + ThemeConstants.TITLE_BAR_HEIGHT) } }
-          .clip(false)
-
-        // 主楼卡片
         ListItem() {
           this.TopicCard()
         }
@@ -232,24 +226,6 @@ export struct TopicDetailPage {
             LoadingFooter({ isLoading: this.v.isRepliesLoadingMore, hasMore: this.v.repliesHasMore })
           }
         }
-
-        // 底部留白
-        ListItem() { Column() { Blank().height(ThemeConstants.SPACE_XL) } }
-      }
-      .enableScrollInteraction(this.listScrollEnabled)
-      .onScrollIndex((_start: number, _end: number, center: number) => {
-        this.updateReadFloor(center)
-      })
-      .onReachEnd(() => {
-        if (this.v.repliesUseV2) {
-          this.v.loadMoreRepliesV2()
-        }
-      })
-      .scrollBar(BarState.Off)
-      .width('100%').height('100%')
-      .padding({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
-      .clip(false)
-      .edgeEffect(EdgeEffect.None)
     }
   }
 
@@ -797,6 +773,12 @@ export struct TopicDetailPage {
       this.scroller.scrollToIndex(listIndex)
     } catch (_e) {
       // ignore
+    }
+  }
+
+  private loadMoreReplies(): void {
+    if (this.v.repliesUseV2) {
+      this.v.loadMoreRepliesV2()
     }
   }
 
