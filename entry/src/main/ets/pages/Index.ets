@@ -32,6 +32,7 @@ import {
   CookieJarSettings,
   DateUtils,
   EmptyState,
+  FeedTabSettings,
   GroupedListSection,
   HttpClient,
   ImagePreviewParams,
@@ -142,6 +143,7 @@ struct CoinIconCanvas {
 @Component
 struct FeedPills {
   @StorageLink('feedTab') @Watch('onFeedTabChanged') feedTab: string = 'tech'
+  @StorageLink(StorageKeys.FEED_TAB_KEYS) @Watch('onFeedTabKeysChanged') feedTabKeys: string = FeedTabSettings.defaultKeysJson()
   @StorageLink(StorageKeys.FEED_TAB_VISUAL_INDEX) feedTabVisualIndex: number = 0
   @State private tabLefts: number[] = []
   @State private tabWidths: number[] = []
@@ -156,7 +158,7 @@ struct FeedPills {
   build() {
     Stack({ alignContent: Alignment.TopStart }) {
       List({ space: ThemeConstants.SPACE_XS, scroller: this.scroller }) {
-        ForEach(ApiConstants.TAB_ITEMS, (tab: TabItem, index: number) => {
+        ForEach(this.visibleTabs(), (tab: TabItem, index: number) => {
           ListItem() {
             Column({ space: 1 }) {
               Text(tab.label)
@@ -202,18 +204,33 @@ struct FeedPills {
     this.centerCurrentTab(true)
   }
 
+  private onFeedTabKeysChanged(_propName: string): void {
+    const tabs = this.visibleTabs()
+    this.tabLefts = []
+    this.tabWidths = []
+    if (!tabs.find((tab: TabItem) => tab.key === this.feedTab)) {
+      this.feedTab = tabs[0].key
+    }
+    this.feedTabVisualIndex = this.selectedTabIndex()
+    this.centerCurrentTab(false)
+  }
+
+  private visibleTabs(): TabItem[] {
+    return FeedTabSettings.tabsFromKeysJson(this.feedTabKeys)
+  }
+
   private selectedTabIndex(): number {
-    const index = ApiConstants.TAB_ITEMS.findIndex((tab: TabItem) => tab.key === this.feedTab)
+    const index = this.visibleTabs().findIndex((tab: TabItem) => tab.key === this.feedTab)
     return index < 0 ? 0 : index
   }
 
   private visualSelectedIndex(): number {
-    return Math.max(0, Math.min(ApiConstants.TAB_ITEMS.length - 1, Math.round(this.feedTabVisualIndex)))
+    return Math.max(0, Math.min(this.visibleTabs().length - 1, Math.round(this.feedTabVisualIndex)))
   }
 
   private animateVisualTabIndex(index: number): void {
     this.getUIContext().animateTo({ duration: ThemeConstants.ANIM_DURATION, curve: Curve.EaseOut }, () => {
-      this.feedTabVisualIndex = Math.max(0, Math.min(ApiConstants.TAB_ITEMS.length - 1, index))
+      this.feedTabVisualIndex = Math.max(0, Math.min(this.visibleTabs().length - 1, index))
     })
   }
 
@@ -236,9 +253,9 @@ struct FeedPills {
   }
 
   private indicatorLeft(): number {
-    const visualIndex = Math.max(0, Math.min(ApiConstants.TAB_ITEMS.length - 1, this.feedTabVisualIndex))
+    const visualIndex = Math.max(0, Math.min(this.visibleTabs().length - 1, this.feedTabVisualIndex))
     const fromIndex = Math.floor(visualIndex)
-    const toIndex = Math.min(ApiConstants.TAB_ITEMS.length - 1, fromIndex + 1)
+    const toIndex = Math.min(this.visibleTabs().length - 1, fromIndex + 1)
     const fraction = visualIndex - fromIndex
     const fromCenter = this.tabCenter(fromIndex)
     const toCenter = this.tabCenter(toIndex)

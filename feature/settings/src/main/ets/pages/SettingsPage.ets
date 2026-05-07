@@ -6,6 +6,7 @@ import {
   type CacheStats,
   CookieJarSettings,
   DateUtils,
+  FeedTabSettings,
   GroupedListSection,
   HttpClient,
   LocalDataSettings,
@@ -19,6 +20,7 @@ import {
   ThemeConstants,
   WriteActionSettings
 } from 'shared'
+import type { TabItem } from 'shared'
 
 @Component
 export struct SettingsPage {
@@ -28,6 +30,7 @@ export struct SettingsPage {
   @StorageLink(StorageKeys.READING_FONT_SIZE) readingFontSize: number = ThemeConstants.FONT_SIZE_BODY
   @StorageLink(StorageKeys.READING_LINE_HEIGHT) readingLineHeight: number = ThemeConstants.LINE_HEIGHT_BODY
   @StorageLink(StorageKeys.READING_DENSITY) readingDensity: string = ReadingSettings.DENSITY_STANDARD
+  @StorageLink(StorageKeys.FEED_TAB_KEYS) feedTabKeys: string = FeedTabSettings.defaultKeysJson()
   @StorageLink(StorageKeys.ACCOUNT_WRITE_ENABLED) accountWriteEnabled: boolean = false
   @State private cacheStats: CacheStats = { topicListCount: 0, topicDetailCount: 0, updatedAt: 0 }
   @State private cacheMessage: string = ''
@@ -47,6 +50,10 @@ export struct SettingsPage {
         ListItem() { this.SectionHeader('阅读') }
           .margin({ top: ThemeConstants.SPACE_MD })
         ListItem() { this.ReadingSection() }
+
+        ListItem() { this.SectionHeader('首页') }
+          .margin({ top: ThemeConstants.SPACE_MD })
+        ListItem() { this.HomeSection() }
 
         ListItem() { this.SectionHeader('内容与媒体') }
           .margin({ top: ThemeConstants.SPACE_MD })
@@ -148,6 +155,27 @@ export struct SettingsPage {
         title: '链接打开',
         subtitle: '外部浏览器为主',
         showChevron: false
+      })
+    }
+  }
+
+  @Builder HomeSection() {
+    GroupedListSection() {
+      ForEach(ApiConstants.TAB_ITEMS, (tab: TabItem, index: number) => {
+        this.TogglePreferenceRow(tab.label, FeedTabSettings.isVisible(this.feedTabKeys, tab.key), (value: boolean) => {
+          this.updateFeedTabVisibility(tab.key, value)
+        })
+        if (index < ApiConstants.TAB_ITEMS.length - 1) {
+          this.SettingsDivider()
+        }
+      }, (tab: TabItem) => tab.key)
+
+      this.SettingsDivider()
+
+      ConciseListRow({
+        title: '恢复默认栏目',
+        showChevron: false,
+        action: () => { this.resetFeedTabs() }
       })
     }
   }
@@ -422,6 +450,29 @@ export struct SettingsPage {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     ReadingSettings.save(context, this.readingFontSize, this.readingLineHeight, this.readingDensity).catch((error: Error) => {
       console.error('save reading settings failed: ' + error.message)
+    })
+  }
+
+  private updateFeedTabVisibility(key: string, _visible: boolean): void {
+    const nextKeys = FeedTabSettings.toggleKey(this.feedTabKeys, key)
+    if (nextKeys === this.feedTabKeys) {
+      return
+    }
+    this.saveFeedTabs(nextKeys)
+  }
+
+  private resetFeedTabs(): void {
+    if (FeedTabSettings.isDefault(this.feedTabKeys)) {
+      return
+    }
+    this.saveFeedTabs(FeedTabSettings.defaultKeysJson())
+  }
+
+  private saveFeedTabs(keysJson: string): void {
+    this.feedTabKeys = keysJson
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    FeedTabSettings.save(context, keysJson).catch((error: Error) => {
+      console.error('save feed tab settings failed: ' + error.message)
     })
   }
 

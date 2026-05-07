@@ -1,7 +1,15 @@
 import { UIAbility, Want, AbilityConstant } from '@kit.AbilityKit'
 import { window } from '@kit.ArkUI'
 import { webview } from '@kit.ArkWeb'
-import { ApiDomainSettings, MediaSettings, ReadingSettings, StorageKeys, V2exUrlRouter, WriteActionSettings } from 'shared'
+import {
+  ApiDomainSettings,
+  FeedTabSettings,
+  MediaSettings,
+  ReadingSettings,
+  StorageKeys,
+  V2exUrlRouter,
+  WriteActionSettings
+} from 'shared'
 
 const TRANSPARENT_COLOR: string = '#00FFFFFF'
 const ENTRY_PAGE: string = 'pages/Index'
@@ -59,13 +67,20 @@ export default class EntryAbility extends UIAbility {
                 ReadingSettings.apply(14, 20, ReadingSettings.DENSITY_STANDARD)
               })
               .finally(() => {
-                WriteActionSettings.load(this.context)
+                FeedTabSettings.load(this.context)
                   .catch((error: Error) => {
-                    console.error('restore write settings failed: ' + error.message)
-                    WriteActionSettings.apply(false)
+                    console.error('restore feed tab settings failed: ' + error.message)
+                    FeedTabSettings.apply(FeedTabSettings.defaultKeysJson())
                   })
                   .finally(() => {
-                    this.loadContent(windowStage, win)
+                    WriteActionSettings.load(this.context)
+                      .catch((error: Error) => {
+                        console.error('restore write settings failed: ' + error.message)
+                        WriteActionSettings.apply(false)
+                      })
+                      .finally(() => {
+                        this.loadContent(windowStage, win)
+                      })
                   })
               })
           })

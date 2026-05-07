@@ -2,7 +2,7 @@ import { FeedViewModel } from '../viewmodel/FeedViewModel'
 import {
   V2exTopic, TopicCard, LoadingFooter, TopicDetailParams, ThemeConstants,
   StorageKeys, PullRefreshListScaffold, ApiConstants, TabItem, ApiService, NodeTopicListParams,
-  UserProfileParams, CacheSettings
+  UserProfileParams, CacheSettings, FeedTabSettings
 } from 'shared'
 import type { TopicReadState } from 'shared'
 import { common } from '@kit.AbilityKit'
@@ -11,10 +11,10 @@ import { common } from '@kit.AbilityKit'
 export struct HomePage {
   @Consume('ns') ns: NavPathStack
   @StorageLink('feedTab') @Watch('onFeedTabChanged') feedTab: string = 'tech'
+  @StorageLink(StorageKeys.FEED_TAB_KEYS) @Watch('onFeedTabKeysChanged') feedTabKeys: string = FeedTabSettings.defaultKeysJson()
   @StorageLink(StorageKeys.FEED_TAB_VISUAL_INDEX) feedTabVisualIndex: number = 0
   @State private currentTabIndex: number = 0
   @State private swiperWidth: number = 0
-  private readonly TAB_ITEMS: TabItem[] = ApiConstants.TAB_ITEMS
   private swiperController: SwiperController = new SwiperController()
   private horizontalPan: PanGestureOptions = new PanGestureOptions({
     direction: PanDirection.Horizontal,
@@ -49,7 +49,7 @@ export struct HomePage {
   }
 
   private tabKeyToIndex(key: string): number {
-    let idx = this.TAB_ITEMS.findIndex(t => t.key === key)
+    let idx = this.visibleTabs().findIndex(t => t.key === key)
     return idx < 0 ? 0 : idx
   }
 
@@ -63,8 +63,23 @@ export struct HomePage {
     this.swiperController.changeIndex(nextIndex, true)
   }
 
+  private onFeedTabKeysChanged(_propName: string): void {
+    const tabs = this.visibleTabs()
+    if (!tabs.find((tab: TabItem) => tab.key === this.feedTab)) {
+      this.feedTab = tabs[0].key
+    }
+    const nextIndex = this.tabKeyToIndex(this.feedTab)
+    this.currentTabIndex = nextIndex
+    this.feedTabVisualIndex = nextIndex
+    this.swiperController.changeIndex(nextIndex, false)
+  }
+
+  private visibleTabs(): TabItem[] {
+    return FeedTabSettings.tabsFromKeysJson(this.feedTabKeys)
+  }
+
   private clampVisualIndex(index: number): number {
-    return Math.max(0, Math.min(this.TAB_ITEMS.length - 1, index))
+    return Math.max(0, Math.min(this.visibleTabs().length - 1, index))
   }
 
   private setVisualTabIndex(index: number): void {
@@ -89,7 +104,7 @@ export struct HomePage {
   build() {
     Column() {
       Swiper(this.swiperController) {
-        ForEach(this.TAB_ITEMS, (tab: TabItem) => {
+        ForEach(this.visibleTabs(), (tab: TabItem) => {
           FeedListPage({ tabKey: tab.key })
         }, (tab: TabItem) => tab.key)
       }
@@ -112,7 +127,8 @@ export struct HomePage {
       .onChange((i: number) => {
         this.currentTabIndex = i
         this.setVisualTabIndex(i)
-        const key = this.TAB_ITEMS[i].key
+        const tab = this.visibleTabs()[i]
+        const key = tab ? tab.key : this.visibleTabs()[0].key
         if (key !== this.feedTab) {
           this.feedTab = key
         }
