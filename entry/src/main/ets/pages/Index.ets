@@ -692,67 +692,46 @@ struct Index {
   @Builder
   MePage() {
     Column() {
-      List({ space: ThemeConstants.SPACE_SM }) {
-        ListItem() {
-          Column() {
-            Blank().height(this.TBH + ThemeConstants.SPACE_XL + ThemeConstants.SPACE_LG)
-          }
-          .width('100%')
-        }
-
+      SecondaryListScaffold({
+        bottomPadding: ThemeConstants.FLOAT_BAR_HEIGHT + ThemeConstants.SPACE_MD
+      }) {
         ListItem() {
           this.SectionHeader('账号')
         }
-        .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, top: ThemeConstants.SPACE_MD })
 
         ListItem() {
           this.AuthSection()
         }
-        .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
 
         if (this.hasCookieAccount()) {
           ListItem() {
             this.SectionHeader('账号内容')
           }
-          .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, top: ThemeConstants.SPACE_MD })
+          .margin({ top: ThemeConstants.SPACE_MD })
 
           ListItem() {
             this.AccountContentSection()
           }
-          .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
         }
 
         ListItem() {
           this.SectionHeader('本地内容')
         }
-        .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, top: ThemeConstants.SPACE_MD })
+        .margin({ top: ThemeConstants.SPACE_MD })
 
         ListItem() {
           this.LocalContentSection()
         }
-        .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
 
         ListItem() {
           this.SectionHeader('更多')
         }
-        .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, top: ThemeConstants.SPACE_MD })
+        .margin({ top: ThemeConstants.SPACE_MD })
 
         ListItem() {
           this.StorageSection()
         }
-        .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
-
-        ListItem() {
-          Column() {
-            Blank().height(this.bottomH + this.FLOAT_H + ThemeConstants.SPACE_MD)
-          }
-          .width('100%')
-        }
       }
-      .scrollBar(BarState.Off)
-      .edgeEffect(EdgeEffect.None)
-      .width('100%')
-      .height('100%')
     }
     .width('100%').height('100%')
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
