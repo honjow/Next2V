@@ -10,6 +10,7 @@ import {
   LocalDataSettings,
   MediaSettings,
   ReadingSettings,
+  ConciseListRow,
   SecondaryListScaffold,
   SectionHeader as SharedSectionHeader,
   ListDivider as SharedListDivider,
@@ -68,20 +69,11 @@ export struct SettingsPage {
 
   @Builder NetworkSection() {
     Column({ space: ThemeConstants.SPACE_SM }) {
-      Row() {
-        Column({ space: ThemeConstants.SPACE_XS }) {
-          Text('API 域名')
-            .fontSize(ThemeConstants.FONT_SIZE_BODY)
-            .fontWeight(FontWeight.Medium)
-            .fontColor($r('sys.color.font_primary'))
-          Text(`当前: ${this.useCoDomain ? 'v2ex.co' : 'v2ex.com'}`)
-            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-            .fontColor($r('sys.color.font_secondary'))
-        }
-        .layoutWeight(1)
-        .alignItems(HorizontalAlign.Start)
-      }
-      .width('100%')
+      ConciseListRow({
+        title: 'API 域名',
+        subtitle: `当前: ${this.useCoDomain ? 'v2ex.co' : 'v2ex.com'}`,
+        showChevron: false
+      })
 
       Row({ space: ThemeConstants.SPACE_SM }) {
         Button('v2ex.com')
@@ -104,11 +96,12 @@ export struct SettingsPage {
           .onClick(() => { this.updateApiDomain(true) })
       }
       .width('100%')
+      .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG, bottom: ThemeConstants.SPACE_LG })
     }
     .width('100%')
     .alignItems(HorizontalAlign.Start)
-    .padding(ThemeConstants.SPACE_LG)
     .borderRadius(ThemeConstants.RADIUS_MD)
+    .clip(true)
     .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }
 
@@ -141,41 +134,21 @@ export struct SettingsPage {
     .width('100%')
     .alignItems(HorizontalAlign.Start)
     .borderRadius(ThemeConstants.RADIUS_MD)
+    .clip(true)
     .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }
 
   @Builder TogglePreferenceRow(title: string, checked: boolean, changeAction: (value: boolean) => void) {
-    Row({ space: ThemeConstants.SPACE_SM }) {
-      Text(title)
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .fontWeight(FontWeight.Medium)
-        .fontColor($r('sys.color.font_primary'))
-        .layoutWeight(1)
-      Toggle({ type: ToggleType.Switch, isOn: checked })
-        .onChange((value: boolean) => { changeAction(value) })
-    }
-    .width('100%')
-    .padding(ThemeConstants.SPACE_LG)
+    ConciseListRow({ title: title, showChevron: false, hasSwitch: true, checked: checked, switchAction: changeAction })
   }
 
   @Builder ReadingPreferenceRows() {
     Column({ space: ThemeConstants.SPACE_MD }) {
-      Row({ space: ThemeConstants.SPACE_SM }) {
-        Column({ space: ThemeConstants.SPACE_XS }) {
-          Text('阅读显示')
-            .fontSize(ThemeConstants.FONT_SIZE_BODY)
-            .fontWeight(FontWeight.Medium)
-            .fontColor($r('sys.color.font_primary'))
-          Text(`${this.readingFontSize}fp / ${this.readingLineHeight}vp · ${this.readingDensityText(this.readingDensity)}`)
-            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-            .fontColor($r('sys.color.font_secondary'))
-            .maxLines(2)
-            .textOverflow({ overflow: TextOverflow.Ellipsis })
-        }
-        .layoutWeight(1)
-        .alignItems(HorizontalAlign.Start)
-      }
-      .width('100%')
+      ConciseListRow({
+        title: '阅读显示',
+        subtitle: `${this.readingFontSize}fp / ${this.readingLineHeight}vp · ${this.readingDensityText(this.readingDensity)}`,
+        showChevron: false
+      })
 
       Row({ space: ThemeConstants.SPACE_SM }) {
         Button('A-')
@@ -207,6 +180,7 @@ export struct SettingsPage {
           .onClick(() => { this.updateReadingFontSize(this.readingFontSize + 1) })
       }
       .width('100%')
+      .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG })
 
       Row({ space: ThemeConstants.SPACE_SM }) {
         Button('行距-')
@@ -238,6 +212,7 @@ export struct SettingsPage {
           .onClick(() => { this.updateReadingLineHeight(this.readingLineHeight + 1) })
       }
       .width('100%')
+      .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG })
 
       Row({ space: ThemeConstants.SPACE_SM }) {
         this.DensityButton('紧凑', ReadingSettings.DENSITY_COMPACT)
@@ -245,9 +220,9 @@ export struct SettingsPage {
         this.DensityButton('宽松', ReadingSettings.DENSITY_COMFORTABLE)
       }
       .width('100%')
+      .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG, bottom: ThemeConstants.SPACE_LG })
     }
     .width('100%')
-    .padding(ThemeConstants.SPACE_LG)
   }
 
   @Builder DensityButton(label: string, density: string) {
@@ -264,34 +239,12 @@ export struct SettingsPage {
 
   @Builder CacheSection() {
     Column() {
-      Row({ space: ThemeConstants.SPACE_SM }) {
-        Column({ space: ThemeConstants.SPACE_XS }) {
-          Text('离线缓存')
-            .fontSize(ThemeConstants.FONT_SIZE_BODY)
-            .fontWeight(FontWeight.Medium)
-            .fontColor($r('sys.color.font_primary'))
-          Text(`列表 ${this.cacheStats.topicListCount} 组 · 详情 ${this.cacheStats.topicDetailCount} 篇`)
-            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-            .fontColor($r('sys.color.font_secondary'))
-          if (this.cacheStats.updatedAt > 0) {
-            Text(`更新于 ${DateUtils.toDateString(this.cacheStats.updatedAt)}`)
-              .fontSize(ThemeConstants.FONT_SIZE_TINY)
-              .fontColor($r('sys.color.font_secondary'))
-          }
-          if (this.cacheMessage) {
-            Text(this.cacheMessage)
-              .fontSize(ThemeConstants.FONT_SIZE_TINY)
-              .fontColor(ThemeConstants.BRAND_PRIMARY)
-          }
-        }
-        .layoutWeight(1)
-        .alignItems(HorizontalAlign.Start)
-        Text(`${this.cacheStats.topicListCount + this.cacheStats.topicDetailCount}`)
-          .fontSize(ThemeConstants.FONT_SIZE_TAG)
-          .fontColor($r('sys.color.font_secondary'))
-      }
-      .width('100%')
-      .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG, top: ThemeConstants.SPACE_LG, bottom: ThemeConstants.SPACE_SM })
+      ConciseListRow({
+        title: '离线缓存',
+        subtitle: this.cacheSubtitle(),
+        count: this.cacheStats.topicListCount + this.cacheStats.topicDetailCount,
+        showChevron: false
+      })
 
       Row({ space: ThemeConstants.SPACE_SM }) {
         Button('刷新状态')
@@ -317,20 +270,12 @@ export struct SettingsPage {
 
       this.SettingsDivider()
 
-      Row({ space: ThemeConstants.SPACE_SM }) {
-        Column({ space: ThemeConstants.SPACE_XS }) {
-          Text('本地数据')
-            .fontSize(ThemeConstants.FONT_SIZE_BODY)
-            .fontWeight(FontWeight.Medium)
-            .fontColor($r('sys.color.font_primary'))
-          if (this.localDataMessage) {
-            Text(this.localDataMessage)
-              .fontSize(ThemeConstants.FONT_SIZE_TINY)
-              .fontColor(ThemeConstants.BRAND_PRIMARY)
-          }
-        }
-        .layoutWeight(1)
-        .alignItems(HorizontalAlign.Start)
+      Column() {
+        ConciseListRow({
+          title: '本地数据',
+          subtitle: this.localDataMessage,
+          showChevron: false
+        })
         Button('清理本地数据')
           .fontSize(ThemeConstants.FONT_SIZE_TAG)
           .height(ThemeConstants.TOUCH_TARGET_SM)
@@ -338,14 +283,17 @@ export struct SettingsPage {
           .borderRadius(ThemeConstants.RADIUS_MD)
           .fontColor(Color.Red)
           .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+          .width('100%')
+          .margin({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG, bottom: ThemeConstants.SPACE_LG })
           .onClick(() => { this.confirmClearLocalData() })
       }
       .width('100%')
-      .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG, top: ThemeConstants.SPACE_MD, bottom: ThemeConstants.SPACE_LG })
+      .alignItems(HorizontalAlign.Start)
     }
     .width('100%')
     .alignItems(HorizontalAlign.Start)
     .borderRadius(ThemeConstants.RADIUS_MD)
+    .clip(true)
     .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }
 
@@ -410,6 +358,17 @@ export struct SettingsPage {
       return '宽松'
     }
     return '标准'
+  }
+
+  private cacheSubtitle(): string {
+    let text = `列表 ${this.cacheStats.topicListCount} 组 · 详情 ${this.cacheStats.topicDetailCount} 篇`
+    if (this.cacheStats.updatedAt > 0) {
+      text += ` · 更新于 ${DateUtils.toDateString(this.cacheStats.updatedAt)}`
+    }
+    if (this.cacheMessage) {
+      text += ` · ${this.cacheMessage}`
+    }
+    return text
   }
 
   private confirmEnableWriteActions(): void {

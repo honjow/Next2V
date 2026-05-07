@@ -6,7 +6,7 @@ export struct SectionHeader {
 
   build() {
     Text(this.title)
-      .fontSize(ThemeConstants.FONT_SIZE_TAG)
+      .fontSize(ThemeConstants.FONT_SIZE_SECTION_TITLE)
       .fontWeight(FontWeight.Medium)
       .fontColor($r('sys.color.font_secondary'))
       .padding({

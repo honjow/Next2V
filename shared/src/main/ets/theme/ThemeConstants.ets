@@ -28,6 +28,8 @@ export class ThemeConstants {
   static readonly FONT_SIZE_META: number = 13;
   static readonly FONT_SIZE_BODY: number = 14;
   static readonly FONT_SIZE_TITLE: number = 16;
+  static readonly FONT_SIZE_LIST_ITEM: number = 13;
+  static readonly FONT_SIZE_SECTION_TITLE: number = 11;
   static readonly FONT_SIZE_HEADING: number = 18;
   static readonly FONT_SIZE_H3: number = 20;
   static readonly FONT_SIZE_H2: number = 22;
@@ -35,7 +37,8 @@ export class ThemeConstants {
 
   // 圆角
   static readonly RADIUS_SM: number = 4;
-  static readonly RADIUS_MD: number = 8;
+  static readonly RADIUS_MD: number = 22;
+  static readonly RADIUS_CARD: number = 24;
   static readonly RADIUS_ROUND: number = 999;
 
   // 尺寸

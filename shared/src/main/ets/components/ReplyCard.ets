@@ -196,7 +196,7 @@ export struct ReplyCard {
       bottom: this.verticalPadding()
     })
     .width('100%')
-    .borderRadius(ThemeConstants.RADIUS_MD)
+    .borderRadius(ThemeConstants.RADIUS_CARD)
     .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }
 }

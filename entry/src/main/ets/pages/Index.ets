@@ -835,7 +835,8 @@ struct Index {
     }
     .width('100%')
     .alignItems(HorizontalAlign.Start)
-    .borderRadius(ThemeConstants.RADIUS_MD)
+    .borderRadius(ThemeConstants.RADIUS_CARD)
+    .clip(true)
     .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }
 
@@ -871,7 +872,7 @@ struct Index {
           .alignItems(HorizontalAlign.Center)
           .width('100%')
           .padding(ThemeConstants.SPACE_LG)
-          .borderRadius(ThemeConstants.RADIUS_MD)
+          .borderRadius(ThemeConstants.RADIUS_CARD)
           .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
         }
         .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
@@ -898,7 +899,7 @@ struct Index {
             this.SettingsDivider()
             Row() {
               Text('退出登录')
-                .fontSize(ThemeConstants.FONT_SIZE_BODY)
+                .fontSize(ThemeConstants.FONT_SIZE_LIST_ITEM)
                 .fontWeight(FontWeight.Medium)
                 .fontColor(Color.Red)
                 .layoutWeight(1)
@@ -912,7 +913,7 @@ struct Index {
           }
           .width('100%')
           .alignItems(HorizontalAlign.Start)
-          .borderRadius(ThemeConstants.RADIUS_MD)
+          .borderRadius(ThemeConstants.RADIUS_CARD)
           .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
         }
         .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
@@ -1041,7 +1042,8 @@ struct Index {
     }
     .width('100%')
     .alignItems(HorizontalAlign.Start)
-    .borderRadius(ThemeConstants.RADIUS_MD)
+    .borderRadius(ThemeConstants.RADIUS_CARD)
+    .padding(4)
     .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }
 
@@ -1082,7 +1084,7 @@ struct Index {
       this.SettingsDivider()
       Row() {
         Text('清除 API 授权')
-          .fontSize(ThemeConstants.FONT_SIZE_BODY)
+          .fontSize(ThemeConstants.FONT_SIZE_LIST_ITEM)
           .fontWeight(FontWeight.Medium)
           .fontColor(Color.Red)
           .layoutWeight(1)
@@ -1096,7 +1098,8 @@ struct Index {
     }
     .width('100%')
     .alignItems(HorizontalAlign.Start)
-    .borderRadius(ThemeConstants.RADIUS_MD)
+    .borderRadius(ThemeConstants.RADIUS_CARD)
+    .clip(true)
     .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }
 
@@ -1120,7 +1123,8 @@ struct Index {
     }
     .width('100%')
     .alignItems(HorizontalAlign.Start)
-    .borderRadius(ThemeConstants.RADIUS_MD)
+    .borderRadius(ThemeConstants.RADIUS_CARD)
+    .clip(true)
     .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }
 

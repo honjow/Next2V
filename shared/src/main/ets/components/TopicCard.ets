@@ -85,7 +85,7 @@ export struct TopicCard {
       top: ThemeConstants.SPACE_SM + 2,
       bottom: ThemeConstants.SPACE_SM + 2
     })
-    .borderRadius(ThemeConstants.RADIUS_MD)
+    .borderRadius(ThemeConstants.RADIUS_CARD)
     .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
     .width('100%')
   }
