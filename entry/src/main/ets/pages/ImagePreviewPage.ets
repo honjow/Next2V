@@ -248,24 +248,14 @@ export struct ImagePreviewPage {
 
       if (this.normalizedUrl()) {
         Column({ space: ThemeConstants.SPACE_XS }) {
-          Row({ space: ThemeConstants.SPACE_SM }) {
-            Button('返回')
-              .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-              .fontColor(Color.White)
-              .height(36)
-              .backgroundColor('#66000000')
-              .borderRadius(ThemeConstants.RADIUS_SM)
-              .onClick(() => { this.stack.pop() })
-
-            Button(this.isSaving ? '保存中...' : '保存图片')
-              .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-              .fontColor(Color.White)
-              .height(36)
-              .enabled(!this.isSaving)
-              .backgroundColor('#66000000')
-              .borderRadius(ThemeConstants.RADIUS_SM)
-              .onClick(() => { this.saveImage() })
-          }
+          Button(this.isSaving ? '保存中...' : '保存图片')
+            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+            .fontColor(Color.White)
+            .height(36)
+            .enabled(!this.isSaving)
+            .backgroundColor('#66000000')
+            .borderRadius(ThemeConstants.RADIUS_ROUND)
+            .onClick(() => { this.saveImage() })
 
           if (this.saveMessage) {
             Text(this.saveMessage)
