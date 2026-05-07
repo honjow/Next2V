@@ -133,12 +133,17 @@ struct CoinIconCanvas {
 
 @Component
 struct FeedPills {
-  @StorageLink('feedTab') feedTab: string = 'tech'
+  @StorageLink('feedTab') @Watch('onFeedTabChanged') feedTab: string = 'tech'
+  private scroller: Scroller = new Scroller()
+
+  aboutToAppear(): void {
+    this.centerCurrentTab(false)
+  }
 
   build() {
-    Scroll() {
-      Row({ space: ThemeConstants.SPACE_XS }) {
-        ForEach(ApiConstants.TAB_ITEMS, (tab: TabItem) => {
+    List({ space: ThemeConstants.SPACE_XS, scroller: this.scroller }) {
+      ForEach(ApiConstants.TAB_ITEMS, (tab: TabItem) => {
+        ListItem() {
           Column({ space: 2 }) {
             Text(tab.label)
               .fontSize(ThemeConstants.FONT_SIZE_BODY)
@@ -154,14 +159,25 @@ struct FeedPills {
           .onClick(() => {
             this.feedTab = tab.key
           })
-        })
-      }
-      .padding({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM })
-      .alignItems(VerticalAlign.Center).height('100%')
+        }
+      })
     }
     .scrollBar(BarState.Off)
-    .scrollable(ScrollDirection.Horizontal)
+    .listDirection(Axis.Horizontal)
+    .padding({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM })
     .width('100%').height('100%')
+  }
+
+  private onFeedTabChanged(_propName: string): void {
+    this.centerCurrentTab(true)
+  }
+
+  private centerCurrentTab(smooth: boolean): void {
+    const index = ApiConstants.TAB_ITEMS.findIndex((tab: TabItem) => tab.key === this.feedTab)
+    if (index < 0) {
+      return
+    }
+    this.scroller.scrollToIndex(index, smooth, ScrollAlign.CENTER)
   }
 }
 

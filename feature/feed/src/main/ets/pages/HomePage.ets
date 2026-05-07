@@ -10,7 +10,8 @@ import { common } from '@kit.AbilityKit'
 @Component
 export struct HomePage {
   @Consume('ns') ns: NavPathStack
-  @StorageLink('feedTab') feedTab: string = 'tech'
+  @StorageLink('feedTab') @Watch('onFeedTabChanged') feedTab: string = 'tech'
+  @State private currentTabIndex: number = 0
   private readonly TAB_ITEMS: TabItem[] = ApiConstants.TAB_ITEMS
   private swiperController: SwiperController = new SwiperController()
   private horizontalPan: PanGestureOptions = new PanGestureOptions({
@@ -21,6 +22,7 @@ export struct HomePage {
 
   aboutToAppear(): void {
     AppStorage.setOrCreate('listScrollEnabled', true)
+    this.currentTabIndex = this.tabKeyToIndex(this.feedTab)
   }
 
   private setListScrollEnabled(enabled: boolean): void {
@@ -48,6 +50,15 @@ export struct HomePage {
     return idx < 0 ? 0 : idx
   }
 
+  private onFeedTabChanged(_propName: string): void {
+    const nextIndex = this.tabKeyToIndex(this.feedTab)
+    if (nextIndex === this.currentTabIndex) {
+      return
+    }
+    this.currentTabIndex = nextIndex
+    this.swiperController.changeIndex(nextIndex, true)
+  }
+
   build() {
     Column() {
       Swiper(this.swiperController) {
@@ -69,6 +80,7 @@ export struct HomePage {
         this.setListScrollEnabled(true)
       })
       .onChange((i: number) => {
+        this.currentTabIndex = i
         const key = this.TAB_ITEMS[i].key
         if (key !== this.feedTab) {
           this.feedTab = key
