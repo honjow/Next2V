@@ -1,6 +1,9 @@
 import { common } from '@kit.AbilityKit'
 import { promptAction } from '@kit.ArkUI'
-import { ApiService, CookieJarSettings, DateUtils, DraftSettings, MarkdownContent, StorageKeys, ThemeConstants } from 'shared'
+import {
+  ApiService, CookieJarSettings, DateUtils, DraftSettings, MarkdownContent, SecondaryFormScaffold, StorageKeys,
+  ThemeConstants
+} from 'shared'
 
 @Component
 export struct ReplyEditorPage {
@@ -9,8 +12,6 @@ export struct ReplyEditorPage {
   @Prop initialContent: string = ''
   @Consume('ns') stack: NavPathStack
   @StorageLink(StorageKeys.ACCOUNT_WRITE_ENABLED) writeEnabled: boolean = false
-  @StorageProp(StorageKeys.TOP_AVOID_HEIGHT) topH: number = 0
-  @StorageProp(StorageKeys.BOTTOM_AVOID_HEIGHT) bottomH: number = 0
 
   @State private content: string = ''
   @State private isPreview: boolean = false
@@ -68,7 +69,8 @@ export struct ReplyEditorPage {
   }
 
   build() {
-    Scroll() {
+    Column() {
+      SecondaryFormScaffold({ includeKeyboardPadding: true }) {
       Column({ space: ThemeConstants.SPACE_SM }) {
         if (this.topicTitle) {
           Text(this.topicTitle)
@@ -174,16 +176,9 @@ export struct ReplyEditorPage {
           .enabled(this.canSubmit())
           .onClick(() => { this.confirmSubmit() })
       }
-      .padding({
-        left: ThemeConstants.SPACE_MD,
-        right: ThemeConstants.SPACE_MD,
-        top: this.topH + ThemeConstants.TITLE_BAR_HEIGHT + ThemeConstants.SPACE_MD,
-        bottom: this.bottomH + ThemeConstants.SPACE_XL
-      })
       .width('100%')
+      }
     }
-    .scrollBar(BarState.Off)
-    .edgeEffect(EdgeEffect.None)
     .width('100%')
     .height('100%')
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
