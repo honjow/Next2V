@@ -255,7 +255,7 @@ function CustomBlockBuilder(token: Token, options: MarkdownOptions) {
   } else if (token.type === PARAGRAPH_MONO) {
     MarkdownParagraph({ paragraphToken: token as Tokens.Paragraph, options: options });
   } else if (token.type === IMAGE_BLOCK_MONO) {
-    MarkdownAutoImage({ url: MediaUrlUtils.normalizeUrl((token as Tokens.Image).href), options: options });
+    MarkdownAutoImage({ url: MediaUrlUtils.imageUrlForRender((token as Tokens.Image).href), options: options });
   }
 }
 
@@ -856,7 +856,7 @@ struct CustomList {
                         .width("100%");
                       }
                       ForEach(this.paragraphImageTokens(child), (img: Tokens.Image, imgIdx: number) => {
-                        MarkdownAutoImage({ url: MediaUrlUtils.normalizeUrl(img.href), options: this.options });
+                        MarkdownAutoImage({ url: MediaUrlUtils.imageUrlForRender(img.href), options: this.options });
                       }, (img: Tokens.Image, imgIdx: number) => `${img.href}-${imgIdx}`)
                     }.width("100%");
                   } else {
@@ -1181,14 +1181,15 @@ export struct MarkdownContent {
       const href = MediaUrlUtils.normalizeUrl(String(only["href"] ?? ""));
       const text = String(only["text"] ?? "").trim();
       const normalizedText = MediaUrlUtils.normalizeUrl(text);
-      if (!MediaUrlUtils.isProbablyImageUrl(href)) {
+      const renderUrl = MediaUrlUtils.imageUrlForRender(href);
+      if (!renderUrl) {
         return;
       }
       if (text.length > 0 && normalizedText !== href) {
         return;
       }
       only["type"] = "image";
-      only["href"] = href;
+      only["href"] = renderUrl;
       only["title"] = only["title"] ?? null;
       only["text"] = "";
       only["tokens"] = [];
@@ -1198,13 +1199,14 @@ export struct MarkdownContent {
     if (onlyType === "text") {
       const rawText = String(only["text"] ?? "").trim();
       const href = MediaUrlUtils.normalizeUrl(rawText);
-      if (!MediaUrlUtils.isProbablyImageUrl(href)) {
+      const renderUrl = MediaUrlUtils.imageUrlForRender(href);
+      if (!renderUrl) {
         return;
       }
       const imageToken: Tokens.Image = {
         type: "image",
         raw: String(only["raw"] ?? rawText),
-        href: href,
+        href: renderUrl,
         title: null,
         text: "",
       };

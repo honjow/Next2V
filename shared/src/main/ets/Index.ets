@@ -95,6 +95,7 @@ export { V2exMemberPageParser } from './parser/V2exMemberPageParser'
 export { DateUtils } from './utils/DateUtils'
 export { ImageUtils } from './utils/ImageUtils'
 export { MediaUrlUtils } from './utils/MediaUrlUtils'
+export type { MediaUrlKind, MediaUrlResult } from './utils/MediaUrlUtils'
 export { NodeSearchUtils } from './utils/NodeSearchUtils'
 export type { NodeSearchMatch } from './utils/NodeSearchUtils'
 

@@ -1,10 +1,11 @@
 const IMAGE_EXT_REGEX: RegExp = /\.(jpe?g|png|gif|webp|bmp|svg|avif|heic|heif)(?:[?#].*)?$/i
-const IMAGE_QUERY_EXT_REGEX: RegExp = /[?&](?:format|fm|ext|type|output)=([a-z0-9]+)/i
+const IMAGE_QUERY_EXT_REGEX: RegExp = /[?&](?:format|fm|ext|type|output)=([a-z0-9/]+)/i
 const ILLEGAL_TITLE_CHARS: RegExp = /[\\/:*?"<>|]/g
 const YOUTUBE_ID_REGEX: RegExp = /(?:youtube\.com\/(?:watch\?[^#]*v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{6,})/i
 const VIMEO_ID_REGEX: RegExp = /vimeo\.com\/(?:.*\/)?([0-9]{6,})/i
 const GIST_REGEX: RegExp = /gist\.github\.com\/([^/?#]+)\/([A-Za-z0-9]+)/i
-const IMGUR_PAGE_REGEX: RegExp = /^https?:\/\/(?:www\.)?imgur\.com\/(?:gallery\/|a\/)?([A-Za-z0-9]+)(?:[/?#]|$)/i
+const IMGUR_SINGLE_IMAGE_PAGE_REGEX: RegExp = /^https?:\/\/(?:www\.)?imgur\.com\/([A-Za-z0-9]{5,12})(?:[?#].*)?$/i
+const IMGUR_COLLECTION_PAGE_REGEX: RegExp = /^https?:\/\/(?:www\.)?imgur\.com\/(?:gallery|a)\//i
 
 const IMAGE_HOST_PREFIXES: string[] = [
   'https://i.imgur.com/',
@@ -34,6 +35,23 @@ export interface MediaLinkPreview {
   label: string
 }
 
+export type MediaUrlKind =
+  'directImage' |
+  'knownImageHostDirect' |
+  'imageHostPageResolved' |
+  'probeRequired' |
+  'nonImageLink' |
+  'unsupported'
+
+export interface MediaUrlResult {
+  originalUrl: string
+  normalizedUrl: string
+  renderUrl: string
+  kind: MediaUrlKind
+  isImage: boolean
+  shouldProbe: boolean
+}
+
 export class MediaUrlUtils {
   static normalizeUrl(raw: string): string {
     const url = (raw ?? '').trim()
@@ -60,14 +78,53 @@ export class MediaUrlUtils {
   }
 
   static isProbablyImageUrl(raw: string): boolean {
-    const url = MediaUrlUtils.normalizeUrl(raw)
-    if (!MediaUrlUtils.isHttpUrl(url)) {
-      return false
+    return MediaUrlUtils.resolveMediaUrl(raw).isImage
+  }
+
+  static imageUrlForRender(raw: string): string {
+    const result = MediaUrlUtils.resolveMediaUrl(raw)
+    return result.isImage ? result.renderUrl : ''
+  }
+
+  static resolveMediaUrl(raw: string): MediaUrlResult {
+    const originalUrl = (raw ?? '').trim()
+    const normalizedUrl = MediaUrlUtils.normalizeUrl(originalUrl)
+    if (!normalizedUrl) {
+      return MediaUrlUtils.result(originalUrl, normalizedUrl, '', 'unsupported', false, false)
     }
-    if (IMAGE_EXT_REGEX.test(url)) {
-      return true
+    if (!MediaUrlUtils.isHttpUrl(normalizedUrl)) {
+      return MediaUrlUtils.result(originalUrl, normalizedUrl, normalizedUrl, 'unsupported', false, false)
     }
-    return IMAGE_HOST_PREFIXES.some((prefix: string) => url.startsWith(prefix))
+    if (IMAGE_EXT_REGEX.test(normalizedUrl) || MediaUrlUtils.imageExtensionFromUrl(normalizedUrl)) {
+      return MediaUrlUtils.result(originalUrl, normalizedUrl, normalizedUrl, 'directImage', true, false)
+    }
+    if (IMAGE_HOST_PREFIXES.some((prefix: string) => normalizedUrl.startsWith(prefix))) {
+      return MediaUrlUtils.result(originalUrl, normalizedUrl, normalizedUrl, 'knownImageHostDirect', true, false)
+    }
+
+    const imgurDirect = MediaUrlUtils.resolveImgurSingleImagePage(normalizedUrl)
+    if (imgurDirect) {
+      return MediaUrlUtils.result(originalUrl, normalizedUrl, imgurDirect, 'imageHostPageResolved', true, false)
+    }
+    if (IMGUR_COLLECTION_PAGE_REGEX.test(normalizedUrl)) {
+      return MediaUrlUtils.result(originalUrl, normalizedUrl, normalizedUrl, 'nonImageLink', false, false)
+    }
+
+    if (MediaUrlUtils.isProbeCandidate(normalizedUrl)) {
+      return MediaUrlUtils.result(originalUrl, normalizedUrl, normalizedUrl, 'probeRequired', false, true)
+    }
+    return MediaUrlUtils.result(originalUrl, normalizedUrl, normalizedUrl, 'nonImageLink', false, false)
+  }
+
+  static resolveByContentType(raw: string, contentType: string): MediaUrlResult {
+    const base = MediaUrlUtils.resolveMediaUrl(raw)
+    if (base.isImage || !base.shouldProbe) {
+      return base
+    }
+    if (MediaUrlUtils.imageExtensionFromContentType(contentType)) {
+      return MediaUrlUtils.result(base.originalUrl, base.normalizedUrl, base.normalizedUrl, 'directImage', true, false)
+    }
+    return MediaUrlUtils.result(base.originalUrl, base.normalizedUrl, base.normalizedUrl, 'nonImageLink', false, false)
   }
 
   static imageExtensionFromContentType(contentType: string): string {
@@ -205,7 +262,10 @@ export class MediaUrlUtils {
   }
 
   private static normalizeImageExtension(raw: string): string {
-    const ext = (raw || '').toLowerCase()
+    let ext = (raw || '').toLowerCase().trim()
+    if (ext.indexOf('/') >= 0) {
+      ext = ext.split('/').pop() || ''
+    }
     if (ext === 'jpeg' || ext === 'jpg') {
       return 'jpg'
     }
@@ -239,10 +299,55 @@ export class MediaUrlUtils {
     if (host === 'i.imgur.com') {
       return false
     }
-    return IMGUR_PAGE_REGEX.test(url)
+    return IMGUR_SINGLE_IMAGE_PAGE_REGEX.test(url) || IMGUR_COLLECTION_PAGE_REGEX.test(url)
   }
 
   private static isHostOrSubdomain(host: string, domain: string): boolean {
     return host === domain || host.endsWith(`.${domain}`)
+  }
+
+  private static resolveImgurSingleImagePage(url: string): string {
+    if (IMGUR_COLLECTION_PAGE_REGEX.test(url)) {
+      return ''
+    }
+    const match = url.match(IMGUR_SINGLE_IMAGE_PAGE_REGEX)
+    if (!match || !match[1]) {
+      return ''
+    }
+    return `https://i.imgur.com/${match[1]}.png`
+  }
+
+  private static isProbeCandidate(url: string): boolean {
+    if (!MediaUrlUtils.isStandaloneHttpUrl(url)) {
+      return false
+    }
+    const host = MediaUrlUtils.hostFromUrl(url)
+    if (!host || MediaUrlUtils.isHostOrSubdomain(host, 'github.com') ||
+      MediaUrlUtils.isHostOrSubdomain(host, 'youtube.com') ||
+      MediaUrlUtils.isHostOrSubdomain(host, 'youtu.be') ||
+      MediaUrlUtils.isHostOrSubdomain(host, 'vimeo.com') ||
+      MediaUrlUtils.isHostOrSubdomain(host, 'v2ex.com') ||
+      MediaUrlUtils.isHostOrSubdomain(host, 'v2ex.co')) {
+      return false
+    }
+    return true
+  }
+
+  private static result(
+    originalUrl: string,
+    normalizedUrl: string,
+    renderUrl: string,
+    kind: MediaUrlKind,
+    isImage: boolean,
+    shouldProbe: boolean
+  ): MediaUrlResult {
+    return {
+      originalUrl: originalUrl,
+      normalizedUrl: normalizedUrl,
+      renderUrl: renderUrl,
+      kind: kind,
+      isImage: isImage,
+      shouldProbe: shouldProbe
+    }
   }
 }
