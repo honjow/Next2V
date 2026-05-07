@@ -10,6 +10,7 @@ import { V2exCollectionActionParser, type V2exToggleAction } from '../parser/V2e
 import { V2exWriteFormParser } from '../parser/V2exWriteFormParser'
 import { V2exSigninParser } from '../parser/V2exSigninParser'
 import { V2exMemberPageParser } from '../parser/V2exMemberPageParser'
+import { V2exAccountListParser, type V2exAccountMemberListItem } from '../parser/V2exAccountListParser'
 import type {
   V2exTopic,
   V2exReply,
@@ -266,6 +267,43 @@ export class ApiService {
       throw new Error('Web 会话已失效，请重新登录')
     }
     return V2exNodeParser.extractFavoriteNodes(html)
+  }
+
+  async getBlockedMembersWithCookie(cookie: string): Promise<V2exAccountMemberListItem[]> {
+    if (!cookie) {
+      throw new Error('请先登录')
+    }
+    const currentUsername = await this.getSessionUsernameWithCookie(cookie)
+    const html = await this.http.getTextWithHeaders('/blocked', { 'Cookie': cookie })
+    if (html.indexOf('/signin') >= 0 && !V2exSessionParser.extractUsername(html)) {
+      throw new Error('Web 会话已失效，请重新登录')
+    }
+    return V2exAccountListParser.extractMembers(html, currentUsername)
+  }
+
+  async getFollowingMembersWithCookie(cookie: string): Promise<V2exAccountMemberListItem[]> {
+    if (!cookie) {
+      throw new Error('请先登录')
+    }
+    const currentUsername = await this.getSessionUsernameWithCookie(cookie)
+    const html = await this.http.getTextWithHeaders('/my/following', { 'Cookie': cookie })
+    if (html.indexOf('/signin') >= 0 && !V2exSessionParser.extractUsername(html)) {
+      throw new Error('Web 会话已失效，请重新登录')
+    }
+    return V2exAccountListParser.extractMembers(html, currentUsername)
+  }
+
+  async getIgnoredTopicsWithCookie(cookie: string): Promise<V2exTopic[]> {
+    if (!cookie) {
+      throw new Error('请先登录')
+    }
+    await this.getSessionUsernameWithCookie(cookie)
+    const html = await this.http.getTextWithHeaders('/ignored', { 'Cookie': cookie })
+    if (html.indexOf('/signin') >= 0 && !V2exSessionParser.extractUsername(html)) {
+      throw new Error('Web 会话已失效，请重新登录')
+    }
+    const ids = V2exAccountListParser.extractTopicIds(html)
+    return this.getTopicsByIds(ids)
   }
 
   // ==================== Cookie 写入操作（站内收藏/关注） ====================

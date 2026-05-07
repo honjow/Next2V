@@ -61,6 +61,8 @@ import { TopicEditorPage } from './TopicEditorPage'
 import { MyTopicsPage } from './MyTopicsPage'
 import { MyRepliesPage } from './MyRepliesPage'
 import { MyNodesPage } from './MyNodesPage'
+import { AccountBlacklistPage } from './AccountBlacklistPage'
+import { AccountFollowingPage } from './AccountFollowingPage'
 import { SavedTopicsPage } from './SavedTopicsPage'
 import { ViewedTopicsPage } from './ViewedTopicsPage'
 import { SavedNodesPage } from './SavedNodesPage'
@@ -450,6 +452,16 @@ struct Index {
         MyNodesPage()
       }
       .titleBar(this.navDestTitleBarOpts('收藏节点'))
+    } else if (name === 'AccountBlacklist') {
+      HdsNavDestination() {
+        AccountBlacklistPage()
+      }
+      .titleBar(this.navDestTitleBarOpts('屏蔽与忽略'))
+    } else if (name === 'AccountFollowing') {
+      HdsNavDestination() {
+        AccountFollowingPage()
+      }
+      .titleBar(this.navDestTitleBarOpts('关注与收藏'))
     } else if (name === 'Settings') {
       HdsNavDestination() {
         SettingsPage()
@@ -1328,6 +1340,14 @@ struct Index {
       this.SettingsDivider()
       this.AuthActionRow('收藏节点', '', () => {
         this.ns.pushPathByName('MyNodes', null)
+      })
+      this.SettingsDivider()
+      this.AuthActionRow('关注与收藏', '', () => {
+        this.ns.pushPathByName('AccountFollowing', null)
+      })
+      this.SettingsDivider()
+      this.AuthActionRow('屏蔽与忽略', '', () => {
+        this.ns.pushPathByName('AccountBlacklist', null)
       })
     }
   }
