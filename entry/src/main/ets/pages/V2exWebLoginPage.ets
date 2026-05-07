@@ -6,6 +6,7 @@ import {
   AuthSessionSettings,
   CookieJarSettings,
   HttpClient,
+  SecondaryContentScaffold,
   StorageKeys,
   ThemeConstants,
   V2exSessionParser
@@ -56,43 +57,50 @@ export struct V2exWebLoginPage {
 
   build() {
     Column() {
-      Web({ src: '', controller: this.controller })
-        .darkMode(WebDarkMode.Auto)
-        .javaScriptAccess(true)
-        .domStorageAccess(true)
-        .onlineImageAccess(true)
+      SecondaryContentScaffold() {
+        Column() {
+          Web({ src: '', controller: this.controller })
+            .darkMode(WebDarkMode.Off)
+            .backgroundColor(Color.White)
+            .javaScriptAccess(true)
+            .domStorageAccess(true)
+            .onlineImageAccess(true)
+            .width('100%')
+            .layoutWeight(1)
+            .onControllerAttached(() => {
+              this.loadSigninPage()
+            })
+            .onPageBegin((event?: PageEndEvent) => {
+              this.pageMessage = event?.url ? `正在加载 ${event.url}` : '正在加载网页登录...'
+              if (event && event.url) {
+                this.lastUrl = event.url
+              }
+              this.scheduleAutoSave()
+            })
+            .onPageEnd((event?: PageEndEvent) => {
+              this.pageMessage = ''
+              if (event && event.url) {
+                this.lastUrl = event.url
+              }
+              this.scheduleAutoSave()
+            })
+            .onLoadFinished((event?: PageEndEvent) => {
+              if (event && event.url) {
+                this.lastUrl = event.url
+              }
+              this.scheduleAutoSave()
+            })
+            .onErrorReceive((event) => {
+              if (event?.request?.isMainFrame()) {
+                this.pageMessage = event.error.getErrorInfo() || '网页登录加载失败'
+              }
+            })
+
+          this.StatusBar()
+        }
         .width('100%')
         .layoutWeight(1)
-        .onControllerAttached(() => {
-          this.loadSigninPage()
-        })
-        .onPageBegin((event?: PageEndEvent) => {
-          this.pageMessage = event?.url ? `正在加载 ${event.url}` : '正在加载网页登录...'
-          if (event && event.url) {
-            this.lastUrl = event.url
-          }
-          this.scheduleAutoSave()
-        })
-        .onPageEnd((event?: PageEndEvent) => {
-          this.pageMessage = ''
-          if (event && event.url) {
-            this.lastUrl = event.url
-          }
-          this.scheduleAutoSave()
-        })
-        .onLoadFinished((event?: PageEndEvent) => {
-          if (event && event.url) {
-            this.lastUrl = event.url
-          }
-          this.scheduleAutoSave()
-        })
-        .onErrorReceive((event) => {
-          if (event?.request?.isMainFrame()) {
-            this.pageMessage = event.error.getErrorInfo() || '网页登录加载失败'
-          }
-        })
-
-      this.StatusBar()
+      }
     }
     .width('100%')
     .height('100%')
