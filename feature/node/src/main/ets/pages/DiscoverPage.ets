@@ -1,8 +1,11 @@
 import { NodeViewModel } from '../viewmodel/NodeViewModel'
 import {
   ApiService, AppSearchField, FilterChip, StorageKeys, V2exNode, V2exTopic, NodeTopicListParams, TopicDetailParams,
-  ThemeConstants
+  ThemeConstants, CollectionSettings
 } from 'shared'
+import type { SavedNode, ViewedTopic } from 'shared'
+import { common } from '@kit.AbilityKit'
+import { LengthMetrics } from '@kit.ArkUI'
 
 type DiscoverTopicMode = 'hot' | 'rank' | 'latest' | 'recent'
 
@@ -18,6 +21,8 @@ export struct DiscoverPage {
   @State private hotError: string = ''
   @State private isHotLoading: boolean = false
   @State private nodeKeyword: string = ''
+  @State private savedNodes: SavedNode[] = []
+  @State private recentNodes: SavedNode[] = []
   @StorageProp(StorageKeys.TOP_AVOID_HEIGHT) topH: number = 0
   @StorageProp(StorageKeys.BOTTOM_AVOID_HEIGHT) bottomH: number = 0
   private readonly TBH: number = ThemeConstants.TITLE_BAR_HEIGHT
@@ -28,6 +33,7 @@ export struct DiscoverPage {
   aboutToAppear(): void {
     this.nodeKeyword = this.vm.keyword
     this.vm.loadAllNodes()
+    this.loadLocalNodeSections()
     this.loadTopicSurface()
   }
 
@@ -42,6 +48,7 @@ export struct DiscoverPage {
         Scroll() {
           Column({ space: ThemeConstants.SPACE_MD }) {
             this.HotTopicsSection()
+            this.LocalNodeSections()
             if (this.vm.nodeDataSource.totalCount() === 0) {
               this.EmptyView()
             } else {
@@ -204,6 +211,59 @@ export struct DiscoverPage {
       .width('100%')
   }
 
+  @Builder LocalNodeSections() {
+    if (this.savedNodes.length > 0 || this.recentNodes.length > 0) {
+      Column({ space: ThemeConstants.SPACE_SM }) {
+        if (this.savedNodes.length > 0) {
+          this.SectionTitle('关注节点')
+          this.NodeChipWrap(this.savedNodes.slice(0, 12), 'saved')
+        }
+        if (this.recentNodes.length > 0) {
+          this.SectionTitle('最近浏览节点')
+          this.NodeChipWrap(this.recentNodes.slice(0, 12), 'recent')
+        }
+      }
+      .width('100%')
+    }
+  }
+
+  @Builder NodeChipWrap(nodes: SavedNode[], prefix: string) {
+    Flex({ wrap: FlexWrap.Wrap, space: { main: LengthMetrics.vp(ThemeConstants.SPACE_SM), cross: LengthMetrics.vp(ThemeConstants.SPACE_SM) } }) {
+      ForEach(nodes, (node: SavedNode) => {
+        this.NodeChip(node)
+      }, (node: SavedNode) => `${prefix}-${node.name}`)
+    }
+    .width('100%')
+  }
+
+  @Builder NodeChip(node: SavedNode) {
+    Button() {
+      Row({ space: ThemeConstants.SPACE_XS }) {
+        Text(node.title || node.name)
+          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+          .fontColor($r('sys.color.font_primary'))
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+        if (node.topics > 0) {
+          Text(`${node.topics}`)
+            .fontSize(ThemeConstants.FONT_SIZE_TINY)
+            .fontColor($r('sys.color.font_secondary'))
+        }
+      }
+      .alignItems(VerticalAlign.Center)
+    }
+    .type(ButtonType.Normal)
+    .buttonStyle(ButtonStyleMode.NORMAL)
+    .height(34)
+    .padding({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
+    .borderRadius(ThemeConstants.RADIUS_ROUND)
+    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+    .onClick(() => {
+      let p: NodeTopicListParams = { nodeName: node.name, nodeTitle: node.title || node.name }
+      this.ns.pushPathByName('NodeTopicList', p as Object)
+    })
+  }
+
   @Builder EmptyView() {
     Column() {
       Text('没有匹配的节点')
@@ -316,5 +376,44 @@ export struct DiscoverPage {
           this.loadTopicSurface()
         }
       })
+  }
+
+  private loadLocalNodeSections(): void {
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    Promise.all([
+      CollectionSettings.loadSavedNodes(context),
+      CollectionSettings.loadViewedTopics(context)
+    ])
+      .then((result) => {
+        this.savedNodes = result[0]
+        this.recentNodes = this.recentNodesFromViewedTopics(result[1], this.savedNodes)
+      })
+      .catch((_error: Error) => {
+        this.savedNodes = []
+        this.recentNodes = []
+      })
+  }
+
+  private recentNodesFromViewedTopics(viewedTopics: ViewedTopic[], savedNodes: SavedNode[]): SavedNode[] {
+    const saved = new Set(savedNodes.map((node: SavedNode) => node.name))
+    const seen: Set<string> = new Set()
+    const nodes: SavedNode[] = []
+    for (const topic of viewedTopics) {
+      const name = (topic.nodeName || '').trim()
+      if (!name || seen.has(name) || saved.has(name)) {
+        continue
+      }
+      nodes.push({
+        name: name,
+        title: topic.nodeTitle || name,
+        topics: 0,
+        savedAt: topic.viewedAt || 0
+      })
+      seen.add(name)
+      if (nodes.length >= 12) {
+        break
+      }
+    }
+    return nodes
   }
 }
