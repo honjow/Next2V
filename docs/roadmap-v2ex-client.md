@@ -1,559 +1,753 @@
-# V2Next V2EX Client Roadmap
+# V2Next Roadmap and Handoff Guide
 
-This document is the handoff guide for continuing V2Next development in a new
-session. It is based on the current V2Next implementation, the V2EX website, and
-two mature open-source clients used as product references:
+This document is the execution guide for continuing V2Next in independent
+threads. It reflects the current codebase after the recent UI/link/profile
+changes, plus a feature comparison against:
 
-- V2Fun: https://github.com/liaoliao666/v2ex
-- VVEX: https://github.com/guozhigq/flutter_v2ex
+- V2Fun: `https://github.com/liaoliao666/v2ex`
+- VVEX / flutter_v2ex: `https://github.com/guozhigq/flutter_v2ex`
+- V2EX web pages and API v2 behavior observed through the current app adapters.
 
-The target is a complete daily-use HarmonyOS NEXT V2EX client, not just a
-read-only browser. The product direction is HDS-first and concise: use system
-components, keep surfaces quiet, and remove explanatory text that does not help
-the immediate decision.
+The product goal is a complete daily-use HarmonyOS NEXT V2EX client. The
+implementation direction is HDS-first, concise, and regression-aware.
 
-## Non-Negotiable UI Rules
+## Hard Rules
 
-The detailed implementation contract is `docs/ui-guidelines.md`. Follow that
-document before changing page UI. This roadmap describes product direction; the
-UI guidelines define the control-level rules and commit gate.
+1. Prefer Harmony Design System / `@kit.UIDesignKit` components and system
+   interaction patterns before writing custom ArkUI UI.
+2. If HDS is unavailable or unsuitable, create or reuse a shared wrapper in
+   `shared/src/main/ets/components/`; do not add page-local one-off buttons,
+   text fields, sheets, rows, or menus.
+3. Keep UI concise. Remove helper subtitles and explanatory copy unless they
+   communicate state, risk, count, cache freshness, or a hidden behavior.
+4. Preserve explicit V2EX money units. If source text says `0.90 铜币`, display a
+   fractional copper value. Do not convert it to `90 铜币`.
+5. Do not auto-run paid/destructive/account-changing operations during
+   unattended validation. This includes post, reply, thank, ignore, report,
+   block, follow, favorite, sign-in, image upload, sticky, and boost.
+6. Write operations must stay guarded by the global write-action switch plus an
+   explicit confirmation.
+7. Do not commit credentials, cookies, tokens, screenshots, device dumps, local
+   reference checkouts, or temporary test artifacts.
+8. Every coherent implementation step must pass:
+   - `bash dev.sh --build-only`
+   - install to `192.168.50.237:12345`
+   - affected-page device interaction
+   - screenshot/layout review for UI changes
+   - `git diff --check`
+   - actual diff review
+   - accurate commit message
 
-### HDS First
+## Current Codebase Snapshot
 
-All new UI work must prefer Harmony Design System / `@kit.UIDesignKit` first.
+Core app and routes:
 
-Use HDS components and interaction patterns for:
+- `entry/src/main/ets/pages/Index.ets`
+  - App shell, bottom tabs, navigation route registration.
+  - Still owns too much: My page, notification UI, account state, local lists.
+  - This is the main architecture debt.
+- `feature/feed/src/main/ets/pages/HomePage.ets`
+  - Home tab strip, swiper sync, topic lists, pull refresh.
+- `feature/node/src/main/ets/pages/DiscoverPage.ets`
+  - Node search plus hot/rank/latest/recent topic surfaces.
+  - UI still uses custom page layout and needs shared scaffold migration.
+- `feature/detail/src/main/ets/pages/TopicDetailPage.ets`
+  - Topic detail, replies, topic actions, read position, filters, images.
+- `feature/detail/src/main/ets/pages/ReplyEditorPage.ets`
+  - Reply draft/editor flow.
+- `entry/src/main/ets/pages/TopicEditorPage.ets`
+  - Topic draft/editor flow.
+- `entry/src/main/ets/pages/SearchPage.ets`
+  - Local/node/SOV2EX/web search sources and filter sheet.
+- `feature/user/src/main/ets/pages/UserProfilePage.ets`
+  - User profile, topics/replies tabs, follow/block controls, full-list entries.
+- `feature/settings/src/main/ets/pages/SettingsPage.ets`
+  - Settings and advanced controls.
 
-- Navigation, title bars, tabs, tab bars, modal surfaces, menus, buttons, list
-  rows, popups, dialogs, toast-like feedback, and material/blur/immersive
-  effects.
-- Secondary pages, including Search, Settings, Login, TopicEditor, ReplyEditor,
-  UserProfile, account pages, notification pages, local lists, and future
-  feature pages.
-- Action menus. Prefer HDS popup menu / menu button patterns instead of
-  hand-written temporary menus.
-- Safe area, title blur, bottom floating tab blur, light-sense/immersive
-  backgrounds, and page transitions.
+Shared infrastructure:
 
-Fallback rules:
+- `shared/src/main/ets/components/SecondaryListScaffold.ets`
+  - Current secondary list safe-area scaffold.
+- `shared/src/main/ets/components/SecondaryFormScaffold.ets`
+  - Form-page scaffold.
+- `shared/src/main/ets/components/AppSearchField.ets`
+- `shared/src/main/ets/components/AppTextField.ets`
+- `shared/src/main/ets/components/AppModalScaffold.ets`
+- `shared/src/main/ets/components/AppActionButton.ets`
+- `shared/src/main/ets/components/FilterChip.ets`
+- `shared/src/main/ets/components/ConciseListRow.ets`
+- `shared/src/main/ets/components/GroupedListSection.ets`
+- `shared/src/main/ets/components/MarkdownContent.ets`
+  - Markdown rendering, selectable text, mentions, image rendering.
+  - Standalone non-image links now render as normal inline links, not cards.
+- `shared/src/main/ets/utils/MediaUrlUtils.ets`
+  - Image URL detection and media URL helpers.
+- `shared/src/main/ets/network/ApiService.ets`
+  - V1/public APIs, HTML parsing, Cookie-backed account/write adapters.
+- `shared/src/main/ets/network/ApiV2Service.ets`
+  - PAT/API v2 wrapper for member/token/notifications/node/topic/replies.
+- `shared/src/main/ets/network/Sov2exService.ets`
+  - SOV2EX remote search.
 
-- Use ArkUI native components only when HDS has no suitable component, the HDS
-  API is unavailable, or device testing proves the HDS path is broken.
-- If ArkUI fallback is required, wrap it in shared components so individual
-  pages do not each invent spacing, buttons, menu, or scaffold behavior.
-- Do not hand-tune one page in isolation. When a layout defect appears on one
-  secondary page, compare it with Detail and Settings, then fix the shared
-  scaffold or shared row/menu component when possible.
-- Every UI change must be verified on the device with screenshots. Do not rely
-  on static code review for spacing, safe area, or blur effects.
+Implemented and must not regress:
 
-### Concise By Default
+- Public tabs and category-specific home content.
+- Horizontal home tab switching with animated indicator.
+- Pull refresh and list scroll behavior.
+- Detail page read position, last-read floor, latest jump, floor jump,
+  OP-only filter, sort/latest controls, reply context, selectable text,
+  copy/share/browser actions, save-later, recent-view tracking.
+- Reply filter row is acceptable in current compact form. Do not enlarge
+  `楼层 / 只看楼主 / 最新` into heavy buttons.
+- Topic/reply Markdown images, direct image URLs, retry/loading, full-screen
+  preview, pinch zoom, save image through appbar menu.
+- Non-image links display as direct clickable text.
+- Web login and native login prototype.
+- Cookie session validation and logout.
+- My account card with avatar, username, coin icons, and sign-in button.
+- Daily mission display and manual sign-in.
+- Balance parsing with explicit-unit preservation.
+- PAT storage and API v2 read flows as advanced/debug capability.
+- Notification list pagination/cache/deletion where supported.
+- Collected topics, member replies, and collected nodes pages.
+- Cookie-backed topic favorite and node follow actions.
+- Guarded topic/reply submission adapters and drafts.
+- User profile topics/replies tabs, full topics/replies pages, follow/block
+  controls with immediate UI update.
+- Search across local saved/viewed/cache/nodes plus SOV2EX and web fallback.
 
-All pages should be concise. Do not add explanatory subtitles, helper text, or
-secondary labels unless they materially help the user decide or prevent a
-mistake.
+## Reference Projects
 
-Apply this especially to My, Settings, Search, Login, TopicEditor, ReplyEditor,
-and local list pages:
+Reference checkouts should stay outside this repo, for example:
 
-- My page entries should usually be one-line commands or content entries. Remove
-  subtitles like "from V2EX sync..." when the title already explains the row.
-- Settings rows may use subtitles only for state, risk, or non-obvious behavior,
-  such as current domain, write-action danger, cache size, or Wi-Fi-only image
-  behavior.
-- Avoid repeating the page or section context inside every row. For example, in
-  an account section, "收藏主题" is enough; "从 V2EX 同步你的收藏主题" is usually
-  redundant.
-- Empty states should be short and actionable, not instructional paragraphs.
-- Prefer compact controls, icon buttons with HDS tooltips/menus, and clear row
-  titles over explanatory inline text.
-- When a page feels rough, first remove unnecessary text and visual noise before
-  adding decoration.
+- `/tmp/v2next-reference/v2fun`
+- `/tmp/v2next-reference/flutter_v2ex`
 
-## Current Implementation State
+Useful V2Fun paths:
 
-V2Next is beyond a read-only prototype. It already supports public browsing,
-login/session state, account metadata, local state, drafts, topic/reply reading,
-and image-heavy content.
+- `screens/HomeScreen.tsx`: dynamic home tabs, recent tab, node tabs.
+- `screens/SortTabsScreen.tsx`: tab sorting/customization.
+- `screens/SearchScreen.tsx`, `screens/SearchOptionsScreen.tsx`:
+  SOV2EX search and options.
+- `screens/HotestTopicsScreen.tsx`, `screens/RankScreen.tsx`,
+  `screens/RecentTopicScreen.tsx`: discovery surfaces.
+- `screens/MemberDetailScreen.tsx`: user profile topics/replies tabs,
+  follow/block actions.
+- `screens/BlackListScreen.tsx`: blocked users and ignored topics.
+- `components/topic/TopicInfo.tsx`: favorite, thank, ignore, report, edit,
+  append action model.
+- `components/topic/ReplyItem.tsx`: thank reply, ignore reply, related replies,
+  reply menu.
+- `screens/RelatedRepliesScreen.tsx`: related reply/thread context.
+- `components/UploadImageButton.tsx`, `screens/ImgurConfigScreen.tsx`,
+  `servicies/other.ts`: Imgur upload configuration and upload flow.
+- `servicies/helper.ts`: HTML parsing, image URL conversion, member/profile
+  parsing, money/profile parsing.
+- `navigation/LinkingConfiguration.ts`, `app.json`: app scheme/deep links.
 
-Implemented:
+Useful VVEX paths:
 
-- Public browsing through parsed V2EX tabs and public/API endpoints.
-- Home tabs with category-specific content and horizontal tab switching.
-- Node discovery, node search, node topic pages, and locally saved nodes.
-- User profile page with profile metadata and recent topics.
-- Topic detail page with Markdown rendering, replies, pull refresh, cache,
-  read/unread state, last read floor, jump to latest, jump to floor, OP-only
-  filter, local save-later, recent-view recording, copy/share/browser actions,
-  reply context, text selection, and code block controls.
-- Cookie session storage, WebView login, native username/password login
-  prototype, session validation, logout, balance parsing, daily mission status,
-  and manual sign-in.
-- Account block on My page with avatar, username, custom-drawn coin badges, and
-  sign-in action.
-- PAT storage, verification, token metadata, API rate-limit snapshot, and
-  PAT-backed API v2 reads. PAT is an advanced mode, not the primary user flow.
-- API v2 wrapper for member, token, notifications, notification deletion, node
-  detail, node topics, topic detail, topic replies, generic GET/POST/DELETE, and
-  rate-limit headers.
-- Notification list pagination, cache, tap-to-topic, type/read labels where the
-  source provides enough signal, and PAT deletion.
-- Cookie-backed account content pages for collected topics, replies, and
-  collected nodes, plus browser fallback links.
-- Site-synced topic favorite/unfavorite and node follow/unfollow via
-  Cookie-backed once-token actions.
-- Guarded Cookie-backed topic and reply submission adapters behind a global
-  write-action switch, with confirmation dialogs, form-token parsing, in-flight
-  states, failure messages, and draft clearing only after success.
-- Inline Markdown images, bare direct image links, common image host recognition,
-  image loading states, retry, full-screen preview, pinch zoom, image save, and
-  image loading preferences.
-- Standalone non-image link cards for common hosts while direct image URLs stay
-  on the controlled inline image path.
-- Reply and topic draft editors with Markdown preview, autosave, node picker,
-  image link insertion, and disabled submit controls behind the write-action
-  switch.
-- Local search across saved topics, viewed topics, cache, saved nodes, node
-  index, history, and external web search fallback.
-- Settings page with local data reset, cache management, media settings, reading
-  settings, write-action switch, API domain switch, and HDS notes.
+- `lib/http/soV2ex.dart`: SOV2EX request parameters and response models.
+- `lib/http/dio_web.dart`: login dynamic fields, captcha, 2FA, thank,
+  ignore, mission, write/edit/append parsing.
+- `lib/http/user.dart`: user profile, topics/replies, block, notifications.
+- `lib/pages/t/topic_id.dart`: topic detail, notification-floor routing,
+  reply list behavior.
+- `lib/components/message/notice_item.dart`, `lib/pages/page_message.dart`,
+  `lib/service/local_notice.dart`: notification parsing/deletion/local
+  notifications and topic jump payload.
+- `lib/utils/upload.dart`: Imgur upload.
+- `lib/utils/app_scheme.dart`, Android `AndroidManifest.xml`: deep link setup.
+- `lib/utils/storage.dart`: settings for link opening, auto sign-in, notice,
+  font sizes, tabs, OP highlight, side swipe.
 
-Key local files:
+Reference code is for behavior and architecture comparison only. Do not copy
+large blocks or foreign UI style into this Harmony app.
 
-- `entry/src/main/ets/pages/Index.ets`: app shell plus too many My/Notify/account
-  responsibilities. This must be split.
-- `feature/detail/src/main/ets/pages/TopicDetailPage.ets`: topic detail,
-  replies, reading controls, topic actions.
-- `feature/detail/src/main/ets/pages/ReplyEditorPage.ets`: reply editor.
-- `entry/src/main/ets/pages/TopicEditorPage.ets`: topic editor.
-- `entry/src/main/ets/pages/SearchPage.ets`: current local/external search UI.
-- `feature/user/src/main/ets/pages/UserProfilePage.ets`: user profile.
-- `feature/settings/src/main/ets/pages/SettingsPage.ets`: settings.
-- `shared/src/main/ets/components/SecondaryListScaffold.ets`: existing secondary
-  scaffold; keep evolving this into the common HDS-first page layer.
-- `shared/src/main/ets/network/ApiService.ets`: public API and Cookie-backed
-  HTML adapters.
-- `shared/src/main/ets/network/ApiV2Service.ets`: authenticated API v2 wrapper.
-- `shared/src/main/ets/components/MarkdownContent.ets`: Markdown/image/link
-  rendering.
+## P0. Architecture and UI Baseline
 
-## Product Gap Summary
-
-Compared with V2Fun and VVEX, the largest gaps are now:
-
-- In-app remote search with SOV2EX-style advanced filters.
-- Discover surfaces: today hot, historical hot, rank/community pages, and richer
-  node navigation.
-- Account actions: thank topic/reply, ignore topic/reply, report, follow/unfollow
-  user, block/unblock user, black list, edit topic, append topic, and image
-  upload.
-- Notification workflow: jump to exact floor/reply, richer type handling, local
-  notification/polling, and better deletion/read-state handling.
-- Login completeness: captcha, 2FA, session expiration recovery, and better
-  native-login error handling.
-- User customization: tab sorting/hiding, node sorting, reading defaults,
-  open-in-app browser preference, quick actions, and deep links.
-- UI consistency: several secondary pages still look like independently tuned
-  pages instead of one HDS-based product.
-
-Compared with the V2EX website, V2Next still lacks:
-
-- Full website action parity for thank, ignore, report, block, edit, append,
-  sticky, boost, invite-code purchase, and image hosting.
-- Full account settings and balance detail.
-- Block behavior that affects lists, replies, notifications, and local filters.
-- Original-format expansion parity for every embedded content type.
-
-API constraint:
-
-- V2EX API 2.0 currently covers notifications, notification deletion, member,
-  token, node, node topics, topic, topic replies, sticky, and boost.
-- Normal topic creation, reply creation, thank, favorite/unfavorite, block, edit,
-  append, image upload, and many account operations still need Cookie-backed HTML
-  form/action adapters unless the official API changes.
-
-## Product Principles
-
-1. HDS-first UI is mandatory for new UI and refactors.
-2. Concise UI is mandatory. Remove redundant subtitles and helper copy unless
-   they communicate state, risk, or an otherwise hidden behavior.
-3. Normal users should use username/password login or official WebView login.
-   PAT remains an advanced/API mode.
-4. Prefer official API v2 when it exposes the needed operation. Use
-   Cookie-backed page parsing/form submission only for missing API capabilities.
-5. Write operations must be explicit, visible, confirmed, and protected by the
-   global write-action switch.
-6. Never auto-submit posts, replies, thanks, favorites, blocks, sticky, boost,
-   image uploads, or other account-changing actions during unattended validation.
-7. Passwords, tokens, cookies, and screenshots containing credentials must never
-   be committed, logged, or shown.
-8. Every coherent feature must pass build, install, device interaction,
-   screenshot review, `git diff --check`, diff review, and an accurate commit.
-9. V2EX coin parsing must preserve explicit units. If the source text says
-   `0.90 铜币`, parse and display it as a fractional copper balance, not `90 铜币`.
-   Do not multiply `0.xx 铜币` by 100 unless a verified source-specific DOM
-   format proves the number is not using the explicit copper unit.
-
-## Recommended Development Plan
-
-### P0. HDS-First Architecture Baseline
-
-Goal: stop accumulating one-off page UI and make future feature work predictable.
+Goal: stop page-by-page patching and make future work predictable.
 
 Tasks:
 
-- Split `Index.ets`. Keep only app shell, bottom tabs, route registration, and
-  global app state there.
-- Move My page/account UI into an account feature area.
-- Move notification UI and notification view model ownership into a notification
-  feature area.
-- Move local saved/viewed/node pages out of `Index.ets`.
-- Promote `SecondaryListScaffold` into a common HDS-first secondary page layer:
-  safe area, title offset, background, list padding, section header, empty state,
-  error state, loading state, bottom padding, and optional appbar actions.
-- Add shared HDS-style components: `SectionHeader`, `SettingsRow`, `AccountRow`,
-  `ActionMenuButton`, `FilterChip`, `SearchPanel`, `EmptyState`, and
-  `DestructiveConfirmDialog` as needed.
-- Add concise-copy defaults to shared row components: subtitles are optional and
-  should be absent by default.
-- Convert Search, Settings, Login, TopicEditor, ReplyEditor, UserProfile, and
-  local list pages to the shared scaffolds.
-- Audit My and Settings first for redundant subtitles and repeated context.
-- Capture baseline screenshots for all primary and secondary pages.
+- Split `entry/src/main/ets/pages/Index.ets`.
+  - Keep route registration, bottom tabs, global app state, and top-level HDS
+    title bar helpers in `Index.ets`.
+  - Move My/account page into a new account feature area, for example
+    `feature/account/src/main/ets/...` or an equivalent local convention.
+  - Move notification page and view model ownership into a notification feature
+    area.
+  - Move local pages for saved topics, viewed topics, and saved nodes out of
+    `Index.ets`.
+- Promote shared scaffolds.
+  - Extend `SecondaryListScaffold` or add a compatible HDS-first page scaffold
+    for safe area, title offset, list padding, bottom avoid, loading, error,
+    empty state, optional appbar actions, pull refresh, and reach-end.
+  - Keep immersive/light-sense behavior correct: content may scroll under the
+    title blur, but first content must not start hidden behind it.
+  - Avoid blank spacer hacks outside the scaffold.
+- Consolidate shared UI primitives.
+  - List rows: use `ConciseListRow`, `GroupedListSection`, or an HDS list-item
+    wrapper. Subtitles are optional and absent by default.
+  - Inputs: use `AppSearchField` or `AppTextField`, never raw page-local
+    `TextInput` styling.
+  - Buttons/chips: keep same-role controls same size and same component.
+  - Sheets: use `bindSheet` plus `AppModalScaffold` or HDS/system sheet
+    patterns. Back must close the sheet before leaving the page.
+  - Menus: page actions and low-frequency operations belong in HDS appbar menus
+    or `ContextMenu`.
+- Migrate or review these pages against the shared layer:
+  - Search
+  - Settings
+  - Login
+  - Web login
+  - Topic editor
+  - Reply editor
+  - User profile
+  - Node topic
+  - Discover
+  - Saved topics / recent views / saved nodes
+  - Notifications
 
-Validation:
+Acceptance:
 
-- Home, Discover, Notifications, My, Settings, Detail, User, Node, Search,
-  Login, TopicEditor, ReplyEditor, SavedTopics, ViewedTopics, and SavedNodes
-  have consistent safe area, horizontal padding, title placement, and background.
-- HDS menu/popup/action patterns are used where available.
-- No content is hidden behind title bars, status bar, bottom floating tab, or
-  gesture area.
+- Screenshot review covers Home, Discover, Notifications, My, Settings, Search,
+  Login, WebLogin, TopicDetail, TopicEditor, ReplyEditor, UserProfile,
+  NodeTopic, saved topics, recent views, saved nodes.
+- No affected page has hidden content behind title bar, status bar, floating
+  bottom tab, keyboard, or gesture area.
+- Same-row controls have consistent height, font, shape, and alignment.
+- No feature page adds raw `TextInput`, pseudo-buttons, custom sheets, or new
+  page-local row styles when a shared wrapper exists.
 
-### P0. In-App Remote Search
+Regression guards:
 
-Goal: match V2Fun/VVEX search usefulness while keeping local search fast.
+- Do not change compact reply filter row shape.
+- Do not reintroduce standalone non-image link cards.
+- Do not change money parsing unless tests prove the source format.
+
+## P0. Media and Image Host Handling
+
+Goal: make image-heavy V2EX topics readable without turning normal links into
+heavy cards.
+
+Current state:
+
+- Direct image suffix URLs are shown as images.
+- Known direct image CDN prefixes are shown as images.
+- Non-image links are shown as inline clickable text.
+- Image preview/save/retry/loading preferences exist.
+
+Gaps:
+
+- Image-host page URLs are not reliably converted to direct image URLs.
+- No content-type probing for ambiguous links.
+- No provider rules table, tests, or settings for image-host behavior.
+- Image upload is not implemented.
+
+Tasks:
+
+- Refactor `MediaUrlUtils.ets` around a typed result, for example:
+  - `directImage`
+  - `knownImageHostDirect`
+  - `imageHostPageResolved`
+  - `probeRequired`
+  - `nonImageLink`
+  - `unsupported`
+- Keep direct-image rules first:
+  - suffix: `.jpg`, `.jpeg`, `.png`, `.gif`, `.webp`, `.bmp`, `.svg`,
+    `.avif`, `.heic`, `.heif`
+  - query extension: `format`, `fm`, `ext`, `type`, `output`
+  - known direct hosts already in `IMAGE_HOST_PREFIXES`
+- Add conservative image-host page rules:
+  - `https://imgur.com/<id>` -> `https://i.imgur.com/<id>.png`
+    only for single-image IDs, not `/a/` or `/gallery/` albums.
+  - `https://sm.ms/image/<id>`: only resolve if a stable direct URL can be
+    derived or fetched; otherwise keep normal link.
+  - `postimg.cc`, `ibb.co`, `imgbox.com`, `postimages.org`: add only when a
+    deterministic direct URL pattern or safe parser is implemented.
+- Add optional HEAD/content-type probing.
+  - Probe only http/https links that are standalone, not known non-image links.
+  - Respect media preferences where possible.
+  - Use timeout and cache probe results locally by normalized URL.
+  - If `Content-Type` starts with `image/`, render image.
+  - On 403/404/timeout/non-image, keep inline link. Do not show an error block.
+- Add tests or a small deterministic test harness for `MediaUrlUtils` rules.
+  Include at least:
+  - direct suffix URL
+  - suffix with query string
+  - `i.imgur.com/...jpg`
+  - `imgur.com/<id>` single image page
+  - `imgur.com/a/<id>` album stays link
+  - `github.com/...` normal link stays link
+  - `raw.githubusercontent.com/...` direct image stays image
+  - unknown URL stays link unless HEAD proves image
+- Update `MarkdownContent.ets`.
+  - Image candidates render through current `MarkdownAutoImage`.
+  - Non-image links remain selectable/clickable text.
+  - Do not create a large link preview card.
+- Add settings only if needed:
+  - auto-load images
+  - Wi-Fi-only image loading
+  - content-type probing on/off if probe behavior affects performance.
+
+Acceptance:
+
+- Build/install/device verify on a topic containing:
+  - direct image link
+  - Imgur single-image page link
+  - GitHub normal link
+  - at least one unsupported image-host page link
+- Direct images show image blocks.
+- Imgur single-image page shows image only if transformed correctly.
+- Album/unsupported links remain normal text links.
+- No grey standalone link cards return.
+- Image loading indicator remains centered.
+- Full-screen preview and save image still work.
+
+Follow-up P1 for upload:
+
+- Add user-configured image upload provider, starting with Imgur-style
+  Client-ID flow.
+- Use a Harmony picker/media API, upload progress, error state, uploaded image
+  history, copy URL, insert Markdown into reply/topic editors.
+- Do not ship hard-coded public client IDs.
+- Do not auto-upload in unattended tests.
+
+## P0. Search Completion
+
+Goal: match mature clients' search utility while keeping the page simple.
+
+Current state:
+
+- Local search across saved/viewed/cache/nodes.
+- SOV2EX service and filters exist.
+- Web fallback exists.
+
+Tasks:
+
+- Verify SOV2EX trigger behavior. The search page must have an obvious HDS
+  action or keyboard action that runs remote search.
+- Confirm remote parameters:
+  - query
+  - pagination
+  - sort: relevance/sumup and created
+  - order: desc/asc
+  - date range
+  - node filter
+  - author/member filter
+- Keep local results instant and separate from remote failures.
+- Search history:
+  - record successful queries
+  - clear history
+  - tap history to search
+- Filter sheet:
+  - use appbar-style modal scaffold with close button
+  - Back closes sheet
+  - no mixed-size buttons
+- Opening results:
+  - topic result opens `TopicDetail`
+  - node result opens `NodeTopicList`
+  - user/author result opens `UserProfile` where applicable.
 
 Reference:
 
-- V2Fun uses SOV2EX and has a search options screen.
-- VVEX uses SOV2EX with sort, order, and date filters.
+- V2Fun: `screens/SearchScreen.tsx`, `screens/SearchOptionsScreen.tsx`,
+  `jotai/sov2exArgsAtom.ts`
+- VVEX: `lib/http/soV2ex.dart`
+
+Acceptance:
+
+- Device tests: search `github`, a Chinese keyword, a node name, and a username.
+- Remote search can load and page results.
+- Remote failure does not break local search.
+- Search UI remains visibly HDS-like and concise.
+
+## P0. Detail, Reply, and Notification Loop
+
+Goal: complete the read -> notification -> exact reply -> respond loop.
 
 Tasks:
 
-- Add a SOV2EX service wrapper with typed request/response models.
-- Support query, pagination, result count, node filter, author filter, date
-  range, sort by relevance/created, and ascending/descending order.
-- Keep local search available as an instant tab/source.
-- Redesign Search as an HDS-first page:
-  - Empty state: history + node quick search.
-  - Query state: local results + remote SOV2EX results.
-  - Appbar action: search filters.
-  - Clear error isolation between local and remote sources.
-- Record and manage search history.
-- Preserve external browser fallback for Google/Bing search if SOV2EX fails.
+- Notification floor jump:
+  - Parse topic id, reply id, and floor from both API v2 and web notification
+    sources.
+  - Pass target floor/reply into `TopicDetailParams`.
+  - Topic detail loads pages until target floor/reply is visible or no more
+    pages remain.
+  - Use an animated scroll to target, not an abrupt jump.
+- Reply controls:
+  - Keep compact `楼层 / 只看楼主 / 最新` row.
+  - Put low-frequency reply actions in `ContextMenu`.
+  - Do not add large visible buttons for rare actions.
+- Related replies:
+  - Implement related/context view through the existing modal scaffold.
+  - Reference V2Fun `screens/RelatedRepliesScreen.tsx` and
+    `components/topic/ReplyItem.tsx`.
+- Account actions in detail:
+  - thank topic
+  - thank reply
+  - ignore topic
+  - ignore reply
+  - report topic
+  - favorite/unfavorite topic, preserving current behavior
+  - edit topic and append topic as P1 if not safe to complete in P0.
+- All paid/destructive actions require confirmation and write-action switch.
 
-Validation:
+Reference:
 
-- Search "programmer", a Chinese keyword, a username, and a node name.
-- Page through results.
-- Open a result into TopicDetail.
-- SOV2EX failure does not break local search.
+- V2Fun: `components/topic/TopicInfo.tsx`,
+  `components/topic/ReplyItem.tsx`
+- VVEX: `lib/http/dio_web.dart`, `lib/pages/t/topic_id.dart`,
+  `lib/components/message/notice_item.dart`
 
-### P0. Detail Actions and Notification Floor Jump
+Acceptance:
 
-Goal: make the reading and notification loop feel complete.
+- Notification tap lands near the exact reply/floor when data exists.
+- Long topic target floor loading works across pages.
+- Reply filter row remains visually compact.
+- Context menu appears repeatedly without failing after multiple opens.
+- Paid/destructive actions are not run by unattended tests.
 
-Tasks:
+## P0. Account, My Page, and User Profiles
 
-- Add notification-to-floor navigation where notification parsing exposes a reply
-  id or floor.
-- Keep TopicDetail capable of loading pages until the target floor/reply is
-  visible.
-- Add thank topic and thank reply with coin-cost confirmation.
-- Add ignore topic and ignore reply with explicit confirmation.
-- Add report topic with explicit confirmation and no unattended execution.
-- Move low-frequency actions into an HDS popup menu.
-- Keep the reply filter row compact and consistent. Do not enlarge floor,
-  OP-only, or latest controls into heavy action buttons; low-frequency reply
-  actions belong in ContextMenu.
-- Add related replies / reply context entry from reply action menu.
-
-Validation:
-
-- Open notification and land near the correct floor.
-- Open a long topic, jump to floor, filter OP, and return to all replies.
-- Write-action disabled state prevents unsafe operations where applicable.
-- No thank/ignore/report action runs during unattended tests.
-
-### P0. Account and My Page Completion
-
-Goal: make normal Cookie login useful as the main account mode.
+Goal: make Cookie login the normal account mode and keep PAT advanced.
 
 Tasks:
 
-- Keep My page as a product account dashboard: avatar, username, balance coins,
-  daily mission/sign-in button, and concise account entries.
-- Remove redundant subtitles from account content rows. Use subtitles only for
-  counts, failure states, stale-cache markers, or other useful state.
-- Move settings to the My appbar only; do not duplicate settings rows in My.
-- Add account detail page with balance detail and browser fallback.
-- Add my topics if parseable separately from collected topics.
-- Add following users/topics page if stable parseable pages exist.
-- Add black list page.
-- Add follow/unfollow user and block/unblock user actions.
-- Make session expiration recoverable everywhere: relogin entry, no stale
-  logged-in UI, clear error path.
-- Keep PAT metadata in an advanced/debug area only.
+- Keep My page as account dashboard:
+  - avatar
+  - username
+  - coin badges
+  - daily mission/sign-in state
+  - concise account entries
+  - settings only in appbar menu
+- Remove redundant subtitles and repeated context.
+- Add account detail page:
+  - balance detail
+  - browser fallback
+  - session state
+  - logout in the detail/settings flow, not as a primary My-page row.
+- Add black list page:
+  - blocked users
+  - ignored topics
+  - reset/clear with confirmation
+  - local state should affect lists where feasible.
+- Add following pages:
+  - following users if parseable
+  - following/collected nodes
+  - collected topics
+- Improve user profile:
+  - topics/replies tab remains.
+  - hidden topics must respect website hidden state.
+  - full topics/replies entries live at list tail, not as top-heavy buttons.
+  - follow/block actions update immediately and refresh from server.
+  - re-entering the page must preserve correct server state.
+- Session expiration:
+  - every authenticated page should show a recoverable login entry.
+  - stale logged-in UI must be cleared or marked stale after validation fails.
 
-Validation:
+Reference:
 
-- Cookie login persists across restart.
-- My page shows `honjow` account data correctly when logged in.
-- Balance parsing keeps `97` as silver and `0.72` as copper for compact website
-  balance text.
-- Expired/invalid Cookie leads to a recoverable login state.
+- V2Fun: `screens/MemberDetailScreen.tsx`, `screens/BlackListScreen.tsx`,
+  `screens/MyTopicsScreen.tsx`, `screens/MyNodesScreen.tsx`
+- VVEX: `lib/http/user.dart`, `lib/components/adaptive/slide.dart`
 
-### P1. Discover and Navigation Surfaces
+Acceptance:
 
-Goal: bring the app closer to mature clients' browsing/discovery capability.
+- Logged-in My page shows `honjow` and correct coin units.
+- `0.90 铜币` stays fractional copper if source says that.
+- Follow/unfollow and block/unblock state refreshes without app restart.
+- Blacklist/ignored topics page does not require PAT.
+- Expired Cookie path is recoverable.
+
+## P1. Login Hardening
+
+Goal: make username/password login reliable, with WebView fallback.
 
 Tasks:
 
-- Add Today Hot.
-- Add Historical Hot, with date selection if a stable source is used.
-- Add Rank/community pages where parseable.
-- Improve Discover page with clear sections: node search, all nodes, hot,
-  history hot, rank, and frequent nodes.
-- Add homepage tab management: sort, hide/show, restore default.
-- Add node sorting/favorites management.
-- Keep all pages on shared HDS scaffolds.
-
-Validation:
-
-- Hot/history/rank pages open and navigate to TopicDetail.
-- Tab sorting survives app restart.
-- Discover does not become a card grid with oversized empty space.
-
-### P1. Login Hardening
-
-Goal: make username/password login robust, with WebView as fallback.
-
-Tasks:
-
-- Harden dynamic field parsing for `/signin`.
-- Add captcha display/input flow if V2EX returns a captcha challenge.
+- Harden `/signin` dynamic field parsing.
+- Display captcha image and input when required.
 - Add 2FA flow.
-- Improve error messages for wrong password, captcha, 2FA, network, and blocked
-  session cases.
-- Validate saved Cookie by loading an authenticated page, not by checking that a
-  Cookie string exists.
-- Keep WebView login as a visible fallback from the native login page.
+- Distinguish errors:
+  - wrong password
+  - captcha required/invalid
+  - 2FA required/invalid
+  - login attempts blocked by V2EX
+  - network failure
+  - session expired
+- Validate saved Cookie by loading an authenticated page, not just by checking
+  a Cookie string.
+- Web login:
+  - use shared scaffold correctly
+  - avoid blank spacer hacks
+  - save and return automatically when a valid session is detected
+  - keep manual save/reload appbar actions as fallback.
 
-Validation:
+Reference:
+
+- VVEX: `lib/http/dio_web.dart`, `lib/utils/login.dart`
+- V2Fun: `screens/LoginScreen.tsx`, `screens/WebSigninScreen.tsx`
+
+Acceptance:
 
 - Normal login succeeds.
-- Wrong password and invalid 2FA/captcha show precise error states.
-- App restart keeps a valid session.
+- Wrong password shows precise error.
+- Captcha challenge displays and can retry.
+- 2FA challenge can complete.
+- Restart preserves valid session.
 
-### P1. Writing and Editing
+## P1. Discover and Navigation
 
-Goal: make write flows usable while remaining safe.
+Goal: make browsing surfaces competitive with V2Fun/VVEX.
+
+Current state:
+
+- Discover has node search and hot/rank/latest/recent topic surfaces.
 
 Tasks:
 
-- Polish reply editor with HDS toolbar, preview, mention insertion, image link
-  insertion, autosave, and submit confirmation.
-- Polish topic editor with node picker, Markdown toolbar, preview, draft save,
-  and submit confirmation.
-- Add @ multiple users from reply context/search.
-- Add edit topic flow: parse original form, edit, preview, confirm coin cost,
-  submit only with write-action switch enabled.
-- Add append topic flow if V2EX exposes stable form/actions.
+- Verify and polish current Discover:
+  - HDS/shared scaffold
+  - pull refresh
+  - concise sections
+  - no oversized grid/card whitespace
+  - appbar menu for secondary actions
+- Add historical hot if stable source is available.
+- Add rank/community pages beyond the small embedded list if parseable.
+- Add all-nodes navigation with categories.
+- Add frequent/recent nodes.
+- Add home tab management:
+  - sort tabs
+  - hide/show tabs
+  - add node tab
+  - restore defaults
+  - persist across restart.
+- Add node sorting/favorites management.
+
+Reference:
+
+- V2Fun: `screens/HomeScreen.tsx`, `screens/SortTabsScreen.tsx`,
+  `screens/HotestTopicsScreen.tsx`, `screens/RankScreen.tsx`,
+  `screens/NavNodesScreen.tsx`
+- VVEX: `lib/components/adaptive/main.dart`,
+  `lib/components/home/tab_bar_list.dart`
+
+Acceptance:
+
+- Hot/rank/latest/recent open topic detail.
+- Tab management survives restart.
+- Discover remains compact and HDS-like.
+
+## P1. Writing and Editing
+
+Goal: make writing usable while keeping account-changing operations protected.
+
+Tasks:
+
+- Reply editor:
+  - shared HDS form scaffold
+  - Markdown toolbar
+  - preview
+  - mention insertion
+  - image link insertion
+  - upload insertion after media upload exists
+  - autosave and restore
+- Topic editor:
+  - node picker
+  - Markdown toolbar
+  - preview
+  - draft save
+  - submit confirmation
+- Add edit topic:
+  - parse original form
+  - preview
+  - confirm
+  - submit only with write-action switch enabled.
+- Add append topic:
+  - parse form/status
+  - preview
+  - confirm
+  - guarded submit.
 - Keep drafts until confirmed success.
 
-Validation:
+Reference:
+
+- V2Fun: `screens/WriteTopicScreen.tsx`, `components/topic/ReplyBox.tsx`,
+  `components/UploadImageButton.tsx`
+- VVEX: `lib/http/dio_web.dart`, `lib/pages/page_write.dart` if present,
+  `lib/components/topic/reply_new.dart`
+
+Acceptance:
 
 - Drafts survive restart.
-- Submit controls remain disabled while write-action switch is off.
+- Submit controls disabled when write-action switch is off.
 - Manual real submission requires explicit user approval.
 
-### P1. Media and Uploads
+## P1. Settings and Personalization
 
-Goal: cover image-heavy topics and writing workflows.
-
-Tasks:
-
-- Keep direct image rendering and full-screen preview stable.
-- Add image upload provider support. Start with Imgur or another user-configured
-  provider; V2EX image host can be evaluated after account eligibility is clear.
-- Add image picker, upload progress, uploaded-image history, copy URL, and insert
-  Markdown.
-- Add long-image preview polish.
-- Add reply/topic "save as image" only after core upload/rendering is stable.
-- Keep Wi-Fi-only and auto-load image preferences.
-
-Validation:
-
-- Pick image, upload, insert Markdown, preview.
-- Save image still works.
-- Large images do not break list/detail layout.
-
-### P1. Settings and Personalization
-
-Goal: make settings product-grade instead of engineering-grade.
+Goal: turn settings from engineering controls into product controls.
 
 Tasks:
 
-- Reorganize Settings into HDS-style sections:
+- Reorganize Settings:
   - Account
   - Reading
-  - Content parsing
-  - Images and media
+  - Content and media
   - Notifications
   - Writing
   - Storage
   - Advanced
-- Add reading defaults: reply order, OP highlight, font size, line height,
-  density, code wrapping.
-- Add open links in app/browser preference.
-- Add notification preference.
-- Add tab/node sorting entry.
-- Keep dangerous actions behind confirmation.
-- Remove redundant account controls from Settings when they belong in My or
-  Account.
-- Remove row subtitles that only restate the title or section context.
+- Reading:
+  - reply order default
+  - OP-only/highlight default
+  - font size
+  - line height
+  - density
+  - code wrapping
+- Content/media:
+  - auto-load images
+  - Wi-Fi-only images
+  - image-host probing if implemented
+  - link open preference
+- Notifications:
+  - polling/local notification preference
+  - quiet behavior
+- Writing:
+  - global write-action switch
+  - image upload provider settings
+- Advanced:
+  - PAT metadata
+  - API domain
+  - cache/debug controls.
 
-Validation:
+Reference:
 
+- V2Fun: `screens/SettingScreen.tsx`, `screens/ConfigureDomainScreen.tsx`,
+  `screens/CustomizeThemeScreen.tsx`, `jotai/*Atom.ts`
+- VVEX: `lib/utils/storage.dart`
+
+Acceptance:
+
+- Settings and My do not duplicate account controls.
+- No row subtitle restates the row title.
 - Settings page spacing matches other secondary pages.
-- No row text overflows.
-- Account settings are not duplicated between My and Settings.
-- My and Settings remain scannable with minimal secondary text.
 
-### P2. System Integration
+## P2. System Integration
 
-Goal: make the app feel complete on HarmonyOS.
+Goal: make V2Next feel native on HarmonyOS.
 
 Tasks:
 
-- Add deep links:
+- Deep links:
   - topic by id
   - member by username
   - node by name
   - search by query
-- Add desktop/launcher quick actions if Harmony supports the required capability:
-  search, sign in, today hot, topic draft.
-- Add local notification/polling only after notification data and user preference
-  are stable.
-- Add notification click routing to topic/floor.
-- Evaluate tablet/two-pane layout after phone UI is stable.
+- Open external V2EX URLs in app where possible.
+- Launcher quick actions if Harmony supports them:
+  - search
+  - today hot
+  - draft
+  - notifications
+- Local notification polling after notification data is stable.
+- Notification tap routes to exact topic/floor.
+- Tablet/two-pane layout after phone layout stabilizes.
 
-Validation:
+Reference:
 
-- Deep links open correct pages from outside the app.
-- Quick actions do not require login unless the action needs it.
-- Notification tap lands on the expected topic/floor.
+- V2Fun: `navigation/LinkingConfiguration.ts`, `app.json`
+- VVEX: Android `AndroidManifest.xml`, `lib/utils/app_scheme.dart`,
+  `lib/service/local_notice.dart`
 
-### P2. Advanced Account Actions
+Acceptance:
 
-Goal: reach parity with website/client power features after core loops are
-stable.
+- Opening a V2EX topic/member/node URL lands on the correct page.
+- Notification tap opens expected topic/floor.
+- System integration does not require login unless action needs account data.
 
-Tasks:
+## Work Breakdown for Child Threads
 
-- Sticky and boost with clear permission and coin-cost explanation.
-- Invite-code purchase only if user explicitly asks for it.
-- Multi-account switching after single-account Cookie/PAT state is reliable.
-- Account settings pages if parseable and worth supporting in app.
-- Optional sync/export/import for local state.
+Recommended order:
 
-Validation:
+1. P0 Media and Image Host Handling.
+2. P0 Architecture and UI Baseline.
+3. P0 Search Completion.
+4. P0 Detail/Notification Loop.
+5. P0 Account/My/User.
+6. P1 Login Hardening.
+7. P1 Discover/Navigation.
+8. P1 Writing/Editing.
+9. P1 Settings/Personalization.
+10. P2 System Integration.
 
-- Every paid/destructive action displays cost and impact before submission.
-- No paid/destructive action is triggered during unattended testing.
+Each child thread should:
 
-## Reference Comparison Notes
+- Start by reading this document plus `docs/ui-guidelines.md`.
+- Inspect relevant current files before editing.
+- Inspect only the listed reference paths needed for the task.
+- Keep write scope narrow and state it in the final message.
+- Avoid touching unrelated UI.
+- Avoid running real paid/destructive actions.
+- Build/install/device-verify before commit.
+- Commit each coherent feature separately.
 
-V2Fun notable references:
+Suggested child-thread prompts:
 
-- SOV2EX/Google search and search option page.
-- History/recent topics, hot topics, rank/community pages.
-- Black list, domain configuration, Imgur configuration, theme customization.
-- Related replies, selectable text, search reply member, and topic editing.
-- URL scheme for search, topic, member, and node.
-
-VVEX notable references:
-
-- Material-style adaptive UI, node sorting, hot/history pages, and recent
-  browsing.
-- Advanced SOV2EX search with date/sort/order controls.
-- 2FA login, auto sign-in, local notifications, quick actions.
-- Topic/reply thank, ignore, report, favorite, follow/block user.
-- Image upload, reply save as image, markdown topic publishing.
-- Read-state service and adaptive/two-pane layout experiments.
-
-## Verification Protocol
-
-For every coherent feature or UI pass:
-
-1. `bash dev.sh --build-only`
-2. Install to `192.168.50.237:12345`
-3. Launch app
-4. Device interaction tests
-5. Screenshot/layout review
-6. `git diff --check`
-7. Review actual diff
-8. Commit with a message describing the actual diff
-
-UI verification must include screenshots for affected pages. For shared UI
-changes, capture at least:
-
-- Home
-- Discover
-- Notifications
-- My
-- Settings
-- TopicDetail
-- Search
-- Login
-- TopicEditor
-- ReplyEditor
-- UserProfile
-- NodeTopic
-
-Use the existing device tools:
-
-- HDC path:
-  `/home/gamer/devtool/ohos/command-line-tools/sdk/default/openharmony/toolchains/hdc`
-- Device:
-  `192.168.50.237:12345`
-
-Do not commit `.env.local`, cookies, tokens, screenshots, device dumps, local
-reference checkouts, or external tool folders such as `.claude/`,
-`.cursor/skills/`, and `.opencode/`.
-
-## Immediate Next Session Prompt
-
-Use this prompt to start the next independent development session:
+### Media Child Thread
 
 ```text
-Continue V2Next development from docs/roadmap-v2ex-client.md.
-
-Priorities:
-1. Follow the HDS-first rule strictly.
-2. Keep UI concise. Remove redundant subtitles/helper text, especially in My and
-   Settings, unless the text communicates state, risk, or hidden behavior.
-3. Start with P0 HDS-first architecture baseline.
-4. Split Index.ets so app shell, My/account, notifications, and local list pages
-   are separated.
-5. Promote shared HDS-first secondary page scaffolds and migrate Search,
-   Settings, Login, TopicEditor, ReplyEditor, UserProfile, and local list pages
-   where practical.
-6. After each coherent step, build, install to 192.168.50.237:12345, interact
-   with affected pages, capture screenshots, review diff, and commit with an
-   accurate message.
-
-Do not auto-submit account-changing actions. Do not commit credentials, cookies,
-tokens, screenshots, or local reference checkouts.
+Implement P0 Media and Image Host Handling from docs/roadmap-v2ex-client.md.
+Focus on MediaUrlUtils and MarkdownContent only unless settings are strictly
+needed. Preserve direct links as inline text, preserve direct image rendering,
+do not reintroduce link cards, and do not implement upload in this step.
+Build, install to 192.168.50.237:12345, verify with screenshots on a topic that
+contains direct image, Imgur page link, and normal GitHub link, then commit.
 ```
+
+### Architecture Child Thread
+
+```text
+Implement the first safe slice of P0 Architecture and UI Baseline from
+docs/roadmap-v2ex-client.md. Split one ownership area out of Index.ets, prefer
+HDS/shared components, and do not change visual behavior outside that area.
+Build, install, screenshot affected pages, and commit.
+```
+
+### Search Child Thread
+
+```text
+Complete P0 Search from docs/roadmap-v2ex-client.md. Verify SOV2EX execution,
+pagination, filter sheet Back dismissal, result navigation, and local-search
+fallback. Preserve HDS/shared controls and concise UI. Build, install, screenshot
+Search states, and commit.
+```
+
+### Detail/Notification Child Thread
+
+```text
+Complete notification floor jump and reply context/menu work from
+docs/roadmap-v2ex-client.md. Keep the current compact reply filter row. Do not
+run paid/destructive actions unattended. Build, install, verify notification to
+floor when data exists, screenshot TopicDetail, and commit.
+```
+
+## Verification Checklist
+
+Use this for every commit:
+
+- `git status --short`
+- `bash dev.sh --build-only`
+- `bash dev.sh --no-build -d 192.168.50.237:12345`
+- Launch app:
+  `/home/gamer/devtool/ohos/command-line-tools/sdk/default/openharmony/toolchains/hdc -t 192.168.50.237:12345 shell "aa start -a EntryAbility -b com.next2v.app"`
+- Interact with affected flows.
+- Capture screenshot:
+  `/home/gamer/devtool/ohos/command-line-tools/sdk/default/openharmony/toolchains/hdc -t 192.168.50.237:12345 shell "snapshot_display -f /data/local/tmp/<name>.jpeg"`
+- Pull screenshot to `/tmp`, inspect it.
+- Optional layout dump for text/state proof:
+  `/home/gamer/devtool/ohos/command-line-tools/sdk/default/openharmony/toolchains/hdc -t 192.168.50.237:12345 shell "uitest dumpLayout"`
+- `git diff --check`
+- Review `git diff`
+- Commit with accurate message.
