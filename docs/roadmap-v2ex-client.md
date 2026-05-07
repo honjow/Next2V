@@ -274,8 +274,9 @@ Tasks:
 - Add ignore topic and ignore reply with explicit confirmation.
 - Add report topic with explicit confirmation and no unattended execution.
 - Move low-frequency actions into an HDS popup menu.
-- Rework reply toolbar so OP filter, floor jump, sort/latest controls, and reply
-  actions do not crowd each other.
+- Keep the reply filter row compact and consistent. Do not enlarge floor,
+  OP-only, or latest controls into heavy action buttons; low-frequency reply
+  actions belong in ContextMenu.
 - Add related replies / reply context entry from reply action menu.
 
 Validation:
