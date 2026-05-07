@@ -16,14 +16,12 @@ import type {
   V2exAuthenticatedMember,
   V2exBalance,
   V2exDailyMission,
-  V2exNotification,
   V2exTokenInfo,
   ViewedTopic
 } from 'shared'
 import {
   ApiConstants,
   ApiService,
-  ApiV2Service,
   AuthSessionSettings,
   AuthSettings,
   Avatar,
@@ -31,13 +29,11 @@ import {
   ConciseListRow,
   CookieJarSettings,
   DateUtils,
-  EmptyState,
   FeedTabSettings,
   GroupedListSection,
   HttpClient,
   ImagePreviewParams,
   ListDivider as SharedListDivider,
-  LoadingFooter,
   NotificationSettings,
   NodeTopicListParams,
   SecondaryListScaffold,
@@ -70,12 +66,7 @@ import { AccountFollowingPage } from './AccountFollowingPage'
 import { SavedTopicsPage } from './SavedTopicsPage'
 import { ViewedTopicsPage } from './ViewedTopicsPage'
 import { SavedNodesPage } from './SavedNodesPage'
-import {
-  NotificationAuthContext,
-  NotificationCenterViewModel,
-  NotificationMetadata,
-  NotificationPageResult
-} from '../viewmodel/NotificationCenterViewModel'
+import { NotificationPage } from './NotificationPage'
 
 @Component
 struct CoinIconCanvas {
@@ -327,19 +318,9 @@ struct Index {
   @State private sessionError: string = ''
   @State private isSessionValidating: boolean = false
   @State private isAuthLoading: boolean = false
-  @State private notifications: V2exNotification[] = []
   @State private savedTopics: SavedTopic[] = []
   @State private savedNodes: SavedNode[] = []
   @State private viewedTopics: ViewedTopic[] = []
-  @State private notificationError: string = ''
-  @State private isNotificationLoading: boolean = false
-  @State private isNotificationDeleting: boolean = false
-  @State private notificationPage: number = 1
-  @State private notificationHasMore: boolean = true
-  @State private isNotificationLoadingMore: boolean = false
-  @State private notificationCacheUpdatedAt: number = 0
-  @State private notificationLoadedFromCache: boolean = false
-  @State private notificationSourceLabel: string = ''
   @State private accountBalance: V2exBalance | null = null
   @State private dailyMission: V2exDailyMission | null = null
   @State private accountMetaError: string = ''
@@ -347,9 +328,6 @@ struct Index {
   @State private isDailyRedeeming: boolean = false
   private http: HttpClient = HttpClient.getInstance()
   private api: ApiService = new ApiService()
-  private apiV2: ApiV2Service = new ApiV2Service()
-  private notificationVm: NotificationCenterViewModel = new NotificationCenterViewModel(this.api)
-  private readonly NOTIFICATION_PAGE_SIZE: number = 20
 
   aboutToAppear(): void {
     this.loadAuthSnapshot()
@@ -365,7 +343,6 @@ struct Index {
     this.savedTopics = []
     this.savedNodes = []
     this.viewedTopics = []
-    this.resetNotificationState()
     this.loadSavedTopics()
     this.loadSavedNodes()
     this.loadViewedTopics()
@@ -381,12 +358,7 @@ struct Index {
       return
     }
     this.sessionError = ''
-    this.resetNotificationState()
-    this.loadNotificationCache(this.sessionUsername)
     this.loadAccountMeta(true)
-    if (this.ct === 2) {
-      this.loadNotifications(true)
-    }
   }
 
   onPendingV2exUrlChanged(_propName: string): void {
@@ -528,7 +500,11 @@ struct Index {
         }.tabBar(this.TabIcon('发现', 1))
 
         TabContent() {
-          this.NotifyPage()
+          NotificationPage({
+            onOpenAccount: () => {
+              this.tc.changeIndex(3)
+            }
+          })
         }.tabBar(this.TabIcon('通知', 2))
 
         TabContent() {
@@ -549,9 +525,7 @@ struct Index {
       } as HdsTabsFloatingStyle)
       .onChange((i: number) => {
         this.ct = i
-        if (i === 2) {
-          this.loadNotifications()
-        } else if (i === 3) {
+        if (i === 3) {
           this.validateCookieSession()
           this.loadAccountMeta()
           this.loadSavedTopics()
@@ -825,50 +799,6 @@ struct Index {
     .padding({ top: ThemeConstants.SPACE_SM - 2, bottom: ThemeConstants.SPACE_XS })
   }
 
-  // NotifyPage 和 MePage 较为简单，保留在 Index 文件内
-  @Builder
-  NotifyPage() {
-    Column() {
-      if (!this.hasNotificationAuth()) {
-        this.AuthRequiredView('登录后可查看通知')
-      } else if (this.isNotificationLoading && this.notifications.length === 0) {
-        LoadingProgress()
-          .width(ThemeConstants.LOADING_SIZE)
-          .height(ThemeConstants.LOADING_SIZE)
-      } else if (this.notificationError && this.notifications.length === 0) {
-        this.NotificationErrorView()
-      } else {
-        SecondaryListScaffold({
-          bottomPadding: ThemeConstants.FLOAT_BAR_HEIGHT,
-          onReachEnd: () => {
-            this.loadMoreNotifications()
-          }
-        }) {
-          ListItem() {
-            this.NotificationSummaryRow()
-          }
-
-          ForEach(this.notifications, (item: V2exNotification) => {
-            this.NotificationListItem(item)
-          })
-          if (this.notifications.length === 0) {
-            ListItem() {
-              this.EmptyNoticeView()
-            }
-          }
-          if (this.notifications.length > 0) {
-            ListItem() {
-              LoadingFooter({ isLoading: this.isNotificationLoadingMore, hasMore: this.notificationHasMore })
-            }
-          }
-        }
-      }
-    }
-    .justifyContent(FlexAlign.Center)
-    .width('100%').height('100%')
-    .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
-  }
-
   @Builder
   MePage() {
     Column() {
@@ -917,10 +847,6 @@ struct Index {
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
   }
 
-  private hasNotificationAuth(): boolean {
-    return this.notificationVm.hasAuth(this.notificationAuthContext())
-  }
-
   private hasCookieAccount(): boolean {
     return this.authCookieConfigured
   }
@@ -930,20 +856,6 @@ struct Index {
       return amount.toFixed(2)
     }
     return `${amount}`
-  }
-
-  private canDeleteNotifications(): boolean {
-    return this.notificationVm.canDelete(this.notificationAuthContext())
-  }
-
-  private notificationAuthContext(): NotificationAuthContext {
-    const cookie = CookieJarSettings.getCurrentCookie()
-    return {
-      tokenConfigured: this.authTokenConfigured,
-      token: this.authToken,
-      cookieConfigured: cookie.length > 0,
-      cookie: cookie
-    }
   }
 
   private loginStatusText(): string {
@@ -1045,8 +957,7 @@ struct Index {
         console.error('restore cookie jar failed: ' + error.message)
       })
     AuthSessionSettings.load(context)
-      .then((snapshot) => {
-        this.loadNotificationCache(snapshot.username)
+      .then((_snapshot) => {
       })
       .catch((error: Error) => {
         console.error('restore auth session failed: ' + error.message)
@@ -1084,13 +995,10 @@ struct Index {
               username: username,
               avatar: profile.avatar_normal || '',
               validatedAt: Date.now()
-            }).then(() => {
-              this.loadNotificationCache(username)
-              this.loadAccountMeta(true)
-              if (this.ct === 2) {
-                this.loadNotifications(true)
-              }
             })
+              .then(() => {
+                this.loadAccountMeta(true)
+              })
           })
       })
       .catch((error: Error) => {
@@ -1116,7 +1024,6 @@ struct Index {
       .finally(() => {
         this.accountBalance = null
         this.dailyMission = null
-        this.resetNotificationState()
       })
   }
 
@@ -1540,11 +1447,6 @@ struct Index {
   }
 
   @Builder
-  EmptyNoticeView() {
-    EmptyState({ message: '暂无通知', stateHeight: 240 })
-  }
-
-  @Builder
   StorageSection() {
     Column() {
       Row() {
@@ -1569,274 +1471,6 @@ struct Index {
     .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }
 
-  @Builder
-  AuthRequiredView(message: string) {
-    Column() {
-      Text(message)
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .fontColor($r('sys.color.font_secondary'))
-      Button('去我的页面配置')
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .margin({ top: ThemeConstants.SPACE_LG })
-        .onClick(() => {
-          this.tc.changeIndex(3)
-        })
-    }
-    .justifyContent(FlexAlign.Center)
-    .width('100%')
-    .height('100%')
-  }
-
-  @Builder
-  NotificationErrorView() {
-    Column() {
-      Text(this.notificationError)
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .fontColor($r('sys.color.font_secondary'))
-      Button('重试')
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .margin({ top: ThemeConstants.SPACE_LG })
-        .onClick(() => {
-          this.loadNotifications(true)
-        })
-    }
-    .justifyContent(FlexAlign.Center)
-    .width('100%')
-    .height('100%')
-  }
-
-  @Builder
-  NotificationSummaryRow() {
-    Row({ space: ThemeConstants.SPACE_MD }) {
-      Column({ space: ThemeConstants.SPACE_XS }) {
-        Text(`${this.notifications.length} 条通知`)
-          .fontSize(ThemeConstants.FONT_SIZE_TITLE)
-          .fontWeight(FontWeight.Medium)
-          .fontColor($r('sys.color.font_primary'))
-        if (this.notificationError && this.notifications.length > 0) {
-          Text(this.notificationError)
-            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-            .fontColor($r('sys.color.font_secondary'))
-            .maxLines(1)
-            .textOverflow({ overflow: TextOverflow.Ellipsis })
-        } else {
-          if (this.notificationKindSummary()) {
-            Text(this.notificationKindSummary())
-              .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-              .fontColor($r('sys.color.font_secondary'))
-              .maxLines(1)
-              .textOverflow({ overflow: TextOverflow.Ellipsis })
-          }
-          if (this.notificationCacheUpdatedAt > 0) {
-            Text(`${this.notificationLoadedFromCache ? '缓存于' :
-              '更新于'} ${DateUtils.toDateString(this.notificationCacheUpdatedAt)}${this.notificationSourceLabel ?
-              ' · ' + this.notificationSourceLabel : ''}`)
-              .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-              .fontColor($r('sys.color.font_secondary'))
-              .maxLines(1)
-              .textOverflow({ overflow: TextOverflow.Ellipsis })
-          } else if (this.notificationSourceLabel) {
-            Text(`来源: ${this.notificationSourceLabel}`)
-              .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-              .fontColor($r('sys.color.font_secondary'))
-              .maxLines(1)
-              .textOverflow({ overflow: TextOverflow.Ellipsis })
-          }
-        }
-      }
-      .layoutWeight(1)
-      .alignItems(HorizontalAlign.Start)
-
-      Button('刷新')
-        .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-        .height(ThemeConstants.TOUCH_TARGET_SM)
-        .type(ButtonType.Normal)
-        .borderRadius(ThemeConstants.RADIUS_MD)
-        .enabled(!this.isNotificationLoading && !this.isNotificationLoadingMore)
-        .onClick(() => {
-          this.loadNotifications(true)
-        })
-
-      Button('批量清除')
-        .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-        .height(ThemeConstants.TOUCH_TARGET_SM)
-        .type(ButtonType.Normal)
-        .borderRadius(ThemeConstants.RADIUS_MD)
-        .enabled(false)
-    }
-    .width('100%')
-    .alignItems(VerticalAlign.Center)
-    .padding(ThemeConstants.SPACE_LG)
-    .borderRadius(ThemeConstants.RADIUS_MD)
-    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
-  }
-
-  @Builder
-  NotificationListItem(item: V2exNotification) {
-    if (this.canDeleteNotifications()) {
-      ListItem() {
-        this.NotificationCard(item)
-      }
-      .onClick(() => { this.openNotification(item) })
-      .swipeAction({ end: this.NotificationSwipeEnd(item) })
-    } else {
-      ListItem() {
-        this.NotificationCard(item)
-      }
-      .onClick(() => { this.openNotification(item) })
-    }
-  }
-
-  private openNotification(item: V2exNotification): void {
-    const meta = this.notificationMeta(item)
-    if (meta.topicId <= 0) {
-      return
-    }
-    this.pushV2exRoute({
-      kind: 'topic',
-      topicId: meta.topicId,
-      targetFloor: meta.targetFloor
-    })
-  }
-
-  private notificationMeta(item: V2exNotification): NotificationMetadata {
-    return this.notificationVm.metadata(item)
-  }
-
-  private notificationKindSummary(): string {
-    return this.notificationVm.kindSummary(this.notifications)
-  }
-
-  private notificationReadTag(item: V2exNotification): string {
-    return this.notificationMeta(item).readTag
-  }
-
-  private notificationKindTag(item: V2exNotification): string {
-    return this.notificationMeta(item).kindTag
-  }
-
-  @Builder
-  NotificationTag(text: string, backgroundColor: ResourceColor, foregroundColor: ResourceColor) {
-    Text(text)
-      .fontSize(ThemeConstants.FONT_SIZE_TAG)
-      .fontColor(foregroundColor)
-      .padding({
-        left: ThemeConstants.SPACE_SM,
-        right: ThemeConstants.SPACE_SM,
-        top: ThemeConstants.SPACE_XS / 2,
-        bottom: ThemeConstants.SPACE_XS / 2
-      })
-      .borderRadius(ThemeConstants.RADIUS_SM)
-      .backgroundColor(backgroundColor)
-  }
-
-  @Builder
-  NotificationCard(item: V2exNotification) {
-    Column({ space: ThemeConstants.SPACE_XS }) {
-      Row({ space: ThemeConstants.SPACE_SM }) {
-        this.NotificationTag(
-          this.notificationKindTag(item),
-          $r('sys.color.ohos_id_color_sub_background'),
-          $r('sys.color.font_secondary')
-        )
-        if (this.notificationReadTag(item)) {
-          this.NotificationTag(
-            this.notificationReadTag(item),
-            this.notificationReadTag(item) === '未读' ? ThemeConstants.BRAND_PRIMARY :
-              $r('sys.color.ohos_id_color_sub_background'),
-            this.notificationReadTag(item) === '未读' ? Color.White : $r('sys.color.font_secondary')
-          )
-        }
-      }
-      .width('100%')
-      .justifyContent(FlexAlign.Start)
-
-      Text(this.notificationTitle(item))
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .fontWeight(FontWeight.Medium)
-        .fontColor($r('sys.color.font_primary'))
-        .maxLines(2)
-        .textOverflow({ overflow: TextOverflow.Ellipsis })
-      Text(this.notificationBody(item))
-        .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-        .fontColor($r('sys.color.font_secondary'))
-        .maxLines(3)
-        .textOverflow({ overflow: TextOverflow.Ellipsis })
-      if (item.created) {
-        Text(DateUtils.toRelativeTime(item.created))
-          .fontSize(ThemeConstants.FONT_SIZE_TINY)
-          .fontColor($r('sys.color.font_secondary'))
-      }
-    }
-    .padding(ThemeConstants.SPACE_LG)
-    .width('100%')
-    .alignItems(HorizontalAlign.Start)
-    .borderRadius(ThemeConstants.RADIUS_MD)
-    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
-  }
-
-  @Builder
-  NotificationSwipeEnd(item: V2exNotification) {
-    Row() {
-      Button('删除')
-        .fontSize(ThemeConstants.FONT_SIZE_TAG)
-        .height(40)
-        .fontColor(Color.White)
-        .backgroundColor(Color.Red)
-        .onClick(() => {
-          this.confirmDeleteNotification(item)
-        })
-    }
-    .height('100%')
-    .padding({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
-    .justifyContent(FlexAlign.Center)
-  }
-
-  private confirmDeleteNotification(item: V2exNotification): void {
-    const id = item.id || 0
-    if (id <= 0 || this.isNotificationDeleting) {
-      return
-    }
-    AlertDialog.show({
-      title: '删除通知',
-      message: '确定删除这条通知吗？',
-      primaryButton: {
-        value: '取消', action: () => {
-        }
-      },
-      secondaryButton: {
-        value: '删除',
-        fontColor: Color.Red,
-        action: () => {
-          this.deleteNotification(id)
-        }
-      }
-    })
-  }
-
-  private deleteNotification(notificationId: number): void {
-    if (!this.authTokenConfigured || !this.authToken || this.isNotificationDeleting) {
-      promptAction.openToast({ message: '删除通知需要 V2 API 授权' }).catch((_error: Error) => {
-      })
-      return
-    }
-    this.isNotificationDeleting = true
-    this.apiV2.deleteNotification(this.authToken, notificationId)
-      .then(() => {
-        this.notifications = this.notifications.filter(item => item.id !== notificationId)
-        this.saveNotificationCache()
-        promptAction.openToast({ message: '已删除' }).catch((_error: Error) => {
-        })
-      })
-      .catch((error: Error) => {
-        promptAction.openToast({ message: error.message || '删除失败' }).catch((_error: Error) => {
-        })
-      })
-      .finally(() => {
-        this.isNotificationDeleting = false
-      })
-  }
-
   private loadAuthSnapshot(): void {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     AuthSettings.load(context)
@@ -1845,7 +1479,6 @@ struct Index {
         this.storedUsername = snapshot.username
         this.tokenDraft = ''
         if (snapshot.token) {
-          this.loadNotificationCache(snapshot.username)
           this.refreshAuthProfile(snapshot.token)
           this.refreshTokenInfo(snapshot.token)
         }
@@ -1870,13 +1503,11 @@ struct Index {
         this.authProfile = profile
         this.authToken = token
         this.storedUsername = username
-        this.resetNotificationState()
         return AuthSettings.saveToken(context, token, username)
       })
       .then(() => {
         this.tokenDraft = ''
         this.refreshTokenInfo(token)
-        this.loadNotifications(true)
       })
       .catch((error: Error) => {
         this.authError = error.message || 'Token 验证失败'
@@ -1891,7 +1522,6 @@ struct Index {
       .then((profile: V2exAuthenticatedMember) => {
         this.authProfile = profile
         this.storedUsername = profile.username || this.storedUsername
-        this.loadNotificationCache(this.storedUsername)
       })
       .catch((error: Error) => {
         this.authError = error.message || '登录状态验证失败'
@@ -1941,8 +1571,7 @@ struct Index {
     const keepCookieAccount = this.hasCookieAccount()
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     AuthSettings.clear(context)
-      .then(() => NotificationSettings.clearCache(context).catch((error: Error) => {
-        this.notificationError = error.message || '清除通知缓存失败'
+      .then(() => NotificationSettings.clearCache(context).catch((_error: Error) => {
       }))
       .then(() => {
         this.authToken = ''
@@ -1956,12 +1585,8 @@ struct Index {
           this.dailyMission = null
           this.accountMetaError = ''
         }
-        this.resetNotificationState()
         if (keepCookieAccount) {
           this.loadAccountMeta(true)
-          if (this.ct === 2) {
-            this.loadNotifications(true)
-          }
         }
       })
       .catch((error: Error) => {
@@ -1986,8 +1611,7 @@ struct Index {
       CookieJarSettings.clear(context).catch((error: Error) => {
         this.sessionError = error.message || '清除 Cookie 失败'
       }),
-      NotificationSettings.clearCache(context).catch((error: Error) => {
-        this.notificationError = error.message || '清除通知缓存失败'
+      NotificationSettings.clearCache(context).catch((_error: Error) => {
       })
     ])
       .finally(() => {
@@ -1999,7 +1623,6 @@ struct Index {
         this.accountBalance = null
         this.dailyMission = null
         this.accountMetaError = ''
-        this.resetNotificationState()
       })
   }
 
@@ -2062,146 +1685,6 @@ struct Index {
       })
   }
 
-  private loadNotifications(force: boolean = false): void {
-    const authContext = this.notificationAuthContext()
-    if (!this.notificationVm.hasAuth(authContext)) {
-      return
-    }
-    if (this.isNotificationLoading || this.isNotificationLoadingMore) {
-      return
-    }
-    if (this.notifications.length > 0 && !force && !this.notificationLoadedFromCache) {
-      return
-    }
-    this.isNotificationLoading = true
-    this.notificationError = ''
-    this.notificationPage = 1
-    this.notificationHasMore = true
-    this.notificationVm.loadPage(authContext, 1, this.NOTIFICATION_PAGE_SIZE)
-      .then((result: NotificationPageResult) => {
-        this.notifications = result.items
-        this.notificationPage = result.page
-        this.notificationHasMore = result.hasMore
-        this.notificationSourceLabel = result.sourceLabel
-        this.notificationLoadedFromCache = false
-        this.saveNotificationCache()
-      })
-      .catch((error: Error) => {
-        const message = error.message || '通知加载失败'
-        this.notificationError = message
-        this.notificationHasMore = false
-        this.handleExpiredCookieSession(message)
-      })
-      .finally(() => {
-        this.isNotificationLoading = false
-      })
-  }
-
-  private loadMoreNotifications(): void {
-    const authContext = this.notificationAuthContext()
-    if (!this.notificationVm.hasAuth(authContext)) {
-      return
-    }
-    if (this.isNotificationLoading || this.isNotificationLoadingMore || !this.notificationHasMore) {
-      return
-    }
-    const nextPage = this.notificationPage + 1
-    this.isNotificationLoadingMore = true
-    this.notificationError = ''
-    this.notificationVm.loadPage(authContext, nextPage, this.NOTIFICATION_PAGE_SIZE)
-      .then((result: NotificationPageResult) => {
-        if (!result.items || result.items.length === 0) {
-          this.notificationHasMore = false
-          return
-        }
-        const merged = this.notificationVm.mergeUnique(this.notifications, result.items)
-        if (merged.length === this.notifications.length) {
-          this.notificationHasMore = false
-          return
-        }
-        this.notifications = merged
-        this.notificationPage = result.page
-        this.notificationHasMore = result.hasMore
-        this.notificationSourceLabel = result.sourceLabel
-        this.notificationLoadedFromCache = false
-        this.saveNotificationCache()
-      })
-      .catch((error: Error) => {
-        const message = error.message || '加载更多失败'
-        this.notificationError = message
-        this.notificationHasMore = false
-        this.handleExpiredCookieSession(message)
-      })
-      .finally(() => {
-        this.isNotificationLoadingMore = false
-      })
-  }
-
-  private resetNotificationState(): void {
-    this.notifications = []
-    this.notificationError = ''
-    this.isNotificationLoading = false
-    this.notificationPage = 1
-    this.notificationHasMore = true
-    this.isNotificationLoadingMore = false
-    this.notificationCacheUpdatedAt = 0
-    this.notificationLoadedFromCache = false
-    this.notificationSourceLabel = ''
-  }
-
-  private loadNotificationCache(username: string): void {
-    const ownerKey = this.notificationOwnerKey(username)
-    if (!ownerKey || (this.notifications.length > 0 && !this.notificationLoadedFromCache)) {
-      return
-    }
-    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    NotificationSettings.loadCache(context, ownerKey)
-      .then((snapshot) => {
-        this.notificationCacheUpdatedAt = snapshot.updatedAt
-        if (snapshot.items.length === 0 || (this.notifications.length > 0 && !this.notificationLoadedFromCache)) {
-          return
-        }
-        this.notifications = snapshot.items
-        this.notificationPage = snapshot.page
-        this.notificationHasMore = snapshot.hasMore
-        this.notificationLoadedFromCache = true
-        this.notificationSourceLabel = this.notificationVm.sourceLabelFor(this.notificationAuthContext())
-      })
-      .catch((error: Error) => {
-        console.error('load notification cache failed: ' + error.message)
-      })
-  }
-
-  private saveNotificationCache(): void {
-    const ownerKey = this.notificationOwnerKey('')
-    if (!ownerKey) {
-      return
-    }
-    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    NotificationSettings.saveCache(context, ownerKey, this.notifications, this.notificationPage,
-      this.notificationHasMore)
-      .then((snapshot) => {
-        this.notificationCacheUpdatedAt = snapshot.updatedAt
-      })
-      .catch((error: Error) => {
-        console.error('save notification cache failed: ' + error.message)
-      })
-  }
-
-  private notificationOwnerKey(username: string): string {
-    let owner = username.trim()
-    if (!owner) {
-      owner = (this.storedUsername || '').trim()
-    }
-    if (!owner) {
-      owner = (this.sessionUsername || '').trim()
-    }
-    if (!owner && this.authProfile) {
-      owner = (this.authProfile.username || '').trim()
-    }
-    return owner ? 'member:' + owner : ''
-  }
-
   private loadSavedTopics(): void {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     CollectionSettings.loadSavedTopics(context)
@@ -2243,11 +1726,4 @@ struct Index {
       })
   }
 
-  private notificationTitle(item: V2exNotification): string {
-    return this.notificationMeta(item).title
-  }
-
-  private notificationBody(item: V2exNotification): string {
-    return this.notificationMeta(item).body
-  }
 }
