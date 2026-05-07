@@ -621,6 +621,9 @@ struct Index {
       this.topicActionItem('站内收藏', $r('sys.symbol.heart_fill'), () => {
         this.sendTopicAction('siteFavorite')
       }),
+      this.topicActionItem('感谢主题', $r('sys.symbol.heart_fill'), () => {
+        this.sendTopicAction('thankTopic')
+      }),
       this.topicActionItem('复制标题', $r('sys.symbol.doc_plaintext'), () => {
         this.sendTopicAction('copyTitle')
       }),

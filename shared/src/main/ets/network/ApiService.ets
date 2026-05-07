@@ -39,6 +39,11 @@ export interface V2exReplyThankAction {
   actionPath: string
 }
 
+export interface V2exTopicThankAction {
+  topicId: number
+  actionPath: string
+}
+
 /**
  * V2EX API 调用层
  * V1 公开接口（无需认证）+ V2 认证接口占位
@@ -522,6 +527,43 @@ export class ApiService {
     }
   }
 
+  async getTopicThankActionWithCookie(cookie: string, topicId: number): Promise<V2exTopicThankAction> {
+    if (!cookie) {
+      throw new Error('请先登录')
+    }
+    if (topicId <= 0) {
+      throw new Error('无效主题')
+    }
+    const topicPath = `/t/${topicId}`
+    const html = await this.http.getTextWithHeaders(topicPath, { 'Cookie': cookie })
+    if (!V2exSessionParser.extractUsername(html)) {
+      throw new Error('Web 会话已失效，请重新登录')
+    }
+    const actionPath = ApiService.extractTopicThankPath(html, topicId)
+    if (!actionPath) {
+      throw new Error('当前主题不可感谢或已经感谢过')
+    }
+    return { topicId, actionPath }
+  }
+
+  async executeTopicThankWithCookie(cookie: string, action: V2exTopicThankAction): Promise<void> {
+    if (!cookie) {
+      throw new Error('请先登录')
+    }
+    if (!action || action.topicId <= 0 || !action.actionPath) {
+      throw new Error('缺少感谢操作')
+    }
+    const topicPath = `/t/${action.topicId}`
+    const res = await this.requestHtmlWithCookieAllowRedirect(action.actionPath, cookie, topicPath, http.RequestMethod.GET)
+    if (res.location.indexOf('/signin') >= 0) {
+      throw new Error('Web 会话已失效，请重新登录')
+    }
+    const problem = V2exSigninParser.extractProblemMessage(res.text)
+    if (problem) {
+      throw new Error(`感谢失败：${problem}`)
+    }
+  }
+
   /**
    * 提交新主题（依赖 Cookie 会话）
    * - 返回新主题 ID（无法解析时返回 0）
@@ -745,6 +787,20 @@ export class ApiService {
       return ApiService.decodeHtml(directMatch[1])
     }
     const loose = new RegExp(`\\/thank\\/reply\\/${replyId}\\?once=\\d+`, 'i')
+    const looseMatch = html.match(loose)
+    return looseMatch && looseMatch[0] ? ApiService.decodeHtml(looseMatch[0]) : ''
+  }
+
+  private static extractTopicThankPath(html: string, topicId: number): string {
+    if (!html || topicId <= 0) {
+      return ''
+    }
+    const direct = new RegExp(`['"]([^'"]*\\/thank\\/topic\\/${topicId}\\?once=\\d+[^'"]*)['"]`, 'i')
+    const directMatch = html.match(direct)
+    if (directMatch && directMatch[1]) {
+      return ApiService.decodeHtml(directMatch[1])
+    }
+    const loose = new RegExp(`\\/thank\\/topic\\/${topicId}\\?once=\\d+`, 'i')
     const looseMatch = html.match(loose)
     return looseMatch && looseMatch[0] ? ApiService.decodeHtml(looseMatch[0]) : ''
   }

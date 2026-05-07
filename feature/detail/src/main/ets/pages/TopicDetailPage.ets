@@ -11,7 +11,7 @@ import {
   LoadingFooter, HttpClient, StorageKeys, ApiService, CookieJarSettings, V2exToggleAction, ReadingSettings,
   AppModalScaffold, V2exRoute, V2exUrlRouter, TopicDetailParams
 } from 'shared'
-import type { V2exReplyThankAction } from 'shared'
+import type { V2exReplyThankAction, V2exTopicThankAction } from 'shared'
 
 interface ReplyContextItem {
   reply: V2exReply
@@ -36,6 +36,7 @@ export struct TopicDetailPage {
   @State isSavedLater: boolean = false
   @State private isSiteFavorited: boolean = false
   @State private isSiteFavoriteLoading: boolean = false
+  @State private isTopicThankLoading: boolean = false
   @State private isReplyThankLoading: boolean = false
   @State private jumpFloorText: string = ''
   @State private contextReply: V2exReply | null = null
@@ -934,6 +935,10 @@ export struct TopicDetailPage {
       this.prepareSiteFavoriteToggle()
       return
     }
+    if (action === 'thankTopic') {
+      this.prepareTopicThank()
+      return
+    }
     if (action === 'saveLater') {
       this.toggleSavedLater()
     } else if (action === 'copyTitle') {
@@ -1005,6 +1010,63 @@ export struct TopicDetailPage {
       })
       .finally(() => {
         this.isSiteFavoriteLoading = false
+      })
+  }
+
+  private prepareTopicThank(): void {
+    if (this.isTopicThankLoading) {
+      return
+    }
+    if (!this.writeEnabled) {
+      promptAction.openToast({ message: '写入操作开关未开启，感谢不可用' }).catch((_error: Error) => { })
+      return
+    }
+    const cookie = CookieJarSettings.getCurrentCookie()
+    if (!cookie) {
+      promptAction.openToast({ message: '请先登录' }).catch((_error: Error) => { })
+      return
+    }
+    this.isTopicThankLoading = true
+    this.api.getTopicThankActionWithCookie(cookie, this.topicId)
+      .then((action: V2exTopicThankAction) => {
+        this.confirmTopicThank(cookie, action)
+      })
+      .catch((error: Error) => {
+        promptAction.openToast({ message: error.message || '解析感谢操作失败' }).catch((_error: Error) => { })
+      })
+      .finally(() => {
+        this.isTopicThankLoading = false
+      })
+  }
+
+  private confirmTopicThank(cookie: string, action: V2exTopicThankAction): void {
+    const title = (this.v.topic?.title || '').trim()
+    AlertDialog.show({
+      title: '感谢主题',
+      message: title ? `确定感谢《${title}》吗？` : '确定感谢该主题吗？',
+      primaryButton: { value: '取消', action: () => { } },
+      secondaryButton: {
+        value: '感谢',
+        action: () => { this.executeTopicThank(cookie, action) }
+      }
+    })
+  }
+
+  private executeTopicThank(cookie: string, action: V2exTopicThankAction): void {
+    if (this.isTopicThankLoading) {
+      return
+    }
+    this.isTopicThankLoading = true
+    this.api.executeTopicThankWithCookie(cookie, action)
+      .then(() => {
+        promptAction.openToast({ message: '已感谢' }).catch((_error: Error) => { })
+        this.v.load()
+      })
+      .catch((error: Error) => {
+        promptAction.openToast({ message: error.message || '感谢失败' }).catch((_error: Error) => { })
+      })
+      .finally(() => {
+        this.isTopicThankLoading = false
       })
   }
 
