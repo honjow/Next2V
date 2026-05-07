@@ -2,7 +2,9 @@ import { common } from '@kit.AbilityKit'
 import { promptAction } from '@kit.ArkUI'
 import {
   ApiService,
+  AppTextField,
   AuthSessionSettings,
+  AppActionButton,
   ConciseListRow,
   CookieJarSettings,
   GroupedListSection,
@@ -63,20 +65,18 @@ export struct V2exNativeLoginPage {
 
   @Builder LoginForm() {
     Column({ space: ThemeConstants.SPACE_SM }) {
-      TextInput({ placeholder: '用户名或邮箱', text: this.username })
-        .height(44)
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
-        .borderRadius(ThemeConstants.RADIUS_MD)
-        .onChange((value: string) => { this.username = value })
+      AppTextField({
+        text: $username,
+        placeholder: '用户名或邮箱',
+        onTextChange: (value: string) => { this.username = value }
+      })
 
-      TextInput({ placeholder: '密码', text: this.password })
-        .height(44)
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .type(InputType.Password)
-        .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
-        .borderRadius(ThemeConstants.RADIUS_MD)
-        .onChange((value: string) => { this.password = value })
+      AppTextField({
+        text: $password,
+        placeholder: '密码',
+        inputType: InputType.Password,
+        onTextChange: (value: string) => { this.password = value }
+      })
 
       if (this.captchaUrl) {
         Image(this.captchaUrl)
@@ -88,12 +88,13 @@ export struct V2exNativeLoginPage {
           .onClick(() => { this.loadChallenge() })
       }
 
-      TextInput({ placeholder: '验证码', text: this.captchaCode })
-        .height(44)
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
-        .borderRadius(ThemeConstants.RADIUS_MD)
-        .onChange((value: string) => { this.captchaCode = value })
+      if (this.challenge?.captchaField) {
+        AppTextField({
+          text: $captchaCode,
+          placeholder: '验证码',
+          onTextChange: (value: string) => { this.captchaCode = value }
+        })
+      }
 
       if (this.errorMessage) {
         Text(this.errorMessage)
@@ -101,22 +102,12 @@ export struct V2exNativeLoginPage {
           .fontColor(Color.Red)
       }
 
-      Button(this.loginButtonText())
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .type(ButtonType.Capsule)
-        .width('100%')
-        .enabled(!this.isLoading && !this.isChallengeLoading)
-        .onClick(() => { this.login() })
-
-      // Button('网页登录')
-      //   .fontSize(ThemeConstants.FONT_SIZE_BODY)
-      //   // .backgroundColor(Color.Gray)
-      //   // .height(40)
-      //   .type(ButtonType.Capsule)
-      //   // .borderRadius(ThemeConstants.RADIUS_MD)
-      //   .width("100%")
-      //   .enabled(!this.isLoading && !this.isChallengeLoading)
-      //   .onClick(() => { this.stack.pushPathByName('V2exWebLogin', null) })
+      AppActionButton({
+        label: this.loginButtonText(),
+        primary: true,
+        isEnabled: !this.isLoading && !this.isChallengeLoading,
+        action: () => { this.login() }
+      })
     }
     .width('100%')
     .padding(ThemeConstants.SPACE_LG)

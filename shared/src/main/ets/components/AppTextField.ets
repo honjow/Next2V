@@ -4,10 +4,12 @@ import { ThemeConstants } from '../theme/ThemeConstants'
 export struct AppTextField {
   @Link text: string
   @Prop placeholder: string = ''
+  @Prop inputType: InputType = InputType.Normal
   onTextChange?: (value: string) => void
 
   build() {
     TextInput({ placeholder: this.placeholder, text: this.text })
+      .type(this.inputType)
       .fontSize(ThemeConstants.FONT_SIZE_BODY)
       .fontColor($r('sys.color.font_primary'))
       .placeholderColor($r('sys.color.font_secondary'))
