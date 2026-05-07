@@ -1,6 +1,7 @@
 import { NodeViewModel } from '../viewmodel/NodeViewModel'
 import {
-  ApiService, V2exNode, V2exTopic, NodeTopicListParams, TopicDetailParams, ThemeConstants
+  ApiService, AppSearchField, FilterChip, StorageKeys, V2exNode, V2exTopic, NodeTopicListParams, TopicDetailParams,
+  ThemeConstants
 } from 'shared'
 
 type DiscoverTopicMode = 'hot' | 'rank' | 'latest' | 'recent'
@@ -16,14 +17,16 @@ export struct DiscoverPage {
   @State private recentTopics: V2exTopic[] = []
   @State private hotError: string = ''
   @State private isHotLoading: boolean = false
-  @StorageProp('topAvoidHeight') topH: number = 0
-  @StorageProp('bottomAvoidHeight') bottomH: number = 0
+  @State private nodeKeyword: string = ''
+  @StorageProp(StorageKeys.TOP_AVOID_HEIGHT) topH: number = 0
+  @StorageProp(StorageKeys.BOTTOM_AVOID_HEIGHT) bottomH: number = 0
   private readonly TBH: number = ThemeConstants.TITLE_BAR_HEIGHT
   private readonly FLOAT_H: number = ThemeConstants.FLOAT_BAR_HEIGHT
   private readonly GAP: number = ThemeConstants.SPACE_MD
   private api: ApiService = new ApiService()
 
   aboutToAppear(): void {
+    this.nodeKeyword = this.vm.keyword
     this.vm.loadAllNodes()
     this.loadTopicSurface()
   }
@@ -77,14 +80,13 @@ export struct DiscoverPage {
 
   @Builder SearchBar() {
     Row() {
-      TextInput({ placeholder: '搜索节点', text: this.vm.keyword })
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .height(44)
-        .borderRadius(ThemeConstants.RADIUS_MD)
-        .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
-        .onChange((value: string) => {
+      AppSearchField({
+        text: $nodeKeyword,
+        placeholder: '搜索节点',
+        onTextChange: (value: string) => {
           this.vm.setNodeFilter(value)
-        })
+        }
+      })
     }
     .width('100%')
     .padding({
@@ -103,12 +105,10 @@ export struct DiscoverPage {
         this.TopicModeButton('latest', '最新')
         this.TopicModeButton('recent', '最近')
         Blank()
-        Button('刷新')
-          .type(ButtonType.Normal)
+        Button('刷新', { type: ButtonType.Capsule })
           .height(32)
           .fontSize(ThemeConstants.FONT_SIZE_TAG)
-          .borderRadius(ThemeConstants.RADIUS_SM)
-          .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+          .buttonStyle(ButtonStyleMode.NORMAL)
           .enabled(!this.isHotLoading)
           .onClick(() => { this.reloadTopicSurface() })
       }
@@ -144,14 +144,11 @@ export struct DiscoverPage {
   }
 
   @Builder TopicModeButton(mode: DiscoverTopicMode, label: string) {
-    Button(label)
-      .type(ButtonType.Normal)
-      .height(32)
-      .fontSize(ThemeConstants.FONT_SIZE_TAG)
-      .fontColor(this.topicMode === mode ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.font_secondary'))
-      .borderRadius(ThemeConstants.RADIUS_SM)
-      .backgroundColor(this.topicMode === mode ? '#EAF2FF' : $r('sys.color.ohos_id_color_button_normal'))
-      .onClick(() => { this.setTopicMode(mode) })
+    FilterChip({
+      label,
+      selected: this.topicMode === mode,
+      action: () => { this.setTopicMode(mode) }
+    })
   }
 
   @Builder HotTopicRow(topic: V2exTopic) {
