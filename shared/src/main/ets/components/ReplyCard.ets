@@ -17,6 +17,8 @@ export struct ReplyCard {
   onMentionClick?: () => void
   onReplyClick?: () => void
   onThankClick?: () => void
+  onIgnoreClick?: () => void
+  onReportClick?: () => void
   onCopyUserClick?: () => void
   onCopyContentClick?: () => void
   onImageClick?: (url: string) => void
@@ -57,7 +59,7 @@ export struct ReplyCard {
 
   private hasContextMenuActions(): boolean {
     return !!(this.onContextClick || this.onMentionClick || this.onCopyUserClick ||
-      this.onCopyContentClick)
+      this.onCopyContentClick || this.onIgnoreClick || this.onReportClick)
   }
 
   private runContextAction(action?: () => void): void {
@@ -95,6 +97,16 @@ export struct ReplyCard {
       if (this.onCopyContentClick) {
         MenuItem({ content: '复制回复内容' })
           .onClick(() => { this.runContextAction(this.onCopyContentClick) })
+      }
+
+      if (this.onIgnoreClick) {
+        MenuItem({ content: '忽略回复' })
+          .onClick(() => { this.runContextAction(this.onIgnoreClick) })
+      }
+
+      if (this.onReportClick) {
+        MenuItem({ content: '报告回复' })
+          .onClick(() => { this.runContextAction(this.onReportClick) })
       }
     }
   }

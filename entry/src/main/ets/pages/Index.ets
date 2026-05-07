@@ -448,6 +448,12 @@ struct Index {
       this.topicActionItem('感谢主题', $r('sys.symbol.heart_fill'), () => {
         this.sendTopicAction('thankTopic')
       }),
+      this.topicActionItem('忽略主题', $r('sys.symbol.xmark'), () => {
+        this.sendTopicAction('ignoreTopic')
+      }),
+      this.topicActionItem('报告主题', $r('sys.symbol.exclamationmark_triangle'), () => {
+        this.sendTopicAction('reportTopic')
+      }),
       this.topicActionItem('复制标题', $r('sys.symbol.doc_plaintext'), () => {
         this.sendTopicAction('copyTitle')
       }),

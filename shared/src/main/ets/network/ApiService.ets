@@ -44,6 +44,16 @@ export interface V2exTopicThankAction {
   actionPath: string
 }
 
+export interface V2exTopicModerationAction {
+  topicId: number
+  actionPath: string
+}
+
+export interface V2exReplyModerationAction {
+  replyId: number
+  actionPath: string
+}
+
 /**
  * V2EX API 调用层
  * V1 公开接口（无需认证）+ V2 认证接口占位
@@ -564,6 +574,54 @@ export class ApiService {
     }
   }
 
+  async getTopicIgnoreActionWithCookie(cookie: string, topicId: number): Promise<V2exTopicModerationAction> {
+    const actionPath = await this.getCookieActionPath(cookie, topicId, 'ignore', 'topic', topicId, '主题不可忽略或已被忽略')
+    return { topicId, actionPath }
+  }
+
+  async executeTopicIgnoreWithCookie(cookie: string, action: V2exTopicModerationAction): Promise<void> {
+    if (!action || action.topicId <= 0 || !action.actionPath) {
+      throw new Error('缺少忽略操作')
+    }
+    await this.executeCookieActionWithCookie(cookie, action.actionPath, `/t/${action.topicId}`, '忽略失败')
+  }
+
+  async getReplyIgnoreActionWithCookie(cookie: string, topicId: number, replyId: number): Promise<V2exReplyModerationAction> {
+    const actionPath = await this.getCookieActionPath(cookie, topicId, 'ignore', 'reply', replyId, '回复不可忽略或已被忽略')
+    return { replyId, actionPath }
+  }
+
+  async executeReplyIgnoreWithCookie(cookie: string, topicId: number, action: V2exReplyModerationAction): Promise<void> {
+    if (!action || action.replyId <= 0 || !action.actionPath) {
+      throw new Error('缺少忽略操作')
+    }
+    await this.executeCookieActionWithCookie(cookie, action.actionPath, `/t/${topicId}`, '忽略失败')
+  }
+
+  async getTopicReportActionWithCookie(cookie: string, topicId: number): Promise<V2exTopicModerationAction> {
+    const actionPath = await this.getCookieActionPath(cookie, topicId, 'report', 'topic', topicId, '主题不可报告或已报告')
+    return { topicId, actionPath }
+  }
+
+  async executeTopicReportWithCookie(cookie: string, action: V2exTopicModerationAction): Promise<void> {
+    if (!action || action.topicId <= 0 || !action.actionPath) {
+      throw new Error('缺少报告操作')
+    }
+    await this.executeCookieActionWithCookie(cookie, action.actionPath, `/t/${action.topicId}`, '报告失败')
+  }
+
+  async getReplyReportActionWithCookie(cookie: string, topicId: number, replyId: number): Promise<V2exReplyModerationAction> {
+    const actionPath = await this.getCookieActionPath(cookie, topicId, 'report', 'reply', replyId, '回复不可报告或已报告')
+    return { replyId, actionPath }
+  }
+
+  async executeReplyReportWithCookie(cookie: string, topicId: number, action: V2exReplyModerationAction): Promise<void> {
+    if (!action || action.replyId <= 0 || !action.actionPath) {
+      throw new Error('缺少报告操作')
+    }
+    await this.executeCookieActionWithCookie(cookie, action.actionPath, `/t/${topicId}`, '报告失败')
+  }
+
   /**
    * 提交新主题（依赖 Cookie 会话）
    * - 返回新主题 ID（无法解析时返回 0）
@@ -803,6 +861,69 @@ export class ApiService {
     const loose = new RegExp(`\\/thank\\/topic\\/${topicId}\\?once=\\d+`, 'i')
     const looseMatch = html.match(loose)
     return looseMatch && looseMatch[0] ? ApiService.decodeHtml(looseMatch[0]) : ''
+  }
+
+  private static extractCookieActionPath(html: string, action: string, target: string, targetId: number): string {
+    if (!html || !action || !target || targetId <= 0) {
+      return ''
+    }
+    const pattern = `\\/${action}\\/${target}\\/${targetId}\\?once=\\d+`
+    const direct = new RegExp(`['"]([^'"]*${pattern}[^'"]*)['"]`, 'i')
+    const directMatch = html.match(direct)
+    if (directMatch && directMatch[1]) {
+      return ApiService.decodeHtml(directMatch[1])
+    }
+    const loose = new RegExp(pattern, 'i')
+    const looseMatch = html.match(loose)
+    return looseMatch && looseMatch[0] ? ApiService.decodeHtml(looseMatch[0]) : ''
+  }
+
+  private async getCookieActionPath(
+    cookie: string,
+    topicId: number,
+    action: string,
+    target: string,
+    targetId: number,
+    missingMessage: string
+  ): Promise<string> {
+    if (!cookie) {
+      throw new Error('请先登录')
+    }
+    if (topicId <= 0 || targetId <= 0) {
+      throw new Error('无效操作对象')
+    }
+    const topicPath = `/t/${topicId}`
+    const html = await this.http.getTextWithHeaders(topicPath, { 'Cookie': cookie })
+    if (!V2exSessionParser.extractUsername(html)) {
+      throw new Error('Web 会话已失效，请重新登录')
+    }
+    const actionPath = ApiService.extractCookieActionPath(html, action, target, targetId)
+    if (!actionPath) {
+      throw new Error(missingMessage)
+    }
+    return actionPath
+  }
+
+  private async executeCookieActionWithCookie(
+    cookie: string,
+    actionPath: string,
+    refererPath: string,
+    failurePrefix: string
+  ): Promise<void> {
+    if (!cookie) {
+      throw new Error('请先登录')
+    }
+    if (!actionPath) {
+      throw new Error('缺少操作路径')
+    }
+    const res = await this.requestHtmlWithCookieAllowRedirect(actionPath, cookie, refererPath, http.RequestMethod.GET)
+    if (res.location.indexOf('/signin') >= 0) {
+      throw new Error('Web 会话已失效，请重新登录')
+    }
+    const problem = V2exSigninParser.extractProblemMessage(res.text)
+    if (problem) {
+      throw new Error(`${failurePrefix}：${problem}`)
+    }
   }
 
   private static decodeHtml(value: string): string {

@@ -12,6 +12,7 @@ import {
   AppModalScaffold, V2exRoute, V2exUrlRouter, TopicDetailParams
 } from 'shared'
 import type { V2exReplyThankAction, V2exTopicThankAction } from 'shared'
+import type { V2exReplyModerationAction, V2exTopicModerationAction } from 'shared'
 
 interface ReplyContextItem {
   reply: V2exReply
@@ -38,6 +39,7 @@ export struct TopicDetailPage {
   @State private isSiteFavoriteLoading: boolean = false
   @State private isTopicThankLoading: boolean = false
   @State private isReplyThankLoading: boolean = false
+  @State private isModerationActionLoading: boolean = false
   @State private jumpFloorText: string = ''
   @State private contextReply: V2exReply | null = null
   @State private contextSheetVisible: boolean = false
@@ -278,6 +280,8 @@ export struct TopicDetailPage {
               onMentionClick: () => { this.openReplyEditor(this.getMentionText(reply.member.username)) },
               onReplyClick: () => { this.openReplyEditor(this.getMentionText(reply.member.username)) },
               onThankClick: () => { this.prepareReplyThank(reply) },
+              onIgnoreClick: () => { this.prepareReplyIgnore(reply) },
+              onReportClick: () => { this.prepareReplyReport(reply) },
               onCopyUserClick: () => { this.copyToClipboard(reply.member.username || '') },
               onCopyContentClick: () => { this.copyToClipboard(reply.content || '') },
               onImageClick: (url: string) => { this.openImagePreview(url) },
@@ -939,6 +943,14 @@ export struct TopicDetailPage {
       this.prepareTopicThank()
       return
     }
+    if (action === 'ignoreTopic') {
+      this.prepareTopicIgnore()
+      return
+    }
+    if (action === 'reportTopic') {
+      this.prepareTopicReport()
+      return
+    }
     if (action === 'saveLater') {
       this.toggleSavedLater()
     } else if (action === 'copyTitle') {
@@ -1127,6 +1139,195 @@ export struct TopicDetailPage {
       })
       .finally(() => {
         this.isReplyThankLoading = false
+      })
+  }
+
+  private prepareTopicIgnore(): void {
+    this.prepareTopicModeration(
+      '忽略主题',
+      '忽略',
+      (cookie: string) => this.api.getTopicIgnoreActionWithCookie(cookie, this.topicId),
+      (cookie: string, action: V2exTopicModerationAction) => this.api.executeTopicIgnoreWithCookie(cookie, action)
+    )
+  }
+
+  private prepareTopicReport(): void {
+    this.prepareTopicModeration(
+      '报告主题',
+      '报告',
+      (cookie: string) => this.api.getTopicReportActionWithCookie(cookie, this.topicId),
+      (cookie: string, action: V2exTopicModerationAction) => this.api.executeTopicReportWithCookie(cookie, action)
+    )
+  }
+
+  private prepareReplyIgnore(reply: V2exReply): void {
+    this.prepareReplyModeration(
+      reply,
+      '忽略回复',
+      '忽略',
+      (cookie: string) => this.api.getReplyIgnoreActionWithCookie(cookie, this.topicId, reply.id),
+      (cookie: string, action: V2exReplyModerationAction) => this.api.executeReplyIgnoreWithCookie(cookie, this.topicId, action)
+    )
+  }
+
+  private prepareReplyReport(reply: V2exReply): void {
+    this.prepareReplyModeration(
+      reply,
+      '报告回复',
+      '报告',
+      (cookie: string) => this.api.getReplyReportActionWithCookie(cookie, this.topicId, reply.id),
+      (cookie: string, action: V2exReplyModerationAction) => this.api.executeReplyReportWithCookie(cookie, this.topicId, action)
+    )
+  }
+
+  private prepareTopicModeration(
+    title: string,
+    verb: string,
+    loadAction: (cookie: string) => Promise<V2exTopicModerationAction>,
+    executeAction: (cookie: string, action: V2exTopicModerationAction) => Promise<void>
+  ): void {
+    if (this.isModerationActionLoading) {
+      return
+    }
+    if (!this.writeEnabled) {
+      promptAction.openToast({ message: `写入操作开关未开启，${verb}不可用` }).catch((_error: Error) => { })
+      return
+    }
+    const cookie = CookieJarSettings.getCurrentCookie()
+    if (!cookie) {
+      promptAction.openToast({ message: '请先登录' }).catch((_error: Error) => { })
+      return
+    }
+    this.isModerationActionLoading = true
+    loadAction(cookie)
+      .then((action: V2exTopicModerationAction) => {
+        this.confirmTopicModeration(title, verb, cookie, action, executeAction)
+      })
+      .catch((error: Error) => {
+        promptAction.openToast({ message: error.message || `解析${verb}操作失败` }).catch((_error: Error) => { })
+      })
+      .finally(() => {
+        this.isModerationActionLoading = false
+      })
+  }
+
+  private confirmTopicModeration(
+    title: string,
+    verb: string,
+    cookie: string,
+    action: V2exTopicModerationAction,
+    executeAction: (cookie: string, action: V2exTopicModerationAction) => Promise<void>
+  ): void {
+    const topicTitle = (this.v.topic?.title || '').trim()
+    AlertDialog.show({
+      title: title,
+      message: topicTitle ? `确定${verb}《${topicTitle}》吗？` : `确定${verb}该主题吗？`,
+      primaryButton: { value: '取消', action: () => { } },
+      secondaryButton: {
+        value: verb,
+        action: () => { this.executeTopicModeration(verb, cookie, action, executeAction) }
+      }
+    })
+  }
+
+  private executeTopicModeration(
+    verb: string,
+    cookie: string,
+    action: V2exTopicModerationAction,
+    executeAction: (cookie: string, action: V2exTopicModerationAction) => Promise<void>
+  ): void {
+    if (this.isModerationActionLoading) {
+      return
+    }
+    this.isModerationActionLoading = true
+    executeAction(cookie, action)
+      .then(() => {
+        promptAction.openToast({ message: `已${verb}` }).catch((_error: Error) => { })
+        this.v.load()
+      })
+      .catch((error: Error) => {
+        promptAction.openToast({ message: error.message || `${verb}失败` }).catch((_error: Error) => { })
+      })
+      .finally(() => {
+        this.isModerationActionLoading = false
+      })
+  }
+
+  private prepareReplyModeration(
+    reply: V2exReply,
+    title: string,
+    verb: string,
+    loadAction: (cookie: string) => Promise<V2exReplyModerationAction>,
+    executeAction: (cookie: string, action: V2exReplyModerationAction) => Promise<void>
+  ): void {
+    if (this.isModerationActionLoading) {
+      return
+    }
+    if (!this.writeEnabled) {
+      promptAction.openToast({ message: `写入操作开关未开启，${verb}不可用` }).catch((_error: Error) => { })
+      return
+    }
+    const cookie = CookieJarSettings.getCurrentCookie()
+    if (!cookie) {
+      promptAction.openToast({ message: '请先登录' }).catch((_error: Error) => { })
+      return
+    }
+    if (!reply || reply.id <= 0) {
+      promptAction.openToast({ message: '回复信息缺失' }).catch((_error: Error) => { })
+      return
+    }
+    this.isModerationActionLoading = true
+    loadAction(cookie)
+      .then((action: V2exReplyModerationAction) => {
+        this.confirmReplyModeration(reply, title, verb, cookie, action, executeAction)
+      })
+      .catch((error: Error) => {
+        promptAction.openToast({ message: error.message || `解析${verb}操作失败` }).catch((_error: Error) => { })
+      })
+      .finally(() => {
+        this.isModerationActionLoading = false
+      })
+  }
+
+  private confirmReplyModeration(
+    reply: V2exReply,
+    title: string,
+    verb: string,
+    cookie: string,
+    action: V2exReplyModerationAction,
+    executeAction: (cookie: string, action: V2exReplyModerationAction) => Promise<void>
+  ): void {
+    AlertDialog.show({
+      title: title,
+      message: `确定${verb} ${reply.member.username || '该用户'} 的回复吗？`,
+      primaryButton: { value: '取消', action: () => { } },
+      secondaryButton: {
+        value: verb,
+        action: () => { this.executeReplyModeration(verb, cookie, action, executeAction) }
+      }
+    })
+  }
+
+  private executeReplyModeration(
+    verb: string,
+    cookie: string,
+    action: V2exReplyModerationAction,
+    executeAction: (cookie: string, action: V2exReplyModerationAction) => Promise<void>
+  ): void {
+    if (this.isModerationActionLoading) {
+      return
+    }
+    this.isModerationActionLoading = true
+    executeAction(cookie, action)
+      .then(() => {
+        promptAction.openToast({ message: `已${verb}` }).catch((_error: Error) => { })
+        this.v.load()
+      })
+      .catch((error: Error) => {
+        promptAction.openToast({ message: error.message || `${verb}失败` }).catch((_error: Error) => { })
+      })
+      .finally(() => {
+        this.isModerationActionLoading = false
       })
   }
 

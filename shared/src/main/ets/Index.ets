@@ -20,7 +20,12 @@ export interface ImagePreviewParams {
 // 网络层
 export { HttpClient } from './network/HttpClient'
 export { ApiService } from './network/ApiService'
-export type { V2exReplyThankAction, V2exTopicThankAction } from './network/ApiService'
+export type {
+  V2exReplyModerationAction,
+  V2exReplyThankAction,
+  V2exTopicModerationAction,
+  V2exTopicThankAction
+} from './network/ApiService'
 export { ApiV2Service } from './network/ApiV2Service'
 export { Sov2exService } from './network/Sov2exService'
 export type { ApiV2RateLimit, ApiV2Response } from './network/ApiV2Service'
