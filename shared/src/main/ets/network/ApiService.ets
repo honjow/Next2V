@@ -194,16 +194,24 @@ export class ApiService {
     if (!cookie) {
       throw new Error('请先登录')
     }
-    const path = page > 1 ? `/my/replies?p=${page}` : '/my/replies'
+    const username = await this.getSessionUsernameWithCookie(cookie)
+    const encodedUsername = encodeURIComponent(username)
+    const path = page > 1 ? `/member/${encodedUsername}/replies?p=${page}` : `/member/${encodedUsername}/replies`
     const html = await this.http.getTextWithHeaders(path, { 'Cookie': cookie })
-    if (!V2exSessionParser.extractUsername(html)) {
-      throw new Error('Web 会话已失效，请重新登录')
-    }
     const ids = V2exTabParser.extractTopicIds(html)
     if (ids.length === 0) {
       return []
     }
     return this.getTopicsByIds(ids)
+  }
+
+  private async getSessionUsernameWithCookie(cookie: string): Promise<string> {
+    const html = await this.http.getTextWithHeaders('/settings', { 'Cookie': cookie })
+    const username = V2exSessionParser.extractUsername(html)
+    if (!username) {
+      throw new Error('Web 会话已失效，请重新登录')
+    }
+    return username
   }
 
   async getMyFavoriteNodesWithCookie(cookie: string): Promise<V2exFavoriteNode[]> {

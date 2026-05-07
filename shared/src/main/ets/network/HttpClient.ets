@@ -57,7 +57,7 @@ export class HttpClient {
         header: requestHeaders,
         connectTimeout: CONNECT_TIMEOUT_MS,
         readTimeout: READ_TIMEOUT_MS,
-        usingCache: true
+        usingCache: !HttpClient.hasAuthHeader(requestHeaders)
       })
 
       if (response.responseCode !== http.ResponseCode.OK) {
@@ -123,7 +123,7 @@ export class HttpClient {
         header: requestHeaders,
         connectTimeout: CONNECT_TIMEOUT_MS,
         readTimeout: READ_TIMEOUT_MS,
-        usingCache: true
+        usingCache: !HttpClient.hasAuthHeader(requestHeaders)
       })
 
       if (response.responseCode !== http.ResponseCode.OK) {
@@ -141,5 +141,11 @@ export class HttpClient {
     } finally {
       httpRequest.destroy()
     }
+  }
+
+  private static hasAuthHeader(headers: Record<string, string>): boolean {
+    const cookie = headers['Cookie'] || headers['cookie'] || ''
+    const authorization = headers['Authorization'] || headers['authorization'] || ''
+    return cookie.trim().length > 0 || authorization.trim().length > 0
   }
 }

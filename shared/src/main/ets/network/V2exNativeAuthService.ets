@@ -198,15 +198,30 @@ export class V2exNativeAuthService {
       const bag = headers as Record<string, Object>
       const value = bag['set-cookie'] || bag['Set-Cookie'] || ''
       if (typeof value === 'string') {
-        return value ? [value] : []
+        return V2exNativeAuthService.splitSetCookieHeader(value)
       }
       if (Array.isArray(value)) {
-        return value.filter((s: Object) => typeof s === 'string') as string[]
+        const lines: string[] = []
+        const items = value.filter((s: Object) => typeof s === 'string') as string[]
+        for (const item of items) {
+          lines.push(...V2exNativeAuthService.splitSetCookieHeader(item))
+        }
+        return lines
       }
       return []
     } catch (e) {
       return []
     }
+  }
+
+  private static splitSetCookieHeader(value: string): string[] {
+    const clean = (value || '').trim()
+    if (!clean) {
+      return []
+    }
+    return clean.split(/,(?=\s*[^;,=\s]+=[^;]*)/g)
+      .map((line: string) => line.trim())
+      .filter((line: string) => line.length > 0)
   }
 
   private static mergeCookieHeader(existingCookieHeader: string, setCookieLines: string[]): string {
