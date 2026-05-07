@@ -12,9 +12,18 @@ export struct UserProfilePage {
   @Consume('ns') stack: NavPathStack
   @State vm: UserViewModel = new UserViewModel(this.username)
   @State private activityTab: number = 0
+  @State private following: boolean = false
+  @State private blocked: boolean = false
   @StorageLink(StorageKeys.TOPIC_READ_STATES) topicReadStates: string = '[]'
 
-  aboutToAppear(): void { this.vm.load() }
+  aboutToAppear(): void {
+    this.vm.load()
+      .then(() => {
+        this.syncActionState()
+      })
+      .catch((_error: Error) => {
+      })
+  }
 
   build() {
     Column() {
@@ -54,6 +63,11 @@ export struct UserProfilePage {
                   this.stack.pushPathByName('TopicDetail', p as Object)
                 })
               }, (topic: V2exTopic) => topic.id.toString())
+              if (this.shouldShowAllActivityButton()) {
+                ListItem() {
+                  this.AllActivityEntry('查看全部主题')
+                }
+              }
             }
           } else {
             if (this.vm.recentReplyCount === 0) {
@@ -70,6 +84,11 @@ export struct UserProfilePage {
                   this.stack.pushPathByName('TopicDetail', p as Object)
                 })
               }, (reply: V2exUserReply) => `${reply.topic_id}-${reply.target_floor}-${reply.created}`)
+              if (this.shouldShowAllActivityButton()) {
+                ListItem() {
+                  this.AllActivityEntry('查看全部回复')
+                }
+              }
             }
           }
         } else {
@@ -134,12 +153,8 @@ export struct UserProfilePage {
 
       if (this.vm.actions !== null) {
         Row({ space: ThemeConstants.SPACE_SM }) {
-          this.MemberActionButton(this.vm.actions!.following ? '取消关注' : '关注', false, () => {
-            this.toggleFollow()
-          })
-          this.MemberActionButton(this.vm.actions!.blocked ? '取消屏蔽' : '屏蔽', true, () => {
-            this.toggleBlock()
-          })
+          this.FollowActionButton()
+          this.BlockActionButton()
         }
         .width('100%')
         .justifyContent(FlexAlign.End)
@@ -159,17 +174,6 @@ export struct UserProfilePage {
         this.ActivityTabButton('回复', 1, this.vm.recentReplyCount)
       }
       Blank()
-      if (this.shouldShowAllActivityButton()) {
-        Button('全部')
-          .type(ButtonType.Capsule)
-          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-          .height(32)
-          .buttonStyle(ButtonStyleMode.NORMAL)
-          .onClick(() => {
-            let p: UserProfileParams = { username: this.username }
-            this.stack.pushPathByName(this.activityTab === 0 ? 'UserTopics' : 'UserReplies', p as Object)
-          })
-      }
     }
     .width('100%')
     .alignItems(VerticalAlign.Center)
@@ -188,16 +192,46 @@ export struct UserProfilePage {
       })
   }
 
-  @Builder MemberActionButton(label: string, isDestructive: boolean, action: () => void) {
-    Button(label)
+  @Builder FollowActionButton() {
+    Button(this.following ? '取消关注' : '关注')
       .type(ButtonType.Capsule)
       .buttonStyle(ButtonStyleMode.NORMAL)
       .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-      .fontColor(isDestructive ? Color.Red : $r('sys.color.font_primary'))
+      .fontColor($r('sys.color.font_primary'))
       .height(30)
       .padding({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
       .enabled(!this.vm.isActionLoading)
-      .onClick(action)
+      .onClick(() => {
+        this.toggleFollow()
+      })
+  }
+
+  @Builder BlockActionButton() {
+    Button(this.blocked ? '取消屏蔽' : '屏蔽')
+      .type(ButtonType.Capsule)
+      .buttonStyle(ButtonStyleMode.NORMAL)
+      .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+      .fontColor(Color.Red)
+      .height(30)
+      .padding({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
+      .enabled(!this.vm.isActionLoading)
+      .onClick(() => {
+        this.toggleBlock()
+      })
+  }
+
+  @Builder AllActivityEntry(label: string) {
+    Button(label)
+      .type(ButtonType.Capsule)
+      .buttonStyle(ButtonStyleMode.NORMAL)
+      .fontSize(ThemeConstants.FONT_SIZE_BODY)
+      .fontColor($r('sys.color.font_primary'))
+      .height(40)
+      .width('100%')
+      .onClick(() => {
+        let p: UserProfileParams = { username: this.username }
+        this.stack.pushPathByName(this.activityTab === 0 ? 'UserTopics' : 'UserReplies', p as Object)
+      })
   }
 
   @Builder EmptyText(text: string) {
@@ -326,25 +360,64 @@ export struct UserProfilePage {
     }
   }
 
-  private shouldShowAllActivityButton(): boolean {
-    if (this.activityTab === 0) {
-      return this.vm.recentTopicCount > 0 && !this.vm.topicsHidden
-    }
-    return this.vm.recentReplyCount > 0
-  }
-
   private toggleFollow(): void {
+    if (this.vm.isActionLoading) {
+      return
+    }
+    const previousFollowing = this.following
+    const nextFollowing = !this.following
+    this.following = nextFollowing
     this.vm.toggleFollow()
+      .then(() => {
+        this.refreshActionStateLater()
+      })
       .catch((error: Error) => {
+        this.following = previousFollowing
         promptAction.openToast({ message: error.message || '操作失败' }).catch((_e: Error) => {})
       })
   }
 
   private toggleBlock(): void {
+    if (this.vm.isActionLoading) {
+      return
+    }
+    const previousBlocked = this.blocked
+    const nextBlocked = !this.blocked
+    this.blocked = nextBlocked
     this.vm.toggleBlock()
+      .then(() => {
+        this.refreshActionStateLater()
+      })
       .catch((error: Error) => {
+        this.blocked = previousBlocked
         promptAction.openToast({ message: error.message || '操作失败' }).catch((_e: Error) => {})
       })
+  }
+
+  private syncActionState(): void {
+    if (this.vm.actions === null) {
+      return
+    }
+    this.following = this.vm.actions.following
+    this.blocked = this.vm.actions.blocked
+  }
+
+  private refreshActionStateLater(): void {
+    setTimeout(() => {
+      this.vm.load()
+        .then(() => {
+          this.syncActionState()
+        })
+        .catch((_error: Error) => {
+        })
+    }, 1200)
+  }
+
+  private shouldShowAllActivityButton(): boolean {
+    if (this.activityTab === 0) {
+      return this.vm.recentTopicCount > 0 && !this.vm.topicsHidden
+    }
+    return this.vm.recentReplyCount > 0
   }
 
   private isTopicUnread(topic: V2exTopic): boolean {

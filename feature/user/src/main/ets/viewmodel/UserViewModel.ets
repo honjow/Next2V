@@ -162,6 +162,7 @@ export class UserViewModel {
       this.topicDataSource.setData(topics)
     } catch (error) {
       this.errorMessage = error.message || '操作失败'
+      throw new Error(this.errorMessage)
     } finally {
       this.isActionLoading = false
     }
