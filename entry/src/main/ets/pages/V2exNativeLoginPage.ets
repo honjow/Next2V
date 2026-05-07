@@ -7,7 +7,7 @@ import {
   CookieJarSettings,
   GroupedListSection,
   HttpClient,
-  StorageKeys,
+  SecondaryListScaffold,
   ThemeConstants,
   V2exNativeAuthService
 } from 'shared'
@@ -24,9 +24,7 @@ export struct V2exNativeLoginPage {
   @State private errorMessage: string = ''
   @State private isLoading: boolean = false
   @State private isChallengeLoading: boolean = false
-  @StorageProp(StorageKeys.BOTTOM_AVOID_HEIGHT) bottomH: number = 0
 
-  private scroller: Scroller = new Scroller()
   private challenge: NativeLoginChallenge | null = null
   private auth: V2exNativeAuthService = new V2exNativeAuthService()
   private api: ApiService = new ApiService()
@@ -38,23 +36,15 @@ export struct V2exNativeLoginPage {
 
   build() {
     Column() {
-      Scroll(this.scroller) {
-        Column({ space: ThemeConstants.SPACE_SM }) {
+      SecondaryListScaffold({ bottomPadding: ThemeConstants.SPACE_XL + 240 }) {
+        ListItem() {
           this.LoginForm()
-          this.WebLoginForm()
-          Blank().height(this.bottomH + 240)
         }
-        .width('100%')
-        .padding({
-          left: ThemeConstants.SPACE_MD,
-          right: ThemeConstants.SPACE_MD,
-          top: ThemeConstants.TITLE_BAR_HEIGHT + ThemeConstants.SPACE_MD + ThemeConstants.SPACE_LG
-        })
+
+        ListItem() {
+          this.WebLoginForm()
+        }
       }
-      .scrollBar(BarState.Off)
-      .edgeEffect(EdgeEffect.None)
-      .width('100%')
-      .height('100%')
     }
     .width('100%')
     .height('100%')
