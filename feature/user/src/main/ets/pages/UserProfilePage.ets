@@ -134,17 +134,12 @@ export struct UserProfilePage {
 
       if (this.vm.actions !== null) {
         Row({ space: ThemeConstants.SPACE_SM }) {
-          Button(this.vm.actions!.following ? '取消关注' : '关注')
-            .type(ButtonType.Capsule)
-            .fontSize(ThemeConstants.FONT_SIZE_META)
-            .enabled(!this.vm.isActionLoading)
-            .onClick(() => { this.toggleFollow() })
-          Button(this.vm.actions!.blocked ? '取消屏蔽' : '屏蔽')
-            .type(ButtonType.Capsule)
-            .fontSize(ThemeConstants.FONT_SIZE_META)
-            .fontColor(this.vm.actions!.blocked ? $r('sys.color.font_primary') : Color.Red)
-            .enabled(!this.vm.isActionLoading)
-            .onClick(() => { this.toggleBlock() })
+          this.MemberActionButton(this.vm.actions!.following ? '取消关注' : '关注', false, () => {
+            this.toggleFollow()
+          })
+          this.MemberActionButton(this.vm.actions!.blocked ? '取消屏蔽' : '屏蔽', true, () => {
+            this.toggleBlock()
+          })
         }
         .width('100%')
         .justifyContent(FlexAlign.End)
@@ -169,6 +164,7 @@ export struct UserProfilePage {
           .type(ButtonType.Capsule)
           .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
           .height(32)
+          .buttonStyle(ButtonStyleMode.NORMAL)
           .onClick(() => {
             let p: UserProfileParams = { username: this.username }
             this.stack.pushPathByName(this.activityTab === 0 ? 'UserTopics' : 'UserReplies', p as Object)
@@ -184,12 +180,24 @@ export struct UserProfilePage {
     Button(`${label}${count > 0 ? ` ${count}` : ''}`)
       .type(ButtonType.Capsule)
       .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-      .height(32)
-      .fontColor(this.activityTab === tab ? $r('sys.color.font_on_primary') : $r('sys.color.font_primary'))
-      .backgroundColor(this.activityTab === tab ? $r('sys.color.ohos_id_color_activated') : $r('sys.color.ohos_id_color_card_bg'))
+      .height(30)
+      .buttonStyle(ButtonStyleMode.NORMAL)
+      .fontColor(this.activityTab === tab ? $r('sys.color.ohos_id_color_activated') : $r('sys.color.font_primary'))
       .onClick(() => {
         this.activityTab = tab
       })
+  }
+
+  @Builder MemberActionButton(label: string, isDestructive: boolean, action: () => void) {
+    Button(label)
+      .type(ButtonType.Capsule)
+      .buttonStyle(ButtonStyleMode.NORMAL)
+      .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+      .fontColor(isDestructive ? Color.Red : $r('sys.color.font_primary'))
+      .height(30)
+      .padding({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
+      .enabled(!this.vm.isActionLoading)
+      .onClick(action)
   }
 
   @Builder EmptyText(text: string) {

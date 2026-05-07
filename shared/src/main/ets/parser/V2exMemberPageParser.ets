@@ -279,7 +279,7 @@ export class V2exMemberPageParser {
   private static replyHtmlToMarkdown(html: string): string {
     return V2exMemberPageParser.decodeHtml((html || '')
       .replace(/<br\s*\/?>/gi, '\n')
-      .replace(/<a[^>]+href=['"]\/member\/([0-9A-Za-z_]+)['"][^>]*>[\s\S]*?<\/a>/gi, '[@$1](/member/$1)')
+      .replace(/@?\s*<a[^>]+href=['"]\/member\/([0-9A-Za-z_]+)['"][^>]*>[\s\S]*?<\/a>/gi, '[@$1](/member/$1)')
       .replace(/<a[^>]+href=['"]([^'"]+)['"][^>]*>([\s\S]*?)<\/a>/gi, '[$2]($1)')
       .replace(/<[^>]+>/g, ''))
       .replace(/\n{3,}/g, '\n\n')
