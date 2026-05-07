@@ -12,12 +12,25 @@ export class ImageUtils {
     if (!path) {
       return ''
     }
-    if (path.startsWith(PROTOCOL_RELATIVE_PREFIX)) {
-      return `https:${path}`
+    const source = ImageUtils.preferLargeAvatar(path)
+    if (source.startsWith(PROTOCOL_RELATIVE_PREFIX)) {
+      return `https:${source}`
     }
-    if (path.startsWith(HTTP_PREFIX)) {
-      return path
+    if (source.startsWith(HTTP_PREFIX)) {
+      return source
     }
-    return `${ApiConstants.BASE_URL_COM}${path}`
+    return `${ApiConstants.BASE_URL_COM}${source}`
+  }
+
+  private static preferLargeAvatar(path: string): string {
+    return (path || '')
+      .replace('/mini.png', '/large.png')
+      .replace('/normal.png', '/large.png')
+      .replace('/mini.jpg', '/large.jpg')
+      .replace('/normal.jpg', '/large.jpg')
+      .replace('/mini.jpeg', '/large.jpeg')
+      .replace('/normal.jpeg', '/large.jpeg')
+      .replace('/mini.webp', '/large.webp')
+      .replace('/normal.webp', '/large.webp')
   }
 }
