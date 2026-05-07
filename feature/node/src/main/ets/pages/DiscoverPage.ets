@@ -1,6 +1,6 @@
 import { NodeViewModel } from '../viewmodel/NodeViewModel'
 import {
-  ApiService, AppSearchField, FilterChip, StorageKeys, V2exNode, V2exTopic, NodeTopicListParams, TopicDetailParams,
+  ApiService, AppSearchField, FilterChip, PullRefresh, StorageKeys, V2exNode, V2exTopic, NodeTopicListParams, TopicDetailParams,
   ThemeConstants, CollectionSettings
 } from 'shared'
 import type { SavedNode, ViewedTopic } from 'shared'
@@ -20,6 +20,7 @@ export struct DiscoverPage {
   @State private recentTopics: V2exTopic[] = []
   @State private hotError: string = ''
   @State private isHotLoading: boolean = false
+  @State private scrollEnabled: boolean = true
   @State private nodeKeyword: string = ''
   @State private savedNodes: SavedNode[] = []
   @State private recentNodes: SavedNode[] = []
@@ -28,6 +29,7 @@ export struct DiscoverPage {
   private readonly TBH: number = ThemeConstants.TITLE_BAR_HEIGHT
   private readonly FLOAT_H: number = ThemeConstants.FLOAT_BAR_HEIGHT
   private readonly GAP: number = ThemeConstants.SPACE_MD
+  private scroller: Scroller = new Scroller()
   private api: ApiService = new ApiService()
 
   aboutToAppear(): void {
@@ -45,40 +47,53 @@ export struct DiscoverPage {
         this.ErrorView()
       } else {
         this.SearchBar()
-        Scroll() {
-          Column({ space: ThemeConstants.SPACE_MD }) {
-            this.LocalNodeSections()
-            this.HotTopicsSection()
-            if (this.vm.nodeDataSource.totalCount() === 0) {
-              this.EmptyView()
-            } else {
-              this.SectionTitle('节点')
-              GridRow({ columns: { sm: 2, md: 4, lg: 6 }, gutter: { x: ThemeConstants.SPACE_SM, y: ThemeConstants.SPACE_SM } }) {
-                LazyForEach(this.vm.nodeDataSource, (node: V2exNode) => {
-                  GridCol({ span: { sm: 1, md: 2, lg: 2 } }) {
-                    Column() {
-                      Text(node.title).fontSize(ThemeConstants.FONT_SIZE_BODY).fontColor($r('sys.color.font_primary')).maxLines(1)
-                        .textOverflow({ overflow: TextOverflow.Ellipsis })
-                      Text(`${node.topics} 主题`).fontSize(ThemeConstants.FONT_SIZE_TINY).fontColor($r('sys.color.font_secondary')).margin({ top: ThemeConstants.SPACE_XS })
-                    }
-                      .alignItems(HorizontalAlign.Center).padding(ThemeConstants.SPACE_MD).width('100%').borderRadius(ThemeConstants.RADIUS_MD)
-                      .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
-                      .onClick(() => {
-                        let p: NodeTopicListParams = { nodeName: node.name, nodeTitle: node.title }
-                        this.ns.pushPathByName('NodeTopicList', p as Object)
-                      })
+        Column() {
+          PullRefresh({
+            scroller: this.scroller,
+            indicatorTop: this.topH + this.TBH,
+            threshold: 56,
+            onRefresh: async () => { await this.refreshDiscover() },
+            onScrollEnableChange: (enabled: boolean) => { this.scrollEnabled = enabled }
+          }) {
+            Scroll(this.scroller) {
+              Column({ space: ThemeConstants.SPACE_MD }) {
+                this.LocalNodeSections()
+                this.HotTopicsSection()
+                if (this.vm.nodeDataSource.totalCount() === 0) {
+                  this.EmptyView()
+                } else {
+                  this.SectionTitle('节点')
+                  GridRow({ columns: { sm: 2, md: 4, lg: 6 }, gutter: { x: ThemeConstants.SPACE_SM, y: ThemeConstants.SPACE_SM } }) {
+                    LazyForEach(this.vm.nodeDataSource, (node: V2exNode) => {
+                      GridCol({ span: { sm: 1, md: 2, lg: 2 } }) {
+                        Column() {
+                          Text(node.title).fontSize(ThemeConstants.FONT_SIZE_BODY).fontColor($r('sys.color.font_primary')).maxLines(1)
+                            .textOverflow({ overflow: TextOverflow.Ellipsis })
+                          Text(`${node.topics} 主题`).fontSize(ThemeConstants.FONT_SIZE_TINY).fontColor($r('sys.color.font_secondary')).margin({ top: ThemeConstants.SPACE_XS })
+                        }
+                          .alignItems(HorizontalAlign.Center).padding(ThemeConstants.SPACE_MD).width('100%').borderRadius(ThemeConstants.RADIUS_MD)
+                          .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+                          .onClick(() => {
+                            let p: NodeTopicListParams = { nodeName: node.name, nodeTitle: node.title }
+                            this.ns.pushPathByName('NodeTopicList', p as Object)
+                          })
+                      }
+                    }, (node: V2exNode) => node.id.toString())
                   }
-                }, (node: V2exNode) => node.id.toString())
+                }
               }
+                .padding({
+                  left: this.GAP, right: this.GAP,
+                  bottom: this.discoverBottomPadding()
+                })
+                .width('100%')
             }
+              .enableScrollInteraction(this.scrollEnabled)
+              .scrollBar(BarState.Off)
           }
-            .padding({
-              left: this.GAP, right: this.GAP,
-              bottom: this.discoverBottomPadding()
-            })
-            .width('100%')
         }
-          .scrollBar(BarState.Off)
+        .width('100%')
+        .layoutWeight(1)
       }
     }
       .width('100%').height('100%')
@@ -111,13 +126,6 @@ export struct DiscoverPage {
         this.TopicModeButton('rank', '热榜')
         this.TopicModeButton('latest', '最新')
         this.TopicModeButton('recent', '最近')
-        Blank()
-        Button('刷新', { type: ButtonType.Capsule })
-          .height(32)
-          .fontSize(ThemeConstants.FONT_SIZE_TAG)
-          .buttonStyle(ButtonStyleMode.NORMAL)
-          .enabled(!this.isHotLoading)
-          .onClick(() => { this.reloadTopicSurface() })
       }
       .width('100%')
       .alignItems(VerticalAlign.Center)
@@ -237,23 +245,19 @@ export struct DiscoverPage {
   }
 
   @Builder NodeChip(node: SavedNode) {
-    Button() {
-      Row({ space: ThemeConstants.SPACE_XS }) {
-        Text(node.title || node.name)
-          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-          .fontColor($r('sys.color.font_primary'))
-          .maxLines(1)
-          .textOverflow({ overflow: TextOverflow.Ellipsis })
-        if (node.topics > 0) {
-          Text(`${node.topics}`)
-            .fontSize(ThemeConstants.FONT_SIZE_TINY)
-            .fontColor($r('sys.color.font_secondary'))
-        }
+    Row({ space: ThemeConstants.SPACE_XS }) {
+      Text(node.title || node.name)
+        .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+        .fontColor($r('sys.color.font_primary'))
+        .maxLines(1)
+        .textOverflow({ overflow: TextOverflow.Ellipsis })
+      if (node.topics > 0) {
+        Text(`${node.topics}`)
+          .fontSize(ThemeConstants.FONT_SIZE_TINY)
+          .fontColor($r('sys.color.font_secondary'))
       }
-      .alignItems(VerticalAlign.Center)
     }
-    .type(ButtonType.Normal)
-    .buttonStyle(ButtonStyleMode.NORMAL)
+    .alignItems(VerticalAlign.Center)
     .height(34)
     .padding({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
     .borderRadius(ThemeConstants.RADIUS_ROUND)
@@ -340,6 +344,12 @@ export struct DiscoverPage {
       this.latestTopics = []
     }
     this.loadTopicSurface()
+  }
+
+  private async refreshDiscover(): Promise<void> {
+    await this.vm.loadAllNodes()
+    this.loadLocalNodeSections()
+    this.reloadTopicSurface()
   }
 
   private loadTopicSurface(): void {

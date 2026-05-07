@@ -14,6 +14,7 @@ import {
   MediaSettings,
   ReadingSettings,
   ConciseListRow,
+  FilterChip,
   SecondaryListScaffold,
   SectionHeader as SharedSectionHeader,
   ListDivider as SharedListDivider,
@@ -297,24 +298,18 @@ export struct SettingsPage {
         })
 
         Row({ space: ThemeConstants.SPACE_SM }) {
-          Button('v2ex.com')
-            .fontSize(ThemeConstants.FONT_SIZE_TAG)
-            .height(ThemeConstants.TOUCH_TARGET_SM)
-            .type(ButtonType.Normal)
-            .borderRadius(ThemeConstants.RADIUS_MD)
-            .fontColor(!this.useCoDomain ? Color.White : $r('sys.color.font_primary'))
-            .backgroundColor(!this.useCoDomain ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.ohos_id_color_button_normal'))
-            .layoutWeight(1)
-            .onClick(() => { this.updateApiDomain(false) })
-          Button('v2ex.co')
-            .fontSize(ThemeConstants.FONT_SIZE_TAG)
-            .height(ThemeConstants.TOUCH_TARGET_SM)
-            .type(ButtonType.Normal)
-            .borderRadius(ThemeConstants.RADIUS_MD)
-            .fontColor(this.useCoDomain ? Color.White : $r('sys.color.font_primary'))
-            .backgroundColor(this.useCoDomain ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.ohos_id_color_button_normal'))
-            .layoutWeight(1)
-            .onClick(() => { this.updateApiDomain(true) })
+          FilterChip({
+            label: 'v2ex.com',
+            selected: !this.useCoDomain,
+            fill: true,
+            action: () => { this.updateApiDomain(false) }
+          })
+          FilterChip({
+            label: 'v2ex.co',
+            selected: this.useCoDomain,
+            fill: true,
+            action: () => { this.updateApiDomain(true) }
+          })
         }
         .width('100%')
         .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG, bottom: ThemeConstants.SPACE_LG })
@@ -362,9 +357,9 @@ export struct SettingsPage {
           .fontSize(ThemeConstants.FONT_SIZE_LIST_ITEM)
           .fontColor($r('sys.color.font_primary'))
           .layoutWeight(1)
-        this.DensityButton('紧凑', ReadingSettings.DENSITY_COMPACT)
-        this.DensityButton('标准', ReadingSettings.DENSITY_STANDARD)
-        this.DensityButton('宽松', ReadingSettings.DENSITY_COMFORTABLE)
+        this.DensityChip('紧凑', ReadingSettings.DENSITY_COMPACT)
+        this.DensityChip('标准', ReadingSettings.DENSITY_STANDARD)
+        this.DensityChip('宽松', ReadingSettings.DENSITY_COMFORTABLE)
       }
       .width('100%')
       .height(52)
@@ -411,16 +406,13 @@ export struct SettingsPage {
       .onClick(action)
   }
 
-  @Builder DensityButton(label: string, density: string) {
-    Button(label)
-      .fontSize(ThemeConstants.FONT_SIZE_TAG)
-      .height(ThemeConstants.TOUCH_TARGET_SM)
-      .type(ButtonType.Normal)
-      .borderRadius(ThemeConstants.RADIUS_MD)
-      .fontColor(this.readingDensity === density ? Color.White : $r('sys.color.font_primary'))
-      .backgroundColor(this.readingDensity === density ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.ohos_id_color_button_normal'))
-      .layoutWeight(1)
-      .onClick(() => { this.updateReadingDensity(density) })
+  @Builder DensityChip(label: string, density: string) {
+    FilterChip({
+      label,
+      selected: this.readingDensity === density,
+      fill: true,
+      action: () => { this.updateReadingDensity(density) }
+    })
   }
 
   @Builder CacheSection() {

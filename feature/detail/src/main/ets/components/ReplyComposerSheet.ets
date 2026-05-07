@@ -8,7 +8,6 @@ import {
   MarkdownContent,
   MarkdownToolbar,
   AppModalScaffold,
-  AppActionButton,
   StorageKeys,
   ThemeConstants
 } from 'shared'
@@ -67,19 +66,33 @@ export struct ReplyComposerSheet {
               .textOverflow({ overflow: TextOverflow.Ellipsis })
           }
 
-          MarkdownToolbar({
-            previewActive: this.isPreview,
-            onEdit: () => { this.isPreview = false },
-            onPreview: () => { this.isPreview = true },
-            onBold: () => { this.insertInlineMarkdown('**', '**', '文字') },
-            onItalic: () => { this.insertInlineMarkdown('*', '*', '文字') },
-            onCode: () => { this.insertInlineMarkdown('`', '`', '代码') },
-            onQuote: () => { this.insertLinePrefix('> ') },
-            onList: () => { this.insertLinePrefix('- ') },
-            onLink: () => { this.insertInlineMarkdown('[', '](https://)', '文字', '[文字](https://'.length) },
-            onImage: () => { this.insertImageLinkTemplate() },
-            onClear: () => { this.confirmClearDraft() }
-          })
+          Row({ space: ThemeConstants.SPACE_SM }) {
+            MarkdownToolbar({
+              previewActive: this.isPreview,
+              onEdit: () => { this.isPreview = false },
+              onPreview: () => { this.isPreview = true },
+              onBold: () => { this.insertInlineMarkdown('**', '**', '文字') },
+              onItalic: () => { this.insertInlineMarkdown('*', '*', '文字') },
+              onCode: () => { this.insertInlineMarkdown('`', '`', '代码') },
+              onQuote: () => { this.insertLinePrefix('> ') },
+              onList: () => { this.insertLinePrefix('- ') },
+              onLink: () => { this.insertInlineMarkdown('[', '](https://)', '文字', '[文字](https://'.length) },
+              onImage: () => { this.insertImageLinkTemplate() },
+              onClear: () => { this.confirmClearDraft() }
+            })
+              .layoutWeight(1)
+
+            Button(this.isSubmitting ? '提交中' : '提交', { type: ButtonType.Capsule })
+              .fontSize(ThemeConstants.FONT_SIZE_TAG)
+              .fontWeight(FontWeight.Medium)
+              .height(32)
+              .width(76)
+              .enabled(this.canSubmit())
+              .buttonStyle(ButtonStyleMode.EMPHASIZED)
+              .onClick(() => { this.confirmSubmit() })
+          }
+          .width('100%')
+          .alignItems(VerticalAlign.Center)
 
           if (this.errorMessage) {
             Text(this.errorMessage)
@@ -92,21 +105,6 @@ export struct ReplyComposerSheet {
               .fontSize(ThemeConstants.FONT_SIZE_TINY)
               .fontColor($r('sys.color.font_secondary'))
           }
-
-          Row({ space: ThemeConstants.SPACE_SM }) {
-            AppActionButton({
-              label: '关闭',
-              primary: false,
-              action: () => { this.close() }
-            })
-            AppActionButton({
-              label: this.isSubmitting ? '提交中' : '提交',
-              primary: true,
-              isEnabled: this.canSubmit(),
-              action: () => { this.confirmSubmit() }
-            })
-          }
-          .width('100%')
 
           if (this.isPreview) {
             if (this.content.trim().length === 0) {

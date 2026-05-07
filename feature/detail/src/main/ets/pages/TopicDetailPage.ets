@@ -318,11 +318,17 @@ export struct TopicDetailPage {
   }
 
   @Builder BottomReplyActionBar() {
-    Row() {
+    Row({ space: ThemeConstants.SPACE_MD }) {
+      Text(this.writeEnabled ? '参与讨论' : '写入操作未开启')
+        .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+        .fontColor($r('sys.color.font_secondary'))
+        .layoutWeight(1)
+        .maxLines(1)
+        .textOverflow({ overflow: TextOverflow.Ellipsis })
       Button() {
         Row({ space: ThemeConstants.SPACE_XS }) {
           SymbolGlyph($r('sys.symbol.arrowshape_turn_up_left_fill'))
-            .fontSize(20)
+            .fontSize(18)
             .fontColor([Color.White])
           Text('回复')
             .fontSize(ThemeConstants.FONT_SIZE_BODY)
@@ -333,10 +339,11 @@ export struct TopicDetailPage {
         .justifyContent(FlexAlign.Center)
       }
       .type(ButtonType.Normal)
-      .height(48)
-      .layoutWeight(1)
+      .height(40)
+      .width(116)
       .borderRadius(ThemeConstants.RADIUS_ROUND)
       .backgroundColor(ThemeConstants.BRAND_PRIMARY)
+      .enabled(this.writeEnabled)
       .onClick(() => {
         this.openReplyEditor()
       })
@@ -345,8 +352,8 @@ export struct TopicDetailPage {
     .padding({
       left: ThemeConstants.SPACE_LG,
       right: ThemeConstants.SPACE_LG,
-      top: ThemeConstants.SPACE_SM,
-      bottom: this.bottomH + ThemeConstants.SPACE_SM
+      top: ThemeConstants.SPACE_XS,
+      bottom: this.bottomH + ThemeConstants.SPACE_XS
     })
     .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }
