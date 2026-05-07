@@ -1,7 +1,7 @@
 import { UserViewModel } from '../viewmodel/UserViewModel'
 import {
   V2exTopic, TopicCard, ThemeConstants, TopicDetailParams, StorageKeys, NodeTopicListParams,
-  Avatar, DateUtils
+  Avatar, DateUtils, SecondaryListScaffold
 } from 'shared'
 import type { TopicReadState } from 'shared'
 
@@ -10,23 +10,25 @@ export struct UserProfilePage {
   @Prop username: string = ''
   @Consume('ns') stack: NavPathStack
   @State vm: UserViewModel = new UserViewModel(this.username)
-  @StorageProp('topAvoidHeight') topH: number = 0
   @StorageLink(StorageKeys.TOPIC_READ_STATES) topicReadStates: string = '[]'
-  private readonly GAP: number = ThemeConstants.SPACE_MD
 
   aboutToAppear(): void { this.vm.load() }
 
   build() {
     Column() {
-      if (this.vm.isLoading && this.vm.profile === null) {
-        LoadingProgress().width(ThemeConstants.LOADING_SIZE).height(ThemeConstants.LOADING_SIZE).margin({ top: ThemeConstants.MARGIN_LOADING_TOP })
-      } else if (this.vm.profile !== null) {
-        List({ space: this.GAP }) {
-          ListItem() { Column() { Blank().height(this.topH + ThemeConstants.TITLE_BAR_HEIGHT) } }
+      SecondaryListScaffold() {
+        if (this.vm.isLoading && this.vm.profile === null) {
+          ListItem() { this.LoadingView() }
+        } else if (this.vm.profile !== null) {
           ListItem() {
             this.ProfileCard()
           }
-          ListItem() { Text('最近主题').fontSize(ThemeConstants.FONT_SIZE_BODY).fontColor($r('sys.color.font_secondary')).padding(ThemeConstants.SPACE_SM) }
+          ListItem() {
+            Text('最近主题')
+              .fontSize(ThemeConstants.FONT_SIZE_BODY)
+              .fontColor($r('sys.color.font_secondary'))
+              .padding(ThemeConstants.SPACE_SM)
+          }
           LazyForEach(this.vm.topicDataSource, (topic: V2exTopic) => {
             ListItem() {
               TopicCard({
@@ -43,16 +45,24 @@ export struct UserProfilePage {
                 this.stack.pushPathByName('TopicDetail', p as Object)
               })
           }, (topic: V2exTopic) => topic.id.toString())
+        } else {
+          ListItem() { this.ErrorView() }
         }
-          .scrollBar(BarState.Off)
-          .padding({ left: this.GAP, right: this.GAP })
-          .width('100%').height('100%')
-      } else {
-        this.ErrorView()
       }
     }
       .width('100%').height('100%')
       .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
+  }
+
+  @Builder LoadingView() {
+    Column() {
+      LoadingProgress()
+        .width(ThemeConstants.LOADING_SIZE)
+        .height(ThemeConstants.LOADING_SIZE)
+    }
+    .justifyContent(FlexAlign.Center)
+    .width('100%')
+    .height(240)
   }
 
   @Builder ProfileCard() {

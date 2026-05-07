@@ -1,7 +1,8 @@
 import { NodeViewModel } from '../viewmodel/NodeViewModel'
 import {
   V2exTopic, TopicCard, ThemeConstants, TopicDetailParams, StorageKeys, UserProfileParams,
-  CollectionSettings, SavedNode, AuthSettings, LoadingFooter, ApiService, CookieJarSettings, V2exToggleAction
+  CollectionSettings, SavedNode, AuthSettings, LoadingFooter, ApiService, CookieJarSettings, V2exToggleAction,
+  SecondaryListScaffold
 } from 'shared'
 import type { TopicReadState } from 'shared'
 import { common } from '@kit.AbilityKit'
@@ -13,14 +14,12 @@ export struct NodeTopicPage {
   @Prop nodeTitle: string = ''
   @Consume('ns') stack: NavPathStack
   @State vm: NodeViewModel = new NodeViewModel()
-  @StorageProp('topAvoidHeight') topH: number = 0
   @StorageLink(StorageKeys.TOPIC_READ_STATES) topicReadStates: string = '[]'
   @StorageLink(StorageKeys.ACCOUNT_WRITE_ENABLED) writeEnabled: boolean = false
   @State private isNodeSaved: boolean = false
   @State private isSiteNodeFavorited: boolean = false
   @State private isSiteNodeFavoriteLoading: boolean = false
   @State private token: string = ''
-  private readonly GAP: number = ThemeConstants.SPACE_MD
   private api: ApiService = new ApiService()
 
   aboutToAppear(): void {
@@ -31,15 +30,14 @@ export struct NodeTopicPage {
 
   build() {
     Column() {
-      if (this.vm.isLoading) {
-        LoadingProgress().width(ThemeConstants.LOADING_SIZE).height(ThemeConstants.LOADING_SIZE).margin({ top: ThemeConstants.MARGIN_LOADING_TOP })
-      } else if (this.vm.errorMessage) {
-        this.ErrorView()
-      } else if (this.vm.nodeTopics.length === 0) {
-        this.EmptyView()
-      } else {
-        List({ space: this.GAP }) {
-          ListItem() { Column() { Blank().height(this.topH + ThemeConstants.TITLE_BAR_HEIGHT) } }
+      SecondaryListScaffold({ onReachEnd: () => { this.loadMore() } }) {
+        if (this.vm.isLoading) {
+          ListItem() { this.LoadingView() }
+        } else if (this.vm.errorMessage) {
+          ListItem() { this.ErrorView() }
+        } else if (this.vm.nodeTopics.length === 0) {
+          ListItem() { this.EmptyView() }
+        } else {
           ListItem() { this.NodeHeaderCard() }
           ForEach(this.vm.nodeTopics, (topic: V2exTopic) => {
             ListItem() {
@@ -63,18 +61,21 @@ export struct NodeTopicPage {
             }
           }
         }
-          .onReachEnd(() => {
-            if (this.vm.nodeTopicsUseV2 && this.token) {
-              this.vm.loadMoreNodeTopicsV2(this.nodeName, this.token)
-            }
-          })
-          .scrollBar(BarState.Off)
-          .padding({ left: this.GAP, right: this.GAP })
-          .width('100%').height('100%')
       }
     }
       .width('100%').height('100%')
       .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
+  }
+
+  @Builder LoadingView() {
+    Column() {
+      LoadingProgress()
+        .width(ThemeConstants.LOADING_SIZE)
+        .height(ThemeConstants.LOADING_SIZE)
+    }
+    .justifyContent(FlexAlign.Center)
+    .width('100%')
+    .height(240)
   }
 
   @Builder NodeHeaderCard() {
@@ -247,6 +248,12 @@ export struct NodeTopicPage {
         this.vm.nodeDetailError = error.message || '读取 Token 失败'
         this.vm.loadNodeTopics(this.nodeName)
       })
+  }
+
+  private loadMore(): void {
+    if (this.vm.nodeTopicsUseV2 && this.token) {
+      this.vm.loadMoreNodeTopicsV2(this.nodeName, this.token)
+    }
   }
 
   private toggleSavedNode(): void {
