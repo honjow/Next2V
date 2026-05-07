@@ -1322,6 +1322,10 @@ struct Index {
         this.ns.pushPathByName('MyTopics', null)
       })
       this.SettingsDivider()
+      this.AuthActionRow('我的回复', '', () => {
+        this.ns.pushPathByName('MyReplies', null)
+      })
+      this.SettingsDivider()
       this.AuthActionRow('收藏节点', '', () => {
         this.ns.pushPathByName('MyNodes', null)
       })

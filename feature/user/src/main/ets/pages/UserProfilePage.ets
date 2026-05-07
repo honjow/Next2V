@@ -1,7 +1,7 @@
 import { UserViewModel } from '../viewmodel/UserViewModel'
 import {
   V2exTopic, V2exUserReply, TopicCard, ThemeConstants, TopicDetailParams, StorageKeys, NodeTopicListParams,
-  Avatar, DateUtils, SecondaryListScaffold, MarkdownContent, UserProfileParams
+  Avatar, DateUtils, SecondaryListScaffold, MarkdownContent, UserProfileParams, CookieJarSettings
 } from 'shared'
 import type { TopicReadState } from 'shared'
 import { promptAction } from '@kit.ArkUI'
@@ -15,6 +15,7 @@ export struct UserProfilePage {
   @State private following: boolean = false
   @State private blocked: boolean = false
   @StorageLink(StorageKeys.TOPIC_READ_STATES) topicReadStates: string = '[]'
+  @StorageLink(StorageKeys.AUTH_SESSION_USERNAME) sessionUsername: string = ''
 
   aboutToAppear(): void {
     this.vm.load()
@@ -137,6 +138,8 @@ export struct UserProfilePage {
         }
         .layoutWeight(1)
         .alignItems(HorizontalAlign.Start)
+
+        this.ProfileActionSlot()
       }
       .width('100%')
       .alignItems(VerticalAlign.Center)
@@ -150,15 +153,6 @@ export struct UserProfilePage {
       }
 
       this.ProfileMeta()
-
-      if (this.vm.actions !== null) {
-        Row({ space: ThemeConstants.SPACE_SM }) {
-          this.FollowActionButton()
-          this.BlockActionButton()
-        }
-        .width('100%')
-        .justifyContent(FlexAlign.End)
-      }
     }
     .padding(ThemeConstants.SPACE_LG)
     .width('100%')
@@ -199,6 +193,7 @@ export struct UserProfilePage {
       .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
       .fontColor($r('sys.color.font_primary'))
       .height(30)
+      .width(88)
       .padding({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
       .enabled(!this.vm.isActionLoading)
       .onClick(() => {
@@ -213,11 +208,37 @@ export struct UserProfilePage {
       .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
       .fontColor(Color.Red)
       .height(30)
+      .width(88)
       .padding({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
       .enabled(!this.vm.isActionLoading)
       .onClick(() => {
         this.toggleBlock()
       })
+  }
+
+  @Builder ProfileActionSlot() {
+    Column({ space: ThemeConstants.SPACE_XS }) {
+      if (this.vm.actions !== null) {
+        this.FollowActionButton()
+        this.BlockActionButton()
+      } else {
+        Button(this.profileActionPlaceholderText())
+          .type(ButtonType.Capsule)
+          .buttonStyle(ButtonStyleMode.NORMAL)
+          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+          .fontColor($r('sys.color.font_secondary'))
+          .height(30)
+          .width(88)
+          .enabled(false)
+        Blank()
+          .height(30)
+          .width(88)
+      }
+    }
+    .width(96)
+    .height(68)
+    .alignItems(HorizontalAlign.End)
+    .justifyContent(FlexAlign.Center)
   }
 
   @Builder AllActivityEntry(label: string) {
@@ -369,6 +390,7 @@ export struct UserProfilePage {
     this.following = nextFollowing
     this.vm.toggleFollow()
       .then(() => {
+        this.syncActionState()
         this.refreshActionStateLater()
       })
       .catch((error: Error) => {
@@ -386,6 +408,7 @@ export struct UserProfilePage {
     this.blocked = nextBlocked
     this.vm.toggleBlock()
       .then(() => {
+        this.syncActionState()
         this.refreshActionStateLater()
       })
       .catch((error: Error) => {
@@ -400,6 +423,22 @@ export struct UserProfilePage {
     }
     this.following = this.vm.actions.following
     this.blocked = this.vm.actions.blocked
+  }
+
+  private profileActionPlaceholderText(): string {
+    if (this.isCurrentSessionUser()) {
+      return '本人'
+    }
+    if (this.vm.isLoading || CookieJarSettings.getCurrentCookie()) {
+      return '加载中'
+    }
+    return '需登录'
+  }
+
+  private isCurrentSessionUser(): boolean {
+    const current = (this.sessionUsername || '').trim().toLowerCase()
+    const target = (this.username || this.vm.profile?.username || '').trim().toLowerCase()
+    return !!current && !!target && current === target
   }
 
   private refreshActionStateLater(): void {
