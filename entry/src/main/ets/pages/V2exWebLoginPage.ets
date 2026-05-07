@@ -1,7 +1,17 @@
 import { common } from '@kit.AbilityKit'
 import { promptAction } from '@kit.ArkUI'
 import { webview } from '@kit.ArkWeb'
-import { ApiService, AuthSessionSettings, CookieJarSettings, HttpClient, StorageKeys, ThemeConstants, V2exSessionParser } from 'shared'
+import {
+  ApiService,
+  AuthSessionSettings,
+  CookieJarSettings,
+  HttpClient,
+  StorageKeys,
+  ThemeConstants,
+  V2exSessionParser
+} from 'shared'
+
+const DEFAULT_V2EX_BASE_URL: string = 'https://www.v2ex.com'
 
 interface PageEndEvent {
   url: string
@@ -21,6 +31,7 @@ export struct V2exWebLoginPage {
   private api: ApiService = new ApiService()
 
   @State private errorMessage: string = ''
+  @State private pageMessage: string = '正在打开网页登录...'
   @State private isSaving: boolean = false
   @State private isSaved: boolean = false
   @State private lastUrl: string = ''
@@ -30,20 +41,41 @@ export struct V2exWebLoginPage {
     return this.http.getBaseUrl()
   }
 
-  private get signinUrl(): string {
-    return `${this.baseUrl}/signin`
+  private currentSigninUrl(): string {
+    const cleanBase = (this.baseUrl || DEFAULT_V2EX_BASE_URL).trim().replace(/\/+$/, '')
+    const hasProtocol = cleanBase.indexOf('http://') === 0 || cleanBase.indexOf('https://') === 0
+    let normalizedBase = DEFAULT_V2EX_BASE_URL
+    if (hasProtocol) {
+      normalizedBase = cleanBase
+    }
+    return `${normalizedBase}/signin`
   }
 
   build() {
     Column() {
-      Web({ src: this.signinUrl, controller: this.controller })
+      Web({ src: '', controller: this.controller })
         .darkMode(WebDarkMode.Auto)
+        .javaScriptAccess(true)
+        .domStorageAccess(true)
+        .onlineImageAccess(true)
         .width('100%')
         .layoutWeight(1)
+        .onControllerAttached(() => {
+          this.loadSigninPage()
+        })
+        .onPageBegin((event?: PageEndEvent) => {
+          this.pageMessage = event?.url ? `正在加载 ${event.url}` : '正在加载网页登录...'
+        })
         .onPageEnd((event?: PageEndEvent) => {
+          this.pageMessage = ''
           if (event && event.url) {
             this.lastUrl = event.url
             this.tryAutoSave(event.url)
+          }
+        })
+        .onErrorReceive((event) => {
+          if (event?.request?.isMainFrame()) {
+            this.pageMessage = event.error.getErrorInfo() || '网页登录加载失败'
           }
         })
 
@@ -56,9 +88,9 @@ export struct V2exWebLoginPage {
 
   @Builder
   StatusBar() {
-    if (this.isSaving || this.errorMessage) {
+    if (this.isSaving || this.errorMessage || this.pageMessage) {
       Row() {
-        Text(this.isSaving ? '正在保存登录状态…' : this.errorMessage)
+        Text(this.statusText())
           .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
           .fontColor(this.errorMessage ? Color.Red : $r('sys.color.font_secondary'))
           .maxLines(1)
@@ -75,6 +107,16 @@ export struct V2exWebLoginPage {
     }
   }
 
+  private statusText(): string {
+    if (this.isSaving) {
+      return '正在保存登录状态…'
+    }
+    if (this.errorMessage) {
+      return this.errorMessage
+    }
+    return this.pageMessage
+  }
+
   onWebLoginAction(_propName: string): void {
     const action = this.webLoginAction.split(':').pop() || ''
     if (action === 'save') {
@@ -85,11 +127,26 @@ export struct V2exWebLoginPage {
   }
 
   private reloadPage(): void {
+    if (!this.lastUrl) {
+      this.loadSigninPage()
+      return
+    }
     try {
       this.controller.refresh()
     } catch (error) {
       const e = error as Error
       this.errorMessage = e.message || '重新加载失败'
+    }
+  }
+
+  private loadSigninPage(): void {
+    const url = this.currentSigninUrl()
+    this.pageMessage = `正在打开 ${url}`
+    try {
+      this.controller.loadUrl(url)
+    } catch (error) {
+      const e = error as Error
+      this.errorMessage = `${e.message || '网页登录加载失败'}: ${url}`
     }
   }
 
@@ -163,7 +220,7 @@ export struct V2exWebLoginPage {
 
     const urls: string[] = []
     this.pushUniqueUrl(urls, this.baseUrl)
-    this.pushUniqueUrl(urls, this.signinUrl)
+    this.pushUniqueUrl(urls, this.currentSigninUrl())
     this.pushUniqueUrl(urls, this.lastUrl)
 
     const merged: Map<string, string> = new Map()

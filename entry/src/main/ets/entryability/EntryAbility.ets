@@ -1,5 +1,6 @@
 import { UIAbility, Want, AbilityConstant } from '@kit.AbilityKit'
 import { window } from '@kit.ArkUI'
+import { webview } from '@kit.ArkWeb'
 import { ApiDomainSettings, MediaSettings, ReadingSettings, StorageKeys, WriteActionSettings } from 'shared'
 
 const TRANSPARENT_COLOR: string = '#00FFFFFF'
@@ -11,7 +12,14 @@ export default class EntryAbility extends UIAbility {
   private mainWindow: window.Window | null = null
   private keyboardHeightCallback: ((height: number) => void) | null = null
 
-  onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {}
+  onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
+    try {
+      webview.WebviewController.initializeWebEngine()
+    } catch (error) {
+      const e = error as Error
+      console.error('initialize web engine failed: ' + e.message)
+    }
+  }
 
   onWindowStageCreate(windowStage: window.WindowStage): void {
     let win: window.Window | null = null
