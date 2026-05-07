@@ -4,6 +4,10 @@
 
 - V2Fun: `https://github.com/liaoliao666/v2ex`
 - VVEX / flutter_v2ex: `https://github.com/guozhigq/flutter_v2ex`
+- ClashBox HarmonyOS 应用 master 分支：
+  `https://github.com/xiaobaigroup/ClashBox/tree/master`
+- HarmonyDO public HarmonyOS 应用：
+  `https://github.com/Amaz1ny/HarmonyDO-public`
 - V2EX 网页站点与当前项目中的 API v2 / Cookie HTML 适配器。
 
 目标是完成一个可日常使用的 HarmonyOS NEXT 原生 V2EX 客户端。方向是：HDS 优先、界面简洁、严格避免破坏已完成能力。
@@ -42,7 +46,8 @@
 - `feature/detail/src/main/ets/pages/TopicDetailPage.ets`
   - 主题详情、回复、主题操作、阅读位置、筛选、图片。
 - `feature/detail/src/main/ets/pages/ReplyEditorPage.ets`
-  - 回复草稿和编辑。
+  - 现有回复草稿/编辑路由。
+  - 普通主题回复不应继续使用独立页面，应该从详情页打开贴靠键盘的悬浮回复组件。
 - `entry/src/main/ets/pages/TopicEditorPage.ets`
   - 发帖草稿和编辑。
 - `entry/src/main/ets/pages/SearchPage.ets`
@@ -132,6 +137,22 @@ VVEX 重点路径：
 - `lib/utils/app_scheme.dart`、Android `AndroidManifest.xml`：深链。
 - `lib/utils/storage.dart`：链接打开方式、自动签到、通知、字号、Tab、楼主高亮、侧滑设置。
 
+ClashBox master 重点路径：
+
+- `entry/src/main/ets/pages/ConfigurationPage.ets`：悬浮新增按钮、`bindSheet` 生命周期、sheet dismiss 控制、sheet 内部路由。
+- `entry/src/main/ets/common/entity/Constants.ets`：集中管理 sheet/list 尺寸常量，避免页面内散落 magic number。
+- `entry/src/main/ets/components/Common/*`：可复用标题、sheet、按钮原语和圆形按钮模式。
+- `entry/src/main/ets/common/breakpoint/BreakPoint.ets`：断点驱动的导航/列表边距和响应式常量。
+
+HarmonyDO public 重点路径：
+
+- `entry/src/main/ets/pages/Index.ets`：`HdsNavigation`、`HdsTabs`、悬浮 Tab 尺寸、HDS 动画模式协调。
+- `entry/src/main/ets/views/components/ImmersiveHdsTitleBarHelper.ets`：沉浸式 HDS 标题栏、渐变模糊、状态栏文字颜色、顶部 spacer 约定。
+- `entry/src/main/ets/views/pages/TopicDetailPage.ets`：底部 HDS action bar、悬浮回复按钮、多 sheet 宿主、回复 sheet 打开/关闭流程、回复/帖子菜单组织。
+- `entry/src/main/ets/views/components/ReplyComposerSheet.ets`：sheet 式回复组件，包含草稿保存、预览、工具栏、图片上传 hook、文本选择。
+- `entry/src/main/ets/views/pages/CategoryTopicPage.ets`、`BookmarksPage.ets`、`BrowsingHistoryPage.ets`：HDS 次级页、appbar 菜单、sheet 宿主放置、列表顶部避让和底部悬浮 Tab 避让。
+- `entry/src/main/ets/common/constants/LayoutConstants.ets`：共享悬浮 Tab/action-bar 尺寸和内容 padding 常量。
+
 参考项目只用于行为和架构对照，不要把外部 UI 风格或大段代码直接复制进 Harmony 项目。
 
 ## P0. 架构与 UI 基线
@@ -155,18 +176,25 @@ VVEX 重点路径：
   - 同角色按钮/chip 保持同尺寸、同组件、同对齐。
   - Sheet 使用 `bindSheet` + `AppModalScaffold` 或 HDS/系统 sheet；返回键先关闭 sheet。
   - 页面操作和低频操作放 appbar 菜单或 `ContextMenu`。
+  - 悬浮主操作：页面内最高频、反复使用的主操作，应使用底部悬浮按钮/action bar，并正确避让键盘、底部 Tab、手势安全区。不要把高频操作藏进 appbar 菜单。
 - 迁移或复核这些页面：
   - Search
   - Settings
   - Login
   - WebLogin
   - TopicEditor
-  - ReplyEditor
+  - ReplyComposer sheet
   - UserProfile
   - NodeTopic
   - Discover
   - SavedTopics / ViewedTopics / SavedNodes
   - Notifications
+  - 任何仍然自己绘制返回按钮的页面。
+- 通知和节点相关页面在继续加功能前先纳入同一架构：
+  - 通知必须由 notification feature module/view model 管理，不继续塞在 `Index.ets`。
+  - 通知列表行、empty/loading/error、分页、删除、点击跳楼层，都使用共享列表脚手架。
+  - 节点搜索、节点主题列表、全部节点导航、收藏节点状态、最近/常用节点，应共享同一 node feature 架构。
+  - 节点和通知页面使用 appbar 菜单放次级操作，使用下拉刷新，列表/内容间距遵循共享规则。
 
 验收标准：
 
@@ -174,6 +202,7 @@ VVEX 重点路径：
 - 受影响页面没有内容被状态栏、标题栏、底部浮动 Tab、键盘、手势区遮挡。
 - 同一行同角色控件高度、字号、形状、对齐一致。
 - 页面内不新增 raw `TextInput`、伪按钮、自定义 sheet、新的一次性 row 样式。
+- 详情页普通回复流程不再跳转到独立回复页面。
 
 回归防线：
 
@@ -321,8 +350,25 @@ P1 上传后续：
   - 跳转使用动画滚动，不要突兀瞬移。
 - 回复控制：
   - 保持紧凑 `楼层 / 只看楼主 / 最新`。
-  - 低频回复操作放 `ContextMenu`。
+  - 楼层列表中外露高频操作：
+    - 感谢回复
+    - 回复该楼层
+  - 低频回复操作继续放 `ContextMenu`：
+    - 复制
+    - 分享
+    - 查看上下文/相关回复
+    - 忽略回复
+    - 举报
+    - 可用时编辑
+  - 回复操作图标更新为合适的系统/HDS symbol，触控区域保持与当前紧凑行一致。
   - 不给低频动作加大号外置按钮。
+- 回复入口与回复组件：
+  - 不再把主回复入口放在 appbar 菜单里。
+  - 详情页底部增加悬浮回复按钮；登录态可用，会话过期时显示可恢复登录状态。
+  - 打开回复时使用贴靠键盘的悬浮 composer/sheet 组件，不走独立 route/page。
+  - composer 应始终位于键盘上方，随可用高度调整，提交/关闭操作始终可触达，关闭后保留草稿。
+  - `ReplyEditorPage.ets` 可以保留为底层组件/草稿承载，但普通用户流应是：详情页 -> 悬浮回复按钮 -> composer sheet。
+  - composer sheet 可以有内部 appbar/title row，放关闭、预览、草稿、提交等操作，但体验上应是附着在当前主题上的 modal，而不是完整次级页面。
 - 相关回复：
   - 使用现有 modal scaffold 实现上下文/相关回复视图。
   - 参考 V2Fun `screens/RelatedRepliesScreen.tsx` 和 `components/topic/ReplyItem.tsx`。
@@ -340,12 +386,17 @@ P1 上传后续：
 
 - V2Fun: `components/topic/TopicInfo.tsx`、`components/topic/ReplyItem.tsx`
 - VVEX: `lib/http/dio_web.dart`、`lib/pages/t/topic_id.dart`、`lib/components/message/notice_item.dart`
+- HarmonyDO: `entry/src/main/ets/views/pages/TopicDetailPage.ets`、`entry/src/main/ets/views/components/ReplyComposerSheet.ets`
+- ClashBox master: `entry/src/main/ets/pages/ConfigurationPage.ets`，参考悬浮按钮、`bindSheet` 生命周期与 dismiss 处理。
 
 验收标准：
 
 - 通知点击能在有数据时跳到接近精确楼层/回复。
 - 长主题跨页加载目标楼层正常。
 - 回复筛选栏视觉仍紧凑。
+- 详情页底部有悬浮回复按钮；appbar 菜单不再是主回复入口。
+- 回复 composer 以 sheet/悬浮组件打开，跟随键盘 resize，关闭/提交可触达，不跳独立回复页。
+- 每条回复外露感谢和回复操作；低频操作保留在带正确图标的 ContextMenu 中。
 - ContextMenu 多次打开不失效。
 - 无人测试不执行付费/破坏性动作。
 
@@ -381,6 +432,8 @@ P1 上传后续：
   - 主题/回复 Tab 保留。
   - 用户隐藏主题时遵循网页状态。
   - 全部主题/全部回复入口放列表末尾。
+  - 关注/屏蔽操作放到右上 appbar/menu 区域，或稳定预留的 header action slot，不放在资料内容下方。
+  - 为关注/屏蔽状态预留默认空间，加载前后不能改变 header 高度，也不能把主题/回复 Tab 向下顶。
   - 关注/屏蔽即时更新并刷新服务端状态。
   - 重新进入页面仍保持正确服务端状态。
 - Session 过期：
@@ -397,6 +450,8 @@ P1 上传后续：
 - 已登录我的页显示 `honjow` 和正确钱币单位。
 - `0.90 铜币` 若源文本如此，必须保持小数铜币。
 - 关注/取消关注、屏蔽/取消屏蔽无需重启刷新。
+- 用户页 header 在关注/屏蔽状态加载前后高度不跳变。
+- 关注/屏蔽入口位于右上操作区；加载、未登录状态使用同一预留区域表达。
 - 黑名单/忽略主题页不依赖 PAT。
 - Cookie 过期路径可恢复。
 
@@ -452,6 +507,14 @@ P1 上传后续：
   - 简洁分区
   - 无夸张空白和卡片网格
   - 次级动作放 appbar 菜单
+- 重构节点相关页面，使其符合项目架构：
+  - `DiscoverPage`
+  - 节点搜索结果
+  - 节点主题列表
+  - 收藏/关注节点
+  - 全部节点分类导航
+  - 最近/常用节点
+- 节点页不能使用临时返回按钮、一次性卡片、页面内自定义输入框样式。使用共享脚手架、`AppSearchField`、appbar actions 和列表下拉刷新。
 - 若有稳定来源，增加历史热门。
 - 增加完整热榜/社区页，而不只是小列表。
 - 增加全部节点分类导航。
@@ -474,6 +537,7 @@ P1 上传后续：
 - 热议/热榜/最新/最近都能进入详情。
 - Tab 管理重启后保持。
 - Discover 保持紧凑和 HDS 风格。
+- 节点页和通知页在视觉上匹配详情/设置等次级页：安全区、appbar、列表间距、下拉刷新、菜单行为一致。
 
 ## P1. 写作与编辑
 
@@ -481,14 +545,17 @@ P1 上传后续：
 
 任务：
 
-- 回复编辑器：
-  - 共享 HDS 表单脚手架
+- 回复 composer：
+  - 贴靠键盘的悬浮 sheet，不做普通 route
+  - 详情页底部悬浮回复按钮作为主入口
+  - 共享 HDS/modal 脚手架，内部有关闭/预览/提交操作
   - Markdown 工具栏
   - 预览
   - @ 插入
   - 图片链接插入
   - 媒体上传完成后支持上传插入
   - 自动保存和恢复
+  - 同一主题/楼层再次打开时恢复草稿
 - 发帖编辑器：
   - 节点选择器
   - Markdown 工具栏
@@ -606,12 +673,13 @@ P1 上传后续：
 2. P0 架构与 UI 基线。
 3. P0 搜索完善。
 4. P0 详情/通知闭环。
-5. P0 账号/我的页/用户页。
-6. P1 登录加固。
-7. P1 发现与导航。
-8. P1 写作与编辑。
-9. P1 设置与个性化。
-10. P2 系统集成。
+5. P0 节点/通知架构清理。
+6. P0 账号/我的页/用户页。
+7. P1 登录加固。
+8. P1 发现与导航。
+9. P1 写作与编辑。
+10. P1 设置与个性化。
+11. P2 系统集成。
 
 每个子线程必须：
 
@@ -654,9 +722,20 @@ P1 上传后续：
 ### 详情/通知子线程
 
 ```text
-完成 docs/roadmap-v2ex-client.md 中通知楼层跳转和回复上下文/菜单工作。
-保持当前紧凑回复筛选栏，不要无人执行付费/破坏性动作。
-构建、安装，在有数据时验证通知到楼层，截图 TopicDetail，然后提交。
+完成 docs/roadmap-v2ex-client.md 的 P0 Detail/Reply/Notification 工作。
+实现通知楼层跳转，楼层外露感谢/回复两个高频操作，低频动作保留在带正确图标的 ContextMenu。
+把独立回复页导航替换为详情页底部悬浮回复按钮 + 贴靠键盘的 composer sheet。
+保持当前紧凑 `楼层 / 只看楼主 / 最新` 筛选栏，不要无人执行付费/破坏性动作。
+构建、安装，在有数据时验证通知到楼层，验证 composer 键盘行为，截图 TopicDetail 和 composer，然后提交。
+```
+
+### 节点/通知架构子线程
+
+```text
+按照 docs/roadmap-v2ex-client.md 将节点页和通知页纳入 HDS-first 共享架构。
+在安全范围内将通知所有权从 Index.ets 移出，迁移 Discover/NodeTopic/Notifications 到共享脚手架。
+移除页面级返回按钮、一次性输入框/卡片，按需加入下拉刷新，保持现有数据行为不变。
+构建、安装，截图 Discover、NodeTopic、Notifications；有数据时验证一次通知到详情/楼层跳转，然后提交。
 ```
 
 ## 验证清单

@@ -6,6 +6,10 @@ changes, plus a feature comparison against:
 
 - V2Fun: `https://github.com/liaoliao666/v2ex`
 - VVEX / flutter_v2ex: `https://github.com/guozhigq/flutter_v2ex`
+- ClashBox HarmonyOS app, master branch:
+  `https://github.com/xiaobaigroup/ClashBox/tree/master`
+- HarmonyDO public HarmonyOS app:
+  `https://github.com/Amaz1ny/HarmonyDO-public`
 - V2EX web pages and API v2 behavior observed through the current app adapters.
 
 The product goal is a complete daily-use HarmonyOS NEXT V2EX client. The
@@ -54,7 +58,9 @@ Core app and routes:
 - `feature/detail/src/main/ets/pages/TopicDetailPage.ets`
   - Topic detail, replies, topic actions, read position, filters, images.
 - `feature/detail/src/main/ets/pages/ReplyEditorPage.ets`
-  - Reply draft/editor flow.
+  - Existing reply draft/editor route.
+  - Normal topic replies should move away from a standalone page and use a
+    keyboard-attached floating composer opened from topic detail.
 - `entry/src/main/ets/pages/TopicEditorPage.ets`
   - Topic draft/editor flow.
 - `entry/src/main/ets/pages/SearchPage.ets`
@@ -161,6 +167,36 @@ Useful VVEX paths:
 - `lib/utils/storage.dart`: settings for link opening, auto sign-in, notice,
   font sizes, tabs, OP highlight, side swipe.
 
+Useful ClashBox master paths:
+
+- `entry/src/main/ets/pages/ConfigurationPage.ets`: floating add button,
+  `bindSheet` lifecycle, sheet dismiss control, and internal sheet routing.
+- `entry/src/main/ets/common/entity/Constants.ets`: centralized sheet/list
+  sizing constants instead of page-local magic numbers.
+- `entry/src/main/ets/components/Common/*`: reusable title/sheet/button
+  primitives and round button patterns.
+- `entry/src/main/ets/common/breakpoint/BreakPoint.ets`: breakpoint-driven
+  navigation/list padding and responsive constants.
+
+Useful HarmonyDO public paths:
+
+- `entry/src/main/ets/pages/Index.ets`: `HdsNavigation`, `HdsTabs`, floating tab
+  sizing, and HDS animation mode coordination.
+- `entry/src/main/ets/views/components/ImmersiveHdsTitleBarHelper.ets`:
+  immersive HDS title bar, gradient blur, status bar content color, and top
+  spacer convention.
+- `entry/src/main/ets/views/pages/TopicDetailPage.ets`: bottom HDS action bar,
+  floating reply button, multiple sheet hosts, reply sheet open/dismiss flow,
+  and reply/post menu organization.
+- `entry/src/main/ets/views/components/ReplyComposerSheet.ets`: sheet-based
+  reply composer with draft save, preview, toolbar, image upload hooks, and
+  text selection.
+- `entry/src/main/ets/views/pages/CategoryTopicPage.ets`,
+  `BookmarksPage.ets`, `BrowsingHistoryPage.ets`: HDS secondary pages, appbar
+  menus, sheet-host placement, list top spacer and bottom floating-tab avoid.
+- `entry/src/main/ets/common/constants/LayoutConstants.ets`: shared floating
+  tab/action-bar dimensions and content padding constants.
+
 Reference code is for behavior and architecture comparison only. Do not copy
 large blocks or foreign UI style into this Harmony app.
 
@@ -196,18 +232,33 @@ Tasks:
     patterns. Back must close the sheet before leaving the page.
   - Menus: page actions and low-frequency operations belong in HDS appbar menus
     or `ContextMenu`.
+  - Floating primary actions: when the action is the page's primary repeated
+    action, use a bottom floating button/action bar that respects keyboard,
+    bottom tab, and gesture safe areas. Do not hide high-frequency actions in
+    appbar menus.
 - Migrate or review these pages against the shared layer:
   - Search
   - Settings
   - Login
   - Web login
   - Topic editor
-  - Reply editor
+  - Reply composer sheet
   - User profile
   - Node topic
   - Discover
   - Saved topics / recent views / saved nodes
   - Notifications
+  - Any page still drawing a page-local back button.
+- Bring notifications and node-related pages into the same architecture before
+  adding more features:
+  - Notifications must be owned by a notification feature module/view model,
+    not embedded in `Index.ets`.
+  - Notification list rows, empty/loading/error states, pagination, deletion,
+    and tap-to-floor navigation must use the shared list scaffold.
+  - Node search, node topic lists, all-node navigation, favorite-node state,
+    and recent/frequent nodes should share one node feature architecture.
+  - Node and notification pages should use appbar menus for secondary actions,
+    pull refresh for reload, and shared list/content spacing.
 
 Acceptance:
 
@@ -219,6 +270,8 @@ Acceptance:
 - Same-row controls have consistent height, font, shape, and alignment.
 - No feature page adds raw `TextInput`, pseudo-buttons, custom sheets, or new
   page-local row styles when a shared wrapper exists.
+- Replying from topic detail does not route to a standalone reply page in the
+  normal flow.
 
 Regression guards:
 
@@ -378,8 +431,34 @@ Tasks:
   - Use an animated scroll to target, not an abrupt jump.
 - Reply controls:
   - Keep compact `楼层 / 只看楼主 / 最新` row.
-  - Put low-frequency reply actions in `ContextMenu`.
+  - Expose high-frequency per-floor actions directly in the floor row:
+    - thank reply
+    - reply to this floor
+  - Keep low-frequency reply actions in `ContextMenu`:
+    - copy
+    - share
+    - view context / related replies
+    - ignore reply
+    - report
+    - edit where available
+  - Update reply action icons to appropriate system/HDS symbols and keep the
+    touch targets consistent with the current compact row.
   - Do not add large visible buttons for rare actions.
+- Reply entry and composer:
+  - Do not put the primary reply entry in the appbar menu.
+  - Add a bottom floating reply button on topic detail, visible for logged-in
+    users and disabled/recoverable for expired sessions.
+  - Opening reply uses a keyboard-attached floating composer/sheet component,
+    not a standalone route/page.
+  - The composer should stay above the keyboard, resize with the available
+    area, keep its submit/close controls visible, and preserve draft content
+    when dismissed.
+  - Reuse or replace `ReplyEditorPage.ets` only as a backing component/draft
+    host. The normal user flow is detail page -> floating reply button ->
+    composer sheet.
+  - The composer sheet may use an internal appbar/title row with close,
+    preview, draft, and submit actions, but it must feel like a modal attached
+    to the current topic instead of a full secondary page.
 - Related replies:
   - Implement related/context view through the existing modal scaffold.
   - Reference V2Fun `screens/RelatedRepliesScreen.tsx` and
@@ -400,12 +479,22 @@ Reference:
   `components/topic/ReplyItem.tsx`
 - VVEX: `lib/http/dio_web.dart`, `lib/pages/t/topic_id.dart`,
   `lib/components/message/notice_item.dart`
+- HarmonyDO: `entry/src/main/ets/views/pages/TopicDetailPage.ets`,
+  `entry/src/main/ets/views/components/ReplyComposerSheet.ets`
+- ClashBox master: `entry/src/main/ets/pages/ConfigurationPage.ets`
+  for floating button plus `bindSheet` lifecycle and dismiss handling.
 
 Acceptance:
 
 - Notification tap lands near the exact reply/floor when data exists.
 - Long topic target floor loading works across pages.
 - Reply filter row remains visually compact.
+- Topic detail has a bottom floating reply button; the appbar menu is not the
+  primary reply entry.
+- Reply composer opens as a sheet/floating component, follows keyboard resize,
+  keeps close/submit reachable, and does not navigate to a separate reply page.
+- Each reply exposes thank and reply actions directly; lower-frequency actions
+  remain in a context menu with correct icons.
 - Context menu appears repeatedly without failing after multiple opens.
 - Paid/destructive actions are not run by unattended tests.
 
@@ -441,6 +530,10 @@ Tasks:
   - topics/replies tab remains.
   - hidden topics must respect website hidden state.
   - full topics/replies entries live at list tail, not as top-heavy buttons.
+  - follow/block actions belong in the top-right appbar/menu area or a stable
+    reserved header action slot, not below the profile content.
+  - reserve default space for follow/block state so loading does not change the
+    header height or push the topics/replies tab down.
   - follow/block actions update immediately and refresh from server.
   - re-entering the page must preserve correct server state.
 - Session expiration:
@@ -458,6 +551,9 @@ Acceptance:
 - Logged-in My page shows `honjow` and correct coin units.
 - `0.90 铜币` stays fractional copper if source says that.
 - Follow/unfollow and block/unblock state refreshes without app restart.
+- User profile header height does not jump when follow/block state loads.
+- Follow/block entry is available from the top-right action area, with loading
+  and logged-out states represented in the same reserved slot.
 - Blacklist/ignored topics page does not require PAT.
 - Expired Cookie path is recoverable.
 
@@ -514,6 +610,16 @@ Tasks:
   - concise sections
   - no oversized grid/card whitespace
   - appbar menu for secondary actions
+- Rework node pages to match the project architecture:
+  - `DiscoverPage`
+  - node search results
+  - node topic list
+  - collected/favorite nodes
+  - all-node category navigation
+  - recent/frequent nodes
+- Node pages must not use ad hoc back buttons, one-off cards, or local input
+  styling. Use shared scaffolds, `AppSearchField`, appbar actions, and list
+  pull refresh.
 - Add historical hot if stable source is available.
 - Add rank/community pages beyond the small embedded list if parseable.
 - Add all-nodes navigation with categories.
@@ -539,6 +645,9 @@ Acceptance:
 - Hot/rank/latest/recent open topic detail.
 - Tab management survives restart.
 - Discover remains compact and HDS-like.
+- Node pages and notification pages visually match secondary pages such as
+  detail/settings: safe area, appbar, list spacing, pull refresh, and menu
+  behavior are consistent.
 
 ## P1. Writing and Editing
 
@@ -546,14 +655,17 @@ Goal: make writing usable while keeping account-changing operations protected.
 
 Tasks:
 
-- Reply editor:
-  - shared HDS form scaffold
+- Reply composer:
+  - keyboard-attached floating sheet, not a normal route
+  - bottom floating reply button as the primary entry on topic detail
+  - shared HDS/modal scaffold with internal close/preview/submit actions
   - Markdown toolbar
   - preview
   - mention insertion
   - image link insertion
   - upload insertion after media upload exists
   - autosave and restore
+  - draft restore when reopening from the same topic/floor
 - Topic editor:
   - node picker
   - Markdown toolbar
@@ -675,12 +787,13 @@ Recommended order:
 2. P0 Architecture and UI Baseline.
 3. P0 Search Completion.
 4. P0 Detail/Notification Loop.
-5. P0 Account/My/User.
-6. P1 Login Hardening.
-7. P1 Discover/Navigation.
-8. P1 Writing/Editing.
-9. P1 Settings/Personalization.
-10. P2 System Integration.
+5. P0 Node/Notification architecture cleanup.
+6. P0 Account/My/User.
+7. P1 Login Hardening.
+8. P1 Discover/Navigation.
+9. P1 Writing/Editing.
+10. P1 Settings/Personalization.
+11. P2 System Integration.
 
 Each child thread should:
 
@@ -727,10 +840,27 @@ Search states, and commit.
 ### Detail/Notification Child Thread
 
 ```text
-Complete notification floor jump and reply context/menu work from
-docs/roadmap-v2ex-client.md. Keep the current compact reply filter row. Do not
-run paid/destructive actions unattended. Build, install, verify notification to
-floor when data exists, screenshot TopicDetail, and commit.
+Complete the P0 Detail/Reply/Notification slice from
+docs/roadmap-v2ex-client.md. Implement notification floor jump, expose per-reply
+thank/reply actions, keep rare actions in ContextMenu with correct icons, and
+replace standalone reply-page navigation with a bottom floating reply button
+plus keyboard-attached composer sheet. Keep the current compact
+`楼层 / 只看楼主 / 最新` filter row. Do not run paid/destructive actions
+unattended. Build, install, verify notification-to-floor when data exists,
+verify composer keyboard behavior, screenshot TopicDetail and composer, then
+commit.
+```
+
+### Node/Notification Architecture Child Thread
+
+```text
+Bring node and notification pages into the shared HDS-first architecture from
+docs/roadmap-v2ex-client.md. Move notification ownership out of Index.ets where
+safe, migrate node/discover/notification pages to shared scaffolds, remove
+page-local back buttons and one-off inputs/cards, add pull refresh where
+appropriate, and keep existing data behavior unchanged. Build, install,
+screenshot Discover, NodeTopic, Notifications, and one notification/detail jump
+when data exists, then commit.
 ```
 
 ## Verification Checklist
