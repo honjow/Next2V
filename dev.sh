@@ -24,8 +24,11 @@ HDC=/home/gamer/devtool/ohos/command-line-tools/sdk/default/openharmony/toolchai
 BUNDLE=com.next2v.app
 
 keep_awake() {
-  "$HDC" shell "power-shell wakeup" >/dev/null 2>&1 || true
-  "$HDC" shell "power-shell timeout -o 13600000" >/dev/null 2>&1 || true
+  if [ -n "${HDC_TARGET:-}" ]; then
+    "$PROJ/scripts/keep_awake.sh" -t "$HDC_TARGET" >/dev/null 2>&1 || true
+  else
+    "$PROJ/scripts/keep_awake.sh" >/dev/null 2>&1 || true
+  fi
 }
 
 case "$1" in
@@ -77,6 +80,7 @@ EOF
     ;;
   *)
     # 构建 + 签名 + 安装
+    keep_awake
     echo "==> 构建 HAP..."
     cd "$PROJ"
     hvigorw assembleHap --mode module -p product=default -p buildMode=debug --no-daemon

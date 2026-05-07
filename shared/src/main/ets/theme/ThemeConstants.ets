@@ -39,6 +39,9 @@ export class ThemeConstants {
   static readonly RADIUS_SM: number = 4;
   static readonly RADIUS_MD: number = 22;
   static readonly RADIUS_CARD: number = 24;
+  static readonly LIST_SECTION_INSET: number = 4;
+  static readonly LIST_ROW_RADIUS: number = 19;
+  static readonly LIST_ROW_TEXT_INDENT: number = 8;
   static readonly RADIUS_ROUND: number = 999;
 
   // 尺寸

@@ -48,6 +48,7 @@ DEVICE_CACHE_FILE = Path.home() / ".cache" / "next2v_device.json"
 DEVICE_CACHE_TTL  = 7 * 24 * 3600
 
 ECO_URL = "https://cn.devecostudio.huawei.com/console/DevEcoIDE/apply?port={port}&appid=1007&code=20698961dd4f420c8b44f49010c6f0cc"
+KEEP_AWAKE = SCRIPTS / "keep_awake.sh"
 
 # ── API 工具函数 ──────────────────────────────────────────────────────────────
 def api(url, data=None, method=None, headers=None, auth=None, raw=False):
@@ -321,6 +322,14 @@ def install_hap(devices: list[str]):
         result = subprocess.run([str(HDC), "-t", dev, "install", str(SIGNED_HAP)],
                                 capture_output=True, text=True)
         print(f"  {(result.stdout + result.stderr).strip()}")
+        keep_awake(dev)
+
+def keep_awake(dev: str):
+    result = subprocess.run([str(KEEP_AWAKE), "-t", dev],
+                            capture_output=True, text=True)
+    if result.returncode != 0:
+        output = (result.stdout + result.stderr).strip()
+        print(f"  WARN: keep-awake failed on {dev}: {output}")
 
 # ── main ──────────────────────────────────────────────────────────────────────
 def main():
@@ -346,10 +355,7 @@ def main():
         print("==> 检查已连接设备...")
         devices = resolve_install_targets(target_device)
         for dev in devices:
-            subprocess.run([str(HDC), "-t", dev, "shell", "power-shell", "wakeup"],
-                           capture_output=True)
-            subprocess.run([str(HDC), "-t", dev, "shell", "power-shell", "timeout", "-o", "3600000"],
-                           capture_output=True)
+            keep_awake(dev)
 
     if not UNSIGNED_HAP.exists():
         print(f"ERROR: 未找到 {UNSIGNED_HAP}，请先构建")

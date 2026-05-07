@@ -32,6 +32,7 @@ import {
   CookieJarSettings,
   DateUtils,
   EmptyState,
+  GroupedListSection,
   HttpClient,
   ImagePreviewParams,
   ListDivider as SharedListDivider,
@@ -1054,7 +1055,7 @@ struct Index {
         .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
 
         ListItem() {
-          Column() {
+          GroupedListSection() {
             this.AuthActionRow('个人主页', '', () => {
               const username = this.currentUsername()
               if (username) {
@@ -1070,19 +1071,12 @@ struct Index {
             this.AuthActionRow('网页账号设置', '', () => {
               this.openV2exPathInSystemBrowser('/settings')
             })
-            // this.SettingsDivider()
-            // ConciseListRow({title:'退出登录', primaryColor: Color.Red, action: () => { this.logoutAll(); this.ns.pop() }})
           }
-          .width('100%')
-          .alignItems(HorizontalAlign.Start)
-          .borderRadius(ThemeConstants.RADIUS_CARD)
-          .padding(4)
-          .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
         }
         .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
 
         ListItem() {
-          Column() {
+          GroupedListSection() {
             ConciseListRow({
               title: '退出登录',
               showChevron: false,
@@ -1093,11 +1087,6 @@ struct Index {
               }
             })
           }
-          .width('100%')
-          .alignItems(HorizontalAlign.Start)
-          .borderRadius(ThemeConstants.RADIUS_CARD)
-          .padding(4)
-          .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
         }
         .margin({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
 
@@ -1220,7 +1209,7 @@ struct Index {
 
   @Builder
   AccountContentSection() {
-    Column() {
+    GroupedListSection() {
       this.AuthActionRow('收藏主题', '', () => {
         this.ns.pushPathByName('MyTopics', null)
       })
@@ -1233,11 +1222,6 @@ struct Index {
         this.ns.pushPathByName('MyNodes', null)
       })
     }
-    .width('100%')
-    .alignItems(HorizontalAlign.Start)
-    .borderRadius(ThemeConstants.RADIUS_CARD)
-    .padding(4)
-    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }
 
   @Builder
@@ -1306,7 +1290,7 @@ struct Index {
 
   @Builder
   LocalContentSection() {
-    Column() {
+    GroupedListSection() {
       this.SearchEntryRow()
       this.SettingsDivider()
       this.TopicDraftEntryRow()
@@ -1323,11 +1307,6 @@ struct Index {
         this.ns.pushPathByName('SavedNodes', null)
       })
     }
-    .width('100%')
-    .alignItems(HorizontalAlign.Start)
-    .borderRadius(ThemeConstants.RADIUS_CARD)
-    .padding(4)
-    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }
 
   @Builder

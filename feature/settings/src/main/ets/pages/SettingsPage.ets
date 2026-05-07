@@ -6,6 +6,7 @@ import {
   type CacheStats,
   CookieJarSettings,
   DateUtils,
+  GroupedListSection,
   HttpClient,
   LocalDataSettings,
   MediaSettings,
@@ -68,45 +69,43 @@ export struct SettingsPage {
   }
 
   @Builder NetworkSection() {
-    Column({ space: ThemeConstants.SPACE_SM }) {
-      ConciseListRow({
-        title: 'API 域名',
-        subtitle: `当前: ${this.useCoDomain ? 'v2ex.co' : 'v2ex.com'}`,
-        showChevron: false
-      })
+    GroupedListSection() {
+      Column({ space: ThemeConstants.SPACE_SM }) {
+        ConciseListRow({
+          title: 'API 域名',
+          subtitle: `当前: ${this.useCoDomain ? 'v2ex.co' : 'v2ex.com'}`,
+          showChevron: false
+        })
 
-      Row({ space: ThemeConstants.SPACE_SM }) {
-        Button('v2ex.com')
-          .fontSize(ThemeConstants.FONT_SIZE_TAG)
-          .height(ThemeConstants.TOUCH_TARGET_SM)
-          .type(ButtonType.Normal)
-          .borderRadius(ThemeConstants.RADIUS_MD)
-          .fontColor(!this.useCoDomain ? Color.White : $r('sys.color.font_primary'))
-          .backgroundColor(!this.useCoDomain ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.ohos_id_color_button_normal'))
-          .layoutWeight(1)
-          .onClick(() => { this.updateApiDomain(false) })
-        Button('v2ex.co')
-          .fontSize(ThemeConstants.FONT_SIZE_TAG)
-          .height(ThemeConstants.TOUCH_TARGET_SM)
-          .type(ButtonType.Normal)
-          .borderRadius(ThemeConstants.RADIUS_MD)
-          .fontColor(this.useCoDomain ? Color.White : $r('sys.color.font_primary'))
-          .backgroundColor(this.useCoDomain ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.ohos_id_color_button_normal'))
-          .layoutWeight(1)
-          .onClick(() => { this.updateApiDomain(true) })
+        Row({ space: ThemeConstants.SPACE_SM }) {
+          Button('v2ex.com')
+            .fontSize(ThemeConstants.FONT_SIZE_TAG)
+            .height(ThemeConstants.TOUCH_TARGET_SM)
+            .type(ButtonType.Normal)
+            .borderRadius(ThemeConstants.RADIUS_MD)
+            .fontColor(!this.useCoDomain ? Color.White : $r('sys.color.font_primary'))
+            .backgroundColor(!this.useCoDomain ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.ohos_id_color_button_normal'))
+            .layoutWeight(1)
+            .onClick(() => { this.updateApiDomain(false) })
+          Button('v2ex.co')
+            .fontSize(ThemeConstants.FONT_SIZE_TAG)
+            .height(ThemeConstants.TOUCH_TARGET_SM)
+            .type(ButtonType.Normal)
+            .borderRadius(ThemeConstants.RADIUS_MD)
+            .fontColor(this.useCoDomain ? Color.White : $r('sys.color.font_primary'))
+            .backgroundColor(this.useCoDomain ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.ohos_id_color_button_normal'))
+            .layoutWeight(1)
+            .onClick(() => { this.updateApiDomain(true) })
+        }
+        .width('100%')
+        .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG, bottom: ThemeConstants.SPACE_LG })
       }
       .width('100%')
-      .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG, bottom: ThemeConstants.SPACE_LG })
     }
-    .width('100%')
-    .alignItems(HorizontalAlign.Start)
-    .borderRadius(ThemeConstants.RADIUS_MD)
-    .padding(4)
-    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }
 
   @Builder PreferenceSection() {
-    Column() {
+    GroupedListSection() {
       this.TogglePreferenceRow('图片自动加载', this.autoLoadImages, (value: boolean) => {
         this.updateAutoLoadImages(value)
       })
@@ -131,11 +130,6 @@ export struct SettingsPage {
         }
       })
     }
-    .width('100%')
-    .alignItems(HorizontalAlign.Start)
-    .borderRadius(ThemeConstants.RADIUS_MD)
-    .padding(4)
-    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }
 
   @Builder TogglePreferenceRow(title: string, checked: boolean, changeAction: (value: boolean) => void) {
@@ -238,7 +232,7 @@ export struct SettingsPage {
   }
 
   @Builder CacheSection() {
-    Column() {
+    GroupedListSection() {
       ConciseListRow({
         title: '离线缓存',
         subtitle: this.cacheSubtitle(),
@@ -282,11 +276,6 @@ export struct SettingsPage {
       .width('100%')
       .alignItems(HorizontalAlign.Start)
     }
-    .width('100%')
-    .alignItems(HorizontalAlign.Start)
-    .borderRadius(ThemeConstants.RADIUS_MD)
-    .padding(4)
-    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }
 
   private updateApiDomain(useCoDomain: boolean): void {
