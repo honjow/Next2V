@@ -28,4 +28,5 @@ export class StorageKeys {
   static readonly TOPIC_DETAIL_ACTION: string = 'topicDetailAction'
   static readonly SEARCH_ACTION: string = 'searchAction'
   static readonly WEB_LOGIN_ACTION: string = 'webLoginAction'
+  static readonly IMAGE_PREVIEW_ACTION: string = 'imagePreviewAction'
 }

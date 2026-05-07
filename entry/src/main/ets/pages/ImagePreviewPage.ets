@@ -3,7 +3,7 @@ import { promptAction } from '@kit.ArkUI'
 import { fileIo } from '@kit.CoreFileKit'
 import { photoAccessHelper } from '@kit.MediaLibraryKit'
 import { http } from '@kit.NetworkKit'
-import { MediaUrlUtils, ThemeConstants } from 'shared'
+import { MediaUrlUtils, StorageKeys, ThemeConstants } from 'shared'
 
 const CONNECT_TIMEOUT_MS: number = 10000
 const READ_TIMEOUT_MS: number = 30000
@@ -23,6 +23,7 @@ export struct ImagePreviewPage {
   @State private pinchValue: number = 1
   @State private isSaving: boolean = false
   @State private saveMessage: string = ''
+  @StorageLink(StorageKeys.IMAGE_PREVIEW_ACTION) @Watch('onImagePreviewActionCommand') imagePreviewActionCommand: string = ''
   @StorageProp('topAvoidHeight') topH: number = 0
 
   private clampScale(value: number): number {
@@ -47,6 +48,18 @@ export struct ImagePreviewPage {
 
   private normalizedUrl(): string {
     return MediaUrlUtils.normalizeUrl(this.url)
+  }
+
+  private onImagePreviewActionCommand(_propName: string): void {
+    const raw = (this.imagePreviewActionCommand || '').trim()
+    if (!raw) {
+      return
+    }
+    const parts = raw.split(':')
+    const action = parts.length > 0 ? parts[parts.length - 1] : ''
+    if (action === 'save') {
+      this.saveImage()
+    }
   }
 
   private showToast(message: string): void {
@@ -246,34 +259,23 @@ export struct ImagePreviewPage {
       .width('100%')
       .height('100%')
 
-      if (this.normalizedUrl()) {
+      if (this.normalizedUrl() && this.saveMessage) {
         Column({ space: ThemeConstants.SPACE_XS }) {
-          Button(this.isSaving ? '保存中...' : '保存图片')
-            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-            .fontColor(Color.White)
-            .height(36)
-            .enabled(!this.isSaving)
+          Text(this.saveMessage)
+            .fontSize(ThemeConstants.FONT_SIZE_TINY)
+            .fontColor('#D9FFFFFF')
+            .padding({
+              left: ThemeConstants.SPACE_SM,
+              right: ThemeConstants.SPACE_SM,
+              top: ThemeConstants.SPACE_XS,
+              bottom: ThemeConstants.SPACE_XS
+            })
+            .borderRadius(ThemeConstants.RADIUS_SM)
             .backgroundColor('#66000000')
-            .borderRadius(ThemeConstants.RADIUS_ROUND)
-            .onClick(() => { this.saveImage() })
-
-          if (this.saveMessage) {
-            Text(this.saveMessage)
-              .fontSize(ThemeConstants.FONT_SIZE_TINY)
-              .fontColor('#D9FFFFFF')
-              .padding({
-                left: ThemeConstants.SPACE_SM,
-                right: ThemeConstants.SPACE_SM,
-                top: ThemeConstants.SPACE_XS,
-                bottom: ThemeConstants.SPACE_XS
-              })
-              .borderRadius(ThemeConstants.RADIUS_SM)
-              .backgroundColor('#66000000')
-          }
         }
         .alignItems(HorizontalAlign.End)
         .padding({
-          top: this.topH + ThemeConstants.SPACE_MD,
+          top: this.topH + ThemeConstants.TITLE_BAR_HEIGHT + ThemeConstants.SPACE_MD,
           right: ThemeConstants.SPACE_MD,
           left: ThemeConstants.SPACE_MD
         })

@@ -273,7 +273,7 @@ struct Index {
       HdsNavDestination() {
         ImagePreviewPage({ url: (param as ImagePreviewParams).url })
       }
-      .titleBar(this.navDestTitleBarOpts())
+      .titleBar(this.navDestTitleBarOpts(undefined, this.imagePreviewTitleMenu()))
     } else if (name === 'NodeTopicList') {
       HdsNavDestination() {
         NodeTopicPage({
@@ -495,6 +495,10 @@ struct Index {
     AppStorage.setOrCreate<string>(StorageKeys.SEARCH_ACTION, `${Date.now()}:${action}`)
   }
 
+  private sendImagePreviewAction(action: string): void {
+    AppStorage.setOrCreate<string>(StorageKeys.IMAGE_PREVIEW_ACTION, `${Date.now()}:${action}`)
+  }
+
   private openV2exPathInSystemBrowser(path: string): void {
     const baseUrl = this.http.getBaseUrl()
     const cleanPath = (path || '').trim()
@@ -587,6 +591,15 @@ struct Index {
       })
     ]
     return { 'value': items, 'maxCount': 2 }
+  }
+
+  private imagePreviewTitleMenu(): Record<string, Object> {
+    let items: Record<string, Object>[] = [
+      this.topicActionItem('保存图片', $r('sys.symbol.arrow_down_to_line'), () => {
+        this.sendImagePreviewAction('save')
+      })
+    ]
+    return { 'value': items, 'maxCount': 1 }
   }
 
   private sendWebLoginAction(action: string): void {
