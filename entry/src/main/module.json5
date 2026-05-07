@@ -29,6 +29,23 @@
           {
             "entities": ["entity.system.home"],
             "actions": ["ohos.want.action.home"]
+          },
+          {
+            "actions": ["ohos.want.action.viewData"],
+            "uris": [
+              { "scheme": "https", "host": "www.v2ex.com", "pathStartWith": "/t/" },
+              { "scheme": "https", "host": "v2ex.com", "pathStartWith": "/t/" },
+              { "scheme": "https", "host": "www.v2ex.co", "pathStartWith": "/t/" },
+              { "scheme": "https", "host": "v2ex.co", "pathStartWith": "/t/" },
+              { "scheme": "https", "host": "www.v2ex.com", "pathStartWith": "/member/" },
+              { "scheme": "https", "host": "v2ex.com", "pathStartWith": "/member/" },
+              { "scheme": "https", "host": "www.v2ex.co", "pathStartWith": "/member/" },
+              { "scheme": "https", "host": "v2ex.co", "pathStartWith": "/member/" },
+              { "scheme": "https", "host": "www.v2ex.com", "pathStartWith": "/go/" },
+              { "scheme": "https", "host": "v2ex.com", "pathStartWith": "/go/" },
+              { "scheme": "https", "host": "www.v2ex.co", "pathStartWith": "/go/" },
+              { "scheme": "https", "host": "v2ex.co", "pathStartWith": "/go/" }
+            ]
           }
         ]
       }

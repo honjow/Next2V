@@ -1,10 +1,12 @@
 import { UserViewModel } from '../viewmodel/UserViewModel'
 import {
   V2exTopic, V2exUserReply, TopicCard, ThemeConstants, TopicDetailParams, StorageKeys, NodeTopicListParams,
-  Avatar, DateUtils, SecondaryListScaffold, MarkdownContent, UserProfileParams, CookieJarSettings
+  Avatar, DateUtils, SecondaryListScaffold, MarkdownContent, UserProfileParams, CookieJarSettings,
+  V2exRoute, V2exUrlRouter
 } from 'shared'
 import type { TopicReadState } from 'shared'
 import { promptAction } from '@kit.ArkUI'
+import { common, Want } from '@kit.AbilityKit'
 
 @Component
 export struct UserProfilePage {
@@ -374,11 +376,40 @@ export struct UserProfilePage {
 
   private openContentLink(url: string): void {
     const clean = (url || '').trim()
-    const memberMatch = clean.match(/^https?:\/\/(?:www\.)?v2ex\.(?:com|co)\/member\/([0-9A-Za-z_]+)$/i) ||
-      clean.match(/^\/member\/([0-9A-Za-z_]+)$/i)
-    if (memberMatch && memberMatch[1]) {
-      this.openUserProfile(memberMatch[1])
+    const route = V2exUrlRouter.parse(clean)
+    if (route) {
+      this.openV2exRoute(route)
+      return
     }
+    this.openInSystemBrowser(clean)
+  }
+
+  private openV2exRoute(route: V2exRoute): void {
+    if (route.kind === 'topic' && route.topicId && route.topicId > 0) {
+      const p: TopicDetailParams = route.targetFloor && route.targetFloor > 0
+        ? { topicId: route.topicId, targetFloor: route.targetFloor }
+        : { topicId: route.topicId }
+      this.stack.pushPathByName('TopicDetail', p as Object)
+      return
+    }
+    if (route.kind === 'member' && route.username) {
+      this.openUserProfile(route.username)
+      return
+    }
+    if (route.kind === 'node' && route.nodeName) {
+      const p: NodeTopicListParams = { nodeName: route.nodeName, nodeTitle: route.nodeName }
+      this.stack.pushPathByName('NodeTopicList', p as Object)
+    }
+  }
+
+  private openInSystemBrowser(url: string): void {
+    const target = (url || '').trim()
+    if (!target) {
+      return
+    }
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    const want: Want = { action: 'ohos.want.action.viewData', uri: target }
+    context.startAbility(want).catch((_error: Error) => { })
   }
 
   private toggleFollow(): void {

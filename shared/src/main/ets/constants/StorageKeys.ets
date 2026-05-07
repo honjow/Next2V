@@ -30,4 +30,5 @@ export class StorageKeys {
   static readonly SEARCH_ACTION: string = 'searchAction'
   static readonly WEB_LOGIN_ACTION: string = 'webLoginAction'
   static readonly IMAGE_PREVIEW_ACTION: string = 'imagePreviewAction'
+  static readonly PENDING_V2EX_URL: string = 'pendingV2exUrl'
 }

@@ -9,7 +9,7 @@ import {
   V2exReply, Avatar, ReplyCard, TimeAgo, ThemeConstants, MarkdownContent, PullRefreshListScaffold,
   NodeTopicListParams, UserProfileParams, ImagePreviewParams, CollectionSettings, CacheSettings, V2exTopic, AuthSettings,
   LoadingFooter, HttpClient, StorageKeys, ApiService, CookieJarSettings, V2exToggleAction, ReadingSettings,
-  AppModalScaffold
+  AppModalScaffold, V2exRoute, V2exUrlRouter, TopicDetailParams
 } from 'shared'
 
 interface ReplyContextItem {
@@ -109,13 +109,30 @@ export struct TopicDetailPage {
 
   private openContentLink(url: string): void {
     const clean = (url || '').trim()
-    const memberMatch = clean.match(/^https?:\/\/(?:www\.)?v2ex\.(?:com|co)\/member\/([0-9A-Za-z_]+)$/i) ||
-      clean.match(/^\/member\/([0-9A-Za-z_]+)$/i)
-    if (memberMatch && memberMatch[1]) {
-      this.openUserProfile(memberMatch[1])
+    const route = V2exUrlRouter.parse(clean)
+    if (route) {
+      this.openV2exRoute(route)
       return
     }
     this.openInSystemBrowser(clean)
+  }
+
+  private openV2exRoute(route: V2exRoute): void {
+    if (route.kind === 'topic' && route.topicId && route.topicId > 0) {
+      const p: TopicDetailParams = route.targetFloor && route.targetFloor > 0
+        ? { topicId: route.topicId, targetFloor: route.targetFloor }
+        : { topicId: route.topicId }
+      this.stack.pushPathByName('TopicDetail', p as Object)
+      return
+    }
+    if (route.kind === 'member' && route.username) {
+      this.openUserProfile(route.username)
+      return
+    }
+    if (route.kind === 'node' && route.nodeName) {
+      const p: NodeTopicListParams = { nodeName: route.nodeName, nodeTitle: route.nodeName }
+      this.stack.pushPathByName('NodeTopicList', p as Object)
+    }
   }
 
   private openReplyEditor(initialContent: string = ''): void {

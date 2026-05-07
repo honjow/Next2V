@@ -38,6 +38,7 @@ import {
   ListDivider as SharedListDivider,
   LoadingFooter,
   NotificationSettings,
+  NodeTopicListParams,
   SecondaryListScaffold,
   SectionHeader as SharedSectionHeader,
   StorageKeys,
@@ -45,7 +46,9 @@ import {
   ThemeConstants,
   TopicDetailParams,
   UserProfileParams,
-  V2exSessionParser
+  V2exRoute,
+  V2exSessionParser,
+  V2exUrlRouter
 } from 'shared'
 import { HomePage } from 'feed'
 import { ReplyEditorPage, TopicDetailPage } from 'detail'
@@ -297,6 +300,7 @@ struct Index {
   @StorageLink(StorageKeys.API_RATE_LIMIT_RESET) apiRateLimitReset: number = 0
   @StorageLink(StorageKeys.API_RATE_LIMIT_UPDATED_AT) apiRateLimitUpdatedAt: number = 0
   @StorageLink(StorageKeys.LOCAL_DATA_UPDATED_AT) @Watch('onLocalDataUpdated') localDataUpdatedAt: number = 0
+  @StorageLink(StorageKeys.PENDING_V2EX_URL) @Watch('onPendingV2exUrlChanged') pendingV2exUrl: string = ''
   @State private authToken: string = ''
   @State private tokenDraft: string = ''
   @State private authProfile: V2exAuthenticatedMember | null = null
@@ -337,6 +341,7 @@ struct Index {
     this.loadSavedNodes()
     this.loadViewedTopics()
     this.loadTopicReadStates()
+    this.consumePendingV2exUrl()
   }
 
   onLocalDataUpdated(_propName: string): void {
@@ -365,6 +370,10 @@ struct Index {
     if (this.ct === 2) {
       this.loadNotifications(true)
     }
+  }
+
+  onPendingV2exUrlChanged(_propName: string): void {
+    this.consumePendingV2exUrl()
   }
 
   @Builder
@@ -646,6 +655,46 @@ struct Index {
         promptAction.openToast({ message: error.message || '打开失败' }).catch((_error: Error) => {
         })
       })
+  }
+
+  private consumePendingV2exUrl(): void {
+    const command = (this.pendingV2exUrl || '').trim()
+    if (!command) {
+      return
+    }
+    const stampedUrlMatch = command.match(/^\d+:(.+)$/)
+    const url = stampedUrlMatch && stampedUrlMatch[1] ? stampedUrlMatch[1] : command
+    if (this.openV2exRoute(url)) {
+      AppStorage.setOrCreate<string>(StorageKeys.PENDING_V2EX_URL, '')
+    }
+  }
+
+  private openV2exRoute(url: string): boolean {
+    const route = V2exUrlRouter.parse(url)
+    if (!route) {
+      return false
+    }
+    this.pushV2exRoute(route)
+    return true
+  }
+
+  private pushV2exRoute(route: V2exRoute): void {
+    if (route.kind === 'topic' && route.topicId && route.topicId > 0) {
+      const p: TopicDetailParams = route.targetFloor && route.targetFloor > 0
+        ? { topicId: route.topicId, targetFloor: route.targetFloor }
+        : { topicId: route.topicId }
+      this.ns.pushPathByName('TopicDetail', p as Object)
+      return
+    }
+    if (route.kind === 'member' && route.username) {
+      const p: UserProfileParams = { username: route.username }
+      this.ns.pushPathByName('UserProfile', p as Object)
+      return
+    }
+    if (route.kind === 'node' && route.nodeName) {
+      const p: NodeTopicListParams = { nodeName: route.nodeName, nodeTitle: route.nodeName }
+      this.ns.pushPathByName('NodeTopicList', p as Object)
+    }
   }
 
   private topicActionItem(label: string, icon: Resource, action: () => void): Record<string, Object> {
@@ -1603,30 +1652,26 @@ struct Index {
       ListItem() {
         this.NotificationCard(item)
       }
-      .onClick(() => {
-        const meta = this.notificationMeta(item)
-        const topicId = meta.topicId
-        if (topicId > 0) {
-          let p: TopicDetailParams =
-            meta.targetFloor > 0 ? { topicId: topicId, targetFloor: meta.targetFloor } : { topicId: topicId }
-          this.ns.pushPathByName('TopicDetail', p as Object)
-        }
-      })
+      .onClick(() => { this.openNotification(item) })
       .swipeAction({ end: this.NotificationSwipeEnd(item) })
     } else {
       ListItem() {
         this.NotificationCard(item)
       }
-      .onClick(() => {
-        const meta = this.notificationMeta(item)
-        const topicId = meta.topicId
-        if (topicId > 0) {
-          let p: TopicDetailParams =
-            meta.targetFloor > 0 ? { topicId: topicId, targetFloor: meta.targetFloor } : { topicId: topicId }
-          this.ns.pushPathByName('TopicDetail', p as Object)
-        }
-      })
+      .onClick(() => { this.openNotification(item) })
     }
+  }
+
+  private openNotification(item: V2exNotification): void {
+    const meta = this.notificationMeta(item)
+    if (meta.topicId <= 0) {
+      return
+    }
+    this.pushV2exRoute({
+      kind: 'topic',
+      topicId: meta.topicId,
+      targetFloor: meta.targetFloor
+    })
   }
 
   private notificationMeta(item: V2exNotification): NotificationMetadata {

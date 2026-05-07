@@ -100,6 +100,9 @@ export { MediaUrlUtils } from './utils/MediaUrlUtils'
 export type { MediaUrlKind, MediaUrlResult } from './utils/MediaUrlUtils'
 export { NodeSearchUtils } from './utils/NodeSearchUtils'
 export type { NodeSearchMatch } from './utils/NodeSearchUtils'
+export { V2exUrlRouter }
+  from './utils/V2exUrlRouter'
+export type { V2exRoute, V2exRouteKind } from './utils/V2exUrlRouter'
 
 // 自适应工具
 export { BreakpointSystem } from './utils/BreakpointSystem'

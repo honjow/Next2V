@@ -1,7 +1,7 @@
 import { UIAbility, Want, AbilityConstant } from '@kit.AbilityKit'
 import { window } from '@kit.ArkUI'
 import { webview } from '@kit.ArkWeb'
-import { ApiDomainSettings, MediaSettings, ReadingSettings, StorageKeys, WriteActionSettings } from 'shared'
+import { ApiDomainSettings, MediaSettings, ReadingSettings, StorageKeys, V2exUrlRouter, WriteActionSettings } from 'shared'
 
 const TRANSPARENT_COLOR: string = '#00FFFFFF'
 const ENTRY_PAGE: string = 'pages/Index'
@@ -19,6 +19,11 @@ export default class EntryAbility extends UIAbility {
       const e = error as Error
       console.error('initialize web engine failed: ' + e.message)
     }
+    this.captureIncomingUrl(want)
+  }
+
+  onNewWant(want: Want, launchParam: AbilityConstant.LaunchParam): void {
+    this.captureIncomingUrl(want)
   }
 
   onWindowStageCreate(windowStage: window.WindowStage): void {
@@ -88,6 +93,14 @@ export default class EntryAbility extends UIAbility {
         AppStorage.setOrCreate<number>(StorageKeys.KEYBOARD_HEIGHT, 0)
       }
     })
+  }
+
+  private captureIncomingUrl(want: Want): void {
+    const uri = (want?.uri || '').trim()
+    if (!uri || !V2exUrlRouter.parse(uri)) {
+      return
+    }
+    AppStorage.setOrCreate<string>(StorageKeys.PENDING_V2EX_URL, `${Date.now()}:${uri}`)
   }
 
   private async configureWideGamut(win: window.Window): Promise<void> {
