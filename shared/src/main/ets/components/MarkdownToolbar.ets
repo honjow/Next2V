@@ -16,18 +16,24 @@ export struct MarkdownToolbar {
   onClear?: () => void
 
   build() {
-    Flex({ direction: FlexDirection.Row, wrap: FlexWrap.Wrap }) {
-      this.ToolButton('编辑', !this.previewActive, () => { this.fire(this.onEdit) })
-      this.ToolButton('预览', this.previewActive, () => { this.fire(this.onPreview) })
-      this.ToolButton('B', false, () => { this.fire(this.onBold) }, FontWeight.Bold)
-      this.ToolButton('I', false, () => { this.fire(this.onItalic) }, FontWeight.Medium, FontStyle.Italic)
-      this.ToolButton('</>', false, () => { this.fire(this.onCode) })
-      this.ToolButton('>', false, () => { this.fire(this.onQuote) })
-      this.ToolButton('-', false, () => { this.fire(this.onList) })
-      this.ToolButton('链', false, () => { this.fire(this.onLink) })
-      this.ToolButton('图', false, () => { this.fire(this.onImage) })
-      this.ToolButton('清', false, () => { this.fire(this.onClear) })
+    Scroll() {
+      Row({ space: ThemeConstants.SPACE_XS }) {
+        this.ToolButton('写', !this.previewActive, () => { this.fire(this.onEdit) })
+        this.ToolButton('看', this.previewActive, () => { this.fire(this.onPreview) })
+        this.ToolButton('B', false, () => { this.fire(this.onBold) }, FontWeight.Bold)
+        this.ToolButton('I', false, () => { this.fire(this.onItalic) }, FontWeight.Medium, FontStyle.Italic)
+        this.ToolButton('`', false, () => { this.fire(this.onCode) })
+        this.ToolButton('>', false, () => { this.fire(this.onQuote) })
+        this.ToolButton('-', false, () => { this.fire(this.onList) })
+        this.ToolButton('[]', false, () => { this.fire(this.onLink) })
+        this.ToolButton('图', false, () => { this.fire(this.onImage) })
+        this.ToolButton('清', false, () => { this.fire(this.onClear) })
+      }
+      .height(32)
+      .alignItems(VerticalAlign.Center)
     }
+    .scrollable(ScrollDirection.Horizontal)
+    .scrollBar(BarState.Off)
     .width('100%')
   }
 
@@ -45,12 +51,11 @@ export struct MarkdownToolbar {
       .fontWeight(weight)
       .fontStyle(style)
       .fontColor(active ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.font_secondary'))
-      .height(ThemeConstants.TOUCH_TARGET_SM)
-      .constraintSize({ minWidth: 42 })
-      .padding({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM })
-      .borderRadius(ThemeConstants.RADIUS_MD)
+      .height(30)
+      .constraintSize({ minWidth: 30 })
+      .padding({ left: ThemeConstants.SPACE_XS, right: ThemeConstants.SPACE_XS })
+      .borderRadius(ThemeConstants.RADIUS_ROUND)
       .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
-      .margin({ right: ThemeConstants.SPACE_SM, bottom: ThemeConstants.SPACE_SM })
       .onClick(action)
   }
 

@@ -8,6 +8,7 @@ import {
   MarkdownContent,
   MarkdownToolbar,
   AppModalScaffold,
+  AppActionButton,
   StorageKeys,
   ThemeConstants
 } from 'shared'
@@ -18,6 +19,7 @@ export struct ReplyComposerSheet {
   @Prop topicTitle: string = ''
   @Prop initialContent: string = ''
   @StorageLink(StorageKeys.ACCOUNT_WRITE_ENABLED) writeEnabled: boolean = false
+  @StorageProp(StorageKeys.KEYBOARD_HEIGHT) keyboardH: number = 0
 
   closeAction?: () => void
   submittedAction?: () => void
@@ -48,7 +50,9 @@ export struct ReplyComposerSheet {
 
   build() {
     AppModalScaffold({
-      title: '回复',
+      title: '写回复',
+      compact: true,
+      includeKeyboardPadding: true,
       closeAction: () => {
         this.close()
       }
@@ -83,25 +87,46 @@ export struct ReplyComposerSheet {
               .fontColor(Color.Red)
           }
 
+          if (!this.writeEnabled) {
+            Text('写入操作未开启')
+              .fontSize(ThemeConstants.FONT_SIZE_TINY)
+              .fontColor($r('sys.color.font_secondary'))
+          }
+
+          Row({ space: ThemeConstants.SPACE_SM }) {
+            AppActionButton({
+              label: '关闭',
+              primary: false,
+              action: () => { this.close() }
+            })
+            AppActionButton({
+              label: this.isSubmitting ? '提交中' : '提交',
+              primary: true,
+              isEnabled: this.canSubmit(),
+              action: () => { this.confirmSubmit() }
+            })
+          }
+          .width('100%')
+
           if (this.isPreview) {
             if (this.content.trim().length === 0) {
               Text('暂无内容')
                 .fontSize(ThemeConstants.FONT_SIZE_BODY)
                 .fontColor($r('sys.color.font_secondary'))
-                .height(260)
+                .height(this.composerBodyHeight())
                 .width('100%')
             } else {
               Scroll() {
                 MarkdownContent({ source: this.content, topMargin: 0 })
               }
-              .height(260)
+              .height(this.composerBodyHeight())
               .width('100%')
               .scrollBar(BarState.Off)
             }
           } else {
             TextArea({ placeholder: '写回复（自动保存草稿）', text: this.content, controller: this.contentController })
               .fontSize(ThemeConstants.FONT_SIZE_BODY)
-              .height(260)
+              .height(this.composerBodyHeight())
               .width('100%')
               .borderRadius(ThemeConstants.RADIUS_MD)
               .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
@@ -120,21 +145,6 @@ export struct ReplyComposerSheet {
               .fontSize(ThemeConstants.FONT_SIZE_TINY)
               .fontColor($r('sys.color.font_secondary'))
           }
-
-          if (!this.writeEnabled) {
-            Text('写入操作开关未开启，提交能力不会启用。')
-              .fontSize(ThemeConstants.FONT_SIZE_TINY)
-              .fontColor($r('sys.color.font_secondary'))
-          }
-
-          Button(this.writeEnabled ? (this.isSubmitting ? '提交中...' : '提交') : '提交（需开启写入开关）')
-            .fontSize(ThemeConstants.FONT_SIZE_TAG)
-            .height(40)
-            .width('100%')
-            .type(ButtonType.Normal)
-            .borderRadius(ThemeConstants.RADIUS_MD)
-            .enabled(this.canSubmit())
-            .onClick(() => { this.confirmSubmit() })
         }
         .width('100%')
       }
@@ -270,6 +280,13 @@ export struct ReplyComposerSheet {
 
   private canSubmit(): boolean {
     return this.writeEnabled && !this.isSubmitting && this.topicId > 0 && this.content.trim().length > 0
+  }
+
+  private composerBodyHeight(): number {
+    if (this.keyboardH > 0) {
+      return 120
+    }
+    return 176
   }
 
   private confirmSubmit(): void {

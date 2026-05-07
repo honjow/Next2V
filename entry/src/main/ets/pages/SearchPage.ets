@@ -207,11 +207,6 @@ export struct SearchPage {
       }
 
       this.SourceModeControls()
-      if (this.sourceMode === 'remote') {
-        this.RemoteSearchControls()
-      } else if (this.sourceMode !== 'externalWeb') {
-        this.ResultFilterControls()
-      }
     }
     .padding({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM, top: ThemeConstants.SPACE_SM, bottom: ThemeConstants.SPACE_SM })
     .width('100%')
@@ -360,7 +355,7 @@ export struct SearchPage {
               .borderRadius(ThemeConstants.RADIUS_MD)
               .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
           } else if (!this.remoteLoading && this.remoteResults.length === 0) {
-            EmptyState({ message: '点击搜索获取远程结果', stateHeight: 96 })
+            EmptyState({ message: '输入关键词后按搜索，筛选在右上角', stateHeight: 96 })
               .borderRadius(ThemeConstants.RADIUS_MD)
               .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
               .margin({ top: ThemeConstants.SPACE_XS })
@@ -514,65 +509,6 @@ export struct SearchPage {
       selected: this.sourceMode === mode,
       action: () => { this.updateSourceMode(mode) }
     })
-  }
-
-  @Builder RemoteSearchControls() {
-    Column({ space: ThemeConstants.SPACE_XS }) {
-      Row({ space: ThemeConstants.SPACE_XS }) {
-        this.RemoteOptionButton('时间', this.remoteSort === 'created', () => {
-          this.remoteSort = 'created'
-          this.executeRemoteSearch(true)
-        })
-        this.RemoteOptionButton('相关', this.remoteSort === 'sumup', () => {
-          this.remoteSort = 'sumup'
-          this.executeRemoteSearch(true)
-        })
-        this.RemoteOptionButton(this.remoteOrder === '0' ? '倒序' : '正序', true, () => {
-          this.remoteOrder = this.remoteOrder === '0' ? '1' : '0'
-          this.executeRemoteSearch(true)
-        })
-        AppActionButton({
-          label: this.remoteLoading ? '搜索中' : '搜索',
-          primary: true,
-          isEnabled: !this.remoteLoading && this.keyword.trim().length > 0,
-          action: () => { this.executeRemoteSearch(true) }
-        })
-      }
-      .width('100%')
-
-      Row({ space: ThemeConstants.SPACE_XS }) {
-        AppTextField({
-          text: $remoteUsername,
-          placeholder: '作者',
-          onTextChange: (value: string) => {
-            this.remoteUsername = value
-            this.resetRemoteResults()
-          }
-        })
-        AppTextField({
-          text: $remoteNode,
-          placeholder: '节点',
-          onTextChange: (value: string) => {
-            this.remoteNode = value
-            this.resetRemoteResults()
-          }
-        })
-        if (this.hasRemoteFilters()) {
-          this.RemoteOptionButton('清除', false, () => { this.clearRemoteFilters() })
-        }
-      }
-      .width('100%')
-
-      Row({ space: ThemeConstants.SPACE_XS }) {
-        this.RemoteDateButton('all', '不限')
-        this.RemoteDateButton('day', '一天')
-        this.RemoteDateButton('week', '一周')
-        this.RemoteDateButton('month', '一月')
-        this.RemoteDateButton('year', '一年')
-      }
-      .width('100%')
-    }
-    .width('100%')
   }
 
   @Builder RemoteOptionButton(label: string, selected: boolean, action: () => void) {

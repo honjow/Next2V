@@ -32,6 +32,7 @@ export struct TopicDetailPage {
   @StorageLink(StorageKeys.READING_FONT_SIZE) readingFontSize: number = ThemeConstants.FONT_SIZE_BODY
   @StorageLink(StorageKeys.READING_LINE_HEIGHT) readingLineHeight: number = ThemeConstants.LINE_HEIGHT_BODY
   @StorageLink(StorageKeys.READING_DENSITY) readingDensity: string = ReadingSettings.DENSITY_STANDARD
+  @StorageProp(StorageKeys.BOTTOM_AVOID_HEIGHT) bottomH: number = 0
   private scroller: Scroller = new Scroller()
   @State listScrollEnabled: boolean = true
   @State isSavedLater: boolean = false
@@ -169,7 +170,7 @@ export struct TopicDetailPage {
   }
 
   build() {
-    Stack({ alignContent: Alignment.BottomEnd }) {
+    Column() {
       Column() {
         if (this.v.isLoading && this.v.topic === null) {
           this.LoadingView()
@@ -179,10 +180,12 @@ export struct TopicDetailPage {
           this.ContentView()
         }
       }
-      .width('100%').height('100%')
+      .width('100%')
+      .layoutWeight(1)
+      .clip(true)
 
       if (this.v.topic !== null) {
-        this.FloatingReplyButton()
+        this.BottomReplyActionBar()
       }
     }
     .width('100%')
@@ -201,7 +204,7 @@ export struct TopicDetailPage {
       }
     })
     .bindSheet($$this.replyComposerVisible, this.ReplyComposerSheetBuilder(), {
-      height: SheetSize.LARGE,
+      height: SheetSize.MEDIUM,
       preferType: SheetType.BOTTOM,
       dragBar: false,
       showClose: false,
@@ -251,6 +254,7 @@ export struct TopicDetailPage {
     PullRefreshListScaffold({
       scroller: this.scroller,
       scrollEnabled: this.listScrollEnabled,
+      bottomPadding: this.replyActionBottomPadding(),
       onRefresh: async () => { await this.v.load() },
       onScrollEnableChange: (enabled: boolean) => { this.listScrollEnabled = enabled },
       onScrollIndex: (_start: number, _end: number, center: number) => { this.updateReadFloor(center) },
@@ -313,33 +317,38 @@ export struct TopicDetailPage {
     })
   }
 
-  @Builder FloatingReplyButton() {
-    Button() {
-      Row({ space: ThemeConstants.SPACE_XS }) {
-        SymbolGlyph($r('sys.symbol.arrowshape_turn_up_left_fill'))
-          .fontSize(20)
-          .fontColor([Color.White])
-        Text('回复')
-          .fontSize(ThemeConstants.FONT_SIZE_BODY)
-          .fontWeight(FontWeight.Medium)
-          .fontColor(Color.White)
+  @Builder BottomReplyActionBar() {
+    Row() {
+      Button() {
+        Row({ space: ThemeConstants.SPACE_XS }) {
+          SymbolGlyph($r('sys.symbol.arrowshape_turn_up_left_fill'))
+            .fontSize(20)
+            .fontColor([Color.White])
+          Text('回复')
+            .fontSize(ThemeConstants.FONT_SIZE_BODY)
+            .fontWeight(FontWeight.Medium)
+            .fontColor(Color.White)
+        }
+        .alignItems(VerticalAlign.Center)
+        .justifyContent(FlexAlign.Center)
       }
-      .alignItems(VerticalAlign.Center)
-      .justifyContent(FlexAlign.Center)
+      .type(ButtonType.Normal)
+      .height(48)
+      .layoutWeight(1)
+      .borderRadius(ThemeConstants.RADIUS_ROUND)
+      .backgroundColor(ThemeConstants.BRAND_PRIMARY)
+      .onClick(() => {
+        this.openReplyEditor()
+      })
     }
-    .type(ButtonType.Normal)
-    .height(48)
-    .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG })
-    .borderRadius(ThemeConstants.RADIUS_ROUND)
-    .backgroundColor(ThemeConstants.BRAND_PRIMARY)
-    .margin({
+    .width('100%')
+    .padding({
+      left: ThemeConstants.SPACE_LG,
       right: ThemeConstants.SPACE_LG,
-      bottom: ThemeConstants.FLOAT_BAR_HEIGHT + ThemeConstants.SPACE_LG
+      top: ThemeConstants.SPACE_SM,
+      bottom: this.bottomH + ThemeConstants.SPACE_SM
     })
-    .shadow(ShadowStyle.OUTER_DEFAULT_MD)
-    .onClick(() => {
-      this.openReplyEditor()
-    })
+    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }
 
   @Builder TopicCard() {
@@ -927,10 +936,6 @@ export struct TopicDetailPage {
   }
 
   private handleTopicAction(action: string): void {
-    if (action === 'reply') {
-      this.openReplyEditor()
-      return
-    }
     if (this.v.topic === null) {
       promptAction.openToast({ message: '主题仍在加载' }).catch((_error: Error) => { })
       return
@@ -1398,6 +1403,10 @@ export struct TopicDetailPage {
       }
     }
     return `${baseUrl}/t/${this.topicId}`
+  }
+
+  private replyActionBottomPadding(): number {
+    return ThemeConstants.SPACE_LG
   }
 }
 

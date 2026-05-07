@@ -436,9 +436,6 @@ struct Index {
 
   private topicDetailTitleBarOpts(): Record<string, Object> {
     let items: Record<string, Object>[] = [
-      this.topicActionItem('回复', $r('sys.symbol.ellipsis_bubble'), () => {
-        this.sendTopicAction('reply')
-      }),
       this.topicActionItem('稍后读', $r('sys.symbol.star'), () => {
         this.sendTopicAction('saveLater')
       }),

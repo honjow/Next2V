@@ -47,8 +47,8 @@ export struct DiscoverPage {
         this.SearchBar()
         Scroll() {
           Column({ space: ThemeConstants.SPACE_MD }) {
-            this.HotTopicsSection()
             this.LocalNodeSections()
+            this.HotTopicsSection()
             if (this.vm.nodeDataSource.totalCount() === 0) {
               this.EmptyView()
             } else {
@@ -74,7 +74,7 @@ export struct DiscoverPage {
           }
             .padding({
               left: this.GAP, right: this.GAP,
-              bottom: this.bottomH + this.FLOAT_H
+              bottom: this.discoverBottomPadding()
             })
             .width('100%')
         }
@@ -288,7 +288,11 @@ export struct DiscoverPage {
     .justifyContent(FlexAlign.Center)
     .width('100%')
     .height('100%')
-    .padding({ top: this.topH + this.TBH, bottom: this.bottomH + this.FLOAT_H })
+    .padding({ top: this.topH + this.TBH, bottom: this.discoverBottomPadding() })
+  }
+
+  private discoverBottomPadding(): number {
+    return this.bottomH + this.FLOAT_H + ThemeConstants.SPACE_XL
   }
 
   private topicSurfaceItems(): V2exTopic[] {

@@ -328,86 +328,87 @@ export struct SettingsPage {
   }
 
   @Builder ReadingPreferenceRows() {
-    Column({ space: ThemeConstants.SPACE_MD }) {
+    Column() {
       ConciseListRow({
         title: '阅读显示',
         subtitle: `${this.readingFontSize}fp / ${this.readingLineHeight}vp · ${this.readingDensityText(this.readingDensity)}`,
         showChevron: false
       })
 
-      Row({ space: ThemeConstants.SPACE_SM }) {
-        Button('A-')
-          .fontSize(ThemeConstants.FONT_SIZE_TAG)
-          .height(ThemeConstants.TOUCH_TARGET_SM)
-          .type(ButtonType.Normal)
-          .borderRadius(ThemeConstants.RADIUS_MD)
-          .fontColor($r('sys.color.font_primary'))
-          .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
-          .layoutWeight(1)
-          .onClick(() => { this.updateReadingFontSize(this.readingFontSize - 1) })
-        Button('默认字号')
-          .fontSize(ThemeConstants.FONT_SIZE_TAG)
-          .height(ThemeConstants.TOUCH_TARGET_SM)
-          .type(ButtonType.Normal)
-          .borderRadius(ThemeConstants.RADIUS_MD)
-          .fontColor($r('sys.color.font_primary'))
-          .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
-          .layoutWeight(1)
-          .onClick(() => { this.updateReadingFontSize(ThemeConstants.FONT_SIZE_BODY) })
-        Button('A+')
-          .fontSize(ThemeConstants.FONT_SIZE_TAG)
-          .height(ThemeConstants.TOUCH_TARGET_SM)
-          .type(ButtonType.Normal)
-          .borderRadius(ThemeConstants.RADIUS_MD)
-          .fontColor($r('sys.color.font_primary'))
-          .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
-          .layoutWeight(1)
-          .onClick(() => { this.updateReadingFontSize(this.readingFontSize + 1) })
-      }
-      .width('100%')
-      .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG })
+      this.SettingsDivider()
+
+      this.StepperPreferenceRow('字号', `${this.readingFontSize}fp`, 'A-', 'A+', () => {
+        this.updateReadingFontSize(this.readingFontSize - 1)
+      }, () => {
+        this.updateReadingFontSize(this.readingFontSize + 1)
+      }, () => {
+        this.updateReadingFontSize(ThemeConstants.FONT_SIZE_BODY)
+      })
+
+      this.SettingsDivider()
+
+      this.StepperPreferenceRow('行距', `${this.readingLineHeight}vp`, '-', '+', () => {
+        this.updateReadingLineHeight(this.readingLineHeight - 1)
+      }, () => {
+        this.updateReadingLineHeight(this.readingLineHeight + 1)
+      }, () => {
+        this.updateReadingLineHeight(ThemeConstants.LINE_HEIGHT_BODY)
+      })
+
+      this.SettingsDivider()
 
       Row({ space: ThemeConstants.SPACE_SM }) {
-        Button('行距-')
-          .fontSize(ThemeConstants.FONT_SIZE_TAG)
-          .height(ThemeConstants.TOUCH_TARGET_SM)
-          .type(ButtonType.Normal)
-          .borderRadius(ThemeConstants.RADIUS_MD)
+        Text('密度')
+          .fontSize(ThemeConstants.FONT_SIZE_LIST_ITEM)
           .fontColor($r('sys.color.font_primary'))
-          .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
           .layoutWeight(1)
-          .onClick(() => { this.updateReadingLineHeight(this.readingLineHeight - 1) })
-        Button('默认行距')
-          .fontSize(ThemeConstants.FONT_SIZE_TAG)
-          .height(ThemeConstants.TOUCH_TARGET_SM)
-          .type(ButtonType.Normal)
-          .borderRadius(ThemeConstants.RADIUS_MD)
-          .fontColor($r('sys.color.font_primary'))
-          .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
-          .layoutWeight(1)
-          .onClick(() => { this.updateReadingLineHeight(ThemeConstants.LINE_HEIGHT_BODY) })
-        Button('行距+')
-          .fontSize(ThemeConstants.FONT_SIZE_TAG)
-          .height(ThemeConstants.TOUCH_TARGET_SM)
-          .type(ButtonType.Normal)
-          .borderRadius(ThemeConstants.RADIUS_MD)
-          .fontColor($r('sys.color.font_primary'))
-          .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
-          .layoutWeight(1)
-          .onClick(() => { this.updateReadingLineHeight(this.readingLineHeight + 1) })
-      }
-      .width('100%')
-      .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG })
-
-      Row({ space: ThemeConstants.SPACE_SM }) {
         this.DensityButton('紧凑', ReadingSettings.DENSITY_COMPACT)
         this.DensityButton('标准', ReadingSettings.DENSITY_STANDARD)
         this.DensityButton('宽松', ReadingSettings.DENSITY_COMFORTABLE)
       }
       .width('100%')
-      .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG, bottom: ThemeConstants.SPACE_LG })
+      .height(52)
+      .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG })
     }
     .width('100%')
+  }
+
+  @Builder StepperPreferenceRow(
+    title: string,
+    value: string,
+    decreaseLabel: string,
+    increaseLabel: string,
+    decreaseAction: () => void,
+    increaseAction: () => void,
+    resetAction: () => void
+  ) {
+    Row({ space: ThemeConstants.SPACE_SM }) {
+      Text(title)
+        .fontSize(ThemeConstants.FONT_SIZE_LIST_ITEM)
+        .fontColor($r('sys.color.font_primary'))
+        .layoutWeight(1)
+      Text(value)
+        .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+        .fontColor($r('sys.color.font_secondary'))
+      this.CompactSettingButton(decreaseLabel, decreaseAction)
+      this.CompactSettingButton('默认', resetAction)
+      this.CompactSettingButton(increaseLabel, increaseAction)
+    }
+    .width('100%')
+    .height(52)
+    .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG })
+  }
+
+  @Builder CompactSettingButton(label: string, action: () => void) {
+    Button(label)
+      .fontSize(ThemeConstants.FONT_SIZE_TAG)
+      .height(30)
+      .constraintSize({ minWidth: 36 })
+      .type(ButtonType.Normal)
+      .borderRadius(ThemeConstants.RADIUS_ROUND)
+      .fontColor($r('sys.color.font_primary'))
+      .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+      .onClick(action)
   }
 
   @Builder DensityButton(label: string, density: string) {
