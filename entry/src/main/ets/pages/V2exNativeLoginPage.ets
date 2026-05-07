@@ -80,12 +80,11 @@ export struct V2exNativeLoginPage {
 
       if (this.captchaUrl) {
         Image(this.captchaUrl)
-          .width(180)
-          .height(64)
+          .width('100%')
           .objectFit(ImageFit.Contain)
           .backgroundColor(Color.White)
           .borderRadius(ThemeConstants.RADIUS_MD)
-          .margin({ top: ThemeConstants.SPACE_XS, bottom: ThemeConstants.SPACE_XS })
+          .margin(ThemeConstants.SPACE_SM)
           .onClick(() => { this.loadChallenge() })
       }
 
