@@ -177,10 +177,10 @@ struct FeedPills {
 
       Row()
         .width(this.indicatorWidth())
-        .height(2)
+        .height(3)
         .backgroundColor(ThemeConstants.BRAND_PRIMARY)
-        .borderRadius(1)
-        .position({ x: this.indicatorLeft(), y: ApiConstants.TAB_BAR_HEIGHT - 13 })
+        .borderRadius(1.5)
+        .position({ x: this.indicatorLeft(), y: ApiConstants.TAB_BAR_HEIGHT - 14 })
         .hitTestBehavior(HitTestMode.None)
     }
     .width('100%').height('100%')
