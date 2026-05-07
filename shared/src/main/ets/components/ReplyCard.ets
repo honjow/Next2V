@@ -15,6 +15,7 @@ export struct ReplyCard {
   onActionsClick?: () => void
   onContextClick?: () => void
   onMentionClick?: () => void
+  onReplyClick?: () => void
   onCopyUserClick?: () => void
   onCopyContentClick?: () => void
   onImageClick?: (url: string) => void
@@ -168,6 +169,22 @@ export struct ReplyCard {
         }
 
         Blank()
+
+        if (this.onReplyClick) {
+          Button() {
+            SymbolGlyph($r('sys.symbol.arrowshape_turn_up_left'))
+              .fontSize(ThemeConstants.FONT_SIZE_TITLE)
+              .fontColor([$r('sys.color.font_secondary')])
+          }
+          .type(ButtonType.Normal)
+          .width(ThemeConstants.TOUCH_TARGET_SM)
+          .height(ThemeConstants.TOUCH_TARGET_SM)
+          .borderRadius(ThemeConstants.RADIUS_ROUND)
+          .backgroundColor(Color.Transparent)
+          .onClick(() => {
+            if (this.onReplyClick) { this.onReplyClick() }
+          })
+        }
 
         if (this.hasContextMenuActions()) {
           Button() {

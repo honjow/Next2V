@@ -1,4 +1,5 @@
 import { DetailViewModel } from '../viewmodel/DetailViewModel'
+import { ReplyComposerSheet } from '../components/ReplyComposerSheet'
 import { common, Want } from '@kit.AbilityKit'
 import { promptAction } from '@kit.ArkUI'
 import { uniformTypeDescriptor as utd } from '@kit.ArkData'
@@ -10,12 +11,6 @@ import {
   LoadingFooter, HttpClient, StorageKeys, ApiService, CookieJarSettings, V2exToggleAction, ReadingSettings,
   AppModalScaffold
 } from 'shared'
-
-interface ReplyEditorParams {
-  topicId: number
-  topicTitle: string
-  initialContent?: string
-}
 
 interface ReplyContextItem {
   reply: V2exReply
@@ -43,6 +38,8 @@ export struct TopicDetailPage {
   @State private jumpFloorText: string = ''
   @State private contextReply: V2exReply | null = null
   @State private contextSheetVisible: boolean = false
+  @State private replyComposerVisible: boolean = false
+  @State private replyComposerInitialContent: string = ''
   private api: ApiService = new ApiService()
   private jumpFloorDialogController: CustomDialogController | null = new CustomDialogController({
     builder: JumpToFloorDialog({
@@ -122,9 +119,8 @@ export struct TopicDetailPage {
   }
 
   private openReplyEditor(initialContent: string = ''): void {
-    const title = (this.v.topic?.title || '').trim()
-    let p: ReplyEditorParams = { topicId: this.topicId, topicTitle: title, initialContent: initialContent }
-    this.stack.pushPathByName('ReplyEditor', p as Object)
+    this.replyComposerInitialContent = initialContent
+    this.replyComposerVisible = true
   }
 
   private bodyFontSize(): number {
@@ -146,7 +142,7 @@ export struct TopicDetailPage {
   }
 
   build() {
-    Stack() {
+    Stack({ alignContent: Alignment.BottomEnd }) {
       Column() {
         if (this.v.isLoading && this.v.topic === null) {
           this.LoadingView()
@@ -158,6 +154,9 @@ export struct TopicDetailPage {
       }
       .width('100%').height('100%')
 
+      if (this.v.topic !== null) {
+        this.FloatingReplyButton()
+      }
     }
     .width('100%')
     .height('100%')
@@ -172,6 +171,18 @@ export struct TopicDetailPage {
       onDisappear: () => {
         this.contextSheetVisible = false
         this.contextReply = null
+      }
+    })
+    .bindSheet($$this.replyComposerVisible, this.ReplyComposerSheetBuilder(), {
+      height: SheetSize.LARGE,
+      preferType: SheetType.BOTTOM,
+      dragBar: false,
+      showClose: false,
+      maskColor: 'rgba(0,0,0,0.24)',
+      backgroundColor: $r('sys.color.ohos_id_color_card_bg'),
+      onDisappear: () => {
+        this.replyComposerVisible = false
+        this.replyComposerInitialContent = ''
       }
     })
   }
@@ -240,6 +251,7 @@ export struct TopicDetailPage {
               },
               onContextClick: () => { this.openReplyContext(reply) },
               onMentionClick: () => { this.openReplyEditor(this.getMentionText(reply.member.username)) },
+              onReplyClick: () => { this.openReplyEditor(this.getMentionText(reply.member.username)) },
               onCopyUserClick: () => { this.copyToClipboard(reply.member.username || '') },
               onCopyContentClick: () => { this.copyToClipboard(reply.content || '') },
               onImageClick: (url: string) => { this.openImagePreview(url) },
@@ -255,6 +267,49 @@ export struct TopicDetailPage {
           }
         }
     }
+  }
+
+  @Builder ReplyComposerSheetBuilder() {
+    ReplyComposerSheet({
+      topicId: this.topicId,
+      topicTitle: (this.v.topic?.title || '').trim(),
+      initialContent: this.replyComposerInitialContent,
+      closeAction: () => {
+        this.replyComposerVisible = false
+      },
+      submittedAction: () => {
+        this.v.load()
+      }
+    })
+  }
+
+  @Builder FloatingReplyButton() {
+    Button() {
+      Row({ space: ThemeConstants.SPACE_XS }) {
+        SymbolGlyph($r('sys.symbol.arrowshape_turn_up_left_fill'))
+          .fontSize(20)
+          .fontColor([Color.White])
+        Text('回复')
+          .fontSize(ThemeConstants.FONT_SIZE_BODY)
+          .fontWeight(FontWeight.Medium)
+          .fontColor(Color.White)
+      }
+      .alignItems(VerticalAlign.Center)
+      .justifyContent(FlexAlign.Center)
+    }
+    .type(ButtonType.Normal)
+    .height(48)
+    .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG })
+    .borderRadius(ThemeConstants.RADIUS_ROUND)
+    .backgroundColor(ThemeConstants.BRAND_PRIMARY)
+    .margin({
+      right: ThemeConstants.SPACE_LG,
+      bottom: ThemeConstants.FLOAT_BAR_HEIGHT + ThemeConstants.SPACE_LG
+    })
+    .shadow(ShadowStyle.OUTER_DEFAULT_MD)
+    .onClick(() => {
+      this.openReplyEditor()
+    })
   }
 
   @Builder TopicCard() {
