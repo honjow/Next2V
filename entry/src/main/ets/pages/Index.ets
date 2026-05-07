@@ -750,7 +750,7 @@ struct Index {
   }
 
   private hasCookieAccount(): boolean {
-    return !!CookieJarSettings.getCurrentCookie()
+    return this.authCookieConfigured
   }
 
   private formatCoinAmount(amount: number): string {
