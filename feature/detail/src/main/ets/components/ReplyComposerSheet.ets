@@ -6,6 +6,7 @@ import {
   DateUtils,
   DraftSettings,
   MarkdownContent,
+  MarkdownToolbar,
   AppModalScaffold,
   StorageKeys,
   ThemeConstants
@@ -26,7 +27,10 @@ export struct ReplyComposerSheet {
   @State private errorMessage: string = ''
   @State private savedAt: number = 0
   @State private isSubmitting: boolean = false
+  @State private contentSelectionStart: number = 0
+  @State private contentSelectionEnd: number = 0
 
+  private contentController: TextAreaController = new TextAreaController()
   private api: ApiService = new ApiService()
   private saveTimerId: number = 0
   private hasSubmitted: boolean = false
@@ -59,13 +63,19 @@ export struct ReplyComposerSheet {
               .textOverflow({ overflow: TextOverflow.Ellipsis })
           }
 
-          Row({ space: ThemeConstants.SPACE_XS }) {
-            this.ModeButton('编辑', !this.isPreview, () => { this.isPreview = false })
-            this.ModeButton('预览', this.isPreview, () => { this.isPreview = true })
-            this.ModeButton('图片', false, () => { this.insertImageLinkTemplate() })
-            this.ModeButton('清空', false, () => { this.confirmClearDraft() })
-          }
-          .width('100%')
+          MarkdownToolbar({
+            previewActive: this.isPreview,
+            onEdit: () => { this.isPreview = false },
+            onPreview: () => { this.isPreview = true },
+            onBold: () => { this.insertInlineMarkdown('**', '**', '文字') },
+            onItalic: () => { this.insertInlineMarkdown('*', '*', '文字') },
+            onCode: () => { this.insertInlineMarkdown('`', '`', '代码') },
+            onQuote: () => { this.insertLinePrefix('> ') },
+            onList: () => { this.insertLinePrefix('- ') },
+            onLink: () => { this.insertInlineMarkdown('[', '](https://)', '文字', '[文字](https://'.length) },
+            onImage: () => { this.insertImageLinkTemplate() },
+            onClear: () => { this.confirmClearDraft() }
+          })
 
           if (this.errorMessage) {
             Text(this.errorMessage)
@@ -89,7 +99,7 @@ export struct ReplyComposerSheet {
               .scrollBar(BarState.Off)
             }
           } else {
-            TextArea({ placeholder: '写回复（自动保存草稿）', text: this.content })
+            TextArea({ placeholder: '写回复（自动保存草稿）', text: this.content, controller: this.contentController })
               .fontSize(ThemeConstants.FONT_SIZE_BODY)
               .height(260)
               .width('100%')
@@ -98,6 +108,10 @@ export struct ReplyComposerSheet {
               .onChange((value: string) => {
                 this.content = value
                 this.scheduleSaveDraft()
+              })
+              .onTextSelectionChange((selectionStart: number, selectionEnd: number) => {
+                this.contentSelectionStart = selectionStart
+                this.contentSelectionEnd = selectionEnd
               })
           }
 
@@ -127,25 +141,14 @@ export struct ReplyComposerSheet {
     }
   }
 
-  @Builder
-  private ModeButton(label: string, active: boolean, action: () => void) {
-    Button(label)
-      .type(ButtonType.Normal)
-      .fontSize(ThemeConstants.FONT_SIZE_TAG)
-      .fontColor(active ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.font_secondary'))
-      .height(ThemeConstants.TOUCH_TARGET_SM)
-      .borderRadius(ThemeConstants.RADIUS_MD)
-      .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
-      .layoutWeight(1)
-      .onClick(action)
-  }
-
   private loadDraft(): void {
     this.content = ''
     this.isPreview = false
     this.errorMessage = ''
     this.savedAt = 0
     this.isSubmitting = false
+    this.contentSelectionStart = 0
+    this.contentSelectionEnd = 0
     this.hasSubmitted = false
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     DraftSettings.loadReplyDraft(context, this.topicId)
@@ -154,6 +157,8 @@ export struct ReplyComposerSheet {
         const draftContent = draft ? (draft.content || '') : ''
         this.content = this.mergeInitialContent(draftContent, seed)
         this.savedAt = draft ? (draft.updatedAt || 0) : 0
+        this.contentSelectionStart = this.content.length
+        this.contentSelectionEnd = this.content.length
         if (seed && this.content !== draftContent) {
           this.scheduleSaveDraft()
         }
@@ -164,9 +169,41 @@ export struct ReplyComposerSheet {
   }
 
   private insertImageLinkTemplate(): void {
-    this.content = `${this.content}${this.content ? '\n' : ''}![图片](https://)`
+    this.insertInlineMarkdown('![', '](https://)', '图片', '![图片](https://'.length)
+  }
+
+  private insertInlineMarkdown(prefix: string, suffix: string, placeholder: string, caretOffset: number = -1): void {
+    const contentLength = this.content.length
+    const start = Math.min(Math.max(this.contentSelectionStart, 0), contentLength)
+    const rawEnd = Math.min(Math.max(this.contentSelectionEnd, 0), contentLength)
+    const end = rawEnd >= start ? rawEnd : start
+    const selected = this.content.substring(start, end)
+    const middle = selected || placeholder
+    const insertion = `${prefix}${middle}${suffix}`
+    this.content = `${this.content.substring(0, start)}${insertion}${this.content.substring(end)}`
+    const caret = start + (caretOffset >= 0 ? caretOffset : prefix.length + middle.length + suffix.length)
+    this.contentSelectionStart = caret
+    this.contentSelectionEnd = caret
     this.isPreview = false
     this.scheduleSaveDraft()
+    setTimeout(() => {
+      this.contentController.caretPosition(caret)
+    }, 0)
+  }
+
+  private insertLinePrefix(prefix: string): void {
+    const contentLength = this.content.length
+    const start = Math.min(Math.max(this.contentSelectionStart, 0), contentLength)
+    const lineStart = this.content.lastIndexOf('\n', Math.max(0, start - 1)) + 1
+    this.content = `${this.content.substring(0, lineStart)}${prefix}${this.content.substring(lineStart)}`
+    const caret = start + prefix.length
+    this.contentSelectionStart = caret
+    this.contentSelectionEnd = caret
+    this.isPreview = false
+    this.scheduleSaveDraft()
+    setTimeout(() => {
+      this.contentController.caretPosition(caret)
+    }, 0)
   }
 
   private normalizeInitialContent(value: string): string {

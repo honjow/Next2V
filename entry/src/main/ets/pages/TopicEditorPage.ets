@@ -1,8 +1,8 @@
 import { common } from '@kit.AbilityKit'
 import { promptAction } from '@kit.ArkUI'
 import {
-  ApiService, CookieJarSettings, DateUtils, DraftSettings, MarkdownContent, SecondaryFormScaffold, StorageKeys,
-  ThemeConstants
+  ApiService, CookieJarSettings, DateUtils, DraftSettings, MarkdownContent, MarkdownToolbar, SecondaryFormScaffold,
+  StorageKeys, ThemeConstants
 } from 'shared'
 
 @Component
@@ -84,7 +84,7 @@ export struct TopicEditorPage {
             .type(ButtonType.Normal)
             .borderRadius(ThemeConstants.RADIUS_MD)
             .enabled(!this.isSubmitting)
-            .onClick(() => { this.stack.pushPathByName('NodePicker', null) })
+            .onClick(() => { this.openNodePicker() })
         }
         .width('100%')
 
@@ -98,45 +98,19 @@ export struct TopicEditorPage {
             this.scheduleSaveDraft()
           })
 
-        Flex({ direction: FlexDirection.Row, wrap: FlexWrap.Wrap }) {
-          Button('编辑')
-            .type(ButtonType.Normal)
-            .fontSize(ThemeConstants.FONT_SIZE_TAG)
-            .fontColor(!this.isPreview ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.font_secondary'))
-            .height(ThemeConstants.TOUCH_TARGET_SM)
-            .borderRadius(ThemeConstants.RADIUS_MD)
-            .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
-            .margin({ right: ThemeConstants.SPACE_SM, bottom: ThemeConstants.SPACE_SM })
-            .onClick(() => { this.isPreview = false })
-          Button('预览')
-            .type(ButtonType.Normal)
-            .fontSize(ThemeConstants.FONT_SIZE_TAG)
-            .fontColor(this.isPreview ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.font_secondary'))
-            .height(ThemeConstants.TOUCH_TARGET_SM)
-            .borderRadius(ThemeConstants.RADIUS_MD)
-            .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
-            .margin({ right: ThemeConstants.SPACE_SM, bottom: ThemeConstants.SPACE_SM })
-            .onClick(() => { this.isPreview = true })
-          Button('图片')
-            .type(ButtonType.Normal)
-            .fontSize(ThemeConstants.FONT_SIZE_TAG)
-            .fontColor($r('sys.color.font_secondary'))
-            .height(ThemeConstants.TOUCH_TARGET_SM)
-            .borderRadius(ThemeConstants.RADIUS_MD)
-            .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
-            .margin({ right: ThemeConstants.SPACE_SM, bottom: ThemeConstants.SPACE_SM })
-            .onClick(() => { this.insertImageLinkTemplate() })
-          Button('清空')
-            .type(ButtonType.Normal)
-            .fontSize(ThemeConstants.FONT_SIZE_TAG)
-            .fontColor($r('sys.color.font_secondary'))
-            .height(ThemeConstants.TOUCH_TARGET_SM)
-            .borderRadius(ThemeConstants.RADIUS_MD)
-            .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
-            .margin({ right: ThemeConstants.SPACE_SM, bottom: ThemeConstants.SPACE_SM })
-            .onClick(() => { this.confirmClearDraft() })
-        }
-        .width('100%')
+        MarkdownToolbar({
+          previewActive: this.isPreview,
+          onEdit: () => { this.isPreview = false },
+          onPreview: () => { this.isPreview = true },
+          onBold: () => { this.insertInlineMarkdown('**', '**', '文字') },
+          onItalic: () => { this.insertInlineMarkdown('*', '*', '文字') },
+          onCode: () => { this.insertInlineMarkdown('`', '`', '代码') },
+          onQuote: () => { this.insertLinePrefix('> ') },
+          onList: () => { this.insertLinePrefix('- ') },
+          onLink: () => { this.insertInlineMarkdown('[', '](https://)', '文字', '[文字](https://'.length) },
+          onImage: () => { this.insertImageLinkTemplate() },
+          onClear: () => { this.confirmClearDraft() }
+        })
 
         if (this.errorMessage) {
           Text(this.errorMessage)
@@ -203,14 +177,19 @@ export struct TopicEditorPage {
   }
 
   private insertImageLinkTemplate(): void {
-    const template = '![图片](https://)'
-    const caretOffset = '![图片](https://'.length
+    this.insertInlineMarkdown('![', '](https://)', '图片', '![图片](https://'.length)
+  }
+
+  private insertInlineMarkdown(prefix: string, suffix: string, placeholder: string, caretOffset: number = -1): void {
     const contentLength = this.content.length
     const start = Math.min(Math.max(this.contentSelectionStart, 0), contentLength)
     const rawEnd = Math.min(Math.max(this.contentSelectionEnd, 0), contentLength)
     const end = rawEnd >= start ? rawEnd : start
-    this.content = `${this.content.substring(0, start)}${template}${this.content.substring(end)}`
-    const caret = start + caretOffset
+    const selected = this.content.substring(start, end)
+    const middle = selected || placeholder
+    const insertion = `${prefix}${middle}${suffix}`
+    this.content = `${this.content.substring(0, start)}${insertion}${this.content.substring(end)}`
+    const caret = start + (caretOffset >= 0 ? caretOffset : prefix.length + middle.length + suffix.length)
     this.contentSelectionStart = caret
     this.contentSelectionEnd = caret
     this.isPreview = false
@@ -218,6 +197,27 @@ export struct TopicEditorPage {
     setTimeout(() => {
       this.contentController.caretPosition(caret)
     }, 0)
+  }
+
+  private insertLinePrefix(prefix: string): void {
+    const contentLength = this.content.length
+    const start = Math.min(Math.max(this.contentSelectionStart, 0), contentLength)
+    const lineStart = this.content.lastIndexOf('\n', Math.max(0, start - 1)) + 1
+    this.content = `${this.content.substring(0, lineStart)}${prefix}${this.content.substring(lineStart)}`
+    const caret = start + prefix.length
+    this.contentSelectionStart = caret
+    this.contentSelectionEnd = caret
+    this.isPreview = false
+    this.scheduleSaveDraft()
+    setTimeout(() => {
+      this.contentController.caretPosition(caret)
+    }, 0)
+  }
+
+  private openNodePicker(): void {
+    this.clearSaveTimer()
+    this.persistDraft()
+    this.stack.pushPathByName('NodePicker', null)
   }
 
   private scheduleSaveDraft(): void {
