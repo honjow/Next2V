@@ -22,8 +22,9 @@ export struct V2exWebLoginPage {
 
   @State private errorMessage: string = ''
   @State private isSaving: boolean = false
+  @State private isSaved: boolean = false
   @State private lastUrl: string = ''
-  @StorageProp(StorageKeys.TOP_AVOID_HEIGHT) topH: number = 0
+  @StorageLink(StorageKeys.WEB_LOGIN_ACTION) @Watch('onWebLoginAction') webLoginAction: string = ''
 
   private get baseUrl(): string {
     return this.http.getBaseUrl()
@@ -35,48 +36,6 @@ export struct V2exWebLoginPage {
 
   build() {
     Column() {
-      Column({ space: ThemeConstants.SPACE_XS }) {
-        Text('使用 V2EX 官方网页登录')
-          .fontSize(ThemeConstants.FONT_SIZE_BODY)
-          .fontWeight(FontWeight.Medium)
-          .fontColor($r('sys.color.font_primary'))
-        Text('登录完成后，点击“保存登录”即可返回。')
-          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-          .fontColor($r('sys.color.font_secondary'))
-        if (this.lastUrl) {
-          Text(this.lastUrl)
-            .fontSize(ThemeConstants.FONT_SIZE_TINY)
-            .fontColor($r('sys.color.font_secondary'))
-            .maxLines(1)
-            .textOverflow({ overflow: TextOverflow.Ellipsis })
-        }
-        if (this.errorMessage) {
-          Text(this.errorMessage)
-            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-            .fontColor(Color.Red)
-            .margin({ top: ThemeConstants.SPACE_XS })
-        }
-        Row({ space: ThemeConstants.SPACE_SM }) {
-          Button(this.isSaving ? '保存中…' : '保存登录')
-            .fontSize(ThemeConstants.FONT_SIZE_TAG)
-            .height(40)
-            .enabled(!this.isSaving)
-            .onClick(() => { this.saveLogin() })
-          Button('重新加载')
-            .fontSize(ThemeConstants.FONT_SIZE_TAG)
-            .height(40)
-            .enabled(!this.isSaving)
-            .onClick(() => { this.controller.refresh() })
-        }
-      }
-      .padding({
-        left: ThemeConstants.SPACE_MD,
-        right: ThemeConstants.SPACE_MD,
-        top: this.topH + ThemeConstants.TITLE_BAR_HEIGHT + ThemeConstants.SPACE_MD,
-        bottom: ThemeConstants.SPACE_MD
-      })
-      .width('100%')
-
       Web({ src: this.signinUrl, controller: this.controller })
         .darkMode(WebDarkMode.Auto)
         .width('100%')
@@ -84,20 +43,72 @@ export struct V2exWebLoginPage {
         .onPageEnd((event?: PageEndEvent) => {
           if (event && event.url) {
             this.lastUrl = event.url
+            this.tryAutoSave(event.url)
           }
         })
+
+      this.StatusBar()
     }
     .width('100%')
     .height('100%')
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
   }
 
-  private saveLogin(): void {
+  @Builder
+  StatusBar() {
+    if (this.isSaving || this.errorMessage) {
+      Row() {
+        Text(this.isSaving ? '正在保存登录状态…' : this.errorMessage)
+          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+          .fontColor(this.errorMessage ? Color.Red : $r('sys.color.font_secondary'))
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+      }
+      .width('100%')
+      .padding({
+        left: ThemeConstants.SPACE_MD,
+        right: ThemeConstants.SPACE_MD,
+        top: ThemeConstants.SPACE_XS,
+        bottom: ThemeConstants.SPACE_XS
+      })
+      .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+    }
+  }
+
+  onWebLoginAction(_propName: string): void {
+    const action = this.webLoginAction.split(':').pop() || ''
+    if (action === 'save') {
+      this.saveLogin(false)
+    } else if (action === 'reload') {
+      this.reloadPage()
+    }
+  }
+
+  private reloadPage(): void {
+    try {
+      this.controller.refresh()
+    } catch (error) {
+      const e = error as Error
+      this.errorMessage = e.message || '重新加载失败'
+    }
+  }
+
+  private tryAutoSave(url: string): void {
+    const cleanUrl = (url || '').trim()
+    if (this.isSaving || this.isSaved || !cleanUrl || cleanUrl.indexOf('/signin') >= 0) {
+      return
+    }
+    this.saveLogin(true)
+  }
+
+  private saveLogin(silent: boolean): void {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     const baseUrl = this.baseUrl
     this.isSaving = true
-    this.errorMessage = ''
-    webview.WebCookieManager.fetchCookie(baseUrl)
+    if (!silent) {
+      this.errorMessage = ''
+    }
+    this.fetchWebLoginCookie()
       .then(async (cookie: string) => {
         const cleanCookie = cookie?.trim() || ''
         if (!cleanCookie) {
@@ -124,16 +135,73 @@ export struct V2exWebLoginPage {
         await AuthSessionSettings.save(context, { loginMode: 'cookie', username, avatar, validatedAt: Date.now() })
       })
       .then(() => {
+        this.isSaved = true
         promptAction.openToast({ message: '登录已保存' }).catch((error: Error) => {
           console.error('openToast failed: ' + error.message)
         })
         this.stack.pop()
       })
       .catch((error: Error) => {
-        this.errorMessage = error.message || '保存登录失败'
+        if (!silent) {
+          this.errorMessage = error.message || '保存登录失败'
+        }
       })
       .finally(() => {
         this.isSaving = false
       })
+  }
+
+  private async fetchWebLoginCookie(): Promise<string> {
+    try {
+      webview.WebCookieManager.saveCookieSync()
+    } catch (_error) {
+      try {
+        await webview.WebCookieManager.saveCookieAsync()
+      } catch (_e) {
+      }
+    }
+
+    const urls: string[] = []
+    this.pushUniqueUrl(urls, this.baseUrl)
+    this.pushUniqueUrl(urls, this.signinUrl)
+    this.pushUniqueUrl(urls, this.lastUrl)
+
+    const merged: Map<string, string> = new Map()
+    for (const url of urls) {
+      try {
+        const cookie = await webview.WebCookieManager.fetchCookie(url)
+        this.mergeCookieHeader(merged, cookie || '')
+      } catch (_error) {
+      }
+    }
+    const parts: string[] = []
+    merged.forEach((value: string, name: string) => {
+      parts.push(`${name}=${value}`)
+    })
+    return parts.join('; ')
+  }
+
+  private pushUniqueUrl(urls: string[], url: string): void {
+    const cleanUrl = (url || '').trim()
+    if (!cleanUrl || cleanUrl.indexOf('http') !== 0 || urls.indexOf(cleanUrl) >= 0) {
+      return
+    }
+    urls.push(cleanUrl)
+  }
+
+  private mergeCookieHeader(target: Map<string, string>, cookieHeader: string): void {
+    const parts = cookieHeader.split(';').map((part: string) => part.trim()).filter((part: string) => part.length > 0)
+    for (const part of parts) {
+      const idx = part.indexOf('=')
+      if (idx <= 0) {
+        continue
+      }
+      const name = part.slice(0, idx).trim()
+      const value = part.slice(idx + 1).trim()
+      if (!name || !value) {
+        continue
+      }
+      target.set(name, value)
+    }
   }
 }

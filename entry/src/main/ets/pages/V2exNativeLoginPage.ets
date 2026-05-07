@@ -5,8 +5,9 @@ import {
   AuthSessionSettings,
   ConciseListRow,
   CookieJarSettings,
+  GroupedListSection,
   HttpClient,
-  SecondaryListScaffold,
+  StorageKeys,
   ThemeConstants,
   V2exNativeAuthService
 } from 'shared'
@@ -23,7 +24,10 @@ export struct V2exNativeLoginPage {
   @State private errorMessage: string = ''
   @State private isLoading: boolean = false
   @State private isChallengeLoading: boolean = false
+  @StorageProp(StorageKeys.TOP_AVOID_HEIGHT) topH: number = 0
+  @StorageProp(StorageKeys.BOTTOM_AVOID_HEIGHT) bottomH: number = 0
 
+  private scroller: Scroller = new Scroller()
   private challenge: NativeLoginChallenge | null = null
   private auth: V2exNativeAuthService = new V2exNativeAuthService()
   private api: ApiService = new ApiService()
@@ -35,14 +39,20 @@ export struct V2exNativeLoginPage {
 
   build() {
     Column() {
-      SecondaryListScaffold() {
-        ListItem() {
-          Column({ space: ThemeConstants.SPACE_SM }) {
-            this.LoginForm()
-            this.WebLoginForm()
-          }
+      Scroll(this.scroller) {
+        Column({ space: ThemeConstants.SPACE_SM }) {
+          Blank().height(this.topH + ThemeConstants.TITLE_BAR_HEIGHT)
+          this.LoginForm()
+          this.WebLoginForm()
+          Blank().height(this.bottomH + ThemeConstants.SPACE_XL)
         }
+        .width('100%')
+        .padding({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
       }
+      .scrollBar(BarState.Off)
+      .edgeEffect(EdgeEffect.None)
+      .width('100%')
+      .height('100%')
     }
     .width('100%')
     .height('100%')
@@ -50,17 +60,13 @@ export struct V2exNativeLoginPage {
   }
 
   @Builder WebLoginForm() {
-    Column({ space: ThemeConstants.SPACE_SM }) {
+    GroupedListSection() {
       ConciseListRow({
         title: '网页登录',
         showChevron: true,
         action: () => { this.stack.pushPathByName('V2exWebLogin', null) }
       })
     }
-    .width('100%')
-    .padding(4)
-    .borderRadius(ThemeConstants.RADIUS_MD)
-    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }
 
   @Builder LoginForm() {

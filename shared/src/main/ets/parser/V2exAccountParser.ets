@@ -107,13 +107,20 @@ export class V2exAccountParser {
   private static createBalance(gold: number, silver: number, bronze: number): V2exBalance {
     const parts: string[] = []
     if (gold > 0) {
-      parts.push(`${gold} 金币`)
+      parts.push(`${V2exAccountParser.formatCoinAmount(gold)} 金币`)
     }
     if (silver > 0) {
-      parts.push(`${silver} 银币`)
+      parts.push(`${V2exAccountParser.formatCoinAmount(silver)} 银币`)
     }
-    parts.push(`${bronze} 铜币`)
+    parts.push(`${V2exAccountParser.formatCoinAmount(bronze)} 铜币`)
     return { gold, silver, bronze, summary: parts.join(' · ') }
+  }
+
+  private static formatCoinAmount(value: number): string {
+    if (Math.floor(value) === value) {
+      return value.toString()
+    }
+    return value.toFixed(2).replace(/0+$/, '').replace(/\.$/, '')
   }
 
   private static compactText(html: string): string {

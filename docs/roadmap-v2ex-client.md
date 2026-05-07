@@ -189,6 +189,10 @@ API constraint:
    be committed, logged, or shown.
 8. Every coherent feature must pass build, install, device interaction,
    screenshot review, `git diff --check`, diff review, and an accurate commit.
+9. V2EX coin parsing must preserve explicit units. If the source text says
+   `0.90 铜币`, parse and display it as a fractional copper balance, not `90 铜币`.
+   Do not multiply `0.xx 铜币` by 100 unless a verified source-specific DOM
+   format proves the number is not using the explicit copper unit.
 
 ## Recommended Development Plan
 

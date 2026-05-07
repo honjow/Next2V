@@ -81,6 +81,6 @@ export class AuthSessionSettings {
     AppStorage.setOrCreate<string>(StorageKeys.AUTH_SESSION_USERNAME, snapshot.username || '')
     AppStorage.setOrCreate<string>(StorageKeys.AUTH_SESSION_AVATAR, snapshot.avatar || '')
     AppStorage.setOrCreate<number>(StorageKeys.AUTH_SESSION_VALIDATED_AT, snapshot.validatedAt || 0)
+    AppStorage.setOrCreate<number>(StorageKeys.AUTH_SESSION_UPDATED_AT, Date.now())
   }
 }
-

@@ -183,6 +183,7 @@ struct Index {
   @StorageLink(StorageKeys.AUTH_SESSION_USERNAME) sessionUsername: string = ''
   @StorageLink(StorageKeys.AUTH_SESSION_AVATAR) sessionAvatar: string = ''
   @StorageLink(StorageKeys.AUTH_SESSION_VALIDATED_AT) sessionValidatedAt: number = 0
+  @StorageLink(StorageKeys.AUTH_SESSION_UPDATED_AT) @Watch('onAuthSessionUpdated') authSessionUpdatedAt: number = 0
   @StorageLink(StorageKeys.API_RATE_LIMIT_LIMIT) apiRateLimitLimit: number = 0
   @StorageLink(StorageKeys.API_RATE_LIMIT_REMAINING) apiRateLimitRemaining: number = 0
   @StorageLink(StorageKeys.API_RATE_LIMIT_RESET) apiRateLimitReset: number = 0
@@ -241,6 +242,23 @@ struct Index {
     this.loadTopicReadStates()
   }
 
+  onAuthSessionUpdated(_propName: string): void {
+    const cookie = CookieJarSettings.getCurrentCookie()
+    if (!cookie) {
+      this.accountBalance = null
+      this.dailyMission = null
+      this.accountMetaError = ''
+      return
+    }
+    this.sessionError = ''
+    this.resetNotificationState()
+    this.loadNotificationCache(this.sessionUsername)
+    this.loadAccountMeta(true)
+    if (this.ct === 2) {
+      this.loadNotifications(true)
+    }
+  }
+
   @Builder
   pm(name: string, param: Object) {
     if (name === 'TopicDetail') {
@@ -280,7 +298,7 @@ struct Index {
       HdsNavDestination() {
         V2exWebLoginPage()
       }
-      .titleBar(this.navDestTitleBarOpts('网页登录'))
+      .titleBar(this.navDestTitleBarOpts('网页登录', this.webLoginTitleMenu()))
     } else if (name === 'V2exNativeLogin') {
       HdsNavDestination() {
         V2exNativeLoginPage()
@@ -559,6 +577,22 @@ struct Index {
     return { 'value': items, 'maxCount': 1 }
   }
 
+  private webLoginTitleMenu(): Record<string, Object> {
+    let items: Record<string, Object>[] = [
+      this.topicActionItem('保存登录', $r('sys.symbol.checkmark_circle'), () => {
+        this.sendWebLoginAction('save')
+      }),
+      this.topicActionItem('重新加载', $r('sys.symbol.arrow_clockwise'), () => {
+        this.sendWebLoginAction('reload')
+      })
+    ]
+    return { 'value': items, 'maxCount': 2 }
+  }
+
+  private sendWebLoginAction(action: string): void {
+    AppStorage.setOrCreate<string>(StorageKeys.WEB_LOGIN_ACTION, `${Date.now()}:${action}`)
+  }
+
   @Builder
   TabIcon(title: string, idx: number) {
     Column() {
@@ -716,7 +750,7 @@ struct Index {
   }
 
   private hasCookieAccount(): boolean {
-    return this.authCookieConfigured && !!CookieJarSettings.getCurrentCookie()
+    return !!CookieJarSettings.getCurrentCookie()
   }
 
   private formatCoinAmount(amount: number): string {
@@ -731,11 +765,12 @@ struct Index {
   }
 
   private notificationAuthContext(): NotificationAuthContext {
+    const cookie = CookieJarSettings.getCurrentCookie()
     return {
       tokenConfigured: this.authTokenConfigured,
       token: this.authToken,
-      cookieConfigured: this.authCookieConfigured,
-      cookie: CookieJarSettings.getCurrentCookie()
+      cookieConfigured: cookie.length > 0,
+      cookie: cookie
     }
   }
 
@@ -780,7 +815,7 @@ struct Index {
     if (this.accountMetaError) {
       return '虚拟币信息不可用'
     }
-    return '金币 0 · 银币 0 · 铜币 0'
+    return ''
   }
 
   private dailyMissionButtonText(): string {
@@ -926,23 +961,29 @@ struct Index {
   @Builder
   CoinBalance() {
     if (this.accountBalance) {
-      Row({ space: ThemeConstants.SPACE_SM }) {
-        if (this.accountBalance.gold > 0) {
-          this.CoinAmount('#B97818', '#F6D77A', '#D59A24', this.accountBalance.gold)
+      if (this.accountBalance.gold > 0 || this.accountBalance.silver > 0 || this.accountBalance.bronze > 0) {
+        Row({ space: ThemeConstants.SPACE_SM }) {
+          if (this.accountBalance.gold > 0) {
+            this.CoinAmount('#B97818', '#F6D77A', '#D59A24', this.accountBalance.gold)
+          }
+          if (this.accountBalance.silver > 0) {
+            this.CoinAmount('#5C6978', '#F6FAFF', '#9FAFC0', this.accountBalance.silver)
+          }
+          if (this.accountBalance.bronze > 0) {
+            this.CoinAmount('#7E4B27', '#D99B65', '#A66B3D', this.accountBalance.bronze)
+          }
         }
-        if (this.accountBalance.silver > 0) {
-          this.CoinAmount('#5C6978', '#F6FAFF', '#9FAFC0', this.accountBalance.silver)
-        }
-        this.CoinAmount('#7E4B27', '#D99B65', '#A66B3D', this.accountBalance.bronze)
+        .alignItems(VerticalAlign.Center)
+        .height(22)
       }
-      .alignItems(VerticalAlign.Center)
-      .height(22)
     } else {
-      Text(this.accountMetaText())
-        .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-        .fontColor($r('sys.color.font_secondary'))
-        .maxLines(1)
-        .textOverflow({ overflow: TextOverflow.Ellipsis })
+      if (this.accountMetaText()) {
+        Text(this.accountMetaText())
+          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+          .fontColor($r('sys.color.font_secondary'))
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+      }
     }
   }
 
@@ -1948,7 +1989,7 @@ struct Index {
 
   private loadAccountMeta(force: boolean = false): void {
     const cookie = CookieJarSettings.getCurrentCookie()
-    if (!this.authCookieConfigured || !cookie || this.isAccountMetaLoading) {
+    if (!cookie || this.isAccountMetaLoading) {
       return
     }
     if (!force && this.accountBalance && this.dailyMission) {
@@ -1976,7 +2017,7 @@ struct Index {
 
   private redeemDailyMission(): void {
     const cookie = CookieJarSettings.getCurrentCookie()
-    if (!this.authCookieConfigured || !cookie || this.isDailyRedeeming) {
+    if (!cookie || this.isDailyRedeeming) {
       return
     }
     if (!this.dailyMission || !this.dailyMission.canRedeem || !this.dailyMission.redeemPath) {

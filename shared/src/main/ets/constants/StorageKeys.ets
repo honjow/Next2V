@@ -17,6 +17,7 @@ export class StorageKeys {
   static readonly AUTH_SESSION_USERNAME: string = 'authSessionUsername'
   static readonly AUTH_SESSION_AVATAR: string = 'authSessionAvatar'
   static readonly AUTH_SESSION_VALIDATED_AT: string = 'authSessionValidatedAt'
+  static readonly AUTH_SESSION_UPDATED_AT: string = 'authSessionUpdatedAt'
   static readonly ACCOUNT_WRITE_ENABLED: string = 'accountWriteEnabled'
   static readonly API_RATE_LIMIT_LIMIT: string = 'apiRateLimitLimit'
   static readonly API_RATE_LIMIT_REMAINING: string = 'apiRateLimitRemaining'
@@ -25,4 +26,5 @@ export class StorageKeys {
   static readonly LOCAL_DATA_UPDATED_AT: string = 'localDataUpdatedAt'
   static readonly TOPIC_DETAIL_ACTION: string = 'topicDetailAction'
   static readonly SEARCH_ACTION: string = 'searchAction'
+  static readonly WEB_LOGIN_ACTION: string = 'webLoginAction'
 }
