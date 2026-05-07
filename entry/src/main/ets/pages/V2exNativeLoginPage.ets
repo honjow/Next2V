@@ -24,7 +24,6 @@ export struct V2exNativeLoginPage {
   @State private errorMessage: string = ''
   @State private isLoading: boolean = false
   @State private isChallengeLoading: boolean = false
-  @StorageProp(StorageKeys.TOP_AVOID_HEIGHT) topH: number = 0
   @StorageProp(StorageKeys.BOTTOM_AVOID_HEIGHT) bottomH: number = 0
 
   private scroller: Scroller = new Scroller()
@@ -41,13 +40,16 @@ export struct V2exNativeLoginPage {
     Column() {
       Scroll(this.scroller) {
         Column({ space: ThemeConstants.SPACE_SM }) {
-          Blank().height(this.topH + ThemeConstants.TITLE_BAR_HEIGHT)
           this.LoginForm()
           this.WebLoginForm()
-          Blank().height(this.bottomH + ThemeConstants.SPACE_XL)
+          Blank().height(this.bottomH + 240)
         }
         .width('100%')
-        .padding({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
+        .padding({
+          left: ThemeConstants.SPACE_MD,
+          right: ThemeConstants.SPACE_MD,
+          top: ThemeConstants.TITLE_BAR_HEIGHT + ThemeConstants.SPACE_MD + ThemeConstants.SPACE_LG
+        })
       }
       .scrollBar(BarState.Off)
       .edgeEffect(EdgeEffect.None)
