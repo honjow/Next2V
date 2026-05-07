@@ -30,6 +30,7 @@ export default class EntryAbility extends UIAbility {
         statusBarColor: TRANSPARENT_COLOR,
         navigationBarColor: TRANSPARENT_COLOR
       })
+      this.configureWideGamut(win)
       this.mainWindow = win
     } catch (error) {
       const e = error as Error
@@ -87,6 +88,21 @@ export default class EntryAbility extends UIAbility {
         AppStorage.setOrCreate<number>(StorageKeys.KEYBOARD_HEIGHT, 0)
       }
     })
+  }
+
+  private async configureWideGamut(win: window.Window): Promise<void> {
+    try {
+      const supported = await win.isWindowSupportWideGamut()
+      if (!supported) {
+        console.info('wide gamut window color space is not supported')
+        return
+      }
+      await win.setWindowColorSpace(window.ColorSpace.WIDE_GAMUT)
+      console.info('wide gamut window color space enabled')
+    } catch (error) {
+      const e = error as Error
+      console.error('configure wide gamut failed: ' + e.message)
+    }
   }
 
   private watchKeyboardHeight(win: window.Window, uiCtx: UIContext): void {
