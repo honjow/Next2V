@@ -654,6 +654,8 @@ struct MarkdownAutoImage {
           }
           .width('100%')
           .height(160)
+          .justifyContent(FlexAlign.Center)
+          .alignItems(VerticalAlign.Center)
           .borderRadius(ThemeConstants.RADIUS_SM)
           .backgroundColor(ThemeConstants.BG_SUB)
           .hitTestBehavior(HitTestMode.Transparent)
