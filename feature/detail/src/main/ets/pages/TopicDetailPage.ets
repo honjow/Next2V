@@ -264,7 +264,7 @@ export struct TopicDetailPage {
 
         Text(this.v.topic!.node.title)
           .fontSize(ThemeConstants.FONT_SIZE_TAG)
-          .fontColor($r('sys.color.ohos_id_color_activated'))
+          .fontColor($r('sys.color.font_secondary'))
           .padding({
             left: ThemeConstants.SPACE_SM,
             right: ThemeConstants.SPACE_SM,
@@ -573,7 +573,7 @@ export struct TopicDetailPage {
     }
     setTimeout(() => {
       try {
-        this.scroller.scrollToIndex(2 + floor)
+        this.scrollToListIndex(2 + floor, true)
       } catch (_e) {
         // ignore
       }
@@ -595,7 +595,7 @@ export struct TopicDetailPage {
     }
     const listIndex = 2 + count
     try {
-      this.scroller.scrollToIndex(listIndex)
+      this.scrollToListIndex(listIndex, true)
     } catch (_e) {
       // ignore
     }
@@ -649,7 +649,7 @@ export struct TopicDetailPage {
         const safeFloor = targetFloor <= loaded ? targetFloor : loaded
         const listIndex = 2 + safeFloor
         try {
-          this.scroller.scrollToIndex(listIndex)
+          this.scrollToListIndex(listIndex, true)
         } catch (_e) {
           // ignore
         }
@@ -706,7 +706,7 @@ export struct TopicDetailPage {
         const listIndex = 2 + targetFloor
         setTimeout(() => {
           try {
-            this.scroller.scrollToIndex(listIndex)
+            this.scrollToListIndex(listIndex, true)
           } catch (_e) {
             // ignore
           }
@@ -743,6 +743,10 @@ export struct TopicDetailPage {
       .catch((_error: Error) => {
         // ignore
       })
+  }
+
+  private scrollToListIndex(index: number, smooth: boolean = false): void {
+    this.scroller.scrollToIndex(index, smooth, ScrollAlign.START)
   }
 
   private async ensureRepliesLoaded(targetFloor: number): Promise<void> {

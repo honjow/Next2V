@@ -32,6 +32,16 @@ export struct ReplyCard {
     return ThemeConstants.SPACE_MD
   }
 
+  private bottomPadding(): number {
+    if (this.readingDensity === ReadingSettings.DENSITY_COMPACT) {
+      return ThemeConstants.SPACE_XS + 2
+    }
+    if (this.readingDensity === ReadingSettings.DENSITY_COMFORTABLE) {
+      return ThemeConstants.SPACE_MD
+    }
+    return ThemeConstants.SPACE_SM
+  }
+
   private contentTopMargin(): number {
     if (this.readingDensity === ReadingSettings.DENSITY_COMPACT) {
       return ThemeConstants.SPACE_XS
@@ -201,7 +211,7 @@ export struct ReplyCard {
       left: ThemeConstants.SPACE_LG,
       right: ThemeConstants.SPACE_LG,
       top: this.verticalPadding(),
-      bottom: this.verticalPadding()
+      bottom: this.bottomPadding()
     })
     .width('100%')
     .borderRadius(ThemeConstants.RADIUS_CARD)

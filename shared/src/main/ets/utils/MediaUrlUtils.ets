@@ -1,5 +1,5 @@
-const IMAGE_EXT_REGEX: RegExp = /\.(jpe?g|png|gif|webp)(?:[?#].*)?$/i
-const IMAGE_QUERY_EXT_REGEX: RegExp = /[?&](?:format|fm|ext)=([a-z0-9]+)/i
+const IMAGE_EXT_REGEX: RegExp = /\.(jpe?g|png|gif|webp|bmp|svg|avif|heic|heif)(?:[?#].*)?$/i
+const IMAGE_QUERY_EXT_REGEX: RegExp = /[?&](?:format|fm|ext|type|output)=([a-z0-9]+)/i
 const ILLEGAL_TITLE_CHARS: RegExp = /[\\/:*?"<>|]/g
 const YOUTUBE_ID_REGEX: RegExp = /(?:youtube\.com\/(?:watch\?[^#]*v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{6,})/i
 const VIMEO_ID_REGEX: RegExp = /vimeo\.com\/(?:.*\/)?([0-9]{6,})/i
@@ -84,6 +84,21 @@ export class MediaUrlUtils {
     if (clean === 'image/webp') {
       return 'webp'
     }
+    if (clean === 'image/bmp') {
+      return 'bmp'
+    }
+    if (clean === 'image/svg+xml') {
+      return 'svg'
+    }
+    if (clean === 'image/avif') {
+      return 'avif'
+    }
+    if (clean === 'image/heic') {
+      return 'heic'
+    }
+    if (clean === 'image/heif') {
+      return 'heif'
+    }
     return ''
   }
 
@@ -111,7 +126,7 @@ export class MediaUrlUtils {
     const url = MediaUrlUtils.normalizeUrl(raw)
     const path = url.split('#')[0].split('?')[0]
     const last = path.split('/').pop() || ''
-    const withoutExt = last.replace(/\.(jpe?g|png|gif|webp)$/i, '')
+    const withoutExt = last.replace(/\.(jpe?g|png|gif|webp|bmp|svg|avif|heic|heif)$/i, '')
     const clean = withoutExt
       .replace(ILLEGAL_TITLE_CHARS, '_')
       .replace(/\s+/g, '_')
@@ -194,7 +209,8 @@ export class MediaUrlUtils {
     if (ext === 'jpeg' || ext === 'jpg') {
       return 'jpg'
     }
-    if (ext === 'png' || ext === 'gif' || ext === 'webp') {
+    if (ext === 'png' || ext === 'gif' || ext === 'webp' || ext === 'bmp' ||
+      ext === 'svg' || ext === 'avif' || ext === 'heic' || ext === 'heif') {
       return ext
     }
     return ''

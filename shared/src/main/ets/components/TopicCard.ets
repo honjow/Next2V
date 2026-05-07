@@ -59,7 +59,7 @@ export struct TopicCard {
             .fontColor($r('sys.color.font_secondary'))
           Text(this.item.last_reply_by || this.item.member.username)
             .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-            .fontColor($r('sys.color.font_emphasize'))
+            .fontColor($r('sys.color.font_secondary'))
             .maxLines(1)
             .textOverflow({ overflow: TextOverflow.Ellipsis })
           Text('·')
