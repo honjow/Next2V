@@ -1,4 +1,4 @@
-export type V2exRouteKind = 'topic' | 'member' | 'node'
+export type V2exRouteKind = 'topic' | 'member' | 'node' | 'search'
 
 export interface V2exRoute {
   kind: V2exRouteKind
@@ -6,6 +6,7 @@ export interface V2exRoute {
   targetFloor?: number
   username?: string
   nodeName?: string
+  query?: string
 }
 
 export class V2exUrlRouter {
@@ -38,6 +39,15 @@ export class V2exUrlRouter {
       return { kind: 'node', nodeName: nodeMatch[1] }
     }
 
+    const searchMatch = path.match(/^\/search(?:\?([^#]*))?$/i)
+    if (searchMatch) {
+      const query = V2exUrlRouter.queryValue(searchMatch[1] || '', 'q') ||
+        V2exUrlRouter.queryValue(searchMatch[1] || '', 'query')
+      if (query) {
+        return { kind: 'search', query: query }
+      }
+    }
+
     return null
   }
 
@@ -54,5 +64,31 @@ export class V2exUrlRouter {
       return ''
     }
     return match[1] || '/'
+  }
+
+  private static queryValue(rawQuery: string, key: string): string {
+    if (!rawQuery) {
+      return ''
+    }
+    const pairs = rawQuery.split('&')
+    for (let i = 0; i < pairs.length; i++) {
+      const pair = pairs[i] || ''
+      const eq = pair.indexOf('=')
+      const rawKey = eq >= 0 ? pair.slice(0, eq) : pair
+      if (V2exUrlRouter.decodeQueryPart(rawKey) !== key) {
+        continue
+      }
+      const rawValue = eq >= 0 ? pair.slice(eq + 1) : ''
+      return V2exUrlRouter.decodeQueryPart(rawValue).trim()
+    }
+    return ''
+  }
+
+  private static decodeQueryPart(value: string): string {
+    try {
+      return decodeURIComponent((value || '').replace(/\+/g, ' '))
+    } catch (_error) {
+      return value || ''
+    }
   }
 }

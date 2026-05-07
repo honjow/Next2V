@@ -44,7 +44,11 @@
               { "scheme": "https", "host": "www.v2ex.com", "pathStartWith": "/go/" },
               { "scheme": "https", "host": "v2ex.com", "pathStartWith": "/go/" },
               { "scheme": "https", "host": "www.v2ex.co", "pathStartWith": "/go/" },
-              { "scheme": "https", "host": "v2ex.co", "pathStartWith": "/go/" }
+              { "scheme": "https", "host": "v2ex.co", "pathStartWith": "/go/" },
+              { "scheme": "https", "host": "www.v2ex.com", "path": "/search" },
+              { "scheme": "https", "host": "v2ex.com", "path": "/search" },
+              { "scheme": "https", "host": "www.v2ex.co", "path": "/search" },
+              { "scheme": "https", "host": "v2ex.co", "path": "/search" }
             ]
           }
         ]

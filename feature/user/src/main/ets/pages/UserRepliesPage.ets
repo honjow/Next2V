@@ -1,6 +1,6 @@
 import { UserRepliesViewModel } from '../viewmodel/UserViewModel'
 import {
-  DateUtils, MarkdownContent, NodeTopicListParams, SecondaryListScaffold, ThemeConstants, TopicDetailParams,
+  DateUtils, MarkdownContent, NodeTopicListParams, SecondaryListScaffold, StorageKeys, ThemeConstants, TopicDetailParams,
   UserProfileParams, V2exRoute, V2exUrlRouter, V2exUserReply
 } from 'shared'
 import { common, Want } from '@kit.AbilityKit'
@@ -166,6 +166,11 @@ export struct UserRepliesPage {
     if (route.kind === 'node' && route.nodeName) {
       const p: NodeTopicListParams = { nodeName: route.nodeName, nodeTitle: route.nodeName }
       this.stack.pushPathByName('NodeTopicList', p as Object)
+      return
+    }
+    if (route.kind === 'search' && route.query) {
+      AppStorage.setOrCreate<string>(StorageKeys.PENDING_SEARCH_QUERY, `${Date.now()}:${route.query}`)
+      this.stack.pushPathByName('Search', null)
     }
   }
 

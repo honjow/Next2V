@@ -694,6 +694,11 @@ struct Index {
     if (route.kind === 'node' && route.nodeName) {
       const p: NodeTopicListParams = { nodeName: route.nodeName, nodeTitle: route.nodeName }
       this.ns.pushPathByName('NodeTopicList', p as Object)
+      return
+    }
+    if (route.kind === 'search' && route.query) {
+      AppStorage.setOrCreate<string>(StorageKeys.PENDING_SEARCH_QUERY, `${Date.now()}:${route.query}`)
+      this.ns.pushPathByName('Search', null)
     }
   }
 

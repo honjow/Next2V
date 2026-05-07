@@ -99,6 +99,7 @@ export struct SearchPage {
   @State private filterSheetVisible: boolean = false
   @State private listScrollEnabled: boolean = true
   @StorageLink(StorageKeys.SEARCH_ACTION) @Watch('onSearchActionCommand') searchActionCommand: string = ''
+  @StorageLink(StorageKeys.PENDING_SEARCH_QUERY) @Watch('onPendingSearchQueryChanged') pendingSearchQuery: string = ''
   @StorageProp(StorageKeys.TOP_AVOID_HEIGHT) topH: number = 0
   @StorageProp(StorageKeys.BOTTOM_AVOID_HEIGHT) bottomH: number = 0
 
@@ -113,6 +114,7 @@ export struct SearchPage {
     this.loadCacheCollections()
     this.loadSourceMode()
     this.loadHistory()
+    this.consumePendingSearchQuery()
   }
 
   aboutToDisappear(): void {
@@ -768,6 +770,24 @@ export struct SearchPage {
         this.refreshSearchSurface()
       }
     }
+  }
+
+  private onPendingSearchQueryChanged(_propName: string): void {
+    this.consumePendingSearchQuery()
+  }
+
+  private consumePendingSearchQuery(): void {
+    const command = (this.pendingSearchQuery || '').trim()
+    if (!command) {
+      return
+    }
+    const stampedQueryMatch = command.match(/^\d+:(.+)$/)
+    const query = stampedQueryMatch && stampedQueryMatch[1] ? stampedQueryMatch[1] : command
+    if (!query.trim()) {
+      return
+    }
+    this.applyHistory(query)
+    AppStorage.setOrCreate<string>(StorageKeys.PENDING_SEARCH_QUERY, '')
   }
 
   private async refreshSearchSurface(): Promise<void> {
