@@ -186,6 +186,9 @@ export struct SearchPage {
           this.keyword = value
           this.applyFilter()
           this.resetRemoteResults()
+        },
+        onSubmit: (_value: string) => {
+          this.runPrimarySearchAction()
         }
       })
 
@@ -202,6 +205,11 @@ export struct SearchPage {
       }
 
       this.SourceModeControls()
+      if (this.sourceMode === 'remote') {
+        this.RemoteSearchControls()
+      } else if (this.sourceMode !== 'externalWeb') {
+        this.ResultFilterControls()
+      }
     }
     .padding({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM, top: ThemeConstants.SPACE_SM, bottom: ThemeConstants.SPACE_SM })
     .width('100%')
@@ -409,8 +417,11 @@ export struct SearchPage {
       Row({ space: ThemeConstants.SPACE_SM }) {
         Text(`@${item.username}`)
           .fontSize(ThemeConstants.FONT_SIZE_TINY)
-          .fontColor($r('sys.color.font_secondary'))
+          .fontColor(ThemeConstants.BRAND_PRIMARY)
           .layoutWeight(1)
+          .onClick(() => {
+            this.openUserProfile(item.username)
+          })
         Text(`${item.replies} 回复`)
           .fontSize(ThemeConstants.FONT_SIZE_TINY)
           .fontColor($r('sys.color.font_secondary'))
@@ -1133,6 +1144,32 @@ export struct SearchPage {
     this.applyFilter()
   }
 
+  private openUserProfile(username: string): void {
+    const clean = (username ?? '').trim()
+    if (!clean) {
+      return
+    }
+    const p: Record<string, Object> = { 'username': clean }
+    this.stack.pushPathByName('UserProfile', p as Object)
+  }
+
+  private runPrimarySearchAction(): void {
+    const q = this.keyword.trim()
+    if (!q) {
+      return
+    }
+    if (this.sourceMode === 'remote') {
+      this.executeRemoteSearch(true)
+      return
+    }
+    if (this.sourceMode === 'externalWeb') {
+      this.openExternalTopicSearch()
+      return
+    }
+    this.applyFilter()
+    this.recordHistory()
+  }
+
   private showTopicResults(): boolean {
     return this.resultFilter === 'all' || this.resultFilter === 'topics' || this.resultFilter === 'users'
   }
@@ -1226,12 +1263,6 @@ export struct SearchPage {
     }
     const from = reset ? 0 : this.remoteFrom
     this.remoteLoading = true
-    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    SearchSettings.recordQuery(context, q)
-      .then((items: string[]) => {
-        this.history = items
-      })
-      .catch((_error: Error) => { })
     this.sov2ex.search({
       q: q,
       from: from,
@@ -1249,6 +1280,12 @@ export struct SearchPage {
         this.remoteResults = reset ? next : this.remoteResults.concat(next)
         this.remoteTotal = response.total || this.remoteResults.length
         this.remoteFrom = this.remoteResults.length
+        const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+        SearchSettings.recordQuery(context, q)
+          .then((items: string[]) => {
+            this.history = items
+          })
+          .catch((_error: Error) => { })
       })
       .catch((error: Error) => {
         this.remoteError = error.message || '远程搜索失败'

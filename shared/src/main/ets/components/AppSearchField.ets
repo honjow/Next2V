@@ -5,6 +5,7 @@ export struct AppSearchField {
   @Link text: string
   @Prop placeholder: string = ''
   onTextChange?: (value: string) => void
+  onSubmit?: (value: string) => void
 
   build() {
     Search({ value: this.text, placeholder: this.placeholder })
@@ -15,6 +16,11 @@ export struct AppSearchField {
         this.text = value
         if (this.onTextChange) {
           this.onTextChange(value)
+        }
+      })
+      .onSubmit((value: string) => {
+        if (this.onSubmit) {
+          this.onSubmit(value)
         }
       })
   }
