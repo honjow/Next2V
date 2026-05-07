@@ -61,6 +61,9 @@ import { TopicEditorPage } from './TopicEditorPage'
 import { MyTopicsPage } from './MyTopicsPage'
 import { MyRepliesPage } from './MyRepliesPage'
 import { MyNodesPage } from './MyNodesPage'
+import { SavedTopicsPage } from './SavedTopicsPage'
+import { ViewedTopicsPage } from './ViewedTopicsPage'
+import { SavedNodesPage } from './SavedNodesPage'
 import {
   NotificationAuthContext,
   NotificationCenterViewModel,
@@ -459,17 +462,17 @@ struct Index {
       .titleBar(this.navDestTitleBarOpts('账号'))
     } else if (name === 'SavedTopics') {
       HdsNavDestination() {
-        this.SavedTopicsPage()
+        SavedTopicsPage()
       }
       .titleBar(this.navDestTitleBarOpts('稍后读'))
     } else if (name === 'ViewedTopics') {
       HdsNavDestination() {
-        this.ViewedTopicsPage()
+        ViewedTopicsPage()
       }
       .titleBar(this.navDestTitleBarOpts('最近浏览'))
     } else if (name === 'SavedNodes') {
       HdsNavDestination() {
-        this.SavedNodesPage()
+        SavedNodesPage()
       }
       .titleBar(this.navDestTitleBarOpts('关注节点'))
     }
@@ -1436,145 +1439,6 @@ struct Index {
       action: action,
       showChevron: true
     })
-  }
-
-  @Builder
-  SavedTopicsPage() {
-    SecondaryListScaffold() {
-      if (this.savedTopics.length === 0) {
-        ListItem() {
-          this.LocalEmptyView('还没有稍后读主题')
-        }
-      } else {
-        ForEach(this.savedTopics, (item: SavedTopic) => {
-          ListItem() {
-            this.LocalTopicRow(item.title, item.nodeTitle, item.nodeName, item.username, item.savedAt, '保存于')
-          }
-          .onClick(() => {
-            let p: TopicDetailParams = { topicId: item.id }
-            this.ns.pushPathByName('TopicDetail', p as Object)
-          })
-        }, (item: SavedTopic) => `saved-${item.id}`)
-      }
-    }
-  }
-
-  @Builder
-  ViewedTopicsPage() {
-    SecondaryListScaffold() {
-      if (this.viewedTopics.length === 0) {
-        ListItem() {
-          this.LocalEmptyView('还没有最近浏览记录')
-        }
-      } else {
-        ForEach(this.viewedTopics, (item: ViewedTopic) => {
-          ListItem() {
-            this.LocalTopicRow(item.title, item.nodeTitle, item.nodeName, item.username, item.viewedAt, '浏览于')
-          }
-          .onClick(() => {
-            let p: TopicDetailParams = { topicId: item.id }
-            this.ns.pushPathByName('TopicDetail', p as Object)
-          })
-        }, (item: ViewedTopic) => `viewed-${item.id}`)
-      }
-    }
-  }
-
-  @Builder
-  SavedNodesPage() {
-    SecondaryListScaffold() {
-      if (this.savedNodes.length === 0) {
-        ListItem() {
-          this.LocalEmptyView('还没有关注节点')
-        }
-      } else {
-        ForEach(this.savedNodes, (item: SavedNode) => {
-          ListItem() {
-            this.LocalNodeRow(item)
-          }
-          .onClick(() => {
-            let p: Record<string, Object> = { 'nodeName': item.name, 'nodeTitle': item.title }
-            this.ns.pushPathByName('NodeTopicList', p as Object)
-          })
-        }, (item: SavedNode) => `node-${item.name}`)
-      }
-    }
-  }
-
-  @Builder
-  LocalTopicRow(title: string, nodeTitle: string, nodeName: string, username: string, timestamp: number,
-    prefix: string) {
-    Column({ space: ThemeConstants.SPACE_SM }) {
-      Text(title)
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .fontWeight(FontWeight.Medium)
-        .fontColor($r('sys.color.font_primary'))
-        .maxLines(2)
-        .textOverflow({ overflow: TextOverflow.Ellipsis })
-      Row({ space: ThemeConstants.SPACE_SM }) {
-        Text(nodeTitle || nodeName)
-          .fontSize(ThemeConstants.FONT_SIZE_TAG)
-          .fontColor($r('sys.color.ohos_id_color_activated'))
-          .padding({
-            left: ThemeConstants.SPACE_SM,
-            right: ThemeConstants.SPACE_SM,
-            top: 2,
-            bottom: 2
-          })
-          .borderRadius(ThemeConstants.RADIUS_SM)
-          .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
-        Text(username)
-          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-          .fontColor($r('sys.color.font_secondary'))
-          .maxLines(1)
-          .textOverflow({ overflow: TextOverflow.Ellipsis })
-        Text(`${prefix} ${DateUtils.toDateString(timestamp)}`)
-          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-          .fontColor($r('sys.color.font_secondary'))
-          .maxLines(1)
-          .textOverflow({ overflow: TextOverflow.Ellipsis })
-      }
-      .width('100%')
-    }
-    .alignItems(HorizontalAlign.Start)
-    .width('100%')
-    .padding(ThemeConstants.SPACE_LG)
-    .borderRadius(ThemeConstants.RADIUS_MD)
-    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
-  }
-
-  @Builder
-  LocalNodeRow(item: SavedNode) {
-    Row({ space: ThemeConstants.SPACE_SM }) {
-      Column({ space: ThemeConstants.SPACE_XS }) {
-        Text(item.title || item.name)
-          .fontSize(ThemeConstants.FONT_SIZE_BODY)
-          .fontWeight(FontWeight.Medium)
-          .fontColor($r('sys.color.font_primary'))
-        Text(`${item.name} · ${item.topics} 个主题 · 关注于 ${DateUtils.toDateString(item.savedAt)}`)
-          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-          .fontColor($r('sys.color.font_secondary'))
-          .maxLines(1)
-          .textOverflow({ overflow: TextOverflow.Ellipsis })
-      }
-      .layoutWeight(1)
-      .alignItems(HorizontalAlign.Start)
-
-      Text('›')
-        .fontSize(ThemeConstants.FONT_SIZE_TITLE)
-        .fontColor($r('sys.color.font_secondary'))
-    }
-    .width('100%')
-    .padding(ThemeConstants.SPACE_LG)
-    .borderRadius(ThemeConstants.RADIUS_MD)
-    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
-  }
-
-  @Builder
-  LocalEmptyView(message: string) {
-    EmptyState({ message: message, stateHeight: 220 })
-      .borderRadius(ThemeConstants.RADIUS_MD)
-      .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }
 
   @Builder
