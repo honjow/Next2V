@@ -8,6 +8,9 @@ const FALLBACK_TOP_AVOID: number = 107
 const FALLBACK_BOTTOM_AVOID: number = 0
 
 export default class EntryAbility extends UIAbility {
+  private mainWindow: window.Window | null = null
+  private keyboardHeightCallback: ((height: number) => void) | null = null
+
   onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {}
 
   onWindowStageCreate(windowStage: window.WindowStage): void {
@@ -19,6 +22,7 @@ export default class EntryAbility extends UIAbility {
         statusBarColor: TRANSPARENT_COLOR,
         navigationBarColor: TRANSPARENT_COLOR
       })
+      this.mainWindow = win
     } catch (error) {
       const e = error as Error
       console.error('configure window failed: ' + e.message)
@@ -60,18 +64,51 @@ export default class EntryAbility extends UIAbility {
       try {
         if (!win) {
           win = windowStage.getMainWindowSync()
+          this.mainWindow = win
         }
         let systemArea = win.getWindowAvoidArea(window.AvoidAreaType.TYPE_SYSTEM)
         let navArea = win.getWindowAvoidArea(window.AvoidAreaType.TYPE_NAVIGATION_INDICATOR)
         let uiCtx = windowStage.getMainWindowSync().getUIContext()
         AppStorage.setOrCreate<number>(StorageKeys.TOP_AVOID_HEIGHT, uiCtx.px2vp(systemArea.topRect.height))
         AppStorage.setOrCreate<number>(StorageKeys.BOTTOM_AVOID_HEIGHT, uiCtx.px2vp(navArea.bottomRect.height))
+        AppStorage.setOrCreate<number>(StorageKeys.KEYBOARD_HEIGHT, 0)
+        this.watchKeyboardHeight(win, uiCtx)
       } catch (e) {
         AppStorage.setOrCreate<number>(StorageKeys.TOP_AVOID_HEIGHT, FALLBACK_TOP_AVOID)
         AppStorage.setOrCreate<number>(StorageKeys.BOTTOM_AVOID_HEIGHT, FALLBACK_BOTTOM_AVOID)
+        AppStorage.setOrCreate<number>(StorageKeys.KEYBOARD_HEIGHT, 0)
       }
     })
   }
 
-  onDestroy(): void {}
+  private watchKeyboardHeight(win: window.Window, uiCtx: UIContext): void {
+    if (this.keyboardHeightCallback) {
+      try {
+        win.off('keyboardHeightChange', this.keyboardHeightCallback)
+      } catch (error) {
+        const e = error as Error
+        console.error('remove keyboard height listener failed: ' + e.message)
+      }
+    }
+    this.keyboardHeightCallback = (height: number) => {
+      AppStorage.setOrCreate<number>(StorageKeys.KEYBOARD_HEIGHT, uiCtx.px2vp(Math.max(0, height)))
+    }
+    try {
+      win.on('keyboardHeightChange', this.keyboardHeightCallback)
+    } catch (error) {
+      const e = error as Error
+      console.error('watch keyboard height failed: ' + e.message)
+    }
+  }
+
+  onDestroy(): void {
+    if (this.mainWindow && this.keyboardHeightCallback) {
+      try {
+        this.mainWindow.off('keyboardHeightChange', this.keyboardHeightCallback)
+      } catch (error) {
+        const e = error as Error
+        console.error('remove keyboard height listener failed: ' + e.message)
+      }
+    }
+  }
 }

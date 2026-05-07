@@ -36,7 +36,7 @@ export struct V2exNativeLoginPage {
 
   build() {
     Column() {
-      SecondaryListScaffold({ bottomPadding: ThemeConstants.SPACE_XL + 240 }) {
+      SecondaryListScaffold({ includeKeyboardPadding: true }) {
         ListItem() {
           this.LoginForm()
         }
@@ -80,11 +80,12 @@ export struct V2exNativeLoginPage {
 
       if (this.captchaUrl) {
         Image(this.captchaUrl)
-          .width('100%')
+          .width(180)
+          .height(64)
           .objectFit(ImageFit.Contain)
           .backgroundColor(Color.White)
           .borderRadius(ThemeConstants.RADIUS_MD)
-          .margin(ThemeConstants.SPACE_SM)
+          .margin({ top: ThemeConstants.SPACE_XS, bottom: ThemeConstants.SPACE_XS })
           .onClick(() => { this.loadChallenge() })
       }
 
@@ -103,10 +104,8 @@ export struct V2exNativeLoginPage {
 
       Button(this.loginButtonText())
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        // .height(40)
         .type(ButtonType.Capsule)
-        .width("100%")
-        // .borderRadius(ThemeConstants.RADIUS_MD)
+        .width('100%')
         .enabled(!this.isLoading && !this.isChallengeLoading)
         .onClick(() => { this.login() })
 

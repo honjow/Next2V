@@ -6,10 +6,12 @@ export struct SecondaryListScaffold {
   @BuilderParam content: () => void
   @StorageProp(StorageKeys.TOP_AVOID_HEIGHT) topH: number = 0
   @StorageProp(StorageKeys.BOTTOM_AVOID_HEIGHT) bottomH: number = 0
+  @StorageProp(StorageKeys.KEYBOARD_HEIGHT) keyboardH: number = 0
   scroller: Scroller = new Scroller()
   @Prop listSpace: number = ThemeConstants.SPACE_SM - 2
   @Prop horizontalPadding: number = ThemeConstants.SPACE_MD
   @Prop bottomPadding: number = ThemeConstants.SPACE_XL
+  @Prop includeKeyboardPadding: boolean = false
   onReachEnd?: () => void
 
   build() {
@@ -26,7 +28,7 @@ export struct SecondaryListScaffold {
 
       ListItem() {
         Column() {
-          Blank().height(this.bottomH + this.bottomPadding)
+          Blank().height(this.bottomH + this.bottomPadding + this.keyboardPadding())
         }
         .width('100%')
       }
@@ -42,5 +44,12 @@ export struct SecondaryListScaffold {
         this.onReachEnd()
       }
     })
+  }
+
+  private keyboardPadding(): number {
+    if (!this.includeKeyboardPadding) {
+      return 0
+    }
+    return Math.max(0, this.keyboardH)
   }
 }

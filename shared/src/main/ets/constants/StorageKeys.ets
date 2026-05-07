@@ -2,6 +2,7 @@
 export class StorageKeys {
   static readonly TOP_AVOID_HEIGHT: string = 'topAvoidHeight'
   static readonly BOTTOM_AVOID_HEIGHT: string = 'bottomAvoidHeight'
+  static readonly KEYBOARD_HEIGHT: string = 'keyboardHeight'
   static readonly NAV_PATH_STACK: string = 'ns'
   static readonly USE_CO_DOMAIN: string = 'useCoDomain'
   static readonly MEDIA_AUTO_LOAD_IMAGES: string = 'mediaAutoLoadImages'
