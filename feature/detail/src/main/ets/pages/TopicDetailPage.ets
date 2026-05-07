@@ -11,6 +11,7 @@ import {
   LoadingFooter, HttpClient, StorageKeys, ApiService, CookieJarSettings, V2exToggleAction, ReadingSettings,
   AppModalScaffold, V2exRoute, V2exUrlRouter, TopicDetailParams
 } from 'shared'
+import type { V2exReplyThankAction } from 'shared'
 
 interface ReplyContextItem {
   reply: V2exReply
@@ -35,6 +36,7 @@ export struct TopicDetailPage {
   @State isSavedLater: boolean = false
   @State private isSiteFavorited: boolean = false
   @State private isSiteFavoriteLoading: boolean = false
+  @State private isReplyThankLoading: boolean = false
   @State private jumpFloorText: string = ''
   @State private contextReply: V2exReply | null = null
   @State private contextSheetVisible: boolean = false
@@ -274,6 +276,7 @@ export struct TopicDetailPage {
               onContextClick: () => { this.openReplyContext(reply) },
               onMentionClick: () => { this.openReplyEditor(this.getMentionText(reply.member.username)) },
               onReplyClick: () => { this.openReplyEditor(this.getMentionText(reply.member.username)) },
+              onThankClick: () => { this.prepareReplyThank(reply) },
               onCopyUserClick: () => { this.copyToClipboard(reply.member.username || '') },
               onCopyContentClick: () => { this.copyToClipboard(reply.content || '') },
               onImageClick: (url: string) => { this.openImagePreview(url) },
@@ -1002,6 +1005,66 @@ export struct TopicDetailPage {
       })
       .finally(() => {
         this.isSiteFavoriteLoading = false
+      })
+  }
+
+  private prepareReplyThank(reply: V2exReply): void {
+    if (this.isReplyThankLoading) {
+      return
+    }
+    if (!this.writeEnabled) {
+      promptAction.openToast({ message: '写入操作开关未开启，感谢不可用' }).catch((_error: Error) => { })
+      return
+    }
+    const cookie = CookieJarSettings.getCurrentCookie()
+    if (!cookie) {
+      promptAction.openToast({ message: '请先登录' }).catch((_error: Error) => { })
+      return
+    }
+    if (!reply || reply.id <= 0) {
+      promptAction.openToast({ message: '回复信息缺失' }).catch((_error: Error) => { })
+      return
+    }
+    this.isReplyThankLoading = true
+    this.api.getReplyThankActionWithCookie(cookie, this.topicId, reply.id)
+      .then((action: V2exReplyThankAction) => {
+        this.confirmReplyThank(cookie, reply, action)
+      })
+      .catch((error: Error) => {
+        promptAction.openToast({ message: error.message || '解析感谢操作失败' }).catch((_error: Error) => { })
+      })
+      .finally(() => {
+        this.isReplyThankLoading = false
+      })
+  }
+
+  private confirmReplyThank(cookie: string, reply: V2exReply, action: V2exReplyThankAction): void {
+    AlertDialog.show({
+      title: '感谢回复',
+      message: `确定感谢 ${reply.member.username || '该用户'} 的回复吗？`,
+      primaryButton: { value: '取消', action: () => { } },
+      secondaryButton: {
+        value: '感谢',
+        action: () => { this.executeReplyThank(cookie, action) }
+      }
+    })
+  }
+
+  private executeReplyThank(cookie: string, action: V2exReplyThankAction): void {
+    if (this.isReplyThankLoading) {
+      return
+    }
+    this.isReplyThankLoading = true
+    this.api.executeReplyThankWithCookie(cookie, this.topicId, action)
+      .then(() => {
+        promptAction.openToast({ message: '已感谢' }).catch((_error: Error) => { })
+        this.v.load()
+      })
+      .catch((error: Error) => {
+        promptAction.openToast({ message: error.message || '感谢失败' }).catch((_error: Error) => { })
+      })
+      .finally(() => {
+        this.isReplyThankLoading = false
       })
   }
 

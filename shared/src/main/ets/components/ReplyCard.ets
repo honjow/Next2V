@@ -16,6 +16,7 @@ export struct ReplyCard {
   onContextClick?: () => void
   onMentionClick?: () => void
   onReplyClick?: () => void
+  onThankClick?: () => void
   onCopyUserClick?: () => void
   onCopyContentClick?: () => void
   onImageClick?: (url: string) => void
@@ -169,6 +170,22 @@ export struct ReplyCard {
         }
 
         Blank()
+
+        if (this.onThankClick) {
+          Button() {
+            SymbolGlyph($r('sys.symbol.heart_fill'))
+              .fontSize(ThemeConstants.FONT_SIZE_TITLE)
+              .fontColor([$r('sys.color.font_secondary')])
+          }
+          .type(ButtonType.Normal)
+          .width(ThemeConstants.TOUCH_TARGET_SM)
+          .height(ThemeConstants.TOUCH_TARGET_SM)
+          .borderRadius(ThemeConstants.RADIUS_ROUND)
+          .backgroundColor(Color.Transparent)
+          .onClick(() => {
+            if (this.onThankClick) { this.onThankClick() }
+          })
+        }
 
         if (this.onReplyClick) {
           Button() {

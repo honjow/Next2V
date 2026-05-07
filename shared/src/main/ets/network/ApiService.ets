@@ -34,6 +34,11 @@ interface CookieHtmlResponse {
   location: string
 }
 
+export interface V2exReplyThankAction {
+  replyId: number
+  actionPath: string
+}
+
 /**
  * V2EX API 调用层
  * V1 公开接口（无需认证）+ V2 认证接口占位
@@ -480,6 +485,43 @@ export class ApiService {
     }
   }
 
+  async getReplyThankActionWithCookie(cookie: string, topicId: number, replyId: number): Promise<V2exReplyThankAction> {
+    if (!cookie) {
+      throw new Error('请先登录')
+    }
+    if (topicId <= 0 || replyId <= 0) {
+      throw new Error('无效回复')
+    }
+    const topicPath = `/t/${topicId}`
+    const html = await this.http.getTextWithHeaders(topicPath, { 'Cookie': cookie })
+    if (!V2exSessionParser.extractUsername(html)) {
+      throw new Error('Web 会话已失效，请重新登录')
+    }
+    const actionPath = ApiService.extractReplyThankPath(html, replyId)
+    if (!actionPath) {
+      throw new Error('当前回复不可感谢或已经感谢过')
+    }
+    return { replyId, actionPath }
+  }
+
+  async executeReplyThankWithCookie(cookie: string, topicId: number, action: V2exReplyThankAction): Promise<void> {
+    if (!cookie) {
+      throw new Error('请先登录')
+    }
+    if (topicId <= 0 || !action || action.replyId <= 0 || !action.actionPath) {
+      throw new Error('缺少感谢操作')
+    }
+    const topicPath = `/t/${topicId}`
+    const res = await this.requestHtmlWithCookieAllowRedirect(action.actionPath, cookie, topicPath, http.RequestMethod.GET)
+    if (res.location.indexOf('/signin') >= 0) {
+      throw new Error('Web 会话已失效，请重新登录')
+    }
+    const problem = V2exSigninParser.extractProblemMessage(res.text)
+    if (problem) {
+      throw new Error(`感谢失败：${problem}`)
+    }
+  }
+
   /**
    * 提交新主题（依赖 Cookie 会话）
    * - 返回新主题 ID（无法解析时返回 0）
@@ -691,6 +733,29 @@ export class ApiService {
       encodedPairs.push(`${encodeURIComponent(key)}=${encodeURIComponent(fields[key] || '')}`)
     }
     return encodedPairs.join('&')
+  }
+
+  private static extractReplyThankPath(html: string, replyId: number): string {
+    if (!html || replyId <= 0) {
+      return ''
+    }
+    const direct = new RegExp(`['"]([^'"]*\\/thank\\/reply\\/${replyId}\\?once=\\d+[^'"]*)['"]`, 'i')
+    const directMatch = html.match(direct)
+    if (directMatch && directMatch[1]) {
+      return ApiService.decodeHtml(directMatch[1])
+    }
+    const loose = new RegExp(`\\/thank\\/reply\\/${replyId}\\?once=\\d+`, 'i')
+    const looseMatch = html.match(loose)
+    return looseMatch && looseMatch[0] ? ApiService.decodeHtml(looseMatch[0]) : ''
+  }
+
+  private static decodeHtml(value: string): string {
+    return (value || '')
+      .replace(/&amp;/g, '&')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
   }
 
   // ==================== Tab 聚合接口 ====================
