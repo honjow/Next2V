@@ -2,7 +2,21 @@
 
 ## Controller workflow for product/UI tasks
 
-For V2Next product, UI, navigation, settings, or interaction work, the agent is responsible for project control, not just code execution.
+For V2Next product, UI, navigation, settings, or interaction work, Hermes is responsible for project control by default, not direct implementation.
+
+### Hermes execution boundary
+
+Unless the user explicitly authorizes Hermes to implement directly (for example: "你直接改", "你来实现", "可以动代码"), Hermes must not modify project files, build, install, control the shared device, or commit changes by itself.
+
+Default Hermes responsibilities are:
+
+1. Translate the user's natural-language complaint into an explicit controller spec.
+2. Define product semantics, preserved semantics, non-goals, and verification paths.
+3. Prepare implementation prompts/specs for a coding agent when code changes are needed.
+4. Review implementation diffs and evidence instead of treating implementer self-reports as proof.
+5. Verify or request verification evidence according to the agreed workflow before calling a task done.
+
+Important: "继续", "按计划走", an active task list, or a context-compaction handoff only authorizes continuing the controller workflow. These signals do not authorize Hermes to self-execute code changes, builds, installs, device operations, or commits.
 
 Before editing or delegating implementation:
 
