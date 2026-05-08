@@ -488,6 +488,11 @@ export class ApiService {
       fields[key] = form.hiddenFields[key]
     }
     fields[form.contentField] = cleanContent
+    // V2EX has changed the reply textarea/id/name shape more than once. Send the
+    // observed field plus stable aliases so the server receives the body even
+    // when the parser picked an id-like field name from current markup.
+    fields['content'] = cleanContent
+    fields['reply_content'] = cleanContent
     const body = ApiService.encodeFormFields(fields)
 
     const res = await this.requestHtmlWithCookieAllowRedirect(form.actionPath, cookie, topicPath, http.RequestMethod.POST, body)
