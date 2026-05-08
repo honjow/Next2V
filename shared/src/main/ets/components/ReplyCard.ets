@@ -64,12 +64,12 @@ export struct ReplyCard {
   }
 
   private runContextAction(action?: () => void): void {
+    this.actionsMenuShown = false
     if (action) {
-      action()
+      setTimeout(() => {
+        action()
+      }, 80)
     }
-    setTimeout(() => {
-      this.actionsMenuShown = false
-    }, 80)
   }
 
   private showContextMenu(): void {
@@ -225,10 +225,12 @@ export struct ReplyCard {
           .borderRadius(ThemeConstants.RADIUS_ROUND)
           .backgroundColor(Color.Transparent)
           .onClick(() => {
-            if (this.onContextClick) {
-              this.onContextClick()
-            } else {
-              this.showContextMenu()
+            this.showContextMenu()
+          })
+          .bindContextMenu(this.actionsMenuShown, this.ReplyActionMenu, {
+            placement: Placement.TopRight,
+            aboutToDisappear: () => {
+              this.actionsMenuShown = false
             }
           })
         } else if (this.onActionsClick) {

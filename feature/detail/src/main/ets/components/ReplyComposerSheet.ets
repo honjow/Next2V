@@ -28,6 +28,7 @@ export struct ReplyComposerSheet {
   @State private errorMessage: string = ''
   @State private savedAt: number = 0
   @State private isSubmitting: boolean = false
+  @State private isSubmitDialogShown: boolean = false
   @State private contentSelectionStart: number = 0
   @State private contentSelectionEnd: number = 0
   @State private submitContentSnapshot: string = ''
@@ -156,6 +157,7 @@ export struct ReplyComposerSheet {
     this.errorMessage = ''
     this.savedAt = 0
     this.isSubmitting = false
+    this.isSubmitDialogShown = false
     this.contentSelectionStart = 0
     this.contentSelectionEnd = 0
     this.submitContentSnapshot = ''
@@ -279,7 +281,7 @@ export struct ReplyComposerSheet {
   }
 
   private canSubmit(): boolean {
-    return this.writeEnabled && !this.isSubmitting && this.topicId > 0 && this.content.trim().length > 0
+    return this.writeEnabled && !this.isSubmitting && !this.isSubmitDialogShown && this.topicId > 0 && this.content.trim().length > 0
   }
 
   private composerBodyHeight(): number {
@@ -291,7 +293,7 @@ export struct ReplyComposerSheet {
 
   private confirmSubmit(): void {
     const cleanContent = this.content.trim()
-    if (!this.writeEnabled || this.isSubmitting || this.topicId <= 0) {
+    if (!this.writeEnabled || this.isSubmitting || this.isSubmitDialogShown || this.topicId <= 0) {
       return
     }
     if (!cleanContent) {
@@ -304,11 +306,12 @@ export struct ReplyComposerSheet {
       return
     }
     this.submitContentSnapshot = cleanContent
+    this.isSubmitDialogShown = true
     this.persistDraft()
     AlertDialog.show({
       title: '提交回复',
       message: '确定提交这条回复吗？',
-      primaryButton: { value: '取消', action: () => { } },
+      primaryButton: { value: '取消', action: () => { this.isSubmitDialogShown = false } },
       secondaryButton: { value: '提交', action: () => { this.submitReply() } }
     })
   }
@@ -316,6 +319,7 @@ export struct ReplyComposerSheet {
   private submitReply(): void {
     const cookie = CookieJarSettings.getCurrentCookie()
     if (!cookie || this.isSubmitting) {
+      this.isSubmitDialogShown = false
       return
     }
     this.isSubmitting = true
@@ -337,6 +341,7 @@ export struct ReplyComposerSheet {
       })
       .finally(() => {
         this.isSubmitting = false
+        this.isSubmitDialogShown = false
       })
   }
 

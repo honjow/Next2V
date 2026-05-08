@@ -18,6 +18,7 @@ export struct ReplyEditorPage {
   @State private errorMessage: string = ''
   @State private savedAt: number = 0
   @State private isSubmitting: boolean = false
+  @State private isSubmitDialogShown: boolean = false
   @State private contentSelectionStart: number = 0
   @State private contentSelectionEnd: number = 0
   @State private submitContentSnapshot: string = ''
@@ -34,6 +35,7 @@ export struct ReplyEditorPage {
     this.errorMessage = ''
     this.savedAt = 0
     this.isSubmitting = false
+    this.isSubmitDialogShown = false
     this.contentSelectionStart = 0
     this.contentSelectionEnd = 0
     this.submitContentSnapshot = ''
@@ -300,7 +302,7 @@ export struct ReplyEditorPage {
   }
 
   private canSubmit(): boolean {
-    if (!this.writeEnabled || this.isSubmitting || this.topicId <= 0) {
+    if (!this.writeEnabled || this.isSubmitting || this.isSubmitDialogShown || this.topicId <= 0) {
       return false
     }
     if (this.content.trim().length === 0) {
@@ -310,7 +312,7 @@ export struct ReplyEditorPage {
   }
 
   private confirmSubmit(): void {
-    if (this.isSubmitting) {
+    if (this.isSubmitting || this.isSubmitDialogShown) {
       return
     }
     if (!this.writeEnabled) {
@@ -328,6 +330,7 @@ export struct ReplyEditorPage {
     }
     const title = (this.topicTitle || '').trim()
     this.submitContentSnapshot = cleanContent
+    this.isSubmitDialogShown = true
     this.persistDraft()
     const target = title ? `《${title}》` : '当前主题'
     const message = `确定向${target}提交回复吗？\n\n` +
@@ -335,7 +338,7 @@ export struct ReplyEditorPage {
     AlertDialog.show({
       title: '提交回复',
       message: message,
-      primaryButton: { value: '取消', action: () => { } },
+      primaryButton: { value: '取消', action: () => { this.isSubmitDialogShown = false } },
       secondaryButton: { value: '提交', action: () => { this.submit() } }
     })
   }
@@ -346,6 +349,7 @@ export struct ReplyEditorPage {
     }
     const cookie = CookieJarSettings.getCurrentCookie()
     if (!cookie) {
+      this.isSubmitDialogShown = false
       promptAction.openToast({ message: '请先登录' }).catch((_error: Error) => { })
       return
     }
@@ -366,6 +370,7 @@ export struct ReplyEditorPage {
       })
       .finally(() => {
         this.isSubmitting = false
+        this.isSubmitDialogShown = false
       })
   }
 }
