@@ -45,6 +45,8 @@ export class StorageKeys {
   static readonly USER_PROFILE_ACTIONS_AVAILABLE: string = 'userProfileActionsAvailable'
   static readonly USER_PROFILE_FOLLOW_LABEL: string = 'userProfileFollowLabel'
   static readonly USER_PROFILE_BLOCK_LABEL: string = 'userProfileBlockLabel'
+  static readonly USER_PROFILE_FOLLOWING: string = 'userProfileFollowing'
+  static readonly USER_PROFILE_BLOCKED: string = 'userProfileBlocked'
   static readonly NOTIFICATION_ACTION: string = 'notificationAction'
   static readonly SEARCH_ACTION: string = 'searchAction'
   static readonly WEB_LOGIN_ACTION: string = 'webLoginAction'

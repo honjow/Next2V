@@ -23,6 +23,8 @@ export struct UserProfilePage {
   @StorageLink(StorageKeys.USER_PROFILE_ACTIONS_AVAILABLE) userProfileActionsAvailable: boolean = false
   @StorageLink(StorageKeys.USER_PROFILE_FOLLOW_LABEL) userProfileFollowLabel: string = ''
   @StorageLink(StorageKeys.USER_PROFILE_BLOCK_LABEL) userProfileBlockLabel: string = ''
+  @StorageLink(StorageKeys.USER_PROFILE_FOLLOWING) userProfileFollowing: boolean = false
+  @StorageLink(StorageKeys.USER_PROFILE_BLOCKED) userProfileBlocked: boolean = false
 
   aboutToAppear(): void {
     this.publishActionMenuState()
@@ -371,12 +373,14 @@ export struct UserProfilePage {
     this.vm.toggleFollow()
       .then(() => {
         this.syncActionState()
+        this.showActionToast(nextFollowing ? '已关注' : '已取消关注')
         this.refreshActionStateLater()
       })
       .catch((error: Error) => {
         this.following = previousFollowing
         this.publishActionMenuState()
-        promptAction.openToast({ message: error.message || '操作失败' }).catch((_e: Error) => {})
+        this.showActionToast(this.actionFailureToast(error))
+        this.reloadActionStateAfterFailure()
       })
   }
 
@@ -391,12 +395,14 @@ export struct UserProfilePage {
     this.vm.toggleBlock()
       .then(() => {
         this.syncActionState()
+        this.showActionToast(nextBlocked ? '已屏蔽' : '已取消屏蔽')
         this.refreshActionStateLater()
       })
       .catch((error: Error) => {
         this.blocked = previousBlocked
         this.publishActionMenuState()
-        promptAction.openToast({ message: error.message || '操作失败' }).catch((_e: Error) => {})
+        this.showActionToast(this.actionFailureToast(error))
+        this.reloadActionStateAfterFailure()
       })
   }
 
@@ -425,6 +431,29 @@ export struct UserProfilePage {
     this.userProfileActionsAvailable = available
     this.userProfileFollowLabel = hasFollowAction ? (this.following ? '取消关注' : '关注') : ''
     this.userProfileBlockLabel = hasBlockAction ? (this.blocked ? '取消屏蔽' : '屏蔽') : ''
+    this.userProfileFollowing = hasFollowAction && this.following
+    this.userProfileBlocked = hasBlockAction && this.blocked
+  }
+
+  private showActionToast(message: string): void {
+    promptAction.openToast({ message: message }).catch((_e: Error) => {})
+  }
+
+  private actionFailureToast(error: Error): string {
+    const message = (error?.message || '').trim()
+    if (message === 'Web 会话已失效，请重新登录') {
+      return message
+    }
+    return '操作失败'
+  }
+
+  private reloadActionStateAfterFailure(): void {
+    this.vm.load()
+      .then(() => {
+        this.syncActionState()
+      })
+      .catch((_error: Error) => {
+      })
   }
 
   private refreshActionStateLater(): void {
@@ -476,7 +505,8 @@ export struct UserProfilePage {
 
   onUserProfileActionCommand(_propName: string): void {
     const raw = (this.userProfileActionCommand || '').trim()
-    if (!raw || !this.userProfileActionsAvailable || this.vm.isActionLoading) {
+    if (!raw || !this.userProfileActionsAvailable || this.userProfileActionsUsername !== this.username ||
+      this.vm.isActionLoading) {
       return
     }
     const action = raw.split(':').pop() || ''

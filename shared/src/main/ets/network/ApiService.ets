@@ -475,7 +475,10 @@ export class ApiService {
       throw new Error('缺少用户操作')
     }
     const memberPath = `/member/${encodeURIComponent(cleanName)}`
-    await this.requestTextWithCookieAllowRedirect(cleanPath, cookie, memberPath)
+    const actionRes = await this.requestHtmlWithCookieAllowRedirect(cleanPath, cookie, memberPath, http.RequestMethod.GET)
+    if (actionRes.location.indexOf('/signin') >= 0) {
+      throw new Error('Web 会话已失效，请重新登录')
+    }
     return this.getMemberPageSnapshot(cleanName, cookie)
   }
 

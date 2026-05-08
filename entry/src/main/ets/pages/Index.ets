@@ -224,6 +224,8 @@ struct Index {
   @StorageLink(StorageKeys.USER_PROFILE_ACTIONS_USERNAME) userProfileActionsUsername: string = ''
   @StorageLink(StorageKeys.USER_PROFILE_FOLLOW_LABEL) userProfileFollowLabel: string = ''
   @StorageLink(StorageKeys.USER_PROFILE_BLOCK_LABEL) userProfileBlockLabel: string = ''
+  @StorageLink(StorageKeys.USER_PROFILE_FOLLOWING) userProfileFollowing: boolean = false
+  @StorageLink(StorageKeys.USER_PROFILE_BLOCKED) userProfileBlocked: boolean = false
   @State private accountRefreshKey: number = 0
   private http: HttpClient = HttpClient.getInstance()
 
@@ -527,12 +529,18 @@ struct Index {
     }
     let items: Record<string, Object>[] = []
     if (this.userProfileFollowLabel) {
-      items.push(this.topicActionItem(this.userProfileFollowLabel, $r('sys.symbol.person_badge_plus'), () => {
+      items.push(this.topicActionItem(
+        this.userProfileFollowLabel,
+        this.userProfileFollowing ? $r('sys.symbol.person_fill') : $r('sys.symbol.person_badge_plus'),
+        () => {
         this.sendUserProfileAction('follow')
       }))
     }
     if (this.userProfileBlockLabel) {
-      items.push(this.topicActionItem(this.userProfileBlockLabel, $r('sys.symbol.nosign'), () => {
+      items.push(this.topicActionItem(
+        this.userProfileBlockLabel,
+        this.userProfileBlocked ? $r('sys.symbol.nosign') : $r('sys.symbol.xmark'),
+        () => {
         this.sendUserProfileAction('block')
       }))
     }
