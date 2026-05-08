@@ -1,0 +1,58 @@
+name: Build OHOS
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+concurrency:
+  group: build-ohos-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build_hap:
+    name: Build unsigned HAP
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/niuhuan/harmony-next-flutter-pipeline-docker/image:latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Get app version
+        shell: bash
+        run: |
+          version=$(node -e "const fs=require('fs'); const m=fs.readFileSync('oh-package.json5','utf8').match(/\"version\"\\s*:\\s*\"([^\"]+)\"/); console.log(m ? m[1] : '0.0.0')")
+          echo "APP_VERSION=$version" >> "$GITHUB_ENV"
+
+      - name: Install OHPM dependencies
+        shell: bash
+        run: |
+          ohpm install --all
+
+      - name: Build unsigned HAP (debug)
+        shell: bash
+        run: |
+          hvigorw assembleHap --mode module -p product=default -p buildMode=debug --no-daemon
+
+      - name: Collect unsigned HAP
+        shell: bash
+        run: |
+          src="entry/build/default/outputs/default/entry-default-unsigned.hap"
+          dst="Next2V_${APP_VERSION}_ohos-unsigned.hap"
+          test -f "$src"
+          cp "$src" "$dst"
+          echo "HAP_PATH=$dst" >> "$GITHUB_ENV"
+
+      - name: Upload unsigned HAP
+        uses: actions/upload-artifact@v4
+        with:
+          name: ohos-hap-unsigned
+          path: ${{ env.HAP_PATH }}
+          if-no-files-found: error
+          retention-days: 14
