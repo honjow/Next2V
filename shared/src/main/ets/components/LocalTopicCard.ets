@@ -22,7 +22,7 @@ export struct LocalTopicCard {
       item: this.toTopic(),
       metaLabel: this.metaLabel,
       metaTimestamp: this.metaTimestamp,
-      hideLocalSnapshotReplyCount: !this.hasReplyCount,
+      showReplyCount: this.hasReplyCount,
       onUserClick: () => {
         if (this.onUserClick) {
           this.onUserClick()

@@ -11,7 +11,7 @@ export struct TopicCard {
   @Prop isUnread: boolean = false
   @Prop metaLabel: string = '最后回复'
   @Prop metaTimestamp: number = 0
-  @Prop hideLocalSnapshotReplyCount: boolean = false
+  @Prop showReplyCount: boolean = true
   onUserClick?: () => void
   onNodeClick?: () => void
 
@@ -75,13 +75,13 @@ export struct TopicCard {
               .fontColor($r('sys.color.font_secondary'))
           }
           TimeAgo({ timestamp: this.metaTimestamp > 0 ? this.metaTimestamp : this.item.last_touched })
-          if (!this.hideLocalSnapshotReplyCount) {
+          if (this.showReplyCount) {
             Text('·')
               .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
               .fontColor($r('sys.color.font_secondary'))
           }
         }
-        if (!this.hideLocalSnapshotReplyCount) {
+        if (this.showReplyCount) {
           Text(`${this.item.replies} 回复`)
             .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
             .fontColor($r('sys.color.font_secondary'))
