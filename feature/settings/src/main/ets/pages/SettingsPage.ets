@@ -64,10 +64,6 @@ export struct SettingsPage {
           .margin({ top: ThemeConstants.SPACE_MD })
         ListItem() { this.MediaSection() }
 
-        ListItem() { this.SectionHeader('通知') }
-          .margin({ top: ThemeConstants.SPACE_MD })
-        ListItem() { this.NotificationSection() }
-
         ListItem() { this.SectionHeader('写作') }
           .margin({ top: ThemeConstants.SPACE_MD })
         ListItem() { this.WritingSection() }
@@ -98,7 +94,6 @@ export struct SettingsPage {
     GroupedListSection() {
       ConciseListRow({
         title: '账号管理',
-        subtitle: '登录、签到、收藏和屏蔽列表',
         action: () => {
           this.stack.pushPathByName('Account', null)
         }
@@ -109,30 +104,6 @@ export struct SettingsPage {
   @Builder ReadingSection() {
     GroupedListSection() {
       this.ReadingPreferenceRows()
-
-      this.SettingsDivider()
-
-      ConciseListRow({
-        title: '回复排序',
-        subtitle: '按 V2EX 默认顺序',
-        showChevron: false
-      })
-
-      this.SettingsDivider()
-
-      ConciseListRow({
-        title: '只看楼主',
-        subtitle: '主题详情内手动切换',
-        showChevron: false
-      })
-
-      this.SettingsDivider()
-
-      ConciseListRow({
-        title: '代码换行',
-        subtitle: '跟随 Markdown 渲染器',
-        showChevron: false
-      })
     }
   }
 
@@ -146,22 +117,6 @@ export struct SettingsPage {
 
       this.TogglePreferenceRow('仅 Wi-Fi 加载图片', this.onlyLoadImagesOnWifi, (value: boolean) => {
         this.updateOnlyLoadImagesOnWifi(value)
-      })
-
-      this.SettingsDivider()
-
-      ConciseListRow({
-        title: '图片主机识别',
-        subtitle: '已启用保守识别',
-        showChevron: false
-      })
-
-      this.SettingsDivider()
-
-      ConciseListRow({
-        title: '链接打开',
-        subtitle: '外部浏览器为主',
-        showChevron: false
       })
     }
   }
@@ -253,31 +208,6 @@ export struct SettingsPage {
       .onClick(action)
   }
 
-  @Builder NotificationSection() {
-    GroupedListSection() {
-      ConciseListRow({
-        title: '通知同步',
-        subtitle: '打开通知页时刷新',
-        showChevron: false
-      })
-
-      this.SettingsDivider()
-
-      ConciseListRow({
-        title: '本地通知',
-        subtitle: '未开启系统推送',
-        showChevron: false
-      })
-
-      this.SettingsDivider()
-
-      ConciseListRow({
-        title: '安静时段',
-        subtitle: '未配置',
-        showChevron: false
-      })
-    }
-  }
 
   @Builder WritingSection() {
     GroupedListSection() {
