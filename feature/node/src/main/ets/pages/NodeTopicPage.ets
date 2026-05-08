@@ -339,11 +339,7 @@ export struct NodeTopicPage {
 
   private syncAppbarIdentity(): void {
     this.nodeTopicTitle = this.vm.nodeDetail?.title || this.nodeTitle || this.nodeName
-    const topics = this.vm.nodeDetail?.topics || 0
-    if (topics > 0) {
-      this.nodeTopicSubtitle = `${topics} 个主题`
-      return
-    }
-    this.nodeTopicSubtitle = this.nodeTopicTitle && this.nodeTopicTitle !== this.nodeName ? this.nodeName : ''
+    const identityName = (this.nodeName || '').trim()
+    this.nodeTopicSubtitle = this.nodeTopicTitle && identityName && this.nodeTopicTitle !== identityName ? identityName : ''
   }
 }
