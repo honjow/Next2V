@@ -240,16 +240,18 @@ export struct NodeTopicPage {
     try {
       const snapshot = await AuthSettings.load(context)
       this.token = snapshot.token || ''
-      await this.vm.loadNodeDetailV2(this.nodeName, this.token)
       if (this.token) {
+        await this.vm.loadNodeDetailV2(this.nodeName, this.token)
         await this.vm.loadNodeTopicsV2(this.nodeName, this.token)
       } else {
+        await this.vm.loadNodeDetail(this.nodeName)
         await this.vm.loadNodeTopics(this.nodeName)
       }
       this.syncAppbarIdentity()
     } catch (error) {
       this.token = ''
       this.vm.nodeDetailError = error.message || '读取 Token 失败'
+      await this.vm.loadNodeDetail(this.nodeName)
       await this.vm.loadNodeTopics(this.nodeName)
       this.syncAppbarIdentity()
     }

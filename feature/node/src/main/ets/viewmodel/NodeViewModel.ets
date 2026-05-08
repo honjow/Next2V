@@ -103,6 +103,17 @@ export class NodeViewModel {
     }
   }
 
+  /** 加载节点详情（公开 API，用于未配置 Token 时仍显示真实主题总数） */
+  async loadNodeDetail(nodeName: string): Promise<void> {
+    this.nodeDetailError = ''
+    try {
+      this.nodeDetail = await this.api.getNodeByName(nodeName)
+    } catch (error) {
+      this.nodeDetail = null
+      this.nodeDetailError = error.message || '节点信息加载失败'
+    }
+  }
+
   /** 加载节点详情（API v2，需要 Token） */
   async loadNodeDetailV2(nodeName: string, token: string): Promise<void> {
     const cleanToken = token.trim()
