@@ -27,6 +27,7 @@ import { promptAction } from '@kit.ArkUI'
 
 @Component
 export struct SettingsPage {
+  @Consume('ns') stack: NavPathStack
   @StorageLink(StorageKeys.USE_CO_DOMAIN) useCoDomain: boolean = false
   @StorageLink(StorageKeys.MEDIA_AUTO_LOAD_IMAGES) autoLoadImages: boolean = true
   @StorageLink(StorageKeys.MEDIA_ONLY_LOAD_IMAGES_ON_WIFI) onlyLoadImagesOnWifi: boolean = false
@@ -97,8 +98,10 @@ export struct SettingsPage {
     GroupedListSection() {
       ConciseListRow({
         title: '账号管理',
-        subtitle: '登录、签到、收藏和屏蔽列表由我的页面管理',
-        showChevron: false
+        subtitle: '登录、签到、收藏和屏蔽列表',
+        action: () => {
+          this.stack.pushPathByName('Account', null)
+        }
       })
     }
   }
