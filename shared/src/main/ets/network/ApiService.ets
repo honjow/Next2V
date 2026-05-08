@@ -851,6 +851,13 @@ export class ApiService {
     if (looseMatch && looseMatch[0]) {
       return ApiService.decodeHtml(looseMatch[0])
     }
+    const jsCall = new RegExp(`thankReply\\(\\s*${replyId}\\s*\\)`, 'i')
+    if (jsCall.test(html)) {
+      const globalOnceMatch = html.match(/(?:var|let|const)\s+once\s*=\s*['\"]?(\d+)['\"]?/i)
+      if (globalOnceMatch && globalOnceMatch[1]) {
+        return `/thank/reply/${replyId}?once=${globalOnceMatch[1]}`
+      }
+    }
     return ''
   }
 
