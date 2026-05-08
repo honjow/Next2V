@@ -10,7 +10,7 @@ import {
   EmptyState,
   LoadingFooter,
   NotificationSettings,
-  SecondaryListScaffold,
+  PullRefreshListScaffold,
   StorageKeys,
   ThemeConstants,
   TopicDetailParams,
@@ -32,6 +32,7 @@ export struct NotificationPage {
   @StorageLink(StorageKeys.AUTH_SESSION_USERNAME) @Watch('onAuthChanged') sessionUsername: string = ''
   @StorageLink(StorageKeys.AUTH_SESSION_UPDATED_AT) @Watch('onAuthChanged') authSessionUpdatedAt: number = 0
   @StorageLink(StorageKeys.LOCAL_DATA_UPDATED_AT) @Watch('onLocalDataUpdated') localDataUpdatedAt: number = 0
+  @StorageLink(StorageKeys.NOTIFICATION_ACTION) @Watch('onNotificationAction') notificationActionCommand: string = ''
   @State private authToken: string = ''
   @State private notifications: V2exNotification[] = []
   @State private notificationError: string = ''
@@ -43,6 +44,8 @@ export struct NotificationPage {
   @State private notificationCacheUpdatedAt: number = 0
   @State private notificationLoadedFromCache: boolean = false
   @State private notificationSourceLabel: string = ''
+  @State private scrollEnabled: boolean = true
+  private scroller: Scroller = new Scroller()
   private api: ApiService = new ApiService()
   private apiV2: ApiV2Service = new ApiV2Service()
   private notificationVm: NotificationCenterViewModel = new NotificationCenterViewModel(this.api)
@@ -65,6 +68,17 @@ export struct NotificationPage {
     this.loadNotificationCache(this.sessionUsername || this.storedUsername)
   }
 
+  onNotificationAction(_propName: string): void {
+    const raw = (this.notificationActionCommand || '').trim()
+    if (!raw) {
+      return
+    }
+    const action = raw.split(':').pop() || ''
+    if (action === 'refresh') {
+      this.loadNotifications(true)
+    }
+  }
+
   build() {
     Column() {
       if (!this.hasNotificationAuth()) {
@@ -76,8 +90,16 @@ export struct NotificationPage {
       } else if (this.notificationError && this.notifications.length === 0) {
         this.NotificationErrorView()
       } else {
-        SecondaryListScaffold({
+        PullRefreshListScaffold({
+          scroller: this.scroller,
+          scrollEnabled: this.scrollEnabled,
           bottomPadding: ThemeConstants.FLOAT_BAR_HEIGHT,
+          onRefresh: async () => {
+            await this.refreshNotifications(true)
+          },
+          onScrollEnableChange: (enabled: boolean) => {
+            this.scrollEnabled = enabled
+          },
           onReachEnd: () => {
             this.loadMoreNotifications()
           }
@@ -186,22 +208,6 @@ export struct NotificationPage {
       .layoutWeight(1)
       .alignItems(HorizontalAlign.Start)
 
-      Button('刷新')
-        .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-        .height(ThemeConstants.TOUCH_TARGET_SM)
-        .type(ButtonType.Normal)
-        .borderRadius(ThemeConstants.RADIUS_MD)
-        .enabled(!this.isNotificationLoading && !this.isNotificationLoadingMore)
-        .onClick(() => {
-          this.loadNotifications(true)
-        })
-
-      Button('批量清除')
-        .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-        .height(ThemeConstants.TOUCH_TARGET_SM)
-        .type(ButtonType.Normal)
-        .borderRadius(ThemeConstants.RADIUS_MD)
-        .enabled(false)
     }
     .width('100%')
     .alignItems(VerticalAlign.Center)
@@ -415,6 +421,12 @@ export struct NotificationPage {
   }
 
   private loadNotifications(force: boolean = false): void {
+    this.refreshNotifications(force).catch((error: Error) => {
+      this.notificationError = error.message || '通知加载失败'
+    })
+  }
+
+  private async refreshNotifications(force: boolean = false): Promise<void> {
     const authContext = this.notificationAuthContext()
     if (!this.notificationVm.hasAuth(authContext)) {
       return
@@ -429,24 +441,24 @@ export struct NotificationPage {
     this.notificationError = ''
     this.notificationPage = 1
     this.notificationHasMore = true
-    this.notificationVm.loadPage(authContext, 1, this.NOTIFICATION_PAGE_SIZE)
-      .then((result: NotificationPageResult) => {
-        this.notifications = result.items
-        this.notificationPage = result.page
-        this.notificationHasMore = result.hasMore
-        this.notificationSourceLabel = result.sourceLabel
-        this.notificationLoadedFromCache = false
-        this.saveNotificationCache()
-      })
-      .catch((error: Error) => {
-        const message = error.message || '通知加载失败'
-        this.notificationError = message
-        this.notificationHasMore = false
-        this.handleExpiredCookieSession(message)
-      })
-      .finally(() => {
-        this.isNotificationLoading = false
-      })
+    try {
+      const result = await this.notificationVm.loadPage(authContext, 1, this.NOTIFICATION_PAGE_SIZE)
+      this.notifications = result.items
+      this.notificationPage = result.page
+      this.notificationHasMore = result.hasMore
+      this.notificationSourceLabel = result.sourceLabel
+      this.notificationLoadedFromCache = false
+      this.saveNotificationCache()
+    } catch (error) {
+      const err = error as Error
+      const message = err.message || '通知加载失败'
+      this.notificationError = message
+      this.notificationHasMore = false
+      this.handleExpiredCookieSession(message)
+      throw err
+    } finally {
+      this.isNotificationLoading = false
+    }
   }
 
   private loadMoreNotifications(): void {

@@ -42,7 +42,13 @@ export struct DiscoverPage {
   build() {
     Column() {
       if (this.vm.isLoading && this.vm.nodeDataSource.totalCount() === 0) {
-        LoadingProgress().width(ThemeConstants.LOADING_SIZE).height(ThemeConstants.LOADING_SIZE)
+        Column() {
+          LoadingProgress().width(ThemeConstants.LOADING_SIZE).height(ThemeConstants.LOADING_SIZE)
+        }
+        .justifyContent(FlexAlign.Center)
+        .alignItems(HorizontalAlign.Center)
+        .width('100%')
+        .height('100%')
       } else if (this.vm.errorMessage && this.vm.nodeDataSource.totalCount() === 0) {
         this.ErrorView()
       } else {

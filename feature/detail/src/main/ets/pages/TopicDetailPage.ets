@@ -28,6 +28,9 @@ export struct TopicDetailPage {
   @State v: DetailViewModel = new DetailViewModel(0)
   @Consume('ns') stack: NavPathStack
   @StorageLink(StorageKeys.TOPIC_DETAIL_ACTION) @Watch('onTopicActionCommand') topicActionCommand: string = ''
+  @StorageLink(StorageKeys.TOPIC_DETAIL_SAVED_LATER) topicDetailSavedLater: boolean = false
+  @StorageLink(StorageKeys.TOPIC_DETAIL_SITE_FAVORITED) topicDetailSiteFavorited: boolean = false
+  @StorageLink(StorageKeys.TOPIC_DETAIL_THANKED) topicDetailThanked: boolean = false
   @StorageLink(StorageKeys.ACCOUNT_WRITE_ENABLED) writeEnabled: boolean = false
   @StorageLink(StorageKeys.READING_FONT_SIZE) readingFontSize: number = ThemeConstants.FONT_SIZE_BODY
   @StorageLink(StorageKeys.READING_LINE_HEIGHT) readingLineHeight: number = ThemeConstants.LINE_HEIGHT_BODY
@@ -37,6 +40,7 @@ export struct TopicDetailPage {
   @State listScrollEnabled: boolean = true
   @State isSavedLater: boolean = false
   @State private isSiteFavorited: boolean = false
+  @State private isTopicThanked: boolean = false
   @State private isSiteFavoriteLoading: boolean = false
   @State private isTopicThankLoading: boolean = false
   @State private isReplyThankLoading: boolean = false
@@ -70,6 +74,7 @@ export struct TopicDetailPage {
     this.hasRestoredReadPosition = false
     this.hasJumpedToTargetFloor = false
     this.jumpFloorText = ''
+    this.syncTopicDetailTitleState(false, false, false)
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     this.v.setCacheHandlers(
       () => CacheSettings.loadTopicDetail(context, this.topicId),
@@ -91,6 +96,8 @@ export struct TopicDetailPage {
         })
       })
     this.loadSavedState()
+    this.loadSiteFavoriteState()
+    this.loadTopicThankState()
   }
 
   aboutToDisappear(): void {
@@ -877,6 +884,7 @@ export struct TopicDetailPage {
     CollectionSettings.isTopicSaved(context, this.topicId)
       .then((saved: boolean) => {
         this.isSavedLater = saved
+        this.topicDetailSavedLater = saved
       })
       .catch((error: Error) => {
         console.error('load saved topic state failed: ' + error.message)
@@ -894,6 +902,7 @@ export struct TopicDetailPage {
     request
       .then(() => {
         this.isSavedLater = !this.isSavedLater
+        this.topicDetailSavedLater = this.isSavedLater
       })
       .catch((error: Error) => {
         console.error('toggle saved topic failed: ' + error.message)
@@ -984,6 +993,7 @@ export struct TopicDetailPage {
     this.api.getTopicFavoriteToggleActionWithCookie(cookie, this.topicId)
       .then((toggle) => {
         this.isSiteFavorited = toggle.currentlyOn
+        this.topicDetailSiteFavorited = toggle.currentlyOn
         this.confirmSiteFavoriteToggle(cookie, toggle)
       })
       .catch((error: Error) => {
@@ -991,6 +1001,44 @@ export struct TopicDetailPage {
       })
       .finally(() => {
         this.isSiteFavoriteLoading = false
+      })
+  }
+
+  private loadSiteFavoriteState(): void {
+    const cookie = CookieJarSettings.getCurrentCookie()
+    if (!cookie || this.topicId <= 0) {
+      this.isSiteFavorited = false
+      this.topicDetailSiteFavorited = false
+      return
+    }
+    this.api.getTopicFavoriteToggleActionWithCookie(cookie, this.topicId)
+      .then((toggle: V2exToggleAction) => {
+        this.isSiteFavorited = toggle.currentlyOn
+        this.topicDetailSiteFavorited = toggle.currentlyOn
+      })
+      .catch((_error: Error) => {
+        this.isSiteFavorited = false
+        this.topicDetailSiteFavorited = false
+      })
+  }
+
+  private loadTopicThankState(): void {
+    const cookie = CookieJarSettings.getCurrentCookie()
+    if (!cookie || this.topicId <= 0) {
+      this.isTopicThanked = false
+      this.topicDetailThanked = false
+      return
+    }
+    this.api.getTopicThankActionWithCookie(cookie, this.topicId)
+      .then((_action: V2exTopicThankAction) => {
+        this.isTopicThanked = false
+        this.topicDetailThanked = false
+      })
+      .catch((error: Error) => {
+        const message = error.message || ''
+        const thanked = message.indexOf('已经感谢过') >= 0
+        this.isTopicThanked = thanked
+        this.topicDetailThanked = thanked
       })
   }
 
@@ -1016,6 +1064,7 @@ export struct TopicDetailPage {
     this.api.executeTopicFavoriteToggleWithCookie(cookie, this.topicId, toggle)
       .then((favorited: boolean) => {
         this.isSiteFavorited = favorited
+        this.topicDetailSiteFavorited = favorited
         promptAction.openToast({ message: favorited ? '已收藏' : '已取消收藏' }).catch((_error: Error) => { })
       })
       .catch((error: Error) => {
@@ -1072,6 +1121,8 @@ export struct TopicDetailPage {
     this.isTopicThankLoading = true
     this.api.executeTopicThankWithCookie(cookie, action)
       .then(() => {
+        this.isTopicThanked = true
+        this.topicDetailThanked = true
         promptAction.openToast({ message: '已感谢' }).catch((_error: Error) => { })
         this.v.load()
       })
@@ -1081,6 +1132,15 @@ export struct TopicDetailPage {
       .finally(() => {
         this.isTopicThankLoading = false
       })
+  }
+
+  private syncTopicDetailTitleState(savedLater: boolean, siteFavorited: boolean, thanked: boolean): void {
+    this.isSavedLater = savedLater
+    this.isSiteFavorited = siteFavorited
+    this.isTopicThanked = thanked
+    this.topicDetailSavedLater = savedLater
+    this.topicDetailSiteFavorited = siteFavorited
+    this.topicDetailThanked = thanked
   }
 
   private prepareReplyThank(reply: V2exReply): void {

@@ -36,7 +36,6 @@ import { ImagePreviewPage } from './ImagePreviewPage'
 import { SearchPage } from './SearchPage'
 import { TopicEditorPage } from './TopicEditorPage'
 import { MyTopicsPage } from './MyTopicsPage'
-import { MyRepliesPage } from './MyRepliesPage'
 import { MyNodesPage } from './MyNodesPage'
 import { AccountBlacklistPage } from './AccountBlacklistPage'
 import { AccountFollowingPage } from './AccountFollowingPage'
@@ -212,6 +211,9 @@ struct Index {
   private tabTitles: string[] = ['首页', '发现', '通知', '我的']
   @State ct: number = 0
   @StorageLink(StorageKeys.PENDING_V2EX_URL) @Watch('onPendingV2exUrlChanged') pendingV2exUrl: string = ''
+  @StorageLink(StorageKeys.TOPIC_DETAIL_SAVED_LATER) topicDetailSavedLater: boolean = false
+  @StorageLink(StorageKeys.TOPIC_DETAIL_SITE_FAVORITED) topicDetailSiteFavorited: boolean = false
+  @StorageLink(StorageKeys.TOPIC_DETAIL_THANKED) topicDetailThanked: boolean = false
   private http: HttpClient = HttpClient.getInstance()
 
   aboutToAppear(): void {
@@ -297,11 +299,6 @@ struct Index {
         MyTopicsPage()
       }
       .titleBar(this.navDestTitleBarOpts('收藏主题'))
-    } else if (name === 'MyReplies') {
-      HdsNavDestination() {
-        MyRepliesPage()
-      }
-      .titleBar(this.navDestTitleBarOpts('我的回复'))
     } else if (name === 'MyNodes') {
       HdsNavDestination() {
         MyNodesPage()
@@ -316,7 +313,7 @@ struct Index {
       HdsNavDestination() {
         AccountFollowingPage()
       }
-      .titleBar(this.navDestTitleBarOpts('关注与收藏'))
+      .titleBar(this.navDestTitleBarOpts('关注用户'))
     } else if (name === 'Settings') {
       HdsNavDestination() {
         SettingsPage()
@@ -341,7 +338,7 @@ struct Index {
       HdsNavDestination() {
         SavedNodesPage()
       }
-      .titleBar(this.navDestTitleBarOpts('关注节点'))
+      .titleBar(this.navDestTitleBarOpts('本地关注节点'))
     }
   }
 
@@ -436,13 +433,16 @@ struct Index {
 
   private topicDetailTitleBarOpts(): Record<string, Object> {
     let items: Record<string, Object>[] = [
-      this.topicActionItem('稍后读', $r('sys.symbol.star'), () => {
+      this.topicActionItem('稍后读', this.topicDetailSavedLater ? $r('sys.symbol.bookmark_fill') :
+        $r('sys.symbol.bookmark'), () => {
         this.sendTopicAction('saveLater')
       }),
-      this.topicActionItem('站内收藏', $r('sys.symbol.heart_fill'), () => {
+      this.topicActionItem('站内收藏', this.topicDetailSiteFavorited ? $r('sys.symbol.star_fill') :
+        $r('sys.symbol.star'), () => {
         this.sendTopicAction('siteFavorite')
       }),
-      this.topicActionItem('感谢主题', $r('sys.symbol.heart_fill'), () => {
+      this.topicActionItem('感谢主题', this.topicDetailThanked ? $r('sys.symbol.heart_fill') :
+        $r('sys.symbol.heart'), () => {
         this.sendTopicAction('thankTopic')
       }),
       this.topicActionItem('忽略主题', $r('sys.symbol.xmark'), () => {
@@ -470,6 +470,10 @@ struct Index {
 
   private sendTopicAction(action: string): void {
     AppStorage.setOrCreate<string>(StorageKeys.TOPIC_DETAIL_ACTION, `${Date.now()}:${action}`)
+  }
+
+  private sendNotificationAction(action: string): void {
+    AppStorage.setOrCreate<string>(StorageKeys.NOTIFICATION_ACTION, `${Date.now()}:${action}`)
   }
 
   private sendSearchAction(action: string): void {
@@ -569,7 +573,9 @@ struct Index {
     } else {
       content = { 'title': titleInfo }
     }
-    if (this.tabTitles[this.ct] === '我的') {
+    if (this.tabTitles[this.ct] === '通知') {
+      content['menu'] = this.notificationTitleMenu()
+    } else if (this.tabTitles[this.ct] === '我的') {
       content['menu'] = this.meTitleMenu()
     } else {
       let emptyMenu: Record<string, Object> = { 'value': [], 'maxCount': 0 }
@@ -593,6 +599,15 @@ struct Index {
     let items: Record<string, Object>[] = [
       this.topicActionItem('设置', $r('sys.symbol.gearshape'), () => {
         this.ns.pushPathByName('Settings', null)
+      })
+    ]
+    return { 'value': items, 'maxCount': 1 }
+  }
+
+  private notificationTitleMenu(): Record<string, Object> {
+    let items: Record<string, Object>[] = [
+      this.topicActionItem('刷新', $r('sys.symbol.arrow_clockwise'), () => {
+        this.sendNotificationAction('refresh')
       })
     ]
     return { 'value': items, 'maxCount': 1 }

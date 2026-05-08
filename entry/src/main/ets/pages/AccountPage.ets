@@ -215,22 +215,7 @@ export struct AccountDashboardPage {
               .fontSize(ThemeConstants.FONT_SIZE_TITLE)
               .fontWeight(FontWeight.Medium)
               .fontColor($r('sys.color.font_primary'))
-            this.CoinBalance()
-            if (this.dailyMission) {
-              Text(this.dailyMission.message)
-                .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-                .fontColor($r('sys.color.font_secondary'))
-            }
-            if (this.sessionError) {
-              Text(this.sessionError)
-                .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-                .fontColor(Color.Red)
-            }
-            if (this.accountMetaError) {
-              Text(this.accountMetaError)
-                .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-                .fontColor(Color.Red)
-            }
+            this.AccountDetailMetaBlock()
           }
           .alignItems(HorizontalAlign.Center)
           .width('100%')
@@ -332,6 +317,38 @@ export struct AccountDashboardPage {
           .textOverflow({ overflow: TextOverflow.Ellipsis })
       }
     }
+  }
+
+  @Builder
+  AccountDetailMetaBlock() {
+    Column({ space: ThemeConstants.SPACE_XS }) {
+      this.CoinBalance()
+      if (this.sessionError) {
+        Text(this.sessionError)
+          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+          .fontColor(Color.Red)
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+      } else if (this.accountMetaError) {
+        Text(this.accountMetaError)
+          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+          .fontColor(Color.Red)
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+      } else if (this.dailyMission) {
+        Text(this.dailyMission.message)
+          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+          .fontColor($r('sys.color.font_secondary'))
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+      } else {
+        Blank().height(ThemeConstants.FONT_SIZE_CAPTION)
+      }
+    }
+    .justifyContent(FlexAlign.Center)
+    .alignItems(HorizontalAlign.Center)
+    .width('100%')
+    .height(52)
   }
 
   @Builder
@@ -492,15 +509,11 @@ export struct AccountDashboardPage {
         this.ns.pushPathByName('MyTopics', null)
       })
       this.SettingsDivider()
-      this.AuthActionRow('我的回复', '', () => {
-        this.ns.pushPathByName('MyReplies', null)
-      })
-      this.SettingsDivider()
       this.AuthActionRow('收藏节点', '', () => {
         this.ns.pushPathByName('MyNodes', null)
       })
       this.SettingsDivider()
-      this.AuthActionRow('关注与收藏', '', () => {
+      this.AuthActionRow('关注用户', '', () => {
         this.ns.pushPathByName('AccountFollowing', null)
       })
       this.SettingsDivider()
@@ -589,7 +602,7 @@ export struct AccountDashboardPage {
         this.ns.pushPathByName('ViewedTopics', null)
       })
       this.SettingsDivider()
-      this.LocalNavigationRow('关注节点', this.savedNodes.length, () => {
+      this.LocalNavigationRow('本地关注节点', this.savedNodes.length, () => {
         this.ns.pushPathByName('SavedNodes', null)
       })
     }

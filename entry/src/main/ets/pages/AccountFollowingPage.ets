@@ -5,13 +5,8 @@ import {
   CookieJarSettings,
   SecondaryListScaffold,
   ThemeConstants,
-  TopicCard,
-  type NodeTopicListParams,
-  type TopicDetailParams,
   type UserProfileParams,
-  type V2exAccountMemberListItem,
-  type V2exFavoriteNode,
-  type V2exTopic
+  type V2exAccountMemberListItem
 } from 'shared'
 
 @Component
@@ -19,8 +14,6 @@ export struct AccountFollowingPage {
   @Consume('ns') stack: NavPathStack
 
   @State private members: V2exAccountMemberListItem[] = []
-  @State private nodes: V2exFavoriteNode[] = []
-  @State private topics: V2exTopic[] = []
   @State private errorMessage: string = ''
   @State private isLoading: boolean = false
 
@@ -35,9 +28,9 @@ export struct AccountFollowingPage {
       SecondaryListScaffold() {
         if (!CookieJarSettings.getCurrentCookie()) {
           ListItem() { this.LoginRequiredView() }
-        } else if (this.isLoading && this.members.length === 0 && this.nodes.length === 0 && this.topics.length === 0) {
+        } else if (this.isLoading && this.members.length === 0) {
           ListItem() { this.LoadingView() }
-        } else if (this.errorMessage && this.members.length === 0 && this.nodes.length === 0 && this.topics.length === 0) {
+        } else if (this.errorMessage && this.members.length === 0) {
           ListItem() { this.ErrorView() }
         } else {
           ListItem() { this.SectionHeader('关注用户') }
@@ -48,28 +41,6 @@ export struct AccountFollowingPage {
               ListItem() { this.MemberRow(item) }
                 .onClick(() => { this.openUser(item.username) })
             }, (item: V2exAccountMemberListItem) => `following-${item.username}`)
-          }
-
-          ListItem() { this.SectionHeader('收藏节点') }
-            .margin({ top: ThemeConstants.SPACE_MD })
-          if (this.nodes.length === 0) {
-            ListItem() { this.EmptyText('暂无收藏节点') }
-          } else {
-            ForEach(this.nodes, (item: V2exFavoriteNode) => {
-              ListItem() { this.NodeRow(item) }
-                .onClick(() => { this.openNode(item) })
-            }, (item: V2exFavoriteNode) => `following-node-${item.name}`)
-          }
-
-          ListItem() { this.SectionHeader('收藏主题') }
-            .margin({ top: ThemeConstants.SPACE_MD })
-          if (this.topics.length === 0) {
-            ListItem() { this.EmptyText('暂无收藏主题') }
-          } else {
-            ForEach(this.topics, (item: V2exTopic) => {
-              ListItem() { TopicCard({ item: item }) }
-                .onClick(() => { this.openTopic(item.id) })
-            }, (item: V2exTopic) => `following-topic-${item.id}`)
           }
         }
       }
@@ -117,31 +88,6 @@ export struct AccountFollowingPage {
     .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }
 
-  @Builder private NodeRow(item: V2exFavoriteNode) {
-    Row({ space: ThemeConstants.SPACE_SM }) {
-      Column({ space: ThemeConstants.SPACE_XS }) {
-        Text(item.title || item.name)
-          .fontSize(ThemeConstants.FONT_SIZE_BODY)
-          .fontWeight(FontWeight.Medium)
-          .fontColor($r('sys.color.font_primary'))
-          .maxLines(1)
-          .textOverflow({ overflow: TextOverflow.Ellipsis })
-        Text(item.name)
-          .fontSize(ThemeConstants.FONT_SIZE_TINY)
-          .fontColor($r('sys.color.font_secondary'))
-      }
-      .layoutWeight(1)
-      .alignItems(HorizontalAlign.Start)
-      Text('›')
-        .fontSize(ThemeConstants.FONT_SIZE_TITLE)
-        .fontColor($r('sys.color.font_secondary'))
-    }
-    .width('100%')
-    .padding(ThemeConstants.SPACE_LG)
-    .borderRadius(ThemeConstants.RADIUS_MD)
-    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
-  }
-
   @Builder private LoadingView() {
     Column() {
       LoadingProgress()
@@ -155,7 +101,7 @@ export struct AccountFollowingPage {
 
   @Builder private LoginRequiredView() {
     Column({ space: ThemeConstants.SPACE_SM }) {
-      Text('登录后可查看关注与收藏')
+      Text('登录后可查看关注用户')
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
         .fontColor($r('sys.color.font_secondary'))
       Button('去登录')
@@ -199,28 +145,18 @@ export struct AccountFollowingPage {
     const cookie = CookieJarSettings.getCurrentCookie()
     if (!cookie) {
       this.members = []
-      this.nodes = []
-      this.topics = []
       this.errorMessage = ''
       return
     }
     this.isLoading = true
     this.errorMessage = ''
-    Promise.all([
-      this.api.getFollowingMembersWithCookie(cookie),
-      this.api.getMyFavoriteNodesWithCookie(cookie),
-      this.api.getMyTopicsWithCookie(cookie, 1)
-    ])
-      .then((result) => {
-        this.members = result[0]
-        this.nodes = result[1]
-        this.topics = result[2]
+    this.api.getFollowingMembersWithCookie(cookie)
+      .then((result: V2exAccountMemberListItem[]) => {
+        this.members = result
       })
       .catch((error: Error) => {
         this.errorMessage = error.message || '加载失败'
         this.members = []
-        this.nodes = []
-        this.topics = []
       })
       .finally(() => {
         this.isLoading = false
@@ -233,15 +169,5 @@ export struct AccountFollowingPage {
   private openUser(username: string): void {
     const p: UserProfileParams = { username: username }
     this.stack.pushPathByName('UserProfile', p as Object)
-  }
-
-  private openNode(item: V2exFavoriteNode): void {
-    const p: NodeTopicListParams = { nodeName: item.name, nodeTitle: item.title }
-    this.stack.pushPathByName('NodeTopicList', p as Object)
-  }
-
-  private openTopic(topicId: number): void {
-    const p: TopicDetailParams = { topicId: topicId }
-    this.stack.pushPathByName('TopicDetail', p as Object)
   }
 }

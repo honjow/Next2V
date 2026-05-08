@@ -22,7 +22,7 @@ export struct SavedNodesPage {
     SecondaryListScaffold() {
       if (this.nodes.length === 0) {
         ListItem() {
-          EmptyState({ message: '还没有关注节点', stateHeight: 220 })
+          EmptyState({ message: '还没有本地关注节点', stateHeight: 220 })
             .borderRadius(ThemeConstants.RADIUS_MD)
             .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
         }
@@ -63,7 +63,7 @@ struct SavedNodeRow {
           .fontSize(ThemeConstants.FONT_SIZE_BODY)
           .fontWeight(FontWeight.Medium)
           .fontColor($r('sys.color.font_primary'))
-        Text(`${this.item.name} · ${this.item.topics} 个主题 · 关注于 ${DateUtils.toDateString(this.item.savedAt)}`)
+        Text(`${this.item.name} · ${this.item.topics} 个主题 · 本地关注于 ${DateUtils.toDateString(this.item.savedAt)}`)
           .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
           .fontColor($r('sys.color.font_secondary'))
           .maxLines(1)
