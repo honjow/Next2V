@@ -202,6 +202,18 @@ export struct TopicDetailPage {
     .width('100%')
     .height('100%')
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
+    .bindSheet($$this.replyComposerVisible, this.ReplyComposerSheetBuilder(), {
+      height: SheetSize.MEDIUM,
+      preferType: SheetType.BOTTOM,
+      dragBar: false,
+      showClose: false,
+      maskColor: 'rgba(0,0,0,0.24)',
+      backgroundColor: $r('sys.color.ohos_id_color_card_bg'),
+      onDisappear: () => {
+        this.replyComposerVisible = false
+        this.replyComposerInitialContent = ''
+      }
+    })
     .bindSheet($$this.contextSheetVisible, this.ReplyContextSheet(), {
       height: SheetSize.LARGE,
       preferType: SheetType.BOTTOM,
@@ -213,18 +225,6 @@ export struct TopicDetailPage {
         this.contextSheetVisible = false
         this.contextReply = null
         this.contextItems = []
-      }
-    })
-    .bindSheet($$this.replyComposerVisible, this.ReplyComposerSheetBuilder(), {
-      height: SheetSize.MEDIUM,
-      preferType: SheetType.BOTTOM,
-      dragBar: false,
-      showClose: false,
-      maskColor: 'rgba(0,0,0,0.24)',
-      backgroundColor: $r('sys.color.ohos_id_color_card_bg'),
-      onDisappear: () => {
-        this.replyComposerVisible = false
-        this.replyComposerInitialContent = ''
       }
     })
   }
@@ -528,7 +528,7 @@ export struct TopicDetailPage {
 
   private openReplyContext(reply: V2exReply): void {
     this.contextReply = reply
-    this.contextItems = this.buildReplyContextItems()
+    this.contextItems = this.buildReplyContextItems(reply)
     setTimeout(() => {
       this.contextSheetVisible = true
     }, 240)
@@ -547,11 +547,7 @@ export struct TopicDetailPage {
     return floor > 0 ? `#${floor} 回复上下文` : '回复上下文'
   }
 
-  private buildReplyContextItems(): ReplyContextItem[] {
-    if (this.contextReply === null) {
-      return []
-    }
-    const selected = this.contextReply
+  private buildReplyContextItems(selected: V2exReply): ReplyContextItem[] {
     const selectedFloor = this.v.getReplyFloor(selected.id)
     const replies = this.v.getLoadedRepliesSnapshot()
     const items: ReplyContextItem[] = []
