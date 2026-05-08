@@ -208,6 +208,9 @@ export struct TopicDetailPage {
       if (this.v.topic !== null) {
         this.FloatingReplyPill()
       }
+
+      this.ReplyComposerSheetHost()
+      this.ReplyContextSheetHost()
     }
     .width('100%')
     .height('100%')
@@ -215,31 +218,43 @@ export struct TopicDetailPage {
     .onAreaChange((_oldValue: Area, newValue: Area) => {
       this.floatingReplyAreaWidth = this.areaLength(newValue.width)
     })
-    .bindSheet($$this.replyComposerVisible, this.ReplyComposerSheetBuilder(), {
-      height: SheetSize.MEDIUM,
-      preferType: SheetType.BOTTOM,
-      dragBar: false,
-      showClose: false,
-      maskColor: 'rgba(0,0,0,0.24)',
-      backgroundColor: $r('sys.color.ohos_id_color_card_bg'),
-      onDisappear: () => {
-        this.replyComposerVisible = false
-        this.replyComposerInitialContent = ''
-      }
-    })
-    .bindSheet($$this.contextSheetVisible, this.ReplyContextSheet(), {
-      height: SheetSize.LARGE,
-      preferType: SheetType.BOTTOM,
-      dragBar: false,
-      showClose: false,
-      maskColor: 'rgba(0,0,0,0.24)',
-      backgroundColor: $r('sys.color.ohos_id_color_card_bg'),
-      onDisappear: () => {
-        this.contextSheetVisible = false
-        this.contextReply = null
-        this.contextItems = []
-      }
-    })
+  }
+
+  @Builder ReplyComposerSheetHost() {
+    Blank()
+      .width(1)
+      .height(1)
+      .bindSheet($$this.replyComposerVisible, this.ReplyComposerSheetBuilder(), {
+        height: SheetSize.MEDIUM,
+        preferType: SheetType.BOTTOM,
+        dragBar: false,
+        showClose: false,
+        maskColor: 'rgba(0,0,0,0.24)',
+        backgroundColor: $r('sys.color.ohos_id_color_card_bg'),
+        onDisappear: () => {
+          this.replyComposerVisible = false
+          this.replyComposerInitialContent = ''
+        }
+      })
+  }
+
+  @Builder ReplyContextSheetHost() {
+    Blank()
+      .width(1)
+      .height(1)
+      .bindSheet($$this.contextSheetVisible, this.ReplyContextSheet(), {
+        height: SheetSize.LARGE,
+        preferType: SheetType.BOTTOM,
+        dragBar: false,
+        showClose: false,
+        maskColor: 'rgba(0,0,0,0.24)',
+        backgroundColor: $r('sys.color.ohos_id_color_card_bg'),
+        onDisappear: () => {
+          this.contextSheetVisible = false
+          this.contextReply = null
+          this.contextItems = []
+        }
+      })
   }
 
   @Builder LoadingView() {
@@ -380,7 +395,7 @@ export struct TopicDetailPage {
       bottom: this.bottomH + this.FLOATING_REPLY_BOTTOM_GAP
     })
     .alignItems(VerticalAlign.Bottom)
-    .hitTestBehavior(HitTestMode.Block)
+    .hitTestBehavior(HitTestMode.Transparent)
     .zIndex(10)
     .animation({ duration: ThemeConstants.ANIM_DURATION, curve: Curve.EaseOut })
   }
