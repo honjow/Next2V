@@ -46,6 +46,8 @@ export struct TopicDetailPage {
   @State private contextSheetVisible: boolean = false
   @State private replyComposerVisible: boolean = false
   @State private replyComposerInitialContent: string = ''
+  private readonly FLOATING_REPLY_HEIGHT: number = 40
+  private readonly FLOATING_REPLY_BOTTOM_GAP: number = ThemeConstants.SPACE_LG
   private api: ApiService = new ApiService()
   private jumpFloorDialogController: CustomDialogController | null = new CustomDialogController({
     builder: JumpToFloorDialog({
@@ -170,7 +172,7 @@ export struct TopicDetailPage {
   }
 
   build() {
-    Column() {
+    Stack({ alignContent: Alignment.Bottom }) {
       Column() {
         if (this.v.isLoading && this.v.topic === null) {
           this.LoadingView()
@@ -181,11 +183,11 @@ export struct TopicDetailPage {
         }
       }
       .width('100%')
-      .layoutWeight(1)
+      .height('100%')
       .clip(true)
 
       if (this.v.topic !== null) {
-        this.BottomReplyActionBar()
+        this.FloatingReplyPill()
       }
     }
     .width('100%')
@@ -317,45 +319,33 @@ export struct TopicDetailPage {
     })
   }
 
-  @Builder BottomReplyActionBar() {
-    Row({ space: ThemeConstants.SPACE_MD }) {
-      Text(this.writeEnabled ? '参与讨论' : '写入操作未开启')
-        .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-        .fontColor($r('sys.color.font_secondary'))
-        .layoutWeight(1)
-        .maxLines(1)
-        .textOverflow({ overflow: TextOverflow.Ellipsis })
-      Button() {
-        Row({ space: ThemeConstants.SPACE_XS }) {
-          SymbolGlyph($r('sys.symbol.arrowshape_turn_up_left_fill'))
-            .fontSize(18)
-            .fontColor([Color.White])
-          Text('回复')
-            .fontSize(ThemeConstants.FONT_SIZE_BODY)
-            .fontWeight(FontWeight.Medium)
-            .fontColor(Color.White)
-        }
-        .alignItems(VerticalAlign.Center)
-        .justifyContent(FlexAlign.Center)
+  @Builder FloatingReplyPill() {
+    Button() {
+      Row({ space: ThemeConstants.SPACE_XS }) {
+        SymbolGlyph(this.writeEnabled ? $r('sys.symbol.arrowshape_turn_up_left_fill') : $r('sys.symbol.lock'))
+          .fontSize(18)
+          .fontColor([Color.White])
+        Text(this.writeEnabled ? '回复' : '只读')
+          .fontSize(ThemeConstants.FONT_SIZE_BODY)
+          .fontWeight(FontWeight.Medium)
+          .fontColor(Color.White)
       }
-      .type(ButtonType.Normal)
-      .height(40)
-      .width(116)
-      .borderRadius(ThemeConstants.RADIUS_ROUND)
-      .backgroundColor(ThemeConstants.BRAND_PRIMARY)
-      .enabled(this.writeEnabled)
-      .onClick(() => {
-        this.openReplyEditor()
-      })
+      .alignItems(VerticalAlign.Center)
+      .justifyContent(FlexAlign.Center)
     }
-    .width('100%')
-    .padding({
-      left: ThemeConstants.SPACE_LG,
-      right: ThemeConstants.SPACE_LG,
-      top: ThemeConstants.SPACE_XS,
-      bottom: this.bottomH + ThemeConstants.SPACE_XS
+    .type(ButtonType.Normal)
+    .height(this.FLOATING_REPLY_HEIGHT)
+    .width(this.writeEnabled ? 96 : 88)
+    .borderRadius(ThemeConstants.RADIUS_ROUND)
+    .backgroundColor(ThemeConstants.BRAND_PRIMARY)
+    .shadow(ShadowStyle.OUTER_DEFAULT_SM)
+    .enabled(this.writeEnabled)
+    .margin({
+      bottom: this.bottomH + this.FLOATING_REPLY_BOTTOM_GAP
     })
-    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+    .onClick(() => {
+      this.openReplyEditor()
+    })
   }
 
   @Builder TopicCard() {
@@ -1413,7 +1403,7 @@ export struct TopicDetailPage {
   }
 
   private replyActionBottomPadding(): number {
-    return ThemeConstants.SPACE_LG
+    return this.FLOATING_REPLY_HEIGHT + this.FLOATING_REPLY_BOTTOM_GAP + ThemeConstants.SPACE_XL
   }
 }
 
