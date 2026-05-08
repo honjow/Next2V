@@ -22,6 +22,7 @@ export interface SavedTopic {
   nodeTitle: string
   username: string
   created: number
+  replies?: number
   savedAt: number
 }
 
@@ -38,6 +39,7 @@ export interface ViewedTopic {
   nodeName: string
   nodeTitle: string
   username: string
+  replies?: number
   viewedAt: number
 }
 
@@ -74,6 +76,7 @@ export class CollectionSettings {
       nodeTitle: topic.node.title,
       username: topic.member.username,
       created: topic.created,
+      replies: topic.replies,
       savedAt: Math.floor(Date.now() / 1000)
     }
     const next = [saved].concat(topics.filter((item: SavedTopic) => item.id !== topic.id)).slice(0, MAX_SAVED_TOPICS)
@@ -148,6 +151,7 @@ export class CollectionSettings {
       nodeName: topic.node.name,
       nodeTitle: topic.node.title,
       username: topic.member.username,
+      replies: topic.replies,
       viewedAt: Math.floor(Date.now() / 1000)
     }
     const next = [viewed].concat(topics.filter((item: ViewedTopic) => item.id !== topic.id)).slice(0, MAX_VIEWED_TOPICS)

@@ -33,6 +33,7 @@ export struct ViewedTopicsPage {
               item: this.toTopic(item),
               metaLabel: '浏览于',
               metaTimestamp: item.viewedAt,
+              hideLocalSnapshotReplyCount: !this.hasKnownReplyCount(item),
               onUserClick: () => { this.openTopic(item.id) },
               onNodeClick: () => { this.openTopic(item.id) }
             })
@@ -89,12 +90,20 @@ export struct ViewedTopicsPage {
       url: '',
       content: '',
       content_rendered: '',
-      replies: 0,
+      replies: this.replyCount(item),
       member: member,
       node: node,
       created: item.viewedAt,
       last_modified: item.viewedAt,
       last_touched: item.viewedAt
     }
+  }
+
+  private hasKnownReplyCount(item: ViewedTopic): boolean {
+    return typeof item.replies === 'number' && item.replies >= 0
+  }
+
+  private replyCount(item: ViewedTopic): number {
+    return this.hasKnownReplyCount(item) ? item.replies as number : 0
   }
 }

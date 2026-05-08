@@ -508,12 +508,12 @@ struct Index {
       })
     ]
     let menu: Record<string, Object> = { 'value': items, 'maxCount': 2 }
-    const baseTitle = nodeTitle || nodeName
-    const useLiveNodeIdentity = this.nodeTopicTitle === baseTitle
-    const title = useLiveNodeIdentity ? this.nodeTopicTitle : baseTitle
-    const subTitle = useLiveNodeIdentity && this.nodeTopicSubtitle
-      ? this.nodeTopicSubtitle
-      : (nodeTitle && nodeTitle !== nodeName ? nodeName : '')
+    const baseTitle = (nodeTitle || nodeName || '').trim()
+    const routeSubTitle = nodeTitle && nodeTitle !== nodeName ? nodeName : ''
+    const liveTitle = (this.nodeTopicTitle || '').trim()
+    const liveSubTitle = (this.nodeTopicSubtitle || '').trim()
+    const title = liveTitle || baseTitle
+    const subTitle = (liveSubTitle || routeSubTitle) !== title ? (liveSubTitle || routeSubTitle) : ''
     return this.navDestTitleBarOpts(title, menu, subTitle)
   }
 

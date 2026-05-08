@@ -1,13 +1,14 @@
 import { common } from '@kit.AbilityKit'
 import {
   CollectionSettings,
-  DateUtils,
-  ConciseListRow,
   EmptyState,
-  GroupedListSection,
   SecondaryListScaffold,
+  TopicCard,
   type SavedTopic,
-  type TopicDetailParams
+  type TopicDetailParams,
+  type V2exMember,
+  type V2exNode,
+  type V2exTopic
 } from 'shared'
 
 @Component
@@ -28,17 +29,17 @@ export struct SavedTopicsPage {
       } else {
         ForEach(this.topics, (item: SavedTopic) => {
           ListItem() {
-            GroupedListSection() {
-              ConciseListRow({
-                title: item.title,
-                subtitle: this.topicSubtitle(item)
-              })
-            }
+            TopicCard({
+              item: this.toTopic(item),
+              metaLabel: '保存于',
+              metaTimestamp: item.savedAt,
+              hideLocalSnapshotReplyCount: !this.hasKnownReplyCount(item),
+              onUserClick: () => { this.openTopic(item.id) },
+              onNodeClick: () => { this.openTopic(item.id) }
+            })
+              .onClick(() => { this.openTopic(item.id) })
           }
-          .onClick(() => {
-            let p: TopicDetailParams = { topicId: item.id }
-            this.stack.pushPathByName('TopicDetail', p as Object)
-          })
+          .onClick(() => { this.openTopic(item.id) })
         }, (item: SavedTopic) => `saved-${item.id}`)
       }
     }
@@ -55,16 +56,54 @@ export struct SavedTopicsPage {
       })
   }
 
-  private topicSubtitle(item: SavedTopic): string {
-    const parts: string[] = []
-    const node = item.nodeTitle || item.nodeName
-    if (node) {
-      parts.push(node)
+  private openTopic(topicId: number): void {
+    if (topicId <= 0) {
+      return
     }
-    if (item.username) {
-      parts.push(item.username)
+    let p: TopicDetailParams = { topicId: topicId }
+    this.stack.pushPathByName('TopicDetail', p as Object)
+  }
+
+  private toTopic(item: SavedTopic): V2exTopic {
+    const member: V2exMember = {
+      id: 0,
+      username: item.username || '',
+      tagline: '',
+      avatar_mini: '',
+      avatar_normal: '',
+      avatar_large: ''
     }
-    parts.push(`保存于 ${DateUtils.toDateString(item.savedAt)}`)
-    return parts.join(' · ')
+    const node: V2exNode = {
+      id: 0,
+      name: item.nodeName || '',
+      title: item.nodeTitle || item.nodeName || '',
+      title_alternative: '',
+      url: '',
+      topics: 0,
+      avatar_mini: '',
+      avatar_normal: '',
+      avatar_large: ''
+    }
+    return {
+      id: item.id,
+      title: item.title,
+      url: '',
+      content: '',
+      content_rendered: '',
+      replies: this.replyCount(item),
+      member: member,
+      node: node,
+      created: item.created,
+      last_modified: item.savedAt,
+      last_touched: item.savedAt
+    }
+  }
+
+  private hasKnownReplyCount(item: SavedTopic): boolean {
+    return typeof item.replies === 'number' && item.replies >= 0
+  }
+
+  private replyCount(item: SavedTopic): number {
+    return this.hasKnownReplyCount(item) ? item.replies as number : 0
   }
 }
