@@ -47,7 +47,7 @@ export struct TopicDetailPage {
   @State private replyComposerVisible: boolean = false
   @State private replyComposerInitialContent: string = ''
   private readonly FLOATING_REPLY_HEIGHT: number = 40
-  private readonly FLOATING_REPLY_BOTTOM_GAP: number = ThemeConstants.SPACE_LG
+  private readonly FLOATING_REPLY_BOTTOM_GAP: number = 2
   private api: ApiService = new ApiService()
   private jumpFloorDialogController: CustomDialogController | null = new CustomDialogController({
     builder: JumpToFloorDialog({
@@ -256,7 +256,6 @@ export struct TopicDetailPage {
     PullRefreshListScaffold({
       scroller: this.scroller,
       scrollEnabled: this.listScrollEnabled,
-      bottomPadding: this.replyActionBottomPadding(),
       onRefresh: async () => { await this.v.load() },
       onScrollEnableChange: (enabled: boolean) => { this.listScrollEnabled = enabled },
       onScrollIndex: (_start: number, _end: number, center: number) => { this.updateReadFloor(center) },
@@ -1402,9 +1401,6 @@ export struct TopicDetailPage {
     return `${baseUrl}/t/${this.topicId}`
   }
 
-  private replyActionBottomPadding(): number {
-    return this.FLOATING_REPLY_HEIGHT + this.FLOATING_REPLY_BOTTOM_GAP + ThemeConstants.SPACE_XL
-  }
 }
 
 @CustomDialog
