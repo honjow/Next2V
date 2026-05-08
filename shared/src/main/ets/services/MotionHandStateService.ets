@@ -10,7 +10,8 @@ export class MotionHandStateService {
   private static startAttempted: boolean = false
   private static operatingSubscribed: boolean = false
   private static holdingSubscribed: boolean = false
-  private static pendingEdge: StableMotionHandEdge | null = null
+  private static pendingOperatingEdge: StableMotionHandEdge | null = null
+  private static pendingHoldingEdge: StableMotionHandEdge | null = null
   private static debounceTimerId: number = 0
   private static readonly EDGE_DEBOUNCE_MS: number = 450
 
@@ -69,7 +70,7 @@ export class MotionHandStateService {
       MotionHandStateService.holdingSubscribed = false
     }
 
-    MotionHandStateService.cancelPendingEdge()
+    MotionHandStateService.cancelPendingEdges()
     MotionHandStateService.startAttempted = false
   }
 
@@ -82,49 +83,64 @@ export class MotionHandStateService {
 
   private static handleOperatingStatus(status: motion.OperatingHandStatus): void {
     if (status === motion.OperatingHandStatus.LEFT_HAND_OPERATED) {
-      MotionHandStateService.scheduleEdge('left')
+      MotionHandStateService.scheduleOperatingEdge('left')
       return
     }
     if (status === motion.OperatingHandStatus.RIGHT_HAND_OPERATED) {
-      MotionHandStateService.scheduleEdge('right')
+      MotionHandStateService.scheduleOperatingEdge('right')
     }
   }
 
   private static handleHoldingStatus(status: motion.HoldingHandStatus): void {
     if (status === motion.HoldingHandStatus.LEFT_HAND_HELD) {
-      MotionHandStateService.scheduleEdge('left')
+      MotionHandStateService.scheduleHoldingEdge('left')
       return
     }
     if (status === motion.HoldingHandStatus.RIGHT_HAND_HELD) {
-      MotionHandStateService.scheduleEdge('right')
+      MotionHandStateService.scheduleHoldingEdge('right')
     }
   }
 
-  private static scheduleEdge(edge: StableMotionHandEdge): void {
-    if (AppStorage.get<MotionHandEdge>(StorageKeys.MOTION_HAND_EDGE) === edge) {
-      MotionHandStateService.cancelPendingEdge()
+  private static scheduleOperatingEdge(edge: StableMotionHandEdge): void {
+    MotionHandStateService.pendingOperatingEdge = edge
+    MotionHandStateService.ensureDebounceTimer()
+  }
+
+  private static scheduleHoldingEdge(edge: StableMotionHandEdge): void {
+    MotionHandStateService.pendingHoldingEdge = edge
+    MotionHandStateService.ensureDebounceTimer()
+  }
+
+  private static ensureDebounceTimer(): void {
+    if (MotionHandStateService.debounceTimerId > 0) {
       return
     }
-    MotionHandStateService.pendingEdge = edge
-    if (MotionHandStateService.debounceTimerId > 0) {
-      clearTimeout(MotionHandStateService.debounceTimerId)
-    }
     MotionHandStateService.debounceTimerId = setTimeout(() => {
-      const nextEdge = MotionHandStateService.pendingEdge
-      MotionHandStateService.debounceTimerId = 0
-      MotionHandStateService.pendingEdge = null
-      if (nextEdge !== null && AppStorage.get<MotionHandEdge>(StorageKeys.MOTION_HAND_EDGE) !== nextEdge) {
-        MotionHandStateService.setEdge(nextEdge)
-      }
+      MotionHandStateService.flushPendingEdges()
     }, MotionHandStateService.EDGE_DEBOUNCE_MS)
   }
 
-  private static cancelPendingEdge(): void {
+  private static flushPendingEdges(): void {
+    const operatingEdge = MotionHandStateService.pendingOperatingEdge
+    const holdingEdge = MotionHandStateService.pendingHoldingEdge
+    MotionHandStateService.debounceTimerId = 0
+    MotionHandStateService.pendingOperatingEdge = null
+    MotionHandStateService.pendingHoldingEdge = null
+
+    // 操作手只在同一融合窗口内与握持手同时上报时优先；否则单独上报的握持手也能切边。
+    const nextEdge = operatingEdge !== null ? operatingEdge : holdingEdge
+    if (nextEdge !== null && AppStorage.get<MotionHandEdge>(StorageKeys.MOTION_HAND_EDGE) !== nextEdge) {
+      MotionHandStateService.setEdge(nextEdge)
+    }
+  }
+
+  private static cancelPendingEdges(): void {
     if (MotionHandStateService.debounceTimerId > 0) {
       clearTimeout(MotionHandStateService.debounceTimerId)
       MotionHandStateService.debounceTimerId = 0
     }
-    MotionHandStateService.pendingEdge = null
+    MotionHandStateService.pendingOperatingEdge = null
+    MotionHandStateService.pendingHoldingEdge = null
   }
 
   private static setEdge(edge: MotionHandEdge): void {
