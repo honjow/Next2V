@@ -240,7 +240,7 @@ export struct NodeTopicPage {
     try {
       const snapshot = await AuthSettings.load(context)
       this.token = snapshot.token || ''
-      this.vm.loadNodeDetailV2(this.nodeName, this.token)
+      await this.vm.loadNodeDetailV2(this.nodeName, this.token)
       if (this.token) {
         await this.vm.loadNodeTopicsV2(this.nodeName, this.token)
       } else {
@@ -269,8 +269,8 @@ export struct NodeTopicPage {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     const node: SavedNode = {
       name: this.nodeName,
-      title: this.nodeTitle || this.nodeName,
-      topics: this.vm.nodeTopics.length,
+      title: this.vm.nodeDetail?.title || this.nodeTitle || this.nodeName,
+      topics: this.vm.nodeDetail?.topics || 0,
       savedAt: Math.floor(Date.now() / 1000)
     }
     const request = this.isNodeSaved
@@ -336,12 +336,12 @@ export struct NodeTopicPage {
   }
 
   private syncAppbarIdentity(): void {
-    this.nodeTopicTitle = this.nodeTitle || this.nodeName
-    const topicCount = this.vm.nodeDetail?.topics || this.vm.nodeTopics.length
-    if (topicCount > 0) {
-      this.nodeTopicSubtitle = `${this.nodeName} · ${topicCount} 主题`
+    this.nodeTopicTitle = this.vm.nodeDetail?.title || this.nodeTitle || this.nodeName
+    const header = (this.vm.nodeDetail?.header || '').trim()
+    if (header) {
+      this.nodeTopicSubtitle = header
       return
     }
-    this.nodeTopicSubtitle = this.nodeTitle && this.nodeTitle !== this.nodeName ? this.nodeName : ''
+    this.nodeTopicSubtitle = this.nodeTopicTitle && this.nodeTopicTitle !== this.nodeName ? this.nodeName : ''
   }
 }

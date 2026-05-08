@@ -1,11 +1,13 @@
 import { common } from '@kit.AbilityKit'
 import {
   CollectionSettings,
-  ConciseListRow,
   EmptyState,
-  GroupedListSection,
   SecondaryListScaffold,
+  TopicCard,
   type TopicDetailParams,
+  type V2exMember,
+  type V2exNode,
+  type V2exTopic,
   type ViewedTopic
 } from 'shared'
 
@@ -27,17 +29,16 @@ export struct ViewedTopicsPage {
       } else {
         ForEach(this.topics, (item: ViewedTopic) => {
           ListItem() {
-            GroupedListSection() {
-              ConciseListRow({
-                title: item.title,
-                subtitle: this.topicSubtitle(item)
-              })
-            }
+            TopicCard({
+              item: this.toTopic(item),
+              metaLabel: '浏览于',
+              metaTimestamp: item.viewedAt,
+              onUserClick: () => { this.openTopic(item.id) },
+              onNodeClick: () => { this.openTopic(item.id) }
+            })
+              .onClick(() => { this.openTopic(item.id) })
           }
-          .onClick(() => {
-            let p: TopicDetailParams = { topicId: item.id }
-            this.stack.pushPathByName('TopicDetail', p as Object)
-          })
+          .onClick(() => { this.openTopic(item.id) })
         }, (item: ViewedTopic) => `viewed-${item.id}`)
       }
     }
@@ -54,12 +55,46 @@ export struct ViewedTopicsPage {
       })
   }
 
-  private topicSubtitle(item: ViewedTopic): string {
-    const node = item.nodeTitle || item.nodeName
-    const author = item.username || ''
-    if (node && author) {
-      return `${node} · ${author}`
+  private openTopic(topicId: number): void {
+    if (topicId <= 0) {
+      return
     }
-    return node || author
+    let p: TopicDetailParams = { topicId: topicId }
+    this.stack.pushPathByName('TopicDetail', p as Object)
+  }
+
+  private toTopic(item: ViewedTopic): V2exTopic {
+    const member: V2exMember = {
+      id: 0,
+      username: item.username || '',
+      tagline: '',
+      avatar_mini: '',
+      avatar_normal: '',
+      avatar_large: ''
+    }
+    const node: V2exNode = {
+      id: 0,
+      name: item.nodeName || '',
+      title: item.nodeTitle || item.nodeName || '',
+      title_alternative: '',
+      url: '',
+      topics: 0,
+      avatar_mini: '',
+      avatar_normal: '',
+      avatar_large: ''
+    }
+    return {
+      id: item.id,
+      title: item.title,
+      url: '',
+      content: '',
+      content_rendered: '',
+      replies: 0,
+      member: member,
+      node: node,
+      created: item.viewedAt,
+      last_modified: item.viewedAt,
+      last_touched: item.viewedAt
+    }
   }
 }

@@ -120,6 +120,7 @@ export struct AccountDashboardPage {
   private http: HttpClient = HttpClient.getInstance()
   private api: ApiService = new ApiService()
   showDetail: boolean = false
+  @Prop @Watch('onRefreshKeyChanged') refreshKey: number = 0
 
   aboutToAppear(): void {
     this.loadAuthSnapshot()
@@ -131,13 +132,11 @@ export struct AccountDashboardPage {
   }
 
   onLocalDataUpdated(_propName: string): void {
-    this.savedTopics = []
-    this.savedNodes = []
-    this.viewedTopics = []
-    this.loadSavedTopics()
-    this.loadSavedNodes()
-    this.loadViewedTopics()
-    this.loadTopicReadStates()
+    this.refreshLocalData()
+  }
+
+  onRefreshKeyChanged(_propName: string): void {
+    this.refreshLocalData()
   }
 
   onAuthSessionUpdated(_propName: string): void {
@@ -201,6 +200,11 @@ export struct AccountDashboardPage {
       .width('100%')
       .height('100%')
       .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
+      .onVisibleAreaChange([0.0, 1.0], (isVisible: boolean, _currentRatio: number) => {
+        if (isVisible) {
+          this.refreshLocalData()
+        }
+      })
     }
   }
 
@@ -598,9 +602,9 @@ export struct AccountDashboardPage {
         this.ns.pushPathByName('SavedTopics', null)
       })
       this.SettingsDivider()
-      this.LocalNavigationRow('最近浏览', this.viewedTopics.length, () => {
+      ViewedTopicsNavigationRow({ refreshKey: this.refreshKey, action: () => {
         this.ns.pushPathByName('ViewedTopics', null)
-      })
+      } })
       this.SettingsDivider()
       this.LocalNavigationRow('本地关注节点', this.savedNodes.length, () => {
         this.ns.pushPathByName('SavedNodes', null)
@@ -1028,6 +1032,16 @@ export struct AccountDashboardPage {
       })
   }
 
+  private refreshLocalData(): void {
+    this.savedTopics = []
+    this.savedNodes = []
+    this.viewedTopics = []
+    this.loadSavedTopics()
+    this.loadSavedNodes()
+    this.loadViewedTopics()
+    this.loadTopicReadStates()
+  }
+
   private openV2exPathInSystemBrowser(path: string): void {
     const baseUrl = this.http.getBaseUrl()
     const cleanPath = (path || '').trim()
@@ -1049,6 +1063,46 @@ export struct AccountDashboardPage {
       .catch((error: Error) => {
         promptAction.openToast({ message: error.message || '打开失败' }).catch((_error: Error) => {
         })
+      })
+  }
+}
+
+@Component
+struct ViewedTopicsNavigationRow {
+  @Prop @Watch('onRefreshKeyChanged') refreshKey: number = 0
+  @State private count: number = 0
+  action?: () => void
+
+  aboutToAppear(): void {
+    this.loadCount()
+  }
+
+  onRefreshKeyChanged(_propName: string): void {
+    this.loadCount()
+  }
+
+  build() {
+    ConciseListRow({
+      title: '最近浏览',
+      count: this.count,
+      action: this.action,
+      showChevron: true
+    })
+      .onVisibleAreaChange([0.0, 1.0], (isVisible: boolean, _currentRatio: number) => {
+        if (isVisible) {
+          this.loadCount()
+        }
+      })
+  }
+
+  private loadCount(): void {
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    CollectionSettings.loadViewedTopics(context)
+      .then((items: ViewedTopic[]) => {
+        this.count = items.length
+      })
+      .catch((error: Error) => {
+        console.error('load viewed topic count failed: ' + error.message)
       })
   }
 }

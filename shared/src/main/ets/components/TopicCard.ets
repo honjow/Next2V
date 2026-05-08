@@ -9,6 +9,8 @@ import { NodeTag } from './NodeTag'
 export struct TopicCard {
   @Prop item: V2exTopic
   @Prop isUnread: boolean = false
+  @Prop metaLabel: string = '最后回复'
+  @Prop metaTimestamp: number = 0
   onUserClick?: () => void
   onNodeClick?: () => void
 
@@ -53,19 +55,21 @@ export struct TopicCard {
       .width('100%')
 
       Row({ space: ThemeConstants.SPACE_XS }) {
-        if (this.item.replies > 0) {
-          Text('最后回复')
+        if (this.item.replies > 0 || this.metaTimestamp > 0) {
+          Text(this.metaLabel)
             .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
             .fontColor($r('sys.color.font_secondary'))
-          Text(this.item.last_reply_by || this.item.member.username)
-            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-            .fontColor($r('sys.color.font_secondary'))
-            .maxLines(1)
-            .textOverflow({ overflow: TextOverflow.Ellipsis })
-          Text('·')
-            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-            .fontColor($r('sys.color.font_secondary'))
-          TimeAgo({ timestamp: this.item.last_touched })
+          if (this.metaTimestamp <= 0) {
+            Text(this.item.last_reply_by || this.item.member.username)
+              .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+              .fontColor($r('sys.color.font_secondary'))
+              .maxLines(1)
+              .textOverflow({ overflow: TextOverflow.Ellipsis })
+            Text('·')
+              .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+              .fontColor($r('sys.color.font_secondary'))
+          }
+          TimeAgo({ timestamp: this.metaTimestamp > 0 ? this.metaTimestamp : this.item.last_touched })
           Text('·')
             .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
             .fontColor($r('sys.color.font_secondary'))

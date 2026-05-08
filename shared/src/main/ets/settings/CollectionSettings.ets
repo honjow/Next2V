@@ -301,7 +301,10 @@ export class CollectionSettings {
   }
 
   private static touchLocalData(): void {
-    AppStorage.setOrCreate<number>(StorageKeys.LOCAL_DATA_UPDATED_AT, Date.now())
+    const updatedAt = Date.now()
+    if (!AppStorage.set<number>(StorageKeys.LOCAL_DATA_UPDATED_AT, updatedAt)) {
+      AppStorage.setOrCreate<number>(StorageKeys.LOCAL_DATA_UPDATED_AT, updatedAt)
+    }
   }
 
   private static parseTopics(raw: string): SavedTopic[] {

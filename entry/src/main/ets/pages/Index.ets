@@ -224,6 +224,7 @@ struct Index {
   @StorageLink(StorageKeys.USER_PROFILE_ACTIONS_USERNAME) userProfileActionsUsername: string = ''
   @StorageLink(StorageKeys.USER_PROFILE_FOLLOW_LABEL) userProfileFollowLabel: string = ''
   @StorageLink(StorageKeys.USER_PROFILE_BLOCK_LABEL) userProfileBlockLabel: string = ''
+  @State private accountRefreshKey: number = 0
   private http: HttpClient = HttpClient.getInstance()
 
   aboutToAppear(): void {
@@ -381,7 +382,7 @@ struct Index {
         }.tabBar(this.TabIcon('通知', 2))
 
         TabContent() {
-          AccountDashboardPage()
+          AccountDashboardPage({ refreshKey: this.accountRefreshKey })
         }.tabBar(this.TabIcon('我的', 3))
       }
       .barOverlap(true)
@@ -399,6 +400,10 @@ struct Index {
       } as HdsTabsFloatingStyle)
       .onChange((i: number) => {
         this.ct = i
+        if (i === 3) {
+          this.accountRefreshKey = Date.now()
+          this.refreshLocalData()
+        }
       })
     }
     .titleBar(this.titleBarOptions())
@@ -509,8 +514,7 @@ struct Index {
     const subTitle = useLiveNodeIdentity && this.nodeTopicSubtitle
       ? this.nodeTopicSubtitle
       : (nodeTitle && nodeTitle !== nodeName ? nodeName : '')
-    const visibleTitle = subTitle ? `${title} · ${subTitle}` : title
-    return this.navDestTitleBarOpts(visibleTitle, menu, subTitle)
+    return this.navDestTitleBarOpts(title, menu, subTitle)
   }
 
   private userProfileTitleBarOpts(username: string): Record<string, Object> {
@@ -537,6 +541,13 @@ struct Index {
 
   private sendTopicAction(action: string): void {
     AppStorage.setOrCreate<string>(StorageKeys.TOPIC_DETAIL_ACTION, `${Date.now()}:${action}`)
+  }
+
+  private refreshLocalData(): void {
+    const updatedAt = Date.now()
+    if (!AppStorage.set<number>(StorageKeys.LOCAL_DATA_UPDATED_AT, updatedAt)) {
+      AppStorage.setOrCreate<number>(StorageKeys.LOCAL_DATA_UPDATED_AT, updatedAt)
+    }
   }
 
   private sendNodeTopicAction(action: string): void {
