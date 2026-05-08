@@ -1,6 +1,7 @@
 import { common, Want } from '@kit.AbilityKit'
 import { promptAction } from '@kit.ArkUI'
 import type {
+  LocalContentStats,
   SavedNode,
   SavedTopic,
   V2exAuthenticatedMember,
@@ -101,6 +102,9 @@ export struct AccountDashboardPage {
   @StorageLink(StorageKeys.API_RATE_LIMIT_RESET) apiRateLimitReset: number = 0
   @StorageLink(StorageKeys.API_RATE_LIMIT_UPDATED_AT) apiRateLimitUpdatedAt: number = 0
   @StorageLink(StorageKeys.LOCAL_DATA_UPDATED_AT) @Watch('onLocalDataUpdated') localDataUpdatedAt: number = 0
+  @StorageLink(StorageKeys.LOCAL_SAVED_TOPIC_COUNT) savedTopicCount: number = 0
+  @StorageLink(StorageKeys.LOCAL_SAVED_NODE_COUNT) savedNodeCount: number = 0
+  @StorageLink(StorageKeys.LOCAL_VIEWED_TOPIC_COUNT) viewedTopicCount: number = 0
   @State private authToken: string = ''
   @State private authProfile: V2exAuthenticatedMember | null = null
   @State private tokenInfo: V2exTokenInfo | null = null
@@ -119,16 +123,14 @@ export struct AccountDashboardPage {
   @State private isDailyRedeeming: boolean = false
   private http: HttpClient = HttpClient.getInstance()
   private api: ApiService = new ApiService()
+  private localStatsRequestId: number = 0
   showDetail: boolean = false
   @Prop @Watch('onRefreshKeyChanged') refreshKey: number = 0
 
   aboutToAppear(): void {
     this.loadAuthSnapshot()
     this.loadSessionSnapshot()
-    this.loadSavedTopics()
-    this.loadSavedNodes()
-    this.loadViewedTopics()
-    this.loadTopicReadStates()
+    this.refreshLocalData()
   }
 
   onLocalDataUpdated(_propName: string): void {
@@ -598,17 +600,17 @@ export struct AccountDashboardPage {
       this.SettingsDivider()
       this.TopicDraftEntryRow()
       this.SettingsDivider()
-      this.LocalNavigationRow('稍后读', this.savedTopics.length, () => {
+      LocalContentNavigationRow({ title: '稍后读', countKind: LocalContentCountKind.SAVED_TOPICS, refreshKey: this.refreshKey, action: () => {
         this.ns.pushPathByName('SavedTopics', null)
-      })
+      } })
       this.SettingsDivider()
-      ViewedTopicsNavigationRow({ refreshKey: this.refreshKey, action: () => {
+      LocalContentNavigationRow({ title: '最近浏览', countKind: LocalContentCountKind.VIEWED_TOPICS, refreshKey: this.refreshKey, action: () => {
         this.ns.pushPathByName('ViewedTopics', null)
       } })
       this.SettingsDivider()
-      this.LocalNavigationRow('本地关注节点', this.savedNodes.length, () => {
+      LocalContentNavigationRow({ title: '本地关注节点', countKind: LocalContentCountKind.SAVED_NODES, refreshKey: this.refreshKey, action: () => {
         this.ns.pushPathByName('SavedNodes', null)
-      })
+      } })
     }
   }
 
@@ -627,16 +629,6 @@ export struct AccountDashboardPage {
       title: '发帖草稿', action: () => {
         this.ns.pushPathByName('TopicEditor', null)
       }
-    })
-  }
-
-  @Builder
-  LocalNavigationRow(title: string, count: number, action: () => void) {
-    ConciseListRow({
-      title: title,
-      count: count,
-      action: action,
-      showChevron: true
     })
   }
 
@@ -996,6 +988,7 @@ export struct AccountDashboardPage {
     CollectionSettings.loadSavedTopics(context)
       .then((items: SavedTopic[]) => {
         this.savedTopics = items
+        this.savedTopicCount = items.length
       })
       .catch((error: Error) => {
         console.error('load saved topics failed: ' + error.message)
@@ -1007,6 +1000,7 @@ export struct AccountDashboardPage {
     CollectionSettings.loadSavedNodes(context)
       .then((items: SavedNode[]) => {
         this.savedNodes = items
+        this.savedNodeCount = items.length
       })
       .catch((error: Error) => {
         console.error('load saved nodes failed: ' + error.message)
@@ -1018,6 +1012,7 @@ export struct AccountDashboardPage {
     CollectionSettings.loadViewedTopics(context)
       .then((items: ViewedTopic[]) => {
         this.viewedTopics = items
+        this.viewedTopicCount = items.length
       })
       .catch((error: Error) => {
         console.error('load viewed topics failed: ' + error.message)
@@ -1033,13 +1028,28 @@ export struct AccountDashboardPage {
   }
 
   private refreshLocalData(): void {
-    this.savedTopics = []
-    this.savedNodes = []
-    this.viewedTopics = []
+    this.loadLocalContentStats()
     this.loadSavedTopics()
     this.loadSavedNodes()
     this.loadViewedTopics()
     this.loadTopicReadStates()
+  }
+
+  private loadLocalContentStats(): void {
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    const requestId = ++this.localStatsRequestId
+    CollectionSettings.loadLocalContentStats(context)
+      .then((stats: LocalContentStats) => {
+        if (requestId !== this.localStatsRequestId) {
+          return
+        }
+        this.savedTopicCount = stats.savedTopicCount
+        this.savedNodeCount = stats.savedNodeCount
+        this.viewedTopicCount = stats.viewedTopicCount
+      })
+      .catch((error: Error) => {
+        console.error('load local content stats failed: ' + error.message)
+      })
   }
 
   private openV2exPathInSystemBrowser(path: string): void {
@@ -1067,9 +1077,18 @@ export struct AccountDashboardPage {
   }
 }
 
+enum LocalContentCountKind {
+  SAVED_TOPICS = 0,
+  SAVED_NODES = 1,
+  VIEWED_TOPICS = 2
+}
+
 @Component
-struct ViewedTopicsNavigationRow {
+struct LocalContentNavigationRow {
+  @Prop title: string = ''
+  @Prop countKind: LocalContentCountKind = LocalContentCountKind.SAVED_TOPICS
   @Prop @Watch('onRefreshKeyChanged') refreshKey: number = 0
+  @StorageLink(StorageKeys.LOCAL_DATA_UPDATED_AT) @Watch('onLocalDataUpdated') localDataUpdatedAt: number = 0
   @State private count: number = 0
   action?: () => void
 
@@ -1081,22 +1100,69 @@ struct ViewedTopicsNavigationRow {
     this.loadCount()
   }
 
+  onLocalDataUpdated(_propName: string): void {
+    this.loadCount()
+  }
+
   build() {
-    ConciseListRow({
-      title: '最近浏览',
-      count: this.count,
-      action: this.action,
-      showChevron: true
+    Row({ space: ThemeConstants.SPACE_SM }) {
+      Text(this.title)
+        .fontSize(ThemeConstants.FONT_SIZE_LIST_ITEM)
+        .fontWeight(FontWeight.Regular)
+        .fontColor($r('sys.color.font_primary'))
+        .maxLines(1)
+        .textOverflow({ overflow: TextOverflow.Ellipsis })
+        .layoutWeight(1)
+
+      Text(`${this.count}`)
+        .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+        .fontColor($r('sys.color.font_secondary'))
+        .maxLines(1)
+        .textOverflow({ overflow: TextOverflow.Ellipsis })
+
+      Text('›')
+        .fontSize(ThemeConstants.FONT_SIZE_TITLE)
+        .fontColor($r('sys.color.font_secondary'))
+    }
+    .alignItems(VerticalAlign.Center)
+    .width('100%')
+    .height(52)
+    .padding({ left: ThemeConstants.SPACE_LG + ThemeConstants.LIST_ROW_TEXT_INDENT, right: ThemeConstants.SPACE_LG })
+    .borderRadius(ThemeConstants.LIST_ROW_RADIUS)
+    .onClick(() => {
+      if (this.action) {
+        this.action()
+      }
     })
-      .onVisibleAreaChange([0.0, 1.0], (isVisible: boolean, _currentRatio: number) => {
-        if (isVisible) {
-          this.loadCount()
-        }
-      })
+    .onVisibleAreaChange([0.0, 1.0], (isVisible: boolean, _currentRatio: number) => {
+      if (isVisible) {
+        this.loadCount()
+      }
+    })
   }
 
   private loadCount(): void {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    if (this.countKind === LocalContentCountKind.SAVED_TOPICS) {
+      CollectionSettings.loadSavedTopics(context)
+        .then((items: SavedTopic[]) => {
+          this.count = items.length
+        })
+        .catch((error: Error) => {
+          console.error('load saved topic count failed: ' + error.message)
+        })
+      return
+    }
+    if (this.countKind === LocalContentCountKind.SAVED_NODES) {
+      CollectionSettings.loadSavedNodes(context)
+        .then((items: SavedNode[]) => {
+          this.count = items.length
+        })
+        .catch((error: Error) => {
+          console.error('load saved node count failed: ' + error.message)
+        })
+      return
+    }
     CollectionSettings.loadViewedTopics(context)
       .then((items: ViewedTopic[]) => {
         this.count = items.length

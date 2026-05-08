@@ -57,12 +57,20 @@ export interface TopicReadState {
   updatedAt: number
 }
 
+export interface LocalContentStats {
+  savedTopicCount: number
+  savedNodeCount: number
+  viewedTopicCount: number
+}
+
 export class CollectionSettings {
   static async loadSavedTopics(context: common.UIAbilityContext): Promise<SavedTopic[]> {
     try {
       const store = await preferences.getPreferences(context, STORE_NAME)
       const raw = store.getSync(KEY_SAVED_TOPICS, '[]') as string
-      return CollectionSettings.parseTopics(raw)
+      const topics = CollectionSettings.parseTopics(raw)
+      CollectionSettings.publishLocalContentCount(StorageKeys.LOCAL_SAVED_TOPIC_COUNT, topics.length)
+      return topics
     } catch (error) {
       const e = error as Error
       throw new Error(e.message || '读取稍后读失败')
@@ -103,7 +111,9 @@ export class CollectionSettings {
     try {
       const store = await preferences.getPreferences(context, STORE_NAME)
       const raw = store.getSync(KEY_SAVED_NODES, '[]') as string
-      return CollectionSettings.parseNodes(raw)
+      const nodes = CollectionSettings.parseNodes(raw)
+      CollectionSettings.publishLocalContentCount(StorageKeys.LOCAL_SAVED_NODE_COUNT, nodes.length)
+      return nodes
     } catch (error) {
       const e = error as Error
       throw new Error(e.message || '读取关注节点失败')
@@ -139,11 +149,26 @@ export class CollectionSettings {
     try {
       const store = await preferences.getPreferences(context, STORE_NAME)
       const raw = store.getSync(KEY_VIEWED_TOPICS, '[]') as string
-      return CollectionSettings.parseViewedTopics(raw)
+      const topics = CollectionSettings.parseViewedTopics(raw)
+      CollectionSettings.publishLocalContentCount(StorageKeys.LOCAL_VIEWED_TOPIC_COUNT, topics.length)
+      return topics
     } catch (error) {
       const e = error as Error
       throw new Error(e.message || '读取最近浏览失败')
     }
+  }
+
+  static async loadLocalContentStats(context: common.UIAbilityContext): Promise<LocalContentStats> {
+    const savedTopics = await CollectionSettings.loadSavedTopics(context)
+    const savedNodes = await CollectionSettings.loadSavedNodes(context)
+    const viewedTopics = await CollectionSettings.loadViewedTopics(context)
+    const stats: LocalContentStats = {
+      savedTopicCount: savedTopics.length,
+      savedNodeCount: savedNodes.length,
+      viewedTopicCount: viewedTopics.length
+    }
+    CollectionSettings.publishLocalContentStats(stats)
+    return stats
   }
 
   static async recordViewedTopic(context: common.UIAbilityContext, topic: V2exTopic): Promise<ViewedTopic[]> {
@@ -244,6 +269,8 @@ export class CollectionSettings {
       store.deleteSync(KEY_TOPIC_READ_STATES)
       store.flushSync()
       AppStorage.setOrCreate<string>(StorageKeys.TOPIC_READ_STATES, '[]')
+      CollectionSettings.publishLocalContentStats({ savedTopicCount: 0, savedNodeCount: 0, viewedTopicCount: 0 })
+      CollectionSettings.touchLocalData()
     } catch (error) {
       const e = error as Error
       throw new Error(e.message || '清理本地收藏与阅读记录失败')
@@ -255,6 +282,7 @@ export class CollectionSettings {
       const store = await preferences.getPreferences(context, STORE_NAME)
       store.putSync(KEY_SAVED_TOPICS, JSON.stringify(topics))
       store.flushSync()
+      CollectionSettings.publishLocalContentCount(StorageKeys.LOCAL_SAVED_TOPIC_COUNT, topics.length)
       CollectionSettings.touchLocalData()
     } catch (error) {
       const e = error as Error
@@ -267,6 +295,7 @@ export class CollectionSettings {
       const store = await preferences.getPreferences(context, STORE_NAME)
       store.putSync(KEY_SAVED_NODES, JSON.stringify(nodes))
       store.flushSync()
+      CollectionSettings.publishLocalContentCount(StorageKeys.LOCAL_SAVED_NODE_COUNT, nodes.length)
       CollectionSettings.touchLocalData()
     } catch (error) {
       const e = error as Error
@@ -279,6 +308,7 @@ export class CollectionSettings {
       const store = await preferences.getPreferences(context, STORE_NAME)
       store.putSync(KEY_VIEWED_TOPICS, JSON.stringify(topics))
       store.flushSync()
+      CollectionSettings.publishLocalContentCount(StorageKeys.LOCAL_VIEWED_TOPIC_COUNT, topics.length)
       CollectionSettings.touchLocalData()
     } catch (error) {
       const e = error as Error
@@ -312,6 +342,18 @@ export class CollectionSettings {
     const updatedAt = Date.now()
     if (!AppStorage.set<number>(StorageKeys.LOCAL_DATA_UPDATED_AT, updatedAt)) {
       AppStorage.setOrCreate<number>(StorageKeys.LOCAL_DATA_UPDATED_AT, updatedAt)
+    }
+  }
+
+  private static publishLocalContentStats(stats: LocalContentStats): void {
+    CollectionSettings.publishLocalContentCount(StorageKeys.LOCAL_SAVED_TOPIC_COUNT, stats.savedTopicCount)
+    CollectionSettings.publishLocalContentCount(StorageKeys.LOCAL_SAVED_NODE_COUNT, stats.savedNodeCount)
+    CollectionSettings.publishLocalContentCount(StorageKeys.LOCAL_VIEWED_TOPIC_COUNT, stats.viewedTopicCount)
+  }
+
+  private static publishLocalContentCount(key: string, count: number): void {
+    if (!AppStorage.set<number>(key, count)) {
+      AppStorage.setOrCreate<number>(key, count)
     }
   }
 
