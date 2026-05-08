@@ -47,9 +47,11 @@ export struct TopicDetailPage {
   @State private isModerationActionLoading: boolean = false
   @State private jumpFloorText: string = ''
   @State private contextReply: V2exReply | null = null
+  @State private contextItems: ReplyContextItem[] = []
   @State private contextSheetVisible: boolean = false
   @State private replyComposerVisible: boolean = false
   @State private replyComposerInitialContent: string = ''
+  @State private thankedReplyIdsJson: string = '[]'
   private readonly FLOATING_REPLY_HEIGHT: number = 40
   private readonly FLOATING_REPLY_BOTTOM_GAP: number = 2
   private api: ApiService = new ApiService()
@@ -210,6 +212,7 @@ export struct TopicDetailPage {
       onDisappear: () => {
         this.contextSheetVisible = false
         this.contextReply = null
+        this.contextItems = []
       }
     })
     .bindSheet($$this.replyComposerVisible, this.ReplyComposerSheetBuilder(), {
@@ -284,6 +287,7 @@ export struct TopicDetailPage {
               reply: reply,
               floor: this.getFloorForReply(reply.id, index),
               isOp: this.v.topic !== null && reply.member.id === this.v.topic!.member.id,
+              isThanked: this.isReplyThanked(reply.id),
               onUserClick: () => {
                 let p: UserProfileParams = { username: reply.member.username }
                 this.stack.pushPathByName('UserProfile', p as Object)
@@ -468,7 +472,7 @@ export struct TopicDetailPage {
       title: this.replyContextTitle(),
       closeAction: () => { this.closeReplyContext() }
     }) {
-      ForEach(this.buildReplyContextItems(), (item: ReplyContextItem) => {
+      ForEach(this.contextItems, (item: ReplyContextItem) => {
         ListItem() {
           this.ReplyContextItemView(item)
         }
@@ -524,11 +528,15 @@ export struct TopicDetailPage {
 
   private openReplyContext(reply: V2exReply): void {
     this.contextReply = reply
-    this.contextSheetVisible = true
+    this.contextItems = this.buildReplyContextItems()
+    setTimeout(() => {
+      this.contextSheetVisible = true
+    }, 240)
   }
 
   private closeReplyContext(): void {
     this.contextSheetVisible = false
+    this.contextItems = []
   }
 
   private replyContextTitle(): string {
@@ -1182,18 +1190,19 @@ export struct TopicDetailPage {
       primaryButton: { value: '取消', action: () => { } },
       secondaryButton: {
         value: '感谢',
-        action: () => { this.executeReplyThank(cookie, thankAction) }
+        action: () => { this.executeReplyThank(cookie, reply, thankAction) }
       }
     })
   }
 
-  private executeReplyThank(cookie: string, action: V2exReplyThankAction): void {
+  private executeReplyThank(cookie: string, reply: V2exReply, action: V2exReplyThankAction): void {
     if (this.isReplyThankLoading) {
       return
     }
     this.isReplyThankLoading = true
     this.api.executeReplyThankWithCookie(cookie, this.topicId, action)
       .then(() => {
+        this.markReplyThanked(reply.id)
         promptAction.openToast({ message: '已感谢' }).catch((_error: Error) => { })
         this.v.load()
       })
@@ -1203,6 +1212,35 @@ export struct TopicDetailPage {
       .finally(() => {
         this.isReplyThankLoading = false
       })
+  }
+
+  private isReplyThanked(replyId: number): boolean {
+    if (replyId <= 0) {
+      return false
+    }
+    try {
+      const ids = JSON.parse(this.thankedReplyIdsJson || '[]') as number[]
+      return Array.isArray(ids) && ids.indexOf(replyId) >= 0
+    } catch (_error) {
+      return false
+    }
+  }
+
+  private markReplyThanked(replyId: number): void {
+    if (replyId <= 0) {
+      return
+    }
+    let ids: number[] = []
+    try {
+      const parsed = JSON.parse(this.thankedReplyIdsJson || '[]') as number[]
+      ids = Array.isArray(parsed) ? parsed : []
+    } catch (_error) {
+      ids = []
+    }
+    if (ids.indexOf(replyId) < 0) {
+      ids.push(replyId)
+      this.thankedReplyIdsJson = JSON.stringify(ids)
+    }
   }
 
   private prepareTopicIgnore(): void {

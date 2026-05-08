@@ -2,7 +2,7 @@ import { NodeViewModel } from '../viewmodel/NodeViewModel'
 import {
   V2exTopic, TopicCard, ThemeConstants, TopicDetailParams, StorageKeys, UserProfileParams,
   CollectionSettings, SavedNode, AuthSettings, LoadingFooter, ApiService, CookieJarSettings, V2exToggleAction,
-  SecondaryListScaffold
+  PullRefreshListScaffold
 } from 'shared'
 import type { TopicReadState } from 'shared'
 import { common } from '@kit.AbilityKit'
@@ -16,6 +16,9 @@ export struct NodeTopicPage {
   @State vm: NodeViewModel = new NodeViewModel()
   @StorageLink(StorageKeys.TOPIC_READ_STATES) topicReadStates: string = '[]'
   @StorageLink(StorageKeys.ACCOUNT_WRITE_ENABLED) writeEnabled: boolean = false
+  @StorageLink(StorageKeys.NODE_TOPIC_ACTION) @Watch('onNodeTopicActionCommand') nodeTopicActionCommand: string = ''
+  @StorageLink(StorageKeys.NODE_TOPIC_SAVED) nodeTopicSaved: boolean = false
+  @StorageLink(StorageKeys.NODE_TOPIC_SITE_FAVORITED) nodeTopicSiteFavorited: boolean = false
   @State private isNodeSaved: boolean = false
   @State private isSiteNodeFavorited: boolean = false
   @State private isSiteNodeFavoriteLoading: boolean = false
@@ -23,6 +26,7 @@ export struct NodeTopicPage {
   private api: ApiService = new ApiService()
 
   aboutToAppear(): void {
+    this.syncNodeTitleState(false, false)
     this.loadData()
     this.loadSavedState()
     this.loadSiteNodeFavoriteState()
@@ -30,7 +34,10 @@ export struct NodeTopicPage {
 
   build() {
     Column() {
-      SecondaryListScaffold({ onReachEnd: () => { this.loadMore() } }) {
+      PullRefreshListScaffold({
+        onRefresh: async () => { await this.refreshData() },
+        onReachEnd: () => { this.loadMore() }
+      }) {
         if (this.vm.isLoading) {
           ListItem() { this.LoadingView() }
         } else if (this.vm.errorMessage) {
@@ -93,17 +100,6 @@ export struct NodeTopicPage {
       }
       .layoutWeight(1)
       .alignItems(HorizontalAlign.Start)
-      Column({ space: ThemeConstants.SPACE_SM }) {
-        Button(this.isSiteNodeFavorited ? '站内已收藏' : '站内收藏')
-          .fontSize(ThemeConstants.FONT_SIZE_TAG)
-          .height(40)
-          .enabled(!this.isSiteNodeFavoriteLoading)
-          .onClick(() => { this.prepareSiteNodeFavoriteToggle() })
-        Button(this.isNodeSaved ? '已关注' : '关注')
-          .fontSize(ThemeConstants.FONT_SIZE_TAG)
-          .height(40)
-          .onClick(() => { this.toggleSavedNode() })
-      }
     }
     .padding(ThemeConstants.SPACE_LG)
     .width('100%')
@@ -143,6 +139,7 @@ export struct NodeTopicPage {
     CollectionSettings.isNodeSaved(context, this.nodeName)
       .then((saved: boolean) => {
         this.isNodeSaved = saved
+        this.nodeTopicSaved = saved
       })
       .catch((error: Error) => {
         console.error('load saved node state failed: ' + error.message)
@@ -156,12 +153,14 @@ export struct NodeTopicPage {
     const cookie = CookieJarSettings.getCurrentCookie()
     if (!cookie || !this.nodeName) {
       this.isSiteNodeFavorited = false
+      this.nodeTopicSiteFavorited = false
       return
     }
     this.isSiteNodeFavoriteLoading = true
     this.api.getNodeFavoriteToggleActionWithCookie(cookie, this.nodeName)
       .then((toggle: V2exToggleAction) => {
         this.isSiteNodeFavorited = toggle.currentlyOn
+        this.nodeTopicSiteFavorited = toggle.currentlyOn
       })
       .catch((error: Error) => {
         console.error('load site node favorite state failed: ' + error.message)
@@ -193,6 +192,7 @@ export struct NodeTopicPage {
     this.api.getNodeFavoriteToggleActionWithCookie(cookie, cleanName)
       .then((toggle: V2exToggleAction) => {
         this.isSiteNodeFavorited = toggle.currentlyOn
+        this.nodeTopicSiteFavorited = toggle.currentlyOn
         this.confirmSiteNodeFavoriteToggle(cookie, cleanName, toggle)
       })
       .catch((error: Error) => {
@@ -222,6 +222,7 @@ export struct NodeTopicPage {
     this.api.executeNodeFavoriteToggleWithCookie(cookie, nodeName, toggle)
       .then((favorited: boolean) => {
         this.isSiteNodeFavorited = favorited
+        this.nodeTopicSiteFavorited = favorited
         promptAction.openToast({ message: favorited ? '已收藏' : '已取消收藏' }).catch((_error: Error) => { })
       })
       .catch((error: Error) => {
@@ -232,22 +233,28 @@ export struct NodeTopicPage {
       })
   }
 
-  private loadData(): void {
+  private async refreshData(): Promise<void> {
+    await this.loadData()
+    this.loadSavedState()
+    this.loadSiteNodeFavoriteState()
+  }
+
+  private async loadData(): Promise<void> {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    AuthSettings.load(context)
-      .then((snapshot) => {
-        this.token = snapshot.token || ''
-        this.vm.loadNodeDetailV2(this.nodeName, this.token)
-        if (this.token) {
-          return this.vm.loadNodeTopicsV2(this.nodeName, this.token)
-        }
-        return this.vm.loadNodeTopics(this.nodeName)
-      })
-      .catch((error: Error) => {
-        this.token = ''
-        this.vm.nodeDetailError = error.message || '读取 Token 失败'
-        this.vm.loadNodeTopics(this.nodeName)
-      })
+    try {
+      const snapshot = await AuthSettings.load(context)
+      this.token = snapshot.token || ''
+      this.vm.loadNodeDetailV2(this.nodeName, this.token)
+      if (this.token) {
+        await this.vm.loadNodeTopicsV2(this.nodeName, this.token)
+      } else {
+        await this.vm.loadNodeTopics(this.nodeName)
+      }
+    } catch (error) {
+      this.token = ''
+      this.vm.nodeDetailError = error.message || '读取 Token 失败'
+      await this.vm.loadNodeTopics(this.nodeName)
+    }
   }
 
   private loadMore(): void {
@@ -270,6 +277,7 @@ export struct NodeTopicPage {
     request
       .then(() => {
         this.isNodeSaved = !this.isNodeSaved
+        this.nodeTopicSaved = this.isNodeSaved
       })
       .catch((error: Error) => {
         console.error('toggle saved node failed: ' + error.message)
@@ -303,5 +311,25 @@ export struct NodeTopicPage {
     } catch (_e) {
       return null
     }
+  }
+
+  onNodeTopicActionCommand(_propName: string): void {
+    const raw = (this.nodeTopicActionCommand || '').trim()
+    if (!raw) {
+      return
+    }
+    const action = raw.split(':').pop() || ''
+    if (action === 'siteFavorite') {
+      this.prepareSiteNodeFavoriteToggle()
+    } else if (action === 'saveNode') {
+      this.toggleSavedNode()
+    }
+  }
+
+  private syncNodeTitleState(saved: boolean, siteFavorited: boolean): void {
+    this.isNodeSaved = saved
+    this.isSiteNodeFavorited = siteFavorited
+    this.nodeTopicSaved = saved
+    this.nodeTopicSiteFavorited = siteFavorited
   }
 }

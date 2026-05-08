@@ -11,6 +11,7 @@ export struct ReplyCard {
   @Prop reply: V2exReply
   @Prop floor: number = 1
   @Prop isOp: boolean = false
+  @Prop isThanked: boolean = false
   onUserClick?: () => void
   onActionsClick?: () => void
   onContextClick?: () => void
@@ -63,10 +64,12 @@ export struct ReplyCard {
   }
 
   private runContextAction(action?: () => void): void {
-    this.actionsMenuShown = false
     if (action) {
       action()
     }
+    setTimeout(() => {
+      this.actionsMenuShown = false
+    }, 80)
   }
 
   private showContextMenu(): void {
@@ -180,9 +183,9 @@ export struct ReplyCard {
 
         if (this.onThankClick) {
           Button() {
-            SymbolGlyph($r('sys.symbol.heart'))
+            SymbolGlyph(this.isThanked ? $r('sys.symbol.heart_fill') : $r('sys.symbol.heart'))
               .fontSize(ThemeConstants.FONT_SIZE_TITLE)
-              .fontColor([$r('sys.color.font_secondary')])
+              .fontColor([this.isThanked ? $r('sys.color.font_emphasize') : $r('sys.color.font_secondary')])
           }
           .type(ButtonType.Normal)
           .width(ThemeConstants.TOUCH_TARGET_SM)
@@ -222,12 +225,10 @@ export struct ReplyCard {
           .borderRadius(ThemeConstants.RADIUS_ROUND)
           .backgroundColor(Color.Transparent)
           .onClick(() => {
-            this.showContextMenu()
-          })
-          .bindContextMenu(this.actionsMenuShown, this.ReplyActionMenu, {
-            placement: Placement.TopRight,
-            aboutToDisappear: () => {
-              this.actionsMenuShown = false
+            if (this.onContextClick) {
+              this.onContextClick()
+            } else {
+              this.showContextMenu()
             }
           })
         } else if (this.onActionsClick) {

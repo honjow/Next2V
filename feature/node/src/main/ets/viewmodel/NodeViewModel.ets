@@ -55,7 +55,7 @@ export class NodeViewModel {
 
   private api: ApiService = new ApiService()
   private apiV2: ApiV2Service = new ApiV2Service()
-  private readonly V2_PAGE_SIZE: number = 20
+  private readonly V2_PAGE_SIZE: number = 10
 
   /** 加载所有节点 */
   async loadAllNodes(): Promise<void> {

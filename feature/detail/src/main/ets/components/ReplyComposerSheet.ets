@@ -30,6 +30,7 @@ export struct ReplyComposerSheet {
   @State private isSubmitting: boolean = false
   @State private contentSelectionStart: number = 0
   @State private contentSelectionEnd: number = 0
+  @State private submitContentSnapshot: string = ''
 
   private contentController: TextAreaController = new TextAreaController()
   private api: ApiService = new ApiService()
@@ -157,6 +158,7 @@ export struct ReplyComposerSheet {
     this.isSubmitting = false
     this.contentSelectionStart = 0
     this.contentSelectionEnd = 0
+    this.submitContentSnapshot = ''
     this.hasSubmitted = false
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     DraftSettings.loadReplyDraft(context, this.topicId)
@@ -288,13 +290,21 @@ export struct ReplyComposerSheet {
   }
 
   private confirmSubmit(): void {
-    if (!this.canSubmit()) {
+    const cleanContent = this.content.trim()
+    if (!this.writeEnabled || this.isSubmitting || this.topicId <= 0) {
+      return
+    }
+    if (!cleanContent) {
+      this.errorMessage = '回复内容不能为空'
+      promptAction.openToast({ message: '回复内容不能为空' }).catch((_error: Error) => { })
       return
     }
     if (!CookieJarSettings.getCurrentCookie()) {
       this.errorMessage = '请先登录'
       return
     }
+    this.submitContentSnapshot = cleanContent
+    this.persistDraft()
     AlertDialog.show({
       title: '提交回复',
       message: '确定提交这条回复吗？',
@@ -310,7 +320,8 @@ export struct ReplyComposerSheet {
     }
     this.isSubmitting = true
     this.errorMessage = ''
-    this.api.submitReplyWithCookie(cookie, this.topicId, this.content.trim())
+    const cleanContent = this.submitContentSnapshot || this.content.trim()
+    this.api.submitReplyWithCookie(cookie, this.topicId, cleanContent)
       .then(() => {
         this.hasSubmitted = true
         const context = this.getUIContext().getHostContext() as common.UIAbilityContext

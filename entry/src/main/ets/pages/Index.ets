@@ -214,6 +214,8 @@ struct Index {
   @StorageLink(StorageKeys.TOPIC_DETAIL_SAVED_LATER) topicDetailSavedLater: boolean = false
   @StorageLink(StorageKeys.TOPIC_DETAIL_SITE_FAVORITED) topicDetailSiteFavorited: boolean = false
   @StorageLink(StorageKeys.TOPIC_DETAIL_THANKED) topicDetailThanked: boolean = false
+  @StorageLink(StorageKeys.NODE_TOPIC_SAVED) nodeTopicSaved: boolean = false
+  @StorageLink(StorageKeys.NODE_TOPIC_SITE_FAVORITED) nodeTopicSiteFavorited: boolean = false
   private http: HttpClient = HttpClient.getInstance()
 
   aboutToAppear(): void {
@@ -245,7 +247,7 @@ struct Index {
           nodeName: (param as Record<string, Object>)['nodeName'] as string,
           nodeTitle: (param as Record<string, Object>)['nodeTitle'] as string
         })
-      }.titleBar(this.navDestTitleBarOpts())
+      }.titleBar(this.nodeTopicTitleBarOpts())
     } else if (name === 'ReplyEditor') {
       HdsNavDestination() {
         ReplyEditorPage({
@@ -468,8 +470,27 @@ struct Index {
     return this.navDestTitleBarOpts(undefined, menu)
   }
 
+  private nodeTopicTitleBarOpts(): Record<string, Object> {
+    let items: Record<string, Object>[] = [
+      this.topicActionItem('站内收藏', this.nodeTopicSiteFavorited ? $r('sys.symbol.star_fill') :
+        $r('sys.symbol.star'), () => {
+        this.sendNodeTopicAction('siteFavorite')
+      }),
+      this.topicActionItem('关注节点', this.nodeTopicSaved ? $r('sys.symbol.bookmark_fill') :
+        $r('sys.symbol.bookmark'), () => {
+        this.sendNodeTopicAction('saveNode')
+      })
+    ]
+    let menu: Record<string, Object> = { 'value': items, 'maxCount': 2 }
+    return this.navDestTitleBarOpts(undefined, menu)
+  }
+
   private sendTopicAction(action: string): void {
     AppStorage.setOrCreate<string>(StorageKeys.TOPIC_DETAIL_ACTION, `${Date.now()}:${action}`)
+  }
+
+  private sendNodeTopicAction(action: string): void {
+    AppStorage.setOrCreate<string>(StorageKeys.NODE_TOPIC_ACTION, `${Date.now()}:${action}`)
   }
 
   private sendNotificationAction(action: string): void {

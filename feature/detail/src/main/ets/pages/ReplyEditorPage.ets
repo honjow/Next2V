@@ -20,6 +20,7 @@ export struct ReplyEditorPage {
   @State private isSubmitting: boolean = false
   @State private contentSelectionStart: number = 0
   @State private contentSelectionEnd: number = 0
+  @State private submitContentSnapshot: string = ''
 
   private contentController: TextAreaController = new TextAreaController()
   private saveTimerId: number = 0
@@ -35,6 +36,7 @@ export struct ReplyEditorPage {
     this.isSubmitting = false
     this.contentSelectionStart = 0
     this.contentSelectionEnd = 0
+    this.submitContentSnapshot = ''
     this.hasSubmitted = false
 
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
@@ -315,7 +317,8 @@ export struct ReplyEditorPage {
       promptAction.openToast({ message: '写入操作开关未开启' }).catch((_error: Error) => { })
       return
     }
-    if (this.content.trim().length === 0) {
+    const cleanContent = this.content.trim()
+    if (cleanContent.length === 0) {
       promptAction.openToast({ message: '回复内容不能为空' }).catch((_error: Error) => { })
       return
     }
@@ -324,6 +327,8 @@ export struct ReplyEditorPage {
       return
     }
     const title = (this.topicTitle || '').trim()
+    this.submitContentSnapshot = cleanContent
+    this.persistDraft()
     const target = title ? `《${title}》` : '当前主题'
     const message = `确定向${target}提交回复吗？\n\n` +
       'V2EX 回复通常至少消耗 5 铜币，提交后会修改你的账号状态。'
@@ -346,7 +351,8 @@ export struct ReplyEditorPage {
     }
     this.isSubmitting = true
     this.errorMessage = ''
-    this.api.submitReplyWithCookie(cookie, this.topicId, this.content)
+    const cleanContent = this.submitContentSnapshot || this.content.trim()
+    this.api.submitReplyWithCookie(cookie, this.topicId, cleanContent)
       .then(() => {
         this.hasSubmitted = true
         const context = this.getUIContext().getHostContext() as common.UIAbilityContext
