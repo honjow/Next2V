@@ -69,6 +69,9 @@ export struct AboutPage {
         .fontSize(28)
         .fontWeight(FontWeight.Bold)
         .fontColor($r('sys.color.font_primary'))
+      Text('HarmonyOS 原生 V2EX 客户端')
+        .fontSize(ThemeConstants.FONT_SIZE_BODY)
+        .fontColor($r('sys.color.font_secondary'))
       Text(`版本 ${this.appVersion}`)
         .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
         .fontColor($r('sys.color.font_secondary'))
@@ -90,11 +93,7 @@ export struct AboutPage {
   AppInfoSection() {
     GroupedListSection() {
       ForEach(this.appInfoRows(), (row: AboutInfoRow, index: number) => {
-        ConciseListRow({
-          title: row.label,
-          trailingText: row.value,
-          showChevron: false
-        })
+        this.InfoRow(row.label, row.value)
         if (index < this.appInfoRows().length - 1) {
           this.SettingsDivider()
         }
@@ -115,7 +114,7 @@ export struct AboutPage {
       this.SettingsDivider()
       ConciseListRow({
         title: '开发者',
-        trailingText: this.developerName,
+        subtitle: this.developerName,
         showChevron: false
       })
     }
@@ -126,7 +125,7 @@ export struct AboutPage {
     GroupedListSection() {
       ConciseListRow({
         title: '源代码许可证',
-        trailingText: 'MIT License',
+        subtitle: 'MIT License',
         action: () => {
           this.openInSystemBrowser(this.licenseUrl)
         }
@@ -147,6 +146,23 @@ export struct AboutPage {
   }
 
   @Builder
+  InfoRow(label: string, value: string) {
+    Row() {
+      Text(label)
+        .fontSize(ThemeConstants.FONT_SIZE_LIST_ITEM)
+        .fontColor($r('sys.color.font_primary'))
+        .layoutWeight(1)
+      Text(value)
+        .fontSize(ThemeConstants.FONT_SIZE_LIST_ITEM)
+        .fontColor($r('sys.color.font_secondary'))
+        .maxLines(1)
+        .textOverflow({ overflow: TextOverflow.Ellipsis })
+    }
+    .width('100%')
+    .padding(ThemeConstants.SPACE_LG)
+  }
+
+  @Builder
   SectionHeader(title: string) {
     SharedSectionHeader({ title: title })
   }
@@ -159,6 +175,7 @@ export struct AboutPage {
   private appInfoRows(): AboutInfoRow[] {
     return [
       { label: '应用名称', value: this.appName },
+      { label: '版本', value: this.appVersion },
       { label: '平台', value: 'HarmonyOS' }
     ]
   }

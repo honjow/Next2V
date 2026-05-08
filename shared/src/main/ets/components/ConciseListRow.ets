@@ -1,6 +1,5 @@
 import {
   HdsListItemCard,
-  SuffixText,
   SuffixSwitch,
   SuffixTextAndArrow
 } from '@kit.UIDesignKit'
@@ -11,7 +10,6 @@ import { ThemeConstants } from '../theme/ThemeConstants'
 export struct ConciseListRow {
   @Prop title: string = ''
   @Prop subtitle: string = ''
-  @Prop trailingText: string = ''
   @Prop count: number = -1
   @Prop destructive: boolean = false
   @Prop showChevron: boolean = true
@@ -41,15 +39,7 @@ export struct ConciseListRow {
       .textOverflow({ overflow: TextOverflow.Ellipsis })
   }
 
-  private trailingTextModifier(): TextModifier {
-    return new TextModifier()
-      .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-      .fontColor(this.secondaryColor ?? $r('sys.color.font_secondary'))
-      .maxLines(1)
-      .textOverflow({ overflow: TextOverflow.Ellipsis })
-  }
-
-  private suffixItem(): SuffixSwitch | SuffixTextAndArrow | SuffixText | undefined {
+  private suffixItem(): SuffixSwitch | SuffixTextAndArrow | undefined {
     if (this.hasSwitch) {
       return new SuffixSwitch({
         isCheck: this.checked,
@@ -63,18 +53,6 @@ export struct ConciseListRow {
     }
     if (this.count >= 0) {
       return new SuffixTextAndArrow({ text: `${this.count}` }, { color: Color.Gray })
-    }
-    if (this.trailingText) {
-      if (this.showChevron) {
-        return new SuffixTextAndArrow({
-          text: this.trailingText,
-          modifier: this.trailingTextModifier()
-        }, { color: Color.Gray })
-      }
-      return new SuffixText({
-        text: this.trailingText,
-        modifier: this.trailingTextModifier()
-      })
     }
     if (this.showChevron) {
       return new SuffixTextAndArrow({ text: `` }, { color: Color.Gray })
