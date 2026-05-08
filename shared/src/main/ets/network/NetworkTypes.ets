@@ -170,6 +170,16 @@ export interface V2exMemberRepliesPageSnapshot {
   hasMore: boolean
 }
 
+export interface V2exNodeTopicsPageSnapshot {
+  topicIds: number[]
+  hasMore: boolean
+}
+
+export interface V2exNodeTopicsPageResult {
+  topics: V2exTopic[]
+  hasMore: boolean
+}
+
 export type Sov2exSortMode = 'sumup' | 'created'
 export type Sov2exOrderMode = '0' | '1'
 

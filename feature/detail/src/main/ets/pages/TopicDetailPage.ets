@@ -31,6 +31,7 @@ export struct TopicDetailPage {
   @StorageLink(StorageKeys.TOPIC_DETAIL_SAVED_LATER) topicDetailSavedLater: boolean = false
   @StorageLink(StorageKeys.TOPIC_DETAIL_SITE_FAVORITED) topicDetailSiteFavorited: boolean = false
   @StorageLink(StorageKeys.TOPIC_DETAIL_THANKED) topicDetailThanked: boolean = false
+  @StorageLink(StorageKeys.AUTH_COOKIE_CONFIGURED) authCookieConfigured: boolean = false
   @StorageLink(StorageKeys.ACCOUNT_WRITE_ENABLED) writeEnabled: boolean = false
   @StorageLink(StorageKeys.READING_FONT_SIZE) readingFontSize: number = ThemeConstants.FONT_SIZE_BODY
   @StorageLink(StorageKeys.READING_LINE_HEIGHT) readingLineHeight: number = ThemeConstants.LINE_HEIGHT_BODY
@@ -162,6 +163,11 @@ export struct TopicDetailPage {
   }
 
   private openReplyEditor(initialContent: string = ''): void {
+    if (!this.authCookieConfigured || !CookieJarSettings.getCurrentCookie()) {
+      promptAction.openToast({ message: '请先登录后回复' }).catch((_error: Error) => { })
+      this.stack.pushPathByName('Account', null)
+      return
+    }
     this.replyComposerInitialContent = initialContent
     this.replyComposerVisible = true
   }
@@ -337,40 +343,50 @@ export struct TopicDetailPage {
   }
 
   @Builder FloatingReplyPill() {
-    Button() {
-      Row({ space: ThemeConstants.SPACE_XS }) {
-        SymbolGlyph(this.writeEnabled ? $r('sys.symbol.arrowshape_turn_up_left_fill') : $r('sys.symbol.lock'))
-          .fontSize(18)
-          .fontColor([Color.White])
-        Text(this.writeEnabled ? '回复' : '只读')
-          .fontSize(ThemeConstants.FONT_SIZE_BODY)
-          .fontWeight(FontWeight.Medium)
-          .fontColor(Color.White)
+    Row() {
+      Button() {
+        Row({ space: ThemeConstants.SPACE_XS }) {
+          SymbolGlyph(this.authCookieConfigured ? $r('sys.symbol.arrowshape_turn_up_left_fill') : $r('sys.symbol.lock'))
+            .fontSize(18)
+            .fontColor([Color.White])
+          Text(this.authCookieConfigured ? '回复' : '登录')
+            .fontSize(ThemeConstants.FONT_SIZE_BODY)
+            .fontWeight(FontWeight.Medium)
+            .fontColor(Color.White)
+        }
+        .alignItems(VerticalAlign.Center)
+        .justifyContent(FlexAlign.Center)
+        .onClick(() => {
+          this.openReplyEditor()
+        })
       }
-      .alignItems(VerticalAlign.Center)
-      .justifyContent(FlexAlign.Center)
+      .type(ButtonType.Normal)
+      .height(this.FLOATING_REPLY_HEIGHT)
+      .width(96)
+      .borderRadius(ThemeConstants.RADIUS_ROUND)
+      .backgroundColor(ThemeConstants.BRAND_PRIMARY)
+      .shadow(ShadowStyle.OUTER_DEFAULT_SM)
+      .translate({ x: this.floatingReplyOffsetX() })
+      .zIndex(10)
+      .onClick(() => {
+        this.openReplyEditor()
+      })
     }
-    .type(ButtonType.Normal)
-    .height(this.FLOATING_REPLY_HEIGHT)
-    .width(this.writeEnabled ? 96 : 88)
-    .borderRadius(ThemeConstants.RADIUS_ROUND)
-    .backgroundColor(ThemeConstants.BRAND_PRIMARY)
-    .shadow(ShadowStyle.OUTER_DEFAULT_SM)
-    .enabled(this.writeEnabled)
-    .margin({
+    .width('100%')
+    .height(this.bottomH + this.FLOATING_REPLY_HEIGHT + this.FLOATING_REPLY_BOTTOM_GAP + ThemeConstants.SPACE_SM)
+    .padding({
       left: ThemeConstants.SPACE_LG,
       right: ThemeConstants.SPACE_LG,
       bottom: this.bottomH + this.FLOATING_REPLY_BOTTOM_GAP
     })
-    .translate({ x: this.floatingReplyOffsetX() })
+    .alignItems(VerticalAlign.Bottom)
+    .hitTestBehavior(HitTestMode.Block)
+    .zIndex(10)
     .animation({ duration: ThemeConstants.ANIM_DURATION, curve: Curve.EaseOut })
-    .onClick(() => {
-      this.openReplyEditor()
-    })
   }
 
   private floatingReplyOffsetX(): number {
-    const buttonWidth = this.writeEnabled ? 96 : 88
+    const buttonWidth = 96
     const sideMargin = ThemeConstants.SPACE_LG
     const availableWidth = Math.max(0, this.floatingReplyAreaWidth - sideMargin * 2 - buttonWidth)
     if (this.visualMotionHandEdge === 'right') {

@@ -26,7 +26,9 @@ import type {
   V2exDailyMission,
   V2exMemberPageSnapshot,
   V2exMemberRepliesPageSnapshot,
-  V2exMemberTopicsPageSnapshot
+  V2exMemberTopicsPageSnapshot,
+  V2exNodeTopicsPageSnapshot,
+  V2exNodeTopicsPageResult
 } from './NetworkTypes'
 
 interface CookieHtmlResponse {
@@ -110,6 +112,24 @@ export class ApiService {
   /** 根据节点名获取主题 */
   async getTopicsByNode(nodeName: string): Promise<V2exTopic[]> {
     return ApiService.normalizeTopics(await this.http.get<V2exTopic[]>(`${ApiConstants.API_TOPIC_SHOW}?node_name=${nodeName}`))
+  }
+
+  /** 根据节点网页获取主题，支持 /go/{node}?p=N 分页。 */
+  async getNodeTopicsPage(nodeName: string, page: number = 1): Promise<V2exNodeTopicsPageResult> {
+    const clean = (nodeName || '').trim()
+    if (!clean) {
+      throw new Error('节点名称不能为空')
+    }
+    const safePage = Math.max(1, Math.floor(page))
+    const html = await this.http.getText(`/go/${encodeURIComponent(clean)}?p=${safePage}`)
+    const snapshot: V2exNodeTopicsPageSnapshot = V2exNodeParser.parseNodeTopicsPage(html)
+    if (snapshot.topicIds.length === 0) {
+      return { topics: [], hasMore: false }
+    }
+    return {
+      topics: await this.getBatchTopics(snapshot.topicIds),
+      hasMore: snapshot.hasMore
+    }
   }
 
   /** 获取主题的回复列表 */

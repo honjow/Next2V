@@ -247,6 +247,7 @@ export class CollectionSettings {
       const store = await preferences.getPreferences(context, STORE_NAME)
       store.putSync(KEY_SAVED_TOPICS, JSON.stringify(topics))
       store.flushSync()
+      CollectionSettings.touchLocalData()
     } catch (error) {
       const e = error as Error
       throw new Error(e.message || '保存稍后读失败')
@@ -258,6 +259,7 @@ export class CollectionSettings {
       const store = await preferences.getPreferences(context, STORE_NAME)
       store.putSync(KEY_SAVED_NODES, JSON.stringify(nodes))
       store.flushSync()
+      CollectionSettings.touchLocalData()
     } catch (error) {
       const e = error as Error
       throw new Error(e.message || '保存关注节点失败')
@@ -269,6 +271,7 @@ export class CollectionSettings {
       const store = await preferences.getPreferences(context, STORE_NAME)
       store.putSync(KEY_VIEWED_TOPICS, JSON.stringify(topics))
       store.flushSync()
+      CollectionSettings.touchLocalData()
     } catch (error) {
       const e = error as Error
       throw new Error(e.message || '保存最近浏览失败')
@@ -295,6 +298,10 @@ export class CollectionSettings {
       const e = error as Error
       throw new Error(e.message || '保存已读状态失败')
     }
+  }
+
+  private static touchLocalData(): void {
+    AppStorage.setOrCreate<number>(StorageKeys.LOCAL_DATA_UPDATED_AT, Date.now())
   }
 
   private static parseTopics(raw: string): SavedTopic[] {

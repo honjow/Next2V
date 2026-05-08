@@ -62,8 +62,10 @@ export struct NodeTopicPage {
                 this.stack.pushPathByName('TopicDetail', p as Object)
               })
           })
-          if (this.vm.nodeTopicsUseV2) {
-            ListItem() {
+          ListItem() {
+            if (this.vm.nodeTopicsLoadMoreError) {
+              this.LoadMoreErrorView()
+            } else {
               LoadingFooter({ isLoading: this.vm.isNodeTopicsLoadingMore, hasMore: this.vm.nodeTopicsHasMore })
             }
           }
@@ -132,6 +134,21 @@ export struct NodeTopicPage {
     .justifyContent(FlexAlign.Center)
     .width('100%')
     .height('100%')
+  }
+
+  @Builder LoadMoreErrorView() {
+    Row({ space: ThemeConstants.SPACE_MD }) {
+      Text(this.vm.nodeTopicsLoadMoreError || '加载更多失败')
+        .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+        .fontColor($r('sys.color.font_secondary'))
+      Button('重试')
+        .fontSize(ThemeConstants.FONT_SIZE_TAG)
+        .height(30)
+        .onClick(() => { this.loadMore() })
+    }
+    .justifyContent(FlexAlign.Center)
+    .width('100%')
+    .height(ThemeConstants.FOOTER_HEIGHT)
   }
 
   private loadSavedState(): void {
@@ -260,7 +277,9 @@ export struct NodeTopicPage {
   private loadMore(): void {
     if (this.vm.nodeTopicsUseV2 && this.token) {
       this.vm.loadMoreNodeTopicsV2(this.nodeName, this.token)
+      return
     }
+    this.vm.loadMoreNodeTopics(this.nodeName)
   }
 
   private toggleSavedNode(): void {

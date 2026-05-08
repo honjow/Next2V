@@ -47,6 +47,7 @@ export class NodeViewModel {
   nodeTopicsPage: number = 1
   nodeTopicsHasMore: boolean = true
   isNodeTopicsLoadingMore: boolean = false
+  nodeTopicsLoadMoreError: string = ''
   isLoading: boolean = false
   keyword: string = ''
   errorMessage: string = ''
@@ -88,9 +89,12 @@ export class NodeViewModel {
     this.errorMessage = ''
     this.nodeTopicsUseV2 = false
     this.nodeTopicsPage = 1
-    this.nodeTopicsHasMore = false
+    this.nodeTopicsHasMore = true
+    this.nodeTopicsLoadMoreError = ''
     try {
-      this.nodeTopics = await this.api.getTopicsByNode(nodeName)
+      const snapshot = await this.api.getNodeTopicsPage(nodeName, 1)
+      this.nodeTopics = snapshot.topics
+      this.nodeTopicsHasMore = snapshot.hasMore
     } catch (error) {
       this.errorMessage = error.message || '节点主题加载失败'
       console.error('Failed to load node topics:', error.message)
@@ -124,6 +128,7 @@ export class NodeViewModel {
     this.nodeTopicsUseV2 = true
     this.nodeTopicsPage = 1
     this.nodeTopicsHasMore = true
+    this.nodeTopicsLoadMoreError = ''
     try {
       const res = await this.apiV2.getNodeTopics(token, nodeName, 1)
       const items = res.data || []
@@ -142,6 +147,7 @@ export class NodeViewModel {
     }
     const nextPage = this.nodeTopicsPage + 1
     this.isNodeTopicsLoadingMore = true
+    this.nodeTopicsLoadMoreError = ''
     try {
       const res = await this.apiV2.getNodeTopics(token, nodeName, nextPage)
       const items = res.data || []
@@ -151,8 +157,29 @@ export class NodeViewModel {
       this.nodeTopicsPage = nextPage
       this.nodeTopicsHasMore = items.length >= this.V2_PAGE_SIZE
     } catch (error) {
-      this.errorMessage = error.message || '加载更多失败'
+      this.nodeTopicsLoadMoreError = error.message || '加载更多失败'
       this.nodeTopicsHasMore = false
+    } finally {
+      this.isNodeTopicsLoadingMore = false
+    }
+  }
+
+  async loadMoreNodeTopics(nodeName: string): Promise<void> {
+    if (this.nodeTopicsUseV2 || this.isNodeTopicsLoadingMore || !this.nodeTopicsHasMore) {
+      return
+    }
+    const nextPage = this.nodeTopicsPage + 1
+    this.isNodeTopicsLoadingMore = true
+    this.nodeTopicsLoadMoreError = ''
+    try {
+      const snapshot = await this.api.getNodeTopicsPage(nodeName, nextPage)
+      const merged = this.nodeTopics.slice()
+      merged.push(...snapshot.topics)
+      this.nodeTopics = merged
+      this.nodeTopicsPage = nextPage
+      this.nodeTopicsHasMore = snapshot.hasMore
+    } catch (error) {
+      this.nodeTopicsLoadMoreError = error.message || '加载更多失败'
     } finally {
       this.isNodeTopicsLoadingMore = false
     }

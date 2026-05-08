@@ -1,5 +1,6 @@
 import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
+import { StorageKeys } from '../constants/StorageKeys'
 
 const STORE_NAME: string = 'next2v_drafts'
 const KEY_REPLY_DRAFTS: string = 'replyDrafts'
@@ -52,6 +53,7 @@ export class DraftSettings {
       const store = await preferences.getPreferences(context, STORE_NAME)
       store.putSync(KEY_TOPIC_DRAFT, JSON.stringify(draft))
       store.flushSync()
+      DraftSettings.touchLocalData()
     } catch (error) {
       const e = error as Error
       throw new Error(e.message || '保存草稿失败')
@@ -63,6 +65,7 @@ export class DraftSettings {
       const store = await preferences.getPreferences(context, STORE_NAME)
       store.deleteSync(KEY_TOPIC_DRAFT)
       store.flushSync()
+      DraftSettings.touchLocalData()
     } catch (error) {
       const e = error as Error
       throw new Error(e.message || '清空草稿失败')
@@ -109,6 +112,7 @@ export class DraftSettings {
       store.deleteSync(KEY_TOPIC_DRAFT)
       store.deleteSync(KEY_REPLY_DRAFTS)
       store.flushSync()
+      DraftSettings.touchLocalData()
     } catch (error) {
       const e = error as Error
       throw new Error(e.message || '清理草稿失败')
@@ -131,10 +135,15 @@ export class DraftSettings {
       const store = await preferences.getPreferences(context, STORE_NAME)
       store.putSync(KEY_REPLY_DRAFTS, JSON.stringify(drafts))
       store.flushSync()
+      DraftSettings.touchLocalData()
     } catch (error) {
       const e = error as Error
       throw new Error(e.message || '保存草稿失败')
     }
+  }
+
+  private static touchLocalData(): void {
+    AppStorage.setOrCreate<number>(StorageKeys.LOCAL_DATA_UPDATED_AT, Date.now())
   }
 
   private static parseReplyDrafts(raw: string): ReplyDraft[] {

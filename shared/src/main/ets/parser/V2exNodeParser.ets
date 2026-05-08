@@ -1,3 +1,6 @@
+import type { V2exNodeTopicsPageSnapshot } from '../network/NetworkTypes'
+import { V2exTabParser } from './V2exTabParser'
+
 export interface V2exFavoriteNode {
   name: string
   title: string
@@ -8,6 +11,13 @@ export interface V2exFavoriteNode {
  * - 当前用于解析 /my/nodes 的收藏节点列表
  */
 export class V2exNodeParser {
+  static parseNodeTopicsPage(html: string): V2exNodeTopicsPageSnapshot {
+    return {
+      topicIds: V2exTabParser.extractTopicIds(html || ''),
+      hasMore: V2exNodeParser.extractHasMore(html || '')
+    }
+  }
+
   /**
    * 从 /my/nodes HTML 中提取收藏节点（name + title）
    */
@@ -31,6 +41,25 @@ export class V2exNodeParser {
     return nodes
   }
 
+  private static extractHasMore(html: string): boolean {
+    const currentMatch = html.match(/<a[^>]*class=['"][^'"]*page_current[^'"]*['"][^>]*>(\d+)<\/a>/i)
+    if (currentMatch && currentMatch[1]) {
+      const current = Number.parseInt(currentMatch[1], 10)
+      const pageRe = /[?&]p=(\d+)/gi
+      let max = current
+      let m: RegExpExecArray | null = pageRe.exec(html)
+      while (m) {
+        const page = Number.parseInt(m[1] || '0', 10)
+        if (page > max) {
+          max = page
+        }
+        m = pageRe.exec(html)
+      }
+      return max > current
+    }
+    return /[?&]p=2/i.test(html)
+  }
+
   private static compactText(html: string): string {
     return V2exNodeParser.decodeHtml(html.replace(/<script[\s\S]*?<\/script>/gi, ' ')
       .replace(/<style[\s\S]*?<\/style>/gi, ' ')
@@ -48,4 +77,3 @@ export class V2exNodeParser {
       .replace(/&gt;/g, '>')
   }
 }
-

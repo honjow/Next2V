@@ -78,6 +78,8 @@ export type {
   V2exMemberPageSnapshot,
   V2exMemberRepliesPageSnapshot,
   V2exMemberTopicsPageSnapshot,
+  V2exNodeTopicsPageSnapshot,
+  V2exNodeTopicsPageResult,
   Sov2exSortMode,
   Sov2exOrderMode,
   Sov2exSearchOptions,
