@@ -51,11 +51,9 @@ struct FeedPills {
   @StorageLink('feedTab') @Watch('onFeedTabChanged') feedTab: string = 'tech'
   @StorageLink(StorageKeys.FEED_TAB_KEYS) @Watch('onFeedTabKeysChanged') feedTabKeys: string = FeedTabSettings.defaultKeysJson()
   @StorageLink(StorageKeys.FEED_TAB_VISUAL_INDEX) feedTabVisualIndex: number = 0
-  @StorageLink(StorageKeys.MOTION_HAND_EDGE) @Watch('onMotionHandEdgeChanged') motionHandEdge: string = 'center'
   @State private tabLefts: number[] = []
   @State private tabWidths: number[] = []
   @State private containerGlobalLeft: number = 0
-  @State private containerWidth: number = 0
   private scroller: Scroller = new Scroller()
 
   aboutToAppear(): void {
@@ -66,11 +64,6 @@ struct FeedPills {
   build() {
     Stack({ alignContent: Alignment.TopStart }) {
       List({ space: ThemeConstants.SPACE_XS, scroller: this.scroller }) {
-        ListItem() {
-          Row().width(this.leadingEdgeSpacerWidth()).height(1)
-        }
-        .animation({ duration: ThemeConstants.ANIM_DURATION, curve: Curve.EaseOut })
-
         ForEach(this.visibleTabs(), (tab: TabItem, index: number) => {
           ListItem() {
             Column({ space: 1 }) {
@@ -92,11 +85,6 @@ struct FeedPills {
             })
           }
         })
-
-        ListItem() {
-          Row().width(this.trailingEdgeSpacerWidth()).height(1)
-        }
-        .animation({ duration: ThemeConstants.ANIM_DURATION, curve: Curve.EaseOut })
       }
       .scrollBar(BarState.Off)
       .listDirection(Axis.Horizontal)
@@ -114,7 +102,6 @@ struct FeedPills {
     .width('100%').height('100%')
     .onAreaChange((_oldValue: Area, newValue: Area) => {
       this.containerGlobalLeft = this.areaX(newValue?.globalPosition?.x)
-      this.containerWidth = this.areaX(newValue?.width)
     })
   }
 
@@ -132,10 +119,6 @@ struct FeedPills {
     }
     this.feedTabVisualIndex = this.selectedTabIndex()
     this.centerCurrentTab(false)
-  }
-
-  private onMotionHandEdgeChanged(_propName: string): void {
-    this.centerCurrentTab(true)
   }
 
   private visibleTabs(): TabItem[] {
@@ -212,52 +195,7 @@ struct FeedPills {
   }
 
   private centerCurrentTab(smooth: boolean): void {
-    this.scroller.scrollToIndex(this.selectedTabIndex() + 1, smooth, this.scrollAlignForHandEdge())
-  }
-
-  private selectedTabWidth(): number {
-    const width = this.tabWidths[this.selectedTabIndex()]
-    return width !== undefined && width > 0 ? width : 0
-  }
-
-  private edgeSpacerBaseWidth(): number {
-    const selectedWidth = this.selectedTabWidth()
-    if (this.containerWidth <= 0 || selectedWidth <= 0) {
-      return 0
-    }
-    return Math.max(0, this.containerWidth - selectedWidth - ThemeConstants.SPACE_SM * 2)
-  }
-
-  private leadingEdgeSpacerWidth(): number {
-    const baseWidth = this.edgeSpacerBaseWidth()
-    if (this.motionHandEdge === 'right') {
-      return baseWidth
-    }
-    if (this.motionHandEdge === 'center') {
-      return baseWidth / 2
-    }
-    return 0
-  }
-
-  private trailingEdgeSpacerWidth(): number {
-    const baseWidth = this.edgeSpacerBaseWidth()
-    if (this.motionHandEdge === 'left') {
-      return baseWidth
-    }
-    if (this.motionHandEdge === 'center') {
-      return baseWidth / 2
-    }
-    return 0
-  }
-
-  private scrollAlignForHandEdge(): ScrollAlign {
-    if (this.motionHandEdge === 'left') {
-      return ScrollAlign.START
-    }
-    if (this.motionHandEdge === 'right') {
-      return ScrollAlign.END
-    }
-    return ScrollAlign.CENTER
+    this.scroller.scrollToIndex(this.selectedTabIndex(), smooth, ScrollAlign.CENTER)
   }
 }
 
