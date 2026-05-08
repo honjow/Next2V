@@ -2,12 +2,9 @@ import { common } from '@kit.AbilityKit'
 import {
   CollectionSettings,
   EmptyState,
+  LocalTopicCard,
   SecondaryListScaffold,
-  TopicCard,
   type TopicDetailParams,
-  type V2exMember,
-  type V2exNode,
-  type V2exTopic,
   type ViewedTopic
 } from 'shared'
 
@@ -30,11 +27,17 @@ export struct ViewedTopicsPage {
         } else {
           ForEach(this.topics, (item: ViewedTopic) => {
             ListItem() {
-              TopicCard({
-                item: this.toTopic(item),
+              LocalTopicCard({
+                topicId: item.id,
+                title: item.title,
+                nodeName: item.nodeName,
+                nodeTitle: item.nodeTitle,
+                username: item.username,
+                avatar: item.avatar || '',
+                replyCount: this.replyCount(item),
+                hasReplyCount: this.hasKnownReplyCount(item),
                 metaLabel: '浏览于',
                 metaTimestamp: item.viewedAt,
-                hideLocalSnapshotReplyCount: !this.hasKnownReplyCount(item),
                 onUserClick: () => { this.openTopic(item.id) },
                 onNodeClick: () => { this.openTopic(item.id) }
               })
@@ -67,41 +70,6 @@ export struct ViewedTopicsPage {
     }
     let p: TopicDetailParams = { topicId: topicId }
     this.stack.pushPathByName('TopicDetail', p as Object)
-  }
-
-  private toTopic(item: ViewedTopic): V2exTopic {
-    const member: V2exMember = {
-      id: 0,
-      username: item.username || '',
-      tagline: '',
-      avatar_mini: item.avatar || '',
-      avatar_normal: item.avatar || '',
-      avatar_large: item.avatar || ''
-    }
-    const node: V2exNode = {
-      id: 0,
-      name: item.nodeName || '',
-      title: item.nodeTitle || item.nodeName || '',
-      title_alternative: '',
-      url: '',
-      topics: 0,
-      avatar_mini: '',
-      avatar_normal: '',
-      avatar_large: ''
-    }
-    return {
-      id: item.id,
-      title: item.title,
-      url: '',
-      content: '',
-      content_rendered: '',
-      replies: this.replyCount(item),
-      member: member,
-      node: node,
-      created: item.viewedAt,
-      last_modified: item.viewedAt,
-      last_touched: item.viewedAt
-    }
   }
 
   private hasKnownReplyCount(item: ViewedTopic): boolean {

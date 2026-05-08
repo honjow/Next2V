@@ -2,13 +2,10 @@ import { common } from '@kit.AbilityKit'
 import {
   CollectionSettings,
   EmptyState,
+  LocalTopicCard,
   SecondaryListScaffold,
-  TopicCard,
   type SavedTopic,
-  type TopicDetailParams,
-  type V2exMember,
-  type V2exNode,
-  type V2exTopic
+  type TopicDetailParams
 } from 'shared'
 
 @Component
@@ -21,28 +18,40 @@ export struct SavedTopicsPage {
   }
 
   build() {
-    SecondaryListScaffold() {
-      if (this.topics.length === 0) {
-        ListItem() {
-          EmptyState({ message: '还没有稍后读主题', stateHeight: 220 })
-        }
-      } else {
-        ForEach(this.topics, (item: SavedTopic) => {
+    Column() {
+      SecondaryListScaffold() {
+        if (this.topics.length === 0) {
           ListItem() {
-            TopicCard({
-              item: this.toTopic(item),
-              metaLabel: '保存于',
-              metaTimestamp: item.savedAt,
-              hideLocalSnapshotReplyCount: !this.hasKnownReplyCount(item),
-              onUserClick: () => { this.openTopic(item.id) },
-              onNodeClick: () => { this.openTopic(item.id) }
-            })
-              .onClick(() => { this.openTopic(item.id) })
+            EmptyState({ message: '还没有稍后读主题', stateHeight: 220 })
           }
-          .onClick(() => { this.openTopic(item.id) })
-        }, (item: SavedTopic) => `saved-${item.id}`)
+        } else {
+          ForEach(this.topics, (item: SavedTopic) => {
+            ListItem() {
+              LocalTopicCard({
+                topicId: item.id,
+                title: item.title,
+                nodeName: item.nodeName,
+                nodeTitle: item.nodeTitle,
+                username: item.username,
+                avatar: item.avatar || '',
+                created: item.created,
+                replyCount: this.replyCount(item),
+                hasReplyCount: this.hasKnownReplyCount(item),
+                metaLabel: '保存于',
+                metaTimestamp: item.savedAt,
+                onUserClick: () => { this.openTopic(item.id) },
+                onNodeClick: () => { this.openTopic(item.id) }
+              })
+                .onClick(() => { this.openTopic(item.id) })
+            }
+            .onClick(() => { this.openTopic(item.id) })
+          }, (item: SavedTopic) => `saved-${item.id}`)
+        }
       }
     }
+    .width('100%')
+    .height('100%')
+    .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
   }
 
   private loadTopics(): void {
@@ -62,41 +71,6 @@ export struct SavedTopicsPage {
     }
     let p: TopicDetailParams = { topicId: topicId }
     this.stack.pushPathByName('TopicDetail', p as Object)
-  }
-
-  private toTopic(item: SavedTopic): V2exTopic {
-    const member: V2exMember = {
-      id: 0,
-      username: item.username || '',
-      tagline: '',
-      avatar_mini: item.avatar || '',
-      avatar_normal: item.avatar || '',
-      avatar_large: item.avatar || ''
-    }
-    const node: V2exNode = {
-      id: 0,
-      name: item.nodeName || '',
-      title: item.nodeTitle || item.nodeName || '',
-      title_alternative: '',
-      url: '',
-      topics: 0,
-      avatar_mini: '',
-      avatar_normal: '',
-      avatar_large: ''
-    }
-    return {
-      id: item.id,
-      title: item.title,
-      url: '',
-      content: '',
-      content_rendered: '',
-      replies: this.replyCount(item),
-      member: member,
-      node: node,
-      created: item.created,
-      last_modified: item.savedAt,
-      last_touched: item.savedAt
-    }
   }
 
   private hasKnownReplyCount(item: SavedTopic): boolean {
