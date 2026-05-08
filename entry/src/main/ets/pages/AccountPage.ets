@@ -641,7 +641,6 @@ export struct AccountDashboardPage {
     GroupedListSection() {
       ConciseListRow({
         title: '关于 Next2V',
-        subtitle: '应用信息、项目地址、开发者与开源许可',
         action: () => {
           this.ns.pushPathByName('About', null)
         }
