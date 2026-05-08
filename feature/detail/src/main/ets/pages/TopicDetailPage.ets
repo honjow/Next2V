@@ -1091,6 +1091,7 @@ export struct TopicDetailPage {
     this.isTopicThankLoading = true
     this.api.getTopicThankActionWithCookie(cookie, this.topicId)
       .then((action: V2exTopicThankAction) => {
+        this.isTopicThankLoading = false
         this.confirmTopicThank(cookie, action)
       })
       .catch((error: Error) => {
@@ -1101,7 +1102,7 @@ export struct TopicDetailPage {
       })
   }
 
-  private confirmTopicThank(cookie: string, action: V2exTopicThankAction): void {
+  private confirmTopicThank(cookie: string, thankAction: V2exTopicThankAction): void {
     const title = (this.v.topic?.title || '').trim()
     AlertDialog.show({
       title: '感谢主题',
@@ -1109,7 +1110,7 @@ export struct TopicDetailPage {
       primaryButton: { value: '取消', action: () => { } },
       secondaryButton: {
         value: '感谢',
-        action: () => { this.executeTopicThank(cookie, action) }
+        action: () => { this.executeTopicThank(cookie, thankAction) }
       }
     })
   }
@@ -1163,6 +1164,7 @@ export struct TopicDetailPage {
     this.isReplyThankLoading = true
     this.api.getReplyThankActionWithCookie(cookie, this.topicId, reply.id)
       .then((action: V2exReplyThankAction) => {
+        this.isReplyThankLoading = false
         this.confirmReplyThank(cookie, reply, action)
       })
       .catch((error: Error) => {
@@ -1173,14 +1175,14 @@ export struct TopicDetailPage {
       })
   }
 
-  private confirmReplyThank(cookie: string, reply: V2exReply, action: V2exReplyThankAction): void {
+  private confirmReplyThank(cookie: string, reply: V2exReply, thankAction: V2exReplyThankAction): void {
     AlertDialog.show({
       title: '感谢回复',
       message: `确定感谢 ${reply.member.username || '该用户'} 的回复吗？`,
       primaryButton: { value: '取消', action: () => { } },
       secondaryButton: {
         value: '感谢',
-        action: () => { this.executeReplyThank(cookie, action) }
+        action: () => { this.executeReplyThank(cookie, thankAction) }
       }
     })
   }

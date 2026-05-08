@@ -527,10 +527,11 @@ export class ApiService {
       throw new Error('缺少感谢操作')
     }
     const topicPath = `/t/${topicId}`
-    const res = await this.requestHtmlWithCookieAllowRedirect(action.actionPath, cookie, topicPath, http.RequestMethod.GET)
+    const res = await this.requestHtmlWithCookieAllowRedirect(action.actionPath, cookie, topicPath, http.RequestMethod.POST)
     if (res.location.indexOf('/signin') >= 0) {
       throw new Error('Web 会话已失效，请重新登录')
     }
+    ApiService.assertThankResponse(res.text)
     const problem = V2exSigninParser.extractProblemMessage(res.text)
     if (problem) {
       throw new Error(`感谢失败：${problem}`)
@@ -564,10 +565,11 @@ export class ApiService {
       throw new Error('缺少感谢操作')
     }
     const topicPath = `/t/${action.topicId}`
-    const res = await this.requestHtmlWithCookieAllowRedirect(action.actionPath, cookie, topicPath, http.RequestMethod.GET)
+    const res = await this.requestHtmlWithCookieAllowRedirect(action.actionPath, cookie, topicPath, http.RequestMethod.POST)
     if (res.location.indexOf('/signin') >= 0) {
       throw new Error('Web 会话已失效，请重新登录')
     }
+    ApiService.assertThankResponse(res.text)
     const problem = V2exSigninParser.extractProblemMessage(res.text)
     if (problem) {
       throw new Error(`感谢失败：${problem}`)
@@ -777,7 +779,7 @@ export class ApiService {
         usingCache: false,
         expectDataType: http.HttpDataType.STRING
       }
-      if (method === http.RequestMethod.POST) {
+      if (method === http.RequestMethod.POST && extraData) {
         options.extraData = extraData
       }
       const response = await httpRequest.request(url, options)
@@ -849,8 +851,7 @@ export class ApiService {
     if (looseMatch && looseMatch[0]) {
       return ApiService.decodeHtml(looseMatch[0])
     }
-    const onceMatch = html.match(/once=(\d+)/i)
-    return onceMatch && onceMatch[1] ? `/thank/reply/${replyId}?once=${onceMatch[1]}` : ''
+    return ''
   }
 
   private static extractTopicThankPath(html: string, topicId: number): string {
@@ -864,7 +865,33 @@ export class ApiService {
     }
     const loose = new RegExp(`\\/thank\\/topic\\/${topicId}\\?once=\\d+`, 'i')
     const looseMatch = html.match(loose)
-    return looseMatch && looseMatch[0] ? ApiService.decodeHtml(looseMatch[0]) : ''
+    if (looseMatch && looseMatch[0]) {
+      return ApiService.decodeHtml(looseMatch[0])
+    }
+    const jsCall = new RegExp(`thankTopic\\(\\s*${topicId}\\s*,\\s*['\"](\\d+)['\"]\\s*\\)`, 'i')
+    const jsCallMatch = html.match(jsCall)
+    if (jsCallMatch && jsCallMatch[1]) {
+      return `/thank/topic/${topicId}?once=${jsCallMatch[1]}`
+    }
+    return ''
+  }
+
+  private static assertThankResponse(text: string): void {
+    const clean = (text || '').trim()
+    if (!clean || clean.charAt(0) !== '{') {
+      return
+    }
+    try {
+      const data = JSON.parse(clean) as Record<string, Object>
+      if (data['success'] === false) {
+        const message = (data['message'] as string) || '感谢失败'
+        throw new Error(`感谢失败：${message}`)
+      }
+    } catch (error) {
+      if (error instanceof Error && error.message.indexOf('感谢失败') === 0) {
+        throw error
+      }
+    }
   }
 
   private static extractCookieActionPath(html: string, action: string, target: string, targetId: number): string {
