@@ -2,6 +2,7 @@ import { http } from '@kit.NetworkKit'
 import { HttpClient } from './HttpClient'
 import { ApiConstants } from '../constants/ApiConstants'
 import { StorageKeys } from '../constants/StorageKeys'
+import { HtmlEntityUtils } from '../utils/HtmlEntityUtils'
 import type { V2exNode, V2exReply, V2exTopic } from './NetworkTypes'
 
 const MAX_RETRIES: number = 3
@@ -35,7 +36,11 @@ export class ApiV2Service {
     if (!cleanName) {
       throw new Error('节点名称不能为空')
     }
-    return this.get<V2exNode>(`${ApiConstants.API_V2_NODE}/${encodeURIComponent(cleanName)}`, token)
+    const res = await this.get<V2exNode>(`${ApiConstants.API_V2_NODE}/${encodeURIComponent(cleanName)}`, token)
+    if (res.data) {
+      ApiV2Service.normalizeNode(res.data)
+    }
+    return res
   }
 
   async getNodeTopics(token: string, nodeName: string, page: number = 1): Promise<ApiV2Response<V2exTopic[]>> {
@@ -44,17 +49,25 @@ export class ApiV2Service {
       throw new Error('节点名称不能为空')
     }
     const cleanPage = page > 0 ? page : 1
-    return this.get<V2exTopic[]>(
+    const res = await this.get<V2exTopic[]>(
       `${ApiConstants.API_V2_NODE}/${encodeURIComponent(cleanName)}/topics?p=${cleanPage}`,
       token
     )
+    if (res.data) {
+      res.data = ApiV2Service.normalizeTopics(res.data)
+    }
+    return res
   }
 
   async getTopic(token: string, topicId: number): Promise<ApiV2Response<V2exTopic>> {
     if (topicId <= 0) {
       throw new Error('无效的主题 ID')
     }
-    return this.get<V2exTopic>(`${ApiConstants.API_V2_TOPIC}/${topicId}`, token)
+    const res = await this.get<V2exTopic>(`${ApiConstants.API_V2_TOPIC}/${topicId}`, token)
+    if (res.data) {
+      ApiV2Service.normalizeTopic(res.data)
+    }
+    return res
   }
 
   async getTopicReplies(token: string, topicId: number, page: number = 1): Promise<ApiV2Response<V2exReply[]>> {
@@ -63,7 +76,7 @@ export class ApiV2Service {
     }
     const cleanPage = page > 0 ? page : 1
     const res = await this.get<Object>(`${ApiConstants.API_V2_TOPIC}/${topicId}/replies?p=${cleanPage}`, token)
-    const replies = ApiV2Service.unwrapList<V2exReply>(res.data)
+    const replies = ApiV2Service.normalizeReplies(ApiV2Service.unwrapList<V2exReply>(res.data))
     return { data: replies, headers: res.headers, rateLimit: res.rateLimit, statusCode: res.statusCode }
   }
 
@@ -197,6 +210,51 @@ export class ApiV2Service {
       // ignore
     }
     return []
+  }
+
+  private static normalizeTopics(topics: V2exTopic[]): V2exTopic[] {
+    return (topics || []).map((topic: V2exTopic) => ApiV2Service.normalizeTopic(topic))
+  }
+
+  private static normalizeTopic(topic: V2exTopic): V2exTopic {
+    if (!topic) {
+      return topic
+    }
+    topic.title = HtmlEntityUtils.decode(topic.title)
+    topic.content = HtmlEntityUtils.decode(topic.content)
+    if (topic.node) {
+      ApiV2Service.normalizeNode(topic.node)
+    }
+    if (topic.member) {
+      topic.member.tagline = HtmlEntityUtils.decode(topic.member.tagline)
+    }
+    return topic
+  }
+
+  private static normalizeReplies(replies: V2exReply[]): V2exReply[] {
+    return (replies || []).map((reply: V2exReply) => ApiV2Service.normalizeReply(reply))
+  }
+
+  private static normalizeReply(reply: V2exReply): V2exReply {
+    if (!reply) {
+      return reply
+    }
+    reply.content = HtmlEntityUtils.decode(reply.content)
+    if (reply.member) {
+      reply.member.tagline = HtmlEntityUtils.decode(reply.member.tagline)
+    }
+    return reply
+  }
+
+  private static normalizeNode(node: V2exNode): V2exNode {
+    if (!node) {
+      return node
+    }
+    node.title = HtmlEntityUtils.decode(node.title)
+    node.title_alternative = HtmlEntityUtils.decode(node.title_alternative)
+    node.header = HtmlEntityUtils.decode(node.header || '')
+    node.footer = HtmlEntityUtils.decode(node.footer || '')
+    return node
   }
 
   private static extractApiMessage(text: string): string {

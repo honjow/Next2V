@@ -12,6 +12,7 @@ import { V2exWriteFormParser } from '../parser/V2exWriteFormParser'
 import { V2exSigninParser } from '../parser/V2exSigninParser'
 import { V2exMemberPageParser } from '../parser/V2exMemberPageParser'
 import { V2exAccountListParser, type V2exAccountMemberListItem } from '../parser/V2exAccountListParser'
+import { HtmlEntityUtils } from '../utils/HtmlEntityUtils'
 import type {
   V2exTopic,
   V2exReply,
@@ -67,12 +68,12 @@ export class ApiService {
 
   /** 获取最新 20 条主题 */
   async getLatestTopics(): Promise<V2exTopic[]> {
-    return this.http.get<V2exTopic[]>(ApiConstants.API_LATEST)
+    return ApiService.normalizeTopics(await this.http.get<V2exTopic[]>(ApiConstants.API_LATEST))
   }
 
   /** 获取每日 10 条热门 */
   async getHotTopics(): Promise<V2exTopic[]> {
-    return this.http.get<V2exTopic[]>(ApiConstants.API_HOT)
+    return ApiService.normalizeTopics(await this.http.get<V2exTopic[]>(ApiConstants.API_HOT))
   }
 
   /** 获取网站 hot tab 热榜主题 */
@@ -98,22 +99,22 @@ export class ApiService {
 
   /** 根据 ID 获取单条主题 */
   async getTopicById(topicId: number): Promise<V2exTopic[]> {
-    return this.http.get<V2exTopic[]>(`${ApiConstants.API_TOPIC_SHOW}?id=${topicId}`)
+    return ApiService.normalizeTopics(await this.http.get<V2exTopic[]>(`${ApiConstants.API_TOPIC_SHOW}?id=${topicId}`))
   }
 
   /** 根据用户名获取其主题 */
   async getTopicsByUsername(username: string): Promise<V2exTopic[]> {
-    return this.http.get<V2exTopic[]>(`${ApiConstants.API_TOPIC_SHOW}?username=${username}`)
+    return ApiService.normalizeTopics(await this.http.get<V2exTopic[]>(`${ApiConstants.API_TOPIC_SHOW}?username=${username}`))
   }
 
   /** 根据节点名获取主题 */
   async getTopicsByNode(nodeName: string): Promise<V2exTopic[]> {
-    return this.http.get<V2exTopic[]>(`${ApiConstants.API_TOPIC_SHOW}?node_name=${nodeName}`)
+    return ApiService.normalizeTopics(await this.http.get<V2exTopic[]>(`${ApiConstants.API_TOPIC_SHOW}?node_name=${nodeName}`))
   }
 
   /** 获取主题的回复列表 */
   async getReplies(topicId: number): Promise<V2exReply[]> {
-    return this.http.get<V2exReply[]>(`${ApiConstants.API_REPLIES_SHOW}?topic_id=${topicId}`)
+    return ApiService.normalizeReplies(await this.http.get<V2exReply[]>(`${ApiConstants.API_REPLIES_SHOW}?topic_id=${topicId}`))
   }
 
   /** 获取所有节点 */
@@ -1025,7 +1026,44 @@ export class ApiService {
       )
       results.push(...batchResults.map(r => r[0]).filter(t => t !== undefined))
     }
-    return results
+    return ApiService.normalizeTopics(results)
+  }
+
+  private static normalizeTopics(topics: V2exTopic[]): V2exTopic[] {
+    return (topics || []).map((topic: V2exTopic) => ApiService.normalizeTopic(topic))
+  }
+
+  private static normalizeTopic(topic: V2exTopic): V2exTopic {
+    if (!topic) {
+      return topic
+    }
+    topic.title = HtmlEntityUtils.decode(topic.title)
+    topic.content = HtmlEntityUtils.decode(topic.content)
+    if (topic.node) {
+      topic.node.title = HtmlEntityUtils.decode(topic.node.title)
+      topic.node.title_alternative = HtmlEntityUtils.decode(topic.node.title_alternative)
+      topic.node.header = HtmlEntityUtils.decode(topic.node.header || '')
+      topic.node.footer = HtmlEntityUtils.decode(topic.node.footer || '')
+    }
+    if (topic.member) {
+      topic.member.tagline = HtmlEntityUtils.decode(topic.member.tagline)
+    }
+    return topic
+  }
+
+  private static normalizeReplies(replies: V2exReply[]): V2exReply[] {
+    return (replies || []).map((reply: V2exReply) => ApiService.normalizeReply(reply))
+  }
+
+  private static normalizeReply(reply: V2exReply): V2exReply {
+    if (!reply) {
+      return reply
+    }
+    reply.content = HtmlEntityUtils.decode(reply.content)
+    if (reply.member) {
+      reply.member.tagline = HtmlEntityUtils.decode(reply.member.tagline)
+    }
+    return reply
   }
 
   private static authHeaders(token: string): Record<string, string> {

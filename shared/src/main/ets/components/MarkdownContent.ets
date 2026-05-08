@@ -7,6 +7,7 @@ import { StorageKeys } from "../constants/StorageKeys";
 import { ReadingSettings } from "../settings/ReadingSettings";
 import { ThemeConstants } from "../theme/ThemeConstants";
 import { MediaUrlUtils } from "../utils/MediaUrlUtils";
+import { HtmlEntityUtils } from "../utils/HtmlEntityUtils";
 
 // Custom token types used to hijack @lidary/markdown's built-in rendering.
 // By changing a token's type before passing it to the Markdown component,
@@ -1007,7 +1008,7 @@ export struct MarkdownContent {
   // Re-type certain tokens so the Markdown component doesn't recognize them
   // and delegates to our customBlockBuilder instead.
   private static processTokens(md: string): Token[] {
-    let tokens = lexer(md, { gfm: true, breaks: true });
+    let tokens = lexer(HtmlEntityUtils.decode(md), { gfm: true, breaks: true });
     MarkdownContent.rewriteBareImageLinks(tokens);
     MarkdownContent.promoteStandaloneImageParagraphs(tokens);
     MarkdownContent.rewriteStandaloneTextLinks(tokens);
