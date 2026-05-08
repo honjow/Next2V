@@ -198,14 +198,23 @@ export struct TopicDetailPage {
       if (this.v.topic !== null) {
         this.FloatingReplyPill()
       }
-
-      if (this.contextSheetVisible) {
-        this.ReplyContextOverlay()
-      }
     }
     .width('100%')
     .height('100%')
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
+    .bindSheet($$this.contextSheetVisible, this.ReplyContextSheet(), {
+      height: SheetSize.LARGE,
+      preferType: SheetType.BOTTOM,
+      dragBar: false,
+      showClose: false,
+      maskColor: 'rgba(0,0,0,0.24)',
+      backgroundColor: $r('sys.color.ohos_id_color_card_bg'),
+      onDisappear: () => {
+        this.contextSheetVisible = false
+        this.contextReply = null
+        this.contextItems = []
+      }
+    })
     .bindSheet($$this.replyComposerVisible, this.ReplyComposerSheetBuilder(), {
       height: SheetSize.MEDIUM,
       preferType: SheetType.BOTTOM,
@@ -284,13 +293,13 @@ export struct TopicDetailPage {
                 this.stack.pushPathByName('UserProfile', p as Object)
               },
               onContextClick: () => { this.openReplyContext(reply) },
-              onCopyUserClick: () => { this.copyToClipboard(reply.member.username || '') },
-              onCopyContentClick: () => { this.copyToClipboard(reply.content || '') },
-              onIgnoreClick: () => { this.prepareReplyIgnore(reply) },
-              onReportClick: () => { this.prepareReplyReport(reply) },
               onMentionClick: () => { this.openReplyEditor(this.getMentionText(reply.member.username)) },
               onReplyClick: () => { this.openReplyEditor(this.getMentionText(reply.member.username)) },
               onThankClick: () => { this.prepareReplyThank(reply) },
+              onIgnoreClick: () => { this.prepareReplyIgnore(reply) },
+              onReportClick: () => { this.prepareReplyReport(reply) },
+              onCopyUserClick: () => { this.copyToClipboard(reply.member.username || '') },
+              onCopyContentClick: () => { this.copyToClipboard(reply.content || '') },
               onImageClick: (url: string) => { this.openImagePreview(url) },
               onLinkClick: (url: string) => { this.openContentLink(url) },
               onMentionUserClick: (username: string) => { this.openUserProfile(username) }
@@ -455,28 +464,7 @@ export struct TopicDetailPage {
       .padding({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM, top: 5, bottom: 5 })
       .borderRadius(ThemeConstants.RADIUS_ROUND)
       .backgroundColor(active ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.ohos_id_color_button_normal'))
-      .onClick(() => { action() })
-  }
-
-  @Builder ReplyContextOverlay() {
-    Stack({ alignContent: Alignment.Bottom }) {
-      Rect()
-        .width('100%')
-        .height('100%')
-        .fill('rgba(0,0,0,0.24)')
-        .onClick(() => { this.closeReplyContext() })
-
-      Column() {
-        this.ReplyContextSheet()
-      }
-      .width('100%')
-      .height('72%')
-      .borderRadius({ topLeft: ThemeConstants.RADIUS_MD, topRight: ThemeConstants.RADIUS_MD })
-      .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
-      .zIndex(1)
-    }
-    .width('100%')
-    .height('100%')
+      .onClick(action)
   }
 
   @Builder ReplyContextSheet() {
@@ -540,8 +528,10 @@ export struct TopicDetailPage {
 
   private openReplyContext(reply: V2exReply): void {
     this.contextReply = reply
-    this.contextItems = this.buildReplyContextItems(reply)
-    this.contextSheetVisible = true
+    this.contextItems = this.buildReplyContextItems()
+    setTimeout(() => {
+      this.contextSheetVisible = true
+    }, 240)
   }
 
   private closeReplyContext(): void {
@@ -557,7 +547,11 @@ export struct TopicDetailPage {
     return floor > 0 ? `#${floor} 回复上下文` : '回复上下文'
   }
 
-  private buildReplyContextItems(selected: V2exReply): ReplyContextItem[] {
+  private buildReplyContextItems(): ReplyContextItem[] {
+    if (this.contextReply === null) {
+      return []
+    }
+    const selected = this.contextReply
     const selectedFloor = this.v.getReplyFloor(selected.id)
     const replies = this.v.getLoadedRepliesSnapshot()
     const items: ReplyContextItem[] = []

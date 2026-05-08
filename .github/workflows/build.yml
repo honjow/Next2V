@@ -18,7 +18,7 @@ jobs:
     name: Build unsigned HAP
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/niuhuan/harmony-next-flutter-pipeline-docker/image:latest
+      image: ghcr.io/niuhuan/harmony-next-flutter-pipeline-docker/image:6.0.2.642-3.35.7
 
     steps:
       - name: Checkout
@@ -29,6 +29,19 @@ jobs:
         run: |
           version=$(node -e "const fs=require('fs'); const m=fs.readFileSync('oh-package.json5','utf8').match(/\"version\"\\s*:\\s*\"([^\"]+)\"/); console.log(m ? m[1] : '0.0.0')")
           echo "APP_VERSION=$version" >> "$GITHUB_ENV"
+
+      - name: Align CI metadata with container toolchain
+        shell: bash
+        run: |
+          # The public pipeline container currently provides Hvigor modelVersion 6.0.2.
+          # Keep source project metadata unchanged, but normalize the checked-out CI
+          # workspace so this unsigned artifact build can run with that toolchain.
+          grep -RIl '"modelVersion"[[:space:]]*:[[:space:]]*"6\.1\.0"' . \
+            --include='oh-package.json5' \
+            --include='hvigor-config.json5' \
+            | xargs -r sed -i 's/"modelVersion"[[:space:]]*:[[:space:]]*"6\.1\.0"/"modelVersion": "6.0.2"/g'
+          sed -i 's/"targetSdkVersion"[[:space:]]*:[[:space:]]*"6\.1\.0(23)"/"targetSdkVersion": "6.0.0(20)"/g' build-profile.json5
+          sed -i 's/"compatibleSdkVersion"[[:space:]]*:[[:space:]]*"6\.1\.0(23)"/"compatibleSdkVersion": "6.0.0(20)"/g' build-profile.json5
 
       - name: Install OHPM dependencies
         shell: bash
