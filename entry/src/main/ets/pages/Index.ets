@@ -376,6 +376,7 @@ struct Index {
       .animationDuration(0)
       .barFloatingStyle({
         barBottomMargin: ThemeConstants.SPACE_XL,
+        adaptToHandedness: true,
         systemMaterialEffect: {
           materialType: hdsMaterial.MaterialType.ADAPTIVE,
           materialLevel: hdsMaterial.MaterialLevel.ADAPTIVE
