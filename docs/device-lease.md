@@ -1,0 +1,148 @@
+# 实机占用声明与 Agent 协作约束
+
+V2Next 目前常驻开发验证真机只有一台：`192.168.50.237:12345`。多项目、多 agent 并行开发时，如果多个自动化任务同时执行 `hdc install`、`aa start`、`uitest click/swipe/keyEvent`，真机状态会被交替控制，导致验证结果不可信。
+
+本机制是 **agent 之间的协作锁（advisory lease）**，用于约束 Hermes/Codex/Claude 等自动化任务。它 **不会拦截人工调试**：人仍然可以直接使用 `hdc`、DevEco、屏幕触控等工具；只有交给 agent 的任务必须遵守 lease。
+
+## 原则
+
+1. **人工优先**：人工调试不需要申请 lease，也不会被脚本阻止。
+2. **Agent 控制真机前必须申请 lease**：涉及安装、启动、点击、滑动、按键、清数据等会改变设备状态的操作，agent 必须持有有效 lease。
+3. **只读观察尽量不加锁**：`hdc list targets`、读取 git 状态、读取本地文件、普通日志查看通常不需要 lease；但若日志/截图/布局依赖当前前台 UI 状态，建议申请 lease。
+4. **TTL 防死锁**：lease 有过期时间，agent 卡死后不会永久占用。
+5. **抢占需用户批准**：除非用户明确要求，否则 agent 不得使用 `--force` 抢占别的 lease。
+
+## 工具位置
+
+```bash
+scripts/device-lease
+scripts/device_lease.py
+```
+
+默认设备：`192.168.50.237:12345`
+
+锁文件目录默认在：
+
+```bash
+~/.hermes/device-leases/
+```
+
+可用环境变量覆盖：
+
+```bash
+export V2NEXT_DEVICE_LEASE_DIR=/tmp/v2next-device-leases
+```
+
+## 基本用法
+
+### 查看当前占用
+
+```bash
+scripts/device-lease status
+```
+
+无人占用时返回非 0，输出 `no active lease` 或过期 lease 信息。
+
+### 申请占用
+
+```bash
+LEASE_ID=$(scripts/device-lease acquire \
+  --owner "codex:v2next-thank-verify" \
+  --project "V2Next" \
+  --ttl 30m \
+  --reason "验证主题感谢/回复感谢")
+```
+
+### 带 lease 执行强控制命令
+
+```bash
+scripts/device-lease run --lease "$LEASE_ID" -- \
+  /home/gamer/devtool/ohos/command-line-tools/sdk/default/openharmony/toolchains/hdc \
+  -t 192.168.50.237:12345 shell uitest uiInput click 650 1200
+```
+
+### 续约
+
+```bash
+scripts/device-lease renew --lease "$LEASE_ID" --ttl 15m
+```
+
+### 释放
+
+```bash
+scripts/device-lease release --lease "$LEASE_ID"
+```
+
+建议 agent 使用 `trap` 确保退出时释放：
+
+```bash
+LEASE_ID=$(scripts/device-lease acquire --owner "codex:task" --ttl 30m --reason "真机验证")
+trap 'scripts/device-lease release --lease "$LEASE_ID" || true' EXIT
+```
+
+## Agent Prompt 必带规则
+
+给 Codex/Claude/Hermes 子任务时，涉及真机验证必须加入：
+
+```text
+真机设备 192.168.50.237:12345 是 agent 间共享的独占资源。你在执行任何会改变设备状态的命令前，必须先通过 scripts/device-lease acquire 获取 lease，并用 scripts/device-lease run --lease "$LEASE_ID" -- <command> 执行 hdc install、aa start、uitest click/swipe/keyEvent、清数据、卸载等强控制命令。完成或失败退出时必须 release。不要使用 --force，除非用户明确批准。人工调试不受该机制限制。
+```
+
+## 哪些命令必须持有 lease
+
+必须：
+
+- `hdc install` / 卸载 / 清应用数据
+- `aa start` / 停止应用 / 切前台应用
+- `uitest uiInput click`
+- `uitest uiInput swipe`
+- `uitest uiInput keyEvent`
+- 会改变设备、应用、账号、页面状态的脚本
+
+建议：
+
+- `uitest dumpLayout`，如果依赖当前页面不被别人切走
+- 截图/录屏，如果依赖当前页面不被别人切走
+- hilog 验证，如果需要和某段 UI 操作严格对应
+
+通常不需要：
+
+- `hdc list targets`
+- `git status` / `git diff`
+- 本地构建，不安装到设备时
+- 查看已保存的本地日志文件
+
+## 人工调试如何处理
+
+本机制不阻止人工直接使用设备。如果你要人工调试，建议向 agent 发一句：
+
+```text
+我接管实机调试，暂停所有 agent 真机操作。
+```
+
+agent 应当停止申请新 lease；如已有 lease，应释放或等待用户确认。
+
+如果需要用户批准抢占：
+
+```bash
+scripts/device-lease acquire --force --owner "manual-approved:task" --reason "用户批准抢占"
+```
+
+## 故障处理
+
+如果 agent 崩溃但 lease 仍显示 active：
+
+1. 先检查 `expires_at`，过期后自动可被新 lease 覆盖。
+2. 如确定无人使用且用户批准，可执行：
+
+```bash
+scripts/device-lease release --lease <old-lease-id> --force
+```
+
+或直接用 `--force` 申请新 lease。
+
+## 设计边界
+
+- 这是 advisory lock，不是系统级 hdc 拦截器。
+- 目标是防止 agent 之间互相抢设备，而不是限制人工操作。
+- 真正的强制隔离可后续再做，例如封装统一 `hdc-agent` 命令并禁止 agent 直接调用裸 `hdc`。当前先保持低摩擦。
