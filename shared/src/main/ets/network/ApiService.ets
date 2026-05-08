@@ -846,7 +846,11 @@ export class ApiService {
     }
     const loose = new RegExp(`\\/thank\\/reply\\/${replyId}\\?once=\\d+`, 'i')
     const looseMatch = html.match(loose)
-    return looseMatch && looseMatch[0] ? ApiService.decodeHtml(looseMatch[0]) : ''
+    if (looseMatch && looseMatch[0]) {
+      return ApiService.decodeHtml(looseMatch[0])
+    }
+    const onceMatch = html.match(/once=(\d+)/i)
+    return onceMatch && onceMatch[1] ? `/thank/reply/${replyId}?once=${onceMatch[1]}` : ''
   }
 
   private static extractTopicThankPath(html: string, topicId: number): string {

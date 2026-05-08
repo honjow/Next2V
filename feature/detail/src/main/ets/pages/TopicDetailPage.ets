@@ -1214,8 +1214,8 @@ export struct TopicDetailPage {
 
   private prepareTopicReport(): void {
     this.prepareTopicModeration(
-      '报告主题',
-      '报告',
+      '举报主题',
+      '举报',
       (cookie: string) => this.api.getTopicReportActionWithCookie(cookie, this.topicId),
       (cookie: string, action: V2exTopicModerationAction) => this.api.executeTopicReportWithCookie(cookie, action)
     )
@@ -1234,8 +1234,8 @@ export struct TopicDetailPage {
   private prepareReplyReport(reply: V2exReply): void {
     this.prepareReplyModeration(
       reply,
-      '报告回复',
-      '报告',
+      '举报回复',
+      '举报',
       (cookie: string) => this.api.getReplyReportActionWithCookie(cookie, this.topicId, reply.id),
       (cookie: string, action: V2exReplyModerationAction) => this.api.executeReplyReportWithCookie(cookie, this.topicId, action)
     )

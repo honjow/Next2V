@@ -9,7 +9,7 @@ export struct AppSearchField {
 
   build() {
     Search({ value: this.text, placeholder: this.placeholder })
-      .height(48)
+      .height(40)
       .width('100%')
       .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
       .onChange((value: string) => {

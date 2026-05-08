@@ -58,7 +58,7 @@ export struct ReplyCard {
   }
 
   private hasContextMenuActions(): boolean {
-    return !!(this.onContextClick || this.onMentionClick || this.onCopyUserClick ||
+    return !!(this.onContextClick || this.onCopyUserClick ||
       this.onCopyContentClick || this.onIgnoreClick || this.onReportClick)
   }
 
@@ -80,32 +80,27 @@ export struct ReplyCard {
   ReplyActionMenu() {
     Menu() {
       if (this.onContextClick) {
-        MenuItem({ content: '查看上下文' })
+        MenuItem({ content: '查看上下文', startIcon: $r('sys.symbol.ellipsis_bubble') })
           .onClick(() => { this.runContextAction(this.onContextClick) })
       }
 
-      if (this.onMentionClick) {
-        MenuItem({ content: '提到用户' })
-          .onClick(() => { this.runContextAction(this.onMentionClick) })
-      }
-
       if (this.onCopyUserClick) {
-        MenuItem({ content: '复制用户名' })
+        MenuItem({ content: '复制用户名', startIcon: $r('sys.symbol.person') })
           .onClick(() => { this.runContextAction(this.onCopyUserClick) })
       }
 
       if (this.onCopyContentClick) {
-        MenuItem({ content: '复制回复内容' })
+        MenuItem({ content: '复制回复内容', startIcon: $r('sys.symbol.doc_plaintext') })
           .onClick(() => { this.runContextAction(this.onCopyContentClick) })
       }
 
       if (this.onIgnoreClick) {
-        MenuItem({ content: '忽略回复' })
+        MenuItem({ content: '忽略回复', startIcon: $r('sys.symbol.xmark') })
           .onClick(() => { this.runContextAction(this.onIgnoreClick) })
       }
 
       if (this.onReportClick) {
-        MenuItem({ content: '报告回复' })
+        MenuItem({ content: '举报回复', startIcon: $r('sys.symbol.exclamationmark_triangle') })
           .onClick(() => { this.runContextAction(this.onReportClick) })
       }
     }
@@ -185,7 +180,7 @@ export struct ReplyCard {
 
         if (this.onThankClick) {
           Button() {
-            SymbolGlyph($r('sys.symbol.heart_fill'))
+            SymbolGlyph($r('sys.symbol.heart'))
               .fontSize(ThemeConstants.FONT_SIZE_TITLE)
               .fontColor([$r('sys.color.font_secondary')])
           }

@@ -3,6 +3,7 @@ import { window } from '@kit.ArkUI'
 import { webview } from '@kit.ArkWeb'
 import {
   ApiDomainSettings,
+  CookieJarSettings,
   FeedTabSettings,
   MediaSettings,
   ReadingSettings,
@@ -73,13 +74,20 @@ export default class EntryAbility extends UIAbility {
                     FeedTabSettings.apply(FeedTabSettings.defaultKeysJson())
                   })
                   .finally(() => {
-                    WriteActionSettings.load(this.context)
+                    CookieJarSettings.load(this.context)
                       .catch((error: Error) => {
-                        console.error('restore write settings failed: ' + error.message)
-                        WriteActionSettings.apply(false)
+                        console.error('restore cookie jar failed: ' + error.message)
+                        CookieJarSettings.apply({ comCookie: '', coCookie: '', updatedAt: 0 })
                       })
                       .finally(() => {
-                        this.loadContent(windowStage, win)
+                        WriteActionSettings.load(this.context)
+                          .catch((error: Error) => {
+                            console.error('restore write settings failed: ' + error.message)
+                            WriteActionSettings.apply(false)
+                          })
+                          .finally(() => {
+                            this.loadContent(windowStage, win)
+                          })
                       })
                   })
               })

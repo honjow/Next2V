@@ -433,22 +433,22 @@ struct Index {
 
   private topicDetailTitleBarOpts(): Record<string, Object> {
     let items: Record<string, Object>[] = [
-      this.topicActionItem('稍后读', this.topicDetailSavedLater ? $r('sys.symbol.bookmark_fill') :
-        $r('sys.symbol.bookmark'), () => {
-        this.sendTopicAction('saveLater')
+      this.topicActionItem('感谢主题', this.topicDetailThanked ? $r('sys.symbol.heart_fill') :
+        $r('sys.symbol.heart'), () => {
+        this.sendTopicAction('thankTopic')
       }),
       this.topicActionItem('站内收藏', this.topicDetailSiteFavorited ? $r('sys.symbol.star_fill') :
         $r('sys.symbol.star'), () => {
         this.sendTopicAction('siteFavorite')
       }),
-      this.topicActionItem('感谢主题', this.topicDetailThanked ? $r('sys.symbol.heart_fill') :
-        $r('sys.symbol.heart'), () => {
-        this.sendTopicAction('thankTopic')
+      this.topicActionItem('稍后读', this.topicDetailSavedLater ? $r('sys.symbol.bookmark_fill') :
+        $r('sys.symbol.bookmark'), () => {
+        this.sendTopicAction('saveLater')
       }),
       this.topicActionItem('忽略主题', $r('sys.symbol.xmark'), () => {
         this.sendTopicAction('ignoreTopic')
       }),
-      this.topicActionItem('报告主题', $r('sys.symbol.exclamationmark_triangle'), () => {
+      this.topicActionItem('举报主题', $r('sys.symbol.exclamationmark_triangle'), () => {
         this.sendTopicAction('reportTopic')
       }),
       this.topicActionItem('复制标题', $r('sys.symbol.doc_plaintext'), () => {
