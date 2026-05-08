@@ -45,6 +45,7 @@ import { SavedTopicsPage } from './SavedTopicsPage'
 import { ViewedTopicsPage } from './ViewedTopicsPage'
 import { SavedNodesPage } from './SavedNodesPage'
 import { NotificationPage } from './NotificationPage'
+import { AboutPage } from './AboutPage'
 
 @Component
 struct FeedPills {
@@ -343,6 +344,11 @@ struct Index {
         SavedNodesPage()
       }
       .titleBar(this.navDestTitleBarOpts('本地关注节点'))
+    } else if (name === 'About') {
+      HdsNavDestination() {
+        AboutPage()
+      }
+      .titleBar(this.navDestTitleBarOpts('关于'))
     }
   }
 

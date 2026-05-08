@@ -638,27 +638,15 @@ export struct AccountDashboardPage {
 
   @Builder
   StorageSection() {
-    Column() {
-      Row() {
-        Column({ space: ThemeConstants.SPACE_XS }) {
-          Text('关于 Next2V')
-            .fontSize(ThemeConstants.FONT_SIZE_BODY)
-            .fontWeight(FontWeight.Medium)
-            .fontColor($r('sys.color.font_primary'))
-          Text('版本 0.1.0')
-            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-            .fontColor($r('sys.color.font_secondary'))
+    GroupedListSection() {
+      ConciseListRow({
+        title: '关于 Next2V',
+        subtitle: '应用信息、项目地址、开发者与开源许可',
+        action: () => {
+          this.ns.pushPathByName('About', null)
         }
-        .layoutWeight(1)
-        .alignItems(HorizontalAlign.Start)
-      }
-      .width('100%')
-      .padding(ThemeConstants.SPACE_LG)
+      })
     }
-    .width('100%')
-    .alignItems(HorizontalAlign.Start)
-    .borderRadius(ThemeConstants.RADIUS_MD)
-    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }
 
   private hasCookieAccount(): boolean {
