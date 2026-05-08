@@ -125,12 +125,6 @@ export struct UserProfilePage {
       Row({ space: ThemeConstants.SPACE_MD }) {
         Avatar({ url: this.vm.profile!.avatar_large || this.vm.profile!.avatar_normal, avatarSize: 72 })
         Column({ space: ThemeConstants.SPACE_XS }) {
-          Text(this.vm.profile!.username)
-            .fontSize(ThemeConstants.FONT_SIZE_HEADING + 2)
-            .fontWeight(FontWeight.Bold)
-            .fontColor($r('sys.color.font_primary'))
-            .maxLines(1)
-            .textOverflow({ overflow: TextOverflow.Ellipsis })
           if (this.vm.profile!.tagline) {
             Text(this.vm.profile!.tagline)
               .fontSize(ThemeConstants.FONT_SIZE_BODY)

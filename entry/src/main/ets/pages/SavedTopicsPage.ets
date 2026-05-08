@@ -69,9 +69,9 @@ export struct SavedTopicsPage {
       id: 0,
       username: item.username || '',
       tagline: '',
-      avatar_mini: '',
-      avatar_normal: '',
-      avatar_large: ''
+      avatar_mini: item.avatar || '',
+      avatar_normal: item.avatar || '',
+      avatar_large: item.avatar || ''
     }
     const node: V2exNode = {
       id: 0,

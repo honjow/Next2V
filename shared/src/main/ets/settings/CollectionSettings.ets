@@ -21,6 +21,7 @@ export interface SavedTopic {
   nodeName: string
   nodeTitle: string
   username: string
+  avatar?: string
   created: number
   replies?: number
   savedAt: number
@@ -39,6 +40,7 @@ export interface ViewedTopic {
   nodeName: string
   nodeTitle: string
   username: string
+  avatar?: string
   replies?: number
   viewedAt: number
 }
@@ -75,6 +77,7 @@ export class CollectionSettings {
       nodeName: topic.node.name,
       nodeTitle: topic.node.title,
       username: topic.member.username,
+      avatar: topic.member.avatar_normal || topic.member.avatar_large || topic.member.avatar_mini,
       created: topic.created,
       replies: topic.replies,
       savedAt: Math.floor(Date.now() / 1000)
@@ -151,6 +154,7 @@ export class CollectionSettings {
       nodeName: topic.node.name,
       nodeTitle: topic.node.title,
       username: topic.member.username,
+      avatar: topic.member.avatar_normal || topic.member.avatar_large || topic.member.avatar_mini,
       replies: topic.replies,
       viewedAt: Math.floor(Date.now() / 1000)
     }

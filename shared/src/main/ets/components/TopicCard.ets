@@ -18,7 +18,11 @@ export struct TopicCard {
   build() {
     Column({ space: ThemeConstants.SPACE_XS }) {
       Row({ space: ThemeConstants.SPACE_SM }) {
-        Avatar({ url: this.item.member.avatar_normal, avatarSize: ThemeConstants.AVATAR_SIZE_REPLY })
+        Avatar({
+          url: this.item.member.avatar_normal,
+          avatarSize: ThemeConstants.AVATAR_SIZE_REPLY,
+          placeholder: this.item.member.username
+        })
           .onClick(() => {
             if (this.onUserClick) { this.onUserClick() }
           })

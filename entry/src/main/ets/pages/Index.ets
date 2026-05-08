@@ -536,7 +536,7 @@ struct Index {
         this.sendUserProfileAction('block')
       }))
     }
-    return { 'value': items, 'maxCount': 0 }
+    return { 'value': items, 'maxCount': 2 }
   }
 
   private sendTopicAction(action: string): void {

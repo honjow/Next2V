@@ -21,28 +21,33 @@ export struct ViewedTopicsPage {
   }
 
   build() {
-    SecondaryListScaffold() {
-      if (this.topics.length === 0) {
-        ListItem() {
-          EmptyState({ message: '还没有最近浏览记录', stateHeight: 220 })
-        }
-      } else {
-        ForEach(this.topics, (item: ViewedTopic) => {
+    Column() {
+      SecondaryListScaffold() {
+        if (this.topics.length === 0) {
           ListItem() {
-            TopicCard({
-              item: this.toTopic(item),
-              metaLabel: '浏览于',
-              metaTimestamp: item.viewedAt,
-              hideLocalSnapshotReplyCount: !this.hasKnownReplyCount(item),
-              onUserClick: () => { this.openTopic(item.id) },
-              onNodeClick: () => { this.openTopic(item.id) }
-            })
-              .onClick(() => { this.openTopic(item.id) })
+            EmptyState({ message: '还没有最近浏览记录', stateHeight: 220 })
           }
-          .onClick(() => { this.openTopic(item.id) })
-        }, (item: ViewedTopic) => `viewed-${item.id}`)
+        } else {
+          ForEach(this.topics, (item: ViewedTopic) => {
+            ListItem() {
+              TopicCard({
+                item: this.toTopic(item),
+                metaLabel: '浏览于',
+                metaTimestamp: item.viewedAt,
+                hideLocalSnapshotReplyCount: !this.hasKnownReplyCount(item),
+                onUserClick: () => { this.openTopic(item.id) },
+                onNodeClick: () => { this.openTopic(item.id) }
+              })
+                .onClick(() => { this.openTopic(item.id) })
+            }
+            .onClick(() => { this.openTopic(item.id) })
+          }, (item: ViewedTopic) => `viewed-${item.id}`)
+        }
       }
     }
+    .width('100%')
+    .height('100%')
+    .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
   }
 
   private loadTopics(): void {
@@ -69,9 +74,9 @@ export struct ViewedTopicsPage {
       id: 0,
       username: item.username || '',
       tagline: '',
-      avatar_mini: '',
-      avatar_normal: '',
-      avatar_large: ''
+      avatar_mini: item.avatar || '',
+      avatar_normal: item.avatar || '',
+      avatar_large: item.avatar || ''
     }
     const node: V2exNode = {
       id: 0,
