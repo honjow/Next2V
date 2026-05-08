@@ -205,6 +205,32 @@ function PillCCBuilder() {
   FeedPills()
 }
 
+@Component
+struct NodeTopicAppbarMetadata {
+  @StorageLink(StorageKeys.NODE_TOPIC_SUBTITLE) subtitle: string = ''
+
+  build() {
+    Row() {
+      if ((this.subtitle || '').trim()) {
+        Text((this.subtitle || '').trim())
+          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+          .fontColor($r('sys.color.font_secondary'))
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+      }
+    }
+    .width('100%')
+    .height(28)
+    .alignItems(VerticalAlign.Top)
+    .padding({ left: 64, right: 96 })
+  }
+}
+
+@Builder
+function NodeTopicMetadataCCBuilder() {
+  NodeTopicAppbarMetadata()
+}
+
 @Entry
 @Component
 struct Index {
@@ -420,7 +446,8 @@ struct Index {
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
   }
 
-  private navDestTitleBarOpts(title?: string, menu?: Record<string, Object>, subTitle?: string): Record<string, Object> {
+  private navDestTitleBarOpts(title?: string, menu?: Record<string, Object>, subTitle?: string,
+    bottomBuilder?: Record<string, Object>): Record<string, Object> {
     let mat: Record<string, Object> =
       { 'materialType': hdsMaterial.MaterialType.ADAPTIVE, 'materialLevel': hdsMaterial.MaterialLevel.ADAPTIVE }
     let scrollOpts: Record<string, Object> =
@@ -445,6 +472,9 @@ struct Index {
         titleInfo['subTitle'] = subTitle
       }
       content['title'] = titleInfo
+      if (bottomBuilder) {
+        content['bottomBuilder'] = bottomBuilder
+      }
       return {
         'avoidLayoutSafeArea': true,
         'enableComponentSafeArea': false,
@@ -516,7 +546,9 @@ struct Index {
     const liveSubTitle = (this.nodeTopicSubtitle || '').trim()
     const title = liveTitle || baseTitle
     const subTitle = (liveSubTitle || routeSubTitle) !== title ? (liveSubTitle || routeSubTitle) : ''
-    return this.navDestTitleBarOpts(title, menu, subTitle)
+    let cc = new ComponentContent(this.getUIContext(), wrapBuilder(NodeTopicMetadataCCBuilder))
+    let bb: Record<string, Object> = { 'builderComponent': cc, 'height': 28, 'showType': 0 }
+    return this.navDestTitleBarOpts(title, menu, subTitle, bb)
   }
 
   private userProfileTitleBarOpts(username: string): Record<string, Object> {
