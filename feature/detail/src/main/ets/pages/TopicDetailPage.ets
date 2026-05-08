@@ -35,10 +35,12 @@ export struct TopicDetailPage {
   @StorageLink(StorageKeys.READING_FONT_SIZE) readingFontSize: number = ThemeConstants.FONT_SIZE_BODY
   @StorageLink(StorageKeys.READING_LINE_HEIGHT) readingLineHeight: number = ThemeConstants.LINE_HEIGHT_BODY
   @StorageLink(StorageKeys.READING_DENSITY) readingDensity: string = ReadingSettings.DENSITY_STANDARD
-  @StorageLink(StorageKeys.MOTION_HAND_EDGE) motionHandEdge: string = 'center'
+  @StorageLink(StorageKeys.MOTION_HAND_EDGE) @Watch('onMotionHandEdgeChanged') motionHandEdge: string = 'center'
   @StorageProp(StorageKeys.BOTTOM_AVOID_HEIGHT) bottomH: number = 0
   private scroller: Scroller = new Scroller()
   @State listScrollEnabled: boolean = true
+  @State private visualMotionHandEdge: string = 'center'
+  @State private floatingReplyAreaWidth: number = 0
   @State isSavedLater: boolean = false
   @State private isSiteFavorited: boolean = false
   @State private isTopicThanked: boolean = false
@@ -77,6 +79,7 @@ export struct TopicDetailPage {
     this.hasRestoredReadPosition = false
     this.hasJumpedToTargetFloor = false
     this.jumpFloorText = ''
+    this.visualMotionHandEdge = this.motionHandEdge
     this.syncTopicDetailTitleState(false, false, false)
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     this.v.setCacheHandlers(
@@ -182,7 +185,7 @@ export struct TopicDetailPage {
   }
 
   build() {
-    Stack({ alignContent: this.floatingReplyAlignment() }) {
+    Stack({ alignContent: Alignment.BottomStart }) {
       Column() {
         if (this.v.isLoading && this.v.topic === null) {
           this.LoadingView()
@@ -203,6 +206,9 @@ export struct TopicDetailPage {
     .width('100%')
     .height('100%')
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
+    .onAreaChange((_oldValue: Area, newValue: Area) => {
+      this.floatingReplyAreaWidth = this.areaLength(newValue.width)
+    })
     .bindSheet($$this.replyComposerVisible, this.ReplyComposerSheetBuilder(), {
       height: SheetSize.MEDIUM,
       preferType: SheetType.BOTTOM,
@@ -356,19 +362,41 @@ export struct TopicDetailPage {
       right: ThemeConstants.SPACE_LG,
       bottom: this.bottomH + this.FLOATING_REPLY_BOTTOM_GAP
     })
+    .translate({ x: this.floatingReplyOffsetX() })
+    .animation({ duration: ThemeConstants.ANIM_DURATION, curve: Curve.EaseOut })
     .onClick(() => {
       this.openReplyEditor()
     })
   }
 
-  private floatingReplyAlignment(): Alignment {
-    if (this.motionHandEdge === 'left') {
-      return Alignment.BottomStart
+  private floatingReplyOffsetX(): number {
+    const buttonWidth = this.writeEnabled ? 96 : 88
+    const sideMargin = ThemeConstants.SPACE_LG
+    const availableWidth = Math.max(0, this.floatingReplyAreaWidth - sideMargin * 2 - buttonWidth)
+    if (this.visualMotionHandEdge === 'right') {
+      return availableWidth
     }
-    if (this.motionHandEdge === 'right') {
-      return Alignment.BottomEnd
+    if (this.visualMotionHandEdge === 'center') {
+      return availableWidth / 2
     }
-    return Alignment.Bottom
+    return 0
+  }
+
+  private onMotionHandEdgeChanged(_propName: string): void {
+    this.getUIContext().animateTo({ duration: ThemeConstants.ANIM_DURATION, curve: Curve.EaseOut }, () => {
+      this.visualMotionHandEdge = this.motionHandEdge
+    })
+  }
+
+  private areaLength(value: Length | undefined): number {
+    if (typeof value === 'number') {
+      return value
+    }
+    if (typeof value === 'string') {
+      const parsed = Number.parseFloat(value)
+      return Number.isNaN(parsed) ? 0 : parsed
+    }
+    return 0
   }
 
   @Builder TopicCard() {

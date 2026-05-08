@@ -4,21 +4,22 @@ import { StorageKeys } from '../constants/StorageKeys'
 
 export type MotionHandEdge = 'left' | 'right' | 'center'
 
+type StableMotionHandEdge = 'left' | 'right'
+
 export class MotionHandStateService {
   private static startAttempted: boolean = false
   private static operatingSubscribed: boolean = false
   private static holdingSubscribed: boolean = false
-  private static operatingStatus: motion.OperatingHandStatus = motion.OperatingHandStatus.UNKNOWN_STATUS
-  private static holdingStatus: motion.HoldingHandStatus = motion.HoldingHandStatus.UNKNOWN_STATUS
+  private static pendingEdge: StableMotionHandEdge | null = null
+  private static debounceTimerId: number = 0
+  private static readonly EDGE_DEBOUNCE_MS: number = 450
 
   private static readonly operatingChanged = (status: motion.OperatingHandStatus): void => {
-    MotionHandStateService.operatingStatus = status
-    MotionHandStateService.publishEdge()
+    MotionHandStateService.handleOperatingStatus(status)
   }
 
   private static readonly holdingChanged = (status: motion.HoldingHandStatus): void => {
-    MotionHandStateService.holdingStatus = status
-    MotionHandStateService.publishEdge()
+    MotionHandStateService.handleHoldingStatus(status)
   }
 
   static start(): void {
@@ -29,8 +30,7 @@ export class MotionHandStateService {
     MotionHandStateService.startAttempted = true
 
     try {
-      MotionHandStateService.operatingStatus = motion.getRecentOperatingHandStatus()
-      MotionHandStateService.publishEdge()
+      MotionHandStateService.handleOperatingStatus(motion.getRecentOperatingHandStatus())
     } catch (error) {
       MotionHandStateService.logError('get recent operating hand', error)
     }
@@ -47,10 +47,6 @@ export class MotionHandStateService {
       MotionHandStateService.holdingSubscribed = true
     } catch (error) {
       MotionHandStateService.logError('subscribe holding hand', error)
-    }
-
-    if (!MotionHandStateService.operatingSubscribed && !MotionHandStateService.holdingSubscribed) {
-      MotionHandStateService.setEdge('center')
     }
   }
 
@@ -73,6 +69,7 @@ export class MotionHandStateService {
       MotionHandStateService.holdingSubscribed = false
     }
 
+    MotionHandStateService.cancelPendingEdge()
     MotionHandStateService.startAttempted = false
   }
 
@@ -83,33 +80,51 @@ export class MotionHandStateService {
     }
   }
 
-  private static publishEdge(): void {
-    const operatingEdge = MotionHandStateService.edgeFromOperating(MotionHandStateService.operatingStatus)
-    if (operatingEdge !== 'center') {
-      MotionHandStateService.setEdge(operatingEdge)
+  private static handleOperatingStatus(status: motion.OperatingHandStatus): void {
+    if (status === motion.OperatingHandStatus.LEFT_HAND_OPERATED) {
+      MotionHandStateService.scheduleEdge('left')
       return
     }
-    MotionHandStateService.setEdge(MotionHandStateService.edgeFromHolding(MotionHandStateService.holdingStatus))
-  }
-
-  private static edgeFromOperating(status: motion.OperatingHandStatus): MotionHandEdge {
-    if (status === motion.OperatingHandStatus.LEFT_HAND_OPERATED) {
-      return 'left'
-    }
     if (status === motion.OperatingHandStatus.RIGHT_HAND_OPERATED) {
-      return 'right'
+      MotionHandStateService.scheduleEdge('right')
     }
-    return 'center'
   }
 
-  private static edgeFromHolding(status: motion.HoldingHandStatus): MotionHandEdge {
+  private static handleHoldingStatus(status: motion.HoldingHandStatus): void {
     if (status === motion.HoldingHandStatus.LEFT_HAND_HELD) {
-      return 'left'
+      MotionHandStateService.scheduleEdge('left')
+      return
     }
     if (status === motion.HoldingHandStatus.RIGHT_HAND_HELD) {
-      return 'right'
+      MotionHandStateService.scheduleEdge('right')
     }
-    return 'center'
+  }
+
+  private static scheduleEdge(edge: StableMotionHandEdge): void {
+    if (AppStorage.get<MotionHandEdge>(StorageKeys.MOTION_HAND_EDGE) === edge) {
+      MotionHandStateService.cancelPendingEdge()
+      return
+    }
+    MotionHandStateService.pendingEdge = edge
+    if (MotionHandStateService.debounceTimerId > 0) {
+      clearTimeout(MotionHandStateService.debounceTimerId)
+    }
+    MotionHandStateService.debounceTimerId = setTimeout(() => {
+      const nextEdge = MotionHandStateService.pendingEdge
+      MotionHandStateService.debounceTimerId = 0
+      MotionHandStateService.pendingEdge = null
+      if (nextEdge !== null && AppStorage.get<MotionHandEdge>(StorageKeys.MOTION_HAND_EDGE) !== nextEdge) {
+        MotionHandStateService.setEdge(nextEdge)
+      }
+    }, MotionHandStateService.EDGE_DEBOUNCE_MS)
+  }
+
+  private static cancelPendingEdge(): void {
+    if (MotionHandStateService.debounceTimerId > 0) {
+      clearTimeout(MotionHandStateService.debounceTimerId)
+      MotionHandStateService.debounceTimerId = 0
+    }
+    MotionHandStateService.pendingEdge = null
   }
 
   private static setEdge(edge: MotionHandEdge): void {
