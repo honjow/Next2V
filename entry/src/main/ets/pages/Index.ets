@@ -16,6 +16,7 @@ import {
   HttpClient,
   ImagePreviewParams,
   NodeTopicListParams,
+  MotionHandStateService,
   StorageKeys,
   TabItem,
   ThemeConstants,
@@ -50,6 +51,7 @@ struct FeedPills {
   @StorageLink('feedTab') @Watch('onFeedTabChanged') feedTab: string = 'tech'
   @StorageLink(StorageKeys.FEED_TAB_KEYS) @Watch('onFeedTabKeysChanged') feedTabKeys: string = FeedTabSettings.defaultKeysJson()
   @StorageLink(StorageKeys.FEED_TAB_VISUAL_INDEX) feedTabVisualIndex: number = 0
+  @StorageLink(StorageKeys.MOTION_HAND_EDGE) @Watch('onMotionHandEdgeChanged') motionHandEdge: string = 'center'
   @State private tabLefts: number[] = []
   @State private tabWidths: number[] = []
   @State private containerGlobalLeft: number = 0
@@ -118,6 +120,10 @@ struct FeedPills {
     }
     this.feedTabVisualIndex = this.selectedTabIndex()
     this.centerCurrentTab(false)
+  }
+
+  private onMotionHandEdgeChanged(_propName: string): void {
+    this.centerCurrentTab(true)
   }
 
   private visibleTabs(): TabItem[] {
@@ -194,7 +200,17 @@ struct FeedPills {
   }
 
   private centerCurrentTab(smooth: boolean): void {
-    this.scroller.scrollToIndex(this.selectedTabIndex(), smooth, ScrollAlign.CENTER)
+    this.scroller.scrollToIndex(this.selectedTabIndex(), smooth, this.scrollAlignForHandEdge())
+  }
+
+  private scrollAlignForHandEdge(): ScrollAlign {
+    if (this.motionHandEdge === 'left') {
+      return ScrollAlign.START
+    }
+    if (this.motionHandEdge === 'right') {
+      return ScrollAlign.END
+    }
+    return ScrollAlign.CENTER
   }
 }
 
@@ -219,6 +235,7 @@ struct Index {
   private http: HttpClient = HttpClient.getInstance()
 
   aboutToAppear(): void {
+    MotionHandStateService.start()
     this.consumePendingV2exUrl()
   }
 

@@ -27,6 +27,7 @@ export class StorageKeys {
   static readonly LOCAL_DATA_UPDATED_AT: string = 'localDataUpdatedAt'
   static readonly FEED_TAB_KEYS: string = 'feedTabKeys'
   static readonly FEED_TAB_VISUAL_INDEX: string = 'feedTabVisualIndex'
+  static readonly MOTION_HAND_EDGE: string = 'motionHandEdge'
   static readonly TOPIC_DETAIL_ACTION: string = 'topicDetailAction'
   static readonly TOPIC_DETAIL_SAVED_LATER: string = 'topicDetailSavedLater'
   static readonly TOPIC_DETAIL_SITE_FAVORITED: string = 'topicDetailSiteFavorited'

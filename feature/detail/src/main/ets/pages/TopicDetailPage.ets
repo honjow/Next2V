@@ -35,6 +35,7 @@ export struct TopicDetailPage {
   @StorageLink(StorageKeys.READING_FONT_SIZE) readingFontSize: number = ThemeConstants.FONT_SIZE_BODY
   @StorageLink(StorageKeys.READING_LINE_HEIGHT) readingLineHeight: number = ThemeConstants.LINE_HEIGHT_BODY
   @StorageLink(StorageKeys.READING_DENSITY) readingDensity: string = ReadingSettings.DENSITY_STANDARD
+  @StorageLink(StorageKeys.MOTION_HAND_EDGE) motionHandEdge: string = 'center'
   @StorageProp(StorageKeys.BOTTOM_AVOID_HEIGHT) bottomH: number = 0
   private scroller: Scroller = new Scroller()
   @State listScrollEnabled: boolean = true
@@ -181,7 +182,7 @@ export struct TopicDetailPage {
   }
 
   build() {
-    Stack({ alignContent: Alignment.Bottom }) {
+    Stack({ alignContent: this.floatingReplyAlignment() }) {
       Column() {
         if (this.v.isLoading && this.v.topic === null) {
           this.LoadingView()
@@ -351,11 +352,23 @@ export struct TopicDetailPage {
     .shadow(ShadowStyle.OUTER_DEFAULT_SM)
     .enabled(this.writeEnabled)
     .margin({
+      left: ThemeConstants.SPACE_LG,
+      right: ThemeConstants.SPACE_LG,
       bottom: this.bottomH + this.FLOATING_REPLY_BOTTOM_GAP
     })
     .onClick(() => {
       this.openReplyEditor()
     })
+  }
+
+  private floatingReplyAlignment(): Alignment {
+    if (this.motionHandEdge === 'left') {
+      return Alignment.BottomStart
+    }
+    if (this.motionHandEdge === 'right') {
+      return Alignment.BottomEnd
+    }
+    return Alignment.Bottom
   }
 
   @Builder TopicCard() {
