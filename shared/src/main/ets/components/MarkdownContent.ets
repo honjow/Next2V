@@ -1008,12 +1008,16 @@ export struct MarkdownContent {
   // Re-type certain tokens so the Markdown component doesn't recognize them
   // and delegates to our customBlockBuilder instead.
   private static processTokens(md: string): Token[] {
-    let tokens = lexer(HtmlEntityUtils.decode(md), { gfm: true, breaks: true });
+    let tokens = lexer(MarkdownContent.normalizeMarkdownSource(HtmlEntityUtils.decode(md)), { gfm: true, breaks: true });
     MarkdownContent.rewriteBareImageLinks(tokens);
     MarkdownContent.promoteStandaloneImageParagraphs(tokens);
     MarkdownContent.rewriteStandaloneTextLinks(tokens);
     MarkdownContent.retypeBlockTokens(tokens);
     return tokens;
+  }
+
+  private static normalizeMarkdownSource(md: string): string {
+    return (md || '').replace(/!\[([^\]]*)\]\(\s+(https?:\/\/[^\s)]+)\s*\)/gi, '![$1]($2)');
   }
 
   private static promoteStandaloneImageParagraphs(tokens: Token[]): void {
@@ -1027,10 +1031,13 @@ export struct MarkdownContent {
         const inlineTokens = token["tokens"] as Token[] | undefined;
         if (Array.isArray(inlineTokens) && inlineTokens.length > 0) {
           const meaningful = inlineTokens.filter((t: Token) => t && t.type !== "br");
-          if (meaningful.length === 1 && meaningful[0].type === "image") {
-            const imageToken = meaningful[0] as Token;
-            (imageToken as TokenRecord)["type"] = IMAGE_BLOCK_MONO;
-            tokens[i] = imageToken;
+          if (meaningful.length > 0 && meaningful.every((t: Token) => t.type === "image")) {
+            const imageTokens = meaningful as Token[];
+            for (const imageToken of imageTokens) {
+              (imageToken as TokenRecord)["type"] = IMAGE_BLOCK_MONO;
+            }
+            tokens.splice(i, 1, ...imageTokens);
+            i += imageTokens.length - 1;
             continue;
           }
         }
