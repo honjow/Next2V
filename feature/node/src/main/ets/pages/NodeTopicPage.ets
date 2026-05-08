@@ -340,6 +340,14 @@ export struct NodeTopicPage {
   private syncAppbarIdentity(): void {
     this.nodeTopicTitle = this.vm.nodeDetail?.title || this.nodeTitle || this.nodeName
     const identityName = (this.nodeName || '').trim()
-    this.nodeTopicSubtitle = this.nodeTopicTitle && identityName && this.nodeTopicTitle !== identityName ? identityName : ''
+    const subtitleParts: string[] = []
+    if (this.nodeTopicTitle && identityName && this.nodeTopicTitle !== identityName) {
+      subtitleParts.push(identityName)
+    }
+    const topicCount = this.vm.nodeDetail?.topics || 0
+    if (topicCount > 0) {
+      subtitleParts.push(`${topicCount} 个主题`)
+    }
+    this.nodeTopicSubtitle = subtitleParts.join(' · ')
   }
 }

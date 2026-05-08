@@ -514,7 +514,8 @@ struct Index {
     const liveSubTitle = (this.nodeTopicSubtitle || '').trim()
     const title = liveTitle || baseTitle
     const subTitle = (liveSubTitle || routeSubTitle) !== title ? (liveSubTitle || routeSubTitle) : ''
-    return this.navDestTitleBarOpts(title, menu, subTitle)
+    const visibleTitle = subTitle ? `${title} · ${subTitle}` : title
+    return this.navDestTitleBarOpts(visibleTitle, menu)
   }
 
   private userProfileTitleBarOpts(username: string): Record<string, Object> {
