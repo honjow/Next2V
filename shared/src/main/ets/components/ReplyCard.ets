@@ -27,6 +27,7 @@ export struct ReplyCard {
   onMentionUserClick?: (username: string) => void
   @StorageLink(StorageKeys.READING_DENSITY) readingDensity: string = ReadingSettings.DENSITY_STANDARD
   @State private actionsMenuShown: boolean = false
+  private pendingContextAction?: () => void
 
   private verticalPadding(): number {
     if (this.readingDensity === ReadingSettings.DENSITY_COMPACT) {
@@ -64,11 +65,15 @@ export struct ReplyCard {
   }
 
   private runContextAction(action?: () => void): void {
+    this.pendingContextAction = action
     this.actionsMenuShown = false
+  }
+
+  private flushPendingContextAction(): void {
+    const action = this.pendingContextAction
+    this.pendingContextAction = undefined
     if (action) {
-      setTimeout(() => {
-        action()
-      }, 80)
+      action()
     }
   }
 
@@ -231,6 +236,9 @@ export struct ReplyCard {
             placement: Placement.TopRight,
             aboutToDisappear: () => {
               this.actionsMenuShown = false
+            },
+            onDisappear: () => {
+              this.flushPendingContextAction()
             }
           })
         } else if (this.onActionsClick) {

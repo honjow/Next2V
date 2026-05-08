@@ -49,6 +49,8 @@ export struct TopicDetailPage {
   @State private contextReply: V2exReply | null = null
   @State private contextItems: ReplyContextItem[] = []
   @State private contextSheetVisible: boolean = false
+  @State private replySheetMode: string = 'context'
+  @State private actionReply: V2exReply | null = null
   @State private replyComposerVisible: boolean = false
   @State private replyComposerInitialContent: string = ''
   @State private thankedReplyIdsJson: string = '[]'
@@ -202,19 +204,6 @@ export struct TopicDetailPage {
     .width('100%')
     .height('100%')
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
-    .bindSheet($$this.contextSheetVisible, this.ReplyContextSheet(), {
-      height: SheetSize.LARGE,
-      preferType: SheetType.BOTTOM,
-      dragBar: false,
-      showClose: false,
-      maskColor: 'rgba(0,0,0,0.24)',
-      backgroundColor: $r('sys.color.ohos_id_color_card_bg'),
-      onDisappear: () => {
-        this.contextSheetVisible = false
-        this.contextReply = null
-        this.contextItems = []
-      }
-    })
     .bindSheet($$this.replyComposerVisible, this.ReplyComposerSheetBuilder(), {
       height: SheetSize.MEDIUM,
       preferType: SheetType.BOTTOM,
@@ -225,6 +214,21 @@ export struct TopicDetailPage {
       onDisappear: () => {
         this.replyComposerVisible = false
         this.replyComposerInitialContent = ''
+      }
+    })
+    .bindSheet($$this.contextSheetVisible, this.ReplySheetBuilder(), {
+      height: SheetSize.LARGE,
+      preferType: SheetType.BOTTOM,
+      dragBar: false,
+      showClose: false,
+      maskColor: 'rgba(0,0,0,0.24)',
+      backgroundColor: $r('sys.color.ohos_id_color_card_bg'),
+      onDisappear: () => {
+        this.contextSheetVisible = false
+        this.replySheetMode = 'context'
+        this.actionReply = null
+        this.contextReply = null
+        this.contextItems = []
       }
     })
   }
@@ -292,14 +296,10 @@ export struct TopicDetailPage {
                 let p: UserProfileParams = { username: reply.member.username }
                 this.stack.pushPathByName('UserProfile', p as Object)
               },
-              onContextClick: () => { this.openReplyContext(reply) },
+              onActionsClick: () => { this.openReplyActions(reply) },
               onMentionClick: () => { this.openReplyEditor(this.getMentionText(reply.member.username)) },
               onReplyClick: () => { this.openReplyEditor(this.getMentionText(reply.member.username)) },
               onThankClick: () => { this.prepareReplyThank(reply) },
-              onIgnoreClick: () => { this.prepareReplyIgnore(reply) },
-              onReportClick: () => { this.prepareReplyReport(reply) },
-              onCopyUserClick: () => { this.copyToClipboard(reply.member.username || '') },
-              onCopyContentClick: () => { this.copyToClipboard(reply.content || '') },
               onImageClick: (url: string) => { this.openImagePreview(url) },
               onLinkClick: (url: string) => { this.openContentLink(url) },
               onMentionUserClick: (username: string) => { this.openUserProfile(username) }
@@ -467,6 +467,50 @@ export struct TopicDetailPage {
       .onClick(action)
   }
 
+  @Builder ReplySheetBuilder() {
+    if (this.replySheetMode === 'actions') {
+      this.ReplyActionSheet()
+    } else {
+      this.ReplyContextSheet()
+    }
+  }
+
+  @Builder ReplyActionSheet() {
+    AppModalScaffold({
+      title: this.replyActionTitle(),
+      closeAction: () => { this.closeReplyContext() }
+    }) {
+      ListItem() {
+        this.ReplyActionItem('查看上下文', () => { this.switchReplySheetToContext() })
+      }
+      ListItem() {
+        this.ReplyActionItem('复制用户名', () => { this.copyActionReplyUsername() })
+      }
+      ListItem() {
+        this.ReplyActionItem('复制回复内容', () => { this.copyActionReplyContent() })
+      }
+      ListItem() {
+        this.ReplyActionItem('忽略回复', () => { this.ignoreActionReply() })
+      }
+      ListItem() {
+        this.ReplyActionItem('举报回复', () => { this.reportActionReply() })
+      }
+    }
+  }
+
+  @Builder ReplyActionItem(label: string, action: () => void) {
+    Button(label)
+      .fontSize(ThemeConstants.FONT_SIZE_BODY)
+      .fontColor($r('sys.color.font_primary'))
+      .buttonStyle(ButtonStyleMode.NORMAL)
+      .stateEffect(true)
+      .width('100%')
+      .height(52)
+      .borderRadius(ThemeConstants.RADIUS_MD)
+      .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
+      .onClick(() => { action() })
+  }
+
   @Builder ReplyContextSheet() {
     AppModalScaffold({
       title: this.replyContextTitle(),
@@ -526,12 +570,66 @@ export struct TopicDetailPage {
     })
   }
 
+  private openReplyActions(reply: V2exReply): void {
+    this.actionReply = reply
+    this.replySheetMode = 'actions'
+    this.contextSheetVisible = true
+  }
+
+  private replyActionTitle(): string {
+    if (this.actionReply === null) {
+      return '回复操作'
+    }
+    const floor = this.v.getReplyFloor(this.actionReply.id)
+    return floor > 0 ? `#${floor} 回复操作` : '回复操作'
+  }
+
+  private switchReplySheetToContext(): void {
+    const reply = this.actionReply
+    if (reply !== null) {
+      this.contextReply = reply
+      this.contextItems = this.buildReplyContextItems(reply)
+      this.replySheetMode = 'context'
+    }
+  }
+
+  private copyActionReplyUsername(): void {
+    const reply = this.actionReply
+    this.closeReplyContext()
+    if (reply !== null) {
+      this.copyToClipboard(reply.member.username || '')
+    }
+  }
+
+  private copyActionReplyContent(): void {
+    const reply = this.actionReply
+    this.closeReplyContext()
+    if (reply !== null) {
+      this.copyToClipboard(reply.content || '')
+    }
+  }
+
+  private ignoreActionReply(): void {
+    const reply = this.actionReply
+    this.closeReplyContext()
+    if (reply !== null) {
+      this.prepareReplyIgnore(reply)
+    }
+  }
+
+  private reportActionReply(): void {
+    const reply = this.actionReply
+    this.closeReplyContext()
+    if (reply !== null) {
+      this.prepareReplyReport(reply)
+    }
+  }
+
   private openReplyContext(reply: V2exReply): void {
     this.contextReply = reply
-    this.contextItems = this.buildReplyContextItems()
-    setTimeout(() => {
-      this.contextSheetVisible = true
-    }, 240)
+    this.contextItems = this.buildReplyContextItems(reply)
+    this.replySheetMode = 'context'
+    this.contextSheetVisible = true
   }
 
   private closeReplyContext(): void {
@@ -547,11 +645,7 @@ export struct TopicDetailPage {
     return floor > 0 ? `#${floor} 回复上下文` : '回复上下文'
   }
 
-  private buildReplyContextItems(): ReplyContextItem[] {
-    if (this.contextReply === null) {
-      return []
-    }
-    const selected = this.contextReply
+  private buildReplyContextItems(selected: V2exReply): ReplyContextItem[] {
     const selectedFloor = this.v.getReplyFloor(selected.id)
     const replies = this.v.getLoadedRepliesSnapshot()
     const items: ReplyContextItem[] = []
