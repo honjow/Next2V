@@ -2,6 +2,7 @@ import { promptAction } from '@kit.ArkUI'
 import {
   ApiService,
   CookieJarSettings,
+  EmptyState,
   LoadingFooter,
   SecondaryListScaffold,
   ThemeConstants,
@@ -109,14 +110,7 @@ export struct MyTopicsPage {
   }
 
   @Builder private EmptyView() {
-    Column() {
-      Text('还没有收藏主题')
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .fontColor($r('sys.color.font_secondary'))
-    }
-    .justifyContent(FlexAlign.Center)
-    .width('100%')
-    .height(240)
+    EmptyState({ message: '还没有收藏主题', stateHeight: 240 })
   }
 
   private refresh(force: boolean = false): void {

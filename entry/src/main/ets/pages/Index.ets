@@ -218,6 +218,12 @@ struct Index {
   @StorageLink(StorageKeys.TOPIC_DETAIL_THANKED) topicDetailThanked: boolean = false
   @StorageLink(StorageKeys.NODE_TOPIC_SAVED) nodeTopicSaved: boolean = false
   @StorageLink(StorageKeys.NODE_TOPIC_SITE_FAVORITED) nodeTopicSiteFavorited: boolean = false
+  @StorageLink(StorageKeys.NODE_TOPIC_TITLE) nodeTopicTitle: string = ''
+  @StorageLink(StorageKeys.NODE_TOPIC_SUBTITLE) nodeTopicSubtitle: string = ''
+  @StorageLink(StorageKeys.USER_PROFILE_ACTIONS_AVAILABLE) userProfileActionsAvailable: boolean = false
+  @StorageLink(StorageKeys.USER_PROFILE_ACTIONS_USERNAME) userProfileActionsUsername: string = ''
+  @StorageLink(StorageKeys.USER_PROFILE_FOLLOW_LABEL) userProfileFollowLabel: string = ''
+  @StorageLink(StorageKeys.USER_PROFILE_BLOCK_LABEL) userProfileBlockLabel: string = ''
   private http: HttpClient = HttpClient.getInstance()
 
   aboutToAppear(): void {
@@ -250,7 +256,10 @@ struct Index {
           nodeName: (param as Record<string, Object>)['nodeName'] as string,
           nodeTitle: (param as Record<string, Object>)['nodeTitle'] as string
         })
-      }.titleBar(this.nodeTopicTitleBarOpts())
+      }.titleBar(this.nodeTopicTitleBarOpts(
+        (param as Record<string, Object>)['nodeName'] as string,
+        (param as Record<string, Object>)['nodeTitle'] as string
+      ))
     } else if (name === 'ReplyEditor') {
       HdsNavDestination() {
         ReplyEditorPage({
@@ -263,7 +272,7 @@ struct Index {
       HdsNavDestination() {
         UserProfilePage({ username: (param as Record<string, Object>)['username'] as string })
       }
-      .titleBar(this.navDestTitleBarOpts())
+      .titleBar(this.userProfileTitleBarOpts((param as Record<string, Object>)['username'] as string))
     } else if (name === 'UserTopics') {
       HdsNavDestination() {
         UserTopicsPage({ username: (param as Record<string, Object>)['username'] as string })
@@ -404,7 +413,7 @@ struct Index {
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
   }
 
-  private navDestTitleBarOpts(title?: string, menu?: Record<string, Object>): Record<string, Object> {
+  private navDestTitleBarOpts(title?: string, menu?: Record<string, Object>, subTitle?: string): Record<string, Object> {
     let mat: Record<string, Object> =
       { 'materialType': hdsMaterial.MaterialType.ADAPTIVE, 'materialLevel': hdsMaterial.MaterialLevel.ADAPTIVE }
     let scrollOpts: Record<string, Object> =
@@ -425,6 +434,9 @@ struct Index {
         }
       }
       let titleInfo: Record<string, Object> = { 'mainTitle': title }
+      if (subTitle) {
+        titleInfo['subTitle'] = subTitle
+      }
       content['title'] = titleInfo
       return {
         'avoidLayoutSafeArea': true,
@@ -479,7 +491,7 @@ struct Index {
     return this.navDestTitleBarOpts(undefined, menu)
   }
 
-  private nodeTopicTitleBarOpts(): Record<string, Object> {
+  private nodeTopicTitleBarOpts(nodeName: string, nodeTitle: string): Record<string, Object> {
     let items: Record<string, Object>[] = [
       this.topicActionItem('站内收藏', this.nodeTopicSiteFavorited ? $r('sys.symbol.star_fill') :
         $r('sys.symbol.star'), () => {
@@ -491,7 +503,36 @@ struct Index {
       })
     ]
     let menu: Record<string, Object> = { 'value': items, 'maxCount': 2 }
-    return this.navDestTitleBarOpts(undefined, menu)
+    const baseTitle = nodeTitle || nodeName
+    const useLiveNodeIdentity = this.nodeTopicTitle === baseTitle
+    const title = useLiveNodeIdentity ? this.nodeTopicTitle : baseTitle
+    const subTitle = useLiveNodeIdentity && this.nodeTopicSubtitle
+      ? this.nodeTopicSubtitle
+      : (nodeTitle && nodeTitle !== nodeName ? nodeName : '')
+    const visibleTitle = subTitle ? `${title} · ${subTitle}` : title
+    return this.navDestTitleBarOpts(visibleTitle, menu, subTitle)
+  }
+
+  private userProfileTitleBarOpts(username: string): Record<string, Object> {
+    return this.navDestTitleBarOpts(username, this.userProfileTitleMenu(username))
+  }
+
+  private userProfileTitleMenu(username: string): Record<string, Object> {
+    if (!this.userProfileActionsAvailable || this.userProfileActionsUsername !== username) {
+      return { 'value': [], 'maxCount': 0 }
+    }
+    let items: Record<string, Object>[] = []
+    if (this.userProfileFollowLabel) {
+      items.push(this.topicActionItem(this.userProfileFollowLabel, $r('sys.symbol.person_badge_plus'), () => {
+        this.sendUserProfileAction('follow')
+      }))
+    }
+    if (this.userProfileBlockLabel) {
+      items.push(this.topicActionItem(this.userProfileBlockLabel, $r('sys.symbol.nosign'), () => {
+        this.sendUserProfileAction('block')
+      }))
+    }
+    return { 'value': items, 'maxCount': 0 }
   }
 
   private sendTopicAction(action: string): void {
@@ -500,6 +541,10 @@ struct Index {
 
   private sendNodeTopicAction(action: string): void {
     AppStorage.setOrCreate<string>(StorageKeys.NODE_TOPIC_ACTION, `${Date.now()}:${action}`)
+  }
+
+  private sendUserProfileAction(action: string): void {
+    AppStorage.setOrCreate<string>(StorageKeys.USER_PROFILE_ACTION, `${Date.now()}:${action}`)
   }
 
   private sendNotificationAction(action: string): void {

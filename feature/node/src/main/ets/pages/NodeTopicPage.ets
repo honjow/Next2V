@@ -19,6 +19,8 @@ export struct NodeTopicPage {
   @StorageLink(StorageKeys.NODE_TOPIC_ACTION) @Watch('onNodeTopicActionCommand') nodeTopicActionCommand: string = ''
   @StorageLink(StorageKeys.NODE_TOPIC_SAVED) nodeTopicSaved: boolean = false
   @StorageLink(StorageKeys.NODE_TOPIC_SITE_FAVORITED) nodeTopicSiteFavorited: boolean = false
+  @StorageLink(StorageKeys.NODE_TOPIC_TITLE) nodeTopicTitle: string = ''
+  @StorageLink(StorageKeys.NODE_TOPIC_SUBTITLE) nodeTopicSubtitle: string = ''
   @State private isNodeSaved: boolean = false
   @State private isSiteNodeFavorited: boolean = false
   @State private isSiteNodeFavoriteLoading: boolean = false
@@ -27,6 +29,7 @@ export struct NodeTopicPage {
 
   aboutToAppear(): void {
     this.syncNodeTitleState(false, false)
+    this.syncAppbarIdentity()
     this.loadData()
     this.loadSavedState()
     this.loadSiteNodeFavoriteState()
@@ -45,7 +48,6 @@ export struct NodeTopicPage {
         } else if (this.vm.nodeTopics.length === 0) {
           ListItem() { this.EmptyView() }
         } else {
-          ListItem() { this.NodeHeaderCard() }
           ForEach(this.vm.nodeTopics, (topic: V2exTopic) => {
             ListItem() {
               TopicCard({
@@ -85,29 +87,6 @@ export struct NodeTopicPage {
     .justifyContent(FlexAlign.Center)
     .width('100%')
     .height(240)
-  }
-
-  @Builder NodeHeaderCard() {
-    Row({ space: ThemeConstants.SPACE_MD }) {
-      Column({ space: ThemeConstants.SPACE_XS }) {
-        Text(this.nodeTitle || this.nodeName)
-          .fontSize(ThemeConstants.FONT_SIZE_HEADING)
-          .fontWeight(FontWeight.Medium)
-          .fontColor($r('sys.color.font_primary'))
-          .maxLines(1)
-          .textOverflow({ overflow: TextOverflow.Ellipsis })
-        Text(`${this.nodeName} · ${(this.vm.nodeDetail?.topics || this.vm.nodeTopics.length)} 主题`)
-          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-          .fontColor($r('sys.color.font_secondary'))
-      }
-      .layoutWeight(1)
-      .alignItems(HorizontalAlign.Start)
-    }
-    .padding(ThemeConstants.SPACE_LG)
-    .width('100%')
-    .alignItems(VerticalAlign.Center)
-    .borderRadius(ThemeConstants.RADIUS_MD)
-    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }
 
   @Builder EmptyView() {
@@ -267,19 +246,23 @@ export struct NodeTopicPage {
       } else {
         await this.vm.loadNodeTopics(this.nodeName)
       }
+      this.syncAppbarIdentity()
     } catch (error) {
       this.token = ''
       this.vm.nodeDetailError = error.message || '读取 Token 失败'
       await this.vm.loadNodeTopics(this.nodeName)
+      this.syncAppbarIdentity()
     }
   }
 
   private loadMore(): void {
     if (this.vm.nodeTopicsUseV2 && this.token) {
       this.vm.loadMoreNodeTopicsV2(this.nodeName, this.token)
+        .finally(() => { this.syncAppbarIdentity() })
       return
     }
     this.vm.loadMoreNodeTopics(this.nodeName)
+      .finally(() => { this.syncAppbarIdentity() })
   }
 
   private toggleSavedNode(): void {
@@ -350,5 +333,15 @@ export struct NodeTopicPage {
     this.isSiteNodeFavorited = siteFavorited
     this.nodeTopicSaved = saved
     this.nodeTopicSiteFavorited = siteFavorited
+  }
+
+  private syncAppbarIdentity(): void {
+    this.nodeTopicTitle = this.nodeTitle || this.nodeName
+    const topicCount = this.vm.nodeDetail?.topics || this.vm.nodeTopics.length
+    if (topicCount > 0) {
+      this.nodeTopicSubtitle = `${this.nodeName} · ${topicCount} 主题`
+      return
+    }
+    this.nodeTopicSubtitle = this.nodeTitle && this.nodeTitle !== this.nodeName ? this.nodeName : ''
   }
 }

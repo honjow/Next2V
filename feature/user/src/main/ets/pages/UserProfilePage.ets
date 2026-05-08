@@ -18,8 +18,14 @@ export struct UserProfilePage {
   @State private blocked: boolean = false
   @StorageLink(StorageKeys.TOPIC_READ_STATES) topicReadStates: string = '[]'
   @StorageLink(StorageKeys.AUTH_SESSION_USERNAME) sessionUsername: string = ''
+  @StorageLink(StorageKeys.USER_PROFILE_ACTION) @Watch('onUserProfileActionCommand') userProfileActionCommand: string = ''
+  @StorageLink(StorageKeys.USER_PROFILE_ACTIONS_USERNAME) userProfileActionsUsername: string = ''
+  @StorageLink(StorageKeys.USER_PROFILE_ACTIONS_AVAILABLE) userProfileActionsAvailable: boolean = false
+  @StorageLink(StorageKeys.USER_PROFILE_FOLLOW_LABEL) userProfileFollowLabel: string = ''
+  @StorageLink(StorageKeys.USER_PROFILE_BLOCK_LABEL) userProfileBlockLabel: string = ''
 
   aboutToAppear(): void {
+    this.publishActionMenuState()
     this.vm.load()
       .then(() => {
         this.syncActionState()
@@ -140,8 +146,6 @@ export struct UserProfilePage {
         }
         .layoutWeight(1)
         .alignItems(HorizontalAlign.Start)
-
-        this.ProfileActionSlot()
       }
       .width('100%')
       .alignItems(VerticalAlign.Center)
@@ -186,61 +190,6 @@ export struct UserProfilePage {
       .onClick(() => {
         this.activityTab = tab
       })
-  }
-
-  @Builder FollowActionButton() {
-    Button(this.following ? '取消关注' : '关注')
-      .type(ButtonType.Capsule)
-      .buttonStyle(ButtonStyleMode.NORMAL)
-      .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-      .fontColor($r('sys.color.font_primary'))
-      .height(30)
-      .width(88)
-      .padding({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
-      .enabled(!this.vm.isActionLoading)
-      .onClick(() => {
-        this.toggleFollow()
-      })
-  }
-
-  @Builder BlockActionButton() {
-    Button(this.blocked ? '取消屏蔽' : '屏蔽')
-      .type(ButtonType.Capsule)
-      .buttonStyle(ButtonStyleMode.NORMAL)
-      .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-      .fontColor(Color.Red)
-      .height(30)
-      .width(88)
-      .padding({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
-      .enabled(!this.vm.isActionLoading)
-      .onClick(() => {
-        this.toggleBlock()
-      })
-  }
-
-  @Builder ProfileActionSlot() {
-    Column({ space: ThemeConstants.SPACE_XS }) {
-      if (this.vm.actions !== null) {
-        this.FollowActionButton()
-        this.BlockActionButton()
-      } else {
-        Button(this.profileActionPlaceholderText())
-          .type(ButtonType.Capsule)
-          .buttonStyle(ButtonStyleMode.NORMAL)
-          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-          .fontColor($r('sys.color.font_secondary'))
-          .height(30)
-          .width(88)
-          .enabled(false)
-        Blank()
-          .height(30)
-          .width(88)
-      }
-    }
-    .width(96)
-    .height(68)
-    .alignItems(HorizontalAlign.End)
-    .justifyContent(FlexAlign.Center)
   }
 
   @Builder AllActivityEntry(label: string) {
@@ -424,6 +373,7 @@ export struct UserProfilePage {
     const previousFollowing = this.following
     const nextFollowing = !this.following
     this.following = nextFollowing
+    this.publishActionMenuState()
     this.vm.toggleFollow()
       .then(() => {
         this.syncActionState()
@@ -431,6 +381,7 @@ export struct UserProfilePage {
       })
       .catch((error: Error) => {
         this.following = previousFollowing
+        this.publishActionMenuState()
         promptAction.openToast({ message: error.message || '操作失败' }).catch((_e: Error) => {})
       })
   }
@@ -442,6 +393,7 @@ export struct UserProfilePage {
     const previousBlocked = this.blocked
     const nextBlocked = !this.blocked
     this.blocked = nextBlocked
+    this.publishActionMenuState()
     this.vm.toggleBlock()
       .then(() => {
         this.syncActionState()
@@ -449,32 +401,36 @@ export struct UserProfilePage {
       })
       .catch((error: Error) => {
         this.blocked = previousBlocked
+        this.publishActionMenuState()
         promptAction.openToast({ message: error.message || '操作失败' }).catch((_e: Error) => {})
       })
   }
 
   private syncActionState(): void {
     if (this.vm.actions === null) {
+      this.publishActionMenuState()
       return
     }
     this.following = this.vm.actions.following
     this.blocked = this.vm.actions.blocked
-  }
-
-  private profileActionPlaceholderText(): string {
-    if (this.isCurrentSessionUser()) {
-      return '本人'
-    }
-    if (this.vm.isLoading || CookieJarSettings.getCurrentCookie()) {
-      return '加载中'
-    }
-    return '需登录'
+    this.publishActionMenuState()
   }
 
   private isCurrentSessionUser(): boolean {
     const current = (this.sessionUsername || '').trim().toLowerCase()
     const target = (this.username || this.vm.profile?.username || '').trim().toLowerCase()
     return !!current && !!target && current === target
+  }
+
+  private publishActionMenuState(): void {
+    const canShowActions = this.vm.actions !== null && !this.isCurrentSessionUser() && !!CookieJarSettings.getCurrentCookie()
+    const hasFollowAction = canShowActions && !!this.vm.actions?.followPath
+    const hasBlockAction = canShowActions && !!this.vm.actions?.blockPath
+    const available = hasFollowAction || hasBlockAction
+    this.userProfileActionsUsername = this.username
+    this.userProfileActionsAvailable = available
+    this.userProfileFollowLabel = hasFollowAction ? (this.following ? '取消关注' : '关注') : ''
+    this.userProfileBlockLabel = hasBlockAction ? (this.blocked ? '取消屏蔽' : '屏蔽') : ''
   }
 
   private refreshActionStateLater(): void {
@@ -521,6 +477,21 @@ export struct UserProfilePage {
       return null
     } catch (_e) {
       return null
+    }
+  }
+
+  onUserProfileActionCommand(_propName: string): void {
+    const raw = (this.userProfileActionCommand || '').trim()
+    if (!raw || !this.userProfileActionsAvailable || this.vm.isActionLoading) {
+      return
+    }
+    const action = raw.split(':').pop() || ''
+    if (action === 'follow' && this.vm.actions?.followPath) {
+      this.toggleFollow()
+      return
+    }
+    if (action === 'block' && this.vm.actions?.blockPath) {
+      this.toggleBlock()
     }
   }
 }

@@ -1,7 +1,10 @@
 import { promptAction } from '@kit.ArkUI'
 import {
   ApiService,
+  ConciseListRow,
   CookieJarSettings,
+  EmptyState,
+  GroupedListSection,
   SecondaryListScaffold,
   ThemeConstants,
   type NodeTopicListParams,
@@ -34,7 +37,12 @@ export struct MyNodesPage {
         } else {
           ForEach(this.nodes, (item: V2exFavoriteNode) => {
             ListItem() {
-              this.NodeRow(item)
+              GroupedListSection() {
+                ConciseListRow({
+                  title: item.title || item.name,
+                  subtitle: item.name
+                })
+              }
             }
               .onClick(() => {
                 const p: NodeTopicListParams = { nodeName: item.name, nodeTitle: item.title }
@@ -99,41 +107,7 @@ export struct MyNodesPage {
   }
 
   @Builder private EmptyView() {
-    Column() {
-      Text('还没有收藏节点')
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .fontColor($r('sys.color.font_secondary'))
-    }
-    .justifyContent(FlexAlign.Center)
-    .width('100%')
-    .height(240)
-  }
-
-  @Builder private NodeRow(item: V2exFavoriteNode) {
-    Row({ space: ThemeConstants.SPACE_SM }) {
-      Column({ space: ThemeConstants.SPACE_XS }) {
-        Text(item.title || item.name)
-          .fontSize(ThemeConstants.FONT_SIZE_BODY)
-          .fontWeight(FontWeight.Medium)
-          .fontColor($r('sys.color.font_primary'))
-          .maxLines(1)
-          .textOverflow({ overflow: TextOverflow.Ellipsis })
-        Text(item.name)
-          .fontSize(ThemeConstants.FONT_SIZE_TINY)
-          .fontColor($r('sys.color.font_secondary'))
-          .maxLines(1)
-          .textOverflow({ overflow: TextOverflow.Ellipsis })
-      }
-      .layoutWeight(1)
-      .alignItems(HorizontalAlign.Start)
-      Text('›')
-        .fontSize(ThemeConstants.FONT_SIZE_TITLE)
-        .fontColor($r('sys.color.font_secondary'))
-    }
-    .width('100%')
-    .padding(ThemeConstants.SPACE_LG)
-    .borderRadius(ThemeConstants.RADIUS_MD)
-    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+    EmptyState({ message: '还没有收藏节点', stateHeight: 240 })
   }
 
   private refresh(force: boolean = false): void {
@@ -164,4 +138,3 @@ export struct MyNodesPage {
       })
   }
 }
-
