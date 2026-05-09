@@ -50,6 +50,52 @@ def parse_iso(value: str) -> dt.datetime:
     return dt.datetime.fromisoformat(value)
 
 
+def current_host() -> str:
+    return socket.gethostname()
+
+
+def process_exists(pid: int) -> bool:
+    if pid <= 0:
+        return False
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    return True
+
+
+def stale_reason(data: dict[str, Any] | None) -> str | None:
+    """Return why a lease is stale before TTL expiry, if known.
+
+    Backward compatibility note: historical leases store ``pid`` as the short-lived
+    acquire command's PID. That PID is intentionally *not* treated as holder
+    liveness. Only explicit holder_pid process-bound leases can become stale
+    before TTL expiry.
+    """
+    if not data or data.get("status") != "active":
+        return None
+    try:
+        if parse_iso(str(data["expires_at"])) <= utc_now():
+            return None
+    except Exception:
+        return None
+    holder_pid = data.get("holder_pid")
+    if holder_pid is None:
+        return None
+    try:
+        pid = int(holder_pid)
+    except (TypeError, ValueError):
+        return "holder pid invalid"
+    holder_host = str(data.get("holder_host") or data.get("host") or "")
+    if holder_host and holder_host != current_host():
+        return None
+    if not process_exists(pid):
+        return "holder pid not running"
+    return None
+
+
 def device_key(device: str) -> str:
     return device.replace(":", "_").replace("/", "_")
 
@@ -84,6 +130,8 @@ def is_active(data: dict[str, Any] | None) -> bool:
         return False
     if data.get("status") != "active":
         return False
+    if stale_reason(data):
+        return False
     try:
         return parse_iso(str(data["expires_at"])) > utc_now()
     except Exception:
@@ -94,17 +142,29 @@ def render(data: dict[str, Any] | None) -> str:
     if not data:
         return "no active lease"
     state = ""
+    stale = stale_reason(data)
     if data.get("status") == "released":
         state = " (released)"
+    elif stale:
+        state = f" (stale: {stale})"
     elif not is_active(data):
         state = " (expired)"
+    holder_pid = data.get("holder_pid")
+    holder_host = data.get("holder_host")
+    if holder_pid is None:
+        liveness = "TTL-only / not process-bound"
+    else:
+        holder_host_text = holder_host or data.get("host") or "unknown-host"
+        liveness = f"process-bound holder_pid={holder_pid} holder_host={holder_host_text}"
     fields = [
         f"lease_id: {data.get('lease_id')}{state}",
         f"device: {data.get('device')}",
         f"owner: {data.get('owner')}",
         f"project: {data.get('project', '')}",
         f"reason: {data.get('reason', '')}",
-        f"pid: {data.get('pid')}",
+        f"liveness: {liveness}",
+        f"acquire_pid: {data.get('acquire_pid', data.get('pid'))}",
+        f"parent_pid: {data.get('parent_pid', '')}",
         f"host: {data.get('host')}",
         f"started_at: {data.get('started_at')}",
         f"expires_at: {data.get('expires_at')}",
@@ -150,13 +210,20 @@ def cmd_acquire(args: argparse.Namespace) -> int:
             "project": args.project,
             "reason": args.reason,
             "pid": os.getpid(),
+            "acquire_pid": os.getpid(),
             "parent_pid": os.getppid(),
-            "host": socket.gethostname(),
+            "host": current_host(),
             "started_at": iso(now),
             "expires_at": iso(now + dt.timedelta(seconds=parse_ttl(args.ttl))),
             "status": "active",
             "forced": bool(args.force),
         }
+        if args.holder_pid is not None:
+            data["holder_pid"] = int(args.holder_pid)
+            data["holder_host"] = current_host()
+            data["liveness"] = "process"
+        else:
+            data["liveness"] = "ttl"
         save_lease(lease_path, data)
         print(lease_id)
         return 0
@@ -245,6 +312,11 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--project", default="V2Next")
     p.add_argument("--reason", default="agent device validation")
     p.add_argument("--ttl", default="30m")
+    p.add_argument(
+        "--holder-pid",
+        type=int,
+        help="optional long-running local process PID that holds the lease; if it exits, the lease is stale before TTL",
+    )
     p.add_argument("--force", action="store_true", help="manual/user-approved override only")
     p.set_defaults(func=cmd_acquire)
 
