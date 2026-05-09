@@ -147,6 +147,7 @@ export struct SettingsPage {
           placeholder: '节点名（如 create）',
           onTextChange: (value: string) => { this.nodeTabName = value }
         })
+          .width('100%')
         Button('添加节点栏目')
           .fontSize(ThemeConstants.FONT_SIZE_TAG)
           .height(ThemeConstants.TOUCH_TARGET_SM)

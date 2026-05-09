@@ -73,6 +73,7 @@ export struct V2exNativeLoginPage {
         placeholder: '用户名或邮箱',
         onTextChange: (value: string) => { this.username = value }
       })
+        .width('100%')
 
       AppTextField({
         text: $password,
@@ -80,6 +81,7 @@ export struct V2exNativeLoginPage {
         inputType: InputType.Password,
         onTextChange: (value: string) => { this.password = value }
       })
+        .width('100%')
 
       if (this.captchaUrl) {
         Image(this.captchaUrl)
@@ -97,6 +99,7 @@ export struct V2exNativeLoginPage {
           placeholder: '验证码',
           onTextChange: (value: string) => { this.captchaCode = value }
         })
+          .width('100%')
       }
 
       if (this.twoFactorChallenge) {
@@ -105,6 +108,7 @@ export struct V2exNativeLoginPage {
           placeholder: '两步验证码',
           onTextChange: (value: string) => { this.twoFactorCode = value }
         })
+          .width('100%')
       }
 
       if (this.errorMessage) {

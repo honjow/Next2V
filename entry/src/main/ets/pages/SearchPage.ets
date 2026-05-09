@@ -639,6 +639,7 @@ export struct SearchPage {
             this.resetRemoteResults()
           }
         })
+          .layoutWeight(1)
         AppTextField({
           text: $remoteNode,
           placeholder: '节点',
@@ -647,6 +648,7 @@ export struct SearchPage {
             this.resetRemoteResults()
           }
         })
+          .layoutWeight(1)
       }
       .width('100%')
 

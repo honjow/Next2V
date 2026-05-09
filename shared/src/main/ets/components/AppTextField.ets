@@ -15,7 +15,6 @@ export struct AppTextField {
       .placeholderColor($r('sys.color.font_secondary'))
       .height(44)
       .padding({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
-      .layoutWeight(1)
       .borderRadius(ThemeConstants.RADIUS_ROUND)
       .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
       .onChange((value: string) => {
