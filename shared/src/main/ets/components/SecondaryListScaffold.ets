@@ -13,6 +13,7 @@ export struct SecondaryListScaffold {
   @Prop bottomPadding: number = ThemeConstants.SPACE_XL
   @Prop includeKeyboardPadding: boolean = false
   onReachEnd?: () => void
+  onDidScroll?: (offset: number, state: ScrollState) => void
 
   build() {
     List({ space: this.listSpace, scroller: this.scroller }) {
@@ -39,6 +40,16 @@ export struct SecondaryListScaffold {
     .padding({ left: this.horizontalPadding, right: this.horizontalPadding })
     .clip(false)
     .edgeEffect(EdgeEffect.None)
+    .onScroll((_scrollOffset: number, scrollState: ScrollState) => {
+      if (this.onDidScroll) {
+        this.onDidScroll(this.scroller.currentOffset().yOffset, scrollState)
+      }
+    })
+    .onScrollIndex((_start: number, _end: number, _center: number) => {
+      if (this.onDidScroll) {
+        this.onDidScroll(this.scroller.currentOffset().yOffset, ScrollState.Scroll)
+      }
+    })
     .onReachEnd(() => {
       if (this.onReachEnd) {
         this.onReachEnd()

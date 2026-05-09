@@ -3,6 +3,7 @@ import {
   hdsMaterial,
   HdsNavDestination,
   HdsNavigation,
+  IconType,
   HdsNavigationTitleMode,
   HdsTabs,
   HdsTabsController,
@@ -30,7 +31,7 @@ import { ReplyEditorPage, TopicDetailPage } from 'detail'
 import { DiscoverPage, NodePickerPage, NodeTopicPage } from 'node'
 import { UserProfilePage, UserRepliesPage, UserTopicsPage } from 'user'
 import { SettingsPage } from 'settings'
-import { ComponentContent, promptAction } from '@kit.ArkUI'
+import { ComponentContent, promptAction, SymbolGlyphModifier } from '@kit.ArkUI'
 import { V2exWebLoginPage } from './V2exWebLoginPage'
 import { V2exNativeLoginPage } from './V2exNativeLoginPage'
 import { ImagePreviewPage } from './ImagePreviewPage'
@@ -252,6 +253,9 @@ struct Index {
   @StorageLink(StorageKeys.USER_PROFILE_BLOCK_LABEL) userProfileBlockLabel: string = ''
   @StorageLink(StorageKeys.USER_PROFILE_FOLLOWING) userProfileFollowing: boolean = false
   @StorageLink(StorageKeys.USER_PROFILE_BLOCKED) userProfileBlocked: boolean = false
+  @StorageLink(StorageKeys.USER_PROFILE_APPBAR_TITLE_USERNAME) userProfileAppbarTitleUsername: string = ''
+  @StorageLink(StorageKeys.USER_PROFILE_APPBAR_TITLE_ROUTE_USERNAME) userProfileAppbarTitleRouteUsername: string = ''
+  @StorageLink(StorageKeys.USER_PROFILE_APPBAR_TITLE_STATES) userProfileAppbarTitleStates: string = '{}'
   @State private accountRefreshKey: number = 0
   private http: HttpClient = HttpClient.getInstance()
 
@@ -302,6 +306,9 @@ struct Index {
         UserProfilePage({ username: (param as Record<string, Object>)['username'] as string })
       }
       .titleBar(this.userProfileTitleBarOpts((param as Record<string, Object>)['username'] as string))
+      .onShown(() => {
+        this.notifyUserProfileShown((param as Record<string, Object>)['username'] as string)
+      })
     } else if (name === 'UserTopics') {
       HdsNavDestination() {
         UserTopicsPage({ username: (param as Record<string, Object>)['username'] as string })
@@ -549,7 +556,27 @@ struct Index {
   }
 
   private userProfileTitleBarOpts(username: string): Record<string, Object> {
-    return this.navDestTitleBarOpts(username, this.userProfileTitleMenu(username))
+    const routeUsername = (username || '').trim()
+    const titleFromState = this.userProfileAppbarTitleFor(routeUsername)
+    const titleRouteUsername = (this.userProfileAppbarTitleRouteUsername || '').trim()
+    const titleUsername = (this.userProfileAppbarTitleUsername || '').trim()
+    const title = titleFromState ||
+      (titleUsername && this.sameUsername(titleRouteUsername, routeUsername) ? titleUsername : ' ')
+    return this.navDestTitleBarOpts(title, this.userProfileTitleMenu(username))
+  }
+
+  private userProfileAppbarTitleFor(username: string): string {
+    const key = (username || '').trim().toLowerCase()
+    if (!key) {
+      return ''
+    }
+    try {
+      const states = JSON.parse(this.userProfileAppbarTitleStates || '{}') as Record<string, string>
+      const title = (states[key] || '').trim()
+      return title
+    } catch (_e) {
+      return ''
+    }
   }
 
   private userProfileTitleMenu(username: string): Record<string, Object> {
@@ -560,7 +587,7 @@ struct Index {
     if (this.userProfileFollowLabel) {
       items.push(this.topicActionItem(
         this.userProfileFollowLabel,
-        this.userProfileFollowing ? $r('sys.symbol.person_fill') : $r('sys.symbol.person_badge_plus'),
+        this.userProfileFollowing ? $r('sys.symbol.person_xmark') : $r('sys.symbol.person_badge_plus'),
         () => {
         this.sendUserProfileAction('follow')
       }))
@@ -568,12 +595,21 @@ struct Index {
     if (this.userProfileBlockLabel) {
       items.push(this.topicActionItem(
         this.userProfileBlockLabel,
-        this.userProfileBlocked ? $r('sys.symbol.nosign') : $r('sys.symbol.xmark'),
+        this.userProfileBlockIcon(),
         () => {
         this.sendUserProfileAction('block')
       }))
     }
-    return { 'value': items, 'maxCount': 2 }
+    return { 'value': items, 'maxCount': 1 }
+  }
+
+  private userProfileBlockIcon(): SymbolGlyphModifier {
+    return new SymbolGlyphModifier(this.userProfileBlocked ? $r('sys.symbol.eye_slash') : $r('sys.symbol.nosign'))
+      .fontColor([Color.Red])
+  }
+
+  private sameUsername(a: string, b: string): boolean {
+    return !!a && !!b && a.trim().toLowerCase() === b.trim().toLowerCase()
   }
 
   private sendTopicAction(action: string): void {
@@ -593,6 +629,10 @@ struct Index {
 
   private sendUserProfileAction(action: string): void {
     AppStorage.setOrCreate<string>(StorageKeys.USER_PROFILE_ACTION, `${Date.now()}:${action}`)
+  }
+
+  private notifyUserProfileShown(username: string): void {
+    AppStorage.setOrCreate<string>(StorageKeys.USER_PROFILE_SHOWN, `${Date.now()}:${username}`)
   }
 
   private sendNotificationAction(action: string): void {
@@ -676,7 +716,7 @@ struct Index {
     }
   }
 
-  private topicActionItem(label: string, icon: Resource, action: () => void): Record<string, Object> {
+  private topicActionItem(label: string, icon: IconType, action: () => void): Record<string, Object> {
     let content: Record<string, Object> = {
       'label': label,
       'icon': icon,

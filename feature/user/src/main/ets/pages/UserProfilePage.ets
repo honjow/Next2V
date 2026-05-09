@@ -25,12 +25,27 @@ export struct UserProfilePage {
   @StorageLink(StorageKeys.USER_PROFILE_BLOCK_LABEL) userProfileBlockLabel: string = ''
   @StorageLink(StorageKeys.USER_PROFILE_FOLLOWING) userProfileFollowing: boolean = false
   @StorageLink(StorageKeys.USER_PROFILE_BLOCKED) userProfileBlocked: boolean = false
+  @StorageLink(StorageKeys.USER_PROFILE_APPBAR_TITLE_USERNAME) userProfileAppbarTitleUsername: string = ''
+  @StorageLink(StorageKeys.USER_PROFILE_APPBAR_TITLE_ROUTE_USERNAME) userProfileAppbarTitleRouteUsername: string = ''
+  @StorageLink(StorageKeys.USER_PROFILE_APPBAR_TITLE_STATES) userProfileAppbarTitleStates: string = '{}'
+  @StorageLink(StorageKeys.USER_PROFILE_SHOWN) @Watch('onUserProfileShown') userProfileShown: string = ''
+  @StorageProp(StorageKeys.TOP_AVOID_HEIGHT) topH: number = 0
+  @State private usernameContentBottom: number = 0
+  @State private currentScrollOffset: number = 0
+  @State private isUsernameCoveredByAppbar: boolean = false
+
+  private readonly titleVisibilityHysteresis: number = 4
 
   aboutToAppear(): void {
+    this.currentScrollOffset = 0
+    this.usernameContentBottom = 0
+    this.isUsernameCoveredByAppbar = false
     this.publishActionMenuState()
+    this.publishAppbarTitle(false)
     this.vm.load()
       .then(() => {
         this.syncActionState()
+        this.evaluateAppbarTitleVisibility()
       })
       .catch((_error: Error) => {
       })
@@ -38,7 +53,12 @@ export struct UserProfilePage {
 
   build() {
     Column() {
-      SecondaryListScaffold() {
+      SecondaryListScaffold({
+        onDidScroll: (offset: number, _state: ScrollState) => {
+          this.currentScrollOffset = Math.max(0, offset)
+          this.evaluateAppbarTitleVisibility()
+        }
+      }) {
         if (this.vm.isLoading && this.vm.profile === null) {
           ListItem() { this.LoadingView() }
         } else if (this.vm.profile !== null) {
@@ -109,6 +129,11 @@ export struct UserProfilePage {
     }
       .width('100%').height('100%')
       .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
+      .onVisibleAreaChange([0.0, 1.0], (isVisible: boolean, _currentRatio: number) => {
+        if (isVisible) {
+          this.republishVisibleState()
+        }
+      })
   }
 
   @Builder LoadingView() {
@@ -127,6 +152,17 @@ export struct UserProfilePage {
       Row({ space: ThemeConstants.SPACE_MD }) {
         Avatar({ url: this.vm.profile!.avatar_large || this.vm.profile!.avatar_normal, avatarSize: 72 })
         Column({ space: ThemeConstants.SPACE_XS }) {
+          Text(this.displayProfileUsername())
+            .fontSize(22)
+            .fontWeight(FontWeight.Bold)
+            .fontColor($r('sys.color.font_primary'))
+            .maxLines(1)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
+            .onAreaChange((_oldValue: Area, newValue: Area) => {
+              const measuredGlobalBottom = this.areaY(newValue?.globalPosition?.y) + this.areaLength(newValue?.height)
+              this.usernameContentBottom = measuredGlobalBottom + this.currentScrollOffset
+              this.evaluateAppbarTitleVisibility()
+            })
           if (this.vm.profile!.tagline) {
             Text(this.vm.profile!.tagline)
               .fontSize(ThemeConstants.FONT_SIZE_BODY)
@@ -422,6 +458,79 @@ export struct UserProfilePage {
     return !!current && !!target && current === target
   }
 
+  private displayProfileUsername(): string {
+    return (this.vm.profile?.username || this.username || '').trim()
+  }
+
+  private evaluateAppbarTitleVisibility(): void {
+    const displayUsername = this.displayProfileUsername()
+    if (!displayUsername || this.usernameContentBottom <= 0) {
+      this.isUsernameCoveredByAppbar = false
+      this.publishAppbarTitle(false)
+      return
+    }
+    const currentUsernameBottom = this.usernameContentBottom - this.currentScrollOffset
+    const appbarBottom = this.topH + ThemeConstants.TITLE_BAR_HEIGHT
+    const shouldShowTitle = this.isUsernameCoveredByAppbar
+      ? currentUsernameBottom <= appbarBottom + this.titleVisibilityHysteresis
+      : currentUsernameBottom <= appbarBottom
+    if (shouldShowTitle === this.isUsernameCoveredByAppbar) {
+      return
+    }
+    this.isUsernameCoveredByAppbar = shouldShowTitle
+    this.publishAppbarTitle(shouldShowTitle)
+  }
+
+  private publishAppbarTitle(visible: boolean): void {
+    const nextRouteUsername = visible ? this.username : ''
+    const nextTitleUsername = visible ? this.displayProfileUsername() : ''
+    this.publishAppbarTitleState(nextTitleUsername)
+    if (this.userProfileAppbarTitleRouteUsername !== nextRouteUsername) {
+      this.userProfileAppbarTitleRouteUsername = nextRouteUsername
+    }
+    if (this.userProfileAppbarTitleUsername !== nextTitleUsername) {
+      this.userProfileAppbarTitleUsername = nextTitleUsername
+    }
+  }
+
+  private publishAppbarTitleState(titleUsername: string): void {
+    const routeUsername = (this.username || '').trim().toLowerCase()
+    if (!routeUsername) {
+      return
+    }
+    let states: Record<string, string> = {}
+    try {
+      const parsed = JSON.parse(this.userProfileAppbarTitleStates || '{}') as Record<string, string>
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        states = parsed
+      }
+    } catch (_e) {
+    }
+    states[routeUsername] = titleUsername
+    this.userProfileAppbarTitleStates = JSON.stringify(states)
+  }
+
+  private areaY(value: Length | undefined): number {
+    if (typeof value === 'number') {
+      return value
+    }
+    if (typeof value === 'string') {
+      const parsed = Number.parseFloat(value)
+      return Number.isNaN(parsed) ? 0 : parsed
+    }
+    return 0
+  }
+
+  private areaLength(value: Length | undefined): number {
+    return this.areaY(value)
+  }
+
+  private republishVisibleState(): void {
+    this.publishActionMenuState()
+    this.evaluateAppbarTitleVisibility()
+    this.publishAppbarTitle(this.isUsernameCoveredByAppbar)
+  }
+
   private publishActionMenuState(): void {
     const canShowActions = this.vm.actions !== null && !this.isCurrentSessionUser() && !!CookieJarSettings.getCurrentCookie()
     const hasFollowAction = canShowActions && !!this.vm.actions?.followPath
@@ -517,5 +626,17 @@ export struct UserProfilePage {
     if (action === 'block' && this.vm.actions?.blockPath) {
       this.toggleBlock()
     }
+  }
+
+  onUserProfileShown(_propName: string): void {
+    const raw = (this.userProfileShown || '').trim()
+    const shownUsername = raw.split(':').pop() || ''
+    if (this.sameUsername(shownUsername, this.username)) {
+      this.republishVisibleState()
+    }
+  }
+
+  private sameUsername(a: string, b: string): boolean {
+    return !!a && !!b && a.trim().toLowerCase() === b.trim().toLowerCase()
   }
 }
