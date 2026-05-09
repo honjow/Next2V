@@ -1,12 +1,7 @@
-import {
-  HdsListItemCard,
-  SuffixText,
-  SuffixSwitch,
-  SuffixTextAndArrow
-} from '@kit.UIDesignKit'
-import { TextModifier } from '@kit.ArkUI'
-import { Avatar } from './Avatar'
+import { HdsListItemCard, PrefixImage, SuffixSwitch, SuffixText, SuffixTextAndArrow } from '@kit.UIDesignKit'
+import { ImageModifier, TextModifier } from '@kit.ArkUI'
 import { ThemeConstants } from '../theme/ThemeConstants'
+import { hilog } from '@kit.PerformanceAnalysisKit'
 
 @Component
 export struct ConciseListRow {
@@ -26,7 +21,7 @@ export struct ConciseListRow {
 
   private primaryTextModifier(): TextModifier {
     return new TextModifier()
-      .textIndent(ThemeConstants.LIST_ROW_TEXT_INDENT)
+      .textIndent(this.leadingImageUrl ? undefined : ThemeConstants.LIST_ROW_TEXT_INDENT)
       .fontSize(ThemeConstants.FONT_SIZE_LIST_ITEM)
       .fontWeight(FontWeight.Regular)
       .fontColor(this.primaryColor ?? (this.destructive ? Color.Red : $r('sys.color.font_primary')))
@@ -36,7 +31,7 @@ export struct ConciseListRow {
 
   private secondaryTextModifier(): TextModifier {
     return new TextModifier()
-      .textIndent(ThemeConstants.LIST_ROW_TEXT_INDENT)
+      .textIndent(this.leadingImageUrl ? undefined : ThemeConstants.LIST_ROW_TEXT_INDENT)
       .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
       .fontColor(this.secondaryColor ?? $r('sys.color.font_secondary'))
       .maxLines(1)
@@ -84,11 +79,25 @@ export struct ConciseListRow {
     return undefined
   }
 
+  private prefixItem(): PrefixImage | undefined {
+    hilog.info(0x0000, 'ConciseListRow', 'Creating PrefixImage with url: %{public}s', this.leadingImageUrl);
+    if (this.leadingImageUrl) {
+      return new PrefixImage({
+        image: this.leadingImageUrl,
+        modifier: new ImageModifier()
+          // .padding(6)
+          .alt($r('sys.media.ohos_app_icon'))
+      })
+    }
+    return undefined
+  }
+
   private hasLeadingImage(): boolean {
     return (this.leadingImageUrl || '').trim().length > 0
   }
 
-  @Builder private RowContent() {
+  @Builder
+  private RowContent() {
     HdsListItemCard({
       textItem: {
         primaryText: {
@@ -102,6 +111,7 @@ export struct ConciseListRow {
       },
       cardPrefixMargin: 0,
       cardSuffixMargin: 0,
+      prefixItem: this.prefixItem(),
       suffixItem: this.suffixItem(),
       cardHeight: this.subtitle ? 60 : 52,
       cardBackgroundColor: Color.Transparent,
@@ -116,28 +126,6 @@ export struct ConciseListRow {
   }
 
   build() {
-    if (this.hasLeadingImage()) {
-      Row() {
-        Avatar({
-          url: this.leadingImageUrl,
-          avatarSize: ThemeConstants.AVATAR_SIZE_REPLY,
-          placeholder: ''
-        })
-          .margin({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM })
-
-        this.RowContent()
-      }
-      .width('100%')
-      .height(this.subtitle ? 60 : 52)
-      .alignItems(VerticalAlign.Center)
-      .borderRadius(ThemeConstants.LIST_ROW_RADIUS)
-      .onClick(() => {
-        if (this.action) {
-          this.action()
-        }
-      })
-    } else {
-      this.RowContent()
-    }
+    this.RowContent()
   }
 }

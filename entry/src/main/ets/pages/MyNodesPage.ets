@@ -29,14 +29,16 @@ export struct MyNodesPage {
 
   build() {
     Column() {
-      SecondaryListScaffold() {
-        if (!CookieJarSettings.getCurrentCookie()) {
-          ListItem() { this.LoginRequiredView() }
-        } else if (this.isLoading && this.nodes.length === 0) {
-          ListItem() { this.LoadingView() }
-        } else if (this.errorMessage && this.nodes.length === 0) {
-          ListItem() { this.ErrorView() }
-        } else {
+      if (!CookieJarSettings.getCurrentCookie()) {
+        this.LoginRequiredView()
+      } else if (this.isLoading && this.nodes.length === 0) {
+        this.LoadingView()
+      } else if (this.errorMessage && this.nodes.length === 0) {
+        this.ErrorView()
+      } else if (this.nodes.length === 0) {
+        this.EmptyView()
+      } else {
+        SecondaryListScaffold() {
           ForEach(this.nodes, (item: V2exFavoriteNode) => {
             ListItem() {
               GroupedListSection() {
@@ -49,11 +51,7 @@ export struct MyNodesPage {
               }
             }
               .onClick(() => { this.openNode(item) })
-          }, (item: V2exFavoriteNode) => `my-node-${item.name}-${this.nodeIcon(item)}`)
-
-          if (this.nodes.length === 0) {
-            ListItem() { this.EmptyView() }
-          }
+          }, (item: V2exFavoriteNode) => `my-node-${item.name}`)
         }
       }
     }
@@ -70,7 +68,7 @@ export struct MyNodesPage {
     }
     .justifyContent(FlexAlign.Center)
     .width('100%')
-    .height(240)
+    .layoutWeight(1)
   }
 
   @Builder private LoginRequiredView() {
@@ -84,7 +82,7 @@ export struct MyNodesPage {
     }
     .justifyContent(FlexAlign.Center)
     .width('100%')
-    .height(240)
+    .layoutWeight(1)
   }
 
   @Builder private ErrorView() {
@@ -104,11 +102,16 @@ export struct MyNodesPage {
     }
     .justifyContent(FlexAlign.Center)
     .width('100%')
-    .height(240)
+    .layoutWeight(1)
   }
 
   @Builder private EmptyView() {
-    EmptyState({ message: '还没有收藏节点', stateHeight: 240 })
+    Column() {
+      EmptyState({ message: '还没有收藏节点' })
+    }
+    .justifyContent(FlexAlign.Center)
+    .width('100%')
+    .layoutWeight(1)
   }
 
   private refresh(force: boolean = false): void {
@@ -125,14 +128,16 @@ export struct MyNodesPage {
     this.errorMessage = ''
     this.api.getMyFavoriteNodesWithCookie(cookie)
       .then((nodes) => {
-        this.nodes = nodes
-        this.enrichMissingNodeIcons(nodes)
+        this.loadNodesWithIcons(nodes, () => {
+          this.isLoading = false
+          if (!force && this.errorMessage) {
+            promptAction.openToast({ message: this.errorMessage }).catch((_error: Error) => { })
+          }
+        })
       })
       .catch((error: Error) => {
         this.errorMessage = error.message || '加载失败'
         this.nodes = []
-      })
-      .finally(() => {
         this.isLoading = false
         if (!force && this.errorMessage) {
           promptAction.openToast({ message: this.errorMessage }).catch((_error: Error) => { })
@@ -157,24 +162,29 @@ export struct MyNodesPage {
     return item.avatarNormal || item.avatarMini || item.avatarLarge || ''
   }
 
-  private enrichMissingNodeIcons(items: V2exFavoriteNode[]): void {
-    if (items.every((item: V2exFavoriteNode) => this.nodeIcon(item))) {
+  private loadNodesWithIcons(favorites: V2exFavoriteNode[], onDone: () => void): void {
+    // 所有节点都已有 icon，直接赋值
+    if (favorites.every((item: V2exFavoriteNode) => this.nodeIcon(item))) {
+      this.nodes = favorites
+      onDone()
       return
     }
+    // 部分节点缺 icon，先拉全量节点数据，合并后再赋值
     this.api.getAllNodes()
       .then((allNodes: V2exNode[]) => {
         const nodeByName: Record<string, V2exNode> = {}
         allNodes.forEach((node: V2exNode) => {
           nodeByName[node.name] = node
         })
-        this.nodes = this.nodes.map((node: V2exFavoriteNode) => {
+        this.nodes = favorites.map((node: V2exFavoriteNode) => {
           const detail = nodeByName[node.name]
           if (!detail) {
             return node
           }
           return {
             name: node.name,
-            title: CollectionSettings.cleanNodeTitle(detail.title || node.title, detail.topics || node.topics || 0),
+            title: CollectionSettings.cleanNodeTitle(
+              detail.title || node.title, detail.topics || node.topics || 0),
             topics: detail.topics || node.topics,
             avatarMini: node.avatarMini || detail.avatar_mini,
             avatarNormal: node.avatarNormal || detail.avatar_normal,
@@ -184,6 +194,11 @@ export struct MyNodesPage {
       })
       .catch((error: Error) => {
         console.error('enrich favorite node icons failed: ' + error.message)
+        // 降级：用不带 icon 的数据
+        this.nodes = favorites
+      })
+      .finally(() => {
+        onDone()
       })
   }
 }
