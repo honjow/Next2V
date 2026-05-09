@@ -541,14 +541,11 @@ struct Index {
     ]
     let menu: Record<string, Object> = { 'value': items, 'maxCount': 2 }
     const baseTitle = (nodeTitle || nodeName || '').trim()
-    const routeSubTitle = nodeTitle && nodeTitle !== nodeName ? nodeName : ''
     const liveTitle = (this.nodeTopicTitle || '').trim()
-    const liveSubTitle = (this.nodeTopicSubtitle || '').trim()
     const title = liveTitle || baseTitle
-    const subTitle = (liveSubTitle || routeSubTitle) !== title ? (liveSubTitle || routeSubTitle) : ''
     let cc = new ComponentContent(this.getUIContext(), wrapBuilder(NodeTopicMetadataCCBuilder))
     let bb: Record<string, Object> = { 'builderComponent': cc, 'height': 28, 'showType': 0 }
-    return this.navDestTitleBarOpts(title, menu, subTitle, bb)
+    return this.navDestTitleBarOpts(title, menu, undefined, bb)
   }
 
   private userProfileTitleBarOpts(username: string): Record<string, Object> {
