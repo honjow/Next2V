@@ -9,7 +9,7 @@ import {
   V2exReply, Avatar, ReplyCard, TimeAgo, ThemeConstants, MarkdownContent, PullRefreshListScaffold,
   NodeTopicListParams, UserProfileParams, ImagePreviewParams, CollectionSettings, CacheSettings, V2exTopic, AuthSettings,
   LoadingFooter, HttpClient, StorageKeys, ApiService, CookieJarSettings, V2exToggleAction, ReadingSettings,
-  AppModalScaffold, V2exRoute, V2exUrlRouter, TopicDetailParams
+  AppModalScaffold, V2exRoute, V2exUrlRouter, TopicDetailParams, ImageUtils
 } from 'shared'
 import type { V2exReplyThankAction, V2exTopicThankAction } from 'shared'
 import type { V2exReplyModerationAction, V2exTopicModerationAction } from 'shared'
@@ -442,7 +442,7 @@ export struct TopicDetailPage {
   @Builder TopicCard() {
     Column() {
       Row({ space: ThemeConstants.SPACE_SM }) {
-        Avatar({ url: this.v.topic!.member.avatar_normal, avatarSize: ThemeConstants.AVATAR_SIZE_REPLY })
+        Avatar({ url: ImageUtils.memberAvatarUrl(this.v.topic!.member), avatarSize: ThemeConstants.AVATAR_SIZE_REPLY })
           .onClick(() => {
             let p: UserProfileParams = { username: this.v.topic!.member.username }
             this.stack.pushPathByName('UserProfile', p as Object)

@@ -5,6 +5,7 @@ import { ThemeConstants } from '../theme/ThemeConstants'
 import { Avatar } from './Avatar'
 import { TimeAgo } from './TimeAgo'
 import { MarkdownContent } from './MarkdownContent'
+import { ImageUtils } from '../utils/ImageUtils'
 
 @Component
 export struct ReplyCard {
@@ -113,7 +114,7 @@ export struct ReplyCard {
     Column() {
       // 头部：头像 + 用户名/OP/楼层 + 时间
       Row({ space: ThemeConstants.SPACE_SM }) {
-        Avatar({ url: this.reply.member.avatar_mini, avatarSize: ThemeConstants.AVATAR_SIZE_REPLY })
+        Avatar({ url: ImageUtils.memberAvatarUrl(this.reply.member), avatarSize: ThemeConstants.AVATAR_SIZE_REPLY })
           .onClick(() => {
             if (this.onUserClick) { this.onUserClick() }
           })

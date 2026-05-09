@@ -7,6 +7,9 @@ export interface V2exMember {
   avatar_mini: string
   avatar_normal: string
   avatar_large: string
+  avatar_xlarge?: string
+  avatar_xxlarge?: string
+  avatar_xxxlarge?: string
 }
 
 export interface V2exNode {

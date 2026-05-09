@@ -4,6 +4,7 @@ import { Avatar } from './Avatar'
 import { UserName } from './UserName'
 import { TimeAgo } from './TimeAgo'
 import { NodeTag } from './NodeTag'
+import { ImageUtils } from '../utils/ImageUtils'
 
 @Component
 export struct TopicCard {
@@ -19,7 +20,7 @@ export struct TopicCard {
     Column({ space: ThemeConstants.SPACE_XS }) {
       Row({ space: ThemeConstants.SPACE_SM }) {
         Avatar({
-          url: this.item.member.avatar_normal,
+          url: ImageUtils.memberAvatarUrl(this.item.member),
           avatarSize: ThemeConstants.AVATAR_SIZE_REPLY,
           placeholder: this.item.member.username
         })
