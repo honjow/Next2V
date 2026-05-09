@@ -19,6 +19,7 @@ export class ThemeConstants {
   static readonly SPACE_MD: number = 12;
   static readonly SPACE_LG: number = 16;
   static readonly SPACE_XL: number = 24;
+  static readonly SPACE_XXL: number = 32;
 
   // 字号
   static readonly FONT_SIZE_TINY: number = 10;

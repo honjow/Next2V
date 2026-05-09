@@ -6,6 +6,7 @@ import {
   CookieJarSettings,
   EmptyState,
   GroupedListSection,
+  ImageUtils,
   SecondaryListScaffold,
   ThemeConstants,
   type NodeTopicListParams,
@@ -16,11 +17,9 @@ import {
 @Component
 export struct MyNodesPage {
   @Consume('ns') stack: NavPathStack
-
   @State private nodes: V2exFavoriteNode[] = []
   @State private errorMessage: string = ''
   @State private isLoading: boolean = false
-
   private api: ApiService = new ApiService()
 
   aboutToAppear(): void {
@@ -46,11 +45,15 @@ export struct MyNodesPage {
                   title: item.title || item.name,
                   subtitle: this.nodeSubtitle(item),
                   leadingImageUrl: this.nodeIcon(item),
-                  action: () => { this.openNode(item) }
+                  action: () => {
+                    this.openNode(item)
+                  }
                 })
               }
             }
-              .onClick(() => { this.openNode(item) })
+            .onClick(() => {
+              this.openNode(item)
+            })
           }, (item: V2exFavoriteNode) => `my-node-${item.name}`)
         }
       }
@@ -60,7 +63,8 @@ export struct MyNodesPage {
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
   }
 
-  @Builder private LoadingView() {
+  @Builder
+  private LoadingView() {
     Column() {
       LoadingProgress()
         .width(ThemeConstants.LOADING_SIZE)
@@ -71,21 +75,25 @@ export struct MyNodesPage {
     .layoutWeight(1)
   }
 
-  @Builder private LoginRequiredView() {
+  @Builder
+  private LoginRequiredView() {
     Column({ space: ThemeConstants.SPACE_SM }) {
       Text('登录后可查看收藏节点')
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
         .fontColor($r('sys.color.font_secondary'))
       Button('去登录')
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .onClick(() => { this.stack.pushPathByName('V2exNativeLogin', null) })
+        .onClick(() => {
+          this.stack.pushPathByName('V2exNativeLogin', null)
+        })
     }
     .justifyContent(FlexAlign.Center)
     .width('100%')
     .layoutWeight(1)
   }
 
-  @Builder private ErrorView() {
+  @Builder
+  private ErrorView() {
     Column({ space: ThemeConstants.SPACE_SM }) {
       Text(this.errorMessage)
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
@@ -93,10 +101,14 @@ export struct MyNodesPage {
       Row({ space: ThemeConstants.SPACE_SM }) {
         Button('重试')
           .fontSize(ThemeConstants.FONT_SIZE_BODY)
-          .onClick(() => { this.refresh(true) })
+          .onClick(() => {
+            this.refresh(true)
+          })
         Button('去登录')
           .fontSize(ThemeConstants.FONT_SIZE_BODY)
-          .onClick(() => { this.stack.pushPathByName('V2exNativeLogin', null) })
+          .onClick(() => {
+            this.stack.pushPathByName('V2exNativeLogin', null)
+          })
       }
       .justifyContent(FlexAlign.Center)
     }
@@ -105,7 +117,8 @@ export struct MyNodesPage {
     .layoutWeight(1)
   }
 
-  @Builder private EmptyView() {
+  @Builder
+  private EmptyView() {
     Column() {
       EmptyState({ message: '还没有收藏节点' })
     }
@@ -131,7 +144,8 @@ export struct MyNodesPage {
         this.loadNodesWithIcons(nodes, () => {
           this.isLoading = false
           if (!force && this.errorMessage) {
-            promptAction.openToast({ message: this.errorMessage }).catch((_error: Error) => { })
+            promptAction.openToast({ message: this.errorMessage }).catch((_error: Error) => {
+            })
           }
         })
       })
@@ -140,7 +154,8 @@ export struct MyNodesPage {
         this.nodes = []
         this.isLoading = false
         if (!force && this.errorMessage) {
-          promptAction.openToast({ message: this.errorMessage }).catch((_error: Error) => { })
+          promptAction.openToast({ message: this.errorMessage }).catch((_error: Error) => {
+          })
         }
       })
   }
@@ -159,7 +174,7 @@ export struct MyNodesPage {
   }
 
   private nodeIcon(item: V2exFavoriteNode): string {
-    return item.avatarNormal || item.avatarMini || item.avatarLarge || ''
+    return item.avatarLarge || ImageUtils.avatarUrl(item.avatarNormal ?? '') || item.avatarMini || ''
   }
 
   private loadNodesWithIcons(favorites: V2exFavoriteNode[], onDone: () => void): void {

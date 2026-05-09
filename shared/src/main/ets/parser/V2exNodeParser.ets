@@ -8,6 +8,7 @@ export interface V2exFavoriteNode {
   avatarMini?: string
   avatarNormal?: string
   avatarLarge?: string
+  avatarXLarge?: string
 }
 
 /**
