@@ -297,7 +297,8 @@ export struct TopicDetailPage {
       onRefresh: async () => { await this.v.load() },
       onScrollEnableChange: (enabled: boolean) => { this.listScrollEnabled = enabled },
       onScrollIndex: (_start: number, _end: number, center: number) => { this.updateReadFloor(center) },
-      onReachEnd: () => { this.loadMoreReplies() }
+      onReachEnd: () => { this.loadMoreReplies() },
+      bottomPadding: this.topicDetailBottomPadding()
     }) {
         ListItem() {
           this.TopicCard()
@@ -388,7 +389,7 @@ export struct TopicDetailPage {
       })
     }
     .width('100%')
-    .height(this.bottomH + this.FLOATING_REPLY_HEIGHT + this.FLOATING_REPLY_BOTTOM_GAP + ThemeConstants.SPACE_SM)
+    .height(this.bottomH + this.floatingReplyClearance())
     .padding({
       left: ThemeConstants.SPACE_LG,
       right: ThemeConstants.SPACE_LG,
@@ -411,6 +412,14 @@ export struct TopicDetailPage {
       return availableWidth / 2
     }
     return 0
+  }
+
+  private floatingReplyClearance(): number {
+    return this.FLOATING_REPLY_HEIGHT + this.FLOATING_REPLY_BOTTOM_GAP + ThemeConstants.SPACE_SM
+  }
+
+  private topicDetailBottomPadding(): number {
+    return ThemeConstants.SPACE_XL + this.floatingReplyClearance()
   }
 
   private onMotionHandEdgeChanged(_propName: string): void {
