@@ -4,7 +4,7 @@ import {
   CookieJarSettings,
   EmptyState,
   LoadingFooter,
-  SecondaryListScaffold,
+  PullRefreshListScaffold,
   ThemeConstants,
   TopicCard,
   type TopicDetailParams,
@@ -17,13 +17,14 @@ export struct MyTopicsPage {
 
   @State private topics: V2exTopic[] = []
   @State private errorMessage: string = ''
-  @State private isLoading: boolean = false
+  @State private isLoading: boolean = true
   @State private isLoadingMore: boolean = false
   @State private page: number = 1
   @State private hasMore: boolean = true
 
   private api: ApiService = new ApiService()
   private readonly PAGE_SIZE: number = 20
+  private refreshGuard: boolean = false
 
   aboutToAppear(): void {
     this.refresh()
@@ -31,14 +32,19 @@ export struct MyTopicsPage {
 
   build() {
     Column() {
-      SecondaryListScaffold({ onReachEnd: () => { this.loadMore() } }) {
-        if (!CookieJarSettings.getCurrentCookie()) {
-          ListItem() { this.LoginRequiredView() }
-        } else if (this.isLoading && this.topics.length === 0) {
-          ListItem() { this.LoadingView() }
-        } else if (this.errorMessage && this.topics.length === 0) {
-          ListItem() { this.ErrorView() }
-        } else {
+      if (!CookieJarSettings.getCurrentCookie()) {
+        this.LoginRequiredView()
+      } else if (this.isLoading && this.topics.length === 0) {
+        this.LoadingView()
+      } else if (this.errorMessage && this.topics.length === 0) {
+        this.ErrorView()
+      } else if (this.topics.length === 0) {
+        this.EmptyView()
+      } else {
+        PullRefreshListScaffold({
+          onReachEnd: () => { this.loadMore() },
+          onRefresh: () => this.refresh(true)
+        }) {
           ForEach(this.topics, (item: V2exTopic) => {
             ListItem() {
               TopicCard({ item: item })
@@ -48,10 +54,6 @@ export struct MyTopicsPage {
                 this.stack.pushPathByName('TopicDetail', p as Object)
               })
           }, (item: V2exTopic) => `my-topic-${item.id}`)
-
-          if (this.topics.length === 0) {
-            ListItem() { this.EmptyView() }
-          }
 
           ListItem() {
             LoadingFooter({ isLoading: this.isLoadingMore, hasMore: this.hasMore })
@@ -72,7 +74,7 @@ export struct MyTopicsPage {
     }
     .justifyContent(FlexAlign.Center)
     .width('100%')
-    .height(240)
+    .layoutWeight(1)
   }
 
   @Builder private LoginRequiredView() {
@@ -86,7 +88,7 @@ export struct MyTopicsPage {
     }
     .justifyContent(FlexAlign.Center)
     .width('100%')
-    .height(240)
+    .layoutWeight(1)
   }
 
   @Builder private ErrorView() {
@@ -106,16 +108,21 @@ export struct MyTopicsPage {
     }
     .justifyContent(FlexAlign.Center)
     .width('100%')
-    .height(240)
+    .layoutWeight(1)
   }
 
   @Builder private EmptyView() {
-    EmptyState({ message: '还没有收藏主题', stateHeight: 240 })
+    Column() {
+      EmptyState({ message: '还没有收藏主题' })
+    }
+    .justifyContent(FlexAlign.Center)
+    .width('100%')
+    .layoutWeight(1)
   }
 
-  private refresh(force: boolean = false): void {
-    if (this.isLoading || this.isLoadingMore) {
-      return
+  private refresh(force: boolean = false): Promise<void> {
+    if (this.refreshGuard) {
+      return Promise.resolve()
     }
     const cookie = CookieJarSettings.getCurrentCookie()
     if (!cookie) {
@@ -123,14 +130,16 @@ export struct MyTopicsPage {
       this.errorMessage = ''
       this.page = 1
       this.hasMore = false
-      return
+      this.isLoading = false
+      return Promise.resolve()
     }
+    this.refreshGuard = true
     this.isLoading = true
     this.errorMessage = ''
     this.page = 1
     this.hasMore = true
 
-    this.api.getMyTopicsWithCookie(cookie, 1)
+    return this.api.getMyTopicsWithCookie(cookie, 1)
       .then((topics) => {
         this.topics = topics
         this.hasMore = topics.length >= this.PAGE_SIZE
@@ -139,12 +148,13 @@ export struct MyTopicsPage {
         this.errorMessage = error.message || '加载失败'
         this.topics = []
         this.hasMore = false
+        if (!force) {
+          promptAction.openToast({ message: this.errorMessage }).catch((_error: Error) => { })
+        }
       })
       .finally(() => {
         this.isLoading = false
-        if (!force && this.errorMessage) {
-          promptAction.openToast({ message: this.errorMessage }).catch((_error: Error) => { })
-        }
+        this.refreshGuard = false
       })
   }
 
