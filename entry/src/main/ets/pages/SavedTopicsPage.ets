@@ -19,12 +19,15 @@ export struct SavedTopicsPage {
 
   build() {
     Column() {
-      PullRefreshListScaffold({ onRefresh: () => this.loadTopics() }) {
-        if (this.topics.length === 0) {
-          ListItem() {
-            EmptyState({ message: '还没有稍后读主题', stateHeight: 220 })
-          }
-        } else {
+      if (this.topics.length === 0) {
+        Column() {
+          EmptyState({ message: '还没有稍后读主题' })
+        }
+        .justifyContent(FlexAlign.Center)
+        .width('100%')
+        .layoutWeight(1)
+      } else {
+        PullRefreshListScaffold({ onRefresh: () => this.loadTopics() }) {
           ForEach(this.topics, (item: SavedTopic) => {
             ListItem() {
               LocalTopicCard({
