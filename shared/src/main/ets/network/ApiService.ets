@@ -332,30 +332,7 @@ export class ApiService {
     if (html.indexOf('/signin') >= 0 && !V2exSessionParser.extractUsername(html)) {
       throw new Error('Web 会话已失效，请重新登录')
     }
-    return this.hydrateMemberListAvatars(V2exAccountListParser.extractMembers(html, currentUsername))
-  }
-
-  private async hydrateMemberListAvatars(members: V2exAccountMemberListItem[]): Promise<V2exAccountMemberListItem[]> {
-    const res: V2exAccountMemberListItem[] = []
-    const avatarByUsername: Record<string, string> = {}
-    for (const item of members) {
-      let avatar = item.avatar || avatarByUsername[item.username] || ''
-      if (!avatar) {
-        try {
-          const profile: V2exMemberProfile = await this.getMember(item.username)
-          avatar = profile.avatar_normal || profile.avatar_large || profile.avatar_mini || ''
-          avatarByUsername[item.username] = avatar
-        } catch (error) {
-          avatar = ''
-        }
-      }
-      res.push({
-        username: item.username,
-        avatar: avatar,
-        subtitle: item.subtitle
-      })
-    }
-    return res
+    return V2exAccountListParser.extractMembers(html, currentUsername)
   }
 
   async getIgnoredTopicsWithCookie(cookie: string): Promise<V2exTopic[]> {

@@ -69,6 +69,15 @@ export class V2exAccountListParser {
     const items: V2exAccountMemberListItem[] = []
     const avatarOwner = V2exAccountListParser.extractAvatarLinkedUsername(block)
     const blockAvatar = V2exAccountListParser.extractAvatarFromHtml(block)
+    if (avatarOwner) {
+      items.push({
+        username: avatarOwner,
+        avatar: blockAvatar,
+        subtitle: ''
+      })
+      return items
+    }
+
     const seen: Set<string> = new Set()
     const linkRe = /<a[^>]+href=['"]\/member\/([0-9A-Za-z_]+)['"][^>]*>([\s\S]*?)<\/a>/gi
     let m: RegExpExecArray | null = linkRe.exec(block)
@@ -77,21 +86,16 @@ export class V2exAccountListParser {
       if (username && !seen.has(username)) {
         const label = V2exAccountListParser.compactText(m[2] || '')
         const linkAvatar = V2exAccountListParser.extractAvatarFromHtml(m[2] || '')
-        items.push({
-          username: username,
-          avatar: linkAvatar || (username === avatarOwner ? blockAvatar : ''),
-          subtitle: label && label !== username ? label : ''
-        })
-        seen.add(username)
+        if (linkAvatar) {
+          items.push({
+            username: username,
+            avatar: linkAvatar,
+            subtitle: label && label !== username ? label : ''
+          })
+          seen.add(username)
+        }
       }
       m = linkRe.exec(block)
-    }
-    if (items.length === 0 && avatarOwner) {
-      items.push({
-        username: avatarOwner,
-        avatar: blockAvatar,
-        subtitle: ''
-      })
     }
     return items
   }
