@@ -13,6 +13,8 @@ export struct NodeTopicPage {
   @Prop nodeName: string = ''
   @Prop nodeTitle: string = ''
   @Consume('ns') stack: NavPathStack
+  @StorageProp(StorageKeys.TOP_AVOID_HEIGHT) topH: number = 0
+  @StorageProp(StorageKeys.BOTTOM_AVOID_HEIGHT) bottomH: number = 0
   @State vm: NodeViewModel = new NodeViewModel()
   @StorageLink(StorageKeys.TOPIC_READ_STATES) topicReadStates: string = '[]'
   @StorageLink(StorageKeys.ACCOUNT_WRITE_ENABLED) writeEnabled: boolean = false
@@ -36,13 +38,13 @@ export struct NodeTopicPage {
   }
 
   build() {
-    Column() {
+    Stack() {
       PullRefreshListScaffold({
         onRefresh: async () => { await this.refreshData() },
         onReachEnd: () => { this.loadMore() }
       }) {
         if (this.vm.isLoading) {
-          ListItem() { this.LoadingView() }
+          ListItem() { Column() {}.height(0) }
         } else if (this.vm.errorMessage) {
           ListItem() { this.ErrorView() }
         } else if (this.vm.nodeTopics.length === 0) {
@@ -73,6 +75,10 @@ export struct NodeTopicPage {
           }
         }
       }
+
+      if (this.vm.isLoading) {
+        this.LoadingView()
+      }
     }
       .width('100%').height('100%')
       .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
@@ -86,7 +92,9 @@ export struct NodeTopicPage {
     }
     .justifyContent(FlexAlign.Center)
     .width('100%')
-    .height(240)
+    .height('100%')
+    .padding({ top: this.topH + ThemeConstants.TITLE_BAR_HEIGHT, bottom: this.bottomH })
+    .hitTestBehavior(HitTestMode.None)
   }
 
   @Builder EmptyView() {

@@ -207,32 +207,6 @@ function PillCCBuilder() {
   FeedPills()
 }
 
-@Component
-struct NodeTopicAppbarMetadata {
-  @StorageLink(StorageKeys.NODE_TOPIC_SUBTITLE) subtitle: string = ''
-
-  build() {
-    Row() {
-      if ((this.subtitle || '').trim()) {
-        Text((this.subtitle || '').trim())
-          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-          .fontColor($r('sys.color.font_secondary'))
-          .maxLines(1)
-          .textOverflow({ overflow: TextOverflow.Ellipsis })
-      }
-    }
-    .width('100%')
-    .height(28)
-    .alignItems(VerticalAlign.Top)
-    .padding({ left: 64, right: 96 })
-  }
-}
-
-@Builder
-function NodeTopicMetadataCCBuilder() {
-  NodeTopicAppbarMetadata()
-}
-
 interface UserProfileAppbarIdentityParams {
   titleUsername: string
   avatarUrl: string
@@ -594,9 +568,8 @@ struct Index {
     const baseTitle = (nodeTitle || nodeName || '').trim()
     const liveTitle = (this.nodeTopicTitle || '').trim()
     const title = liveTitle || baseTitle
-    let cc = new ComponentContent(this.getUIContext(), wrapBuilder(NodeTopicMetadataCCBuilder))
-    let bb: Record<string, Object> = { 'builderComponent': cc, 'height': 28, 'showType': 0 }
-    return this.navDestTitleBarOpts(title, menu, undefined, bb)
+    const subtitle = (this.nodeTopicSubtitle || '').trim()
+    return this.navDestTitleBarOpts(title, menu, subtitle)
   }
 
   private userProfileTitleBarOpts(username: string): Record<string, Object> {
