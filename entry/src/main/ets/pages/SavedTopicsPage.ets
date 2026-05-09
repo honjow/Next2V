@@ -3,7 +3,7 @@ import {
   CollectionSettings,
   EmptyState,
   LocalTopicCard,
-  SecondaryListScaffold,
+  PullRefreshListScaffold,
   type SavedTopic,
   type TopicDetailParams
 } from 'shared'
@@ -19,7 +19,7 @@ export struct SavedTopicsPage {
 
   build() {
     Column() {
-      SecondaryListScaffold() {
+      PullRefreshListScaffold({ onRefresh: () => this.loadTopics() }) {
         if (this.topics.length === 0) {
           ListItem() {
             EmptyState({ message: '还没有稍后读主题', stateHeight: 220 })
@@ -54,9 +54,9 @@ export struct SavedTopicsPage {
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
   }
 
-  private loadTopics(): void {
+  private loadTopics(): Promise<void> {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    CollectionSettings.loadSavedTopics(context)
+    return CollectionSettings.loadSavedTopics(context)
       .then((items: SavedTopic[]) => {
         this.topics = items
       })
