@@ -27,7 +27,7 @@ export class ImageUtils {
   /** 将 V2EX 头像 URL 的 mini/normal 尺寸升级为更适合列表显示的尺寸。 */
   private static preferLargeAvatar(path: string, size: AvatarSize = 'xlarge'): string {
     return (path || '')
-      .replace(/_(?:mini|normal)(\.\w+)$/, `_${size}$1`)
-      .replace(/\/(?:mini|normal)(\.\w+)$/, '/large$1')
+      .replace(/_(?:mini|normal)(\.\w+)([?#].*)?$/, `_${size}$1$2`)
+      .replace(/\/(?:mini|normal)(\.\w+)([?#].*)?$/, '/large$1$2')
   }
 }
