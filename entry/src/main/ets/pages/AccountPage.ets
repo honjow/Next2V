@@ -600,17 +600,29 @@ export struct AccountDashboardPage {
       this.SettingsDivider()
       this.TopicDraftEntryRow()
       this.SettingsDivider()
-      LocalContentNavigationRow({ title: '稍后读', countKind: LocalContentCountKind.SAVED_TOPICS, refreshKey: this.refreshKey, action: () => {
-        this.ns.pushPathByName('SavedTopics', null)
-      } })
+      ConciseListRow({
+        title: '稍后读',
+        count: this.savedTopicCount,
+        action: () => {
+          this.ns.pushPathByName('SavedTopics', null)
+        }
+      })
       this.SettingsDivider()
-      LocalContentNavigationRow({ title: '最近浏览', countKind: LocalContentCountKind.VIEWED_TOPICS, refreshKey: this.refreshKey, action: () => {
-        this.ns.pushPathByName('ViewedTopics', null)
-      } })
+      ConciseListRow({
+        title: '最近浏览',
+        count: this.viewedTopicCount,
+        action: () => {
+          this.ns.pushPathByName('ViewedTopics', null)
+        }
+      })
       this.SettingsDivider()
-      LocalContentNavigationRow({ title: '本地关注节点', countKind: LocalContentCountKind.SAVED_NODES, refreshKey: this.refreshKey, action: () => {
-        this.ns.pushPathByName('SavedNodes', null)
-      } })
+      ConciseListRow({
+        title: '本地关注节点',
+        count: this.savedNodeCount,
+        action: () => {
+          this.ns.pushPathByName('SavedNodes', null)
+        }
+      })
     }
   }
 
@@ -1073,102 +1085,6 @@ export struct AccountDashboardPage {
       .catch((error: Error) => {
         promptAction.openToast({ message: error.message || '打开失败' }).catch((_error: Error) => {
         })
-      })
-  }
-}
-
-enum LocalContentCountKind {
-  SAVED_TOPICS = 0,
-  SAVED_NODES = 1,
-  VIEWED_TOPICS = 2
-}
-
-@Component
-struct LocalContentNavigationRow {
-  @Prop title: string = ''
-  @Prop countKind: LocalContentCountKind = LocalContentCountKind.SAVED_TOPICS
-  @Prop @Watch('onRefreshKeyChanged') refreshKey: number = 0
-  @StorageLink(StorageKeys.LOCAL_DATA_UPDATED_AT) @Watch('onLocalDataUpdated') localDataUpdatedAt: number = 0
-  @State private count: number = 0
-  action?: () => void
-
-  aboutToAppear(): void {
-    this.loadCount()
-  }
-
-  onRefreshKeyChanged(_propName: string): void {
-    this.loadCount()
-  }
-
-  onLocalDataUpdated(_propName: string): void {
-    this.loadCount()
-  }
-
-  build() {
-    Row({ space: ThemeConstants.SPACE_SM }) {
-      Text(this.title)
-        .fontSize(ThemeConstants.FONT_SIZE_LIST_ITEM)
-        .fontWeight(FontWeight.Regular)
-        .fontColor($r('sys.color.font_primary'))
-        .maxLines(1)
-        .textOverflow({ overflow: TextOverflow.Ellipsis })
-        .layoutWeight(1)
-
-      Text(`${this.count}`)
-        .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-        .fontColor($r('sys.color.font_secondary'))
-        .maxLines(1)
-        .textOverflow({ overflow: TextOverflow.Ellipsis })
-
-      Text('›')
-        .fontSize(ThemeConstants.FONT_SIZE_TITLE)
-        .fontColor($r('sys.color.font_secondary'))
-    }
-    .alignItems(VerticalAlign.Center)
-    .width('100%')
-    .height(52)
-    .padding({ left: ThemeConstants.SPACE_LG + ThemeConstants.LIST_ROW_TEXT_INDENT, right: ThemeConstants.SPACE_LG })
-    .borderRadius(ThemeConstants.LIST_ROW_RADIUS)
-    .onClick(() => {
-      if (this.action) {
-        this.action()
-      }
-    })
-    .onVisibleAreaChange([0.0, 1.0], (isVisible: boolean, _currentRatio: number) => {
-      if (isVisible) {
-        this.loadCount()
-      }
-    })
-  }
-
-  private loadCount(): void {
-    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    if (this.countKind === LocalContentCountKind.SAVED_TOPICS) {
-      CollectionSettings.loadSavedTopics(context)
-        .then((items: SavedTopic[]) => {
-          this.count = items.length
-        })
-        .catch((error: Error) => {
-          console.error('load saved topic count failed: ' + error.message)
-        })
-      return
-    }
-    if (this.countKind === LocalContentCountKind.SAVED_NODES) {
-      CollectionSettings.loadSavedNodes(context)
-        .then((items: SavedNode[]) => {
-          this.count = items.length
-        })
-        .catch((error: Error) => {
-          console.error('load saved node count failed: ' + error.message)
-        })
-      return
-    }
-    CollectionSettings.loadViewedTopics(context)
-      .then((items: ViewedTopic[]) => {
-        this.count = items.length
-      })
-      .catch((error: Error) => {
-        console.error('load viewed topic count failed: ' + error.message)
       })
   }
 }
