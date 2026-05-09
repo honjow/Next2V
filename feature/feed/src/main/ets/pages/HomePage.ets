@@ -2,7 +2,7 @@ import { FeedViewModel } from '../viewmodel/FeedViewModel'
 import {
   V2exTopic, TopicCard, LoadingFooter, TopicDetailParams, ThemeConstants,
   StorageKeys, PullRefreshListScaffold, ApiConstants, TabItem, ApiService, NodeTopicListParams,
-  UserProfileParams, CacheSettings, FeedTabSettings
+  UserProfileParams, CacheSettings, FeedTabSettings, BlockedMemberSettings, BlockedTopicFilter
 } from 'shared'
 import type { TopicReadState } from 'shared'
 import { common } from '@kit.AbilityKit'
@@ -164,6 +164,7 @@ struct FeedListPage {
   @Consume('ns') ns: NavPathStack
   @StorageLink('listScrollEnabled') listScrollEnabled: boolean = true
   @StorageLink(StorageKeys.TOPIC_READ_STATES) topicReadStates: string = '[]'
+  @StorageLink(StorageKeys.BLOCKED_MEMBERS_UPDATED_AT) @Watch('onBlockedMembersChanged') blockedMembersUpdatedAt: number = 0
   @Prop tabKey: string = 'tech'
   @State vm: FeedViewModel = new FeedViewModel()
   private readonly FLOAT_H: number = ThemeConstants.FLOAT_BAR_HEIGHT
@@ -178,11 +179,26 @@ struct FeedListPage {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     this.vm.setLoader(() => this.api.getTabTopics(this.tabKey))
     this.vm.setCacheHandlers(
-      () => CacheSettings.loadTopicList(context, `tab:${this.tabKey}`),
+      async () => {
+        const topics = await CacheSettings.loadTopicList(context, `tab:${this.tabKey}`)
+        const blockedUsernames = await BlockedMemberSettings.loadUsernames(context)
+        return BlockedTopicFilter.filterTopicsByBlockedAuthors(topics, blockedUsernames)
+      },
       (topics: V2exTopic[]) => CacheSettings.saveTopicList(context, `tab:${this.tabKey}`, topics)
     )
     this.vm.loadCachedData()
     this.vm.loadData()
+  }
+
+  private onBlockedMembersChanged(_propName: string): void {
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    BlockedMemberSettings.loadUsernames(context)
+      .then((blockedUsernames: string[]) => {
+        this.vm.dataSource.filterBlockedAuthors(blockedUsernames)
+      })
+      .catch((error: Error) => {
+        console.error('apply blocked member feed filter failed: ' + error.message)
+      })
   }
 
   build() {

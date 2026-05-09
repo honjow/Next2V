@@ -1,6 +1,8 @@
 import { http } from '@kit.NetworkKit'
 import { HttpClient } from './HttpClient'
 import { FeedTabSettings } from '../settings/FeedTabSettings'
+import { CookieJarSettings } from '../settings/CookieJarSettings'
+import { BlockedMemberSettings } from '../settings/BlockedMemberSettings'
 import { ApiConstants } from '../constants/ApiConstants'
 import { V2exTabParser } from '../parser/V2exTabParser'
 import { V2exNotificationParser } from '../parser/V2exNotificationParser'
@@ -13,6 +15,7 @@ import { V2exSigninParser } from '../parser/V2exSigninParser'
 import { V2exMemberPageParser } from '../parser/V2exMemberPageParser'
 import { V2exAccountListParser, type V2exAccountMemberListItem } from '../parser/V2exAccountListParser'
 import { HtmlEntityUtils } from '../utils/HtmlEntityUtils'
+import { BlockedTopicFilter } from '../utils/BlockedTopicFilter'
 import type {
   V2exTopic,
   V2exReply,
@@ -1011,22 +1014,22 @@ export class ApiService {
    */
   async getTabTopics(tab: string): Promise<V2exTopic[]> {
     const nodeName = FeedTabSettings.nodeNameFromKey(tab)
+    let topics: V2exTopic[]
     if (nodeName) {
-      return this.getTopicsByNode(nodeName)
+      topics = await this.getTopicsByNode(nodeName)
+    } else if (tab === 'latest') {
+      topics = await this.getLatestTopics()
+    } else if (tab === 'hot') {
+      topics = await this.getHotTopics()
+    } else {
+      const html = await this.http.getText(ApiConstants.TAB_URLS[tab])
+      const ids = V2exTabParser.extractTopicIds(html)
+      if (ids.length === 0) {
+        throw new Error(`Tab "${tab}" 没有获取到主题，请稍后重试`)
+      }
+      topics = await this.getBatchTopics(ids)
     }
-    if (tab === 'latest') {
-      return this.getLatestTopics()
-    }
-    if (tab === 'hot') {
-      return this.getHotTopics()
-    }
-
-    const html = await this.http.getText(ApiConstants.TAB_URLS[tab])
-    const ids = V2exTabParser.extractTopicIds(html)
-    if (ids.length === 0) {
-      throw new Error(`Tab "${tab}" 没有获取到主题，请稍后重试`)
-    }
-    return this.getBatchTopics(ids)
+    return this.filterBlockedTopicAuthors(topics)
   }
 
   async getTopicsByIds(ids: number[]): Promise<V2exTopic[]> {
@@ -1054,6 +1057,22 @@ export class ApiService {
 
   private static normalizeTopics(topics: V2exTopic[]): V2exTopic[] {
     return (topics || []).map((topic: V2exTopic) => ApiService.normalizeTopic(topic))
+  }
+
+  private async filterBlockedTopicAuthors(topics: V2exTopic[]): Promise<V2exTopic[]> {
+    const cookie = CookieJarSettings.getCurrentCookie()
+    if (!cookie || !topics || topics.length === 0) {
+      return topics || []
+    }
+    try {
+      const blockedMembers = await this.getBlockedMembersWithCookie(cookie)
+      const usernames = blockedMembers.map(item => item.username)
+      BlockedMemberSettings.applyRuntimeUsernames(usernames)
+      return BlockedTopicFilter.filterTopicsByBlockedAuthors(topics, usernames)
+    } catch (error) {
+      console.error('filter blocked topic authors failed:', (error as Error).message)
+      return BlockedTopicFilter.filterTopicsByBlockedAuthors(topics, BlockedMemberSettings.getCachedUsernames())
+    }
   }
 
   private static normalizeTopic(topic: V2exTopic): V2exTopic {

@@ -1,7 +1,9 @@
 import { promptAction } from '@kit.ArkUI'
+import { common } from '@kit.AbilityKit'
 import {
   ApiService,
   Avatar,
+  BlockedMemberSettings,
   CookieJarSettings,
   SecondaryListScaffold,
   ThemeConstants,
@@ -173,6 +175,10 @@ export struct AccountBlacklistPage {
       .then((result) => {
         this.members = result[0]
         this.topics = result[1]
+        const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+        BlockedMemberSettings.saveUsernames(context, this.members.map(item => item.username)).catch((error: Error) => {
+          console.error('save blocked members failed: ' + error.message)
+        })
       })
       .catch((error: Error) => {
         this.errorMessage = error.message || '加载失败'

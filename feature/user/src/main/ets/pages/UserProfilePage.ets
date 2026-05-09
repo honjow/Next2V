@@ -2,7 +2,7 @@ import { UserViewModel } from '../viewmodel/UserViewModel'
 import {
   V2exTopic, V2exUserReply, TopicCard, ThemeConstants, TopicDetailParams, StorageKeys, NodeTopicListParams,
   Avatar, DateUtils, SecondaryListScaffold, MarkdownContent, UserProfileParams, CookieJarSettings,
-  V2exRoute, V2exUrlRouter
+  V2exRoute, V2exUrlRouter, BlockedMemberSettings
 } from 'shared'
 import type { TopicReadState } from 'shared'
 import { promptAction } from '@kit.ArkUI'
@@ -433,6 +433,7 @@ export struct UserProfilePage {
     this.vm.toggleBlock()
       .then(() => {
         this.syncActionState()
+        this.persistBlockedMemberState(this.blocked)
         this.showActionToast(nextBlocked ? '已屏蔽' : '已取消屏蔽')
         this.refreshActionStateLater()
       })
@@ -441,6 +442,20 @@ export struct UserProfilePage {
         this.publishActionMenuState()
         this.showActionToast(this.actionFailureToast(error))
         this.reloadActionStateAfterFailure()
+      })
+  }
+
+  private persistBlockedMemberState(blocked: boolean): void {
+    const username = this.displayProfileUsername()
+    if (!username) {
+      BlockedMemberSettings.publishUpdatedAt()
+      return
+    }
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    BlockedMemberSettings.setBlocked(context, username, blocked)
+      .catch((error: Error) => {
+        console.error('persist blocked member failed: ' + error.message)
+        BlockedMemberSettings.publishUpdatedAt()
       })
   }
 
