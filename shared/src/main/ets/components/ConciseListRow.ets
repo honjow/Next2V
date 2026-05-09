@@ -1,7 +1,7 @@
 import { HdsListItemCard, PrefixImage, SuffixSwitch, SuffixText, SuffixTextAndArrow } from '@kit.UIDesignKit'
 import { ImageModifier, TextModifier } from '@kit.ArkUI'
 import { ThemeConstants } from '../theme/ThemeConstants'
-import { hilog } from '@kit.PerformanceAnalysisKit'
+import { ImageUtils } from '../utils/ImageUtils'
 
 @Component
 export struct ConciseListRow {
@@ -80,20 +80,15 @@ export struct ConciseListRow {
   }
 
   private prefixItem(): PrefixImage | undefined {
-    hilog.info(0x0000, 'ConciseListRow', 'Creating PrefixImage with url: %{public}s', this.leadingImageUrl);
-    if (this.leadingImageUrl) {
+    const imageUrl = ImageUtils.avatarUrl(this.leadingImageUrl)
+    if (imageUrl) {
       return new PrefixImage({
-        image: this.leadingImageUrl,
+        image: imageUrl,
         modifier: new ImageModifier()
-          // .padding(6)
           .alt($r('sys.media.ohos_app_icon'))
       })
     }
     return undefined
-  }
-
-  private hasLeadingImage(): boolean {
-    return (this.leadingImageUrl || '').trim().length > 0
   }
 
   @Builder

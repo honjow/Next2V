@@ -121,7 +121,7 @@ export struct MyTopicsPage {
   }
 
   private refresh(force: boolean = false): Promise<void> {
-    if (this.refreshGuard) {
+    if (this.refreshGuard || this.isLoadingMore) {
       return Promise.resolve()
     }
     const cookie = CookieJarSettings.getCurrentCookie()

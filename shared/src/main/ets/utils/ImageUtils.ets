@@ -24,11 +24,10 @@ export class ImageUtils {
     return `${ApiConstants.BASE_URL_COM}${source}`
   }
 
-  /**
-   * 将头像 URL 的 _mini/_normal 后缀替换为目标尺寸。
-   * 支持 xlarge / xxlarge / xxxlarge。
-   */
+  /** 将 V2EX 头像 URL 的 mini/normal 尺寸升级为更适合列表显示的尺寸。 */
   private static preferLargeAvatar(path: string, size: AvatarSize = 'xlarge'): string {
-    return (path || '').replace(/_(?:mini|normal)(\.\w+)$/, `_${size}$1`)
+    return (path || '')
+      .replace(/_(?:mini|normal)(\.\w+)$/, `_${size}$1`)
+      .replace(/\/(?:mini|normal)(\.\w+)$/, '/large$1')
   }
 }
