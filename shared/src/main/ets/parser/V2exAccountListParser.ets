@@ -10,69 +10,133 @@ export class V2exAccountListParser {
   static extractMembers(html: string, excludedUsername: string = ''): V2exAccountMemberListItem[] {
     const clean = html || ''
     const excluded = (excludedUsername || '').trim().toLowerCase()
-    const items: V2exAccountMemberListItem[] = []
     const seen: Set<string> = new Set()
-    const memberRe = /<a[^>]+href=['"]\/member\/([0-9A-Za-z_]+)['"][^>]*>([\s\S]*?)<\/a>/gi
-    let m: RegExpExecArray | null = memberRe.exec(clean)
-    while (m) {
-      const username = (m[1] || '').trim()
-      if (username && username.toLowerCase() !== excluded && !seen.has(username)) {
-        const label = V2exAccountListParser.compactText(m[2] || '')
-        const linkHtml = m[2] || ''
-        items.push({
-          username: username,
-          avatar: V2exAccountListParser.extractAvatarFromHtml(linkHtml) ||
-            V2exAccountListParser.extractScopedAvatar(clean, m.index, username),
-          subtitle: label && label !== username ? label : ''
-        })
-        seen.add(username)
+    const items: V2exAccountMemberListItem[] = []
+    const blocks = V2exAccountListParser.extractMemberBlocks(clean)
+    for (const block of blocks) {
+      const blockItems = V2exAccountListParser.extractMembersFromBlock(block)
+      for (const item of blockItems) {
+        if (item.username && item.username.toLowerCase() !== excluded && !seen.has(item.username)) {
+          items.push(item)
+          seen.add(item.username)
+        }
       }
-      m = memberRe.exec(clean)
     }
-    return items
+    if (items.length > 0) {
+      return items
+    }
+    return V2exAccountListParser.extractLinkedMembers(clean, excluded, seen)
   }
 
   static extractTopicIds(html: string): number[] {
     return V2exTabParser.extractTopicIds(html || '')
   }
 
-  private static extractScopedAvatar(html: string, linkIndex: number, username: string): string {
-    const block = V2exAccountListParser.extractMemberBlock(html, linkIndex)
-    const direct = V2exAccountListParser.extractAvatarFromHtml(block)
-    if (direct) {
-      return direct
+  private static extractMemberBlocks(html: string): string[] {
+    const blocks: string[] = []
+    const rowRe = /<tr\b[\s\S]*?<\/tr>/gi
+    let rowMatch: RegExpExecArray | null = rowRe.exec(html)
+    while (rowMatch) {
+      const row = rowMatch[0] || ''
+      if (V2exAccountListParser.hasAvatarImage(row) && V2exAccountListParser.hasMemberLink(row)) {
+        blocks.push(row)
+      }
+      rowMatch = rowRe.exec(html)
     }
-    return V2exAccountListParser.extractNearestAvatar(html, linkIndex, username)
+    if (blocks.length > 0) {
+      return blocks
+    }
+
+    const cellStarts: number[] = []
+    const cellRe = /<div[^>]+class=['"][^'"]*\bcell\b[^'"]*['"][^>]*>/gi
+    let cellMatch: RegExpExecArray | null = cellRe.exec(html)
+    while (cellMatch) {
+      cellStarts.push(cellMatch.index)
+      cellMatch = cellRe.exec(html)
+    }
+    for (let i = 0; i < cellStarts.length; i++) {
+      const start = cellStarts[i]
+      const end = i + 1 < cellStarts.length ? cellStarts[i + 1] : html.length
+      const cell = html.slice(start, end)
+      if (V2exAccountListParser.hasAvatarImage(cell) && V2exAccountListParser.hasMemberLink(cell)) {
+        blocks.push(cell)
+      }
+    }
+    return blocks
   }
 
-  private static extractMemberBlock(html: string, linkIndex: number): string {
-    const divCellStart = Math.max(
-      html.lastIndexOf('<div class="cell"', linkIndex),
-      html.lastIndexOf("<div class='cell'", linkIndex)
-    )
-    if (divCellStart >= 0) {
-      const cellEnd = html.indexOf('</div>', linkIndex)
-      if (cellEnd > divCellStart) {
-        return html.slice(divCellStart, cellEnd)
+  private static extractMembersFromBlock(block: string): V2exAccountMemberListItem[] {
+    const items: V2exAccountMemberListItem[] = []
+    const avatarOwner = V2exAccountListParser.extractAvatarLinkedUsername(block)
+    const blockAvatar = V2exAccountListParser.extractAvatarFromHtml(block)
+    const seen: Set<string> = new Set()
+    const linkRe = /<a[^>]+href=['"]\/member\/([0-9A-Za-z_]+)['"][^>]*>([\s\S]*?)<\/a>/gi
+    let m: RegExpExecArray | null = linkRe.exec(block)
+    while (m) {
+      const username = (m[1] || '').trim()
+      if (username && !seen.has(username)) {
+        const label = V2exAccountListParser.compactText(m[2] || '')
+        const linkAvatar = V2exAccountListParser.extractAvatarFromHtml(m[2] || '')
+        items.push({
+          username: username,
+          avatar: linkAvatar || (username === avatarOwner ? blockAvatar : ''),
+          subtitle: label && label !== username ? label : ''
+        })
+        seen.add(username)
       }
+      m = linkRe.exec(block)
     }
-    const rowStart = html.lastIndexOf('<tr', linkIndex)
-    if (rowStart >= 0) {
-      const rowEnd = html.indexOf('</tr>', linkIndex)
-      if (rowEnd > rowStart) {
-        return html.slice(rowStart, rowEnd)
+    if (items.length === 0 && avatarOwner) {
+      items.push({
+        username: avatarOwner,
+        avatar: blockAvatar,
+        subtitle: ''
+      })
+    }
+    return items
+  }
+
+  private static extractAvatarLinkedUsername(html: string): string {
+    const linkRe = /<a[^>]+href=['"]\/member\/([0-9A-Za-z_]+)['"][^>]*>([\s\S]*?)<\/a>/gi
+    let m: RegExpExecArray | null = linkRe.exec(html)
+    while (m) {
+      if (V2exAccountListParser.hasAvatarImage(m[2] || '')) {
+        return (m[1] || '').trim()
       }
+      m = linkRe.exec(html)
     }
-    const tdStart = html.lastIndexOf('<td', linkIndex)
-    if (tdStart >= 0) {
-      const tdEnd = html.indexOf('</td>', linkIndex)
-      if (tdEnd > tdStart) {
-        return html.slice(tdStart, tdEnd)
+    return ''
+  }
+
+  private static extractLinkedMembers(html: string, excluded: string, seen: Set<string>): V2exAccountMemberListItem[] {
+    const items: V2exAccountMemberListItem[] = []
+    const memberRe = /<a[^>]+href=['"]\/member\/([0-9A-Za-z_]+)['"][^>]*>([\s\S]*?)<\/a>/gi
+    let m: RegExpExecArray | null = memberRe.exec(html)
+    while (m) {
+      const username = (m[1] || '').trim()
+      if (username && username.toLowerCase() !== excluded && !seen.has(username)) {
+        const label = V2exAccountListParser.compactText(m[2] || '')
+        const avatar = V2exAccountListParser.extractAvatarFromHtml(m[2] || '')
+        if (avatar) {
+          items.push({
+            username: username,
+            avatar: avatar,
+            subtitle: label && label !== username ? label : ''
+          })
+          seen.add(username)
+        }
       }
+      m = memberRe.exec(html)
     }
-    const start = Math.max(0, linkIndex - 240)
-    const end = Math.min(html.length, linkIndex + 240)
-    return html.slice(start, end)
+    return items
+  }
+
+  private static hasMemberLink(html: string): boolean {
+    return /href=['"]\/member\/[0-9A-Za-z_]+['"]/i.test(html)
+  }
+
+  private static hasAvatarImage(html: string): boolean {
+    return V2exAccountListParser.extractAvatarFromHtml(html).length > 0
   }
 
   private static extractAvatarFromHtml(html: string): string {
@@ -86,29 +150,6 @@ export class V2exAccountListParser {
       m = imgRe.exec(html)
     }
     return ''
-  }
-
-  private static extractNearestAvatar(html: string, linkIndex: number, username: string): string {
-    const start = Math.max(0, linkIndex - 240)
-    const end = Math.min(html.length, linkIndex + 240)
-    const block = html.slice(start, end)
-    const localLinkIndex = linkIndex - start
-    const imgRe = /<img[^>]+src=['"]([^'"]+)['"][^>]*>/gi
-    let bestSrc = ''
-    let bestDistance = 1000000000
-    let m: RegExpExecArray | null = imgRe.exec(block)
-    while (m) {
-      const src = V2exAccountListParser.decodeHtml(m[1] || '').trim()
-      if (src.indexOf(username) >= 0 || V2exAccountListParser.isAvatarImage(src)) {
-        const distance = Math.abs(m.index - localLinkIndex)
-        if (distance < bestDistance) {
-          bestDistance = distance
-          bestSrc = src
-        }
-      }
-      m = imgRe.exec(block)
-    }
-    return V2exAccountListParser.normalizeImageUrl(bestSrc)
   }
 
   private static normalizeImageUrl(src: string): string {
