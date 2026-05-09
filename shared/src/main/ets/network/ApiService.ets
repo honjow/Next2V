@@ -1066,13 +1066,35 @@ export class ApiService {
     }
     try {
       const blockedMembers = await this.getBlockedMembersWithCookie(cookie)
-      const usernames = blockedMembers.map(item => item.username)
+      const usernames = ApiService.mergeBlockedUsernames(
+        BlockedMemberSettings.getCachedUsernames(),
+        blockedMembers.map(item => item.username)
+      )
       BlockedMemberSettings.applyRuntimeUsernames(usernames)
       return BlockedTopicFilter.filterTopicsByBlockedAuthors(topics, usernames)
     } catch (error) {
       console.error('filter blocked topic authors failed:', (error as Error).message)
       return BlockedTopicFilter.filterTopicsByBlockedAuthors(topics, BlockedMemberSettings.getCachedUsernames())
     }
+  }
+
+  private static mergeBlockedUsernames(localUsernames: string[], remoteUsernames: string[]): string[] {
+    const usernames: string[] = []
+    const seen: Set<string> = new Set()
+    const append = (value: string): void => {
+      const normalized = BlockedTopicFilter.normalizeUsername(value)
+      if (normalized && !seen.has(normalized)) {
+        seen.add(normalized)
+        usernames.push(normalized)
+      }
+    }
+    for (const username of localUsernames || []) {
+      append(username)
+    }
+    for (const username of remoteUsernames || []) {
+      append(username)
+    }
+    return usernames.sort()
   }
 
   private static normalizeTopic(topic: V2exTopic): V2exTopic {
