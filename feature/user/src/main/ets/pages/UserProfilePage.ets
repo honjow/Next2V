@@ -26,8 +26,10 @@ export struct UserProfilePage {
   @StorageLink(StorageKeys.USER_PROFILE_FOLLOWING) userProfileFollowing: boolean = false
   @StorageLink(StorageKeys.USER_PROFILE_BLOCKED) userProfileBlocked: boolean = false
   @StorageLink(StorageKeys.USER_PROFILE_APPBAR_TITLE_USERNAME) userProfileAppbarTitleUsername: string = ''
+  @StorageLink(StorageKeys.USER_PROFILE_APPBAR_TITLE_AVATAR_URL) userProfileAppbarTitleAvatarUrl: string = ''
   @StorageLink(StorageKeys.USER_PROFILE_APPBAR_TITLE_ROUTE_USERNAME) userProfileAppbarTitleRouteUsername: string = ''
   @StorageLink(StorageKeys.USER_PROFILE_APPBAR_TITLE_STATES) userProfileAppbarTitleStates: string = '{}'
+  @StorageLink(StorageKeys.USER_PROFILE_APPBAR_AVATAR_STATES) userProfileAppbarAvatarStates: string = '{}'
   @StorageLink(StorageKeys.USER_PROFILE_SHOWN) @Watch('onUserProfileShown') userProfileShown: string = ''
   @StorageProp(StorageKeys.TOP_AVOID_HEIGHT) topH: number = 0
   @State private usernameContentBottom: number = 0
@@ -484,30 +486,48 @@ export struct UserProfilePage {
   private publishAppbarTitle(visible: boolean): void {
     const nextRouteUsername = visible ? this.username : ''
     const nextTitleUsername = visible ? this.displayProfileUsername() : ''
-    this.publishAppbarTitleState(nextTitleUsername)
+    const nextAvatarUrl = visible ? this.profileAvatarUrl() : ''
+    this.publishAppbarIdentityState(nextTitleUsername, nextAvatarUrl)
     if (this.userProfileAppbarTitleRouteUsername !== nextRouteUsername) {
       this.userProfileAppbarTitleRouteUsername = nextRouteUsername
     }
     if (this.userProfileAppbarTitleUsername !== nextTitleUsername) {
       this.userProfileAppbarTitleUsername = nextTitleUsername
     }
+    if (this.userProfileAppbarTitleAvatarUrl !== nextAvatarUrl) {
+      this.userProfileAppbarTitleAvatarUrl = nextAvatarUrl
+    }
   }
 
-  private publishAppbarTitleState(titleUsername: string): void {
+  private publishAppbarIdentityState(titleUsername: string, avatarUrl: string): void {
     const routeUsername = (this.username || '').trim().toLowerCase()
     if (!routeUsername) {
       return
     }
-    let states: Record<string, string> = {}
+    let titleStates: Record<string, string> = {}
+    let avatarStates: Record<string, string> = {}
     try {
       const parsed = JSON.parse(this.userProfileAppbarTitleStates || '{}') as Record<string, string>
       if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-        states = parsed
+        titleStates = parsed
       }
     } catch (_e) {
     }
-    states[routeUsername] = titleUsername
-    this.userProfileAppbarTitleStates = JSON.stringify(states)
+    try {
+      const parsed = JSON.parse(this.userProfileAppbarAvatarStates || '{}') as Record<string, string>
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        avatarStates = parsed
+      }
+    } catch (_e) {
+    }
+    titleStates[routeUsername] = titleUsername
+    avatarStates[routeUsername] = avatarUrl
+    this.userProfileAppbarTitleStates = JSON.stringify(titleStates)
+    this.userProfileAppbarAvatarStates = JSON.stringify(avatarStates)
+  }
+
+  private profileAvatarUrl(): string {
+    return (this.vm.profile?.avatar_large || this.vm.profile?.avatar_normal || '').trim()
   }
 
   private areaY(value: Length | undefined): number {

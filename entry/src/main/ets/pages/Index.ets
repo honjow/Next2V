@@ -13,6 +13,7 @@ import {
 import { common, Want } from '@kit.AbilityKit'
 import {
   ApiConstants,
+  Avatar,
   FeedTabSettings,
   HttpClient,
   ImagePreviewParams,
@@ -232,6 +233,41 @@ function NodeTopicMetadataCCBuilder() {
   NodeTopicAppbarMetadata()
 }
 
+interface UserProfileAppbarIdentityParams {
+  titleUsername: string
+  avatarUrl: string
+}
+
+@Component
+struct UserProfileAppbarIdentity {
+  @Prop titleUsername: string = ''
+  @Prop avatarUrl: string = ''
+
+  build() {
+    Row({ space: ThemeConstants.SPACE_XS }) {
+      if ((this.titleUsername || '').trim()) {
+        Avatar({ url: this.avatarUrl, avatarSize: 24, placeholder: (this.titleUsername || '').trim() })
+        Text((this.titleUsername || '').trim())
+          .fontSize(ThemeConstants.FONT_SIZE_TITLE)
+          .fontWeight(FontWeight.Medium)
+          .fontColor($r('sys.color.font_primary'))
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+      }
+    }
+    .width('100%')
+    .height(ThemeConstants.TITLE_BAR_HEIGHT)
+    .alignItems(VerticalAlign.Center)
+    .padding({ left: 64, right: 96 })
+    .hitTestBehavior(HitTestMode.None)
+  }
+}
+
+@Builder
+function UserProfileIdentityCCBuilder(params: UserProfileAppbarIdentityParams) {
+  UserProfileAppbarIdentity({ titleUsername: params.titleUsername, avatarUrl: params.avatarUrl })
+}
+
 @Entry
 @Component
 struct Index {
@@ -254,8 +290,10 @@ struct Index {
   @StorageLink(StorageKeys.USER_PROFILE_FOLLOWING) userProfileFollowing: boolean = false
   @StorageLink(StorageKeys.USER_PROFILE_BLOCKED) userProfileBlocked: boolean = false
   @StorageLink(StorageKeys.USER_PROFILE_APPBAR_TITLE_USERNAME) userProfileAppbarTitleUsername: string = ''
+  @StorageLink(StorageKeys.USER_PROFILE_APPBAR_TITLE_AVATAR_URL) userProfileAppbarTitleAvatarUrl: string = ''
   @StorageLink(StorageKeys.USER_PROFILE_APPBAR_TITLE_ROUTE_USERNAME) userProfileAppbarTitleRouteUsername: string = ''
   @StorageLink(StorageKeys.USER_PROFILE_APPBAR_TITLE_STATES) userProfileAppbarTitleStates: string = '{}'
+  @StorageLink(StorageKeys.USER_PROFILE_APPBAR_AVATAR_STATES) userProfileAppbarAvatarStates: string = '{}'
   @State private accountRefreshKey: number = 0
   private http: HttpClient = HttpClient.getInstance()
 
@@ -453,8 +491,8 @@ struct Index {
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
   }
 
-  private navDestTitleBarOpts(title?: string, menu?: Record<string, Object>, subTitle?: string,
-    bottomBuilder?: Record<string, Object>): Record<string, Object> {
+  private navDestTitleBarOpts<T extends Object>(title?: string, menu?: Record<string, Object>, subTitle?: string,
+    bottomBuilder?: Record<string, Object>, stackBuilderComponent?: ComponentContent<T>, titleAccessibilityText?: string): Record<string, Object> {
     let mat: Record<string, Object> =
       { 'materialType': hdsMaterial.MaterialType.ADAPTIVE, 'materialLevel': hdsMaterial.MaterialLevel.ADAPTIVE }
     let scrollOpts: Record<string, Object> =
@@ -475,10 +513,16 @@ struct Index {
         }
       }
       let titleInfo: Record<string, Object> = { 'mainTitle': title }
+      if (titleAccessibilityText) {
+        titleInfo['mainTitleAccessibilityText'] = titleAccessibilityText
+      }
       if (subTitle) {
         titleInfo['subTitle'] = subTitle
       }
       content['title'] = titleInfo
+      if (stackBuilderComponent) {
+        content['stackBuilderComponent'] = stackBuilderComponent
+      }
       if (bottomBuilder) {
         content['bottomBuilder'] = bottomBuilder
       }
@@ -558,10 +602,20 @@ struct Index {
   private userProfileTitleBarOpts(username: string): Record<string, Object> {
     const routeUsername = (username || '').trim()
     const titleFromState = this.userProfileAppbarTitleFor(routeUsername)
+    const avatarFromState = this.userProfileAppbarAvatarFor(routeUsername)
     const titleRouteUsername = (this.userProfileAppbarTitleRouteUsername || '').trim()
     const titleUsername = (this.userProfileAppbarTitleUsername || '').trim()
     const title = titleFromState ||
       (titleUsername && this.sameUsername(titleRouteUsername, routeUsername) ? titleUsername : ' ')
+    if (title.trim()) {
+      const avatarUrl = avatarFromState ||
+        (this.sameUsername(titleRouteUsername, routeUsername) ? (this.userProfileAppbarTitleAvatarUrl || '').trim() : '')
+      let cc = new ComponentContent<UserProfileAppbarIdentityParams>(
+        this.getUIContext(),
+        wrapBuilder(UserProfileIdentityCCBuilder),
+        { titleUsername: title, avatarUrl: avatarUrl })
+      return this.navDestTitleBarOpts(' ', this.userProfileTitleMenu(username), undefined, undefined, cc, title)
+    }
     return this.navDestTitleBarOpts(title, this.userProfileTitleMenu(username))
   }
 
@@ -574,6 +628,19 @@ struct Index {
       const states = JSON.parse(this.userProfileAppbarTitleStates || '{}') as Record<string, string>
       const title = (states[key] || '').trim()
       return title
+    } catch (_e) {
+      return ''
+    }
+  }
+
+  private userProfileAppbarAvatarFor(username: string): string {
+    const key = (username || '').trim().toLowerCase()
+    if (!key) {
+      return ''
+    }
+    try {
+      const states = JSON.parse(this.userProfileAppbarAvatarStates || '{}') as Record<string, string>
+      return (states[key] || '').trim()
     } catch (_e) {
       return ''
     }
