@@ -3,7 +3,7 @@ import {
   CollectionSettings,
   EmptyState,
   LocalTopicCard,
-  SecondaryListScaffold,
+  PullRefreshListScaffold,
   type TopicDetailParams,
   type ViewedTopic
 } from 'shared'
@@ -19,7 +19,7 @@ export struct ViewedTopicsPage {
 
   build() {
     Column() {
-      SecondaryListScaffold() {
+      PullRefreshListScaffold({ onRefresh: () => this.loadTopics() }) {
         if (this.topics.length === 0) {
           ListItem() {
             EmptyState({ message: '还没有最近浏览记录', stateHeight: 220 })
@@ -53,9 +53,9 @@ export struct ViewedTopicsPage {
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
   }
 
-  private loadTopics(): void {
+  private loadTopics(): Promise<void> {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    CollectionSettings.loadViewedTopics(context)
+    return CollectionSettings.loadViewedTopics(context)
       .then((items: ViewedTopic[]) => {
         this.topics = items
       })
