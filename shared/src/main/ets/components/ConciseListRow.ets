@@ -5,6 +5,7 @@ import {
   SuffixTextAndArrow
 } from '@kit.UIDesignKit'
 import { TextModifier } from '@kit.ArkUI'
+import { Avatar } from './Avatar'
 import { ThemeConstants } from '../theme/ThemeConstants'
 
 @Component
@@ -12,6 +13,7 @@ export struct ConciseListRow {
   @Prop title: string = ''
   @Prop subtitle: string = ''
   @Prop trailingText: string = ''
+  @Prop leadingImageUrl: string = ''
   @Prop count: number = -1
   @Prop destructive: boolean = false
   @Prop showChevron: boolean = true
@@ -82,7 +84,11 @@ export struct ConciseListRow {
     return undefined
   }
 
-  build() {
+  private hasLeadingImage(): boolean {
+    return (this.leadingImageUrl || '').trim().length > 0
+  }
+
+  @Builder private RowContent() {
     HdsListItemCard({
       textItem: {
         primaryText: {
@@ -107,5 +113,31 @@ export struct ConciseListRow {
         }
       }
     })
+  }
+
+  build() {
+    if (this.hasLeadingImage()) {
+      Row() {
+        Avatar({
+          url: this.leadingImageUrl,
+          avatarSize: ThemeConstants.AVATAR_SIZE_REPLY,
+          placeholder: ''
+        })
+          .margin({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM })
+
+        this.RowContent()
+      }
+      .width('100%')
+      .height(this.subtitle ? 60 : 52)
+      .alignItems(VerticalAlign.Center)
+      .borderRadius(ThemeConstants.LIST_ROW_RADIUS)
+      .onClick(() => {
+        if (this.action) {
+          this.action()
+        }
+      })
+    } else {
+      this.RowContent()
+    }
   }
 }

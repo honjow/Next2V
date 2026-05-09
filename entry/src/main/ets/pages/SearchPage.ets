@@ -1335,9 +1335,9 @@ export struct SearchPage {
       title_alternative: '',
       url: '',
       topics: item.topics,
-      avatar_mini: '',
-      avatar_normal: '',
-      avatar_large: ''
+      avatar_mini: item.avatarMini || '',
+      avatar_normal: item.avatarNormal || '',
+      avatar_large: item.avatarLarge || ''
     }
   }
 }

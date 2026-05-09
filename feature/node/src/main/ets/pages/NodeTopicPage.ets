@@ -271,8 +271,11 @@ export struct NodeTopicPage {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     const node: SavedNode = {
       name: this.nodeName,
-      title: this.vm.nodeDetail?.title || this.nodeTitle || this.nodeName,
+      title: CollectionSettings.cleanNodeTitle(this.vm.nodeDetail?.title || this.nodeTitle || this.nodeName, this.vm.nodeDetail?.topics || 0),
       topics: this.vm.nodeDetail?.topics || 0,
+      avatarMini: this.vm.nodeDetail?.avatar_mini,
+      avatarNormal: this.vm.nodeDetail?.avatar_normal,
+      avatarLarge: this.vm.nodeDetail?.avatar_large,
       savedAt: Math.floor(Date.now() / 1000)
     }
     const request = this.isNodeSaved
@@ -338,7 +341,7 @@ export struct NodeTopicPage {
   }
 
   private syncAppbarIdentity(): void {
-    this.nodeTopicTitle = this.vm.nodeDetail?.title || this.nodeTitle || this.nodeName
+    this.nodeTopicTitle = CollectionSettings.cleanNodeTitle(this.vm.nodeDetail?.title || this.nodeTitle || this.nodeName, this.vm.nodeDetail?.topics || 0)
     const identityName = (this.nodeName || '').trim()
     const subtitleParts: string[] = []
     if (this.nodeTopicTitle && identityName && this.nodeTopicTitle !== identityName) {

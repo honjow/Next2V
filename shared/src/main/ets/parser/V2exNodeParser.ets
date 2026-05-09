@@ -4,6 +4,10 @@ import { V2exTabParser } from './V2exTabParser'
 export interface V2exFavoriteNode {
   name: string
   title: string
+  topics?: number
+  avatarMini?: string
+  avatarNormal?: string
+  avatarLarge?: string
 }
 
 /**
@@ -32,13 +36,26 @@ export class V2exNodeParser {
     while (m) {
       const name = (m[1] || '').trim()
       if (name && !seen.has(name)) {
-        const title = V2exNodeParser.compactText(m[2] || '')
-        nodes.push({ name, title: title || name })
+        const parsed = V2exNodeParser.extractNodeTitleParts(V2exNodeParser.compactText(m[2] || ''), name)
+        nodes.push(parsed)
         seen.add(name)
       }
       m = linkRe.exec(html)
     }
     return nodes
+  }
+
+  private static extractNodeTitleParts(text: string, name: string): V2exFavoriteNode {
+    const clean = (text || '').trim()
+    const match = clean.match(/^(.+?)\s+(\d{2,})$/)
+    if (match) {
+      return {
+        name: name,
+        title: (match[1] || name).trim(),
+        topics: Number.parseInt(match[2] || '0', 10)
+      }
+    }
+    return { name: name, title: clean || name }
   }
 
   private static extractHasMore(html: string): boolean {

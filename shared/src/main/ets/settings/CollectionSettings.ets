@@ -31,6 +31,9 @@ export interface SavedNode {
   name: string
   title: string
   topics: number
+  avatarMini?: string
+  avatarNormal?: string
+  avatarLarge?: string
   savedAt: number
 }
 
@@ -124,8 +127,11 @@ export class CollectionSettings {
     const nodes = await CollectionSettings.loadSavedNodes(context)
     const saved: SavedNode = {
       name: node.name,
-      title: node.title,
+      title: CollectionSettings.cleanNodeTitle(node.title, node.topics),
       topics: node.topics,
+      avatarMini: node.avatarMini,
+      avatarNormal: node.avatarNormal,
+      avatarLarge: node.avatarLarge,
       savedAt: Math.floor(Date.now() / 1000)
     }
     const next = [saved].concat(nodes.filter((item: SavedNode) => item.name !== node.name)).slice(0, MAX_SAVED_NODES)
@@ -137,6 +143,65 @@ export class CollectionSettings {
     const nodes = await CollectionSettings.loadSavedNodes(context)
     const next = nodes.filter((item: SavedNode) => item.name !== nodeName)
     await CollectionSettings.writeSavedNodes(context, next)
+    return next
+  }
+
+  static async updateSavedNodeMetadata(context: common.UIAbilityContext, node: SavedNode): Promise<SavedNode[]> {
+    const nodes = await CollectionSettings.loadSavedNodes(context)
+    let changed = false
+    const next = nodes.map((item: SavedNode) => {
+      if (item.name !== node.name) {
+        return item
+      }
+      changed = true
+      return {
+        name: item.name,
+        title: CollectionSettings.cleanNodeTitle(node.title || item.title, node.topics || item.topics),
+        topics: node.topics > 0 ? node.topics : item.topics,
+        avatarMini: node.avatarMini || item.avatarMini,
+        avatarNormal: node.avatarNormal || item.avatarNormal,
+        avatarLarge: node.avatarLarge || item.avatarLarge,
+        savedAt: item.savedAt
+      }
+    })
+    if (changed) {
+      await CollectionSettings.writeSavedNodes(context, next)
+    }
+    return next
+  }
+
+  static async updateSavedNodesMetadata(context: common.UIAbilityContext, updates: SavedNode[]): Promise<SavedNode[]> {
+    const nodes = await CollectionSettings.loadSavedNodes(context)
+    const updateByName: Record<string, SavedNode> = {}
+    updates.forEach((node: SavedNode) => {
+      updateByName[node.name] = node
+    })
+    let changed = false
+    const next = nodes.map((item: SavedNode) => {
+      const update = updateByName[item.name]
+      if (!update) {
+        return item
+      }
+      const nextNode: SavedNode = {
+        name: item.name,
+        title: CollectionSettings.cleanNodeTitle(update.title || item.title, update.topics || item.topics),
+        topics: update.topics > 0 ? update.topics : item.topics,
+        avatarMini: update.avatarMini || item.avatarMini,
+        avatarNormal: update.avatarNormal || item.avatarNormal,
+        avatarLarge: update.avatarLarge || item.avatarLarge,
+        savedAt: item.savedAt
+      }
+      changed = changed ||
+        nextNode.title !== item.title ||
+        nextNode.topics !== item.topics ||
+        nextNode.avatarMini !== item.avatarMini ||
+        nextNode.avatarNormal !== item.avatarNormal ||
+        nextNode.avatarLarge !== item.avatarLarge
+      return nextNode
+    })
+    if (changed) {
+      await CollectionSettings.writeSavedNodes(context, next)
+    }
     return next
   }
 
@@ -375,10 +440,49 @@ export class CollectionSettings {
       if (!Array.isArray(parsed)) {
         return []
       }
-      return parsed.filter((item: SavedNode) => item.name.length > 0 && item.title.length > 0)
+      const nodes: SavedNode[] = []
+      parsed.forEach((item: SavedNode) => {
+        const node = CollectionSettings.normalizeSavedNode(item)
+        if (node) {
+          nodes.push(node)
+        }
+      })
+      return nodes
     } catch (error) {
       return []
     }
+  }
+
+  private static normalizeSavedNode(item: SavedNode): SavedNode | null {
+    const name = ((item?.name || '') as string).trim()
+    const topics = Math.max(0, item?.topics || 0)
+    const title = CollectionSettings.cleanNodeTitle(((item?.title || name) as string).trim(), topics)
+    if (!name || !title) {
+      return null
+    }
+    return {
+      name: name,
+      title: title,
+      topics: topics,
+      avatarMini: ((item?.avatarMini || '') as string).trim() || undefined,
+      avatarNormal: ((item?.avatarNormal || '') as string).trim() || undefined,
+      avatarLarge: ((item?.avatarLarge || '') as string).trim() || undefined,
+      savedAt: item?.savedAt || 0
+    }
+  }
+
+  static cleanNodeTitle(title: string, topics: number = 0): string {
+    let clean = (title || '')
+      .replace(/\s*[·｜|]\s*\d+\s*个主题\s*$/g, '')
+      .replace(/\s+\d+\s*个主题\s*$/g, '')
+      .trim()
+    if (topics > 0) {
+      const topicSuffix = `${topics}`
+      if (clean.endsWith(` ${topicSuffix}`)) {
+        clean = clean.substring(0, clean.length - topicSuffix.length).trim()
+      }
+    }
+    return clean.replace(/\s+\d{2,}\s*$/g, '').trim()
   }
 
   private static parseViewedTopics(raw: string): ViewedTopic[] {

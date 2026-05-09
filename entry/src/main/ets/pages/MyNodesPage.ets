@@ -1,6 +1,7 @@
 import { promptAction } from '@kit.ArkUI'
 import {
   ApiService,
+  CollectionSettings,
   ConciseListRow,
   CookieJarSettings,
   EmptyState,
@@ -8,7 +9,8 @@ import {
   SecondaryListScaffold,
   ThemeConstants,
   type NodeTopicListParams,
-  type V2exFavoriteNode
+  type V2exFavoriteNode,
+  type V2exNode
 } from 'shared'
 
 @Component
@@ -40,15 +42,14 @@ export struct MyNodesPage {
               GroupedListSection() {
                 ConciseListRow({
                   title: item.title || item.name,
-                  subtitle: item.name
+                  subtitle: this.nodeSubtitle(item),
+                  leadingImageUrl: this.nodeIcon(item),
+                  action: () => { this.openNode(item) }
                 })
               }
             }
-              .onClick(() => {
-                const p: NodeTopicListParams = { nodeName: item.name, nodeTitle: item.title }
-                this.stack.pushPathByName('NodeTopicList', p as Object)
-              })
-          }, (item: V2exFavoriteNode) => `my-node-${item.name}`)
+              .onClick(() => { this.openNode(item) })
+          }, (item: V2exFavoriteNode) => `my-node-${item.name}-${this.nodeIcon(item)}`)
 
           if (this.nodes.length === 0) {
             ListItem() { this.EmptyView() }
@@ -125,6 +126,7 @@ export struct MyNodesPage {
     this.api.getMyFavoriteNodesWithCookie(cookie)
       .then((nodes) => {
         this.nodes = nodes
+        this.enrichMissingNodeIcons(nodes)
       })
       .catch((error: Error) => {
         this.errorMessage = error.message || '加载失败'
@@ -135,6 +137,53 @@ export struct MyNodesPage {
         if (!force && this.errorMessage) {
           promptAction.openToast({ message: this.errorMessage }).catch((_error: Error) => { })
         }
+      })
+  }
+
+  private openNode(item: V2exFavoriteNode): void {
+    const p: NodeTopicListParams = { nodeName: item.name, nodeTitle: item.title || item.name }
+    this.stack.pushPathByName('NodeTopicList', p as Object)
+  }
+
+  private nodeSubtitle(item: V2exFavoriteNode): string {
+    const parts: string[] = [item.name]
+    if ((item.topics || 0) > 0) {
+      parts.push(`${item.topics} 个主题`)
+    }
+    return parts.join(' · ')
+  }
+
+  private nodeIcon(item: V2exFavoriteNode): string {
+    return item.avatarNormal || item.avatarMini || item.avatarLarge || ''
+  }
+
+  private enrichMissingNodeIcons(items: V2exFavoriteNode[]): void {
+    if (items.every((item: V2exFavoriteNode) => this.nodeIcon(item))) {
+      return
+    }
+    this.api.getAllNodes()
+      .then((allNodes: V2exNode[]) => {
+        const nodeByName: Record<string, V2exNode> = {}
+        allNodes.forEach((node: V2exNode) => {
+          nodeByName[node.name] = node
+        })
+        this.nodes = this.nodes.map((node: V2exFavoriteNode) => {
+          const detail = nodeByName[node.name]
+          if (!detail) {
+            return node
+          }
+          return {
+            name: node.name,
+            title: CollectionSettings.cleanNodeTitle(detail.title || node.title, detail.topics || node.topics || 0),
+            topics: detail.topics || node.topics,
+            avatarMini: node.avatarMini || detail.avatar_mini,
+            avatarNormal: node.avatarNormal || detail.avatar_normal,
+            avatarLarge: node.avatarLarge || detail.avatar_large
+          }
+        })
+      })
+      .catch((error: Error) => {
+        console.error('enrich favorite node icons failed: ' + error.message)
       })
   }
 }
