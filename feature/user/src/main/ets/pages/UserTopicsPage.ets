@@ -16,20 +16,24 @@ export struct UserTopicsPage {
 
   build() {
     Column() {
-      SecondaryListScaffold({
-        onReachEnd: () => {
-          this.vm.loadMore()
-        }
-      }) {
-        if (this.vm.isLoading && this.vm.topicDataSource.totalCount() === 0) {
-          ListItem() { this.LoadingView() }
-        } else if (this.vm.topicsHidden) {
-          ListItem() { this.EmptyText('主题列表已隐藏') }
-        } else if (this.vm.errorMessage && this.vm.topicDataSource.totalCount() === 0) {
-          ListItem() { this.ErrorView() }
-        } else if (this.vm.topicDataSource.totalCount() === 0) {
-          ListItem() { this.EmptyText('暂无主题') }
-        } else {
+      if (this.vm.isLoading && this.vm.topicDataSource.totalCount() === 0) {
+        Column() { this.LoadingView() }
+          .justifyContent(FlexAlign.Center).width('100%').layoutWeight(1)
+      } else if (this.vm.topicsHidden) {
+        Column() { this.EmptyText('主题列表已隐藏') }
+          .justifyContent(FlexAlign.Center).width('100%').layoutWeight(1)
+      } else if (this.vm.errorMessage && this.vm.topicDataSource.totalCount() === 0) {
+        Column() { this.ErrorView() }
+          .justifyContent(FlexAlign.Center).width('100%').layoutWeight(1)
+      } else if (this.vm.topicDataSource.totalCount() === 0) {
+        Column() { this.EmptyText('暂无主题') }
+          .justifyContent(FlexAlign.Center).width('100%').layoutWeight(1)
+      } else {
+        SecondaryListScaffold({
+          onReachEnd: () => {
+            this.vm.loadMore()
+          }
+        }) {
           LazyForEach(this.vm.topicDataSource, (topic: V2exTopic) => {
             ListItem() {
               TopicCard({
@@ -48,7 +52,7 @@ export struct UserTopicsPage {
           }, (topic: V2exTopic) => topic.id.toString())
 
           if (this.vm.isLoadingMore) {
-            ListItem() { this.LoadingView(80) }
+            ListItem() { this.FooterLoadingView() }
           }
         }
       }
@@ -58,7 +62,7 @@ export struct UserTopicsPage {
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
   }
 
-  @Builder LoadingView(height: number = 240) {
+  @Builder LoadingView() {
     Column() {
       LoadingProgress()
         .width(ThemeConstants.LOADING_SIZE)
@@ -66,7 +70,17 @@ export struct UserTopicsPage {
     }
     .justifyContent(FlexAlign.Center)
     .width('100%')
-    .height(height)
+  }
+
+  @Builder FooterLoadingView() {
+    Column() {
+      LoadingProgress()
+        .width(ThemeConstants.LOADING_SIZE)
+        .height(ThemeConstants.LOADING_SIZE)
+    }
+    .justifyContent(FlexAlign.Center)
+    .width('100%')
+    .height(80)
   }
 
   @Builder EmptyText(text: string) {
@@ -93,7 +107,6 @@ export struct UserTopicsPage {
     }
     .justifyContent(FlexAlign.Center)
     .width('100%')
-    .height(240)
   }
 
   private isTopicUnread(topic: V2exTopic): boolean {

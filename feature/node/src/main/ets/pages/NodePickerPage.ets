@@ -76,7 +76,7 @@ export struct NodePickerPage {
             }
             .justifyContent(FlexAlign.Center)
             .width('100%')
-            .height(240)
+            .padding({ top: ThemeConstants.SPACE_XXL, bottom: ThemeConstants.SPACE_XXL })
           }
         } else if (this.vm.errorMessage && this.vm.nodeDataSource.totalCount() === 0) {
           ListItem() {
@@ -91,7 +91,7 @@ export struct NodePickerPage {
             }
             .justifyContent(FlexAlign.Center)
             .width('100%')
-            .height(240)
+            .padding({ top: ThemeConstants.SPACE_XXL, bottom: ThemeConstants.SPACE_XXL })
           }
         } else if (this.vm.nodeDataSource.totalCount() === 0) {
           ListItem() {
@@ -102,7 +102,7 @@ export struct NodePickerPage {
             }
             .justifyContent(FlexAlign.Center)
             .width('100%')
-            .height(240)
+            .padding({ top: ThemeConstants.SPACE_XXL, bottom: ThemeConstants.SPACE_XXL })
           }
         } else {
           LazyForEach(this.vm.nodeDataSource, (node: V2exNode) => {

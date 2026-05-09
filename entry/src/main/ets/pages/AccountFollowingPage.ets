@@ -26,22 +26,25 @@ export struct AccountFollowingPage {
 
   build() {
     Column() {
-      PullRefreshListScaffold({
-        scrollEnabled: this.scrollEnabled,
-        onRefresh: async () => {
-          await this.refresh(true)
-        },
-        onScrollEnableChange: (enabled: boolean) => {
-          this.scrollEnabled = enabled
-        }
-      }) {
-        if (!CookieJarSettings.getCurrentCookie()) {
-          ListItem() { this.LoginRequiredView() }
-        } else if (this.isLoading && this.members.length === 0) {
-          ListItem() { this.LoadingView() }
-        } else if (this.errorMessage && this.members.length === 0) {
-          ListItem() { this.ErrorView() }
-        } else {
+      if (!CookieJarSettings.getCurrentCookie()) {
+        Column() { this.LoginRequiredView() }
+          .justifyContent(FlexAlign.Center).width('100%').layoutWeight(1)
+      } else if (this.isLoading && this.members.length === 0) {
+        Column() { this.LoadingView() }
+          .justifyContent(FlexAlign.Center).width('100%').layoutWeight(1)
+      } else if (this.errorMessage && this.members.length === 0) {
+        Column() { this.ErrorView() }
+          .justifyContent(FlexAlign.Center).width('100%').layoutWeight(1)
+      } else {
+        PullRefreshListScaffold({
+          scrollEnabled: this.scrollEnabled,
+          onRefresh: async () => {
+            await this.refresh(true)
+          },
+          onScrollEnableChange: (enabled: boolean) => {
+            this.scrollEnabled = enabled
+          }
+        }) {
           ListItem() { this.SectionHeader('关注用户') }
           if (this.members.length === 0) {
             ListItem() { this.EmptyText('暂无关注用户') }
@@ -105,7 +108,6 @@ export struct AccountFollowingPage {
     }
     .justifyContent(FlexAlign.Center)
     .width('100%')
-    .height(240)
   }
 
   @Builder private LoginRequiredView() {
@@ -119,7 +121,6 @@ export struct AccountFollowingPage {
     }
     .justifyContent(FlexAlign.Center)
     .width('100%')
-    .height(240)
   }
 
   @Builder private ErrorView() {
@@ -133,7 +134,6 @@ export struct AccountFollowingPage {
     }
     .justifyContent(FlexAlign.Center)
     .width('100%')
-    .height(240)
   }
 
   @Builder private EmptyText(text: string) {

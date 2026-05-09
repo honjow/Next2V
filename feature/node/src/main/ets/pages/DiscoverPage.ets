@@ -299,7 +299,7 @@ export struct DiscoverPage {
     }
     .justifyContent(FlexAlign.Center)
     .width('100%')
-    .height(240)
+    .padding({ top: ThemeConstants.SPACE_XXL, bottom: ThemeConstants.SPACE_XXL })
   }
 
   @Builder ErrorView() {

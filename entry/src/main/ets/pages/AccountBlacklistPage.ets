@@ -31,14 +31,17 @@ export struct AccountBlacklistPage {
 
   build() {
     Column() {
-      SecondaryListScaffold() {
-        if (!CookieJarSettings.getCurrentCookie()) {
-          ListItem() { this.LoginRequiredView() }
-        } else if (this.isLoading && this.members.length === 0 && this.topics.length === 0) {
-          ListItem() { this.LoadingView() }
-        } else if (this.errorMessage && this.members.length === 0 && this.topics.length === 0) {
-          ListItem() { this.ErrorView() }
-        } else {
+      if (!CookieJarSettings.getCurrentCookie()) {
+        Column() { this.LoginRequiredView() }
+          .justifyContent(FlexAlign.Center).width('100%').layoutWeight(1)
+      } else if (this.isLoading && this.members.length === 0 && this.topics.length === 0) {
+        Column() { this.LoadingView() }
+          .justifyContent(FlexAlign.Center).width('100%').layoutWeight(1)
+      } else if (this.errorMessage && this.members.length === 0 && this.topics.length === 0) {
+        Column() { this.ErrorView() }
+          .justifyContent(FlexAlign.Center).width('100%').layoutWeight(1)
+      } else {
+        SecondaryListScaffold() {
           ListItem() { this.SectionHeader('屏蔽用户') }
           if (this.members.length === 0) {
             ListItem() { this.EmptyText('暂无屏蔽用户') }
@@ -113,7 +116,6 @@ export struct AccountBlacklistPage {
     }
     .justifyContent(FlexAlign.Center)
     .width('100%')
-    .height(240)
   }
 
   @Builder private LoginRequiredView() {
@@ -127,7 +129,6 @@ export struct AccountBlacklistPage {
     }
     .justifyContent(FlexAlign.Center)
     .width('100%')
-    .height(240)
   }
 
   @Builder private ErrorView() {
@@ -141,7 +142,6 @@ export struct AccountBlacklistPage {
     }
     .justifyContent(FlexAlign.Center)
     .width('100%')
-    .height(240)
   }
 
   @Builder private EmptyText(text: string) {

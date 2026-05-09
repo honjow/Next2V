@@ -55,15 +55,16 @@ export struct UserProfilePage {
 
   build() {
     Column() {
-      SecondaryListScaffold({
-        onDidScroll: (offset: number, _state: ScrollState) => {
-          this.currentScrollOffset = Math.max(0, offset)
-          this.evaluateAppbarTitleVisibility()
-        }
-      }) {
-        if (this.vm.isLoading && this.vm.profile === null) {
-          ListItem() { this.LoadingView() }
-        } else if (this.vm.profile !== null) {
+      if (this.vm.isLoading && this.vm.profile === null) {
+        Column() { this.LoadingView() }
+          .justifyContent(FlexAlign.Center).width('100%').layoutWeight(1)
+      } else if (this.vm.profile !== null) {
+        SecondaryListScaffold({
+          onDidScroll: (offset: number, _state: ScrollState) => {
+            this.currentScrollOffset = Math.max(0, offset)
+            this.evaluateAppbarTitleVisibility()
+          }
+        }) {
           ListItem() {
             this.ProfileCard()
           }
@@ -124,9 +125,10 @@ export struct UserProfilePage {
               }
             }
           }
-        } else {
-          ListItem() { this.ErrorView() }
         }
+      } else {
+        Column() { this.ErrorView() }
+          .justifyContent(FlexAlign.Center).width('100%').layoutWeight(1)
       }
     }
       .width('100%').height('100%')
@@ -146,7 +148,6 @@ export struct UserProfilePage {
     }
     .justifyContent(FlexAlign.Center)
     .width('100%')
-    .height(240)
   }
 
   @Builder ProfileCard() {

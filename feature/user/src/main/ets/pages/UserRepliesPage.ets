@@ -15,18 +15,21 @@ export struct UserRepliesPage {
 
   build() {
     Column() {
-      SecondaryListScaffold({
-        onReachEnd: () => {
-          this.vm.loadMore()
-        }
-      }) {
-        if (this.vm.isLoading && this.vm.replyDataSource.totalCount() === 0) {
-          ListItem() { this.LoadingView() }
-        } else if (this.vm.errorMessage && this.vm.replyDataSource.totalCount() === 0) {
-          ListItem() { this.ErrorView() }
-        } else if (this.vm.replyDataSource.totalCount() === 0) {
-          ListItem() { this.EmptyText('暂无回复') }
-        } else {
+      if (this.vm.isLoading && this.vm.replyDataSource.totalCount() === 0) {
+        Column() { this.LoadingView() }
+          .justifyContent(FlexAlign.Center).width('100%').layoutWeight(1)
+      } else if (this.vm.errorMessage && this.vm.replyDataSource.totalCount() === 0) {
+        Column() { this.ErrorView() }
+          .justifyContent(FlexAlign.Center).width('100%').layoutWeight(1)
+      } else if (this.vm.replyDataSource.totalCount() === 0) {
+        Column() { this.EmptyText('暂无回复') }
+          .justifyContent(FlexAlign.Center).width('100%').layoutWeight(1)
+      } else {
+        SecondaryListScaffold({
+          onReachEnd: () => {
+            this.vm.loadMore()
+          }
+        }) {
           LazyForEach(this.vm.replyDataSource, (reply: V2exUserReply) => {
             ListItem() {
               this.ReplyItem(reply)
@@ -38,7 +41,7 @@ export struct UserRepliesPage {
           }, (reply: V2exUserReply) => `${reply.topic_id}-${reply.target_floor}-${reply.created}`)
 
           if (this.vm.isLoadingMore) {
-            ListItem() { this.LoadingView(80) }
+            ListItem() { this.FooterLoadingView() }
           }
         }
       }
@@ -94,7 +97,7 @@ export struct UserRepliesPage {
     .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }
 
-  @Builder LoadingView(height: number = 240) {
+  @Builder LoadingView() {
     Column() {
       LoadingProgress()
         .width(ThemeConstants.LOADING_SIZE)
@@ -102,7 +105,17 @@ export struct UserRepliesPage {
     }
     .justifyContent(FlexAlign.Center)
     .width('100%')
-    .height(height)
+  }
+
+  @Builder FooterLoadingView() {
+    Column() {
+      LoadingProgress()
+        .width(ThemeConstants.LOADING_SIZE)
+        .height(ThemeConstants.LOADING_SIZE)
+    }
+    .justifyContent(FlexAlign.Center)
+    .width('100%')
+    .height(80)
   }
 
   @Builder EmptyText(text: string) {
@@ -129,7 +142,6 @@ export struct UserRepliesPage {
     }
     .justifyContent(FlexAlign.Center)
     .width('100%')
-    .height(240)
   }
 
   private openUserProfile(username: string): void {
