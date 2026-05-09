@@ -1,0 +1,19 @@
+{
+  "version": "v35-final-solid-exact-v5",
+  "solid_material": "exact v5 solid layer parameters/colors/geometry; transparent master excludes only preview background",
+  "glass_material": "glassB + warm_low; sunset glass sat14",
+  "system_default": "default_system/app_icon.png = sunset_solid exact v5 style",
+  "colors": [
+    "cyan",
+    "azure",
+    "emerald",
+    "sunset",
+    "coral",
+    "slate"
+  ],
+  "materials": [
+    "solid",
+    "glass"
+  ],
+  "size": "1024x1024"
+}

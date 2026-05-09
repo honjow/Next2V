@@ -22,11 +22,11 @@
         "name": "EntryAbility",
         "srcEntry": "./ets/entryability/EntryAbility.ets",
         "description": "$string:EntryAbility_desc",
-        "icon": "$media:app_icon",
+        "icon": "$media:app_icon_layered",
         "label": "$string:EntryAbility_label",
         "launchType": "singleton",
         "exported": true,
-        "startWindowIcon": "$media:start_icon",
+        "startWindowIcon": "$media:startup_foreground",
         "startWindowBackground": "$color:start_window_background",
         "skills": [
           {

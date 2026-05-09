@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024"><defs><linearGradient id="bg" x1="0" y1="0" x2="1024" y2="1024" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#5DCBFF"/><stop offset="0.52" stop-color="#2D92F0"/><stop offset="1" stop-color="#2354D5"/></linearGradient>
+  <clipPath id="upperClip"><path d="M 256.13 250.10 L 793.31 420.53 Q 820.00 429.00 820.00 457.00 L 820.00 567.00 Q 820.00 595.00 793.31 586.53 L 256.13 416.10 Q 218.00 404.00 218.00 364.00 L 218.00 278.00 Q 218.00 238.00 256.13 250.10 Z"/></clipPath>
+  <clipPath id="lowerClip"><path d="M 256.13 607.90 L 793.31 437.47 Q 820.00 429.00 820.00 457.00 L 820.00 567.00 Q 820.00 595.00 793.31 603.47 L 256.13 773.90 Q 218.00 786.00 218.00 746.00 L 218.00 660.00 Q 218.00 620.00 256.13 607.90 Z"/></clipPath>
+  <filter id="castShadow" x="-25%" y="-25%" width="150%" height="150%"><feGaussianBlur stdDeviation="9"/></filter>
+  <filter id="gaussianGlass" x="-35%" y="-35%" width="170%" height="170%"><feGaussianBlur stdDeviation="26" result="blur"/><feColorMatrix in="blur" type="matrix" values="1.08 0 0 0 0  0 1.08 0 0 0  0 0 1.08 0 0  0 0 0 1 0"/></filter>
+  <filter id="softFrostTexture" x="-20%" y="-20%" width="140%" height="140%"><feTurbulence type="fractalNoise" baseFrequency="0.08" numOctaves="4" seed="47" result="noise"/><feGaussianBlur in="noise" stdDeviation="1.2" result="softNoise"/><feDisplacementMap in="SourceGraphic" in2="softNoise" scale="3.3" xChannelSelector="R" yChannelSelector="G"/></filter>
+  <linearGradient id="solidLower" x1="218" y1="786" x2="820" y2="429" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#E1F6FF"/><stop offset="1" stop-color="#A8E3FF"/></linearGradient>
+  <linearGradient id="milkUpper" x1="218" y1="238" x2="820" y2="595" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#FFFFFF" stop-opacity="0.80"/><stop offset="1" stop-color="#F4FCFF" stop-opacity="0.60"/></linearGradient>
+  <linearGradient id="milkLower" x1="218" y1="786" x2="820" y2="429" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#E1F6FF" stop-opacity="0.64"/><stop offset="1" stop-color="#A8E3FF" stop-opacity="0.48"/></linearGradient>
+  <style>.shadowFill{fill:#1F63C0;}</style>
+</defs><rect width="1024" height="1024" fill="url(#bg)"/></svg>
