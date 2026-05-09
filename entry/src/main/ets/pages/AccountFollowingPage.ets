@@ -3,7 +3,7 @@ import {
   ApiService,
   Avatar,
   CookieJarSettings,
-  SecondaryListScaffold,
+  PullRefreshListScaffold,
   ThemeConstants,
   type UserProfileParams,
   type V2exAccountMemberListItem
@@ -16,6 +16,7 @@ export struct AccountFollowingPage {
   @State private members: V2exAccountMemberListItem[] = []
   @State private errorMessage: string = ''
   @State private isLoading: boolean = false
+  @State private scrollEnabled: boolean = true
 
   private api: ApiService = new ApiService()
 
@@ -25,7 +26,15 @@ export struct AccountFollowingPage {
 
   build() {
     Column() {
-      SecondaryListScaffold() {
+      PullRefreshListScaffold({
+        scrollEnabled: this.scrollEnabled,
+        onRefresh: async () => {
+          await this.refresh(true)
+        },
+        onScrollEnableChange: (enabled: boolean) => {
+          this.scrollEnabled = enabled
+        }
+      }) {
         if (!CookieJarSettings.getCurrentCookie()) {
           ListItem() { this.LoginRequiredView() }
         } else if (this.isLoading && this.members.length === 0) {
@@ -60,7 +69,7 @@ export struct AccountFollowingPage {
 
   @Builder private MemberRow(item: V2exAccountMemberListItem) {
     Row({ space: ThemeConstants.SPACE_MD }) {
-      Avatar({ url: item.avatar, avatarSize: 42 })
+      Avatar({ url: item.avatar, avatarSize: 42, placeholder: item.username })
       Column({ space: ThemeConstants.SPACE_XS }) {
         Text(item.username)
           .fontSize(ThemeConstants.FONT_SIZE_BODY)
@@ -138,7 +147,7 @@ export struct AccountFollowingPage {
       .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }
 
-  private refresh(force: boolean = false): void {
+  private async refresh(force: boolean = false): Promise<void> {
     if (this.isLoading) {
       return
     }
@@ -150,20 +159,19 @@ export struct AccountFollowingPage {
     }
     this.isLoading = true
     this.errorMessage = ''
-    this.api.getFollowingMembersWithCookie(cookie)
-      .then((result: V2exAccountMemberListItem[]) => {
-        this.members = result
-      })
-      .catch((error: Error) => {
-        this.errorMessage = error.message || '加载失败'
-        this.members = []
-      })
-      .finally(() => {
-        this.isLoading = false
-        if (!force && this.errorMessage) {
-          promptAction.openToast({ message: this.errorMessage }).catch((_error: Error) => { })
-        }
-      })
+    try {
+      const result = await this.api.getFollowingMembersWithCookie(cookie)
+      this.members = result
+    } catch (error) {
+      const e = error as Error
+      this.errorMessage = e.message || '加载失败'
+      this.members = []
+    } finally {
+      this.isLoading = false
+      if (!force && this.errorMessage) {
+        promptAction.openToast({ message: this.errorMessage }).catch((_error: Error) => { })
+      }
+    }
   }
 
   private openUser(username: string): void {
