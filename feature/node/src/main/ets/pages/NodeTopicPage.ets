@@ -32,6 +32,7 @@ export struct NodeTopicPage {
   aboutToAppear(): void {
     this.syncNodeTitleState(false, false)
     this.syncAppbarIdentity()
+    this.vm.isLoading = true
     this.loadData()
     this.loadSavedState()
     this.loadSiteNodeFavoriteState()
@@ -43,9 +44,9 @@ export struct NodeTopicPage {
         onRefresh: async () => { await this.refreshData() },
         onReachEnd: () => { this.loadMore() }
       }) {
-        if (this.vm.isLoading) {
+        if (this.vm.isLoading && this.vm.nodeTopics.length === 0) {
           ListItem() { Column() {}.height(0) }
-        } else if (this.vm.errorMessage) {
+        } else if (this.vm.errorMessage && this.vm.nodeTopics.length === 0) {
           ListItem() { this.ErrorView() }
         } else if (this.vm.nodeTopics.length === 0) {
           ListItem() { this.EmptyView() }
@@ -76,7 +77,7 @@ export struct NodeTopicPage {
         }
       }
 
-      if (this.vm.isLoading) {
+      if (this.vm.isLoading && this.vm.nodeTopics.length === 0) {
         this.LoadingView()
       }
     }
