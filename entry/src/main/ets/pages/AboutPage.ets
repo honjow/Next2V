@@ -1,4 +1,4 @@
-import { common, Want } from '@kit.AbilityKit'
+import { bundleManager, common, Want } from '@kit.AbilityKit'
 import { promptAction } from '@kit.ArkUI'
 import {
   ConciseListRow,
@@ -17,10 +17,20 @@ interface AboutInfoRow {
 @Component
 export struct AboutPage {
   private readonly appName: string = 'Next2V'
-  private readonly appVersion: string = '0.1.0'
+  @State private appVersion: string = ''
   private readonly projectUrl: string = 'https://github.com/honjow/Next2V'
   private readonly licenseUrl: string = 'https://github.com/honjow/Next2V'
   private readonly developerName: string = 'honjow'
+
+  aboutToAppear(): void {
+    bundleManager.getBundleInfoForSelf(bundleManager.BundleFlag.GET_BUNDLE_INFO_WITH_APPLICATION)
+      .then((info) => {
+        this.appVersion = info.versionName
+      })
+      .catch((error: Error) => {
+        console.error('get bundle info failed: ' + error.message)
+      })
+  }
 
   build() {
     Column() {
