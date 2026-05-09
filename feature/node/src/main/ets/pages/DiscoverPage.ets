@@ -63,29 +63,12 @@ export struct DiscoverPage {
           }) {
             Scroll(this.scroller) {
               Column({ space: ThemeConstants.SPACE_MD }) {
-                this.LocalNodeSections()
-                this.HotTopicsSection()
-                if (this.vm.nodeDataSource.totalCount() === 0) {
-                  this.EmptyView()
+                if (this.hasNodeSearchQuery()) {
+                  this.NodeResultsSection()
                 } else {
-                  this.SectionTitle('节点')
-                  GridRow({ columns: { sm: 2, md: 4, lg: 6 }, gutter: { x: ThemeConstants.SPACE_SM, y: ThemeConstants.SPACE_SM } }) {
-                    LazyForEach(this.vm.nodeDataSource, (node: V2exNode) => {
-                      GridCol({ span: { sm: 1, md: 2, lg: 2 } }) {
-                        Column() {
-                          Text(node.title).fontSize(ThemeConstants.FONT_SIZE_BODY).fontColor($r('sys.color.font_primary')).maxLines(1)
-                            .textOverflow({ overflow: TextOverflow.Ellipsis })
-                          Text(`${node.topics} 主题`).fontSize(ThemeConstants.FONT_SIZE_TINY).fontColor($r('sys.color.font_secondary')).margin({ top: ThemeConstants.SPACE_XS })
-                        }
-                          .alignItems(HorizontalAlign.Center).padding(ThemeConstants.SPACE_MD).width('100%').borderRadius(ThemeConstants.RADIUS_MD)
-                          .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
-                          .onClick(() => {
-                            let p: NodeTopicListParams = { nodeName: node.name, nodeTitle: node.title }
-                            this.ns.pushPathByName('NodeTopicList', p as Object)
-                          })
-                      }
-                    }, (node: V2exNode) => node.id.toString())
-                  }
+                  this.LocalNodeSections()
+                  this.HotTopicsSection()
+                  this.NodeResultsSection()
                 }
               }
                 .padding({
@@ -217,6 +200,40 @@ export struct DiscoverPage {
     })
   }
 
+  @Builder NodeResultsSection() {
+    if (this.vm.nodeDataSource.totalCount() === 0) {
+      this.EmptyView()
+    } else {
+      this.SectionTitle('节点')
+      GridRow({ columns: { sm: 2, md: 4, lg: 6 }, gutter: { x: ThemeConstants.SPACE_SM, y: ThemeConstants.SPACE_SM } }) {
+        LazyForEach(this.vm.nodeDataSource, (node: V2exNode) => {
+          GridCol({ span: { sm: 1, md: 2, lg: 2 } }) {
+            Column() {
+              Text(node.title)
+                .fontSize(ThemeConstants.FONT_SIZE_BODY)
+                .fontColor($r('sys.color.font_primary'))
+                .maxLines(1)
+                .textOverflow({ overflow: TextOverflow.Ellipsis })
+              Text(`${node.topics} 主题`)
+                .fontSize(ThemeConstants.FONT_SIZE_TINY)
+                .fontColor($r('sys.color.font_secondary'))
+                .margin({ top: ThemeConstants.SPACE_XS })
+            }
+            .alignItems(HorizontalAlign.Center)
+            .padding(ThemeConstants.SPACE_MD)
+            .width('100%')
+            .borderRadius(ThemeConstants.RADIUS_MD)
+            .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+            .onClick(() => {
+              let p: NodeTopicListParams = { nodeName: node.name, nodeTitle: node.title }
+              this.ns.pushPathByName('NodeTopicList', p as Object)
+            })
+          }
+        }, (node: V2exNode) => node.id.toString())
+      }
+    }
+  }
+
   @Builder SectionTitle(title: string) {
     Text(title)
       .fontSize(ThemeConstants.FONT_SIZE_TITLE)
@@ -303,6 +320,10 @@ export struct DiscoverPage {
 
   private discoverBottomPadding(): number {
     return this.bottomH + this.FLOAT_H + ThemeConstants.SPACE_XL
+  }
+
+  private hasNodeSearchQuery(): boolean {
+    return (this.nodeKeyword || '').trim().length > 0
   }
 
   private topicSurfaceItems(): V2exTopic[] {
