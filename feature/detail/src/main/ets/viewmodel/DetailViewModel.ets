@@ -1,4 +1,4 @@
-import { V2exTopic, V2exReply, ApiService, ApiV2Service, TopicDetailCache } from 'shared'
+import { V2exTopic, V2exReply, ApiService, ApiV2Service, TopicDetailCache, HtmlEntityUtils } from 'shared'
 import { ReplyDataSource } from '../model/DetailModels'
 
 /**
@@ -72,10 +72,10 @@ export class DetailViewModel {
       if (!cached) {
         return
       }
-      this.topic = cached.topic
-      this.replies = cached.replies
+      this.topic = this.normalizeTopicForRender(cached.topic)
+      this.replies = this.normalizeRepliesForRender(cached.replies)
       this.replyDataSource.setData(this.getVisibleReplies())
-      this.repliesLoaded = cached.replies.length
+      this.repliesLoaded = this.replies.length
     } catch (error) {
       console.error('load topic cache failed:', (error as Error).message)
     }
@@ -112,11 +112,11 @@ export class DetailViewModel {
         this.repliesHasMore = false
       }
 
-      this.topic = topic
-      this.replies = replies
+      this.topic = this.normalizeTopicForRender(topic)
+      this.replies = this.normalizeRepliesForRender(replies)
       this.replyDataSource.setData(this.getVisibleReplies())
-      this.repliesLoaded = replies.length
-      await this.saveCache(topic, replies)
+      this.repliesLoaded = this.replies.length
+      await this.saveCache(this.topic, this.replies)
     } catch (error) {
       const e = error as Error
       this.errorMessage = e.message || '加载失败'
@@ -179,6 +179,41 @@ export class DetailViewModel {
     } catch (error) {
       console.error('save topic cache failed:', (error as Error).message)
     }
+  }
+
+  private normalizeTopicForRender(topic: V2exTopic | null): V2exTopic | null {
+    if (!topic) {
+      return topic
+    }
+    topic.title = HtmlEntityUtils.decode(topic.title)
+    topic.content = HtmlEntityUtils.decode(topic.content)
+    topic.content_rendered = HtmlEntityUtils.decode(topic.content_rendered)
+    if (topic.node) {
+      topic.node.title = HtmlEntityUtils.decode(topic.node.title)
+      topic.node.title_alternative = HtmlEntityUtils.decode(topic.node.title_alternative)
+      topic.node.header = HtmlEntityUtils.decode(topic.node.header || '')
+      topic.node.footer = HtmlEntityUtils.decode(topic.node.footer || '')
+    }
+    if (topic.member) {
+      topic.member.tagline = HtmlEntityUtils.decode(topic.member.tagline)
+    }
+    return topic
+  }
+
+  private normalizeRepliesForRender(replies: V2exReply[]): V2exReply[] {
+    return (replies || []).map((reply: V2exReply) => this.normalizeReplyForRender(reply))
+  }
+
+  private normalizeReplyForRender(reply: V2exReply): V2exReply {
+    if (!reply) {
+      return reply
+    }
+    reply.content = HtmlEntityUtils.decode(reply.content)
+    reply.content_rendered = HtmlEntityUtils.decode(reply.content_rendered)
+    if (reply.member) {
+      reply.member.tagline = HtmlEntityUtils.decode(reply.member.tagline)
+    }
+    return reply
   }
 
   private getVisibleReplies(): V2exReply[] {

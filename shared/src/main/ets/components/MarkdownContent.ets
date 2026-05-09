@@ -285,7 +285,7 @@ function _openMention(options: MarkdownOptions, username: string): void {
 
 @Builder
 function SelectableTextWithMentions(text: string, fontSize: number, options: MarkdownOptions) {
-  ForEach(_splitMentionText(text), (part: string) => {
+  ForEach(_splitMentionText(HtmlEntityUtils.decode(text)), (part: string) => {
     if (part.startsWith("@") && part.length > 1) {
       Span(part)
         .fontSize(fontSize)
