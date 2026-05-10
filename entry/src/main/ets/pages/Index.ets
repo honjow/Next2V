@@ -57,12 +57,9 @@ struct FeedPills {
   @State private tabLefts: number[] = []
   @State private tabWidths: number[] = []
   @State private containerGlobalLeft: number = 0
+  private pendingCenterIndex: number = -1
+  private pendingCenterSmooth: boolean = true
   private scroller: Scroller = new Scroller()
-
-  aboutToAppear(): void {
-    this.feedTabVisualIndex = this.selectedTabIndex()
-    this.centerCurrentTab(false)
-  }
 
   build() {
     Stack({ alignContent: Alignment.TopStart }) {
@@ -80,8 +77,8 @@ struct FeedPills {
             .alignItems(HorizontalAlign.Center)
             .padding({ bottom: 0 })
             .onClick(() => {
-              this.animateVisualTabIndex(index)
               this.feedTab = tab.key
+              this.centerTab(index, true)
             })
             .onAreaChange((_oldValue: Area, newValue: Area) => {
               this.updateTabLayout(index, newValue)
@@ -109,19 +106,16 @@ struct FeedPills {
   }
 
   private onFeedTabChanged(_propName: string): void {
-    this.animateVisualTabIndex(this.selectedTabIndex())
-    this.centerCurrentTab(true)
+    const index = this.selectedTabIndex()
+    if (index < 0) {
+      return
+    }
+    this.centerTab(index, true)
   }
 
   private onFeedTabKeysChanged(_propName: string): void {
-    const tabs = this.visibleTabs()
     this.tabLefts = []
     this.tabWidths = []
-    if (!tabs.find((tab: TabItem) => tab.key === this.feedTab)) {
-      this.feedTab = tabs[0].key
-    }
-    this.feedTabVisualIndex = this.selectedTabIndex()
-    this.centerCurrentTab(false)
   }
 
   private visibleTabs(): TabItem[] {
@@ -130,17 +124,16 @@ struct FeedPills {
 
   private selectedTabIndex(): number {
     const index = this.visibleTabs().findIndex((tab: TabItem) => tab.key === this.feedTab)
+    return index
+  }
+
+  private selectedTabIndexForLayout(): number {
+    const index = this.selectedTabIndex()
     return index < 0 ? 0 : index
   }
 
   private visualSelectedIndex(): number {
     return Math.max(0, Math.min(this.visibleTabs().length - 1, Math.round(this.feedTabVisualIndex)))
-  }
-
-  private animateVisualTabIndex(index: number): void {
-    this.getUIContext().animateTo({ duration: ThemeConstants.ANIM_DURATION, curve: Curve.EaseOut }, () => {
-      this.feedTabVisualIndex = Math.max(0, Math.min(this.visibleTabs().length - 1, index))
-    })
   }
 
   private updateTabLayout(index: number, area: Area): void {
@@ -155,6 +148,9 @@ struct FeedPills {
     nextWidths[index] = width
     this.tabLefts = nextLefts
     this.tabWidths = nextWidths
+    if (this.pendingCenterIndex === index) {
+      this.centerTab(index, this.pendingCenterSmooth)
+    }
   }
 
   private indicatorWidth(): number {
@@ -177,7 +173,7 @@ struct FeedPills {
     if (left !== undefined && width !== undefined && width > 0) {
       return left + width / 2
     }
-    const fallbackIndex = this.selectedTabIndex()
+    const fallbackIndex = this.selectedTabIndexForLayout()
     const fallbackLeft = this.tabLefts[fallbackIndex]
     const fallbackWidth = this.tabWidths[fallbackIndex]
     if (fallbackLeft !== undefined && fallbackWidth !== undefined && fallbackWidth > 0) {
@@ -197,8 +193,18 @@ struct FeedPills {
     return 0
   }
 
-  private centerCurrentTab(smooth: boolean): void {
-    this.scroller.scrollToIndex(this.selectedTabIndex(), smooth, ScrollAlign.CENTER)
+  private centerTab(index: number, smooth: boolean): void {
+    if (index < 0 || index >= this.visibleTabs().length) {
+      return
+    }
+    const width = this.tabWidths[index]
+    if (width === undefined || width <= 0) {
+      this.pendingCenterIndex = index
+      this.pendingCenterSmooth = smooth
+      return
+    }
+    this.pendingCenterIndex = -1
+    this.scroller.scrollToIndex(index, smooth, ScrollAlign.CENTER)
   }
 }
 
@@ -249,6 +255,10 @@ struct Index {
   private tc: HdsTabsController = new HdsTabsController()
   private tabTitles: string[] = ['首页', '发现', '通知', '我的']
   @State ct: number = 0
+  @State private homeFeedScrollerKeys: string[] = []
+  @State private homeFeedScrollers: Scroller[] = []
+  @State private homeFeedScrollerReady: boolean[] = []
+  @State private activeHomeFeedTabKey: string = 'tech'
   @StorageLink(StorageKeys.PENDING_V2EX_URL) @Watch('onPendingV2exUrlChanged') pendingV2exUrl: string = ''
   @StorageLink(StorageKeys.TOPIC_DETAIL_SAVED_LATER) topicDetailSavedLater: boolean = false
   @StorageLink(StorageKeys.TOPIC_DETAIL_SITE_FAVORITED) topicDetailSiteFavorited: boolean = false
