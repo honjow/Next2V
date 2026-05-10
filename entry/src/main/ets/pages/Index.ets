@@ -8,7 +8,6 @@ import {
   HdsTabs,
   HdsTabsController,
   HdsTabsFloatingStyle,
-  HideMode,
   BottomBuilderShowType,
   ScrollEffectType
 } from '@kit.UIDesignKit'
@@ -286,10 +285,6 @@ struct Index {
   private tc: HdsTabsController = new HdsTabsController()
   private tabTitles: string[] = ['首页', '发现', '通知', '我的']
   @State ct: number = 0
-  @State private homeFeedScrollerKeys: string[] = []
-  @State private homeFeedScrollers: Scroller[] = []
-  @State private homeFeedScrollerReady: boolean[] = []
-  @State private activeHomeFeedTabKey: string = 'tech'
   @StorageLink(StorageKeys.PENDING_V2EX_URL) @Watch('onPendingV2exUrlChanged') pendingV2exUrl: string = ''
   @StorageLink(StorageKeys.TOPIC_DETAIL_SAVED_LATER) topicDetailSavedLater: boolean = false
   @StorageLink(StorageKeys.TOPIC_DETAIL_SITE_FAVORITED) topicDetailSiteFavorited: boolean = false
@@ -454,14 +449,7 @@ struct Index {
     HdsNavigation(this.ns) {
       HdsTabs({ controller: this.tc, index: this.ct }) {
         TabContent() {
-          HomePage({
-            onRegisterFeedScroller: (tabKey: string, scroller: Scroller, ready: boolean) => {
-              this.registerHomeFeedScroller(tabKey, scroller, ready)
-            },
-            onFeedTabSwitch: (tabKey: string) => {
-              this.setActiveHomeFeedTab(tabKey)
-            }
-          })
+          HomePage()
         }.tabBar(this.TabIcon('首页', 0))
 
         TabContent() {
@@ -503,13 +491,6 @@ struct Index {
     }
     .titleBar(this.titleBarOptions())
     .titleMode(HdsNavigationTitleMode.MINI)
-    .bindToScrollable(this.homeBoundFeedScrollers())
-    .dynamicHideTitleBar({
-      hideTitleArea: this.homeTitleHideActive(),
-      hideBottomBuilder: false,
-      hideStatusBar: false,
-      mode: HideMode.SCROLL_UP
-    })
     .hideBackButton(true)
     .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM])
     .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
@@ -819,56 +800,6 @@ struct Index {
       'action': action
     }
     return { 'content': content }
-  }
-
-  private registerHomeFeedScroller(tabKey: string, scroller: Scroller, ready: boolean): void {
-    const existing = this.homeFeedScrollerKeys.indexOf(tabKey)
-    if (existing >= 0) {
-      if (!ready && this.homeFeedScrollers[existing] !== scroller) {
-        return
-      }
-      if (this.homeFeedScrollers[existing] === scroller && this.homeFeedScrollerReady[existing] === ready) {
-        return
-      }
-      const nextScrollers = this.homeFeedScrollers.slice()
-      const nextReady = this.homeFeedScrollerReady.slice()
-      nextScrollers[existing] = scroller
-      nextReady[existing] = ready
-      this.homeFeedScrollers = nextScrollers
-      this.homeFeedScrollerReady = nextReady
-      return
-    }
-    if (!ready) {
-      return
-    }
-    const nextKeys = this.homeFeedScrollerKeys.slice()
-    const nextScrollers = this.homeFeedScrollers.slice()
-    const nextReady = this.homeFeedScrollerReady.slice()
-    nextKeys.push(tabKey)
-    nextScrollers.push(scroller)
-    nextReady.push(true)
-    this.homeFeedScrollerKeys = nextKeys
-    this.homeFeedScrollers = nextScrollers
-    this.homeFeedScrollerReady = nextReady
-  }
-
-  private homeBoundFeedScrollers(): Scroller[] {
-    if (this.ct !== 0) {
-      return []
-    }
-    const index = this.homeFeedScrollerKeys.indexOf(this.activeHomeFeedTabKey)
-    if (index < 0 || !this.homeFeedScrollerReady[index]) {
-      return []
-    }
-    return [this.homeFeedScrollers[index]]
-  }
-
-  private setActiveHomeFeedTab(tabKey: string): void {
-    this.activeHomeFeedTabKey = tabKey
-  }
-
-  private homeTitleHideActive(): boolean {
-    return this.ct === 0
   }
 
   private titleBarOptions(): Record<string, Object> {

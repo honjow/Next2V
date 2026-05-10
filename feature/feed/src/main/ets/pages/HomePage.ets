@@ -16,9 +16,6 @@ export struct HomePage {
   @State private currentTabIndex: number = 0
   @State private swiperWidth: number = 0
   private swiperController: SwiperController = new SwiperController()
-  onRegisterFeedScroller?: (tabKey: string, scroller: Scroller, ready: boolean) => void
-  onFeedTabSwitch?: (tabKey: string) => void
-  private lastRequestedFeedTabKey: string = ''
   private horizontalPan: PanGestureOptions = new PanGestureOptions({
     direction: PanDirection.Horizontal,
     distance: 1
@@ -34,7 +31,6 @@ export struct HomePage {
     }
     this.currentTabIndex = nextIndex
     this.setVisualTabIndex(nextIndex)
-    this.requestFeedTabSwitchRestore(this.feedTab)
   }
 
   private setListScrollEnabled(enabled: boolean): void {
@@ -76,22 +72,11 @@ export struct HomePage {
     return true
   }
 
-  private requestFeedTabSwitchRestore(tabKey: string): void {
-    if (tabKey === this.lastRequestedFeedTabKey) {
-      return
-    }
-    this.lastRequestedFeedTabKey = tabKey
-    if (this.onFeedTabSwitch) {
-      this.onFeedTabSwitch(tabKey)
-    }
-  }
-
   private onFeedTabChanged(_propName: string): void {
     const nextIndex = this.tabKeyToIndex(this.feedTab)
     if (nextIndex < 0) {
       return
     }
-    this.requestFeedTabSwitchRestore(this.feedTab)
     if (nextIndex === this.currentTabIndex) {
       return
     }
@@ -157,8 +142,7 @@ export struct HomePage {
       Swiper(this.swiperController) {
         ForEach(this.visibleTabs(), (tab: TabItem) => {
           FeedListPage({
-            tabKey: tab.key,
-            onRegisterFeedScroller: this.onRegisterFeedScroller
+            tabKey: tab.key
           })
         }, (tab: TabItem) => tab.key)
       }
@@ -187,7 +171,6 @@ export struct HomePage {
         this.currentTabIndex = i
         this.setVisualTabIndex(i)
         if (key !== this.feedTab) {
-          this.requestFeedTabSwitchRestore(key)
           this.feedTab = key
         }
       })
@@ -224,7 +207,6 @@ struct FeedListPage {
   @StorageLink(StorageKeys.TOPIC_READ_STATES) topicReadStates: string = '[]'
   @StorageLink(StorageKeys.BLOCKED_MEMBERS_UPDATED_AT) @Watch('onBlockedMembersChanged') blockedMembersUpdatedAt: number = 0
   @Prop tabKey: string = 'tech'
-  onRegisterFeedScroller?: (tabKey: string, scroller: Scroller, ready: boolean) => void
   @State vm: FeedViewModel = new FeedViewModel()
   private readonly FLOAT_H: number = ThemeConstants.FLOAT_BAR_HEIGHT
   private readonly GAP: number = ThemeConstants.SPACE_SM - 2
@@ -235,9 +217,6 @@ struct FeedListPage {
   private api: ApiService = new ApiService()
 
   aboutToAppear(): void {
-    if (this.onRegisterFeedScroller) {
-      this.onRegisterFeedScroller(this.tabKey, this.scroller, false)
-    }
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     this.vm.setLoader(() => this.api.getTabTopics(this.tabKey))
     this.vm.setCacheHandlers(
@@ -300,16 +279,6 @@ struct FeedListPage {
           }
         }
         .width('100%').height('100%')
-        .onAppear(() => {
-          if (this.onRegisterFeedScroller) {
-            this.onRegisterFeedScroller(this.tabKey, this.scroller, true)
-          }
-        })
-        .onDisAppear(() => {
-          if (this.onRegisterFeedScroller) {
-            this.onRegisterFeedScroller(this.tabKey, this.scroller, false)
-          }
-        })
       } else {
         Column() {
           LoadingProgress().width(ThemeConstants.LOADING_SIZE).height(ThemeConstants.LOADING_SIZE)
@@ -319,11 +288,6 @@ struct FeedListPage {
             .margin({ top: ThemeConstants.SPACE_LG })
             .onClick(() => this.vm.loadData())
         }.justifyContent(FlexAlign.Center).width('100%').height('100%')
-        .onAppear(() => {
-          if (this.onRegisterFeedScroller) {
-            this.onRegisterFeedScroller(this.tabKey, this.scroller, false)
-          }
-        })
       }
     }
     .width('100%').height('100%')
