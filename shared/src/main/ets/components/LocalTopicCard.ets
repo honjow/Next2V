@@ -9,6 +9,7 @@ export struct LocalTopicCard {
   @Prop nodeTitle: string = ''
   @Prop username: string = ''
   @Prop avatar: string = ''
+  @Prop memberPro: number = 0
   @Prop created: number = 0
   @Prop replyCount: number = 0
   @Prop hasReplyCount: boolean = false
@@ -41,6 +42,7 @@ export struct LocalTopicCard {
       id: 0,
       username: this.username || '',
       tagline: '',
+      pro: this.memberPro,
       avatar_mini: this.avatar || '',
       avatar_normal: this.avatar || '',
       avatar_large: this.avatar || ''

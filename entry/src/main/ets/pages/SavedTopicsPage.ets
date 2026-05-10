@@ -37,6 +37,7 @@ export struct SavedTopicsPage {
                 nodeTitle: item.nodeTitle,
                 username: item.username,
                 avatar: item.avatar || '',
+                memberPro: item.memberPro || 0,
                 created: item.created,
                 replyCount: this.replyCount(item),
                 hasReplyCount: this.hasKnownReplyCount(item),

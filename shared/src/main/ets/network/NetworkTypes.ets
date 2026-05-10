@@ -4,6 +4,7 @@ export interface V2exMember {
   id: number
   username: string
   tagline: string
+  pro?: number
   avatar_mini: string
   avatar_normal: string
   avatar_large: string

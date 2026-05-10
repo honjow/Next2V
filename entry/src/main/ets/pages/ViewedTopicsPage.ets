@@ -34,6 +34,7 @@ export struct ViewedTopicsPage {
                 nodeTitle: item.nodeTitle,
                 username: item.username,
                 avatar: item.avatar || '',
+                memberPro: item.memberPro || 0,
                 replyCount: this.replyCount(item),
                 hasReplyCount: this.hasKnownReplyCount(item),
                 metaLabel: '浏览于',

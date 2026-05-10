@@ -28,10 +28,14 @@ export struct TopicCard {
             if (this.onUserClick) { this.onUserClick() }
           })
         Column() {
-          UserName({ username: this.item.member.username, fontSize: ThemeConstants.FONT_SIZE_META })
-            .onClick(() => {
+          UserName({
+            username: this.item.member.username,
+            fontSize: ThemeConstants.FONT_SIZE_META,
+            isPro: this.isMemberPro(),
+            onUserClick: () => {
               if (this.onUserClick) { this.onUserClick() }
-            })
+            }
+          })
         }
         .layoutWeight(1)
         .alignItems(HorizontalAlign.Start)
@@ -102,5 +106,9 @@ export struct TopicCard {
     .borderRadius(ThemeConstants.RADIUS_CARD)
     .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
     .width('100%')
+  }
+
+  private isMemberPro(): boolean {
+    return (this.item.member.pro || 0) > 0
   }
 }
