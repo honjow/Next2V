@@ -16,8 +16,6 @@ export struct HomePage {
   @State private currentTabIndex: number = 0
   @State private swiperWidth: number = 0
   private swiperController: SwiperController = new SwiperController()
-  onRegisterFeedScroller?: (tabKey: string, scroller: Scroller) => void
-  onFeedTabSwitch?: (tabKey: string) => void
   private horizontalPan: PanGestureOptions = new PanGestureOptions({
     direction: PanDirection.Horizontal,
     distance: 1
@@ -28,7 +26,6 @@ export struct HomePage {
     AppStorage.setOrCreate('listScrollEnabled', true)
     this.currentTabIndex = this.tabKeyToIndex(this.feedTab)
     this.feedTabVisualIndex = this.currentTabIndex
-    this.requestFeedTabSwitchRestore(this.feedTab)
   }
 
   private setListScrollEnabled(enabled: boolean): void {
@@ -56,18 +53,11 @@ export struct HomePage {
     return idx < 0 ? 0 : idx
   }
 
-  private requestFeedTabSwitchRestore(tabKey: string): void {
-    if (this.onFeedTabSwitch) {
-      this.onFeedTabSwitch(tabKey)
-    }
-  }
-
   private onFeedTabChanged(_propName: string): void {
     const nextIndex = this.tabKeyToIndex(this.feedTab)
     if (nextIndex === this.currentTabIndex) {
       return
     }
-    this.requestFeedTabSwitchRestore(this.feedTab)
     this.currentTabIndex = nextIndex
     this.animateVisualTabIndex(nextIndex)
     this.swiperController.changeIndex(nextIndex, true)
@@ -115,10 +105,7 @@ export struct HomePage {
     Column() {
       Swiper(this.swiperController) {
         ForEach(this.visibleTabs(), (tab: TabItem) => {
-          FeedListPage({
-            tabKey: tab.key,
-            onRegisterFeedScroller: this.onRegisterFeedScroller
-          })
+          FeedListPage({ tabKey: tab.key })
         }, (tab: TabItem) => tab.key)
       }
       .index(this.tabKeyToIndex(this.feedTab))
@@ -138,13 +125,10 @@ export struct HomePage {
         this.setVisualTabIndex(index)
       })
       .onChange((i: number) => {
-        const tab = this.visibleTabs()[i]
-        const key = tab ? tab.key : this.visibleTabs()[0].key
-        if (key !== this.feedTab) {
-          this.requestFeedTabSwitchRestore(key)
-        }
         this.currentTabIndex = i
         this.setVisualTabIndex(i)
+        const tab = this.visibleTabs()[i]
+        const key = tab ? tab.key : this.visibleTabs()[0].key
         if (key !== this.feedTab) {
           this.feedTab = key
         }
@@ -182,7 +166,6 @@ struct FeedListPage {
   @StorageLink(StorageKeys.TOPIC_READ_STATES) topicReadStates: string = '[]'
   @StorageLink(StorageKeys.BLOCKED_MEMBERS_UPDATED_AT) @Watch('onBlockedMembersChanged') blockedMembersUpdatedAt: number = 0
   @Prop tabKey: string = 'tech'
-  onRegisterFeedScroller?: (tabKey: string, scroller: Scroller) => void
   @State vm: FeedViewModel = new FeedViewModel()
   private readonly FLOAT_H: number = ThemeConstants.FLOAT_BAR_HEIGHT
   private readonly GAP: number = ThemeConstants.SPACE_SM - 2
@@ -193,9 +176,6 @@ struct FeedListPage {
   private api: ApiService = new ApiService()
 
   aboutToAppear(): void {
-    if (this.onRegisterFeedScroller) {
-      this.onRegisterFeedScroller(this.tabKey, this.scroller)
-    }
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     this.vm.setLoader(() => this.api.getTabTopics(this.tabKey))
     this.vm.setCacheHandlers(

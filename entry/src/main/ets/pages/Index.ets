@@ -8,8 +8,6 @@ import {
   HdsTabs,
   HdsTabsController,
   HdsTabsFloatingStyle,
-  HideMode,
-  BottomBuilderShowType,
   ScrollEffectType
 } from '@kit.UIDesignKit'
 import { common, Want } from '@kit.AbilityKit'
@@ -251,11 +249,6 @@ struct Index {
   private tc: HdsTabsController = new HdsTabsController()
   private tabTitles: string[] = ['首页', '发现', '通知', '我的']
   @State ct: number = 0
-  @State private homeFeedScrollerKeys: string[] = []
-  @State private homeFeedScrollers: Scroller[] = []
-  @State private activeHomeFeedTabKey: string = 'tech'
-  @State private homeTitleResettingForFeedSwitch: boolean = false
-  @State private homeTitleResetSeq: number = 0
   @StorageLink(StorageKeys.PENDING_V2EX_URL) @Watch('onPendingV2exUrlChanged') pendingV2exUrl: string = ''
   @StorageLink(StorageKeys.TOPIC_DETAIL_SAVED_LATER) topicDetailSavedLater: boolean = false
   @StorageLink(StorageKeys.TOPIC_DETAIL_SITE_FAVORITED) topicDetailSiteFavorited: boolean = false
@@ -420,14 +413,7 @@ struct Index {
     HdsNavigation(this.ns) {
       HdsTabs({ controller: this.tc, index: this.ct }) {
         TabContent() {
-          HomePage({
-            onRegisterFeedScroller: (tabKey: string, scroller: Scroller) => {
-              this.registerHomeFeedScroller(tabKey, scroller)
-            },
-            onFeedTabSwitch: (tabKey: string) => {
-              this.resetHomeTitleForFeedSwitch(tabKey)
-            }
-          })
+          HomePage()
         }.tabBar(this.TabIcon('首页', 0))
 
         TabContent() {
@@ -469,13 +455,6 @@ struct Index {
     }
     .titleBar(this.titleBarOptions())
     .titleMode(HdsNavigationTitleMode.MINI)
-    .bindToScrollable(this.homeBoundFeedScrollers())
-    .dynamicHideTitleBar({
-      hideTitleArea: this.homeTitleHideActive(),
-      hideBottomBuilder: false,
-      hideStatusBar: false,
-      mode: HideMode.SCROLL_UP
-    })
     .hideBackButton(true)
     .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM])
     .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
@@ -787,65 +766,12 @@ struct Index {
     return { 'content': content }
   }
 
-  private registerHomeFeedScroller(tabKey: string, scroller: Scroller): void {
-    const existing = this.homeFeedScrollerKeys.indexOf(tabKey)
-    if (existing >= 0) {
-      if (this.homeFeedScrollers[existing] === scroller) {
-        return
-      }
-      const nextScrollers = this.homeFeedScrollers.slice()
-      nextScrollers[existing] = scroller
-      this.homeFeedScrollers = nextScrollers
-      return
-    }
-    const nextKeys = this.homeFeedScrollerKeys.slice()
-    const nextScrollers = this.homeFeedScrollers.slice()
-    nextKeys.push(tabKey)
-    nextScrollers.push(scroller)
-    this.homeFeedScrollerKeys = nextKeys
-    this.homeFeedScrollers = nextScrollers
-  }
-
-  private homeBoundFeedScrollers(): Scroller[] {
-    if (this.ct !== 0) {
-      return []
-    }
-    const index = this.homeFeedScrollerKeys.indexOf(this.activeHomeFeedTabKey)
-    if (index < 0) {
-      return []
-    }
-    return [this.homeFeedScrollers[index]]
-  }
-
-  private homeTitleHideActive(): boolean {
-    return this.ct === 0 && !this.homeTitleResettingForFeedSwitch
-  }
-
-  private resetHomeTitleForFeedSwitch(tabKey: string): void {
-    this.activeHomeFeedTabKey = tabKey
-    if (this.ct !== 0) {
-      return
-    }
-    const seq = this.homeTitleResetSeq + 1
-    this.homeTitleResetSeq = seq
-    this.homeTitleResettingForFeedSwitch = true
-    setTimeout(() => {
-      if (this.homeTitleResetSeq === seq) {
-        this.homeTitleResettingForFeedSwitch = false
-      }
-    }, 120)
-  }
-
   private titleBarOptions(): Record<string, Object> {
     let titleInfo: Record<string, Object> = { 'mainTitle': this.tabTitles[this.ct] }
     let content: Record<string, Object>
     if (this.ct === 0) {
       let cc = new ComponentContent(this.getUIContext(), wrapBuilder(PillCCBuilder))
-      let bb: Record<string, Object> = {
-        'builderComponent': cc,
-        'height': ApiConstants.TAB_BAR_HEIGHT,
-        'showType': BottomBuilderShowType.DIRECTLY_SHOW
-      }
+      let bb: Record<string, Object> = { 'builderComponent': cc, 'height': ApiConstants.TAB_BAR_HEIGHT, 'showType': 0 }
       content = { 'title': titleInfo, 'bottomBuilder': bb }
     } else {
       content = { 'title': titleInfo }
