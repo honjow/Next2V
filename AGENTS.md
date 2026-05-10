@@ -18,6 +18,17 @@ Default Hermes responsibilities are:
 
 Important: "继续", "按计划走", an active task list, or a context-compaction handoff only authorizes continuing the controller workflow. These signals do not authorize Hermes to self-execute code changes, builds, installs, device operations, or commits.
 
+### Worktree setup preflight
+
+Before any agent or subagent builds, signs, installs, or device-tests a V2Next lane worktree under `/home/gamer/v2next-worktrees/`, run `scripts/sync-signing-materials.sh` in that worktree (or copy the same four gitignored files from `/home/gamer/git/V2Next/scripts`):
+
+- `scripts/xiaobai.p12`
+- `scripts/xiaobai.csr`
+- `scripts/next2v-debug.cer`
+- `scripts/next2v-debug.p7b`
+
+These files are intentionally gitignored and must not be committed or printed. Do this before `bash dev.sh`, otherwise `scripts/sign.py` may try Huawei/AGC login, hit an expired token, and stall in a headless browser callback.
+
 Before editing or delegating implementation:
 
 1. Translate the user's natural-language complaint into an explicit controller spec.
