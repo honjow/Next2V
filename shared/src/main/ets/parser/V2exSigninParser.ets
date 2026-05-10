@@ -18,6 +18,7 @@ interface V2exSigninInput {
   name: string
   value: string
   placeholder: string
+  context: string
 }
 
 /**
@@ -76,13 +77,16 @@ export class V2exSigninParser {
 
     const hiddenFields: Record<string, string> = {}
     inputs
-      .filter((input: V2exSigninInput) => input.type.toLowerCase() === 'hidden' && input.name)
+      .filter((input: V2exSigninInput) => {
+        const type = input.type.toLowerCase()
+        return input.name && (type === 'hidden' || type === 'submit' || type === 'button')
+      })
       .forEach((input: V2exSigninInput) => {
         hiddenFields[input.name] = input.value
       })
 
     return {
-      action: V2exSigninParser.extractFormAction(preferred) || '/signin',
+      action: V2exSigninParser.extractFormAction(preferred),
       codeField,
       hiddenFields
     }
@@ -128,7 +132,8 @@ export class V2exSigninParser {
         type: V2exSigninParser.extractAttr(tag, 'type') || 'text',
         name: V2exSigninParser.extractAttr(tag, 'name'),
         value: V2exSigninParser.extractAttr(tag, 'value'),
-        placeholder: V2exSigninParser.extractAttr(tag, 'placeholder')
+        placeholder: V2exSigninParser.extractAttr(tag, 'placeholder'),
+        context: V2exSigninParser.inputContext(html, m.index, tag.length)
       })
       m = re.exec(html)
     }
@@ -163,8 +168,15 @@ export class V2exSigninParser {
   private static findCaptchaField(inputs: V2exSigninInput[]): string {
     const found = inputs.find((input: V2exSigninInput) => {
       const placeholder = input.placeholder.toLowerCase()
+      const name = input.name.toLowerCase()
+      const context = input.context.toLowerCase()
       return input.type.toLowerCase() === 'text' && input.name &&
-        (placeholder.indexOf('captcha') >= 0 || placeholder.indexOf('code') >= 0)
+        (placeholder.indexOf('captcha') >= 0 ||
+          placeholder.indexOf('code') >= 0 ||
+          placeholder.indexOf('验证码') >= 0 ||
+          name.indexOf('captcha') >= 0 ||
+          context.indexOf('captcha') >= 0 ||
+          context.indexOf('验证码') >= 0)
     })
     return found ? found.name : ''
   }
@@ -212,6 +224,32 @@ export class V2exSigninParser {
       .replace(/&#39;/g, "'")
       .replace(/&lt;/g, '<')
       .replace(/&gt;/g, '>')
+  }
+
+  private static inputContext(html: string, index: number, length: number): string {
+    const start = V2exSigninParser.nearestContextStart(html, index)
+    const end = V2exSigninParser.nearestContextEnd(html, index + length)
+    if (start >= 0 && end > index) {
+      return V2exSigninParser.compactText(html.slice(start, end))
+    }
+    const before = html.slice(Math.max(0, index - 64), index)
+    const after = html.slice(index + length, Math.min(html.length, index + length + 64))
+    return V2exSigninParser.compactText(`${before} ${after}`)
+  }
+
+  private static nearestContextStart(html: string, index: number): number {
+    const prefix = html.slice(0, index)
+    const matches = prefix.match(/<(tr|div|p|label)\b[^>]*>/gi)
+    if (!matches || matches.length === 0) {
+      return -1
+    }
+    return prefix.lastIndexOf(matches[matches.length - 1])
+  }
+
+  private static nearestContextEnd(html: string, index: number): number {
+    const suffix = html.slice(index)
+    const m = suffix.match(/<\/(tr|div|p|label)>/i)
+    return m && typeof m.index === 'number' ? index + m.index + m[0].length : -1
   }
 
   private static compactText(html: string): string {

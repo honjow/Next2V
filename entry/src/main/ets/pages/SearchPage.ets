@@ -674,6 +674,7 @@ export struct SearchPage {
               this.clearRemoteFilters()
             }
           })
+            .layoutWeight(1)
         }
         AppActionButton({
           label: this.remoteLoading ? '搜索中' : '应用搜索',
@@ -684,6 +685,7 @@ export struct SearchPage {
             this.filterSheetVisible = false
           }
         })
+          .layoutWeight(1)
       }
       .width('100%')
     }

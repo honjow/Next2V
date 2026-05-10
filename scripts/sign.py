@@ -34,13 +34,15 @@ SIGNED_HAP  = PROJ / "entry/build/default/outputs/default/entry-default-signed.h
 BUNDLE_NAME = "com.next2v.app"
 CERT_NAME   = "next2v-debug"
 
-KS_FILE     = SCRIPTS / "xiaobai.p12"
+SIGNING_MATERIALS_DIR = Path(os.environ.get("NEXT2V_SIGNING_MATERIALS_DIR", SCRIPTS))
+
+KS_FILE     = Path(os.environ.get("NEXT2V_KS_FILE", SIGNING_MATERIALS_DIR / "xiaobai.p12"))
 KS_ALIAS    = "xiaobai"
 KS_PWD      = "xiaobai123"
-CSR         = SCRIPTS / "xiaobai.csr"
+CSR         = Path(os.environ.get("NEXT2V_CSR_FILE", SIGNING_MATERIALS_DIR / "xiaobai.csr"))
 
-CERT_FILE    = SCRIPTS / f"{CERT_NAME}.cer"
-PROFILE_FILE = SCRIPTS / f"{CERT_NAME}.p7b"
+CERT_FILE    = Path(os.environ.get("NEXT2V_CERT_FILE", SIGNING_MATERIALS_DIR / f"{CERT_NAME}.cer"))
+PROFILE_FILE = Path(os.environ.get("NEXT2V_PROFILE_FILE", SIGNING_MATERIALS_DIR / f"{CERT_NAME}.p7b"))
 AUTH_FILE    = Path.home() / "Documents/hap_installer/userInfo.json"
 
 # 设备选择缓存文件及有效期（7 天）
@@ -92,13 +94,16 @@ def login():
     port = random.randint(8333, 9333)
     server = HTTPServer(("127.0.0.1", port), CallbackHandler)
     server.timeout = 120
+    deadline = time.time() + server.timeout
     url = ECO_URL.format(port=port)
     print(f"\n请在浏览器中完成华为账号登录:")
     print(f"  {url}\n")
     webbrowser.open(url)
     print("等待登录回调（最长 120 秒）...")
-    while CallbackHandler.result is None:
+    while CallbackHandler.result is None and time.time() < deadline:
         server.handle_request()
+    if CallbackHandler.result is None:
+        raise RuntimeError("登录回调超时：未在 120 秒内收到华为账号登录回调")
     from urllib.parse import parse_qs, urlparse, quote
     body = CallbackHandler.result
     params = parse_qs(body) if "=" in body else {}
@@ -341,6 +346,7 @@ def main():
 
     no_install    = "--no-install"    in args
     force_profile = "--force-profile" in args or "--refresh" in args
+    non_interactive = "--non-interactive" in args or os.environ.get("NEXT2V_SIGN_NONINTERACTIVE") == "1"
 
     # 解析 -d 参数：可以是 "all" 或具体设备地址
     target_device = None
@@ -367,6 +373,10 @@ def main():
         if not no_install:
             install_hap(devices)
         return
+
+    if non_interactive:
+        missing = [str(p) for p in (KS_FILE, CERT_FILE, PROFILE_FILE) if not p.exists()]
+        raise RuntimeError("非交互签名材料缺失，拒绝触发华为登录流程: " + ", ".join(missing))
 
     auth = load_or_login()
 

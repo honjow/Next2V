@@ -13,7 +13,6 @@ export struct AppActionButton {
       .fontWeight(FontWeight.Medium)
       .height(44)
       .width('100%')
-      .layoutWeight(1)
       .enabled(this.isEnabled)
       .buttonStyle(this.primary ? ButtonStyleMode.EMPHASIZED : ButtonStyleMode.NORMAL)
       .onClick(() => {
