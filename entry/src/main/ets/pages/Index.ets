@@ -8,6 +8,8 @@ import {
   HdsTabs,
   HdsTabsController,
   HdsTabsFloatingStyle,
+  HideMode,
+  BottomBuilderShowType,
   ScrollEffectType
 } from '@kit.UIDesignKit'
 import { common, Want } from '@kit.AbilityKit'
@@ -78,7 +80,6 @@ struct FeedPills {
             .padding({ bottom: 0 })
             .onClick(() => {
               this.feedTab = tab.key
-              this.centerTab(index, true)
             })
             .onAreaChange((_oldValue: Area, newValue: Area) => {
               this.updateTabLayout(index, newValue)
@@ -116,6 +117,7 @@ struct FeedPills {
   private onFeedTabKeysChanged(_propName: string): void {
     this.tabLefts = []
     this.tabWidths = []
+    this.pendingCenterIndex = -1
   }
 
   private visibleTabs(): TabItem[] {
@@ -127,13 +129,12 @@ struct FeedPills {
     return index
   }
 
-  private selectedTabIndexForLayout(): number {
-    const index = this.selectedTabIndex()
-    return index < 0 ? 0 : index
-  }
-
   private visualSelectedIndex(): number {
-    return Math.max(0, Math.min(this.visibleTabs().length - 1, Math.round(this.feedTabVisualIndex)))
+    const count = this.visibleTabs().length
+    if (count <= 0) {
+      return 0
+    }
+    return Math.max(0, Math.min(count - 1, Math.round(this.feedTabVisualIndex)))
   }
 
   private updateTabLayout(index: number, area: Area): void {
@@ -158,9 +159,13 @@ struct FeedPills {
   }
 
   private indicatorLeft(): number {
-    const visualIndex = Math.max(0, Math.min(this.visibleTabs().length - 1, this.feedTabVisualIndex))
+    const count = this.visibleTabs().length
+    if (count <= 0) {
+      return ThemeConstants.SPACE_SM
+    }
+    const visualIndex = Math.max(0, Math.min(count - 1, this.feedTabVisualIndex))
     const fromIndex = Math.floor(visualIndex)
-    const toIndex = Math.min(this.visibleTabs().length - 1, fromIndex + 1)
+    const toIndex = Math.min(count - 1, fromIndex + 1)
     const fraction = visualIndex - fromIndex
     const fromCenter = this.tabCenter(fromIndex)
     const toCenter = this.tabCenter(toIndex)
@@ -173,13 +178,39 @@ struct FeedPills {
     if (left !== undefined && width !== undefined && width > 0) {
       return left + width / 2
     }
-    const fallbackIndex = this.selectedTabIndexForLayout()
-    const fallbackLeft = this.tabLefts[fallbackIndex]
-    const fallbackWidth = this.tabWidths[fallbackIndex]
-    if (fallbackLeft !== undefined && fallbackWidth !== undefined && fallbackWidth > 0) {
-      return fallbackLeft + fallbackWidth / 2
+    return this.estimatedTabCenter(index)
+  }
+
+  private averageMeasuredTabWidth(): number {
+    let total = 0
+    let count = 0
+    for (let i = 0; i < this.tabWidths.length; i++) {
+      const width = this.tabWidths[i]
+      if (width !== undefined && width > 0) {
+        total += width
+        count++
+      }
     }
-    return ThemeConstants.SPACE_SM + this.indicatorWidth() / 2
+    return count > 0 ? total / count : 48
+  }
+
+  private estimatedTabCenter(index: number): number {
+    const step = this.averageMeasuredTabWidth() + ThemeConstants.SPACE_XS
+    for (let prev = index - 1; prev >= 0; prev--) {
+      const left = this.tabLefts[prev]
+      const width = this.tabWidths[prev]
+      if (left !== undefined && width !== undefined && width > 0) {
+        return left + width / 2 + (index - prev) * step
+      }
+    }
+    for (let next = index + 1; next < this.visibleTabs().length; next++) {
+      const left = this.tabLefts[next]
+      const width = this.tabWidths[next]
+      if (left !== undefined && width !== undefined && width > 0) {
+        return left + width / 2 - (next - index) * step
+      }
+    }
+    return ThemeConstants.SPACE_SM + this.averageMeasuredTabWidth() / 2 + index * step
   }
 
   private areaX(value: Length | undefined): number {
@@ -423,7 +454,14 @@ struct Index {
     HdsNavigation(this.ns) {
       HdsTabs({ controller: this.tc, index: this.ct }) {
         TabContent() {
-          HomePage()
+          HomePage({
+            onRegisterFeedScroller: (tabKey: string, scroller: Scroller, ready: boolean) => {
+              this.registerHomeFeedScroller(tabKey, scroller, ready)
+            },
+            onFeedTabSwitch: (tabKey: string) => {
+              this.setActiveHomeFeedTab(tabKey)
+            }
+          })
         }.tabBar(this.TabIcon('首页', 0))
 
         TabContent() {
@@ -465,6 +503,13 @@ struct Index {
     }
     .titleBar(this.titleBarOptions())
     .titleMode(HdsNavigationTitleMode.MINI)
+    .bindToScrollable(this.homeBoundFeedScrollers())
+    .dynamicHideTitleBar({
+      hideTitleArea: this.homeTitleHideActive(),
+      hideBottomBuilder: false,
+      hideStatusBar: false,
+      mode: HideMode.SCROLL_UP
+    })
     .hideBackButton(true)
     .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM])
     .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
@@ -776,12 +821,66 @@ struct Index {
     return { 'content': content }
   }
 
+  private registerHomeFeedScroller(tabKey: string, scroller: Scroller, ready: boolean): void {
+    const existing = this.homeFeedScrollerKeys.indexOf(tabKey)
+    if (existing >= 0) {
+      if (!ready && this.homeFeedScrollers[existing] !== scroller) {
+        return
+      }
+      if (this.homeFeedScrollers[existing] === scroller && this.homeFeedScrollerReady[existing] === ready) {
+        return
+      }
+      const nextScrollers = this.homeFeedScrollers.slice()
+      const nextReady = this.homeFeedScrollerReady.slice()
+      nextScrollers[existing] = scroller
+      nextReady[existing] = ready
+      this.homeFeedScrollers = nextScrollers
+      this.homeFeedScrollerReady = nextReady
+      return
+    }
+    if (!ready) {
+      return
+    }
+    const nextKeys = this.homeFeedScrollerKeys.slice()
+    const nextScrollers = this.homeFeedScrollers.slice()
+    const nextReady = this.homeFeedScrollerReady.slice()
+    nextKeys.push(tabKey)
+    nextScrollers.push(scroller)
+    nextReady.push(true)
+    this.homeFeedScrollerKeys = nextKeys
+    this.homeFeedScrollers = nextScrollers
+    this.homeFeedScrollerReady = nextReady
+  }
+
+  private homeBoundFeedScrollers(): Scroller[] {
+    if (this.ct !== 0) {
+      return []
+    }
+    const index = this.homeFeedScrollerKeys.indexOf(this.activeHomeFeedTabKey)
+    if (index < 0 || !this.homeFeedScrollerReady[index]) {
+      return []
+    }
+    return [this.homeFeedScrollers[index]]
+  }
+
+  private setActiveHomeFeedTab(tabKey: string): void {
+    this.activeHomeFeedTabKey = tabKey
+  }
+
+  private homeTitleHideActive(): boolean {
+    return this.ct === 0
+  }
+
   private titleBarOptions(): Record<string, Object> {
     let titleInfo: Record<string, Object> = { 'mainTitle': this.tabTitles[this.ct] }
     let content: Record<string, Object>
     if (this.ct === 0) {
       let cc = new ComponentContent(this.getUIContext(), wrapBuilder(PillCCBuilder))
-      let bb: Record<string, Object> = { 'builderComponent': cc, 'height': ApiConstants.TAB_BAR_HEIGHT, 'showType': 0 }
+      let bb: Record<string, Object> = {
+        'builderComponent': cc,
+        'height': ApiConstants.TAB_BAR_HEIGHT,
+        'showType': BottomBuilderShowType.DIRECTLY_SHOW
+      }
       content = { 'title': titleInfo, 'bottomBuilder': bb }
     } else {
       content = { 'title': titleInfo }
