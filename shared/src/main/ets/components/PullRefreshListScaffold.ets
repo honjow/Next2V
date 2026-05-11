@@ -101,6 +101,6 @@ export struct PullRefreshListScaffold {
     if (this.indicatorTop >= 0) {
       return this.indicatorTop
     }
-    return this.topH + ThemeConstants.TITLE_BAR_HEIGHT + this.topPadding + ThemeConstants.SPACE_MD
+    return this.topH + ThemeConstants.TITLE_BAR_HEIGHT / 2 + this.topPadding
   }
 }
