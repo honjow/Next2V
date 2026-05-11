@@ -1032,6 +1032,8 @@ export struct MarkdownContent {
   private static processTokens(md: string): Token[] {
     let tokens = lexer(MarkdownContent.normalizeMarkdownSource(HtmlEntityUtils.decode(md)), { gfm: true, breaks: true });
     MarkdownContent.rewriteBareImageLinks(tokens);
+    MarkdownContent.rewriteInlineImageLinks(tokens);
+    MarkdownContent.splitMixedImageParagraphs(tokens);
     MarkdownContent.promoteStandaloneImageParagraphs(tokens);
     MarkdownContent.rewriteStandaloneTextLinks(tokens);
     MarkdownContent.retypeBlockTokens(tokens);
@@ -1039,7 +1041,211 @@ export struct MarkdownContent {
   }
 
   private static normalizeMarkdownSource(md: string): string {
-    return (md || '').replace(/!\[([^\]]*)\]\(\s+(https?:\/\/[^\s)]+)\s*\)/gi, '![$1]($2)');
+    return (md || '').replace(/\]\(\s+(https?:\/\/[^\s)]+)\s*\)/gi, ']($1)');
+  }
+
+  private static splitMixedImageParagraphs(tokens: Token[]): void {
+    if (!tokens || tokens.length === 0) {
+      return;
+    }
+    for (let i = 0; i < tokens.length; i++) {
+      const token = tokens[i] as TokenRecord;
+      const type = (token["type"] as string) || "";
+      if (type === "paragraph") {
+        const replacement = MarkdownContent.splitParagraphByImages(token);
+        if (replacement.length > 0) {
+          tokens.splice(i, 1, ...replacement);
+          i += replacement.length - 1;
+          continue;
+        }
+      }
+
+      const childTokens = token["tokens"] as Token[] | undefined;
+      if (Array.isArray(childTokens) && childTokens.length > 0) {
+        MarkdownContent.splitMixedImageParagraphs(childTokens);
+      }
+
+      const items = token["items"] as Array<TokenRecord> | undefined;
+      if (Array.isArray(items) && items.length > 0) {
+        for (const item of items) {
+          const itemTokens = item["tokens"] as Token[] | undefined;
+          if (Array.isArray(itemTokens) && itemTokens.length > 0) {
+            MarkdownContent.splitMixedImageParagraphs(itemTokens);
+          }
+        }
+      }
+    }
+  }
+
+  private static splitParagraphByImages(paragraph: TokenRecord): Token[] {
+    const inlineTokens = paragraph["tokens"] as Token[] | undefined;
+    if (!Array.isArray(inlineTokens) || inlineTokens.length === 0) {
+      return [];
+    }
+    if (!inlineTokens.some((t: Token) => t && t.type === "image")) {
+      return [];
+    }
+
+    const result: Token[] = [];
+    let textTokens: Token[] = [];
+    for (const token of inlineTokens) {
+      if (token && token.type === "image") {
+        MarkdownContent.flushParagraphTokens(result, textTokens);
+        textTokens = [];
+        (token as TokenRecord)["type"] = IMAGE_BLOCK_MONO;
+        result.push(token);
+      } else {
+        textTokens.push(token);
+      }
+    }
+    MarkdownContent.flushParagraphTokens(result, textTokens);
+    return result.length > 1 ? result : [];
+  }
+
+  private static flushParagraphTokens(result: Token[], tokens: Token[]): void {
+    const meaningful = tokens.filter((t: Token) => t && t.type !== "br" && String((t as TokenRecord)["raw"] ?? (t as TokenRecord)["text"] ?? "").trim().length > 0);
+    if (meaningful.length === 0) {
+      return;
+    }
+    const raw = tokens.map((t: Token) => String((t as TokenRecord)["raw"] ?? (t as TokenRecord)["text"] ?? "")).join("");
+    const text = tokens.map((t: Token) => String((t as TokenRecord)["text"] ?? (t as TokenRecord)["raw"] ?? "")).join("");
+    result.push({
+      type: "paragraph",
+      raw: raw,
+      text: text,
+      tokens: tokens,
+    } as Tokens.Paragraph);
+  }
+
+  private static rewriteInlineImageLinks(tokens: Token[]): void {
+    if (!tokens || tokens.length === 0) {
+      return;
+    }
+    for (let i = 0; i < tokens.length; i++) {
+      const token = tokens[i] as TokenRecord;
+      const type = (token["type"] as string) || "";
+      if (type === "paragraph") {
+        MarkdownContent.rewriteParagraphInlineImages(token);
+      }
+
+      const childTokens = token["tokens"] as Token[] | undefined;
+      if (Array.isArray(childTokens) && childTokens.length > 0) {
+        MarkdownContent.rewriteInlineImageLinks(childTokens);
+      }
+
+      const items = token["items"] as Array<TokenRecord> | undefined;
+      if (Array.isArray(items) && items.length > 0) {
+        for (const item of items) {
+          const itemTokens = item["tokens"] as Token[] | undefined;
+          if (Array.isArray(itemTokens) && itemTokens.length > 0) {
+            MarkdownContent.rewriteInlineImageLinks(itemTokens);
+          }
+        }
+      }
+    }
+  }
+
+  private static rewriteParagraphInlineImages(paragraph: TokenRecord): void {
+    const inlineTokens = paragraph["tokens"] as Token[] | undefined;
+    if (!Array.isArray(inlineTokens) || inlineTokens.length === 0) {
+      return;
+    }
+    const rewritten: Token[] = [];
+    for (const token of inlineTokens) {
+      rewritten.push(...MarkdownContent.rewriteInlineImageToken(token));
+    }
+    paragraph["tokens"] = rewritten;
+  }
+
+  private static rewriteInlineImageToken(token: Token): Token[] {
+    const record = token as TokenRecord;
+    const type = (record["type"] as string) || "";
+    if (type === "link") {
+      const nestedImage = MarkdownContent.firstNestedImage(record);
+      if (nestedImage) {
+        return [nestedImage as Token];
+      }
+      const href = MediaUrlUtils.imageUrlForRender(String(record["href"] ?? ""));
+      const text = String(record["text"] ?? "").trim();
+      const normalizedText = MediaUrlUtils.normalizeUrl(text);
+      if (href && (!text || normalizedText === MediaUrlUtils.normalizeUrl(String(record["href"] ?? "")))) {
+        return [MarkdownContent.buildImageToken(String(record["raw"] ?? text), href, text) as Token];
+      }
+      return [token];
+    }
+    if (type === "text") {
+      return MarkdownContent.splitTextImageUrls(token);
+    }
+    return [token];
+  }
+
+  private static firstNestedImage(record: TokenRecord): Tokens.Image | null {
+    const children = record["tokens"] as Token[] | undefined;
+    if (!Array.isArray(children) || children.length === 0) {
+      return null;
+    }
+    for (const child of children) {
+      const childRecord = child as TokenRecord;
+      if ((childRecord["type"] as string) === "image") {
+        const renderUrl = MediaUrlUtils.imageUrlForRender(String(childRecord["href"] ?? ""));
+        if (renderUrl) {
+          childRecord["href"] = renderUrl;
+          return child as Tokens.Image;
+        }
+      }
+    }
+    return null;
+  }
+
+  private static splitTextImageUrls(token: Token): Token[] {
+    const record = token as TokenRecord;
+    const text = String(record["text"] ?? record["raw"] ?? "");
+    if (!text) {
+      return [token];
+    }
+    const result: Token[] = [];
+    const re = /https?:\/\/[^\s<>()]+/gi;
+    let last = 0;
+    let m: RegExpExecArray | null = re.exec(text);
+    while (m) {
+      const rawUrl = m[0].replace(/[.,!?;:，。！？；：]+$/g, "");
+      const renderUrl = MediaUrlUtils.imageUrlForRender(rawUrl);
+      if (!renderUrl) {
+        m = re.exec(text);
+        continue;
+      }
+      if (m.index > last) {
+        result.push(MarkdownContent.buildTextToken(text.slice(last, m.index)) as Token);
+      }
+      result.push(MarkdownContent.buildImageToken(rawUrl, renderUrl, "") as Token);
+      last = m.index + rawUrl.length;
+      m = re.exec(text);
+    }
+    if (last === 0) {
+      return [token];
+    }
+    if (last < text.length) {
+      result.push(MarkdownContent.buildTextToken(text.slice(last)) as Token);
+    }
+    return result;
+  }
+
+  private static buildTextToken(text: string): Tokens.Text {
+    return {
+      type: "text",
+      raw: text,
+      text: text,
+    } as Tokens.Text;
+  }
+
+  private static buildImageToken(raw: string, href: string, text: string): Tokens.Image {
+    return {
+      type: "image",
+      raw: raw,
+      href: href,
+      title: null,
+      text: text,
+    };
   }
 
   private static promoteStandaloneImageParagraphs(tokens: Token[]): void {
