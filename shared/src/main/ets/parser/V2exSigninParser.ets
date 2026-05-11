@@ -64,7 +64,8 @@ export class V2exSigninParser {
     }
     const forms = V2exSigninParser.extractForms(html)
     const preferred = forms.find((form: string) => V2exSigninParser.looksLikeTwoFactorForm(form)) ||
-      (V2exSigninParser.looksLikeTwoFactorForm(html) ? html : '')
+      forms.find((form: string) => V2exSigninParser.looksLikeTwoFactorFormByActionOrInputs(form)) ||
+      (V2exSigninParser.looksLikeTwoFactorForm(html) || V2exSigninParser.looksLikeTwoFactorFormByActionOrInputs(html) ? html : '')
     if (!preferred) {
       return null
     }
@@ -117,9 +118,31 @@ export class V2exSigninParser {
       text.indexOf('安全码') >= 0
   }
 
+  private static looksLikeTwoFactorFormByActionOrInputs(html: string): boolean {
+    const actionPath = V2exSigninParser.locationPath(V2exSigninParser.extractFormAction(html))
+    if (actionPath === '/2fa' || actionPath.indexOf('/2fa?') === 0) {
+      return true
+    }
+    const inputs = V2exSigninParser.extractInputs(html)
+    return V2exSigninParser.findTwoFactorCodeField(inputs) === 'code'
+  }
+
   private static extractFormAction(formHtml: string): string {
     const formTag = formHtml.match(/<form\b[^>]*>/i)
     return formTag ? V2exSigninParser.extractAttr(formTag[0], 'action') : ''
+  }
+
+  private static locationPath(location: string): string {
+    const trimmed = (location || '').trim()
+    if (!trimmed) {
+      return ''
+    }
+    const schemeIdx = trimmed.indexOf('://')
+    if (schemeIdx >= 0) {
+      const pathStart = trimmed.indexOf('/', schemeIdx + 3)
+      return pathStart >= 0 ? trimmed.slice(pathStart) : '/'
+    }
+    return trimmed.indexOf('/') === 0 ? trimmed : `/${trimmed}`
   }
 
   private static extractInputs(html: string): V2exSigninInput[] {
@@ -184,7 +207,7 @@ export class V2exSigninParser {
   private static findTwoFactorCodeField(inputs: V2exSigninInput[]): string {
     const candidates = inputs.filter((input: V2exSigninInput) => {
       const type = input.type.toLowerCase()
-      return input.name && (type === 'text' || type === 'tel' || type === 'number' || type === '')
+      return input.name && (type === 'text' || type === 'tel' || type === 'number' || type === 'password' || type === '')
     })
     const preferred = candidates.find((input: V2exSigninInput) => {
       const name = input.name.toLowerCase()

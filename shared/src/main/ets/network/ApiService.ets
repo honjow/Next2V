@@ -40,6 +40,16 @@ interface CookieHtmlResponse {
   location: string
 }
 
+export class V2exCookieTwoFactorRequiredError extends Error {
+  path: string
+
+  constructor(path: string, message: string = 'V2EX 需要完成两步验证') {
+    super(message)
+    this.name = 'V2exCookieTwoFactorRequiredError'
+    this.path = path
+  }
+}
+
 export interface V2exReplyThankAction {
   replyId: number
   actionPath: string
@@ -163,7 +173,7 @@ export class ApiService {
     }
     const path = `/member/${encodeURIComponent(clean)}`
     const html = cookie
-      ? await this.http.getTextWithHeaders(path, { 'Cookie': cookie })
+      ? await this.getCookieHtml(path, cookie)
       : await this.http.getText(path)
     return V2exMemberPageParser.parse(html, clean)
   }
@@ -176,7 +186,7 @@ export class ApiService {
     const safePage = Math.max(1, Math.floor(page))
     const path = `/member/${encodeURIComponent(clean)}/topics?p=${safePage}`
     const html = cookie
-      ? await this.http.getTextWithHeaders(path, { 'Cookie': cookie })
+      ? await this.getCookieHtml(path, cookie)
       : await this.http.getText(path)
     return V2exMemberPageParser.parseTopicsPage(html)
   }
@@ -189,7 +199,7 @@ export class ApiService {
     const safePage = Math.max(1, Math.floor(page))
     const path = `/member/${encodeURIComponent(clean)}/replies?p=${safePage}`
     const html = cookie
-      ? await this.http.getTextWithHeaders(path, { 'Cookie': cookie })
+      ? await this.getCookieHtml(path, cookie)
       : await this.http.getText(path)
     return V2exMemberPageParser.parseRepliesPage(html)
   }
@@ -226,7 +236,7 @@ export class ApiService {
     if (!cookie) {
       throw new Error('请先登录')
     }
-    const html = await this.http.getTextWithHeaders(`/notifications?p=${page}`, { 'Cookie': cookie })
+    const html = await this.getCookieHtml(`/notifications?p=${page}`, cookie)
     if (!V2exSessionParser.extractUsername(html)) {
       throw new Error('Web 会话已失效，请重新登录')
     }
@@ -237,7 +247,7 @@ export class ApiService {
     if (!cookie) {
       throw new Error('请先登录')
     }
-    const html = await this.http.getTextWithHeaders('/balance', { 'Cookie': cookie })
+    const html = await this.getCookieHtml('/balance', cookie)
     if (!V2exSessionParser.extractUsername(html)) {
       throw new Error('Web 会话已失效，请重新登录')
     }
@@ -248,7 +258,7 @@ export class ApiService {
     if (!cookie) {
       throw new Error('请先登录')
     }
-    const html = await this.http.getTextWithHeaders('/mission/daily', { 'Cookie': cookie })
+    const html = await this.getCookieHtml('/mission/daily', cookie)
     if (!V2exSessionParser.extractUsername(html)) {
       throw new Error('Web 会话已失效，请重新登录')
     }
@@ -259,7 +269,7 @@ export class ApiService {
     if (!redeemPath) {
       throw new Error('今日不可签到')
     }
-    await this.http.getTextWithHeaders(redeemPath, { 'Cookie': cookie })
+    await this.getCookieHtml(redeemPath, cookie)
     return this.getDailyMissionWithCookie(cookie)
   }
 
@@ -268,7 +278,7 @@ export class ApiService {
       throw new Error('请先登录')
     }
     const path = page > 1 ? `/my/topics?p=${page}` : '/my/topics'
-    const html = await this.http.getTextWithHeaders(path, { 'Cookie': cookie })
+    const html = await this.getCookieHtml(path, cookie)
     if (!V2exSessionParser.extractUsername(html)) {
       throw new Error('Web 会话已失效，请重新登录')
     }
@@ -286,7 +296,7 @@ export class ApiService {
     const username = await this.getSessionUsernameWithCookie(cookie)
     const encodedUsername = encodeURIComponent(username)
     const path = page > 1 ? `/member/${encodedUsername}/replies?p=${page}` : `/member/${encodedUsername}/replies`
-    const html = await this.http.getTextWithHeaders(path, { 'Cookie': cookie })
+    const html = await this.getCookieHtml(path, cookie)
     const ids = V2exTabParser.extractTopicIds(html)
     if (ids.length === 0) {
       return []
@@ -295,7 +305,7 @@ export class ApiService {
   }
 
   private async getSessionUsernameWithCookie(cookie: string): Promise<string> {
-    const html = await this.http.getTextWithHeaders('/settings', { 'Cookie': cookie })
+    const html = await this.getCookieHtml('/settings', cookie)
     const username = V2exSessionParser.extractUsername(html)
     if (!username) {
       throw new Error('Web 会话已失效，请重新登录')
@@ -307,7 +317,7 @@ export class ApiService {
     if (!cookie) {
       throw new Error('请先登录')
     }
-    const html = await this.http.getTextWithHeaders('/my/nodes', { 'Cookie': cookie })
+    const html = await this.getCookieHtml('/my/nodes', cookie)
     if (!V2exSessionParser.extractUsername(html)) {
       throw new Error('Web 会话已失效，请重新登录')
     }
@@ -319,7 +329,7 @@ export class ApiService {
       throw new Error('请先登录')
     }
     const currentUsername = await this.getSessionUsernameWithCookie(cookie)
-    const html = await this.http.getTextWithHeaders('/blocked', { 'Cookie': cookie })
+    const html = await this.getCookieHtml('/blocked', cookie)
     if (html.indexOf('/signin') >= 0 && !V2exSessionParser.extractUsername(html)) {
       throw new Error('Web 会话已失效，请重新登录')
     }
@@ -331,7 +341,7 @@ export class ApiService {
       throw new Error('请先登录')
     }
     const currentUsername = await this.getSessionUsernameWithCookie(cookie)
-    const html = await this.http.getTextWithHeaders('/my/following', { 'Cookie': cookie })
+    const html = await this.getCookieHtml('/my/following', cookie)
     if (html.indexOf('/signin') >= 0 && !V2exSessionParser.extractUsername(html)) {
       throw new Error('Web 会话已失效，请重新登录')
     }
@@ -343,7 +353,7 @@ export class ApiService {
       throw new Error('请先登录')
     }
     await this.getSessionUsernameWithCookie(cookie)
-    const html = await this.http.getTextWithHeaders('/ignored', { 'Cookie': cookie })
+    const html = await this.getCookieHtml('/ignored', cookie)
     if (html.indexOf('/signin') >= 0 && !V2exSessionParser.extractUsername(html)) {
       throw new Error('Web 会话已失效，请重新登录')
     }
@@ -364,7 +374,7 @@ export class ApiService {
       throw new Error('无效主题 ID')
     }
     const topicPath = `/t/${topicId}`
-    const html = await this.http.getTextWithHeaders(topicPath, { 'Cookie': cookie })
+    const html = await this.getCookieHtml(topicPath, cookie)
     if (!V2exSessionParser.extractUsername(html)) {
       throw new Error('Web 会话已失效，请重新登录')
     }
@@ -390,7 +400,7 @@ export class ApiService {
     const topicPath = `/t/${topicId}`
     await this.requestTextWithCookieAllowRedirect(toggle.actionPath, cookie, topicPath)
 
-    const verifyHtml = await this.http.getTextWithHeaders(topicPath, { 'Cookie': cookie })
+    const verifyHtml = await this.getCookieHtml(topicPath, cookie)
     if (!V2exSessionParser.extractUsername(verifyHtml)) {
       throw new Error('Web 会话已失效，请重新登录')
     }
@@ -422,7 +432,7 @@ export class ApiService {
       throw new Error('无效节点')
     }
     const nodePath = `/go/${cleanName}`
-    const html = await this.http.getTextWithHeaders(nodePath, { 'Cookie': cookie })
+    const html = await this.getCookieHtml(nodePath, cookie)
     if (!V2exSessionParser.extractUsername(html)) {
       throw new Error('Web 会话已失效，请重新登录')
     }
@@ -448,7 +458,7 @@ export class ApiService {
     const nodePath = `/go/${cleanName}`
     await this.requestTextWithCookieAllowRedirect(toggle.actionPath, cookie, nodePath)
 
-    const verifyHtml = await this.http.getTextWithHeaders(nodePath, { 'Cookie': cookie })
+    const verifyHtml = await this.getCookieHtml(nodePath, cookie)
     if (!V2exSessionParser.extractUsername(verifyHtml)) {
       throw new Error('Web 会话已失效，请重新登录')
     }
@@ -500,7 +510,7 @@ export class ApiService {
       throw new Error('回复内容不能为空')
     }
     const topicPath = `/t/${topicId}`
-    const html = await this.http.getTextWithHeaders(topicPath, { 'Cookie': cookie })
+    const html = await this.getCookieHtml(topicPath, cookie)
     if (!V2exSessionParser.extractUsername(html)) {
       throw new Error('Web 会话已失效，请重新登录')
     }
@@ -540,7 +550,7 @@ export class ApiService {
       throw new Error('无效回复')
     }
     const topicPath = `/t/${topicId}`
-    const html = await this.http.getTextWithHeaders(topicPath, { 'Cookie': cookie })
+    const html = await this.getCookieHtml(topicPath, cookie)
     if (!V2exSessionParser.extractUsername(html)) {
       throw new Error('Web 会话已失效，请重新登录')
     }
@@ -578,7 +588,7 @@ export class ApiService {
       throw new Error('无效主题')
     }
     const topicPath = `/t/${topicId}`
-    const html = await this.http.getTextWithHeaders(topicPath, { 'Cookie': cookie })
+    const html = await this.getCookieHtml(topicPath, cookie)
     if (!V2exSessionParser.extractUsername(html)) {
       throw new Error('Web 会话已失效，请重新登录')
     }
@@ -716,6 +726,62 @@ export class ApiService {
     return ApiService.extractTopicId(res.text)
   }
 
+
+  private async getCookieHtml(path: string, cookie: string): Promise<string> {
+    const endpoint = this.cookieEndpoint(path)
+    const res = await this.http.getTextResponseWithHeaders(endpoint, { 'Cookie': cookie })
+    this.assertNoTwoFactorChallenge(endpoint, res.text, res.location)
+    return res.text
+  }
+
+  private cookieEndpoint(pathOrUrl: string): string {
+    const clean = (pathOrUrl || '').trim()
+    if (!clean) {
+      return '/'
+    }
+    const baseUrl = this.http.getBaseUrl().replace(/\/+$/, '')
+    if (clean.startsWith(baseUrl)) {
+      const endpoint = clean.slice(baseUrl.length)
+      return endpoint || '/'
+    }
+    if (clean.startsWith('http://') || clean.startsWith('https://')) {
+      const schemeIdx = clean.indexOf('://')
+      const pathStart = clean.indexOf('/', schemeIdx + 3)
+      return pathStart >= 0 ? clean.slice(pathStart) : '/'
+    }
+    return clean.startsWith('/') ? clean : `/${clean}`
+  }
+
+  private assertNoTwoFactorChallenge(path: string, text: string, location: string): void {
+    if (ApiService.isLocationPath(location, '/2fa') || V2exSigninParser.extractTwoFactorForm(text)) {
+      throw new V2exCookieTwoFactorRequiredError(path)
+    }
+  }
+
+  private static isLocationPath(location: string, path: string): boolean {
+    if (!location || !path) {
+      return false
+    }
+    const normalized = ApiService.locationPath(location)
+    return normalized === path || normalized.indexOf(`${path}?`) === 0
+  }
+
+  private static locationPath(location: string): string {
+    const trimmed = (location || '').trim()
+    if (!trimmed) {
+      return ''
+    }
+    const schemeIdx = trimmed.indexOf('://')
+    if (schemeIdx >= 0) {
+      const pathStart = trimmed.indexOf('/', schemeIdx + 3)
+      return pathStart >= 0 ? trimmed.slice(pathStart) : '/'
+    }
+    if (trimmed.indexOf('/') !== 0) {
+      return `/${trimmed}`
+    }
+    return trimmed
+  }
+
   private async requestTextWithCookieAllowRedirect(pathOrUrl: string, cookie: string, refererPath: string): Promise<void> {
     const clean = (pathOrUrl || '').trim()
     if (!clean) {
@@ -755,6 +821,10 @@ export class ApiService {
         expectDataType: http.HttpDataType.STRING
       })
       const statusCode = response.responseCode as number
+      const location = ApiService.extractHeaderValue(response.header, 'location')
+      if (ApiService.isLocationPath(location, '/2fa')) {
+        throw new V2exCookieTwoFactorRequiredError(clean)
+      }
       if (statusCode < 200 || statusCode >= 400) {
         throw new Error(`HTTP ${statusCode}: ${url}`)
       }
@@ -816,11 +886,12 @@ export class ApiService {
       }
       const response = await httpRequest.request(url, options)
       const statusCode = response.responseCode as number
+      const text = (response.result as string) || ''
+      const location = ApiService.extractHeaderValue(headerBag || response.header, 'location')
+      this.assertNoTwoFactorChallenge(clean, text, location)
       if (statusCode < 200 || statusCode >= 400) {
         throw new Error(`HTTP ${statusCode}: ${url}`)
       }
-      const text = (response.result as string) || ''
-      const location = ApiService.extractHeaderValue(headerBag || response.header, 'location')
       return { statusCode, text, location }
     } finally {
       httpRequest.destroy()
@@ -963,7 +1034,7 @@ export class ApiService {
       throw new Error('无效操作对象')
     }
     const topicPath = `/t/${topicId}`
-    const html = await this.http.getTextWithHeaders(topicPath, { 'Cookie': cookie })
+    const html = await this.getCookieHtml(topicPath, cookie)
     if (!V2exSessionParser.extractUsername(html)) {
       throw new Error('Web 会话已失效，请重新登录')
     }

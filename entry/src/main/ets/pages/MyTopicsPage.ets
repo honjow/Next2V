@@ -1,4 +1,5 @@
 import { promptAction } from '@kit.ArkUI'
+import { V2exTwoFactorPrompt } from '../components/V2exTwoFactorPrompt'
 import {
   ApiService,
   CookieJarSettings,
@@ -8,7 +9,8 @@ import {
   ThemeConstants,
   TopicCard,
   type TopicDetailParams,
-  type V2exTopic
+  type V2exTopic,
+  V2exCookieTwoFactorRequiredError
 } from 'shared'
 
 @Component
@@ -21,6 +23,8 @@ export struct MyTopicsPage {
   @State private isLoadingMore: boolean = false
   @State private page: number = 1
   @State private hasMore: boolean = true
+  @State private twoFactorVisible: boolean = false
+  @State private twoFactorCookie: string = ''
 
   private api: ApiService = new ApiService()
   private readonly PAGE_SIZE: number = 20
@@ -64,6 +68,26 @@ export struct MyTopicsPage {
     .width('100%')
     .height('100%')
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
+    .bindSheet($$this.twoFactorVisible, this.TwoFactorSheet(), {
+      height: SheetSize.MEDIUM,
+      preferType: SheetType.BOTTOM,
+      dragBar: false,
+      showClose: false,
+      maskColor: 'rgba(0,0,0,0.24)',
+      backgroundColor: $r('sys.color.ohos_id_color_card_bg'),
+      onDisappear: () => {
+        this.twoFactorVisible = false
+      }
+    })
+  }
+
+  @Builder private TwoFactorSheet() {
+    V2exTwoFactorPrompt({
+      visible: $twoFactorVisible,
+      cookie: this.twoFactorCookie,
+      message: '完成两步验证后即可继续访问 V2EX 账号内容。',
+      onSuccess: () => { this.refresh(true) }
+    })
   }
 
   @Builder private LoadingView() {
@@ -145,6 +169,10 @@ export struct MyTopicsPage {
         this.hasMore = topics.length >= this.PAGE_SIZE
       })
       .catch((error: Error) => {
+        if (error instanceof V2exCookieTwoFactorRequiredError) {
+          this.openTwoFactorFromCookie()
+          return
+        }
         this.errorMessage = error.message || '加载失败'
         this.topics = []
         this.hasMore = false
@@ -156,6 +184,17 @@ export struct MyTopicsPage {
         this.isLoading = false
         this.refreshGuard = false
       })
+  }
+
+  private openTwoFactorFromCookie(): void {
+    const cookie = CookieJarSettings.getCurrentCookie()
+    if (!cookie) {
+      this.errorMessage = 'V2EX 需要完成两步验证，请重新登录'
+      return
+    }
+    this.errorMessage = 'V2EX 需要完成两步验证'
+    this.twoFactorCookie = cookie
+    this.twoFactorVisible = true
   }
 
   private loadMore(): void {
@@ -179,6 +218,10 @@ export struct MyTopicsPage {
       })
       .catch((error: Error) => {
         this.hasMore = false
+        if (error instanceof V2exCookieTwoFactorRequiredError) {
+          this.openTwoFactorFromCookie()
+          return
+        }
         promptAction.openToast({ message: error.message || '加载更多失败' }).catch((_error: Error) => { })
       })
       .finally(() => {

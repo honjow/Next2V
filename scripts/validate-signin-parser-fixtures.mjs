@@ -144,6 +144,12 @@ function looksLikeTwoFactorForm(html) {
     text.includes('两步') || text.includes('二步') || text.includes('动态验证码') || text.includes('安全码')
 }
 
+function looksLikeTwoFactorFormByActionOrInputs(html) {
+  const actionPath = locationPath(extractFormAction(html))
+  if (actionPath === '/2fa' || actionPath.indexOf('/2fa?') === 0) return true
+  return findTwoFactorCodeField(extractInputs(html)) === 'code'
+}
+
 function extractFormAction(formHtml) {
   const formTag = formHtml.match(/<form\b[^>]*>/i)
   return formTag ? extractAttr(formTag[0], 'action') : ''
@@ -152,7 +158,7 @@ function extractFormAction(formHtml) {
 function findTwoFactorCodeField(inputs) {
   const candidates = inputs.filter(input => {
     const type = input.type.toLowerCase()
-    return input.name && (type === 'text' || type === 'tel' || type === 'number' || type === '')
+    return input.name && (type === 'text' || type === 'tel' || type === 'number' || type === 'password' || type === '')
   })
   const preferred = candidates.find(input => {
     const name = input.name.toLowerCase()
@@ -166,7 +172,9 @@ function findTwoFactorCodeField(inputs) {
 
 function extractTwoFactorForm(html) {
   const forms = extractForms(html)
-  const preferred = forms.find(form => looksLikeTwoFactorForm(form)) || (looksLikeTwoFactorForm(html) ? html : '')
+  const preferred = forms.find(form => looksLikeTwoFactorForm(form)) ||
+    forms.find(form => looksLikeTwoFactorFormByActionOrInputs(form)) ||
+    (looksLikeTwoFactorForm(html) || looksLikeTwoFactorFormByActionOrInputs(html) ? html : '')
   if (!preferred) return null
   const inputs = extractInputs(preferred)
   const codeField = findTwoFactorCodeField(inputs)
@@ -178,6 +186,41 @@ function extractTwoFactorForm(html) {
   })
     .forEach(input => { hiddenFields[input.name] = input.value })
   return { action: extractFormAction(preferred), codeField, hiddenFields }
+}
+
+function locationPath(location) {
+  const trimmed = (location || '').trim()
+  if (!trimmed) return ''
+  const schemeIdx = trimmed.indexOf('://')
+  if (schemeIdx >= 0) {
+    const pathStart = trimmed.indexOf('/', schemeIdx + 3)
+    return pathStart >= 0 ? trimmed.slice(pathStart) : '/'
+  }
+  return trimmed.indexOf('/') === 0 ? trimmed : `/${trimmed}`
+}
+
+function isLocationPath(location, path) {
+  if (!location || !path) return false
+  const normalized = locationPath(location)
+  return normalized === path || normalized.indexOf(`${path}?`) === 0
+}
+
+function memberNameFromHref(href) {
+  const m = (href || '').match(/^\/member\/([0-9A-Za-z_]+)(?:[?#].*)?$/)
+  return m && m[1] ? m[1] : ''
+}
+
+function hasClass(className, expected) {
+  return (className || '').split(/\s+/).some(part => part === expected)
+}
+
+function extractSessionUsername(html) {
+  const links = html.match(/<a\b[^>]*>/gi) || []
+  for (const link of links) {
+    const member = memberNameFromHref(extractAttr(link, 'href'))
+    if (member && hasClass(extractAttr(link, 'class'), 'top')) return member
+  }
+  return ''
 }
 
 const signinChineseCaptcha = `
@@ -250,18 +293,111 @@ assert.deepEqual(extractTwoFactorForm(actionlessTwoFactorFixture), {
   hiddenFields: { once: '[REDACTED_ONCE]' }
 })
 
+const passwordTwoFactorFixture = `
+<form action="/2fa" method="post">
+  <div>Two-factor authentication code</div>
+  <input type="hidden" name="once" value="[REDACTED_ONCE]">
+  <input type="password" name="code" autocomplete="one-time-code">
+</form>`
+assert.deepEqual(extractTwoFactorForm(passwordTwoFactorFixture), {
+  action: '/2fa',
+  codeField: 'code',
+  hiddenFields: { once: '[REDACTED_ONCE]' }
+})
+
+const actionOnlyTwoFactorFixture = `
+<form action="/2fa" method="post">
+  <input type="hidden" name="once" value="[REDACTED_ONCE]">
+  <input type="password" name="code" autocomplete="one-time-code">
+</form>`
+assert.deepEqual(extractTwoFactorForm(actionOnlyTwoFactorFixture), {
+  action: '/2fa',
+  codeField: 'code',
+  hiddenFields: { once: '[REDACTED_ONCE]' }
+})
+
+const bareCodeTwoFactorFixture = `
+<form method="post">
+  <input type="hidden" name="once" value="[REDACTED_ONCE]">
+  <input type="password" name="code">
+</form>`
+assert.deepEqual(extractTwoFactorForm(bareCodeTwoFactorFixture), {
+  action: '',
+  codeField: 'code',
+  hiddenFields: { once: '[REDACTED_ONCE]' }
+})
+
+assert.equal(
+  extractSessionUsername('<a class="top active" data-redacted="1" href="/member/live_user">live_user</a>'),
+  'live_user'
+)
+assert.equal(
+  extractSessionUsername('<a href="/member/live_user?from=settings" rel="me" class="top">live_user</a>'),
+  'live_user'
+)
+
 const source = fs.readFileSync('shared/src/main/ets/parser/V2exSigninParser.ets', 'utf8')
 assert.match(source, /context\.indexOf\('验证码'\)/)
 assert.match(source, /placeholder\.indexOf\('验证码'\)/)
 assert.match(source, /placeholder\.indexOf\('code'\)/)
 assert.match(source, /src\.indexOf\('captcha'\)/)
 assert.match(source, /private static inputContext/)
+assert.match(source, /looksLikeTwoFactorFormByActionOrInputs/)
+assert.match(source, /actionPath === '\/2fa'/)
+assert.match(source, /findTwoFactorCodeField\(inputs\) === 'code'/)
 const service = fs.readFileSync('shared/src/main/ets/network/V2exNativeAuthService.ets', 'utf8')
 assert.match(service, /twoFactorChallengeFromHtml/)
+assert.match(service, /private static readonly TWO_FACTOR_PATH: string = '\/2fa'/)
+assert.match(service, /isLocationPath\(postRes\.location, V2exNativeAuthService\.TWO_FACTOR_PATH\)/)
+assert.match(service, /fixedTwoFactorChallenge\(cookieAfterPost/)
+assert.match(service, /twoFactorFormPairs\(challenge, cleanCode\)/)
+assert.match(service, /pairs\.push\(\{ key: challenge\.codeField \|\| 'code', value: cleanCode \}\)/)
+assert.match(service, /action: twoFactor\.action \|\| V2exNativeAuthService\.TWO_FACTOR_PATH/)
+assert.match(service, /codeField: twoFactor\.codeField/)
+assert.match(service, /challenge\.action \|\| V2exNativeAuthService\.TWO_FACTOR_PATH/)
+assert.match(service, /requestText\(`\$\{baseUrl\}\$\{V2exNativeAuthService\.SETTINGS_PATH\}`/)
+assert.match(service, /receivedSetCookieLines\.push\(\.\.\.V2exNativeAuthService\.extractSetCookieHeader\(headers\)\)/)
+assert.match(service, /uniqueCookieLines\(receivedSetCookieLines\.concat\(finalSetCookie\)\)/)
+assert.match(service, /V2exNativeAuthService\.extractSingleHeader\(headers, 'location'\) \|\| receivedLocation/)
+assert.doesNotMatch(service, /getTextWithHeaders\('\/settings'/, 'native login must verify private proof through auth request path before saving')
 assert.match(service, /path\.indexOf\('\/'\) !== 0/)
 assert.doesNotMatch(service, /challenge\.action\s*\|\|\s*['"]\/signin['"]/, '2FA completion must not guess /signin')
 assert.doesNotMatch(source, /extractFormAction\(preferred\)\s*\|\|\s*['"]\/signin['"]/, 'parser must not guess /signin for actionless 2FA forms')
+const apiService = fs.readFileSync('shared/src/main/ets/network/ApiService.ets', 'utf8')
+assert.match(apiService, /export class V2exCookieTwoFactorRequiredError extends Error/)
+assert.match(apiService, /getTextResponseWithHeaders\(endpoint, \{ 'Cookie': cookie \}\)/)
+assert.match(apiService, /assertNoTwoFactorChallenge\(endpoint, res\.text, res\.location\)/)
+assert.match(apiService, /isLocationPath\(location, '\/2fa'\) \|\| V2exSigninParser\.extractTwoFactorForm\(text\)/)
+assert.match(apiService, /throw new V2exCookieTwoFactorRequiredError\(path\)/)
+assert.ok(isLocationPath('/2fa', '/2fa'), 'relative /2fa redirect must be treated as typed 2FA')
+assert.ok(isLocationPath('2fa?once=[REDACTED]', '/2fa'), 'bare relative 2fa redirect must be treated as typed 2FA')
+assert.ok(isLocationPath('https://www.v2ex.com/2fa?next=%2Fsettings', '/2fa'), 'absolute /2fa redirect must be treated as typed 2FA')
+const requestHtmlStart = apiService.indexOf('private async requestHtmlWithCookieAllowRedirect')
+const requestHtmlAssert = apiService.indexOf('this.assertNoTwoFactorChallenge(clean, text, location)', requestHtmlStart)
+const requestHtmlHttpThrow = apiService.indexOf('throw new Error(`HTTP ${statusCode}: ${url}`)', requestHtmlStart)
+assert.ok(requestHtmlStart >= 0 && requestHtmlAssert >= 0 && requestHtmlHttpThrow >= 0)
+assert.ok(
+  requestHtmlAssert < requestHtmlHttpThrow,
+  'cookie/private HTML helper must detect /2fa before generic HTTP status failure'
+)
+const httpClient = fs.readFileSync('shared/src/main/ets/network/HttpClient.ets', 'utf8')
+assert.match(httpClient, /export interface TextResponseWithHeaders/)
+assert.match(httpClient, /getTextResponseWithHeaders/)
+assert.match(httpClient, /const location = HttpClient\.extractSingleHeader\(received, 'location'\)/)
+assert.match(httpClient, /HttpClient\.extractSingleHeader\(responseHeaders, 'location'\) \|\| receivedLocation/)
+assert.match(httpClient, /statusCode >= 300 && statusCode < 400[\s\S]*return \{ statusCode, text: \(response\.result as string\) \|\| '', location \}/)
+const sessionParser = fs.readFileSync('shared/src/main/ets/parser/V2exSessionParser.ets', 'utf8')
+assert.match(sessionParser, /const links = html\.match\(\/<a\\b\[\^>\]\*>\/gi\) \|\| \[\]/)
+assert.match(sessionParser, /hasClass\(className, 'top'\)/)
+const webPage = fs.readFileSync('entry/src/main/ets/pages/V2exWebLoginPage.ets', 'utf8')
+assert.match(webPage, /private autoSaveTimerId: number = 0/)
+assert.match(webPage, /this\.cancelAutoSave\(\)/)
+assert.match(webPage, /private isCurrentSaveRequest\(requestId: number\): boolean \{\s*return this\.isPageActive && requestId === this\.saveRequestId\s*\}/s)
 const page = fs.readFileSync('entry/src/main/ets/pages/V2exNativeLoginPage.ets', 'utf8')
+assert.doesNotMatch(page, /@Prop twoFactorCookie: string = ''/)
+assert.doesNotMatch(page, /@State private twoFactorCode: string = ''/)
+assert.doesNotMatch(page, /private twoFactorChallenge:/)
+assert.doesNotMatch(page, /private completeTwoFactor\(\): void/)
 assert.match(page, /aboutToAppear\(\): void \{\s*this\.isPageActive = true\s*this\.clearSecretState\(\)\s*this\.loadChallenge\(\)\s*\}/s)
 assert.match(page, /aboutToDisappear\(\): void \{\s*this\.isPageActive = false\s*this\.clearSecretState\(\)\s*\}/s)
 assert.match(page, /private clearSecretState\(\): void/)
@@ -272,8 +408,22 @@ assert.match(page, /this\.challengeRequestId\+\+/)
 assert.match(page, /requestId !== this\.challengeRequestId/)
 assert.match(page, /private isCurrentAuthRequest\(requestId: number\): boolean \{\s*return this\.isPageActive && requestId === this\.authRequestId\s*\}/s)
 assert.match(page, /const requestId = \+\+this\.authRequestId[\s\S]*this\.auth\.loginWithChallenge\(challenge, cleanUsername, pwd, captchaCode\)[\s\S]*if \(!this\.isCurrentAuthRequest\(requestId\)\)/)
-assert.match(page, /const requestId = \+\+this\.authRequestId[\s\S]*this\.auth\.completeTwoFactor\(twoFactorChallenge, twoFactorCode\)[\s\S]*if \(!this\.isCurrentAuthRequest\(requestId\)\)/)
+assert.match(page, /error instanceof NativeTwoFactorRequiredError[\s\S]*finishLogin\(context, baseUrl, \{ cookie: error\.challenge\.cookie, username: cleanUsername \}, requestId\)/)
 assert.match(page, /finishLogin\([\s\S]*requestId: number[\s\S]*if \(!this\.isCurrentAuthRequest\(requestId\)\)/)
+const prompt = fs.readFileSync('entry/src/main/ets/components/V2exTwoFactorPrompt.ets', 'utf8')
+assert.match(prompt, /export struct V2exTwoFactorPrompt/)
+assert.match(prompt, /this\.auth\.completeTwoFactorWithCookie\(cleanCookie, cleanCode\)/)
+assert.match(prompt, /CookieJarSettings\.saveForBaseUrl\(context, baseUrl, snapshot\.cookie\)/)
+const accountPage = fs.readFileSync('entry/src/main/ets/pages/AccountPage.ets', 'utf8')
+assert.match(accountPage, /V2exTwoFactorPrompt/)
+assert.match(accountPage, /\.bindSheet\(\$\$this\.twoFactorVisible, this\.TwoFactorSheet\(\)/)
+assert.doesNotMatch(accountPage, /V2exNativeLoginParams/)
+assert.doesNotMatch(accountPage, /pushPathByName\('V2exNativeLogin', params as Object\)/)
+const myTopicsPage = fs.readFileSync('entry/src/main/ets/pages/MyTopicsPage.ets', 'utf8')
+assert.match(myTopicsPage, /V2exTwoFactorPrompt/)
+assert.match(myTopicsPage, /\.bindSheet\(\$\$this\.twoFactorVisible, this\.TwoFactorSheet\(\)/)
+assert.doesNotMatch(myTopicsPage, /V2exNativeLoginParams/)
+assert.doesNotMatch(myTopicsPage, /pushPathByName\('V2exNativeLogin', params as Object\)/)
 const button = fs.readFileSync('shared/src/main/ets/components/AppActionButton.ets', 'utf8')
 assert.ok(!button.includes('.layoutWeight(1)'), 'AppActionButton must not flex-grow by default')
 

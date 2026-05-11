@@ -14,7 +14,7 @@ import {
   ThemeConstants,
   V2exNativeAuthService
 } from 'shared'
-import type { NativeLoginChallenge, NativeLoginSnapshot, NativeTwoFactorChallenge } from 'shared'
+import type { NativeLoginChallenge, NativeLoginSnapshot } from 'shared'
 
 @Component
 export struct V2exNativeLoginPage {
@@ -25,13 +25,11 @@ export struct V2exNativeLoginPage {
   @State private captchaCode: string = ''
   @State private captchaField: string = ''
   @State private captchaUrl: string = ''
-  @State private twoFactorCode: string = ''
   @State private errorMessage: string = ''
   @State private isLoading: boolean = false
   @State private isChallengeLoading: boolean = false
 
   private challenge: NativeLoginChallenge | null = null
-  private twoFactorChallenge: NativeTwoFactorChallenge | null = null
   private auth: V2exNativeAuthService = new V2exNativeAuthService()
   private api: ApiService = new ApiService()
   private http: HttpClient = HttpClient.getInstance()
@@ -116,25 +114,6 @@ export struct V2exNativeLoginPage {
           .width('100%')
       }
 
-      if (this.twoFactorChallenge) {
-        Text('请输入当前一次性验证码；如果验证码已过期，可以重新开始登录。')
-          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-          .fontColor($r('sys.color.font_secondary'))
-          .width('100%')
-        AppTextField({
-          text: $twoFactorCode,
-          placeholder: '两步验证码',
-          onTextChange: (value: string) => { this.twoFactorCode = value }
-        })
-          .width('100%')
-        AppActionButton({
-          label: '重新开始登录',
-          primary: false,
-          isEnabled: !this.isLoading && !this.isChallengeLoading,
-          action: () => { this.restartLoginChallenge() }
-        })
-      }
-
       if (this.errorMessage) {
         Text(this.errorMessage)
           .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
@@ -159,10 +138,7 @@ export struct V2exNativeLoginPage {
       return '准备中…'
     }
     if (this.isLoading) {
-      return this.twoFactorChallenge ? '验证中…' : '登录中…'
-    }
-    if (this.twoFactorChallenge) {
-      return '完成两步验证'
+      return '登录中…'
     }
     return '登录'
   }
@@ -172,8 +148,6 @@ export struct V2exNativeLoginPage {
     this.isChallengeLoading = true
     this.errorMessage = message
     this.captchaCode = ''
-    this.twoFactorCode = ''
-    this.twoFactorChallenge = null
     this.challenge = null
     this.captchaField = ''
     this.captchaUrl = ''
@@ -221,11 +195,9 @@ export struct V2exNativeLoginPage {
     this.captchaCode = ''
     this.captchaField = ''
     this.captchaUrl = ''
-    this.twoFactorCode = ''
     this.isLoading = false
     this.isChallengeLoading = false
     this.challenge = null
-    this.twoFactorChallenge = null
   }
 
   private isCurrentAuthRequest(requestId: number): boolean {
@@ -233,10 +205,6 @@ export struct V2exNativeLoginPage {
   }
 
   private login(): void {
-    if (this.twoFactorChallenge) {
-      this.completeTwoFactor()
-      return
-    }
     const cleanUsername = this.username.trim()
     const pwd = this.password
     if (!cleanUsername || !pwd) {
@@ -269,18 +237,16 @@ export struct V2exNativeLoginPage {
       })
       .catch((error: Error) => {
         if (!this.isCurrentAuthRequest(requestId)) {
-          return
+          return Promise.resolve()
         }
         if (error instanceof NativeTwoFactorRequiredError) {
-          this.twoFactorChallenge = error.challenge
-          this.twoFactorCode = ''
-          this.errorMessage = '请输入两步验证码'
-          return
+          return this.finishLogin(context, baseUrl, { cookie: error.challenge.cookie, username: cleanUsername }, requestId)
         }
         this.errorMessage = error.message || '登录失败'
         if (this.captchaField) {
           this.loadChallenge(this.errorMessage)
         }
+        return Promise.resolve()
       })
       .finally(() => {
         if (!this.isCurrentAuthRequest(requestId)) {
@@ -290,82 +256,66 @@ export struct V2exNativeLoginPage {
       })
   }
 
-  private completeTwoFactor(): void {
-    if (!this.twoFactorChallenge) {
-      return
-    }
-    const requestId = ++this.authRequestId
-    const twoFactorChallenge = this.twoFactorChallenge
-    const twoFactorCode = this.twoFactorCode
-    this.isLoading = true
-    this.errorMessage = ''
 
-    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    const baseUrl = this.http.getBaseUrl()
-    this.auth.completeTwoFactor(twoFactorChallenge, twoFactorCode)
-      .then((snapshot: NativeLoginSnapshot) => {
-        if (!this.isCurrentAuthRequest(requestId)) {
-          return
-        }
-        return this.finishLogin(context, baseUrl, snapshot, requestId)
-      })
-      .catch((error: Error) => {
-        if (!this.isCurrentAuthRequest(requestId)) {
-          return
-        }
-        if (error instanceof NativeTwoFactorRequiredError) {
-          this.twoFactorChallenge = error.challenge
-        }
-        this.twoFactorCode = ''
-        this.errorMessage = error.message || '两步验证失败'
-      })
-      .finally(() => {
-        if (!this.isCurrentAuthRequest(requestId)) {
-          return
-        }
-        this.isLoading = false
-      })
-  }
-
-  private finishLogin(
+  private async finishLogin(
     context: common.UIAbilityContext,
     baseUrl: string,
     snapshot: NativeLoginSnapshot,
     requestId: number
   ): Promise<void> {
     if (!this.isCurrentAuthRequest(requestId)) {
-      return Promise.resolve()
+      return
     }
-    return CookieJarSettings.saveForBaseUrl(context, baseUrl, snapshot.cookie)
-      .then(() => {
-        if (!this.isCurrentAuthRequest(requestId)) {
-          return Promise.resolve()
-        }
-        return this.api.getMember(snapshot.username)
-          .then((profile) => {
-            if (!this.isCurrentAuthRequest(requestId)) {
-              return Promise.resolve()
-            }
-            return AuthSessionSettings.save(context, {
-              loginMode: 'cookie',
-              username: snapshot.username,
-              avatar: profile.avatar_normal || '',
-              validatedAt: Date.now()
-            })
-          })
+
+    let avatar = ''
+    try {
+      const profile = await this.api.getMember(snapshot.username)
+      avatar = profile.avatar_normal || profile.avatar_large || profile.avatar_mini || ''
+    } catch (_error) {
+      avatar = ''
+    }
+    if (!this.isCurrentAuthRequest(requestId)) {
+      return
+    }
+
+    try {
+      await CookieJarSettings.saveForBaseUrl(context, baseUrl, snapshot.cookie)
+      await AuthSessionSettings.save(context, {
+        loginMode: 'cookie',
+        username: snapshot.username,
+        avatar,
+        validatedAt: Date.now()
       })
-      .then(() => {
-        if (!this.isCurrentAuthRequest(requestId)) {
-          return
-        }
-        this.password = ''
-        this.twoFactorCode = ''
-        this.twoFactorChallenge = null
-        promptAction.openToast({ message: '登录成功' }).catch((error: Error) => {
-          console.error('openToast failed: ' + error.message)
-        })
-        this.stack.pop()
+    } catch (error) {
+      await this.clearPersistedLogin(context)
+      const caught = error as Error
+      throw caught
+    }
+
+    if (!this.isCurrentAuthRequest(requestId)) {
+      return
+    }
+    this.password = ''
+    promptAction.openToast({ message: '登录成功' }).catch((error: Error) => {
+      console.error('openToast failed: ' + error.message)
+    })
+    try {
+      this.stack.pop()
+    } catch (error) {
+      const caught = error as Error
+      console.error('pop login page failed: ' + caught.message)
+    }
+  }
+
+  private async clearPersistedLogin(context: common.UIAbilityContext): Promise<void> {
+    await Promise.all([
+      CookieJarSettings.clear(context).catch((clearError: Error) => {
+        console.error('clear cookie after login persist failure: ' + clearError.message)
+      }),
+      AuthSessionSettings.clear(context).catch((clearError: Error) => {
+        console.error('clear auth session after login persist failure: ' + clearError.message)
       })
+    ])
   }
 
   private shouldShowCaptchaField(): boolean {
