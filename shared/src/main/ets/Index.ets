@@ -24,7 +24,8 @@ export type {
   V2exReplyModerationAction,
   V2exReplyThankAction,
   V2exTopicModerationAction,
-  V2exTopicThankAction
+  V2exTopicThankAction,
+  V2exTopicWebRepliesPage
 } from './network/ApiService'
 export { ApiV2Service } from './network/ApiV2Service'
 export { Sov2exService } from './network/Sov2exService'

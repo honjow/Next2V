@@ -70,12 +70,20 @@ export class ApiV2Service {
     return res
   }
 
-  async getTopicReplies(token: string, topicId: number, page: number = 1): Promise<ApiV2Response<V2exReply[]>> {
+  async getTopicReplies(
+    token: string,
+    topicId: number,
+    page: number = 1,
+    cacheBuster: number = 0
+  ): Promise<ApiV2Response<V2exReply[]>> {
     if (topicId <= 0) {
       throw new Error('无效的主题 ID')
     }
     const cleanPage = page > 0 ? page : 1
-    const res = await this.get<Object>(`${ApiConstants.API_V2_TOPIC}/${topicId}/replies?p=${cleanPage}`, token)
+    const endpoint = cacheBuster > 0
+      ? `${ApiConstants.API_V2_TOPIC}/${topicId}/replies?p=${cleanPage}&_=${cacheBuster}`
+      : `${ApiConstants.API_V2_TOPIC}/${topicId}/replies?p=${cleanPage}`
+    const res = await this.get<Object>(endpoint, token)
     const replies = ApiV2Service.normalizeReplies(ApiV2Service.unwrapList<V2exReply>(res.data))
     return { data: replies, headers: res.headers, rateLimit: res.rateLimit, statusCode: res.statusCode }
   }

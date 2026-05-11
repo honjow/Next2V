@@ -13,17 +13,25 @@ export struct PullRefresh {
   @BuilderParam content: () => void
   scroller: Scroller = new Scroller()
   onRefresh: () => Promise<void> = async () => {}
+  onBottomRefresh: () => Promise<void> = async () => {}
+  canStartBottomRefresh: () => boolean = () => false
   onScrollEnableChange: (enabled: boolean) => void = (_) => {}
   @Prop indicatorTop: number = 0
   @Prop threshold: number = 80
+  @Prop bottomIndicatorBottom: number = ThemeConstants.SPACE_XL
 
   @State pullOffset: number = 0
+  @State bottomPullOffset: number = 0
   @State refreshState: number = 0
+  @State bottomRefreshState: number = 0
+  @State containerHeight: number = 0
   private hapticFired: boolean = false
   private touchStartX: number = 0
   private touchStartY: number = 0
   private touchStartPullOffset: number = 0
+  private touchStartBottomPullOffset: number = 0
   private isTracking: boolean = false
+  private isBottomTracking: boolean = false
   private isHorizontalGesture: boolean = false
 
   private isListAtTop(): boolean {
@@ -43,6 +51,19 @@ export struct PullRefresh {
     }
   }
 
+  private bounceBottomBack(target: number = 0): void {
+    this.onScrollEnableChange(true)
+    this.getUIContext().animateTo({ duration: ThemeConstants.ANIM_DURATION, curve: Curve.EaseOut }, () => {
+      this.bottomPullOffset = target
+    })
+    if (target === 0) {
+      setTimeout(() => {
+        this.bottomRefreshState = 0
+        this.hapticFired = false
+      }, ThemeConstants.ANIM_STATE_RESET_MS)
+    }
+  }
+
   private onPullEnd(): void {
     if (this.pullOffset >= this.threshold && this.refreshState !== 2) {
       this.onScrollEnableChange(true)
@@ -56,10 +77,29 @@ export struct PullRefresh {
     }
   }
 
+  private onBottomPullEnd(): void {
+    if (this.bottomPullOffset >= this.threshold && this.bottomRefreshState !== 2) {
+      this.onScrollEnableChange(true)
+      this.getUIContext().animateTo({ duration: ThemeConstants.ANIM_DURATION, curve: Curve.EaseOut }, () => {
+        this.bottomPullOffset = ThemeConstants.TITLE_BAR_HEIGHT
+      })
+      this.bottomRefreshState = 2
+      this.doBottomRefresh()
+    } else if (this.bottomPullOffset > 0) {
+      this.bounceBottomBack(0)
+    }
+  }
+
   private async doRefresh(): Promise<void> {
     await this.onRefresh()
     this.refreshState = 3
     setTimeout(() => this.bounceBack(0), ThemeConstants.ANIM_DONE_DELAY_MS)
+  }
+
+  private async doBottomRefresh(): Promise<void> {
+    await this.onBottomRefresh()
+    this.bottomRefreshState = 3
+    setTimeout(() => this.bounceBottomBack(0), ThemeConstants.ANIM_DONE_DELAY_MS)
   }
 
   private triggerHaptic(): void {
@@ -85,7 +125,38 @@ export struct PullRefresh {
 
   private resetTouchState(): void {
     this.isTracking = false
+    this.isBottomTracking = false
     this.isHorizontalGesture = false
+  }
+
+  private areaLength(value: Length | undefined): number {
+    if (typeof value === 'number') {
+      return value
+    }
+    if (typeof value === 'string') {
+      const parsed = Number.parseFloat(value)
+      return Number.isNaN(parsed) ? 0 : parsed
+    }
+    return 0
+  }
+
+  private bottomText(): string {
+    if (this.bottomRefreshState === 2 || this.bottomRefreshState === 3) {
+      return '刷新中…'
+    }
+    if (this.bottomRefreshState === 1) {
+      return '松开刷新'
+    }
+    return '上拉刷新'
+  }
+
+  private bottomIndicatorY(): number {
+    return Math.max(0,
+      this.containerHeight
+      - this.bottomIndicatorBottom
+      - this.bottomPullOffset / 2
+      - ThemeConstants.TITLE_BAR_HEIGHT / 2
+      + ThemeConstants.SPACE_SM)
   }
 
   build() {
@@ -93,14 +164,15 @@ export struct PullRefresh {
       Column() {
         this.content()
       }
-      .offset({ y: this.pullOffset })
+      .offset({ y: this.pullOffset - this.bottomPullOffset })
       .onTouch((event: TouchEvent) => {
-        if (this.refreshState >= 2) return
+        if (this.refreshState >= 2 || this.bottomRefreshState >= 2) return
 
         if (event.type === TouchType.Down) {
           this.touchStartX = event.touches[0].x
           this.touchStartY = event.touches[0].y
           this.touchStartPullOffset = this.pullOffset
+          this.touchStartBottomPullOffset = this.bottomPullOffset
           this.resetTouchState()
           return
         }
@@ -111,7 +183,7 @@ export struct PullRefresh {
           if (this.isHorizontalGesture) {
             return
           }
-          if (!this.isTracking) {
+          if (!this.isTracking && !this.isBottomTracking) {
             if (Math.abs(deltaX) > DIRECTION_LOCK_VP && Math.abs(deltaX) > Math.abs(deltaY)) {
               this.isHorizontalGesture = true
               return
@@ -119,16 +191,29 @@ export struct PullRefresh {
             if (deltaY > PULL_START_DRAG_VP && this.isListAtTop()) {
               this.isTracking = true
               this.onScrollEnableChange(false)
+            } else if (deltaY < -PULL_START_DRAG_VP && this.canStartBottomRefresh()) {
+              this.isBottomTracking = true
+              this.onScrollEnableChange(false)
             } else {
               return
             }
           }
-          this.pullOffset = Math.max(0, this.touchStartPullOffset + deltaY * PULL_RESISTANCE_FACTOR)
-          if (this.pullOffset >= this.threshold) {
-            this.refreshState = 1
-            this.triggerHaptic()
-          } else {
-            this.refreshState = 0
+          if (this.isTracking) {
+            this.pullOffset = Math.max(0, this.touchStartPullOffset + deltaY * PULL_RESISTANCE_FACTOR)
+            if (this.pullOffset >= this.threshold) {
+              this.refreshState = 1
+              this.triggerHaptic()
+            } else {
+              this.refreshState = 0
+            }
+          } else if (this.isBottomTracking) {
+            this.bottomPullOffset = Math.max(0, this.touchStartBottomPullOffset - deltaY * PULL_RESISTANCE_FACTOR)
+            if (this.bottomPullOffset >= this.threshold) {
+              this.bottomRefreshState = 1
+              this.triggerHaptic()
+            } else {
+              this.bottomRefreshState = 0
+            }
           }
         }
 
@@ -136,6 +221,12 @@ export struct PullRefresh {
           if (this.isTracking) {
             if (this.pullOffset > 0) {
               this.onPullEnd()
+            } else {
+              this.onScrollEnableChange(true)
+            }
+          } else if (this.isBottomTracking) {
+            if (this.bottomPullOffset > 0) {
+              this.onBottomPullEnd()
             } else {
               this.onScrollEnableChange(true)
             }
@@ -155,8 +246,30 @@ export struct PullRefresh {
       }
       .position({ y: this.indicatorTop + this.pullOffset / 2 })
       .hitTestBehavior(HitTestMode.None)
+
+      if (this.bottomPullOffset > 0 || this.bottomRefreshState > 0) {
+        Row({ space: ThemeConstants.SPACE_SM }) {
+          if (this.bottomRefreshState >= 2) {
+            LoadingProgress()
+              .width(ThemeConstants.LOADING_SIZE_SMALL)
+              .height(ThemeConstants.LOADING_SIZE_SMALL)
+              .color($r('sys.color.font_secondary'))
+          }
+          Text(this.bottomText())
+            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+            .fontColor($r('sys.color.font_secondary'))
+        }
+        .width('100%')
+        .height(ThemeConstants.TITLE_BAR_HEIGHT)
+        .justifyContent(FlexAlign.Center)
+        .position({ y: this.bottomIndicatorY() })
+        .hitTestBehavior(HitTestMode.None)
+      }
     }
     .width('100%').height('100%')
     .clip(false)
+    .onAreaChange((_oldValue: Area, newValue: Area) => {
+      this.containerHeight = this.areaLength(newValue.height)
+    })
   }
 }

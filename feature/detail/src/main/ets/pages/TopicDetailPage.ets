@@ -48,6 +48,7 @@ export struct TopicDetailPage {
   @StorageProp(StorageKeys.BOTTOM_AVOID_HEIGHT) bottomH: number = 0
   private scroller: Scroller = new Scroller()
   @State listScrollEnabled: boolean = true
+  @State private isReplyListAtEnd: boolean = false
   @State private visualMotionHandEdge: string = 'center'
   @State private floatingReplyAreaWidth: number = 0
   @State isSavedLater: boolean = false
@@ -317,12 +318,14 @@ export struct TopicDetailPage {
       scrollEnabled: this.listScrollEnabled,
       onRefresh: async () => { await this.v.load() },
       onScrollEnableChange: (enabled: boolean) => { this.listScrollEnabled = enabled },
-      onScrollIndex: (_start: number, _end: number, center: number) => { this.updateReadFloor(center) },
+      onScrollIndex: (_start: number, end: number, center: number) => { this.handleReplyListScrollIndex(end, center) },
       onDidScroll: (offset: number, _state: ScrollState) => {
         this.currentScrollOffset = Math.max(0, offset)
         this.evaluateAppbarIdentityVisibility()
       },
-      onReachEnd: () => { this.loadMoreReplies() },
+      onReachEnd: () => { this.handleReplyListReachEnd() },
+      canStartBottomRefresh: () => { return this.canTriggerBottomRefresh() },
+      onBottomRefresh: async () => { await this.refreshLastRepliesPage() },
       bottomPadding: this.topicDetailBottomPadding()
     }) {
         ListItem() {
@@ -361,9 +364,14 @@ export struct TopicDetailPage {
           }
         }, (reply: V2exReply) => reply.id.toString())
 
-        if (this.v.repliesUseV2) {
+        if (this.v.shouldShowRepliesFooter()) {
           ListItem() {
-            LoadingFooter({ isLoading: this.v.isRepliesLoadingMore, hasMore: this.v.repliesHasMore })
+            LoadingFooter({
+              isLoading: this.v.isRepliesLoadingMore,
+              hasMore: this.v.repliesHasMore,
+              isError: this.v.repliesLoadMoreState === 'loadMoreError',
+              onRetry: () => { this.retryLoadMoreReplies() }
+            })
           }
         }
     }
@@ -938,10 +946,47 @@ export struct TopicDetailPage {
   }
 
   private loadMoreReplies(): void {
-    if (this.v.repliesUseV2) {
-      this.v.loadMoreRepliesV2()
+    this.v.loadMoreReplies()
+  }
+
+  private retryLoadMoreReplies(): void {
+    this.v.retryLoadMoreReplies()
+  }
+
+  private refreshLastRepliesPage(): Promise<void> {
+    return this.v.refreshLastRepliesPage()
+      .then(() => { })
+      .catch((error: Error) => {
+        promptAction.openToast({ message: error.message || '刷新失败' }).catch((_toastError: Error) => { })
+      })
+  }
+
+  private canTriggerBottomRefresh(): boolean {
+    return this.isReplyListAtEnd && this.v.canBottomRefresh()
+  }
+
+  private handleReplyListReachEnd(): void {
+    this.isReplyListAtEnd = true
+    this.loadMoreReplies()
+  }
+
+  private handleReplyListScrollIndex(end: number, center: number): void {
+    this.updateReadFloor(center)
+    const lastReplyIndex = this.lastReplyListIndex()
+    this.isReplyListAtEnd = lastReplyIndex > 0 && end >= lastReplyIndex
+    if (lastReplyIndex > 0 && end >= lastReplyIndex - 3) {
+      this.loadMoreReplies()
     }
   }
+
+  private lastReplyListIndex(): number {
+    const count = this.v.replyDataSource.totalCount()
+    if (count <= 0) {
+      return 0
+    }
+    return 2 + count
+  }
+
 
   private replyCountText(): string {
     if (this.v.repliesUseV2 && this.v.topic !== null && this.v.topic!.replies > 0) {
@@ -1092,7 +1137,7 @@ export struct TopicDetailPage {
     let guard = 0
     while (this.v.replyDataSource.totalCount() < targetFloor && this.v.repliesHasMore && guard < 20) {
       guard++
-      await this.v.loadMoreRepliesV2()
+      await this.v.loadMoreReplies()
     }
   }
 

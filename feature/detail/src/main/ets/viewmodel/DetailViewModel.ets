@@ -1,4 +1,5 @@
 import { V2exTopic, V2exReply, ApiService, ApiV2Service, TopicDetailCache, HtmlEntityUtils } from 'shared'
+import type { V2exTopicWebRepliesPage } from 'shared'
 import { ReplyDataSource } from '../model/DetailModels'
 
 /**
@@ -15,6 +16,9 @@ export class DetailViewModel {
   repliesHasMore: boolean = false
   isRepliesLoadingMore: boolean = false
   repliesLoaded: number = 0
+  repliesLoadMoreState: string = 'endReached'
+  loadMoreErrorMessage: string = ''
+  isBottomRefreshing: boolean = false
   errorMessage: string = ''
   topicId: number = 0
 
@@ -24,6 +28,9 @@ export class DetailViewModel {
   private replies: V2exReply[] = []
   private cacheLoader: (() => Promise<TopicDetailCache | null>) | null = null
   private cacheSaver: ((topic: V2exTopic | null, replies: V2exReply[]) => Promise<void>) | null = null
+  private repliesSource: string = 'publicApi'
+  private repliesPageCount: number = 1
+  private failedRepliesPage: number = 0
   private readonly V2_REPLY_PAGE_SIZE: number = 20
 
   constructor(topicId: number) {
@@ -88,10 +95,16 @@ export class DetailViewModel {
     }
     this.isLoading = true
     this.errorMessage = ''
+    this.loadMoreErrorMessage = ''
     this.repliesUseV2 = !!this.authToken
+    this.repliesSource = this.authToken ? 'v2' : 'publicApi'
     this.repliesPage = 1
+    this.repliesPageCount = 1
     this.repliesHasMore = false
     this.isRepliesLoadingMore = false
+    this.isBottomRefreshing = false
+    this.failedRepliesPage = 0
+    this.repliesLoadMoreState = 'endReached'
     try {
       let topic: V2exTopic | null = null
       let replies: V2exReply[] = []
@@ -101,21 +114,35 @@ export class DetailViewModel {
         const replyRes = await this.apiV2.getTopicReplies(this.authToken, this.topicId, 1)
         replies = replyRes.data || []
         this.repliesUseV2 = true
+        this.repliesSource = 'v2'
         this.repliesHasMore = replies.length >= this.V2_REPLY_PAGE_SIZE
       } else {
         const topics = await this.api.getTopicById(this.topicId)
         if (topics.length > 0) {
           topic = topics[0]
         }
-        replies = await this.api.getRepliesWithWebFallback(this.topicId, topic ? topic.replies : 0)
+        const apiReplies = await this.api.getReplies(this.topicId)
+        const expectedReplies = topic ? topic.replies : 0
+        if (apiReplies.length === 0 || (expectedReplies > 0 && apiReplies.length < expectedReplies)) {
+          const firstPage = await this.api.getTopicWebRepliesPage(this.topicId, 1, Date.now())
+          replies = firstPage.replies
+          this.repliesSource = 'publicWebPage'
+          this.repliesPage = firstPage.page
+          this.repliesPageCount = firstPage.pageCount
+          this.repliesHasMore = firstPage.hasMore
+        } else {
+          replies = apiReplies
+          this.repliesSource = 'publicApi'
+          this.repliesHasMore = false
+        }
         this.repliesUseV2 = false
-        this.repliesHasMore = false
       }
 
       this.topic = this.normalizeTopicForRender(topic)
       this.replies = this.normalizeRepliesForRender(replies)
       this.replyDataSource.setData(this.getVisibleReplies())
       this.repliesLoaded = this.replies.length
+      this.repliesLoadMoreState = this.repliesHasMore ? 'idle' : 'endReached'
       await this.saveCache(this.topic, this.replies)
     } catch (error) {
       const e = error as Error
@@ -127,47 +154,134 @@ export class DetailViewModel {
     }
   }
 
-  async loadMoreRepliesV2(): Promise<void> {
-    if (!this.repliesUseV2 || this.isLoading || this.isRepliesLoadingMore || !this.repliesHasMore || !this.authToken) {
+  async loadMoreReplies(): Promise<void> {
+    if (this.isLoading || this.isRepliesLoadingMore || this.isBottomRefreshing || !this.repliesHasMore) {
       return
     }
-    const nextPage = this.repliesPage + 1
+    if (this.repliesSource === 'v2' && !this.authToken) {
+      return
+    }
+    const nextPage = this.failedRepliesPage > 0 ? this.failedRepliesPage : this.repliesPage + 1
     this.isRepliesLoadingMore = true
+    this.repliesLoadMoreState = 'loadingMore'
+    this.loadMoreErrorMessage = ''
     try {
-      const res = await this.apiV2.getTopicReplies(this.authToken, this.topicId, nextPage)
-      const items = res.data || []
-      if (items.length === 0) {
-        this.repliesHasMore = false
-        return
-      }
-
-      const existingIds = new Set<number>(this.replies.map(reply => reply.id))
-      const unique = items.filter(item => item && item.id > 0 && !existingIds.has(item.id))
-      if (unique.length === 0) {
-        this.repliesHasMore = false
-        return
-      }
-
-      this.replies = this.replies.concat(unique)
-      if (this.onlyOp) {
-        const opId = this.topic ? this.topic.member.id : 0
-        const opUnique = opId > 0 ? unique.filter(reply => reply.member.id === opId) : unique
-        if (opUnique.length > 0) {
-          this.replyDataSource.appendData(opUnique)
-        }
+      let items: V2exReply[] = []
+      let hasMore = false
+      let pageCount = this.repliesPageCount
+      if (this.repliesSource === 'v2') {
+        const res = await this.apiV2.getTopicReplies(this.authToken, this.topicId, nextPage)
+        items = res.data || []
+        hasMore = items.length >= this.V2_REPLY_PAGE_SIZE
+      } else if (this.repliesSource === 'publicWebPage') {
+        const snapshot: V2exTopicWebRepliesPage = await this.api.getTopicWebRepliesPage(this.topicId, nextPage, Date.now())
+        items = snapshot.replies
+        hasMore = snapshot.hasMore
+        pageCount = snapshot.pageCount
       } else {
-        this.replyDataSource.appendData(unique)
+        return
       }
-      this.repliesLoaded = this.replies.length
-      this.repliesPage = nextPage
-      this.repliesHasMore = items.length >= this.V2_REPLY_PAGE_SIZE
+
+      const unique = this.uniqueNewReplies(items)
+      this.appendReplies(unique)
+      if (this.repliesSource !== 'v2' || items.length > 0) {
+        this.repliesPage = nextPage
+      }
+      this.repliesPageCount = Math.max(pageCount, this.repliesPage)
+      this.repliesHasMore = hasMore
+      this.failedRepliesPage = 0
+      this.repliesLoadMoreState = hasMore ? 'idle' : 'endReached'
+      await this.saveCache(this.topic, this.replies)
     } catch (error) {
       const e = error as Error
-      this.errorMessage = e.message || '加载更多失败'
-      this.repliesHasMore = false
+      this.loadMoreErrorMessage = e.message || '加载更多失败'
+      this.failedRepliesPage = nextPage
+      this.repliesLoadMoreState = 'loadMoreError'
     } finally {
       this.isRepliesLoadingMore = false
     }
+  }
+
+  async loadMoreRepliesV2(): Promise<void> {
+    await this.loadMoreReplies()
+  }
+
+  async retryLoadMoreReplies(): Promise<void> {
+    if (this.repliesLoadMoreState !== 'loadMoreError' || this.failedRepliesPage <= 0) {
+      return
+    }
+    await this.loadMoreReplies()
+  }
+
+  canBottomRefresh(): boolean {
+    return !this.isLoading && !this.isRepliesLoadingMore && !this.isBottomRefreshing &&
+      this.repliesLoadMoreState === 'endReached' && !this.repliesHasMore && this.repliesPage >= 1
+  }
+
+  shouldShowRepliesFooter(): boolean {
+    return this.repliesLoadMoreState === 'loadingMore' || this.repliesLoadMoreState === 'loadMoreError'
+  }
+
+  async refreshLastRepliesPage(): Promise<void> {
+    if (!this.canBottomRefresh()) {
+      return
+    }
+    this.isBottomRefreshing = true
+    try {
+      let items: V2exReply[] = []
+      if (this.repliesSource === 'v2') {
+        const res = await this.apiV2.getTopicReplies(this.authToken, this.topicId, this.repliesPage, Date.now())
+        items = res.data || []
+      } else if (this.repliesSource === 'publicWebPage') {
+        const snapshot = await this.api.getTopicWebRepliesPage(this.topicId, this.repliesPage, Date.now())
+        items = snapshot.replies
+        this.repliesPageCount = snapshot.pageCount
+        this.repliesHasMore = snapshot.hasMore
+        if (snapshot.hasMore) {
+          this.repliesLoadMoreState = 'idle'
+        }
+      } else {
+        const snapshot = await this.api.getTopicWebRepliesPage(this.topicId, 1, Date.now())
+        items = snapshot.replies
+        this.repliesSource = 'publicWebPage'
+        this.repliesPage = snapshot.page
+        this.repliesPageCount = snapshot.pageCount
+        this.repliesHasMore = snapshot.hasMore
+        if (snapshot.hasMore) {
+          this.repliesLoadMoreState = 'idle'
+        }
+      }
+      const unique = this.uniqueNewReplies(items)
+      this.appendReplies(unique)
+      if (!this.repliesHasMore) {
+        this.repliesLoadMoreState = 'endReached'
+      }
+      await this.saveCache(this.topic, this.replies)
+    } finally {
+      this.isBottomRefreshing = false
+    }
+  }
+
+  private uniqueNewReplies(items: V2exReply[]): V2exReply[] {
+    const existingIds = new Set<number>(this.replies.map(reply => reply.id))
+    return this.normalizeRepliesForRender(items).filter((item: V2exReply) => item && item.id > 0 && !existingIds.has(item.id))
+  }
+
+  private appendReplies(unique: V2exReply[]): void {
+    if (unique.length === 0) {
+      return
+    }
+    this.replies = this.replies.concat(unique)
+    if (this.onlyOp) {
+      const opId = this.topic ? this.topic.member.id : 0
+      const opUnique = opId > 0 ? unique.filter(reply => reply.member.id === opId) : unique
+      if (opUnique.length > 0) {
+        this.replyDataSource.appendData(opUnique)
+      }
+    } else {
+      this.replyDataSource.appendData(unique)
+    }
+    this.repliesLoaded = this.replies.length
   }
 
   private async saveCache(topic: V2exTopic | null, replies: V2exReply[]): Promise<void> {

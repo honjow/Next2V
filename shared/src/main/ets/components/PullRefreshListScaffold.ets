@@ -16,6 +16,8 @@ export struct PullRefreshListScaffold {
   @Prop refreshThreshold: number = 40
   @Prop scrollEnabled: boolean = true
   onRefresh?: () => Promise<void>
+  onBottomRefresh?: () => Promise<void>
+  canStartBottomRefresh?: () => boolean
   onReachEnd?: () => void
   onScrollIndex?: (start: number, end: number, center: number) => void
   onDidScroll?: (offset: number, state: ScrollState) => void
@@ -26,10 +28,22 @@ export struct PullRefreshListScaffold {
       scroller: this.scroller,
       indicatorTop: this.resolvedIndicatorTop(),
       threshold: this.refreshThreshold,
+      bottomIndicatorBottom: this.bottomH + this.bottomPadding,
       onRefresh: async () => {
         if (this.onRefresh) {
           await this.onRefresh()
         }
+      },
+      onBottomRefresh: async () => {
+        if (this.onBottomRefresh) {
+          await this.onBottomRefresh()
+        }
+      },
+      canStartBottomRefresh: () => {
+        if (this.canStartBottomRefresh) {
+          return this.canStartBottomRefresh()
+        }
+        return false
       },
       onScrollEnableChange: (enabled: boolean) => {
         if (this.onScrollEnableChange) {
@@ -87,6 +101,6 @@ export struct PullRefreshListScaffold {
     if (this.indicatorTop >= 0) {
       return this.indicatorTop
     }
-    return this.topH + ThemeConstants.TITLE_BAR_HEIGHT / 2 + this.topPadding
+    return this.topH + ThemeConstants.TITLE_BAR_HEIGHT + this.topPadding + ThemeConstants.SPACE_MD
   }
 }
