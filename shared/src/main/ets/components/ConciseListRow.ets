@@ -89,13 +89,14 @@ export struct ConciseListRow {
   private DropdownSuffix() {
     Row({ space: ThemeConstants.SPACE_XS }) {
       Text(this.trailingText)
-        .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+        .fontSize(ThemeConstants.FONT_SIZE_BODY)
         .fontColor(this.secondaryColor ?? $r('sys.color.font_secondary'))
         .maxLines(1)
         .textOverflow({ overflow: TextOverflow.Ellipsis })
-      SymbolGlyph($r('sys.symbol.chevron_down'))
-        .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-        .fontColor([$r('sys.color.font_secondary')])
+      SymbolGlyph($r('sys.symbol.arrowtriangle_down_fill'))
+        .fontSize(ThemeConstants.FONT_SIZE_TITLE)
+        .fontColor([$r('sys.color.font_tertiary')])
+        .padding({left:4, right: 12})
     }
     .alignItems(VerticalAlign.Center)
   }

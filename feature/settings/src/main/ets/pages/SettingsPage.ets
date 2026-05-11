@@ -1,29 +1,29 @@
 import { common } from '@kit.AbilityKit'
+import type { TabItem } from 'shared'
 import {
-  AppTextField,
   ApiConstants,
   ApiDomainSettings,
+  AppTextField,
   CacheSettings,
-  type CacheStats,
+  ConciseListRow,
   CookieJarSettings,
   DateUtils,
   FeedTabSettings,
+  FilterChip,
   GroupedListSection,
   HttpClient,
+  ListDivider as SharedListDivider,
   LocalDataSettings,
   MediaSettings,
   ReadingSettings,
-  ConciseListRow,
-  FilterChip,
   SecondaryListScaffold,
   SectionHeader as SharedSectionHeader,
-  ListDivider as SharedListDivider,
   StorageKeys,
-  ThemeSettings,
   ThemeConstants,
+  ThemeSettings,
+  type CacheStats,
   WriteActionSettings
 } from 'shared'
-import type { TabItem } from 'shared'
 import { promptAction, SymbolGlyphModifier } from '@kit.ArkUI'
 
 @Component
@@ -52,32 +52,67 @@ export struct SettingsPage {
   build() {
     Column() {
       SecondaryListScaffold() {
-        ListItem() { this.SectionHeader('账号') }
-        ListItem() { this.AccountSection() }
+        ListItem() {
+          this.SectionHeader('账号')
+        }
 
-        ListItem() { this.SectionHeader('阅读') }
-          .margin({ top: ThemeConstants.SPACE_MD })
-        ListItem() { this.ReadingSection() }
+        ListItem() {
+          this.AccountSection()
+        }
 
-        ListItem() { this.SectionHeader('首页') }
-          .margin({ top: ThemeConstants.SPACE_MD })
-        ListItem() { this.HomeSection() }
+        ListItem() {
+          this.SectionHeader('阅读')
+        }
+        .margin({ top: ThemeConstants.SPACE_MD })
 
-        ListItem() { this.SectionHeader('内容与媒体') }
-          .margin({ top: ThemeConstants.SPACE_MD })
-        ListItem() { this.MediaSection() }
+        ListItem() {
+          this.ReadingSection()
+        }
 
-        ListItem() { this.SectionHeader('写作') }
-          .margin({ top: ThemeConstants.SPACE_MD })
-        ListItem() { this.WritingSection() }
+        ListItem() {
+          this.SectionHeader('首页')
+        }
+        .margin({ top: ThemeConstants.SPACE_MD })
 
-        ListItem() { this.SectionHeader('存储') }
-          .margin({ top: ThemeConstants.SPACE_MD })
-        ListItem() { this.CacheSection() }
+        ListItem() {
+          this.HomeSection()
+        }
 
-        ListItem() { this.SectionHeader('高级') }
-          .margin({ top: ThemeConstants.SPACE_MD })
-        ListItem() { this.AdvancedSection() }
+        ListItem() {
+          this.SectionHeader('内容与媒体')
+        }
+        .margin({ top: ThemeConstants.SPACE_MD })
+
+        ListItem() {
+          this.MediaSection()
+        }
+
+        ListItem() {
+          this.SectionHeader('写作')
+        }
+        .margin({ top: ThemeConstants.SPACE_MD })
+
+        ListItem() {
+          this.WritingSection()
+        }
+
+        ListItem() {
+          this.SectionHeader('存储')
+        }
+        .margin({ top: ThemeConstants.SPACE_MD })
+
+        ListItem() {
+          this.CacheSection()
+        }
+
+        ListItem() {
+          this.SectionHeader('高级')
+        }
+        .margin({ top: ThemeConstants.SPACE_MD })
+
+        ListItem() {
+          this.AdvancedSection()
+        }
       }
     }
     .width('100%')
@@ -85,15 +120,18 @@ export struct SettingsPage {
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
   }
 
-  @Builder SectionHeader(title: string) {
+  @Builder
+  SectionHeader(title: string) {
     SharedSectionHeader({ title: title })
   }
 
-  @Builder SettingsDivider() {
+  @Builder
+  SettingsDivider() {
     SharedListDivider()
   }
 
-  @Builder AccountSection() {
+  @Builder
+  AccountSection() {
     GroupedListSection() {
       ConciseListRow({
         title: '账号管理',
@@ -104,13 +142,15 @@ export struct SettingsPage {
     }
   }
 
-  @Builder ReadingSection() {
+  @Builder
+  ReadingSection() {
     GroupedListSection() {
       this.ReadingPreferenceRows()
     }
   }
 
-  @Builder MediaSection() {
+  @Builder
+  MediaSection() {
     GroupedListSection() {
       this.TogglePreferenceRow('图片自动加载', this.autoLoadImages, (value: boolean) => {
         this.updateAutoLoadImages(value)
@@ -124,7 +164,8 @@ export struct SettingsPage {
     }
   }
 
-  @Builder HomeSection() {
+  @Builder
+  HomeSection() {
     GroupedListSection() {
       ForEach(FeedTabSettings.tabsFromKeysJson(this.feedTabKeys), (tab: TabItem, index: number) => {
         this.HomeVisibleTabRow(tab, index, FeedTabSettings.tabsFromKeysJson(this.feedTabKeys).length)
@@ -135,20 +176,25 @@ export struct SettingsPage {
 
       this.SettingsDivider()
 
-      ForEach(ApiConstants.TAB_ITEMS.filter((tab: TabItem) => !FeedTabSettings.isVisible(this.feedTabKeys, tab.key)), (tab: TabItem) => {
-        ConciseListRow({
-          title: `添加 ${tab.label}`,
-          showChevron: false,
-          action: () => { this.updateFeedTabVisibility(tab.key, true) }
-        })
-        this.SettingsDivider()
-      }, (tab: TabItem) => tab.key)
+      ForEach(ApiConstants.TAB_ITEMS.filter((tab: TabItem) => !FeedTabSettings.isVisible(this.feedTabKeys, tab.key)),
+        (tab: TabItem) => {
+          ConciseListRow({
+            title: `添加 ${tab.label}`,
+            showChevron: false,
+            action: () => {
+              this.updateFeedTabVisibility(tab.key, true)
+            }
+          })
+          this.SettingsDivider()
+        }, (tab: TabItem) => tab.key)
 
       Column({ space: ThemeConstants.SPACE_SM }) {
         AppTextField({
           text: $nodeTabName,
           placeholder: '节点名（如 create）',
-          onTextChange: (value: string) => { this.nodeTabName = value }
+          onTextChange: (value: string) => {
+            this.nodeTabName = value
+          }
         })
           .width('100%')
         Button('添加节点栏目')
@@ -159,7 +205,9 @@ export struct SettingsPage {
           .fontColor(Color.White)
           .backgroundColor(ThemeConstants.BRAND_PRIMARY)
           .width('100%')
-          .onClick(() => { this.addNodeFeedTab() })
+          .onClick(() => {
+            this.addNodeFeedTab()
+          })
       }
       .padding(ThemeConstants.SPACE_LG)
 
@@ -168,12 +216,15 @@ export struct SettingsPage {
       ConciseListRow({
         title: '恢复默认栏目',
         showChevron: false,
-        action: () => { this.resetFeedTabs() }
+        action: () => {
+          this.resetFeedTabs()
+        }
       })
     }
   }
 
-  @Builder HomeVisibleTabRow(tab: TabItem, index: number, count: number) {
+  @Builder
+  HomeVisibleTabRow(tab: TabItem, index: number, count: number) {
     Row({ space: ThemeConstants.SPACE_SM }) {
       Column({ space: ThemeConstants.SPACE_XS }) {
         Text(tab.label)
@@ -188,18 +239,28 @@ export struct SettingsPage {
       .layoutWeight(1)
       .alignItems(HorizontalAlign.Start)
 
-      this.HomeTabButton('↑', index > 0, () => { this.moveFeedTab(tab.key, -1) })
-      this.HomeTabButton('↓', index < count - 1, () => { this.moveFeedTab(tab.key, 1) })
+      this.HomeTabButton('↑', index > 0, () => {
+        this.moveFeedTab(tab.key, -1)
+      })
+      this.HomeTabButton('↓', index < count - 1, () => {
+        this.moveFeedTab(tab.key, 1)
+      })
       this.HomeTabButton(FeedTabSettings.isNodeKey(tab.key) ? '删' : '隐', count > 1, () => {
         this.updateFeedTabVisibility(tab.key, false)
       })
     }
     .width('100%')
-    .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG, top: ThemeConstants.SPACE_MD, bottom: ThemeConstants.SPACE_MD })
+    .padding({
+      left: ThemeConstants.SPACE_LG,
+      right: ThemeConstants.SPACE_LG,
+      top: ThemeConstants.SPACE_MD,
+      bottom: ThemeConstants.SPACE_MD
+    })
     .alignItems(VerticalAlign.Center)
   }
 
-  @Builder HomeTabButton(label: string, enabled: boolean, action: () => void) {
+  @Builder
+  HomeTabButton(label: string, enabled: boolean, action: () => void) {
     Button(label)
       .fontSize(ThemeConstants.FONT_SIZE_TAG)
       .height(ThemeConstants.TOUCH_TARGET_SM)
@@ -212,8 +273,8 @@ export struct SettingsPage {
       .onClick(action)
   }
 
-
-  @Builder WritingSection() {
+  @Builder
+  WritingSection() {
     GroupedListSection() {
       this.TogglePreferenceRow('写入操作', this.accountWriteEnabled, (value: boolean) => {
         if (value) {
@@ -225,7 +286,8 @@ export struct SettingsPage {
     }
   }
 
-  @Builder AdvancedSection() {
+  @Builder
+  AdvancedSection() {
     GroupedListSection() {
       Column({ space: ThemeConstants.SPACE_SM }) {
         ConciseListRow({
@@ -239,13 +301,17 @@ export struct SettingsPage {
             label: 'v2ex.com',
             selected: !this.useCoDomain,
             fill: true,
-            action: () => { this.updateApiDomain(false) }
+            action: () => {
+              this.updateApiDomain(false)
+            }
           })
           FilterChip({
             label: 'v2ex.co',
             selected: this.useCoDomain,
             fill: true,
-            action: () => { this.updateApiDomain(true) }
+            action: () => {
+              this.updateApiDomain(true)
+            }
           })
         }
         .width('100%')
@@ -255,12 +321,38 @@ export struct SettingsPage {
     }
   }
 
-  @Builder TogglePreferenceRow(title: string, checked: boolean, changeAction: (value: boolean) => void) {
-    ConciseListRow({ title: title, showChevron: false, hasSwitch: true, checked: checked, switchAction: changeAction })
+  @Builder
+  TogglePreferenceRow(title: string, checked: boolean, changeAction: (value: boolean) => void) {
+    ConciseListRow({
+      title: title,
+      showChevron: false,
+      hasSwitch: true,
+      checked: checked,
+      switchAction: changeAction
+    })
   }
 
-  @Builder ReadingPreferenceRows() {
+  @Builder
+  ReadingPreferenceRows() {
     Column() {
+      ConciseListRow({
+        title: '主题',
+        trailingText: ThemeSettings.modeText(this.themeMode),
+        showChevron: false,
+        trailingDropdown: true,
+        action: () => {
+          this.showThemeMenu()
+        }
+      })
+        .bindMenu(this.themeMenuShown, this.ThemeModeMenu, {
+          placement: Placement.BottomRight,
+          aboutToDisappear: () => {
+            this.themeMenuShown = false
+          }
+        })
+
+      this.SettingsDivider()
+
       ConciseListRow({
         title: '阅读显示',
         subtitle: `${this.readingFontSize}fp / ${this.readingLineHeight}vp · ${this.readingDensityText(this.readingDensity)}`,
@@ -269,19 +361,6 @@ export struct SettingsPage {
 
       this.SettingsDivider()
 
-      ConciseListRow({
-        title: '主题',
-        trailingText: ThemeSettings.modeText(this.themeMode),
-        showChevron: false,
-        trailingDropdown: true,
-        action: () => { this.showThemeMenu() }
-      })
-        .bindMenu(this.themeMenuShown, this.ThemeModeMenu, {
-          placement: Placement.BottomRight,
-          aboutToDisappear: () => { this.themeMenuShown = false }
-        })
-
-      this.SettingsDivider()
 
       this.StepperPreferenceRow('字号', `${this.readingFontSize}fp`, 'A-', 'A+', () => {
         this.updateReadingFontSize(this.readingFontSize - 1)
@@ -319,7 +398,8 @@ export struct SettingsPage {
     .width('100%')
   }
 
-  @Builder StepperPreferenceRow(
+  @Builder
+  StepperPreferenceRow(
     title: string,
     value: string,
     decreaseLabel: string,
@@ -345,7 +425,8 @@ export struct SettingsPage {
     .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG })
   }
 
-  @Builder CompactSettingButton(label: string, action: () => void) {
+  @Builder
+  CompactSettingButton(label: string, action: () => void) {
     Button(label)
       .fontSize(ThemeConstants.FONT_SIZE_TAG)
       .height(30)
@@ -357,16 +438,20 @@ export struct SettingsPage {
       .onClick(action)
   }
 
-  @Builder DensityChip(label: string, density: string) {
+  @Builder
+  DensityChip(label: string, density: string) {
     FilterChip({
       label,
       selected: this.readingDensity === density,
       fill: true,
-      action: () => { this.updateReadingDensity(density) }
+      action: () => {
+        this.updateReadingDensity(density)
+      }
     })
   }
 
-  @Builder ThemeModeMenu() {
+  @Builder
+  ThemeModeMenu() {
     Menu() {
       this.ThemeModeMenuItem('自动', ThemeSettings.MODE_AUTO)
       this.ThemeModeMenuItem('浅色', ThemeSettings.MODE_LIGHT)
@@ -374,12 +459,15 @@ export struct SettingsPage {
     }
   }
 
-  @Builder ThemeModeMenuItem(label: string, mode: string) {
+  @Builder
+  ThemeModeMenuItem(label: string, mode: string) {
     MenuItem({
       content: label,
       symbolEndIcon: this.themeMode === mode ? new SymbolGlyphModifier($r('sys.symbol.checkmark')) : undefined
     })
-      .onClick(() => { this.updateThemeMode(mode) })
+      .onClick(() => {
+        this.updateThemeMode(mode)
+      })
   }
 
   private showThemeMenu(): void {
@@ -389,7 +477,8 @@ export struct SettingsPage {
     }, 20)
   }
 
-  @Builder CacheSection() {
+  @Builder
+  CacheSection() {
     GroupedListSection() {
       ConciseListRow({
         title: '离线缓存',
@@ -407,7 +496,9 @@ export struct SettingsPage {
           .fontColor($r('sys.color.font_primary'))
           .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
           .layoutWeight(1)
-          .onClick(() => { this.loadCacheStats() })
+          .onClick(() => {
+            this.loadCacheStats()
+          })
         Button('清理缓存')
           .fontSize(ThemeConstants.FONT_SIZE_TAG)
           .height(ThemeConstants.TOUCH_TARGET_SM)
@@ -416,7 +507,9 @@ export struct SettingsPage {
           .fontColor($r('sys.color.font_primary'))
           .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
           .layoutWeight(1)
-          .onClick(() => { this.clearCache() })
+          .onClick(() => {
+            this.clearCache()
+          })
       }
       .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG, bottom: ThemeConstants.SPACE_MD })
 
@@ -428,7 +521,9 @@ export struct SettingsPage {
           primaryColor: Color.Red,
           subtitle: this.localDataMessage,
           showChevron: false,
-          action: () => { this.confirmClearLocalData() }
+          action: () => {
+            this.confirmClearLocalData()
+          }
         })
       }
       .width('100%')
@@ -472,7 +567,8 @@ export struct SettingsPage {
   }
 
   private updateReadingLineHeight(lineHeight: number): void {
-    this.saveReadingSettings(this.readingFontSize, ReadingSettings.normalizeLineHeight(lineHeight, this.readingFontSize), this.readingDensity)
+    this.saveReadingSettings(this.readingFontSize,
+      ReadingSettings.normalizeLineHeight(lineHeight, this.readingFontSize), this.readingDensity)
   }
 
   private updateReadingDensity(density: string): void {
@@ -493,9 +589,10 @@ export struct SettingsPage {
     this.readingLineHeight = ReadingSettings.normalizeLineHeight(lineHeight, this.readingFontSize)
     this.readingDensity = ReadingSettings.normalizeDensity(density)
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    ReadingSettings.save(context, this.readingFontSize, this.readingLineHeight, this.readingDensity).catch((error: Error) => {
-      console.error('save reading settings failed: ' + error.message)
-    })
+    ReadingSettings.save(context, this.readingFontSize, this.readingLineHeight, this.readingDensity)
+      .catch((error: Error) => {
+        console.error('save reading settings failed: ' + error.message)
+      })
   }
 
   private updateFeedTabVisibility(key: string, _visible: boolean): void {
@@ -517,12 +614,14 @@ export struct SettingsPage {
   private addNodeFeedTab(): void {
     const cleanName = FeedTabSettings.normalizeNodeName(this.nodeTabName)
     if (!cleanName) {
-      promptAction.openToast({ message: '请输入有效节点名' }).catch((_error: Error) => { })
+      promptAction.openToast({ message: '请输入有效节点名' }).catch((_error: Error) => {
+      })
       return
     }
     const nextKeys = FeedTabSettings.addNode(this.feedTabKeys, cleanName)
     if (nextKeys === this.feedTabKeys) {
-      promptAction.openToast({ message: '节点栏目已存在' }).catch((_error: Error) => { })
+      promptAction.openToast({ message: '节点栏目已存在' }).catch((_error: Error) => {
+      })
       return
     }
     this.nodeTabName = ''
@@ -572,11 +671,16 @@ export struct SettingsPage {
     AlertDialog.show({
       title: '开启写入操作',
       message: '写入操作可能导致误触或误操作。确定开启吗？',
-      primaryButton: { value: '取消', action: () => { } },
+      primaryButton: {
+        value: '取消', action: () => {
+        }
+      },
       secondaryButton: {
         value: '开启',
         fontColor: ThemeConstants.BRAND_PRIMARY,
-        action: () => { this.updateWriteActions(true) }
+        action: () => {
+          this.updateWriteActions(true)
+        }
       }
     })
   }
@@ -616,11 +720,16 @@ export struct SettingsPage {
     AlertDialog.show({
       title: '清理本地数据',
       message: '将清理本机保存的稍后读、关注节点、最近浏览、已读状态、草稿、搜索历史、通知缓存和离线缓存。登录状态与偏好设置会保留。确定继续吗？',
-      primaryButton: { value: '取消', action: () => { } },
+      primaryButton: {
+        value: '取消', action: () => {
+        }
+      },
       secondaryButton: {
         value: '清理',
         fontColor: Color.Red,
-        action: () => { this.clearLocalData() }
+        action: () => {
+          this.clearLocalData()
+        }
       }
     })
   }
