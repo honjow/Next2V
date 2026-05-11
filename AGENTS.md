@@ -43,6 +43,19 @@ Before editing or delegating implementation:
 6. UI/interaction completion requires scenario validation when tooling is available: the requested state appears, preserved information remains, actions actually work, failure/unauthenticated states are handled where relevant, and the state is correct after navigation away/re-entry.
 7. If the spec is found wrong or ambiguous, stop and revise the spec before continuing. Do not patch over a mistaken product interpretation.
 
+## Kanban dispatch rules: review vs QA separation
+
+UI / 交互 / 导航 / 设置类 lane 必须满足以下硬约束。Controller (v2pm) 不得绕过；dispatcher 派 integrate 卡前必须核对。
+
+1. **角色分离**：禁止单卡同时叫 “Review/QA” 或由同一 assignee 完成两件事。必须拆为两张独立卡：
+   - `Review`，assignee = `v2reviewer`：只做 diff / spec 合规 / 构建日志 / 静态断言。
+   - `QA on device`，assignee = `v2qa`：在共享设备 `192.168.50.237:12345` 上独立验证。
+2. **证据来源隔离**：`v2reviewer` 不得以实现卡（v2frontend）产出的截图 / 录屏 / 设备日志作为 PASS 证据。设备证据必须由 `v2qa` 在本次 QA 卡内自抓。
+3. **QA artifact 路径**：v2qa 必须把证据落在 `.hermes-artifacts/<yyyymmdd-HHMM>-<lane>-qa/`，禁止复用实现卡的目录。至少包含 `validation-summary.md` + 关键状态截图。
+4. **Integrate 卡门控**：integrate / commit-merge 卡的 `--parent` 必须包含一张 status=done 且结论 PASS 的 `v2qa` 卡，并在 body 中显式引用该卡 id、run id、artifact 目录。仅有 v2reviewer PASS 不足以授权 integrate。
+5. **用户实机 ack 例外**：当用户在对话中直接给出实机 ack 时，可由 controller 关闭对应 v2qa 卡并以用户 ack 作为等价证据，但必须在卡的 summary 中写明 “由用户实机 ack 闭环”，不得静默跳过。
+6. **遗漏补救**：若发现某 lane 在合并后才被察觉缺独立 v2qa，必须对 master 当前 HEAD 补一张 post-merge `QA on device` 卡，结论 FAIL 时按修订流程走，不允许追溯性地把 reviewer PASS 改写为 QA PASS。
+
 ## Commit messages
 
 Use informative Conventional Commits. Avoid vague subjects such as `fix bug`, `update`, `resolve regressions`, or messages that only name the area.
