@@ -42,6 +42,19 @@ function _inlineImageSize(fontSize: number): number {
   return size;
 }
 
+function _isMixedInlineImageCandidate(token: Token): boolean {
+  if (!token || token.type !== "image") {
+    return false;
+  }
+  if (_isInlineImageToken(token)) {
+    return true;
+  }
+  const imageToken = token as Tokens.Image;
+  const raw = (token.raw ?? "").trim().toLowerCase();
+  const altText = (imageToken.text ?? "").trim();
+  return raw.startsWith("<img") || altText.length === 0;
+}
+
 function _appendCacheBust(url: string, nonce: number): string {
   if (!url) {
     return "";
@@ -442,16 +455,32 @@ struct MarkdownParagraph {
     return tokens;
   }
 
+  private hasInlineImage(): boolean {
+    return this.inlineTokens().some((token: Token) => _isInlineImageToken(token));
+  }
+
   build() {
-    Text() {
-      SelectableInlineTokenSpans(this.inlineTokens(), this.bodyFontSize(), this.options);
+    if (this.hasInlineImage()) {
+      Text() {
+        SelectableInlineTokenSpans(this.inlineTokens(), this.bodyFontSize(), this.options);
+      }
+      .fontSize(this.bodyFontSize())
+      .fontColor(ThemeConstants.TEXT_PRIMARY)
+      .lineHeight(this.bodyLineHeight())
+      .textAlign(TextAlign.Start)
+      .width("100%")
+    } else {
+      Text() {
+        SelectableInlineTokenSpans(this.inlineTokens(), this.bodyFontSize(), this.options);
+      }
+      .fontSize(this.bodyFontSize())
+      .fontColor(ThemeConstants.TEXT_PRIMARY)
+      .lineHeight(this.bodyLineHeight())
+      .textAlign(TextAlign.Start)
+      .width("100%")
+      .copyOption(CopyOptions.LocalDevice)
+      .textSelectable(TextSelectableMode.SELECTABLE_FOCUSABLE)
     }
-    .fontSize(this.bodyFontSize())
-    .fontColor(ThemeConstants.TEXT_PRIMARY)
-    .lineHeight(this.bodyLineHeight())
-    .width("100%")
-    .copyOption(CopyOptions.LocalDevice)
-    .textSelectable(TextSelectableMode.SELECTABLE_FOCUSABLE)
   }
 }
 
@@ -1090,7 +1119,10 @@ export struct MarkdownContent {
   }
 
   private static normalizeMarkdownSource(md: string): string {
-    return (md || '').replace(/\]\(\s+(https?:\/\/[^\s)]+)\s*\)/gi, ']($1)');
+    return (md || '')
+      .replace(/<a\b[^>]*>\s*<img\b[^>]*\bsrc=(["'])(https?:\/\/[^"']+)\1[^>]*>\s*<\/a>/gi, '$2')
+      .replace(/<img\b[^>]*\bsrc=(["'])(https?:\/\/[^"']+)\1[^>]*>/gi, '$2')
+      .replace(/\]\(\s+(https?:\/\/[^\s)]+)\s*\)/gi, ']($1)');
   }
 
   private static splitMixedImageParagraphs(tokens: Token[]): void {
@@ -1132,6 +1164,25 @@ export struct MarkdownContent {
       return [];
     }
     if (!inlineTokens.some((t: Token) => t && t.type === "image" && !_isInlineImageToken(t))) {
+      return [];
+    }
+
+    const hasNonImageText = inlineTokens.some((t: Token) => {
+      if (!t || t.type === "image" || t.type === "br") {
+        return false;
+      }
+      const text = ((t as Tokens.Text).text ?? t.raw ?? "").trim();
+      return text.length > 0;
+    });
+    const canKeepImagesInline = inlineTokens
+      .filter((t: Token) => t && t.type === "image")
+      .every((t: Token) => _isMixedInlineImageCandidate(t));
+    if (hasNonImageText && canKeepImagesInline) {
+      for (const token of inlineTokens) {
+        if (token && token.type === "image") {
+          (token as InlineImageToken).inlineImage = true;
+        }
+      }
       return [];
     }
 
@@ -1218,7 +1269,7 @@ export struct MarkdownContent {
       const text = String(record["text"] ?? "").trim();
       const normalizedText = MediaUrlUtils.normalizeUrl(text);
       if (href && (!text || normalizedText === MediaUrlUtils.normalizeUrl(String(record["href"] ?? "")))) {
-        return [MarkdownContent.buildImageToken(String(record["raw"] ?? text), href, text) as Token];
+        return [MarkdownContent.buildImageToken(String(record["raw"] ?? text), href, text, true) as Token];
       }
       return [token];
     }

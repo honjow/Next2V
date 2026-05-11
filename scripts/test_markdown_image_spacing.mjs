@@ -4,7 +4,10 @@ const IMAGE_BLOCK_MONO = 'customImageBlock'
 const INLINE_IMAGE_PROP = 'inlineImage'
 
 function normalizeMarkdownSource(md) {
-  return (md || '').replace(/\]\(\s+(https?:\/\/[^\s)]+)\s*\)/gi, ']($1)')
+  return (md || '')
+    .replace(/<a\b[^>]*>\s*<img\b[^>]*\bsrc=(["'])(https?:\/\/[^"']+)\1[^>]*>\s*<\/a>/gi, '$2')
+    .replace(/<img\b[^>]*\bsrc=(["'])(https?:\/\/[^"']+)\1[^>]*>/gi, '$2')
+    .replace(/\]\(\s+(https?:\/\/[^\s)]+)\s*\)/gi, ']($1)')
 }
 
 function imageUrlForRender(raw) {
@@ -20,6 +23,14 @@ function buildTextToken(text) {
 
 function isInlineImageToken(token) {
   return token && token.type === 'image' && token[INLINE_IMAGE_PROP] === true
+}
+
+function isMixedInlineImageCandidate(token) {
+  if (!token || token.type !== 'image') return false
+  if (isInlineImageToken(token)) return true
+  const raw = String(token.raw || '').trim().toLowerCase()
+  const altText = String(token.text || '').trim()
+  return raw.startsWith('<img') || altText.length === 0
 }
 
 function buildImageToken(raw, href, text = '', inlineImage = false) {
@@ -68,7 +79,7 @@ function rewriteInlineImageToken(token) {
     if (nested) return [nested]
     const href = imageUrlForRender(token.href)
     const text = (token.text || '').trim()
-    if (href && (!text || text === token.href)) return [buildImageToken(token.raw || text, href, text)]
+    if (href && (!text || text === token.href)) return [buildImageToken(token.raw || text, href, text, true)]
     return [token]
   }
   if (token.type === 'text') return splitTextImageUrls(token)
@@ -82,6 +93,19 @@ function rewriteParagraphInlineImages(paragraph) {
 function splitParagraphByImages(paragraph) {
   const inlineTokens = paragraph.tokens || []
   if (!inlineTokens.some((t) => t.type === 'image' && !isInlineImageToken(t))) return []
+  const hasNonImageText = inlineTokens.some((t) => {
+    if (!t || t.type === 'image' || t.type === 'br') return false
+    return String(t.text || t.raw || '').trim().length > 0
+  })
+  const canKeepImagesInline = inlineTokens
+    .filter((t) => t && t.type === 'image')
+    .every(isMixedInlineImageCandidate)
+  if (hasNonImageText && canKeepImagesInline) {
+    for (const token of inlineTokens) {
+      if (token && token.type === 'image') token[INLINE_IMAGE_PROP] = true
+    }
+    return []
+  }
   const result = []
   let textTokens = []
   const flush = () => {
@@ -130,7 +154,9 @@ const fixture = [
   '[![peOMvse.png]( https://s41.ax1x.com/2026/05/11/peOMvse.png)]( https://imgchr.com/i/peOMvse)',
   '',
   'normal text should stay unchanged',
-  '![already_ok](https://example.com/a.png)'
+  '![already_ok](https://example.com/a.png)',
+  '我一个完全不懂 css 的后端，现在都开始写大屏了 <a target="_blank" href="https://i.imgur.com/huX6coX.png" rel="nofollow noopener"><img src="https://i.imgur.com/huX6coX.png" class="embedded_image" rel="noreferrer"></a>',
+  '<img src="https://example.com/standalone.png" class="embedded_image">'
 ].join('\n')
 
 const actual = normalizeMarkdownSource(fixture)
@@ -140,7 +166,9 @@ const expected = [
   '[![peOMvse.png](https://s41.ax1x.com/2026/05/11/peOMvse.png)](https://imgchr.com/i/peOMvse)',
   '',
   'normal text should stay unchanged',
-  '![already_ok](https://example.com/a.png)'
+  '![already_ok](https://example.com/a.png)',
+  '我一个完全不懂 css 的后端，现在都开始写大屏了 https://i.imgur.com/huX6coX.png',
+  'https://example.com/standalone.png'
 ].join('\n')
 
 if (actual !== expected) {
@@ -201,4 +229,18 @@ if (bareSplit.length !== 0 || inlineBareImageParagraph.tokens.length !== 2 || in
   process.exit(1)
 }
 
-console.log('PASS: markdown image spacing, linked image blocks, and mixed inline bare image URLs')
+const renderedHtmlImageParagraph = {
+  type: 'paragraph',
+  tokens: [
+    { type: 'text', raw: '我一个完全不懂 css 的后端，现在都开始写大屏了', text: '我一个完全不懂 css 的后端，现在都开始写大屏了' },
+    { type: 'image', raw: '<img src="https://i.imgur.com/huX6coX.png" class="embedded_image" rel="noreferrer">', href: 'https://i.imgur.com/huX6coX.png', text: '' }
+  ]
+}
+const renderedHtmlSplit = splitParagraphByImages(renderedHtmlImageParagraph)
+if (renderedHtmlSplit.length !== 0 || renderedHtmlImageParagraph.tokens[1][INLINE_IMAGE_PROP] !== true) {
+  console.error('FAIL rendered HTML img in mixed text paragraph should remain inline')
+  console.error(JSON.stringify({ renderedHtmlSplit, paragraph: renderedHtmlImageParagraph }, null, 2))
+  process.exit(1)
+}
+
+console.log('PASS: markdown image spacing, linked image blocks, and mixed inline image tokens')
