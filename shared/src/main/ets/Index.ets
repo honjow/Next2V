@@ -106,6 +106,7 @@ export type { V2exFavoriteNode } from './parser/V2exNodeParser'
 export { V2exCollectionActionParser } from './parser/V2exCollectionActionParser'
 export type { V2exToggleAction } from './parser/V2exCollectionActionParser'
 export { V2exMemberPageParser } from './parser/V2exMemberPageParser'
+export { V2exTopicRepliesParser } from './parser/V2exTopicRepliesParser'
 export { V2exAccountListParser } from './parser/V2exAccountListParser'
 export type { V2exAccountMemberListItem } from './parser/V2exAccountListParser'
 

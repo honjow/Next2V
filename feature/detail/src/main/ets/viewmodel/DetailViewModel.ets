@@ -107,7 +107,7 @@ export class DetailViewModel {
         if (topics.length > 0) {
           topic = topics[0]
         }
-        replies = await this.api.getReplies(this.topicId)
+        replies = await this.api.getRepliesWithWebFallback(this.topicId, topic ? topic.replies : 0)
         this.repliesUseV2 = false
         this.repliesHasMore = false
       }

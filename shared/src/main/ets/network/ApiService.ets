@@ -14,6 +14,7 @@ import { V2exWriteFormParser } from '../parser/V2exWriteFormParser'
 import { V2exSigninParser } from '../parser/V2exSigninParser'
 import { V2exMemberPageParser } from '../parser/V2exMemberPageParser'
 import { V2exAccountListParser, type V2exAccountMemberListItem } from '../parser/V2exAccountListParser'
+import { V2exTopicRepliesParser } from '../parser/V2exTopicRepliesParser'
 import { HtmlEntityUtils } from '../utils/HtmlEntityUtils'
 import { BlockedTopicFilter } from '../utils/BlockedTopicFilter'
 import type {
@@ -148,6 +149,46 @@ export class ApiService {
   /** 获取主题的回复列表 */
   async getReplies(topicId: number): Promise<V2exReply[]> {
     return ApiService.normalizeReplies(await this.http.get<V2exReply[]>(`${ApiConstants.API_REPLIES_SHOW}?topic_id=${topicId}`))
+  }
+
+  /** 获取主题回复；当旧公开 API 少于主题回复数时，以公开网页 HTML 为准。 */
+  async getRepliesWithWebFallback(topicId: number, expectedReplies: number = 0): Promise<V2exReply[]> {
+    const apiReplies = await this.getReplies(topicId)
+    if (apiReplies.length === 0 || (expectedReplies > 0 && apiReplies.length < expectedReplies)) {
+      try {
+        const webReplies = await this.getTopicWebReplies(topicId)
+        if (webReplies.length > apiReplies.length) {
+          return webReplies
+        }
+      } catch (error) {
+        console.error('topic web replies fallback failed:', (error as Error).message)
+      }
+    }
+    return apiReplies
+  }
+
+  /** 获取公开主题网页中的实际回复，用于旧 replies API 为空或滞后时兜底。 */
+  async getTopicWebReplies(topicId: number): Promise<V2exReply[]> {
+    const cacheBuster = Date.now()
+    const firstHtml = await this.http.getText(`/t/${topicId}?p=1&_=${cacheBuster}`)
+    const replies = V2exTopicRepliesParser.parseReplies(firstHtml)
+    const pageCount = V2exTopicRepliesParser.extractPageCount(firstHtml)
+    if (pageCount <= 1) {
+      return ApiService.normalizeReplies(replies)
+    }
+
+    const seen = new Set<number>(replies.map(reply => reply.id))
+    for (let page = 2; page <= pageCount; page++) {
+      const html = await this.http.getText(`/t/${topicId}?p=${page}&_=${cacheBuster}`)
+      const pageReplies = V2exTopicRepliesParser.parseReplies(html)
+      pageReplies.forEach((reply: V2exReply) => {
+        if (reply.id > 0 && !seen.has(reply.id)) {
+          seen.add(reply.id)
+          replies.push(reply)
+        }
+      })
+    }
+    return ApiService.normalizeReplies(replies)
   }
 
   /** 获取所有节点 */
