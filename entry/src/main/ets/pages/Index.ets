@@ -300,6 +300,12 @@ struct TopicDetailAppbarIdentity {
           .fontColor($r('sys.color.font_primary'))
           .maxLines(1)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
+          // layoutWeight(1) is required: without it, a Text in a Row keeps
+          // its intrinsic width and OVERFLOWS the parent's right padding
+          // into the trailing menu icon area. Ellipsis only triggers when
+          // the Text's own width is constrained. Short / wrappable titles
+          // fit by coincidence; long CJK titles overlap by ~1 character.
+          .layoutWeight(1)
       }
     }
     .width('100%')
