@@ -31,12 +31,20 @@ export struct TopicDetailPage {
   @StorageLink(StorageKeys.TOPIC_DETAIL_SAVED_LATER) topicDetailSavedLater: boolean = false
   @StorageLink(StorageKeys.TOPIC_DETAIL_SITE_FAVORITED) topicDetailSiteFavorited: boolean = false
   @StorageLink(StorageKeys.TOPIC_DETAIL_THANKED) topicDetailThanked: boolean = false
+  @StorageLink(StorageKeys.TOPIC_DETAIL_APPBAR_TITLE) topicDetailAppbarTitle: string = ''
+  @StorageLink(StorageKeys.TOPIC_DETAIL_APPBAR_AVATAR_URL) topicDetailAppbarAvatarUrl: string = ''
+  @StorageLink(StorageKeys.TOPIC_DETAIL_APPBAR_USERNAME) topicDetailAppbarUsername: string = ''
+  @StorageLink(StorageKeys.TOPIC_DETAIL_APPBAR_ROUTE_TOPIC_ID) topicDetailAppbarRouteTopicId: string = ''
+  @StorageLink(StorageKeys.TOPIC_DETAIL_APPBAR_TITLE_STATES) topicDetailAppbarTitleStates: string = '{}'
+  @StorageLink(StorageKeys.TOPIC_DETAIL_APPBAR_AVATAR_STATES) topicDetailAppbarAvatarStates: string = '{}'
+  @StorageLink(StorageKeys.TOPIC_DETAIL_APPBAR_USERNAME_STATES) topicDetailAppbarUsernameStates: string = '{}'
   @StorageLink(StorageKeys.AUTH_COOKIE_CONFIGURED) authCookieConfigured: boolean = false
   @StorageLink(StorageKeys.ACCOUNT_WRITE_ENABLED) writeEnabled: boolean = false
   @StorageLink(StorageKeys.READING_FONT_SIZE) readingFontSize: number = ThemeConstants.FONT_SIZE_BODY
   @StorageLink(StorageKeys.READING_LINE_HEIGHT) readingLineHeight: number = ThemeConstants.LINE_HEIGHT_BODY
   @StorageLink(StorageKeys.READING_DENSITY) readingDensity: string = ReadingSettings.DENSITY_STANDARD
   @StorageLink(StorageKeys.MOTION_HAND_EDGE) @Watch('onMotionHandEdgeChanged') motionHandEdge: string = 'center'
+  @StorageProp(StorageKeys.TOP_AVOID_HEIGHT) topH: number = 0
   @StorageProp(StorageKeys.BOTTOM_AVOID_HEIGHT) bottomH: number = 0
   private scroller: Scroller = new Scroller()
   @State listScrollEnabled: boolean = true
@@ -56,8 +64,12 @@ export struct TopicDetailPage {
   @State private replyComposerVisible: boolean = false
   @State private replyComposerInitialContent: string = ''
   @State private thankedReplyIdsJson: string = '[]'
+  @State private titleContentBottom: number = 0
+  @State private currentScrollOffset: number = 0
+  @State private isTitleCoveredByAppbar: boolean = false
   private readonly FLOATING_REPLY_HEIGHT: number = 40
   private readonly FLOATING_REPLY_BOTTOM_GAP: number = 2
+  private readonly titleVisibilityHysteresis: number = 4
   private api: ApiService = new ApiService()
   private jumpFloorDialogController: CustomDialogController | null = new CustomDialogController({
     builder: JumpToFloorDialog({
@@ -81,7 +93,11 @@ export struct TopicDetailPage {
     this.hasJumpedToTargetFloor = false
     this.jumpFloorText = ''
     this.visualMotionHandEdge = this.motionHandEdge
+    this.currentScrollOffset = 0
+    this.titleContentBottom = 0
+    this.isTitleCoveredByAppbar = false
     this.syncTopicDetailTitleState(false, false, false)
+    this.publishAppbarIdentity(false)
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     this.v.setCacheHandlers(
       () => CacheSettings.loadTopicDetail(context, this.topicId),
@@ -218,6 +234,11 @@ export struct TopicDetailPage {
     .onAreaChange((_oldValue: Area, newValue: Area) => {
       this.floatingReplyAreaWidth = this.areaLength(newValue.width)
     })
+    .onVisibleAreaChange([0.0, 1.0], (isVisible: boolean, _currentRatio: number) => {
+      if (isVisible) {
+        this.republishAppbarIdentity()
+      }
+    })
   }
 
   @Builder ReplyComposerSheetHost() {
@@ -297,6 +318,10 @@ export struct TopicDetailPage {
       onRefresh: async () => { await this.v.load() },
       onScrollEnableChange: (enabled: boolean) => { this.listScrollEnabled = enabled },
       onScrollIndex: (_start: number, _end: number, center: number) => { this.updateReadFloor(center) },
+      onDidScroll: (offset: number, _state: ScrollState) => {
+        this.currentScrollOffset = Math.max(0, offset)
+        this.evaluateAppbarIdentityVisibility()
+      },
       onReachEnd: () => { this.loadMoreReplies() },
       bottomPadding: this.topicDetailBottomPadding()
     }) {
@@ -439,6 +464,82 @@ export struct TopicDetailPage {
     return 0
   }
 
+  private areaY(value: Length | undefined): number {
+    return this.areaLength(value)
+  }
+
+  private evaluateAppbarIdentityVisibility(): void {
+    if (!this.v.topic || this.titleContentBottom <= 0) {
+      this.isTitleCoveredByAppbar = false
+      this.publishAppbarIdentity(false)
+      return
+    }
+    const currentTitleBottom = this.titleContentBottom - this.currentScrollOffset
+    const appbarBottom = this.topH + ThemeConstants.TITLE_BAR_HEIGHT
+    const shouldShowIdentity = this.isTitleCoveredByAppbar
+      ? currentTitleBottom <= appbarBottom + this.titleVisibilityHysteresis
+      : currentTitleBottom <= appbarBottom
+    if (shouldShowIdentity === this.isTitleCoveredByAppbar) {
+      return
+    }
+    this.isTitleCoveredByAppbar = shouldShowIdentity
+    this.publishAppbarIdentity(shouldShowIdentity)
+  }
+
+  private republishAppbarIdentity(): void {
+    this.evaluateAppbarIdentityVisibility()
+    this.publishAppbarIdentity(this.isTitleCoveredByAppbar)
+  }
+
+  private publishAppbarIdentity(visible: boolean): void {
+    const routeKey = this.topicRouteKey()
+    if (!routeKey) {
+      return
+    }
+    const title = visible ? this.topicAppbarTitle() : ''
+    const avatarUrl = visible ? this.topicAppbarAvatarUrl() : ''
+    const username = visible ? this.topicAppbarUsername() : ''
+    this.topicDetailAppbarTitleStates = this.nextStringState(this.topicDetailAppbarTitleStates, routeKey, title)
+    this.topicDetailAppbarAvatarStates = this.nextStringState(this.topicDetailAppbarAvatarStates, routeKey, avatarUrl)
+    this.topicDetailAppbarUsernameStates = this.nextStringState(this.topicDetailAppbarUsernameStates, routeKey, username)
+    this.topicDetailAppbarRouteTopicId = visible ? routeKey : ''
+    this.topicDetailAppbarTitle = title
+    this.topicDetailAppbarAvatarUrl = avatarUrl
+    this.topicDetailAppbarUsername = username
+  }
+
+  private nextStringState(statesJson: string, key: string, value: string): string {
+    let states: Record<string, string> = {}
+    try {
+      const parsed = JSON.parse(statesJson || '{}') as Record<string, string>
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        states = parsed
+      }
+    } catch (_error) {
+    }
+    states[key] = value
+    return JSON.stringify(states)
+  }
+
+  private topicRouteKey(): string {
+    return this.topicId > 0 ? this.topicId.toString() : ''
+  }
+
+  private topicAppbarTitle(): string {
+    return (this.v.topic?.title || '').trim()
+  }
+
+  private topicAppbarUsername(): string {
+    return (this.v.topic?.member?.username || '').trim()
+  }
+
+  private topicAppbarAvatarUrl(): string {
+    if (!this.v.topic) {
+      return ''
+    }
+    return (this.v.topic.member.avatar_large || this.v.topic.member.avatar_normal || '').trim()
+  }
+
   @Builder TopicCard() {
     Column() {
       Row({ space: ThemeConstants.SPACE_SM }) {
@@ -495,6 +596,11 @@ export struct TopicDetailPage {
         .lineHeight(28)
         .width('100%')
         .margin({ top: ThemeConstants.SPACE_MD })
+        .onAreaChange((_oldValue: Area, newValue: Area) => {
+          const measuredGlobalBottom = this.areaY(newValue?.globalPosition?.y) + this.areaLength(newValue?.height)
+          this.titleContentBottom = measuredGlobalBottom + this.currentScrollOffset
+          this.evaluateAppbarIdentityVisibility()
+        })
 
       // 正文
       if (this.v.topic!.content) {

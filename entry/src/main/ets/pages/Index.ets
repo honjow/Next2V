@@ -278,6 +278,49 @@ function UserProfileIdentityCCBuilder(params: UserProfileAppbarIdentityParams) {
   UserProfileAppbarIdentity({ titleUsername: params.titleUsername, avatarUrl: params.avatarUrl })
 }
 
+interface TopicDetailAppbarIdentityParams {
+  title: string
+  avatarUrl: string
+  username: string
+}
+
+@Component
+struct TopicDetailAppbarIdentity {
+  @Prop title: string = ''
+  @Prop avatarUrl: string = ''
+  @Prop username: string = ''
+
+  build() {
+    Row({ space: ThemeConstants.SPACE_XS }) {
+      if ((this.title || '').trim()) {
+        Avatar({ url: this.avatarUrl, avatarSize: 24, placeholder: (this.username || this.title || '').trim() })
+        Text((this.title || '').trim())
+          .fontSize(ThemeConstants.FONT_SIZE_TITLE)
+          .fontWeight(FontWeight.Medium)
+          .fontColor($r('sys.color.font_primary'))
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+      }
+    }
+    .width('100%')
+    .height(ThemeConstants.TITLE_BAR_HEIGHT)
+    .alignItems(VerticalAlign.Center)
+    // 152vp is the measured trailing action width for the current
+    // topicDetailTitleBarOpts menu (maxCount=3, 9 items total). HDS does not
+    // auto-reserve trailing space for stackBuilderComponent content in MINI mode.
+    // If menu maxCount or menu item count/order changes, remeasure and update this
+    // value: swipe until identity appears, screenshot, measure first trailing icon
+    // left edge x, then vp = (screenWidthPx - x) / vpRatio + 4.
+    .padding({ left: 64, right: 156 })
+    .hitTestBehavior(HitTestMode.None)
+  }
+}
+
+@Builder
+function TopicDetailIdentityCCBuilder(params: TopicDetailAppbarIdentityParams) {
+  TopicDetailAppbarIdentity({ title: params.title, avatarUrl: params.avatarUrl, username: params.username })
+}
+
 @Entry
 @Component
 struct Index {
@@ -289,6 +332,13 @@ struct Index {
   @StorageLink(StorageKeys.TOPIC_DETAIL_SAVED_LATER) topicDetailSavedLater: boolean = false
   @StorageLink(StorageKeys.TOPIC_DETAIL_SITE_FAVORITED) topicDetailSiteFavorited: boolean = false
   @StorageLink(StorageKeys.TOPIC_DETAIL_THANKED) topicDetailThanked: boolean = false
+  @StorageLink(StorageKeys.TOPIC_DETAIL_APPBAR_TITLE) topicDetailAppbarTitle: string = ''
+  @StorageLink(StorageKeys.TOPIC_DETAIL_APPBAR_AVATAR_URL) topicDetailAppbarAvatarUrl: string = ''
+  @StorageLink(StorageKeys.TOPIC_DETAIL_APPBAR_USERNAME) topicDetailAppbarUsername: string = ''
+  @StorageLink(StorageKeys.TOPIC_DETAIL_APPBAR_ROUTE_TOPIC_ID) topicDetailAppbarRouteTopicId: string = ''
+  @StorageLink(StorageKeys.TOPIC_DETAIL_APPBAR_TITLE_STATES) topicDetailAppbarTitleStates: string = '{}'
+  @StorageLink(StorageKeys.TOPIC_DETAIL_APPBAR_AVATAR_STATES) topicDetailAppbarAvatarStates: string = '{}'
+  @StorageLink(StorageKeys.TOPIC_DETAIL_APPBAR_USERNAME_STATES) topicDetailAppbarUsernameStates: string = '{}'
   @StorageLink(StorageKeys.NODE_TOPIC_SAVED) nodeTopicSaved: boolean = false
   @StorageLink(StorageKeys.NODE_TOPIC_SITE_FAVORITED) nodeTopicSiteFavorited: boolean = false
   @StorageLink(StorageKeys.NODE_TOPIC_TITLE) nodeTopicTitle: string = ''
@@ -325,7 +375,7 @@ struct Index {
           targetFloor: ((param as Record<string, Object>)['targetFloor'] as number) || 0
         })
       }
-      .titleBar(this.topicDetailTitleBarOpts())
+      .titleBar(this.topicDetailTitleBarOpts(((param as Record<string, Object>)['topicId'] as number) || 0))
     } else if (name === 'ImagePreview') {
       HdsNavDestination() {
         ImagePreviewPage({ url: (param as ImagePreviewParams).url })
@@ -552,7 +602,7 @@ struct Index {
     }
   }
 
-  private topicDetailTitleBarOpts(): Record<string, Object> {
+  private topicDetailTitleBarOpts(topicId: number): Record<string, Object> {
     let items: Record<string, Object>[] = [
       this.topicActionItem('感谢主题', this.topicDetailThanked ? $r('sys.symbol.heart_fill') :
         $r('sys.symbol.heart'), () => {
@@ -586,7 +636,37 @@ struct Index {
       })
     ]
     let menu: Record<string, Object> = { 'value': items, 'maxCount': 3 }
+    const routeKey = topicId > 0 ? topicId.toString() : ''
+    if (!routeKey) {
+      return this.navDestTitleBarOpts(undefined, menu)
+    }
+    const titleFromState = this.topicDetailAppbarStringFor(this.topicDetailAppbarTitleStates, routeKey)
+    const avatarFromState = this.topicDetailAppbarStringFor(this.topicDetailAppbarAvatarStates, routeKey)
+    const usernameFromState = this.topicDetailAppbarStringFor(this.topicDetailAppbarUsernameStates, routeKey)
+    const titleRouteKey = (this.topicDetailAppbarRouteTopicId || '').trim()
+    const title = titleFromState || (titleRouteKey === routeKey ? (this.topicDetailAppbarTitle || '').trim() : '')
+    if (title.trim()) {
+      const avatarUrl = avatarFromState || (titleRouteKey === routeKey ? (this.topicDetailAppbarAvatarUrl || '').trim() : '')
+      const username = usernameFromState || (titleRouteKey === routeKey ? (this.topicDetailAppbarUsername || '').trim() : '')
+      let cc = new ComponentContent<TopicDetailAppbarIdentityParams>(
+        this.getUIContext(),
+        wrapBuilder(TopicDetailIdentityCCBuilder),
+        { title: title, avatarUrl: avatarUrl, username: username })
+      return this.navDestTitleBarOpts(' ', menu, undefined, undefined, cc, title)
+    }
     return this.navDestTitleBarOpts(undefined, menu)
+  }
+
+  private topicDetailAppbarStringFor(statesJson: string, routeKey: string): string {
+    if (!routeKey) {
+      return ''
+    }
+    try {
+      const states = JSON.parse(statesJson || '{}') as Record<string, string>
+      return (states[routeKey] || '').trim()
+    } catch (_e) {
+      return ''
+    }
   }
 
   private nodeTopicTitleBarOpts(nodeName: string, nodeTitle: string): Record<string, Object> {

@@ -18,6 +18,7 @@ export struct PullRefreshListScaffold {
   onRefresh?: () => Promise<void>
   onReachEnd?: () => void
   onScrollIndex?: (start: number, end: number, center: number) => void
+  onDidScroll?: (offset: number, state: ScrollState) => void
   onScrollEnableChange?: (enabled: boolean) => void
 
   build() {
@@ -55,9 +56,17 @@ export struct PullRefreshListScaffold {
         }
       }
       .enableScrollInteraction(this.scrollEnabled)
+      .onScroll((_scrollOffset: number, scrollState: ScrollState) => {
+        if (this.onDidScroll) {
+          this.onDidScroll(this.scroller.currentOffset().yOffset, scrollState)
+        }
+      })
       .onScrollIndex((start: number, end: number, center: number) => {
         if (this.onScrollIndex) {
           this.onScrollIndex(start, end, center)
+        }
+        if (this.onDidScroll) {
+          this.onDidScroll(this.scroller.currentOffset().yOffset, ScrollState.Scroll)
         }
       })
       .onReachEnd(() => {
