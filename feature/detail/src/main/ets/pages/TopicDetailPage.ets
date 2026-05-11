@@ -1204,7 +1204,18 @@ export struct TopicDetailPage {
     if (!raw) {
       return
     }
-    const action = raw.split(':').pop() || ''
+    // Payload format: `${ts}:${topicId}:${action}`. Filter by topicId so
+    // only the foreground TopicDetailPage reacts — without this, every
+    // live instance in the nav stack would handle the action.
+    const parts = raw.split(':')
+    if (parts.length < 3) {
+      return
+    }
+    const targetTopicId = Number(parts[1])
+    if (targetTopicId !== this.topicId) {
+      return
+    }
+    const action = parts.slice(2).join(':')
     this.handleTopicAction(action)
   }
 

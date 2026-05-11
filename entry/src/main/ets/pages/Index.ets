@@ -612,33 +612,33 @@ struct Index {
     let items: Record<string, Object>[] = [
       this.topicActionItem('感谢主题', this.topicDetailThanked ? $r('sys.symbol.heart_fill') :
         $r('sys.symbol.heart'), () => {
-        this.sendTopicAction('thankTopic')
+        this.sendTopicAction(topicId, 'thankTopic')
       }),
       this.topicActionItem('站内收藏', this.topicDetailSiteFavorited ? $r('sys.symbol.star_fill') :
         $r('sys.symbol.star'), () => {
-        this.sendTopicAction('siteFavorite')
+        this.sendTopicAction(topicId, 'siteFavorite')
       }),
       this.topicActionItem('稍后读', this.topicDetailSavedLater ? $r('sys.symbol.bookmark_fill') :
         $r('sys.symbol.bookmark'), () => {
-        this.sendTopicAction('saveLater')
+        this.sendTopicAction(topicId, 'saveLater')
       }),
       this.topicActionItem('忽略主题', $r('sys.symbol.xmark'), () => {
-        this.sendTopicAction('ignoreTopic')
+        this.sendTopicAction(topicId, 'ignoreTopic')
       }),
       this.topicActionItem('举报主题', $r('sys.symbol.exclamationmark_triangle'), () => {
-        this.sendTopicAction('reportTopic')
+        this.sendTopicAction(topicId, 'reportTopic')
       }),
       this.topicActionItem('复制标题', $r('sys.symbol.doc_plaintext'), () => {
-        this.sendTopicAction('copyTitle')
+        this.sendTopicAction(topicId, 'copyTitle')
       }),
       this.topicActionItem('复制链接', $r('sys.symbol.plus_square_on_square'), () => {
-        this.sendTopicAction('copyLink')
+        this.sendTopicAction(topicId, 'copyLink')
       }),
       this.topicActionItem('分享链接', $r('sys.symbol.share'), () => {
-        this.sendTopicAction('share')
+        this.sendTopicAction(topicId, 'share')
       }),
       this.topicActionItem('浏览器打开', $r('sys.symbol.search_things'), () => {
-        this.sendTopicAction('openBrowser')
+        this.sendTopicAction(topicId, 'openBrowser')
       })
     ]
     let menu: Record<string, Object> = { 'value': items, 'maxCount': 3 }
@@ -774,8 +774,14 @@ struct Index {
     return !!a && !!b && a.trim().toLowerCase() === b.trim().toLowerCase()
   }
 
-  private sendTopicAction(action: string): void {
-    AppStorage.setOrCreate<string>(StorageKeys.TOPIC_DETAIL_ACTION, `${Date.now()}:${action}`)
+  private sendTopicAction(topicId: number, action: string): void {
+    // Payload format: `${ts}:${topicId}:${action}` so each TopicDetailPage
+    // instance can filter by its own topicId. Without this, the global
+    // AppStorage @Watch broadcasts the action to every live TopicDetailPage
+    // in the nav stack — both top and underneath — causing duplicate
+    // dialogs (e.g. opening detail B from a link in detail A and tapping
+    // 收藏 fired the toggle on both topics).
+    AppStorage.setOrCreate<string>(StorageKeys.TOPIC_DETAIL_ACTION, `${Date.now()}:${topicId}:${action}`)
   }
 
   private refreshLocalData(): void {
