@@ -6,6 +6,12 @@ const CONNECT_TIMEOUT_MS: number = 10000
 const READ_TIMEOUT_MS: number = 15000
 const BACKOFF_BASE_MS: number = 1000
 
+export interface TextResponseWithHeaders {
+  statusCode: number
+  text: string
+  location: string
+}
+
 /**
  * 通用 HTTP 客户端
  * - 超时控制（连接 10s / 读取 15s）
@@ -95,6 +101,11 @@ export class HttpClient {
     return this.requestText(endpoint, http.RequestMethod.GET, MAX_RETRIES, headers)
   }
 
+  /** GET 请求获取纯文本和响应头（用于 Cookie 私有页识别 /2fa redirect） */
+  async getTextResponseWithHeaders(endpoint: string, headers: Record<string, string>): Promise<TextResponseWithHeaders> {
+    return this.requestTextResponse(endpoint, http.RequestMethod.GET, MAX_RETRIES, headers)
+  }
+
   /**
    * 纯文本请求，返回原始字符串（不执行 JSON.parse）
    */
@@ -140,6 +151,97 @@ export class HttpClient {
       throw new Error(`Network error: ${error.message}`)
     } finally {
       httpRequest.destroy()
+    }
+  }
+
+
+  async requestTextResponse(
+    endpoint: string,
+    method?: http.RequestMethod,
+    retryCount: number = MAX_RETRIES,
+    headers?: Record<string, string>
+  ): Promise<TextResponseWithHeaders> {
+    let httpRequest = http.createHttp()
+    const url = `${this.baseUrl}${endpoint}`
+    const reqMethod = method || http.RequestMethod.GET
+    let headerBag: Object | null = null
+    let receivedLocation: string = ''
+    httpRequest.on('headersReceive', (received: Object) => {
+      headerBag = received
+      const location = HttpClient.extractSingleHeader(received, 'location')
+      if (location) {
+        receivedLocation = location
+      }
+    })
+    let requestHeaders: Record<string, string> = {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Accept-Encoding': 'gzip'
+    }
+    if (headers) {
+      Object.keys(headers).forEach((key: string) => {
+        requestHeaders[key] = headers[key]
+      })
+    }
+
+    try {
+      const response = await httpRequest.request(url, {
+        method: reqMethod,
+        header: requestHeaders,
+        connectTimeout: CONNECT_TIMEOUT_MS,
+        readTimeout: READ_TIMEOUT_MS,
+        usingCache: !HttpClient.hasAuthHeader(requestHeaders)
+      })
+
+      const statusCode = response.responseCode as number
+      const responseHeaders = headerBag || response.header
+      const location = HttpClient.extractSingleHeader(responseHeaders, 'location') || receivedLocation
+      if (statusCode >= 300 && statusCode < 400) {
+        return { statusCode, text: (response.result as string) || '', location }
+      }
+      if (statusCode < 200 || statusCode >= 400) {
+        throw new Error(`HTTP ${statusCode}: ${url}`)
+      }
+      return { statusCode, text: (response.result as string) || '', location }
+    } catch (error) {
+      if (retryCount > 0) {
+        const delay = BACKOFF_BASE_MS * Math.pow(2, MAX_RETRIES - retryCount)
+        await new Promise<void>(resolve => setTimeout(resolve, delay))
+        return this.requestTextResponse(endpoint, method, retryCount - 1, headers)
+      }
+      throw new Error(`Network error: ${error.message}`)
+    } finally {
+      httpRequest.destroy()
+    }
+  }
+
+  private static extractSingleHeader(headers: Object, name: string): string {
+    try {
+      const bag = headers as Record<string, Object>
+      const lower = name.toLowerCase()
+      const exact = bag[name] || bag[lower] || bag[name.toUpperCase()]
+      if (typeof exact === 'string') {
+        return exact.trim()
+      }
+      if (Array.isArray(exact)) {
+        const values = exact.filter((s: Object) => typeof s === 'string') as string[]
+        return values.length > 0 ? values[0].trim() : ''
+      }
+      const keys = Object.keys(bag)
+      const matched = keys.find((key: string) => key.toLowerCase() === lower)
+      if (!matched) {
+        return ''
+      }
+      const value = bag[matched]
+      if (typeof value === 'string') {
+        return value.trim()
+      }
+      if (Array.isArray(value)) {
+        const values = value.filter((s: Object) => typeof s === 'string') as string[]
+        return values.length > 0 ? values[0].trim() : ''
+      }
+      return ''
+    } catch (_e) {
+      return ''
     }
   }
 

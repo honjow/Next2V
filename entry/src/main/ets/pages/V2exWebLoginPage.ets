@@ -39,6 +39,8 @@ export struct V2exWebLoginPage {
   private autoSaveTimerId: number = 0
   private autoSaveAttempt: number = 0
   private isAutoSaving: boolean = false
+  private isPageActive: boolean = false
+  private saveRequestId: number = 0
   @StorageLink(StorageKeys.WEB_LOGIN_ACTION) @Watch('onWebLoginAction') webLoginAction: string = ''
 
   private get baseUrl(): string {
@@ -53,6 +55,18 @@ export struct V2exWebLoginPage {
       normalizedBase = cleanBase
     }
     return `${normalizedBase}/signin`
+  }
+
+  aboutToAppear(): void {
+    this.isPageActive = true
+  }
+
+  aboutToDisappear(): void {
+    this.isPageActive = false
+    this.saveRequestId++
+    this.cancelAutoSave()
+    this.isSaving = false
+    this.isAutoSaving = false
   }
 
   build() {
@@ -176,24 +190,32 @@ export struct V2exWebLoginPage {
   }
 
   private scheduleAutoSave(delay: number = 900): void {
-    if (this.isSaving || this.isAutoSaving || this.isSaved) {
+    if (!this.isPageActive || this.isSaving || this.isAutoSaving || this.isSaved) {
       return
     }
-    if (this.autoSaveTimerId) {
-      clearTimeout(this.autoSaveTimerId)
-      this.autoSaveTimerId = 0
-    }
+    this.cancelAutoSave()
     this.autoSaveTimerId = setTimeout(() => {
       this.autoSaveTimerId = 0
+      if (!this.isPageActive || this.isSaved) {
+        return
+      }
       this.autoSaveAttempt += 1
       this.saveLogin(true, this.autoSaveAttempt)
     }, delay)
   }
 
+  private cancelAutoSave(): void {
+    if (this.autoSaveTimerId) {
+      clearTimeout(this.autoSaveTimerId)
+      this.autoSaveTimerId = 0
+    }
+  }
+
   private saveLogin(silent: boolean, autoAttempt: number = 0): void {
-    if (this.isSaved || this.isSaving || this.isAutoSaving) {
+    if (!this.isPageActive || this.isSaved || this.isSaving || this.isAutoSaving) {
       return
     }
+    const requestId = ++this.saveRequestId
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     const baseUrl = this.baseUrl
     if (silent) {
@@ -204,26 +226,12 @@ export struct V2exWebLoginPage {
     if (!silent) {
       this.errorMessage = ''
     }
-    this.fetchWebLoginCookie()
-      .then(async (cookie: string) => {
-        const cleanCookie = cookie?.trim() || ''
-        if (!cleanCookie) {
-          throw new Error('未获取到登录 Cookie，请确认已完成登录')
-        }
-        if (silent && !this.hasLikelyAuthCookie(cleanCookie)) {
-          throw new Error('网页登录尚未完成')
-        }
-        const html = await this.http.getTextWithHeaders('/settings', { 'Cookie': cleanCookie })
-        const username = V2exSessionParser.extractUsername(html)
-        if (!username) {
-          throw new Error('Cookie 登录态无效，请确认已完成登录')
-        }
-        const validated: ValidatedCookie = { cookie: cleanCookie, username }
-        return validated
-      })
+    this.validateWebLoginCookie(silent)
       .then(async (validated: ValidatedCookie) => {
+        if (!this.isCurrentSaveRequest(requestId)) {
+          return
+        }
         const username = validated.username
-        await CookieJarSettings.saveForBaseUrl(context, baseUrl, validated.cookie)
         let avatar = ''
         try {
           const profile = await this.api.getMember(username)
@@ -231,33 +239,87 @@ export struct V2exWebLoginPage {
         } catch (_error) {
           avatar = ''
         }
+        if (!this.isCurrentSaveRequest(requestId)) {
+          await this.clearPersistedLogin(context)
+          return
+        }
+        await CookieJarSettings.saveForBaseUrl(context, baseUrl, validated.cookie)
+        if (!this.isCurrentSaveRequest(requestId)) {
+          await this.clearPersistedLogin(context)
+          return
+        }
         await AuthSessionSettings.save(context, { loginMode: 'cookie', username, avatar, validatedAt: Date.now() })
+        if (!this.isCurrentSaveRequest(requestId)) {
+          await this.clearPersistedLogin(context)
+        }
       })
       .then(() => {
+        if (!this.isCurrentSaveRequest(requestId)) {
+          return
+        }
         this.isSaved = true
+        this.cancelAutoSave()
         promptAction.openToast({ message: '登录已保存' }).catch((error: Error) => {
           console.error('openToast failed: ' + error.message)
         })
         this.stack.pop()
       })
       .catch((error: Error) => {
+        if (!this.isPageActive || requestId !== this.saveRequestId) {
+          return
+        }
         if (!silent) {
           this.errorMessage = error.message || '保存登录失败'
         } else if (!this.isSaved && autoAttempt > 0 && autoAttempt < 12) {
           setTimeout(() => {
-            if (!this.isSaved) {
+            if (this.isPageActive && !this.isSaved && requestId === this.saveRequestId) {
               this.saveLogin(true, autoAttempt + 1)
             }
           }, 1200)
         }
       })
       .finally(() => {
+        if (!this.isPageActive || requestId !== this.saveRequestId) {
+          return
+        }
         if (silent) {
           this.isAutoSaving = false
         } else {
           this.isSaving = false
         }
       })
+  }
+
+  private async validateWebLoginCookie(silent: boolean): Promise<ValidatedCookie> {
+    const cookie = await this.fetchWebLoginCookie()
+    const cleanCookie = cookie?.trim() || ''
+    if (!cleanCookie) {
+      throw new Error('未获取到登录 Cookie，请确认已完成登录')
+    }
+    if (silent && !this.hasLikelyAuthCookie(cleanCookie)) {
+      throw new Error('网页登录尚未完成')
+    }
+    const html = await this.http.getTextWithHeaders('/settings', { 'Cookie': cleanCookie })
+    const username = V2exSessionParser.extractUsername(html)
+    if (!username) {
+      throw new Error('Cookie 登录态无效，请确认已完成登录')
+    }
+    return { cookie: cleanCookie, username }
+  }
+
+  private isCurrentSaveRequest(requestId: number): boolean {
+    return this.isPageActive && requestId === this.saveRequestId
+  }
+
+  private async clearPersistedLogin(context: common.UIAbilityContext): Promise<void> {
+    await Promise.all([
+      CookieJarSettings.clear(context).catch((clearError: Error) => {
+        console.error('clear cookie after web login persist failure: ' + clearError.message)
+      }),
+      AuthSessionSettings.clear(context).catch((clearError: Error) => {
+        console.error('clear auth session after web login persist failure: ' + clearError.message)
+      })
+    ])
   }
 
   private async fetchWebLoginCookie(): Promise<string> {

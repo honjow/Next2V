@@ -1,5 +1,6 @@
 import { common, Want } from '@kit.AbilityKit'
 import { promptAction } from '@kit.ArkUI'
+import { V2exTwoFactorPrompt } from '../components/V2exTwoFactorPrompt'
 import type {
   LocalContentStats,
   SavedNode,
@@ -28,7 +29,9 @@ import {
   StorageKeys,
   ThemeConstants,
   UserProfileParams,
-  V2exSessionParser
+  V2exCookieTwoFactorRequiredError,
+  V2exSessionParser,
+  V2exSigninParser
 } from 'shared'
 
 @Component
@@ -121,6 +124,8 @@ export struct AccountDashboardPage {
   @State private accountMetaError: string = ''
   @State private isAccountMetaLoading: boolean = false
   @State private isDailyRedeeming: boolean = false
+  @State private twoFactorVisible: boolean = false
+  @State private twoFactorCookie: string = ''
   private http: HttpClient = HttpClient.getInstance()
   private api: ApiService = new ApiService()
   private localStatsRequestId: number = 0
@@ -202,6 +207,17 @@ export struct AccountDashboardPage {
       .width('100%')
       .height('100%')
       .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
+      .bindSheet($$this.twoFactorVisible, this.TwoFactorSheet(), {
+        height: SheetSize.MEDIUM,
+        preferType: SheetType.BOTTOM,
+        dragBar: false,
+        showClose: false,
+        maskColor: 'rgba(0,0,0,0.24)',
+        backgroundColor: $r('sys.color.ohos_id_color_card_bg'),
+        onDisappear: () => {
+          this.twoFactorVisible = false
+        }
+      })
       .onVisibleAreaChange([0.0, 1.0], (isVisible: boolean, _currentRatio: number) => {
         if (isVisible) {
           this.refreshLocalData()
@@ -279,6 +295,32 @@ export struct AccountDashboardPage {
     .width('100%')
     .height('100%')
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
+    .bindSheet($$this.twoFactorVisible, this.TwoFactorSheet(), {
+      height: SheetSize.MEDIUM,
+      preferType: SheetType.BOTTOM,
+      dragBar: false,
+      showClose: false,
+      maskColor: 'rgba(0,0,0,0.24)',
+      backgroundColor: $r('sys.color.ohos_id_color_card_bg'),
+      onDisappear: () => {
+        this.twoFactorVisible = false
+      }
+    })
+  }
+
+  @Builder
+  TwoFactorSheet() {
+    V2exTwoFactorPrompt({
+      visible: $twoFactorVisible,
+      cookie: this.twoFactorCookie,
+      message: '完成两步验证后即可继续访问 V2EX 账号内容。',
+      onSuccess: () => {
+        this.sessionError = ''
+        this.accountMetaError = ''
+        this.validateCookieSession(true)
+        this.loadAccountMeta(true)
+      }
+    })
   }
 
   @Builder
@@ -785,9 +827,12 @@ export struct AccountDashboardPage {
     this.isSessionValidating = true
     this.sessionError = ''
     const headers: Record<string, string> = { 'Cookie': cookie }
-    this.http.getTextWithHeaders('/settings', headers)
-      .then((html: string) => {
-        const username = V2exSessionParser.extractUsername(html)
+    this.http.getTextResponseWithHeaders('/settings', headers)
+      .then((res) => {
+        if (res.location.indexOf('/2fa') >= 0 || V2exSigninParser.extractTwoFactorForm(res.text)) {
+          throw new V2exCookieTwoFactorRequiredError('/settings')
+        }
+        const username = V2exSessionParser.extractUsername(res.text)
         if (!username) {
           throw new Error('Web 会话已失效，请重新登录')
         }
@@ -806,6 +851,10 @@ export struct AccountDashboardPage {
           })
       })
       .catch((error: Error) => {
+        if (error instanceof V2exCookieTwoFactorRequiredError) {
+          this.openTwoFactorFromCookie()
+          return
+        }
         const message = error.message || 'Web 会话验证失败'
         this.sessionError = message
         this.handleExpiredCookieSession(message)
@@ -829,6 +878,18 @@ export struct AccountDashboardPage {
         this.accountBalance = null
         this.dailyMission = null
       })
+  }
+
+  private openTwoFactorFromCookie(): void {
+    const cookie = CookieJarSettings.getCurrentCookie()
+    if (!cookie) {
+      this.sessionError = 'V2EX 需要完成两步验证，请重新登录'
+      return
+    }
+    this.sessionError = 'V2EX 需要完成两步验证'
+    this.accountMetaError = 'V2EX 需要完成两步验证'
+    this.twoFactorCookie = cookie
+    this.twoFactorVisible = true
   }
 
   private refreshAuthProfile(token: string): void {
@@ -955,6 +1016,10 @@ export struct AccountDashboardPage {
         this.dailyMission = results[1]
       })
       .catch((error: Error) => {
+        if (error instanceof V2exCookieTwoFactorRequiredError) {
+          this.openTwoFactorFromCookie()
+          return
+        }
         const message = error.message || '读取账号信息失败'
         this.accountMetaError = message
         this.handleExpiredCookieSession(message)
@@ -984,6 +1049,10 @@ export struct AccountDashboardPage {
         this.loadAccountMeta(true)
       })
       .catch((error: Error) => {
+        if (error instanceof V2exCookieTwoFactorRequiredError) {
+          this.openTwoFactorFromCookie()
+          return
+        }
         const message = error.message || '签到失败'
         this.accountMetaError = message
         this.handleExpiredCookieSession(message)

@@ -6,10 +6,13 @@ import { V2exSessionParser } from '../parser/V2exSessionParser'
 
 const CONNECT_TIMEOUT_MS: number = 10000
 const READ_TIMEOUT_MS: number = 15000
+const DEBUG_SKIP_LOGIN_2FA: boolean = false
 
 interface TextWithSetCookie {
   text: string
   setCookie: string[]
+  statusCode: number
+  location: string
 }
 
 interface CookiePair {
@@ -56,6 +59,8 @@ export class NativeTwoFactorRequiredError extends Error {
 
 export class V2exNativeAuthService {
   private httpClient: HttpClient = HttpClient.getInstance()
+  private static readonly TWO_FACTOR_PATH: string = '/2fa'
+  private static readonly SETTINGS_PATH: string = '/settings'
 
   async prepareLogin(): Promise<NativeLoginChallenge> {
     const baseUrl = this.httpClient.getBaseUrl()
@@ -111,30 +116,66 @@ export class V2exNativeAuthService {
 
     const postRes = await this.requestText(signinUrl, http.RequestMethod.POST, challenge.cookie, formBody)
     const cookieAfterPost = V2exNativeAuthService.mergeCookieHeader(challenge.cookie, postRes.setCookie)
-    const loginError = V2exSigninParser.extractProblemMessage(postRes.text)
+    if (V2exNativeAuthService.isLocationPath(postRes.location, V2exNativeAuthService.TWO_FACTOR_PATH)) {
+      if (DEBUG_SKIP_LOGIN_2FA) {
+        return { cookie: cookieAfterPost, username: username }
+      }
+      throw new NativeTwoFactorRequiredError(V2exNativeAuthService.fixedTwoFactorChallenge(cookieAfterPost))
+    }
 
-    const settingsUrl = `${baseUrl}/settings`
-    const settingsHtml = await this.httpClient.getTextWithHeaders('/settings', { 'Cookie': cookieAfterPost })
-    const signedInUser = V2exSessionParser.extractUsername(settingsHtml)
+    const loginError = V2exSigninParser.extractProblemMessage(postRes.text)
+    if (V2exNativeAuthService.isLocationPath(postRes.location, '/signin') || loginError) {
+      throw new Error(`登录失败：${loginError || '用户名、密码或验证码不正确'}`)
+    }
+    if (DEBUG_SKIP_LOGIN_2FA) {
+      return { cookie: cookieAfterPost, username: username }
+    }
+
+    const postTwoFactor = V2exSigninParser.extractTwoFactorForm(postRes.text)
+    if (postTwoFactor) {
+      if (DEBUG_SKIP_LOGIN_2FA) {
+        return { cookie: cookieAfterPost, username: username }
+      }
+      throw new NativeTwoFactorRequiredError(V2exNativeAuthService.fixedTwoFactorChallenge(cookieAfterPost, postTwoFactor.hiddenFields))
+    }
+
+    const settingsRes = await this.requestText(`${baseUrl}${V2exNativeAuthService.SETTINGS_PATH}`, http.RequestMethod.GET, cookieAfterPost)
+    const signedInUser = V2exSessionParser.extractUsername(settingsRes.text)
     if (!signedInUser) {
-      const postTwoFactor = V2exSigninParser.extractTwoFactorForm(postRes.text)
-      const settingsTwoFactor = V2exSigninParser.extractTwoFactorForm(settingsHtml)
-      const twoFactor = postTwoFactor || settingsTwoFactor
-      if (twoFactor) {
-        throw new NativeTwoFactorRequiredError({
-          cookie: cookieAfterPost,
-          action: twoFactor.action || (postTwoFactor ? signinUrl : settingsUrl),
-          codeField: twoFactor.codeField,
-          hiddenFields: twoFactor.hiddenFields
-        })
+      if (V2exNativeAuthService.isLocationPath(settingsRes.location, V2exNativeAuthService.TWO_FACTOR_PATH)) {
+        if (DEBUG_SKIP_LOGIN_2FA) {
+          return { cookie: cookieAfterPost, username: username }
+        }
+        throw new NativeTwoFactorRequiredError(V2exNativeAuthService.fixedTwoFactorChallenge(cookieAfterPost))
       }
-      if (loginError) {
-        throw new Error(`登录失败：${loginError}`)
+      const settingsTwoFactor = V2exSigninParser.extractTwoFactorForm(settingsRes.text)
+      if (settingsTwoFactor) {
+        if (DEBUG_SKIP_LOGIN_2FA) {
+          return { cookie: cookieAfterPost, username: username }
+        }
+        throw new NativeTwoFactorRequiredError(V2exNativeAuthService.fixedTwoFactorChallenge(cookieAfterPost, settingsTwoFactor.hiddenFields))
       }
-      throw new Error('登录失败：可能需要验证码或两步验证，请改用网页登录')
+      if (postRes.location && !V2exNativeAuthService.isLocationPath(postRes.location, '/') &&
+        !V2exNativeAuthService.isLocationPath(postRes.location, V2exNativeAuthService.SETTINGS_PATH)) {
+        throw new Error(`登录失败：不支持的跳转 ${postRes.location}`)
+      }
+      throw new Error('登录失败：无法通过私有页面验证会话，请改用网页登录')
     }
 
     return { cookie: cookieAfterPost, username: signedInUser }
+  }
+
+  async completeTwoFactorWithCookie(cookie: string, code: string): Promise<NativeLoginSnapshot> {
+    const cleanCookie = (cookie || '').trim()
+    if (!cleanCookie) {
+      throw new Error('缺少登录会话，请重新登录')
+    }
+    const twoFactorUrl = `${this.httpClient.getBaseUrl()}${V2exNativeAuthService.TWO_FACTOR_PATH}`
+    const getRes = await this.requestText(twoFactorUrl, http.RequestMethod.GET, cleanCookie)
+    const cookieAfterGet = V2exNativeAuthService.mergeCookieHeader(cleanCookie, getRes.setCookie)
+    const challenge = V2exNativeAuthService.twoFactorChallengeFromHtml(cookieAfterGet, getRes.text) ||
+      V2exNativeAuthService.fixedTwoFactorChallenge(cookieAfterGet)
+    return this.completeTwoFactor(challenge, code)
   }
 
   async completeTwoFactor(challenge: NativeTwoFactorChallenge, code: string): Promise<NativeLoginSnapshot> {
@@ -142,17 +183,12 @@ export class V2exNativeAuthService {
     if (!cleanCode) {
       throw new Error('请输入两步验证码')
     }
-    if (!challenge.action) {
-      throw new Error('两步验证表单已失效，请重新开始登录')
-    }
+    const pairs = V2exNativeAuthService.twoFactorFormPairs(challenge, cleanCode)
 
-    const pairs: FormPair[] = []
-    Object.keys(challenge.hiddenFields).forEach((key: string) => {
-      pairs.push({ key, value: challenge.hiddenFields[key] })
-    })
-    pairs.push({ key: challenge.codeField, value: cleanCode })
-
-    const actionUrl = V2exNativeAuthService.absoluteUrl(this.httpClient.getBaseUrl(), challenge.action)
+    const actionUrl = V2exNativeAuthService.absoluteUrl(
+      this.httpClient.getBaseUrl(),
+      challenge.action || V2exNativeAuthService.TWO_FACTOR_PATH
+    )
     const postRes = await this.requestText(
       actionUrl,
       http.RequestMethod.POST,
@@ -160,20 +196,33 @@ export class V2exNativeAuthService {
       V2exNativeAuthService.encodeFormPairs(pairs)
     )
     const cookieAfterPost = V2exNativeAuthService.mergeCookieHeader(challenge.cookie, postRes.setCookie)
+    if (V2exNativeAuthService.isLocationPath(postRes.location, V2exNativeAuthService.TWO_FACTOR_PATH)) {
+      throw new NativeTwoFactorRequiredError(
+        V2exNativeAuthService.fixedTwoFactorChallenge(cookieAfterPost, challenge.hiddenFields),
+        '两步验证失败，请检查验证码后重试'
+      )
+    }
+
     const loginError = V2exSigninParser.extractProblemMessage(postRes.text)
     if (loginError) {
-      const nextChallenge = V2exNativeAuthService.twoFactorChallengeFromHtml(cookieAfterPost, postRes.text, actionUrl)
+      const nextChallenge = V2exNativeAuthService.twoFactorChallengeFromHtml(cookieAfterPost, postRes.text)
       if (nextChallenge) {
         throw new NativeTwoFactorRequiredError(nextChallenge, `两步验证失败：${loginError}`)
       }
       throw new Error(`两步验证失败：${loginError}`)
     }
 
-    const settingsHtml = await this.httpClient.getTextWithHeaders('/settings', { 'Cookie': cookieAfterPost })
-    const signedInUser = V2exSessionParser.extractUsername(settingsHtml)
+    const settingsRes = await this.requestText(`${this.httpClient.getBaseUrl()}${V2exNativeAuthService.SETTINGS_PATH}`, http.RequestMethod.GET, cookieAfterPost)
+    const signedInUser = V2exSessionParser.extractUsername(settingsRes.text)
     if (!signedInUser) {
-      const nextChallenge = V2exNativeAuthService.twoFactorChallengeFromHtml(cookieAfterPost, postRes.text, actionUrl) ||
-        V2exNativeAuthService.twoFactorChallengeFromHtml(cookieAfterPost, settingsHtml, `${this.httpClient.getBaseUrl()}/settings`)
+      if (V2exNativeAuthService.isLocationPath(settingsRes.location, V2exNativeAuthService.TWO_FACTOR_PATH)) {
+        throw new NativeTwoFactorRequiredError(
+          V2exNativeAuthService.fixedTwoFactorChallenge(cookieAfterPost, challenge.hiddenFields),
+          '两步验证失败，请检查验证码后重试'
+        )
+      }
+      const nextChallenge = V2exNativeAuthService.twoFactorChallengeFromHtml(cookieAfterPost, postRes.text) ||
+        V2exNativeAuthService.twoFactorChallengeFromHtml(cookieAfterPost, settingsRes.text)
       if (nextChallenge) {
         throw new NativeTwoFactorRequiredError(nextChallenge, '两步验证失败，请检查验证码后重试')
       }
@@ -222,8 +271,15 @@ export class V2exNativeAuthService {
   ): Promise<TextWithSetCookie> {
     let httpRequest = http.createHttp()
     let headerBag: Object | null = null
+    const receivedSetCookieLines: string[] = []
+    let receivedLocation: string = ''
     httpRequest.on('headersReceive', (headers: Object) => {
       headerBag = headers
+      receivedSetCookieLines.push(...V2exNativeAuthService.extractSetCookieHeader(headers))
+      const location = V2exNativeAuthService.extractSingleHeader(headers, 'location')
+      if (location) {
+        receivedLocation = location
+      }
     })
 
     try {
@@ -253,8 +309,11 @@ export class V2exNativeAuthService {
       const response = await httpRequest.request(url, options)
 
       const text = (response.result as string) || ''
-      const setCookie = V2exNativeAuthService.extractSetCookieHeader(headerBag || response.header)
-      return { text, setCookie }
+      const headers = headerBag || response.header
+      const finalSetCookie = V2exNativeAuthService.extractSetCookieHeader(headers)
+      const setCookie = V2exNativeAuthService.uniqueCookieLines(receivedSetCookieLines.concat(finalSetCookie))
+      const location = V2exNativeAuthService.extractSingleHeader(headers, 'location') || receivedLocation
+      return { text, setCookie, statusCode: response.responseCode as number, location }
     } finally {
       httpRequest.destroy()
     }
@@ -270,16 +329,94 @@ export class V2exNativeAuthService {
     return `${baseUrl}${path}`
   }
 
-  private static twoFactorChallengeFromHtml(cookie: string, html: string, currentUrl: string): NativeTwoFactorChallenge | null {
+  private static twoFactorChallengeFromHtml(cookie: string, html: string): NativeTwoFactorChallenge | null {
     const twoFactor = V2exSigninParser.extractTwoFactorForm(html)
     if (!twoFactor) {
       return null
     }
     return {
       cookie,
-      action: twoFactor.action || currentUrl,
+      action: twoFactor.action || V2exNativeAuthService.TWO_FACTOR_PATH,
       codeField: twoFactor.codeField,
       hiddenFields: twoFactor.hiddenFields
+    }
+  }
+
+  private static fixedTwoFactorChallenge(cookie: string, hiddenFields: Record<string, string> = {}): NativeTwoFactorChallenge {
+    return {
+      cookie,
+      action: V2exNativeAuthService.TWO_FACTOR_PATH,
+      codeField: 'code',
+      hiddenFields
+    }
+  }
+
+  private static twoFactorFormPairs(challenge: NativeTwoFactorChallenge, cleanCode: string): FormPair[] {
+    const pairs: FormPair[] = []
+    const hiddenFields = challenge.hiddenFields
+    const keys = Object.keys(hiddenFields)
+    for (const key of keys) {
+      if (!key || key === challenge.codeField) {
+        continue
+      }
+      pairs.push({ key, value: hiddenFields[key] })
+    }
+    pairs.push({ key: challenge.codeField || 'code', value: cleanCode })
+    return pairs
+  }
+
+  private static isLocationPath(location: string, path: string): boolean {
+    if (!location || !path) {
+      return false
+    }
+    const normalized = V2exNativeAuthService.locationPath(location)
+    return normalized === path || normalized.indexOf(`${path}?`) === 0
+  }
+
+  private static locationPath(location: string): string {
+    const trimmed = location.trim()
+    if (!trimmed) {
+      return ''
+    }
+    const schemeIdx = trimmed.indexOf('://')
+    if (schemeIdx >= 0) {
+      const pathStart = trimmed.indexOf('/', schemeIdx + 3)
+      return pathStart >= 0 ? trimmed.slice(pathStart) : '/'
+    }
+    if (trimmed.indexOf('/') !== 0) {
+      return `/${trimmed}`
+    }
+    return trimmed
+  }
+
+  private static extractSingleHeader(headers: Object, name: string): string {
+    try {
+      const bag = headers as Record<string, Object>
+      const lower = name.toLowerCase()
+      const exact = bag[name] || bag[lower] || bag[name.toUpperCase()]
+      if (typeof exact === 'string') {
+        return exact.trim()
+      }
+      if (Array.isArray(exact)) {
+        const values = exact.filter((s: Object) => typeof s === 'string') as string[]
+        return values.length > 0 ? values[0].trim() : ''
+      }
+      const keys = Object.keys(bag)
+      const matched = keys.find((key: string) => key.toLowerCase() === lower)
+      if (!matched) {
+        return ''
+      }
+      const value = bag[matched]
+      if (typeof value === 'string') {
+        return value.trim()
+      }
+      if (Array.isArray(value)) {
+        const values = value.filter((s: Object) => typeof s === 'string') as string[]
+        return values.length > 0 ? values[0].trim() : ''
+      }
+      return ''
+    } catch (e) {
+      return ''
     }
   }
 
@@ -302,6 +439,20 @@ export class V2exNativeAuthService {
     } catch (e) {
       return []
     }
+  }
+
+  private static uniqueCookieLines(lines: string[]): string[] {
+    const seen: Record<string, boolean> = {}
+    const result: string[] = []
+    for (const line of lines) {
+      const clean = (line || '').trim()
+      if (!clean || seen[clean]) {
+        continue
+      }
+      seen[clean] = true
+      result.push(clean)
+    }
+    return result
   }
 
   private static splitSetCookieHeader(value: string): string[] {

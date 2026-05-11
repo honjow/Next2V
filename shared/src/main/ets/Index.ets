@@ -19,7 +19,7 @@ export interface ImagePreviewParams {
 
 // 网络层
 export { HttpClient } from './network/HttpClient'
-export { ApiService } from './network/ApiService'
+export { ApiService, V2exCookieTwoFactorRequiredError } from './network/ApiService'
 export type {
   V2exReplyModerationAction,
   V2exReplyThankAction,
