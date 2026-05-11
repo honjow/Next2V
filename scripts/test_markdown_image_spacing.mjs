@@ -148,6 +148,45 @@ function promoteStandaloneImageParagraphs(tokens) {
   }
 }
 
+function canMergeSelectableParagraph(token) {
+  if (!token || token.type !== 'paragraph') return false
+  const inlineTokens = token.tokens || []
+  if (inlineTokens.length === 0) return false
+  return !inlineTokens.some((t) => t && (t.type === 'image' || isInlineImageToken(t)))
+}
+
+function mergeParagraphRange(paragraphs) {
+  const tokens = []
+  const raw = []
+  const text = []
+  for (let i = 0; i < paragraphs.length; i++) {
+    const paragraph = paragraphs[i]
+    if (i > 0) {
+      tokens.push(buildTextToken('\n\n'))
+      raw.push('\n\n')
+      text.push('\n\n')
+    }
+    tokens.push(...(paragraph.tokens || []))
+    raw.push(paragraph.raw || '')
+    text.push(paragraph.text || paragraph.raw || '')
+  }
+  return { type: 'paragraph', raw: raw.join(''), text: text.join(''), tokens }
+}
+
+function mergeSelectableParagraphRuns(tokens) {
+  let i = 0
+  while (i < tokens.length) {
+    if (!canMergeSelectableParagraph(tokens[i])) {
+      i++
+      continue
+    }
+    let end = i + 1
+    while (end < tokens.length && canMergeSelectableParagraph(tokens[end])) end++
+    if (end - i > 1) tokens.splice(i, end - i, mergeParagraphRange(tokens.slice(i, end)))
+    i++
+  }
+}
+
 const fixture = [
   '![pic_7.png]( https://iili.io/BtYjJwP.png)',
   '![pic_8.png]( https://iili.io/BtYjKPa.png)',
@@ -243,4 +282,29 @@ if (renderedHtmlSplit.length !== 0 || renderedHtmlImageParagraph.tokens[1][INLIN
   process.exit(1)
 }
 
-console.log('PASS: markdown image spacing, linked image blocks, and mixed inline image tokens')
+const paragraphRun = [
+  { type: 'paragraph', raw: '第一段', text: '第一段', tokens: [buildTextToken('第一段')] },
+  { type: 'paragraph', raw: '第二段', text: '第二段', tokens: [buildTextToken('第二段')] },
+  { type: 'customImageBlock', href: 'https://example.com/a.png' },
+  { type: 'paragraph', raw: '第三段', text: '第三段', tokens: [buildTextToken('第三段')] },
+  { type: 'paragraph', raw: '第四段', text: '第四段', tokens: [buildTextToken('第四段')] }
+]
+mergeSelectableParagraphRuns(paragraphRun)
+if (paragraphRun.length !== 3 || paragraphRun[0].tokens.length !== 3 || paragraphRun[0].tokens[1].text !== '\n\n' || paragraphRun[2].tokens[1].text !== '\n\n') {
+  console.error('FAIL selectable paragraph runs should merge adjacent text paragraphs across blank lines')
+  console.error(JSON.stringify(paragraphRun, null, 2))
+  process.exit(1)
+}
+
+const paragraphRunWithInlineImage = [
+  { type: 'paragraph', raw: '前', text: '前', tokens: [buildTextToken('前')] },
+  { type: 'paragraph', raw: '图', text: '图', tokens: [buildTextToken('图'), buildImageToken('https://example.com/i.png', 'https://example.com/i.png', '', true)] }
+]
+mergeSelectableParagraphRuns(paragraphRunWithInlineImage)
+if (paragraphRunWithInlineImage.length !== 2) {
+  console.error('FAIL inline image paragraphs should not be merged into selectable text runs')
+  console.error(JSON.stringify(paragraphRunWithInlineImage, null, 2))
+  process.exit(1)
+}
+
+console.log('PASS: markdown image spacing, linked image blocks, mixed inline image tokens, and paragraph selection runs')

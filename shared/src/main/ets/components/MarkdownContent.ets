@@ -1114,6 +1114,7 @@ export struct MarkdownContent {
     MarkdownContent.splitMixedImageParagraphs(tokens);
     MarkdownContent.promoteStandaloneImageParagraphs(tokens);
     MarkdownContent.rewriteStandaloneTextLinks(tokens);
+    MarkdownContent.mergeSelectableParagraphRuns(tokens);
     MarkdownContent.retypeBlockTokens(tokens);
     return tokens;
   }
@@ -1437,6 +1438,89 @@ export struct MarkdownContent {
         MarkdownContent.rewriteStandaloneTextLinks(childTokens);
       }
     }
+  }
+
+  private static mergeSelectableParagraphRuns(tokens: Token[]): void {
+    if (!tokens || tokens.length === 0) {
+      return;
+    }
+
+    let i = 0;
+    while (i < tokens.length) {
+      const current = tokens[i] as TokenRecord;
+      if (!MarkdownContent.canMergeSelectableParagraph(current)) {
+        MarkdownContent.mergeChildSelectableParagraphRuns(current);
+        i++;
+        continue;
+      }
+
+      let end = i + 1;
+      while (end < tokens.length && MarkdownContent.canMergeSelectableParagraph(tokens[end] as TokenRecord)) {
+        end++;
+      }
+
+      if (end - i > 1) {
+        const merged = MarkdownContent.mergeParagraphRange(tokens.slice(i, end));
+        tokens.splice(i, end - i, merged as Token);
+      }
+      i++;
+    }
+  }
+
+  private static mergeChildSelectableParagraphRuns(token: TokenRecord): void {
+    const childTokens = token["tokens"] as Token[] | undefined;
+    if (Array.isArray(childTokens) && childTokens.length > 0) {
+      MarkdownContent.mergeSelectableParagraphRuns(childTokens);
+    }
+
+    const items = token["items"] as Array<TokenRecord> | undefined;
+    if (Array.isArray(items) && items.length > 0) {
+      for (const item of items) {
+        const itemTokens = item["tokens"] as Token[] | undefined;
+        if (Array.isArray(itemTokens) && itemTokens.length > 0) {
+          MarkdownContent.mergeSelectableParagraphRuns(itemTokens);
+        }
+      }
+    }
+  }
+
+  private static canMergeSelectableParagraph(token: TokenRecord): boolean {
+    if (!token || token["type"] !== "paragraph") {
+      return false;
+    }
+    const inlineTokens = token["tokens"] as Token[] | undefined;
+    if (!Array.isArray(inlineTokens) || inlineTokens.length === 0) {
+      return false;
+    }
+    return !inlineTokens.some((t: Token) => t && (t.type === "image" || _isInlineImageToken(t)));
+  }
+
+  private static mergeParagraphRange(paragraphs: Token[]): Tokens.Paragraph {
+    const mergedTokens: Token[] = [];
+    const rawParts: string[] = [];
+    const textParts: string[] = [];
+    for (let i = 0; i < paragraphs.length; i++) {
+      const paragraph = paragraphs[i] as TokenRecord;
+      const inlineTokens = paragraph["tokens"] as Token[] | undefined;
+      if (i > 0) {
+        const separator = MarkdownContent.buildTextToken("\n\n");
+        mergedTokens.push(separator as Token);
+        rawParts.push("\n\n");
+        textParts.push("\n\n");
+      }
+      if (Array.isArray(inlineTokens)) {
+        mergedTokens.push(...inlineTokens);
+      }
+      rawParts.push(String(paragraph["raw"] ?? ""));
+      textParts.push(String(paragraph["text"] ?? paragraph["raw"] ?? ""));
+    }
+
+    return {
+      type: "paragraph",
+      raw: rawParts.join(""),
+      text: textParts.join(""),
+      tokens: mergedTokens,
+    } as Tokens.Paragraph;
   }
 
   private static rewriteStandaloneTextLink(paragraph: TokenRecord): void {
