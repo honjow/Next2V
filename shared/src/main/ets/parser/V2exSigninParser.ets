@@ -50,12 +50,25 @@ export class V2exSigninParser {
     if (!html) {
       return ''
     }
-    const problemRe = /<div[^>]*class=['"][^'"]*problem[^'"]*['"][^>]*>([\s\S]*?)<\/div>/i
-    const problem = html.match(problemRe)
-    if (problem && problem[1]) {
-      return V2exSigninParser.compactText(problem[1])
+    const problemRe = /<div[^>]*class=['"][^'"]*problem[^'"]*['"][^>]*>([\s\S]*?)<\/div>/gi
+    let problem: RegExpExecArray | null = problemRe.exec(html)
+    while (problem) {
+      const message = problem[1] ? V2exSigninParser.compactText(problem[1]) : ''
+      if (message) {
+        return message
+      }
+      problem = problemRe.exec(html)
     }
     return ''
+  }
+
+  static hasSigninForm(html: string): boolean {
+    if (!html) {
+      return false
+    }
+    const forms = V2exSigninParser.extractForms(html)
+    return forms.some((form: string) => V2exSigninParser.locationPath(V2exSigninParser.extractFormAction(form)) === '/signin') ||
+      V2exSigninParser.extractForm(html) !== null
   }
 
   static extractTwoFactorForm(html: string): V2exTwoFactorForm | null {

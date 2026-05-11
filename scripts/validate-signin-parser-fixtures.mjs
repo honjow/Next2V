@@ -126,6 +126,37 @@ function extractForm(html) {
   return { usernameField, passwordField, captchaField, captchaUrl, once, next }
 }
 
+function extractProblemMessage(html) {
+  const problemRe = /<div[^>]*class=['"][^'"]*problem[^'"]*['"][^>]*>([\s\S]*?)<\/div>/gi
+  let problem = problemRe.exec(html)
+  while (problem) {
+    const message = problem[1] ? compactText(problem[1]) : ''
+    if (message) return message
+    problem = problemRe.exec(html)
+  }
+  return ''
+}
+
+function hasSigninForm(html) {
+  const forms = extractForms(html)
+  return forms.some(form => locationPath(extractFormAction(form)) === '/signin') || extractForm(html) !== null
+}
+
+function loginInputErrorMessage(challenge, problemMessage) {
+  const problem = (problemMessage || '').trim()
+  if (problem) {
+    if (problem.includes('验证码') || problem.toLowerCase().includes('captcha')) {
+      return '验证码不正确，请重新输入'
+    }
+    if (problem.includes('密码') || problem.toLowerCase().includes('password') ||
+      problem.toLowerCase().includes('username') || problem.includes('用户名')) {
+      return '用户名或密码不正确，请检查后重试'
+    }
+    return problem
+  }
+  return challenge.captchaField ? '用户名、密码或验证码不正确，请检查后重试' : '用户名或密码不正确，请检查后重试'
+}
+
 function extractForms(html) {
   const forms = []
   const re = /<form\b[^>]*>[\s\S]*?<\/form>/gi
@@ -268,6 +299,26 @@ assert.deepEqual(extractForm(signinEnglishLiveCaptcha), {
   next: '/settings'
 })
 
+const signinProblemWithHiddenEmptyDiv = `
+<div class="box">
+  <div id="problem" class="problem topic_content markdown_body" style="display: none;"></div>
+  <div class="problem">Please fix following problems and submit again:<ul><li>输入的验证码不正确。</li></ul></div>
+  <form method="post" action="/signin">
+    <input type="text" name="u_live_redacted" placeholder="Username or Email" />
+    <input type="password" name="p_live_redacted" />
+    <input type="text" name="captcha_live_redacted" placeholder="Enter the code above, click to change" />
+    <input type="hidden" value="[REDACTED_ONCE]" name="once" />
+    <input type="hidden" value="/settings" name="next" />
+  </form>
+</div>`
+assert.equal(extractProblemMessage(signinProblemWithHiddenEmptyDiv), 'Please fix following problems and submit again: 输入的验证码不正确。')
+assert.equal(hasSigninForm(signinProblemWithHiddenEmptyDiv), true)
+assert.equal(hasSigninForm('<html><body><a class="top" href="/member/live_user">live_user</a></body></html>'), false)
+assert.equal(loginInputErrorMessage({ captchaField: 'captcha_live_redacted' }, extractProblemMessage(signinProblemWithHiddenEmptyDiv)), '验证码不正确，请重新输入')
+assert.equal(loginInputErrorMessage({ captchaField: 'captcha_live_redacted' }, 'Username or password is incorrect'), '用户名或密码不正确，请检查后重试')
+assert.equal(loginInputErrorMessage({ captchaField: 'captcha_live_redacted' }, ''), '用户名、密码或验证码不正确，请检查后重试')
+assert.equal(loginInputErrorMessage({ captchaField: '' }, ''), '用户名或密码不正确，请检查后重试')
+
 const twoFactorFixture = `
 <form action="2fa" method="post">
   <div>两步验证</div>
@@ -342,6 +393,9 @@ assert.match(source, /placeholder\.indexOf\('验证码'\)/)
 assert.match(source, /placeholder\.indexOf\('code'\)/)
 assert.match(source, /src\.indexOf\('captcha'\)/)
 assert.match(source, /private static inputContext/)
+assert.match(source, /static hasSigninForm/)
+assert.match(source, /let problem: RegExpExecArray \| null = problemRe\.exec\(html\)/)
+assert.match(source, /while \(problem\)/)
 assert.match(source, /looksLikeTwoFactorFormByActionOrInputs/)
 assert.match(source, /actionPath === '\/2fa'/)
 assert.match(source, /findTwoFactorCodeField\(inputs\) === 'code'/)
@@ -356,6 +410,13 @@ assert.match(service, /action: twoFactor\.action \|\| V2exNativeAuthService\.TWO
 assert.match(service, /codeField: twoFactor\.codeField/)
 assert.match(service, /challenge\.action \|\| V2exNativeAuthService\.TWO_FACTOR_PATH/)
 assert.match(service, /requestText\(`\$\{baseUrl\}\$\{V2exNativeAuthService\.SETTINGS_PATH\}`/)
+assert.match(service, /private static isSigninResponse/)
+assert.match(service, /private static loginInputErrorMessage/)
+assert.match(service, /V2exNativeAuthService\.isSigninResponse\(settingsRes\)/)
+assert.match(service, /验证码不正确，请重新输入/)
+assert.match(service, /用户名或密码不正确，请检查后重试/)
+assert.match(service, /用户名、密码或验证码不正确，请检查后重试/)
+assert.match(service, /无法确认登录状态，请改用网页登录/)
 assert.match(service, /receivedSetCookieLines\.push\(\.\.\.V2exNativeAuthService\.extractSetCookieHeader\(headers\)\)/)
 assert.match(service, /uniqueCookieLines\(receivedSetCookieLines\.concat\(finalSetCookie\)\)/)
 assert.match(service, /V2exNativeAuthService\.extractSingleHeader\(headers, 'location'\) \|\| receivedLocation/)

@@ -124,8 +124,8 @@ export class V2exNativeAuthService {
     }
 
     const loginError = V2exSigninParser.extractProblemMessage(postRes.text)
-    if (V2exNativeAuthService.isLocationPath(postRes.location, '/signin') || loginError) {
-      throw new Error(`登录失败：${loginError || '用户名、密码或验证码不正确'}`)
+    if (V2exNativeAuthService.isSigninResponse(postRes) || loginError) {
+      throw new Error(`登录失败：${V2exNativeAuthService.loginInputErrorMessage(challenge, loginError)}`)
     }
     if (DEBUG_SKIP_LOGIN_2FA) {
       return { cookie: cookieAfterPost, username: username }
@@ -159,7 +159,11 @@ export class V2exNativeAuthService {
         !V2exNativeAuthService.isLocationPath(postRes.location, V2exNativeAuthService.SETTINGS_PATH)) {
         throw new Error(`登录失败：不支持的跳转 ${postRes.location}`)
       }
-      throw new Error('登录失败：无法通过私有页面验证会话，请改用网页登录')
+      const settingsProblem = V2exSigninParser.extractProblemMessage(settingsRes.text)
+      if (V2exNativeAuthService.isSigninResponse(settingsRes) || settingsProblem) {
+        throw new Error(`登录失败：${V2exNativeAuthService.loginInputErrorMessage(challenge, settingsProblem)}`)
+      }
+      throw new Error('登录失败：无法确认登录状态，请改用网页登录')
     }
 
     return { cookie: cookieAfterPost, username: signedInUser }
@@ -371,6 +375,25 @@ export class V2exNativeAuthService {
     }
     const normalized = V2exNativeAuthService.locationPath(location)
     return normalized === path || normalized.indexOf(`${path}?`) === 0
+  }
+
+  private static isSigninResponse(res: TextWithSetCookie): boolean {
+    return V2exNativeAuthService.isLocationPath(res.location, '/signin') || V2exSigninParser.hasSigninForm(res.text)
+  }
+
+  private static loginInputErrorMessage(challenge: NativeLoginChallenge, problemMessage: string): string {
+    const problem = (problemMessage || '').trim()
+    if (problem) {
+      if (problem.indexOf('验证码') >= 0 || problem.toLowerCase().indexOf('captcha') >= 0) {
+        return '验证码不正确，请重新输入'
+      }
+      if (problem.indexOf('密码') >= 0 || problem.toLowerCase().indexOf('password') >= 0 ||
+        problem.toLowerCase().indexOf('username') >= 0 || problem.indexOf('用户名') >= 0) {
+        return '用户名或密码不正确，请检查后重试'
+      }
+      return problem
+    }
+    return challenge.captchaField ? '用户名、密码或验证码不正确，请检查后重试' : '用户名或密码不正确，请检查后重试'
   }
 
   private static locationPath(location: string): string {
