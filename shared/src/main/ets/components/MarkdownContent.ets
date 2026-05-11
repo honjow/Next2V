@@ -16,9 +16,31 @@ const CODE_MONO = "customCode";
 const LIST_MONO = "customList";
 const PARAGRAPH_MONO = "customParagraph";
 const IMAGE_BLOCK_MONO = "customImageBlock";
+const INLINE_IMAGE_SIZE = 24;
+const INLINE_IMAGE_MAX_SIZE = 40;
 
 type TokenValue = Object | null | undefined;
 type TokenRecord = Record<string, TokenValue>;
+
+interface InlineImageToken extends Tokens.Image {
+  inlineImage?: boolean;
+}
+
+function _isInlineImageToken(token: Token): boolean {
+  const image = token as InlineImageToken;
+  return token && token.type === "image" && image.inlineImage === true;
+}
+
+function _inlineImageSize(fontSize: number): number {
+  const size = Math.round(fontSize * 1.5);
+  if (size < INLINE_IMAGE_SIZE) {
+    return INLINE_IMAGE_SIZE;
+  }
+  if (size > INLINE_IMAGE_MAX_SIZE) {
+    return INLINE_IMAGE_MAX_SIZE;
+  }
+  return size;
+}
 
 function _appendCacheBust(url: string, nonce: number): string {
   if (!url) {
@@ -237,6 +259,10 @@ interface CustomInlineParams {
 
 interface MarkdownImageCompleteEvent {
   loadingStatus: number;
+  width?: number;
+  height?: number;
+  componentWidth?: number;
+  componentHeight?: number;
 }
 
 interface MarkdownImageErrorEvent {
@@ -381,6 +407,12 @@ function SelectableInlineTokenSpans(tokens: Token[], fontSize: number, options: 
         .fontSize(fontSize)
         .fontColor(ThemeConstants.TEXT_SECONDARY)
         .decoration({ type: TextDecorationType.LineThrough });
+    } else if (_isInlineImageToken(t)) {
+      ImageSpan(MediaUrlUtils.imageUrlForRender((t as Tokens.Image).href))
+        .width(_inlineImageSize(fontSize))
+        .height(_inlineImageSize(fontSize))
+        .objectFit(ImageFit.Contain)
+        .verticalAlign(ImageSpanAlignment.CENTER);
     } else {
       SelectableTextWithMentions((t as Tokens.Text).text ?? t.raw ?? "", fontSize, options);
     }
@@ -615,6 +647,12 @@ function InlineTokenSpans(tokens: Token[], fontSize: number) {
         .fontSize(fontSize)
         .fontColor(ThemeConstants.TEXT_SECONDARY)
         .decoration({ type: TextDecorationType.LineThrough });
+    } else if (_isInlineImageToken(t)) {
+      ImageSpan(MediaUrlUtils.imageUrlForRender((t as Tokens.Image).href))
+        .width(_inlineImageSize(fontSize))
+        .height(_inlineImageSize(fontSize))
+        .objectFit(ImageFit.Contain)
+        .verticalAlign(ImageSpanAlignment.CENTER);
     } else {
       // Token union includes Space which has no .text — cast needed
       Span((t as Tokens.Text).text ?? t.raw ?? "")
@@ -634,6 +672,8 @@ struct MarkdownAutoImage {
   @State private reloadNonce: number = 0
   @State private networkChecked: boolean = false
   @State private isWifiNetwork: boolean = false
+  @State private sourceWidth: number = 0
+  @State private sourceHeight: number = 0
 
   aboutToAppear() {
     this.refreshNetworkState();
@@ -709,15 +749,24 @@ struct MarkdownAutoImage {
     this.loadState = 1;
   }
 
+  private renderedWidth(): Length {
+    if (this.sourceWidth > 0 && this.sourceWidth <= 240) {
+      return this.sourceWidth;
+    }
+    return "100%";
+  }
+
   build() {
     if (this.imageLoadingAllowed()) {
       Stack({ alignContent: Alignment.Center }) {
         Image(_appendCacheBust(this.url, this.reloadNonce))
-          .width("100%")
+          .width(this.renderedWidth())
           .objectFit(ImageFit.Contain)
           .borderRadius(ThemeConstants.RADIUS_SM)
           .onComplete((event?: MarkdownImageCompleteEvent) => {
             if ((event?.loadingStatus ?? 0) === 1) {
+              this.sourceWidth = event?.width ?? 0;
+              this.sourceHeight = event?.height ?? 0;
               this.loadState = 2;
             }
           })
@@ -832,18 +881,18 @@ struct CustomList {
   }
 
   private paragraphTextTokens(child: Token): Token[] {
-    return this.paragraphTokens(child).filter((t: Token) => t && t.type !== "image" && t.type !== "br");
+    return this.paragraphTokens(child).filter((t: Token) => t && (t.type !== "image" || _isInlineImageToken(t)) && t.type !== "br");
   }
 
   private paragraphImageTokens(child: Token): Tokens.Image[] {
-    return this.paragraphTokens(child).filter((t: Token) => t && t.type === "image") as Tokens.Image[];
+    return this.paragraphTokens(child).filter((t: Token) => t && t.type === "image" && !_isInlineImageToken(t)) as Tokens.Image[];
   }
 
   private hasImageToken(tokens: Token[]): boolean {
     if (!tokens || tokens.length === 0) {
       return false;
     }
-    return tokens.some((t: Token) => t && t.type === "image");
+    return tokens.some((t: Token) => t && t.type === "image" && !_isInlineImageToken(t));
   }
 
   build() {
@@ -1082,14 +1131,14 @@ export struct MarkdownContent {
     if (!Array.isArray(inlineTokens) || inlineTokens.length === 0) {
       return [];
     }
-    if (!inlineTokens.some((t: Token) => t && t.type === "image")) {
+    if (!inlineTokens.some((t: Token) => t && t.type === "image" && !_isInlineImageToken(t))) {
       return [];
     }
 
     const result: Token[] = [];
     let textTokens: Token[] = [];
     for (const token of inlineTokens) {
-      if (token && token.type === "image") {
+      if (token && token.type === "image" && !_isInlineImageToken(token)) {
         MarkdownContent.flushParagraphTokens(result, textTokens);
         textTokens = [];
         (token as TokenRecord)["type"] = IMAGE_BLOCK_MONO;
@@ -1217,7 +1266,7 @@ export struct MarkdownContent {
       if (m.index > last) {
         result.push(MarkdownContent.buildTextToken(text.slice(last, m.index)) as Token);
       }
-      result.push(MarkdownContent.buildImageToken(rawUrl, renderUrl, "") as Token);
+      result.push(MarkdownContent.buildImageToken(rawUrl, renderUrl, "", true) as Token);
       last = m.index + rawUrl.length;
       m = re.exec(text);
     }
@@ -1238,14 +1287,16 @@ export struct MarkdownContent {
     } as Tokens.Text;
   }
 
-  private static buildImageToken(raw: string, href: string, text: string): Tokens.Image {
-    return {
+  private static buildImageToken(raw: string, href: string, text: string, inlineImage: boolean = false): Tokens.Image {
+    const imageToken: InlineImageToken = {
       type: "image",
       raw: raw,
       href: href,
       title: null,
       text: text,
-    };
+      inlineImage: inlineImage,
+    } as InlineImageToken;
+    return imageToken;
   }
 
   private static promoteStandaloneImageParagraphs(tokens: Token[]): void {

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 const IMAGE_BLOCK_MONO = 'customImageBlock'
+const INLINE_IMAGE_PROP = 'inlineImage'
 
 function normalizeMarkdownSource(md) {
   return (md || '').replace(/\]\(\s+(https?:\/\/[^\s)]+)\s*\)/gi, ']($1)')
@@ -17,8 +18,14 @@ function buildTextToken(text) {
   return { type: 'text', raw: text, text }
 }
 
-function buildImageToken(raw, href, text = '') {
-  return { type: 'image', raw, href, title: null, text }
+function isInlineImageToken(token) {
+  return token && token.type === 'image' && token[INLINE_IMAGE_PROP] === true
+}
+
+function buildImageToken(raw, href, text = '', inlineImage = false) {
+  const token = { type: 'image', raw, href, title: null, text }
+  if (inlineImage) token[INLINE_IMAGE_PROP] = true
+  return token
 }
 
 function splitTextImageUrls(token) {
@@ -35,7 +42,7 @@ function splitTextImageUrls(token) {
       continue
     }
     if (m.index > last) result.push(buildTextToken(text.slice(last, m.index)))
-    result.push(buildImageToken(rawUrl, renderUrl))
+    result.push(buildImageToken(rawUrl, renderUrl, '', true))
     last = m.index + rawUrl.length
     m = re.exec(text)
   }
@@ -74,7 +81,7 @@ function rewriteParagraphInlineImages(paragraph) {
 
 function splitParagraphByImages(paragraph) {
   const inlineTokens = paragraph.tokens || []
-  if (!inlineTokens.some((t) => t.type === 'image')) return []
+  if (!inlineTokens.some((t) => t.type === 'image' && !isInlineImageToken(t))) return []
   const result = []
   let textTokens = []
   const flush = () => {
@@ -89,7 +96,7 @@ function splitParagraphByImages(paragraph) {
     }
   }
   for (const token of inlineTokens) {
-    if (token.type === 'image') {
+    if (token.type === 'image' && !isInlineImageToken(token)) {
       flush()
       textTokens = []
       token.type = IMAGE_BLOCK_MONO
@@ -188,10 +195,10 @@ const inlineBareImageParagraph = {
 }
 rewriteParagraphInlineImages(inlineBareImageParagraph)
 const bareSplit = splitParagraphByImages(inlineBareImageParagraph)
-if (bareSplit.length !== 2 || bareSplit[1].type !== IMAGE_BLOCK_MONO || bareSplit[1].href !== 'https://i.imgur.com/huX6coX.png') {
-  console.error('FAIL inline bare image URL paragraph splitting')
-  console.error(JSON.stringify(bareSplit, null, 2))
+if (bareSplit.length !== 0 || inlineBareImageParagraph.tokens.length !== 2 || inlineBareImageParagraph.tokens[1].type !== 'image' || inlineBareImageParagraph.tokens[1][INLINE_IMAGE_PROP] !== true || inlineBareImageParagraph.tokens[1].href !== 'https://i.imgur.com/huX6coX.png') {
+  console.error('FAIL inline bare image URL should remain inline in mixed text paragraph')
+  console.error(JSON.stringify({ bareSplit, paragraph: inlineBareImageParagraph }, null, 2))
   process.exit(1)
 }
 
-console.log('PASS: markdown image spacing, linked images, and inline bare image URLs')
+console.log('PASS: markdown image spacing, linked image blocks, and mixed inline bare image URLs')
