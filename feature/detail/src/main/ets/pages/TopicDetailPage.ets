@@ -9,7 +9,7 @@ import {
   V2exReply, Avatar, ReplyCard, TimeAgo, ThemeConstants, MarkdownContent, PullRefreshListScaffold,
   NodeTopicListParams, UserProfileParams, ImagePreviewParams, CollectionSettings, CacheSettings, V2exTopic, AuthSettings,
   LoadingFooter, HttpClient, StorageKeys, ApiService, CookieJarSettings, V2exToggleAction, ReadingSettings,
-  AppModalScaffold, V2exRoute, V2exUrlRouter, TopicDetailParams, ImageUtils
+  AppModalScaffold, V2exRoute, V2exUrlRouter, TopicDetailParams, ImageUtils, HtmlEntityUtils
 } from 'shared'
 import type { V2exReplyThankAction, V2exTopicThankAction } from 'shared'
 import type { V2exReplyModerationAction, V2exTopicModerationAction } from 'shared'
@@ -648,7 +648,7 @@ export struct TopicDetailPage {
 
     this.addContextReplyByFloor(replies, selectedFloor - 2, '上文', addReply)
     this.addContextReplyByFloor(replies, selectedFloor - 1, '上文', addReply)
-    this.addMentionTargetsBeforeSelection(replies, selectedFloor, selected.content, addReply)
+    this.addMentionTargetsBeforeSelection(replies, selectedFloor, selected.content, selected.content_rendered, addReply)
     addReply(selected, '当前回复', true)
     this.addRepliesMentioningSelectedAuthor(replies, selectedFloor, selected.member.username, addReply)
     this.addContextReplyByFloor(replies, selectedFloor + 1, '下文', addReply)
@@ -673,9 +673,10 @@ export struct TopicDetailPage {
     replies: V2exReply[],
     selectedFloor: number,
     content: string,
+    renderedContent: string,
     addReply: (reply: V2exReply | null, label: string, selectedItem: boolean) => void
   ): void {
-    const names = this.extractMentionedUsernames(content)
+    const names = this.extractMentionedUsernames(content, renderedContent)
     names.forEach((name: string) => {
       const target = this.findPreviousReplyByUsername(replies, selectedFloor, name)
       addReply(target, `@${name}`, false)
@@ -695,7 +696,7 @@ export struct TopicDetailPage {
     let added = 0
     for (let i = selectedFloor; i < replies.length && added < 2; i++) {
       const reply = replies[i]
-      if (reply && this.contentMentionsUsername(reply.content, clean)) {
+      if (reply && this.contentMentionsUsername(reply.content, reply.content_rendered, clean)) {
         addReply(reply, `提到 @${clean}`, false)
         added++
       }
@@ -716,40 +717,65 @@ export struct TopicDetailPage {
     return null
   }
 
-  private contentMentionsUsername(content: string, username: string): boolean {
+  private contentMentionsUsername(content: string, renderedContent: string, username: string): boolean {
     const clean = (username || '').trim().toLowerCase()
     if (!clean) {
       return false
     }
-    return this.extractMentionedUsernames(content).some((name: string) => name.toLowerCase() === clean)
+    return this.extractMentionedUsernames(content, renderedContent).some((name: string) => name.toLowerCase() === clean)
   }
 
-  private extractMentionedUsernames(content: string): string[] {
+  private extractMentionedUsernames(content: string, renderedContent: string = ''): string[] {
     const names: string[] = []
     const seen = new Set<string>()
-    const parts = (content || '').split('@')
-    for (let i = 1; i < parts.length; i++) {
-      const name = this.readMentionName(parts[i] || '')
-      const key = name.toLowerCase()
-      if (name && !seen.has(key)) {
+    const addName = (name: string): void => {
+      const clean = (name || '').trim()
+      const key = clean.toLowerCase()
+      if (clean && !seen.has(key)) {
         seen.add(key)
-        names.push(name)
+        names.push(clean)
       }
+    }
+
+    const rendered = renderedContent || ''
+    const linkRe = /@\s*<a\b[^>]*href=["'](?:https?:\/\/(?:www\.)?v2ex\.(?:com|co))?\/member\/([^"'?#\/]+)[^"']*["'][^>]*>/gi
+    let linkMatch: RegExpExecArray | null = linkRe.exec(rendered)
+    while (linkMatch) {
+      addName(this.decodeHtmlText(linkMatch[1] || ''))
+      linkMatch = linkRe.exec(rendered)
+    }
+    if (names.length > 0) {
+      return names
+    }
+
+    const raw = content || ''
+    const re = /@([0-9A-Za-z_]{2,32})/g
+    let m: RegExpExecArray | null = re.exec(raw)
+    while (m) {
+      if (this.isValidMentionMatch(raw, m.index, m[0])) {
+        addName(m[1] || '')
+      }
+      m = re.exec(raw)
     }
     return names
   }
 
-  private readMentionName(raw: string): string {
-    let name = ''
-    for (let i = 0; i < raw.length; i++) {
-      const ch = raw.charAt(i)
-      if (this.isMentionNameChar(ch)) {
-        name += ch
-      } else {
-        break
-      }
+  private isValidMentionMatch(raw: string, atIndex: number, matchText: string): boolean {
+    const before = atIndex > 0 ? raw.charAt(atIndex - 1) : ''
+    const afterIndex = atIndex + matchText.length
+    const after = afterIndex < raw.length ? raw.charAt(afterIndex) : ''
+    return this.isMentionBoundaryChar(before) && this.isMentionBoundaryChar(after)
+  }
+
+  private isMentionBoundaryChar(ch: string): boolean {
+    if (!ch) {
+      return true
     }
-    return name
+    return !this.isMentionNameChar(ch) && ch !== '-' && ch !== '.'
+  }
+
+  private decodeHtmlText(value: string): string {
+    return HtmlEntityUtils.decode(value || '')
   }
 
   private isMentionNameChar(ch: string): boolean {

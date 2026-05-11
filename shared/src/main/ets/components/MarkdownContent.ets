@@ -301,6 +301,23 @@ function SelectableTextWithMentions(text: string, fontSize: number, options: Mar
   });
 }
 
+function _isMentionBoundaryChar(ch: string): boolean {
+  if (!ch) {
+    return true;
+  }
+  return !((ch >= 'a' && ch <= 'z') ||
+    (ch >= 'A' && ch <= 'Z') ||
+    (ch >= '0' && ch <= '9') ||
+    ch === '_' || ch === '-' || ch === '.');
+}
+
+function _isValidMentionMatch(raw: string, atIndex: number, matchText: string): boolean {
+  const before = atIndex > 0 ? raw.charAt(atIndex - 1) : '';
+  const afterIndex = atIndex + matchText.length;
+  const after = afterIndex < raw.length ? raw.charAt(afterIndex) : '';
+  return _isMentionBoundaryChar(before) && _isMentionBoundaryChar(after);
+}
+
 function _splitMentionText(text: string): string[] {
   const raw = text || "";
   if (!raw) {
@@ -311,11 +328,16 @@ function _splitMentionText(text: string): string[] {
   let last = 0;
   let m: RegExpExecArray | null = re.exec(raw);
   while (m) {
+    const matchText = m[0];
+    if (!_isValidMentionMatch(raw, m.index, matchText)) {
+      m = re.exec(raw);
+      continue;
+    }
     if (m.index > last) {
       parts.push(raw.slice(last, m.index));
     }
-    parts.push(m[0]);
-    last = m.index + m[0].length;
+    parts.push(matchText);
+    last = m.index + matchText.length;
     m = re.exec(raw);
   }
   if (last < raw.length) {
