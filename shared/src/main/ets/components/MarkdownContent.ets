@@ -1166,10 +1166,175 @@ export struct MarkdownContent {
   }
 
   private static normalizeMarkdownSource(md: string): string {
-    return (md || '')
+    let source = md || '';
+    if (MarkdownContent.looksLikeRenderedHtml(source)) {
+      source = MarkdownContent.renderedHtmlToMarkdown(source);
+    }
+    return source
       .replace(/<a\b[^>]*>\s*<img\b[^>]*\bsrc=(["'])(https?:\/\/[^"']+)\1[^>]*>\s*<\/a>/gi, '$2')
       .replace(/<img\b[^>]*\bsrc=(["'])(https?:\/\/[^"']+)\1[^>]*>/gi, '$2')
       .replace(/\]\(\s+(https?:\/\/[^\s)]+)\s*\)/gi, ']($1)');
+  }
+
+  private static looksLikeRenderedHtml(source: string): boolean {
+    const value = (source || '').trim();
+    if (!value.startsWith('<')) {
+      return false;
+    }
+    return /<(?:div|p|h[1-6]|ul|ol|li|table|img|a)\b/i.test(value);
+  }
+
+  private static renderedHtmlToMarkdown(html: string): string {
+    let md = (html || '')
+      .replace(/\r\n/g, '\n')
+      .replace(/<table\b[^>]*>[\s\S]*?<\/table>/gi, (table: string): string => {
+        return MarkdownContent.convertHtmlTable(table);
+      })
+      .replace(/<h([1-6])\b[^>]*>([\s\S]*?)<\/h\1>/gi, (_all: string, level: string, text: string): string => {
+        return `\n\n${MarkdownContent.headingPrefix(Number(level))} ${MarkdownContent.stripHtmlTags(text)}\n\n`;
+      })
+      .replace(/<ol\b[^>]*>([\s\S]*?)<\/ol>/gi, (_all: string, body: string): string => {
+        return MarkdownContent.convertHtmlList(body, true);
+      })
+      .replace(/<ul\b[^>]*>([\s\S]*?)<\/ul>/gi, (_all: string, body: string): string => {
+        return MarkdownContent.convertHtmlList(body, false);
+      })
+      .replace(/<p\b[^>]*>([\s\S]*?)<\/p>/gi, (_all: string, text: string): string => {
+        const inline = MarkdownContent.inlineHtmlToMarkdown(text).trim();
+        return inline ? `\n\n${inline}\n\n` : '\n\n';
+      })
+      .replace(/<div\b[^>]*>/gi, '\n\n')
+      .replace(/<\/div>/gi, '\n\n')
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<img\b[^>]*>/gi, (tag: string): string => MarkdownContent.inlineHtmlToMarkdown(tag))
+      .replace(/<[^>]+>/g, '');
+    return HtmlEntityUtils.decode(md)
+      .replace(/[ \t]+\n/g, '\n')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+  }
+
+  private static headingPrefix(level: number): string {
+    let prefix = '';
+    const count = Math.max(1, Math.min(6, level));
+    for (let i = 0; i < count; i++) {
+      prefix += '#';
+    }
+    return prefix;
+  }
+
+  private static convertHtmlList(listHtml: string, ordered: boolean): string {
+    const items: string[] = [];
+    const re = /<li\b[^>]*>([\s\S]*?)<\/li>/gi;
+    let match: RegExpExecArray | null = re.exec(listHtml);
+    while (match) {
+      const text = MarkdownContent.inlineHtmlToMarkdown(match[1])
+        .replace(/\s*\n\s*/g, ' ')
+        .trim();
+      if (text.length > 0) {
+        items.push(text);
+      }
+      match = re.exec(listHtml);
+    }
+    if (items.length === 0) {
+      return '\n\n';
+    }
+    let lines: string[] = [];
+    for (let i = 0; i < items.length; i++) {
+      const marker = ordered ? `${i + 1}.` : '-';
+      lines.push(`${marker} ${items[i]}`);
+    }
+    return `\n\n${lines.join('\n')}\n\n`;
+  }
+
+  private static convertHtmlTable(tableHtml: string): string {
+    const rows: string[][] = [];
+    const rowRe = /<tr\b[^>]*>([\s\S]*?)<\/tr>/gi;
+    let rowMatch: RegExpExecArray | null = rowRe.exec(tableHtml);
+    while (rowMatch) {
+      const cells: string[] = [];
+      const cellRe = /<t[hd]\b[^>]*>([\s\S]*?)<\/t[hd]>/gi;
+      let cellMatch: RegExpExecArray | null = cellRe.exec(rowMatch[1]);
+      while (cellMatch) {
+        cells.push(MarkdownContent.inlineHtmlToMarkdown(cellMatch[1])
+          .replace(/\s*\n\s*/g, ' ')
+          .replace(/\|/g, '\\|')
+          .trim());
+        cellMatch = cellRe.exec(rowMatch[1]);
+      }
+      if (cells.length > 0) {
+        rows.push(cells);
+      }
+      rowMatch = rowRe.exec(tableHtml);
+    }
+    if (rows.length === 0) {
+      return '\n\n';
+    }
+
+    let width = 0;
+    for (const row of rows) {
+      width = Math.max(width, row.length);
+    }
+    const lines: string[] = [];
+    lines.push(`| ${MarkdownContent.padTableRow(rows[0], width).join(' | ')} |`);
+    const divider: string[] = [];
+    for (let i = 0; i < width; i++) {
+      divider.push('---');
+    }
+    lines.push(`| ${divider.join(' | ')} |`);
+    for (let i = 1; i < rows.length; i++) {
+      lines.push(`| ${MarkdownContent.padTableRow(rows[i], width).join(' | ')} |`);
+    }
+    return `\n\n${lines.join('\n')}\n\n`;
+  }
+
+  private static padTableRow(row: string[], width: number): string[] {
+    const padded: string[] = [];
+    for (let i = 0; i < width; i++) {
+      padded.push(row[i] || '');
+    }
+    return padded;
+  }
+
+  private static inlineHtmlToMarkdown(value: string): string {
+    return (value || '')
+      .replace(/<img\b[^>]*>/gi, (tag: string): string => {
+        const src = MarkdownContent.htmlAttr(tag, 'src');
+        const alt = MarkdownContent.htmlAttr(tag, 'alt');
+        return src ? `![${alt}](${src})` : '';
+      })
+      .replace(/<a\b[^>]*href=(["'])(.*?)\1[^>]*>([\s\S]*?)<\/a>/gi,
+        (_all: string, _quote: string, href: string, text: string): string => {
+          const label = MarkdownContent.stripHtmlTags(text);
+          const url = HtmlEntityUtils.decode(href).trim();
+          if (!url) {
+            return label;
+          }
+          return label && label !== url ? `[${label}](${url})` : url;
+        })
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<code\b[^>]*>([\s\S]*?)<\/code>/gi, (_all: string, code: string): string => {
+        return `\`${MarkdownContent.stripHtmlTags(code)}\``;
+      })
+      .replace(/<(strong|b)\b[^>]*>([\s\S]*?)<\/\1>/gi, (_all: string, _tag: string, text: string): string => {
+        return `**${MarkdownContent.stripHtmlTags(text)}**`;
+      })
+      .replace(/<(em|i)\b[^>]*>([\s\S]*?)<\/\1>/gi, (_all: string, _tag: string, text: string): string => {
+        return `*${MarkdownContent.stripHtmlTags(text)}*`;
+      })
+      .replace(/<[^>]+>/g, '');
+  }
+
+  private static stripHtmlTags(value: string): string {
+    return HtmlEntityUtils.decode((value || '').replace(/<[^>]+>/g, ''))
+      .replace(/[ \t\f\v]+/g, ' ')
+      .trim();
+  }
+
+  private static htmlAttr(tag: string, name: string): string {
+    const re = new RegExp(`${name}\\s*=\\s*(["'])(.*?)\\1`, 'i');
+    const match = re.exec(tag || '');
+    return match ? HtmlEntityUtils.decode(match[2]).trim() : '';
   }
 
   private static splitMixedImageParagraphs(tokens: Token[]): void {
