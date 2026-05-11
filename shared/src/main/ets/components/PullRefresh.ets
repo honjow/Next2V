@@ -38,6 +38,19 @@ export struct PullRefresh {
     return this.scroller.currentOffset().yOffset <= 0
   }
 
+  // Pixel-true bottom check for MANUAL pull-up (force refresh) gesture only.
+  // Auto pagination uses List.onReachEnd/onScrollIndex which fire when the
+  // last item enters the viewport — that signal is intentionally looser and
+  // must NOT gate the manual pull-up indicator, otherwise the user sees the
+  // bottom indicator flash while the list is still mid-scroll.
+  private isListAtBottom(): boolean {
+    try {
+      return this.scroller.isAtEnd()
+    } catch (_e) {
+      return false
+    }
+  }
+
   private bounceBack(target: number = 0): void {
     this.onScrollEnableChange(true)
     this.getUIContext().animateTo({ duration: ThemeConstants.ANIM_DURATION, curve: Curve.EaseOut }, () => {
@@ -191,7 +204,7 @@ export struct PullRefresh {
             if (deltaY > PULL_START_DRAG_VP && this.isListAtTop()) {
               this.isTracking = true
               this.onScrollEnableChange(false)
-            } else if (deltaY < -PULL_START_DRAG_VP && this.canStartBottomRefresh()) {
+            } else if (deltaY < -PULL_START_DRAG_VP && this.isListAtBottom() && this.canStartBottomRefresh()) {
               this.isBottomTracking = true
               this.onScrollEnableChange(false)
             } else {

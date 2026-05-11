@@ -962,7 +962,13 @@ export struct TopicDetailPage {
   }
 
   private canTriggerBottomRefresh(): boolean {
-    return this.isReplyListAtEnd && this.v.canBottomRefresh()
+    // Pixel-true scroll-to-bottom is now enforced inside PullRefresh
+    // (isListAtBottom via Scroller.isAtEnd). This gate only expresses
+    // business state: refresh not already running, last page reached, etc.
+    // isReplyListAtEnd intentionally NOT consulted here — it's a loose
+    // "last item visible" signal owned by auto-pagination and would
+    // re-introduce the false-trigger bug.
+    return this.v.canBottomRefresh()
   }
 
   private handleReplyListReachEnd(): void {
