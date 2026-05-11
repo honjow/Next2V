@@ -1,4 +1,5 @@
 import { UIAbility, Want, AbilityConstant } from '@kit.AbilityKit'
+import { Configuration } from '@ohos.app.ability.Configuration'
 import { window } from '@kit.ArkUI'
 import { webview } from '@kit.ArkWeb'
 import {
@@ -8,6 +9,7 @@ import {
   MediaSettings,
   ReadingSettings,
   StorageKeys,
+  ThemeSettings,
   V2exUrlRouter,
   WriteActionSettings
 } from 'shared'
@@ -56,7 +58,13 @@ export default class EntryAbility extends UIAbility {
         ApiDomainSettings.apply(false)
       })
       .finally(() => {
-        MediaSettings.load(this.context)
+        ThemeSettings.load(this.context)
+          .catch((error: Error) => {
+            console.error('restore theme settings failed: ' + error.message)
+            ThemeSettings.apply(this.context, ThemeSettings.MODE_AUTO)
+          })
+          .finally(() => {
+            MediaSettings.load(this.context)
           .catch((error: Error) => {
             console.error('restore media settings failed: ' + error.message)
             MediaSettings.apply(true, false)
@@ -92,7 +100,12 @@ export default class EntryAbility extends UIAbility {
                   })
               })
           })
+          })
       })
+  }
+
+  onConfigurationUpdate(newConfig: Configuration): void {
+    ThemeSettings.refreshEffectiveDark(this.context, newConfig.colorMode)
   }
 
   private loadContent(windowStage: window.WindowStage, win: window.Window | null): void {

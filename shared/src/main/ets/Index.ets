@@ -36,6 +36,8 @@ export type { TabItem } from './constants/ApiConstants'
 export { StorageKeys } from './constants/StorageKeys'
 export { ApiDomainSettings } from './settings/ApiDomainSettings'
 export { FeedTabSettings } from './settings/FeedTabSettings'
+export { ThemeSettings }
+  from './settings/ThemeSettings'
 export { AuthSettings } from './settings/AuthSettings'
 export type { AuthSnapshot } from './settings/AuthSettings'
 export { CookieJarSettings } from './settings/CookieJarSettings'

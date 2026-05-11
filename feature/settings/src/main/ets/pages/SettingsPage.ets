@@ -19,11 +19,12 @@ import {
   SectionHeader as SharedSectionHeader,
   ListDivider as SharedListDivider,
   StorageKeys,
+  ThemeSettings,
   ThemeConstants,
   WriteActionSettings
 } from 'shared'
 import type { TabItem } from 'shared'
-import { promptAction } from '@kit.ArkUI'
+import { promptAction, SymbolGlyphModifier } from '@kit.ArkUI'
 
 @Component
 export struct SettingsPage {
@@ -34,12 +35,14 @@ export struct SettingsPage {
   @StorageLink(StorageKeys.READING_FONT_SIZE) readingFontSize: number = ThemeConstants.FONT_SIZE_BODY
   @StorageLink(StorageKeys.READING_LINE_HEIGHT) readingLineHeight: number = ThemeConstants.LINE_HEIGHT_BODY
   @StorageLink(StorageKeys.READING_DENSITY) readingDensity: string = ReadingSettings.DENSITY_STANDARD
+  @StorageLink(StorageKeys.THEME_MODE) themeMode: string = ThemeSettings.MODE_AUTO
   @StorageLink(StorageKeys.FEED_TAB_KEYS) feedTabKeys: string = FeedTabSettings.defaultKeysJson()
   @StorageLink(StorageKeys.ACCOUNT_WRITE_ENABLED) accountWriteEnabled: boolean = false
   @State private nodeTabName: string = ''
   @State private cacheStats: CacheStats = { topicListCount: 0, topicDetailCount: 0, updatedAt: 0 }
   @State private cacheMessage: string = ''
   @State private localDataMessage: string = ''
+  @State private themeMenuShown: boolean = false
   private http: HttpClient = HttpClient.getInstance()
 
   aboutToAppear(): void {
@@ -266,6 +269,20 @@ export struct SettingsPage {
 
       this.SettingsDivider()
 
+      ConciseListRow({
+        title: '主题',
+        trailingText: ThemeSettings.modeText(this.themeMode),
+        showChevron: false,
+        trailingDropdown: true,
+        action: () => { this.showThemeMenu() }
+      })
+        .bindMenu(this.themeMenuShown, this.ThemeModeMenu, {
+          placement: Placement.BottomRight,
+          aboutToDisappear: () => { this.themeMenuShown = false }
+        })
+
+      this.SettingsDivider()
+
       this.StepperPreferenceRow('字号', `${this.readingFontSize}fp`, 'A-', 'A+', () => {
         this.updateReadingFontSize(this.readingFontSize - 1)
       }, () => {
@@ -347,6 +364,29 @@ export struct SettingsPage {
       fill: true,
       action: () => { this.updateReadingDensity(density) }
     })
+  }
+
+  @Builder ThemeModeMenu() {
+    Menu() {
+      this.ThemeModeMenuItem('自动', ThemeSettings.MODE_AUTO)
+      this.ThemeModeMenuItem('浅色', ThemeSettings.MODE_LIGHT)
+      this.ThemeModeMenuItem('深色', ThemeSettings.MODE_DARK)
+    }
+  }
+
+  @Builder ThemeModeMenuItem(label: string, mode: string) {
+    MenuItem({
+      content: label,
+      symbolEndIcon: this.themeMode === mode ? new SymbolGlyphModifier($r('sys.symbol.checkmark')) : undefined
+    })
+      .onClick(() => { this.updateThemeMode(mode) })
+  }
+
+  private showThemeMenu(): void {
+    this.themeMenuShown = false
+    setTimeout(() => {
+      this.themeMenuShown = true
+    }, 20)
   }
 
   @Builder CacheSection() {
@@ -437,6 +477,15 @@ export struct SettingsPage {
 
   private updateReadingDensity(density: string): void {
     this.saveReadingSettings(this.readingFontSize, this.readingLineHeight, density)
+  }
+
+  private updateThemeMode(mode: string): void {
+    const normalizedMode = ThemeSettings.normalizeMode(mode)
+    this.themeMode = normalizedMode
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    ThemeSettings.save(context, normalizedMode).catch((error: Error) => {
+      console.error('save theme settings failed: ' + error.message)
+    })
   }
 
   private saveReadingSettings(fontSize: number, lineHeight: number, density: string): void {

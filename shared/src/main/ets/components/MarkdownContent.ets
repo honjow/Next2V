@@ -248,16 +248,53 @@ function highlightLine(code: string): CodeToken[] {
   return result;
 }
 
-// Matches @lidary/markdown's default dark-bg code block palette
-const _defaultCodeColors: Record<string, ResourceColor> = {
-  "text": ThemeConstants.CODE_TEXT,
-  "string": ThemeConstants.CODE_TEXT,
-  "keyword": "#0A69DA",
-  "type": "#0A69DA",
-  "symbol": "#E3DA90",
-  "number": "#B3E54C",
-  "boolean": ThemeConstants.CODE_TEXT,
+const _darkCodeColors: Record<string, ResourceColor> = {
+  "text": "#F8F8F2",
+  "string": "#E6DB74",
+  "keyword": "#66D9EF",
+  "type": "#A6E22E",
+  "symbol": "#F8F8F2",
+  "number": "#AE81FF",
+  "boolean": "#AE81FF",
 };
+
+const _lightCodeColors: Record<string, ResourceColor> = {
+  "text": "#24292F",
+  "string": "#0A3069",
+  "keyword": "#CF222E",
+  "type": "#8250DF",
+  "symbol": "#24292F",
+  "number": "#0550AE",
+  "boolean": "#0550AE",
+};
+
+function _codeColors(isDark: boolean): Record<string, ResourceColor> {
+  return isDark ? _darkCodeColors : _lightCodeColors;
+}
+
+function _codeBackground(isDark: boolean): ResourceColor {
+  return isDark ? "#1E1F22" : "#F6F8FA";
+}
+
+function _codeHeaderBackground(isDark: boolean): ResourceColor {
+  return isDark ? "#2B2D31" : "#EAEEF3";
+}
+
+function _codeMetaColor(isDark: boolean): ResourceColor {
+  return isDark ? "#C9D1D9" : "#57606A";
+}
+
+function _codePressedOverlay(isDark: boolean): ResourceColor {
+  return isDark ? "#40FFFFFF" : "#18000000";
+}
+
+function _quoteBackground(isDark: boolean): ResourceColor {
+  return isDark ? "#22262D" : "#F6F8FA";
+}
+
+function _quoteDriveColor(isDark: boolean): ResourceColor {
+  return isDark ? "#636E7B" : "#D0D7DE";
+}
 
 // Signature required by @lidary/markdown's customInlineBuilder callback
 interface CustomInlineParams {
@@ -526,12 +563,20 @@ struct MarkdownCodeBlock {
     return lineHeight < ThemeConstants.LINE_HEIGHT_CODE ? ThemeConstants.LINE_HEIGHT_CODE : lineHeight;
   }
 
+  private isDarkMode(): boolean {
+    return this.options.darkMode === true;
+  }
+
+  private codePalette(): Record<string, ResourceColor> {
+    return _codeColors(this.isDarkMode());
+  }
+
   @Builder CodeLineSpans(line: string) {
     ForEach(highlightLine(line), (ht: CodeToken) => {
       Span(ht.text)
         .fontColor(
           this.options.theme?.code?.fontColor?.[ht.type] ??
-            _defaultCodeColors[ht.type] ??
+            this.codePalette()[ht.type] ??
             ThemeConstants.CODE_TEXT,
         )
         .fontSize(this.options.theme?.code?.fontSize ?? this.codeFontSize())
@@ -571,7 +616,7 @@ struct MarkdownCodeBlock {
       Row({ space: ThemeConstants.SPACE_SM }) {
         Text(this.languageText())
           .fontSize(ThemeConstants.FONT_SIZE_TAG)
-          .fontColor(ThemeConstants.CODE_ICON)
+          .fontColor(_codeMetaColor(this.isDarkMode()))
           .fontFamily("Noto Sans Mono")
           .maxLines(1)
           .textOverflow({ overflow: TextOverflow.Ellipsis });
@@ -581,7 +626,7 @@ struct MarkdownCodeBlock {
         Button() {
           Text(this.wrapLines ? "滚动" : "换行")
             .fontSize(ThemeConstants.FONT_SIZE_TAG)
-            .fontColor(ThemeConstants.CODE_ICON);
+            .fontColor(_codeMetaColor(this.isDarkMode()));
         }
         .type(ButtonType.Normal)
         .height(28)
@@ -589,7 +634,7 @@ struct MarkdownCodeBlock {
         .borderRadius(ThemeConstants.RADIUS_SM)
         .backgroundColor(Color.Transparent)
         .stateStyles({
-          pressed: { .backgroundColor(ThemeConstants.PRESSED_OVERLAY) },
+          pressed: { .backgroundColor(_codePressedOverlay(this.isDarkMode())) },
           normal: { .backgroundColor(Color.Transparent) },
         })
         .onClick(() => {
@@ -600,7 +645,7 @@ struct MarkdownCodeBlock {
           Image($r("sys.media.ohos_ic_public_copy"))
             .width(ThemeConstants.ICON_SIZE_SM)
             .height(ThemeConstants.ICON_SIZE_SM)
-            .fillColor(ThemeConstants.CODE_ICON);
+            .fillColor(_codeMetaColor(this.isDarkMode()));
         }
         .type(ButtonType.Normal)
         .width(ThemeConstants.TOUCH_TARGET_SM)
@@ -608,7 +653,7 @@ struct MarkdownCodeBlock {
         .borderRadius(ThemeConstants.RADIUS_SM)
         .backgroundColor(Color.Transparent)
         .stateStyles({
-          pressed: { .backgroundColor(ThemeConstants.PRESSED_OVERLAY) },
+          pressed: { .backgroundColor(_codePressedOverlay(this.isDarkMode())) },
           normal: { .backgroundColor(Color.Transparent) },
         })
         .onClick(() => {
@@ -622,7 +667,7 @@ struct MarkdownCodeBlock {
         top: ThemeConstants.SPACE_SM,
         bottom: ThemeConstants.SPACE_XS,
       })
-      .backgroundColor("#3A3D42");
+      .backgroundColor(_codeHeaderBackground(this.isDarkMode()));
 
       if (this.wrapLines) {
         this.CodeLines(true);
@@ -638,7 +683,7 @@ struct MarkdownCodeBlock {
     .width("100%")
     .borderRadius(this.options.theme?.code?.borderRadius ?? ThemeConstants.RADIUS_SM)
     .clip(true)
-    .backgroundColor(this.options.theme?.code?.backgroundColor ?? ThemeConstants.CODE_BG);
+    .backgroundColor(this.options.theme?.code?.backgroundColor ?? _codeBackground(this.isDarkMode()));
   }
 }
 
@@ -1034,6 +1079,7 @@ export struct MarkdownContent {
   @StorageLink(StorageKeys.READING_FONT_SIZE) readingFontSize: number = ThemeConstants.FONT_SIZE_BODY;
   @StorageLink(StorageKeys.READING_LINE_HEIGHT) readingLineHeight: number = ThemeConstants.LINE_HEIGHT_BODY;
   @StorageLink(StorageKeys.READING_DENSITY) readingDensity: string = ReadingSettings.DENSITY_STANDARD;
+  @StorageLink(StorageKeys.THEME_EFFECTIVE_DARK) themeEffectiveDark: boolean = false;
   @State private tokens: Token[] = [];
 
   aboutToAppear() {
@@ -1646,6 +1692,7 @@ export struct MarkdownContent {
             gfm: true,
             breaks: true,
           },
+          darkMode: this.themeEffectiveDark,
           theme: {
             // overrides blue default for list bullets etc.
             themeColor: ThemeConstants.TEXT_SECONDARY,
@@ -1687,6 +1734,50 @@ export struct MarkdownContent {
               },
             ],
             linkColor: ThemeConstants.TEXT_LINK,
+            blockQuoteStyle: {
+              backgroundColor: _quoteBackground(this.themeEffectiveDark),
+              driveColor: _quoteDriveColor(this.themeEffectiveDark),
+              driveWidth: 4,
+              borderRadius: ThemeConstants.RADIUS_SM,
+            },
+            code: {
+              fontColor: _codeColors(this.themeEffectiveDark),
+              fontSize: this.bodyFontSize(),
+              backgroundColor: _codeBackground(this.themeEffectiveDark),
+              borderRadius: ThemeConstants.RADIUS_SM,
+              codeSpanBackgroundColor: this.themeEffectiveDark ? '#30363D' : '#EFF1F3',
+              codeSpanBorderRadius: ThemeConstants.RADIUS_SM,
+            },
+            codeSpan: {
+              backgroundColor: this.themeEffectiveDark ? '#30363D' : '#EFF1F3',
+              borderRadius: ThemeConstants.RADIUS_SM,
+            },
+          },
+          darkTheme: {
+            themeColor: ThemeConstants.TEXT_SECONDARY,
+            fontStyle: {
+              fontSize: this.bodyFontSize(),
+              fontColor: ThemeConstants.TEXT_PRIMARY,
+            },
+            linkColor: ThemeConstants.TEXT_LINK,
+            blockQuoteStyle: {
+              backgroundColor: _quoteBackground(true),
+              driveColor: _quoteDriveColor(true),
+              driveWidth: 4,
+              borderRadius: ThemeConstants.RADIUS_SM,
+            },
+            code: {
+              fontColor: _codeColors(true),
+              fontSize: this.bodyFontSize(),
+              backgroundColor: _codeBackground(true),
+              borderRadius: ThemeConstants.RADIUS_SM,
+              codeSpanBackgroundColor: '#30363D',
+              codeSpanBorderRadius: ThemeConstants.RADIUS_SM,
+            },
+            codeSpan: {
+              backgroundColor: '#30363D',
+              borderRadius: ThemeConstants.RADIUS_SM,
+            },
           },
           imageClick: (url?: string) => {
             const normalized = MediaUrlUtils.normalizeUrl(url ?? "");

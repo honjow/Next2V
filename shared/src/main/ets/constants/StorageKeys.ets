@@ -10,6 +10,8 @@ export class StorageKeys {
   static readonly READING_FONT_SIZE: string = 'readingFontSize'
   static readonly READING_LINE_HEIGHT: string = 'readingLineHeight'
   static readonly READING_DENSITY: string = 'readingDensity'
+  static readonly THEME_MODE: string = 'themeMode'
+  static readonly THEME_EFFECTIVE_DARK: string = 'themeEffectiveDark'
   static readonly TOPIC_READ_STATES: string = 'topicReadStates'
   static readonly AUTH_TOKEN_CONFIGURED: string = 'authTokenConfigured'
   static readonly AUTH_USERNAME: string = 'authUsername'

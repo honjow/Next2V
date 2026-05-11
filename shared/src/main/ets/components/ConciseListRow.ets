@@ -1,4 +1,4 @@
-import { HdsListItemCard, PrefixImage, SuffixSwitch, SuffixText, SuffixTextAndArrow } from '@kit.UIDesignKit'
+import { HdsListItemCard, PrefixImage, SuffixCustomBuilder, SuffixSwitch, SuffixText, SuffixTextAndArrow } from '@kit.UIDesignKit'
 import { ImageModifier, TextModifier } from '@kit.ArkUI'
 import { ThemeConstants } from '../theme/ThemeConstants'
 import { ImageUtils } from '../utils/ImageUtils'
@@ -12,6 +12,7 @@ export struct ConciseListRow {
   @Prop count: number = -1
   @Prop destructive: boolean = false
   @Prop showChevron: boolean = true
+  @Prop trailingDropdown: boolean = false
   @Prop hasSwitch: boolean = false
   @Prop checked: boolean = false
   primaryColor?: Color
@@ -46,7 +47,7 @@ export struct ConciseListRow {
       .textOverflow({ overflow: TextOverflow.Ellipsis })
   }
 
-  private suffixItem(): SuffixSwitch | SuffixTextAndArrow | SuffixText | undefined {
+  private suffixItem(): SuffixSwitch | SuffixTextAndArrow | SuffixText | SuffixCustomBuilder | undefined {
     if (this.hasSwitch) {
       return new SuffixSwitch({
         isCheck: this.checked,
@@ -62,6 +63,11 @@ export struct ConciseListRow {
       return new SuffixTextAndArrow({ text: `${this.count}` }, { color: Color.Gray })
     }
     if (this.trailingText) {
+      if (this.trailingDropdown) {
+        return new SuffixCustomBuilder(() => {
+          this.DropdownSuffix()
+        })
+      }
       if (this.showChevron) {
         return new SuffixTextAndArrow({
           text: this.trailingText,
@@ -77,6 +83,21 @@ export struct ConciseListRow {
       return new SuffixTextAndArrow({ text: `` }, { color: Color.Gray })
     }
     return undefined
+  }
+
+  @Builder
+  private DropdownSuffix() {
+    Row({ space: ThemeConstants.SPACE_XS }) {
+      Text(this.trailingText)
+        .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+        .fontColor(this.secondaryColor ?? $r('sys.color.font_secondary'))
+        .maxLines(1)
+        .textOverflow({ overflow: TextOverflow.Ellipsis })
+      SymbolGlyph($r('sys.symbol.chevron_down'))
+        .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+        .fontColor([$r('sys.color.font_secondary')])
+    }
+    .alignItems(VerticalAlign.Center)
   }
 
   private prefixItem(): PrefixImage | undefined {
