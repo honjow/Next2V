@@ -54,6 +54,10 @@ export struct ConciseListRow {
       .textOverflow({ overflow: TextOverflow.Ellipsis })
   }
 
+  private cardHeight(): number {
+    return this.subtitle ? 60 : 52
+  }
+
   private suffixItem(): SuffixTextAndArrow | SuffixText | SuffixCustomBuilder | undefined {
     if (this.hasSwitch) {
       return new SuffixCustomBuilder(() => {
@@ -93,18 +97,23 @@ export struct ConciseListRow {
 
   @Builder
   private SwitchSuffix() {
-    Toggle({ type: ToggleType.Switch, isOn: this.checked })
-      .selectedColor(ThemeConstants.BRAND_PRIMARY)
-      .enabled(this.isEnabled)
-      .opacity(this.isEnabled ? 1.0 : 0.65)
-      .onChange((value: boolean) => {
-        if (!this.isEnabled) {
-          return
-        }
-        if (this.switchAction) {
-          this.switchAction(value)
-        }
-      })
+    Row() {
+      Toggle({ type: ToggleType.Switch, isOn: this.checked })
+        .selectedColor(ThemeConstants.BRAND_PRIMARY)
+        .enabled(this.isEnabled)
+        .opacity(this.isEnabled ? 1.0 : 0.65)
+        .onChange((value: boolean) => {
+          if (!this.isEnabled) {
+            return
+          }
+          if (this.switchAction) {
+            this.switchAction(value)
+          }
+        })
+    }
+    .height(this.cardHeight())
+    .padding({ right: ThemeConstants.SPACE_SM })
+    .alignItems(VerticalAlign.Center)
   }
 
   @Builder
@@ -191,7 +200,7 @@ export struct ConciseListRow {
       cardSuffixMargin: 0,
       prefixItem: this.prefixItem(),
       suffixItem: this.suffixItem(),
-      cardHeight: this.subtitle ? 60 : 52,
+      cardHeight: this.cardHeight(),
       cardBackgroundColor: Color.Transparent,
       cardBorderRadius: ThemeConstants.LIST_ROW_RADIUS,
       hoverBorderRadius: ThemeConstants.LIST_ROW_RADIUS,
