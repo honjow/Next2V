@@ -130,11 +130,25 @@ export class V2exTopicRepliesParser {
       .replace(/<p[^>]*>/gi, '')
       .replace(/<\/p>/gi, '')
       .replace(/<pre[^>]*><code[^>]*>([\s\S]*?)<\/code><\/pre>/gi, '\n```\n$1\n```\n')
+      .replace(/<a[^>]+href=['"]([^'"]+)['"][^>]*>\s*(<img\b[^>]*>)\s*<\/a>/gi,
+        (_match: string, href: string, imgTag: string) => V2exTopicRepliesParser.imageTagToMarkdown(imgTag, href))
+      .replace(/<img\b[^>]*>/gi,
+        (match: string) => V2exTopicRepliesParser.imageTagToMarkdown(match, ''))
       .replace(/@?\s*<a[^>]+href=['"]\/member\/([0-9A-Za-z_]+)['"][^>]*>[\s\S]*?<\/a>/gi, '[@$1](/member/$1)')
       .replace(/<a[^>]+href=['"]([^'"]+)['"][^>]*>([\s\S]*?)<\/a>/gi, '[$2]($1)')
       .replace(/<[^>]+>/g, ''))
       .replace(/\n{3,}/g, '\n\n')
       .trim()
+  }
+
+  private static imageTagToMarkdown(tag: string, fallbackHref: string): string {
+    const src = V2exTopicRepliesParser.extractAttr(tag, 'src') ||
+      V2exTopicRepliesParser.decodeHtml(fallbackHref || '').trim()
+    if (!src) {
+      return ''
+    }
+    const alt = V2exTopicRepliesParser.extractAttr(tag, 'alt')
+    return `![${alt}](${src})`
   }
 
   private static extractAttr(tag: string, name: string): string {
