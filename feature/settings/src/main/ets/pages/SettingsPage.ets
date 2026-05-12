@@ -9,7 +9,6 @@ import {
   CookieJarSettings,
   DateUtils,
   FeedTabSettings,
-  FilterChip,
   GroupedListSection,
   HttpClient,
   ListDivider as SharedListDivider,
@@ -44,6 +43,7 @@ export struct SettingsPage {
   @State private localDataMessage: string = ''
   @State private themeMenuShown: boolean = false
   @State private apiDomainMenuShown: boolean = false
+  @State private densityMenuShown: boolean = false
   private http: HttpClient = HttpClient.getInstance()
 
   aboutToAppear(): void {
@@ -161,7 +161,7 @@ export struct SettingsPage {
 
       this.TogglePreferenceRow('仅 Wi-Fi 加载图片', this.onlyLoadImagesOnWifi, (value: boolean) => {
         this.updateOnlyLoadImagesOnWifi(value)
-      })
+      }, this.autoLoadImages)
     }
   }
 
@@ -309,12 +309,13 @@ export struct SettingsPage {
   }
 
   @Builder
-  TogglePreferenceRow(title: string, checked: boolean, changeAction: (value: boolean) => void) {
+  TogglePreferenceRow(title: string, checked: boolean, changeAction: (value: boolean) => void, isEnabled: boolean = true) {
     ConciseListRow({
       title: title,
       showChevron: false,
       hasSwitch: true,
       checked: checked,
+      isEnabled: isEnabled,
       switchAction: changeAction
     })
   }
@@ -340,15 +341,6 @@ export struct SettingsPage {
 
       this.SettingsDivider()
 
-      ConciseListRow({
-        title: '阅读显示',
-        subtitle: `${this.readingFontSize}fp / ${this.readingLineHeight}vp · ${this.readingDensityText(this.readingDensity)}`,
-        showChevron: false
-      })
-
-      this.SettingsDivider()
-
-
       this.StepperPreferenceRow('字号', `${this.readingFontSize}fp`, 'A-', 'A+', () => {
         this.updateReadingFontSize(this.readingFontSize - 1)
       }, () => {
@@ -369,18 +361,21 @@ export struct SettingsPage {
 
       this.SettingsDivider()
 
-      Row({ space: ThemeConstants.SPACE_SM }) {
-        Text('密度')
-          .fontSize(ThemeConstants.FONT_SIZE_LIST_ITEM)
-          .fontColor($r('sys.color.font_primary'))
-          .layoutWeight(1)
-        this.DensityChip('紧凑', ReadingSettings.DENSITY_COMPACT)
-        this.DensityChip('标准', ReadingSettings.DENSITY_STANDARD)
-        this.DensityChip('宽松', ReadingSettings.DENSITY_COMFORTABLE)
-      }
-      .width('100%')
-      .height(52)
-      .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG })
+      ConciseListRow({
+        title: '密度',
+        trailingText: this.readingDensityText(this.readingDensity),
+        showChevron: false,
+        trailingDropdown: true,
+        action: () => {
+          this.showDensityMenu()
+        }
+      })
+        .bindMenu(this.densityMenuShown, this.ReadingDensityMenu, {
+          placement: Placement.BottomRight,
+          aboutToDisappear: () => {
+            this.densityMenuShown = false
+          }
+        })
     }
     .width('100%')
   }
@@ -426,23 +421,20 @@ export struct SettingsPage {
   }
 
   @Builder
-  DensityChip(label: string, density: string) {
-    FilterChip({
-      label,
-      selected: this.readingDensity === density,
-      fill: true,
-      action: () => {
-        this.updateReadingDensity(density)
-      }
-    })
-  }
-
-  @Builder
   ThemeModeMenu() {
     Menu() {
       this.ThemeModeMenuItem('自动', ThemeSettings.MODE_AUTO)
       this.ThemeModeMenuItem('浅色', ThemeSettings.MODE_LIGHT)
       this.ThemeModeMenuItem('深色', ThemeSettings.MODE_DARK)
+    }
+  }
+
+  @Builder
+  ReadingDensityMenu() {
+    Menu() {
+      this.ReadingDensityMenuItem('紧凑', ReadingSettings.DENSITY_COMPACT)
+      this.ReadingDensityMenuItem('标准', ReadingSettings.DENSITY_STANDARD)
+      this.ReadingDensityMenuItem('宽松', ReadingSettings.DENSITY_COMFORTABLE)
     }
   }
 
@@ -462,6 +454,17 @@ export struct SettingsPage {
     })
       .onClick(() => {
         this.updateApiDomain(useCoDomain)
+      })
+  }
+
+  @Builder
+  ReadingDensityMenuItem(label: string, density: string) {
+    MenuItem({
+      content: label,
+      symbolEndIcon: this.readingDensity === density ? new SymbolGlyphModifier($r('sys.symbol.checkmark')) : undefined
+    })
+      .onClick(() => {
+        this.updateReadingDensity(density)
       })
   }
 
@@ -487,6 +490,13 @@ export struct SettingsPage {
     this.apiDomainMenuShown = false
     setTimeout(() => {
       this.apiDomainMenuShown = true
+    }, 20)
+  }
+
+  private showDensityMenu(): void {
+    this.densityMenuShown = false
+    setTimeout(() => {
+      this.densityMenuShown = true
     }, 20)
   }
 
@@ -566,6 +576,9 @@ export struct SettingsPage {
   }
 
   private updateOnlyLoadImagesOnWifi(onlyLoadImagesOnWifi: boolean): void {
+    if (!this.autoLoadImages) {
+      return
+    }
     this.onlyLoadImagesOnWifi = onlyLoadImagesOnWifi
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     MediaSettings.save(context, this.autoLoadImages, onlyLoadImagesOnWifi).catch((error: Error) => {

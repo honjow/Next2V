@@ -1,4 +1,4 @@
-import { HdsListItemCard, PrefixImage, SuffixCustomBuilder, SuffixSwitch, SuffixText, SuffixTextAndArrow } from '@kit.UIDesignKit'
+import { HdsListItemCard, PrefixImage, SuffixCustomBuilder, SuffixText, SuffixTextAndArrow } from '@kit.UIDesignKit'
 import { ImageModifier, TextModifier } from '@kit.ArkUI'
 import { ThemeConstants } from '../theme/ThemeConstants'
 import { ImageUtils } from '../utils/ImageUtils'
@@ -15,6 +15,7 @@ export struct ConciseListRow {
   @Prop trailingDropdown: boolean = false
   @Prop hasSwitch: boolean = false
   @Prop checked: boolean = false
+  @Prop isEnabled: boolean = true
   primaryColor?: Color
   secondaryColor?: Color
   action?: () => void
@@ -47,16 +48,10 @@ export struct ConciseListRow {
       .textOverflow({ overflow: TextOverflow.Ellipsis })
   }
 
-  private suffixItem(): SuffixSwitch | SuffixTextAndArrow | SuffixText | SuffixCustomBuilder | undefined {
+  private suffixItem(): SuffixTextAndArrow | SuffixText | SuffixCustomBuilder | undefined {
     if (this.hasSwitch) {
-      return new SuffixSwitch({
-        isCheck: this.checked,
-        selectColor: ThemeConstants.BRAND_PRIMARY,
-        onChange: (value: boolean) => {
-          if (this.switchAction) {
-            this.switchAction(value)
-          }
-        }
+      return new SuffixCustomBuilder(() => {
+        this.SwitchSuffix()
       })
     }
     if (this.count >= 0) {
@@ -83,6 +78,22 @@ export struct ConciseListRow {
       return new SuffixTextAndArrow({ text: `` }, { color: Color.Gray })
     }
     return undefined
+  }
+
+  @Builder
+  private SwitchSuffix() {
+    Toggle({ type: ToggleType.Switch, isOn: this.checked })
+      .selectedColor(ThemeConstants.BRAND_PRIMARY)
+      .enabled(this.isEnabled)
+      .opacity(this.isEnabled ? 1.0 : 0.45)
+      .onChange((value: boolean) => {
+        if (!this.isEnabled) {
+          return
+        }
+        if (this.switchAction) {
+          this.switchAction(value)
+        }
+      })
   }
 
   @Builder
@@ -134,6 +145,7 @@ export struct ConciseListRow {
       cardBackgroundColor: Color.Transparent,
       cardBorderRadius: ThemeConstants.LIST_ROW_RADIUS,
       hoverBorderRadius: ThemeConstants.LIST_ROW_RADIUS,
+      enable: this.isEnabled,
       onClick: () => {
         if (this.action) {
           this.action()
@@ -143,6 +155,10 @@ export struct ConciseListRow {
   }
 
   build() {
-    this.RowContent()
+    Column() {
+      this.RowContent()
+    }
+    .width('100%')
+    .opacity(this.isEnabled ? 1.0 : 0.4)
   }
 }
