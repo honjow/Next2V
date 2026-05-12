@@ -630,7 +630,7 @@ struct MarkdownCodeBlock {
             .fontColor(_codeMetaColor(this.isDarkMode()));
         }
         .type(ButtonType.Normal)
-        .height(28)
+        .height(24)
         .padding({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM })
         .borderRadius(ThemeConstants.RADIUS_SM)
         .backgroundColor(Color.Transparent)
@@ -649,8 +649,8 @@ struct MarkdownCodeBlock {
             .fillColor(_codeMetaColor(this.isDarkMode()));
         }
         .type(ButtonType.Normal)
-        .width(ThemeConstants.TOUCH_TARGET_SM)
-        .height(28)
+        .width(ThemeConstants.TOUCH_TARGET_SM - 4)
+        .height(24)
         .borderRadius(ThemeConstants.RADIUS_SM)
         .backgroundColor(Color.Transparent)
         .stateStyles({
@@ -665,7 +665,7 @@ struct MarkdownCodeBlock {
       .padding({
         left: ThemeConstants.SPACE_MD,
         right: ThemeConstants.SPACE_SM,
-        top: ThemeConstants.SPACE_SM,
+        top: ThemeConstants.SPACE_XS,
         bottom: ThemeConstants.SPACE_XS,
       })
       .backgroundColor(_codeHeaderBackground(this.isDarkMode()));
