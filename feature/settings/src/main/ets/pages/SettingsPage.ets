@@ -43,6 +43,7 @@ export struct SettingsPage {
   @State private cacheMessage: string = ''
   @State private localDataMessage: string = ''
   @State private themeMenuShown: boolean = false
+  @State private apiDomainMenuShown: boolean = false
   private http: HttpClient = HttpClient.getInstance()
 
   aboutToAppear(): void {
@@ -289,35 +290,21 @@ export struct SettingsPage {
   @Builder
   AdvancedSection() {
     GroupedListSection() {
-      Column({ space: ThemeConstants.SPACE_SM }) {
-        ConciseListRow({
-          title: 'API 域名',
-          subtitle: `当前: ${this.useCoDomain ? 'v2ex.co' : 'v2ex.com'}`,
-          showChevron: false
-        })
-
-        Row({ space: ThemeConstants.SPACE_SM }) {
-          FilterChip({
-            label: 'v2ex.com',
-            selected: !this.useCoDomain,
-            fill: true,
-            action: () => {
-              this.updateApiDomain(false)
-            }
-          })
-          FilterChip({
-            label: 'v2ex.co',
-            selected: this.useCoDomain,
-            fill: true,
-            action: () => {
-              this.updateApiDomain(true)
-            }
-          })
+      ConciseListRow({
+        title: 'API 域名',
+        trailingText: this.useCoDomain ? 'v2ex.co' : 'v2ex.com',
+        showChevron: false,
+        trailingDropdown: true,
+        action: () => {
+          this.showApiDomainMenu()
         }
-        .width('100%')
-        .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG, bottom: ThemeConstants.SPACE_LG })
-      }
-      .width('100%')
+      })
+        .bindMenu(this.apiDomainMenuShown, this.ApiDomainMenu, {
+          placement: Placement.BottomRight,
+          aboutToDisappear: () => {
+            this.apiDomainMenuShown = false
+          }
+        })
     }
   }
 
@@ -460,6 +447,25 @@ export struct SettingsPage {
   }
 
   @Builder
+  ApiDomainMenu() {
+    Menu() {
+      this.ApiDomainMenuItem('v2ex.com', false)
+      this.ApiDomainMenuItem('v2ex.co', true)
+    }
+  }
+
+  @Builder
+  ApiDomainMenuItem(label: string, useCoDomain: boolean) {
+    MenuItem({
+      content: label,
+      symbolEndIcon: this.useCoDomain === useCoDomain ? new SymbolGlyphModifier($r('sys.symbol.checkmark')) : undefined
+    })
+      .onClick(() => {
+        this.updateApiDomain(useCoDomain)
+      })
+  }
+
+  @Builder
   ThemeModeMenuItem(label: string, mode: string) {
     MenuItem({
       content: label,
@@ -474,6 +480,13 @@ export struct SettingsPage {
     this.themeMenuShown = false
     setTimeout(() => {
       this.themeMenuShown = true
+    }, 20)
+  }
+
+  private showApiDomainMenu(): void {
+    this.apiDomainMenuShown = false
+    setTimeout(() => {
+      this.apiDomainMenuShown = true
     }, 20)
   }
 
