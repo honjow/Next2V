@@ -2,6 +2,8 @@ import { StorageKeys } from '../constants/StorageKeys'
 import { ThemeConstants } from '../theme/ThemeConstants'
 import { PullRefresh } from './PullRefresh'
 
+const DEFAULT_REFRESH_THRESHOLD: number = 60
+
 @Component
 export struct PullRefreshListScaffold {
   @BuilderParam content: () => void
@@ -13,7 +15,7 @@ export struct PullRefreshListScaffold {
   @Prop topPadding: number = 0
   @Prop bottomPadding: number = ThemeConstants.SPACE_XL
   @Prop indicatorTop: number = -1
-  @Prop refreshThreshold: number = 40
+  @Prop refreshThreshold: number = DEFAULT_REFRESH_THRESHOLD
   @Prop scrollEnabled: boolean = true
   onRefresh?: () => Promise<void>
   onBottomRefresh?: () => Promise<void>

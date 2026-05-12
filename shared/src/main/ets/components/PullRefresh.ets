@@ -3,6 +3,7 @@ import { ThemeConstants } from '../theme/ThemeConstants'
 
 const PULL_START_DRAG_VP: number = 4
 const PULL_RESISTANCE_FACTOR: number = 0.8
+const DEFAULT_PULL_REFRESH_THRESHOLD: number = 120
 const OPACITY_THRESHOLD_FACTOR: number = 0.5
 const HAPTIC_HD_INTENSITY: number = 60
 const HAPTIC_FALLBACK_DURATION: number = 30
@@ -17,7 +18,7 @@ export struct PullRefresh {
   canStartBottomRefresh: () => boolean = () => false
   onScrollEnableChange: (enabled: boolean) => void = (_) => {}
   @Prop indicatorTop: number = 0
-  @Prop threshold: number = 80
+  @Prop threshold: number = DEFAULT_PULL_REFRESH_THRESHOLD
   @Prop bottomIndicatorBottom: number = ThemeConstants.SPACE_XL
 
   @State pullOffset: number = 0

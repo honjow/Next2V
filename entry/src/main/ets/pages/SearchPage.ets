@@ -107,6 +107,7 @@ export struct SearchPage {
   private api: ApiService = new ApiService()
   private sov2ex: Sov2exService = new Sov2exService()
   private scroller: Scroller = new Scroller()
+  private readonly PULL_REFRESH_THRESHOLD: number = 84
 
   aboutToAppear(): void {
     this.keyword = ''
@@ -130,7 +131,7 @@ export struct SearchPage {
           PullRefresh({
             scroller: this.scroller,
             indicatorTop: this.topH + ThemeConstants.TITLE_BAR_HEIGHT,
-            threshold: 56,
+            threshold: this.PULL_REFRESH_THRESHOLD,
             onRefresh: async () => {
               await this.refreshSearchSurface()
             },

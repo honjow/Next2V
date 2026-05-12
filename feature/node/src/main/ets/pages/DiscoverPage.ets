@@ -29,6 +29,7 @@ export struct DiscoverPage {
   private readonly TBH: number = ThemeConstants.TITLE_BAR_HEIGHT
   private readonly FLOAT_H: number = ThemeConstants.FLOAT_BAR_HEIGHT
   private readonly GAP: number = ThemeConstants.SPACE_MD
+  private readonly PULL_REFRESH_THRESHOLD: number = 84
   private scroller: Scroller = new Scroller()
   private api: ApiService = new ApiService()
 
@@ -57,7 +58,7 @@ export struct DiscoverPage {
           PullRefresh({
             scroller: this.scroller,
             indicatorTop: this.topH + this.TBH,
-            threshold: 56,
+            threshold: this.PULL_REFRESH_THRESHOLD,
             onRefresh: async () => { await this.refreshDiscover() },
             onScrollEnableChange: (enabled: boolean) => { this.scrollEnabled = enabled }
           }) {

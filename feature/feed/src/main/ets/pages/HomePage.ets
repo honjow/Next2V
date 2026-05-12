@@ -210,7 +210,7 @@ struct FeedListPage {
   @State vm: FeedViewModel = new FeedViewModel()
   private readonly FLOAT_H: number = ThemeConstants.FLOAT_BAR_HEIGHT
   private readonly GAP: number = ThemeConstants.SPACE_SM - 2
-  private readonly PULL_THRESHOLD: number = 40
+  private readonly PULL_THRESHOLD: number = 60
   private readonly TBH: number = ThemeConstants.TITLE_BAR_HEIGHT
   private readonly BB_H: number = ApiConstants.TAB_BAR_HEIGHT
   private scroller: Scroller = new Scroller()
