@@ -151,9 +151,13 @@ export struct SettingsPage {
 
       this.SettingsDivider()
 
-      this.TogglePreferenceRow('仅 Wi-Fi 加载图片', this.onlyLoadImagesOnWifi, (value: boolean) => {
-        this.updateOnlyLoadImagesOnWifi(value)
-      }, this.autoLoadImages)
+      if (this.autoLoadImages) {
+        this.TogglePreferenceRow('仅 Wi-Fi 加载图片', this.onlyLoadImagesOnWifi, (value: boolean) => {
+          this.updateOnlyLoadImagesOnWifi(value)
+        })
+      } else {
+        this.DisabledWifiImagePreferenceRow()
+      }
     }
   }
 
@@ -309,6 +313,19 @@ export struct SettingsPage {
       checked: checked,
       isEnabled: isEnabled,
       switchAction: changeAction
+    })
+  }
+
+  @Builder
+  DisabledWifiImagePreferenceRow() {
+    ConciseListRow({
+      title: '仅 Wi-Fi 加载图片',
+      showChevron: false,
+      hasSwitch: true,
+      checked: this.onlyLoadImagesOnWifi,
+      isEnabled: false,
+      switchAction: (_value: boolean) => {
+      }
     })
   }
 

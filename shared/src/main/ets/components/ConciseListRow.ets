@@ -96,7 +96,7 @@ export struct ConciseListRow {
     Toggle({ type: ToggleType.Switch, isOn: this.checked })
       .selectedColor(ThemeConstants.BRAND_PRIMARY)
       .enabled(this.isEnabled)
-      .opacity(this.isEnabled ? 1.0 : 0.45)
+      .opacity(this.isEnabled ? 1.0 : 0.65)
       .onChange((value: boolean) => {
         if (!this.isEnabled) {
           return
@@ -195,9 +195,9 @@ export struct ConciseListRow {
       cardBackgroundColor: Color.Transparent,
       cardBorderRadius: ThemeConstants.LIST_ROW_RADIUS,
       hoverBorderRadius: ThemeConstants.LIST_ROW_RADIUS,
-      enable: this.isEnabled,
+      enable: this.hasSwitch ? true : this.isEnabled,
       onClick: () => {
-        if (this.action) {
+        if (this.isEnabled && this.action) {
           this.action()
         }
       }
