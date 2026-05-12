@@ -1,10 +1,11 @@
 import { common, Want } from '@kit.AbilityKit'
 import { promptAction } from '@kit.ArkUI'
 import { V2exTwoFactorPrompt } from '../components/V2exTwoFactorPrompt'
-import type {
+import {
   LocalContentStats,
   SavedNode,
   SavedTopic,
+  towFASheetOptions,
   V2exAuthenticatedMember,
   V2exBalance,
   V2exDailyMission,
@@ -31,8 +32,7 @@ import {
   UserProfileParams,
   V2exCookieTwoFactorRequiredError,
   V2exSessionParser,
-  V2exSigninParser,
-  defaultSheetOptions,
+  V2exSigninParser
 } from 'shared'
 
 @Component
@@ -208,7 +208,9 @@ export struct AccountDashboardPage {
       .width('100%')
       .height('100%')
       .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
-      .bindSheet($$this.twoFactorVisible, this.TwoFactorSheet(), defaultSheetOptions(SheetSize.MEDIUM, () => { this.twoFactorVisible = false }))
+      .bindSheet($$this.twoFactorVisible, this.TwoFactorSheet(), towFASheetOptions(SheetSize.MEDIUM, () => {
+        this.twoFactorVisible = false
+      }))
       .onVisibleAreaChange([0.0, 1.0], (isVisible: boolean, _currentRatio: number) => {
         if (isVisible) {
           this.refreshLocalData()
@@ -286,7 +288,9 @@ export struct AccountDashboardPage {
     .width('100%')
     .height('100%')
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
-    .bindSheet($$this.twoFactorVisible, this.TwoFactorSheet(), defaultSheetOptions(SheetSize.MEDIUM, () => { this.twoFactorVisible = false }))
+    .bindSheet($$this.twoFactorVisible, this.TwoFactorSheet(), towFASheetOptions(SheetSize.MEDIUM, () => {
+      this.twoFactorVisible = false
+    }))
   }
 
   @Builder

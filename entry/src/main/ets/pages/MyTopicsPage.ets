@@ -11,13 +11,12 @@ import {
   type TopicDetailParams,
   type V2exTopic,
   V2exCookieTwoFactorRequiredError,
-  defaultSheetOptions,
+  towFASheetOptions
 } from 'shared'
 
 @Component
 export struct MyTopicsPage {
   @Consume('ns') stack: NavPathStack
-
   @State private topics: V2exTopic[] = []
   @State private errorMessage: string = ''
   @State private isLoading: boolean = true
@@ -26,7 +25,6 @@ export struct MyTopicsPage {
   @State private hasMore: boolean = true
   @State private twoFactorVisible: boolean = false
   @State private twoFactorCookie: string = ''
-
   private api: ApiService = new ApiService()
   private readonly PAGE_SIZE: number = 20
   private refreshGuard: boolean = false
@@ -47,17 +45,19 @@ export struct MyTopicsPage {
         this.EmptyView()
       } else {
         PullRefreshListScaffold({
-          onReachEnd: () => { this.loadMore() },
+          onReachEnd: () => {
+            this.loadMore()
+          },
           onRefresh: () => this.refresh(true)
         }) {
           ForEach(this.topics, (item: V2exTopic) => {
             ListItem() {
               TopicCard({ item: item })
             }
-              .onClick(() => {
-                let p: TopicDetailParams = { topicId: item.id }
-                this.stack.pushPathByName('TopicDetail', p as Object)
-              })
+            .onClick(() => {
+              let p: TopicDetailParams = { topicId: item.id }
+              this.stack.pushPathByName('TopicDetail', p as Object)
+            })
           }, (item: V2exTopic) => `my-topic-${item.id}`)
 
           ListItem() {
@@ -69,19 +69,25 @@ export struct MyTopicsPage {
     .width('100%')
     .height('100%')
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
-    .bindSheet($$this.twoFactorVisible, this.TwoFactorSheet(), defaultSheetOptions(SheetSize.MEDIUM, () => { this.twoFactorVisible = false }))
+    .bindSheet($$this.twoFactorVisible, this.TwoFactorSheet(), towFASheetOptions(SheetSize.MEDIUM, () => {
+      this.twoFactorVisible = false
+    }))
   }
 
-  @Builder private TwoFactorSheet() {
+  @Builder
+  private TwoFactorSheet() {
     V2exTwoFactorPrompt({
       visible: $twoFactorVisible,
       cookie: this.twoFactorCookie,
       message: '完成两步验证后即可继续访问 V2EX 账号内容。',
-      onSuccess: () => { this.refresh(true) }
+      onSuccess: () => {
+        this.refresh(true)
+      }
     })
   }
 
-  @Builder private LoadingView() {
+  @Builder
+  private LoadingView() {
     Column() {
       LoadingProgress()
         .width(ThemeConstants.LOADING_SIZE)
@@ -92,21 +98,25 @@ export struct MyTopicsPage {
     .layoutWeight(1)
   }
 
-  @Builder private LoginRequiredView() {
+  @Builder
+  private LoginRequiredView() {
     Column({ space: ThemeConstants.SPACE_SM }) {
       Text('登录后可查看收藏主题')
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
         .fontColor($r('sys.color.font_secondary'))
       Button('去登录')
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .onClick(() => { this.stack.pushPathByName('V2exNativeLogin', null) })
+        .onClick(() => {
+          this.stack.pushPathByName('V2exNativeLogin', null)
+        })
     }
     .justifyContent(FlexAlign.Center)
     .width('100%')
     .layoutWeight(1)
   }
 
-  @Builder private ErrorView() {
+  @Builder
+  private ErrorView() {
     Column({ space: ThemeConstants.SPACE_SM }) {
       Text(this.errorMessage)
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
@@ -114,10 +124,14 @@ export struct MyTopicsPage {
       Row({ space: ThemeConstants.SPACE_SM }) {
         Button('重试')
           .fontSize(ThemeConstants.FONT_SIZE_BODY)
-          .onClick(() => { this.refresh(true) })
+          .onClick(() => {
+            this.refresh(true)
+          })
         Button('去登录')
           .fontSize(ThemeConstants.FONT_SIZE_BODY)
-          .onClick(() => { this.stack.pushPathByName('V2exNativeLogin', null) })
+          .onClick(() => {
+            this.stack.pushPathByName('V2exNativeLogin', null)
+          })
       }
       .justifyContent(FlexAlign.Center)
     }
@@ -126,7 +140,8 @@ export struct MyTopicsPage {
     .layoutWeight(1)
   }
 
-  @Builder private EmptyView() {
+  @Builder
+  private EmptyView() {
     Column() {
       EmptyState({ message: '还没有收藏主题' })
     }
@@ -168,7 +183,8 @@ export struct MyTopicsPage {
         this.topics = []
         this.hasMore = false
         if (!force) {
-          promptAction.openToast({ message: this.errorMessage }).catch((_error: Error) => { })
+          promptAction.openToast({ message: this.errorMessage }).catch((_error: Error) => {
+          })
         }
       })
       .finally(() => {
@@ -213,10 +229,12 @@ export struct MyTopicsPage {
           this.openTwoFactorFromCookie()
           return
         }
-        promptAction.openToast({ message: error.message || '加载更多失败' }).catch((_error: Error) => { })
+        promptAction.openToast({ message: error.message || '加载更多失败' }).catch((_error: Error) => {
+        })
       })
       .finally(() => {
         this.isLoadingMore = false
       })
   }
 }
+
