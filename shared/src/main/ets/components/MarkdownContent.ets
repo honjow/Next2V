@@ -603,6 +603,7 @@ struct MarkdownCodeBlock {
       })
     }
     .alignItems(HorizontalAlign.Start)
+    .constraintSize({ minWidth: "100%" })
     .padding({
       top: ThemeConstants.SPACE_SM,
       bottom: ThemeConstants.SPACE_MD,
