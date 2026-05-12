@@ -14,12 +14,18 @@ export struct ConciseListRow {
   @Prop showChevron: boolean = true
   @Prop trailingDropdown: boolean = false
   @Prop hasSwitch: boolean = false
+  @Prop hasCounter: boolean = false
+  @Prop counterValue: string = ''
+  @Prop counterDecreaseEnabled: boolean = true
+  @Prop counterIncreaseEnabled: boolean = true
   @Prop checked: boolean = false
   @Prop isEnabled: boolean = true
   primaryColor?: Color
   secondaryColor?: Color
   action?: () => void
   switchAction?: (value: boolean) => void
+  counterDecreaseAction?: () => void
+  counterIncreaseAction?: () => void
 
   private primaryTextModifier(): TextModifier {
     return new TextModifier()
@@ -52,6 +58,11 @@ export struct ConciseListRow {
     if (this.hasSwitch) {
       return new SuffixCustomBuilder(() => {
         this.SwitchSuffix()
+      })
+    }
+    if (this.hasCounter) {
+      return new SuffixCustomBuilder(() => {
+        this.CounterSuffix()
       })
     }
     if (this.count >= 0) {
@@ -94,6 +105,45 @@ export struct ConciseListRow {
           this.switchAction(value)
         }
       })
+  }
+
+  @Builder
+  private CounterSuffix() {
+    Row({ space: ThemeConstants.SPACE_SM }) {
+      this.CounterButton('−', this.counterDecreaseEnabled, () => {
+        if (this.counterDecreaseAction) {
+          this.counterDecreaseAction()
+        }
+      })
+      Text(this.counterValue)
+        .fontSize(ThemeConstants.FONT_SIZE_BODY)
+        .fontColor(this.secondaryColor ?? $r('sys.color.font_secondary'))
+        .textAlign(TextAlign.Center)
+        .width(44)
+        .maxLines(1)
+        .textOverflow({ overflow: TextOverflow.Ellipsis })
+      this.CounterButton('+', this.counterIncreaseEnabled, () => {
+        if (this.counterIncreaseAction) {
+          this.counterIncreaseAction()
+        }
+      })
+    }
+    .alignItems(VerticalAlign.Center)
+    .opacity(this.isEnabled ? 1.0 : 0.45)
+  }
+
+  @Builder
+  private CounterButton(label: string, enabled: boolean, action: () => void) {
+    Button(label)
+      .fontSize(ThemeConstants.FONT_SIZE_BODY)
+      .fontColor(enabled ? $r('sys.color.font_primary') : $r('sys.color.font_tertiary'))
+      .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+      .borderRadius(ThemeConstants.RADIUS_ROUND)
+      .width(32)
+      .height(30)
+      .enabled(enabled && this.isEnabled)
+      .opacity(enabled ? 1.0 : 0.45)
+      .onClick(action)
   }
 
   @Builder

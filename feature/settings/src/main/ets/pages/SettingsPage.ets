@@ -341,22 +341,36 @@ export struct SettingsPage {
 
       this.SettingsDivider()
 
-      this.StepperPreferenceRow('字号', `${this.readingFontSize}fp`, 'A-', 'A+', () => {
-        this.updateReadingFontSize(this.readingFontSize - 1)
-      }, () => {
-        this.updateReadingFontSize(this.readingFontSize + 1)
-      }, () => {
-        this.updateReadingFontSize(ThemeConstants.FONT_SIZE_BODY)
+      ConciseListRow({
+        title: '字号',
+        showChevron: false,
+        hasCounter: true,
+        counterValue: `${this.readingFontSize}fp`,
+        counterDecreaseEnabled: this.readingFontSize > ReadingSettings.FONT_SIZE_MIN,
+        counterIncreaseEnabled: this.readingFontSize < ReadingSettings.FONT_SIZE_MAX,
+        counterDecreaseAction: () => {
+          this.updateReadingFontSize(this.readingFontSize - 1)
+        },
+        counterIncreaseAction: () => {
+          this.updateReadingFontSize(this.readingFontSize + 1)
+        }
       })
 
       this.SettingsDivider()
 
-      this.StepperPreferenceRow('行距', `${this.readingLineHeight}vp`, '-', '+', () => {
-        this.updateReadingLineHeight(this.readingLineHeight - 1)
-      }, () => {
-        this.updateReadingLineHeight(this.readingLineHeight + 1)
-      }, () => {
-        this.updateReadingLineHeight(ThemeConstants.LINE_HEIGHT_BODY)
+      ConciseListRow({
+        title: '行距',
+        showChevron: false,
+        hasCounter: true,
+        counterValue: `${this.readingLineHeight}vp`,
+        counterDecreaseEnabled: this.readingLineHeight > this.readingLineHeightMin(),
+        counterIncreaseEnabled: this.readingLineHeight < ReadingSettings.LINE_HEIGHT_MAX,
+        counterDecreaseAction: () => {
+          this.updateReadingLineHeight(this.readingLineHeight - 1)
+        },
+        counterIncreaseAction: () => {
+          this.updateReadingLineHeight(this.readingLineHeight + 1)
+        }
       })
 
       this.SettingsDivider()
@@ -376,48 +390,18 @@ export struct SettingsPage {
             this.densityMenuShown = false
           }
         })
+
+      this.SettingsDivider()
+
+      ConciseListRow({
+        title: '恢复默认阅读设置',
+        showChevron: false,
+        action: () => {
+          this.confirmResetReadingSettings()
+        }
+      })
     }
     .width('100%')
-  }
-
-  @Builder
-  StepperPreferenceRow(
-    title: string,
-    value: string,
-    decreaseLabel: string,
-    increaseLabel: string,
-    decreaseAction: () => void,
-    increaseAction: () => void,
-    resetAction: () => void
-  ) {
-    Row({ space: ThemeConstants.SPACE_SM }) {
-      Text(title)
-        .fontSize(ThemeConstants.FONT_SIZE_LIST_ITEM)
-        .fontColor($r('sys.color.font_primary'))
-        .layoutWeight(1)
-      Text(value)
-        .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-        .fontColor($r('sys.color.font_secondary'))
-      this.CompactSettingButton(decreaseLabel, decreaseAction)
-      this.CompactSettingButton('默认', resetAction)
-      this.CompactSettingButton(increaseLabel, increaseAction)
-    }
-    .width('100%')
-    .height(52)
-    .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG })
-  }
-
-  @Builder
-  CompactSettingButton(label: string, action: () => void) {
-    Button(label)
-      .fontSize(ThemeConstants.FONT_SIZE_TAG)
-      .height(30)
-      .constraintSize({ minWidth: 36 })
-      .type(ButtonType.Normal)
-      .borderRadius(ThemeConstants.RADIUS_ROUND)
-      .fontColor($r('sys.color.font_primary'))
-      .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
-      .onClick(action)
   }
 
   @Builder
@@ -599,6 +583,33 @@ export struct SettingsPage {
 
   private updateReadingDensity(density: string): void {
     this.saveReadingSettings(this.readingFontSize, this.readingLineHeight, density)
+  }
+
+  private readingLineHeightMin(): number {
+    return Math.max(ReadingSettings.LINE_HEIGHT_MIN, ReadingSettings.normalizeFontSize(this.readingFontSize) + 4)
+  }
+
+  private confirmResetReadingSettings(): void {
+    AlertDialog.show({
+      title: '恢复默认阅读设置',
+      message: '将字号和行距恢复为默认值。确定继续吗？',
+      primaryButton: {
+        value: '取消', action: () => {
+        }
+      },
+      secondaryButton: {
+        value: '恢复',
+        fontColor: ThemeConstants.BRAND_PRIMARY,
+        action: () => {
+          this.resetReadingSettings()
+        }
+      }
+    })
+  }
+
+  private resetReadingSettings(): void {
+    this.saveReadingSettings(ThemeConstants.FONT_SIZE_BODY, ThemeConstants.LINE_HEIGHT_BODY,
+      this.readingDensity)
   }
 
   private updateThemeMode(mode: string): void {
