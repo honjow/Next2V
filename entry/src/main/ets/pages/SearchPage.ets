@@ -28,7 +28,8 @@ import {
   ThemeConstants,
   type TopicDetailParams,
   type V2exNode,
-  type ViewedTopic
+  type ViewedTopic,
+  defaultSheetOptions,
 } from 'shared'
 
 interface SearchTopicItem {
@@ -154,17 +155,7 @@ export struct SearchPage {
     .width('100%')
     .height('100%')
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
-    .bindSheet($$this.filterSheetVisible, this.SearchFilterSheet(), {
-      height: SheetSize.MEDIUM,
-      preferType: SheetType.BOTTOM,
-      dragBar: false,
-      showClose: false,
-      maskColor: 'rgba(0,0,0,0.24)',
-      backgroundColor: $r('sys.color.ohos_id_color_card_bg'),
-      onDisappear: () => {
-        this.filterSheetVisible = false
-      }
-    })
+    .bindSheet($$this.filterSheetVisible, this.SearchFilterSheet(), defaultSheetOptions(SheetSize.MEDIUM, () => { this.filterSheetVisible = false }))
   }
 
   @Builder SearchResultSurface() {

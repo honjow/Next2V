@@ -9,7 +9,7 @@ import {
   V2exReply, Avatar, ReplyCard, TimeAgo, ThemeConstants, MarkdownContent, PullRefreshListScaffold,
   NodeTopicListParams, UserProfileParams, ImagePreviewParams, CollectionSettings, CacheSettings, V2exTopic, AuthSettings,
   LoadingFooter, HttpClient, StorageKeys, ApiService, CookieJarSettings, V2exToggleAction, ReadingSettings,
-  AppModalScaffold, V2exRoute, V2exUrlRouter, TopicDetailParams, ImageUtils, HtmlEntityUtils
+  AppModalScaffold, V2exRoute, V2exUrlRouter, TopicDetailParams, ImageUtils, HtmlEntityUtils, defaultSheetOptions,
 } from 'shared'
 import type { V2exReplyThankAction, V2exTopicThankAction } from 'shared'
 import type { V2exReplyModerationAction, V2exTopicModerationAction } from 'shared'
@@ -246,37 +246,14 @@ export struct TopicDetailPage {
     Blank()
       .width(1)
       .height(1)
-      .bindSheet($$this.replyComposerVisible, this.ReplyComposerSheetBuilder(), {
-        height: SheetSize.MEDIUM,
-        preferType: SheetType.BOTTOM,
-        dragBar: false,
-        showClose: false,
-        maskColor: 'rgba(0,0,0,0.24)',
-        backgroundColor: $r('sys.color.ohos_id_color_card_bg'),
-        onDisappear: () => {
-          this.replyComposerVisible = false
-          this.replyComposerInitialContent = ''
-        }
-      })
+      .bindSheet($$this.replyComposerVisible, this.ReplyComposerSheetBuilder(), defaultSheetOptions(SheetSize.MEDIUM, () => { this.replyComposerVisible = false; this.replyComposerInitialContent = '' }))
   }
 
   @Builder ReplyContextSheetHost() {
     Blank()
       .width(1)
       .height(1)
-      .bindSheet($$this.contextSheetVisible, this.ReplyContextSheet(), {
-        height: SheetSize.LARGE,
-        preferType: SheetType.BOTTOM,
-        dragBar: false,
-        showClose: false,
-        maskColor: 'rgba(0,0,0,0.24)',
-        backgroundColor: $r('sys.color.ohos_id_color_card_bg'),
-        onDisappear: () => {
-          this.contextSheetVisible = false
-          this.contextReply = null
-          this.contextItems = []
-        }
-      })
+      .bindSheet($$this.contextSheetVisible, this.ReplyContextSheet(), defaultSheetOptions(SheetSize.LARGE, () => { this.contextSheetVisible = false; this.contextReply = null; this.contextItems = [] }))
   }
 
   @Builder LoadingView() {

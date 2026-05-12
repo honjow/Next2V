@@ -3,6 +3,7 @@ import { promptAction } from '@kit.ArkUI'
 import {
   ApiService,
   AppActionButton,
+  AppModalScaffold,
   AppTextField,
   AuthSessionSettings,
   CookieJarSettings,
@@ -31,49 +32,49 @@ export struct V2exTwoFactorPrompt {
   private http: HttpClient = HttpClient.getInstance()
 
   build() {
-    Column({ space: ThemeConstants.SPACE_MD }) {
-      Text(this.title)
-        .fontSize(ThemeConstants.FONT_SIZE_TITLE)
-        .fontWeight(FontWeight.Medium)
-        .fontColor($r('sys.color.font_primary'))
-        .width('100%')
+    AppModalScaffold({
+      title: this.title,
+      closeAction: () => { this.cancel() }
+    }) {
+      ListItem() {
+        Column({ space: ThemeConstants.SPACE_MD }) {
+          Text(this.message)
+            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+            .fontColor($r('sys.color.font_secondary'))
+            .width('100%')
 
-      Text(this.message)
-        .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-        .fontColor($r('sys.color.font_secondary'))
-        .width('100%')
+          AppTextField({
+            text: $code,
+            placeholder: '输入 6 位验证码',
+            inputType: InputType.Number,
+            onTextChange: (value: string) => { this.code = value }
+          })
+            .width('100%')
 
-      AppTextField({
-        text: $code,
-        placeholder: '输入 6 位验证码',
-        inputType: InputType.Number,
-        onTextChange: (value: string) => { this.code = value }
-      })
-        .width('100%')
+          if (this.errorMessage) {
+            Text(this.errorMessage)
+              .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+              .fontColor(Color.Red)
+              .width('100%')
+          }
 
-      if (this.errorMessage) {
-        Text(this.errorMessage)
-          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-          .fontColor(Color.Red)
-          .width('100%')
+          AppActionButton({
+            label: this.isSubmitting ? '验证中…' : '完成验证',
+            primary: true,
+            isEnabled: !this.isSubmitting,
+            action: () => { this.submit() }
+          })
+
+          AppActionButton({
+            label: '稍后再说',
+            primary: false,
+            isEnabled: !this.isSubmitting,
+            action: () => { this.cancel() }
+          })
+        }
+        .width('100%')
       }
-
-      AppActionButton({
-        label: this.isSubmitting ? '验证中…' : '完成验证',
-        primary: true,
-        isEnabled: !this.isSubmitting,
-        action: () => { this.submit() }
-      })
-
-      AppActionButton({
-        label: '稍后再说',
-        primary: false,
-        isEnabled: !this.isSubmitting,
-        action: () => { this.cancel() }
-      })
     }
-    .width('100%')
-    .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG, top: ThemeConstants.SPACE_LG, bottom: ThemeConstants.SPACE_XL })
   }
 
   private submit(): void {

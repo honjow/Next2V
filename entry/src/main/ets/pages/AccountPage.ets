@@ -31,7 +31,8 @@ import {
   UserProfileParams,
   V2exCookieTwoFactorRequiredError,
   V2exSessionParser,
-  V2exSigninParser
+  V2exSigninParser,
+  defaultSheetOptions,
 } from 'shared'
 
 @Component
@@ -207,17 +208,7 @@ export struct AccountDashboardPage {
       .width('100%')
       .height('100%')
       .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
-      .bindSheet($$this.twoFactorVisible, this.TwoFactorSheet(), {
-        height: SheetSize.MEDIUM,
-        preferType: SheetType.BOTTOM,
-        dragBar: false,
-        showClose: false,
-        maskColor: 'rgba(0,0,0,0.24)',
-        backgroundColor: $r('sys.color.ohos_id_color_card_bg'),
-        onDisappear: () => {
-          this.twoFactorVisible = false
-        }
-      })
+      .bindSheet($$this.twoFactorVisible, this.TwoFactorSheet(), defaultSheetOptions(SheetSize.MEDIUM, () => { this.twoFactorVisible = false }))
       .onVisibleAreaChange([0.0, 1.0], (isVisible: boolean, _currentRatio: number) => {
         if (isVisible) {
           this.refreshLocalData()
@@ -295,17 +286,7 @@ export struct AccountDashboardPage {
     .width('100%')
     .height('100%')
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
-    .bindSheet($$this.twoFactorVisible, this.TwoFactorSheet(), {
-      height: SheetSize.MEDIUM,
-      preferType: SheetType.BOTTOM,
-      dragBar: false,
-      showClose: false,
-      maskColor: 'rgba(0,0,0,0.24)',
-      backgroundColor: $r('sys.color.ohos_id_color_card_bg'),
-      onDisappear: () => {
-        this.twoFactorVisible = false
-      }
-    })
+    .bindSheet($$this.twoFactorVisible, this.TwoFactorSheet(), defaultSheetOptions(SheetSize.MEDIUM, () => { this.twoFactorVisible = false }))
   }
 
   @Builder

@@ -112,6 +112,7 @@ export { V2exAccountListParser } from './parser/V2exAccountListParser'
 export type { V2exAccountMemberListItem } from './parser/V2exAccountListParser'
 
 // 工具
+export { defaultSheetOptions } from './utils/BindSheetHelper'
 export { DateUtils } from './utils/DateUtils'
 export { ImageUtils } from './utils/ImageUtils'
 export { MediaUrlUtils } from './utils/MediaUrlUtils'

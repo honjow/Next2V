@@ -10,7 +10,8 @@ import {
   TopicCard,
   type TopicDetailParams,
   type V2exTopic,
-  V2exCookieTwoFactorRequiredError
+  V2exCookieTwoFactorRequiredError,
+  defaultSheetOptions,
 } from 'shared'
 
 @Component
@@ -68,17 +69,7 @@ export struct MyTopicsPage {
     .width('100%')
     .height('100%')
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
-    .bindSheet($$this.twoFactorVisible, this.TwoFactorSheet(), {
-      height: SheetSize.MEDIUM,
-      preferType: SheetType.BOTTOM,
-      dragBar: false,
-      showClose: false,
-      maskColor: 'rgba(0,0,0,0.24)',
-      backgroundColor: $r('sys.color.ohos_id_color_card_bg'),
-      onDisappear: () => {
-        this.twoFactorVisible = false
-      }
-    })
+    .bindSheet($$this.twoFactorVisible, this.TwoFactorSheet(), defaultSheetOptions(SheetSize.MEDIUM, () => { this.twoFactorVisible = false }))
   }
 
   @Builder private TwoFactorSheet() {
