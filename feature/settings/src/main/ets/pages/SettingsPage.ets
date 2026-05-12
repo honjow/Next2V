@@ -12,7 +12,6 @@ import {
   GroupedListSection,
   HttpClient,
   ListDivider as SharedListDivider,
-  LocalDataSettings,
   MediaSettings,
   ReadingSettings,
   SecondaryListScaffold,
@@ -39,8 +38,6 @@ export struct SettingsPage {
   @StorageLink(StorageKeys.ACCOUNT_WRITE_ENABLED) accountWriteEnabled: boolean = false
   @State private nodeTabName: string = ''
   @State private cacheStats: CacheStats = { topicListCount: 0, topicDetailCount: 0, updatedAt: 0 }
-  @State private cacheMessage: string = ''
-  @State private localDataMessage: string = ''
   @State private themeMenuShown: boolean = false
   @State private apiDomainMenuShown: boolean = false
   @State private densityMenuShown: boolean = false
@@ -488,53 +485,13 @@ export struct SettingsPage {
   CacheSection() {
     GroupedListSection() {
       ConciseListRow({
-        title: '离线缓存',
+        title: '存储',
         subtitle: this.cacheSubtitle(),
         count: this.cacheStats.topicListCount + this.cacheStats.topicDetailCount,
-        showChevron: false
+        action: () => {
+          this.stack.pushPathByName('Storage', null)
+        }
       })
-
-      Row({ space: ThemeConstants.SPACE_SM }) {
-        Button('刷新状态')
-          .fontSize(ThemeConstants.FONT_SIZE_TAG)
-          .height(ThemeConstants.TOUCH_TARGET_SM)
-          .type(ButtonType.Normal)
-          .borderRadius(ThemeConstants.RADIUS_MD)
-          .fontColor($r('sys.color.font_primary'))
-          .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
-          .layoutWeight(1)
-          .onClick(() => {
-            this.loadCacheStats()
-          })
-        Button('清理缓存')
-          .fontSize(ThemeConstants.FONT_SIZE_TAG)
-          .height(ThemeConstants.TOUCH_TARGET_SM)
-          .type(ButtonType.Normal)
-          .borderRadius(ThemeConstants.RADIUS_MD)
-          .fontColor($r('sys.color.font_primary'))
-          .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
-          .layoutWeight(1)
-          .onClick(() => {
-            this.clearCache()
-          })
-      }
-      .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG, bottom: ThemeConstants.SPACE_MD })
-
-      this.SettingsDivider()
-
-      Column() {
-        ConciseListRow({
-          title: '清理本地数据',
-          primaryColor: Color.Red,
-          subtitle: this.localDataMessage,
-          showChevron: false,
-          action: () => {
-            this.confirmClearLocalData()
-          }
-        })
-      }
-      .width('100%')
-      .alignItems(HorizontalAlign.Start)
     }
   }
 
@@ -695,9 +652,6 @@ export struct SettingsPage {
     if (this.cacheStats.updatedAt > 0) {
       text += ` · 更新于 ${DateUtils.toDateString(this.cacheStats.updatedAt)}`
     }
-    if (this.cacheMessage) {
-      text += ` · ${this.cacheMessage}`
-    }
     return text
   }
 
@@ -741,46 +695,4 @@ export struct SettingsPage {
       })
   }
 
-  private clearCache(): void {
-    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    CacheSettings.clear(context)
-      .then(() => {
-        this.cacheMessage = '已清理'
-        this.loadCacheStats()
-      })
-      .catch((error: Error) => {
-        this.cacheMessage = error.message || '清理失败'
-      })
-  }
-
-  private confirmClearLocalData(): void {
-    AlertDialog.show({
-      title: '清理本地数据',
-      message: '将清理本机保存的稍后读、关注节点、最近浏览、已读状态、草稿、搜索历史、通知缓存和离线缓存。登录状态与偏好设置会保留。确定继续吗？',
-      primaryButton: {
-        value: '取消', action: () => {
-        }
-      },
-      secondaryButton: {
-        value: '清理',
-        fontColor: Color.Red,
-        action: () => {
-          this.clearLocalData()
-        }
-      }
-    })
-  }
-
-  private clearLocalData(): void {
-    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    LocalDataSettings.clearAll(context)
-      .then(() => {
-        this.cacheMessage = '已清理'
-        this.localDataMessage = '已清理'
-        this.loadCacheStats()
-      })
-      .catch((error: Error) => {
-        this.localDataMessage = error.message || '清理失败'
-      })
-  }
 }
