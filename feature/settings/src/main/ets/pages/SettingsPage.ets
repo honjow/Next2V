@@ -13,7 +13,6 @@ import {
   HttpClient,
   ListDivider as SharedListDivider,
   MediaSettings,
-  ReadingSettings,
   SecondaryListScaffold,
   SectionHeader as SharedSectionHeader,
   StorageKeys,
@@ -30,9 +29,6 @@ export struct SettingsPage {
   @StorageLink(StorageKeys.USE_CO_DOMAIN) useCoDomain: boolean = false
   @StorageLink(StorageKeys.MEDIA_AUTO_LOAD_IMAGES) autoLoadImages: boolean = true
   @StorageLink(StorageKeys.MEDIA_ONLY_LOAD_IMAGES_ON_WIFI) onlyLoadImagesOnWifi: boolean = false
-  @StorageLink(StorageKeys.READING_FONT_SIZE) readingFontSize: number = ThemeConstants.FONT_SIZE_BODY
-  @StorageLink(StorageKeys.READING_LINE_HEIGHT) readingLineHeight: number = ThemeConstants.LINE_HEIGHT_BODY
-  @StorageLink(StorageKeys.READING_DENSITY) readingDensity: string = ReadingSettings.DENSITY_STANDARD
   @StorageLink(StorageKeys.THEME_MODE) themeMode: string = ThemeSettings.MODE_AUTO
   @StorageLink(StorageKeys.FEED_TAB_KEYS) feedTabKeys: string = FeedTabSettings.defaultKeysJson()
   @StorageLink(StorageKeys.ACCOUNT_WRITE_ENABLED) accountWriteEnabled: boolean = false
@@ -40,7 +36,6 @@ export struct SettingsPage {
   @State private cacheStats: CacheStats = { topicListCount: 0, topicDetailCount: 0, updatedAt: 0 }
   @State private themeMenuShown: boolean = false
   @State private apiDomainMenuShown: boolean = false
-  @State private densityMenuShown: boolean = false
   private http: HttpClient = HttpClient.getInstance()
 
   aboutToAppear(): void {
@@ -339,62 +334,9 @@ export struct SettingsPage {
       this.SettingsDivider()
 
       ConciseListRow({
-        title: '字号',
-        showChevron: false,
-        hasCounter: true,
-        counterValue: `${this.readingFontSize}fp`,
-        counterDecreaseEnabled: this.readingFontSize > ReadingSettings.FONT_SIZE_MIN,
-        counterIncreaseEnabled: this.readingFontSize < ReadingSettings.FONT_SIZE_MAX,
-        counterDecreaseAction: () => {
-          this.updateReadingFontSize(this.readingFontSize - 1)
-        },
-        counterIncreaseAction: () => {
-          this.updateReadingFontSize(this.readingFontSize + 1)
-        }
-      })
-
-      this.SettingsDivider()
-
-      ConciseListRow({
-        title: '行距',
-        showChevron: false,
-        hasCounter: true,
-        counterValue: `${this.readingLineHeight}vp`,
-        counterDecreaseEnabled: this.readingLineHeight > this.readingLineHeightMin(),
-        counterIncreaseEnabled: this.readingLineHeight < ReadingSettings.LINE_HEIGHT_MAX,
-        counterDecreaseAction: () => {
-          this.updateReadingLineHeight(this.readingLineHeight - 1)
-        },
-        counterIncreaseAction: () => {
-          this.updateReadingLineHeight(this.readingLineHeight + 1)
-        }
-      })
-
-      this.SettingsDivider()
-
-      ConciseListRow({
-        title: '密度',
-        trailingText: this.readingDensityText(this.readingDensity),
-        showChevron: false,
-        trailingDropdown: true,
+        title: '阅读设置',
         action: () => {
-          this.showDensityMenu()
-        }
-      })
-        .bindMenu(this.densityMenuShown, this.ReadingDensityMenu, {
-          placement: Placement.BottomRight,
-          aboutToDisappear: () => {
-            this.densityMenuShown = false
-          }
-        })
-
-      this.SettingsDivider()
-
-      ConciseListRow({
-        title: '恢复默认阅读设置',
-        showChevron: false,
-        action: () => {
-          this.confirmResetReadingSettings()
+          this.stack.pushPathByName('ReadingSettings', null)
         }
       })
     }
@@ -407,15 +349,6 @@ export struct SettingsPage {
       this.ThemeModeMenuItem('自动', ThemeSettings.MODE_AUTO)
       this.ThemeModeMenuItem('浅色', ThemeSettings.MODE_LIGHT)
       this.ThemeModeMenuItem('深色', ThemeSettings.MODE_DARK)
-    }
-  }
-
-  @Builder
-  ReadingDensityMenu() {
-    Menu() {
-      this.ReadingDensityMenuItem('紧凑', ReadingSettings.DENSITY_COMPACT)
-      this.ReadingDensityMenuItem('标准', ReadingSettings.DENSITY_STANDARD)
-      this.ReadingDensityMenuItem('宽松', ReadingSettings.DENSITY_COMFORTABLE)
     }
   }
 
@@ -435,17 +368,6 @@ export struct SettingsPage {
     })
       .onClick(() => {
         this.updateApiDomain(useCoDomain)
-      })
-  }
-
-  @Builder
-  ReadingDensityMenuItem(label: string, density: string) {
-    MenuItem({
-      content: label,
-      symbolEndIcon: this.readingDensity === density ? new SymbolGlyphModifier($r('sys.symbol.checkmark')) : undefined
-    })
-      .onClick(() => {
-        this.updateReadingDensity(density)
       })
   }
 
@@ -471,13 +393,6 @@ export struct SettingsPage {
     this.apiDomainMenuShown = false
     setTimeout(() => {
       this.apiDomainMenuShown = true
-    }, 20)
-  }
-
-  private showDensityMenu(): void {
-    this.densityMenuShown = false
-    setTimeout(() => {
-      this.densityMenuShown = true
     }, 20)
   }
 
@@ -527,48 +442,6 @@ export struct SettingsPage {
     })
   }
 
-  private updateReadingFontSize(fontSize: number): void {
-    const nextFontSize = ReadingSettings.normalizeFontSize(fontSize)
-    const nextLineHeight = ReadingSettings.normalizeLineHeight(this.readingLineHeight, nextFontSize)
-    this.saveReadingSettings(nextFontSize, nextLineHeight, this.readingDensity)
-  }
-
-  private updateReadingLineHeight(lineHeight: number): void {
-    this.saveReadingSettings(this.readingFontSize,
-      ReadingSettings.normalizeLineHeight(lineHeight, this.readingFontSize), this.readingDensity)
-  }
-
-  private updateReadingDensity(density: string): void {
-    this.saveReadingSettings(this.readingFontSize, this.readingLineHeight, density)
-  }
-
-  private readingLineHeightMin(): number {
-    return Math.max(ReadingSettings.LINE_HEIGHT_MIN, ReadingSettings.normalizeFontSize(this.readingFontSize) + 4)
-  }
-
-  private confirmResetReadingSettings(): void {
-    AlertDialog.show({
-      title: '恢复默认阅读设置',
-      message: '将字号和行距恢复为默认值。确定继续吗？',
-      primaryButton: {
-        value: '取消', action: () => {
-        }
-      },
-      secondaryButton: {
-        value: '恢复',
-        fontColor: ThemeConstants.BRAND_PRIMARY,
-        action: () => {
-          this.resetReadingSettings()
-        }
-      }
-    })
-  }
-
-  private resetReadingSettings(): void {
-    this.saveReadingSettings(ThemeConstants.FONT_SIZE_BODY, ThemeConstants.LINE_HEIGHT_BODY,
-      this.readingDensity)
-  }
-
   private updateThemeMode(mode: string): void {
     const normalizedMode = ThemeSettings.normalizeMode(mode)
     this.themeMode = normalizedMode
@@ -576,17 +449,6 @@ export struct SettingsPage {
     ThemeSettings.save(context, normalizedMode).catch((error: Error) => {
       console.error('save theme settings failed: ' + error.message)
     })
-  }
-
-  private saveReadingSettings(fontSize: number, lineHeight: number, density: string): void {
-    this.readingFontSize = ReadingSettings.normalizeFontSize(fontSize)
-    this.readingLineHeight = ReadingSettings.normalizeLineHeight(lineHeight, this.readingFontSize)
-    this.readingDensity = ReadingSettings.normalizeDensity(density)
-    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    ReadingSettings.save(context, this.readingFontSize, this.readingLineHeight, this.readingDensity)
-      .catch((error: Error) => {
-        console.error('save reading settings failed: ' + error.message)
-      })
   }
 
   private updateFeedTabVisibility(key: string, _visible: boolean): void {
@@ -635,16 +497,6 @@ export struct SettingsPage {
     FeedTabSettings.save(context, keysJson).catch((error: Error) => {
       console.error('save feed tab settings failed: ' + error.message)
     })
-  }
-
-  private readingDensityText(density: string): string {
-    if (density === ReadingSettings.DENSITY_COMPACT) {
-      return '紧凑'
-    }
-    if (density === ReadingSettings.DENSITY_COMFORTABLE) {
-      return '宽松'
-    }
-    return '标准'
   }
 
   private cacheSubtitle(): string {

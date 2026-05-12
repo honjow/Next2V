@@ -29,9 +29,9 @@ export class ReadingSettings {
   static apply(fontSize: number, lineHeight: number, density: string): void {
     const normalizedFontSize = ReadingSettings.normalizeFontSize(fontSize)
     const normalizedLineHeight = ReadingSettings.normalizeLineHeight(lineHeight, normalizedFontSize)
-    AppStorage.setOrCreate<number>(StorageKeys.READING_FONT_SIZE, normalizedFontSize)
-    AppStorage.setOrCreate<number>(StorageKeys.READING_LINE_HEIGHT, normalizedLineHeight)
-    AppStorage.setOrCreate<string>(StorageKeys.READING_DENSITY, ReadingSettings.normalizeDensity(density))
+    ReadingSettings.setAppStorageValue<number>(StorageKeys.READING_FONT_SIZE, normalizedFontSize)
+    ReadingSettings.setAppStorageValue<number>(StorageKeys.READING_LINE_HEIGHT, normalizedLineHeight)
+    ReadingSettings.setAppStorageValue<string>(StorageKeys.READING_DENSITY, ReadingSettings.normalizeDensity(density))
   }
 
   static async load(context: common.UIAbilityContext): Promise<ReadingSettingsSnapshot> {
@@ -58,6 +58,23 @@ export class ReadingSettings {
       store.putSync(KEY_FONT_SIZE, normalizedFontSize)
       store.putSync(KEY_LINE_HEIGHT, normalizedLineHeight)
       store.putSync(KEY_DENSITY, normalizedDensity)
+      store.flushSync()
+    } catch (error) {
+      const e = error as Error
+      throw new Error(e.message || '保存阅读设置失败')
+    }
+  }
+
+  static async saveTypography(context: common.UIAbilityContext, fontSize: number, lineHeight: number): Promise<void> {
+    const normalizedFontSize = ReadingSettings.normalizeFontSize(fontSize)
+    const normalizedLineHeight = ReadingSettings.normalizeLineHeight(lineHeight, normalizedFontSize)
+    const currentDensity = ReadingSettings.normalizeDensity(
+      AppStorage.get<string>(StorageKeys.READING_DENSITY) ?? DENSITY_STANDARD)
+    ReadingSettings.apply(normalizedFontSize, normalizedLineHeight, currentDensity)
+    try {
+      const store = await preferences.getPreferences(context, STORE_NAME)
+      store.putSync(KEY_FONT_SIZE, normalizedFontSize)
+      store.putSync(KEY_LINE_HEIGHT, normalizedLineHeight)
       store.flushSync()
     } catch (error) {
       const e = error as Error
@@ -100,5 +117,11 @@ export class ReadingSettings {
       return density
     }
     return DENSITY_STANDARD
+  }
+
+  private static setAppStorageValue<T>(key: string, value: T): void {
+    if (!AppStorage.set<T>(key, value)) {
+      AppStorage.setOrCreate<T>(key, value)
+    }
   }
 }
