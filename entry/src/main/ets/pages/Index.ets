@@ -428,13 +428,13 @@ struct Index {
       HdsNavDestination() {
         TopicDetailPage({
           topicId: ((param as Record<string, Object>)['topicId'] as number) || 0,
-          targetFloor: ((param as Record<string, Object>)['targetFloor'] as number) || 0
+          targetFloor: ((param as Record<string, Object>)['targetFloor'] as number) || 0,
         })
       }
       .titleBar(this.topicDetailTitleBarOpts(((param as Record<string, Object>)['topicId'] as number) || 0))
       .dynamicHideTitleBar({
         hideTitleArea: this.isFoldedAndUseOuterScreen,
-        hideStatusBar: false,
+        hideStatusBar: this.isFoldedAndUseOuterScreen,
         mode: HideMode.SCROLL_UP,
       })
     } else if (name === 'ImagePreview') {

@@ -25,6 +25,7 @@ interface ReplyContextItem {
 export struct TopicDetailPage {
   @Prop topicId: number = 0
   @Prop targetFloor: number = 0
+  @Prop hideTitle: boolean = false
   @State v: DetailViewModel = new DetailViewModel(0)
   @Consume('ns') stack: NavPathStack
   @StorageLink(StorageKeys.TOPIC_DETAIL_ACTION) @Watch('onTopicActionCommand') topicActionCommand: string = ''
