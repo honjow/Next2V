@@ -286,7 +286,7 @@ const TITLE_BAR_LEADING_EDGE_RESERVE_MEDIUM: number = 24
 const TITLE_BAR_LEADING_EDGE_RESERVE_EXPANDED: number = 32
 const TITLE_BAR_BACK_BUTTON_SLOT_WIDTH: number = 48
 const TITLE_BAR_ACTION_VISUAL_RESERVE: number = 36
-const TITLE_BAR_TRAILING_SAFETY_GAP: number = 8
+const TITLE_BAR_TRAILING_EDGE_RESERVE: number = TITLE_BAR_LEADING_EDGE_RESERVE_COMPACT
 const TOPIC_DETAIL_TITLE_MENU_MAX_COUNT: number = 3
 
 function titleBarLengthToNumber(value: Length | undefined): number {
@@ -300,21 +300,20 @@ function titleBarLengthToNumber(value: Length | undefined): number {
   return 0
 }
 
-function titleBarTrailingReserve(titleBarWidth: number, menuMaxCount: number, menuItemCount: number): number {
+function titleBarTrailingReserve(menuMaxCount: number, menuItemCount: number): number {
   const inlineCount = Math.max(0, Math.min(menuMaxCount, menuItemCount))
   const hasOverflowAction = menuItemCount > menuMaxCount
   const actionSlotCount = inlineCount + (hasOverflowAction ? 1 : 0)
   if (actionSlotCount <= 0) {
     return 0
   }
-  // The stackBuilderComponent can measure its own titlebar width via
-  // onAreaChange, but HDS exposes no per-route trailing menu bounds here
-  // (only value/maxCount in TitleBarContentOptions). Keep bcdc554's tighter
-  // 36vp visual footprint per visible/overflow action, then add only the
-  // same width-aware edge gutter used for the leading side so unfolded layouts
-  // get separation without reverting to full 48vp touch-slot padding.
-  return actionSlotCount * TITLE_BAR_ACTION_VISUAL_RESERVE + TITLE_BAR_TRAILING_SAFETY_GAP +
-    titleBarWidthAwareEdgeReserve(titleBarWidth)
+  // HDS exposes menu count, not the actual trailing action bounds. Use the
+  // same edge-distance standard that works on the leading side: reserve the
+  // visible width of each inline/overflow action, then add one compact edge
+  // gap. Do not scale this gap with the appbar width; screenshots in split
+  // widths showed that the previous width-bucket right gutter wasted title
+  // space while the leading side was already correct.
+  return actionSlotCount * TITLE_BAR_ACTION_VISUAL_RESERVE + TITLE_BAR_TRAILING_EDGE_RESERVE
 }
 
 function titleBarWidthAwareEdgeReserve(titleBarWidth: number): number {
@@ -370,7 +369,7 @@ struct UserProfileAppbarIdentity {
     .alignItems(VerticalAlign.Center)
     .padding({
       left: titleBarLeadingReserve(this.titleBarWidth),
-      right: titleBarTrailingReserve(this.titleBarWidth, this.menuMaxCount, this.menuItemCount)
+      right: titleBarTrailingReserve(this.menuMaxCount, this.menuItemCount)
     })
     .hitTestBehavior(HitTestMode.None)
     .onAreaChange((_oldValue: Area, newValue: Area) => {
@@ -429,7 +428,7 @@ struct TopicDetailAppbarIdentity {
     .alignItems(VerticalAlign.Center)
     .padding({
       left: titleBarLeadingReserve(this.titleBarWidth),
-      right: titleBarTrailingReserve(this.titleBarWidth, this.menuMaxCount, this.menuItemCount)
+      right: titleBarTrailingReserve(this.menuMaxCount, this.menuItemCount)
     })
     .hitTestBehavior(HitTestMode.None)
     .onAreaChange((_oldValue: Area, newValue: Area) => {
