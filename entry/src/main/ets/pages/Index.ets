@@ -279,15 +279,67 @@ function DiscoverSearchCCBuilder() {
   DiscoverSearchComponent()
 }
 
+const TITLE_BAR_COMPACT_WIDTH: number = 600
+const TITLE_BAR_EXPANDED_WIDTH: number = 840
+const TITLE_BAR_EDGE_RESERVE_COMPACT: number = 16
+const TITLE_BAR_EDGE_RESERVE_MEDIUM: number = 24
+const TITLE_BAR_EDGE_RESERVE_EXPANDED: number = 32
+const TITLE_BAR_BACK_BUTTON_SLOT_WIDTH: number = 48
+const TITLE_BAR_ACTION_SLOT_WIDTH: number = 48
+const TOPIC_DETAIL_TITLE_MENU_MAX_COUNT: number = 3
+
+function titleBarLengthToNumber(value: Length | undefined): number {
+  if (typeof value === 'number') {
+    return value
+  }
+  if (typeof value === 'string') {
+    const parsed = Number.parseFloat(value)
+    return Number.isNaN(parsed) ? 0 : parsed
+  }
+  return 0
+}
+
+function titleBarHorizontalEdgeReserve(titleBarWidth: number): number {
+  if (titleBarWidth >= TITLE_BAR_EXPANDED_WIDTH) {
+    return TITLE_BAR_EDGE_RESERVE_EXPANDED
+  }
+  if (titleBarWidth >= TITLE_BAR_COMPACT_WIDTH) {
+    return TITLE_BAR_EDGE_RESERVE_MEDIUM
+  }
+  return TITLE_BAR_EDGE_RESERVE_COMPACT
+}
+
+function titleBarTrailingReserve(titleBarWidth: number, menuMaxCount: number, menuItemCount: number): number {
+  const inlineCount = Math.max(0, Math.min(menuMaxCount, menuItemCount))
+  const hasOverflowAction = menuItemCount > menuMaxCount
+  const actionSlotCount = inlineCount + (hasOverflowAction ? 1 : 0)
+  // HDS MINI title bars do not automatically shrink stackBuilderComponent
+  // content around title-menu actions. Reserve one 48vp HDS action slot for
+  // each inline item plus one more 48vp slot when the overflow affordance is
+  // shown. Add the width-aware edge reserve because wider/folded/tablet modes
+  // use larger titlebar side gutters. Future menu maxCount/value changes only
+  // need to pass the updated counts into this formula.
+  return titleBarHorizontalEdgeReserve(titleBarWidth) + actionSlotCount * TITLE_BAR_ACTION_SLOT_WIDTH
+}
+
+function titleBarLeadingReserve(titleBarWidth: number): number {
+  return TITLE_BAR_BACK_BUTTON_SLOT_WIDTH + titleBarHorizontalEdgeReserve(titleBarWidth)
+}
+
 interface UserProfileAppbarIdentityParams {
   titleUsername: string
   avatarUrl: string
+  menuMaxCount: number
+  menuItemCount: number
 }
 
 @Component
 struct UserProfileAppbarIdentity {
   @Prop titleUsername: string = ''
   @Prop avatarUrl: string = ''
+  @Prop menuMaxCount: number = 0
+  @Prop menuItemCount: number = 0
+  @State private titleBarWidth: number = 0
 
   build() {
     Row({ space: ThemeConstants.SPACE_XS }) {
@@ -299,25 +351,39 @@ struct UserProfileAppbarIdentity {
           .fontColor($r('sys.color.font_primary'))
           .maxLines(1)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
+          .layoutWeight(1)
       }
     }
     .width('100%')
     .height(ThemeConstants.TITLE_BAR_HEIGHT)
     .alignItems(VerticalAlign.Center)
-    .padding({ left: 64, right: 96 })
+    .padding({
+      left: titleBarLeadingReserve(this.titleBarWidth),
+      right: titleBarTrailingReserve(this.titleBarWidth, this.menuMaxCount, this.menuItemCount)
+    })
     .hitTestBehavior(HitTestMode.None)
+    .onAreaChange((_oldValue: Area, newValue: Area) => {
+      this.titleBarWidth = titleBarLengthToNumber(newValue?.width)
+    })
   }
 }
 
 @Builder
 function UserProfileIdentityCCBuilder(params: UserProfileAppbarIdentityParams) {
-  UserProfileAppbarIdentity({ titleUsername: params.titleUsername, avatarUrl: params.avatarUrl })
+  UserProfileAppbarIdentity({
+    titleUsername: params.titleUsername,
+    avatarUrl: params.avatarUrl,
+    menuMaxCount: params.menuMaxCount,
+    menuItemCount: params.menuItemCount
+  })
 }
 
 interface TopicDetailAppbarIdentityParams {
   title: string
   avatarUrl: string
   username: string
+  menuMaxCount: number
+  menuItemCount: number
 }
 
 @Component
@@ -325,6 +391,9 @@ struct TopicDetailAppbarIdentity {
   @Prop title: string = ''
   @Prop avatarUrl: string = ''
   @Prop username: string = ''
+  @Prop menuMaxCount: number = 0
+  @Prop menuItemCount: number = 0
+  @State private titleBarWidth: number = 0
 
   build() {
     Row({ space: ThemeConstants.SPACE_XS }) {
@@ -347,20 +416,26 @@ struct TopicDetailAppbarIdentity {
     .width('100%')
     .height(ThemeConstants.TITLE_BAR_HEIGHT)
     .alignItems(VerticalAlign.Center)
-    // 152vp is the measured trailing action width for the current
-    // topicDetailTitleBarOpts menu (maxCount=3, 9 items total). HDS does not
-    // auto-reserve trailing space for stackBuilderComponent content in MINI mode.
-    // If menu maxCount or menu item count/order changes, remeasure and update this
-    // value: swipe until identity appears, screenshot, measure first trailing icon
-    // left edge x, then vp = (screenWidthPx - x) / vpRatio + 4.
-    .padding({ left: 64, right: 156 })
+    .padding({
+      left: titleBarLeadingReserve(this.titleBarWidth),
+      right: titleBarTrailingReserve(this.titleBarWidth, this.menuMaxCount, this.menuItemCount)
+    })
     .hitTestBehavior(HitTestMode.None)
+    .onAreaChange((_oldValue: Area, newValue: Area) => {
+      this.titleBarWidth = titleBarLengthToNumber(newValue?.width)
+    })
   }
 }
 
 @Builder
 function TopicDetailIdentityCCBuilder(params: TopicDetailAppbarIdentityParams) {
-  TopicDetailAppbarIdentity({ title: params.title, avatarUrl: params.avatarUrl, username: params.username })
+  TopicDetailAppbarIdentity({
+    title: params.title,
+    avatarUrl: params.avatarUrl,
+    username: params.username,
+    menuMaxCount: params.menuMaxCount,
+    menuItemCount: params.menuItemCount
+  })
 }
 
 @Entry
@@ -718,7 +793,7 @@ struct Index {
         this.sendTopicAction(topicId, 'openBrowser')
       })
     ]
-    let menu: Record<string, Object> = { 'value': items, 'maxCount': 3 }
+    let menu: Record<string, Object> = { 'value': items, 'maxCount': TOPIC_DETAIL_TITLE_MENU_MAX_COUNT }
     const routeKey = topicId > 0 ? topicId.toString() : ''
     if (!routeKey) {
       return this.navDestTitleBarOpts(undefined, menu)
@@ -736,7 +811,13 @@ struct Index {
       let cc = new ComponentContent<TopicDetailAppbarIdentityParams>(
         this.getUIContext(),
         wrapBuilder(TopicDetailIdentityCCBuilder),
-        { title: title, avatarUrl: avatarUrl, username: username })
+        {
+          title: title,
+          avatarUrl: avatarUrl,
+          username: username,
+          menuMaxCount: TOPIC_DETAIL_TITLE_MENU_MAX_COUNT,
+          menuItemCount: items.length
+        })
       return this.navDestTitleBarOpts(' ', menu, undefined, undefined, cc, title)
     }
     return this.navDestTitleBarOpts(undefined, menu)
@@ -781,6 +862,7 @@ struct Index {
     const titleUsername = (this.userProfileAppbarTitleUsername || '').trim()
     const title = titleFromState ||
       (titleUsername && this.sameUsername(titleRouteUsername, routeUsername) ? titleUsername : ' ')
+    const profileMenu = this.userProfileTitleMenu(username)
     if (title.trim()) {
       const avatarUrl = avatarFromState ||
         (this.sameUsername(titleRouteUsername, routeUsername) ? (this.userProfileAppbarTitleAvatarUrl || '').trim() :
@@ -788,10 +870,25 @@ struct Index {
       let cc = new ComponentContent<UserProfileAppbarIdentityParams>(
         this.getUIContext(),
         wrapBuilder(UserProfileIdentityCCBuilder),
-        { titleUsername: title, avatarUrl: avatarUrl })
-      return this.navDestTitleBarOpts(' ', this.userProfileTitleMenu(username), undefined, undefined, cc, title)
+        {
+          titleUsername: title,
+          avatarUrl: avatarUrl,
+          menuMaxCount: this.titleBarMenuMaxCount(profileMenu),
+          menuItemCount: this.titleBarMenuItemCount(profileMenu)
+        })
+      return this.navDestTitleBarOpts(' ', profileMenu, undefined, undefined, cc, title)
     }
-    return this.navDestTitleBarOpts(title, this.userProfileTitleMenu(username))
+    return this.navDestTitleBarOpts(title, profileMenu)
+  }
+
+  private titleBarMenuItemCount(menu: Record<string, Object>): number {
+    const value = menu['value'] as Record<string, Object>[]
+    return value ? value.length : 0
+  }
+
+  private titleBarMenuMaxCount(menu: Record<string, Object>): number {
+    const value = menu['maxCount'] as number
+    return value === undefined ? 0 : Math.max(0, value)
   }
 
   private userProfileAppbarTitleFor(username: string): string {
