@@ -132,15 +132,14 @@ export class V2exTopicRepliesParser {
     if (!block || replyId <= 0) {
       return false
     }
-    const areaMatch = block.match(new RegExp(`<div[^>]+id=['"]thank_area_${replyId}['"][^>]*>([\\s\\S]*?)<\\/div>`, 'i'))
-    if (!areaMatch || !areaMatch[0]) {
+    const areaId = new RegExp(`id=['\"]thank_area_${replyId}['\"]`, 'i')
+    if (!areaId.test(block)) {
       return false
     }
-    const area = areaMatch[0]
-    if (new RegExp(`thankReply\\(\\s*${replyId}\\s*\\)`, 'i').test(area)) {
+    if (new RegExp(`thankReply\\(\\s*${replyId}\\s*\\)`, 'i').test(block)) {
       return false
     }
-    return /已感谢|感谢已发送|thanked|heart_/.test(area)
+    return /已感谢|感谢已发送|thanked|heart_|thank_area/i.test(block)
   }
 
   private static replyHtmlToMarkdown(html: string): string {

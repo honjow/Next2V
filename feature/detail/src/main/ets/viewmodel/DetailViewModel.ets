@@ -1,4 +1,4 @@
-import { V2exTopic, V2exReply, ApiService, ApiV2Service, TopicDetailCache, HtmlEntityUtils, StorageKeys, ReplyDisplaySettings } from 'shared'
+import { V2exTopic, V2exReply, ApiService, ApiV2Service, TopicDetailCache, HtmlEntityUtils, StorageKeys, ReplyDisplaySettings, CookieJarSettings } from 'shared'
 import type { V2exTopicWebRepliesPage } from 'shared'
 import { ReplyDataSource } from '../model/DetailModels'
 
@@ -157,7 +157,8 @@ export class DetailViewModel {
           topic = topics[0]
         }
         const apiReplies = await this.api.getReplies(this.topicId, cacheBuster)
-        const firstPage = await this.api.getTopicWebRepliesPage(this.topicId, 1, Date.now())
+        const webCookie = CookieJarSettings.getCurrentCookie()
+        const firstPage = await this.api.getTopicWebRepliesPage(this.topicId, 1, Date.now(), webCookie)
         if (firstPage.replies.length > 0) {
           replies = firstPage.replies
           this.repliesSource = 'publicWebPage'
@@ -208,7 +209,7 @@ export class DetailViewModel {
         items = res.data || []
         hasMore = items.length >= this.V2_REPLY_PAGE_SIZE
       } else if (this.repliesSource === 'publicWebPage') {
-        const snapshot: V2exTopicWebRepliesPage = await this.api.getTopicWebRepliesPage(this.topicId, nextPage, Date.now())
+        const snapshot: V2exTopicWebRepliesPage = await this.api.getTopicWebRepliesPage(this.topicId, nextPage, Date.now(), CookieJarSettings.getCurrentCookie())
         items = snapshot.replies
         hasMore = snapshot.hasMore
         pageCount = snapshot.pageCount
@@ -267,7 +268,7 @@ export class DetailViewModel {
         const res = await this.apiV2.getTopicReplies(this.authToken, this.topicId, this.repliesPage, Date.now())
         items = res.data || []
       } else if (this.repliesSource === 'publicWebPage') {
-        const snapshot = await this.api.getTopicWebRepliesPage(this.topicId, this.repliesPage, Date.now())
+        const snapshot = await this.api.getTopicWebRepliesPage(this.topicId, this.repliesPage, Date.now(), CookieJarSettings.getCurrentCookie())
         items = snapshot.replies
         this.repliesPageCount = snapshot.pageCount
         this.repliesHasMore = snapshot.hasMore
@@ -275,7 +276,7 @@ export class DetailViewModel {
           this.repliesLoadMoreState = 'idle'
         }
       } else {
-        const snapshot = await this.api.getTopicWebRepliesPage(this.topicId, 1, Date.now())
+        const snapshot = await this.api.getTopicWebRepliesPage(this.topicId, 1, Date.now(), CookieJarSettings.getCurrentCookie())
         items = snapshot.replies
         this.repliesSource = 'publicWebPage'
         this.repliesPage = snapshot.page
@@ -353,7 +354,12 @@ export class DetailViewModel {
     if (reply.member) {
       reply.member.tagline = HtmlEntityUtils.decode(reply.member.tagline)
     }
+    reply.renderKey = `${reply.renderKey || reply.id.toString()}-${this.replyStateKey(reply)}`
     return reply
+  }
+
+  private replyStateKey(reply: V2exReply): string {
+    return `thanks-${reply.thanks || 0}-${reply.thanked ? 'me' : 'other'}`
   }
 
 
@@ -368,7 +374,7 @@ export class DetailViewModel {
       reply.replyFloor = this.extractReplyFloor(reply.content, reply.content_rendered)
       reply.hiddenLeadingMentionContent = this.removeLeadingSingleMention(reply.content, reply.replyUsers || [], reply.replyFloor || -1)
       reply.relationLabel = this.replyRelationLabel(reply)
-      reply.renderKey = `${this.replyDisplayMode}-r-${reply.id}`
+      reply.renderKey = `${this.replyDisplayMode}-r-${reply.id}-${this.replyStateKey(reply)}`
       return reply
     })
     return prepared
@@ -399,9 +405,9 @@ export class DetailViewModel {
       reply.threadLevel = level
       reply.isDuplicateThreadItem = false
       reply.threadChildren = []
-      reply.renderKey = `${this.replyDisplayMode}-r-${reply.id}-t-${level}`
+      reply.renderKey = `${this.replyDisplayMode}-r-${reply.id}-t-${level}-${this.replyStateKey(reply)}`
       if (hideSingleMention && level > 0 && (reply.replyUsers || []).length === 1 && (reply.hiddenLeadingMentionContent || '').trim()) {
-        reply.renderKey = `${this.replyDisplayMode}-r-${reply.id}-t-${level}-compact`
+        reply.renderKey = `${this.replyDisplayMode}-r-${reply.id}-t-${level}-compact-${this.replyStateKey(reply)}`
       }
       const children = (childMap.get(reply.floor || 0) || []).sort((a: V2exReply, b: V2exReply) => (a.floor || 0) - (b.floor || 0))
       reply.threadChildren = children.map((child: V2exReply) => prepareNode(child, level + 1))
@@ -422,7 +428,7 @@ export class DetailViewModel {
           dup.threadLevel = 0
           dup.threadChildren = []
           dup.isDuplicateThreadItem = true
-          dup.renderKey = `${this.replyDisplayMode}-r-${reply.id}-dup`
+          dup.renderKey = `${this.replyDisplayMode}-r-${reply.id}-dup-${this.replyStateKey(reply)}`
           duplicateList.push(dup)
         }
       })

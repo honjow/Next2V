@@ -190,13 +190,15 @@ export class ApiService {
   async getTopicWebRepliesPage(
     topicId: number,
     page: number = 1,
-    cacheBuster: number = Date.now()
+    cacheBuster: number = Date.now(),
+    cookie: string = ''
   ): Promise<V2exTopicWebRepliesPage> {
     if (topicId <= 0) {
       throw new Error('无效的主题 ID')
     }
     const safePage = Math.max(1, Math.floor(page))
-    const html = await this.http.getText(`/t/${topicId}?p=${safePage}&_=${cacheBuster}`)
+    const path = `/t/${topicId}?p=${safePage}&_=${cacheBuster}`
+    const html = cookie ? await this.getCookieHtml(path, cookie) : await this.http.getText(path)
     const pageCount = Math.max(1, V2exTopicRepliesParser.extractPageCount(html))
     return {
       replies: ApiService.normalizeReplies(V2exTopicRepliesParser.parseReplies(html)),
@@ -207,9 +209,9 @@ export class ApiService {
   }
 
   /** 获取公开主题网页中的实际回复，用于旧 replies API 为空或滞后时兜底。 */
-  async getTopicWebReplies(topicId: number): Promise<V2exReply[]> {
+  async getTopicWebReplies(topicId: number, cookie: string = ''): Promise<V2exReply[]> {
     const cacheBuster = Date.now()
-    const firstPage = await this.getTopicWebRepliesPage(topicId, 1, cacheBuster)
+    const firstPage = await this.getTopicWebRepliesPage(topicId, 1, cacheBuster, cookie)
     const replies = firstPage.replies.slice()
     if (firstPage.pageCount <= 1) {
       return ApiService.normalizeReplies(replies)
@@ -217,7 +219,7 @@ export class ApiService {
 
     const seen = new Set<number>(replies.map(reply => reply.id))
     for (let page = 2; page <= firstPage.pageCount; page++) {
-      const snapshot = await this.getTopicWebRepliesPage(topicId, page, cacheBuster)
+      const snapshot = await this.getTopicWebRepliesPage(topicId, page, cacheBuster, cookie)
       snapshot.replies.forEach((reply: V2exReply) => {
         if (reply.id > 0 && !seen.has(reply.id)) {
           seen.add(reply.id)
