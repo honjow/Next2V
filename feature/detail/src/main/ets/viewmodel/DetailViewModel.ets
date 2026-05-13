@@ -105,8 +105,7 @@ export class DetailViewModel {
     this.isLoading = true
     this.errorMessage = ''
     this.loadMoreErrorMessage = ''
-    if (forceNetwork) {
-      this.topic = null
+    if (forceNetwork && this.topic === null) {
       this.replies = []
       this.replyDataSource.setData([])
       this.repliesLoaded = 0
