@@ -11,17 +11,28 @@ export class FeedViewModel {
   dataSource: FeedDataSource = new FeedDataSource()
   isLoading: boolean = false
   isRefreshing: boolean = false
+  isLoadingMore: boolean = false
   hasMore: boolean = true
   errorMessage: string = ''
   activeTab: string = 'tech'
+  page: number = 0
 
   private api: ApiService = new ApiService()
   private loader: () => Promise<V2exTopic[]> = () => this.api.getTabTopics(this.activeTab)
+  private pagedLoader: ((page: number) => Promise<V2exTopic[]>) | null = null
   private cacheLoader: (() => Promise<V2exTopic[]>) | null = null
   private cacheSaver: ((topics: V2exTopic[]) => Promise<void>) | null = null
 
   setLoader(loader: () => Promise<V2exTopic[]>): void {
     this.loader = loader
+    this.pagedLoader = null
+    this.page = 0
+  }
+
+  setPagedLoader(loader: (page: number) => Promise<V2exTopic[]>): void {
+    this.pagedLoader = loader
+    this.loader = () => loader(1)
+    this.page = 0
   }
 
   setCacheHandlers(loader: () => Promise<V2exTopic[]>, saver: (topics: V2exTopic[]) => Promise<void>): void {
@@ -37,7 +48,7 @@ export class FeedViewModel {
       const data = await this.cacheLoader()
       if (data.length > 0) {
         this.dataSource.setData(data)
-        this.hasMore = data.length >= 20
+        this.hasMore = this.pagedLoader !== null ? true : data.length >= 20
       }
     } catch (error) {
       console.error('load feed cache failed:', (error as Error).message)
@@ -59,11 +70,13 @@ export class FeedViewModel {
 
     this.isLoading = true
     this.errorMessage = ''
+    this.page = 0
 
     try {
-      const data = await this.loader()
+      const data = await this.loadPage(1)
       this.dataSource.setData(data)
-      this.hasMore = data.length >= 20  // 如果返回 20 条，可能还有更多
+      this.page = 1
+      this.hasMore = this.resolveHasMore(data.length, data.length)
       await this.saveCache(data)
     } catch (error) {
       this.errorMessage = error.message || '加载失败'
@@ -78,11 +91,13 @@ export class FeedViewModel {
 
     this.isRefreshing = true
     this.errorMessage = ''
+    this.page = 0
 
     try {
-      const data = await this.loader()
+      const data = await this.loadPage(1)
       this.dataSource.setData(data)
-      this.hasMore = data.length >= 20
+      this.page = 1
+      this.hasMore = this.resolveHasMore(data.length, data.length)
       await this.saveCache(data)
     } catch (error) {
       this.errorMessage = error.message || '刷新失败'
@@ -100,15 +115,43 @@ export class FeedViewModel {
     this.triggerHaptic()
 
     try {
-      const data = await this.loader()
+      const data = await this.loadPage(1)
       this.dataSource.setData(data)
-      this.hasMore = data.length >= 20
+      this.page = 1
+      this.hasMore = this.resolveHasMore(data.length, data.length)
       await this.saveCache(data)
     } catch (error) {
       this.errorMessage = error.message || '刷新失败'
     } finally {
       this.isRefreshing = false
     }
+  }
+
+
+  async loadMore(): Promise<void> {
+    if (this.isLoading || this.isRefreshing || this.isLoadingMore || !this.hasMore || !this.pagedLoader) {
+      return
+    }
+
+    this.isLoadingMore = true
+    this.errorMessage = ''
+    try {
+      const nextPage = Math.max(1, this.page + 1)
+      const data = await this.loadPage(nextPage)
+      const unique = this.filterNewTopics(data)
+      this.page = nextPage
+      this.hasMore = this.resolveHasMore(data.length, unique.length)
+      this.dataSource.appendData(unique)
+      await this.saveCache(this.dataSource.getAllData())
+    } catch (error) {
+      this.errorMessage = error.message || '加载更多失败'
+    } finally {
+      this.isLoadingMore = false
+    }
+  }
+
+  canLoadMore(): boolean {
+    return this.pagedLoader !== null && this.hasMore && !this.isLoading && !this.isRefreshing && !this.isLoadingMore
   }
 
   /** HD 震动反馈 */
@@ -145,5 +188,32 @@ export class FeedViewModel {
     } catch (error) {
       console.error('save feed cache failed:', (error as Error).message)
     }
+  }
+
+  private async loadPage(page: number): Promise<V2exTopic[]> {
+    if (this.pagedLoader) {
+      return this.pagedLoader(page)
+    }
+    return this.loader()
+  }
+
+  private resolveHasMore(fetchedCount: number, uniqueCount: number): boolean {
+    if (this.pagedLoader) {
+      return fetchedCount > 0 && uniqueCount > 0
+    }
+    return fetchedCount >= 20
+  }
+
+  private filterNewTopics(data: V2exTopic[]): V2exTopic[] {
+    const existingIds: Set<number> = new Set(this.dataSource.getAllData().map((topic: V2exTopic) => topic.id))
+    const unique: V2exTopic[] = []
+    data.forEach((topic: V2exTopic) => {
+      if (existingIds.has(topic.id)) {
+        return
+      }
+      existingIds.add(topic.id)
+      unique.push(topic)
+    })
+    return unique
   }
 }

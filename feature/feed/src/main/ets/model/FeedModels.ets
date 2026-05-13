@@ -34,8 +34,15 @@ export class FeedDataSource implements IDataSource {
     this.listeners.forEach(listener => listener.onDataReloaded())
   }
 
+  getAllData(): V2exTopic[] {
+    return this.dataArray
+  }
+
   /** 追加数据（触底加载） */
   appendData(data: V2exTopic[]): void {
+    if (data.length === 0) {
+      return
+    }
     const start = this.dataArray.length
     this.dataArray = this.dataArray.concat(data)
     this.listeners.forEach(listener => listener.onDataAdd(start))

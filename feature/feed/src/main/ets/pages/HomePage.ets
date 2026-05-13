@@ -228,7 +228,11 @@ struct FeedListPage {
 
   aboutToAppear(): void {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    this.vm.setLoader(() => this.api.getTabTopics(this.tabKey))
+    if (this.tabKey === 'latest') {
+      this.vm.setPagedLoader((page: number) => this.api.getRecentTopics(page))
+    } else {
+      this.vm.setLoader(() => this.api.getTabTopics(this.tabKey))
+    }
     this.vm.setCacheHandlers(
       async () => {
         const topics = await CacheSettings.loadTopicList(context, `tab:${this.tabKey}`)
@@ -264,7 +268,10 @@ struct FeedListPage {
             indicatorTop: this.TBH + this.BB_H,
             refreshThreshold: this.PULL_THRESHOLD,
             scrollEnabled: this.listScrollEnabled,
-            onRefresh: async () => { await this.vm.refresh() }
+            onRefresh: async () => { await this.vm.refresh() },
+            onBottomRefresh: async () => { await this.vm.loadMore() },
+            canStartBottomRefresh: () => this.vm.canLoadMore(),
+            onReachEnd: () => { this.vm.loadMore() }
           }) {
               LazyForEach(this.vm.dataSource, (item: V2exTopic) => {
                 ListItem() {
@@ -286,6 +293,17 @@ struct FeedListPage {
                     this.ns.pushPathByName('TopicDetail', p as Object)
                   })
               }, (item: V2exTopic) => item.id.toString())
+
+              if (this.tabKey === 'latest') {
+                ListItem() {
+                  LoadingFooter({
+                    isLoading: this.vm.isLoadingMore,
+                    hasMore: this.vm.hasMore,
+                    isError: !!this.vm.errorMessage && this.vm.hasMore,
+                    onRetry: () => { this.vm.loadMore() }
+                  })
+                }
+              }
           }
         }
         .width('100%').height('100%')
