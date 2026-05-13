@@ -89,10 +89,27 @@ export struct ReplyCard {
     return override ? this.displayContent : this.reply.content
   }
 
+  private visibleMentionPrefix(reply: V2exReply): string {
+    const users = reply.replyUsers || []
+    if (users.length === 0 || (reply.threadLevel || 0) <= 0) {
+      return ''
+    }
+    const content = (reply.content || '').trimStart()
+    const first = users[0] || ''
+    if (first && content.toLowerCase().startsWith(`@${first.toLowerCase()}`)) {
+      return ''
+    }
+    return `${users.map((name: string) => `@${name}`).join(' ')} `
+  }
+
   private childDisplayContent(reply: V2exReply): string {
     if (this.hideLeadingMention && (reply.hiddenLeadingMentionContent || '').trim() && (reply.threadLevel || 0) > 0 &&
       (reply.replyUsers || []).length === 1) {
       return reply.hiddenLeadingMentionContent || ''
+    }
+    const prefix = this.visibleMentionPrefix(reply)
+    if (prefix) {
+      return `${prefix}${reply.content || ''}`
     }
     return ''
   }

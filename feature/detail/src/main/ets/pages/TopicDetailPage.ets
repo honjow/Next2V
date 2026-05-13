@@ -1,7 +1,7 @@
 import { DetailViewModel } from '../viewmodel/DetailViewModel'
 import { ReplyComposerSheet } from '../components/ReplyComposerSheet'
 import { common, Want } from '@kit.AbilityKit'
-import { promptAction } from '@kit.ArkUI'
+import { promptAction, SymbolGlyphModifier } from '@kit.ArkUI'
 import { uniformTypeDescriptor as utd } from '@kit.ArkData'
 import { pasteboard } from '@kit.BasicServicesKit'
 import { systemShare } from '@kit.ShareKit'
@@ -677,7 +677,8 @@ export struct TopicDetailPage {
 
   @Builder ReplyDisplayModeMenuItem(label: string, mode: string) {
     MenuItem({
-      content: this.v.replyDisplayMode === mode ? `✓ ${label}` : label
+      content: label,
+      symbolEndIcon: this.v.replyDisplayMode === mode ? new SymbolGlyphModifier($r('sys.symbol.checkmark')) : undefined
     })
       .onClick(() => {
         this.v.setReplyDisplayMode(mode)
