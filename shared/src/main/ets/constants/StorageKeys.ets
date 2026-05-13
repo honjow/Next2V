@@ -69,4 +69,5 @@ export class StorageKeys {
   static readonly IMAGE_PREVIEW_ACTION: string = 'imagePreviewAction'
   static readonly PENDING_V2EX_URL: string = 'pendingV2exUrl'
   static readonly PENDING_SEARCH_QUERY: string = 'pendingSearchQuery'
+  static readonly DISCOVER_NODE_KEYWORD: string = 'discoverNodeKeyword'
 }

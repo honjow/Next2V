@@ -1,7 +1,7 @@
 import { NodeViewModel } from '../viewmodel/NodeViewModel'
 import {
-  ApiService, AppSearchField, FilterChip, PullRefresh, StorageKeys, V2exNode, V2exTopic, NodeTopicListParams, TopicDetailParams,
-  ThemeConstants, CollectionSettings
+  ApiService, FilterChip, PullRefresh, StorageKeys, V2exNode, V2exTopic, NodeTopicListParams, TopicDetailParams,
+  ThemeConstants, CollectionSettings, DiscoverScrollerHolder
 } from 'shared'
 import type { SavedNode, ViewedTopic } from 'shared'
 import { common } from '@kit.AbilityKit'
@@ -21,20 +21,25 @@ export struct DiscoverPage {
   @State private hotError: string = ''
   @State private isHotLoading: boolean = false
   @State private scrollEnabled: boolean = true
-  @State private nodeKeyword: string = ''
+  @StorageLink(StorageKeys.DISCOVER_NODE_KEYWORD) @Watch('onKeywordChanged') nodeKeyword: string = ''
   @State private savedNodes: SavedNode[] = []
   @State private recentNodes: SavedNode[] = []
   @StorageProp(StorageKeys.TOP_AVOID_HEIGHT) topH: number = 0
   @StorageProp(StorageKeys.BOTTOM_AVOID_HEIGHT) bottomH: number = 0
   private readonly TBH: number = ThemeConstants.TITLE_BAR_HEIGHT
   private readonly FLOAT_H: number = ThemeConstants.FLOAT_BAR_HEIGHT
+  private readonly BBH: number = 48
   private readonly GAP: number = ThemeConstants.SPACE_MD
   private readonly PULL_REFRESH_THRESHOLD: number = 84
-  private scroller: Scroller = new Scroller()
+  private scroller: Scroller = DiscoverScrollerHolder.scroller
   private api: ApiService = new ApiService()
 
+  private onKeywordChanged(): void {
+    this.vm.setNodeFilter(this.nodeKeyword)
+  }
+
   aboutToAppear(): void {
-    this.nodeKeyword = this.vm.keyword
+    AppStorage.setOrCreate(StorageKeys.DISCOVER_NODE_KEYWORD, this.vm.keyword)
     this.vm.loadAllNodes()
     this.loadLocalNodeSections()
     this.loadTopicSurface()
@@ -53,11 +58,10 @@ export struct DiscoverPage {
       } else if (this.vm.errorMessage && this.vm.nodeDataSource.totalCount() === 0) {
         this.ErrorView()
       } else {
-        this.SearchBar()
         Column() {
           PullRefresh({
             scroller: this.scroller,
-            indicatorTop: this.topH + this.TBH,
+            indicatorTop: this.topH + this.TBH + this.BBH,
             threshold: this.PULL_REFRESH_THRESHOLD,
             onRefresh: async () => { await this.refreshDiscover() },
             onScrollEnableChange: (enabled: boolean) => { this.scrollEnabled = enabled }
@@ -88,25 +92,6 @@ export struct DiscoverPage {
     }
       .width('100%').height('100%')
       .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
-  }
-
-  @Builder SearchBar() {
-    Row() {
-      AppSearchField({
-        text: $nodeKeyword,
-        placeholder: '搜索节点',
-        onTextChange: (value: string) => {
-          this.vm.setNodeFilter(value)
-        }
-      })
-    }
-    .width('100%')
-    .padding({
-      left: this.GAP,
-      right: this.GAP,
-      top: this.topH + this.TBH,
-      bottom: this.GAP
-    })
   }
 
   @Builder HotTopicsSection() {
@@ -316,7 +301,7 @@ export struct DiscoverPage {
     .justifyContent(FlexAlign.Center)
     .width('100%')
     .height('100%')
-    .padding({ top: this.topH + this.TBH, bottom: this.discoverBottomPadding() })
+    .padding({ top: this.topH + this.TBH + this.BBH, bottom: this.discoverBottomPadding() })
   }
 
   private discoverBottomPadding(): number {

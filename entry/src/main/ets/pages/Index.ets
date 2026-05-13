@@ -9,12 +9,15 @@ import {
   HdsTabsController,
   HdsTabsFloatingStyle,
   BottomBuilderShowType,
-  ScrollEffectType
+  ScrollEffectType,
+  HideMode
 } from '@kit.UIDesignKit'
 import { common, Want } from '@kit.AbilityKit'
 import {
   ApiConstants,
+  AppSearchField,
   Avatar,
+  DiscoverScrollerHolder,
   FeedTabSettings,
   HttpClient,
   ImagePreviewParams,
@@ -241,6 +244,27 @@ struct FeedPills {
 @Builder
 function PillCCBuilder() {
   FeedPills()
+}
+
+@Component
+struct DiscoverSearchComponent {
+  @StorageLink(StorageKeys.DISCOVER_NODE_KEYWORD) keyword: string = ''
+
+  build() {
+    Row() {
+      AppSearchField({
+        text: $keyword,
+        placeholder: '搜索节点'
+      })
+    }
+    .width('100%')
+    .padding({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, top: 4, bottom: 4 })
+  }
+}
+
+@Builder
+function DiscoverSearchCCBuilder() {
+  DiscoverSearchComponent()
 }
 
 interface UserProfileAppbarIdentityParams {
@@ -558,6 +582,14 @@ struct Index {
     .titleBar(this.titleBarOptions())
     .titleMode(HdsNavigationTitleMode.MINI)
     .hideBackButton(true)
+    .dynamicHideTitleBar({
+      hideTitleArea: this.ct === 1,
+      hideBottomBuilder: this.ct === 1,
+      hideStatusBar: false,
+      mode: HideMode.SCROLL_UP,
+      hideOffset: 10
+    })
+    .bindToScrollable(this.ct === 1 ? [DiscoverScrollerHolder.scroller] : [])
     .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM])
     .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
     .navDestination(this.pm)
@@ -912,6 +944,14 @@ struct Index {
       let bb: Record<string, Object> = {
         'builderComponent': cc,
         'height': ApiConstants.TAB_BAR_HEIGHT,
+        'showType': BottomBuilderShowType.DIRECTLY_SHOW
+      }
+      content = { 'title': titleInfo, 'bottomBuilder': bb }
+    } else if (this.ct === 1) {
+      let cc = new ComponentContent(this.getUIContext(), wrapBuilder(DiscoverSearchCCBuilder))
+      let bb: Record<string, Object> = {
+        'builderComponent': cc,
+        'height': 48,
         'showType': BottomBuilderShowType.DIRECTLY_SHOW
       }
       content = { 'title': titleInfo, 'bottomBuilder': bb }
