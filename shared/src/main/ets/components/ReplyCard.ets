@@ -13,6 +13,12 @@ export struct ReplyCard {
   @Prop floor: number = 1
   @Prop isOp: boolean = false
   @Prop isThanked: boolean = false
+  @Prop threadLevel: number = 0
+  @Prop relationLabel: string = ''
+  @Prop displayContent: string = ''
+  @Prop isWrongReference: boolean = false
+  @Prop isDuplicateThreadItem: boolean = false
+  @State private cardWidth: number = 0
   onUserClick?: () => void
   onActionsClick?: () => void
   onContextClick?: () => void
@@ -57,6 +63,33 @@ export struct ReplyCard {
       return ThemeConstants.SPACE_MD
     }
     return ThemeConstants.SPACE_SM
+  }
+
+  private threadIndent(): number {
+    if (this.threadLevel <= 0) {
+      return 0
+    }
+    const availableWidth = this.cardWidth > 0 ? this.cardWidth : 360
+    const indentUnit = Math.max(12, Math.min(20, availableWidth * 0.045))
+    const minContentWidth = 240
+    const maxByWidth = Math.max(1, Math.min(3, Math.floor((availableWidth - minContentWidth) / indentUnit)))
+    return Math.min(this.threadLevel, maxByWidth) * indentUnit
+  }
+
+  private contentSource(): string {
+    const override = (this.displayContent || '').trim()
+    return override ? this.displayContent : this.reply.content
+  }
+
+  private relationText(): string {
+    const label = (this.relationLabel || '').trim()
+    if (this.isWrongReference) {
+      return label ? `${label} · 引用可疑` : '引用可疑'
+    }
+    if (this.isDuplicateThreadItem) {
+      return label ? `${label} · 已在子线程显示` : '已在子线程显示'
+    }
+    return label
   }
 
   private hasContextMenuActions(): boolean {
@@ -111,7 +144,12 @@ export struct ReplyCard {
   }
 
   build() {
-    Column() {
+    Row() {
+      if (this.threadIndent() > 0) {
+        Row()
+          .width(this.threadIndent())
+      }
+      Column() {
       // 头部：头像 + 用户名/OP/楼层 + 时间
       Row({ space: ThemeConstants.SPACE_SM }) {
         Avatar({ url: ImageUtils.memberAvatarUrl(this.reply.member), avatarSize: ThemeConstants.AVATAR_SIZE_REPLY })
@@ -150,10 +188,22 @@ export struct ReplyCard {
       .width('100%')
       .alignItems(VerticalAlign.Center)
 
-      if (this.reply.content) {
+      if (this.relationText()) {
+        Text(this.relationText())
+          .fontSize(ThemeConstants.FONT_SIZE_TAG)
+          .fontColor(this.isWrongReference ? $r('sys.color.font_emphasize') : $r('sys.color.font_secondary'))
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+          .padding({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM, top: 2, bottom: 2 })
+          .borderRadius(ThemeConstants.RADIUS_SM)
+          .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+          .margin({ top: ThemeConstants.SPACE_XS })
+      }
+
+      if (this.contentSource()) {
         Column() {
           MarkdownContent({
-            source: this.reply.content,
+            source: this.contentSource(),
             topMargin: this.contentTopMargin(),
             onImageClick: this.onImageClick,
             onLinkClick: this.onLinkClick,
@@ -253,15 +303,25 @@ export struct ReplyCard {
       .width('100%')
       .margin({ top: ThemeConstants.SPACE_SM })
       .alignItems(VerticalAlign.Center)
+      }
+      .padding({
+        left: this.threadLevel > 0 ? ThemeConstants.SPACE_MD : ThemeConstants.SPACE_LG,
+        right: ThemeConstants.SPACE_LG,
+        top: this.verticalPadding(),
+        bottom: this.bottomPadding()
+      })
+      .layoutWeight(1)
+      .borderRadius(ThemeConstants.RADIUS_CARD)
+      .backgroundColor(this.threadLevel > 0 ? $r('sys.color.ohos_id_color_sub_background') : $r('sys.color.ohos_id_color_card_bg'))
     }
-    .padding({
-      left: ThemeConstants.SPACE_LG,
-      right: ThemeConstants.SPACE_LG,
-      top: this.verticalPadding(),
-      bottom: this.bottomPadding()
-    })
     .width('100%')
-    .borderRadius(ThemeConstants.RADIUS_CARD)
-    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+    .onAreaChange((_oldValue: Area, newValue: Area) => {
+      if (typeof newValue.width === 'number') {
+        this.cardWidth = newValue.width
+      } else if (typeof newValue.width === 'string') {
+        const parsed = Number.parseFloat(newValue.width)
+        this.cardWidth = Number.isNaN(parsed) ? 0 : parsed
+      }
+    })
   }
 }

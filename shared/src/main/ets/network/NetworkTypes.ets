@@ -52,6 +52,15 @@ export interface V2exReply {
   member: V2exMember
   created: number
   last_modified: number
+  floor?: number
+  replyUsers?: string[]
+  replyFloor?: number
+  threadLevel?: number
+  isWrongReference?: boolean
+  isDuplicateThreadItem?: boolean
+  hiddenLeadingMentionContent?: string
+  relationLabel?: string
+  renderKey?: string
 }
 
 export interface V2exMemberProfile {

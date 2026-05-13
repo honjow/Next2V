@@ -63,6 +63,7 @@ export struct TopicDetailPage {
   @State private contextReply: V2exReply | null = null
   @State private contextItems: ReplyContextItem[] = []
   @State private contextSheetVisible: boolean = false
+  @State private replyDisplayMenuShown: boolean = false
   @State private replyComposerVisible: boolean = false
   @State private replyComposerInitialContent: string = ''
   @State private thankedReplyIdsJson: string = '[]'
@@ -323,6 +324,11 @@ export struct TopicDetailPage {
               floor: this.getFloorForReply(reply.id, index),
               isOp: this.v.topic !== null && reply.member.id === this.v.topic!.member.id,
               isThanked: this.isReplyThanked(reply.id),
+              threadLevel: reply.threadLevel || 0,
+              relationLabel: reply.relationLabel || '',
+              displayContent: this.replyDisplayContent(reply),
+              isWrongReference: !!reply.isWrongReference,
+              isDuplicateThreadItem: !!reply.isDuplicateThreadItem,
               onUserClick: () => {
                 let p: UserProfileParams = { username: reply.member.username }
                 this.stack.pushPathByName('UserProfile', p as Object)
@@ -340,7 +346,7 @@ export struct TopicDetailPage {
               onMentionUserClick: (username: string) => { this.openUserProfile(username) }
             })
           }
-        }, (reply: V2exReply) => reply.id.toString())
+        }, (reply: V2exReply) => reply.renderKey || reply.id.toString())
 
         if (this.v.shouldShowRepliesFooter()) {
           ListItem() {
@@ -615,7 +621,7 @@ export struct TopicDetailPage {
 
       Row({ space: ThemeConstants.SPACE_XS }) {
         this.ReplyToolButton('楼层', false, () => { this.openJumpToFloorDialog() })
-        this.ReplyToolButton('只看楼主', this.v.onlyOp, () => { this.toggleOnlyOp() })
+        this.ReplyDisplayModeButton()
         this.ReplyToolButton('最新', false, () => { this.scrollToLatestReply() })
       }
       .alignItems(VerticalAlign.Center)
@@ -638,6 +644,40 @@ export struct TopicDetailPage {
       .borderRadius(ThemeConstants.RADIUS_ROUND)
       .backgroundColor(active ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.ohos_id_color_button_normal'))
       .onClick(action)
+  }
+
+
+  @Builder ReplyDisplayModeButton() {
+    Text(this.replyDisplayModeText())
+      .fontSize(ThemeConstants.FONT_SIZE_TINY)
+      .fontColor(this.v.replyDisplayMode === 'origin' ? $r('sys.color.font_secondary') : Color.White)
+      .padding({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM, top: 5, bottom: 5 })
+      .borderRadius(ThemeConstants.RADIUS_ROUND)
+      .backgroundColor(this.v.replyDisplayMode === 'origin' ? $r('sys.color.ohos_id_color_button_normal') : ThemeConstants.BRAND_PRIMARY)
+      .onClick(() => { this.showReplyDisplayMenu() })
+      .bindMenu(this.replyDisplayMenuShown, this.ReplyDisplayModeMenu, {
+        placement: Placement.BottomRight,
+        aboutToDisappear: () => { this.replyDisplayMenuShown = false }
+      })
+  }
+
+  @Builder ReplyDisplayModeMenu() {
+    Menu() {
+      this.ReplyDisplayModeMenuItem('楼中楼', 'thread')
+      this.ReplyDisplayModeMenuItem('楼中楼(@)', 'threadWithMention')
+      this.ReplyDisplayModeMenuItem('冗余楼中楼', 'threadRedundant')
+      this.ReplyDisplayModeMenuItem('只看楼主', 'op')
+      this.ReplyDisplayModeMenuItem('原版', 'origin')
+    }
+  }
+
+  @Builder ReplyDisplayModeMenuItem(label: string, mode: string) {
+    MenuItem({
+      content: this.v.replyDisplayMode === mode ? `✓ ${label}` : label
+    })
+      .onClick(() => {
+        this.v.setReplyDisplayMode(mode)
+      })
   }
 
   @Builder ReplyContextSheet() {
@@ -980,7 +1020,35 @@ export struct TopicDetailPage {
   }
 
   private toggleOnlyOp(): void {
-    this.v.setOnlyOp(!this.v.onlyOp)
+    this.v.setReplyDisplayMode(this.v.onlyOp ? 'thread' : 'op')
+  }
+
+  private showReplyDisplayMenu(): void {
+    this.replyDisplayMenuShown = false
+    setTimeout(() => { this.replyDisplayMenuShown = true }, 20)
+  }
+
+  private replyDisplayModeText(): string {
+    if (this.v.replyDisplayMode === 'origin') {
+      return '原版'
+    }
+    if (this.v.replyDisplayMode === 'threadWithMention') {
+      return '楼中楼(@)'
+    }
+    if (this.v.replyDisplayMode === 'threadRedundant') {
+      return '冗余楼中楼'
+    }
+    if (this.v.replyDisplayMode === 'op') {
+      return '只看楼主'
+    }
+    return '楼中楼'
+  }
+
+  private replyDisplayContent(reply: V2exReply): string {
+    if (this.v.replyDisplayMode === 'thread' && (reply.hiddenLeadingMentionContent || '').trim() && (reply.threadLevel || 0) > 0 && (reply.replyUsers || []).length === 1) {
+      return reply.hiddenLeadingMentionContent || ''
+    }
+    return ''
   }
 
   private getFloorForReply(replyId: number, index: number): number {

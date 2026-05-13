@@ -11,6 +11,7 @@ export class DetailViewModel {
   replyDataSource: ReplyDataSource = new ReplyDataSource()
   isLoading: boolean = false
   onlyOp: boolean = false
+  replyDisplayMode: string = 'thread'
   repliesUseV2: boolean = false
   repliesPage: number = 1
   repliesHasMore: boolean = false
@@ -39,6 +40,13 @@ export class DetailViewModel {
 
   setOnlyOp(enabled: boolean): void {
     this.onlyOp = enabled
+    this.replyDisplayMode = enabled ? 'op' : 'thread'
+    this.replyDataSource.setData(this.getVisibleReplies())
+  }
+
+  setReplyDisplayMode(mode: string): void {
+    this.replyDisplayMode = mode
+    this.onlyOp = mode === 'op'
     this.replyDataSource.setData(this.getVisibleReplies())
   }
 
@@ -272,15 +280,7 @@ export class DetailViewModel {
       return
     }
     this.replies = this.replies.concat(unique)
-    if (this.onlyOp) {
-      const opId = this.topic ? this.topic.member.id : 0
-      const opUnique = opId > 0 ? unique.filter(reply => reply.member.id === opId) : unique
-      if (opUnique.length > 0) {
-        this.replyDataSource.appendData(opUnique)
-      }
-    } else {
-      this.replyDataSource.appendData(unique)
-    }
+    this.replyDataSource.setData(this.getVisibleReplies())
     this.repliesLoaded = this.replies.length
   }
 
@@ -330,14 +330,196 @@ export class DetailViewModel {
     return reply
   }
 
+
+  private prepareRepliesForThreading(): V2exReply[] {
+    const prepared = this.replies.map((reply: V2exReply, index: number) => {
+      reply.floor = index + 1
+      reply.threadLevel = 0
+      reply.isWrongReference = false
+      reply.isDuplicateThreadItem = false
+      reply.replyUsers = this.extractReplyUsers(reply.content, reply.content_rendered)
+      reply.replyFloor = this.extractReplyFloor(reply.content, reply.content_rendered)
+      reply.hiddenLeadingMentionContent = this.removeLeadingSingleMention(reply.content, reply.replyUsers || [], reply.replyFloor || -1)
+      reply.relationLabel = this.replyRelationLabel(reply)
+      reply.renderKey = `r-${reply.id}`
+      return reply
+    })
+    return prepared
+  }
+
+  private buildThreadedReplies(includeDuplicateOriginal: boolean, hideSingleMention: boolean): V2exReply[] {
+    const base = this.prepareRepliesForThreading()
+    const byFloor = new Map<number, V2exReply>()
+    const childMap = new Map<number, V2exReply[]>()
+    const parentFloorById = new Map<number, number>()
+    base.forEach((reply: V2exReply) => {
+      byFloor.set(reply.floor || 0, reply)
+      childMap.set(reply.floor || 0, [])
+    })
+
+    base.forEach((reply: V2exReply) => {
+      const parentFloor = this.findThreadParentFloor(reply, byFloor)
+      if (parentFloor > 0 && parentFloor < (reply.floor || 0)) {
+        const children = childMap.get(parentFloor) || []
+        children.push(reply)
+        childMap.set(parentFloor, children)
+        parentFloorById.set(reply.id, parentFloor)
+      }
+    })
+
+    const result: V2exReply[] = []
+    const append = (reply: V2exReply, level: number): void => {
+      reply.threadLevel = level
+      reply.isDuplicateThreadItem = false
+      reply.renderKey = `r-${reply.id}-t-${level}`
+      if (hideSingleMention && level > 0 && (reply.replyUsers || []).length === 1 && (reply.hiddenLeadingMentionContent || '').trim()) {
+        reply.renderKey = `r-${reply.id}-t-${level}-compact`
+      }
+      result.push(reply)
+      const children = (childMap.get(reply.floor || 0) || []).sort((a: V2exReply, b: V2exReply) => (a.floor || 0) - (b.floor || 0))
+      children.forEach((child: V2exReply) => append(child, level + 1))
+    }
+
+    base.forEach((reply: V2exReply) => {
+      if (!parentFloorById.has(reply.id)) {
+        append(reply, 0)
+      }
+    })
+
+    if (includeDuplicateOriginal) {
+      const duplicateList: V2exReply[] = []
+      base.forEach((reply: V2exReply) => {
+        if (parentFloorById.has(reply.id)) {
+          const dup = this.cloneReplyForDisplay(reply)
+          dup.threadLevel = 0
+          dup.isDuplicateThreadItem = true
+          dup.renderKey = `r-${reply.id}-dup`
+          duplicateList.push(dup)
+        }
+      })
+      return result.concat(duplicateList.sort((a: V2exReply, b: V2exReply) => (a.floor || 0) - (b.floor || 0)))
+    }
+    return result
+  }
+
+  private cloneReplyForDisplay(reply: V2exReply): V2exReply {
+    return JSON.parse(JSON.stringify(reply)) as V2exReply
+  }
+
+  private findThreadParentFloor(reply: V2exReply, byFloor: Map<number, V2exReply>): number {
+    const floor = reply.floor || 0
+    const users = reply.replyUsers || []
+    const replyFloor = reply.replyFloor || -1
+    if (floor <= 1 || users.length === 0) {
+      return 0
+    }
+    if (replyFloor > 0 && replyFloor < floor) {
+      const target = byFloor.get(replyFloor)
+      if (!target || !target.member) {
+        reply.isWrongReference = true
+        return 0
+      }
+      const targetName = (target.member.username || '').toLowerCase()
+      const mentioned = users.some((name: string) => name.toLowerCase() === targetName)
+      if (mentioned) {
+        return replyFloor
+      }
+      reply.isWrongReference = true
+      return 0
+    }
+    if (users.length !== 1) {
+      return 0
+    }
+    const targetUser = users[0].toLowerCase()
+    for (let i = floor - 1; i >= 1; i--) {
+      const candidate = byFloor.get(i)
+      if (candidate && candidate.member && (candidate.member.username || '').toLowerCase() === targetUser) {
+        return i
+      }
+    }
+    return 0
+  }
+
+  private extractReplyUsers(content: string, renderedContent: string): string[] {
+    const names: string[] = []
+    const seen = new Set<string>()
+    const addName = (name: string): void => {
+      const clean = (name || '').trim()
+      const key = clean.toLowerCase()
+      if (clean && !seen.has(key)) {
+        seen.add(key)
+        names.push(clean)
+      }
+    }
+    const rendered = renderedContent || content || ''
+    const linkRe = /@?\s*<a\b[^>]*href=["'](?:https?:\/\/(?:www\.)?v2ex\.(?:com|co))?\/member\/([^"'?#\/]+)[^"']*["'][^>]*>/gi
+    let linkMatch: RegExpExecArray | null = linkRe.exec(rendered)
+    while (linkMatch) {
+      addName(HtmlEntityUtils.decode(linkMatch[1] || ''))
+      linkMatch = linkRe.exec(rendered)
+    }
+    if (names.length > 0) {
+      return names
+    }
+    const raw = content || ''
+    const re = /@([0-9A-Za-z_]{2,32})/g
+    let m: RegExpExecArray | null = re.exec(raw)
+    while (m) {
+      addName(m[1] || '')
+      m = re.exec(raw)
+    }
+    return names
+  }
+
+  private extractReplyFloor(content: string, renderedContent: string): number {
+    const source = `${renderedContent || ''} ${content || ''}`
+    const m = source.match(/(?:^|\s)#(\d{1,5})(?:\s|<|$)/)
+    if (!m || !m[1]) {
+      return -1
+    }
+    const floor = Number.parseInt(m[1])
+    return Number.isNaN(floor) ? -1 : floor
+  }
+
+  private removeLeadingSingleMention(content: string, users: string[], replyFloor: number): string {
+    if (users.length !== 1) {
+      return content
+    }
+    const name = users[0]
+    const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const floorPart = replyFloor > 0 ? `\\s*#${replyFloor}` : '(?:\\s*#\\d+)?'
+    const re = new RegExp(`^\\s*@${escaped}${floorPart}\\s*`, 'i')
+    return (content || '').replace(re, '').trim()
+  }
+
+  private replyRelationLabel(reply: V2exReply): string {
+    const users = reply.replyUsers || []
+    const floor = reply.replyFloor || -1
+    if (users.length === 0 && floor <= 0) {
+      return ''
+    }
+    const mention = users.length > 0 ? users.map((name: string) => `@${name}`).join(' ') : ''
+    const floorText = floor > 0 ? `#${floor}` : ''
+    return `回复 ${mention}${mention && floorText ? ' · ' : ''}${floorText}`.trim()
+  }
+
   private getVisibleReplies(): V2exReply[] {
-    if (!this.onlyOp) {
-      return this.replies
+    if (this.replyDisplayMode === 'op' || this.onlyOp) {
+      const opId = this.topic ? this.topic.member.id : 0
+      if (opId <= 0) {
+        return this.prepareRepliesForThreading()
+      }
+      return this.prepareRepliesForThreading().filter(reply => reply.member.id === opId)
     }
-    const opId = this.topic ? this.topic.member.id : 0
-    if (opId <= 0) {
-      return this.replies
+    if (this.replyDisplayMode === 'origin') {
+      return this.prepareRepliesForThreading()
     }
-    return this.replies.filter(reply => reply.member.id === opId)
+    if (this.replyDisplayMode === 'threadRedundant') {
+      return this.buildThreadedReplies(true, false)
+    }
+    if (this.replyDisplayMode === 'threadWithMention') {
+      return this.buildThreadedReplies(false, false)
+    }
+    return this.buildThreadedReplies(false, true)
   }
 }
