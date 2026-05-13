@@ -35,7 +35,7 @@ import { HomePage } from 'feed'
 import { ReplyEditorPage, TopicDetailPage } from 'detail'
 import { DiscoverPage, NodePickerPage, NodeTopicPage } from 'node'
 import { UserProfilePage, UserRepliesPage, UserTopicsPage } from 'user'
-import { SettingsPage, StorageSettingsPage, ReadingSettingsPage } from 'settings'
+import { SettingsPage, StorageSettingsPage, ReadingSettingsPage, HomeNodeSettingsPage } from 'settings'
 import { ComponentContent, promptAction, SymbolGlyphModifier } from '@kit.ArkUI'
 import { V2exWebLoginPage } from './V2exWebLoginPage'
 import { V2exNativeLoginPage } from './V2exNativeLoginPage'
@@ -502,6 +502,11 @@ struct Index {
         StorageSettingsPage()
       }
       .titleBar(this.navDestTitleBarOpts('存储'))
+    } else if (name === 'HomeNodeSettings') {
+      HdsNavDestination() {
+        HomeNodeSettingsPage()
+      }
+      .titleBar(this.navDestTitleBarOpts('首页栏目设置'))
     } else if (name === 'ReadingSettings') {
       HdsNavDestination() {
         ReadingSettingsPage()
