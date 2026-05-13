@@ -2525,9 +2525,14 @@ export struct MarkdownContent {
     }
   }
 
+  private sourceIdentity(): string {
+    const raw = this.source || "";
+    return `${raw.length}:${raw.slice(0, 32)}:${raw.slice(Math.max(0, raw.length - 32))}`;
+  }
+
   build() {
     Markdown({
-      token: this.tokens,
+      token: MarkdownContent.processTokens(this.source, this.inlineImageSizeRecords),
       options: {
           lineSpace: this.blockSpace(),
           textLineSpace: LengthMetrics.vp(this.bodyLineHeight()),
@@ -2656,6 +2661,7 @@ export struct MarkdownContent {
       scrollBar: BarState.Off,
       paddings: { left: 0, right: 0, top: 0, bottom: 0 },
     })
+      .id(this.sourceIdentity())
       .width("100%")
       .margin({ top: this.effectiveTopMargin() });
   }

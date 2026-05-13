@@ -97,7 +97,7 @@ export class DetailViewModel {
     }
   }
 
-  async load(): Promise<void> {
+  async load(forceNetwork: boolean = true): Promise<void> {
     if (this.topicId <= 0) {
       this.errorMessage = '无效的主题 ID'
       return
@@ -105,6 +105,12 @@ export class DetailViewModel {
     this.isLoading = true
     this.errorMessage = ''
     this.loadMoreErrorMessage = ''
+    if (forceNetwork) {
+      this.topic = null
+      this.replies = []
+      this.replyDataSource.setData([])
+      this.repliesLoaded = 0
+    }
     this.repliesUseV2 = !!this.authToken
     this.repliesSource = this.authToken ? 'v2' : 'publicApi'
     this.repliesPage = 1
@@ -117,6 +123,7 @@ export class DetailViewModel {
     try {
       let topic: V2exTopic | null = null
       let replies: V2exReply[] = []
+      const cacheBuster = forceNetwork ? Date.now() : 0
       if (this.authToken) {
         const res = await this.apiV2.getTopic(this.authToken, this.topicId)
         topic = res.data
@@ -126,11 +133,11 @@ export class DetailViewModel {
         this.repliesSource = 'v2'
         this.repliesHasMore = replies.length >= this.V2_REPLY_PAGE_SIZE
       } else {
-        const topics = await this.api.getTopicById(this.topicId)
+        const topics = await this.api.getTopicById(this.topicId, cacheBuster)
         if (topics.length > 0) {
           topic = topics[0]
         }
-        const apiReplies = await this.api.getReplies(this.topicId)
+        const apiReplies = await this.api.getReplies(this.topicId, cacheBuster)
         const expectedReplies = topic ? topic.replies : 0
         if (apiReplies.length === 0 || (expectedReplies > 0 && apiReplies.length < expectedReplies)) {
           const firstPage = await this.api.getTopicWebRepliesPage(this.topicId, 1, Date.now())

@@ -121,8 +121,14 @@ export class ApiService {
   }
 
   /** 根据 ID 获取单条主题 */
-  async getTopicById(topicId: number): Promise<V2exTopic[]> {
-    return ApiService.normalizeTopics(await this.http.get<V2exTopic[]>(`${ApiConstants.API_TOPIC_SHOW}?id=${topicId}`))
+  async getTopicById(topicId: number, cacheBuster: number = 0): Promise<V2exTopic[]> {
+    const endpoint = cacheBuster > 0
+      ? `${ApiConstants.API_TOPIC_SHOW}?id=${topicId}&_=${cacheBuster}`
+      : `${ApiConstants.API_TOPIC_SHOW}?id=${topicId}`
+    const topics = cacheBuster > 0
+      ? await this.http.getNoCache<V2exTopic[]>(endpoint)
+      : await this.http.get<V2exTopic[]>(endpoint)
+    return ApiService.normalizeTopics(topics)
   }
 
   /** 根据用户名获取其主题 */
@@ -154,8 +160,14 @@ export class ApiService {
   }
 
   /** 获取主题的回复列表 */
-  async getReplies(topicId: number): Promise<V2exReply[]> {
-    return ApiService.normalizeReplies(await this.http.get<V2exReply[]>(`${ApiConstants.API_REPLIES_SHOW}?topic_id=${topicId}`))
+  async getReplies(topicId: number, cacheBuster: number = 0): Promise<V2exReply[]> {
+    const endpoint = cacheBuster > 0
+      ? `${ApiConstants.API_REPLIES_SHOW}?topic_id=${topicId}&_=${cacheBuster}`
+      : `${ApiConstants.API_REPLIES_SHOW}?topic_id=${topicId}`
+    const replies = cacheBuster > 0
+      ? await this.http.getNoCache<V2exReply[]>(endpoint)
+      : await this.http.get<V2exReply[]>(endpoint)
+    return ApiService.normalizeReplies(replies)
   }
 
   /** 获取主题回复；当旧公开 API 少于主题回复数时，以公开网页 HTML 为准。 */

@@ -42,7 +42,8 @@ export class HttpClient {
     endpoint: string,
     method?: http.RequestMethod,
     retryCount: number = MAX_RETRIES,
-    headers?: Record<string, string>
+    headers?: Record<string, string>,
+    usingCache?: boolean
   ): Promise<T> {
     let httpRequest = http.createHttp()
     const url = `${this.baseUrl}${endpoint}`
@@ -63,7 +64,7 @@ export class HttpClient {
         header: requestHeaders,
         connectTimeout: CONNECT_TIMEOUT_MS,
         readTimeout: READ_TIMEOUT_MS,
-        usingCache: !HttpClient.hasAuthHeader(requestHeaders)
+        usingCache: usingCache ?? !HttpClient.hasAuthHeader(requestHeaders)
       })
 
       if (response.responseCode !== http.ResponseCode.OK) {
@@ -75,7 +76,7 @@ export class HttpClient {
       if (retryCount > 0) {
         const delay = BACKOFF_BASE_MS * Math.pow(2, MAX_RETRIES - retryCount)
         await new Promise<void>(resolve => setTimeout(resolve, delay))
-        return this.request<T>(endpoint, method, retryCount - 1, headers)
+        return this.request<T>(endpoint, method, retryCount - 1, headers, usingCache)
       }
       throw new Error(`Network error: ${error.message}`)
     } finally {
@@ -89,6 +90,18 @@ export class HttpClient {
 
   async getWithHeaders<T>(endpoint: string, headers: Record<string, string>): Promise<T> {
     return this.request<T>(endpoint, http.RequestMethod.GET, MAX_RETRIES, headers)
+  }
+
+  async getNoCache<T>(endpoint: string): Promise<T> {
+    return this.request<T>(endpoint, http.RequestMethod.GET, MAX_RETRIES, HttpClient.noCacheHeaders(), false)
+  }
+
+  async getNoCacheWithHeaders<T>(endpoint: string, headers: Record<string, string>): Promise<T> {
+    const merged: Record<string, string> = HttpClient.noCacheHeaders()
+    Object.keys(headers).forEach((key: string) => {
+      merged[key] = headers[key]
+    })
+    return this.request<T>(endpoint, http.RequestMethod.GET, MAX_RETRIES, merged, false)
   }
 
   /** GET 请求获取纯文本（用于 HTML 抓取） */
@@ -113,7 +126,8 @@ export class HttpClient {
     endpoint: string,
     method?: http.RequestMethod,
     retryCount: number = MAX_RETRIES,
-    headers?: Record<string, string>
+    headers?: Record<string, string>,
+    usingCache?: boolean
   ): Promise<string> {
     let httpRequest = http.createHttp()
     const url = `${this.baseUrl}${endpoint}`
@@ -134,7 +148,7 @@ export class HttpClient {
         header: requestHeaders,
         connectTimeout: CONNECT_TIMEOUT_MS,
         readTimeout: READ_TIMEOUT_MS,
-        usingCache: !HttpClient.hasAuthHeader(requestHeaders)
+        usingCache: usingCache ?? !HttpClient.hasAuthHeader(requestHeaders)
       })
 
       if (response.responseCode !== http.ResponseCode.OK) {
@@ -146,7 +160,7 @@ export class HttpClient {
       if (retryCount > 0) {
         const delay = BACKOFF_BASE_MS * Math.pow(2, MAX_RETRIES - retryCount)
         await new Promise<void>(resolve => setTimeout(resolve, delay))
-        return this.requestText(endpoint, method, retryCount - 1, headers)
+        return this.requestText(endpoint, method, retryCount - 1, headers, usingCache)
       }
       throw new Error(`Network error: ${error.message}`)
     } finally {
@@ -159,7 +173,8 @@ export class HttpClient {
     endpoint: string,
     method?: http.RequestMethod,
     retryCount: number = MAX_RETRIES,
-    headers?: Record<string, string>
+    headers?: Record<string, string>,
+    usingCache?: boolean
   ): Promise<TextResponseWithHeaders> {
     let httpRequest = http.createHttp()
     const url = `${this.baseUrl}${endpoint}`
@@ -189,7 +204,7 @@ export class HttpClient {
         header: requestHeaders,
         connectTimeout: CONNECT_TIMEOUT_MS,
         readTimeout: READ_TIMEOUT_MS,
-        usingCache: !HttpClient.hasAuthHeader(requestHeaders)
+        usingCache: usingCache ?? !HttpClient.hasAuthHeader(requestHeaders)
       })
 
       const statusCode = response.responseCode as number
@@ -206,7 +221,7 @@ export class HttpClient {
       if (retryCount > 0) {
         const delay = BACKOFF_BASE_MS * Math.pow(2, MAX_RETRIES - retryCount)
         await new Promise<void>(resolve => setTimeout(resolve, delay))
-        return this.requestTextResponse(endpoint, method, retryCount - 1, headers)
+        return this.requestTextResponse(endpoint, method, retryCount - 1, headers, usingCache)
       }
       throw new Error(`Network error: ${error.message}`)
     } finally {
@@ -249,5 +264,12 @@ export class HttpClient {
     const cookie = headers['Cookie'] || headers['cookie'] || ''
     const authorization = headers['Authorization'] || headers['authorization'] || ''
     return cookie.trim().length > 0 || authorization.trim().length > 0
+  }
+
+  private static noCacheHeaders(): Record<string, string> {
+    return {
+      'Cache-Control': 'no-cache, no-store, max-age=0',
+      'Pragma': 'no-cache'
+    }
   }
 }
