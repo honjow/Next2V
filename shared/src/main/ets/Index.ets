@@ -127,6 +127,7 @@ export type { V2exRoute, V2exRouteKind } from './utils/V2exUrlRouter'
 export { BreakpointSystem } from './utils/BreakpointSystem'
 export { BreakPointType } from './utils/BreakPointType'
 export type { Breakpoint } from './utils/BreakpointSystem'
+export { FoldScreenUtil } from './utils/FoldScreenUtil'
 
 // 主题
 export { ThemeConstants } from './theme/ThemeConstants'

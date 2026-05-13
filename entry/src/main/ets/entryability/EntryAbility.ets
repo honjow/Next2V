@@ -6,6 +6,7 @@ import {
   ApiDomainSettings,
   CookieJarSettings,
   FeedTabSettings,
+  FoldScreenUtil,
   MediaSettings,
   ReadingSettings,
   StorageKeys,
@@ -31,6 +32,9 @@ export default class EntryAbility extends UIAbility {
       console.error('initialize web engine failed: ' + e.message)
     }
     this.captureIncomingUrl(want)
+    
+    // 初始化折叠屏状态监听
+    FoldScreenUtil.getInstance().init()
   }
 
   onNewWant(want: Want, launchParam: AbilityConstant.LaunchParam): void {

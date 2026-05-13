@@ -1,16 +1,16 @@
 import {
   BlurStrategy,
+  BottomBuilderShowType,
   hdsMaterial,
   HdsNavDestination,
   HdsNavigation,
-  IconType,
   HdsNavigationTitleMode,
   HdsTabs,
   HdsTabsController,
   HdsTabsFloatingStyle,
-  BottomBuilderShowType,
-  ScrollEffectType,
-  HideMode
+  HideMode,
+  IconType,
+  ScrollEffectType
 } from '@kit.UIDesignKit'
 import { common, Want } from '@kit.AbilityKit'
 import {
@@ -18,10 +18,11 @@ import {
   AppSearchField,
   Avatar,
   FeedTabSettings,
+  FoldScreenUtil,
   HttpClient,
   ImagePreviewParams,
-  NodeTopicListParams,
   MotionHandStateService,
+  NodeTopicListParams,
   StorageKeys,
   TabItem,
   ThemeConstants,
@@ -55,7 +56,8 @@ import { AboutPage } from './AboutPage'
 @Component
 struct FeedPills {
   @StorageLink('feedTab') @Watch('onFeedTabChanged') feedTab: string = 'tech'
-  @StorageLink(StorageKeys.FEED_TAB_KEYS) @Watch('onFeedTabKeysChanged') feedTabKeys: string = FeedTabSettings.defaultKeysJson()
+  @StorageLink(StorageKeys.FEED_TAB_KEYS) @Watch('onFeedTabKeysChanged') feedTabKeys: string =
+    FeedTabSettings.defaultKeysJson()
   @StorageLink(StorageKeys.FEED_TAB_VISUAL_INDEX) feedTabVisualIndex: number = 0
   @State private tabLefts: number[] = []
   @State private tabWidths: number[] = []
@@ -72,9 +74,14 @@ struct FeedPills {
             Column({ space: 1 }) {
               Text(tab.label)
                 .fontSize(ThemeConstants.FONT_SIZE_BODY)
-                .fontColor(this.visualSelectedIndex() === index ? ThemeConstants.BRAND_PRIMARY : ThemeConstants.TEXT_SECONDARY)
+                .fontColor(this.visualSelectedIndex() === index ? ThemeConstants.BRAND_PRIMARY :
+                  ThemeConstants.TEXT_SECONDARY)
                 .fontWeight(this.visualSelectedIndex() === index ? FontWeight.Medium : FontWeight.Regular)
-                .padding({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, top: ThemeConstants.SPACE_XS })
+                .padding({
+                  left: ThemeConstants.SPACE_MD,
+                  right: ThemeConstants.SPACE_MD,
+                  top: ThemeConstants.SPACE_XS
+                })
               Blank().height(2).width(18)
             }
             .alignItems(HorizontalAlign.Center)
@@ -91,7 +98,8 @@ struct FeedPills {
       .scrollBar(BarState.Off)
       .listDirection(Axis.Horizontal)
       .padding({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM })
-      .width('100%').height('100%')
+      .width('100%')
+      .height('100%')
 
       Row()
         .width(this.indicatorWidth())
@@ -257,7 +265,12 @@ struct DiscoverSearchComponent {
       })
     }
     .width('100%')
-    .padding({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, top: 4, bottom: 4 })
+    .padding({
+      left: ThemeConstants.SPACE_MD,
+      right: ThemeConstants.SPACE_MD,
+      top: 4,
+      bottom: 4
+    })
   }
 }
 
@@ -384,11 +397,25 @@ struct Index {
   @StorageLink(StorageKeys.USER_PROFILE_APPBAR_TITLE_STATES) userProfileAppbarTitleStates: string = '{}'
   @StorageLink(StorageKeys.USER_PROFILE_APPBAR_AVATAR_STATES) userProfileAppbarAvatarStates: string = '{}'
   @State private accountRefreshKey: number = 0
+  @State private isFoldedAndUseOuterScreen: boolean = false
   private http: HttpClient = HttpClient.getInstance()
+  private foldScreenCallback: (value: boolean) => void = (value: boolean) => {
+    this.isFoldedAndUseOuterScreen = value
+  }
 
   aboutToAppear(): void {
     MotionHandStateService.start()
     this.consumePendingV2exUrl()
+
+    // 注册折叠屏状态变化回调
+    const foldScreenUtil = FoldScreenUtil.getInstance()
+    this.isFoldedAndUseOuterScreen = foldScreenUtil.isFoldedAndUseOuterScreen()
+    foldScreenUtil.registerCallback(this.foldScreenCallback)
+  }
+
+  aboutToDisappear(): void {
+    // 取消注册折叠屏状态变化回调
+    FoldScreenUtil.getInstance().unregisterCallback(this.foldScreenCallback)
   }
 
   onPendingV2exUrlChanged(_propName: string): void {
@@ -405,6 +432,11 @@ struct Index {
         })
       }
       .titleBar(this.topicDetailTitleBarOpts(((param as Record<string, Object>)['topicId'] as number) || 0))
+      .dynamicHideTitleBar({
+        hideTitleArea: this.isFoldedAndUseOuterScreen,
+        hideStatusBar: false,
+        mode: HideMode.SCROLL_UP,
+      })
     } else if (name === 'ImagePreview') {
       HdsNavDestination() {
         ImagePreviewPage({ url: (param as ImagePreviewParams).url })
@@ -587,11 +619,10 @@ struct Index {
     .titleMode(HdsNavigationTitleMode.MINI)
     .hideBackButton(true)
     .dynamicHideTitleBar({
-      hideTitleArea: this.ct === 1,
+      hideTitleArea: this.ct === 1 || this.ct === 2,
       hideBottomBuilder: this.ct === 1,
       hideStatusBar: false,
       mode: HideMode.SCROLL_UP,
-      hideOffset: 10
     })
     .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM])
     .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
@@ -603,7 +634,8 @@ struct Index {
   }
 
   private navDestTitleBarOpts<T extends Object>(title?: string, menu?: Record<string, Object>, subTitle?: string,
-    bottomBuilder?: Record<string, Object>, stackBuilderComponent?: ComponentContent<T>, titleAccessibilityText?: string): Record<string, Object> {
+    bottomBuilder?: Record<string, Object>, stackBuilderComponent?: ComponentContent<T>,
+    titleAccessibilityText?: string): Record<string, Object> {
     let mat: Record<string, Object> =
       { 'materialType': hdsMaterial.MaterialType.ADAPTIVE, 'materialLevel': hdsMaterial.MaterialLevel.ADAPTIVE }
     let scrollOpts: Record<string, Object> =
@@ -697,8 +729,10 @@ struct Index {
     const titleRouteKey = (this.topicDetailAppbarRouteTopicId || '').trim()
     const title = titleFromState || (titleRouteKey === routeKey ? (this.topicDetailAppbarTitle || '').trim() : '')
     if (title.trim()) {
-      const avatarUrl = avatarFromState || (titleRouteKey === routeKey ? (this.topicDetailAppbarAvatarUrl || '').trim() : '')
-      const username = usernameFromState || (titleRouteKey === routeKey ? (this.topicDetailAppbarUsername || '').trim() : '')
+      const avatarUrl =
+        avatarFromState || (titleRouteKey === routeKey ? (this.topicDetailAppbarAvatarUrl || '').trim() : '')
+      const username =
+        usernameFromState || (titleRouteKey === routeKey ? (this.topicDetailAppbarUsername || '').trim() : '')
       let cc = new ComponentContent<TopicDetailAppbarIdentityParams>(
         this.getUIContext(),
         wrapBuilder(TopicDetailIdentityCCBuilder),
@@ -749,7 +783,8 @@ struct Index {
       (titleUsername && this.sameUsername(titleRouteUsername, routeUsername) ? titleUsername : ' ')
     if (title.trim()) {
       const avatarUrl = avatarFromState ||
-        (this.sameUsername(titleRouteUsername, routeUsername) ? (this.userProfileAppbarTitleAvatarUrl || '').trim() : '')
+        (this.sameUsername(titleRouteUsername, routeUsername) ? (this.userProfileAppbarTitleAvatarUrl || '').trim() :
+          '')
       let cc = new ComponentContent<UserProfileAppbarIdentityParams>(
         this.getUIContext(),
         wrapBuilder(UserProfileIdentityCCBuilder),
@@ -796,16 +831,16 @@ struct Index {
         this.userProfileFollowLabel,
         this.userProfileFollowing ? $r('sys.symbol.person_xmark') : $r('sys.symbol.person_badge_plus'),
         () => {
-        this.sendUserProfileAction('follow')
-      }))
+          this.sendUserProfileAction('follow')
+        }))
     }
     if (this.userProfileBlockLabel) {
       items.push(this.topicActionItem(
         this.userProfileBlockLabel,
         this.userProfileBlockIcon(),
         () => {
-        this.sendUserProfileAction('block')
-      }))
+          this.sendUserProfileAction('block')
+        }))
     }
     return { 'value': items, 'maxCount': 1 }
   }
