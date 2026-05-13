@@ -1,14 +1,11 @@
 import { common } from '@kit.AbilityKit'
-import type { TabItem } from 'shared'
 import {
   ApiConstants,
   ApiDomainSettings,
-  AppTextField,
   CacheSettings,
   ConciseListRow,
   CookieJarSettings,
   DateUtils,
-  FeedTabSettings,
   GroupedListSection,
   HttpClient,
   ListDivider as SharedListDivider,
@@ -21,7 +18,7 @@ import {
   type CacheStats,
   WriteActionSettings
 } from 'shared'
-import { promptAction, SymbolGlyphModifier } from '@kit.ArkUI'
+import { SymbolGlyphModifier } from '@kit.ArkUI'
 
 @Component
 export struct SettingsPage {
@@ -30,9 +27,7 @@ export struct SettingsPage {
   @StorageLink(StorageKeys.MEDIA_AUTO_LOAD_IMAGES) autoLoadImages: boolean = true
   @StorageLink(StorageKeys.MEDIA_ONLY_LOAD_IMAGES_ON_WIFI) onlyLoadImagesOnWifi: boolean = false
   @StorageLink(StorageKeys.THEME_MODE) themeMode: string = ThemeSettings.MODE_AUTO
-  @StorageLink(StorageKeys.FEED_TAB_KEYS) feedTabKeys: string = FeedTabSettings.defaultKeysJson()
   @StorageLink(StorageKeys.ACCOUNT_WRITE_ENABLED) accountWriteEnabled: boolean = false
-  @State private nodeTabName: string = ''
   @State private cacheStats: CacheStats = { topicListCount: 0, topicDetailCount: 0, updatedAt: 0 }
   @State private themeMenuShown: boolean = false
   @State private apiDomainMenuShown: boolean = false
@@ -68,7 +63,14 @@ export struct SettingsPage {
         .margin({ top: ThemeConstants.SPACE_MD })
 
         ListItem() {
-          this.HomeSection()
+          GroupedListSection() {
+            ConciseListRow({
+              title: '首页栏目设置',
+              action: () => {
+                this.stack.pushPathByName('HomeNodeSettings', null)
+              }
+            })
+          }
         }
 
         ListItem() {
@@ -159,115 +161,6 @@ export struct SettingsPage {
         this.DisabledWifiImagePreferenceRow()
       }
     }
-  }
-
-  @Builder
-  HomeSection() {
-    GroupedListSection() {
-      ForEach(FeedTabSettings.tabsFromKeysJson(this.feedTabKeys), (tab: TabItem, index: number) => {
-        this.HomeVisibleTabRow(tab, index, FeedTabSettings.tabsFromKeysJson(this.feedTabKeys).length)
-        if (index < FeedTabSettings.tabsFromKeysJson(this.feedTabKeys).length - 1) {
-          this.SettingsDivider()
-        }
-      }, (tab: TabItem) => tab.key)
-
-      this.SettingsDivider()
-
-      ForEach(ApiConstants.TAB_ITEMS.filter((tab: TabItem) => !FeedTabSettings.isVisible(this.feedTabKeys, tab.key)),
-        (tab: TabItem) => {
-          ConciseListRow({
-            title: `添加 ${tab.label}`,
-            showChevron: false,
-            action: () => {
-              this.updateFeedTabVisibility(tab.key, true)
-            }
-          })
-          this.SettingsDivider()
-        }, (tab: TabItem) => tab.key)
-
-      Column({ space: ThemeConstants.SPACE_SM }) {
-        AppTextField({
-          text: $nodeTabName,
-          placeholder: '节点名（如 create）',
-          onTextChange: (value: string) => {
-            this.nodeTabName = value
-          }
-        })
-          .width('100%')
-        Button('添加节点栏目')
-          .fontSize(ThemeConstants.FONT_SIZE_TAG)
-          .height(ThemeConstants.TOUCH_TARGET_SM)
-          .type(ButtonType.Normal)
-          .borderRadius(ThemeConstants.RADIUS_MD)
-          .fontColor(Color.White)
-          .backgroundColor(ThemeConstants.BRAND_PRIMARY)
-          .width('100%')
-          .onClick(() => {
-            this.addNodeFeedTab()
-          })
-      }
-      .padding(ThemeConstants.SPACE_LG)
-
-      this.SettingsDivider()
-
-      ConciseListRow({
-        title: '恢复默认栏目',
-        showChevron: false,
-        action: () => {
-          this.resetFeedTabs()
-        }
-      })
-    }
-  }
-
-  @Builder
-  HomeVisibleTabRow(tab: TabItem, index: number, count: number) {
-    Row({ space: ThemeConstants.SPACE_SM }) {
-      Column({ space: ThemeConstants.SPACE_XS }) {
-        Text(tab.label)
-          .fontSize(ThemeConstants.FONT_SIZE_BODY)
-          .fontColor($r('sys.color.font_primary'))
-          .maxLines(1)
-          .textOverflow({ overflow: TextOverflow.Ellipsis })
-        Text(FeedTabSettings.isNodeKey(tab.key) ? '节点栏目' : '首页栏目')
-          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-          .fontColor($r('sys.color.font_secondary'))
-      }
-      .layoutWeight(1)
-      .alignItems(HorizontalAlign.Start)
-
-      this.HomeTabButton('↑', index > 0, () => {
-        this.moveFeedTab(tab.key, -1)
-      })
-      this.HomeTabButton('↓', index < count - 1, () => {
-        this.moveFeedTab(tab.key, 1)
-      })
-      this.HomeTabButton(FeedTabSettings.isNodeKey(tab.key) ? '删' : '隐', count > 1, () => {
-        this.updateFeedTabVisibility(tab.key, false)
-      })
-    }
-    .width('100%')
-    .padding({
-      left: ThemeConstants.SPACE_LG,
-      right: ThemeConstants.SPACE_LG,
-      top: ThemeConstants.SPACE_MD,
-      bottom: ThemeConstants.SPACE_MD
-    })
-    .alignItems(VerticalAlign.Center)
-  }
-
-  @Builder
-  HomeTabButton(label: string, enabled: boolean, action: () => void) {
-    Button(label)
-      .fontSize(ThemeConstants.FONT_SIZE_TAG)
-      .height(ThemeConstants.TOUCH_TARGET_SM)
-      .width(48)
-      .enabled(enabled)
-      .type(ButtonType.Normal)
-      .borderRadius(ThemeConstants.RADIUS_MD)
-      .fontColor(enabled ? $r('sys.color.font_primary') : $r('sys.color.font_tertiary'))
-      .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
-      .onClick(action)
   }
 
   @Builder
@@ -465,54 +358,6 @@ export struct SettingsPage {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     ThemeSettings.save(context, normalizedMode).catch((error: Error) => {
       console.error('save theme settings failed: ' + error.message)
-    })
-  }
-
-  private updateFeedTabVisibility(key: string, _visible: boolean): void {
-    const nextKeys = FeedTabSettings.toggleKey(this.feedTabKeys, key)
-    if (nextKeys === this.feedTabKeys) {
-      return
-    }
-    this.saveFeedTabs(nextKeys)
-  }
-
-  private moveFeedTab(key: string, direction: number): void {
-    const nextKeys = FeedTabSettings.moveKey(this.feedTabKeys, key, direction)
-    if (nextKeys === this.feedTabKeys) {
-      return
-    }
-    this.saveFeedTabs(nextKeys)
-  }
-
-  private addNodeFeedTab(): void {
-    const cleanName = FeedTabSettings.normalizeNodeName(this.nodeTabName)
-    if (!cleanName) {
-      promptAction.openToast({ message: '请输入有效节点名' }).catch((_error: Error) => {
-      })
-      return
-    }
-    const nextKeys = FeedTabSettings.addNode(this.feedTabKeys, cleanName)
-    if (nextKeys === this.feedTabKeys) {
-      promptAction.openToast({ message: '节点栏目已存在' }).catch((_error: Error) => {
-      })
-      return
-    }
-    this.nodeTabName = ''
-    this.saveFeedTabs(nextKeys)
-  }
-
-  private resetFeedTabs(): void {
-    if (FeedTabSettings.isDefault(this.feedTabKeys)) {
-      return
-    }
-    this.saveFeedTabs(FeedTabSettings.defaultKeysJson())
-  }
-
-  private saveFeedTabs(keysJson: string): void {
-    this.feedTabKeys = keysJson
-    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    FeedTabSettings.save(context, keysJson).catch((error: Error) => {
-      console.error('save feed tab settings failed: ' + error.message)
     })
   }
 
