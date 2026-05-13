@@ -5,6 +5,7 @@ import { StorageKeys } from '../constants/StorageKeys'
 
 const STORE_NAME: string = 'next2v_feed_tabs'
 const KEY_VISIBLE_KEYS: string = 'visibleKeys'
+const KEY_LAST_SELECTED_KEY: string = 'lastSelectedKey'
 const NODE_KEY_PREFIX: string = 'node:'
 
 export class FeedTabSettings {
@@ -108,8 +109,15 @@ export class FeedTabSettings {
     try {
       const store = await preferences.getPreferences(context, STORE_NAME)
       const keysJson = store.getSync(KEY_VISIBLE_KEYS, FeedTabSettings.defaultKeysJson()) as string
+      const lastSelectedKey = store.getSync(KEY_LAST_SELECTED_KEY, '') as string
       const normalized = JSON.stringify(FeedTabSettings.normalizeKeys(FeedTabSettings.parseKeys(keysJson)))
       FeedTabSettings.apply(normalized)
+      const selectedKey = FeedTabSettings.selectedKeyOrFallback(normalized, lastSelectedKey)
+      FeedTabSettings.applySelectedKey(selectedKey)
+      if (selectedKey !== lastSelectedKey) {
+        store.putSync(KEY_LAST_SELECTED_KEY, selectedKey)
+        store.flushSync()
+      }
       return normalized
     } catch (error) {
       const e = error as Error
@@ -122,8 +130,13 @@ export class FeedTabSettings {
       const normalized = JSON.stringify(FeedTabSettings.normalizeKeys(FeedTabSettings.parseKeys(keysJson)))
       const store = await preferences.getPreferences(context, STORE_NAME)
       store.putSync(KEY_VISIBLE_KEYS, normalized)
+      const selectedKey = FeedTabSettings.selectedKeyOrFallback(
+        normalized,
+        AppStorage.get<string>(StorageKeys.FEED_TAB) || '')
+      store.putSync(KEY_LAST_SELECTED_KEY, selectedKey)
       store.flushSync()
       FeedTabSettings.apply(normalized)
+      FeedTabSettings.applySelectedKey(selectedKey)
       return normalized
     } catch (error) {
       const e = error as Error
@@ -131,8 +144,35 @@ export class FeedTabSettings {
     }
   }
 
+  static async saveSelectedKey(context: common.UIAbilityContext, key: string): Promise<string> {
+    try {
+      const keysJson = AppStorage.get<string>(StorageKeys.FEED_TAB_KEYS) || FeedTabSettings.defaultKeysJson()
+      const selectedKey = FeedTabSettings.selectedKeyOrFallback(keysJson, key)
+      const store = await preferences.getPreferences(context, STORE_NAME)
+      store.putSync(KEY_LAST_SELECTED_KEY, selectedKey)
+      store.flushSync()
+      FeedTabSettings.applySelectedKey(selectedKey)
+      return selectedKey
+    } catch (error) {
+      const e = error as Error
+      throw new Error(e.message || '保存首页选中栏目失败')
+    }
+  }
+
   static apply(keysJson: string): void {
-    AppStorage.setOrCreate<string>(StorageKeys.FEED_TAB_KEYS, keysJson || FeedTabSettings.defaultKeysJson())
+    FeedTabSettings.setAppStorageValue<string>(StorageKeys.FEED_TAB_KEYS, keysJson || FeedTabSettings.defaultKeysJson())
+  }
+
+  static applySelectedKey(key: string): void {
+    FeedTabSettings.setAppStorageValue<string>(StorageKeys.FEED_TAB, key || FeedTabSettings.defaultKeys()[0])
+  }
+
+  private static selectedKeyOrFallback(keysJson: string, key: string): string {
+    const tabs = FeedTabSettings.tabsFromKeysJson(keysJson)
+    if (tabs.find((tab: TabItem) => tab.key === key)) {
+      return key
+    }
+    return tabs.length > 0 ? tabs[0].key : FeedTabSettings.defaultKeys()[0]
   }
 
   private static parseKeys(keysJson: string): string[] {
@@ -162,5 +202,11 @@ export class FeedTabSettings {
 
   private static nodeKey(nodeName: string): string {
     return `${NODE_KEY_PREFIX}${nodeName}`
+  }
+
+  private static setAppStorageValue<T>(key: string, value: T): void {
+    if (!AppStorage.set<T>(key, value)) {
+      AppStorage.setOrCreate<T>(key, value)
+    }
   }
 }

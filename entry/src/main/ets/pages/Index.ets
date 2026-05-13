@@ -55,7 +55,7 @@ import { AboutPage } from './AboutPage'
 
 @Component
 struct FeedPills {
-  @StorageLink('feedTab') @Watch('onFeedTabChanged') feedTab: string = 'tech'
+  @StorageLink(StorageKeys.FEED_TAB) @Watch('onFeedTabChanged') feedTab: string = 'tech'
   @StorageLink(StorageKeys.FEED_TAB_KEYS) @Watch('onFeedTabKeysChanged') feedTabKeys: string =
     FeedTabSettings.defaultKeysJson()
   @StorageLink(StorageKeys.FEED_TAB_VISUAL_INDEX) feedTabVisualIndex: number = 0

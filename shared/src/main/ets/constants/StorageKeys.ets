@@ -30,6 +30,7 @@ export class StorageKeys {
   static readonly LOCAL_SAVED_TOPIC_COUNT: string = 'localSavedTopicCount'
   static readonly LOCAL_SAVED_NODE_COUNT: string = 'localSavedNodeCount'
   static readonly LOCAL_VIEWED_TOPIC_COUNT: string = 'localViewedTopicCount'
+  static readonly FEED_TAB: string = 'feedTab'
   static readonly FEED_TAB_KEYS: string = 'feedTabKeys'
   static readonly FEED_TAB_VISUAL_INDEX: string = 'feedTabVisualIndex'
   static readonly BLOCKED_MEMBERS_UPDATED_AT: string = 'blockedMembersUpdatedAt'

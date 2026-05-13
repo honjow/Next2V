@@ -10,7 +10,7 @@ import { common } from '@kit.AbilityKit'
 @Component
 export struct HomePage {
   @Consume('ns') ns: NavPathStack
-  @StorageLink('feedTab') @Watch('onFeedTabChanged') feedTab: string = 'tech'
+  @StorageLink(StorageKeys.FEED_TAB) @Watch('onFeedTabChanged') feedTab: string = 'tech'
   @StorageLink(StorageKeys.FEED_TAB_KEYS) @Watch('onFeedTabKeysChanged') feedTabKeys: string = FeedTabSettings.defaultKeysJson()
   @StorageLink(StorageKeys.FEED_TAB_VISUAL_INDEX) feedTabVisualIndex: number = 0
   @State private currentTabIndex: number = 0
@@ -69,6 +69,7 @@ export struct HomePage {
       return false
     }
     this.feedTab = tabs[0].key
+    this.persistSelectedTab(tabs[0].key)
     return true
   }
 
@@ -77,12 +78,20 @@ export struct HomePage {
     if (nextIndex < 0) {
       return
     }
+    this.persistSelectedTab(this.feedTab)
     if (nextIndex === this.currentTabIndex) {
       return
     }
     this.currentTabIndex = nextIndex
     this.animateVisualTabIndex(nextIndex)
     this.swiperController.changeIndex(nextIndex, true)
+  }
+
+  private persistSelectedTab(key: string): void {
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    FeedTabSettings.saveSelectedKey(context, key).catch((error: Error) => {
+      console.error('save selected feed tab failed: ' + error.message)
+    })
   }
 
   private onFeedTabKeysChanged(_propName: string): void {
@@ -173,6 +182,7 @@ export struct HomePage {
         if (key !== this.feedTab) {
           this.feedTab = key
         }
+        this.persistSelectedTab(key)
       })
       .onAreaChange((_oldValue: Area, newValue: Area) => {
         this.swiperWidth = (newValue?.width as number) || 0
