@@ -26,6 +26,7 @@ export class V2exTopicRepliesParser {
         replies.push({
           id,
           thanks: V2exTopicRepliesParser.extractThanks(block),
+          thanked: V2exTopicRepliesParser.extractThankedByCurrentUser(block, id),
           content: V2exTopicRepliesParser.replyHtmlToMarkdown(contentRendered),
           content_rendered: contentRendered,
           member: V2exTopicRepliesParser.toMember(member),
@@ -116,11 +117,30 @@ export class V2exTopicRepliesParser {
   }
 
   private static extractThanks(block: string): number {
+    const heartCount = (block || '').match(/<span[^>]*class=['"][^'"]*\bsmall\b[^'"]*\bfade\b[^'"]*['"][^>]*>[\s\S]*?(?:heart|❤️)[\s\S]*?(\d+)\s*<\/span>/i)
+    if (heartCount && heartCount[1]) {
+      return V2exTopicRepliesParser.parseNumber(heartCount[1])
+    }
     const m = (block || '').match(/(\d+)\s*(?:个)?感谢|thanks[^>]*>\s*(\d+)/i)
     if (!m) {
       return 0
     }
     return V2exTopicRepliesParser.parseNumber(m[1] || m[2] || '')
+  }
+
+  private static extractThankedByCurrentUser(block: string, replyId: number): boolean {
+    if (!block || replyId <= 0) {
+      return false
+    }
+    const areaMatch = block.match(new RegExp(`<div[^>]+id=['"]thank_area_${replyId}['"][^>]*>([\\s\\S]*?)<\\/div>`, 'i'))
+    if (!areaMatch || !areaMatch[0]) {
+      return false
+    }
+    const area = areaMatch[0]
+    if (new RegExp(`thankReply\\(\\s*${replyId}\\s*\\)`, 'i').test(area)) {
+      return false
+    }
+    return /已感谢|感谢已发送|thanked|heart_/.test(area)
   }
 
   private static replyHtmlToMarkdown(html: string): string {

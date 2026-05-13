@@ -1524,6 +1524,7 @@ export struct TopicDetailPage {
     this.isReplyThankLoading = true
     this.api.executeReplyThankWithCookie(cookie, this.topicId, action)
       .then(() => {
+        this.v.markReplyThanked(reply.id)
         this.markReplyThanked(reply.id)
         promptAction.openToast({ message: '已感谢' }).catch((_error: Error) => { })
         this.v.load()
@@ -1539,6 +1540,12 @@ export struct TopicDetailPage {
   private isReplyThanked(replyId: number): boolean {
     if (replyId <= 0) {
       return false
+    }
+    const replies = this.v.getLoadedRepliesSnapshot()
+    for (let i = 0; i < replies.length; i++) {
+      if (replies[i] && replies[i].id === replyId && replies[i].thanked) {
+        return true
+      }
     }
     try {
       const ids = JSON.parse(this.thankedReplyIdsJson || '[]') as number[]

@@ -47,6 +47,7 @@ export interface V2exTopic {
 export interface V2exReply {
   id: number
   thanks: number
+  thanked?: boolean
   content: string
   content_rendered: string
   member: V2exMember

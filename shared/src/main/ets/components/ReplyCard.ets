@@ -261,34 +261,30 @@ export struct ReplyCard {
         .width('100%')
       }
 
-      // 底部：时间 + 感谢数
+      // 底部：时间 + 操作
       Row() {
         TimeAgo({ timestamp: this.reply.created })
-
-        if (this.reply.thanks > 0) {
-          Text('·')
-            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-            .fontColor($r('sys.color.font_secondary'))
-            .margin({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM })
-          SymbolGlyph($r('sys.symbol.heart_fill'))
-            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-            .fontColor([$r('sys.color.font_emphasize')])
-          Text(` ${this.reply.thanks}`)
-            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-            .fontColor($r('sys.color.font_emphasize'))
-        }
 
         Blank()
 
         if (this.onThankClick) {
           Button() {
-            SymbolGlyph(this.isThanked ? $r('sys.symbol.heart_fill') : $r('sys.symbol.heart'))
-              .fontSize(ThemeConstants.FONT_SIZE_TITLE)
-              .fontColor([this.isThanked ? $r('sys.color.font_emphasize') : $r('sys.color.font_secondary')])
+            Row({ space: ThemeConstants.SPACE_XS }) {
+              SymbolGlyph(this.isThanked ? $r('sys.symbol.heart_fill') : $r('sys.symbol.heart'))
+                .fontSize(ThemeConstants.FONT_SIZE_TITLE)
+                .fontColor([this.isThanked || this.reply.thanks > 0 ? '#E84026' : $r('sys.color.font_secondary')])
+              if (this.reply.thanks > 0) {
+                Text(`${this.reply.thanks}`)
+                  .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+                  .fontColor('#E84026')
+              }
+            }
+            .alignItems(VerticalAlign.Center)
           }
           .type(ButtonType.Normal)
-          .width(ThemeConstants.TOUCH_TARGET_SM)
+          .constraintSize({ minWidth: ThemeConstants.TOUCH_TARGET_SM })
           .height(ThemeConstants.TOUCH_TARGET_SM)
+          .padding({ left: ThemeConstants.SPACE_XS, right: ThemeConstants.SPACE_XS })
           .borderRadius(ThemeConstants.RADIUS_ROUND)
           .backgroundColor(Color.Transparent)
           .onClick(() => {

@@ -67,6 +67,26 @@ export class DetailViewModel {
     return this.replies.slice()
   }
 
+  markReplyThanked(replyId: number): void {
+    if (replyId <= 0) {
+      return
+    }
+    let changed = false
+    this.replies.forEach((reply: V2exReply) => {
+      if (reply && reply.id === replyId) {
+        if (!reply.thanked) {
+          reply.thanks = Math.max(0, reply.thanks || 0) + 1
+        }
+        reply.thanked = true
+        reply.renderKey = `${reply.renderKey || reply.id.toString()}-thanks-${reply.thanks}-me`
+        changed = true
+      }
+    })
+    if (changed) {
+      this.replyDataSource.setData(this.getVisibleReplies())
+    }
+  }
+
   setToken(token: string): void {
     this.authToken = token.trim()
   }
@@ -137,9 +157,8 @@ export class DetailViewModel {
           topic = topics[0]
         }
         const apiReplies = await this.api.getReplies(this.topicId, cacheBuster)
-        const expectedReplies = topic ? topic.replies : 0
-        if (apiReplies.length === 0 || (expectedReplies > 0 && apiReplies.length < expectedReplies)) {
-          const firstPage = await this.api.getTopicWebRepliesPage(this.topicId, 1, Date.now())
+        const firstPage = await this.api.getTopicWebRepliesPage(this.topicId, 1, Date.now())
+        if (firstPage.replies.length > 0) {
           replies = firstPage.replies
           this.repliesSource = 'publicWebPage'
           this.repliesPage = firstPage.page
