@@ -42,7 +42,12 @@ export struct HomeNodeSettingsPage {
             .width('100%')
           }
           .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
-          .borderRadius(this.visibleRowRadius(index, this.visibleTabs().length))
+          .borderRadius({
+            topLeft: index === 0 ? ThemeConstants.RADIUS_CARD : 0,
+            topRight: index === 0 ? ThemeConstants.RADIUS_CARD : 0,
+            bottomLeft: index === this.visibleTabs().length - 1 ? ThemeConstants.RADIUS_CARD : 0,
+            bottomRight: index === this.visibleTabs().length - 1 ? ThemeConstants.RADIUS_CARD : 0
+          })
           .clip(true)
         }, (tab: TabItem) => tab.key)
           .onMove((from: number, to: number) => {
@@ -183,16 +188,6 @@ export struct HomeNodeSettingsPage {
 
   private hiddenBuiltInTabs(): TabItem[] {
     return ApiConstants.TAB_ITEMS.filter((tab: TabItem) => !FeedTabSettings.isVisible(this.feedTabKeys, tab.key))
-  }
-
-  private visibleRowRadius(index: number, count: number): number {
-    if (count <= 1) {
-      return ThemeConstants.RADIUS_CARD
-    }
-    if (index === 0 || index === count - 1) {
-      return ThemeConstants.RADIUS_CARD
-    }
-    return 0
   }
 
   private updateFeedTabVisibility(key: string): void {
