@@ -1,15 +1,7 @@
-interface BindSheetOptions {
-  height: SheetSize
-  preferType: SheetType
-  detents: [SheetSize, SheetSize]
-  showClose: boolean
-  blurStyle: BlurStyle
-  onDisappear: () => void
-  keyboardAvoidMode?: SheetKeyboardAvoidMode
-}
+type SheetDetents = [(SheetSize | Length), (SheetSize | Length)?, (SheetSize | Length)?]
 
-export function defaultSheetOptions(height: SheetSize, onDisappear: () => void): BindSheetOptions {
-  const detents: [SheetSize, SheetSize] = [SheetSize.MEDIUM, SheetSize.LARGE]
+export function defaultSheetOptions(height: SheetSize, onDisappear: () => void): SheetOptions {
+  const detents: SheetDetents = [SheetSize.MEDIUM, SheetSize.LARGE]
   return {
     height: height,
     preferType: SheetType.BOTTOM,
@@ -21,8 +13,8 @@ export function defaultSheetOptions(height: SheetSize, onDisappear: () => void):
   }
 }
 
-export function towFASheetOptions(height: SheetSize, onDisappear: () => void): BindSheetOptions {
-  const detents: [SheetSize, SheetSize] = [SheetSize.MEDIUM, SheetSize.LARGE]
+export function towFASheetOptions(height: SheetSize, onDisappear: () => void): SheetOptions {
+  const detents: SheetDetents = [SheetSize.LARGE]
   return {
     height: height,
     preferType: SheetType.BOTTOM,
