@@ -23,20 +23,32 @@ export struct HomeNodeSettingsPage {
     Column() {
       SecondaryListScaffold() {
         ListItem() {
+          this.DragInstruction()
+        }
+
+        ListItem() {
           this.SectionHeader('已显示栏目')
         }
 
-        ForEach(this.visibleTabs(), (tab: TabItem, index: number) => {
-          ListItem() {
-            this.HomeVisibleTabRow(tab, index, this.visibleTabs().length)
-          }
-          .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
-          .borderRadius(this.visibleRowRadius(index, this.visibleTabs().length))
-          .clip(true)
-        }, (tab: TabItem) => tab.key)
-          .onMove((from: number, to: number) => {
-            this.moveFeedTabToIndex(from, to)
-          })
+        ListItemGroup() {
+          ForEach(this.visibleTabs(), (tab: TabItem, index: number) => {
+            ListItem() {
+              Column() {
+                this.HomeVisibleTabRow(tab, this.visibleTabs().length)
+                if (index < this.visibleTabs().length - 1) {
+                  this.SettingsDivider()
+                }
+              }
+              .width('100%')
+            }
+          }, (tab: TabItem) => tab.key)
+            .onMove((from: number, to: number) => {
+              this.moveFeedTabToIndex(from, to)
+            })
+        }
+        .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+        .borderRadius(ThemeConstants.RADIUS_CARD)
+        .clip(true)
 
         ListItem() {
           this.SectionHeader('添加栏目')
@@ -81,22 +93,23 @@ export struct HomeNodeSettingsPage {
   }
 
   @Builder
-  HomeVisibleTabRow(tab: TabItem, _index: number, count: number) {
+  DragInstruction() {
+    Text('长按栏目可拖动排序')
+      .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+      .fontColor($r('sys.color.font_secondary'))
+      .padding({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM })
+      .width('100%')
+  }
+
+  @Builder
+  HomeVisibleTabRow(tab: TabItem, count: number) {
     Row({ space: ThemeConstants.SPACE_SM }) {
-      Column({ space: ThemeConstants.SPACE_XS }) {
-        Text(tab.label)
-          .fontSize(ThemeConstants.FONT_SIZE_BODY)
-          .fontColor($r('sys.color.font_primary'))
-          .maxLines(1)
-          .textOverflow({ overflow: TextOverflow.Ellipsis })
-        Text(FeedTabSettings.isNodeKey(tab.key) ? '节点栏目 · 长按拖动排序' : '首页栏目 · 长按拖动排序')
-          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-          .fontColor($r('sys.color.font_secondary'))
-          .maxLines(1)
-          .textOverflow({ overflow: TextOverflow.Ellipsis })
-      }
+      Text(tab.label)
+        .fontSize(ThemeConstants.FONT_SIZE_BODY)
+        .fontColor($r('sys.color.font_primary'))
+        .maxLines(1)
+        .textOverflow({ overflow: TextOverflow.Ellipsis })
       .layoutWeight(1)
-      .alignItems(HorizontalAlign.Start)
 
       Text('☰')
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
@@ -171,16 +184,6 @@ export struct HomeNodeSettingsPage {
 
   private hiddenBuiltInTabs(): TabItem[] {
     return ApiConstants.TAB_ITEMS.filter((tab: TabItem) => !FeedTabSettings.isVisible(this.feedTabKeys, tab.key))
-  }
-
-  private visibleRowRadius(index: number, count: number): number {
-    if (count <= 1) {
-      return ThemeConstants.RADIUS_CARD
-    }
-    if (index === 0 || index === count - 1) {
-      return ThemeConstants.RADIUS_CARD
-    }
-    return 0
   }
 
   private updateFeedTabVisibility(key: string): void {
