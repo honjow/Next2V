@@ -1,4 +1,11 @@
-import { HdsListItemCard, PrefixImage, SuffixCustomBuilder, SuffixText, SuffixTextAndArrow } from '@kit.UIDesignKit'
+import {
+  HdsListItemCard,
+  PrefixCustomBuilder,
+  PrefixImage,
+  SuffixCustomBuilder,
+  SuffixText,
+  SuffixTextAndArrow
+} from '@kit.UIDesignKit'
 import { ImageModifier, TextModifier } from '@kit.ArkUI'
 import { ThemeConstants } from '../theme/ThemeConstants'
 import { ImageUtils } from '../utils/ImageUtils'
@@ -23,6 +30,8 @@ export struct ConciseListRow {
   primaryColor?: Color
   secondaryColor?: Color
   action?: () => void
+  @BuilderParam suffixBuilderParam?: () => void
+  @BuilderParam prefixBuilderParam?: () => void
   switchAction?: (value: boolean) => void
   counterDecreaseAction?: () => void
   counterIncreaseAction?: () => void
@@ -58,7 +67,33 @@ export struct ConciseListRow {
     return this.subtitle ? 60 : 52
   }
 
+  @Builder
+  private WrappedSuffixBuilder() {
+    Row() {
+      if (this.suffixBuilderParam) {
+        this.suffixBuilderParam()
+      }
+    }
+    .padding({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_MD })
+  }
+
+  @Builder
+  private WrappedPrefixBuilder() {
+    Row() {
+      if (this.prefixBuilderParam) {
+        this.prefixBuilderParam()
+      }
+    }
+    .padding({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM })
+  }
+
   private suffixItem(): SuffixTextAndArrow | SuffixText | SuffixCustomBuilder | undefined {
+    if (this.suffixBuilderParam) {
+      return new SuffixCustomBuilder(() => {
+        this.WrappedSuffixBuilder()
+      })
+    }
+
     if (this.hasSwitch) {
       return new SuffixCustomBuilder(() => {
         this.SwitchSuffix()
@@ -166,12 +201,18 @@ export struct ConciseListRow {
       SymbolGlyph($r('sys.symbol.arrowtriangle_down_fill'))
         .fontSize(ThemeConstants.FONT_SIZE_TITLE)
         .fontColor([$r('sys.color.font_tertiary')])
-        .padding({left:4, right: 12})
+        .padding({ left: 4, right: 12 })
     }
     .alignItems(VerticalAlign.Center)
   }
 
-  private prefixItem(): PrefixImage | undefined {
+  private prefixItem(): PrefixImage | PrefixCustomBuilder | undefined {
+    if (this.prefixBuilderParam) {
+      return new PrefixCustomBuilder(() => {
+        this.WrappedPrefixBuilder()
+      })
+    }
+
     const imageUrl = ImageUtils.avatarUrl(this.leadingImageUrl)
     if (imageUrl) {
       return new PrefixImage({

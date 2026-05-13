@@ -21,43 +21,45 @@ export struct HomeNodeSettingsPage {
 
   build() {
     Column() {
-      SecondaryListScaffold({ listSpace: 0 }) {
+      SecondaryListScaffold() {
         ListItem() {
-          this.DragInstruction()
-        }
-        .margin({ bottom: ThemeConstants.SPACE_SM - 2 })
-
-        ListItem() {
-          this.SectionHeader('已显示栏目')
+          this.SectionHeader('已显示栏目  长按栏目可拖动排序')
         }
 
-        ForEach(this.visibleTabs(), (tab: TabItem, index: number) => {
-          ListItem() {
-            Column() {
-              this.HomeVisibleTabRow(tab, this.visibleTabs().length)
-              if (index < this.visibleTabs().length - 1) {
-                this.SettingsDivider()
+        GroupedListSection() {
+          List() {
+            ForEach(this.visibleTabs(), (tab: TabItem, index: number): void => {
+              ListItem() {
+                Column() {
+                  ConciseListRow({
+                    title: tab.label,
+                    suffixBuilderParam: (): void => this.ButtonSuffix(tab.key, this.visibleTabs().length > 1),
+                  })
+                  if (index < this.visibleTabs().length - 1) {
+                    this.SettingsDivider()
+                  }
+                }
+                .width('100%')
               }
-            }
-            .width('100%')
+              .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+              .borderRadius({
+                topLeft: index === 0 ? ThemeConstants.RADIUS_CARD : 0,
+                topRight: index === 0 ? ThemeConstants.RADIUS_CARD : 0,
+                bottomLeft: index === this.visibleTabs().length - 1 ? ThemeConstants.RADIUS_CARD : 0,
+                bottomRight: index === this.visibleTabs().length - 1 ? ThemeConstants.RADIUS_CARD : 0
+              })
+              .clip(true)
+            }, (tab: TabItem) => tab.key)
+              .onMove((from: number, to: number) => {
+                this.moveFeedTabToIndex(from, to)
+              })
           }
-          .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
-          .borderRadius({
-            topLeft: index === 0 ? ThemeConstants.RADIUS_CARD : 0,
-            topRight: index === 0 ? ThemeConstants.RADIUS_CARD : 0,
-            bottomLeft: index === this.visibleTabs().length - 1 ? ThemeConstants.RADIUS_CARD : 0,
-            bottomRight: index === this.visibleTabs().length - 1 ? ThemeConstants.RADIUS_CARD : 0
-          })
-          .clip(true)
-        }, (tab: TabItem) => tab.key)
-          .onMove((from: number, to: number) => {
-            this.moveFeedTabToIndex(from, to)
-          })
+          .width('100%')
+        }
 
         ListItem() {
           this.SectionHeader('添加栏目')
         }
-        .margin({ top: ThemeConstants.SPACE_MD })
 
         ListItem() {
           this.AddSection()
@@ -66,7 +68,6 @@ export struct HomeNodeSettingsPage {
         ListItem() {
           this.SectionHeader('重置')
         }
-        .margin({ top: ThemeConstants.SPACE_MD })
 
         ListItem() {
           GroupedListSection() {
@@ -87,60 +88,29 @@ export struct HomeNodeSettingsPage {
   }
 
   @Builder
+  ButtonSuffix(key: string, enabled: boolean) {
+    Button(FeedTabSettings.isNodeKey(key) ? '删除' : '隐藏')
+      .fontSize(ThemeConstants.FONT_SIZE_TAG)
+      .height(ThemeConstants.TOUCH_TARGET_SM)
+      // .width(48)
+      .enabled(enabled)
+      .type(ButtonType.Capsule)
+      .borderRadius(ThemeConstants.RADIUS_MD)
+      .fontColor(enabled ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.font_tertiary'))
+      .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+      .onClick(() => {
+        this.updateFeedTabVisibility(key)
+      })
+  }
+
+  @Builder
   SectionHeader(title: string) {
-    SharedSectionHeader({ title: title })
+    SharedSectionHeader({ title: title }).margin({ top: ThemeConstants.SPACE_MD })
   }
 
   @Builder
   SettingsDivider() {
     SharedListDivider()
-  }
-
-  @Builder
-  DragInstruction() {
-    Text('长按栏目可拖动排序')
-      .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-      .fontColor($r('sys.color.font_secondary'))
-      .padding({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM })
-      .width('100%')
-  }
-
-  @Builder
-  HomeVisibleTabRow(tab: TabItem, count: number) {
-    Row({ space: ThemeConstants.SPACE_SM }) {
-      Text(tab.label)
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .fontColor($r('sys.color.font_primary'))
-        .maxLines(1)
-        .textOverflow({ overflow: TextOverflow.Ellipsis })
-      .layoutWeight(1)
-
-      Text('☰')
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .fontColor($r('sys.color.font_secondary'))
-        .padding({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM })
-
-      Button(FeedTabSettings.isNodeKey(tab.key) ? '删' : '隐')
-        .fontSize(ThemeConstants.FONT_SIZE_TAG)
-        .height(ThemeConstants.TOUCH_TARGET_SM)
-        .width(48)
-        .enabled(count > 1)
-        .type(ButtonType.Normal)
-        .borderRadius(ThemeConstants.RADIUS_MD)
-        .fontColor(count > 1 ? $r('sys.color.font_primary') : $r('sys.color.font_tertiary'))
-        .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
-        .onClick(() => {
-          this.updateFeedTabVisibility(tab.key)
-        })
-    }
-    .width('100%')
-    .padding({
-      left: ThemeConstants.SPACE_LG,
-      right: ThemeConstants.SPACE_LG,
-      top: ThemeConstants.SPACE_MD,
-      bottom: ThemeConstants.SPACE_MD
-    })
-    .alignItems(VerticalAlign.Center)
   }
 
   @Builder

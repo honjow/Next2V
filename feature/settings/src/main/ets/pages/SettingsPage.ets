@@ -51,7 +51,6 @@ export struct SettingsPage {
         ListItem() {
           this.SectionHeader('阅读')
         }
-        .margin({ top: ThemeConstants.SPACE_MD })
 
         ListItem() {
           this.ReadingSection()
@@ -60,7 +59,6 @@ export struct SettingsPage {
         ListItem() {
           this.SectionHeader('首页')
         }
-        .margin({ top: ThemeConstants.SPACE_MD })
 
         ListItem() {
           GroupedListSection() {
@@ -76,7 +74,6 @@ export struct SettingsPage {
         ListItem() {
           this.SectionHeader('内容与媒体')
         }
-        .margin({ top: ThemeConstants.SPACE_MD })
 
         ListItem() {
           this.MediaSection()
@@ -85,7 +82,6 @@ export struct SettingsPage {
         ListItem() {
           this.SectionHeader('写作')
         }
-        .margin({ top: ThemeConstants.SPACE_MD })
 
         ListItem() {
           this.WritingSection()
@@ -94,7 +90,6 @@ export struct SettingsPage {
         ListItem() {
           this.SectionHeader('存储')
         }
-        .margin({ top: ThemeConstants.SPACE_MD })
 
         ListItem() {
           this.CacheSection()
@@ -103,7 +98,6 @@ export struct SettingsPage {
         ListItem() {
           this.SectionHeader('高级')
         }
-        .margin({ top: ThemeConstants.SPACE_MD })
 
         ListItem() {
           this.AdvancedSection()
@@ -117,7 +111,7 @@ export struct SettingsPage {
 
   @Builder
   SectionHeader(title: string) {
-    SharedSectionHeader({ title: title })
+    SharedSectionHeader({ title: title }).margin({ top: ThemeConstants.SPACE_MD })
   }
 
   @Builder
