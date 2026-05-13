@@ -147,7 +147,7 @@ export struct ConciseListRow {
         })
     }
     .height(this.cardHeight())
-    .padding({ right: ThemeConstants.SPACE_SM })
+    .padding({ right: ThemeConstants.SPACE_MD })
     .alignItems(VerticalAlign.Center)
   }
 
