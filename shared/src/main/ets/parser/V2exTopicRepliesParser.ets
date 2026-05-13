@@ -147,8 +147,7 @@ export class V2exTopicRepliesParser {
     if (!src) {
       return ''
     }
-    const alt = V2exTopicRepliesParser.extractAttr(tag, 'alt')
-    return `![${alt}](${src})`
+    return src
   }
 
   private static extractAttr(tag: string, name: string): string {
