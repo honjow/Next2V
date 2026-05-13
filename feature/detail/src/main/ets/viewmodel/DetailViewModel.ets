@@ -160,6 +160,7 @@ export class DetailViewModel {
         const webCookie = CookieJarSettings.getCurrentCookie()
         const firstPage = await this.api.getTopicWebRepliesPage(this.topicId, 1, Date.now(), webCookie)
         if (firstPage.replies.length > 0) {
+          topic = this.mergeTopicSupplements(topic, firstPage.topicSupplementMarkdown || '')
           replies = firstPage.replies
           this.repliesSource = 'publicWebPage'
           this.repliesPage = firstPage.page
@@ -320,6 +321,21 @@ export class DetailViewModel {
     } catch (error) {
       console.error('save topic cache failed:', (error as Error).message)
     }
+  }
+
+  private mergeTopicSupplements(topic: V2exTopic | null, supplementMarkdown: string): V2exTopic | null {
+    const supplement = (supplementMarkdown || '').trim()
+    if (!topic || supplement.length === 0) {
+      return topic
+    }
+    const current = (topic.content || '').trim()
+    const marker = supplement.split('\n')[0] || 'Supplement'
+    if (current.indexOf(marker) >= 0) {
+      return topic
+    }
+    topic.content = current.length > 0 ? `${current}\n\n${supplement}` : supplement
+    topic.content_rendered = topic.content
+    return topic
   }
 
   private normalizeTopicForRender(topic: V2exTopic | null): V2exTopic | null {

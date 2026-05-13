@@ -71,6 +71,7 @@ export interface V2exTopicWebRepliesPage {
   page: number
   pageCount: number
   hasMore: boolean
+  topicSupplementMarkdown?: string
 }
 
 export interface V2exReplyModerationAction {
@@ -204,7 +205,8 @@ export class ApiService {
       replies: ApiService.normalizeReplies(V2exTopicRepliesParser.parseReplies(html)),
       page: safePage,
       pageCount: pageCount,
-      hasMore: safePage < pageCount
+      hasMore: safePage < pageCount,
+      topicSupplementMarkdown: ApiService.extractTopicSupplementMarkdown(html)
     }
   }
 
@@ -1204,6 +1206,33 @@ export class ApiService {
       results.push(...batchResults.map(r => r[0]).filter(t => t !== undefined))
     }
     return ApiService.normalizeTopics(results)
+  }
+
+  private static extractTopicSupplementMarkdown(html: string): string {
+    const source = html || ''
+    const supplements: string[] = []
+    const re = /<div[^>]*class=['"][^'"]*\bsubtle\b[^'"]*['"][^>]*>[\s\S]*?<span[^>]*class=['"][^'"]*\bfade\b[^'"]*['"][^>]*>([\s\S]*?)<\/span>[\s\S]*?<div[^>]*class=['"][^'"]*\btopic_content\b[^'"]*['"][^>]*>([\s\S]*?)<\/div>[\s\S]*?<\/div>/gi
+    let match: RegExpExecArray | null = re.exec(source)
+    while (match) {
+      const title = ApiService.htmlToPlainText(match[1] || '').trim()
+      const body = ApiService.htmlToPlainText(match[2] || '').trim()
+      if (body.length > 0) {
+        supplements.push(`## ${title || 'Supplement'}\n\n${body}`)
+      }
+      match = re.exec(source)
+    }
+    return supplements.join('\n\n')
+  }
+
+  private static htmlToPlainText(html: string): string {
+    return HtmlEntityUtils.decode((html || '')
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<\/p>/gi, '\n\n')
+      .replace(/<\/div>/gi, '\n')
+      .replace(/<[^>]+>/g, '')
+      .replace(/\r/g, '')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim())
   }
 
   private static normalizeTopics(topics: V2exTopic[]): V2exTopic[] {
