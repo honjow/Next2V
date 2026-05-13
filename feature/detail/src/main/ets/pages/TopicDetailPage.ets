@@ -8,7 +8,7 @@ import { systemShare } from '@kit.ShareKit'
 import {
   V2exReply, Avatar, ReplyCard, TimeAgo, ThemeConstants, MarkdownContent, PullRefreshListScaffold,
   NodeTopicListParams, UserProfileParams, ImagePreviewParams, CollectionSettings, CacheSettings, V2exTopic, AuthSettings,
-  LoadingFooter, HttpClient, StorageKeys, ApiService, CookieJarSettings, V2exToggleAction, ReadingSettings,
+  LoadingFooter, HttpClient, StorageKeys, ApiService, CookieJarSettings, V2exToggleAction, ReadingSettings, ReplyDisplaySettings,
   AppModalScaffold, V2exRoute, V2exUrlRouter, TopicDetailParams, ImageUtils, HtmlEntityUtils, defaultSheetOptions,
 } from 'shared'
 import type { V2exReplyThankAction, V2exTopicThankAction } from 'shared'
@@ -63,6 +63,7 @@ export struct TopicDetailPage {
   @State private contextReply: V2exReply | null = null
   @State private contextItems: ReplyContextItem[] = []
   @State private contextSheetVisible: boolean = false
+  @StorageLink(StorageKeys.REPLY_DISPLAY_MODE) replyDisplayMode: string = ReplyDisplaySettings.MODE_THREAD
   @State private replyDisplayMenuShown: boolean = false
   @State private replyComposerVisible: boolean = false
   @State private replyComposerInitialContent: string = ''
@@ -91,6 +92,7 @@ export struct TopicDetailPage {
 
   aboutToAppear(): void {
     this.v = new DetailViewModel(this.topicId)
+    this.v.setReplyDisplayMode(this.replyDisplayMode)
     this.lastReadFloor = 0
     this.hasRestoredReadPosition = false
     this.hasJumpedToTargetFloor = false
@@ -681,7 +683,7 @@ export struct TopicDetailPage {
       symbolEndIcon: this.v.replyDisplayMode === mode ? new SymbolGlyphModifier($r('sys.symbol.checkmark')) : undefined
     })
       .onClick(() => {
-        this.v.setReplyDisplayMode(mode)
+        this.updateReplyDisplayMode(mode)
       })
   }
 
@@ -1025,7 +1027,17 @@ export struct TopicDetailPage {
   }
 
   private toggleOnlyOp(): void {
-    this.v.setReplyDisplayMode(this.v.onlyOp ? 'thread' : 'op')
+    this.updateReplyDisplayMode(this.v.onlyOp ? ReplyDisplaySettings.MODE_THREAD : ReplyDisplaySettings.MODE_OP)
+  }
+
+  private updateReplyDisplayMode(mode: string): void {
+    const normalizedMode = ReplyDisplaySettings.normalizeMode(mode)
+    this.replyDisplayMode = normalizedMode
+    this.v.setReplyDisplayMode(normalizedMode)
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    ReplyDisplaySettings.save(context, normalizedMode).catch((error: Error) => {
+      console.error('save reply display mode failed: ' + error.message)
+    })
   }
 
   private showReplyDisplayMenu(): void {
@@ -1034,19 +1046,7 @@ export struct TopicDetailPage {
   }
 
   private replyDisplayModeText(): string {
-    if (this.v.replyDisplayMode === 'origin') {
-      return '原版'
-    }
-    if (this.v.replyDisplayMode === 'threadWithMention') {
-      return '楼中楼(@)'
-    }
-    if (this.v.replyDisplayMode === 'threadRedundant') {
-      return '冗余楼中楼'
-    }
-    if (this.v.replyDisplayMode === 'op') {
-      return '只看楼主'
-    }
-    return '楼中楼'
+    return ReplyDisplaySettings.modeText(this.v.replyDisplayMode)
   }
 
   private replyDisplayContent(reply: V2exReply): string {

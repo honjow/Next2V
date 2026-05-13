@@ -10,6 +10,7 @@ export class StorageKeys {
   static readonly READING_FONT_SIZE: string = 'readingFontSize'
   static readonly READING_LINE_HEIGHT: string = 'readingLineHeight'
   static readonly READING_DENSITY: string = 'readingDensity'
+  static readonly REPLY_DISPLAY_MODE: string = 'replyDisplayMode'
   static readonly THEME_MODE: string = 'themeMode'
   static readonly THEME_EFFECTIVE_DARK: string = 'themeEffectiveDark'
   static readonly TOPIC_READ_STATES: string = 'topicReadStates'

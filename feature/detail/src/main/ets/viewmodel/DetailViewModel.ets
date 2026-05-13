@@ -1,4 +1,4 @@
-import { V2exTopic, V2exReply, ApiService, ApiV2Service, TopicDetailCache, HtmlEntityUtils } from 'shared'
+import { V2exTopic, V2exReply, ApiService, ApiV2Service, TopicDetailCache, HtmlEntityUtils, StorageKeys, ReplyDisplaySettings } from 'shared'
 import type { V2exTopicWebRepliesPage } from 'shared'
 import { ReplyDataSource } from '../model/DetailModels'
 
@@ -11,7 +11,8 @@ export class DetailViewModel {
   replyDataSource: ReplyDataSource = new ReplyDataSource()
   isLoading: boolean = false
   onlyOp: boolean = false
-  replyDisplayMode: string = 'thread'
+  replyDisplayMode: string = ReplyDisplaySettings.normalizeMode(
+    AppStorage.get<string>(StorageKeys.REPLY_DISPLAY_MODE) ?? ReplyDisplaySettings.MODE_THREAD)
   repliesUseV2: boolean = false
   repliesPage: number = 1
   repliesHasMore: boolean = false
@@ -40,13 +41,13 @@ export class DetailViewModel {
 
   setOnlyOp(enabled: boolean): void {
     this.onlyOp = enabled
-    this.replyDisplayMode = enabled ? 'op' : 'thread'
+    this.replyDisplayMode = enabled ? ReplyDisplaySettings.MODE_OP : ReplyDisplaySettings.MODE_THREAD
     this.replyDataSource.setData(this.getVisibleReplies())
   }
 
   setReplyDisplayMode(mode: string): void {
-    this.replyDisplayMode = mode
-    this.onlyOp = mode === 'op'
+    this.replyDisplayMode = ReplyDisplaySettings.normalizeMode(mode)
+    this.onlyOp = this.replyDisplayMode === ReplyDisplaySettings.MODE_OP
     this.replyDataSource.setData(this.getVisibleReplies())
   }
 
@@ -342,7 +343,7 @@ export class DetailViewModel {
       reply.replyFloor = this.extractReplyFloor(reply.content, reply.content_rendered)
       reply.hiddenLeadingMentionContent = this.removeLeadingSingleMention(reply.content, reply.replyUsers || [], reply.replyFloor || -1)
       reply.relationLabel = this.replyRelationLabel(reply)
-      reply.renderKey = `r-${reply.id}`
+      reply.renderKey = `${this.replyDisplayMode}-r-${reply.id}`
       return reply
     })
     return prepared
@@ -373,9 +374,9 @@ export class DetailViewModel {
       reply.threadLevel = level
       reply.isDuplicateThreadItem = false
       reply.threadChildren = []
-      reply.renderKey = `r-${reply.id}-t-${level}`
+      reply.renderKey = `${this.replyDisplayMode}-r-${reply.id}-t-${level}`
       if (hideSingleMention && level > 0 && (reply.replyUsers || []).length === 1 && (reply.hiddenLeadingMentionContent || '').trim()) {
-        reply.renderKey = `r-${reply.id}-t-${level}-compact`
+        reply.renderKey = `${this.replyDisplayMode}-r-${reply.id}-t-${level}-compact`
       }
       const children = (childMap.get(reply.floor || 0) || []).sort((a: V2exReply, b: V2exReply) => (a.floor || 0) - (b.floor || 0))
       reply.threadChildren = children.map((child: V2exReply) => prepareNode(child, level + 1))
@@ -396,7 +397,7 @@ export class DetailViewModel {
           dup.threadLevel = 0
           dup.threadChildren = []
           dup.isDuplicateThreadItem = true
-          dup.renderKey = `r-${reply.id}-dup`
+          dup.renderKey = `${this.replyDisplayMode}-r-${reply.id}-dup`
           duplicateList.push(dup)
         }
       })
@@ -507,20 +508,20 @@ export class DetailViewModel {
   }
 
   private getVisibleReplies(): V2exReply[] {
-    if (this.replyDisplayMode === 'op' || this.onlyOp) {
+    if (this.replyDisplayMode === ReplyDisplaySettings.MODE_OP || this.onlyOp) {
       const opId = this.topic ? this.topic.member.id : 0
       if (opId <= 0) {
         return this.prepareRepliesForThreading()
       }
       return this.prepareRepliesForThreading().filter(reply => reply.member.id === opId)
     }
-    if (this.replyDisplayMode === 'origin') {
+    if (this.replyDisplayMode === ReplyDisplaySettings.MODE_ORIGIN) {
       return this.prepareRepliesForThreading()
     }
-    if (this.replyDisplayMode === 'threadRedundant') {
+    if (this.replyDisplayMode === ReplyDisplaySettings.MODE_THREAD_REDUNDANT) {
       return this.buildThreadedReplies(true, false)
     }
-    if (this.replyDisplayMode === 'threadWithMention') {
+    if (this.replyDisplayMode === ReplyDisplaySettings.MODE_THREAD_WITH_MENTION) {
       return this.buildThreadedReplies(false, false)
     }
     return this.buildThreadedReplies(false, true)

@@ -9,6 +9,7 @@ import {
   FoldScreenUtil,
   MediaSettings,
   ReadingSettings,
+  ReplyDisplaySettings,
   StorageKeys,
   ThemeSettings,
   V2exUrlRouter,
@@ -74,7 +75,13 @@ export default class EntryAbility extends UIAbility {
             MediaSettings.apply(true, false)
           })
           .finally(() => {
-            ReadingSettings.load(this.context)
+            ReplyDisplaySettings.load(this.context)
+              .catch((error: Error) => {
+                console.error('restore reply display settings failed: ' + error.message)
+                ReplyDisplaySettings.apply(ReplyDisplaySettings.MODE_THREAD)
+              })
+              .finally(() => {
+                ReadingSettings.load(this.context)
               .catch((error: Error) => {
                 console.error('restore reading settings failed: ' + error.message)
                 ReadingSettings.apply(14, 20, ReadingSettings.DENSITY_STANDARD)
@@ -102,6 +109,7 @@ export default class EntryAbility extends UIAbility {
                           })
                       })
                   })
+              })
               })
           })
           })

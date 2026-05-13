@@ -15,6 +15,7 @@ import {
   StorageKeys,
   ThemeConstants,
   ThemeSettings,
+  ReplyDisplaySettings,
   type CacheStats,
   WriteActionSettings
 } from 'shared'
@@ -27,9 +28,11 @@ export struct SettingsPage {
   @StorageLink(StorageKeys.MEDIA_AUTO_LOAD_IMAGES) autoLoadImages: boolean = true
   @StorageLink(StorageKeys.MEDIA_ONLY_LOAD_IMAGES_ON_WIFI) onlyLoadImagesOnWifi: boolean = false
   @StorageLink(StorageKeys.THEME_MODE) themeMode: string = ThemeSettings.MODE_AUTO
+  @StorageLink(StorageKeys.REPLY_DISPLAY_MODE) replyDisplayMode: string = ReplyDisplaySettings.MODE_THREAD
   @StorageLink(StorageKeys.ACCOUNT_WRITE_ENABLED) accountWriteEnabled: boolean = false
   @State private cacheStats: CacheStats = { topicListCount: 0, topicDetailCount: 0, updatedAt: 0 }
   @State private themeMenuShown: boolean = false
+  @State private replyDisplayMenuShown: boolean = false
   @State private apiDomainMenuShown: boolean = false
   private http: HttpClient = HttpClient.getInstance()
 
@@ -238,6 +241,24 @@ export struct SettingsPage {
       this.SettingsDivider()
 
       ConciseListRow({
+        title: '回复显示',
+        trailingText: ReplyDisplaySettings.modeText(this.replyDisplayMode),
+        showChevron: false,
+        trailingDropdown: true,
+        action: () => {
+          this.showReplyDisplayMenu()
+        }
+      })
+        .bindMenu(this.replyDisplayMenuShown, this.ReplyDisplayModeMenu, {
+          placement: Placement.BottomRight,
+          aboutToDisappear: () => {
+            this.replyDisplayMenuShown = false
+          }
+        })
+
+      this.SettingsDivider()
+
+      ConciseListRow({
         title: '阅读设置',
         action: () => {
           this.stack.pushPathByName('ReadingSettings', null)
@@ -253,6 +274,17 @@ export struct SettingsPage {
       this.ThemeModeMenuItem('自动', ThemeSettings.MODE_AUTO)
       this.ThemeModeMenuItem('浅色', ThemeSettings.MODE_LIGHT)
       this.ThemeModeMenuItem('深色', ThemeSettings.MODE_DARK)
+    }
+  }
+
+  @Builder
+  ReplyDisplayModeMenu() {
+    Menu() {
+      this.ReplyDisplayModeMenuItem('楼中楼', ReplyDisplaySettings.MODE_THREAD)
+      this.ReplyDisplayModeMenuItem('楼中楼(@)', ReplyDisplaySettings.MODE_THREAD_WITH_MENTION)
+      this.ReplyDisplayModeMenuItem('冗余楼中楼', ReplyDisplaySettings.MODE_THREAD_REDUNDANT)
+      this.ReplyDisplayModeMenuItem('只看楼主', ReplyDisplaySettings.MODE_OP)
+      this.ReplyDisplayModeMenuItem('原版', ReplyDisplaySettings.MODE_ORIGIN)
     }
   }
 
@@ -286,10 +318,28 @@ export struct SettingsPage {
       })
   }
 
+  @Builder
+  ReplyDisplayModeMenuItem(label: string, mode: string) {
+    MenuItem({
+      content: label,
+      symbolEndIcon: this.replyDisplayMode === mode ? new SymbolGlyphModifier($r('sys.symbol.checkmark')) : undefined
+    })
+      .onClick(() => {
+        this.updateReplyDisplayMode(mode)
+      })
+  }
+
   private showThemeMenu(): void {
     this.themeMenuShown = false
     setTimeout(() => {
       this.themeMenuShown = true
+    }, 20)
+  }
+
+  private showReplyDisplayMenu(): void {
+    this.replyDisplayMenuShown = false
+    setTimeout(() => {
+      this.replyDisplayMenuShown = true
     }, 20)
   }
 
@@ -352,6 +402,15 @@ export struct SettingsPage {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     ThemeSettings.save(context, normalizedMode).catch((error: Error) => {
       console.error('save theme settings failed: ' + error.message)
+    })
+  }
+
+  private updateReplyDisplayMode(mode: string): void {
+    const normalizedMode = ReplyDisplaySettings.normalizeMode(mode)
+    this.replyDisplayMode = normalizedMode
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    ReplyDisplaySettings.save(context, normalizedMode).catch((error: Error) => {
+      console.error('save reply display mode failed: ' + error.message)
     })
   }
 
