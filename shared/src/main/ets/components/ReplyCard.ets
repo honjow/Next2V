@@ -51,6 +51,9 @@ export struct ReplyCard {
   }
 
   private bottomPadding(): number {
+    if (this.embedded) {
+      return 0
+    }
     if (this.readingDensity === ReadingSettings.DENSITY_COMPACT) {
       return ThemeConstants.SPACE_XS + 2
     }
