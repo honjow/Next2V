@@ -61,6 +61,7 @@ export interface V2exReply {
   hiddenLeadingMentionContent?: string
   relationLabel?: string
   renderKey?: string
+  threadChildren?: V2exReply[]
 }
 
 export interface V2exMemberProfile {

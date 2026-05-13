@@ -325,22 +325,26 @@ export struct TopicDetailPage {
               isOp: this.v.topic !== null && reply.member.id === this.v.topic!.member.id,
               isThanked: this.isReplyThanked(reply.id),
               threadLevel: reply.threadLevel || 0,
-              relationLabel: reply.relationLabel || '',
+              relationLabel: '',
               displayContent: this.replyDisplayContent(reply),
+              childReplies: reply.threadChildren || [],
+              opMemberId: this.v.topic !== null ? this.v.topic!.member.id : 0,
+              hideLeadingMention: this.v.replyDisplayMode === 'thread',
+              isReplyThanked: (target: V2exReply) => { return this.isReplyThanked(target.id) },
               isWrongReference: !!reply.isWrongReference,
               isDuplicateThreadItem: !!reply.isDuplicateThreadItem,
-              onUserClick: () => {
-                let p: UserProfileParams = { username: reply.member.username }
+              onUserClick: (target: V2exReply) => {
+                let p: UserProfileParams = { username: target.member.username }
                 this.stack.pushPathByName('UserProfile', p as Object)
               },
-              onContextClick: () => { this.openReplyContext(reply) },
-              onMentionClick: () => { this.openReplyEditor(this.getMentionText(reply.member.username)) },
-              onReplyClick: () => { this.openReplyEditor(this.getMentionText(reply.member.username)) },
-              onThankClick: () => { this.prepareReplyThank(reply) },
-              onIgnoreClick: () => { this.prepareReplyIgnore(reply) },
-              onReportClick: () => { this.prepareReplyReport(reply) },
-              onCopyUserClick: () => { this.copyToClipboard(reply.member.username || '') },
-              onCopyContentClick: () => { this.copyToClipboard(reply.content || '') },
+              onContextClick: (target: V2exReply) => { this.openReplyContext(target) },
+              onMentionClick: (target: V2exReply) => { this.openReplyEditor(this.getMentionText(target.member.username)) },
+              onReplyClick: (target: V2exReply) => { this.openReplyEditor(this.getMentionText(target.member.username)) },
+              onThankClick: (target: V2exReply) => { this.prepareReplyThank(target) },
+              onIgnoreClick: (target: V2exReply) => { this.prepareReplyIgnore(target) },
+              onReportClick: (target: V2exReply) => { this.prepareReplyReport(target) },
+              onCopyUserClick: (target: V2exReply) => { this.copyToClipboard(target.member.username || '') },
+              onCopyContentClick: (target: V2exReply) => { this.copyToClipboard(target.content || '') },
               onImageClick: (url: string) => { this.openImagePreview(url) },
               onLinkClick: (url: string) => { this.openContentLink(url) },
               onMentionUserClick: (username: string) => { this.openUserProfile(username) }

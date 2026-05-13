@@ -337,6 +337,7 @@ export class DetailViewModel {
       reply.threadLevel = 0
       reply.isWrongReference = false
       reply.isDuplicateThreadItem = false
+      reply.threadChildren = []
       reply.replyUsers = this.extractReplyUsers(reply.content, reply.content_rendered)
       reply.replyFloor = this.extractReplyFloor(reply.content, reply.content_rendered)
       reply.hiddenLeadingMentionContent = this.removeLeadingSingleMention(reply.content, reply.replyUsers || [], reply.replyFloor || -1)
@@ -368,21 +369,22 @@ export class DetailViewModel {
     })
 
     const result: V2exReply[] = []
-    const append = (reply: V2exReply, level: number): void => {
+    const prepareNode = (reply: V2exReply, level: number): V2exReply => {
       reply.threadLevel = level
       reply.isDuplicateThreadItem = false
+      reply.threadChildren = []
       reply.renderKey = `r-${reply.id}-t-${level}`
       if (hideSingleMention && level > 0 && (reply.replyUsers || []).length === 1 && (reply.hiddenLeadingMentionContent || '').trim()) {
         reply.renderKey = `r-${reply.id}-t-${level}-compact`
       }
-      result.push(reply)
       const children = (childMap.get(reply.floor || 0) || []).sort((a: V2exReply, b: V2exReply) => (a.floor || 0) - (b.floor || 0))
-      children.forEach((child: V2exReply) => append(child, level + 1))
+      reply.threadChildren = children.map((child: V2exReply) => prepareNode(child, level + 1))
+      return reply
     }
 
     base.forEach((reply: V2exReply) => {
       if (!parentFloorById.has(reply.id)) {
-        append(reply, 0)
+        result.push(prepareNode(reply, 0))
       }
     })
 
@@ -392,6 +394,7 @@ export class DetailViewModel {
         if (parentFloorById.has(reply.id)) {
           const dup = this.cloneReplyForDisplay(reply)
           dup.threadLevel = 0
+          dup.threadChildren = []
           dup.isDuplicateThreadItem = true
           dup.renderKey = `r-${reply.id}-dup`
           duplicateList.push(dup)
