@@ -279,13 +279,10 @@ function DiscoverSearchCCBuilder() {
   DiscoverSearchComponent()
 }
 
-const TITLE_BAR_COMPACT_WIDTH: number = 600
-const TITLE_BAR_EXPANDED_WIDTH: number = 840
-const TITLE_BAR_EDGE_RESERVE_COMPACT: number = 16
-const TITLE_BAR_EDGE_RESERVE_MEDIUM: number = 24
-const TITLE_BAR_EDGE_RESERVE_EXPANDED: number = 32
+const TITLE_BAR_EDGE_RESERVE: number = 16
 const TITLE_BAR_BACK_BUTTON_SLOT_WIDTH: number = 48
-const TITLE_BAR_ACTION_SLOT_WIDTH: number = 48
+const TITLE_BAR_ACTION_VISUAL_RESERVE: number = 36
+const TITLE_BAR_TRAILING_SAFETY_GAP: number = 8
 const TOPIC_DETAIL_TITLE_MENU_MAX_COUNT: number = 3
 
 function titleBarLengthToNumber(value: Length | undefined): number {
@@ -299,31 +296,24 @@ function titleBarLengthToNumber(value: Length | undefined): number {
   return 0
 }
 
-function titleBarHorizontalEdgeReserve(titleBarWidth: number): number {
-  if (titleBarWidth >= TITLE_BAR_EXPANDED_WIDTH) {
-    return TITLE_BAR_EDGE_RESERVE_EXPANDED
-  }
-  if (titleBarWidth >= TITLE_BAR_COMPACT_WIDTH) {
-    return TITLE_BAR_EDGE_RESERVE_MEDIUM
-  }
-  return TITLE_BAR_EDGE_RESERVE_COMPACT
-}
-
-function titleBarTrailingReserve(titleBarWidth: number, menuMaxCount: number, menuItemCount: number): number {
+function titleBarTrailingReserve(_titleBarWidth: number, menuMaxCount: number, menuItemCount: number): number {
   const inlineCount = Math.max(0, Math.min(menuMaxCount, menuItemCount))
   const hasOverflowAction = menuItemCount > menuMaxCount
   const actionSlotCount = inlineCount + (hasOverflowAction ? 1 : 0)
-  // HDS MINI title bars do not automatically shrink stackBuilderComponent
-  // content around title-menu actions. Reserve one 48vp HDS action slot for
-  // each inline item plus one more 48vp slot when the overflow affordance is
-  // shown. Add the width-aware edge reserve because wider/folded/tablet modes
-  // use larger titlebar side gutters. Future menu maxCount/value changes only
-  // need to pass the updated counts into this formula.
-  return titleBarHorizontalEdgeReserve(titleBarWidth) + actionSlotCount * TITLE_BAR_ACTION_SLOT_WIDTH
+  if (actionSlotCount <= 0) {
+    return 0
+  }
+  // The stackBuilderComponent can measure its own titlebar width via
+  // onAreaChange, but HDS exposes no per-route trailing menu bounds here
+  // (only value/maxCount in TitleBarContentOptions). Use the measured current
+  // MINI titlebar action footprint instead: 36vp per visible/overflow action
+  // plus one small safety gap. This is tighter than reserving full 48vp touch
+  // slots and avoids adding unverified large-screen gutters.
+  return actionSlotCount * TITLE_BAR_ACTION_VISUAL_RESERVE + TITLE_BAR_TRAILING_SAFETY_GAP
 }
 
-function titleBarLeadingReserve(titleBarWidth: number): number {
-  return TITLE_BAR_BACK_BUTTON_SLOT_WIDTH + titleBarHorizontalEdgeReserve(titleBarWidth)
+function titleBarLeadingReserve(_titleBarWidth: number): number {
+  return TITLE_BAR_BACK_BUTTON_SLOT_WIDTH + TITLE_BAR_EDGE_RESERVE
 }
 
 interface UserProfileAppbarIdentityParams {
