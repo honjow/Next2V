@@ -110,7 +110,14 @@ export struct ReplyCard {
 
   private leftPadding(): number {
     if (this.embedded) {
-      return Math.min(this.threadIndent(), ThemeConstants.SPACE_XL) + ThemeConstants.SPACE_SM
+      return this.threadLevel > 1 ? ThemeConstants.SPACE_LG : ThemeConstants.SPACE_MD
+    }
+    return ThemeConstants.SPACE_LG
+  }
+
+  private rightPadding(): number {
+    if (this.embedded) {
+      return 0
     }
     return ThemeConstants.SPACE_LG
   }
@@ -372,7 +379,7 @@ export struct ReplyCard {
       }
       .padding({
         left: this.leftPadding(),
-        right: ThemeConstants.SPACE_LG,
+        right: this.rightPadding(),
         top: this.verticalPadding(),
         bottom: this.bottomPadding()
       })
