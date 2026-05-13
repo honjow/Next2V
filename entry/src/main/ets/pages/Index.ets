@@ -17,7 +17,6 @@ import {
   ApiConstants,
   AppSearchField,
   Avatar,
-  DiscoverScrollerHolder,
   FeedTabSettings,
   HttpClient,
   ImagePreviewParams,
@@ -589,7 +588,6 @@ struct Index {
       mode: HideMode.SCROLL_UP,
       hideOffset: 10
     })
-    .bindToScrollable(this.ct === 1 ? [DiscoverScrollerHolder.scroller] : [])
     .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM])
     .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
     .navDestination(this.pm)

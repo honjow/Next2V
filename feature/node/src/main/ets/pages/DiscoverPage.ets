@@ -1,7 +1,7 @@
 import { NodeViewModel } from '../viewmodel/NodeViewModel'
 import {
   ApiService, FilterChip, PullRefresh, StorageKeys, V2exNode, V2exTopic, NodeTopicListParams, TopicDetailParams,
-  ThemeConstants, CollectionSettings, DiscoverScrollerHolder
+  ThemeConstants, CollectionSettings
 } from 'shared'
 import type { SavedNode, ViewedTopic } from 'shared'
 import { common } from '@kit.AbilityKit'
@@ -31,7 +31,7 @@ export struct DiscoverPage {
   private readonly BBH: number = 48
   private readonly GAP: number = ThemeConstants.SPACE_MD
   private readonly PULL_REFRESH_THRESHOLD: number = 84
-  private scroller: Scroller = DiscoverScrollerHolder.scroller
+  private scroller: Scroller = new Scroller()
   private api: ApiService = new ApiService()
 
   private onKeywordChanged(): void {

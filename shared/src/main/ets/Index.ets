@@ -119,7 +119,6 @@ export { MediaUrlUtils } from './utils/MediaUrlUtils'
 export type { MediaUrlKind, MediaUrlResult } from './utils/MediaUrlUtils'
 export { NodeSearchUtils } from './utils/NodeSearchUtils'
 export type { NodeSearchMatch } from './utils/NodeSearchUtils'
-export { DiscoverScrollerHolder } from './utils/DiscoverScrollerHolder'
 export { V2exUrlRouter }
   from './utils/V2exUrlRouter'
 export type { V2exRoute, V2exRouteKind } from './utils/V2exUrlRouter'
