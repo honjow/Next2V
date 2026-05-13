@@ -342,7 +342,7 @@ export struct ReplyCard {
               Divider()
                 .strokeWidth(0.5)
                 .color($r('sys.color.ohos_id_color_list_separator'))
-                .margin({ top: ThemeConstants.SPACE_SM, bottom: ThemeConstants.SPACE_SM })
+                .margin({ top: ThemeConstants.SPACE_XS, bottom: ThemeConstants.SPACE_XS })
               ReplyCard({
                 reply: child,
                 floor: child.floor || 0,
