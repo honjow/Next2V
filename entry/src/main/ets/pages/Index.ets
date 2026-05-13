@@ -279,7 +279,11 @@ function DiscoverSearchCCBuilder() {
   DiscoverSearchComponent()
 }
 
-const TITLE_BAR_EDGE_RESERVE: number = 16
+const TITLE_BAR_COMPACT_WIDTH: number = 600
+const TITLE_BAR_EXPANDED_WIDTH: number = 840
+const TITLE_BAR_LEADING_EDGE_RESERVE_COMPACT: number = 16
+const TITLE_BAR_LEADING_EDGE_RESERVE_MEDIUM: number = 24
+const TITLE_BAR_LEADING_EDGE_RESERVE_EXPANDED: number = 32
 const TITLE_BAR_BACK_BUTTON_SLOT_WIDTH: number = 48
 const TITLE_BAR_ACTION_VISUAL_RESERVE: number = 36
 const TITLE_BAR_TRAILING_SAFETY_GAP: number = 8
@@ -296,7 +300,7 @@ function titleBarLengthToNumber(value: Length | undefined): number {
   return 0
 }
 
-function titleBarTrailingReserve(_titleBarWidth: number, menuMaxCount: number, menuItemCount: number): number {
+function titleBarTrailingReserve(titleBarWidth: number, menuMaxCount: number, menuItemCount: number): number {
   const inlineCount = Math.max(0, Math.min(menuMaxCount, menuItemCount))
   const hasOverflowAction = menuItemCount > menuMaxCount
   const actionSlotCount = inlineCount + (hasOverflowAction ? 1 : 0)
@@ -305,15 +309,32 @@ function titleBarTrailingReserve(_titleBarWidth: number, menuMaxCount: number, m
   }
   // The stackBuilderComponent can measure its own titlebar width via
   // onAreaChange, but HDS exposes no per-route trailing menu bounds here
-  // (only value/maxCount in TitleBarContentOptions). Use the measured current
-  // MINI titlebar action footprint instead: 36vp per visible/overflow action
-  // plus one small safety gap. This is tighter than reserving full 48vp touch
-  // slots and avoids adding unverified large-screen gutters.
-  return actionSlotCount * TITLE_BAR_ACTION_VISUAL_RESERVE + TITLE_BAR_TRAILING_SAFETY_GAP
+  // (only value/maxCount in TitleBarContentOptions). Keep bcdc554's tighter
+  // 36vp visual footprint per visible/overflow action, then add only the
+  // same width-aware edge gutter used for the leading side so unfolded layouts
+  // get separation without reverting to full 48vp touch-slot padding.
+  return actionSlotCount * TITLE_BAR_ACTION_VISUAL_RESERVE + TITLE_BAR_TRAILING_SAFETY_GAP +
+    titleBarWidthAwareEdgeReserve(titleBarWidth)
 }
 
-function titleBarLeadingReserve(_titleBarWidth: number): number {
-  return TITLE_BAR_BACK_BUTTON_SLOT_WIDTH + TITLE_BAR_EDGE_RESERVE
+function titleBarWidthAwareEdgeReserve(titleBarWidth: number): number {
+  if (titleBarWidth >= TITLE_BAR_EXPANDED_WIDTH) {
+    return TITLE_BAR_LEADING_EDGE_RESERVE_EXPANDED
+  }
+  if (titleBarWidth >= TITLE_BAR_COMPACT_WIDTH) {
+    return TITLE_BAR_LEADING_EDGE_RESERVE_MEDIUM
+  }
+  return TITLE_BAR_LEADING_EDGE_RESERVE_COMPACT
+}
+
+function titleBarLeadingReserve(titleBarWidth: number): number {
+  // HDS does not expose the MINI back-button bubble bounds to this custom
+  // stackBuilderComponent. Keep the fixed 48vp back slot, then add only the
+  // observed HDS leading gutter for the measured titlebar width: 16vp phone,
+  // 24vp medium, 32vp unfolded. On the 2560px unfolded QA screenshot the
+  // 64vp compact reserve started the identity avatar inside the back bubble;
+  // the expanded 80vp reserve moves it just past the bubble with a small gap.
+  return TITLE_BAR_BACK_BUTTON_SLOT_WIDTH + titleBarWidthAwareEdgeReserve(titleBarWidth)
 }
 
 interface UserProfileAppbarIdentityParams {
