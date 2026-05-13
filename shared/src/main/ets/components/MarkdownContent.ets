@@ -16,6 +16,9 @@ const CODE_MONO = "customCode";
 const LIST_MONO = "customList";
 const PARAGRAPH_MONO = "customParagraph";
 const IMAGE_BLOCK_MONO = "customImageBlock";
+const IMAGE_TABLE_MONO = "customImageTable";
+const IMAGE_TABLE_START = "@@V2NEXT_IMAGE_TABLE_START@@";
+const IMAGE_TABLE_END = "@@V2NEXT_IMAGE_TABLE_END@@";
 const INLINE_IMAGE_SIZE = 24;
 const INLINE_IMAGE_MAX_SIZE = 40;
 const INLINE_IMAGE_SMALL_MAX_PX = 128;
@@ -39,6 +42,13 @@ interface InlineImageSizeRecord {
   widthPx: number;
   heightPx: number;
   status: InlineImageSizeStatus;
+}
+
+interface ImageTableToken {
+  type: string;
+  raw?: string;
+  imageUrls?: string[];
+  imageLabels?: string[];
 }
 
 type InlineImageCompleteReporter = (url: string, event?: MarkdownImageCompleteEvent) => void;
@@ -423,7 +433,19 @@ function CustomBlockBuilder(token: Token, options: MarkdownOptions) {
       reportImageError: (options as MarkdownRenderOptions).reportInlineImageError,
     });
   } else if (token.type === IMAGE_BLOCK_MONO) {
-    MarkdownAutoImage({ url: MediaUrlUtils.imageUrlForRender((token as Tokens.Image).href), options: options });
+    MarkdownAutoImage({
+      url: MediaUrlUtils.imageUrlForRender((token as Tokens.Image).href),
+      options: options,
+      reportImageComplete: (options as MarkdownRenderOptions).reportInlineImageComplete,
+      reportImageError: (options as MarkdownRenderOptions).reportInlineImageError,
+    });
+  } else if (token.type === IMAGE_TABLE_MONO) {
+    MarkdownImageTable({
+      tableToken: token as ImageTableToken,
+      options: options,
+      reportImageComplete: (options as MarkdownRenderOptions).reportInlineImageComplete,
+      reportImageError: (options as MarkdownRenderOptions).reportInlineImageError,
+    });
   }
 }
 
@@ -621,27 +643,33 @@ struct MarkdownParagraph {
   build() {
     if (this.hasBlockImage()) {
       Column({ space: ThemeConstants.SPACE_SM }) {
-        if (this.textTokens().length > 0) {
-          Text() {
-            SelectableInlineTokenSpans(
-              this.textTokens(),
-              this.bodyFontSize(),
-              this.options,
-              this.reportImageComplete,
-              this.reportImageError,
-            );
+        ForEach(this.inlineTokens(), (token: Token, tokenIdx: number) => {
+          if (token && token.type === "image" && !_isInlineImageToken(token)) {
+            MarkdownAutoImage({
+              url: MediaUrlUtils.imageUrlForRender((token as Tokens.Image).href),
+              options: this.options,
+              reportImageComplete: this.reportImageComplete,
+              reportImageError: this.reportImageError,
+            });
+          } else if (token && token.type !== "br" && String((token as TokenRecord)["text"] ?? (token as TokenRecord)["raw"] ?? "").trim().length > 0) {
+            Text() {
+              SelectableInlineTokenSpans(
+                [token],
+                this.bodyFontSize(),
+                this.options,
+                this.reportImageComplete,
+                this.reportImageError,
+              );
+            }
+            .fontSize(this.bodyFontSize())
+            .fontColor(ThemeConstants.TEXT_PRIMARY)
+            .lineHeight(this.bodyLineHeight())
+            .textAlign(TextAlign.Start)
+            .width("100%")
+            .copyOption(CopyOptions.LocalDevice)
+            .textSelectable(TextSelectableMode.SELECTABLE_FOCUSABLE)
           }
-          .fontSize(this.bodyFontSize())
-          .fontColor(ThemeConstants.TEXT_PRIMARY)
-          .lineHeight(this.bodyLineHeight())
-          .textAlign(TextAlign.Start)
-          .width("100%")
-          .copyOption(CopyOptions.LocalDevice)
-          .textSelectable(TextSelectableMode.SELECTABLE_FOCUSABLE)
-        }
-        ForEach(this.blockImageTokens(), (img: Tokens.Image, imgIdx: number) => {
-          MarkdownAutoImage({ url: MediaUrlUtils.imageUrlForRender(img.href), options: this.options });
-        }, (img: Tokens.Image, imgIdx: number) => `${img.href}-${imgIdx}`)
+        }, (token: Token, tokenIdx: number) => `${String((token as TokenRecord)["type"] ?? "token")}-${String((token as TokenRecord)["raw"] ?? (token as TokenRecord)["href"] ?? tokenIdx)}-${tokenIdx}`)
       }
       .width("100%")
       .alignItems(HorizontalAlign.Start)
@@ -913,9 +941,69 @@ function InlineTokenSpans(
 }
 
 @Component
+struct MarkdownImageTable {
+  @Prop tableToken: ImageTableToken;
+  @Prop options: MarkdownOptions;
+  reportImageComplete?: InlineImageCompleteReporter;
+  reportImageError?: InlineImageErrorReporter;
+
+  private imageUrls(): string[] {
+    return (this.tableToken.imageUrls ?? []).filter((url: string) => MediaUrlUtils.imageUrlForRender(url).length > 0);
+  }
+
+  private labels(): string[] {
+    return this.tableToken.imageLabels ?? [];
+  }
+
+  private columnWidth(): string {
+    const count = Math.max(1, this.imageUrls().length);
+    return `${100 / count}%`;
+  }
+
+  build() {
+    Column({ space: ThemeConstants.SPACE_XS }) {
+      if (this.labels().some((label: string) => label.trim().length > 0)) {
+        Row({ space: ThemeConstants.SPACE_SM }) {
+          ForEach(this.imageUrls(), (_url: string, index: number) => {
+            Text(this.labels()[index] ?? "")
+              .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+              .fontColor(ThemeConstants.TEXT_SECONDARY)
+              .textAlign(TextAlign.Center)
+              .width(this.columnWidth())
+              .maxLines(2)
+              .textOverflow({ overflow: TextOverflow.Ellipsis });
+          }, (_url: string, index: number) => `label-${index}`)
+        }
+        .width("100%")
+      }
+      Row({ space: ThemeConstants.SPACE_SM }) {
+        ForEach(this.imageUrls(), (url: string, index: number) => {
+          Column() {
+            MarkdownAutoImage({
+              url: MediaUrlUtils.imageUrlForRender(url),
+              options: this.options,
+              reportImageComplete: this.reportImageComplete,
+              reportImageError: this.reportImageError,
+            });
+          }
+          .width(this.columnWidth())
+          .alignItems(HorizontalAlign.Start)
+        }, (url: string, index: number) => `${url}-${index}`)
+      }
+      .width("100%")
+      .alignItems(VerticalAlign.Top)
+    }
+    .width("100%")
+    .alignItems(HorizontalAlign.Start)
+  }
+}
+
+@Component
 struct MarkdownAutoImage {
   @Prop url: string = "";
   @Prop options: MarkdownOptions;
+  reportImageComplete?: InlineImageCompleteReporter;
+  reportImageError?: InlineImageErrorReporter;
   @StorageLink(StorageKeys.MEDIA_AUTO_LOAD_IMAGES) @Watch('onImageLoadPolicyChanged') autoLoadImages: boolean = true
   @StorageLink(StorageKeys.MEDIA_ONLY_LOAD_IMAGES_ON_WIFI) @Watch('onImageLoadPolicyChanged') onlyLoadImagesOnWifi: boolean = false
   @State private loadState: number = 0 // 0: idle, 1: loading, 2: loaded, 3: error
@@ -1040,10 +1128,16 @@ struct MarkdownAutoImage {
               this.sourceWidth = event?.width ?? 0;
               this.sourceHeight = event?.height ?? 0;
               this.loadState = 2;
+              if (this.reportImageComplete) {
+                this.reportImageComplete(this.url, event);
+              }
             }
           })
-          .onError((_event?: MarkdownImageErrorEvent) => {
+          .onError((event?: MarkdownImageErrorEvent) => {
             this.loadState = 3;
+            if (this.reportImageError) {
+              this.reportImageError(this.url, event);
+            }
           })
           .onClick(() => {
             const click = this.options?.imageClick as ((url?: string) => void) | undefined;
@@ -1211,7 +1305,12 @@ struct CustomList {
                         .width("100%");
                       }
                       ForEach(this.paragraphImageTokens(child), (img: Tokens.Image, imgIdx: number) => {
-                        MarkdownAutoImage({ url: MediaUrlUtils.imageUrlForRender(img.href), options: this.options });
+                        MarkdownAutoImage({
+                          url: MediaUrlUtils.imageUrlForRender(img.href),
+                          options: this.options,
+                          reportImageComplete: this.reportImageComplete,
+                          reportImageError: this.reportImageError,
+                        });
                       }, (img: Tokens.Image, imgIdx: number) => `${img.href}-${imgIdx}`)
                     }.width("100%");
                   } else {
@@ -1428,11 +1527,13 @@ export struct MarkdownContent {
   // and delegates to our customBlockBuilder instead.
   private static processTokens(md: string, sizeRecords: InlineImageSizeRecord[] = []): Token[] {
     let tokens = lexer(MarkdownContent.normalizeMarkdownSource(HtmlEntityUtils.decode(md)), { gfm: true, breaks: true });
+    MarkdownContent.rewriteImageTableMarkers(tokens);
     MarkdownContent.rewriteBareImageLinks(tokens);
     MarkdownContent.rewriteInlineImageLinks(tokens);
     MarkdownContent.splitMixedImageParagraphs(tokens, sizeRecords);
     MarkdownContent.promoteStandaloneImageParagraphs(tokens);
     MarkdownContent.rewriteStandaloneTextLinks(tokens);
+    MarkdownContent.removeIgnorableLayoutTokens(tokens);
     MarkdownContent.mergeSelectableParagraphRuns(tokens);
     MarkdownContent.retypeBlockTokens(tokens);
     return tokens;
@@ -1446,15 +1547,22 @@ export struct MarkdownContent {
     source = source.replace(/<table\b[^>]*>[\s\S]*?<\/table>/gi, (table: string): string => {
       return MarkdownContent.convertImageTableToMarkdownImages(table);
     });
-    return source
+    source = source
       .replace(/\r\n/g, '\n')
       .replace(/\r/g, '\n')
       .replace(/<a\b[^>]*>\s*<img\b[^>]*\bsrc=(["'])(https?:\/\/[^"']+)\1[^>]*>\s*<\/a>/gi, '$2')
       .replace(/<img\b[^>]*\bsrc=(["'])(https?:\/\/[^"']+)\1[^>]*>/gi, '$2')
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/(^|\n)[ \t]*(https?:\/\/[^\s<>()]+)[ \t]*(?=\n|$)/gi,
+        (_all: string, prefix: string, url: string): string => {
+          const renderUrl = MediaUrlUtils.imageUrlForRender(url);
+          return renderUrl ? `${prefix}\n${renderUrl}\n` : `${prefix}${url}`;
+        })
       .replace(/<\/?(?:table|tbody|thead|tr|td|th)\b[^>]*>/gi, '\n\n')
       .replace(/^[ \t]+(https?:\/\/[^\s<>()]+)[ \t]*$/gmi, '$1')
       .replace(/\n{3,}/g, '\n\n')
       .replace(/\]\(\s+(https?:\/\/[^\s)]+)\s*\)/gi, ']($1)');
+    return MarkdownContent.convertMarkdownImageTables(source);
   }
 
   private static looksLikeRenderedHtml(source: string): boolean {
@@ -1505,6 +1613,62 @@ export struct MarkdownContent {
     return prefix;
   }
 
+  private static convertMarkdownImageTables(source: string): string {
+    const lines = (source || '').split('\n');
+    const out: string[] = [];
+    let i = 0;
+    while (i < lines.length) {
+      if (i + 2 < lines.length && MarkdownContent.isMarkdownTableSeparator(lines[i + 1])) {
+        const labels = MarkdownContent.markdownTableCells(lines[i]).map((cell: string): string => cell.trim());
+        const imageUrls: string[] = [];
+        let end = i + 2;
+        while (end < lines.length && MarkdownContent.markdownTableCells(lines[end]).length > 0) {
+          const cells = MarkdownContent.markdownTableCells(lines[end]);
+          for (const cell of cells) {
+            const url = MarkdownContent.firstMarkdownImageUrl(cell);
+            if (url) {
+              imageUrls.push(url);
+            }
+          }
+          end++;
+        }
+        if (imageUrls.length > 0) {
+          out.push(MarkdownContent.buildImageTableMarker(imageUrls, labels));
+          i = end;
+          continue;
+        }
+      }
+      out.push(lines[i]);
+      i++;
+    }
+    return out.join('\n');
+  }
+
+  private static markdownTableCells(line: string): string[] {
+    const value = (line || '').trim();
+    if (!value.startsWith('|') || !value.endsWith('|')) {
+      return [];
+    }
+    const inner = value.substring(1, value.length - 1);
+    return inner.split('|');
+  }
+
+  private static isMarkdownTableSeparator(line: string): boolean {
+    const cells = MarkdownContent.markdownTableCells(line);
+    if (cells.length === 0) {
+      return false;
+    }
+    return cells.every((cell: string): boolean => /^\s*:?-{3,}:?\s*$/.test(cell));
+  }
+
+  private static firstMarkdownImageUrl(cell: string): string {
+    const match = /!\[[^\]]*\]\(\s*(https?:\/\/[^\s)]+)\s*\)/i.exec(cell || '');
+    if (!match || !match[1]) {
+      return '';
+    }
+    return MediaUrlUtils.imageUrlForRender(match[1]) || '';
+  }
+
   private static convertHtmlList(listHtml: string, ordered: boolean): string {
     const items: string[] = [];
     const re = /<li\b[^>]*>([\s\S]*?)<\/li>/gi;
@@ -1534,13 +1698,15 @@ export struct MarkdownContent {
     if (imageUrls.length === 0) {
       return tableHtml;
     }
-    return `\n\n${imageUrls.map((url: string): string => `![](${url})`).join('\n\n')}\n\n`;
+    const labels = MarkdownContent.extractTableHeaderLabels(tableHtml);
+    return MarkdownContent.buildImageTableMarker(imageUrls, labels);
   }
 
   private static convertHtmlTable(tableHtml: string): string {
     const imageUrls = MarkdownContent.extractImageUrlsFromHtml(tableHtml);
     if (imageUrls.length > 0) {
-      return `\n\n${imageUrls.map((url: string): string => `![](${url})`).join('\n\n')}\n\n`;
+      const labels = MarkdownContent.extractTableHeaderLabels(tableHtml);
+      return MarkdownContent.buildImageTableMarker(imageUrls, labels);
     }
 
     const rows: string[][] = [];
@@ -1603,6 +1769,93 @@ export struct MarkdownContent {
       match = re.exec(html || '');
     }
     return urls;
+  }
+
+  private static extractTableHeaderLabels(tableHtml: string): string[] {
+    const labels: string[] = [];
+    const re = /<th\b[^>]*>([\s\S]*?)<\/th>/gi;
+    let match: RegExpExecArray | null = re.exec(tableHtml || '');
+    while (match) {
+      labels.push(MarkdownContent.stripHtmlTags(match[1]));
+      match = re.exec(tableHtml || '');
+    }
+    return labels;
+  }
+
+  private static buildImageTableMarker(imageUrls: string[], labels: string[]): string {
+    const lines: string[] = [IMAGE_TABLE_START];
+    for (let i = 0; i < imageUrls.length; i++) {
+      const label = encodeURIComponent(labels[i] ?? '');
+      const url = encodeURIComponent(imageUrls[i] ?? '');
+      lines.push(`${label}\t${url}`);
+    }
+    lines.push(IMAGE_TABLE_END);
+    return `\n\n${lines.join('\n')}\n\n`;
+  }
+
+  private static rewriteImageTableMarkers(tokens: Token[]): void {
+    if (!tokens || tokens.length === 0) {
+      return;
+    }
+    for (let i = 0; i < tokens.length; i++) {
+      const token = tokens[i] as TokenRecord;
+      if (token["type"] === "paragraph") {
+        const tableToken = MarkdownContent.parseImageTableMarker(String(token["text"] ?? token["raw"] ?? ''));
+        if (tableToken) {
+          tokens.splice(i, 1, tableToken as Token);
+          continue;
+        }
+      }
+
+      const childTokens = token["tokens"] as Token[] | undefined;
+      if (Array.isArray(childTokens) && childTokens.length > 0) {
+        MarkdownContent.rewriteImageTableMarkers(childTokens);
+      }
+
+      const items = token["items"] as Array<TokenRecord> | undefined;
+      if (Array.isArray(items) && items.length > 0) {
+        for (const item of items) {
+          const itemTokens = item["tokens"] as Token[] | undefined;
+          if (Array.isArray(itemTokens) && itemTokens.length > 0) {
+            MarkdownContent.rewriteImageTableMarkers(itemTokens);
+          }
+        }
+      }
+    }
+  }
+
+  private static parseImageTableMarker(text: string): ImageTableToken | null {
+    const clean = (text || '').trim();
+    if (!clean.startsWith(IMAGE_TABLE_START) || !clean.endsWith(IMAGE_TABLE_END)) {
+      return null;
+    }
+    const lines = clean.split('\n').map((line: string): string => line.trim()).filter((line: string): boolean => line.length > 0);
+    const urls: string[] = [];
+    const labels: string[] = [];
+    for (const line of lines) {
+      if (line === IMAGE_TABLE_START || line === IMAGE_TABLE_END) {
+        continue;
+      }
+      const parts = line.split('\t');
+      const label = parts.length > 1 ? parts[0] : '';
+      const url = parts.length > 1 ? parts[1] : parts[0];
+      try {
+        labels.push(decodeURIComponent(label || ''));
+        urls.push(decodeURIComponent(url || ''));
+      } catch (_error) {
+        labels.push(label || '');
+        urls.push(url || '');
+      }
+    }
+    if (urls.length === 0) {
+      return null;
+    }
+    return {
+      type: IMAGE_TABLE_MONO,
+      raw: text,
+      imageUrls: urls,
+      imageLabels: labels,
+    } as ImageTableToken;
   }
 
   private static inlineHtmlToMarkdown(value: string): string {
@@ -1709,9 +1962,13 @@ export struct MarkdownContent {
     const result: Token[] = [];
     let textTokens: Token[] = [];
     for (const token of inlineTokens) {
-      if (token && token.type === "image" && !_isMixedInlineImageCandidate(token, sizeRecords)) {
+      if (token && token.type === "image" && _isMixedInlineImageCandidate(token, sizeRecords)) {
+        (token as InlineImageToken).inlineImage = true;
+        textTokens.push(token);
+      } else if (token && token.type === "image" && !_isMixedInlineImageCandidate(token, sizeRecords)) {
         MarkdownContent.flushParagraphTokens(result, textTokens);
         textTokens = [];
+        (token as InlineImageToken).inlineImage = false;
         const imageParagraph: Tokens.Paragraph = {
           type: "paragraph",
           raw: String((token as TokenRecord)["raw"] ?? ""),
@@ -1779,7 +2036,66 @@ export struct MarkdownContent {
     for (const token of inlineTokens) {
       rewritten.push(...MarkdownContent.rewriteInlineImageToken(token));
     }
+    MarkdownContent.markStandaloneInlineImages(rewritten);
     paragraph["tokens"] = rewritten;
+  }
+
+  private static markStandaloneInlineImages(tokens: Token[]): void {
+    for (let i = 0; i < tokens.length; i++) {
+      const token = tokens[i] as Token;
+      if (!token || token.type !== "image") {
+        continue;
+      }
+      if (MarkdownContent.isImageTokenAloneOnInlineLine(tokens, i)) {
+        (token as InlineImageToken).inlineImage = false;
+      }
+    }
+  }
+
+  private static isImageTokenAloneOnInlineLine(tokens: Token[], index: number): boolean {
+    let before = '';
+    for (let i = index - 1; i >= 0; i--) {
+      const token = tokens[i] as TokenRecord;
+      if (!token) {
+        continue;
+      }
+      if (token["type"] === "br") {
+        break;
+      }
+      const text = String(token["text"] ?? token["raw"] ?? "");
+      const breakIndex = Math.max(text.lastIndexOf('\n'), text.lastIndexOf('\r'));
+      if (breakIndex >= 0) {
+        before = text.slice(breakIndex + 1) + before;
+        break;
+      }
+      before = text + before;
+    }
+
+    let after = '';
+    for (let i = index + 1; i < tokens.length; i++) {
+      const token = tokens[i] as TokenRecord;
+      if (!token) {
+        continue;
+      }
+      if (token["type"] === "br") {
+        break;
+      }
+      const text = String(token["text"] ?? token["raw"] ?? "");
+      const lineFeed = text.indexOf('\n');
+      const carriage = text.indexOf('\r');
+      let breakIndex = -1;
+      if (lineFeed >= 0 && carriage >= 0) {
+        breakIndex = Math.min(lineFeed, carriage);
+      } else {
+        breakIndex = Math.max(lineFeed, carriage);
+      }
+      if (breakIndex >= 0) {
+        after += text.slice(0, breakIndex);
+        break;
+      }
+      after += text;
+    }
+    return before.trim().length === 0;
   }
 
   private static rewriteInlineImageToken(token: Token): Token[] {
@@ -1794,7 +2110,9 @@ export struct MarkdownContent {
       const text = String(record["text"] ?? "").trim();
       const normalizedText = MediaUrlUtils.normalizeUrl(text);
       if (href && (!text || normalizedText === MediaUrlUtils.normalizeUrl(String(record["href"] ?? "")))) {
-        return [MarkdownContent.buildImageToken(String(record["raw"] ?? text), href, text, true) as Token];
+        const rawHref = MediaUrlUtils.normalizeUrl(String(record["href"] ?? ""));
+        const imgurPage = /^https?:\/\/(?:www\.)?imgur\.com\/[A-Za-z0-9]{5,12}(?:[?#].*)?$/i.test(rawHref);
+        return [MarkdownContent.buildImageToken(String(record["raw"] ?? text), href, text, !imgurPage) as Token];
       }
       return [token];
     }
@@ -1875,8 +2193,7 @@ export struct MarkdownContent {
       lineEnd++;
     }
     const before = raw.slice(lineStart, start).trim();
-    const after = raw.slice(end, lineEnd).trim();
-    return before.length === 0 && after.length === 0;
+    return before.length === 0;
   }
 
   private static buildTextToken(text: string): Tokens.Text {
@@ -1978,6 +2295,36 @@ export struct MarkdownContent {
       const childTokens = token["tokens"] as Token[] | undefined;
       if (Array.isArray(childTokens) && childTokens.length > 0) {
         MarkdownContent.rewriteStandaloneTextLinks(childTokens);
+      }
+    }
+  }
+
+  private static removeIgnorableLayoutTokens(tokens: Token[]): void {
+    if (!tokens || tokens.length === 0) {
+      return;
+    }
+    for (let i = tokens.length - 1; i >= 0; i--) {
+      const token = tokens[i] as TokenRecord;
+      const type = (token["type"] as string) || "";
+      const raw = String(token["raw"] ?? token["text"] ?? "");
+      if ((type === "space" || type === "html") && raw.trim().length === 0) {
+        tokens.splice(i, 1);
+        continue;
+      }
+
+      const childTokens = token["tokens"] as Token[] | undefined;
+      if (Array.isArray(childTokens) && childTokens.length > 0) {
+        MarkdownContent.removeIgnorableLayoutTokens(childTokens);
+      }
+
+      const items = token["items"] as Array<TokenRecord> | undefined;
+      if (Array.isArray(items) && items.length > 0) {
+        for (const item of items) {
+          const itemTokens = item["tokens"] as Token[] | undefined;
+          if (Array.isArray(itemTokens) && itemTokens.length > 0) {
+            MarkdownContent.removeIgnorableLayoutTokens(itemTokens);
+          }
+        }
       }
     }
   }
