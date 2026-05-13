@@ -21,34 +21,33 @@ export struct HomeNodeSettingsPage {
 
   build() {
     Column() {
-      SecondaryListScaffold() {
+      SecondaryListScaffold({ listSpace: 0 }) {
         ListItem() {
           this.DragInstruction()
         }
+        .margin({ bottom: ThemeConstants.SPACE_SM - 2 })
 
         ListItem() {
           this.SectionHeader('已显示栏目')
         }
 
-        ListItemGroup() {
-          ForEach(this.visibleTabs(), (tab: TabItem, index: number) => {
-            ListItem() {
-              Column() {
-                this.HomeVisibleTabRow(tab, this.visibleTabs().length)
-                if (index < this.visibleTabs().length - 1) {
-                  this.SettingsDivider()
-                }
+        ForEach(this.visibleTabs(), (tab: TabItem, index: number) => {
+          ListItem() {
+            Column() {
+              this.HomeVisibleTabRow(tab, this.visibleTabs().length)
+              if (index < this.visibleTabs().length - 1) {
+                this.SettingsDivider()
               }
-              .width('100%')
             }
-          }, (tab: TabItem) => tab.key)
-            .onMove((from: number, to: number) => {
-              this.moveFeedTabToIndex(from, to)
-            })
-        }
-        .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
-        .borderRadius(ThemeConstants.RADIUS_CARD)
-        .clip(true)
+            .width('100%')
+          }
+          .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+          .borderRadius(this.visibleRowRadius(index, this.visibleTabs().length))
+          .clip(true)
+        }, (tab: TabItem) => tab.key)
+          .onMove((from: number, to: number) => {
+            this.moveFeedTabToIndex(from, to)
+          })
 
         ListItem() {
           this.SectionHeader('添加栏目')
@@ -184,6 +183,16 @@ export struct HomeNodeSettingsPage {
 
   private hiddenBuiltInTabs(): TabItem[] {
     return ApiConstants.TAB_ITEMS.filter((tab: TabItem) => !FeedTabSettings.isVisible(this.feedTabKeys, tab.key))
+  }
+
+  private visibleRowRadius(index: number, count: number): number {
+    if (count <= 1) {
+      return ThemeConstants.RADIUS_CARD
+    }
+    if (index === 0 || index === count - 1) {
+      return ThemeConstants.RADIUS_CARD
+    }
+    return 0
   }
 
   private updateFeedTabVisibility(key: string): void {
