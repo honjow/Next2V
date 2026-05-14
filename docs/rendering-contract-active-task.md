@@ -1,7 +1,7 @@
 # Rendering contract active task
 
-Workspace: `/home/gamer/v2next-worktrees/rendering-contract`
-Branch: `lane/rendering-contract`
+Workspace: `/home/gamer/v2next-worktrees/rendering-table`
+Branch: `lane/rendering-table`
 
 ## Scope
 
@@ -39,7 +39,7 @@ Transitional implementation remains compatible with `@lidary/markdown` token obj
 - `parseRenderedHtmlToRenderAst(contentRendered, sizeRecords)`:
   - direct HTML block/inline tokenization via `renderedHtmlToTokens(...)`;
   - output is tagged `rawSourceKind: "renderedHtml"`;
-  - non-image HTML tables remain the narrow legacy exception because the existing renderer consumes Markdown table tokens.
+  - ordinary HTML tables are parsed directly into V2Next-owned `table` render tokens; only image tables keep the `imageTable` special case.
 
 Canonical block kinds:
 
@@ -50,6 +50,7 @@ Canonical block kinds:
 - `code`
 - `imageBlock`
 - `imageTable`
+- `table`
 
 Canonical inline kinds:
 
@@ -84,6 +85,7 @@ The source now carries `RENDER_STYLE_CONTRACT_TABLE` as a testable contract. Cur
 | imageBlock | role from source structure/Markdown block semantics; dimensions only size rendering |
 | inlineImage | role from source structure/Markdown inline semantics; measured size only affects rendered dimensions |
 | imageTable | preserve all image URLs in source order with optional caption labels |
+| table | ordinary data tables use fixed body `14/20` × `readingTextScale`; header Medium/Bold, body Regular; horizontal scroll with content-estimated/clamped per-column widths, min/max cell width, row/header separation, and visible vertical column dividers |
 
 ## Reading text scale
 
@@ -108,12 +110,15 @@ It covers semantic mirror equivalence for:
 - image-first mixed text, e.g. `<p><img src="..."> after</p>`, which must remain inline because same-line text exists after the image
 - adjacent duplicate linked images
 - member link without literal preceding `@`
+- ordinary HTML and Markdown GFM tables normalize into the same `table` render-token shape, preserving inline strong/link/codespan semantics and avoiding Markdown pipe/separator fallback
 
 It also asserts static source boundaries:
 
 - explicit Render block/inline kinds and style contract table exist;
 - both adapter functions exist;
 - rendered HTML process path does not call `renderedHtmlToMarkdown`;
+- ordinary HTML table handling does not call `lexer(convertHtmlTable(raw))`, and `RenderProcessedToken` has a `token.type === "table"` renderer branch;
+- ordinary table layout does not use the old fixed `116vp` per-cell strategy or runtime natural `onSizeChange` column measurement; each column is deterministically estimated from header/body text display units with min/max clamps and horizontal padding, table width is the sum of estimated columns, ragged rows pad to `columnCount()`, cells draw explicit right borders for vertical separators, and parsed left/center/right alignment uses Start fallback;
 - no intrinsic big/small image role classifier is introduced;
 - `isImageTokenAloneOnInlineLine(...)` only demotes an image to standalone/block when both `before.trim().length === 0` and `after.trim().length === 0` on the same source line;
 - h1-h6 have independent fixed base typography tokens; no heading contract uses `bodyFontSize() + N` or `min(bodyFontSize()+N, ...)`, and h2-h6 are not collapsed into the body token.
@@ -127,6 +132,10 @@ Required static/script validation for this implementation is recorded under:
 Typography/scale fix validation is recorded under:
 
 `.hermes-artifacts/rendering-contract-typography-fix/test-logs/`
+
+Table layout fix validation is recorded under:
+
+`.hermes-artifacts/rendering-table-layout-fix2/test-logs/`
 
 Implementation evidence paths expected by reviewer exist:
 
