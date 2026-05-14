@@ -1,4 +1,5 @@
 import { V2exReply } from '../network/NetworkTypes'
+import { StorageKeys } from '../constants/StorageKeys'
 import { ThemeConstants } from '../theme/ThemeConstants'
 import { Avatar } from './Avatar'
 import { TimeAgo } from './TimeAgo'
@@ -37,17 +38,26 @@ export struct ReplyCard {
   onLinkClick?: (url: string) => void;
   onMentionUserClick?: (username: string) => void;
   @State private actionsMenuShown: boolean = false;
+  @StorageProp(StorageKeys.REPLY_CARD_STYLE) private replyCardStyle: string = 'standard';
+
+  private isCompact(): boolean {
+    return this.replyCardStyle === 'compact'
+  }
 
   // ---- 回复卡片边距 ----
-  private static readonly PADDING_TOP: number = 12; // 卡片上边距
-  private static readonly PADDING_BOTTOM: number = 8; // 卡片下边距（顶层卡片，楼中楼固定为 0）
-  private static readonly PADDING_LEFT: number = 16; // 顶层卡片左边距
-  private static readonly PADDING_LEFT_EMBEDDED: number = 12; // 楼中楼 ≤1层 左边距
-  private static readonly PADDING_LEFT_DEEP: number = 16; // 楼中楼 >1层 左边距
-  private static readonly PADDING_RIGHT: number = 16; // 顶层卡片右边距（楼中楼固定为 0）
-  private static readonly CONTENT_GAP: number = 8; // 头部（用户名行）与正文之间的间距
-  private static readonly ACTIONS_GAP: number = 0; // 正文与底部操作栏（时间/感谢/回复）之间的间距
-  private static readonly CHILD_DIVIDER_MARGIN: number = 0; // 楼中楼子回复之间分隔线的上下间距
+  // 顶层卡片四面边距（embedded 卡片 top/bottom/right 均为 0，间距由 CHILD_DIVIDER_MARGIN 统一控制）
+  private static readonly PADDING_TOP: number = 12;
+  private static readonly PADDING_BOTTOM: number = 12;
+  private static readonly PADDING_LEFT: number = 16;
+  private static readonly PADDING_RIGHT: number = 16;
+  // 楼中楼仅保留左边距用于缩进
+  private static readonly PADDING_LEFT_EMBEDDED: number = 12; // ≤1层
+  private static readonly PADDING_LEFT_DEEP: number = 16; // >1层
+  // 内容区域内部间距
+  private static readonly CONTENT_GAP: number = 8; // 头部 → 正文
+  private static readonly ACTIONS_GAP: number = 0; // 正文 → 操作栏（标准模式）
+  // 楼中楼子回复之间的唯一间距控制器（divider 上下各留此值）
+  private static readonly CHILD_DIVIDER_MARGIN: number = 8;
 
   private threadIndent(): number {
     if (this.threadLevel <= 0) return 0
@@ -212,10 +222,104 @@ export struct ReplyCard {
     }
   }
 
+  @Builder
+  ThankButton() {
+    if (this.onThankClick) {
+      Button() {
+        Row({ space: ThemeConstants.SPACE_XS }) {
+          SymbolGlyph(this.isThanked ? $r('sys.symbol.heart_fill') : $r('sys.symbol.heart'))
+            .fontSize(ThemeConstants.FONT_SIZE_TITLE)
+            .fontColor([
+              this.isThanked || this.reply.thanks > 0 ? '#E84026' : $r('sys.color.font_secondary'),
+            ])
+          if (this.reply.thanks > 0) {
+            Text(`${this.reply.thanks}`)
+              .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+              .fontColor('#E84026')
+          }
+        }.alignItems(VerticalAlign.Center)
+      }
+      .type(ButtonType.Normal)
+      .constraintSize({ minWidth: ThemeConstants.TOUCH_TARGET_SM })
+      .height(ThemeConstants.TOUCH_TARGET_SM)
+      .padding({ left: ThemeConstants.SPACE_XS, right: ThemeConstants.SPACE_XS })
+      .borderRadius(ThemeConstants.RADIUS_ROUND)
+      .backgroundColor(Color.Transparent)
+      .opacity(this.isThankPending ? 0.45 : 1)
+      .enabled(!this.isThankPending)
+      .onClick(() => {
+        if (this.onThankClick && !this.isThankPending) {
+          this.onThankClick(this.reply)
+        }
+      })
+    }
+  }
+
+  @Builder
+  ReplyButton() {
+    if (this.onReplyClick) {
+      Button() {
+        SymbolGlyph($r('sys.symbol.arrowshape_turn_up_left'))
+          .fontSize(ThemeConstants.FONT_SIZE_TITLE)
+          .fontColor([$r('sys.color.font_secondary')])
+      }
+      .type(ButtonType.Normal)
+      .width(ThemeConstants.TOUCH_TARGET_SM)
+      .height(ThemeConstants.TOUCH_TARGET_SM)
+      .borderRadius(ThemeConstants.RADIUS_ROUND)
+      .backgroundColor(Color.Transparent)
+      .onClick(() => {
+        if (this.onReplyClick) {
+          this.onReplyClick(this.reply)
+        }
+      })
+    }
+  }
+
+  @Builder
+  MoreButton() {
+    if (this.hasContextMenuActions()) {
+      Button() {
+        SymbolGlyph($r('sys.symbol.ellipsis_bubble'))
+          .fontSize(ThemeConstants.FONT_SIZE_TITLE)
+          .fontColor([$r('sys.color.font_secondary')])
+      }
+      .type(ButtonType.Normal)
+      .width(ThemeConstants.TOUCH_TARGET_SM)
+      .height(ThemeConstants.TOUCH_TARGET_SM)
+      .borderRadius(ThemeConstants.RADIUS_ROUND)
+      .backgroundColor(Color.Transparent)
+      .onClick(() => {
+        this.showContextMenu()
+      })
+      .bindContextMenu(this.actionsMenuShown, this.ReplyActionMenu, {
+        placement: Placement.TopRight,
+        aboutToDisappear: () => {
+          this.actionsMenuShown = false
+        },
+      })
+    } else if (this.onActionsClick) {
+      Button() {
+        SymbolGlyph($r('sys.symbol.ellipsis_bubble'))
+          .fontSize(ThemeConstants.FONT_SIZE_TITLE)
+          .fontColor([$r('sys.color.font_secondary')])
+      }
+      .type(ButtonType.Normal)
+      .width(ThemeConstants.TOUCH_TARGET_SM)
+      .height(ThemeConstants.TOUCH_TARGET_SM)
+      .borderRadius(ThemeConstants.RADIUS_ROUND)
+      .backgroundColor(Color.Transparent)
+      .onClick(() => {
+        if (this.onActionsClick) {
+          this.onActionsClick(this.reply)
+        }
+      })
+    }
+  }
+
   build() {
     Row() {
       Column() {
-        // 头部：头像 + 用户名/OP/楼层 + 时间
         Row({ space: ThemeConstants.SPACE_SM }) {
           Avatar({
             url: ImageUtils.memberAvatarUrl(this.reply.member),
@@ -263,7 +367,17 @@ export struct ReplyCard {
               .borderRadius(ThemeConstants.RADIUS_SM)
               .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
           }
+
+          if (this.isCompact()) {
+            TimeAgo({ timestamp: this.reply.created })
+          }
           Blank()
+
+          if (this.isCompact()) {
+            this.ThankButton()
+            this.ReplyButton()
+            this.MoreButton()
+          }
           Text(`#${this.floor}`)
             .fontSize(ThemeConstants.FONT_SIZE_TAG)
             .fontColor($r('sys.color.font_secondary'))
@@ -283,102 +397,18 @@ export struct ReplyCard {
           }.width('100%')
         }
 
-        // 底部：时间 + 操作
-        Row() {
-          TimeAgo({ timestamp: this.reply.created })
-          Blank()
-
-          if (this.onThankClick) {
-            Button() {
-              Row({ space: ThemeConstants.SPACE_XS }) {
-                SymbolGlyph(this.isThanked ? $r('sys.symbol.heart_fill') : $r('sys.symbol.heart'))
-                  .fontSize(ThemeConstants.FONT_SIZE_TITLE)
-                  .fontColor([
-                    this.isThanked || this.reply.thanks > 0
-                      ? '#E84026'
-                      : $r('sys.color.font_secondary'),
-                  ])
-                if (this.reply.thanks > 0) {
-                  Text(`${this.reply.thanks}`)
-                    .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-                    .fontColor('#E84026')
-                }
-              }.alignItems(VerticalAlign.Center)
-            }
-            .type(ButtonType.Normal)
-            .constraintSize({ minWidth: ThemeConstants.TOUCH_TARGET_SM })
-            .height(ThemeConstants.TOUCH_TARGET_SM)
-            .padding({ left: ThemeConstants.SPACE_XS, right: ThemeConstants.SPACE_XS })
-            .borderRadius(ThemeConstants.RADIUS_ROUND)
-            .backgroundColor(Color.Transparent)
-            .opacity(this.isThankPending ? 0.45 : 1)
-            .enabled(!this.isThankPending)
-            .onClick(() => {
-              if (this.onThankClick && !this.isThankPending) {
-                this.onThankClick(this.reply)
-              }
-            })
+        if (!this.isCompact()) {
+          Row() {
+            TimeAgo({ timestamp: this.reply.created })
+            Blank()
+            this.ThankButton()
+            this.ReplyButton()
+            this.MoreButton()
           }
-
-          if (this.onReplyClick) {
-            Button() {
-              SymbolGlyph($r('sys.symbol.arrowshape_turn_up_left'))
-                .fontSize(ThemeConstants.FONT_SIZE_TITLE)
-                .fontColor([$r('sys.color.font_secondary')])
-            }
-            .type(ButtonType.Normal)
-            .width(ThemeConstants.TOUCH_TARGET_SM)
-            .height(ThemeConstants.TOUCH_TARGET_SM)
-            .borderRadius(ThemeConstants.RADIUS_ROUND)
-            .backgroundColor(Color.Transparent)
-            .onClick(() => {
-              if (this.onReplyClick) {
-                this.onReplyClick(this.reply)
-              }
-            })
-          }
-
-          if (this.hasContextMenuActions()) {
-            Button() {
-              SymbolGlyph($r('sys.symbol.ellipsis_bubble'))
-                .fontSize(ThemeConstants.FONT_SIZE_TITLE)
-                .fontColor([$r('sys.color.font_secondary')])
-            }
-            .type(ButtonType.Normal)
-            .width(ThemeConstants.TOUCH_TARGET_SM)
-            .height(ThemeConstants.TOUCH_TARGET_SM)
-            .borderRadius(ThemeConstants.RADIUS_ROUND)
-            .backgroundColor(Color.Transparent)
-            .onClick(() => {
-              this.showContextMenu()
-            })
-            .bindContextMenu(this.actionsMenuShown, this.ReplyActionMenu, {
-              placement: Placement.TopRight,
-              aboutToDisappear: () => {
-                this.actionsMenuShown = false
-              },
-            })
-          } else if (this.onActionsClick) {
-            Button() {
-              SymbolGlyph($r('sys.symbol.ellipsis_bubble'))
-                .fontSize(ThemeConstants.FONT_SIZE_TITLE)
-                .fontColor([$r('sys.color.font_secondary')])
-            }
-            .type(ButtonType.Normal)
-            .width(ThemeConstants.TOUCH_TARGET_SM)
-            .height(ThemeConstants.TOUCH_TARGET_SM)
-            .borderRadius(ThemeConstants.RADIUS_ROUND)
-            .backgroundColor(Color.Transparent)
-            .onClick(() => {
-              if (this.onActionsClick) {
-                this.onActionsClick(this.reply)
-              }
-            })
-          }
+          .width('100%')
+          .margin({ top: ReplyCard.ACTIONS_GAP })
+          .alignItems(VerticalAlign.Center)
         }
-        .width('100%')
-        .margin({ top: ReplyCard.ACTIONS_GAP })
-        .alignItems(VerticalAlign.Center)
 
         if (this.childReplies.length > 0) {
           Column() {
@@ -438,7 +468,7 @@ export struct ReplyCard {
             : ReplyCard.PADDING_LEFT_EMBEDDED
           : ReplyCard.PADDING_LEFT,
         right: this.embedded ? 0 : ReplyCard.PADDING_RIGHT,
-        top: ReplyCard.PADDING_TOP,
+        top: this.embedded ? 0 : ReplyCard.PADDING_TOP,
         bottom: this.embedded ? 0 : ReplyCard.PADDING_BOTTOM,
       })
       .layoutWeight(1)

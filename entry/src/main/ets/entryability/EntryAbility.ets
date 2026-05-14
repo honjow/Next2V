@@ -10,10 +10,11 @@ import {
   MediaSettings,
   ReadingSettings,
   ReplyDisplaySettings,
+  ReplyCardStyleSettings,
   StorageKeys,
   ThemeSettings,
   V2exUrlRouter,
-  WriteActionSettings
+  WriteActionSettings,
 } from 'shared'
 
 const TRANSPARENT_COLOR: string = '#00FFFFFF'
@@ -33,7 +34,7 @@ export default class EntryAbility extends UIAbility {
       console.error('initialize web engine failed: ' + e.message)
     }
     this.captureIncomingUrl(want)
-    
+
     // 初始化折叠屏状态监听
     FoldScreenUtil.getInstance().init()
   }
@@ -49,7 +50,7 @@ export default class EntryAbility extends UIAbility {
       win.setWindowLayoutFullScreen(true)
       win.setWindowSystemBarProperties({
         statusBarColor: TRANSPARENT_COLOR,
-        navigationBarColor: TRANSPARENT_COLOR
+        navigationBarColor: TRANSPARENT_COLOR,
       })
       this.configureWideGamut(win)
       this.mainWindow = win
@@ -70,48 +71,63 @@ export default class EntryAbility extends UIAbility {
           })
           .finally(() => {
             MediaSettings.load(this.context)
-          .catch((error: Error) => {
-            console.error('restore media settings failed: ' + error.message)
-            MediaSettings.apply(true, false)
-          })
-          .finally(() => {
-            ReplyDisplaySettings.load(this.context)
               .catch((error: Error) => {
-                console.error('restore reply display settings failed: ' + error.message)
-                ReplyDisplaySettings.apply(ReplyDisplaySettings.MODE_THREAD)
+                console.error('restore media settings failed: ' + error.message)
+                MediaSettings.apply(true, false)
               })
               .finally(() => {
-                ReadingSettings.load(this.context)
-              .catch((error: Error) => {
-                console.error('restore reading settings failed: ' + error.message)
-                ReadingSettings.apply(14, 20, ReadingSettings.DENSITY_STANDARD)
-              })
-              .finally(() => {
-                FeedTabSettings.load(this.context)
+                ReplyDisplaySettings.load(this.context)
                   .catch((error: Error) => {
-                    console.error('restore feed tab settings failed: ' + error.message)
-                    FeedTabSettings.apply(FeedTabSettings.defaultKeysJson())
+                    console.error('restore reply display settings failed: ' + error.message)
+                    ReplyDisplaySettings.apply(ReplyDisplaySettings.MODE_THREAD)
                   })
                   .finally(() => {
-                    CookieJarSettings.load(this.context)
+                    ReadingSettings.load(this.context)
                       .catch((error: Error) => {
-                        console.error('restore cookie jar failed: ' + error.message)
-                        CookieJarSettings.apply({ comCookie: '', coCookie: '', updatedAt: 0 })
+                        console.error('restore reading settings failed: ' + error.message)
+                        ReadingSettings.apply(14, 20, ReadingSettings.DENSITY_STANDARD)
                       })
                       .finally(() => {
-                        WriteActionSettings.load(this.context)
+                        FeedTabSettings.load(this.context)
                           .catch((error: Error) => {
-                            console.error('restore write settings failed: ' + error.message)
-                            WriteActionSettings.apply(false)
+                            console.error('restore feed tab settings failed: ' + error.message)
+                            FeedTabSettings.apply(FeedTabSettings.defaultKeysJson())
                           })
                           .finally(() => {
-                            this.loadContent(windowStage, win)
+                            CookieJarSettings.load(this.context)
+                              .catch((error: Error) => {
+                                console.error('restore cookie jar failed: ' + error.message)
+                                CookieJarSettings.apply({
+                                  comCookie: '',
+                                  coCookie: '',
+                                  updatedAt: 0,
+                                })
+                              })
+                              .finally(() => {
+                                WriteActionSettings.load(this.context)
+                                  .catch((error: Error) => {
+                                    console.error('restore write settings failed: ' + error.message)
+                                    WriteActionSettings.apply(false)
+                                  })
+                                  .finally(() => {
+                                    ReplyCardStyleSettings.load(this.context)
+                                      .catch((error: Error) => {
+                                        console.error(
+                                          'restore reply card style failed: ' + error.message,
+                                        )
+                                        ReplyCardStyleSettings.apply(
+                                          ReplyCardStyleSettings.STYLE_STANDARD,
+                                        )
+                                      })
+                                      .finally(() => {
+                                        this.loadContent(windowStage, win)
+                                      })
+                                  })
+                              })
                           })
                       })
                   })
               })
-              })
-          })
           })
       })
   }
@@ -122,7 +138,9 @@ export default class EntryAbility extends UIAbility {
 
   private loadContent(windowStage: window.WindowStage, win: window.Window | null): void {
     windowStage.loadContent(ENTRY_PAGE, (err) => {
-      if (err.code) { console.error('loadContent failed: ' + JSON.stringify(err)) }
+      if (err.code) {
+        console.error('loadContent failed: ' + JSON.stringify(err))
+      }
       try {
         if (!win) {
           win = windowStage.getMainWindowSync()
@@ -131,8 +149,14 @@ export default class EntryAbility extends UIAbility {
         let systemArea = win.getWindowAvoidArea(window.AvoidAreaType.TYPE_SYSTEM)
         let navArea = win.getWindowAvoidArea(window.AvoidAreaType.TYPE_NAVIGATION_INDICATOR)
         let uiCtx = windowStage.getMainWindowSync().getUIContext()
-        AppStorage.setOrCreate<number>(StorageKeys.TOP_AVOID_HEIGHT, uiCtx.px2vp(systemArea.topRect.height))
-        AppStorage.setOrCreate<number>(StorageKeys.BOTTOM_AVOID_HEIGHT, uiCtx.px2vp(navArea.bottomRect.height))
+        AppStorage.setOrCreate<number>(
+          StorageKeys.TOP_AVOID_HEIGHT,
+          uiCtx.px2vp(systemArea.topRect.height),
+        )
+        AppStorage.setOrCreate<number>(
+          StorageKeys.BOTTOM_AVOID_HEIGHT,
+          uiCtx.px2vp(navArea.bottomRect.height),
+        )
         AppStorage.setOrCreate<number>(StorageKeys.KEYBOARD_HEIGHT, 0)
         this.watchKeyboardHeight(win, uiCtx)
       } catch (e) {

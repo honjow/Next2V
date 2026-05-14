@@ -12,6 +12,7 @@ export class StorageKeys {
   static readonly READING_DENSITY: string = 'readingDensity'
   static readonly READING_RESTORE_POSITION: string = 'readingRestorePosition'
   static readonly REPLY_DISPLAY_MODE: string = 'replyDisplayMode'
+  static readonly REPLY_CARD_STYLE: string = 'replyCardStyle'
   static readonly THEME_MODE: string = 'themeMode'
   static readonly THEME_EFFECTIVE_DARK: string = 'themeEffectiveDark'
   static readonly TOPIC_READ_STATES: string = 'topicReadStates'
@@ -62,7 +63,8 @@ export class StorageKeys {
   static readonly USER_PROFILE_BLOCKED: string = 'userProfileBlocked'
   static readonly USER_PROFILE_APPBAR_TITLE_USERNAME: string = 'userProfileAppbarTitleUsername'
   static readonly USER_PROFILE_APPBAR_TITLE_AVATAR_URL: string = 'userProfileAppbarTitleAvatarUrl'
-  static readonly USER_PROFILE_APPBAR_TITLE_ROUTE_USERNAME: string = 'userProfileAppbarTitleRouteUsername'
+  static readonly USER_PROFILE_APPBAR_TITLE_ROUTE_USERNAME: string =
+    'userProfileAppbarTitleRouteUsername'
   static readonly USER_PROFILE_APPBAR_TITLE_STATES: string = 'userProfileAppbarTitleStates'
   static readonly USER_PROFILE_APPBAR_AVATAR_STATES: string = 'userProfileAppbarAvatarStates'
   static readonly USER_PROFILE_SHOWN: string = 'userProfileShown'
