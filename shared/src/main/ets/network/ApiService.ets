@@ -614,21 +614,26 @@ export class ApiService {
     fields['reply_content'] = cleanContent
     const body = ApiService.encodeFormFields(fields)
 
-    const res = await this.requestHtmlWithCookieAllowRedirect(form.actionPath, cookie, topicPath, http.RequestMethod.POST, body)
+    // V2EX replies are submitted to the topic URL itself. The parsed form is
+    // used for the current once/content field names, but relying on the action
+    // attribute can silently post to a non-mutating page when the page markup
+    // changes or another form is selected.
+    const res = await this.requestHtmlWithCookieAllowRedirect(topicPath, cookie, topicPath, http.RequestMethod.POST, body)
     if (res.location.indexOf('/signin') >= 0) {
       throw new Error('Web 会话已失效，请重新登录')
     }
     if (ApiService.isTopicLocation(res.location, topicId)) {
       return
     }
+    const username = V2exSessionParser.extractUsername(html)
+    if (await this.hasSubmittedReplyOnLastPage(cookie, topicId, username, cleanContent)) {
+      return
+    }
     const problem = V2exSigninParser.extractProblemMessage(res.text)
     if (problem) {
-      const username = V2exSessionParser.extractUsername(html)
-      if (await this.hasSubmittedReplyOnLastPage(cookie, topicId, username, cleanContent)) {
-        return
-      }
       throw new Error(`提交失败：${problem}`)
     }
+    throw new Error('提交失败：未确认回复已发布')
   }
 
   async getReplyThankActionWithCookie(cookie: string, topicId: number, replyId: number): Promise<V2exReplyThankAction> {
