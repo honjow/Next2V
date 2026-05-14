@@ -159,8 +159,8 @@ export class DetailViewModel {
         const apiReplies = await this.api.getReplies(this.topicId, cacheBuster)
         const webCookie = CookieJarSettings.getCurrentCookie()
         const firstPage = await this.api.getTopicWebRepliesPage(this.topicId, 1, Date.now(), webCookie)
+        topic = this.mergeTopicSupplements(topic, firstPage.topicSupplementMarkdown || '')
         if (firstPage.replies.length > 0) {
-          topic = this.mergeTopicSupplements(topic, firstPage.topicSupplementMarkdown || '')
           replies = firstPage.replies
           this.repliesSource = 'publicWebPage'
           this.repliesPage = firstPage.page
@@ -328,13 +328,11 @@ export class DetailViewModel {
     if (!topic || supplement.length === 0) {
       return topic
     }
-    const current = (topic.content || '').trim()
-    const marker = supplement.split('\n')[0] || 'Supplement'
-    if (current.indexOf(marker) >= 0) {
+    const existing = (topic.topicSupplementMarkdown || '').trim()
+    if (existing.indexOf(supplement) >= 0) {
       return topic
     }
-    topic.content = current.length > 0 ? `${current}\n\n${supplement}` : supplement
-    topic.content_rendered = topic.content
+    topic.topicSupplementMarkdown = existing.length > 0 ? `${existing}\n\n${supplement}` : supplement
     return topic
   }
 

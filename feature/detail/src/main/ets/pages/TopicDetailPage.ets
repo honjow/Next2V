@@ -540,6 +540,18 @@ export struct TopicDetailPage {
 
   @Builder TopicCard() {
     Column() {
+      Text(this.v.topic!.title)
+        .fontSize(ThemeConstants.FONT_SIZE_HEADING)
+        .fontWeight(FontWeight.Medium)
+        .fontColor($r('sys.color.font_primary'))
+        .lineHeight(28)
+        .width('100%')
+        .onAreaChange((_oldValue: Area, newValue: Area) => {
+          const measuredGlobalBottom = this.areaY(newValue?.globalPosition?.y) + this.areaLength(newValue?.height)
+          this.titleContentBottom = measuredGlobalBottom + this.currentScrollOffset
+          this.evaluateAppbarIdentityVisibility()
+        })
+
       Row({ space: ThemeConstants.SPACE_SM }) {
         Avatar({ url: ImageUtils.memberAvatarUrl(this.v.topic!.member), avatarSize: ThemeConstants.AVATAR_SIZE_REPLY })
           .onClick(() => {
@@ -586,24 +598,25 @@ export struct TopicDetailPage {
       }
       .width('100%')
       .alignItems(VerticalAlign.Center)
-
-      Text(this.v.topic!.title)
-        .fontSize(ThemeConstants.FONT_SIZE_HEADING)
-        .fontWeight(FontWeight.Medium)
-        .fontColor($r('sys.color.font_primary'))
-        .lineHeight(28)
-        .width('100%')
-        .margin({ top: ThemeConstants.SPACE_MD })
-        .onAreaChange((_oldValue: Area, newValue: Area) => {
-          const measuredGlobalBottom = this.areaY(newValue?.globalPosition?.y) + this.areaLength(newValue?.height)
-          this.titleContentBottom = measuredGlobalBottom + this.currentScrollOffset
-          this.evaluateAppbarIdentityVisibility()
-        })
+      .margin({ top: ThemeConstants.SPACE_MD })
 
       // 正文
       if (this.v.topic!.content) {
         MarkdownContent({
           source: this.v.topic!.content,
+          onImageClick: (url: string) => { this.openImagePreview(url) },
+          onLinkClick: (url: string) => { this.openContentLink(url) },
+          onMentionClick: (username: string) => { this.openUserProfile(username) }
+        })
+      }
+
+      if (this.v.topic!.topicSupplementMarkdown) {
+        Divider()
+          .strokeWidth(1)
+          .color($r('sys.color.ohos_id_color_list_separator'))
+          .margin({ top: ThemeConstants.SPACE_LG, bottom: ThemeConstants.SPACE_MD })
+        MarkdownContent({
+          source: this.v.topic!.topicSupplementMarkdown || '',
           onImageClick: (url: string) => { this.openImagePreview(url) },
           onLinkClick: (url: string) => { this.openContentLink(url) },
           onMentionClick: (username: string) => { this.openUserProfile(username) }

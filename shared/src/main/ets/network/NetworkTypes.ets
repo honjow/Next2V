@@ -35,6 +35,7 @@ export interface V2exTopic {
   url: string
   content: string
   content_rendered: string
+  topicSupplementMarkdown?: string
   replies: number
   member: V2exMember
   node: V2exNode
