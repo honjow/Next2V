@@ -1,7 +1,7 @@
 # Rendering contract active task
 
-Workspace: `/home/gamer/v2next-worktrees/rendering-table`
-Branch: `lane/rendering-table`
+Workspace: `/home/gamer/v2next-worktrees/rendering-image-flow`
+Branch: `lane/rendering-image-flow`
 
 ## Scope
 
@@ -83,9 +83,28 @@ The source now carries `RENDER_STYLE_CONTRACT_TABLE` as a testable contract. Cur
 | em | inherited/body size, italic, primary |
 | codespan | inherited/body size, mono, primary, `BG_SUB` background |
 | imageBlock | role from source structure/Markdown block semantics; dimensions only size rendering |
-| inlineImage | role from source structure/Markdown inline semantics; measured size only affects rendered dimensions |
+| inlineImage | role from source structure/Markdown inline semantics; display dimensions come from actual image dimensions and the measured paragraph/content available width; missing size records use a neutral pending load sentinel until `ImageSpan.onComplete` reports intrinsic dimensions |
 | imageTable | preserve all image URLs in source order with optional caption labels |
 | table | ordinary data tables use fixed body `14/20` × `readingTextScale`; header Medium/Bold, body Regular; horizontal scroll with content-estimated/clamped per-column widths, min/max cell width, row/header separation, and visible vertical column dividers |
+
+## Image sizing contract
+
+Image inline/block role is a source-structure decision only:
+
+- Rendered HTML `<p><img ...>text</p>` and Markdown same-line image+text remain inline in token order.
+- Standalone image lines/blocks remain block images through existing source-line checks.
+- The renderer must not introduce an intrinsic big/small/icon classifier to choose inline vs block.
+
+Display size is a separate rendering concern:
+
+- Inline image size uses the recorded actual `widthPx`/`heightPx` and preserves aspect ratio.
+- `MarkdownParagraph` records the paragraph/Text available width with `onAreaChange` and passes that measured width into `_inlineImageRenderSize(...)`; table cells use their cell width and top-level heading fallback paths use the component width state. This avoids a global fixed "content width" assumption.
+- A viewport safety max height (`INLINE_IMAGE_VIEWPORT_SAFE_MAX_HEIGHT`, currently `1200`) prevents pathological tall draw regions while avoiding the old fixed `320x240` inline cap.
+- Missing size records must not fall back to font-size icons, `24..40`, or a content-width `16:9` placeholder. They use `INLINE_IMAGE_PENDING_SIZE = 1` as a pending load sentinel whose only purpose is to trigger `ImageSpan` loading and `onComplete` intrinsic size reporting. Existing `reportInlineImageComplete` / size-record refresh can replace it with actual aspect-ratio sizing on later render.
+- If no content width has been measured yet, inline images (even with a size record) stay at the same pending sentinel rather than drawing a huge region; once width is measured, recorded dimensions are clamped to that real available width.
+- Emojis/icons can still stay inline; if their actual dimensions are naturally small, they render small because of actual size, not because of a separate inline-small path.
+
+Forbidden strategies: `INLINE_IMAGE_FALLBACK_MIN_SIZE/MAX_SIZE`, `_inlineImageSize(fontSize)`, fixed `INLINE_IMAGE_SPAN_MAX_WIDTH=320` / `MAX_HEIGHT=240`, or any `inlineSmall` / `blockLarge` role classifier.
 
 ## Reading text scale
 
@@ -120,6 +139,7 @@ It also asserts static source boundaries:
 - ordinary HTML table handling does not call `lexer(convertHtmlTable(raw))`, and `RenderProcessedToken` has a `token.type === "table"` renderer branch;
 - ordinary table layout does not use the old fixed `116vp` per-cell strategy or runtime natural `onSizeChange` column measurement; each column is deterministically estimated from header/body text display units with min/max clamps and horizontal padding, table width is the sum of estimated columns, ragged rows pad to `columnCount()`, cells draw explicit right borders for vertical separators, and parsed left/center/right alignment uses Start fallback;
 - no intrinsic big/small image role classifier is introduced;
+- inline image display size uses actual recorded width/height + aspect ratio under measured paragraph/content available width, uses a `1x1` pending load sentinel before intrinsic dimensions/width are available, does not use the old `24..40` font-size fallback, fixed `320x240` inline span cap, or a fixed `360` content-width placeholder, and preserves `<p><img ...>效果已经不是当下 Agent 的主要矛盾</p>` token order;
 - `isImageTokenAloneOnInlineLine(...)` only demotes an image to standalone/block when both `before.trim().length === 0` and `after.trim().length === 0` on the same source line;
 - h1-h6 have independent fixed base typography tokens; no heading contract uses `bodyFontSize() + N` or `min(bodyFontSize()+N, ...)`, and h2-h6 are not collapsed into the body token.
 
@@ -137,7 +157,20 @@ Table layout fix validation is recorded under:
 
 `.hermes-artifacts/rendering-table-layout-fix2/test-logs/`
 
+Image-flow sizing fix1 validation is recorded under:
+
+`.hermes-artifacts/rendering-image-flow-fix1/test-logs/`
+
+Earlier image-flow sizing implementation validation was recorded under:
+
+`.hermes-artifacts/rendering-image-flow-impl/test-logs/`
+
 Implementation evidence paths expected by reviewer exist:
+
+- `.hermes-artifacts/rendering-image-flow-impl/summary.md`
+- `.hermes-artifacts/rendering-image-flow-impl/test-logs/`
+
+Prior implementation evidence paths:
 
 - `.hermes-artifacts/rendering-contract-impl/summary.md`
 - `.hermes-artifacts/rendering-contract-impl/diff-summary.md`

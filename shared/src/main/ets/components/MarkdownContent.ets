@@ -31,10 +31,11 @@ const IMAGE_BLOCK_MONO = "customImageBlock";
 const IMAGE_TABLE_MONO = "customImageTable";
 const IMAGE_TABLE_START = "@@V2NEXT_IMAGE_TABLE_START@@";
 const IMAGE_TABLE_END = "@@V2NEXT_IMAGE_TABLE_END@@";
-const INLINE_IMAGE_FALLBACK_MIN_SIZE = 24;
-const INLINE_IMAGE_FALLBACK_MAX_SIZE = 40;
-const INLINE_IMAGE_SPAN_MAX_WIDTH = 320;
-const INLINE_IMAGE_SPAN_MAX_HEIGHT = 240;
+// Neutral load sentinel for inline images whose intrinsic dimensions are not known yet.
+// This is only to start ImageSpan loading/onComplete; it is not an icon/small-image fallback
+// and must not reserve content-width space before the real image size is recorded.
+const INLINE_IMAGE_PENDING_SIZE = 1;
+const INLINE_IMAGE_VIEWPORT_SAFE_MAX_HEIGHT = 1200;
 const INLINE_IMAGE_SIZE_RECORD_LIMIT = 64;
 
 const RENDER_BODY_FONT_SIZE = 14;
@@ -102,7 +103,7 @@ const RENDER_STYLE_CONTRACT_TABLE: RenderContractStyleRow[] = [
   { name: "em", semanticKind: "em", fontSize: "inherited/body", style: "Italic", color: "TEXT_PRIMARY" },
   { name: "codespan", semanticKind: "codespan", fontSize: "inherited/body", color: "TEXT_PRIMARY", background: "BG_SUB" },
   { name: "imageBlock", semanticKind: "imageBlock", fontSize: "n/a", roleDecision: "source structure / Markdown block semantics; never intrinsic big/small" },
-  { name: "inlineImage", semanticKind: "image", fontSize: "clamp((fixed base 14 * readingTextScale) * 1.5, 24, 40) fallback", roleDecision: "source structure / Markdown inline semantics; measured size only affects rendered dimensions" },
+  { name: "inlineImage", semanticKind: "image", fontSize: "n/a", roleDecision: "source structure / Markdown inline semantics; rendered dimensions come from actual image size + content container max constraint" },
   { name: "imageTable", semanticKind: "imageTable", fontSize: "caption labels", color: "TEXT_SECONDARY" },
   { name: "table", semanticKind: "table", fontSize: "fixed base 14 * readingTextScale", lineHeight: "fixed base 20 * readingTextScale", weight: "header Medium/Bold; body Regular", color: "TEXT_PRIMARY", background: "header BG_SUB; divider #1A000000" },
 ];
@@ -158,17 +159,6 @@ function _isInlineImageToken(token: Token): boolean {
   return token && token.type === "image" && image.inlineImage === true;
 }
 
-function _inlineImageSize(fontSize: number): number {
-  const size = Math.round(fontSize * 1.5);
-  if (size < INLINE_IMAGE_FALLBACK_MIN_SIZE) {
-    return INLINE_IMAGE_FALLBACK_MIN_SIZE;
-  }
-  if (size > INLINE_IMAGE_FALLBACK_MAX_SIZE) {
-    return INLINE_IMAGE_FALLBACK_MAX_SIZE;
-  }
-  return size;
-}
-
 function _findInlineImageSizeRecord(records: InlineImageSizeRecord[], url: string): InlineImageSizeRecord | null {
   if (!url || !records || records.length === 0) {
     return null;
@@ -188,16 +178,30 @@ function _inlineImageRenderUrl(token: Token): string {
   return MediaUrlUtils.imageUrlForRender((token as Tokens.Image).href);
 }
 
-function _inlineImageRenderSize(token: Token, sizeRecords: InlineImageSizeRecord[], fontSize: number): InlineImageRenderSize {
-  const fallback = _inlineImageSize(fontSize);
+function _areaWidth(value: Area): number {
+  if (typeof value.width === 'number') {
+    return value.width;
+  }
+  if (typeof value.width === 'string') {
+    const parsed = Number.parseFloat(value.width);
+    return Number.isNaN(parsed) ? 0 : parsed;
+  }
+  return 0;
+}
+
+function _inlineImageRenderSize(token: Token, sizeRecords: InlineImageSizeRecord[], availableWidth: number): InlineImageRenderSize {
+  const contentMaxWidth = Math.max(0, availableWidth);
   const url = _inlineImageRenderUrl(token);
   const record = _findInlineImageSizeRecord(sizeRecords, url);
   const widthPx = record?.widthPx ?? 0;
   const heightPx = record?.heightPx ?? 0;
-  if (widthPx <= 0 || heightPx <= 0) {
-    return { width: fallback, height: fallback };
+  if (widthPx <= 0 || heightPx <= 0 || contentMaxWidth <= 0) {
+    return {
+      width: INLINE_IMAGE_PENDING_SIZE,
+      height: INLINE_IMAGE_PENDING_SIZE,
+    };
   }
-  const scale = Math.min(1, INLINE_IMAGE_SPAN_MAX_WIDTH / widthPx, INLINE_IMAGE_SPAN_MAX_HEIGHT / heightPx);
+  const scale = Math.min(1, contentMaxWidth / widthPx, INLINE_IMAGE_VIEWPORT_SAFE_MAX_HEIGHT / heightPx);
   return {
     width: Math.max(1, Math.round(widthPx * scale)),
     height: Math.max(1, Math.round(heightPx * scale)),
@@ -651,6 +655,7 @@ function SelectableInlineTokenSpans(
   inlineImageSizeRecords: InlineImageSizeRecord[] = [],
   reportImageComplete?: InlineImageCompleteReporter,
   reportImageError?: InlineImageErrorReporter,
+  availableWidth: number = 0,
 ) {
   ForEach(tokens, (t: Token) => {
     if (t.type === "strong") {
@@ -696,8 +701,8 @@ function SelectableInlineTokenSpans(
         .decoration({ type: TextDecorationType.LineThrough });
     } else if (_isInlineImageToken(t)) {
       ImageSpan(_inlineImageRenderUrl(t))
-        .width(_inlineImageRenderSize(t, inlineImageSizeRecords, fontSize).width)
-        .height(_inlineImageRenderSize(t, inlineImageSizeRecords, fontSize).height)
+        .width(_inlineImageRenderSize(t, inlineImageSizeRecords, availableWidth).width)
+        .height(_inlineImageRenderSize(t, inlineImageSizeRecords, availableWidth).height)
         .objectFit(ImageFit.Contain)
         .verticalAlign(ImageSpanAlignment.CENTER)
         .onComplete((event?: MarkdownImageCompleteEvent) => {
@@ -721,10 +726,23 @@ struct MarkdownParagraph {
   @Prop paragraphToken: Tokens.Paragraph;
   @Prop options: MarkdownOptions;
   @Prop inlineImageSizeRecords: InlineImageSizeRecord[] = [];
+  @Prop contentAvailableWidth: number = 0;
   reportImageComplete?: InlineImageCompleteReporter;
   reportImageError?: InlineImageErrorReporter;
   @StorageLink(StorageKeys.READING_FONT_SIZE) readingFontSize: number = ReadingSettings.TEXT_SCALE_DEFAULT;
   @StorageLink(StorageKeys.READING_LINE_HEIGHT) readingLineHeight: number = ThemeConstants.LINE_HEIGHT_BODY;
+  @State private paragraphAvailableWidth: number = 0;
+
+  private updateParagraphAvailableWidth(value: Area): void {
+    this.paragraphAvailableWidth = _areaWidth(value);
+  }
+
+  private inlineContentMaxWidth(): number {
+    if (this.paragraphAvailableWidth > 0) {
+      return this.paragraphAvailableWidth;
+    }
+    return this.contentAvailableWidth;
+  }
 
   private bodyFontSize(): number {
     return ReadingSettings.scaleTypographyToken(RENDER_BODY_FONT_SIZE, this.readingFontSize);
@@ -778,6 +796,7 @@ struct MarkdownParagraph {
                 this.inlineImageSizeRecords,
                 this.reportImageComplete,
                 this.reportImageError,
+                this.inlineContentMaxWidth(),
               );
             }
             .fontSize(this.bodyFontSize())
@@ -785,6 +804,9 @@ struct MarkdownParagraph {
             .lineHeight(this.bodyLineHeight())
             .textAlign(TextAlign.Start)
             .width("100%")
+            .onAreaChange((_oldValue: Area, newValue: Area) => {
+              this.updateParagraphAvailableWidth(newValue);
+            })
             .copyOption(CopyOptions.LocalDevice)
             .textSelectable(TextSelectableMode.SELECTABLE_FOCUSABLE)
           }
@@ -801,6 +823,7 @@ struct MarkdownParagraph {
           this.inlineImageSizeRecords,
           this.reportImageComplete,
           this.reportImageError,
+          this.inlineContentMaxWidth(),
         );
       }
       .fontSize(this.bodyFontSize())
@@ -808,6 +831,9 @@ struct MarkdownParagraph {
       .lineHeight(this.bodyLineHeight())
       .textAlign(TextAlign.Start)
       .width("100%")
+      .onAreaChange((_oldValue: Area, newValue: Area) => {
+        this.updateParagraphAvailableWidth(newValue);
+      })
     } else {
       Text() {
         SelectableInlineTokenSpans(
@@ -817,6 +843,7 @@ struct MarkdownParagraph {
           this.inlineImageSizeRecords,
           this.reportImageComplete,
           this.reportImageError,
+          this.inlineContentMaxWidth(),
         );
       }
       .fontSize(this.bodyFontSize())
@@ -824,6 +851,9 @@ struct MarkdownParagraph {
       .lineHeight(this.bodyLineHeight())
       .textAlign(TextAlign.Start)
       .width("100%")
+      .onAreaChange((_oldValue: Area, newValue: Area) => {
+        this.updateParagraphAvailableWidth(newValue);
+      })
       .copyOption(CopyOptions.LocalDevice)
       .textSelectable(TextSelectableMode.SELECTABLE_FOCUSABLE)
     }
@@ -835,6 +865,7 @@ struct MarkdownBlockquote {
   @Prop quoteToken: Token;
   @Prop options: MarkdownOptions;
   @Prop inlineImageSizeRecords: InlineImageSizeRecord[] = [];
+  @Prop contentAvailableWidth: number = 0;
   reportImageComplete?: InlineImageCompleteReporter;
   reportImageError?: InlineImageErrorReporter;
   @StorageLink(StorageKeys.READING_FONT_SIZE) readingFontSize: number = ReadingSettings.TEXT_SCALE_DEFAULT;
@@ -871,6 +902,7 @@ struct MarkdownBlockquote {
               paragraphToken: child as Tokens.Paragraph,
               options: this.options,
               inlineImageSizeRecords: this.inlineImageSizeRecords,
+              contentAvailableWidth: this.contentAvailableWidth,
               reportImageComplete: this.reportImageComplete,
               reportImageError: this.reportImageError,
             });
@@ -879,6 +911,7 @@ struct MarkdownBlockquote {
               listToken: child as Tokens.List,
               options: this.options,
               inlineImageSizeRecords: this.inlineImageSizeRecords,
+              contentAvailableWidth: this.contentAvailableWidth,
               reportImageComplete: this.reportImageComplete,
               reportImageError: this.reportImageError,
             });
@@ -1083,6 +1116,7 @@ function InlineTokenSpans(
   inlineImageSizeRecords: InlineImageSizeRecord[] = [],
   reportImageComplete?: InlineImageCompleteReporter,
   reportImageError?: InlineImageErrorReporter,
+  availableWidth: number = 0,
 ) {
   ForEach(tokens, (t: Token) => {
     if (t.type === "strong") {
@@ -1122,8 +1156,8 @@ function InlineTokenSpans(
         .decoration({ type: TextDecorationType.LineThrough });
     } else if (_isInlineImageToken(t)) {
       ImageSpan(_inlineImageRenderUrl(t))
-        .width(_inlineImageRenderSize(t, inlineImageSizeRecords, fontSize).width)
-        .height(_inlineImageRenderSize(t, inlineImageSizeRecords, fontSize).height)
+        .width(_inlineImageRenderSize(t, inlineImageSizeRecords, availableWidth).width)
+        .height(_inlineImageRenderSize(t, inlineImageSizeRecords, availableWidth).height)
         .objectFit(ImageFit.Contain)
         .verticalAlign(ImageSpanAlignment.CENTER)
         .onComplete((event?: MarkdownImageCompleteEvent) => {
@@ -1614,6 +1648,7 @@ struct CustomList {
   @Prop listToken: Tokens.List;
   @Prop options: MarkdownOptions;
   @Prop inlineImageSizeRecords: InlineImageSizeRecord[] = [];
+  @Prop contentAvailableWidth: number = 0;
   reportImageComplete?: InlineImageCompleteReporter;
   reportImageError?: InlineImageErrorReporter;
   @StorageLink(StorageKeys.READING_FONT_SIZE) readingFontSize: number = ReadingSettings.TEXT_SCALE_DEFAULT;
@@ -1665,6 +1700,7 @@ struct CustomList {
                     paragraphToken: child as Tokens.Paragraph,
                     options: this.options,
                     inlineImageSizeRecords: this.inlineImageSizeRecords,
+                    contentAvailableWidth: this.contentAvailableWidth,
                     reportImageComplete: this.reportImageComplete,
                     reportImageError: this.reportImageError,
                   });
@@ -1680,6 +1716,7 @@ struct CustomList {
                   listToken: child as Tokens.List,
                   options: this.options,
                   inlineImageSizeRecords: this.inlineImageSizeRecords,
+                  contentAvailableWidth: this.contentAvailableWidth,
                   reportImageComplete: this.reportImageComplete,
                   reportImageError: this.reportImageError,
                 }).padding({
@@ -1746,6 +1783,7 @@ export struct MarkdownContent {
   @StorageLink(StorageKeys.THEME_EFFECTIVE_DARK) themeEffectiveDark: boolean = false;
   @State private tokens: Token[] = [];
   @State private inlineImageSizeRecords: InlineImageSizeRecord[] = [];
+  @State private contentAvailableWidth: number = 0;
 
   aboutToAppear() {
     this.refreshTokens();
@@ -1760,8 +1798,12 @@ export struct MarkdownContent {
     this.tokens = MarkdownContent.processTokens(this.source, this.inlineImageSizeRecords);
   }
 
+  private updateContentAvailableWidth(value: Area): void {
+    this.contentAvailableWidth = _areaWidth(value);
+  }
+
   private reportInlineImageComplete(url: string, event?: MarkdownImageCompleteEvent): void {
-    if (!url || (event?.loadingStatus ?? 0) !== 1) {
+    if (!url) {
       return;
     }
     const widthPx = event?.width ?? 0;
@@ -1885,6 +1927,7 @@ export struct MarkdownContent {
     MarkdownContent.rewriteImageTableMarkers(tokens);
     MarkdownContent.rewriteBareImageLinks(tokens);
     MarkdownContent.rewriteInlineImageLinks(tokens);
+    MarkdownContent.splitResolvedWideInlineImages(tokens, sizeRecords);
     // Keep mixed text/image paragraphs as a single ordered token stream.
     // Splitting them into adjacent top-level custom blocks lets @lidary/markdown
     // reorder custom builders in practice (e.g. image rendered before preceding
@@ -2825,6 +2868,80 @@ export struct MarkdownContent {
     }
   }
 
+  private static splitResolvedWideInlineImages(tokens: Token[], sizeRecords: InlineImageSizeRecord[]): void {
+    if (!tokens || tokens.length === 0) {
+      return;
+    }
+    for (let i = 0; i < tokens.length; i++) {
+      const token = tokens[i] as TokenRecord;
+      const type = (token["type"] as string) || "";
+      if (type === "paragraph") {
+        const replacement = MarkdownContent.splitParagraphByResolvedWideInlineImages(token, sizeRecords);
+        if (replacement.length > 0) {
+          tokens.splice(i, 1, ...replacement);
+          i += replacement.length - 1;
+          continue;
+        }
+      }
+
+      const childTokens = token["tokens"] as Token[] | undefined;
+      if (Array.isArray(childTokens) && childTokens.length > 0) {
+        MarkdownContent.splitResolvedWideInlineImages(childTokens, sizeRecords);
+      }
+
+      const items = token["items"] as Array<TokenRecord> | undefined;
+      if (Array.isArray(items) && items.length > 0) {
+        for (const item of items) {
+          const itemTokens = item["tokens"] as Token[] | undefined;
+          if (Array.isArray(itemTokens) && itemTokens.length > 0) {
+            MarkdownContent.splitResolvedWideInlineImages(itemTokens, sizeRecords);
+          }
+        }
+      }
+    }
+  }
+
+  private static splitParagraphByResolvedWideInlineImages(paragraph: TokenRecord, sizeRecords: InlineImageSizeRecord[]): Token[] {
+    const inlineTokens = paragraph["tokens"] as Token[] | undefined;
+    if (!Array.isArray(inlineTokens) || inlineTokens.length === 0) {
+      return [];
+    }
+    if (!inlineTokens.some((token: Token): boolean => MarkdownContent.shouldFlowInlineImageAsBlock(token, sizeRecords))) {
+      return [];
+    }
+    const result: Token[] = [];
+    let textTokens: Token[] = [];
+    for (const token of inlineTokens) {
+      if (MarkdownContent.shouldFlowInlineImageAsBlock(token, sizeRecords)) {
+        MarkdownContent.flushParagraphTokens(result, textTokens);
+        textTokens = [];
+        (token as InlineImageToken).inlineImage = false;
+        result.push({
+          type: "paragraph",
+          raw: String((token as TokenRecord)["raw"] ?? ""),
+          text: String((token as TokenRecord)["text"] ?? ""),
+          tokens: [token],
+        } as Tokens.Paragraph);
+      } else {
+        textTokens.push(token);
+      }
+    }
+    MarkdownContent.flushParagraphTokens(result, textTokens);
+    return result.length > 1 ? result : [];
+  }
+
+  private static shouldFlowInlineImageAsBlock(token: Token, sizeRecords: InlineImageSizeRecord[]): boolean {
+    if (!token || token.type !== "image" || !_isInlineImageToken(token)) {
+      return false;
+    }
+    const url = _inlineImageRenderUrl(token);
+    const record = _findInlineImageSizeRecord(sizeRecords, url);
+    if (!record || record.widthPx <= 0 || record.heightPx <= 0) {
+      return false;
+    }
+    return record.widthPx > 96 || record.heightPx > 48;
+  }
+
   private static splitParagraphByImages(paragraph: TokenRecord): Token[] {
     const inlineTokens = paragraph["tokens"] as Token[] | undefined;
     if (!Array.isArray(inlineTokens) || inlineTokens.length === 0) {
@@ -3550,6 +3667,7 @@ export struct MarkdownContent {
         paragraphToken: token as Tokens.Paragraph,
         options: this.markdownOptions(),
         inlineImageSizeRecords: this.inlineImageSizeRecords,
+        contentAvailableWidth: this.contentAvailableWidth,
         reportImageComplete: (url: string, event?: MarkdownImageCompleteEvent) => { this.reportInlineImageComplete(url, event); },
         reportImageError: (url: string, event?: MarkdownImageErrorEvent) => { this.reportInlineImageError(url, event); },
       });
@@ -3580,6 +3698,7 @@ export struct MarkdownContent {
         quoteToken: token,
         options: this.markdownOptions(),
         inlineImageSizeRecords: this.inlineImageSizeRecords,
+        contentAvailableWidth: this.contentAvailableWidth,
         reportImageComplete: (url: string, event?: MarkdownImageCompleteEvent) => { this.reportInlineImageComplete(url, event); },
         reportImageError: (url: string, event?: MarkdownImageErrorEvent) => { this.reportInlineImageError(url, event); },
       });
@@ -3592,6 +3711,7 @@ export struct MarkdownContent {
           this.inlineImageSizeRecords,
           (url: string, event?: MarkdownImageCompleteEvent) => { this.reportInlineImageComplete(url, event); },
           (url: string, event?: MarkdownImageErrorEvent) => { this.reportInlineImageError(url, event); },
+          this.contentAvailableWidth,
         );
       }
         .fontSize(this.headingSize(token))
@@ -3619,6 +3739,9 @@ export struct MarkdownContent {
     }
     .id(this.sourceIdentity())
     .width("100%")
+    .onAreaChange((_oldValue: Area, newValue: Area) => {
+      this.updateContentAvailableWidth(newValue);
+    })
     .alignItems(HorizontalAlign.Start)
     .margin({ top: this.effectiveTopMargin() });
   }
