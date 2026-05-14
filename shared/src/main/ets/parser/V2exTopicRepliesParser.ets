@@ -166,7 +166,10 @@ export class V2exTopicRepliesParser {
     if (!src) {
       return ''
     }
-    return src
+    // Rendered V2EX replies often contain text<br><img><img>. Treat image
+    // fragments as block boundaries at the source-conversion stage so later
+    // Markdown token splitting cannot reorder text around block images.
+    return `\n\n${src}\n\n`
   }
 
   private static extractAttr(tag: string, name: string): string {
