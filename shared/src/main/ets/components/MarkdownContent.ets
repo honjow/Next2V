@@ -37,8 +37,66 @@ const INLINE_IMAGE_SPAN_MAX_WIDTH = 320;
 const INLINE_IMAGE_SPAN_MAX_HEIGHT = 240;
 const INLINE_IMAGE_SIZE_RECORD_LIMIT = 64;
 
-type TokenValue = Object | null | undefined;
+const RENDER_BODY_FONT_SIZE = 14;
+const RENDER_BODY_LINE_HEIGHT = 20;
+const RENDER_CODE_FONT_SIZE = 12;
+const RENDER_CODE_LINE_HEIGHT = 18;
+const RENDER_H1_FONT_SIZE = 22;
+const RENDER_H1_LINE_HEIGHT = 28;
+const RENDER_H2_FONT_SIZE = 20;
+const RENDER_H2_LINE_HEIGHT = 26;
+const RENDER_H3_FONT_SIZE = 18;
+const RENDER_H3_LINE_HEIGHT = 24;
+const RENDER_H4_FONT_SIZE = 16;
+const RENDER_H4_LINE_HEIGHT = 22;
+const RENDER_H5_FONT_SIZE = 15;
+const RENDER_H5_LINE_HEIGHT = 21;
+const RENDER_H6_FONT_SIZE = 14;
+const RENDER_H6_LINE_HEIGHT = 20;
+
+type TokenValue = Object | string | number | boolean | null | undefined;
 type TokenRecord = Record<string, TokenValue>;
+
+type RenderSourceKind = "markdown" | "renderedHtml";
+type RenderBlockKind = "paragraph" | "heading" | "list" | "blockquote" | "code" | "imageBlock" | "imageTable";
+type RenderInlineKind = "text" | "link" | "strong" | "em" | "codespan" | "image" | "break";
+type RenderToken = Token;
+
+interface RenderContractStyleRow {
+  name: string;
+  semanticKind: RenderBlockKind | RenderInlineKind;
+  fontSize: string;
+  lineHeight?: string;
+  color?: string;
+  weight?: string;
+  style?: string;
+  background?: string;
+  roleDecision?: string;
+}
+
+// Explicit V2Next rendering contract table. These rows are intentionally string
+// formulas rather than computed values so adapter tests can assert the semantic
+// contract without requiring ArkUI runtime objects. The actual builders below
+// must stay aligned with this table.
+const RENDER_STYLE_CONTRACT_TABLE: RenderContractStyleRow[] = [
+  { name: "paragraph", semanticKind: "paragraph", fontSize: "fixed base 14 * readingTextScale", lineHeight: "fixed base 20 * readingTextScale", color: "TEXT_PRIMARY" },
+  { name: "h1", semanticKind: "heading", fontSize: "fixed base 22 * readingTextScale", lineHeight: "fixed base 28 * readingTextScale", weight: "Bold", color: "TEXT_PRIMARY" },
+  { name: "h2", semanticKind: "heading", fontSize: "fixed base 20 * readingTextScale", lineHeight: "fixed base 26 * readingTextScale", weight: "Bold", color: "TEXT_PRIMARY" },
+  { name: "h3", semanticKind: "heading", fontSize: "fixed base 18 * readingTextScale", lineHeight: "fixed base 24 * readingTextScale", weight: "Medium", color: "TEXT_PRIMARY" },
+  { name: "h4", semanticKind: "heading", fontSize: "fixed base 16 * readingTextScale", lineHeight: "fixed base 22 * readingTextScale", weight: "Medium", color: "TEXT_PRIMARY" },
+  { name: "h5", semanticKind: "heading", fontSize: "fixed base 15 * readingTextScale", lineHeight: "fixed base 21 * readingTextScale", weight: "Medium", color: "TEXT_PRIMARY" },
+  { name: "h6", semanticKind: "heading", fontSize: "fixed base 14 * readingTextScale", lineHeight: "fixed base 20 * readingTextScale", weight: "Medium", color: "TEXT_PRIMARY" },
+  { name: "list", semanticKind: "list", fontSize: "fixed base 14 * readingTextScale", lineHeight: "fixed base 20 * readingTextScale", color: "TEXT_PRIMARY" },
+  { name: "blockquote", semanticKind: "blockquote", fontSize: "fixed base 14 * readingTextScale", lineHeight: "fixed base 20 * readingTextScale", color: "TEXT_PRIMARY", background: "_quoteBackground(...)" },
+  { name: "code/pre", semanticKind: "code", fontSize: "fixed base 12 * readingTextScale", lineHeight: "fixed base 18 * readingTextScale", color: "CODE_TEXT", background: "_codeBackground(...)" },
+  { name: "link", semanticKind: "link", fontSize: "inherited/body", color: "TEXT_LINK", style: "underline except member links" },
+  { name: "strong", semanticKind: "strong", fontSize: "inherited/body", weight: "Bold", color: "TEXT_PRIMARY" },
+  { name: "em", semanticKind: "em", fontSize: "inherited/body", style: "Italic", color: "TEXT_PRIMARY" },
+  { name: "codespan", semanticKind: "codespan", fontSize: "inherited/body", color: "TEXT_PRIMARY", background: "BG_SUB" },
+  { name: "imageBlock", semanticKind: "imageBlock", fontSize: "n/a", roleDecision: "source structure / Markdown block semantics; never intrinsic big/small" },
+  { name: "inlineImage", semanticKind: "image", fontSize: "clamp((fixed base 14 * readingTextScale) * 1.5, 24, 40) fallback", roleDecision: "source structure / Markdown inline semantics; measured size only affects rendered dimensions" },
+  { name: "imageTable", semanticKind: "imageTable", fontSize: "caption labels", color: "TEXT_SECONDARY" },
+];
 
 interface InlineImageToken extends Tokens.Image {
   inlineImage?: boolean;
@@ -633,15 +691,15 @@ struct MarkdownParagraph {
   @Prop inlineImageSizeRecords: InlineImageSizeRecord[] = [];
   reportImageComplete?: InlineImageCompleteReporter;
   reportImageError?: InlineImageErrorReporter;
-  @StorageLink(StorageKeys.READING_FONT_SIZE) readingFontSize: number = ThemeConstants.FONT_SIZE_BODY;
+  @StorageLink(StorageKeys.READING_FONT_SIZE) readingFontSize: number = ReadingSettings.TEXT_SCALE_DEFAULT;
   @StorageLink(StorageKeys.READING_LINE_HEIGHT) readingLineHeight: number = ThemeConstants.LINE_HEIGHT_BODY;
 
   private bodyFontSize(): number {
-    return ReadingSettings.normalizeFontSize(this.readingFontSize);
+    return ReadingSettings.scaleTypographyToken(RENDER_BODY_FONT_SIZE, this.readingFontSize);
   }
 
   private bodyLineHeight(): number {
-    return ReadingSettings.normalizeLineHeight(this.readingLineHeight, this.bodyFontSize());
+    return ReadingSettings.scaleTypographyToken(RENDER_BODY_LINE_HEIGHT, this.readingFontSize);
   }
 
   private inlineTokens(): Token[] {
@@ -747,15 +805,15 @@ struct MarkdownBlockquote {
   @Prop inlineImageSizeRecords: InlineImageSizeRecord[] = [];
   reportImageComplete?: InlineImageCompleteReporter;
   reportImageError?: InlineImageErrorReporter;
-  @StorageLink(StorageKeys.READING_FONT_SIZE) readingFontSize: number = ThemeConstants.FONT_SIZE_BODY;
+  @StorageLink(StorageKeys.READING_FONT_SIZE) readingFontSize: number = ReadingSettings.TEXT_SCALE_DEFAULT;
   @StorageLink(StorageKeys.READING_LINE_HEIGHT) readingLineHeight: number = ThemeConstants.LINE_HEIGHT_BODY;
 
   private bodyFontSize(): number {
-    return ReadingSettings.normalizeFontSize(this.readingFontSize);
+    return ReadingSettings.scaleTypographyToken(RENDER_BODY_FONT_SIZE, this.readingFontSize);
   }
 
   private bodyLineHeight(): number {
-    return ReadingSettings.normalizeLineHeight(this.readingLineHeight, this.bodyFontSize());
+    return ReadingSettings.scaleTypographyToken(RENDER_BODY_LINE_HEIGHT, this.readingFontSize);
   }
 
   private quoteRailHeight(): number {
@@ -823,7 +881,7 @@ struct MarkdownBlockquote {
 struct MarkdownCodeBlock {
   @Prop codeToken: Tokens.Code;
   @Prop options: MarkdownOptions;
-  @StorageLink(StorageKeys.READING_FONT_SIZE) readingFontSize: number = ThemeConstants.FONT_SIZE_BODY;
+  @StorageLink(StorageKeys.READING_FONT_SIZE) readingFontSize: number = ReadingSettings.TEXT_SCALE_DEFAULT;
   @StorageLink(StorageKeys.READING_LINE_HEIGHT) readingLineHeight: number = ThemeConstants.LINE_HEIGHT_BODY;
   @State private wrapLines: boolean = false;
 
@@ -852,13 +910,11 @@ struct MarkdownCodeBlock {
   }
 
   private codeFontSize(): number {
-    const fontSize = ReadingSettings.normalizeFontSize(this.readingFontSize) - 2;
-    return fontSize < ThemeConstants.FONT_SIZE_CODE ? ThemeConstants.FONT_SIZE_CODE : fontSize;
+    return ReadingSettings.scaleTypographyToken(RENDER_CODE_FONT_SIZE, this.readingFontSize);
   }
 
   private codeLineHeight(): number {
-    const lineHeight = ReadingSettings.normalizeLineHeight(this.readingLineHeight, ReadingSettings.normalizeFontSize(this.readingFontSize)) - 2;
-    return lineHeight < ThemeConstants.LINE_HEIGHT_CODE ? ThemeConstants.LINE_HEIGHT_CODE : lineHeight;
+    return ReadingSettings.scaleTypographyToken(RENDER_CODE_LINE_HEIGHT, this.readingFontSize);
   }
 
   private isDarkMode(): boolean {
@@ -877,7 +933,7 @@ struct MarkdownCodeBlock {
             this.codePalette()[ht.type] ??
             ThemeConstants.CODE_TEXT,
         )
-        .fontSize(this.options.theme?.code?.fontSize ?? this.codeFontSize())
+        .fontSize(this.codeFontSize())
         .fontFamily("Noto Sans Mono");
     })
   }
@@ -1338,16 +1394,16 @@ struct CustomList {
   @Prop inlineImageSizeRecords: InlineImageSizeRecord[] = [];
   reportImageComplete?: InlineImageCompleteReporter;
   reportImageError?: InlineImageErrorReporter;
-  @StorageLink(StorageKeys.READING_FONT_SIZE) readingFontSize: number = ThemeConstants.FONT_SIZE_BODY;
+  @StorageLink(StorageKeys.READING_FONT_SIZE) readingFontSize: number = ReadingSettings.TEXT_SCALE_DEFAULT;
   @StorageLink(StorageKeys.READING_LINE_HEIGHT) readingLineHeight: number = ThemeConstants.LINE_HEIGHT_BODY;
   @StorageLink(StorageKeys.READING_DENSITY) readingDensity: string = ReadingSettings.DENSITY_STANDARD;
 
   private bodyFontSize(): number {
-    return ReadingSettings.normalizeFontSize(this.readingFontSize);
+    return ReadingSettings.scaleTypographyToken(RENDER_BODY_FONT_SIZE, this.readingFontSize);
   }
 
   private bodyLineHeight(): number {
-    return ReadingSettings.normalizeLineHeight(this.readingLineHeight, this.bodyFontSize());
+    return ReadingSettings.scaleTypographyToken(RENDER_BODY_LINE_HEIGHT, this.readingFontSize);
   }
 
   private blockSpace(): number {
@@ -1462,7 +1518,7 @@ export struct MarkdownContent {
   onImageClick?: (url: string) => void
   onLinkClick?: (url: string) => void
   onMentionClick?: (username: string) => void
-  @StorageLink(StorageKeys.READING_FONT_SIZE) readingFontSize: number = ThemeConstants.FONT_SIZE_BODY;
+  @StorageLink(StorageKeys.READING_FONT_SIZE) readingFontSize: number = ReadingSettings.TEXT_SCALE_DEFAULT;
   @StorageLink(StorageKeys.READING_LINE_HEIGHT) readingLineHeight: number = ThemeConstants.LINE_HEIGHT_BODY;
   @StorageLink(StorageKeys.READING_DENSITY) readingDensity: string = ReadingSettings.DENSITY_STANDARD;
   @StorageLink(StorageKeys.THEME_EFFECTIVE_DARK) themeEffectiveDark: boolean = false;
@@ -1530,16 +1586,13 @@ export struct MarkdownContent {
   }
 
   private bodyFontSize(): number {
-    return ReadingSettings.normalizeFontSize(this.readingFontSize);
+    return ReadingSettings.scaleTypographyToken(RENDER_BODY_FONT_SIZE, this.readingFontSize);
   }
 
   private bodyLineHeight(): number {
-    return ReadingSettings.normalizeLineHeight(this.readingLineHeight, this.bodyFontSize());
+    return ReadingSettings.scaleTypographyToken(RENDER_BODY_LINE_HEIGHT, this.readingFontSize);
   }
 
-  private headingFontSize(delta: number): number {
-    return this.bodyFontSize() + delta;
-  }
 
   private blockSpace(): number {
     if (this.readingDensity === ReadingSettings.DENSITY_COMPACT) {
@@ -1598,11 +1651,14 @@ export struct MarkdownContent {
   //   not @lidary/markdown custom builder behavior.
   private static processTokens(md: string, sizeRecords: InlineImageSizeRecord[] = []): Token[] {
     let tokens: Token[];
+    let sourceKind: RenderSourceKind;
     const decodedSource = HtmlEntityUtils.decode(md || '');
     if (MarkdownContent.looksLikeRenderedHtml(decodedSource)) {
-      tokens = MarkdownContent.renderedHtmlToTokens(decodedSource, sizeRecords);
+      sourceKind = "renderedHtml";
+      tokens = MarkdownContent.parseRenderedHtmlToRenderAst(decodedSource, sizeRecords);
     } else {
-      tokens = lexer(MarkdownContent.normalizeMarkdownSource(decodedSource), { gfm: true, breaks: true });
+      sourceKind = "markdown";
+      tokens = MarkdownContent.parseMarkdownToRenderAst(decodedSource, sizeRecords);
     }
     MarkdownContent.rewriteImageTableMarkers(tokens);
     MarkdownContent.rewriteBareImageLinks(tokens);
@@ -1616,7 +1672,44 @@ export struct MarkdownContent {
     MarkdownContent.removeIgnorableLayoutTokens(tokens);
     MarkdownContent.mergeSelectableParagraphRuns(tokens);
     MarkdownContent.retypeBlockTokens(tokens);
+    MarkdownContent.tagRenderSourceKind(tokens as RenderToken[], sourceKind);
     return tokens;
+  }
+
+  private static parseMarkdownToRenderAst(source: string, _sizeRecords: InlineImageSizeRecord[] = []): RenderToken[] {
+    const tokens = lexer(MarkdownContent.normalizeMarkdownSource(source), { gfm: true, breaks: true }) as RenderToken[];
+    MarkdownContent.tagRenderSourceKind(tokens, "markdown");
+    return tokens;
+  }
+
+  private static parseRenderedHtmlToRenderAst(contentRendered: string, sizeRecords: InlineImageSizeRecord[] = []): RenderToken[] {
+    const tokens = MarkdownContent.renderedHtmlToTokens(contentRendered, sizeRecords) as RenderToken[];
+    MarkdownContent.tagRenderSourceKind(tokens, "renderedHtml");
+    return tokens;
+  }
+
+  private static tagRenderSourceKind(tokens: RenderToken[], sourceKind: RenderSourceKind): void {
+    if (!tokens || tokens.length === 0) {
+      return;
+    }
+    for (const token of tokens) {
+      const record = token as TokenRecord;
+      record["rawSourceKind"] = sourceKind;
+      const childTokens = record["tokens"] as RenderToken[] | undefined;
+      if (Array.isArray(childTokens) && childTokens.length > 0) {
+        MarkdownContent.tagRenderSourceKind(childTokens, sourceKind);
+      }
+      const items = record["items"] as Array<TokenRecord> | undefined;
+      if (Array.isArray(items) && items.length > 0) {
+        for (const item of items) {
+          item["rawSourceKind"] = sourceKind;
+          const itemTokens = item["tokens"] as RenderToken[] | undefined;
+          if (Array.isArray(itemTokens) && itemTokens.length > 0) {
+            MarkdownContent.tagRenderSourceKind(itemTokens, sourceKind);
+          }
+        }
+      }
+    }
   }
 
   private static renderedHtmlToTokens(html: string, sizeRecords: InlineImageSizeRecord[] = []): Token[] {
@@ -2483,7 +2576,7 @@ export struct MarkdownContent {
       }
       after += text;
     }
-    return before.trim().length === 0;
+    return before.trim().length === 0 && after.trim().length === 0;
   }
 
   private static rewriteInlineImageToken(token: Token): Token[] {
@@ -2913,7 +3006,6 @@ export struct MarkdownContent {
         linkColor: ThemeConstants.TEXT_LINK,
         code: {
           fontColor: _codeColors(this.themeEffectiveDark),
-          fontSize: this.bodyFontSize(),
           backgroundColor: _codeBackground(this.themeEffectiveDark),
           borderRadius: ThemeConstants.RADIUS_SM,
           codeSpanBackgroundColor: this.themeEffectiveDark ? '#30363D' : '#EFF1F3',
@@ -2957,28 +3049,64 @@ export struct MarkdownContent {
     return Math.max(1, Math.min(6, depth));
   }
 
-  private headingSize(token: Token): number {
-    // Content headings are section labels inside a post body, not native page
-    // titles. Keep them inside the same reading rhythm as paragraphs and cap
-    // lower-level headings so user-selected large body text does not turn V2EX
-    // <h2>/<h3> into oversized app chrome.
+  private headingBaseFontSize(token: Token): number {
     const level = this.headingLevel(token);
     if (level <= 1) {
-      return Math.min(this.bodyFontSize() + 1, ThemeConstants.FONT_SIZE_TITLE);
+      return RENDER_H1_FONT_SIZE;
     }
-    return Math.min(this.bodyFontSize(), ThemeConstants.FONT_SIZE_BODY);
+    if (level === 2) {
+      return RENDER_H2_FONT_SIZE;
+    }
+    if (level === 3) {
+      return RENDER_H3_FONT_SIZE;
+    }
+    if (level === 4) {
+      return RENDER_H4_FONT_SIZE;
+    }
+    if (level === 5) {
+      return RENDER_H5_FONT_SIZE;
+    }
+    return RENDER_H6_FONT_SIZE;
+  }
+
+  private headingBaseLineHeight(token: Token): number {
+    const level = this.headingLevel(token);
+    if (level <= 1) {
+      return RENDER_H1_LINE_HEIGHT;
+    }
+    if (level === 2) {
+      return RENDER_H2_LINE_HEIGHT;
+    }
+    if (level === 3) {
+      return RENDER_H3_LINE_HEIGHT;
+    }
+    if (level === 4) {
+      return RENDER_H4_LINE_HEIGHT;
+    }
+    if (level === 5) {
+      return RENDER_H5_LINE_HEIGHT;
+    }
+    return RENDER_H6_LINE_HEIGHT;
+  }
+
+  private headingSize(token: Token): number {
+    return ReadingSettings.scaleTypographyToken(this.headingBaseFontSize(token), this.readingFontSize);
   }
 
   private headingLineHeight(token: Token): number {
-    return Math.max(this.headingSize(token) + 4, Math.min(this.bodyLineHeight(), ThemeConstants.LINE_HEIGHT_BODY));
+    return ReadingSettings.scaleTypographyToken(this.headingBaseLineHeight(token), this.readingFontSize);
   }
 
   private headingWeight(token: Token): FontWeight {
-    return this.headingLevel(token) <= 1 ? FontWeight.Medium : FontWeight.Regular;
+    const level = this.headingLevel(token);
+    if (level <= 2) {
+      return FontWeight.Bold;
+    }
+    return FontWeight.Medium;
   }
 
-  private headingColor(token: Token): ResourceColor {
-    return this.headingLevel(token) <= 1 ? ThemeConstants.TEXT_PRIMARY : ThemeConstants.TEXT_SECONDARY;
+  private headingColor(_token: Token): ResourceColor {
+    return ThemeConstants.TEXT_PRIMARY;
   }
 
   private headingInlineTokens(token: Token): Token[] {

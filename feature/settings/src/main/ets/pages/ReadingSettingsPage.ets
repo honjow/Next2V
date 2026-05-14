@@ -2,7 +2,6 @@ import { common } from '@kit.AbilityKit'
 import {
   ConciseListRow,
   GroupedListSection,
-  ListDivider as SharedListDivider,
   ReadingSettings,
   SecondaryListScaffold,
   StorageKeys,
@@ -13,8 +12,19 @@ const PREVIEW_FIXED_HEIGHT: number = 220
 
 @Component
 export struct ReadingSettingsPage {
-  @StorageLink(StorageKeys.READING_FONT_SIZE) readingFontSize: number = ThemeConstants.FONT_SIZE_BODY
-  @StorageLink(StorageKeys.READING_LINE_HEIGHT) readingLineHeight: number = ThemeConstants.LINE_HEIGHT_BODY
+  @StorageLink(StorageKeys.READING_FONT_SIZE) readingFontSize: number = ReadingSettings.TEXT_SCALE_DEFAULT
+
+  private scaledToken(baseValue: number): number {
+    return ReadingSettings.scaleTypographyToken(baseValue, this.readingFontSize)
+  }
+
+  private bodyFontSize(): number {
+    return this.scaledToken(ThemeConstants.FONT_SIZE_BODY)
+  }
+
+  private bodyLineHeight(): number {
+    return this.scaledToken(ThemeConstants.LINE_HEIGHT_BODY)
+  }
 
   build() {
     Column() {
@@ -44,28 +54,28 @@ export struct ReadingSettingsPage {
       Scroll() {
         Column({ space: ThemeConstants.SPACE_MD }) {
           Text('一条关于 Next2V 的主题')
-            .fontSize(this.readingFontSize + 3)
+            .fontSize(this.scaledToken(18))
             .fontWeight(FontWeight.Medium)
             .fontColor($r('sys.color.font_primary'))
-            .lineHeight(this.readingLineHeight + 2)
+            .lineHeight(this.scaledToken(24))
             .width('100%')
 
-          Text('这是阅读字体设置的实时预览区域。拖动下面的滑块后，正文的字号和行距会立即同步变化，用来接近实际主题详情中的阅读感受。')
-            .fontSize(this.readingFontSize)
+          Text('这是阅读字体设置的实时预览区域。拖动下面的滑块后，正文、标题、列表、引用和代码会按同一比例缩放，用来接近实际主题详情中的阅读感受。')
+            .fontSize(this.bodyFontSize())
             .fontColor($r('sys.color.font_primary'))
-            .lineHeight(this.readingLineHeight)
+            .lineHeight(this.bodyLineHeight())
             .width('100%')
 
           Text('V2EX 的讨论通常包含短句、链接、引用和代码片段。预览保持在页面背景上，避免额外卡片影响对文字排版的判断。')
-            .fontSize(this.readingFontSize)
+            .fontSize(this.bodyFontSize())
             .fontColor($r('sys.color.font_primary'))
-            .lineHeight(this.readingLineHeight)
+            .lineHeight(this.bodyLineHeight())
             .width('100%')
 
           Text('> 如果一种设置能让你不用停顿就读完整段内容，它大概就是合适的。')
-            .fontSize(this.readingFontSize - 1)
+            .fontSize(this.scaledToken(13))
             .fontColor($r('sys.color.font_secondary'))
-            .lineHeight(this.readingLineHeight)
+            .lineHeight(this.bodyLineHeight())
             .width('100%')
             .padding({
               left: ThemeConstants.SPACE_MD,
@@ -101,7 +111,7 @@ export struct ReadingSettingsPage {
       Column() {
         Column({ space: ThemeConstants.SPACE_SM }) {
           Row() {
-            Text('字号')
+            Text('文字缩放')
               .fontSize(ThemeConstants.FONT_SIZE_LIST_ITEM)
               .fontColor($r('sys.color.font_primary'))
               .maxLines(1)
@@ -113,16 +123,16 @@ export struct ReadingSettingsPage {
 
           Slider({
             value: this.readingFontSize,
-            min: ReadingSettings.FONT_SIZE_MIN,
-            max: ReadingSettings.FONT_SIZE_MAX,
-            step: 1,
+            min: ReadingSettings.TEXT_SCALE_MIN,
+            max: ReadingSettings.TEXT_SCALE_MAX,
+            step: 0.01,
             style: SliderStyle.InSet
           })
             .width('100%')
             .selectedColor(ThemeConstants.BRAND_PRIMARY)
             .showTips(false)
             .onChange((nextValue: number, _mode: SliderChangeMode) => {
-              this.updateReadingFontSize(nextValue)
+              this.updateReadingTextScale(nextValue)
             })
         }
         .width('100%')
@@ -132,44 +142,6 @@ export struct ReadingSettingsPage {
           top: ThemeConstants.SPACE_MD,
           bottom: ThemeConstants.SPACE_MD
         })
-
-        this.SettingsDivider()
-
-        Column({ space: ThemeConstants.SPACE_SM }) {
-          Row() {
-            Text('行距')
-              .fontSize(ThemeConstants.FONT_SIZE_LIST_ITEM)
-              .fontColor($r('sys.color.font_primary'))
-              .maxLines(1)
-              .textOverflow({ overflow: TextOverflow.Ellipsis })
-            Blank()
-          }
-          .width('100%')
-          .height(32)
-
-          Slider({
-            value: this.readingLineHeight,
-            min: this.readingLineHeightMin(),
-            max: ReadingSettings.LINE_HEIGHT_MAX,
-            step: 1,
-            style: SliderStyle.InSet
-          })
-            .width('100%')
-            .selectedColor(ThemeConstants.BRAND_PRIMARY)
-            .showTips(false)
-            .onChange((nextValue: number, _mode: SliderChangeMode) => {
-              this.updateReadingLineHeight(nextValue)
-            })
-        }
-        .width('100%')
-        .padding({
-          left: ThemeConstants.SPACE_LG,
-          right: ThemeConstants.SPACE_LG,
-          top: ThemeConstants.SPACE_MD,
-          bottom: ThemeConstants.SPACE_MD
-        })
-
-        this.SettingsDivider()
 
         ConciseListRow({
           title: '恢复默认',
@@ -184,27 +156,16 @@ export struct ReadingSettingsPage {
     }
   }
 
-  @Builder
-  SettingsDivider() {
-    SharedListDivider()
+  private updateReadingTextScale(textScale: number): void {
+    const nextTextScale = ReadingSettings.normalizeTextScale(textScale)
+    this.saveReadingTextScale(nextTextScale)
   }
 
-  private updateReadingFontSize(fontSize: number): void {
-    const nextFontSize = ReadingSettings.normalizeFontSize(fontSize)
-    const nextLineHeight = ReadingSettings.normalizeLineHeight(this.readingLineHeight, nextFontSize)
-    this.saveReadingSettings(nextFontSize, nextLineHeight)
-  }
-
-  private updateReadingLineHeight(lineHeight: number): void {
-    this.saveReadingSettings(this.readingFontSize,
-      ReadingSettings.normalizeLineHeight(lineHeight, this.readingFontSize))
-  }
-
-  private saveReadingSettings(fontSize: number, lineHeight: number): void {
-    this.readingFontSize = ReadingSettings.normalizeFontSize(fontSize)
-    this.readingLineHeight = ReadingSettings.normalizeLineHeight(lineHeight, this.readingFontSize)
+  private saveReadingTextScale(textScale: number): void {
+    this.readingFontSize = ReadingSettings.normalizeTextScale(textScale)
+    const lineHeight = ReadingSettings.scaleTypographyToken(ThemeConstants.LINE_HEIGHT_BODY, this.readingFontSize)
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    ReadingSettings.saveTypography(context, this.readingFontSize, this.readingLineHeight)
+    ReadingSettings.saveTypography(context, this.readingFontSize, lineHeight)
       .catch((error: Error) => {
         console.error('save reading settings failed: ' + error.message)
       })
@@ -213,7 +174,7 @@ export struct ReadingSettingsPage {
   private confirmResetReadingSettings(): void {
     AlertDialog.show({
       title: '恢复默认阅读字体设置',
-      message: '将字号和行距恢复为默认值。确定继续吗？',
+      message: '将文字缩放恢复为默认值。确定继续吗？',
       primaryButton: {
         value: '取消',
         action: () => {
@@ -230,12 +191,6 @@ export struct ReadingSettingsPage {
   }
 
   private resetReadingSettings(): void {
-    const defaultFontSize = ReadingSettings.normalizeFontSize(ThemeConstants.FONT_SIZE_BODY)
-    const defaultLineHeight = ReadingSettings.normalizeLineHeight(ThemeConstants.LINE_HEIGHT_BODY, defaultFontSize)
-    this.saveReadingSettings(defaultFontSize, defaultLineHeight)
-  }
-
-  private readingLineHeightMin(): number {
-    return Math.max(ReadingSettings.LINE_HEIGHT_MIN, ReadingSettings.normalizeFontSize(this.readingFontSize) + 4)
+    this.saveReadingTextScale(ReadingSettings.TEXT_SCALE_DEFAULT)
   }
 }
