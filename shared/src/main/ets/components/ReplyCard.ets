@@ -5,6 +5,7 @@ import { Avatar } from './Avatar'
 import { TimeAgo } from './TimeAgo'
 import { MarkdownContent } from './MarkdownContent'
 import { ImageUtils } from '../utils/ImageUtils'
+import { SymbolGlyphModifier } from '@kit.ArkUI'
 @Component
 export struct ReplyCard {
   @Prop reply: V2exReply;
@@ -180,11 +181,17 @@ export struct ReplyCard {
     }, 20)
   }
 
+  @State contextIcon: SymbolGlyphModifier = new SymbolGlyphModifier($r('sys.symbol.ellipsis_bubble'));
+  @State copyUserIcon: SymbolGlyphModifier = new SymbolGlyphModifier($r('sys.symbol.person'));
+  @State copyContentIcon: SymbolGlyphModifier = new SymbolGlyphModifier($r('sys.symbol.doc_plaintext'));
+  @State ignoreIcon: SymbolGlyphModifier = new SymbolGlyphModifier($r('sys.symbol.xmark'));
+  @State reportIcon: SymbolGlyphModifier = new SymbolGlyphModifier($r('sys.symbol.exclamationmark_triangle'));
+
   @Builder
   ReplyActionMenu() {
     Menu() {
       if (this.onContextClick) {
-        MenuItem({ content: '查看上下文', startIcon: $r('sys.symbol.ellipsis_bubble') }).onClick(
+        MenuItem({ content: '查看上下文', symbolStartIcon: this.contextIcon }).onClick(
           () => {
             this.runContextAction(this.onContextClick)
           },
@@ -192,13 +199,13 @@ export struct ReplyCard {
       }
 
       if (this.onCopyUserClick) {
-        MenuItem({ content: '复制用户名', startIcon: $r('sys.symbol.person') }).onClick(() => {
+        MenuItem({ content: '复制用户名', symbolStartIcon: this.copyUserIcon }).onClick(() => {
           this.runContextAction(this.onCopyUserClick)
         })
       }
 
       if (this.onCopyContentClick) {
-        MenuItem({ content: '复制回复内容', startIcon: $r('sys.symbol.doc_plaintext') }).onClick(
+        MenuItem({ content: '复制回复内容', symbolStartIcon: this.copyContentIcon }).onClick(
           () => {
             this.runContextAction(this.onCopyContentClick)
           },
@@ -206,7 +213,7 @@ export struct ReplyCard {
       }
 
       if (this.onIgnoreClick) {
-        MenuItem({ content: '忽略回复', startIcon: $r('sys.symbol.xmark') }).onClick(() => {
+        MenuItem({ content: '忽略回复', symbolStartIcon: this.ignoreIcon }).onClick(() => {
           this.runContextAction(this.onIgnoreClick)
         })
       }
@@ -214,7 +221,7 @@ export struct ReplyCard {
       if (this.onReportClick) {
         MenuItem({
           content: '举报回复',
-          startIcon: $r('sys.symbol.exclamationmark_triangle'),
+          symbolStartIcon: this.reportIcon,
         }).onClick(() => {
           this.runContextAction(this.onReportClick)
         })
