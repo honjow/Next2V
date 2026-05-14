@@ -1,42 +1,69 @@
 import { UserViewModel } from '../viewmodel/UserViewModel'
 import {
-  V2exTopic, V2exUserReply, TopicCard, ThemeConstants, TopicDetailParams, StorageKeys, NodeTopicListParams,
-  Avatar, DateUtils, SecondaryListScaffold, MarkdownContent, UserProfileParams, CookieJarSettings,
-  V2exRoute, V2exUrlRouter, BlockedMemberSettings
+  V2exTopic,
+  V2exUserReply,
+  TopicCard,
+  ThemeConstants,
+  TopicDetailParams,
+  StorageKeys,
+  NodeTopicListParams,
+  Avatar,
+  DateUtils,
+  SecondaryListScaffold,
+  MarkdownContent,
+  UserProfileParams,
+  CookieJarSettings,
+  V2exRoute,
+  V2exUrlRouter,
+  BlockedMemberSettings,
 } from 'shared'
 import type { TopicReadState } from 'shared'
-import { promptAction } from '@kit.ArkUI'
+import { promptAction, SegmentButton, SegmentButtonOptions } from '@kit.ArkUI'
 import { common, Want } from '@kit.AbilityKit'
-
 @Component
 export struct UserProfilePage {
-  @Prop username: string = ''
-  @Consume('ns') stack: NavPathStack
-  @State vm: UserViewModel = new UserViewModel(this.username)
-  @State private activityTab: number = 0
-  @State private following: boolean = false
-  @State private blocked: boolean = false
-  @StorageLink(StorageKeys.TOPIC_READ_STATES) topicReadStates: string = '[]'
-  @StorageLink(StorageKeys.AUTH_SESSION_USERNAME) sessionUsername: string = ''
-  @StorageLink(StorageKeys.USER_PROFILE_ACTION) @Watch('onUserProfileActionCommand') userProfileActionCommand: string = ''
-  @StorageLink(StorageKeys.USER_PROFILE_ACTIONS_USERNAME) userProfileActionsUsername: string = ''
-  @StorageLink(StorageKeys.USER_PROFILE_ACTIONS_AVAILABLE) userProfileActionsAvailable: boolean = false
-  @StorageLink(StorageKeys.USER_PROFILE_FOLLOW_LABEL) userProfileFollowLabel: string = ''
-  @StorageLink(StorageKeys.USER_PROFILE_BLOCK_LABEL) userProfileBlockLabel: string = ''
-  @StorageLink(StorageKeys.USER_PROFILE_FOLLOWING) userProfileFollowing: boolean = false
-  @StorageLink(StorageKeys.USER_PROFILE_BLOCKED) userProfileBlocked: boolean = false
-  @StorageLink(StorageKeys.USER_PROFILE_APPBAR_TITLE_USERNAME) userProfileAppbarTitleUsername: string = ''
-  @StorageLink(StorageKeys.USER_PROFILE_APPBAR_TITLE_AVATAR_URL) userProfileAppbarTitleAvatarUrl: string = ''
-  @StorageLink(StorageKeys.USER_PROFILE_APPBAR_TITLE_ROUTE_USERNAME) userProfileAppbarTitleRouteUsername: string = ''
-  @StorageLink(StorageKeys.USER_PROFILE_APPBAR_TITLE_STATES) userProfileAppbarTitleStates: string = '{}'
-  @StorageLink(StorageKeys.USER_PROFILE_APPBAR_AVATAR_STATES) userProfileAppbarAvatarStates: string = '{}'
-  @StorageLink(StorageKeys.USER_PROFILE_SHOWN) @Watch('onUserProfileShown') userProfileShown: string = ''
-  @StorageProp(StorageKeys.TOP_AVOID_HEIGHT) topH: number = 0
-  @State private usernameContentBottom: number = 0
-  @State private currentScrollOffset: number = 0
-  @State private isUsernameCoveredByAppbar: boolean = false
+  @Prop username: string = '';
+  @Consume('ns') stack: NavPathStack;
+  @State vm: UserViewModel = new UserViewModel(this.username);
+  @State private activityTab: number = 0;
+  @State private tabSelectedIndexes: number[] = [0];
+  @State private tabOptions: SegmentButtonOptions = SegmentButtonOptions.tab({
+    buttons: [{ text: '主题' }, { text: '回复' }],
+    buttonPadding: { top: 12, bottom: 12, left: 8, right: 8 },
+  });
+  @State private following: boolean = false;
+  @State private blocked: boolean = false;
+  @StorageLink(StorageKeys.TOPIC_READ_STATES) topicReadStates: string = '[]';
+  @StorageLink(StorageKeys.AUTH_SESSION_USERNAME) sessionUsername: string = '';
+  @StorageLink(StorageKeys.USER_PROFILE_ACTION)
+  @Watch('onUserProfileActionCommand')
+  userProfileActionCommand: string = '';
+  @StorageLink(StorageKeys.USER_PROFILE_ACTIONS_USERNAME) userProfileActionsUsername: string = '';
+  @StorageLink(StorageKeys.USER_PROFILE_ACTIONS_AVAILABLE) userProfileActionsAvailable: boolean =
+    false;
+  @StorageLink(StorageKeys.USER_PROFILE_FOLLOW_LABEL) userProfileFollowLabel: string = '';
+  @StorageLink(StorageKeys.USER_PROFILE_BLOCK_LABEL) userProfileBlockLabel: string = '';
+  @StorageLink(StorageKeys.USER_PROFILE_FOLLOWING) userProfileFollowing: boolean = false;
+  @StorageLink(StorageKeys.USER_PROFILE_BLOCKED) userProfileBlocked: boolean = false;
+  @StorageLink(StorageKeys.USER_PROFILE_APPBAR_TITLE_USERNAME)
+  userProfileAppbarTitleUsername: string = '';
+  @StorageLink(StorageKeys.USER_PROFILE_APPBAR_TITLE_AVATAR_URL)
+  userProfileAppbarTitleAvatarUrl: string = '';
+  @StorageLink(StorageKeys.USER_PROFILE_APPBAR_TITLE_ROUTE_USERNAME)
+  userProfileAppbarTitleRouteUsername: string = '';
+  @StorageLink(StorageKeys.USER_PROFILE_APPBAR_TITLE_STATES) userProfileAppbarTitleStates: string =
+    '{}';
+  @StorageLink(StorageKeys.USER_PROFILE_APPBAR_AVATAR_STATES)
+  userProfileAppbarAvatarStates: string = '{}';
+  @StorageLink(StorageKeys.USER_PROFILE_SHOWN)
+  @Watch('onUserProfileShown')
+  userProfileShown: string = '';
+  @StorageProp(StorageKeys.TOP_AVOID_HEIGHT) topH: number = 0;
+  @State private usernameContentBottom: number = 0;
+  @State private currentScrollOffset: number = 0;
+  @State private isUsernameCoveredByAppbar: boolean = false;
 
-  private readonly titleVisibilityHysteresis: number = 4
+  private readonly titleVisibilityHysteresis: number = 4;
 
   aboutToAppear(): void {
     this.currentScrollOffset = 0
@@ -44,26 +71,31 @@ export struct UserProfilePage {
     this.isUsernameCoveredByAppbar = false
     this.publishActionMenuState()
     this.publishAppbarTitle(false)
-    this.vm.load()
+    this.vm
+      .load()
       .then(() => {
         this.syncActionState()
         this.evaluateAppbarTitleVisibility()
+        this.updateTabLabels()
       })
-      .catch((_error: Error) => {
-      })
+      .catch((_error: Error) => {})
   }
 
   build() {
     Column() {
       if (this.vm.isLoading && this.vm.profile === null) {
-        Column() { this.LoadingView() }
-          .justifyContent(FlexAlign.Center).width('100%').layoutWeight(1)
+        Column() {
+          this.LoadingView()
+        }
+        .justifyContent(FlexAlign.Center)
+        .width('100%')
+        .layoutWeight(1)
       } else if (this.vm.profile !== null) {
         SecondaryListScaffold({
           onDidScroll: (offset: number, _state: ScrollState) => {
             this.currentScrollOffset = Math.max(0, offset)
             this.evaluateAppbarTitleVisibility()
-          }
+          },
         }) {
           ListItem() {
             this.ProfileCard()
@@ -81,22 +113,29 @@ export struct UserProfilePage {
                 this.EmptyText('暂无主题')
               }
             } else {
-              LazyForEach(this.vm.topicDataSource, (topic: V2exTopic) => {
-                ListItem() {
-                  TopicCard({
-                    item: topic,
-                    isUnread: this.isTopicUnread(topic),
-                    onNodeClick: () => {
-                      let p: NodeTopicListParams = { nodeName: topic.node.name, nodeTitle: topic.node.title }
-                      this.stack.pushPathByName('NodeTopicList', p as Object)
-                    }
+              LazyForEach(
+                this.vm.topicDataSource,
+                (topic: V2exTopic) => {
+                  ListItem() {
+                    TopicCard({
+                      item: topic,
+                      isUnread: this.isTopicUnread(topic),
+                      onNodeClick: () => {
+                        let p: NodeTopicListParams = {
+                          nodeName: topic.node.name,
+                          nodeTitle: topic.node.title,
+                        }
+                        this.stack.pushPathByName('NodeTopicList', p as Object)
+                      },
+                    })
+                  }
+                  .onClick(() => {
+                    let p: TopicDetailParams = { topicId: topic.id }
+                    this.stack.pushPathByName('TopicDetail', p as Object)
                   })
-                }
-                .onClick(() => {
-                  let p: TopicDetailParams = { topicId: topic.id }
-                  this.stack.pushPathByName('TopicDetail', p as Object)
-                })
-              }, (topic: V2exTopic) => topic.id.toString())
+                },
+                (topic: V2exTopic) => topic.id.toString(),
+              )
               if (this.shouldShowAllActivityButton()) {
                 ListItem() {
                   this.AllActivityEntry('查看全部主题')
@@ -109,15 +148,23 @@ export struct UserProfilePage {
                 this.EmptyText('暂无回复')
               }
             } else {
-              LazyForEach(this.vm.replyDataSource, (reply: V2exUserReply) => {
-                ListItem() {
-                  this.ReplyItem(reply)
-                }
-                .onClick(() => {
-                  let p: TopicDetailParams = { topicId: reply.topic_id, targetFloor: reply.target_floor }
-                  this.stack.pushPathByName('TopicDetail', p as Object)
-                })
-              }, (reply: V2exUserReply) => `${reply.topic_id}-${reply.target_floor}-${reply.created}`)
+              LazyForEach(
+                this.vm.replyDataSource,
+                (reply: V2exUserReply) => {
+                  ListItem() {
+                    this.ReplyItem(reply)
+                  }
+                  .onClick(() => {
+                    let p: TopicDetailParams = {
+                      topicId: reply.topic_id,
+                      targetFloor: reply.target_floor,
+                    }
+                    this.stack.pushPathByName('TopicDetail', p as Object)
+                  })
+                },
+                (reply: V2exUserReply) =>
+                  `${reply.topic_id}-${reply.target_floor}-${reply.created}`,
+              )
               if (this.shouldShowAllActivityButton()) {
                 ListItem() {
                   this.AllActivityEntry('查看全部回复')
@@ -127,17 +174,22 @@ export struct UserProfilePage {
           }
         }
       } else {
-        Column() { this.ErrorView() }
-          .justifyContent(FlexAlign.Center).width('100%').layoutWeight(1)
+        Column() {
+          this.ErrorView()
+        }
+        .justifyContent(FlexAlign.Center)
+        .width('100%')
+        .layoutWeight(1)
       }
     }
-      .width('100%').height('100%')
-      .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
-      .onVisibleAreaChange([0.0, 1.0], (isVisible: boolean, _currentRatio: number) => {
-        if (isVisible) {
-          this.republishVisibleState()
-        }
-      })
+    .width('100%')
+    .height('100%')
+    .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
+    .onVisibleAreaChange([0.0, 1.0], (isVisible: boolean, _currentRatio: number) => {
+      if (isVisible) {
+        this.republishVisibleState()
+      }
+    })
   }
 
   @Builder LoadingView() {
@@ -153,7 +205,10 @@ export struct UserProfilePage {
   @Builder ProfileCard() {
     Column({ space: ThemeConstants.SPACE_MD }) {
       Row({ space: ThemeConstants.SPACE_MD }) {
-        Avatar({ url: this.vm.profile!.avatar_large || this.vm.profile!.avatar_normal, avatarSize: 72 })
+        Avatar({
+          url: this.vm.profile!.avatar_large || this.vm.profile!.avatar_normal,
+          avatarSize: 72,
+        })
         Column({ space: ThemeConstants.SPACE_XS }) {
           Text(this.displayProfileUsername())
             .fontSize(22)
@@ -162,7 +217,8 @@ export struct UserProfilePage {
             .maxLines(1)
             .textOverflow({ overflow: TextOverflow.Ellipsis })
             .onAreaChange((_oldValue: Area, newValue: Area) => {
-              const measuredGlobalBottom = this.areaY(newValue?.globalPosition?.y) + this.areaLength(newValue?.height)
+              const measuredGlobalBottom =
+                this.areaY(newValue?.globalPosition?.y) + this.areaLength(newValue?.height)
               this.usernameContentBottom = measuredGlobalBottom + this.currentScrollOffset
               this.evaluateAppbarTitleVisibility()
             })
@@ -173,7 +229,9 @@ export struct UserProfilePage {
               .maxLines(2)
               .textOverflow({ overflow: TextOverflow.Ellipsis })
           }
-          Text(`第 ${this.vm.profile!.id} 号会员 · ${DateUtils.toDateString(this.vm.profile!.created)}`)
+          Text(
+            `第 ${this.vm.profile!.id} 号会员 · ${DateUtils.toDateString(this.vm.profile!.created)}`,
+          )
             .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
             .fontColor($r('sys.color.font_secondary'))
             .maxLines(1)
@@ -202,29 +260,28 @@ export struct UserProfilePage {
     .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }
 
-  @Builder ActivityTabs() {
-    Row() {
-      Row({ space: ThemeConstants.SPACE_XS }) {
-        this.ActivityTabButton('主题', 0, this.vm.recentTopicCount)
-        this.ActivityTabButton('回复', 1, this.vm.recentReplyCount)
-      }
-      Blank()
-    }
-    .width('100%')
-    .alignItems(VerticalAlign.Center)
-    .padding(ThemeConstants.SPACE_SM)
+  private updateTabLabels(): void {
+    const topicLabel = this.vm.recentTopicCount > 0 ? `主题 ${this.vm.recentTopicCount}` : '主题'
+    const replyLabel = this.vm.recentReplyCount > 0 ? `回复 ${this.vm.recentReplyCount}` : '回复'
+    this.tabOptions.buttons[0].text = topicLabel
+    this.tabOptions.buttons[1].text = replyLabel
   }
 
-  @Builder ActivityTabButton(label: string, tab: number, count: number) {
-    Button(`${label}${count > 0 ? ` ${count}` : ''}`)
-      .type(ButtonType.Capsule)
-      .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-      .height(30)
-      .buttonStyle(ButtonStyleMode.NORMAL)
-      .fontColor(this.activityTab === tab ? $r('sys.color.ohos_id_color_activated') : $r('sys.color.font_primary'))
-      .onClick(() => {
-        this.activityTab = tab
+  @Builder ActivityTabs() {
+    Row() {
+      SegmentButton({
+        options: this.tabOptions,
+        selectedIndexes: $tabSelectedIndexes,
+        onItemClicked: (index: number) => {
+          this.activityTab = index
+        },
       })
+        .constraintSize({ maxWidth: 448 })
+    }
+    .width('100%')
+    .justifyContent(FlexAlign.Center)
+    .alignItems(VerticalAlign.Center)
+    .padding(ThemeConstants.SPACE_SM)
   }
 
   @Builder AllActivityEntry(label: string) {
@@ -237,7 +294,10 @@ export struct UserProfilePage {
       .width('100%')
       .onClick(() => {
         let p: UserProfileParams = { username: this.username }
-        this.stack.pushPathByName(this.activityTab === 0 ? 'UserTopics' : 'UserReplies', p as Object)
+        this.stack.pushPathByName(
+          this.activityTab === 0 ? 'UserTopics' : 'UserReplies',
+          p as Object,
+        )
       })
   }
 
@@ -272,9 +332,7 @@ export struct UserProfilePage {
             .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
             .fontColor($r('sys.color.font_secondary'))
         }
-      }
-      .width('100%')
-
+      }.width('100%')
       Text(reply.topic_title)
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
         .fontWeight(FontWeight.Medium)
@@ -287,8 +345,12 @@ export struct UserProfilePage {
         MarkdownContent({
           source: reply.content,
           topMargin: 0,
-          onLinkClick: (url: string) => { this.openContentLink(url) },
-          onMentionClick: (username: string) => { this.openUserProfile(username) }
+          onLinkClick: (url: string) => {
+            this.openContentLink(url)
+          },
+          onMentionClick: (username: string) => {
+            this.openUserProfile(username)
+          },
         })
       }
     }
@@ -342,7 +404,9 @@ export struct UserProfilePage {
       Button('重试')
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
         .margin({ top: ThemeConstants.SPACE_LG })
-        .onClick(() => { this.vm.load() })
+        .onClick(() => {
+          this.vm.load()
+        })
     }
     .justifyContent(FlexAlign.Center)
     .width('100%')
@@ -370,9 +434,10 @@ export struct UserProfilePage {
 
   private openV2exRoute(route: V2exRoute): void {
     if (route.kind === 'topic' && route.topicId && route.topicId > 0) {
-      const p: TopicDetailParams = route.targetFloor && route.targetFloor > 0
-        ? { topicId: route.topicId, targetFloor: route.targetFloor }
-        : { topicId: route.topicId }
+      const p: TopicDetailParams =
+        route.targetFloor && route.targetFloor > 0
+          ? { topicId: route.topicId, targetFloor: route.targetFloor }
+          : { topicId: route.topicId }
       this.stack.pushPathByName('TopicDetail', p as Object)
       return
     }
@@ -386,7 +451,10 @@ export struct UserProfilePage {
       return
     }
     if (route.kind === 'search' && route.query) {
-      AppStorage.setOrCreate<string>(StorageKeys.PENDING_SEARCH_QUERY, `${Date.now()}:${route.query}`)
+      AppStorage.setOrCreate<string>(
+        StorageKeys.PENDING_SEARCH_QUERY,
+        `${Date.now()}:${route.query}`,
+      )
       this.stack.pushPathByName('Search', null)
     }
   }
@@ -398,7 +466,7 @@ export struct UserProfilePage {
     }
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     const want: Want = { action: 'ohos.want.action.viewData', uri: target }
-    context.startAbility(want).catch((_error: Error) => { })
+    context.startAbility(want).catch((_error: Error) => {})
   }
 
   private toggleFollow(): void {
@@ -409,7 +477,8 @@ export struct UserProfilePage {
     const nextFollowing = !this.following
     this.following = nextFollowing
     this.publishActionMenuState()
-    this.vm.toggleFollow()
+    this.vm
+      .toggleFollow()
       .then(() => {
         this.syncActionState()
         this.showActionToast(nextFollowing ? '已关注' : '已取消关注')
@@ -431,7 +500,8 @@ export struct UserProfilePage {
     const nextBlocked = !this.blocked
     this.blocked = nextBlocked
     this.publishActionMenuState()
-    this.vm.toggleBlock()
+    this.vm
+      .toggleBlock()
       .then(() => {
         this.syncActionState()
         this.persistBlockedMemberState(this.blocked)
@@ -453,11 +523,10 @@ export struct UserProfilePage {
       return
     }
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    BlockedMemberSettings.setBlocked(context, username, blocked)
-      .catch((error: Error) => {
-        console.error('persist blocked member failed: ' + error.message)
-        BlockedMemberSettings.publishUpdatedAt()
-      })
+    BlockedMemberSettings.setBlocked(context, username, blocked).catch((error: Error) => {
+      console.error('persist blocked member failed: ' + error.message)
+      BlockedMemberSettings.publishUpdatedAt()
+    })
   }
 
   private syncActionState(): void {
@@ -527,15 +596,16 @@ export struct UserProfilePage {
       if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
         titleStates = parsed
       }
-    } catch (_e) {
-    }
+    } catch (_e) {}
     try {
-      const parsed = JSON.parse(this.userProfileAppbarAvatarStates || '{}') as Record<string, string>
+      const parsed = JSON.parse(this.userProfileAppbarAvatarStates || '{}') as Record<
+        string,
+        string
+      >
       if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
         avatarStates = parsed
       }
-    } catch (_e) {
-    }
+    } catch (_e) {}
     titleStates[routeUsername] = titleUsername
     avatarStates[routeUsername] = avatarUrl
     this.userProfileAppbarTitleStates = JSON.stringify(titleStates)
@@ -568,7 +638,10 @@ export struct UserProfilePage {
   }
 
   private publishActionMenuState(): void {
-    const canShowActions = this.vm.actions !== null && !this.isCurrentSessionUser() && !!CookieJarSettings.getCurrentCookie()
+    const canShowActions =
+      this.vm.actions !== null &&
+      !this.isCurrentSessionUser() &&
+      !!CookieJarSettings.getCurrentCookie()
     const hasFollowAction = canShowActions && !!this.vm.actions?.followPath
     const hasBlockAction = canShowActions && !!this.vm.actions?.blockPath
     const available = hasFollowAction || hasBlockAction
@@ -593,22 +666,24 @@ export struct UserProfilePage {
   }
 
   private reloadActionStateAfterFailure(): void {
-    this.vm.load()
+    this.vm
+      .load()
       .then(() => {
         this.syncActionState()
+        this.updateTabLabels()
       })
-      .catch((_error: Error) => {
-      })
+      .catch((_error: Error) => {})
   }
 
   private refreshActionStateLater(): void {
     setTimeout(() => {
-      this.vm.load()
+      this.vm
+        .load()
         .then(() => {
           this.syncActionState()
+          this.updateTabLabels()
         })
-        .catch((_error: Error) => {
-        })
+        .catch((_error: Error) => {})
     }, 1200)
   }
 
@@ -650,8 +725,12 @@ export struct UserProfilePage {
 
   onUserProfileActionCommand(_propName: string): void {
     const raw = (this.userProfileActionCommand || '').trim()
-    if (!raw || !this.userProfileActionsAvailable || this.userProfileActionsUsername !== this.username ||
-      this.vm.isActionLoading) {
+    if (
+      !raw ||
+      !this.userProfileActionsAvailable ||
+      this.userProfileActionsUsername !== this.username ||
+      this.vm.isActionLoading
+    ) {
       return
     }
     const action = raw.split(':').pop() || ''
