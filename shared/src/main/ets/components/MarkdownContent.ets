@@ -2151,9 +2151,7 @@ export struct MarkdownContent {
       const text = String(record["text"] ?? "").trim();
       const normalizedText = MediaUrlUtils.normalizeUrl(text);
       if (href && (!text || normalizedText === MediaUrlUtils.normalizeUrl(String(record["href"] ?? "")))) {
-        const rawHref = MediaUrlUtils.normalizeUrl(String(record["href"] ?? ""));
-        const imgurPage = /^https?:\/\/(?:www\.)?imgur\.com\/[A-Za-z0-9]{5,12}(?:[?#].*)?$/i.test(rawHref);
-        return [MarkdownContent.buildImageToken(String(record["raw"] ?? text), href, text, !imgurPage) as Token];
+        return [MarkdownContent.buildImageToken(String(record["raw"] ?? text), href, text, false) as Token];
       }
       return [token];
     }
@@ -2201,8 +2199,11 @@ export struct MarkdownContent {
       if (m.index > last) {
         result.push(MarkdownContent.buildTextToken(text.slice(last, m.index)) as Token);
       }
-      const inlineImage = !MarkdownContent.isUrlAloneOnLine(text, m.index, m.index + rawUrl.length);
-      result.push(MarkdownContent.buildImageToken(rawUrl, renderUrl, "", inlineImage) as Token);
+      // Bare image URLs default to block. If the source later proves to be a
+      // genuinely small image, MarkdownAutoImage reports its dimensions and the
+      // token pass can promote it to inline. This avoids treating consecutive
+      // large images on the same rendered HTML line as emoji-sized ImageSpans.
+      result.push(MarkdownContent.buildImageToken(rawUrl, renderUrl, "", false) as Token);
       last = m.index + rawUrl.length;
       m = re.exec(text);
     }
@@ -2215,27 +2216,6 @@ export struct MarkdownContent {
     return result;
   }
 
-  private static isUrlAloneOnLine(text: string, start: number, end: number): boolean {
-    const raw = text || "";
-    let lineStart = start;
-    while (lineStart > 0) {
-      const ch = raw.charAt(lineStart - 1);
-      if (ch === "\n" || ch === "\r") {
-        break;
-      }
-      lineStart--;
-    }
-    let lineEnd = end;
-    while (lineEnd < raw.length) {
-      const ch = raw.charAt(lineEnd);
-      if (ch === "\n" || ch === "\r") {
-        break;
-      }
-      lineEnd++;
-    }
-    const before = raw.slice(lineStart, start).trim();
-    return before.length === 0;
-  }
 
   private static buildTextToken(text: string): Tokens.Text {
     return {
