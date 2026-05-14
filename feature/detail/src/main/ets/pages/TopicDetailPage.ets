@@ -6,10 +6,35 @@ import { uniformTypeDescriptor as utd } from '@kit.ArkData'
 import { pasteboard } from '@kit.BasicServicesKit'
 import { systemShare } from '@kit.ShareKit'
 import {
-  V2exReply, Avatar, ReplyCard, TimeAgo, ThemeConstants, MarkdownContent, PullRefreshListScaffold,
-  NodeTopicListParams, UserProfileParams, ImagePreviewParams, CollectionSettings, CacheSettings, V2exTopic, AuthSettings,
-  LoadingFooter, HttpClient, StorageKeys, ApiService, CookieJarSettings, V2exToggleAction, ReadingSettings, ReplyDisplaySettings,
-  AppModalScaffold, V2exRoute, V2exUrlRouter, TopicDetailParams, ImageUtils, HtmlEntityUtils, defaultSheetOptions,
+  V2exReply,
+  Avatar,
+  ReplyCard,
+  TimeAgo,
+  ThemeConstants,
+  MarkdownContent,
+  PullRefreshListScaffold,
+  NodeTopicListParams,
+  UserProfileParams,
+  ImagePreviewParams,
+  CollectionSettings,
+  CacheSettings,
+  V2exTopic,
+  AuthSettings,
+  LoadingFooter,
+  HttpClient,
+  StorageKeys,
+  ApiService,
+  CookieJarSettings,
+  V2exToggleAction,
+  ReadingSettings,
+  ReplyDisplaySettings,
+  AppModalScaffold,
+  V2exRoute,
+  V2exUrlRouter,
+  TopicDetailParams,
+  ImageUtils,
+  HtmlEntityUtils,
+  defaultSheetOptions,
 } from 'shared'
 import type { V2exReplyThankAction, V2exTopicThankAction } from 'shared'
 import type { V2exReplyModerationAction, V2exTopicModerationAction } from 'shared'
@@ -20,79 +45,92 @@ interface ReplyContextItem {
   label: string
   selected: boolean
 }
-
 @Component
 export struct TopicDetailPage {
-  @Prop topicId: number = 0
-  @Prop targetFloor: number = 0
-  @Prop hideTitle: boolean = false
-  @State v: DetailViewModel = new DetailViewModel(0)
-  @Consume('ns') stack: NavPathStack
-  @StorageLink(StorageKeys.TOPIC_DETAIL_ACTION) @Watch('onTopicActionCommand') topicActionCommand: string = ''
-  @StorageLink(StorageKeys.TOPIC_DETAIL_SAVED_LATER) topicDetailSavedLater: boolean = false
-  @StorageLink(StorageKeys.TOPIC_DETAIL_SITE_FAVORITED) topicDetailSiteFavorited: boolean = false
-  @StorageLink(StorageKeys.TOPIC_DETAIL_THANKED) topicDetailThanked: boolean = false
-  @StorageLink(StorageKeys.TOPIC_DETAIL_APPBAR_TITLE) topicDetailAppbarTitle: string = ''
-  @StorageLink(StorageKeys.TOPIC_DETAIL_APPBAR_AVATAR_URL) topicDetailAppbarAvatarUrl: string = ''
-  @StorageLink(StorageKeys.TOPIC_DETAIL_APPBAR_USERNAME) topicDetailAppbarUsername: string = ''
-  @StorageLink(StorageKeys.TOPIC_DETAIL_APPBAR_ROUTE_TOPIC_ID) topicDetailAppbarRouteTopicId: string = ''
-  @StorageLink(StorageKeys.TOPIC_DETAIL_APPBAR_TITLE_STATES) topicDetailAppbarTitleStates: string = '{}'
-  @StorageLink(StorageKeys.TOPIC_DETAIL_APPBAR_AVATAR_STATES) topicDetailAppbarAvatarStates: string = '{}'
-  @StorageLink(StorageKeys.TOPIC_DETAIL_APPBAR_USERNAME_STATES) topicDetailAppbarUsernameStates: string = '{}'
-  @StorageLink(StorageKeys.AUTH_COOKIE_CONFIGURED) authCookieConfigured: boolean = false
-  @StorageLink(StorageKeys.ACCOUNT_WRITE_ENABLED) writeEnabled: boolean = false
-  @StorageLink(StorageKeys.READING_FONT_SIZE) readingFontSize: number = ThemeConstants.FONT_SIZE_BODY
-  @StorageLink(StorageKeys.READING_LINE_HEIGHT) readingLineHeight: number = ThemeConstants.LINE_HEIGHT_BODY
-  @StorageLink(StorageKeys.READING_DENSITY) readingDensity: string = ReadingSettings.DENSITY_STANDARD
-  @StorageLink(StorageKeys.READING_RESTORE_POSITION) readingRestorePosition: boolean = false
-  @StorageLink(StorageKeys.MOTION_HAND_EDGE) @Watch('onMotionHandEdgeChanged') motionHandEdge: string = 'center'
-  @StorageProp(StorageKeys.TOP_AVOID_HEIGHT) topH: number = 0
-  @StorageProp(StorageKeys.BOTTOM_AVOID_HEIGHT) bottomH: number = 0
-  private scroller: Scroller = new Scroller()
-  @State listScrollEnabled: boolean = true
-  @State private isReplyListAtEnd: boolean = false
-  @State private visualMotionHandEdge: string = 'center'
-  @State private floatingReplyAreaWidth: number = 0
-  @State isSavedLater: boolean = false
-  @State private isSiteFavorited: boolean = false
-  @State private isTopicThanked: boolean = false
-  @State private isSiteFavoriteLoading: boolean = false
-  @State private isTopicThankLoading: boolean = false
-  @State private isReplyThankLoading: boolean = false
-  @State private pendingReplyThankId: number = 0
-  @State private isModerationActionLoading: boolean = false
-  @State private jumpFloorText: string = ''
-  @State private contextReply: V2exReply | null = null
-  @State private contextItems: ReplyContextItem[] = []
-  @State private contextSheetVisible: boolean = false
-  @StorageLink(StorageKeys.REPLY_DISPLAY_MODE) replyDisplayMode: string = ReplyDisplaySettings.MODE_THREAD
-  @State private replyDisplayMenuShown: boolean = false
-  @State private replyComposerVisible: boolean = false
-  @State private replyComposerInitialContent: string = ''
-  @State private thankedReplyIdsJson: string = '[]'
-  @State private titleContentBottom: number = 0
-  @State private currentScrollOffset: number = 0
-  @State private isTitleCoveredByAppbar: boolean = false
-  private readonly FLOATING_REPLY_HEIGHT: number = 40
-  private readonly FLOATING_REPLY_BOTTOM_GAP: number = 2
-  private readonly titleVisibilityHysteresis: number = 4
-  private api: ApiService = new ApiService()
-  private topicThankLocked: boolean = false
-  private replyThankLockedId: number = 0
+  @Prop topicId: number = 0;
+  @Prop targetFloor: number = 0;
+  @Prop hideTitle: boolean = false;
+  @State v: DetailViewModel = new DetailViewModel(0);
+  @Consume('ns') stack: NavPathStack;
+  @StorageLink(StorageKeys.TOPIC_DETAIL_ACTION)
+  @Watch('onTopicActionCommand')
+  topicActionCommand: string = '';
+  @StorageLink(StorageKeys.TOPIC_DETAIL_SAVED_LATER) topicDetailSavedLater: boolean = false;
+  @StorageLink(StorageKeys.TOPIC_DETAIL_SITE_FAVORITED) topicDetailSiteFavorited: boolean = false;
+  @StorageLink(StorageKeys.TOPIC_DETAIL_THANKED) topicDetailThanked: boolean = false;
+  @StorageLink(StorageKeys.TOPIC_DETAIL_APPBAR_TITLE) topicDetailAppbarTitle: string = '';
+  @StorageLink(StorageKeys.TOPIC_DETAIL_APPBAR_AVATAR_URL) topicDetailAppbarAvatarUrl: string = '';
+  @StorageLink(StorageKeys.TOPIC_DETAIL_APPBAR_USERNAME) topicDetailAppbarUsername: string = '';
+  @StorageLink(StorageKeys.TOPIC_DETAIL_APPBAR_ROUTE_TOPIC_ID)
+  topicDetailAppbarRouteTopicId: string = '';
+  @StorageLink(StorageKeys.TOPIC_DETAIL_APPBAR_TITLE_STATES) topicDetailAppbarTitleStates: string =
+    '{}';
+  @StorageLink(StorageKeys.TOPIC_DETAIL_APPBAR_AVATAR_STATES)
+  topicDetailAppbarAvatarStates: string = '{}';
+  @StorageLink(StorageKeys.TOPIC_DETAIL_APPBAR_USERNAME_STATES)
+  topicDetailAppbarUsernameStates: string = '{}';
+  @StorageLink(StorageKeys.AUTH_COOKIE_CONFIGURED) authCookieConfigured: boolean = false;
+  @StorageLink(StorageKeys.ACCOUNT_WRITE_ENABLED) writeEnabled: boolean = false;
+  @StorageLink(StorageKeys.READING_FONT_SIZE) readingFontSize: number =
+    ThemeConstants.FONT_SIZE_BODY;
+  @StorageLink(StorageKeys.READING_LINE_HEIGHT) readingLineHeight: number =
+    ThemeConstants.LINE_HEIGHT_BODY;
+  @StorageLink(StorageKeys.READING_DENSITY) readingDensity: string =
+    ReadingSettings.DENSITY_STANDARD;
+  @StorageLink(StorageKeys.READING_RESTORE_POSITION) readingRestorePosition: boolean = false;
+  @StorageLink(StorageKeys.MOTION_HAND_EDGE)
+  @Watch('onMotionHandEdgeChanged')
+  motionHandEdge: string = 'center';
+  @StorageProp(StorageKeys.TOP_AVOID_HEIGHT) topH: number = 0;
+  @StorageProp(StorageKeys.BOTTOM_AVOID_HEIGHT) bottomH: number = 0;
+  private scroller: Scroller = new Scroller();
+  @State listScrollEnabled: boolean = true;
+  @State private isReplyListAtEnd: boolean = false;
+  @State private visualMotionHandEdge: string = 'center';
+  @State private floatingReplyAreaWidth: number = 0;
+  @State isSavedLater: boolean = false;
+  @State private isSiteFavorited: boolean = false;
+  @State private isTopicThanked: boolean = false;
+  @State private isSiteFavoriteLoading: boolean = false;
+  @State private isTopicThankLoading: boolean = false;
+  @State private isReplyThankLoading: boolean = false;
+  @State private pendingReplyThankId: number = 0;
+  @State private isModerationActionLoading: boolean = false;
+  @State private jumpFloorText: string = '';
+  @State private contextReply: V2exReply | null = null;
+  @State private contextItems: ReplyContextItem[] = [];
+  @State private contextSheetVisible: boolean = false;
+  @StorageLink(StorageKeys.REPLY_DISPLAY_MODE) replyDisplayMode: string =
+    ReplyDisplaySettings.MODE_THREAD;
+  @State private replyDisplayMenuShown: boolean = false;
+  @State private replyComposerVisible: boolean = false;
+  @State private replyComposerInitialContent: string = '';
+  @State private thankedReplyIdsJson: string = '[]';
+  @State private titleContentBottom: number = 0;
+  @State private currentScrollOffset: number = 0;
+  @State private isTitleCoveredByAppbar: boolean = false;
+  private readonly FLOATING_REPLY_HEIGHT: number = 40;
+  private readonly FLOATING_REPLY_BOTTOM_GAP: number = 2;
+  private readonly titleVisibilityHysteresis: number = 4;
+  private api: ApiService = new ApiService();
+  private topicThankLocked: boolean = false;
+  private replyThankLockedId: number = 0;
   private jumpFloorDialogController: CustomDialogController | null = new CustomDialogController({
     builder: JumpToFloorDialog({
       floorText: $jumpFloorText,
-      cancel: () => { },
-      confirm: (value: string) => { this.handleJumpToFloor(value) }
+      cancel: () => {},
+      confirm: (value: string) => {
+        this.handleJumpToFloor(value)
+      },
     }),
     autoCancel: true,
     alignment: DialogAlignment.Center,
     customStyle: false,
-    cornerRadius: ThemeConstants.RADIUS_MD
-  })
-  private lastReadFloor: number = 0
-  private hasRestoredReadPosition: boolean = false
-  private hasJumpedToTargetFloor: boolean = false
+    cornerRadius: ThemeConstants.RADIUS_MD,
+  });
+  private lastReadFloor: number = 0;
+  private hasRestoredReadPosition: boolean = false;
+  private hasJumpedToTargetFloor: boolean = false;
 
   aboutToAppear(): void {
     this.v = new DetailViewModel(this.topicId)
@@ -110,7 +148,8 @@ export struct TopicDetailPage {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     this.v.setCacheHandlers(
       () => CacheSettings.loadTopicDetail(context, this.topicId),
-      (topic: V2exTopic | null, replies: V2exReply[]) => CacheSettings.saveTopicDetail(context, this.topicId, topic, replies)
+      (topic: V2exTopic | null, replies: V2exReply[]) =>
+        CacheSettings.saveTopicDetail(context, this.topicId, topic, replies),
     )
     this.v.loadCachedData()
     AuthSettings.load(context)
@@ -125,6 +164,10 @@ export struct TopicDetailPage {
           this.recordViewedTopic()
           this.markTopicReadState()
           this.restoreInitialPosition()
+          this.v.triggerThreadPreloadIfNeeded()
+          if (this.v.needsPreloadConfirm) {
+            this.showPreloadConfirmDialog()
+          }
         })
       })
     this.loadSavedState()
@@ -166,9 +209,10 @@ export struct TopicDetailPage {
 
   private openV2exRoute(route: V2exRoute): void {
     if (route.kind === 'topic' && route.topicId && route.topicId > 0) {
-      const p: TopicDetailParams = route.targetFloor && route.targetFloor > 0
-        ? { topicId: route.topicId, targetFloor: route.targetFloor }
-        : { topicId: route.topicId }
+      const p: TopicDetailParams =
+        route.targetFloor && route.targetFloor > 0
+          ? { topicId: route.topicId, targetFloor: route.targetFloor }
+          : { topicId: route.topicId }
       this.stack.pushPathByName('TopicDetail', p as Object)
       return
     }
@@ -182,14 +226,17 @@ export struct TopicDetailPage {
       return
     }
     if (route.kind === 'search' && route.query) {
-      AppStorage.setOrCreate<string>(StorageKeys.PENDING_SEARCH_QUERY, `${Date.now()}:${route.query}`)
+      AppStorage.setOrCreate<string>(
+        StorageKeys.PENDING_SEARCH_QUERY,
+        `${Date.now()}:${route.query}`,
+      )
       this.stack.pushPathByName('Search', null)
     }
   }
 
   private openReplyEditor(initialContent: string = ''): void {
     if (!this.authCookieConfigured || !CookieJarSettings.getCurrentCookie()) {
-      promptAction.openToast({ message: '请先登录后回复' }).catch((_error: Error) => { })
+      promptAction.openToast({ message: '请先登录后回复' }).catch((_error: Error) => {})
       this.stack.pushPathByName('Account', null)
       return
     }
@@ -254,14 +301,29 @@ export struct TopicDetailPage {
     Blank()
       .width(1)
       .height(1)
-      .bindSheet($$this.replyComposerVisible, this.ReplyComposerSheetBuilder(), defaultSheetOptions(SheetSize.MEDIUM, () => { this.replyComposerVisible = false; this.replyComposerInitialContent = '' }))
+      .bindSheet(
+        $$this.replyComposerVisible,
+        this.ReplyComposerSheetBuilder(),
+        defaultSheetOptions(SheetSize.MEDIUM, () => {
+          this.replyComposerVisible = false
+          this.replyComposerInitialContent = ''
+        }),
+      )
   }
 
   @Builder ReplyContextSheetHost() {
     Blank()
       .width(1)
       .height(1)
-      .bindSheet($$this.contextSheetVisible, this.ReplyContextSheet(), defaultSheetOptions(SheetSize.LARGE, () => { this.contextSheetVisible = false; this.contextReply = null; this.contextItems = [] }))
+      .bindSheet(
+        $$this.contextSheetVisible,
+        this.ReplyContextSheet(),
+        defaultSheetOptions(SheetSize.LARGE, () => {
+          this.contextSheetVisible = false
+          this.contextReply = null
+          this.contextItems = []
+        }),
+      )
   }
 
   @Builder LoadingView() {
@@ -276,7 +338,8 @@ export struct TopicDetailPage {
         .margin({ top: ThemeConstants.SPACE_MD })
     }
     .justifyContent(FlexAlign.Center)
-    .width('100%').height('100%')
+    .width('100%')
+    .height('100%')
   }
 
   @Builder ErrorView() {
@@ -291,39 +354,56 @@ export struct TopicDetailPage {
       Button('重试')
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
         .margin({ top: ThemeConstants.SPACE_LG })
-        .onClick(() => { this.v.load() })
+        .onClick(() => {
+          this.v.load()
+        })
     }
     .justifyContent(FlexAlign.Center)
-    .width('100%').height('100%')
+    .width('100%')
+    .height('100%')
   }
 
   @Builder ContentView() {
     PullRefreshListScaffold({
       scroller: this.scroller,
       scrollEnabled: this.listScrollEnabled,
-      onRefresh: async () => { await this.v.load() },
-      onScrollEnableChange: (enabled: boolean) => { this.listScrollEnabled = enabled },
-      onScrollIndex: (_start: number, end: number, center: number) => { this.handleReplyListScrollIndex(end, center) },
+      onRefresh: async () => {
+        await this.v.load()
+      },
+      onScrollEnableChange: (enabled: boolean) => {
+        this.listScrollEnabled = enabled
+      },
+      onScrollIndex: (_start: number, end: number, center: number) => {
+        this.handleReplyListScrollIndex(end, center)
+      },
       onDidScroll: (offset: number, _state: ScrollState) => {
         this.currentScrollOffset = Math.max(0, offset)
         this.evaluateAppbarIdentityVisibility()
       },
-      onReachEnd: () => { this.handleReplyListReachEnd() },
-      canStartBottomRefresh: () => { return this.canTriggerBottomRefresh() },
-      onBottomRefresh: async () => { await this.refreshLastRepliesPage() },
-      bottomPadding: this.topicDetailBottomPadding()
+      onReachEnd: () => {
+        this.handleReplyListReachEnd()
+      },
+      canStartBottomRefresh: () => {
+        return this.canTriggerBottomRefresh()
+      },
+      onBottomRefresh: async () => {
+        await this.refreshLastRepliesPage()
+      },
+      bottomPadding: this.topicDetailBottomPadding(),
     }) {
-        ListItem() {
-          this.TopicCard()
-        }
+      ListItem() {
+        this.TopicCard()
+      }
 
-        // 回复分隔
-        ListItem() {
-          this.ReplyDivider()
-        }
+      // 回复分隔
+      ListItem() {
+        this.ReplyDivider()
+      }
 
-        // 回复列表
-        LazyForEach(this.v.replyDataSource, (reply: V2exReply, index: number) => {
+      // 回复列表
+      LazyForEach(
+        this.v.replyDataSource,
+        (reply: V2exReply, index: number) => {
           ListItem() {
             ReplyCard({
               reply: reply,
@@ -337,39 +417,85 @@ export struct TopicDetailPage {
               childReplies: reply.threadChildren || [],
               opMemberId: this.v.topic !== null ? this.v.topic!.member.id : 0,
               hideLeadingMention: this.v.replyDisplayMode === 'thread',
-              isReplyThanked: (target: V2exReply) => { return this.isReplyThanked(target.id) },
-              isReplyThankPending: (target: V2exReply) => { return this.isReplyThankPending(target.id) },
+              isReplyThanked: (target: V2exReply) => {
+                return this.isReplyThanked(target.id)
+              },
+              isReplyThankPending: (target: V2exReply) => {
+                return this.isReplyThankPending(target.id)
+              },
               isWrongReference: !!reply.isWrongReference,
               isDuplicateThreadItem: !!reply.isDuplicateThreadItem,
               onUserClick: (target: V2exReply) => {
                 let p: UserProfileParams = { username: target.member.username }
                 this.stack.pushPathByName('UserProfile', p as Object)
               },
-              onContextClick: (target: V2exReply) => { this.openReplyContext(target) },
-              onMentionClick: (target: V2exReply) => { this.openReplyEditor(this.getMentionText(target.member.username)) },
-              onReplyClick: (target: V2exReply) => { this.openReplyEditor(this.getMentionText(target.member.username)) },
-              onThankClick: (target: V2exReply) => { this.prepareReplyThank(target) },
-              onIgnoreClick: (target: V2exReply) => { this.prepareReplyIgnore(target) },
-              onReportClick: (target: V2exReply) => { this.prepareReplyReport(target) },
-              onCopyUserClick: (target: V2exReply) => { this.copyToClipboard(target.member.username || '') },
-              onCopyContentClick: (target: V2exReply) => { this.copyToClipboard(target.content || '') },
-              onImageClick: (url: string) => { this.openImagePreview(url) },
-              onLinkClick: (url: string) => { this.openContentLink(url) },
-              onMentionUserClick: (username: string) => { this.openUserProfile(username) }
+              onContextClick: (target: V2exReply) => {
+                this.openReplyContext(target)
+              },
+              onMentionClick: (target: V2exReply) => {
+                this.openReplyEditor(this.getMentionText(target.member.username))
+              },
+              onReplyClick: (target: V2exReply) => {
+                this.openReplyEditor(this.getMentionText(target.member.username))
+              },
+              onThankClick: (target: V2exReply) => {
+                this.prepareReplyThank(target)
+              },
+              onIgnoreClick: (target: V2exReply) => {
+                this.prepareReplyIgnore(target)
+              },
+              onReportClick: (target: V2exReply) => {
+                this.prepareReplyReport(target)
+              },
+              onCopyUserClick: (target: V2exReply) => {
+                this.copyToClipboard(target.member.username || '')
+              },
+              onCopyContentClick: (target: V2exReply) => {
+                this.copyToClipboard(target.content || '')
+              },
+              onImageClick: (url: string) => {
+                this.openImagePreview(url)
+              },
+              onLinkClick: (url: string) => {
+                this.openContentLink(url)
+              },
+              onMentionUserClick: (username: string) => {
+                this.openUserProfile(username)
+              },
             })
           }
-        }, (reply: V2exReply) => reply.renderKey || reply.id.toString())
+        },
+        (reply: V2exReply) => reply.renderKey || reply.id.toString(),
+      )
 
-        if (this.v.shouldShowRepliesFooter()) {
-          ListItem() {
-            LoadingFooter({
-              isLoading: this.v.isRepliesLoadingMore,
-              hasMore: this.v.repliesHasMore,
-              isError: this.v.repliesLoadMoreState === 'loadMoreError',
-              onRetry: () => { this.retryLoadMoreReplies() }
-            })
+      if (this.v.isPreloadingAll) {
+        ListItem() {
+          Row({ space: ThemeConstants.SPACE_SM }) {
+            LoadingProgress()
+              .width(20)
+              .height(20)
+            Text(this.v.preloadProgress)
+              .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+              .fontColor($r('sys.color.font_secondary'))
           }
+          .justifyContent(FlexAlign.Center)
+          .width('100%')
+          .padding(ThemeConstants.SPACE_MD)
         }
+      }
+
+      if (this.v.shouldShowRepliesFooter()) {
+        ListItem() {
+          LoadingFooter({
+            isLoading: this.v.isRepliesLoadingMore,
+            hasMore: this.v.repliesHasMore,
+            isError: this.v.repliesLoadMoreState === 'loadMoreError',
+            onRetry: () => {
+              this.retryLoadMoreReplies()
+            },
+          })
+        }
+      }
     }
   }
 
@@ -383,7 +509,7 @@ export struct TopicDetailPage {
       },
       submittedAction: () => {
         this.v.load()
-      }
+      },
     })
   }
 
@@ -391,7 +517,11 @@ export struct TopicDetailPage {
     Row() {
       Button() {
         Row({ space: ThemeConstants.SPACE_XS }) {
-          SymbolGlyph(this.authCookieConfigured ? $r('sys.symbol.arrowshape_turn_up_left_fill') : $r('sys.symbol.lock'))
+          SymbolGlyph(
+            this.authCookieConfigured
+              ? $r('sys.symbol.arrowshape_turn_up_left_fill')
+              : $r('sys.symbol.lock'),
+          )
             .fontSize(18)
             .fontColor([Color.White])
           Text(this.authCookieConfigured ? '回复' : '登录')
@@ -422,7 +552,7 @@ export struct TopicDetailPage {
     .padding({
       left: ThemeConstants.SPACE_LG,
       right: ThemeConstants.SPACE_LG,
-      bottom: this.bottomH + this.FLOATING_REPLY_BOTTOM_GAP
+      bottom: this.bottomH + this.FLOATING_REPLY_BOTTOM_GAP,
     })
     .alignItems(VerticalAlign.Bottom)
     .hitTestBehavior(HitTestMode.Transparent)
@@ -452,9 +582,12 @@ export struct TopicDetailPage {
   }
 
   private onMotionHandEdgeChanged(_propName: string): void {
-    this.getUIContext().animateTo({ duration: ThemeConstants.ANIM_DURATION, curve: Curve.EaseOut }, () => {
-      this.visualMotionHandEdge = this.motionHandEdge
-    })
+    this.getUIContext().animateTo(
+      { duration: ThemeConstants.ANIM_DURATION, curve: Curve.EaseOut },
+      () => {
+        this.visualMotionHandEdge = this.motionHandEdge
+      },
+    )
   }
 
   private areaLength(value: Length | undefined): number {
@@ -503,9 +636,21 @@ export struct TopicDetailPage {
     const title = visible ? this.topicAppbarTitle() : ''
     const avatarUrl = visible ? this.topicAppbarAvatarUrl() : ''
     const username = visible ? this.topicAppbarUsername() : ''
-    this.topicDetailAppbarTitleStates = this.nextStringState(this.topicDetailAppbarTitleStates, routeKey, title)
-    this.topicDetailAppbarAvatarStates = this.nextStringState(this.topicDetailAppbarAvatarStates, routeKey, avatarUrl)
-    this.topicDetailAppbarUsernameStates = this.nextStringState(this.topicDetailAppbarUsernameStates, routeKey, username)
+    this.topicDetailAppbarTitleStates = this.nextStringState(
+      this.topicDetailAppbarTitleStates,
+      routeKey,
+      title,
+    )
+    this.topicDetailAppbarAvatarStates = this.nextStringState(
+      this.topicDetailAppbarAvatarStates,
+      routeKey,
+      avatarUrl,
+    )
+    this.topicDetailAppbarUsernameStates = this.nextStringState(
+      this.topicDetailAppbarUsernameStates,
+      routeKey,
+      username,
+    )
     this.topicDetailAppbarRouteTopicId = visible ? routeKey : ''
     this.topicDetailAppbarTitle = title
     this.topicDetailAppbarAvatarUrl = avatarUrl
@@ -519,8 +664,7 @@ export struct TopicDetailPage {
       if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
         states = parsed
       }
-    } catch (_error) {
-    }
+    } catch (_error) {}
     states[key] = value
     return JSON.stringify(states)
   }
@@ -547,12 +691,14 @@ export struct TopicDetailPage {
   @Builder TopicCard() {
     Column() {
       Row({ space: ThemeConstants.SPACE_SM }) {
-        Avatar({ url: ImageUtils.memberAvatarUrl(this.v.topic!.member), avatarSize: ThemeConstants.AVATAR_SIZE_REPLY })
+        Avatar({
+          url: ImageUtils.memberAvatarUrl(this.v.topic!.member),
+          avatarSize: ThemeConstants.AVATAR_SIZE_REPLY,
+        })
           .onClick(() => {
             let p: UserProfileParams = { username: this.v.topic!.member.username }
             this.stack.pushPathByName('UserProfile', p as Object)
           })
-
         Text(this.v.topic!.member.username)
           .fontSize(ThemeConstants.FONT_SIZE_META)
           .fontWeight(FontWeight.Medium)
@@ -561,15 +707,11 @@ export struct TopicDetailPage {
             let p: UserProfileParams = { username: this.v.topic!.member.username }
             this.stack.pushPathByName('UserProfile', p as Object)
           })
-
         Text('·')
           .fontSize(ThemeConstants.FONT_SIZE_META)
           .fontColor($r('sys.color.font_secondary'))
-
         TimeAgo({ timestamp: this.v.topic!.created })
-
         Blank()
-
         Text(this.v.topic!.node.title)
           .fontSize(ThemeConstants.FONT_SIZE_TAG)
           .fontColor($r('sys.color.font_secondary'))
@@ -577,22 +719,20 @@ export struct TopicDetailPage {
             left: ThemeConstants.SPACE_SM,
             right: ThemeConstants.SPACE_SM,
             top: 2,
-            bottom: 2
+            bottom: 2,
           })
           .borderRadius(ThemeConstants.RADIUS_SM)
           .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
           .onClick(() => {
             let p: NodeTopicListParams = {
               nodeName: this.v.topic!.node.name,
-              nodeTitle: this.v.topic!.node.title
+              nodeTitle: this.v.topic!.node.title,
             }
             this.stack.pushPathByName('NodeTopicList', p as Object)
           })
-
       }
       .width('100%')
       .alignItems(VerticalAlign.Center)
-
       Text(this.v.topic!.title)
         .fontSize(ThemeConstants.FONT_SIZE_HEADING)
         .fontWeight(FontWeight.Medium)
@@ -601,22 +741,33 @@ export struct TopicDetailPage {
         .width('100%')
         .margin({ top: ThemeConstants.SPACE_MD })
         .onAreaChange((_oldValue: Area, newValue: Area) => {
-          const measuredGlobalBottom = this.areaY(newValue?.globalPosition?.y) + this.areaLength(newValue?.height)
+          const measuredGlobalBottom =
+            this.areaY(newValue?.globalPosition?.y) + this.areaLength(newValue?.height)
           this.titleContentBottom = measuredGlobalBottom + this.currentScrollOffset
           this.evaluateAppbarIdentityVisibility()
         })
 
       // 正文
       if (this.topicBodySource()) {
-        ForEach(this.topicBodyBlocks(), (block: string, index: number) => {
-          MarkdownContent({
-            source: block,
-            topMargin: index === 0 ? ThemeConstants.SPACE_LG : ThemeConstants.SPACE_SM,
-            onImageClick: (url: string) => { this.openImagePreview(url) },
-            onLinkClick: (url: string) => { this.openContentLink(url) },
-            onMentionClick: (username: string) => { this.openUserProfile(username) }
-          })
-        }, (block: string, index: number) => `${index}-${block.length}-${block.slice(0, 16)}`)
+        ForEach(
+          this.topicBodyBlocks(),
+          (block: string, index: number) => {
+            MarkdownContent({
+              source: block,
+              topMargin: index === 0 ? ThemeConstants.SPACE_LG : ThemeConstants.SPACE_SM,
+              onImageClick: (url: string) => {
+                this.openImagePreview(url)
+              },
+              onLinkClick: (url: string) => {
+                this.openContentLink(url)
+              },
+              onMentionClick: (username: string) => {
+                this.openUserProfile(username)
+              },
+            })
+          },
+          (block: string, index: number) => `${index}-${block.length}-${block.slice(0, 16)}`,
+        )
       }
 
       if (this.v.topic!.topicSupplementMarkdown) {
@@ -624,27 +775,43 @@ export struct TopicDetailPage {
           .strokeWidth(1)
           .color($r('sys.color.ohos_id_color_list_separator'))
           .margin({ top: ThemeConstants.SPACE_MD, bottom: ThemeConstants.SPACE_XS })
-        ForEach(this.supplementBlocks(this.v.topic!.topicSupplementMarkdown || ''), (block: string, index: number) => {
-          Column() {
-            Text(this.supplementMeta(block))
-              .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-              .fontColor($r('sys.color.font_secondary'))
-              .width('100%')
-            if (this.supplementBody(block)) {
-              ForEach(this.markdownBlocks(this.supplementBody(block)), (bodyBlock: string, bodyIndex: number) => {
-                MarkdownContent({
-                  source: bodyBlock,
-                  topMargin: bodyIndex === 0 ? ThemeConstants.SPACE_XS : ThemeConstants.SPACE_SM,
-                  onImageClick: (url: string) => { this.openImagePreview(url) },
-                  onLinkClick: (url: string) => { this.openContentLink(url) },
-                  onMentionClick: (username: string) => { this.openUserProfile(username) }
-                })
-              }, (bodyBlock: string, bodyIndex: number) => `${bodyIndex}-${bodyBlock.length}-${bodyBlock.slice(0, 16)}`)
+        ForEach(
+          this.supplementBlocks(this.v.topic!.topicSupplementMarkdown || ''),
+          (block: string, index: number) => {
+            Column() {
+              Text(this.supplementMeta(block))
+                .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+                .fontColor($r('sys.color.font_secondary'))
+                .width('100%')
+              if (this.supplementBody(block)) {
+                ForEach(
+                  this.markdownBlocks(this.supplementBody(block)),
+                  (bodyBlock: string, bodyIndex: number) => {
+                    MarkdownContent({
+                      source: bodyBlock,
+                      topMargin:
+                        bodyIndex === 0 ? ThemeConstants.SPACE_XS : ThemeConstants.SPACE_SM,
+                      onImageClick: (url: string) => {
+                        this.openImagePreview(url)
+                      },
+                      onLinkClick: (url: string) => {
+                        this.openContentLink(url)
+                      },
+                      onMentionClick: (username: string) => {
+                        this.openUserProfile(username)
+                      },
+                    })
+                  },
+                  (bodyBlock: string, bodyIndex: number) =>
+                    `${bodyIndex}-${bodyBlock.length}-${bodyBlock.slice(0, 16)}`,
+                )
+              }
             }
-          }
-          .width('100%')
-          .margin({ top: index === 0 ? 0 : ThemeConstants.SPACE_MD })
-        }, (block: string, index: number) => `${index}-${block.length}-${block.slice(0, 16)}`)
+            .width('100%')
+            .margin({ top: index === 0 ? 0 : ThemeConstants.SPACE_MD })
+          },
+          (block: string, index: number) => `${index}-${block.length}-${block.slice(0, 16)}`,
+        )
       }
     }
     .padding(this.topicCardPadding())
@@ -771,13 +938,15 @@ export struct TopicDetailPage {
         .maxLines(1)
         .textOverflow({ overflow: TextOverflow.Ellipsis })
         .layoutWeight(1)
-
       Row({ space: ThemeConstants.SPACE_XS }) {
-        this.ReplyToolButton('楼层', false, () => { this.openJumpToFloorDialog() })
+        this.ReplyToolButton('楼层', false, () => {
+          this.openJumpToFloorDialog()
+        })
         this.ReplyDisplayModeButton()
-        this.ReplyToolButton('最新', false, () => { this.scrollToLatestReply() })
-      }
-      .alignItems(VerticalAlign.Center)
+        this.ReplyToolButton('最新', false, () => {
+          this.scrollToLatestReply()
+        })
+      }.alignItems(VerticalAlign.Center)
     }
     .alignItems(VerticalAlign.Center)
     .width('100%')
@@ -785,7 +954,7 @@ export struct TopicDetailPage {
       left: ThemeConstants.SPACE_SM,
       right: ThemeConstants.SPACE_SM,
       top: ThemeConstants.SPACE_SM,
-      bottom: ThemeConstants.SPACE_XS
+      bottom: ThemeConstants.SPACE_XS,
     })
   }
 
@@ -795,22 +964,33 @@ export struct TopicDetailPage {
       .fontColor(active ? Color.White : $r('sys.color.font_secondary'))
       .padding({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM, top: 5, bottom: 5 })
       .borderRadius(ThemeConstants.RADIUS_ROUND)
-      .backgroundColor(active ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.ohos_id_color_button_normal'))
+      .backgroundColor(
+        active ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.ohos_id_color_button_normal'),
+      )
       .onClick(action)
   }
-
 
   @Builder ReplyDisplayModeButton() {
     Text(this.replyDisplayModeText())
       .fontSize(ThemeConstants.FONT_SIZE_TINY)
-      .fontColor(this.v.replyDisplayMode === 'origin' ? $r('sys.color.font_secondary') : Color.White)
+      .fontColor(
+        this.v.replyDisplayMode === 'origin' ? $r('sys.color.font_secondary') : Color.White,
+      )
       .padding({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM, top: 5, bottom: 5 })
       .borderRadius(ThemeConstants.RADIUS_ROUND)
-      .backgroundColor(this.v.replyDisplayMode === 'origin' ? $r('sys.color.ohos_id_color_button_normal') : ThemeConstants.BRAND_PRIMARY)
-      .onClick(() => { this.showReplyDisplayMenu() })
+      .backgroundColor(
+        this.v.replyDisplayMode === 'origin'
+          ? $r('sys.color.ohos_id_color_button_normal')
+          : ThemeConstants.BRAND_PRIMARY,
+      )
+      .onClick(() => {
+        this.showReplyDisplayMenu()
+      })
       .bindMenu(this.replyDisplayMenuShown, this.ReplyDisplayModeMenu, {
         placement: Placement.BottomRight,
-        aboutToDisappear: () => { this.replyDisplayMenuShown = false }
+        aboutToDisappear: () => {
+          this.replyDisplayMenuShown = false
+        },
       })
   }
 
@@ -827,23 +1007,31 @@ export struct TopicDetailPage {
   @Builder ReplyDisplayModeMenuItem(label: string, mode: string) {
     MenuItem({
       content: label,
-      symbolEndIcon: this.v.replyDisplayMode === mode ? new SymbolGlyphModifier($r('sys.symbol.checkmark')) : undefined
+      symbolEndIcon:
+        this.v.replyDisplayMode === mode
+          ? new SymbolGlyphModifier($r('sys.symbol.checkmark'))
+          : undefined,
+    }).onClick(() => {
+      this.updateReplyDisplayMode(mode)
     })
-      .onClick(() => {
-        this.updateReplyDisplayMode(mode)
-      })
   }
 
   @Builder ReplyContextSheet() {
     AppModalScaffold({
       title: this.replyContextTitle(),
-      closeAction: () => { this.closeReplyContext() }
+      closeAction: () => {
+        this.closeReplyContext()
+      },
     }) {
-      ForEach(this.contextItems, (item: ReplyContextItem) => {
-        ListItem() {
-          this.ReplyContextItemView(item)
-        }
-      }, (item: ReplyContextItem) => `${item.reply.id}-${item.floor}-${item.label}`)
+      ForEach(
+        this.contextItems,
+        (item: ReplyContextItem) => {
+          ListItem() {
+            this.ReplyContextItemView(item)
+          }
+        },
+        (item: ReplyContextItem) => `${item.reply.id}-${item.floor}-${item.label}`,
+      )
     }
   }
 
@@ -852,29 +1040,33 @@ export struct TopicDetailPage {
       Row({ space: ThemeConstants.SPACE_SM }) {
         Text(item.label)
           .fontSize(ThemeConstants.FONT_SIZE_TAG)
-          .fontColor(item.selected ? $r('sys.color.ohos_id_color_activated') : $r('sys.color.font_secondary'))
-          .padding({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM, top: 2, bottom: 2 })
+          .fontColor(
+            item.selected
+              ? $r('sys.color.ohos_id_color_activated')
+              : $r('sys.color.font_secondary'),
+          )
+          .padding({
+            left: ThemeConstants.SPACE_SM,
+            right: ThemeConstants.SPACE_SM,
+            top: 2,
+            bottom: 2,
+          })
           .borderRadius(ThemeConstants.RADIUS_SM)
           .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
-
         Text(`#${item.floor}`)
           .fontSize(ThemeConstants.FONT_SIZE_TAG)
           .fontColor($r('sys.color.font_secondary'))
-
         Text(item.reply.member.username)
           .fontSize(ThemeConstants.FONT_SIZE_META)
           .fontWeight(FontWeight.Medium)
           .fontColor($r('sys.color.font_primary'))
           .maxLines(1)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
-
         Blank()
-
         TimeAgo({ timestamp: item.reply.created })
       }
       .width('100%')
       .alignItems(VerticalAlign.Center)
-
       Text(this.replySnippet(item.reply.content))
         .fontSize(this.bodyFontSize())
         .lineHeight(this.bodyLineHeight())
@@ -886,7 +1078,11 @@ export struct TopicDetailPage {
     .width('100%')
     .padding(ThemeConstants.SPACE_MD)
     .borderRadius(ThemeConstants.RADIUS_MD)
-    .backgroundColor(item.selected ? $r('sys.color.ohos_id_color_button_normal') : $r('sys.color.ohos_id_color_sub_background'))
+    .backgroundColor(
+      item.selected
+        ? $r('sys.color.ohos_id_color_button_normal')
+        : $r('sys.color.ohos_id_color_sub_background'),
+    )
     .onClick(() => {
       this.jumpToLoadedReplyFloor(item.floor)
       this.closeReplyContext()
@@ -934,9 +1130,20 @@ export struct TopicDetailPage {
 
     this.addContextReplyByFloor(replies, selectedFloor - 2, '上文', addReply)
     this.addContextReplyByFloor(replies, selectedFloor - 1, '上文', addReply)
-    this.addMentionTargetsBeforeSelection(replies, selectedFloor, selected.content, selected.content_rendered, addReply)
+    this.addMentionTargetsBeforeSelection(
+      replies,
+      selectedFloor,
+      selected.content,
+      selected.content_rendered,
+      addReply,
+    )
     addReply(selected, '当前回复', true)
-    this.addRepliesMentioningSelectedAuthor(replies, selectedFloor, selected.member.username, addReply)
+    this.addRepliesMentioningSelectedAuthor(
+      replies,
+      selectedFloor,
+      selected.member.username,
+      addReply,
+    )
     this.addContextReplyByFloor(replies, selectedFloor + 1, '下文', addReply)
     this.addContextReplyByFloor(replies, selectedFloor + 2, '下文', addReply)
 
@@ -947,7 +1154,7 @@ export struct TopicDetailPage {
     replies: V2exReply[],
     floor: number,
     label: string,
-    addReply: (reply: V2exReply | null, label: string, selectedItem: boolean) => void
+    addReply: (reply: V2exReply | null, label: string, selectedItem: boolean) => void,
   ): void {
     if (floor <= 0 || floor > replies.length) {
       return
@@ -960,7 +1167,7 @@ export struct TopicDetailPage {
     selectedFloor: number,
     content: string,
     renderedContent: string,
-    addReply: (reply: V2exReply | null, label: string, selectedItem: boolean) => void
+    addReply: (reply: V2exReply | null, label: string, selectedItem: boolean) => void,
   ): void {
     const names = this.extractMentionedUsernames(content, renderedContent)
     names.forEach((name: string) => {
@@ -973,7 +1180,7 @@ export struct TopicDetailPage {
     replies: V2exReply[],
     selectedFloor: number,
     username: string,
-    addReply: (reply: V2exReply | null, label: string, selectedItem: boolean) => void
+    addReply: (reply: V2exReply | null, label: string, selectedItem: boolean) => void,
   ): void {
     const clean = (username || '').trim()
     if (!clean) {
@@ -989,7 +1196,11 @@ export struct TopicDetailPage {
     }
   }
 
-  private findPreviousReplyByUsername(replies: V2exReply[], selectedFloor: number, username: string): V2exReply | null {
+  private findPreviousReplyByUsername(
+    replies: V2exReply[],
+    selectedFloor: number,
+    username: string,
+  ): V2exReply | null {
     const clean = (username || '').trim().toLowerCase()
     if (!clean) {
       return null
@@ -1003,12 +1214,18 @@ export struct TopicDetailPage {
     return null
   }
 
-  private contentMentionsUsername(content: string, renderedContent: string, username: string): boolean {
+  private contentMentionsUsername(
+    content: string,
+    renderedContent: string,
+    username: string,
+  ): boolean {
     const clean = (username || '').trim().toLowerCase()
     if (!clean) {
       return false
     }
-    return this.extractMentionedUsernames(content, renderedContent).some((name: string) => name.toLowerCase() === clean)
+    return this.extractMentionedUsernames(content, renderedContent).some(
+      (name: string) => name.toLowerCase() === clean,
+    )
   }
 
   private extractMentionedUsernames(content: string, renderedContent: string = ''): string[] {
@@ -1024,7 +1241,8 @@ export struct TopicDetailPage {
     }
 
     const rendered = renderedContent || ''
-    const linkRe = /@\s*<a\b[^>]*href=["'](?:https?:\/\/(?:www\.)?v2ex\.(?:com|co))?\/member\/([^"'?#\/]+)[^"']*["'][^>]*>/gi
+    const linkRe =
+      /@\s*<a\b[^>]*href=["'](?:https?:\/\/(?:www\.)?v2ex\.(?:com|co))?\/member\/([^"'?#\/]+)[^"']*["'][^>]*>/gi
     let linkMatch: RegExpExecArray | null = linkRe.exec(rendered)
     while (linkMatch) {
       addName(this.decodeHtmlText(linkMatch[1] || ''))
@@ -1065,10 +1283,9 @@ export struct TopicDetailPage {
   }
 
   private isMentionNameChar(ch: string): boolean {
-    return (ch >= 'a' && ch <= 'z') ||
-      (ch >= 'A' && ch <= 'Z') ||
-      (ch >= '0' && ch <= '9') ||
-      ch === '_'
+    return (
+      (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') || ch === '_'
+    )
   }
 
   private replySnippet(content: string): string {
@@ -1126,10 +1343,13 @@ export struct TopicDetailPage {
   }
 
   private refreshLastRepliesPage(): Promise<void> {
-    return this.v.refreshLastRepliesPage()
-      .then(() => { })
+    return this.v
+      .refreshLastRepliesPage()
+      .then(() => {})
       .catch((error: Error) => {
-        promptAction.openToast({ message: error.message || '刷新失败' }).catch((_toastError: Error) => { })
+        promptAction
+          .openToast({ message: error.message || '刷新失败' })
+          .catch((_toastError: Error) => {})
       })
   }
 
@@ -1165,7 +1385,6 @@ export struct TopicDetailPage {
     return 2 + count
   }
 
-
   private replyCountText(): string {
     if (this.v.repliesUseV2 && this.v.topic !== null && this.v.topic!.replies > 0) {
       return `已加载 ${this.v.repliesLoaded} / ${this.v.topic!.replies}`
@@ -1174,13 +1393,23 @@ export struct TopicDetailPage {
   }
 
   private toggleOnlyOp(): void {
-    this.updateReplyDisplayMode(this.v.onlyOp ? ReplyDisplaySettings.MODE_THREAD : ReplyDisplaySettings.MODE_OP)
+    this.updateReplyDisplayMode(
+      this.v.onlyOp ? ReplyDisplaySettings.MODE_THREAD : ReplyDisplaySettings.MODE_OP,
+    )
   }
 
   private updateReplyDisplayMode(mode: string): void {
     const normalizedMode = ReplyDisplaySettings.normalizeMode(mode)
     this.replyDisplayMode = normalizedMode
-    this.v.setReplyDisplayMode(normalizedMode)
+    const isThreadSwitch =
+      normalizedMode === ReplyDisplaySettings.MODE_THREAD ||
+      normalizedMode === ReplyDisplaySettings.MODE_THREAD_WITH_MENTION ||
+      normalizedMode === ReplyDisplaySettings.MODE_THREAD_REDUNDANT
+    if (isThreadSwitch && !this.v.allRepliesLoaded && this.v.repliesHasMore) {
+      this.v.switchToThreadModeAndPreload(normalizedMode)
+    } else {
+      this.v.setReplyDisplayMode(normalizedMode)
+    }
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     ReplyDisplaySettings.save(context, normalizedMode).catch((error: Error) => {
       console.error('save reply display mode failed: ' + error.message)
@@ -1189,7 +1418,9 @@ export struct TopicDetailPage {
 
   private showReplyDisplayMenu(): void {
     this.replyDisplayMenuShown = false
-    setTimeout(() => { this.replyDisplayMenuShown = true }, 20)
+    setTimeout(() => {
+      this.replyDisplayMenuShown = true
+    }, 20)
   }
 
   private replyDisplayModeText(): string {
@@ -1197,7 +1428,12 @@ export struct TopicDetailPage {
   }
 
   private replyDisplayContent(reply: V2exReply): string {
-    if (this.v.replyDisplayMode === 'thread' && (reply.hiddenLeadingMentionContent || '').trim() && (reply.threadLevel || 0) > 0 && (reply.replyUsers || []).length === 1) {
+    if (
+      this.v.replyDisplayMode === 'thread' &&
+      (reply.hiddenLeadingMentionContent || '').trim() &&
+      (reply.threadLevel || 0) > 0 &&
+      (reply.replyUsers || []).length === 1
+    ) {
       return reply.hiddenLeadingMentionContent || ''
     }
     return ''
@@ -1205,7 +1441,7 @@ export struct TopicDetailPage {
 
   private getFloorForReply(replyId: number, index: number): number {
     const floor = this.v.getReplyFloor(replyId)
-    return floor > 0 ? floor : (index + 1)
+    return floor > 0 ? floor : index + 1
   }
 
   private openJumpToFloorDialog(): void {
@@ -1220,7 +1456,7 @@ export struct TopicDetailPage {
     const raw = (value || '').trim()
     const floor = parseInt(raw, 10)
     if (!raw || isNaN(floor) || floor <= 0) {
-      promptAction.openToast({ message: '请输入有效楼层号' }).catch((_error: Error) => { })
+      promptAction.openToast({ message: '请输入有效楼层号' }).catch((_error: Error) => {})
       return
     }
     const maxFloor = this.v.topic !== null ? this.v.topic!.replies : 0
@@ -1265,10 +1501,11 @@ export struct TopicDetailPage {
       return
     }
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    CollectionSettings.saveTopicReadFloor(context, this.topicId, this.lastReadFloor)
-      .catch((error: Error) => {
+    CollectionSettings.saveTopicReadFloor(context, this.topicId, this.lastReadFloor).catch(
+      (error: Error) => {
         console.error('save read position failed: ' + error.message)
-      })
+      },
+    )
   }
 
   private restoreReadPosition(): void {
@@ -1342,7 +1579,11 @@ export struct TopicDetailPage {
       return
     }
     let guard = 0
-    while (this.v.replyDataSource.totalCount() < targetFloor && this.v.repliesHasMore && guard < 20) {
+    while (
+      this.v.replyDataSource.totalCount() < targetFloor &&
+      this.v.repliesHasMore &&
+      guard < 20
+    ) {
       guard++
       await this.v.loadMoreReplies()
     }
@@ -1383,10 +1624,9 @@ export struct TopicDetailPage {
       return
     }
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    CollectionSettings.recordViewedTopic(context, this.v.topic)
-      .catch((error: Error) => {
-        console.error('record viewed topic failed: ' + error.message)
-      })
+    CollectionSettings.recordViewedTopic(context, this.v.topic).catch((error: Error) => {
+      console.error('record viewed topic failed: ' + error.message)
+    })
   }
 
   private markTopicReadState(): void {
@@ -1394,10 +1634,11 @@ export struct TopicDetailPage {
       return
     }
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    CollectionSettings.markTopicRead(context, this.v.topic.id, this.v.topic.last_touched)
-      .catch((error: Error) => {
+    CollectionSettings.markTopicRead(context, this.v.topic.id, this.v.topic.last_touched).catch(
+      (error: Error) => {
         console.error('mark topic read failed: ' + error.message)
-      })
+      },
+    )
   }
 
   onTopicActionCommand(_propName: string): void {
@@ -1422,7 +1663,7 @@ export struct TopicDetailPage {
 
   private handleTopicAction(action: string): void {
     if (this.v.topic === null) {
-      promptAction.openToast({ message: '主题仍在加载' }).catch((_error: Error) => { })
+      promptAction.openToast({ message: '主题仍在加载' }).catch((_error: Error) => {})
       return
     }
     if (action === 'siteFavorite') {
@@ -1461,23 +1702,28 @@ export struct TopicDetailPage {
       return
     }
     if (!this.writeEnabled) {
-      promptAction.openToast({ message: '写入操作开关未开启，站内收藏不可用' }).catch((_error: Error) => { })
+      promptAction
+        .openToast({ message: '写入操作开关未开启，站内收藏不可用' })
+        .catch((_error: Error) => {})
       return
     }
     const cookie = CookieJarSettings.getCurrentCookie()
     if (!cookie) {
-      promptAction.openToast({ message: '请先登录' }).catch((_error: Error) => { })
+      promptAction.openToast({ message: '请先登录' }).catch((_error: Error) => {})
       return
     }
     this.isSiteFavoriteLoading = true
-    this.api.getTopicFavoriteToggleActionWithCookie(cookie, this.topicId)
+    this.api
+      .getTopicFavoriteToggleActionWithCookie(cookie, this.topicId)
       .then((toggle) => {
         this.isSiteFavorited = toggle.currentlyOn
         this.topicDetailSiteFavorited = toggle.currentlyOn
         this.confirmSiteFavoriteToggle(cookie, toggle)
       })
       .catch((error: Error) => {
-        promptAction.openToast({ message: error.message || '解析站内收藏失败' }).catch((_error: Error) => { })
+        promptAction
+          .openToast({ message: error.message || '解析站内收藏失败' })
+          .catch((_error: Error) => {})
       })
       .finally(() => {
         this.isSiteFavoriteLoading = false
@@ -1491,7 +1737,8 @@ export struct TopicDetailPage {
       this.topicDetailSiteFavorited = false
       return
     }
-    this.api.getTopicFavoriteToggleActionWithCookie(cookie, this.topicId)
+    this.api
+      .getTopicFavoriteToggleActionWithCookie(cookie, this.topicId)
       .then((toggle: V2exToggleAction) => {
         this.isSiteFavorited = toggle.currentlyOn
         this.topicDetailSiteFavorited = toggle.currentlyOn
@@ -1509,7 +1756,8 @@ export struct TopicDetailPage {
       this.topicDetailThanked = false
       return
     }
-    this.api.getTopicThankActionWithCookie(cookie, this.topicId)
+    this.api
+      .getTopicThankActionWithCookie(cookie, this.topicId)
       .then((_action: V2exTopicThankAction) => {
         this.isTopicThanked = false
         this.topicDetailThanked = false
@@ -1522,17 +1770,39 @@ export struct TopicDetailPage {
       })
   }
 
+  private showPreloadConfirmDialog(): void {
+    const total = this.v.topic?.replies || 0
+    AlertDialog.show({
+      title: '回复数量较多',
+      message: `该主题有 ${total} 条回复，加载全部回复可能需要较长时间。\n\n是否继续加载以启用完整的楼中楼视图？`,
+      primaryButton: {
+        value: '平铺显示',
+        action: () => {
+          this.v.confirmPreloadFallbackFlat()
+        },
+      },
+      secondaryButton: {
+        value: '继续加载',
+        action: () => {
+          this.v.confirmPreloadAll()
+        },
+      },
+    })
+  }
+
   private confirmSiteFavoriteToggle(cookie: string, toggle: V2exToggleAction): void {
     const title = (this.v.topic?.title || '').trim()
     const verb = this.isSiteFavorited ? '取消收藏' : '收藏'
     AlertDialog.show({
       title: '站内收藏',
       message: title ? `确定${verb}《${title}》吗？` : `确定${verb}该主题吗？`,
-      primaryButton: { value: '取消', action: () => { } },
+      primaryButton: { value: '取消', action: () => {} },
       secondaryButton: {
         value: verb,
-        action: () => { this.executeSiteFavoriteToggle(cookie, toggle) }
-      }
+        action: () => {
+          this.executeSiteFavoriteToggle(cookie, toggle)
+        },
+      },
     })
   }
 
@@ -1541,14 +1811,19 @@ export struct TopicDetailPage {
       return
     }
     this.isSiteFavoriteLoading = true
-    this.api.executeTopicFavoriteToggleWithCookie(cookie, this.topicId, toggle)
+    this.api
+      .executeTopicFavoriteToggleWithCookie(cookie, this.topicId, toggle)
       .then((favorited: boolean) => {
         this.isSiteFavorited = favorited
         this.topicDetailSiteFavorited = favorited
-        promptAction.openToast({ message: favorited ? '已收藏' : '已取消收藏' }).catch((_error: Error) => { })
+        promptAction
+          .openToast({ message: favorited ? '已收藏' : '已取消收藏' })
+          .catch((_error: Error) => {})
       })
       .catch((error: Error) => {
-        promptAction.openToast({ message: error.message || '操作失败' }).catch((_error: Error) => { })
+        promptAction
+          .openToast({ message: error.message || '操作失败' })
+          .catch((_error: Error) => {})
       })
       .finally(() => {
         this.isSiteFavoriteLoading = false
@@ -1560,16 +1835,18 @@ export struct TopicDetailPage {
       return
     }
     if (this.isTopicThanked || this.topicDetailThanked) {
-      promptAction.openToast({ message: '已经感谢过' }).catch((_error: Error) => { })
+      promptAction.openToast({ message: '已经感谢过' }).catch((_error: Error) => {})
       return
     }
     if (!this.writeEnabled) {
-      promptAction.openToast({ message: '写入操作开关未开启，感谢不可用' }).catch((_error: Error) => { })
+      promptAction
+        .openToast({ message: '写入操作开关未开启，感谢不可用' })
+        .catch((_error: Error) => {})
       return
     }
     const cookie = CookieJarSettings.getCurrentCookie()
     if (!cookie) {
-      promptAction.openToast({ message: '请先登录' }).catch((_error: Error) => { })
+      promptAction.openToast({ message: '请先登录' }).catch((_error: Error) => {})
       return
     }
     this.topicThankLocked = true
@@ -1584,12 +1861,16 @@ export struct TopicDetailPage {
       autoCancel: false,
       primaryButton: {
         value: '取消',
-        action: () => { this.topicThankLocked = false }
+        action: () => {
+          this.topicThankLocked = false
+        },
       },
       secondaryButton: {
         value: '感谢',
-        action: () => { this.executeTopicThank(cookie) }
-      }
+        action: () => {
+          this.executeTopicThank(cookie)
+        },
+      },
     })
   }
 
@@ -1598,15 +1879,18 @@ export struct TopicDetailPage {
       return
     }
     this.isTopicThankLoading = true
-    this.api.getTopicThankActionWithCookie(cookie, this.topicId)
+    this.api
+      .getTopicThankActionWithCookie(cookie, this.topicId)
       .then((action: V2exTopicThankAction) => this.api.executeTopicThankWithCookie(cookie, action))
       .then(() => {
         this.isTopicThanked = true
         this.topicDetailThanked = true
-        promptAction.openToast({ message: '已感谢' }).catch((_error: Error) => { })
+        promptAction.openToast({ message: '已感谢' }).catch((_error: Error) => {})
       })
       .catch((error: Error) => {
-        promptAction.openToast({ message: error.message || '感谢失败' }).catch((_error: Error) => { })
+        promptAction
+          .openToast({ message: error.message || '感谢失败' })
+          .catch((_error: Error) => {})
       })
       .finally(() => {
         this.isTopicThankLoading = false
@@ -1614,7 +1898,11 @@ export struct TopicDetailPage {
       })
   }
 
-  private syncTopicDetailTitleState(savedLater: boolean, siteFavorited: boolean, thanked: boolean): void {
+  private syncTopicDetailTitleState(
+    savedLater: boolean,
+    siteFavorited: boolean,
+    thanked: boolean,
+  ): void {
     this.isSavedLater = savedLater
     this.isSiteFavorited = siteFavorited
     this.isTopicThanked = thanked
@@ -1628,24 +1916,26 @@ export struct TopicDetailPage {
       return
     }
     if (!reply || reply.id <= 0) {
-      promptAction.openToast({ message: '回复信息缺失' }).catch((_error: Error) => { })
+      promptAction.openToast({ message: '回复信息缺失' }).catch((_error: Error) => {})
       return
     }
     if (this.isReplyThanked(reply.id)) {
-      promptAction.openToast({ message: '已经感谢过' }).catch((_error: Error) => { })
+      promptAction.openToast({ message: '已经感谢过' }).catch((_error: Error) => {})
       return
     }
     if (!this.writeEnabled) {
-      promptAction.openToast({ message: '写入操作开关未开启，感谢不可用' }).catch((_error: Error) => { })
+      promptAction
+        .openToast({ message: '写入操作开关未开启，感谢不可用' })
+        .catch((_error: Error) => {})
       return
     }
     const cookie = CookieJarSettings.getCurrentCookie()
     if (!cookie) {
-      promptAction.openToast({ message: '请先登录' }).catch((_error: Error) => { })
+      promptAction.openToast({ message: '请先登录' }).catch((_error: Error) => {})
       return
     }
     if (!reply || reply.id <= 0) {
-      promptAction.openToast({ message: '回复信息缺失' }).catch((_error: Error) => { })
+      promptAction.openToast({ message: '回复信息缺失' }).catch((_error: Error) => {})
       return
     }
     this.replyThankLockedId = reply.id
@@ -1660,12 +1950,16 @@ export struct TopicDetailPage {
       autoCancel: false,
       primaryButton: {
         value: '取消',
-        action: () => { this.clearReplyThankLock() }
+        action: () => {
+          this.clearReplyThankLock()
+        },
       },
       secondaryButton: {
         value: '感谢',
-        action: () => { this.executeReplyThank(cookie, reply) }
-      }
+        action: () => {
+          this.executeReplyThank(cookie, reply)
+        },
+      },
     })
   }
 
@@ -1674,15 +1968,20 @@ export struct TopicDetailPage {
       return
     }
     this.isReplyThankLoading = true
-    this.api.getReplyThankActionWithCookie(cookie, this.topicId, reply.id)
-      .then((action: V2exReplyThankAction) => this.api.executeReplyThankWithCookie(cookie, this.topicId, action))
+    this.api
+      .getReplyThankActionWithCookie(cookie, this.topicId, reply.id)
+      .then((action: V2exReplyThankAction) =>
+        this.api.executeReplyThankWithCookie(cookie, this.topicId, action),
+      )
       .then(() => {
         this.v.markReplyThanked(reply.id)
         this.markReplyThanked(reply.id)
-        promptAction.openToast({ message: '已感谢' }).catch((_error: Error) => { })
+        promptAction.openToast({ message: '已感谢' }).catch((_error: Error) => {})
       })
       .catch((error: Error) => {
-        promptAction.openToast({ message: error.message || '感谢失败' }).catch((_error: Error) => { })
+        promptAction
+          .openToast({ message: error.message || '感谢失败' })
+          .catch((_error: Error) => {})
       })
       .finally(() => {
         this.isReplyThankLoading = false
@@ -1739,7 +2038,8 @@ export struct TopicDetailPage {
       '忽略主题',
       '忽略',
       (cookie: string) => this.api.getTopicIgnoreActionWithCookie(cookie, this.topicId),
-      (cookie: string, action: V2exTopicModerationAction) => this.api.executeTopicIgnoreWithCookie(cookie, action)
+      (cookie: string, action: V2exTopicModerationAction) =>
+        this.api.executeTopicIgnoreWithCookie(cookie, action),
     )
   }
 
@@ -1748,7 +2048,8 @@ export struct TopicDetailPage {
       '举报主题',
       '举报',
       (cookie: string) => this.api.getTopicReportActionWithCookie(cookie, this.topicId),
-      (cookie: string, action: V2exTopicModerationAction) => this.api.executeTopicReportWithCookie(cookie, action)
+      (cookie: string, action: V2exTopicModerationAction) =>
+        this.api.executeTopicReportWithCookie(cookie, action),
     )
   }
 
@@ -1758,7 +2059,8 @@ export struct TopicDetailPage {
       '忽略回复',
       '忽略',
       (cookie: string) => this.api.getReplyIgnoreActionWithCookie(cookie, this.topicId, reply.id),
-      (cookie: string, action: V2exReplyModerationAction) => this.api.executeReplyIgnoreWithCookie(cookie, this.topicId, action)
+      (cookie: string, action: V2exReplyModerationAction) =>
+        this.api.executeReplyIgnoreWithCookie(cookie, this.topicId, action),
     )
   }
 
@@ -1768,7 +2070,8 @@ export struct TopicDetailPage {
       '举报回复',
       '举报',
       (cookie: string) => this.api.getReplyReportActionWithCookie(cookie, this.topicId, reply.id),
-      (cookie: string, action: V2exReplyModerationAction) => this.api.executeReplyReportWithCookie(cookie, this.topicId, action)
+      (cookie: string, action: V2exReplyModerationAction) =>
+        this.api.executeReplyReportWithCookie(cookie, this.topicId, action),
     )
   }
 
@@ -1776,18 +2079,20 @@ export struct TopicDetailPage {
     title: string,
     verb: string,
     loadAction: (cookie: string) => Promise<V2exTopicModerationAction>,
-    executeAction: (cookie: string, action: V2exTopicModerationAction) => Promise<void>
+    executeAction: (cookie: string, action: V2exTopicModerationAction) => Promise<void>,
   ): void {
     if (this.isModerationActionLoading) {
       return
     }
     if (!this.writeEnabled) {
-      promptAction.openToast({ message: `写入操作开关未开启，${verb}不可用` }).catch((_error: Error) => { })
+      promptAction
+        .openToast({ message: `写入操作开关未开启，${verb}不可用` })
+        .catch((_error: Error) => {})
       return
     }
     const cookie = CookieJarSettings.getCurrentCookie()
     if (!cookie) {
-      promptAction.openToast({ message: '请先登录' }).catch((_error: Error) => { })
+      promptAction.openToast({ message: '请先登录' }).catch((_error: Error) => {})
       return
     }
     this.isModerationActionLoading = true
@@ -1796,7 +2101,9 @@ export struct TopicDetailPage {
         this.confirmTopicModeration(title, verb, cookie, action, executeAction)
       })
       .catch((error: Error) => {
-        promptAction.openToast({ message: error.message || `解析${verb}操作失败` }).catch((_error: Error) => { })
+        promptAction
+          .openToast({ message: error.message || `解析${verb}操作失败` })
+          .catch((_error: Error) => {})
       })
       .finally(() => {
         this.isModerationActionLoading = false
@@ -1808,17 +2115,19 @@ export struct TopicDetailPage {
     verb: string,
     cookie: string,
     action: V2exTopicModerationAction,
-    executeAction: (cookie: string, action: V2exTopicModerationAction) => Promise<void>
+    executeAction: (cookie: string, action: V2exTopicModerationAction) => Promise<void>,
   ): void {
     const topicTitle = (this.v.topic?.title || '').trim()
     AlertDialog.show({
       title: title,
       message: topicTitle ? `确定${verb}《${topicTitle}》吗？` : `确定${verb}该主题吗？`,
-      primaryButton: { value: '取消', action: () => { } },
+      primaryButton: { value: '取消', action: () => {} },
       secondaryButton: {
         value: verb,
-        action: () => { this.executeTopicModeration(verb, cookie, action, executeAction) }
-      }
+        action: () => {
+          this.executeTopicModeration(verb, cookie, action, executeAction)
+        },
+      },
     })
   }
 
@@ -1826,7 +2135,7 @@ export struct TopicDetailPage {
     verb: string,
     cookie: string,
     action: V2exTopicModerationAction,
-    executeAction: (cookie: string, action: V2exTopicModerationAction) => Promise<void>
+    executeAction: (cookie: string, action: V2exTopicModerationAction) => Promise<void>,
   ): void {
     if (this.isModerationActionLoading) {
       return
@@ -1834,11 +2143,13 @@ export struct TopicDetailPage {
     this.isModerationActionLoading = true
     executeAction(cookie, action)
       .then(() => {
-        promptAction.openToast({ message: `已${verb}` }).catch((_error: Error) => { })
+        promptAction.openToast({ message: `已${verb}` }).catch((_error: Error) => {})
         this.v.load()
       })
       .catch((error: Error) => {
-        promptAction.openToast({ message: error.message || `${verb}失败` }).catch((_error: Error) => { })
+        promptAction
+          .openToast({ message: error.message || `${verb}失败` })
+          .catch((_error: Error) => {})
       })
       .finally(() => {
         this.isModerationActionLoading = false
@@ -1850,22 +2161,24 @@ export struct TopicDetailPage {
     title: string,
     verb: string,
     loadAction: (cookie: string) => Promise<V2exReplyModerationAction>,
-    executeAction: (cookie: string, action: V2exReplyModerationAction) => Promise<void>
+    executeAction: (cookie: string, action: V2exReplyModerationAction) => Promise<void>,
   ): void {
     if (this.isModerationActionLoading) {
       return
     }
     if (!this.writeEnabled) {
-      promptAction.openToast({ message: `写入操作开关未开启，${verb}不可用` }).catch((_error: Error) => { })
+      promptAction
+        .openToast({ message: `写入操作开关未开启，${verb}不可用` })
+        .catch((_error: Error) => {})
       return
     }
     const cookie = CookieJarSettings.getCurrentCookie()
     if (!cookie) {
-      promptAction.openToast({ message: '请先登录' }).catch((_error: Error) => { })
+      promptAction.openToast({ message: '请先登录' }).catch((_error: Error) => {})
       return
     }
     if (!reply || reply.id <= 0) {
-      promptAction.openToast({ message: '回复信息缺失' }).catch((_error: Error) => { })
+      promptAction.openToast({ message: '回复信息缺失' }).catch((_error: Error) => {})
       return
     }
     this.isModerationActionLoading = true
@@ -1874,7 +2187,9 @@ export struct TopicDetailPage {
         this.confirmReplyModeration(reply, title, verb, cookie, action, executeAction)
       })
       .catch((error: Error) => {
-        promptAction.openToast({ message: error.message || `解析${verb}操作失败` }).catch((_error: Error) => { })
+        promptAction
+          .openToast({ message: error.message || `解析${verb}操作失败` })
+          .catch((_error: Error) => {})
       })
       .finally(() => {
         this.isModerationActionLoading = false
@@ -1887,16 +2202,18 @@ export struct TopicDetailPage {
     verb: string,
     cookie: string,
     action: V2exReplyModerationAction,
-    executeAction: (cookie: string, action: V2exReplyModerationAction) => Promise<void>
+    executeAction: (cookie: string, action: V2exReplyModerationAction) => Promise<void>,
   ): void {
     AlertDialog.show({
       title: title,
       message: `确定${verb} ${reply.member.username || '该用户'} 的回复吗？`,
-      primaryButton: { value: '取消', action: () => { } },
+      primaryButton: { value: '取消', action: () => {} },
       secondaryButton: {
         value: verb,
-        action: () => { this.executeReplyModeration(verb, cookie, action, executeAction) }
-      }
+        action: () => {
+          this.executeReplyModeration(verb, cookie, action, executeAction)
+        },
+      },
     })
   }
 
@@ -1904,7 +2221,7 @@ export struct TopicDetailPage {
     verb: string,
     cookie: string,
     action: V2exReplyModerationAction,
-    executeAction: (cookie: string, action: V2exReplyModerationAction) => Promise<void>
+    executeAction: (cookie: string, action: V2exReplyModerationAction) => Promise<void>,
   ): void {
     if (this.isModerationActionLoading) {
       return
@@ -1912,11 +2229,13 @@ export struct TopicDetailPage {
     this.isModerationActionLoading = true
     executeAction(cookie, action)
       .then(() => {
-        promptAction.openToast({ message: `已${verb}` }).catch((_error: Error) => { })
+        promptAction.openToast({ message: `已${verb}` }).catch((_error: Error) => {})
         this.v.load()
       })
       .catch((error: Error) => {
-        promptAction.openToast({ message: error.message || `${verb}失败` }).catch((_error: Error) => { })
+        promptAction
+          .openToast({ message: error.message || `${verb}失败` })
+          .catch((_error: Error) => {})
       })
       .finally(() => {
         this.isModerationActionLoading = false
@@ -1931,9 +2250,11 @@ export struct TopicDetailPage {
     try {
       let data = pasteboard.createData(pasteboard.MIMETYPE_TEXT_PLAIN, content)
       pasteboard.getSystemPasteboard().setDataSync(data)
-      promptAction.openToast({ message: '已复制' }).catch((_error: Error) => { })
+      promptAction.openToast({ message: '已复制' }).catch((_error: Error) => {})
     } catch (error) {
-      promptAction.openToast({ message: (error as Error).message || '复制失败' }).catch((_error: Error) => { })
+      promptAction
+        .openToast({ message: (error as Error).message || '复制失败' })
+        .catch((_error: Error) => {})
     }
   }
 
@@ -1949,10 +2270,9 @@ export struct TopicDetailPage {
     }
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     const want: Want = { action: 'ohos.want.action.viewData', uri: target }
-    context.startAbility(want)
-      .catch((error: Error) => {
-        promptAction.openToast({ message: error.message || '打开失败' }).catch((_error: Error) => { })
-      })
+    context.startAbility(want).catch((error: Error) => {
+      promptAction.openToast({ message: error.message || '打开失败' }).catch((_error: Error) => {})
+    })
   }
 
   private shareTopic(): void {
@@ -1965,16 +2285,19 @@ export struct TopicDetailPage {
       utd: utd.UniformDataType.HYPERLINK,
       title: title,
       description: title,
-      content: url
+      content: url,
     })
     const controller = new systemShare.ShareController(data)
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    controller.show(context, {
-      selectionMode: systemShare.SelectionMode.SINGLE,
-      previewMode: systemShare.SharePreviewMode.DEFAULT
-    })
+    controller
+      .show(context, {
+        selectionMode: systemShare.SelectionMode.SINGLE,
+        previewMode: systemShare.SharePreviewMode.DEFAULT,
+      })
       .catch((error: Error) => {
-        promptAction.openToast({ message: error.message || '分享失败' }).catch((_error: Error) => { })
+        promptAction
+          .openToast({ message: error.message || '分享失败' })
+          .catch((_error: Error) => {})
       })
   }
 
@@ -1991,15 +2314,14 @@ export struct TopicDetailPage {
     }
     return `${baseUrl}/t/${this.topicId}`
   }
-
 }
 
 @CustomDialog
 struct JumpToFloorDialog {
-  controller?: CustomDialogController
-  @Link floorText: string
-  cancel: () => void = () => { }
-  confirm: (value: string) => void = (_value: string) => { }
+  controller?: CustomDialogController;
+  @Link floorText: string;
+  cancel: () => void = () => {};
+  confirm: (value: string) => void = (_value: string) => {};
 
   build() {
     Column({ space: ThemeConstants.SPACE_MD }) {
@@ -2012,7 +2334,9 @@ struct JumpToFloorDialog {
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
         .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
         .borderRadius(ThemeConstants.RADIUS_MD)
-        .onChange((value: string) => { this.floorText = value })
+        .onChange((value: string) => {
+          this.floorText = value
+        })
       Row({ space: ThemeConstants.SPACE_SM }) {
         Button('取消')
           .layoutWeight(1)

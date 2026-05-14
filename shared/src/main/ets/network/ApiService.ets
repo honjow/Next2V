@@ -9,11 +9,17 @@ import { V2exNotificationParser } from '../parser/V2exNotificationParser'
 import { V2exAccountParser } from '../parser/V2exAccountParser'
 import { V2exSessionParser } from '../parser/V2exSessionParser'
 import { V2exNodeParser, type V2exFavoriteNode } from '../parser/V2exNodeParser'
-import { V2exCollectionActionParser, type V2exToggleAction } from '../parser/V2exCollectionActionParser'
+import {
+  V2exCollectionActionParser,
+  type V2exToggleAction,
+} from '../parser/V2exCollectionActionParser'
 import { V2exWriteFormParser } from '../parser/V2exWriteFormParser'
 import { V2exSigninParser } from '../parser/V2exSigninParser'
 import { V2exMemberPageParser } from '../parser/V2exMemberPageParser'
-import { V2exAccountListParser, type V2exAccountMemberListItem } from '../parser/V2exAccountListParser'
+import {
+  V2exAccountListParser,
+  type V2exAccountMemberListItem,
+} from '../parser/V2exAccountListParser'
 import { V2exTopicRepliesParser } from '../parser/V2exTopicRepliesParser'
 import { HtmlEntityUtils } from '../utils/HtmlEntityUtils'
 import { BlockedTopicFilter } from '../utils/BlockedTopicFilter'
@@ -32,7 +38,7 @@ import type {
   V2exMemberRepliesPageSnapshot,
   V2exMemberTopicsPageSnapshot,
   V2exNodeTopicsPageSnapshot,
-  V2exNodeTopicsPageResult
+  V2exNodeTopicsPageResult,
 } from './NetworkTypes'
 
 interface CookieHtmlResponse {
@@ -71,6 +77,12 @@ export interface V2exTopicWebRepliesPage {
   page: number
   pageCount: number
   hasMore: boolean
+  topicSupplementMarkdown?: string
+}
+
+export interface V2exTopicWebRepliesAllResult {
+  replies: V2exReply[]
+  pageCount: number
   topicSupplementMarkdown?: string
 }
 
@@ -123,23 +135,29 @@ export class ApiService {
 
   /** 根据 ID 获取单条主题 */
   async getTopicById(topicId: number, cacheBuster: number = 0): Promise<V2exTopic[]> {
-    const endpoint = cacheBuster > 0
-      ? `${ApiConstants.API_TOPIC_SHOW}?id=${topicId}&_=${cacheBuster}`
-      : `${ApiConstants.API_TOPIC_SHOW}?id=${topicId}`
-    const topics = cacheBuster > 0
-      ? await this.http.getNoCache<V2exTopic[]>(endpoint)
-      : await this.http.get<V2exTopic[]>(endpoint)
+    const endpoint =
+      cacheBuster > 0
+        ? `${ApiConstants.API_TOPIC_SHOW}?id=${topicId}&_=${cacheBuster}`
+        : `${ApiConstants.API_TOPIC_SHOW}?id=${topicId}`
+    const topics =
+      cacheBuster > 0
+        ? await this.http.getNoCache<V2exTopic[]>(endpoint)
+        : await this.http.get<V2exTopic[]>(endpoint)
     return ApiService.normalizeTopics(topics)
   }
 
   /** 根据用户名获取其主题 */
   async getTopicsByUsername(username: string): Promise<V2exTopic[]> {
-    return ApiService.normalizeTopics(await this.http.get<V2exTopic[]>(`${ApiConstants.API_TOPIC_SHOW}?username=${username}`))
+    return ApiService.normalizeTopics(
+      await this.http.get<V2exTopic[]>(`${ApiConstants.API_TOPIC_SHOW}?username=${username}`),
+    )
   }
 
   /** 根据节点名获取主题 */
   async getTopicsByNode(nodeName: string): Promise<V2exTopic[]> {
-    return ApiService.normalizeTopics(await this.http.get<V2exTopic[]>(`${ApiConstants.API_TOPIC_SHOW}?node_name=${nodeName}`))
+    return ApiService.normalizeTopics(
+      await this.http.get<V2exTopic[]>(`${ApiConstants.API_TOPIC_SHOW}?node_name=${nodeName}`),
+    )
   }
 
   /** 根据节点网页获取主题，支持 /go/{node}?p=N 分页。 */
@@ -156,23 +174,28 @@ export class ApiService {
     }
     return {
       topics: await this.getBatchTopics(snapshot.topicIds),
-      hasMore: snapshot.hasMore
+      hasMore: snapshot.hasMore,
     }
   }
 
   /** 获取主题的回复列表 */
   async getReplies(topicId: number, cacheBuster: number = 0): Promise<V2exReply[]> {
-    const endpoint = cacheBuster > 0
-      ? `${ApiConstants.API_REPLIES_SHOW}?topic_id=${topicId}&_=${cacheBuster}`
-      : `${ApiConstants.API_REPLIES_SHOW}?topic_id=${topicId}`
-    const replies = cacheBuster > 0
-      ? await this.http.getNoCache<V2exReply[]>(endpoint)
-      : await this.http.get<V2exReply[]>(endpoint)
+    const endpoint =
+      cacheBuster > 0
+        ? `${ApiConstants.API_REPLIES_SHOW}?topic_id=${topicId}&_=${cacheBuster}`
+        : `${ApiConstants.API_REPLIES_SHOW}?topic_id=${topicId}`
+    const replies =
+      cacheBuster > 0
+        ? await this.http.getNoCache<V2exReply[]>(endpoint)
+        : await this.http.get<V2exReply[]>(endpoint)
     return ApiService.normalizeReplies(replies)
   }
 
   /** 获取主题回复；当旧公开 API 少于主题回复数时，以公开网页 HTML 为准。 */
-  async getRepliesWithWebFallback(topicId: number, expectedReplies: number = 0): Promise<V2exReply[]> {
+  async getRepliesWithWebFallback(
+    topicId: number,
+    expectedReplies: number = 0,
+  ): Promise<V2exReply[]> {
     const apiReplies = await this.getReplies(topicId)
     if (apiReplies.length === 0 || (expectedReplies > 0 && apiReplies.length < expectedReplies)) {
       try {
@@ -192,7 +215,7 @@ export class ApiService {
     topicId: number,
     page: number = 1,
     cacheBuster: number = Date.now(),
-    cookie: string = ''
+    cookie: string = '',
   ): Promise<V2exTopicWebRepliesPage> {
     if (topicId <= 0) {
       throw new Error('无效的主题 ID')
@@ -206,30 +229,80 @@ export class ApiService {
       page: safePage,
       pageCount: pageCount,
       hasMore: safePage < pageCount,
-      topicSupplementMarkdown: ApiService.extractTopicSupplementMarkdown(html)
+      topicSupplementMarkdown: ApiService.extractTopicSupplementMarkdown(html),
     }
   }
 
   /** 获取公开主题网页中的实际回复，用于旧 replies API 为空或滞后时兜底。 */
   async getTopicWebReplies(topicId: number, cookie: string = ''): Promise<V2exReply[]> {
+    const result = await this.getTopicWebRepliesAll(topicId, cookie)
+    return result.replies
+  }
+
+  /**
+   * Fetch all reply pages in parallel. Returns merged replies sorted by page order,
+   * plus the page count. An optional onProgress callback fires after each page completes.
+   */
+  async getTopicWebRepliesAll(
+    topicId: number,
+    cookie: string = '',
+    onProgress?: (loaded: number, total: number) => void,
+  ): Promise<V2exTopicWebRepliesAllResult> {
     const cacheBuster = Date.now()
     const firstPage = await this.getTopicWebRepliesPage(topicId, 1, cacheBuster, cookie)
-    const replies = firstPage.replies.slice()
-    if (firstPage.pageCount <= 1) {
-      return ApiService.normalizeReplies(replies)
+    const pageCount = firstPage.pageCount
+    if (onProgress) {
+      onProgress(1, pageCount)
+    }
+    if (pageCount <= 1) {
+      return {
+        replies: ApiService.normalizeReplies(firstPage.replies),
+        pageCount: pageCount,
+        topicSupplementMarkdown: firstPage.topicSupplementMarkdown,
+      }
     }
 
-    const seen = new Set<number>(replies.map(reply => reply.id))
-    for (let page = 2; page <= firstPage.pageCount; page++) {
-      const snapshot = await this.getTopicWebRepliesPage(topicId, page, cacheBuster, cookie)
-      snapshot.replies.forEach((reply: V2exReply) => {
+    const pageResults: V2exTopicWebRepliesPage[] = new Array<V2exTopicWebRepliesPage>(pageCount)
+    pageResults[0] = firstPage
+
+    const remaining: number[] = []
+    for (let p = 2; p <= pageCount; p++) {
+      remaining.push(p)
+    }
+
+    let loaded = 1
+    const promises = remaining.map((page: number): Promise<void> => {
+      return this.getTopicWebRepliesPage(topicId, page, cacheBuster, cookie).then(
+        (snapshot: V2exTopicWebRepliesPage) => {
+          pageResults[page - 1] = snapshot
+          loaded++
+          if (onProgress) {
+            onProgress(loaded, pageCount)
+          }
+        },
+      )
+    })
+    await Promise.all(promises)
+
+    const seen = new Set<number>()
+    const merged: V2exReply[] = []
+    for (let i = 0; i < pageCount; i++) {
+      const page = pageResults[i]
+      if (!page) {
+        continue
+      }
+      page.replies.forEach((reply: V2exReply) => {
         if (reply.id > 0 && !seen.has(reply.id)) {
           seen.add(reply.id)
-          replies.push(reply)
+          merged.push(reply)
         }
       })
     }
-    return ApiService.normalizeReplies(replies)
+    return {
+      replies: ApiService.normalizeReplies(merged),
+      pageCount: pageCount,
+      topicSupplementMarkdown: firstPage.topicSupplementMarkdown,
+    }
   }
 
   /** 获取所有节点 */
@@ -248,41 +321,46 @@ export class ApiService {
   }
 
   /** 获取成员页实际展示的主题、回复和可用操作。主题列表遵循用户网页隐藏设置。 */
-  async getMemberPageSnapshot(username: string, cookie: string = ''): Promise<V2exMemberPageSnapshot> {
+  async getMemberPageSnapshot(
+    username: string,
+    cookie: string = '',
+  ): Promise<V2exMemberPageSnapshot> {
     const clean = (username || '').trim()
     if (!clean) {
       throw new Error('无效用户名')
     }
     const path = `/member/${encodeURIComponent(clean)}`
-    const html = cookie
-      ? await this.getCookieHtml(path, cookie)
-      : await this.http.getText(path)
+    const html = cookie ? await this.getCookieHtml(path, cookie) : await this.http.getText(path)
     return V2exMemberPageParser.parse(html, clean)
   }
 
-  async getMemberTopicsPage(username: string, page: number = 1, cookie: string = ''): Promise<V2exMemberTopicsPageSnapshot> {
+  async getMemberTopicsPage(
+    username: string,
+    page: number = 1,
+    cookie: string = '',
+  ): Promise<V2exMemberTopicsPageSnapshot> {
     const clean = (username || '').trim()
     if (!clean) {
       throw new Error('无效用户名')
     }
     const safePage = Math.max(1, Math.floor(page))
     const path = `/member/${encodeURIComponent(clean)}/topics?p=${safePage}`
-    const html = cookie
-      ? await this.getCookieHtml(path, cookie)
-      : await this.http.getText(path)
+    const html = cookie ? await this.getCookieHtml(path, cookie) : await this.http.getText(path)
     return V2exMemberPageParser.parseTopicsPage(html)
   }
 
-  async getMemberRepliesPage(username: string, page: number = 1, cookie: string = ''): Promise<V2exMemberRepliesPageSnapshot> {
+  async getMemberRepliesPage(
+    username: string,
+    page: number = 1,
+    cookie: string = '',
+  ): Promise<V2exMemberRepliesPageSnapshot> {
     const clean = (username || '').trim()
     if (!clean) {
       throw new Error('无效用户名')
     }
     const safePage = Math.max(1, Math.floor(page))
     const path = `/member/${encodeURIComponent(clean)}/replies?p=${safePage}`
-    const html = cookie
-      ? await this.getCookieHtml(path, cookie)
-      : await this.http.getText(path)
+    const html = cookie ? await this.getCookieHtml(path, cookie) : await this.http.getText(path)
     return V2exMemberPageParser.parseRepliesPage(html)
   }
 
@@ -296,21 +374,21 @@ export class ApiService {
   async getAuthenticatedMember(token: string): Promise<V2exAuthenticatedMember> {
     return this.http.getWithHeaders<V2exAuthenticatedMember>(
       ApiConstants.API_V2_MEMBER,
-      ApiService.authHeaders(token)
+      ApiService.authHeaders(token),
     )
   }
 
   async getTokenInfo(token: string): Promise<V2exTokenInfo> {
     return this.http.getWithHeaders<V2exTokenInfo>(
       ApiConstants.API_V2_TOKEN,
-      ApiService.authHeaders(token)
+      ApiService.authHeaders(token),
     )
   }
 
   async getNotifications(token: string, page: number = 1): Promise<V2exNotification[]> {
     return this.http.getWithHeaders<V2exNotification[]>(
       `${ApiConstants.API_V2_NOTIFICATIONS}?p=${page}`,
-      ApiService.authHeaders(token)
+      ApiService.authHeaders(token),
     )
   }
 
@@ -347,7 +425,10 @@ export class ApiService {
     return V2exAccountParser.extractDailyMission(html)
   }
 
-  async redeemDailyMissionWithCookie(cookie: string, redeemPath: string): Promise<V2exDailyMission> {
+  async redeemDailyMissionWithCookie(
+    cookie: string,
+    redeemPath: string,
+  ): Promise<V2exDailyMission> {
     if (!redeemPath) {
       throw new Error('今日不可签到')
     }
@@ -377,7 +458,10 @@ export class ApiService {
     }
     const username = await this.getSessionUsernameWithCookie(cookie)
     const encodedUsername = encodeURIComponent(username)
-    const path = page > 1 ? `/member/${encodedUsername}/replies?p=${page}` : `/member/${encodedUsername}/replies`
+    const path =
+      page > 1
+        ? `/member/${encodedUsername}/replies?p=${page}`
+        : `/member/${encodedUsername}/replies`
     const html = await this.getCookieHtml(path, cookie)
     const ids = V2exTabParser.extractTopicIds(html)
     if (ids.length === 0) {
@@ -448,7 +532,10 @@ export class ApiService {
   /**
    * 获取主题收藏/取消收藏的切换链接（依赖 Cookie 会话）
    */
-  async getTopicFavoriteToggleActionWithCookie(cookie: string, topicId: number): Promise<V2exToggleAction> {
+  async getTopicFavoriteToggleActionWithCookie(
+    cookie: string,
+    topicId: number,
+  ): Promise<V2exToggleAction> {
     if (!cookie) {
       throw new Error('请先登录')
     }
@@ -472,7 +559,11 @@ export class ApiService {
    * 执行主题收藏切换（依赖 Cookie 会话）
    * - 返回操作后的收藏状态
    */
-  async executeTopicFavoriteToggleWithCookie(cookie: string, topicId: number, toggle: V2exToggleAction): Promise<boolean> {
+  async executeTopicFavoriteToggleWithCookie(
+    cookie: string,
+    topicId: number,
+    toggle: V2exToggleAction,
+  ): Promise<boolean> {
     if (!cookie) {
       throw new Error('请先登录')
     }
@@ -505,7 +596,10 @@ export class ApiService {
   /**
    * 获取节点关注/取消关注的切换链接（依赖 Cookie 会话）
    */
-  async getNodeFavoriteToggleActionWithCookie(cookie: string, nodeName: string): Promise<V2exToggleAction> {
+  async getNodeFavoriteToggleActionWithCookie(
+    cookie: string,
+    nodeName: string,
+  ): Promise<V2exToggleAction> {
     const cleanName = (nodeName || '').trim()
     if (!cookie) {
       throw new Error('请先登录')
@@ -529,7 +623,11 @@ export class ApiService {
    * 执行节点关注切换（依赖 Cookie 会话）
    * - 返回操作后的关注状态
    */
-  async executeNodeFavoriteToggleWithCookie(cookie: string, nodeName: string, toggle: V2exToggleAction): Promise<boolean> {
+  async executeNodeFavoriteToggleWithCookie(
+    cookie: string,
+    nodeName: string,
+    toggle: V2exToggleAction,
+  ): Promise<boolean> {
     const cleanName = (nodeName || '').trim()
     if (!cookie) {
       throw new Error('请先登录')
@@ -560,7 +658,11 @@ export class ApiService {
     return this.executeNodeFavoriteToggleWithCookie(cookie, nodeName, toggle)
   }
 
-  async executeMemberActionWithCookie(cookie: string, username: string, actionPath: string): Promise<V2exMemberPageSnapshot> {
+  async executeMemberActionWithCookie(
+    cookie: string,
+    username: string,
+    actionPath: string,
+  ): Promise<V2exMemberPageSnapshot> {
     const cleanName = (username || '').trim()
     const cleanPath = (actionPath || '').trim()
     if (!cookie) {
@@ -570,7 +672,12 @@ export class ApiService {
       throw new Error('缺少用户操作')
     }
     const memberPath = `/member/${encodeURIComponent(cleanName)}`
-    const actionRes = await this.requestHtmlWithCookieAllowRedirect(cleanPath, cookie, memberPath, http.RequestMethod.GET)
+    const actionRes = await this.requestHtmlWithCookieAllowRedirect(
+      cleanPath,
+      cookie,
+      memberPath,
+      http.RequestMethod.GET,
+    )
     if (actionRes.location.indexOf('/signin') >= 0) {
       throw new Error('Web 会话已失效，请重新登录')
     }
@@ -618,7 +725,13 @@ export class ApiService {
     // used for the current once/content field names, but relying on the action
     // attribute can silently post to a non-mutating page when the page markup
     // changes or another form is selected.
-    const res = await this.requestHtmlWithCookieAllowRedirect(topicPath, cookie, topicPath, http.RequestMethod.POST, body)
+    const res = await this.requestHtmlWithCookieAllowRedirect(
+      topicPath,
+      cookie,
+      topicPath,
+      http.RequestMethod.POST,
+      body,
+    )
     if (res.location.indexOf('/signin') >= 0) {
       throw new Error('Web 会话已失效，请重新登录')
     }
@@ -636,7 +749,11 @@ export class ApiService {
     throw new Error('提交失败：未确认回复已发布')
   }
 
-  async getReplyThankActionWithCookie(cookie: string, topicId: number, replyId: number): Promise<V2exReplyThankAction> {
+  async getReplyThankActionWithCookie(
+    cookie: string,
+    topicId: number,
+    replyId: number,
+  ): Promise<V2exReplyThankAction> {
     if (!cookie) {
       throw new Error('请先登录')
     }
@@ -655,7 +772,11 @@ export class ApiService {
     return { replyId, actionPath }
   }
 
-  async executeReplyThankWithCookie(cookie: string, topicId: number, action: V2exReplyThankAction): Promise<void> {
+  async executeReplyThankWithCookie(
+    cookie: string,
+    topicId: number,
+    action: V2exReplyThankAction,
+  ): Promise<void> {
     if (!cookie) {
       throw new Error('请先登录')
     }
@@ -663,7 +784,12 @@ export class ApiService {
       throw new Error('缺少感谢操作')
     }
     const topicPath = `/t/${topicId}`
-    const res = await this.requestHtmlWithCookieAllowRedirect(action.actionPath, cookie, topicPath, http.RequestMethod.POST)
+    const res = await this.requestHtmlWithCookieAllowRedirect(
+      action.actionPath,
+      cookie,
+      topicPath,
+      http.RequestMethod.POST,
+    )
     if (res.location.indexOf('/signin') >= 0) {
       throw new Error('Web 会话已失效，请重新登录')
     }
@@ -674,7 +800,10 @@ export class ApiService {
     }
   }
 
-  async getTopicThankActionWithCookie(cookie: string, topicId: number): Promise<V2exTopicThankAction> {
+  async getTopicThankActionWithCookie(
+    cookie: string,
+    topicId: number,
+  ): Promise<V2exTopicThankAction> {
     if (!cookie) {
       throw new Error('请先登录')
     }
@@ -701,7 +830,12 @@ export class ApiService {
       throw new Error('缺少感谢操作')
     }
     const topicPath = `/t/${action.topicId}`
-    const res = await this.requestHtmlWithCookieAllowRedirect(action.actionPath, cookie, topicPath, http.RequestMethod.POST)
+    const res = await this.requestHtmlWithCookieAllowRedirect(
+      action.actionPath,
+      cookie,
+      topicPath,
+      http.RequestMethod.POST,
+    )
     if (res.location.indexOf('/signin') >= 0) {
       throw new Error('Web 会话已失效，请重新登录')
     }
@@ -712,48 +846,114 @@ export class ApiService {
     }
   }
 
-  async getTopicIgnoreActionWithCookie(cookie: string, topicId: number): Promise<V2exTopicModerationAction> {
-    const actionPath = await this.getCookieActionPath(cookie, topicId, 'ignore', 'topic', topicId, '主题不可忽略或已被忽略')
+  async getTopicIgnoreActionWithCookie(
+    cookie: string,
+    topicId: number,
+  ): Promise<V2exTopicModerationAction> {
+    const actionPath = await this.getCookieActionPath(
+      cookie,
+      topicId,
+      'ignore',
+      'topic',
+      topicId,
+      '主题不可忽略或已被忽略',
+    )
     return { topicId, actionPath }
   }
 
-  async executeTopicIgnoreWithCookie(cookie: string, action: V2exTopicModerationAction): Promise<void> {
+  async executeTopicIgnoreWithCookie(
+    cookie: string,
+    action: V2exTopicModerationAction,
+  ): Promise<void> {
     if (!action || action.topicId <= 0 || !action.actionPath) {
       throw new Error('缺少忽略操作')
     }
-    await this.executeCookieActionWithCookie(cookie, action.actionPath, `/t/${action.topicId}`, '忽略失败')
+    await this.executeCookieActionWithCookie(
+      cookie,
+      action.actionPath,
+      `/t/${action.topicId}`,
+      '忽略失败',
+    )
   }
 
-  async getReplyIgnoreActionWithCookie(cookie: string, topicId: number, replyId: number): Promise<V2exReplyModerationAction> {
-    const actionPath = await this.getCookieActionPath(cookie, topicId, 'ignore', 'reply', replyId, '回复不可忽略或已被忽略')
+  async getReplyIgnoreActionWithCookie(
+    cookie: string,
+    topicId: number,
+    replyId: number,
+  ): Promise<V2exReplyModerationAction> {
+    const actionPath = await this.getCookieActionPath(
+      cookie,
+      topicId,
+      'ignore',
+      'reply',
+      replyId,
+      '回复不可忽略或已被忽略',
+    )
     return { replyId, actionPath }
   }
 
-  async executeReplyIgnoreWithCookie(cookie: string, topicId: number, action: V2exReplyModerationAction): Promise<void> {
+  async executeReplyIgnoreWithCookie(
+    cookie: string,
+    topicId: number,
+    action: V2exReplyModerationAction,
+  ): Promise<void> {
     if (!action || action.replyId <= 0 || !action.actionPath) {
       throw new Error('缺少忽略操作')
     }
     await this.executeCookieActionWithCookie(cookie, action.actionPath, `/t/${topicId}`, '忽略失败')
   }
 
-  async getTopicReportActionWithCookie(cookie: string, topicId: number): Promise<V2exTopicModerationAction> {
-    const actionPath = await this.getCookieActionPath(cookie, topicId, 'report', 'topic', topicId, '主题不可报告或已报告')
+  async getTopicReportActionWithCookie(
+    cookie: string,
+    topicId: number,
+  ): Promise<V2exTopicModerationAction> {
+    const actionPath = await this.getCookieActionPath(
+      cookie,
+      topicId,
+      'report',
+      'topic',
+      topicId,
+      '主题不可报告或已报告',
+    )
     return { topicId, actionPath }
   }
 
-  async executeTopicReportWithCookie(cookie: string, action: V2exTopicModerationAction): Promise<void> {
+  async executeTopicReportWithCookie(
+    cookie: string,
+    action: V2exTopicModerationAction,
+  ): Promise<void> {
     if (!action || action.topicId <= 0 || !action.actionPath) {
       throw new Error('缺少报告操作')
     }
-    await this.executeCookieActionWithCookie(cookie, action.actionPath, `/t/${action.topicId}`, '报告失败')
+    await this.executeCookieActionWithCookie(
+      cookie,
+      action.actionPath,
+      `/t/${action.topicId}`,
+      '报告失败',
+    )
   }
 
-  async getReplyReportActionWithCookie(cookie: string, topicId: number, replyId: number): Promise<V2exReplyModerationAction> {
-    const actionPath = await this.getCookieActionPath(cookie, topicId, 'report', 'reply', replyId, '回复不可报告或已报告')
+  async getReplyReportActionWithCookie(
+    cookie: string,
+    topicId: number,
+    replyId: number,
+  ): Promise<V2exReplyModerationAction> {
+    const actionPath = await this.getCookieActionPath(
+      cookie,
+      topicId,
+      'report',
+      'reply',
+      replyId,
+      '回复不可报告或已报告',
+    )
     return { replyId, actionPath }
   }
 
-  async executeReplyReportWithCookie(cookie: string, topicId: number, action: V2exReplyModerationAction): Promise<void> {
+  async executeReplyReportWithCookie(
+    cookie: string,
+    topicId: number,
+    action: V2exReplyModerationAction,
+  ): Promise<void> {
     if (!action || action.replyId <= 0 || !action.actionPath) {
       throw new Error('缺少报告操作')
     }
@@ -764,7 +964,12 @@ export class ApiService {
    * 提交新主题（依赖 Cookie 会话）
    * - 返回新主题 ID（无法解析时返回 0）
    */
-  async createTopicWithCookie(cookie: string, nodeName: string, title: string, content: string): Promise<number> {
+  async createTopicWithCookie(
+    cookie: string,
+    nodeName: string,
+    title: string,
+    content: string,
+  ): Promise<number> {
     const cleanNode = (nodeName || '').trim()
     const cleanTitle = (title || '').trim()
     const cleanContent = (content || '').trim()
@@ -782,7 +987,12 @@ export class ApiService {
     }
 
     const composePath = `/new/${cleanNode}`
-    const composeRes = await this.requestHtmlWithCookieAllowRedirect(composePath, cookie, composePath, http.RequestMethod.GET)
+    const composeRes = await this.requestHtmlWithCookieAllowRedirect(
+      composePath,
+      cookie,
+      composePath,
+      http.RequestMethod.GET,
+    )
     if (composeRes.location.indexOf('/signin') >= 0) {
       throw new Error('Web 会话已失效，请重新登录')
     }
@@ -804,7 +1014,13 @@ export class ApiService {
     fields[form.contentField] = cleanContent
     const body = ApiService.encodeFormFields(fields)
 
-    const res = await this.requestHtmlWithCookieAllowRedirect(form.actionPath, cookie, composePath, http.RequestMethod.POST, body)
+    const res = await this.requestHtmlWithCookieAllowRedirect(
+      form.actionPath,
+      cookie,
+      composePath,
+      http.RequestMethod.POST,
+      body,
+    )
     if (res.location.indexOf('/signin') >= 0) {
       throw new Error('Web 会话已失效，请重新登录')
     }
@@ -824,7 +1040,6 @@ export class ApiService {
     }
     return 0
   }
-
 
   private async getCookieHtml(path: string, cookie: string): Promise<string> {
     const endpoint = this.cookieEndpoint(path)
@@ -852,7 +1067,10 @@ export class ApiService {
   }
 
   private assertNoTwoFactorChallenge(path: string, text: string, location: string): void {
-    if (ApiService.isLocationPath(location, '/2fa') || V2exSigninParser.extractTwoFactorForm(text)) {
+    if (
+      ApiService.isLocationPath(location, '/2fa') ||
+      V2exSigninParser.extractTwoFactorForm(text)
+    ) {
       throw new V2exCookieTwoFactorRequiredError(path)
     }
   }
@@ -881,22 +1099,31 @@ export class ApiService {
     return trimmed
   }
 
-  private async requestTextWithCookieAllowRedirect(pathOrUrl: string, cookie: string, refererPath: string): Promise<void> {
+  private async requestTextWithCookieAllowRedirect(
+    pathOrUrl: string,
+    cookie: string,
+    refererPath: string,
+  ): Promise<void> {
     const clean = (pathOrUrl || '').trim()
     if (!clean) {
       throw new Error('缺少操作路径')
     }
     const baseUrl = this.http.getBaseUrl()
-    const url = clean.startsWith('http://') || clean.startsWith('https://')
-      ? clean
-      : clean.startsWith('/') ? `${baseUrl}${clean}` : `${baseUrl}/${clean}`
+    const url =
+      clean.startsWith('http://') || clean.startsWith('https://')
+        ? clean
+        : clean.startsWith('/')
+          ? `${baseUrl}${clean}`
+          : `${baseUrl}/${clean}`
 
     const refererClean = (refererPath || '').trim()
     const refererUrl = !refererClean
       ? ''
-      : (refererClean.startsWith('http://') || refererClean.startsWith('https://'))
-          ? refererClean
-          : refererClean.startsWith('/') ? `${baseUrl}${refererClean}` : `${baseUrl}/${refererClean}`
+      : refererClean.startsWith('http://') || refererClean.startsWith('https://')
+        ? refererClean
+        : refererClean.startsWith('/')
+          ? `${baseUrl}${refererClean}`
+          : `${baseUrl}/${refererClean}`
 
     let httpRequest = http.createHttp()
     try {
@@ -905,7 +1132,7 @@ export class ApiService {
         'Accept-Encoding': 'gzip',
         'Content-Type': 'text/html; charset=utf-8',
         'Cookie': cookie,
-        'User-Agent': 'Mozilla/5.0'
+        'User-Agent': 'Mozilla/5.0',
       }
       if (refererUrl) {
         requestHeaders['Referer'] = refererUrl
@@ -917,7 +1144,7 @@ export class ApiService {
         connectTimeout: this.CONNECT_TIMEOUT_MS,
         readTimeout: this.READ_TIMEOUT_MS,
         usingCache: false,
-        expectDataType: http.HttpDataType.STRING
+        expectDataType: http.HttpDataType.STRING,
       })
       const statusCode = response.responseCode as number
       const location = ApiService.extractHeaderValue(response.header, 'location')
@@ -937,23 +1164,28 @@ export class ApiService {
     cookie: string,
     refererPath: string,
     method: http.RequestMethod,
-    extraData: string = ''
+    extraData: string = '',
   ): Promise<CookieHtmlResponse> {
     const clean = (pathOrUrl || '').trim()
     if (!clean) {
       throw new Error('缺少操作路径')
     }
     const baseUrl = this.http.getBaseUrl()
-    const url = clean.startsWith('http://') || clean.startsWith('https://')
-      ? clean
-      : clean.startsWith('/') ? `${baseUrl}${clean}` : `${baseUrl}/${clean}`
+    const url =
+      clean.startsWith('http://') || clean.startsWith('https://')
+        ? clean
+        : clean.startsWith('/')
+          ? `${baseUrl}${clean}`
+          : `${baseUrl}/${clean}`
 
     const refererClean = (refererPath || '').trim()
     const refererUrl = !refererClean
       ? ''
-      : (refererClean.startsWith('http://') || refererClean.startsWith('https://'))
-          ? refererClean
-          : refererClean.startsWith('/') ? `${baseUrl}${refererClean}` : `${baseUrl}/${refererClean}`
+      : refererClean.startsWith('http://') || refererClean.startsWith('https://')
+        ? refererClean
+        : refererClean.startsWith('/')
+          ? `${baseUrl}${refererClean}`
+          : `${baseUrl}/${refererClean}`
 
     let httpRequest = http.createHttp()
     let headerBag: Object | null = null
@@ -964,9 +1196,12 @@ export class ApiService {
       const requestHeaders: Record<string, string> = {
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Encoding': 'gzip',
-        'Content-Type': method === http.RequestMethod.POST ? 'application/x-www-form-urlencoded' : 'text/html; charset=utf-8',
+        'Content-Type':
+          method === http.RequestMethod.POST
+            ? 'application/x-www-form-urlencoded'
+            : 'text/html; charset=utf-8',
         'Cookie': cookie,
-        'User-Agent': 'Mozilla/5.0'
+        'User-Agent': 'Mozilla/5.0',
       }
       if (refererUrl) {
         requestHeaders['Referer'] = refererUrl
@@ -978,7 +1213,7 @@ export class ApiService {
         connectTimeout: this.CONNECT_TIMEOUT_MS,
         readTimeout: this.READ_TIMEOUT_MS,
         usingCache: false,
-        expectDataType: http.HttpDataType.STRING
+        expectDataType: http.HttpDataType.STRING,
       }
       if (method === http.RequestMethod.POST && extraData) {
         options.extraData = extraData
@@ -1004,7 +1239,8 @@ export class ApiService {
     }
     try {
       const bag = headers as Record<string, Object>
-      const value = bag[cleanKey] || bag[key] || bag[cleanKey.toUpperCase()] || bag[key.toUpperCase()] || ''
+      const value =
+        bag[cleanKey] || bag[key] || bag[cleanKey.toUpperCase()] || bag[key.toUpperCase()] || ''
       if (typeof value === 'string') {
         return value
       }
@@ -1043,7 +1279,10 @@ export class ApiService {
     if (!html || replyId <= 0) {
       return ''
     }
-    const direct = new RegExp(`['"]([^'"]*\\/thank\\/reply\\/${replyId}\\?once=\\d+[^'"]*)['"]`, 'i')
+    const direct = new RegExp(
+      `['"]([^'"]*\\/thank\\/reply\\/${replyId}\\?once=\\d+[^'"]*)['"]`,
+      'i',
+    )
     const directMatch = html.match(direct)
     if (directMatch && directMatch[1]) {
       return ApiService.decodeHtml(directMatch[1])
@@ -1067,7 +1306,10 @@ export class ApiService {
     if (!html || topicId <= 0) {
       return ''
     }
-    const direct = new RegExp(`['"]([^'"]*\\/thank\\/topic\\/${topicId}\\?once=\\d+[^'"]*)['"]`, 'i')
+    const direct = new RegExp(
+      `['"]([^'"]*\\/thank\\/topic\\/${topicId}\\?once=\\d+[^'"]*)['"]`,
+      'i',
+    )
     const directMatch = html.match(direct)
     if (directMatch && directMatch[1]) {
       return ApiService.decodeHtml(directMatch[1])
@@ -1103,7 +1345,12 @@ export class ApiService {
     }
   }
 
-  private static extractCookieActionPath(html: string, action: string, target: string, targetId: number): string {
+  private static extractCookieActionPath(
+    html: string,
+    action: string,
+    target: string,
+    targetId: number,
+  ): string {
     if (!html || !action || !target || targetId <= 0) {
       return ''
     }
@@ -1124,7 +1371,7 @@ export class ApiService {
     action: string,
     target: string,
     targetId: number,
-    missingMessage: string
+    missingMessage: string,
   ): Promise<string> {
     if (!cookie) {
       throw new Error('请先登录')
@@ -1148,7 +1395,7 @@ export class ApiService {
     cookie: string,
     actionPath: string,
     refererPath: string,
-    failurePrefix: string
+    failurePrefix: string,
   ): Promise<void> {
     if (!cookie) {
       throw new Error('请先登录')
@@ -1156,7 +1403,12 @@ export class ApiService {
     if (!actionPath) {
       throw new Error('缺少操作路径')
     }
-    const res = await this.requestHtmlWithCookieAllowRedirect(actionPath, cookie, refererPath, http.RequestMethod.GET)
+    const res = await this.requestHtmlWithCookieAllowRedirect(
+      actionPath,
+      cookie,
+      refererPath,
+      http.RequestMethod.GET,
+    )
     if (res.location.indexOf('/signin') >= 0) {
       throw new Error('Web 会话已失效，请重新登录')
     }
@@ -1171,10 +1423,19 @@ export class ApiService {
       return false
     }
     const path = ApiService.locationPath(location)
-    return path === `/t/${topicId}` || path.indexOf(`/t/${topicId}?`) === 0 || path.indexOf(`/t/${topicId}#`) === 0
+    return (
+      path === `/t/${topicId}` ||
+      path.indexOf(`/t/${topicId}?`) === 0 ||
+      path.indexOf(`/t/${topicId}#`) === 0
+    )
   }
 
-  private async hasSubmittedReplyOnLastPage(cookie: string, topicId: number, username: string, content: string): Promise<boolean> {
+  private async hasSubmittedReplyOnLastPage(
+    cookie: string,
+    topicId: number,
+    username: string,
+    content: string,
+  ): Promise<boolean> {
     const cleanUsername = (username || '').trim()
     const cleanContent = ApiService.normalizeReplyProbeText(content)
     if (!cookie || topicId <= 0 || !cleanUsername || !cleanContent) {
@@ -1184,13 +1445,18 @@ export class ApiService {
       const cacheBuster = Date.now()
       const firstPage = await this.getTopicWebRepliesPage(topicId, 1, cacheBuster, cookie)
       const lastPageNumber = Math.max(1, firstPage.pageCount)
-      const lastPage = lastPageNumber === 1 ? firstPage : await this.getTopicWebRepliesPage(topicId, lastPageNumber, cacheBuster, cookie)
+      const lastPage =
+        lastPageNumber === 1
+          ? firstPage
+          : await this.getTopicWebRepliesPage(topicId, lastPageNumber, cacheBuster, cookie)
       return lastPage.replies.some((reply: V2exReply) => {
         const replyUsername = reply && reply.member ? (reply.member.username || '').trim() : ''
         if (replyUsername !== cleanUsername) {
           return false
         }
-        const replyContent = ApiService.normalizeReplyProbeText(reply.content || reply.content_rendered || '')
+        const replyContent = ApiService.normalizeReplyProbeText(
+          reply.content || reply.content_rendered || '',
+        )
         if (!replyContent) {
           return false
         }
@@ -1203,13 +1469,15 @@ export class ApiService {
   }
 
   private static normalizeReplyProbeText(value: string): string {
-    return HtmlEntityUtils.decode((value || '')
-      .replace(/<br\s*\/?>/gi, '\n')
-      .replace(/<[^>]+>/g, '')
-      .replace(/\r\n/g, '\n')
-      .replace(/\r/g, '\n')
-      .replace(/\s+/g, ' ')
-      .trim())
+    return HtmlEntityUtils.decode(
+      (value || '')
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<[^>]+>/g, '')
+        .replace(/\r\n/g, '\n')
+        .replace(/\r/g, '\n')
+        .replace(/\s+/g, ' ')
+        .trim(),
+    )
   }
 
   private static decodeHtml(value: string): string {
@@ -1264,9 +1532,9 @@ export class ApiService {
     for (let i = 0; i < ids.length; i += CONCURRENCY) {
       const batch = ids.slice(i, i + CONCURRENCY)
       const batchResults = await Promise.all(
-        batch.map(id => this.http.get<V2exTopic[]>(`${ApiConstants.API_TOPIC_SHOW}?id=${id}`))
+        batch.map((id) => this.http.get<V2exTopic[]>(`${ApiConstants.API_TOPIC_SHOW}?id=${id}`)),
       )
-      results.push(...batchResults.map(r => r[0]).filter(t => t !== undefined))
+      results.push(...batchResults.map((r) => r[0]).filter((t) => t !== undefined))
     }
     return ApiService.normalizeTopics(results)
   }
@@ -1274,7 +1542,8 @@ export class ApiService {
   private static extractTopicSupplementMarkdown(html: string): string {
     const source = html || ''
     const supplements: string[] = []
-    const re = /<div[^>]*class=['"][^'"]*\bsubtle\b[^'"]*['"][^>]*>[\s\S]*?<span[^>]*class=['"][^'"]*\bfade\b[^'"]*['"][^>]*>([\s\S]*?)<\/span>[\s\S]*?<div[^>]*class=['"][^'"]*\btopic_content\b[^'"]*['"][^>]*>([\s\S]*?)<\/div>[\s\S]*?<\/div>/gi
+    const re =
+      /<div[^>]*class=['"][^'"]*\bsubtle\b[^'"]*['"][^>]*>[\s\S]*?<span[^>]*class=['"][^'"]*\bfade\b[^'"]*['"][^>]*>([\s\S]*?)<\/span>[\s\S]*?<div[^>]*class=['"][^'"]*\btopic_content\b[^'"]*['"][^>]*>([\s\S]*?)<\/div>[\s\S]*?<\/div>/gi
     let match: RegExpExecArray | null = re.exec(source)
     while (match) {
       const title = ApiService.htmlToPlainText(match[1] || '').trim()
@@ -1288,14 +1557,16 @@ export class ApiService {
   }
 
   private static htmlToPlainText(html: string): string {
-    return HtmlEntityUtils.decode((html || '')
-      .replace(/<br\s*\/?>/gi, '\n')
-      .replace(/<\/p>/gi, '\n\n')
-      .replace(/<\/div>/gi, '\n')
-      .replace(/<[^>]+>/g, '')
-      .replace(/\r/g, '')
-      .replace(/\n{3,}/g, '\n\n')
-      .trim())
+    return HtmlEntityUtils.decode(
+      (html || '')
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<\/p>/gi, '\n\n')
+        .replace(/<\/div>/gi, '\n')
+        .replace(/<[^>]+>/g, '')
+        .replace(/\r/g, '')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim(),
+    )
   }
 
   private static normalizeTopics(topics: V2exTopic[]): V2exTopic[] {
@@ -1311,17 +1582,23 @@ export class ApiService {
       const blockedMembers = await this.getBlockedMembersWithCookie(cookie)
       const usernames = ApiService.mergeBlockedUsernames(
         BlockedMemberSettings.getCachedUsernames(),
-        blockedMembers.map(item => item.username)
+        blockedMembers.map((item) => item.username),
       )
       BlockedMemberSettings.applyRuntimeUsernames(usernames)
       return BlockedTopicFilter.filterTopicsByBlockedAuthors(topics, usernames)
     } catch (error) {
       console.error('filter blocked topic authors failed:', (error as Error).message)
-      return BlockedTopicFilter.filterTopicsByBlockedAuthors(topics, BlockedMemberSettings.getCachedUsernames())
+      return BlockedTopicFilter.filterTopicsByBlockedAuthors(
+        topics,
+        BlockedMemberSettings.getCachedUsernames(),
+      )
     }
   }
 
-  private static mergeBlockedUsernames(localUsernames: string[], remoteUsernames: string[]): string[] {
+  private static mergeBlockedUsernames(
+    localUsernames: string[],
+    remoteUsernames: string[],
+  ): string[] {
     const usernames: string[] = []
     const seen: Set<string> = new Set()
     const append = (value: string): void => {
@@ -1377,7 +1654,7 @@ export class ApiService {
 
   private static authHeaders(token: string): Record<string, string> {
     return {
-      'Authorization': `Bearer ${token.trim()}`
+      'Authorization': `Bearer ${token.trim()}`,
     }
   }
 }

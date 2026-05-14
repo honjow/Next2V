@@ -9,7 +9,7 @@ import {
   ReplyDisplaySettings,
   CookieJarSettings,
 } from 'shared'
-import type { V2exTopicWebRepliesPage } from 'shared'
+import type { V2exTopicWebRepliesPage, V2exTopicWebRepliesAllResult } from 'shared'
 import { ReplyDataSource } from '../model/DetailModels'
 
 /**
@@ -34,6 +34,10 @@ export class DetailViewModel {
   isBottomRefreshing: boolean = false
   errorMessage: string = ''
   topicId: number = 0
+  isPreloadingAll: boolean = false
+  preloadProgress: string = ''
+  needsPreloadConfirm: boolean = false
+  private preloadFallbackToFlat: boolean = false
 
   private api: ApiService = new ApiService()
   private apiV2: ApiV2Service = new ApiV2Service()
@@ -46,6 +50,8 @@ export class DetailViewModel {
   private repliesPageCount: number = 1
   private failedRepliesPage: number = 0
   private readonly V2_REPLY_PAGE_SIZE: number = 20
+  allRepliesLoaded: boolean = false
+  private static readonly PRELOAD_REPLY_LIMIT: number = 500
 
   constructor(topicId: number) {
     this.topicId = topicId
@@ -62,6 +68,57 @@ export class DetailViewModel {
   setReplyDisplayMode(mode: string): void {
     this.replyDisplayMode = ReplyDisplaySettings.normalizeMode(mode)
     this.onlyOp = this.replyDisplayMode === ReplyDisplaySettings.MODE_OP
+    this.replyDataSource.setData(this.getVisibleReplies())
+  }
+
+  isThreadMode(): boolean {
+    if (this.preloadFallbackToFlat) {
+      return false
+    }
+    const m = this.replyDisplayMode
+    return (
+      m === ReplyDisplaySettings.MODE_THREAD ||
+      m === ReplyDisplaySettings.MODE_THREAD_WITH_MENTION ||
+      m === ReplyDisplaySettings.MODE_THREAD_REDUNDANT
+    )
+  }
+
+  /**
+   * Called after load() completes. Checks if thread mode needs preloading
+   * and either auto-preloads or sets needsPreloadConfirm for the UI to show a dialog.
+   */
+  triggerThreadPreloadIfNeeded(): void {
+    if (!this.isThreadMode() || !this.repliesHasMore || this.allRepliesLoaded) {
+      return
+    }
+    const estimatedTotal = this.estimateTotalReplies()
+    if (estimatedTotal > DetailViewModel.PRELOAD_REPLY_LIMIT) {
+      this.needsPreloadConfirm = true
+    } else {
+      this.preloadRemainingReplies()
+    }
+  }
+
+  /**
+   * Called when user switches to a thread mode after the topic is already loaded.
+   * Triggers preloading remaining pages if not yet done.
+   */
+  async switchToThreadModeAndPreload(mode: string): Promise<void> {
+    this.preloadFallbackToFlat = false
+    this.setReplyDisplayMode(mode)
+    if (!this.allRepliesLoaded && this.repliesHasMore) {
+      await this.preloadRemainingReplies()
+    }
+  }
+
+  confirmPreloadAll(): void {
+    this.needsPreloadConfirm = false
+    this.preloadRemainingReplies()
+  }
+
+  confirmPreloadFallbackFlat(): void {
+    this.needsPreloadConfirm = false
+    this.preloadFallbackToFlat = true
     this.replyDataSource.setData(this.getVisibleReplies())
   }
 
@@ -198,6 +255,9 @@ export class DetailViewModel {
       this.replyDataSource.setData(this.getVisibleReplies())
       this.repliesLoaded = this.replies.length
       this.repliesLoadMoreState = this.repliesHasMore ? 'idle' : 'endReached'
+      if (!this.repliesHasMore) {
+        this.allRepliesLoaded = true
+      }
       await this.saveCache(this.topic, this.replies)
     } catch (error) {
       const e = error as Error
@@ -271,6 +331,66 @@ export class DetailViewModel {
     await this.loadMoreReplies()
   }
 
+  async preloadRemainingReplies(): Promise<void> {
+    if (this.isPreloadingAll || this.allRepliesLoaded || this.isLoading) {
+      return
+    }
+    this.isPreloadingAll = true
+    this.preloadProgress = '正在加载全部回复…'
+    try {
+      if (this.repliesSource === 'publicWebPage') {
+        await this.preloadWebReplies()
+      } else if (this.repliesSource === 'v2') {
+        await this.preloadV2Replies()
+      }
+      this.allRepliesLoaded = true
+      this.repliesHasMore = false
+      this.repliesLoadMoreState = 'endReached'
+      this.replyDataSource.setData(this.getVisibleReplies())
+      this.repliesLoaded = this.replies.length
+      await this.saveCache(this.topic, this.replies)
+    } catch (error) {
+      console.error('preload all replies failed:', (error as Error).message)
+    } finally {
+      this.isPreloadingAll = false
+      this.preloadProgress = ''
+    }
+  }
+
+  private async preloadWebReplies(): Promise<void> {
+    const cookie = CookieJarSettings.getCurrentCookie()
+    const result: V2exTopicWebRepliesAllResult = await this.api.getTopicWebRepliesAll(
+      this.topicId,
+      cookie,
+      (loaded: number, total: number) => {
+        this.preloadProgress = `正在加载全部回复 ${loaded}/${total}…`
+      },
+    )
+    if (result.topicSupplementMarkdown) {
+      this.topic = this.mergeTopicSupplements(this.topic, result.topicSupplementMarkdown)
+    }
+    this.replies = this.normalizeRepliesForRender(result.replies)
+    this.repliesPage = result.pageCount
+    this.repliesPageCount = result.pageCount
+  }
+
+  private async preloadV2Replies(): Promise<void> {
+    let page = this.repliesPage + 1
+    let hasMore = this.repliesHasMore
+    while (hasMore) {
+      this.preloadProgress = `正在加载全部回复 ${this.replies.length} 条…`
+      const res = await this.apiV2.getTopicReplies(this.authToken, this.topicId, page)
+      const items = res.data || []
+      const unique = this.uniqueNewReplies(items)
+      if (unique.length > 0) {
+        this.replies = this.replies.concat(unique)
+      }
+      hasMore = items.length >= this.V2_REPLY_PAGE_SIZE
+      this.repliesPage = page
+      page++
+    }
+  }
+
   async retryLoadMoreReplies(): Promise<void> {
     if (this.repliesLoadMoreState !== 'loadMoreError' || this.failedRepliesPage <= 0) {
       return
@@ -293,6 +413,13 @@ export class DetailViewModel {
     return (
       this.repliesLoadMoreState === 'loadingMore' || this.repliesLoadMoreState === 'loadMoreError'
     )
+  }
+
+  private estimateTotalReplies(): number {
+    if (this.topic && this.topic.replies > 0) {
+      return this.topic.replies
+    }
+    return this.repliesPageCount * 100
   }
 
   async refreshLastRepliesPage(): Promise<void> {
@@ -653,7 +780,7 @@ export class DetailViewModel {
       }
       return this.prepareRepliesForThreading().filter((reply) => reply.member.id === opId)
     }
-    if (this.replyDisplayMode === ReplyDisplaySettings.MODE_ORIGIN) {
+    if (this.replyDisplayMode === ReplyDisplaySettings.MODE_ORIGIN || this.preloadFallbackToFlat) {
       return this.prepareRepliesForThreading()
     }
     if (this.replyDisplayMode === ReplyDisplaySettings.MODE_THREAD_REDUNDANT) {
