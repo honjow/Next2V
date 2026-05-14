@@ -2150,11 +2150,11 @@ export struct MarkdownContent {
       if (m.index > last) {
         result.push(MarkdownContent.buildTextToken(text.slice(last, m.index)) as Token);
       }
-      // Bare image URLs default to block. If the source later proves to be a
-      // genuinely small image, MarkdownAutoImage reports its dimensions and the
-      // token pass can promote it to inline. This avoids treating consecutive
-      // large images on the same rendered HTML line as emoji-sized ImageSpans.
-      result.push(MarkdownContent.buildImageToken(rawUrl, renderUrl, "", false) as Token);
+      const beforeOnLine = text.slice(Math.max(last, text.lastIndexOf('\n', m.index - 1) + 1), m.index).trim().length > 0;
+      const nextBreak = text.indexOf('\n', m.index + rawUrl.length);
+      const afterEnd = nextBreak >= 0 ? nextBreak : text.length;
+      const afterOnLine = text.slice(m.index + rawUrl.length, afterEnd).trim().length > 0;
+      result.push(MarkdownContent.buildImageToken(rawUrl, renderUrl, "", beforeOnLine || afterOnLine) as Token);
       last = m.index + rawUrl.length;
       m = re.exec(text);
     }
