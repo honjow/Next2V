@@ -618,8 +618,15 @@ export class ApiService {
     if (res.location.indexOf('/signin') >= 0) {
       throw new Error('Web 会话已失效，请重新登录')
     }
+    if (ApiService.isTopicLocation(res.location, topicId)) {
+      return
+    }
     const problem = V2exSigninParser.extractProblemMessage(res.text)
     if (problem) {
+      const username = V2exSessionParser.extractUsername(html)
+      if (await this.hasSubmittedReplyOnLastPage(cookie, topicId, username, cleanContent)) {
+        return
+      }
       throw new Error(`提交失败：${problem}`)
     }
   }
@@ -796,16 +803,21 @@ export class ApiService {
     if (res.location.indexOf('/signin') >= 0) {
       throw new Error('Web 会话已失效，请重新登录')
     }
-    const problem = V2exSigninParser.extractProblemMessage(res.text)
-    if (problem) {
-      throw new Error(`提交失败：${problem}`)
-    }
 
     const topicFromLocation = ApiService.extractTopicId(res.location)
     if (topicFromLocation > 0) {
       return topicFromLocation
     }
-    return ApiService.extractTopicId(res.text)
+    const topicFromText = ApiService.extractTopicId(res.text)
+    if (topicFromText > 0) {
+      return topicFromText
+    }
+
+    const problem = V2exSigninParser.extractProblemMessage(res.text)
+    if (problem) {
+      throw new Error(`提交失败：${problem}`)
+    }
+    return 0
   }
 
 
@@ -1147,6 +1159,52 @@ export class ApiService {
     if (problem) {
       throw new Error(`${failurePrefix}：${problem}`)
     }
+  }
+
+  private static isTopicLocation(location: string, topicId: number): boolean {
+    if (topicId <= 0) {
+      return false
+    }
+    const path = ApiService.locationPath(location)
+    return path === `/t/${topicId}` || path.indexOf(`/t/${topicId}?`) === 0 || path.indexOf(`/t/${topicId}#`) === 0
+  }
+
+  private async hasSubmittedReplyOnLastPage(cookie: string, topicId: number, username: string, content: string): Promise<boolean> {
+    const cleanUsername = (username || '').trim()
+    const cleanContent = ApiService.normalizeReplyProbeText(content)
+    if (!cookie || topicId <= 0 || !cleanUsername || !cleanContent) {
+      return false
+    }
+    try {
+      const cacheBuster = Date.now()
+      const firstPage = await this.getTopicWebRepliesPage(topicId, 1, cacheBuster, cookie)
+      const lastPageNumber = Math.max(1, firstPage.pageCount)
+      const lastPage = lastPageNumber === 1 ? firstPage : await this.getTopicWebRepliesPage(topicId, lastPageNumber, cacheBuster, cookie)
+      return lastPage.replies.some((reply: V2exReply) => {
+        const replyUsername = reply && reply.member ? (reply.member.username || '').trim() : ''
+        if (replyUsername !== cleanUsername) {
+          return false
+        }
+        const replyContent = ApiService.normalizeReplyProbeText(reply.content || reply.content_rendered || '')
+        if (!replyContent) {
+          return false
+        }
+        return replyContent.indexOf(cleanContent) >= 0 || cleanContent.indexOf(replyContent) >= 0
+      })
+    } catch (error) {
+      console.error('verify submitted reply failed: ' + (error as Error).message)
+      return false
+    }
+  }
+
+  private static normalizeReplyProbeText(value: string): string {
+    return HtmlEntityUtils.decode((value || '')
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<[^>]+>/g, '')
+      .replace(/\r\n/g, '\n')
+      .replace(/\r/g, '\n')
+      .replace(/\s+/g, ' ')
+      .trim())
   }
 
   private static decodeHtml(value: string): string {

@@ -15,7 +15,6 @@ const PREVIEW_FIXED_HEIGHT: number = 220
 export struct ReadingSettingsPage {
   @StorageLink(StorageKeys.READING_FONT_SIZE) readingFontSize: number = ThemeConstants.FONT_SIZE_BODY
   @StorageLink(StorageKeys.READING_LINE_HEIGHT) readingLineHeight: number = ThemeConstants.LINE_HEIGHT_BODY
-  @StorageLink(StorageKeys.READING_RESTORE_POSITION) readingRestorePosition: boolean = false
 
   build() {
     Column() {
@@ -51,7 +50,7 @@ export struct ReadingSettingsPage {
             .lineHeight(this.readingLineHeight + 2)
             .width('100%')
 
-          Text('这是阅读设置的实时预览区域。拖动下面的滑块后，正文的字号和行距会立即同步变化，用来接近实际主题详情中的阅读感受。')
+          Text('这是阅读字体设置的实时预览区域。拖动下面的滑块后，正文的字号和行距会立即同步变化，用来接近实际主题详情中的阅读感受。')
             .fontSize(this.readingFontSize)
             .fontColor($r('sys.color.font_primary'))
             .lineHeight(this.readingLineHeight)
@@ -173,19 +172,6 @@ export struct ReadingSettingsPage {
         this.SettingsDivider()
 
         ConciseListRow({
-          title: '记住阅读位置',
-          subtitle: '重新进入主题时跳到上次阅读的楼层',
-          showChevron: false,
-          hasSwitch: true,
-          checked: this.readingRestorePosition,
-          switchAction: (value: boolean) => {
-            this.updateRestorePosition(value)
-          }
-        })
-
-        this.SettingsDivider()
-
-        ConciseListRow({
           title: '恢复默认',
           destructive: true,
           showChevron: false,
@@ -224,18 +210,9 @@ export struct ReadingSettingsPage {
       })
   }
 
-  private updateRestorePosition(value: boolean): void {
-    this.readingRestorePosition = value
-    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    ReadingSettings.saveRestorePosition(context, value)
-      .catch((error: Error) => {
-        console.error('save reading restore position setting failed: ' + error.message)
-      })
-  }
-
   private confirmResetReadingSettings(): void {
     AlertDialog.show({
-      title: '恢复默认阅读设置',
+      title: '恢复默认阅读字体设置',
       message: '将字号和行距恢复为默认值。确定继续吗？',
       primaryButton: {
         value: '取消',

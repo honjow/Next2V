@@ -627,7 +627,7 @@ struct Index {
       HdsNavDestination() {
         ReadingSettingsPage()
       }
-      .titleBar(this.navDestTitleBarOpts('阅读设置'))
+      .titleBar(this.navDestTitleBarOpts('阅读字体设置'))
     } else if (name === 'Account') {
       HdsNavDestination() {
         AccountDashboardPage({ showDetail: true })

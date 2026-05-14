@@ -10,6 +10,7 @@ import {
   HttpClient,
   ListDivider as SharedListDivider,
   MediaSettings,
+  ReadingSettings,
   SecondaryListScaffold,
   SectionHeader as SharedSectionHeader,
   StorageKeys,
@@ -29,6 +30,7 @@ export struct SettingsPage {
   @StorageLink(StorageKeys.MEDIA_ONLY_LOAD_IMAGES_ON_WIFI) onlyLoadImagesOnWifi: boolean = false
   @StorageLink(StorageKeys.THEME_MODE) themeMode: string = ThemeSettings.MODE_AUTO
   @StorageLink(StorageKeys.REPLY_DISPLAY_MODE) replyDisplayMode: string = ReplyDisplaySettings.MODE_THREAD
+  @StorageLink(StorageKeys.READING_RESTORE_POSITION) readingRestorePosition: boolean = false
   @StorageLink(StorageKeys.ACCOUNT_WRITE_ENABLED) accountWriteEnabled: boolean = false
   @State private cacheStats: CacheStats = { topicListCount: 0, topicDetailCount: 0, updatedAt: 0 }
   @State private themeMenuShown: boolean = false
@@ -258,8 +260,14 @@ export struct SettingsPage {
 
       this.SettingsDivider()
 
+      this.TogglePreferenceRow('记住阅读位置', this.readingRestorePosition, (value: boolean) => {
+        this.updateRestorePosition(value)
+      })
+
+      this.SettingsDivider()
+
       ConciseListRow({
-        title: '阅读设置',
+        title: '阅读字体设置',
         action: () => {
           this.stack.pushPathByName('ReadingSettings', null)
         }
@@ -411,6 +419,14 @@ export struct SettingsPage {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     ReplyDisplaySettings.save(context, normalizedMode).catch((error: Error) => {
       console.error('save reply display mode failed: ' + error.message)
+    })
+  }
+
+  private updateRestorePosition(value: boolean): void {
+    this.readingRestorePosition = value
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    ReadingSettings.saveRestorePosition(context, value).catch((error: Error) => {
+      console.error('save reading restore position setting failed: ' + error.message)
     })
   }
 
