@@ -206,6 +206,7 @@ export class DetailViewModel {
     this.repliesPage = 1
     this.repliesPageCount = 1
     this.repliesHasMore = false
+    this.allRepliesLoaded = false
     this.isRepliesLoadingMore = false
     this.isBottomRefreshing = false
     this.failedRepliesPage = 0
@@ -258,7 +259,7 @@ export class DetailViewModel {
       if (!this.repliesHasMore) {
         this.allRepliesLoaded = true
       }
-      await this.saveCache(this.topic, this.replies)
+      this.saveCache(this.topic, this.replies).catch((_e: Error) => {})
     } catch (error) {
       const e = error as Error
       this.errorMessage = e.message || '加载失败'
@@ -348,7 +349,7 @@ export class DetailViewModel {
       this.repliesLoadMoreState = 'endReached'
       this.replyDataSource.setData(this.getVisibleReplies())
       this.repliesLoaded = this.replies.length
-      await this.saveCache(this.topic, this.replies)
+      this.saveCache(this.topic, this.replies).catch((_e: Error) => {})
     } catch (error) {
       console.error('preload all replies failed:', (error as Error).message)
     } finally {

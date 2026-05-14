@@ -369,6 +369,7 @@ export struct TopicDetailPage {
       scrollEnabled: this.listScrollEnabled,
       onRefresh: async () => {
         await this.v.load()
+        this.v.triggerThreadPreloadIfNeeded()
       },
       onScrollEnableChange: (enabled: boolean) => {
         this.listScrollEnabled = enabled
@@ -1386,10 +1387,14 @@ export struct TopicDetailPage {
   }
 
   private replyCountText(): string {
-    if (this.v.repliesUseV2 && this.v.topic !== null && this.v.topic!.replies > 0) {
-      return `已加载 ${this.v.repliesLoaded} / ${this.v.topic!.replies}`
+    const total = this.v.topic?.replies ?? 0
+    if (total > 0 && this.v.repliesLoaded < total) {
+      return `已加载 ${this.v.repliesLoaded} / ${total}`
     }
-    return `共 ${this.v.replyDataSource.totalCount()} 条回复`
+    if (total > 0) {
+      return `共 ${total} 条回复`
+    }
+    return `共 ${this.v.repliesLoaded} 条回复`
   }
 
   private toggleOnlyOp(): void {

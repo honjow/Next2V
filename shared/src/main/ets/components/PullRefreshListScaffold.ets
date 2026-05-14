@@ -2,7 +2,7 @@ import { StorageKeys } from '../constants/StorageKeys'
 import { ThemeConstants } from '../theme/ThemeConstants'
 import { PullRefresh } from './PullRefresh'
 
-const DEFAULT_REFRESH_THRESHOLD: number = 60
+const DEFAULT_REFRESH_THRESHOLD: number = 120
 
 @Component
 export struct PullRefreshListScaffold {
