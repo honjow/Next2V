@@ -1515,7 +1515,13 @@ export struct MarkdownContent {
   // Re-type certain tokens so the Markdown component doesn't recognize them
   // and delegates to our customBlockBuilder instead.
   private static processTokens(md: string, sizeRecords: InlineImageSizeRecord[] = []): Token[] {
-    let tokens = lexer(MarkdownContent.normalizeMarkdownSource(HtmlEntityUtils.decode(md)), { gfm: true, breaks: true });
+    let tokens: Token[];
+    const decodedSource = HtmlEntityUtils.decode(md || '');
+    if (MarkdownContent.looksLikeRenderedHtml(decodedSource)) {
+      tokens = MarkdownContent.renderedHtmlToTokens(decodedSource, sizeRecords);
+    } else {
+      tokens = lexer(MarkdownContent.normalizeMarkdownSource(decodedSource), { gfm: true, breaks: true });
+    }
     MarkdownContent.rewriteImageTableMarkers(tokens);
     MarkdownContent.rewriteBareImageLinks(tokens);
     MarkdownContent.rewriteInlineImageLinks(tokens);
@@ -1529,6 +1535,257 @@ export struct MarkdownContent {
     MarkdownContent.mergeSelectableParagraphRuns(tokens);
     MarkdownContent.retypeBlockTokens(tokens);
     return tokens;
+  }
+
+  private static renderedHtmlToTokens(html: string, sizeRecords: InlineImageSizeRecord[] = []): Token[] {
+    const source = MarkdownContent.stripRenderedHtmlWrapper(html || '')
+      .replace(/\r\n/g, '\n')
+      .replace(/\r/g, '\n');
+    const tokens: Token[] = [];
+    const blockRe = /<(table|h[1-6]|p|ul|ol|div)\b[^>]*>([\s\S]*?)<\/\1>/gi;
+    let last = 0;
+    let match: RegExpExecArray | null = blockRe.exec(source);
+    while (match) {
+      if (match.index > last) {
+        MarkdownContent.pushInlineParagraphToken(tokens, source.slice(last, match.index), sizeRecords);
+      }
+      tokens.push(...MarkdownContent.htmlBlockToTokens(match[1].toLowerCase(), match[0], match[2], sizeRecords));
+      last = blockRe.lastIndex;
+      match = blockRe.exec(source);
+    }
+    if (last < source.length) {
+      MarkdownContent.pushInlineParagraphToken(tokens, source.slice(last), sizeRecords);
+    }
+    if (tokens.length === 0) {
+      MarkdownContent.pushInlineParagraphToken(tokens, source, sizeRecords);
+    }
+    return tokens;
+  }
+
+  private static stripRenderedHtmlWrapper(html: string): string {
+    let source = (html || '').trim();
+    source = source.replace(/^<div\b[^>]*class=(["'])[^"']*markdown_body[^"']*\1[^>]*>/i, '');
+    source = source.replace(/<\/div>\s*$/i, '');
+    return source;
+  }
+
+  private static htmlBlockToTokens(tag: string, raw: string, body: string, sizeRecords: InlineImageSizeRecord[] = []): Token[] {
+    if (tag === 'table') {
+      const imageUrls = MarkdownContent.extractImageUrlsFromHtml(raw);
+      if (imageUrls.length > 0) {
+        const tableToken = MarkdownContent.parseImageTableMarker(MarkdownContent.buildImageTableMarker(imageUrls, MarkdownContent.extractTableHeaderLabels(raw)).trim());
+        return tableToken ? [tableToken as Token] : [];
+      }
+      return lexer(MarkdownContent.convertHtmlTable(raw), { gfm: true, breaks: true });
+    }
+    if (/^h[1-6]$/.test(tag)) {
+      const depth = Number(tag.slice(1));
+      return [{
+        type: 'heading',
+        raw: raw,
+        depth: depth,
+        text: MarkdownContent.stripHtmlTags(body),
+        tokens: MarkdownContent.inlineHtmlToTokens(body, sizeRecords),
+      } as Token];
+    }
+    if (tag === 'ul' || tag === 'ol') {
+      return [MarkdownContent.htmlListToToken(raw, tag === 'ol', sizeRecords) as Token];
+    }
+    if (tag === 'div' && /<(?:table|h[1-6]|p|ul|ol)\b/i.test(body)) {
+      return MarkdownContent.renderedHtmlToTokens(body, sizeRecords);
+    }
+    const paragraph = MarkdownContent.inlineHtmlToParagraph(body, raw, sizeRecords);
+    return paragraph ? [paragraph as Token] : [];
+  }
+
+  private static htmlListToToken(listHtml: string, ordered: boolean, sizeRecords: InlineImageSizeRecord[] = []): Tokens.List {
+    const items: Tokens.ListItem[] = [];
+    const itemRe = /<li\b[^>]*>([\s\S]*?)<\/li>/gi;
+    let match: RegExpExecArray | null = itemRe.exec(listHtml || '');
+    while (match) {
+      const childBlocks = /<(?:ul|ol|p|div|table|h[1-6])\b/i.test(match[1])
+        ? MarkdownContent.renderedHtmlToTokens(match[1], sizeRecords)
+        : [];
+      const paragraph = MarkdownContent.inlineHtmlToParagraph(match[1], match[0], sizeRecords);
+      const itemTokens: Token[] = childBlocks.length > 0 ? childBlocks : (paragraph ? [paragraph as Token] : []);
+      items.push({
+        type: 'list_item',
+        raw: match[0],
+        task: false,
+        checked: undefined,
+        loose: false,
+        text: MarkdownContent.stripHtmlTags(match[1]),
+        tokens: itemTokens,
+      } as Tokens.ListItem);
+      match = itemRe.exec(listHtml || '');
+    }
+    return {
+      type: 'list',
+      raw: listHtml,
+      ordered: ordered,
+      start: 1,
+      loose: false,
+      items: items,
+    } as Tokens.List;
+  }
+
+  private static pushInlineParagraphToken(tokens: Token[], html: string, sizeRecords: InlineImageSizeRecord[] = []): void {
+    const paragraph = MarkdownContent.inlineHtmlToParagraph(html, html, sizeRecords);
+    if (paragraph) {
+      tokens.push(paragraph as Token);
+    }
+  }
+
+  private static inlineHtmlToParagraph(html: string, raw: string, sizeRecords: InlineImageSizeRecord[] = []): Tokens.Paragraph | null {
+    const inlineTokens = MarkdownContent.inlineHtmlToTokens(html, sizeRecords);
+    if (inlineTokens.length === 0) {
+      return null;
+    }
+    const text = inlineTokens.map((token: Token): string => String((token as TokenRecord)["text"] ?? (token as TokenRecord)["href"] ?? (token as TokenRecord)["raw"] ?? '')).join('');
+    return {
+      type: 'paragraph',
+      raw: raw,
+      text: text,
+      tokens: inlineTokens,
+    } as Tokens.Paragraph;
+  }
+
+  private static inlineHtmlToTokens(value: string, _sizeRecords: InlineImageSizeRecord[] = []): Token[] {
+    const tokens: Token[] = [];
+    const source = value || '';
+    const inlineRe = /<a\b[^>]*>[\s\S]*?<\/a>|<img\b[^>]*>|<br\s*\/?>|<code\b[^>]*>[\s\S]*?<\/code>|<(strong|b|em|i)\b[^>]*>[\s\S]*?<\/\1>/gi;
+    let last = 0;
+    let match: RegExpExecArray | null = inlineRe.exec(source);
+    while (match) {
+      MarkdownContent.appendHtmlTextToken(tokens, source.slice(last, match.index));
+      tokens.push(...MarkdownContent.htmlInlinePartToTokens(match[0]));
+      last = inlineRe.lastIndex;
+      match = inlineRe.exec(source);
+    }
+    MarkdownContent.appendHtmlTextToken(tokens, source.slice(last).replace(/<[^>]+>/g, ''));
+    MarkdownContent.trimInlineTextEdges(tokens);
+    MarkdownContent.markStandaloneInlineImages(tokens);
+    return tokens;
+  }
+
+  private static htmlInlinePartToTokens(part: string): Token[] {
+    if (/^<br/i.test(part)) {
+      return [{ type: 'br', raw: part, text: '\n' } as Token];
+    }
+    if (/^<img/i.test(part)) {
+      const src = MarkdownContent.htmlAttr(part, 'src');
+      return src ? [MarkdownContent.buildImageToken(part, src, '', true) as Token] : [];
+    }
+    if (/^<a/i.test(part)) {
+      const href = MarkdownContent.htmlAttr(part, 'href');
+      const images: Token[] = [];
+      const imageRe = /<img\b[^>]*>/gi;
+      let imageMatch: RegExpExecArray | null = imageRe.exec(part);
+      while (imageMatch) {
+        const src = MarkdownContent.htmlAttr(imageMatch[0], 'src') || href;
+        if (src) {
+          images.push(MarkdownContent.buildImageToken(imageMatch[0], src, '', true) as Token);
+        }
+        imageMatch = imageRe.exec(part);
+      }
+      if (images.length > 0) {
+        return images;
+      }
+      const label = MarkdownContent.stripHtmlTags(part);
+      if (!href) {
+        return label ? [MarkdownContent.buildTextToken(label) as Token] : [];
+      }
+      return [{
+        type: 'link',
+        raw: part,
+        href: href,
+        title: null,
+        text: label,
+        tokens: [MarkdownContent.buildTextToken(label) as Token],
+      } as Tokens.Link];
+    }
+    if (/^<code/i.test(part)) {
+      return [{ type: 'codespan', raw: part, text: MarkdownContent.stripHtmlTags(part) } as Tokens.Codespan];
+    }
+    if (/^<(strong|b)/i.test(part)) {
+      const text = MarkdownContent.stripHtmlTags(part);
+      return [{ type: 'strong', raw: part, text: text, tokens: [MarkdownContent.buildTextToken(text) as Token] } as Tokens.Strong];
+    }
+    if (/^<(em|i)/i.test(part)) {
+      const text = MarkdownContent.stripHtmlTags(part);
+      return [{ type: 'em', raw: part, text: text, tokens: [MarkdownContent.buildTextToken(text) as Token] } as Tokens.Em];
+    }
+    return [];
+  }
+
+  private static appendHtmlTextToken(tokens: Token[], text: string): void {
+    const clean = HtmlEntityUtils.decode(text || '').replace(/[ \t\f\v\r\n]+/g, ' ');
+    if (!clean) {
+      return;
+    }
+    const last = tokens.length > 0 ? tokens[tokens.length - 1] as TokenRecord : null;
+    if (last && last["type"] === 'text') {
+      last["text"] = String(last["text"] ?? '') + clean;
+      last["raw"] = String(last["raw"] ?? '') + clean;
+      return;
+    }
+    tokens.push(MarkdownContent.buildTextToken(clean) as Token);
+  }
+
+  private static trimInlineTextEdges(tokens: Token[]): void {
+    while (tokens.length > 0) {
+      const first = tokens[0] as TokenRecord;
+      if (first["type"] !== 'text' || String(first["text"] ?? '').trim().length > 0) {
+        break;
+      }
+      tokens.shift();
+    }
+    while (tokens.length > 0) {
+      const last = tokens[tokens.length - 1] as TokenRecord;
+      if (last["type"] !== 'text' || String(last["text"] ?? '').trim().length > 0) {
+        break;
+      }
+      tokens.pop();
+    }
+    if (tokens.length > 0 && (tokens[0] as TokenRecord)["type"] === 'text') {
+      const first = tokens[0] as TokenRecord;
+      const trimmed = String(first["text"] ?? '').replace(/^\s+/, '');
+      first["text"] = trimmed;
+      first["raw"] = trimmed;
+    }
+    if (tokens.length > 0 && (tokens[tokens.length - 1] as TokenRecord)["type"] === 'text') {
+      const last = tokens[tokens.length - 1] as TokenRecord;
+      const trimmed = String(last["text"] ?? '').replace(/\s+$/, '');
+      last["text"] = trimmed;
+      last["raw"] = trimmed;
+    }
+    MarkdownContent.removeLeadingMentionTextBeforeMemberLink(tokens);
+  }
+
+  private static removeLeadingMentionTextBeforeMemberLink(tokens: Token[]): void {
+    for (let i = 1; i < tokens.length; i++) {
+      const current = tokens[i] as TokenRecord;
+      const previous = tokens[i - 1] as TokenRecord;
+      if (current["type"] !== 'link' || previous["type"] !== 'text') {
+        continue;
+      }
+      const href = String(current["href"] ?? '');
+      if (!/^\/member\/[^?#/]+(?:[?#].*)?$/i.test(href) && !/^https?:\/\/(?:www\.)?v2ex\.(?:com|co)\/member\/[^?#/]+/i.test(href)) {
+        continue;
+      }
+      const text = String(previous["text"] ?? '');
+      const stripped = text.replace(/@\s*$/, '');
+      if (stripped !== text) {
+        previous["text"] = stripped;
+        previous["raw"] = stripped;
+      }
+    }
+    for (let i = tokens.length - 1; i >= 0; i--) {
+      const token = tokens[i] as TokenRecord;
+      if (token["type"] === 'text' && String(token["text"] ?? '').length === 0) {
+        tokens.splice(i, 1);
+      }
+    }
   }
 
   private static normalizeMarkdownSource(md: string): string {
