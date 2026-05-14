@@ -602,31 +602,143 @@ export struct TopicDetailPage {
 
       // 正文
       if (this.v.topic!.content) {
-        MarkdownContent({
-          source: this.v.topic!.content,
-          onImageClick: (url: string) => { this.openImagePreview(url) },
-          onLinkClick: (url: string) => { this.openContentLink(url) },
-          onMentionClick: (username: string) => { this.openUserProfile(username) }
-        })
+        ForEach(this.markdownBlocks(this.v.topic!.content), (block: string, index: number) => {
+          MarkdownContent({
+            source: block,
+            topMargin: index === 0 ? ThemeConstants.SPACE_LG : ThemeConstants.SPACE_SM,
+            onImageClick: (url: string) => { this.openImagePreview(url) },
+            onLinkClick: (url: string) => { this.openContentLink(url) },
+            onMentionClick: (username: string) => { this.openUserProfile(username) }
+          })
+        }, (block: string, index: number) => `${index}-${block.length}-${block.slice(0, 16)}`)
       }
 
       if (this.v.topic!.topicSupplementMarkdown) {
         Divider()
           .strokeWidth(1)
           .color($r('sys.color.ohos_id_color_list_separator'))
-          .margin({ top: ThemeConstants.SPACE_LG, bottom: ThemeConstants.SPACE_MD })
-        MarkdownContent({
-          source: this.v.topic!.topicSupplementMarkdown || '',
-          onImageClick: (url: string) => { this.openImagePreview(url) },
-          onLinkClick: (url: string) => { this.openContentLink(url) },
-          onMentionClick: (username: string) => { this.openUserProfile(username) }
-        })
+          .margin({ top: ThemeConstants.SPACE_MD, bottom: ThemeConstants.SPACE_XS })
+        ForEach(this.supplementBlocks(this.v.topic!.topicSupplementMarkdown || ''), (block: string, index: number) => {
+          Column() {
+            Text(this.supplementMeta(block))
+              .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+              .fontColor($r('sys.color.font_secondary'))
+              .width('100%')
+            if (this.supplementBody(block)) {
+              ForEach(this.markdownBlocks(this.supplementBody(block)), (bodyBlock: string, bodyIndex: number) => {
+                MarkdownContent({
+                  source: bodyBlock,
+                  topMargin: bodyIndex === 0 ? ThemeConstants.SPACE_XS : ThemeConstants.SPACE_SM,
+                  onImageClick: (url: string) => { this.openImagePreview(url) },
+                  onLinkClick: (url: string) => { this.openContentLink(url) },
+                  onMentionClick: (username: string) => { this.openUserProfile(username) }
+                })
+              }, (bodyBlock: string, bodyIndex: number) => `${bodyIndex}-${bodyBlock.length}-${bodyBlock.slice(0, 16)}`)
+            }
+          }
+          .width('100%')
+          .margin({ top: index === 0 ? 0 : ThemeConstants.SPACE_MD })
+        }, (block: string, index: number) => `${index}-${block.length}-${block.slice(0, 16)}`)
       }
     }
     .padding(this.topicCardPadding())
     .width('100%')
     .borderRadius(ThemeConstants.RADIUS_MD)
     .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+  }
+
+  private markdownBlocks(source: string): string[] {
+    const normalized = (source || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n')
+    const lines = normalized.split('\n')
+    const blocks: string[] = []
+    let buffer: string[] = []
+    let tableBuffer: string[] = []
+    let inTable = false
+    const flushBuffer = (): void => {
+      const text = buffer.join('\n').trim()
+      if (text.length > 0) {
+        blocks.push(text)
+      }
+      buffer = []
+    }
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i]
+      const trimmed = line.trim()
+      if (inTable) {
+        tableBuffer.push(line)
+        if (/<\/table>/i.test(line)) {
+          const table = tableBuffer.join('\n').trim()
+          if (table.length > 0) {
+            blocks.push(table)
+          }
+          tableBuffer = []
+          inTable = false
+        }
+        continue
+      }
+      if (/<table\b/i.test(line)) {
+        flushBuffer()
+        tableBuffer = [line]
+        inTable = !/<\/table>/i.test(line)
+        if (!inTable) {
+          blocks.push(tableBuffer.join('\n').trim())
+          tableBuffer = []
+        }
+        continue
+      }
+      if (/^#{1,6}\s+/.test(trimmed)) {
+        flushBuffer()
+        blocks.push(trimmed)
+        continue
+      }
+      if (trimmed.length === 0) {
+        flushBuffer()
+        continue
+      }
+      buffer.push(line)
+    }
+    flushBuffer()
+    const trailingTable = tableBuffer.join('\n').trim()
+    if (trailingTable.length > 0) {
+      blocks.push(trailingTable)
+    }
+    return blocks
+  }
+
+  private supplementBlocks(source: string): string[] {
+    const normalized = (source || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim()
+    if (normalized.length === 0) {
+      return []
+    }
+    const lines = normalized.split('\n')
+    const blocks: string[] = []
+    let current: string[] = []
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i]
+      if (/^##\s+/.test(line.trim()) && current.length > 0) {
+        blocks.push(current.join('\n').trim())
+        current = []
+      }
+      current.push(line)
+    }
+    const last = current.join('\n').trim()
+    if (last.length > 0) {
+      blocks.push(last)
+    }
+    return blocks
+  }
+
+  private supplementMeta(block: string): string {
+    const first = ((block || '').split('\n')[0] || '').trim()
+    return first.replace(/^##\s+/, '').trim()
+  }
+
+  private supplementBody(block: string): string {
+    const lines = (block || '').split('\n')
+    if (lines.length <= 1) {
+      return ''
+    }
+    return lines.slice(1).join('\n').trim()
   }
 
   @Builder ReplyDivider() {
