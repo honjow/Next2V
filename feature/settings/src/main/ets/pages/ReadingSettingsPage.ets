@@ -15,6 +15,7 @@ const PREVIEW_FIXED_HEIGHT: number = 220
 export struct ReadingSettingsPage {
   @StorageLink(StorageKeys.READING_FONT_SIZE) readingFontSize: number = ThemeConstants.FONT_SIZE_BODY
   @StorageLink(StorageKeys.READING_LINE_HEIGHT) readingLineHeight: number = ThemeConstants.LINE_HEIGHT_BODY
+  @StorageLink(StorageKeys.READING_RESTORE_POSITION) readingRestorePosition: boolean = false
 
   build() {
     Column() {
@@ -172,6 +173,19 @@ export struct ReadingSettingsPage {
         this.SettingsDivider()
 
         ConciseListRow({
+          title: '记住阅读位置',
+          subtitle: '重新进入主题时跳到上次阅读的楼层',
+          showChevron: false,
+          hasSwitch: true,
+          checked: this.readingRestorePosition,
+          switchAction: (value: boolean) => {
+            this.updateRestorePosition(value)
+          }
+        })
+
+        this.SettingsDivider()
+
+        ConciseListRow({
           title: '恢复默认',
           destructive: true,
           showChevron: false,
@@ -207,6 +221,15 @@ export struct ReadingSettingsPage {
     ReadingSettings.saveTypography(context, this.readingFontSize, this.readingLineHeight)
       .catch((error: Error) => {
         console.error('save reading settings failed: ' + error.message)
+      })
+  }
+
+  private updateRestorePosition(value: boolean): void {
+    this.readingRestorePosition = value
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    ReadingSettings.saveRestorePosition(context, value)
+      .catch((error: Error) => {
+        console.error('save reading restore position setting failed: ' + error.message)
       })
   }
 

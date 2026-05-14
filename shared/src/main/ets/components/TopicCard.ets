@@ -48,12 +48,6 @@ export struct TopicCard {
       .alignItems(VerticalAlign.Center)
 
       Row({ space: 6 }) {
-        if (this.isUnread) {
-          Text('●')
-            .fontSize(8)
-            .fontColor(ThemeConstants.BRAND_PRIMARY)
-            .margin({ top: 4 })
-        }
         Text(this.item.title)
           .fontSize(ThemeConstants.FONT_SIZE_BODY)
           .fontColor($r('sys.color.font_primary'))

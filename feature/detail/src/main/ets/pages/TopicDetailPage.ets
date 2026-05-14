@@ -44,6 +44,7 @@ export struct TopicDetailPage {
   @StorageLink(StorageKeys.READING_FONT_SIZE) readingFontSize: number = ThemeConstants.FONT_SIZE_BODY
   @StorageLink(StorageKeys.READING_LINE_HEIGHT) readingLineHeight: number = ThemeConstants.LINE_HEIGHT_BODY
   @StorageLink(StorageKeys.READING_DENSITY) readingDensity: string = ReadingSettings.DENSITY_STANDARD
+  @StorageLink(StorageKeys.READING_RESTORE_POSITION) readingRestorePosition: boolean = false
   @StorageLink(StorageKeys.MOTION_HAND_EDGE) @Watch('onMotionHandEdgeChanged') motionHandEdge: string = 'center'
   @StorageProp(StorageKeys.TOP_AVOID_HEIGHT) topH: number = 0
   @StorageProp(StorageKeys.BOTTOM_AVOID_HEIGHT) bottomH: number = 0
@@ -1284,6 +1285,9 @@ export struct TopicDetailPage {
     const target = Math.floor(this.targetFloor)
     if (target > 0) {
       this.jumpToTargetFloor(target)
+      return
+    }
+    if (!this.readingRestorePosition) {
       return
     }
     this.restoreReadPosition()
