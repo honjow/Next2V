@@ -307,4 +307,35 @@ if (paragraphRunWithInlineImage.length !== 2) {
   process.exit(1)
 }
 
-console.log('PASS: markdown image spacing, linked image blocks, mixed inline image tokens, and paragraph selection runs')
+const source = await import('node:fs').then(fs => fs.readFileSync('shared/src/main/ets/components/MarkdownContent.ets', 'utf8'))
+const customListMatch = source.match(/struct CustomList[\s\S]*?\/\/ customInlineBuilder callback/)
+if (!customListMatch) {
+  console.error('FAIL could not locate CustomList source block')
+  process.exit(1)
+}
+const customListSource = customListMatch[0]
+if (!/MarkdownParagraph\(\{[\s\S]*paragraphToken: child as Tokens\.Paragraph/.test(customListSource)) {
+  console.error('FAIL CustomList must delegate paragraph rendering to MarkdownParagraph to preserve text/image token order')
+  process.exit(1)
+}
+if (/paragraphTextTokens|paragraphImageTokens/.test(customListSource)) {
+  console.error('FAIL CustomList must not render all paragraph text before all paragraph images')
+  process.exit(1)
+}
+const processTokensMatch = source.match(/private static processTokens[\s\S]*?return tokens;/)
+if (!processTokensMatch) {
+  console.error('FAIL could not locate processTokens source block')
+  process.exit(1)
+}
+const processTokensSource = processTokensMatch[0]
+if (/splitMixedImageParagraphs\(/.test(processTokensSource)) {
+  console.error('FAIL processTokens must not split mixed text/image paragraphs into top-level custom blocks')
+  process.exit(1)
+}
+const paragraphMatch = source.match(/struct MarkdownParagraph[\s\S]*?\n}\n\n@Component\nstruct MarkdownCodeBlock/)
+if (!paragraphMatch || !/ForEach\(this\.inlineTokens\(\)/.test(paragraphMatch[0])) {
+  console.error('FAIL MarkdownParagraph must render mixed block images by iterating the original inline token order')
+  process.exit(1)
+}
+
+console.log('PASS: markdown image spacing, linked image blocks, mixed inline image tokens, paragraph selection runs, and source-order mixed paragraph rendering')

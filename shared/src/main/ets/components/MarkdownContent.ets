@@ -1,8 +1,8 @@
-import { Markdown, MarkdownOptions, Token, Tokens, lexer } from "@lidary/markdown";
+import { MarkdownOptions, Token, Tokens, lexer } from "@lidary/markdown";
 import { common, Want } from "@kit.AbilityKit";
 import { pasteboard } from "@kit.BasicServicesKit";
 import { connection } from "@kit.NetworkKit";
-import { LengthMetrics, promptAction } from "@kit.ArkUI";
+import { promptAction } from "@kit.ArkUI";
 import { StorageKeys } from "../constants/StorageKeys";
 import { ReadingSettings } from "../settings/ReadingSettings";
 import { ThemeConstants } from "../theme/ThemeConstants";
@@ -1284,30 +1284,6 @@ struct CustomList {
     return ThemeConstants.SPACE_SM;
   }
 
-  private paragraphTokens(child: Token): Token[] {
-    const paragraph = child as Tokens.Paragraph;
-    const tokens = paragraph.tokens as Token[] | undefined;
-    if (!Array.isArray(tokens) || tokens.length === 0) {
-      return [];
-    }
-    return tokens;
-  }
-
-  private paragraphTextTokens(child: Token): Token[] {
-    return this.paragraphTokens(child).filter((t: Token) => t && (t.type !== "image" || _isInlineImageToken(t)) && t.type !== "br");
-  }
-
-  private paragraphImageTokens(child: Token): Tokens.Image[] {
-    return this.paragraphTokens(child).filter((t: Token) => t && t.type === "image" && !_isInlineImageToken(t)) as Tokens.Image[];
-  }
-
-  private hasImageToken(tokens: Token[]): boolean {
-    if (!tokens || tokens.length === 0) {
-      return false;
-    }
-    return tokens.some((t: Token) => t && t.type === "image" && !_isInlineImageToken(t));
-  }
-
   build() {
     Column({ space: this.blockSpace() }) {
       ForEach(this.listToken.items, (item: Tokens.ListItem, index: number) => {
@@ -1326,46 +1302,18 @@ struct CustomList {
           }
           Column({ space: this.blockSpace() }) {
             ForEach(item.tokens, (child: Token) => {
-              if (child.type === "text" || child.type === "paragraph") {
+              if (child.type === "text" || child.type === "paragraph" || child.type === PARAGRAPH_MONO) {
                 if (
                   (child as Tokens.Paragraph).tokens &&
                   (child as Tokens.Paragraph).tokens.length > 0
                 ) {
-                  if (this.hasImageToken(this.paragraphTokens(child))) {
-                    Column({ space: ThemeConstants.SPACE_SM }) {
-                      if (this.paragraphTextTokens(child).length > 0) {
-                        Text() {
-                          InlineTokenSpans(
-                            this.paragraphTextTokens(child),
-                            this.bodyFontSize(),
-                            this.reportImageComplete,
-                            this.reportImageError,
-                          )
-                        }
-                        .lineHeight(this.bodyLineHeight())
-                        .width("100%");
-                      }
-                      ForEach(this.paragraphImageTokens(child), (img: Tokens.Image, imgIdx: number) => {
-                        MarkdownAutoImage({
-                          url: MediaUrlUtils.imageUrlForRender(img.href),
-                          options: this.options,
-                          reportImageComplete: this.reportImageComplete,
-                          reportImageError: this.reportImageError,
-                        });
-                      }, (img: Tokens.Image, imgIdx: number) => `${img.href}-${imgIdx}`)
-                    }.width("100%");
-                  } else {
-                    Text() {
-                      InlineTokenSpans(
-                        this.paragraphTokens(child),
-                        this.bodyFontSize(),
-                        this.reportImageComplete,
-                        this.reportImageError,
-                      )
-                    }
-                    .lineHeight(this.bodyLineHeight())
-                    .width("100%");
-                  }
+                  MarkdownParagraph({
+                    paragraphToken: child as Tokens.Paragraph,
+                    options: this.options,
+                    inlineImageSizeRecords: this.inlineImageSizeRecords,
+                    reportImageComplete: this.reportImageComplete,
+                    reportImageError: this.reportImageError,
+                  });
                 } else {
                   Text(child.text)
                     .fontSize(this.bodyFontSize())
@@ -1571,7 +1519,10 @@ export struct MarkdownContent {
     MarkdownContent.rewriteImageTableMarkers(tokens);
     MarkdownContent.rewriteBareImageLinks(tokens);
     MarkdownContent.rewriteInlineImageLinks(tokens);
-    MarkdownContent.splitMixedImageParagraphs(tokens, sizeRecords);
+    // Keep mixed text/image paragraphs as a single ordered token stream.
+    // Splitting them into adjacent top-level custom blocks lets @lidary/markdown
+    // reorder custom builders in practice (e.g. image rendered before preceding
+    // text). MarkdownParagraph renders inline tokens itself and preserves order.
     MarkdownContent.promoteStandaloneImageParagraphs(tokens);
     MarkdownContent.rewriteStandaloneTextLinks(tokens);
     MarkdownContent.removeIgnorableLayoutTokens(tokens);
@@ -2551,139 +2502,130 @@ export struct MarkdownContent {
     return `${raw.length}:${raw.slice(0, 32)}:${raw.slice(Math.max(0, raw.length - 32))}`;
   }
 
-  build() {
-    Markdown({
-      token: MarkdownContent.processTokens(this.source, this.inlineImageSizeRecords),
-      options: {
-          lineSpace: this.blockSpace(),
-          textLineSpace: LengthMetrics.vp(this.bodyLineHeight()),
-          options: {
-            gfm: true,
-            breaks: true,
-          },
-          darkMode: this.themeEffectiveDark,
-          theme: {
-            // overrides blue default for list bullets etc.
-            themeColor: ThemeConstants.TEXT_SECONDARY,
-            fontStyle: {
-              fontSize: this.bodyFontSize(),
-              fontColor: ThemeConstants.TEXT_PRIMARY,
-            },
-            // one level smaller than library defaults
-            headingStyle: [
-              {
-                fontSize: this.headingFontSize(10),
-                fontWeight: FontWeight.Bold,
-                fontColor: ThemeConstants.TEXT_PRIMARY,
-              },
-              {
-                fontSize: this.headingFontSize(8),
-                fontWeight: FontWeight.Bold,
-                fontColor: ThemeConstants.TEXT_PRIMARY,
-              },
-              {
-                fontSize: this.headingFontSize(6),
-                fontWeight: FontWeight.Medium,
-                fontColor: ThemeConstants.TEXT_PRIMARY,
-              },
-              {
-                fontSize: this.headingFontSize(4),
-                fontWeight: FontWeight.Medium,
-                fontColor: ThemeConstants.TEXT_PRIMARY,
-              },
-              {
-                fontSize: this.headingFontSize(2),
-                fontWeight: FontWeight.Normal,
-                fontColor: ThemeConstants.TEXT_PRIMARY,
-              },
-              {
-                fontSize: this.bodyFontSize(),
-                fontWeight: FontWeight.Normal,
-                fontColor: ThemeConstants.TEXT_PRIMARY,
-              },
-            ],
-            linkColor: ThemeConstants.TEXT_LINK,
-            blockQuoteStyle: {
-              backgroundColor: _quoteBackground(this.themeEffectiveDark),
-              driveColor: _quoteDriveColor(this.themeEffectiveDark),
-              driveWidth: 4,
-              borderRadius: ThemeConstants.RADIUS_SM,
-            },
-            code: {
-              fontColor: _codeColors(this.themeEffectiveDark),
-              fontSize: this.bodyFontSize(),
-              backgroundColor: _codeBackground(this.themeEffectiveDark),
-              borderRadius: ThemeConstants.RADIUS_SM,
-              codeSpanBackgroundColor: this.themeEffectiveDark ? '#30363D' : '#EFF1F3',
-              codeSpanBorderRadius: ThemeConstants.RADIUS_SM,
-            },
-            codeSpan: {
-              backgroundColor: this.themeEffectiveDark ? '#30363D' : '#EFF1F3',
-              borderRadius: ThemeConstants.RADIUS_SM,
-            },
-          },
-          darkTheme: {
-            themeColor: ThemeConstants.TEXT_SECONDARY,
-            fontStyle: {
-              fontSize: this.bodyFontSize(),
-              fontColor: ThemeConstants.TEXT_PRIMARY,
-            },
-            linkColor: ThemeConstants.TEXT_LINK,
-            blockQuoteStyle: {
-              backgroundColor: _quoteBackground(true),
-              driveColor: _quoteDriveColor(true),
-              driveWidth: 4,
-              borderRadius: ThemeConstants.RADIUS_SM,
-            },
-            code: {
-              fontColor: _codeColors(true),
-              fontSize: this.bodyFontSize(),
-              backgroundColor: _codeBackground(true),
-              borderRadius: ThemeConstants.RADIUS_SM,
-              codeSpanBackgroundColor: '#30363D',
-              codeSpanBorderRadius: ThemeConstants.RADIUS_SM,
-            },
-            codeSpan: {
-              backgroundColor: '#30363D',
-              borderRadius: ThemeConstants.RADIUS_SM,
-            },
-          },
-          imageClick: (url?: string) => {
-            const normalized = MediaUrlUtils.normalizeUrl(url ?? "");
-            if (normalized && this.onImageClick) {
-              this.onImageClick(normalized);
-            }
-          },
-          linkClick: (url?: string) => {
-            const normalized = MediaUrlUtils.normalizeUrl(url ?? "");
-            if (normalized) {
-              this.openLink(normalized);
-            }
-          },
-          mentionClick: (username: string) => {
-            if (this.onMentionClick) {
-              this.onMentionClick(username);
-            }
-          },
-          inlineImageSizeRecords: this.inlineImageSizeRecords,
-          reportInlineImageComplete: (url: string, event?: MarkdownImageCompleteEvent) => {
-            this.reportInlineImageComplete(url, event);
-          },
-          reportInlineImageError: (url: string, event?: MarkdownImageErrorEvent) => {
-            this.reportInlineImageError(url, event);
-          },
-          customBlockBuilder: wrapBuilder(CustomBlockBuilder),
-          customInlineBuilder: CodeSpanBuilder as (tokenItem: Token, params: object) => void,
-        } as MarkdownOptions,
-      nestedScroll: {
-        scrollForward: NestedScrollMode.PARENT_FIRST,
-        scrollBackward: NestedScrollMode.SELF_FIRST,
+  private markdownOptions(): MarkdownOptions {
+    return {
+      darkMode: this.themeEffectiveDark,
+      theme: {
+        themeColor: ThemeConstants.TEXT_SECONDARY,
+        fontStyle: {
+          fontSize: this.bodyFontSize(),
+          fontColor: ThemeConstants.TEXT_PRIMARY,
+        },
+        linkColor: ThemeConstants.TEXT_LINK,
+        code: {
+          fontColor: _codeColors(this.themeEffectiveDark),
+          fontSize: this.bodyFontSize(),
+          backgroundColor: _codeBackground(this.themeEffectiveDark),
+          borderRadius: ThemeConstants.RADIUS_SM,
+          codeSpanBackgroundColor: this.themeEffectiveDark ? '#30363D' : '#EFF1F3',
+          codeSpanBorderRadius: ThemeConstants.RADIUS_SM,
+        },
+        codeSpan: {
+          backgroundColor: this.themeEffectiveDark ? '#30363D' : '#EFF1F3',
+          borderRadius: ThemeConstants.RADIUS_SM,
+        },
       },
-      scrollBar: BarState.Off,
-      paddings: { left: 0, right: 0, top: 0, bottom: 0 },
-    })
-      .id(this.sourceIdentity())
-      .width("100%")
-      .margin({ top: this.effectiveTopMargin() });
+      imageClick: (url?: string) => {
+        const normalized = MediaUrlUtils.normalizeUrl(url ?? "");
+        if (normalized && this.onImageClick) {
+          this.onImageClick(normalized);
+        }
+      },
+      linkClick: (url?: string) => {
+        const normalized = MediaUrlUtils.normalizeUrl(url ?? "");
+        if (normalized) {
+          this.openLink(normalized);
+        }
+      },
+      mentionClick: (username: string) => {
+        if (this.onMentionClick) {
+          this.onMentionClick(username);
+        }
+      },
+    } as MarkdownOptions;
+  }
+
+  private tokenKey(token: Token, index: number): string {
+    const record = token as TokenRecord;
+    return `${String(record["type"] ?? "token")}-${String(record["raw"] ?? record["href"] ?? record["text"] ?? index)}-${index}`;
+  }
+
+  private headingLevel(token: Token): number {
+    const depth = Number((token as TokenRecord)["depth"] ?? 0);
+    if (!Number.isFinite(depth) || depth <= 0) {
+      return 6;
+    }
+    return Math.max(1, Math.min(6, depth));
+  }
+
+  private headingSize(token: Token): number {
+    const level = this.headingLevel(token);
+    return this.headingFontSize(Math.max(0, 12 - level * 2));
+  }
+
+  private plainTokenText(token: Token): string {
+    return String((token as TokenRecord)["text"] ?? (token as TokenRecord)["raw"] ?? "").trim();
+  }
+
+  @Builder RenderProcessedToken(token: Token) {
+    if (token.type === CODE_MONO) {
+      MarkdownCodeBlock({ codeToken: token as Tokens.Code, options: this.markdownOptions() });
+    } else if (token.type === LIST_MONO) {
+      CustomList({
+        listToken: token as Tokens.List,
+        options: this.markdownOptions(),
+        inlineImageSizeRecords: this.inlineImageSizeRecords,
+        reportImageComplete: (url: string, event?: MarkdownImageCompleteEvent) => { this.reportInlineImageComplete(url, event); },
+        reportImageError: (url: string, event?: MarkdownImageErrorEvent) => { this.reportInlineImageError(url, event); },
+      });
+    } else if (token.type === PARAGRAPH_MONO) {
+      MarkdownParagraph({
+        paragraphToken: token as Tokens.Paragraph,
+        options: this.markdownOptions(),
+        inlineImageSizeRecords: this.inlineImageSizeRecords,
+        reportImageComplete: (url: string, event?: MarkdownImageCompleteEvent) => { this.reportInlineImageComplete(url, event); },
+        reportImageError: (url: string, event?: MarkdownImageErrorEvent) => { this.reportInlineImageError(url, event); },
+      });
+    } else if (token.type === IMAGE_BLOCK_MONO) {
+      MarkdownAutoImage({
+        url: MediaUrlUtils.imageUrlForRender((token as Tokens.Image).href),
+        options: this.markdownOptions(),
+        reportImageComplete: (url: string, event?: MarkdownImageCompleteEvent) => { this.reportInlineImageComplete(url, event); },
+        reportImageError: (url: string, event?: MarkdownImageErrorEvent) => { this.reportInlineImageError(url, event); },
+      });
+    } else if (token.type === IMAGE_TABLE_MONO) {
+      MarkdownImageTable({
+        tableToken: token as ImageTableToken,
+        options: this.markdownOptions(),
+        reportImageComplete: (url: string, event?: MarkdownImageCompleteEvent) => { this.reportInlineImageComplete(url, event); },
+        reportImageError: (url: string, event?: MarkdownImageErrorEvent) => { this.reportInlineImageError(url, event); },
+      });
+    } else if (token.type === "heading") {
+      Text(String((token as TokenRecord)["text"] ?? ""))
+        .fontSize(this.headingSize(token))
+        .fontWeight(this.headingLevel(token) <= 3 ? FontWeight.Bold : FontWeight.Medium)
+        .fontColor(ThemeConstants.TEXT_PRIMARY)
+        .lineHeight(this.bodyLineHeight())
+        .width("100%");
+    } else if (token.type === "space" || token.type === "html") {
+    } else if (this.plainTokenText(token).length > 0) {
+      Text(this.plainTokenText(token))
+        .fontSize(this.bodyFontSize())
+        .fontColor(ThemeConstants.TEXT_PRIMARY)
+        .lineHeight(this.bodyLineHeight())
+        .width("100%");
+    }
+  }
+
+  build() {
+    Column({ space: this.blockSpace() }) {
+      ForEach(MarkdownContent.processTokens(this.source, this.inlineImageSizeRecords), (token: Token, index: number) => {
+        this.RenderProcessedToken(token);
+      }, (token: Token, index: number) => this.tokenKey(token, index))
+    }
+    .id(this.sourceIdentity())
+    .width("100%")
+    .alignItems(HorizontalAlign.Start)
+    .margin({ top: this.effectiveTopMargin() });
   }
 }
