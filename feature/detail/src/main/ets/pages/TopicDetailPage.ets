@@ -1557,22 +1557,10 @@ export struct TopicDetailPage {
       return
     }
     this.topicThankLocked = true
-    this.isTopicThankLoading = true
-    this.api.getTopicThankActionWithCookie(cookie, this.topicId)
-      .then((action: V2exTopicThankAction) => {
-        this.isTopicThankLoading = false
-        this.confirmTopicThank(cookie, action)
-      })
-      .catch((error: Error) => {
-        this.topicThankLocked = false
-        promptAction.openToast({ message: error.message || '解析感谢操作失败' }).catch((_error: Error) => { })
-      })
-      .finally(() => {
-        this.isTopicThankLoading = false
-      })
+    this.confirmTopicThank(cookie)
   }
 
-  private confirmTopicThank(cookie: string, thankAction: V2exTopicThankAction): void {
+  private confirmTopicThank(cookie: string): void {
     const title = (this.v.topic?.title || '').trim()
     AlertDialog.show({
       title: '感谢主题',
@@ -1584,22 +1572,22 @@ export struct TopicDetailPage {
       },
       secondaryButton: {
         value: '感谢',
-        action: () => { this.executeTopicThank(cookie, thankAction) }
+        action: () => { this.executeTopicThank(cookie) }
       }
     })
   }
 
-  private executeTopicThank(cookie: string, action: V2exTopicThankAction): void {
+  private executeTopicThank(cookie: string): void {
     if (this.isTopicThankLoading) {
       return
     }
     this.isTopicThankLoading = true
-    this.api.executeTopicThankWithCookie(cookie, action)
+    this.api.getTopicThankActionWithCookie(cookie, this.topicId)
+      .then((action: V2exTopicThankAction) => this.api.executeTopicThankWithCookie(cookie, action))
       .then(() => {
         this.isTopicThanked = true
         this.topicDetailThanked = true
         promptAction.openToast({ message: '已感谢' }).catch((_error: Error) => { })
-        this.v.load()
       })
       .catch((error: Error) => {
         promptAction.openToast({ message: error.message || '感谢失败' }).catch((_error: Error) => { })
@@ -1646,22 +1634,10 @@ export struct TopicDetailPage {
     }
     this.replyThankLockedId = reply.id
     this.pendingReplyThankId = reply.id
-    this.isReplyThankLoading = true
-    this.api.getReplyThankActionWithCookie(cookie, this.topicId, reply.id)
-      .then((action: V2exReplyThankAction) => {
-        this.isReplyThankLoading = false
-        this.confirmReplyThank(cookie, reply, action)
-      })
-      .catch((error: Error) => {
-        this.clearReplyThankLock()
-        promptAction.openToast({ message: error.message || '解析感谢操作失败' }).catch((_error: Error) => { })
-      })
-      .finally(() => {
-        this.isReplyThankLoading = false
-      })
+    this.confirmReplyThank(cookie, reply)
   }
 
-  private confirmReplyThank(cookie: string, reply: V2exReply, thankAction: V2exReplyThankAction): void {
+  private confirmReplyThank(cookie: string, reply: V2exReply): void {
     AlertDialog.show({
       title: '感谢回复',
       message: `确定感谢 ${reply.member.username || '该用户'} 的回复吗？`,
@@ -1672,22 +1648,22 @@ export struct TopicDetailPage {
       },
       secondaryButton: {
         value: '感谢',
-        action: () => { this.executeReplyThank(cookie, reply, thankAction) }
+        action: () => { this.executeReplyThank(cookie, reply) }
       }
     })
   }
 
-  private executeReplyThank(cookie: string, reply: V2exReply, action: V2exReplyThankAction): void {
+  private executeReplyThank(cookie: string, reply: V2exReply): void {
     if (this.isReplyThankLoading) {
       return
     }
     this.isReplyThankLoading = true
-    this.api.executeReplyThankWithCookie(cookie, this.topicId, action)
+    this.api.getReplyThankActionWithCookie(cookie, this.topicId, reply.id)
+      .then((action: V2exReplyThankAction) => this.api.executeReplyThankWithCookie(cookie, this.topicId, action))
       .then(() => {
         this.v.markReplyThanked(reply.id)
         this.markReplyThanked(reply.id)
         promptAction.openToast({ message: '已感谢' }).catch((_error: Error) => { })
-        this.v.load()
       })
       .catch((error: Error) => {
         promptAction.openToast({ message: error.message || '感谢失败' }).catch((_error: Error) => { })
