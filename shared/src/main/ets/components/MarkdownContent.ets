@@ -472,6 +472,32 @@ function _openMention(options: MarkdownOptions, username: string): void {
   }
 }
 
+function _memberNameFromLink(token: Tokens.Link): string {
+  const href = token.href || "";
+  const match = /^https?:\/\/(?:www\.)?v2ex\.(?:com|co)\/member\/([^?#/]+)(?:[?#].*)?$/i.exec(MediaUrlUtils.normalizeUrl(href)) ||
+    /^\/member\/([^?#/]+)(?:[?#].*)?$/i.exec(href);
+  if (!match || !match[1]) {
+    return "";
+  }
+  try {
+    return decodeURIComponent(match[1]);
+  } catch (_error) {
+    return match[1];
+  }
+}
+
+function _memberLinkText(token: Tokens.Link): string {
+  const name = _memberNameFromLink(token);
+  if (!name) {
+    return "";
+  }
+  const text = (token.text || "").trim();
+  if (text.startsWith("@")) {
+    return text;
+  }
+  return `@${text || name}`;
+}
+
 @Builder
 function SelectableTextWithMentions(text: string, fontSize: number, options: MarkdownOptions) {
   ForEach(_splitMentionText(HtmlEntityUtils.decode(text)), (part: string) => {
@@ -564,13 +590,22 @@ function SelectableInlineTokenSpans(
           radius: ThemeConstants.RADIUS_SM,
         });
     } else if (t.type === "link") {
-      Span((t as Tokens.Link).text)
-        .fontSize(fontSize)
-        .fontColor(ThemeConstants.TEXT_LINK)
-        .decoration({ type: TextDecorationType.Underline, color: ThemeConstants.TEXT_LINK })
-        .onClick(() => {
-          _openInlineLink(options, (t as Tokens.Link).href);
-        });
+      if (_memberNameFromLink(t as Tokens.Link)) {
+        Span(_memberLinkText(t as Tokens.Link))
+          .fontSize(fontSize)
+          .fontColor(ThemeConstants.TEXT_LINK)
+          .onClick(() => {
+            _openMention(options, _memberNameFromLink(t as Tokens.Link));
+          });
+      } else {
+        Span((t as Tokens.Link).text)
+          .fontSize(fontSize)
+          .fontColor(ThemeConstants.TEXT_LINK)
+          .decoration({ type: TextDecorationType.Underline, color: ThemeConstants.TEXT_LINK })
+          .onClick(() => {
+            _openInlineLink(options, (t as Tokens.Link).href);
+          });
+      }
     } else if (t.type === "del") {
       Span((t as Tokens.Del).text)
         .fontSize(fontSize)
@@ -906,10 +941,16 @@ function InlineTokenSpans(
           radius: ThemeConstants.RADIUS_SM,
         });
     } else if (t.type === "link") {
-      Span((t as Tokens.Link).text)
-        .fontSize(fontSize)
-        .fontColor(ThemeConstants.TEXT_LINK)
-        .decoration({ type: TextDecorationType.Underline, color: ThemeConstants.TEXT_LINK });
+      if (_memberNameFromLink(t as Tokens.Link)) {
+        Span(_memberLinkText(t as Tokens.Link))
+          .fontSize(fontSize)
+          .fontColor(ThemeConstants.TEXT_LINK);
+      } else {
+        Span((t as Tokens.Link).text)
+          .fontSize(fontSize)
+          .fontColor(ThemeConstants.TEXT_LINK)
+          .decoration({ type: TextDecorationType.Underline, color: ThemeConstants.TEXT_LINK });
+      }
     } else if (t.type === "del") {
       Span((t as Tokens.Del).text)
         .fontSize(fontSize)

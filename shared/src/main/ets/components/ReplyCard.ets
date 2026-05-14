@@ -96,10 +96,28 @@ export struct ReplyCard {
     }
     const content = (reply.content || '').trimStart()
     const first = users[0] || ''
-    if (first && content.toLowerCase().startsWith(`@${first.toLowerCase()}`)) {
+    if (first && this.startsWithMention(content, first)) {
       return ''
     }
     return `${users.map((name: string) => `@${name}`).join(' ')} `
+  }
+
+  private startsWithMention(content: string, username: string): boolean {
+    const source = (content || '').trimStart()
+    const name = (username || '').trim()
+    if (!source || !name) {
+      return false
+    }
+    const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const rawMention = new RegExp(`^@${escaped}(?:$|\\s|#|[：:，,。.!?])`, 'i')
+    if (rawMention.test(source)) {
+      return true
+    }
+    const markdownMemberLink = new RegExp(
+      `^\\[@?${escaped}\\]\\((?:https?:\\/\\/(?:www\\.)?v2ex\\.(?:com|co))?\\/member\\/${escaped}(?:[?#][^)]*)?\\)(?:$|\\s|#|[：:，,。.!?])`,
+      'i'
+    )
+    return markdownMemberLink.test(source)
   }
 
   private childDisplayContent(reply: V2exReply): string {

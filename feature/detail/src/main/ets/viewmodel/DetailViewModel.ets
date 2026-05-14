@@ -538,7 +538,11 @@ export class DetailViewModel {
     const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
     const floorPart = replyFloor > 0 ? `\\s*#${replyFloor}` : '(?:\\s*#\\d+)?'
     const re = new RegExp(`^\\s*@${escaped}${floorPart}\\s*`, 'i')
-    return (content || '').replace(re, '').trim()
+    const markdownLinkRe = new RegExp(
+      `^\\s*\\[@?${escaped}\\]\\((?:https?:\\/\\/(?:www\\.)?v2ex\\.(?:com|co))?\\/member\\/${escaped}(?:[?#][^)]*)?\\)${floorPart}\\s*`,
+      'i'
+    )
+    return (content || '').replace(markdownLinkRe, '').replace(re, '').trim()
   }
 
   private replyRelationLabel(reply: V2exReply): string {
