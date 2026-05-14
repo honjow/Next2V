@@ -16,7 +16,7 @@ alwaysApply: true
 ## Before Committing
 
 - Don't commit unless explicitly asked
-- Run `npx @ohos-rs/oxk format` on changed `.ets` files
+- Run `npx @ohos-rs/oxk format --quote-style single --semicolons as-needed` on changed `.ets` files
 - Don't commit `oh-package-lock.json5` files unless dependency changes are intentional
 - Don't commit `build-profile.json5` signing config changes
 

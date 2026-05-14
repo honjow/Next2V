@@ -1,4 +1,14 @@
-import { V2exTopic, V2exReply, ApiService, ApiV2Service, TopicDetailCache, HtmlEntityUtils, StorageKeys, ReplyDisplaySettings, CookieJarSettings } from 'shared'
+import {
+  V2exTopic,
+  V2exReply,
+  ApiService,
+  ApiV2Service,
+  TopicDetailCache,
+  HtmlEntityUtils,
+  StorageKeys,
+  ReplyDisplaySettings,
+  CookieJarSettings,
+} from 'shared'
 import type { V2exTopicWebRepliesPage } from 'shared'
 import { ReplyDataSource } from '../model/DetailModels'
 
@@ -12,7 +22,8 @@ export class DetailViewModel {
   isLoading: boolean = false
   onlyOp: boolean = false
   replyDisplayMode: string = ReplyDisplaySettings.normalizeMode(
-    AppStorage.get<string>(StorageKeys.REPLY_DISPLAY_MODE) ?? ReplyDisplaySettings.MODE_THREAD)
+    AppStorage.get<string>(StorageKeys.REPLY_DISPLAY_MODE) ?? ReplyDisplaySettings.MODE_THREAD,
+  )
   repliesUseV2: boolean = false
   repliesPage: number = 1
   repliesHasMore: boolean = false
@@ -29,7 +40,8 @@ export class DetailViewModel {
   private authToken: string = ''
   private replies: V2exReply[] = []
   private cacheLoader: (() => Promise<TopicDetailCache | null>) | null = null
-  private cacheSaver: ((topic: V2exTopic | null, replies: V2exReply[]) => Promise<void>) | null = null
+  private cacheSaver: ((topic: V2exTopic | null, replies: V2exReply[]) => Promise<void>) | null =
+    null
   private repliesSource: string = 'publicApi'
   private repliesPageCount: number = 1
   private failedRepliesPage: number = 0
@@ -41,7 +53,9 @@ export class DetailViewModel {
 
   setOnlyOp(enabled: boolean): void {
     this.onlyOp = enabled
-    this.replyDisplayMode = enabled ? ReplyDisplaySettings.MODE_OP : ReplyDisplaySettings.MODE_THREAD
+    this.replyDisplayMode = enabled
+      ? ReplyDisplaySettings.MODE_OP
+      : ReplyDisplaySettings.MODE_THREAD
     this.replyDataSource.setData(this.getVisibleReplies())
   }
 
@@ -93,7 +107,7 @@ export class DetailViewModel {
 
   setCacheHandlers(
     loader: () => Promise<TopicDetailCache | null>,
-    saver: (topic: V2exTopic | null, replies: V2exReply[]) => Promise<void>
+    saver: (topic: V2exTopic | null, replies: V2exReply[]) => Promise<void>,
   ): void {
     this.cacheLoader = loader
     this.cacheSaver = saver
@@ -158,7 +172,12 @@ export class DetailViewModel {
         }
         const apiReplies = await this.api.getReplies(this.topicId, cacheBuster)
         const webCookie = CookieJarSettings.getCurrentCookie()
-        const firstPage = await this.api.getTopicWebRepliesPage(this.topicId, 1, Date.now(), webCookie)
+        const firstPage = await this.api.getTopicWebRepliesPage(
+          this.topicId,
+          1,
+          Date.now(),
+          webCookie,
+        )
         topic = this.mergeTopicSupplements(topic, firstPage.topicSupplementMarkdown || '')
         if (firstPage.replies.length > 0) {
           replies = firstPage.replies
@@ -191,7 +210,12 @@ export class DetailViewModel {
   }
 
   async loadMoreReplies(): Promise<void> {
-    if (this.isLoading || this.isRepliesLoadingMore || this.isBottomRefreshing || !this.repliesHasMore) {
+    if (
+      this.isLoading ||
+      this.isRepliesLoadingMore ||
+      this.isBottomRefreshing ||
+      !this.repliesHasMore
+    ) {
       return
     }
     if (this.repliesSource === 'v2' && !this.authToken) {
@@ -210,7 +234,12 @@ export class DetailViewModel {
         items = res.data || []
         hasMore = items.length >= this.V2_REPLY_PAGE_SIZE
       } else if (this.repliesSource === 'publicWebPage') {
-        const snapshot: V2exTopicWebRepliesPage = await this.api.getTopicWebRepliesPage(this.topicId, nextPage, Date.now(), CookieJarSettings.getCurrentCookie())
+        const snapshot: V2exTopicWebRepliesPage = await this.api.getTopicWebRepliesPage(
+          this.topicId,
+          nextPage,
+          Date.now(),
+          CookieJarSettings.getCurrentCookie(),
+        )
         items = snapshot.replies
         hasMore = snapshot.hasMore
         pageCount = snapshot.pageCount
@@ -250,12 +279,20 @@ export class DetailViewModel {
   }
 
   canBottomRefresh(): boolean {
-    return !this.isLoading && !this.isRepliesLoadingMore && !this.isBottomRefreshing &&
-      this.repliesLoadMoreState === 'endReached' && !this.repliesHasMore && this.repliesPage >= 1
+    return (
+      !this.isLoading &&
+      !this.isRepliesLoadingMore &&
+      !this.isBottomRefreshing &&
+      this.repliesLoadMoreState === 'endReached' &&
+      !this.repliesHasMore &&
+      this.repliesPage >= 1
+    )
   }
 
   shouldShowRepliesFooter(): boolean {
-    return this.repliesLoadMoreState === 'loadingMore' || this.repliesLoadMoreState === 'loadMoreError'
+    return (
+      this.repliesLoadMoreState === 'loadingMore' || this.repliesLoadMoreState === 'loadMoreError'
+    )
   }
 
   async refreshLastRepliesPage(): Promise<void> {
@@ -266,10 +303,20 @@ export class DetailViewModel {
     try {
       let items: V2exReply[] = []
       if (this.repliesSource === 'v2') {
-        const res = await this.apiV2.getTopicReplies(this.authToken, this.topicId, this.repliesPage, Date.now())
+        const res = await this.apiV2.getTopicReplies(
+          this.authToken,
+          this.topicId,
+          this.repliesPage,
+          Date.now(),
+        )
         items = res.data || []
       } else if (this.repliesSource === 'publicWebPage') {
-        const snapshot = await this.api.getTopicWebRepliesPage(this.topicId, this.repliesPage, Date.now(), CookieJarSettings.getCurrentCookie())
+        const snapshot = await this.api.getTopicWebRepliesPage(
+          this.topicId,
+          this.repliesPage,
+          Date.now(),
+          CookieJarSettings.getCurrentCookie(),
+        )
         items = snapshot.replies
         this.repliesPageCount = snapshot.pageCount
         this.repliesHasMore = snapshot.hasMore
@@ -277,7 +324,12 @@ export class DetailViewModel {
           this.repliesLoadMoreState = 'idle'
         }
       } else {
-        const snapshot = await this.api.getTopicWebRepliesPage(this.topicId, 1, Date.now(), CookieJarSettings.getCurrentCookie())
+        const snapshot = await this.api.getTopicWebRepliesPage(
+          this.topicId,
+          1,
+          Date.now(),
+          CookieJarSettings.getCurrentCookie(),
+        )
         items = snapshot.replies
         this.repliesSource = 'publicWebPage'
         this.repliesPage = snapshot.page
@@ -299,8 +351,10 @@ export class DetailViewModel {
   }
 
   private uniqueNewReplies(items: V2exReply[]): V2exReply[] {
-    const existingIds = new Set<number>(this.replies.map(reply => reply.id))
-    return this.normalizeRepliesForRender(items).filter((item: V2exReply) => item && item.id > 0 && !existingIds.has(item.id))
+    const existingIds = new Set<number>(this.replies.map((reply) => reply.id))
+    return this.normalizeRepliesForRender(items).filter(
+      (item: V2exReply) => item && item.id > 0 && !existingIds.has(item.id),
+    )
   }
 
   private appendReplies(unique: V2exReply[]): void {
@@ -323,7 +377,10 @@ export class DetailViewModel {
     }
   }
 
-  private mergeTopicSupplements(topic: V2exTopic | null, supplementMarkdown: string): V2exTopic | null {
+  private mergeTopicSupplements(
+    topic: V2exTopic | null,
+    supplementMarkdown: string,
+  ): V2exTopic | null {
     const supplement = (supplementMarkdown || '').trim()
     if (!topic || supplement.length === 0) {
       return topic
@@ -332,7 +389,8 @@ export class DetailViewModel {
     if (existing.indexOf(supplement) >= 0) {
       return topic
     }
-    topic.topicSupplementMarkdown = existing.length > 0 ? `${existing}\n\n${supplement}` : supplement
+    topic.topicSupplementMarkdown =
+      existing.length > 0 ? `${existing}\n\n${supplement}` : supplement
     return topic
   }
 
@@ -376,6 +434,16 @@ export class DetailViewModel {
     return `thanks-${reply.thanks || 0}-${reply.thanked ? 'me' : 'other'}`
   }
 
+  private childrenThankKey(children: V2exReply[]): string {
+    if (children.length === 0) {
+      return ''
+    }
+    const parts = children.map((c: V2exReply) => {
+      const sub = this.childrenThankKey(c.threadChildren || [])
+      return `${c.id}${c.thanked ? 't' : 'f'}${c.thanks || 0}${sub}`
+    })
+    return `-ch(${parts.join(',')})`
+  }
 
   private prepareRepliesForThreading(): V2exReply[] {
     const prepared = this.replies.map((reply: V2exReply, index: number) => {
@@ -386,7 +454,11 @@ export class DetailViewModel {
       reply.threadChildren = []
       reply.replyUsers = this.extractReplyUsers(reply.content, reply.content_rendered)
       reply.replyFloor = this.extractReplyFloor(reply.content, reply.content_rendered)
-      reply.hiddenLeadingMentionContent = this.removeLeadingSingleMention(reply.content, reply.replyUsers || [], reply.replyFloor || -1)
+      reply.hiddenLeadingMentionContent = this.removeLeadingSingleMention(
+        reply.content,
+        reply.replyUsers || [],
+        reply.replyFloor || -1,
+      )
       reply.relationLabel = this.replyRelationLabel(reply)
       reply.renderKey = `${this.replyDisplayMode}-r-${reply.id}-${this.replyStateKey(reply)}`
       return reply
@@ -394,7 +466,10 @@ export class DetailViewModel {
     return prepared
   }
 
-  private buildThreadedReplies(includeDuplicateOriginal: boolean, hideSingleMention: boolean): V2exReply[] {
+  private buildThreadedReplies(
+    includeDuplicateOriginal: boolean,
+    hideSingleMention: boolean,
+  ): V2exReply[] {
     const base = this.prepareRepliesForThreading()
     const byFloor = new Map<number, V2exReply>()
     const childMap = new Map<number, V2exReply[]>()
@@ -419,12 +494,19 @@ export class DetailViewModel {
       reply.threadLevel = level
       reply.isDuplicateThreadItem = false
       reply.threadChildren = []
-      reply.renderKey = `${this.replyDisplayMode}-r-${reply.id}-t-${level}-${this.replyStateKey(reply)}`
-      if (hideSingleMention && level > 0 && (reply.replyUsers || []).length === 1 && (reply.hiddenLeadingMentionContent || '').trim()) {
-        reply.renderKey = `${this.replyDisplayMode}-r-${reply.id}-t-${level}-compact-${this.replyStateKey(reply)}`
-      }
-      const children = (childMap.get(reply.floor || 0) || []).sort((a: V2exReply, b: V2exReply) => (a.floor || 0) - (b.floor || 0))
+      const children = (childMap.get(reply.floor || 0) || []).sort(
+        (a: V2exReply, b: V2exReply) => (a.floor || 0) - (b.floor || 0),
+      )
       reply.threadChildren = children.map((child: V2exReply) => prepareNode(child, level + 1))
+      const childSummary = this.childrenThankKey(reply.threadChildren)
+      const compactTag =
+        hideSingleMention &&
+        level > 0 &&
+        (reply.replyUsers || []).length === 1 &&
+        (reply.hiddenLeadingMentionContent || '').trim()
+          ? '-compact'
+          : ''
+      reply.renderKey = `${this.replyDisplayMode}-r-${reply.id}-t-${level}${compactTag}-${this.replyStateKey(reply)}${childSummary}`
       return reply
     }
 
@@ -446,7 +528,9 @@ export class DetailViewModel {
           duplicateList.push(dup)
         }
       })
-      return result.concat(duplicateList.sort((a: V2exReply, b: V2exReply) => (a.floor || 0) - (b.floor || 0)))
+      return result.concat(
+        duplicateList.sort((a: V2exReply, b: V2exReply) => (a.floor || 0) - (b.floor || 0)),
+      )
     }
     return result
   }
@@ -482,7 +566,11 @@ export class DetailViewModel {
     const targetUser = users[0].toLowerCase()
     for (let i = floor - 1; i >= 1; i--) {
       const candidate = byFloor.get(i)
-      if (candidate && candidate.member && (candidate.member.username || '').toLowerCase() === targetUser) {
+      if (
+        candidate &&
+        candidate.member &&
+        (candidate.member.username || '').toLowerCase() === targetUser
+      ) {
         return i
       }
     }
@@ -501,7 +589,8 @@ export class DetailViewModel {
       }
     }
     const rendered = renderedContent || content || ''
-    const linkRe = /@?\s*<a\b[^>]*href=["'](?:https?:\/\/(?:www\.)?v2ex\.(?:com|co))?\/member\/([^"'?#\/]+)[^"']*["'][^>]*>/gi
+    const linkRe =
+      /@?\s*<a\b[^>]*href=["'](?:https?:\/\/(?:www\.)?v2ex\.(?:com|co))?\/member\/([^"'?#\/]+)[^"']*["'][^>]*>/gi
     let linkMatch: RegExpExecArray | null = linkRe.exec(rendered)
     while (linkMatch) {
       addName(HtmlEntityUtils.decode(linkMatch[1] || ''))
@@ -540,7 +629,7 @@ export class DetailViewModel {
     const re = new RegExp(`^\\s*@${escaped}${floorPart}\\s*`, 'i')
     const markdownLinkRe = new RegExp(
       `^\\s*\\[@?${escaped}\\]\\((?:https?:\\/\\/(?:www\\.)?v2ex\\.(?:com|co))?\\/member\\/${escaped}(?:[?#][^)]*)?\\)${floorPart}\\s*`,
-      'i'
+      'i',
     )
     return (content || '').replace(markdownLinkRe, '').replace(re, '').trim()
   }
@@ -562,7 +651,7 @@ export class DetailViewModel {
       if (opId <= 0) {
         return this.prepareRepliesForThreading()
       }
-      return this.prepareRepliesForThreading().filter(reply => reply.member.id === opId)
+      return this.prepareRepliesForThreading().filter((reply) => reply.member.id === opId)
     }
     if (this.replyDisplayMode === ReplyDisplaySettings.MODE_ORIGIN) {
       return this.prepareRepliesForThreading()

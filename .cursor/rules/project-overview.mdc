@@ -24,7 +24,7 @@ HarmonyOS (ArkTS/ArkUI) V2EX client app.
 
 - Build: `hvigorw assembleHap --mode module -p product=default -p module=entry@default`
 - Sign + Install: `python3 scripts/sign.py`
-- Format: `npx @ohos-rs/oxk format <file.ets>`
+- Format: `npx @ohos-rs/oxk format --quote-style single --semicolons as-needed <file.ets>`
 
 ## Conventions
 
