@@ -761,7 +761,7 @@ struct MarkdownBlockquote {
     Row({ space: ThemeConstants.SPACE_SM }) {
       Blank()
         .width(3)
-        .height('100%')
+        .height(24)
         .borderRadius(2)
         .backgroundColor(_quoteDriveColor(this.options.darkMode === true))
       Column({ space: ThemeConstants.SPACE_XS }) {

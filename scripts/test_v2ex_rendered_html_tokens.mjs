@@ -129,6 +129,7 @@ assert.match(source, /renderedHtmlToTokens/)
 assert.match(source, /inlineHtmlToTokens/)
 assert.match(source, /parseMarkdownInlineTextTokens/)
 assert.match(source, /MarkdownBlockquote/)
+assert.doesNotMatch(source, /\.height\('100%'\)[\s\S]{0,160}quoteDriveColor/)
 const processTokensBody = source.match(/private static processTokens\([\s\S]*?\n  }\n\n  private static renderedHtmlToTokens/)[0]
 assert.doesNotMatch(processTokensBody, /renderedHtmlToMarkdown/)
 
