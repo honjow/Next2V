@@ -33,6 +33,20 @@ function isMixedInlineImageCandidate(token) {
   return raw.startsWith('<img') || altText.length === 0
 }
 
+function inlineImageRenderSize(record, availableWidth = 0) {
+  const widthPx = record?.widthPx ?? 0
+  const heightPx = record?.heightPx ?? 0
+  const contentMaxWidth = Math.max(0, availableWidth)
+  if (widthPx <= 0 || heightPx <= 0 || contentMaxWidth <= 0) {
+    return { width: 1, height: 1 }
+  }
+  const scale = Math.min(1, contentMaxWidth / widthPx, 1200 / heightPx)
+  return {
+    width: Math.max(1, Math.round(widthPx * scale)),
+    height: Math.max(1, Math.round(heightPx * scale))
+  }
+}
+
 function buildImageToken(raw, href, text = '', inlineImage = false) {
   const token = { type: 'image', raw, href, title: null, text }
   if (inlineImage) token[INLINE_IMAGE_PROP] = true
@@ -305,6 +319,52 @@ if (mixedInlineSplit.length !== 0 || mixedRenderedHtmlAndStandaloneImage[0].toke
   process.exit(1)
 }
 
+
+const inlineNatural360 = inlineImageRenderSize({ widthPx: 1200, heightPx: 800 }, 360)
+if (inlineNatural360.width !== 360 || inlineNatural360.height !== 240) {
+  console.error('FAIL inline image actual dimensions must preserve aspect ratio under 360 available width constraint')
+  console.error(JSON.stringify(inlineNatural360, null, 2))
+  process.exit(1)
+}
+const inlineNatural280 = inlineImageRenderSize({ widthPx: 1200, heightPx: 800 }, 280)
+if (inlineNatural280.width !== 280 || inlineNatural280.height !== 187) {
+  console.error('FAIL inline image actual dimensions must follow variable paragraph available width constraint')
+  console.error(JSON.stringify(inlineNatural280, null, 2))
+  process.exit(1)
+}
+const inlineSmallNatural = inlineImageRenderSize({ widthPx: 32, heightPx: 18 }, 360)
+if (inlineSmallNatural.width !== 32 || inlineSmallNatural.height !== 18) {
+  console.error('FAIL naturally small inline images should stay small from actual dimensions, not from a separate icon class')
+  console.error(JSON.stringify(inlineSmallNatural, null, 2))
+  process.exit(1)
+}
+const inlineNoRecord = inlineImageRenderSize(null, 360)
+if (inlineNoRecord.width !== 1 || inlineNoRecord.height !== 1) {
+  console.error('FAIL inline image without a size record should use a neutral pending load sentinel, not content-width or 24..40 placeholder')
+  console.error(JSON.stringify(inlineNoRecord, null, 2))
+  process.exit(1)
+}
+const inlineRecordedNoWidth = inlineImageRenderSize({ widthPx: 1200, heightPx: 800 }, 0)
+if (inlineRecordedNoWidth.width !== 1 || inlineRecordedNoWidth.height !== 1) {
+  console.error('FAIL recorded inline images without measured available width should avoid huge draw regions with the pending sentinel')
+  console.error(JSON.stringify(inlineRecordedNoWidth, null, 2))
+  process.exit(1)
+}
+
+const renderedImageBeforeTextParagraph = {
+  type: 'paragraph',
+  tokens: [
+    { type: 'image', raw: '<img src="https://example.com/topic1212780.png" class="embedded_image">', href: 'https://example.com/topic1212780.png', text: '' },
+    { type: 'text', raw: '效果已经不是当下 Agent 的主要矛盾', text: '效果已经不是当下 Agent 的主要矛盾' }
+  ]
+}
+const renderedImageBeforeTextSplit = splitParagraphByImages(renderedImageBeforeTextParagraph)
+if (renderedImageBeforeTextSplit.length !== 0 || renderedImageBeforeTextParagraph.tokens.map((t) => t.type).join(',') !== 'image,text' || renderedImageBeforeTextParagraph.tokens[0][INLINE_IMAGE_PROP] !== true) {
+  console.error('FAIL rendered HTML <p><img>文本</p> should preserve token order and inline source structure')
+  console.error(JSON.stringify({ renderedImageBeforeTextSplit, paragraph: renderedImageBeforeTextParagraph }, null, 2))
+  process.exit(1)
+}
+
 const paragraphRun = [
   { type: 'paragraph', raw: '第一段', text: '第一段', tokens: [buildTextToken('第一段')] },
   { type: 'paragraph', raw: '第二段', text: '第二段', tokens: [buildTextToken('第二段')] },
@@ -359,12 +419,33 @@ if (!/buildImageToken\(String\(record\["raw"\] \?\? text\), href, text, true\)/.
   console.error('FAIL bare/autolinked image URLs should start as inline candidates and only standalone lines should be demoted')
   process.exit(1)
 }
-if (/_classifyInlineImageSize|inlineSmall|blockLarge|INLINE_IMAGE_(?:SMALL|LARGE)/.test(source)) {
-  console.error('FAIL image dimensions must not classify inline vs block layout')
+if (/_classifyInlineImageSize|inlineSmall|blockLarge|INLINE_IMAGE_(?:SMALL|LARGE)|INLINE_IMAGE_FALLBACK_(?:MIN|MAX)_SIZE|_inlineImageSize\(/.test(source)) {
+  console.error('FAIL image dimensions must not classify inline vs block layout or use 24-40 inline-small fallback')
   process.exit(1)
 }
-if (!/_inlineImageRenderSize/.test(source) || !/widthPx[\s\S]*heightPx/.test(source)) {
-  console.error('FAIL inline image dimensions should be used only for natural aspect-ratio sizing')
+if (/INLINE_IMAGE_SPAN_MAX_WIDTH|INLINE_IMAGE_SPAN_MAX_HEIGHT/.test(source)) {
+  console.error('FAIL inline images must not use fixed 320x240 span caps')
+  process.exit(1)
+}
+const inlineSizeSource = source.match(/function _inlineImageRenderSize[\s\S]*?\n}/)?.[0] || ''
+if (/INLINE_IMAGE_CONTENT_MAX_WIDTH\s*=\s*360/.test(source) || !/const INLINE_IMAGE_PENDING_SIZE = 1;/.test(source) || !/availableWidth: number/.test(inlineSizeSource) || !/const contentMaxWidth = Math\.max\(0, availableWidth\);/.test(inlineSizeSource) || !/widthPx[\s\S]*heightPx/.test(inlineSizeSource) || !/width: INLINE_IMAGE_PENDING_SIZE,[\s\S]*height: INLINE_IMAGE_PENDING_SIZE/.test(inlineSizeSource) || !/scale = Math\.min\(1, contentMaxWidth \/ widthPx/.test(inlineSizeSource)) {
+  console.error('FAIL inline image dimensions should use pending sentinel until actual dimensions and measured available width are known')
+  process.exit(1)
+}
+if (!/@State private paragraphAvailableWidth: number = 0;/.test(source) || !/@Prop contentAvailableWidth: number = 0;/.test(source) || !/return this\.contentAvailableWidth;/.test(source) || !/\.onAreaChange\(\(_oldValue: Area, newValue: Area\) => \{\n\s*this\.updateParagraphAvailableWidth\(newValue\);/.test(source) || !/SelectableInlineTokenSpans\([\s\S]*this\.inlineContentMaxWidth\(\)/.test(source) || !/contentAvailableWidth: this\.contentAvailableWidth/.test(source)) {
+  console.error('FAIL MarkdownParagraph must measure paragraph width, fall back to root content width, and pass it into inline image sizing')
+  process.exit(1)
+}
+if (!/splitResolvedWideInlineImages\(tokens, sizeRecords\)/.test(source) || !/splitParagraphByResolvedWideInlineImages/.test(source) || !/shouldFlowInlineImageAsBlock/.test(source) || !/record\.widthPx > 96 \|\| record\.heightPx > 48/.test(source)) {
+  console.error('FAIL resolved large inline images must have a source-order block fallback after ImageSpan dynamic sizing fails')
+  process.exit(1)
+}
+if (/return \{ width: fallback, height: fallback \}/.test(source)) {
+  console.error('FAIL missing inline image records must not fall back to font-size square icons')
+  process.exit(1)
+}
+if (/\(event\?\.loadingStatus \?\? 0\) !== 1/.test(source) || !/widthPx <= 0 \|\| heightPx <= 0/.test(source)) {
+  console.error('FAIL inline image completion should record any onComplete event with valid intrinsic dimensions, including loadingStatus 0 data-load callbacks')
   process.exit(1)
 }
 const paragraphMatch = source.match(/struct MarkdownParagraph[\s\S]*?\n}\n\n@Component\nstruct MarkdownCodeBlock/)

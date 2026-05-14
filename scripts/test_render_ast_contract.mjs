@@ -245,8 +245,14 @@ assert.doesNotMatch(source, /lexer\(MarkdownContent\.convertHtmlTable\(raw\)/)
 const standaloneImageLineCheck = source.match(/private static isImageTokenAloneOnInlineLine[\s\S]*?return before\.trim\(\)\.length === 0 && after\.trim\(\)\.length === 0;/)
 assert.ok(standaloneImageLineCheck, 'production image standalone role requires empty same-line text before and after image')
 assert.match(source, /roleDecision: "source structure \/ Markdown block semantics; never intrinsic big\/small"/)
-assert.match(source, /roleDecision: "source structure \/ Markdown inline semantics; measured size only affects rendered dimensions"/)
-assert.doesNotMatch(source, /_classifyInlineImageSize|inlineSmall|blockLarge|INLINE_IMAGE_(?:SMALL|LARGE)/)
+assert.match(source, /roleDecision: "source structure \/ Markdown inline semantics; rendered dimensions come from actual image size \+ content container max constraint"/)
+assert.doesNotMatch(source, /INLINE_IMAGE_CONTENT_MAX_WIDTH\s*=\s*360/)
+assert.match(source, /const INLINE_IMAGE_PENDING_SIZE = 1;/)
+assert.match(source, /function _inlineImageRenderSize\(token: Token, sizeRecords: InlineImageSizeRecord\[\], availableWidth: number\)/)
+assert.match(source, /@State private paragraphAvailableWidth: number = 0;/)
+assert.match(source, /this\.updateParagraphAvailableWidth\(newValue\);/)
+assert.match(source, /this\.inlineContentMaxWidth\(\)/)
+assert.doesNotMatch(source, /_classifyInlineImageSize|inlineSmall|blockLarge|INLINE_IMAGE_(?:SMALL|LARGE)|INLINE_IMAGE_FALLBACK_(?:MIN|MAX)_SIZE|_inlineImageSize\(|INLINE_IMAGE_SPAN_MAX_(?:WIDTH|HEIGHT)/)
 assert.match(source, /const RENDER_BODY_FONT_SIZE = 14;/)
 assert.match(source, /const RENDER_BODY_LINE_HEIGHT = 20;/)
 assert.match(source, /const RENDER_H1_FONT_SIZE = 22;[\s\S]*const RENDER_H1_LINE_HEIGHT = 28;/)
@@ -300,6 +306,7 @@ const pairs = [
   ['strong/em/codespan', '**bold** *em* `code`', '<p><strong>bold</strong> <em>em</em> <code>code</code></p>'],
   ['mixed text+image', 'before ![pic](https://example.com/a.png) after', '<p>before <img src="https://example.com/a.png" alt="pic"> after</p>'],
   ['image-first mixed text', '![pic](https://example.com/a.png) after', '<p><img src="https://example.com/a.png" alt="pic"> after</p>'],
+  ['topic1212780 image-first mixed text', '![pic](https://example.com/topic1212780.png)效果已经不是当下 Agent 的主要矛盾', '<p><img src="https://example.com/topic1212780.png" alt="pic">效果已经不是当下 Agent 的主要矛盾</p>'],
   ['member link', '[name](/member/name)', '<p>@<a href="/member/name">name</a></p>']
 ]
 for (const [name, md, html] of pairs) {

@@ -118,6 +118,12 @@ assert.deepEqual(tokens127.map(t => t.type), ['link', 'text', 'image'])
 assert.equal(tokens127[1].text, ' #6 要黑丝也可以 ')
 assert.equal(tokens127[2].href, 'https://i.imgur.com/MA8YqTP.png')
 
+const topic1212780Mixed = '<p><img src="https://example.com/topic1212780.png" alt="pic">效果已经不是当下 Agent 的主要矛盾</p>'
+const topic1212780Tokens = inlineHtmlToTokens(topic1212780Mixed.replace(/^<p>|<\/p>$/g, ''))
+assert.deepEqual(topic1212780Tokens.map(t => t.type), ['image', 'text'])
+assert.equal(topic1212780Tokens[0].href, 'https://example.com/topic1212780.png')
+assert.equal(topic1212780Tokens[1].text, '效果已经不是当下 Agent 的主要矛盾')
+
 const imageFirstMixed = '<p><img src="https://example.com/a.png" alt="pic"> after</p>'
 const imageFirstMixedTokens = inlineHtmlToTokens(imageFirstMixed.replace(/^<p>|<\/p>$/g, ''))
 assert.deepEqual(imageFirstMixedTokens.map(t => t.type), ['image', 'text'])
@@ -143,7 +149,7 @@ assert.match(source, /inlineHtmlToTokens/)
 assert.match(source, /parseMarkdownInlineTextTokens/)
 assert.match(source, /MarkdownBlockquote/)
 assert.doesNotMatch(source, /\.height\('100%'\)[\s\S]{0,160}quoteDriveColor/)
-assert.doesNotMatch(source, /_classifyInlineImageSize|inlineSmall|blockLarge|INLINE_IMAGE_(?:SMALL|LARGE)/)
+assert.doesNotMatch(source, /_classifyInlineImageSize|inlineSmall|blockLarge|INLINE_IMAGE_(?:SMALL|LARGE)|INLINE_IMAGE_FALLBACK_(?:MIN|MAX)_SIZE|_inlineImageSize\(|INLINE_IMAGE_SPAN_MAX_(?:WIDTH|HEIGHT)/)
 
 assert.match(source, /const RENDER_BODY_FONT_SIZE = 14;/)
 assert.match(source, /const RENDER_BODY_LINE_HEIGHT = 20;/)
@@ -192,5 +198,17 @@ const processTokensBody = source.match(/private static processTokens\([\s\S]*?re
 assert.doesNotMatch(processTokensBody, /renderedHtmlToMarkdown/)
 assert.match(processTokensBody, /parseRenderedHtmlToRenderAst\(decodedSource, sizeRecords\)/)
 assert.match(source, /return before\.trim\(\)\.length === 0 && after\.trim\(\)\.length === 0;/)
+const inlineSizeSource = source.match(/function _inlineImageRenderSize[\s\S]*?\n}/)?.[0] || ''
+assert.doesNotMatch(source, /INLINE_IMAGE_CONTENT_MAX_WIDTH\s*=\s*360/)
+assert.match(source, /const INLINE_IMAGE_PENDING_SIZE = 1;/)
+assert.match(inlineSizeSource, /availableWidth: number/)
+assert.match(inlineSizeSource, /const contentMaxWidth = Math\.max\(0, availableWidth\);/)
+assert.match(inlineSizeSource, /widthPx[\s\S]*heightPx/)
+assert.match(inlineSizeSource, /width: INLINE_IMAGE_PENDING_SIZE,[\s\S]*height: INLINE_IMAGE_PENDING_SIZE/)
+assert.match(inlineSizeSource, /scale = Math\.min\(1, contentMaxWidth \/ widthPx/)
+assert.match(source, /@State private paragraphAvailableWidth: number = 0;/)
+assert.match(source, /\.onAreaChange\(\(_oldValue: Area, newValue: Area\) => \{\n\s*this\.updateParagraphAvailableWidth\(newValue\);/)
+assert.match(source, /SelectableInlineTokenSpans\([\s\S]*this\.inlineContentMaxWidth\(\)/)
+assert.doesNotMatch(source, /return \{ width: fallback, height: fallback \}/)
 
-console.log('PASS: V2EX rendered HTML mirror/static checks preserve adjacent images, image-first mixed inline content, markdown links, and member links')
+console.log('PASS: V2EX rendered HTML mirror/static checks preserve adjacent images, topic1212780 image-first mixed inline content, markdown links, and member links')

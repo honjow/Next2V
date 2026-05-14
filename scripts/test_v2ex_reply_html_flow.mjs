@@ -68,7 +68,7 @@ const topicDetailSource = readFileSync('feature/detail/src/main/ets/pages/TopicD
 assert.match(topicDetailSource, /private topicBodySource\(\)/)
 assert.match(topicDetailSource, /this\.v\.topic\?\.content_rendered/)
 assert.match(topicDetailSource, /return this\.v\.topic\?\.content_rendered \|\| ''/)
-assert.match(topicDetailSource, /ForEach\(this\.topicBodyBlocks\(\)/)
+assert.match(topicDetailSource, /ForEach\([\s\S]{0,120}this\.topicBodyBlocks\(\)/)
 assert.doesNotMatch(topicDetailSource, /ForEach\(this\.markdownBlocks\(this\.v\.topic!\.content\)/)
 
 const markdownSource = readFileSync('shared/src/main/ets/components/MarkdownContent.ets', 'utf8')
