@@ -13,6 +13,7 @@ export struct ReplyCard {
   @Prop floor: number = 1
   @Prop isOp: boolean = false
   @Prop isThanked: boolean = false
+  @Prop isThankPending: boolean = false
   @Prop threadLevel: number = 0
   @Prop relationLabel: string = ''
   @Prop displayContent: string = ''
@@ -34,6 +35,7 @@ export struct ReplyCard {
   onCopyUserClick?: (reply: V2exReply) => void
   onCopyContentClick?: (reply: V2exReply) => void
   isReplyThanked?: (reply: V2exReply) => boolean
+  isReplyThankPending?: (reply: V2exReply) => boolean
   onImageClick?: (url: string) => void
   onLinkClick?: (url: string) => void
   onMentionUserClick?: (username: string) => void
@@ -135,6 +137,13 @@ export struct ReplyCard {
   private childIsThanked(reply: V2exReply): boolean {
     if (this.isReplyThanked) {
       return this.isReplyThanked(reply)
+    }
+    return false
+  }
+
+  private childIsThankPending(reply: V2exReply): boolean {
+    if (this.isReplyThankPending) {
+      return this.isReplyThankPending(reply)
     }
     return false
   }
@@ -305,8 +314,10 @@ export struct ReplyCard {
           .padding({ left: ThemeConstants.SPACE_XS, right: ThemeConstants.SPACE_XS })
           .borderRadius(ThemeConstants.RADIUS_ROUND)
           .backgroundColor(Color.Transparent)
+          .opacity(this.isThankPending ? 0.45 : 1)
+          .enabled(!this.isThanked && !this.isThankPending)
           .onClick(() => {
-            if (this.onThankClick) { this.onThankClick(this.reply) }
+            if (this.onThankClick && !this.isThanked && !this.isThankPending) { this.onThankClick(this.reply) }
           })
         }
 
@@ -379,6 +390,7 @@ export struct ReplyCard {
                 floor: child.floor || 0,
                 isOp: this.opMemberId > 0 && child.member.id === this.opMemberId,
                 isThanked: this.childIsThanked(child),
+                isThankPending: this.childIsThankPending(child),
                 threadLevel: child.threadLevel || 0,
                 relationLabel: '',
                 displayContent: this.childDisplayContent(child),
@@ -399,6 +411,7 @@ export struct ReplyCard {
                 onCopyUserClick: this.onCopyUserClick,
                 onCopyContentClick: this.onCopyContentClick,
                 isReplyThanked: this.isReplyThanked,
+                isReplyThankPending: this.isReplyThankPending,
                 onImageClick: this.onImageClick,
                 onLinkClick: this.onLinkClick,
                 onMentionUserClick: this.onMentionUserClick

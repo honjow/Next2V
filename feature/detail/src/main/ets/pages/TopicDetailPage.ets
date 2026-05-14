@@ -59,6 +59,7 @@ export struct TopicDetailPage {
   @State private isSiteFavoriteLoading: boolean = false
   @State private isTopicThankLoading: boolean = false
   @State private isReplyThankLoading: boolean = false
+  @State private pendingReplyThankId: number = 0
   @State private isModerationActionLoading: boolean = false
   @State private jumpFloorText: string = ''
   @State private contextReply: V2exReply | null = null
@@ -76,6 +77,8 @@ export struct TopicDetailPage {
   private readonly FLOATING_REPLY_BOTTOM_GAP: number = 2
   private readonly titleVisibilityHysteresis: number = 4
   private api: ApiService = new ApiService()
+  private topicThankLocked: boolean = false
+  private replyThankLockedId: number = 0
   private jumpFloorDialogController: CustomDialogController | null = new CustomDialogController({
     builder: JumpToFloorDialog({
       floorText: $jumpFloorText,
@@ -327,6 +330,7 @@ export struct TopicDetailPage {
               floor: this.getFloorForReply(reply.id, index),
               isOp: this.v.topic !== null && reply.member.id === this.v.topic!.member.id,
               isThanked: this.isReplyThanked(reply.id),
+              isThankPending: this.isReplyThankPending(reply.id),
               threadLevel: reply.threadLevel || 0,
               relationLabel: '',
               displayContent: this.replyDisplayContent(reply),
@@ -334,6 +338,7 @@ export struct TopicDetailPage {
               opMemberId: this.v.topic !== null ? this.v.topic!.member.id : 0,
               hideLeadingMention: this.v.replyDisplayMode === 'thread',
               isReplyThanked: (target: V2exReply) => { return this.isReplyThanked(target.id) },
+              isReplyThankPending: (target: V2exReply) => { return this.isReplyThankPending(target.id) },
               isWrongReference: !!reply.isWrongReference,
               isDuplicateThreadItem: !!reply.isDuplicateThreadItem,
               onUserClick: (target: V2exReply) => {
@@ -1535,7 +1540,11 @@ export struct TopicDetailPage {
   }
 
   private prepareTopicThank(): void {
-    if (this.isTopicThankLoading) {
+    if (this.topicThankLocked || this.isTopicThankLoading) {
+      return
+    }
+    if (this.isTopicThanked || this.topicDetailThanked) {
+      promptAction.openToast({ message: '已经感谢过' }).catch((_error: Error) => { })
       return
     }
     if (!this.writeEnabled) {
@@ -1547,13 +1556,14 @@ export struct TopicDetailPage {
       promptAction.openToast({ message: '请先登录' }).catch((_error: Error) => { })
       return
     }
+    this.topicThankLocked = true
     this.isTopicThankLoading = true
     this.api.getTopicThankActionWithCookie(cookie, this.topicId)
       .then((action: V2exTopicThankAction) => {
-        this.isTopicThankLoading = false
         this.confirmTopicThank(cookie, action)
       })
       .catch((error: Error) => {
+        this.topicThankLocked = false
         promptAction.openToast({ message: error.message || '解析感谢操作失败' }).catch((_error: Error) => { })
       })
       .finally(() => {
@@ -1566,7 +1576,11 @@ export struct TopicDetailPage {
     AlertDialog.show({
       title: '感谢主题',
       message: title ? `确定感谢《${title}》吗？` : '确定感谢该主题吗？',
-      primaryButton: { value: '取消', action: () => { } },
+      autoCancel: false,
+      primaryButton: {
+        value: '取消',
+        action: () => { this.topicThankLocked = false }
+      },
       secondaryButton: {
         value: '感谢',
         action: () => { this.executeTopicThank(cookie, thankAction) }
@@ -1591,6 +1605,7 @@ export struct TopicDetailPage {
       })
       .finally(() => {
         this.isTopicThankLoading = false
+        this.topicThankLocked = false
       })
   }
 
@@ -1604,7 +1619,15 @@ export struct TopicDetailPage {
   }
 
   private prepareReplyThank(reply: V2exReply): void {
-    if (this.isReplyThankLoading) {
+    if (this.isReplyThankLoading || this.replyThankLockedId > 0) {
+      return
+    }
+    if (!reply || reply.id <= 0) {
+      promptAction.openToast({ message: '回复信息缺失' }).catch((_error: Error) => { })
+      return
+    }
+    if (this.isReplyThanked(reply.id)) {
+      promptAction.openToast({ message: '已经感谢过' }).catch((_error: Error) => { })
       return
     }
     if (!this.writeEnabled) {
@@ -1620,13 +1643,15 @@ export struct TopicDetailPage {
       promptAction.openToast({ message: '回复信息缺失' }).catch((_error: Error) => { })
       return
     }
+    this.replyThankLockedId = reply.id
+    this.pendingReplyThankId = reply.id
     this.isReplyThankLoading = true
     this.api.getReplyThankActionWithCookie(cookie, this.topicId, reply.id)
       .then((action: V2exReplyThankAction) => {
-        this.isReplyThankLoading = false
         this.confirmReplyThank(cookie, reply, action)
       })
       .catch((error: Error) => {
+        this.clearReplyThankLock()
         promptAction.openToast({ message: error.message || '解析感谢操作失败' }).catch((_error: Error) => { })
       })
       .finally(() => {
@@ -1638,7 +1663,11 @@ export struct TopicDetailPage {
     AlertDialog.show({
       title: '感谢回复',
       message: `确定感谢 ${reply.member.username || '该用户'} 的回复吗？`,
-      primaryButton: { value: '取消', action: () => { } },
+      autoCancel: false,
+      primaryButton: {
+        value: '取消',
+        action: () => { this.clearReplyThankLock() }
+      },
       secondaryButton: {
         value: '感谢',
         action: () => { this.executeReplyThank(cookie, reply, thankAction) }
@@ -1663,7 +1692,17 @@ export struct TopicDetailPage {
       })
       .finally(() => {
         this.isReplyThankLoading = false
+        this.clearReplyThankLock()
       })
+  }
+
+  private isReplyThankPending(replyId: number): boolean {
+    return replyId > 0 && this.pendingReplyThankId === replyId
+  }
+
+  private clearReplyThankLock(): void {
+    this.replyThankLockedId = 0
+    this.pendingReplyThankId = 0
   }
 
   private isReplyThanked(replyId: number): boolean {
