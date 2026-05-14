@@ -10,7 +10,7 @@ import {
   HdsTabsFloatingStyle,
   HideMode,
   IconType,
-  ScrollEffectType
+  ScrollEffectType,
 } from '@kit.UIDesignKit'
 import { common, Want } from '@kit.AbilityKit'
 import {
@@ -29,13 +29,18 @@ import {
   TopicDetailParams,
   UserProfileParams,
   V2exRoute,
-  V2exUrlRouter
+  V2exUrlRouter,
 } from 'shared'
 import { HomePage } from 'feed'
 import { ReplyEditorPage, TopicDetailPage } from 'detail'
 import { DiscoverPage, NodePickerPage, NodeTopicPage } from 'node'
 import { UserProfilePage, UserRepliesPage, UserTopicsPage } from 'user'
-import { SettingsPage, StorageSettingsPage, ReadingSettingsPage, HomeNodeSettingsPage } from 'settings'
+import {
+  SettingsPage,
+  StorageSettingsPage,
+  ReadingSettingsPage,
+  HomeNodeSettingsPage,
+} from 'settings'
 import { ComponentContent, promptAction, SymbolGlyphModifier } from '@kit.ArkUI'
 import { V2exWebLoginPage } from './V2exWebLoginPage'
 import { V2exNativeLoginPage } from './V2exNativeLoginPage'
@@ -55,16 +60,23 @@ import { AboutPage } from './AboutPage'
 
 @Component
 struct FeedPills {
-  @StorageLink(StorageKeys.FEED_TAB) @Watch('onFeedTabChanged') feedTab: string = 'tech'
+  @StorageLink(StorageKeys.FEED_TAB) @Watch('onFeedTabChanged') feedTab: string = 'tech';
   @StorageLink(StorageKeys.FEED_TAB_KEYS) @Watch('onFeedTabKeysChanged') feedTabKeys: string =
-    FeedTabSettings.defaultKeysJson()
-  @StorageLink(StorageKeys.FEED_TAB_VISUAL_INDEX) feedTabVisualIndex: number = 0
-  @State private tabLefts: number[] = []
-  @State private tabWidths: number[] = []
-  @State private containerGlobalLeft: number = 0
-  private pendingCenterIndex: number = -1
-  private pendingCenterSmooth: boolean = true
-  private scroller: Scroller = new Scroller()
+    FeedTabSettings.defaultKeysJson();
+  @StorageLink(StorageKeys.FEED_TAB_VISUAL_INDEX) feedTabVisualIndex: number = 0;
+  @State private tabLefts: number[] = [];
+  @State private tabWidths: number[] = [];
+  @State private containerGlobalLeft: number = 0;
+  private pendingCenterIndex: number = -1;
+  private pendingCenterSmooth: boolean = true;
+  private scroller: Scroller = new Scroller();
+
+  aboutToAppear(): void {
+    const index = this.selectedTabIndex()
+    if (index > 0) {
+      this.centerTab(index, false)
+    }
+  }
 
   build() {
     Stack({ alignContent: Alignment.TopStart }) {
@@ -74,15 +86,22 @@ struct FeedPills {
             Column({ space: 1 }) {
               Text(tab.label)
                 .fontSize(ThemeConstants.FONT_SIZE_BODY)
-                .fontColor(this.visualSelectedIndex() === index ? ThemeConstants.BRAND_PRIMARY :
-                  ThemeConstants.TEXT_SECONDARY)
-                .fontWeight(this.visualSelectedIndex() === index ? FontWeight.Medium : FontWeight.Regular)
+                .fontColor(
+                  this.visualSelectedIndex() === index
+                    ? ThemeConstants.BRAND_PRIMARY
+                    : ThemeConstants.TEXT_SECONDARY,
+                )
+                .fontWeight(
+                  this.visualSelectedIndex() === index ? FontWeight.Medium : FontWeight.Regular,
+                )
                 .padding({
                   left: ThemeConstants.SPACE_MD,
                   right: ThemeConstants.SPACE_MD,
-                  top: ThemeConstants.SPACE_XS
+                  top: ThemeConstants.SPACE_XS,
                 })
-              Blank().height(2).width(18)
+              Blank()
+                .height(2)
+                .width(18)
             }
             .alignItems(HorizontalAlign.Center)
             .padding({ bottom: 0 })
@@ -100,7 +119,6 @@ struct FeedPills {
       .padding({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM })
       .width('100%')
       .height('100%')
-
       Row()
         .width(this.indicatorWidth())
         .height(3)
@@ -109,7 +127,8 @@ struct FeedPills {
         .position({ x: this.indicatorLeft(), y: ApiConstants.TAB_BAR_HEIGHT - 14 })
         .hitTestBehavior(HitTestMode.None)
     }
-    .width('100%').height('100%')
+    .width('100%')
+    .height('100%')
     .onAreaChange((_oldValue: Area, newValue: Area) => {
       this.containerGlobalLeft = this.areaX(newValue?.globalPosition?.x)
     })
@@ -255,13 +274,13 @@ function PillCCBuilder() {
 
 @Component
 struct DiscoverSearchComponent {
-  @StorageLink(StorageKeys.DISCOVER_NODE_KEYWORD) keyword: string = ''
+  @StorageLink(StorageKeys.DISCOVER_NODE_KEYWORD) keyword: string = '';
 
   build() {
     Row() {
       AppSearchField({
         text: $keyword,
-        placeholder: '搜索节点'
+        placeholder: '搜索节点',
       })
     }
     .width('100%')
@@ -269,7 +288,7 @@ struct DiscoverSearchComponent {
       left: ThemeConstants.SPACE_MD,
       right: ThemeConstants.SPACE_MD,
       top: 4,
-      bottom: 4
+      bottom: 4,
     })
   }
 }
@@ -345,16 +364,20 @@ interface UserProfileAppbarIdentityParams {
 
 @Component
 struct UserProfileAppbarIdentity {
-  @Prop titleUsername: string = ''
-  @Prop avatarUrl: string = ''
-  @Prop menuMaxCount: number = 0
-  @Prop menuItemCount: number = 0
-  @State private titleBarWidth: number = 0
+  @Prop titleUsername: string = '';
+  @Prop avatarUrl: string = '';
+  @Prop menuMaxCount: number = 0;
+  @Prop menuItemCount: number = 0;
+  @State private titleBarWidth: number = 0;
 
   build() {
     Row({ space: ThemeConstants.SPACE_XS }) {
       if ((this.titleUsername || '').trim()) {
-        Avatar({ url: this.avatarUrl, avatarSize: 24, placeholder: (this.titleUsername || '').trim() })
+        Avatar({
+          url: this.avatarUrl,
+          avatarSize: 24,
+          placeholder: (this.titleUsername || '').trim(),
+        })
         Text((this.titleUsername || '').trim())
           .fontSize(ThemeConstants.FONT_SIZE_TITLE)
           .fontWeight(FontWeight.Medium)
@@ -369,7 +392,7 @@ struct UserProfileAppbarIdentity {
     .alignItems(VerticalAlign.Center)
     .padding({
       left: titleBarLeadingReserve(this.titleBarWidth),
-      right: titleBarTrailingReserve(this.menuMaxCount, this.menuItemCount)
+      right: titleBarTrailingReserve(this.menuMaxCount, this.menuItemCount),
     })
     .hitTestBehavior(HitTestMode.None)
     .onAreaChange((_oldValue: Area, newValue: Area) => {
@@ -384,7 +407,7 @@ function UserProfileIdentityCCBuilder(params: UserProfileAppbarIdentityParams) {
     titleUsername: params.titleUsername,
     avatarUrl: params.avatarUrl,
     menuMaxCount: params.menuMaxCount,
-    menuItemCount: params.menuItemCount
+    menuItemCount: params.menuItemCount,
   })
 }
 
@@ -398,17 +421,21 @@ interface TopicDetailAppbarIdentityParams {
 
 @Component
 struct TopicDetailAppbarIdentity {
-  @Prop title: string = ''
-  @Prop avatarUrl: string = ''
-  @Prop username: string = ''
-  @Prop menuMaxCount: number = 0
-  @Prop menuItemCount: number = 0
-  @State private titleBarWidth: number = 0
+  @Prop title: string = '';
+  @Prop avatarUrl: string = '';
+  @Prop username: string = '';
+  @Prop menuMaxCount: number = 0;
+  @Prop menuItemCount: number = 0;
+  @State private titleBarWidth: number = 0;
 
   build() {
     Row({ space: ThemeConstants.SPACE_XS }) {
       if ((this.title || '').trim()) {
-        Avatar({ url: this.avatarUrl, avatarSize: 24, placeholder: (this.username || this.title || '').trim() })
+        Avatar({
+          url: this.avatarUrl,
+          avatarSize: 24,
+          placeholder: (this.username || this.title || '').trim(),
+        })
         Text((this.title || '').trim())
           .fontSize(ThemeConstants.FONT_SIZE_TITLE)
           .fontWeight(FontWeight.Medium)
@@ -428,7 +455,7 @@ struct TopicDetailAppbarIdentity {
     .alignItems(VerticalAlign.Center)
     .padding({
       left: titleBarLeadingReserve(this.titleBarWidth),
-      right: titleBarTrailingReserve(this.menuMaxCount, this.menuItemCount)
+      right: titleBarTrailingReserve(this.menuMaxCount, this.menuItemCount),
     })
     .hitTestBehavior(HitTestMode.None)
     .onAreaChange((_oldValue: Area, newValue: Area) => {
@@ -444,49 +471,61 @@ function TopicDetailIdentityCCBuilder(params: TopicDetailAppbarIdentityParams) {
     avatarUrl: params.avatarUrl,
     username: params.username,
     menuMaxCount: params.menuMaxCount,
-    menuItemCount: params.menuItemCount
+    menuItemCount: params.menuItemCount,
   })
 }
 
 @Entry
 @Component
 struct Index {
-  @Provide('ns') ns: NavPathStack = new NavPathStack()
-  private tc: HdsTabsController = new HdsTabsController()
-  private tabTitles: string[] = ['首页', '发现', '通知', '我的']
-  @State ct: number = 0
-  @StorageLink(StorageKeys.PENDING_V2EX_URL) @Watch('onPendingV2exUrlChanged') pendingV2exUrl: string = ''
-  @StorageLink(StorageKeys.TOPIC_DETAIL_SAVED_LATER) topicDetailSavedLater: boolean = false
-  @StorageLink(StorageKeys.TOPIC_DETAIL_SITE_FAVORITED) topicDetailSiteFavorited: boolean = false
-  @StorageLink(StorageKeys.TOPIC_DETAIL_THANKED) topicDetailThanked: boolean = false
-  @StorageLink(StorageKeys.TOPIC_DETAIL_APPBAR_TITLE) topicDetailAppbarTitle: string = ''
-  @StorageLink(StorageKeys.TOPIC_DETAIL_APPBAR_AVATAR_URL) topicDetailAppbarAvatarUrl: string = ''
-  @StorageLink(StorageKeys.TOPIC_DETAIL_APPBAR_USERNAME) topicDetailAppbarUsername: string = ''
-  @StorageLink(StorageKeys.TOPIC_DETAIL_APPBAR_ROUTE_TOPIC_ID) topicDetailAppbarRouteTopicId: string = ''
-  @StorageLink(StorageKeys.TOPIC_DETAIL_APPBAR_TITLE_STATES) topicDetailAppbarTitleStates: string = '{}'
-  @StorageLink(StorageKeys.TOPIC_DETAIL_APPBAR_AVATAR_STATES) topicDetailAppbarAvatarStates: string = '{}'
-  @StorageLink(StorageKeys.TOPIC_DETAIL_APPBAR_USERNAME_STATES) topicDetailAppbarUsernameStates: string = '{}'
-  @StorageLink(StorageKeys.NODE_TOPIC_SAVED) nodeTopicSaved: boolean = false
-  @StorageLink(StorageKeys.NODE_TOPIC_SITE_FAVORITED) nodeTopicSiteFavorited: boolean = false
-  @StorageLink(StorageKeys.NODE_TOPIC_TITLE) nodeTopicTitle: string = ''
-  @StorageLink(StorageKeys.NODE_TOPIC_SUBTITLE) nodeTopicSubtitle: string = ''
-  @StorageLink(StorageKeys.USER_PROFILE_ACTIONS_AVAILABLE) userProfileActionsAvailable: boolean = false
-  @StorageLink(StorageKeys.USER_PROFILE_ACTIONS_USERNAME) userProfileActionsUsername: string = ''
-  @StorageLink(StorageKeys.USER_PROFILE_FOLLOW_LABEL) userProfileFollowLabel: string = ''
-  @StorageLink(StorageKeys.USER_PROFILE_BLOCK_LABEL) userProfileBlockLabel: string = ''
-  @StorageLink(StorageKeys.USER_PROFILE_FOLLOWING) userProfileFollowing: boolean = false
-  @StorageLink(StorageKeys.USER_PROFILE_BLOCKED) userProfileBlocked: boolean = false
-  @StorageLink(StorageKeys.USER_PROFILE_APPBAR_TITLE_USERNAME) userProfileAppbarTitleUsername: string = ''
-  @StorageLink(StorageKeys.USER_PROFILE_APPBAR_TITLE_AVATAR_URL) userProfileAppbarTitleAvatarUrl: string = ''
-  @StorageLink(StorageKeys.USER_PROFILE_APPBAR_TITLE_ROUTE_USERNAME) userProfileAppbarTitleRouteUsername: string = ''
-  @StorageLink(StorageKeys.USER_PROFILE_APPBAR_TITLE_STATES) userProfileAppbarTitleStates: string = '{}'
-  @StorageLink(StorageKeys.USER_PROFILE_APPBAR_AVATAR_STATES) userProfileAppbarAvatarStates: string = '{}'
-  @State private accountRefreshKey: number = 0
-  @State private isFoldedAndUseOuterScreen: boolean = false
-  private http: HttpClient = HttpClient.getInstance()
+  @Provide('ns') ns: NavPathStack = new NavPathStack();
+  private tc: HdsTabsController = new HdsTabsController();
+  private tabTitles: string[] = ['首页', '发现', '通知', '我的'];
+  @State ct: number = 0;
+  @StorageLink(StorageKeys.PENDING_V2EX_URL)
+  @Watch('onPendingV2exUrlChanged')
+  pendingV2exUrl: string = '';
+  @StorageLink(StorageKeys.TOPIC_DETAIL_SAVED_LATER) topicDetailSavedLater: boolean = false;
+  @StorageLink(StorageKeys.TOPIC_DETAIL_SITE_FAVORITED) topicDetailSiteFavorited: boolean = false;
+  @StorageLink(StorageKeys.TOPIC_DETAIL_THANKED) topicDetailThanked: boolean = false;
+  @StorageLink(StorageKeys.TOPIC_DETAIL_APPBAR_TITLE) topicDetailAppbarTitle: string = '';
+  @StorageLink(StorageKeys.TOPIC_DETAIL_APPBAR_AVATAR_URL) topicDetailAppbarAvatarUrl: string = '';
+  @StorageLink(StorageKeys.TOPIC_DETAIL_APPBAR_USERNAME) topicDetailAppbarUsername: string = '';
+  @StorageLink(StorageKeys.TOPIC_DETAIL_APPBAR_ROUTE_TOPIC_ID)
+  topicDetailAppbarRouteTopicId: string = '';
+  @StorageLink(StorageKeys.TOPIC_DETAIL_APPBAR_TITLE_STATES) topicDetailAppbarTitleStates: string =
+    '{}';
+  @StorageLink(StorageKeys.TOPIC_DETAIL_APPBAR_AVATAR_STATES)
+  topicDetailAppbarAvatarStates: string = '{}';
+  @StorageLink(StorageKeys.TOPIC_DETAIL_APPBAR_USERNAME_STATES)
+  topicDetailAppbarUsernameStates: string = '{}';
+  @StorageLink(StorageKeys.NODE_TOPIC_SAVED) nodeTopicSaved: boolean = false;
+  @StorageLink(StorageKeys.NODE_TOPIC_SITE_FAVORITED) nodeTopicSiteFavorited: boolean = false;
+  @StorageLink(StorageKeys.NODE_TOPIC_TITLE) nodeTopicTitle: string = '';
+  @StorageLink(StorageKeys.NODE_TOPIC_SUBTITLE) nodeTopicSubtitle: string = '';
+  @StorageLink(StorageKeys.USER_PROFILE_ACTIONS_AVAILABLE) userProfileActionsAvailable: boolean =
+    false;
+  @StorageLink(StorageKeys.USER_PROFILE_ACTIONS_USERNAME) userProfileActionsUsername: string = '';
+  @StorageLink(StorageKeys.USER_PROFILE_FOLLOW_LABEL) userProfileFollowLabel: string = '';
+  @StorageLink(StorageKeys.USER_PROFILE_BLOCK_LABEL) userProfileBlockLabel: string = '';
+  @StorageLink(StorageKeys.USER_PROFILE_FOLLOWING) userProfileFollowing: boolean = false;
+  @StorageLink(StorageKeys.USER_PROFILE_BLOCKED) userProfileBlocked: boolean = false;
+  @StorageLink(StorageKeys.USER_PROFILE_APPBAR_TITLE_USERNAME)
+  userProfileAppbarTitleUsername: string = '';
+  @StorageLink(StorageKeys.USER_PROFILE_APPBAR_TITLE_AVATAR_URL)
+  userProfileAppbarTitleAvatarUrl: string = '';
+  @StorageLink(StorageKeys.USER_PROFILE_APPBAR_TITLE_ROUTE_USERNAME)
+  userProfileAppbarTitleRouteUsername: string = '';
+  @StorageLink(StorageKeys.USER_PROFILE_APPBAR_TITLE_STATES) userProfileAppbarTitleStates: string =
+    '{}';
+  @StorageLink(StorageKeys.USER_PROFILE_APPBAR_AVATAR_STATES)
+  userProfileAppbarAvatarStates: string = '{}';
+  @State private accountRefreshKey: number = 0;
+  @State private isFoldedAndUseOuterScreen: boolean = false;
+  private http: HttpClient = HttpClient.getInstance();
   private foldScreenCallback: (value: boolean) => void = (value: boolean) => {
     this.isFoldedAndUseOuterScreen = value
-  }
+  };
 
   aboutToAppear(): void {
     MotionHandStateService.start()
@@ -516,7 +555,9 @@ struct Index {
           targetFloor: ((param as Record<string, Object>)['targetFloor'] as number) || 0,
         })
       }
-      .titleBar(this.topicDetailTitleBarOpts(((param as Record<string, Object>)['topicId'] as number) || 0))
+      .titleBar(
+        this.topicDetailTitleBarOpts(((param as Record<string, Object>)['topicId'] as number) || 0),
+      )
       .dynamicHideTitleBar({
         hideTitleArea: this.isFoldedAndUseOuterScreen,
         hideStatusBar: this.isFoldedAndUseOuterScreen,
@@ -525,134 +566,118 @@ struct Index {
     } else if (name === 'ImagePreview') {
       HdsNavDestination() {
         ImagePreviewPage({ url: (param as ImagePreviewParams).url })
-      }
-      .titleBar(this.navDestTitleBarOpts(undefined, this.imagePreviewTitleMenu()))
+      }.titleBar(this.navDestTitleBarOpts(undefined, this.imagePreviewTitleMenu()))
     } else if (name === 'NodeTopicList') {
       HdsNavDestination() {
         NodeTopicPage({
           nodeName: (param as Record<string, Object>)['nodeName'] as string,
-          nodeTitle: (param as Record<string, Object>)['nodeTitle'] as string
+          nodeTitle: (param as Record<string, Object>)['nodeTitle'] as string,
         })
-      }.titleBar(this.nodeTopicTitleBarOpts(
-        (param as Record<string, Object>)['nodeName'] as string,
-        (param as Record<string, Object>)['nodeTitle'] as string
-      ))
+      }
+      .titleBar(
+        this.nodeTopicTitleBarOpts(
+          (param as Record<string, Object>)['nodeName'] as string,
+          (param as Record<string, Object>)['nodeTitle'] as string,
+        ),
+      )
     } else if (name === 'ReplyEditor') {
       HdsNavDestination() {
         ReplyEditorPage({
           topicId: ((param as Record<string, Object>)['topicId'] as number) || 0,
           topicTitle: ((param as Record<string, Object>)['topicTitle'] as string) || '',
-          initialContent: ((param as Record<string, Object>)['initialContent'] as string) || ''
+          initialContent: ((param as Record<string, Object>)['initialContent'] as string) || '',
         })
       }.titleBar(this.navDestTitleBarOpts('回复'))
     } else if (name === 'UserProfile') {
       HdsNavDestination() {
         UserProfilePage({ username: (param as Record<string, Object>)['username'] as string })
       }
-      .titleBar(this.userProfileTitleBarOpts((param as Record<string, Object>)['username'] as string))
+      .titleBar(
+        this.userProfileTitleBarOpts((param as Record<string, Object>)['username'] as string),
+      )
       .onShown(() => {
         this.notifyUserProfileShown((param as Record<string, Object>)['username'] as string)
       })
     } else if (name === 'UserTopics') {
       HdsNavDestination() {
         UserTopicsPage({ username: (param as Record<string, Object>)['username'] as string })
-      }
-      .titleBar(this.navDestTitleBarOpts('全部主题'))
+      }.titleBar(this.navDestTitleBarOpts('全部主题'))
     } else if (name === 'UserReplies') {
       HdsNavDestination() {
         UserRepliesPage({ username: (param as Record<string, Object>)['username'] as string })
-      }
-      .titleBar(this.navDestTitleBarOpts('全部回复'))
+      }.titleBar(this.navDestTitleBarOpts('全部回复'))
     } else if (name === 'V2exWebLogin') {
       HdsNavDestination() {
         V2exWebLoginPage()
-      }
-      .titleBar(this.navDestTitleBarOpts('网页登录', this.webLoginTitleMenu()))
+      }.titleBar(this.navDestTitleBarOpts('网页登录', this.webLoginTitleMenu()))
     } else if (name === 'V2exNativeLogin') {
       HdsNavDestination() {
         V2exNativeLoginPage()
-      }
-      .titleBar(this.navDestTitleBarOpts('账号密码登录'))
+      }.titleBar(this.navDestTitleBarOpts('账号密码登录'))
     } else if (name === 'NodePicker') {
       HdsNavDestination() {
         NodePickerPage()
-      }
-      .titleBar(this.navDestTitleBarOpts('选择节点'))
+      }.titleBar(this.navDestTitleBarOpts('选择节点'))
     } else if (name === 'Search') {
       HdsNavDestination() {
         SearchPage()
-      }
-      .titleBar(this.navDestTitleBarOpts('搜索', this.searchTitleMenu()))
+      }.titleBar(this.navDestTitleBarOpts('搜索', this.searchTitleMenu()))
     } else if (name === 'TopicEditor') {
       HdsNavDestination() {
         TopicEditorPage()
-      }
-      .titleBar(this.navDestTitleBarOpts('发帖草稿'))
+      }.titleBar(this.navDestTitleBarOpts('发帖草稿'))
     } else if (name === 'MyTopics') {
       HdsNavDestination() {
         MyTopicsPage()
-      }
-      .titleBar(this.navDestTitleBarOpts('收藏主题'))
+      }.titleBar(this.navDestTitleBarOpts('收藏主题'))
     } else if (name === 'MyNodes') {
       HdsNavDestination() {
         MyNodesPage()
-      }
-      .titleBar(this.navDestTitleBarOpts('收藏节点'))
+      }.titleBar(this.navDestTitleBarOpts('收藏节点'))
     } else if (name === 'AccountBlacklist') {
       HdsNavDestination() {
         AccountBlacklistPage()
-      }
-      .titleBar(this.navDestTitleBarOpts('屏蔽与忽略'))
+      }.titleBar(this.navDestTitleBarOpts('屏蔽与忽略'))
     } else if (name === 'AccountFollowing') {
       HdsNavDestination() {
         AccountFollowingPage()
-      }
-      .titleBar(this.navDestTitleBarOpts('关注用户'))
+      }.titleBar(this.navDestTitleBarOpts('关注用户'))
     } else if (name === 'Settings') {
       HdsNavDestination() {
         SettingsPage()
-      }
-      .titleBar(this.navDestTitleBarOpts('设置'))
+      }.titleBar(this.navDestTitleBarOpts('设置'))
     } else if (name === 'Storage') {
       HdsNavDestination() {
         StorageSettingsPage()
-      }
-      .titleBar(this.navDestTitleBarOpts('存储'))
+      }.titleBar(this.navDestTitleBarOpts('存储'))
     } else if (name === 'HomeNodeSettings') {
       HdsNavDestination() {
         HomeNodeSettingsPage()
-      }
-      .titleBar(this.navDestTitleBarOpts('首页栏目设置'))
+      }.titleBar(this.navDestTitleBarOpts('首页栏目设置'))
     } else if (name === 'ReadingSettings') {
       HdsNavDestination() {
         ReadingSettingsPage()
-      }
-      .titleBar(this.navDestTitleBarOpts('阅读字体设置'))
+      }.titleBar(this.navDestTitleBarOpts('阅读字体设置'))
     } else if (name === 'Account') {
       HdsNavDestination() {
         AccountDashboardPage({ showDetail: true })
-      }
-      .titleBar(this.navDestTitleBarOpts('账号'))
+      }.titleBar(this.navDestTitleBarOpts('账号'))
     } else if (name === 'SavedTopics') {
       HdsNavDestination() {
         SavedTopicsPage()
-      }
-      .titleBar(this.navDestTitleBarOpts('稍后读'))
+      }.titleBar(this.navDestTitleBarOpts('稍后读'))
     } else if (name === 'ViewedTopics') {
       HdsNavDestination() {
         ViewedTopicsPage()
-      }
-      .titleBar(this.navDestTitleBarOpts('最近浏览'))
+      }.titleBar(this.navDestTitleBarOpts('最近浏览'))
     } else if (name === 'SavedNodes') {
       HdsNavDestination() {
         SavedNodesPage()
-      }
-      .titleBar(this.navDestTitleBarOpts('本地关注节点'))
+      }.titleBar(this.navDestTitleBarOpts('本地关注节点'))
     } else if (name === 'About') {
       HdsNavDestination() {
         AboutPage()
-      }
-      .titleBar(this.navDestTitleBarOpts('关于'))
+      }.titleBar(this.navDestTitleBarOpts('关于'))
     }
   }
 
@@ -662,19 +687,16 @@ struct Index {
         TabContent() {
           HomePage()
         }.tabBar(this.TabIcon('首页', 0))
-
         TabContent() {
           DiscoverPage()
         }.tabBar(this.TabIcon('发现', 1))
-
         TabContent() {
           NotificationPage({
             onOpenAccount: () => {
               this.tc.changeIndex(3)
-            }
+            },
           })
         }.tabBar(this.TabIcon('通知', 2))
-
         TabContent() {
           AccountDashboardPage({ refreshKey: this.accountRefreshKey })
         }.tabBar(this.TabIcon('我的', 3))
@@ -689,8 +711,8 @@ struct Index {
         adaptToHandedness: true,
         systemMaterialEffect: {
           materialType: hdsMaterial.MaterialType.ADAPTIVE,
-          materialLevel: hdsMaterial.MaterialLevel.ADAPTIVE
-        }
+          materialLevel: hdsMaterial.MaterialLevel.ADAPTIVE,
+        },
       } as HdsTabsFloatingStyle)
       .onChange((i: number) => {
         this.ct = i
@@ -709,7 +731,10 @@ struct Index {
       hideStatusBar: false,
       mode: HideMode.SCROLL_UP,
     })
-    .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM])
+    .ignoreLayoutSafeArea(
+      [LayoutSafeAreaType.SYSTEM],
+      [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM],
+    )
     .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
     .navDestination(this.pm)
     .mode(NavigationMode.Stack)
@@ -718,14 +743,26 @@ struct Index {
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
   }
 
-  private navDestTitleBarOpts<T extends Object>(title?: string, menu?: Record<string, Object>, subTitle?: string,
-    bottomBuilder?: Record<string, Object>, stackBuilderComponent?: ComponentContent<T>,
-    titleAccessibilityText?: string): Record<string, Object> {
-    let mat: Record<string, Object> =
-      { 'materialType': hdsMaterial.MaterialType.ADAPTIVE, 'materialLevel': hdsMaterial.MaterialLevel.ADAPTIVE }
-    let scrollOpts: Record<string, Object> =
-      { 'enableScrollEffect': true, 'scrollEffectType': ScrollEffectType.GRADIENT_BLUR }
-    let style: Record<string, Object> = { 'systemMaterialEffect': mat, 'scrollEffectOpts': scrollOpts }
+  private navDestTitleBarOpts<T extends Object>(
+    title?: string,
+    menu?: Record<string, Object>,
+    subTitle?: string,
+    bottomBuilder?: Record<string, Object>,
+    stackBuilderComponent?: ComponentContent<T>,
+    titleAccessibilityText?: string,
+  ): Record<string, Object> {
+    let mat: Record<string, Object> = {
+      'materialType': hdsMaterial.MaterialType.ADAPTIVE,
+      'materialLevel': hdsMaterial.MaterialLevel.ADAPTIVE,
+    }
+    let scrollOpts: Record<string, Object> = {
+      'enableScrollEffect': true,
+      'scrollEffectType': ScrollEffectType.GRADIENT_BLUR,
+    }
+    let style: Record<string, Object> = {
+      'systemMaterialEffect': mat,
+      'scrollEffectOpts': scrollOpts,
+    }
     if (title || menu) {
       let content: Record<string, Object> = {}
       if (menu) {
@@ -737,7 +774,7 @@ struct Index {
           'enableComponentSafeArea': false,
           'blurStrategy': BlurStrategy.ENABLE,
           'content': content,
-          'style': style
+          'style': style,
         }
       }
       let titleInfo: Record<string, Object> = { 'mainTitle': title }
@@ -759,31 +796,40 @@ struct Index {
         'enableComponentSafeArea': false,
         'blurStrategy': BlurStrategy.ENABLE,
         'content': content,
-        'style': style
+        'style': style,
       }
     }
     return {
       'avoidLayoutSafeArea': true,
       'enableComponentSafeArea': false,
       'blurStrategy': BlurStrategy.ENABLE,
-      'style': style
+      'style': style,
     }
   }
 
   private topicDetailTitleBarOpts(topicId: number): Record<string, Object> {
     let items: Record<string, Object>[] = [
-      this.topicActionItem('感谢主题', this.topicDetailThanked ? $r('sys.symbol.heart_fill') :
-        $r('sys.symbol.heart'), () => {
-        this.sendTopicAction(topicId, 'thankTopic')
-      }),
-      this.topicActionItem('站内收藏', this.topicDetailSiteFavorited ? $r('sys.symbol.star_fill') :
-        $r('sys.symbol.star'), () => {
-        this.sendTopicAction(topicId, 'siteFavorite')
-      }),
-      this.topicActionItem('稍后读', this.topicDetailSavedLater ? $r('sys.symbol.bookmark_fill') :
-        $r('sys.symbol.bookmark'), () => {
-        this.sendTopicAction(topicId, 'saveLater')
-      }),
+      this.topicActionItem(
+        '感谢主题',
+        this.topicDetailThanked ? $r('sys.symbol.heart_fill') : $r('sys.symbol.heart'),
+        () => {
+          this.sendTopicAction(topicId, 'thankTopic')
+        },
+      ),
+      this.topicActionItem(
+        '站内收藏',
+        this.topicDetailSiteFavorited ? $r('sys.symbol.star_fill') : $r('sys.symbol.star'),
+        () => {
+          this.sendTopicAction(topicId, 'siteFavorite')
+        },
+      ),
+      this.topicActionItem(
+        '稍后读',
+        this.topicDetailSavedLater ? $r('sys.symbol.bookmark_fill') : $r('sys.symbol.bookmark'),
+        () => {
+          this.sendTopicAction(topicId, 'saveLater')
+        },
+      ),
       this.topicActionItem('忽略主题', $r('sys.symbol.xmark'), () => {
         this.sendTopicAction(topicId, 'ignoreTopic')
       }),
@@ -801,23 +847,39 @@ struct Index {
       }),
       this.topicActionItem('浏览器打开', $r('sys.symbol.search_things'), () => {
         this.sendTopicAction(topicId, 'openBrowser')
-      })
+      }),
     ]
-    let menu: Record<string, Object> = { 'value': items, 'maxCount': TOPIC_DETAIL_TITLE_MENU_MAX_COUNT }
+    let menu: Record<string, Object> = {
+      'value': items,
+      'maxCount': TOPIC_DETAIL_TITLE_MENU_MAX_COUNT,
+    }
     const routeKey = topicId > 0 ? topicId.toString() : ''
     if (!routeKey) {
       return this.navDestTitleBarOpts(undefined, menu)
     }
-    const titleFromState = this.topicDetailAppbarStringFor(this.topicDetailAppbarTitleStates, routeKey)
-    const avatarFromState = this.topicDetailAppbarStringFor(this.topicDetailAppbarAvatarStates, routeKey)
-    const usernameFromState = this.topicDetailAppbarStringFor(this.topicDetailAppbarUsernameStates, routeKey)
+    const titleFromState = this.topicDetailAppbarStringFor(
+      this.topicDetailAppbarTitleStates,
+      routeKey,
+    )
+    const avatarFromState = this.topicDetailAppbarStringFor(
+      this.topicDetailAppbarAvatarStates,
+      routeKey,
+    )
+    const usernameFromState = this.topicDetailAppbarStringFor(
+      this.topicDetailAppbarUsernameStates,
+      routeKey,
+    )
     const titleRouteKey = (this.topicDetailAppbarRouteTopicId || '').trim()
-    const title = titleFromState || (titleRouteKey === routeKey ? (this.topicDetailAppbarTitle || '').trim() : '')
+    const title =
+      titleFromState ||
+      (titleRouteKey === routeKey ? (this.topicDetailAppbarTitle || '').trim() : '')
     if (title.trim()) {
       const avatarUrl =
-        avatarFromState || (titleRouteKey === routeKey ? (this.topicDetailAppbarAvatarUrl || '').trim() : '')
+        avatarFromState ||
+        (titleRouteKey === routeKey ? (this.topicDetailAppbarAvatarUrl || '').trim() : '')
       const username =
-        usernameFromState || (titleRouteKey === routeKey ? (this.topicDetailAppbarUsername || '').trim() : '')
+        usernameFromState ||
+        (titleRouteKey === routeKey ? (this.topicDetailAppbarUsername || '').trim() : '')
       let cc = new ComponentContent<TopicDetailAppbarIdentityParams>(
         this.getUIContext(),
         wrapBuilder(TopicDetailIdentityCCBuilder),
@@ -826,8 +888,9 @@ struct Index {
           avatarUrl: avatarUrl,
           username: username,
           menuMaxCount: TOPIC_DETAIL_TITLE_MENU_MAX_COUNT,
-          menuItemCount: items.length
-        })
+          menuItemCount: items.length,
+        },
+      )
       return this.navDestTitleBarOpts(' ', menu, undefined, undefined, cc, title)
     }
     return this.navDestTitleBarOpts(undefined, menu)
@@ -847,14 +910,20 @@ struct Index {
 
   private nodeTopicTitleBarOpts(nodeName: string, nodeTitle: string): Record<string, Object> {
     let items: Record<string, Object>[] = [
-      this.topicActionItem('站内收藏', this.nodeTopicSiteFavorited ? $r('sys.symbol.star_fill') :
-        $r('sys.symbol.star'), () => {
-        this.sendNodeTopicAction('siteFavorite')
-      }),
-      this.topicActionItem('关注节点', this.nodeTopicSaved ? $r('sys.symbol.bookmark_fill') :
-        $r('sys.symbol.bookmark'), () => {
-        this.sendNodeTopicAction('saveNode')
-      })
+      this.topicActionItem(
+        '站内收藏',
+        this.nodeTopicSiteFavorited ? $r('sys.symbol.star_fill') : $r('sys.symbol.star'),
+        () => {
+          this.sendNodeTopicAction('siteFavorite')
+        },
+      ),
+      this.topicActionItem(
+        '关注节点',
+        this.nodeTopicSaved ? $r('sys.symbol.bookmark_fill') : $r('sys.symbol.bookmark'),
+        () => {
+          this.sendNodeTopicAction('saveNode')
+        },
+      ),
     ]
     let menu: Record<string, Object> = { 'value': items, 'maxCount': 2 }
     const baseTitle = (nodeTitle || nodeName || '').trim()
@@ -870,13 +939,16 @@ struct Index {
     const avatarFromState = this.userProfileAppbarAvatarFor(routeUsername)
     const titleRouteUsername = (this.userProfileAppbarTitleRouteUsername || '').trim()
     const titleUsername = (this.userProfileAppbarTitleUsername || '').trim()
-    const title = titleFromState ||
+    const title =
+      titleFromState ||
       (titleUsername && this.sameUsername(titleRouteUsername, routeUsername) ? titleUsername : ' ')
     const profileMenu = this.userProfileTitleMenu(username)
     if (title.trim()) {
-      const avatarUrl = avatarFromState ||
-        (this.sameUsername(titleRouteUsername, routeUsername) ? (this.userProfileAppbarTitleAvatarUrl || '').trim() :
-          '')
+      const avatarUrl =
+        avatarFromState ||
+        (this.sameUsername(titleRouteUsername, routeUsername)
+          ? (this.userProfileAppbarTitleAvatarUrl || '').trim()
+          : '')
       let cc = new ComponentContent<UserProfileAppbarIdentityParams>(
         this.getUIContext(),
         wrapBuilder(UserProfileIdentityCCBuilder),
@@ -884,8 +956,9 @@ struct Index {
           titleUsername: title,
           avatarUrl: avatarUrl,
           menuMaxCount: this.titleBarMenuMaxCount(profileMenu),
-          menuItemCount: this.titleBarMenuItemCount(profileMenu)
-        })
+          menuItemCount: this.titleBarMenuItemCount(profileMenu),
+        },
+      )
       return this.navDestTitleBarOpts(' ', profileMenu, undefined, undefined, cc, title)
     }
     return this.navDestTitleBarOpts(title, profileMenu)
@@ -921,7 +994,10 @@ struct Index {
       return ''
     }
     try {
-      const states = JSON.parse(this.userProfileAppbarAvatarStates || '{}') as Record<string, string>
+      const states = JSON.parse(this.userProfileAppbarAvatarStates || '{}') as Record<
+        string,
+        string
+      >
       return (states[key] || '').trim()
     } catch (_e) {
       return ''
@@ -934,27 +1010,32 @@ struct Index {
     }
     let items: Record<string, Object>[] = []
     if (this.userProfileFollowLabel) {
-      items.push(this.topicActionItem(
-        this.userProfileFollowLabel,
-        this.userProfileFollowing ? $r('sys.symbol.person_xmark') : $r('sys.symbol.person_badge_plus'),
-        () => {
-          this.sendUserProfileAction('follow')
-        }))
+      items.push(
+        this.topicActionItem(
+          this.userProfileFollowLabel,
+          this.userProfileFollowing
+            ? $r('sys.symbol.person_xmark')
+            : $r('sys.symbol.person_badge_plus'),
+          () => {
+            this.sendUserProfileAction('follow')
+          },
+        ),
+      )
     }
     if (this.userProfileBlockLabel) {
-      items.push(this.topicActionItem(
-        this.userProfileBlockLabel,
-        this.userProfileBlockIcon(),
-        () => {
+      items.push(
+        this.topicActionItem(this.userProfileBlockLabel, this.userProfileBlockIcon(), () => {
           this.sendUserProfileAction('block')
-        }))
+        }),
+      )
     }
     return { 'value': items, 'maxCount': 1 }
   }
 
   private userProfileBlockIcon(): SymbolGlyphModifier {
-    return new SymbolGlyphModifier(this.userProfileBlocked ? $r('sys.symbol.eye_slash') : $r('sys.symbol.nosign'))
-      .fontColor([Color.Red])
+    return new SymbolGlyphModifier(
+      this.userProfileBlocked ? $r('sys.symbol.eye_slash') : $r('sys.symbol.nosign'),
+    ).fontColor([Color.Red])
   }
 
   private sameUsername(a: string, b: string): boolean {
@@ -968,7 +1049,10 @@ struct Index {
     // in the nav stack — both top and underneath — causing duplicate
     // dialogs (e.g. opening detail B from a link in detail A and tapping
     // 收藏 fired the toggle on both topics).
-    AppStorage.setOrCreate<string>(StorageKeys.TOPIC_DETAIL_ACTION, `${Date.now()}:${topicId}:${action}`)
+    AppStorage.setOrCreate<string>(
+      StorageKeys.TOPIC_DETAIL_ACTION,
+      `${Date.now()}:${topicId}:${action}`,
+    )
   }
 
   private refreshLocalData(): void {
@@ -1019,11 +1103,9 @@ struct Index {
     }
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     const want: Want = { action: 'ohos.want.action.viewData', uri: target }
-    context.startAbility(want)
-      .catch((error: Error) => {
-        promptAction.openToast({ message: error.message || '打开失败' }).catch((_error: Error) => {
-        })
-      })
+    context.startAbility(want).catch((error: Error) => {
+      promptAction.openToast({ message: error.message || '打开失败' }).catch((_error: Error) => {})
+    })
   }
 
   private consumePendingV2exUrl(): void {
@@ -1049,9 +1131,10 @@ struct Index {
 
   private pushV2exRoute(route: V2exRoute): void {
     if (route.kind === 'topic' && route.topicId && route.topicId > 0) {
-      const p: TopicDetailParams = route.targetFloor && route.targetFloor > 0
-        ? { topicId: route.topicId, targetFloor: route.targetFloor }
-        : { topicId: route.topicId }
+      const p: TopicDetailParams =
+        route.targetFloor && route.targetFloor > 0
+          ? { topicId: route.topicId, targetFloor: route.targetFloor }
+          : { topicId: route.topicId }
       this.ns.pushPathByName('TopicDetail', p as Object)
       return
     }
@@ -1066,17 +1149,24 @@ struct Index {
       return
     }
     if (route.kind === 'search' && route.query) {
-      AppStorage.setOrCreate<string>(StorageKeys.PENDING_SEARCH_QUERY, `${Date.now()}:${route.query}`)
+      AppStorage.setOrCreate<string>(
+        StorageKeys.PENDING_SEARCH_QUERY,
+        `${Date.now()}:${route.query}`,
+      )
       this.ns.pushPathByName('Search', null)
     }
   }
 
-  private topicActionItem(label: string, icon: IconType, action: () => void): Record<string, Object> {
+  private topicActionItem(
+    label: string,
+    icon: IconType,
+    action: () => void,
+  ): Record<string, Object> {
     let content: Record<string, Object> = {
       'label': label,
       'icon': icon,
       'isEnabled': true,
-      'action': action
+      'action': action,
     }
     return { 'content': content }
   }
@@ -1089,7 +1179,7 @@ struct Index {
       let bb: Record<string, Object> = {
         'builderComponent': cc,
         'height': ApiConstants.TAB_BAR_HEIGHT,
-        'showType': BottomBuilderShowType.DIRECTLY_SHOW
+        'showType': BottomBuilderShowType.DIRECTLY_SHOW,
       }
       content = { 'title': titleInfo, 'bottomBuilder': bb }
     } else if (this.ct === 1) {
@@ -1097,7 +1187,7 @@ struct Index {
       let bb: Record<string, Object> = {
         'builderComponent': cc,
         'height': 48,
-        'showType': BottomBuilderShowType.DIRECTLY_SHOW
+        'showType': BottomBuilderShowType.DIRECTLY_SHOW,
       }
       content = { 'title': titleInfo, 'bottomBuilder': bb }
     } else {
@@ -1111,17 +1201,24 @@ struct Index {
       let emptyMenu: Record<string, Object> = { 'value': [], 'maxCount': 0 }
       content['menu'] = emptyMenu
     }
-    let mat: Record<string, Object> =
-      { 'materialType': hdsMaterial.MaterialType.ADAPTIVE, 'materialLevel': hdsMaterial.MaterialLevel.ADAPTIVE }
-    let scrollOpts: Record<string, Object> =
-      { 'enableScrollEffect': true, 'scrollEffectType': ScrollEffectType.GRADIENT_BLUR }
-    let style: Record<string, Object> = { 'systemMaterialEffect': mat, 'scrollEffectOpts': scrollOpts }
+    let mat: Record<string, Object> = {
+      'materialType': hdsMaterial.MaterialType.ADAPTIVE,
+      'materialLevel': hdsMaterial.MaterialLevel.ADAPTIVE,
+    }
+    let scrollOpts: Record<string, Object> = {
+      'enableScrollEffect': true,
+      'scrollEffectType': ScrollEffectType.GRADIENT_BLUR,
+    }
+    let style: Record<string, Object> = {
+      'systemMaterialEffect': mat,
+      'scrollEffectOpts': scrollOpts,
+    }
     return {
       'avoidLayoutSafeArea': true,
       'enableComponentSafeArea': false,
       'blurStrategy': BlurStrategy.ENABLE,
       'content': content,
-      'style': style
+      'style': style,
     }
   }
 
@@ -1129,7 +1226,7 @@ struct Index {
     let items: Record<string, Object>[] = [
       this.topicActionItem('设置', $r('sys.symbol.gearshape'), () => {
         this.ns.pushPathByName('Settings', null)
-      })
+      }),
     ]
     return { 'value': items, 'maxCount': 1 }
   }
@@ -1138,7 +1235,7 @@ struct Index {
     let items: Record<string, Object>[] = [
       this.topicActionItem('刷新', $r('sys.symbol.arrow_clockwise'), () => {
         this.sendNotificationAction('refresh')
-      })
+      }),
     ]
     return { 'value': items, 'maxCount': 1 }
   }
@@ -1147,7 +1244,7 @@ struct Index {
     let items: Record<string, Object>[] = [
       this.topicActionItem('筛选', $r('sys.symbol.funnel'), () => {
         this.sendSearchAction('filter')
-      })
+      }),
     ]
     return { 'value': items, 'maxCount': 1 }
   }
@@ -1159,7 +1256,7 @@ struct Index {
       }),
       this.topicActionItem('重新加载', $r('sys.symbol.arrow_clockwise'), () => {
         this.sendWebLoginAction('reload')
-      })
+      }),
     ]
     return { 'value': items, 'maxCount': 2 }
   }
@@ -1168,7 +1265,7 @@ struct Index {
     let items: Record<string, Object>[] = [
       this.topicActionItem('保存图片', $r('sys.symbol.arrow_down_to_line'), () => {
         this.sendImagePreviewAction('save')
-      })
+      }),
     ]
     return { 'value': items, 'maxCount': 1 }
   }
@@ -1180,15 +1277,29 @@ struct Index {
   @Builder
   TabIcon(title: string, idx: number) {
     Column() {
-      SymbolGlyph(idx === 0 ? $r('sys.symbol.house_fill')
-        : idx === 1 ? $r('sys.symbol.square_fill_grid_2x2')
-          : idx === 2 ? $r('sys.symbol.bell_fill')
-            : $r('sys.symbol.person_fill'))
-        .fontSize(ThemeConstants.INDICATOR_SIZE - 6).renderingStrategy(SymbolRenderingStrategy.MULTIPLE_OPACITY)
-        .fontColor([this.ct === idx ? $r('sys.color.ohos_id_color_activated') : $r('sys.color.font_secondary')])
+      SymbolGlyph(
+        idx === 0
+          ? $r('sys.symbol.house_fill')
+          : idx === 1
+            ? $r('sys.symbol.square_fill_grid_2x2')
+            : idx === 2
+              ? $r('sys.symbol.bell_fill')
+              : $r('sys.symbol.person_fill'),
+      )
+        .fontSize(ThemeConstants.INDICATOR_SIZE - 6)
+        .renderingStrategy(SymbolRenderingStrategy.MULTIPLE_OPACITY)
+        .fontColor([
+          this.ct === idx
+            ? $r('sys.color.ohos_id_color_activated')
+            : $r('sys.color.font_secondary'),
+        ])
       Text(title)
         .fontSize(ThemeConstants.FONT_SIZE_TINY)
-        .fontColor(this.ct === idx ? $r('sys.color.ohos_id_color_activated') : $r('sys.color.font_secondary'))
+        .fontColor(
+          this.ct === idx
+            ? $r('sys.color.ohos_id_color_activated')
+            : $r('sys.color.font_secondary'),
+        )
     }
     .alignItems(HorizontalAlign.Center)
     .justifyContent(FlexAlign.Center)
