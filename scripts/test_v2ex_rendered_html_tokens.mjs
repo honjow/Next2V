@@ -43,7 +43,7 @@ function stripTags(value) {
 
 function parseMarkdownInlineTextTokens(text) {
   const result = []
-  const re = /\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)/g
+  const re = /\[([^\]\n]+)\]\(\s*(https?:\/\/[^\s)]+)\s*\)/g
   let last = 0
   let match
   while ((match = re.exec(text || ''))) {
@@ -124,12 +124,19 @@ assert.deepEqual(markdownLinkTokens.map(t => t.type), ['link'])
 assert.equal(markdownLinkTokens[0].text, 'coolpace/V2EX_Polish')
 assert.equal(markdownLinkTokens[0].href, 'https://github.com/coolpace/V2EX_Polish/tree/main')
 
+const spacedMarkdownLink = '<p>[coolpace/V2EX_Polish]( https://github.com/coolpace/V2EX_Polish/tree/main )</p>'
+const spacedMarkdownLinkTokens = inlineHtmlToTokens(spacedMarkdownLink.replace(/^<p>|<\/p>$/g, ''))
+assert.deepEqual(spacedMarkdownLinkTokens.map(t => t.type), ['link'])
+assert.equal(spacedMarkdownLinkTokens[0].text, 'coolpace/V2EX_Polish')
+assert.equal(spacedMarkdownLinkTokens[0].href, 'https://github.com/coolpace/V2EX_Polish/tree/main')
+
 const source = readFileSync('shared/src/main/ets/components/MarkdownContent.ets', 'utf8')
 assert.match(source, /renderedHtmlToTokens/)
 assert.match(source, /inlineHtmlToTokens/)
 assert.match(source, /parseMarkdownInlineTextTokens/)
 assert.match(source, /MarkdownBlockquote/)
 assert.doesNotMatch(source, /\.height\('100%'\)[\s\S]{0,160}quoteDriveColor/)
+assert.doesNotMatch(source, /_classifyInlineImageSize|inlineSmall|blockLarge|INLINE_IMAGE_(?:SMALL|LARGE)/)
 const processTokensBody = source.match(/private static processTokens\([\s\S]*?\n  }\n\n  private static renderedHtmlToTokens/)[0]
 assert.doesNotMatch(processTokensBody, /renderedHtmlToMarkdown/)
 

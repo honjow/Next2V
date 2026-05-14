@@ -282,6 +282,29 @@ if (renderedHtmlSplit.length !== 0 || renderedHtmlImageParagraph.tokens[1][INLIN
   process.exit(1)
 }
 
+const mixedRenderedHtmlAndStandaloneImage = [
+  {
+    type: 'paragraph',
+    tokens: [
+      { type: 'text', raw: 'emoji ', text: 'emoji ' },
+      buildImageToken('<img src="https://example.com/emoji.png">', 'https://example.com/emoji.png', '', true)
+    ]
+  },
+  {
+    type: 'paragraph',
+    tokens: [
+      buildImageToken('![standalone](https://example.com/standalone.png)', 'https://example.com/standalone.png', 'standalone', false)
+    ]
+  }
+]
+const mixedInlineSplit = splitParagraphByImages(mixedRenderedHtmlAndStandaloneImage[0])
+const standaloneSplit = splitParagraphByImages(mixedRenderedHtmlAndStandaloneImage[1])
+if (mixedInlineSplit.length !== 0 || mixedRenderedHtmlAndStandaloneImage[0].tokens[1][INLINE_IMAGE_PROP] !== true || standaloneSplit.length !== 0 || mixedRenderedHtmlAndStandaloneImage[1].tokens[0][INLINE_IMAGE_PROP] === true) {
+  console.error('FAIL inline source-flow image and standalone image block semantics must coexist')
+  console.error(JSON.stringify({ mixedInlineSplit, standaloneSplit, mixedRenderedHtmlAndStandaloneImage }, null, 2))
+  process.exit(1)
+}
+
 const paragraphRun = [
   { type: 'paragraph', raw: '第一段', text: '第一段', tokens: [buildTextToken('第一段')] },
   { type: 'paragraph', raw: '第二段', text: '第二段', tokens: [buildTextToken('第二段')] },
@@ -334,6 +357,14 @@ if (/splitMixedImageParagraphs\(/.test(processTokensSource)) {
 }
 if (!/buildImageToken\(String\(record\["raw"\] \?\? text\), href, text, true\)/.test(source)) {
   console.error('FAIL bare/autolinked image URLs should start as inline candidates and only standalone lines should be demoted')
+  process.exit(1)
+}
+if (/_classifyInlineImageSize|inlineSmall|blockLarge|INLINE_IMAGE_(?:SMALL|LARGE)/.test(source)) {
+  console.error('FAIL image dimensions must not classify inline vs block layout')
+  process.exit(1)
+}
+if (!/_inlineImageRenderSize/.test(source) || !/widthPx[\s\S]*heightPx/.test(source)) {
+  console.error('FAIL inline image dimensions should be used only for natural aspect-ratio sizing')
   process.exit(1)
 }
 const paragraphMatch = source.match(/struct MarkdownParagraph[\s\S]*?\n}\n\n@Component\nstruct MarkdownCodeBlock/)

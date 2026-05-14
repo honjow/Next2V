@@ -607,8 +607,8 @@ export struct TopicDetailPage {
         })
 
       // 正文
-      if (this.v.topic!.content) {
-        ForEach(this.markdownBlocks(this.v.topic!.content), (block: string, index: number) => {
+      if (this.topicBodySource()) {
+        ForEach(this.topicBodyBlocks(), (block: string, index: number) => {
           MarkdownContent({
             source: block,
             topMargin: index === 0 ? ThemeConstants.SPACE_LG : ThemeConstants.SPACE_SM,
@@ -651,6 +651,22 @@ export struct TopicDetailPage {
     .width('100%')
     .borderRadius(ThemeConstants.RADIUS_MD)
     .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+  }
+
+  private topicBodySource(): string {
+    const rendered = (this.v.topic?.content_rendered || '').trim()
+    if (rendered.length > 0) {
+      return this.v.topic?.content_rendered || ''
+    }
+    return this.v.topic?.content || ''
+  }
+
+  private topicBodyBlocks(): string[] {
+    const source = this.topicBodySource()
+    if ((this.v.topic?.content_rendered || '').trim().length > 0) {
+      return [source]
+    }
+    return this.markdownBlocks(source)
   }
 
   private markdownBlocks(source: string): string[] {

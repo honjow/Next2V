@@ -64,7 +64,14 @@ const replyCardSource = readFileSync('shared/src/main/ets/components/ReplyCard.e
 assert.match(replyCardSource, /this\.reply\.content_rendered/)
 assert.match(replyCardSource, /return this\.reply\.content_rendered/)
 
+const topicDetailSource = readFileSync('feature/detail/src/main/ets/pages/TopicDetailPage.ets', 'utf8')
+assert.match(topicDetailSource, /private topicBodySource\(\)/)
+assert.match(topicDetailSource, /this\.v\.topic\?\.content_rendered/)
+assert.match(topicDetailSource, /return this\.v\.topic\?\.content_rendered \|\| ''/)
+assert.match(topicDetailSource, /ForEach\(this\.topicBodyBlocks\(\)/)
+assert.doesNotMatch(topicDetailSource, /ForEach\(this\.markdownBlocks\(this\.v\.topic!\.content\)/)
+
 const markdownSource = readFileSync('shared/src/main/ets/components/MarkdownContent.ets', 'utf8')
 assert.doesNotMatch(markdownSource, /if \(!value\.startsWith\('<'\)\)/)
 
-console.log('PASS: V2EX reply HTML image conversion and ReplyCard rendered source flow preserve webpage inline layout')
+console.log('PASS: V2EX reply/topic rendered source flow preserves webpage inline layout')

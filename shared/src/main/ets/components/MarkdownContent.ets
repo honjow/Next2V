@@ -9,9 +9,21 @@ import { ThemeConstants } from "../theme/ThemeConstants";
 import { MediaUrlUtils } from "../utils/MediaUrlUtils";
 import { HtmlEntityUtils } from "../utils/HtmlEntityUtils";
 
-// Custom token types used to hijack @lidary/markdown's built-in rendering.
-// By changing a token's type before passing it to the Markdown component,
-// it falls through to customBlockBuilder where we render it ourselves.
+// @lidary/markdown is intentionally quarantined here.
+// Allowed uses:
+//   1. lexer() may parse real Markdown fallback sources only.
+//   2. exported Token/Tokens/MarkdownOptions types may be used as temporary
+//      compatibility shapes while this component is migrated to V2Next-owned
+//      Render Tokens.
+// Do NOT route V2EX content_rendered HTML through HTML -> Markdown -> lexer(),
+// and do NOT rely on @lidary/markdown's renderer/custom builders for ordered
+// V2EX content layout. Mixed text/image/link order and inline-vs-block image
+// placement are source-structure semantics owned by V2Next, not by the library.
+//
+// The custom token types below are legacy compatibility shims: they keep the
+// current UI working while preventing the library from taking over blocks whose
+// layout/order V2Next must control. Do not expand this pattern; replace it with
+// explicit V2Next Render Tokens when touching this area.
 const CODE_MONO = "customCode";
 const LIST_MONO = "customList";
 const PARAGRAPH_MONO = "customParagraph";
@@ -19,13 +31,10 @@ const IMAGE_BLOCK_MONO = "customImageBlock";
 const IMAGE_TABLE_MONO = "customImageTable";
 const IMAGE_TABLE_START = "@@V2NEXT_IMAGE_TABLE_START@@";
 const IMAGE_TABLE_END = "@@V2NEXT_IMAGE_TABLE_END@@";
-const INLINE_IMAGE_SIZE = 24;
-const INLINE_IMAGE_MAX_SIZE = 40;
-const INLINE_IMAGE_SMALL_MAX_PX = 128;
-const INLINE_IMAGE_LARGE_MIN_PX = 240;
-const INLINE_IMAGE_LARGE_WIDTH_MIN_PX = 160;
-const INLINE_IMAGE_LARGE_HEIGHT_MIN_PX = 80;
-const INLINE_IMAGE_RATIO_LIMIT = 2.0;
+const INLINE_IMAGE_FALLBACK_MIN_SIZE = 24;
+const INLINE_IMAGE_FALLBACK_MAX_SIZE = 40;
+const INLINE_IMAGE_SPAN_MAX_WIDTH = 320;
+const INLINE_IMAGE_SPAN_MAX_HEIGHT = 240;
 const INLINE_IMAGE_SIZE_RECORD_LIMIT = 64;
 
 type TokenValue = Object | null | undefined;
@@ -35,13 +44,15 @@ interface InlineImageToken extends Tokens.Image {
   inlineImage?: boolean;
 }
 
-type InlineImageSizeStatus = "unknown" | "inlineSmall" | "blockLarge" | "error";
-
 interface InlineImageSizeRecord {
   url: string;
   widthPx: number;
   heightPx: number;
-  status: InlineImageSizeStatus;
+}
+
+interface InlineImageRenderSize {
+  width: number;
+  height: number;
 }
 
 interface ImageTableToken {
@@ -67,11 +78,11 @@ function _isInlineImageToken(token: Token): boolean {
 
 function _inlineImageSize(fontSize: number): number {
   const size = Math.round(fontSize * 1.5);
-  if (size < INLINE_IMAGE_SIZE) {
-    return INLINE_IMAGE_SIZE;
+  if (size < INLINE_IMAGE_FALLBACK_MIN_SIZE) {
+    return INLINE_IMAGE_FALLBACK_MIN_SIZE;
   }
-  if (size > INLINE_IMAGE_MAX_SIZE) {
-    return INLINE_IMAGE_MAX_SIZE;
+  if (size > INLINE_IMAGE_FALLBACK_MAX_SIZE) {
+    return INLINE_IMAGE_FALLBACK_MAX_SIZE;
   }
   return size;
 }
@@ -88,28 +99,6 @@ function _findInlineImageSizeRecord(records: InlineImageSizeRecord[], url: strin
   return null;
 }
 
-function _classifyInlineImageSize(widthPx: number, heightPx: number): InlineImageSizeStatus {
-  if (widthPx <= 0 || heightPx <= 0) {
-    return "unknown";
-  }
-  const maxSide = Math.max(widthPx, heightPx);
-  const minSide = Math.min(widthPx, heightPx);
-  const aspectRatio = minSide > 0 ? maxSide / minSide : maxSide;
-  if (maxSide <= INLINE_IMAGE_SMALL_MAX_PX && aspectRatio <= INLINE_IMAGE_RATIO_LIMIT) {
-    return "inlineSmall";
-  }
-  if (maxSide >= INLINE_IMAGE_LARGE_MIN_PX) {
-    return "blockLarge";
-  }
-  if (widthPx >= INLINE_IMAGE_LARGE_WIDTH_MIN_PX && heightPx >= INLINE_IMAGE_LARGE_HEIGHT_MIN_PX) {
-    return "blockLarge";
-  }
-  if (aspectRatio > INLINE_IMAGE_RATIO_LIMIT && maxSide >= INLINE_IMAGE_LARGE_WIDTH_MIN_PX) {
-    return "blockLarge";
-  }
-  return aspectRatio <= INLINE_IMAGE_RATIO_LIMIT ? "inlineSmall" : "blockLarge";
-}
-
 function _inlineImageRenderUrl(token: Token): string {
   if (!token || token.type !== "image") {
     return "";
@@ -117,22 +106,25 @@ function _inlineImageRenderUrl(token: Token): string {
   return MediaUrlUtils.imageUrlForRender((token as Tokens.Image).href);
 }
 
-function _inlineImageStatus(token: Token, sizeRecords: InlineImageSizeRecord[]): InlineImageSizeStatus {
+function _inlineImageRenderSize(token: Token, sizeRecords: InlineImageSizeRecord[], fontSize: number): InlineImageRenderSize {
+  const fallback = _inlineImageSize(fontSize);
   const url = _inlineImageRenderUrl(token);
   const record = _findInlineImageSizeRecord(sizeRecords, url);
-  return record ? record.status : "unknown";
+  const widthPx = record?.widthPx ?? 0;
+  const heightPx = record?.heightPx ?? 0;
+  if (widthPx <= 0 || heightPx <= 0) {
+    return { width: fallback, height: fallback };
+  }
+  const scale = Math.min(1, INLINE_IMAGE_SPAN_MAX_WIDTH / widthPx, INLINE_IMAGE_SPAN_MAX_HEIGHT / heightPx);
+  return {
+    width: Math.max(1, Math.round(widthPx * scale)),
+    height: Math.max(1, Math.round(heightPx * scale)),
+  };
 }
 
-function _isMixedInlineImageCandidate(token: Token, sizeRecords: InlineImageSizeRecord[] = []): boolean {
+function _isMixedInlineImageCandidate(token: Token): boolean {
   if (!token || token.type !== "image") {
     return false;
-  }
-  const sizeStatus = _inlineImageStatus(token, sizeRecords);
-  if (sizeStatus === "blockLarge") {
-    return false;
-  }
-  if (sizeStatus === "inlineSmall" || sizeStatus === "error") {
-    return true;
   }
   if (_isInlineImageToken(token)) {
     return true;
@@ -566,6 +558,7 @@ function SelectableInlineTokenSpans(
   tokens: Token[],
   fontSize: number,
   options: MarkdownOptions,
+  inlineImageSizeRecords: InlineImageSizeRecord[] = [],
   reportImageComplete?: InlineImageCompleteReporter,
   reportImageError?: InlineImageErrorReporter,
 ) {
@@ -613,8 +606,8 @@ function SelectableInlineTokenSpans(
         .decoration({ type: TextDecorationType.LineThrough });
     } else if (_isInlineImageToken(t)) {
       ImageSpan(_inlineImageRenderUrl(t))
-        .width(_inlineImageSize(fontSize))
-        .height(_inlineImageSize(fontSize))
+        .width(_inlineImageRenderSize(t, inlineImageSizeRecords, fontSize).width)
+        .height(_inlineImageRenderSize(t, inlineImageSizeRecords, fontSize).height)
         .objectFit(ImageFit.Contain)
         .verticalAlign(ImageSpanAlignment.CENTER)
         .onComplete((event?: MarkdownImageCompleteEvent) => {
@@ -692,6 +685,7 @@ struct MarkdownParagraph {
                 [token],
                 this.bodyFontSize(),
                 this.options,
+                this.inlineImageSizeRecords,
                 this.reportImageComplete,
                 this.reportImageError,
               );
@@ -714,6 +708,7 @@ struct MarkdownParagraph {
           this.inlineTokens(),
           this.bodyFontSize(),
           this.options,
+          this.inlineImageSizeRecords,
           this.reportImageComplete,
           this.reportImageError,
         );
@@ -729,6 +724,7 @@ struct MarkdownParagraph {
           this.inlineTokens(),
           this.bodyFontSize(),
           this.options,
+          this.inlineImageSizeRecords,
           this.reportImageComplete,
           this.reportImageError,
         );
@@ -981,6 +977,7 @@ struct MarkdownCodeBlock {
 function InlineTokenSpans(
   tokens: Token[],
   fontSize: number,
+  inlineImageSizeRecords: InlineImageSizeRecord[] = [],
   reportImageComplete?: InlineImageCompleteReporter,
   reportImageError?: InlineImageErrorReporter,
 ) {
@@ -1022,8 +1019,8 @@ function InlineTokenSpans(
         .decoration({ type: TextDecorationType.LineThrough });
     } else if (_isInlineImageToken(t)) {
       ImageSpan(_inlineImageRenderUrl(t))
-        .width(_inlineImageSize(fontSize))
-        .height(_inlineImageSize(fontSize))
+        .width(_inlineImageRenderSize(t, inlineImageSizeRecords, fontSize).width)
+        .height(_inlineImageRenderSize(t, inlineImageSizeRecords, fontSize).height)
         .objectFit(ImageFit.Contain)
         .verticalAlign(ImageSpanAlignment.CENTER)
         .onComplete((event?: MarkdownImageCompleteEvent) => {
@@ -1480,7 +1477,6 @@ export struct MarkdownContent {
       url: url,
       widthPx: widthPx,
       heightPx: heightPx,
-      status: _classifyInlineImageSize(widthPx, heightPx),
     });
   }
 
@@ -1492,7 +1488,6 @@ export struct MarkdownContent {
       url: url,
       widthPx: 0,
       heightPx: 0,
-      status: "error",
     });
   }
 
@@ -1501,7 +1496,7 @@ export struct MarkdownContent {
       return;
     }
     const existing = _findInlineImageSizeRecord(this.inlineImageSizeRecords, next.url);
-    if (existing && existing.widthPx === next.widthPx && existing.heightPx === next.heightPx && existing.status === next.status) {
+    if (existing && existing.widthPx === next.widthPx && existing.heightPx === next.heightPx) {
       return;
     }
 
@@ -1576,8 +1571,16 @@ export struct MarkdownContent {
     }
   }
 
-  // Re-type certain tokens so the Markdown component doesn't recognize them
-  // and delegates to our customBlockBuilder instead.
+  // Boundary for @lidary/markdown:
+  // - rendered HTML must be parsed directly by renderedHtmlToTokens(); never
+  //   convert V2EX content_rendered into Markdown just to feed lexer(). That
+  //   loses DOM structure and revives the inline/block image bugs this file is
+  //   trying to remove.
+  // - lexer() is only a fallback Markdown parser. Its output is immediately
+  //   normalized into V2Next-controlled tokens before rendering decisions.
+  // - layout decisions, especially image inline-vs-block placement, must follow
+  //   the source structure / Markdown semantics, not image intrinsic size and
+  //   not @lidary/markdown custom builder behavior.
   private static processTokens(md: string, sizeRecords: InlineImageSizeRecord[] = []): Token[] {
     let tokens: Token[];
     const decodedSource = HtmlEntityUtils.decode(md || '');
@@ -1640,6 +1643,10 @@ export struct MarkdownContent {
         const tableToken = MarkdownContent.parseImageTableMarker(MarkdownContent.buildImageTableMarker(imageUrls, MarkdownContent.extractTableHeaderLabels(raw)).trim());
         return tableToken ? [tableToken as Token] : [];
       }
+      // Non-image HTML tables are the only rendered-HTML subcase still routed
+      // through lexer(), because the existing table renderer consumes Markdown
+      // table tokens. Do not generalize this into an HTML -> Markdown pipeline;
+      // image/text/link content must stay on the direct HTML-token path above.
       return lexer(MarkdownContent.convertHtmlTable(raw), { gfm: true, breaks: true });
     }
     if (/^h[1-6]$/.test(tag)) {
@@ -1802,7 +1809,7 @@ export struct MarkdownContent {
 
   private static parseMarkdownInlineTextTokens(text: string): Token[] {
     const result: Token[] = [];
-    const re = /\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)/g;
+    const re = /\[([^\]\n]+)\]\(\s*(https?:\/\/[^\s)]+)\s*\)/g;
     let last = 0;
     let match: RegExpExecArray | null = re.exec(text || '');
     while (match) {
@@ -2248,7 +2255,7 @@ export struct MarkdownContent {
     return match ? HtmlEntityUtils.decode(match[2]).trim() : '';
   }
 
-  private static splitMixedImageParagraphs(tokens: Token[], sizeRecords: InlineImageSizeRecord[] = []): void {
+  private static splitMixedImageParagraphs(tokens: Token[]): void {
     if (!tokens || tokens.length === 0) {
       return;
     }
@@ -2256,7 +2263,7 @@ export struct MarkdownContent {
       const token = tokens[i] as TokenRecord;
       const type = (token["type"] as string) || "";
       if (type === "paragraph") {
-        const replacement = MarkdownContent.splitParagraphByImages(token, sizeRecords);
+        const replacement = MarkdownContent.splitParagraphByImages(token);
         if (replacement.length > 0) {
           tokens.splice(i, 1, ...replacement);
           i += replacement.length - 1;
@@ -2266,7 +2273,7 @@ export struct MarkdownContent {
 
       const childTokens = token["tokens"] as Token[] | undefined;
       if (Array.isArray(childTokens) && childTokens.length > 0) {
-        MarkdownContent.splitMixedImageParagraphs(childTokens, sizeRecords);
+        MarkdownContent.splitMixedImageParagraphs(childTokens);
       }
 
       const items = token["items"] as Array<TokenRecord> | undefined;
@@ -2274,19 +2281,19 @@ export struct MarkdownContent {
         for (const item of items) {
           const itemTokens = item["tokens"] as Token[] | undefined;
           if (Array.isArray(itemTokens) && itemTokens.length > 0) {
-            MarkdownContent.splitMixedImageParagraphs(itemTokens, sizeRecords);
+            MarkdownContent.splitMixedImageParagraphs(itemTokens);
           }
         }
       }
     }
   }
 
-  private static splitParagraphByImages(paragraph: TokenRecord, sizeRecords: InlineImageSizeRecord[] = []): Token[] {
+  private static splitParagraphByImages(paragraph: TokenRecord): Token[] {
     const inlineTokens = paragraph["tokens"] as Token[] | undefined;
     if (!Array.isArray(inlineTokens) || inlineTokens.length === 0) {
       return [];
     }
-    if (!inlineTokens.some((t: Token) => t && t.type === "image" && !_isMixedInlineImageCandidate(t, sizeRecords))) {
+    if (!inlineTokens.some((t: Token) => t && t.type === "image" && !_isMixedInlineImageCandidate(t))) {
       return [];
     }
 
@@ -2299,7 +2306,7 @@ export struct MarkdownContent {
     });
     const canKeepImagesInline = inlineTokens
       .filter((t: Token) => t && t.type === "image")
-      .every((t: Token) => _isMixedInlineImageCandidate(t, sizeRecords));
+      .every((t: Token) => _isMixedInlineImageCandidate(t));
     if (hasNonImageText && canKeepImagesInline) {
       for (const token of inlineTokens) {
         if (token && token.type === "image") {
@@ -2312,10 +2319,10 @@ export struct MarkdownContent {
     const result: Token[] = [];
     let textTokens: Token[] = [];
     for (const token of inlineTokens) {
-      if (token && token.type === "image" && _isMixedInlineImageCandidate(token, sizeRecords)) {
+      if (token && token.type === "image" && _isMixedInlineImageCandidate(token)) {
         (token as InlineImageToken).inlineImage = true;
         textTokens.push(token);
-      } else if (token && token.type === "image" && !_isMixedInlineImageCandidate(token, sizeRecords)) {
+      } else if (token && token.type === "image" && !_isMixedInlineImageCandidate(token)) {
         MarkdownContent.flushParagraphTokens(result, textTokens);
         textTokens = [];
         (token as InlineImageToken).inlineImage = false;
