@@ -280,7 +280,7 @@ export struct ReplyCard {
   MoreButton() {
     if (this.hasContextMenuActions()) {
       Button() {
-        SymbolGlyph($r('sys.symbol.ellipsis_bubble'))
+        SymbolGlyph($r('sys.symbol.dot_grid_2x2'))
           .fontSize(ThemeConstants.FONT_SIZE_TITLE)
           .fontColor([$r('sys.color.font_secondary')])
       }
@@ -300,7 +300,7 @@ export struct ReplyCard {
       })
     } else if (this.onActionsClick) {
       Button() {
-        SymbolGlyph($r('sys.symbol.ellipsis_bubble'))
+        SymbolGlyph($r('sys.symbol.dot_grid_2x2'))
           .fontSize(ThemeConstants.FONT_SIZE_TITLE)
           .fontColor([$r('sys.color.font_secondary')])
       }
