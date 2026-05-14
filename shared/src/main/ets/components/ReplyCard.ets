@@ -315,9 +315,9 @@ export struct ReplyCard {
           .borderRadius(ThemeConstants.RADIUS_ROUND)
           .backgroundColor(Color.Transparent)
           .opacity(this.isThankPending ? 0.45 : 1)
-          .enabled(!this.isThanked && !this.isThankPending)
+          .enabled(!this.isThankPending)
           .onClick(() => {
-            if (this.onThankClick && !this.isThanked && !this.isThankPending) { this.onThankClick(this.reply) }
+            if (this.onThankClick && !this.isThankPending) { this.onThankClick(this.reply) }
           })
         }
 
