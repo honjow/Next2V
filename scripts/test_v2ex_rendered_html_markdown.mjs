@@ -43,10 +43,13 @@ function attr(tag, name) {
 
 function inlineHtmlToMarkdown(value) {
   return (value || '')
+    .replace(/<a\b[^>]*href=(["'])(.*?)\1[^>]*>\s*(<img\b[^>]*>)\s*<\/a>/gi, (_all, _quote, href, imgTag) => {
+      const src = attr(imgTag, 'src') || decodeHtml(href).trim()
+      return src ? ` ${src} ` : ''
+    })
     .replace(/<img\b[^>]*>/gi, tag => {
       const src = attr(tag, 'src')
-      const alt = attr(tag, 'alt')
-      return src ? `![${alt}](${src})` : ''
+      return src ? ` ${src} ` : ''
     })
     .replace(/<a\b[^>]*href=(["'])(.*?)\1[^>]*>([\s\S]*?)<\/a>/gi, (_all, _quote, href, text) => {
       const label = stripTags(text)
@@ -121,8 +124,14 @@ assert.match(out, /\[Google Summer of Code 2020\]\(https:\/\/summerofcode\.withg
 assert.match(out, /\| 活动 \| 学生人数 \| 最终考核通过人数 \|/)
 assert.match(out, /\| GSoC \| 4 \| 4 \|/)
 assert.match(out, /^- 积极参与开源社区的建设/m)
-assert.match(out, /!\[qrcode-casbin\]\(https:\/\/cdn\.casbin\.com\/activity\/qrcode-casbin\.png\)/)
+assert.match(out, /https:\/\/cdn\.casbin\.com\/activity\/qrcode-casbin\.png/)
 assert.doesNotMatch(out, /<\/?(?:div|h2|p|table|ul|li|img)\b/i)
+
+const duplicateInlineImages = '@<a href="/member/vipfts">vipfts</a> <a target="_blank" href="https://i.imgur.com/U3hKhrT.png" rel="nofollow noopener"><img src="https://i.imgur.com/U3hKhrT.png" class="embedded_image" rel="noreferrer"></a><a target="_blank" href="https://i.imgur.com/U3hKhrT.png" rel="nofollow noopener"><img src="https://i.imgur.com/U3hKhrT.png" class="embedded_image" rel="noreferrer"></a>'
+const duplicateOut = renderedHtmlToMarkdown(duplicateInlineImages)
+assert.match(duplicateOut, /@vipfts/)
+assert.equal((duplicateOut.match(/https:\/\/i\.imgur\.com\/U3hKhrT\.png/g) || []).length, 2)
+assert.doesNotMatch(duplicateOut, /U3hKhrT\.pnghttps:\/\/i\.imgur\.com/)
 
 const source = readFileSync('shared/src/main/ets/components/MarkdownContent.ets', 'utf8')
 assert.match(source, /renderedHtmlToMarkdown/)

@@ -1849,9 +1849,14 @@ export struct MarkdownContent {
 
   private static inlineHtmlToMarkdown(value: string): string {
     return (value || '')
+      .replace(/<a\b[^>]*href=(["'])(.*?)\1[^>]*>\s*(<img\b[^>]*>)\s*<\/a>/gi,
+        (_all: string, _quote: string, href: string, imgTag: string): string => {
+          const src = MarkdownContent.htmlAttr(imgTag, 'src') || HtmlEntityUtils.decode(href).trim();
+          return src ? ` ${src} ` : '';
+        })
       .replace(/<img\b[^>]*>/gi, (tag: string): string => {
         const src = MarkdownContent.htmlAttr(tag, 'src');
-        return src || '';
+        return src ? ` ${src} ` : '';
       })
       .replace(/<a\b[^>]*href=(["'])(.*?)\1[^>]*>([\s\S]*?)<\/a>/gi,
         (_all: string, _quote: string, href: string, text: string): string => {
