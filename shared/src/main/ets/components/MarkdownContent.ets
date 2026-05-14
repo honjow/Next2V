@@ -53,12 +53,20 @@ const RENDER_H5_FONT_SIZE = 15;
 const RENDER_H5_LINE_HEIGHT = 21;
 const RENDER_H6_FONT_SIZE = 14;
 const RENDER_H6_LINE_HEIGHT = 20;
+const TABLE_MIN_CELL_WIDTH = 96;
+const TABLE_MAX_CELL_WIDTH = 320;
+const TABLE_CELL_HORIZONTAL_PADDING = ThemeConstants.SPACE_SM * 2;
+const TABLE_ASCII_DISPLAY_UNIT = 0.56;
+const TABLE_NUMERIC_DISPLAY_UNIT = 0.48;
+const TABLE_SPACE_DISPLAY_UNIT = 0.33;
+const TABLE_WIDE_DISPLAY_UNIT = 1.0;
+const TABLE_BORDER_COLOR = "#1A000000";
 
 type TokenValue = Object | string | number | boolean | null | undefined;
 type TokenRecord = Record<string, TokenValue>;
 
 type RenderSourceKind = "markdown" | "renderedHtml";
-type RenderBlockKind = "paragraph" | "heading" | "list" | "blockquote" | "code" | "imageBlock" | "imageTable";
+type RenderBlockKind = "paragraph" | "heading" | "list" | "blockquote" | "code" | "imageBlock" | "imageTable" | "table";
 type RenderInlineKind = "text" | "link" | "strong" | "em" | "codespan" | "image" | "break";
 type RenderToken = Token;
 
@@ -96,6 +104,7 @@ const RENDER_STYLE_CONTRACT_TABLE: RenderContractStyleRow[] = [
   { name: "imageBlock", semanticKind: "imageBlock", fontSize: "n/a", roleDecision: "source structure / Markdown block semantics; never intrinsic big/small" },
   { name: "inlineImage", semanticKind: "image", fontSize: "clamp((fixed base 14 * readingTextScale) * 1.5, 24, 40) fallback", roleDecision: "source structure / Markdown inline semantics; measured size only affects rendered dimensions" },
   { name: "imageTable", semanticKind: "imageTable", fontSize: "caption labels", color: "TEXT_SECONDARY" },
+  { name: "table", semanticKind: "table", fontSize: "fixed base 14 * readingTextScale", lineHeight: "fixed base 20 * readingTextScale", weight: "header Medium/Bold; body Regular", color: "TEXT_PRIMARY", background: "header BG_SUB; divider #1A000000" },
 ];
 
 interface InlineImageToken extends Tokens.Image {
@@ -118,6 +127,21 @@ interface ImageTableToken {
   raw?: string;
   imageUrls?: string[];
   imageLabels?: string[];
+}
+
+interface RenderTableCell {
+  raw?: string;
+  text: string;
+  tokens: Token[];
+  align?: string;
+  header?: boolean;
+}
+
+interface RenderTableToken {
+  type: string;
+  raw?: string;
+  headers: RenderTableCell[];
+  rows: RenderTableCell[][];
 }
 
 type InlineImageCompleteReporter = (url: string, event?: MarkdownImageCompleteEvent) => void;
@@ -493,6 +517,14 @@ function CustomBlockBuilder(token: Token, options: MarkdownOptions) {
     MarkdownImageTable({
       tableToken: token as ImageTableToken,
       options: options,
+      reportImageComplete: (options as MarkdownRenderOptions).reportInlineImageComplete,
+      reportImageError: (options as MarkdownRenderOptions).reportInlineImageError,
+    });
+  } else if (token.type === "table") {
+    MarkdownTable({
+      tableToken: token as RenderTableToken,
+      options: options,
+      inlineImageSizeRecords: (options as MarkdownRenderOptions).inlineImageSizeRecords ?? [],
       reportImageComplete: (options as MarkdownRenderOptions).reportInlineImageComplete,
       reportImageError: (options as MarkdownRenderOptions).reportInlineImageError,
     });
@@ -1113,6 +1145,196 @@ function InlineTokenSpans(
   });
 }
 
+function buildPlainTextTokenForRender(text: string): Token {
+  return {
+    type: "text",
+    raw: text,
+    text: text,
+  } as Token;
+}
+
+@Component
+struct MarkdownTable {
+  @Prop tableToken: RenderTableToken;
+  @Prop options: MarkdownOptions;
+  @Prop inlineImageSizeRecords: InlineImageSizeRecord[] = [];
+  reportImageComplete?: InlineImageCompleteReporter;
+  reportImageError?: InlineImageErrorReporter;
+  @StorageLink(StorageKeys.READING_FONT_SIZE) readingFontSize: number = ReadingSettings.TEXT_SCALE_DEFAULT;
+
+  private bodyFontSize(): number {
+    return ReadingSettings.scaleTypographyToken(RENDER_BODY_FONT_SIZE, this.readingFontSize);
+  }
+
+  private bodyLineHeight(): number {
+    return ReadingSettings.scaleTypographyToken(RENDER_BODY_LINE_HEIGHT, this.readingFontSize);
+  }
+
+  private columnCount(): number {
+    let count = this.tableToken.headers.length;
+    for (const row of this.tableToken.rows) {
+      count = Math.max(count, row.length);
+    }
+    return Math.max(1, count);
+  }
+
+  private textDisplayUnits(text: string): number {
+    let units = 0;
+    for (const char of text) {
+      const code = char.charCodeAt(0);
+      if (char === " " || char === "\t") {
+        units += TABLE_SPACE_DISPLAY_UNIT;
+      } else if (code >= 48 && code <= 57) {
+        units += TABLE_NUMERIC_DISPLAY_UNIT;
+      } else if (code >= 0 && code <= 127) {
+        units += TABLE_ASCII_DISPLAY_UNIT;
+      } else {
+        units += TABLE_WIDE_DISPLAY_UNIT;
+      }
+    }
+    return units;
+  }
+
+  private cellEstimatedWidth(cell: RenderTableCell | undefined): number {
+    if (!cell) {
+      return TABLE_MIN_CELL_WIDTH;
+    }
+    const text = cell.text ?? "";
+    const contentWidth = this.textDisplayUnits(text) * this.bodyFontSize();
+    return Math.ceil(contentWidth + TABLE_CELL_HORIZONTAL_PADDING);
+  }
+
+  private estimatedColumnWidth(index: number): number {
+    let width = this.cellEstimatedWidth(this.tableToken.headers[index]);
+    for (const row of this.tableToken.rows) {
+      width = Math.max(width, this.cellEstimatedWidth(row[index]));
+    }
+    return Math.min(TABLE_MAX_CELL_WIDTH, Math.max(TABLE_MIN_CELL_WIDTH, width));
+  }
+
+  private columnWidth(index: number): number {
+    return this.estimatedColumnWidth(index);
+  }
+
+  private tableMinWidth(): number {
+    let width = 0;
+    const count = this.columnCount();
+    for (let index = 0; index < count; index++) {
+      width += this.columnWidth(index);
+    }
+    return width;
+  }
+
+  private emptyCell(): RenderTableCell {
+    return {
+      text: "",
+      tokens: [],
+    } as RenderTableCell;
+  }
+
+  private paddedRow(row: RenderTableCell[]): RenderTableCell[] {
+    const cells: RenderTableCell[] = [];
+    const count = this.columnCount();
+    for (let index = 0; index < count; index++) {
+      cells.push(row[index] ?? this.emptyCell());
+    }
+    return cells;
+  }
+
+  private normalizedRows(): RenderTableCell[][] {
+    const rows: RenderTableCell[][] = [];
+    if (this.tableToken.headers.length > 0) {
+      rows.push(this.tableToken.headers);
+    }
+    for (const row of this.tableToken.rows) {
+      rows.push(row);
+    }
+    return rows;
+  }
+
+  private isHeaderRow(index: number): boolean {
+    return index === 0 && this.tableToken.headers.length > 0;
+  }
+
+  private cellTokens(cell: RenderTableCell): Token[] {
+    if (Array.isArray(cell.tokens) && cell.tokens.length > 0) {
+      return cell.tokens;
+    }
+    return [buildPlainTextTokenForRender(cell.text)];
+  }
+
+  private cellTextAlign(cell: RenderTableCell): TextAlign {
+    if (cell.align === "center") {
+      return TextAlign.Center;
+    }
+    if (cell.align === "right") {
+      return TextAlign.End;
+    }
+    return TextAlign.Start;
+  }
+
+  @Builder TableCell(cell: RenderTableCell, header: boolean, columnIndex: number) {
+    Text() {
+      SelectableInlineTokenSpans(
+        this.cellTokens(cell),
+        this.bodyFontSize(),
+        this.options,
+        this.inlineImageSizeRecords,
+        this.reportImageComplete,
+        this.reportImageError,
+      );
+    }
+    .fontSize(this.bodyFontSize())
+    .fontWeight(header ? FontWeight.Medium : FontWeight.Regular)
+    .fontColor(ThemeConstants.TEXT_PRIMARY)
+    .lineHeight(this.bodyLineHeight())
+    .textAlign(this.cellTextAlign(cell))
+    .width(this.columnWidth(columnIndex))
+    .maxLines(1)
+    .textOverflow({ overflow: TextOverflow.Ellipsis })
+    .padding({
+      left: ThemeConstants.SPACE_SM,
+      right: ThemeConstants.SPACE_SM,
+      top: ThemeConstants.SPACE_XS,
+      bottom: ThemeConstants.SPACE_XS,
+    })
+    .copyOption(CopyOptions.LocalDevice)
+    .textSelectable(TextSelectableMode.SELECTABLE_FOCUSABLE)
+    .border({
+      width: { right: columnIndex < this.columnCount() - 1 ? 1 : 0 },
+      color: TABLE_BORDER_COLOR,
+    });
+  }
+
+  build() {
+    Scroll() {
+      Column() {
+        ForEach(this.normalizedRows(), (row: RenderTableCell[], rowIndex: number) => {
+          Row() {
+            ForEach(this.paddedRow(row), (cell: RenderTableCell, cellIndex: number) => {
+              this.TableCell(cell, this.isHeaderRow(rowIndex), cellIndex);
+            }, (cell: RenderTableCell, cellIndex: number) => `${rowIndex}-${cellIndex}-${cell.text}`)
+          }
+          .constraintSize({ minWidth: this.tableMinWidth() })
+          .alignItems(VerticalAlign.Top)
+          .backgroundColor(this.isHeaderRow(rowIndex) ? ThemeConstants.BG_SUB : Color.Transparent)
+          .border({
+            width: { bottom: 1 },
+            color: TABLE_BORDER_COLOR,
+          });
+        }, (row: RenderTableCell[], rowIndex: number) => `table-row-${rowIndex}-${row.length}`)
+      }
+      .constraintSize({ minWidth: this.tableMinWidth() })
+      .border({ width: 1, color: TABLE_BORDER_COLOR })
+      .borderRadius(ThemeConstants.RADIUS_SM)
+      .clip(true)
+    }
+    .width("100%")
+    .scrollable(ScrollDirection.Horizontal)
+    .scrollBar(BarState.Auto);
+  }
+}
+
 @Component
 struct MarkdownImageTable {
   @Prop tableToken: ImageTableToken;
@@ -1678,6 +1900,7 @@ export struct MarkdownContent {
 
   private static parseMarkdownToRenderAst(source: string, _sizeRecords: InlineImageSizeRecord[] = []): RenderToken[] {
     const tokens = lexer(MarkdownContent.normalizeMarkdownSource(source), { gfm: true, breaks: true }) as RenderToken[];
+    MarkdownContent.normalizeMarkdownTableTokens(tokens);
     MarkdownContent.tagRenderSourceKind(tokens, "markdown");
     return tokens;
   }
@@ -1751,11 +1974,8 @@ export struct MarkdownContent {
         const tableToken = MarkdownContent.parseImageTableMarker(MarkdownContent.buildImageTableMarker(imageUrls, MarkdownContent.extractTableHeaderLabels(raw)).trim());
         return tableToken ? [tableToken as Token] : [];
       }
-      // Non-image HTML tables are the only rendered-HTML subcase still routed
-      // through lexer(), because the existing table renderer consumes Markdown
-      // table tokens. Do not generalize this into an HTML -> Markdown pipeline;
-      // image/text/link content must stay on the direct HTML-token path above.
-      return lexer(MarkdownContent.convertHtmlTable(raw), { gfm: true, breaks: true });
+      const tableToken = MarkdownContent.htmlTableToRenderTableToken(raw, sizeRecords);
+      return tableToken ? [tableToken as Token] : [];
     }
     if (/^h[1-6]$/.test(tag)) {
       const depth = Number(tag.slice(1));
@@ -1791,6 +2011,89 @@ export struct MarkdownContent {
     }
     const paragraph = MarkdownContent.inlineHtmlToParagraph(body, raw, sizeRecords);
     return paragraph ? [paragraph as Token] : [];
+  }
+
+  private static htmlTableToRenderTableToken(raw: string, sizeRecords: InlineImageSizeRecord[] = []): RenderTableToken | null {
+    const allRows: RenderTableCell[][] = [];
+    const headerRows: RenderTableCell[][] = [];
+    const bodyRows: RenderTableCell[][] = [];
+    const rowRe = /<tr\b[^>]*>([\s\S]*?)<\/tr>/gi;
+    let rowMatch: RegExpExecArray | null = rowRe.exec(raw || '');
+    while (rowMatch) {
+      const rowHtml = rowMatch[1] || '';
+      const cells: RenderTableCell[] = [];
+      let rowIsHeader = false;
+      const cellRe = /<(th|td)\b([^>]*)>([\s\S]*?)<\/\1>/gi;
+      let cellMatch: RegExpExecArray | null = cellRe.exec(rowHtml);
+      while (cellMatch) {
+        const tag = (cellMatch[1] || '').toLowerCase();
+        const attrs = cellMatch[2] || '';
+        const cellHtml = cellMatch[3] || '';
+        const isHeader = tag === 'th';
+        if (isHeader) {
+          rowIsHeader = true;
+        }
+        cells.push(MarkdownContent.htmlTableCellToRenderCell(cellHtml, attrs, isHeader, sizeRecords));
+        cellMatch = cellRe.exec(rowHtml);
+      }
+      if (cells.length > 0) {
+        allRows.push(cells);
+        const rowPrefix = (raw || '').slice(0, rowMatch.index);
+        if (rowIsHeader || /<thead\b[^>]*>[\s\S]*$/i.test(rowPrefix) && !/<\/thead>[\s\S]*$/i.test(rowPrefix)) {
+          headerRows.push(cells.map((cell: RenderTableCell): RenderTableCell => MarkdownContent.withTableCellHeader(cell, true)));
+        } else {
+          bodyRows.push(cells);
+        }
+      }
+      rowMatch = rowRe.exec(raw || '');
+    }
+    if (allRows.length === 0) {
+      return null;
+    }
+    let headers: RenderTableCell[] = headerRows.length > 0 ? headerRows[0] : [];
+    let rows: RenderTableCell[][] = bodyRows;
+    if (headers.length === 0 && allRows.length > 1 && allRows[0].some((cell: RenderTableCell): boolean => cell.header === true)) {
+      headers = allRows[0].map((cell: RenderTableCell): RenderTableCell => MarkdownContent.withTableCellHeader(cell, true));
+      rows = allRows.slice(1);
+    } else if (headers.length === 0 && rows.length === 0) {
+      rows = allRows;
+    }
+    return {
+      type: 'table',
+      raw: raw,
+      headers: headers,
+      rows: rows,
+    } as RenderTableToken;
+  }
+
+  private static htmlTableCellToRenderCell(cellHtml: string, attrs: string, header: boolean, sizeRecords: InlineImageSizeRecord[] = []): RenderTableCell {
+    const inlineTokens = MarkdownContent.inlineHtmlToTokens(cellHtml, sizeRecords);
+    const text = inlineTokens.map((token: Token): string => String((token as TokenRecord)["text"] ?? (token as TokenRecord)["href"] ?? (token as TokenRecord)["raw"] ?? '')).join('');
+    return {
+      raw: cellHtml,
+      text: text,
+      tokens: inlineTokens,
+      align: MarkdownContent.htmlTableCellAlign(attrs),
+      header: header,
+    } as RenderTableCell;
+  }
+
+  private static htmlTableCellAlign(attrs: string): string {
+    const align = MarkdownContent.htmlAttr(attrs || '', 'align').toLowerCase();
+    if (align === 'center' || align === 'right' || align === 'left') {
+      return align;
+    }
+    return '';
+  }
+
+  private static withTableCellHeader(cell: RenderTableCell, header: boolean): RenderTableCell {
+    return {
+      raw: cell.raw,
+      text: cell.text,
+      tokens: cell.tokens,
+      align: cell.align,
+      header: header,
+    } as RenderTableCell;
   }
 
   private static htmlListToToken(listHtml: string, ordered: boolean, sizeRecords: InlineImageSizeRecord[] = []): Tokens.List {
@@ -1933,31 +2236,42 @@ export struct MarkdownContent {
 
   private static parseMarkdownInlineTextTokens(text: string): Token[] {
     const result: Token[] = [];
-    const re = /\[([^\]\n]+)\]\(\s*(https?:\/\/[^\s)]+)\s*\)/g;
+    const source = text || '';
+    const re = /\[([^\]\n]+)\]\(\s*(https?:\/\/[^\s)]+)\s*\)|\*\*([^*]+)\*\*|\*([^*]+)\*|`([^`]+)`/g;
     let last = 0;
-    let match: RegExpExecArray | null = re.exec(text || '');
+    let match: RegExpExecArray | null = re.exec(source);
     while (match) {
       if (match.index > last) {
-        result.push(MarkdownContent.buildTextToken(text.slice(last, match.index)) as Token);
+        result.push(MarkdownContent.buildTextToken(source.slice(last, match.index)) as Token);
       }
-      const label = match[1] || '';
-      const href = match[2] || '';
-      result.push({
-        type: 'link',
-        raw: match[0],
-        href: href,
-        title: null,
-        text: label,
-        tokens: [MarkdownContent.buildTextToken(label) as Token],
-      } as Tokens.Link);
+      if (match[2]) {
+        const label = match[1] || '';
+        const href = match[2] || '';
+        result.push({
+          type: 'link',
+          raw: match[0],
+          href: href,
+          title: null,
+          text: label,
+          tokens: [MarkdownContent.buildTextToken(label) as Token],
+        } as Tokens.Link);
+      } else if (match[3]) {
+        const value = match[3] || '';
+        result.push({ type: 'strong', raw: match[0], text: value, tokens: [MarkdownContent.buildTextToken(value) as Token] } as Tokens.Strong);
+      } else if (match[4]) {
+        const value = match[4] || '';
+        result.push({ type: 'em', raw: match[0], text: value, tokens: [MarkdownContent.buildTextToken(value) as Token] } as Tokens.Em);
+      } else if (match[5]) {
+        result.push({ type: 'codespan', raw: match[0], text: match[5] || '' } as Tokens.Codespan);
+      }
       last = match.index + match[0].length;
-      match = re.exec(text || '');
+      match = re.exec(source);
     }
     if (last === 0) {
-      return [MarkdownContent.buildTextToken(text) as Token];
+      return [MarkdownContent.buildTextToken(source) as Token];
     }
-    if (last < text.length) {
-      result.push(MarkdownContent.buildTextToken(text.slice(last)) as Token);
+    if (last < source.length) {
+      result.push(MarkdownContent.buildTextToken(source.slice(last)) as Token);
     }
     return result;
   }
@@ -2016,6 +2330,105 @@ export struct MarkdownContent {
         tokens.splice(i, 1);
       }
     }
+  }
+
+  private static normalizeMarkdownTableTokens(tokens: Token[]): void {
+    if (!tokens || tokens.length === 0) {
+      return;
+    }
+    for (let i = 0; i < tokens.length; i++) {
+      const token = tokens[i] as TokenRecord;
+      if (token["type"] === "table") {
+        const tableToken = MarkdownContent.normalizeMarkdownTableToken(tokens[i]);
+        if (tableToken) {
+          tokens[i] = tableToken as Token;
+        }
+        continue;
+      }
+      const childTokens = token["tokens"] as Token[] | undefined;
+      if (Array.isArray(childTokens) && childTokens.length > 0) {
+        MarkdownContent.normalizeMarkdownTableTokens(childTokens);
+      }
+    }
+  }
+
+  private static normalizeMarkdownTableToken(token: Token): RenderTableToken | null {
+    const record = token as TokenRecord;
+    const headers: RenderTableCell[] = [];
+    const headerValues = record["header"] as TokenRecord[] | undefined;
+    if (Array.isArray(headerValues)) {
+      for (const cell of headerValues) {
+        headers.push(MarkdownContent.markdownTableCellToRenderCell(cell, true));
+      }
+    }
+    const rows: RenderTableCell[][] = [];
+    const rowValues = record["rows"] as Array<TokenRecord[]> | undefined;
+    if (Array.isArray(rowValues)) {
+      for (const row of rowValues) {
+        if (!Array.isArray(row)) {
+          continue;
+        }
+        const cells: RenderTableCell[] = [];
+        for (const cell of row) {
+          cells.push(MarkdownContent.markdownTableCellToRenderCell(cell, false));
+        }
+        rows.push(cells);
+      }
+    }
+    if (headers.length === 0 && rows.length === 0) {
+      return MarkdownContent.markdownTableRawToRenderTableToken(String(record["raw"] ?? ''));
+    }
+    return {
+      type: 'table',
+      raw: String(record["raw"] ?? ''),
+      headers: headers,
+      rows: rows,
+    } as RenderTableToken;
+  }
+
+  private static markdownTableCellToRenderCell(cell: TokenRecord, header: boolean): RenderTableCell {
+    const text = String(cell["text"] ?? cell["raw"] ?? '');
+    const tokens = cell["tokens"] as Token[] | undefined;
+    return {
+      raw: String(cell["raw"] ?? text),
+      text: text,
+      tokens: Array.isArray(tokens) && tokens.length > 0 ? tokens : MarkdownContent.parseMarkdownInlineTextTokens(text),
+      align: String(cell["align"] ?? ''),
+      header: header,
+    } as RenderTableCell;
+  }
+
+  private static markdownTableRawToRenderTableToken(raw: string): RenderTableToken | null {
+    const lines = (raw || '').split('\n').map((line: string): string => line.trim()).filter((line: string): boolean => line.length > 0);
+    if (lines.length < 2 || !MarkdownContent.isMarkdownTableSeparator(lines[1])) {
+      return null;
+    }
+    const headers = MarkdownContent.markdownTableCells(lines[0]).map((cell: string): RenderTableCell => MarkdownContent.markdownRawCellToRenderCell(cell, true));
+    const rows: RenderTableCell[][] = [];
+    for (let i = 2; i < lines.length; i++) {
+      const cells = MarkdownContent.markdownTableCells(lines[i]);
+      if (cells.length === 0) {
+        continue;
+      }
+      rows.push(cells.map((cell: string): RenderTableCell => MarkdownContent.markdownRawCellToRenderCell(cell, false)));
+    }
+    return {
+      type: 'table',
+      raw: raw,
+      headers: headers,
+      rows: rows,
+    } as RenderTableToken;
+  }
+
+  private static markdownRawCellToRenderCell(raw: string, header: boolean): RenderTableCell {
+    const text = (raw || '').trim().replace(/\\\|/g, '|');
+    return {
+      raw: raw,
+      text: text,
+      tokens: MarkdownContent.parseMarkdownInlineTextTokens(text),
+      align: '',
+      header: header,
+    } as RenderTableCell;
   }
 
   private static normalizeMarkdownSource(md: string): string {
@@ -3144,6 +3557,14 @@ export struct MarkdownContent {
       MarkdownAutoImage({
         url: MediaUrlUtils.imageUrlForRender((token as Tokens.Image).href),
         options: this.markdownOptions(),
+        reportImageComplete: (url: string, event?: MarkdownImageCompleteEvent) => { this.reportInlineImageComplete(url, event); },
+        reportImageError: (url: string, event?: MarkdownImageErrorEvent) => { this.reportInlineImageError(url, event); },
+      });
+    } else if (token.type === "table") {
+      MarkdownTable({
+        tableToken: token as RenderTableToken,
+        options: this.markdownOptions(),
+        inlineImageSizeRecords: this.inlineImageSizeRecords,
         reportImageComplete: (url: string, event?: MarkdownImageCompleteEvent) => { this.reportInlineImageComplete(url, event); },
         reportImageError: (url: string, event?: MarkdownImageErrorEvent) => { this.reportInlineImageError(url, event); },
       });
