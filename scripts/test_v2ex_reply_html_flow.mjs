@@ -46,6 +46,13 @@ assert.equal(
   '看样子，这只是冰山一角，这个同事，以后有你受的了 https://i.imgur.com/14cwgsI.png'
 )
 
+const exactReply127 = '@<a href="/member/iixy">iixy</a> #6 要黑丝也可以 <a target="_blank" href="https://i.imgur.com/MA8YqTP.png" rel="nofollow noopener" target="_blank"><img src="https://i.imgur.com/MA8YqTP.png" class="embedded_image" rel="noreferrer"></a>'
+assert.equal(
+  replyHtmlToMarkdown(exactReply127),
+  '[@iixy](/member/iixy) #6 要黑丝也可以 https://i.imgur.com/MA8YqTP.png'
+)
+assert.doesNotMatch(replyHtmlToMarkdown(exactReply127), /\n/)
+
 const explicitBreak = '前<br><a href="https://example.com/a.png"><img src="https://example.com/a.png"></a><br>后'
 assert.equal(replyHtmlToMarkdown(explicitBreak), '前\nhttps://example.com/a.png\n后')
 
@@ -53,4 +60,11 @@ const parserSource = readFileSync('shared/src/main/ets/parser/V2exTopicRepliesPa
 assert.doesNotMatch(parserSource, /return `\\n\\n\$\{src\}\\n\\n`/)
 assert.match(parserSource, /return src\b/)
 
-console.log('PASS: V2EX reply HTML image conversion preserves source line breaks')
+const replyCardSource = readFileSync('shared/src/main/ets/components/ReplyCard.ets', 'utf8')
+assert.match(replyCardSource, /this\.reply\.content_rendered/)
+assert.match(replyCardSource, /return this\.reply\.content_rendered/)
+
+const markdownSource = readFileSync('shared/src/main/ets/components/MarkdownContent.ets', 'utf8')
+assert.doesNotMatch(markdownSource, /if \(!value\.startsWith\('<'\)\)/)
+
+console.log('PASS: V2EX reply HTML image conversion and ReplyCard rendered source flow preserve webpage inline layout')

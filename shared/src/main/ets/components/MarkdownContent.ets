@@ -1559,9 +1559,6 @@ export struct MarkdownContent {
 
   private static looksLikeRenderedHtml(source: string): boolean {
     const value = (source || '').trim();
-    if (!value.startsWith('<')) {
-      return false;
-    }
     return /<(?:div|p|h[1-6]|ul|ol|li|table|img|a)\b/i.test(value);
   }
 
@@ -2102,7 +2099,10 @@ export struct MarkdownContent {
       const text = String(record["text"] ?? "").trim();
       const normalizedText = MediaUrlUtils.normalizeUrl(text);
       if (href && (!text || normalizedText === MediaUrlUtils.normalizeUrl(String(record["href"] ?? "")))) {
-        return [MarkdownContent.buildImageToken(String(record["raw"] ?? text), href, text, false) as Token];
+        // Treat bare/autolinked image URLs as inline candidates first. A later
+        // pass demotes images that are actually alone on their source line to
+        // block images, while mixed text + URL replies keep webpage inline flow.
+        return [MarkdownContent.buildImageToken(String(record["raw"] ?? text), href, text, true) as Token];
       }
       return [token];
     }

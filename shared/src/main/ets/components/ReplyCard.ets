@@ -88,7 +88,17 @@ export struct ReplyCard {
 
   private contentSource(): string {
     const override = (this.displayContent || '').trim()
-    return override ? this.displayContent : this.reply.content
+    if (override) {
+      return this.displayContent
+    }
+    const rendered = (this.reply.content_rendered || '').trim()
+    // V2EX web collapses ordinary whitespace in rendered reply HTML. Render the
+    // same source when it is available so single source newlines do not become
+    // app-only hard line breaks, and linked embedded images keep source order.
+    if (rendered.length > 0) {
+      return this.reply.content_rendered
+    }
+    return this.reply.content
   }
 
   private visibleMentionPrefix(reply: V2exReply): string {

@@ -332,6 +332,10 @@ if (/splitMixedImageParagraphs\(/.test(processTokensSource)) {
   console.error('FAIL processTokens must not split mixed text/image paragraphs into top-level custom blocks')
   process.exit(1)
 }
+if (!/buildImageToken\(String\(record\["raw"\] \?\? text\), href, text, true\)/.test(source)) {
+  console.error('FAIL bare/autolinked image URLs should start as inline candidates and only standalone lines should be demoted')
+  process.exit(1)
+}
 const paragraphMatch = source.match(/struct MarkdownParagraph[\s\S]*?\n}\n\n@Component\nstruct MarkdownCodeBlock/)
 if (!paragraphMatch || !/ForEach\(this\.inlineTokens\(\)/.test(paragraphMatch[0])) {
   console.error('FAIL MarkdownParagraph must render mixed block images by iterating the original inline token order')
