@@ -747,6 +747,20 @@ struct MarkdownBlockquote {
   @Prop inlineImageSizeRecords: InlineImageSizeRecord[] = [];
   reportImageComplete?: InlineImageCompleteReporter;
   reportImageError?: InlineImageErrorReporter;
+  @StorageLink(StorageKeys.READING_FONT_SIZE) readingFontSize: number = ThemeConstants.FONT_SIZE_BODY;
+  @StorageLink(StorageKeys.READING_LINE_HEIGHT) readingLineHeight: number = ThemeConstants.LINE_HEIGHT_BODY;
+
+  private bodyFontSize(): number {
+    return ReadingSettings.normalizeFontSize(this.readingFontSize);
+  }
+
+  private bodyLineHeight(): number {
+    return ReadingSettings.normalizeLineHeight(this.readingLineHeight, this.bodyFontSize());
+  }
+
+  private quoteRailHeight(): number {
+    return this.bodyLineHeight();
+  }
 
   private quoteChildren(): Token[] {
     const children = (this.quoteToken as TokenRecord)["tokens"] as Token[] | undefined;
@@ -757,7 +771,7 @@ struct MarkdownBlockquote {
     Row({ space: ThemeConstants.SPACE_SM }) {
       Blank()
         .width(3)
-        .height(24)
+        .height(this.quoteRailHeight())
         .borderRadius(2)
         .backgroundColor(_quoteDriveColor(this.options.darkMode === true))
       Column({ space: ThemeConstants.SPACE_XS }) {
@@ -787,7 +801,8 @@ struct MarkdownBlockquote {
             });
           } else if (child.type !== "space" && String((child as TokenRecord)["text"] ?? (child as TokenRecord)["raw"] ?? "").trim().length > 0) {
             Text(String((child as TokenRecord)["text"] ?? (child as TokenRecord)["raw"] ?? ""))
-              .fontSize(ThemeConstants.FONT_SIZE_BODY)
+              .fontSize(this.bodyFontSize())
+              .lineHeight(this.bodyLineHeight())
               .fontColor(ThemeConstants.TEXT_SECONDARY)
               .width("100%");
           }
@@ -1609,7 +1624,7 @@ export struct MarkdownContent {
       .replace(/\r\n/g, '\n')
       .replace(/\r/g, '\n');
     const tokens: Token[] = [];
-    const blockRe = /<(table|h[1-6]|p|ul|ol|div)\b[^>]*>([\s\S]*?)<\/\1>/gi;
+    const blockRe = /<(table|h[1-6]|p|ul|ol|blockquote|pre|div)\b[^>]*>([\s\S]*?)<\/\1>/gi;
     let last = 0;
     let match: RegExpExecArray | null = blockRe.exec(source);
     while (match) {
@@ -1662,7 +1677,23 @@ export struct MarkdownContent {
     if (tag === 'ul' || tag === 'ol') {
       return [MarkdownContent.htmlListToToken(raw, tag === 'ol', sizeRecords) as Token];
     }
-    if (tag === 'div' && /<(?:table|h[1-6]|p|ul|ol)\b/i.test(body)) {
+    if (tag === 'blockquote') {
+      return [{
+        type: 'blockquote',
+        raw: raw,
+        text: MarkdownContent.stripHtmlTags(body),
+        tokens: MarkdownContent.renderedHtmlToTokens(body, sizeRecords),
+      } as Token];
+    }
+    if (tag === 'pre') {
+      return [{
+        type: 'code',
+        raw: raw,
+        text: MarkdownContent.stripHtmlTags(body),
+        lang: '',
+      } as Tokens.Code];
+    }
+    if (tag === 'div' && /<(?:table|h[1-6]|p|ul|ol|blockquote|pre)\b/i.test(body)) {
       return MarkdownContent.renderedHtmlToTokens(body, sizeRecords);
     }
     const paragraph = MarkdownContent.inlineHtmlToParagraph(body, raw, sizeRecords);
@@ -2927,8 +2958,35 @@ export struct MarkdownContent {
   }
 
   private headingSize(token: Token): number {
+    // Content headings are section labels inside a post body, not native page
+    // titles. Keep them inside the same reading rhythm as paragraphs and cap
+    // lower-level headings so user-selected large body text does not turn V2EX
+    // <h2>/<h3> into oversized app chrome.
     const level = this.headingLevel(token);
-    return this.headingFontSize(Math.max(0, 12 - level * 2));
+    if (level <= 1) {
+      return Math.min(this.bodyFontSize() + 1, ThemeConstants.FONT_SIZE_TITLE);
+    }
+    return Math.min(this.bodyFontSize(), ThemeConstants.FONT_SIZE_BODY);
+  }
+
+  private headingLineHeight(token: Token): number {
+    return Math.max(this.headingSize(token) + 4, Math.min(this.bodyLineHeight(), ThemeConstants.LINE_HEIGHT_BODY));
+  }
+
+  private headingWeight(token: Token): FontWeight {
+    return this.headingLevel(token) <= 1 ? FontWeight.Medium : FontWeight.Regular;
+  }
+
+  private headingColor(token: Token): ResourceColor {
+    return this.headingLevel(token) <= 1 ? ThemeConstants.TEXT_PRIMARY : ThemeConstants.TEXT_SECONDARY;
+  }
+
+  private headingInlineTokens(token: Token): Token[] {
+    const tokens = (token as TokenRecord)["tokens"] as Token[] | undefined;
+    if (Array.isArray(tokens) && tokens.length > 0) {
+      return tokens;
+    }
+    return [MarkdownContent.buildTextToken(String((token as TokenRecord)["text"] ?? "")) as Token];
   }
 
   private plainTokenText(token: Token): string {
@@ -2977,12 +3035,23 @@ export struct MarkdownContent {
         reportImageError: (url: string, event?: MarkdownImageErrorEvent) => { this.reportInlineImageError(url, event); },
       });
     } else if (token.type === "heading") {
-      Text(String((token as TokenRecord)["text"] ?? ""))
+      Text() {
+        SelectableInlineTokenSpans(
+          this.headingInlineTokens(token),
+          this.headingSize(token),
+          this.markdownOptions(),
+          this.inlineImageSizeRecords,
+          (url: string, event?: MarkdownImageCompleteEvent) => { this.reportInlineImageComplete(url, event); },
+          (url: string, event?: MarkdownImageErrorEvent) => { this.reportInlineImageError(url, event); },
+        );
+      }
         .fontSize(this.headingSize(token))
-        .fontWeight(this.headingLevel(token) <= 3 ? FontWeight.Bold : FontWeight.Medium)
-        .fontColor(ThemeConstants.TEXT_PRIMARY)
-        .lineHeight(this.bodyLineHeight())
-        .width("100%");
+        .fontWeight(this.headingWeight(token))
+        .fontColor(this.headingColor(token))
+        .lineHeight(this.headingLineHeight(token))
+        .width("100%")
+        .copyOption(CopyOptions.LocalDevice)
+        .textSelectable(TextSelectableMode.SELECTABLE_FOCUSABLE);
     } else if (token.type === "space" || token.type === "html") {
     } else if (this.plainTokenText(token).length > 0) {
       Text(this.plainTokenText(token))

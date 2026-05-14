@@ -137,6 +137,16 @@ assert.match(source, /parseMarkdownInlineTextTokens/)
 assert.match(source, /MarkdownBlockquote/)
 assert.doesNotMatch(source, /\.height\('100%'\)[\s\S]{0,160}quoteDriveColor/)
 assert.doesNotMatch(source, /_classifyInlineImageSize|inlineSmall|blockLarge|INLINE_IMAGE_(?:SMALL|LARGE)/)
+
+assert.match(source, /Content headings are section labels inside a post body/)
+assert.match(source, /Math\.min\(this\.bodyFontSize\(\), ThemeConstants\.FONT_SIZE_BODY\)/)
+assert.match(source, /private headingInlineTokens\(token: Token\): Token\[\]/)
+assert.match(source, /const blockRe = \/<\(table\|h\[1-6\]\|p\|ul\|ol\|blockquote\|pre\|div\)/)
+assert.match(source, /tag === 'blockquote'/)
+assert.match(source, /tag === 'pre'/)
+assert.doesNotMatch(source, /12 - level \* 2/)
+assert.doesNotMatch(source, /headingLevel\(token\) <= 3/)
+assert.doesNotMatch(source, /FontWeight\.Bold : FontWeight\.Medium/)
 const processTokensBody = source.match(/private static processTokens\([\s\S]*?\n  }\n\n  private static renderedHtmlToTokens/)[0]
 assert.doesNotMatch(processTokensBody, /renderedHtmlToMarkdown/)
 
