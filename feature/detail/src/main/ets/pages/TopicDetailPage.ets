@@ -540,18 +540,6 @@ export struct TopicDetailPage {
 
   @Builder TopicCard() {
     Column() {
-      Text(this.v.topic!.title)
-        .fontSize(ThemeConstants.FONT_SIZE_HEADING)
-        .fontWeight(FontWeight.Medium)
-        .fontColor($r('sys.color.font_primary'))
-        .lineHeight(28)
-        .width('100%')
-        .onAreaChange((_oldValue: Area, newValue: Area) => {
-          const measuredGlobalBottom = this.areaY(newValue?.globalPosition?.y) + this.areaLength(newValue?.height)
-          this.titleContentBottom = measuredGlobalBottom + this.currentScrollOffset
-          this.evaluateAppbarIdentityVisibility()
-        })
-
       Row({ space: ThemeConstants.SPACE_SM }) {
         Avatar({ url: ImageUtils.memberAvatarUrl(this.v.topic!.member), avatarSize: ThemeConstants.AVATAR_SIZE_REPLY })
           .onClick(() => {
@@ -598,7 +586,19 @@ export struct TopicDetailPage {
       }
       .width('100%')
       .alignItems(VerticalAlign.Center)
-      .margin({ top: ThemeConstants.SPACE_MD })
+
+      Text(this.v.topic!.title)
+        .fontSize(ThemeConstants.FONT_SIZE_HEADING)
+        .fontWeight(FontWeight.Medium)
+        .fontColor($r('sys.color.font_primary'))
+        .lineHeight(28)
+        .width('100%')
+        .margin({ top: ThemeConstants.SPACE_MD })
+        .onAreaChange((_oldValue: Area, newValue: Area) => {
+          const measuredGlobalBottom = this.areaY(newValue?.globalPosition?.y) + this.areaLength(newValue?.height)
+          this.titleContentBottom = measuredGlobalBottom + this.currentScrollOffset
+          this.evaluateAppbarIdentityVisibility()
+        })
 
       // 正文
       if (this.v.topic!.content) {
