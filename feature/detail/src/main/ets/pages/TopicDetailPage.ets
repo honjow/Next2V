@@ -1560,6 +1560,7 @@ export struct TopicDetailPage {
     this.isTopicThankLoading = true
     this.api.getTopicThankActionWithCookie(cookie, this.topicId)
       .then((action: V2exTopicThankAction) => {
+        this.isTopicThankLoading = false
         this.confirmTopicThank(cookie, action)
       })
       .catch((error: Error) => {
@@ -1648,6 +1649,7 @@ export struct TopicDetailPage {
     this.isReplyThankLoading = true
     this.api.getReplyThankActionWithCookie(cookie, this.topicId, reply.id)
       .then((action: V2exReplyThankAction) => {
+        this.isReplyThankLoading = false
         this.confirmReplyThank(cookie, reply, action)
       })
       .catch((error: Error) => {
