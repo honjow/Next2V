@@ -41,12 +41,29 @@ function stripTags(value) {
     .trim()
 }
 
+function parseMarkdownInlineTextTokens(text) {
+  const result = []
+  const re = /\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)/g
+  let last = 0
+  let match
+  while ((match = re.exec(text || ''))) {
+    if (match.index > last) result.push({ type: 'text', text: text.slice(last, match.index) })
+    result.push({ type: 'link', href: match[2], text: match[1] })
+    last = match.index + match[0].length
+  }
+  if (last === 0) return [{ type: 'text', text }]
+  if (last < text.length) result.push({ type: 'text', text: text.slice(last) })
+  return result
+}
+
 function appendText(tokens, text) {
   const value = decodeHtml(text).replace(/[ \t\f\v\r\n]+/g, ' ')
   if (!value) return
-  const last = tokens[tokens.length - 1]
-  if (last && last.type === 'text') last.text += value
-  else tokens.push({ type: 'text', text: value })
+  for (const token of parseMarkdownInlineTextTokens(value)) {
+    const last = tokens[tokens.length - 1]
+    if (token.type === 'text' && last && last.type === 'text') last.text += token.text
+    else tokens.push(token)
+  }
 }
 
 function trimTextEdges(tokens) {
@@ -101,10 +118,18 @@ assert.deepEqual(tokens127.map(t => t.type), ['link', 'text', 'image'])
 assert.equal(tokens127[1].text, ' #6 要黑丝也可以 ')
 assert.equal(tokens127[2].href, 'https://i.imgur.com/MA8YqTP.png')
 
+const markdownLink = '<p>[coolpace/V2EX_Polish](https://github.com/coolpace/V2EX_Polish/tree/main)</p>'
+const markdownLinkTokens = inlineHtmlToTokens(markdownLink.replace(/^<p>|<\/p>$/g, ''))
+assert.deepEqual(markdownLinkTokens.map(t => t.type), ['link'])
+assert.equal(markdownLinkTokens[0].text, 'coolpace/V2EX_Polish')
+assert.equal(markdownLinkTokens[0].href, 'https://github.com/coolpace/V2EX_Polish/tree/main')
+
 const source = readFileSync('shared/src/main/ets/components/MarkdownContent.ets', 'utf8')
 assert.match(source, /renderedHtmlToTokens/)
 assert.match(source, /inlineHtmlToTokens/)
-const processTokensBody = source.match(/private static processTokens\([\s\S]*?\n  }\n\n  private static normalizeMarkdownSource/)[0]
+assert.match(source, /parseMarkdownInlineTextTokens/)
+assert.match(source, /MarkdownBlockquote/)
+const processTokensBody = source.match(/private static processTokens\([\s\S]*?\n  }\n\n  private static renderedHtmlToTokens/)[0]
 assert.doesNotMatch(processTokensBody, /renderedHtmlToMarkdown/)
 
-console.log('PASS: V2EX rendered HTML is represented as structured inline tokens, preserving adjacent images and member links')
+console.log('PASS: V2EX rendered HTML is represented as structured inline tokens, preserving adjacent images, markdown links, and member links')

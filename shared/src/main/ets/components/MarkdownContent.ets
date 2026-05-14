@@ -745,6 +745,70 @@ struct MarkdownParagraph {
 }
 
 @Component
+struct MarkdownBlockquote {
+  @Prop quoteToken: Token;
+  @Prop options: MarkdownOptions;
+  @Prop inlineImageSizeRecords: InlineImageSizeRecord[] = [];
+  reportImageComplete?: InlineImageCompleteReporter;
+  reportImageError?: InlineImageErrorReporter;
+
+  private quoteChildren(): Token[] {
+    const children = (this.quoteToken as TokenRecord)["tokens"] as Token[] | undefined;
+    return Array.isArray(children) ? children : [];
+  }
+
+  build() {
+    Row({ space: ThemeConstants.SPACE_SM }) {
+      Blank()
+        .width(3)
+        .height('100%')
+        .borderRadius(2)
+        .backgroundColor(_quoteDriveColor(this.options.darkMode === true))
+      Column({ space: ThemeConstants.SPACE_XS }) {
+        ForEach(this.quoteChildren(), (child: Token) => {
+          if (child.type === PARAGRAPH_MONO || child.type === "paragraph") {
+            MarkdownParagraph({
+              paragraphToken: child as Tokens.Paragraph,
+              options: this.options,
+              inlineImageSizeRecords: this.inlineImageSizeRecords,
+              reportImageComplete: this.reportImageComplete,
+              reportImageError: this.reportImageError,
+            });
+          } else if (child.type === LIST_MONO || child.type === "list") {
+            CustomList({
+              listToken: child as Tokens.List,
+              options: this.options,
+              inlineImageSizeRecords: this.inlineImageSizeRecords,
+              reportImageComplete: this.reportImageComplete,
+              reportImageError: this.reportImageError,
+            });
+          } else if (child.type === IMAGE_BLOCK_MONO || child.type === "image") {
+            MarkdownAutoImage({
+              url: MediaUrlUtils.imageUrlForRender((child as Tokens.Image).href),
+              options: this.options,
+              reportImageComplete: this.reportImageComplete,
+              reportImageError: this.reportImageError,
+            });
+          } else if (child.type !== "space" && String((child as TokenRecord)["text"] ?? (child as TokenRecord)["raw"] ?? "").trim().length > 0) {
+            Text(String((child as TokenRecord)["text"] ?? (child as TokenRecord)["raw"] ?? ""))
+              .fontSize(ThemeConstants.FONT_SIZE_BODY)
+              .fontColor(ThemeConstants.TEXT_SECONDARY)
+              .width("100%");
+          }
+        }, (child: Token, index: number) => `${String((child as TokenRecord)["type"] ?? "token")}-${String((child as TokenRecord)["raw"] ?? (child as TokenRecord)["text"] ?? index)}-${index}`)
+      }
+      .layoutWeight(1)
+      .padding({ top: ThemeConstants.SPACE_XS, bottom: ThemeConstants.SPACE_XS })
+    }
+    .width("100%")
+    .padding({ left: ThemeConstants.SPACE_SM })
+    .backgroundColor(_quoteBackground(this.options.darkMode === true))
+    .borderRadius(ThemeConstants.RADIUS_SM)
+    .alignItems(VerticalAlign.Top)
+  }
+}
+
+@Component
 struct MarkdownCodeBlock {
   @Prop codeToken: Tokens.Code;
   @Prop options: MarkdownOptions;
@@ -1723,13 +1787,48 @@ export struct MarkdownContent {
     if (!clean) {
       return;
     }
-    const last = tokens.length > 0 ? tokens[tokens.length - 1] as TokenRecord : null;
-    if (last && last["type"] === 'text') {
-      last["text"] = String(last["text"] ?? '') + clean;
-      last["raw"] = String(last["raw"] ?? '') + clean;
-      return;
+    const inlineTokens = MarkdownContent.parseMarkdownInlineTextTokens(clean);
+    for (const token of inlineTokens) {
+      const record = token as TokenRecord;
+      const last = tokens.length > 0 ? tokens[tokens.length - 1] as TokenRecord : null;
+      if (record["type"] === 'text' && last && last["type"] === 'text') {
+        last["text"] = String(last["text"] ?? '') + String(record["text"] ?? '');
+        last["raw"] = String(last["raw"] ?? '') + String(record["raw"] ?? record["text"] ?? '');
+      } else {
+        tokens.push(token);
+      }
     }
-    tokens.push(MarkdownContent.buildTextToken(clean) as Token);
+  }
+
+  private static parseMarkdownInlineTextTokens(text: string): Token[] {
+    const result: Token[] = [];
+    const re = /\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)/g;
+    let last = 0;
+    let match: RegExpExecArray | null = re.exec(text || '');
+    while (match) {
+      if (match.index > last) {
+        result.push(MarkdownContent.buildTextToken(text.slice(last, match.index)) as Token);
+      }
+      const label = match[1] || '';
+      const href = match[2] || '';
+      result.push({
+        type: 'link',
+        raw: match[0],
+        href: href,
+        title: null,
+        text: label,
+        tokens: [MarkdownContent.buildTextToken(label) as Token],
+      } as Tokens.Link);
+      last = match.index + match[0].length;
+      match = re.exec(text || '');
+    }
+    if (last === 0) {
+      return [MarkdownContent.buildTextToken(text) as Token];
+    }
+    if (last < text.length) {
+      result.push(MarkdownContent.buildTextToken(text.slice(last)) as Token);
+    }
+    return result;
   }
 
   private static trimInlineTextEdges(tokens: Token[]): void {
@@ -2859,6 +2958,14 @@ export struct MarkdownContent {
       MarkdownImageTable({
         tableToken: token as ImageTableToken,
         options: this.markdownOptions(),
+        reportImageComplete: (url: string, event?: MarkdownImageCompleteEvent) => { this.reportInlineImageComplete(url, event); },
+        reportImageError: (url: string, event?: MarkdownImageErrorEvent) => { this.reportInlineImageError(url, event); },
+      });
+    } else if (token.type === "blockquote") {
+      MarkdownBlockquote({
+        quoteToken: token,
+        options: this.markdownOptions(),
+        inlineImageSizeRecords: this.inlineImageSizeRecords,
         reportImageComplete: (url: string, event?: MarkdownImageCompleteEvent) => { this.reportInlineImageComplete(url, event); },
         reportImageError: (url: string, event?: MarkdownImageErrorEvent) => { this.reportInlineImageError(url, event); },
       });
