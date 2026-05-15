@@ -77,16 +77,11 @@ export struct TopicDetailPage {
   @StorageLink(StorageKeys.READING_DENSITY) readingDensity: string =
     ReadingSettings.DENSITY_STANDARD;
   @StorageLink(StorageKeys.READING_RESTORE_POSITION) readingRestorePosition: boolean = false;
-  @StorageLink(StorageKeys.MOTION_HAND_EDGE)
-  @Watch('onMotionHandEdgeChanged')
-  motionHandEdge: string = 'center';
   @StorageProp(StorageKeys.TOP_AVOID_HEIGHT) topH: number = 0;
   @StorageProp(StorageKeys.BOTTOM_AVOID_HEIGHT) bottomH: number = 0;
   private scroller: Scroller = new Scroller();
   @State listScrollEnabled: boolean = true;
   @State private isReplyListAtEnd: boolean = false;
-  @State private visualMotionHandEdge: string = 'center';
-  @State private floatingReplyAreaWidth: number = 0;
   @State isSavedLater: boolean = false;
   @State private isSiteFavorited: boolean = false;
   @State private isTopicThanked: boolean = false;
@@ -108,8 +103,7 @@ export struct TopicDetailPage {
   @State private titleContentBottom: number = 0;
   @State private currentScrollOffset: number = 0;
   @State private isTitleCoveredByAppbar: boolean = false;
-  private readonly FLOATING_REPLY_HEIGHT: number = 40;
-  private readonly FLOATING_REPLY_BOTTOM_GAP: number = 2;
+  private readonly HDS_ACTION_BAR_CLEARANCE: number = 72;
   private readonly titleVisibilityHysteresis: number = 4;
   private api: ApiService = new ApiService();
   private topicThankLocked: boolean = false;
@@ -138,7 +132,6 @@ export struct TopicDetailPage {
     this.hasRestoredReadPosition = false
     this.hasJumpedToTargetFloor = false
     this.jumpFloorText = ''
-    this.visualMotionHandEdge = this.motionHandEdge
     this.currentScrollOffset = 0
     this.titleContentBottom = 0
     this.isTitleCoveredByAppbar = false
@@ -261,7 +254,7 @@ export struct TopicDetailPage {
   }
 
   build() {
-    Stack({ alignContent: Alignment.BottomStart }) {
+    Column() {
       Column() {
         if (this.v.isLoading && this.v.topic === null) {
           this.LoadingView()
@@ -272,12 +265,8 @@ export struct TopicDetailPage {
         }
       }
       .width('100%')
-      .height('100%')
+      .layoutWeight(1)
       .clip(true)
-
-      if (this.v.topic !== null) {
-        this.FloatingReplyPill()
-      }
 
       this.ReplyComposerSheetHost()
       this.ReplyContextSheetHost()
@@ -285,9 +274,6 @@ export struct TopicDetailPage {
     .width('100%')
     .height('100%')
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
-    .onAreaChange((_oldValue: Area, newValue: Area) => {
-      this.floatingReplyAreaWidth = this.areaLength(newValue.width)
-    })
     .onVisibleAreaChange([0.0, 1.0], (isVisible: boolean, _currentRatio: number) => {
       if (isVisible) {
         this.republishAppbarIdentity()
@@ -512,81 +498,8 @@ export struct TopicDetailPage {
     })
   }
 
-  @Builder FloatingReplyPill() {
-    Row() {
-      Button() {
-        Row({ space: ThemeConstants.SPACE_XS }) {
-          SymbolGlyph(
-            this.authCookieConfigured
-              ? $r('sys.symbol.arrowshape_turn_up_left_fill')
-              : $r('sys.symbol.lock'),
-          )
-            .fontSize(18)
-            .fontColor([Color.White])
-          Text(this.authCookieConfigured ? '回复' : '登录')
-            .fontSize(ThemeConstants.FONT_SIZE_BODY)
-            .fontWeight(FontWeight.Medium)
-            .fontColor(Color.White)
-        }
-        .alignItems(VerticalAlign.Center)
-        .justifyContent(FlexAlign.Center)
-        .onClick(() => {
-          this.openReplyEditor()
-        })
-      }
-      .type(ButtonType.Normal)
-      .height(this.FLOATING_REPLY_HEIGHT)
-      .width(96)
-      .borderRadius(ThemeConstants.RADIUS_ROUND)
-      .backgroundColor(ThemeConstants.BRAND_PRIMARY)
-      .shadow(ShadowStyle.OUTER_DEFAULT_SM)
-      .translate({ x: this.floatingReplyOffsetX() })
-      .zIndex(10)
-      .onClick(() => {
-        this.openReplyEditor()
-      })
-    }
-    .width('100%')
-    .height(this.bottomH + this.floatingReplyClearance())
-    .padding({
-      left: ThemeConstants.SPACE_LG,
-      right: ThemeConstants.SPACE_LG,
-      bottom: this.bottomH + this.FLOATING_REPLY_BOTTOM_GAP,
-    })
-    .alignItems(VerticalAlign.Bottom)
-    .hitTestBehavior(HitTestMode.Transparent)
-    .zIndex(10)
-    .animation({ duration: ThemeConstants.ANIM_DURATION, curve: Curve.EaseOut })
-  }
-
-  private floatingReplyOffsetX(): number {
-    const buttonWidth = 96
-    const sideMargin = ThemeConstants.SPACE_LG
-    const availableWidth = Math.max(0, this.floatingReplyAreaWidth - sideMargin * 2 - buttonWidth)
-    if (this.visualMotionHandEdge === 'right') {
-      return availableWidth
-    }
-    if (this.visualMotionHandEdge === 'center') {
-      return availableWidth / 2
-    }
-    return 0
-  }
-
-  private floatingReplyClearance(): number {
-    return this.FLOATING_REPLY_HEIGHT + this.FLOATING_REPLY_BOTTOM_GAP + ThemeConstants.SPACE_SM
-  }
-
   private topicDetailBottomPadding(): number {
-    return ThemeConstants.SPACE_XL + this.floatingReplyClearance()
-  }
-
-  private onMotionHandEdgeChanged(_propName: string): void {
-    this.getUIContext().animateTo(
-      { duration: ThemeConstants.ANIM_DURATION, curve: Curve.EaseOut },
-      () => {
-        this.visualMotionHandEdge = this.motionHandEdge
-      },
-    )
+    return ThemeConstants.SPACE_XL + this.HDS_ACTION_BAR_CLEARANCE
   }
 
   private areaLength(value: Length | undefined): number {
@@ -1687,6 +1600,10 @@ export struct TopicDetailPage {
     }
     if (action === 'reportTopic') {
       this.prepareTopicReport()
+      return
+    }
+    if (action === 'reply') {
+      this.openReplyEditor()
       return
     }
     if (action === 'saveLater') {
