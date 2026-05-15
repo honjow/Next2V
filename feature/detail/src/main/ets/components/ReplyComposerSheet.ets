@@ -16,7 +16,7 @@ import {
 export struct ReplyComposerSheet {
   @Prop topicId: number = 0
   @Prop topicTitle: string = ''
-  @Prop initialContent: string = ''
+  @Prop @Watch('onInitialContentChanged') initialContent: string = ''
   @StorageProp(StorageKeys.KEYBOARD_HEIGHT) keyboardH: number = 0
 
   closeAction?: () => void
@@ -46,6 +46,25 @@ export struct ReplyComposerSheet {
     if (!this.hasSubmitted) {
       this.persistDraft()
     }
+  }
+
+  onInitialContentChanged(_propName: string): void {
+    const seed = this.normalizeInitialContent(this.initialContent)
+    if (!seed) {
+      return
+    }
+    const nextContent = this.mergeInitialContent(this.content, seed)
+    if (nextContent === this.content) {
+      return
+    }
+    this.content = nextContent
+    this.isPreview = false
+    this.contentSelectionStart = this.content.length
+    this.contentSelectionEnd = this.content.length
+    this.scheduleSaveDraft()
+    setTimeout(() => {
+      this.contentController.caretPosition(this.content.length)
+    }, 0)
   }
 
   build() {
@@ -218,13 +237,25 @@ export struct ReplyComposerSheet {
 
   private mergeInitialContent(draftContent: string, seed: string): string {
     const draft = draftContent || ''
-    if (!seed || draft.indexOf(seed) >= 0) {
+    if (!seed) {
       return draft
     }
     if (draft.trim().length === 0) {
       return seed
     }
-    return `${draft.trimEnd()}\n${seed}`
+    if (this.startsWithInitialSeed(draft, seed)) {
+      return draft
+    }
+    return seed
+  }
+
+  private startsWithInitialSeed(content: string, seed: string): boolean {
+    const target = seed.trim()
+    if (!target) {
+      return false
+    }
+    const text = (content || '').trimStart()
+    return text.trim() === target || text.startsWith(`${target} `) || text.startsWith(`${target}\n`)
   }
 
   private scheduleSaveDraft(): void {

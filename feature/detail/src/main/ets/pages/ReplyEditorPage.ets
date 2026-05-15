@@ -203,27 +203,22 @@ export struct ReplyEditorPage {
     if (!seed) {
       return draft
     }
-    if (this.containsInitialSeed(draft, seed)) {
-      return draft
-    }
     if (draft.trim().length === 0) {
       return seed
     }
-    return `${draft.replace(/\s+$/g, '')}\n\n${seed}`
+    if (this.startsWithInitialSeed(draft, seed)) {
+      return draft
+    }
+    return seed
   }
 
-  private containsInitialSeed(draftContent: string, seed: string): boolean {
+  private startsWithInitialSeed(content: string, seed: string): boolean {
     const target = seed.trim()
     if (!target) {
       return false
     }
-    const parts = (draftContent || '').split(/\s+/)
-    for (let i = 0; i < parts.length; i++) {
-      if (parts[i] === target) {
-        return true
-      }
-    }
-    return false
+    const text = (content || '').trimStart()
+    return text.trim() === target || text.startsWith(`${target} `) || text.startsWith(`${target}\n`)
   }
 
   private scheduleSaveDraft(): void {
