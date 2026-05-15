@@ -18,10 +18,11 @@ Next2V 是一个面向 HarmonyOS 的原生 V2EX 第三方客户端。
 ## 界面预览
 
 <p align="center">
-  <img src="assets/screenshots/home-feed.jpeg" alt="首页主题流" width="220" />
-  <img src="assets/screenshots/topic-detail-rendering.jpeg" alt="主题详情与内容渲染" width="220" />
-  <img src="assets/screenshots/discover-trending.jpeg" alt="发现页与今日热议" width="220" />
-  <img src="assets/screenshots/settings-reading.jpeg" alt="阅读与账号设置" width="220" />
+  <img src="assets/screenshots/home-feed.jpeg" alt="首页主题流" width="200" />
+  <img src="assets/screenshots/topic-detail-rendering.jpeg" alt="主题详情与内容渲染" width="200" />
+  <img src="assets/screenshots/discover-trending.jpeg" alt="发现页与今日热议" width="200" />
+  <img src="assets/screenshots/my-page.jpeg" alt="我的与账号内容" width="200" />
+  <img src="assets/screenshots/settings-reading.jpeg" alt="阅读与账号设置" width="200" />
 </p>
 
 ## 项目状态
