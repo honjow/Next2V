@@ -29,7 +29,7 @@ export struct UserProfilePage {
   @State private tabSelectedIndexes: number[] = [0];
   @State private tabOptions: SegmentButtonOptions = SegmentButtonOptions.tab({
     buttons: [{ text: '主题' }, { text: '回复' }],
-    buttonPadding: { top: 12, bottom: 12, left: 8, right: 8 },
+    buttonPadding: { top: 10, bottom: 10, left: 8, right: 8 },
   });
   @State private following: boolean = false;
   @State private blocked: boolean = false;
