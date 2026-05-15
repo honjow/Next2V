@@ -30,9 +30,25 @@ function decodeHtml(value) {
 }
 
 function attr(tag, name) {
-  const re = new RegExp(`${name}\\s*=\\s*(["'])(.*?)\\1`, 'i')
+  const re = new RegExp(`(?:^|\\s)${name}\\s*=\\s*(?:(["'])(.*?)\\1|([^\\s"'=<>]+))`, 'i')
   const m = tag.match(re)
-  return m ? decodeHtml(m[2]).trim() : ''
+  const value = m ? (m[2] || m[3] || '') : ''
+  return value ? decodeHtml(value).trim() : ''
+}
+
+function hasHtmlClass(tag, className) {
+  return attr(tag, 'class').split(/\s+/).includes(className)
+}
+
+function decodeCfEmail(cfemail) {
+  const value = (cfemail || '').trim()
+  if (value.length < 4 || value.length % 2 !== 0 || !/^[0-9a-f]+$/i.test(value)) return ''
+  const key = parseInt(value.slice(0, 2), 16)
+  let out = ''
+  for (let i = 2; i < value.length; i += 2) {
+    out += String.fromCharCode(parseInt(value.slice(i, i + 2), 16) ^ key)
+  }
+  return out
 }
 
 function stripTags(value) {
@@ -101,6 +117,12 @@ function inlineHtmlToTokens(html) {
       if (imgs.length) imgs.forEach(src => tokens.push({ type: 'image', href: src }))
       else {
         const label = stripTags(part)
+        if (hasHtmlClass(part, '__cf_email__')) {
+          const decodedEmail = decodeCfEmail(attr(part, 'data-cfemail'))
+          tokens.push({ type: 'text', text: decodedEmail || label })
+          index = re.lastIndex
+          continue
+        }
         if (/^\/member\//.test(href) && tokens[tokens.length - 1]?.type === 'text') {
           tokens[tokens.length - 1].text = tokens[tokens.length - 1].text.replace(/@\s*$/, '')
         }
@@ -153,6 +175,41 @@ assert.deepEqual(spacedMarkdownLinkTokens.map(t => t.type), ['link'])
 assert.equal(spacedMarkdownLinkTokens[0].text, 'coolpace/V2EX_Polish')
 assert.equal(spacedMarkdownLinkTokens[0].href, 'https://github.com/coolpace/V2EX_Polish/tree/main')
 
+const topic1212851Reply2 = '谢谢老板，<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="6e1a1a0f0f1e1a0f2e5f585d400d0103">[email&#160;protected]</a>'
+const topic1212851Tokens = inlineHtmlToTokens(topic1212851Reply2)
+assert.deepEqual(topic1212851Tokens.map(t => t.type), ['text', 'text'])
+assert.equal(topic1212851Tokens.map(t => t.text || '').join(''), '谢谢老板，ttaapta@163.com')
+assert.equal(topic1212851Tokens.some(t => t.href === '/cdn-cgi/l/email-protection'), false)
+
+const cfEmailVariations = [
+  '<a data-cfemail="6e1a1a0f0f1e1a0f2e5f585d400d0103" class="quiet __cf_email__ extra" href="/cdn-cgi/l/email-protection">hidden</a>',
+  "<a class='quiet __cf_email__ extra' href='/cdn-cgi/l/email-protection' data-cfemail='6e1a1a0f0f1e1a0f2e5f585d400d0103'>hidden</a>",
+]
+for (const html of cfEmailVariations) {
+  const tokens = inlineHtmlToTokens(html)
+  assert.deepEqual(tokens, [{ type: 'text', text: 'ttaapta@163.com' }])
+}
+
+const malformedCfEmail = '<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="not-hex">[email&#160;protected]</a>'
+const malformedCfTokens = inlineHtmlToTokens(malformedCfEmail)
+assert.deepEqual(malformedCfTokens, [{ type: 'text', text: '[email protected]' }])
+
+const dataClassLinkTokens = inlineHtmlToTokens('<a data-class="__cf_email__" data-cfemail="6e1a1a0f0f1e1a0f2e5f585d400d0103" href="https://example.com">Example</a>')
+assert.deepEqual(dataClassLinkTokens, [{ type: 'link', href: 'https://example.com', text: 'Example' }])
+assert.equal(dataClassLinkTokens.some(t => t.text === 'ttaapta@163.com'), false)
+
+const prefixedClassLinkTokens = inlineHtmlToTokens('<a xclass="__cf_email__" data-cfemail="6e1a1a0f0f1e1a0f2e5f585d400d0103" href="https://example.com/prefixed">Prefixed</a>')
+assert.deepEqual(prefixedClassLinkTokens, [{ type: 'link', href: 'https://example.com/prefixed', text: 'Prefixed' }])
+
+const ariaClassLinkTokens = inlineHtmlToTokens('<a aria-class="__cf_email__" data-cfemail="6e1a1a0f0f1e1a0f2e5f585d400d0103" href="https://example.com/aria">Aria</a>')
+assert.deepEqual(ariaClassLinkTokens, [{ type: 'link', href: 'https://example.com/aria', text: 'Aria' }])
+
+const normalLinkTokens = inlineHtmlToTokens('<a href="https://example.com/path">Example</a>')
+assert.deepEqual(normalLinkTokens, [{ type: 'link', href: 'https://example.com/path', text: 'Example' }])
+
+const memberLinkTokens = inlineHtmlToTokens('@<a href="/member/example_user">example_user</a>')
+assert.deepEqual(memberLinkTokens, [{ type: 'link', href: '/member/example_user', text: 'example_user' }])
+
 const topic1212814CodeHtml = '<pre><code>&lt;video&gt;\n  &lt;model name=&quot;cube&quot; /&gt;\n  &lt;graphics api=&quot;webgpu&quot;&gt;ok&lt;/graphics&gt;\n&lt;/video&gt;</code></pre>'
 const topic1212814CodeText = extractPreCodeTextFromRenderedHtml(decodeHtml(topic1212814CodeHtml))
 assert.equal(topic1212814CodeText, '<video>\n  <model name="cube" />\n  <graphics api="webgpu">ok</graphics>\n</video>')
@@ -165,6 +222,11 @@ const source = readFileSync('shared/src/main/ets/components/MarkdownContent.ets'
 const readingSettingsPageSource = readFileSync('feature/settings/src/main/ets/pages/ReadingSettingsPage.ets', 'utf8')
 assert.match(source, /renderedHtmlToTokens/)
 assert.match(source, /inlineHtmlToTokens/)
+assert.match(source, /decodeCloudflareEmail/)
+assert.match(source, /htmlClassContains\(part, '__cf_email__'\)/)
+assert.match(source, /data-cfemail/)
+assert.ok(source.includes('`(?:^|\\\\s)${name}\\\\s*='), 'MarkdownContent.htmlAttr must require start-or-whitespace before the attribute name')
+assert.doesNotMatch(source, /new RegExp\(`\$\{name\}\\\\s\*=\\\\s\*\(\["'\]\)\(\.\*\?\)\\\\1`, 'i'\)/)
 assert.match(source, /parseMarkdownInlineTextTokens/)
 assert.match(source, /MarkdownBlockquote/)
 assert.doesNotMatch(source, /\.height\('100%'\)[\s\S]{0,160}quoteDriveColor/)
