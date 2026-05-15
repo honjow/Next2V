@@ -432,10 +432,10 @@ export struct TopicDetailPage {
                 this.openReplyContext(target)
               },
               onMentionClick: (target: V2exReply) => {
-                this.openReplyEditor(this.getMentionText(target.member.username))
+                this.openReplyEditor(this.getReplyMentionText(target, index))
               },
               onReplyClick: (target: V2exReply) => {
-                this.openReplyEditor(this.getMentionText(target.member.username))
+                this.openReplyEditor(this.getReplyMentionText(target, index))
               },
               onThankClick: (target: V2exReply) => {
                 this.prepareReplyThank(target)
@@ -1447,6 +1447,10 @@ export struct TopicDetailPage {
     return floor > 0 ? floor : index + 1
   }
 
+  private getReplyMentionText(reply: V2exReply, fallbackIndex: number): string {
+    return this.getMentionText(reply.member.username, this.getFloorForReply(reply.id, fallbackIndex))
+  }
+
   private openJumpToFloorDialog(): void {
     if (this.v.topic === null) {
       return
@@ -2231,9 +2235,13 @@ export struct TopicDetailPage {
     }
   }
 
-  private getMentionText(username: string): string {
+  private getMentionText(username: string, floor: number = 0): string {
     const clean = (username || '').trim()
-    return clean ? `@${clean} ` : ''
+    if (!clean) {
+      return ''
+    }
+    const cleanFloor = Math.floor(floor)
+    return cleanFloor > 0 ? `@${clean} #${cleanFloor} ` : `@${clean} `
   }
 
   private openInSystemBrowser(url: string): void {
