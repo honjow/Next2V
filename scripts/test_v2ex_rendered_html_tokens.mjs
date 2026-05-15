@@ -41,6 +41,17 @@ function stripTags(value) {
     .trim()
 }
 
+function extractPreCodeTextFromRenderedHtml(preHtml) {
+  const bodyMatch = (preHtml || '').match(/^<pre\b[^>]*>([\s\S]*?)<\/pre>$/i)
+  let body = bodyMatch ? bodyMatch[1] : (preHtml || '')
+  const codeMatch = body.match(/^\s*<code\b[^>]*>([\s\S]*?)<\/code>\s*$/i)
+  if (codeMatch) body = codeMatch[1]
+  return decodeHtml(body)
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n')
+    .trim()
+}
+
 function parseMarkdownInlineTextTokens(text) {
   const result = []
   const re = /\[([^\]\n]+)\]\(\s*(https?:\/\/[^\s)]+)\s*\)/g
@@ -142,6 +153,14 @@ assert.deepEqual(spacedMarkdownLinkTokens.map(t => t.type), ['link'])
 assert.equal(spacedMarkdownLinkTokens[0].text, 'coolpace/V2EX_Polish')
 assert.equal(spacedMarkdownLinkTokens[0].href, 'https://github.com/coolpace/V2EX_Polish/tree/main')
 
+const topic1212814CodeHtml = '<pre><code>&lt;video&gt;\n  &lt;model name=&quot;cube&quot; /&gt;\n  &lt;graphics api=&quot;webgpu&quot;&gt;ok&lt;/graphics&gt;\n&lt;/video&gt;</code></pre>'
+const topic1212814CodeText = extractPreCodeTextFromRenderedHtml(decodeHtml(topic1212814CodeHtml))
+assert.equal(topic1212814CodeText, '<video>\n  <model name="cube" />\n  <graphics api="webgpu">ok</graphics>\n</video>')
+assert.match(topic1212814CodeText, /<video>/)
+assert.match(topic1212814CodeText, /<model name="cube" \/>/)
+assert.match(topic1212814CodeText, /<graphics api="webgpu">ok<\/graphics>/)
+assert.notEqual(topic1212814CodeText.trim(), '')
+
 const source = readFileSync('shared/src/main/ets/components/MarkdownContent.ets', 'utf8')
 const readingSettingsPageSource = readFileSync('feature/settings/src/main/ets/pages/ReadingSettingsPage.ets', 'utf8')
 assert.match(source, /renderedHtmlToTokens/)
@@ -190,6 +209,11 @@ assert.match(source, /parseRenderedHtmlToRenderAst\(contentRendered: string/)
 assert.match(source, /const blockRe = \/<\(table\|h\[1-6\]\|p\|ul\|ol\|blockquote\|pre\|div\)/)
 assert.match(source, /tag === 'blockquote'/)
 assert.match(source, /tag === 'pre'/)
+assert.match(source, /private static extractPreCodeTextFromRenderedHtml\(body: string\): string/)
+const preBranch = source.match(/if \(tag === 'pre'\) \{[\s\S]*?\n    \}/)?.[0] || ''
+assert.match(preBranch, /text: MarkdownContent\.extractPreCodeTextFromRenderedHtml\(body\)/)
+assert.doesNotMatch(preBranch, /stripHtmlTags\(body\)/)
+assert.doesNotMatch(source, /tag === 'pre'[\s\S]{0,220}stripHtmlTags\(body\)/)
 assert.doesNotMatch(source, /12 - level \* 2/)
 assert.doesNotMatch(source, /headingLevel\(token\) <= 3/)
 assert.doesNotMatch(source, /FontWeight\.Bold : FontWeight\.Medium/)

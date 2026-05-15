@@ -2045,7 +2045,7 @@ export struct MarkdownContent {
       return [{
         type: 'code',
         raw: raw,
-        text: MarkdownContent.stripHtmlTags(body),
+        text: MarkdownContent.extractPreCodeTextFromRenderedHtml(body),
         lang: '',
       } as Tokens.Code];
     }
@@ -2821,6 +2821,18 @@ export struct MarkdownContent {
         return `*${MarkdownContent.stripHtmlTags(text)}*`;
       })
       .replace(/<[^>]+>/g, '');
+  }
+
+  private static extractPreCodeTextFromRenderedHtml(body: string): string {
+    let code = body || '';
+    const codeMatch = /^\s*<code\b[^>]*>([\s\S]*?)<\/code>\s*$/i.exec(code);
+    if (codeMatch) {
+      code = codeMatch[1];
+    }
+    return HtmlEntityUtils.decode(code)
+      .replace(/\r\n/g, '\n')
+      .replace(/\r/g, '\n')
+      .trim();
   }
 
   private static stripHtmlTags(value: string): string {
