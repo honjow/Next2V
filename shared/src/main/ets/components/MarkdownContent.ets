@@ -233,7 +233,7 @@ function _appendCacheBust(url: string, nonce: number): string {
   return `${url}${sep}_r=${nonce}`;
 }
 
-type CodeHighLight = "string" | "text" | "keyword" | "type" | "symbol" | "number" | "boolean";
+type CodeHighLight = "string" | "text" | "keyword" | "type" | "symbol" | "number" | "boolean" | "comment" | "tag" | "attr" | "key" | "punctuation" | "flag";
 
 interface CodeToken {
   type: CodeHighLight;
@@ -244,7 +244,7 @@ interface CodeToken {
 // Ported from @lidary/markdown's internal HighlightAnalyzer (not exported).
 // Simple regex-based tokenizer: splits each line into typed spans for coloring.
 const _stringRegex = /(["'])(?:(?=(\\?))\2.)*?\1/g;
-const _commonRegex = /([(\s=){}."])/gi;
+const _commonRegex = /([(\s=){}.[\]",;:<>+\-*\/])/gi;
 
 const _keywords: Set<string> = new Set([
   "public",
@@ -352,7 +352,7 @@ function _splitOne(code: CodeToken, token: CodeToken): CodeToken[] {
       if (v.length > 0) {
         res.push({ type: "text", text: v });
       }
-      res.push({ type: "string", text: token.text });
+      res.push({ type: token.type, text: token.text });
     } else if (v.length > 0) {
       res.push({ type: "text", text: v });
     }
@@ -384,10 +384,90 @@ function _buildToken(text: string): CodeToken {
   return { type: "text", text: text };
 }
 
-// Two-pass tokenizer: first extract string literals, then split the rest by
+function normalizeCodeLanguage(lang: string): string {
+  const raw = (lang || '').trim().toLowerCase();
+  if (!raw) {
+    return '';
+  }
+  const first = raw.split(/[\s,;]+/)[0].replace(/^language-/, '').replace(/^lang-/, '');
+  if (first === 'js' || first === 'javascript' || first === 'jsx') {
+    return 'javascript';
+  }
+  if (first === 'ts' || first === 'typescript' || first === 'tsx' || first === 'ets' || first === 'arkts') {
+    return 'typescript';
+  }
+  if (first === 'xml' || first === 'html' || first === 'xhtml' || first === 'svg') {
+    return first === 'xml' ? 'xml' : 'html';
+  }
+  if (first === 'json' || first === 'jsonc') {
+    return 'json';
+  }
+  if (first === 'shell' || first === 'bash' || first === 'sh' || first === 'zsh') {
+    return 'shell';
+  }
+  if (first === 'css') {
+    return 'css';
+  }
+  return first || 'generic';
+}
+
+function _pushCodeToken(tokens: CodeToken[], type: CodeHighLight, text: string): void {
+  if (!text) {
+    return;
+  }
+  const last = tokens.length > 0 ? tokens[tokens.length - 1] : null;
+  if (last && last.type === type) {
+    last.text += text;
+  } else {
+    tokens.push({ type: type, text: text } as CodeToken);
+  }
+}
+
+function _lineCommentIndex(code: string): number {
+  let quote = '';
+  let escaped = false;
+  for (let i = 0; i < code.length - 1; i++) {
+    const ch = code.charAt(i);
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+    if (ch === '\\') {
+      escaped = true;
+      continue;
+    }
+    if (quote) {
+      if (ch === quote) {
+        quote = '';
+      }
+      continue;
+    }
+    if (ch === '"' || ch === "'" || ch === '`') {
+      quote = ch;
+      continue;
+    }
+    if (ch === '/' && code.charAt(i + 1) === '/') {
+      return i;
+    }
+  }
+  return -1;
+}
+
+// Two-pass generic tokenizer: first extract string literals, then split the rest by
 // common delimiters and classify each piece (keyword, type, number, etc.).
 function highlightLine(code: string): CodeToken[] {
+  const commentIndex = _lineCommentIndex(code || '');
+  if (commentIndex >= 0) {
+    const before = highlightLine((code || '').slice(0, commentIndex));
+    before.push({ type: 'comment', text: (code || '').slice(commentIndex) } as CodeToken);
+    return before;
+  }
   let tokens: CodeToken[] = [{ type: "text", text: code } as CodeToken];
+
+  let blockCommentMatch: RegExpExecArray | null = /\/\*[\s\S]*?\*\//.exec(code || '');
+  if (blockCommentMatch) {
+    tokens = _splitAll(tokens, { type: 'comment', text: blockCommentMatch[0] } as CodeToken);
+  }
 
   // Pass 1: pull out quoted strings so they're not further split
   let strings = code.match(_stringRegex);
@@ -415,6 +495,147 @@ function highlightLine(code: string): CodeToken[] {
   return result;
 }
 
+function highlightJsonLine(code: string): CodeToken[] {
+  const tokens: CodeToken[] = [];
+  const source = code || '';
+  const re = /"(?:\\.|[^"\\])*"|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?|true|false|null|[{}\[\],:]/g;
+  let last = 0;
+  let match: RegExpExecArray | null = re.exec(source);
+  while (match) {
+    if (match.index > last) {
+      _pushCodeToken(tokens, 'text', source.slice(last, match.index));
+    }
+    const value = match[0];
+    const after = source.slice(re.lastIndex).replace(/^\s+/, '');
+    if (value.startsWith('"')) {
+      _pushCodeToken(tokens, after.startsWith(':') ? 'key' : 'string', value);
+    } else if (/^-?\d/.test(value)) {
+      _pushCodeToken(tokens, 'number', value);
+    } else if (value === 'true' || value === 'false' || value === 'null') {
+      _pushCodeToken(tokens, 'boolean', value);
+    } else {
+      _pushCodeToken(tokens, 'punctuation', value);
+    }
+    last = re.lastIndex;
+    match = re.exec(source);
+  }
+  if (last < source.length) {
+    _pushCodeToken(tokens, 'text', source.slice(last));
+  }
+  return tokens;
+}
+
+function highlightXmlLine(code: string): CodeToken[] {
+  const tokens: CodeToken[] = [];
+  const source = code || '';
+  const tagRe = /<!--[\s\S]*?-->|<\/?[A-Za-z][^>]*?\/?>/g;
+  let last = 0;
+  let match: RegExpExecArray | null = tagRe.exec(source);
+  while (match) {
+    if (match.index > last) {
+      _pushCodeToken(tokens, 'text', source.slice(last, match.index));
+    }
+    const tag = match[0];
+    if (tag.startsWith('<!--')) {
+      _pushCodeToken(tokens, 'comment', tag);
+    } else {
+      const tagTokens = tokenizeXmlTag(tag);
+      for (const token of tagTokens) {
+        _pushCodeToken(tokens, token.type, token.text);
+      }
+    }
+    last = tagRe.lastIndex;
+    match = tagRe.exec(source);
+  }
+  if (last < source.length) {
+    _pushCodeToken(tokens, 'text', source.slice(last));
+  }
+  return tokens;
+}
+
+function tokenizeXmlTag(tag: string): CodeToken[] {
+  const tokens: CodeToken[] = [];
+  let index = 0;
+  const open = /^<\/?/.exec(tag || '');
+  if (open) {
+    _pushCodeToken(tokens, 'punctuation', open[0]);
+    index = open[0].length;
+  }
+  const name = /^[A-Za-z_:\-][\w:.\-]*/.exec(tag.slice(index));
+  if (name) {
+    _pushCodeToken(tokens, 'tag', name[0]);
+    index += name[0].length;
+  }
+  while (index < tag.length) {
+    const rest = tag.slice(index);
+    const close = /^\s*\/?>$/.exec(rest);
+    if (close) {
+      const spaces = rest.slice(0, rest.length - (rest.endsWith('/>') ? 2 : 1));
+      _pushCodeToken(tokens, 'text', spaces);
+      _pushCodeToken(tokens, 'punctuation', rest.endsWith('/>') ? '/>' : '>');
+      break;
+    }
+    const attr = /^(\s+)([A-Za-z_:\-][\w:.\-]*)(\s*=\s*)?((?:"[^"]*"|'[^']*'))?/.exec(rest);
+    if (!attr || attr[0].length === 0) {
+      _pushCodeToken(tokens, 'text', rest.charAt(0));
+      index += 1;
+      continue;
+    }
+    _pushCodeToken(tokens, 'text', attr[1] || '');
+    _pushCodeToken(tokens, 'attr', attr[2] || '');
+    _pushCodeToken(tokens, 'punctuation', attr[3] || '');
+    _pushCodeToken(tokens, 'string', attr[4] || '');
+    index += attr[0].length;
+  }
+  return tokens;
+}
+
+function highlightShellLine(code: string): CodeToken[] {
+  const source = code || '';
+  const hash = source.indexOf('#');
+  const body = hash >= 0 ? source.slice(0, hash) : source;
+  const result: CodeToken[] = [];
+  const re = /"(?:\\.|[^"\\])*"|'[^']*'|--?[A-Za-z0-9][\w-]*|\b(?:cd|echo|export|grep|sed|awk|cat|ls|rm|cp|mv|mkdir|curl|git|node|npm|pnpm|yarn|bash|sh|if|then|else|fi|for|do|done|case|esac|while|function)\b/g;
+  let last = 0;
+  let match: RegExpExecArray | null = re.exec(body);
+  while (match) {
+    if (match.index > last) {
+      _pushCodeToken(result, 'text', body.slice(last, match.index));
+    }
+    const value = match[0];
+    if (value.startsWith('"') || value.startsWith("'")) {
+      _pushCodeToken(result, 'string', value);
+    } else if (value.startsWith('-')) {
+      _pushCodeToken(result, 'flag', value);
+    } else {
+      _pushCodeToken(result, 'keyword', value);
+    }
+    last = re.lastIndex;
+    match = re.exec(body);
+  }
+  if (last < body.length) {
+    _pushCodeToken(result, 'text', body.slice(last));
+  }
+  if (hash >= 0) {
+    _pushCodeToken(result, 'comment', source.slice(hash));
+  }
+  return result;
+}
+
+function highlightCodeLine(code: string, lang: string): CodeToken[] {
+  const normalized = normalizeCodeLanguage(lang);
+  if (normalized === 'xml' || normalized === 'html') {
+    return highlightXmlLine(code);
+  }
+  if (normalized === 'json') {
+    return highlightJsonLine(code);
+  }
+  if (normalized === 'shell') {
+    return highlightShellLine(code);
+  }
+  return highlightLine(code);
+}
+
 const _darkCodeColors: Record<string, ResourceColor> = {
   "text": "#F8F8F2",
   "string": "#E6DB74",
@@ -423,6 +644,12 @@ const _darkCodeColors: Record<string, ResourceColor> = {
   "symbol": "#F8F8F2",
   "number": "#AE81FF",
   "boolean": "#AE81FF",
+  "comment": "#8B949E",
+  "tag": "#7EE787",
+  "attr": "#D2A8FF",
+  "key": "#79C0FF",
+  "punctuation": "#F8F8F2",
+  "flag": "#FFA657",
 };
 
 const _lightCodeColors: Record<string, ResourceColor> = {
@@ -433,6 +660,12 @@ const _lightCodeColors: Record<string, ResourceColor> = {
   "symbol": "#24292F",
   "number": "#0550AE",
   "boolean": "#0550AE",
+  "comment": "#6E7781",
+  "tag": "#116329",
+  "attr": "#8250DF",
+  "key": "#0550AE",
+  "punctuation": "#24292F",
+  "flag": "#953800",
 };
 
 function _codeColors(isDark: boolean): Record<string, ResourceColor> {
@@ -955,7 +1188,7 @@ struct MarkdownCodeBlock {
   }
 
   private languageText(): string {
-    const lang = ((this.codeToken.lang || "") as string).trim();
+    const lang = normalizeCodeLanguage((this.codeToken.lang || "") as string);
     return lang || "code";
   }
 
@@ -991,7 +1224,7 @@ struct MarkdownCodeBlock {
   }
 
   @Builder CodeLineSpans(line: string) {
-    ForEach(highlightLine(line), (ht: CodeToken) => {
+    ForEach(highlightCodeLine(line, this.languageText()), (ht: CodeToken) => {
       Span(ht.text)
         .fontColor(
           this.options.theme?.code?.fontColor?.[ht.type] ??
@@ -1944,6 +2177,7 @@ export struct MarkdownContent {
   private static parseMarkdownToRenderAst(source: string, _sizeRecords: InlineImageSizeRecord[] = []): RenderToken[] {
     const tokens = lexer(MarkdownContent.normalizeMarkdownSource(source), { gfm: true, breaks: true }) as RenderToken[];
     MarkdownContent.normalizeMarkdownTableTokens(tokens);
+    MarkdownContent.normalizeCodeBlockTokens(tokens);
     MarkdownContent.tagRenderSourceKind(tokens, "markdown");
     return tokens;
   }
@@ -2042,12 +2276,11 @@ export struct MarkdownContent {
       } as Token];
     }
     if (tag === 'pre') {
-      return [{
-        type: 'code',
-        raw: raw,
-        text: MarkdownContent.extractPreCodeTextFromRenderedHtml(body),
-        lang: '',
-      } as Tokens.Code];
+      return [MarkdownContent.buildCodeBlockToken(
+        MarkdownContent.extractPreCodeTextFromRenderedHtml(body),
+        MarkdownContent.extractPreCodeLanguageFromRenderedHtml(raw, body),
+        raw,
+      ) as Token];
     }
     if (tag === 'div' && /<(?:table|h[1-6]|p|ul|ol|blockquote|pre)\b/i.test(body)) {
       return MarkdownContent.renderedHtmlToTokens(body, sizeRecords);
@@ -2502,7 +2735,7 @@ export struct MarkdownContent {
 
   private static looksLikeRenderedHtml(source: string): boolean {
     const value = (source || '').trim();
-    return /<(?:div|p|h[1-6]|ul|ol|li|table|img|a)\b/i.test(value);
+    return /<(?:div|p|h[1-6]|ul|ol|li|table|img|a|pre|code)\b/i.test(value);
   }
 
   private static renderedHtmlToMarkdown(html: string): string {
@@ -2821,6 +3054,86 @@ export struct MarkdownContent {
         return `*${MarkdownContent.stripHtmlTags(text)}*`;
       })
       .replace(/<[^>]+>/g, '');
+  }
+
+  private static normalizeCodeBlockTokens(tokens: Token[]): void {
+    if (!tokens || tokens.length === 0) {
+      return;
+    }
+    for (let i = 0; i < tokens.length; i++) {
+      const token = tokens[i] as TokenRecord;
+      if (token["type"] === 'code') {
+        tokens[i] = MarkdownContent.buildCodeBlockToken(
+          String(token["text"] ?? ''),
+          String(token["lang"] ?? ''),
+          String(token["raw"] ?? ''),
+        ) as Token;
+        continue;
+      }
+      const childTokens = token["tokens"] as Token[] | undefined;
+      if (Array.isArray(childTokens) && childTokens.length > 0) {
+        MarkdownContent.normalizeCodeBlockTokens(childTokens);
+      }
+      const items = token["items"] as Array<TokenRecord> | undefined;
+      if (Array.isArray(items) && items.length > 0) {
+        for (const item of items) {
+          const itemTokens = item["tokens"] as Token[] | undefined;
+          if (Array.isArray(itemTokens) && itemTokens.length > 0) {
+            MarkdownContent.normalizeCodeBlockTokens(itemTokens);
+          }
+        }
+      }
+    }
+  }
+
+  private static buildCodeBlockToken(text: string, lang: string, raw: string): Tokens.Code {
+    return {
+      type: 'code',
+      raw: raw || text,
+      text: text || '',
+      lang: normalizeCodeLanguage(lang || ''),
+    } as Tokens.Code;
+  }
+
+  private static extractPreCodeLanguageFromRenderedHtml(raw: string, body: string): string {
+    const codeOpen = /^\s*(<code\b[^>]*>)/i.exec(body || '');
+    const codeTag = codeOpen ? codeOpen[1] : '';
+    const preOpen = /^(<pre\b[^>]*>)/i.exec(raw || '');
+    const preTag = preOpen ? preOpen[1] : '';
+    return normalizeCodeLanguage(
+      MarkdownContent.extractCodeLanguageFromTag(codeTag) ||
+        MarkdownContent.extractCodeLanguageFromTag(preTag)
+    );
+  }
+
+  private static extractCodeLanguageFromTag(tag: string): string {
+    if (!tag) {
+      return '';
+    }
+    const dataLanguage = MarkdownContent.htmlAttr(tag, 'data-language');
+    if (dataLanguage) {
+      return dataLanguage;
+    }
+    const dataLang = MarkdownContent.htmlAttr(tag, 'data-lang');
+    if (dataLang) {
+      return dataLang;
+    }
+    const className = MarkdownContent.htmlAttr(tag, 'class');
+    if (className) {
+      const language = /(?:^|\s)language-([A-Za-z0-9_+.-]+)/i.exec(className);
+      if (language && language[1]) {
+        return language[1];
+      }
+      const lang = /(?:^|\s)lang-([A-Za-z0-9_+.-]+)/i.exec(className);
+      if (lang && lang[1]) {
+        return lang[1];
+      }
+      const brush = /(?:^|\s)brush\s*:\s*([A-Za-z0-9_+.-]+)/i.exec(className);
+      if (brush && brush[1]) {
+        return brush[1];
+      }
+    }
+    return '';
   }
 
   private static extractPreCodeTextFromRenderedHtml(body: string): string {
