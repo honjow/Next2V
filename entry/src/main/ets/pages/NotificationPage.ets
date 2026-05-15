@@ -50,7 +50,6 @@ export struct NotificationPage {
   private apiV2: ApiV2Service = new ApiV2Service()
   private notificationVm: NotificationCenterViewModel = new NotificationCenterViewModel(this.api)
   private readonly NOTIFICATION_PAGE_SIZE: number = 20
-  onOpenAccount: () => void = () => {}
 
   aboutToAppear(): void {
     this.loadAuthSnapshot()
@@ -136,11 +135,11 @@ export struct NotificationPage {
       Text(message)
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
         .fontColor($r('sys.color.font_secondary'))
-      Button('去我的页面配置')
+      Button('去登录')
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
         .margin({ top: ThemeConstants.SPACE_LG })
         .onClick(() => {
-          this.onOpenAccount()
+          this.ns.pushPathByName('V2exNativeLogin', null)
         })
     }
     .justifyContent(FlexAlign.Center)

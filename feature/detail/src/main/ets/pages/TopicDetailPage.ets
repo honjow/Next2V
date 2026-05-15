@@ -235,8 +235,7 @@ export struct TopicDetailPage {
 
   private openReplyEditor(initialContent: string = ''): void {
     if (!this.authCookieConfigured || !CookieJarSettings.getCurrentCookie()) {
-      promptAction.openToast({ message: '请先登录后回复' }).catch((_error: Error) => {})
-      this.stack.pushPathByName('Account', null)
+      this.stack.pushPathByName('V2exNativeLogin', null)
       return
     }
     this.replyComposerInitialContent = initialContent

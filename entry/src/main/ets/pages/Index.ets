@@ -691,11 +691,7 @@ struct Index {
           DiscoverPage()
         }.tabBar(this.TabIcon('发现', 1))
         TabContent() {
-          NotificationPage({
-            onOpenAccount: () => {
-              this.tc.changeIndex(3)
-            },
-          })
+          NotificationPage()
         }.tabBar(this.TabIcon('通知', 2))
         TabContent() {
           AccountDashboardPage({ refreshKey: this.accountRefreshKey })
