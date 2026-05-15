@@ -520,6 +520,7 @@ struct Index {
     '{}';
   @StorageLink(StorageKeys.USER_PROFILE_APPBAR_AVATAR_STATES)
   userProfileAppbarAvatarStates: string = '{}';
+  @State private notificationRefreshKey: number = 0;
   @State private accountRefreshKey: number = 0;
   @State private isFoldedAndUseOuterScreen: boolean = false;
   private http: HttpClient = HttpClient.getInstance();
@@ -691,7 +692,7 @@ struct Index {
           DiscoverPage()
         }.tabBar(this.TabIcon('发现', 1))
         TabContent() {
-          NotificationPage()
+          NotificationPage({ refreshKey: this.notificationRefreshKey })
         }.tabBar(this.TabIcon('通知', 2))
         TabContent() {
           AccountDashboardPage({ refreshKey: this.accountRefreshKey })
@@ -712,6 +713,9 @@ struct Index {
       } as HdsTabsFloatingStyle)
       .onChange((i: number) => {
         this.ct = i
+        if (i === 2) {
+          this.notificationRefreshKey = Date.now()
+        }
         if (i === 3) {
           this.accountRefreshKey = Date.now()
           this.refreshLocalData()

@@ -50,21 +50,26 @@ export struct NotificationPage {
   private apiV2: ApiV2Service = new ApiV2Service()
   private notificationVm: NotificationCenterViewModel = new NotificationCenterViewModel(this.api)
   private readonly NOTIFICATION_PAGE_SIZE: number = 20
+  private authRefreshRequestId: number = 0
+  @Prop @Watch('onRefreshKeyChanged') refreshKey: number = 0
 
   aboutToAppear(): void {
-    this.loadAuthSnapshot()
-    this.loadNotificationCache(this.sessionUsername || this.storedUsername)
+    this.loadAuthSnapshot(false)
+  }
+
+  onRefreshKeyChanged(_propName: string): void {
+    this.resetNotificationState()
+    this.loadAuthSnapshot(true)
   }
 
   onAuthChanged(_propName: string): void {
-    this.loadAuthSnapshot(true)
     this.resetNotificationState()
-    this.loadNotificationCache(this.sessionUsername || this.storedUsername)
+    this.loadAuthSnapshot(true)
   }
 
   onLocalDataUpdated(_propName: string): void {
     this.resetNotificationState()
-    this.loadNotificationCache(this.sessionUsername || this.storedUsername)
+    this.loadAuthSnapshot(true)
   }
 
   onNotificationAction(_propName: string): void {
@@ -127,6 +132,11 @@ export struct NotificationPage {
     .width('100%')
     .height('100%')
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
+    .onVisibleAreaChange([0.0, 1.0], (isVisible: boolean, _currentRatio: number) => {
+      if (isVisible) {
+        this.refreshVisibleNotificationsIfNeeded()
+      }
+    })
   }
 
   @Builder
@@ -310,15 +320,44 @@ export struct NotificationPage {
 
   private loadAuthSnapshot(forceNotifications: boolean = false): void {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    AuthSettings.load(context)
+    const requestId = ++this.authRefreshRequestId
+    const restoreCookieJar = CookieJarSettings.getCurrentCookie()
+      ? Promise.resolve()
+      : CookieJarSettings.load(context).catch((error: Error) => {
+          console.error('restore notification cookie jar failed: ' + error.message)
+        })
+    restoreCookieJar
+      .then(() => AuthSettings.load(context))
       .then((snapshot) => {
+        if (requestId !== this.authRefreshRequestId) {
+          return
+        }
         this.authToken = snapshot.token
-        this.loadNotificationCache(snapshot.username)
+        this.loadNotificationCache(snapshot.username || this.sessionUsername)
         this.loadNotifications(forceNotifications)
       })
       .catch((error: Error) => {
+        if (requestId !== this.authRefreshRequestId) {
+          return
+        }
         this.notificationError = error.message || '读取通知授权失败'
       })
+  }
+
+  private refreshVisibleNotificationsIfNeeded(): void {
+    if (!this.hasNotificationAuth()) {
+      if (this.authCookieConfigured || this.authTokenConfigured) {
+        this.loadAuthSnapshot(true)
+      }
+      return
+    }
+    if (this.isNotificationLoading || this.isNotificationLoadingMore) {
+      return
+    }
+    if (this.notifications.length > 0 && !this.notificationLoadedFromCache) {
+      return
+    }
+    this.loadAuthSnapshot(true)
   }
 
   private hasNotificationAuth(): boolean {
