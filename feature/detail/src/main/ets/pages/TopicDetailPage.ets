@@ -288,10 +288,12 @@ export struct TopicDetailPage {
       .bindSheet(
         $$this.replyComposerVisible,
         this.ReplyComposerSheetBuilder(),
-        defaultSheetOptions(SheetSize.MEDIUM, () => {
+        defaultSheetOptions(SheetSize.LARGE, () => {
           this.replyComposerVisible = false
           this.replyComposerInitialContent = ''
-        }),
+        },
+          [SheetSize.LARGE, SheetSize.MEDIUM]
+        ),
       )
   }
 
