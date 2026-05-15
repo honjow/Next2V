@@ -2466,6 +2466,11 @@ export struct MarkdownContent {
         return images;
       }
       const label = MarkdownContent.stripHtmlTags(part);
+      if (MarkdownContent.htmlClassContains(part, '__cf_email__')) {
+        const decodedEmail = MarkdownContent.decodeCloudflareEmail(MarkdownContent.htmlAttr(part, 'data-cfemail'));
+        const text = decodedEmail || label;
+        return text ? [MarkdownContent.buildTextToken(text) as Token] : [];
+      }
       if (!href) {
         return label ? [MarkdownContent.buildTextToken(label) as Token] : [];
       }
@@ -3155,9 +3160,40 @@ export struct MarkdownContent {
   }
 
   private static htmlAttr(tag: string, name: string): string {
-    const re = new RegExp(`${name}\\s*=\\s*(["'])(.*?)\\1`, 'i');
+    const re = new RegExp(`(?:^|\\s)${name}\\s*=\\s*(?:(["'])(.*?)\\1|([^\\s"'=<>]+))`, 'i');
     const match = re.exec(tag || '');
-    return match ? HtmlEntityUtils.decode(match[2]).trim() : '';
+    const value = match ? (match[2] || match[3] || '') : '';
+    return value ? HtmlEntityUtils.decode(value).trim() : '';
+  }
+
+  private static htmlClassContains(tag: string, className: string): boolean {
+    const classes = MarkdownContent.htmlAttr(tag, 'class').split(/\s+/);
+    for (const value of classes) {
+      if (value === className) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private static decodeCloudflareEmail(cfemail: string): string {
+    const value = (cfemail || '').trim();
+    if (value.length < 4 || value.length % 2 !== 0 || !/^[0-9a-f]+$/i.test(value)) {
+      return '';
+    }
+    const key = Number.parseInt(value.slice(0, 2), 16);
+    if (Number.isNaN(key)) {
+      return '';
+    }
+    let result = '';
+    for (let i = 2; i < value.length; i += 2) {
+      const byteValue = Number.parseInt(value.slice(i, i + 2), 16);
+      if (Number.isNaN(byteValue)) {
+        return '';
+      }
+      result += String.fromCharCode(byteValue ^ key);
+    }
+    return result;
   }
 
   private static splitMixedImageParagraphs(tokens: Token[]): void {
