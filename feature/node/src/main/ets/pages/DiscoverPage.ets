@@ -78,6 +78,7 @@ export struct DiscoverPage {
               }
                 .padding({
                   left: this.GAP, right: this.GAP,
+                  top: this.discoverTopPadding(),
                   bottom: this.discoverBottomPadding()
                 })
                 .width('100%')
@@ -226,6 +227,7 @@ export struct DiscoverPage {
       .fontWeight(FontWeight.Medium)
       .fontColor($r('sys.color.font_primary'))
       .width('100%')
+      .padding({ top: ThemeConstants.SPACE_SM })
   }
 
   @Builder LocalNodeSections() {
@@ -306,6 +308,10 @@ export struct DiscoverPage {
 
   private discoverBottomPadding(): number {
     return this.bottomH + this.FLOAT_H + ThemeConstants.SPACE_XL
+  }
+
+  private discoverTopPadding(): number {
+    return this.topH + this.TBH + this.BBH
   }
 
   private hasNodeSearchQuery(): boolean {
