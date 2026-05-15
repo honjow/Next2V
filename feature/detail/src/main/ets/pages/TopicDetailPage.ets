@@ -70,7 +70,6 @@ export struct TopicDetailPage {
   @StorageLink(StorageKeys.TOPIC_DETAIL_APPBAR_USERNAME_STATES)
   topicDetailAppbarUsernameStates: string = '{}';
   @StorageLink(StorageKeys.AUTH_COOKIE_CONFIGURED) authCookieConfigured: boolean = false;
-  @StorageLink(StorageKeys.ACCOUNT_WRITE_ENABLED) writeEnabled: boolean = false;
   @StorageLink(StorageKeys.READING_FONT_SIZE) readingFontSize: number =
     ThemeConstants.FONT_SIZE_BODY;
   @StorageLink(StorageKeys.READING_LINE_HEIGHT) readingLineHeight: number =
@@ -1706,12 +1705,6 @@ export struct TopicDetailPage {
     if (this.isSiteFavoriteLoading) {
       return
     }
-    if (!this.writeEnabled) {
-      promptAction
-        .openToast({ message: '写入操作开关未开启，站内收藏不可用' })
-        .catch((_error: Error) => {})
-      return
-    }
     const cookie = CookieJarSettings.getCurrentCookie()
     if (!cookie) {
       promptAction.openToast({ message: '请先登录' }).catch((_error: Error) => {})
@@ -1843,12 +1836,6 @@ export struct TopicDetailPage {
       promptAction.openToast({ message: '已经感谢过' }).catch((_error: Error) => {})
       return
     }
-    if (!this.writeEnabled) {
-      promptAction
-        .openToast({ message: '写入操作开关未开启，感谢不可用' })
-        .catch((_error: Error) => {})
-      return
-    }
     const cookie = CookieJarSettings.getCurrentCookie()
     if (!cookie) {
       promptAction.openToast({ message: '请先登录' }).catch((_error: Error) => {})
@@ -1926,12 +1913,6 @@ export struct TopicDetailPage {
     }
     if (this.isReplyThanked(reply.id)) {
       promptAction.openToast({ message: '已经感谢过' }).catch((_error: Error) => {})
-      return
-    }
-    if (!this.writeEnabled) {
-      promptAction
-        .openToast({ message: '写入操作开关未开启，感谢不可用' })
-        .catch((_error: Error) => {})
       return
     }
     const cookie = CookieJarSettings.getCurrentCookie()
@@ -2089,12 +2070,6 @@ export struct TopicDetailPage {
     if (this.isModerationActionLoading) {
       return
     }
-    if (!this.writeEnabled) {
-      promptAction
-        .openToast({ message: `写入操作开关未开启，${verb}不可用` })
-        .catch((_error: Error) => {})
-      return
-    }
     const cookie = CookieJarSettings.getCurrentCookie()
     if (!cookie) {
       promptAction.openToast({ message: '请先登录' }).catch((_error: Error) => {})
@@ -2169,12 +2144,6 @@ export struct TopicDetailPage {
     executeAction: (cookie: string, action: V2exReplyModerationAction) => Promise<void>,
   ): void {
     if (this.isModerationActionLoading) {
-      return
-    }
-    if (!this.writeEnabled) {
-      promptAction
-        .openToast({ message: `写入操作开关未开启，${verb}不可用` })
-        .catch((_error: Error) => {})
       return
     }
     const cookie = CookieJarSettings.getCurrentCookie()

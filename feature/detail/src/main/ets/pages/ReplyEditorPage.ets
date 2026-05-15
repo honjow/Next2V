@@ -2,7 +2,7 @@ import { common } from '@kit.AbilityKit'
 import { promptAction } from '@kit.ArkUI'
 import {
   ApiService, CookieJarSettings, DateUtils, DraftSettings, MarkdownContent, MarkdownToolbar, SecondaryFormScaffold,
-  StorageKeys, ThemeConstants
+  ThemeConstants
 } from 'shared'
 
 @Component
@@ -11,7 +11,6 @@ export struct ReplyEditorPage {
   @Prop topicTitle: string = ''
   @Prop initialContent: string = ''
   @Consume('ns') stack: NavPathStack
-  @StorageLink(StorageKeys.ACCOUNT_WRITE_ENABLED) writeEnabled: boolean = false
 
   @State private content: string = ''
   @State private isPreview: boolean = false
@@ -139,13 +138,7 @@ export struct ReplyEditorPage {
             .fontColor($r('sys.color.font_secondary'))
         }
 
-        if (!this.writeEnabled) {
-          Text('写入操作开关未开启，提交能力不会启用。')
-            .fontSize(ThemeConstants.FONT_SIZE_TINY)
-            .fontColor($r('sys.color.font_secondary'))
-        }
-
-        Button(this.writeEnabled ? (this.isSubmitting ? '提交中...' : '提交') : '提交（需开启写入开关）')
+        Button(this.isSubmitting ? '提交中...' : '提交')
           .fontSize(ThemeConstants.FONT_SIZE_TAG)
           .height(40)
           .width('100%')
@@ -302,7 +295,7 @@ export struct ReplyEditorPage {
   }
 
   private canSubmit(): boolean {
-    if (!this.writeEnabled || this.isSubmitting || this.isSubmitDialogShown || this.topicId <= 0) {
+    if (this.isSubmitting || this.isSubmitDialogShown || this.topicId <= 0) {
       return false
     }
     if (this.content.trim().length === 0) {
@@ -313,10 +306,6 @@ export struct ReplyEditorPage {
 
   private confirmSubmit(): void {
     if (this.isSubmitting || this.isSubmitDialogShown) {
-      return
-    }
-    if (!this.writeEnabled) {
-      promptAction.openToast({ message: '写入操作开关未开启' }).catch((_error: Error) => { })
       return
     }
     const cleanContent = this.content.trim()

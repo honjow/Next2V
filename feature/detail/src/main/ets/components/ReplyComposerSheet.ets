@@ -17,7 +17,6 @@ export struct ReplyComposerSheet {
   @Prop topicId: number = 0
   @Prop topicTitle: string = ''
   @Prop initialContent: string = ''
-  @StorageLink(StorageKeys.ACCOUNT_WRITE_ENABLED) writeEnabled: boolean = false
   @StorageProp(StorageKeys.KEYBOARD_HEIGHT) keyboardH: number = 0
 
   closeAction?: () => void
@@ -100,12 +99,6 @@ export struct ReplyComposerSheet {
             Text(this.errorMessage)
               .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
               .fontColor(Color.Red)
-          }
-
-          if (!this.writeEnabled) {
-            Text('写入操作未开启')
-              .fontSize(ThemeConstants.FONT_SIZE_TINY)
-              .fontColor($r('sys.color.font_secondary'))
           }
 
           if (this.isPreview) {
@@ -281,7 +274,7 @@ export struct ReplyComposerSheet {
   }
 
   private canSubmit(): boolean {
-    return this.writeEnabled && !this.isSubmitting && !this.isSubmitDialogShown && this.topicId > 0 && this.content.trim().length > 0
+    return !this.isSubmitting && !this.isSubmitDialogShown && this.topicId > 0 && this.content.trim().length > 0
   }
 
   private composerBodyHeight(): number {
@@ -293,7 +286,7 @@ export struct ReplyComposerSheet {
 
   private confirmSubmit(): void {
     const cleanContent = this.content.trim()
-    if (!this.writeEnabled || this.isSubmitting || this.isSubmitDialogShown || this.topicId <= 0) {
+    if (this.isSubmitting || this.isSubmitDialogShown || this.topicId <= 0) {
       return
     }
     if (!cleanContent) {

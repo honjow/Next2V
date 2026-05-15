@@ -58,7 +58,6 @@ export { ReadingSettings } from './settings/ReadingSettings'
 export type { ReadingSettingsSnapshot } from './settings/ReadingSettings'
 export { ReplyDisplaySettings } from './settings/ReplyDisplaySettings'
 export { ReplyCardStyleSettings } from './settings/ReplyCardStyleSettings'
-export { WriteActionSettings } from './settings/WriteActionSettings'
 export { CollectionSettings } from './settings/CollectionSettings'
 export type {
   SavedNode,

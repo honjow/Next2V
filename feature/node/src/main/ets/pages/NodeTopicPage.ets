@@ -17,7 +17,6 @@ export struct NodeTopicPage {
   @StorageProp(StorageKeys.BOTTOM_AVOID_HEIGHT) bottomH: number = 0
   @State vm: NodeViewModel = new NodeViewModel()
   @StorageLink(StorageKeys.TOPIC_READ_STATES) topicReadStates: string = '[]'
-  @StorageLink(StorageKeys.ACCOUNT_WRITE_ENABLED) writeEnabled: boolean = false
   @StorageLink(StorageKeys.NODE_TOPIC_ACTION) @Watch('onNodeTopicActionCommand') nodeTopicActionCommand: string = ''
   @StorageLink(StorageKeys.NODE_TOPIC_SAVED) nodeTopicSaved: boolean = false
   @StorageLink(StorageKeys.NODE_TOPIC_SITE_FAVORITED) nodeTopicSiteFavorited: boolean = false
@@ -177,10 +176,6 @@ export struct NodeTopicPage {
 
   private prepareSiteNodeFavoriteToggle(): void {
     if (this.isSiteNodeFavoriteLoading) {
-      return
-    }
-    if (!this.writeEnabled) {
-      promptAction.openToast({ message: '写入操作开关未开启，站内收藏不可用' }).catch((_error: Error) => { })
       return
     }
     const cookie = CookieJarSettings.getCurrentCookie()

@@ -19,7 +19,6 @@ import {
   ReplyDisplaySettings,
   ReplyCardStyleSettings,
   type CacheStats,
-  WriteActionSettings,
 } from 'shared'
 import { SymbolGlyphModifier } from '@kit.ArkUI'
 @Component
@@ -34,7 +33,6 @@ export struct SettingsPage {
   @StorageLink(StorageKeys.REPLY_CARD_STYLE) replyCardStyle: string =
     ReplyCardStyleSettings.STYLE_STANDARD;
   @StorageLink(StorageKeys.READING_RESTORE_POSITION) readingRestorePosition: boolean = false;
-  @StorageLink(StorageKeys.ACCOUNT_WRITE_ENABLED) accountWriteEnabled: boolean = false;
   @State private cacheStats: CacheStats = { topicListCount: 0, topicDetailCount: 0, updatedAt: 0 };
   @State private themeMenuShown: boolean = false;
   @State private replyDisplayMenuShown: boolean = false;
@@ -79,12 +77,6 @@ export struct SettingsPage {
         }
         ListItem() {
           this.MediaSection()
-        }
-        ListItem() {
-          this.SectionHeader('写作')
-        }
-        ListItem() {
-          this.WritingSection()
         }
         ListItem() {
           this.SectionHeader('存储')
@@ -154,19 +146,6 @@ export struct SettingsPage {
       } else {
         this.DisabledWifiImagePreferenceRow()
       }
-    }
-  }
-
-  @Builder
-  WritingSection() {
-    GroupedListSection() {
-      this.TogglePreferenceRow('写入操作', this.accountWriteEnabled, (value: boolean) => {
-        if (value) {
-          this.confirmEnableWriteActions()
-        } else {
-          this.updateWriteActions(false)
-        }
-      })
     }
   }
 
@@ -490,35 +469,6 @@ export struct SettingsPage {
       text += ` · 更新于 ${DateUtils.toDateString(this.cacheStats.updatedAt)}`
     }
     return text
-  }
-
-  private confirmEnableWriteActions(): void {
-    if (this.accountWriteEnabled) {
-      return
-    }
-    AlertDialog.show({
-      title: '开启写入操作',
-      message: '写入操作可能导致误触或误操作。确定开启吗？',
-      primaryButton: {
-        value: '取消',
-        action: () => {},
-      },
-      secondaryButton: {
-        value: '开启',
-        fontColor: ThemeConstants.BRAND_PRIMARY,
-        action: () => {
-          this.updateWriteActions(true)
-        },
-      },
-    })
-  }
-
-  private updateWriteActions(enabled: boolean): void {
-    this.accountWriteEnabled = enabled
-    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    WriteActionSettings.save(context, enabled).catch((error: Error) => {
-      console.error('save write settings failed: ' + error.message)
-    })
   }
 
   private loadCacheStats(): void {

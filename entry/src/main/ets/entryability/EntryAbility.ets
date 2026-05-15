@@ -14,7 +14,6 @@ import {
   StorageKeys,
   ThemeSettings,
   V2exUrlRouter,
-  WriteActionSettings,
 } from 'shared'
 
 const TRANSPARENT_COLOR: string = '#00FFFFFF'
@@ -104,24 +103,17 @@ export default class EntryAbility extends UIAbility {
                                 })
                               })
                               .finally(() => {
-                                WriteActionSettings.load(this.context)
+                                ReplyCardStyleSettings.load(this.context)
                                   .catch((error: Error) => {
-                                    console.error('restore write settings failed: ' + error.message)
-                                    WriteActionSettings.apply(false)
+                                    console.error(
+                                      'restore reply card style failed: ' + error.message,
+                                    )
+                                    ReplyCardStyleSettings.apply(
+                                      ReplyCardStyleSettings.STYLE_STANDARD,
+                                    )
                                   })
                                   .finally(() => {
-                                    ReplyCardStyleSettings.load(this.context)
-                                      .catch((error: Error) => {
-                                        console.error(
-                                          'restore reply card style failed: ' + error.message,
-                                        )
-                                        ReplyCardStyleSettings.apply(
-                                          ReplyCardStyleSettings.STYLE_STANDARD,
-                                        )
-                                      })
-                                      .finally(() => {
-                                        this.loadContent(windowStage, win)
-                                      })
+                                    this.loadContent(windowStage, win)
                                   })
                               })
                           })
