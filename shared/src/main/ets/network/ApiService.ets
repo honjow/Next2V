@@ -1493,7 +1493,8 @@ export class ApiService {
 
   /**
    * 根据 tab key 获取主题列表
-   * - latest/hot 直接走 JSON API
+   * - latest 走 JSON API
+   * - hot 使用网站最热 tab（/?tab=hot），避免退回每日 10 条热门 API
    * - 其余 tab 先 HTML 抓取 ID，再逐个并发获取详情
    */
   async getTabTopics(tab: string): Promise<V2exTopic[]> {
@@ -1504,7 +1505,7 @@ export class ApiService {
     } else if (tab === 'latest') {
       topics = await this.getLatestTopics()
     } else if (tab === 'hot') {
-      topics = await this.getHotTopics()
+      topics = await this.getHotTabTopics()
     } else {
       const html = await this.http.getText(ApiConstants.TAB_URLS[tab])
       const ids = V2exTabParser.extractTopicIds(html)
