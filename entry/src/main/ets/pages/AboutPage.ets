@@ -20,6 +20,7 @@ export struct AboutPage {
   @State private appVersion: string = ''
   private readonly projectUrl: string = 'https://github.com/honjow/Next2V'
   private readonly licenseUrl: string = 'https://github.com/honjow/Next2V'
+  private readonly v2nextUrl: string = 'https://github.com/zyronon/V2Next'
   private readonly developerName: string = 'honjow'
 
   aboutToAppear(): void {
@@ -55,6 +56,15 @@ export struct AboutPage {
 
         ListItem() {
           this.ProjectSection()
+        }
+
+        ListItem() {
+          this.SectionHeader('致谢')
+        }
+        .margin({ top: ThemeConstants.SPACE_MD })
+
+        ListItem() {
+          this.AcknowledgementSection()
         }
 
         ListItem() {
@@ -131,6 +141,28 @@ export struct AboutPage {
         trailingText: this.developerName,
         showChevron: false
       })
+    }
+  }
+
+  @Builder
+  AcknowledgementSection() {
+    GroupedListSection() {
+      ConciseListRow({
+        title: 'zyronon/V2Next',
+        subtitle: this.v2nextUrl,
+        action: () => {
+          this.openInSystemBrowser(this.v2nextUrl)
+        }
+      })
+      this.SettingsDivider()
+      Column({ space: ThemeConstants.SPACE_XS }) {
+        Text('感谢 V2Next 项目在 V2EX 客户端体验上的探索。')
+          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+          .fontColor($r('sys.color.font_secondary'))
+      }
+      .width('100%')
+      .alignItems(HorizontalAlign.Start)
+      .padding(ThemeConstants.SPACE_LG)
     }
   }
 
