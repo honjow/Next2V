@@ -4,6 +4,7 @@ import { webview } from '@kit.ArkWeb'
 import {
   ApiService,
   AuthSessionSettings,
+  AutoDailyCheckinService,
   CookieJarSettings,
   HttpClient,
   SecondaryListScaffold,
@@ -249,6 +250,9 @@ export struct V2exWebLoginPage {
           return
         }
         await AuthSessionSettings.save(context, { loginMode: 'cookie', username, avatar, validatedAt: Date.now() })
+        AutoDailyCheckinService.tryCheckin(context, validated.cookie, 'web-login').catch((error: Error) => {
+          console.info('auto daily check-in web-login trigger failed: ' + error.message)
+        })
         if (!this.isCurrentSaveRequest(requestId)) {
           await this.clearPersistedLogin(context)
         }
