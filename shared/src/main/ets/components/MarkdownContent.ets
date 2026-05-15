@@ -1557,8 +1557,7 @@ struct MarkdownTable {
     .lineHeight(this.bodyLineHeight())
     .textAlign(this.cellTextAlign(cell))
     .width(this.columnWidth(columnIndex))
-    .maxLines(1)
-    .textOverflow({ overflow: TextOverflow.Ellipsis })
+    .wordBreak(WordBreak.BREAK_WORD)
     .padding({
       left: ThemeConstants.SPACE_SM,
       right: ThemeConstants.SPACE_SM,

@@ -136,6 +136,22 @@ assert.equal(mdToken.rows[0][0].tokens[0].type, 'strong')
 assert.equal(mdToken.rows[1][0].tokens[0].type, 'link')
 assert.equal(mdToken.rows[1][1].tokens[0].type, 'codespan')
 
+const topic1213097LongCell = '83.33%（10/12，连续多轮任务中成功保持上下文并完成端到端验证）'
+const topic1213097HtmlTable = `<table><thead><tr><th>指标</th><th>OpenAgent</th><th>OpenClaw</th></tr></thead><tbody><tr><td>成功率</td><td>${topic1213097LongCell}</td><td>61.11%（11/18，复杂任务中仍保留完整执行记录）</td></tr></tbody></table>`
+const topic1213097HtmlToken = htmlTableToToken(topic1213097HtmlTable)
+assert.equal(topic1213097HtmlToken.type, 'table')
+assert.deepEqual(topic1213097HtmlToken.headers.map(c => c.text), ['指标', 'OpenAgent', 'OpenClaw'])
+assert.equal(topic1213097HtmlToken.rows[0][0].text, '成功率')
+assert.equal(topic1213097HtmlToken.rows[0][1].text, topic1213097LongCell)
+assert.ok(!topic1213097HtmlToken.rows[0][1].text.includes('...'), 'HTML table long cell text must be preserved, not replaced by ellipsis')
+
+const topic1213097MdToken = markdownTableToToken(`| 指标 | OpenAgent | OpenClaw |\n| --- | --- | --- |\n| 成功率 | ${topic1213097LongCell} | 61.11%（11/18，复杂任务中仍保留完整执行记录） |`)
+assert.equal(topic1213097MdToken.type, 'table')
+assert.deepEqual(topic1213097MdToken.headers.map(c => c.text), topic1213097HtmlToken.headers.map(c => c.text))
+assert.equal(topic1213097MdToken.rows[0][1].text, topic1213097LongCell)
+assert.ok(!topic1213097MdToken.rows[0][1].text.includes('...'), 'Markdown table long cell text must be preserved, not replaced by ellipsis')
+assert.ok(topic1213097MdToken.rows[0][1].text.includes('端到端验证'), 'Markdown table keeps the full long-cell suffix')
+
 assert.match(source, /type RenderBlockKind = [^;]*"table"/, 'RenderBlockKind includes table')
 assert.match(source, /interface RenderTableToken[\s\S]*headers: RenderTableCell\[\][\s\S]*rows: RenderTableCell\[\]\[\]/, 'RenderTableToken shape is declared')
 const htmlTableParserStart = source.indexOf('private static htmlTableToRenderTableToken')
@@ -159,6 +175,11 @@ assert.doesNotMatch(markdownTableStruct[0], /MarkdownContent\.buildTextToken\(/,
 assert.doesNotMatch(markdownTableStruct[0], /cellWidth\(\): number \{\s*return 116;\s*\}/, 'MarkdownTable must not use the old fixed 116vp cell width strategy')
 assert.doesNotMatch(markdownTableStruct[0], /columnCount\(\)\s*\*\s*this\.cellWidth\(\)/, 'MarkdownTable width must not be columnCount()*cellWidth() fixed strategy')
 assert.doesNotMatch(markdownTableStruct[0], /@State private columnWidths|measuredColumnWidth|updateColumnWidth|onSizeChange/, 'MarkdownTable ordinary layout must not use runtime natural measurement column widths')
+const tableCellBuilder = markdownTableStruct[0].match(/@Builder TableCell\([\s\S]*?\n  }\n\n  build\(\)/)?.[0] || ''
+assert.ok(tableCellBuilder, 'MarkdownTable.TableCell builder is present')
+assert.doesNotMatch(tableCellBuilder, /\.maxLines\(1\)[\s\S]{0,120}\.textOverflow\(\{ overflow: TextOverflow\.Ellipsis \}\)/, 'MarkdownTable.TableCell must not force single-line ellipsis')
+assert.doesNotMatch(tableCellBuilder, /TextOverflow\.Ellipsis/, 'MarkdownTable.TableCell must not ellipsize ordinary table text')
+assert.match(tableCellBuilder, /\.wordBreak\(WordBreak\.BREAK_WORD\)/, 'MarkdownTable.TableCell uses smart word-break wrapping: preserve words at whitespace when possible, still break long unspaced strings')
 assert.match(source, /const TABLE_MIN_CELL_WIDTH = \d+;/, 'MarkdownTable declares a systematic min column width clamp')
 assert.match(source, /const TABLE_MAX_CELL_WIDTH = \d+;/, 'MarkdownTable declares a systematic max column width clamp')
 assert.match(source, /const TABLE_CELL_HORIZONTAL_PADDING = ThemeConstants\.SPACE_SM \* 2;/, 'MarkdownTable includes cell horizontal padding in width estimates')
