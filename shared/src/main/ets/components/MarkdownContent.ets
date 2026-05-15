@@ -54,13 +54,26 @@ const RENDER_H5_FONT_SIZE = 15;
 const RENDER_H5_LINE_HEIGHT = 21;
 const RENDER_H6_FONT_SIZE = 14;
 const RENDER_H6_LINE_HEIGHT = 20;
-const TABLE_MIN_CELL_WIDTH = 96;
-const TABLE_MAX_CELL_WIDTH = 320;
+// Minimum width that keeps ordinary header words and short numeric cells readable;
+// if every column cannot keep this width, the table scrolls horizontally instead of hard-squeezing text.
+const TABLE_READABLE_MIN_CELL_WIDTH = 112;
 const TABLE_CELL_HORIZONTAL_PADDING = ThemeConstants.SPACE_SM * 2;
+// Content-width units used for ordinary table natural-width estimates. These stay close to glyph
+// proportions so prose-heavy cells do not dominate responsive compression.
 const TABLE_ASCII_DISPLAY_UNIT = 0.56;
 const TABLE_NUMERIC_DISPLAY_UNIT = 0.48;
+const TABLE_SYMBOL_DISPLAY_UNIT = 0.56;
 const TABLE_SPACE_DISPLAY_UNIT = 0.33;
 const TABLE_WIDE_DISPLAY_UNIT = 1.0;
+// Conservative no-wrap estimate used only for protected short tokens (short ASCII headers and
+// percent/fraction cells). Values are ArkUI vp text-width estimates, not physical-pixel dump
+// bounds; they must preserve protected tokens without making a 230-class viewport scroll when
+// the protected minima can fit.
+const TABLE_PROTECTED_ASCII_DISPLAY_UNIT = 1.65;
+const TABLE_PROTECTED_NUMERIC_DISPLAY_UNIT = 1.1;
+const TABLE_PROTECTED_SYMBOL_DISPLAY_UNIT = 0.9;
+const TABLE_PROTECTED_SPACE_DISPLAY_UNIT = 0.55;
+const TABLE_PROTECTED_WIDE_DISPLAY_UNIT = 1.08;
 const TABLE_BORDER_COLOR = "#1A000000";
 
 type TokenValue = Object | string | number | boolean | null | undefined;
@@ -1428,6 +1441,11 @@ struct MarkdownTable {
   reportImageComplete?: InlineImageCompleteReporter;
   reportImageError?: InlineImageErrorReporter;
   @StorageLink(StorageKeys.READING_FONT_SIZE) readingFontSize: number = ReadingSettings.TEXT_SCALE_DEFAULT;
+  @State private tableAvailableWidth: number = 0;
+
+  private updateTableAvailableWidth(value: Area): void {
+    this.tableAvailableWidth = _areaWidth(value);
+  }
 
   private bodyFontSize(): number {
     return ReadingSettings.scaleTypographyToken(RENDER_BODY_FONT_SIZE, this.readingFontSize);
@@ -1445,51 +1463,173 @@ struct MarkdownTable {
     return Math.max(1, count);
   }
 
-  private textDisplayUnits(text: string): number {
+  private textDisplayUnits(text: string, protectedNoWrap: boolean = false): number {
+    const asciiUnit = protectedNoWrap ? TABLE_PROTECTED_ASCII_DISPLAY_UNIT : TABLE_ASCII_DISPLAY_UNIT;
+    const numericUnit = protectedNoWrap ? TABLE_PROTECTED_NUMERIC_DISPLAY_UNIT : TABLE_NUMERIC_DISPLAY_UNIT;
+    const symbolUnit = protectedNoWrap ? TABLE_PROTECTED_SYMBOL_DISPLAY_UNIT : TABLE_SYMBOL_DISPLAY_UNIT;
+    const spaceUnit = protectedNoWrap ? TABLE_PROTECTED_SPACE_DISPLAY_UNIT : TABLE_SPACE_DISPLAY_UNIT;
+    const wideUnit = protectedNoWrap ? TABLE_PROTECTED_WIDE_DISPLAY_UNIT : TABLE_WIDE_DISPLAY_UNIT;
     let units = 0;
     for (const char of text) {
       const code = char.charCodeAt(0);
       if (char === " " || char === "\t") {
-        units += TABLE_SPACE_DISPLAY_UNIT;
+        units += spaceUnit;
       } else if (code >= 48 && code <= 57) {
-        units += TABLE_NUMERIC_DISPLAY_UNIT;
+        units += numericUnit;
+      } else if ((code >= 65 && code <= 90) || (code >= 97 && code <= 122)) {
+        units += asciiUnit;
       } else if (code >= 0 && code <= 127) {
-        units += TABLE_ASCII_DISPLAY_UNIT;
+        units += symbolUnit;
       } else {
-        units += TABLE_WIDE_DISPLAY_UNIT;
+        units += wideUnit;
       }
     }
     return units;
   }
 
-  private cellEstimatedWidth(cell: RenderTableCell | undefined): number {
+  private isProtectedNoWrapCell(cell: RenderTableCell | undefined): boolean {
     if (!cell) {
-      return TABLE_MIN_CELL_WIDTH;
+      return false;
     }
-    const text = cell.text ?? "";
-    const contentWidth = this.textDisplayUnits(text) * this.bodyFontSize();
-    return Math.ceil(contentWidth + TABLE_CELL_HORIZONTAL_PADDING);
+    const text = (cell.text ?? "").trim();
+    return /^\d+(?:\.\d+)?%（\s*\d+\s*\/\s*\d+\s*）$/.test(text) ||
+      (cell.header === true && /^(?=.{6,16}$)(?=.*[A-Za-z])[A-Za-z][A-Za-z0-9_-]*$/.test(text));
   }
 
-  private estimatedColumnWidth(index: number): number {
-    let width = this.cellEstimatedWidth(this.tableToken.headers[index]);
-    for (const row of this.tableToken.rows) {
-      width = Math.max(width, this.cellEstimatedWidth(row[index]));
+  private shortUnbreakableIntrinsicMinWidth(cell: RenderTableCell | undefined): number {
+    if (!cell) {
+      return 0;
     }
-    return Math.min(TABLE_MAX_CELL_WIDTH, Math.max(TABLE_MIN_CELL_WIDTH, width));
+    const text = (cell.text ?? "").trim();
+    if (this.isProtectedNoWrapCell(cell)) {
+      const noBreakDisplayText = text.replace(/\s+/g, "");
+      return Math.ceil(this.textDisplayUnits(noBreakDisplayText, true) * this.bodyFontSize() + TABLE_CELL_HORIZONTAL_PADDING);
+    }
+    return 0;
+  }
+
+  private cellWidthText(cell: RenderTableCell): string {
+    const text = cell.text ?? "";
+    const trimmed = text.trim();
+    if (/^\d+(?:\.\d+)?%（\s*\d+\s*\/\s*\d+\s*）$/.test(trimmed) ||
+      (cell.header === true && /^(?=.{6,16}$)(?=.*[A-Za-z])[A-Za-z][A-Za-z0-9_-]*$/.test(trimmed))) {
+      return trimmed.replace(/\s+/g, "");
+    }
+    return text;
+  }
+
+  private cellEstimatedWidth(cell: RenderTableCell | undefined): number {
+    if (!cell) {
+      return TABLE_CELL_HORIZONTAL_PADDING;
+    }
+    const text = this.cellWidthText(cell);
+    const natural = Math.ceil(this.textDisplayUnits(text) * this.bodyFontSize() + TABLE_CELL_HORIZONTAL_PADDING);
+    return Math.max(natural, this.shortUnbreakableIntrinsicMinWidth(cell));
+  }
+
+  private naturalColumnWidths(): number[] {
+    const widths: number[] = [];
+    const count = this.columnCount();
+    for (let index = 0; index < count; index++) {
+      let width = this.cellEstimatedWidth(this.tableToken.headers[index]);
+      for (const row of this.tableToken.rows) {
+        width = Math.max(width, this.cellEstimatedWidth(row[index]));
+      }
+      widths.push(width);
+    }
+    return widths;
+  }
+
+  private columnReadableMinWidths(): number[] {
+    const widths: number[] = [];
+    const count = this.columnCount();
+    for (let index = 0; index < count; index++) {
+      let minWidth = Math.max(TABLE_READABLE_MIN_CELL_WIDTH, this.shortUnbreakableIntrinsicMinWidth(this.tableToken.headers[index]));
+      for (const row of this.tableToken.rows) {
+        minWidth = Math.max(minWidth, this.shortUnbreakableIntrinsicMinWidth(row[index]));
+      }
+      widths.push(minWidth);
+    }
+    return widths;
+  }
+
+  private allocatedColumnWidths(): number[] {
+    const natural = this.naturalColumnWidths();
+    const readableMin = this.columnReadableMinWidths();
+    let naturalTotal = 0;
+    for (const width of natural) {
+      naturalTotal += width;
+    }
+    const availableWidth = this.tableAvailableWidth;
+    if (availableWidth <= 0 || naturalTotal <= availableWidth) {
+      return natural;
+    }
+
+    let readableTotal = 0;
+    for (const width of readableMin) {
+      readableTotal += width;
+    }
+    if (readableTotal > availableWidth) {
+      return readableMin;
+    }
+
+    const extraWidth = availableWidth - readableTotal;
+    const compressionCap = Math.floor(availableWidth / Math.max(1, natural.length) * 1.5);
+    const cappedTargets = natural.map((width: number, index: number) => {
+      if (width <= readableMin[index]) {
+        return readableMin[index];
+      }
+      // Compression allocator cap: derive the waterline from measured available width and column
+      // count so one prose-heavy natural column cannot absorb all spare width and hide following
+      // protected columns. This is not a product width bucket; natural tables that fit still use
+      // their exact content widths above.
+      return Math.max(readableMin[index], Math.min(width, compressionCap));
+    });
+    const allocated = readableMin.map((width: number) => width);
+    let remaining = extraWidth;
+    while (remaining > 0) {
+      const flexibleIndexes: number[] = [];
+      for (let index = 0; index < allocated.length; index++) {
+        if (allocated[index] < cappedTargets[index]) {
+          flexibleIndexes.push(index);
+        }
+      }
+      if (flexibleIndexes.length === 0) {
+        break;
+      }
+      const share = Math.max(1, Math.floor(remaining / flexibleIndexes.length));
+      let consumed = 0;
+      for (const index of flexibleIndexes) {
+        if (remaining <= 0) {
+          break;
+        }
+        const add = Math.min(share, remaining, cappedTargets[index] - allocated[index]);
+        allocated[index] += add;
+        remaining -= add;
+        consumed += add;
+      }
+      if (consumed === 0) {
+        break;
+      }
+    }
+    return allocated;
   }
 
   private columnWidth(index: number): number {
-    return this.estimatedColumnWidth(index);
+    return this.allocatedColumnWidths()[index] ?? TABLE_READABLE_MIN_CELL_WIDTH;
   }
 
   private tableMinWidth(): number {
     let width = 0;
-    const count = this.columnCount();
-    for (let index = 0; index < count; index++) {
-      width += this.columnWidth(index);
+    const allocated = this.allocatedColumnWidths();
+    for (let index = 0; index < allocated.length; index++) {
+      width += allocated[index];
     }
     return width;
+  }
+
+  private tableContentWidth(): number {
+    return this.tableMinWidth();
   }
 
   private emptyCell(): RenderTableCell {
@@ -1523,11 +1663,33 @@ struct MarkdownTable {
     return index === 0 && this.tableToken.headers.length > 0;
   }
 
-  private cellTokens(cell: RenderTableCell): Token[] {
-    if (Array.isArray(cell.tokens) && cell.tokens.length > 0) {
-      return cell.tokens;
+  private formatTableCellTextForLayout(text: string): string {
+    return (text ?? "").replace(/(\d+(?:\.\d+)?%)（\s*(\d+)\s*\/\s*(\d+)\s*）/g, (_match: string, percent: string, numerator: string, denominator: string): string => {
+      return `${percent}\u2060（\u00A0${numerator}/${denominator}\u00A0）`;
+    });
+  }
+
+  private formattedCellToken(token: Token): Token {
+    const originalText = String((token as TokenRecord)["text"] ?? "");
+    if (originalText.length === 0) {
+      return token;
     }
-    return [buildPlainTextTokenForRender(cell.text)];
+    const formattedText = this.formatTableCellTextForLayout(originalText);
+    if (formattedText === originalText) {
+      return token;
+    }
+    const record = token as TokenRecord;
+    const formattedRecord: TokenRecord = {};
+    Object.keys(record).forEach((key: string) => {
+      formattedRecord[key] = record[key];
+    });
+    formattedRecord["text"] = formattedText;
+    return formattedRecord as Token;
+  }
+
+  private cellTokens(cell: RenderTableCell): Token[] {
+    const tokens = Array.isArray(cell.tokens) && cell.tokens.length > 0 ? cell.tokens : [buildPlainTextTokenForRender(cell.text)];
+    return tokens.map((token: Token) => this.formattedCellToken(token));
   }
 
   private cellTextAlign(cell: RenderTableCell): TextAlign {
@@ -1557,6 +1719,7 @@ struct MarkdownTable {
     .lineHeight(this.bodyLineHeight())
     .textAlign(this.cellTextAlign(cell))
     .width(this.columnWidth(columnIndex))
+    .constraintSize({ minWidth: this.columnWidth(columnIndex), maxWidth: this.columnWidth(columnIndex) })
     .wordBreak(WordBreak.BREAK_WORD)
     .padding({
       left: ThemeConstants.SPACE_SM,
@@ -1581,7 +1744,8 @@ struct MarkdownTable {
               this.TableCell(cell, this.isHeaderRow(rowIndex), cellIndex);
             }, (cell: RenderTableCell, cellIndex: number) => `${rowIndex}-${cellIndex}-${cell.text}`)
           }
-          .constraintSize({ minWidth: this.tableMinWidth() })
+          .width(this.tableContentWidth())
+          .constraintSize({ minWidth: this.tableContentWidth(), maxWidth: this.tableContentWidth() })
           .alignItems(VerticalAlign.Top)
           .backgroundColor(this.isHeaderRow(rowIndex) ? ThemeConstants.BG_SUB : Color.Transparent)
           .border({
@@ -1590,14 +1754,18 @@ struct MarkdownTable {
           });
         }, (row: RenderTableCell[], rowIndex: number) => `table-row-${rowIndex}-${row.length}`)
       }
-      .constraintSize({ minWidth: this.tableMinWidth() })
+      .width(this.tableContentWidth())
+      .constraintSize({ minWidth: this.tableContentWidth(), maxWidth: this.tableContentWidth() })
       .border({ width: 1, color: TABLE_BORDER_COLOR })
       .borderRadius(ThemeConstants.RADIUS_SM)
       .clip(true)
     }
     .width("100%")
     .scrollable(ScrollDirection.Horizontal)
-    .scrollBar(BarState.Auto);
+    .scrollBar(BarState.Auto)
+    .onAreaChange((_oldValue: Area, newValue: Area) => {
+      this.updateTableAvailableWidth(newValue);
+    });
   }
 }
 
