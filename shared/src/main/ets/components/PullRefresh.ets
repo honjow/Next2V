@@ -170,16 +170,6 @@ export struct PullRefresh {
     return 0
   }
 
-  private bottomText(): string {
-    if (this.bottomRefreshState === 2 || this.bottomRefreshState === 3) {
-      return '刷新中…'
-    }
-    if (this.bottomRefreshState === 1) {
-      return '松开刷新'
-    }
-    return '上拉刷新'
-  }
-
   private bottomIndicatorY(): number {
     return Math.max(
       0,
@@ -302,19 +292,22 @@ export struct PullRefresh {
 
       if (this.bottomPullOffset > 0 || this.bottomRefreshState > 0) {
         Row({ space: ThemeConstants.SPACE_SM }) {
-          if (this.bottomRefreshState >= 2) {
-            LoadingProgress()
-              .width(ThemeConstants.LOADING_SIZE_SMALL)
-              .height(ThemeConstants.LOADING_SIZE_SMALL)
-              .color($r('sys.color.font_secondary'))
-          }
-          Text(this.bottomText())
-            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-            .fontColor($r('sys.color.font_secondary'))
+          LoadingProgress()
+            .width(ThemeConstants.LOADING_SIZE_SMALL)
+            .height(ThemeConstants.LOADING_SIZE_SMALL)
+            .color($r('sys.color.font_secondary'))
         }
         .width('100%')
         .height(ThemeConstants.TITLE_BAR_HEIGHT)
         .justifyContent(FlexAlign.Center)
+        .opacity(
+          this.bottomRefreshState >= 2
+            ? 1
+            : Math.min(
+                Math.max(this.bottomPullOffset / this.threshold, 0.2),
+                1,
+              ),
+        )
         .position({ y: this.bottomIndicatorY() })
         .hitTestBehavior(HitTestMode.None)
       }
