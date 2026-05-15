@@ -4,6 +4,7 @@ import {
   ApiService,
   AppTextField,
   AuthSessionSettings,
+  AutoDailyCheckinService,
   AppActionButton,
   ConciseListRow,
   CookieJarSettings,
@@ -285,6 +286,9 @@ export struct V2exNativeLoginPage {
         username: snapshot.username,
         avatar,
         validatedAt: Date.now()
+      })
+      AutoDailyCheckinService.tryCheckin(context, snapshot.cookie, 'native-login').catch((error: Error) => {
+        console.info('auto daily check-in native-login trigger failed: ' + error.message)
       })
     } catch (error) {
       await this.clearPersistedLogin(context)

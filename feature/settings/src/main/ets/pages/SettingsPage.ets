@@ -2,6 +2,7 @@ import { common } from '@kit.AbilityKit'
 import {
   ApiConstants,
   ApiDomainSettings,
+  AutoDailyCheckinSettings,
   CacheSettings,
   ConciseListRow,
   CookieJarSettings,
@@ -25,6 +26,7 @@ import { SymbolGlyphModifier } from '@kit.ArkUI'
 export struct SettingsPage {
   @Consume('ns') stack: NavPathStack;
   @StorageLink(StorageKeys.USE_CO_DOMAIN) useCoDomain: boolean = false;
+  @StorageLink(StorageKeys.AUTO_DAILY_CHECKIN_ENABLED) autoDailyCheckinEnabled: boolean = true;
   @StorageLink(StorageKeys.MEDIA_AUTO_LOAD_IMAGES) autoLoadImages: boolean = true;
   @StorageLink(StorageKeys.MEDIA_ONLY_LOAD_IMAGES_ON_WIFI) onlyLoadImagesOnWifi: boolean = false;
   @StorageLink(StorageKeys.THEME_MODE) themeMode: string = ThemeSettings.MODE_AUTO;
@@ -115,6 +117,10 @@ export struct SettingsPage {
         action: () => {
           this.stack.pushPathByName('Account', null)
         },
+      })
+      this.SettingsDivider()
+      this.TogglePreferenceRow('自动签到', this.autoDailyCheckinEnabled, (value: boolean) => {
+        this.updateAutoDailyCheckin(value)
       })
     }
   }
@@ -414,6 +420,14 @@ export struct SettingsPage {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     MediaSettings.save(context, autoLoadImages, this.onlyLoadImagesOnWifi).catch((error: Error) => {
       console.error('save media settings failed: ' + error.message)
+    })
+  }
+
+  private updateAutoDailyCheckin(enabled: boolean): void {
+    this.autoDailyCheckinEnabled = enabled
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    AutoDailyCheckinSettings.save(context, enabled).catch((error: Error) => {
+      console.error('save auto daily check-in setting failed: ' + error.message)
     })
   }
 

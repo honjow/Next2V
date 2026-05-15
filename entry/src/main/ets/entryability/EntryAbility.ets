@@ -4,6 +4,8 @@ import { window } from '@kit.ArkUI'
 import { webview } from '@kit.ArkWeb'
 import {
   ApiDomainSettings,
+  AutoDailyCheckinService,
+  AutoDailyCheckinSettings,
   CookieJarSettings,
   FeedTabSettings,
   FoldScreenUtil,
@@ -103,17 +105,31 @@ export default class EntryAbility extends UIAbility {
                                 })
                               })
                               .finally(() => {
-                                ReplyCardStyleSettings.load(this.context)
+                                AutoDailyCheckinSettings.load(this.context)
                                   .catch((error: Error) => {
-                                    console.error(
-                                      'restore reply card style failed: ' + error.message,
-                                    )
-                                    ReplyCardStyleSettings.apply(
-                                      ReplyCardStyleSettings.STYLE_STANDARD,
-                                    )
+                                    console.error('restore auto daily check-in setting failed: ' + error.message)
+                                    AutoDailyCheckinSettings.apply(true)
                                   })
                                   .finally(() => {
-                                    this.loadContent(windowStage, win)
+                                    AutoDailyCheckinService.tryCheckin(
+                                      this.context,
+                                      CookieJarSettings.getCurrentCookie(),
+                                      'startup',
+                                    ).catch((error: Error) => {
+                                      console.info('auto daily check-in startup trigger failed: ' + error.message)
+                                    })
+                                    ReplyCardStyleSettings.load(this.context)
+                                      .catch((error: Error) => {
+                                        console.error(
+                                          'restore reply card style failed: ' + error.message,
+                                        )
+                                        ReplyCardStyleSettings.apply(
+                                          ReplyCardStyleSettings.STYLE_STANDARD,
+                                        )
+                                      })
+                                      .finally(() => {
+                                        this.loadContent(windowStage, win)
+                                      })
                                   })
                               })
                           })
