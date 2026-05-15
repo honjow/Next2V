@@ -4,7 +4,6 @@ export function defaultSheetOptions(height: SheetSize, onDisappear: () => void):
   const detents: SheetDetents = [SheetSize.MEDIUM, SheetSize.LARGE]
   return {
     height: height,
-    preferType: SheetType.BOTTOM,
     detents: detents,
     showClose: false,
     blurStyle: BlurStyle.Thick,
@@ -17,7 +16,6 @@ export function towFASheetOptions(height: SheetSize, onDisappear: () => void): S
   const detents: SheetDetents = [SheetSize.LARGE]
   return {
     height: height,
-    preferType: SheetType.BOTTOM,
     detents: detents,
     showClose: false,
     blurStyle: BlurStyle.Thick,
