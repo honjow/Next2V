@@ -76,6 +76,8 @@ const TABLE_PROTECTED_SYMBOL_DISPLAY_UNIT = 0.9;
 const TABLE_PROTECTED_SPACE_DISPLAY_UNIT = 0.55;
 const TABLE_PROTECTED_WIDE_DISPLAY_UNIT = 1.08;
 const TABLE_BORDER_COLOR = "#1A000000";
+const TABLE_OUTER_BORDER_WIDTH = 1;
+const TABLE_CELL_VERTICAL_DIVIDER_WIDTH = 1;
 
 type TokenValue = Object | string | number | boolean | null | undefined;
 type TokenRecord = Record<string, TokenValue>;
@@ -1928,6 +1930,14 @@ struct MarkdownTable {
     return total;
   }
 
+  private tableHorizontalBorderBudget(): number {
+    return TABLE_OUTER_BORDER_WIDTH * 2 + Math.max(0, this.columnCount() - 1) * TABLE_CELL_VERTICAL_DIVIDER_WIDTH;
+  }
+
+  private columnAvailableWidth(): number {
+    return Math.max(0, this.tableAvailableWidth - this.tableHorizontalBorderBudget());
+  }
+
   private distributeColumnWidths(baseWidths: number[], targetWidths: number[], availableWidth: number): number[] {
     const allocated = baseWidths.map((width: number) => width);
     let remaining = availableWidth - this.sumWidths(allocated);
@@ -1972,7 +1982,7 @@ struct MarkdownTable {
     for (const width of natural) {
       naturalTotal += width;
     }
-    const availableWidth = this.tableAvailableWidth;
+    const availableWidth = this.columnAvailableWidth();
     if (availableWidth <= 0 || naturalTotal <= availableWidth) {
       return natural;
     }
@@ -2132,7 +2142,7 @@ struct MarkdownTable {
         bottom: ThemeConstants.SPACE_XS,
       })
       .border({
-        width: { right: columnIndex < this.columnCount() - 1 ? 1 : 0 },
+        width: { right: columnIndex < this.columnCount() - 1 ? TABLE_CELL_VERTICAL_DIVIDER_WIDTH : 0 },
         color: TABLE_BORDER_COLOR,
       })
     } else {
@@ -2169,7 +2179,7 @@ struct MarkdownTable {
       .copyOption(CopyOptions.LocalDevice)
       .textSelectable(TextSelectableMode.SELECTABLE_FOCUSABLE)
       .border({
-        width: { right: columnIndex < this.columnCount() - 1 ? 1 : 0 },
+        width: { right: columnIndex < this.columnCount() - 1 ? TABLE_CELL_VERTICAL_DIVIDER_WIDTH : 0 },
         color: TABLE_BORDER_COLOR,
       });
     }
@@ -2196,7 +2206,7 @@ struct MarkdownTable {
       }
       .width(this.tableContentWidth())
       .constraintSize({ minWidth: this.tableContentWidth(), maxWidth: this.tableContentWidth() })
-      .border({ width: 1, color: TABLE_BORDER_COLOR })
+      .border({ width: TABLE_OUTER_BORDER_WIDTH, color: TABLE_BORDER_COLOR })
       .borderRadius(ThemeConstants.RADIUS_SM)
       .clip(true)
     }

@@ -203,7 +203,8 @@ assert.doesNotMatch(source, /const TABLE_MAX_CELL_WIDTH = 320;/, 'MarkdownTable 
 assert.match(source, /const TABLE_CELL_HORIZONTAL_PADDING = ThemeConstants\.SPACE_SM \* 2;/, 'MarkdownTable includes cell horizontal padding in width estimates')
 assert.match(markdownTableStruct[0], /textDisplayUnits\(text: string, protectedNoWrap: boolean = false\): number[\s\S]*TABLE_PROTECTED_ASCII_DISPLAY_UNIT[\s\S]*TABLE_ASCII_DISPLAY_UNIT[\s\S]*TABLE_WIDE_DISPLAY_UNIT/, 'MarkdownTable estimates text display units with separate ordinary and protected no-wrap weighting')
 assert.match(markdownTableStruct[0], /naturalColumnWidths\(\): number\[\][\s\S]*this\.tableToken\.headers\[index\][\s\S]*for \(const row of this\.tableToken\.rows\)[\s\S]*widths\.push\(width\)/, 'MarkdownTable estimates natural column widths from header and row text without artificial caps')
-assert.match(markdownTableStruct[0], /allocatedColumnWidths\(\): number\[\][\s\S]*this\.tableAvailableWidth[\s\S]*TABLE_READABLE_MIN_CELL_WIDTH/, 'MarkdownTable allocates columns with measured availableWidth and readable minimum')
+assert.match(markdownTableStruct[0], /tableHorizontalBorderBudget\(\): number[\s\S]*TABLE_OUTER_BORDER_WIDTH \* 2[\s\S]*TABLE_CELL_VERTICAL_DIVIDER_WIDTH[\s\S]*columnAvailableWidth\(\): number[\s\S]*this\.tableAvailableWidth - this\.tableHorizontalBorderBudget\(\)/, 'MarkdownTable declares an explicit border budget helper for outer border and vertical dividers')
+assert.match(markdownTableStruct[0], /allocatedColumnWidths\(\): number\[\][\s\S]*const availableWidth = this\.columnAvailableWidth\(\);[\s\S]*TABLE_READABLE_MIN_CELL_WIDTH/, 'MarkdownTable allocates columns with measured border-adjusted availableWidth and readable minimum')
 assert.match(markdownTableStruct[0], /compressionCap = Math\.floor\(availableWidth \/ Math\.max\(1, natural\.length\) \* 1\.5\)[\s\S]*cappedTargets[\s\S]*return this\.distributeColumnWidths\(readableMin, cappedTargets, availableWidth\)/, 'MarkdownTable uses a measured fair-share compression cap so one prose-heavy column cannot hide protected columns')
 assert.match(markdownTableStruct[0], /columnWidth\(index: number\): number[\s\S]*return this\.allocatedColumnWidths\(\)\[index\]/, 'MarkdownTable columnWidth uses responsive allocated widths')
 assert.match(markdownTableStruct[0], /tableMinWidth\(\): number[\s\S]*const allocated = this\.allocatedColumnWidths\(\)[\s\S]*width \+= allocated\[index\]/, 'MarkdownTable table width sums responsive allocations')
@@ -216,6 +217,8 @@ assert.doesNotMatch(markdownTableStruct[0], /\.constraintSize\(\{ minWidth: this
 const TABLE_READABLE_MIN_CELL_WIDTH_FOR_TEST = Number(source.match(/const TABLE_READABLE_MIN_CELL_WIDTH = (\d+);/)?.[1] ?? 128)
 const BODY_FONT_SIZE_FOR_TEST = Number(source.match(/const RENDER_BODY_FONT_SIZE = (\d+);/)?.[1] ?? 14)
 const TABLE_CELL_HORIZONTAL_PADDING_FOR_TEST = 16
+const TABLE_OUTER_BORDER_WIDTH_FOR_TEST = Number(source.match(/const TABLE_OUTER_BORDER_WIDTH = (\d+);/)?.[1] ?? 1)
+const TABLE_CELL_VERTICAL_DIVIDER_WIDTH_FOR_TEST = Number(source.match(/const TABLE_CELL_VERTICAL_DIVIDER_WIDTH = (\d+);/)?.[1] ?? 1)
 const TABLE_ASCII_DISPLAY_UNIT_FOR_TEST = Number(source.match(/const TABLE_ASCII_DISPLAY_UNIT = ([0-9.]+);/)?.[1] ?? 0.56)
 const TABLE_NUMERIC_DISPLAY_UNIT_FOR_TEST = Number(source.match(/const TABLE_NUMERIC_DISPLAY_UNIT = ([0-9.]+);/)?.[1] ?? 0.48)
 const TABLE_SYMBOL_DISPLAY_UNIT_FOR_TEST = Number(source.match(/const TABLE_SYMBOL_DISPLAY_UNIT = ([0-9.]+);/)?.[1] ?? TABLE_ASCII_DISPLAY_UNIT_FOR_TEST)
@@ -328,34 +331,49 @@ function columnHardUnbreakableMinWidthsForTest(headers, rows) {
   return widths
 }
 
+function tableColumnCountForTest(headers, rows) {
+  return Math.max(headers.length, ...rows.map(row => row.length), 1)
+}
+
+function tableHorizontalBorderBudgetForTest(headers, rows) {
+  return TABLE_OUTER_BORDER_WIDTH_FOR_TEST * 2 + Math.max(0, tableColumnCountForTest(headers, rows) - 1) * TABLE_CELL_VERTICAL_DIVIDER_WIDTH_FOR_TEST
+}
+
+function tableAllocationResultForTest(widths, borderBudget) {
+  const tableWidth = widths.reduce((sum, width) => sum + width, 0)
+  return { widths, tableWidth, renderedOuterWidth: tableWidth + borderBudget }
+}
+
 function allocateTableForTest(headers, rows, availableWidth) {
+  const borderBudget = tableHorizontalBorderBudgetForTest(headers, rows)
+  const columnAvailableWidth = Math.max(0, availableWidth - borderBudget)
   const natural = naturalColumnWidthsForTest(headers, rows)
   const readableMin = columnReadableMinWidthsForTest(headers, rows)
   const naturalTotal = natural.reduce((sum, width) => sum + width, 0)
-  if (!availableWidth || naturalTotal <= availableWidth) return { widths: natural, tableWidth: naturalTotal }
+  if (!columnAvailableWidth || naturalTotal <= columnAvailableWidth) return tableAllocationResultForTest(natural, borderBudget)
   const minTotal = readableMin.reduce((sum, width) => sum + width, 0)
   const hardMin = columnHardUnbreakableMinWidthsForTest(headers, rows)
   const hardTotal = hardMin.reduce((sum, width) => sum + width, 0)
-  if (hardTotal > availableWidth) {
+  if (hardTotal > columnAvailableWidth) {
     const widths = hardMin.map((width, index) => Math.max(width, visibleCompactMinWidthForTest(), Math.min(readableMin[index], visibleCompactMinWidthForTest())))
-    return { widths, tableWidth: widths.reduce((sum, width) => sum + width, 0) }
+    return tableAllocationResultForTest(widths, borderBudget)
   }
-  if (minTotal > availableWidth) {
+  if (minTotal > columnAvailableWidth) {
     const hardMin = columnHardUnbreakableMinWidthsForTest(headers, rows)
     const hardTotal = hardMin.reduce((sum, width) => sum + width, 0)
-    if (hardTotal > availableWidth) {
+    if (hardTotal > columnAvailableWidth) {
       const widths = hardMin.map((width, index) => Math.max(width, visibleCompactMinWidthForTest(), readableMin[index]))
-      return { widths, tableWidth: widths.reduce((sum, width) => sum + width, 0) }
+      return tableAllocationResultForTest(widths, borderBudget)
     }
     const compactMin = natural.map((_, index) => Math.max(hardMin[index], Math.min(readableMin[index], visibleCompactMinWidthForTest())))
     const compactMinTotal = compactMin.reduce((sum, width) => sum + width, 0)
-    if (compactMinTotal > availableWidth) {
-      return { widths: compactMin, tableWidth: compactMinTotal }
+    if (compactMinTotal > columnAvailableWidth) {
+      return tableAllocationResultForTest(compactMin, borderBudget)
     }
-    const compressionCap = Math.floor(availableWidth / Math.max(1, natural.length) * 1.5)
+    const compressionCap = Math.floor(columnAvailableWidth / Math.max(1, natural.length) * 1.5)
     const cappedTargets = natural.map((width, index) => Math.max(compactMin[index], Math.min(width, compressionCap)))
     const widths = compactMin.slice()
-    let remaining = availableWidth - compactMinTotal
+    let remaining = columnAvailableWidth - compactMinTotal
     while (remaining > 0) {
       const flexible = widths.map((width, index) => width < cappedTargets[index] ? index : -1).filter(index => index >= 0)
       if (flexible.length === 0) break
@@ -374,12 +392,12 @@ function allocateTableForTest(headers, rows, availableWidth) {
       widths[index] += 1
       remaining -= 1
     }
-    return { widths, tableWidth: widths.reduce((sum, width) => sum + width, 0) }
+    return tableAllocationResultForTest(widths, borderBudget)
   }
-  const compressionCap = Math.floor(availableWidth / Math.max(1, natural.length) * 1.5)
+  const compressionCap = Math.floor(columnAvailableWidth / Math.max(1, natural.length) * 1.5)
   const cappedTargets = natural.map((width, index) => Math.max(readableMin[index], Math.min(width, compressionCap)))
   const widths = readableMin.slice()
-  let remaining = availableWidth - minTotal
+  let remaining = columnAvailableWidth - minTotal
   while (remaining > 0) {
     const flexible = widths.map((width, index) => width < cappedTargets[index] ? index : -1).filter(index => index >= 0)
     if (flexible.length === 0) break
@@ -394,7 +412,7 @@ function allocateTableForTest(headers, rows, availableWidth) {
     }
     if (consumed === 0) break
   }
-  return { widths, tableWidth: widths.reduce((sum, width) => sum + width, 0) }
+  return tableAllocationResultForTest(widths, borderBudget)
 }
 
 function formatTableCellTextForLayoutForTest(text) {
@@ -459,7 +477,8 @@ const shortRows = [[
 const firstTable230 = allocateTableForTest(shortHeaders, shortRows, DEVICE_230_CONTENT_WIDTH_VP_FOR_TEST)
 assert.equal(firstTable230.tableWidth, firstTable230.widths.reduce((sum, width) => sum + width, 0), 'layout mirror: first 230 table width is content-derived total')
 assert.deepEqual(firstTable230.widths, naturalColumnWidthsForTest(shortHeaders, shortRows), 'naturalTotal <= availableWidth returns natural widths exactly: no stretch, no compression')
-assert.ok(firstTable230.tableWidth <= DEVICE_230_CONTENT_WIDTH_VP_FOR_TEST, `first 230 table must initially fit when protected minima fit, got total ${firstTable230.tableWidth}`)
+assert.equal(firstTable230.renderedOuterWidth, firstTable230.tableWidth + tableHorizontalBorderBudgetForTest(shortHeaders, shortRows), 'layout mirror: rendered outer width adds table outer border and internal vertical dividers')
+assert.ok(firstTable230.renderedOuterWidth <= DEVICE_230_CONTENT_WIDTH_VP_FOR_TEST, `first 230 rendered outer table must initially fit when protected minima fit, got total ${firstTable230.renderedOuterWidth}`)
 assert.ok(firstTable230.tableWidth < DEVICE_230_CONTENT_WIDTH_VP_FOR_TEST, `naturalTotal <= availableWidth does not force the table to fill the viewport, got total ${firstTable230.tableWidth}`)
 assert.ok(firstTable230.widths[1] >= shortUnbreakableIntrinsicMinForTest(spacedSuccessRateForTest), '83.33%（30/36） column keeps its no-wrap natural estimate, not a fixed protected clamp')
 assert.ok(firstTable230.widths[2] >= shortUnbreakableIntrinsicMinForTest('61.11%（ 22/36 ）'), '61.11%（22/36） column keeps its no-wrap natural estimate, not a fixed protected clamp')
@@ -479,22 +498,22 @@ const firstTableLongOrdinaryRows = [
   ],
 ]
 const firstTableBalanced230 = allocateTableForTest(shortHeaders, firstTableLongOrdinaryRows, DEVICE_230_CONTENT_WIDTH_VP_FOR_TEST)
-assert.ok(firstTableBalanced230.tableWidth <= DEVICE_230_CONTENT_WIDTH_VP_FOR_TEST, `compressed first table must not overflow when protected minima fit, got ${firstTableBalanced230.tableWidth}`)
+assert.ok(firstTableBalanced230.renderedOuterWidth <= DEVICE_230_CONTENT_WIDTH_VP_FOR_TEST, `compressed first table rendered outer width must not overflow when protected minima fit, got ${firstTableBalanced230.renderedOuterWidth}`)
 assert.ok(firstTableBalanced230.widths[2] >= shortUnbreakableIntrinsicMinForTest('61.11%（ 22/36 ）'), `OpenClaw/61.11% column keeps protected no-wrap minimum, got ${firstTableBalanced230.widths[2]}`)
 assert.ok(firstTableBalanced230.widths[2] * DEVICE_230_PIXEL_RATIO_FOR_TEST > 390, `OpenClaw column must not become a right-edge sliver, got ${firstTableBalanced230.widths[2]}vp`)
 assert.ok(Math.max(...firstTableBalanced230.widths) * DEVICE_230_PIXEL_RATIO_FOR_TEST < 1200, `no column may repeat the ~1300px OpenAgent over-wide regression, got ${firstTableBalanced230.widths.join(',')}vp`)
 assert.ok(firstTableBalanced230.widths[1] <= Math.floor(DEVICE_230_CONTENT_WIDTH_VP_FOR_TEST / 3 * 1.5), `ordinary long prose column is capped by measured fair-share compression, got ${firstTableBalanced230.widths[1]}`)
 assert.ok(firstTable230.widths[1] * DEVICE_230_PIXEL_RATIO_FOR_TEST < 1320 && firstTable230.widths[2] * DEVICE_230_PIXEL_RATIO_FOR_TEST < 1320, 'percent/fraction columns must not repeat fix3 pathological width')
 const table237Narrow = allocateTableForTest(shortHeaders, firstTableLongOrdinaryRows, DEVICE_237_NARROW_CONTENT_WIDTH_VP_FOR_TEST)
-assert.ok(table237Narrow.tableWidth <= DEVICE_237_NARROW_CONTENT_WIDTH_VP_FOR_TEST, `237-like ordinary comparison table must fit measured availableWidth, got ${table237Narrow.tableWidth}`)
+assert.ok(table237Narrow.renderedOuterWidth <= DEVICE_237_NARROW_CONTENT_WIDTH_VP_FOR_TEST, `237-like ordinary comparison table rendered outer width must fit measured availableWidth, got ${table237Narrow.renderedOuterWidth}`)
 assert.ok(table237Narrow.widths[2] >= Math.floor(DEVICE_237_NARROW_CONTENT_WIDTH_VP_FOR_TEST / 4), `237 OpenClaw column must remain visible, not a right-edge sliver, got ${table237Narrow.widths[2]}vp`)
 assert.ok(table237Narrow.widths.every(width => width >= visibleCompactMinWidthForTest()), `237 all columns keep compact readable minima, got ${table237Narrow.widths.join(',')}`)
 const table230Narrow = allocateTableForTest(shortHeaders, firstTableLongOrdinaryRows, DEVICE_230_NARROW_CONTENT_WIDTH_VP_FOR_TEST)
-assert.ok(table230Narrow.tableWidth <= DEVICE_230_NARROW_CONTENT_WIDTH_VP_FOR_TEST, `230 current/narrow ordinary comparison table must fit measured availableWidth, got ${table230Narrow.tableWidth}`)
+assert.ok(table230Narrow.renderedOuterWidth <= DEVICE_230_NARROW_CONTENT_WIDTH_VP_FOR_TEST, `230 current/narrow ordinary comparison table rendered outer width must fit measured availableWidth, got ${table230Narrow.renderedOuterWidth}`)
 assert.ok(table230Narrow.widths[2] >= Math.floor(DEVICE_230_NARROW_CONTENT_WIDTH_VP_FOR_TEST / 4), `230 current/narrow OpenClaw column must not be clipped to OpenC..., got ${table230Narrow.widths[2]}vp`)
 assert.ok(table230Narrow.widths[1] > table230Narrow.widths[0] && table230Narrow.widths[2] > table230Narrow.widths[0], `comparison columns should receive visible shares, got ${table230Narrow.widths.join(',')}`)
 const secondTable230 = allocateTableForTest(shortHeaders, [[{ text: '完成率' }, { text: '100%' }, { text: '95%' }]], DEVICE_230_CONTENT_WIDTH_VP_FOR_TEST)
-assert.ok(secondTable230.tableWidth <= DEVICE_230_CONTENT_WIDTH_VP_FOR_TEST, `second compact table must fit the initial 230 viewport when protected minima fit, got ${secondTable230.tableWidth}`)
+assert.ok(secondTable230.renderedOuterWidth <= DEVICE_230_CONTENT_WIDTH_VP_FOR_TEST, `second compact table rendered outer width must fit the initial 230 viewport when protected minima fit, got ${secondTable230.renderedOuterWidth}`)
 assert.deepEqual(secondTable230.widths, naturalColumnWidthsForTest(shortHeaders, [[{ text: '完成率' }, { text: '100%' }, { text: '95%' }]]), 'second compact table uses natural widths exactly when they fit')
 assert.equal(secondTable230.widths[1], shortUnbreakableIntrinsicMinForTest('OpenAgent', true), 'OpenAgent column uses protected header min, not a fixed clamp')
 assert.equal(secondTable230.widths[2], shortUnbreakableIntrinsicMinForTest('OpenClaw', true), 'OpenClaw column uses protected header min, not a fixed clamp')
@@ -504,16 +523,16 @@ assert.ok(secondTable230.widths[2] * DEVICE_230_PIXEL_RATIO_FOR_TEST > 74, `Open
 assert.ok(secondTable230.widths[1] * DEVICE_230_PIXEL_RATIO_FOR_TEST < 1320 && secondTable230.widths[2] * DEVICE_230_PIXEL_RATIO_FOR_TEST < 1320, 'OpenAgent/OpenClaw must not repeat fix3 pathological width')
 const projectPerformanceRows = topic1213097ProjectPerformanceMdToken.rows
 const projectPerformance237Narrow = allocateTableForTest(shortHeaders, projectPerformanceRows, DEVICE_237_NARROW_CONTENT_WIDTH_VP_FOR_TEST)
-assert.ok(projectPerformance237Narrow.tableWidth <= DEVICE_237_NARROW_CONTENT_WIDTH_VP_FOR_TEST, `3.3 project-performance table must fit 237-like measured availableWidth, got ${projectPerformance237Narrow.tableWidth}`)
+assert.ok(projectPerformance237Narrow.renderedOuterWidth <= DEVICE_237_NARROW_CONTENT_WIDTH_VP_FOR_TEST, `3.3 project-performance table rendered outer width must fit 237-like measured availableWidth, got ${projectPerformance237Narrow.renderedOuterWidth}`)
 assert.ok(projectPerformance237Narrow.widths[2] >= Math.floor(DEVICE_237_NARROW_CONTENT_WIDTH_VP_FOR_TEST / 4), `3.3 237-like OpenClaw/right-value column must not be a sliver, got ${projectPerformance237Narrow.widths[2]}vp`)
 assert.ok(projectPerformance237Narrow.widths[2] >= TABLE_READABLE_MIN_CELL_WIDTH_FOR_TEST, `3.3 237-like OpenClaw install-size value should remain readable with wrapping, got ${projectPerformance237Narrow.widths[2]}vp`)
 assert.ok(projectPerformanceRows[0][2].text.includes('~29.2 s') && projectPerformanceRows[2][2].text.includes('42,000+ 文件'), '3.3 narrow OpenClaw values remain present in table tokens')
 const projectPerformance230Narrow = allocateTableForTest(shortHeaders, projectPerformanceRows, DEVICE_230_NARROW_CONTENT_WIDTH_VP_FOR_TEST)
-assert.ok(projectPerformance230Narrow.tableWidth <= DEVICE_230_NARROW_CONTENT_WIDTH_VP_FOR_TEST, `3.3 project-performance table must fit 230-narrow measured availableWidth, got ${projectPerformance230Narrow.tableWidth}`)
+assert.ok(projectPerformance230Narrow.renderedOuterWidth <= DEVICE_230_NARROW_CONTENT_WIDTH_VP_FOR_TEST, `3.3 project-performance table rendered outer width must fit 230-narrow measured availableWidth, got ${projectPerformance230Narrow.renderedOuterWidth}`)
 assert.ok(projectPerformance230Narrow.widths[2] >= Math.floor(DEVICE_230_NARROW_CONTENT_WIDTH_VP_FOR_TEST / 4), `3.3 230-narrow OpenClaw/right-value column must not be a right-edge sliver, got ${projectPerformance230Narrow.widths[2]}vp`)
 assert.ok(projectPerformance230Narrow.widths[1] > visibleCompactMinWidthForTest() && projectPerformance230Narrow.widths[2] > visibleCompactMinWidthForTest(), `3.3 230-narrow comparison columns should keep readable shares, got ${projectPerformance230Narrow.widths.join(',')}`)
 const projectPerformance230Wide = allocateTableForTest(shortHeaders, projectPerformanceRows, DEVICE_230_CONTENT_WIDTH_VP_FOR_TEST)
-assert.ok(projectPerformance230Wide.tableWidth <= DEVICE_230_CONTENT_WIDTH_VP_FOR_TEST, `3.3 project-performance table must fit wide 230 measured availableWidth, got ${projectPerformance230Wide.tableWidth}`)
+assert.ok(projectPerformance230Wide.renderedOuterWidth <= DEVICE_230_CONTENT_WIDTH_VP_FOR_TEST, `3.3 project-performance table rendered outer width must fit wide 230 measured availableWidth, got ${projectPerformance230Wide.renderedOuterWidth}`)
 assert.deepEqual(projectPerformance230Wide.widths, naturalColumnWidthsForTest(shortHeaders, projectPerformanceRows), '3.3 wide 230 keeps natural content widths when they fit instead of needless over-compression')
 assert.ok(projectPerformance230Wide.tableWidth < DEVICE_230_CONTENT_WIDTH_VP_FOR_TEST, `3.3 wide 230 should not stretch a naturally fitting table to full viewport, got ${projectPerformance230Wide.tableWidth}`)
 assert.ok(projectPerformance230Wide.widths[1] >= shortUnbreakableIntrinsicMinForTest('OpenAgent', true), `3.3 wide 230 OpenAgent column remains readable, got ${projectPerformance230Wide.widths[1]}vp`)
@@ -523,17 +542,17 @@ const naturalShort = allocateTableForTest([{ text: 'A', header: true }, { text: 
 assert.equal(naturalShort.tableWidth, naturalShort.widths.reduce((sum, width) => sum + width, 0), 'layout mirror: natural table width is content total')
 assert.ok(naturalShort.tableWidth < 900, 'naturalTotal <= availableWidth keeps ordinary short table narrower than body instead of stretching')
 const compressedShort = allocateTableForTest([{ text: 'Alpha', header: true }, { text: 'Beta', header: true }, { text: 'Gamma', header: true }], [[{ text: 'moderately long ordinary text that should wrap within a readable column' }, { text: 'short' }, { text: 'short' }]], 350)
-assert.equal(compressedShort.tableWidth, 350, 'compressible non-protected tables fill availableWidth when naturalTotal exceeds availableWidth but readable minima fit')
+assert.equal(compressedShort.renderedOuterWidth, 350, 'compressible non-protected tables fill availableWidth including table borders when naturalTotal exceeds availableWidth but readable minima fit')
 assert.ok(compressedShort.widths.every(width => width >= TABLE_READABLE_MIN_CELL_WIDTH_FOR_TEST), 'compressed columns stay readable')
 const scrollNeeded = allocateTableForTest([{ text: 'Alpha', header: true }, { text: 'Beta', header: true }, { text: 'Gamma', header: true }, { text: 'Delta', header: true }, { text: 'Epsilon', header: true }], [[{ text: 'long ordinary text' }, { text: 'long ordinary text' }, { text: 'long ordinary text' }, { text: 'long ordinary text' }, { text: 'long ordinary text' }]], 300)
-assert.ok(scrollNeeded.tableWidth > 300, 'when all columns cannot remain minimally readable, table width exceeds availableWidth for horizontal scroll')
+assert.ok(scrollNeeded.renderedOuterWidth > 300, 'when all columns cannot remain minimally readable, rendered outer width exceeds availableWidth for horizontal scroll')
 assert.ok(scrollNeeded.widths.every(width => width >= visibleCompactMinWidthForTest()), 'horizontal-scroll case preserves compact visible column widths instead of hard squeezing')
 const protectedSoftWrap = allocateTableForTest([{ text: 'OpenAgent', header: true }, { text: 'OpenClaw', header: true }], [[{ text: '83.33%（ 30/36 ）' }, { text: '61.11%（ 22/36 ）' }]], 200)
-assert.ok(protectedSoftWrap.tableWidth <= 200, `protected short semantic tokens are soft preferences and must fit ordinary comparison tables, got ${protectedSoftWrap.tableWidth}`)
+assert.ok(protectedSoftWrap.renderedOuterWidth <= 200, `protected short semantic tokens are soft preferences and must fit ordinary comparison tables including borders, got ${protectedSoftWrap.renderedOuterWidth}`)
 assert.ok(protectedSoftWrap.widths.every(width => width >= visibleCompactMinWidthForTest()), `protected soft-wrap columns remain visible, got ${protectedSoftWrap.widths.join(',')}`)
 const hardUrlTextForTest = 'https://example.com/' + 'a'.repeat(80)
 const hardUnbreakableOverflow = allocateTableForTest([{ text: 'Key', header: true }, { text: 'Value', header: true }], [[{ text: 'url' }, { text: hardUrlTextForTest }]], 260)
-assert.ok(hardUnbreakableOverflow.tableWidth > 260, 'truly hard unbreakable URL/hash-like content may exceed availableWidth and scroll')
+assert.ok(hardUnbreakableOverflow.renderedOuterWidth > 260, 'truly hard unbreakable URL/hash-like content may exceed availableWidth and scroll')
 assert.ok(hardUnbreakableOverflow.widths[1] >= hardUnbreakableIntrinsicMinForTest(hardUrlTextForTest), 'hard unbreakable column preserves its intrinsic unbroken width')
 assert.doesNotMatch(source, /const TABLE_SHORT_UNBREAKABLE_MIN_CELL_WIDTH = 480;/, 'MarkdownTable must not keep fix3 fixed 480vp protected width')
 assert.doesNotMatch(source, /const TABLE_MIN_CELL_WIDTH = \d+;/, 'MarkdownTable must not keep a natural-width floor that overrides actual content estimates')
@@ -542,8 +561,11 @@ assert.match(markdownTableStruct[0], /isProtectedNoWrapCell\(cell: RenderTableCe
 assert.match(markdownTableStruct[0], /columnReadableMinWidths\(\): number\[\][\s\S]*shortUnbreakableIntrinsicMinWidth[\s\S]*TABLE_READABLE_MIN_CELL_WIDTH/, 'MarkdownTable uses protected short-token intrinsic minima as roomy-layout preferences')
 assert.match(markdownTableStruct[0], /visibleCompactMinWidth\(\): number[\s\S]*this\.bodyFontSize\(\) \* 4[\s\S]*hardUnbreakableIntrinsicMinWidth\(cell: RenderTableCell \| undefined\): number[\s\S]*longestUnbreakableSegment/, 'MarkdownTable distinguishes soft protected tokens from truly hard unbreakable overflow')
 assert.match(markdownTableStruct[0], /hardUnbreakableColumnMinWidths[\s\S]*if \(hardUnbreakableTotal > availableWidth\)[\s\S]*if \(readableTotal > availableWidth\)[\s\S]*compactMin[\s\S]*return this\.distributeColumnWidths/, 'MarkdownTable squeezes ordinary tables into measured availableWidth before falling back to hard-unbreakable scroll')
-assert.match(markdownTableStruct[0], /\.border\(\{[\s\S]*width: \{ right: columnIndex < this\.columnCount\(\) - 1 \? 1 : 0 \}[\s\S]*color: TABLE_BORDER_COLOR/, 'MarkdownTable draws vertical separators with explicit cell right borders')
-assert.doesNotMatch(markdownTableStruct[0], /Divider\(\)[\s\S]*\.height\("100%"\)/, 'MarkdownTable must not rely on 100%-height Divider as the only vertical separator')
+assert.match(tableCellBuilder, /\.border\(\{[\s\S]*width: \{ right: columnIndex < this\.columnCount\(\) - 1 \? TABLE_CELL_VERTICAL_DIVIDER_WIDTH : 0 \}[\s\S]*color: TABLE_BORDER_COLOR/, 'MarkdownTable draws internal vertical separators with per-cell right borders using the shared divider constant')
+assert.match(markdownTableStruct[0], /\.border\(\{ width: TABLE_OUTER_BORDER_WIDTH, color: TABLE_BORDER_COLOR \}\)/, 'MarkdownTable outer border uses the shared outer border constant')
+assert.doesNotMatch(markdownTableStruct[0], /verticalDividerIndexes\(|verticalDividerOffset\(|@Builder TableRow\(/, 'MarkdownTable must not keep row-level overlay divider helpers')
+assert.doesNotMatch(markdownTableStruct[0], /Stack\(\{ alignContent: Alignment\.TopStart \}\)[\s\S]*Blank\(\)[\s\S]*\.height\("100%"\)[\s\S]*\.position\(/, 'MarkdownTable must not draw vertical separators with row-level Stack/Blank 100%-height positioned overlays')
+assert.doesNotMatch(markdownTableStruct[0], /Divider\(\)[\s\S]*\.height\("100%"\)|Blank\(\)[\s\S]*\.height\("100%"\)[\s\S]*\.position\(/, 'MarkdownTable must not rely on 100%-height divider overlays')
 assert.match(markdownTableStruct[0], /cellTextAlign\(cell: RenderTableCell\): TextAlign[\s\S]*cell\.align === "center"[\s\S]*cell\.align === "right"[\s\S]*TextAlign\.Start/, 'MarkdownTable applies parsed cell align with Start fallback')
 assert.match(markdownTableStruct[0], /paddedRow\(row: RenderTableCell\[\]\): RenderTableCell\[\][\s\S]*const count = this\.columnCount\(\)[\s\S]*cells\.push\(row\[index\] \?\? this\.emptyCell\(\)\)/, 'MarkdownTable pads ragged rows to columnCount for consistent widths/dividers')
 
