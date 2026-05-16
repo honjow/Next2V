@@ -31,6 +31,32 @@ keep_awake() {
   fi
 }
 
+ensure_ohpm_dependencies() {
+  if ! command -v ohpm >/dev/null 2>&1; then
+    echo "错误: 未找到 ohpm，请先把 OpenHarmony command-line-tools/bin 加入 PATH" >&2
+    exit 1
+  fi
+
+  local module_dirs=(
+    "."
+    "shared"
+    "feature/feed"
+    "feature/detail"
+    "feature/node"
+    "feature/settings"
+    "feature/user"
+    "entry"
+  )
+
+  echo "==> 检查/恢复 ohpm 依赖..."
+  for module_dir in "${module_dirs[@]}"; do
+    if [ -f "$PROJ/$module_dir/oh-package.json5" ]; then
+      echo "   - ohpm install $module_dir"
+      (cd "$PROJ/$module_dir" && ohpm install)
+    fi
+  done
+}
+
 case "$1" in
   -h|--help)
     cat <<'EOF'
@@ -69,6 +95,7 @@ EOF
     ;;
   --build-only)
     shift
+    ensure_ohpm_dependencies
     echo "==> 构建 HAP..."
     cd "$PROJ"
     hvigorw assembleHap --mode module -p product=default -p buildMode=debug --no-daemon
@@ -81,6 +108,7 @@ EOF
   *)
     # 构建 + 签名 + 安装
     keep_awake
+    ensure_ohpm_dependencies
     echo "==> 构建 HAP..."
     cd "$PROJ"
     hvigorw assembleHap --mode module -p product=default -p buildMode=debug --no-daemon

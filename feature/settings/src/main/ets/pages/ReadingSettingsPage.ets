@@ -1,5 +1,4 @@
 import { common } from '@kit.AbilityKit'
-import { SymbolGlyphModifier } from '@kit.ArkUI'
 import {
   ConciseListRow,
   GroupedListSection,
@@ -14,8 +13,6 @@ const PREVIEW_FIXED_HEIGHT: number = 220
 @Component
 export struct ReadingSettingsPage {
   @StorageLink(StorageKeys.READING_FONT_SIZE) readingFontSize: number = ReadingSettings.TEXT_SCALE_DEFAULT
-  @StorageLink(StorageKeys.READING_BASE64_DECODE_MODE) base64DecodeMode: string = ReadingSettings.BASE64_MODE_BADGE
-  @State private base64ModeMenuShown: boolean = false
 
   private scaledToken(baseValue: number): number {
     return ReadingSettings.scaleTypographyToken(baseValue, this.readingFontSize)
@@ -147,22 +144,6 @@ export struct ReadingSettingsPage {
         })
 
         ConciseListRow({
-          title: 'Base64 解码',
-          subtitle: '默认点击查看，避免直接暴露邮箱/微信等明文',
-          trailingText: this.base64DecodeModeLabel(),
-          trailingDropdown: true,
-          action: () => {
-            this.showBase64ModeMenu()
-          }
-        })
-          .bindMenu(this.base64ModeMenuShown, this.Base64ModeMenu, {
-            placement: Placement.BottomRight,
-            aboutToDisappear: () => {
-              this.base64ModeMenuShown = false
-            },
-          })
-
-        ConciseListRow({
           title: '恢复默认',
           destructive: true,
           showChevron: false,
@@ -173,55 +154,6 @@ export struct ReadingSettingsPage {
       }
       .width('100%')
     }
-  }
-
-  @Builder
-  Base64ModeMenu() {
-    Menu() {
-      this.Base64ModeMenuItem('关闭', ReadingSettings.BASE64_MODE_OFF)
-      this.Base64ModeMenuItem('点击查看', ReadingSettings.BASE64_MODE_BADGE)
-      this.Base64ModeMenuItem('文内显示', ReadingSettings.BASE64_MODE_INLINE)
-    }
-  }
-
-  @Builder
-  Base64ModeMenuItem(label: string, mode: string) {
-    MenuItem({
-      content: label,
-      symbolEndIcon:
-        this.base64DecodeMode === mode
-          ? new SymbolGlyphModifier($r('sys.symbol.checkmark'))
-          : undefined,
-    }).onClick(() => {
-      this.updateBase64DecodeMode(mode)
-    })
-  }
-
-  private showBase64ModeMenu(): void {
-    this.base64ModeMenuShown = false
-    setTimeout(() => {
-      this.base64ModeMenuShown = true
-    }, 20)
-  }
-
-  private base64DecodeModeLabel(): string {
-    if (this.base64DecodeMode === ReadingSettings.BASE64_MODE_OFF) {
-      return '关闭'
-    }
-    if (this.base64DecodeMode === ReadingSettings.BASE64_MODE_INLINE) {
-      return '文内显示'
-    }
-    return '点击查看'
-  }
-
-  private updateBase64DecodeMode(mode: string): void {
-    const normalized = ReadingSettings.normalizeBase64DecodeMode(mode)
-    this.base64DecodeMode = normalized
-    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    ReadingSettings.saveBase64DecodeMode(context, normalized)
-      .catch((error: Error) => {
-        console.error('save base64 decode settings failed: ' + error.message)
-      })
   }
 
   private updateReadingTextScale(textScale: number): void {
@@ -260,6 +192,5 @@ export struct ReadingSettingsPage {
 
   private resetReadingSettings(): void {
     this.saveReadingTextScale(ReadingSettings.TEXT_SCALE_DEFAULT)
-    this.updateBase64DecodeMode(ReadingSettings.BASE64_MODE_BADGE)
   }
 }

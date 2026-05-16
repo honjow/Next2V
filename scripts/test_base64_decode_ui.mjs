@@ -110,7 +110,7 @@ function renderText(tokens, mode = 'badge') {
   return tokens.map(t => {
     if (t.type === 'base64Decode') {
       if (mode === 'inline') return ` 解码：${t.decoded}`
-      if (mode === 'badge') return ' Base64/解码'
+      if (mode === 'badge') return ' Base64'
       return ''
     }
     if (Array.isArray(t.tokens)) return renderText(t.tokens, mode)
@@ -169,7 +169,7 @@ const overlongTokens = enhanceInlineTokens([{ type: 'text', text: overlongToken 
 assert.equal(overlongTokens.some(t => t.type === 'base64Decode'), false, 'overlong continuous token has no Base64 decode token')
 const overlongRenderedBadge = renderText(overlongTokens, 'badge')
 const overlongRenderedInline = renderText(overlongTokens, 'inline')
-assert.equal(overlongRenderedBadge.includes('Base64/解码'), false, 'overlong continuous token does not produce a badge')
+assert.equal(overlongRenderedBadge.includes('Base64'), false, 'overlong continuous token does not produce a badge')
 assert.equal(overlongRenderedInline.includes('解码：'), false, 'overlong continuous token does not inline decoded text')
 
 for (const rejected of ['YWJj', '/////wAAAAAA', Buffer.from([0, 1, 2, 3, 4, 5, 6, 7, 8]).toString('base64'), '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef']) {
@@ -185,21 +185,26 @@ const markdownTokens = enhanceInlineTokens(parseSimpleMarkdownInline(`联系 ${e
 const htmlTokens = enhanceInlineTokens(parseSimpleHtmlInline(`<p>联系 ${email}</p>`))
 assert.deepEqual(markdownTokens.map(t => t.type), htmlTokens.map(t => t.type), 'Markdown and rendered HTML ordinary text get same enhancement shape')
 assert.equal(renderText(markdownTokens, 'badge').includes('hello@example.com'), false, 'default badge mode does not inline decoded plaintext')
-assert.equal(renderText(markdownTokens, 'badge').includes('Base64/解码'), true, 'default badge/action is explicit')
+assert.equal(renderText(markdownTokens, 'badge').includes('Base64'), true, 'default badge/action is explicit')
+assert.equal(renderText(markdownTokens, 'badge').includes('解码：hello@example.com'), false, 'default badge mode does not inline decoded plaintext with label')
 assert.equal(renderText(markdownTokens, 'inline').includes('解码：hello@example.com'), true, 'inline mode clearly labels decoded plaintext')
 
 const source = readFileSync('shared/src/main/ets/components/MarkdownContent.ets', 'utf8')
 const settings = readFileSync('shared/src/main/ets/settings/ReadingSettings.ets', 'utf8')
-const page = readFileSync('feature/settings/src/main/ets/pages/ReadingSettingsPage.ets', 'utf8')
+const readingFontPage = readFileSync('feature/settings/src/main/ets/pages/ReadingSettingsPage.ets', 'utf8')
+const settingsPage = readFileSync('feature/settings/src/main/ets/pages/SettingsPage.ets', 'utf8')
 assert.match(source, /enhanceBase64TextTokens\(tokens\)/)
 assert.match(source, /type === 'code' \|\| type === 'codespan' \|\| type === 'link'/)
-assert.match(source, /Span\(" Base64\/解码"\)/)
+assert.match(source, /Span\(" Base64"\)/)
+assert.doesNotMatch(source, /Base64\/解码/)
 assert.match(source, /AlertDialog\.show\(\{[\s\S]*title: "Base64 解码"[\s\S]*value: "关闭"[\s\S]*value: "复制"/)
 assert.doesNotMatch(source, /console\.(?:log|info|warn|error)\([^\n]*(?:decoded|Base64 解码|解码文本)/, 'decoded Base64 text must not be logged')
 assert.match(settings, /KEY_BASE64_DECODE_MODE: string = 'readingBase64DecodeMode'/)
 assert.match(settings, /BASE64_MODE_BADGE: string = 'badge'/)
-assert.match(page, /Base64 解码/)
-assert.match(page, /点击查看/)
-assert.match(page, /文内显示/)
+assert.match(settingsPage, /Base64 解码/)
+assert.match(settingsPage, /点击查看/)
+assert.match(settingsPage, /文内显示/)
+assert.doesNotMatch(readingFontPage, /Base64 解码/)
+assert.doesNotMatch(readingFontPage, /BASE64_MODE/)
 
 console.log('PASS: Base64 decode UI detection, AST enhancement, privacy default, inline labeling, and settings contract')

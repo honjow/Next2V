@@ -35,10 +35,12 @@ export struct SettingsPage {
   @StorageLink(StorageKeys.REPLY_CARD_STYLE) replyCardStyle: string =
     ReplyCardStyleSettings.STYLE_STANDARD;
   @StorageLink(StorageKeys.READING_RESTORE_POSITION) readingRestorePosition: boolean = false;
+  @StorageLink(StorageKeys.READING_BASE64_DECODE_MODE) base64DecodeMode: string = ReadingSettings.BASE64_MODE_BADGE;
   @State private cacheStats: CacheStats = { topicListCount: 0, topicDetailCount: 0, updatedAt: 0 };
   @State private themeMenuShown: boolean = false;
   @State private replyDisplayMenuShown: boolean = false;
   @State private replyCardStyleMenuShown: boolean = false;
+  @State private base64ModeMenuShown: boolean = false;
   @State private apiDomainMenuShown: boolean = false;
   private http: HttpClient = HttpClient.getInstance();
 
@@ -266,6 +268,24 @@ export struct SettingsPage {
 
       this.SettingsDivider()
       ConciseListRow({
+        title: 'Base64 解码',
+        subtitle: '默认点击查看，避免直接暴露邮箱/微信等明文',
+        trailingText: this.base64DecodeModeLabel(),
+        showChevron: false,
+        trailingDropdown: true,
+        action: () => {
+          this.showBase64ModeMenu()
+        },
+      })
+        .bindMenu(this.base64ModeMenuShown, this.Base64ModeMenu, {
+          placement: Placement.BottomRight,
+          aboutToDisappear: () => {
+            this.base64ModeMenuShown = false
+          },
+        })
+
+      this.SettingsDivider()
+      ConciseListRow({
         title: '阅读字体设置',
         action: () => {
           this.stack.pushPathByName('ReadingSettings', null)
@@ -300,6 +320,28 @@ export struct SettingsPage {
       this.ReplyCardStyleMenuItem('标准', ReplyCardStyleSettings.STYLE_STANDARD)
       this.ReplyCardStyleMenuItem('紧凑', ReplyCardStyleSettings.STYLE_COMPACT)
     }
+  }
+
+  @Builder
+  Base64ModeMenu() {
+    Menu() {
+      this.Base64ModeMenuItem('关闭', ReadingSettings.BASE64_MODE_OFF)
+      this.Base64ModeMenuItem('点击查看', ReadingSettings.BASE64_MODE_BADGE)
+      this.Base64ModeMenuItem('文内显示', ReadingSettings.BASE64_MODE_INLINE)
+    }
+  }
+
+  @Builder
+  Base64ModeMenuItem(label: string, mode: string) {
+    MenuItem({
+      content: label,
+      symbolEndIcon:
+        this.base64DecodeMode === mode
+          ? new SymbolGlyphModifier($r('sys.symbol.checkmark'))
+          : undefined,
+    }).onClick(() => {
+      this.updateBase64DecodeMode(mode)
+    })
   }
 
   @Builder
@@ -378,6 +420,13 @@ export struct SettingsPage {
     this.replyCardStyleMenuShown = false
     setTimeout(() => {
       this.replyCardStyleMenuShown = true
+    }, 20)
+  }
+
+  private showBase64ModeMenu(): void {
+    this.base64ModeMenuShown = false
+    setTimeout(() => {
+      this.base64ModeMenuShown = true
     }, 20)
   }
 
@@ -466,6 +515,25 @@ export struct SettingsPage {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     ReplyCardStyleSettings.save(context, normalized).catch((error: Error) => {
       console.error('save reply card style failed: ' + error.message)
+    })
+  }
+
+  private base64DecodeModeLabel(): string {
+    if (this.base64DecodeMode === ReadingSettings.BASE64_MODE_OFF) {
+      return '关闭'
+    }
+    if (this.base64DecodeMode === ReadingSettings.BASE64_MODE_INLINE) {
+      return '文内显示'
+    }
+    return '点击查看'
+  }
+
+  private updateBase64DecodeMode(mode: string): void {
+    const normalized = ReadingSettings.normalizeBase64DecodeMode(mode)
+    this.base64DecodeMode = normalized
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    ReadingSettings.saveBase64DecodeMode(context, normalized).catch((error: Error) => {
+      console.error('save base64 decode settings failed: ' + error.message)
     })
   }
 
