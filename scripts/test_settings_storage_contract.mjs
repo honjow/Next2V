@@ -10,6 +10,80 @@ const assert = (condition, message) => {
   }
 }
 
+
+const findMatchingBrace = (text, openBraceIndex) => {
+  let depth = 0
+  let quote = null
+  let escaped = false
+  let lineComment = false
+  let blockComment = false
+
+  for (let i = openBraceIndex; i < text.length; i += 1) {
+    const char = text[i]
+    const next = text[i + 1]
+
+    if (lineComment) {
+      if (char === '\n') {
+        lineComment = false
+      }
+      continue
+    }
+    if (blockComment) {
+      if (char === '*' && next === '/') {
+        blockComment = false
+        i += 1
+      }
+      continue
+    }
+    if (quote !== null) {
+      if (escaped) {
+        escaped = false
+      } else if (char === '\\') {
+        escaped = true
+      } else if (char === quote) {
+        quote = null
+      }
+      continue
+    }
+
+    if (char === '/' && next === '/') {
+      lineComment = true
+      i += 1
+      continue
+    }
+    if (char === '/' && next === '*') {
+      blockComment = true
+      i += 1
+      continue
+    }
+    if (char === '\'' || char === '"' || char === '`') {
+      quote = char
+      continue
+    }
+    if (char === '{') {
+      depth += 1
+    } else if (char === '}') {
+      depth -= 1
+      if (depth === 0) {
+        return i
+      }
+    }
+  }
+
+  return -1
+}
+
+const extractMethodBody = (text, methodName) => {
+  const methodRegex = new RegExp(`(?:static\\s+async|private\\s+static\\s+async|private\\s+static)\\s+${methodName}\\s*\\(`)
+  const methodMatch = methodRegex.exec(text)
+  assert(methodMatch !== null, `SettingsBootstrap.${methodName} method missing`)
+  const openBraceIndex = text.indexOf('{', methodMatch.index)
+  assert(openBraceIndex !== -1, `SettingsBootstrap.${methodName} opening brace missing`)
+  const closeBraceIndex = findMatchingBrace(text, openBraceIndex)
+  assert(closeBraceIndex !== -1, `SettingsBootstrap.${methodName} closing brace missing`)
+  return text.slice(openBraceIndex + 1, closeBraceIndex)
+}
+
 const storageKeysText = read('shared/src/main/ets/constants/StorageKeys.ets')
 const storageKeyRegex = /static readonly (\w+): string =\s*(?:\n\s*)?'([^']+)'/g
 const orderedStorageKeys = []
@@ -161,27 +235,145 @@ for (const file of [
 }
 
 const entry = read('entry/src/main/ets/entryability/EntryAbility.ets')
-const entryLoadSequence = [
-  'ApiDomainSettings.load',
-  'ThemeSettings.load',
-  'MediaSettings.load',
-  'ReplyDisplaySettings.load',
-  'ReadingSettings.load',
-  'FeedTabSettings.load',
-  'CookieJarSettings.load',
-  'AutoDailyCheckinSettings.load',
-  'ReplyCardStyleSettings.load',
-  'ReplyActionAlignmentSettings.load',
-  'this.loadContent',
+const bootstrapRel = 'shared/src/main/ets/settings/SettingsBootstrap.ets'
+assert(fs.existsSync(path.join(repo, bootstrapRel)), 'SettingsBootstrap.ets must exist')
+const bootstrap = read(bootstrapRel)
+assert(/class\s+SettingsBootstrap/.test(bootstrap), 'SettingsBootstrap class missing')
+assert(/static\s+async\s+loadAll\s*\(\s*context\s*:\s*common\.UIAbilityContext\s*\)\s*:\s*Promise<void>/.test(bootstrap), 'SettingsBootstrap.loadAll signature missing')
+assert(entry.includes('SettingsBootstrap.loadAll(this.context)'), 'EntryAbility must call SettingsBootstrap.loadAll(this.context)')
+const loadAllIndex = entry.indexOf('SettingsBootstrap.loadAll(this.context)')
+const finallyIndex = entry.indexOf('.finally', loadAllIndex)
+const loadContentIndex = entry.indexOf('this.loadContent(windowStage, win)', loadAllIndex)
+assert(finallyIndex !== -1, 'EntryAbility SettingsBootstrap.loadAll must use finally before loadContent')
+assert(loadContentIndex !== -1, 'EntryAbility must load content after SettingsBootstrap.loadAll')
+assert(finallyIndex > loadAllIndex && loadContentIndex > finallyIndex, 'EntryAbility loadContent must be in or after SettingsBootstrap.loadAll finally')
+
+const loadAllBody = extractMethodBody(bootstrap, 'loadAll')
+const loadAllHelperSequence = [
+  'restoreApiDomain',
+  'restoreTheme',
+  'restoreMedia',
+  'restoreReplyDisplay',
+  'restoreReading',
+  'restoreFeedTabs',
+  'restoreCookieJar',
+  'restoreAutoDailyCheckin',
+  'triggerStartupCheckin',
+  'restoreReplyCardStyle',
+  'restoreReplyActionAlignment',
 ]
 let previousIndex = -1
-for (const call of entryLoadSequence) {
-  const index = entry.indexOf(call, previousIndex + 1)
-  assert(index !== -1, `EntryAbility no longer calls ${call}`)
-  assert(index > previousIndex, `EntryAbility load sequence changed near ${call}`)
+for (const helper of loadAllHelperSequence) {
+  const call = `SettingsBootstrap.${helper}(`
+  const index = loadAllBody.indexOf(call, previousIndex + 1)
+  assert(index !== -1, `SettingsBootstrap.loadAll no longer calls ${helper}`)
+  assert(index > previousIndex, `SettingsBootstrap.loadAll helper order changed near ${helper}`)
   previousIndex = index
 }
-assert(!entry.includes('SettingsBootstrap.loadAll'), 'Phase 2 bootstrap must not be introduced')
+assert(!/await\s+SettingsBootstrap\.triggerStartupCheckin\s*\(/.test(loadAllBody), 'SettingsBootstrap.triggerStartupCheckin must not be awaited')
+assert(!/await\s+AutoDailyCheckinService\.tryCheckin/.test(bootstrap), 'AutoDailyCheckinService.tryCheckin must remain fire-and-forget')
+
+const helperContracts = [
+  {
+    name: 'restoreApiDomain',
+    required: [
+      'ApiDomainSettings.load(context).catch',
+      'restore api domain failed: ',
+      'ApiDomainSettings.apply(false)',
+    ],
+  },
+  {
+    name: 'restoreTheme',
+    required: [
+      'ThemeSettings.load(context).catch',
+      'restore theme settings failed: ',
+      'ThemeSettings.apply(context, ThemeSettings.MODE_AUTO)',
+    ],
+  },
+  {
+    name: 'restoreMedia',
+    required: [
+      'MediaSettings.load(context).catch',
+      'restore media settings failed: ',
+      'MediaSettings.apply(true, false)',
+    ],
+  },
+  {
+    name: 'restoreReplyDisplay',
+    required: [
+      'ReplyDisplaySettings.load(context).catch',
+      'restore reply display settings failed: ',
+      'ReplyDisplaySettings.apply(ReplyDisplaySettings.MODE_THREAD)',
+    ],
+  },
+  {
+    name: 'restoreReading',
+    required: [
+      'ReadingSettings.load(context).catch',
+      'restore reading settings failed: ',
+      'ReadingSettings.apply(14, 20, ReadingSettings.DENSITY_STANDARD)',
+    ],
+  },
+  {
+    name: 'restoreFeedTabs',
+    required: [
+      'FeedTabSettings.load(context).catch',
+      'restore feed tab settings failed: ',
+      'FeedTabSettings.apply(FeedTabSettings.defaultKeysJson())',
+    ],
+  },
+  {
+    name: 'restoreCookieJar',
+    required: [
+      'CookieJarSettings.load(context).catch',
+      'restore cookie jar failed: ',
+      'CookieJarSettings.apply({',
+      "comCookie: ''",
+      "coCookie: ''",
+      'updatedAt: 0',
+    ],
+  },
+  {
+    name: 'restoreAutoDailyCheckin',
+    required: [
+      'AutoDailyCheckinSettings.load(context).catch',
+      'restore auto daily check-in setting failed: ',
+      'AutoDailyCheckinSettings.apply(true)',
+    ],
+  },
+  {
+    name: 'triggerStartupCheckin',
+    required: [
+      'AutoDailyCheckinService.tryCheckin(',
+      'CookieJarSettings.getCurrentCookie()',
+      "'startup'",
+      '.catch((error: Error) => {',
+      'auto daily check-in startup trigger failed: ',
+    ],
+  },
+  {
+    name: 'restoreReplyCardStyle',
+    required: [
+      'ReplyCardStyleSettings.load(context).catch',
+      'restore reply card style failed: ',
+      'ReplyCardStyleSettings.apply(ReplyCardStyleSettings.STYLE_STANDARD)',
+    ],
+  },
+  {
+    name: 'restoreReplyActionAlignment',
+    required: [
+      'ReplyActionAlignmentSettings.load(context).catch',
+      'restore reply action alignment failed: ',
+      'ReplyActionAlignmentSettings.apply(ReplyActionAlignmentSettings.MODE_UNSET)',
+    ],
+  },
+]
+for (const contract of helperContracts) {
+  const helperBody = extractMethodBody(bootstrap, contract.name)
+  for (const required of contract.required) {
+    assert(helperBody.includes(required), `SettingsBootstrap.${contract.name} missing preserved load/catch/fallback/log string: ${required}`)
+  }
+}
 
 const media = read('shared/src/main/ets/settings/MediaSettings.ets')
 assert(media.includes("KEY_AUTO_LOAD_IMAGES: string = 'autoLoadImages'"), 'MediaSettings legacy autoLoadImages preferences key changed')
