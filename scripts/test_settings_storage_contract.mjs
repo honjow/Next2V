@@ -326,6 +326,32 @@ assert(helperText.includes("export { STORE_NAME_SETTINGS } from './SettingsStore
 assert(helperText.includes('type SettingsPreferencesStore = preferences.Preferences'), 'SettingsStorage must expose SettingsPreferencesStore preferences.Preferences alias')
 assert(helperText.includes('function setAppStorageValue<T>'), 'SettingsStorage must expose setAppStorageValue<T>')
 assert(helperText.includes('AppStorage.set<T>') && helperText.includes('AppStorage.setOrCreate<T>'), 'setAppStorageValue must use set fallback setOrCreate')
+for (const helperName of ['withPreferencesStore', 'readJsonArray', 'readJsonObject', 'writeJsonValue', 'deleteKeysAndFlush']) {
+  assert(helperText.includes(`function ${helperName}`), `SettingsStorage must expose ${helperName}`)
+}
+assert(helperText.includes('preferences.getPreferences(context, storeName)'), 'withPreferencesStore must fetch the requested storeName without changing store ownership')
+assert(helperText.includes('JSON.parse') && helperText.includes('JSON.stringify'), 'JSON preferences helpers must own parse/stringify primitives')
+assert(helperText.includes('store.flushSync()'), 'JSON preferences write/delete helpers must flush synchronously')
+
+const jsonBusinessSettingsContracts = [
+  ['SearchSettings.ets', 'STORE_NAME_SEARCH', ['withPreferencesStore', 'readJsonArray', 'writeJsonValue', 'deleteKeysAndFlush']],
+  ['BlockedMemberSettings.ets', 'STORE_NAME_BLOCKED_MEMBERS', ['withPreferencesStore', 'readJsonArray', 'writeJsonValue']],
+  ['DraftSettings.ets', 'STORE_NAME_DRAFTS', ['withPreferencesStore', 'readJsonArray', 'readJsonObject', 'writeJsonValue', 'deleteKeysAndFlush']],
+]
+for (const [file, storeConst, helpers] of jsonBusinessSettingsContracts) {
+  const text = read(`shared/src/main/ets/settings/${file}`)
+  assert(!text.includes("import { preferences } from '@kit.ArkData'"), `${file} must use SettingsStorage preferences helpers instead of direct preferences import`)
+  assert(text.includes(`STORE_NAME: string = ${storeConst}`), `${file} must keep ${storeConst} store binding`)
+  for (const helper of helpers) {
+    assert(text.includes(helper), `${file} must use ${helper}`)
+  }
+}
+assert(read('shared/src/main/ets/settings/DraftSettings.ets').includes("KEY_REPLY_DRAFTS: string = 'replyDrafts'"), 'DraftSettings replyDrafts key changed')
+assert(read('shared/src/main/ets/settings/DraftSettings.ets').includes("KEY_TOPIC_DRAFT: string = 'topicDraft'"), 'DraftSettings topicDraft key changed')
+assert(read('shared/src/main/ets/settings/SearchSettings.ets').includes("KEY_HISTORY: string = 'searchHistory'"), 'SearchSettings searchHistory key changed')
+assert(read('shared/src/main/ets/settings/SearchSettings.ets').includes("KEY_SOURCE_MODE: string = 'sourceMode'"), 'SearchSettings sourceMode key changed')
+assert(read('shared/src/main/ets/settings/BlockedMemberSettings.ets').includes("KEY_USERNAMES: string = 'usernames'"), 'BlockedMemberSettings usernames key changed')
+assert(read('shared/src/main/ets/settings/BlockedMemberSettings.ets').includes("KEY_UPDATED_AT: string = 'updatedAt'"), 'BlockedMemberSettings updatedAt key changed')
 
 const next2vSettingsFiles = [
   'ApiDomainSettings.ets',

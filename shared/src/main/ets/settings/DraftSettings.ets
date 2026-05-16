@@ -1,7 +1,6 @@
 import { common } from '@kit.AbilityKit'
-import { preferences } from '@kit.ArkData'
 import { StorageKeys } from '../constants/StorageKeys'
-import { setAppStorageValue } from './SettingsStorage'
+import { deleteKeysAndFlush, readJsonArray, readJsonObject, setAppStorageValue, withPreferencesStore, writeJsonValue } from './SettingsStorage'
 import { STORE_NAME_DRAFTS } from './SettingsStores'
 
 const STORE_NAME: string = STORE_NAME_DRAFTS
@@ -25,12 +24,10 @@ export interface TopicDraft {
 export class DraftSettings {
   static async loadTopicDraft(context: common.UIAbilityContext): Promise<TopicDraft | null> {
     try {
-      const store = await preferences.getPreferences(context, STORE_NAME)
-      const raw = store.getSync(KEY_TOPIC_DRAFT, '') as string
-      if (!raw) {
-        return null
-      }
-      return DraftSettings.parseTopicDraft(raw)
+      return await withPreferencesStore<TopicDraft | null>(context, STORE_NAME, (store) => {
+        const parsed = readJsonObject<TopicDraft>(store, KEY_TOPIC_DRAFT, null)
+        return DraftSettings.parseTopicDraft(parsed)
+      })
     } catch (error) {
       const e = error as Error
       throw new Error(e.message || '读取草稿失败')
@@ -52,9 +49,9 @@ export class DraftSettings {
       updatedAt: Math.floor(Date.now() / 1000)
     }
     try {
-      const store = await preferences.getPreferences(context, STORE_NAME)
-      store.putSync(KEY_TOPIC_DRAFT, JSON.stringify(draft))
-      store.flushSync()
+      await withPreferencesStore<void>(context, STORE_NAME, (store) => {
+        writeJsonValue<TopicDraft>(store, KEY_TOPIC_DRAFT, draft)
+      })
       DraftSettings.touchLocalData()
     } catch (error) {
       const e = error as Error
@@ -64,9 +61,9 @@ export class DraftSettings {
 
   static async clearTopicDraft(context: common.UIAbilityContext): Promise<void> {
     try {
-      const store = await preferences.getPreferences(context, STORE_NAME)
-      store.deleteSync(KEY_TOPIC_DRAFT)
-      store.flushSync()
+      await withPreferencesStore<void>(context, STORE_NAME, (store) => {
+        deleteKeysAndFlush(store, [KEY_TOPIC_DRAFT])
+      })
       DraftSettings.touchLocalData()
     } catch (error) {
       const e = error as Error
@@ -110,10 +107,9 @@ export class DraftSettings {
 
   static async clearAll(context: common.UIAbilityContext): Promise<void> {
     try {
-      const store = await preferences.getPreferences(context, STORE_NAME)
-      store.deleteSync(KEY_TOPIC_DRAFT)
-      store.deleteSync(KEY_REPLY_DRAFTS)
-      store.flushSync()
+      await withPreferencesStore<void>(context, STORE_NAME, (store) => {
+        deleteKeysAndFlush(store, [KEY_TOPIC_DRAFT, KEY_REPLY_DRAFTS])
+      })
       DraftSettings.touchLocalData()
     } catch (error) {
       const e = error as Error
@@ -123,9 +119,10 @@ export class DraftSettings {
 
   private static async loadAllReplyDrafts(context: common.UIAbilityContext): Promise<ReplyDraft[]> {
     try {
-      const store = await preferences.getPreferences(context, STORE_NAME)
-      const raw = store.getSync(KEY_REPLY_DRAFTS, '[]') as string
-      return DraftSettings.parseReplyDrafts(raw)
+      return await withPreferencesStore<ReplyDraft[]>(context, STORE_NAME, (store) => {
+        const parsed = readJsonArray<ReplyDraft>(store, KEY_REPLY_DRAFTS, [])
+        return DraftSettings.parseReplyDrafts(parsed)
+      })
     } catch (error) {
       const e = error as Error
       throw new Error(e.message || '读取草稿失败')
@@ -134,9 +131,9 @@ export class DraftSettings {
 
   private static async writeAllReplyDrafts(context: common.UIAbilityContext, drafts: ReplyDraft[]): Promise<void> {
     try {
-      const store = await preferences.getPreferences(context, STORE_NAME)
-      store.putSync(KEY_REPLY_DRAFTS, JSON.stringify(drafts))
-      store.flushSync()
+      await withPreferencesStore<void>(context, STORE_NAME, (store) => {
+        writeJsonValue<ReplyDraft[]>(store, KEY_REPLY_DRAFTS, drafts)
+      })
       DraftSettings.touchLocalData()
     } catch (error) {
       const e = error as Error
@@ -148,38 +145,28 @@ export class DraftSettings {
     setAppStorageValue<number>(StorageKeys.LOCAL_DATA_UPDATED_AT, Date.now())
   }
 
-  private static parseReplyDrafts(raw: string): ReplyDraft[] {
-    try {
-      const parsed = JSON.parse(raw) as ReplyDraft[]
-      if (!Array.isArray(parsed)) {
-        return []
-      }
-      return parsed
-        .filter((item: ReplyDraft) => item && item.topicId > 0 && item.content !== undefined)
-        .slice(0, MAX_REPLY_DRAFTS)
-    } catch (error) {
+  private static parseReplyDrafts(parsed: ReplyDraft[]): ReplyDraft[] {
+    if (!Array.isArray(parsed)) {
       return []
     }
+    return parsed
+      .filter((item: ReplyDraft) => item && item.topicId > 0 && item.content !== undefined)
+      .slice(0, MAX_REPLY_DRAFTS)
   }
 
-  private static parseTopicDraft(raw: string): TopicDraft | null {
-    try {
-      const parsed = JSON.parse(raw) as TopicDraft
-      if (!parsed) {
-        return null
-      }
-      const draft: TopicDraft = {
-        nodeName: (parsed.nodeName ?? '').trim(),
-        title: (parsed.title ?? '').trim(),
-        content: parsed.content ?? '',
-        updatedAt: parsed.updatedAt || 0
-      }
-      if (!draft.nodeName && !draft.title && draft.content.trim().length === 0) {
-        return null
-      }
-      return draft
-    } catch (error) {
+  private static parseTopicDraft(parsed: TopicDraft | null): TopicDraft | null {
+    if (!parsed) {
       return null
     }
+    const draft: TopicDraft = {
+      nodeName: (parsed.nodeName ?? '').trim(),
+      title: (parsed.title ?? '').trim(),
+      content: parsed.content ?? '',
+      updatedAt: parsed.updatedAt || 0
+    }
+    if (!draft.nodeName && !draft.title && draft.content.trim().length === 0) {
+      return null
+    }
+    return draft
   }
 }

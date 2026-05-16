@@ -1,8 +1,7 @@
 import { common } from '@kit.AbilityKit'
-import { preferences } from '@kit.ArkData'
 import { StorageKeys } from '../constants/StorageKeys'
 import { BlockedTopicFilter } from '../utils/BlockedTopicFilter'
-import { setAppStorageValue } from './SettingsStorage'
+import { readJsonArray, setAppStorageValue, withPreferencesStore, writeJsonValue } from './SettingsStorage'
 import { STORE_NAME_BLOCKED_MEMBERS } from './SettingsStores'
 
 const STORE_NAME: string = STORE_NAME_BLOCKED_MEMBERS
@@ -19,15 +18,16 @@ export class BlockedMemberSettings {
 
   static async load(context: common.UIAbilityContext): Promise<BlockedMemberSnapshot> {
     try {
-      const store = await preferences.getPreferences(context, STORE_NAME)
-      const raw = store.getSync(KEY_USERNAMES, '[]') as string
-      const updatedAt = store.getSync(KEY_UPDATED_AT, 0) as number
-      const usernames = BlockedMemberSettings.parseUsernames(raw)
-      BlockedMemberSettings.cachedUsernames = usernames
-      return {
-        usernames: usernames,
-        updatedAt: updatedAt || 0
-      }
+      return await withPreferencesStore<BlockedMemberSnapshot>(context, STORE_NAME, (store) => {
+        const parsed = readJsonArray<string>(store, KEY_USERNAMES, [])
+        const updatedAt = store.getSync(KEY_UPDATED_AT, 0) as number
+        const usernames = BlockedMemberSettings.normalizeList(parsed)
+        BlockedMemberSettings.cachedUsernames = usernames
+        return {
+          usernames: usernames,
+          updatedAt: updatedAt || 0
+        }
+      })
     } catch (_error) {
       return { usernames: [], updatedAt: 0 }
     }
@@ -42,10 +42,11 @@ export class BlockedMemberSettings {
     const normalized = BlockedMemberSettings.normalizeList(usernames)
     const updatedAt = Date.now()
     try {
-      const store = await preferences.getPreferences(context, STORE_NAME)
-      store.putSync(KEY_USERNAMES, JSON.stringify(normalized))
-      store.putSync(KEY_UPDATED_AT, updatedAt)
-      store.flushSync()
+      await withPreferencesStore<void>(context, STORE_NAME, (store) => {
+        writeJsonValue<string[]>(store, KEY_USERNAMES, normalized, false)
+        store.putSync(KEY_UPDATED_AT, updatedAt)
+        store.flushSync()
+      })
       BlockedMemberSettings.cachedUsernames = normalized
       BlockedMemberSettings.publishUpdatedAt(updatedAt)
     } catch (error) {
@@ -79,18 +80,6 @@ export class BlockedMemberSettings {
 
   static applyRuntimeUsernames(usernames: string[]): void {
     BlockedMemberSettings.cachedUsernames = BlockedMemberSettings.normalizeList(usernames)
-  }
-
-  private static parseUsernames(raw: string): string[] {
-    try {
-      const parsed = JSON.parse(raw) as string[]
-      if (!Array.isArray(parsed)) {
-        return []
-      }
-      return BlockedMemberSettings.normalizeList(parsed)
-    } catch (_error) {
-      return []
-    }
   }
 
   private static normalizeList(usernames: string[]): string[] {
