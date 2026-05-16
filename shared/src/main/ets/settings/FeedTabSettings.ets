@@ -3,8 +3,9 @@ import { preferences } from '@kit.ArkData'
 import { ApiConstants, TabItem } from '../constants/ApiConstants'
 import { StorageKeys } from '../constants/StorageKeys'
 import { setAppStorageValue } from './SettingsStorage'
+import { STORE_NAME_FEED_TABS } from './SettingsStores'
 
-const STORE_NAME: string = 'next2v_feed_tabs'
+const STORE_NAME: string = STORE_NAME_FEED_TABS
 const KEY_VISIBLE_KEYS: string = 'visibleKeys'
 const KEY_LAST_SELECTED_KEY: string = 'lastSelectedKey'
 const NODE_KEY_PREFIX: string = 'node:'

@@ -5,8 +5,9 @@ import { ApiConstants } from '../constants/ApiConstants'
 import { StorageKeys } from '../constants/StorageKeys'
 import { HttpClient } from '../network/HttpClient'
 import { setAppStorageValue } from './SettingsStorage'
+import { STORE_NAME_COOKIEJAR } from './SettingsStores'
 
-const STORE_NAME: string = 'next2v_cookiejar'
+const STORE_NAME: string = STORE_NAME_COOKIEJAR
 const KEY_COOKIE_COM: string = 'cookieCom'
 const KEY_COOKIE_CO: string = 'cookieCo'
 const KEY_UPDATED_AT: string = 'updatedAt'

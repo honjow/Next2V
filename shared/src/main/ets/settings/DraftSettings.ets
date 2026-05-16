@@ -2,8 +2,9 @@ import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
 import { StorageKeys } from '../constants/StorageKeys'
 import { setAppStorageValue } from './SettingsStorage'
+import { STORE_NAME_DRAFTS } from './SettingsStores'
 
-const STORE_NAME: string = 'next2v_drafts'
+const STORE_NAME: string = STORE_NAME_DRAFTS
 const KEY_REPLY_DRAFTS: string = 'replyDrafts'
 const KEY_TOPIC_DRAFT: string = 'topicDraft'
 const MAX_REPLY_DRAFTS: number = 50

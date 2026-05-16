@@ -1,8 +1,9 @@
 import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
 import { V2exNotification } from '../network/NetworkTypes'
+import { STORE_NAME_NOTIFICATIONS } from './SettingsStores'
 
-const STORE_NAME: string = 'next2v_notifications'
+const STORE_NAME: string = STORE_NAME_NOTIFICATIONS
 const KEY_CACHE: string = 'lastLoadedNotifications'
 const MAX_CACHED_NOTIFICATIONS: number = 80
 

@@ -1,8 +1,9 @@
 import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
 import { V2exReply, V2exTopic } from '../network/NetworkTypes'
+import { STORE_NAME_CACHE } from './SettingsStores'
 
-const STORE_NAME: string = 'next2v_cache'
+const STORE_NAME: string = STORE_NAME_CACHE
 const KEY_PREFIX_TOPIC_LIST: string = 'topicList:'
 const KEY_PREFIX_TOPIC_DETAIL: string = 'topicDetail:'
 const KEY_CACHE_INDEX: string = 'cacheIndex'

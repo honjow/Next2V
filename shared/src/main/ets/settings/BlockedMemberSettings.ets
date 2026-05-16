@@ -3,8 +3,9 @@ import { preferences } from '@kit.ArkData'
 import { StorageKeys } from '../constants/StorageKeys'
 import { BlockedTopicFilter } from '../utils/BlockedTopicFilter'
 import { setAppStorageValue } from './SettingsStorage'
+import { STORE_NAME_BLOCKED_MEMBERS } from './SettingsStores'
 
-const STORE_NAME: string = 'next2v_blocked_members'
+const STORE_NAME: string = STORE_NAME_BLOCKED_MEMBERS
 const KEY_USERNAMES: string = 'usernames'
 const KEY_UPDATED_AT: string = 'updatedAt'
 

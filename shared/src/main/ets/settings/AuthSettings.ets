@@ -2,8 +2,9 @@ import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
 import { StorageKeys } from '../constants/StorageKeys'
 import { setAppStorageValue } from './SettingsStorage'
+import { STORE_NAME_AUTH } from './SettingsStores'
 
-const STORE_NAME: string = 'next2v_auth'
+const STORE_NAME: string = STORE_NAME_AUTH
 const KEY_TOKEN: string = 'personalAccessToken'
 const KEY_USERNAME: string = 'username'
 

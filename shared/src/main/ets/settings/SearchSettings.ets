@@ -1,7 +1,8 @@
 import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
+import { STORE_NAME_SEARCH } from './SettingsStores'
 
-const STORE_NAME: string = 'next2v_search'
+const STORE_NAME: string = STORE_NAME_SEARCH
 const KEY_HISTORY: string = 'searchHistory'
 const KEY_SOURCE_MODE: string = 'sourceMode'
 const MAX_HISTORY: number = 20

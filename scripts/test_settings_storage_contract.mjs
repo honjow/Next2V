@@ -256,8 +256,73 @@ for (const file of [
   assert(!text.includes('SettingDescriptor') && !text.includes('readDescriptorValue') && !text.includes('applyDescriptorValue'), `${file} must not be descriptorized in Phase2C`)
 }
 
+const storesRel = 'shared/src/main/ets/settings/SettingsStores.ets'
+assert(fs.existsSync(path.join(repo, storesRel)), 'SettingsStores.ets must centralize Preferences store names')
+const storesText = read(storesRel)
+const storeNameRegex = /export\s+const\s+(STORE_NAME_\w+)\s*:\s*string\s*=\s*'([^']+)'/g
+const orderedStoreNames = []
+const storeNames = new Map()
+while ((match = storeNameRegex.exec(storesText)) !== null) {
+  orderedStoreNames.push([match[1], match[2]])
+  storeNames.set(match[1], match[2])
+}
+const expectedStoreNames = [
+  ['STORE_NAME_SETTINGS', 'next2v_settings'],
+  ['STORE_NAME_AUTH', 'next2v_auth'],
+  ['STORE_NAME_AUTH_SESSION', 'next2v_auth_session'],
+  ['STORE_NAME_COOKIEJAR', 'next2v_cookiejar'],
+  ['STORE_NAME_FEED_TABS', 'next2v_feed_tabs'],
+  ['STORE_NAME_CACHE', 'next2v_cache'],
+  ['STORE_NAME_COLLECTIONS', 'next2v_collections'],
+  ['STORE_NAME_DRAFTS', 'next2v_drafts'],
+  ['STORE_NAME_SEARCH', 'next2v_search'],
+  ['STORE_NAME_NOTIFICATIONS', 'next2v_notifications'],
+  ['STORE_NAME_BLOCKED_MEMBERS', 'next2v_blocked_members'],
+]
+assert(
+  orderedStoreNames.length === expectedStoreNames.length,
+  `SettingsStores declaration count changed: expected ${expectedStoreNames.length}, got ${orderedStoreNames.length}`,
+)
+for (let i = 0; i < expectedStoreNames.length; i += 1) {
+  const [expectedName, expectedValue] = expectedStoreNames[i]
+  const [actualName, actualValue] = orderedStoreNames[i] || []
+  assert(
+    actualName === expectedName && actualValue === expectedValue,
+    `SettingsStores declaration #${i + 1} changed: expected ${expectedName}='${expectedValue}', got ${actualName}='${actualValue}'`,
+  )
+}
+const expectedStoreValues = new Set(expectedStoreNames.map(([, value]) => value))
+for (const value of expectedStoreValues) {
+  const occurrences = storesText.match(new RegExp(`'${value}'`, 'g')) || []
+  assert(occurrences.length === 1, `SettingsStores must declare '${value}' exactly once`)
+}
+const storeOwners = new Map([
+  ['AuthSettings.ets', 'STORE_NAME_AUTH'],
+  ['AuthSessionSettings.ets', 'STORE_NAME_AUTH_SESSION'],
+  ['CookieJarSettings.ets', 'STORE_NAME_COOKIEJAR'],
+  ['FeedTabSettings.ets', 'STORE_NAME_FEED_TABS'],
+  ['CacheSettings.ets', 'STORE_NAME_CACHE'],
+  ['CollectionSettings.ets', 'STORE_NAME_COLLECTIONS'],
+  ['DraftSettings.ets', 'STORE_NAME_DRAFTS'],
+  ['SearchSettings.ets', 'STORE_NAME_SEARCH'],
+  ['NotificationSettings.ets', 'STORE_NAME_NOTIFICATIONS'],
+  ['BlockedMemberSettings.ets', 'STORE_NAME_BLOCKED_MEMBERS'],
+])
+for (const [file, storeConst] of storeOwners.entries()) {
+  const text = read(`shared/src/main/ets/settings/${file}`)
+  assert(text.includes(`import { ${storeConst} } from './SettingsStores'`), `${file} must import ${storeConst} from SettingsStores`)
+  assert(text.includes(`STORE_NAME: string = ${storeConst}`), `${file} must bind STORE_NAME to ${storeConst}`)
+}
+for (const file of settingsFiles) {
+  if (file === 'SettingsStores.ets') continue
+  const rel = `shared/src/main/ets/settings/${file}`
+  const text = read(rel)
+  for (const value of expectedStoreValues) {
+    assert(!text.includes(`'${value}'`), `${rel} must not hard-code Preferences store name '${value}' outside SettingsStores`)
+  }
+}
 const helperText = read('shared/src/main/ets/settings/SettingsStorage.ets')
-assert(helperText.includes("STORE_NAME_SETTINGS: string = 'next2v_settings'"), 'SettingsStorage must expose STORE_NAME_SETTINGS')
+assert(helperText.includes("export { STORE_NAME_SETTINGS } from './SettingsStores'"), 'SettingsStorage must re-export STORE_NAME_SETTINGS from SettingsStores')
 assert(helperText.includes('type SettingsPreferencesStore = preferences.Preferences'), 'SettingsStorage must expose SettingsPreferencesStore preferences.Preferences alias')
 assert(helperText.includes('function setAppStorageValue<T>'), 'SettingsStorage must expose setAppStorageValue<T>')
 assert(helperText.includes('AppStorage.set<T>') && helperText.includes('AppStorage.setOrCreate<T>'), 'setAppStorageValue must use set fallback setOrCreate')
@@ -370,8 +435,8 @@ for (const file of ['FeedTabSettings.ets', 'CookieJarSettings.ets']) {
   const text = read(`shared/src/main/ets/settings/${file}`)
   assert(!text.includes('loadFromStore'), `${file} must not add loadFromStore`)
 }
-assert(read('shared/src/main/ets/settings/FeedTabSettings.ets').includes("STORE_NAME: string = 'next2v_feed_tabs'"), 'FeedTabSettings must keep independent next2v_feed_tabs store')
-assert(read('shared/src/main/ets/settings/CookieJarSettings.ets').includes("STORE_NAME: string = 'next2v_cookiejar'"), 'CookieJarSettings must keep independent next2v_cookiejar store')
+assert(read('shared/src/main/ets/settings/FeedTabSettings.ets').includes('STORE_NAME: string = STORE_NAME_FEED_TABS'), 'FeedTabSettings must keep independent next2v_feed_tabs store via SettingsStores')
+assert(read('shared/src/main/ets/settings/CookieJarSettings.ets').includes('STORE_NAME: string = STORE_NAME_COOKIEJAR'), 'CookieJarSettings must keep independent next2v_cookiejar store via SettingsStores')
 
 const entry = read('entry/src/main/ets/entryability/EntryAbility.ets')
 const bootstrapRel = 'shared/src/main/ets/settings/SettingsBootstrap.ets'

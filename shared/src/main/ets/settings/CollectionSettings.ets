@@ -3,8 +3,9 @@ import { preferences } from '@kit.ArkData'
 import { StorageKeys } from '../constants/StorageKeys'
 import { V2exTopic } from '../network/NetworkTypes'
 import { setAppStorageValue } from './SettingsStorage'
+import { STORE_NAME_COLLECTIONS } from './SettingsStores'
 
-const STORE_NAME: string = 'next2v_collections'
+const STORE_NAME: string = STORE_NAME_COLLECTIONS
 const KEY_SAVED_TOPICS: string = 'savedTopics'
 const KEY_SAVED_NODES: string = 'savedNodes'
 const KEY_VIEWED_TOPICS: string = 'viewedTopics'
