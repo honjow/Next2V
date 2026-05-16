@@ -1,7 +1,8 @@
 import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
 import { StorageKeys } from '../constants/StorageKeys'
-import { STORE_NAME_SETTINGS, SettingsPreferencesStore, setAppStorageValue } from './SettingsStorage'
+import { SettingDescriptor, applyDescriptorValue, readDescriptorValue } from './SettingsDescriptor'
+import { STORE_NAME_SETTINGS, SettingsPreferencesStore } from './SettingsStorage'
 
 const STORE_NAME: string = STORE_NAME_SETTINGS
 const KEY_REPLY_ACTION_ALIGNMENT_MODE: string = StorageKeys.REPLY_ACTION_ALIGNMENT_MODE
@@ -13,6 +14,31 @@ export interface ReplyActionAlignmentOption {
   mode: ReplyActionAlignmentMode
 }
 
+function normalizeReplyActionAlignmentMode(mode: string): ReplyActionAlignmentMode {
+  const value = (mode || '').trim()
+  if (
+    value === ReplyActionAlignmentSettings.MODE_SMART_GRIP ||
+    value === ReplyActionAlignmentSettings.MODE_FOLLOW_OPERATION ||
+    value === ReplyActionAlignmentSettings.MODE_FIXED_LEFT ||
+    value === ReplyActionAlignmentSettings.MODE_FIXED_RIGHT
+  ) {
+    return value as ReplyActionAlignmentMode
+  }
+  return ReplyActionAlignmentSettings.MODE_UNSET
+}
+
+class ReplyActionAlignmentModeDescriptor implements SettingDescriptor<string> {
+  readonly storageKey: string = StorageKeys.REPLY_ACTION_ALIGNMENT_MODE
+  readonly preferenceKey: string = KEY_REPLY_ACTION_ALIGNMENT_MODE
+  readonly defaultValue: string = ''
+
+  normalize(mode: string): string {
+    return normalizeReplyActionAlignmentMode(mode)
+  }
+}
+
+export const REPLY_ACTION_ALIGNMENT_MODE_DESCRIPTOR: SettingDescriptor<string> = new ReplyActionAlignmentModeDescriptor()
+
 export class ReplyActionAlignmentSettings {
   static readonly MODE_UNSET: ReplyActionAlignmentMode = ''
   static readonly MODE_SMART_GRIP: ReplyActionAlignmentMode = 'smartGrip'
@@ -21,10 +47,7 @@ export class ReplyActionAlignmentSettings {
   static readonly MODE_FIXED_RIGHT: ReplyActionAlignmentMode = 'fixedRight'
 
   static apply(mode: string): void {
-    setAppStorageValue<ReplyActionAlignmentMode>(
-      StorageKeys.REPLY_ACTION_ALIGNMENT_MODE,
-      ReplyActionAlignmentSettings.normalizeMode(mode),
-    )
+    applyDescriptorValue<string>(REPLY_ACTION_ALIGNMENT_MODE_DESCRIPTOR, mode)
   }
 
   static async load(context: common.UIAbilityContext): Promise<ReplyActionAlignmentMode> {
@@ -38,16 +61,13 @@ export class ReplyActionAlignmentSettings {
   }
 
   static async loadFromStore(store: SettingsPreferencesStore): Promise<ReplyActionAlignmentMode> {
-    const mode = ReplyActionAlignmentSettings.normalizeMode(
-      store.getSync(KEY_REPLY_ACTION_ALIGNMENT_MODE, ReplyActionAlignmentSettings.MODE_UNSET) as string,
-    )
-    ReplyActionAlignmentSettings.apply(mode)
-    return mode
+    const normalized = readDescriptorValue<string>(store, REPLY_ACTION_ALIGNMENT_MODE_DESCRIPTOR) as ReplyActionAlignmentMode
+    ReplyActionAlignmentSettings.apply(normalized)
+    return normalized
   }
 
   static async save(context: common.UIAbilityContext, mode: string): Promise<void> {
-    const normalized = ReplyActionAlignmentSettings.normalizeMode(mode)
-    ReplyActionAlignmentSettings.apply(normalized)
+    const normalized = applyDescriptorValue<string>(REPLY_ACTION_ALIGNMENT_MODE_DESCRIPTOR, mode)
     try {
       const store = await preferences.getPreferences(context, STORE_NAME)
       store.putSync(KEY_REPLY_ACTION_ALIGNMENT_MODE, normalized)
@@ -59,16 +79,7 @@ export class ReplyActionAlignmentSettings {
   }
 
   static normalizeMode(mode: string): ReplyActionAlignmentMode {
-    const value = (mode || '').trim()
-    if (
-      value === ReplyActionAlignmentSettings.MODE_SMART_GRIP ||
-      value === ReplyActionAlignmentSettings.MODE_FOLLOW_OPERATION ||
-      value === ReplyActionAlignmentSettings.MODE_FIXED_LEFT ||
-      value === ReplyActionAlignmentSettings.MODE_FIXED_RIGHT
-    ) {
-      return value as ReplyActionAlignmentMode
-    }
-    return ReplyActionAlignmentSettings.MODE_UNSET
+    return REPLY_ACTION_ALIGNMENT_MODE_DESCRIPTOR.normalize(mode) as ReplyActionAlignmentMode
   }
 
   static defaultMode(smartGripSupported: boolean): ReplyActionAlignmentMode {

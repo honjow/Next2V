@@ -214,6 +214,48 @@ for (const file of settingsFiles) {
   assert(!text.includes('private static setAppStorageValue'), `${rel} still declares private setAppStorageValue`)
 }
 
+const descriptorRel = 'shared/src/main/ets/settings/SettingsDescriptor.ets'
+assert(fs.existsSync(path.join(repo, descriptorRel)), 'SettingsDescriptor.ets must exist')
+const descriptorText = read(descriptorRel)
+assert(/export\s+interface\s+SettingDescriptor\s*<\s*T\s*>/.test(descriptorText), 'SettingsDescriptor must export SettingDescriptor<T>')
+assert(/export\s+function\s+readDescriptorValue\s*<\s*T\s*>/.test(descriptorText), 'SettingsDescriptor must export readDescriptorValue<T>')
+assert(/export\s+function\s+applyDescriptorValue\s*<\s*T\s*>/.test(descriptorText), 'SettingsDescriptor must export applyDescriptorValue<T>')
+assert(descriptorText.includes('SettingsPreferencesStore'), 'SettingsDescriptor.readDescriptorValue must use SettingsPreferencesStore')
+assert(descriptorText.includes('setAppStorageValue<T>(descriptor.storageKey, normalized)'), 'SettingsDescriptor.applyDescriptorValue must apply normalized value through setAppStorageValue')
+assert(!descriptorText.includes('getPreferences') && !descriptorText.includes('flushSync') && !descriptorText.includes('UIAbilityContext'), 'SettingsDescriptor must not own preferences save/context side effects')
+
+const firstDescriptorSettings = [
+  'ReplyDisplaySettings.ets',
+  'ReplyCardStyleSettings.ets',
+  'ReplyActionAlignmentSettings.ets',
+]
+for (const file of firstDescriptorSettings) {
+  const text = read(`shared/src/main/ets/settings/${file}`)
+  assert(text.includes('SettingDescriptor'), `${file} must define a typed descriptor`)
+  assert(text.includes('readDescriptorValue'), `${file} loadFromStore must read via descriptor`)
+  assert(text.includes('applyDescriptorValue'), `${file} apply/save must apply via descriptor`)
+  assert(text.includes('STORE_NAME_SETTINGS'), `${file} must keep shared STORE_NAME_SETTINGS`)
+  assert(text.includes('SettingsPreferencesStore'), `${file} must keep SettingsPreferencesStore type`)
+  assert(/static\s+async\s+loadFromStore\s*\(\s*store\s*:\s*SettingsPreferencesStore/.test(text), `${file} must expose static async loadFromStore(store: SettingsPreferencesStore...)`)
+  const saveBody = extractMethodBody(text, 'save')
+  assert(saveBody.includes('preferences.getPreferences(context, STORE_NAME)'), `${file} save path must still fetch preferences STORE_NAME`)
+  assert(/store\.putSync\([^\n]+,\s*normalized\)/.test(saveBody), `${file} save path must still put normalized value`)
+  assert(saveBody.includes('store.flushSync()'), `${file} save path must still flush synchronously`)
+}
+
+for (const file of [
+  'ThemeSettings.ets',
+  'ApiDomainSettings.ets',
+  'MediaSettings.ets',
+  'AutoDailyCheckinSettings.ets',
+  'ReadingSettings.ets',
+  'FeedTabSettings.ets',
+  'CookieJarSettings.ets',
+]) {
+  const text = read(`shared/src/main/ets/settings/${file}`)
+  assert(!text.includes('SettingDescriptor') && !text.includes('readDescriptorValue') && !text.includes('applyDescriptorValue'), `${file} must not be descriptorized in Phase2C`)
+}
+
 const helperText = read('shared/src/main/ets/settings/SettingsStorage.ets')
 assert(helperText.includes("STORE_NAME_SETTINGS: string = 'next2v_settings'"), 'SettingsStorage must expose STORE_NAME_SETTINGS')
 assert(helperText.includes('type SettingsPreferencesStore = preferences.Preferences'), 'SettingsStorage must expose SettingsPreferencesStore preferences.Preferences alias')
@@ -235,7 +277,11 @@ for (const file of next2vSettingsFiles) {
   const text = read(`shared/src/main/ets/settings/${file}`)
   assert(text.includes('STORE_NAME_SETTINGS'), `${file} must use shared STORE_NAME_SETTINGS`)
   assert(text.includes('SettingsPreferencesStore'), `${file} must use shared SettingsPreferencesStore type`)
-  assert(text.includes('setAppStorageValue'), `${file} must use shared AppStorage helper`)
+  if (firstDescriptorSettings.includes(file)) {
+    assert(text.includes('applyDescriptorValue'), `${file} must use descriptor AppStorage helper`)
+  } else {
+    assert(text.includes('setAppStorageValue'), `${file} must use shared AppStorage helper`)
+  }
   assert(/static\s+async\s+loadFromStore\s*\(\s*store\s*:\s*SettingsPreferencesStore/.test(text), `${file} must expose static async loadFromStore(store: SettingsPreferencesStore...)`)
   const loadBody = extractMethodBody(text, 'load')
   assert(loadBody.includes('preferences.getPreferences(context, STORE_NAME)'), `${file} load(context) must still fetch STORE_NAME before delegating`)
@@ -245,6 +291,20 @@ for (const file of next2vSettingsFiles) {
 }
 
 const readingSettings = read('shared/src/main/ets/settings/ReadingSettings.ets')
+assert(storageKeys.get('READING_FONT_SIZE') === 'readingFontSize', "StorageKeys.READING_FONT_SIZE must remain 'readingFontSize'")
+assert(!storageKeys.has('READING_TEXT_SCALE'), 'StorageKeys must not add READING_TEXT_SCALE in Phase2C')
+for (const [name, value] of storageKeys.entries()) {
+  assert(value !== 'readingTextScale', `StorageKeys must not add readingTextScale value (${name})`)
+}
+for (const rel of [
+  'shared/src/main/ets/constants/StorageKeys.ets',
+  'shared/src/main/ets/settings/ReadingSettings.ets',
+  'feature/settings/src/main/ets/pages/ReadingSettingsPage.ets',
+]) {
+  const text = read(rel)
+  assert(!text.includes('READING_TEXT_SCALE'), `${rel} must not reference READING_TEXT_SCALE`)
+  assert(!text.includes('readingTextScale'), `${rel} must not introduce readingTextScale key`)
+}
 for (const method of ['saveTypography', 'saveRestorePosition', 'saveBase64DecodeMode']) {
   const body = extractMethodBody(readingSettings, method)
   assert(body.includes('preferences.getPreferences(context, STORE_NAME)'), `ReadingSettings.${method} path must keep fetching preferences STORE_NAME`)
