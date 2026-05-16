@@ -11,6 +11,7 @@ export class StorageKeys {
   static readonly READING_LINE_HEIGHT: string = 'readingLineHeight'
   static readonly READING_DENSITY: string = 'readingDensity'
   static readonly READING_RESTORE_POSITION: string = 'readingRestorePosition'
+  static readonly READING_BASE64_DECODE_MODE: string = 'readingBase64DecodeMode'
   static readonly REPLY_DISPLAY_MODE: string = 'replyDisplayMode'
   static readonly REPLY_CARD_STYLE: string = 'replyCardStyle'
   static readonly THEME_MODE: string = 'themeMode'

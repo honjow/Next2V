@@ -8,6 +8,7 @@ import { ReadingSettings } from "../settings/ReadingSettings";
 import { ThemeConstants } from "../theme/ThemeConstants";
 import { MediaUrlUtils } from "../utils/MediaUrlUtils";
 import { HtmlEntityUtils } from "../utils/HtmlEntityUtils";
+import { Base64DecodeUtils } from "../utils/Base64DecodeUtils";
 
 // @lidary/markdown is intentionally quarantined here.
 // Allowed uses:
@@ -81,8 +82,16 @@ type TokenRecord = Record<string, TokenValue>;
 
 type RenderSourceKind = "markdown" | "renderedHtml";
 type RenderBlockKind = "paragraph" | "heading" | "list" | "blockquote" | "code" | "imageBlock" | "imageTable" | "table";
-type RenderInlineKind = "text" | "link" | "strong" | "em" | "codespan" | "image" | "break";
+type RenderInlineKind = "text" | "link" | "strong" | "em" | "codespan" | "image" | "break" | "base64Decode";
 type RenderToken = Token;
+
+interface Base64DecodeToken {
+  type: string;
+  raw: string;
+  text: string;
+  original: string;
+  decoded: string;
+}
 
 interface RenderContractStyleRow {
   name: string;
@@ -115,6 +124,7 @@ const RENDER_STYLE_CONTRACT_TABLE: RenderContractStyleRow[] = [
   { name: "strong", semanticKind: "strong", fontSize: "inherited/body", weight: "Bold", color: "TEXT_PRIMARY" },
   { name: "em", semanticKind: "em", fontSize: "inherited/body", style: "Italic", color: "TEXT_PRIMARY" },
   { name: "codespan", semanticKind: "codespan", fontSize: "inherited/body", color: "TEXT_PRIMARY", background: "BG_SUB" },
+  { name: "base64Decode", semanticKind: "base64Decode", fontSize: "inherited/body", color: "TEXT_LINK", roleDecision: "ordinary text enhancement only; original token text remains visible and decoded text is badge-gated by default" },
   { name: "imageBlock", semanticKind: "imageBlock", fontSize: "n/a", roleDecision: "source structure / Markdown block semantics; never intrinsic big/small" },
   { name: "inlineImage", semanticKind: "image", fontSize: "n/a", roleDecision: "source structure / Markdown inline semantics; rendered dimensions come from actual image size + content container max constraint" },
   { name: "imageTable", semanticKind: "imageTable", fontSize: "caption labels", color: "TEXT_SECONDARY" },
@@ -830,6 +840,45 @@ function _memberLinkText(token: Tokens.Link): string {
   return `@${text || name}`;
 }
 
+function _copyDecodedBase64Text(decoded: string): void {
+  try {
+    let data = pasteboard.createData(
+      pasteboard.MIMETYPE_TEXT_PLAIN,
+      decoded,
+    );
+    pasteboard.getSystemPasteboard().setDataSync(data);
+    promptAction.openToast({ message: "已复制解码文本" }).catch((_error: Error) => { });
+  } catch (error) {
+    promptAction.openToast({ message: (error as Error).message || "复制失败" }).catch((_error: Error) => { });
+  }
+}
+
+function _openBase64DecodeDialog(original: string, decoded: string): void {
+  AlertDialog.show({
+    title: "Base64 解码",
+    message: `原文：${_base64OriginalSummary(original)}\n\n${decoded}`,
+    primaryButton: {
+      value: "关闭",
+      action: () => {
+      },
+    },
+    secondaryButton: {
+      value: "复制",
+      action: () => {
+        _copyDecodedBase64Text(decoded);
+      },
+    },
+  });
+}
+
+function _base64OriginalSummary(original: string): string {
+  const value = original || "";
+  if (value.length <= 32) {
+    return value;
+  }
+  return `${value.slice(0, 16)}…${value.slice(value.length - 8)}`;
+}
+
 @Builder
 function SelectableTextWithMentions(text: string, fontSize: number, options: MarkdownOptions) {
   ForEach(_splitMentionText(HtmlEntityUtils.decode(text)), (part: string) => {
@@ -902,6 +951,7 @@ function SelectableInlineTokenSpans(
   reportImageComplete?: InlineImageCompleteReporter,
   reportImageError?: InlineImageErrorReporter,
   availableWidth: number = 0,
+  base64DecodeMode: string = ReadingSettings.BASE64_MODE_BADGE,
 ) {
   ForEach(tokens, (t: Token) => {
     if (t.type === "strong") {
@@ -938,6 +988,27 @@ function SelectableInlineTokenSpans(
           .decoration({ type: TextDecorationType.Underline, color: ThemeConstants.TEXT_LINK })
           .onClick(() => {
             _openInlineLink(options, (t as Tokens.Link).href);
+          });
+      }
+    } else if (t.type === "base64Decode") {
+      if (base64DecodeMode === ReadingSettings.BASE64_MODE_INLINE) {
+        Span(` 解码：${(t as Base64DecodeToken).decoded}`)
+          .fontSize(fontSize)
+          .fontColor(ThemeConstants.TEXT_SECONDARY)
+          .textBackgroundStyle({
+            color: ThemeConstants.BG_SUB,
+            radius: ThemeConstants.RADIUS_SM,
+          });
+      } else if (base64DecodeMode === ReadingSettings.BASE64_MODE_BADGE) {
+        Span(" Base64/解码")
+          .fontSize(Math.max(10, fontSize - 2))
+          .fontColor(ThemeConstants.TEXT_LINK)
+          .textBackgroundStyle({
+            color: ThemeConstants.BG_SUB,
+            radius: ThemeConstants.RADIUS_SM,
+          })
+          .onClick(() => {
+            _openBase64DecodeDialog((t as Base64DecodeToken).original, (t as Base64DecodeToken).decoded);
           });
       }
     } else if (t.type === "del") {
@@ -977,6 +1048,7 @@ struct MarkdownParagraph {
   reportImageError?: InlineImageErrorReporter;
   @StorageLink(StorageKeys.READING_FONT_SIZE) readingFontSize: number = ReadingSettings.TEXT_SCALE_DEFAULT;
   @StorageLink(StorageKeys.READING_LINE_HEIGHT) readingLineHeight: number = ThemeConstants.LINE_HEIGHT_BODY;
+  @StorageLink(StorageKeys.READING_BASE64_DECODE_MODE) base64DecodeMode: string = ReadingSettings.BASE64_MODE_BADGE;
   @State private paragraphAvailableWidth: number = 0;
 
   private updateParagraphAvailableWidth(value: Area): void {
@@ -1043,6 +1115,7 @@ struct MarkdownParagraph {
                 this.reportImageComplete,
                 this.reportImageError,
                 this.inlineContentMaxWidth(),
+                this.base64DecodeMode,
               );
             }
             .fontSize(this.bodyFontSize())
@@ -1070,6 +1143,7 @@ struct MarkdownParagraph {
           this.reportImageComplete,
           this.reportImageError,
           this.inlineContentMaxWidth(),
+          this.base64DecodeMode,
         );
       }
       .fontSize(this.bodyFontSize())
@@ -1090,6 +1164,7 @@ struct MarkdownParagraph {
           this.reportImageComplete,
           this.reportImageError,
           this.inlineContentMaxWidth(),
+          this.base64DecodeMode,
         );
       }
       .fontSize(this.bodyFontSize())
@@ -1441,6 +1516,7 @@ struct MarkdownTable {
   reportImageComplete?: InlineImageCompleteReporter;
   reportImageError?: InlineImageErrorReporter;
   @StorageLink(StorageKeys.READING_FONT_SIZE) readingFontSize: number = ReadingSettings.TEXT_SCALE_DEFAULT;
+  @StorageLink(StorageKeys.READING_BASE64_DECODE_MODE) base64DecodeMode: string = ReadingSettings.BASE64_MODE_BADGE;
   @State private tableAvailableWidth: number = 0;
 
   private updateTableAvailableWidth(value: Area): void {
@@ -1787,6 +1863,8 @@ struct MarkdownTable {
         this.inlineImageSizeRecords,
         this.reportImageComplete,
         this.reportImageError,
+        0,
+        this.base64DecodeMode,
       );
     }
     .fontSize(this.bodyFontSize())
@@ -2256,6 +2334,7 @@ export struct MarkdownContent {
   @StorageLink(StorageKeys.READING_FONT_SIZE) readingFontSize: number = ReadingSettings.TEXT_SCALE_DEFAULT;
   @StorageLink(StorageKeys.READING_LINE_HEIGHT) readingLineHeight: number = ThemeConstants.LINE_HEIGHT_BODY;
   @StorageLink(StorageKeys.READING_DENSITY) readingDensity: string = ReadingSettings.DENSITY_STANDARD;
+  @StorageLink(StorageKeys.READING_BASE64_DECODE_MODE) base64DecodeMode: string = ReadingSettings.BASE64_MODE_BADGE;
   @StorageLink(StorageKeys.THEME_EFFECTIVE_DARK) themeEffectiveDark: boolean = false;
   @State private tokens: Token[] = [];
   @State private inlineImageSizeRecords: InlineImageSizeRecord[] = [];
@@ -2403,6 +2482,7 @@ export struct MarkdownContent {
     MarkdownContent.rewriteImageTableMarkers(tokens);
     MarkdownContent.rewriteBareImageLinks(tokens);
     MarkdownContent.rewriteInlineImageLinks(tokens);
+    MarkdownContent.enhanceBase64TextTokens(tokens);
     MarkdownContent.splitResolvedWideInlineImages(tokens, sizeRecords);
     // Keep mixed text/image paragraphs as a single ordered token stream.
     // Splitting them into adjacent top-level custom blocks lets @lidary/markdown
@@ -3204,6 +3284,104 @@ export struct MarkdownContent {
     }
     lines.push(IMAGE_TABLE_END);
     return `\n\n${lines.join('\n')}\n\n`;
+  }
+
+  private static enhanceBase64TextTokens(tokens: Token[]): void {
+    if (!tokens || tokens.length === 0) {
+      return;
+    }
+    for (let i = 0; i < tokens.length; i++) {
+      const token = tokens[i] as TokenRecord;
+      const type = String(token["type"] ?? '');
+      // Only enhance ordinary visible text. Code blocks, pre/code/codespan and
+      // links keep their original semantics and click targets unchanged.
+      if (type === 'code' || type === 'codespan' || type === 'link' || type === 'image') {
+        continue;
+      }
+      if (type === 'text') {
+        const replacement = MarkdownContent.base64EnhancedTextTokenRun(tokens[i]);
+        if (replacement.length > 0) {
+          tokens.splice(i, 1, ...replacement);
+          i += replacement.length - 1;
+        }
+        continue;
+      }
+      const childTokens = token["tokens"] as Token[] | undefined;
+      if (Array.isArray(childTokens) && childTokens.length > 0) {
+        MarkdownContent.enhanceBase64TextTokens(childTokens);
+      }
+      const items = token["items"] as Array<TokenRecord> | undefined;
+      if (Array.isArray(items) && items.length > 0) {
+        for (const item of items) {
+          const itemTokens = item["tokens"] as Token[] | undefined;
+          if (Array.isArray(itemTokens) && itemTokens.length > 0) {
+            MarkdownContent.enhanceBase64TextTokens(itemTokens);
+          }
+        }
+      }
+      const headers = token["headers"] as Array<TokenRecord> | undefined;
+      if (Array.isArray(headers) && headers.length > 0) {
+        for (const cell of headers) {
+          const cellTokens = cell["tokens"] as Token[] | undefined;
+          if (Array.isArray(cellTokens) && cellTokens.length > 0) {
+            MarkdownContent.enhanceBase64TextTokens(cellTokens);
+          }
+        }
+      }
+      const rows = token["rows"] as Array<Array<TokenRecord>> | undefined;
+      if (Array.isArray(rows) && rows.length > 0) {
+        for (const row of rows) {
+          for (const cell of row) {
+            const cellTokens = cell["tokens"] as Token[] | undefined;
+            if (Array.isArray(cellTokens) && cellTokens.length > 0) {
+              MarkdownContent.enhanceBase64TextTokens(cellTokens);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  private static base64EnhancedTextTokenRun(token: Token): Token[] {
+    const record = token as TokenRecord;
+    const text = String(record["text"] ?? '');
+    if (!text || text.length < Base64DecodeUtils.MIN_TOKEN_LENGTH) {
+      return [];
+    }
+    const result: Token[] = [];
+    const re = /[A-Za-z0-9+/_=\-]+/g;
+    let last = 0;
+    let changed = false;
+    let match: RegExpExecArray | null = re.exec(text);
+    while (match) {
+      const candidate = match[0];
+      const decoded = Base64DecodeUtils.tryDecodeToken(candidate);
+      if (!decoded) {
+        match = re.exec(text);
+        continue;
+      }
+      if (match.index > last) {
+        result.push(MarkdownContent.buildTextToken(text.slice(last, match.index)) as Token);
+      }
+      result.push(MarkdownContent.buildTextToken(candidate) as Token);
+      result.push({
+        type: 'base64Decode',
+        raw: candidate,
+        text: '',
+        original: decoded.original,
+        decoded: decoded.decoded,
+      } as Base64DecodeToken);
+      last = match.index + candidate.length;
+      changed = true;
+      match = re.exec(text);
+    }
+    if (!changed) {
+      return [];
+    }
+    if (last < text.length) {
+      result.push(MarkdownContent.buildTextToken(text.slice(last)) as Token);
+    }
+    return result;
   }
 
   private static rewriteImageTableMarkers(tokens: Token[]): void {
@@ -4316,6 +4494,7 @@ export struct MarkdownContent {
           (url: string, event?: MarkdownImageCompleteEvent) => { this.reportInlineImageComplete(url, event); },
           (url: string, event?: MarkdownImageErrorEvent) => { this.reportInlineImageError(url, event); },
           this.contentAvailableWidth,
+          this.base64DecodeMode,
         );
       }
         .fontSize(this.headingSize(token))
