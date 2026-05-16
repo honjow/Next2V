@@ -207,6 +207,12 @@ assert.doesNotMatch(source, /Span\(" Base64"\)[\s\S]{0,800}\.bindPopup/, 'Text S
 assert.doesNotMatch(source, /Base64\/解码/)
 assert.doesNotMatch(source, /AlertDialog\.show/, 'default badge must use system Popup instead of AlertDialog')
 assert.match(source, /Button\(\)[\s\S]*\.bindPopup\([\s\S]*message: _base64PopupMessage[\s\S]*value: "复制"[\s\S]*autoCancel: true[\s\S]*mask: false[\s\S]*onStateChange:/, 'default badge popup uses ordinary PopupOptions on a Button anchor with one copy button, autoCancel, mask:false, and state sync')
+const base64PopupMessage = source.match(/function _base64PopupMessage\([\s\S]*?\n\}/)?.[0] || ''
+assert.match(base64PopupMessage, /return decoded;/, 'Base64 popup message returns decoded text directly')
+assert.doesNotMatch(base64PopupMessage, /Base64 解码|原文：|_base64OriginalSummary/, 'Base64 popup message must not include title or original summary')
+const base64PopupOptions = source.match(/\.bindPopup\(this\.isPopupVisible, \{[\s\S]*?\n    \}\);/)?.[0] || ''
+assert.match(base64PopupOptions, /message: _base64PopupMessage/, 'Base64 badge still opens ordinary PopupOptions with message text')
+assert.doesNotMatch(base64PopupOptions, /\bwidth\s*:/, 'Base64 PopupOptions must not set width; let the system choose popup width')
 assert.doesNotMatch(source, /builder\s*:/, 'Base64 popup first version must not use CustomPopupOptions.builder')
 assert.doesNotMatch(source, /value: "关闭"/, 'Base64 popup must not add a dedicated close button')
 assert.doesNotMatch(source, /console\.(?:log|info|warn|error)\([^\n]*(?:decoded|Base64 解码|解码文本)/, 'decoded Base64 text must not be logged')
