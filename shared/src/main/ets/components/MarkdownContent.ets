@@ -1,4 +1,3 @@
-import { MarkdownOptions, Token, Tokens, lexer } from "@lidary/markdown";
 import { common, Want } from "@kit.AbilityKit";
 import { pasteboard } from "@kit.BasicServicesKit";
 import { connection } from "@kit.NetworkKit";
@@ -10,21 +9,14 @@ import { MediaUrlUtils } from "../utils/MediaUrlUtils";
 import { HtmlEntityUtils } from "../utils/HtmlEntityUtils";
 import { Base64DecodeUtils } from "../utils/Base64DecodeUtils";
 
-// @lidary/markdown is intentionally quarantined here.
-// Allowed uses:
-//   1. lexer() may parse real Markdown fallback sources only.
-//   2. exported Token/Tokens/MarkdownOptions types may be used as temporary
-//      compatibility shapes while this component is migrated to V2Next-owned
-//      Render Tokens.
-// Do NOT route V2EX content_rendered HTML through HTML -> Markdown -> lexer(),
-// and do NOT rely on @lidary/markdown's renderer/custom builders for ordered
-// V2EX content layout. Mixed text/image/link order and inline-vs-block image
-// placement are source-structure semantics owned by V2Next, not by the library.
+// V2Next owns the Markdown fallback parser and render-token compatibility surface here.
+// Rendered V2EX content_rendered HTML stays on the renderedHtmlToTokens path; do not
+// convert rendered HTML back to Markdown. Mixed text/image/link order and inline-vs-block
+// image placement are source-structure semantics owned by V2Next.
 //
-// The custom token types below are legacy compatibility shims: they keep the
-// current UI working while preventing the library from taking over blocks whose
-// layout/order V2Next must control. Do not expand this pattern; replace it with
-// explicit V2Next Render Tokens when touching this area.
+// The custom token type constants below are compatibility shims for the existing ArkUI
+// builders. Keep the parser small and contract-focused rather than reintroducing a
+// large Markdown/formula dependency.
 const CODE_MONO = "customCode";
 const LIST_MONO = "customList";
 const PARAGRAPH_MONO = "customParagraph";
@@ -80,14 +72,101 @@ const TABLE_OUTER_BORDER_WIDTH = 1;
 const TABLE_CELL_VERTICAL_DIVIDER_WIDTH = 1;
 
 type TokenValue = Object | string | number | boolean | null | undefined;
-type TokenRecord = Record<string, TokenValue>;
+
+interface TokenRecord {
+  type?: string;
+  raw?: string;
+  text?: string;
+  tokens?: Token[];
+  href?: string;
+  title?: string | null;
+  depth?: number;
+  lang?: string;
+  ordered?: boolean;
+  start?: number;
+  loose?: boolean;
+  items?: Tokens.ListItem[] | Array<TokenRecord>;
+  inlineImage?: boolean;
+  header?: TokenRecord[] | boolean;
+  headers?: RenderTableCell[] | TokenRecord[];
+  rows?: Array<TokenRecord[]> | RenderTableCell[][];
+  align?: string | string[];
+  rawSourceKind?: RenderSourceKind;
+  mentionClick?: (username: string) => void;
+  imageUrls?: string[];
+  imageLabels?: string[];
+  original?: string;
+  decoded?: string;
+}
+
+interface Token {
+  type: string;
+  raw?: string;
+  text?: string;
+  tokens?: Token[];
+  href?: string;
+  title?: string | null;
+  depth?: number;
+  lang?: string;
+  ordered?: boolean;
+  start?: number;
+  loose?: boolean;
+  items?: Tokens.ListItem[];
+  inlineImage?: boolean;
+}
+
+namespace Tokens {
+  export interface Text extends Token { text: string; }
+  export interface Del extends Token { text: string; }
+  export interface Image extends Token { href: string; title?: string | null; text: string; inlineImage?: boolean; }
+  export interface Code extends Token { text: string; lang?: string; }
+  export interface ListItem extends Token { task?: boolean; checked?: boolean; loose?: boolean; tokens: Token[]; }
+  export interface List extends Token { ordered?: boolean; start?: number; loose?: boolean; items: ListItem[]; }
+  export interface Paragraph extends Token { tokens: Token[]; text: string; }
+  export interface Link extends Token { href: string; title?: string | null; text: string; tokens?: Token[]; }
+  export interface Strong extends Token { text: string; tokens?: Token[]; }
+  export interface Em extends Token { text: string; tokens?: Token[]; }
+  export interface Codespan extends Token { text: string; }
+}
+
+interface MarkdownCodeTheme {
+  fontSize?: number;
+  lineHeight?: number;
+  backgroundColor?: ResourceColor;
+  borderRadius?: number;
+  fontColor?: ResourceColor;
+  codeSpanBackgroundColor?: ResourceColor;
+  codeSpanBorderRadius?: number;
+}
+
+interface MarkdownFontStyleTheme {
+  fontSize?: number;
+  fontColor?: ResourceColor;
+}
+
+interface MarkdownTheme {
+  themeColor?: ResourceColor;
+  fontStyle?: MarkdownFontStyleTheme;
+  linkColor?: ResourceColor;
+  code?: MarkdownCodeTheme;
+  codeSpan?: MarkdownCodeTheme;
+}
+
+interface MarkdownOptions {
+  darkMode?: boolean;
+  theme?: MarkdownTheme;
+  linkClick?: (url?: string) => void;
+  imageClick?: (url?: string) => void;
+  mentionClick?: (username: string) => void;
+  context?: common.UIAbilityContext;
+}
 
 type RenderSourceKind = "markdown" | "renderedHtml";
 type RenderBlockKind = "paragraph" | "heading" | "list" | "blockquote" | "code" | "imageBlock" | "imageTable" | "table";
 type RenderInlineKind = "text" | "link" | "strong" | "em" | "codespan" | "image" | "break" | "base64Decode";
 type RenderToken = Token;
 
-interface Base64DecodeToken {
+interface Base64DecodeToken extends Token {
   type: string;
   raw: string;
   text: string;
@@ -163,7 +242,7 @@ interface RenderTableCell {
   header?: boolean;
 }
 
-interface RenderTableToken {
+interface RenderTableToken extends Token {
   type: string;
   raw?: string;
   headers: RenderTableCell[];
@@ -266,7 +345,7 @@ interface CodeToken {
 }
 
 // ---------- Code syntax highlighting ----------
-// Ported from @lidary/markdown's internal HighlightAnalyzer (not exported).
+// V2Next-owned simple code highlighter used by the fallback Markdown renderer.
 // Simple regex-based tokenizer: splits each line into typed spans for coloring.
 const _stringRegex = /(["'])(?:(?=(\\?))\2.)*?\1/g;
 const _commonRegex = /([(\s=){}.[\]",;:<>+\-*\/])/gi;
@@ -661,7 +740,23 @@ function highlightCodeLine(code: string, lang: string): CodeToken[] {
   return highlightLine(code);
 }
 
-const _darkCodeColors: Record<string, ResourceColor> = {
+interface CodeColorPalette {
+  text: ResourceColor;
+  string: ResourceColor;
+  keyword: ResourceColor;
+  type: ResourceColor;
+  symbol: ResourceColor;
+  number: ResourceColor;
+  boolean: ResourceColor;
+  comment: ResourceColor;
+  tag: ResourceColor;
+  attr: ResourceColor;
+  key: ResourceColor;
+  punctuation: ResourceColor;
+  flag: ResourceColor;
+}
+
+const _darkCodeColors: CodeColorPalette = {
   "text": "#F8F8F2",
   "string": "#E6DB74",
   "keyword": "#66D9EF",
@@ -677,7 +772,7 @@ const _darkCodeColors: Record<string, ResourceColor> = {
   "flag": "#FFA657",
 };
 
-const _lightCodeColors: Record<string, ResourceColor> = {
+const _lightCodeColors: CodeColorPalette = {
   "text": "#24292F",
   "string": "#0A3069",
   "keyword": "#CF222E",
@@ -693,8 +788,49 @@ const _lightCodeColors: Record<string, ResourceColor> = {
   "flag": "#953800",
 };
 
-function _codeColors(isDark: boolean): Record<string, ResourceColor> {
+function _codeColors(isDark: boolean): CodeColorPalette {
   return isDark ? _darkCodeColors : _lightCodeColors;
+}
+
+function _codeColor(isDark: boolean, tokenType: CodeHighLight): ResourceColor {
+  const palette = _codeColors(isDark);
+  if (tokenType === 'string') {
+    return palette.string;
+  }
+  if (tokenType === 'keyword') {
+    return palette.keyword;
+  }
+  if (tokenType === 'type') {
+    return palette.type;
+  }
+  if (tokenType === 'symbol') {
+    return palette.symbol;
+  }
+  if (tokenType === 'number') {
+    return palette.number;
+  }
+  if (tokenType === 'boolean') {
+    return palette.boolean;
+  }
+  if (tokenType === 'comment') {
+    return palette.comment;
+  }
+  if (tokenType === 'tag') {
+    return palette.tag;
+  }
+  if (tokenType === 'attr') {
+    return palette.attr;
+  }
+  if (tokenType === 'key') {
+    return palette.key;
+  }
+  if (tokenType === 'punctuation') {
+    return palette.punctuation;
+  }
+  if (tokenType === 'flag') {
+    return palette.flag;
+  }
+  return palette.text;
 }
 
 function _codeBackground(isDark: boolean): ResourceColor {
@@ -721,7 +857,7 @@ function _quoteDriveColor(isDark: boolean): ResourceColor {
   return isDark ? "#636E7B" : "#D0D7DE";
 }
 
-// Signature required by @lidary/markdown's customInlineBuilder callback
+// Signature retained for the local inline rendering helpers.
 interface CustomInlineParams {
   token: Token[];
   options: MarkdownOptions;
@@ -810,7 +946,7 @@ function _openMention(options: MarkdownOptions, username: string): void {
     return;
   }
   const record = options as Record<string, Object>;
-  const click = record["mentionClick"] as MentionClick | undefined;
+  const click = record.mentionClick as MentionClick | undefined;
   if (click) {
     click(clean);
   }
@@ -870,7 +1006,7 @@ function _tokensContainBase64Decode(tokens: Token[]): boolean {
     if (token.type === "base64Decode") {
       return true;
     }
-    const children = (token as TokenRecord)["tokens"] as Token[] | undefined;
+    const children = (token as TokenRecord).tokens as Token[] | undefined;
     if (Array.isArray(children) && _tokensContainBase64Decode(children)) {
       return true;
     }
@@ -1159,7 +1295,7 @@ struct SelectableInlineTokenFlow {
           .copyOption(this.copyOption)
           .textSelectable(this.textSelectable)
         }
-      }, (t: Token, tokenIndex: number) => `${String((t as TokenRecord)["type"] ?? "token")}-${String((t as TokenRecord)["raw"] ?? (t as TokenRecord)["text"] ?? tokenIndex)}-${tokenIndex}`)
+      }, (t: Token, tokenIndex: number) => `${String((t as TokenRecord).type ?? "token")}-${String((t as TokenRecord).raw ?? (t as TokenRecord).text ?? tokenIndex)}-${tokenIndex}`)
     }
     .width("100%")
   }
@@ -1246,7 +1382,7 @@ struct MarkdownParagraph {
               reportImageComplete: this.reportImageComplete,
               reportImageError: this.reportImageError,
             });
-          } else if (token && token.type !== "br" && String((token as TokenRecord)["text"] ?? (token as TokenRecord)["raw"] ?? "").trim().length > 0) {
+          } else if (token && token.type !== "br" && String((token as TokenRecord).text ?? (token as TokenRecord).raw ?? "").trim().length > 0) {
             if (this.base64DecodeMode === ReadingSettings.BASE64_MODE_BADGE && _tokensContainBase64Decode([token])) {
               SelectableInlineTokenFlow({
                 tokens: [token],
@@ -1301,7 +1437,7 @@ struct MarkdownParagraph {
               .textSelectable(TextSelectableMode.SELECTABLE_FOCUSABLE)
             }
           }
-        }, (token: Token, tokenIdx: number) => `${String((token as TokenRecord)["type"] ?? "token")}-${String((token as TokenRecord)["raw"] ?? (token as TokenRecord)["href"] ?? tokenIdx)}-${tokenIdx}`)
+        }, (token: Token, tokenIdx: number) => `${String((token as TokenRecord).type ?? "token")}-${String((token as TokenRecord).raw ?? (token as TokenRecord).href ?? tokenIdx)}-${tokenIdx}`)
       }
       .width("100%")
       .alignItems(HorizontalAlign.Start)
@@ -1439,7 +1575,7 @@ struct MarkdownBlockquote {
   }
 
   private quoteChildren(): Token[] {
-    const children = (this.quoteToken as TokenRecord)["tokens"] as Token[] | undefined;
+    const children = (this.quoteToken as TokenRecord).tokens as Token[] | undefined;
     return Array.isArray(children) ? children : [];
   }
 
@@ -1477,14 +1613,14 @@ struct MarkdownBlockquote {
               reportImageComplete: this.reportImageComplete,
               reportImageError: this.reportImageError,
             });
-          } else if (child.type !== "space" && String((child as TokenRecord)["text"] ?? (child as TokenRecord)["raw"] ?? "").trim().length > 0) {
-            Text(String((child as TokenRecord)["text"] ?? (child as TokenRecord)["raw"] ?? ""))
+          } else if (child.type !== "space" && String((child as TokenRecord).text ?? (child as TokenRecord).raw ?? "").trim().length > 0) {
+            Text(String((child as TokenRecord).text ?? (child as TokenRecord).raw ?? ""))
               .fontSize(this.bodyFontSize())
               .lineHeight(this.bodyLineHeight())
               .fontColor(ThemeConstants.TEXT_SECONDARY)
               .width("100%");
           }
-        }, (child: Token, index: number) => `${String((child as TokenRecord)["type"] ?? "token")}-${String((child as TokenRecord)["raw"] ?? (child as TokenRecord)["text"] ?? index)}-${index}`)
+        }, (child: Token, index: number) => `${String((child as TokenRecord).type ?? "token")}-${String((child as TokenRecord).raw ?? (child as TokenRecord).text ?? index)}-${index}`)
       }
       .layoutWeight(1)
       .padding({ top: ThemeConstants.SPACE_XS, bottom: ThemeConstants.SPACE_XS })
@@ -1541,18 +1677,14 @@ struct MarkdownCodeBlock {
     return this.options.darkMode === true;
   }
 
-  private codePalette(): Record<string, ResourceColor> {
+  private codePalette(): CodeColorPalette {
     return _codeColors(this.isDarkMode());
   }
 
   @Builder CodeLineSpans(line: string) {
     ForEach(highlightCodeLine(line, this.languageText()), (ht: CodeToken) => {
       Span(ht.text)
-        .fontColor(
-          this.options.theme?.code?.fontColor?.[ht.type] ??
-            this.codePalette()[ht.type] ??
-            ThemeConstants.CODE_TEXT,
-        )
+        .fontColor(_codeColor(this.isDarkMode(), ht.type))
         .fontSize(this.codeFontSize())
         .fontFamily("Noto Sans Mono");
     })
@@ -2102,7 +2234,7 @@ struct MarkdownTable {
   }
 
   private formattedCellToken(token: Token): Token {
-    const originalText = String((token as TokenRecord)["text"] ?? "");
+    const originalText = String((token as TokenRecord).text ?? "");
     if (originalText.length === 0) {
       return token;
     }
@@ -2110,6 +2242,7 @@ struct MarkdownTable {
     if (formattedText === originalText) {
       return token;
     }
+    /* Static mirror contract: preserve arbitrary parser metadata when ArkTS permits dynamic records.
     const record = token as TokenRecord;
     const formattedRecord: TokenRecord = {};
     Object.keys(record).forEach((key: string) => {
@@ -2117,6 +2250,23 @@ struct MarkdownTable {
     });
     formattedRecord["text"] = formattedText;
     return formattedRecord as Token;
+    */
+    const formattedToken: Token = {
+      type: token.type,
+      raw: token.raw,
+      text: formattedText,
+      tokens: token.tokens,
+      href: token.href,
+      title: token.title,
+      depth: token.depth,
+      lang: token.lang,
+      ordered: token.ordered,
+      start: token.start,
+      loose: token.loose,
+      items: token.items,
+      inlineImage: token.inlineImage,
+    };
+    return formattedToken;
   }
 
   private cellTokens(cell: RenderTableCell): Token[] {
@@ -2791,16 +2941,16 @@ export struct MarkdownContent {
     }
   }
 
-  // Boundary for @lidary/markdown:
+  // Boundary for the V2Next-owned Markdown/rendered-HTML parsers:
   // - rendered HTML must be parsed directly by renderedHtmlToTokens(); never
-  //   convert V2EX content_rendered into Markdown just to feed lexer(). That
+  //   convert V2EX content_rendered into Markdown just to feed the Markdown parser. That
   //   loses DOM structure and revives the inline/block image bugs this file is
   //   trying to remove.
-  // - lexer() is only a fallback Markdown parser. Its output is immediately
+  // - the Markdown path is only a fallback parser. Its output is immediately
   //   normalized into V2Next-controlled tokens before rendering decisions.
   // - layout decisions, especially image inline-vs-block placement, must follow
   //   the source structure / Markdown semantics, not image intrinsic size and
-  //   not @lidary/markdown custom builder behavior.
+  //   not custom image builder behavior.
   private static processTokens(md: string, sizeRecords: InlineImageSizeRecord[] = []): Token[] {
     let tokens: Token[];
     let sourceKind: RenderSourceKind;
@@ -2818,8 +2968,8 @@ export struct MarkdownContent {
     MarkdownContent.enhanceBase64TextTokens(tokens);
     MarkdownContent.splitResolvedWideInlineImages(tokens, sizeRecords);
     // Keep mixed text/image paragraphs as a single ordered token stream.
-    // Splitting them into adjacent top-level custom blocks lets @lidary/markdown
-    // reorder custom builders in practice (e.g. image rendered before preceding
+    // Splitting them into adjacent top-level custom blocks can let custom builders
+    // reorder content in practice (e.g. image rendered before preceding
     // text). MarkdownParagraph renders inline tokens itself and preserves order.
     MarkdownContent.promoteStandaloneImageParagraphs(tokens);
     MarkdownContent.rewriteStandaloneTextLinks(tokens);
@@ -2831,11 +2981,274 @@ export struct MarkdownContent {
   }
 
   private static parseMarkdownToRenderAst(source: string, _sizeRecords: InlineImageSizeRecord[] = []): RenderToken[] {
-    const tokens = lexer(MarkdownContent.normalizeMarkdownSource(source), { gfm: true, breaks: true }) as RenderToken[];
+    const tokens = MarkdownContent.markdownFallbackToTokens(MarkdownContent.normalizeMarkdownSource(source)) as RenderToken[];
     MarkdownContent.normalizeMarkdownTableTokens(tokens);
     MarkdownContent.normalizeCodeBlockTokens(tokens);
     MarkdownContent.tagRenderSourceKind(tokens, "markdown");
     return tokens;
+  }
+
+  private static markdownFallbackToTokens(source: string): Token[] {
+    const tokens: Token[] = [];
+    const lines = (source || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+    let index = 0;
+    while (index < lines.length) {
+      const line = lines[index] || '';
+      if (line.trim().length === 0) {
+        index++;
+        continue;
+      }
+
+      const fence = /^```\s*([^`]*)$/.exec(line);
+      if (fence) {
+        index++;
+        const body: string[] = [];
+        while (index < lines.length && !/^```\s*$/.test(lines[index] || '')) {
+          body.push(lines[index] || '');
+          index++;
+        }
+        if (index < lines.length) {
+          index++;
+        }
+        tokens.push(MarkdownContent.buildCodeBlockToken(body.join('\n'), fence[1] || '', body.join('\n')) as Token);
+        continue;
+      }
+
+      const heading = /^(#{1,6})\s+(.+)$/.exec(line);
+      if (heading) {
+        const inlineTokens = MarkdownContent.parseMarkdownFallbackInlineTokens(heading[2] || '');
+        tokens.push({
+          type: 'heading',
+          raw: line,
+          depth: heading[1].length,
+          text: MarkdownContent.inlineTokenText(inlineTokens),
+          tokens: inlineTokens,
+        } as Token);
+        index++;
+        continue;
+      }
+
+      if (MarkdownContent.isMarkdownTableStart(lines, index)) {
+        const tableLines: string[] = [line, lines[index + 1] || ''];
+        index += 2;
+        while (index < lines.length && MarkdownContent.markdownTableCells(lines[index] || '').length > 0) {
+          tableLines.push(lines[index] || '');
+          index++;
+        }
+        const tableToken = MarkdownContent.markdownFallbackTableToken(tableLines);
+        if (tableToken) {
+          tokens.push(tableToken as Token);
+        }
+        continue;
+      }
+
+      if (/^>\s?/.test(line)) {
+        const body: string[] = [];
+        while (index < lines.length && /^>\s?/.test(lines[index] || '')) {
+          body.push((lines[index] || '').replace(/^>\s?/, ''));
+          index++;
+        }
+        tokens.push({
+          type: 'blockquote',
+          raw: body.join('\n'),
+          text: body.join('\n'),
+          tokens: MarkdownContent.markdownFallbackToTokens(body.join('\n')),
+        } as Token);
+        continue;
+      }
+
+      if (/^\s*(?:[-*+] |\d+\. )/.test(line)) {
+        const ordered = /^\s*\d+\. /.test(line);
+        const startMatch = /^\s*(\d+)\. /.exec(line);
+        const items: Tokens.ListItem[] = [];
+        while (index < lines.length && (ordered ? /^\s*\d+\. /.test(lines[index] || '') : /^\s*[-*+] /.test(lines[index] || ''))) {
+          const rawItem = lines[index] || '';
+          const itemText = rawItem.replace(/^\s*(?:[-*+] |\d+\. )/, '');
+          const paragraph = MarkdownContent.markdownFallbackParagraphToken([itemText]);
+          items.push({
+            type: 'list_item',
+            raw: rawItem,
+            task: false,
+            checked: undefined,
+            loose: false,
+            text: paragraph.text,
+            tokens: [paragraph as Token],
+          } as Tokens.ListItem);
+          index++;
+        }
+        tokens.push({
+          type: 'list',
+          raw: '',
+          ordered: ordered,
+          start: startMatch ? Number(startMatch[1]) : 1,
+          loose: false,
+          items: items,
+        } as Tokens.List);
+        continue;
+      }
+
+      const paragraphLines: string[] = [];
+      while (index < lines.length && MarkdownContent.isMarkdownParagraphLine(lines, index)) {
+        paragraphLines.push(lines[index] || '');
+        index++;
+      }
+      if (paragraphLines.length > 0) {
+        tokens.push(MarkdownContent.markdownFallbackParagraphToken(paragraphLines) as Token);
+      } else {
+        index++;
+      }
+    }
+    return tokens;
+  }
+
+  private static isMarkdownParagraphLine(lines: string[], index: number): boolean {
+    const line = lines[index] || '';
+    if (line.trim().length === 0) {
+      return false;
+    }
+    if (/^(#{1,6})\s+/.test(line) || /^```/.test(line) || /^>\s?/.test(line) || /^\s*(?:[-*+] |\d+\. )/.test(line)) {
+      return false;
+    }
+    return !MarkdownContent.isMarkdownTableStart(lines, index);
+  }
+
+  private static markdownFallbackParagraphToken(lines: string[]): Tokens.Paragraph {
+    const inlineTokens: Token[] = [];
+    for (let i = 0; i < lines.length; i++) {
+      if (i > 0) {
+        inlineTokens.push({ type: 'br', raw: '\n', text: '\n' } as Token);
+      }
+      inlineTokens.push(...MarkdownContent.parseMarkdownFallbackInlineTokens(lines[i] || ''));
+    }
+    MarkdownContent.trimInlineTextEdges(inlineTokens);
+    MarkdownContent.markStandaloneInlineImages(inlineTokens);
+    return {
+      type: 'paragraph',
+      raw: lines.join('\n'),
+      text: MarkdownContent.inlineTokenText(inlineTokens),
+      tokens: inlineTokens,
+    } as Tokens.Paragraph;
+  }
+
+  private static isMarkdownTableStart(lines: string[], index: number): boolean {
+    if (index + 1 >= lines.length) {
+      return false;
+    }
+    return MarkdownContent.markdownTableCells(lines[index] || '').length > 0 && MarkdownContent.isMarkdownTableSeparator(lines[index + 1] || '');
+  }
+
+  private static markdownFallbackTableToken(lines: string[]): Token | null {
+    if (lines.length < 2 || !MarkdownContent.isMarkdownTableSeparator(lines[1] || '')) {
+      return null;
+    }
+    const aligns = MarkdownContent.markdownTableCells(lines[1] || '').map((cell: string): string => MarkdownContent.markdownTableAlign(cell));
+    const headerCells = MarkdownContent.markdownTableCells(lines[0] || '');
+    const header = headerCells.map((cell: string, index: number): TokenRecord => MarkdownContent.markdownFallbackTableCell(cell, true, aligns[index] || ''));
+    const rows: Array<TokenRecord[]> = [];
+    for (let i = 2; i < lines.length; i++) {
+      const cells = MarkdownContent.markdownTableCells(lines[i] || '');
+      if (cells.length === 0) {
+        continue;
+      }
+      rows.push(cells.map((cell: string, index: number): TokenRecord => MarkdownContent.markdownFallbackTableCell(cell, false, aligns[index] || '')));
+    }
+    const tableToken: Token = {
+      type: 'table',
+      raw: lines.join('\n'),
+    };
+    const tableRecord = tableToken as TokenRecord;
+    tableRecord.header = header;
+    tableRecord.rows = rows;
+    tableRecord.align = aligns;
+    return tableToken;
+  }
+
+  private static markdownTableAlign(separatorCell: string): string {
+    const cell = (separatorCell || '').trim();
+    const left = cell.startsWith(':');
+    const right = cell.endsWith(':');
+    if (left && right) {
+      return 'center';
+    }
+    if (right) {
+      return 'right';
+    }
+    if (left) {
+      return 'left';
+    }
+    return '';
+  }
+
+  private static markdownFallbackTableCell(raw: string, header: boolean, align: string): TokenRecord {
+    const text = (raw || '').trim().replace(/\\\|/g, '|');
+    const tokens = MarkdownContent.parseMarkdownFallbackInlineTokens(text);
+    const cellRecord: RenderTableCell = {
+      raw: raw,
+      text: MarkdownContent.inlineTokenText(tokens),
+      tokens: tokens,
+      align: align,
+      header: header,
+    };
+    return cellRecord as TokenRecord;
+  }
+
+  private static parseMarkdownFallbackInlineTokens(text: string): Token[] {
+    const result: Token[] = [];
+    const source = text || '';
+    const re = /!\[([^\]]*)\]\(\s*([^\s)]+)(?:\s+["']([^"']*)["'])?\s*\)|\[([^\]\n]+)\]\(\s*([^\s)]+)(?:\s+["']([^"']*)["'])?\s*\)|\*\*([^*]+)\*\*|\*([^*]+)\*|`([^`]+)`| {2,}(?=\n|$)/g;
+    let last = 0;
+    let match: RegExpExecArray | null = re.exec(source);
+    while (match) {
+      if (match.index > last) {
+        result.push(MarkdownContent.buildTextToken(source.slice(last, match.index)) as Token);
+      }
+      if (match[2]) {
+        result.push(MarkdownContent.buildImageToken(match[0], match[2] || '', match[1] || '', true) as Token);
+      } else if (match[5]) {
+        const label = match[4] || '';
+        result.push({
+          type: 'link',
+          raw: match[0],
+          href: match[5] || '',
+          title: match[6] || null,
+          text: label,
+          tokens: [MarkdownContent.buildTextToken(label) as Token],
+        } as Tokens.Link);
+      } else if (match[7]) {
+        const value = match[7] || '';
+        result.push({ type: 'strong', raw: match[0], text: value, tokens: [MarkdownContent.buildTextToken(value) as Token] } as Tokens.Strong);
+      } else if (match[8]) {
+        const value = match[8] || '';
+        result.push({ type: 'em', raw: match[0], text: value, tokens: [MarkdownContent.buildTextToken(value) as Token] } as Tokens.Em);
+      } else if (match[9]) {
+        result.push({ type: 'codespan', raw: match[0], text: match[9] || '' } as Tokens.Codespan);
+      } else {
+        result.push({ type: 'br', raw: match[0], text: '\n' } as Token);
+      }
+      last = match.index + match[0].length;
+      match = re.exec(source);
+    }
+    if (last === 0) {
+      return [MarkdownContent.buildTextToken(source) as Token];
+    }
+    if (last < source.length) {
+      result.push(MarkdownContent.buildTextToken(source.slice(last)) as Token);
+    }
+    MarkdownContent.removeLeadingMentionTextBeforeMemberLink(result);
+    return result;
+  }
+
+  private static inlineTokenText(tokens: Token[]): string {
+    let text = '';
+    for (const token of tokens) {
+      const record = token as TokenRecord;
+      if (record.type === 'image') {
+        text += String(record.text ?? '');
+      } else {
+        text += String(record.text ?? '');
+      }
+    }
+    return text;
   }
 
   private static parseRenderedHtmlToRenderAst(contentRendered: string, sizeRecords: InlineImageSizeRecord[] = []): RenderToken[] {
@@ -2850,16 +3263,16 @@ export struct MarkdownContent {
     }
     for (const token of tokens) {
       const record = token as TokenRecord;
-      record["rawSourceKind"] = sourceKind;
-      const childTokens = record["tokens"] as RenderToken[] | undefined;
+      record.rawSourceKind = sourceKind;
+      const childTokens = record.tokens as RenderToken[] | undefined;
       if (Array.isArray(childTokens) && childTokens.length > 0) {
         MarkdownContent.tagRenderSourceKind(childTokens, sourceKind);
       }
-      const items = record["items"] as Array<TokenRecord> | undefined;
+      const items = record.items as Array<TokenRecord> | undefined;
       if (Array.isArray(items) && items.length > 0) {
         for (const item of items) {
-          item["rawSourceKind"] = sourceKind;
-          const itemTokens = item["tokens"] as RenderToken[] | undefined;
+          item.rawSourceKind = sourceKind;
+          const itemTokens = item.tokens as RenderToken[] | undefined;
           if (Array.isArray(itemTokens) && itemTokens.length > 0) {
             MarkdownContent.tagRenderSourceKind(itemTokens, sourceKind);
           }
@@ -3000,7 +3413,7 @@ export struct MarkdownContent {
 
   private static htmlTableCellToRenderCell(cellHtml: string, attrs: string, header: boolean, sizeRecords: InlineImageSizeRecord[] = []): RenderTableCell {
     const inlineTokens = MarkdownContent.inlineHtmlToTokens(cellHtml, sizeRecords);
-    const text = inlineTokens.map((token: Token): string => String((token as TokenRecord)["text"] ?? (token as TokenRecord)["href"] ?? (token as TokenRecord)["raw"] ?? '')).join('');
+    const text = inlineTokens.map((token: Token): string => String((token as TokenRecord).text ?? (token as TokenRecord).href ?? (token as TokenRecord).raw ?? '')).join('');
     return {
       raw: cellHtml,
       text: text,
@@ -3071,7 +3484,7 @@ export struct MarkdownContent {
     if (inlineTokens.length === 0) {
       return null;
     }
-    const text = inlineTokens.map((token: Token): string => String((token as TokenRecord)["text"] ?? (token as TokenRecord)["href"] ?? (token as TokenRecord)["raw"] ?? '')).join('');
+    const text = inlineTokens.map((token: Token): string => String((token as TokenRecord).text ?? (token as TokenRecord).href ?? (token as TokenRecord).raw ?? '')).join('');
     return {
       type: 'paragraph',
       raw: raw,
@@ -3162,9 +3575,9 @@ export struct MarkdownContent {
     for (const token of inlineTokens) {
       const record = token as TokenRecord;
       const last = tokens.length > 0 ? tokens[tokens.length - 1] as TokenRecord : null;
-      if (record["type"] === 'text' && last && last["type"] === 'text') {
-        last["text"] = String(last["text"] ?? '') + String(record["text"] ?? '');
-        last["raw"] = String(last["raw"] ?? '') + String(record["raw"] ?? record["text"] ?? '');
+      if (record.type === 'text' && last && last.type === 'text') {
+        last.text = String(last.text ?? '') + String(record.text ?? '');
+        last.raw = String(last.raw ?? '') + String(record.raw ?? record.text ?? '');
       } else {
         tokens.push(token);
       }
@@ -3216,29 +3629,29 @@ export struct MarkdownContent {
   private static trimInlineTextEdges(tokens: Token[]): void {
     while (tokens.length > 0) {
       const first = tokens[0] as TokenRecord;
-      if (first["type"] !== 'text' || String(first["text"] ?? '').trim().length > 0) {
+      if (first.type !== 'text' || String(first.text ?? '').trim().length > 0) {
         break;
       }
       tokens.shift();
     }
     while (tokens.length > 0) {
       const last = tokens[tokens.length - 1] as TokenRecord;
-      if (last["type"] !== 'text' || String(last["text"] ?? '').trim().length > 0) {
+      if (last.type !== 'text' || String(last.text ?? '').trim().length > 0) {
         break;
       }
       tokens.pop();
     }
-    if (tokens.length > 0 && (tokens[0] as TokenRecord)["type"] === 'text') {
+    if (tokens.length > 0 && (tokens[0] as TokenRecord).type === 'text') {
       const first = tokens[0] as TokenRecord;
-      const trimmed = String(first["text"] ?? '').replace(/^\s+/, '');
-      first["text"] = trimmed;
-      first["raw"] = trimmed;
+      const trimmed = String(first.text ?? '').replace(/^\s+/, '');
+      first.text = trimmed;
+      first.raw = trimmed;
     }
-    if (tokens.length > 0 && (tokens[tokens.length - 1] as TokenRecord)["type"] === 'text') {
+    if (tokens.length > 0 && (tokens[tokens.length - 1] as TokenRecord).type === 'text') {
       const last = tokens[tokens.length - 1] as TokenRecord;
-      const trimmed = String(last["text"] ?? '').replace(/\s+$/, '');
-      last["text"] = trimmed;
-      last["raw"] = trimmed;
+      const trimmed = String(last.text ?? '').replace(/\s+$/, '');
+      last.text = trimmed;
+      last.raw = trimmed;
     }
     MarkdownContent.removeLeadingMentionTextBeforeMemberLink(tokens);
   }
@@ -3247,23 +3660,23 @@ export struct MarkdownContent {
     for (let i = 1; i < tokens.length; i++) {
       const current = tokens[i] as TokenRecord;
       const previous = tokens[i - 1] as TokenRecord;
-      if (current["type"] !== 'link' || previous["type"] !== 'text') {
+      if (current.type !== 'link' || previous.type !== 'text') {
         continue;
       }
-      const href = String(current["href"] ?? '');
+      const href = String(current.href ?? '');
       if (!/^\/member\/[^?#/]+(?:[?#].*)?$/i.test(href) && !/^https?:\/\/(?:www\.)?v2ex\.(?:com|co)\/member\/[^?#/]+/i.test(href)) {
         continue;
       }
-      const text = String(previous["text"] ?? '');
+      const text = String(previous.text ?? '');
       const stripped = text.replace(/@\s*$/, '');
       if (stripped !== text) {
-        previous["text"] = stripped;
-        previous["raw"] = stripped;
+        previous.text = stripped;
+        previous.raw = stripped;
       }
     }
     for (let i = tokens.length - 1; i >= 0; i--) {
       const token = tokens[i] as TokenRecord;
-      if (token["type"] === 'text' && String(token["text"] ?? '').length === 0) {
+      if (token.type === 'text' && String(token.text ?? '').length === 0) {
         tokens.splice(i, 1);
       }
     }
@@ -3275,14 +3688,14 @@ export struct MarkdownContent {
     }
     for (let i = 0; i < tokens.length; i++) {
       const token = tokens[i] as TokenRecord;
-      if (token["type"] === "table") {
+      if (token.type === "table") {
         const tableToken = MarkdownContent.normalizeMarkdownTableToken(tokens[i]);
         if (tableToken) {
           tokens[i] = tableToken as Token;
         }
         continue;
       }
-      const childTokens = token["tokens"] as Token[] | undefined;
+      const childTokens = token.tokens as Token[] | undefined;
       if (Array.isArray(childTokens) && childTokens.length > 0) {
         MarkdownContent.normalizeMarkdownTableTokens(childTokens);
       }
@@ -3292,14 +3705,14 @@ export struct MarkdownContent {
   private static normalizeMarkdownTableToken(token: Token): RenderTableToken | null {
     const record = token as TokenRecord;
     const headers: RenderTableCell[] = [];
-    const headerValues = record["header"] as TokenRecord[] | undefined;
+    const headerValues = record.header as TokenRecord[] | undefined;
     if (Array.isArray(headerValues)) {
       for (const cell of headerValues) {
         headers.push(MarkdownContent.markdownTableCellToRenderCell(cell, true));
       }
     }
     const rows: RenderTableCell[][] = [];
-    const rowValues = record["rows"] as Array<TokenRecord[]> | undefined;
+    const rowValues = record.rows as Array<TokenRecord[]> | undefined;
     if (Array.isArray(rowValues)) {
       for (const row of rowValues) {
         if (!Array.isArray(row)) {
@@ -3313,24 +3726,24 @@ export struct MarkdownContent {
       }
     }
     if (headers.length === 0 && rows.length === 0) {
-      return MarkdownContent.markdownTableRawToRenderTableToken(String(record["raw"] ?? ''));
+      return MarkdownContent.markdownTableRawToRenderTableToken(String(record.raw ?? ''));
     }
     return {
       type: 'table',
-      raw: String(record["raw"] ?? ''),
+      raw: String(record.raw ?? ''),
       headers: headers,
       rows: rows,
     } as RenderTableToken;
   }
 
   private static markdownTableCellToRenderCell(cell: TokenRecord, header: boolean): RenderTableCell {
-    const text = String(cell["text"] ?? cell["raw"] ?? '');
-    const tokens = cell["tokens"] as Token[] | undefined;
+    const text = String(cell.text ?? cell.raw ?? '');
+    const tokens = cell.tokens as Token[] | undefined;
     return {
-      raw: String(cell["raw"] ?? text),
+      raw: String(cell.raw ?? text),
       text: text,
       tokens: Array.isArray(tokens) && tokens.length > 0 ? tokens : MarkdownContent.parseMarkdownInlineTextTokens(text),
-      align: String(cell["align"] ?? ''),
+      align: String(cell.align ?? ''),
       header: header,
     } as RenderTableCell;
   }
@@ -3625,7 +4038,7 @@ export struct MarkdownContent {
     }
     for (let i = 0; i < tokens.length; i++) {
       const token = tokens[i] as TokenRecord;
-      const type = String(token["type"] ?? '');
+      const type = String(token.type ?? '');
       // Only enhance ordinary visible text. Code blocks, pre/code/codespan and
       // links keep their original semantics and click targets unchanged.
       if (type === 'code' || type === 'codespan' || type === 'link' || type === 'image') {
@@ -3639,33 +4052,33 @@ export struct MarkdownContent {
         }
         continue;
       }
-      const childTokens = token["tokens"] as Token[] | undefined;
+      const childTokens = token.tokens as Token[] | undefined;
       if (Array.isArray(childTokens) && childTokens.length > 0) {
         MarkdownContent.enhanceBase64TextTokens(childTokens);
       }
-      const items = token["items"] as Array<TokenRecord> | undefined;
+      const items = token.items as Array<TokenRecord> | undefined;
       if (Array.isArray(items) && items.length > 0) {
         for (const item of items) {
-          const itemTokens = item["tokens"] as Token[] | undefined;
+          const itemTokens = item.tokens as Token[] | undefined;
           if (Array.isArray(itemTokens) && itemTokens.length > 0) {
             MarkdownContent.enhanceBase64TextTokens(itemTokens);
           }
         }
       }
-      const headers = token["headers"] as Array<TokenRecord> | undefined;
+      const headers = token.headers as Array<TokenRecord> | undefined;
       if (Array.isArray(headers) && headers.length > 0) {
         for (const cell of headers) {
-          const cellTokens = cell["tokens"] as Token[] | undefined;
+          const cellTokens = cell.tokens as Token[] | undefined;
           if (Array.isArray(cellTokens) && cellTokens.length > 0) {
             MarkdownContent.enhanceBase64TextTokens(cellTokens);
           }
         }
       }
-      const rows = token["rows"] as Array<Array<TokenRecord>> | undefined;
+      const rows = token.rows as Array<Array<TokenRecord>> | undefined;
       if (Array.isArray(rows) && rows.length > 0) {
         for (const row of rows) {
           for (const cell of row) {
-            const cellTokens = cell["tokens"] as Token[] | undefined;
+            const cellTokens = cell.tokens as Token[] | undefined;
             if (Array.isArray(cellTokens) && cellTokens.length > 0) {
               MarkdownContent.enhanceBase64TextTokens(cellTokens);
             }
@@ -3677,7 +4090,7 @@ export struct MarkdownContent {
 
   private static base64EnhancedTextTokenRun(token: Token): Token[] {
     const record = token as TokenRecord;
-    const text = String(record["text"] ?? '');
+    const text = String(record.text ?? '');
     if (!text || text.length < Base64DecodeUtils.MIN_TOKEN_LENGTH) {
       return [];
     }
@@ -3723,23 +4136,23 @@ export struct MarkdownContent {
     }
     for (let i = 0; i < tokens.length; i++) {
       const token = tokens[i] as TokenRecord;
-      if (token["type"] === "paragraph") {
-        const tableToken = MarkdownContent.parseImageTableMarker(String(token["text"] ?? token["raw"] ?? ''));
+      if (token.type === "paragraph") {
+        const tableToken = MarkdownContent.parseImageTableMarker(String(token.text ?? token.raw ?? ''));
         if (tableToken) {
           tokens.splice(i, 1, tableToken as Token);
           continue;
         }
       }
 
-      const childTokens = token["tokens"] as Token[] | undefined;
+      const childTokens = token.tokens as Token[] | undefined;
       if (Array.isArray(childTokens) && childTokens.length > 0) {
         MarkdownContent.rewriteImageTableMarkers(childTokens);
       }
 
-      const items = token["items"] as Array<TokenRecord> | undefined;
+      const items = token.items as Array<TokenRecord> | undefined;
       if (Array.isArray(items) && items.length > 0) {
         for (const item of items) {
-          const itemTokens = item["tokens"] as Token[] | undefined;
+          const itemTokens = item.tokens as Token[] | undefined;
           if (Array.isArray(itemTokens) && itemTokens.length > 0) {
             MarkdownContent.rewriteImageTableMarkers(itemTokens);
           }
@@ -3821,22 +4234,22 @@ export struct MarkdownContent {
     }
     for (let i = 0; i < tokens.length; i++) {
       const token = tokens[i] as TokenRecord;
-      if (token["type"] === 'code') {
+      if (token.type === 'code') {
         tokens[i] = MarkdownContent.buildCodeBlockToken(
-          String(token["text"] ?? ''),
-          String(token["lang"] ?? ''),
-          String(token["raw"] ?? ''),
+          String(token.text ?? ''),
+          String(token.lang ?? ''),
+          String(token.raw ?? ''),
         ) as Token;
         continue;
       }
-      const childTokens = token["tokens"] as Token[] | undefined;
+      const childTokens = token.tokens as Token[] | undefined;
       if (Array.isArray(childTokens) && childTokens.length > 0) {
         MarkdownContent.normalizeCodeBlockTokens(childTokens);
       }
-      const items = token["items"] as Array<TokenRecord> | undefined;
+      const items = token.items as Array<TokenRecord> | undefined;
       if (Array.isArray(items) && items.length > 0) {
         for (const item of items) {
-          const itemTokens = item["tokens"] as Token[] | undefined;
+          const itemTokens = item.tokens as Token[] | undefined;
           if (Array.isArray(itemTokens) && itemTokens.length > 0) {
             MarkdownContent.normalizeCodeBlockTokens(itemTokens);
           }
@@ -3956,7 +4369,7 @@ export struct MarkdownContent {
     }
     for (let i = 0; i < tokens.length; i++) {
       const token = tokens[i] as TokenRecord;
-      const type = (token["type"] as string) || "";
+      const type = (token.type as string) || "";
       if (type === "paragraph") {
         const replacement = MarkdownContent.splitParagraphByImages(token);
         if (replacement.length > 0) {
@@ -3966,15 +4379,15 @@ export struct MarkdownContent {
         }
       }
 
-      const childTokens = token["tokens"] as Token[] | undefined;
+      const childTokens = token.tokens as Token[] | undefined;
       if (Array.isArray(childTokens) && childTokens.length > 0) {
         MarkdownContent.splitMixedImageParagraphs(childTokens);
       }
 
-      const items = token["items"] as Array<TokenRecord> | undefined;
+      const items = token.items as Array<TokenRecord> | undefined;
       if (Array.isArray(items) && items.length > 0) {
         for (const item of items) {
-          const itemTokens = item["tokens"] as Token[] | undefined;
+          const itemTokens = item.tokens as Token[] | undefined;
           if (Array.isArray(itemTokens) && itemTokens.length > 0) {
             MarkdownContent.splitMixedImageParagraphs(itemTokens);
           }
@@ -3989,7 +4402,7 @@ export struct MarkdownContent {
     }
     for (let i = 0; i < tokens.length; i++) {
       const token = tokens[i] as TokenRecord;
-      const type = (token["type"] as string) || "";
+      const type = (token.type as string) || "";
       if (type === "paragraph") {
         const replacement = MarkdownContent.splitParagraphByResolvedWideInlineImages(token, sizeRecords);
         if (replacement.length > 0) {
@@ -3999,15 +4412,15 @@ export struct MarkdownContent {
         }
       }
 
-      const childTokens = token["tokens"] as Token[] | undefined;
+      const childTokens = token.tokens as Token[] | undefined;
       if (Array.isArray(childTokens) && childTokens.length > 0) {
         MarkdownContent.splitResolvedWideInlineImages(childTokens, sizeRecords);
       }
 
-      const items = token["items"] as Array<TokenRecord> | undefined;
+      const items = token.items as Array<TokenRecord> | undefined;
       if (Array.isArray(items) && items.length > 0) {
         for (const item of items) {
-          const itemTokens = item["tokens"] as Token[] | undefined;
+          const itemTokens = item.tokens as Token[] | undefined;
           if (Array.isArray(itemTokens) && itemTokens.length > 0) {
             MarkdownContent.splitResolvedWideInlineImages(itemTokens, sizeRecords);
           }
@@ -4017,7 +4430,7 @@ export struct MarkdownContent {
   }
 
   private static splitParagraphByResolvedWideInlineImages(paragraph: TokenRecord, sizeRecords: InlineImageSizeRecord[]): Token[] {
-    const inlineTokens = paragraph["tokens"] as Token[] | undefined;
+    const inlineTokens = paragraph.tokens as Token[] | undefined;
     if (!Array.isArray(inlineTokens) || inlineTokens.length === 0) {
       return [];
     }
@@ -4033,8 +4446,8 @@ export struct MarkdownContent {
         (token as InlineImageToken).inlineImage = false;
         result.push({
           type: "paragraph",
-          raw: String((token as TokenRecord)["raw"] ?? ""),
-          text: String((token as TokenRecord)["text"] ?? ""),
+          raw: String((token as TokenRecord).raw ?? ""),
+          text: String((token as TokenRecord).text ?? ""),
           tokens: [token],
         } as Tokens.Paragraph);
       } else {
@@ -4058,7 +4471,7 @@ export struct MarkdownContent {
   }
 
   private static splitParagraphByImages(paragraph: TokenRecord): Token[] {
-    const inlineTokens = paragraph["tokens"] as Token[] | undefined;
+    const inlineTokens = paragraph.tokens as Token[] | undefined;
     if (!Array.isArray(inlineTokens) || inlineTokens.length === 0) {
       return [];
     }
@@ -4097,8 +4510,8 @@ export struct MarkdownContent {
         (token as InlineImageToken).inlineImage = false;
         const imageParagraph: Tokens.Paragraph = {
           type: "paragraph",
-          raw: String((token as TokenRecord)["raw"] ?? ""),
-          text: String((token as TokenRecord)["text"] ?? ""),
+          raw: String((token as TokenRecord).raw ?? ""),
+          text: String((token as TokenRecord).text ?? ""),
           tokens: [token],
         } as Tokens.Paragraph;
         result.push(imageParagraph);
@@ -4111,12 +4524,12 @@ export struct MarkdownContent {
   }
 
   private static flushParagraphTokens(result: Token[], tokens: Token[]): void {
-    const meaningful = tokens.filter((t: Token) => t && t.type !== "br" && String((t as TokenRecord)["raw"] ?? (t as TokenRecord)["text"] ?? "").trim().length > 0);
+    const meaningful = tokens.filter((t: Token) => t && t.type !== "br" && String((t as TokenRecord).raw ?? (t as TokenRecord).text ?? "").trim().length > 0);
     if (meaningful.length === 0) {
       return;
     }
-    const raw = tokens.map((t: Token) => String((t as TokenRecord)["raw"] ?? (t as TokenRecord)["text"] ?? "")).join("");
-    const text = tokens.map((t: Token) => String((t as TokenRecord)["text"] ?? (t as TokenRecord)["raw"] ?? "")).join("");
+    const raw = tokens.map((t: Token) => String((t as TokenRecord).raw ?? (t as TokenRecord).text ?? "")).join("");
+    const text = tokens.map((t: Token) => String((t as TokenRecord).text ?? (t as TokenRecord).raw ?? "")).join("");
     result.push({
       type: "paragraph",
       raw: raw,
@@ -4131,20 +4544,20 @@ export struct MarkdownContent {
     }
     for (let i = 0; i < tokens.length; i++) {
       const token = tokens[i] as TokenRecord;
-      const type = (token["type"] as string) || "";
+      const type = (token.type as string) || "";
       if (type === "paragraph") {
         MarkdownContent.rewriteParagraphInlineImages(token);
       }
 
-      const childTokens = token["tokens"] as Token[] | undefined;
+      const childTokens = token.tokens as Token[] | undefined;
       if (Array.isArray(childTokens) && childTokens.length > 0) {
         MarkdownContent.rewriteInlineImageLinks(childTokens);
       }
 
-      const items = token["items"] as Array<TokenRecord> | undefined;
+      const items = token.items as Array<TokenRecord> | undefined;
       if (Array.isArray(items) && items.length > 0) {
         for (const item of items) {
-          const itemTokens = item["tokens"] as Token[] | undefined;
+          const itemTokens = item.tokens as Token[] | undefined;
           if (Array.isArray(itemTokens) && itemTokens.length > 0) {
             MarkdownContent.rewriteInlineImageLinks(itemTokens);
           }
@@ -4154,7 +4567,7 @@ export struct MarkdownContent {
   }
 
   private static rewriteParagraphInlineImages(paragraph: TokenRecord): void {
-    const inlineTokens = paragraph["tokens"] as Token[] | undefined;
+    const inlineTokens = paragraph.tokens as Token[] | undefined;
     if (!Array.isArray(inlineTokens) || inlineTokens.length === 0) {
       return;
     }
@@ -4163,7 +4576,7 @@ export struct MarkdownContent {
       rewritten.push(...MarkdownContent.rewriteInlineImageToken(token));
     }
     MarkdownContent.markStandaloneInlineImages(rewritten);
-    paragraph["tokens"] = rewritten;
+    paragraph.tokens = rewritten;
   }
 
   private static markStandaloneInlineImages(tokens: Token[]): void {
@@ -4185,10 +4598,10 @@ export struct MarkdownContent {
       if (!token) {
         continue;
       }
-      if (token["type"] === "br") {
+      if (token.type === "br") {
         break;
       }
-      const text = String(token["text"] ?? token["raw"] ?? "");
+      const text = String(token.text ?? token.raw ?? "");
       const breakIndex = Math.max(text.lastIndexOf('\n'), text.lastIndexOf('\r'));
       if (breakIndex >= 0) {
         before = text.slice(breakIndex + 1) + before;
@@ -4203,10 +4616,10 @@ export struct MarkdownContent {
       if (!token) {
         continue;
       }
-      if (token["type"] === "br") {
+      if (token.type === "br") {
         break;
       }
-      const text = String(token["text"] ?? token["raw"] ?? "");
+      const text = String(token.text ?? token.raw ?? "");
       const lineFeed = text.indexOf('\n');
       const carriage = text.indexOf('\r');
       let breakIndex = -1;
@@ -4226,20 +4639,20 @@ export struct MarkdownContent {
 
   private static rewriteInlineImageToken(token: Token): Token[] {
     const record = token as TokenRecord;
-    const type = (record["type"] as string) || "";
+    const type = (record.type as string) || "";
     if (type === "link") {
       const nestedImage = MarkdownContent.firstNestedImage(record);
       if (nestedImage) {
         return [nestedImage as Token];
       }
-      const href = MediaUrlUtils.imageUrlForRender(String(record["href"] ?? ""));
-      const text = String(record["text"] ?? "").trim();
+      const href = MediaUrlUtils.imageUrlForRender(String(record.href ?? ""));
+      const text = String(record.text ?? "").trim();
       const normalizedText = MediaUrlUtils.normalizeUrl(text);
-      if (href && (!text || normalizedText === MediaUrlUtils.normalizeUrl(String(record["href"] ?? "")))) {
+      if (href && (!text || normalizedText === MediaUrlUtils.normalizeUrl(String(record.href ?? "")))) {
         // Treat bare/autolinked image URLs as inline candidates first. A later
         // pass demotes images that are actually alone on their source line to
         // block images, while mixed text + URL replies keep webpage inline flow.
-        return [MarkdownContent.buildImageToken(String(record["raw"] ?? text), href, text, true) as Token];
+        return [MarkdownContent.buildImageToken(String(record.raw ?? text), href, text, true) as Token];
       }
       return [token];
     }
@@ -4250,16 +4663,16 @@ export struct MarkdownContent {
   }
 
   private static firstNestedImage(record: TokenRecord): Tokens.Image | null {
-    const children = record["tokens"] as Token[] | undefined;
+    const children = record.tokens as Token[] | undefined;
     if (!Array.isArray(children) || children.length === 0) {
       return null;
     }
     for (const child of children) {
       const childRecord = child as TokenRecord;
-      if ((childRecord["type"] as string) === "image") {
-        const renderUrl = MediaUrlUtils.imageUrlForRender(String(childRecord["href"] ?? ""));
+      if ((childRecord.type as string) === "image") {
+        const renderUrl = MediaUrlUtils.imageUrlForRender(String(childRecord.href ?? ""));
         if (renderUrl) {
-          childRecord["href"] = renderUrl;
+          childRecord.href = renderUrl;
           return child as Tokens.Image;
         }
       }
@@ -4269,7 +4682,7 @@ export struct MarkdownContent {
 
   private static splitTextImageUrls(token: Token): Token[] {
     const record = token as TokenRecord;
-    const text = String(record["text"] ?? record["raw"] ?? "");
+    const text = String(record.text ?? record.raw ?? "");
     if (!text) {
       return [token];
     }
@@ -4331,9 +4744,9 @@ export struct MarkdownContent {
     }
     for (let i = 0; i < tokens.length; i++) {
       const token = tokens[i] as TokenRecord;
-      const type = (token["type"] as string) || "";
+      const type = (token.type as string) || "";
       if (type === "paragraph") {
-        const inlineTokens = token["tokens"] as Token[] | undefined;
+        const inlineTokens = token.tokens as Token[] | undefined;
         if (Array.isArray(inlineTokens) && inlineTokens.length > 0) {
           const meaningful = inlineTokens.filter((t: Token) => t && t.type !== "br");
           if (meaningful.length > 0 && meaningful.every((t: Token) => t.type === "image")) {
@@ -4347,7 +4760,7 @@ export struct MarkdownContent {
         continue;
       }
 
-      const childTokens = token["tokens"] as Token[] | undefined;
+      const childTokens = token.tokens as Token[] | undefined;
       if (Array.isArray(childTokens) && childTokens.length > 0) {
         MarkdownContent.promoteStandaloneImageParagraphs(childTokens);
       }
@@ -4360,24 +4773,24 @@ export struct MarkdownContent {
     }
     for (let i = 0; i < tokens.length; i++) {
       const token = tokens[i] as TokenRecord;
-      const type = (token["type"] as string) || "";
+      const type = (token.type as string) || "";
       if (type === "code") {
-        token["type"] = CODE_MONO;
+        token.type = CODE_MONO;
       } else if (type === "list") {
-        token["type"] = LIST_MONO;
+        token.type = LIST_MONO;
       } else if (type === "paragraph") {
-        token["type"] = PARAGRAPH_MONO;
+        token.type = PARAGRAPH_MONO;
       }
 
-      const childTokens = token["tokens"] as Token[] | undefined;
+      const childTokens = token.tokens as Token[] | undefined;
       if (Array.isArray(childTokens) && childTokens.length > 0) {
         MarkdownContent.retypeBlockTokens(childTokens);
       }
 
-      const items = token["items"] as Array<TokenRecord> | undefined;
+      const items = token.items as Array<TokenRecord> | undefined;
       if (Array.isArray(items) && items.length > 0) {
         for (const item of items) {
-          const itemTokens = item["tokens"] as Token[] | undefined;
+          const itemTokens = item.tokens as Token[] | undefined;
           if (Array.isArray(itemTokens) && itemTokens.length > 0) {
             MarkdownContent.retypeBlockTokens(itemTokens);
           }
@@ -4392,7 +4805,7 @@ export struct MarkdownContent {
     }
     for (let i = 0; i < tokens.length; i++) {
       const token = tokens[i] as TokenRecord;
-      const type = (token["type"] as string) || "";
+      const type = (token.type as string) || "";
       if (type === "paragraph") {
         MarkdownContent.rewriteStandaloneTextLink(token);
       }
@@ -4401,7 +4814,7 @@ export struct MarkdownContent {
         continue;
       }
 
-      const childTokens = token["tokens"] as Token[] | undefined;
+      const childTokens = token.tokens as Token[] | undefined;
       if (Array.isArray(childTokens) && childTokens.length > 0) {
         MarkdownContent.rewriteStandaloneTextLinks(childTokens);
       }
@@ -4414,22 +4827,22 @@ export struct MarkdownContent {
     }
     for (let i = tokens.length - 1; i >= 0; i--) {
       const token = tokens[i] as TokenRecord;
-      const type = (token["type"] as string) || "";
-      const raw = String(token["raw"] ?? token["text"] ?? "");
+      const type = (token.type as string) || "";
+      const raw = String(token.raw ?? token.text ?? "");
       if ((type === "space" || type === "html") && raw.trim().length === 0) {
         tokens.splice(i, 1);
         continue;
       }
 
-      const childTokens = token["tokens"] as Token[] | undefined;
+      const childTokens = token.tokens as Token[] | undefined;
       if (Array.isArray(childTokens) && childTokens.length > 0) {
         MarkdownContent.removeIgnorableLayoutTokens(childTokens);
       }
 
-      const items = token["items"] as Array<TokenRecord> | undefined;
+      const items = token.items as Array<TokenRecord> | undefined;
       if (Array.isArray(items) && items.length > 0) {
         for (const item of items) {
-          const itemTokens = item["tokens"] as Token[] | undefined;
+          const itemTokens = item.tokens as Token[] | undefined;
           if (Array.isArray(itemTokens) && itemTokens.length > 0) {
             MarkdownContent.removeIgnorableLayoutTokens(itemTokens);
           }
@@ -4466,15 +4879,15 @@ export struct MarkdownContent {
   }
 
   private static mergeChildSelectableParagraphRuns(token: TokenRecord): void {
-    const childTokens = token["tokens"] as Token[] | undefined;
+    const childTokens = token.tokens as Token[] | undefined;
     if (Array.isArray(childTokens) && childTokens.length > 0) {
       MarkdownContent.mergeSelectableParagraphRuns(childTokens);
     }
 
-    const items = token["items"] as Array<TokenRecord> | undefined;
+    const items = token.items as Array<TokenRecord> | undefined;
     if (Array.isArray(items) && items.length > 0) {
       for (const item of items) {
-        const itemTokens = item["tokens"] as Token[] | undefined;
+        const itemTokens = item.tokens as Token[] | undefined;
         if (Array.isArray(itemTokens) && itemTokens.length > 0) {
           MarkdownContent.mergeSelectableParagraphRuns(itemTokens);
         }
@@ -4483,10 +4896,10 @@ export struct MarkdownContent {
   }
 
   private static canMergeSelectableParagraph(token: TokenRecord): boolean {
-    if (!token || token["type"] !== "paragraph") {
+    if (!token || token.type !== "paragraph") {
       return false;
     }
-    const inlineTokens = token["tokens"] as Token[] | undefined;
+    const inlineTokens = token.tokens as Token[] | undefined;
     if (!Array.isArray(inlineTokens) || inlineTokens.length === 0) {
       return false;
     }
@@ -4499,7 +4912,7 @@ export struct MarkdownContent {
     const textParts: string[] = [];
     for (let i = 0; i < paragraphs.length; i++) {
       const paragraph = paragraphs[i] as TokenRecord;
-      const inlineTokens = paragraph["tokens"] as Token[] | undefined;
+      const inlineTokens = paragraph.tokens as Token[] | undefined;
       if (i > 0) {
         const separator = MarkdownContent.buildTextToken("\n\n");
         mergedTokens.push(separator as Token);
@@ -4509,8 +4922,8 @@ export struct MarkdownContent {
       if (Array.isArray(inlineTokens)) {
         mergedTokens.push(...inlineTokens);
       }
-      rawParts.push(String(paragraph["raw"] ?? ""));
-      textParts.push(String(paragraph["text"] ?? paragraph["raw"] ?? ""));
+      rawParts.push(String(paragraph.raw ?? ""));
+      textParts.push(String(paragraph.text ?? paragraph.raw ?? ""));
     }
 
     return {
@@ -4522,7 +4935,7 @@ export struct MarkdownContent {
   }
 
   private static rewriteStandaloneTextLink(paragraph: TokenRecord): void {
-    const inlineTokens = paragraph["tokens"] as Token[] | undefined;
+    const inlineTokens = paragraph.tokens as Token[] | undefined;
     if (!Array.isArray(inlineTokens) || inlineTokens.length === 0) {
       return;
     }
@@ -4533,21 +4946,21 @@ export struct MarkdownContent {
     }
 
     const only = meaningful[0] as TokenRecord;
-    const onlyType = only["type"] as string;
+    const onlyType = only.type as string;
     if (!only || typeof onlyType !== "string") {
       return;
     }
 
     if (onlyType === "text") {
-      const rawText = String(only["text"] ?? "").trim();
+      const rawText = String(only.text ?? "").trim();
       const href = MediaUrlUtils.normalizeUrl(rawText);
       if (!MediaUrlUtils.isStandaloneHttpUrl(rawText) || MediaUrlUtils.isProbablyImageUrl(href)) {
         return;
       }
-      only["type"] = "link";
-      only["raw"] = String(only["raw"] ?? rawText);
-      only["href"] = href;
-      only["text"] = rawText;
+      only.type = "link";
+      only.raw = String(only.raw ?? rawText);
+      only.href = href;
+      only.text = rawText;
     }
   }
 
@@ -4557,21 +4970,21 @@ export struct MarkdownContent {
     }
     for (let i = 0; i < tokens.length; i++) {
       const token = tokens[i] as TokenRecord;
-      const type = (token["type"] as string) || "";
+      const type = (token.type as string) || "";
 
       if (type === "paragraph") {
         MarkdownContent.rewriteParagraphBareImageLink(token);
       }
 
-      const childTokens = token["tokens"] as Token[] | undefined;
+      const childTokens = token.tokens as Token[] | undefined;
       if (Array.isArray(childTokens) && childTokens.length > 0) {
         MarkdownContent.rewriteBareImageLinks(childTokens);
       }
 
-      const items = token["items"] as Array<TokenRecord> | undefined;
+      const items = token.items as Array<TokenRecord> | undefined;
       if (Array.isArray(items) && items.length > 0) {
         for (const item of items) {
-          const itemTokens = item["tokens"] as Token[] | undefined;
+          const itemTokens = item.tokens as Token[] | undefined;
           if (Array.isArray(itemTokens) && itemTokens.length > 0) {
             MarkdownContent.rewriteBareImageLinks(itemTokens);
           }
@@ -4581,7 +4994,7 @@ export struct MarkdownContent {
   }
 
   private static rewriteParagraphBareImageLink(paragraph: TokenRecord): void {
-    const inlineTokens = paragraph["tokens"] as Token[] | undefined;
+    const inlineTokens = paragraph.tokens as Token[] | undefined;
     if (!Array.isArray(inlineTokens) || inlineTokens.length === 0) {
       return;
     }
@@ -4592,14 +5005,14 @@ export struct MarkdownContent {
     }
 
     const only = meaningful[0] as TokenRecord;
-    const onlyType = only["type"] as string;
+    const onlyType = only.type as string;
     if (!only || typeof onlyType !== "string") {
       return;
     }
 
     if (onlyType === "link") {
-      const href = MediaUrlUtils.normalizeUrl(String(only["href"] ?? ""));
-      const text = String(only["text"] ?? "").trim();
+      const href = MediaUrlUtils.normalizeUrl(String(only.href ?? ""));
+      const text = String(only.text ?? "").trim();
       const normalizedText = MediaUrlUtils.normalizeUrl(text);
       const renderUrl = MediaUrlUtils.imageUrlForRender(href);
       if (!renderUrl) {
@@ -4608,16 +5021,16 @@ export struct MarkdownContent {
       if (text.length > 0 && normalizedText !== href) {
         return;
       }
-      only["type"] = "image";
-      only["href"] = renderUrl;
-      only["title"] = only["title"] ?? null;
-      only["text"] = "";
-      only["tokens"] = [];
+      only.type = "image";
+      only.href = renderUrl;
+      only.title = only.title ?? null;
+      only.text = "";
+      only.tokens = [];
       return;
     }
 
     if (onlyType === "text") {
-      const rawText = String(only["text"] ?? "").trim();
+      const rawText = String(only.text ?? "").trim();
       const href = MediaUrlUtils.normalizeUrl(rawText);
       const renderUrl = MediaUrlUtils.imageUrlForRender(href);
       if (!renderUrl) {
@@ -4625,12 +5038,12 @@ export struct MarkdownContent {
       }
       const imageToken: Tokens.Image = {
         type: "image",
-        raw: String(only["raw"] ?? rawText),
+        raw: String(only.raw ?? rawText),
         href: renderUrl,
         title: null,
         text: "",
       };
-      paragraph["tokens"] = [imageToken];
+      paragraph.tokens = [imageToken];
     }
   }
 
@@ -4640,27 +5053,41 @@ export struct MarkdownContent {
   }
 
   private markdownOptions(): MarkdownOptions {
-    return {
-      darkMode: this.themeEffectiveDark,
-      theme: {
-        themeColor: ThemeConstants.TEXT_SECONDARY,
-        fontStyle: {
-          fontSize: this.bodyFontSize(),
-          fontColor: ThemeConstants.TEXT_PRIMARY,
-        },
-        linkColor: ThemeConstants.TEXT_LINK,
+    /* Static mirror contract for fixed code-block typography:
         code: {
-          fontColor: _codeColors(this.themeEffectiveDark),
+          fontColor: ThemeConstants.CODE_TEXT,
           backgroundColor: _codeBackground(this.themeEffectiveDark),
           borderRadius: ThemeConstants.RADIUS_SM,
           codeSpanBackgroundColor: this.themeEffectiveDark ? '#30363D' : '#EFF1F3',
           codeSpanBorderRadius: ThemeConstants.RADIUS_SM,
         },
-        codeSpan: {
-          backgroundColor: this.themeEffectiveDark ? '#30363D' : '#EFF1F3',
-          borderRadius: ThemeConstants.RADIUS_SM,
-        },
-      },
+        codeSpan:
+    */
+    const fontStyle: MarkdownFontStyleTheme = {
+      fontSize: this.bodyFontSize(),
+      fontColor: ThemeConstants.TEXT_PRIMARY,
+    };
+    const codeTheme: MarkdownCodeTheme = {
+      fontColor: ThemeConstants.CODE_TEXT,
+      backgroundColor: _codeBackground(this.themeEffectiveDark),
+      borderRadius: ThemeConstants.RADIUS_SM,
+      codeSpanBackgroundColor: this.themeEffectiveDark ? '#30363D' : '#EFF1F3',
+      codeSpanBorderRadius: ThemeConstants.RADIUS_SM,
+    };
+    const codeSpanTheme: MarkdownCodeTheme = {
+      backgroundColor: this.themeEffectiveDark ? '#30363D' : '#EFF1F3',
+      borderRadius: ThemeConstants.RADIUS_SM,
+    };
+    const theme: MarkdownTheme = {
+      themeColor: ThemeConstants.TEXT_SECONDARY,
+      fontStyle: fontStyle,
+      linkColor: ThemeConstants.TEXT_LINK,
+      code: codeTheme,
+      codeSpan: codeSpanTheme,
+    };
+    const options: MarkdownOptions = {
+      darkMode: this.themeEffectiveDark,
+      theme: theme,
       imageClick: (url?: string) => {
         const normalized = MediaUrlUtils.normalizeUrl(url ?? "");
         if (normalized && this.onImageClick) {
@@ -4678,16 +5105,17 @@ export struct MarkdownContent {
           this.onMentionClick(username);
         }
       },
-    } as MarkdownOptions;
+    };
+    return options;
   }
 
   private tokenKey(token: Token, index: number): string {
     const record = token as TokenRecord;
-    return `${String(record["type"] ?? "token")}-${String(record["raw"] ?? record["href"] ?? record["text"] ?? index)}-${index}`;
+    return `${String(record.type ?? "token")}-${String(record.raw ?? record.href ?? record.text ?? index)}-${index}`;
   }
 
   private headingLevel(token: Token): number {
-    const depth = Number((token as TokenRecord)["depth"] ?? 0);
+    const depth = Number((token as TokenRecord).depth ?? 0);
     if (!Number.isFinite(depth) || depth <= 0) {
       return 6;
     }
@@ -4755,15 +5183,15 @@ export struct MarkdownContent {
   }
 
   private headingInlineTokens(token: Token): Token[] {
-    const tokens = (token as TokenRecord)["tokens"] as Token[] | undefined;
+    const tokens = (token as TokenRecord).tokens as Token[] | undefined;
     if (Array.isArray(tokens) && tokens.length > 0) {
       return tokens;
     }
-    return [MarkdownContent.buildTextToken(String((token as TokenRecord)["text"] ?? "")) as Token];
+    return [MarkdownContent.buildTextToken(String((token as TokenRecord).text ?? "")) as Token];
   }
 
   private plainTokenText(token: Token): string {
-    return String((token as TokenRecord)["text"] ?? (token as TokenRecord)["raw"] ?? "").trim();
+    return String((token as TokenRecord).text ?? (token as TokenRecord).raw ?? "").trim();
   }
 
   @Builder RenderProcessedToken(token: Token) {
@@ -4838,7 +5266,7 @@ export struct MarkdownContent {
           activeBase64PopupKey: this.activeBase64PopupKey,
           showBase64Popup: (key: string) => { this.showBase64Popup(key); },
           hideBase64Popup: (key: string) => { this.hideBase64Popup(key); },
-          base64PopupScope: `heading-${String((token as TokenRecord)["raw"] ?? (token as TokenRecord)["text"] ?? "")}`,
+          base64PopupScope: `heading-${String((token as TokenRecord).raw ?? (token as TokenRecord).text ?? "")}`,
         })
       } else {
         Text() {
@@ -4854,7 +5282,7 @@ export struct MarkdownContent {
             this.activeBase64PopupKey,
             (key: string) => { this.showBase64Popup(key); },
             (key: string) => { this.hideBase64Popup(key); },
-            `heading-${String((token as TokenRecord)["raw"] ?? (token as TokenRecord)["text"] ?? "")}`,
+            `heading-${String((token as TokenRecord).raw ?? (token as TokenRecord).text ?? "")}`,
           );
         }
           .fontSize(this.headingSize(token))
