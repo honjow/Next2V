@@ -3,7 +3,8 @@
 #
 # 用法:
 #   bash dev.sh                   # debug 构建 + 签名 + 安装到缓存/选择的设备
-#   bash dev.sh --build-only      # 仅构建 + 签名，不安装到设备
+#   bash dev.sh --build-only      # debug 仅构建 + 签名，不安装到设备
+#   bash dev.sh --release-build-only # release 仅构建 + 签名，不安装到设备
 #   bash dev.sh -d all            # 安装到所有已连接设备（并刷新缓存时效）
 #   bash dev.sh -d <device>       # 安装到指定设备（不影响缓存）
 #   bash dev.sh --no-build        # 跳过构建，直接签名安装（沿用上次产物）
@@ -64,7 +65,8 @@ dev.sh - Next2V 鸿蒙开发一键脚本
 
 用法:
   bash dev.sh                   debug 构建 + 签名 + 安装到缓存/选择的设备
-  bash dev.sh --build-only      仅构建 + 签名，不安装到设备
+  bash dev.sh --build-only      debug 仅构建 + 签名，不安装到设备
+  bash dev.sh --release-build-only release 仅构建 + 签名，不安装到设备
   bash dev.sh -d all            安装到所有已连接设备（并刷新缓存时效）
   bash dev.sh -d <device>       安装到指定设备（不影响缓存）
   bash dev.sh --no-build        跳过构建，直接签名安装（沿用上次产物）
@@ -99,6 +101,14 @@ EOF
     echo "==> 构建 HAP..."
     cd "$PROJ"
     hvigorw assembleHap --mode module -p product=default -p buildMode=debug --no-daemon
+    python3 "$PROJ/scripts/sign.py" --no-install "$@"
+    ;;
+  --release-build-only)
+    shift
+    ensure_ohpm_dependencies
+    echo "==> 构建 release HAP..."
+    cd "$PROJ"
+    hvigorw assembleHap --mode module -p product=default -p buildMode=release --no-daemon
     python3 "$PROJ/scripts/sign.py" --no-install "$@"
     ;;
   --no-build)

@@ -7,7 +7,12 @@
     },
     {
       "name": "release",
-      "debuggable": false
+      "debuggable": false,
+      "nativeLib": {
+        "filter": {
+          "excludes": ["**/x86_64/**"]
+        }
+      }
     }
   ],
   "targets": [
