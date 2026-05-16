@@ -1,7 +1,8 @@
 import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
 import { StorageKeys } from '../constants/StorageKeys'
-import { STORE_NAME_SETTINGS, SettingsPreferencesStore, setAppStorageValue } from './SettingsStorage'
+import { SettingDescriptor, applyDescriptorValue, readDescriptorValue } from './SettingsDescriptor'
+import { STORE_NAME_SETTINGS, SettingsPreferencesStore } from './SettingsStorage'
 
 const STORE_NAME: string = STORE_NAME_SETTINGS
 const KEY_REPLY_DISPLAY_MODE: string = StorageKeys.REPLY_DISPLAY_MODE
@@ -11,6 +12,26 @@ const MODE_THREAD_REDUNDANT: string = 'threadRedundant'
 const MODE_OP: string = 'op'
 const MODE_ORIGIN: string = 'origin'
 
+function normalizeReplyDisplayMode(mode: string): string {
+  const value = (mode || '').trim()
+  if (value === MODE_THREAD_WITH_MENTION || value === MODE_THREAD_REDUNDANT || value === MODE_OP || value === MODE_ORIGIN) {
+    return value
+  }
+  return MODE_THREAD
+}
+
+class ReplyDisplayModeDescriptor implements SettingDescriptor<string> {
+  readonly storageKey: string = StorageKeys.REPLY_DISPLAY_MODE
+  readonly preferenceKey: string = KEY_REPLY_DISPLAY_MODE
+  readonly defaultValue: string = MODE_THREAD
+
+  normalize(mode: string): string {
+    return normalizeReplyDisplayMode(mode)
+  }
+}
+
+export const REPLY_DISPLAY_MODE_DESCRIPTOR: SettingDescriptor<string> = new ReplyDisplayModeDescriptor()
+
 export class ReplyDisplaySettings {
   static readonly MODE_THREAD: string = MODE_THREAD
   static readonly MODE_THREAD_WITH_MENTION: string = MODE_THREAD_WITH_MENTION
@@ -19,7 +40,7 @@ export class ReplyDisplaySettings {
   static readonly MODE_ORIGIN: string = MODE_ORIGIN
 
   static apply(mode: string): void {
-    setAppStorageValue<string>(StorageKeys.REPLY_DISPLAY_MODE, ReplyDisplaySettings.normalizeMode(mode))
+    applyDescriptorValue<string>(REPLY_DISPLAY_MODE_DESCRIPTOR, mode)
   }
 
   static async load(context: common.UIAbilityContext): Promise<string> {
@@ -33,17 +54,16 @@ export class ReplyDisplaySettings {
   }
 
   static async loadFromStore(store: SettingsPreferencesStore): Promise<string> {
-    const mode = ReplyDisplaySettings.normalizeMode(store.getSync(KEY_REPLY_DISPLAY_MODE, MODE_THREAD) as string)
-    ReplyDisplaySettings.apply(mode)
-    return mode
+    const normalized = readDescriptorValue<string>(store, REPLY_DISPLAY_MODE_DESCRIPTOR)
+    ReplyDisplaySettings.apply(normalized)
+    return normalized
   }
 
   static async save(context: common.UIAbilityContext, mode: string): Promise<void> {
-    const normalizedMode = ReplyDisplaySettings.normalizeMode(mode)
-    ReplyDisplaySettings.apply(normalizedMode)
+    const normalized = applyDescriptorValue<string>(REPLY_DISPLAY_MODE_DESCRIPTOR, mode)
     try {
       const store = await preferences.getPreferences(context, STORE_NAME)
-      store.putSync(KEY_REPLY_DISPLAY_MODE, normalizedMode)
+      store.putSync(KEY_REPLY_DISPLAY_MODE, normalized)
       store.flushSync()
     } catch (error) {
       const e = error as Error
@@ -52,11 +72,7 @@ export class ReplyDisplaySettings {
   }
 
   static normalizeMode(mode: string): string {
-    const value = (mode || '').trim()
-    if (value === MODE_THREAD_WITH_MENTION || value === MODE_THREAD_REDUNDANT || value === MODE_OP || value === MODE_ORIGIN) {
-      return value
-    }
-    return MODE_THREAD
+    return REPLY_DISPLAY_MODE_DESCRIPTOR.normalize(mode)
   }
 
   static modeText(mode: string): string {
