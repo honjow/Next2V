@@ -3,7 +3,7 @@ import { preferences } from '@kit.ArkData'
 import { ApiConstants } from '../constants/ApiConstants'
 import { StorageKeys } from '../constants/StorageKeys'
 import { HttpClient } from '../network/HttpClient'
-import { STORE_NAME_SETTINGS, setAppStorageValue } from './SettingsStorage'
+import { STORE_NAME_SETTINGS, SettingsPreferencesStore, setAppStorageValue } from './SettingsStorage'
 
 const STORE_NAME: string = STORE_NAME_SETTINGS
 const KEY_USE_CO_DOMAIN: string = StorageKeys.USE_CO_DOMAIN
@@ -17,13 +17,17 @@ export class ApiDomainSettings {
   static async load(context: common.UIAbilityContext): Promise<boolean> {
     try {
       const store = await preferences.getPreferences(context, STORE_NAME)
-      const useCoDomain = store.getSync(KEY_USE_CO_DOMAIN, false) as boolean
-      ApiDomainSettings.apply(useCoDomain)
-      return useCoDomain
+      return ApiDomainSettings.loadFromStore(store)
     } catch (error) {
       const e = error as Error
       throw new Error(e.message || '读取 API 域名设置失败')
     }
+  }
+
+  static async loadFromStore(store: SettingsPreferencesStore): Promise<boolean> {
+    const useCoDomain = store.getSync(KEY_USE_CO_DOMAIN, false) as boolean
+    ApiDomainSettings.apply(useCoDomain)
+    return useCoDomain
   }
 
   static async save(context: common.UIAbilityContext, useCoDomain: boolean): Promise<void> {

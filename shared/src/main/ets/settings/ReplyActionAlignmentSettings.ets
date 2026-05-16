@@ -1,7 +1,7 @@
 import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
 import { StorageKeys } from '../constants/StorageKeys'
-import { STORE_NAME_SETTINGS, setAppStorageValue } from './SettingsStorage'
+import { STORE_NAME_SETTINGS, SettingsPreferencesStore, setAppStorageValue } from './SettingsStorage'
 
 const STORE_NAME: string = STORE_NAME_SETTINGS
 const KEY_REPLY_ACTION_ALIGNMENT_MODE: string = StorageKeys.REPLY_ACTION_ALIGNMENT_MODE
@@ -30,15 +30,19 @@ export class ReplyActionAlignmentSettings {
   static async load(context: common.UIAbilityContext): Promise<ReplyActionAlignmentMode> {
     try {
       const store = await preferences.getPreferences(context, STORE_NAME)
-      const mode = ReplyActionAlignmentSettings.normalizeMode(
-        store.getSync(KEY_REPLY_ACTION_ALIGNMENT_MODE, ReplyActionAlignmentSettings.MODE_UNSET) as string,
-      )
-      ReplyActionAlignmentSettings.apply(mode)
-      return mode
+      return ReplyActionAlignmentSettings.loadFromStore(store)
     } catch (error) {
       const e = error as Error
       throw new Error(e.message || '读取回复按钮对齐方式失败')
     }
+  }
+
+  static async loadFromStore(store: SettingsPreferencesStore): Promise<ReplyActionAlignmentMode> {
+    const mode = ReplyActionAlignmentSettings.normalizeMode(
+      store.getSync(KEY_REPLY_ACTION_ALIGNMENT_MODE, ReplyActionAlignmentSettings.MODE_UNSET) as string,
+    )
+    ReplyActionAlignmentSettings.apply(mode)
+    return mode
   }
 
   static async save(context: common.UIAbilityContext, mode: string): Promise<void> {

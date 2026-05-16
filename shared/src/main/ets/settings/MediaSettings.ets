@@ -1,7 +1,7 @@
 import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
 import { StorageKeys } from '../constants/StorageKeys'
-import { STORE_NAME_SETTINGS, setAppStorageValue } from './SettingsStorage'
+import { STORE_NAME_SETTINGS, SettingsPreferencesStore, setAppStorageValue } from './SettingsStorage'
 
 const STORE_NAME: string = STORE_NAME_SETTINGS
 // Legacy preferences keys differ from StorageKeys.MEDIA_* AppStorage keys; keep them for compatibility.
@@ -22,16 +22,20 @@ export class MediaSettings {
   static async load(context: common.UIAbilityContext): Promise<MediaSettingsSnapshot> {
     try {
       const store = await preferences.getPreferences(context, STORE_NAME)
-      const autoLoadImages = store.getSync(KEY_AUTO_LOAD_IMAGES, true) as boolean
-      const onlyLoadImagesOnWifi = store.getSync(KEY_ONLY_LOAD_IMAGES_ON_WIFI, false) as boolean
-      MediaSettings.apply(autoLoadImages, onlyLoadImagesOnWifi)
-      return {
-        autoLoadImages: autoLoadImages,
-        onlyLoadImagesOnWifi: onlyLoadImagesOnWifi
-      }
+      return MediaSettings.loadFromStore(store)
     } catch (error) {
       const e = error as Error
       throw new Error(e.message || '读取媒体设置失败')
+    }
+  }
+
+  static async loadFromStore(store: SettingsPreferencesStore): Promise<MediaSettingsSnapshot> {
+    const autoLoadImages = store.getSync(KEY_AUTO_LOAD_IMAGES, true) as boolean
+    const onlyLoadImagesOnWifi = store.getSync(KEY_ONLY_LOAD_IMAGES_ON_WIFI, false) as boolean
+    MediaSettings.apply(autoLoadImages, onlyLoadImagesOnWifi)
+    return {
+      autoLoadImages: autoLoadImages,
+      onlyLoadImagesOnWifi: onlyLoadImagesOnWifi
     }
   }
 
