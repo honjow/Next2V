@@ -853,22 +853,12 @@ function _copyDecodedBase64Text(decoded: string): void {
   }
 }
 
-function _openBase64DecodeDialog(original: string, decoded: string): void {
-  AlertDialog.show({
-    title: "Base64 解码",
-    message: `原文：${_base64OriginalSummary(original)}\n\n${decoded}`,
-    primaryButton: {
-      value: "关闭",
-      action: () => {
-      },
-    },
-    secondaryButton: {
-      value: "复制",
-      action: () => {
-        _copyDecodedBase64Text(decoded);
-      },
-    },
-  });
+function _base64PopupMessage(original: string, decoded: string): string {
+  return `Base64 解码\n\n原文：${_base64OriginalSummary(original)}\n\n${decoded}`;
+}
+
+function _base64PopupKey(token: Base64DecodeToken, tokenIndex: number, scope: string): string {
+  return `${scope}-${tokenIndex}-${token.original}`;
 }
 
 function _base64OriginalSummary(original: string): string {
@@ -877,6 +867,71 @@ function _base64OriginalSummary(original: string): string {
     return value;
   }
   return `${value.slice(0, 16)}…${value.slice(value.length - 8)}`;
+}
+
+function _tokensContainBase64Decode(tokens: Token[]): boolean {
+  if (!tokens || tokens.length === 0) {
+    return false;
+  }
+  for (const token of tokens) {
+    if (!token) {
+      continue;
+    }
+    if (token.type === "base64Decode") {
+      return true;
+    }
+    const children = (token as TokenRecord)["tokens"] as Token[] | undefined;
+    if (Array.isArray(children) && _tokensContainBase64Decode(children)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+@Component
+struct Base64PopupBadge {
+  @Prop token: Base64DecodeToken;
+  @Prop tokenIndex: number = 0;
+  @Prop fontSize: number = RENDER_BODY_FONT_SIZE;
+  @Prop base64PopupScope: string = "inline";
+  @State private isPopupVisible: boolean = false;
+
+  build() {
+    Button() {
+      Text("Base64")
+        .fontSize(Math.max(10, this.fontSize - 2))
+        .fontColor(ThemeConstants.TEXT_LINK)
+    }
+    .type(ButtonType.Normal)
+    .height(Math.max(18, this.fontSize + 6))
+    .padding({ left: ThemeConstants.SPACE_XS, right: ThemeConstants.SPACE_XS })
+    .margin({ left: ThemeConstants.SPACE_XS })
+    .borderRadius(ThemeConstants.RADIUS_SM)
+    .backgroundColor(ThemeConstants.BG_SUB)
+    .stateStyles({
+      pressed: { .backgroundColor(ThemeConstants.BG_SUB) },
+      normal: { .backgroundColor(ThemeConstants.BG_SUB) },
+    })
+    .onClick(() => {
+      this.isPopupVisible = true;
+    })
+    .bindPopup(this.isPopupVisible, {
+      message: _base64PopupMessage(this.token.original, this.token.decoded),
+      placement: Placement.Bottom,
+      primaryButton: {
+        value: "复制",
+        action: () => {
+          _copyDecodedBase64Text(this.token.decoded);
+        },
+      },
+      autoCancel: true,
+      mask: false,
+      enableArrow: true,
+      onStateChange: (event: PopupStateChangeParam) => {
+        this.isPopupVisible = event.isVisible;
+      },
+    });
+  }
 }
 
 @Builder
@@ -952,8 +1007,12 @@ function SelectableInlineTokenSpans(
   reportImageError?: InlineImageErrorReporter,
   availableWidth: number = 0,
   base64DecodeMode: string = ReadingSettings.BASE64_MODE_BADGE,
+  activeBase64PopupKey: string = "",
+  showBase64Popup?: (key: string) => void,
+  hideBase64Popup?: (key: string) => void,
+  base64PopupScope: string = "inline",
 ) {
-  ForEach(tokens, (t: Token) => {
+  ForEach(tokens, (t: Token, tokenIndex: number) => {
     if (t.type === "strong") {
       Span((t as Tokens.Strong).text)
         .fontSize(fontSize)
@@ -1006,9 +1065,6 @@ function SelectableInlineTokenSpans(
           .textBackgroundStyle({
             color: ThemeConstants.BG_SUB,
             radius: ThemeConstants.RADIUS_SM,
-          })
-          .onClick(() => {
-            _openBase64DecodeDialog((t as Base64DecodeToken).original, (t as Base64DecodeToken).decoded);
           });
       }
     } else if (t.type === "del") {
@@ -1039,6 +1095,72 @@ function SelectableInlineTokenSpans(
 }
 
 @Component
+struct SelectableInlineTokenFlow {
+  @Prop tokens: Token[] = [];
+  @Prop fontSize: number = RENDER_BODY_FONT_SIZE;
+  @Prop fontColor: ResourceColor = ThemeConstants.TEXT_PRIMARY;
+  @Prop fontWeight: FontWeight = FontWeight.Regular;
+  @Prop lineHeight: number = RENDER_BODY_LINE_HEIGHT;
+  @Prop textAlign: TextAlign = TextAlign.Start;
+  @Prop wordBreak: WordBreak = WordBreak.BREAK_WORD;
+  @Prop copyOption: CopyOptions = CopyOptions.LocalDevice;
+  @Prop textSelectable: TextSelectableMode = TextSelectableMode.SELECTABLE_FOCUSABLE;
+  @Prop options: MarkdownOptions;
+  @Prop inlineImageSizeRecords: InlineImageSizeRecord[] = [];
+  reportImageComplete?: InlineImageCompleteReporter;
+  reportImageError?: InlineImageErrorReporter;
+  @Prop availableWidth: number = 0;
+  @Prop base64DecodeMode: string = ReadingSettings.BASE64_MODE_BADGE;
+  @Prop activeBase64PopupKey: string = "";
+  showBase64Popup?: (key: string) => void;
+  hideBase64Popup?: (key: string) => void;
+  @Prop base64PopupScope: string = "inline";
+
+  build() {
+    Flex({ wrap: FlexWrap.Wrap }) {
+      ForEach(this.tokens, (t: Token, tokenIndex: number) => {
+        if (t.type === "base64Decode" && this.base64DecodeMode === ReadingSettings.BASE64_MODE_BADGE) {
+          Base64PopupBadge({
+            token: t as Base64DecodeToken,
+            tokenIndex: tokenIndex,
+            fontSize: this.fontSize,
+            base64PopupScope: this.base64PopupScope,
+          });
+        } else if (t.type === "base64Decode" && this.base64DecodeMode === ReadingSettings.BASE64_MODE_OFF) {
+          Blank().width(0).height(0);
+        } else {
+          Text() {
+            SelectableInlineTokenSpans(
+              [t],
+              this.fontSize,
+              this.options,
+              this.inlineImageSizeRecords,
+              this.reportImageComplete,
+              this.reportImageError,
+              this.availableWidth,
+              this.base64DecodeMode,
+              this.activeBase64PopupKey,
+              this.showBase64Popup,
+              this.hideBase64Popup,
+              `${this.base64PopupScope}-${tokenIndex}`,
+            );
+          }
+          .fontSize(this.fontSize)
+          .fontWeight(this.fontWeight)
+          .fontColor(this.fontColor)
+          .lineHeight(this.lineHeight)
+          .textAlign(this.textAlign)
+          .wordBreak(this.wordBreak)
+          .copyOption(this.copyOption)
+          .textSelectable(this.textSelectable)
+        }
+      }, (t: Token, tokenIndex: number) => `${String((t as TokenRecord)["type"] ?? "token")}-${String((t as TokenRecord)["raw"] ?? (t as TokenRecord)["text"] ?? tokenIndex)}-${tokenIndex}`)
+    }
+    .width("100%")
+  }
+}
+
+@Component
 struct MarkdownParagraph {
   @Prop paragraphToken: Tokens.Paragraph;
   @Prop options: MarkdownOptions;
@@ -1050,6 +1172,20 @@ struct MarkdownParagraph {
   @StorageLink(StorageKeys.READING_LINE_HEIGHT) readingLineHeight: number = ThemeConstants.LINE_HEIGHT_BODY;
   @StorageLink(StorageKeys.READING_BASE64_DECODE_MODE) base64DecodeMode: string = ReadingSettings.BASE64_MODE_BADGE;
   @State private paragraphAvailableWidth: number = 0;
+  @State private activeBase64PopupKey: string = "";
+
+  private showBase64Popup(key: string): void {
+    this.activeBase64PopupKey = "";
+    setTimeout(() => {
+      this.activeBase64PopupKey = key;
+    }, 20);
+  }
+
+  private hideBase64Popup(key: string): void {
+    if (this.activeBase64PopupKey === key) {
+      this.activeBase64PopupKey = "";
+    }
+  }
 
   private updateParagraphAvailableWidth(value: Area): void {
     this.paragraphAvailableWidth = _areaWidth(value);
@@ -1106,77 +1242,170 @@ struct MarkdownParagraph {
               reportImageError: this.reportImageError,
             });
           } else if (token && token.type !== "br" && String((token as TokenRecord)["text"] ?? (token as TokenRecord)["raw"] ?? "").trim().length > 0) {
-            Text() {
-              SelectableInlineTokenSpans(
-                [token],
-                this.bodyFontSize(),
-                this.options,
-                this.inlineImageSizeRecords,
-                this.reportImageComplete,
-                this.reportImageError,
-                this.inlineContentMaxWidth(),
-                this.base64DecodeMode,
-              );
+            if (this.base64DecodeMode === ReadingSettings.BASE64_MODE_BADGE && _tokensContainBase64Decode([token])) {
+              SelectableInlineTokenFlow({
+                tokens: [token],
+                fontSize: this.bodyFontSize(),
+                fontColor: ThemeConstants.TEXT_PRIMARY,
+                fontWeight: FontWeight.Regular,
+                lineHeight: this.bodyLineHeight(),
+                textAlign: TextAlign.Start,
+                wordBreak: WordBreak.BREAK_WORD,
+                copyOption: CopyOptions.LocalDevice,
+                textSelectable: TextSelectableMode.SELECTABLE_FOCUSABLE,
+                options: this.options,
+                inlineImageSizeRecords: this.inlineImageSizeRecords,
+                reportImageComplete: this.reportImageComplete,
+                reportImageError: this.reportImageError,
+                availableWidth: this.inlineContentMaxWidth(),
+                base64DecodeMode: this.base64DecodeMode,
+                activeBase64PopupKey: this.activeBase64PopupKey,
+                showBase64Popup: (key: string) => { this.showBase64Popup(key); },
+                hideBase64Popup: (key: string) => { this.hideBase64Popup(key); },
+                base64PopupScope: `paragraph-block-${tokenIdx}`,
+              })
+              .onAreaChange((_oldValue: Area, newValue: Area) => {
+                this.updateParagraphAvailableWidth(newValue);
+              })
+            } else {
+              Text() {
+                SelectableInlineTokenSpans(
+                  [token],
+                  this.bodyFontSize(),
+                  this.options,
+                  this.inlineImageSizeRecords,
+                  this.reportImageComplete,
+                  this.reportImageError,
+                  this.inlineContentMaxWidth(),
+                  this.base64DecodeMode,
+                  this.activeBase64PopupKey,
+                  (key: string) => { this.showBase64Popup(key); },
+                  (key: string) => { this.hideBase64Popup(key); },
+                  `paragraph-block-${tokenIdx}`,
+                );
+              }
+              .fontSize(this.bodyFontSize())
+              .fontColor(ThemeConstants.TEXT_PRIMARY)
+              .lineHeight(this.bodyLineHeight())
+              .textAlign(TextAlign.Start)
+              .width("100%")
+              .onAreaChange((_oldValue: Area, newValue: Area) => {
+                this.updateParagraphAvailableWidth(newValue);
+              })
+              .copyOption(CopyOptions.LocalDevice)
+              .textSelectable(TextSelectableMode.SELECTABLE_FOCUSABLE)
             }
-            .fontSize(this.bodyFontSize())
-            .fontColor(ThemeConstants.TEXT_PRIMARY)
-            .lineHeight(this.bodyLineHeight())
-            .textAlign(TextAlign.Start)
-            .width("100%")
-            .onAreaChange((_oldValue: Area, newValue: Area) => {
-              this.updateParagraphAvailableWidth(newValue);
-            })
-            .copyOption(CopyOptions.LocalDevice)
-            .textSelectable(TextSelectableMode.SELECTABLE_FOCUSABLE)
           }
         }, (token: Token, tokenIdx: number) => `${String((token as TokenRecord)["type"] ?? "token")}-${String((token as TokenRecord)["raw"] ?? (token as TokenRecord)["href"] ?? tokenIdx)}-${tokenIdx}`)
       }
       .width("100%")
       .alignItems(HorizontalAlign.Start)
     } else if (this.hasInlineImage()) {
-      Text() {
-        SelectableInlineTokenSpans(
-          this.inlineTokens(),
-          this.bodyFontSize(),
-          this.options,
-          this.inlineImageSizeRecords,
-          this.reportImageComplete,
-          this.reportImageError,
-          this.inlineContentMaxWidth(),
-          this.base64DecodeMode,
-        );
+      if (this.base64DecodeMode === ReadingSettings.BASE64_MODE_BADGE && _tokensContainBase64Decode(this.inlineTokens())) {
+        SelectableInlineTokenFlow({
+          tokens: this.inlineTokens(),
+          fontSize: this.bodyFontSize(),
+          fontColor: ThemeConstants.TEXT_PRIMARY,
+          fontWeight: FontWeight.Regular,
+          lineHeight: this.bodyLineHeight(),
+          textAlign: TextAlign.Start,
+          wordBreak: WordBreak.BREAK_WORD,
+          copyOption: CopyOptions.LocalDevice,
+          textSelectable: TextSelectableMode.SELECTABLE_FOCUSABLE,
+          options: this.options,
+          inlineImageSizeRecords: this.inlineImageSizeRecords,
+          reportImageComplete: this.reportImageComplete,
+          reportImageError: this.reportImageError,
+          availableWidth: this.inlineContentMaxWidth(),
+          base64DecodeMode: this.base64DecodeMode,
+          activeBase64PopupKey: this.activeBase64PopupKey,
+          showBase64Popup: (key: string) => { this.showBase64Popup(key); },
+          hideBase64Popup: (key: string) => { this.hideBase64Popup(key); },
+          base64PopupScope: "paragraph-inline",
+        })
+        .onAreaChange((_oldValue: Area, newValue: Area) => {
+          this.updateParagraphAvailableWidth(newValue);
+        })
+      } else {
+        Text() {
+          SelectableInlineTokenSpans(
+            this.inlineTokens(),
+            this.bodyFontSize(),
+            this.options,
+            this.inlineImageSizeRecords,
+            this.reportImageComplete,
+            this.reportImageError,
+            this.inlineContentMaxWidth(),
+            this.base64DecodeMode,
+            this.activeBase64PopupKey,
+            (key: string) => { this.showBase64Popup(key); },
+            (key: string) => { this.hideBase64Popup(key); },
+            "paragraph-inline",
+          );
+        }
+        .fontSize(this.bodyFontSize())
+        .fontColor(ThemeConstants.TEXT_PRIMARY)
+        .lineHeight(this.bodyLineHeight())
+        .textAlign(TextAlign.Start)
+        .width("100%")
+        .onAreaChange((_oldValue: Area, newValue: Area) => {
+          this.updateParagraphAvailableWidth(newValue);
+        })
       }
-      .fontSize(this.bodyFontSize())
-      .fontColor(ThemeConstants.TEXT_PRIMARY)
-      .lineHeight(this.bodyLineHeight())
-      .textAlign(TextAlign.Start)
-      .width("100%")
-      .onAreaChange((_oldValue: Area, newValue: Area) => {
-        this.updateParagraphAvailableWidth(newValue);
-      })
     } else {
-      Text() {
-        SelectableInlineTokenSpans(
-          this.inlineTokens(),
-          this.bodyFontSize(),
-          this.options,
-          this.inlineImageSizeRecords,
-          this.reportImageComplete,
-          this.reportImageError,
-          this.inlineContentMaxWidth(),
-          this.base64DecodeMode,
-        );
+      if (this.base64DecodeMode === ReadingSettings.BASE64_MODE_BADGE && _tokensContainBase64Decode(this.inlineTokens())) {
+        SelectableInlineTokenFlow({
+          tokens: this.inlineTokens(),
+          fontSize: this.bodyFontSize(),
+          fontColor: ThemeConstants.TEXT_PRIMARY,
+          fontWeight: FontWeight.Regular,
+          lineHeight: this.bodyLineHeight(),
+          textAlign: TextAlign.Start,
+          wordBreak: WordBreak.BREAK_WORD,
+          copyOption: CopyOptions.LocalDevice,
+          textSelectable: TextSelectableMode.SELECTABLE_FOCUSABLE,
+          options: this.options,
+          inlineImageSizeRecords: this.inlineImageSizeRecords,
+          reportImageComplete: this.reportImageComplete,
+          reportImageError: this.reportImageError,
+          availableWidth: this.inlineContentMaxWidth(),
+          base64DecodeMode: this.base64DecodeMode,
+          activeBase64PopupKey: this.activeBase64PopupKey,
+          showBase64Popup: (key: string) => { this.showBase64Popup(key); },
+          hideBase64Popup: (key: string) => { this.hideBase64Popup(key); },
+          base64PopupScope: "paragraph-text",
+        })
+        .onAreaChange((_oldValue: Area, newValue: Area) => {
+          this.updateParagraphAvailableWidth(newValue);
+        })
+      } else {
+        Text() {
+          SelectableInlineTokenSpans(
+            this.inlineTokens(),
+            this.bodyFontSize(),
+            this.options,
+            this.inlineImageSizeRecords,
+            this.reportImageComplete,
+            this.reportImageError,
+            this.inlineContentMaxWidth(),
+            this.base64DecodeMode,
+            this.activeBase64PopupKey,
+            (key: string) => { this.showBase64Popup(key); },
+            (key: string) => { this.hideBase64Popup(key); },
+            "paragraph-text",
+          );
+        }
+        .fontSize(this.bodyFontSize())
+        .fontColor(ThemeConstants.TEXT_PRIMARY)
+        .lineHeight(this.bodyLineHeight())
+        .textAlign(TextAlign.Start)
+        .width("100%")
+        .onAreaChange((_oldValue: Area, newValue: Area) => {
+          this.updateParagraphAvailableWidth(newValue);
+        })
+        .copyOption(CopyOptions.LocalDevice)
+        .textSelectable(TextSelectableMode.SELECTABLE_FOCUSABLE)
       }
-      .fontSize(this.bodyFontSize())
-      .fontColor(ThemeConstants.TEXT_PRIMARY)
-      .lineHeight(this.bodyLineHeight())
-      .textAlign(TextAlign.Start)
-      .width("100%")
-      .onAreaChange((_oldValue: Area, newValue: Area) => {
-        this.updateParagraphAvailableWidth(newValue);
-      })
-      .copyOption(CopyOptions.LocalDevice)
-      .textSelectable(TextSelectableMode.SELECTABLE_FOCUSABLE)
     }
   }
 }
@@ -1518,6 +1747,20 @@ struct MarkdownTable {
   @StorageLink(StorageKeys.READING_FONT_SIZE) readingFontSize: number = ReadingSettings.TEXT_SCALE_DEFAULT;
   @StorageLink(StorageKeys.READING_BASE64_DECODE_MODE) base64DecodeMode: string = ReadingSettings.BASE64_MODE_BADGE;
   @State private tableAvailableWidth: number = 0;
+  @State private activeBase64PopupKey: string = "";
+
+  private showBase64Popup(key: string): void {
+    this.activeBase64PopupKey = "";
+    setTimeout(() => {
+      this.activeBase64PopupKey = key;
+    }, 20);
+  }
+
+  private hideBase64Popup(key: string): void {
+    if (this.activeBase64PopupKey === key) {
+      this.activeBase64PopupKey = "";
+    }
+  }
 
   private updateTableAvailableWidth(value: Area): void {
     this.tableAvailableWidth = _areaWidth(value);
@@ -1854,39 +2097,79 @@ struct MarkdownTable {
     return TextAlign.Start;
   }
 
-  @Builder TableCell(cell: RenderTableCell, header: boolean, columnIndex: number) {
-    Text() {
-      SelectableInlineTokenSpans(
-        this.cellTokens(cell),
-        this.bodyFontSize(),
-        this.options,
-        this.inlineImageSizeRecords,
-        this.reportImageComplete,
-        this.reportImageError,
-        0,
-        this.base64DecodeMode,
-      );
+  @Builder TableCell(cell: RenderTableCell, header: boolean, columnIndex: number, rowIndex: number) {
+    if (this.base64DecodeMode === ReadingSettings.BASE64_MODE_BADGE && _tokensContainBase64Decode(this.cellTokens(cell))) {
+      SelectableInlineTokenFlow({
+        tokens: this.cellTokens(cell),
+        fontSize: this.bodyFontSize(),
+        fontColor: ThemeConstants.TEXT_PRIMARY,
+        fontWeight: header ? FontWeight.Medium : FontWeight.Regular,
+        lineHeight: this.bodyLineHeight(),
+        textAlign: this.cellTextAlign(cell),
+        wordBreak: WordBreak.BREAK_WORD,
+        copyOption: CopyOptions.LocalDevice,
+        textSelectable: TextSelectableMode.SELECTABLE_FOCUSABLE,
+        options: this.options,
+        inlineImageSizeRecords: this.inlineImageSizeRecords,
+        reportImageComplete: this.reportImageComplete,
+        reportImageError: this.reportImageError,
+        availableWidth: 0,
+        base64DecodeMode: this.base64DecodeMode,
+        activeBase64PopupKey: this.activeBase64PopupKey,
+        showBase64Popup: (key: string) => { this.showBase64Popup(key); },
+        hideBase64Popup: (key: string) => { this.hideBase64Popup(key); },
+        base64PopupScope: `table-${rowIndex}-${columnIndex}`,
+      })
+      .width(this.columnWidth(columnIndex))
+      .constraintSize({ minWidth: this.columnWidth(columnIndex), maxWidth: this.columnWidth(columnIndex) })
+      .padding({
+        left: ThemeConstants.SPACE_SM,
+        right: ThemeConstants.SPACE_SM,
+        top: ThemeConstants.SPACE_XS,
+        bottom: ThemeConstants.SPACE_XS,
+      })
+      .border({
+        width: { right: columnIndex < this.columnCount() - 1 ? 1 : 0 },
+        color: TABLE_BORDER_COLOR,
+      })
+    } else {
+      Text() {
+        SelectableInlineTokenSpans(
+          this.cellTokens(cell),
+          this.bodyFontSize(),
+          this.options,
+          this.inlineImageSizeRecords,
+          this.reportImageComplete,
+          this.reportImageError,
+          0,
+          this.base64DecodeMode,
+          this.activeBase64PopupKey,
+          (key: string) => { this.showBase64Popup(key); },
+          (key: string) => { this.hideBase64Popup(key); },
+          `table-${rowIndex}-${columnIndex}`,
+        );
+      }
+      .fontSize(this.bodyFontSize())
+      .fontWeight(header ? FontWeight.Medium : FontWeight.Regular)
+      .fontColor(ThemeConstants.TEXT_PRIMARY)
+      .lineHeight(this.bodyLineHeight())
+      .textAlign(this.cellTextAlign(cell))
+      .width(this.columnWidth(columnIndex))
+      .constraintSize({ minWidth: this.columnWidth(columnIndex), maxWidth: this.columnWidth(columnIndex) })
+      .wordBreak(WordBreak.BREAK_WORD)
+      .padding({
+        left: ThemeConstants.SPACE_SM,
+        right: ThemeConstants.SPACE_SM,
+        top: ThemeConstants.SPACE_XS,
+        bottom: ThemeConstants.SPACE_XS,
+      })
+      .copyOption(CopyOptions.LocalDevice)
+      .textSelectable(TextSelectableMode.SELECTABLE_FOCUSABLE)
+      .border({
+        width: { right: columnIndex < this.columnCount() - 1 ? 1 : 0 },
+        color: TABLE_BORDER_COLOR,
+      });
     }
-    .fontSize(this.bodyFontSize())
-    .fontWeight(header ? FontWeight.Medium : FontWeight.Regular)
-    .fontColor(ThemeConstants.TEXT_PRIMARY)
-    .lineHeight(this.bodyLineHeight())
-    .textAlign(this.cellTextAlign(cell))
-    .width(this.columnWidth(columnIndex))
-    .constraintSize({ minWidth: this.columnWidth(columnIndex), maxWidth: this.columnWidth(columnIndex) })
-    .wordBreak(WordBreak.BREAK_WORD)
-    .padding({
-      left: ThemeConstants.SPACE_SM,
-      right: ThemeConstants.SPACE_SM,
-      top: ThemeConstants.SPACE_XS,
-      bottom: ThemeConstants.SPACE_XS,
-    })
-    .copyOption(CopyOptions.LocalDevice)
-    .textSelectable(TextSelectableMode.SELECTABLE_FOCUSABLE)
-    .border({
-      width: { right: columnIndex < this.columnCount() - 1 ? 1 : 0 },
-      color: TABLE_BORDER_COLOR,
-    });
   }
 
   build() {
@@ -1895,7 +2178,7 @@ struct MarkdownTable {
         ForEach(this.normalizedRows(), (row: RenderTableCell[], rowIndex: number) => {
           Row() {
             ForEach(this.paddedRow(row), (cell: RenderTableCell, cellIndex: number) => {
-              this.TableCell(cell, this.isHeaderRow(rowIndex), cellIndex);
+              this.TableCell(cell, this.isHeaderRow(rowIndex), cellIndex, rowIndex);
             }, (cell: RenderTableCell, cellIndex: number) => `${rowIndex}-${cellIndex}-${cell.text}`)
           }
           .width(this.tableContentWidth())
@@ -2339,6 +2622,20 @@ export struct MarkdownContent {
   @State private tokens: Token[] = [];
   @State private inlineImageSizeRecords: InlineImageSizeRecord[] = [];
   @State private contentAvailableWidth: number = 0;
+  @State private activeBase64PopupKey: string = "";
+
+  private showBase64Popup(key: string): void {
+    this.activeBase64PopupKey = "";
+    setTimeout(() => {
+      this.activeBase64PopupKey = key;
+    }, 20);
+  }
+
+  private hideBase64Popup(key: string): void {
+    if (this.activeBase64PopupKey === key) {
+      this.activeBase64PopupKey = "";
+    }
+  }
 
   aboutToAppear() {
     this.refreshTokens();
@@ -4485,25 +4782,53 @@ export struct MarkdownContent {
         reportImageError: (url: string, event?: MarkdownImageErrorEvent) => { this.reportInlineImageError(url, event); },
       });
     } else if (token.type === "heading") {
-      Text() {
-        SelectableInlineTokenSpans(
-          this.headingInlineTokens(token),
-          this.headingSize(token),
-          this.markdownOptions(),
-          this.inlineImageSizeRecords,
-          (url: string, event?: MarkdownImageCompleteEvent) => { this.reportInlineImageComplete(url, event); },
-          (url: string, event?: MarkdownImageErrorEvent) => { this.reportInlineImageError(url, event); },
-          this.contentAvailableWidth,
-          this.base64DecodeMode,
-        );
+      if (this.base64DecodeMode === ReadingSettings.BASE64_MODE_BADGE && _tokensContainBase64Decode(this.headingInlineTokens(token))) {
+        SelectableInlineTokenFlow({
+          tokens: this.headingInlineTokens(token),
+          fontSize: this.headingSize(token),
+          fontColor: this.headingColor(token),
+          fontWeight: this.headingWeight(token),
+          lineHeight: this.headingLineHeight(token),
+          textAlign: TextAlign.Start,
+          wordBreak: WordBreak.BREAK_WORD,
+          copyOption: CopyOptions.LocalDevice,
+          textSelectable: TextSelectableMode.SELECTABLE_FOCUSABLE,
+          options: this.markdownOptions(),
+          inlineImageSizeRecords: this.inlineImageSizeRecords,
+          reportImageComplete: (url: string, event?: MarkdownImageCompleteEvent) => { this.reportInlineImageComplete(url, event); },
+          reportImageError: (url: string, event?: MarkdownImageErrorEvent) => { this.reportInlineImageError(url, event); },
+          availableWidth: this.contentAvailableWidth,
+          base64DecodeMode: this.base64DecodeMode,
+          activeBase64PopupKey: this.activeBase64PopupKey,
+          showBase64Popup: (key: string) => { this.showBase64Popup(key); },
+          hideBase64Popup: (key: string) => { this.hideBase64Popup(key); },
+          base64PopupScope: `heading-${String((token as TokenRecord)["raw"] ?? (token as TokenRecord)["text"] ?? "")}`,
+        })
+      } else {
+        Text() {
+          SelectableInlineTokenSpans(
+            this.headingInlineTokens(token),
+            this.headingSize(token),
+            this.markdownOptions(),
+            this.inlineImageSizeRecords,
+            (url: string, event?: MarkdownImageCompleteEvent) => { this.reportInlineImageComplete(url, event); },
+            (url: string, event?: MarkdownImageErrorEvent) => { this.reportInlineImageError(url, event); },
+            this.contentAvailableWidth,
+            this.base64DecodeMode,
+            this.activeBase64PopupKey,
+            (key: string) => { this.showBase64Popup(key); },
+            (key: string) => { this.hideBase64Popup(key); },
+            `heading-${String((token as TokenRecord)["raw"] ?? (token as TokenRecord)["text"] ?? "")}`,
+          );
+        }
+          .fontSize(this.headingSize(token))
+          .fontWeight(this.headingWeight(token))
+          .fontColor(this.headingColor(token))
+          .lineHeight(this.headingLineHeight(token))
+          .width("100%")
+          .copyOption(CopyOptions.LocalDevice)
+          .textSelectable(TextSelectableMode.SELECTABLE_FOCUSABLE);
       }
-        .fontSize(this.headingSize(token))
-        .fontWeight(this.headingWeight(token))
-        .fontColor(this.headingColor(token))
-        .lineHeight(this.headingLineHeight(token))
-        .width("100%")
-        .copyOption(CopyOptions.LocalDevice)
-        .textSelectable(TextSelectableMode.SELECTABLE_FOCUSABLE);
     } else if (token.type === "space" || token.type === "html") {
     } else if (this.plainTokenText(token).length > 0) {
       Text(this.plainTokenText(token))
