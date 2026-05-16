@@ -1553,44 +1553,66 @@ struct MarkdownTable {
     return widths;
   }
 
-  private allocatedColumnWidths(): number[] {
-    const natural = this.naturalColumnWidths();
-    const readableMin = this.columnReadableMinWidths();
-    let naturalTotal = 0;
-    for (const width of natural) {
-      naturalTotal += width;
-    }
-    const availableWidth = this.tableAvailableWidth;
-    if (availableWidth <= 0 || naturalTotal <= availableWidth) {
-      return natural;
-    }
+  private visibleCompactMinWidth(): number {
+    return Math.ceil(this.bodyFontSize() * 4 + TABLE_CELL_HORIZONTAL_PADDING);
+  }
 
-    let readableTotal = 0;
-    for (const width of readableMin) {
-      readableTotal += width;
-    }
-    if (readableTotal > availableWidth) {
-      return readableMin;
-    }
-
-    const extraWidth = availableWidth - readableTotal;
-    const compressionCap = Math.floor(availableWidth / Math.max(1, natural.length) * 1.5);
-    const cappedTargets = natural.map((width: number, index: number) => {
-      if (width <= readableMin[index]) {
-        return readableMin[index];
+  private longestUnbreakableSegment(text: string): string {
+    const segments = (text ?? "").match(/[^\s\u3000]+/g) ?? [];
+    let longest = "";
+    for (const segment of segments) {
+      if (segment.length > longest.length) {
+        longest = segment;
       }
-      // Compression allocator cap: derive the waterline from measured available width and column
-      // count so one prose-heavy natural column cannot absorb all spare width and hide following
-      // protected columns. This is not a product width bucket; natural tables that fit still use
-      // their exact content widths above.
-      return Math.max(readableMin[index], Math.min(width, compressionCap));
-    });
-    const allocated = readableMin.map((width: number) => width);
-    let remaining = extraWidth;
+    }
+    return longest;
+  }
+
+  private hardUnbreakableIntrinsicMinWidth(cell: RenderTableCell | undefined): number {
+    if (!cell) {
+      return 0;
+    }
+    const longestUnbreakableSegment = this.longestUnbreakableSegment(cell.text ?? "");
+    if (longestUnbreakableSegment.length === 0) {
+      return 0;
+    }
+    const isUrlLike = /^https?:\/\//i.test(longestUnbreakableSegment);
+    const isHashLike = /^[A-Fa-f0-9]{32,}$/.test(longestUnbreakableSegment);
+    const isLongCodeLike = /^[\x21-\x7E]+$/.test(longestUnbreakableSegment) && longestUnbreakableSegment.length >= 48;
+    if (!isUrlLike && !isHashLike && !isLongCodeLike) {
+      return 0;
+    }
+    return Math.ceil(this.textDisplayUnits(longestUnbreakableSegment) * this.bodyFontSize() + TABLE_CELL_HORIZONTAL_PADDING);
+  }
+
+  private hardUnbreakableColumnMinWidths(): number[] {
+    const widths: number[] = [];
+    const count = this.columnCount();
+    for (let index = 0; index < count; index++) {
+      let minWidth = this.hardUnbreakableIntrinsicMinWidth(this.tableToken.headers[index]);
+      for (const row of this.tableToken.rows) {
+        minWidth = Math.max(minWidth, this.hardUnbreakableIntrinsicMinWidth(row[index]));
+      }
+      widths.push(minWidth);
+    }
+    return widths;
+  }
+
+  private sumWidths(widths: number[]): number {
+    let total = 0;
+    for (const width of widths) {
+      total += width;
+    }
+    return total;
+  }
+
+  private distributeColumnWidths(baseWidths: number[], targetWidths: number[], availableWidth: number): number[] {
+    const allocated = baseWidths.map((width: number) => width);
+    let remaining = availableWidth - this.sumWidths(allocated);
     while (remaining > 0) {
       const flexibleIndexes: number[] = [];
       for (let index = 0; index < allocated.length; index++) {
-        if (allocated[index] < cappedTargets[index]) {
+        if (allocated[index] < targetWidths[index]) {
           flexibleIndexes.push(index);
         }
       }
@@ -1603,7 +1625,7 @@ struct MarkdownTable {
         if (remaining <= 0) {
           break;
         }
-        const add = Math.min(share, remaining, cappedTargets[index] - allocated[index]);
+        const add = Math.min(share, remaining, targetWidths[index] - allocated[index]);
         allocated[index] += add;
         remaining -= add;
         consumed += add;
@@ -1612,7 +1634,61 @@ struct MarkdownTable {
         break;
       }
     }
+    let index = 0;
+    while (remaining > 0 && allocated.length > 0) {
+      allocated[index] += 1;
+      remaining -= 1;
+      index = (index + 1) % allocated.length;
+    }
     return allocated;
+  }
+
+  private allocatedColumnWidths(): number[] {
+    const natural = this.naturalColumnWidths();
+    const readableMin = this.columnReadableMinWidths();
+    let naturalTotal = 0;
+    for (const width of natural) {
+      naturalTotal += width;
+    }
+    const availableWidth = this.tableAvailableWidth;
+    if (availableWidth <= 0 || naturalTotal <= availableWidth) {
+      return natural;
+    }
+
+    const readableTotal = this.sumWidths(readableMin);
+    const hardUnbreakableColumnMinWidths = this.hardUnbreakableColumnMinWidths();
+    const hardUnbreakableTotal = this.sumWidths(hardUnbreakableColumnMinWidths);
+    if (hardUnbreakableTotal > availableWidth) {
+      return hardUnbreakableColumnMinWidths.map((width: number, index: number) => {
+        return Math.max(width, this.visibleCompactMinWidth(), Math.min(readableMin[index], this.visibleCompactMinWidth()));
+      });
+    }
+    if (readableTotal > availableWidth) {
+      const compactMin = natural.map((_width: number, index: number) => {
+        return Math.max(hardUnbreakableColumnMinWidths[index], Math.min(readableMin[index], this.visibleCompactMinWidth()));
+      });
+      if (this.sumWidths(compactMin) > availableWidth) {
+        return compactMin;
+      }
+      const compressionCap = Math.floor(availableWidth / Math.max(1, natural.length) * 1.5);
+      const compactTargets = natural.map((width: number, index: number) => {
+        return Math.max(compactMin[index], Math.min(width, compressionCap));
+      });
+      return this.distributeColumnWidths(compactMin, compactTargets, availableWidth);
+    }
+
+    const compressionCap = Math.floor(availableWidth / Math.max(1, natural.length) * 1.5);
+    const cappedTargets = natural.map((width: number, index: number) => {
+      if (width <= readableMin[index]) {
+        return readableMin[index];
+      }
+      // Compression allocator cap: derive the waterline from measured available width and column
+      // count so one prose-heavy natural column cannot absorb all spare width and hide following
+      // protected columns. This is not a product width bucket; natural tables that fit still use
+      // their exact content widths above.
+      return Math.max(readableMin[index], Math.min(width, compressionCap));
+    });
+    return this.distributeColumnWidths(readableMin, cappedTargets, availableWidth);
   }
 
   private columnWidth(index: number): number {
