@@ -62,6 +62,11 @@ export { Base64DecodeUtils } from './utils/Base64DecodeUtils'
 export type { Base64DecodeResult } from './utils/Base64DecodeUtils'
 export { ReplyDisplaySettings } from './settings/ReplyDisplaySettings'
 export { ReplyCardStyleSettings } from './settings/ReplyCardStyleSettings'
+export { ReplyActionAlignmentSettings } from './settings/ReplyActionAlignmentSettings'
+export type {
+  ReplyActionAlignmentMode,
+  ReplyActionAlignmentOption,
+} from './settings/ReplyActionAlignmentSettings'
 export { CollectionSettings } from './settings/CollectionSettings'
 export type {
   SavedNode,

@@ -11,6 +11,7 @@ import {
   FoldScreenUtil,
   MediaSettings,
   ReadingSettings,
+  ReplyActionAlignmentSettings,
   ReplyDisplaySettings,
   ReplyCardStyleSettings,
   StorageKeys,
@@ -128,7 +129,18 @@ export default class EntryAbility extends UIAbility {
                                         )
                                       })
                                       .finally(() => {
-                                        this.loadContent(windowStage, win)
+                                        ReplyActionAlignmentSettings.load(this.context)
+                                          .catch((error: Error) => {
+                                            console.error(
+                                              'restore reply action alignment failed: ' + error.message,
+                                            )
+                                            ReplyActionAlignmentSettings.apply(
+                                              ReplyActionAlignmentSettings.MODE_UNSET,
+                                            )
+                                          })
+                                          .finally(() => {
+                                            this.loadContent(windowStage, win)
+                                          })
                                       })
                                   })
                               })

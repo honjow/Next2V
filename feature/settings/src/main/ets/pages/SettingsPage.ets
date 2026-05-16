@@ -17,7 +17,9 @@ import {
   StorageKeys,
   ThemeConstants,
   ThemeSettings,
+  ReplyActionAlignmentSettings,
   ReplyDisplaySettings,
+  MotionHandStateService,
   ReplyCardStyleSettings,
   type CacheStats,
 } from 'shared'
@@ -34,12 +36,16 @@ export struct SettingsPage {
     ReplyDisplaySettings.MODE_THREAD;
   @StorageLink(StorageKeys.REPLY_CARD_STYLE) replyCardStyle: string =
     ReplyCardStyleSettings.STYLE_STANDARD;
+  @StorageLink(StorageKeys.REPLY_ACTION_ALIGNMENT_MODE) replyActionAlignmentMode: string =
+    ReplyActionAlignmentSettings.MODE_UNSET;
+  @StorageLink(StorageKeys.MOTION_HOLDING_HAND_SUPPORTED) motionHoldingHandSupported: boolean = false;
   @StorageLink(StorageKeys.READING_RESTORE_POSITION) readingRestorePosition: boolean = false;
   @StorageLink(StorageKeys.READING_BASE64_DECODE_MODE) base64DecodeMode: string = ReadingSettings.BASE64_MODE_BADGE;
   @State private cacheStats: CacheStats = { topicListCount: 0, topicDetailCount: 0, updatedAt: 0 };
   @State private themeMenuShown: boolean = false;
   @State private replyDisplayMenuShown: boolean = false;
   @State private replyCardStyleMenuShown: boolean = false;
+  @State private replyActionAlignmentMenuShown: boolean = false;
   @State private base64ModeMenuShown: boolean = false;
   @State private apiDomainMenuShown: boolean = false;
   private http: HttpClient = HttpClient.getInstance();
@@ -261,6 +267,26 @@ export struct SettingsPage {
         })
 
       this.SettingsDivider()
+      ConciseListRow({
+        title: '回复按钮对齐方式',
+        trailingText: ReplyActionAlignmentSettings.modeText(
+          this.replyActionAlignmentMode,
+          this.motionHoldingHandSupported,
+        ),
+        showChevron: false,
+        trailingDropdown: true,
+        action: () => {
+          this.showReplyActionAlignmentMenu()
+        },
+      })
+        .bindMenu(this.replyActionAlignmentMenuShown, this.ReplyActionAlignmentMenu, {
+          placement: Placement.BottomRight,
+          aboutToDisappear: () => {
+            this.replyActionAlignmentMenuShown = false
+          },
+        })
+
+      this.SettingsDivider()
 
       this.TogglePreferenceRow('记住阅读位置', this.readingRestorePosition, (value: boolean) => {
         this.updateRestorePosition(value)
@@ -323,6 +349,24 @@ export struct SettingsPage {
   }
 
   @Builder
+  ReplyActionAlignmentMenu() {
+    Menu() {
+      if (this.motionHoldingHandSupported) {
+        this.ReplyActionAlignmentMenuItem(
+          '智感握姿',
+          ReplyActionAlignmentSettings.MODE_SMART_GRIP,
+        )
+      }
+      this.ReplyActionAlignmentMenuItem(
+        '跟随操作',
+        ReplyActionAlignmentSettings.MODE_FOLLOW_OPERATION,
+      )
+      this.ReplyActionAlignmentMenuItem('固定左侧', ReplyActionAlignmentSettings.MODE_FIXED_LEFT)
+      this.ReplyActionAlignmentMenuItem('固定右侧', ReplyActionAlignmentSettings.MODE_FIXED_RIGHT)
+    }
+  }
+
+  @Builder
   Base64ModeMenu() {
     Menu() {
       this.Base64ModeMenuItem('关闭', ReadingSettings.BASE64_MODE_OFF)
@@ -354,6 +398,22 @@ export struct SettingsPage {
           : undefined,
     }).onClick(() => {
       this.updateReplyCardStyle(style)
+    })
+  }
+
+  @Builder
+  ReplyActionAlignmentMenuItem(label: string, mode: string) {
+    MenuItem({
+      content: label,
+      symbolEndIcon:
+        ReplyActionAlignmentSettings.effectiveMode(
+          this.replyActionAlignmentMode,
+          this.motionHoldingHandSupported,
+        ) === mode
+          ? new SymbolGlyphModifier($r('sys.symbol.checkmark'))
+          : undefined,
+    }).onClick(() => {
+      this.updateReplyActionAlignmentMode(mode)
     })
   }
 
@@ -420,6 +480,13 @@ export struct SettingsPage {
     this.replyCardStyleMenuShown = false
     setTimeout(() => {
       this.replyCardStyleMenuShown = true
+    }, 20)
+  }
+
+  private showReplyActionAlignmentMenu(): void {
+    this.replyActionAlignmentMenuShown = false
+    setTimeout(() => {
+      this.replyActionAlignmentMenuShown = true
     }, 20)
   }
 
@@ -515,6 +582,20 @@ export struct SettingsPage {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     ReplyCardStyleSettings.save(context, normalized).catch((error: Error) => {
       console.error('save reply card style failed: ' + error.message)
+    })
+  }
+
+  private updateReplyActionAlignmentMode(mode: string): void {
+    const normalized = ReplyActionAlignmentSettings.normalizeMode(mode)
+    const effective = ReplyActionAlignmentSettings.effectiveMode(
+      normalized,
+      this.motionHoldingHandSupported,
+    )
+    this.replyActionAlignmentMode = normalized
+    MotionHandStateService.applyAlignmentMode(effective)
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    ReplyActionAlignmentSettings.save(context, normalized).catch((error: Error) => {
+      console.error('save reply action alignment mode failed: ' + error.message)
     })
   }
 

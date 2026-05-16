@@ -35,6 +35,7 @@ import {
   TopicDetailParams,
   ImageUtils,
   HtmlEntityUtils,
+  MotionHandStateService,
   defaultSheetOptions,
 } from 'shared'
 import type { V2exReplyThankAction, V2exTopicThankAction } from 'shared'
@@ -73,7 +74,7 @@ export struct TopicDetailPage {
   @StorageLink(StorageKeys.AUTH_COOKIE_CONFIGURED) authCookieConfigured: boolean = false;
   @StorageLink(StorageKeys.MOTION_HAND_EDGE)
   @Watch('onMotionHandEdgeChanged')
-  motionHandEdge: string = 'center';
+  motionHandEdge: string = 'right';
   @StorageLink(StorageKeys.READING_FONT_SIZE) readingFontSize: number =
     ThemeConstants.FONT_SIZE_BODY;
   @StorageLink(StorageKeys.READING_LINE_HEIGHT) readingLineHeight: number =
@@ -102,7 +103,8 @@ export struct TopicDetailPage {
     ReplyDisplaySettings.MODE_THREAD;
   @State private replyDisplayMenuShown: boolean = false;
   @State private replyComposerVisible: boolean = false;
-  @State private visualMotionHandEdge: string = 'center';
+  @State private visualMotionHandEdge: string = 'right';
+  @State private detailRootWidth: number = 0;
   @State private detailRootHeight: number = 0;
   @State private replyComposerInitialContent: string = '';
   @State private thankedReplyIdsJson: string = '[]';
@@ -111,6 +113,8 @@ export struct TopicDetailPage {
   @State private isTitleCoveredByAppbar: boolean = false;
   private readonly HDS_ACTION_BAR_CLEARANCE: number = 72;
   private readonly TOPIC_DETAIL_REPLY_BUTTON_SIZE: number = 56;
+  private readonly FOLLOW_OPERATION_VERTICAL_SCROLL_THRESHOLD: number = 24;
+  private readonly FOLLOW_OPERATION_VERTICAL_DOMINANCE_RATIO: number = 1.2;
   private readonly titleVisibilityHysteresis: number = 4;
   private api: ApiService = new ApiService();
   private topicThankLocked: boolean = false;
@@ -131,6 +135,12 @@ export struct TopicDetailPage {
   private lastReadFloor: number = 0;
   private hasRestoredReadPosition: boolean = false;
   private hasJumpedToTargetFloor: boolean = false;
+  private followOperationTouchActive: boolean = false;
+  private followOperationStartX: number = 0;
+  private followOperationStartY: number = 0;
+  private followOperationLatestX: number = 0;
+  private followOperationLatestY: number = 0;
+  private followOperationScrollReported: boolean = false;
 
   aboutToAppear(): void {
     this.v = new DetailViewModel(this.topicId)
@@ -275,6 +285,9 @@ export struct TopicDetailPage {
       .width('100%')
       .height('100%')
       .clip(true)
+      .onTouch((event: TouchEvent) => {
+        this.trackReplyActionFollowOperation(event)
+      })
 
       if (this.detailRootHeight > 0) {
         this.TopicDetailReplyActionBar()
@@ -292,6 +305,7 @@ export struct TopicDetailPage {
       }
     })
     .onAreaChange((_oldValue: Area, newValue: Area) => {
+      this.detailRootWidth = this.areaLength(newValue?.width)
       this.detailRootHeight = this.areaLength(newValue?.height)
     })
   }
@@ -336,13 +350,68 @@ export struct TopicDetailPage {
   }
 
   private topicDetailReplyActionBarAlign(): FlexAlign {
-    if (this.visualMotionHandEdge === 'right') {
-      return FlexAlign.End
+    if (this.visualMotionHandEdge === 'left') {
+      return FlexAlign.Start
     }
-    if (this.visualMotionHandEdge === 'center') {
-      return FlexAlign.Center
+    return FlexAlign.End
+  }
+
+  private trackReplyActionFollowOperation(event: TouchEvent): void {
+    if (event.type !== TouchType.Down && !this.followOperationTouchActive) {
+      return
     }
-    return FlexAlign.Start
+    const touch = event.touches[0] ?? event.changedTouches[0]
+    if (!touch) {
+      if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+        this.clearFollowOperationTouchState()
+      }
+      return
+    }
+    if (event.type === TouchType.Down) {
+      this.followOperationTouchActive = true
+      this.followOperationStartX = touch.x
+      this.followOperationStartY = touch.y
+      this.followOperationLatestX = touch.x
+      this.followOperationLatestY = touch.y
+      this.followOperationScrollReported = false
+      return
+    }
+    if (event.type === TouchType.Move) {
+      this.followOperationLatestX = touch.x
+      this.followOperationLatestY = touch.y
+      this.reportFollowOperationWhenVerticalScroll()
+      return
+    }
+    if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+      this.clearFollowOperationTouchState()
+    }
+  }
+
+  private reportFollowOperationWhenVerticalScroll(): void {
+    if (this.followOperationScrollReported) {
+      return
+    }
+    const dx = this.followOperationLatestX - this.followOperationStartX
+    const dy = this.followOperationLatestY - this.followOperationStartY
+    const absDx = Math.abs(dx)
+    const absDy = Math.abs(dy)
+    if (absDy < this.FOLLOW_OPERATION_VERTICAL_SCROLL_THRESHOLD) {
+      return
+    }
+    if (absDy < absDx * this.FOLLOW_OPERATION_VERTICAL_DOMINANCE_RATIO) {
+      return
+    }
+    this.followOperationScrollReported = true
+    MotionHandStateService.reportFollowOperationX(this.followOperationStartX, this.detailRootWidth)
+  }
+
+  private clearFollowOperationTouchState(): void {
+    this.followOperationTouchActive = false
+    this.followOperationStartX = 0
+    this.followOperationStartY = 0
+    this.followOperationLatestX = 0
+    this.followOperationLatestY = 0
+    this.followOperationScrollReported = false
   }
 
   private onMotionHandEdgeChanged(_propName: string): void {
