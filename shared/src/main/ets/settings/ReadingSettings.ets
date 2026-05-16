@@ -2,16 +2,17 @@ import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
 import { StorageKeys } from '../constants/StorageKeys'
 import { ThemeConstants } from '../theme/ThemeConstants'
+import { STORE_NAME_SETTINGS, setAppStorageValue } from './SettingsStorage'
 
-const STORE_NAME: string = 'next2v_settings'
+const STORE_NAME: string = STORE_NAME_SETTINGS
 // Compatibility key: kept as readingFontSize in preferences/AppStorage, but the
 // value is now a reading text scale source. Legacy 12..18 body-font values are
 // mapped to scale via oldFontSize / ThemeConstants.FONT_SIZE_BODY on load/save.
-const KEY_FONT_SIZE: string = 'readingFontSize'
-const KEY_LINE_HEIGHT: string = 'readingLineHeight'
-const KEY_DENSITY: string = 'readingDensity'
-const KEY_RESTORE_POSITION: string = 'readingRestorePosition'
-const KEY_BASE64_DECODE_MODE: string = 'readingBase64DecodeMode'
+const KEY_FONT_SIZE: string = StorageKeys.READING_FONT_SIZE
+const KEY_LINE_HEIGHT: string = StorageKeys.READING_LINE_HEIGHT
+const KEY_DENSITY: string = StorageKeys.READING_DENSITY
+const KEY_RESTORE_POSITION: string = StorageKeys.READING_RESTORE_POSITION
+const KEY_BASE64_DECODE_MODE: string = StorageKeys.READING_BASE64_DECODE_MODE
 const DENSITY_COMPACT: string = 'compact'
 const DENSITY_STANDARD: string = 'standard'
 const DENSITY_COMFORTABLE: string = 'comfortable'
@@ -46,11 +47,11 @@ export class ReadingSettings {
   static apply(fontSize: number, lineHeight: number, density: string, restorePosition: boolean = false): void {
     const normalizedTextScale = ReadingSettings.normalizeTextScale(fontSize)
     const normalizedLineHeight = ReadingSettings.normalizeLineHeight(lineHeight, normalizedTextScale)
-    ReadingSettings.setAppStorageValue<number>(StorageKeys.READING_FONT_SIZE, normalizedTextScale)
-    ReadingSettings.setAppStorageValue<number>(StorageKeys.READING_LINE_HEIGHT, normalizedLineHeight)
-    ReadingSettings.setAppStorageValue<string>(StorageKeys.READING_DENSITY, ReadingSettings.normalizeDensity(density))
-    ReadingSettings.setAppStorageValue<boolean>(StorageKeys.READING_RESTORE_POSITION, restorePosition)
-    ReadingSettings.setAppStorageValue<string>(StorageKeys.READING_BASE64_DECODE_MODE,
+    setAppStorageValue<number>(StorageKeys.READING_FONT_SIZE, normalizedTextScale)
+    setAppStorageValue<number>(StorageKeys.READING_LINE_HEIGHT, normalizedLineHeight)
+    setAppStorageValue<string>(StorageKeys.READING_DENSITY, ReadingSettings.normalizeDensity(density))
+    setAppStorageValue<boolean>(StorageKeys.READING_RESTORE_POSITION, restorePosition)
+    setAppStorageValue<string>(StorageKeys.READING_BASE64_DECODE_MODE,
       ReadingSettings.normalizeBase64DecodeMode(AppStorage.get<string>(StorageKeys.READING_BASE64_DECODE_MODE) ?? BASE64_MODE_BADGE))
   }
 
@@ -63,7 +64,7 @@ export class ReadingSettings {
       const restorePosition = store.getSync(KEY_RESTORE_POSITION, false) as boolean
       const base64DecodeMode = ReadingSettings.normalizeBase64DecodeMode(store.getSync(KEY_BASE64_DECODE_MODE, BASE64_MODE_BADGE) as string)
       ReadingSettings.apply(textScale, lineHeight, density, restorePosition)
-      ReadingSettings.setAppStorageValue<string>(StorageKeys.READING_BASE64_DECODE_MODE, base64DecodeMode)
+      setAppStorageValue<string>(StorageKeys.READING_BASE64_DECODE_MODE, base64DecodeMode)
       return {
         fontSize: textScale,
         textScale: textScale,
@@ -115,7 +116,7 @@ export class ReadingSettings {
   }
 
   static async saveRestorePosition(context: common.UIAbilityContext, restorePosition: boolean): Promise<void> {
-    ReadingSettings.setAppStorageValue<boolean>(StorageKeys.READING_RESTORE_POSITION, restorePosition)
+    setAppStorageValue<boolean>(StorageKeys.READING_RESTORE_POSITION, restorePosition)
     try {
       const store = await preferences.getPreferences(context, STORE_NAME)
       store.putSync(KEY_RESTORE_POSITION, restorePosition)
@@ -128,7 +129,7 @@ export class ReadingSettings {
 
   static async saveBase64DecodeMode(context: common.UIAbilityContext, mode: string): Promise<void> {
     const normalized = ReadingSettings.normalizeBase64DecodeMode(mode)
-    ReadingSettings.setAppStorageValue<string>(StorageKeys.READING_BASE64_DECODE_MODE, normalized)
+    setAppStorageValue<string>(StorageKeys.READING_BASE64_DECODE_MODE, normalized)
     try {
       const store = await preferences.getPreferences(context, STORE_NAME)
       store.putSync(KEY_BASE64_DECODE_MODE, normalized)
@@ -195,11 +196,5 @@ export class ReadingSettings {
       return mode
     }
     return BASE64_MODE_BADGE
-  }
-
-  private static setAppStorageValue<T>(key: string, value: T): void {
-    if (!AppStorage.set<T>(key, value)) {
-      AppStorage.setOrCreate<T>(key, value)
-    }
   }
 }

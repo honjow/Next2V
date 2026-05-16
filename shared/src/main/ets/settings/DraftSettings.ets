@@ -1,6 +1,7 @@
 import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
 import { StorageKeys } from '../constants/StorageKeys'
+import { setAppStorageValue } from './SettingsStorage'
 
 const STORE_NAME: string = 'next2v_drafts'
 const KEY_REPLY_DRAFTS: string = 'replyDrafts'
@@ -143,7 +144,7 @@ export class DraftSettings {
   }
 
   private static touchLocalData(): void {
-    AppStorage.setOrCreate<number>(StorageKeys.LOCAL_DATA_UPDATED_AT, Date.now())
+    setAppStorageValue<number>(StorageKeys.LOCAL_DATA_UPDATED_AT, Date.now())
   }
 
   private static parseReplyDrafts(raw: string): ReplyDraft[] {

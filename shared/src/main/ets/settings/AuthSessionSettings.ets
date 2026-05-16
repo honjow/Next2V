@@ -1,6 +1,7 @@
 import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
 import { StorageKeys } from '../constants/StorageKeys'
+import { setAppStorageValue } from './SettingsStorage'
 
 const STORE_NAME: string = 'next2v_auth_session'
 const KEY_LOGIN_MODE: string = 'loginMode'
@@ -77,10 +78,10 @@ export class AuthSessionSettings {
   }
 
   static apply(snapshot: AuthSessionSnapshot): void {
-    AppStorage.setOrCreate<string>(StorageKeys.AUTH_LOGIN_MODE, snapshot.loginMode || 'none')
-    AppStorage.setOrCreate<string>(StorageKeys.AUTH_SESSION_USERNAME, snapshot.username || '')
-    AppStorage.setOrCreate<string>(StorageKeys.AUTH_SESSION_AVATAR, snapshot.avatar || '')
-    AppStorage.setOrCreate<number>(StorageKeys.AUTH_SESSION_VALIDATED_AT, snapshot.validatedAt || 0)
-    AppStorage.setOrCreate<number>(StorageKeys.AUTH_SESSION_UPDATED_AT, Date.now())
+    setAppStorageValue<string>(StorageKeys.AUTH_LOGIN_MODE, snapshot.loginMode || 'none')
+    setAppStorageValue<string>(StorageKeys.AUTH_SESSION_USERNAME, snapshot.username || '')
+    setAppStorageValue<string>(StorageKeys.AUTH_SESSION_AVATAR, snapshot.avatar || '')
+    setAppStorageValue<number>(StorageKeys.AUTH_SESSION_VALIDATED_AT, snapshot.validatedAt || 0)
+    setAppStorageValue<number>(StorageKeys.AUTH_SESSION_UPDATED_AT, Date.now())
   }
 }

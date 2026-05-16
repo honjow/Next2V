@@ -204,8 +204,10 @@ function canonical(blocks) {
 
 const source = readFileSync('shared/src/main/ets/components/MarkdownContent.ets', 'utf8')
 const readingSettingsSource = readFileSync('shared/src/main/ets/settings/ReadingSettings.ets', 'utf8')
+const storageKeysSource = readFileSync('shared/src/main/ets/constants/StorageKeys.ets', 'utf8')
 const readingSettingsPageSource = readFileSync('feature/settings/src/main/ets/pages/ReadingSettingsPage.ets', 'utf8')
-assert.match(readingSettingsSource, /const KEY_FONT_SIZE: string = 'readingFontSize'/)
+assert.match(readingSettingsSource, /const KEY_FONT_SIZE: string = StorageKeys\.READING_FONT_SIZE/)
+assert.match(storageKeysSource, /READING_FONT_SIZE: string = 'readingFontSize'/)
 assert.match(readingSettingsSource, /value is now a reading text scale source/)
 assert.match(readingSettingsSource, /static readonly TEXT_SCALE_DEFAULT: number = 1\.0/)
 assert.match(readingSettingsSource, /static normalizeTextScale\(value: number\): number/)

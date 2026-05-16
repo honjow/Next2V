@@ -1,9 +1,10 @@
 import { common, ConfigurationConstant } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
 import { StorageKeys } from '../constants/StorageKeys'
+import { STORE_NAME_SETTINGS, setAppStorageValue } from './SettingsStorage'
 
-const STORE_NAME: string = 'next2v_settings'
-const KEY_THEME_MODE: string = 'themeMode'
+const STORE_NAME: string = STORE_NAME_SETTINGS
+const KEY_THEME_MODE: string = StorageKeys.THEME_MODE
 const THEME_MODE_AUTO: string = 'auto'
 const THEME_MODE_LIGHT: string = 'light'
 const THEME_MODE_DARK: string = 'dark'
@@ -21,8 +22,8 @@ export class ThemeSettings {
   static apply(context: common.UIAbilityContext, mode: string): ThemeSettingsSnapshot {
     const normalizedMode = ThemeSettings.normalizeMode(mode)
     const effectiveDark = ThemeSettings.effectiveDarkForMode(context, normalizedMode)
-    AppStorage.setOrCreate<string>(StorageKeys.THEME_MODE, normalizedMode)
-    AppStorage.setOrCreate<boolean>(StorageKeys.THEME_EFFECTIVE_DARK, effectiveDark)
+    setAppStorageValue<string>(StorageKeys.THEME_MODE, normalizedMode)
+    setAppStorageValue<boolean>(StorageKeys.THEME_EFFECTIVE_DARK, effectiveDark)
     ThemeSettings.applySystemColorMode(context, normalizedMode)
     return { mode: normalizedMode, effectiveDark: effectiveDark }
   }
@@ -53,7 +54,7 @@ export class ThemeSettings {
 
   static refreshEffectiveDark(context: common.UIAbilityContext, colorMode?: ConfigurationConstant.ColorMode): void {
     const mode = ThemeSettings.normalizeMode(AppStorage.get<string>(StorageKeys.THEME_MODE) || THEME_MODE_AUTO)
-    AppStorage.setOrCreate<boolean>(StorageKeys.THEME_EFFECTIVE_DARK, ThemeSettings.effectiveDarkForMode(context, mode, colorMode))
+    setAppStorageValue<boolean>(StorageKeys.THEME_EFFECTIVE_DARK, ThemeSettings.effectiveDarkForMode(context, mode, colorMode))
   }
 
   static normalizeMode(value: string): string {

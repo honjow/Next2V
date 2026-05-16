@@ -191,6 +191,7 @@ assert.equal(renderText(markdownTokens, 'inline').includes('解码：hello@examp
 
 const source = readFileSync('shared/src/main/ets/components/MarkdownContent.ets', 'utf8')
 const settings = readFileSync('shared/src/main/ets/settings/ReadingSettings.ets', 'utf8')
+const storageKeys = readFileSync('shared/src/main/ets/constants/StorageKeys.ets', 'utf8')
 const readingFontPage = readFileSync('feature/settings/src/main/ets/pages/ReadingSettingsPage.ets', 'utf8')
 const settingsPage = readFileSync('feature/settings/src/main/ets/pages/SettingsPage.ets', 'utf8')
 assert.match(source, /enhanceBase64TextTokens\(tokens\)/)
@@ -219,7 +220,8 @@ assert.doesNotMatch(base64PopupOptions, /\bwidth\s*:/, 'Base64 CustomPopupOption
 assert.doesNotMatch(base64PopupOptions, /message:|value: "复制"|value: "关闭"|Base64 解码|原文：|AlertDialog/, 'Base64 CustomPopupOptions must not use ordinary message/actions or dialog labels')
 assert.doesNotMatch(source, /AlertDialog\.show/, 'default badge must use system Popup instead of AlertDialog')
 assert.doesNotMatch(source, /console\.(?:log|info|warn|error)\([^\n]*(?:decoded|Base64 解码|解码文本)/, 'decoded Base64 text must not be logged')
-assert.match(settings, /KEY_BASE64_DECODE_MODE: string = 'readingBase64DecodeMode'/)
+assert.match(settings, /KEY_BASE64_DECODE_MODE: string = StorageKeys\.READING_BASE64_DECODE_MODE/)
+assert.match(storageKeys, /READING_BASE64_DECODE_MODE: string = 'readingBase64DecodeMode'/)
 assert.match(settings, /BASE64_MODE_BADGE: string = 'badge'/)
 assert.match(settingsPage, /Base64 解码/)
 assert.match(settingsPage, /点击查看/)

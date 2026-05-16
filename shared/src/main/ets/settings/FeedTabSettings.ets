@@ -2,6 +2,7 @@ import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
 import { ApiConstants, TabItem } from '../constants/ApiConstants'
 import { StorageKeys } from '../constants/StorageKeys'
+import { setAppStorageValue } from './SettingsStorage'
 
 const STORE_NAME: string = 'next2v_feed_tabs'
 const KEY_VISIBLE_KEYS: string = 'visibleKeys'
@@ -160,11 +161,11 @@ export class FeedTabSettings {
   }
 
   static apply(keysJson: string): void {
-    FeedTabSettings.setAppStorageValue<string>(StorageKeys.FEED_TAB_KEYS, keysJson || FeedTabSettings.defaultKeysJson())
+    setAppStorageValue<string>(StorageKeys.FEED_TAB_KEYS, keysJson || FeedTabSettings.defaultKeysJson())
   }
 
   static applySelectedKey(key: string): void {
-    FeedTabSettings.setAppStorageValue<string>(StorageKeys.FEED_TAB, key || FeedTabSettings.defaultKeys()[0])
+    setAppStorageValue<string>(StorageKeys.FEED_TAB, key || FeedTabSettings.defaultKeys()[0])
   }
 
   private static selectedKeyOrFallback(keysJson: string, key: string): string {
@@ -202,11 +203,5 @@ export class FeedTabSettings {
 
   private static nodeKey(nodeName: string): string {
     return `${NODE_KEY_PREFIX}${nodeName}`
-  }
-
-  private static setAppStorageValue<T>(key: string, value: T): void {
-    if (!AppStorage.set<T>(key, value)) {
-      AppStorage.setOrCreate<T>(key, value)
-    }
   }
 }

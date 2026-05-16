@@ -2,13 +2,14 @@ import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
 import { StorageKeys } from '../constants/StorageKeys'
 import { V2exTopic } from '../network/NetworkTypes'
+import { setAppStorageValue } from './SettingsStorage'
 
 const STORE_NAME: string = 'next2v_collections'
 const KEY_SAVED_TOPICS: string = 'savedTopics'
 const KEY_SAVED_NODES: string = 'savedNodes'
 const KEY_VIEWED_TOPICS: string = 'viewedTopics'
 const KEY_TOPIC_READ_POSITIONS: string = 'topicReadPositions'
-const KEY_TOPIC_READ_STATES: string = 'topicReadStates'
+const KEY_TOPIC_READ_STATES: string = StorageKeys.TOPIC_READ_STATES
 const MAX_SAVED_TOPICS: number = 100
 const MAX_SAVED_NODES: number = 80
 const MAX_VIEWED_TOPICS: number = 100
@@ -296,10 +297,10 @@ export class CollectionSettings {
   static async syncTopicReadStates(context: common.UIAbilityContext): Promise<TopicReadState[]> {
     try {
       const states = await CollectionSettings.loadTopicReadStates(context)
-      AppStorage.setOrCreate<string>(StorageKeys.TOPIC_READ_STATES, JSON.stringify(states))
+      setAppStorageValue<string>(StorageKeys.TOPIC_READ_STATES, JSON.stringify(states))
       return states
     } catch (error) {
-      AppStorage.setOrCreate<string>(StorageKeys.TOPIC_READ_STATES, '[]')
+      setAppStorageValue<string>(StorageKeys.TOPIC_READ_STATES, '[]')
       return []
     }
   }
@@ -313,7 +314,7 @@ export class CollectionSettings {
     const state: TopicReadState = { id: topicId, touchedAt: normalizedTouchedAt, updatedAt: Math.floor(Date.now() / 1000) }
     const next = [state].concat(states.filter((item: TopicReadState) => item.id !== topicId)).slice(0, MAX_READ_STATES)
     await CollectionSettings.writeTopicReadStates(context, next)
-    AppStorage.setOrCreate<string>(StorageKeys.TOPIC_READ_STATES, JSON.stringify(next))
+    setAppStorageValue<string>(StorageKeys.TOPIC_READ_STATES, JSON.stringify(next))
     return next
   }
 
@@ -337,7 +338,7 @@ export class CollectionSettings {
       store.deleteSync(KEY_TOPIC_READ_POSITIONS)
       store.deleteSync(KEY_TOPIC_READ_STATES)
       store.flushSync()
-      AppStorage.setOrCreate<string>(StorageKeys.TOPIC_READ_STATES, '[]')
+      setAppStorageValue<string>(StorageKeys.TOPIC_READ_STATES, '[]')
       CollectionSettings.publishLocalContentStats({ savedTopicCount: 0, savedNodeCount: 0, viewedTopicCount: 0 })
       CollectionSettings.touchLocalData()
     } catch (error) {
@@ -409,9 +410,7 @@ export class CollectionSettings {
 
   private static touchLocalData(): void {
     const updatedAt = Date.now()
-    if (!AppStorage.set<number>(StorageKeys.LOCAL_DATA_UPDATED_AT, updatedAt)) {
-      AppStorage.setOrCreate<number>(StorageKeys.LOCAL_DATA_UPDATED_AT, updatedAt)
-    }
+    setAppStorageValue<number>(StorageKeys.LOCAL_DATA_UPDATED_AT, updatedAt)
   }
 
   private static publishLocalContentStats(stats: LocalContentStats): void {
@@ -421,9 +420,7 @@ export class CollectionSettings {
   }
 
   private static publishLocalContentCount(key: string, count: number): void {
-    if (!AppStorage.set<number>(key, count)) {
-      AppStorage.setOrCreate<number>(key, count)
-    }
+    setAppStorageValue<number>(key, count)
   }
 
   private static parseTopics(raw: string): SavedTopic[] {

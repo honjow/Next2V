@@ -43,6 +43,7 @@ export type {
 export { ApiConstants } from './constants/ApiConstants'
 export type { TabItem } from './constants/ApiConstants'
 export { StorageKeys } from './constants/StorageKeys'
+export { STORE_NAME_SETTINGS, setAppStorageValue } from './settings/SettingsStorage'
 export { ApiDomainSettings } from './settings/ApiDomainSettings'
 export { FeedTabSettings } from './settings/FeedTabSettings'
 export { ThemeSettings } from './settings/ThemeSettings'
