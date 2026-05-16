@@ -853,20 +853,12 @@ function _copyDecodedBase64Text(decoded: string): void {
   }
 }
 
-function _base64PopupMessage(original: string, decoded: string): string {
-  return `Base64 解码\n\n原文：${_base64OriginalSummary(original)}\n\n${decoded}`;
+function _base64PopupMessage(_original: string, decoded: string): string {
+  return decoded;
 }
 
 function _base64PopupKey(token: Base64DecodeToken, tokenIndex: number, scope: string): string {
   return `${scope}-${tokenIndex}-${token.original}`;
-}
-
-function _base64OriginalSummary(original: string): string {
-  const value = original || "";
-  if (value.length <= 32) {
-    return value;
-  }
-  return `${value.slice(0, 16)}…${value.slice(value.length - 8)}`;
 }
 
 function _tokensContainBase64Decode(tokens: Token[]): boolean {
