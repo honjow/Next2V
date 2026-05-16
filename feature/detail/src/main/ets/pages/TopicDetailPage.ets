@@ -1,7 +1,8 @@
 import { DetailViewModel } from '../viewmodel/DetailViewModel'
 import { ReplyComposerSheet } from '../components/ReplyComposerSheet'
 import { common, Want } from '@kit.AbilityKit'
-import { promptAction, SymbolGlyphModifier } from '@kit.ArkUI'
+import { LengthMetrics, promptAction, SymbolGlyphModifier } from '@kit.ArkUI'
+import { ActionBarButton, ActionBarStyle, HdsActionBar } from '@kit.UIDesignKit'
 import { uniformTypeDescriptor as utd } from '@kit.ArkData'
 import { pasteboard } from '@kit.BasicServicesKit'
 import { systemShare } from '@kit.ShareKit'
@@ -70,6 +71,9 @@ export struct TopicDetailPage {
   @StorageLink(StorageKeys.TOPIC_DETAIL_APPBAR_USERNAME_STATES)
   topicDetailAppbarUsernameStates: string = '{}';
   @StorageLink(StorageKeys.AUTH_COOKIE_CONFIGURED) authCookieConfigured: boolean = false;
+  @StorageLink(StorageKeys.MOTION_HAND_EDGE)
+  @Watch('onMotionHandEdgeChanged')
+  motionHandEdge: string = 'center';
   @StorageLink(StorageKeys.READING_FONT_SIZE) readingFontSize: number =
     ThemeConstants.FONT_SIZE_BODY;
   @StorageLink(StorageKeys.READING_LINE_HEIGHT) readingLineHeight: number =
@@ -98,12 +102,15 @@ export struct TopicDetailPage {
     ReplyDisplaySettings.MODE_THREAD;
   @State private replyDisplayMenuShown: boolean = false;
   @State private replyComposerVisible: boolean = false;
+  @State private visualMotionHandEdge: string = 'center';
+  @State private detailRootHeight: number = 0;
   @State private replyComposerInitialContent: string = '';
   @State private thankedReplyIdsJson: string = '[]';
   @State private titleContentBottom: number = 0;
   @State private currentScrollOffset: number = 0;
   @State private isTitleCoveredByAppbar: boolean = false;
   private readonly HDS_ACTION_BAR_CLEARANCE: number = 72;
+  private readonly TOPIC_DETAIL_REPLY_BUTTON_SIZE: number = 56;
   private readonly titleVisibilityHysteresis: number = 4;
   private api: ApiService = new ApiService();
   private topicThankLocked: boolean = false;
@@ -134,6 +141,7 @@ export struct TopicDetailPage {
     this.jumpFloorText = ''
     this.currentScrollOffset = 0
     this.titleContentBottom = 0
+    this.visualMotionHandEdge = this.motionHandEdge
     this.isTitleCoveredByAppbar = false
     this.syncTopicDetailTitleState(false, false, false)
     this.publishAppbarIdentity(false)
@@ -254,7 +262,7 @@ export struct TopicDetailPage {
   }
 
   build() {
-    Column() {
+    Stack() {
       Column() {
         if (this.v.isLoading && this.v.topic === null) {
           this.LoadingView()
@@ -265,8 +273,10 @@ export struct TopicDetailPage {
         }
       }
       .width('100%')
-      .layoutWeight(1)
+      .height('100%')
       .clip(true)
+
+      this.TopicDetailReplyActionBar()
 
       this.ReplyComposerSheetHost()
       this.ReplyContextSheetHost()
@@ -279,6 +289,64 @@ export struct TopicDetailPage {
         this.republishAppbarIdentity()
       }
     })
+    .onAreaChange((_oldValue: Area, newValue: Area) => {
+      this.detailRootHeight = this.areaLength(newValue?.height)
+    })
+  }
+
+  @Builder TopicDetailReplyActionBar() {
+    Row() {
+      HdsActionBar({
+        primaryButton: new ActionBarButton({
+          width: LengthMetrics.vp(this.TOPIC_DETAIL_REPLY_BUTTON_SIZE),
+          baseIcon: this.authCookieConfigured
+            ? $r('sys.symbol.arrowshape_turn_up_left_fill')
+            : $r('sys.symbol.lock'),
+          hoverTips: this.authCookieConfigured ? '回复' : '登录',
+          accessibilityText: this.authCookieConfigured ? '回复' : '登录',
+          onClick: () => {
+            this.openReplyEditor()
+          },
+        }),
+        actionBarStyle: new ActionBarStyle({
+          height: LengthMetrics.vp(this.TOPIC_DETAIL_REPLY_BUTTON_SIZE),
+          margin: LengthMetrics.vp(0),
+        }),
+      })
+    }
+    .width('100%')
+    .height(this.TOPIC_DETAIL_REPLY_BUTTON_SIZE)
+    .justifyContent(this.topicDetailReplyActionBarAlign())
+    .alignItems(VerticalAlign.Center)
+    .position({ x: 0, y: this.topicDetailReplyActionBarTop() })
+    .hitTestBehavior(HitTestMode.Transparent)
+    .animation({ duration: ThemeConstants.ANIM_DURATION, curve: Curve.EaseOut })
+  }
+
+  private topicDetailReplyActionBarTop(): number {
+    if (this.detailRootHeight <= 0) {
+      return 0
+    }
+    return Math.max(0, this.detailRootHeight - this.bottomH - this.TOPIC_DETAIL_REPLY_BUTTON_SIZE)
+  }
+
+  private topicDetailReplyActionBarAlign(): FlexAlign {
+    if (this.visualMotionHandEdge === 'right') {
+      return FlexAlign.End
+    }
+    if (this.visualMotionHandEdge === 'center') {
+      return FlexAlign.Center
+    }
+    return FlexAlign.Start
+  }
+
+  private onMotionHandEdgeChanged(_propName: string): void {
+    this.getUIContext().animateTo(
+      { duration: ThemeConstants.ANIM_DURATION, curve: Curve.EaseOut },
+      () => {
+        this.visualMotionHandEdge = this.motionHandEdge
+      },
+    )
   }
 
   @Builder ReplyComposerSheetHost() {
