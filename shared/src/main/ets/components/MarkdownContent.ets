@@ -1309,7 +1309,7 @@ struct MarkdownParagraph {
   @Prop contentAvailableWidth: number = 0;
   reportImageComplete?: InlineImageCompleteReporter;
   reportImageError?: InlineImageErrorReporter;
-  @StorageLink(StorageKeys.READING_FONT_SIZE) readingFontSize: number = ReadingSettings.TEXT_SCALE_DEFAULT;
+  @StorageLink(StorageKeys.READING_TEXT_SCALE) readingTextScale: number = ReadingSettings.TEXT_SCALE_DEFAULT;
   @StorageLink(StorageKeys.READING_LINE_HEIGHT) readingLineHeight: number = ThemeConstants.LINE_HEIGHT_BODY;
   @StorageLink(StorageKeys.READING_BASE64_DECODE_MODE) base64DecodeMode: string = ReadingSettings.BASE64_MODE_BADGE;
   @State private paragraphAvailableWidth: number = 0;
@@ -1340,11 +1340,11 @@ struct MarkdownParagraph {
   }
 
   private bodyFontSize(): number {
-    return ReadingSettings.scaleTypographyToken(RENDER_BODY_FONT_SIZE, this.readingFontSize);
+    return ReadingSettings.scaleTypographyToken(RENDER_BODY_FONT_SIZE, this.readingTextScale);
   }
 
   private bodyLineHeight(): number {
-    return ReadingSettings.scaleTypographyToken(RENDER_BODY_LINE_HEIGHT, this.readingFontSize);
+    return ReadingSettings.scaleTypographyToken(RENDER_BODY_LINE_HEIGHT, this.readingTextScale);
   }
 
   private inlineTokens(): Token[] {
@@ -1559,15 +1559,15 @@ struct MarkdownBlockquote {
   @Prop contentAvailableWidth: number = 0;
   reportImageComplete?: InlineImageCompleteReporter;
   reportImageError?: InlineImageErrorReporter;
-  @StorageLink(StorageKeys.READING_FONT_SIZE) readingFontSize: number = ReadingSettings.TEXT_SCALE_DEFAULT;
+  @StorageLink(StorageKeys.READING_TEXT_SCALE) readingTextScale: number = ReadingSettings.TEXT_SCALE_DEFAULT;
   @StorageLink(StorageKeys.READING_LINE_HEIGHT) readingLineHeight: number = ThemeConstants.LINE_HEIGHT_BODY;
 
   private bodyFontSize(): number {
-    return ReadingSettings.scaleTypographyToken(RENDER_BODY_FONT_SIZE, this.readingFontSize);
+    return ReadingSettings.scaleTypographyToken(RENDER_BODY_FONT_SIZE, this.readingTextScale);
   }
 
   private bodyLineHeight(): number {
-    return ReadingSettings.scaleTypographyToken(RENDER_BODY_LINE_HEIGHT, this.readingFontSize);
+    return ReadingSettings.scaleTypographyToken(RENDER_BODY_LINE_HEIGHT, this.readingTextScale);
   }
 
   private quoteRailHeight(): number {
@@ -1637,7 +1637,7 @@ struct MarkdownBlockquote {
 struct MarkdownCodeBlock {
   @Prop codeToken: Tokens.Code;
   @Prop options: MarkdownOptions;
-  @StorageLink(StorageKeys.READING_FONT_SIZE) readingFontSize: number = ReadingSettings.TEXT_SCALE_DEFAULT;
+  @StorageLink(StorageKeys.READING_TEXT_SCALE) readingTextScale: number = ReadingSettings.TEXT_SCALE_DEFAULT;
   @StorageLink(StorageKeys.READING_LINE_HEIGHT) readingLineHeight: number = ThemeConstants.LINE_HEIGHT_BODY;
   @State private wrapLines: boolean = false;
 
@@ -1666,11 +1666,11 @@ struct MarkdownCodeBlock {
   }
 
   private codeFontSize(): number {
-    return ReadingSettings.scaleTypographyToken(RENDER_CODE_FONT_SIZE, this.readingFontSize);
+    return ReadingSettings.scaleTypographyToken(RENDER_CODE_FONT_SIZE, this.readingTextScale);
   }
 
   private codeLineHeight(): number {
-    return ReadingSettings.scaleTypographyToken(RENDER_CODE_LINE_HEIGHT, this.readingFontSize);
+    return ReadingSettings.scaleTypographyToken(RENDER_CODE_LINE_HEIGHT, this.readingTextScale);
   }
 
   private isDarkMode(): boolean {
@@ -1881,7 +1881,7 @@ struct MarkdownTable {
   @Prop inlineImageSizeRecords: InlineImageSizeRecord[] = [];
   reportImageComplete?: InlineImageCompleteReporter;
   reportImageError?: InlineImageErrorReporter;
-  @StorageLink(StorageKeys.READING_FONT_SIZE) readingFontSize: number = ReadingSettings.TEXT_SCALE_DEFAULT;
+  @StorageLink(StorageKeys.READING_TEXT_SCALE) readingTextScale: number = ReadingSettings.TEXT_SCALE_DEFAULT;
   @StorageLink(StorageKeys.READING_BASE64_DECODE_MODE) base64DecodeMode: string = ReadingSettings.BASE64_MODE_BADGE;
   @State private tableAvailableWidth: number = 0;
   @State private activeBase64PopupKey: string = "";
@@ -1904,11 +1904,11 @@ struct MarkdownTable {
   }
 
   private bodyFontSize(): number {
-    return ReadingSettings.scaleTypographyToken(RENDER_BODY_FONT_SIZE, this.readingFontSize);
+    return ReadingSettings.scaleTypographyToken(RENDER_BODY_FONT_SIZE, this.readingTextScale);
   }
 
   private bodyLineHeight(): number {
-    return ReadingSettings.scaleTypographyToken(RENDER_BODY_LINE_HEIGHT, this.readingFontSize);
+    return ReadingSettings.scaleTypographyToken(RENDER_BODY_LINE_HEIGHT, this.readingTextScale);
   }
 
   private columnCount(): number {
@@ -2674,16 +2674,16 @@ struct CustomList {
   @Prop contentAvailableWidth: number = 0;
   reportImageComplete?: InlineImageCompleteReporter;
   reportImageError?: InlineImageErrorReporter;
-  @StorageLink(StorageKeys.READING_FONT_SIZE) readingFontSize: number = ReadingSettings.TEXT_SCALE_DEFAULT;
+  @StorageLink(StorageKeys.READING_TEXT_SCALE) readingTextScale: number = ReadingSettings.TEXT_SCALE_DEFAULT;
   @StorageLink(StorageKeys.READING_LINE_HEIGHT) readingLineHeight: number = ThemeConstants.LINE_HEIGHT_BODY;
   @StorageLink(StorageKeys.READING_DENSITY) readingDensity: string = ReadingSettings.DENSITY_STANDARD;
 
   private bodyFontSize(): number {
-    return ReadingSettings.scaleTypographyToken(RENDER_BODY_FONT_SIZE, this.readingFontSize);
+    return ReadingSettings.scaleTypographyToken(RENDER_BODY_FONT_SIZE, this.readingTextScale);
   }
 
   private bodyLineHeight(): number {
-    return ReadingSettings.scaleTypographyToken(RENDER_BODY_LINE_HEIGHT, this.readingFontSize);
+    return ReadingSettings.scaleTypographyToken(RENDER_BODY_LINE_HEIGHT, this.readingTextScale);
   }
 
   private blockSpace(): number {
@@ -2800,7 +2800,7 @@ export struct MarkdownContent {
   onImageClick?: (url: string) => void
   onLinkClick?: (url: string) => void
   onMentionClick?: (username: string) => void
-  @StorageLink(StorageKeys.READING_FONT_SIZE) readingFontSize: number = ReadingSettings.TEXT_SCALE_DEFAULT;
+  @StorageLink(StorageKeys.READING_TEXT_SCALE) readingTextScale: number = ReadingSettings.TEXT_SCALE_DEFAULT;
   @StorageLink(StorageKeys.READING_LINE_HEIGHT) readingLineHeight: number = ThemeConstants.LINE_HEIGHT_BODY;
   @StorageLink(StorageKeys.READING_DENSITY) readingDensity: string = ReadingSettings.DENSITY_STANDARD;
   @StorageLink(StorageKeys.READING_BASE64_DECODE_MODE) base64DecodeMode: string = ReadingSettings.BASE64_MODE_BADGE;
@@ -2888,11 +2888,11 @@ export struct MarkdownContent {
   }
 
   private bodyFontSize(): number {
-    return ReadingSettings.scaleTypographyToken(RENDER_BODY_FONT_SIZE, this.readingFontSize);
+    return ReadingSettings.scaleTypographyToken(RENDER_BODY_FONT_SIZE, this.readingTextScale);
   }
 
   private bodyLineHeight(): number {
-    return ReadingSettings.scaleTypographyToken(RENDER_BODY_LINE_HEIGHT, this.readingFontSize);
+    return ReadingSettings.scaleTypographyToken(RENDER_BODY_LINE_HEIGHT, this.readingTextScale);
   }
 
 
@@ -5163,11 +5163,11 @@ export struct MarkdownContent {
   }
 
   private headingSize(token: Token): number {
-    return ReadingSettings.scaleTypographyToken(this.headingBaseFontSize(token), this.readingFontSize);
+    return ReadingSettings.scaleTypographyToken(this.headingBaseFontSize(token), this.readingTextScale);
   }
 
   private headingLineHeight(token: Token): number {
-    return ReadingSettings.scaleTypographyToken(this.headingBaseLineHeight(token), this.readingFontSize);
+    return ReadingSettings.scaleTypographyToken(this.headingBaseLineHeight(token), this.readingTextScale);
   }
 
   private headingWeight(token: Token): FontWeight {

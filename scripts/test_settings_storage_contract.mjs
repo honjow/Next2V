@@ -102,7 +102,7 @@ const expectedStorageKeys = [
   ['USE_CO_DOMAIN', 'useCoDomain'],
   ['MEDIA_AUTO_LOAD_IMAGES', 'mediaAutoLoadImages'],
   ['MEDIA_ONLY_LOAD_IMAGES_ON_WIFI', 'mediaOnlyLoadImagesOnWifi'],
-  ['READING_FONT_SIZE', 'readingFontSize'],
+  ['READING_TEXT_SCALE', 'readingTextScale'],
   ['READING_LINE_HEIGHT', 'readingLineHeight'],
   ['READING_DENSITY', 'readingDensity'],
   ['READING_RESTORE_POSITION', 'readingRestorePosition'],
@@ -291,19 +291,70 @@ for (const file of next2vSettingsFiles) {
 }
 
 const readingSettings = read('shared/src/main/ets/settings/ReadingSettings.ets')
-assert(storageKeys.get('READING_FONT_SIZE') === 'readingFontSize', "StorageKeys.READING_FONT_SIZE must remain 'readingFontSize'")
-assert(!storageKeys.has('READING_TEXT_SCALE'), 'StorageKeys must not add READING_TEXT_SCALE in Phase2C')
+const legacyReadingStorageName = 'READING_' + 'FONT_SIZE'
+const legacyReadingStorageValue = 'reading' + 'FontSize'
+assert(storageKeys.get('READING_TEXT_SCALE') === 'readingTextScale', "StorageKeys.READING_TEXT_SCALE must be 'readingTextScale'")
+assert(!storageKeys.has(legacyReadingStorageName), 'legacy reading storage constant must be removed')
 for (const [name, value] of storageKeys.entries()) {
-  assert(value !== 'readingTextScale', `StorageKeys must not add readingTextScale value (${name})`)
+  assert(value !== legacyReadingStorageValue, `legacy reading storage value must be absent (${name})`)
 }
-for (const rel of [
-  'shared/src/main/ets/constants/StorageKeys.ets',
-  'shared/src/main/ets/settings/ReadingSettings.ets',
-  'feature/settings/src/main/ets/pages/ReadingSettingsPage.ets',
+assert(readingSettings.includes('const KEY_TEXT_SCALE: string = StorageKeys.READING_TEXT_SCALE'), 'ReadingSettings must use KEY_TEXT_SCALE')
+assert(!readingSettings.includes('numeric > 2'), 'normalizeTextScale must not convert legacy font-size values')
+assert(!readingSettings.includes('/ ThemeConstants.FONT_SIZE_BODY : numeric'), 'normalizeTextScale must be scale-only')
+
+const normalizeTextScaleContract = (value) => {
+  const numeric = Number(value)
+  const min = 12 / 14
+  const max = 18 / 14
+  if (!Number.isFinite(numeric)) return 1.0
+  if (numeric < min) return min
+  if (numeric > max) return max
+  return Math.round(numeric * 100) / 100
+}
+for (const [input, expected] of [
+  [0.5, 12 / 14],
+  [0.86, 0.86],
+  [1, 1],
+  [1.234, 1.23],
+  [12, 18 / 14],
+  [14, 18 / 14],
+  [18, 18 / 14],
+  [Number.NaN, 1.0],
 ]) {
-  const text = read(rel)
-  assert(!text.includes('READING_TEXT_SCALE'), `${rel} must not reference READING_TEXT_SCALE`)
-  assert(!text.includes('readingTextScale'), `${rel} must not introduce readingTextScale key`)
+  assert(Object.is(normalizeTextScaleContract(input), expected), `normalizeTextScale scale-only contract failed for ${input}`)
+}
+
+const sourceRoots = [
+  'entry/src/main/ets',
+  'feature/detail/src/main/ets',
+  'feature/feed/src/main/ets',
+  'feature/node/src/main/ets',
+  'feature/settings/src/main/ets',
+  'feature/user/src/main/ets',
+  'shared/src/main/ets',
+  'scripts',
+]
+const walkTextFiles = (dir) => {
+  const results = []
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name)
+    if (entry.isDirectory()) {
+      results.push(...walkTextFiles(full))
+    } else if (/\.(ets|ts|js|mjs)$/.test(entry.name)) {
+      results.push(full)
+    }
+  }
+  return results
+}
+for (const root of sourceRoots) {
+  const absRoot = path.join(repo, root)
+  if (!fs.existsSync(absRoot)) continue
+  for (const abs of walkTextFiles(absRoot)) {
+    const rel = path.relative(repo, abs)
+    const text = fs.readFileSync(abs, 'utf8')
+    assert(!text.includes(legacyReadingStorageName), `${rel} must not reference legacy reading storage constant`)
+    assert(!text.includes(legacyReadingStorageValue), `${rel} must not reference legacy reading storage key`)
+  }
 }
 for (const method of ['saveTypography', 'saveRestorePosition', 'saveBase64DecodeMode']) {
   const body = extractMethodBody(readingSettings, method)
@@ -414,7 +465,7 @@ const helperContracts = [
       'ReadingSettings.load(context)',
       ').catch',
       'restore reading settings failed: ',
-      'ReadingSettings.apply(14, 20, ReadingSettings.DENSITY_STANDARD)',
+      'ReadingSettings.apply(ReadingSettings.TEXT_SCALE_DEFAULT, 20, ReadingSettings.DENSITY_STANDARD)',
     ],
   },
   {

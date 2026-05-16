@@ -81,7 +81,7 @@ export class SettingsBootstrap {
       : ReadingSettings.load(context)
     ).catch((error: Error) => {
       console.error('restore reading settings failed: ' + error.message)
-      ReadingSettings.apply(14, 20, ReadingSettings.DENSITY_STANDARD)
+      ReadingSettings.apply(ReadingSettings.TEXT_SCALE_DEFAULT, 20, ReadingSettings.DENSITY_STANDARD)
     })
   }
 

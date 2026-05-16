@@ -108,7 +108,7 @@ Forbidden strategies: `INLINE_IMAGE_FALLBACK_MIN_SIZE/MAX_SIZE`, `_inlineImageSi
 
 ## Reading text scale
 
-The existing persisted/AppStorage key remains `readingFontSize` for compatibility, but it is now a scale source rather than the semantic body token. `ReadingSettings.normalizeTextScale(...)` accepts both new scale values and legacy 12..18 font-size values; legacy values are mapped as `oldFontSize / 14` and clamped to the same range.
+The persisted/AppStorage key is `readingTextScale`. `ReadingSettings.normalizeTextScale(...)` treats stored values as scale values only; legacy font-size values are intentionally not migrated in this schema cleanup.
 
 Rendering components must apply this single scale to fixed semantic tokens. Headings must not be defined as `bodyFontSize() + N`, `min(bodyFontSize()+N, ...)`, or by collapsing h2-h6 to body configuration. Line heights are fixed token line heights multiplied by the same scale.
 

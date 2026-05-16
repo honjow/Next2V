@@ -247,8 +247,8 @@ assert.match(source, /name: "h6"[\s\S]*fontSize: "fixed base 14 \* readingTextSc
 assert.match(source, /name: "code\/pre"[\s\S]*fontSize: "fixed base 12 \* readingTextScale"[\s\S]*lineHeight: "fixed base 18 \* readingTextScale"/)
 assert.match(source, /private headingBaseFontSize\(token: Token\): number/)
 assert.match(source, /private headingBaseLineHeight\(token: Token\): number/)
-assert.match(source, /return ReadingSettings\.scaleTypographyToken\(this\.headingBaseFontSize\(token\), this\.readingFontSize\);/)
-assert.match(source, /return ReadingSettings\.scaleTypographyToken\(this\.headingBaseLineHeight\(token\), this\.readingFontSize\);/)
+assert.match(source, /return ReadingSettings\.scaleTypographyToken\(this\.headingBaseFontSize\(token\), this\.readingTextScale\);/)
+assert.match(source, /return ReadingSettings\.scaleTypographyToken\(this\.headingBaseLineHeight\(token\), this\.readingTextScale\);/)
 const codeBlockBody = source.match(/struct MarkdownCodeBlock[\s\S]*?\n}\n\n@Component\nstruct MarkdownAutoImage/)[0]
 assert.match(codeBlockBody, /\.fontSize\(this\.codeFontSize\(\)\)/)
 assert.doesNotMatch(codeBlockBody, /theme\?\.code\?\.fontSize/)

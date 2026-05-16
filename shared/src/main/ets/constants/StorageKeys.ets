@@ -10,7 +10,7 @@ export class StorageKeys {
   static readonly USE_CO_DOMAIN: string = 'useCoDomain'
   static readonly MEDIA_AUTO_LOAD_IMAGES: string = 'mediaAutoLoadImages'
   static readonly MEDIA_ONLY_LOAD_IMAGES_ON_WIFI: string = 'mediaOnlyLoadImagesOnWifi'
-  static readonly READING_FONT_SIZE: string = 'readingFontSize'
+  static readonly READING_TEXT_SCALE: string = 'readingTextScale'
   static readonly READING_LINE_HEIGHT: string = 'readingLineHeight'
   static readonly READING_DENSITY: string = 'readingDensity'
   static readonly READING_RESTORE_POSITION: string = 'readingRestorePosition'

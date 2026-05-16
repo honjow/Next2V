@@ -75,8 +75,8 @@ export struct TopicDetailPage {
   @StorageLink(StorageKeys.MOTION_HAND_EDGE)
   @Watch('onMotionHandEdgeChanged')
   motionHandEdge: string = 'right';
-  @StorageLink(StorageKeys.READING_FONT_SIZE) readingFontSize: number =
-    ThemeConstants.FONT_SIZE_BODY;
+  @StorageLink(StorageKeys.READING_TEXT_SCALE) readingTextScale: number =
+    ReadingSettings.TEXT_SCALE_DEFAULT;
   @StorageLink(StorageKeys.READING_LINE_HEIGHT) readingLineHeight: number =
     ThemeConstants.LINE_HEIGHT_BODY;
   @StorageLink(StorageKeys.READING_DENSITY) readingDensity: string =
@@ -254,11 +254,11 @@ export struct TopicDetailPage {
   }
 
   private bodyFontSize(): number {
-    return ReadingSettings.normalizeFontSize(this.readingFontSize)
+    return ReadingSettings.scaleTypographyToken(ThemeConstants.FONT_SIZE_BODY, this.readingTextScale)
   }
 
   private bodyLineHeight(): number {
-    return ReadingSettings.normalizeLineHeight(this.readingLineHeight, this.bodyFontSize())
+    return ReadingSettings.normalizeLineHeight(this.readingLineHeight, this.readingTextScale)
   }
 
   private topicCardPadding(): number {
