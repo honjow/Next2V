@@ -108,8 +108,37 @@ EOF
     ensure_ohpm_dependencies
     echo "==> 构建 release HAP..."
     cd "$PROJ"
+    RELEASE_BUILD_PROFILE_BACKUP_DIR="$(mktemp -d)"
+    backup_release_build_profiles() {
+      local profile
+      for profile in "$PROJ"/shared/BuildProfile.ets "$PROJ"/feature/*/BuildProfile.ets; do
+        [ -f "$profile" ] || continue
+        mkdir -p "$RELEASE_BUILD_PROFILE_BACKUP_DIR/$(dirname "${profile#$PROJ/}")"
+        cp "$profile" "$RELEASE_BUILD_PROFILE_BACKUP_DIR/${profile#$PROJ/}"
+      done
+    }
+    restore_release_build_profiles() {
+      local backup relpath
+      [ -n "${RELEASE_BUILD_PROFILE_BACKUP_DIR:-}" ] && [ -d "$RELEASE_BUILD_PROFILE_BACKUP_DIR" ] || return 0
+      while IFS= read -r -d '' backup; do
+        relpath="${backup#$RELEASE_BUILD_PROFILE_BACKUP_DIR/}"
+        cp "$backup" "$PROJ/$relpath"
+      done < <(find "$RELEASE_BUILD_PROFILE_BACKUP_DIR" -type f -name BuildProfile.ets -print0)
+      rm -rf "$RELEASE_BUILD_PROFILE_BACKUP_DIR"
+    }
+    cleanup_release_packaging() {
+      local status=0
+      python3 "$PROJ/scripts/prune-release-media-resources.py" --restore || status=$?
+      restore_release_build_profiles || status=$?
+      return "$status"
+    }
+    backup_release_build_profiles
+    trap cleanup_release_packaging EXIT
+    python3 "$PROJ/scripts/prune-release-media-resources.py" --apply
     hvigorw assembleHap --mode module -p product=default -p buildMode=release --no-daemon
     python3 "$PROJ/scripts/sign.py" --no-install "$@"
+    cleanup_release_packaging
+    trap - EXIT
     ;;
   --no-build)
     shift
