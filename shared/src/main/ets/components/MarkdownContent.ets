@@ -853,10 +853,6 @@ function _copyDecodedBase64Text(decoded: string): void {
   }
 }
 
-function _base64PopupMessage(_original: string, decoded: string): string {
-  return decoded;
-}
-
 function _base64PopupKey(token: Base64DecodeToken, tokenIndex: number, scope: string): string {
   return `${scope}-${tokenIndex}-${token.original}`;
 }
@@ -888,6 +884,27 @@ struct Base64PopupBadge {
   @Prop base64PopupScope: string = "inline";
   @State private isPopupVisible: boolean = false;
 
+  @Builder
+  Base64PopupContent() {
+    Column() {
+      Text(this.token.decoded)
+        .fontSize(this.fontSize)
+        .fontColor(ThemeConstants.TEXT_PRIMARY)
+        .lineHeight(Math.max(18, this.fontSize + 6))
+        .wordBreak(WordBreak.BREAK_WORD)
+    }
+    .padding({
+      left: ThemeConstants.SPACE_LG,
+      right: ThemeConstants.SPACE_LG,
+      top: ThemeConstants.SPACE_MD,
+      bottom: ThemeConstants.SPACE_MD,
+    })
+    .onClick(() => {
+      _copyDecodedBase64Text(this.token.decoded);
+      this.isPopupVisible = false;
+    })
+  }
+
   build() {
     Button() {
       Text("Base64")
@@ -908,14 +925,8 @@ struct Base64PopupBadge {
       this.isPopupVisible = true;
     })
     .bindPopup(this.isPopupVisible, {
-      message: _base64PopupMessage(this.token.original, this.token.decoded),
+      builder: this.Base64PopupContent,
       placement: Placement.Bottom,
-      primaryButton: {
-        value: "复制",
-        action: () => {
-          _copyDecodedBase64Text(this.token.decoded);
-        },
-      },
       autoCancel: true,
       mask: false,
       enableArrow: true,
