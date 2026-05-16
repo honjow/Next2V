@@ -12,10 +12,10 @@ const PREVIEW_FIXED_HEIGHT: number = 220
 
 @Component
 export struct ReadingSettingsPage {
-  @StorageLink(StorageKeys.READING_FONT_SIZE) readingFontSize: number = ReadingSettings.TEXT_SCALE_DEFAULT
+  @StorageLink(StorageKeys.READING_TEXT_SCALE) readingTextScale: number = ReadingSettings.TEXT_SCALE_DEFAULT
 
   private scaledToken(baseValue: number): number {
-    return ReadingSettings.scaleTypographyToken(baseValue, this.readingFontSize)
+    return ReadingSettings.scaleTypographyToken(baseValue, this.readingTextScale)
   }
 
   private bodyFontSize(): number {
@@ -60,7 +60,7 @@ export struct ReadingSettingsPage {
             .lineHeight(this.scaledToken(24))
             .width('100%')
 
-          Text('这是阅读字体设置的实时预览区域。拖动下面的滑块后，正文、标题、列表、引用和代码会按同一比例缩放，用来接近实际主题详情中的阅读感受。')
+          Text('这是阅读文字缩放设置的实时预览区域。拖动下面的滑块后，正文、标题、列表、引用和代码会按同一比例缩放，用来接近实际主题详情中的阅读感受。')
             .fontSize(this.bodyFontSize())
             .fontColor($r('sys.color.font_primary'))
             .lineHeight(this.bodyLineHeight())
@@ -122,7 +122,7 @@ export struct ReadingSettingsPage {
           .height(32)
 
           Slider({
-            value: this.readingFontSize,
+            value: this.readingTextScale,
             min: ReadingSettings.TEXT_SCALE_MIN,
             max: ReadingSettings.TEXT_SCALE_MAX,
             step: 0.01,
@@ -162,10 +162,10 @@ export struct ReadingSettingsPage {
   }
 
   private saveReadingTextScale(textScale: number): void {
-    this.readingFontSize = ReadingSettings.normalizeTextScale(textScale)
-    const lineHeight = ReadingSettings.scaleTypographyToken(ThemeConstants.LINE_HEIGHT_BODY, this.readingFontSize)
+    this.readingTextScale = ReadingSettings.normalizeTextScale(textScale)
+    const lineHeight = ReadingSettings.scaleTypographyToken(ThemeConstants.LINE_HEIGHT_BODY, this.readingTextScale)
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    ReadingSettings.saveTypography(context, this.readingFontSize, lineHeight)
+    ReadingSettings.saveTypography(context, this.readingTextScale, lineHeight)
       .catch((error: Error) => {
         console.error('save reading settings failed: ' + error.message)
       })
@@ -173,7 +173,7 @@ export struct ReadingSettingsPage {
 
   private confirmResetReadingSettings(): void {
     AlertDialog.show({
-      title: '恢复默认阅读字体设置',
+      title: '恢复默认阅读文字缩放设置',
       message: '将文字缩放恢复为默认值。确定继续吗？',
       primaryButton: {
         value: '取消',
