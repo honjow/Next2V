@@ -45,18 +45,80 @@ jobs:
           ohpm install --all
 
       - name: Build unsigned HAP (debug)
+        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
         shell: bash
         run: |
           hvigorw assembleHap --mode module -p product=default -p buildMode=debug --no-daemon
+
+      - name: Build unsigned HAP (release)
+        if: ${{ startsWith(github.ref, 'refs/tags/') }}
+        shell: bash
+        run: |
+          cleanup_release_prune() {
+            python3 scripts/prune-release-media-resources.py --restore
+          }
+          trap cleanup_release_prune EXIT
+          python3 scripts/prune-release-media-resources.py --apply
+          hvigorw assembleHap --mode module -p product=default -p buildMode=release --no-daemon
+          cleanup_release_prune
+          trap - EXIT
 
       - name: Collect unsigned HAP
         shell: bash
         run: |
           src="entry/build/default/outputs/default/entry-default-unsigned.hap"
-          dst="Next2V_${APP_VERSION}_ohos-unsigned.hap"
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            dst="Next2V_${APP_VERSION}_ohos-release-unsigned.hap"
+          else
+            dst="Next2V_${APP_VERSION}_ohos-debug-unsigned.hap"
+          fi
           test -f "$src"
           cp "$src" "$dst"
           echo "HAP_PATH=$dst" >> "$GITHUB_ENV"
+
+      - name: Inspect unsigned HAP
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import os
+          import zipfile
+          from pathlib import Path
+
+          hap = Path(os.environ['HAP_PATH'])
+          with zipfile.ZipFile(hap) as z:
+              names = z.namelist()
+          x86 = sum(1 for name in names if name.startswith('libs/x86_64/'))
+          arm64 = sum(1 for name in names if name.startswith('libs/arm64-v8a/'))
+          source_maps = 'ets/sourceMaps.map' in names
+          icon_media = sorted(
+              name for name in names
+              if name.startswith('resources/base/media/')
+              and (name.rsplit('/', 1)[-1].startswith('app_icon') or name.rsplit('/', 1)[-1].startswith('startup_foreground'))
+          )
+          print(f'HAP: {hap}')
+          print(f'Size MiB: {hap.stat().st_size / 1024 / 1024:.2f}')
+          print(f'arm64 entries: {arm64}')
+          print(f'x86_64 entries: {x86}')
+          print(f'has sourceMaps.map: {source_maps}')
+          print('icon/startup media:')
+          for name in icon_media:
+              print(f'  {name}')
+
+          if os.environ.get('GITHUB_REF', '').startswith('refs/tags/'):
+              required = {
+                  'resources/base/media/app_icon_layered.json',
+                  'resources/base/media/app_icon_sunset_solid_background.png',
+                  'resources/base/media/app_icon_sunset_solid_foreground.png',
+                  'resources/base/media/startup_foreground.png',
+              }
+              missing = sorted(required - set(names))
+              if missing:
+                  raise SystemExit(f'release HAP missing required media: {missing}')
+              if x86:
+                  raise SystemExit('release HAP unexpectedly contains x86_64 native libraries')
+              if source_maps:
+                  raise SystemExit('release HAP unexpectedly contains ets/sourceMaps.map')
+          PY
 
       - name: Upload unsigned HAP
         uses: actions/upload-artifact@v4
