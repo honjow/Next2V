@@ -1,9 +1,7 @@
 import {
   BlurStrategy,
   BottomBuilderShowType,
-  ActionBarButton,
   hdsMaterial,
-  HdsActionBar,
   HdsNavDestination,
   HdsNavigation,
   HdsNavigationTitleMode,
@@ -487,11 +485,6 @@ struct Index {
   @StorageLink(StorageKeys.PENDING_V2EX_URL)
   @Watch('onPendingV2exUrlChanged')
   pendingV2exUrl: string = '';
-  @StorageLink(StorageKeys.AUTH_COOKIE_CONFIGURED) authCookieConfigured: boolean = false;
-  @StorageProp(StorageKeys.BOTTOM_AVOID_HEIGHT) bottomH: number = 0;
-  @StorageLink(StorageKeys.MOTION_HAND_EDGE)
-  @Watch('onMotionHandEdgeChanged')
-  motionHandEdge: string = 'center';
   @StorageLink(StorageKeys.TOPIC_DETAIL_SAVED_LATER) topicDetailSavedLater: boolean = false;
   @StorageLink(StorageKeys.TOPIC_DETAIL_SITE_FAVORITED) topicDetailSiteFavorited: boolean = false;
   @StorageLink(StorageKeys.TOPIC_DETAIL_THANKED) topicDetailThanked: boolean = false;
@@ -530,8 +523,6 @@ struct Index {
   @State private notificationRefreshKey: number = 0;
   @State private accountRefreshKey: number = 0;
   @State private isFoldedAndUseOuterScreen: boolean = false;
-  @State private visualMotionHandEdge: string = 'center';
-  private readonly TOPIC_DETAIL_REPLY_TOOLBAR_HEIGHT: number = 108;
   private http: HttpClient = HttpClient.getInstance();
   private foldScreenCallback: (value: boolean) => void = (value: boolean) => {
     this.isFoldedAndUseOuterScreen = value
@@ -539,7 +530,6 @@ struct Index {
 
   aboutToAppear(): void {
     MotionHandStateService.start()
-    this.visualMotionHandEdge = this.motionHandEdge
     this.consumePendingV2exUrl()
 
     // 注册折叠屏状态变化回调
@@ -568,13 +558,6 @@ struct Index {
       }
       .titleBar(
         this.topicDetailTitleBarOpts(((param as Record<string, Object>)['topicId'] as number) || 0),
-      )
-      .toolbarConfiguration(
-        this.TopicDetailReplyToolbar(((param as Record<string, Object>)['topicId'] as number) || 0),
-        {
-          backgroundColor: Color.Transparent,
-          barStyle: BarStyle.STACK,
-        },
       )
       .dynamicHideTitleBar({
         hideTitleArea: this.isFoldedAndUseOuterScreen,
@@ -699,51 +682,6 @@ struct Index {
     }
   }
 
-  @Builder TopicDetailReplyToolbar(topicId: number) {
-    Row() {
-      HdsActionBar({
-        primaryButton: new ActionBarButton({
-          baseIcon: this.authCookieConfigured
-            ? $r('sys.symbol.arrowshape_turn_up_left_fill')
-            : $r('sys.symbol.lock'),
-          hoverTips: this.authCookieConfigured ? '回复' : '登录',
-          accessibilityText: this.authCookieConfigured ? '回复' : '登录',
-          onClick: () => {
-            this.sendTopicAction(topicId, 'reply')
-          },
-        }),
-      })
-    }
-    .width('100%')
-    .height(this.TOPIC_DETAIL_REPLY_TOOLBAR_HEIGHT + this.bottomH)
-    .justifyContent(this.topicDetailReplyToolbarAlign())
-    .alignItems(VerticalAlign.Bottom)
-    .padding({
-      left: ThemeConstants.SPACE_LG,
-      right: ThemeConstants.SPACE_LG,
-      bottom: this.bottomH + ThemeConstants.SPACE_LG,
-    })
-    .animation({ duration: ThemeConstants.ANIM_DURATION, curve: Curve.EaseOut })
-  }
-
-  private topicDetailReplyToolbarAlign(): FlexAlign {
-    if (this.visualMotionHandEdge === 'right') {
-      return FlexAlign.End
-    }
-    if (this.visualMotionHandEdge === 'center') {
-      return FlexAlign.Center
-    }
-    return FlexAlign.Start
-  }
-
-  private onMotionHandEdgeChanged(_propName: string): void {
-    this.getUIContext().animateTo(
-      { duration: ThemeConstants.ANIM_DURATION, curve: Curve.EaseOut },
-      () => {
-        this.visualMotionHandEdge = this.motionHandEdge
-      },
-    )
-  }
 
   build() {
     HdsNavigation(this.ns) {
