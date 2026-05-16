@@ -1,7 +1,7 @@
 import { common, ConfigurationConstant } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
 import { StorageKeys } from '../constants/StorageKeys'
-import { STORE_NAME_SETTINGS, setAppStorageValue } from './SettingsStorage'
+import { STORE_NAME_SETTINGS, SettingsPreferencesStore, setAppStorageValue } from './SettingsStorage'
 
 const STORE_NAME: string = STORE_NAME_SETTINGS
 const KEY_THEME_MODE: string = StorageKeys.THEME_MODE
@@ -31,12 +31,16 @@ export class ThemeSettings {
   static async load(context: common.UIAbilityContext): Promise<ThemeSettingsSnapshot> {
     try {
       const store = await preferences.getPreferences(context, STORE_NAME)
-      const mode = ThemeSettings.normalizeMode(store.getSync(KEY_THEME_MODE, THEME_MODE_AUTO) as string)
-      return ThemeSettings.apply(context, mode)
+      return ThemeSettings.loadFromStore(store, context)
     } catch (error) {
       const e = error as Error
       throw new Error(e.message || '读取主题设置失败')
     }
+  }
+
+  static async loadFromStore(store: SettingsPreferencesStore, context: common.UIAbilityContext): Promise<ThemeSettingsSnapshot> {
+    const mode = ThemeSettings.normalizeMode(store.getSync(KEY_THEME_MODE, THEME_MODE_AUTO) as string)
+    return ThemeSettings.apply(context, mode)
   }
 
   static async save(context: common.UIAbilityContext, mode: string): Promise<void> {

@@ -216,10 +216,11 @@ for (const file of settingsFiles) {
 
 const helperText = read('shared/src/main/ets/settings/SettingsStorage.ets')
 assert(helperText.includes("STORE_NAME_SETTINGS: string = 'next2v_settings'"), 'SettingsStorage must expose STORE_NAME_SETTINGS')
+assert(helperText.includes('type SettingsPreferencesStore = preferences.Preferences'), 'SettingsStorage must expose SettingsPreferencesStore preferences.Preferences alias')
 assert(helperText.includes('function setAppStorageValue<T>'), 'SettingsStorage must expose setAppStorageValue<T>')
 assert(helperText.includes('AppStorage.set<T>') && helperText.includes('AppStorage.setOrCreate<T>'), 'setAppStorageValue must use set fallback setOrCreate')
 
-for (const file of [
+const next2vSettingsFiles = [
   'ApiDomainSettings.ets',
   'MediaSettings.ets',
   'ReadingSettings.ets',
@@ -228,11 +229,38 @@ for (const file of [
   'ReplyCardStyleSettings.ets',
   'ReplyActionAlignmentSettings.ets',
   'AutoDailyCheckinSettings.ets',
-]) {
+]
+
+for (const file of next2vSettingsFiles) {
   const text = read(`shared/src/main/ets/settings/${file}`)
   assert(text.includes('STORE_NAME_SETTINGS'), `${file} must use shared STORE_NAME_SETTINGS`)
+  assert(text.includes('SettingsPreferencesStore'), `${file} must use shared SettingsPreferencesStore type`)
   assert(text.includes('setAppStorageValue'), `${file} must use shared AppStorage helper`)
+  assert(/static\s+async\s+loadFromStore\s*\(\s*store\s*:\s*SettingsPreferencesStore/.test(text), `${file} must expose static async loadFromStore(store: SettingsPreferencesStore...)`)
+  const loadBody = extractMethodBody(text, 'load')
+  assert(loadBody.includes('preferences.getPreferences(context, STORE_NAME)'), `${file} load(context) must still fetch STORE_NAME before delegating`)
+  assert(loadBody.includes('.loadFromStore(store'), `${file} load(context) must delegate to loadFromStore(store)`)
+  const saveBody = extractMethodBody(text, 'save')
+  assert(saveBody.includes('preferences.getPreferences(context, STORE_NAME)'), `${file} save path must keep fetching preferences STORE_NAME`)
 }
+
+const readingSettings = read('shared/src/main/ets/settings/ReadingSettings.ets')
+for (const method of ['saveTypography', 'saveRestorePosition', 'saveBase64DecodeMode']) {
+  const body = extractMethodBody(readingSettings, method)
+  assert(body.includes('preferences.getPreferences(context, STORE_NAME)'), `ReadingSettings.${method} path must keep fetching preferences STORE_NAME`)
+}
+const autoDailyCheckinSettings = read('shared/src/main/ets/settings/AutoDailyCheckinSettings.ets')
+for (const method of ['saveLastAttemptDate', 'saveLastSuccessDate']) {
+  const body = extractMethodBody(autoDailyCheckinSettings, method)
+  assert(body.includes('preferences.getPreferences(context, STORE_NAME)'), `AutoDailyCheckinSettings.${method} path must keep fetching preferences STORE_NAME`)
+}
+
+for (const file of ['FeedTabSettings.ets', 'CookieJarSettings.ets']) {
+  const text = read(`shared/src/main/ets/settings/${file}`)
+  assert(!text.includes('loadFromStore'), `${file} must not add loadFromStore`)
+}
+assert(read('shared/src/main/ets/settings/FeedTabSettings.ets').includes("STORE_NAME: string = 'next2v_feed_tabs'"), 'FeedTabSettings must keep independent next2v_feed_tabs store')
+assert(read('shared/src/main/ets/settings/CookieJarSettings.ets').includes("STORE_NAME: string = 'next2v_cookiejar'"), 'CookieJarSettings must keep independent next2v_cookiejar store')
 
 const entry = read('entry/src/main/ets/entryability/EntryAbility.ets')
 const bootstrapRel = 'shared/src/main/ets/settings/SettingsBootstrap.ets'
@@ -240,6 +268,11 @@ assert(fs.existsSync(path.join(repo, bootstrapRel)), 'SettingsBootstrap.ets must
 const bootstrap = read(bootstrapRel)
 assert(/class\s+SettingsBootstrap/.test(bootstrap), 'SettingsBootstrap class missing')
 assert(/static\s+async\s+loadAll\s*\(\s*context\s*:\s*common\.UIAbilityContext\s*\)\s*:\s*Promise<void>/.test(bootstrap), 'SettingsBootstrap.loadAll signature missing')
+assert(bootstrap.includes('STORE_NAME_SETTINGS'), 'SettingsBootstrap must import/use STORE_NAME_SETTINGS')
+assert(bootstrap.includes('SettingsPreferencesStore'), 'SettingsBootstrap must use SettingsPreferencesStore')
+const settingsStorePrefetches = bootstrap.match(/preferences\.getPreferences\(context, STORE_NAME_SETTINGS\)/g) || []
+assert(settingsStorePrefetches.length === 1, `SettingsBootstrap must prefetch STORE_NAME_SETTINGS exactly once, got ${settingsStorePrefetches.length}`)
+assert(!bootstrap.includes('settingsStore = undefined'), 'SettingsBootstrap must not abort or clear settingsStore after prefetch failure')
 assert(entry.includes('SettingsBootstrap.loadAll(this.context)'), 'EntryAbility must call SettingsBootstrap.loadAll(this.context)')
 const loadAllIndex = entry.indexOf('SettingsBootstrap.loadAll(this.context)')
 const finallyIndex = entry.indexOf('.finally', loadAllIndex)
@@ -277,7 +310,9 @@ const helperContracts = [
   {
     name: 'restoreApiDomain',
     required: [
-      'ApiDomainSettings.load(context).catch',
+      'ApiDomainSettings.loadFromStore(settingsStore)',
+      'ApiDomainSettings.load(context)',
+      ').catch',
       'restore api domain failed: ',
       'ApiDomainSettings.apply(false)',
     ],
@@ -285,7 +320,9 @@ const helperContracts = [
   {
     name: 'restoreTheme',
     required: [
-      'ThemeSettings.load(context).catch',
+      'ThemeSettings.loadFromStore(settingsStore, context)',
+      'ThemeSettings.load(context)',
+      ').catch',
       'restore theme settings failed: ',
       'ThemeSettings.apply(context, ThemeSettings.MODE_AUTO)',
     ],
@@ -293,7 +330,9 @@ const helperContracts = [
   {
     name: 'restoreMedia',
     required: [
-      'MediaSettings.load(context).catch',
+      'MediaSettings.loadFromStore(settingsStore)',
+      'MediaSettings.load(context)',
+      ').catch',
       'restore media settings failed: ',
       'MediaSettings.apply(true, false)',
     ],
@@ -301,7 +340,9 @@ const helperContracts = [
   {
     name: 'restoreReplyDisplay',
     required: [
-      'ReplyDisplaySettings.load(context).catch',
+      'ReplyDisplaySettings.loadFromStore(settingsStore)',
+      'ReplyDisplaySettings.load(context)',
+      ').catch',
       'restore reply display settings failed: ',
       'ReplyDisplaySettings.apply(ReplyDisplaySettings.MODE_THREAD)',
     ],
@@ -309,7 +350,9 @@ const helperContracts = [
   {
     name: 'restoreReading',
     required: [
-      'ReadingSettings.load(context).catch',
+      'ReadingSettings.loadFromStore(settingsStore)',
+      'ReadingSettings.load(context)',
+      ').catch',
       'restore reading settings failed: ',
       'ReadingSettings.apply(14, 20, ReadingSettings.DENSITY_STANDARD)',
     ],
@@ -336,7 +379,9 @@ const helperContracts = [
   {
     name: 'restoreAutoDailyCheckin',
     required: [
-      'AutoDailyCheckinSettings.load(context).catch',
+      'AutoDailyCheckinSettings.loadFromStore(settingsStore)',
+      'AutoDailyCheckinSettings.load(context)',
+      ').catch',
       'restore auto daily check-in setting failed: ',
       'AutoDailyCheckinSettings.apply(true)',
     ],
@@ -354,7 +399,9 @@ const helperContracts = [
   {
     name: 'restoreReplyCardStyle',
     required: [
-      'ReplyCardStyleSettings.load(context).catch',
+      'ReplyCardStyleSettings.loadFromStore(settingsStore)',
+      'ReplyCardStyleSettings.load(context)',
+      ').catch',
       'restore reply card style failed: ',
       'ReplyCardStyleSettings.apply(ReplyCardStyleSettings.STYLE_STANDARD)',
     ],
@@ -362,7 +409,9 @@ const helperContracts = [
   {
     name: 'restoreReplyActionAlignment',
     required: [
-      'ReplyActionAlignmentSettings.load(context).catch',
+      'ReplyActionAlignmentSettings.loadFromStore(settingsStore)',
+      'ReplyActionAlignmentSettings.load(context)',
+      ').catch',
       'restore reply action alignment failed: ',
       'ReplyActionAlignmentSettings.apply(ReplyActionAlignmentSettings.MODE_UNSET)',
     ],

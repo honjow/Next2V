@@ -1,7 +1,7 @@
 import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
 import { StorageKeys } from '../constants/StorageKeys'
-import { STORE_NAME_SETTINGS, setAppStorageValue } from './SettingsStorage'
+import { STORE_NAME_SETTINGS, SettingsPreferencesStore, setAppStorageValue } from './SettingsStorage'
 
 const STORE_NAME: string = STORE_NAME_SETTINGS
 const KEY_ENABLED: string = StorageKeys.AUTO_DAILY_CHECKIN_ENABLED
@@ -48,20 +48,24 @@ export class AutoDailyCheckinSettings {
   static async load(context: common.UIAbilityContext): Promise<AutoDailyCheckinSettingsSnapshot> {
     try {
       const store = await preferences.getPreferences(context, STORE_NAME)
-      const enabled = store.getSync(KEY_ENABLED, true) as boolean
-      const lastAttemptDate = store.getSync(KEY_LAST_ATTEMPT_DATE, '') as string
-      const lastAttemptIdentity = store.getSync(KEY_LAST_ATTEMPT_IDENTITY, '') as string
-      const lastSuccessDate = store.getSync(KEY_LAST_SUCCESS_DATE, '') as string
-      AutoDailyCheckinSettings.apply(enabled, lastAttemptDate, lastAttemptIdentity, lastSuccessDate)
-      return {
-        enabled: enabled,
-        lastAttemptDate: lastAttemptDate,
-        lastAttemptIdentity: lastAttemptIdentity,
-        lastSuccessDate: lastSuccessDate,
-      }
+      return AutoDailyCheckinSettings.loadFromStore(store)
     } catch (error) {
       const e = error as Error
       throw new Error(e.message || '读取自动签到设置失败')
+    }
+  }
+
+  static async loadFromStore(store: SettingsPreferencesStore): Promise<AutoDailyCheckinSettingsSnapshot> {
+    const enabled = store.getSync(KEY_ENABLED, true) as boolean
+    const lastAttemptDate = store.getSync(KEY_LAST_ATTEMPT_DATE, '') as string
+    const lastAttemptIdentity = store.getSync(KEY_LAST_ATTEMPT_IDENTITY, '') as string
+    const lastSuccessDate = store.getSync(KEY_LAST_SUCCESS_DATE, '') as string
+    AutoDailyCheckinSettings.apply(enabled, lastAttemptDate, lastAttemptIdentity, lastSuccessDate)
+    return {
+      enabled: enabled,
+      lastAttemptDate: lastAttemptDate,
+      lastAttemptIdentity: lastAttemptIdentity,
+      lastSuccessDate: lastSuccessDate,
     }
   }
 

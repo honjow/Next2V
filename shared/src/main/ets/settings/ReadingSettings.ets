@@ -2,7 +2,7 @@ import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
 import { StorageKeys } from '../constants/StorageKeys'
 import { ThemeConstants } from '../theme/ThemeConstants'
-import { STORE_NAME_SETTINGS, setAppStorageValue } from './SettingsStorage'
+import { STORE_NAME_SETTINGS, SettingsPreferencesStore, setAppStorageValue } from './SettingsStorage'
 
 const STORE_NAME: string = STORE_NAME_SETTINGS
 // Compatibility key: kept as readingFontSize in preferences/AppStorage, but the
@@ -58,24 +58,28 @@ export class ReadingSettings {
   static async load(context: common.UIAbilityContext): Promise<ReadingSettingsSnapshot> {
     try {
       const store = await preferences.getPreferences(context, STORE_NAME)
-      const textScale = ReadingSettings.normalizeTextScale(store.getSync(KEY_FONT_SIZE, ReadingSettings.TEXT_SCALE_DEFAULT) as number)
-      const lineHeight = ReadingSettings.normalizeLineHeight(store.getSync(KEY_LINE_HEIGHT, ThemeConstants.LINE_HEIGHT_BODY) as number, textScale)
-      const density = ReadingSettings.normalizeDensity(store.getSync(KEY_DENSITY, DENSITY_STANDARD) as string)
-      const restorePosition = store.getSync(KEY_RESTORE_POSITION, false) as boolean
-      const base64DecodeMode = ReadingSettings.normalizeBase64DecodeMode(store.getSync(KEY_BASE64_DECODE_MODE, BASE64_MODE_BADGE) as string)
-      ReadingSettings.apply(textScale, lineHeight, density, restorePosition)
-      setAppStorageValue<string>(StorageKeys.READING_BASE64_DECODE_MODE, base64DecodeMode)
-      return {
-        fontSize: textScale,
-        textScale: textScale,
-        lineHeight: lineHeight,
-        density: density,
-        restorePosition: restorePosition,
-        base64DecodeMode: base64DecodeMode,
-      }
+      return ReadingSettings.loadFromStore(store)
     } catch (error) {
       const e = error as Error
       throw new Error(e.message || '读取阅读设置失败')
+    }
+  }
+
+  static async loadFromStore(store: SettingsPreferencesStore): Promise<ReadingSettingsSnapshot> {
+    const textScale = ReadingSettings.normalizeTextScale(store.getSync(KEY_FONT_SIZE, ReadingSettings.TEXT_SCALE_DEFAULT) as number)
+    const lineHeight = ReadingSettings.normalizeLineHeight(store.getSync(KEY_LINE_HEIGHT, ThemeConstants.LINE_HEIGHT_BODY) as number, textScale)
+    const density = ReadingSettings.normalizeDensity(store.getSync(KEY_DENSITY, DENSITY_STANDARD) as string)
+    const restorePosition = store.getSync(KEY_RESTORE_POSITION, false) as boolean
+    const base64DecodeMode = ReadingSettings.normalizeBase64DecodeMode(store.getSync(KEY_BASE64_DECODE_MODE, BASE64_MODE_BADGE) as string)
+    ReadingSettings.apply(textScale, lineHeight, density, restorePosition)
+    setAppStorageValue<string>(StorageKeys.READING_BASE64_DECODE_MODE, base64DecodeMode)
+    return {
+      fontSize: textScale,
+      textScale: textScale,
+      lineHeight: lineHeight,
+      density: density,
+      restorePosition: restorePosition,
+      base64DecodeMode: base64DecodeMode,
     }
   }
 

@@ -1,7 +1,7 @@
 import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
 import { StorageKeys } from '../constants/StorageKeys'
-import { STORE_NAME_SETTINGS, setAppStorageValue } from './SettingsStorage'
+import { STORE_NAME_SETTINGS, SettingsPreferencesStore, setAppStorageValue } from './SettingsStorage'
 
 const STORE_NAME: string = STORE_NAME_SETTINGS
 const KEY_REPLY_DISPLAY_MODE: string = StorageKeys.REPLY_DISPLAY_MODE
@@ -25,13 +25,17 @@ export class ReplyDisplaySettings {
   static async load(context: common.UIAbilityContext): Promise<string> {
     try {
       const store = await preferences.getPreferences(context, STORE_NAME)
-      const mode = ReplyDisplaySettings.normalizeMode(store.getSync(KEY_REPLY_DISPLAY_MODE, MODE_THREAD) as string)
-      ReplyDisplaySettings.apply(mode)
-      return mode
+      return ReplyDisplaySettings.loadFromStore(store)
     } catch (error) {
       const e = error as Error
       throw new Error(e.message || '读取回复显示设置失败')
     }
+  }
+
+  static async loadFromStore(store: SettingsPreferencesStore): Promise<string> {
+    const mode = ReplyDisplaySettings.normalizeMode(store.getSync(KEY_REPLY_DISPLAY_MODE, MODE_THREAD) as string)
+    ReplyDisplaySettings.apply(mode)
+    return mode
   }
 
   static async save(context: common.UIAbilityContext, mode: string): Promise<void> {
