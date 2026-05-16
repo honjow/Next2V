@@ -3,14 +3,15 @@ import { preferences } from '@kit.ArkData'
 import { ApiConstants } from '../constants/ApiConstants'
 import { StorageKeys } from '../constants/StorageKeys'
 import { HttpClient } from '../network/HttpClient'
+import { STORE_NAME_SETTINGS, setAppStorageValue } from './SettingsStorage'
 
-const STORE_NAME: string = 'next2v_settings'
-const KEY_USE_CO_DOMAIN: string = 'useCoDomain'
+const STORE_NAME: string = STORE_NAME_SETTINGS
+const KEY_USE_CO_DOMAIN: string = StorageKeys.USE_CO_DOMAIN
 
 export class ApiDomainSettings {
   static apply(useCoDomain: boolean): void {
     HttpClient.getInstance().setBaseUrl(useCoDomain ? ApiConstants.BASE_URL_CO : ApiConstants.BASE_URL_COM)
-    AppStorage.setOrCreate<boolean>(StorageKeys.USE_CO_DOMAIN, useCoDomain)
+    setAppStorageValue<boolean>(StorageKeys.USE_CO_DOMAIN, useCoDomain)
   }
 
   static async load(context: common.UIAbilityContext): Promise<boolean> {

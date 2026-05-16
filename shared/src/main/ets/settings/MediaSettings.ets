@@ -1,8 +1,10 @@
 import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
 import { StorageKeys } from '../constants/StorageKeys'
+import { STORE_NAME_SETTINGS, setAppStorageValue } from './SettingsStorage'
 
-const STORE_NAME: string = 'next2v_settings'
+const STORE_NAME: string = STORE_NAME_SETTINGS
+// Legacy preferences keys differ from StorageKeys.MEDIA_* AppStorage keys; keep them for compatibility.
 const KEY_AUTO_LOAD_IMAGES: string = 'autoLoadImages'
 const KEY_ONLY_LOAD_IMAGES_ON_WIFI: string = 'onlyLoadImagesOnWifi'
 
@@ -13,8 +15,8 @@ export interface MediaSettingsSnapshot {
 
 export class MediaSettings {
   static apply(autoLoadImages: boolean, onlyLoadImagesOnWifi: boolean = false): void {
-    AppStorage.setOrCreate<boolean>(StorageKeys.MEDIA_AUTO_LOAD_IMAGES, autoLoadImages)
-    AppStorage.setOrCreate<boolean>(StorageKeys.MEDIA_ONLY_LOAD_IMAGES_ON_WIFI, onlyLoadImagesOnWifi)
+    setAppStorageValue<boolean>(StorageKeys.MEDIA_AUTO_LOAD_IMAGES, autoLoadImages)
+    setAppStorageValue<boolean>(StorageKeys.MEDIA_ONLY_LOAD_IMAGES_ON_WIFI, onlyLoadImagesOnWifi)
   }
 
   static async load(context: common.UIAbilityContext): Promise<MediaSettingsSnapshot> {

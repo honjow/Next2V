@@ -1,12 +1,13 @@
 import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
 import { StorageKeys } from '../constants/StorageKeys'
+import { STORE_NAME_SETTINGS, setAppStorageValue } from './SettingsStorage'
 
-const STORE_NAME: string = 'next2v_settings'
-const KEY_ENABLED: string = 'autoDailyCheckinEnabled'
-const KEY_LAST_ATTEMPT_DATE: string = 'autoDailyCheckinLastAttemptDate'
-const KEY_LAST_ATTEMPT_IDENTITY: string = 'autoDailyCheckinLastAttemptIdentity'
-const KEY_LAST_SUCCESS_DATE: string = 'autoDailyCheckinLastSuccessDate'
+const STORE_NAME: string = STORE_NAME_SETTINGS
+const KEY_ENABLED: string = StorageKeys.AUTO_DAILY_CHECKIN_ENABLED
+const KEY_LAST_ATTEMPT_DATE: string = StorageKeys.AUTO_DAILY_CHECKIN_LAST_ATTEMPT_DATE
+const KEY_LAST_ATTEMPT_IDENTITY: string = StorageKeys.AUTO_DAILY_CHECKIN_LAST_ATTEMPT_IDENTITY
+const KEY_LAST_SUCCESS_DATE: string = StorageKeys.AUTO_DAILY_CHECKIN_LAST_SUCCESS_DATE
 
 export interface AutoDailyCheckinSettingsSnapshot {
   enabled: boolean
@@ -22,10 +23,10 @@ export class AutoDailyCheckinSettings {
     lastAttemptIdentity: string = '',
     lastSuccessDate: string = '',
   ): void {
-    AppStorage.setOrCreate<boolean>(StorageKeys.AUTO_DAILY_CHECKIN_ENABLED, enabled)
-    AppStorage.setOrCreate<string>(StorageKeys.AUTO_DAILY_CHECKIN_LAST_ATTEMPT_DATE, lastAttemptDate || '')
-    AppStorage.setOrCreate<string>(StorageKeys.AUTO_DAILY_CHECKIN_LAST_ATTEMPT_IDENTITY, lastAttemptIdentity || '')
-    AppStorage.setOrCreate<string>(StorageKeys.AUTO_DAILY_CHECKIN_LAST_SUCCESS_DATE, lastSuccessDate || '')
+    setAppStorageValue<boolean>(StorageKeys.AUTO_DAILY_CHECKIN_ENABLED, enabled)
+    setAppStorageValue<string>(StorageKeys.AUTO_DAILY_CHECKIN_LAST_ATTEMPT_DATE, lastAttemptDate || '')
+    setAppStorageValue<string>(StorageKeys.AUTO_DAILY_CHECKIN_LAST_ATTEMPT_IDENTITY, lastAttemptIdentity || '')
+    setAppStorageValue<string>(StorageKeys.AUTO_DAILY_CHECKIN_LAST_SUCCESS_DATE, lastSuccessDate || '')
   }
 
   static isEnabled(): boolean {

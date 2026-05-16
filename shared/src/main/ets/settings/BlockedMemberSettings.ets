@@ -2,6 +2,7 @@ import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
 import { StorageKeys } from '../constants/StorageKeys'
 import { BlockedTopicFilter } from '../utils/BlockedTopicFilter'
+import { setAppStorageValue } from './SettingsStorage'
 
 const STORE_NAME: string = 'next2v_blocked_members'
 const KEY_USERNAMES: string = 'usernames'
@@ -68,9 +69,7 @@ export class BlockedMemberSettings {
   }
 
   static publishUpdatedAt(updatedAt: number = Date.now()): void {
-    if (!AppStorage.set<number>(StorageKeys.BLOCKED_MEMBERS_UPDATED_AT, updatedAt)) {
-      AppStorage.setOrCreate<number>(StorageKeys.BLOCKED_MEMBERS_UPDATED_AT, updatedAt)
-    }
+    setAppStorageValue<number>(StorageKeys.BLOCKED_MEMBERS_UPDATED_AT, updatedAt)
   }
 
   static getCachedUsernames(): string[] {

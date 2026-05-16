@@ -1,9 +1,12 @@
 /** AppStorage 键名常量，避免跨模块硬编码字符串 */
 export class StorageKeys {
+  // Runtime window/layout state
   static readonly TOP_AVOID_HEIGHT: string = 'topAvoidHeight'
   static readonly BOTTOM_AVOID_HEIGHT: string = 'bottomAvoidHeight'
   static readonly KEYBOARD_HEIGHT: string = 'keyboardHeight'
   static readonly NAV_PATH_STACK: string = 'ns'
+
+  // Persistent user settings / preferences-backed AppStorage
   static readonly USE_CO_DOMAIN: string = 'useCoDomain'
   static readonly MEDIA_AUTO_LOAD_IMAGES: string = 'mediaAutoLoadImages'
   static readonly MEDIA_ONLY_LOAD_IMAGES_ON_WIFI: string = 'mediaOnlyLoadImagesOnWifi'
@@ -17,6 +20,8 @@ export class StorageKeys {
   static readonly REPLY_ACTION_ALIGNMENT_MODE: string = 'replyActionAlignmentMode'
   static readonly THEME_MODE: string = 'themeMode'
   static readonly THEME_EFFECTIVE_DARK: string = 'themeEffectiveDark'
+
+  // Auth/session state
   static readonly TOPIC_READ_STATES: string = 'topicReadStates'
   static readonly AUTH_TOKEN_CONFIGURED: string = 'authTokenConfigured'
   static readonly AUTH_USERNAME: string = 'authUsername'
@@ -26,10 +31,14 @@ export class StorageKeys {
   static readonly AUTH_SESSION_AVATAR: string = 'authSessionAvatar'
   static readonly AUTH_SESSION_VALIDATED_AT: string = 'authSessionValidatedAt'
   static readonly AUTH_SESSION_UPDATED_AT: string = 'authSessionUpdatedAt'
+
+  // Auto daily check-in state
   static readonly AUTO_DAILY_CHECKIN_ENABLED: string = 'autoDailyCheckinEnabled'
   static readonly AUTO_DAILY_CHECKIN_LAST_ATTEMPT_DATE: string = 'autoDailyCheckinLastAttemptDate'
   static readonly AUTO_DAILY_CHECKIN_LAST_ATTEMPT_IDENTITY: string = 'autoDailyCheckinLastAttemptIdentity'
   static readonly AUTO_DAILY_CHECKIN_LAST_SUCCESS_DATE: string = 'autoDailyCheckinLastSuccessDate'
+
+  // API/local data/cache metadata
   static readonly API_RATE_LIMIT_LIMIT: string = 'apiRateLimitLimit'
   static readonly API_RATE_LIMIT_REMAINING: string = 'apiRateLimitRemaining'
   static readonly API_RATE_LIMIT_RESET: string = 'apiRateLimitReset'
@@ -38,12 +47,16 @@ export class StorageKeys {
   static readonly LOCAL_SAVED_TOPIC_COUNT: string = 'localSavedTopicCount'
   static readonly LOCAL_SAVED_NODE_COUNT: string = 'localSavedNodeCount'
   static readonly LOCAL_VIEWED_TOPIC_COUNT: string = 'localViewedTopicCount'
+
+  // Feed tabs and motion state
   static readonly FEED_TAB: string = 'feedTab'
   static readonly FEED_TAB_KEYS: string = 'feedTabKeys'
   static readonly FEED_TAB_VISUAL_INDEX: string = 'feedTabVisualIndex'
   static readonly BLOCKED_MEMBERS_UPDATED_AT: string = 'blockedMembersUpdatedAt'
   static readonly MOTION_HAND_EDGE: string = 'motionHandEdge'
   static readonly MOTION_HOLDING_HAND_SUPPORTED: string = 'motionHoldingHandSupported'
+
+  // Navigation/action bus and page appbar state
   static readonly TOPIC_DETAIL_ACTION: string = 'topicDetailAction'
   static readonly TOPIC_DETAIL_SAVED_LATER: string = 'topicDetailSavedLater'
   static readonly TOPIC_DETAIL_SITE_FAVORITED: string = 'topicDetailSiteFavorited'

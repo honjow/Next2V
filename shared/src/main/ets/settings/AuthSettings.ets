@@ -1,6 +1,7 @@
 import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
 import { StorageKeys } from '../constants/StorageKeys'
+import { setAppStorageValue } from './SettingsStorage'
 
 const STORE_NAME: string = 'next2v_auth'
 const KEY_TOKEN: string = 'personalAccessToken'
@@ -55,7 +56,7 @@ export class AuthSettings {
   }
 
   static apply(token: string, username: string): void {
-    AppStorage.setOrCreate<boolean>(StorageKeys.AUTH_TOKEN_CONFIGURED, token.trim().length > 0)
-    AppStorage.setOrCreate<string>(StorageKeys.AUTH_USERNAME, username)
+    setAppStorageValue<boolean>(StorageKeys.AUTH_TOKEN_CONFIGURED, token.trim().length > 0)
+    setAppStorageValue<string>(StorageKeys.AUTH_USERNAME, username)
   }
 }

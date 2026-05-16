@@ -5,6 +5,7 @@ import { CollectionSettings } from './CollectionSettings'
 import { DraftSettings } from './DraftSettings'
 import { NotificationSettings } from './NotificationSettings'
 import { SearchSettings } from './SearchSettings'
+import { setAppStorageValue } from './SettingsStorage'
 
 export class LocalDataSettings {
   static async clearAll(context: common.UIAbilityContext): Promise<void> {
@@ -15,6 +16,6 @@ export class LocalDataSettings {
       CacheSettings.clear(context),
       NotificationSettings.clearCache(context)
     ])
-    AppStorage.setOrCreate<number>(StorageKeys.LOCAL_DATA_UPDATED_AT, Math.floor(Date.now() / 1000))
+    setAppStorageValue<number>(StorageKeys.LOCAL_DATA_UPDATED_AT, Math.floor(Date.now() / 1000))
   }
 }

@@ -4,6 +4,7 @@ import { webview } from '@kit.ArkWeb'
 import { ApiConstants } from '../constants/ApiConstants'
 import { StorageKeys } from '../constants/StorageKeys'
 import { HttpClient } from '../network/HttpClient'
+import { setAppStorageValue } from './SettingsStorage'
 
 const STORE_NAME: string = 'next2v_cookiejar'
 const KEY_COOKIE_COM: string = 'cookieCom'
@@ -111,7 +112,7 @@ export class CookieJarSettings {
 
   static refreshConfiguredState(): void {
     const current = CookieJarSettings.getCurrentCookie()
-    AppStorage.setOrCreate<boolean>(StorageKeys.AUTH_COOKIE_CONFIGURED, current.length > 0)
+    setAppStorageValue<boolean>(StorageKeys.AUTH_COOKIE_CONFIGURED, current.length > 0)
   }
 
   static async restoreCurrentToWebCookieManager(): Promise<void> {

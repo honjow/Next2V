@@ -1,9 +1,10 @@
 import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
 import { StorageKeys } from '../constants/StorageKeys'
+import { STORE_NAME_SETTINGS, setAppStorageValue } from './SettingsStorage'
 
-const STORE_NAME: string = 'next2v_settings'
-const KEY_REPLY_DISPLAY_MODE: string = 'replyDisplayMode'
+const STORE_NAME: string = STORE_NAME_SETTINGS
+const KEY_REPLY_DISPLAY_MODE: string = StorageKeys.REPLY_DISPLAY_MODE
 const MODE_THREAD: string = 'thread'
 const MODE_THREAD_WITH_MENTION: string = 'threadWithMention'
 const MODE_THREAD_REDUNDANT: string = 'threadRedundant'
@@ -18,7 +19,7 @@ export class ReplyDisplaySettings {
   static readonly MODE_ORIGIN: string = MODE_ORIGIN
 
   static apply(mode: string): void {
-    ReplyDisplaySettings.setAppStorageValue<string>(StorageKeys.REPLY_DISPLAY_MODE, ReplyDisplaySettings.normalizeMode(mode))
+    setAppStorageValue<string>(StorageKeys.REPLY_DISPLAY_MODE, ReplyDisplaySettings.normalizeMode(mode))
   }
 
   static async load(context: common.UIAbilityContext): Promise<string> {
@@ -69,11 +70,5 @@ export class ReplyDisplaySettings {
       return '原版'
     }
     return '楼中楼'
-  }
-
-  private static setAppStorageValue<T>(key: string, value: T): void {
-    if (!AppStorage.set<T>(key, value)) {
-      AppStorage.setOrCreate<T>(key, value)
-    }
   }
 }

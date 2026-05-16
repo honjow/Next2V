@@ -1,9 +1,10 @@
 import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
 import { StorageKeys } from '../constants/StorageKeys'
+import { STORE_NAME_SETTINGS, setAppStorageValue } from './SettingsStorage'
 
-const STORE_NAME: string = 'next2v_settings'
-const KEY_REPLY_CARD_STYLE: string = 'replyCardStyle'
+const STORE_NAME: string = STORE_NAME_SETTINGS
+const KEY_REPLY_CARD_STYLE: string = StorageKeys.REPLY_CARD_STYLE
 const STYLE_STANDARD: string = 'standard'
 const STYLE_COMPACT: string = 'compact'
 
@@ -12,7 +13,7 @@ export class ReplyCardStyleSettings {
   static readonly STYLE_COMPACT: string = STYLE_COMPACT
 
   static apply(style: string): void {
-    ReplyCardStyleSettings.setAppStorageValue<string>(
+    setAppStorageValue<string>(
       StorageKeys.REPLY_CARD_STYLE,
       ReplyCardStyleSettings.normalize(style),
     )
@@ -58,11 +59,5 @@ export class ReplyCardStyleSettings {
       return '紧凑'
     }
     return '标准'
-  }
-
-  private static setAppStorageValue<T>(key: string, value: T): void {
-    if (!AppStorage.set<T>(key, value)) {
-      AppStorage.setOrCreate<T>(key, value)
-    }
   }
 }
