@@ -1000,7 +1000,7 @@ function SelectableInlineTokenSpans(
             radius: ThemeConstants.RADIUS_SM,
           });
       } else if (base64DecodeMode === ReadingSettings.BASE64_MODE_BADGE) {
-        Span(" Base64/解码")
+        Span(" Base64")
           .fontSize(Math.max(10, fontSize - 2))
           .fontColor(ThemeConstants.TEXT_LINK)
           .textBackgroundStyle({
