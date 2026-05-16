@@ -3,17 +3,8 @@ import { Configuration } from '@ohos.app.ability.Configuration'
 import { window } from '@kit.ArkUI'
 import { webview } from '@kit.ArkWeb'
 import {
-  ApiDomainSettings,
-  AutoDailyCheckinService,
-  AutoDailyCheckinSettings,
-  CookieJarSettings,
-  FeedTabSettings,
   FoldScreenUtil,
-  MediaSettings,
-  ReadingSettings,
-  ReplyActionAlignmentSettings,
-  ReplyDisplaySettings,
-  ReplyCardStyleSettings,
+  SettingsBootstrap,
   StorageKeys,
   ThemeSettings,
   V2exUrlRouter,
@@ -60,96 +51,9 @@ export default class EntryAbility extends UIAbility {
       const e = error as Error
       console.error('configure window failed: ' + e.message)
     }
-    ApiDomainSettings.load(this.context)
-      .catch((error: Error) => {
-        console.error('restore api domain failed: ' + error.message)
-        ApiDomainSettings.apply(false)
-      })
-      .finally(() => {
-        ThemeSettings.load(this.context)
-          .catch((error: Error) => {
-            console.error('restore theme settings failed: ' + error.message)
-            ThemeSettings.apply(this.context, ThemeSettings.MODE_AUTO)
-          })
-          .finally(() => {
-            MediaSettings.load(this.context)
-              .catch((error: Error) => {
-                console.error('restore media settings failed: ' + error.message)
-                MediaSettings.apply(true, false)
-              })
-              .finally(() => {
-                ReplyDisplaySettings.load(this.context)
-                  .catch((error: Error) => {
-                    console.error('restore reply display settings failed: ' + error.message)
-                    ReplyDisplaySettings.apply(ReplyDisplaySettings.MODE_THREAD)
-                  })
-                  .finally(() => {
-                    ReadingSettings.load(this.context)
-                      .catch((error: Error) => {
-                        console.error('restore reading settings failed: ' + error.message)
-                        ReadingSettings.apply(14, 20, ReadingSettings.DENSITY_STANDARD)
-                      })
-                      .finally(() => {
-                        FeedTabSettings.load(this.context)
-                          .catch((error: Error) => {
-                            console.error('restore feed tab settings failed: ' + error.message)
-                            FeedTabSettings.apply(FeedTabSettings.defaultKeysJson())
-                          })
-                          .finally(() => {
-                            CookieJarSettings.load(this.context)
-                              .catch((error: Error) => {
-                                console.error('restore cookie jar failed: ' + error.message)
-                                CookieJarSettings.apply({
-                                  comCookie: '',
-                                  coCookie: '',
-                                  updatedAt: 0,
-                                })
-                              })
-                              .finally(() => {
-                                AutoDailyCheckinSettings.load(this.context)
-                                  .catch((error: Error) => {
-                                    console.error('restore auto daily check-in setting failed: ' + error.message)
-                                    AutoDailyCheckinSettings.apply(true)
-                                  })
-                                  .finally(() => {
-                                    AutoDailyCheckinService.tryCheckin(
-                                      this.context,
-                                      CookieJarSettings.getCurrentCookie(),
-                                      'startup',
-                                    ).catch((error: Error) => {
-                                      console.info('auto daily check-in startup trigger failed: ' + error.message)
-                                    })
-                                    ReplyCardStyleSettings.load(this.context)
-                                      .catch((error: Error) => {
-                                        console.error(
-                                          'restore reply card style failed: ' + error.message,
-                                        )
-                                        ReplyCardStyleSettings.apply(
-                                          ReplyCardStyleSettings.STYLE_STANDARD,
-                                        )
-                                      })
-                                      .finally(() => {
-                                        ReplyActionAlignmentSettings.load(this.context)
-                                          .catch((error: Error) => {
-                                            console.error(
-                                              'restore reply action alignment failed: ' + error.message,
-                                            )
-                                            ReplyActionAlignmentSettings.apply(
-                                              ReplyActionAlignmentSettings.MODE_UNSET,
-                                            )
-                                          })
-                                          .finally(() => {
-                                            this.loadContent(windowStage, win)
-                                          })
-                                      })
-                                  })
-                              })
-                          })
-                      })
-                  })
-              })
-          })
-      })
+    SettingsBootstrap.loadAll(this.context).finally(() => {
+      this.loadContent(windowStage, win)
+    })
   }
 
   onConfigurationUpdate(newConfig: Configuration): void {
