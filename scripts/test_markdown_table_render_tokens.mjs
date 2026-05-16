@@ -210,7 +210,7 @@ assert.match(markdownTableStruct[0], /columnWidth\(index: number\): number[\s\S]
 assert.match(markdownTableStruct[0], /tableMinWidth\(\): number[\s\S]*const allocated = this\.allocatedColumnWidths\(\)[\s\S]*width \+= allocated\[index\]/, 'MarkdownTable table width sums responsive allocations')
 assert.match(markdownTableStruct[0], /private tableContentWidth\(\): number[\s\S]*return this\.tableMinWidth\(\);/, 'MarkdownTable owns an explicit content width separate from Scroll viewport width')
 assert.match(markdownTableStruct[0], /Text\(\)[\s\S]*\.width\(this\.columnWidth\(columnIndex\)\)[\s\S]*\.constraintSize\(\{ minWidth: this\.columnWidth\(columnIndex\), maxWidth: this\.columnWidth\(columnIndex\) \}\)/, 'MarkdownTable.TableCell fixes each Text to the allocated column width so Row stretch cannot donate viewport slack')
-assert.match(markdownTableStruct[0], /Row\(\)[\s\S]*\.width\(this\.tableContentWidth\(\)\)/, 'MarkdownTable rows use explicit content width, not only minWidth')
+assert.match(markdownTableStruct[0], /Flex\(\{ direction: FlexDirection\.Row, alignItems: ItemAlign\.Stretch \}\)[\s\S]*\.width\(this\.tableContentWidth\(\)\)/, 'MarkdownTable rows use explicit content width with stretch alignment so cell containers span the tallest cell')
 assert.match(markdownTableStruct[0], /Column\(\)[\s\S]*\.width\(this\.tableContentWidth\(\)\)[\s\S]*\.constraintSize\(\{ minWidth: this\.tableContentWidth\(\), maxWidth: this\.tableContentWidth\(\) \}\)/, 'MarkdownTable content column uses explicit min/max width to avoid ArkUI viewport stretch')
 assert.doesNotMatch(markdownTableStruct[0], /\.constraintSize\(\{ minWidth: this\.tableMinWidth\(\) \}\)/, 'MarkdownTable must not rely on minWidth-only table layout constraints')
 
@@ -252,9 +252,16 @@ function displayUnitsForTest(text, protectedNoWrap = false) {
   return units
 }
 
+function isShortNumericNoWrapTextForTest(text) {
+  const value = String(text || '').trim()
+  return /^(?:[$¥€£]\s*)?\d{1,3}(?:,\d{3})*(?:\.\d+)?$/.test(value) ||
+    /^\d+(?:\.\d+)?%$/.test(value) ||
+    /^\d+(?:\.\d+)?%（\s*\d+\s*\/\s*\d+\s*）$/.test(value)
+}
+
 function isProtectedNoWrapCellForTest(text, header = false) {
   const value = String(text || '').trim()
-  return /^\d+(?:\.\d+)?%（\s*\d+\s*\/\s*\d+\s*）$/.test(value) || (header && /^(?=.{6,16}$)(?=.*[A-Za-z])[A-Za-z][A-Za-z0-9_-]*$/.test(value))
+  return isShortNumericNoWrapTextForTest(value) || (header && /^(?=.{6,16}$)(?=.*[A-Za-z])[A-Za-z][A-Za-z0-9_-]*$/.test(value))
 }
 
 function shortUnbreakableIntrinsicMinForTest(text, header = false) {
@@ -268,7 +275,7 @@ function shortUnbreakableIntrinsicMinForTest(text, header = false) {
 
 function noBreakWidthTextForTest(text, header = false) {
   const value = String(text || '')
-  if (/^\s*\d+(?:\.\d+)?%（\s*\d+\s*\/\s*\d+\s*）\s*$/.test(value) || (header && /^(?=.{6,16}$)(?=.*[A-Za-z])[A-Za-z][A-Za-z0-9_-]*$/.test(value.trim()))) {
+  if (isShortNumericNoWrapTextForTest(value) || (header && /^(?=.{6,16}$)(?=.*[A-Za-z])[A-Za-z][A-Za-z0-9_-]*$/.test(value.trim()))) {
     return value.trim().replace(/\s+/g, '')
   }
   return value
@@ -415,8 +422,24 @@ function allocateTableForTest(headers, rows, availableWidth) {
   return tableAllocationResultForTest(widths, borderBudget)
 }
 
+function joinWithWordJoinerForTest(text) {
+  return String(text || '').split('').join('\u2060')
+}
+
 function formatTableCellTextForLayoutForTest(text) {
-  return String(text || '').replace(/(\d+(?:\.\d+)?%)（\s*(\d+)\s*\/\s*(\d+)\s*）/g, (_match, percent, numerator, denominator) => `${percent}\u2060（\u00A0${numerator}/${denominator}\u00A0）`)
+  const source = String(text || '')
+  const trimmed = source.trim()
+  if (!isShortNumericNoWrapTextForTest(trimmed)) return source
+  const leading = /^\s*/.exec(source)?.[0] || ''
+  const trailing = /\s*$/.exec(source)?.[0] || ''
+  const percentFraction = /^(\d+(?:\.\d+)?%)（\s*(\d+)\s*\/\s*(\d+)\s*）$/.exec(trimmed)
+  if (percentFraction) {
+    const percent = joinWithWordJoinerForTest(percentFraction[1])
+    const numerator = joinWithWordJoinerForTest(percentFraction[2])
+    const denominator = joinWithWordJoinerForTest(percentFraction[3])
+    return `${leading}${percent}\u2060（\u00A0${numerator}/${denominator}\u00A0）${trailing}`
+  }
+  return `${leading}${joinWithWordJoinerForTest(trimmed.replace(/\s+/g, ''))}${trailing}`
 }
 
 function formattedCellTokenForTest(token) {
@@ -434,11 +457,38 @@ function formattedCellTokenForTest(token) {
 
 const spacedSuccessRateForTest = '83.33%（ 30/36 ）'
 const spacedSuccessRateDisplayForTest = formatTableCellTextForLayoutForTest(spacedSuccessRateForTest)
-assert.equal(spacedSuccessRateDisplayForTest, '83.33%\u2060（\u00A030/36\u00A0）', 'table-cell success rate display removes the percent/bracket break and replaces bracket-edge regular spaces with NBSP')
+assert.equal(spacedSuccessRateDisplayForTest, '8\u20603\u2060.\u20603\u20603\u2060%\u2060（\u00A03\u20600/3\u20606\u00A0）', 'table-cell success rate display removes the percent/bracket break and replaces bracket-edge regular spaces with NBSP')
 assert.ok(!/% +（/.test(spacedSuccessRateDisplayForTest), 'table-cell success rate display has no breakable regular space between percent and bracket')
 assert.ok(!/（ +\d/.test(spacedSuccessRateDisplayForTest), 'table-cell success rate display has no breakable regular space after full-width left bracket')
 assert.ok(!/\d +）/.test(spacedSuccessRateDisplayForTest), 'table-cell success rate display has no breakable regular space before full-width right bracket')
-assert.equal(formatTableCellTextForLayoutForTest('61.11%（22/36）'), '61.11%\u2060（\u00A022/36\u00A0）', 'compact success-rate values also gain non-breaking display guards')
+assert.equal(formatTableCellTextForLayoutForTest('61.11%（22/36）'), '6\u20601\u2060.\u20601\u20601\u2060%\u2060（\u00A02\u20602/3\u20606\u00A0）', 'compact success-rate values also gain non-breaking display guards')
+assert.equal(formatTableCellTextForLayoutForTest('$15.70'), '$\u20601\u20605\u2060.\u20607\u20600', 'short money values gain word-joiner guards between all breakable characters')
+assert.equal(formatTableCellTextForLayoutForTest('$30.14'), '$\u20603\u20600\u2060.\u20601\u20604', 'short money values must not allow the final decimal digit to wrap alone')
+assert.equal(formatTableCellTextForLayoutForTest('90.6%'), '9\u20600\u2060.\u20606\u2060%', 'short percent values gain display no-wrap guards')
+for (const value of ['$15.70', '$30.14', '$5.10', '$5.49', '90.6%', '95.2%', '88.7%', '60.3%', '51', '218', '83.33%（30/36）']) {
+  assert.ok(isShortNumericNoWrapTextForTest(value), `${value} is recognized as a short numeric no-wrap semantic unit`)
+  assert.notEqual(formatTableCellTextForLayoutForTest(value), value, `${value} receives table-cell-only display guards`)
+  assert.ok(formatTableCellTextForLayoutForTest(value).includes('\u2060'), `${value} formatted display includes word joiners`)
+  assert.ok(!/\.\d+(?!\u2060)/.test(formatTableCellTextForLayoutForTest(value)), `${value} formatted display must not leave an unguarded decimal suffix`)
+}
+for (const value of ['ordinary 2026 long prose', 'https://x.test/a/12345abcdef67890', 'version 1.2.3', 'abc123', '~29.2 s', 'exe ~23 MB / 42,000+ 文件']) {
+  assert.ok(!isShortNumericNoWrapTextForTest(value), `${value} is not a complete short numeric no-wrap semantic unit`)
+  assert.equal(formatTableCellTextForLayoutForTest(value), value, `${value} must not receive short numeric word-joiner display pollution`)
+  assert.ok(!formatTableCellTextForLayoutForTest(value).includes('\u2060'), `${value} must not contain U+2060 after table-cell formatting`)
+}
+assert.doesNotMatch(markdownTableStruct[0], /\.replace\(\/\(\\d\+\(\?:\\\.\\d\+\)\?%\|\(\?:\[\$¥€£\]/, 'formatTableCellTextForLayout must not use the old broad global numeric-substring replace')
+const agentCostRowsForTest = [[
+  { text: 'OpenClaw' },
+  { text: '$15.70' },
+  { text: '51' },
+  { text: '90.6%' },
+], [
+  { text: 'Hermes' },
+  { text: '$30.14' },
+  { text: '218' },
+  { text: '95.2%' },
+]]
+assert.ok(columnReadableMinWidthsForTest([{ text: 'Agent', header: true }, { text: '总成本', header: true }, { text: '请求数', header: true }, { text: 'Cache 命中率', header: true }], agentCostRowsForTest)[1] >= shortUnbreakableIntrinsicMinForTest('$30.14'), 'money columns keep protected intrinsic minimum in readable width allocation')
 const metadataTokenForTest = {
   type: 'link',
   raw: '[83.33%（ 30/36 ）](https://example.com/rate)',

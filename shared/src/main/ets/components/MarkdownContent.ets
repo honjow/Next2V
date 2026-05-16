@@ -1811,12 +1811,18 @@ struct MarkdownTable {
     return units;
   }
 
+  private isShortNumericNoWrapText(text: string): boolean {
+    return /^(?:[$¥€£]\s*)?\d{1,3}(?:,\d{3})*(?:\.\d+)?$/.test(text) ||
+      /^\d+(?:\.\d+)?%$/.test(text) ||
+      /^\d+(?:\.\d+)?%（\s*\d+\s*\/\s*\d+\s*）$/.test(text);
+  }
+
   private isProtectedNoWrapCell(cell: RenderTableCell | undefined): boolean {
     if (!cell) {
       return false;
     }
     const text = (cell.text ?? "").trim();
-    return /^\d+(?:\.\d+)?%（\s*\d+\s*\/\s*\d+\s*）$/.test(text) ||
+    return this.isShortNumericNoWrapText(text) ||
       (cell.header === true && /^(?=.{6,16}$)(?=.*[A-Za-z])[A-Za-z][A-Za-z0-9_-]*$/.test(text));
   }
 
@@ -1835,7 +1841,7 @@ struct MarkdownTable {
   private cellWidthText(cell: RenderTableCell): string {
     const text = cell.text ?? "";
     const trimmed = text.trim();
-    if (/^\d+(?:\.\d+)?%（\s*\d+\s*\/\s*\d+\s*）$/.test(trimmed) ||
+    if (this.isShortNumericNoWrapText(trimmed) ||
       (cell.header === true && /^(?=.{6,16}$)(?=.*[A-Za-z])[A-Za-z][A-Za-z0-9_-]*$/.test(trimmed))) {
       return trimmed.replace(/\s+/g, "");
     }
@@ -2071,10 +2077,28 @@ struct MarkdownTable {
     return index === 0 && this.tableToken.headers.length > 0;
   }
 
+  private joinWithWordJoiner(text: string): string {
+    return text.split("").join("\u2060");
+  }
+
   private formatTableCellTextForLayout(text: string): string {
-    return (text ?? "").replace(/(\d+(?:\.\d+)?%)（\s*(\d+)\s*\/\s*(\d+)\s*）/g, (_match: string, percent: string, numerator: string, denominator: string): string => {
-      return `${percent}\u2060（\u00A0${numerator}/${denominator}\u00A0）`;
-    });
+    const source = text ?? "";
+    const trimmed = source.trim();
+    if (!this.isShortNumericNoWrapText(trimmed)) {
+      return source;
+    }
+    const leadingMatch = /^\s*/.exec(source);
+    const trailingMatch = /\s*$/.exec(source);
+    const leading = leadingMatch ? leadingMatch[0] : "";
+    const trailing = trailingMatch ? trailingMatch[0] : "";
+    const percentFraction = /^(\d+(?:\.\d+)?%)（\s*(\d+)\s*\/\s*(\d+)\s*）$/.exec(trimmed);
+    if (percentFraction) {
+      const percent = this.joinWithWordJoiner(percentFraction[1]);
+      const numerator = this.joinWithWordJoiner(percentFraction[2]);
+      const denominator = this.joinWithWordJoiner(percentFraction[3]);
+      return `${leading}${percent}\u2060（\u00A0${numerator}/${denominator}\u00A0）${trailing}`;
+    }
+    return `${leading}${this.joinWithWordJoiner(trimmed.replace(/\s+/g, ""))}${trailing}`;
   }
 
   private formattedCellToken(token: Token): Token {
@@ -2111,92 +2135,91 @@ struct MarkdownTable {
   }
 
   @Builder TableCell(cell: RenderTableCell, header: boolean, columnIndex: number, rowIndex: number) {
-    if (this.base64DecodeMode === ReadingSettings.BASE64_MODE_BADGE && _tokensContainBase64Decode(this.cellTokens(cell))) {
-      SelectableInlineTokenFlow({
-        tokens: this.cellTokens(cell),
-        fontSize: this.bodyFontSize(),
-        fontColor: ThemeConstants.TEXT_PRIMARY,
-        fontWeight: header ? FontWeight.Medium : FontWeight.Regular,
-        lineHeight: this.bodyLineHeight(),
-        textAlign: this.cellTextAlign(cell),
-        wordBreak: WordBreak.BREAK_WORD,
-        copyOption: CopyOptions.LocalDevice,
-        textSelectable: TextSelectableMode.SELECTABLE_FOCUSABLE,
-        options: this.options,
-        inlineImageSizeRecords: this.inlineImageSizeRecords,
-        reportImageComplete: this.reportImageComplete,
-        reportImageError: this.reportImageError,
-        availableWidth: 0,
-        base64DecodeMode: this.base64DecodeMode,
-        activeBase64PopupKey: this.activeBase64PopupKey,
-        showBase64Popup: (key: string) => { this.showBase64Popup(key); },
-        hideBase64Popup: (key: string) => { this.hideBase64Popup(key); },
-        base64PopupScope: `table-${rowIndex}-${columnIndex}`,
-      })
-      .width(this.columnWidth(columnIndex))
-      .constraintSize({ minWidth: this.columnWidth(columnIndex), maxWidth: this.columnWidth(columnIndex) })
-      .padding({
-        left: ThemeConstants.SPACE_SM,
-        right: ThemeConstants.SPACE_SM,
-        top: ThemeConstants.SPACE_XS,
-        bottom: ThemeConstants.SPACE_XS,
-      })
-      .border({
-        width: { right: columnIndex < this.columnCount() - 1 ? TABLE_CELL_VERTICAL_DIVIDER_WIDTH : 0 },
-        color: TABLE_BORDER_COLOR,
-      })
-    } else {
-      Text() {
-        SelectableInlineTokenSpans(
-          this.cellTokens(cell),
-          this.bodyFontSize(),
-          this.options,
-          this.inlineImageSizeRecords,
-          this.reportImageComplete,
-          this.reportImageError,
-          0,
-          this.base64DecodeMode,
-          this.activeBase64PopupKey,
-          (key: string) => { this.showBase64Popup(key); },
-          (key: string) => { this.hideBase64Popup(key); },
-          `table-${rowIndex}-${columnIndex}`,
-        );
+    Column() {
+      if (this.base64DecodeMode === ReadingSettings.BASE64_MODE_BADGE && _tokensContainBase64Decode(this.cellTokens(cell))) {
+        SelectableInlineTokenFlow({
+          tokens: this.cellTokens(cell),
+          fontSize: this.bodyFontSize(),
+          fontColor: ThemeConstants.TEXT_PRIMARY,
+          fontWeight: header ? FontWeight.Medium : FontWeight.Regular,
+          lineHeight: this.bodyLineHeight(),
+          textAlign: this.cellTextAlign(cell),
+          wordBreak: WordBreak.BREAK_WORD,
+          copyOption: CopyOptions.LocalDevice,
+          textSelectable: TextSelectableMode.SELECTABLE_FOCUSABLE,
+          options: this.options,
+          inlineImageSizeRecords: this.inlineImageSizeRecords,
+          reportImageComplete: this.reportImageComplete,
+          reportImageError: this.reportImageError,
+          availableWidth: 0,
+          base64DecodeMode: this.base64DecodeMode,
+          activeBase64PopupKey: this.activeBase64PopupKey,
+          showBase64Popup: (key: string) => { this.showBase64Popup(key); },
+          hideBase64Popup: (key: string) => { this.hideBase64Popup(key); },
+          base64PopupScope: `table-${rowIndex}-${columnIndex}`,
+        })
+        .width(this.columnWidth(columnIndex))
+        .constraintSize({ minWidth: this.columnWidth(columnIndex), maxWidth: this.columnWidth(columnIndex) })
+        .padding({
+          left: ThemeConstants.SPACE_SM,
+          right: ThemeConstants.SPACE_SM,
+          top: ThemeConstants.SPACE_XS,
+          bottom: ThemeConstants.SPACE_XS,
+        })
+      } else {
+        Text() {
+          SelectableInlineTokenSpans(
+            this.cellTokens(cell),
+            this.bodyFontSize(),
+            this.options,
+            this.inlineImageSizeRecords,
+            this.reportImageComplete,
+            this.reportImageError,
+            0,
+            this.base64DecodeMode,
+            this.activeBase64PopupKey,
+            (key: string) => { this.showBase64Popup(key); },
+            (key: string) => { this.hideBase64Popup(key); },
+            `table-${rowIndex}-${columnIndex}`,
+          );
+        }
+        .fontSize(this.bodyFontSize())
+        .fontWeight(header ? FontWeight.Medium : FontWeight.Regular)
+        .fontColor(ThemeConstants.TEXT_PRIMARY)
+        .lineHeight(this.bodyLineHeight())
+        .textAlign(this.cellTextAlign(cell))
+        .width(this.columnWidth(columnIndex))
+        .constraintSize({ minWidth: this.columnWidth(columnIndex), maxWidth: this.columnWidth(columnIndex) })
+        .wordBreak(WordBreak.BREAK_WORD)
+        .padding({
+          left: ThemeConstants.SPACE_SM,
+          right: ThemeConstants.SPACE_SM,
+          top: ThemeConstants.SPACE_XS,
+          bottom: ThemeConstants.SPACE_XS,
+        })
+        .copyOption(CopyOptions.LocalDevice)
+        .textSelectable(TextSelectableMode.SELECTABLE_FOCUSABLE);
       }
-      .fontSize(this.bodyFontSize())
-      .fontWeight(header ? FontWeight.Medium : FontWeight.Regular)
-      .fontColor(ThemeConstants.TEXT_PRIMARY)
-      .lineHeight(this.bodyLineHeight())
-      .textAlign(this.cellTextAlign(cell))
-      .width(this.columnWidth(columnIndex))
-      .constraintSize({ minWidth: this.columnWidth(columnIndex), maxWidth: this.columnWidth(columnIndex) })
-      .wordBreak(WordBreak.BREAK_WORD)
-      .padding({
-        left: ThemeConstants.SPACE_SM,
-        right: ThemeConstants.SPACE_SM,
-        top: ThemeConstants.SPACE_XS,
-        bottom: ThemeConstants.SPACE_XS,
-      })
-      .copyOption(CopyOptions.LocalDevice)
-      .textSelectable(TextSelectableMode.SELECTABLE_FOCUSABLE)
-      .border({
-        width: { right: columnIndex < this.columnCount() - 1 ? TABLE_CELL_VERTICAL_DIVIDER_WIDTH : 0 },
-        color: TABLE_BORDER_COLOR,
-      });
     }
+    .width(this.columnWidth(columnIndex))
+    .constraintSize({ minWidth: this.columnWidth(columnIndex), maxWidth: this.columnWidth(columnIndex) })
+    .border({
+      width: { right: columnIndex < this.columnCount() - 1 ? TABLE_CELL_VERTICAL_DIVIDER_WIDTH : 0 },
+      color: TABLE_BORDER_COLOR,
+    });
   }
 
   build() {
     Scroll() {
       Column() {
         ForEach(this.normalizedRows(), (row: RenderTableCell[], rowIndex: number) => {
-          Row() {
+          Flex({ direction: FlexDirection.Row, alignItems: ItemAlign.Stretch }) {
             ForEach(this.paddedRow(row), (cell: RenderTableCell, cellIndex: number) => {
               this.TableCell(cell, this.isHeaderRow(rowIndex), cellIndex, rowIndex);
             }, (cell: RenderTableCell, cellIndex: number) => `${rowIndex}-${cellIndex}-${cell.text}`)
           }
           .width(this.tableContentWidth())
           .constraintSize({ minWidth: this.tableContentWidth(), maxWidth: this.tableContentWidth() })
-          .alignItems(VerticalAlign.Top)
           .backgroundColor(this.isHeaderRow(rowIndex) ? ThemeConstants.BG_SUB : Color.Transparent)
           .border({
             width: { bottom: 1 },
