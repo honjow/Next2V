@@ -11,9 +11,13 @@ const KEY_FONT_SIZE: string = 'readingFontSize'
 const KEY_LINE_HEIGHT: string = 'readingLineHeight'
 const KEY_DENSITY: string = 'readingDensity'
 const KEY_RESTORE_POSITION: string = 'readingRestorePosition'
+const KEY_BASE64_DECODE_MODE: string = 'readingBase64DecodeMode'
 const DENSITY_COMPACT: string = 'compact'
 const DENSITY_STANDARD: string = 'standard'
 const DENSITY_COMFORTABLE: string = 'comfortable'
+const BASE64_MODE_OFF: string = 'off'
+const BASE64_MODE_BADGE: string = 'badge'
+const BASE64_MODE_INLINE: string = 'inline'
 
 export interface ReadingSettingsSnapshot {
   fontSize: number
@@ -21,6 +25,7 @@ export interface ReadingSettingsSnapshot {
   lineHeight: number
   density: string
   restorePosition: boolean
+  base64DecodeMode: string
 }
 
 export class ReadingSettings {
@@ -34,6 +39,9 @@ export class ReadingSettings {
   static readonly DENSITY_COMPACT: string = DENSITY_COMPACT
   static readonly DENSITY_STANDARD: string = DENSITY_STANDARD
   static readonly DENSITY_COMFORTABLE: string = DENSITY_COMFORTABLE
+  static readonly BASE64_MODE_OFF: string = BASE64_MODE_OFF
+  static readonly BASE64_MODE_BADGE: string = BASE64_MODE_BADGE
+  static readonly BASE64_MODE_INLINE: string = BASE64_MODE_INLINE
 
   static apply(fontSize: number, lineHeight: number, density: string, restorePosition: boolean = false): void {
     const normalizedTextScale = ReadingSettings.normalizeTextScale(fontSize)
@@ -42,6 +50,8 @@ export class ReadingSettings {
     ReadingSettings.setAppStorageValue<number>(StorageKeys.READING_LINE_HEIGHT, normalizedLineHeight)
     ReadingSettings.setAppStorageValue<string>(StorageKeys.READING_DENSITY, ReadingSettings.normalizeDensity(density))
     ReadingSettings.setAppStorageValue<boolean>(StorageKeys.READING_RESTORE_POSITION, restorePosition)
+    ReadingSettings.setAppStorageValue<string>(StorageKeys.READING_BASE64_DECODE_MODE,
+      ReadingSettings.normalizeBase64DecodeMode(AppStorage.get<string>(StorageKeys.READING_BASE64_DECODE_MODE) ?? BASE64_MODE_BADGE))
   }
 
   static async load(context: common.UIAbilityContext): Promise<ReadingSettingsSnapshot> {
@@ -51,8 +61,17 @@ export class ReadingSettings {
       const lineHeight = ReadingSettings.normalizeLineHeight(store.getSync(KEY_LINE_HEIGHT, ThemeConstants.LINE_HEIGHT_BODY) as number, textScale)
       const density = ReadingSettings.normalizeDensity(store.getSync(KEY_DENSITY, DENSITY_STANDARD) as string)
       const restorePosition = store.getSync(KEY_RESTORE_POSITION, false) as boolean
+      const base64DecodeMode = ReadingSettings.normalizeBase64DecodeMode(store.getSync(KEY_BASE64_DECODE_MODE, BASE64_MODE_BADGE) as string)
       ReadingSettings.apply(textScale, lineHeight, density, restorePosition)
-      return { fontSize: textScale, textScale: textScale, lineHeight: lineHeight, density: density, restorePosition: restorePosition }
+      ReadingSettings.setAppStorageValue<string>(StorageKeys.READING_BASE64_DECODE_MODE, base64DecodeMode)
+      return {
+        fontSize: textScale,
+        textScale: textScale,
+        lineHeight: lineHeight,
+        density: density,
+        restorePosition: restorePosition,
+        base64DecodeMode: base64DecodeMode,
+      }
     } catch (error) {
       const e = error as Error
       throw new Error(e.message || '读取阅读设置失败')
@@ -107,6 +126,19 @@ export class ReadingSettings {
     }
   }
 
+  static async saveBase64DecodeMode(context: common.UIAbilityContext, mode: string): Promise<void> {
+    const normalized = ReadingSettings.normalizeBase64DecodeMode(mode)
+    ReadingSettings.setAppStorageValue<string>(StorageKeys.READING_BASE64_DECODE_MODE, normalized)
+    try {
+      const store = await preferences.getPreferences(context, STORE_NAME)
+      store.putSync(KEY_BASE64_DECODE_MODE, normalized)
+      store.flushSync()
+    } catch (error) {
+      const e = error as Error
+      throw new Error(e.message || '保存 Base64 解码设置失败')
+    }
+  }
+
   static normalizeTextScale(value: number): number {
     const numeric = Number(value)
     if (!Number.isFinite(numeric)) {
@@ -155,6 +187,14 @@ export class ReadingSettings {
       return density
     }
     return DENSITY_STANDARD
+  }
+
+  static normalizeBase64DecodeMode(value: string): string {
+    const mode = (value || '').trim()
+    if (mode === BASE64_MODE_OFF || mode === BASE64_MODE_INLINE) {
+      return mode
+    }
+    return BASE64_MODE_BADGE
   }
 
   private static setAppStorageValue<T>(key: string, value: T): void {
