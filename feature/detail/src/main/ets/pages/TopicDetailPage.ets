@@ -276,7 +276,9 @@ export struct TopicDetailPage {
       .height('100%')
       .clip(true)
 
-      this.TopicDetailReplyActionBar()
+      if (this.detailRootHeight > 0) {
+        this.TopicDetailReplyActionBar()
+      }
 
       this.ReplyComposerSheetHost()
       this.ReplyContextSheetHost()
@@ -318,9 +320,12 @@ export struct TopicDetailPage {
     .height(this.TOPIC_DETAIL_REPLY_BUTTON_SIZE)
     .justifyContent(this.topicDetailReplyActionBarAlign())
     .alignItems(VerticalAlign.Center)
+    .padding({
+      left: ThemeConstants.SPACE_LG,
+      right: ThemeConstants.SPACE_LG,
+    })
     .position({ x: 0, y: this.topicDetailReplyActionBarTop() })
     .hitTestBehavior(HitTestMode.Transparent)
-    .animation({ duration: ThemeConstants.ANIM_DURATION, curve: Curve.EaseOut })
   }
 
   private topicDetailReplyActionBarTop(): number {
