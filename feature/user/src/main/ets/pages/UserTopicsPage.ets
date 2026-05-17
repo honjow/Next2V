@@ -1,7 +1,7 @@
 import { UserTopicsViewModel } from '../viewmodel/UserViewModel'
 import {
-  V2exTopic, TopicCard, ThemeConstants, TopicDetailParams, StorageKeys, NodeTopicListParams,
-  SecondaryListScaffold
+  CardEmptyState, NodeTopicListParams, PageErrorState, PageLoadingState, SecondaryListScaffold,
+  StorageKeys, TopicCard, TopicDetailParams, V2exTopic
 } from 'shared'
 import type { TopicReadState } from 'shared'
 
@@ -17,17 +17,18 @@ export struct UserTopicsPage {
   build() {
     Column() {
       if (this.vm.isLoading && this.vm.topicDataSource.totalCount() === 0) {
-        Column() { this.LoadingView() }
-          .justifyContent(FlexAlign.Center).width('100%').layoutWeight(1)
+        PageLoadingState()
       } else if (this.vm.topicsHidden) {
-        Column() { this.EmptyText('主题列表已隐藏') }
-          .justifyContent(FlexAlign.Center).width('100%').layoutWeight(1)
+        CardEmptyState({ message: '主题列表已隐藏' })
       } else if (this.vm.errorMessage && this.vm.topicDataSource.totalCount() === 0) {
-        Column() { this.ErrorView() }
-          .justifyContent(FlexAlign.Center).width('100%').layoutWeight(1)
+        PageErrorState({
+          message: this.vm.errorMessage || '加载失败',
+          retryAction: () => {
+            this.vm.load()
+          }
+        })
       } else if (this.vm.topicDataSource.totalCount() === 0) {
-        Column() { this.EmptyText('暂无主题') }
-          .justifyContent(FlexAlign.Center).width('100%').layoutWeight(1)
+        CardEmptyState({ message: '暂无主题' })
       } else {
         SecondaryListScaffold({
           onReachEnd: () => {
@@ -52,7 +53,9 @@ export struct UserTopicsPage {
           }, (topic: V2exTopic) => topic.id.toString())
 
           if (this.vm.isLoadingMore) {
-            ListItem() { this.FooterLoadingView() }
+            ListItem() {
+              PageLoadingState({ stateHeight: 80, expand: false })
+            }
           }
         }
       }
@@ -60,53 +63,6 @@ export struct UserTopicsPage {
     .width('100%')
     .height('100%')
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
-  }
-
-  @Builder LoadingView() {
-    Column() {
-      LoadingProgress()
-        .width(ThemeConstants.LOADING_SIZE)
-        .height(ThemeConstants.LOADING_SIZE)
-    }
-    .justifyContent(FlexAlign.Center)
-    .width('100%')
-  }
-
-  @Builder FooterLoadingView() {
-    Column() {
-      LoadingProgress()
-        .width(ThemeConstants.LOADING_SIZE)
-        .height(ThemeConstants.LOADING_SIZE)
-    }
-    .justifyContent(FlexAlign.Center)
-    .width('100%')
-    .height(80)
-  }
-
-  @Builder EmptyText(text: string) {
-    Text(text)
-      .fontSize(ThemeConstants.FONT_SIZE_BODY)
-      .fontColor($r('sys.color.font_secondary'))
-      .width('100%')
-      .textAlign(TextAlign.Center)
-      .padding(ThemeConstants.SPACE_LG)
-      .borderRadius(ThemeConstants.RADIUS_CARD)
-      .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
-  }
-
-  @Builder ErrorView() {
-    Column() {
-      Text(this.vm.errorMessage || '加载失败')
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .fontColor($r('sys.color.font_secondary'))
-      Button('重试')
-        .type(ButtonType.Capsule)
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .margin({ top: ThemeConstants.SPACE_LG })
-        .onClick(() => { this.vm.load() })
-    }
-    .justifyContent(FlexAlign.Center)
-    .width('100%')
   }
 
   private isTopicUnread(topic: V2exTopic): boolean {

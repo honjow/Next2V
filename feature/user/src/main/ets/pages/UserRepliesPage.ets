@@ -1,7 +1,8 @@
 import { UserRepliesViewModel } from '../viewmodel/UserViewModel'
 import {
-  DateUtils, MarkdownContent, NodeTopicListParams, SecondaryListScaffold, StorageKeys, ThemeConstants, TopicDetailParams,
-  UserProfileParams, V2exRoute, V2exUrlRouter, V2exUserReply
+  CardEmptyState, DateUtils, MarkdownContent, NodeTopicListParams, PageErrorState, PageLoadingState,
+  SecondaryListScaffold, StorageKeys, ThemeConstants, TopicDetailParams, UserProfileParams, V2exRoute,
+  V2exUrlRouter, V2exUserReply
 } from 'shared'
 import { common, Want } from '@kit.AbilityKit'
 
@@ -16,14 +17,16 @@ export struct UserRepliesPage {
   build() {
     Column() {
       if (this.vm.isLoading && this.vm.replyDataSource.totalCount() === 0) {
-        Column() { this.LoadingView() }
-          .justifyContent(FlexAlign.Center).width('100%').layoutWeight(1)
+        PageLoadingState()
       } else if (this.vm.errorMessage && this.vm.replyDataSource.totalCount() === 0) {
-        Column() { this.ErrorView() }
-          .justifyContent(FlexAlign.Center).width('100%').layoutWeight(1)
+        PageErrorState({
+          message: this.vm.errorMessage || '加载失败',
+          retryAction: () => {
+            this.vm.load()
+          }
+        })
       } else if (this.vm.replyDataSource.totalCount() === 0) {
-        Column() { this.EmptyText('暂无回复') }
-          .justifyContent(FlexAlign.Center).width('100%').layoutWeight(1)
+        CardEmptyState({ message: '暂无回复' })
       } else {
         SecondaryListScaffold({
           onReachEnd: () => {
@@ -41,7 +44,9 @@ export struct UserRepliesPage {
           }, (reply: V2exUserReply) => `${reply.topic_id}-${reply.target_floor}-${reply.created}`)
 
           if (this.vm.isLoadingMore) {
-            ListItem() { this.FooterLoadingView() }
+            ListItem() {
+              PageLoadingState({ stateHeight: 80, expand: false })
+            }
           }
         }
       }
@@ -95,53 +100,6 @@ export struct UserRepliesPage {
     .width('100%')
     .borderRadius(ThemeConstants.RADIUS_CARD)
     .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
-  }
-
-  @Builder LoadingView() {
-    Column() {
-      LoadingProgress()
-        .width(ThemeConstants.LOADING_SIZE)
-        .height(ThemeConstants.LOADING_SIZE)
-    }
-    .justifyContent(FlexAlign.Center)
-    .width('100%')
-  }
-
-  @Builder FooterLoadingView() {
-    Column() {
-      LoadingProgress()
-        .width(ThemeConstants.LOADING_SIZE)
-        .height(ThemeConstants.LOADING_SIZE)
-    }
-    .justifyContent(FlexAlign.Center)
-    .width('100%')
-    .height(80)
-  }
-
-  @Builder EmptyText(text: string) {
-    Text(text)
-      .fontSize(ThemeConstants.FONT_SIZE_BODY)
-      .fontColor($r('sys.color.font_secondary'))
-      .width('100%')
-      .textAlign(TextAlign.Center)
-      .padding(ThemeConstants.SPACE_LG)
-      .borderRadius(ThemeConstants.RADIUS_CARD)
-      .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
-  }
-
-  @Builder ErrorView() {
-    Column() {
-      Text(this.vm.errorMessage || '加载失败')
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .fontColor($r('sys.color.font_secondary'))
-      Button('重试')
-        .type(ButtonType.Capsule)
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .margin({ top: ThemeConstants.SPACE_LG })
-        .onClick(() => { this.vm.load() })
-    }
-    .justifyContent(FlexAlign.Center)
-    .width('100%')
   }
 
   private openUserProfile(username: string): void {
