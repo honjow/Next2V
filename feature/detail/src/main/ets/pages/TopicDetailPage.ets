@@ -1597,9 +1597,8 @@ export struct TopicDetailPage {
       return
     }
     this.isTopicThankLoading = true
-    this.api
-      .getTopicThankActionWithCookie(cookie, this.topicId)
-      .then((action: V2exTopicThankAction) => this.api.executeTopicThankWithCookie(cookie, action))
+    TopicDetailActionCoordinator
+      .executeTopicThank(this.api, cookie, this.topicId)
       .then(() => {
         this.isTopicThanked = true
         this.topicDetailThanked = true

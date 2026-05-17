@@ -2,7 +2,10 @@ import {
   ApiService,
   V2exReply,
 } from 'shared'
-import type { V2exReplyThankAction } from 'shared'
+import type {
+  V2exReplyThankAction,
+  V2exTopicThankAction,
+} from 'shared'
 
 export interface ParsedTopicDetailAction {
   topicId: number
@@ -187,6 +190,12 @@ export class TopicDetailActionCoordinator {
       .then((action: V2exReplyThankAction) =>
         api.executeReplyThankWithCookie(cookie, topicId, action),
       )
+  }
+
+  static executeTopicThank(api: ApiService, cookie: string, topicId: number): Promise<void> {
+    return api
+      .getTopicThankActionWithCookie(cookie, topicId)
+      .then((action: V2exTopicThankAction) => api.executeTopicThankWithCookie(cookie, action))
   }
 
   private static hasValidReply(reply: V2exReply | null): boolean {
