@@ -32,10 +32,10 @@ const CACHE_PAYLOAD_FILE_SUFFIX: string = '.json'
 const CACHE_PAYLOAD_STAGED_SUFFIX: string = '.staged'
 const MAX_CACHE_PAYLOAD_FILENAME_STEM_LENGTH: number = 180
 
-const SQL_SELECT_CACHE_ENTRY: string = 'SELECT payload_text, payload_path, expires_at FROM cache_entries WHERE cache_key = ? AND kind = ? LIMIT 1'
+const SQL_SELECT_CACHE_ENTRY: string = 'SELECT payload_text, payload_path, payload_hash, expires_at FROM cache_entries WHERE cache_key = ? AND kind = ? LIMIT 1'
 const SQL_SELECT_CACHE_INDEX: string = `SELECT cache_key, kind, cached_at, accessed_at FROM cache_entries WHERE kind IN (${CACHE_KINDS_SQL}) ORDER BY cached_at DESC`
 const SQL_SELECT_CACHE_STATS: string = `SELECT kind, COUNT(*) AS count_value, MAX(cached_at) AS updated_at FROM cache_entries WHERE kind IN (${CACHE_KINDS_SQL}) GROUP BY kind`
-const SQL_UPSERT_CACHE_ENTRY: string = 'INSERT OR REPLACE INTO cache_entries (cache_key, kind, payload_text, payload_path, cached_at, accessed_at, expires_at, size) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+const SQL_UPSERT_CACHE_ENTRY: string = 'INSERT OR REPLACE INTO cache_entries (cache_key, kind, payload_text, payload_path, payload_hash, cached_at, accessed_at, expires_at, size) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
 const SQL_TOUCH_CACHE_ENTRY: string = 'UPDATE cache_entries SET accessed_at = ? WHERE cache_key = ? AND kind = ?'
 const SQL_SELECT_CACHE_ENTRY_PAYLOAD_PATH: string = 'SELECT payload_path FROM cache_entries WHERE cache_key = ? AND kind = ? LIMIT 1'
 const SQL_DELETE_CACHE_ENTRY: string = 'DELETE FROM cache_entries WHERE cache_key = ? AND kind = ?'
@@ -243,6 +243,7 @@ export class CacheSettings {
       }
       const payloadIndex = resultSet.getColumnIndex('payload_text')
       const pathIndex = resultSet.getColumnIndex('payload_path')
+      const hashIndex = resultSet.getColumnIndex('payload_hash')
       const expiresIndex = resultSet.getColumnIndex('expires_at')
       const expiresAt = resultSet.getLong(expiresIndex)
       if (expiresAt <= CacheSettings.nowSeconds()) {
@@ -251,8 +252,13 @@ export class CacheSettings {
       }
       const payloadText = CacheSettings.readNullableString(resultSet, payloadIndex)
       const payloadPath = CacheSettings.readNullableString(resultSet, pathIndex)
+      const payloadHash = CacheSettings.readNullableString(resultSet, hashIndex)
       const resolvedPayload = CacheSettings.resolvePayloadText(context, payloadText, payloadPath)
       if (resolvedPayload.length <= 0) {
+        await CacheSettings.deleteCacheEntry(context, store, cacheKey, kind)
+        return null
+      }
+      if (payloadHash.length > 0 && CacheSettings.payloadHash(resolvedPayload) !== payloadHash) {
         await CacheSettings.deleteCacheEntry(context, store, cacheKey, kind)
         return null
       }
@@ -277,12 +283,14 @@ export class CacheSettings {
     expiresAt: number
   ): Promise<void> {
     const previousPayloadPath = await CacheSettings.loadCacheEntryPayloadPath(store, cacheKey, kind)
+    const payloadHash = CacheSettings.payloadHash(payloadText)
     const payloadPlan = CacheSettings.preparePayloadStorage(context, payloadFileName, payloadText)
     const args: relationalStore.ValueType[] = [
       cacheKey,
       kind,
       payloadPlan.payloadText,
       payloadPlan.payloadPath,
+      payloadHash,
       cachedAt,
       cachedAt,
       expiresAt,
@@ -851,5 +859,47 @@ export class CacheSettings {
       }
     }
     return bytes
+  }
+
+  private static payloadHash(payloadText: string): string {
+    let bytes = 0
+    let hash = 0x811c9dc5
+    for (let i = 0; i < payloadText.length; i++) {
+      const code = payloadText.charCodeAt(i)
+      if (code <= 0x7F) {
+        hash = CacheSettings.fnv1a32Byte(hash, code)
+        bytes += 1
+      } else if (code <= 0x7FF) {
+        hash = CacheSettings.fnv1a32Byte(hash, 0xC0 | (code >> 6))
+        hash = CacheSettings.fnv1a32Byte(hash, 0x80 | (code & 0x3F))
+        bytes += 2
+      } else if (code >= 0xD800 && code <= 0xDBFF && i + 1 < payloadText.length) {
+        const next = payloadText.charCodeAt(i + 1)
+        if (next >= 0xDC00 && next <= 0xDFFF) {
+          const point = 0x10000 + ((code - 0xD800) << 10) + (next - 0xDC00)
+          hash = CacheSettings.fnv1a32Byte(hash, 0xF0 | (point >> 18))
+          hash = CacheSettings.fnv1a32Byte(hash, 0x80 | ((point >> 12) & 0x3F))
+          hash = CacheSettings.fnv1a32Byte(hash, 0x80 | ((point >> 6) & 0x3F))
+          hash = CacheSettings.fnv1a32Byte(hash, 0x80 | (point & 0x3F))
+          bytes += 4
+          i += 1
+        } else {
+          hash = CacheSettings.fnv1a32Byte(hash, 0xEF)
+          hash = CacheSettings.fnv1a32Byte(hash, 0xBF)
+          hash = CacheSettings.fnv1a32Byte(hash, 0xBD)
+          bytes += 3
+        }
+      } else {
+        hash = CacheSettings.fnv1a32Byte(hash, 0xE0 | (code >> 12))
+        hash = CacheSettings.fnv1a32Byte(hash, 0x80 | ((code >> 6) & 0x3F))
+        hash = CacheSettings.fnv1a32Byte(hash, 0x80 | (code & 0x3F))
+        bytes += 3
+      }
+    }
+    return 'v1:fnv1a32-utf8:' + bytes.toString() + ':' + hash.toString(16).padStart(8, '0')
+  }
+
+  private static fnv1a32Byte(hash: number, byte: number): number {
+    return Math.imul((hash ^ (byte & 0xFF)) >>> 0, 16777619) >>> 0
   }
 }

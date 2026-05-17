@@ -24,6 +24,8 @@ for (const method of [
   'seedInvalidPathRow',
   'seedOrphanPayloadFile',
   'seedMissingFileRow',
+  'seedHashMismatchRow',
+  'validateHashMismatchRepair',
   'seedExpiredRow',
   'resetSeededCache',
   'seedAll',
@@ -38,6 +40,8 @@ for (const scenario of [
   'invalid_path',
   'orphan_file',
   'missing_file',
+  'hash_mismatch',
+  'hash_mismatch_validate',
   'expired_row',
   'reset_seeded',
 ]) {
@@ -48,6 +52,9 @@ assert(seed.includes("await CacheSettings.saveTopicList(context, 'qa-seed-large-
 assert(seed.includes("await CacheSettings.saveTopicList(context, 'qa-seed-mixed-inline'"), 'mixed inline list seed must use CacheSettings.saveTopicList')
 assert(seed.includes('await CacheSettings.saveTopicDetail('), 'mixed detail seed must use CacheSettings.saveTopicDetail')
 assert(seed.includes("'../outside-cache.json'"), 'invalid path DB fixture missing')
+assert(seed.includes("const WRONG_PAYLOAD_HASH: string = 'v1:fnv1a32-utf8:1:00000000'"), 'hash mismatch seed must use intentionally wrong versioned hash fixture')
+assert(seed.includes("SEED_TOPIC_LIST_FILE_PREFIX + 'hash_mismatch' + CACHE_PAYLOAD_FILE_SUFFIX"), 'hash mismatch seed must use a safe seed payload filename')
+assert(seed.includes("await CacheSettings.loadTopicList(context, 'qa-seed-hash-mismatch')"), 'hash mismatch validation must call production CacheSettings.loadTopicList')
 assert(!/payloadFilePath\s*\(\s*context\s*,\s*['"]\.\.\//.test(seed), 'invalid traversal value must never be passed to fileIo path helpers')
 assert(seed.includes("const SQL_DELETE_SEEDED_CACHE_ROWS: string = 'DELETE FROM cache_entries WHERE cache_key LIKE ? OR cache_key IN (?, ?, ?)'"), 'reset must target seed row predicates only')
 assert(seed.includes("SEED_LIST_KEY_PREFIX + '%'"), 'reset must use seed list prefix')
@@ -58,6 +65,8 @@ assert(storage.includes("import BuildProfile from '../../../../BuildProfile'"), 
 assert(/if\s*\(\s*BuildProfile\.DEBUG\s*&&\s*CacheDeviceQaSeed\.isEnabled\(\)\s*\)/.test(storage), 'storage seed section must be BuildProfile.DEBUG guarded')
 assert(/!BuildProfile\.DEBUG\s*\|\|\s*!CacheDeviceQaSeed\.isEnabled\(\)/.test(storage), 'storage seed actions must runtime-check debug guard')
 assert(storage.includes('Seed 全部缓存场景') && storage.includes('重置 Seed 缓存'), 'storage seed UI rows missing')
+assert(storage.includes('Seed Hash 不匹配行') && storage.includes('验证 Hash 修复'), 'storage hash mismatch seed/validation UI rows missing')
+assert(storage.includes('CacheDeviceQaSeed.seedHashMismatchRow') && storage.includes('CacheDeviceQaSeed.validateHashMismatchRepair'), 'storage hash mismatch actions missing')
 assert(sharedIndex.includes("export { CacheDeviceQaSeed } from './settings/CacheDeviceQaSeed'"), 'shared index must export CacheDeviceQaSeed')
 
 console.log('cache device QA seed static contract OK')

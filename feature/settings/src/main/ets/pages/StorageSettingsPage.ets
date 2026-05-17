@@ -185,6 +185,26 @@ export struct StorageSettingsPage {
       this.SettingsDivider()
 
       ConciseListRow({
+        title: 'Seed Hash 不匹配行',
+        showChevron: false,
+        action: () => {
+          this.runSeedAction('hash', () => CacheDeviceQaSeed.seedHashMismatchRow(this.hostContext()))
+        }
+      })
+
+      this.SettingsDivider()
+
+      ConciseListRow({
+        title: '验证 Hash 修复',
+        showChevron: false,
+        action: () => {
+          this.runSeedAction('hash-read', () => CacheDeviceQaSeed.validateHashMismatchRepair(this.hostContext()))
+        }
+      })
+
+      this.SettingsDivider()
+
+      ConciseListRow({
         title: 'Seed 过期行',
         showChevron: false,
         action: () => {

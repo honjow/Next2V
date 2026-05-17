@@ -18,7 +18,8 @@ const CACHE_PAYLOAD_DIR_NAME: string = 'cache_payloads'
 const SEED_TOPIC_LIST_FILE_PREFIX: string = 'topic_list_qa_seed_'
 const SEED_TOPIC_DETAIL_FILE_PREFIX: string = 'topic_detail_qa_seed_'
 const CACHE_PAYLOAD_FILE_SUFFIX: string = '.json'
-const SQL_UPSERT_CACHE_ENTRY: string = 'INSERT OR REPLACE INTO cache_entries (cache_key, kind, payload_text, payload_path, cached_at, accessed_at, expires_at, size) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+const WRONG_PAYLOAD_HASH: string = 'v1:fnv1a32-utf8:1:00000000'
+const SQL_UPSERT_CACHE_ENTRY: string = 'INSERT OR REPLACE INTO cache_entries (cache_key, kind, payload_text, payload_path, payload_hash, cached_at, accessed_at, expires_at, size) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
 const SQL_SELECT_SEED_PAYLOAD_PATHS: string = 'SELECT payload_path FROM cache_entries WHERE cache_key LIKE ? OR cache_key IN (?, ?, ?)'
 const SQL_DELETE_SEEDED_CACHE_ROWS: string = 'DELETE FROM cache_entries WHERE cache_key LIKE ? OR cache_key IN (?, ?, ?)'
 
@@ -90,6 +91,7 @@ export class CacheDeviceQaSeed {
         CACHE_KIND_TOPIC_LIST,
         '',
         '../outside-cache.json',
+        null,
         now,
         now + 3600,
         0
@@ -128,6 +130,7 @@ export class CacheDeviceQaSeed {
         CACHE_KIND_TOPIC_LIST,
         '',
         SEED_TOPIC_LIST_FILE_PREFIX + 'missing' + CACHE_PAYLOAD_FILE_SUFFIX,
+        null,
         now,
         now + 3600,
         128
@@ -136,6 +139,44 @@ export class CacheDeviceQaSeed {
         rows: 1,
         files: 0,
         notes: ['Inserted a safe file-backed row whose payload file is intentionally absent.']
+      }
+    })
+  }
+
+  static async seedHashMismatchRow(context: common.UIAbilityContext): Promise<CacheDeviceQaSeedResult> {
+    CacheDeviceQaSeed.assertEnabled()
+    return CacheDeviceQaSeed.withResult(context, 'hash_mismatch', async (): Promise<SeedPayloadCounts> => {
+      const now = CacheDeviceQaSeed.nowSeconds()
+      const payload = JSON.stringify([CacheDeviceQaSeed.topic(910007, 'QA seed hash mismatch', 'hash mismatch payload')])
+      const fileName = SEED_TOPIC_LIST_FILE_PREFIX + 'hash_mismatch' + CACHE_PAYLOAD_FILE_SUFFIX
+      CacheDeviceQaSeed.writeSafeSeedPayloadFile(context, fileName, payload)
+      await CacheDeviceQaSeed.upsertRawRow(
+        context,
+        SEED_LIST_KEY_PREFIX + 'hash-mismatch',
+        CACHE_KIND_TOPIC_LIST,
+        null,
+        fileName,
+        WRONG_PAYLOAD_HASH,
+        now,
+        now + 3600,
+        payload.length
+      )
+      return {
+        rows: 1,
+        files: 1,
+        notes: ['Inserted a safe file-backed topic list row with an intentionally wrong payload_hash.']
+      }
+    })
+  }
+
+  static async validateHashMismatchRepair(context: common.UIAbilityContext): Promise<CacheDeviceQaSeedResult> {
+    CacheDeviceQaSeed.assertEnabled()
+    return CacheDeviceQaSeed.withResult(context, 'hash_mismatch_validate', async (): Promise<SeedPayloadCounts> => {
+      const topics = await CacheSettings.loadTopicList(context, 'qa-seed-hash-mismatch')
+      return {
+        rows: 0,
+        files: 0,
+        notes: ['Production read returned ' + topics.length.toString() + ' topics; expected cache miss after hash mismatch cleanup.']
       }
     })
   }
@@ -150,6 +191,7 @@ export class CacheDeviceQaSeed {
         SEED_LIST_KEY_PREFIX + 'expired',
         CACHE_KIND_TOPIC_LIST,
         payload,
+        null,
         null,
         now - 7200,
         now - 3600,
@@ -186,6 +228,7 @@ export class CacheDeviceQaSeed {
     results.push(await CacheDeviceQaSeed.seedInvalidPathRow(context))
     results.push(await CacheDeviceQaSeed.seedOrphanPayloadFile(context))
     results.push(await CacheDeviceQaSeed.seedMissingFileRow(context))
+    results.push(await CacheDeviceQaSeed.seedHashMismatchRow(context))
     results.push(await CacheDeviceQaSeed.seedExpiredRow(context))
     return results
   }
@@ -214,12 +257,13 @@ export class CacheDeviceQaSeed {
     kind: string,
     payloadText: string | null,
     payloadPath: string | null,
+    payloadHash: string | null,
     cachedAt: number,
     expiresAt: number,
     size: number
   ): Promise<void> {
     const store = await LocalDataStore.open(context)
-    const args: relationalStore.ValueType[] = [cacheKey, kind, payloadText, payloadPath, cachedAt, cachedAt, expiresAt, size]
+    const args: relationalStore.ValueType[] = [cacheKey, kind, payloadText, payloadPath, payloadHash, cachedAt, cachedAt, expiresAt, size]
     await store.executeSql(SQL_UPSERT_CACHE_ENTRY, args)
   }
 

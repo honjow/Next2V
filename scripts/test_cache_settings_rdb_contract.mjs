@@ -49,10 +49,10 @@ for (const snippet of [
   'const FILE_PAYLOAD_THRESHOLD_BYTES: number = 256 * 1024',
   'const MAX_CACHE_PAYLOAD_SIZE: number = 20 * 1024 * 1024',
   'const MAX_TOPIC_LIST_ITEMS: number = 50',
-  'SELECT payload_text, payload_path, expires_at FROM cache_entries',
+  'SELECT payload_text, payload_path, payload_hash, expires_at FROM cache_entries',
   'INSERT OR REPLACE INTO cache_entries',
-  'payload_text, payload_path, cached_at',
-  'VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+  'payload_text, payload_path, payload_hash, cached_at',
+  'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
   'UPDATE cache_entries SET accessed_at = ?',
   'DELETE FROM cache_entries WHERE kind IN',
   'ORDER BY accessed_at DESC, cached_at DESC, cache_key ASC LIMIT 32',
@@ -104,6 +104,22 @@ for (const policyContract of [
   {
     name: 'payload accounting uses UTF-8 byte size',
     pattern: /private\s+static\s+byteLength\s*\([\s\S]*charCodeAt[\s\S]*0xD800[\s\S]*0xDFFF[\s\S]*return bytes/,
+  },
+  {
+    name: 'cache writes compute and store deterministic payload hash',
+    pattern: /private\s+static\s+async\s+saveCacheEntry[\s\S]*const payloadHash = CacheSettings\.payloadHash\(payloadText\)[\s\S]*const args: relationalStore\.ValueType\[\] = \[[\s\S]*payloadPlan\.payloadPath,[\s\S]*payloadHash,[\s\S]*payloadPlan\.size[\s\S]*\]/,
+  },
+  {
+    name: 'cache reads verify non-empty payload hash after resolving payload and before parsing',
+    pattern: /private\s+static\s+async\s+loadCacheEntry[\s\S]*const payloadHash = CacheSettings\.readNullableString\(resultSet,\s*hashIndex\)[\s\S]*const resolvedPayload = CacheSettings\.resolvePayloadText\(context,\s*payloadText,\s*payloadPath\)[\s\S]*if\s*\(resolvedPayload\.length <= 0\)[\s\S]*if\s*\(payloadHash\.length > 0 && CacheSettings\.payloadHash\(resolvedPayload\) !== payloadHash\)[\s\S]*await CacheSettings\.deleteCacheEntry\(context,\s*store,\s*cacheKey,\s*kind\)[\s\S]*return null[\s\S]*return\s*{[\s\S]*payloadText: resolvedPayload/,
+  },
+  {
+    name: 'null or empty payload hash remains legacy-compatible',
+    pattern: /if\s*\(payloadHash\.length > 0 && CacheSettings\.payloadHash\(resolvedPayload\) !== payloadHash\)/,
+  },
+  {
+    name: 'payload hash uses versioned FNV-1a UTF-8 byte checksum',
+    pattern: /private\s+static\s+payloadHash[\s\S]*0x811c9dc5[\s\S]*v1:fnv1a32-utf8:[\s\S]*Math\.imul\(\(hash \^ \(byte & 0xFF\)\) >>> 0,\s*16777619\) >>> 0/,
   },
   {
     name: 'file-backed save stages payloads and stores only committed relative payload path',
@@ -228,6 +244,8 @@ for (const method of [
   'seedInvalidPathRow',
   'seedOrphanPayloadFile',
   'seedMissingFileRow',
+  'seedHashMismatchRow',
+  'validateHashMismatchRepair',
   'seedExpiredRow',
   'resetSeededCache',
   'seedAll',
