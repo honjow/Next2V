@@ -141,6 +141,20 @@ export struct ReplyCard {
     return height
   }
 
+  private childReplyBottomGap(index: number): number {
+    if (!this.isCompact() || index >= this.childReplies.length - 1) {
+      return 0
+    }
+    return ReplyCardLayoutPolicy.COMPACT_CHILD_REPLY_GAP
+  }
+
+  private childReplyListTopGap(): number {
+    if (!this.isCompact() || this.childReplies.length === 0) {
+      return 0
+    }
+    return ReplyCardLayoutPolicy.COMPACT_CHILD_REPLY_GAP
+  }
+
   private updateChildGuideHeight(reply: V2exReply, area: Area): void {
     const height = typeof area.height === 'number'
       ? area.height
@@ -266,6 +280,10 @@ export struct ReplyCard {
                       onLinkClick: this.onLinkClick,
                       onMentionUserClick: this.onMentionUserClick,
                     })
+                    if (this.childReplyBottomGap(index) > 0) {
+                      Blank()
+                        .height(this.childReplyBottomGap(index))
+                    }
                   }
                   .layoutWeight(1)
                   .onAreaChange((_oldValue: Area, newValue: Area) => {
@@ -277,7 +295,9 @@ export struct ReplyCard {
               },
               (child: V2exReply) => this.childKey(child),
             )
-          }.width('100%')
+          }
+          .width('100%')
+          .margin({ top: this.childReplyListTopGap() })
         }
       }
       .padding({

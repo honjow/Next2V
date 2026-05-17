@@ -78,9 +78,18 @@ for (const literal of [
   'CONTENT_GAP: number = 8',
   'ACTIONS_GAP: number = 0',
   'CHILD_DIVIDER_MARGIN: number = 8',
+  'COMPACT_CHILD_REPLY_GAP: number = 8',
 ]) {
   assert.ok(layout.includes(literal), `layout policy value changed/missing: ${literal}`)
 }
+
+assert.match(replyCard, /private childReplyBottomGap\(index: number\): number/)
+assert.match(replyCard, /!this\.isCompact\(\) \|\| index >= this\.childReplies\.length - 1/)
+assert.match(replyCard, /private childReplyListTopGap\(\): number/)
+assert.match(replyCard, /!this\.isCompact\(\) \|\| this\.childReplies\.length === 0/)
+assert.match(replyCard, /ReplyCardLayoutPolicy\.COMPACT_CHILD_REPLY_GAP/)
+assert.match(replyCard, /Blank\(\)[\s\S]*\.height\(this\.childReplyBottomGap\(index\)\)/)
+assert.match(replyCard, /\.margin\(\{ top: this\.childReplyListTopGap\(\) \}\)/)
 
 for (const label of ['查看上下文', '复制用户名', '复制回复内容', '忽略回复', '举报回复']) {
   assert.ok(actions.includes(label), `context menu label missing: ${label}`)
