@@ -1,36 +1,34 @@
 import { common } from '@kit.AbilityKit'
 import { relationalStore } from '@kit.ArkData'
-import { fileIo } from '@kit.CoreFileKit'
 import { V2exReply, V2exTopic } from '../network/NetworkTypes'
 import { LocalDataStore } from '../storage/LocalDataStore'
+import {
+  cleanupPreparedPayloadFile,
+  commitStagedPayloadFile,
+  deleteOrphanPayloadFiles,
+  payloadHash,
+  preparePayloadStorage,
+  resolvePayloadText,
+  topicDetailPayloadFileName,
+  topicListPayloadFileName,
+  unlinkPayloadFileBestEffort,
+} from './CachePayloadFiles'
+import {
+  CACHE_KIND_TOPIC_DETAIL,
+  CACHE_KIND_TOPIC_LIST,
+  CACHE_KINDS_SQL,
+  KEY_CACHE_INDEX,
+  KEY_PREFIX_TOPIC_DETAIL,
+  KEY_PREFIX_TOPIC_LIST,
+  MAX_CACHE_PAYLOAD_SIZE,
+  MAX_TOPIC_LIST_ITEMS,
+  TOPIC_DETAIL_TTL_SECONDS,
+  TOPIC_LIST_TTL_SECONDS,
+} from './CachePolicy'
 import { deleteKeysAndFlush, SettingsPreferencesStore, withPreferencesStore } from './SettingsStorage'
 import { STORE_NAME_CACHE } from './SettingsStores'
 
 const STORE_NAME: string = STORE_NAME_CACHE
-// Legacy Preferences keys kept for clean-break deletion traceability.
-const KEY_PREFIX_TOPIC_LIST: string = 'topicList:'
-const KEY_PREFIX_TOPIC_DETAIL: string = 'topicDetail:'
-const KEY_CACHE_INDEX: string = 'cacheIndex'
-
-const CACHE_KIND_TOPIC_LIST: string = 'topic_list'
-const CACHE_KIND_TOPIC_DETAIL: string = 'topic_detail'
-const CACHE_KINDS_SQL: string = `'${CACHE_KIND_TOPIC_LIST}', '${CACHE_KIND_TOPIC_DETAIL}'`
-
-// Offline cache policy. These values are intentionally centralized here so
-// callers keep treating AppStorage as UI projection, not durable cache state.
-const TOPIC_LIST_TTL_SECONDS: number = 7 * 24 * 60 * 60
-const TOPIC_DETAIL_TTL_SECONDS: number = 30 * 24 * 60 * 60
-const MAX_TOPIC_LIST_ROWS: number = 32
-const MAX_TOPIC_DETAIL_ROWS: number = 200
-const FILE_PAYLOAD_THRESHOLD_BYTES: number = 256 * 1024
-const MAX_CACHE_PAYLOAD_SIZE: number = 20 * 1024 * 1024
-const MAX_TOPIC_LIST_ITEMS: number = 50
-const CACHE_PAYLOAD_DIR_NAME: string = 'cache_payloads'
-const CACHE_PAYLOAD_TOPIC_LIST_PREFIX: string = 'topic_list_'
-const CACHE_PAYLOAD_TOPIC_DETAIL_PREFIX: string = 'topic_detail_'
-const CACHE_PAYLOAD_FILE_SUFFIX: string = '.json'
-const CACHE_PAYLOAD_STAGED_SUFFIX: string = '.staged'
-const MAX_CACHE_PAYLOAD_FILENAME_STEM_LENGTH: number = 180
 
 const SQL_SELECT_CACHE_ENTRY: string = 'SELECT payload_text, payload_path, payload_hash, expires_at FROM cache_entries WHERE cache_key = ? AND kind = ? LIMIT 1'
 const SQL_SELECT_CACHE_INDEX: string = `SELECT cache_key, kind, cached_at, accessed_at FROM cache_entries WHERE kind IN (${CACHE_KINDS_SQL}) ORDER BY cached_at DESC`
@@ -82,13 +80,6 @@ interface CacheEntry {
   expiresAt: number
 }
 
-interface PayloadStoragePlan {
-  payloadText: string | null
-  payloadPath: string | null
-  stagedPayloadPath: string | null
-  size: number
-}
-
 export class CacheSettings {
   static async loadKeyIndex(context: common.UIAbilityContext): Promise<CacheKeyIndex> {
     try {
@@ -133,7 +124,7 @@ export class CacheSettings {
         store,
         CacheSettings.topicListRowKey(cacheKey),
         CACHE_KIND_TOPIC_LIST,
-        CacheSettings.topicListPayloadFileName(CacheSettings.topicListRowKey(cacheKey)),
+        topicListPayloadFileName(CacheSettings.topicListRowKey(cacheKey)),
         payload,
         now,
         now + TOPIC_LIST_TTL_SECONDS
@@ -185,7 +176,7 @@ export class CacheSettings {
         store,
         CacheSettings.topicDetailRowKey(topicId),
         CACHE_KIND_TOPIC_DETAIL,
-        CacheSettings.topicDetailPayloadFileName(CacheSettings.topicDetailRowKey(topicId)),
+        topicDetailPayloadFileName(CacheSettings.topicDetailRowKey(topicId)),
         JSON.stringify(payload),
         now,
         now + TOPIC_DETAIL_TTL_SECONDS
@@ -252,13 +243,13 @@ export class CacheSettings {
       }
       const payloadText = CacheSettings.readNullableString(resultSet, payloadIndex)
       const payloadPath = CacheSettings.readNullableString(resultSet, pathIndex)
-      const payloadHash = CacheSettings.readNullableString(resultSet, hashIndex)
-      const resolvedPayload = CacheSettings.resolvePayloadText(context, payloadText, payloadPath)
+      const storedPayloadHash = CacheSettings.readNullableString(resultSet, hashIndex)
+      const resolvedPayload = resolvePayloadText(context, payloadText, payloadPath)
       if (resolvedPayload.length <= 0) {
         await CacheSettings.deleteCacheEntry(context, store, cacheKey, kind)
         return null
       }
-      if (payloadHash.length > 0 && CacheSettings.payloadHash(resolvedPayload) !== payloadHash) {
+      if (storedPayloadHash.length > 0 && payloadHash(resolvedPayload) !== storedPayloadHash) {
         await CacheSettings.deleteCacheEntry(context, store, cacheKey, kind)
         return null
       }
@@ -283,27 +274,27 @@ export class CacheSettings {
     expiresAt: number
   ): Promise<void> {
     const previousPayloadPath = await CacheSettings.loadCacheEntryPayloadPath(store, cacheKey, kind)
-    const payloadHash = CacheSettings.payloadHash(payloadText)
-    const payloadPlan = CacheSettings.preparePayloadStorage(context, payloadFileName, payloadText)
+    const nextPayloadHash = payloadHash(payloadText)
+    const payloadPlan = preparePayloadStorage(context, payloadFileName, payloadText)
     const args: relationalStore.ValueType[] = [
       cacheKey,
       kind,
       payloadPlan.payloadText,
       payloadPlan.payloadPath,
-      payloadHash,
+      nextPayloadHash,
       cachedAt,
       cachedAt,
       expiresAt,
       payloadPlan.size
     ]
     try {
-      CacheSettings.commitStagedPayloadFile(context, payloadPlan)
+      commitStagedPayloadFile(context, payloadPlan)
       await store.executeSql(SQL_UPSERT_CACHE_ENTRY, args)
       if (previousPayloadPath && previousPayloadPath !== payloadPlan.payloadPath) {
-        CacheSettings.unlinkPayloadFileBestEffort(context, previousPayloadPath)
+        unlinkPayloadFileBestEffort(context, previousPayloadPath)
       }
     } catch (error) {
-      CacheSettings.cleanupPreparedPayloadFile(context, payloadPlan)
+      cleanupPreparedPayloadFile(context, payloadPlan)
       const e = error as Error
       throw new Error(e.message || '保存缓存失败')
     }
@@ -328,7 +319,7 @@ export class CacheSettings {
     const args: relationalStore.ValueType[] = [cacheKey, kind]
     await store.executeSql(SQL_DELETE_CACHE_ENTRY, args)
     if (payloadPath) {
-      CacheSettings.unlinkPayloadFileBestEffort(context, payloadPath)
+      unlinkPayloadFileBestEffort(context, payloadPath)
     }
   }
 
@@ -429,7 +420,7 @@ export class CacheSettings {
     const payloadPaths = await CacheSettings.selectPayloadPaths(store, selectPayloadPathsSql, selectArgs)
     await store.executeSql(deleteSql, deleteArgs)
     payloadPaths.forEach((payloadPath: string) => {
-      CacheSettings.unlinkPayloadFileBestEffort(context, payloadPath)
+      unlinkPayloadFileBestEffort(context, payloadPath)
     })
   }
 
@@ -454,133 +445,12 @@ export class CacheSettings {
     return payloadPaths
   }
 
-  private static preparePayloadStorage(
-    context: common.UIAbilityContext,
-    payloadFileName: string,
-    payloadText: string
-  ): PayloadStoragePlan {
-    const size = CacheSettings.byteLength(payloadText)
-    if (size < FILE_PAYLOAD_THRESHOLD_BYTES) {
-      return {
-        payloadText: payloadText,
-        payloadPath: null,
-        stagedPayloadPath: null,
-        size: size
-      }
-    }
-    CacheSettings.ensurePayloadDirectory(context)
-    const committedPayloadFileName = CacheSettings.committedPayloadFileName(context, payloadFileName)
-    const stagedPayloadFileName = CacheSettings.stagedPayloadFileName(committedPayloadFileName)
-    CacheSettings.writePayloadFile(context, stagedPayloadFileName, payloadText)
-    return {
-      payloadText: null,
-      payloadPath: committedPayloadFileName,
-      stagedPayloadPath: stagedPayloadFileName,
-      size: size
-    }
-  }
-
-  private static commitStagedPayloadFile(context: common.UIAbilityContext, payloadPlan: PayloadStoragePlan): void {
-    if (!payloadPlan.stagedPayloadPath || !payloadPlan.payloadPath) {
-      return
-    }
-    try {
-      fileIo.renameSync(
-        CacheSettings.payloadFilePath(context, payloadPlan.stagedPayloadPath),
-        CacheSettings.payloadFilePath(context, payloadPlan.payloadPath)
-      )
-    } catch (error) {
-      CacheSettings.cleanupPreparedPayloadFile(context, payloadPlan)
-      const e = error as Error
-      throw new Error(e.message || '提交缓存文件失败')
-    }
-  }
-
-  private static cleanupPreparedPayloadFile(context: common.UIAbilityContext, payloadPlan: PayloadStoragePlan): void {
-    if (payloadPlan.stagedPayloadPath) {
-      CacheSettings.unlinkPayloadFileBestEffort(context, payloadPlan.stagedPayloadPath)
-    }
-    if (payloadPlan.payloadPath) {
-      CacheSettings.unlinkPayloadFileBestEffort(context, payloadPlan.payloadPath)
-    }
-  }
-
-  private static resolvePayloadText(
-    context: common.UIAbilityContext,
-    payloadText: string,
-    payloadPath: string
-  ): string {
-    if (payloadPath.length > 0 && CacheSettings.isCachePayloadFileName(payloadPath)) {
-      try {
-        return fileIo.readTextSync(CacheSettings.payloadFilePath(context, payloadPath))
-      } catch (_error) {
-      }
-    }
-    return payloadText
-  }
-
-  private static ensurePayloadDirectory(context: common.UIAbilityContext): void {
-    try {
-      fileIo.mkdirSync(CacheSettings.payloadBaseDir(context), true)
-    } catch (_error) {
-    }
-  }
-
-  private static writePayloadFile(context: common.UIAbilityContext, relativeName: string, payloadText: string): void {
-    if (!CacheSettings.isSafePayloadFileName(relativeName)) {
-      throw new Error('非法缓存文件名')
-    }
-    let file: fileIo.File | null = null
-    try {
-      file = fileIo.openSync(
-        CacheSettings.payloadFilePath(context, relativeName),
-        fileIo.OpenMode.READ_WRITE | fileIo.OpenMode.CREATE | fileIo.OpenMode.TRUNC
-      )
-      fileIo.writeSync(file.fd, payloadText)
-    } finally {
-      CacheSettings.closeFileBestEffort(file)
-    }
-  }
-
   private static async deleteOrphanPayloadFiles(
     context: common.UIAbilityContext,
     store: relationalStore.RdbStore
   ): Promise<void> {
-    let filenames: string[] = []
-    try {
-      filenames = fileIo.listFileSync(CacheSettings.payloadBaseDir(context))
-    } catch (_error) {
-      return
-    }
     const activePaths = new Set<string>(await CacheSettings.selectPayloadPaths(store, SQL_SELECT_ACTIVE_CACHE_PAYLOAD_PATHS, []))
-    filenames.forEach((filename: string) => {
-      if (
-        CacheSettings.isCachePayloadArtifactFileName(filename) &&
-        !activePaths.has(filename)
-      ) {
-        CacheSettings.unlinkPayloadFileBestEffort(context, filename)
-      }
-    })
-  }
-
-  private static unlinkPayloadFileBestEffort(context: common.UIAbilityContext, relativeName: string): void {
-    if (!CacheSettings.isSafePayloadFileName(relativeName)) {
-      return
-    }
-    try {
-      fileIo.unlinkSync(CacheSettings.payloadFilePath(context, relativeName))
-    } catch (_error) {
-    }
-  }
-
-  private static closeFileBestEffort(file: fileIo.File | null): void {
-    if (!file) {
-      return
-    }
-    try {
-      fileIo.closeSync(file)
-    } catch (_error) {
-    }
+    deleteOrphanPayloadFiles(context, activePaths)
   }
 
   private static readNullableString(resultSet: relationalStore.ResultSet, columnIndex: number): string {
@@ -588,130 +458,6 @@ export class CacheSettings {
       return ''
     }
     return resultSet.getString(columnIndex)
-  }
-
-  private static topicListPayloadFileName(rowKey: string): string {
-    return CACHE_PAYLOAD_TOPIC_LIST_PREFIX + CacheSettings.encodePayloadKey(rowKey) + CACHE_PAYLOAD_FILE_SUFFIX
-  }
-
-  private static topicDetailPayloadFileName(rowKey: string): string {
-    return CACHE_PAYLOAD_TOPIC_DETAIL_PREFIX + CacheSettings.encodePayloadKey(rowKey) + CACHE_PAYLOAD_FILE_SUFFIX
-  }
-
-  private static committedPayloadFileName(context: common.UIAbilityContext, baseName: string): string {
-    if (!CacheSettings.isCachePayloadFileName(baseName)) {
-      throw new Error('非法缓存文件名')
-    }
-    const stem = baseName.substring(0, baseName.length - CACHE_PAYLOAD_FILE_SUFFIX.length)
-    for (let attempt = 0; attempt < 8; attempt++) {
-      const candidate = stem + '_' + Date.now().toString() + '_' + CacheSettings.randomPayloadNonce() + CACHE_PAYLOAD_FILE_SUFFIX
-      if (!CacheSettings.payloadFileExistsBestEffort(context, candidate)) {
-        return candidate
-      }
-    }
-    throw new Error('缓存文件名冲突')
-  }
-
-  private static stagedPayloadFileName(committedName: string): string {
-    if (!CacheSettings.isCachePayloadFileName(committedName)) {
-      throw new Error('非法缓存文件名')
-    }
-    return committedName + CACHE_PAYLOAD_STAGED_SUFFIX
-  }
-
-  private static randomPayloadNonce(): string {
-    return Math.floor(Math.random() * 0x100000000).toString(16).padStart(8, '0')
-  }
-
-  private static encodePayloadKey(value: string): string {
-    let encoded = ''
-    for (let i = 0; i < value.length; i++) {
-      const code = value.charCodeAt(i)
-      if (code <= 0x7F) {
-        encoded += CacheSettings.hexByte(code)
-      } else if (code <= 0x7FF) {
-        encoded += CacheSettings.hexByte(0xC0 | (code >> 6))
-        encoded += CacheSettings.hexByte(0x80 | (code & 0x3F))
-      } else if (code >= 0xD800 && code <= 0xDBFF && i + 1 < value.length) {
-        const next = value.charCodeAt(i + 1)
-        if (next >= 0xDC00 && next <= 0xDFFF) {
-          const point = 0x10000 + ((code - 0xD800) << 10) + (next - 0xDC00)
-          encoded += CacheSettings.hexByte(0xF0 | (point >> 18))
-          encoded += CacheSettings.hexByte(0x80 | ((point >> 12) & 0x3F))
-          encoded += CacheSettings.hexByte(0x80 | ((point >> 6) & 0x3F))
-          encoded += CacheSettings.hexByte(0x80 | (point & 0x3F))
-          i += 1
-        } else {
-          encoded += CacheSettings.hexByte(0xEF)
-          encoded += CacheSettings.hexByte(0xBF)
-          encoded += CacheSettings.hexByte(0xBD)
-        }
-      } else {
-        encoded += CacheSettings.hexByte(0xE0 | (code >> 12))
-        encoded += CacheSettings.hexByte(0x80 | ((code >> 6) & 0x3F))
-        encoded += CacheSettings.hexByte(0x80 | (code & 0x3F))
-      }
-    }
-    if (encoded.length <= 0 || encoded.length > MAX_CACHE_PAYLOAD_FILENAME_STEM_LENGTH) {
-      throw new Error('缓存文件名长度无效')
-    }
-    return encoded
-  }
-
-  private static hexByte(value: number): string {
-    const clean = value & 0xFF
-    return clean.toString(16).padStart(2, '0')
-  }
-
-  private static payloadBaseDir(context: common.UIAbilityContext): string {
-    return context.filesDir + '/' + CACHE_PAYLOAD_DIR_NAME
-  }
-
-  private static payloadFilePath(context: common.UIAbilityContext, relativeName: string): string {
-    return CacheSettings.payloadBaseDir(context) + '/' + relativeName
-  }
-
-  private static payloadFileExistsBestEffort(context: common.UIAbilityContext, relativeName: string): boolean {
-    if (!CacheSettings.isSafePayloadFileName(relativeName)) {
-      return true
-    }
-    try {
-      return fileIo.accessSync(CacheSettings.payloadFilePath(context, relativeName))
-    } catch (_error) {
-      return false
-    }
-  }
-
-  private static isCachePayloadFileName(relativeName: string): boolean {
-    return (
-      relativeName.startsWith(CACHE_PAYLOAD_TOPIC_LIST_PREFIX) ||
-      relativeName.startsWith(CACHE_PAYLOAD_TOPIC_DETAIL_PREFIX)
-    ) && relativeName.endsWith(CACHE_PAYLOAD_FILE_SUFFIX) &&
-      !relativeName.includes(CACHE_PAYLOAD_STAGED_SUFFIX) &&
-      CacheSettings.isSafePayloadFileName(relativeName)
-  }
-
-  private static isCachePayloadArtifactFileName(relativeName: string): boolean {
-    if (CacheSettings.isCachePayloadFileName(relativeName)) {
-      return true
-    }
-    if (!relativeName.endsWith(CACHE_PAYLOAD_FILE_SUFFIX + CACHE_PAYLOAD_STAGED_SUFFIX)) {
-      return false
-    }
-    return CacheSettings.isCachePayloadFileName(relativeName.substring(0, relativeName.length - CACHE_PAYLOAD_STAGED_SUFFIX.length))
-  }
-
-  private static isSafePayloadFileName(relativeName: string): boolean {
-    if (
-      relativeName.length <= 0 ||
-      relativeName.startsWith('.') ||
-      relativeName.includes('/') ||
-      relativeName.includes('\\') ||
-      relativeName.includes('..')
-    ) {
-      return false
-    }
-    return /^[A-Za-z0-9._-]+$/.test(relativeName)
   }
 
   private static readKeyIndexResult(resultSet: relationalStore.ResultSet): CacheKeyIndex {
@@ -836,70 +582,5 @@ export class CacheSettings {
 
   private static nowSeconds(): number {
     return Math.floor(Date.now() / 1000)
-  }
-
-  private static byteLength(value: string): number {
-    let bytes = 0
-    for (let i = 0; i < value.length; i++) {
-      const code = value.charCodeAt(i)
-      if (code <= 0x7F) {
-        bytes += 1
-      } else if (code <= 0x7FF) {
-        bytes += 2
-      } else if (code >= 0xD800 && code <= 0xDBFF && i + 1 < value.length) {
-        const next = value.charCodeAt(i + 1)
-        if (next >= 0xDC00 && next <= 0xDFFF) {
-          bytes += 4
-          i += 1
-        } else {
-          bytes += 3
-        }
-      } else {
-        bytes += 3
-      }
-    }
-    return bytes
-  }
-
-  private static payloadHash(payloadText: string): string {
-    let bytes = 0
-    let hash = 0x811c9dc5
-    for (let i = 0; i < payloadText.length; i++) {
-      const code = payloadText.charCodeAt(i)
-      if (code <= 0x7F) {
-        hash = CacheSettings.fnv1a32Byte(hash, code)
-        bytes += 1
-      } else if (code <= 0x7FF) {
-        hash = CacheSettings.fnv1a32Byte(hash, 0xC0 | (code >> 6))
-        hash = CacheSettings.fnv1a32Byte(hash, 0x80 | (code & 0x3F))
-        bytes += 2
-      } else if (code >= 0xD800 && code <= 0xDBFF && i + 1 < payloadText.length) {
-        const next = payloadText.charCodeAt(i + 1)
-        if (next >= 0xDC00 && next <= 0xDFFF) {
-          const point = 0x10000 + ((code - 0xD800) << 10) + (next - 0xDC00)
-          hash = CacheSettings.fnv1a32Byte(hash, 0xF0 | (point >> 18))
-          hash = CacheSettings.fnv1a32Byte(hash, 0x80 | ((point >> 12) & 0x3F))
-          hash = CacheSettings.fnv1a32Byte(hash, 0x80 | ((point >> 6) & 0x3F))
-          hash = CacheSettings.fnv1a32Byte(hash, 0x80 | (point & 0x3F))
-          bytes += 4
-          i += 1
-        } else {
-          hash = CacheSettings.fnv1a32Byte(hash, 0xEF)
-          hash = CacheSettings.fnv1a32Byte(hash, 0xBF)
-          hash = CacheSettings.fnv1a32Byte(hash, 0xBD)
-          bytes += 3
-        }
-      } else {
-        hash = CacheSettings.fnv1a32Byte(hash, 0xE0 | (code >> 12))
-        hash = CacheSettings.fnv1a32Byte(hash, 0x80 | ((code >> 6) & 0x3F))
-        hash = CacheSettings.fnv1a32Byte(hash, 0x80 | (code & 0x3F))
-        bytes += 3
-      }
-    }
-    return 'v1:fnv1a32-utf8:' + bytes.toString() + ':' + hash.toString(16).padStart(8, '0')
-  }
-
-  private static fnv1a32Byte(hash: number, byte: number): number {
-    return Math.imul((hash ^ (byte & 0xFF)) >>> 0, 16777619) >>> 0
   }
 }

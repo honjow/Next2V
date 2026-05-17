@@ -11,6 +11,7 @@ const assert = (condition, message) => {
 }
 
 const seed = read('shared/src/main/ets/settings/CacheDeviceQaSeed.ets')
+const policy = read('shared/src/main/ets/settings/CachePolicy.ets')
 const storage = read('feature/settings/src/main/ets/pages/StorageSettingsPage.ets')
 const sharedIndex = read('shared/src/main/ets/Index.ets')
 
@@ -58,6 +59,11 @@ assert(seed.includes("await CacheSettings.loadTopicList(context, 'qa-seed-hash-m
 assert(!/payloadFilePath\s*\(\s*context\s*,\s*['"]\.\.\//.test(seed), 'invalid traversal value must never be passed to fileIo path helpers')
 assert(seed.includes("const SQL_DELETE_SEEDED_CACHE_ROWS: string = 'DELETE FROM cache_entries WHERE cache_key LIKE ? OR cache_key IN (?, ?, ?)'"), 'reset must target seed row predicates only')
 assert(seed.includes("SEED_LIST_KEY_PREFIX + '%'"), 'reset must use seed list prefix')
+assert(seed.includes("import {\n  CACHE_KIND_TOPIC_DETAIL") || seed.includes("from './CachePolicy'"), 'seed utility must import shared cache policy constants')
+assert(policy.includes("export const KEY_PREFIX_TOPIC_LIST: string = 'topicList:'"), 'shared policy must preserve topic list prefix')
+assert(policy.includes("export const KEY_PREFIX_TOPIC_DETAIL: string = 'topicDetail:'"), 'shared policy must preserve topic detail prefix')
+assert(policy.includes("export const CACHE_KIND_TOPIC_LIST: string = 'topic_list'"), 'shared policy must preserve topic list kind')
+assert(policy.includes("export const CACHE_KIND_TOPIC_DETAIL: string = 'topic_detail'"), 'shared policy must preserve topic detail kind')
 assert(seed.includes('isSafeSeedPayloadFileName') && seed.includes('isProductionSeedPayloadFileName'), 'reset must restrict deleted payload files to seed-created names')
 assert(!seed.includes('ApiService') && !seed.includes('HttpClient') && !seed.includes('V2exNativeAuthService'), 'seed utility must not import network/auth clients')
 

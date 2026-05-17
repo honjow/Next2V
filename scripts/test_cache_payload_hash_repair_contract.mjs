@@ -11,6 +11,7 @@ const assert = (condition, message) => {
 }
 
 const cacheSettings = read('shared/src/main/ets/settings/CacheSettings.ets')
+const cachePayloadFiles = read('shared/src/main/ets/settings/CachePayloadFiles.ets')
 const seed = read('shared/src/main/ets/settings/CacheDeviceQaSeed.ets')
 
 assert(
@@ -23,27 +24,27 @@ assert(
   'cache upsert must store payload_hash with nine placeholders'
 )
 assert(
-  /const payloadHash = CacheSettings\.payloadHash\(payloadText\)[\s\S]*payloadPlan\.payloadPath,[\s\S]*payloadHash,[\s\S]*cachedAt/.test(cacheSettings),
-  'saveCacheEntry must compute payloadHash(payloadText) and include it in SQL args'
+  /const nextPayloadHash = payloadHash\(payloadText\)[\s\S]*payloadPlan\.payloadPath,[\s\S]*nextPayloadHash,[\s\S]*cachedAt/.test(cacheSettings),
+  'saveCacheEntry must compute payloadHash(payloadText) through CachePayloadFiles and include it in SQL args'
 )
 assert(
-  /const resolvedPayload = CacheSettings\.resolvePayloadText\(context,\s*payloadText,\s*payloadPath\)[\s\S]*if\s*\(resolvedPayload\.length <= 0\)[\s\S]*if\s*\(payloadHash\.length > 0 && CacheSettings\.payloadHash\(resolvedPayload\) !== payloadHash\)[\s\S]*await CacheSettings\.deleteCacheEntry\(context,\s*store,\s*cacheKey,\s*kind\)[\s\S]*return null/.test(cacheSettings),
+  /const resolvedPayload = resolvePayloadText\(context,\s*payloadText,\s*payloadPath\)[\s\S]*if\s*\(resolvedPayload\.length <= 0\)[\s\S]*if\s*\(storedPayloadHash\.length > 0 && payloadHash\(resolvedPayload\) !== storedPayloadHash\)[\s\S]*await CacheSettings\.deleteCacheEntry\(context,\s*store,\s*cacheKey,\s*kind\)[\s\S]*return null/.test(cacheSettings),
   'read path must verify non-empty payload_hash after resolution and delete only the affected cache entry on mismatch'
 )
 assert(
-  /if\s*\(payloadHash\.length > 0 && CacheSettings\.payloadHash\(resolvedPayload\) !== payloadHash\)/.test(cacheSettings),
+  /if\s*\(storedPayloadHash\.length > 0 && payloadHash\(resolvedPayload\) !== storedPayloadHash\)/.test(cacheSettings),
   'null or empty payload_hash must stay legacy-compatible'
 )
 assert(
-  /private\s+static\s+payloadHash\(payloadText: string\): string[\s\S]*return 'v1:fnv1a32-utf8:' \+ bytes\.toString\(\) \+ ':' \+ hash\.toString\(16\)\.padStart\(8,\s*'0'\)/.test(cacheSettings),
+  /export\s+function\s+payloadHash\(payloadText: string\): string[\s\S]*return 'v1:fnv1a32-utf8:' \+ bytes\.toString\(\) \+ ':' \+ hash\.toString\(16\)\.padStart\(8,\s*'0'\)/.test(cachePayloadFiles),
   'payloadHash must use the versioned v1:fnv1a32-utf8:<bytes>:<hex8> format'
 )
 assert(
-  cacheSettings.includes('Math.imul((hash ^ (byte & 0xFF)) >>> 0, 16777619) >>> 0'),
+  cachePayloadFiles.includes('Math.imul((hash ^ (byte & 0xFF)) >>> 0, 16777619) >>> 0'),
   'payloadHash must use Math.imul FNV-1a multiplication'
 )
 assert(
-  /private\s+static\s+resolvePayloadText[\s\S]*payloadPath\.length > 0 && CacheSettings\.isCachePayloadFileName\(payloadPath\)[\s\S]*fileIo\.readTextSync[\s\S]*return payloadText/.test(cacheSettings),
+  /export\s+function\s+resolvePayloadText[\s\S]*payloadPath\.length > 0 && isCachePayloadFileName\(payloadPath\)[\s\S]*fileIo\.readTextSync[\s\S]*return payloadText/.test(cachePayloadFiles),
   'unsafe payload_path values must not be passed to fileIo and must retain inline fallback'
 )
 

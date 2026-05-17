@@ -5,19 +5,21 @@ import BuildProfile from '../../../../BuildProfile'
 import { V2exMember, V2exNode, V2exReply, V2exTopic } from '../network/NetworkTypes'
 import { LocalDataStore } from '../storage/LocalDataStore'
 import { CacheSettings, CacheStats } from './CacheSettings'
+import {
+  CACHE_KIND_TOPIC_DETAIL,
+  CACHE_KIND_TOPIC_LIST,
+  CACHE_PAYLOAD_DIR_NAME,
+  CACHE_PAYLOAD_FILE_SUFFIX,
+  KEY_PREFIX_TOPIC_DETAIL,
+  KEY_PREFIX_TOPIC_LIST,
+} from './CachePolicy'
 
-const CACHE_KIND_TOPIC_LIST: string = 'topic_list'
-const CACHE_KIND_TOPIC_DETAIL: string = 'topic_detail'
-const KEY_PREFIX_TOPIC_LIST: string = 'topicList:'
-const KEY_PREFIX_TOPIC_DETAIL: string = 'topicDetail:'
 const SEED_LIST_KEY_PREFIX: string = KEY_PREFIX_TOPIC_LIST + 'qa-seed-'
 const SEED_DETAIL_KEY_PREFIX: string = KEY_PREFIX_TOPIC_DETAIL + '90000'
 const SEED_DETAIL_MIXED_ID: number = 900001
 const SEED_DETAIL_RESET_IDS: number[] = [900001, 900002, 900003]
-const CACHE_PAYLOAD_DIR_NAME: string = 'cache_payloads'
 const SEED_TOPIC_LIST_FILE_PREFIX: string = 'topic_list_qa_seed_'
 const SEED_TOPIC_DETAIL_FILE_PREFIX: string = 'topic_detail_qa_seed_'
-const CACHE_PAYLOAD_FILE_SUFFIX: string = '.json'
 const WRONG_PAYLOAD_HASH: string = 'v1:fnv1a32-utf8:1:00000000'
 const SQL_UPSERT_CACHE_ENTRY: string = 'INSERT OR REPLACE INTO cache_entries (cache_key, kind, payload_text, payload_path, payload_hash, cached_at, accessed_at, expires_at, size) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
 const SQL_SELECT_SEED_PAYLOAD_PATHS: string = 'SELECT payload_path FROM cache_entries WHERE cache_key LIKE ? OR cache_key IN (?, ?, ?)'
