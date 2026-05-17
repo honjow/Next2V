@@ -35,6 +35,9 @@ import {
   SearchPageStateCoordinator,
 } from '../model/SearchPageStateCoordinator'
 import {
+  SearchSourceCoordinator,
+} from '../model/SearchSourceCoordinator'
+import {
   ExternalWebSearchCard,
   LocalSearchFilterSheetContent,
   type RemoteDateRange,
@@ -174,7 +177,7 @@ export struct SearchPage {
   }
 
   @Builder HistorySection() {
-    if (!this.keyword.trim() && this.history.length > 0) {
+    if (SearchSourceCoordinator.shouldShowHistory(this.keyword, this.history.length)) {
       SearchHistoryStrip({
         history: this.history,
         clearAction: () => { this.clearHistory() },
@@ -398,8 +401,11 @@ export struct SearchPage {
       return
     }
     if (action === 'refresh') {
-      if (this.sourceMode === 'externalWeb' && this.keyword.trim().length > 0) {
+      const refreshAction = SearchSourceCoordinator.refreshAction(this.sourceMode, this.keyword)
+      if (refreshAction === 'external') {
         this.openExternalTopicSearch()
+      } else if (refreshAction === 'remote') {
+        this.executeRemoteSearch(true)
       } else {
         this.refreshSearchSurface()
       }
@@ -533,9 +539,12 @@ export struct SearchPage {
     SearchSettings.loadSourceMode(context)
       .then((mode: SearchSourceMode) => {
         this.sourceMode = mode
-        if (this.usesNodeIndex()) {
+        const effect = SearchSourceCoordinator.loadedSourceModeEffect(mode, this.keyword)
+        if (effect.shouldLoadNodeIndex) {
           this.loadNodeIndex()
-        } else {
+        } else if (effect.shouldExecuteRemote) {
+          this.executeRemoteSearch(true)
+        } else if (effect.shouldApplyLocalFilter) {
           this.applyFilter()
         }
       })
@@ -579,18 +588,18 @@ export struct SearchPage {
   }
 
   private applyHistory(q: string): void {
-    const clean = (q ?? '').trim()
-    if (!clean) {
+    const selection = SearchSourceCoordinator.applyHistory(q, this.sourceMode)
+    if (!selection.shouldApply) {
       return
     }
-    this.keyword = clean
+    this.keyword = selection.query
     this.applyFilter()
     this.resetRemoteResults()
-    if (this.sourceMode === 'remote') {
+    if (selection.shouldExecuteRemote) {
       this.executeRemoteSearch(true)
     }
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    SearchSettings.recordQuery(context, clean)
+    SearchSettings.recordQuery(context, selection.query)
       .then((items: string[]) => {
         this.history = items
       })
@@ -628,21 +637,24 @@ export struct SearchPage {
   }
 
   private updateSourceMode(mode: SearchSourceMode): void {
-    if (this.sourceMode === mode) {
+    const transition = SearchSourceCoordinator.transitionSourceMode(this.sourceMode, mode, this.keyword)
+    if (!transition.changed) {
       return
     }
-    this.sourceMode = mode
-    this.resetRemoteResults()
+    this.sourceMode = transition.mode
+    if (transition.shouldResetRemote) {
+      this.resetRemoteResults()
+    }
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    SearchSettings.saveSourceMode(context, mode)
+    SearchSettings.saveSourceMode(context, transition.mode)
       .catch((error: Error) => {
         this.errorMessage = error.message || '保存搜索来源失败'
       })
-    if (this.usesNodeIndex()) {
+    if (transition.shouldLoadNodeIndex) {
       this.loadNodeIndex()
-    } else if (mode === 'remote' && this.keyword.trim().length > 0) {
+    } else if (transition.shouldExecuteRemote) {
       this.executeRemoteSearch(true)
-    } else {
+    } else if (transition.shouldApplyLocalFilter) {
       this.applyFilter()
     }
   }
@@ -665,20 +677,19 @@ export struct SearchPage {
   }
 
   private runPrimarySearchAction(): void {
-    const q = this.keyword.trim()
-    if (!q) {
-      return
-    }
-    if (this.sourceMode === 'remote') {
+    const action = SearchSourceCoordinator.primaryAction(this.sourceMode, this.keyword)
+    if (action === 'remote') {
       this.executeRemoteSearch(true)
       return
     }
-    if (this.sourceMode === 'externalWeb') {
+    if (action === 'external') {
       this.openExternalTopicSearch()
       return
     }
-    this.applyFilter()
-    this.recordHistory()
+    if (action === 'local') {
+      this.applyFilter()
+      this.recordHistory()
+    }
   }
 
   private showTopicResults(): boolean {
