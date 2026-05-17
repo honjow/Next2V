@@ -18,6 +18,24 @@ Default Hermes responsibilities are:
 
 Important: "继续", "按计划走", an active task list, or a context-compaction handoff only authorizes continuing the controller workflow. These signals do not authorize Hermes to self-execute code changes, builds, installs, device operations, or commits.
 
+### Direct worker controller mode (no Kanban)
+
+When the user explicitly rejects Kanban/watchdog orchestration for V2Next work, use direct worker controller mode instead of board tasks.
+
+Required contract:
+
+1. Hermes remains the controller; a status-only cron, board dispatcher, or one-shot worker launch is not sufficient.
+2. Start independent worker processes directly by command, normally `codex exec --sandbox danger-full-access --color never - < prompt.md` under a PTY/log wrapper.
+3. Record per stage: controller artifact directory, prompt path, worker log path, result JSON path, PID/session id, worktree, and current git status.
+4. Use explicit stages: implementation -> read-only review -> independent device QA -> integrate -> next planned lane/spec.
+5. Each stage must produce a machine-readable result JSON with `verdict: PASS|FAIL|BLOCKED|REQUEST_CHANGES`, `summary`, `artifact_dir`, `commands`, `changed_files`, `evidence`, and `commit` when applicable.
+6. Advance only on `verdict=PASS`. `FAIL`, `BLOCKED`, or `REQUEST_CHANGES` must stop or trigger a narrow recovery worker with evidence; do not call a live process or heartbeat “progress”.
+7. If a worker exits 0 without the result JSON, inspect required artifacts before declaring failure. For spec stages, a `summary.md` containing `Verdict: SPEC_READY` may be converted into a result JSON by the controller/recovery worker. For QA, only synthesize from `validation-summary.md` when it explicitly says PASS and screenshots/layout/logs exist. For integrate, verify commit and push evidence first.
+8. Do not rerun already-PASS upstream stages after a later blocker; resume from the failed/missing stage.
+9. No-progress escalation is mandatory: monitor process liveness, log growth, artifact creation, git diff/commit state, elapsed time, and no-output threshold; then inspect logs and kill/restart/split/switch worker or stop as a real blocker.
+
+The existing Review/QA/Integrate quality gates below still apply in direct-worker mode; replace Kanban parent/child status with result JSON artifacts and controller verification.
+
 ### Worktree setup preflight
 
 Before any agent or subagent builds, signs, installs, or device-tests a V2Next lane worktree under `/home/gamer/v2next-worktrees/`, run `scripts/sync-signing-materials.sh` in that worktree (or copy the same four gitignored files from `/home/gamer/git/V2Next/scripts`):
