@@ -203,6 +203,8 @@ function canonical(blocks) {
 }
 
 const source = readFileSync('shared/src/main/ets/components/MarkdownContent.ets', 'utf8')
+const codeBlockSource = readFileSync('shared/src/main/ets/components/markdown/MarkdownCodeBlock.ets', 'utf8')
+const codeInternalsSource = readFileSync('shared/src/main/ets/components/markdown/MarkdownCodeInternals.ets', 'utf8')
 const readingSettingsSource = readFileSync('shared/src/main/ets/settings/ReadingSettings.ets', 'utf8')
 const storageKeysSource = readFileSync('shared/src/main/ets/constants/StorageKeys.ets', 'utf8')
 const readingSettingsPageSource = readFileSync('feature/settings/src/main/ets/pages/ReadingSettingsPage.ets', 'utf8')
@@ -262,7 +264,7 @@ assert.ok(standaloneImageLineCheck, 'production image standalone role requires e
 assert.match(source, /roleDecision: "source structure \/ Markdown block semantics; never intrinsic big\/small"/)
 assert.match(source, /roleDecision: "source structure \/ Markdown inline semantics; rendered dimensions come from actual image size \+ content container max constraint"/)
 assert.doesNotMatch(source, /INLINE_IMAGE_CONTENT_MAX_WIDTH\s*=\s*360/)
-assert.match(source, /const INLINE_IMAGE_PENDING_SIZE = 1;/)
+assert.match(source, /const INLINE_IMAGE_PENDING_SIZE = 24;/)
 assert.match(source, /function _inlineImageRenderSize\(token: Token, sizeRecords: InlineImageSizeRecord\[\], availableWidth: number\)/)
 assert.match(source, /@State private paragraphAvailableWidth: number = 0;/)
 assert.match(source, /this\.updateParagraphAvailableWidth\(newValue\);/)
@@ -276,8 +278,8 @@ assert.match(source, /const RENDER_H3_FONT_SIZE = 18;[\s\S]*const RENDER_H3_LINE
 assert.match(source, /const RENDER_H4_FONT_SIZE = 16;[\s\S]*const RENDER_H4_LINE_HEIGHT = 22;/)
 assert.match(source, /const RENDER_H5_FONT_SIZE = 15;[\s\S]*const RENDER_H5_LINE_HEIGHT = 21;/)
 assert.match(source, /const RENDER_H6_FONT_SIZE = 14;[\s\S]*const RENDER_H6_LINE_HEIGHT = 20;/)
-assert.match(source, /const RENDER_CODE_FONT_SIZE = 12;/)
-assert.match(source, /const RENDER_CODE_LINE_HEIGHT = 18;/)
+assert.match(codeInternalsSource, /export const RENDER_CODE_FONT_SIZE = 12;/)
+assert.match(codeInternalsSource, /export const RENDER_CODE_LINE_HEIGHT = 18;/)
 assert.match(source, /name: "h1"[\s\S]*fontSize: "fixed base 22 \* readingTextScale"[\s\S]*lineHeight: "fixed base 28 \* readingTextScale"/)
 assert.match(source, /name: "h6"[\s\S]*fontSize: "fixed base 14 \* readingTextScale"[\s\S]*lineHeight: "fixed base 20 \* readingTextScale"/)
 assert.match(source, /name: "code\/pre"[\s\S]*fontSize: "fixed base 12 \* readingTextScale"[\s\S]*lineHeight: "fixed base 18 \* readingTextScale"/)
@@ -285,7 +287,7 @@ assert.match(source, /private headingBaseFontSize\(token: Token\): number/)
 assert.match(source, /private headingBaseLineHeight\(token: Token\): number/)
 assert.match(source, /return ReadingSettings\.scaleTypographyToken\(this\.headingBaseFontSize\(token\), this\.readingTextScale\);/)
 assert.match(source, /return ReadingSettings\.scaleTypographyToken\(this\.headingBaseLineHeight\(token\), this\.readingTextScale\);/)
-const codeBlockBody = source.match(/struct MarkdownCodeBlock[\s\S]*?\n}\n\n@Component\nstruct MarkdownAutoImage/)[0]
+const codeBlockBody = codeBlockSource.match(/struct MarkdownCodeBlock[\s\S]*?\n}/)[0]
 assert.match(codeBlockBody, /private codeFontSize\(\): number \{[\s\S]*RENDER_CODE_FONT_SIZE/)
 assert.match(codeBlockBody, /private codeLineHeight\(\): number \{[\s\S]*RENDER_CODE_LINE_HEIGHT/)
 assert.match(codeBlockBody, /\.fontSize\(this\.codeFontSize\(\)\)/)

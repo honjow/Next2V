@@ -26,10 +26,10 @@ const IMAGE_BLOCK_MONO = "customImageBlock";
 const IMAGE_TABLE_MONO = "customImageTable";
 const IMAGE_TABLE_START = "@@V2NEXT_IMAGE_TABLE_START@@";
 const IMAGE_TABLE_END = "@@V2NEXT_IMAGE_TABLE_END@@";
-// Neutral load sentinel for inline images whose intrinsic dimensions are not known yet.
-// This is only to start ImageSpan loading/onComplete; it is not an icon/small-image fallback
-// and must not reserve content-width space before the real image size is recorded.
-const INLINE_IMAGE_PENDING_SIZE = 1;
+// Visible load sentinel for inline images whose intrinsic dimensions are not known yet.
+// Once ImageSpan reports dimensions, the measured image size wins even if the
+// paragraph width has not reported yet.
+const INLINE_IMAGE_PENDING_SIZE = 24;
 const INLINE_IMAGE_VIEWPORT_SAFE_MAX_HEIGHT = 1200;
 const INLINE_IMAGE_SIZE_RECORD_LIMIT = 64;
 
@@ -299,10 +299,16 @@ function _inlineImageRenderSize(token: Token, sizeRecords: InlineImageSizeRecord
   const record = _findInlineImageSizeRecord(sizeRecords, url);
   const widthPx = record?.widthPx ?? 0;
   const heightPx = record?.heightPx ?? 0;
-  if (widthPx <= 0 || heightPx <= 0 || contentMaxWidth <= 0) {
+  if (widthPx <= 0 || heightPx <= 0) {
     return {
       width: INLINE_IMAGE_PENDING_SIZE,
       height: INLINE_IMAGE_PENDING_SIZE,
+    };
+  }
+  if (contentMaxWidth <= 0) {
+    return {
+      width: Math.max(1, Math.round(widthPx)),
+      height: Math.max(1, Math.round(heightPx)),
     };
   }
   const scale = Math.min(1, contentMaxWidth / widthPx, INLINE_IMAGE_VIEWPORT_SAFE_MAX_HEIGHT / heightPx);

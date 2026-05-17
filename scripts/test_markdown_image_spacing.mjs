@@ -37,8 +37,14 @@ function inlineImageRenderSize(record, availableWidth = 0) {
   const widthPx = record?.widthPx ?? 0
   const heightPx = record?.heightPx ?? 0
   const contentMaxWidth = Math.max(0, availableWidth)
-  if (widthPx <= 0 || heightPx <= 0 || contentMaxWidth <= 0) {
-    return { width: 1, height: 1 }
+  if (widthPx <= 0 || heightPx <= 0) {
+    return { width: 24, height: 24 }
+  }
+  if (contentMaxWidth <= 0) {
+    return {
+      width: Math.max(1, Math.round(widthPx)),
+      height: Math.max(1, Math.round(heightPx))
+    }
   }
   const scale = Math.min(1, contentMaxWidth / widthPx, 1200 / heightPx)
   return {
@@ -339,14 +345,14 @@ if (inlineSmallNatural.width !== 32 || inlineSmallNatural.height !== 18) {
   process.exit(1)
 }
 const inlineNoRecord = inlineImageRenderSize(null, 360)
-if (inlineNoRecord.width !== 1 || inlineNoRecord.height !== 1) {
-  console.error('FAIL inline image without a size record should use a neutral pending load sentinel, not content-width or 24..40 placeholder')
+if (inlineNoRecord.width !== 24 || inlineNoRecord.height !== 24) {
+  console.error('FAIL inline image without a size record should use a visible pending load sentinel')
   console.error(JSON.stringify(inlineNoRecord, null, 2))
   process.exit(1)
 }
-const inlineRecordedNoWidth = inlineImageRenderSize({ widthPx: 1200, heightPx: 800 }, 0)
-if (inlineRecordedNoWidth.width !== 1 || inlineRecordedNoWidth.height !== 1) {
-  console.error('FAIL recorded inline images without measured available width should avoid huge draw regions with the pending sentinel')
+const inlineRecordedNoWidth = inlineImageRenderSize({ widthPx: 32, heightPx: 18 }, 0)
+if (inlineRecordedNoWidth.width !== 32 || inlineRecordedNoWidth.height !== 18) {
+  console.error('FAIL recorded inline images without measured available width should still use the known intrinsic size')
   console.error(JSON.stringify(inlineRecordedNoWidth, null, 2))
   process.exit(1)
 }
@@ -415,12 +421,12 @@ if (/splitMixedImageParagraphs\(/.test(processTokensSource)) {
   console.error('FAIL processTokens must not split mixed text/image paragraphs into top-level custom blocks')
   process.exit(1)
 }
-if (!/buildImageToken\(String\(record\["raw"\] \?\? text\), href, text, true\)/.test(source)) {
+if (!/buildImageToken\(String\(record(?:\["raw"\]|\.raw) \?\? text\), href, text, true\)/.test(source)) {
   console.error('FAIL bare/autolinked image URLs should start as inline candidates and only standalone lines should be demoted')
   process.exit(1)
 }
 if (/_classifyInlineImageSize|inlineSmall|blockLarge|INLINE_IMAGE_(?:SMALL|LARGE)|INLINE_IMAGE_FALLBACK_(?:MIN|MAX)_SIZE|_inlineImageSize\(/.test(source)) {
-  console.error('FAIL image dimensions must not classify inline vs block layout or use 24-40 inline-small fallback')
+  console.error('FAIL image dimensions must not classify inline vs block layout or use inline-small fallback classes')
   process.exit(1)
 }
 if (/INLINE_IMAGE_SPAN_MAX_WIDTH|INLINE_IMAGE_SPAN_MAX_HEIGHT/.test(source)) {
@@ -428,8 +434,8 @@ if (/INLINE_IMAGE_SPAN_MAX_WIDTH|INLINE_IMAGE_SPAN_MAX_HEIGHT/.test(source)) {
   process.exit(1)
 }
 const inlineSizeSource = source.match(/function _inlineImageRenderSize[\s\S]*?\n}/)?.[0] || ''
-if (/INLINE_IMAGE_CONTENT_MAX_WIDTH\s*=\s*360/.test(source) || !/const INLINE_IMAGE_PENDING_SIZE = 1;/.test(source) || !/availableWidth: number/.test(inlineSizeSource) || !/const contentMaxWidth = Math\.max\(0, availableWidth\);/.test(inlineSizeSource) || !/widthPx[\s\S]*heightPx/.test(inlineSizeSource) || !/width: INLINE_IMAGE_PENDING_SIZE,[\s\S]*height: INLINE_IMAGE_PENDING_SIZE/.test(inlineSizeSource) || !/scale = Math\.min\(1, contentMaxWidth \/ widthPx/.test(inlineSizeSource)) {
-  console.error('FAIL inline image dimensions should use pending sentinel until actual dimensions and measured available width are known')
+if (/INLINE_IMAGE_CONTENT_MAX_WIDTH\s*=\s*360/.test(source) || !/const INLINE_IMAGE_PENDING_SIZE = 24;/.test(source) || !/availableWidth: number/.test(inlineSizeSource) || !/const contentMaxWidth = Math\.max\(0, availableWidth\);/.test(inlineSizeSource) || !/widthPx[\s\S]*heightPx/.test(inlineSizeSource) || !/width: INLINE_IMAGE_PENDING_SIZE,[\s\S]*height: INLINE_IMAGE_PENDING_SIZE/.test(inlineSizeSource) || !/contentMaxWidth <= 0[\s\S]*Math\.round\(widthPx\)[\s\S]*Math\.round\(heightPx\)/.test(inlineSizeSource) || !/scale = Math\.min\(1, contentMaxWidth \/ widthPx/.test(inlineSizeSource)) {
+  console.error('FAIL inline image dimensions should use a visible pending sentinel, then prefer known dimensions before measured width is available')
   process.exit(1)
 }
 if (!/@State private paragraphAvailableWidth: number = 0;/.test(source) || !/@Prop contentAvailableWidth: number = 0;/.test(source) || !/return this\.contentAvailableWidth;/.test(source) || !/\.onAreaChange\(\(_oldValue: Area, newValue: Area\) => \{\n\s*this\.updateParagraphAvailableWidth\(newValue\);/.test(source) || !/SelectableInlineTokenSpans\([\s\S]*this\.inlineContentMaxWidth\(\)/.test(source) || !/contentAvailableWidth: this\.contentAvailableWidth/.test(source)) {
@@ -448,7 +454,7 @@ if (/\(event\?\.loadingStatus \?\? 0\) !== 1/.test(source) || !/widthPx <= 0 \|\
   console.error('FAIL inline image completion should record any onComplete event with valid intrinsic dimensions, including loadingStatus 0 data-load callbacks')
   process.exit(1)
 }
-const paragraphMatch = source.match(/struct MarkdownParagraph[\s\S]*?\n}\n\n@Component\nstruct MarkdownCodeBlock/)
+const paragraphMatch = source.match(/struct MarkdownParagraph[\s\S]*?\n}\n\n@Component\nstruct MarkdownBlockquote/)
 if (!paragraphMatch || !/ForEach\(this\.inlineTokens\(\)/.test(paragraphMatch[0])) {
   console.error('FAIL MarkdownParagraph must render mixed block images by iterating the original inline token order')
   process.exit(1)
