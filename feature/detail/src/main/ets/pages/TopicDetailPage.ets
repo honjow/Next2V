@@ -1534,8 +1534,8 @@ export struct TopicDetailPage {
       return
     }
     this.isSiteFavoriteLoading = true
-    this.api
-      .executeTopicFavoriteToggleWithCookie(cookie, this.topicId, toggle)
+    TopicDetailActionCoordinator
+      .executeSiteFavoriteToggle(this.api, cookie, this.topicId, toggle)
       .then((favorited: boolean) => {
         this.isSiteFavorited = favorited
         this.topicDetailSiteFavorited = favorited

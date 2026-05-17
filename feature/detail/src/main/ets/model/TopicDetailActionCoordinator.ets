@@ -5,6 +5,7 @@ import {
 import type {
   V2exReplyThankAction,
   V2exTopicThankAction,
+  V2exToggleAction,
 } from 'shared'
 
 export interface ParsedTopicDetailAction {
@@ -196,6 +197,15 @@ export class TopicDetailActionCoordinator {
     return api
       .getTopicThankActionWithCookie(cookie, topicId)
       .then((action: V2exTopicThankAction) => api.executeTopicThankWithCookie(cookie, action))
+  }
+
+  static executeSiteFavoriteToggle(
+    api: ApiService,
+    cookie: string,
+    topicId: number,
+    toggle: V2exToggleAction,
+  ): Promise<boolean> {
+    return api.executeTopicFavoriteToggleWithCookie(cookie, topicId, toggle)
   }
 
   private static hasValidReply(reply: V2exReply | null): boolean {
