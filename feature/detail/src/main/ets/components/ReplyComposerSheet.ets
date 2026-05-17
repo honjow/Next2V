@@ -3,6 +3,7 @@ import { promptAction } from '@kit.ArkUI'
 import {
   ReplyComposerCoordinator,
   type ReplyComposerEditResult,
+  type ReplyComposerToolbarCommand,
 } from '../model/ReplyComposerCoordinator'
 import {
   ReplyComposerDraftCoordinator,
@@ -98,13 +99,13 @@ export struct ReplyComposerSheet {
               previewActive: this.isPreview,
               onEdit: () => { this.isPreview = false },
               onPreview: () => { this.isPreview = true },
-              onBold: () => { this.insertInlineMarkdown('**', '**', '文字') },
-              onItalic: () => { this.insertInlineMarkdown('*', '*', '文字') },
-              onCode: () => { this.insertInlineMarkdown('`', '`', '代码') },
-              onQuote: () => { this.insertLinePrefix('> ') },
-              onList: () => { this.insertLinePrefix('- ') },
-              onLink: () => { this.insertInlineMarkdown('[', '](https://)', '文字', '[文字](https://'.length) },
-              onImage: () => { this.insertImageLinkTemplate() },
+              onBold: () => { this.applyToolbarCommand('bold') },
+              onItalic: () => { this.applyToolbarCommand('italic') },
+              onCode: () => { this.applyToolbarCommand('code') },
+              onQuote: () => { this.applyToolbarCommand('quote') },
+              onList: () => { this.applyToolbarCommand('list') },
+              onLink: () => { this.applyToolbarCommand('link') },
+              onImage: () => { this.applyToolbarCommand('image') },
               onClear: () => { this.confirmClearDraft() }
             })
               .layoutWeight(1)
@@ -187,34 +188,12 @@ export struct ReplyComposerSheet {
       })
   }
 
-  private insertImageLinkTemplate(): void {
-    this.insertInlineMarkdown('![', '](https://)', '图片', '![图片](https://'.length)
-  }
-
-  private insertInlineMarkdown(prefix: string, suffix: string, placeholder: string, caretOffset: number = -1): void {
-    const result = ReplyComposerCoordinator.insertInlineMarkdown(
+  private applyToolbarCommand(command: ReplyComposerToolbarCommand): void {
+    const result = ReplyComposerCoordinator.applyToolbarCommand(
+      command,
       this.content,
       this.contentSelectionStart,
       this.contentSelectionEnd,
-      prefix,
-      suffix,
-      placeholder,
-      caretOffset,
-    )
-    this.applyEditResult(result)
-    this.isPreview = false
-    this.scheduleSaveDraft()
-    setTimeout(() => {
-      this.contentController.caretPosition(result.caret)
-    }, 0)
-  }
-
-  private insertLinePrefix(prefix: string): void {
-    const result = ReplyComposerCoordinator.insertLinePrefix(
-      this.content,
-      this.contentSelectionStart,
-      this.contentSelectionEnd,
-      prefix,
     )
     this.applyEditResult(result)
     this.isPreview = false

@@ -5,6 +5,8 @@ export interface ReplyComposerEditResult {
   caret: number
 }
 
+export type ReplyComposerToolbarCommand = 'bold' | 'italic' | 'code' | 'quote' | 'list' | 'link' | 'image'
+
 export type ReplySubmitBlockReason = '' | 'busy' | 'invalidTopic' | 'empty' | 'loginRequired'
 
 export interface ReplySubmitCheckResult {
@@ -78,6 +80,49 @@ export class ReplyComposerCoordinator {
       selectionEnd: caret,
       caret: caret,
     }
+  }
+
+  static applyToolbarCommand(
+    command: ReplyComposerToolbarCommand,
+    content: string,
+    selectionStart: number,
+    selectionEnd: number,
+  ): ReplyComposerEditResult {
+    if (command === 'bold') {
+      return ReplyComposerCoordinator.insertInlineMarkdown(content, selectionStart, selectionEnd, '**', '**', '文字')
+    }
+    if (command === 'italic') {
+      return ReplyComposerCoordinator.insertInlineMarkdown(content, selectionStart, selectionEnd, '*', '*', '文字')
+    }
+    if (command === 'code') {
+      return ReplyComposerCoordinator.insertInlineMarkdown(content, selectionStart, selectionEnd, '`', '`', '代码')
+    }
+    if (command === 'quote') {
+      return ReplyComposerCoordinator.insertLinePrefix(content, selectionStart, selectionEnd, '> ')
+    }
+    if (command === 'list') {
+      return ReplyComposerCoordinator.insertLinePrefix(content, selectionStart, selectionEnd, '- ')
+    }
+    if (command === 'link') {
+      return ReplyComposerCoordinator.insertInlineMarkdown(
+        content,
+        selectionStart,
+        selectionEnd,
+        '[',
+        '](https://)',
+        '文字',
+        '[文字](https://'.length,
+      )
+    }
+    return ReplyComposerCoordinator.insertInlineMarkdown(
+      content,
+      selectionStart,
+      selectionEnd,
+      '![',
+      '](https://)',
+      '图片',
+      '![图片](https://'.length,
+    )
   }
 
   static canSubmit(
