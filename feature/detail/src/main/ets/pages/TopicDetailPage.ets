@@ -7,6 +7,10 @@ import {
   TopicDetailReplyDivider,
   TopicRepliesPreloadIndicator,
 } from '../components/TopicDetailComponents'
+import {
+  ReplyContextCoordinator,
+  type ReplyContextItem,
+} from '../model/ReplyContextCoordinator'
 import { common, Want } from '@kit.AbilityKit'
 import { LengthMetrics, promptAction } from '@kit.ArkUI'
 import { ActionBarButton, ActionBarStyle, HdsActionBar } from '@kit.UIDesignKit'
@@ -37,19 +41,12 @@ import {
   V2exRoute,
   V2exUrlRouter,
   TopicDetailParams,
-  HtmlEntityUtils,
   MotionHandStateService,
   defaultSheetOptions,
 } from 'shared'
 import type { V2exReplyThankAction, V2exTopicThankAction } from 'shared'
 import type { V2exReplyModerationAction, V2exTopicModerationAction } from 'shared'
 
-interface ReplyContextItem {
-  reply: V2exReply
-  floor: number
-  label: string
-  selected: boolean
-}
 @Component
 export struct TopicDetailPage {
   @Prop topicId: number = 0;
@@ -1021,181 +1018,12 @@ export struct TopicDetailPage {
   }
 
   private buildReplyContextItems(selected: V2exReply): ReplyContextItem[] {
-    const selectedFloor = this.v.getReplyFloor(selected.id)
-    const replies = this.v.getLoadedRepliesSnapshot()
-    const items: ReplyContextItem[] = []
-    const seen = new Set<number>()
-
-    const addReply = (reply: V2exReply | null, label: string, selectedItem: boolean): void => {
-      if (reply === null || reply.id <= 0 || seen.has(reply.id)) {
-        return
-      }
-      const floor = this.v.getReplyFloor(reply.id)
-      if (floor <= 0) {
-        return
-      }
-      seen.add(reply.id)
-      items.push({ reply: reply, floor: floor, label: label, selected: selectedItem })
-    }
-
-    this.addContextReplyByFloor(replies, selectedFloor - 2, '上文', addReply)
-    this.addContextReplyByFloor(replies, selectedFloor - 1, '上文', addReply)
-    this.addMentionTargetsBeforeSelection(
-      replies,
-      selectedFloor,
-      selected.content,
-      selected.content_rendered,
-      addReply,
-    )
-    addReply(selected, '当前回复', true)
-    this.addRepliesMentioningSelectedAuthor(
-      replies,
-      selectedFloor,
-      selected.member.username,
-      addReply,
-    )
-    this.addContextReplyByFloor(replies, selectedFloor + 1, '下文', addReply)
-    this.addContextReplyByFloor(replies, selectedFloor + 2, '下文', addReply)
-
-    return items.sort((left: ReplyContextItem, right: ReplyContextItem) => left.floor - right.floor)
-  }
-
-  private addContextReplyByFloor(
-    replies: V2exReply[],
-    floor: number,
-    label: string,
-    addReply: (reply: V2exReply | null, label: string, selectedItem: boolean) => void,
-  ): void {
-    if (floor <= 0 || floor > replies.length) {
-      return
-    }
-    addReply(replies[floor - 1], label, false)
-  }
-
-  private addMentionTargetsBeforeSelection(
-    replies: V2exReply[],
-    selectedFloor: number,
-    content: string,
-    renderedContent: string,
-    addReply: (reply: V2exReply | null, label: string, selectedItem: boolean) => void,
-  ): void {
-    const names = this.extractMentionedUsernames(content, renderedContent)
-    names.forEach((name: string) => {
-      const target = this.findPreviousReplyByUsername(replies, selectedFloor, name)
-      addReply(target, `@${name}`, false)
+    return ReplyContextCoordinator.build({
+      selected: selected,
+      selectedFloor: this.v.getReplyFloor(selected.id),
+      replies: this.v.getLoadedRepliesSnapshot(),
+      getReplyFloor: (replyId: number) => this.v.getReplyFloor(replyId),
     })
-  }
-
-  private addRepliesMentioningSelectedAuthor(
-    replies: V2exReply[],
-    selectedFloor: number,
-    username: string,
-    addReply: (reply: V2exReply | null, label: string, selectedItem: boolean) => void,
-  ): void {
-    const clean = (username || '').trim()
-    if (!clean) {
-      return
-    }
-    let added = 0
-    for (let i = selectedFloor; i < replies.length && added < 2; i++) {
-      const reply = replies[i]
-      if (reply && this.contentMentionsUsername(reply.content, reply.content_rendered, clean)) {
-        addReply(reply, `提到 @${clean}`, false)
-        added++
-      }
-    }
-  }
-
-  private findPreviousReplyByUsername(
-    replies: V2exReply[],
-    selectedFloor: number,
-    username: string,
-  ): V2exReply | null {
-    const clean = (username || '').trim().toLowerCase()
-    if (!clean) {
-      return null
-    }
-    for (let i = selectedFloor - 2; i >= 0; i--) {
-      const reply = replies[i]
-      if (reply && (reply.member.username || '').trim().toLowerCase() === clean) {
-        return reply
-      }
-    }
-    return null
-  }
-
-  private contentMentionsUsername(
-    content: string,
-    renderedContent: string,
-    username: string,
-  ): boolean {
-    const clean = (username || '').trim().toLowerCase()
-    if (!clean) {
-      return false
-    }
-    return this.extractMentionedUsernames(content, renderedContent).some(
-      (name: string) => name.toLowerCase() === clean,
-    )
-  }
-
-  private extractMentionedUsernames(content: string, renderedContent: string = ''): string[] {
-    const names: string[] = []
-    const seen = new Set<string>()
-    const addName = (name: string): void => {
-      const clean = (name || '').trim()
-      const key = clean.toLowerCase()
-      if (clean && !seen.has(key)) {
-        seen.add(key)
-        names.push(clean)
-      }
-    }
-
-    const rendered = renderedContent || ''
-    const linkRe =
-      /@\s*<a\b[^>]*href=["'](?:https?:\/\/(?:www\.)?v2ex\.(?:com|co))?\/member\/([^"'?#\/]+)[^"']*["'][^>]*>/gi
-    let linkMatch: RegExpExecArray | null = linkRe.exec(rendered)
-    while (linkMatch) {
-      addName(this.decodeHtmlText(linkMatch[1] || ''))
-      linkMatch = linkRe.exec(rendered)
-    }
-    if (names.length > 0) {
-      return names
-    }
-
-    const raw = content || ''
-    const re = /@([0-9A-Za-z_]{2,32})/g
-    let m: RegExpExecArray | null = re.exec(raw)
-    while (m) {
-      if (this.isValidMentionMatch(raw, m.index, m[0])) {
-        addName(m[1] || '')
-      }
-      m = re.exec(raw)
-    }
-    return names
-  }
-
-  private isValidMentionMatch(raw: string, atIndex: number, matchText: string): boolean {
-    const before = atIndex > 0 ? raw.charAt(atIndex - 1) : ''
-    const afterIndex = atIndex + matchText.length
-    const after = afterIndex < raw.length ? raw.charAt(afterIndex) : ''
-    return this.isMentionBoundaryChar(before) && this.isMentionBoundaryChar(after)
-  }
-
-  private isMentionBoundaryChar(ch: string): boolean {
-    if (!ch) {
-      return true
-    }
-    return !this.isMentionNameChar(ch) && ch !== '-' && ch !== '.'
-  }
-
-  private decodeHtmlText(value: string): string {
-    return HtmlEntityUtils.decode(value || '')
-  }
-
-  private isMentionNameChar(ch: string): boolean {
-    return (
-      (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') || ch === '_'
-    )
   }
 
   private replySnippet(content: string): string {
