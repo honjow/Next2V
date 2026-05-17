@@ -298,25 +298,31 @@ export struct ReplyComposerSheet {
   }
 
   private confirmSubmit(): void {
-    const cleanContent = this.content.trim()
-    if (this.isSubmitting || this.isSubmitDialogShown || this.topicId <= 0) {
+    const check = ReplyComposerCoordinator.checkSubmit(
+      this.isSubmitting,
+      this.isSubmitDialogShown,
+      this.topicId,
+      this.content,
+      CookieJarSettings.getCurrentCookie(),
+    )
+    if (check.reason === 'busy' || check.reason === 'invalidTopic') {
       return
     }
-    if (!cleanContent) {
-      this.errorMessage = '回复内容不能为空'
-      promptAction.openToast({ message: '回复内容不能为空' }).catch((_error: Error) => { })
+    if (check.reason === 'empty') {
+      this.errorMessage = check.message
+      promptAction.openToast({ message: check.message }).catch((_error: Error) => { })
       return
     }
-    if (!CookieJarSettings.getCurrentCookie()) {
-      this.errorMessage = '请先登录'
+    if (check.reason === 'loginRequired') {
+      this.errorMessage = check.message
       return
     }
-    this.submitContentSnapshot = cleanContent
+    this.submitContentSnapshot = check.content
     this.isSubmitDialogShown = true
     this.persistDraft()
     AlertDialog.show({
       title: '提交回复',
-      message: '确定提交这条回复吗？',
+      message: ReplyComposerCoordinator.sheetSubmitConfirmMessage(),
       primaryButton: { value: '取消', action: () => { this.isSubmitDialogShown = false } },
       secondaryButton: { value: '提交', action: () => { this.submitReply() } }
     })

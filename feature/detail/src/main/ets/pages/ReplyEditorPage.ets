@@ -257,15 +257,13 @@ export struct ReplyEditorPage {
   }
 
   private canSubmit(): boolean {
-    if (!ReplyComposerCoordinator.canSubmit(
+    return ReplyComposerCoordinator.canSubmitWithCookie(
       this.isSubmitting,
       this.isSubmitDialogShown,
       this.topicId,
       this.content,
-    )) {
-      return false
-    }
-    return !!CookieJarSettings.getCurrentCookie()
+      CookieJarSettings.getCurrentCookie(),
+    )
   }
 
   private applyDraftState(state: ReplyComposerDraftState): void {
@@ -277,28 +275,26 @@ export struct ReplyEditorPage {
   }
 
   private confirmSubmit(): void {
-    if (this.isSubmitting || this.isSubmitDialogShown) {
+    const check = ReplyComposerCoordinator.checkSubmit(
+      this.isSubmitting,
+      this.isSubmitDialogShown,
+      this.topicId,
+      this.content,
+      CookieJarSettings.getCurrentCookie(),
+    )
+    if (check.reason === 'busy' || check.reason === 'invalidTopic') {
       return
     }
-    const cleanContent = this.content.trim()
-    if (cleanContent.length === 0) {
-      promptAction.openToast({ message: '回复内容不能为空' }).catch((_error: Error) => { })
+    if (check.reason === 'empty' || check.reason === 'loginRequired') {
+      promptAction.openToast({ message: check.message }).catch((_error: Error) => { })
       return
     }
-    if (!CookieJarSettings.getCurrentCookie()) {
-      promptAction.openToast({ message: '请先登录' }).catch((_error: Error) => { })
-      return
-    }
-    const title = (this.topicTitle || '').trim()
-    this.submitContentSnapshot = cleanContent
+    this.submitContentSnapshot = check.content
     this.isSubmitDialogShown = true
     this.persistDraft()
-    const target = title ? `《${title}》` : '当前主题'
-    const message = `确定向${target}提交回复吗？\n\n` +
-      'V2EX 回复通常至少消耗 5 铜币，提交后会修改你的账号状态。'
     AlertDialog.show({
       title: '提交回复',
-      message: message,
+      message: ReplyComposerCoordinator.pageSubmitConfirmMessage(this.topicTitle),
       primaryButton: { value: '取消', action: () => { this.isSubmitDialogShown = false } },
       secondaryButton: { value: '提交', action: () => { this.submit() } }
     })

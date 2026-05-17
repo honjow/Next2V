@@ -5,6 +5,15 @@ export interface ReplyComposerEditResult {
   caret: number
 }
 
+export type ReplySubmitBlockReason = '' | 'busy' | 'invalidTopic' | 'empty' | 'loginRequired'
+
+export interface ReplySubmitCheckResult {
+  allowed: boolean
+  reason: ReplySubmitBlockReason
+  content: string
+  message: string
+}
+
 export class ReplyComposerCoordinator {
   static normalizeInitialContent(value: string): string {
     const clean = (value || '').trim()
@@ -78,6 +87,55 @@ export class ReplyComposerCoordinator {
     content: string,
   ): boolean {
     return !isSubmitting && !isSubmitDialogShown && topicId > 0 && content.trim().length > 0
+  }
+
+  static canSubmitWithCookie(
+    isSubmitting: boolean,
+    isSubmitDialogShown: boolean,
+    topicId: number,
+    content: string,
+    cookie: string,
+  ): boolean {
+    return ReplyComposerCoordinator.canSubmit(
+      isSubmitting,
+      isSubmitDialogShown,
+      topicId,
+      content,
+    ) && !!cookie
+  }
+
+  static checkSubmit(
+    isSubmitting: boolean,
+    isSubmitDialogShown: boolean,
+    topicId: number,
+    content: string,
+    cookie: string,
+  ): ReplySubmitCheckResult {
+    if (isSubmitting || isSubmitDialogShown) {
+      return { allowed: false, reason: 'busy', content: '', message: '' }
+    }
+    if (topicId <= 0) {
+      return { allowed: false, reason: 'invalidTopic', content: '', message: '' }
+    }
+    const cleanContent = content.trim()
+    if (!cleanContent) {
+      return { allowed: false, reason: 'empty', content: '', message: '回复内容不能为空' }
+    }
+    if (!cookie) {
+      return { allowed: false, reason: 'loginRequired', content: cleanContent, message: '请先登录' }
+    }
+    return { allowed: true, reason: '', content: cleanContent, message: '' }
+  }
+
+  static sheetSubmitConfirmMessage(): string {
+    return '确定提交这条回复吗？'
+  }
+
+  static pageSubmitConfirmMessage(topicTitle: string): string {
+    const title = (topicTitle || '').trim()
+    const target = title ? `《${title}》` : '当前主题'
+    return `确定向${target}提交回复吗？\n\n` +
+      'V2EX 回复通常至少消耗 5 铜币，提交后会修改你的账号状态。'
   }
 
   static composerBodyHeight(keyboardHeight: number): number {
