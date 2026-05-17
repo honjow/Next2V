@@ -13,25 +13,30 @@ const KEY_CACHE_INDEX: string = 'cacheIndex'
 
 const CACHE_KIND_TOPIC_LIST: string = 'topic_list'
 const CACHE_KIND_TOPIC_DETAIL: string = 'topic_detail'
+const CACHE_KINDS_SQL: string = `'${CACHE_KIND_TOPIC_LIST}', '${CACHE_KIND_TOPIC_DETAIL}'`
+
+// Offline cache policy. These values are intentionally centralized here so
+// callers keep treating AppStorage as UI projection, not durable cache state.
 const TOPIC_LIST_TTL_SECONDS: number = 7 * 24 * 60 * 60
 const TOPIC_DETAIL_TTL_SECONDS: number = 30 * 24 * 60 * 60
 const MAX_TOPIC_LIST_ROWS: number = 32
 const MAX_TOPIC_DETAIL_ROWS: number = 200
+// Inline payloads stay in RDB for this slice; larger storage backends are a non-goal.
 const MAX_INLINE_PAYLOAD_SIZE: number = 20 * 1024 * 1024
 const MAX_TOPIC_LIST_ITEMS: number = 50
 
 const SQL_SELECT_CACHE_ENTRY: string = 'SELECT payload_text, expires_at FROM cache_entries WHERE cache_key = ? AND kind = ? LIMIT 1'
-const SQL_SELECT_CACHE_INDEX: string = 'SELECT cache_key, kind, cached_at, accessed_at FROM cache_entries WHERE kind IN (\'topic_list\', \'topic_detail\') ORDER BY cached_at DESC'
-const SQL_SELECT_CACHE_STATS: string = 'SELECT kind, COUNT(*) AS count_value, MAX(cached_at) AS updated_at FROM cache_entries WHERE kind IN (\'topic_list\', \'topic_detail\') GROUP BY kind'
+const SQL_SELECT_CACHE_INDEX: string = `SELECT cache_key, kind, cached_at, accessed_at FROM cache_entries WHERE kind IN (${CACHE_KINDS_SQL}) ORDER BY cached_at DESC`
+const SQL_SELECT_CACHE_STATS: string = `SELECT kind, COUNT(*) AS count_value, MAX(cached_at) AS updated_at FROM cache_entries WHERE kind IN (${CACHE_KINDS_SQL}) GROUP BY kind`
 const SQL_UPSERT_CACHE_ENTRY: string = 'INSERT OR REPLACE INTO cache_entries (cache_key, kind, payload_text, payload_path, cached_at, accessed_at, expires_at, size) VALUES (?, ?, ?, NULL, ?, ?, ?, ?)'
 const SQL_TOUCH_CACHE_ENTRY: string = 'UPDATE cache_entries SET accessed_at = ? WHERE cache_key = ? AND kind = ?'
 const SQL_DELETE_CACHE_ENTRY: string = 'DELETE FROM cache_entries WHERE cache_key = ? AND kind = ?'
-const SQL_DELETE_EXPIRED_CACHE_ENTRIES: string = 'DELETE FROM cache_entries WHERE kind IN (\'topic_list\', \'topic_detail\') AND expires_at <= ?'
-const SQL_CLEAR_CACHE_ENTRIES: string = 'DELETE FROM cache_entries WHERE kind IN (\'topic_list\', \'topic_detail\')'
-const SQL_PRUNE_TOPIC_LIST_ROWS: string = 'DELETE FROM cache_entries WHERE kind = \'topic_list\' AND cache_key NOT IN (SELECT cache_key FROM cache_entries WHERE kind = \'topic_list\' ORDER BY accessed_at DESC, cached_at DESC LIMIT 32)'
-const SQL_PRUNE_TOPIC_DETAIL_ROWS: string = 'DELETE FROM cache_entries WHERE kind = \'topic_detail\' AND cache_key NOT IN (SELECT cache_key FROM cache_entries WHERE kind = \'topic_detail\' ORDER BY accessed_at DESC, cached_at DESC LIMIT 200)'
-const SQL_SELECT_INLINE_CACHE_SIZE: string = 'SELECT COALESCE(SUM(size), 0) AS total_size FROM cache_entries WHERE kind IN (\'topic_list\', \'topic_detail\')'
-const SQL_PRUNE_INLINE_PAYLOAD_SIZE: string = 'DELETE FROM cache_entries WHERE cache_key IN (SELECT cache_key FROM cache_entries WHERE kind IN (\'topic_list\', \'topic_detail\') ORDER BY accessed_at ASC, cached_at ASC LIMIT ?)'
+const SQL_DELETE_EXPIRED_CACHE_ENTRIES: string = `DELETE FROM cache_entries WHERE kind IN (${CACHE_KINDS_SQL}) AND expires_at <= ?`
+const SQL_CLEAR_CACHE_ENTRIES: string = `DELETE FROM cache_entries WHERE kind IN (${CACHE_KINDS_SQL})`
+const SQL_PRUNE_TOPIC_LIST_ROWS: string = 'DELETE FROM cache_entries WHERE kind = \'topic_list\' AND cache_key NOT IN (SELECT cache_key FROM cache_entries WHERE kind = \'topic_list\' ORDER BY accessed_at DESC, cached_at DESC, cache_key ASC LIMIT 32)'
+const SQL_PRUNE_TOPIC_DETAIL_ROWS: string = 'DELETE FROM cache_entries WHERE kind = \'topic_detail\' AND cache_key NOT IN (SELECT cache_key FROM cache_entries WHERE kind = \'topic_detail\' ORDER BY accessed_at DESC, cached_at DESC, cache_key ASC LIMIT 200)'
+const SQL_SELECT_INLINE_CACHE_SIZE: string = `SELECT COALESCE(SUM(size), 0) AS total_size FROM cache_entries WHERE kind IN (${CACHE_KINDS_SQL})`
+const SQL_PRUNE_INLINE_PAYLOAD_SIZE: string = `DELETE FROM cache_entries WHERE cache_key IN (SELECT cache_key FROM cache_entries WHERE kind IN (${CACHE_KINDS_SQL}) ORDER BY accessed_at ASC, cached_at ASC, cache_key ASC LIMIT ?)`
 
 export interface TopicDetailCache {
   topic: V2exTopic | null
@@ -232,7 +237,7 @@ export class CacheSettings {
       cachedAt,
       cachedAt,
       expiresAt,
-      payloadText.length
+      CacheSettings.byteLength(payloadText)
     ]
     await store.executeSql(SQL_UPSERT_CACHE_ENTRY, args)
   }
@@ -420,5 +425,28 @@ export class CacheSettings {
 
   private static nowSeconds(): number {
     return Math.floor(Date.now() / 1000)
+  }
+
+  private static byteLength(value: string): number {
+    let bytes = 0
+    for (let i = 0; i < value.length; i++) {
+      const code = value.charCodeAt(i)
+      if (code <= 0x7F) {
+        bytes += 1
+      } else if (code <= 0x7FF) {
+        bytes += 2
+      } else if (code >= 0xD800 && code <= 0xDBFF && i + 1 < value.length) {
+        const next = value.charCodeAt(i + 1)
+        if (next >= 0xDC00 && next <= 0xDFFF) {
+          bytes += 4
+          i += 1
+        } else {
+          bytes += 3
+        }
+      } else {
+        bytes += 3
+      }
+    }
+    return bytes
   }
 }

@@ -39,6 +39,7 @@ for (const snippet of [
   "const KEY_CACHE_INDEX: string = 'cacheIndex'",
   "const CACHE_KIND_TOPIC_LIST: string = 'topic_list'",
   "const CACHE_KIND_TOPIC_DETAIL: string = 'topic_detail'",
+  "const CACHE_KINDS_SQL: string = `'${CACHE_KIND_TOPIC_LIST}', '${CACHE_KIND_TOPIC_DETAIL}'`",
   'const TOPIC_LIST_TTL_SECONDS: number = 7 * 24 * 60 * 60',
   'const TOPIC_DETAIL_TTL_SECONDS: number = 30 * 24 * 60 * 60',
   'const MAX_TOPIC_LIST_ROWS: number = 32',
@@ -49,13 +50,51 @@ for (const snippet of [
   'INSERT OR REPLACE INTO cache_entries',
   'UPDATE cache_entries SET accessed_at = ?',
   'DELETE FROM cache_entries WHERE kind IN',
-  'ORDER BY accessed_at DESC, cached_at DESC LIMIT 32',
-  'ORDER BY accessed_at DESC, cached_at DESC LIMIT 200',
+  'ORDER BY accessed_at DESC, cached_at DESC, cache_key ASC LIMIT 32',
+  'ORDER BY accessed_at DESC, cached_at DESC, cache_key ASC LIMIT 200',
+  'ORDER BY accessed_at ASC, cached_at ASC, cache_key ASC LIMIT ?',
   'LocalDataStore.open(context)',
-  'payloadText.length',
+  'CacheSettings.byteLength(payloadText)',
   'deleteLegacyCacheBestEffort',
 ]) {
   assert(cacheSettings.includes(snippet), `CacheSettings missing RDB cache contract: ${snippet}`)
+}
+
+for (const policyContract of [
+  {
+    name: 'expired cache rows are removed before index reads',
+    pattern: /static\s+async\s+loadKeyIndex[\s\S]*await CacheSettings\.deleteExpiredRows\(store,\s*now\)[\s\S]*store\.querySql\(SQL_SELECT_CACHE_INDEX\)/,
+  },
+  {
+    name: 'expired cache rows are removed before stats reads',
+    pattern: /static\s+async\s+loadStats[\s\S]*await CacheSettings\.deleteExpiredRows\(store,\s*now\)[\s\S]*store\.querySql\(SQL_SELECT_CACHE_STATS\)/,
+  },
+  {
+    name: 'expired cache rows are removed after writes before LRU pruning',
+    pattern: /private\s+static\s+async\s+pruneCache[\s\S]*await CacheSettings\.deleteExpiredRows\(store,\s*now\)[\s\S]*SQL_PRUNE_TOPIC_LIST_ROWS[\s\S]*SQL_PRUNE_TOPIC_DETAIL_ROWS[\s\S]*pruneInlinePayloadSize/,
+  },
+  {
+    name: 'topic list rows are trimmed before persistence',
+    pattern: /const next = topics\.slice\(0,\s*MAX_TOPIC_LIST_ITEMS\)[\s\S]*JSON\.stringify\(next\)/,
+  },
+  {
+    name: 'inline payload accounting uses UTF-8 byte size',
+    pattern: /private\s+static\s+byteLength\s*\([\s\S]*charCodeAt[\s\S]*0xD800[\s\S]*0xDFFF[\s\S]*return bytes/,
+  },
+]) {
+  assert(policyContract.pattern.test(cacheSettings), `CacheSettings policy contract missing: ${policyContract.name}`)
+}
+
+for (const sqlName of [
+  'SQL_SELECT_CACHE_INDEX',
+  'SQL_SELECT_CACHE_STATS',
+  'SQL_DELETE_EXPIRED_CACHE_ENTRIES',
+  'SQL_CLEAR_CACHE_ENTRIES',
+  'SQL_SELECT_INLINE_CACHE_SIZE',
+  'SQL_PRUNE_INLINE_PAYLOAD_SIZE',
+]) {
+  const pattern = new RegExp(`const\\s+${sqlName}:\\s+string\\s+=\\s+\`[^\`]*\\$\\{CACHE_KINDS_SQL\\}`)
+  assert(pattern.test(cacheSettings), `${sqlName} must use the centralized cache kind set`)
 }
 
 assert(!cacheSettings.includes('import { preferences }'), 'CacheSettings must not import preferences for primary cache read/write')
