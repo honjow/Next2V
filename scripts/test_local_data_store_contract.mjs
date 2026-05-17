@@ -19,7 +19,7 @@ const requiredSnippets = [
   "import { common } from '@kit.AbilityKit'",
   "import { relationalStore } from '@kit.ArkData'",
   "export const LOCAL_DATA_DB_NAME: string = 'V2Next.db'",
-  'export const LOCAL_DATA_SCHEMA_VERSION: number = 3',
+  'export const LOCAL_DATA_SCHEMA_VERSION: number = 4',
   "export const LOCAL_DATA_SCHEMA_META_TABLE: string = 'schema_meta'",
   "export const SQL_CREATE_SCHEMA_META_TABLE: string = 'CREATE TABLE IF NOT EXISTS schema_meta (key TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL)'",
   "export const SQL_CREATE_SEARCH_HISTORY_TABLE: string = 'CREATE TABLE IF NOT EXISTS search_history (query TEXT PRIMARY KEY NOT NULL, searched_at INTEGER NOT NULL)'",
@@ -28,7 +28,17 @@ const requiredSnippets = [
   "export const SQL_CREATE_CACHE_ENTRIES_KIND_INDEX: string = 'CREATE INDEX IF NOT EXISTS idx_cache_entries_kind ON cache_entries (kind)'",
   "export const SQL_CREATE_CACHE_ENTRIES_EXPIRES_AT_INDEX: string = 'CREATE INDEX IF NOT EXISTS idx_cache_entries_expires_at ON cache_entries (expires_at)'",
   "export const SQL_CREATE_CACHE_ENTRIES_ACCESSED_AT_INDEX: string = 'CREATE INDEX IF NOT EXISTS idx_cache_entries_accessed_at ON cache_entries (accessed_at)'",
-  "export const SQL_UPSERT_SCHEMA_VERSION: string = 'INSERT OR REPLACE INTO schema_meta (key, value) VALUES (\\'schema_version\\', \\'3\\')'",
+  "export const SQL_CREATE_COLLECTION_SAVED_TOPICS_TABLE: string = 'CREATE TABLE IF NOT EXISTS collection_saved_topics (topic_id INTEGER PRIMARY KEY NOT NULL, title TEXT NOT NULL, node_name TEXT NOT NULL, node_title TEXT NOT NULL, username TEXT NOT NULL, avatar TEXT, member_pro INTEGER, created INTEGER NOT NULL, replies INTEGER, saved_at INTEGER NOT NULL)'",
+  "export const SQL_CREATE_COLLECTION_SAVED_TOPICS_INDEX: string = 'CREATE INDEX IF NOT EXISTS idx_collection_saved_topics_saved_at ON collection_saved_topics (saved_at DESC, topic_id DESC)'",
+  "export const SQL_CREATE_COLLECTION_SAVED_NODES_TABLE: string = 'CREATE TABLE IF NOT EXISTS collection_saved_nodes (node_name TEXT PRIMARY KEY NOT NULL, title TEXT NOT NULL, topics INTEGER NOT NULL, avatar_mini TEXT, avatar_normal TEXT, avatar_large TEXT, saved_at INTEGER NOT NULL)'",
+  "export const SQL_CREATE_COLLECTION_SAVED_NODES_INDEX: string = 'CREATE INDEX IF NOT EXISTS idx_collection_saved_nodes_saved_at ON collection_saved_nodes (saved_at DESC, node_name ASC)'",
+  "export const SQL_CREATE_COLLECTION_VIEWED_TOPICS_TABLE: string = 'CREATE TABLE IF NOT EXISTS collection_viewed_topics (topic_id INTEGER PRIMARY KEY NOT NULL, title TEXT NOT NULL, node_name TEXT NOT NULL, node_title TEXT NOT NULL, username TEXT NOT NULL, avatar TEXT, member_pro INTEGER, replies INTEGER, viewed_at INTEGER NOT NULL)'",
+  "export const SQL_CREATE_COLLECTION_VIEWED_TOPICS_INDEX: string = 'CREATE INDEX IF NOT EXISTS idx_collection_viewed_topics_viewed_at ON collection_viewed_topics (viewed_at DESC, topic_id DESC)'",
+  "export const SQL_CREATE_COLLECTION_TOPIC_READ_POSITIONS_TABLE: string = 'CREATE TABLE IF NOT EXISTS collection_topic_read_positions (topic_id INTEGER PRIMARY KEY NOT NULL, floor INTEGER NOT NULL, updated_at INTEGER NOT NULL)'",
+  "export const SQL_CREATE_COLLECTION_TOPIC_READ_POSITIONS_INDEX: string = 'CREATE INDEX IF NOT EXISTS idx_collection_topic_read_positions_updated_at ON collection_topic_read_positions (updated_at DESC, topic_id DESC)'",
+  "export const SQL_CREATE_COLLECTION_TOPIC_READ_STATES_TABLE: string = 'CREATE TABLE IF NOT EXISTS collection_topic_read_states (topic_id INTEGER PRIMARY KEY NOT NULL, touched_at INTEGER NOT NULL, updated_at INTEGER NOT NULL)'",
+  "export const SQL_CREATE_COLLECTION_TOPIC_READ_STATES_INDEX: string = 'CREATE INDEX IF NOT EXISTS idx_collection_topic_read_states_updated_at ON collection_topic_read_states (updated_at DESC, topic_id DESC)'",
+  "export const SQL_UPSERT_SCHEMA_VERSION: string = 'INSERT OR REPLACE INTO schema_meta (key, value) VALUES (\\'schema_version\\', \\'4\\')'",
   'securityLevel: relationalStore.SecurityLevel.S3',
   'relationalStore.getRdbStore(context, LOCAL_DATA_STORE_CONFIG)',
   'await store.execute(SQL_CREATE_SCHEMA_META_TABLE)',
@@ -38,6 +48,16 @@ const requiredSnippets = [
   'await store.execute(SQL_CREATE_CACHE_ENTRIES_KIND_INDEX)',
   'await store.execute(SQL_CREATE_CACHE_ENTRIES_EXPIRES_AT_INDEX)',
   'await store.execute(SQL_CREATE_CACHE_ENTRIES_ACCESSED_AT_INDEX)',
+  'await store.execute(SQL_CREATE_COLLECTION_SAVED_TOPICS_TABLE)',
+  'await store.execute(SQL_CREATE_COLLECTION_SAVED_TOPICS_INDEX)',
+  'await store.execute(SQL_CREATE_COLLECTION_SAVED_NODES_TABLE)',
+  'await store.execute(SQL_CREATE_COLLECTION_SAVED_NODES_INDEX)',
+  'await store.execute(SQL_CREATE_COLLECTION_VIEWED_TOPICS_TABLE)',
+  'await store.execute(SQL_CREATE_COLLECTION_VIEWED_TOPICS_INDEX)',
+  'await store.execute(SQL_CREATE_COLLECTION_TOPIC_READ_POSITIONS_TABLE)',
+  'await store.execute(SQL_CREATE_COLLECTION_TOPIC_READ_POSITIONS_INDEX)',
+  'await store.execute(SQL_CREATE_COLLECTION_TOPIC_READ_STATES_TABLE)',
+  'await store.execute(SQL_CREATE_COLLECTION_TOPIC_READ_STATES_INDEX)',
   'await store.execute(SQL_UPSERT_SCHEMA_VERSION)',
   'store.version = LOCAL_DATA_SCHEMA_VERSION',
   'return store',
@@ -47,7 +67,7 @@ for (const snippet of requiredSnippets) {
 }
 assert(/export\s+class\s+LocalDataStore/.test(localDataText), 'LocalDataStore class must be exported')
 assert(/static\s+async\s+open\s*\(\s*context\s*:\s*common\.UIAbilityContext\s*\)\s*:\s*Promise<\s*relationalStore\.RdbStore\s*>/.test(localDataText), 'LocalDataStore.open(context) signature missing')
-assert(!localDataText.includes('CollectionSettings'), 'LocalDataStore skeleton must not wire collections')
+assert(!localDataText.includes('CollectionSettings'), 'LocalDataStore must not import business collection settings')
 assert(!localDataText.includes('DraftSettings'), 'LocalDataStore skeleton must not wire drafts')
 assert(!localDataText.includes('SearchSettings'), 'LocalDataStore must not know SearchSettings')
 assert(!localDataText.includes('CacheSettings'), 'LocalDataStore must not know CacheSettings')
@@ -58,20 +78,22 @@ assert(indexText.includes("export { LocalDataStore, LOCAL_DATA_DB_NAME, LOCAL_DA
 
 const forbiddenBusinessFiles = [
   'entry/src/main/ets/entryability/EntryAbility.ets',
-  'shared/src/main/ets/settings/CollectionSettings.ets',
   'shared/src/main/ets/settings/DraftSettings.ets',
   'shared/src/main/ets/settings/BlockedMemberSettings.ets',
   'shared/src/main/ets/settings/SettingsBootstrap.ets',
   'shared/src/main/ets/settings/SettingsStorage.ets',
 ]
 for (const rel of forbiddenBusinessFiles) {
-  assert(!read(rel).includes('LocalDataStore'), `${rel} must not wire LocalDataStore in this skeleton lane`)
+  assert(!read(rel).includes('LocalDataStore'), `${rel} must not wire LocalDataStore outside migrated RDB settings`)
   assert(!read(rel).includes('V2Next.db'), `${rel} must not know RDB db name in this skeleton lane`)
 }
 
 const searchSettingsText = read('shared/src/main/ets/settings/SearchSettings.ets')
 assert(searchSettingsText.includes("import { LocalDataStore } from '../storage/LocalDataStore'"), 'SearchSettings must be the only Lane 4 business settings LocalDataStore consumer')
 assert(!searchSettingsText.includes('V2Next.db'), 'SearchSettings must not know RDB db name')
+const collectionSettingsText = read('shared/src/main/ets/settings/CollectionSettings.ets')
+assert(collectionSettingsText.includes("import { LocalDataStore } from '../storage/LocalDataStore'"), 'CollectionSettings must consume LocalDataStore for collection RDB')
+assert(!collectionSettingsText.includes('V2Next.db'), 'CollectionSettings must not know RDB db name')
 
 const sourceRoots = [
   'entry/src/main/ets',
@@ -104,6 +126,7 @@ for (const root of sourceRoots) {
       rel === localDataRel ||
       rel === 'shared/src/main/ets/Index.ets' ||
       rel === 'shared/src/main/ets/settings/SearchSettings.ets' ||
+      rel === 'shared/src/main/ets/settings/CollectionSettings.ets' ||
       rel === 'shared/src/main/ets/settings/CacheSettings.ets' ||
       rel === 'shared/src/main/ets/settings/CacheDeviceQaSeed.ets'
     ) continue

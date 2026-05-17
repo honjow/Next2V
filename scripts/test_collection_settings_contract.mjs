@@ -70,7 +70,7 @@ const findMatchingBrace = (text, openBraceIndex) => {
 }
 
 const extractMethodBody = (text, methodName) => {
-  const methodRegex = new RegExp(`(?:static\\s+async|static)\\s+${methodName}\\s*\\(`)
+  const methodRegex = new RegExp(`(?:static\\s+async|private\\s+static\\s+async|private\\s+static|static)\\s+${methodName}\\s*\\(`)
   const methodMatch = methodRegex.exec(text)
   assert(methodMatch !== null, `CollectionSettings.${methodName} method missing`)
   const openBraceIndex = text.indexOf('{', methodMatch.index)
@@ -87,7 +87,7 @@ const parsersRel = 'shared/src/main/ets/settings/CollectionParsers.ets'
 const publisherRel = 'shared/src/main/ets/settings/LocalDataPublisher.ets'
 
 for (const rel of [collectionRel, typesRel, limitsRel, parsersRel, publisherRel]) {
-  assert(exists(rel), `${rel} must exist for Lane 5A split`)
+  assert(exists(rel), `${rel} must exist`)
 }
 
 const collectionText = read(collectionRel)
@@ -139,14 +139,84 @@ const expectedKeys = [
   ['KEY_TOPIC_READ_STATES', 'topicReadStates'],
 ]
 for (const [name, value] of expectedKeys) {
-  assert(collectionText.includes(`const ${name}: string = '${value}'`), `${name} must remain '${value}'`)
+  assert(collectionText.includes(`const ${name}: string = '${value}'`), `${name} must remain '${value}' for legacy traceability`)
 }
 
-for (const rel of [collectionRel, typesRel, limitsRel, parsersRel, publisherRel]) {
-  const text = read(rel)
-  assert(!text.includes('relationalStore'), `${rel} must not import or reference relationalStore in Lane 5A`)
-  assert(!text.includes('LocalDataStore'), `${rel} must not use LocalDataStore in Lane 5A`)
+for (const snippet of [
+  "import { relationalStore } from '@kit.ArkData'",
+  "import { LocalDataStore } from '../storage/LocalDataStore'",
+  "import { deleteKeysAndFlush, withPreferencesStore } from './SettingsStorage'",
+  'LocalDataStore.open(context)',
+  'deleteLegacyCollectionKeysBestEffort',
+]) {
+  assert(collectionText.includes(snippet), `CollectionSettings missing RDB/legacy cleanup contract: ${snippet}`)
 }
+
+for (const forbidden of [
+  'preferences.getPreferences',
+  'store.getSync(KEY_SAVED_TOPICS',
+  'store.getSync(KEY_SAVED_NODES',
+  'store.getSync(KEY_VIEWED_TOPICS',
+  'store.getSync(KEY_TOPIC_READ_POSITIONS',
+  'store.getSync(KEY_TOPIC_READ_STATES',
+  'store.putSync(KEY_SAVED_TOPICS',
+  'store.putSync(KEY_SAVED_NODES',
+  'store.putSync(KEY_VIEWED_TOPICS',
+  'store.putSync(KEY_TOPIC_READ_POSITIONS',
+  'store.putSync(KEY_TOPIC_READ_STATES',
+  'parseSavedTopics',
+  'parseSavedNodes',
+  'parseViewedTopics',
+  'parseTopicReadPositions',
+  'parseTopicReadStates',
+]) {
+  assert(!collectionText.includes(forbidden), `CollectionSettings must not dual-read/write Preferences or parser fallback: ${forbidden}`)
+}
+
+const rdbContracts = [
+  'collection_saved_topics',
+  'collection_saved_nodes',
+  'collection_viewed_topics',
+  'collection_topic_read_positions',
+  'collection_topic_read_states',
+  'INSERT OR REPLACE INTO collection_saved_topics',
+  'INSERT OR REPLACE INTO collection_saved_nodes',
+  'INSERT OR REPLACE INTO collection_viewed_topics',
+  'INSERT OR REPLACE INTO collection_topic_read_positions',
+  'INSERT OR REPLACE INTO collection_topic_read_states',
+  'ORDER BY saved_at DESC, topic_id DESC LIMIT 100',
+  'ORDER BY saved_at DESC, node_name ASC LIMIT 80',
+  'ORDER BY viewed_at DESC, topic_id DESC LIMIT 100',
+  'ORDER BY updated_at DESC, topic_id DESC LIMIT 200',
+  'ORDER BY updated_at DESC, topic_id DESC LIMIT 500',
+  'SELECT COUNT(*) AS count_value FROM collection_saved_topics',
+  'SELECT COUNT(*) AS count_value FROM collection_saved_nodes',
+  'SELECT COUNT(*) AS count_value FROM collection_viewed_topics',
+]
+for (const snippet of rdbContracts) {
+  assert(collectionText.includes(snippet), `CollectionSettings missing RDB contract: ${snippet}`)
+}
+
+for (const method of ['saveTopic', 'removeTopic', 'saveNode', 'removeNode', 'recordViewedTopic']) {
+  const body = extractMethodBody(collectionText, method)
+  assert(body.includes('LocalDataPublisher.touchLocalData()'), `${method} must touch local data after successful persistence`)
+}
+
+const clearAllBody = extractMethodBody(collectionText, 'clearAll')
+for (const sql of [
+  'SQL_CLEAR_SAVED_TOPICS',
+  'SQL_CLEAR_SAVED_NODES',
+  'SQL_CLEAR_VIEWED_TOPICS',
+  'SQL_CLEAR_TOPIC_READ_POSITIONS',
+  'SQL_CLEAR_TOPIC_READ_STATES',
+]) {
+  assert(clearAllBody.includes(`await store.executeSql(${sql})`), `clearAll must delete ${sql}`)
+}
+assert(clearAllBody.includes('LocalDataPublisher.clearTopicReadStates()'), 'clearAll must publish empty read states')
+assert(clearAllBody.includes('savedTopicCount: 0'), 'clearAll must publish zero saved topic count')
+assert(clearAllBody.includes('savedNodeCount: 0'), 'clearAll must publish zero saved node count')
+assert(clearAllBody.includes('viewedTopicCount: 0'), 'clearAll must publish zero viewed topic count')
+assert(clearAllBody.indexOf('deleteLegacyCollectionKeysBestEffort') > clearAllBody.indexOf('LocalDataPublisher.touchLocalData()'), 'legacy keys must be deleted only after RDB clear succeeds')
 
 const publisherText = read(publisherRel)
 const storageKeyRefs = [...publisherText.matchAll(/StorageKeys\.(\w+)/g)].map((match) => match[1])
@@ -163,15 +233,6 @@ for (const key of storageKeyRefs) {
 assert(storageKeyRefs.length >= allowedPublisherKeys.size, 'LocalDataPublisher must own local projection keys')
 assert(!publisherText.includes('preferences.getPreferences'), 'LocalDataPublisher must not own Preferences access')
 assert(!publisherText.includes('UIAbilityContext'), 'LocalDataPublisher must not own UIAbilityContext side effects')
-
-const clearAllBody = extractMethodBody(collectionText, 'clearAll')
-for (const [name] of expectedKeys) {
-  assert(clearAllBody.includes(`store.deleteSync(${name})`), `clearAll must delete ${name}`)
-}
-assert(clearAllBody.includes('LocalDataPublisher.clearTopicReadStates()'), 'clearAll must publish empty read states')
-assert(clearAllBody.includes('savedTopicCount: 0'), 'clearAll must publish zero saved topic count')
-assert(clearAllBody.includes('savedNodeCount: 0'), 'clearAll must publish zero saved node count')
-assert(clearAllBody.includes('viewedTopicCount: 0'), 'clearAll must publish zero viewed topic count')
 
 const indexText = read('shared/src/main/ets/Index.ets')
 assert(indexText.includes("export { CollectionSettings } from './settings/CollectionSettings'"), 'shared Index must keep CollectionSettings facade export')
