@@ -1,7 +1,12 @@
 import { DetailViewModel } from '../viewmodel/DetailViewModel'
 import { ReplyComposerSheet } from '../components/ReplyComposerSheet'
+import {
+  ReplyContextListItem,
+  ReplyContextSheetContent,
+  TopicDetailReplyDivider,
+} from '../components/TopicDetailComponents'
 import { common, Want } from '@kit.AbilityKit'
-import { LengthMetrics, promptAction, SymbolGlyphModifier } from '@kit.ArkUI'
+import { LengthMetrics, promptAction } from '@kit.ArkUI'
 import { ActionBarButton, ActionBarStyle, HdsActionBar } from '@kit.UIDesignKit'
 import { uniformTypeDescriptor as utd } from '@kit.ArkData'
 import { pasteboard } from '@kit.BasicServicesKit'
@@ -29,7 +34,6 @@ import {
   V2exToggleAction,
   ReadingSettings,
   ReplyDisplaySettings,
-  AppModalScaffold,
   V2exRoute,
   V2exUrlRouter,
   TopicDetailParams,
@@ -987,93 +991,28 @@ export struct TopicDetailPage {
   }
 
   @Builder ReplyDivider() {
-    Row({ space: ThemeConstants.SPACE_SM }) {
-      Text(this.replyCountText())
-        .fontSize(ThemeConstants.FONT_SIZE_META)
-        .fontColor($r('sys.color.font_secondary'))
-        .maxLines(1)
-        .textOverflow({ overflow: TextOverflow.Ellipsis })
-        .layoutWeight(1)
-      Row({ space: ThemeConstants.SPACE_XS }) {
-        this.ReplyToolButton('楼层', false, () => {
-          this.openJumpToFloorDialog()
-        })
-        this.ReplyDisplayModeButton()
-        this.ReplyToolButton('最新', false, () => {
-          this.scrollToLatestReply()
-        })
-      }.alignItems(VerticalAlign.Center)
-    }
-    .alignItems(VerticalAlign.Center)
-    .width('100%')
-    .padding({
-      left: ThemeConstants.SPACE_SM,
-      right: ThemeConstants.SPACE_SM,
-      top: ThemeConstants.SPACE_SM,
-      bottom: ThemeConstants.SPACE_XS,
-    })
-  }
-
-  @Builder ReplyToolButton(label: string, active: boolean, action: () => void) {
-    Text(label)
-      .fontSize(ThemeConstants.FONT_SIZE_TINY)
-      .fontColor(active ? Color.White : $r('sys.color.font_secondary'))
-      .padding({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM, top: 5, bottom: 5 })
-      .borderRadius(ThemeConstants.RADIUS_ROUND)
-      .backgroundColor(
-        active ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.ohos_id_color_button_normal'),
-      )
-      .onClick(action)
-  }
-
-  @Builder ReplyDisplayModeButton() {
-    Text(this.replyDisplayModeText())
-      .fontSize(ThemeConstants.FONT_SIZE_TINY)
-      .fontColor(
-        this.v.replyDisplayMode === 'origin' ? $r('sys.color.font_secondary') : Color.White,
-      )
-      .padding({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM, top: 5, bottom: 5 })
-      .borderRadius(ThemeConstants.RADIUS_ROUND)
-      .backgroundColor(
-        this.v.replyDisplayMode === 'origin'
-          ? $r('sys.color.ohos_id_color_button_normal')
-          : ThemeConstants.BRAND_PRIMARY,
-      )
-      .onClick(() => {
+    TopicDetailReplyDivider({
+      replyDisplayMenuShown: this.replyDisplayMenuShown,
+      replyCountText: this.replyCountText(),
+      replyDisplayMode: this.v.replyDisplayMode,
+      replyDisplayModeText: this.replyDisplayModeText(),
+      onJumpToFloor: () => {
+        this.openJumpToFloorDialog()
+      },
+      onLatest: () => {
+        this.scrollToLatestReply()
+      },
+      onShowDisplayMenu: () => {
         this.showReplyDisplayMenu()
-      })
-      .bindMenu(this.replyDisplayMenuShown, this.ReplyDisplayModeMenu, {
-        placement: Placement.BottomRight,
-        aboutToDisappear: () => {
-          this.replyDisplayMenuShown = false
-        },
-      })
-  }
-
-  @Builder ReplyDisplayModeMenu() {
-    Menu() {
-      this.ReplyDisplayModeMenuItem('楼中楼', 'thread')
-      this.ReplyDisplayModeMenuItem('楼中楼(@)', 'threadWithMention')
-      this.ReplyDisplayModeMenuItem('冗余楼中楼', 'threadRedundant')
-      this.ReplyDisplayModeMenuItem('只看楼主', 'op')
-      this.ReplyDisplayModeMenuItem('原版', 'origin')
-    }
-  }
-
-  @Builder ReplyDisplayModeMenuItem(label: string, mode: string) {
-    MenuItem({
-      content: label,
-      symbolEndIcon:
-        this.v.replyDisplayMode === mode
-          ? new SymbolGlyphModifier($r('sys.symbol.checkmark'))
-          : undefined,
-    }).onClick(() => {
-      this.updateReplyDisplayMode(mode)
+      },
+      onDisplayModeChange: (mode: string) => {
+        this.updateReplyDisplayMode(mode)
+      },
     })
   }
 
   @Builder ReplyContextSheet() {
-    AppModalScaffold({
+    ReplyContextSheetContent({
       title: this.replyContextTitle(),
       closeAction: () => {
         this.closeReplyContext()
@@ -1092,56 +1031,18 @@ export struct TopicDetailPage {
   }
 
   @Builder ReplyContextItemView(item: ReplyContextItem) {
-    Column({ space: ThemeConstants.SPACE_SM }) {
-      Row({ space: ThemeConstants.SPACE_SM }) {
-        Text(item.label)
-          .fontSize(ThemeConstants.FONT_SIZE_TAG)
-          .fontColor(
-            item.selected
-              ? $r('sys.color.ohos_id_color_activated')
-              : $r('sys.color.font_secondary'),
-          )
-          .padding({
-            left: ThemeConstants.SPACE_SM,
-            right: ThemeConstants.SPACE_SM,
-            top: 2,
-            bottom: 2,
-          })
-          .borderRadius(ThemeConstants.RADIUS_SM)
-          .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
-        Text(`#${item.floor}`)
-          .fontSize(ThemeConstants.FONT_SIZE_TAG)
-          .fontColor($r('sys.color.font_secondary'))
-        Text(item.reply.member.username)
-          .fontSize(ThemeConstants.FONT_SIZE_META)
-          .fontWeight(FontWeight.Medium)
-          .fontColor($r('sys.color.font_primary'))
-          .maxLines(1)
-          .textOverflow({ overflow: TextOverflow.Ellipsis })
-        Blank()
-        TimeAgo({ timestamp: item.reply.created })
-      }
-      .width('100%')
-      .alignItems(VerticalAlign.Center)
-      Text(this.replySnippet(item.reply.content))
-        .fontSize(this.bodyFontSize())
-        .lineHeight(this.bodyLineHeight())
-        .fontColor($r('sys.color.font_primary'))
-        .maxLines(4)
-        .textOverflow({ overflow: TextOverflow.Ellipsis })
-        .width('100%')
-    }
-    .width('100%')
-    .padding(ThemeConstants.SPACE_MD)
-    .borderRadius(ThemeConstants.RADIUS_MD)
-    .backgroundColor(
-      item.selected
-        ? $r('sys.color.ohos_id_color_button_normal')
-        : $r('sys.color.ohos_id_color_sub_background'),
-    )
-    .onClick(() => {
-      this.jumpToLoadedReplyFloor(item.floor)
-      this.closeReplyContext()
+    ReplyContextListItem({
+      reply: item.reply,
+      floor: item.floor,
+      label: item.label,
+      selected: item.selected,
+      snippet: this.replySnippet(item.reply.content),
+      bodyFontSize: this.bodyFontSize(),
+      bodyLineHeight: this.bodyLineHeight(),
+      onSelect: () => {
+        this.jumpToLoadedReplyFloor(item.floor)
+        this.closeReplyContext()
+      },
     })
   }
 

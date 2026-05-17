@@ -361,3 +361,32 @@ Lane 3 结论：主要 UI 拆分完成。后续若继续瘦身，优先评估是
 - 实机路径覆盖：应用内路由 `https://www.v2ex.com/go/apple` -> `Apple` 节点主题页 -> 连续上滑触发分页/后续主题渲染。
 
 Lane 4 结论：`PagedListScaffold` 已完成 `MyTopicsPage` 和 `NodeTopicPage` 两个试点。下一步进入 Lane 5 前，先拆分范围较小、可独立验证的 `TopicDetailPage` 展示组件，不碰写操作和解析逻辑。
+
+### 2026-05-17 Lane 5 第一批
+
+状态：PASS
+
+范围：
+
+- 只拆 `TopicDetailPage` 的回复列表展示组件。
+- 不改主题正文解析、Markdown 渲染、回复编辑器、感谢、收藏、屏蔽、举报、复制、图片预览、链接跳转等行为逻辑。
+
+变更：
+
+- 新增 `feature/detail/src/main/ets/components/TopicDetailComponents.ets`。
+- 抽出 `TopicDetailReplyDivider`，承载回复数量、楼层跳转、回复显示模式菜单和“最新”入口。
+- 抽出 `ReplyContextSheetContent` 和 `ReplyContextListItem`，承载回复上下文 sheet 外壳和上下文预览条目。
+- `TopicDetailPage` 保留状态、楼层计算、菜单状态、跳转和回调行为。
+
+验收：
+
+- `git diff --check` 通过。
+- `bash dev.sh --build-only` 通过。
+- 已安装到 `192.168.50.237:12345` 并完成实机 QA。
+- 证据目录：`.hermes-artifacts/20260517-2226-topic-detail-components-qa/`。
+- 实机路径覆盖：`Apple` 节点主题页 -> 第一条主题详情 -> 回复工具条 -> 显示模式菜单 -> 回复操作菜单 -> `#2 回复上下文` sheet。
+
+后续入口：
+
+1. `TopicDetailPage` 下一批仍只拆纯展示：优先评估主题头部元信息卡或预加载进度/footer。
+2. 写回复、感谢、收藏、屏蔽、举报、解析和 Markdown 渲染继续保持原页面内逻辑，不在同一批移动。
