@@ -232,7 +232,13 @@ export struct ReplyCard {
                     onLinkClick: this.onLinkClick,
                     onMentionUserClick: this.onMentionUserClick,
                   })
-                }.width('100%')
+                }
+                .width('100%')
+                .padding({ left: ReplyCardLayoutPolicy.THREAD_GUIDE_CONTENT_GAP })
+                .border({
+                  width: { left: ReplyCardLayoutPolicy.THREAD_GUIDE_LINE_WIDTH },
+                  color: $r('sys.color.ohos_id_color_list_separator'),
+                })
               },
               (child: V2exReply) => child.renderKey || child.id.toString(),
             )
