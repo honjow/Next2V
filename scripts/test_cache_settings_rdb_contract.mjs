@@ -33,6 +33,7 @@ for (const snippet of [
 }
 
 for (const snippet of [
+  "import { fileIo } from '@kit.CoreFileKit'",
   "import { LocalDataStore } from '../storage/LocalDataStore'",
   "const KEY_PREFIX_TOPIC_LIST: string = 'topicList:'",
   "const KEY_PREFIX_TOPIC_DETAIL: string = 'topicDetail:'",
@@ -44,10 +45,13 @@ for (const snippet of [
   'const TOPIC_DETAIL_TTL_SECONDS: number = 30 * 24 * 60 * 60',
   'const MAX_TOPIC_LIST_ROWS: number = 32',
   'const MAX_TOPIC_DETAIL_ROWS: number = 200',
-  'const MAX_INLINE_PAYLOAD_SIZE: number = 20 * 1024 * 1024',
+  'const FILE_PAYLOAD_THRESHOLD_BYTES: number = 256 * 1024',
+  'const MAX_CACHE_PAYLOAD_SIZE: number = 20 * 1024 * 1024',
   'const MAX_TOPIC_LIST_ITEMS: number = 50',
-  'SELECT payload_text, expires_at FROM cache_entries',
+  'SELECT payload_text, payload_path, expires_at FROM cache_entries',
   'INSERT OR REPLACE INTO cache_entries',
+  'payload_text, payload_path, cached_at',
+  'VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
   'UPDATE cache_entries SET accessed_at = ?',
   'DELETE FROM cache_entries WHERE kind IN',
   'ORDER BY accessed_at DESC, cached_at DESC, cache_key ASC LIMIT 32',
@@ -55,31 +59,64 @@ for (const snippet of [
   'ORDER BY accessed_at ASC, cached_at ASC, cache_key ASC LIMIT ?',
   'LocalDataStore.open(context)',
   'CacheSettings.byteLength(payloadText)',
+  'context.filesDir + \'/\' + CACHE_PAYLOAD_DIR_NAME',
+  'fileIo.mkdirSync(CacheSettings.payloadBaseDir(context), true)',
+  'fileIo.openSync',
+  'fileIo.writeSync',
+  'fileIo.readTextSync',
+  'fileIo.unlinkSync',
+  'fileIo.listFileSync',
+  'deleteRowsWithPayloadFiles',
+  'deleteOrphanPayloadFiles',
+  'isSafePayloadFileName',
   'deleteLegacyCacheBestEffort',
 ]) {
   assert(cacheSettings.includes(snippet), `CacheSettings missing RDB cache contract: ${snippet}`)
 }
 
+for (const nullableContract of [
+  'payload_text TEXT, payload_path TEXT',
+  'etag TEXT, payload_hash TEXT',
+]) {
+  assert(localData.includes(nullableContract), `cache_entries must keep nullable payload/hash columns: ${nullableContract}`)
+}
+
 for (const policyContract of [
   {
     name: 'expired cache rows are removed before index reads',
-    pattern: /static\s+async\s+loadKeyIndex[\s\S]*await CacheSettings\.deleteExpiredRows\(store,\s*now\)[\s\S]*store\.querySql\(SQL_SELECT_CACHE_INDEX\)/,
+    pattern: /static\s+async\s+loadKeyIndex[\s\S]*await CacheSettings\.deleteExpiredRows\(context,\s*store,\s*now\)[\s\S]*store\.querySql\(SQL_SELECT_CACHE_INDEX\)/,
   },
   {
     name: 'expired cache rows are removed before stats reads',
-    pattern: /static\s+async\s+loadStats[\s\S]*await CacheSettings\.deleteExpiredRows\(store,\s*now\)[\s\S]*store\.querySql\(SQL_SELECT_CACHE_STATS\)/,
+    pattern: /static\s+async\s+loadStats[\s\S]*await CacheSettings\.deleteExpiredRows\(context,\s*store,\s*now\)[\s\S]*store\.querySql\(SQL_SELECT_CACHE_STATS\)/,
   },
   {
-    name: 'expired cache rows are removed after writes before LRU pruning',
-    pattern: /private\s+static\s+async\s+pruneCache[\s\S]*await CacheSettings\.deleteExpiredRows\(store,\s*now\)[\s\S]*SQL_PRUNE_TOPIC_LIST_ROWS[\s\S]*SQL_PRUNE_TOPIC_DETAIL_ROWS[\s\S]*pruneInlinePayloadSize/,
+    name: 'expired cache rows are removed after writes before file-aware LRU pruning',
+    pattern: /private\s+static\s+async\s+pruneCache[\s\S]*await CacheSettings\.deleteExpiredRows\(context,\s*store,\s*now\)[\s\S]*SQL_SELECT_PRUNE_TOPIC_LIST_PAYLOAD_PATHS[\s\S]*SQL_PRUNE_TOPIC_LIST_ROWS[\s\S]*SQL_SELECT_PRUNE_TOPIC_DETAIL_PAYLOAD_PATHS[\s\S]*SQL_PRUNE_TOPIC_DETAIL_ROWS[\s\S]*pruneCachePayloadSize/,
   },
   {
     name: 'topic list rows are trimmed before persistence',
     pattern: /const next = topics\.slice\(0,\s*MAX_TOPIC_LIST_ITEMS\)[\s\S]*JSON\.stringify\(next\)/,
   },
   {
-    name: 'inline payload accounting uses UTF-8 byte size',
+    name: 'payload accounting uses UTF-8 byte size',
     pattern: /private\s+static\s+byteLength\s*\([\s\S]*charCodeAt[\s\S]*0xD800[\s\S]*0xDFFF[\s\S]*return bytes/,
+  },
+  {
+    name: 'file-backed save stores null inline text and relative payload path',
+    pattern: /private\s+static\s+preparePayloadStorage[\s\S]*size\s*<\s*FILE_PAYLOAD_THRESHOLD_BYTES[\s\S]*payloadText:\s*payloadText[\s\S]*payloadPath:\s*null[\s\S]*payloadText:\s*null[\s\S]*payloadPath:\s*payloadFileName/,
+  },
+  {
+    name: 'load prefers safe readable file and falls back to inline payload text',
+    pattern: /private\s+static\s+resolvePayloadText[\s\S]*isSafePayloadFileName\(payloadPath\)[\s\S]*fileIo\.readTextSync[\s\S]*return payloadText/,
+  },
+  {
+    name: 'clear removes cache rows through payload cleanup and keeps legacy cleanup',
+    pattern: /static\s+async\s+clear[\s\S]*deleteRowsWithPayloadFiles[\s\S]*SQL_SELECT_CLEAR_CACHE_PAYLOAD_PATHS[\s\S]*SQL_CLEAR_CACHE_ENTRIES[\s\S]*deleteOrphanPayloadFiles[\s\S]*deleteLegacyCacheBestEffort/,
+  },
+  {
+    name: 'payload filename guard rejects slash, backslash, traversal, empty and leading dot names',
+    pattern: /private\s+static\s+isSafePayloadFileName[\s\S]*relativeName\.length\s*<=\s*0[\s\S]*relativeName\.startsWith\('\.'\)[\s\S]*relativeName\.includes\('\/'\)[\s\S]*relativeName\.includes\('\\\\'\)[\s\S]*relativeName\.includes\('\.\.'\)[\s\S]*\^\[A-Za-z0-9\._-\]\+/,
   },
 ]) {
   assert(policyContract.pattern.test(cacheSettings), `CacheSettings policy contract missing: ${policyContract.name}`)
@@ -88,13 +125,27 @@ for (const policyContract of [
 for (const sqlName of [
   'SQL_SELECT_CACHE_INDEX',
   'SQL_SELECT_CACHE_STATS',
+  'SQL_SELECT_EXPIRED_CACHE_PAYLOAD_PATHS',
   'SQL_DELETE_EXPIRED_CACHE_ENTRIES',
+  'SQL_SELECT_CLEAR_CACHE_PAYLOAD_PATHS',
   'SQL_CLEAR_CACHE_ENTRIES',
-  'SQL_SELECT_INLINE_CACHE_SIZE',
-  'SQL_PRUNE_INLINE_PAYLOAD_SIZE',
+  'SQL_SELECT_CACHE_PAYLOAD_SIZE',
+  'SQL_SELECT_PRUNE_CACHE_PAYLOAD_PATHS',
+  'SQL_PRUNE_CACHE_PAYLOAD_SIZE',
+  'SQL_SELECT_ACTIVE_CACHE_PAYLOAD_PATHS',
 ]) {
   const pattern = new RegExp(`const\\s+${sqlName}:\\s+string\\s+=\\s+\`[^\`]*\\$\\{CACHE_KINDS_SQL\\}`)
   assert(pattern.test(cacheSettings), `${sqlName} must use the centralized cache kind set`)
+}
+
+for (const rawDelete of [
+  'await store.executeSql(SQL_DELETE_EXPIRED_CACHE_ENTRIES',
+  'await store.executeSql(SQL_PRUNE_TOPIC_LIST_ROWS',
+  'await store.executeSql(SQL_PRUNE_TOPIC_DETAIL_ROWS',
+  'await store.executeSql(SQL_PRUNE_CACHE_PAYLOAD_SIZE',
+  'await store.executeSql(SQL_CLEAR_CACHE_ENTRIES',
+]) {
+  assert(!cacheSettings.includes(rawDelete), `CacheSettings must not bypass payload cleanup: ${rawDelete}`)
 }
 
 assert(!cacheSettings.includes('import { preferences }'), 'CacheSettings must not import preferences for primary cache read/write')
