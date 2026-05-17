@@ -1,12 +1,37 @@
 import { common } from '@kit.AbilityKit'
-import { preferences } from '@kit.ArkData'
+import { relationalStore } from '@kit.ArkData'
 import { V2exReply, V2exTopic } from '../network/NetworkTypes'
+import { LocalDataStore } from '../storage/LocalDataStore'
+import { deleteKeysAndFlush, SettingsPreferencesStore, withPreferencesStore } from './SettingsStorage'
 import { STORE_NAME_CACHE } from './SettingsStores'
 
 const STORE_NAME: string = STORE_NAME_CACHE
+// Legacy Preferences keys kept for clean-break deletion traceability.
 const KEY_PREFIX_TOPIC_LIST: string = 'topicList:'
 const KEY_PREFIX_TOPIC_DETAIL: string = 'topicDetail:'
 const KEY_CACHE_INDEX: string = 'cacheIndex'
+
+const CACHE_KIND_TOPIC_LIST: string = 'topic_list'
+const CACHE_KIND_TOPIC_DETAIL: string = 'topic_detail'
+const TOPIC_LIST_TTL_SECONDS: number = 7 * 24 * 60 * 60
+const TOPIC_DETAIL_TTL_SECONDS: number = 30 * 24 * 60 * 60
+const MAX_TOPIC_LIST_ROWS: number = 32
+const MAX_TOPIC_DETAIL_ROWS: number = 200
+const MAX_INLINE_PAYLOAD_SIZE: number = 20 * 1024 * 1024
+const MAX_TOPIC_LIST_ITEMS: number = 50
+
+const SQL_SELECT_CACHE_ENTRY: string = 'SELECT payload_text, expires_at FROM cache_entries WHERE cache_key = ? AND kind = ? LIMIT 1'
+const SQL_SELECT_CACHE_INDEX: string = 'SELECT cache_key, kind, cached_at, accessed_at FROM cache_entries WHERE kind IN (\'topic_list\', \'topic_detail\') ORDER BY cached_at DESC'
+const SQL_SELECT_CACHE_STATS: string = 'SELECT kind, COUNT(*) AS count_value, MAX(cached_at) AS updated_at FROM cache_entries WHERE kind IN (\'topic_list\', \'topic_detail\') GROUP BY kind'
+const SQL_UPSERT_CACHE_ENTRY: string = 'INSERT OR REPLACE INTO cache_entries (cache_key, kind, payload_text, payload_path, cached_at, accessed_at, expires_at, size) VALUES (?, ?, ?, NULL, ?, ?, ?, ?)'
+const SQL_TOUCH_CACHE_ENTRY: string = 'UPDATE cache_entries SET accessed_at = ? WHERE cache_key = ? AND kind = ?'
+const SQL_DELETE_CACHE_ENTRY: string = 'DELETE FROM cache_entries WHERE cache_key = ? AND kind = ?'
+const SQL_DELETE_EXPIRED_CACHE_ENTRIES: string = 'DELETE FROM cache_entries WHERE kind IN (\'topic_list\', \'topic_detail\') AND expires_at <= ?'
+const SQL_CLEAR_CACHE_ENTRIES: string = 'DELETE FROM cache_entries WHERE kind IN (\'topic_list\', \'topic_detail\')'
+const SQL_PRUNE_TOPIC_LIST_ROWS: string = 'DELETE FROM cache_entries WHERE kind = \'topic_list\' AND cache_key NOT IN (SELECT cache_key FROM cache_entries WHERE kind = \'topic_list\' ORDER BY accessed_at DESC, cached_at DESC LIMIT 32)'
+const SQL_PRUNE_TOPIC_DETAIL_ROWS: string = 'DELETE FROM cache_entries WHERE kind = \'topic_detail\' AND cache_key NOT IN (SELECT cache_key FROM cache_entries WHERE kind = \'topic_detail\' ORDER BY accessed_at DESC, cached_at DESC LIMIT 200)'
+const SQL_SELECT_INLINE_CACHE_SIZE: string = 'SELECT COALESCE(SUM(size), 0) AS total_size FROM cache_entries WHERE kind IN (\'topic_list\', \'topic_detail\')'
+const SQL_PRUNE_INLINE_PAYLOAD_SIZE: string = 'DELETE FROM cache_entries WHERE cache_key IN (SELECT cache_key FROM cache_entries WHERE kind IN (\'topic_list\', \'topic_detail\') ORDER BY accessed_at ASC, cached_at ASC LIMIT ?)'
 
 export interface TopicDetailCache {
   topic: V2exTopic | null
@@ -26,51 +51,66 @@ export interface CacheKeyIndex {
   updatedAt: number
 }
 
-interface CacheIndex {
+interface LegacyCacheIndex {
   topicLists: string[]
   topicDetails: string[]
   updatedAt: number
 }
 
+interface CacheEntry {
+  payloadText: string
+  expiresAt: number
+}
+
 export class CacheSettings {
   static async loadKeyIndex(context: common.UIAbilityContext): Promise<CacheKeyIndex> {
     try {
-      const store = await preferences.getPreferences(context, STORE_NAME)
-      const index = CacheSettings.readIndex(store)
-      return {
-        topicLists: index.topicLists.slice(),
-        topicDetails: index.topicDetails
-          .map((key: string) => parseInt(key, 10))
-          .filter((id: number) => Number.isFinite(id) && id > 0),
-        updatedAt: index.updatedAt
-      }
+      const now = CacheSettings.nowSeconds()
+      const store = await LocalDataStore.open(context)
+      await CacheSettings.deleteExpiredRows(store, now)
+      const resultSet = await store.querySql(SQL_SELECT_CACHE_INDEX)
+      return CacheSettings.readKeyIndexResult(resultSet)
     } catch (error) {
-      const e = error as Error
-      throw new Error(e.message || '读取缓存索引失败')
+      return { topicLists: [], topicDetails: [], updatedAt: 0 }
     }
   }
+
   static async loadTopicList(context: common.UIAbilityContext, cacheKey: string): Promise<V2exTopic[]> {
     try {
-      const store = await preferences.getPreferences(context, STORE_NAME)
-      const raw = store.getSync(KEY_PREFIX_TOPIC_LIST + cacheKey, '[]') as string
-      return CacheSettings.parseTopicList(raw)
+      const rowKey = CacheSettings.topicListRowKey(cacheKey)
+      const store = await LocalDataStore.open(context)
+      const row = await CacheSettings.loadCacheEntry(store, rowKey, CACHE_KIND_TOPIC_LIST)
+      if (!row) {
+        return []
+      }
+      const parsed = CacheSettings.parseTopicList(row.payloadText)
+      if (parsed.length <= 0) {
+        await CacheSettings.deleteCacheEntry(store, rowKey, CACHE_KIND_TOPIC_LIST)
+        return []
+      }
+      await CacheSettings.touchCacheEntry(store, rowKey, CACHE_KIND_TOPIC_LIST)
+      return parsed
     } catch (error) {
-      const e = error as Error
-      throw new Error(e.message || '读取列表缓存失败')
+      return []
     }
   }
 
   static async saveTopicList(context: common.UIAbilityContext, cacheKey: string, topics: V2exTopic[]): Promise<void> {
     try {
-      const store = await preferences.getPreferences(context, STORE_NAME)
-      const next = topics.slice(0, 50)
-      store.putSync(KEY_PREFIX_TOPIC_LIST + cacheKey, JSON.stringify(next))
-      CacheSettings.writeIndex(store, (index: CacheIndex) => {
-        if (index.topicLists.indexOf(cacheKey) < 0) {
-          index.topicLists.push(cacheKey)
-        }
-      })
-      store.flushSync()
+      const now = CacheSettings.nowSeconds()
+      const next = topics.slice(0, MAX_TOPIC_LIST_ITEMS)
+      const payload = JSON.stringify(next)
+      const store = await LocalDataStore.open(context)
+      await CacheSettings.saveCacheEntry(
+        store,
+        CacheSettings.topicListRowKey(cacheKey),
+        CACHE_KIND_TOPIC_LIST,
+        payload,
+        now,
+        now + TOPIC_LIST_TTL_SECONDS
+      )
+      await CacheSettings.pruneCache(store, now)
+      CacheSettings.deleteLegacyCacheBestEffort(context)
     } catch (error) {
       const e = error as Error
       throw new Error(e.message || '保存列表缓存失败')
@@ -79,15 +119,21 @@ export class CacheSettings {
 
   static async loadTopicDetail(context: common.UIAbilityContext, topicId: number): Promise<TopicDetailCache | null> {
     try {
-      const store = await preferences.getPreferences(context, STORE_NAME)
-      const raw = store.getSync(KEY_PREFIX_TOPIC_DETAIL + topicId.toString(), '') as string
-      if (!raw) {
+      const rowKey = CacheSettings.topicDetailRowKey(topicId)
+      const store = await LocalDataStore.open(context)
+      const row = await CacheSettings.loadCacheEntry(store, rowKey, CACHE_KIND_TOPIC_DETAIL)
+      if (!row) {
         return null
       }
-      return CacheSettings.parseTopicDetail(raw)
+      const parsed = CacheSettings.parseTopicDetail(row.payloadText)
+      if (!parsed) {
+        await CacheSettings.deleteCacheEntry(store, rowKey, CACHE_KIND_TOPIC_DETAIL)
+        return null
+      }
+      await CacheSettings.touchCacheEntry(store, rowKey, CACHE_KIND_TOPIC_DETAIL)
+      return parsed
     } catch (error) {
-      const e = error as Error
-      throw new Error(e.message || '读取详情缓存失败')
+      return null
     }
   }
 
@@ -98,20 +144,23 @@ export class CacheSettings {
     replies: V2exReply[]
   ): Promise<void> {
     try {
-      const store = await preferences.getPreferences(context, STORE_NAME)
+      const now = CacheSettings.nowSeconds()
       const payload: TopicDetailCache = {
         topic: topic,
         replies: replies,
-        cachedAt: Math.floor(Date.now() / 1000)
+        cachedAt: now
       }
-      store.putSync(KEY_PREFIX_TOPIC_DETAIL + topicId.toString(), JSON.stringify(payload))
-      CacheSettings.writeIndex(store, (index: CacheIndex) => {
-        const key = topicId.toString()
-        if (index.topicDetails.indexOf(key) < 0) {
-          index.topicDetails.push(key)
-        }
-      })
-      store.flushSync()
+      const store = await LocalDataStore.open(context)
+      await CacheSettings.saveCacheEntry(
+        store,
+        CacheSettings.topicDetailRowKey(topicId),
+        CACHE_KIND_TOPIC_DETAIL,
+        JSON.stringify(payload),
+        now,
+        now + TOPIC_DETAIL_TTL_SECONDS
+      )
+      await CacheSettings.pruneCache(store, now)
+      CacheSettings.deleteLegacyCacheBestEffort(context)
     } catch (error) {
       const e = error as Error
       throw new Error(e.message || '保存详情缓存失败')
@@ -120,34 +169,192 @@ export class CacheSettings {
 
   static async loadStats(context: common.UIAbilityContext): Promise<CacheStats> {
     try {
-      const store = await preferences.getPreferences(context, STORE_NAME)
-      const index = CacheSettings.readIndex(store)
-      return {
-        topicListCount: index.topicLists.length,
-        topicDetailCount: index.topicDetails.length,
-        updatedAt: index.updatedAt
-      }
+      const now = CacheSettings.nowSeconds()
+      const store = await LocalDataStore.open(context)
+      await CacheSettings.deleteExpiredRows(store, now)
+      const resultSet = await store.querySql(SQL_SELECT_CACHE_STATS)
+      return CacheSettings.readStatsResult(resultSet)
     } catch (error) {
-      const e = error as Error
-      throw new Error(e.message || '读取缓存状态失败')
+      return { topicListCount: 0, topicDetailCount: 0, updatedAt: 0 }
     }
   }
 
   static async clear(context: common.UIAbilityContext): Promise<void> {
     try {
-      const store = await preferences.getPreferences(context, STORE_NAME)
-      const index = CacheSettings.readIndex(store)
-      index.topicLists.forEach((key: string) => {
-        store.deleteSync(KEY_PREFIX_TOPIC_LIST + key)
-      })
-      index.topicDetails.forEach((key: string) => {
-        store.deleteSync(KEY_PREFIX_TOPIC_DETAIL + key)
-      })
-      store.deleteSync(KEY_CACHE_INDEX)
-      store.flushSync()
+      const store = await LocalDataStore.open(context)
+      await store.executeSql(SQL_CLEAR_CACHE_ENTRIES)
+      CacheSettings.deleteLegacyCacheBestEffort(context)
     } catch (error) {
       const e = error as Error
       throw new Error(e.message || '清理缓存失败')
+    }
+  }
+
+  private static async loadCacheEntry(
+    store: relationalStore.RdbStore,
+    cacheKey: string,
+    kind: string
+  ): Promise<CacheEntry | null> {
+    const args: relationalStore.ValueType[] = [cacheKey, kind]
+    const resultSet = await store.querySql(SQL_SELECT_CACHE_ENTRY, args)
+    try {
+      if (!resultSet.goToNextRow()) {
+        return null
+      }
+      const payloadIndex = resultSet.getColumnIndex('payload_text')
+      const expiresIndex = resultSet.getColumnIndex('expires_at')
+      const expiresAt = resultSet.getLong(expiresIndex)
+      if (expiresAt <= CacheSettings.nowSeconds()) {
+        await CacheSettings.deleteCacheEntry(store, cacheKey, kind)
+        return null
+      }
+      return {
+        payloadText: resultSet.getString(payloadIndex),
+        expiresAt: expiresAt
+      }
+    } finally {
+      resultSet.close()
+    }
+  }
+
+  private static async saveCacheEntry(
+    store: relationalStore.RdbStore,
+    cacheKey: string,
+    kind: string,
+    payloadText: string,
+    cachedAt: number,
+    expiresAt: number
+  ): Promise<void> {
+    const args: relationalStore.ValueType[] = [
+      cacheKey,
+      kind,
+      payloadText,
+      cachedAt,
+      cachedAt,
+      expiresAt,
+      payloadText.length
+    ]
+    await store.executeSql(SQL_UPSERT_CACHE_ENTRY, args)
+  }
+
+  private static async touchCacheEntry(
+    store: relationalStore.RdbStore,
+    cacheKey: string,
+    kind: string
+  ): Promise<void> {
+    const args: relationalStore.ValueType[] = [CacheSettings.nowSeconds(), cacheKey, kind]
+    await store.executeSql(SQL_TOUCH_CACHE_ENTRY, args)
+  }
+
+  private static async deleteCacheEntry(
+    store: relationalStore.RdbStore,
+    cacheKey: string,
+    kind: string
+  ): Promise<void> {
+    const args: relationalStore.ValueType[] = [cacheKey, kind]
+    await store.executeSql(SQL_DELETE_CACHE_ENTRY, args)
+  }
+
+  private static async deleteExpiredRows(store: relationalStore.RdbStore, now: number): Promise<void> {
+    const args: relationalStore.ValueType[] = [now]
+    await store.executeSql(SQL_DELETE_EXPIRED_CACHE_ENTRIES, args)
+  }
+
+  private static async pruneCache(store: relationalStore.RdbStore, now: number): Promise<void> {
+    await CacheSettings.deleteExpiredRows(store, now)
+    await store.executeSql(SQL_PRUNE_TOPIC_LIST_ROWS)
+    await store.executeSql(SQL_PRUNE_TOPIC_DETAIL_ROWS)
+    await CacheSettings.pruneInlinePayloadSize(store)
+  }
+
+  private static async pruneInlinePayloadSize(store: relationalStore.RdbStore): Promise<void> {
+    let totalSize = 0
+    const resultSet = await store.querySql(SQL_SELECT_INLINE_CACHE_SIZE)
+    try {
+      if (resultSet.goToNextRow()) {
+        const sizeIndex = resultSet.getColumnIndex('total_size')
+        totalSize = resultSet.getLong(sizeIndex)
+      }
+    } finally {
+      resultSet.close()
+    }
+    while (totalSize > MAX_INLINE_PAYLOAD_SIZE) {
+      const args: relationalStore.ValueType[] = [1]
+      await store.executeSql(SQL_PRUNE_INLINE_PAYLOAD_SIZE, args)
+      totalSize = await CacheSettings.loadInlinePayloadSize(store)
+    }
+  }
+
+  private static async loadInlinePayloadSize(store: relationalStore.RdbStore): Promise<number> {
+    const resultSet = await store.querySql(SQL_SELECT_INLINE_CACHE_SIZE)
+    try {
+      if (!resultSet.goToNextRow()) {
+        return 0
+      }
+      const sizeIndex = resultSet.getColumnIndex('total_size')
+      return resultSet.getLong(sizeIndex)
+    } finally {
+      resultSet.close()
+    }
+  }
+
+  private static readKeyIndexResult(resultSet: relationalStore.ResultSet): CacheKeyIndex {
+    const topicLists: string[] = []
+    const topicDetails: number[] = []
+    let updatedAt = 0
+    try {
+      const keyIndex = resultSet.getColumnIndex('cache_key')
+      const kindIndex = resultSet.getColumnIndex('kind')
+      const cachedAtIndex = resultSet.getColumnIndex('cached_at')
+      const accessedAtIndex = resultSet.getColumnIndex('accessed_at')
+      while (resultSet.goToNextRow()) {
+        const cacheKey = resultSet.getString(keyIndex)
+        const kind = resultSet.getString(kindIndex)
+        updatedAt = Math.max(updatedAt, resultSet.getLong(cachedAtIndex), resultSet.getLong(accessedAtIndex))
+        if (kind === CACHE_KIND_TOPIC_LIST && cacheKey.startsWith(KEY_PREFIX_TOPIC_LIST)) {
+          topicLists.push(cacheKey.substring(KEY_PREFIX_TOPIC_LIST.length))
+        } else if (kind === CACHE_KIND_TOPIC_DETAIL && cacheKey.startsWith(KEY_PREFIX_TOPIC_DETAIL)) {
+          const id = parseInt(cacheKey.substring(KEY_PREFIX_TOPIC_DETAIL.length), 10)
+          if (Number.isFinite(id) && id > 0) {
+            topicDetails.push(id)
+          }
+        }
+      }
+    } finally {
+      resultSet.close()
+    }
+    return {
+      topicLists: topicLists,
+      topicDetails: topicDetails,
+      updatedAt: updatedAt
+    }
+  }
+
+  private static readStatsResult(resultSet: relationalStore.ResultSet): CacheStats {
+    let topicListCount = 0
+    let topicDetailCount = 0
+    let updatedAt = 0
+    try {
+      const kindIndex = resultSet.getColumnIndex('kind')
+      const countIndex = resultSet.getColumnIndex('count_value')
+      const updatedAtIndex = resultSet.getColumnIndex('updated_at')
+      while (resultSet.goToNextRow()) {
+        const kind = resultSet.getString(kindIndex)
+        const count = resultSet.getLong(countIndex)
+        updatedAt = Math.max(updatedAt, resultSet.getLong(updatedAtIndex))
+        if (kind === CACHE_KIND_TOPIC_LIST) {
+          topicListCount = count
+        } else if (kind === CACHE_KIND_TOPIC_DETAIL) {
+          topicDetailCount = count
+        }
+      }
+    } finally {
+      resultSet.close()
+    }
+    return {
+      topicListCount: topicListCount,
+      topicDetailCount: topicDetailCount,
+      updatedAt: updatedAt
     }
   }
 
@@ -175,10 +382,24 @@ export class CacheSettings {
     }
   }
 
-  private static readIndex(store: preferences.Preferences): CacheIndex {
+  private static deleteLegacyCacheBestEffort(context: common.UIAbilityContext): void {
+    withPreferencesStore<void>(context, STORE_NAME, (store: SettingsPreferencesStore) => {
+      const index = CacheSettings.readLegacyIndex(store)
+      const keys: string[] = [KEY_CACHE_INDEX]
+      index.topicLists.forEach((key: string) => {
+        keys.push(KEY_PREFIX_TOPIC_LIST + key)
+      })
+      index.topicDetails.forEach((key: string) => {
+        keys.push(KEY_PREFIX_TOPIC_DETAIL + key)
+      })
+      deleteKeysAndFlush(store, keys)
+    }).catch(() => {})
+  }
+
+  private static readLegacyIndex(store: SettingsPreferencesStore): LegacyCacheIndex {
     try {
       const raw = store.getSync(KEY_CACHE_INDEX, '{"topicLists":[],"topicDetails":[],"updatedAt":0}') as string
-      const parsed = JSON.parse(raw) as CacheIndex
+      const parsed = JSON.parse(raw) as LegacyCacheIndex
       return {
         topicLists: Array.isArray(parsed.topicLists) ? parsed.topicLists : [],
         topicDetails: Array.isArray(parsed.topicDetails) ? parsed.topicDetails : [],
@@ -189,14 +410,15 @@ export class CacheSettings {
     }
   }
 
-  private static writeIndex(store: preferences.Preferences, update: (index: CacheIndex) => void): void {
-    const index = CacheSettings.readIndex(store)
-    update(index)
-    index.updatedAt = Math.floor(Date.now() / 1000)
-    try {
-      store.putSync(KEY_CACHE_INDEX, JSON.stringify(index))
-    } catch (error) {
-      throw new Error('写入缓存索引失败')
-    }
+  private static topicListRowKey(cacheKey: string): string {
+    return KEY_PREFIX_TOPIC_LIST + cacheKey
+  }
+
+  private static topicDetailRowKey(topicId: number): string {
+    return KEY_PREFIX_TOPIC_DETAIL + topicId.toString()
+  }
+
+  private static nowSeconds(): number {
+    return Math.floor(Date.now() / 1000)
   }
 }

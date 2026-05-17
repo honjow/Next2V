@@ -19,17 +19,25 @@ const requiredSnippets = [
   "import { common } from '@kit.AbilityKit'",
   "import { relationalStore } from '@kit.ArkData'",
   "export const LOCAL_DATA_DB_NAME: string = 'V2Next.db'",
-  'export const LOCAL_DATA_SCHEMA_VERSION: number = 2',
+  'export const LOCAL_DATA_SCHEMA_VERSION: number = 3',
   "export const LOCAL_DATA_SCHEMA_META_TABLE: string = 'schema_meta'",
   "export const SQL_CREATE_SCHEMA_META_TABLE: string = 'CREATE TABLE IF NOT EXISTS schema_meta (key TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL)'",
   "export const SQL_CREATE_SEARCH_HISTORY_TABLE: string = 'CREATE TABLE IF NOT EXISTS search_history (query TEXT PRIMARY KEY NOT NULL, searched_at INTEGER NOT NULL)'",
   "export const SQL_CREATE_SEARCH_HISTORY_INDEX: string = 'CREATE INDEX IF NOT EXISTS idx_search_history_searched_at ON search_history (searched_at DESC)'",
-  "export const SQL_UPSERT_SCHEMA_VERSION: string = 'INSERT OR REPLACE INTO schema_meta (key, value) VALUES (\\'schema_version\\', \\'2\\')'",
+  "export const SQL_CREATE_CACHE_ENTRIES_TABLE: string = 'CREATE TABLE IF NOT EXISTS cache_entries (cache_key TEXT PRIMARY KEY NOT NULL, kind TEXT NOT NULL, payload_text TEXT, payload_path TEXT, cached_at INTEGER NOT NULL, accessed_at INTEGER NOT NULL, expires_at INTEGER NOT NULL, size INTEGER NOT NULL, etag TEXT, payload_hash TEXT)'",
+  "export const SQL_CREATE_CACHE_ENTRIES_KIND_INDEX: string = 'CREATE INDEX IF NOT EXISTS idx_cache_entries_kind ON cache_entries (kind)'",
+  "export const SQL_CREATE_CACHE_ENTRIES_EXPIRES_AT_INDEX: string = 'CREATE INDEX IF NOT EXISTS idx_cache_entries_expires_at ON cache_entries (expires_at)'",
+  "export const SQL_CREATE_CACHE_ENTRIES_ACCESSED_AT_INDEX: string = 'CREATE INDEX IF NOT EXISTS idx_cache_entries_accessed_at ON cache_entries (accessed_at)'",
+  "export const SQL_UPSERT_SCHEMA_VERSION: string = 'INSERT OR REPLACE INTO schema_meta (key, value) VALUES (\\'schema_version\\', \\'3\\')'",
   'securityLevel: relationalStore.SecurityLevel.S3',
   'relationalStore.getRdbStore(context, LOCAL_DATA_STORE_CONFIG)',
   'await store.execute(SQL_CREATE_SCHEMA_META_TABLE)',
   'await store.execute(SQL_CREATE_SEARCH_HISTORY_TABLE)',
   'await store.execute(SQL_CREATE_SEARCH_HISTORY_INDEX)',
+  'await store.execute(SQL_CREATE_CACHE_ENTRIES_TABLE)',
+  'await store.execute(SQL_CREATE_CACHE_ENTRIES_KIND_INDEX)',
+  'await store.execute(SQL_CREATE_CACHE_ENTRIES_EXPIRES_AT_INDEX)',
+  'await store.execute(SQL_CREATE_CACHE_ENTRIES_ACCESSED_AT_INDEX)',
   'await store.execute(SQL_UPSERT_SCHEMA_VERSION)',
   'store.version = LOCAL_DATA_SCHEMA_VERSION',
   'return store',
@@ -42,7 +50,7 @@ assert(/static\s+async\s+open\s*\(\s*context\s*:\s*common\.UIAbilityContext\s*\)
 assert(!localDataText.includes('CollectionSettings'), 'LocalDataStore skeleton must not wire collections')
 assert(!localDataText.includes('DraftSettings'), 'LocalDataStore skeleton must not wire drafts')
 assert(!localDataText.includes('SearchSettings'), 'LocalDataStore must not know SearchSettings')
-assert(!localDataText.includes('CacheSettings'), 'LocalDataStore skeleton must not wire cache')
+assert(!localDataText.includes('CacheSettings'), 'LocalDataStore must not know CacheSettings')
 assert(!localDataText.includes('BlockedMemberSettings'), 'LocalDataStore skeleton must not wire blocked members')
 
 const indexText = read('shared/src/main/ets/Index.ets')
@@ -52,7 +60,6 @@ const forbiddenBusinessFiles = [
   'entry/src/main/ets/entryability/EntryAbility.ets',
   'shared/src/main/ets/settings/CollectionSettings.ets',
   'shared/src/main/ets/settings/DraftSettings.ets',
-  'shared/src/main/ets/settings/CacheSettings.ets',
   'shared/src/main/ets/settings/BlockedMemberSettings.ets',
   'shared/src/main/ets/settings/SettingsBootstrap.ets',
   'shared/src/main/ets/settings/SettingsStorage.ets',
@@ -93,7 +100,12 @@ for (const root of sourceRoots) {
   for (const abs of walkTextFiles(absRoot)) {
     const rel = path.relative(repo, abs)
     const text = fs.readFileSync(abs, 'utf8')
-    if (rel === localDataRel || rel === 'shared/src/main/ets/Index.ets' || rel === 'shared/src/main/ets/settings/SearchSettings.ets') continue
+    if (
+      rel === localDataRel ||
+      rel === 'shared/src/main/ets/Index.ets' ||
+      rel === 'shared/src/main/ets/settings/SearchSettings.ets' ||
+      rel === 'shared/src/main/ets/settings/CacheSettings.ets'
+    ) continue
     assert(!text.includes("@ohos.data.relationalStore") && !text.includes("'@kit.ArkData'") || !text.includes('relationalStore'), `${rel} must not add relationalStore usage outside LocalDataStore/SearchSettings Lane 4 boundary`)
   }
 }
