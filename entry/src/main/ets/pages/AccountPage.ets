@@ -1,5 +1,6 @@
 import { common, Want } from '@kit.AbilityKit'
 import { promptAction } from '@kit.ArkUI'
+import { AccountCoinIcon } from '../components/AccountCoinIcon'
 import { V2exTwoFactorPrompt } from '../components/V2exTwoFactorPrompt'
 import {
   LocalContentStats,
@@ -34,62 +35,6 @@ import {
   V2exSessionParser,
   V2exSigninParser
 } from 'shared'
-
-@Component
-struct AccountCoinIconCanvas {
-  @Prop rimColor: string
-  @Prop faceColor: string
-  @Prop edgeColor: string
-  private settings: RenderingContextSettings = new RenderingContextSettings(true)
-  private context: CanvasRenderingContext2D = new CanvasRenderingContext2D(this.settings)
-
-  build() {
-    Canvas(this.context)
-      .width(16)
-      .height(16)
-      .onReady(() => {
-        this.drawCoin()
-      })
-  }
-
-  private drawCoin(): void {
-    const ctx = this.context
-    ctx.clearRect(0, 0, 16, 16)
-    const face = ctx.createLinearGradient(3, 2, 13, 14)
-    face.addColorStop(0.0, this.faceColor)
-    face.addColorStop(0.62, this.edgeColor)
-    face.addColorStop(1.0, this.rimColor)
-    ctx.beginPath()
-    ctx.arc(8, 8, 7.2, 0, Math.PI * 2)
-    ctx.fillStyle = this.rimColor
-    ctx.fill()
-    ctx.save()
-    ctx.beginPath()
-    ctx.arc(8, 8, 5.8, 0, Math.PI * 2)
-    ctx.clip()
-    ctx.fillStyle = face
-    ctx.fillRect(2, 2, 12, 12)
-    ctx.fillStyle = 'rgba(0,0,0,0.10)'
-    ctx.beginPath()
-    ctx.moveTo(2.2, 10.8)
-    ctx.quadraticCurveTo(8.0, 13.8, 13.8, 10.8)
-    ctx.lineTo(13.8, 14.2)
-    ctx.lineTo(2.2, 14.2)
-    ctx.closePath()
-    ctx.fill()
-    ctx.restore()
-    ctx.beginPath()
-    ctx.arc(8, 8, 5.8, 0, Math.PI * 2)
-    ctx.lineWidth = 1.1
-    ctx.strokeStyle = 'rgba(255,255,255,0.55)'
-    ctx.stroke()
-    ctx.beginPath()
-    ctx.arc(8, 8, 3.1, 0, Math.PI * 2)
-    ctx.lineWidth = 1
-    ctx.strokeStyle = 'rgba(255,255,255,0.34)'
-    ctx.stroke()
-  }
-}
 
 @Component
 export struct AccountDashboardPage {
@@ -387,7 +332,7 @@ export struct AccountDashboardPage {
   @Builder
   CoinAmount(rimColor: string, faceColor: string, edgeColor: string, amount: number) {
     Row({ space: 4 }) {
-      AccountCoinIconCanvas({ rimColor, faceColor, edgeColor })
+      AccountCoinIcon({ rimColor, faceColor, edgeColor })
       Text(this.formatCoinAmount(amount))
         .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
         .fontColor($r('sys.color.font_secondary'))
