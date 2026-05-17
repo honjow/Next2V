@@ -247,3 +247,25 @@
 - 实机路径覆盖：账号页 -> `收藏节点` -> `iPhone` 节点主题页。
 
 Lane 1 结论：完成。下一步进入 Lane 2，抽 `AccountMemberRow`。
+
+### 2026-05-17 Lane 2
+
+状态：PASS
+
+变更：
+
+- 新增 `shared/src/main/ets/components/AccountMemberRow.ets`。
+- 从 shared 入口导出 `AccountMemberRow`。
+- 迁移 `AccountFollowingPage` 和 `AccountBlacklistPage` 的 member row，保留原点击进入用户页行为。
+- 保留关注用户头像 placeholder、用户名、副标题、右侧箭头和卡片视觉。
+
+验证：
+
+- `git diff --check` 通过。
+- `bash dev.sh --build-only` 通过。
+- 已安装到 `192.168.50.237:12345` 并完成实机 QA。
+- 证据目录：`.hermes-artifacts/20260517-2142-account-member-row-qa/`。
+- 实机路径覆盖：账号页 -> `关注用户`；账号页 -> `屏蔽与忽略`。
+- 覆盖状态：关注用户有数据 row、屏蔽与忽略空态。
+
+Lane 2 结论：完成。下一步进入 Lane 3，拆分 `SearchPage` UI 层，先只抽展示组件，不改变搜索数据语义。

@@ -1,7 +1,7 @@
 import { promptAction } from '@kit.ArkUI'
 import {
+  AccountMemberRow,
   ApiService,
-  Avatar,
   CardEmptyState,
   CookieJarSettings,
   PageErrorState,
@@ -61,7 +61,9 @@ export struct AccountFollowingPage {
             ListItem() { CardEmptyState({ message: '暂无关注用户', expand: false }) }
           } else {
             ForEach(this.members, (item: V2exAccountMemberListItem) => {
-              ListItem() { this.MemberRow(item) }
+              ListItem() {
+                AccountMemberRow({ item: item, avatarPlaceholder: item.username })
+              }
                 .onClick(() => { this.openUser(item.username) })
             }, (item: V2exAccountMemberListItem) => `following-${item.username}`)
           }
@@ -79,36 +81,6 @@ export struct AccountFollowingPage {
       .fontColor($r('sys.color.font_secondary'))
       .width('100%')
       .padding({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, bottom: ThemeConstants.SPACE_XS })
-  }
-
-  @Builder private MemberRow(item: V2exAccountMemberListItem) {
-    Row({ space: ThemeConstants.SPACE_MD }) {
-      Avatar({ url: item.avatar, avatarSize: 42, placeholder: item.username })
-      Column({ space: ThemeConstants.SPACE_XS }) {
-        Text(item.username)
-          .fontSize(ThemeConstants.FONT_SIZE_BODY)
-          .fontWeight(FontWeight.Medium)
-          .fontColor($r('sys.color.font_primary'))
-          .maxLines(1)
-          .textOverflow({ overflow: TextOverflow.Ellipsis })
-        if (item.subtitle) {
-          Text(item.subtitle)
-            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-            .fontColor($r('sys.color.font_secondary'))
-            .maxLines(1)
-            .textOverflow({ overflow: TextOverflow.Ellipsis })
-        }
-      }
-      .layoutWeight(1)
-      .alignItems(HorizontalAlign.Start)
-      Text('›')
-        .fontSize(ThemeConstants.FONT_SIZE_TITLE)
-        .fontColor($r('sys.color.font_secondary'))
-    }
-    .width('100%')
-    .padding(ThemeConstants.SPACE_LG)
-    .borderRadius(ThemeConstants.RADIUS_MD)
-    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }
 
   private async refresh(force: boolean = false): Promise<void> {

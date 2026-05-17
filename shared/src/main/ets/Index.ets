@@ -184,6 +184,7 @@ export { ListDivider } from './components/ListDivider'
 export { ConciseListRow } from './components/ConciseListRow'
 export { GroupedListSection } from './components/GroupedListSection'
 export { EmptyState } from './components/EmptyState'
+export { AccountMemberRow } from './components/AccountMemberRow'
 export {
   CardEmptyState,
   PageErrorState,
