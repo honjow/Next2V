@@ -1,7 +1,7 @@
 # V2Next 持久化与本地数据重构探究/规划
 
 更新时间：2026-05-17
-当前 master：`1794a20 merge: lane/reading-text-scale-drop-legacy`
+当前 master：`a63813a feat(storage): migrate cache metadata to RDB`
 
 ## 1. 当前已完成事项
 
@@ -39,6 +39,130 @@
 - Review PASS：`/home/gamer/v2next-worktrees/reading-text-scale-drop-legacy/.hermes-artifacts/reading-text-scale-drop-legacy-review/summary.md`
 - 237 设备 QA PASS：`/home/gamer/v2next-worktrees/reading-text-scale-drop-legacy/.hermes-artifacts/reading-text-scale-drop-legacy-qa/validation-summary.md`
 - 集成记录：`/home/gamer/git/V2Next/.hermes-artifacts/reading-text-scale-drop-legacy-integrate/summary.md`
+
+## 1.1 持久化重构 Lane4-Lane6 落地状态（2026-05-17）
+
+当前 controller 计划中的三条后续 lane 已全部完成、集成并推送到 `origin/master`。
+
+统一 artifact 基线：
+
+- `/home/gamer/v2next-worktrees/rdb-migration-decision/.hermes-artifacts/direct-controller-20260517-121703/`
+
+当前 master 最新提交：
+
+- `a63813a feat(storage): migrate cache metadata to RDB`
+
+最近相关提交：
+
+- `a63813a feat(storage): migrate cache metadata to RDB`
+- `c011976 refactor(storage): split collection settings helpers`
+- `d368eab docs(agents): define direct worker controller mode`
+- `1e746ec feat(storage): migrate search history to RDB`
+- `ba97a8d docs(storage): add persistence refactor plan`
+
+### Lane4：SearchSettings.searchHistory 迁移到 RDB
+
+状态：完成并已推送。
+
+结果：
+
+- `SearchSettings` 的搜索历史迁移到 RDB/`LocalDataStore`。
+- 增加/更新搜索历史、LocalDataStore、settings storage 合约测试。
+- 文档冲突集成时保留了主线 bootstrap/controller 说明和 lane 执行决策。
+
+提交：
+
+- lane commit：`5002917`
+- master integration commit：`1e746ec feat(storage): migrate search history to RDB`
+- 文档保护提交：`ba97a8d docs(storage): add persistence refactor plan`
+
+关键证据：
+
+- Review：`lane4_review-result.json`
+- QA：`lane4_qa-result.json`
+- Integrate：`lane4_integrate-result.json`
+
+### Lane5：CollectionSettings split/prep
+
+状态：完成并已推送。
+
+结果：
+
+- 暂不做 CollectionSettings 全量 RDB 迁移。
+- 先完成职责拆分/准备：`CollectionTypes`、`CollectionLimits`、`CollectionParsers`、`LocalDataPublisher`。
+- Preferences 仍是 saved topics / saved nodes / viewed / read state 的 source of truth。
+- 增加 `test_collection_settings_contract.mjs`。
+
+重要修复：
+
+- 首次 QA 发现 saved-node 回归：本地关注节点 toggle 后 Account 仍显示 0，SavedNodes 为空，重启后不持久化。
+- Root cause：Node appbar action 缺 `nodeName`，NodeTopicPage 无法过滤目标节点；缺 node identity 时可能写脏数据。
+- 处理链：fix worker -> re-review -> re-QA -> integrate。
+- 原始失败证据保留为 `lane5_qa_initial_fail-result.json`，最终 canonical QA 结果为 `lane5_qa-result.json`。
+
+提交：
+
+- `c011976 refactor(storage): split collection settings helpers`
+
+关键证据：
+
+- Implementation：`lane5_impl-result.json`
+- 初次 QA FAIL：`lane5_qa_initial_fail-result.json`
+- Fix：`lane5_fix_saved_node-result.json`
+- Review after fix：`lane5_review-result.json`
+- QA after fix：`lane5_qa-result.json`
+- Integrate：`lane5_integrate-result.json`
+- 设备 QA 摘要：`lane5-collection-settings-split-qa-after-fix/validation-summary.md`
+
+### Lane6：CacheSettings cache metadata 迁移到 RDB
+
+状态：完成并已推送。
+
+结果：
+
+- `CacheSettings` 的列表/详情 cache metadata 迁移到 RDB。
+- `LocalDataStore` schema 升到 v3。
+- 保持 `CacheSettings` 对外 API 和可见行为。
+- 增加 `test_cache_settings_rdb_contract.mjs`，并更新 LocalDataStore/SearchHistory 相关合约测试。
+
+提交：
+
+- `a63813a feat(storage): migrate cache metadata to RDB`
+
+设备 QA 覆盖：
+
+- 设备：`192.168.50.237:12345`
+- fresh install/run。
+- Home 列表缓存、Detail 缓存、Search 离线缓存来源。
+- Storage settings 缓存计数显示。
+- force-stop/restart 后缓存计数保持。
+- clear cache 只清离线 cache，计数归零。
+- 证据目录包含 10 张截图和 10 个 layout dump。
+
+关键证据：
+
+- Implementation：`lane6_impl-result.json`
+- Review：`lane6_review-result.json`
+- QA：`lane6_qa-result.json`
+- Integrate：`lane6_integrate-result.json`
+- 设备 QA 摘要：`lane6-cache-rdb-qa/validation-summary.md`
+
+### 当前验证状态
+
+主仓库 `/home/gamer/git/V2Next`：
+
+- `master...origin/master`
+- clean
+
+已复跑并通过：
+
+- `node scripts/test_cache_settings_rdb_contract.mjs`
+- `node scripts/test_local_data_store_contract.mjs`
+- `node scripts/test_search_history_rdb_contract.mjs`
+- `node scripts/test_settings_storage_contract.mjs`
+- `git diff --check`
+
+当前无 in-progress controller stage，无 blocker。
 
 ## 2. 当前持久化形态
 
@@ -411,48 +535,64 @@
 - build-only。
 - 启动 smoke，确保 DB init 不 crash。
 
-### Lane 4：迁移 SearchSettings 或 DraftSettings 到 RDB
+### Lane 4：迁移 SearchSettings.searchHistory 到 RDB（已完成）
 
-推荐先迁 SearchSettings 或 DraftSettings，原因：
+实际选择：先迁 SearchSettings.searchHistory，原因：数据量小、UI 验证路径短、风险低于 Collection/Cache。
 
-- 数据量小。
-- UI 验证路径短。
-- 风险低于 Collection/Cache。
+已落地：
 
-如果用户继续接受“丢历史包袱”，可以 clean break；否则需要 Preferences -> RDB 一次性迁移策略。
+- Search history 使用 RDB 存储。
+- clean break，不做旧 Preferences 搜索历史迁移。
+- commit：`1e746ec feat(storage): migrate search history to RDB`。
 
-必须先决策：
+验证：
 
-- 是否保留旧 Preferences 数据。
-- 是否首次启动迁移。
-- 迁移成功后是否删除旧 key。
-- 回滚策略。
+- `test_search_history_rdb_contract.mjs`
+- `test_local_data_store_contract.mjs`
+- `test_settings_storage_contract.mjs`
+- 独立 review + 设备/行为 QA + integrate 后 master 复跑。
 
-### Lane 5：迁移 CollectionSettings
+### Lane 5：CollectionSettings split/prep（已完成，未迁 RDB）
 
-目标：收益最大。
+目标：降低后续迁移风险，先拆文件职责，再决定 saved topics/nodes 等数据保留策略。
 
-拆分：
+已落地：
 
-- saved topics
-- saved nodes
-- viewed topics
-- read positions
-- read states
-- local stats publisher
+- 拆出 `CollectionTypes.ets`、`CollectionLimits.ets`、`CollectionParsers.ets`、`LocalDataPublisher.ets`。
+- `CollectionSettings.ets` 继续承载持久化入口，Preferences 仍是 source of truth。
+- 增加 `test_collection_settings_contract.mjs`。
+- 修复 split/prep 过程中暴露的 saved-node action scoping 回归。
+- commit：`c011976 refactor(storage): split collection settings helpers`。
 
-建议先拆文件职责，再迁 RDB，避免单 lane 过大。
+未落地：
 
-### Lane 6：迁移 CacheSettings
+- saved topics / saved nodes / viewed topics / read positions / read states 的完整 RDB 迁移。
+- 这部分需要先明确是否保留旧数据、是否 clean break、是否分域迁移。
 
-目标：缓存可维护化。
+### Lane 6：迁移 CacheSettings cache metadata 到 RDB（已完成第一安全切片）
 
-内容：
+目标：缓存 metadata 可维护化。
 
-- RDB cache metadata。
-- 可选文件 payload。
+已落地：
+
+- topic list/detail cache metadata 迁移到 RDB。
+- 小 payload/metadata 仍走当前 CacheSettings 公共 API，保持 UI 行为不变。
+- `LocalDataStore` schema 升级到 v3。
+- 增加 `test_cache_settings_rdb_contract.mjs`。
+- commit：`a63813a feat(storage): migrate cache metadata to RDB`。
+
+已验证：
+
+- Storage settings cache count。
+- Home/detail/search cache-backed 行为。
+- force-stop/restart 后 RDB 持久化。
+- clear cache 只清 cache，不触发 local-data clear。
+
+后续可选增强：
+
 - TTL / LRU。
-- 最大大小。
+- 最大条数/最大大小。
+- 大 payload 文件化 + RDB index。
 - index repair / orphan cleanup。
 
 ## 7. 关键风险/决策点
@@ -547,14 +687,47 @@
 如果使用 Kanban，看板只是任务容器，不是 controller。必须同时启动/保持 controller loop：定期检查 board/task/runs/log/PID/artifact，发现 todo/blocked/stalled 要主动 dispatch/recover/reassign，并在每个 gate 完成后显式创建或推进下一 gate。不能把“已创建卡片”当作“任务会自动继续”。
 ```
 
-## 10. 下一会话建议起点
+## 10. 当前情况与下一步候选
 
-建议新会话从这个任务开始：
+当前情况：
 
-> 基于 `docs/persistence-storage-refactor-plan.md`，先推进 Lane 1：集中持久化 store name 注册表与 contract tests。要求不改变任何 store string、key string、用户行为或 UI；只做结构整理和测试加固。按文档第 9 节的 controller 模式执行：implementation -> review -> build -> integrate。
+- 本轮持久化重构 controller 计划已完成：Lane4 SearchHistory RDB、Lane5 Collection split/prep、Lane6 Cache metadata RDB。
+- 主仓库 master 已同步 origin/master，最新 commit `a63813a`。
+- 当前无 in-progress controller stage，无 blocker。
 
-如果想更激进，可以改成：
+已完成的目标架构切片：
 
-> 先做 RDB spike / LocalDataStore skeleton，不接业务数据，只验证 relationalStore 初始化、schema version、build 和启动 smoke。按文档第 9 节的 controller 模式执行。
+- 用户轻量设置：继续 Preferences。
+- Search history：已迁 RDB。
+- Cache metadata：已迁 RDB。
+- CollectionSettings：已拆分职责，但数据仍在 Preferences。
+- AppStorage：继续作为 UI projection / runtime bus，不作为 durable source of truth。
 
-推荐优先 Lane 1，因为风险最低，能给后面 RDB migration 打地基。
+下一步候选按风险从低到高：
+
+1. 文档/测试加固
+   - 把 Lane4-Lane6 的实际 schema、行为边界、QA 入口整理到更短的开发者说明。
+   - 补齐 `LocalDataStore` schema/version 注释和 contract 覆盖说明。
+
+2. Cache 后续增强
+   - TTL / LRU / max size。
+   - index repair / orphan cleanup。
+   - 大 payload 文件化 + RDB index。
+   - 风险中等，适合按小 lane 做。
+
+3. CollectionSettings 完整 RDB 迁移
+   - saved topics / saved nodes / viewed topics / read positions / read states 分域迁移。
+   - 需要先决策旧 Preferences 数据保留策略。
+   - 不建议和 UI 改版混做。
+
+4. DraftSettings / BlockedMemberSettings / NotificationSettings RDB 化
+   - 草稿和 blocked members 通常不应默认丢数据，需要单独数据保留策略。
+   - Notification cache 可视实际业务价值决定是否迁移。
+
+建议下一条实现 lane：
+
+> 基于 `docs/persistence-storage-refactor-plan.md` 和当前 master，推进 CacheSettings TTL/LRU 第一安全切片：只新增过期/容量清理策略和 contract tests，保持 UI 不变；按第 9 节 controller 模式执行 implementation -> review -> QA/build -> integrate。
+
+如果要继续 Collection：
+
+> 先做 CollectionSettings RDB migration spec lane，只产出分域迁移方案和数据保留决策矩阵，不直接改代码；明确 saved topics、saved nodes、viewed topics、read positions、read states 是否保留旧数据、是否 clean break、每域 QA 路径。
