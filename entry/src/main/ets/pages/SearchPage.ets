@@ -19,8 +19,6 @@ import {
   Sov2exService,
   AppActionButton,
   AppModalScaffold,
-  AppTextField,
-  FilterChip,
   type Sov2exHit,
   type Sov2exOrderMode,
   type Sov2exSortMode,
@@ -32,18 +30,19 @@ import {
 } from 'shared'
 import {
   ExternalWebSearchCard,
+  LocalSearchFilterSheetContent,
+  type RemoteDateRange,
   type RemoteTopicItem,
   RemoteTopicRow,
+  RemoteSearchFilterSheetContent,
   type SearchNodeItem,
   SearchNodeRow,
   SearchHistoryStrip,
   SearchPanelHeader,
+  type SearchResultFilter,
   type SearchTopicItem,
   SearchTopicRow,
 } from '../components/SearchPageComponents'
-
-type SearchResultFilter = 'all' | 'topics' | 'nodes' | 'users'
-type RemoteDateRange = 'all' | 'day' | 'week' | 'month' | 'year'
 
 @Component
 export struct SearchPage {
@@ -317,54 +316,6 @@ export struct SearchPage {
     .layoutWeight(1)
   }
 
-  @Builder RemoteOptionButton(label: string, selected: boolean, action: () => void) {
-    FilterChip({
-      label,
-      selected,
-      action
-    })
-  }
-
-  @Builder RemoteDateButton(range: RemoteDateRange, label: string) {
-    FilterChip({
-      label,
-      selected: this.remoteDateRange === range,
-      fill: true,
-      action: () => {
-        if (this.remoteDateRange === range) {
-          return
-        }
-        this.remoteDateRange = range
-        this.executeRemoteSearch(true)
-      }
-    })
-  }
-
-  @Builder ResultFilterControls() {
-    Row() {
-      Text('结果')
-        .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-        .fontColor($r('sys.color.font_secondary'))
-      Blank()
-      Row({ space: ThemeConstants.SPACE_XS }) {
-        this.ResultFilterButton('all', '全部')
-        this.ResultFilterButton('topics', '主题')
-        this.ResultFilterButton('nodes', '节点')
-        this.ResultFilterButton('users', '用户')
-      }
-    }
-    .width('100%')
-    .padding({ left: ThemeConstants.SPACE_XS, right: ThemeConstants.SPACE_XS })
-  }
-
-  @Builder ResultFilterButton(filter: SearchResultFilter, label: string) {
-    FilterChip({
-      label,
-      selected: this.resultFilter === filter,
-      action: () => { this.updateResultFilter(filter) }
-    })
-  }
-
   @Builder SearchFilterSheet() {
     AppModalScaffold({
       title: '搜索筛选',
@@ -389,113 +340,49 @@ export struct SearchPage {
   }
 
   @Builder LocalFilterSheetContent() {
-    Column({ space: ThemeConstants.SPACE_SM }) {
-      Text('结果类型')
-        .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-        .fontColor($r('sys.color.font_secondary'))
-        .width('100%')
-      Row({ space: ThemeConstants.SPACE_XS }) {
-        this.ResultFilterButton('all', '全部')
-        this.ResultFilterButton('topics', '主题')
-        this.ResultFilterButton('nodes', '节点')
-        this.ResultFilterButton('users', '用户')
+    LocalSearchFilterSheetContent({
+      keyword: this.keyword,
+      resultFilter: this.resultFilter,
+      updateResultFilter: (filter: SearchResultFilter) => { this.updateResultFilter(filter) },
+      applyAction: () => {
+        this.applyFilter()
+        this.filterSheetVisible = false
       }
-      .width('100%')
-      AppActionButton({
-        label: '应用',
-        primary: true,
-        isEnabled: this.keyword.trim().length > 0,
-        action: () => {
-          this.applyFilter()
-          this.filterSheetVisible = false
-        }
-      })
-    }
-    .width('100%')
+    })
   }
 
   @Builder RemoteFilterSheetContent() {
-    Column({ space: ThemeConstants.SPACE_SM }) {
-      Text('排序')
-        .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-        .fontColor($r('sys.color.font_secondary'))
-        .width('100%')
-      Row({ space: ThemeConstants.SPACE_XS }) {
-        this.RemoteOptionButton('时间', this.remoteSort === 'created', () => {
-          this.remoteSort = 'created'
-          this.resetRemoteResults()
-        })
-        this.RemoteOptionButton('相关', this.remoteSort === 'sumup', () => {
-          this.remoteSort = 'sumup'
-          this.resetRemoteResults()
-        })
-        this.RemoteOptionButton(this.remoteOrder === '0' ? '倒序' : '正序', true, () => {
-          this.remoteOrder = this.remoteOrder === '0' ? '1' : '0'
-          this.resetRemoteResults()
-        })
-      }
-      .width('100%')
-
-      Row({ space: ThemeConstants.SPACE_XS }) {
-        AppTextField({
-          text: $remoteUsername,
-          placeholder: '作者',
-          onTextChange: (value: string) => {
-            this.remoteUsername = value
-            this.resetRemoteResults()
-          }
-        })
-          .layoutWeight(1)
-        AppTextField({
-          text: $remoteNode,
-          placeholder: '节点',
-          onTextChange: (value: string) => {
-            this.remoteNode = value
-            this.resetRemoteResults()
-          }
-        })
-          .layoutWeight(1)
-      }
-      .width('100%')
-
-      Text('时间范围')
-        .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-        .fontColor($r('sys.color.font_secondary'))
-        .width('100%')
-      Row({ space: ThemeConstants.SPACE_XS }) {
-        this.RemoteDateButton('all', '不限')
-        this.RemoteDateButton('day', '一天')
-        this.RemoteDateButton('week', '一周')
-        this.RemoteDateButton('month', '一月')
-        this.RemoteDateButton('year', '一年')
-      }
-      .width('100%')
-
-      Row({ space: ThemeConstants.SPACE_XS }) {
-        if (this.hasRemoteFilters()) {
-          AppActionButton({
-            label: '清除',
-            primary: false,
-            action: () => {
-              this.clearRemoteFilters()
-            }
-          })
-            .layoutWeight(1)
+    RemoteSearchFilterSheetContent({
+      remoteUsername: $remoteUsername,
+      remoteNode: $remoteNode,
+      keyword: this.keyword,
+      remoteSort: this.remoteSort,
+      remoteOrder: this.remoteOrder,
+      remoteDateRange: this.remoteDateRange,
+      remoteLoading: this.remoteLoading,
+      hasRemoteFilters: this.hasRemoteFilters(),
+      selectSort: (sort: Sov2exSortMode) => {
+        this.remoteSort = sort
+        this.resetRemoteResults()
+      },
+      toggleOrder: () => {
+        this.remoteOrder = this.remoteOrder === '0' ? '1' : '0'
+        this.resetRemoteResults()
+      },
+      remoteTextChange: () => { this.resetRemoteResults() },
+      selectDateRange: (range: RemoteDateRange) => {
+        if (this.remoteDateRange === range) {
+          return
         }
-        AppActionButton({
-          label: this.remoteLoading ? '搜索中' : '应用搜索',
-          primary: true,
-          isEnabled: !this.remoteLoading && this.keyword.trim().length > 0,
-          action: () => {
-            this.executeRemoteSearch(true)
-            this.filterSheetVisible = false
-          }
-        })
-          .layoutWeight(1)
+        this.remoteDateRange = range
+        this.executeRemoteSearch(true)
+      },
+      clearFilters: () => { this.clearRemoteFilters() },
+      applySearch: () => {
+        this.executeRemoteSearch(true)
+        this.filterSheetVisible = false
       }
-      .width('100%')
-    }
-    .width('100%')
+    })
   }
 
   private onSearchActionCommand(_propName: string): void {
