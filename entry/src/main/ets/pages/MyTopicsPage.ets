@@ -2,13 +2,9 @@ import { promptAction } from '@kit.ArkUI'
 import { V2exTwoFactorPrompt } from '../components/V2exTwoFactorPrompt'
 import {
   ApiService,
-  CardEmptyState,
   CookieJarSettings,
-  LoadingFooter,
-  PageErrorState,
-  PageLoadingState,
   PageLoginRequiredState,
-  PullRefreshListScaffold,
+  PagedListScaffold,
   TopicCard,
   type TopicDetailParams,
   type V2exTopic,
@@ -45,10 +41,12 @@ export struct MyTopicsPage {
           }
         })
       } else if (this.isLoading && this.topics.length === 0) {
-        PageLoadingState()
+        PagedListScaffold({
+          isInitialLoading: true
+        }) {}
       } else if (this.errorMessage && this.topics.length === 0) {
-        PageErrorState({
-          message: this.errorMessage,
+        PagedListScaffold({
+          errorMessage: this.errorMessage,
           retryAction: () => {
             this.refresh(true)
           },
@@ -56,11 +54,16 @@ export struct MyTopicsPage {
           secondaryAction: () => {
             this.stack.pushPathByName('V2exNativeLogin', null)
           }
-        })
+        }) {}
       } else if (this.topics.length === 0) {
-        CardEmptyState({ message: '还没有收藏主题' })
+        PagedListScaffold({
+          isEmpty: true,
+          emptyMessage: '还没有收藏主题'
+        }) {}
       } else {
-        PullRefreshListScaffold({
+        PagedListScaffold({
+          isLoadingMore: this.isLoadingMore,
+          hasMore: this.hasMore,
           onReachEnd: () => {
             this.loadMore()
           },
@@ -75,10 +78,6 @@ export struct MyTopicsPage {
               this.stack.pushPathByName('TopicDetail', p as Object)
             })
           }, (item: V2exTopic) => `my-topic-${item.id}`)
-
-          ListItem() {
-            LoadingFooter({ isLoading: this.isLoadingMore, hasMore: this.hasMore })
-          }
         }
       }
     }
