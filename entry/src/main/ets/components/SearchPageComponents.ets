@@ -390,6 +390,7 @@ export struct SearchTopicRow {
         .fontColor($r('sys.color.font_primary'))
         .maxLines(2)
         .textOverflow({ overflow: TextOverflow.Ellipsis })
+        .width('100%')
       Row({ space: ThemeConstants.SPACE_SM }) {
         Text(`${this.item.nodeTitle} / ${this.item.nodeName} · @${this.item.username}`)
           .fontSize(ThemeConstants.FONT_SIZE_TINY)
@@ -404,6 +405,7 @@ export struct SearchTopicRow {
     }
     .padding(ThemeConstants.SPACE_MD)
     .width('100%')
+    .alignItems(HorizontalAlign.Start)
     .borderRadius(ThemeConstants.RADIUS_MD)
     .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }
@@ -472,12 +474,14 @@ export struct RemoteTopicRow {
         .fontColor($r('sys.color.font_primary'))
         .maxLines(2)
         .textOverflow({ overflow: TextOverflow.Ellipsis })
+        .width('100%')
       if (this.item.content) {
         Text(this.item.content)
           .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
           .fontColor($r('sys.color.font_secondary'))
           .maxLines(2)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
+          .width('100%')
       }
       Row({ space: ThemeConstants.SPACE_SM }) {
         Text(`@${this.item.username}`)
@@ -500,6 +504,7 @@ export struct RemoteTopicRow {
     }
     .padding(ThemeConstants.SPACE_MD)
     .width('100%')
+    .alignItems(HorizontalAlign.Start)
     .borderRadius(ThemeConstants.RADIUS_MD)
     .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }
