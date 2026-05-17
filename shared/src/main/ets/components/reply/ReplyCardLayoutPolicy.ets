@@ -12,8 +12,9 @@ export class ReplyCardLayoutPolicy {
   static readonly CONTENT_GAP: number = 8;
   static readonly ACTIONS_GAP: number = 0;
   static readonly CHILD_DIVIDER_MARGIN: number = 8;
-  static readonly THREAD_GUIDE_LINE_WIDTH: number = 1;
+  static readonly THREAD_GUIDE_LINE_WIDTH: number = 0.5;
   static readonly THREAD_GUIDE_CONTENT_GAP: number = 6;
+  static readonly THREAD_GUIDE_END_INSET: number = 8;
 
   static leftPadding(embedded: boolean, threadLevel: number): number {
     if (!embedded) {

@@ -23,6 +23,7 @@ export struct ReplyCard {
   @Prop opMemberId: number = 0;
   @Prop hideLeadingMention: boolean = false;
   @State private cardWidth: number = 0;
+  @State private threadGuideHeights: Record<string, number> = {};
   onUserClick?: (reply: V2exReply) => void;
   onActionsClick?: (reply: V2exReply) => void;
   onContextClick?: (reply: V2exReply) => void;
@@ -124,6 +125,33 @@ export struct ReplyCard {
     return false
   }
 
+  private childKey(reply: V2exReply): string {
+    return reply.renderKey || reply.id.toString()
+  }
+
+  private childMeasuredHeight(reply: V2exReply): number {
+    return this.threadGuideHeights[this.childKey(reply)] || 0
+  }
+
+  private childGuideHeight(reply: V2exReply, index: number): number {
+    const height = this.childMeasuredHeight(reply)
+    if (index >= this.childReplies.length - 1) {
+      return Math.max(0, height - ReplyCardLayoutPolicy.THREAD_GUIDE_END_INSET)
+    }
+    return height
+  }
+
+  private updateChildGuideHeight(reply: V2exReply, area: Area): void {
+    const height = typeof area.height === 'number'
+      ? area.height
+      : Number.parseFloat(area.height as string)
+    if (Number.isNaN(height) || Math.abs(height - this.childMeasuredHeight(reply)) < 0.5) {
+      return
+    }
+    this.threadGuideHeights[this.childKey(reply)] = height
+    this.threadGuideHeights = this.threadGuideHeights
+  }
+
   private cardBackground(): ResourceColor | Color {
     if (this.embedded) {
       return Color.Transparent
@@ -192,55 +220,62 @@ export struct ReplyCard {
           Column() {
             ForEach(
               this.childReplies,
-              (child: V2exReply) => {
-                Column() {
-                  Divider()
-                    .strokeWidth(0.5)
-                    .color($r('sys.color.ohos_id_color_list_separator'))
-                    .margin({
-                      top: ReplyCardLayoutPolicy.CHILD_DIVIDER_MARGIN,
-                      bottom: ReplyCardLayoutPolicy.CHILD_DIVIDER_MARGIN,
+              (child: V2exReply, index: number) => {
+                Row() {
+                  if (this.childGuideHeight(child, index) > 0) {
+                    Divider()
+                      .vertical(true)
+                      .strokeWidth(ReplyCardLayoutPolicy.THREAD_GUIDE_LINE_WIDTH)
+                      .color($r('sys.color.ohos_id_color_list_separator'))
+                      .height(this.childGuideHeight(child, index))
+                      .margin({ right: ReplyCardLayoutPolicy.THREAD_GUIDE_CONTENT_GAP })
+                  } else {
+                    Column()
+                      .width(ReplyCardLayoutPolicy.THREAD_GUIDE_LINE_WIDTH)
+                      .margin({ right: ReplyCardLayoutPolicy.THREAD_GUIDE_CONTENT_GAP })
+                  }
+                  Column() {
+                    ReplyCard({
+                      reply: child,
+                      floor: child.floor || 0,
+                      isOp: this.opMemberId > 0 && child.member.id === this.opMemberId,
+                      isThanked: this.childIsThanked(child),
+                      isThankPending: this.childIsThankPending(child),
+                      threadLevel: child.threadLevel || 0,
+                      relationLabel: '',
+                      displayContent: this.childDisplayContent(child),
+                      childReplies: child.threadChildren || [],
+                      embedded: true,
+                      opMemberId: this.opMemberId,
+                      hideLeadingMention: this.hideLeadingMention,
+                      isWrongReference: !!child.isWrongReference,
+                      isDuplicateThreadItem: !!child.isDuplicateThreadItem,
+                      onUserClick: this.onUserClick,
+                      onActionsClick: this.onActionsClick,
+                      onContextClick: this.onContextClick,
+                      onMentionClick: this.onMentionClick,
+                      onReplyClick: this.onReplyClick,
+                      onThankClick: this.onThankClick,
+                      onIgnoreClick: this.onIgnoreClick,
+                      onReportClick: this.onReportClick,
+                      onCopyUserClick: this.onCopyUserClick,
+                      onCopyContentClick: this.onCopyContentClick,
+                      isReplyThanked: this.isReplyThanked,
+                      isReplyThankPending: this.isReplyThankPending,
+                      onImageClick: this.onImageClick,
+                      onLinkClick: this.onLinkClick,
+                      onMentionUserClick: this.onMentionUserClick,
                     })
-                  ReplyCard({
-                    reply: child,
-                    floor: child.floor || 0,
-                    isOp: this.opMemberId > 0 && child.member.id === this.opMemberId,
-                    isThanked: this.childIsThanked(child),
-                    isThankPending: this.childIsThankPending(child),
-                    threadLevel: child.threadLevel || 0,
-                    relationLabel: '',
-                    displayContent: this.childDisplayContent(child),
-                    childReplies: child.threadChildren || [],
-                    embedded: true,
-                    opMemberId: this.opMemberId,
-                    hideLeadingMention: this.hideLeadingMention,
-                    isWrongReference: !!child.isWrongReference,
-                    isDuplicateThreadItem: !!child.isDuplicateThreadItem,
-                    onUserClick: this.onUserClick,
-                    onActionsClick: this.onActionsClick,
-                    onContextClick: this.onContextClick,
-                    onMentionClick: this.onMentionClick,
-                    onReplyClick: this.onReplyClick,
-                    onThankClick: this.onThankClick,
-                    onIgnoreClick: this.onIgnoreClick,
-                    onReportClick: this.onReportClick,
-                    onCopyUserClick: this.onCopyUserClick,
-                    onCopyContentClick: this.onCopyContentClick,
-                    isReplyThanked: this.isReplyThanked,
-                    isReplyThankPending: this.isReplyThankPending,
-                    onImageClick: this.onImageClick,
-                    onLinkClick: this.onLinkClick,
-                    onMentionUserClick: this.onMentionUserClick,
+                  }
+                  .layoutWeight(1)
+                  .onAreaChange((_oldValue: Area, newValue: Area) => {
+                    this.updateChildGuideHeight(child, newValue)
                   })
                 }
                 .width('100%')
-                .padding({ left: ReplyCardLayoutPolicy.THREAD_GUIDE_CONTENT_GAP })
-                .border({
-                  width: { left: ReplyCardLayoutPolicy.THREAD_GUIDE_LINE_WIDTH },
-                  color: $r('sys.color.ohos_id_color_list_separator'),
-                })
+                .alignItems(VerticalAlign.Top)
               },
-              (child: V2exReply) => child.renderKey || child.id.toString(),
+              (child: V2exReply) => this.childKey(child),
             )
           }.width('100%')
         }
