@@ -14,6 +14,8 @@ UI, interaction, navigation, and settings lanes must preserve role separation. T
 
 Device evidence must be captured during the QA card itself and stored in `.hermes-artifacts/<yyyymmdd-HHMM>-<lane>-qa/`. Do not reuse the implementation card's artifact directory. At minimum, include `validation-summary.md` and screenshots for key states.
 
+Before installing or controlling the device, QA must prove hdc readiness with a real shell probe: `hdc tconn 192.168.50.237:12345`, wait about 2 seconds, then `hdc -t 192.168.50.237:12345 shell echo ok`. `Connect OK` or `list targets -v` showing `Connected` is not enough evidence because the target can appear connected before shell commands produce output. If the probe does not print `ok`, record QA as `BLOCKED` with the probe output instead of repeatedly reconnecting. Do not use `hdc tmode port ...` during normal QA unless the user explicitly asks to repair device connection mode.
+
 If the scenario needs login or 2FA, follow [device-qa-login-2fa.md](device-qa-login-2fa.md).
 
 ## Integrate Gate

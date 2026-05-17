@@ -35,6 +35,21 @@ export V2NEXT_DEVICE_LEASE_DIR=/tmp/v2next-device-leases
 
 ## 基本用法
 
+### HDC TCP 连接稳定探针
+
+共享设备使用 TCP target `192.168.50.237:12345`。实机 QA 开始前，必须先确认设备 shell 真正可用，而不是只看 `tconn` 或 `list targets`：
+
+```bash
+HDC=/home/gamer/devtool/ohos/command-line-tools/sdk/default/openharmony/toolchains/hdc
+$HDC tconn 192.168.50.237:12345
+sleep 2
+$HDC -t 192.168.50.237:12345 shell echo ok
+```
+
+只有第三条命令明确输出 `ok`，才可以继续 `hdc install`、`aa start`、截图、点击或 dump。`tconn` 返回 `Connect OK`、`list targets -v` 显示 `Connected` 都不能单独作为设备可控证据；实测中 target 显示 Connected 后，立即执行 `shell echo` 可能无输出，等待约 2 秒后才稳定。
+
+如果探针没有输出 `ok`，记录为设备连接 `BLOCKED`，不要循环重试或继续安装。除非用户明确要求修复设备连接模式，agent 不得执行 `hdc tmode port ...`；`tmode` 会改变设备端 hdc daemon 模式，不属于普通 QA 连接检查。
+
 ### 查看当前占用
 
 ```bash
@@ -106,6 +121,7 @@ trap 'scripts/device-lease release --lease "$LEASE_ID" || true' EXIT
 
 必须：
 
+- `hdc tconn` / `hdc tconn ... -remove`
 - `hdc install` / 卸载 / 清应用数据
 - `aa start` / 停止应用 / 切前台应用
 - `uitest uiInput click`
@@ -122,6 +138,7 @@ trap 'scripts/device-lease release --lease "$LEASE_ID" || true' EXIT
 通常不需要：
 
 - `hdc list targets`
+- `hdc -t 192.168.50.237:12345 shell echo ok` 这类只读连接探针
 - `git status` / `git diff`
 - 本地构建，不安装到设备时
 - 查看已保存的本地日志文件

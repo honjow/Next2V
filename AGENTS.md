@@ -28,6 +28,8 @@ UI, interaction, navigation, and settings lanes require separate gates:
 - `QA on device` by `v2qa`: independent validation on shared device `192.168.50.237:12345` with fresh evidence in `.hermes-artifacts/<yyyymmdd-HHMM>-<lane>-qa/`.
 - Integrate requires a PASS QA result or an explicit user real-device ack recorded as user ack. Reviewer PASS alone is not enough.
 
+Before any install or device control, verify hdc readiness with a real shell probe: `hdc tconn 192.168.50.237:12345`, wait about 2 seconds, then `hdc -t 192.168.50.237:12345 shell echo ok`. `Connect OK` or `list targets` showing `Connected` is not enough. If the probe does not print `ok`, record device QA as `BLOCKED`; do not loop reconnects or run `hdc tmode port ...` unless the user explicitly asks to repair connection mode.
+
 ### Device QA login and 2FA
 
 When device QA requires login, credentials/config come from local `.env.local` only. Do not commit `.env.local`, print it, copy values into prompts/result JSON, or paste values into chat. A worker/controller may use it only inside the local execution environment for the exact QA login action.
