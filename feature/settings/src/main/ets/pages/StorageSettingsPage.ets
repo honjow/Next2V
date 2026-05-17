@@ -1,5 +1,7 @@
 import { common } from '@kit.AbilityKit'
+import type { CacheDeviceQaSeedResult, CacheStats } from 'shared'
 import {
+  CacheDeviceQaSeed,
   CacheSettings,
   ConciseListRow,
   DateUtils,
@@ -8,14 +10,15 @@ import {
   LocalDataSettings,
   SecondaryListScaffold,
   SectionHeader as SharedSectionHeader,
-  ThemeConstants,
-  type CacheStats
+  ThemeConstants
 } from 'shared'
+import BuildProfile from '../../../../BuildProfile'
 
 @Component
 export struct StorageSettingsPage {
   @State private cacheStats: CacheStats = { topicListCount: 0, topicDetailCount: 0, updatedAt: 0 }
   @State private cacheMessage: string = ''
+  @State private seedMessage: string = ''
   @State private localDataMessage: string = ''
 
   aboutToAppear(): void {
@@ -31,6 +34,17 @@ export struct StorageSettingsPage {
 
         ListItem() {
           this.CacheSection()
+        }
+
+        if (BuildProfile.DEBUG && CacheDeviceQaSeed.isEnabled()) {
+          ListItem() {
+            this.SectionHeader('缓存 QA Seed')
+          }
+          .margin({ top: ThemeConstants.SPACE_MD })
+
+          ListItem() {
+            this.CacheQaSeedSection()
+          }
         }
 
         ListItem() {
@@ -106,6 +120,91 @@ export struct StorageSettingsPage {
     }
   }
 
+  @Builder
+  CacheQaSeedSection() {
+    GroupedListSection() {
+      ConciseListRow({
+        title: 'Seed 全部缓存场景',
+        subtitle: this.seedMessage,
+        showChevron: false,
+        action: () => {
+          this.runSeedAll()
+        }
+      })
+
+      this.SettingsDivider()
+
+      ConciseListRow({
+        title: 'Seed 大列表文件缓存',
+        showChevron: false,
+        action: () => {
+          this.runSeedAction('large', () => CacheDeviceQaSeed.seedLargeFileBackedList(this.hostContext()))
+        }
+      })
+
+      this.SettingsDivider()
+
+      ConciseListRow({
+        title: 'Seed 混合行缓存',
+        showChevron: false,
+        action: () => {
+          this.runSeedAction('mixed', () => CacheDeviceQaSeed.seedMixedInlineFile(this.hostContext()))
+        }
+      })
+
+      this.SettingsDivider()
+
+      ConciseListRow({
+        title: 'Seed 非法路径行',
+        showChevron: false,
+        action: () => {
+          this.runSeedAction('invalid', () => CacheDeviceQaSeed.seedInvalidPathRow(this.hostContext()))
+        }
+      })
+
+      this.SettingsDivider()
+
+      ConciseListRow({
+        title: 'Seed 孤立文件',
+        showChevron: false,
+        action: () => {
+          this.runSeedAction('orphan', () => CacheDeviceQaSeed.seedOrphanPayloadFile(this.hostContext()))
+        }
+      })
+
+      this.SettingsDivider()
+
+      ConciseListRow({
+        title: 'Seed 缺失文件行',
+        showChevron: false,
+        action: () => {
+          this.runSeedAction('missing', () => CacheDeviceQaSeed.seedMissingFileRow(this.hostContext()))
+        }
+      })
+
+      this.SettingsDivider()
+
+      ConciseListRow({
+        title: 'Seed 过期行',
+        showChevron: false,
+        action: () => {
+          this.runSeedAction('expired', () => CacheDeviceQaSeed.seedExpiredRow(this.hostContext()))
+        }
+      })
+
+      this.SettingsDivider()
+
+      ConciseListRow({
+        title: '重置 Seed 缓存',
+        destructive: true,
+        showChevron: false,
+        action: () => {
+          this.runSeedAction('reset', () => CacheDeviceQaSeed.resetSeededCache(this.hostContext()))
+        }
+      })
+    }
+  }
+
   private cacheSubtitle(): string {
     let text = `列表 ${this.cacheStats.topicListCount} 组 · 详情 ${this.cacheStats.topicDetailCount} 篇`
     if (this.cacheStats.updatedAt > 0) {
@@ -115,7 +214,7 @@ export struct StorageSettingsPage {
   }
 
   private loadCacheStats(): void {
-    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    const context = this.hostContext()
     CacheSettings.loadStats(context)
       .then((stats: CacheStats) => {
         this.cacheStats = stats
@@ -145,7 +244,7 @@ export struct StorageSettingsPage {
   }
 
   private clearCache(): void {
-    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    const context = this.hostContext()
     CacheSettings.clear(context)
       .then(() => {
         this.cacheMessage = '已清理'
@@ -175,7 +274,7 @@ export struct StorageSettingsPage {
   }
 
   private clearLocalData(): void {
-    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    const context = this.hostContext()
     LocalDataSettings.clearAll(context)
       .then(() => {
         this.cacheMessage = '已清理'
@@ -184,6 +283,42 @@ export struct StorageSettingsPage {
       })
       .catch((error: Error) => {
         this.localDataMessage = error.message || '清理失败'
+      })
+  }
+
+  private hostContext(): common.UIAbilityContext {
+    return this.getUIContext().getHostContext() as common.UIAbilityContext
+  }
+
+  private runSeedAll(): void {
+    if (!BuildProfile.DEBUG || !CacheDeviceQaSeed.isEnabled()) {
+      this.seedMessage = '仅 debug 构建可用'
+      return
+    }
+    CacheDeviceQaSeed.seedAll(this.hostContext())
+      .then((results: CacheDeviceQaSeedResult[]) => {
+        const rows = results.reduce((sum: number, result: CacheDeviceQaSeedResult) => sum + result.seededRows, 0)
+        const files = results.reduce((sum: number, result: CacheDeviceQaSeedResult) => sum + result.seededFiles, 0)
+        this.seedMessage = `已写入 ${rows} 行 / ${files} 文件`
+        this.loadCacheStats()
+      })
+      .catch((error: Error) => {
+        this.seedMessage = error.message || 'Seed 失败'
+      })
+  }
+
+  private runSeedAction(label: string, action: () => Promise<CacheDeviceQaSeedResult>): void {
+    if (!BuildProfile.DEBUG || !CacheDeviceQaSeed.isEnabled()) {
+      this.seedMessage = '仅 debug 构建可用'
+      return
+    }
+    action()
+      .then((result: CacheDeviceQaSeedResult) => {
+        this.seedMessage = `${label}: ${result.seededRows} 行 / ${result.seededFiles} 文件`
+        this.loadCacheStats()
+      })
+      .catch((error: Error) => {
+        this.seedMessage = error.message || 'Seed 失败'
       })
   }
 }

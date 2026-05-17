@@ -12,6 +12,7 @@ const assert = (condition, message) => {
 
 const localData = read('shared/src/main/ets/storage/LocalDataStore.ets')
 const cacheSettings = read('shared/src/main/ets/settings/CacheSettings.ets')
+const cacheDeviceQaSeed = read('shared/src/main/ets/settings/CacheDeviceQaSeed.ets')
 
 for (const snippet of [
   'export const LOCAL_DATA_SCHEMA_VERSION: number = 3',
@@ -193,6 +194,7 @@ const allowedRelationalStoreUsers = new Set([
   'shared/src/main/ets/storage/LocalDataStore.ets',
   'shared/src/main/ets/settings/SearchSettings.ets',
   'shared/src/main/ets/settings/CacheSettings.ets',
+  'shared/src/main/ets/settings/CacheDeviceQaSeed.ets',
 ])
 const walkTextFiles = (dir) => {
   const results = []
@@ -216,5 +218,26 @@ for (const root of sourceRoots) {
     assert(!text.includes('relationalStore'), `${rel} must not import/use relationalStore directly for cache`)
   }
 }
+
+assert(cacheDeviceQaSeed.includes("import BuildProfile from '../../../../BuildProfile'"), 'CacheDeviceQaSeed must use the shared BuildProfile guard')
+assert(/static\s+isEnabled\s*\(\s*\)\s*:\s*boolean\s*{[\s\S]*return\s+BuildProfile\.DEBUG[\s\S]*}/.test(cacheDeviceQaSeed), 'CacheDeviceQaSeed.isEnabled must use BuildProfile.DEBUG')
+assert(/static\s+assertEnabled\s*\(\s*\)\s*:\s*void\s*{[\s\S]*CacheDeviceQaSeed\.isEnabled\(\)[\s\S]*throw new Error/.test(cacheDeviceQaSeed), 'CacheDeviceQaSeed.assertEnabled guard missing')
+for (const method of [
+  'seedLargeFileBackedList',
+  'seedMixedInlineFile',
+  'seedInvalidPathRow',
+  'seedOrphanPayloadFile',
+  'seedMissingFileRow',
+  'seedExpiredRow',
+  'resetSeededCache',
+  'seedAll',
+]) {
+  const pattern = new RegExp(`static\\s+async\\s+${method}[\\s\\S]*?CacheDeviceQaSeed\\.assertEnabled\\(\\)`)
+  assert(pattern.test(cacheDeviceQaSeed), `${method} must guard internally`)
+}
+assert(cacheDeviceQaSeed.includes('INSERT OR REPLACE INTO cache_entries'), 'CacheDeviceQaSeed direct seed writes must target cache_entries')
+assert(cacheDeviceQaSeed.includes("const SEED_LIST_KEY_PREFIX: string = KEY_PREFIX_TOPIC_LIST + 'qa-seed-'"), 'CacheDeviceQaSeed list rows must use qa-seed prefix')
+assert(cacheDeviceQaSeed.includes("const SQL_DELETE_SEEDED_CACHE_ROWS: string = 'DELETE FROM cache_entries WHERE cache_key LIKE ? OR cache_key IN (?, ?, ?)'"), 'CacheDeviceQaSeed reset must delete only seed rows')
+assert(!cacheDeviceQaSeed.includes('ApiService') && !cacheDeviceQaSeed.includes('HttpClient') && !cacheDeviceQaSeed.includes('V2exNativeAuthService'), 'CacheDeviceQaSeed must not import network/auth clients')
 
 console.log('cache settings RDB contract OK')

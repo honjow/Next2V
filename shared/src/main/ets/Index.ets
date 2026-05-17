@@ -96,6 +96,8 @@ export type { AutoDailyCheckinResult }
   from './services/AutoDailyCheckinService'
 export { CacheSettings } from './settings/CacheSettings'
 export type { CacheKeyIndex, CacheStats, TopicDetailCache } from './settings/CacheSettings'
+export { CacheDeviceQaSeed } from './settings/CacheDeviceQaSeed'
+export type { CacheDeviceQaSeedResult } from './settings/CacheDeviceQaSeed'
 export { BlockedTopicFilter } from './utils/BlockedTopicFilter'
 export type {
   V2exTopic,
