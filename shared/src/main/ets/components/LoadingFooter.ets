@@ -8,6 +8,8 @@ export struct LoadingFooter {
   @Prop isLoading: boolean = false
   @Prop hasMore: boolean = true
   @Prop isError: boolean = false
+  @Prop errorMessage: string = '加载失败，点击重试'
+  @Prop retryLabel: string = ''
   onRetry?: () => void
 
   build() {
@@ -22,9 +24,20 @@ export struct LoadingFooter {
           .fontColor($r('sys.color.font_secondary'))
           .margin({ left: ThemeConstants.SPACE_SM })
       } else if (this.isError) {
-        Text('加载失败，点击重试')
+        Text(this.errorMessage)
           .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
           .fontColor($r('sys.color.font_secondary'))
+        if (this.retryLabel) {
+          Button(this.retryLabel)
+            .fontSize(ThemeConstants.FONT_SIZE_TAG)
+            .height(30)
+            .margin({ left: ThemeConstants.SPACE_MD })
+            .onClick(() => {
+              if (this.onRetry) {
+                this.onRetry()
+              }
+            })
+        }
       } else if (!this.hasMore) {
         Text('没有更多了')
           .fontSize(ThemeConstants.FONT_SIZE_CAPTION)

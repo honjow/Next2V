@@ -14,6 +14,8 @@ export struct PagedListScaffold {
   @Prop isLoadingMore: boolean = false
   @Prop hasMore: boolean = true
   @Prop loadMoreErrorMessage: string = ''
+  @Prop loadMoreRetryLabel: string = ''
+  @Prop showFooter: boolean = true
   @Prop listSpace: number = ThemeConstants.SPACE_SM - 2
   @Prop horizontalPadding: number = ThemeConstants.SPACE_MD
   @Prop topPadding: number = 0
@@ -59,17 +61,21 @@ export struct PagedListScaffold {
       }) {
         this.content()
 
-        ListItem() {
-          LoadingFooter({
-            isLoading: this.isLoadingMore,
-            hasMore: this.hasMore,
-            isError: this.loadMoreErrorMessage.length > 0,
-            onRetry: () => {
-              if (this.onLoadMoreRetry) {
-                this.onLoadMoreRetry()
+        if (this.showFooter) {
+          ListItem() {
+            LoadingFooter({
+              isLoading: this.isLoadingMore,
+              hasMore: this.hasMore,
+              isError: this.loadMoreErrorMessage.length > 0,
+              errorMessage: this.loadMoreErrorMessage || '加载失败，点击重试',
+              retryLabel: this.loadMoreRetryLabel,
+              onRetry: () => {
+                if (this.onLoadMoreRetry) {
+                  this.onLoadMoreRetry()
+                }
               }
-            }
-          })
+            })
+          }
         }
       }
     }

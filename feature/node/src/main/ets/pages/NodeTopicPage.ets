@@ -1,7 +1,7 @@
 import { NodeViewModel } from '../viewmodel/NodeViewModel'
 import {
-  AuthSettings, CardEmptyState, CollectionSettings, SavedNode, ApiService, CookieJarSettings, LoadingFooter,
-  PageErrorState, PageLoadingState, PullRefreshListScaffold, StorageKeys, ThemeConstants, TopicCard,
+  AuthSettings, CardEmptyState, CollectionSettings, SavedNode, ApiService, CookieJarSettings,
+  PagedListScaffold, PageErrorState, PageLoadingState, StorageKeys, ThemeConstants, TopicCard,
   TopicDetailParams, UserProfileParams, V2exToggleAction, V2exTopic
 } from 'shared'
 import type { TopicReadState } from 'shared'
@@ -40,9 +40,15 @@ export struct NodeTopicPage {
 
   build() {
     Stack() {
-      PullRefreshListScaffold({
+      PagedListScaffold({
+        isLoadingMore: this.vm.isNodeTopicsLoadingMore,
+        hasMore: this.vm.nodeTopicsHasMore,
+        loadMoreErrorMessage: this.vm.nodeTopicsLoadMoreError,
+        loadMoreRetryLabel: '重试',
+        showFooter: this.vm.nodeTopics.length > 0,
         onRefresh: async () => { await this.refreshData() },
-        onReachEnd: () => { this.loadMore() }
+        onReachEnd: () => { this.loadMore() },
+        onLoadMoreRetry: () => { this.loadMore() }
       }) {
         if (this.vm.isLoading && this.vm.nodeTopics.length === 0) {
           ListItem() { Column() {}.height(0) }
@@ -67,13 +73,6 @@ export struct NodeTopicPage {
                 this.stack.pushPathByName('TopicDetail', p as Object)
               })
           })
-          ListItem() {
-            if (this.vm.nodeTopicsLoadMoreError) {
-              this.LoadMoreErrorView()
-            } else {
-              LoadingFooter({ isLoading: this.vm.isNodeTopicsLoadingMore, hasMore: this.vm.nodeTopicsHasMore })
-            }
-          }
         }
       }
 
@@ -108,21 +107,6 @@ export struct NodeTopicPage {
         this.loadData()
       }
     })
-  }
-
-  @Builder LoadMoreErrorView() {
-    Row({ space: ThemeConstants.SPACE_MD }) {
-      Text(this.vm.nodeTopicsLoadMoreError || '加载更多失败')
-        .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-        .fontColor($r('sys.color.font_secondary'))
-      Button('重试')
-        .fontSize(ThemeConstants.FONT_SIZE_TAG)
-        .height(30)
-        .onClick(() => { this.loadMore() })
-    }
-    .justifyContent(FlexAlign.Center)
-    .width('100%')
-    .height(ThemeConstants.FOOTER_HEIGHT)
   }
 
   private loadSavedState(): void {

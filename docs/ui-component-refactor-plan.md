@@ -340,3 +340,24 @@ Lane 3 结论：主要 UI 拆分完成。后续若继续瘦身，优先评估是
 
 1. Lane 4 第二批再评估 `NodeTopicPage` 是否适合接入 `PagedListScaffold`。
 2. `NodeTopicPage` 当前有 loading overlay、节点收藏状态和加载更多错误重试，迁移时必须保留这些页面级交互，不强行一次收口。
+
+### 2026-05-17 Lane 4 第二批
+
+状态：PASS
+
+变更：
+
+- 扩展 `PagedListScaffold`，支持可选隐藏 footer、加载更多错误文案和显式重试按钮文案。
+- 扩展 `LoadingFooter`，保留默认“加载失败，点击重试”的点击重试语义，同时支持页面传入错误文案和按钮式重试。
+- 迁移 `NodeTopicPage` 接入 `PagedListScaffold`，保留节点主题 loading overlay、空态、错误态、下拉刷新、触底加载、加载更多失败重试和节点收藏相关状态。
+- 避免给 `PagedListScaffold` 增加第二个 `@BuilderParam`；ArkUI 尾随 builder 调用要求组件只有一个 `@BuilderParam`。
+
+验证：
+
+- `git diff --check` 通过。
+- `bash dev.sh --build-only` 通过。
+- 已安装到 `192.168.50.237:12345` 并完成实机 QA。
+- 证据目录：`.hermes-artifacts/20260517-2217-paged-list-node-topic-qa/`。
+- 实机路径覆盖：应用内路由 `https://www.v2ex.com/go/apple` -> `Apple` 节点主题页 -> 连续上滑触发分页/后续主题渲染。
+
+Lane 4 结论：`PagedListScaffold` 已完成 `MyTopicsPage` 和 `NodeTopicPage` 两个试点。下一步进入 Lane 5 前，先拆分范围较小、可独立验证的 `TopicDetailPage` 展示组件，不碰写操作和解析逻辑。
