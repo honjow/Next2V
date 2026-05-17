@@ -1,6 +1,10 @@
 import { common } from '@kit.AbilityKit'
 import { promptAction } from '@kit.ArkUI'
 import {
+  ReplyComposerCoordinator,
+  type ReplyComposerEditResult,
+} from '../model/ReplyComposerCoordinator'
+import {
   ApiService, CookieJarSettings, DateUtils, DraftSettings, MarkdownContent, MarkdownToolbar, SecondaryFormScaffold,
   ThemeConstants
 } from 'shared'
@@ -43,9 +47,9 @@ export struct ReplyEditorPage {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     DraftSettings.loadReplyDraft(context, this.topicId)
       .then((draft) => {
-        const seed = this.normalizeInitialContent(this.initialContent)
+        const seed = ReplyComposerCoordinator.normalizeInitialContent(this.initialContent)
         const draftContent = draft ? (draft.content || '') : ''
-        const merged = this.mergeInitialContent(draftContent, seed)
+        const merged = ReplyComposerCoordinator.mergeInitialContent(draftContent, seed)
         if (draft) {
           this.content = merged
           this.savedAt = draft.updatedAt || 0
@@ -160,65 +164,42 @@ export struct ReplyEditorPage {
   }
 
   private insertInlineMarkdown(prefix: string, suffix: string, placeholder: string, caretOffset: number = -1): void {
-    const contentLength = this.content.length
-    const start = Math.min(Math.max(this.contentSelectionStart, 0), contentLength)
-    const rawEnd = Math.min(Math.max(this.contentSelectionEnd, 0), contentLength)
-    const end = rawEnd >= start ? rawEnd : start
-    const selected = this.content.substring(start, end)
-    const middle = selected || placeholder
-    const insertion = `${prefix}${middle}${suffix}`
-    this.content = `${this.content.substring(0, start)}${insertion}${this.content.substring(end)}`
-    const caret = start + (caretOffset >= 0 ? caretOffset : prefix.length + middle.length + suffix.length)
-    this.contentSelectionStart = caret
-    this.contentSelectionEnd = caret
+    const result = ReplyComposerCoordinator.insertInlineMarkdown(
+      this.content,
+      this.contentSelectionStart,
+      this.contentSelectionEnd,
+      prefix,
+      suffix,
+      placeholder,
+      caretOffset,
+    )
+    this.applyEditResult(result)
     this.isPreview = false
     this.scheduleSaveDraft()
     setTimeout(() => {
-      this.contentController.caretPosition(caret)
+      this.contentController.caretPosition(result.caret)
     }, 0)
   }
 
   private insertLinePrefix(prefix: string): void {
-    const contentLength = this.content.length
-    const start = Math.min(Math.max(this.contentSelectionStart, 0), contentLength)
-    const lineStart = this.content.lastIndexOf('\n', Math.max(0, start - 1)) + 1
-    this.content = `${this.content.substring(0, lineStart)}${prefix}${this.content.substring(lineStart)}`
-    const caret = start + prefix.length
-    this.contentSelectionStart = caret
-    this.contentSelectionEnd = caret
+    const result = ReplyComposerCoordinator.insertLinePrefix(
+      this.content,
+      this.contentSelectionStart,
+      this.contentSelectionEnd,
+      prefix,
+    )
+    this.applyEditResult(result)
     this.isPreview = false
     this.scheduleSaveDraft()
     setTimeout(() => {
-      this.contentController.caretPosition(caret)
+      this.contentController.caretPosition(result.caret)
     }, 0)
   }
 
-  private normalizeInitialContent(value: string): string {
-    const clean = (value || '').trim()
-    return clean ? `${clean} ` : ''
-  }
-
-  private mergeInitialContent(draftContent: string, seed: string): string {
-    const draft = draftContent || ''
-    if (!seed) {
-      return draft
-    }
-    if (draft.trim().length === 0) {
-      return seed
-    }
-    if (this.startsWithInitialSeed(draft, seed)) {
-      return draft
-    }
-    return seed
-  }
-
-  private startsWithInitialSeed(content: string, seed: string): boolean {
-    const target = seed.trim()
-    if (!target) {
-      return false
-    }
-    const text = (content || '').trimStart()
-    return text.trim() === target || text.startsWith(`${target} `) || text.startsWith(`${target}\n`)
+  private applyEditResult(result: ReplyComposerEditResult): void {
+    this.content = result.content
+    this.contentSelectionStart = result.selectionStart
+    this.contentSelectionEnd = result.selectionEnd
   }
 
   private scheduleSaveDraft(): void {
@@ -290,10 +271,12 @@ export struct ReplyEditorPage {
   }
 
   private canSubmit(): boolean {
-    if (this.isSubmitting || this.isSubmitDialogShown || this.topicId <= 0) {
-      return false
-    }
-    if (this.content.trim().length === 0) {
+    if (!ReplyComposerCoordinator.canSubmit(
+      this.isSubmitting,
+      this.isSubmitDialogShown,
+      this.topicId,
+      this.content,
+    )) {
       return false
     }
     return !!CookieJarSettings.getCurrentCookie()
