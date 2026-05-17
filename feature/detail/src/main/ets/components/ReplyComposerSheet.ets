@@ -5,10 +5,13 @@ import {
   type ReplyComposerEditResult,
 } from '../model/ReplyComposerCoordinator'
 import {
+  ReplyComposerDraftCoordinator,
+  type ReplyComposerDraftState,
+} from '../model/ReplyComposerDraftCoordinator'
+import {
   ApiService,
   CookieJarSettings,
   DateUtils,
-  DraftSettings,
   MarkdownContent,
   MarkdownToolbar,
   AppModalScaffold,
@@ -168,31 +171,19 @@ export struct ReplyComposerSheet {
   }
 
   private loadDraft(): void {
-    this.content = ''
+    this.applyDraftState(ReplyComposerDraftCoordinator.initialState())
     this.isPreview = false
-    this.errorMessage = ''
-    this.savedAt = 0
     this.isSubmitting = false
     this.isSubmitDialogShown = false
-    this.contentSelectionStart = 0
-    this.contentSelectionEnd = 0
     this.submitContentSnapshot = ''
     this.hasSubmitted = false
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    DraftSettings.loadReplyDraft(context, this.topicId)
-      .then((draft) => {
-        const seed = ReplyComposerCoordinator.normalizeInitialContent(this.initialContent)
-        const draftContent = draft ? (draft.content || '') : ''
-        this.content = ReplyComposerCoordinator.mergeInitialContent(draftContent, seed)
-        this.savedAt = draft ? (draft.updatedAt || 0) : 0
-        this.contentSelectionStart = this.content.length
-        this.contentSelectionEnd = this.content.length
-        if (seed && this.content !== draftContent) {
+    ReplyComposerDraftCoordinator.loadDraft(context, this.topicId, this.initialContent)
+      .then((state: ReplyComposerDraftState) => {
+        this.applyDraftState(state)
+        if (state.shouldScheduleSave) {
           this.scheduleSaveDraft()
         }
-      })
-      .catch((error: Error) => {
-        this.errorMessage = error.message || '读取草稿失败'
       })
   }
 
@@ -254,14 +245,14 @@ export struct ReplyComposerSheet {
   }
 
   private persistDraft(): void {
-    if (this.topicId <= 0 || this.hasSubmitted) {
+    if (!ReplyComposerDraftCoordinator.shouldPersist(this.topicId, this.hasSubmitted)) {
       return
     }
     this.clearSaveTimer()
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    DraftSettings.saveReplyDraft(context, this.topicId, this.content)
-      .then(() => {
-        this.savedAt = Math.floor(Date.now() / 1000)
+    ReplyComposerDraftCoordinator.persistDraft(context, this.topicId, this.content)
+      .then((savedAt: number) => {
+        this.savedAt = savedAt
       })
       .catch((error: Error) => {
         this.errorMessage = error.message || '保存草稿失败'
@@ -279,10 +270,18 @@ export struct ReplyComposerSheet {
           this.content = ''
           this.savedAt = 0
           const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-          DraftSettings.clearReplyDraft(context, this.topicId).catch((_error: Error) => { })
+          ReplyComposerDraftCoordinator.clearDraft(context, this.topicId).catch((_error: Error) => { })
         }
       }
     })
+  }
+
+  private applyDraftState(state: ReplyComposerDraftState): void {
+    this.content = state.content
+    this.savedAt = state.savedAt
+    this.errorMessage = state.errorMessage
+    this.contentSelectionStart = state.selectionStart
+    this.contentSelectionEnd = state.selectionEnd
   }
 
   private canSubmit(): boolean {
@@ -336,7 +335,7 @@ export struct ReplyComposerSheet {
       .then(() => {
         this.hasSubmitted = true
         const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-        DraftSettings.clearReplyDraft(context, this.topicId).catch((_error: Error) => { })
+        ReplyComposerDraftCoordinator.clearDraft(context, this.topicId).catch((_error: Error) => { })
         promptAction.openToast({ message: '回复已提交' }).catch((_error: Error) => { })
         if (this.submittedAction) {
           this.submittedAction()

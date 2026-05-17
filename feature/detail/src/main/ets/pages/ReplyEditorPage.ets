@@ -5,7 +5,11 @@ import {
   type ReplyComposerEditResult,
 } from '../model/ReplyComposerCoordinator'
 import {
-  ApiService, CookieJarSettings, DateUtils, DraftSettings, MarkdownContent, MarkdownToolbar, SecondaryFormScaffold,
+  ReplyComposerDraftCoordinator,
+  type ReplyComposerDraftState,
+} from '../model/ReplyComposerDraftCoordinator'
+import {
+  ApiService, CookieJarSettings, DateUtils, MarkdownContent, MarkdownToolbar, SecondaryFormScaffold,
   ThemeConstants
 } from 'shared'
 
@@ -33,38 +37,20 @@ export struct ReplyEditorPage {
   private api: ApiService = new ApiService()
 
   aboutToAppear(): void {
-    this.content = ''
+    this.applyDraftState(ReplyComposerDraftCoordinator.initialState())
     this.isPreview = false
-    this.errorMessage = ''
-    this.savedAt = 0
     this.isSubmitting = false
     this.isSubmitDialogShown = false
-    this.contentSelectionStart = 0
-    this.contentSelectionEnd = 0
     this.submitContentSnapshot = ''
     this.hasSubmitted = false
 
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    DraftSettings.loadReplyDraft(context, this.topicId)
-      .then((draft) => {
-        const seed = ReplyComposerCoordinator.normalizeInitialContent(this.initialContent)
-        const draftContent = draft ? (draft.content || '') : ''
-        const merged = ReplyComposerCoordinator.mergeInitialContent(draftContent, seed)
-        if (draft) {
-          this.content = merged
-          this.savedAt = draft.updatedAt || 0
-        } else {
-          this.content = merged
-          this.savedAt = 0
-        }
-        this.contentSelectionStart = this.content.length
-        this.contentSelectionEnd = this.content.length
-        if (seed && merged !== draftContent) {
+    ReplyComposerDraftCoordinator.loadDraft(context, this.topicId, this.initialContent)
+      .then((state: ReplyComposerDraftState) => {
+        this.applyDraftState(state)
+        if (state.shouldScheduleSave) {
           this.scheduleSaveDraft()
         }
-      })
-      .catch((error: Error) => {
-        this.errorMessage = error.message || '读取草稿失败'
       })
   }
 
@@ -217,14 +203,14 @@ export struct ReplyEditorPage {
   }
 
   private persistDraft(): void {
-    if (this.isSaving || this.topicId <= 0) {
+    if (this.isSaving || !ReplyComposerDraftCoordinator.shouldPersist(this.topicId, this.hasSubmitted)) {
       return
     }
     this.isSaving = true
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    DraftSettings.saveReplyDraft(context, this.topicId, this.content)
-      .then(() => {
-        this.savedAt = Math.floor(Date.now() / 1000)
+    ReplyComposerDraftCoordinator.persistDraft(context, this.topicId, this.content)
+      .then((savedAt: number) => {
+        this.savedAt = savedAt
       })
       .catch((error: Error) => {
         this.errorMessage = error.message || '保存草稿失败'
@@ -261,7 +247,7 @@ export struct ReplyEditorPage {
     this.savedAt = 0
     this.clearSaveTimer()
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    DraftSettings.clearReplyDraft(context, this.topicId)
+    ReplyComposerDraftCoordinator.clearDraft(context, this.topicId)
       .then(() => {
         promptAction.openToast({ message: '已清空' }).catch((_error: Error) => { })
       })
@@ -280,6 +266,14 @@ export struct ReplyEditorPage {
       return false
     }
     return !!CookieJarSettings.getCurrentCookie()
+  }
+
+  private applyDraftState(state: ReplyComposerDraftState): void {
+    this.content = state.content
+    this.savedAt = state.savedAt
+    this.errorMessage = state.errorMessage
+    this.contentSelectionStart = state.selectionStart
+    this.contentSelectionEnd = state.selectionEnd
   }
 
   private confirmSubmit(): void {
@@ -327,7 +321,7 @@ export struct ReplyEditorPage {
       .then(() => {
         this.hasSubmitted = true
         const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-        DraftSettings.clearReplyDraft(context, this.topicId).catch((_error: Error) => { })
+        ReplyComposerDraftCoordinator.clearDraft(context, this.topicId).catch((_error: Error) => { })
         promptAction.openToast({ message: '已提交' }).catch((_error: Error) => { })
         this.stack.pop()
       })
