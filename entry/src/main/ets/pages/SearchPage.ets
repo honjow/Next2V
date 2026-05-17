@@ -29,6 +29,9 @@ import {
 } from 'shared'
 import { SearchLocalResultBuilder } from '../model/SearchLocalResultBuilder'
 import {
+  RemoteSearchCoordinator,
+} from '../model/RemoteSearchCoordinator'
+import {
   SearchPageStateCoordinator,
 } from '../model/SearchPageStateCoordinator'
 import {
@@ -739,7 +742,7 @@ export struct SearchPage {
 
   private executeRemoteSearch(reset: boolean): void {
     const q = this.keyword.trim()
-    if (!q || this.remoteLoading) {
+    if (!RemoteSearchCoordinator.canExecute(q, this.remoteLoading)) {
       return
     }
     if (reset) {
@@ -748,25 +751,21 @@ export struct SearchPage {
       this.remoteFrom = 0
       this.remoteError = ''
     }
-    const from = reset ? 0 : this.remoteFrom
     this.remoteLoading = true
-    this.sov2ex.search({
-      q: q,
-      from: from,
-      size: 20,
+    this.sov2ex.search(RemoteSearchCoordinator.buildRequest({
+      keyword: q,
+      from: this.remoteFrom,
       sort: this.remoteSort,
       order: this.remoteOrder,
-      username: this.remoteUsername.trim(),
-      node: this.remoteNode.trim(),
-      gte: this.remoteGte()
-    })
+      username: this.remoteUsername,
+      node: this.remoteNode,
+      dateRange: this.remoteDateRange,
+    }, reset))
       .then((response) => {
-        const hits = response.hits || []
-        const next = hits.map((hit) => SearchPageStateCoordinator.remoteHitToItem(hit))
-          .filter((item: RemoteTopicItem) => item.id > 0)
-        this.remoteResults = reset ? next : this.remoteResults.concat(next)
-        this.remoteTotal = response.total || this.remoteResults.length
-        this.remoteFrom = this.remoteResults.length
+        const state = RemoteSearchCoordinator.mergeResponse(this.remoteResults, response, reset)
+        this.remoteResults = state.results
+        this.remoteTotal = state.total
+        this.remoteFrom = state.from
         const context = this.getUIContext().getHostContext() as common.UIAbilityContext
         SearchSettings.recordQuery(context, q)
           .then((items: string[]) => {
@@ -796,10 +795,6 @@ export struct SearchPage {
     this.remoteDateRange = 'all'
     this.resetRemoteResults()
     this.executeRemoteSearch(true)
-  }
-
-  private remoteGte(): number {
-    return SearchPageStateCoordinator.remoteGte(this.remoteDateRange)
   }
 
 }
