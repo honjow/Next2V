@@ -204,3 +204,27 @@
 
 1. 继续 Lane 1，迁移 `MyNodesPage` / `MyTopicsPage` / `AccountFollowingPage` / `AccountBlacklistPage`。
 2. 每批保持小范围迁移、build-only、实机 QA。
+
+### 2026-05-17 Lane 1 第二批
+
+状态：PASS
+
+变更：
+
+- 迁移 `MyTopicsPage` / `MyNodesPage` 的登录、加载、错误、空态。
+- 迁移 `AccountFollowingPage` / `AccountBlacklistPage` 的登录、加载、错误和列表内空态。
+- 保持原有路由、文案和重试/去登录动作。
+
+验证：
+
+- `git diff --check` 通过。
+- `bash dev.sh --build-only` 通过。
+- 已安装到 `192.168.50.237:12345` 并完成实机 QA。
+- 证据目录：`.hermes-artifacts/20260517-2131-page-state-account-qa/`。
+- 实机路径覆盖：账号页 -> `收藏主题`、`收藏节点`、`关注用户`、`屏蔽与忽略`。
+- 覆盖状态：收藏主题有数据、收藏节点有数据、关注用户有数据、屏蔽与忽略列表内空态。
+
+后续入口：
+
+1. 完成 Lane 1 剩余 `feature/node/src/main/ets/pages/NodeTopicPage.ets`。
+2. 进入 Lane 2，抽 `AccountMemberRow` 收口关注/屏蔽用户 row。

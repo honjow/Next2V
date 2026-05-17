@@ -2,7 +2,11 @@ import { promptAction } from '@kit.ArkUI'
 import {
   ApiService,
   Avatar,
+  CardEmptyState,
   CookieJarSettings,
+  PageErrorState,
+  PageLoadingState,
+  PageLoginRequiredState,
   PullRefreshListScaffold,
   ThemeConstants,
   type UserProfileParams,
@@ -27,14 +31,21 @@ export struct AccountFollowingPage {
   build() {
     Column() {
       if (!CookieJarSettings.getCurrentCookie()) {
-        Column() { this.LoginRequiredView() }
-          .justifyContent(FlexAlign.Center).width('100%').layoutWeight(1)
+        PageLoginRequiredState({
+          message: '登录后可查看关注用户',
+          action: () => {
+            this.stack.pushPathByName('V2exNativeLogin', null)
+          }
+        })
       } else if (this.isLoading && this.members.length === 0) {
-        Column() { this.LoadingView() }
-          .justifyContent(FlexAlign.Center).width('100%').layoutWeight(1)
+        PageLoadingState()
       } else if (this.errorMessage && this.members.length === 0) {
-        Column() { this.ErrorView() }
-          .justifyContent(FlexAlign.Center).width('100%').layoutWeight(1)
+        PageErrorState({
+          message: this.errorMessage,
+          retryAction: () => {
+            this.refresh(true)
+          }
+        })
       } else {
         PullRefreshListScaffold({
           scrollEnabled: this.scrollEnabled,
@@ -47,7 +58,7 @@ export struct AccountFollowingPage {
         }) {
           ListItem() { this.SectionHeader('关注用户') }
           if (this.members.length === 0) {
-            ListItem() { this.EmptyText('暂无关注用户') }
+            ListItem() { CardEmptyState({ message: '暂无关注用户', expand: false }) }
           } else {
             ForEach(this.members, (item: V2exAccountMemberListItem) => {
               ListItem() { this.MemberRow(item) }
@@ -98,53 +109,6 @@ export struct AccountFollowingPage {
     .padding(ThemeConstants.SPACE_LG)
     .borderRadius(ThemeConstants.RADIUS_MD)
     .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
-  }
-
-  @Builder private LoadingView() {
-    Column() {
-      LoadingProgress()
-        .width(ThemeConstants.LOADING_SIZE)
-        .height(ThemeConstants.LOADING_SIZE)
-    }
-    .justifyContent(FlexAlign.Center)
-    .width('100%')
-  }
-
-  @Builder private LoginRequiredView() {
-    Column({ space: ThemeConstants.SPACE_SM }) {
-      Text('登录后可查看关注用户')
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .fontColor($r('sys.color.font_secondary'))
-      Button('去登录')
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .onClick(() => { this.stack.pushPathByName('V2exNativeLogin', null) })
-    }
-    .justifyContent(FlexAlign.Center)
-    .width('100%')
-  }
-
-  @Builder private ErrorView() {
-    Column({ space: ThemeConstants.SPACE_SM }) {
-      Text(this.errorMessage)
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .fontColor($r('sys.color.font_secondary'))
-      Button('重试')
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .onClick(() => { this.refresh(true) })
-    }
-    .justifyContent(FlexAlign.Center)
-    .width('100%')
-  }
-
-  @Builder private EmptyText(text: string) {
-    Text(text)
-      .fontSize(ThemeConstants.FONT_SIZE_BODY)
-      .fontColor($r('sys.color.font_secondary'))
-      .textAlign(TextAlign.Center)
-      .width('100%')
-      .padding(ThemeConstants.SPACE_LG)
-      .borderRadius(ThemeConstants.RADIUS_CARD)
-      .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }
 
   private async refresh(force: boolean = false): Promise<void> {

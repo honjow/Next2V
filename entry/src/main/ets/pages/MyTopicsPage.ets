@@ -2,11 +2,13 @@ import { promptAction } from '@kit.ArkUI'
 import { V2exTwoFactorPrompt } from '../components/V2exTwoFactorPrompt'
 import {
   ApiService,
+  CardEmptyState,
   CookieJarSettings,
-  EmptyState,
   LoadingFooter,
+  PageErrorState,
+  PageLoadingState,
+  PageLoginRequiredState,
   PullRefreshListScaffold,
-  ThemeConstants,
   TopicCard,
   type TopicDetailParams,
   type V2exTopic,
@@ -36,13 +38,27 @@ export struct MyTopicsPage {
   build() {
     Column() {
       if (!CookieJarSettings.getCurrentCookie()) {
-        this.LoginRequiredView()
+        PageLoginRequiredState({
+          message: '登录后可查看收藏主题',
+          action: () => {
+            this.stack.pushPathByName('V2exNativeLogin', null)
+          }
+        })
       } else if (this.isLoading && this.topics.length === 0) {
-        this.LoadingView()
+        PageLoadingState()
       } else if (this.errorMessage && this.topics.length === 0) {
-        this.ErrorView()
+        PageErrorState({
+          message: this.errorMessage,
+          retryAction: () => {
+            this.refresh(true)
+          },
+          secondaryLabel: '去登录',
+          secondaryAction: () => {
+            this.stack.pushPathByName('V2exNativeLogin', null)
+          }
+        })
       } else if (this.topics.length === 0) {
-        this.EmptyView()
+        CardEmptyState({ message: '还没有收藏主题' })
       } else {
         PullRefreshListScaffold({
           onReachEnd: () => {
@@ -84,70 +100,6 @@ export struct MyTopicsPage {
         this.refresh(true)
       }
     })
-  }
-
-  @Builder
-  private LoadingView() {
-    Column() {
-      LoadingProgress()
-        .width(ThemeConstants.LOADING_SIZE)
-        .height(ThemeConstants.LOADING_SIZE)
-    }
-    .justifyContent(FlexAlign.Center)
-    .width('100%')
-    .layoutWeight(1)
-  }
-
-  @Builder
-  private LoginRequiredView() {
-    Column({ space: ThemeConstants.SPACE_SM }) {
-      Text('登录后可查看收藏主题')
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .fontColor($r('sys.color.font_secondary'))
-      Button('去登录')
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .onClick(() => {
-          this.stack.pushPathByName('V2exNativeLogin', null)
-        })
-    }
-    .justifyContent(FlexAlign.Center)
-    .width('100%')
-    .layoutWeight(1)
-  }
-
-  @Builder
-  private ErrorView() {
-    Column({ space: ThemeConstants.SPACE_SM }) {
-      Text(this.errorMessage)
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .fontColor($r('sys.color.font_secondary'))
-      Row({ space: ThemeConstants.SPACE_SM }) {
-        Button('重试')
-          .fontSize(ThemeConstants.FONT_SIZE_BODY)
-          .onClick(() => {
-            this.refresh(true)
-          })
-        Button('去登录')
-          .fontSize(ThemeConstants.FONT_SIZE_BODY)
-          .onClick(() => {
-            this.stack.pushPathByName('V2exNativeLogin', null)
-          })
-      }
-      .justifyContent(FlexAlign.Center)
-    }
-    .justifyContent(FlexAlign.Center)
-    .width('100%')
-    .layoutWeight(1)
-  }
-
-  @Builder
-  private EmptyView() {
-    Column() {
-      EmptyState({ message: '还没有收藏主题' })
-    }
-    .justifyContent(FlexAlign.Center)
-    .width('100%')
-    .layoutWeight(1)
   }
 
   private refresh(force: boolean = false): Promise<void> {
@@ -237,4 +189,3 @@ export struct MyTopicsPage {
       })
   }
 }
-

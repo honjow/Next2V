@@ -2,13 +2,15 @@ import { promptAction } from '@kit.ArkUI'
 import {
   ApiService,
   CollectionSettings,
+  CardEmptyState,
   ConciseListRow,
   CookieJarSettings,
-  EmptyState,
   GroupedListSection,
   ImageUtils,
+  PageErrorState,
+  PageLoadingState,
+  PageLoginRequiredState,
   SecondaryListScaffold,
-  ThemeConstants,
   type NodeTopicListParams,
   type V2exFavoriteNode,
   type V2exNode
@@ -29,13 +31,27 @@ export struct MyNodesPage {
   build() {
     Column() {
       if (!CookieJarSettings.getCurrentCookie()) {
-        this.LoginRequiredView()
+        PageLoginRequiredState({
+          message: '登录后可查看收藏节点',
+          action: () => {
+            this.stack.pushPathByName('V2exNativeLogin', null)
+          }
+        })
       } else if (this.isLoading && this.nodes.length === 0) {
-        this.LoadingView()
+        PageLoadingState()
       } else if (this.errorMessage && this.nodes.length === 0) {
-        this.ErrorView()
+        PageErrorState({
+          message: this.errorMessage,
+          retryAction: () => {
+            this.refresh(true)
+          },
+          secondaryLabel: '去登录',
+          secondaryAction: () => {
+            this.stack.pushPathByName('V2exNativeLogin', null)
+          }
+        })
       } else if (this.nodes.length === 0) {
-        this.EmptyView()
+        CardEmptyState({ message: '还没有收藏节点' })
       } else {
         SecondaryListScaffold() {
           ForEach(this.nodes, (item: V2exFavoriteNode) => {
@@ -61,70 +77,6 @@ export struct MyNodesPage {
     .width('100%')
     .height('100%')
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
-  }
-
-  @Builder
-  private LoadingView() {
-    Column() {
-      LoadingProgress()
-        .width(ThemeConstants.LOADING_SIZE)
-        .height(ThemeConstants.LOADING_SIZE)
-    }
-    .justifyContent(FlexAlign.Center)
-    .width('100%')
-    .layoutWeight(1)
-  }
-
-  @Builder
-  private LoginRequiredView() {
-    Column({ space: ThemeConstants.SPACE_SM }) {
-      Text('登录后可查看收藏节点')
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .fontColor($r('sys.color.font_secondary'))
-      Button('去登录')
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .onClick(() => {
-          this.stack.pushPathByName('V2exNativeLogin', null)
-        })
-    }
-    .justifyContent(FlexAlign.Center)
-    .width('100%')
-    .layoutWeight(1)
-  }
-
-  @Builder
-  private ErrorView() {
-    Column({ space: ThemeConstants.SPACE_SM }) {
-      Text(this.errorMessage)
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .fontColor($r('sys.color.font_secondary'))
-      Row({ space: ThemeConstants.SPACE_SM }) {
-        Button('重试')
-          .fontSize(ThemeConstants.FONT_SIZE_BODY)
-          .onClick(() => {
-            this.refresh(true)
-          })
-        Button('去登录')
-          .fontSize(ThemeConstants.FONT_SIZE_BODY)
-          .onClick(() => {
-            this.stack.pushPathByName('V2exNativeLogin', null)
-          })
-      }
-      .justifyContent(FlexAlign.Center)
-    }
-    .justifyContent(FlexAlign.Center)
-    .width('100%')
-    .layoutWeight(1)
-  }
-
-  @Builder
-  private EmptyView() {
-    Column() {
-      EmptyState({ message: '还没有收藏节点' })
-    }
-    .justifyContent(FlexAlign.Center)
-    .width('100%')
-    .layoutWeight(1)
   }
 
   private refresh(force: boolean = false): void {
