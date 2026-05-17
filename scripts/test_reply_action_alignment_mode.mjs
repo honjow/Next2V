@@ -25,7 +25,8 @@ const settingsPage = read('feature/settings/src/main/ets/pages/SettingsPage.ets'
 const topic = read('feature/detail/src/main/ets/pages/TopicDetailPage.ets')
 const index = read('shared/src/main/ets/Index.ets')
 const entry = read('entry/src/main/ets/entryability/EntryAbility.ets')
-const all = [storage, settings, motion, settingsPage, topic, index, entry].join('\n')
+const settingsBootstrap = read('shared/src/main/ets/settings/SettingsBootstrap.ets')
+const all = [storage, settings, motion, settingsPage, topic, index, entry, settingsBootstrap].join('\n')
 const followTouchBlock = sliceBetween(
   topic,
   'private trackReplyActionFollowOperation(event: TouchEvent): void',
@@ -103,7 +104,13 @@ expect(!/MotionHandStateService\.reportFollowOperationX\(touch\.x/.test(topic), 
 expect(!/event\.type\s*!==\s*TouchType\.Down[\s\S]*event\.type\s*!==\s*TouchType\.Move[\s\S]*event\.type\s*!==\s*TouchType\.Up[\s\S]*MotionHandStateService\.reportFollowOperationX/.test(followTouchBlock), 'old Down/Move/Up direct-report behavior remains')
 
 expect(index.includes("ReplyActionAlignmentSettings } from './settings/ReplyActionAlignmentSettings'"), 'ReplyActionAlignmentSettings export missing')
-expect(entry.includes('ReplyActionAlignmentSettings.load(this.context)'), 'startup load missing')
+expect(entry.includes('SettingsBootstrap.loadAll(this.context)'), 'startup settings bootstrap load missing')
+expect(settingsBootstrap.includes("ReplyActionAlignmentSettings } from './ReplyActionAlignmentSettings'"), 'startup bootstrap reply action settings import missing')
+expect(settingsBootstrap.includes('restoreReplyActionAlignment'), 'startup bootstrap reply action restore missing')
+expect(
+  /ReplyActionAlignmentSettings\.loadFromStore\([\s\S]*ReplyActionAlignmentSettings\.load\(context\)/.test(settingsBootstrap),
+  'startup bootstrap reply action load missing',
+)
 
 if (process.exitCode) {
   process.exit(process.exitCode)
