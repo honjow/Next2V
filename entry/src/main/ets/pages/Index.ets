@@ -62,8 +62,11 @@ import {
   UserProfileIdentityCCBuilder,
 } from '../components/IndexTitleBarComponents'
 import { MainTabIcon } from '../components/MainTabIcon'
-
-const TOPIC_DETAIL_TITLE_MENU_MAX_COUNT: number = 3
+import {
+  TopicDetailTitleAction,
+  TopicDetailTitleActionDescriptor,
+  TopicDetailTitleBarCoordinator
+} from '../model/TopicDetailTitleBarCoordinator'
 
 @Entry
 @Component
@@ -399,104 +402,81 @@ struct Index {
   }
 
   private topicDetailTitleBarOpts(topicId: number): Record<string, Object> {
-    let items: Record<string, Object>[] = [
-      this.topicActionItem(
-        '感谢主题',
-        this.topicDetailThanked ? $r('sys.symbol.heart_fill') : $r('sys.symbol.heart'),
+    let items: Record<string, Object>[] = TopicDetailTitleBarCoordinator.actions().map(
+      (descriptor: TopicDetailTitleActionDescriptor) => this.topicActionItem(
+        descriptor.label,
+        this.topicDetailTitleActionIcon(descriptor.action),
         () => {
-          this.sendTopicAction(topicId, 'thankTopic')
+          this.sendTopicAction(topicId, descriptor.action)
         },
-      ),
-      this.topicActionItem(
-        '站内收藏',
-        this.topicDetailSiteFavorited ? $r('sys.symbol.star_fill') : $r('sys.symbol.star'),
-        () => {
-          this.sendTopicAction(topicId, 'siteFavorite')
-        },
-      ),
-      this.topicActionItem(
-        '稍后读',
-        this.topicDetailSavedLater ? $r('sys.symbol.bookmark_fill') : $r('sys.symbol.bookmark'),
-        () => {
-          this.sendTopicAction(topicId, 'saveLater')
-        },
-      ),
-      this.topicActionItem('忽略主题', $r('sys.symbol.xmark'), () => {
-        this.sendTopicAction(topicId, 'ignoreTopic')
-      }),
-      this.topicActionItem('举报主题', $r('sys.symbol.exclamationmark_triangle'), () => {
-        this.sendTopicAction(topicId, 'reportTopic')
-      }),
-      this.topicActionItem('复制标题', $r('sys.symbol.doc_plaintext'), () => {
-        this.sendTopicAction(topicId, 'copyTitle')
-      }),
-      this.topicActionItem('复制链接', $r('sys.symbol.plus_square_on_square'), () => {
-        this.sendTopicAction(topicId, 'copyLink')
-      }),
-      this.topicActionItem('分享链接', $r('sys.symbol.share'), () => {
-        this.sendTopicAction(topicId, 'share')
-      }),
-      this.topicActionItem('浏览器打开', $r('sys.symbol.search_things'), () => {
-        this.sendTopicAction(topicId, 'openBrowser')
-      }),
-    ]
+      )
+    )
     let menu: Record<string, Object> = {
       'value': items,
-      'maxCount': TOPIC_DETAIL_TITLE_MENU_MAX_COUNT,
+      'maxCount': TopicDetailTitleBarCoordinator.MENU_MAX_COUNT,
     }
-    const routeKey = topicId > 0 ? topicId.toString() : ''
+    const routeKey = TopicDetailTitleBarCoordinator.routeKey(topicId)
     if (!routeKey) {
       return this.navDestTitleBarOpts(undefined, menu)
     }
-    const titleFromState = this.topicDetailAppbarStringFor(
+    const identity = TopicDetailTitleBarCoordinator.identity(
+      routeKey,
+      this.topicDetailAppbarRouteTopicId,
+      this.topicDetailAppbarTitle,
+      this.topicDetailAppbarAvatarUrl,
+      this.topicDetailAppbarUsername,
       this.topicDetailAppbarTitleStates,
-      routeKey,
-    )
-    const avatarFromState = this.topicDetailAppbarStringFor(
       this.topicDetailAppbarAvatarStates,
-      routeKey,
-    )
-    const usernameFromState = this.topicDetailAppbarStringFor(
       this.topicDetailAppbarUsernameStates,
-      routeKey,
     )
-    const titleRouteKey = (this.topicDetailAppbarRouteTopicId || '').trim()
-    const title =
-      titleFromState ||
-      (titleRouteKey === routeKey ? (this.topicDetailAppbarTitle || '').trim() : '')
-    if (title.trim()) {
-      const avatarUrl =
-        avatarFromState ||
-        (titleRouteKey === routeKey ? (this.topicDetailAppbarAvatarUrl || '').trim() : '')
-      const username =
-        usernameFromState ||
-        (titleRouteKey === routeKey ? (this.topicDetailAppbarUsername || '').trim() : '')
+    if (identity.title.trim()) {
       let cc = new ComponentContent<TopicDetailAppbarIdentityParams>(
         this.getUIContext(),
         wrapBuilder(TopicDetailIdentityCCBuilder),
         {
-          title: title,
-          avatarUrl: avatarUrl,
-          username: username,
-          menuMaxCount: TOPIC_DETAIL_TITLE_MENU_MAX_COUNT,
+          title: identity.title,
+          avatarUrl: identity.avatarUrl,
+          username: identity.username,
+          menuMaxCount: TopicDetailTitleBarCoordinator.MENU_MAX_COUNT,
           menuItemCount: items.length,
         },
       )
-      return this.navDestTitleBarOpts(' ', menu, undefined, undefined, cc, title)
+      return this.navDestTitleBarOpts(' ', menu, undefined, undefined, cc, identity.title)
     }
     return this.navDestTitleBarOpts(undefined, menu)
   }
 
-  private topicDetailAppbarStringFor(statesJson: string, routeKey: string): string {
-    if (!routeKey) {
-      return ''
+  private topicDetailTitleActionIcon(action: TopicDetailTitleAction): Resource {
+    const active = TopicDetailTitleBarCoordinator.activeForState(action, {
+      savedLater: this.topicDetailSavedLater,
+      siteFavorited: this.topicDetailSiteFavorited,
+      thanked: this.topicDetailThanked,
+    })
+    if (action === 'thankTopic') {
+      return active ? $r('sys.symbol.heart_fill') : $r('sys.symbol.heart')
     }
-    try {
-      const states = JSON.parse(statesJson || '{}') as Record<string, string>
-      return (states[routeKey] || '').trim()
-    } catch (_e) {
-      return ''
+    if (action === 'siteFavorite') {
+      return active ? $r('sys.symbol.star_fill') : $r('sys.symbol.star')
     }
+    if (action === 'saveLater') {
+      return active ? $r('sys.symbol.bookmark_fill') : $r('sys.symbol.bookmark')
+    }
+    if (action === 'ignoreTopic') {
+      return $r('sys.symbol.xmark')
+    }
+    if (action === 'reportTopic') {
+      return $r('sys.symbol.exclamationmark_triangle')
+    }
+    if (action === 'copyTitle') {
+      return $r('sys.symbol.doc_plaintext')
+    }
+    if (action === 'copyLink') {
+      return $r('sys.symbol.plus_square_on_square')
+    }
+    if (action === 'share') {
+      return $r('sys.symbol.share')
+    }
+    return $r('sys.symbol.search_things')
   }
 
   private nodeTopicTitleBarOpts(nodeName: string, nodeTitle: string): Record<string, Object> {

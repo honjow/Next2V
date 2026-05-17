@@ -6,13 +6,16 @@ import {
   ConciseListRow,
   FeedTabSettings,
   GroupedListSection,
-  ListDivider as SharedListDivider,
   SecondaryListScaffold,
-  SectionHeader as SharedSectionHeader,
   StorageKeys,
   ThemeConstants
 } from 'shared'
 import { promptAction } from '@kit.ArkUI'
+import {
+  HomeNodeVisibilityButton,
+  SettingsDivider,
+  SettingsSectionHeader
+} from '../components/SettingsPageComponents'
 
 @Component
 export struct HomeNodeSettingsPage {
@@ -23,7 +26,7 @@ export struct HomeNodeSettingsPage {
     Column() {
       SecondaryListScaffold() {
         ListItem() {
-          this.SectionHeader('已显示栏目  长按栏目可拖动排序')
+          SettingsSectionHeader({ title: '已显示栏目  长按栏目可拖动排序' })
         }
 
         GroupedListSection() {
@@ -36,7 +39,7 @@ export struct HomeNodeSettingsPage {
                     suffixBuilderParam: (): void => this.ButtonSuffix(tab.key, this.visibleTabs().length > 1),
                   })
                   if (index < this.visibleTabs().length - 1) {
-                    this.SettingsDivider()
+                    SettingsDivider()
                   }
                 }
                 .width('100%')
@@ -58,7 +61,7 @@ export struct HomeNodeSettingsPage {
         }
 
         ListItem() {
-          this.SectionHeader('添加栏目')
+          SettingsSectionHeader({ title: '添加栏目' })
         }
 
         ListItem() {
@@ -66,7 +69,7 @@ export struct HomeNodeSettingsPage {
         }
 
         ListItem() {
-          this.SectionHeader('重置')
+          SettingsSectionHeader({ title: '重置' })
         }
 
         ListItem() {
@@ -89,28 +92,13 @@ export struct HomeNodeSettingsPage {
 
   @Builder
   ButtonSuffix(key: string, enabled: boolean) {
-    Button(FeedTabSettings.isNodeKey(key) ? '删除' : '隐藏')
-      .fontSize(ThemeConstants.FONT_SIZE_TAG)
-      .height(ThemeConstants.TOUCH_TARGET_SM)
-      // .width(48)
-      .enabled(enabled)
-      .type(ButtonType.Capsule)
-      .borderRadius(ThemeConstants.RADIUS_MD)
-      .fontColor(enabled ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.font_tertiary'))
-      .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
-      .onClick(() => {
+    HomeNodeVisibilityButton({
+      label: FeedTabSettings.isNodeKey(key) ? '删除' : '隐藏',
+      isEnabled: enabled,
+      clickAction: () => {
         this.updateFeedTabVisibility(key)
-      })
-  }
-
-  @Builder
-  SectionHeader(title: string) {
-    SharedSectionHeader({ title: title }).margin({ top: ThemeConstants.SPACE_MD })
-  }
-
-  @Builder
-  SettingsDivider() {
-    SharedListDivider()
+      }
+    })
   }
 
   @Builder
@@ -124,7 +112,7 @@ export struct HomeNodeSettingsPage {
             this.updateFeedTabVisibility(tab.key)
           }
         })
-        this.SettingsDivider()
+        SettingsDivider()
       }, (tab: TabItem) => tab.key)
 
       Column({ space: ThemeConstants.SPACE_SM }) {

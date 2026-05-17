@@ -1,13 +1,21 @@
 import { NodeViewModel } from '../viewmodel/NodeViewModel'
 import {
-  ApiService, FilterChip, PullRefresh, StorageKeys, V2exNode, V2exTopic, NodeTopicListParams, TopicDetailParams,
+  ApiService, PullRefresh, StorageKeys, V2exNode, V2exTopic, NodeTopicListParams, TopicDetailParams,
   ThemeConstants, CollectionSettings
 } from 'shared'
 import type { SavedNode, ViewedTopic } from 'shared'
 import { common } from '@kit.AbilityKit'
 import { LengthMetrics } from '@kit.ArkUI'
-
-type DiscoverTopicMode = 'hot' | 'rank' | 'latest' | 'recent'
+import {
+  DiscoverEmptyState,
+  DiscoverErrorState,
+  DiscoverHotTopicRow,
+  DiscoverNodeCard,
+  DiscoverNodeChip,
+  DiscoverSectionTitle,
+  DiscoverTopicMode,
+  DiscoverTopicModeButton
+} from '../components/DiscoverPageComponents'
 
 @Component
 export struct DiscoverPage {
@@ -56,7 +64,12 @@ export struct DiscoverPage {
         .width('100%')
         .height('100%')
       } else if (this.vm.errorMessage && this.vm.nodeDataSource.totalCount() === 0) {
-        this.ErrorView()
+        DiscoverErrorState({
+          message: this.vm.errorMessage,
+          topPadding: this.topH + this.TBH + this.BBH,
+          bottomPadding: this.discoverBottomPadding(),
+          retryAction: () => { this.vm.loadAllNodes() }
+        })
       } else {
         Column() {
           PullRefresh({
@@ -106,11 +119,7 @@ export struct DiscoverPage {
       .width('100%')
       .alignItems(VerticalAlign.Center)
 
-      Text(this.topicSectionTitle())
-        .fontSize(ThemeConstants.FONT_SIZE_TITLE)
-        .fontWeight(FontWeight.Medium)
-        .fontColor($r('sys.color.font_primary'))
-        .width('100%')
+      DiscoverSectionTitle({ title: this.topicSectionTitle() })
 
       if (this.isHotLoading && this.topicSurfaceItems().length === 0) {
         LoadingProgress()
@@ -135,85 +144,37 @@ export struct DiscoverPage {
   }
 
   @Builder TopicModeButton(mode: DiscoverTopicMode, label: string) {
-    FilterChip({
-      label,
+    DiscoverTopicModeButton({
+      label: label,
       selected: this.topicMode === mode,
       action: () => { this.setTopicMode(mode) }
     })
   }
 
   @Builder HotTopicRow(topic: V2exTopic) {
-    Row({ space: ThemeConstants.SPACE_SM }) {
-      Column({ space: ThemeConstants.SPACE_XS }) {
-        Text(topic.title)
-          .fontSize(ThemeConstants.FONT_SIZE_BODY)
-          .fontWeight(FontWeight.Medium)
-          .fontColor($r('sys.color.font_primary'))
-          .maxLines(2)
-          .textOverflow({ overflow: TextOverflow.Ellipsis })
-        Row({ space: ThemeConstants.SPACE_XS }) {
-          Text(topic.node.title)
-            .fontSize(ThemeConstants.FONT_SIZE_TINY)
-            .fontColor($r('sys.color.font_secondary'))
-            .maxLines(1)
-            .textOverflow({ overflow: TextOverflow.Ellipsis })
-          Text('·')
-            .fontSize(ThemeConstants.FONT_SIZE_TINY)
-            .fontColor($r('sys.color.font_secondary'))
-          Text(topic.member.username)
-            .fontSize(ThemeConstants.FONT_SIZE_TINY)
-            .fontColor($r('sys.color.font_secondary'))
-            .maxLines(1)
-            .textOverflow({ overflow: TextOverflow.Ellipsis })
-        }
+    DiscoverHotTopicRow({
+      topic: topic,
+      openAction: () => {
+        let p: TopicDetailParams = { topicId: topic.id }
+        this.ns.pushPathByName('TopicDetail', p as Object)
       }
-      .layoutWeight(1)
-      .alignItems(HorizontalAlign.Start)
-
-      Text(`${topic.replies}`)
-        .fontSize(ThemeConstants.FONT_SIZE_META)
-        .fontColor($r('sys.color.font_secondary'))
-        .padding({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM, top: 4, bottom: 4 })
-        .borderRadius(ThemeConstants.RADIUS_SM)
-        .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
-    }
-    .width('100%')
-    .padding(ThemeConstants.SPACE_MD)
-    .borderRadius(ThemeConstants.RADIUS_MD)
-    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
-    .onClick(() => {
-      let p: TopicDetailParams = { topicId: topic.id }
-      this.ns.pushPathByName('TopicDetail', p as Object)
     })
   }
 
   @Builder NodeResultsSection() {
     if (this.vm.nodeDataSource.totalCount() === 0) {
-      this.EmptyView()
+      DiscoverEmptyState()
     } else {
-      this.SectionTitle('节点')
+      DiscoverSectionTitle({ title: '节点' })
       GridRow({ columns: { sm: 2, md: 4, lg: 6 }, gutter: { x: ThemeConstants.SPACE_SM, y: ThemeConstants.SPACE_SM } }) {
         LazyForEach(this.vm.nodeDataSource, (node: V2exNode) => {
           GridCol({ span: { sm: 1, md: 2, lg: 2 } }) {
-            Column() {
-              Text(node.title)
-                .fontSize(ThemeConstants.FONT_SIZE_BODY)
-                .fontColor($r('sys.color.font_primary'))
-                .maxLines(1)
-                .textOverflow({ overflow: TextOverflow.Ellipsis })
-              Text(`${node.topics} 主题`)
-                .fontSize(ThemeConstants.FONT_SIZE_TINY)
-                .fontColor($r('sys.color.font_secondary'))
-                .margin({ top: ThemeConstants.SPACE_XS })
-            }
-            .alignItems(HorizontalAlign.Center)
-            .padding(ThemeConstants.SPACE_MD)
-            .width('100%')
-            .borderRadius(ThemeConstants.RADIUS_MD)
-            .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
-            .onClick(() => {
-              let p: NodeTopicListParams = { nodeName: node.name, nodeTitle: node.title }
-              this.ns.pushPathByName('NodeTopicList', p as Object)
+            DiscoverNodeCard({
+              node: node,
+              openAction: () => {
+                let p: NodeTopicListParams = { nodeName: node.name, nodeTitle: node.title }
+                this.ns.pushPathByName('NodeTopicList', p as Object)
+              }
             })
           }
         }, (node: V2exNode) => node.id.toString())
@@ -221,24 +182,15 @@ export struct DiscoverPage {
     }
   }
 
-  @Builder SectionTitle(title: string) {
-    Text(title)
-      .fontSize(ThemeConstants.FONT_SIZE_TITLE)
-      .fontWeight(FontWeight.Medium)
-      .fontColor($r('sys.color.font_primary'))
-      .width('100%')
-      .padding({ top: ThemeConstants.SPACE_SM })
-  }
-
   @Builder LocalNodeSections() {
     if (this.savedNodes.length > 0 || this.recentNodes.length > 0) {
       Column({ space: ThemeConstants.SPACE_SM }) {
         if (this.savedNodes.length > 0) {
-          this.SectionTitle('关注节点')
+          DiscoverSectionTitle({ title: '关注节点' })
           this.NodeChipWrap(this.savedNodes.slice(0, 12), 'saved')
         }
         if (this.recentNodes.length > 0) {
-          this.SectionTitle('最近浏览节点')
+          DiscoverSectionTitle({ title: '最近浏览节点' })
           this.NodeChipWrap(this.recentNodes.slice(0, 12), 'recent')
         }
       }
@@ -256,54 +208,13 @@ export struct DiscoverPage {
   }
 
   @Builder NodeChip(node: SavedNode) {
-    Row({ space: ThemeConstants.SPACE_XS }) {
-      Text(node.title || node.name)
-        .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-        .fontColor($r('sys.color.font_primary'))
-        .maxLines(1)
-        .textOverflow({ overflow: TextOverflow.Ellipsis })
-      if (node.topics > 0) {
-        Text(`${node.topics}`)
-          .fontSize(ThemeConstants.FONT_SIZE_TINY)
-          .fontColor($r('sys.color.font_secondary'))
+    DiscoverNodeChip({
+      node: node,
+      openAction: () => {
+        let p: NodeTopicListParams = { nodeName: node.name, nodeTitle: node.title || node.name }
+        this.ns.pushPathByName('NodeTopicList', p as Object)
       }
-    }
-    .alignItems(VerticalAlign.Center)
-    .height(34)
-    .padding({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
-    .borderRadius(ThemeConstants.RADIUS_ROUND)
-    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
-    .onClick(() => {
-      let p: NodeTopicListParams = { nodeName: node.name, nodeTitle: node.title || node.name }
-      this.ns.pushPathByName('NodeTopicList', p as Object)
     })
-  }
-
-  @Builder EmptyView() {
-    Column() {
-      Text('没有匹配的节点')
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .fontColor($r('sys.color.font_secondary'))
-    }
-    .justifyContent(FlexAlign.Center)
-    .width('100%')
-    .padding({ top: ThemeConstants.SPACE_XXL, bottom: ThemeConstants.SPACE_XXL })
-  }
-
-  @Builder ErrorView() {
-    Column() {
-      Text(this.vm.errorMessage)
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .fontColor($r('sys.color.font_secondary'))
-      Button('重试')
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .margin({ top: ThemeConstants.SPACE_LG })
-        .onClick(() => { this.vm.loadAllNodes() })
-    }
-    .justifyContent(FlexAlign.Center)
-    .width('100%')
-    .height('100%')
-    .padding({ top: this.topH + this.TBH + this.BBH, bottom: this.discoverBottomPadding() })
   }
 
   private discoverBottomPadding(): number {

@@ -1,10 +1,11 @@
 import { UserRepliesViewModel } from '../viewmodel/UserViewModel'
 import {
-  CardEmptyState, DateUtils, MarkdownContent, NodeTopicListParams, PageErrorState, PageLoadingState,
-  SecondaryListScaffold, StorageKeys, ThemeConstants, TopicDetailParams, UserProfileParams, V2exRoute,
+  CardEmptyState, NodeTopicListParams, PageErrorState, PageLoadingState,
+  SecondaryListScaffold, StorageKeys, TopicDetailParams, UserProfileParams, V2exRoute,
   V2exUrlRouter, V2exUserReply
 } from 'shared'
 import { common, Want } from '@kit.AbilityKit'
+import { UserRepliesCard } from '../components/UserRepliesComponents'
 
 @Component
 export struct UserRepliesPage {
@@ -57,49 +58,12 @@ export struct UserRepliesPage {
   }
 
   @Builder ReplyItem(reply: V2exUserReply) {
-    Column({ space: ThemeConstants.SPACE_SM }) {
-      Row({ space: ThemeConstants.SPACE_XS }) {
-        Text(reply.topic_author || this.username)
-          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-          .fontColor($r('sys.color.font_secondary'))
-        Text('›')
-          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-          .fontColor($r('sys.color.font_secondary'))
-        Text(reply.node_title || reply.node_name)
-          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-          .fontColor($r('sys.color.font_secondary'))
-          .maxLines(1)
-          .textOverflow({ overflow: TextOverflow.Ellipsis })
-        Blank()
-        if (reply.created > 0) {
-          Text(DateUtils.toDateString(reply.created))
-            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-            .fontColor($r('sys.color.font_secondary'))
-        }
-      }
-      .width('100%')
-
-      Text(reply.topic_title)
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .fontWeight(FontWeight.Medium)
-        .fontColor($r('sys.color.font_primary'))
-        .maxLines(2)
-        .textOverflow({ overflow: TextOverflow.Ellipsis })
-        .width('100%')
-
-      if (reply.content) {
-        MarkdownContent({
-          source: reply.content,
-          topMargin: 0,
-          onLinkClick: (url: string) => { this.openContentLink(url) },
-          onMentionClick: (username: string) => { this.openUserProfile(username) }
-        })
-      }
-    }
-    .padding(ThemeConstants.SPACE_MD)
-    .width('100%')
-    .borderRadius(ThemeConstants.RADIUS_CARD)
-    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+    UserRepliesCard({
+      reply: reply,
+      fallbackUsername: this.username,
+      openLink: (url: string) => { this.openContentLink(url) },
+      openMention: (username: string) => { this.openUserProfile(username) }
+    })
   }
 
   private openUserProfile(username: string): void {

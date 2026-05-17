@@ -6,13 +6,14 @@ import {
   ConciseListRow,
   DateUtils,
   GroupedListSection,
-  ListDivider as SharedListDivider,
   LocalDataSettings,
-  SecondaryListScaffold,
-  SectionHeader as SharedSectionHeader,
-  ThemeConstants
+  SecondaryListScaffold
 } from 'shared'
 import BuildProfile from '../../../../BuildProfile'
+import {
+  SettingsDivider,
+  SettingsSectionHeader
+} from '../components/SettingsPageComponents'
 
 @Component
 export struct StorageSettingsPage {
@@ -29,7 +30,7 @@ export struct StorageSettingsPage {
     Column() {
       SecondaryListScaffold() {
         ListItem() {
-          this.SectionHeader('离线缓存')
+          SettingsSectionHeader({ title: '离线缓存' })
         }
 
         ListItem() {
@@ -38,9 +39,8 @@ export struct StorageSettingsPage {
 
         if (BuildProfile.DEBUG && CacheDeviceQaSeed.isEnabled()) {
           ListItem() {
-            this.SectionHeader('缓存 QA Seed')
+            SettingsSectionHeader({ title: '缓存 QA Seed' })
           }
-          .margin({ top: ThemeConstants.SPACE_MD })
 
           ListItem() {
             this.CacheQaSeedSection()
@@ -48,9 +48,8 @@ export struct StorageSettingsPage {
         }
 
         ListItem() {
-          this.SectionHeader('本地数据')
+          SettingsSectionHeader({ title: '本地数据' })
         }
-        .margin({ top: ThemeConstants.SPACE_MD })
 
         ListItem() {
           this.LocalDataSection()
@@ -63,16 +62,6 @@ export struct StorageSettingsPage {
   }
 
   @Builder
-  SectionHeader(title: string) {
-    SharedSectionHeader({ title: title })
-  }
-
-  @Builder
-  SettingsDivider() {
-    SharedListDivider()
-  }
-
-  @Builder
   CacheSection() {
     GroupedListSection() {
       ConciseListRow({
@@ -81,7 +70,7 @@ export struct StorageSettingsPage {
         showChevron: false
       })
 
-      this.SettingsDivider()
+      SettingsDivider()
 
       ConciseListRow({
         title: '刷新缓存状态',
@@ -91,7 +80,7 @@ export struct StorageSettingsPage {
         }
       })
 
-      this.SettingsDivider()
+      SettingsDivider()
 
       ConciseListRow({
         title: '清理缓存',
@@ -132,7 +121,7 @@ export struct StorageSettingsPage {
         }
       })
 
-      this.SettingsDivider()
+      SettingsDivider()
 
       ConciseListRow({
         title: 'Seed 大列表文件缓存',
@@ -142,7 +131,7 @@ export struct StorageSettingsPage {
         }
       })
 
-      this.SettingsDivider()
+      SettingsDivider()
 
       ConciseListRow({
         title: 'Seed 混合行缓存',
@@ -152,7 +141,7 @@ export struct StorageSettingsPage {
         }
       })
 
-      this.SettingsDivider()
+      SettingsDivider()
 
       ConciseListRow({
         title: 'Seed 非法路径行',
@@ -162,7 +151,7 @@ export struct StorageSettingsPage {
         }
       })
 
-      this.SettingsDivider()
+      SettingsDivider()
 
       ConciseListRow({
         title: 'Seed 孤立文件',
@@ -172,7 +161,7 @@ export struct StorageSettingsPage {
         }
       })
 
-      this.SettingsDivider()
+      SettingsDivider()
 
       ConciseListRow({
         title: 'Seed 缺失文件行',
@@ -182,7 +171,7 @@ export struct StorageSettingsPage {
         }
       })
 
-      this.SettingsDivider()
+      SettingsDivider()
 
       ConciseListRow({
         title: 'Seed Hash 不匹配行',
@@ -192,7 +181,7 @@ export struct StorageSettingsPage {
         }
       })
 
-      this.SettingsDivider()
+      SettingsDivider()
 
       ConciseListRow({
         title: '验证 Hash 修复',
@@ -202,7 +191,7 @@ export struct StorageSettingsPage {
         }
       })
 
-      this.SettingsDivider()
+      SettingsDivider()
 
       ConciseListRow({
         title: 'Seed 过期行',
@@ -212,7 +201,7 @@ export struct StorageSettingsPage {
         }
       })
 
-      this.SettingsDivider()
+      SettingsDivider()
 
       ConciseListRow({
         title: '重置 Seed 缓存',

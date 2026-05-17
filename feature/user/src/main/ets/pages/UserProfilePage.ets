@@ -7,10 +7,7 @@ import {
   TopicDetailParams,
   StorageKeys,
   NodeTopicListParams,
-  Avatar,
-  DateUtils,
   SecondaryListScaffold,
-  MarkdownContent,
   UserProfileParams,
   CookieJarSettings,
   V2exRoute,
@@ -20,6 +17,14 @@ import {
 import type { TopicReadState } from 'shared'
 import { promptAction, SegmentButton, SegmentButtonOptions } from '@kit.ArkUI'
 import { common, Want } from '@kit.AbilityKit'
+import {
+  UserProfileAllActivityButton,
+  UserProfileCard,
+  UserProfileEmptyCard,
+  UserProfileErrorState,
+  UserProfileLoadingState,
+  UserProfileReplyCard
+} from '../components/UserProfileComponents'
 @Component
 export struct UserProfilePage {
   @Prop username: string = '';
@@ -85,7 +90,7 @@ export struct UserProfilePage {
     Column() {
       if (this.vm.isLoading && this.vm.profile === null) {
         Column() {
-          this.LoadingView()
+          UserProfileLoadingState()
         }
         .justifyContent(FlexAlign.Center)
         .width('100%')
@@ -106,11 +111,11 @@ export struct UserProfilePage {
           if (this.activityTab === 0) {
             if (this.vm.topicsHidden) {
               ListItem() {
-                this.EmptyText('主题列表已隐藏')
+                UserProfileEmptyCard({ message: '主题列表已隐藏' })
               }
             } else if (this.vm.recentTopicCount === 0) {
               ListItem() {
-                this.EmptyText('暂无主题')
+                UserProfileEmptyCard({ message: '暂无主题' })
               }
             } else {
               LazyForEach(
@@ -145,7 +150,7 @@ export struct UserProfilePage {
           } else {
             if (this.vm.recentReplyCount === 0) {
               ListItem() {
-                this.EmptyText('暂无回复')
+                UserProfileEmptyCard({ message: '暂无回复' })
               }
             } else {
               LazyForEach(
@@ -175,7 +180,12 @@ export struct UserProfilePage {
         }
       } else {
         Column() {
-          this.ErrorView()
+          UserProfileErrorState({
+            message: this.vm.errorMessage || '加载失败',
+            retryAction: () => {
+              this.vm.load()
+            }
+          })
         }
         .justifyContent(FlexAlign.Center)
         .width('100%')
@@ -192,72 +202,15 @@ export struct UserProfilePage {
     })
   }
 
-  @Builder LoadingView() {
-    Column() {
-      LoadingProgress()
-        .width(ThemeConstants.LOADING_SIZE)
-        .height(ThemeConstants.LOADING_SIZE)
-    }
-    .justifyContent(FlexAlign.Center)
-    .width('100%')
-  }
-
   @Builder ProfileCard() {
-    Column({ space: ThemeConstants.SPACE_MD }) {
-      Row({ space: ThemeConstants.SPACE_MD }) {
-        Avatar({
-          url: this.vm.profile!.avatar_large || this.vm.profile!.avatar_normal,
-          avatarSize: 72,
-        })
-        Column({ space: ThemeConstants.SPACE_XS }) {
-          Text(this.displayProfileUsername())
-            .fontSize(22)
-            .fontWeight(FontWeight.Bold)
-            .fontColor($r('sys.color.font_primary'))
-            .maxLines(1)
-            .textOverflow({ overflow: TextOverflow.Ellipsis })
-            .onAreaChange((_oldValue: Area, newValue: Area) => {
-              const measuredGlobalBottom =
-                this.areaY(newValue?.globalPosition?.y) + this.areaLength(newValue?.height)
-              this.usernameContentBottom = measuredGlobalBottom + this.currentScrollOffset
-              this.evaluateAppbarTitleVisibility()
-            })
-          if (this.vm.profile!.tagline) {
-            Text(this.vm.profile!.tagline)
-              .fontSize(ThemeConstants.FONT_SIZE_BODY)
-              .fontColor($r('sys.color.font_secondary'))
-              .maxLines(2)
-              .textOverflow({ overflow: TextOverflow.Ellipsis })
-          }
-          Text(
-            `第 ${this.vm.profile!.id} 号会员 · ${DateUtils.toDateString(this.vm.profile!.created)}`,
-          )
-            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-            .fontColor($r('sys.color.font_secondary'))
-            .maxLines(1)
-            .textOverflow({ overflow: TextOverflow.Ellipsis })
-        }
-        .layoutWeight(1)
-        .alignItems(HorizontalAlign.Start)
+    UserProfileCard({
+      profile: this.vm.profile!,
+      displayUsername: this.displayProfileUsername(),
+      onUsernameAreaChange: (bottom: number) => {
+        this.usernameContentBottom = bottom + this.currentScrollOffset
+        this.evaluateAppbarTitleVisibility()
       }
-      .width('100%')
-      .alignItems(VerticalAlign.Center)
-
-      if (this.vm.profile!.bio) {
-        Text(this.vm.profile!.bio)
-          .fontSize(ThemeConstants.FONT_SIZE_BODY)
-          .fontColor($r('sys.color.font_primary'))
-          .lineHeight(ThemeConstants.LINE_HEIGHT_BODY + 2)
-          .width('100%')
-      }
-
-      this.ProfileMeta()
-    }
-    .padding(ThemeConstants.SPACE_LG)
-    .width('100%')
-    .alignItems(HorizontalAlign.Start)
-    .borderRadius(ThemeConstants.RADIUS_MD)
-    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+    })
   }
 
   private updateTabLabels(): void {
@@ -285,132 +238,29 @@ export struct UserProfilePage {
   }
 
   @Builder AllActivityEntry(label: string) {
-    Button(label)
-      .type(ButtonType.Capsule)
-      .buttonStyle(ButtonStyleMode.NORMAL)
-      .fontSize(ThemeConstants.FONT_SIZE_BODY)
-      .fontColor($r('sys.color.font_primary'))
-      .height(40)
-      .width('100%')
-      .onClick(() => {
+    UserProfileAllActivityButton({
+      label,
+      openAction: () => {
         let p: UserProfileParams = { username: this.username }
         this.stack.pushPathByName(
           this.activityTab === 0 ? 'UserTopics' : 'UserReplies',
           p as Object,
         )
-      })
-  }
-
-  @Builder EmptyText(text: string) {
-    Text(text)
-      .fontSize(ThemeConstants.FONT_SIZE_BODY)
-      .fontColor($r('sys.color.font_secondary'))
-      .width('100%')
-      .textAlign(TextAlign.Center)
-      .padding(ThemeConstants.SPACE_LG)
-      .borderRadius(ThemeConstants.RADIUS_CARD)
-      .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+      }
+    })
   }
 
   @Builder ReplyItem(reply: V2exUserReply) {
-    Column({ space: ThemeConstants.SPACE_SM }) {
-      Row({ space: ThemeConstants.SPACE_XS }) {
-        Text(reply.topic_author || this.vm.profile!.username)
-          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-          .fontColor($r('sys.color.font_secondary'))
-        Text('›')
-          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-          .fontColor($r('sys.color.font_secondary'))
-        Text(reply.node_title || reply.node_name)
-          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-          .fontColor($r('sys.color.font_secondary'))
-          .maxLines(1)
-          .textOverflow({ overflow: TextOverflow.Ellipsis })
-        Blank()
-        if (reply.created > 0) {
-          Text(DateUtils.toDateString(reply.created))
-            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-            .fontColor($r('sys.color.font_secondary'))
-        }
-      }.width('100%')
-      Text(reply.topic_title)
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .fontWeight(FontWeight.Medium)
-        .fontColor($r('sys.color.font_primary'))
-        .maxLines(2)
-        .textOverflow({ overflow: TextOverflow.Ellipsis })
-        .width('100%')
-
-      if (reply.content) {
-        MarkdownContent({
-          source: reply.content,
-          topMargin: 0,
-          onLinkClick: (url: string) => {
-            this.openContentLink(url)
-          },
-          onMentionClick: (username: string) => {
-            this.openUserProfile(username)
-          },
-        })
+    UserProfileReplyCard({
+      reply,
+      fallbackUsername: this.vm.profile!.username,
+      openLink: (url: string) => {
+        this.openContentLink(url)
+      },
+      openMention: (username: string) => {
+        this.openUserProfile(username)
       }
-    }
-    .padding(ThemeConstants.SPACE_MD)
-    .width('100%')
-    .borderRadius(ThemeConstants.RADIUS_CARD)
-    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
-  }
-
-  @Builder ProfileMeta() {
-    Column({ space: ThemeConstants.SPACE_XS }) {
-      if (this.vm.profile!.location) {
-        this.MetaRow('位置', this.vm.profile!.location)
-      }
-      if (this.vm.profile!.website) {
-        this.MetaRow('网站', this.vm.profile!.website)
-      }
-      if (this.vm.profile!.github) {
-        this.MetaRow('GitHub', this.vm.profile!.github)
-      }
-      if (this.vm.profile!.twitter) {
-        this.MetaRow('Twitter', this.vm.profile!.twitter)
-      }
-    }
-    .width('100%')
-    .alignItems(HorizontalAlign.Start)
-  }
-
-  @Builder MetaRow(label: string, value: string) {
-    Row({ space: ThemeConstants.SPACE_SM }) {
-      Text(label)
-        .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-        .fontColor($r('sys.color.font_secondary'))
-        .width(56)
-      Text(value)
-        .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-        .fontColor($r('sys.color.font_primary'))
-        .maxLines(1)
-        .textOverflow({ overflow: TextOverflow.Ellipsis })
-        .layoutWeight(1)
-    }
-    .width('100%')
-    .alignItems(VerticalAlign.Center)
-  }
-
-  @Builder ErrorView() {
-    Column() {
-      Text(this.vm.errorMessage || '加载失败')
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .fontColor($r('sys.color.font_secondary'))
-      Button('重试')
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .margin({ top: ThemeConstants.SPACE_LG })
-        .onClick(() => {
-          this.vm.load()
-        })
-    }
-    .justifyContent(FlexAlign.Center)
-    .width('100%')
-    .height('100%')
+    })
   }
 
   private openUserProfile(username: string): void {
