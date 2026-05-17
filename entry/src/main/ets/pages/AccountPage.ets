@@ -1,6 +1,11 @@
 import { common, Want } from '@kit.AbilityKit'
 import { promptAction } from '@kit.ArkUI'
-import { AccountCoinIcon } from '../components/AccountCoinIcon'
+import {
+  AccountDetailHeaderCard,
+  AccountRateLimitSummary,
+  AccountSignedInCard,
+  AccountTokenSummary
+} from '../components/AccountDashboardComponents'
 import { V2exTwoFactorPrompt } from '../components/V2exTwoFactorPrompt'
 import {
   LocalContentStats,
@@ -17,11 +22,9 @@ import {
   ApiService,
   AuthSessionSettings,
   AuthSettings,
-  Avatar,
   CollectionSettings,
   ConciseListRow,
   CookieJarSettings,
-  DateUtils,
   GroupedListSection,
   HttpClient,
   ListDivider as SharedListDivider,
@@ -169,19 +172,15 @@ export struct AccountDashboardPage {
     Column() {
       SecondaryListScaffold({ bottomPadding: ThemeConstants.SPACE_MD }) {
         ListItem() {
-          Column({ space: ThemeConstants.SPACE_MD }) {
-            Avatar({ url: this.currentAvatar(), avatarSize: 72 })
-            Text(this.currentUsername() || 'V2EX 用户')
-              .fontSize(ThemeConstants.FONT_SIZE_TITLE)
-              .fontWeight(FontWeight.Medium)
-              .fontColor($r('sys.color.font_primary'))
-            this.AccountDetailMetaBlock()
-          }
-          .alignItems(HorizontalAlign.Center)
-          .width('100%')
-          .padding(ThemeConstants.SPACE_LG)
-          .borderRadius(ThemeConstants.RADIUS_CARD)
-          .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+          AccountDetailHeaderCard({
+            avatarUrl: this.currentAvatar(),
+            username: this.currentUsername(),
+            balance: this.accountBalance,
+            fallbackText: this.accountMetaText(),
+            sessionError: this.sessionError,
+            accountMetaError: this.accountMetaError,
+            dailyMissionMessage: this.dailyMission ? this.dailyMission.message : ''
+          })
         }
 
         ListItem() {
@@ -269,79 +268,6 @@ export struct AccountDashboardPage {
   }
 
   @Builder
-  CoinBalance() {
-    if (this.accountBalance) {
-      if (this.accountBalance.gold > 0 || this.accountBalance.silver > 0 || this.accountBalance.bronze > 0) {
-        Row({ space: ThemeConstants.SPACE_SM }) {
-          if (this.accountBalance.gold > 0) {
-            this.CoinAmount('#B97818', '#F6D77A', '#D59A24', this.accountBalance.gold)
-          }
-          if (this.accountBalance.silver > 0) {
-            this.CoinAmount('#5C6978', '#F6FAFF', '#9FAFC0', this.accountBalance.silver)
-          }
-          if (this.accountBalance.bronze > 0) {
-            this.CoinAmount('#7E4B27', '#D99B65', '#A66B3D', this.accountBalance.bronze)
-          }
-        }
-        .alignItems(VerticalAlign.Center)
-        .height(22)
-      }
-    } else {
-      if (this.accountMetaText()) {
-        Text(this.accountMetaText())
-          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-          .fontColor($r('sys.color.font_secondary'))
-          .maxLines(1)
-          .textOverflow({ overflow: TextOverflow.Ellipsis })
-      }
-    }
-  }
-
-  @Builder
-  AccountDetailMetaBlock() {
-    Column({ space: ThemeConstants.SPACE_XS }) {
-      this.CoinBalance()
-      if (this.sessionError) {
-        Text(this.sessionError)
-          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-          .fontColor(Color.Red)
-          .maxLines(1)
-          .textOverflow({ overflow: TextOverflow.Ellipsis })
-      } else if (this.accountMetaError) {
-        Text(this.accountMetaError)
-          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-          .fontColor(Color.Red)
-          .maxLines(1)
-          .textOverflow({ overflow: TextOverflow.Ellipsis })
-      } else if (this.dailyMission) {
-        Text(this.dailyMission.message)
-          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-          .fontColor($r('sys.color.font_secondary'))
-          .maxLines(1)
-          .textOverflow({ overflow: TextOverflow.Ellipsis })
-      } else {
-        Blank().height(ThemeConstants.FONT_SIZE_CAPTION)
-      }
-    }
-    .justifyContent(FlexAlign.Center)
-    .alignItems(HorizontalAlign.Center)
-    .width('100%')
-    .height(52)
-  }
-
-  @Builder
-  CoinAmount(rimColor: string, faceColor: string, edgeColor: string, amount: number) {
-    Row({ space: 4 }) {
-      AccountCoinIcon({ rimColor, faceColor, edgeColor })
-      Text(this.formatCoinAmount(amount))
-        .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-        .fontColor($r('sys.color.font_secondary'))
-        .maxLines(1)
-    }
-    .alignItems(VerticalAlign.Center)
-  }
-
-  @Builder
   AuthSection() {
     Column() {
       if (!this.authCookieConfigured && !this.authTokenConfigured) {
@@ -349,42 +275,19 @@ export struct AccountDashboardPage {
           this.ns.pushPathByName('V2exNativeLogin', null)
         })
       } else {
-        Row({ space: ThemeConstants.SPACE_MD }) {
-          Avatar({ url: this.currentAvatar(), avatarSize: 54 })
-          Column({ space: ThemeConstants.SPACE_XS }) {
-            Text(this.currentUsername() || 'V2EX 用户')
-              .fontSize(ThemeConstants.FONT_SIZE_TITLE)
-              .fontWeight(FontWeight.Medium)
-              .fontColor($r('sys.color.font_primary'))
-              .maxLines(1)
-              .textOverflow({ overflow: TextOverflow.Ellipsis })
-            this.CoinBalance()
+        AccountSignedInCard({
+          avatarUrl: this.currentAvatar(),
+          username: this.currentUsername(),
+          balance: this.accountBalance,
+          fallbackText: this.accountMetaText(),
+          dailyMissionText: this.dailyMissionButtonText(),
+          dailyMissionEnabled: this.dailyMissionEnabled(),
+          redeemDailyMission: () => {
+            this.redeemDailyMission()
+          },
+          openDetail: () => {
+            this.ns.pushPathByName('Account', null)
           }
-          .layoutWeight(1)
-          .alignItems(HorizontalAlign.Start)
-
-          Button(this.dailyMissionButtonText())
-            .fontSize(ThemeConstants.FONT_SIZE_TAG)
-            .height(ThemeConstants.TOUCH_TARGET_SM)
-            .type(ButtonType.Normal)
-            .borderRadius(ThemeConstants.RADIUS_MD)
-            .fontColor(this.dailyMissionEnabled() ? Color.White : $r('sys.color.font_secondary'))
-            .backgroundColor(this.dailyMissionEnabled() ? ThemeConstants.BRAND_PRIMARY :
-              $r('sys.color.ohos_id_color_button_normal'))
-            .enabled(this.dailyMissionEnabled())
-            .onClick(() => {
-              this.redeemDailyMission()
-            })
-
-          Text('›')
-            .fontSize(ThemeConstants.FONT_SIZE_TITLE)
-            .fontColor($r('sys.color.font_secondary'))
-        }
-        .alignItems(VerticalAlign.Center)
-        .width('100%')
-        .padding(ThemeConstants.SPACE_LG)
-        .onClick(() => {
-          this.ns.pushPathByName('Account', null)
         })
       }
     }
@@ -393,83 +296,6 @@ export struct AccountDashboardPage {
     .borderRadius(ThemeConstants.RADIUS_CARD)
     .padding(4)
     .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
-  }
-
-  @Builder
-  ProfileSummary() {
-    Column({ space: ThemeConstants.SPACE_XS }) {
-      if (this.profileTagline()) {
-        Text(this.profileTagline())
-          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-          .fontColor($r('sys.color.font_secondary'))
-          .maxLines(2)
-          .textOverflow({ overflow: TextOverflow.Ellipsis })
-      }
-      Row({ space: ThemeConstants.SPACE_SM }) {
-        if (this.profileLocation()) {
-          Text(`位置: ${this.profileLocation()}`)
-            .fontSize(ThemeConstants.FONT_SIZE_TINY)
-            .fontColor($r('sys.color.font_secondary'))
-        }
-        if (this.profileCreatedAt() > 0) {
-          Text(`注册: ${DateUtils.toDateString(this.profileCreatedAt())}`)
-            .fontSize(ThemeConstants.FONT_SIZE_TINY)
-            .fontColor($r('sys.color.font_secondary'))
-        }
-      }
-      .width('100%')
-    }
-    .width('100%')
-    .alignItems(HorizontalAlign.Start)
-    .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG, bottom: ThemeConstants.SPACE_SM })
-  }
-
-  @Builder
-  TokenSummary() {
-    Column({ space: ThemeConstants.SPACE_XS }) {
-      if (this.tokenScope()) {
-        Text(`Token 权限: ${this.tokenScope()}`)
-          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-          .fontColor($r('sys.color.font_secondary'))
-      }
-      if (this.tokenExpiration() > 0) {
-        Text(`到期: ${DateUtils.toDateString(this.tokenExpiration())}`)
-          .fontSize(ThemeConstants.FONT_SIZE_TINY)
-          .fontColor($r('sys.color.font_secondary'))
-      }
-      if (this.tokenLastUsed() > 0) {
-        Text(`最后使用: ${DateUtils.toDateString(this.tokenLastUsed())}`)
-          .fontSize(ThemeConstants.FONT_SIZE_TINY)
-          .fontColor($r('sys.color.font_secondary'))
-      }
-    }
-    .width('100%')
-    .alignItems(HorizontalAlign.Start)
-    .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG, bottom: ThemeConstants.SPACE_SM })
-  }
-
-  @Builder
-  RateLimitSummary() {
-    Column({ space: ThemeConstants.SPACE_XS }) {
-      if (this.apiRateLimitLimit > 0) {
-        Text(`API 额度: ${this.apiRateLimitRemaining} / ${this.apiRateLimitLimit}`)
-          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-          .fontColor($r('sys.color.font_secondary'))
-      }
-      if (this.apiRateLimitReset > 0) {
-        Text(`重置时间: ${DateUtils.toDateString(this.apiRateLimitReset)}`)
-          .fontSize(ThemeConstants.FONT_SIZE_TINY)
-          .fontColor($r('sys.color.font_secondary'))
-      }
-      if (this.apiRateLimitUpdatedAt > 0) {
-        Text(`更新于 ${DateUtils.toDateString(this.apiRateLimitUpdatedAt)}`)
-          .fontSize(ThemeConstants.FONT_SIZE_TINY)
-          .fontColor($r('sys.color.font_secondary'))
-      }
-    }
-    .width('100%')
-    .alignItems(HorizontalAlign.Start)
-    .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG, bottom: ThemeConstants.SPACE_SM })
   }
 
   @Builder
@@ -533,12 +359,21 @@ export struct AccountDashboardPage {
       }
 
       if (this.tokenInfo) {
-        this.TokenSummary()
+        AccountTokenSummary({
+          scope: this.tokenScope(),
+          expiration: this.tokenExpiration(),
+          lastUsed: this.tokenLastUsed()
+        })
       }
 
       if (this.hasApiRateLimitSnapshot()) {
         this.SettingsDivider()
-        this.RateLimitSummary()
+        AccountRateLimitSummary({
+          limit: this.apiRateLimitLimit,
+          remaining: this.apiRateLimitRemaining,
+          resetAt: this.apiRateLimitReset,
+          updatedAt: this.apiRateLimitUpdatedAt
+        })
       }
 
       this.SettingsDivider()
@@ -630,13 +465,6 @@ export struct AccountDashboardPage {
 
   private hasCookieAccount(): boolean {
     return this.authCookieConfigured
-  }
-
-  private formatCoinAmount(amount: number): string {
-    if (amount > 0 && amount < 1) {
-      return amount.toFixed(2)
-    }
-    return `${amount}`
   }
 
   private currentUsername(): string {

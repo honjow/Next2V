@@ -6,7 +6,6 @@ import {
   AuthSessionSettings,
   AuthSettings,
   CookieJarSettings,
-  DateUtils,
   EmptyState,
   LoadingFooter,
   NotificationSettings,
@@ -22,6 +21,13 @@ import {
   NotificationMetadata,
   NotificationPageResult
 } from '../viewmodel/NotificationCenterViewModel'
+import {
+  NotificationAuthRequiredState,
+  NotificationCard,
+  NotificationDeleteSwipeAction,
+  NotificationErrorState,
+  NotificationSummaryCard
+} from '../components/NotificationPageComponents'
 
 @Component
 export struct NotificationPage {
@@ -86,13 +92,23 @@ export struct NotificationPage {
   build() {
     Column() {
       if (!this.hasNotificationAuth()) {
-        this.AuthRequiredView('登录后可查看通知')
+        NotificationAuthRequiredState({
+          message: '登录后可查看通知',
+          onLoginClick: () => {
+            this.ns.pushPathByName('V2exNativeLogin', null)
+          }
+        })
       } else if (this.isNotificationLoading && this.notifications.length === 0) {
         LoadingProgress()
           .width(ThemeConstants.LOADING_SIZE)
           .height(ThemeConstants.LOADING_SIZE)
       } else if (this.notificationError && this.notifications.length === 0) {
-        this.NotificationErrorView()
+        NotificationErrorState({
+          message: this.notificationError,
+          onRetryClick: () => {
+            this.loadNotifications(true)
+          }
+        })
       } else {
         PullRefreshListScaffold({
           scroller: this.scroller,
@@ -109,7 +125,14 @@ export struct NotificationPage {
           }
         }) {
           ListItem() {
-            this.NotificationSummaryRow()
+            NotificationSummaryCard({
+              count: this.notifications.length,
+              errorText: this.notificationError,
+              kindSummary: this.notificationKindSummary(),
+              cacheUpdatedAt: this.notificationCacheUpdatedAt,
+              loadedFromCache: this.notificationLoadedFromCache,
+              sourceLabel: this.notificationSourceLabel
+            })
           }
 
           ForEach(this.notifications, (item: V2exNotification) => {
@@ -140,182 +163,41 @@ export struct NotificationPage {
   }
 
   @Builder
-  AuthRequiredView(message: string) {
-    Column() {
-      Text(message)
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .fontColor($r('sys.color.font_secondary'))
-      Button('去登录')
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .margin({ top: ThemeConstants.SPACE_LG })
-        .onClick(() => {
-          this.ns.pushPathByName('V2exNativeLogin', null)
-        })
-    }
-    .justifyContent(FlexAlign.Center)
-    .width('100%')
-    .height('100%')
-  }
-
-  @Builder
-  NotificationErrorView() {
-    Column() {
-      Text(this.notificationError)
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .fontColor($r('sys.color.font_secondary'))
-      Button('重试')
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .margin({ top: ThemeConstants.SPACE_LG })
-        .onClick(() => {
-          this.loadNotifications(true)
-        })
-    }
-    .justifyContent(FlexAlign.Center)
-    .width('100%')
-    .height('100%')
-  }
-
-  @Builder
-  NotificationSummaryRow() {
-    Row({ space: ThemeConstants.SPACE_MD }) {
-      Column({ space: ThemeConstants.SPACE_XS }) {
-        Text(`${this.notifications.length} 条通知`)
-          .fontSize(ThemeConstants.FONT_SIZE_TITLE)
-          .fontWeight(FontWeight.Medium)
-          .fontColor($r('sys.color.font_primary'))
-        if (this.notificationError && this.notifications.length > 0) {
-          Text(this.notificationError)
-            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-            .fontColor($r('sys.color.font_secondary'))
-            .maxLines(1)
-            .textOverflow({ overflow: TextOverflow.Ellipsis })
-        } else {
-          if (this.notificationKindSummary()) {
-            Text(this.notificationKindSummary())
-              .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-              .fontColor($r('sys.color.font_secondary'))
-              .maxLines(1)
-              .textOverflow({ overflow: TextOverflow.Ellipsis })
-          }
-          if (this.notificationCacheUpdatedAt > 0) {
-            Text(`${this.notificationLoadedFromCache ? '缓存于' :
-              '更新于'} ${DateUtils.toDateString(this.notificationCacheUpdatedAt)}${this.notificationSourceLabel ?
-              ' · ' + this.notificationSourceLabel : ''}`)
-              .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-              .fontColor($r('sys.color.font_secondary'))
-              .maxLines(1)
-              .textOverflow({ overflow: TextOverflow.Ellipsis })
-          } else if (this.notificationSourceLabel) {
-            Text(`来源: ${this.notificationSourceLabel}`)
-              .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-              .fontColor($r('sys.color.font_secondary'))
-              .maxLines(1)
-              .textOverflow({ overflow: TextOverflow.Ellipsis })
-          }
-        }
-      }
-      .layoutWeight(1)
-      .alignItems(HorizontalAlign.Start)
-
-    }
-    .width('100%')
-    .alignItems(VerticalAlign.Center)
-    .padding(ThemeConstants.SPACE_LG)
-    .borderRadius(ThemeConstants.RADIUS_MD)
-    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
-  }
-
-  @Builder
   NotificationListItem(item: V2exNotification) {
     if (this.canDeleteNotifications()) {
       ListItem() {
-        this.NotificationCard(item)
+        NotificationCard({
+          item,
+          kindTag: this.notificationKindTag(item),
+          readTag: this.notificationReadTag(item),
+          titleText: this.notificationTitle(item),
+          bodyText: this.notificationBody(item)
+        })
       }
       .onClick(() => { this.openNotification(item) })
       .swipeAction({ end: this.NotificationSwipeEnd(item) })
     } else {
       ListItem() {
-        this.NotificationCard(item)
+        NotificationCard({
+          item,
+          kindTag: this.notificationKindTag(item),
+          readTag: this.notificationReadTag(item),
+          titleText: this.notificationTitle(item),
+          bodyText: this.notificationBody(item)
+        })
       }
       .onClick(() => { this.openNotification(item) })
     }
   }
 
   @Builder
-  NotificationTag(text: string, backgroundColor: ResourceColor, foregroundColor: ResourceColor) {
-    Text(text)
-      .fontSize(ThemeConstants.FONT_SIZE_TAG)
-      .fontColor(foregroundColor)
-      .padding({
-        left: ThemeConstants.SPACE_SM,
-        right: ThemeConstants.SPACE_SM,
-        top: ThemeConstants.SPACE_XS / 2,
-        bottom: ThemeConstants.SPACE_XS / 2
-      })
-      .borderRadius(ThemeConstants.RADIUS_SM)
-      .backgroundColor(backgroundColor)
-  }
-
-  @Builder
-  NotificationCard(item: V2exNotification) {
-    Column({ space: ThemeConstants.SPACE_XS }) {
-      Row({ space: ThemeConstants.SPACE_SM }) {
-        this.NotificationTag(
-          this.notificationKindTag(item),
-          $r('sys.color.ohos_id_color_sub_background'),
-          $r('sys.color.font_secondary')
-        )
-        if (this.notificationReadTag(item)) {
-          this.NotificationTag(
-            this.notificationReadTag(item),
-            this.notificationReadTag(item) === '未读' ? ThemeConstants.BRAND_PRIMARY :
-              $r('sys.color.ohos_id_color_sub_background'),
-            this.notificationReadTag(item) === '未读' ? Color.White : $r('sys.color.font_secondary')
-          )
-        }
-      }
-      .width('100%')
-      .justifyContent(FlexAlign.Start)
-
-      Text(this.notificationTitle(item))
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .fontWeight(FontWeight.Medium)
-        .fontColor($r('sys.color.font_primary'))
-        .maxLines(2)
-        .textOverflow({ overflow: TextOverflow.Ellipsis })
-      Text(this.notificationBody(item))
-        .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-        .fontColor($r('sys.color.font_secondary'))
-        .maxLines(3)
-        .textOverflow({ overflow: TextOverflow.Ellipsis })
-      if (item.created) {
-        Text(DateUtils.toRelativeTime(item.created))
-          .fontSize(ThemeConstants.FONT_SIZE_TINY)
-          .fontColor($r('sys.color.font_secondary'))
-      }
-    }
-    .padding(ThemeConstants.SPACE_LG)
-    .width('100%')
-    .alignItems(HorizontalAlign.Start)
-    .borderRadius(ThemeConstants.RADIUS_MD)
-    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
-  }
-
-  @Builder
   NotificationSwipeEnd(item: V2exNotification) {
-    Row() {
-      Button('删除')
-        .fontSize(ThemeConstants.FONT_SIZE_TAG)
-        .height(40)
-        .fontColor(Color.White)
-        .backgroundColor(Color.Red)
-        .onClick(() => {
-          this.confirmDeleteNotification(item)
-        })
-    }
-    .height('100%')
-    .padding({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
-    .justifyContent(FlexAlign.Center)
+    NotificationDeleteSwipeAction({
+      item,
+      onDeleteClick: (target: V2exNotification) => {
+        this.confirmDeleteNotification(target)
+      }
+    })
   }
 
   private loadAuthSnapshot(forceNotifications: boolean = false): void {

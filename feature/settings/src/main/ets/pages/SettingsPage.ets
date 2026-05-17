@@ -9,13 +9,10 @@ import {
   DateUtils,
   GroupedListSection,
   HttpClient,
-  ListDivider as SharedListDivider,
   MediaSettings,
   ReadingSettings,
   SecondaryListScaffold,
-  SectionHeader as SharedSectionHeader,
   StorageKeys,
-  ThemeConstants,
   ThemeSettings,
   ReplyActionAlignmentSettings,
   ReplyDisplaySettings,
@@ -23,7 +20,13 @@ import {
   ReplyCardStyleSettings,
   type CacheStats,
 } from 'shared'
-import { SymbolGlyphModifier } from '@kit.ArkUI'
+import {
+  SettingsCheckedMenuItem,
+  SettingsDivider,
+  SettingsDropdownRow,
+  SettingsSectionHeader,
+  SettingsToggleRow
+} from '../components/SettingsPageComponents'
 @Component
 export struct SettingsPage {
   @Consume('ns') stack: NavPathStack;
@@ -109,12 +112,12 @@ export struct SettingsPage {
 
   @Builder
   SectionHeader(title: string) {
-    SharedSectionHeader({ title: title }).margin({ top: ThemeConstants.SPACE_MD })
+    SettingsSectionHeader({ title })
   }
 
   @Builder
   SettingsDivider() {
-    SharedListDivider()
+    SettingsDivider()
   }
 
   @Builder
@@ -166,12 +169,10 @@ export struct SettingsPage {
   @Builder
   AdvancedSection() {
     GroupedListSection() {
-      ConciseListRow({
+      SettingsDropdownRow({
         title: 'API 域名',
         trailingText: this.useCoDomain ? 'v2ex.co' : 'v2ex.com',
-        showChevron: false,
-        trailingDropdown: true,
-        action: () => {
+        openAction: () => {
           this.showApiDomainMenu()
         },
       })
@@ -191,37 +192,31 @@ export struct SettingsPage {
     changeAction: (value: boolean) => void,
     isEnabled: boolean = true,
   ) {
-    ConciseListRow({
-      title: title,
-      showChevron: false,
-      hasSwitch: true,
-      checked: checked,
-      isEnabled: isEnabled,
-      switchAction: changeAction,
+    SettingsToggleRow({
+      title,
+      checked,
+      isEnabled,
+      changeAction
     })
   }
 
   @Builder
   DisabledWifiImagePreferenceRow() {
-    ConciseListRow({
+    SettingsToggleRow({
       title: '仅 Wi-Fi 加载图片',
-      showChevron: false,
-      hasSwitch: true,
       checked: this.onlyLoadImagesOnWifi,
       isEnabled: false,
-      switchAction: (_value: boolean) => {},
+      changeAction: (_value: boolean) => {},
     })
   }
 
   @Builder
   ReadingPreferenceRows() {
     Column() {
-      ConciseListRow({
+      SettingsDropdownRow({
         title: '主题',
         trailingText: ThemeSettings.modeText(this.themeMode),
-        showChevron: false,
-        trailingDropdown: true,
-        action: () => {
+        openAction: () => {
           this.showThemeMenu()
         },
       })
@@ -233,12 +228,10 @@ export struct SettingsPage {
         })
 
       this.SettingsDivider()
-      ConciseListRow({
+      SettingsDropdownRow({
         title: '回复显示',
         trailingText: ReplyDisplaySettings.modeText(this.replyDisplayMode),
-        showChevron: false,
-        trailingDropdown: true,
-        action: () => {
+        openAction: () => {
           this.showReplyDisplayMenu()
         },
       })
@@ -250,12 +243,10 @@ export struct SettingsPage {
         })
 
       this.SettingsDivider()
-      ConciseListRow({
+      SettingsDropdownRow({
         title: '回复样式',
         trailingText: ReplyCardStyleSettings.styleText(this.replyCardStyle),
-        showChevron: false,
-        trailingDropdown: true,
-        action: () => {
+        openAction: () => {
           this.showReplyCardStyleMenu()
         },
       })
@@ -267,15 +258,13 @@ export struct SettingsPage {
         })
 
       this.SettingsDivider()
-      ConciseListRow({
+      SettingsDropdownRow({
         title: '回复按钮对齐方式',
         trailingText: ReplyActionAlignmentSettings.modeText(
           this.replyActionAlignmentMode,
           this.motionHoldingHandSupported,
         ),
-        showChevron: false,
-        trailingDropdown: true,
-        action: () => {
+        openAction: () => {
           this.showReplyActionAlignmentMenu()
         },
       })
@@ -293,13 +282,11 @@ export struct SettingsPage {
       })
 
       this.SettingsDivider()
-      ConciseListRow({
+      SettingsDropdownRow({
         title: 'Base64 解码',
         subtitle: '默认点击查看，避免直接暴露邮箱/微信等明文',
         trailingText: this.base64DecodeModeLabel(),
-        showChevron: false,
-        trailingDropdown: true,
-        action: () => {
+        openAction: () => {
           this.showBase64ModeMenu()
         },
       })
@@ -377,43 +364,37 @@ export struct SettingsPage {
 
   @Builder
   Base64ModeMenuItem(label: string, mode: string) {
-    MenuItem({
-      content: label,
-      symbolEndIcon:
-        this.base64DecodeMode === mode
-          ? new SymbolGlyphModifier($r('sys.symbol.checkmark'))
-          : undefined,
-    }).onClick(() => {
-      this.updateBase64DecodeMode(mode)
+    SettingsCheckedMenuItem({
+      label,
+      selected: this.base64DecodeMode === mode,
+      selectAction: () => {
+        this.updateBase64DecodeMode(mode)
+      }
     })
   }
 
   @Builder
   ReplyCardStyleMenuItem(label: string, style: string) {
-    MenuItem({
-      content: label,
-      symbolEndIcon:
-        this.replyCardStyle === style
-          ? new SymbolGlyphModifier($r('sys.symbol.checkmark'))
-          : undefined,
-    }).onClick(() => {
-      this.updateReplyCardStyle(style)
+    SettingsCheckedMenuItem({
+      label,
+      selected: this.replyCardStyle === style,
+      selectAction: () => {
+        this.updateReplyCardStyle(style)
+      }
     })
   }
 
   @Builder
   ReplyActionAlignmentMenuItem(label: string, mode: string) {
-    MenuItem({
-      content: label,
-      symbolEndIcon:
-        ReplyActionAlignmentSettings.effectiveMode(
-          this.replyActionAlignmentMode,
-          this.motionHoldingHandSupported,
-        ) === mode
-          ? new SymbolGlyphModifier($r('sys.symbol.checkmark'))
-          : undefined,
-    }).onClick(() => {
-      this.updateReplyActionAlignmentMode(mode)
+    SettingsCheckedMenuItem({
+      label,
+      selected: ReplyActionAlignmentSettings.effectiveMode(
+        this.replyActionAlignmentMode,
+        this.motionHoldingHandSupported,
+      ) === mode,
+      selectAction: () => {
+        this.updateReplyActionAlignmentMode(mode)
+      }
     })
   }
 
@@ -427,38 +408,34 @@ export struct SettingsPage {
 
   @Builder
   ApiDomainMenuItem(label: string, useCoDomain: boolean) {
-    MenuItem({
-      content: label,
-      symbolEndIcon:
-        this.useCoDomain === useCoDomain
-          ? new SymbolGlyphModifier($r('sys.symbol.checkmark'))
-          : undefined,
-    }).onClick(() => {
-      this.updateApiDomain(useCoDomain)
+    SettingsCheckedMenuItem({
+      label,
+      selected: this.useCoDomain === useCoDomain,
+      selectAction: () => {
+        this.updateApiDomain(useCoDomain)
+      }
     })
   }
 
   @Builder
   ThemeModeMenuItem(label: string, mode: string) {
-    MenuItem({
-      content: label,
-      symbolEndIcon:
-        this.themeMode === mode ? new SymbolGlyphModifier($r('sys.symbol.checkmark')) : undefined,
-    }).onClick(() => {
-      this.updateThemeMode(mode)
+    SettingsCheckedMenuItem({
+      label,
+      selected: this.themeMode === mode,
+      selectAction: () => {
+        this.updateThemeMode(mode)
+      }
     })
   }
 
   @Builder
   ReplyDisplayModeMenuItem(label: string, mode: string) {
-    MenuItem({
-      content: label,
-      symbolEndIcon:
-        this.replyDisplayMode === mode
-          ? new SymbolGlyphModifier($r('sys.symbol.checkmark'))
-          : undefined,
-    }).onClick(() => {
-      this.updateReplyDisplayMode(mode)
+    SettingsCheckedMenuItem({
+      label,
+      selected: this.replyDisplayMode === mode,
+      selectAction: () => {
+        this.updateReplyDisplayMode(mode)
+      }
     })
   }
 
