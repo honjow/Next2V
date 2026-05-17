@@ -29,6 +29,7 @@ const CACHE_PAYLOAD_DIR_NAME: string = 'cache_payloads'
 const CACHE_PAYLOAD_TOPIC_LIST_PREFIX: string = 'topic_list_'
 const CACHE_PAYLOAD_TOPIC_DETAIL_PREFIX: string = 'topic_detail_'
 const CACHE_PAYLOAD_FILE_SUFFIX: string = '.json'
+const CACHE_PAYLOAD_STAGED_SUFFIX: string = '.staged'
 const MAX_CACHE_PAYLOAD_FILENAME_STEM_LENGTH: number = 180
 
 const SQL_SELECT_CACHE_ENTRY: string = 'SELECT payload_text, payload_path, expires_at FROM cache_entries WHERE cache_key = ? AND kind = ? LIMIT 1'
@@ -84,6 +85,7 @@ interface CacheEntry {
 interface PayloadStoragePlan {
   payloadText: string | null
   payloadPath: string | null
+  stagedPayloadPath: string | null
   size: number
 }
 
@@ -286,9 +288,16 @@ export class CacheSettings {
       expiresAt,
       payloadPlan.size
     ]
-    await store.executeSql(SQL_UPSERT_CACHE_ENTRY, args)
-    if (previousPayloadPath && previousPayloadPath !== payloadPlan.payloadPath) {
-      CacheSettings.unlinkPayloadFileBestEffort(context, previousPayloadPath)
+    try {
+      CacheSettings.commitStagedPayloadFile(context, payloadPlan)
+      await store.executeSql(SQL_UPSERT_CACHE_ENTRY, args)
+      if (previousPayloadPath && previousPayloadPath !== payloadPlan.payloadPath) {
+        CacheSettings.unlinkPayloadFileBestEffort(context, previousPayloadPath)
+      }
+    } catch (error) {
+      CacheSettings.cleanupPreparedPayloadFile(context, payloadPlan)
+      const e = error as Error
+      throw new Error(e.message || '保存缓存失败')
     }
   }
 
@@ -447,15 +456,44 @@ export class CacheSettings {
       return {
         payloadText: payloadText,
         payloadPath: null,
+        stagedPayloadPath: null,
         size: size
       }
     }
     CacheSettings.ensurePayloadDirectory(context)
-    CacheSettings.writePayloadFile(context, payloadFileName, payloadText)
+    const committedPayloadFileName = CacheSettings.committedPayloadFileName(context, payloadFileName)
+    const stagedPayloadFileName = CacheSettings.stagedPayloadFileName(committedPayloadFileName)
+    CacheSettings.writePayloadFile(context, stagedPayloadFileName, payloadText)
     return {
       payloadText: null,
-      payloadPath: payloadFileName,
+      payloadPath: committedPayloadFileName,
+      stagedPayloadPath: stagedPayloadFileName,
       size: size
+    }
+  }
+
+  private static commitStagedPayloadFile(context: common.UIAbilityContext, payloadPlan: PayloadStoragePlan): void {
+    if (!payloadPlan.stagedPayloadPath || !payloadPlan.payloadPath) {
+      return
+    }
+    try {
+      fileIo.renameSync(
+        CacheSettings.payloadFilePath(context, payloadPlan.stagedPayloadPath),
+        CacheSettings.payloadFilePath(context, payloadPlan.payloadPath)
+      )
+    } catch (error) {
+      CacheSettings.cleanupPreparedPayloadFile(context, payloadPlan)
+      const e = error as Error
+      throw new Error(e.message || '提交缓存文件失败')
+    }
+  }
+
+  private static cleanupPreparedPayloadFile(context: common.UIAbilityContext, payloadPlan: PayloadStoragePlan): void {
+    if (payloadPlan.stagedPayloadPath) {
+      CacheSettings.unlinkPayloadFileBestEffort(context, payloadPlan.stagedPayloadPath)
+    }
+    if (payloadPlan.payloadPath) {
+      CacheSettings.unlinkPayloadFileBestEffort(context, payloadPlan.payloadPath)
     }
   }
 
@@ -464,7 +502,7 @@ export class CacheSettings {
     payloadText: string,
     payloadPath: string
   ): string {
-    if (payloadPath.length > 0 && CacheSettings.isSafePayloadFileName(payloadPath)) {
+    if (payloadPath.length > 0 && CacheSettings.isCachePayloadFileName(payloadPath)) {
       try {
         return fileIo.readTextSync(CacheSettings.payloadFilePath(context, payloadPath))
       } catch (_error) {
@@ -509,7 +547,7 @@ export class CacheSettings {
     const activePaths = new Set<string>(await CacheSettings.selectPayloadPaths(store, SQL_SELECT_ACTIVE_CACHE_PAYLOAD_PATHS, []))
     filenames.forEach((filename: string) => {
       if (
-        CacheSettings.isCachePayloadFileName(filename) &&
+        CacheSettings.isCachePayloadArtifactFileName(filename) &&
         !activePaths.has(filename)
       ) {
         CacheSettings.unlinkPayloadFileBestEffort(context, filename)
@@ -550,6 +588,31 @@ export class CacheSettings {
 
   private static topicDetailPayloadFileName(rowKey: string): string {
     return CACHE_PAYLOAD_TOPIC_DETAIL_PREFIX + CacheSettings.encodePayloadKey(rowKey) + CACHE_PAYLOAD_FILE_SUFFIX
+  }
+
+  private static committedPayloadFileName(context: common.UIAbilityContext, baseName: string): string {
+    if (!CacheSettings.isCachePayloadFileName(baseName)) {
+      throw new Error('非法缓存文件名')
+    }
+    const stem = baseName.substring(0, baseName.length - CACHE_PAYLOAD_FILE_SUFFIX.length)
+    for (let attempt = 0; attempt < 8; attempt++) {
+      const candidate = stem + '_' + Date.now().toString() + '_' + CacheSettings.randomPayloadNonce() + CACHE_PAYLOAD_FILE_SUFFIX
+      if (!CacheSettings.payloadFileExistsBestEffort(context, candidate)) {
+        return candidate
+      }
+    }
+    throw new Error('缓存文件名冲突')
+  }
+
+  private static stagedPayloadFileName(committedName: string): string {
+    if (!CacheSettings.isCachePayloadFileName(committedName)) {
+      throw new Error('非法缓存文件名')
+    }
+    return committedName + CACHE_PAYLOAD_STAGED_SUFFIX
+  }
+
+  private static randomPayloadNonce(): string {
+    return Math.floor(Math.random() * 0x100000000).toString(16).padStart(8, '0')
   }
 
   private static encodePayloadKey(value: string): string {
@@ -600,11 +663,34 @@ export class CacheSettings {
     return CacheSettings.payloadBaseDir(context) + '/' + relativeName
   }
 
+  private static payloadFileExistsBestEffort(context: common.UIAbilityContext, relativeName: string): boolean {
+    if (!CacheSettings.isSafePayloadFileName(relativeName)) {
+      return true
+    }
+    try {
+      return fileIo.accessSync(CacheSettings.payloadFilePath(context, relativeName))
+    } catch (_error) {
+      return false
+    }
+  }
+
   private static isCachePayloadFileName(relativeName: string): boolean {
     return (
       relativeName.startsWith(CACHE_PAYLOAD_TOPIC_LIST_PREFIX) ||
       relativeName.startsWith(CACHE_PAYLOAD_TOPIC_DETAIL_PREFIX)
-    ) && relativeName.endsWith(CACHE_PAYLOAD_FILE_SUFFIX) && CacheSettings.isSafePayloadFileName(relativeName)
+    ) && relativeName.endsWith(CACHE_PAYLOAD_FILE_SUFFIX) &&
+      !relativeName.includes(CACHE_PAYLOAD_STAGED_SUFFIX) &&
+      CacheSettings.isSafePayloadFileName(relativeName)
+  }
+
+  private static isCachePayloadArtifactFileName(relativeName: string): boolean {
+    if (CacheSettings.isCachePayloadFileName(relativeName)) {
+      return true
+    }
+    if (!relativeName.endsWith(CACHE_PAYLOAD_FILE_SUFFIX + CACHE_PAYLOAD_STAGED_SUFFIX)) {
+      return false
+    }
+    return CacheSettings.isCachePayloadFileName(relativeName.substring(0, relativeName.length - CACHE_PAYLOAD_STAGED_SUFFIX.length))
   }
 
   private static isSafePayloadFileName(relativeName: string): boolean {

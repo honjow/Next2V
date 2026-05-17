@@ -63,6 +63,8 @@ for (const snippet of [
   'fileIo.mkdirSync(CacheSettings.payloadBaseDir(context), true)',
   'fileIo.openSync',
   'fileIo.writeSync',
+  'fileIo.renameSync',
+  'fileIo.accessSync',
   'fileIo.readTextSync',
   'fileIo.unlinkSync',
   'fileIo.listFileSync',
@@ -103,20 +105,32 @@ for (const policyContract of [
     pattern: /private\s+static\s+byteLength\s*\([\s\S]*charCodeAt[\s\S]*0xD800[\s\S]*0xDFFF[\s\S]*return bytes/,
   },
   {
-    name: 'file-backed save stores null inline text and relative payload path',
-    pattern: /private\s+static\s+preparePayloadStorage[\s\S]*size\s*<\s*FILE_PAYLOAD_THRESHOLD_BYTES[\s\S]*payloadText:\s*payloadText[\s\S]*payloadPath:\s*null[\s\S]*payloadText:\s*null[\s\S]*payloadPath:\s*payloadFileName/,
+    name: 'file-backed save stages payloads and stores only committed relative payload path',
+    pattern: /private\s+static\s+preparePayloadStorage[\s\S]*size\s*<\s*FILE_PAYLOAD_THRESHOLD_BYTES[\s\S]*payloadText:\s*payloadText[\s\S]*payloadPath:\s*null[\s\S]*stagedPayloadPath:\s*null[\s\S]*committedPayloadFileName[\s\S]*stagedPayloadFileName[\s\S]*writePayloadFile\(context,\s*stagedPayloadFileName,\s*payloadText\)[\s\S]*payloadText:\s*null[\s\S]*payloadPath:\s*committedPayloadFileName[\s\S]*stagedPayloadPath:\s*stagedPayloadFileName/,
   },
   {
-    name: 'load prefers safe readable file and falls back to inline payload text',
-    pattern: /private\s+static\s+resolvePayloadText[\s\S]*isSafePayloadFileName\(payloadPath\)[\s\S]*fileIo\.readTextSync[\s\S]*return payloadText/,
+    name: 'save promotes staged payload before DB commit point and cleans new file on failure',
+    pattern: /private\s+static\s+async\s+saveCacheEntry[\s\S]*const payloadPlan = CacheSettings\.preparePayloadStorage[\s\S]*try\s*{[\s\S]*CacheSettings\.commitStagedPayloadFile\(context,\s*payloadPlan\)[\s\S]*await store\.executeSql\(SQL_UPSERT_CACHE_ENTRY,\s*args\)[\s\S]*previousPayloadPath[\s\S]*catch\s*\(error\)\s*{[\s\S]*CacheSettings\.cleanupPreparedPayloadFile\(context,\s*payloadPlan\)[\s\S]*throw new Error\(e\.message \|\| '保存缓存失败'\)/,
+  },
+  {
+    name: 'staged payload promotion uses rename and DB never stores staged path',
+    pattern: /private\s+static\s+commitStagedPayloadFile[\s\S]*fileIo\.renameSync\([\s\S]*payloadPlan\.stagedPayloadPath[\s\S]*payloadPlan\.payloadPath[\s\S]*private\s+static\s+stagedPayloadFileName[\s\S]*return committedName \+ CACHE_PAYLOAD_STAGED_SUFFIX/,
+  },
+  {
+    name: 'committed payload filenames are unique before staging',
+    pattern: /private\s+static\s+committedPayloadFileName[\s\S]*for\s*\(let attempt = 0; attempt < 8; attempt\+\+\)[\s\S]*payloadFileExistsBestEffort\(context,\s*candidate\)[\s\S]*return candidate[\s\S]*throw new Error\('缓存文件名冲突'\)/,
+  },
+  {
+    name: 'load prefers committed cache payload files and falls back to inline payload text',
+    pattern: /private\s+static\s+resolvePayloadText[\s\S]*isCachePayloadFileName\(payloadPath\)[\s\S]*fileIo\.readTextSync[\s\S]*return payloadText/,
   },
   {
     name: 'clear removes cache rows through payload cleanup and keeps legacy cleanup',
     pattern: /static\s+async\s+clear[\s\S]*deleteRowsWithPayloadFiles[\s\S]*SQL_SELECT_CLEAR_CACHE_PAYLOAD_PATHS[\s\S]*SQL_CLEAR_CACHE_ENTRIES[\s\S]*deleteOrphanPayloadFiles[\s\S]*deleteLegacyCacheBestEffort/,
   },
   {
-    name: 'payload filename guard rejects slash, backslash, traversal, empty and leading dot names',
-    pattern: /private\s+static\s+isSafePayloadFileName[\s\S]*relativeName\.length\s*<=\s*0[\s\S]*relativeName\.startsWith\('\.'\)[\s\S]*relativeName\.includes\('\/'\)[\s\S]*relativeName\.includes\('\\\\'\)[\s\S]*relativeName\.includes\('\.\.'\)[\s\S]*\^\[A-Za-z0-9\._-\]\+/,
+    name: 'payload filename guard rejects slash, backslash, traversal, empty, leading dot, and staged DB names',
+    pattern: /private\s+static\s+isCachePayloadFileName[\s\S]*!relativeName\.includes\(CACHE_PAYLOAD_STAGED_SUFFIX\)[\s\S]*private\s+static\s+isSafePayloadFileName[\s\S]*relativeName\.length\s*<=\s*0[\s\S]*relativeName\.startsWith\('\.'\)[\s\S]*relativeName\.includes\('\/'\)[\s\S]*relativeName\.includes\('\\\\'\)[\s\S]*relativeName\.includes\('\.\.'\)[\s\S]*\^\[A-Za-z0-9\._-\]\+/,
   },
 ]) {
   assert(policyContract.pattern.test(cacheSettings), `CacheSettings policy contract missing: ${policyContract.name}`)
