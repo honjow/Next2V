@@ -12,6 +12,10 @@ import {
   type ReplyContextItem,
 } from '../model/ReplyContextCoordinator'
 import {
+  TopicDetailContentCoordinator,
+  type TopicSupplementBlock,
+} from '../model/TopicDetailContentCoordinator'
+import {
   TopicDetailActionCoordinator,
 } from '../model/TopicDetailActionCoordinator'
 import { TopicDetailAppbarCoordinator } from '../model/TopicDetailAppbarCoordinator'
@@ -730,7 +734,7 @@ export struct TopicDetailPage {
       })
 
       // 正文
-      if (this.topicBodySource()) {
+      if (this.topicBodyBlocks().length > 0) {
         ForEach(
           this.topicBodyBlocks(),
           (block: string, index: number) => {
@@ -758,16 +762,16 @@ export struct TopicDetailPage {
           .color($r('sys.color.ohos_id_color_list_separator'))
           .margin({ top: ThemeConstants.SPACE_MD, bottom: ThemeConstants.SPACE_XS })
         ForEach(
-          this.supplementBlocks(this.v.topic!.topicSupplementMarkdown || ''),
-          (block: string, index: number) => {
+          this.topicSupplementBlocks(),
+          (block: TopicSupplementBlock, index: number) => {
             Column() {
-              Text(this.supplementMeta(block))
+              Text(block.meta)
                 .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
                 .fontColor($r('sys.color.font_secondary'))
                 .width('100%')
-              if (this.supplementBody(block)) {
+              if (block.bodyBlocks.length > 0) {
                 ForEach(
-                  this.markdownBlocks(this.supplementBody(block)),
+                  block.bodyBlocks,
                   (bodyBlock: string, bodyIndex: number) => {
                     MarkdownContent({
                       source: bodyBlock,
@@ -792,7 +796,7 @@ export struct TopicDetailPage {
             .width('100%')
             .margin({ top: index === 0 ? 0 : ThemeConstants.SPACE_MD })
           },
-          (block: string, index: number) => `${index}-${block.length}-${block.slice(0, 16)}`,
+          (block: TopicSupplementBlock) => block.key,
         )
       }
     }
@@ -802,114 +806,14 @@ export struct TopicDetailPage {
     .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }
 
-  private topicBodySource(): string {
-    const rendered = (this.v.topic?.content_rendered || '').trim()
-    if (rendered.length > 0) {
-      return this.v.topic?.content_rendered || ''
-    }
-    return this.v.topic?.content || ''
-  }
-
   private topicBodyBlocks(): string[] {
-    const source = this.topicBodySource()
-    if ((this.v.topic?.content_rendered || '').trim().length > 0) {
-      return [source]
-    }
-    return this.markdownBlocks(source)
+    return TopicDetailContentCoordinator.topicBodyBlocks(this.v.topic)
   }
 
-  private markdownBlocks(source: string): string[] {
-    const normalized = (source || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n')
-    const lines = normalized.split('\n')
-    const blocks: string[] = []
-    let buffer: string[] = []
-    let tableBuffer: string[] = []
-    let inTable = false
-    const flushBuffer = (): void => {
-      const text = buffer.join('\n').trim()
-      if (text.length > 0) {
-        blocks.push(text)
-      }
-      buffer = []
-    }
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i]
-      const trimmed = line.trim()
-      if (inTable) {
-        tableBuffer.push(line)
-        if (/<\/table>/i.test(line)) {
-          const table = tableBuffer.join('\n').trim()
-          if (table.length > 0) {
-            blocks.push(table)
-          }
-          tableBuffer = []
-          inTable = false
-        }
-        continue
-      }
-      if (/<table\b/i.test(line)) {
-        flushBuffer()
-        tableBuffer = [line]
-        inTable = !/<\/table>/i.test(line)
-        if (!inTable) {
-          blocks.push(tableBuffer.join('\n').trim())
-          tableBuffer = []
-        }
-        continue
-      }
-      if (/^#{1,6}\s+/.test(trimmed)) {
-        flushBuffer()
-        blocks.push(trimmed)
-        continue
-      }
-      if (trimmed.length === 0) {
-        flushBuffer()
-        continue
-      }
-      buffer.push(line)
-    }
-    flushBuffer()
-    const trailingTable = tableBuffer.join('\n').trim()
-    if (trailingTable.length > 0) {
-      blocks.push(trailingTable)
-    }
-    return blocks
-  }
-
-  private supplementBlocks(source: string): string[] {
-    const normalized = (source || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim()
-    if (normalized.length === 0) {
-      return []
-    }
-    const lines = normalized.split('\n')
-    const blocks: string[] = []
-    let current: string[] = []
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i]
-      if (/^##\s+/.test(line.trim()) && current.length > 0) {
-        blocks.push(current.join('\n').trim())
-        current = []
-      }
-      current.push(line)
-    }
-    const last = current.join('\n').trim()
-    if (last.length > 0) {
-      blocks.push(last)
-    }
-    return blocks
-  }
-
-  private supplementMeta(block: string): string {
-    const first = ((block || '').split('\n')[0] || '').trim()
-    return first.replace(/^##\s+/, '').trim()
-  }
-
-  private supplementBody(block: string): string {
-    const lines = (block || '').split('\n')
-    if (lines.length <= 1) {
-      return ''
-    }
-    return lines.slice(1).join('\n').trim()
+  private topicSupplementBlocks(): TopicSupplementBlock[] {
+    return TopicDetailContentCoordinator.topicSupplementBlocks(
+      this.v.topic?.topicSupplementMarkdown || '',
+    )
   }
 
   @Builder ReplyDivider() {
@@ -982,11 +886,10 @@ export struct TopicDetailPage {
   }
 
   private replyContextTitle(): string {
-    if (this.contextReply === null) {
-      return '回复上下文'
-    }
-    const floor = this.v.getReplyFloor(this.contextReply.id)
-    return floor > 0 ? `#${floor} 回复上下文` : '回复上下文'
+    return ReplyContextCoordinator.title(
+      this.contextReply,
+      (replyId: number) => this.v.getReplyFloor(replyId),
+    )
   }
 
   private buildReplyContextItems(selected: V2exReply): ReplyContextItem[] {
@@ -999,12 +902,7 @@ export struct TopicDetailPage {
   }
 
   private replySnippet(content: string): string {
-    const text = (content || '')
-      .replace(/\r/g, '\n')
-      .replace(/\n+/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim()
-    return text || '（无内容）'
+    return ReplyContextCoordinator.snippet(content)
   }
 
   private jumpToLoadedReplyFloor(floor: number): void {

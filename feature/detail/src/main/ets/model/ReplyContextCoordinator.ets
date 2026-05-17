@@ -18,6 +18,23 @@ export interface ReplyContextBuildInput {
 }
 
 export class ReplyContextCoordinator {
+  static title(reply: V2exReply | null, getReplyFloor: (replyId: number) => number): string {
+    if (reply === null) {
+      return '回复上下文'
+    }
+    const floor = getReplyFloor(reply.id)
+    return floor > 0 ? `#${floor} 回复上下文` : '回复上下文'
+  }
+
+  static snippet(content: string): string {
+    const text = (content || '')
+      .replace(/\r/g, '\n')
+      .replace(/\n+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+    return text || '（无内容）'
+  }
+
   static build(input: ReplyContextBuildInput): ReplyContextItem[] {
     const items: ReplyContextItem[] = []
     const seen = new Set<number>()
