@@ -15,6 +15,7 @@ import {
   TopicDetailActionCoordinator,
 } from '../model/TopicDetailActionCoordinator'
 import { TopicDetailAppbarCoordinator } from '../model/TopicDetailAppbarCoordinator'
+import { TopicDetailReplyDisplayCoordinator } from '../model/TopicDetailReplyDisplayCoordinator'
 import { TopicDetailScrollCoordinator } from '../model/TopicDetailScrollCoordinator'
 import { common, Want } from '@kit.AbilityKit'
 import { LengthMetrics, promptAction } from '@kit.ArkUI'
@@ -1091,14 +1092,10 @@ export struct TopicDetailPage {
   }
 
   private replyCountText(): string {
-    const total = this.v.topic?.replies ?? 0
-    if (total > 0 && this.v.repliesLoaded < total) {
-      return `已加载 ${this.v.repliesLoaded} / ${total}`
-    }
-    if (total > 0) {
-      return `共 ${total} 条回复`
-    }
-    return `共 ${this.v.repliesLoaded} 条回复`
+    return TopicDetailReplyDisplayCoordinator.replyCountText(
+      this.v.topic?.replies ?? 0,
+      this.v.repliesLoaded,
+    )
   }
 
   private toggleOnlyOp(): void {
@@ -1133,7 +1130,7 @@ export struct TopicDetailPage {
   }
 
   private replyDisplayModeText(): string {
-    return ReplyDisplaySettings.modeText(this.v.replyDisplayMode)
+    return TopicDetailReplyDisplayCoordinator.modeText(this.v.replyDisplayMode)
   }
 
   private replyDisplayContent(reply: V2exReply): string {

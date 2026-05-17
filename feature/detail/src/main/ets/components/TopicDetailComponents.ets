@@ -7,6 +7,10 @@ import {
   V2exReply,
   V2exTopic,
 } from 'shared'
+import {
+  TopicDetailReplyDisplayCoordinator,
+  type ReplyDisplayModeOption,
+} from '../model/TopicDetailReplyDisplayCoordinator'
 import { SymbolGlyphModifier } from '@kit.ArkUI'
 
 @Component
@@ -180,24 +184,26 @@ export struct TopicDetailReplyDivider {
 
   @Builder DisplayModeMenu() {
     Menu() {
-      this.DisplayModeMenuItem('楼中楼', 'thread')
-      this.DisplayModeMenuItem('楼中楼(@)', 'threadWithMention')
-      this.DisplayModeMenuItem('冗余楼中楼', 'threadRedundant')
-      this.DisplayModeMenuItem('只看楼主', 'op')
-      this.DisplayModeMenuItem('原版', 'origin')
+      ForEach(
+        TopicDetailReplyDisplayCoordinator.modeOptions(),
+        (option: ReplyDisplayModeOption) => {
+          this.DisplayModeMenuItem(option)
+        },
+        (option: ReplyDisplayModeOption) => option.mode,
+      )
     }
   }
 
-  @Builder DisplayModeMenuItem(label: string, mode: string) {
+  @Builder DisplayModeMenuItem(option: ReplyDisplayModeOption) {
     MenuItem({
-      content: label,
+      content: option.label,
       symbolEndIcon:
-        this.replyDisplayMode === mode
+        this.replyDisplayMode === option.mode
           ? new SymbolGlyphModifier($r('sys.symbol.checkmark'))
           : undefined,
     }).onClick(() => {
       if (this.onDisplayModeChange) {
-        this.onDisplayModeChange(mode)
+        this.onDisplayModeChange(option.mode)
       }
     })
   }
