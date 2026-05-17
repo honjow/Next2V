@@ -1,7 +1,17 @@
 # V2Next 持久化与本地数据重构探究/规划
 
 更新时间：2026-05-17
-当前 master：`a63813a feat(storage): migrate cache metadata to RDB`
+当前 master：`3f02c0d feat(storage): migrate collection data to RDB`
+
+## 0. 最终收口状态
+
+截至 `3f02c0d feat(storage): migrate collection data to RDB`，本轮已规划的持久化重构 lanes 已收口到 Collection RDB：
+
+- 设置 key/store/bootstrap/descriptor cleanup 已完成。
+- Search history 已迁入 `LocalDataStore` RDB。
+- Collection split/prep、saved-node action scoping 修复、Collection RDB clean break 已完成。
+- Cache metadata RDB、TTL/LRU 策略澄清、大 payload 文件化、原子写、hash 校验/读时修复、QA seed tool、CacheSettings helper split 已完成。
+- 当前无已知 blocker。Preferences 继续保留给轻量用户设置；剩余工作均为可选后续 spec。
 
 ## 1. 当前已完成事项
 
@@ -40,9 +50,9 @@
 - 237 设备 QA PASS：`/home/gamer/v2next-worktrees/reading-text-scale-drop-legacy/.hermes-artifacts/reading-text-scale-drop-legacy-qa/validation-summary.md`
 - 集成记录：`/home/gamer/git/V2Next/.hermes-artifacts/reading-text-scale-drop-legacy-integrate/summary.md`
 
-## 1.1 持久化重构 Lane4-Lane6 落地状态（2026-05-17）
+## 1.1 持久化重构 Lane4 后续落地状态（2026-05-17）
 
-当前 controller 计划中的三条后续 lane 已全部完成、集成并推送到 `origin/master`。
+当前 controller 计划与后续补强 lane 已全部完成、集成并推送到 `origin/master`，范围已从 Lane4-Lane6 延伸到 Collection RDB clean break。
 
 统一 artifact 基线：
 
@@ -50,10 +60,17 @@
 
 当前 master 最新提交：
 
-- `a63813a feat(storage): migrate cache metadata to RDB`
+- `3f02c0d feat(storage): migrate collection data to RDB`
 
 最近相关提交：
 
+- `3f02c0d feat(storage): migrate collection data to RDB`
+- `4cb1f1b refactor(storage): split cache settings helpers`
+- `e7bfb1c fix(storage): verify cache payload hashes`
+- `2d9cb87 test(storage): add debug cache QA seed tool`
+- `b6d3ad2 fix(storage): make cache payload file writes atomic`
+- `528fdb9 feat(storage): store large cache payloads in files`
+- `ad58da5 refactor(storage): clarify cache TTL and LRU policy`
 - `a63813a feat(storage): migrate cache metadata to RDB`
 - `c011976 refactor(storage): split collection settings helpers`
 - `d368eab docs(agents): define direct worker controller mode`
@@ -82,7 +99,7 @@
 - QA：`lane4_qa-result.json`
 - Integrate：`lane4_integrate-result.json`
 
-### Lane5：CollectionSettings split/prep
+### Lane5：CollectionSettings split/prep 与 saved-node 修复
 
 状态：完成并已推送。
 
@@ -121,7 +138,7 @@
 结果：
 
 - `CacheSettings` 的列表/详情 cache metadata 迁移到 RDB。
-- `LocalDataStore` schema 升到 v3。
+- `LocalDataStore` 在该阶段升到 v3；后续 Collection RDB 已升到当前 `v4`。
 - 保持 `CacheSettings` 对外 API 和可见行为。
 - 增加 `test_cache_settings_rdb_contract.mjs`，并更新 LocalDataStore/SearchHistory 相关合约测试。
 
@@ -147,6 +164,44 @@
 - Integrate：`lane6_integrate-result.json`
 - 设备 QA 摘要：`lane6-cache-rdb-qa/validation-summary.md`
 
+### Lane7-Lane10：Cache 后续收口
+
+状态：完成并已推送。
+
+结果：
+
+- TTL/LRU policy 已明确为行为保持的安全切片，缓存过期、访问时间、容量裁剪语义写入代码与测试。
+- 大 cache payload 改为文件存储，RDB 保留 index/metadata/hash/path，小 payload 可继续 inline。
+- payload 文件写入改为 staged temp file + commit 的原子写路径，失败时做 best-effort cleanup。
+- 增加 debug cache QA seed tool，用于设备侧制造大 payload、inline、过期、缺失文件、hash mismatch、孤儿文件等验证状态。
+- payload hash 在读取时校验；hash mismatch、缺文件、非法 path 等坏数据按读时 repair/删除处理。
+- CacheSettings helper 已拆分，公共 facade/API 保持稳定。
+
+提交：
+
+- `ad58da5 refactor(storage): clarify cache TTL and LRU policy`
+- `528fdb9 feat(storage): store large cache payloads in files`
+- `b6d3ad2 fix(storage): make cache payload file writes atomic`
+- `2d9cb87 test(storage): add debug cache QA seed tool`
+- `e7bfb1c fix(storage): verify cache payload hashes`
+- `4cb1f1b refactor(storage): split cache settings helpers`
+
+### Lane11：Collection RDB clean break
+
+状态：完成并已推送。
+
+最终语义：
+
+- `CollectionSettings` 的 saved topics、saved nodes、viewed topics、read positions、read states 均以 `LocalDataStore` RDB 为 source of truth。
+- `LocalDataStore` schema version 为 `v4`。
+- clean break：不做 Preferences -> RDB 数据迁移，不做 Preferences dual-read fallback。
+- legacy Preferences keys 仅在对应 RDB 写入/清理成功后 best-effort deletion；删除失败不恢复旧 Preferences 语义。
+- `CollectionSettings` public facade 和 UI/AppStorage projection 语义保持稳定。
+
+提交：
+
+- `3f02c0d feat(storage): migrate collection data to RDB`
+
 ### 当前验证状态
 
 主仓库 `/home/gamer/git/V2Next`：
@@ -154,12 +209,17 @@
 - `master...origin/master`
 - clean
 
-已复跑并通过：
+当前关键 contract/static tests：
 
+- `node scripts/test_collection_rdb_contract.mjs`
+- `node scripts/test_collection_settings_contract.mjs`
 - `node scripts/test_cache_settings_rdb_contract.mjs`
+- `node scripts/test_cache_payload_hash_repair_contract.mjs`
+- `node scripts/test_cache_device_qa_seed_static.mjs`
 - `node scripts/test_local_data_store_contract.mjs`
 - `node scripts/test_search_history_rdb_contract.mjs`
 - `node scripts/test_settings_storage_contract.mjs`
+- `node scripts/test_blocked_topic_filter.mjs`
 - `git diff --check`
 
 当前无 in-progress controller stage，无 blocker。
@@ -552,32 +612,26 @@
 - `test_settings_storage_contract.mjs`
 - 独立 review + 设备/行为 QA + integrate 后 master 复跑。
 
-### Lane 5：CollectionSettings split/prep（已完成，未迁 RDB）
+### Lane 5：CollectionSettings split/prep（已完成）
 
 目标：降低后续迁移风险，先拆文件职责，再决定 saved topics/nodes 等数据保留策略。
 
 已落地：
 
 - 拆出 `CollectionTypes.ets`、`CollectionLimits.ets`、`CollectionParsers.ets`、`LocalDataPublisher.ets`。
-- `CollectionSettings.ets` 继续承载持久化入口，Preferences 仍是 source of truth。
+- `CollectionSettings.ets` 继续承载 public facade 与持久化入口。
 - 增加 `test_collection_settings_contract.mjs`。
 - 修复 split/prep 过程中暴露的 saved-node action scoping 回归。
 - commit：`c011976 refactor(storage): split collection settings helpers`。
 
-未落地：
-
-- saved topics / saved nodes / viewed topics / read positions / read states 的完整 RDB 迁移。
-- 这部分需要先明确是否保留旧数据、是否 clean break、是否分域迁移。
-
-### Lane 6：迁移 CacheSettings cache metadata 到 RDB（已完成第一安全切片）
+### Lane 6：迁移 CacheSettings cache metadata 到 RDB（已完成）
 
 目标：缓存 metadata 可维护化。
 
 已落地：
 
 - topic list/detail cache metadata 迁移到 RDB。
-- 小 payload/metadata 仍走当前 CacheSettings 公共 API，保持 UI 行为不变。
-- `LocalDataStore` schema 升级到 v3。
+- `CacheSettings` 公共 API 保持 UI 行为不变。
 - 增加 `test_cache_settings_rdb_contract.mjs`。
 - commit：`a63813a feat(storage): migrate cache metadata to RDB`。
 
@@ -588,12 +642,43 @@
 - force-stop/restart 后 RDB 持久化。
 - clear cache 只清 cache，不触发 local-data clear。
 
-后续可选增强：
+### Lane 7：Cache TTL/LRU policy 澄清（已完成）
 
-- TTL / LRU。
-- 最大条数/最大大小。
-- 大 payload 文件化 + RDB index。
-- index repair / orphan cleanup。
+- 明确缓存过期、访问时间、容量裁剪边界。
+- 行为保持，继续由 contract tests 锁定 cache metadata 语义。
+- commit：`ad58da5 refactor(storage): clarify cache TTL and LRU policy`。
+
+### Lane 8：Cache file-backed payload storage（已完成）
+
+- 大 payload 存入文件，RDB 保存 `payload_path`、`payload_hash`、size、时间戳等 metadata。
+- 小 payload 可 inline，公共 API 不暴露存储细节。
+- commit：`528fdb9 feat(storage): store large cache payloads in files`。
+
+### Lane 9：Cache payload 写入与 repair 加固（已完成）
+
+- payload 文件写入改为原子 staged write。
+- 读取时校验 payload hash，发现 hash mismatch、缺失文件、非法 path 等坏状态时做读时 repair/删除。
+- 增加 debug cache QA seed tool 与静态测试，便于设备 QA 构造异常缓存状态。
+- commits：
+  - `b6d3ad2 fix(storage): make cache payload file writes atomic`
+  - `2d9cb87 test(storage): add debug cache QA seed tool`
+  - `e7bfb1c fix(storage): verify cache payload hashes`
+
+### Lane 10：CacheSettings helper split（已完成）
+
+- CacheSettings helper 拆分完成，保持 `CacheSettings` facade/API 稳定。
+- commit：`4cb1f1b refactor(storage): split cache settings helpers`。
+
+### Lane 11：CollectionSettings RDB migration clean break（已完成）
+
+最终语义：
+
+- saved topics、saved nodes、viewed topics、topic read positions、topic read states 现在全部使用 `LocalDataStore` RDB 作为 source of truth。
+- `LocalDataStore` schema version 为 `v4`。
+- clean break：不做旧 Preferences 数据迁移，不做 Preferences dual-read fallback。
+- legacy Preferences keys 只在对应 RDB 操作成功后 best-effort deletion。
+- `CollectionSettings` public facade、AppStorage projection、local counts 与 read-state 发布语义保持稳定。
+- commit：`3f02c0d feat(storage): migrate collection data to RDB`。
 
 ## 7. 关键风险/决策点
 
@@ -691,43 +776,73 @@
 
 当前情况：
 
-- 本轮持久化重构 controller 计划已完成：Lane4 SearchHistory RDB、Lane5 Collection split/prep、Lane6 Cache metadata RDB。
-- 主仓库 master 已同步 origin/master，最新 commit `a63813a`。
+- 本轮持久化重构 controller 计划已完成到 Collection RDB：Search history RDB、Collection split/prep 与 saved-node 修复、Cache metadata RDB、Cache TTL/LRU、Cache file-backed payload、atomic write、debug QA seed、payload hash/read-time repair、CacheSettings helper split、Collection RDB clean break。
+- 主仓库 master 已同步 origin/master，最新 commit `3f02c0d`。
 - 当前无 in-progress controller stage，无 blocker。
 
 已完成的目标架构切片：
 
 - 用户轻量设置：继续 Preferences。
 - Search history：已迁 RDB。
-- Cache metadata：已迁 RDB。
-- CollectionSettings：已拆分职责，但数据仍在 Preferences。
+- Cache metadata/payload：metadata 已迁 RDB，大 payload 文件化，hash/read-time repair 已落地。
+- CollectionSettings：saved topics、saved nodes、viewed topics、read positions、read states 已迁 RDB；schema `v4`；clean break，无 Preferences migration/dual-read fallback。
 - AppStorage：继续作为 UI projection / runtime bus，不作为 durable source of truth。
 
-下一步候选按风险从低到高：
+当前验证清单：
 
-1. 文档/测试加固
-   - 把 Lane4-Lane6 的实际 schema、行为边界、QA 入口整理到更短的开发者说明。
-   - 补齐 `LocalDataStore` schema/version 注释和 contract 覆盖说明。
+- `node scripts/test_collection_rdb_contract.mjs`
+- `node scripts/test_collection_settings_contract.mjs`
+- `node scripts/test_local_data_store_contract.mjs`
+- `node scripts/test_settings_storage_contract.mjs`
+- `node scripts/test_blocked_topic_filter.mjs`
+- `node scripts/test_search_history_rdb_contract.mjs`
+- `node scripts/test_cache_settings_rdb_contract.mjs`
+- `node scripts/test_cache_payload_hash_repair_contract.mjs`
+- `node scripts/test_cache_device_qa_seed_static.mjs`
+- `git diff --check`
 
-2. Cache 后续增强
-   - TTL / LRU / max size。
-   - index repair / orphan cleanup。
-   - 大 payload 文件化 + RDB index。
-   - 风险中等，适合按小 lane 做。
+## 11. 剩余可选工作
 
-3. CollectionSettings 完整 RDB 迁移
-   - saved topics / saved nodes / viewed topics / read positions / read states 分域迁移。
-   - 需要先决策旧 Preferences 数据保留策略。
-   - 不建议和 UI 改版混做。
+当前无必须处理的 blocker。Preferences 应继续作为 lightweight settings 的持久化层，不需要把 theme/API domain/media/reading/reply display 等小型设置强行迁入 RDB。
 
-4. DraftSettings / BlockedMemberSettings / NotificationSettings RDB 化
-   - 草稿和 blocked members 通常不应默认丢数据，需要单独数据保留策略。
-   - Notification cache 可视实际业务价值决定是否迁移。
+可选 future spec candidates：
 
-建议下一条实现 lane：
+- `DraftSettings` RDB：草稿通常不应默认 clean break，需单独数据保留/迁移决策。
+- `NotificationSettings` RDB/cache policy：先确认通知缓存、已读状态、TTL 和清理价值。
+- `BlockedMemberSettings` RDB decision：是否 clean break 需单独确认；blocked members 通常不应静默丢失。
+- `LocalDataStore` schema/store split：行为保持的结构整理，见下节。
+- 统一 debug local-data seed panel：整合 cache/collection/search 等本地数据 QA seed 入口，仅作为 debug 能力。
 
-> 基于 `docs/persistence-storage-refactor-plan.md` 和当前 master，推进 CacheSettings TTL/LRU 第一安全切片：只新增过期/容量清理策略和 contract tests，保持 UI 不变；按第 9 节 controller 模式执行 implementation -> review -> QA/build -> integrate。
+### LocalDataStore split spec（可选）
 
-如果要继续 Collection：
+目标：只做 behavior-preserving 结构拆分，降低 `LocalDataStore.ets` 与各 settings facade 的长期耦合风险；不改变用户可见行为，不改变数据语义。
 
-> 先做 CollectionSettings RDB migration spec lane，只产出分域迁移方案和数据保留决策矩阵，不直接改代码；明确 saved topics、saved nodes、viewed topics、read positions、read states 是否保留旧数据、是否 clean break、每域 QA 路径。
+建议拆分方向：
+
+- `LocalDataSchema.ets`：集中 schema version、table names、DDL、schema_meta upsert。
+- `SearchHistoryStore.ets`：封装 search history SQL 与 row mapping。
+- `CacheStore.ets`：封装 cache metadata/payload index SQL、TTL/LRU query、repair delete。
+- `CollectionStore.ets`：封装 saved/viewed/read-position/read-state SQL 与 row mapping。
+
+约束：
+
+- 除非新增 domain tables，否则不 bump schema；当前 schema 保持 `v4`。
+- `LocalDataStore` 继续负责 open/init/schema execution，不 import business settings facade。
+- `SearchSettings`、`CacheSettings`、`CollectionSettings` public facade/API 保持稳定。
+- AppStorage 发布仍留在对应 settings/publisher 层，不进入 schema/store 基础层。
+- 不引入 Preferences migration，不恢复 Collection dual-read fallback。
+
+验证要求：
+
+- 必跑全部当前 contract/static tests：
+  - `node scripts/test_collection_rdb_contract.mjs`
+  - `node scripts/test_collection_settings_contract.mjs`
+  - `node scripts/test_local_data_store_contract.mjs`
+  - `node scripts/test_settings_storage_contract.mjs`
+  - `node scripts/test_blocked_topic_filter.mjs`
+  - `node scripts/test_search_history_rdb_contract.mjs`
+  - `node scripts/test_cache_settings_rdb_contract.mjs`
+  - `node scripts/test_cache_payload_hash_repair_contract.mjs`
+  - `node scripts/test_cache_device_qa_seed_static.mjs`
+- 必跑 `bash dev.sh --build-only`。
+- 如果没有可见行为变化，设备 QA 可降级为 optional smoke；若任何 facade 行为、缓存清理、收藏/已读发布语义发生变化，则必须做独立设备 QA。
