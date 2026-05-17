@@ -269,3 +269,29 @@ Lane 1 结论：完成。下一步进入 Lane 2，抽 `AccountMemberRow`。
 - 覆盖状态：关注用户有数据 row、屏蔽与忽略空态。
 
 Lane 2 结论：完成。下一步进入 Lane 3，拆分 `SearchPage` UI 层，先只抽展示组件，不改变搜索数据语义。
+
+### 2026-05-17 Lane 3 第一批
+
+状态：PASS
+
+变更：
+
+- 新增 `entry/src/main/ets/components/SearchPageComponents.ets`。
+- 抽出 `SearchPanelHeader`，承载搜索输入、加载/错误提示和来源 chip。
+- 抽出 `SearchHistoryStrip`，承载历史标题、清空入口和历史关键词 chip。
+- 抽出 `SearchTopicRow` / `SearchNodeRow` / `RemoteTopicRow`，承载本地主题、节点和 SOV2EX 结果 row。
+- 抽出 `ExternalWebSearchCard`，承载网页搜索模式卡片。
+- `SearchPage` 保留搜索状态、过滤、远程请求、历史持久化、导航和 sheet 状态，不改变业务语义。
+
+验证：
+
+- `git diff --check` 通过。
+- `bash dev.sh --build-only` 通过。
+- 已安装到 `192.168.50.237:12345` 并完成实机 QA。
+- 证据目录：`.hermes-artifacts/20260517-2149-search-ui-components-qa/`。
+- 实机路径覆盖：应用内搜索路由 `https://www.v2ex.com/search?q=apple` -> 本地结果 -> `SOV2EX` 结果 -> 搜索筛选 sheet -> 清空关键词后的搜索历史。
+
+后续入口：
+
+1. Lane 3 第二批继续拆筛选 sheet 内容，但必须保持远程筛选状态和执行时机不变。
+2. 如果 sheet 拆分引入 `@Link` 状态较多，优先拆本地筛选内容，再拆远程筛选内容。
