@@ -493,7 +493,38 @@
 - 行为不变，除非用户明确接受 clean break。
 - 先 contract/static tests，再 build，再必要设备 QA。
 
-## 8. 新会话固定当前 controller 模式
+## 8. 当前执行决策（2026-05-17）
+
+### 旧本地数据策略
+
+项目仍处于非常早期阶段，后续本地业务数据迁 RDB 时可采用 clean break：
+
+- 可以直接丢弃旧 Preferences 本地业务数据。
+- 不需要实现 Preferences -> RDB 数据迁移。
+- 不需要为旧本地数据设计迁移回滚。
+- 不需要围绕 search history / drafts / blocked members 等早期本地数据做保留取舍。
+- 仍需保持 UI/API 行为不变；可接受的用户可见变化仅限旧本地数据重置/消失。
+
+### 实机 QA 证据要求
+
+后续所有实机 QA 必须在 fresh QA artifact 目录中保存并在 validation-summary.md 中列出：
+
+- QA verdict。
+- 关键命令结果。
+- artifact 目录。
+- 截图路径。
+- layout/dump 路径。
+- 关键日志路径。
+- 是否已集成/提交/推送。
+
+缺少截图和 layout/dump 证据时，不得把实机 QA 记为 PASS；除非明确说明设备验证不可行并以 BLOCKED/NOT_RUN 处理。
+
+### Controller/agent 推进约定
+
+本系列任务已授权持续按 controller / agent 模式推进：implementation -> review -> QA -> integrate -> next lane。
+常规 gate 之间不再询问确认；只有真实 blocker、QA FAIL、REQUEST_CHANGES、需要用户实机/账号输入，或仍未决且会改变用户可见行为的重大 schema 设计问题才停止。
+
+## 9. 新会话固定当前 controller 模式
 
 新会话不要只说“按这个文档继续”，也不要默认调用 Kanban 后等待看板自动推进。建议把下面这段作为新会话启动块直接发给 assistant：
 
@@ -516,14 +547,14 @@
 如果使用 Kanban，看板只是任务容器，不是 controller。必须同时启动/保持 controller loop：定期检查 board/task/runs/log/PID/artifact，发现 todo/blocked/stalled 要主动 dispatch/recover/reassign，并在每个 gate 完成后显式创建或推进下一 gate。不能把“已创建卡片”当作“任务会自动继续”。
 ```
 
-## 9. 下一会话建议起点
+## 10. 下一会话建议起点
 
 建议新会话从这个任务开始：
 
-> 基于 `docs/persistence-storage-refactor-plan.md`，先推进 Lane 1：集中持久化 store name 注册表与 contract tests。要求不改变任何 store string、key string、用户行为或 UI；只做结构整理和测试加固。按文档第 8 节的 controller 模式执行：implementation -> review -> build -> integrate。
+> 基于 `docs/persistence-storage-refactor-plan.md`，先推进 Lane 1：集中持久化 store name 注册表与 contract tests。要求不改变任何 store string、key string、用户行为或 UI；只做结构整理和测试加固。按文档第 9 节的 controller 模式执行：implementation -> review -> build -> integrate。
 
 如果想更激进，可以改成：
 
-> 先做 RDB spike / LocalDataStore skeleton，不接业务数据，只验证 relationalStore 初始化、schema version、build 和启动 smoke。按文档第 8 节的 controller 模式执行。
+> 先做 RDB spike / LocalDataStore skeleton，不接业务数据，只验证 relationalStore 初始化、schema version、build 和启动 smoke。按文档第 9 节的 controller 模式执行。
 
 推荐优先 Lane 1，因为风险最低，能给后面 RDB migration 打地基。

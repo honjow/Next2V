@@ -19,13 +19,17 @@ const requiredSnippets = [
   "import { common } from '@kit.AbilityKit'",
   "import { relationalStore } from '@kit.ArkData'",
   "export const LOCAL_DATA_DB_NAME: string = 'V2Next.db'",
-  'export const LOCAL_DATA_SCHEMA_VERSION: number = 1',
+  'export const LOCAL_DATA_SCHEMA_VERSION: number = 2',
   "export const LOCAL_DATA_SCHEMA_META_TABLE: string = 'schema_meta'",
   "export const SQL_CREATE_SCHEMA_META_TABLE: string = 'CREATE TABLE IF NOT EXISTS schema_meta (key TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL)'",
-  "export const SQL_UPSERT_SCHEMA_VERSION: string = 'INSERT OR REPLACE INTO schema_meta (key, value) VALUES (\\'schema_version\\', \\'1\\')'",
+  "export const SQL_CREATE_SEARCH_HISTORY_TABLE: string = 'CREATE TABLE IF NOT EXISTS search_history (query TEXT PRIMARY KEY NOT NULL, searched_at INTEGER NOT NULL)'",
+  "export const SQL_CREATE_SEARCH_HISTORY_INDEX: string = 'CREATE INDEX IF NOT EXISTS idx_search_history_searched_at ON search_history (searched_at DESC)'",
+  "export const SQL_UPSERT_SCHEMA_VERSION: string = 'INSERT OR REPLACE INTO schema_meta (key, value) VALUES (\\'schema_version\\', \\'2\\')'",
   'securityLevel: relationalStore.SecurityLevel.S3',
   'relationalStore.getRdbStore(context, LOCAL_DATA_STORE_CONFIG)',
   'await store.execute(SQL_CREATE_SCHEMA_META_TABLE)',
+  'await store.execute(SQL_CREATE_SEARCH_HISTORY_TABLE)',
+  'await store.execute(SQL_CREATE_SEARCH_HISTORY_INDEX)',
   'await store.execute(SQL_UPSERT_SCHEMA_VERSION)',
   'store.version = LOCAL_DATA_SCHEMA_VERSION',
   'return store',
@@ -37,7 +41,7 @@ assert(/export\s+class\s+LocalDataStore/.test(localDataText), 'LocalDataStore cl
 assert(/static\s+async\s+open\s*\(\s*context\s*:\s*common\.UIAbilityContext\s*\)\s*:\s*Promise<\s*relationalStore\.RdbStore\s*>/.test(localDataText), 'LocalDataStore.open(context) signature missing')
 assert(!localDataText.includes('CollectionSettings'), 'LocalDataStore skeleton must not wire collections')
 assert(!localDataText.includes('DraftSettings'), 'LocalDataStore skeleton must not wire drafts')
-assert(!localDataText.includes('SearchSettings'), 'LocalDataStore skeleton must not wire search')
+assert(!localDataText.includes('SearchSettings'), 'LocalDataStore must not know SearchSettings')
 assert(!localDataText.includes('CacheSettings'), 'LocalDataStore skeleton must not wire cache')
 assert(!localDataText.includes('BlockedMemberSettings'), 'LocalDataStore skeleton must not wire blocked members')
 
@@ -48,7 +52,6 @@ const forbiddenBusinessFiles = [
   'entry/src/main/ets/entryability/EntryAbility.ets',
   'shared/src/main/ets/settings/CollectionSettings.ets',
   'shared/src/main/ets/settings/DraftSettings.ets',
-  'shared/src/main/ets/settings/SearchSettings.ets',
   'shared/src/main/ets/settings/CacheSettings.ets',
   'shared/src/main/ets/settings/BlockedMemberSettings.ets',
   'shared/src/main/ets/settings/SettingsBootstrap.ets',
@@ -58,6 +61,10 @@ for (const rel of forbiddenBusinessFiles) {
   assert(!read(rel).includes('LocalDataStore'), `${rel} must not wire LocalDataStore in this skeleton lane`)
   assert(!read(rel).includes('V2Next.db'), `${rel} must not know RDB db name in this skeleton lane`)
 }
+
+const searchSettingsText = read('shared/src/main/ets/settings/SearchSettings.ets')
+assert(searchSettingsText.includes("import { LocalDataStore } from '../storage/LocalDataStore'"), 'SearchSettings must be the only Lane 4 business settings LocalDataStore consumer')
+assert(!searchSettingsText.includes('V2Next.db'), 'SearchSettings must not know RDB db name')
 
 const sourceRoots = [
   'entry/src/main/ets',
@@ -86,8 +93,8 @@ for (const root of sourceRoots) {
   for (const abs of walkTextFiles(absRoot)) {
     const rel = path.relative(repo, abs)
     const text = fs.readFileSync(abs, 'utf8')
-    if (rel === localDataRel || rel === 'shared/src/main/ets/Index.ets') continue
-    assert(!text.includes("@ohos.data.relationalStore") && !text.includes("'@kit.ArkData'") || !text.includes('relationalStore'), `${rel} must not add relationalStore usage outside LocalDataStore`)
+    if (rel === localDataRel || rel === 'shared/src/main/ets/Index.ets' || rel === 'shared/src/main/ets/settings/SearchSettings.ets') continue
+    assert(!text.includes("@ohos.data.relationalStore") && !text.includes("'@kit.ArkData'") || !text.includes('relationalStore'), `${rel} must not add relationalStore usage outside LocalDataStore/SearchSettings Lane 4 boundary`)
   }
 }
 

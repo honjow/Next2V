@@ -334,7 +334,7 @@ assert(helperText.includes('JSON.parse') && helperText.includes('JSON.stringify'
 assert(helperText.includes('store.flushSync()'), 'JSON preferences write/delete helpers must flush synchronously')
 
 const jsonBusinessSettingsContracts = [
-  ['SearchSettings.ets', 'STORE_NAME_SEARCH', ['withPreferencesStore', 'readJsonArray', 'writeJsonValue', 'deleteKeysAndFlush']],
+  ['SearchSettings.ets', 'STORE_NAME_SEARCH', ['withPreferencesStore']],
   ['BlockedMemberSettings.ets', 'STORE_NAME_BLOCKED_MEMBERS', ['withPreferencesStore', 'readJsonArray', 'writeJsonValue']],
   ['DraftSettings.ets', 'STORE_NAME_DRAFTS', ['withPreferencesStore', 'readJsonArray', 'readJsonObject', 'writeJsonValue', 'deleteKeysAndFlush']],
 ]
@@ -350,6 +350,7 @@ assert(read('shared/src/main/ets/settings/DraftSettings.ets').includes("KEY_REPL
 assert(read('shared/src/main/ets/settings/DraftSettings.ets').includes("KEY_TOPIC_DRAFT: string = 'topicDraft'"), 'DraftSettings topicDraft key changed')
 assert(read('shared/src/main/ets/settings/SearchSettings.ets').includes("KEY_HISTORY: string = 'searchHistory'"), 'SearchSettings searchHistory key changed')
 assert(read('shared/src/main/ets/settings/SearchSettings.ets').includes("KEY_SOURCE_MODE: string = 'sourceMode'"), 'SearchSettings sourceMode key changed')
+assert(read('shared/src/main/ets/settings/SearchSettings.ets').includes("LocalDataStore.open(context)"), 'SearchSettings searchHistory must use LocalDataStore RDB')
 assert(read('shared/src/main/ets/settings/BlockedMemberSettings.ets').includes("KEY_USERNAMES: string = 'usernames'"), 'BlockedMemberSettings usernames key changed')
 assert(read('shared/src/main/ets/settings/BlockedMemberSettings.ets').includes("KEY_UPDATED_AT: string = 'updatedAt'"), 'BlockedMemberSettings updatedAt key changed')
 
