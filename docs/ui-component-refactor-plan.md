@@ -228,3 +228,22 @@
 
 1. 完成 Lane 1 剩余 `feature/node/src/main/ets/pages/NodeTopicPage.ets`。
 2. 进入 Lane 2，抽 `AccountMemberRow` 收口关注/屏蔽用户 row。
+
+### 2026-05-17 Lane 1 第三批
+
+状态：PASS
+
+变更：
+
+- 迁移 `NodeTopicPage` 的初始 loading overlay 内部实现、空态和错误态到共享 PageState。
+- 保留原 Stack + PullRefreshListScaffold 结构、分页、下拉刷新、加载更多错误和节点收藏动作。
+
+验证：
+
+- `git diff --check` 通过。
+- `bash dev.sh --build-only` 通过。
+- 已安装到 `192.168.50.237:12345` 并完成实机 QA。
+- 证据目录：`.hermes-artifacts/20260517-2137-page-state-node-topic-qa/`。
+- 实机路径覆盖：账号页 -> `收藏节点` -> `iPhone` 节点主题页。
+
+Lane 1 结论：完成。下一步进入 Lane 2，抽 `AccountMemberRow`。

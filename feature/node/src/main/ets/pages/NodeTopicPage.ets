@@ -1,8 +1,8 @@
 import { NodeViewModel } from '../viewmodel/NodeViewModel'
 import {
-  V2exTopic, TopicCard, ThemeConstants, TopicDetailParams, StorageKeys, UserProfileParams,
-  CollectionSettings, SavedNode, AuthSettings, LoadingFooter, ApiService, CookieJarSettings, V2exToggleAction,
-  PullRefreshListScaffold
+  AuthSettings, CardEmptyState, CollectionSettings, SavedNode, ApiService, CookieJarSettings, LoadingFooter,
+  PageErrorState, PageLoadingState, PullRefreshListScaffold, StorageKeys, ThemeConstants, TopicCard,
+  TopicDetailParams, UserProfileParams, V2exToggleAction, V2exTopic
 } from 'shared'
 import type { TopicReadState } from 'shared'
 import { common } from '@kit.AbilityKit'
@@ -87,9 +87,7 @@ export struct NodeTopicPage {
 
   @Builder LoadingView() {
     Column() {
-      LoadingProgress()
-        .width(ThemeConstants.LOADING_SIZE)
-        .height(ThemeConstants.LOADING_SIZE)
+      PageLoadingState()
     }
     .justifyContent(FlexAlign.Center)
     .width('100%')
@@ -99,29 +97,17 @@ export struct NodeTopicPage {
   }
 
   @Builder EmptyView() {
-    Column() {
-      Text('暂无主题')
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .fontColor($r('sys.color.font_secondary'))
-    }
-    .justifyContent(FlexAlign.Center)
-    .width('100%')
-    .height('100%')
+    CardEmptyState({ message: '暂无主题', expand: false })
   }
 
   @Builder ErrorView() {
-    Column() {
-      Text(this.vm.errorMessage || '节点主题加载失败')
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .fontColor($r('sys.color.font_secondary'))
-      Button('重试')
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .margin({ top: ThemeConstants.SPACE_LG })
-        .onClick(() => { this.loadData() })
-    }
-    .justifyContent(FlexAlign.Center)
-    .width('100%')
-    .height('100%')
+    PageErrorState({
+      message: this.vm.errorMessage || '节点主题加载失败',
+      expand: false,
+      retryAction: () => {
+        this.loadData()
+      }
+    })
   }
 
   @Builder LoadMoreErrorView() {
