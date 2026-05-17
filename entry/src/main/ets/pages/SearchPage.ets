@@ -32,6 +32,10 @@ import {
   RemoteSearchCoordinator,
 } from '../model/RemoteSearchCoordinator'
 import {
+  type RemoteFilterEffect,
+  SearchFilterCoordinator,
+} from '../model/SearchFilterCoordinator'
+import {
   SearchPageStateCoordinator,
 } from '../model/SearchPageStateCoordinator'
 import {
@@ -371,20 +375,22 @@ export struct SearchPage {
       remoteLoading: this.remoteLoading,
       hasRemoteFilters: this.hasRemoteFilters(),
       selectSort: (sort: Sov2exSortMode) => {
+        const effect = SearchFilterCoordinator.selectRemoteSort(this.remoteSort, sort)
         this.remoteSort = sort
-        this.resetRemoteResults()
+        this.applyRemoteFilterEffect(effect)
       },
       toggleOrder: () => {
-        this.remoteOrder = this.remoteOrder === '0' ? '1' : '0'
-        this.resetRemoteResults()
+        const effect = SearchFilterCoordinator.toggleRemoteOrder(this.remoteOrder)
+        this.remoteOrder = effect.order
+        this.applyRemoteFilterEffect(effect)
       },
-      remoteTextChange: () => { this.resetRemoteResults() },
+      remoteTextChange: () => {
+        this.applyRemoteFilterEffect(SearchFilterCoordinator.remoteTextChanged())
+      },
       selectDateRange: (range: RemoteDateRange) => {
-        if (this.remoteDateRange === range) {
-          return
-        }
+        const effect = SearchFilterCoordinator.selectRemoteDateRange(this.remoteDateRange, range)
         this.remoteDateRange = range
-        this.executeRemoteSearch(true)
+        this.applyRemoteFilterEffect(effect)
       },
       clearFilters: () => { this.clearRemoteFilters() },
       applySearch: () => {
@@ -660,11 +666,14 @@ export struct SearchPage {
   }
 
   private updateResultFilter(filter: SearchResultFilter): void {
-    if (this.resultFilter === filter) {
+    const effect = SearchFilterCoordinator.updateLocalResultFilter(this.resultFilter, filter)
+    if (!effect.changed) {
       return
     }
-    this.resultFilter = filter
-    this.applyFilter()
+    this.resultFilter = effect.filter
+    if (effect.shouldApplyLocalFilter) {
+      this.applyFilter()
+    }
   }
 
   private openUserProfile(username: string): void {
@@ -801,11 +810,23 @@ export struct SearchPage {
   }
 
   private clearRemoteFilters(): void {
-    this.remoteUsername = ''
-    this.remoteNode = ''
-    this.remoteDateRange = 'all'
-    this.resetRemoteResults()
-    this.executeRemoteSearch(true)
+    const effect = SearchFilterCoordinator.clearRemoteFilters()
+    this.remoteUsername = effect.username
+    this.remoteNode = effect.node
+    this.remoteDateRange = effect.dateRange
+    this.applyRemoteFilterEffect(effect)
+  }
+
+  private applyRemoteFilterEffect(effect: RemoteFilterEffect): void {
+    if (!effect.changed) {
+      return
+    }
+    if (effect.shouldResetRemote) {
+      this.resetRemoteResults()
+    }
+    if (effect.shouldExecuteRemote) {
+      this.executeRemoteSearch(true)
+    }
   }
 
 }
