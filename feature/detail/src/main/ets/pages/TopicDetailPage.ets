@@ -11,6 +11,9 @@ import {
   ReplyContextCoordinator,
   type ReplyContextItem,
 } from '../model/ReplyContextCoordinator'
+import {
+  TopicDetailActionCoordinator,
+} from '../model/TopicDetailActionCoordinator'
 import { common, Want } from '@kit.AbilityKit'
 import { LengthMetrics, promptAction } from '@kit.ArkUI'
 import { ActionBarButton, ActionBarStyle, HdsActionBar } from '@kit.UIDesignKit'
@@ -1388,23 +1391,11 @@ export struct TopicDetailPage {
   }
 
   onTopicActionCommand(_propName: string): void {
-    const raw = (this.topicActionCommand || '').trim()
-    if (!raw) {
+    const command = TopicDetailActionCoordinator.parseCommand(this.topicActionCommand)
+    if (!command || command.topicId !== this.topicId) {
       return
     }
-    // Payload format: `${ts}:${topicId}:${action}`. Filter by topicId so
-    // only the foreground TopicDetailPage reacts — without this, every
-    // live instance in the nav stack would handle the action.
-    const parts = raw.split(':')
-    if (parts.length < 3) {
-      return
-    }
-    const targetTopicId = Number(parts[1])
-    if (targetTopicId !== this.topicId) {
-      return
-    }
-    const action = parts.slice(2).join(':')
-    this.handleTopicAction(action)
+    this.handleTopicAction(command.action)
   }
 
   private handleTopicAction(action: string): void {
@@ -1535,11 +1526,10 @@ export struct TopicDetailPage {
   }
 
   private confirmSiteFavoriteToggle(cookie: string, toggle: V2exToggleAction): void {
-    const title = (this.v.topic?.title || '').trim()
     const verb = this.isSiteFavorited ? '取消收藏' : '收藏'
     AlertDialog.show({
       title: '站内收藏',
-      message: title ? `确定${verb}《${title}》吗？` : `确定${verb}该主题吗？`,
+      message: TopicDetailActionCoordinator.topicFavoriteMessage(this.v.topic?.title || '', verb),
       primaryButton: { value: '取消', action: () => {} },
       secondaryButton: {
         value: verb,
@@ -1592,10 +1582,9 @@ export struct TopicDetailPage {
   }
 
   private confirmTopicThank(cookie: string): void {
-    const title = (this.v.topic?.title || '').trim()
     AlertDialog.show({
       title: '感谢主题',
-      message: title ? `确定感谢《${title}》吗？` : '确定感谢该主题吗？',
+      message: TopicDetailActionCoordinator.topicThankMessage(this.v.topic?.title || ''),
       autoCancel: false,
       primaryButton: {
         value: '取消',
@@ -1678,7 +1667,7 @@ export struct TopicDetailPage {
   private confirmReplyThank(cookie: string, reply: V2exReply): void {
     AlertDialog.show({
       title: '感谢回复',
-      message: `确定感谢 ${reply.member.username || '该用户'} 的回复吗？`,
+      message: TopicDetailActionCoordinator.replyActionMessage('感谢', reply.member.username),
       autoCancel: false,
       primaryButton: {
         value: '取消',
@@ -1731,38 +1720,16 @@ export struct TopicDetailPage {
   }
 
   private isReplyThanked(replyId: number): boolean {
-    if (replyId <= 0) {
-      return false
-    }
-    const replies = this.v.getLoadedRepliesSnapshot()
-    for (let i = 0; i < replies.length; i++) {
-      if (replies[i] && replies[i].id === replyId && replies[i].thanked) {
-        return true
-      }
-    }
-    try {
-      const ids = JSON.parse(this.thankedReplyIdsJson || '[]') as number[]
-      return Array.isArray(ids) && ids.indexOf(replyId) >= 0
-    } catch (_error) {
-      return false
-    }
+    return TopicDetailActionCoordinator.isReplyThanked(
+      replyId,
+      this.v.getLoadedRepliesSnapshot(),
+      this.thankedReplyIdsJson,
+    )
   }
 
   private markReplyThanked(replyId: number): void {
-    if (replyId <= 0) {
-      return
-    }
-    let ids: number[] = []
-    try {
-      const parsed = JSON.parse(this.thankedReplyIdsJson || '[]') as number[]
-      ids = Array.isArray(parsed) ? parsed : []
-    } catch (_error) {
-      ids = []
-    }
-    if (ids.indexOf(replyId) < 0) {
-      ids.push(replyId)
-      this.thankedReplyIdsJson = JSON.stringify(ids)
-    }
+    this.thankedReplyIdsJson =
+      TopicDetailActionCoordinator.markReplyThanked(replyId, this.thankedReplyIdsJson)
   }
 
   private prepareTopicIgnore(): void {
@@ -1828,7 +1795,9 @@ export struct TopicDetailPage {
       })
       .catch((error: Error) => {
         promptAction
-          .openToast({ message: error.message || `解析${verb}操作失败` })
+          .openToast({
+            message: error.message || TopicDetailActionCoordinator.parseActionFailureMessage(verb),
+          })
           .catch((_error: Error) => {})
       })
       .finally(() => {
@@ -1843,10 +1812,9 @@ export struct TopicDetailPage {
     action: V2exTopicModerationAction,
     executeAction: (cookie: string, action: V2exTopicModerationAction) => Promise<void>,
   ): void {
-    const topicTitle = (this.v.topic?.title || '').trim()
     AlertDialog.show({
       title: title,
-      message: topicTitle ? `确定${verb}《${topicTitle}》吗？` : `确定${verb}该主题吗？`,
+      message: TopicDetailActionCoordinator.topicFavoriteMessage(this.v.topic?.title || '', verb),
       primaryButton: { value: '取消', action: () => {} },
       secondaryButton: {
         value: verb,
@@ -1908,7 +1876,9 @@ export struct TopicDetailPage {
       })
       .catch((error: Error) => {
         promptAction
-          .openToast({ message: error.message || `解析${verb}操作失败` })
+          .openToast({
+            message: error.message || TopicDetailActionCoordinator.parseActionFailureMessage(verb),
+          })
           .catch((_error: Error) => {})
       })
       .finally(() => {
@@ -1926,7 +1896,7 @@ export struct TopicDetailPage {
   ): void {
     AlertDialog.show({
       title: title,
-      message: `确定${verb} ${reply.member.username || '该用户'} 的回复吗？`,
+      message: TopicDetailActionCoordinator.replyActionMessage(verb, reply.member.username),
       primaryButton: { value: '取消', action: () => {} },
       secondaryButton: {
         value: verb,
