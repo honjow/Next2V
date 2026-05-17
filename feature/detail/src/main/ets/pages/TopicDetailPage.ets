@@ -14,6 +14,7 @@ import {
 import {
   TopicDetailActionCoordinator,
 } from '../model/TopicDetailActionCoordinator'
+import { TopicDetailAppbarCoordinator } from '../model/TopicDetailAppbarCoordinator'
 import { TopicDetailScrollCoordinator } from '../model/TopicDetailScrollCoordinator'
 import { common, Want } from '@kit.AbilityKit'
 import { LengthMetrics, promptAction } from '@kit.ArkUI'
@@ -641,36 +642,27 @@ export struct TopicDetailPage {
   }
 
   private areaLength(value: Length | undefined): number {
-    if (typeof value === 'number') {
-      return value
-    }
-    if (typeof value === 'string') {
-      const parsed = Number.parseFloat(value)
-      return Number.isNaN(parsed) ? 0 : parsed
-    }
-    return 0
+    return TopicDetailAppbarCoordinator.areaLength(value)
   }
 
   private areaY(value: Length | undefined): number {
-    return this.areaLength(value)
+    return TopicDetailAppbarCoordinator.areaY(value)
   }
 
   private evaluateAppbarIdentityVisibility(): void {
-    if (!this.v.topic || this.titleContentBottom <= 0) {
-      this.isTitleCoveredByAppbar = false
-      this.publishAppbarIdentity(false)
+    const result = TopicDetailAppbarCoordinator.evaluateVisibility({
+      hasTopic: !!this.v.topic,
+      titleContentBottom: this.titleContentBottom,
+      currentScrollOffset: this.currentScrollOffset,
+      appbarBottom: this.topH + ThemeConstants.TITLE_BAR_HEIGHT,
+      hysteresis: this.titleVisibilityHysteresis,
+      currentlyVisible: this.isTitleCoveredByAppbar,
+    })
+    if (!result.shouldPublish) {
       return
     }
-    const currentTitleBottom = this.titleContentBottom - this.currentScrollOffset
-    const appbarBottom = this.topH + ThemeConstants.TITLE_BAR_HEIGHT
-    const shouldShowIdentity = this.isTitleCoveredByAppbar
-      ? currentTitleBottom <= appbarBottom + this.titleVisibilityHysteresis
-      : currentTitleBottom <= appbarBottom
-    if (shouldShowIdentity === this.isTitleCoveredByAppbar) {
-      return
-    }
-    this.isTitleCoveredByAppbar = shouldShowIdentity
-    this.publishAppbarIdentity(shouldShowIdentity)
+    this.isTitleCoveredByAppbar = result.visible
+    this.publishAppbarIdentity(result.visible)
   }
 
   private republishAppbarIdentity(): void {
@@ -683,59 +675,34 @@ export struct TopicDetailPage {
     if (!routeKey) {
       return
     }
-    const title = visible ? this.topicAppbarTitle() : ''
-    const avatarUrl = visible ? this.topicAppbarAvatarUrl() : ''
-    const username = visible ? this.topicAppbarUsername() : ''
+    const identity = TopicDetailAppbarCoordinator.identity(this.v.topic, visible)
     this.topicDetailAppbarTitleStates = this.nextStringState(
       this.topicDetailAppbarTitleStates,
       routeKey,
-      title,
+      identity.title,
     )
     this.topicDetailAppbarAvatarStates = this.nextStringState(
       this.topicDetailAppbarAvatarStates,
       routeKey,
-      avatarUrl,
+      identity.avatarUrl,
     )
     this.topicDetailAppbarUsernameStates = this.nextStringState(
       this.topicDetailAppbarUsernameStates,
       routeKey,
-      username,
+      identity.username,
     )
     this.topicDetailAppbarRouteTopicId = visible ? routeKey : ''
-    this.topicDetailAppbarTitle = title
-    this.topicDetailAppbarAvatarUrl = avatarUrl
-    this.topicDetailAppbarUsername = username
+    this.topicDetailAppbarTitle = identity.title
+    this.topicDetailAppbarAvatarUrl = identity.avatarUrl
+    this.topicDetailAppbarUsername = identity.username
   }
 
   private nextStringState(statesJson: string, key: string, value: string): string {
-    let states: Record<string, string> = {}
-    try {
-      const parsed = JSON.parse(statesJson || '{}') as Record<string, string>
-      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-        states = parsed
-      }
-    } catch (_error) {}
-    states[key] = value
-    return JSON.stringify(states)
+    return TopicDetailAppbarCoordinator.nextStringState(statesJson, key, value)
   }
 
   private topicRouteKey(): string {
-    return this.topicId > 0 ? this.topicId.toString() : ''
-  }
-
-  private topicAppbarTitle(): string {
-    return (this.v.topic?.title || '').trim()
-  }
-
-  private topicAppbarUsername(): string {
-    return (this.v.topic?.member?.username || '').trim()
-  }
-
-  private topicAppbarAvatarUrl(): string {
-    if (!this.v.topic) {
-      return ''
-    }
-    return (this.v.topic.member.avatar_large || this.v.topic.member.avatar_normal || '').trim()
+    return TopicDetailAppbarCoordinator.routeKey(this.topicId)
   }
 
   @Builder TopicCard() {
