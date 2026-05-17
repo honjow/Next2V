@@ -19,7 +19,6 @@ import {
   Sov2exService,
   AppActionButton,
   AppModalScaffold,
-  type Sov2exHit,
   type Sov2exOrderMode,
   type Sov2exSortMode,
   ThemeConstants,
@@ -29,6 +28,9 @@ import {
   defaultSheetOptions,
 } from 'shared'
 import { SearchLocalResultBuilder } from '../model/SearchLocalResultBuilder'
+import {
+  SearchPageStateCoordinator,
+} from '../model/SearchPageStateCoordinator'
 import {
   ExternalWebSearchCard,
   LocalSearchFilterSheetContent,
@@ -387,12 +389,7 @@ export struct SearchPage {
   }
 
   private onSearchActionCommand(_propName: string): void {
-    const raw = (this.searchActionCommand || '').trim()
-    if (!raw) {
-      return
-    }
-    const parts = raw.split(':')
-    const action = parts.length > 0 ? parts[parts.length - 1] : ''
+    const action = SearchPageStateCoordinator.parseActionCommand(this.searchActionCommand)
     if (action === 'filter') {
       this.filterSheetVisible = true
       return
@@ -411,13 +408,8 @@ export struct SearchPage {
   }
 
   private consumePendingSearchQuery(): void {
-    const command = (this.pendingSearchQuery || '').trim()
-    if (!command) {
-      return
-    }
-    const stampedQueryMatch = command.match(/^\d+:(.+)$/)
-    const query = stampedQueryMatch && stampedQueryMatch[1] ? stampedQueryMatch[1] : command
-    if (!query.trim()) {
+    const query = SearchPageStateCoordinator.parsePendingQuery(this.pendingSearchQuery)
+    if (!query) {
       return
     }
     this.applyHistory(query)
@@ -687,53 +679,35 @@ export struct SearchPage {
   }
 
   private showTopicResults(): boolean {
-    return this.resultFilter === 'all' || this.resultFilter === 'topics' || this.resultFilter === 'users'
+    return SearchPageStateCoordinator.shouldShowTopicResults(this.resultFilter)
   }
 
   private showNodeResults(): boolean {
-    return this.resultFilter === 'all' || this.resultFilter === 'nodes'
+    return SearchPageStateCoordinator.shouldShowNodeResults(this.resultFilter)
   }
 
   private topicSectionTitle(): string {
-    return this.resultFilter === 'users' ? '用户相关主题' : '主题结果'
+    return SearchPageStateCoordinator.topicSectionTitle(this.resultFilter)
   }
 
   private emptyTopicHint(): string {
-    return this.resultFilter === 'users' ? '没有匹配该用户的本地主题' : '没有匹配的主题'
+    return SearchPageStateCoordinator.emptyTopicHint(this.resultFilter)
   }
 
   private usesNodeIndex(): boolean {
-    return this.sourceMode === 'localWithNodes'
+    return SearchPageStateCoordinator.usesNodeIndex(this.sourceMode)
   }
 
   private sourceModeSummary(): string {
-    if (this.sourceMode === 'remote') {
-      return '使用 SOV2EX 站内搜索'
-    }
-    if (this.sourceMode === 'externalWeb') {
-      return '官方 API 暂无主题搜索，使用系统浏览器搜索 V2EX 主题'
-    }
-    if (this.usesNodeIndex()) {
-      return '在收藏 / 最近浏览 / 关注节点 / 离线缓存 / 节点库中搜索'
-    }
-    return '在收藏 / 最近浏览 / 关注节点 / 离线缓存中搜索'
+    return SearchPageStateCoordinator.sourceModeSummary(this.sourceMode)
   }
 
   private loadingSummary(): string {
-    if (this.isCacheLoading && this.isNodeIndexLoading) {
-      return '索引加载中'
-    }
-    if (this.isCacheLoading) {
-      return '缓存加载中'
-    }
-    return '节点加载中'
+    return SearchPageStateCoordinator.loadingSummary(this.isCacheLoading, this.isNodeIndexLoading)
   }
 
   private emptyNodeHint(): string {
-    if (this.usesNodeIndex()) {
-      return '节点库和你关注的节点会出现在这里'
-    }
-    return '你关注的节点会出现在这里'
+    return SearchPageStateCoordinator.emptyNodeHint(this.sourceMode)
   }
 
   private openExternalTopicSearch(): void {
@@ -747,7 +721,7 @@ export struct SearchPage {
         this.history = items
       })
       .catch((_error: Error) => { })
-    const url = SearchPage.buildExternalTopicSearchUrl(q)
+    const url = SearchPageStateCoordinator.buildExternalTopicSearchUrl(q)
     const want: Want = { action: 'ohos.want.action.viewData', uri: url }
     context.startAbility(want)
       .catch((error: Error) => {
@@ -755,15 +729,12 @@ export struct SearchPage {
       })
   }
 
-  private static buildExternalTopicSearchUrl(query: string): string {
-    return `https://www.bing.com/search?q=${encodeURIComponent(`site:v2ex.com/t ${query}`)}`
-  }
-
   private resetRemoteResults(): void {
-    this.remoteResults = []
-    this.remoteTotal = 0
-    this.remoteFrom = 0
-    this.remoteError = ''
+    const state = SearchPageStateCoordinator.resetRemoteState()
+    this.remoteResults = state.results
+    this.remoteTotal = state.total
+    this.remoteFrom = state.from
+    this.remoteError = state.error
   }
 
   private executeRemoteSearch(reset: boolean): void {
@@ -791,7 +762,7 @@ export struct SearchPage {
     })
       .then((response) => {
         const hits = response.hits || []
-        const next = hits.map((hit: Sov2exHit) => SearchPage.remoteHitToItem(hit))
+        const next = hits.map((hit) => SearchPageStateCoordinator.remoteHitToItem(hit))
           .filter((item: RemoteTopicItem) => item.id > 0)
         this.remoteResults = reset ? next : this.remoteResults.concat(next)
         this.remoteTotal = response.total || this.remoteResults.length
@@ -811,52 +782,12 @@ export struct SearchPage {
       })
   }
 
-  private static remoteHitToItem(hit: Sov2exHit): RemoteTopicItem {
-    const source = hit._source || {}
-    const rawId = source.id || Number.parseInt(hit._id || '0')
-    return {
-      id: rawId || 0,
-      title: SearchPage.cleanHighlightText(source.title || ''),
-      username: source.member || '',
-      content: SearchPage.cleanHighlightText(SearchPage.firstHighlight(hit) || source.content || ''),
-      created: SearchPage.cleanCreated(source.created || ''),
-      replies: source.replies || 0,
-      nodeId: source.node || 0
-    }
-  }
-
-  private static firstHighlight(hit: Sov2exHit): string {
-    const highlight = hit.highlight
-    if (!highlight) {
-      return ''
-    }
-    const reply = highlight.replyListContent
-    if (reply && reply.length > 0) {
-      return reply[0]
-    }
-    if (highlight.content && highlight.content.length > 0) {
-      return highlight.content[0]
-    }
-    if (highlight.title && highlight.title.length > 0) {
-      return highlight.title[0]
-    }
-    return ''
-  }
-
-  private static cleanHighlightText(text: string): string {
-    return (text ?? '')
-      .replace(/<em>/g, '')
-      .replace(/<\/em>/g, '')
-      .replace(/\s+/g, ' ')
-      .trim()
-  }
-
-  private static cleanCreated(created: string): string {
-    return (created ?? '').replace('T', ' ').slice(0, 16)
-  }
-
   private hasRemoteFilters(): boolean {
-    return this.remoteUsername.trim().length > 0 || this.remoteNode.trim().length > 0 || this.remoteDateRange !== 'all'
+    return SearchPageStateCoordinator.hasRemoteFilters(
+      this.remoteUsername,
+      this.remoteNode,
+      this.remoteDateRange,
+    )
   }
 
   private clearRemoteFilters(): void {
@@ -868,21 +799,7 @@ export struct SearchPage {
   }
 
   private remoteGte(): number {
-    if (this.remoteDateRange === 'all') {
-      return 0
-    }
-    const now = Math.floor(Date.now() / 1000)
-    const day = 24 * 60 * 60
-    if (this.remoteDateRange === 'day') {
-      return now - day
-    }
-    if (this.remoteDateRange === 'week') {
-      return now - 7 * day
-    }
-    if (this.remoteDateRange === 'month') {
-      return now - 30 * day
-    }
-    return now - 365 * day
+    return SearchPageStateCoordinator.remoteGte(this.remoteDateRange)
   }
 
 }
