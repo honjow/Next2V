@@ -1,82 +1,56 @@
 import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
-import { StorageKeys } from '../constants/StorageKeys'
 import { V2exTopic } from '../network/NetworkTypes'
-import { setAppStorageValue } from './SettingsStorage'
+import {
+  MAX_READ_POSITIONS,
+  MAX_READ_STATES,
+  MAX_SAVED_NODES,
+  MAX_SAVED_TOPICS,
+  MAX_VIEWED_TOPICS,
+} from './CollectionLimits'
+import {
+  cleanNodeTitle,
+  parseSavedNodes,
+  parseSavedTopics,
+  parseTopicReadPositions,
+  parseTopicReadStates,
+  parseViewedTopics,
+} from './CollectionParsers'
+import type {
+  LocalContentStats,
+  SavedNode,
+  SavedTopic,
+  TopicReadPosition,
+  TopicReadState,
+  ViewedTopic,
+} from './CollectionTypes'
+import { LocalDataPublisher } from './LocalDataPublisher'
 import { STORE_NAME_COLLECTIONS } from './SettingsStores'
+
+export type {
+  LocalContentStats,
+  SavedNode,
+  SavedTopic,
+  TopicReadPosition,
+  TopicReadState,
+  ViewedTopic,
+} from './CollectionTypes'
 
 const STORE_NAME: string = STORE_NAME_COLLECTIONS
 const KEY_SAVED_TOPICS: string = 'savedTopics'
 const KEY_SAVED_NODES: string = 'savedNodes'
 const KEY_VIEWED_TOPICS: string = 'viewedTopics'
 const KEY_TOPIC_READ_POSITIONS: string = 'topicReadPositions'
-const KEY_TOPIC_READ_STATES: string = StorageKeys.TOPIC_READ_STATES
-const MAX_SAVED_TOPICS: number = 100
-const MAX_SAVED_NODES: number = 80
-const MAX_VIEWED_TOPICS: number = 100
-const MAX_READ_POSITIONS: number = 200
-const MAX_READ_STATES: number = 500
-
-export interface SavedTopic {
-  id: number
-  title: string
-  nodeName: string
-  nodeTitle: string
-  username: string
-  avatar?: string
-  memberPro?: number
-  created: number
-  replies?: number
-  savedAt: number
-}
-
-export interface SavedNode {
-  name: string
-  title: string
-  topics: number
-  avatarMini?: string
-  avatarNormal?: string
-  avatarLarge?: string
-  savedAt: number
-}
-
-export interface ViewedTopic {
-  id: number
-  title: string
-  nodeName: string
-  nodeTitle: string
-  username: string
-  avatar?: string
-  memberPro?: number
-  replies?: number
-  viewedAt: number
-}
-
-export interface TopicReadPosition {
-  id: number
-  floor: number
-  updatedAt: number
-}
-
-export interface TopicReadState {
-  id: number
-  touchedAt: number
-  updatedAt: number
-}
-
-export interface LocalContentStats {
-  savedTopicCount: number
-  savedNodeCount: number
-  viewedTopicCount: number
-}
+// Legacy/compatibility Preferences key that mirrors StorageKeys.TOPIC_READ_STATES.
+const KEY_TOPIC_READ_STATES: string = 'topicReadStates'
 
 export class CollectionSettings {
   static async loadSavedTopics(context: common.UIAbilityContext): Promise<SavedTopic[]> {
     try {
       const store = await preferences.getPreferences(context, STORE_NAME)
       const raw = store.getSync(KEY_SAVED_TOPICS, '[]') as string
-      const topics = CollectionSettings.parseTopics(raw)
-      CollectionSettings.publishLocalContentCount(StorageKeys.LOCAL_SAVED_TOPIC_COUNT, topics.length)
+      const topics = parseSavedTopics(raw)
+      LocalDataPublisher.publishSavedTopicCount(topics.length)
       return topics
     } catch (error) {
       const e = error as Error
@@ -119,8 +93,8 @@ export class CollectionSettings {
     try {
       const store = await preferences.getPreferences(context, STORE_NAME)
       const raw = store.getSync(KEY_SAVED_NODES, '[]') as string
-      const nodes = CollectionSettings.parseNodes(raw)
-      CollectionSettings.publishLocalContentCount(StorageKeys.LOCAL_SAVED_NODE_COUNT, nodes.length)
+      const nodes = parseSavedNodes(raw)
+      LocalDataPublisher.publishSavedNodeCount(nodes.length)
       return nodes
     } catch (error) {
       const e = error as Error
@@ -132,7 +106,7 @@ export class CollectionSettings {
     const nodes = await CollectionSettings.loadSavedNodes(context)
     const saved: SavedNode = {
       name: node.name,
-      title: CollectionSettings.cleanNodeTitle(node.title, node.topics),
+      title: cleanNodeTitle(node.title, node.topics),
       topics: node.topics,
       avatarMini: node.avatarMini,
       avatarNormal: node.avatarNormal,
@@ -161,7 +135,7 @@ export class CollectionSettings {
       changed = true
       return {
         name: item.name,
-        title: CollectionSettings.cleanNodeTitle(node.title || item.title, node.topics || item.topics),
+        title: cleanNodeTitle(node.title || item.title, node.topics || item.topics),
         topics: node.topics > 0 ? node.topics : item.topics,
         avatarMini: node.avatarMini || item.avatarMini,
         avatarNormal: node.avatarNormal || item.avatarNormal,
@@ -189,7 +163,7 @@ export class CollectionSettings {
       }
       const nextNode: SavedNode = {
         name: item.name,
-        title: CollectionSettings.cleanNodeTitle(update.title || item.title, update.topics || item.topics),
+        title: cleanNodeTitle(update.title || item.title, update.topics || item.topics),
         topics: update.topics > 0 ? update.topics : item.topics,
         avatarMini: update.avatarMini || item.avatarMini,
         avatarNormal: update.avatarNormal || item.avatarNormal,
@@ -219,8 +193,8 @@ export class CollectionSettings {
     try {
       const store = await preferences.getPreferences(context, STORE_NAME)
       const raw = store.getSync(KEY_VIEWED_TOPICS, '[]') as string
-      const topics = CollectionSettings.parseViewedTopics(raw)
-      CollectionSettings.publishLocalContentCount(StorageKeys.LOCAL_VIEWED_TOPIC_COUNT, topics.length)
+      const topics = parseViewedTopics(raw)
+      LocalDataPublisher.publishViewedTopicCount(topics.length)
       return topics
     } catch (error) {
       const e = error as Error
@@ -237,7 +211,7 @@ export class CollectionSettings {
       savedNodeCount: savedNodes.length,
       viewedTopicCount: viewedTopics.length
     }
-    CollectionSettings.publishLocalContentStats(stats)
+    LocalDataPublisher.publishLocalContentStats(stats)
     return stats
   }
 
@@ -288,7 +262,7 @@ export class CollectionSettings {
     try {
       const store = await preferences.getPreferences(context, STORE_NAME)
       const raw = store.getSync(KEY_TOPIC_READ_POSITIONS, '[]') as string
-      return CollectionSettings.parseTopicReadPositions(raw)
+      return parseTopicReadPositions(raw)
     } catch (error) {
       const e = error as Error
       throw new Error(e.message || '读取阅读位置失败')
@@ -298,10 +272,10 @@ export class CollectionSettings {
   static async syncTopicReadStates(context: common.UIAbilityContext): Promise<TopicReadState[]> {
     try {
       const states = await CollectionSettings.loadTopicReadStates(context)
-      setAppStorageValue<string>(StorageKeys.TOPIC_READ_STATES, JSON.stringify(states))
+      LocalDataPublisher.publishTopicReadStates(states)
       return states
     } catch (error) {
-      setAppStorageValue<string>(StorageKeys.TOPIC_READ_STATES, '[]')
+      LocalDataPublisher.clearTopicReadStates()
       return []
     }
   }
@@ -315,7 +289,7 @@ export class CollectionSettings {
     const state: TopicReadState = { id: topicId, touchedAt: normalizedTouchedAt, updatedAt: Math.floor(Date.now() / 1000) }
     const next = [state].concat(states.filter((item: TopicReadState) => item.id !== topicId)).slice(0, MAX_READ_STATES)
     await CollectionSettings.writeTopicReadStates(context, next)
-    setAppStorageValue<string>(StorageKeys.TOPIC_READ_STATES, JSON.stringify(next))
+    LocalDataPublisher.publishTopicReadStates(next)
     return next
   }
 
@@ -323,7 +297,7 @@ export class CollectionSettings {
     try {
       const store = await preferences.getPreferences(context, STORE_NAME)
       const raw = store.getSync(KEY_TOPIC_READ_STATES, '[]') as string
-      return CollectionSettings.parseTopicReadStates(raw)
+      return parseTopicReadStates(raw)
     } catch (error) {
       const e = error as Error
       throw new Error(e.message || '读取已读状态失败')
@@ -339,9 +313,9 @@ export class CollectionSettings {
       store.deleteSync(KEY_TOPIC_READ_POSITIONS)
       store.deleteSync(KEY_TOPIC_READ_STATES)
       store.flushSync()
-      setAppStorageValue<string>(StorageKeys.TOPIC_READ_STATES, '[]')
-      CollectionSettings.publishLocalContentStats({ savedTopicCount: 0, savedNodeCount: 0, viewedTopicCount: 0 })
-      CollectionSettings.touchLocalData()
+      LocalDataPublisher.clearTopicReadStates()
+      LocalDataPublisher.publishLocalContentStats({ savedTopicCount: 0, savedNodeCount: 0, viewedTopicCount: 0 })
+      LocalDataPublisher.touchLocalData()
     } catch (error) {
       const e = error as Error
       throw new Error(e.message || '清理本地收藏与阅读记录失败')
@@ -353,8 +327,8 @@ export class CollectionSettings {
       const store = await preferences.getPreferences(context, STORE_NAME)
       store.putSync(KEY_SAVED_TOPICS, JSON.stringify(topics))
       store.flushSync()
-      CollectionSettings.publishLocalContentCount(StorageKeys.LOCAL_SAVED_TOPIC_COUNT, topics.length)
-      CollectionSettings.touchLocalData()
+      LocalDataPublisher.publishSavedTopicCount(topics.length)
+      LocalDataPublisher.touchLocalData()
     } catch (error) {
       const e = error as Error
       throw new Error(e.message || '保存稍后读失败')
@@ -366,8 +340,8 @@ export class CollectionSettings {
       const store = await preferences.getPreferences(context, STORE_NAME)
       store.putSync(KEY_SAVED_NODES, JSON.stringify(nodes))
       store.flushSync()
-      CollectionSettings.publishLocalContentCount(StorageKeys.LOCAL_SAVED_NODE_COUNT, nodes.length)
-      CollectionSettings.touchLocalData()
+      LocalDataPublisher.publishSavedNodeCount(nodes.length)
+      LocalDataPublisher.touchLocalData()
     } catch (error) {
       const e = error as Error
       throw new Error(e.message || '保存关注节点失败')
@@ -379,8 +353,8 @@ export class CollectionSettings {
       const store = await preferences.getPreferences(context, STORE_NAME)
       store.putSync(KEY_VIEWED_TOPICS, JSON.stringify(topics))
       store.flushSync()
-      CollectionSettings.publishLocalContentCount(StorageKeys.LOCAL_VIEWED_TOPIC_COUNT, topics.length)
-      CollectionSettings.touchLocalData()
+      LocalDataPublisher.publishViewedTopicCount(topics.length)
+      LocalDataPublisher.touchLocalData()
     } catch (error) {
       const e = error as Error
       throw new Error(e.message || '保存最近浏览失败')
@@ -409,117 +383,7 @@ export class CollectionSettings {
     }
   }
 
-  private static touchLocalData(): void {
-    const updatedAt = Date.now()
-    setAppStorageValue<number>(StorageKeys.LOCAL_DATA_UPDATED_AT, updatedAt)
-  }
-
-  private static publishLocalContentStats(stats: LocalContentStats): void {
-    CollectionSettings.publishLocalContentCount(StorageKeys.LOCAL_SAVED_TOPIC_COUNT, stats.savedTopicCount)
-    CollectionSettings.publishLocalContentCount(StorageKeys.LOCAL_SAVED_NODE_COUNT, stats.savedNodeCount)
-    CollectionSettings.publishLocalContentCount(StorageKeys.LOCAL_VIEWED_TOPIC_COUNT, stats.viewedTopicCount)
-  }
-
-  private static publishLocalContentCount(key: string, count: number): void {
-    setAppStorageValue<number>(key, count)
-  }
-
-  private static parseTopics(raw: string): SavedTopic[] {
-    try {
-      const parsed = JSON.parse(raw) as SavedTopic[]
-      if (!Array.isArray(parsed)) {
-        return []
-      }
-      return parsed.filter((item: SavedTopic) => item.id > 0 && item.title.length > 0)
-    } catch (error) {
-      return []
-    }
-  }
-
-  private static parseNodes(raw: string): SavedNode[] {
-    try {
-      const parsed = JSON.parse(raw) as SavedNode[]
-      if (!Array.isArray(parsed)) {
-        return []
-      }
-      const nodes: SavedNode[] = []
-      parsed.forEach((item: SavedNode) => {
-        const node = CollectionSettings.normalizeSavedNode(item)
-        if (node) {
-          nodes.push(node)
-        }
-      })
-      return nodes
-    } catch (error) {
-      return []
-    }
-  }
-
-  private static normalizeSavedNode(item: SavedNode): SavedNode | null {
-    const name = ((item?.name || '') as string).trim()
-    const topics = Math.max(0, item?.topics || 0)
-    const title = CollectionSettings.cleanNodeTitle(((item?.title || name) as string).trim(), topics)
-    if (!name || !title) {
-      return null
-    }
-    return {
-      name: name,
-      title: title,
-      topics: topics,
-      avatarMini: ((item?.avatarMini || '') as string).trim() || undefined,
-      avatarNormal: ((item?.avatarNormal || '') as string).trim() || undefined,
-      avatarLarge: ((item?.avatarLarge || '') as string).trim() || undefined,
-      savedAt: item?.savedAt || 0
-    }
-  }
-
   static cleanNodeTitle(title: string, topics: number = 0): string {
-    let clean = (title || '')
-      .replace(/\s*[·｜|]\s*\d+\s*个主题\s*$/g, '')
-      .replace(/\s+\d+\s*个主题\s*$/g, '')
-      .trim()
-    if (topics > 0) {
-      const topicSuffix = `${topics}`
-      if (clean.endsWith(` ${topicSuffix}`)) {
-        clean = clean.substring(0, clean.length - topicSuffix.length).trim()
-      }
-    }
-    return clean.replace(/\s+\d{2,}\s*$/g, '').trim()
-  }
-
-  private static parseViewedTopics(raw: string): ViewedTopic[] {
-    try {
-      const parsed = JSON.parse(raw) as ViewedTopic[]
-      if (!Array.isArray(parsed)) {
-        return []
-      }
-      return parsed.filter((item: ViewedTopic) => item.id > 0 && item.title.length > 0)
-    } catch (error) {
-      return []
-    }
-  }
-
-  private static parseTopicReadPositions(raw: string): TopicReadPosition[] {
-    try {
-      const parsed = JSON.parse(raw) as TopicReadPosition[]
-      if (!Array.isArray(parsed)) {
-        return []
-      }
-      return parsed.filter((item: TopicReadPosition) => item.id > 0 && item.floor > 0)
-    } catch (error) {
-      return []
-    }
-  }
-
-  private static parseTopicReadStates(raw: string): TopicReadState[] {
-    try {
-      const parsed = JSON.parse(raw) as TopicReadState[]
-      if (!Array.isArray(parsed)) {
-        return []
-      }
-      return parsed.filter((item: TopicReadState) => item.id > 0 && item.touchedAt > 0)
-    } catch (error) {
-      return []
-    }
+    return cleanNodeTitle(title, topics)
   }
 }

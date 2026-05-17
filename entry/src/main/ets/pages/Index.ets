@@ -915,14 +915,14 @@ struct Index {
         '站内收藏',
         this.nodeTopicSiteFavorited ? $r('sys.symbol.star_fill') : $r('sys.symbol.star'),
         () => {
-          this.sendNodeTopicAction('siteFavorite')
+          this.sendNodeTopicAction(nodeName, 'siteFavorite')
         },
       ),
       this.topicActionItem(
         '关注节点',
         this.nodeTopicSaved ? $r('sys.symbol.bookmark_fill') : $r('sys.symbol.bookmark'),
         () => {
-          this.sendNodeTopicAction('saveNode')
+          this.sendNodeTopicAction(nodeName, 'saveNode')
         },
       ),
     ]
@@ -1063,8 +1063,11 @@ struct Index {
     }
   }
 
-  private sendNodeTopicAction(action: string): void {
-    AppStorage.setOrCreate<string>(StorageKeys.NODE_TOPIC_ACTION, `${Date.now()}:${action}`)
+  private sendNodeTopicAction(nodeName: string, action: string): void {
+    AppStorage.setOrCreate<string>(
+      StorageKeys.NODE_TOPIC_ACTION,
+      `${Date.now()}:${(nodeName || '').trim()}:${action}`,
+    )
   }
 
   private sendUserProfileAction(action: string): void {

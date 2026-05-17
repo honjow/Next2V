@@ -23,6 +23,7 @@ export struct NodeTopicPage {
   @StorageLink(StorageKeys.NODE_TOPIC_TITLE) nodeTopicTitle: string = ''
   @StorageLink(StorageKeys.NODE_TOPIC_SUBTITLE) nodeTopicSubtitle: string = ''
   @State private isNodeSaved: boolean = false
+  @State private isSavedNodeLoading: boolean = false
   @State private isSiteNodeFavorited: boolean = false
   @State private isSiteNodeFavoriteLoading: boolean = false
   @State private token: string = ''
@@ -140,7 +141,12 @@ export struct NodeTopicPage {
 
   private loadSavedState(): void {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    CollectionSettings.isNodeSaved(context, this.nodeName)
+    const nodeName = this.currentNodeName()
+    if (!nodeName) {
+      this.syncNodeTitleState(false, this.isSiteNodeFavorited)
+      return
+    }
+    CollectionSettings.isNodeSaved(context, nodeName)
       .then((saved: boolean) => {
         this.isNodeSaved = saved
         this.nodeTopicSaved = saved
@@ -272,26 +278,38 @@ export struct NodeTopicPage {
   }
 
   private toggleSavedNode(): void {
+    if (this.isSavedNodeLoading) {
+      return
+    }
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    const nodeName = this.currentNodeName()
+    if (!nodeName) {
+      promptAction.openToast({ message: '节点信息缺失' }).catch((_error: Error) => { })
+      return
+    }
     const node: SavedNode = {
-      name: this.nodeName,
-      title: CollectionSettings.cleanNodeTitle(this.vm.nodeDetail?.title || this.nodeTitle || this.nodeName, this.vm.nodeDetail?.topics || 0),
+      name: nodeName,
+      title: CollectionSettings.cleanNodeTitle(this.vm.nodeDetail?.title || this.nodeTitle || nodeName, this.vm.nodeDetail?.topics || 0),
       topics: this.vm.nodeDetail?.topics || 0,
       avatarMini: this.vm.nodeDetail?.avatar_mini,
       avatarNormal: this.vm.nodeDetail?.avatar_normal,
       avatarLarge: this.vm.nodeDetail?.avatar_large,
       savedAt: Math.floor(Date.now() / 1000)
     }
+    this.isSavedNodeLoading = true
     const request = this.isNodeSaved
-      ? CollectionSettings.removeNode(context, this.nodeName)
+      ? CollectionSettings.removeNode(context, nodeName)
       : CollectionSettings.saveNode(context, node)
     request
-      .then(() => {
-        this.isNodeSaved = !this.isNodeSaved
+      .then((nodes: SavedNode[]) => {
+        this.isNodeSaved = nodes.some((item: SavedNode) => item.name === nodeName)
         this.nodeTopicSaved = this.isNodeSaved
       })
       .catch((error: Error) => {
         console.error('toggle saved node failed: ' + error.message)
+      })
+      .finally(() => {
+        this.isSavedNodeLoading = false
       })
   }
 
@@ -329,12 +347,21 @@ export struct NodeTopicPage {
     if (!raw) {
       return
     }
-    const action = raw.split(':').pop() || ''
+    const parts = raw.split(':')
+    const action = parts.pop() || ''
+    const targetNodeName = parts.length >= 2 ? (parts.pop() || '').trim() : ''
+    if (targetNodeName && targetNodeName !== this.currentNodeName()) {
+      return
+    }
     if (action === 'siteFavorite') {
       this.prepareSiteNodeFavoriteToggle()
     } else if (action === 'saveNode') {
       this.toggleSavedNode()
     }
+  }
+
+  private currentNodeName(): string {
+    return (this.nodeName || this.vm.nodeDetail?.name || '').trim()
   }
 
   private syncNodeTitleState(saved: boolean, siteFavorited: boolean): void {

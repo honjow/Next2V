@@ -1,0 +1,221 @@
+#!/usr/bin/env node
+import fs from 'node:fs'
+import path from 'node:path'
+
+const repo = process.cwd()
+const read = (rel) => fs.readFileSync(path.join(repo, rel), 'utf8')
+const exists = (rel) => fs.existsSync(path.join(repo, rel))
+const assert = (condition, message) => {
+  if (!condition) {
+    throw new Error(message)
+  }
+}
+
+const findMatchingBrace = (text, openBraceIndex) => {
+  let depth = 0
+  let quote = null
+  let escaped = false
+  let lineComment = false
+  let blockComment = false
+
+  for (let i = openBraceIndex; i < text.length; i += 1) {
+    const char = text[i]
+    const next = text[i + 1]
+
+    if (lineComment) {
+      if (char === '\n') lineComment = false
+      continue
+    }
+    if (blockComment) {
+      if (char === '*' && next === '/') {
+        blockComment = false
+        i += 1
+      }
+      continue
+    }
+    if (quote !== null) {
+      if (escaped) {
+        escaped = false
+      } else if (char === '\\') {
+        escaped = true
+      } else if (char === quote) {
+        quote = null
+      }
+      continue
+    }
+
+    if (char === '/' && next === '/') {
+      lineComment = true
+      i += 1
+      continue
+    }
+    if (char === '/' && next === '*') {
+      blockComment = true
+      i += 1
+      continue
+    }
+    if (char === '\'' || char === '"' || char === '`') {
+      quote = char
+      continue
+    }
+    if (char === '{') {
+      depth += 1
+    } else if (char === '}') {
+      depth -= 1
+      if (depth === 0) return i
+    }
+  }
+
+  return -1
+}
+
+const extractMethodBody = (text, methodName) => {
+  const methodRegex = new RegExp(`(?:static\\s+async|static)\\s+${methodName}\\s*\\(`)
+  const methodMatch = methodRegex.exec(text)
+  assert(methodMatch !== null, `CollectionSettings.${methodName} method missing`)
+  const openBraceIndex = text.indexOf('{', methodMatch.index)
+  assert(openBraceIndex !== -1, `CollectionSettings.${methodName} opening brace missing`)
+  const closeBraceIndex = findMatchingBrace(text, openBraceIndex)
+  assert(closeBraceIndex !== -1, `CollectionSettings.${methodName} closing brace missing`)
+  return text.slice(openBraceIndex + 1, closeBraceIndex)
+}
+
+const collectionRel = 'shared/src/main/ets/settings/CollectionSettings.ets'
+const typesRel = 'shared/src/main/ets/settings/CollectionTypes.ets'
+const limitsRel = 'shared/src/main/ets/settings/CollectionLimits.ets'
+const parsersRel = 'shared/src/main/ets/settings/CollectionParsers.ets'
+const publisherRel = 'shared/src/main/ets/settings/LocalDataPublisher.ets'
+
+for (const rel of [collectionRel, typesRel, limitsRel, parsersRel, publisherRel]) {
+  assert(exists(rel), `${rel} must exist for Lane 5A split`)
+}
+
+const collectionText = read(collectionRel)
+assert(/export\s+class\s+CollectionSettings/.test(collectionText), 'CollectionSettings facade class must remain exported')
+
+for (const method of [
+  'loadSavedTopics',
+  'saveTopic',
+  'removeTopic',
+  'isTopicSaved',
+  'loadSavedNodes',
+  'saveNode',
+  'removeNode',
+  'updateSavedNodeMetadata',
+  'updateSavedNodesMetadata',
+  'isNodeSaved',
+  'loadViewedTopics',
+  'recordViewedTopic',
+  'getTopicReadFloor',
+  'saveTopicReadFloor',
+  'loadTopicReadPositions',
+  'syncTopicReadStates',
+  'markTopicRead',
+  'loadTopicReadStates',
+  'loadLocalContentStats',
+  'clearAll',
+  'cleanNodeTitle',
+]) {
+  extractMethodBody(collectionText, method)
+}
+
+const limitsText = read(limitsRel)
+const expectedLimits = new Map([
+  ['MAX_SAVED_TOPICS', '100'],
+  ['MAX_SAVED_NODES', '80'],
+  ['MAX_VIEWED_TOPICS', '100'],
+  ['MAX_READ_POSITIONS', '200'],
+  ['MAX_READ_STATES', '500'],
+])
+for (const [name, value] of expectedLimits) {
+  assert(limitsText.includes(`export const ${name}: number = ${value}`), `${name} must remain ${value}`)
+}
+
+const expectedKeys = [
+  ['KEY_SAVED_TOPICS', 'savedTopics'],
+  ['KEY_SAVED_NODES', 'savedNodes'],
+  ['KEY_VIEWED_TOPICS', 'viewedTopics'],
+  ['KEY_TOPIC_READ_POSITIONS', 'topicReadPositions'],
+  ['KEY_TOPIC_READ_STATES', 'topicReadStates'],
+]
+for (const [name, value] of expectedKeys) {
+  assert(collectionText.includes(`const ${name}: string = '${value}'`), `${name} must remain '${value}'`)
+}
+
+for (const rel of [collectionRel, typesRel, limitsRel, parsersRel, publisherRel]) {
+  const text = read(rel)
+  assert(!text.includes('relationalStore'), `${rel} must not import or reference relationalStore in Lane 5A`)
+  assert(!text.includes('LocalDataStore'), `${rel} must not use LocalDataStore in Lane 5A`)
+}
+
+const publisherText = read(publisherRel)
+const storageKeyRefs = [...publisherText.matchAll(/StorageKeys\.(\w+)/g)].map((match) => match[1])
+const allowedPublisherKeys = new Set([
+  'LOCAL_SAVED_TOPIC_COUNT',
+  'LOCAL_SAVED_NODE_COUNT',
+  'LOCAL_VIEWED_TOPIC_COUNT',
+  'LOCAL_DATA_UPDATED_AT',
+  'TOPIC_READ_STATES',
+])
+for (const key of storageKeyRefs) {
+  assert(allowedPublisherKeys.has(key), `LocalDataPublisher must not publish StorageKeys.${key}`)
+}
+assert(storageKeyRefs.length >= allowedPublisherKeys.size, 'LocalDataPublisher must own local projection keys')
+assert(!publisherText.includes('preferences.getPreferences'), 'LocalDataPublisher must not own Preferences access')
+assert(!publisherText.includes('UIAbilityContext'), 'LocalDataPublisher must not own UIAbilityContext side effects')
+
+const clearAllBody = extractMethodBody(collectionText, 'clearAll')
+for (const [name] of expectedKeys) {
+  assert(clearAllBody.includes(`store.deleteSync(${name})`), `clearAll must delete ${name}`)
+}
+assert(clearAllBody.includes('LocalDataPublisher.clearTopicReadStates()'), 'clearAll must publish empty read states')
+assert(clearAllBody.includes('savedTopicCount: 0'), 'clearAll must publish zero saved topic count')
+assert(clearAllBody.includes('savedNodeCount: 0'), 'clearAll must publish zero saved node count')
+assert(clearAllBody.includes('viewedTopicCount: 0'), 'clearAll must publish zero viewed topic count')
+
+const indexText = read('shared/src/main/ets/Index.ets')
+assert(indexText.includes("export { CollectionSettings } from './settings/CollectionSettings'"), 'shared Index must keep CollectionSettings facade export')
+assert(indexText.includes("} from './settings/CollectionSettings'"), 'shared Index must re-export collection types through CollectionSettings')
+assert(!indexText.includes('./settings/CollectionParsers'), 'shared Index must not export CollectionParsers internals')
+assert(!indexText.includes('./settings/CollectionLimits'), 'shared Index must not export CollectionLimits internals')
+assert(!indexText.includes('./settings/LocalDataPublisher'), 'shared Index must not export LocalDataPublisher internals')
+
+const appIndexText = read('entry/src/main/ets/pages/Index.ets')
+assert(/sendNodeTopicAction\(nodeName:\s*string,\s*action:\s*string\)/.test(appIndexText), 'Node topic appbar actions must include the target node name')
+assert(appIndexText.includes('${Date.now()}:${(nodeName || \'\').trim()}:${action}'), 'Node topic action payload must be scoped by node name')
+
+const nodeTopicText = read('feature/node/src/main/ets/pages/NodeTopicPage.ets')
+assert(nodeTopicText.includes('private currentNodeName(): string'), 'NodeTopicPage must normalize the current node name before saved-node operations')
+assert(nodeTopicText.includes('targetNodeName !== this.currentNodeName()'), 'NodeTopicPage must ignore saved-node actions for other live node pages')
+assert(nodeTopicText.includes('this.isNodeSaved = nodes.some'), 'NodeTopicPage saved-node state must come from the CollectionSettings result')
+
+const sourceRoots = [
+  'entry/src/main/ets',
+  'feature/detail/src/main/ets',
+  'feature/feed/src/main/ets',
+  'feature/node/src/main/ets',
+  'feature/settings/src/main/ets',
+  'feature/user/src/main/ets',
+]
+for (const root of sourceRoots) {
+  const absRoot = path.join(repo, root)
+  if (!fs.existsSync(absRoot)) continue
+  const stack = [absRoot]
+  while (stack.length > 0) {
+    const current = stack.pop()
+    for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
+      const full = path.join(current, entry.name)
+      if (entry.isDirectory()) {
+        stack.push(full)
+      } else if (entry.name.endsWith('.ets')) {
+        const rel = path.relative(repo, full)
+        const text = fs.readFileSync(full, 'utf8')
+        assert(!text.includes('CollectionParsers'), `${rel} must not import CollectionParsers directly`)
+        assert(!text.includes('CollectionLimits'), `${rel} must not import CollectionLimits directly`)
+        assert(!text.includes('LocalDataPublisher'), `${rel} must not import LocalDataPublisher directly`)
+      }
+    }
+  }
+}
+
+console.log('collection settings contract OK')
