@@ -28,6 +28,7 @@ import {
   type ViewedTopic,
   defaultSheetOptions,
 } from 'shared'
+import { SearchLocalResultBuilder } from '../model/SearchLocalResultBuilder'
 import {
   ExternalWebSearchCard,
   LocalSearchFilterSheetContent,
@@ -614,159 +615,21 @@ export struct SearchPage {
       return
     }
 
-    const includeTopics = this.showTopicResults()
-    const includeNodes = this.showNodeResults()
-    const bag = new Map<number, SearchTopicItem>()
-
-    if (includeTopics) {
-      for (const item of this.savedTopics) {
-        const t: SearchTopicItem = {
-          id: item.id,
-          title: item.title,
-          nodeName: item.nodeName,
-          nodeTitle: item.nodeTitle,
-          username: item.username,
-          source: '收藏',
-          updatedAt: item.savedAt || 0
-        }
-        if (SearchPage.topicMatches(t, q, this.resultFilter)) {
-          bag.set(t.id, t)
-        }
-      }
-
-      for (const item of this.viewedTopics) {
-        const existing = bag.get(item.id)
-        const t: SearchTopicItem = existing ? existing : {
-          id: item.id,
-          title: item.title,
-          nodeName: item.nodeName,
-          nodeTitle: item.nodeTitle,
-          username: item.username,
-          source: '最近',
-          updatedAt: item.viewedAt || 0
-        }
-        if (!SearchPage.topicMatches(t, q, this.resultFilter)) {
-          continue
-        }
-        if (!existing) {
-          bag.set(t.id, t)
-        } else {
-          existing.source = SearchPage.mergeSource(existing.source, '最近')
-          existing.updatedAt = Math.max(existing.updatedAt, item.viewedAt || 0)
-        }
-      }
-
-      for (const item of this.cacheTopicDetails) {
-        if (!SearchPage.topicMatches(item, q, this.resultFilter)) {
-          continue
-        }
-        const existing = bag.get(item.id)
-        if (!existing) {
-          bag.set(item.id, item)
-        } else {
-          existing.source = SearchPage.mergeSource(existing.source, item.source)
-          existing.updatedAt = Math.max(existing.updatedAt, item.updatedAt)
-        }
-      }
-
-      for (const item of this.cacheTopicLists) {
-        if (!SearchPage.topicMatches(item, q, this.resultFilter)) {
-          continue
-        }
-        const existing = bag.get(item.id)
-        if (!existing) {
-          bag.set(item.id, item)
-        } else {
-          existing.source = SearchPage.mergeSource(existing.source, item.source)
-          existing.updatedAt = Math.max(existing.updatedAt, item.updatedAt)
-        }
-      }
-    }
-
-    this.topicResults = Array.from(bag.values())
-      .sort((a: SearchTopicItem, b: SearchTopicItem) => b.updatedAt - a.updatedAt)
-
-    const nodeBag = new Map<string, SearchNodeItem>()
-
-    if (includeNodes) {
-      for (const item of this.savedNodes) {
-        const node = SearchPage.savedNodeToV2exNode(item)
-        const score = NodeSearchUtils.scoreNode(node, q)
-        if (score <= 0) {
-          continue
-        }
-        const n: SearchNodeItem = {
-          name: item.name,
-          title: item.title,
-          topics: item.topics,
-          source: '关注',
-          updatedAt: item.savedAt || 0,
-          score: score + 1200
-        }
-        nodeBag.set(n.name, n)
-      }
-
-      if (this.usesNodeIndex()) {
-        for (const match of NodeSearchUtils.search(this.allNodes, q).slice(0, 120)) {
-          const node = match.node
-          const existing = nodeBag.get(node.name)
-          if (!existing) {
-            nodeBag.set(node.name, {
-              name: node.name,
-              title: node.title,
-              topics: node.topics,
-              source: '节点库',
-              updatedAt: 0,
-              score: match.score
-            })
-          } else {
-            existing.title = existing.title || node.title
-            existing.topics = Math.max(existing.topics, node.topics)
-            existing.source = SearchPage.mergeSource(existing.source, '节点库')
-            existing.score = Math.max(existing.score, match.score + 1200)
-          }
-        }
-      }
-    }
-
-    this.nodeResults = Array.from(nodeBag.values())
-      .sort((a: SearchNodeItem, b: SearchNodeItem) => {
-        if (b.score !== a.score) {
-          return b.score - a.score
-        }
-        if (b.updatedAt !== a.updatedAt) {
-          return b.updatedAt - a.updatedAt
-        }
-        return b.topics - a.topics
-      })
-  }
-
-  private static topicMatches(item: SearchTopicItem, q: string, filter: SearchResultFilter): boolean {
-    if (filter === 'users') {
-      return item.username.toLowerCase().includes(q)
-    }
-    if (item.id.toString().includes(q)) {
-      return true
-    }
-    if (item.title.toLowerCase().includes(q)) {
-      return true
-    }
-    if (item.nodeName.toLowerCase().includes(q)) {
-      return true
-    }
-    if (item.nodeTitle.toLowerCase().includes(q)) {
-      return true
-    }
-    return item.username.toLowerCase().includes(q)
-  }
-
-  private static mergeSource(existing: string, incoming: string): string {
-    const parts = existing.split(' · ').map(s => s.trim()).filter(s => s.length > 0)
-    if (parts.indexOf(incoming) >= 0) {
-      return existing
-    }
-    parts.push(incoming)
-    return parts.join(' · ')
+    const results = SearchLocalResultBuilder.build({
+      keyword: q,
+      resultFilter: this.resultFilter,
+      includeTopics: this.showTopicResults(),
+      includeNodes: this.showNodeResults(),
+      usesNodeIndex: this.usesNodeIndex(),
+      savedTopics: this.savedTopics,
+      viewedTopics: this.viewedTopics,
+      savedNodes: this.savedNodes,
+      allNodes: this.allNodes,
+      cacheTopicLists: this.cacheTopicLists,
+      cacheTopicDetails: this.cacheTopicDetails,
+    })
+    this.topicResults = results.topicResults
+    this.nodeResults = results.nodeResults
   }
 
   private updateSourceMode(mode: SearchSourceMode): void {
@@ -1022,17 +885,4 @@ export struct SearchPage {
     return now - 365 * day
   }
 
-  private static savedNodeToV2exNode(item: SavedNode): V2exNode {
-    return {
-      id: 0,
-      name: item.name,
-      title: item.title,
-      title_alternative: '',
-      url: '',
-      topics: item.topics,
-      avatar_mini: item.avatarMini || '',
-      avatar_normal: item.avatarNormal || '',
-      avatar_large: item.avatarLarge || ''
-    }
-  }
 }

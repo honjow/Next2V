@@ -416,3 +416,31 @@ Lane 4 结论：`PagedListScaffold` 已完成 `MyTopicsPage` 和 `NodeTopicPage`
 - 实机路径覆盖：`Apple` 节点主题页 -> 第一条主题详情 -> 主题头部/正文渲染 -> 连续上滑触发 appbar identity 与回复区展示。
 
 Lane 5 展示拆分结论：低风险展示层已拆出回复工具条、回复上下文、主题头部和预加载提示。后续若继续拆 `TopicDetailPage`，应进入行为协调或正文渲染边界，风险显著高于当前批次。
+
+### 2026-05-17 Lane 6 第一批
+
+状态：PASS
+
+范围：
+
+- 先拆 `SearchPage` 本地结果构建逻辑，降低页面内数据合并和排序代码量。
+- 不改搜索入口、历史记录、远端 Web 搜索、节点索引加载、筛选 sheet 和结果点击行为。
+
+变更：
+
+- 新增 `SearchLocalResultBuilder`，集中处理本地主题/节点搜索结果的匹配、去重、来源合并和排序。
+- `SearchPage` 保留 keyword/source/filter 状态、缓存加载、远端搜索时序和页面交互，只调用 builder 接收 `topicResults` 与 `nodeResults`。
+- 保留原有本地搜索来源优先级：收藏主题、最近浏览、详情缓存、列表缓存、关注节点、节点库。
+
+验证：
+
+- `git diff --check` 通过。
+- `bash dev.sh --build-only` 通过。
+- 已安装到 `192.168.50.237:12345` 并完成实机 QA。
+- 证据目录：`.hermes-artifacts/20260517-2256-search-local-builder-qa/`。
+- 实机路径覆盖：应用内路由 `https://www.v2ex.com/search?q=apple` -> 本地搜索结果渲染 -> 本地筛选 sheet 展开。
+
+后续入口：
+
+1. `SearchPage` 后续可继续拆状态协调，但应先明确远端搜索、本地搜索、历史记录三条状态线的职责边界。
+2. 下一步按计划进入 `TopicDetailPage` 行为协调拆分，优先选择纯协调、无写操作、无网络请求的上下文构建逻辑。
