@@ -14,6 +14,7 @@ import {
 import {
   TopicDetailActionCoordinator,
 } from '../model/TopicDetailActionCoordinator'
+import { TopicDetailScrollCoordinator } from '../model/TopicDetailScrollCoordinator'
 import { common, Want } from '@kit.AbilityKit'
 import { LengthMetrics, promptAction } from '@kit.ArkUI'
 import { ActionBarButton, ActionBarStyle, HdsActionBar } from '@kit.UIDesignKit'
@@ -1119,11 +1120,7 @@ export struct TopicDetailPage {
   }
 
   private lastReplyListIndex(): number {
-    const count = this.v.replyDataSource.totalCount()
-    if (count <= 0) {
-      return 0
-    }
-    return 2 + count
+    return TopicDetailScrollCoordinator.lastReplyListIndex(this.v.replyDataSource.totalCount())
   }
 
   private replyCountText(): string {
@@ -1202,22 +1199,20 @@ export struct TopicDetailPage {
   }
 
   private handleJumpToFloor(value: string): void {
-    const raw = (value || '').trim()
-    const floor = parseInt(raw, 10)
-    if (!raw || isNaN(floor) || floor <= 0) {
-      promptAction.openToast({ message: '请输入有效楼层号' }).catch((_error: Error) => {})
+    const maxFloor = this.v.topic !== null ? this.v.topic!.replies : 0
+    const result = TopicDetailScrollCoordinator.parseJumpFloor(value, maxFloor)
+    if (!result.valid) {
+      promptAction.openToast({ message: result.message }).catch((_error: Error) => {})
       return
     }
-    const maxFloor = this.v.topic !== null ? this.v.topic!.replies : 0
-    const targetFloor = maxFloor > 0 && floor > maxFloor ? maxFloor : floor
-    this.ensureRepliesLoaded(targetFloor)
+    this.ensureRepliesLoaded(result.floor)
       .then(() => {
         const loaded = this.v.replyDataSource.totalCount()
-        if (loaded <= 0) {
+        const safeFloor = TopicDetailScrollCoordinator.loadedFloor(result.floor, loaded)
+        if (safeFloor <= 0) {
           return
         }
-        const safeFloor = targetFloor <= loaded ? targetFloor : loaded
-        const listIndex = 2 + safeFloor
+        const listIndex = TopicDetailScrollCoordinator.listIndexForFloor(safeFloor)
         try {
           this.scrollToListIndex(listIndex, true)
         } catch (_e) {
@@ -1230,7 +1225,7 @@ export struct TopicDetailPage {
   }
 
   private updateReadFloor(centerIndex: number): void {
-    const replyIndex = centerIndex - 3
+    const replyIndex = TopicDetailScrollCoordinator.replyIndexFromCenterListIndex(centerIndex)
     if (replyIndex < 0 || replyIndex >= this.v.replyDataSource.totalCount()) {
       return
     }
@@ -1270,11 +1265,11 @@ export struct TopicDetailPage {
         }
         await this.ensureRepliesLoaded(floor)
         const loaded = this.v.replyDataSource.totalCount()
-        if (loaded <= 0) {
+        const targetFloor = TopicDetailScrollCoordinator.loadedFloor(floor, loaded)
+        if (targetFloor <= 0) {
           return
         }
-        const targetFloor = floor <= loaded ? floor : loaded
-        const listIndex = 2 + targetFloor
+        const listIndex = TopicDetailScrollCoordinator.listIndexForFloor(targetFloor)
         setTimeout(() => {
           try {
             this.scrollToListIndex(listIndex, true)
@@ -1308,10 +1303,10 @@ export struct TopicDetailPage {
     this.ensureRepliesLoaded(floor)
       .then(() => {
         const loaded = this.v.replyDataSource.totalCount()
-        if (loaded <= 0) {
+        const safeFloor = TopicDetailScrollCoordinator.loadedFloor(floor, loaded)
+        if (safeFloor <= 0) {
           return
         }
-        const safeFloor = floor <= loaded ? floor : loaded
         this.jumpToLoadedReplyFloor(safeFloor)
       })
       .catch((_error: Error) => {
@@ -1324,18 +1319,13 @@ export struct TopicDetailPage {
   }
 
   private async ensureRepliesLoaded(targetFloor: number): Promise<void> {
-    if (targetFloor <= 0 || !this.v.repliesUseV2) {
-      return
-    }
-    let guard = 0
-    while (
-      this.v.replyDataSource.totalCount() < targetFloor &&
-      this.v.repliesHasMore &&
-      guard < 20
-    ) {
-      guard++
-      await this.v.loadMoreReplies()
-    }
+    await TopicDetailScrollCoordinator.ensureRepliesLoaded(
+      targetFloor,
+      this.v.repliesUseV2,
+      () => this.v.replyDataSource.totalCount(),
+      () => this.v.repliesHasMore,
+      () => this.v.loadMoreReplies(),
+    )
   }
 
   private loadSavedState(): void {
@@ -1498,8 +1488,7 @@ export struct TopicDetailPage {
         this.topicDetailThanked = false
       })
       .catch((error: Error) => {
-        const message = error.message || ''
-        const thanked = message.indexOf('已经感谢过') >= 0
+        const thanked = TopicDetailActionCoordinator.thankedFromTopicThankLoadError(error)
         this.isTopicThanked = thanked
         this.topicDetailThanked = thanked
       })
@@ -1565,16 +1554,18 @@ export struct TopicDetailPage {
   }
 
   private prepareTopicThank(): void {
-    if (this.topicThankLocked || this.isTopicThankLoading) {
-      return
-    }
-    if (this.isTopicThanked || this.topicDetailThanked) {
-      promptAction.openToast({ message: '已经感谢过' }).catch((_error: Error) => {})
-      return
-    }
     const cookie = CookieJarSettings.getCurrentCookie()
-    if (!cookie) {
-      promptAction.openToast({ message: '请先登录' }).catch((_error: Error) => {})
+    const guard = TopicDetailActionCoordinator.topicThankGuard({
+      locked: this.topicThankLocked,
+      loading: this.isTopicThankLoading,
+      thanked: this.isTopicThanked,
+      storageThanked: this.topicDetailThanked,
+      cookie,
+    })
+    if (!guard.allowed) {
+      if (guard.message) {
+        promptAction.openToast({ message: guard.message }).catch((_error: Error) => {})
+      }
       return
     }
     this.topicThankLocked = true
@@ -1639,24 +1630,22 @@ export struct TopicDetailPage {
   }
 
   private prepareReplyThank(reply: V2exReply): void {
-    if (this.isReplyThankLoading || this.replyThankLockedId > 0) {
-      return
-    }
-    if (!reply || reply.id <= 0) {
-      promptAction.openToast({ message: '回复信息缺失' }).catch((_error: Error) => {})
-      return
-    }
-    if (this.isReplyThanked(reply.id)) {
-      promptAction.openToast({ message: '已经感谢过' }).catch((_error: Error) => {})
-      return
-    }
     const cookie = CookieJarSettings.getCurrentCookie()
-    if (!cookie) {
-      promptAction.openToast({ message: '请先登录' }).catch((_error: Error) => {})
-      return
-    }
-    if (!reply || reply.id <= 0) {
-      promptAction.openToast({ message: '回复信息缺失' }).catch((_error: Error) => {})
+    const guard = TopicDetailActionCoordinator.replyThankGuard({
+      loading: this.isReplyThankLoading,
+      lockedReplyId: this.replyThankLockedId,
+      reply,
+      thanked: TopicDetailActionCoordinator.isReplyThankedForGuard(
+        reply,
+        this.v.getLoadedRepliesSnapshot(),
+        this.thankedReplyIdsJson,
+      ),
+      cookie,
+    })
+    if (!guard.allowed) {
+      if (guard.message) {
+        promptAction.openToast({ message: guard.message }).catch((_error: Error) => {})
+      }
       return
     }
     this.replyThankLockedId = reply.id
@@ -1780,12 +1769,15 @@ export struct TopicDetailPage {
     loadAction: (cookie: string) => Promise<V2exTopicModerationAction>,
     executeAction: (cookie: string, action: V2exTopicModerationAction) => Promise<void>,
   ): void {
-    if (this.isModerationActionLoading) {
-      return
-    }
     const cookie = CookieJarSettings.getCurrentCookie()
-    if (!cookie) {
-      promptAction.openToast({ message: '请先登录' }).catch((_error: Error) => {})
+    const guard = TopicDetailActionCoordinator.moderationGuard({
+      loading: this.isModerationActionLoading,
+      cookie,
+    })
+    if (!guard.allowed) {
+      if (guard.message) {
+        promptAction.openToast({ message: guard.message }).catch((_error: Error) => {})
+      }
       return
     }
     this.isModerationActionLoading = true
@@ -1857,16 +1849,16 @@ export struct TopicDetailPage {
     loadAction: (cookie: string) => Promise<V2exReplyModerationAction>,
     executeAction: (cookie: string, action: V2exReplyModerationAction) => Promise<void>,
   ): void {
-    if (this.isModerationActionLoading) {
-      return
-    }
     const cookie = CookieJarSettings.getCurrentCookie()
-    if (!cookie) {
-      promptAction.openToast({ message: '请先登录' }).catch((_error: Error) => {})
-      return
-    }
-    if (!reply || reply.id <= 0) {
-      promptAction.openToast({ message: '回复信息缺失' }).catch((_error: Error) => {})
+    const guard = TopicDetailActionCoordinator.moderationGuard({
+      loading: this.isModerationActionLoading,
+      cookie,
+      reply,
+    })
+    if (!guard.allowed) {
+      if (guard.message) {
+        promptAction.openToast({ message: guard.message }).catch((_error: Error) => {})
+      }
       return
     }
     this.isModerationActionLoading = true
