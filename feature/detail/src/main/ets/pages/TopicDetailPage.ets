@@ -48,7 +48,7 @@ import {
   MotionHandStateService,
   defaultSheetOptions,
 } from 'shared'
-import type { V2exReplyThankAction, V2exTopicThankAction } from 'shared'
+import type { V2exTopicThankAction } from 'shared'
 import type { V2exReplyModerationAction, V2exTopicModerationAction } from 'shared'
 
 @Component
@@ -1648,8 +1648,9 @@ export struct TopicDetailPage {
       }
       return
     }
-    this.replyThankLockedId = reply.id
-    this.pendingReplyThankId = reply.id
+    const lockState = TopicDetailActionCoordinator.replyThankLockState(reply)
+    this.replyThankLockedId = lockState.lockedReplyId
+    this.pendingReplyThankId = lockState.pendingReplyThankId
     this.confirmReplyThank(cookie, reply)
   }
 
@@ -1678,11 +1679,8 @@ export struct TopicDetailPage {
       return
     }
     this.isReplyThankLoading = true
-    this.api
-      .getReplyThankActionWithCookie(cookie, this.topicId, reply.id)
-      .then((action: V2exReplyThankAction) =>
-        this.api.executeReplyThankWithCookie(cookie, this.topicId, action),
-      )
+    TopicDetailActionCoordinator
+      .executeReplyThank(this.api, cookie, this.topicId, reply.id)
       .then(() => {
         this.v.markReplyThanked(reply.id)
         this.markReplyThanked(reply.id)
@@ -1704,8 +1702,9 @@ export struct TopicDetailPage {
   }
 
   private clearReplyThankLock(): void {
-    this.replyThankLockedId = 0
-    this.pendingReplyThankId = 0
+    const lockState = TopicDetailActionCoordinator.clearReplyThankLockState()
+    this.replyThankLockedId = lockState.lockedReplyId
+    this.pendingReplyThankId = lockState.pendingReplyThankId
   }
 
   private isReplyThanked(replyId: number): boolean {

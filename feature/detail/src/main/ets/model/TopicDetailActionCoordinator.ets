@@ -1,4 +1,8 @@
-import { V2exReply } from 'shared'
+import {
+  ApiService,
+  V2exReply,
+} from 'shared'
+import type { V2exReplyThankAction } from 'shared'
 
 export interface ParsedTopicDetailAction {
   topicId: number
@@ -30,6 +34,11 @@ export interface ModerationGuardOptions {
 export interface ActionGuardResult {
   allowed: boolean
   message: string
+}
+
+export interface ReplyThankLockState {
+  lockedReplyId: number
+  pendingReplyThankId: number
 }
 
 export class TopicDetailActionCoordinator {
@@ -151,6 +160,33 @@ export class TopicDetailActionCoordinator {
   static thankedFromTopicThankLoadError(error: Error): boolean {
     const message = error.message || ''
     return message.indexOf('已经感谢过') >= 0
+  }
+
+  static replyThankLockState(reply: V2exReply): ReplyThankLockState {
+    return {
+      lockedReplyId: reply.id,
+      pendingReplyThankId: reply.id,
+    }
+  }
+
+  static clearReplyThankLockState(): ReplyThankLockState {
+    return {
+      lockedReplyId: 0,
+      pendingReplyThankId: 0,
+    }
+  }
+
+  static executeReplyThank(
+    api: ApiService,
+    cookie: string,
+    topicId: number,
+    replyId: number,
+  ): Promise<void> {
+    return api
+      .getReplyThankActionWithCookie(cookie, topicId, replyId)
+      .then((action: V2exReplyThankAction) =>
+        api.executeReplyThankWithCookie(cookie, topicId, action),
+      )
   }
 
   private static hasValidReply(reply: V2exReply | null): boolean {
