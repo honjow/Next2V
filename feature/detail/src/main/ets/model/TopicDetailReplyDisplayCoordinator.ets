@@ -1,4 +1,7 @@
-import { ReplyDisplaySettings } from 'shared'
+import {
+  ReplyDisplaySettings,
+  V2exReply,
+} from 'shared'
 
 export interface ReplyDisplayModeOption {
   label: string
@@ -28,5 +31,30 @@ export class TopicDetailReplyDisplayCoordinator {
 
   static modeText(mode: string): string {
     return ReplyDisplaySettings.modeText(mode)
+  }
+
+  static displayContent(reply: V2exReply, mode: string): string {
+    if (
+      mode === ReplyDisplaySettings.MODE_THREAD &&
+      (reply.hiddenLeadingMentionContent || '').trim() &&
+      (reply.threadLevel || 0) > 0 &&
+      (reply.replyUsers || []).length === 1
+    ) {
+      return reply.hiddenLeadingMentionContent || ''
+    }
+    return ''
+  }
+
+  static floorForReply(resolvedFloor: number, fallbackIndex: number): number {
+    return resolvedFloor > 0 ? resolvedFloor : fallbackIndex + 1
+  }
+
+  static mentionText(username: string, floor: number = 0): string {
+    const clean = (username || '').trim()
+    if (!clean) {
+      return ''
+    }
+    const cleanFloor = Math.floor(floor)
+    return cleanFloor > 0 ? `@${clean} #${cleanFloor} ` : `@${clean} `
   }
 }

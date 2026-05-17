@@ -1134,24 +1134,18 @@ export struct TopicDetailPage {
   }
 
   private replyDisplayContent(reply: V2exReply): string {
-    if (
-      this.v.replyDisplayMode === 'thread' &&
-      (reply.hiddenLeadingMentionContent || '').trim() &&
-      (reply.threadLevel || 0) > 0 &&
-      (reply.replyUsers || []).length === 1
-    ) {
-      return reply.hiddenLeadingMentionContent || ''
-    }
-    return ''
+    return TopicDetailReplyDisplayCoordinator.displayContent(reply, this.v.replyDisplayMode)
   }
 
   private getFloorForReply(replyId: number, index: number): number {
-    const floor = this.v.getReplyFloor(replyId)
-    return floor > 0 ? floor : index + 1
+    return TopicDetailReplyDisplayCoordinator.floorForReply(this.v.getReplyFloor(replyId), index)
   }
 
   private getReplyMentionText(reply: V2exReply, fallbackIndex: number): string {
-    return this.getMentionText(reply.member.username, this.getFloorForReply(reply.id, fallbackIndex))
+    return TopicDetailReplyDisplayCoordinator.mentionText(
+      reply.member.username,
+      this.getFloorForReply(reply.id, fallbackIndex),
+    )
   }
 
   private openJumpToFloorDialog(): void {
@@ -1903,12 +1897,7 @@ export struct TopicDetailPage {
   }
 
   private getMentionText(username: string, floor: number = 0): string {
-    const clean = (username || '').trim()
-    if (!clean) {
-      return ''
-    }
-    const cleanFloor = Math.floor(floor)
-    return cleanFloor > 0 ? `@${clean} #${cleanFloor} ` : `@${clean} `
+    return TopicDetailReplyDisplayCoordinator.mentionText(username, floor)
   }
 
   private openInSystemBrowser(url: string): void {
