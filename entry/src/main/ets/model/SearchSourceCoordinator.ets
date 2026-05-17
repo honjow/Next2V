@@ -11,6 +11,12 @@ export interface SearchHistorySelection {
   shouldExecuteRemote: boolean
 }
 
+export interface SearchKeywordChangeEffect {
+  query: string
+  shouldApplyLocalFilter: boolean
+  shouldResetRemote: boolean
+}
+
 export interface SearchSourceTransition {
   changed: boolean
   mode: SearchSourceMode
@@ -38,6 +44,18 @@ export class SearchSourceCoordinator {
       shouldApply: clean.length > 0,
       shouldExecuteRemote: sourceMode === 'remote' && clean.length > 0,
     }
+  }
+
+  static keywordChanged(query: string): SearchKeywordChangeEffect {
+    return {
+      query,
+      shouldApplyLocalFilter: true,
+      shouldResetRemote: true,
+    }
+  }
+
+  static recordableQuery(query: string): string {
+    return (query ?? '').trim()
   }
 
   static primaryAction(sourceMode: SearchSourceMode, keyword: string): SearchPrimaryAction {

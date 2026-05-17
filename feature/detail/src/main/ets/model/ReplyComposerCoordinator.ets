@@ -17,6 +17,22 @@ export interface ReplySubmitCheckResult {
 }
 
 export class ReplyComposerCoordinator {
+  static submitButtonLabel(isSubmitting: boolean): string {
+    return isSubmitting ? '提交中' : '提交'
+  }
+
+  static shouldShowTopicTitle(topicTitle: string): boolean {
+    return (topicTitle || '').trim().length > 0
+  }
+
+  static savedAtText(savedAt: number, formatDate: (value: number) => string): string {
+    return savedAt > 0 ? `已保存于 ${formatDate(savedAt)}` : ''
+  }
+
+  static previewEmptyMessage(): string {
+    return '暂无内容'
+  }
+
   static normalizeInitialContent(value: string): string {
     const clean = (value || '').trim()
     return clean ? `${clean} ` : ''

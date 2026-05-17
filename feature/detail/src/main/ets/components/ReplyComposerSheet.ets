@@ -86,7 +86,7 @@ export struct ReplyComposerSheet {
     }) {
       ListItem() {
         Column({ space: ThemeConstants.SPACE_SM }) {
-          if (this.topicTitle) {
+          if (ReplyComposerCoordinator.shouldShowTopicTitle(this.topicTitle)) {
             Text(this.topicTitle)
               .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
               .fontColor($r('sys.color.font_secondary'))
@@ -110,7 +110,7 @@ export struct ReplyComposerSheet {
             })
               .layoutWeight(1)
 
-            Button(this.isSubmitting ? '提交中' : '提交', { type: ButtonType.Capsule })
+            Button(ReplyComposerCoordinator.submitButtonLabel(this.isSubmitting), { type: ButtonType.Capsule })
               .fontSize(ThemeConstants.FONT_SIZE_TAG)
               .fontWeight(FontWeight.Medium)
               .height(32)
@@ -130,7 +130,7 @@ export struct ReplyComposerSheet {
 
           if (this.isPreview) {
             if (this.content.trim().length === 0) {
-              Text('暂无内容')
+              Text(ReplyComposerCoordinator.previewEmptyMessage())
                 .fontSize(ThemeConstants.FONT_SIZE_BODY)
                 .fontColor($r('sys.color.font_secondary'))
                 .height(this.composerBodyHeight())
@@ -161,7 +161,7 @@ export struct ReplyComposerSheet {
           }
 
           if (this.savedAt > 0) {
-            Text(`已保存于 ${DateUtils.toDateString(this.savedAt)}`)
+            Text(this.savedAtText())
               .fontSize(ThemeConstants.FONT_SIZE_TINY)
               .fontColor($r('sys.color.font_secondary'))
           }
@@ -274,6 +274,13 @@ export struct ReplyComposerSheet {
 
   private composerBodyHeight(): number {
     return ReplyComposerCoordinator.composerBodyHeight(this.keyboardH)
+  }
+
+  private savedAtText(): string {
+    return ReplyComposerCoordinator.savedAtText(
+      this.savedAt,
+      (value: number) => DateUtils.toDateString(value),
+    )
   }
 
   private confirmSubmit(): void {

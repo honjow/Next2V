@@ -171,9 +171,7 @@ export struct SearchPage {
       errorMessage: this.errorMessage,
       sourceMode: this.sourceMode,
       onTextChange: (value: string) => {
-        this.keyword = value
-        this.applyFilter()
-        this.resetRemoteResults()
+        this.handleKeywordChange(value)
       },
       onSubmit: (_value: string) => { this.runPrimarySearchAction() },
       updateSourceMode: (mode: SearchSourceMode) => { this.updateSourceMode(mode) }
@@ -375,22 +373,16 @@ export struct SearchPage {
       remoteLoading: this.remoteLoading,
       hasRemoteFilters: this.hasRemoteFilters(),
       selectSort: (sort: Sov2exSortMode) => {
-        const effect = SearchFilterCoordinator.selectRemoteSort(this.remoteSort, sort)
-        this.remoteSort = sort
-        this.applyRemoteFilterEffect(effect)
+        this.selectRemoteSort(sort)
       },
       toggleOrder: () => {
-        const effect = SearchFilterCoordinator.toggleRemoteOrder(this.remoteOrder)
-        this.remoteOrder = effect.order
-        this.applyRemoteFilterEffect(effect)
+        this.toggleRemoteOrder()
       },
       remoteTextChange: () => {
         this.applyRemoteFilterEffect(SearchFilterCoordinator.remoteTextChanged())
       },
       selectDateRange: (range: RemoteDateRange) => {
-        const effect = SearchFilterCoordinator.selectRemoteDateRange(this.remoteDateRange, range)
-        this.remoteDateRange = range
-        this.applyRemoteFilterEffect(effect)
+        this.selectRemoteDateRange(range)
       },
       clearFilters: () => { this.clearRemoteFilters() },
       applySearch: () => {
@@ -572,16 +564,11 @@ export struct SearchPage {
   }
 
   private recordHistory(): void {
-    const q = this.keyword.trim()
+    const q = SearchSourceCoordinator.recordableQuery(this.keyword)
     if (!q) {
       return
     }
-    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    SearchSettings.recordQuery(context, q)
-      .then((items: string[]) => {
-        this.history = items
-      })
-      .catch((_error: Error) => { })
+    this.recordHistoryQuery(q)
   }
 
   private clearHistory(): void {
@@ -604,8 +591,27 @@ export struct SearchPage {
     if (selection.shouldExecuteRemote) {
       this.executeRemoteSearch(true)
     }
+    this.recordHistoryQuery(selection.query)
+  }
+
+  private handleKeywordChange(value: string): void {
+    const effect = SearchSourceCoordinator.keywordChanged(value)
+    this.keyword = effect.query
+    if (effect.shouldApplyLocalFilter) {
+      this.applyFilter()
+    }
+    if (effect.shouldResetRemote) {
+      this.resetRemoteResults()
+    }
+  }
+
+  private recordHistoryQuery(query: string): void {
+    const q = SearchSourceCoordinator.recordableQuery(query)
+    if (!q) {
+      return
+    }
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    SearchSettings.recordQuery(context, selection.query)
+    SearchSettings.recordQuery(context, q)
       .then((items: string[]) => {
         this.history = items
       })
@@ -739,11 +745,7 @@ export struct SearchPage {
       return
     }
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    SearchSettings.recordQuery(context, q)
-      .then((items: string[]) => {
-        this.history = items
-      })
-      .catch((_error: Error) => { })
+    this.recordHistoryQuery(q)
     const url = SearchPageStateCoordinator.buildExternalTopicSearchUrl(q)
     const want: Want = { action: 'ohos.want.action.viewData', uri: url }
     context.startAbility(want)
@@ -786,12 +788,7 @@ export struct SearchPage {
         this.remoteResults = state.results
         this.remoteTotal = state.total
         this.remoteFrom = state.from
-        const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-        SearchSettings.recordQuery(context, q)
-          .then((items: string[]) => {
-            this.history = items
-          })
-          .catch((_error: Error) => { })
+        this.recordHistoryQuery(q)
       })
       .catch((error: Error) => {
         this.remoteError = error.message || '远程搜索失败'
@@ -817,6 +814,24 @@ export struct SearchPage {
     this.applyRemoteFilterEffect(effect)
   }
 
+  private selectRemoteSort(sort: Sov2exSortMode): void {
+    const effect = SearchFilterCoordinator.selectRemoteSort(this.remoteSort, sort)
+    this.remoteSort = effect.sort
+    this.applyRemoteFilterEffect(effect)
+  }
+
+  private toggleRemoteOrder(): void {
+    const effect = SearchFilterCoordinator.toggleRemoteOrder(this.remoteOrder)
+    this.remoteOrder = effect.order
+    this.applyRemoteFilterEffect(effect)
+  }
+
+  private selectRemoteDateRange(range: RemoteDateRange): void {
+    const effect = SearchFilterCoordinator.selectRemoteDateRange(this.remoteDateRange, range)
+    this.remoteDateRange = effect.dateRange
+    this.applyRemoteFilterEffect(effect)
+  }
+
   private applyRemoteFilterEffect(effect: RemoteFilterEffect): void {
     if (!effect.changed) {
       return
@@ -824,7 +839,10 @@ export struct SearchPage {
     if (effect.shouldResetRemote) {
       this.resetRemoteResults()
     }
-    if (effect.shouldExecuteRemote) {
+    if (
+      effect.shouldExecuteRemote &&
+      SearchFilterCoordinator.shouldApplyRemoteFilters(this.keyword, this.remoteLoading)
+    ) {
       this.executeRemoteSearch(true)
     }
   }

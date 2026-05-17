@@ -19,6 +19,10 @@ import {
   TopicDetailActionCoordinator,
 } from '../model/TopicDetailActionCoordinator'
 import { TopicDetailAppbarCoordinator } from '../model/TopicDetailAppbarCoordinator'
+import {
+  TopicDetailFloatingActionCoordinator,
+  type TopicDetailFollowTouchState,
+} from '../model/TopicDetailFloatingActionCoordinator'
 import { TopicDetailReplyDisplayCoordinator } from '../model/TopicDetailReplyDisplayCoordinator'
 import { TopicDetailScrollCoordinator } from '../model/TopicDetailScrollCoordinator'
 import { common, Want } from '@kit.AbilityKit'
@@ -145,12 +149,8 @@ export struct TopicDetailPage {
   private lastReadFloor: number = 0;
   private hasRestoredReadPosition: boolean = false;
   private hasJumpedToTargetFloor: boolean = false;
-  private followOperationTouchActive: boolean = false;
-  private followOperationStartX: number = 0;
-  private followOperationStartY: number = 0;
-  private followOperationLatestX: number = 0;
-  private followOperationLatestY: number = 0;
-  private followOperationScrollReported: boolean = false;
+  private followTouchState: TopicDetailFollowTouchState =
+    TopicDetailFloatingActionCoordinator.initialTouchState();
 
   aboutToAppear(): void {
     this.v = new DetailViewModel(this.topicId)
@@ -161,6 +161,7 @@ export struct TopicDetailPage {
     this.jumpFloorText = ''
     this.currentScrollOffset = 0
     this.titleContentBottom = 0
+    this.followTouchState = TopicDetailFloatingActionCoordinator.initialTouchState()
     this.visualMotionHandEdge = this.motionHandEdge
     this.isTitleCoveredByAppbar = false
     this.syncTopicDetailTitleState(false, false, false)
@@ -353,75 +354,40 @@ export struct TopicDetailPage {
   }
 
   private topicDetailReplyActionBarTop(): number {
-    if (this.detailRootHeight <= 0) {
-      return 0
-    }
-    return Math.max(0, this.detailRootHeight - this.bottomH - this.TOPIC_DETAIL_REPLY_BUTTON_SIZE)
+    return TopicDetailFloatingActionCoordinator.actionBarTop(
+      this.detailRootHeight,
+      this.bottomH,
+      this.TOPIC_DETAIL_REPLY_BUTTON_SIZE,
+    )
   }
 
   private topicDetailReplyActionBarAlign(): FlexAlign {
-    if (this.visualMotionHandEdge === 'left') {
-      return FlexAlign.Start
-    }
-    return FlexAlign.End
+    return TopicDetailFloatingActionCoordinator.actionBarAlign(this.visualMotionHandEdge)
   }
 
   private trackReplyActionFollowOperation(event: TouchEvent): void {
-    if (event.type !== TouchType.Down && !this.followOperationTouchActive) {
+    if (event.type !== TouchType.Down && !this.followTouchState.active) {
       return
     }
     const touch = event.touches[0] ?? event.changedTouches[0]
     if (!touch) {
       if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
-        this.clearFollowOperationTouchState()
+        this.followTouchState = TopicDetailFloatingActionCoordinator.initialTouchState()
       }
       return
     }
-    if (event.type === TouchType.Down) {
-      this.followOperationTouchActive = true
-      this.followOperationStartX = touch.x
-      this.followOperationStartY = touch.y
-      this.followOperationLatestX = touch.x
-      this.followOperationLatestY = touch.y
-      this.followOperationScrollReported = false
-      return
+    const update = TopicDetailFloatingActionCoordinator.updateTouch(
+      this.followTouchState,
+      event.type,
+      touch.x,
+      touch.y,
+      this.FOLLOW_OPERATION_VERTICAL_SCROLL_THRESHOLD,
+      this.FOLLOW_OPERATION_VERTICAL_DOMINANCE_RATIO,
+    )
+    this.followTouchState = update.state
+    if (update.shouldReport) {
+      MotionHandStateService.reportFollowOperationX(update.reportX, this.detailRootWidth)
     }
-    if (event.type === TouchType.Move) {
-      this.followOperationLatestX = touch.x
-      this.followOperationLatestY = touch.y
-      this.reportFollowOperationWhenVerticalScroll()
-      return
-    }
-    if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
-      this.clearFollowOperationTouchState()
-    }
-  }
-
-  private reportFollowOperationWhenVerticalScroll(): void {
-    if (this.followOperationScrollReported) {
-      return
-    }
-    const dx = this.followOperationLatestX - this.followOperationStartX
-    const dy = this.followOperationLatestY - this.followOperationStartY
-    const absDx = Math.abs(dx)
-    const absDy = Math.abs(dy)
-    if (absDy < this.FOLLOW_OPERATION_VERTICAL_SCROLL_THRESHOLD) {
-      return
-    }
-    if (absDy < absDx * this.FOLLOW_OPERATION_VERTICAL_DOMINANCE_RATIO) {
-      return
-    }
-    this.followOperationScrollReported = true
-    MotionHandStateService.reportFollowOperationX(this.followOperationStartX, this.detailRootWidth)
-  }
-
-  private clearFollowOperationTouchState(): void {
-    this.followOperationTouchActive = false
-    this.followOperationStartX = 0
-    this.followOperationStartY = 0
-    this.followOperationLatestX = 0
-    this.followOperationLatestY = 0
-    this.followOperationScrollReported = false
   }
 
   private onMotionHandEdgeChanged(_propName: string): void {

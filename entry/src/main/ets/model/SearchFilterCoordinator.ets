@@ -23,6 +23,10 @@ export interface RemoteOrderEffect extends RemoteFilterEffect {
   order: Sov2exOrderMode
 }
 
+export interface RemoteSortEffect extends RemoteFilterEffect {
+  sort: Sov2exSortMode
+}
+
 export interface RemoteDateRangeEffect extends RemoteFilterEffect {
   dateRange: RemoteDateRange
 }
@@ -46,10 +50,12 @@ export class SearchFilterCoordinator {
     }
   }
 
-  static selectRemoteSort(_currentSort: Sov2exSortMode, _nextSort: Sov2exSortMode): RemoteFilterEffect {
+  static selectRemoteSort(currentSort: Sov2exSortMode, nextSort: Sov2exSortMode): RemoteSortEffect {
+    const changed = currentSort !== nextSort
     return {
-      changed: true,
-      shouldResetRemote: true,
+      changed,
+      sort: nextSort,
+      shouldResetRemote: changed,
       shouldExecuteRemote: false,
     }
   }
@@ -93,5 +99,9 @@ export class SearchFilterCoordinator {
       shouldResetRemote: true,
       shouldExecuteRemote: true,
     }
+  }
+
+  static shouldApplyRemoteFilters(keyword: string, remoteLoading: boolean): boolean {
+    return keyword.trim().length > 0 && !remoteLoading
   }
 }
