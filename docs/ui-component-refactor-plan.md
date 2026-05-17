@@ -390,3 +390,29 @@ Lane 4 结论：`PagedListScaffold` 已完成 `MyTopicsPage` 和 `NodeTopicPage`
 
 1. `TopicDetailPage` 下一批仍只拆纯展示：优先评估主题头部元信息卡或预加载进度/footer。
 2. 写回复、感谢、收藏、屏蔽、举报、解析和 Markdown 渲染继续保持原页面内逻辑，不在同一批移动。
+
+### 2026-05-17 Lane 5 第二批
+
+状态：PASS
+
+范围：
+
+- 继续只拆 `TopicDetailPage` 的纯展示组件。
+- 不改主题正文 Markdown、补充内容解析、图片/链接/mention 点击、写回复、感谢、收藏、屏蔽、举报等行为逻辑。
+
+变更：
+
+- 在 `TopicDetailComponents.ets` 中抽出 `TopicDetailHeader`，承载主题作者、发布时间、节点 tag 和标题展示。
+- `TopicDetailHeader` 通过 `onTitleAreaChange` 回传标题测量结果，`TopicDetailPage` 继续负责 appbar identity 显隐状态。
+- 抽出 `TopicRepliesPreloadIndicator`，承载回复预加载进度展示。
+- `TopicDetailPage` 保留主题正文、补充内容、导航参数和所有交互行为。
+
+验证：
+
+- `git diff --check` 通过。
+- `bash dev.sh --build-only` 通过。
+- 已安装到 `192.168.50.237:12345` 并完成实机 QA。
+- 证据目录：`.hermes-artifacts/20260517-2251-topic-detail-header-qa/`。
+- 实机路径覆盖：`Apple` 节点主题页 -> 第一条主题详情 -> 主题头部/正文渲染 -> 连续上滑触发 appbar identity 与回复区展示。
+
+Lane 5 展示拆分结论：低风险展示层已拆出回复工具条、回复上下文、主题头部和预加载提示。后续若继续拆 `TopicDetailPage`，应进入行为协调或正文渲染边界，风险显著高于当前批次。

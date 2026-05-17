@@ -1,5 +1,101 @@
-import { AppModalScaffold, ThemeConstants, TimeAgo, V2exReply } from 'shared'
+import {
+  AppModalScaffold,
+  Avatar,
+  ImageUtils,
+  ThemeConstants,
+  TimeAgo,
+  V2exReply,
+  V2exTopic,
+} from 'shared'
 import { SymbolGlyphModifier } from '@kit.ArkUI'
+
+@Component
+export struct TopicDetailHeader {
+  @Prop topic: V2exTopic
+  onUserClick?: () => void
+  onNodeClick?: () => void
+  onTitleAreaChange?: (oldValue: Area, newValue: Area) => void
+
+  build() {
+    Column() {
+      Row({ space: ThemeConstants.SPACE_SM }) {
+        Avatar({
+          url: ImageUtils.memberAvatarUrl(this.topic.member),
+          avatarSize: ThemeConstants.AVATAR_SIZE_REPLY,
+        })
+          .onClick(() => {
+            if (this.onUserClick) {
+              this.onUserClick()
+            }
+          })
+        Text(this.topic.member.username)
+          .fontSize(ThemeConstants.FONT_SIZE_META)
+          .fontWeight(FontWeight.Medium)
+          .fontColor($r('sys.color.font_primary'))
+          .onClick(() => {
+            if (this.onUserClick) {
+              this.onUserClick()
+            }
+          })
+        Text('·')
+          .fontSize(ThemeConstants.FONT_SIZE_META)
+          .fontColor($r('sys.color.font_secondary'))
+        TimeAgo({ timestamp: this.topic.created })
+        Blank()
+        Text(this.topic.node.title)
+          .fontSize(ThemeConstants.FONT_SIZE_TAG)
+          .fontColor($r('sys.color.font_secondary'))
+          .padding({
+            left: ThemeConstants.SPACE_SM,
+            right: ThemeConstants.SPACE_SM,
+            top: 2,
+            bottom: 2,
+          })
+          .borderRadius(ThemeConstants.RADIUS_SM)
+          .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+          .onClick(() => {
+            if (this.onNodeClick) {
+              this.onNodeClick()
+            }
+          })
+      }
+      .width('100%')
+      .alignItems(VerticalAlign.Center)
+      Text(this.topic.title)
+        .fontSize(ThemeConstants.FONT_SIZE_HEADING)
+        .fontWeight(FontWeight.Medium)
+        .fontColor($r('sys.color.font_primary'))
+        .lineHeight(28)
+        .width('100%')
+        .margin({ top: ThemeConstants.SPACE_MD })
+        .onAreaChange((oldValue: Area, newValue: Area) => {
+          if (this.onTitleAreaChange) {
+            this.onTitleAreaChange(oldValue, newValue)
+          }
+        })
+    }
+    .width('100%')
+  }
+}
+
+@Component
+export struct TopicRepliesPreloadIndicator {
+  @Prop text: string = ''
+
+  build() {
+    Row({ space: ThemeConstants.SPACE_SM }) {
+      LoadingProgress()
+        .width(20)
+        .height(20)
+      Text(this.text)
+        .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+        .fontColor($r('sys.color.font_secondary'))
+    }
+    .justifyContent(FlexAlign.Center)
+    .width('100%')
+    .padding(ThemeConstants.SPACE_MD)
+  }
+}
 
 @Component
 export struct TopicDetailReplyDivider {

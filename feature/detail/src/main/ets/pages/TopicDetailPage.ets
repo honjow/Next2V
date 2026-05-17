@@ -3,7 +3,9 @@ import { ReplyComposerSheet } from '../components/ReplyComposerSheet'
 import {
   ReplyContextListItem,
   ReplyContextSheetContent,
+  TopicDetailHeader,
   TopicDetailReplyDivider,
+  TopicRepliesPreloadIndicator,
 } from '../components/TopicDetailComponents'
 import { common, Want } from '@kit.AbilityKit'
 import { LengthMetrics, promptAction } from '@kit.ArkUI'
@@ -13,9 +15,7 @@ import { pasteboard } from '@kit.BasicServicesKit'
 import { systemShare } from '@kit.ShareKit'
 import {
   V2exReply,
-  Avatar,
   ReplyCard,
-  TimeAgo,
   ThemeConstants,
   MarkdownContent,
   PullRefreshListScaffold,
@@ -37,7 +37,6 @@ import {
   V2exRoute,
   V2exUrlRouter,
   TopicDetailParams,
-  ImageUtils,
   HtmlEntityUtils,
   MotionHandStateService,
   defaultSheetOptions,
@@ -603,17 +602,7 @@ export struct TopicDetailPage {
 
       if (this.v.isPreloadingAll) {
         ListItem() {
-          Row({ space: ThemeConstants.SPACE_SM }) {
-            LoadingProgress()
-              .width(20)
-              .height(20)
-            Text(this.v.preloadProgress)
-              .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-              .fontColor($r('sys.color.font_secondary'))
-          }
-          .justifyContent(FlexAlign.Center)
-          .width('100%')
-          .padding(ThemeConstants.SPACE_MD)
+          TopicRepliesPreloadIndicator({ text: this.v.preloadProgress })
         }
       }
 
@@ -750,62 +739,26 @@ export struct TopicDetailPage {
 
   @Builder TopicCard() {
     Column() {
-      Row({ space: ThemeConstants.SPACE_SM }) {
-        Avatar({
-          url: ImageUtils.memberAvatarUrl(this.v.topic!.member),
-          avatarSize: ThemeConstants.AVATAR_SIZE_REPLY,
-        })
-          .onClick(() => {
-            let p: UserProfileParams = { username: this.v.topic!.member.username }
-            this.stack.pushPathByName('UserProfile', p as Object)
-          })
-        Text(this.v.topic!.member.username)
-          .fontSize(ThemeConstants.FONT_SIZE_META)
-          .fontWeight(FontWeight.Medium)
-          .fontColor($r('sys.color.font_primary'))
-          .onClick(() => {
-            let p: UserProfileParams = { username: this.v.topic!.member.username }
-            this.stack.pushPathByName('UserProfile', p as Object)
-          })
-        Text('·')
-          .fontSize(ThemeConstants.FONT_SIZE_META)
-          .fontColor($r('sys.color.font_secondary'))
-        TimeAgo({ timestamp: this.v.topic!.created })
-        Blank()
-        Text(this.v.topic!.node.title)
-          .fontSize(ThemeConstants.FONT_SIZE_TAG)
-          .fontColor($r('sys.color.font_secondary'))
-          .padding({
-            left: ThemeConstants.SPACE_SM,
-            right: ThemeConstants.SPACE_SM,
-            top: 2,
-            bottom: 2,
-          })
-          .borderRadius(ThemeConstants.RADIUS_SM)
-          .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
-          .onClick(() => {
-            let p: NodeTopicListParams = {
-              nodeName: this.v.topic!.node.name,
-              nodeTitle: this.v.topic!.node.title,
-            }
-            this.stack.pushPathByName('NodeTopicList', p as Object)
-          })
-      }
-      .width('100%')
-      .alignItems(VerticalAlign.Center)
-      Text(this.v.topic!.title)
-        .fontSize(ThemeConstants.FONT_SIZE_HEADING)
-        .fontWeight(FontWeight.Medium)
-        .fontColor($r('sys.color.font_primary'))
-        .lineHeight(28)
-        .width('100%')
-        .margin({ top: ThemeConstants.SPACE_MD })
-        .onAreaChange((_oldValue: Area, newValue: Area) => {
+      TopicDetailHeader({
+        topic: this.v.topic!,
+        onUserClick: () => {
+          let p: UserProfileParams = { username: this.v.topic!.member.username }
+          this.stack.pushPathByName('UserProfile', p as Object)
+        },
+        onNodeClick: () => {
+          let p: NodeTopicListParams = {
+            nodeName: this.v.topic!.node.name,
+            nodeTitle: this.v.topic!.node.title,
+          }
+          this.stack.pushPathByName('NodeTopicList', p as Object)
+        },
+        onTitleAreaChange: (_oldValue: Area, newValue: Area) => {
           const measuredGlobalBottom =
             this.areaY(newValue?.globalPosition?.y) + this.areaLength(newValue?.height)
           this.titleContentBottom = measuredGlobalBottom + this.currentScrollOffset
           this.evaluateAppbarIdentityVisibility()
-        })
+        },
+      })
 
       // 正文
       if (this.topicBodySource()) {
