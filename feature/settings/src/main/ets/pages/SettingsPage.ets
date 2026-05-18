@@ -30,6 +30,7 @@ import {
   SettingsPageCoordinator,
   type SettingsOption,
 } from '../model/SettingsPageCoordinator'
+import { StorageSettingsCoordinator } from '../model/StorageSettingsCoordinator'
 @Component
 export struct SettingsPage {
   @Consume('ns') stack: NavPathStack;
@@ -484,7 +485,7 @@ export struct SettingsPage {
     GroupedListSection() {
       ConciseListRow({
         title: '存储',
-        subtitle: SettingsPageCoordinator.cacheSubtitle(this.cacheStats),
+        subtitle: StorageSettingsCoordinator.cacheSubtitle(this.cacheStats),
         count: this.cacheStats.topicListCount + this.cacheStats.topicDetailCount,
         action: () => {
           this.stack.pushPathByName('Storage', null)

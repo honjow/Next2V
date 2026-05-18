@@ -4,7 +4,6 @@ import {
   CacheDeviceQaSeed,
   CacheSettings,
   ConciseListRow,
-  DateUtils,
   GroupedListSection,
   LocalDataSettings,
   SecondaryListScaffold
@@ -14,6 +13,10 @@ import {
   SettingsDivider,
   SettingsSectionHeader
 } from '../components/SettingsPageComponents'
+import {
+  StorageSettingsCoordinator,
+  type StorageConfirmDialogCopy,
+} from '../model/StorageSettingsCoordinator'
 
 @Component
 export struct StorageSettingsPage {
@@ -66,7 +69,7 @@ export struct StorageSettingsPage {
     GroupedListSection() {
       ConciseListRow({
         title: '离线缓存',
-        subtitle: this.cacheSubtitle(),
+        subtitle: StorageSettingsCoordinator.cacheSubtitle(this.cacheStats),
         showChevron: false
       })
 
@@ -214,14 +217,6 @@ export struct StorageSettingsPage {
     }
   }
 
-  private cacheSubtitle(): string {
-    let text = `列表 ${this.cacheStats.topicListCount} 组 · 详情 ${this.cacheStats.topicDetailCount} 篇`
-    if (this.cacheStats.updatedAt > 0) {
-      text += ` · 更新于 ${DateUtils.toDateString(this.cacheStats.updatedAt)}`
-    }
-    return text
-  }
-
   private loadCacheStats(): void {
     const context = this.hostContext()
     CacheSettings.loadStats(context)
@@ -229,21 +224,22 @@ export struct StorageSettingsPage {
         this.cacheStats = stats
       })
       .catch((error: Error) => {
-        this.cacheMessage = error.message || '读取缓存状态失败'
+        this.cacheMessage = StorageSettingsCoordinator.readCacheErrorMessage(error)
         console.error('load cache stats failed: ' + error.message)
       })
   }
 
   private confirmClearCache(): void {
+    const copy: StorageConfirmDialogCopy = StorageSettingsCoordinator.clearCacheDialogCopy()
     AlertDialog.show({
-      title: '清理缓存',
-      message: '将只清理离线缓存，不会清理登录状态或偏好设置。确定继续吗？',
+      title: copy.title,
+      message: copy.message,
       primaryButton: {
-        value: '取消', action: () => {
+        value: copy.cancelValue, action: () => {
         }
       },
       secondaryButton: {
-        value: '清理',
+        value: copy.confirmValue,
         fontColor: Color.Red,
         action: () => {
           this.clearCache()
@@ -256,24 +252,25 @@ export struct StorageSettingsPage {
     const context = this.hostContext()
     CacheSettings.clear(context)
       .then(() => {
-        this.cacheMessage = '已清理'
+        this.cacheMessage = StorageSettingsCoordinator.clearSuccessMessage()
         this.loadCacheStats()
       })
       .catch((error: Error) => {
-        this.cacheMessage = error.message || '清理失败'
+        this.cacheMessage = StorageSettingsCoordinator.clearErrorMessage(error)
       })
   }
 
   private confirmClearLocalData(): void {
+    const copy: StorageConfirmDialogCopy = StorageSettingsCoordinator.clearLocalDataDialogCopy()
     AlertDialog.show({
-      title: '清理本地数据',
-      message: '将清理本机保存的稍后读、关注节点、最近浏览、已读状态、草稿、搜索历史、通知缓存和离线缓存。登录状态与偏好设置会保留。确定继续吗？',
+      title: copy.title,
+      message: copy.message,
       primaryButton: {
-        value: '取消', action: () => {
+        value: copy.cancelValue, action: () => {
         }
       },
       secondaryButton: {
-        value: '清理',
+        value: copy.confirmValue,
         fontColor: Color.Red,
         action: () => {
           this.clearLocalData()
@@ -286,12 +283,12 @@ export struct StorageSettingsPage {
     const context = this.hostContext()
     LocalDataSettings.clearAll(context)
       .then(() => {
-        this.cacheMessage = '已清理'
-        this.localDataMessage = '已清理'
+        this.cacheMessage = StorageSettingsCoordinator.clearSuccessMessage()
+        this.localDataMessage = StorageSettingsCoordinator.clearSuccessMessage()
         this.loadCacheStats()
       })
       .catch((error: Error) => {
-        this.localDataMessage = error.message || '清理失败'
+        this.localDataMessage = StorageSettingsCoordinator.clearErrorMessage(error)
       })
   }
 
@@ -301,33 +298,31 @@ export struct StorageSettingsPage {
 
   private runSeedAll(): void {
     if (!BuildProfile.DEBUG || !CacheDeviceQaSeed.isEnabled()) {
-      this.seedMessage = '仅 debug 构建可用'
+      this.seedMessage = StorageSettingsCoordinator.seedUnavailableMessage()
       return
     }
     CacheDeviceQaSeed.seedAll(this.hostContext())
       .then((results: CacheDeviceQaSeedResult[]) => {
-        const rows = results.reduce((sum: number, result: CacheDeviceQaSeedResult) => sum + result.seededRows, 0)
-        const files = results.reduce((sum: number, result: CacheDeviceQaSeedResult) => sum + result.seededFiles, 0)
-        this.seedMessage = `已写入 ${rows} 行 / ${files} 文件`
+        this.seedMessage = StorageSettingsCoordinator.seedAllSuccessMessage(results)
         this.loadCacheStats()
       })
       .catch((error: Error) => {
-        this.seedMessage = error.message || 'Seed 失败'
+        this.seedMessage = StorageSettingsCoordinator.seedErrorMessage(error)
       })
   }
 
   private runSeedAction(label: string, action: () => Promise<CacheDeviceQaSeedResult>): void {
     if (!BuildProfile.DEBUG || !CacheDeviceQaSeed.isEnabled()) {
-      this.seedMessage = '仅 debug 构建可用'
+      this.seedMessage = StorageSettingsCoordinator.seedUnavailableMessage()
       return
     }
     action()
       .then((result: CacheDeviceQaSeedResult) => {
-        this.seedMessage = `${label}: ${result.seededRows} 行 / ${result.seededFiles} 文件`
+        this.seedMessage = StorageSettingsCoordinator.seedActionSuccessMessage(label, result)
         this.loadCacheStats()
       })
       .catch((error: Error) => {
-        this.seedMessage = error.message || 'Seed 失败'
+        this.seedMessage = StorageSettingsCoordinator.seedErrorMessage(error)
       })
   }
 }

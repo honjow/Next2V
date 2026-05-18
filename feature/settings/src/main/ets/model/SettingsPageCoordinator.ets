@@ -1,11 +1,9 @@
 import {
-  DateUtils,
   ReadingSettings,
   ReplyActionAlignmentSettings,
   ReplyCardStyleSettings,
   ReplyDisplaySettings,
   ThemeSettings,
-  type CacheStats,
 } from 'shared'
 
 export interface SettingsOption {
@@ -89,11 +87,4 @@ export class SettingsPageCoordinator {
     return useCoDomain ? 'v2ex.co' : 'v2ex.com'
   }
 
-  static cacheSubtitle(stats: CacheStats): string {
-    let text = `列表 ${stats.topicListCount} 组 · 详情 ${stats.topicDetailCount} 篇`
-    if (stats.updatedAt > 0) {
-      text += ` · 更新于 ${DateUtils.toDateString(stats.updatedAt)}`
-    }
-    return text
-  }
 }
