@@ -51,6 +51,11 @@ interface CookieHtmlResponse {
   location: string
 }
 
+interface NotificationDeleteAction {
+  id: number
+  once: string
+}
+
 interface SameOriginRequestUrls {
   url: string
   refererUrl: string
@@ -362,30 +367,70 @@ export class ApiService {
       throw new Error('缺少通知删除参数')
     }
     const safeVerifyPage = Math.max(1, Math.floor(verifyPage))
-    if (await this.isNotificationDeletedFromCookiePage(cookie, notificationId, safeVerifyPage)) {
+    console.info(`[NotificationDelete] cookie start id=${notificationId} page=${safeVerifyPage}`)
+    const action = await this.latestNotificationDeleteAction(cookie, notificationId, safeVerifyPage)
+    if (action.id <= 0) {
+      console.info(`[NotificationDelete] cookie already_deleted id=${notificationId} page=${safeVerifyPage}`)
       return
     }
-    const fields: Record<string, string> = {}
-    fields['once'] = once
-    const body = ApiService.encodeFormFields(fields)
-    const res = await this.requestHtmlWithCookieAllowRedirect(
-      `/delete/notification/${notificationId}?once=${encodeURIComponent(once)}`,
-      cookie,
-      '/notifications',
-      http.RequestMethod.POST,
-      body,
-      {
-        'Accept': '*/*',
-        'X-Requested-With': 'XMLHttpRequest'
-      }
-    )
+    if (action.id !== notificationId || action.once !== once) {
+      console.info(`[NotificationDelete] cookie refreshed_action id=${notificationId} fresh=${action.id} page=${safeVerifyPage}`)
+    }
+    const res = await this.deleteNotificationWithCookieRequest(cookie, action.id, action.once)
+    console.info(`[NotificationDelete] cookie request_done id=${action.id} status=${res.statusCode} signin=${res.location.indexOf('/signin') >= 0}`)
     if (res.location.indexOf('/signin') >= 0) {
       throw new Error('Web 会话已失效，请重新登录')
     }
-    if (await this.isNotificationDeletedFromCookiePage(cookie, notificationId, safeVerifyPage)) {
+    if (await this.isNotificationDeletedFromCookiePage(cookie, action.id, safeVerifyPage)) {
+      console.info(`[NotificationDelete] cookie verified id=${action.id} page=${safeVerifyPage}`)
       return
     }
+    console.error(`[NotificationDelete] cookie verify_failed id=${action.id} page=${safeVerifyPage}`)
     throw new Error('删除通知未生效，请稍后重试')
+  }
+
+  private async deleteNotificationWithCookieRequest(
+    cookie: string,
+    notificationId: number,
+    once: string
+  ): Promise<CookieHtmlResponse> {
+    try {
+      return await this.requestHtmlWithCookieAllowRedirect(
+        `/delete/notification/${notificationId}?once=${encodeURIComponent(once)}`,
+        cookie,
+        '/notifications',
+        http.RequestMethod.POST,
+        '',
+        {
+          'Accept': '*/*',
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      )
+    } catch (error) {
+      const e = error as Error
+      console.error(`[NotificationDelete] cookie request_failed id=${notificationId} message=${ApiService.safeOperationErrorMessage(e)}`)
+      throw new Error(ApiService.safeOperationErrorMessage(e))
+    }
+  }
+
+  private async latestNotificationDeleteAction(
+    cookie: string,
+    notificationId: number,
+    page: number
+  ): Promise<NotificationDeleteAction> {
+    const latest = await this.getNotificationsWithCookie(cookie, page)
+    const item = latest.find((current: V2exNotification) => {
+      return current.id === notificationId || current.delete_id === notificationId
+    })
+    if (!item) {
+      return { id: 0, once: '' }
+    }
+    const id = item.delete_id || item.id || 0
+    const once = (item.delete_once || '').trim()
+    if (id <= 0 || !once) {
+      throw new Error('缺少通知删除参数')
+    }
+    return { id, once }
   }
 
   private async isNotificationDeletedFromCookiePage(cookie: string, notificationId: number, page: number): Promise<boolean> {
@@ -1282,6 +1327,13 @@ export class ApiService {
       encodedPairs.push(`${encodeURIComponent(key)}=${encodeURIComponent(fields[key] || '')}`)
     }
     return encodedPairs.join('&')
+  }
+
+  private static safeOperationErrorMessage(error: Error): string {
+    const message = error.message || '请求失败'
+    return message
+      .replace(/once=[^\s&]+/gi, 'once=<redacted>')
+      .replace(/https?:\/\/[^\s]+/gi, '<url>')
   }
 
   private static extractReplyThankPath(html: string, replyId: number): string {
