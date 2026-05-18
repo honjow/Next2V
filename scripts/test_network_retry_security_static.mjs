@@ -43,11 +43,27 @@ assertIncludes(apiPath, api, 'resolveCookieRequestUrls')
 assertIncludes(apiPath, api, 'resolveSameOriginUrl')
 assertIncludes(apiPath, api, 'targetOrigin !== baseOrigin')
 assertIncludes(apiPath, api, '不允许使用外域链接')
+assertIncludes(apiPath, api, 'private static queryParam(name: string, value: string): string')
+assertIncludes(apiPath, api, "ApiService.queryParam('username', username)")
+assertIncludes(apiPath, api, "ApiService.queryParam('node_name', nodeName)")
+assertIncludes(apiPath, api, "ApiService.queryParam('name', name)")
 
 assertIncludes(cookiePath, cookie, 'static async clearForBaseUrl')
 assertIncludes(cookiePath, cookie, 'expireWebCookiesForBaseUrl')
 assertIncludes(cookiePath, cookie, 'Expires=Thu, 01 Jan 1970 00:00:00 GMT')
 assertIncludes(accountPath, account, 'CookieJarSettings.clearForBaseUrl(context, HttpClient.getInstance().getBaseUrl())')
 assertIncludes(notificationPath, notification, 'CookieJarSettings.clearForBaseUrl(context, HttpClient.getInstance().getBaseUrl())')
+
+const forbiddenRawQueryParams = [
+  '?username=${username}',
+  '?node_name=${nodeName}',
+  '?name=${name}',
+]
+for (const needle of forbiddenRawQueryParams) {
+  if (api.includes(needle)) {
+    console.error(`FAIL: raw query parameter interpolation remains in ${apiPath}: ${needle}`)
+    process.exit(1)
+  }
+}
 
 console.log('PASS: network retry and cookie security static contracts')

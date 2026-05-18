@@ -198,6 +198,8 @@
 
 ### A6. P2：URL query 参数未统一 encode
 
+状态更新（2026-05-18）：部分已处理。`ApiService` V1 公开只读接口中的 `username`、`node_name`、`name` query 参数已收口到 `ApiService.queryParam`，并增加静态防回归测试；其他新增请求仍应继续遵循统一 encode 规则。
+
 **文件/符号**
 
 - `shared/src/main/ets/network/ApiV2Service.ets`

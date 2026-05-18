@@ -144,14 +144,18 @@ export class ApiService {
   /** 根据用户名获取其主题 */
   async getTopicsByUsername(username: string): Promise<V2exTopic[]> {
     return ApiService.normalizeTopics(
-      await this.http.get<V2exTopic[]>(`${ApiConstants.API_TOPIC_SHOW}?username=${username}`),
+      await this.http.get<V2exTopic[]>(
+        `${ApiConstants.API_TOPIC_SHOW}?${ApiService.queryParam('username', username)}`,
+      ),
     )
   }
 
   /** 根据节点名获取主题 */
   async getTopicsByNode(nodeName: string): Promise<V2exTopic[]> {
     return ApiService.normalizeTopics(
-      await this.http.get<V2exTopic[]>(`${ApiConstants.API_TOPIC_SHOW}?node_name=${nodeName}`),
+      await this.http.get<V2exTopic[]>(
+        `${ApiConstants.API_TOPIC_SHOW}?${ApiService.queryParam('node_name', nodeName)}`,
+      ),
     )
   }
 
@@ -239,12 +243,16 @@ export class ApiService {
 
   /** 根据名称获取节点详情 */
   async getNodeByName(name: string): Promise<V2exNode> {
-    return this.http.get<V2exNode>(`${ApiConstants.API_NODE_SHOW}?name=${name}`)
+    return this.http.get<V2exNode>(
+      `${ApiConstants.API_NODE_SHOW}?${ApiService.queryParam('name', name)}`,
+    )
   }
 
   /** 获取用户信息 */
   async getMember(username: string): Promise<V2exMemberProfile> {
-    return this.http.get<V2exMemberProfile>(`${ApiConstants.API_MEMBER_SHOW}?username=${username}`)
+    return this.http.get<V2exMemberProfile>(
+      `${ApiConstants.API_MEMBER_SHOW}?${ApiService.queryParam('username', username)}`,
+    )
   }
 
   /** 获取成员页实际展示的主题、回复和可用操作。主题列表遵循用户网页隐藏设置。 */
@@ -1567,5 +1575,9 @@ export class ApiService {
     return {
       'Authorization': `Bearer ${token.trim()}`,
     }
+  }
+
+  private static queryParam(name: string, value: string): string {
+    return `${encodeURIComponent(name)}=${encodeURIComponent((value || '').trim())}`
   }
 }
