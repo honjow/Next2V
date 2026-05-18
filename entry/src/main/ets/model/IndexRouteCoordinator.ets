@@ -1,11 +1,67 @@
 import type {
+  ImagePreviewParams,
   NodeTopicListParams,
   TopicDetailParams,
   UserProfileParams,
   V2exRoute,
 } from 'shared'
 
+export interface ReplyEditorRouteParams {
+  topicId: number
+  topicTitle: string
+  initialContent: string
+}
+
 export class IndexRouteCoordinator {
+  private static numberParam(param: Object, key: string): number {
+    try {
+      const value = (param as Record<string, Object>)[key]
+      return typeof value === 'number' && Number.isFinite(value) ? value : 0
+    } catch (_error) {
+      return 0
+    }
+  }
+
+  private static stringParam(param: Object, key: string): string {
+    try {
+      const value = (param as Record<string, Object>)[key]
+      return typeof value === 'string' ? value : ''
+    } catch (_error) {
+      return ''
+    }
+  }
+
+  static topicDetailRouteParams(param: Object): TopicDetailParams {
+    const topicId = IndexRouteCoordinator.numberParam(param, 'topicId')
+    const targetFloor = IndexRouteCoordinator.numberParam(param, 'targetFloor')
+    if (targetFloor > 0) {
+      return { topicId, targetFloor }
+    }
+    return { topicId }
+  }
+
+  static replyEditorRouteParams(param: Object): ReplyEditorRouteParams {
+    return {
+      topicId: IndexRouteCoordinator.numberParam(param, 'topicId'),
+      topicTitle: IndexRouteCoordinator.stringParam(param, 'topicTitle'),
+      initialContent: IndexRouteCoordinator.stringParam(param, 'initialContent'),
+    }
+  }
+
+  static imagePreviewRouteParams(param: Object): ImagePreviewParams {
+    return { url: IndexRouteCoordinator.stringParam(param, 'url') }
+  }
+
+  static nodeTopicRouteParams(param: Object): NodeTopicListParams {
+    const nodeName = IndexRouteCoordinator.stringParam(param, 'nodeName')
+    const nodeTitle = IndexRouteCoordinator.stringParam(param, 'nodeTitle')
+    return { nodeName, nodeTitle }
+  }
+
+  static userProfileRouteParams(param: Object): UserProfileParams {
+    return { username: IndexRouteCoordinator.stringParam(param, 'username') }
+  }
+
   static commandPayload(command: string): string {
     const raw = (command || '').trim()
     if (!raw) {

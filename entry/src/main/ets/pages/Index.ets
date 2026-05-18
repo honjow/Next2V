@@ -17,7 +17,6 @@ import {
   ApiConstants,
   FoldScreenUtil,
   HttpClient,
-  ImagePreviewParams,
   MotionHandStateService,
   StorageKeys,
   ThemeConstants,
@@ -147,12 +146,12 @@ struct Index {
     if (name === 'TopicDetail') {
       HdsNavDestination() {
         TopicDetailPage({
-          topicId: ((param as Record<string, Object>)['topicId'] as number) || 0,
-          targetFloor: ((param as Record<string, Object>)['targetFloor'] as number) || 0,
+          topicId: IndexRouteCoordinator.topicDetailRouteParams(param).topicId,
+          targetFloor: IndexRouteCoordinator.topicDetailRouteParams(param).targetFloor || 0,
         })
       }
       .titleBar(
-        this.topicDetailTitleBarOpts(((param as Record<string, Object>)['topicId'] as number) || 0),
+        this.topicDetailTitleBarOpts(IndexRouteCoordinator.topicDetailRouteParams(param).topicId),
       )
       .dynamicHideTitleBar({
         hideTitleArea: this.isFoldedAndUseOuterScreen,
@@ -161,46 +160,46 @@ struct Index {
       })
     } else if (name === 'ImagePreview') {
       HdsNavDestination() {
-        ImagePreviewPage({ url: (param as ImagePreviewParams).url })
+        ImagePreviewPage({ url: IndexRouteCoordinator.imagePreviewRouteParams(param).url })
       }.titleBar(this.navDestTitleBarOpts(undefined, this.imagePreviewTitleMenu()))
     } else if (name === 'NodeTopicList') {
       HdsNavDestination() {
         NodeTopicPage({
-          nodeName: (param as Record<string, Object>)['nodeName'] as string,
-          nodeTitle: (param as Record<string, Object>)['nodeTitle'] as string,
+          nodeName: IndexRouteCoordinator.nodeTopicRouteParams(param).nodeName,
+          nodeTitle: IndexRouteCoordinator.nodeTopicRouteParams(param).nodeTitle,
         })
       }
       .titleBar(
         this.nodeTopicTitleBarOpts(
-          (param as Record<string, Object>)['nodeName'] as string,
-          (param as Record<string, Object>)['nodeTitle'] as string,
+          IndexRouteCoordinator.nodeTopicRouteParams(param).nodeName,
+          IndexRouteCoordinator.nodeTopicRouteParams(param).nodeTitle,
         ),
       )
     } else if (name === 'ReplyEditor') {
       HdsNavDestination() {
         ReplyEditorPage({
-          topicId: ((param as Record<string, Object>)['topicId'] as number) || 0,
-          topicTitle: ((param as Record<string, Object>)['topicTitle'] as string) || '',
-          initialContent: ((param as Record<string, Object>)['initialContent'] as string) || '',
+          topicId: IndexRouteCoordinator.replyEditorRouteParams(param).topicId,
+          topicTitle: IndexRouteCoordinator.replyEditorRouteParams(param).topicTitle,
+          initialContent: IndexRouteCoordinator.replyEditorRouteParams(param).initialContent,
         })
       }.titleBar(this.navDestTitleBarOpts('回复'))
     } else if (name === 'UserProfile') {
       HdsNavDestination() {
-        UserProfilePage({ username: (param as Record<string, Object>)['username'] as string })
+        UserProfilePage({ username: IndexRouteCoordinator.userProfileRouteParams(param).username })
       }
       .titleBar(
-        this.userProfileTitleBarOpts((param as Record<string, Object>)['username'] as string),
+        this.userProfileTitleBarOpts(IndexRouteCoordinator.userProfileRouteParams(param).username),
       )
       .onShown(() => {
-        this.notifyUserProfileShown((param as Record<string, Object>)['username'] as string)
+        this.notifyUserProfileShown(IndexRouteCoordinator.userProfileRouteParams(param).username)
       })
     } else if (name === 'UserTopics') {
       HdsNavDestination() {
-        UserTopicsPage({ username: (param as Record<string, Object>)['username'] as string })
+        UserTopicsPage({ username: IndexRouteCoordinator.userProfileRouteParams(param).username })
       }.titleBar(this.navDestTitleBarOpts('全部主题'))
     } else if (name === 'UserReplies') {
       HdsNavDestination() {
-        UserRepliesPage({ username: (param as Record<string, Object>)['username'] as string })
+        UserRepliesPage({ username: IndexRouteCoordinator.userProfileRouteParams(param).username })
       }.titleBar(this.navDestTitleBarOpts('全部回复'))
     } else if (name === 'V2exWebLogin') {
       HdsNavDestination() {
