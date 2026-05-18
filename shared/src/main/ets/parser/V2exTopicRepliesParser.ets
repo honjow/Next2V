@@ -117,15 +117,20 @@ export class V2exTopicRepliesParser {
   }
 
   private static extractThanks(block: string): number {
-    const heartCount = (block || '').match(/<span[^>]*class=['"][^'"]*\bsmall\b[^'"]*\bfade\b[^'"]*['"][^>]*>[\s\S]*?(?:heart|❤️)[\s\S]*?(\d+)\s*<\/span>/i)
+    const metaBlock = V2exTopicRepliesParser.removeReplyContentHtml(block || '')
+    const heartCount = metaBlock.match(/<span[^>]*class=['"][^'"]*\bsmall\b[^'"]*\bfade\b[^'"]*['"][^>]*>[\s\S]*?(?:heart|❤️)[\s\S]*?(\d+)\s*<\/span>/i)
     if (heartCount && heartCount[1]) {
       return V2exTopicRepliesParser.parseNumber(heartCount[1])
     }
-    const m = (block || '').match(/(\d+)\s*(?:个)?感谢|thanks[^>]*>\s*(\d+)/i)
+    const m = metaBlock.match(/(\d+)\s*(?:个)?感谢|thanks[^>]*>\s*(\d+)/i)
     if (!m) {
       return 0
     }
     return V2exTopicRepliesParser.parseNumber(m[1] || m[2] || '')
+  }
+
+  private static removeReplyContentHtml(block: string): string {
+    return (block || '').replace(/<div[^>]*class=['"][^'"]*\breply_content\b[^'"]*['"][^>]*>[\s\S]*?<\/div>/gi, '')
   }
 
   private static extractThankedByCurrentUser(block: string, replyId: number): boolean {

@@ -65,6 +65,20 @@ function markdown(html) {
     .trim()
 }
 
+function removeReplyContentHtml(block) {
+  return (block || '').replace(/<div[^>]*class=['"][^'"]*\breply_content\b[^'"]*['"][^>]*>[\s\S]*?<\/div>/gi, '')
+}
+
+function extractThanks(block) {
+  const metaBlock = removeReplyContentHtml(block || '')
+  const heartCount = metaBlock.match(/<span[^>]*class=['"][^'"]*\bsmall\b[^'"]*\bfade\b[^'"]*['"][^>]*>[\s\S]*?(?:heart|❤️)[\s\S]*?(\d+)\s*<\/span>/i)
+  if (heartCount?.[1]) {
+    return parseNumber(heartCount[1])
+  }
+  const m = metaBlock.match(/(\d+)\s*(?:个)?感谢|thanks[^>]*>\s*(\d+)/i)
+  return m ? parseNumber(m[1] || m[2] || '') : 0
+}
+
 function parseReplies(html) {
   const replies = []
   const replyRe = /<div\s+id=['"]r_(\d+)['"][^>]*class=['"][^'"]*\bcell\b[^'"]*['"][^>]*>([\s\S]*?)(?=<div\s+id=['"]r_\d+['"][^>]*class=['"][^'"]*\bcell\b|<div\s+class=['"]sep20['"]|$)/gi
@@ -75,7 +89,7 @@ function parseReplies(html) {
     const contentRendered = block.match(/<div[^>]*class=['"][^'"]*\breply_content\b[^'"]*['"][^>]*>([\s\S]*?)<\/div>/i)?.[1]?.trim() || ''
     const avatarTag = block.match(/<img[^>]+class=['"][^'"]*\bavatar\b[^'"]*['"][^>]*>/i)?.[0] || ''
     const username = block.match(/<a[^>]+href=['"]\/member\/([^'"]+)['"][^>]*>/i)?.[1] || extractAttr(avatarTag, 'alt')
-    replies.push({ id, content: markdown(contentRendered), content_rendered: contentRendered, member: { id: parseNumber(extractAttr(avatarTag, 'data-uid')), username, avatar_normal: extractAttr(avatarTag, 'src') } })
+    replies.push({ id, thanks: extractThanks(block), content: markdown(contentRendered), content_rendered: contentRendered, member: { id: parseNumber(extractAttr(avatarTag, 'data-uid')), username, avatar_normal: extractAttr(avatarTag, 'src') } })
     m = replyRe.exec(html)
   }
   return replies
@@ -119,6 +133,43 @@ if (topic1213489Reply35.content.includes('/cdn-cgi/l/email-protection')) {
   process.exit(1)
 }
 
+const topic1213451Reply20Html = `
+<div id="r_17652152" class="cell">
+  <table><tr>
+    <td><img src="https://cdn.v2ex.com/avatar/a46a/cf27/384005_normal.png?m=1689697711" class="avatar" alt="cherishd" data-uid="384005" /></td>
+    <td><div class="fr">&nbsp; &nbsp;<span class="no">20</span></div>
+      <strong><a href="/member/cherishd" class="dark">cherishd</a></strong>
+      <span class="ago" title="2026-05-18 11:54:12 +08:00">几小时前</span>
+      <div class="reply_content">ID：290  感谢老板<br /><br />YTE5ODU5NjQwOThAb3V0bG9vay5jb20=</div>
+    </td>
+  </tr></table>
+</div>`
+const topic1213451Reply20 = parseReplies(topic1213451Reply20Html)[0]
+if (!topic1213451Reply20 || topic1213451Reply20.thanks !== 0) {
+  console.error('FAIL: topic 1213451 reply 20 body text was parsed as thanks', topic1213451Reply20)
+  process.exit(1)
+}
+if (!topic1213451Reply20.content.includes('ID：290')) {
+  console.error('FAIL: topic 1213451 reply 20 content was damaged while extracting thanks', topic1213451Reply20)
+  process.exit(1)
+}
+
+const thankedReplyHtml = `
+<div id="r_1" class="cell">
+  <table><tr>
+    <td><img src="https://cdn.v2ex.com/avatar/test_normal.png" class="avatar" alt="member" data-uid="1" /></td>
+    <td><div class="fr"><span class="small fade">heart 3</span></div>
+      <strong><a href="/member/member" class="dark">member</a></strong>
+      <div class="reply_content">正文无感谢数</div>
+    </td>
+  </tr></table>
+</div>`
+const thankedReply = parseReplies(thankedReplyHtml)[0]
+if (!thankedReply || thankedReply.thanks !== 3) {
+  console.error('FAIL: metadata thanks count was not parsed', thankedReply)
+  process.exit(1)
+}
+
 function assertProductionCoverage() {
   const parserPath = 'shared/src/main/ets/parser/V2exTopicRepliesParser.ets'
   const apiPath = 'shared/src/main/ets/network/ApiService.ets'
@@ -138,6 +189,8 @@ function assertProductionCoverage() {
     [parserPath, parser, 'cloudflareEmailToText'],
     [parserPath, parser, 'decodeCloudflareEmail'],
     [parserPath, parser, 'data-cfemail'],
+    [parserPath, parser, 'thanks: V2exTopicRepliesParser.extractThanks(block)'],
+    [parserPath, parser, 'removeReplyContentHtml'],
     [apiPath, api, 'async getRepliesWithWebFallback('],
     [apiPath, api, 'expectedReplies: number = 0'],
     [apiPath, api, 'apiReplies.length === 0 || (expectedReplies > 0 && apiReplies.length < expectedReplies)'],
