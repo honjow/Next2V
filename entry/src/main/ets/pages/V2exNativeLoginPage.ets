@@ -13,6 +13,7 @@ import {
   NativeTwoFactorRequiredError,
   SecondaryListScaffold,
   ThemeConstants,
+  TwoFactorChallengeService,
   V2exNativeAuthService
 } from 'shared'
 import type { NativeLoginChallenge, NativeLoginSnapshot } from 'shared'
@@ -241,7 +242,10 @@ export struct V2exNativeLoginPage {
           return Promise.resolve()
         }
         if (error instanceof NativeTwoFactorRequiredError) {
-          return this.finishLogin(context, baseUrl, { cookie: error.challenge.cookie, username: cleanUsername }, requestId)
+          this.password = ''
+          TwoFactorChallengeService.request(error.challenge.cookie, 'nativeLogin')
+          this.errorMessage = '需要完成两步验证后才能登录'
+          return Promise.resolve()
         }
         this.errorMessage = error.message || '登录失败'
         if (this.captchaField) {

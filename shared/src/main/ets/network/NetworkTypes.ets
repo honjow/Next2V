@@ -125,6 +125,8 @@ export interface V2exNotification {
   member?: V2exMember
   for_member_id?: number
   text?: string
+  reply_content?: string
+  reply_content_rendered?: string
   payload?: string
   payload_rendered?: string
   title?: string
@@ -133,6 +135,8 @@ export interface V2exNotification {
   topic_id?: number
   topic_title?: string
   target_floor?: number
+  delete_id?: number
+  delete_once?: string
   created?: number
   last_modified?: number
   unread?: boolean

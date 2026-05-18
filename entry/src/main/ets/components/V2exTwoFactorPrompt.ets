@@ -20,7 +20,6 @@ export struct V2exTwoFactorPrompt {
   @Link visible: boolean
   @Prop cookie: string = ''
   @Prop title: string = '两步验证'
-  @Prop message: string = 'V2EX 需要完成两步验证后才能继续访问账号内容。'
   onSuccess?: () => void
   onCancel?: () => void
 
@@ -39,7 +38,7 @@ export struct V2exTwoFactorPrompt {
     }) {
       ListItem() {
         Column({ space: ThemeConstants.SPACE_MD }) {
-          Text(this.message)
+          Text('V2EX 需要完成两步验证后才能继续访问账号内容。')
             .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
             .fontColor($r('sys.color.font_secondary'))
             .width('100%')

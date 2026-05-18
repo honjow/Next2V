@@ -6,6 +6,9 @@ export interface NotificationCardDisplay {
   readTag: string
   titleText: string
   bodyText: string
+  replyContent: string
+  memberName: string
+  avatarUrl: string
 }
 
 export class NotificationPageCoordinator {
@@ -14,7 +17,10 @@ export class NotificationPageCoordinator {
       kindTag: meta.kindTag,
       readTag: meta.readTag,
       titleText: meta.title,
-      bodyText: meta.body
+      bodyText: meta.body,
+      replyContent: meta.replyContent,
+      memberName: meta.memberName,
+      avatarUrl: meta.avatarUrl
     }
   }
 

@@ -25,6 +25,10 @@ export interface NotificationMetadata {
   targetFloor: number
   title: string
   body: string
+  replyContent: string
+  memberName: string
+  avatarUrl: string
+  canDeleteWithCookie: boolean
 }
 
 interface NotificationReadStateBag {
@@ -49,6 +53,13 @@ export class NotificationCenterViewModel {
 
   canDelete(context: NotificationAuthContext): boolean {
     return context.tokenConfigured && !!context.token
+  }
+
+  canDeleteItem(context: NotificationAuthContext, item: V2exNotification): boolean {
+    if (this.canDelete(context)) {
+      return true
+    }
+    return context.cookieConfigured && !!context.cookie && this.webDeleteId(item) > 0 && !!this.webDeleteOnce(item)
   }
 
   async loadPage(
@@ -93,8 +104,32 @@ export class NotificationCenterViewModel {
       topicId: this.topicId(item),
       targetFloor: this.targetFloor(item),
       title: this.title(item),
-      body: body
+      body: body,
+      replyContent: this.replyContent(item),
+      memberName: item.member?.username || '',
+      avatarUrl: item.member?.avatar_normal || item.member?.avatar_large || item.member?.avatar_mini || '',
+      canDeleteWithCookie: this.webDeleteId(item) > 0 && !!this.webDeleteOnce(item)
     }
+  }
+
+  unreadCount(items: V2exNotification[]): number {
+    if (!Array.isArray(items)) {
+      return 0
+    }
+    return items.filter((item: V2exNotification) => this.isUnread(item)).length
+  }
+
+  async unreadCountFromCookie(cookie: string): Promise<number> {
+    return this.api.getNotificationUnreadCountWithCookie(cookie)
+  }
+
+  webDeleteId(item: V2exNotification): number {
+    const id = item.delete_id || item.id || 0
+    return id > 0 ? id : 0
+  }
+
+  webDeleteOnce(item: V2exNotification): string {
+    return (item.delete_once || '').trim()
   }
 
   kindSummary(items: V2exNotification[]): string {
@@ -170,7 +205,7 @@ export class NotificationCenterViewModel {
   }
 
   private kindTag(item: V2exNotification, body: string): string {
-    const text = `${item.title || ''} ${body} ${item.payload || ''} ${item.payload_rendered || ''}`.toLowerCase()
+    const text = `${item.title || ''} ${body} ${this.replyContent(item)} ${item.payload || ''} ${item.payload_rendered || ''}`.toLowerCase()
     if (this.containsAny(text, ['提到了你', 'mentioned you', 'mention'])) {
       return '提及'
     }
@@ -197,7 +232,11 @@ export class NotificationCenterViewModel {
   }
 
   private body(item: V2exNotification): string {
-    return item.text || item.content || item.payload || item.content_rendered || item.payload_rendered || ''
+    return item.text || item.content || item.content_rendered || ''
+  }
+
+  private replyContent(item: V2exNotification): string {
+    return item.reply_content || item.payload || item.content || item.reply_content_rendered || item.payload_rendered || ''
   }
 
   private topicId(item: V2exNotification): number {
@@ -234,6 +273,11 @@ export class NotificationCenterViewModel {
       return value > 0
     }
     return null
+  }
+
+  private isUnread(item: V2exNotification): boolean {
+    const tag = this.readTag(item)
+    return tag === '未读'
   }
 
   private containsAny(text: string, needles: string[]): boolean {

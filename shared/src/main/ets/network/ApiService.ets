@@ -338,6 +338,39 @@ export class ApiService {
     return V2exNotificationParser.extractNotifications(html)
   }
 
+  async getNotificationUnreadCountWithCookie(cookie: string): Promise<number> {
+    if (!cookie) {
+      return 0
+    }
+    const html = await this.getCookieHtml('/', cookie)
+    if (!V2exSessionParser.extractUsername(html)) {
+      throw new Error('Web 会话已失效，请重新登录')
+    }
+    return V2exSessionParser.extractUnreadNotificationCount(html)
+  }
+
+  async deleteNotificationWithCookie(cookie: string, notificationId: number, once: string): Promise<void> {
+    if (!cookie) {
+      throw new Error('请先登录')
+    }
+    if (notificationId <= 0 || !once) {
+      throw new Error('缺少通知删除参数')
+    }
+    const fields: Record<string, string> = {}
+    fields['once'] = once
+    const body = ApiService.encodeFormFields(fields)
+    const res = await this.requestHtmlWithCookieAllowRedirect(
+      `/delete/notification/${notificationId}?once=${encodeURIComponent(once)}`,
+      cookie,
+      '/notifications',
+      http.RequestMethod.POST,
+      body,
+    )
+    if (res.location.indexOf('/signin') >= 0) {
+      throw new Error('Web 会话已失效，请重新登录')
+    }
+  }
+
   async getBalanceWithCookie(cookie: string): Promise<V2exBalance> {
     if (!cookie) {
       throw new Error('请先登录')

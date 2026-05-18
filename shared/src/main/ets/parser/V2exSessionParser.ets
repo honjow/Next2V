@@ -26,6 +26,23 @@ export class V2exSessionParser {
     return ''
   }
 
+  static extractUnreadNotificationCount(html: string): number {
+    if (!html) {
+      return 0
+    }
+    const linkRe = /<a\b[^>]*href\s*=\s*(['"])\/notifications(?:\?[^'"]*)?\1[^>]*>([\s\S]*?)<\/a>/gi
+    let m: RegExpExecArray | null = linkRe.exec(html)
+    while (m) {
+      const text = V2exSessionParser.compactText(m[2] || '')
+      const count = V2exSessionParser.extractFirstNumber(text)
+      if (count > 0) {
+        return count
+      }
+      m = linkRe.exec(html)
+    }
+    return 0
+  }
+
   private static memberNameFromHref(href: string): string {
     if (!href) {
       return ''
@@ -45,6 +62,23 @@ export class V2exSessionParser {
     const re = new RegExp(`${attrName}\\s*=\\s*(['"])(.*?)\\1`, 'i')
     const m = tag.match(re)
     return m && m[2] ? V2exSessionParser.decodeHtml(m[2]) : ''
+  }
+
+  private static extractFirstNumber(text: string): number {
+    const m = (text || '').match(/\d+/)
+    if (!m || !m[0]) {
+      return 0
+    }
+    const value = Number.parseInt(m[0])
+    return Number.isFinite(value) && value > 0 ? value : 0
+  }
+
+  private static compactText(html: string): string {
+    return V2exSessionParser.decodeHtml(html.replace(/<script[\s\S]*?<\/script>/gi, ' ')
+      .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+      .replace(/<[^>]+>/g, ' '))
+      .replace(/\s+/g, ' ')
+      .trim()
   }
 
   private static decodeHtml(value: string): string {

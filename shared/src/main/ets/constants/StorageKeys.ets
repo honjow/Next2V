@@ -31,6 +31,11 @@ export class StorageKeys {
   static readonly AUTH_SESSION_AVATAR: string = 'authSessionAvatar'
   static readonly AUTH_SESSION_VALIDATED_AT: string = 'authSessionValidatedAt'
   static readonly AUTH_SESSION_UPDATED_AT: string = 'authSessionUpdatedAt'
+  static readonly TWO_FACTOR_VISIBLE: string = 'twoFactorVisible'
+  static readonly TWO_FACTOR_COOKIE: string = 'twoFactorCookie'
+  static readonly TWO_FACTOR_SOURCE: string = 'twoFactorSource'
+  static readonly TWO_FACTOR_REQUESTED_AT: string = 'twoFactorRequestedAt'
+  static readonly TWO_FACTOR_COMPLETED_AT: string = 'twoFactorCompletedAt'
 
   // Auto daily check-in state
   static readonly AUTO_DAILY_CHECKIN_ENABLED: string = 'autoDailyCheckinEnabled'
@@ -88,6 +93,7 @@ export class StorageKeys {
   static readonly USER_PROFILE_APPBAR_AVATAR_STATES: string = 'userProfileAppbarAvatarStates'
   static readonly USER_PROFILE_SHOWN: string = 'userProfileShown'
   static readonly NOTIFICATION_ACTION: string = 'notificationAction'
+  static readonly NOTIFICATION_UNREAD_COUNT: string = 'notificationUnreadCount'
   static readonly SEARCH_ACTION: string = 'searchAction'
   static readonly WEB_LOGIN_ACTION: string = 'webLoginAction'
   static readonly IMAGE_PREVIEW_ACTION: string = 'imagePreviewAction'

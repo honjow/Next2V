@@ -1,34 +1,39 @@
 import { promptAction } from '@kit.ArkUI'
-import { V2exTwoFactorPrompt } from '../components/V2exTwoFactorPrompt'
 import {
   ApiService,
   CookieJarSettings,
   PageLoginRequiredState,
   PagedListScaffold,
+  StorageKeys,
   TopicCard,
+  TwoFactorChallengeService,
   type TopicDetailParams,
   type V2exTopic,
-  V2exCookieTwoFactorRequiredError,
-  towFASheetOptions
+  V2exCookieTwoFactorRequiredError
 } from 'shared'
 
 @Component
 export struct MyTopicsPage {
   @Consume('ns') stack: NavPathStack
+  @StorageLink(StorageKeys.AUTH_SESSION_UPDATED_AT)
+  @Watch('onAuthSessionUpdated')
+  authSessionUpdatedAt: number = 0
   @State private topics: V2exTopic[] = []
   @State private errorMessage: string = ''
   @State private isLoading: boolean = true
   @State private isLoadingMore: boolean = false
   @State private page: number = 1
   @State private hasMore: boolean = true
-  @State private twoFactorVisible: boolean = false
-  @State private twoFactorCookie: string = ''
   private api: ApiService = new ApiService()
   private readonly PAGE_SIZE: number = 20
   private refreshGuard: boolean = false
 
   aboutToAppear(): void {
     this.refresh()
+  }
+
+  onAuthSessionUpdated(_propName: string): void {
+    this.refresh(true)
   }
 
   build() {
@@ -84,21 +89,6 @@ export struct MyTopicsPage {
     .width('100%')
     .height('100%')
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
-    .bindSheet($$this.twoFactorVisible, this.TwoFactorSheet(), towFASheetOptions(SheetSize.MEDIUM, () => {
-      this.twoFactorVisible = false
-    }))
-  }
-
-  @Builder
-  private TwoFactorSheet() {
-    V2exTwoFactorPrompt({
-      visible: $twoFactorVisible,
-      cookie: this.twoFactorCookie,
-      message: '完成两步验证后即可继续访问 V2EX 账号内容。',
-      onSuccess: () => {
-        this.refresh(true)
-      }
-    })
   }
 
   private refresh(force: boolean = false): Promise<void> {
@@ -151,8 +141,7 @@ export struct MyTopicsPage {
       return
     }
     this.errorMessage = 'V2EX 需要完成两步验证'
-    this.twoFactorCookie = cookie
-    this.twoFactorVisible = true
+    TwoFactorChallengeService.request(cookie, 'myTopics')
   }
 
   private loadMore(): void {

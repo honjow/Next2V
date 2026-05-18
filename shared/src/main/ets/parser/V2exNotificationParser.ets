@@ -11,6 +11,11 @@ interface ParsedNotificationCreatedMeta {
   timeText: string
 }
 
+interface ParsedNotificationDeleteAction {
+  id: number
+  once: string
+}
+
 export class V2exNotificationParser {
   static extractNotifications(html: string): V2exNotification[] {
     if (!html) {
@@ -59,6 +64,9 @@ export class V2exNotificationParser {
     const rawText = V2exNotificationParser.compactText(cell)
     const meta = V2exNotificationParser.extractCreated(rawText)
     const unread = V2exNotificationParser.extractUnread(openTag)
+    const replyContentRendered = V2exNotificationParser.extractPayloadHtml(cell)
+    const replyContent = replyContentRendered ? V2exNotificationParser.compactText(replyContentRendered) : ''
+    const deleteAction = V2exNotificationParser.extractDeleteAction(cell)
     const text = meta.timeText ? V2exNotificationParser.stripTimeSuffix(rawText, meta.timeText) : rawText
     if (!text && !topic.title) {
       return null
@@ -67,10 +75,16 @@ export class V2exNotificationParser {
       id: id,
       member: member,
       text: text,
+      reply_content: replyContent,
+      reply_content_rendered: replyContentRendered,
+      payload: replyContent,
+      payload_rendered: replyContentRendered,
       title: topic.title,
       topic_id: topic.id,
       topic_title: topic.title,
       target_floor: topic.targetFloor,
+      delete_id: deleteAction.id,
+      delete_once: deleteAction.once,
       created: meta.created,
       last_modified: 0,
       unread: unread === null ? undefined : unread
@@ -267,13 +281,44 @@ export class V2exNotificationParser {
       return undefined
     }
     const username = V2exNotificationParser.compactText(m[2] || '') || V2exNotificationParser.decodeHtml(m[1] || '')
+    const avatar = V2exNotificationParser.extractMemberAvatar(cell, username)
     return {
       id: 0,
       username: username,
       tagline: '',
-      avatar_mini: '',
-      avatar_normal: '',
-      avatar_large: ''
+      avatar_mini: avatar,
+      avatar_normal: avatar,
+      avatar_large: avatar
+    }
+  }
+
+  private static extractMemberAvatar(cell: string, username: string): string {
+    const imgRe = /<img[^>]+(?:alt=['"]([^'"]*)['"][^>]*src=['"]([^'"]+)['"]|src=['"]([^'"]+)['"][^>]*alt=['"]([^'"]*)['"])[^>]*>/i
+    const m = cell.match(imgRe)
+    if (!m) {
+      return ''
+    }
+    const alt = V2exNotificationParser.decodeHtml(m[1] || m[4] || '')
+    if (username && alt && alt !== username) {
+      return ''
+    }
+    return V2exNotificationParser.decodeHtml(m[2] || m[3] || '')
+  }
+
+  private static extractPayloadHtml(cell: string): string {
+    const m = cell.match(/<div[^>]+class=['"][^'"]*\bpayload\b[^'"]*['"][^>]*>([\s\S]*?)<\/div>/i)
+    return m ? (m[1] || '').trim() : ''
+  }
+
+  private static extractDeleteAction(cell: string): ParsedNotificationDeleteAction {
+    const m = cell.match(/deleteNotification\s*\(\s*['"]?(\d+)['"]?\s*,\s*['"]?([^'")\s]+)['"]?\s*\)/i)
+    if (!m) {
+      return { id: 0, once: '' }
+    }
+    const id = Number.parseInt(m[1] || '0')
+    return {
+      id: Number.isFinite(id) && id > 0 ? id : 0,
+      once: V2exNotificationParser.decodeHtml(m[2] || '').trim()
     }
   }
 

@@ -19,7 +19,6 @@ export class AccountPageCoordinator {
 
   static readonly LOGIN_TITLE: string = '未登录'
   static readonly LOGIN_SUBTITLE: string = '点击登录 V2EX'
-  static readonly TWO_FACTOR_MESSAGE: string = '完成两步验证后即可继续访问 V2EX 账号内容。'
 
   static readonly PROFILE_TITLE: string = '个人主页'
   static readonly BALANCE_DETAIL_TITLE: string = '余额明细'

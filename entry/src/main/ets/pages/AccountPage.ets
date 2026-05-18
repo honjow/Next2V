@@ -6,12 +6,10 @@ import {
   AccountSignedInCard,
   AccountTokenSummary
 } from '../components/AccountDashboardComponents'
-import { V2exTwoFactorPrompt } from '../components/V2exTwoFactorPrompt'
 import {
   LocalContentStats,
   SavedNode,
   SavedTopic,
-  towFASheetOptions,
   V2exAuthenticatedMember,
   V2exBalance,
   V2exDailyMission,
@@ -32,6 +30,7 @@ import {
   SectionHeader as SharedSectionHeader,
   StorageKeys,
   ThemeConstants,
+  TwoFactorChallengeService,
   UserProfileParams,
   V2exCookieTwoFactorRequiredError,
   V2exSessionParser,
@@ -74,8 +73,6 @@ export struct AccountDashboardPage {
   @State private accountMetaError: string = ''
   @State private isAccountMetaLoading: boolean = false
   @State private isDailyRedeeming: boolean = false
-  @State private twoFactorVisible: boolean = false
-  @State private twoFactorCookie: string = ''
   private http: HttpClient = HttpClient.getInstance()
   private api: ApiService = new ApiService()
   private localStatsRequestId: number = 0
@@ -157,9 +154,6 @@ export struct AccountDashboardPage {
       .width('100%')
       .height('100%')
       .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
-      .bindSheet($$this.twoFactorVisible, this.TwoFactorSheet(), towFASheetOptions(SheetSize.MEDIUM, () => {
-        this.twoFactorVisible = false
-      }))
       .onVisibleAreaChange([0.0, 1.0], (isVisible: boolean, _currentRatio: number) => {
         if (isVisible) {
           this.refreshLocalData()
@@ -233,24 +227,6 @@ export struct AccountDashboardPage {
     .width('100%')
     .height('100%')
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
-    .bindSheet($$this.twoFactorVisible, this.TwoFactorSheet(), towFASheetOptions(SheetSize.MEDIUM, () => {
-      this.twoFactorVisible = false
-    }))
-  }
-
-  @Builder
-  TwoFactorSheet() {
-    V2exTwoFactorPrompt({
-      visible: $twoFactorVisible,
-      cookie: this.twoFactorCookie,
-      message: AccountPageCoordinator.TWO_FACTOR_MESSAGE,
-      onSuccess: () => {
-        this.sessionError = ''
-        this.accountMetaError = ''
-        this.validateCookieSession(true)
-        this.loadAccountMeta(true)
-      }
-    })
   }
 
   @Builder
@@ -657,8 +633,7 @@ export struct AccountDashboardPage {
     }
     this.sessionError = 'V2EX 需要完成两步验证'
     this.accountMetaError = 'V2EX 需要完成两步验证'
-    this.twoFactorCookie = cookie
-    this.twoFactorVisible = true
+    TwoFactorChallengeService.request(cookie, 'account')
   }
 
   private refreshAuthProfile(token: string): void {

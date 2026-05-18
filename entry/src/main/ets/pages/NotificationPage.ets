@@ -12,6 +12,8 @@ import {
   PullRefreshListScaffold,
   StorageKeys,
   ThemeConstants,
+  TwoFactorChallengeService,
+  V2exCookieTwoFactorRequiredError,
   V2exNotification
 } from 'shared'
 import {
@@ -26,8 +28,7 @@ import {
   NotificationAuthRequiredState,
   NotificationCard,
   NotificationDeleteSwipeAction,
-  NotificationErrorState,
-  NotificationSummaryCard
+  NotificationErrorState
 } from '../components/NotificationPageComponents'
 
 @Component
@@ -40,6 +41,7 @@ export struct NotificationPage {
   @StorageLink(StorageKeys.AUTH_SESSION_UPDATED_AT) @Watch('onAuthChanged') authSessionUpdatedAt: number = 0
   @StorageLink(StorageKeys.LOCAL_DATA_UPDATED_AT) @Watch('onLocalDataUpdated') localDataUpdatedAt: number = 0
   @StorageLink(StorageKeys.NOTIFICATION_ACTION) @Watch('onNotificationAction') notificationActionCommand: string = ''
+  @StorageLink(StorageKeys.NOTIFICATION_UNREAD_COUNT) notificationUnreadCount: number = 0
   @State private authToken: string = ''
   @State private notifications: V2exNotification[] = []
   @State private notificationError: string = ''
@@ -125,17 +127,6 @@ export struct NotificationPage {
             this.loadMoreNotifications()
           }
         }) {
-          ListItem() {
-            NotificationSummaryCard({
-              count: this.notifications.length,
-              errorText: this.notificationError,
-              kindSummary: this.notificationKindSummary(),
-              cacheUpdatedAt: this.notificationCacheUpdatedAt,
-              loadedFromCache: this.notificationLoadedFromCache,
-              sourceLabel: this.notificationSourceLabel
-            })
-          }
-
           ForEach(this.notifications, (item: V2exNotification) => {
             this.NotificationListItem(item)
           })
@@ -165,7 +156,7 @@ export struct NotificationPage {
 
   @Builder
   NotificationListItem(item: V2exNotification) {
-    if (this.canDeleteNotifications()) {
+    if (this.canDeleteNotification(item)) {
       ListItem() {
         this.NotificationDisplayCard(item, this.notificationCardDisplay(item))
       }
@@ -186,7 +177,10 @@ export struct NotificationPage {
       kindTag: display.kindTag,
       readTag: display.readTag,
       titleText: display.titleText,
-      bodyText: display.bodyText
+      bodyText: display.bodyText,
+      replyContent: display.replyContent,
+      memberName: display.memberName,
+      avatarUrl: display.avatarUrl
     })
   }
 
@@ -243,8 +237,8 @@ export struct NotificationPage {
     return this.notificationVm.hasAuth(this.notificationAuthContext())
   }
 
-  private canDeleteNotifications(): boolean {
-    return this.notificationVm.canDelete(this.notificationAuthContext())
+  private canDeleteNotification(item: V2exNotification): boolean {
+    return this.notificationVm.canDeleteItem(this.notificationAuthContext(), item)
   }
 
   private notificationAuthContext(): NotificationAuthContext {
@@ -270,10 +264,6 @@ export struct NotificationPage {
     return this.notificationVm.metadata(item)
   }
 
-  private notificationKindSummary(): string {
-    return this.notificationVm.kindSummary(this.notifications)
-  }
-
   private notificationCardDisplay(item: V2exNotification): NotificationCardDisplay {
     return NotificationPageCoordinator.displayFor(this.notificationMeta(item))
   }
@@ -294,10 +284,18 @@ export struct NotificationPage {
         value: '删除',
         fontColor: Color.Red,
         action: () => {
-          this.deleteNotification(id)
+          this.deleteNotificationItem(item)
         }
       }
     })
+  }
+
+  private deleteNotificationItem(item: V2exNotification): void {
+    if (this.authTokenConfigured && this.authToken) {
+      this.deleteNotification(item.id || 0)
+      return
+    }
+    this.deleteNotificationWithCookie(item)
   }
 
   private deleteNotification(notificationId: number): void {
@@ -309,10 +307,7 @@ export struct NotificationPage {
     this.isNotificationDeleting = true
     this.apiV2.deleteNotification(this.authToken, notificationId)
       .then(() => {
-        this.notifications = this.notifications.filter(item => item.id !== notificationId)
-        this.saveNotificationCache()
-        promptAction.openToast({ message: '已删除' }).catch((_error: Error) => {
-        })
+        this.handleNotificationDeleted(notificationId)
       })
       .catch((error: Error) => {
         promptAction.openToast({ message: error.message || '删除失败' }).catch((_error: Error) => {
@@ -321,6 +316,37 @@ export struct NotificationPage {
       .finally(() => {
         this.isNotificationDeleting = false
       })
+  }
+
+  private deleteNotificationWithCookie(item: V2exNotification): void {
+    const cookie = CookieJarSettings.getCurrentCookie()
+    const notificationId = this.notificationVm.webDeleteId(item)
+    const once = this.notificationVm.webDeleteOnce(item)
+    if (!cookie || notificationId <= 0 || !once || this.isNotificationDeleting) {
+      promptAction.openToast({ message: '删除通知需要 Web 会话' }).catch((_error: Error) => {
+      })
+      return
+    }
+    this.isNotificationDeleting = true
+    this.api.deleteNotificationWithCookie(cookie, notificationId, once)
+      .then(() => {
+        this.handleNotificationDeleted(item.id || notificationId)
+      })
+      .catch((error: Error) => {
+        promptAction.openToast({ message: error.message || '删除失败' }).catch((_error: Error) => {
+        })
+      })
+      .finally(() => {
+        this.isNotificationDeleting = false
+      })
+  }
+
+  private handleNotificationDeleted(notificationId: number): void {
+    this.notifications = this.notifications.filter(item => item.id !== notificationId)
+    this.publishUnreadCount()
+    this.saveNotificationCache()
+    promptAction.openToast({ message: '已删除' }).catch((_error: Error) => {
+    })
   }
 
   private loadNotifications(force: boolean = false): void {
@@ -348,6 +374,7 @@ export struct NotificationPage {
     try {
       const result = await this.notificationVm.loadPage(authContext, 1, this.NOTIFICATION_PAGE_SIZE)
       this.notifications = result.items
+      this.publishUnreadCount()
       this.notificationPage = result.page
       this.notificationHasMore = result.hasMore
       this.notificationSourceLabel = result.sourceLabel
@@ -358,6 +385,7 @@ export struct NotificationPage {
       const message = err.message || '通知加载失败'
       this.notificationError = message
       this.notificationHasMore = false
+      this.handleTwoFactorChallenge(err)
       this.handleExpiredCookieSession(message)
       throw err
     } finally {
@@ -388,6 +416,7 @@ export struct NotificationPage {
           return
         }
         this.notifications = merged
+        this.publishUnreadCount()
         this.notificationPage = result.page
         this.notificationHasMore = result.hasMore
         this.notificationSourceLabel = result.sourceLabel
@@ -398,6 +427,7 @@ export struct NotificationPage {
         const message = error.message || '加载更多失败'
         this.notificationError = message
         this.notificationHasMore = false
+        this.handleTwoFactorChallenge(error)
         this.handleExpiredCookieSession(message)
       })
       .finally(() => {
@@ -415,6 +445,7 @@ export struct NotificationPage {
     this.notificationCacheUpdatedAt = 0
     this.notificationLoadedFromCache = false
     this.notificationSourceLabel = ''
+    this.publishUnreadCount()
   }
 
   private loadNotificationCache(username: string): void {
@@ -436,6 +467,7 @@ export struct NotificationPage {
           return
         }
         this.notifications = result.items
+        this.publishUnreadCount()
         this.notificationPage = result.page
         this.notificationHasMore = result.hasMore
         this.notificationLoadedFromCache = true
@@ -465,6 +497,22 @@ export struct NotificationPage {
       .catch((error: Error) => {
         console.error('save notification cache failed: ' + error.message)
       })
+  }
+
+  private publishUnreadCount(): void {
+    this.notificationUnreadCount = this.notificationVm.unreadCount(this.notifications)
+  }
+
+  private handleTwoFactorChallenge(error: Error): void {
+    if (!(error instanceof V2exCookieTwoFactorRequiredError)) {
+      return
+    }
+    const cookie = CookieJarSettings.getCurrentCookie()
+    if (!cookie) {
+      return
+    }
+    this.notificationError = 'V2EX 需要完成两步验证'
+    TwoFactorChallengeService.request(cookie, 'notification')
   }
 
   private handleExpiredCookieSession(message: string): void {

@@ -121,6 +121,11 @@ const expectedStorageKeys = [
   ['AUTH_SESSION_AVATAR', 'authSessionAvatar'],
   ['AUTH_SESSION_VALIDATED_AT', 'authSessionValidatedAt'],
   ['AUTH_SESSION_UPDATED_AT', 'authSessionUpdatedAt'],
+  ['TWO_FACTOR_VISIBLE', 'twoFactorVisible'],
+  ['TWO_FACTOR_COOKIE', 'twoFactorCookie'],
+  ['TWO_FACTOR_SOURCE', 'twoFactorSource'],
+  ['TWO_FACTOR_REQUESTED_AT', 'twoFactorRequestedAt'],
+  ['TWO_FACTOR_COMPLETED_AT', 'twoFactorCompletedAt'],
   ['AUTO_DAILY_CHECKIN_ENABLED', 'autoDailyCheckinEnabled'],
   ['AUTO_DAILY_CHECKIN_LAST_ATTEMPT_DATE', 'autoDailyCheckinLastAttemptDate'],
   ['AUTO_DAILY_CHECKIN_LAST_ATTEMPT_IDENTITY', 'autoDailyCheckinLastAttemptIdentity'],
@@ -169,6 +174,7 @@ const expectedStorageKeys = [
   ['USER_PROFILE_APPBAR_AVATAR_STATES', 'userProfileAppbarAvatarStates'],
   ['USER_PROFILE_SHOWN', 'userProfileShown'],
   ['NOTIFICATION_ACTION', 'notificationAction'],
+  ['NOTIFICATION_UNREAD_COUNT', 'notificationUnreadCount'],
   ['SEARCH_ACTION', 'searchAction'],
   ['WEB_LOGIN_ACTION', 'webLoginAction'],
   ['IMAGE_PREVIEW_ACTION', 'imagePreviewAction'],
@@ -633,4 +639,3 @@ assert(media.includes("KEY_ONLY_LOAD_IMAGES_ON_WIFI: string = 'onlyLoadImagesOnW
 assert(/legacy|compatibility|兼容/i.test(media), 'MediaSettings legacy key compatibility comment missing')
 
 console.log('settings storage contract OK')
-

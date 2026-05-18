@@ -92,6 +92,7 @@ export { BlockedMemberSettings } from './settings/BlockedMemberSettings'
 export type { BlockedMemberSnapshot } from './settings/BlockedMemberSettings'
 export { MotionHandStateService } from './services/MotionHandStateService'
 export type { MotionHandEdge } from './services/MotionHandStateService'
+export { TwoFactorChallengeService } from './services/TwoFactorChallengeService'
 export { AutoDailyCheckinService }
   from './services/AutoDailyCheckinService'
 export type { AutoDailyCheckinResult }

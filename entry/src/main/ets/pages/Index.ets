@@ -16,11 +16,16 @@ import {
 import { common, Want } from '@kit.AbilityKit'
 import {
   ApiConstants,
+  ApiService,
+  AuthSettings,
+  CookieJarSettings,
   FoldScreenUtil,
   HttpClient,
   MotionHandStateService,
   StorageKeys,
   ThemeConstants,
+  towFASheetOptions,
+  TwoFactorChallengeService,
   V2exRoute,
   V2exUrlRouter,
 } from 'shared'
@@ -59,6 +64,7 @@ import {
   UserProfileIdentityCCBuilder,
 } from '../components/IndexTitleBarComponents'
 import { MainTabIcon } from '../components/MainTabIcon'
+import { V2exTwoFactorPrompt } from '../components/V2exTwoFactorPrompt'
 import {
   TopicDetailTitleAction,
   TopicDetailTitleActionDescriptor,
@@ -68,6 +74,7 @@ import {
   IndexTitleBarCoordinator,
   IndexTitleMenuDescriptor,
 } from '../model/IndexTitleBarCoordinator'
+import { NotificationCenterViewModel, NotificationAuthContext } from '../viewmodel/NotificationCenterViewModel'
 import type { IndexDestinationDescriptor } from '../model/IndexRouteCoordinator'
 import { IndexRouteCoordinator } from '../model/IndexRouteCoordinator'
 
@@ -116,10 +123,16 @@ struct Index {
     '{}';
   @StorageLink(StorageKeys.USER_PROFILE_APPBAR_AVATAR_STATES)
   userProfileAppbarAvatarStates: string = '{}';
+  @StorageLink(StorageKeys.NOTIFICATION_UNREAD_COUNT) notificationUnreadCount: number = 0;
+  @StorageLink(StorageKeys.TWO_FACTOR_VISIBLE) twoFactorVisible: boolean = false;
+  @StorageLink(StorageKeys.TWO_FACTOR_COOKIE) twoFactorCookie: string = '';
+  @StorageLink(StorageKeys.TWO_FACTOR_SOURCE) twoFactorSource: string = '';
   @State private notificationRefreshKey: number = 0;
   @State private accountRefreshKey: number = 0;
   @State private isFoldedAndUseOuterScreen: boolean = false;
   private http: HttpClient = HttpClient.getInstance();
+  private notificationVm: NotificationCenterViewModel = new NotificationCenterViewModel(new ApiService());
+  private notificationBadgeRequestId: number = 0;
   private foldScreenCallback: (value: boolean) => void = (value: boolean) => {
     this.isFoldedAndUseOuterScreen = value
   };
@@ -127,6 +140,7 @@ struct Index {
   aboutToAppear(): void {
     MotionHandStateService.start()
     this.consumePendingV2exUrl()
+    this.refreshNotificationBadge()
 
     // 注册折叠屏状态变化回调
     const foldScreenUtil = FoldScreenUtil.getInstance()
@@ -283,7 +297,11 @@ struct Index {
       .onChange((i: number) => {
         this.ct = i
         if (i === 2) {
+          this.notificationBadgeRequestId++
           this.notificationRefreshKey = Date.now()
+        }
+        if (i !== 2) {
+          this.refreshNotificationBadge()
         }
         if (i === 3) {
           this.accountRefreshKey = Date.now()
@@ -310,6 +328,36 @@ struct Index {
     .width('100%')
     .height('100%')
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
+    .bindSheet($$this.twoFactorVisible, this.GlobalTwoFactorSheet(), towFASheetOptions(SheetSize.MEDIUM, () => {
+      TwoFactorChallengeService.cancel()
+    }))
+  }
+
+  @Builder
+  private GlobalTwoFactorSheet() {
+    V2exTwoFactorPrompt({
+      visible: $twoFactorVisible,
+      cookie: this.twoFactorCookie,
+      onSuccess: () => {
+        const source = this.twoFactorSource
+        TwoFactorChallengeService.complete()
+        if (source === 'nativeLogin') {
+          try {
+            this.ns.pop()
+          } catch (error) {
+            const caught = error as Error
+            console.error('pop native login after global 2fa failed: ' + caught.message)
+          }
+        }
+        this.notificationRefreshKey = Date.now()
+        this.accountRefreshKey = Date.now()
+        this.refreshNotificationBadge()
+        this.refreshLocalData()
+      },
+      onCancel: () => {
+        TwoFactorChallengeService.cancel()
+      }
+    })
   }
 
   private destinationTitleBarOpts(descriptor: IndexDestinationDescriptor): Record<string, Object> {
@@ -876,12 +924,67 @@ struct Index {
     )
   }
 
+  private refreshNotificationBadge(): void {
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    const requestId = ++this.notificationBadgeRequestId
+    const restoreCookieJar = CookieJarSettings.getCurrentCookie()
+      ? Promise.resolve()
+      : CookieJarSettings.load(context).catch((_error: Error) => {
+      })
+    restoreCookieJar
+      .then(() => AuthSettings.load(context))
+      .then((snapshot) => {
+        if (requestId !== this.notificationBadgeRequestId) {
+          return
+        }
+        const cookie = CookieJarSettings.getCurrentCookie()
+        if (snapshot.token) {
+          const authContext: NotificationAuthContext = {
+            tokenConfigured: true,
+            token: snapshot.token,
+            cookieConfigured: false,
+            cookie: ''
+          }
+          this.notificationVm.loadPage(authContext, 1, 20)
+            .then((result) => {
+              if (this.canApplyNotificationBadgeRequest(requestId)) {
+                this.notificationUnreadCount = this.notificationVm.unreadCount(result.items)
+              }
+            })
+            .catch((_error: Error) => {
+            })
+          return
+        }
+        if (cookie) {
+          this.notificationVm.unreadCountFromCookie(cookie)
+            .then((count: number) => {
+              if (this.canApplyNotificationBadgeRequest(requestId)) {
+                this.notificationUnreadCount = count
+              }
+            })
+            .catch((_error: Error) => {
+            })
+          return
+        }
+        if (this.canApplyNotificationBadgeRequest(requestId)) {
+          this.notificationUnreadCount = 0
+        }
+      })
+      .catch((_error: Error) => {
+      })
+  }
+
+  private canApplyNotificationBadgeRequest(requestId: number): boolean {
+    return requestId === this.notificationBadgeRequestId && this.ct !== 2
+  }
+
   @Builder
   TabIcon(title: string, idx: number) {
     MainTabIcon({
       title: title,
       idx: idx,
       currentIndex: this.ct,
+      badgeCount: idx === 2 ? this.notificationUnreadCount : 0,
     })
   }
 }
