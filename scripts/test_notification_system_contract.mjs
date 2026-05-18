@@ -74,6 +74,12 @@ for (const token of [
 
 const page = read('entry/src/main/ets/pages/NotificationPage.ets')
 assert(!page.includes('NotificationSummaryCard({'), 'NotificationPage must not render the old summary card as the first list item')
+const localDataHandlerMatch = page.match(/onLocalDataUpdated\(_propName: string\): void \{([\s\S]*?)\n  \}/)
+assert(localDataHandlerMatch, 'NotificationPage missing onLocalDataUpdated handler')
+assert(
+  !localDataHandlerMatch[1].includes('resetNotificationState()'),
+  'NotificationPage must not blank the notification list on local data updates'
+)
 for (const forbidden of [
   'NotificationDeleteConfirmDialog',
   'CustomDialogController',

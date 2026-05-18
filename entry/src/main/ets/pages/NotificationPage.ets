@@ -77,7 +77,7 @@ export struct NotificationPage {
   }
 
   onLocalDataUpdated(_propName: string): void {
-    this.resetNotificationState()
+    this.notificationError = ''
     this.loadAuthSnapshot(true)
   }
 
