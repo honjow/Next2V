@@ -23,6 +23,8 @@ set -e
 PROJ="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 HDC=/home/gamer/devtool/ohos/command-line-tools/sdk/default/openharmony/toolchains/hdc
 BUNDLE=com.next2v.app
+DEBUG_BUNDLE=com.next2v.app
+RELEASE_BUNDLE=com.honjow.next2v
 
 keep_awake() {
   if [ -n "${HDC_TARGET:-}" ]; then
@@ -56,6 +58,25 @@ ensure_ohpm_dependencies() {
       (cd "$PROJ/$module_dir" && ohpm install)
     fi
   done
+}
+
+set_app_bundle_name() {
+  local bundle_name="$1"
+  python3 - "$PROJ/AppScope/app.json5" "$bundle_name" <<'PY'
+from pathlib import Path
+import sys
+
+path = Path(sys.argv[1])
+bundle = sys.argv[2]
+text = path.read_text(encoding="utf-8")
+text = text.replace('"bundleName": "com.next2v.app"', f'"bundleName": "{bundle}"')
+text = text.replace('"bundleName": "com.honjow.next2v"', f'"bundleName": "{bundle}"')
+path.write_text(text, encoding="utf-8")
+PY
+}
+
+restore_debug_bundle_name() {
+  set_app_bundle_name "$DEBUG_BUNDLE"
 }
 
 case "$1" in
@@ -109,7 +130,9 @@ EOF
     echo "==> 构建 release HAP..."
     cd "$PROJ"
     RELEASE_BUILD_PROFILE_BACKUP_DIR="$(mktemp -d)"
+    APP_SCOPE_BACKUP="$RELEASE_BUILD_PROFILE_BACKUP_DIR/AppScope-app.json5"
     backup_release_build_profiles() {
+      cp "$PROJ/AppScope/app.json5" "$APP_SCOPE_BACKUP"
       local profile
       for profile in "$PROJ"/shared/BuildProfile.ets "$PROJ"/feature/*/BuildProfile.ets; do
         [ -f "$profile" ] || continue
@@ -120,6 +143,9 @@ EOF
     restore_release_build_profiles() {
       local backup relpath
       [ -n "${RELEASE_BUILD_PROFILE_BACKUP_DIR:-}" ] && [ -d "$RELEASE_BUILD_PROFILE_BACKUP_DIR" ] || return 0
+      if [ -f "$APP_SCOPE_BACKUP" ]; then
+        cp "$APP_SCOPE_BACKUP" "$PROJ/AppScope/app.json5"
+      fi
       while IFS= read -r -d '' backup; do
         relpath="${backup#$RELEASE_BUILD_PROFILE_BACKUP_DIR/}"
         cp "$backup" "$PROJ/$relpath"
@@ -134,6 +160,7 @@ EOF
     }
     backup_release_build_profiles
     trap cleanup_release_packaging EXIT
+    set_app_bundle_name "$RELEASE_BUNDLE"
     python3 "$PROJ/scripts/prune-release-media-resources.py" --apply
     hvigorw assembleHap --mode module -p product=default -p buildMode=release --no-daemon
     python3 "$PROJ/scripts/sign.py" --no-install "$@"

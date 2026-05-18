@@ -20,7 +20,11 @@ import {
   V2exAccountListParser,
   type V2exAccountMemberListItem,
 } from '../parser/V2exAccountListParser'
-import { V2exTopicRepliesParser } from '../parser/V2exTopicRepliesParser'
+import { V2exTopicWebRepliesClient } from './V2exTopicWebRepliesClient'
+import type {
+  V2exTopicWebRepliesAllResult,
+  V2exTopicWebRepliesPage,
+} from './V2exTopicWebRepliesClient'
 import { HtmlEntityUtils } from '../utils/HtmlEntityUtils'
 import { BlockedTopicFilter } from '../utils/BlockedTopicFilter'
 import type {
@@ -47,6 +51,11 @@ interface CookieHtmlResponse {
   location: string
 }
 
+interface SameOriginRequestUrls {
+  url: string
+  refererUrl: string
+}
+
 export class V2exCookieTwoFactorRequiredError extends Error {
   path: string
 
@@ -70,20 +79,6 @@ export interface V2exTopicThankAction {
 export interface V2exTopicModerationAction {
   topicId: number
   actionPath: string
-}
-
-export interface V2exTopicWebRepliesPage {
-  replies: V2exReply[]
-  page: number
-  pageCount: number
-  hasMore: boolean
-  topicSupplementMarkdown?: string
-}
-
-export interface V2exTopicWebRepliesAllResult {
-  replies: V2exReply[]
-  pageCount: number
-  topicSupplementMarkdown?: string
 }
 
 export interface V2exReplyModerationAction {
@@ -217,26 +212,12 @@ export class ApiService {
     cacheBuster: number = Date.now(),
     cookie: string = '',
   ): Promise<V2exTopicWebRepliesPage> {
-    if (topicId <= 0) {
-      throw new Error('无效的主题 ID')
-    }
-    const safePage = Math.max(1, Math.floor(page))
-    const path = `/t/${topicId}?p=${safePage}&_=${cacheBuster}`
-    const html = cookie ? await this.getCookieHtml(path, cookie) : await this.http.getText(path)
-    const pageCount = Math.max(1, V2exTopicRepliesParser.extractPageCount(html))
-    return {
-      replies: ApiService.normalizeReplies(V2exTopicRepliesParser.parseReplies(html)),
-      page: safePage,
-      pageCount: pageCount,
-      hasMore: safePage < pageCount,
-      topicSupplementMarkdown: ApiService.extractTopicSupplementMarkdown(html),
-    }
+    return this.topicWebRepliesClient().getPage(topicId, page, cacheBuster, cookie)
   }
 
   /** 获取公开主题网页中的实际回复，用于旧 replies API 为空或滞后时兜底。 */
   async getTopicWebReplies(topicId: number, cookie: string = ''): Promise<V2exReply[]> {
-    const result = await this.getTopicWebRepliesAll(topicId, cookie)
-    return result.replies
+    return this.topicWebRepliesClient().getReplies(topicId, cookie)
   }
 
   /**
@@ -248,61 +229,7 @@ export class ApiService {
     cookie: string = '',
     onProgress?: (loaded: number, total: number) => void,
   ): Promise<V2exTopicWebRepliesAllResult> {
-    const cacheBuster = Date.now()
-    const firstPage = await this.getTopicWebRepliesPage(topicId, 1, cacheBuster, cookie)
-    const pageCount = firstPage.pageCount
-    if (onProgress) {
-      onProgress(1, pageCount)
-    }
-    if (pageCount <= 1) {
-      return {
-        replies: ApiService.normalizeReplies(firstPage.replies),
-        pageCount: pageCount,
-        topicSupplementMarkdown: firstPage.topicSupplementMarkdown,
-      }
-    }
-
-    const pageResults: V2exTopicWebRepliesPage[] = new Array<V2exTopicWebRepliesPage>(pageCount)
-    pageResults[0] = firstPage
-
-    const remaining: number[] = []
-    for (let p = 2; p <= pageCount; p++) {
-      remaining.push(p)
-    }
-
-    let loaded = 1
-    const promises = remaining.map((page: number): Promise<void> => {
-      return this.getTopicWebRepliesPage(topicId, page, cacheBuster, cookie).then(
-        (snapshot: V2exTopicWebRepliesPage) => {
-          pageResults[page - 1] = snapshot
-          loaded++
-          if (onProgress) {
-            onProgress(loaded, pageCount)
-          }
-        },
-      )
-    })
-    await Promise.all(promises)
-
-    const seen = new Set<number>()
-    const merged: V2exReply[] = []
-    for (let i = 0; i < pageCount; i++) {
-      const page = pageResults[i]
-      if (!page) {
-        continue
-      }
-      page.replies.forEach((reply: V2exReply) => {
-        if (reply.id > 0 && !seen.has(reply.id)) {
-          seen.add(reply.id)
-          merged.push(reply)
-        }
-      })
-    }
-    return {
-      replies: ApiService.normalizeReplies(merged),
-      pageCount: pageCount,
-      topicSupplementMarkdown: firstPage.topicSupplementMarkdown,
-    }
+    return this.topicWebRepliesClient().getAll(topicId, cookie, onProgress)
   }
 
   /** 获取所有节点 */
@@ -1048,6 +975,12 @@ export class ApiService {
     return res.text
   }
 
+  private topicWebRepliesClient(): V2exTopicWebRepliesClient {
+    return new V2exTopicWebRepliesClient(this.http, (path: string, cookie: string): Promise<string> => {
+      return this.getCookieHtml(path, cookie)
+    })
+  }
+
   private cookieEndpoint(pathOrUrl: string): string {
     const clean = (pathOrUrl || '').trim()
     if (!clean) {
@@ -1108,22 +1041,9 @@ export class ApiService {
     if (!clean) {
       throw new Error('缺少操作路径')
     }
-    const baseUrl = this.http.getBaseUrl()
-    const url =
-      clean.startsWith('http://') || clean.startsWith('https://')
-        ? clean
-        : clean.startsWith('/')
-          ? `${baseUrl}${clean}`
-          : `${baseUrl}/${clean}`
-
-    const refererClean = (refererPath || '').trim()
-    const refererUrl = !refererClean
-      ? ''
-      : refererClean.startsWith('http://') || refererClean.startsWith('https://')
-        ? refererClean
-        : refererClean.startsWith('/')
-          ? `${baseUrl}${refererClean}`
-          : `${baseUrl}/${refererClean}`
+    const urls = ApiService.resolveCookieRequestUrls(this.http.getBaseUrl(), clean, refererPath)
+    const url = urls.url
+    const refererUrl = urls.refererUrl
 
     let httpRequest = http.createHttp()
     try {
@@ -1170,22 +1090,9 @@ export class ApiService {
     if (!clean) {
       throw new Error('缺少操作路径')
     }
-    const baseUrl = this.http.getBaseUrl()
-    const url =
-      clean.startsWith('http://') || clean.startsWith('https://')
-        ? clean
-        : clean.startsWith('/')
-          ? `${baseUrl}${clean}`
-          : `${baseUrl}/${clean}`
-
-    const refererClean = (refererPath || '').trim()
-    const refererUrl = !refererClean
-      ? ''
-      : refererClean.startsWith('http://') || refererClean.startsWith('https://')
-        ? refererClean
-        : refererClean.startsWith('/')
-          ? `${baseUrl}${refererClean}`
-          : `${baseUrl}/${refererClean}`
+    const urls = ApiService.resolveCookieRequestUrls(this.http.getBaseUrl(), clean, refererPath)
+    const url = urls.url
+    const refererUrl = urls.refererUrl
 
     let httpRequest = http.createHttp()
     let headerBag: Object | null = null
@@ -1252,6 +1159,39 @@ export class ApiService {
     } catch (_e) {
       return ''
     }
+  }
+
+  private static resolveCookieRequestUrls(baseUrl: string, pathOrUrl: string, refererPath: string): SameOriginRequestUrls {
+    const url = ApiService.resolveSameOriginUrl(baseUrl, pathOrUrl, '操作路径')
+    const refererClean = (refererPath || '').trim()
+    const refererUrl = refererClean ? ApiService.resolveSameOriginUrl(baseUrl, refererClean, '来源路径') : ''
+    return { url, refererUrl }
+  }
+
+  private static resolveSameOriginUrl(baseUrl: string, pathOrUrl: string, label: string): string {
+    const clean = (pathOrUrl || '').trim()
+    if (!clean) {
+      throw new Error(`缺少${label}`)
+    }
+    if (clean.startsWith('http://') || clean.startsWith('https://')) {
+      const baseOrigin = ApiService.urlOrigin(baseUrl)
+      const targetOrigin = ApiService.urlOrigin(clean)
+      if (!baseOrigin || targetOrigin !== baseOrigin) {
+        throw new Error(`${label}不允许使用外域链接`)
+      }
+      return clean
+    }
+    return clean.startsWith('/') ? `${baseUrl}${clean}` : `${baseUrl}/${clean}`
+  }
+
+  private static urlOrigin(url: string): string {
+    const clean = (url || '').trim()
+    const schemeIdx = clean.indexOf('://')
+    if (schemeIdx < 0) {
+      return ''
+    }
+    const pathStart = clean.indexOf('/', schemeIdx + 3)
+    return (pathStart >= 0 ? clean.slice(0, pathStart) : clean).toLowerCase()
   }
 
   private static extractTopicId(text: string): number {
@@ -1538,36 +1478,6 @@ export class ApiService {
       results.push(...batchResults.map((r) => r[0]).filter((t) => t !== undefined))
     }
     return ApiService.normalizeTopics(results)
-  }
-
-  private static extractTopicSupplementMarkdown(html: string): string {
-    const source = html || ''
-    const supplements: string[] = []
-    const re =
-      /<div[^>]*class=['"][^'"]*\bsubtle\b[^'"]*['"][^>]*>[\s\S]*?<span[^>]*class=['"][^'"]*\bfade\b[^'"]*['"][^>]*>([\s\S]*?)<\/span>[\s\S]*?<div[^>]*class=['"][^'"]*\btopic_content\b[^'"]*['"][^>]*>([\s\S]*?)<\/div>[\s\S]*?<\/div>/gi
-    let match: RegExpExecArray | null = re.exec(source)
-    while (match) {
-      const title = ApiService.htmlToPlainText(match[1] || '').trim()
-      const body = ApiService.htmlToPlainText(match[2] || '').trim()
-      if (body.length > 0) {
-        supplements.push(`## ${title || 'Supplement'}\n\n${body}`)
-      }
-      match = re.exec(source)
-    }
-    return supplements.join('\n\n')
-  }
-
-  private static htmlToPlainText(html: string): string {
-    return HtmlEntityUtils.decode(
-      (html || '')
-        .replace(/<br\s*\/?>/gi, '\n')
-        .replace(/<\/p>/gi, '\n\n')
-        .replace(/<\/div>/gi, '\n')
-        .replace(/<[^>]+>/g, '')
-        .replace(/\r/g, '')
-        .replace(/\n{3,}/g, '\n\n')
-        .trim(),
-    )
   }
 
   private static normalizeTopics(topics: V2exTopic[]): V2exTopic[] {

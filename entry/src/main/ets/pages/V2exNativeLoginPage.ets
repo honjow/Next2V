@@ -313,7 +313,7 @@ export struct V2exNativeLoginPage {
 
   private async clearPersistedLogin(context: common.UIAbilityContext): Promise<void> {
     await Promise.all([
-      CookieJarSettings.clear(context).catch((clearError: Error) => {
+      CookieJarSettings.clearForBaseUrl(context, this.http.getBaseUrl()).catch((clearError: Error) => {
         console.error('clear cookie after login persist failure: ' + clearError.message)
       }),
       AuthSessionSettings.clear(context).catch((clearError: Error) => {

@@ -122,10 +122,12 @@ if (topic1213489Reply35.content.includes('/cdn-cgi/l/email-protection')) {
 function assertProductionCoverage() {
   const parserPath = 'shared/src/main/ets/parser/V2exTopicRepliesParser.ets'
   const apiPath = 'shared/src/main/ets/network/ApiService.ets'
+  const webRepliesClientPath = 'shared/src/main/ets/network/V2exTopicWebRepliesClient.ets'
   const detailPath = 'feature/detail/src/main/ets/viewmodel/DetailViewModel.ets'
   const indexPath = 'shared/src/main/ets/Index.ets'
   const parser = readFileSync(new URL(`../${parserPath}`, import.meta.url), 'utf8')
   const api = readFileSync(new URL(`../${apiPath}`, import.meta.url), 'utf8')
+  const webRepliesClient = readFileSync(new URL(`../${webRepliesClientPath}`, import.meta.url), 'utf8')
   const detail = readFileSync(new URL(`../${detailPath}`, import.meta.url), 'utf8')
   const index = readFileSync(new URL(`../${indexPath}`, import.meta.url), 'utf8')
 
@@ -133,12 +135,18 @@ function assertProductionCoverage() {
     [parserPath, parser, 'export class V2exTopicRepliesParser'],
     [parserPath, parser, 'static parseReplies(html: string): V2exReply[]'],
     [parserPath, parser, 'id=[\'\"]r_(\\d+)'],
-    [apiPath, api, 'async getRepliesWithWebFallback(topicId: number, expectedReplies: number = 0): Promise<V2exReply[]>'],
+    [parserPath, parser, 'cloudflareEmailToText'],
+    [parserPath, parser, 'decodeCloudflareEmail'],
+    [parserPath, parser, 'data-cfemail'],
+    [apiPath, api, 'async getRepliesWithWebFallback('],
+    [apiPath, api, 'expectedReplies: number = 0'],
     [apiPath, api, 'apiReplies.length === 0 || (expectedReplies > 0 && apiReplies.length < expectedReplies)'],
     [apiPath, api, 'const webReplies = await this.getTopicWebReplies(topicId)'],
-    [apiPath, api, 'V2exTopicRepliesParser.parseReplies'],
-    [apiPath, api, '`/t/${topicId}?p=1&_=${cacheBuster}`'],
-    [detailPath, detail, 'replies = await this.api.getRepliesWithWebFallback(this.topicId, topic ? topic.replies : 0)'],
+    [apiPath, api, 'return this.topicWebRepliesClient().getPage(topicId, page, cacheBuster, cookie)'],
+    [webRepliesClientPath, webRepliesClient, 'export class V2exTopicWebRepliesClient'],
+    [webRepliesClientPath, webRepliesClient, 'V2exTopicRepliesParser.parseReplies'],
+    [webRepliesClientPath, webRepliesClient, 'const path = `/t/${topicId}?p=${safePage}&_=${cacheBuster}`'],
+    [detailPath, detail, 'const firstPage = await this.api.getTopicWebRepliesPage('],
     [detailPath, detail, 'const replyRes = await this.apiV2.getTopicReplies(this.authToken, this.topicId, 1)'],
     [indexPath, index, "export { V2exTopicRepliesParser } from './parser/V2exTopicRepliesParser'"]
   ]

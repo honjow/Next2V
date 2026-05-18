@@ -631,7 +631,7 @@ export struct AccountDashboardPage {
     }
     this.sessionError = message
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    CookieJarSettings.clear(context)
+    CookieJarSettings.clearForBaseUrl(context, HttpClient.getInstance().getBaseUrl())
       .then(() => AuthSessionSettings.clear(context))
       .catch((_error: Error) => {
       })

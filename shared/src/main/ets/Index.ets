@@ -25,9 +25,11 @@ export type {
   V2exReplyThankAction,
   V2exTopicModerationAction,
   V2exTopicThankAction,
+} from './network/ApiService'
+export type {
   V2exTopicWebRepliesPage,
   V2exTopicWebRepliesAllResult,
-} from './network/ApiService'
+} from './network/V2exTopicWebRepliesClient'
 export { ApiV2Service } from './network/ApiV2Service'
 export { Sov2exService } from './network/Sov2exService'
 export type { ApiV2RateLimit, ApiV2Response } from './network/ApiV2Service'

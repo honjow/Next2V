@@ -103,6 +103,37 @@ export class CookieJarSettings {
     }
   }
 
+  static async clearForBaseUrl(context: common.UIAbilityContext, baseUrl: string): Promise<void> {
+    const cleanBaseUrl = baseUrl === ApiConstants.BASE_URL_CO ? ApiConstants.BASE_URL_CO : ApiConstants.BASE_URL_COM
+    try {
+      const store = await preferences.getPreferences(context, STORE_NAME)
+      const previousCookie = CookieJarSettings.getCookieForBaseUrl(cleanBaseUrl)
+      if (cleanBaseUrl === ApiConstants.BASE_URL_CO) {
+        store.deleteSync(KEY_COOKIE_CO)
+        CookieJarSettings.coCookie = ''
+      } else {
+        store.deleteSync(KEY_COOKIE_COM)
+        CookieJarSettings.comCookie = ''
+      }
+      CookieJarSettings.updatedAt = CookieJarSettings.comCookie || CookieJarSettings.coCookie ? Date.now() : 0
+      if (CookieJarSettings.updatedAt > 0) {
+        store.putSync(KEY_UPDATED_AT, CookieJarSettings.updatedAt)
+      } else {
+        store.deleteSync(KEY_UPDATED_AT)
+      }
+      store.flushSync()
+      CookieJarSettings.apply({
+        comCookie: CookieJarSettings.comCookie,
+        coCookie: CookieJarSettings.coCookie,
+        updatedAt: CookieJarSettings.updatedAt
+      })
+      CookieJarSettings.expireWebCookiesForBaseUrl(cleanBaseUrl, previousCookie)
+    } catch (error) {
+      const e = error as Error
+      throw new Error(e.message || '清除当前域 Cookie 设置失败')
+    }
+  }
+
   static apply(snapshot: CookieJarSnapshot): void {
     CookieJarSettings.comCookie = snapshot.comCookie || ''
     CookieJarSettings.coCookie = snapshot.coCookie || ''
@@ -166,5 +197,30 @@ export class CookieJarSettings {
       res.push(pair)
     }
     return res
+  }
+
+  private static expireWebCookiesForBaseUrl(baseUrl: string, cookieHeader: string): void {
+    const pairs = CookieJarSettings.parseCookiePairs(cookieHeader)
+    if (pairs.length === 0) {
+      return
+    }
+    for (const pair of pairs) {
+      try {
+        webview.WebCookieManager.configCookieSync(
+          baseUrl,
+          `${pair.name}=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT`,
+          false,
+          true
+        )
+      } catch (error) {
+        const e = error as Error
+        console.error('expire web cookie failed: ' + (e.message || 'unknown'))
+      }
+    }
+    try {
+      webview.WebCookieManager.saveCookieSync()
+    } catch (_error) {
+      // Preferences has already been cleared; WebView will sync on the next explicit cookie restore.
+    }
   }
 }

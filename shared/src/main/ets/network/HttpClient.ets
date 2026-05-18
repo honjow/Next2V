@@ -1,5 +1,6 @@
 import { http } from '@kit.NetworkKit'
 import { ApiConstants } from '../constants/ApiConstants'
+import { HttpJsonParseError, HttpRetryPolicy, HttpStatusError } from './HttpRetryPolicy'
 
 const MAX_RETRIES: number = 3
 const CONNECT_TIMEOUT_MS: number = 10000
@@ -68,17 +69,23 @@ export class HttpClient {
       })
 
       if (response.responseCode !== http.ResponseCode.OK) {
-        throw new Error(`HTTP ${response.responseCode}: ${url}`)
+        throw new HttpStatusError(response.responseCode as number, url)
       }
 
-      return JSON.parse(response.result as string) as T
+      try {
+        return JSON.parse(response.result as string) as T
+      } catch (error) {
+        const e = error as Error
+        throw new HttpJsonParseError(e.message || 'JSON parse failed')
+      }
     } catch (error) {
-      if (retryCount > 0) {
+      const e = error as Error
+      if (retryCount > 0 && HttpRetryPolicy.shouldRetry(reqMethod, e)) {
         const delay = BACKOFF_BASE_MS * Math.pow(2, MAX_RETRIES - retryCount)
         await new Promise<void>(resolve => setTimeout(resolve, delay))
         return this.request<T>(endpoint, method, retryCount - 1, headers, usingCache)
       }
-      throw new Error(`Network error: ${error.message}`)
+      throw new Error(HttpClient.formatRequestError(e))
     } finally {
       httpRequest.destroy()
     }
@@ -152,17 +159,18 @@ export class HttpClient {
       })
 
       if (response.responseCode !== http.ResponseCode.OK) {
-        throw new Error(`HTTP ${response.responseCode}: ${url}`)
+        throw new HttpStatusError(response.responseCode as number, url)
       }
 
       return response.result as string
     } catch (error) {
-      if (retryCount > 0) {
+      const e = error as Error
+      if (retryCount > 0 && HttpRetryPolicy.shouldRetry(reqMethod, e)) {
         const delay = BACKOFF_BASE_MS * Math.pow(2, MAX_RETRIES - retryCount)
         await new Promise<void>(resolve => setTimeout(resolve, delay))
         return this.requestText(endpoint, method, retryCount - 1, headers, usingCache)
       }
-      throw new Error(`Network error: ${error.message}`)
+      throw new Error(HttpClient.formatRequestError(e))
     } finally {
       httpRequest.destroy()
     }
@@ -214,16 +222,17 @@ export class HttpClient {
         return { statusCode, text: (response.result as string) || '', location }
       }
       if (statusCode < 200 || statusCode >= 400) {
-        throw new Error(`HTTP ${statusCode}: ${url}`)
+        throw new HttpStatusError(statusCode, url)
       }
       return { statusCode, text: (response.result as string) || '', location }
     } catch (error) {
-      if (retryCount > 0) {
+      const e = error as Error
+      if (retryCount > 0 && HttpRetryPolicy.shouldRetry(reqMethod, e)) {
         const delay = BACKOFF_BASE_MS * Math.pow(2, MAX_RETRIES - retryCount)
         await new Promise<void>(resolve => setTimeout(resolve, delay))
         return this.requestTextResponse(endpoint, method, retryCount - 1, headers, usingCache)
       }
-      throw new Error(`Network error: ${error.message}`)
+      throw new Error(HttpClient.formatRequestError(e))
     } finally {
       httpRequest.destroy()
     }
@@ -264,6 +273,13 @@ export class HttpClient {
     const cookie = headers['Cookie'] || headers['cookie'] || ''
     const authorization = headers['Authorization'] || headers['authorization'] || ''
     return cookie.trim().length > 0 || authorization.trim().length > 0
+  }
+
+  private static formatRequestError(error: Error): string {
+    if (error instanceof HttpStatusError || error instanceof HttpJsonParseError) {
+      return error.message
+    }
+    return `Network error: ${error.message || 'unknown'}`
   }
 
   private static noCacheHeaders(): Record<string, string> {

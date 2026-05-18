@@ -317,7 +317,7 @@ export struct V2exWebLoginPage {
 
   private async clearPersistedLogin(context: common.UIAbilityContext): Promise<void> {
     await Promise.all([
-      CookieJarSettings.clear(context).catch((clearError: Error) => {
+      CookieJarSettings.clearForBaseUrl(context, this.baseUrl).catch((clearError: Error) => {
         console.error('clear cookie after web login persist failure: ' + clearError.message)
       }),
       AuthSessionSettings.clear(context).catch((clearError: Error) => {

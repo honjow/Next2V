@@ -7,6 +7,7 @@ import {
   AuthSettings,
   CookieJarSettings,
   EmptyState,
+  HttpClient,
   LoadingFooter,
   NotificationSettings,
   PullRefreshListScaffold,
@@ -464,7 +465,7 @@ export struct NotificationPage {
       return
     }
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    CookieJarSettings.clear(context)
+    CookieJarSettings.clearForBaseUrl(context, HttpClient.getInstance().getBaseUrl())
       .then(() => AuthSessionSettings.clear(context))
       .catch((_error: Error) => {
       })

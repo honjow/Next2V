@@ -1,5 +1,6 @@
 import { http } from '@kit.NetworkKit'
 import { HttpClient } from './HttpClient'
+import { HttpRetryPolicy, HttpStatusError } from './HttpRetryPolicy'
 import { ApiConstants } from '../constants/ApiConstants'
 import { StorageKeys } from '../constants/StorageKeys'
 import { HtmlEntityUtils } from '../utils/HtmlEntityUtils'
@@ -155,18 +156,18 @@ export class ApiV2Service {
 
       if (statusCode < 200 || statusCode >= 300) {
         const apiMessage = ApiV2Service.extractApiMessage((response.result as string) || '')
-        throw new Error(apiMessage || `HTTP ${statusCode}: ${endpoint}`)
+        throw new HttpStatusError(statusCode, url, apiMessage || `HTTP ${statusCode}: ${endpoint}`)
       }
 
       const data = ApiV2Service.parseJsonOrNull<T>((response.result as string) || '')
       return { data, headers, rateLimit, statusCode }
     } catch (error) {
-      if (retryCount > 0) {
+      const e = error as Error
+      if (retryCount > 0 && HttpRetryPolicy.shouldRetry(method, e)) {
         const delay = BACKOFF_BASE_MS * Math.pow(2, MAX_RETRIES - retryCount)
         await new Promise<void>(resolve => setTimeout(resolve, delay))
         return this.request<T>(endpoint, method, token, extraData, retryCount - 1)
       }
-      const e = error as Error
       throw new Error(e.message || 'Network error')
     } finally {
       httpRequest.destroy()
