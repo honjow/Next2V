@@ -25,6 +25,30 @@ function extractAttr(tag, name) {
   return m?.[1] ? decodeHtml(m[1]) : ''
 }
 
+function decodeCloudflareEmail(cfemail) {
+  const value = (cfemail || '').trim()
+  if (value.length < 4 || value.length % 2 !== 0 || !/^[0-9a-f]+$/i.test(value)) {
+    return ''
+  }
+  const key = Number.parseInt(value.slice(0, 2), 16)
+  if (Number.isNaN(key)) {
+    return ''
+  }
+  let result = ''
+  for (let i = 2; i < value.length; i += 2) {
+    const byteValue = Number.parseInt(value.slice(i, i + 2), 16)
+    if (Number.isNaN(byteValue)) {
+      return ''
+    }
+    result += String.fromCharCode(byteValue ^ key)
+  }
+  return result
+}
+
+function cloudflareEmailToText(anchor) {
+  return decodeCloudflareEmail(extractAttr(anchor, 'data-cfemail')) || anchor.replace(/<[^>]+>/g, '')
+}
+
 function markdown(html) {
   return decodeHtml((html || '')
     .replace(/<br\s*\/?>/gi, '\n')
@@ -32,6 +56,8 @@ function markdown(html) {
     .replace(/<p[^>]*>/gi, '')
     .replace(/<\/p>/gi, '')
     .replace(/<pre[^>]*><code[^>]*>([\s\S]*?)<\/code><\/pre>/gi, '\n```\n$1\n```\n')
+    .replace(/<a\b[^>]*class=['"][^'"]*\b__cf_email__\b[^'"]*['"][^>]*>[\s\S]*?<\/a>/gi,
+      match => cloudflareEmailToText(match))
     .replace(/@?\s*<a[^>]+href=['"]\/member\/([0-9A-Za-z_]+)['"][^>]*>[\s\S]*?<\/a>/gi, '[@$1](/member/$1)')
     .replace(/<a[^>]+href=['"]([^'"]+)['"][^>]*>([\s\S]*?)<\/a>/gi, '[$2]($1)')
     .replace(/<[^>]+>/g, ''))
@@ -70,6 +96,26 @@ if (linkReply.id !== 17627699 || linkReply.member.username !== 'zrc' || !linkRep
 const mentionReply = replies[4]
 if (!mentionReply.content.includes('[@zrc](/member/zrc)')) {
   console.error('FAIL: member mention was not converted to markdown', mentionReply.content)
+  process.exit(1)
+}
+
+const topic1213489Reply35Html = `
+<div id="r_17653398" class="cell">
+  <table><tr>
+    <td><img src="https://cdn.v2ex.com/avatar/bca5/444b/205319_normal.png?m=1748934526" class="avatar" alt="u3u" data-uid="205319" /></td>
+    <td><strong><a href="/member/u3u" class="dark">u3u</a></strong>
+      <div class="reply_content"><a target="_blank" href="https://i.imgur.com/vL7eAiI.png" rel="nofollow noopener" target="_blank"><img src="https://i.imgur.com/vL7eAiI.png" class="embedded_image" rel="noreferrer"></a><br /><a target="_blank" href="https://i.imgur.com/8wpc4J1.png" rel="nofollow noopener" target="_blank"><img src="https://i.imgur.com/8wpc4J1.png" class="embedded_image" rel="noreferrer"></a><br />@<a href="/member/Livid">Livid</a> #26 这个错误之前也偶尔出现过 但一般换一下节点就可以了 今天是所有节点都无法访问 我给 <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="84f7f1f4f4ebf6f0c4f2b6e1fcaae7ebe9">[email&#160;protected]</a> 发了邮件 目前只有 <a target="_blank" href="http://global.v2ex.co" rel="nofollow noopener">global.v2ex.co</a> 域名可以正常访问</div>
+    </td>
+  </tr></table>
+</div>`
+const topic1213489Replies = parseReplies(topic1213489Reply35Html)
+const topic1213489Reply35 = topic1213489Replies[0]
+if (!topic1213489Reply35 || !topic1213489Reply35.content.includes('support@v2ex.com')) {
+  console.error('FAIL: Cloudflare protected email was not decoded in topic 1213489 reply 35', topic1213489Reply35)
+  process.exit(1)
+}
+if (topic1213489Reply35.content.includes('/cdn-cgi/l/email-protection')) {
+  console.error('FAIL: Cloudflare email protection URL leaked into markdown content', topic1213489Reply35.content)
   process.exit(1)
 }
 

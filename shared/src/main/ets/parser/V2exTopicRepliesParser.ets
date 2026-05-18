@@ -151,6 +151,8 @@ export class V2exTopicRepliesParser {
       .replace(/<pre[^>]*><code[^>]*>([\s\S]*?)<\/code><\/pre>/gi, '\n```\n$1\n```\n')
       .replace(/<a[^>]+href=['"]([^'"]+)['"][^>]*>\s*(<img\b[^>]*>)\s*<\/a>/gi,
         (_match: string, href: string, imgTag: string) => V2exTopicRepliesParser.imageTagToMarkdown(imgTag, href))
+      .replace(/<a\b[^>]*class=['"][^'"]*\b__cf_email__\b[^'"]*['"][^>]*>[\s\S]*?<\/a>/gi,
+        (match: string) => V2exTopicRepliesParser.cloudflareEmailToText(match))
       .replace(/<img\b[^>]*>/gi,
         (match: string) => V2exTopicRepliesParser.imageTagToMarkdown(match, ''))
       .replace(/@?\s*<a[^>]+href=['"]\/member\/([0-9A-Za-z_]+)['"][^>]*>[\s\S]*?<\/a>/gi, '[@$1](/member/$1)')
@@ -170,6 +172,36 @@ export class V2exTopicRepliesParser {
     // paragraph. Real line/paragraph breaks are represented by surrounding
     // <br>/<p>/<div> handling before this conversion.
     return src
+  }
+
+  private static cloudflareEmailToText(anchor: string): string {
+    const decoded = V2exTopicRepliesParser.decodeCloudflareEmail(
+      V2exTopicRepliesParser.extractAttr(anchor, 'data-cfemail')
+    )
+    if (decoded) {
+      return decoded
+    }
+    return V2exTopicRepliesParser.stripTags(anchor)
+  }
+
+  private static decodeCloudflareEmail(cfemail: string): string {
+    const value = (cfemail || '').trim()
+    if (value.length < 4 || value.length % 2 !== 0 || !/^[0-9a-f]+$/i.test(value)) {
+      return ''
+    }
+    const key = Number.parseInt(value.slice(0, 2), 16)
+    if (Number.isNaN(key)) {
+      return ''
+    }
+    let result = ''
+    for (let i = 2; i < value.length; i += 2) {
+      const byteValue = Number.parseInt(value.slice(i, i + 2), 16)
+      if (Number.isNaN(byteValue)) {
+        return ''
+      }
+      result += String.fromCharCode(byteValue ^ key)
+    }
+    return result
   }
 
   private static extractAttr(tag: string, name: string): string {
