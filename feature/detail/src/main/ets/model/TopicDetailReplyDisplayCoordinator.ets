@@ -40,6 +40,9 @@ export class TopicDetailReplyDisplayCoordinator {
       (reply.threadLevel || 0) > 0 &&
       (reply.replyUsers || []).length === 1
     ) {
+      if ((reply.hiddenLeadingMentionRenderedContent || '').trim()) {
+        return reply.hiddenLeadingMentionRenderedContent || ''
+      }
       return reply.hiddenLeadingMentionContent || ''
     }
     return ''

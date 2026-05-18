@@ -53,6 +53,8 @@ assert.ok(displayIndex >= 0 && renderedIndex > displayIndex, 'displayContent mus
 assert.ok(contentIndex > renderedIndex, 'content_rendered must be preferred before content fallback')
 
 assert.match(replyCard, /hiddenLeadingMentionContent/)
+assert.match(replyCard, /hiddenLeadingMentionRenderedContent/)
+assert.match(replyCard, /return reply\.hiddenLeadingMentionRenderedContent \|\| ''/)
 assert.match(replyCard, /replyUsers/)
 assert.match(replyCard, /startsWithMention\(content,\s*first\)/)
 assert.match(replyCard, /threadChildren\s*\|\|\s*\[\]/)

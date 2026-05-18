@@ -332,6 +332,11 @@ function _isMixedInlineImageCandidate(token: Token): boolean {
   return raw.startsWith("<img");
 }
 
+function _inlineTokenKey(token: Token, index: number): string {
+  const record = token as TokenRecord;
+  return `${String(record.type ?? "token")}-${String(record.raw ?? record.href ?? record.text ?? index)}-${index}`;
+}
+
 function _appendCacheBust(url: string, nonce: number): string {
   if (!url) {
     return "";
@@ -584,7 +589,7 @@ function SelectableTextWithMentions(text: string, fontSize: number, options: Mar
         .fontSize(fontSize)
         .fontColor(ThemeConstants.TEXT_PRIMARY);
     }
-  });
+  }, (part: string, index: number) => `${part}-${index}`);
 }
 
 function _isMentionBoundaryChar(ch: string): boolean {
@@ -726,7 +731,7 @@ function SelectableInlineTokenSpans(
     } else {
       SelectableTextWithMentions((t as Tokens.Text).text ?? t.raw ?? "", fontSize, options);
     }
-  });
+  }, (t: Token, tokenIndex: number) => _inlineTokenKey(t, tokenIndex));
 }
 
 @Component
@@ -789,7 +794,7 @@ struct SelectableInlineTokenFlow {
           .copyOption(this.copyOption)
           .textSelectable(this.textSelectable)
         }
-      }, (t: Token, tokenIndex: number) => `${String((t as TokenRecord).type ?? "token")}-${String((t as TokenRecord).raw ?? (t as TokenRecord).text ?? tokenIndex)}-${tokenIndex}`)
+      }, (t: Token, tokenIndex: number) => _inlineTokenKey(t, tokenIndex))
     }
     .width("100%")
   }
@@ -931,7 +936,7 @@ struct MarkdownParagraph {
               .textSelectable(TextSelectableMode.SELECTABLE_FOCUSABLE)
             }
           }
-        }, (token: Token, tokenIdx: number) => `${String((token as TokenRecord).type ?? "token")}-${String((token as TokenRecord).raw ?? (token as TokenRecord).href ?? tokenIdx)}-${tokenIdx}`)
+        }, (token: Token, tokenIdx: number) => _inlineTokenKey(token, tokenIdx))
       }
       .width("100%")
       .alignItems(HorizontalAlign.Start)
@@ -1196,7 +1201,7 @@ function InlineTokenSpans(
         .fontSize(fontSize)
         .fontColor(ThemeConstants.TEXT_PRIMARY);
     }
-  });
+  }, (t: Token, tokenIndex: number) => _inlineTokenKey(t, tokenIndex));
 }
 
 function buildPlainTextTokenForRender(text: string): Token {

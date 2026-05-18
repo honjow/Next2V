@@ -102,6 +102,9 @@ export struct ReplyCard {
       (reply.threadLevel || 0) > 0 &&
       (reply.replyUsers || []).length === 1
     ) {
+      if ((reply.hiddenLeadingMentionRenderedContent || '').trim()) {
+        return reply.hiddenLeadingMentionRenderedContent || ''
+      }
       return reply.hiddenLeadingMentionContent || ''
     }
     const prefix = this.visibleMentionPrefix(reply)

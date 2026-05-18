@@ -61,6 +61,7 @@ export interface V2exReply {
   isWrongReference?: boolean
   isDuplicateThreadItem?: boolean
   hiddenLeadingMentionContent?: string
+  hiddenLeadingMentionRenderedContent?: string
   relationLabel?: string
   renderKey?: string
   threadChildren?: V2exReply[]

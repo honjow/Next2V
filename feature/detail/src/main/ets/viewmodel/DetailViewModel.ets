@@ -587,6 +587,11 @@ export class DetailViewModel {
         reply.replyUsers || [],
         reply.replyFloor || -1,
       )
+      reply.hiddenLeadingMentionRenderedContent = this.removeLeadingSingleMentionRendered(
+        reply.content_rendered,
+        reply.replyUsers || [],
+        reply.replyFloor || -1,
+      )
       reply.relationLabel = this.replyRelationLabel(reply)
       reply.renderKey = `${this.replyDisplayMode}-r-${reply.id}-${this.replyStateKey(reply)}`
       return reply
@@ -760,6 +765,21 @@ export class DetailViewModel {
       'i',
     )
     return (content || '').replace(markdownLinkRe, '').replace(re, '').trim()
+  }
+
+  private removeLeadingSingleMentionRendered(contentRendered: string, users: string[], replyFloor: number): string {
+    if (users.length !== 1) {
+      return contentRendered
+    }
+    const name = users[0]
+    const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const floorPart = replyFloor > 0 ? `\\s*#${replyFloor}` : '(?:\\s*#\\d+)?'
+    const memberHref = `(?:https?:\\/\\/(?:www\\.)?v2ex\\.(?:com|co))?\\/member\\/${escaped}(?:[?#][^"']*)?`
+    const renderedMentionRe = new RegExp(
+      `^\\s*@?\\s*<a\\b(?=[^>]*href=["']${memberHref}["'])[^>]*>\\s*@?${escaped}\\s*<\\/a>${floorPart}\\s*`,
+      'i',
+    )
+    return (contentRendered || '').replace(renderedMentionRe, '').trim()
   }
 
   private replyRelationLabel(reply: V2exReply): string {
