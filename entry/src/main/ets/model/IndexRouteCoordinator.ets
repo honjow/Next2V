@@ -102,6 +102,28 @@ export class IndexRouteCoordinator {
     'userReplies': '全部回复',
   }
 
+  private static readonly STANDARD_TITLE_BAR_FAMILIES: Record<string, boolean> = {
+    'replyEditor': true,
+    'nativeLogin': true,
+    'nodePicker': true,
+    'topicEditor': true,
+    'myTopics': true,
+    'myNodes': true,
+    'accountBlacklist': true,
+    'accountFollowing': true,
+    'settings': true,
+    'storage': true,
+    'homeNodeSettings': true,
+    'readingSettings': true,
+    'account': true,
+    'savedTopics': true,
+    'viewedTopics': true,
+    'savedNodes': true,
+    'about': true,
+    'userTopics': true,
+    'userReplies': true,
+  }
+
   private static numberParam(param: Object, key: string): number {
     try {
       const value = (param as Record<string, Object>)[key]
@@ -172,6 +194,10 @@ export class IndexRouteCoordinator {
       return null
     }
     return IndexRouteCoordinator.destinationDescriptor(family, param)
+  }
+
+  static usesStandardTitleBar(family: IndexDestinationFamily): boolean {
+    return !!IndexRouteCoordinator.STANDARD_TITLE_BAR_FAMILIES[family]
   }
 
   static commandPayload(command: string): string {

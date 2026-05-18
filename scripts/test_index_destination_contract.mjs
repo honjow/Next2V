@@ -26,7 +26,9 @@ assertIncludes(indexPath, index, 'pm(name: string, param: Object)')
 assertIncludes(indexPath, index, 'this.destination(IndexRouteCoordinator.destination(name, param))')
 assertIncludes(coordinatorPath, coordinator, 'DESTINATION_FAMILIES')
 assertIncludes(coordinatorPath, coordinator, 'DESTINATION_TITLES')
+assertIncludes(coordinatorPath, coordinator, 'STANDARD_TITLE_BAR_FAMILIES')
 assertIncludes(coordinatorPath, coordinator, 'static destination(name: string, param: Object)')
+assertIncludes(coordinatorPath, coordinator, 'static usesStandardTitleBar(family: IndexDestinationFamily)')
 
 const pmMatch = index.match(/pm\(name: string, param: Object\) \{([\s\S]*?)\n  \}/)
 if (!pmMatch || !pmMatch[1]) {
@@ -35,6 +37,18 @@ if (!pmMatch || !pmMatch[1]) {
 const pmBody = pmMatch[1]
 if (/name\s*={2,3}/.test(pmBody) || /HdsNavDestination\s*\(/.test(pmBody)) {
   fail('Index.pm must stay descriptor-only and must not own route branches')
+}
+if (/else if\s*\(\s*descriptor\s*&&\s*descriptor\.family/.test(index)) {
+  fail('Index destination dispatcher must not use a descriptor-family else-if chain')
+}
+if (/switch\s*\(\s*descriptor\.family\s*\)/.test(index)) {
+  fail('Index destination dispatcher must stay ArkUI-builder-compatible and avoid switch control flow')
+}
+if ((index.match(/HdsNavDestination\s*\(/g) || []).length !== 1) {
+  fail('Index destination dispatcher must keep a single shared HdsNavDestination shell')
+}
+if (/private\s+[a-zA-Z0-9_]+Destination\s*\(\s*descriptor: IndexDestinationDescriptor/.test(index)) {
+  fail('Index destination dispatcher must not reintroduce per-page destination wrapper builders')
 }
 
 const routeNames = [

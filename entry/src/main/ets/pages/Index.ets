@@ -1,6 +1,7 @@
 import {
   BlurStrategy,
   BottomBuilderShowType,
+  DynamicHideParams,
   hdsMaterial,
   HdsNavDestination,
   HdsNavigation,
@@ -149,309 +150,106 @@ struct Index {
 
   @Builder
   private destination(descriptor: IndexDestinationDescriptor | null) {
-    if (descriptor && descriptor.family === 'topicDetail') {
-      this.topicDetailDestination(descriptor)
-    } else if (descriptor && descriptor.family === 'replyEditor') {
-      this.replyEditorDestination(descriptor)
-    } else if (descriptor && descriptor.family === 'webLogin') {
-      this.webLoginDestination(descriptor)
-    } else if (descriptor && descriptor.family === 'nativeLogin') {
-      this.nativeLoginDestination(descriptor)
-    } else if (descriptor && descriptor.family === 'nodePicker') {
-      this.nodePickerDestination(descriptor)
-    } else if (descriptor && descriptor.family === 'search') {
-      this.searchDestination(descriptor)
-    } else if (descriptor && descriptor.family === 'topicEditor') {
-      this.topicEditorDestination(descriptor)
-    } else if (descriptor && descriptor.family === 'myTopics') {
-      this.myTopicsDestination(descriptor)
-    } else if (descriptor && descriptor.family === 'myNodes') {
-      this.myNodesDestination(descriptor)
-    } else if (descriptor && descriptor.family === 'accountBlacklist') {
-      this.accountBlacklistDestination(descriptor)
-    } else if (descriptor && descriptor.family === 'accountFollowing') {
-      this.accountFollowingDestination(descriptor)
-    } else if (descriptor && descriptor.family === 'settings') {
-      this.settingsDestination(descriptor)
-    } else if (descriptor && descriptor.family === 'storage') {
-      this.storageDestination(descriptor)
-    } else if (descriptor && descriptor.family === 'homeNodeSettings') {
-      this.homeNodeSettingsDestination(descriptor)
-    } else if (descriptor && descriptor.family === 'readingSettings') {
-      this.readingSettingsDestination(descriptor)
-    } else if (descriptor && descriptor.family === 'account') {
-      this.accountDestination(descriptor)
-    } else if (descriptor && descriptor.family === 'savedTopics') {
-      this.savedTopicsDestination(descriptor)
-    } else if (descriptor && descriptor.family === 'viewedTopics') {
-      this.viewedTopicsDestination(descriptor)
-    } else if (descriptor && descriptor.family === 'savedNodes') {
-      this.savedNodesDestination(descriptor)
-    } else if (descriptor && descriptor.family === 'about') {
-      this.aboutDestination(descriptor)
-    } else if (descriptor && descriptor.family === 'imagePreview') {
-      this.imagePreviewDestination(descriptor)
-    } else if (descriptor && descriptor.family === 'nodeTopic') {
-      this.nodeTopicDestination(descriptor)
-    } else if (descriptor && descriptor.family === 'userProfile') {
-      this.userProfileDestination(descriptor)
-    } else if (descriptor && descriptor.family === 'userTopics') {
-      this.userTopicsDestination(descriptor)
-    } else if (descriptor && descriptor.family === 'userReplies') {
-      this.userRepliesDestination(descriptor)
-    }
-  }
-
-  @Builder
-  private topicDetailDestination(descriptor: IndexDestinationDescriptor) {
-    if (descriptor.family === 'topicDetail') {
+    if (descriptor) {
       HdsNavDestination() {
-        TopicDetailPage({
-          topicId: descriptor.topicDetailParams.topicId,
-          targetFloor: descriptor.topicDetailParams.targetFloor || 0,
-        })
+        this.destinationContent(descriptor)
       }
-      .titleBar(this.topicDetailTitleBarOpts(descriptor.topicDetailParams.topicId))
-      .dynamicHideTitleBar({
-        hideTitleArea: this.isFoldedAndUseOuterScreen,
-        hideStatusBar: this.isFoldedAndUseOuterScreen,
-        mode: HideMode.SCROLL_UP,
-      })
-    }
-  }
-
-  @Builder
-  private replyEditorDestination(descriptor: IndexDestinationDescriptor) {
-    if (descriptor.family === 'replyEditor') {
-      HdsNavDestination() {
-        ReplyEditorPage({
-          topicId: descriptor.replyEditorParams.topicId,
-          topicTitle: descriptor.replyEditorParams.topicTitle,
-          initialContent: descriptor.replyEditorParams.initialContent,
-        })
-      }.titleBar(this.navDestTitleBarOpts(descriptor.title))
-    }
-  }
-
-  @Builder
-  private webLoginDestination(descriptor: IndexDestinationDescriptor) {
-    if (descriptor.family === 'webLogin') {
-      HdsNavDestination() {
-        V2exWebLoginPage()
-      }.titleBar(this.navDestTitleBarOpts(descriptor.title, this.webLoginTitleMenu()))
-    }
-  }
-
-  @Builder
-  private nativeLoginDestination(descriptor: IndexDestinationDescriptor) {
-    if (descriptor.family === 'nativeLogin') {
-      HdsNavDestination() {
-        V2exNativeLoginPage()
-      }.titleBar(this.navDestTitleBarOpts(descriptor.title))
-    }
-  }
-
-  @Builder
-  private nodePickerDestination(descriptor: IndexDestinationDescriptor) {
-    if (descriptor.family === 'nodePicker') {
-      HdsNavDestination() {
-        NodePickerPage()
-      }.titleBar(this.navDestTitleBarOpts(descriptor.title))
-    }
-  }
-
-  @Builder
-  private searchDestination(descriptor: IndexDestinationDescriptor) {
-    if (descriptor.family === 'search') {
-      HdsNavDestination() {
-        SearchPage()
-      }.titleBar(this.navDestTitleBarOpts(descriptor.title, this.searchTitleMenu()))
-    }
-  }
-
-  @Builder
-  private topicEditorDestination(descriptor: IndexDestinationDescriptor) {
-    if (descriptor.family === 'topicEditor') {
-      HdsNavDestination() {
-        TopicEditorPage()
-      }.titleBar(this.navDestTitleBarOpts(descriptor.title))
-    }
-  }
-
-  @Builder
-  private myTopicsDestination(descriptor: IndexDestinationDescriptor) {
-    if (descriptor.family === 'myTopics') {
-      HdsNavDestination() {
-        MyTopicsPage()
-      }.titleBar(this.navDestTitleBarOpts(descriptor.title))
-    }
-  }
-
-  @Builder
-  private myNodesDestination(descriptor: IndexDestinationDescriptor) {
-    if (descriptor.family === 'myNodes') {
-      HdsNavDestination() {
-        MyNodesPage()
-      }.titleBar(this.navDestTitleBarOpts(descriptor.title))
-    }
-  }
-
-  @Builder
-  private accountBlacklistDestination(descriptor: IndexDestinationDescriptor) {
-    if (descriptor.family === 'accountBlacklist') {
-      HdsNavDestination() {
-        AccountBlacklistPage()
-      }.titleBar(this.navDestTitleBarOpts(descriptor.title))
-    }
-  }
-
-  @Builder
-  private accountFollowingDestination(descriptor: IndexDestinationDescriptor) {
-    if (descriptor.family === 'accountFollowing') {
-      HdsNavDestination() {
-        AccountFollowingPage()
-      }.titleBar(this.navDestTitleBarOpts(descriptor.title))
-    }
-  }
-
-  @Builder
-  private settingsDestination(descriptor: IndexDestinationDescriptor) {
-    if (descriptor.family === 'settings') {
-      HdsNavDestination() {
-        SettingsPage()
-      }.titleBar(this.navDestTitleBarOpts(descriptor.title))
-    }
-  }
-
-  @Builder
-  private storageDestination(descriptor: IndexDestinationDescriptor) {
-    if (descriptor.family === 'storage') {
-      HdsNavDestination() {
-        StorageSettingsPage()
-      }.titleBar(this.navDestTitleBarOpts(descriptor.title))
-    }
-  }
-
-  @Builder
-  private homeNodeSettingsDestination(descriptor: IndexDestinationDescriptor) {
-    if (descriptor.family === 'homeNodeSettings') {
-      HdsNavDestination() {
-        HomeNodeSettingsPage()
-      }.titleBar(this.navDestTitleBarOpts(descriptor.title))
-    }
-  }
-
-  @Builder
-  private readingSettingsDestination(descriptor: IndexDestinationDescriptor) {
-    if (descriptor.family === 'readingSettings') {
-      HdsNavDestination() {
-        ReadingSettingsPage()
-      }.titleBar(this.navDestTitleBarOpts(descriptor.title))
-    }
-  }
-
-  @Builder
-  private accountDestination(descriptor: IndexDestinationDescriptor) {
-    if (descriptor.family === 'account') {
-      HdsNavDestination() {
-        AccountDashboardPage({ showDetail: true })
-      }.titleBar(this.navDestTitleBarOpts(descriptor.title))
-    }
-  }
-
-  @Builder
-  private savedTopicsDestination(descriptor: IndexDestinationDescriptor) {
-    if (descriptor.family === 'savedTopics') {
-      HdsNavDestination() {
-        SavedTopicsPage()
-      }.titleBar(this.navDestTitleBarOpts(descriptor.title))
-    }
-  }
-
-  @Builder
-  private viewedTopicsDestination(descriptor: IndexDestinationDescriptor) {
-    if (descriptor.family === 'viewedTopics') {
-      HdsNavDestination() {
-        ViewedTopicsPage()
-      }.titleBar(this.navDestTitleBarOpts(descriptor.title))
-    }
-  }
-
-  @Builder
-  private savedNodesDestination(descriptor: IndexDestinationDescriptor) {
-    if (descriptor.family === 'savedNodes') {
-      HdsNavDestination() {
-        SavedNodesPage()
-      }.titleBar(this.navDestTitleBarOpts(descriptor.title))
-    }
-  }
-
-  @Builder
-  private aboutDestination(descriptor: IndexDestinationDescriptor) {
-    if (descriptor.family === 'about') {
-      HdsNavDestination() {
-        AboutPage()
-      }.titleBar(this.navDestTitleBarOpts(descriptor.title))
-    }
-  }
-
-  @Builder
-  private imagePreviewDestination(descriptor: IndexDestinationDescriptor) {
-    if (descriptor.family === 'imagePreview') {
-      HdsNavDestination() {
-        ImagePreviewPage({ url: descriptor.imagePreviewParams.url })
-      }.titleBar(this.navDestTitleBarOpts(undefined, this.imagePreviewTitleMenu()))
-    }
-  }
-
-  @Builder
-  private nodeTopicDestination(descriptor: IndexDestinationDescriptor) {
-    if (descriptor.family === 'nodeTopic') {
-      HdsNavDestination() {
-        NodeTopicPage({
-          nodeName: descriptor.nodeTopicParams.nodeName,
-          nodeTitle: descriptor.nodeTopicParams.nodeTitle,
-        })
-      }.titleBar(
-        this.nodeTopicTitleBarOpts(
-          descriptor.nodeTopicParams.nodeName,
-          descriptor.nodeTopicParams.nodeTitle,
-        ),
-      )
-    }
-  }
-
-  @Builder
-  private userProfileDestination(descriptor: IndexDestinationDescriptor) {
-    if (descriptor.family === 'userProfile') {
-      HdsNavDestination() {
-        UserProfilePage({ username: descriptor.userProfileParams.username })
-      }
-      .titleBar(this.userProfileTitleBarOpts(descriptor.userProfileParams.username))
+      .titleBar(this.destinationTitleBarOpts(descriptor))
+      .dynamicHideTitleBar(this.destinationHideTitleBarOpts(descriptor))
       .onShown(() => {
-        this.notifyUserProfileShown(descriptor.userProfileParams.username)
+        this.onDestinationShown(descriptor)
       })
     }
   }
 
   @Builder
-  private userTopicsDestination(descriptor: IndexDestinationDescriptor) {
+  private destinationContent(descriptor: IndexDestinationDescriptor) {
+    if (descriptor.family === 'topicDetail') {
+      TopicDetailPage({
+        topicId: descriptor.topicDetailParams.topicId,
+        targetFloor: descriptor.topicDetailParams.targetFloor || 0,
+      })
+    }
+    if (descriptor.family === 'replyEditor') {
+      ReplyEditorPage({
+        topicId: descriptor.replyEditorParams.topicId,
+        topicTitle: descriptor.replyEditorParams.topicTitle,
+        initialContent: descriptor.replyEditorParams.initialContent,
+      })
+    }
+    if (descriptor.family === 'webLogin') {
+      V2exWebLoginPage()
+    }
+    if (descriptor.family === 'nativeLogin') {
+      V2exNativeLoginPage()
+    }
+    if (descriptor.family === 'nodePicker') {
+      NodePickerPage()
+    }
+    if (descriptor.family === 'search') {
+      SearchPage()
+    }
+    if (descriptor.family === 'topicEditor') {
+      TopicEditorPage()
+    }
+    if (descriptor.family === 'myTopics') {
+      MyTopicsPage()
+    }
+    if (descriptor.family === 'myNodes') {
+      MyNodesPage()
+    }
+    if (descriptor.family === 'accountBlacklist') {
+      AccountBlacklistPage()
+    }
+    if (descriptor.family === 'accountFollowing') {
+      AccountFollowingPage()
+    }
+    if (descriptor.family === 'settings') {
+      SettingsPage()
+    }
+    if (descriptor.family === 'storage') {
+      StorageSettingsPage()
+    }
+    if (descriptor.family === 'homeNodeSettings') {
+      HomeNodeSettingsPage()
+    }
+    if (descriptor.family === 'readingSettings') {
+      ReadingSettingsPage()
+    }
+    if (descriptor.family === 'account') {
+      AccountDashboardPage({ showDetail: true })
+    }
+    if (descriptor.family === 'savedTopics') {
+      SavedTopicsPage()
+    }
+    if (descriptor.family === 'viewedTopics') {
+      ViewedTopicsPage()
+    }
+    if (descriptor.family === 'savedNodes') {
+      SavedNodesPage()
+    }
+    if (descriptor.family === 'about') {
+      AboutPage()
+    }
+    if (descriptor.family === 'imagePreview') {
+      ImagePreviewPage({ url: descriptor.imagePreviewParams.url })
+    }
+    if (descriptor.family === 'nodeTopic') {
+      NodeTopicPage({
+        nodeName: descriptor.nodeTopicParams.nodeName,
+        nodeTitle: descriptor.nodeTopicParams.nodeTitle,
+      })
+    }
+    if (descriptor.family === 'userProfile') {
+      UserProfilePage({ username: descriptor.userProfileParams.username })
+    }
     if (descriptor.family === 'userTopics') {
-      HdsNavDestination() {
-        UserTopicsPage({ username: descriptor.userProfileParams.username })
-      }.titleBar(this.navDestTitleBarOpts(descriptor.title))
+      UserTopicsPage({ username: descriptor.userProfileParams.username })
     }
-  }
-
-  @Builder
-  private userRepliesDestination(descriptor: IndexDestinationDescriptor) {
     if (descriptor.family === 'userReplies') {
-      HdsNavDestination() {
-        UserRepliesPage({ username: descriptor.userProfileParams.username })
-      }.titleBar(this.navDestTitleBarOpts(descriptor.title))
+      UserRepliesPage({ username: descriptor.userProfileParams.username })
     }
   }
-
 
   build() {
     HdsNavigation(this.ns) {
@@ -512,6 +310,50 @@ struct Index {
     .width('100%')
     .height('100%')
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
+  }
+
+  private destinationTitleBarOpts(descriptor: IndexDestinationDescriptor): Record<string, Object> {
+    if (IndexRouteCoordinator.usesStandardTitleBar(descriptor.family)) {
+      return this.navDestTitleBarOpts(descriptor.title)
+    }
+    if (descriptor.family === 'topicDetail') {
+      return this.topicDetailTitleBarOpts(descriptor.topicDetailParams.topicId)
+    }
+    if (descriptor.family === 'webLogin') {
+      return this.navDestTitleBarOpts(descriptor.title, this.webLoginTitleMenu())
+    }
+    if (descriptor.family === 'search') {
+      return this.navDestTitleBarOpts(descriptor.title, this.searchTitleMenu())
+    }
+    if (descriptor.family === 'imagePreview') {
+      return this.navDestTitleBarOpts(undefined, this.imagePreviewTitleMenu())
+    }
+    if (descriptor.family === 'nodeTopic') {
+      return this.nodeTopicTitleBarOpts(
+        descriptor.nodeTopicParams.nodeName,
+        descriptor.nodeTopicParams.nodeTitle,
+      )
+    }
+    if (descriptor.family === 'userProfile') {
+      return this.userProfileTitleBarOpts(descriptor.userProfileParams.username)
+    }
+    return this.navDestTitleBarOpts(descriptor.title)
+  }
+
+  private destinationHideTitleBarOpts(descriptor: IndexDestinationDescriptor): DynamicHideParams {
+    const hideForTopicDetail =
+      descriptor.family === 'topicDetail' && this.isFoldedAndUseOuterScreen
+    return {
+      hideTitleArea: hideForTopicDetail,
+      hideStatusBar: hideForTopicDetail,
+      mode: HideMode.SCROLL_UP,
+    }
+  }
+
+  private onDestinationShown(descriptor: IndexDestinationDescriptor): void {
+    if (descriptor.family === 'userProfile') {
+      this.notifyUserProfileShown(descriptor.userProfileParams.username)
+    }
   }
 
   private navDestTitleBarOpts<T extends Object>(
