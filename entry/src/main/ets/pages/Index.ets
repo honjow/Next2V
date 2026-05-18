@@ -67,6 +67,7 @@ import {
   TopicDetailTitleActionDescriptor,
   TopicDetailTitleBarCoordinator
 } from '../model/TopicDetailTitleBarCoordinator'
+import { IndexTitleBarCoordinator } from '../model/IndexTitleBarCoordinator'
 
 @Entry
 @Component
@@ -497,87 +498,49 @@ struct Index {
       ),
     ]
     let menu: Record<string, Object> = { 'value': items, 'maxCount': 2 }
-    const baseTitle = (nodeTitle || nodeName || '').trim()
-    const liveTitle = (this.nodeTopicTitle || '').trim()
-    const title = liveTitle || baseTitle
-    const subtitle = (this.nodeTopicSubtitle || '').trim()
-    return this.navDestTitleBarOpts(title, menu, subtitle)
+    const text = IndexTitleBarCoordinator.nodeTopicText(
+      nodeName,
+      nodeTitle,
+      this.nodeTopicTitle,
+      this.nodeTopicSubtitle
+    )
+    return this.navDestTitleBarOpts(text.title, menu, text.subtitle)
   }
 
   private userProfileTitleBarOpts(username: string): Record<string, Object> {
-    const routeUsername = (username || '').trim()
-    const titleFromState = this.userProfileAppbarTitleFor(routeUsername)
-    const avatarFromState = this.userProfileAppbarAvatarFor(routeUsername)
-    const titleRouteUsername = (this.userProfileAppbarTitleRouteUsername || '').trim()
-    const titleUsername = (this.userProfileAppbarTitleUsername || '').trim()
-    const title =
-      titleFromState ||
-      (titleUsername && this.sameUsername(titleRouteUsername, routeUsername) ? titleUsername : ' ')
+    const identity = IndexTitleBarCoordinator.userProfileIdentity(
+      username,
+      this.userProfileAppbarTitleRouteUsername,
+      this.userProfileAppbarTitleUsername,
+      this.userProfileAppbarTitleAvatarUrl,
+      this.userProfileAppbarTitleStates,
+      this.userProfileAppbarAvatarStates
+    )
     const profileMenu = this.userProfileTitleMenu(username)
-    if (title.trim()) {
-      const avatarUrl =
-        avatarFromState ||
-        (this.sameUsername(titleRouteUsername, routeUsername)
-          ? (this.userProfileAppbarTitleAvatarUrl || '').trim()
-          : '')
+    if (identity.title.trim()) {
+      const stats = IndexTitleBarCoordinator.menuStats(profileMenu)
       let cc = new ComponentContent<UserProfileAppbarIdentityParams>(
         this.getUIContext(),
         wrapBuilder(UserProfileIdentityCCBuilder),
         {
-          titleUsername: title,
-          avatarUrl: avatarUrl,
-          menuMaxCount: this.titleBarMenuMaxCount(profileMenu),
-          menuItemCount: this.titleBarMenuItemCount(profileMenu),
+          titleUsername: identity.title,
+          avatarUrl: identity.avatarUrl,
+          menuMaxCount: stats.maxCount,
+          menuItemCount: stats.itemCount,
         },
       )
-      return this.navDestTitleBarOpts(' ', profileMenu, undefined, undefined, cc, title)
+      return this.navDestTitleBarOpts(' ', profileMenu, undefined, undefined, cc, identity.title)
     }
-    return this.navDestTitleBarOpts(title, profileMenu)
-  }
-
-  private titleBarMenuItemCount(menu: Record<string, Object>): number {
-    const value = menu['value'] as Record<string, Object>[]
-    return value ? value.length : 0
-  }
-
-  private titleBarMenuMaxCount(menu: Record<string, Object>): number {
-    const value = menu['maxCount'] as number
-    return value === undefined ? 0 : Math.max(0, value)
-  }
-
-  private userProfileAppbarTitleFor(username: string): string {
-    const key = (username || '').trim().toLowerCase()
-    if (!key) {
-      return ''
-    }
-    try {
-      const states = JSON.parse(this.userProfileAppbarTitleStates || '{}') as Record<string, string>
-      const title = (states[key] || '').trim()
-      return title
-    } catch (_e) {
-      return ''
-    }
-  }
-
-  private userProfileAppbarAvatarFor(username: string): string {
-    const key = (username || '').trim().toLowerCase()
-    if (!key) {
-      return ''
-    }
-    try {
-      const states = JSON.parse(this.userProfileAppbarAvatarStates || '{}') as Record<
-        string,
-        string
-      >
-      return (states[key] || '').trim()
-    } catch (_e) {
-      return ''
-    }
+    return this.navDestTitleBarOpts(identity.title, profileMenu)
   }
 
   private userProfileTitleMenu(username: string): Record<string, Object> {
-    if (!this.userProfileActionsAvailable || this.userProfileActionsUsername !== username) {
-      return { 'value': [], 'maxCount': 0 }
+    if (!IndexTitleBarCoordinator.userProfileActionsAvailable(
+      username,
+      this.userProfileActionsUsername,
+      this.userProfileActionsAvailable
+    )) {
+      return IndexTitleBarCoordinator.emptyMenu()
     }
     let items: Record<string, Object>[] = []
     if (this.userProfileFollowLabel) {
@@ -607,10 +570,6 @@ struct Index {
     return new SymbolGlyphModifier(
       this.userProfileBlocked ? $r('sys.symbol.eye_slash') : $r('sys.symbol.nosign'),
     ).fontColor([Color.Red])
-  }
-
-  private sameUsername(a: string, b: string): boolean {
-    return !!a && !!b && a.trim().toLowerCase() === b.trim().toLowerCase()
   }
 
   private sendTopicAction(topicId: number, action: string): void {
@@ -772,8 +731,7 @@ struct Index {
     } else if (this.tabTitles[this.ct] === '我的') {
       content['menu'] = this.meTitleMenu()
     } else {
-      let emptyMenu: Record<string, Object> = { 'value': [], 'maxCount': 0 }
-      content['menu'] = emptyMenu
+      content['menu'] = IndexTitleBarCoordinator.emptyMenu()
     }
     let mat: Record<string, Object> = {
       'materialType': hdsMaterial.MaterialType.ADAPTIVE,

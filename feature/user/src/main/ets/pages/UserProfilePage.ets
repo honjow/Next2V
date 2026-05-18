@@ -25,6 +25,7 @@ import {
   UserProfileLoadingState,
   UserProfileReplyCard
 } from '../components/UserProfileComponents'
+import { UserProfilePageCoordinator } from '../model/UserProfilePageCoordinator'
 @Component
 export struct UserProfilePage {
   @Prop username: string = '';
@@ -214,10 +215,9 @@ export struct UserProfilePage {
   }
 
   private updateTabLabels(): void {
-    const topicLabel = this.vm.recentTopicCount > 0 ? `主题 ${this.vm.recentTopicCount}` : '主题'
-    const replyLabel = this.vm.recentReplyCount > 0 ? `回复 ${this.vm.recentReplyCount}` : '回复'
-    this.tabOptions.buttons[0].text = topicLabel
-    this.tabOptions.buttons[1].text = replyLabel
+    const labels = UserProfilePageCoordinator.tabLabels(this.vm.recentTopicCount, this.vm.recentReplyCount)
+    this.tabOptions.buttons[0].text = labels.topicLabel
+    this.tabOptions.buttons[1].text = labels.replyLabel
   }
 
   @Builder ActivityTabs() {
@@ -396,21 +396,20 @@ export struct UserProfilePage {
   }
 
   private displayProfileUsername(): string {
-    return (this.vm.profile?.username || this.username || '').trim()
+    return UserProfilePageCoordinator.displayUsername(this.vm.profile?.username || '', this.username)
   }
 
   private evaluateAppbarTitleVisibility(): void {
     const displayUsername = this.displayProfileUsername()
-    if (!displayUsername || this.usernameContentBottom <= 0) {
-      this.isUsernameCoveredByAppbar = false
-      this.publishAppbarTitle(false)
-      return
-    }
-    const currentUsernameBottom = this.usernameContentBottom - this.currentScrollOffset
-    const appbarBottom = this.topH + ThemeConstants.TITLE_BAR_HEIGHT
-    const shouldShowTitle = this.isUsernameCoveredByAppbar
-      ? currentUsernameBottom <= appbarBottom + this.titleVisibilityHysteresis
-      : currentUsernameBottom <= appbarBottom
+    const shouldShowTitle = UserProfilePageCoordinator.shouldShowAppbarTitle(
+      displayUsername,
+      this.usernameContentBottom,
+      this.currentScrollOffset,
+      this.topH,
+      ThemeConstants.TITLE_BAR_HEIGHT,
+      this.isUsernameCoveredByAppbar,
+      this.titleVisibilityHysteresis
+    )
     if (shouldShowTitle === this.isUsernameCoveredByAppbar) {
       return
     }
@@ -419,18 +418,21 @@ export struct UserProfilePage {
   }
 
   private publishAppbarTitle(visible: boolean): void {
-    const nextRouteUsername = visible ? this.username : ''
-    const nextTitleUsername = visible ? this.displayProfileUsername() : ''
-    const nextAvatarUrl = visible ? this.profileAvatarUrl() : ''
-    this.publishAppbarIdentityState(nextTitleUsername, nextAvatarUrl)
-    if (this.userProfileAppbarTitleRouteUsername !== nextRouteUsername) {
-      this.userProfileAppbarTitleRouteUsername = nextRouteUsername
+    const next = UserProfilePageCoordinator.appbarIdentity(
+      visible,
+      this.username,
+      this.displayProfileUsername(),
+      this.profileAvatarUrl()
+    )
+    this.publishAppbarIdentityState(next.titleUsername, next.avatarUrl)
+    if (this.userProfileAppbarTitleRouteUsername !== next.routeUsername) {
+      this.userProfileAppbarTitleRouteUsername = next.routeUsername
     }
-    if (this.userProfileAppbarTitleUsername !== nextTitleUsername) {
-      this.userProfileAppbarTitleUsername = nextTitleUsername
+    if (this.userProfileAppbarTitleUsername !== next.titleUsername) {
+      this.userProfileAppbarTitleUsername = next.titleUsername
     }
-    if (this.userProfileAppbarTitleAvatarUrl !== nextAvatarUrl) {
-      this.userProfileAppbarTitleAvatarUrl = nextAvatarUrl
+    if (this.userProfileAppbarTitleAvatarUrl !== next.avatarUrl) {
+      this.userProfileAppbarTitleAvatarUrl = next.avatarUrl
     }
   }
 
@@ -439,27 +441,10 @@ export struct UserProfilePage {
     if (!routeUsername) {
       return
     }
-    let titleStates: Record<string, string> = {}
-    let avatarStates: Record<string, string> = {}
-    try {
-      const parsed = JSON.parse(this.userProfileAppbarTitleStates || '{}') as Record<string, string>
-      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-        titleStates = parsed
-      }
-    } catch (_e) {}
-    try {
-      const parsed = JSON.parse(this.userProfileAppbarAvatarStates || '{}') as Record<
-        string,
-        string
-      >
-      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-        avatarStates = parsed
-      }
-    } catch (_e) {}
-    titleStates[routeUsername] = titleUsername
-    avatarStates[routeUsername] = avatarUrl
-    this.userProfileAppbarTitleStates = JSON.stringify(titleStates)
-    this.userProfileAppbarAvatarStates = JSON.stringify(avatarStates)
+    this.userProfileAppbarTitleStates =
+      UserProfilePageCoordinator.nextStringState(this.userProfileAppbarTitleStates, routeUsername, titleUsername)
+    this.userProfileAppbarAvatarStates =
+      UserProfilePageCoordinator.nextStringState(this.userProfileAppbarAvatarStates, routeUsername, avatarUrl)
   }
 
   private profileAvatarUrl(): string {
@@ -488,19 +473,20 @@ export struct UserProfilePage {
   }
 
   private publishActionMenuState(): void {
-    const canShowActions =
-      this.vm.actions !== null &&
-      !this.isCurrentSessionUser() &&
-      !!CookieJarSettings.getCurrentCookie()
-    const hasFollowAction = canShowActions && !!this.vm.actions?.followPath
-    const hasBlockAction = canShowActions && !!this.vm.actions?.blockPath
-    const available = hasFollowAction || hasBlockAction
-    this.userProfileActionsUsername = this.username
-    this.userProfileActionsAvailable = available
-    this.userProfileFollowLabel = hasFollowAction ? (this.following ? '取消关注' : '关注') : ''
-    this.userProfileBlockLabel = hasBlockAction ? (this.blocked ? '取消屏蔽' : '屏蔽') : ''
-    this.userProfileFollowing = hasFollowAction && this.following
-    this.userProfileBlocked = hasBlockAction && this.blocked
+    const state = UserProfilePageCoordinator.actionMenuState(
+      this.vm.actions,
+      this.isCurrentSessionUser(),
+      !!CookieJarSettings.getCurrentCookie(),
+      this.username,
+      this.following,
+      this.blocked
+    )
+    this.userProfileActionsUsername = state.username
+    this.userProfileActionsAvailable = state.available
+    this.userProfileFollowLabel = state.followLabel
+    this.userProfileBlockLabel = state.blockLabel
+    this.userProfileFollowing = state.following
+    this.userProfileBlocked = state.blocked
   }
 
   private showActionToast(message: string): void {
@@ -538,10 +524,12 @@ export struct UserProfilePage {
   }
 
   private shouldShowAllActivityButton(): boolean {
-    if (this.activityTab === 0) {
-      return this.vm.recentTopicCount > 0 && !this.vm.topicsHidden
-    }
-    return this.vm.recentReplyCount > 0
+    return UserProfilePageCoordinator.shouldShowAllActivityButton(
+      this.activityTab,
+      this.vm.recentTopicCount,
+      this.vm.topicsHidden,
+      this.vm.recentReplyCount
+    )
   }
 
   private isTopicUnread(topic: V2exTopic): boolean {
@@ -602,6 +590,6 @@ export struct UserProfilePage {
   }
 
   private sameUsername(a: string, b: string): boolean {
-    return !!a && !!b && a.trim().toLowerCase() === b.trim().toLowerCase()
+    return UserProfilePageCoordinator.sameUsername(a, b)
   }
 }

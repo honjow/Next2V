@@ -38,6 +38,7 @@ import {
   V2exSessionParser,
   V2exSigninParser
 } from 'shared'
+import { AccountPageCoordinator } from '../model/AccountPageCoordinator'
 
 @Component
 export struct AccountDashboardPage {
@@ -464,78 +465,80 @@ export struct AccountDashboardPage {
   }
 
   private hasCookieAccount(): boolean {
-    return this.authCookieConfigured
+    return AccountPageCoordinator.hasCookieAccount(this.authCookieConfigured)
   }
 
   private currentUsername(): string {
-    return this.sessionUsername || this.authProfile?.username || this.storedUsername || ''
+    return AccountPageCoordinator.identity(
+      this.sessionUsername,
+      this.sessionAvatar,
+      this.authProfile,
+      this.storedUsername
+    ).username
   }
 
   private currentAvatar(): string {
-    return this.sessionAvatar || this.authProfile?.avatar_normal || this.authProfile?.avatar_large || ''
+    return AccountPageCoordinator.identity(
+      this.sessionUsername,
+      this.sessionAvatar,
+      this.authProfile,
+      this.storedUsername
+    ).avatarUrl
   }
 
   private accountMetaText(): string {
-    if (!this.hasCookieAccount()) {
-      if (this.authTokenConfigured) {
-        return 'API 授权已配置'
-      }
-      return ''
-    }
-    if (this.accountBalance) {
-      return this.accountBalance.summary
-    }
-    if (this.isAccountMetaLoading) {
-      return '虚拟币同步中'
-    }
-    if (this.accountMetaError) {
-      return '虚拟币信息不可用'
-    }
-    return ''
+    return AccountPageCoordinator.accountMetaText(
+      this.hasCookieAccount(),
+      this.authTokenConfigured,
+      this.accountBalance,
+      this.isAccountMetaLoading,
+      this.accountMetaError
+    )
   }
 
   private dailyMissionButtonText(): string {
-    if (this.isDailyRedeeming) {
-      return '签到中'
-    }
-    if (this.dailyMission && !this.dailyMission.canRedeem) {
-      return '已签到'
-    }
-    return '签到'
+    return AccountPageCoordinator.dailyMissionButtonText(this.isDailyRedeeming, this.dailyMission)
   }
 
   private dailyMissionEnabled(): boolean {
-    return this.hasCookieAccount() &&
-      !this.isAccountMetaLoading && !this.isDailyRedeeming &&
-      (!this.dailyMission || this.dailyMission.canRedeem)
+    return AccountPageCoordinator.dailyMissionEnabled(
+      this.hasCookieAccount(),
+      this.isAccountMetaLoading,
+      this.isDailyRedeeming,
+      this.dailyMission
+    )
   }
 
   private profileTagline(): string {
-    return this.authProfile?.tagline || ''
+    return AccountPageCoordinator.profileTagline(this.authProfile)
   }
 
   private profileLocation(): string {
-    return this.authProfile?.location || ''
+    return AccountPageCoordinator.profileLocation(this.authProfile)
   }
 
   private profileCreatedAt(): number {
-    return this.authProfile?.created || 0
+    return AccountPageCoordinator.profileCreatedAt(this.authProfile)
   }
 
   private tokenScope(): string {
-    return this.tokenInfo?.scope || ''
+    return AccountPageCoordinator.tokenScope(this.tokenInfo)
   }
 
   private tokenExpiration(): number {
-    return this.tokenInfo?.expiration || 0
+    return AccountPageCoordinator.tokenExpiration(this.tokenInfo)
   }
 
   private tokenLastUsed(): number {
-    return this.tokenInfo?.last_used || 0
+    return AccountPageCoordinator.tokenLastUsed(this.tokenInfo)
   }
 
   private hasApiRateLimitSnapshot(): boolean {
-    return this.apiRateLimitLimit > 0 || this.apiRateLimitUpdatedAt > 0 || this.apiRateLimitReset > 0
+    return AccountPageCoordinator.hasApiRateLimitSnapshot(
+      this.apiRateLimitLimit,
+      this.apiRateLimitUpdatedAt,
+      this.apiRateLimitReset
+    )
   }
 
   private loadAuthSnapshot(): void {

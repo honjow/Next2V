@@ -12,7 +12,6 @@ import {
   PullRefreshListScaffold,
   StorageKeys,
   ThemeConstants,
-  TopicDetailParams,
   V2exNotification
 } from 'shared'
 import {
@@ -21,6 +20,7 @@ import {
   NotificationMetadata,
   NotificationPageResult
 } from '../viewmodel/NotificationCenterViewModel'
+import { NotificationCardDisplay, NotificationPageCoordinator } from '../model/NotificationPageCoordinator'
 import {
   NotificationAuthRequiredState,
   NotificationCard,
@@ -166,28 +166,27 @@ export struct NotificationPage {
   NotificationListItem(item: V2exNotification) {
     if (this.canDeleteNotifications()) {
       ListItem() {
-        NotificationCard({
-          item,
-          kindTag: this.notificationKindTag(item),
-          readTag: this.notificationReadTag(item),
-          titleText: this.notificationTitle(item),
-          bodyText: this.notificationBody(item)
-        })
+        this.NotificationDisplayCard(item, this.notificationCardDisplay(item))
       }
       .onClick(() => { this.openNotification(item) })
       .swipeAction({ end: this.NotificationSwipeEnd(item) })
     } else {
       ListItem() {
-        NotificationCard({
-          item,
-          kindTag: this.notificationKindTag(item),
-          readTag: this.notificationReadTag(item),
-          titleText: this.notificationTitle(item),
-          bodyText: this.notificationBody(item)
-        })
+        this.NotificationDisplayCard(item, this.notificationCardDisplay(item))
       }
       .onClick(() => { this.openNotification(item) })
     }
+  }
+
+  @Builder
+  NotificationDisplayCard(item: V2exNotification, display: NotificationCardDisplay) {
+    NotificationCard({
+      item,
+      kindTag: display.kindTag,
+      readTag: display.readTag,
+      titleText: display.titleText,
+      bodyText: display.bodyText
+    })
   }
 
   @Builder
@@ -227,19 +226,16 @@ export struct NotificationPage {
   }
 
   private refreshVisibleNotificationsIfNeeded(): void {
-    if (!this.hasNotificationAuth()) {
-      if (this.authCookieConfigured || this.authTokenConfigured) {
-        this.loadAuthSnapshot(true)
-      }
-      return
+    if (NotificationPageCoordinator.shouldRefreshVisible(
+      this.hasNotificationAuth(),
+      this.authCookieConfigured || this.authTokenConfigured,
+      this.isNotificationLoading,
+      this.isNotificationLoadingMore,
+      this.notifications.length,
+      this.notificationLoadedFromCache
+    )) {
+      this.loadAuthSnapshot(true)
     }
-    if (this.isNotificationLoading || this.isNotificationLoadingMore) {
-      return
-    }
-    if (this.notifications.length > 0 && !this.notificationLoadedFromCache) {
-      return
-    }
-    this.loadAuthSnapshot(true)
   }
 
   private hasNotificationAuth(): boolean {
@@ -262,12 +258,10 @@ export struct NotificationPage {
 
   private openNotification(item: V2exNotification): void {
     const meta = this.notificationMeta(item)
-    if (meta.topicId <= 0) {
+    const p = NotificationPageCoordinator.routeParams(meta)
+    if (!p) {
       return
     }
-    const p: TopicDetailParams = meta.targetFloor && meta.targetFloor > 0
-      ? { topicId: meta.topicId, targetFloor: meta.targetFloor }
-      : { topicId: meta.topicId }
     this.ns.pushPathByName('TopicDetail', p as Object)
   }
 
@@ -279,20 +273,8 @@ export struct NotificationPage {
     return this.notificationVm.kindSummary(this.notifications)
   }
 
-  private notificationReadTag(item: V2exNotification): string {
-    return this.notificationMeta(item).readTag
-  }
-
-  private notificationKindTag(item: V2exNotification): string {
-    return this.notificationMeta(item).kindTag
-  }
-
-  private notificationTitle(item: V2exNotification): string {
-    return this.notificationMeta(item).title
-  }
-
-  private notificationBody(item: V2exNotification): string {
-    return this.notificationMeta(item).body
+  private notificationCardDisplay(item: V2exNotification): NotificationCardDisplay {
+    return NotificationPageCoordinator.displayFor(this.notificationMeta(item))
   }
 
   private confirmDeleteNotification(item: V2exNotification): void {
@@ -348,13 +330,14 @@ export struct NotificationPage {
 
   private async refreshNotifications(force: boolean = false): Promise<void> {
     const authContext = this.notificationAuthContext()
-    if (!this.notificationVm.hasAuth(authContext)) {
-      return
-    }
-    if (this.isNotificationLoading || this.isNotificationLoadingMore) {
-      return
-    }
-    if (this.notifications.length > 0 && !force && !this.notificationLoadedFromCache) {
+    if (!NotificationPageCoordinator.shouldRefreshNotifications(
+      this.notificationVm.hasAuth(authContext),
+      this.isNotificationLoading,
+      this.isNotificationLoadingMore,
+      this.notifications.length,
+      force,
+      this.notificationLoadedFromCache
+    )) {
       return
     }
     this.isNotificationLoading = true
@@ -473,14 +456,7 @@ export struct NotificationPage {
   }
 
   private notificationOwnerKey(username: string): string {
-    let owner = username.trim()
-    if (!owner) {
-      owner = (this.storedUsername || '').trim()
-    }
-    if (!owner) {
-      owner = (this.sessionUsername || '').trim()
-    }
-    return owner ? 'member:' + owner : ''
+    return NotificationPageCoordinator.ownerKey(username, this.storedUsername, this.sessionUsername)
   }
 
   private handleExpiredCookieSession(message: string): void {

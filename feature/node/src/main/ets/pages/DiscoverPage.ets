@@ -3,7 +3,7 @@ import {
   ApiService, PullRefresh, StorageKeys, V2exNode, V2exTopic, NodeTopicListParams, TopicDetailParams,
   ThemeConstants, CollectionSettings
 } from 'shared'
-import type { SavedNode, ViewedTopic } from 'shared'
+import type { SavedNode } from 'shared'
 import { common } from '@kit.AbilityKit'
 import { LengthMetrics } from '@kit.ArkUI'
 import {
@@ -16,6 +16,7 @@ import {
   DiscoverTopicMode,
   DiscoverTopicModeButton
 } from '../components/DiscoverPageComponents'
+import { DiscoverPageCoordinator, DiscoverTopicBuckets } from '../model/DiscoverPageCoordinator'
 
 @Component
 export struct DiscoverPage {
@@ -226,33 +227,15 @@ export struct DiscoverPage {
   }
 
   private hasNodeSearchQuery(): boolean {
-    return (this.nodeKeyword || '').trim().length > 0
+    return DiscoverPageCoordinator.hasNodeSearchQuery(this.nodeKeyword)
   }
 
   private topicSurfaceItems(): V2exTopic[] {
-    if (this.topicMode === 'hot') {
-      return this.hotTopics
-    }
-    if (this.topicMode === 'rank') {
-      return this.rankTopics
-    }
-    if (this.topicMode === 'recent') {
-      return this.recentTopics
-    }
-    return this.latestTopics
+    return DiscoverPageCoordinator.topicItems(this.topicMode, this.topicBuckets())
   }
 
   private topicSectionTitle(): string {
-    if (this.topicMode === 'hot') {
-      return '今日热议'
-    }
-    if (this.topicMode === 'rank') {
-      return '全站热榜'
-    }
-    if (this.topicMode === 'recent') {
-      return '最近更新'
-    }
-    return '最新主题'
+    return DiscoverPageCoordinator.topicModeLabel(this.topicMode)
   }
 
   private setTopicMode(mode: DiscoverTopicMode): void {
@@ -264,15 +247,7 @@ export struct DiscoverPage {
   }
 
   private reloadTopicSurface(): void {
-    if (this.topicMode === 'hot') {
-      this.hotTopics = []
-    } else if (this.topicMode === 'rank') {
-      this.rankTopics = []
-    } else if (this.topicMode === 'recent') {
-      this.recentTopics = []
-    } else {
-      this.latestTopics = []
-    }
+    this.applyTopicBuckets(DiscoverPageCoordinator.withoutTopics(this.topicMode, this.topicBuckets()))
     this.loadTopicSurface()
   }
 
@@ -283,10 +258,7 @@ export struct DiscoverPage {
   }
 
   private loadTopicSurface(): void {
-    if (this.isHotLoading) {
-      return
-    }
-    if (this.topicSurfaceItems().length > 0) {
+    if (!DiscoverPageCoordinator.shouldLoadTopicSurface(this.topicMode, this.topicBuckets(), this.isHotLoading)) {
       return
     }
     this.isHotLoading = true
@@ -301,15 +273,7 @@ export struct DiscoverPage {
           : this.api.getLatestTopics()
     request
       .then((topics: V2exTopic[]) => {
-        if (requestedMode === 'hot') {
-          this.hotTopics = topics || []
-        } else if (requestedMode === 'rank') {
-          this.rankTopics = topics || []
-        } else if (requestedMode === 'recent') {
-          this.recentTopics = topics || []
-        } else {
-          this.latestTopics = topics || []
-        }
+        this.applyTopicBuckets(DiscoverPageCoordinator.withTopics(requestedMode, this.topicBuckets(), topics))
       })
       .catch((error: Error) => {
         this.hotError = error.message || '主题加载失败'
@@ -330,7 +294,7 @@ export struct DiscoverPage {
     ])
       .then((result) => {
         this.savedNodes = result[0]
-        this.recentNodes = this.recentNodesFromViewedTopics(result[1], this.savedNodes)
+        this.recentNodes = DiscoverPageCoordinator.recentNodesFromViewedTopics(result[1], this.savedNodes)
       })
       .catch((_error: Error) => {
         this.savedNodes = []
@@ -338,26 +302,19 @@ export struct DiscoverPage {
       })
   }
 
-  private recentNodesFromViewedTopics(viewedTopics: ViewedTopic[], savedNodes: SavedNode[]): SavedNode[] {
-    const saved = new Set(savedNodes.map((node: SavedNode) => node.name))
-    const seen: Set<string> = new Set()
-    const nodes: SavedNode[] = []
-    for (const topic of viewedTopics) {
-      const name = (topic.nodeName || '').trim()
-      if (!name || seen.has(name) || saved.has(name)) {
-        continue
-      }
-      nodes.push({
-        name: name,
-        title: topic.nodeTitle || name,
-        topics: 0,
-        savedAt: topic.viewedAt || 0
-      })
-      seen.add(name)
-      if (nodes.length >= 12) {
-        break
-      }
+  private topicBuckets(): DiscoverTopicBuckets {
+    return {
+      hot: this.hotTopics,
+      rank: this.rankTopics,
+      latest: this.latestTopics,
+      recent: this.recentTopics
     }
-    return nodes
+  }
+
+  private applyTopicBuckets(buckets: DiscoverTopicBuckets): void {
+    this.hotTopics = buckets.hot
+    this.rankTopics = buckets.rank
+    this.latestTopics = buckets.latest
+    this.recentTopics = buckets.recent
   }
 }
