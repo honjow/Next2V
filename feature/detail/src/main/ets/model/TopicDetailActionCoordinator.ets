@@ -40,6 +40,18 @@ export interface ActionGuardResult {
   message: string
 }
 
+export interface ModerationPreflight {
+  cookie: string
+  guard: ActionGuardResult
+}
+
+export interface ModerationConfirmDialog {
+  title: string
+  message: string
+  cancelLabel: string
+  confirmLabel: string
+}
+
 export interface ReplyThankLockState {
   lockedReplyId: number
   pendingReplyThankId: number
@@ -159,6 +171,31 @@ export class TopicDetailActionCoordinator {
       return { allowed: false, message: '回复信息缺失' }
     }
     return { allowed: true, message: '' }
+  }
+
+  static moderationPreflight(options: ModerationGuardOptions): ModerationPreflight {
+    return {
+      cookie: options.cookie,
+      guard: TopicDetailActionCoordinator.moderationGuard(options),
+    }
+  }
+
+  static topicModerationConfirmDialog(title: string, verb: string, topicTitle: string): ModerationConfirmDialog {
+    return {
+      title,
+      message: TopicDetailActionCoordinator.topicFavoriteMessage(topicTitle, verb),
+      cancelLabel: '取消',
+      confirmLabel: verb,
+    }
+  }
+
+  static replyModerationConfirmDialog(title: string, verb: string, reply: V2exReply): ModerationConfirmDialog {
+    return {
+      title,
+      message: TopicDetailActionCoordinator.replyActionMessage(verb, reply.member.username),
+      cancelLabel: '取消',
+      confirmLabel: verb,
+    }
   }
 
   static thankedFromTopicThankLoadError(error: Error): boolean {

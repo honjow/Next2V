@@ -1,15 +1,10 @@
 import { common, Want } from '@kit.AbilityKit'
 import { promptAction } from '@kit.ArkUI'
 import {
-  CacheSettings,
-  type CacheKeyIndex,
-  CollectionSettings,
   ApiService,
-  NodeSearchUtils,
   type NodeTopicListParams,
   type SavedNode,
   type SavedTopic,
-  SearchSettings,
   type SearchSourceMode,
   SectionHeader as SharedSectionHeader,
   ListDivider as SharedListDivider,
@@ -38,6 +33,12 @@ import {
 import {
   SearchPageStateCoordinator,
 } from '../model/SearchPageStateCoordinator'
+import {
+  SearchLocalDataCoordinator,
+} from '../model/SearchLocalDataCoordinator'
+import {
+  SearchSettingsAdapter,
+} from '../model/SearchSettingsAdapter'
 import {
   SearchSourceCoordinator,
 } from '../model/SearchSourceCoordinator'
@@ -439,15 +440,11 @@ export struct SearchPage {
 
   private loadLocalCollections(): void {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    Promise.all([
-      CollectionSettings.loadSavedTopics(context),
-      CollectionSettings.loadViewedTopics(context),
-      CollectionSettings.loadSavedNodes(context)
-    ])
-      .then((results: Object[]) => {
-        this.savedTopics = (results[0] as SavedTopic[]) || []
-        this.viewedTopics = (results[1] as ViewedTopic[]) || []
-        this.savedNodes = (results[2] as SavedNode[]) || []
+    SearchLocalDataCoordinator.loadLocalCollections(context)
+      .then((collections) => {
+        this.savedTopics = collections.savedTopics
+        this.viewedTopics = collections.viewedTopics
+        this.savedNodes = collections.savedNodes
         this.applyFilter()
       })
       .catch((error: Error) => {
@@ -458,47 +455,10 @@ export struct SearchPage {
   private loadCacheCollections(): void {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     this.isCacheLoading = true
-    CacheSettings.loadKeyIndex(context)
-      .then(async (index: CacheKeyIndex) => {
-        const listTopics = new Map<number, SearchTopicItem>()
-        const detailTopics = new Map<number, SearchTopicItem>()
-
-        for (const key of index.topicLists) {
-          const topics = await CacheSettings.loadTopicList(context, key)
-          for (const topic of topics) {
-            const item: SearchTopicItem = {
-              id: topic.id,
-              title: topic.title,
-              nodeName: topic.node.name,
-              nodeTitle: topic.node.title,
-              username: topic.member.username,
-              source: '缓存(列表)',
-              updatedAt: index.updatedAt
-            }
-            listTopics.set(item.id, item)
-          }
-        }
-
-        for (const topicId of index.topicDetails) {
-          const detail = await CacheSettings.loadTopicDetail(context, topicId)
-          if (!detail || !detail.topic) {
-            continue
-          }
-          const topic = detail.topic
-          const item: SearchTopicItem = {
-            id: topic.id,
-            title: topic.title,
-            nodeName: topic.node.name,
-            nodeTitle: topic.node.title,
-            username: topic.member.username,
-            source: '缓存(详情)',
-            updatedAt: detail.cachedAt || index.updatedAt
-          }
-          detailTopics.set(item.id, item)
-        }
-
-        this.cacheTopicLists = Array.from(listTopics.values())
-        this.cacheTopicDetails = Array.from(detailTopics.values())
+    SearchLocalDataCoordinator.loadCacheCollections(context)
+      .then((collections) => {
+        this.cacheTopicLists = collections.cacheTopicLists
+        this.cacheTopicDetails = collections.cacheTopicDetails
         this.applyFilter()
       })
       .catch((_error: Error) => {
@@ -519,9 +479,9 @@ export struct SearchPage {
       return
     }
     this.isNodeIndexLoading = true
-    this.api.getAllNodes()
+    SearchLocalDataCoordinator.loadNodeIndex(this.api)
       .then((nodes: V2exNode[]) => {
-        this.allNodes = NodeSearchUtils.sortByPopularity(nodes)
+        this.allNodes = nodes
         this.applyFilter()
       })
       .catch((_error: Error) => {
@@ -534,7 +494,7 @@ export struct SearchPage {
 
   private loadSourceMode(): void {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    SearchSettings.loadSourceMode(context)
+    SearchSettingsAdapter.loadSourceMode(context)
       .then((mode: SearchSourceMode) => {
         this.sourceMode = mode
         const effect = SearchSourceCoordinator.loadedSourceModeEffect(mode, this.keyword)
@@ -554,7 +514,7 @@ export struct SearchPage {
 
   private loadHistory(): void {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    SearchSettings.loadHistory(context)
+    SearchSettingsAdapter.loadHistory(context)
       .then((items: string[]) => {
         this.history = items
       })
@@ -573,7 +533,7 @@ export struct SearchPage {
 
   private clearHistory(): void {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    SearchSettings.clearHistory(context)
+    SearchSettingsAdapter.clearHistory(context)
       .then(() => {
         this.history = []
       })
@@ -611,7 +571,7 @@ export struct SearchPage {
       return
     }
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    SearchSettings.recordQuery(context, q)
+    SearchSettingsAdapter.recordHistory(context, q)
       .then((items: string[]) => {
         this.history = items
       })
@@ -658,7 +618,7 @@ export struct SearchPage {
       this.resetRemoteResults()
     }
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    SearchSettings.saveSourceMode(context, transition.mode)
+    SearchSettingsAdapter.saveSourceMode(context, transition.mode)
       .catch((error: Error) => {
         this.errorMessage = error.message || '保存搜索来源失败'
       })

@@ -1590,20 +1590,20 @@ export struct TopicDetailPage {
     executeAction: (cookie: string, action: V2exTopicModerationAction) => Promise<void>,
   ): void {
     const cookie = CookieJarSettings.getCurrentCookie()
-    const guard = TopicDetailActionCoordinator.moderationGuard({
+    const preflight = TopicDetailActionCoordinator.moderationPreflight({
       loading: this.isModerationActionLoading,
       cookie,
     })
-    if (!guard.allowed) {
-      if (guard.message) {
-        promptAction.openToast({ message: guard.message }).catch((_error: Error) => {})
+    if (!preflight.guard.allowed) {
+      if (preflight.guard.message) {
+        promptAction.openToast({ message: preflight.guard.message }).catch((_error: Error) => {})
       }
       return
     }
     this.isModerationActionLoading = true
-    loadAction(cookie)
+    loadAction(preflight.cookie)
       .then((action: V2exTopicModerationAction) => {
-        this.confirmTopicModeration(title, verb, cookie, action, executeAction)
+        this.confirmTopicModeration(title, verb, preflight.cookie, action, executeAction)
       })
       .catch((error: Error) => {
         promptAction
@@ -1624,12 +1624,17 @@ export struct TopicDetailPage {
     action: V2exTopicModerationAction,
     executeAction: (cookie: string, action: V2exTopicModerationAction) => Promise<void>,
   ): void {
+    const dialog = TopicDetailActionCoordinator.topicModerationConfirmDialog(
+      title,
+      verb,
+      this.v.topic?.title || '',
+    )
     AlertDialog.show({
-      title: title,
-      message: TopicDetailActionCoordinator.topicFavoriteMessage(this.v.topic?.title || '', verb),
-      primaryButton: { value: '取消', action: () => {} },
+      title: dialog.title,
+      message: dialog.message,
+      primaryButton: { value: dialog.cancelLabel, action: () => {} },
       secondaryButton: {
-        value: verb,
+        value: dialog.confirmLabel,
         action: () => {
           this.executeTopicModeration(verb, cookie, action, executeAction)
         },
@@ -1670,21 +1675,21 @@ export struct TopicDetailPage {
     executeAction: (cookie: string, action: V2exReplyModerationAction) => Promise<void>,
   ): void {
     const cookie = CookieJarSettings.getCurrentCookie()
-    const guard = TopicDetailActionCoordinator.moderationGuard({
+    const preflight = TopicDetailActionCoordinator.moderationPreflight({
       loading: this.isModerationActionLoading,
       cookie,
       reply,
     })
-    if (!guard.allowed) {
-      if (guard.message) {
-        promptAction.openToast({ message: guard.message }).catch((_error: Error) => {})
+    if (!preflight.guard.allowed) {
+      if (preflight.guard.message) {
+        promptAction.openToast({ message: preflight.guard.message }).catch((_error: Error) => {})
       }
       return
     }
     this.isModerationActionLoading = true
-    loadAction(cookie)
+    loadAction(preflight.cookie)
       .then((action: V2exReplyModerationAction) => {
-        this.confirmReplyModeration(reply, title, verb, cookie, action, executeAction)
+        this.confirmReplyModeration(reply, title, verb, preflight.cookie, action, executeAction)
       })
       .catch((error: Error) => {
         promptAction
@@ -1706,12 +1711,13 @@ export struct TopicDetailPage {
     action: V2exReplyModerationAction,
     executeAction: (cookie: string, action: V2exReplyModerationAction) => Promise<void>,
   ): void {
+    const dialog = TopicDetailActionCoordinator.replyModerationConfirmDialog(title, verb, reply)
     AlertDialog.show({
-      title: title,
-      message: TopicDetailActionCoordinator.replyActionMessage(verb, reply.member.username),
-      primaryButton: { value: '取消', action: () => {} },
+      title: dialog.title,
+      message: dialog.message,
+      primaryButton: { value: dialog.cancelLabel, action: () => {} },
       secondaryButton: {
-        value: verb,
+        value: dialog.confirmLabel,
         action: () => {
           this.executeReplyModeration(verb, cookie, action, executeAction)
         },
