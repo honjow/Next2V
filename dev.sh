@@ -79,6 +79,10 @@ restore_debug_bundle_name() {
   set_app_bundle_name "$DEBUG_BUNDLE"
 }
 
+restore_release_bundle_name() {
+  set_app_bundle_name "$RELEASE_BUNDLE"
+}
+
 case "$1" in
   -h|--help)
     cat <<'EOF'
@@ -121,7 +125,23 @@ EOF
     ensure_ohpm_dependencies
     echo "==> 构建 HAP..."
     cd "$PROJ"
+    DEBUG_APP_SCOPE_BACKUP="$(mktemp)"
+    cp "$PROJ/AppScope/app.json5" "$DEBUG_APP_SCOPE_BACKUP"
+    cleanup_debug_packaging() {
+      local status=0
+      if [ -n "${DEBUG_APP_SCOPE_BACKUP:-}" ] && [ -f "$DEBUG_APP_SCOPE_BACKUP" ]; then
+        cp "$DEBUG_APP_SCOPE_BACKUP" "$PROJ/AppScope/app.json5" || status=$?
+        rm -f "$DEBUG_APP_SCOPE_BACKUP"
+      else
+        restore_release_bundle_name || status=$?
+      fi
+      return "$status"
+    }
+    trap cleanup_debug_packaging EXIT
+    restore_debug_bundle_name
     hvigorw assembleHap --mode module -p product=default -p buildMode=debug --no-daemon
+    cleanup_debug_packaging
+    trap - EXIT
     python3 "$PROJ/scripts/sign.py" --no-install "$@"
     ;;
   --release-build-only)
@@ -177,7 +197,23 @@ EOF
     ensure_ohpm_dependencies
     echo "==> 构建 HAP..."
     cd "$PROJ"
+    DEBUG_APP_SCOPE_BACKUP="$(mktemp)"
+    cp "$PROJ/AppScope/app.json5" "$DEBUG_APP_SCOPE_BACKUP"
+    cleanup_debug_packaging() {
+      local status=0
+      if [ -n "${DEBUG_APP_SCOPE_BACKUP:-}" ] && [ -f "$DEBUG_APP_SCOPE_BACKUP" ]; then
+        cp "$DEBUG_APP_SCOPE_BACKUP" "$PROJ/AppScope/app.json5" || status=$?
+        rm -f "$DEBUG_APP_SCOPE_BACKUP"
+      else
+        restore_release_bundle_name || status=$?
+      fi
+      return "$status"
+    }
+    trap cleanup_debug_packaging EXIT
+    restore_debug_bundle_name
     hvigorw assembleHap --mode module -p product=default -p buildMode=debug --no-daemon
+    cleanup_debug_packaging
+    trap - EXIT
     python3 "$PROJ/scripts/sign.py" "$@"
     ;;
 esac

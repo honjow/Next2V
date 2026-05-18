@@ -19,11 +19,8 @@ import {
   HttpClient,
   ImagePreviewParams,
   MotionHandStateService,
-  NodeTopicListParams,
   StorageKeys,
   ThemeConstants,
-  TopicDetailParams,
-  UserProfileParams,
   V2exRoute,
   V2exUrlRouter,
 } from 'shared'
@@ -68,6 +65,7 @@ import {
   TopicDetailTitleBarCoordinator
 } from '../model/TopicDetailTitleBarCoordinator'
 import { IndexTitleBarCoordinator } from '../model/IndexTitleBarCoordinator'
+import { IndexRouteCoordinator } from '../model/IndexRouteCoordinator'
 
 @Entry
 @Component
@@ -581,7 +579,7 @@ struct Index {
     // 收藏 fired the toggle on both topics).
     AppStorage.setOrCreate<string>(
       StorageKeys.TOPIC_DETAIL_ACTION,
-      `${Date.now()}:${topicId}:${action}`,
+      IndexRouteCoordinator.topicActionCommand(topicId, action, Date.now()),
     )
   }
 
@@ -595,28 +593,43 @@ struct Index {
   private sendNodeTopicAction(nodeName: string, action: string): void {
     AppStorage.setOrCreate<string>(
       StorageKeys.NODE_TOPIC_ACTION,
-      `${Date.now()}:${(nodeName || '').trim()}:${action}`,
+      IndexRouteCoordinator.nodeTopicActionCommand(nodeName, action, Date.now()),
     )
   }
 
   private sendUserProfileAction(action: string): void {
-    AppStorage.setOrCreate<string>(StorageKeys.USER_PROFILE_ACTION, `${Date.now()}:${action}`)
+    AppStorage.setOrCreate<string>(
+      StorageKeys.USER_PROFILE_ACTION,
+      IndexRouteCoordinator.simpleCommand(action, Date.now()),
+    )
   }
 
   private notifyUserProfileShown(username: string): void {
-    AppStorage.setOrCreate<string>(StorageKeys.USER_PROFILE_SHOWN, `${Date.now()}:${username}`)
+    AppStorage.setOrCreate<string>(
+      StorageKeys.USER_PROFILE_SHOWN,
+      IndexRouteCoordinator.userProfileShownCommand(username, Date.now()),
+    )
   }
 
   private sendNotificationAction(action: string): void {
-    AppStorage.setOrCreate<string>(StorageKeys.NOTIFICATION_ACTION, `${Date.now()}:${action}`)
+    AppStorage.setOrCreate<string>(
+      StorageKeys.NOTIFICATION_ACTION,
+      IndexRouteCoordinator.simpleCommand(action, Date.now()),
+    )
   }
 
   private sendSearchAction(action: string): void {
-    AppStorage.setOrCreate<string>(StorageKeys.SEARCH_ACTION, `${Date.now()}:${action}`)
+    AppStorage.setOrCreate<string>(
+      StorageKeys.SEARCH_ACTION,
+      IndexRouteCoordinator.simpleCommand(action, Date.now()),
+    )
   }
 
   private sendImagePreviewAction(action: string): void {
-    AppStorage.setOrCreate<string>(StorageKeys.IMAGE_PREVIEW_ACTION, `${Date.now()}:${action}`)
+    AppStorage.setOrCreate<string>(
+      StorageKeys.IMAGE_PREVIEW_ACTION,
+      IndexRouteCoordinator.simpleCommand(action, Date.now()),
+    )
   }
 
   private openV2exPathInSystemBrowser(path: string): void {
@@ -642,12 +655,10 @@ struct Index {
   }
 
   private consumePendingV2exUrl(): void {
-    const command = (this.pendingV2exUrl || '').trim()
-    if (!command) {
+    const url = IndexRouteCoordinator.commandPayload(this.pendingV2exUrl)
+    if (!url) {
       return
     }
-    const stampedUrlMatch = command.match(/^\d+:(.+)$/)
-    const url = stampedUrlMatch && stampedUrlMatch[1] ? stampedUrlMatch[1] : command
     if (this.openV2exRoute(url)) {
       AppStorage.setOrCreate<string>(StorageKeys.PENDING_V2EX_URL, '')
     }
@@ -663,28 +674,26 @@ struct Index {
   }
 
   private pushV2exRoute(route: V2exRoute): void {
-    if (route.kind === 'topic' && route.topicId && route.topicId > 0) {
-      const p: TopicDetailParams =
-        route.targetFloor && route.targetFloor > 0
-          ? { topicId: route.topicId, targetFloor: route.targetFloor }
-          : { topicId: route.topicId }
-      this.ns.pushPathByName('TopicDetail', p as Object)
+    const topicParams = IndexRouteCoordinator.topicParams(route)
+    if (topicParams) {
+      this.ns.pushPathByName('TopicDetail', topicParams as Object)
       return
     }
-    if (route.kind === 'member' && route.username) {
-      const p: UserProfileParams = { username: route.username }
-      this.ns.pushPathByName('UserProfile', p as Object)
+    const userProfileParams = IndexRouteCoordinator.userProfileParams(route)
+    if (userProfileParams) {
+      this.ns.pushPathByName('UserProfile', userProfileParams as Object)
       return
     }
-    if (route.kind === 'node' && route.nodeName) {
-      const p: NodeTopicListParams = { nodeName: route.nodeName, nodeTitle: route.nodeName }
-      this.ns.pushPathByName('NodeTopicList', p as Object)
+    const nodeTopicParams = IndexRouteCoordinator.nodeTopicParams(route)
+    if (nodeTopicParams) {
+      this.ns.pushPathByName('NodeTopicList', nodeTopicParams as Object)
       return
     }
-    if (route.kind === 'search' && route.query) {
+    const searchQuery = IndexRouteCoordinator.searchQuery(route)
+    if (searchQuery) {
       AppStorage.setOrCreate<string>(
         StorageKeys.PENDING_SEARCH_QUERY,
-        `${Date.now()}:${route.query}`,
+        IndexRouteCoordinator.pendingSearchQueryCommand(searchQuery, Date.now()),
       )
       this.ns.pushPathByName('Search', null)
     }
@@ -803,7 +812,10 @@ struct Index {
   }
 
   private sendWebLoginAction(action: string): void {
-    AppStorage.setOrCreate<string>(StorageKeys.WEB_LOGIN_ACTION, `${Date.now()}:${action}`)
+    AppStorage.setOrCreate<string>(
+      StorageKeys.WEB_LOGIN_ACTION,
+      IndexRouteCoordinator.simpleCommand(action, Date.now()),
+    )
   }
 
   @Builder
