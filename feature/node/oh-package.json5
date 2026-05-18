@@ -1,6 +1,6 @@
 {
   "name": "node",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Next2V node module - node list & node topics",
   "main": "src/main/ets/Index.ets",
   "dependencies": {
