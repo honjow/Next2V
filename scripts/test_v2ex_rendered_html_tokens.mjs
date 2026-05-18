@@ -138,6 +138,37 @@ function inlineHtmlToTokens(html) {
   return tokens
 }
 
+function stripLeadingSingleMentionRenderedBody(contentRendered, username, replyFloor) {
+  const name = username || ''
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const htmlSpace = '(?:\\s|&nbsp;|&#160;|&#xa0;)*'
+  const floorPart = replyFloor > 0 ? `${htmlSpace}#${replyFloor}` : `(?:${htmlSpace}#\\d+)?`
+  const memberHref = `(?:https?:\\/\\/(?:www\\.)?v2ex\\.(?:com|co))?\\/member\\/${escaped}(?:[?#][^"']*)?`
+  const renderedMentionRe = new RegExp(
+    `^${htmlSpace}@?${htmlSpace}<a\\b(?=[^>]*href=["']${memberHref}["'])[^>]*>${htmlSpace}@?${escaped}${htmlSpace}<\\/a>${floorPart}${htmlSpace}`,
+    'i',
+  )
+  return String(contentRendered || '').replace(renderedMentionRe, '')
+}
+
+function removeLeadingSingleMentionRendered(contentRendered, users, replyFloor) {
+  if (!Array.isArray(users) || users.length !== 1) return ''
+  const source = String(contentRendered || '').trim()
+  if (!source) return ''
+  const direct = stripLeadingSingleMentionRenderedBody(source, users[0], replyFloor)
+  if (direct !== source) return direct.trim()
+
+  const paragraphMatch = source.match(/^(\s*<p\b[^>]*>)([\s\S]*)(<\/p>\s*)$/i)
+  if (paragraphMatch) {
+    const opening = paragraphMatch[1] || ''
+    const body = paragraphMatch[2] || ''
+    const closing = paragraphMatch[3] || ''
+    const strippedBody = stripLeadingSingleMentionRenderedBody(body, users[0], replyFloor)
+    if (strippedBody !== body) return `${opening}${strippedBody.trimStart()}${closing}`.trim()
+  }
+  return ''
+}
+
 const exact117 = '@<a href="/member/vipfts">vipfts</a> <a target="_blank" href="https://i.imgur.com/U3hKhrT.png"><img src="https://i.imgur.com/U3hKhrT.png"></a><a target="_blank" href="https://i.imgur.com/U3hKhrT.png"><img src="https://i.imgur.com/U3hKhrT.png"></a>'
 const tokens117 = inlineHtmlToTokens(exact117)
 assert.deepEqual(tokens117.map(t => t.type), ['link', 'text', 'image', 'image'])
@@ -210,6 +241,30 @@ assert.deepEqual(normalLinkTokens, [{ type: 'link', href: 'https://example.com/p
 const memberLinkTokens = inlineHtmlToTokens('@<a href="/member/example_user">example_user</a>')
 assert.deepEqual(memberLinkTokens, [{ type: 'link', href: '/member/example_user', text: 'example_user' }])
 
+const strippedDirectMention = removeLeadingSingleMentionRendered(
+  '@<a href="/member/vipfts">vipfts</a> <a href="https://i.imgur.com/U3hKhrT.png"><img src="https://i.imgur.com/U3hKhrT.png"></a><a href="https://i.imgur.com/U3hKhrT.png"><img src="https://i.imgur.com/U3hKhrT.png"></a>',
+  ['vipfts'],
+  -1,
+)
+assert.equal(strippedDirectMention, '<a href="https://i.imgur.com/U3hKhrT.png"><img src="https://i.imgur.com/U3hKhrT.png"></a><a href="https://i.imgur.com/U3hKhrT.png"><img src="https://i.imgur.com/U3hKhrT.png"></a>')
+
+const strippedParagraphMention = removeLeadingSingleMentionRendered(
+  '<p>@<a class="dark" href="/member/iixy">iixy</a> #6 <a href="https://i.imgur.com/MA8YqTP.png"><img src="https://i.imgur.com/MA8YqTP.png"></a></p>',
+  ['iixy'],
+  6,
+)
+assert.equal(strippedParagraphMention, '<p><a href="https://i.imgur.com/MA8YqTP.png"><img src="https://i.imgur.com/MA8YqTP.png"></a></p>')
+
+const strippedAnchorAtMention = removeLeadingSingleMentionRendered(
+  '<p><a href="https://www.v2ex.com/member/alice">@alice</a>&nbsp;#12&nbsp;hello</p>',
+  ['alice'],
+  12,
+)
+assert.equal(strippedAnchorAtMention, '<p>hello</p>')
+assert.equal(removeLeadingSingleMentionRendered('<p>hello</p>', ['alice'], -1), '')
+assert.equal(removeLeadingSingleMentionRendered('<p>@<a href="/member/alice">alice</a> hello</p>', ['alice', 'bob'], -1), '')
+assert.equal(removeLeadingSingleMentionRendered('<p> hello </p>', ['alice'], -1), '')
+
 const topic1212814CodeHtml = '<pre><code>&lt;video&gt;\n  &lt;model name=&quot;cube&quot; /&gt;\n  &lt;graphics api=&quot;webgpu&quot;&gt;ok&lt;/graphics&gt;\n&lt;/video&gt;</code></pre>'
 const topic1212814CodeText = extractPreCodeTextFromRenderedHtml(decodeHtml(topic1212814CodeHtml))
 assert.equal(topic1212814CodeText, '<video>\n  <model name="cube" />\n  <graphics api="webgpu">ok</graphics>\n</video>')
@@ -230,6 +285,11 @@ assert.match(source, /ForEach\(tokens, \(t: Token, tokenIndex: number\) => \{[\s
 assert.match(source, /ForEach\(tokens, \(t: Token\) => \{[\s\S]*?\}, \(t: Token, tokenIndex: number\) => _inlineTokenKey\(t, tokenIndex\)\)/)
 assert.match(source, /private static hasAdjacentImageOnInlineLine\(tokens: Token\[\], index: number\): boolean/)
 assert.match(source, /MarkdownContent\.hasAdjacentImageOnInlineLine\(tokens, i\)[\s\S]*?\(token as InlineImageToken\)\.inlineImage = true/)
+const detailViewModelSource = readFileSync('feature/detail/src/main/ets/viewmodel/DetailViewModel.ets', 'utf8')
+assert.match(detailViewModelSource, /private removeLeadingSingleMentionRendered\(contentRendered: string, users: string\[\], replyFloor: number\): string/)
+assert.ok(detailViewModelSource.includes('<p\\b[^>]*>'))
+assert.match(detailViewModelSource, /stripLeadingSingleMentionRenderedBody\(body, users\[0\], replyFloor\)/)
+assert.match(detailViewModelSource, /return ''[\s\S]*private stripLeadingSingleMentionRenderedBody/)
 assert.match(source, /decodeCloudflareEmail/)
 assert.match(source, /htmlClassContains\(part, '__cf_email__'\)/)
 assert.match(source, /data-cfemail/)

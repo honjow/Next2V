@@ -769,17 +769,42 @@ export class DetailViewModel {
 
   private removeLeadingSingleMentionRendered(contentRendered: string, users: string[], replyFloor: number): string {
     if (users.length !== 1) {
-      return contentRendered
+      return ''
     }
-    const name = users[0]
+    const source = (contentRendered || '').trim()
+    if (!source) {
+      return ''
+    }
+    const direct = this.stripLeadingSingleMentionRenderedBody(source, users[0], replyFloor)
+    if (direct !== source) {
+      return direct.trim()
+    }
+
+    const paragraphMatch = source.match(/^(\s*<p\b[^>]*>)([\s\S]*)(<\/p>\s*)$/i)
+    if (paragraphMatch) {
+      const opening = paragraphMatch[1] || ''
+      const body = paragraphMatch[2] || ''
+      const closing = paragraphMatch[3] || ''
+      const strippedBody = this.stripLeadingSingleMentionRenderedBody(body, users[0], replyFloor)
+      if (strippedBody !== body) {
+        return `${opening}${strippedBody.trimStart()}${closing}`.trim()
+      }
+    }
+
+    return ''
+  }
+
+  private stripLeadingSingleMentionRenderedBody(contentRendered: string, username: string, replyFloor: number): string {
+    const name = username
     const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-    const floorPart = replyFloor > 0 ? `\\s*#${replyFloor}` : '(?:\\s*#\\d+)?'
+    const htmlSpace = '(?:\\s|&nbsp;|&#160;|&#xa0;)*'
+    const floorPart = replyFloor > 0 ? `${htmlSpace}#${replyFloor}` : `(?:${htmlSpace}#\\d+)?`
     const memberHref = `(?:https?:\\/\\/(?:www\\.)?v2ex\\.(?:com|co))?\\/member\\/${escaped}(?:[?#][^"']*)?`
     const renderedMentionRe = new RegExp(
-      `^\\s*@?\\s*<a\\b(?=[^>]*href=["']${memberHref}["'])[^>]*>\\s*@?${escaped}\\s*<\\/a>${floorPart}\\s*`,
+      `^${htmlSpace}@?${htmlSpace}<a\\b(?=[^>]*href=["']${memberHref}["'])[^>]*>${htmlSpace}@?${escaped}${htmlSpace}<\\/a>${floorPart}${htmlSpace}`,
       'i',
     )
-    return (contentRendered || '').replace(renderedMentionRe, '').trim()
+    return (contentRendered || '').replace(renderedMentionRe, '')
   }
 
   private replyRelationLabel(reply: V2exReply): string {
