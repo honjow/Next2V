@@ -99,15 +99,16 @@ export class NotificationCenterViewModel {
 
   metadata(item: V2exNotification): NotificationMetadata {
     const body = this.body(item)
+    const kindTag = this.kindTag(item, body)
     return {
-      kindTag: this.kindTag(item, body),
+      kindTag: kindTag,
       readTag: this.readTag(item),
       topicId: this.topicId(item),
       targetFloor: this.targetFloor(item),
       title: this.title(item),
-      body: body,
-      replyContent: this.replyContent(item),
-      replyRenderedContent: this.replyRenderedContent(item),
+      body: this.displayBody(kindTag, body),
+      replyContent: this.displayReplyContent(kindTag, item),
+      replyRenderedContent: this.displayReplyRenderedContent(kindTag, item),
       memberName: item.member?.username || '',
       avatarUrl: item.member?.avatar_normal || item.member?.avatar_large || item.member?.avatar_mini || '',
       canDeleteWithCookie: this.webDeleteId(item) > 0 && !!this.webDeleteOnce(item)
@@ -180,28 +181,28 @@ export class NotificationCenterViewModel {
 
     const unread = this.flag(bag.unread)
     if (unread !== null) {
-      return unread ? '未读' : '已读'
+      return unread ? '未读' : ''
     }
     const isUnread = this.flag(bag.is_unread)
     if (isUnread !== null) {
-      return isUnread ? '未读' : '已读'
+      return isUnread ? '未读' : ''
     }
     const isUnreadCamel = this.flag(bag.isUnread)
     if (isUnreadCamel !== null) {
-      return isUnreadCamel ? '未读' : '已读'
+      return isUnreadCamel ? '未读' : ''
     }
 
     const read = this.flag(bag.read)
     if (read !== null) {
-      return read ? '已读' : '未读'
+      return read ? '' : '未读'
     }
     const isRead = this.flag(bag.is_read)
     if (isRead !== null) {
-      return isRead ? '已读' : '未读'
+      return isRead ? '' : '未读'
     }
     const isReadCamel = this.flag(bag.isRead)
     if (isReadCamel !== null) {
-      return isReadCamel ? '已读' : '未读'
+      return isReadCamel ? '' : '未读'
     }
     return ''
   }
@@ -235,6 +236,27 @@ export class NotificationCenterViewModel {
 
   private body(item: V2exNotification): string {
     return item.text || item.content || item.content_rendered || ''
+  }
+
+  private displayBody(kindTag: string, body: string): string {
+    if (kindTag === '收藏') {
+      return ''
+    }
+    return body
+  }
+
+  private displayReplyContent(kindTag: string, item: V2exNotification): string {
+    if (kindTag === '收藏') {
+      return ''
+    }
+    return this.replyContent(item)
+  }
+
+  private displayReplyRenderedContent(kindTag: string, item: V2exNotification): string {
+    if (kindTag === '收藏') {
+      return ''
+    }
+    return this.replyRenderedContent(item)
   }
 
   private replyContent(item: V2exNotification): string {

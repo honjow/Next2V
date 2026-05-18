@@ -53,12 +53,14 @@ export struct NotificationPage {
   @State private notificationLoadedFromCache: boolean = false
   @State private notificationSourceLabel: string = ''
   @State private scrollEnabled: boolean = true
+  @State private viewedUnreadNotificationKeys: string[] = []
   private scroller: Scroller = new Scroller()
   private api: ApiService = new ApiService()
   private apiV2: ApiV2Service = new ApiV2Service()
   private notificationVm: NotificationCenterViewModel = new NotificationCenterViewModel(this.api)
   private readonly NOTIFICATION_PAGE_SIZE: number = 20
   private authRefreshRequestId: number = 0
+  private notificationEntryUnreadCount: number = 0
   private pendingNotificationDeletes: Set<number> = new Set<number>()
   @Prop @Watch('onRefreshKeyChanged') refreshKey: number = 0
 
@@ -266,7 +268,11 @@ export struct NotificationPage {
   }
 
   private notificationCardDisplay(item: V2exNotification): NotificationCardDisplay {
-    return NotificationPageCoordinator.displayFor(this.notificationMeta(item))
+    const display = NotificationPageCoordinator.displayFor(this.notificationMeta(item))
+    if (!display.readTag && this.isViewedUnreadNotification(item)) {
+      display.readTag = '未读'
+    }
+    return display
   }
 
   private confirmDeleteNotification(item: V2exNotification): void {
@@ -446,13 +452,22 @@ export struct NotificationPage {
     )) {
       return
     }
+    if (force && this.notifications.length > 0) {
+      this.resetViewedUnreadState()
+    }
+    const entryUnreadCount = this.captureNotificationEntryUnreadCount()
     this.isNotificationLoading = true
     this.notificationError = ''
     this.notificationPage = 1
     this.notificationHasMore = true
     try {
       const result = await this.notificationVm.loadPage(authContext, 1, this.NOTIFICATION_PAGE_SIZE)
-      this.notifications = result.items
+      this.viewedUnreadNotificationKeys = this.viewedUnreadKeysForLoadedItems(
+        result.items,
+        result.source === 'cookie',
+        entryUnreadCount
+      )
+      this.notifications = this.notificationsWithoutReadState(result.items)
       this.publishUnreadCount()
       this.notificationPage = result.page
       this.notificationHasMore = result.hasMore
@@ -489,7 +504,10 @@ export struct NotificationPage {
           this.notificationHasMore = false
           return
         }
-        const merged = this.notificationVm.mergeUnique(this.notifications, result.items)
+        const merged = this.notificationVm.mergeUnique(
+          this.notifications,
+          this.notificationsWithoutReadState(result.items)
+        )
         if (merged.length === this.notifications.length) {
           this.notificationHasMore = false
           return
@@ -524,6 +542,7 @@ export struct NotificationPage {
     this.notificationCacheUpdatedAt = 0
     this.notificationLoadedFromCache = false
     this.notificationSourceLabel = ''
+    this.resetViewedUnreadState()
     this.publishUnreadCount()
   }
 
@@ -545,12 +564,19 @@ export struct NotificationPage {
         if (!result.shouldApplyItems) {
           return
         }
-        this.notifications = result.items
+        const authContext = this.notificationAuthContext()
+        const entryUnreadCount = this.captureNotificationEntryUnreadCount()
+        this.viewedUnreadNotificationKeys = this.viewedUnreadKeysForLoadedItems(
+          result.items,
+          this.isCookieNotificationSource(authContext),
+          entryUnreadCount
+        )
+        this.notifications = this.notificationsWithoutReadState(result.items)
         this.publishUnreadCount()
         this.notificationPage = result.page
         this.notificationHasMore = result.hasMore
         this.notificationLoadedFromCache = true
-        this.notificationSourceLabel = this.notificationVm.sourceLabelFor(this.notificationAuthContext())
+        this.notificationSourceLabel = this.notificationVm.sourceLabelFor(authContext)
       })
       .catch((error: Error) => {
         console.error('load notification cache failed: ' + error.message)
@@ -579,7 +605,93 @@ export struct NotificationPage {
   }
 
   private publishUnreadCount(): void {
-    this.notificationUnreadCount = this.notificationVm.unreadCount(this.notifications)
+    this.notificationUnreadCount = 0
+  }
+
+  private captureNotificationEntryUnreadCount(): number {
+    const count = Math.max(0, this.notificationUnreadCount)
+    if (count > this.notificationEntryUnreadCount) {
+      this.notificationEntryUnreadCount = count
+    }
+    return this.notificationEntryUnreadCount
+  }
+
+  private resetViewedUnreadState(): void {
+    this.viewedUnreadNotificationKeys = []
+    this.notificationEntryUnreadCount = 0
+  }
+
+  private isCookieNotificationSource(context: NotificationAuthContext): boolean {
+    if (context.tokenConfigured && !!context.token) {
+      return false
+    }
+    return context.cookieConfigured && !!context.cookie
+  }
+
+  private viewedUnreadKeysForLoadedItems(
+    items: V2exNotification[],
+    useCountFallback: boolean,
+    unreadCount: number
+  ): string[] {
+    if (!Array.isArray(items) || items.length === 0) {
+      return []
+    }
+    if (this.notificationVm.unreadCount(items) > 0) {
+      return this.unreadKeysFromItems(items)
+    }
+    if (!useCountFallback || unreadCount <= 0) {
+      return this.retainViewedUnreadKeys(items)
+    }
+    return items.slice(0, Math.min(unreadCount, items.length))
+      .map((item: V2exNotification) => this.notificationItemKey(item))
+      .filter((key: string) => !!key)
+  }
+
+  private unreadKeysFromItems(items: V2exNotification[]): string[] {
+    return items
+      .filter((item: V2exNotification) => this.notificationVm.metadata(item).readTag === '未读')
+      .map((item: V2exNotification) => this.notificationItemKey(item))
+      .filter((key: string) => !!key)
+  }
+
+  private retainViewedUnreadKeys(items: V2exNotification[]): string[] {
+    if (this.viewedUnreadNotificationKeys.length === 0) {
+      return []
+    }
+    const keys = new Set<string>(items.map((item: V2exNotification) => this.notificationItemKey(item)))
+    return this.viewedUnreadNotificationKeys.filter((key: string) => keys.has(key))
+  }
+
+  private isViewedUnreadNotification(item: V2exNotification): boolean {
+    const key = this.notificationItemKey(item)
+    return !!key && this.viewedUnreadNotificationKeys.indexOf(key) >= 0
+  }
+
+  private notificationsWithoutReadState(items: V2exNotification[]): V2exNotification[] {
+    return items.map((item: V2exNotification) => this.notificationWithoutReadState(item))
+  }
+
+  private notificationWithoutReadState(item: V2exNotification): V2exNotification {
+    return {
+      id: item.id,
+      member: item.member,
+      for_member_id: item.for_member_id,
+      text: item.text,
+      reply_content: item.reply_content,
+      reply_content_rendered: item.reply_content_rendered,
+      payload: item.payload,
+      payload_rendered: item.payload_rendered,
+      title: item.title,
+      content: item.content,
+      content_rendered: item.content_rendered,
+      topic_id: item.topic_id,
+      topic_title: item.topic_title,
+      target_floor: item.target_floor,
+      delete_id: item.delete_id,
+      delete_once: item.delete_once,
+      created: item.created,
+      last_modified: item.last_modified
+    }
   }
 
   private handleTwoFactorChallenge(error: Error): void {

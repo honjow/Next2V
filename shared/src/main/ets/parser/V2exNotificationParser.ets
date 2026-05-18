@@ -114,7 +114,7 @@ export class V2exNotificationParser {
     if (className.indexOf('unread') >= 0) {
       return true
     }
-    return false
+    return null
   }
 
   private static stripTimeSuffix(text: string, timeText: string): string {

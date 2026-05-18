@@ -62,19 +62,24 @@ for (const token of [
 }
 
 const vm = read('entry/src/main/ets/viewmodel/NotificationCenterViewModel.ets')
+assert(!vm.includes("'已读'"), 'NotificationCenterViewModel should not emit a visible read tag')
 for (const token of [
   'canDeleteItem(context: NotificationAuthContext, item: V2exNotification)',
   'unreadCount(items: V2exNotification[]): number',
   'async unreadCountFromCookie(cookie: string): Promise<number>',
   'webDeleteId(item: V2exNotification): number',
   'webDeleteOnce(item: V2exNotification): string',
-  'replyContent: this.replyContent(item)',
-  'replyRenderedContent: this.replyRenderedContent(item)',
+  'body: this.displayBody(kindTag, body)',
+  'replyContent: this.displayReplyContent(kindTag, item)',
+  'replyRenderedContent: this.displayReplyRenderedContent(kindTag, item)',
+  "if (kindTag === '收藏')",
   'private replyRenderedContent(item: V2exNotification): string',
   'private firstReadableContent(candidates: (string | undefined)[]): string',
   'private readableNotificationContent(raw: string): string',
   ".replace(/<img\\b[^>]*>/gi, ' 图片 ')",
   "tag === '未读'",
+  "return unread ? '未读' : ''",
+  "return read ? '' : '未读'",
 ]) {
   assert(vm.includes(token), `NotificationCenterViewModel contract missing ${token}`)
 }
@@ -112,6 +117,14 @@ for (const token of [
   'this.restoreNotificationAfterDeleteFailure(item, originalIndex)',
   'private publishUnreadCount(): void',
   'this.publishUnreadCount()',
+  '@State private viewedUnreadNotificationKeys: string[] = []',
+  'private notificationEntryUnreadCount: number = 0',
+  'this.viewedUnreadKeysForLoadedItems(',
+  'this.notificationsWithoutReadState(result.items)',
+  'private captureNotificationEntryUnreadCount(): number',
+  'private viewedUnreadKeysForLoadedItems(',
+  'private notificationWithoutReadState(item: V2exNotification): V2exNotification',
+  'this.notificationUnreadCount = 0',
   'replyContent: display.replyContent',
   'replyRenderedContent: display.replyRenderedContent',
 ]) {
