@@ -42,11 +42,18 @@ for (const token of [
   'async getNotificationUnreadCountWithCookie(cookie: string): Promise<number>',
   "this.getCookieHtml('/', cookie)",
   'V2exSessionParser.extractUnreadNotificationCount(html)',
-  'async deleteNotificationWithCookie(cookie: string, notificationId: number, once: string): Promise<void>',
+  'async deleteNotificationWithCookie(',
+  'verifyPage: number = 1',
   "`/delete/notification/${notificationId}?once=${encodeURIComponent(once)}`",
   "fields['once'] = once",
   'ApiService.encodeFormFields(fields)',
   'http.RequestMethod.POST',
+  "'X-Requested-With': 'XMLHttpRequest'",
+  'if (await this.isNotificationDeletedFromCookiePage(cookie, notificationId, safeVerifyPage))',
+  'private async isNotificationDeletedFromCookiePage(cookie: string, notificationId: number, page: number): Promise<boolean>',
+  'const latest = await this.getNotificationsWithCookie(cookie, page)',
+  'item.id === notificationId || item.delete_id === notificationId',
+  "throw new Error('删除通知未生效，请稍后重试')",
   "'/notifications'",
 ]) {
   assert(apiService.includes(token), `ApiService cookie delete contract missing ${token}`)
@@ -67,10 +74,29 @@ for (const token of [
 
 const page = read('entry/src/main/ets/pages/NotificationPage.ets')
 assert(!page.includes('NotificationSummaryCard({'), 'NotificationPage must not render the old summary card as the first list item')
+for (const forbidden of [
+  'NotificationDeleteConfirmDialog',
+  'CustomDialogController',
+  'fakeDeleteRequestForTest',
+  'DELETE_REQUEST_TEST_DELAY_MS',
+]) {
+  assert(!page.includes(forbidden), `NotificationPage must not retain temporary/custom delete confirmation code: ${forbidden}`)
+}
 for (const token of [
   '@StorageLink(StorageKeys.NOTIFICATION_UNREAD_COUNT) notificationUnreadCount: number = 0',
   'this.notificationVm.canDeleteItem(this.notificationAuthContext(), item)',
-  'this.api.deleteNotificationWithCookie(cookie, notificationId, once)',
+  'const verifyPage = this.notificationPageForItem(item)',
+  'this.api.deleteNotificationWithCookie(cookie, notificationId, once, verifyPage)',
+  'AlertDialog.show({',
+  "value: '删除'",
+  'private notificationPageForItem(item: V2exNotification): number',
+  'private deleteNotificationInBackground(',
+  'private retryDeleteNotificationRequest(request: () => Promise<void>, attempt: number): Promise<void>',
+  'if (attempt >= 2)',
+  'private deleteRetryDelayMs(attempt: number): number',
+  'private restoreNotificationAfterDeleteFailure(item: V2exNotification, originalIndex: number): void',
+  'this.pendingNotificationDeletes.add(notificationId)',
+  'this.restoreNotificationAfterDeleteFailure(item, originalIndex)',
   'private publishUnreadCount(): void',
   'this.publishUnreadCount()',
   'replyContent: display.replyContent',

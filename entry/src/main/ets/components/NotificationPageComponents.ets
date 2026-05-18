@@ -171,15 +171,11 @@ export struct NotificationDeleteSwipeAction {
   build() {
     Row() {
       Button() {
-        Row({ space: ThemeConstants.SPACE_XS }) {
-          SymbolGlyph($r('sys.symbol.trash'))
-            .fontSize(ThemeConstants.ICON_SIZE_SM)
-            .fontColor([Color.White])
-          Text('删除')
-            .fontSize(ThemeConstants.FONT_SIZE_TAG)
-            .fontColor(Color.White)
-        }
+        SymbolGlyph($r('sys.symbol.trash'))
+          .fontSize(ThemeConstants.ICON_SIZE_SM)
+          .fontColor([Color.White])
       }
+      .width(48)
       .height(40)
       .backgroundColor(Color.Red)
       .onClick(() => {

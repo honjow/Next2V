@@ -349,12 +349,21 @@ export class ApiService {
     return V2exSessionParser.extractUnreadNotificationCount(html)
   }
 
-  async deleteNotificationWithCookie(cookie: string, notificationId: number, once: string): Promise<void> {
+  async deleteNotificationWithCookie(
+    cookie: string,
+    notificationId: number,
+    once: string,
+    verifyPage: number = 1
+  ): Promise<void> {
     if (!cookie) {
       throw new Error('请先登录')
     }
     if (notificationId <= 0 || !once) {
       throw new Error('缺少通知删除参数')
+    }
+    const safeVerifyPage = Math.max(1, Math.floor(verifyPage))
+    if (await this.isNotificationDeletedFromCookiePage(cookie, notificationId, safeVerifyPage)) {
+      return
     }
     const fields: Record<string, string> = {}
     fields['once'] = once
@@ -365,10 +374,25 @@ export class ApiService {
       '/notifications',
       http.RequestMethod.POST,
       body,
+      {
+        'Accept': '*/*',
+        'X-Requested-With': 'XMLHttpRequest'
+      }
     )
     if (res.location.indexOf('/signin') >= 0) {
       throw new Error('Web 会话已失效，请重新登录')
     }
+    if (await this.isNotificationDeletedFromCookiePage(cookie, notificationId, safeVerifyPage)) {
+      return
+    }
+    throw new Error('删除通知未生效，请稍后重试')
+  }
+
+  private async isNotificationDeletedFromCookiePage(cookie: string, notificationId: number, page: number): Promise<boolean> {
+    const latest = await this.getNotificationsWithCookie(cookie, page)
+    return !latest.some((item: V2exNotification) => {
+      return item.id === notificationId || item.delete_id === notificationId
+    })
   }
 
   async getBalanceWithCookie(cookie: string): Promise<V2exBalance> {
@@ -1126,6 +1150,7 @@ export class ApiService {
     refererPath: string,
     method: http.RequestMethod,
     extraData: string = '',
+    extraHeaders: Record<string, string> = {},
   ): Promise<CookieHtmlResponse> {
     const clean = (pathOrUrl || '').trim()
     if (!clean) {
@@ -1154,6 +1179,9 @@ export class ApiService {
       if (refererUrl) {
         requestHeaders['Referer'] = refererUrl
       }
+      Object.keys(extraHeaders).forEach((key: string) => {
+        requestHeaders[key] = extraHeaders[key]
+      })
 
       const options: http.HttpRequestOptions = {
         method: method,

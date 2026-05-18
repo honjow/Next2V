@@ -16,6 +16,12 @@ Direct worker controller mode is allowed when this project workflow calls for it
 
 Implementation, read-only review, independent device QA, integrate, and follow-up spec stages must be explicit. Each worker stage must produce a result JSON with `verdict: PASS|FAIL|BLOCKED|REQUEST_CHANGES`, `summary`, `artifact_dir`, `commands`, `changed_files`, `evidence`, and `commit` when applicable. A live process, heartbeat, or implementer self-report is not proof. Do not rerun already-PASS upstream stages after a later blocker; resume from the failed or missing stage.
 
+### Product and UI preservation boundary
+
+User product decisions are hard constraints, not suggestions. Unless the user explicitly requests that exact product/visual change, do not replace existing UI components, remove features, change colors, typography, spacing, layout, wording, navigation path, confirmation style, interaction model, or visible state semantics while fixing a bug. Technical convenience, easier testing, or a suspected implementation issue is not authorization to change user-visible design.
+
+When validating a hypothesis, keep test scaffolding isolated and temporary. Fake network requests, artificial delays, mocked services, diagnostic UI, or instrumentation must be removed before final implementation unless the user explicitly asks to keep them. Do not treat evidence gathered under a changed UI/component path as proof for the preserved UI path.
+
 ### Worktree signing preflight
 
 Before any agent or subagent builds, signs, installs, or device-tests a V2Next lane worktree under `/home/gamer/v2next-worktrees/`, run `scripts/sync-signing-materials.sh` in that worktree, or copy the same four gitignored signing files from `/home/gamer/git/V2Next/scripts`. These files are secret-bearing local materials, must not be printed or committed, and prevent `scripts/sign.py` from stalling on Huawei/AGC login during `bash dev.sh`.

@@ -46,7 +46,6 @@ export struct NotificationPage {
   @State private notifications: V2exNotification[] = []
   @State private notificationError: string = ''
   @State private isNotificationLoading: boolean = false
-  @State private isNotificationDeleting: boolean = false
   @State private notificationPage: number = 1
   @State private notificationHasMore: boolean = true
   @State private isNotificationLoadingMore: boolean = false
@@ -60,6 +59,7 @@ export struct NotificationPage {
   private notificationVm: NotificationCenterViewModel = new NotificationCenterViewModel(this.api)
   private readonly NOTIFICATION_PAGE_SIZE: number = 20
   private authRefreshRequestId: number = 0
+  private pendingNotificationDeletes: Set<number> = new Set<number>()
   @Prop @Watch('onRefreshKeyChanged') refreshKey: number = 0
 
   aboutToAppear(): void {
@@ -129,7 +129,7 @@ export struct NotificationPage {
         }) {
           ForEach(this.notifications, (item: V2exNotification) => {
             this.NotificationListItem(item)
-          })
+          }, (item: V2exNotification) => this.notificationItemKey(item))
           if (this.notifications.length === 0) {
             ListItem() {
               EmptyState({ message: '暂无通知', stateHeight: 240 })
@@ -270,7 +270,7 @@ export struct NotificationPage {
 
   private confirmDeleteNotification(item: V2exNotification): void {
     const id = item.id || 0
-    if (id <= 0 || this.isNotificationDeleting) {
+    if (id <= 0 || this.pendingNotificationDeletes.has(id)) {
       return
     }
     AlertDialog.show({
@@ -282,7 +282,6 @@ export struct NotificationPage {
       },
       secondaryButton: {
         value: '删除',
-        fontColor: Color.Red,
         action: () => {
           this.deleteNotificationItem(item)
         }
@@ -291,62 +290,141 @@ export struct NotificationPage {
   }
 
   private deleteNotificationItem(item: V2exNotification): void {
+    const localId = item.id || 0
+    if (localId <= 0 || this.pendingNotificationDeletes.has(localId)) {
+      return
+    }
     if (this.authTokenConfigured && this.authToken) {
-      this.deleteNotification(item.id || 0)
+      this.deleteNotification(item)
       return
     }
     this.deleteNotificationWithCookie(item)
   }
 
-  private deleteNotification(notificationId: number): void {
-    if (!this.authTokenConfigured || !this.authToken || this.isNotificationDeleting) {
+  private deleteNotification(item: V2exNotification): void {
+    const notificationId = item.id || 0
+    if (!this.authTokenConfigured || !this.authToken || notificationId <= 0) {
       promptAction.openToast({ message: '删除通知需要 V2 API 授权' }).catch((_error: Error) => {
       })
       return
     }
-    this.isNotificationDeleting = true
-    this.apiV2.deleteNotification(this.authToken, notificationId)
-      .then(() => {
-        this.handleNotificationDeleted(notificationId)
+    const originalIndex = this.handleNotificationDeleted(item)
+    if (originalIndex < 0) {
+      return
+    }
+    const token = this.authToken
+    this.deleteNotificationInBackground(item, originalIndex, () => {
+      return this.apiV2.deleteNotification(token, notificationId).then(() => {
       })
-      .catch((error: Error) => {
-        promptAction.openToast({ message: error.message || '删除失败' }).catch((_error: Error) => {
-        })
-      })
-      .finally(() => {
-        this.isNotificationDeleting = false
-      })
+    })
   }
 
   private deleteNotificationWithCookie(item: V2exNotification): void {
     const cookie = CookieJarSettings.getCurrentCookie()
     const notificationId = this.notificationVm.webDeleteId(item)
     const once = this.notificationVm.webDeleteOnce(item)
-    if (!cookie || notificationId <= 0 || !once || this.isNotificationDeleting) {
+    const verifyPage = this.notificationPageForItem(item)
+    if (!cookie || notificationId <= 0 || !once) {
       promptAction.openToast({ message: '删除通知需要 Web 会话' }).catch((_error: Error) => {
       })
       return
     }
-    this.isNotificationDeleting = true
-    this.api.deleteNotificationWithCookie(cookie, notificationId, once)
-      .then(() => {
-        this.handleNotificationDeleted(item.id || notificationId)
-      })
-      .catch((error: Error) => {
-        promptAction.openToast({ message: error.message || '删除失败' }).catch((_error: Error) => {
-        })
-      })
-      .finally(() => {
-        this.isNotificationDeleting = false
-      })
+    const originalIndex = this.handleNotificationDeleted(item)
+    if (originalIndex < 0) {
+      return
+    }
+    this.deleteNotificationInBackground(item, originalIndex, () => {
+      return this.api.deleteNotificationWithCookie(cookie, notificationId, once, verifyPage)
+    })
   }
 
-  private handleNotificationDeleted(notificationId: number): void {
-    this.notifications = this.notifications.filter(item => item.id !== notificationId)
+  private notificationPageForItem(item: V2exNotification): number {
+    const index = this.notifications.findIndex((current: V2exNotification) => current.id === item.id)
+    if (index < 0) {
+      return 1
+    }
+    return Math.floor(index / this.NOTIFICATION_PAGE_SIZE) + 1
+  }
+
+  private notificationItemKey(item: V2exNotification): string {
+    const id = item.id || 0
+    const deleteId = item.delete_id || 0
+    const topicId = item.topic_id || 0
+    const targetFloor = item.target_floor || 0
+    return `${id}:${deleteId}:${topicId}:${targetFloor}`
+  }
+
+  private handleNotificationDeleted(item: V2exNotification): number {
+    const notificationId = item.id || 0
+    const originalIndex = this.notifications.findIndex((current: V2exNotification) => current.id === notificationId)
+    if (originalIndex < 0) {
+      return -1
+    }
+    this.notifications = this.notifications.filter((current: V2exNotification) => current.id !== notificationId)
+    this.publishUnreadCount()
+    return originalIndex
+  }
+
+  private deleteNotificationInBackground(
+    item: V2exNotification,
+    originalIndex: number,
+    request: () => Promise<void>
+  ): void {
+    const notificationId = item.id || 0
+    if (notificationId <= 0) {
+      return
+    }
+    this.pendingNotificationDeletes.add(notificationId)
+    this.afterOptimisticDeleteFrame(() => {
+      promptAction.openToast({ message: '已删除' }).catch((_error: Error) => {
+      })
+      this.saveNotificationCache()
+      this.retryDeleteNotificationRequest(request, 0)
+        .catch((error: Error) => {
+          this.restoreNotificationAfterDeleteFailure(item, originalIndex)
+          promptAction.openToast({ message: error.message || '删除失败，已恢复' }).catch((_toastError: Error) => {
+          })
+        })
+        .finally(() => {
+          this.pendingNotificationDeletes.delete(notificationId)
+        })
+    })
+  }
+
+  private afterOptimisticDeleteFrame(work: () => void): void {
+    setTimeout(() => {
+      work()
+    }, 32)
+  }
+
+  private retryDeleteNotificationRequest(request: () => Promise<void>, attempt: number): Promise<void> {
+    return request().catch((error: Error) => {
+      if (attempt >= 2) {
+        throw error
+      }
+      return new Promise<void>((resolve) => {
+        setTimeout(() => {
+          resolve()
+        }, this.deleteRetryDelayMs(attempt))
+      }).then(() => this.retryDeleteNotificationRequest(request, attempt + 1))
+    })
+  }
+
+  private deleteRetryDelayMs(attempt: number): number {
+    return Math.pow(2, attempt) * 1200
+  }
+
+  private restoreNotificationAfterDeleteFailure(item: V2exNotification, originalIndex: number): void {
+    const notificationId = item.id || 0
+    if (notificationId <= 0 || this.notifications.some((current: V2exNotification) => current.id === notificationId)) {
+      return
+    }
+    const safeIndex = Math.max(0, Math.min(originalIndex, this.notifications.length))
+    this.notifications = this.notifications.slice(0, safeIndex)
+      .concat([item])
+      .concat(this.notifications.slice(safeIndex))
     this.publishUnreadCount()
     this.saveNotificationCache()
-    promptAction.openToast({ message: '已删除' }).catch((_error: Error) => {
-    })
   }
 
   private loadNotifications(force: boolean = false): void {

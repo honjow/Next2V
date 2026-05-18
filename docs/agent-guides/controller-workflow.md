@@ -26,9 +26,12 @@ Before editing or delegating implementation:
 2. Treat the original user wording as evidence, not as the executable implementation spec.
 3. Separate product semantics, preserved semantics, non-goals, and verification path.
 4. For information-migration requests, move the existing information structure unless the spec explicitly changes its meaning. Do not replace a field with a nearby metric or a guessed "more useful" value.
-5. If implementation is delegated, require a spec-compliance review before code-quality review. The controller must still inspect the diff and independently verify build/device results; implementation-agent self-reports are not proof.
-6. UI/interaction completion requires scenario validation when tooling is available: the requested state appears, preserved information remains, actions actually work, failure/unauthenticated states are handled where relevant, and the state is correct after navigation away/re-entry.
-7. If the spec is found wrong or ambiguous, stop and revise the spec before continuing. Do not patch over a mistaken product interpretation.
+5. Treat the existing UI/interaction surface as preserved unless the user explicitly changes it. Do not swap system components for custom components, alter colors, spacing, typography, copy, navigation, confirmation flows, or remove features just because it makes an implementation easier.
+6. Keep diagnostic changes out of final diffs. Fake network calls, artificial delays, mocked services, diagnostic UI, logging overlays, and temporary instrumentation may only be used as isolated verification scaffolding; remove them before final validation unless the user explicitly asks to keep them.
+7. Evidence must match the preserved product path. A test performed with a different component, confirmation flow, mock path, or altered UI cannot be used as proof that the original preserved path works.
+8. If implementation is delegated, require a spec-compliance review before code-quality review. The controller must still inspect the diff and independently verify build/device results; implementation-agent self-reports are not proof.
+9. UI/interaction completion requires scenario validation when tooling is available: the requested state appears, preserved information remains, actions actually work, failure/unauthenticated states are handled where relevant, and the state is correct after navigation away/re-entry.
+10. If the spec is found wrong or ambiguous, stop and revise the spec before continuing. Do not patch over a mistaken product interpretation.
 
 ## Direct Worker Controller Mode
 
