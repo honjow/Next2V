@@ -64,7 +64,10 @@ import {
   TopicDetailTitleActionDescriptor,
   TopicDetailTitleBarCoordinator
 } from '../model/TopicDetailTitleBarCoordinator'
-import { IndexTitleBarCoordinator } from '../model/IndexTitleBarCoordinator'
+import {
+  IndexTitleBarCoordinator,
+  IndexTitleMenuDescriptor,
+} from '../model/IndexTitleBarCoordinator'
 import { IndexRouteCoordinator } from '../model/IndexRouteCoordinator'
 
 @Entry
@@ -764,51 +767,89 @@ struct Index {
   }
 
   private meTitleMenu(): Record<string, Object> {
-    let items: Record<string, Object>[] = [
-      this.topicActionItem('设置', $r('sys.symbol.gearshape'), () => {
-        this.ns.pushPathByName('Settings', null)
-      }),
-    ]
-    return { 'value': items, 'maxCount': 1 }
+    let items: Record<string, Object>[] = IndexTitleBarCoordinator.meMenuItems().map(
+      (descriptor: IndexTitleMenuDescriptor) => this.topicActionItem(
+        descriptor.label,
+        this.mainTitleMenuIcon(descriptor.icon),
+        () => {
+          if (descriptor.action === 'settings') {
+            this.ns.pushPathByName('Settings', null)
+          }
+        },
+      )
+    )
+    return { 'value': items, 'maxCount': IndexTitleBarCoordinator.SINGLE_ITEM_MENU_MAX_COUNT }
   }
 
   private notificationTitleMenu(): Record<string, Object> {
-    let items: Record<string, Object>[] = [
-      this.topicActionItem('刷新', $r('sys.symbol.arrow_clockwise'), () => {
-        this.sendNotificationAction('refresh')
-      }),
-    ]
-    return { 'value': items, 'maxCount': 1 }
+    let items: Record<string, Object>[] = IndexTitleBarCoordinator.notificationMenuItems().map(
+      (descriptor: IndexTitleMenuDescriptor) => this.topicActionItem(
+        descriptor.label,
+        this.mainTitleMenuIcon(descriptor.icon),
+        () => {
+          this.sendNotificationAction(descriptor.action)
+        },
+      )
+    )
+    return { 'value': items, 'maxCount': IndexTitleBarCoordinator.SINGLE_ITEM_MENU_MAX_COUNT }
   }
 
   private searchTitleMenu(): Record<string, Object> {
-    let items: Record<string, Object>[] = [
-      this.topicActionItem('筛选', $r('sys.symbol.funnel'), () => {
-        this.sendSearchAction('filter')
-      }),
-    ]
-    return { 'value': items, 'maxCount': 1 }
+    let items: Record<string, Object>[] = IndexTitleBarCoordinator.searchMenuItems().map(
+      (descriptor: IndexTitleMenuDescriptor) => this.topicActionItem(
+        descriptor.label,
+        this.mainTitleMenuIcon(descriptor.icon),
+        () => {
+          this.sendSearchAction(descriptor.action)
+        },
+      )
+    )
+    return { 'value': items, 'maxCount': IndexTitleBarCoordinator.SINGLE_ITEM_MENU_MAX_COUNT }
   }
 
   private webLoginTitleMenu(): Record<string, Object> {
-    let items: Record<string, Object>[] = [
-      this.topicActionItem('保存登录', $r('sys.symbol.checkmark_circle'), () => {
-        this.sendWebLoginAction('save')
-      }),
-      this.topicActionItem('重新加载', $r('sys.symbol.arrow_clockwise'), () => {
-        this.sendWebLoginAction('reload')
-      }),
-    ]
-    return { 'value': items, 'maxCount': 2 }
+    let items: Record<string, Object>[] = IndexTitleBarCoordinator.webLoginMenuItems().map(
+      (descriptor: IndexTitleMenuDescriptor) => this.topicActionItem(
+        descriptor.label,
+        this.mainTitleMenuIcon(descriptor.icon),
+        () => {
+          this.sendWebLoginAction(descriptor.action)
+        },
+      )
+    )
+    return { 'value': items, 'maxCount': IndexTitleBarCoordinator.WEB_LOGIN_MENU_MAX_COUNT }
   }
 
   private imagePreviewTitleMenu(): Record<string, Object> {
-    let items: Record<string, Object>[] = [
-      this.topicActionItem('保存图片', $r('sys.symbol.arrow_down_to_line'), () => {
-        this.sendImagePreviewAction('save')
-      }),
-    ]
-    return { 'value': items, 'maxCount': 1 }
+    let items: Record<string, Object>[] = IndexTitleBarCoordinator.imagePreviewMenuItems().map(
+      (descriptor: IndexTitleMenuDescriptor) => this.topicActionItem(
+        descriptor.label,
+        this.mainTitleMenuIcon(descriptor.icon),
+        () => {
+          this.sendImagePreviewAction(descriptor.action)
+        },
+      )
+    )
+    return { 'value': items, 'maxCount': IndexTitleBarCoordinator.SINGLE_ITEM_MENU_MAX_COUNT }
+  }
+
+  private mainTitleMenuIcon(icon: string): Resource {
+    if (icon === 'settings') {
+      return $r('sys.symbol.gearshape')
+    }
+    if (icon === 'filter') {
+      return $r('sys.symbol.funnel')
+    }
+    if (icon === 'confirm') {
+      return $r('sys.symbol.checkmark_circle')
+    }
+    if (icon === 'download') {
+      return $r('sys.symbol.arrow_down_to_line')
+    }
+    if (icon === 'refresh') {
+      return $r('sys.symbol.arrow_clockwise')
+    }
+    return $r('sys.symbol.search_things')
   }
 
   private sendWebLoginAction(action: string): void {

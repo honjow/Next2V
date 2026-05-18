@@ -14,9 +14,41 @@ export interface NodeTopicTitleBarText {
   subtitle: string
 }
 
+export interface IndexTitleMenuDescriptor {
+  label: string
+  action: string
+  icon: string
+}
+
 export class IndexTitleBarCoordinator {
+  static readonly SINGLE_ITEM_MENU_MAX_COUNT: number = 1
+  static readonly WEB_LOGIN_MENU_MAX_COUNT: number = 2
+
   static emptyMenu(): Record<string, Object> {
     return { 'value': [], 'maxCount': 0 }
+  }
+
+  static meMenuItems(): IndexTitleMenuDescriptor[] {
+    return [{ label: '设置', action: 'settings', icon: 'settings' }]
+  }
+
+  static notificationMenuItems(): IndexTitleMenuDescriptor[] {
+    return [{ label: '刷新', action: 'refresh', icon: 'refresh' }]
+  }
+
+  static searchMenuItems(): IndexTitleMenuDescriptor[] {
+    return [{ label: '筛选', action: 'filter', icon: 'filter' }]
+  }
+
+  static webLoginMenuItems(): IndexTitleMenuDescriptor[] {
+    return [
+      { label: '保存登录', action: 'save', icon: 'confirm' },
+      { label: '重新加载', action: 'reload', icon: 'refresh' },
+    ]
+  }
+
+  static imagePreviewMenuItems(): IndexTitleMenuDescriptor[] {
+    return [{ label: '保存图片', action: 'save', icon: 'download' }]
   }
 
   static menuStats(menu: Record<string, Object>): TitleBarMenuStats {

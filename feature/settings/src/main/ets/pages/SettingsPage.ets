@@ -6,7 +6,6 @@ import {
   CacheSettings,
   ConciseListRow,
   CookieJarSettings,
-  DateUtils,
   GroupedListSection,
   HttpClient,
   MediaSettings,
@@ -27,6 +26,10 @@ import {
   SettingsSectionHeader,
   SettingsToggleRow
 } from '../components/SettingsPageComponents'
+import {
+  SettingsPageCoordinator,
+  type SettingsOption,
+} from '../model/SettingsPageCoordinator'
 @Component
 export struct SettingsPage {
   @Consume('ns') stack: NavPathStack;
@@ -171,7 +174,7 @@ export struct SettingsPage {
     GroupedListSection() {
       SettingsDropdownRow({
         title: 'API 域名',
-        trailingText: this.useCoDomain ? 'v2ex.co' : 'v2ex.com',
+        trailingText: SettingsPageCoordinator.apiDomainLabel(this.useCoDomain),
         openAction: () => {
           this.showApiDomainMenu()
         },
@@ -310,90 +313,84 @@ export struct SettingsPage {
   @Builder
   ThemeModeMenu() {
     Menu() {
-      this.ThemeModeMenuItem('自动', ThemeSettings.MODE_AUTO)
-      this.ThemeModeMenuItem('浅色', ThemeSettings.MODE_LIGHT)
-      this.ThemeModeMenuItem('深色', ThemeSettings.MODE_DARK)
+      ForEach(SettingsPageCoordinator.themeModeOptions(), (option: SettingsOption) => {
+        this.ThemeModeMenuItem(option)
+      }, (option: SettingsOption) => option.value)
     }
   }
 
   @Builder
   ReplyDisplayModeMenu() {
     Menu() {
-      this.ReplyDisplayModeMenuItem('楼中楼', ReplyDisplaySettings.MODE_THREAD)
-      this.ReplyDisplayModeMenuItem('楼中楼(@)', ReplyDisplaySettings.MODE_THREAD_WITH_MENTION)
-      this.ReplyDisplayModeMenuItem('冗余楼中楼', ReplyDisplaySettings.MODE_THREAD_REDUNDANT)
-      this.ReplyDisplayModeMenuItem('只看楼主', ReplyDisplaySettings.MODE_OP)
-      this.ReplyDisplayModeMenuItem('原版', ReplyDisplaySettings.MODE_ORIGIN)
+      ForEach(SettingsPageCoordinator.replyDisplayModeOptions(), (option: SettingsOption) => {
+        this.ReplyDisplayModeMenuItem(option)
+      }, (option: SettingsOption) => option.value)
     }
   }
 
   @Builder
   ReplyCardStyleMenu() {
     Menu() {
-      this.ReplyCardStyleMenuItem('标准', ReplyCardStyleSettings.STYLE_STANDARD)
-      this.ReplyCardStyleMenuItem('紧凑', ReplyCardStyleSettings.STYLE_COMPACT)
+      ForEach(SettingsPageCoordinator.replyCardStyleOptions(), (option: SettingsOption) => {
+        this.ReplyCardStyleMenuItem(option)
+      }, (option: SettingsOption) => option.value)
     }
   }
 
   @Builder
   ReplyActionAlignmentMenu() {
     Menu() {
-      if (this.motionHoldingHandSupported) {
-        this.ReplyActionAlignmentMenuItem(
-          '智感握姿',
-          ReplyActionAlignmentSettings.MODE_SMART_GRIP,
-        )
-      }
-      this.ReplyActionAlignmentMenuItem(
-        '跟随操作',
-        ReplyActionAlignmentSettings.MODE_FOLLOW_OPERATION,
+      ForEach(
+        SettingsPageCoordinator.replyActionAlignmentOptions(this.motionHoldingHandSupported),
+        (option: SettingsOption) => {
+          this.ReplyActionAlignmentMenuItem(option)
+        },
+        (option: SettingsOption) => option.value,
       )
-      this.ReplyActionAlignmentMenuItem('固定左侧', ReplyActionAlignmentSettings.MODE_FIXED_LEFT)
-      this.ReplyActionAlignmentMenuItem('固定右侧', ReplyActionAlignmentSettings.MODE_FIXED_RIGHT)
     }
   }
 
   @Builder
   Base64ModeMenu() {
     Menu() {
-      this.Base64ModeMenuItem('关闭', ReadingSettings.BASE64_MODE_OFF)
-      this.Base64ModeMenuItem('点击查看', ReadingSettings.BASE64_MODE_BADGE)
-      this.Base64ModeMenuItem('文内显示', ReadingSettings.BASE64_MODE_INLINE)
+      ForEach(SettingsPageCoordinator.base64DecodeModeOptions(), (option: SettingsOption) => {
+        this.Base64ModeMenuItem(option)
+      }, (option: SettingsOption) => option.value)
     }
   }
 
   @Builder
-  Base64ModeMenuItem(label: string, mode: string) {
+  Base64ModeMenuItem(option: SettingsOption) {
     SettingsCheckedMenuItem({
-      label,
-      selected: this.base64DecodeMode === mode,
+      label: option.label,
+      selected: this.base64DecodeMode === option.value,
       selectAction: () => {
-        this.updateBase64DecodeMode(mode)
+        this.updateBase64DecodeMode(option.value)
       }
     })
   }
 
   @Builder
-  ReplyCardStyleMenuItem(label: string, style: string) {
+  ReplyCardStyleMenuItem(option: SettingsOption) {
     SettingsCheckedMenuItem({
-      label,
-      selected: this.replyCardStyle === style,
+      label: option.label,
+      selected: this.replyCardStyle === option.value,
       selectAction: () => {
-        this.updateReplyCardStyle(style)
+        this.updateReplyCardStyle(option.value)
       }
     })
   }
 
   @Builder
-  ReplyActionAlignmentMenuItem(label: string, mode: string) {
+  ReplyActionAlignmentMenuItem(option: SettingsOption) {
     SettingsCheckedMenuItem({
-      label,
+      label: option.label,
       selected: ReplyActionAlignmentSettings.effectiveMode(
         this.replyActionAlignmentMode,
         this.motionHoldingHandSupported,
-      ) === mode,
+      ) === option.value,
       selectAction: () => {
-        this.updateReplyActionAlignmentMode(mode)
+        this.updateReplyActionAlignmentMode(option.value)
       }
     })
   }
@@ -401,40 +398,41 @@ export struct SettingsPage {
   @Builder
   ApiDomainMenu() {
     Menu() {
-      this.ApiDomainMenuItem('v2ex.com', false)
-      this.ApiDomainMenuItem('v2ex.co', true)
+      ForEach(SettingsPageCoordinator.apiDomainOptions(), (option: SettingsOption) => {
+        this.ApiDomainMenuItem(option)
+      }, (option: SettingsOption) => option.value)
     }
   }
 
   @Builder
-  ApiDomainMenuItem(label: string, useCoDomain: boolean) {
+  ApiDomainMenuItem(option: SettingsOption) {
     SettingsCheckedMenuItem({
-      label,
-      selected: this.useCoDomain === useCoDomain,
+      label: option.label,
+      selected: this.useCoDomain === (option.value === 'true'),
       selectAction: () => {
-        this.updateApiDomain(useCoDomain)
+        this.updateApiDomain(option.value === 'true')
       }
     })
   }
 
   @Builder
-  ThemeModeMenuItem(label: string, mode: string) {
+  ThemeModeMenuItem(option: SettingsOption) {
     SettingsCheckedMenuItem({
-      label,
-      selected: this.themeMode === mode,
+      label: option.label,
+      selected: this.themeMode === option.value,
       selectAction: () => {
-        this.updateThemeMode(mode)
+        this.updateThemeMode(option.value)
       }
     })
   }
 
   @Builder
-  ReplyDisplayModeMenuItem(label: string, mode: string) {
+  ReplyDisplayModeMenuItem(option: SettingsOption) {
     SettingsCheckedMenuItem({
-      label,
-      selected: this.replyDisplayMode === mode,
+      label: option.label,
+      selected: this.replyDisplayMode === option.value,
       selectAction: () => {
-        this.updateReplyDisplayMode(mode)
+        this.updateReplyDisplayMode(option.value)
       }
     })
   }
@@ -443,42 +441,42 @@ export struct SettingsPage {
     this.themeMenuShown = false
     setTimeout(() => {
       this.themeMenuShown = true
-    }, 20)
+    }, SettingsPageCoordinator.MENU_OPEN_DELAY_MS)
   }
 
   private showReplyDisplayMenu(): void {
     this.replyDisplayMenuShown = false
     setTimeout(() => {
       this.replyDisplayMenuShown = true
-    }, 20)
+    }, SettingsPageCoordinator.MENU_OPEN_DELAY_MS)
   }
 
   private showReplyCardStyleMenu(): void {
     this.replyCardStyleMenuShown = false
     setTimeout(() => {
       this.replyCardStyleMenuShown = true
-    }, 20)
+    }, SettingsPageCoordinator.MENU_OPEN_DELAY_MS)
   }
 
   private showReplyActionAlignmentMenu(): void {
     this.replyActionAlignmentMenuShown = false
     setTimeout(() => {
       this.replyActionAlignmentMenuShown = true
-    }, 20)
+    }, SettingsPageCoordinator.MENU_OPEN_DELAY_MS)
   }
 
   private showBase64ModeMenu(): void {
     this.base64ModeMenuShown = false
     setTimeout(() => {
       this.base64ModeMenuShown = true
-    }, 20)
+    }, SettingsPageCoordinator.MENU_OPEN_DELAY_MS)
   }
 
   private showApiDomainMenu(): void {
     this.apiDomainMenuShown = false
     setTimeout(() => {
       this.apiDomainMenuShown = true
-    }, 20)
+    }, SettingsPageCoordinator.MENU_OPEN_DELAY_MS)
   }
 
   @Builder
@@ -486,7 +484,7 @@ export struct SettingsPage {
     GroupedListSection() {
       ConciseListRow({
         title: '存储',
-        subtitle: this.cacheSubtitle(),
+        subtitle: SettingsPageCoordinator.cacheSubtitle(this.cacheStats),
         count: this.cacheStats.topicListCount + this.cacheStats.topicDetailCount,
         action: () => {
           this.stack.pushPathByName('Storage', null)
@@ -577,13 +575,7 @@ export struct SettingsPage {
   }
 
   private base64DecodeModeLabel(): string {
-    if (this.base64DecodeMode === ReadingSettings.BASE64_MODE_OFF) {
-      return '关闭'
-    }
-    if (this.base64DecodeMode === ReadingSettings.BASE64_MODE_INLINE) {
-      return '文内显示'
-    }
-    return '点击查看'
+    return SettingsPageCoordinator.base64DecodeModeLabel(this.base64DecodeMode)
   }
 
   private updateBase64DecodeMode(mode: string): void {
@@ -601,14 +593,6 @@ export struct SettingsPage {
     ReadingSettings.saveRestorePosition(context, value).catch((error: Error) => {
       console.error('save reading restore position setting failed: ' + error.message)
     })
-  }
-
-  private cacheSubtitle(): string {
-    let text = `列表 ${this.cacheStats.topicListCount} 组 · 详情 ${this.cacheStats.topicDetailCount} 篇`
-    if (this.cacheStats.updatedAt > 0) {
-      text += ` · 更新于 ${DateUtils.toDateString(this.cacheStats.updatedAt)}`
-    }
-    return text
   }
 
   private loadCacheStats(): void {
