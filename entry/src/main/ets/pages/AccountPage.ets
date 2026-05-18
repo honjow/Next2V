@@ -22,7 +22,6 @@ import {
   ApiService,
   AuthSessionSettings,
   AuthSettings,
-  CollectionSettings,
   ConciseListRow,
   CookieJarSettings,
   GroupedListSection,
@@ -38,6 +37,7 @@ import {
   V2exSessionParser,
   V2exSigninParser
 } from 'shared'
+import { AccountLocalContentCoordinator } from '../model/AccountLocalContentCoordinator'
 import { AccountPageCoordinator } from '../model/AccountPageCoordinator'
 
 @Component
@@ -827,10 +827,10 @@ export struct AccountDashboardPage {
 
   private loadSavedTopics(): void {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    CollectionSettings.loadSavedTopics(context)
-      .then((items: SavedTopic[]) => {
-        this.savedTopics = items
-        this.savedTopicCount = items.length
+    AccountLocalContentCoordinator.loadSavedTopics(context)
+      .then((result) => {
+        this.savedTopics = result.items
+        this.savedTopicCount = result.count
       })
       .catch((error: Error) => {
         console.error('load saved topics failed: ' + error.message)
@@ -839,10 +839,10 @@ export struct AccountDashboardPage {
 
   private loadSavedNodes(): void {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    CollectionSettings.loadSavedNodes(context)
-      .then((items: SavedNode[]) => {
-        this.savedNodes = items
-        this.savedNodeCount = items.length
+    AccountLocalContentCoordinator.loadSavedNodes(context)
+      .then((result) => {
+        this.savedNodes = result.items
+        this.savedNodeCount = result.count
       })
       .catch((error: Error) => {
         console.error('load saved nodes failed: ' + error.message)
@@ -851,10 +851,10 @@ export struct AccountDashboardPage {
 
   private loadViewedTopics(): void {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    CollectionSettings.loadViewedTopics(context)
-      .then((items: ViewedTopic[]) => {
-        this.viewedTopics = items
-        this.viewedTopicCount = items.length
+    AccountLocalContentCoordinator.loadViewedTopics(context)
+      .then((result) => {
+        this.viewedTopics = result.items
+        this.viewedTopicCount = result.count
       })
       .catch((error: Error) => {
         console.error('load viewed topics failed: ' + error.message)
@@ -863,7 +863,7 @@ export struct AccountDashboardPage {
 
   private loadTopicReadStates(): void {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    CollectionSettings.syncTopicReadStates(context)
+    AccountLocalContentCoordinator.syncTopicReadStates(context)
       .catch((error: Error) => {
         console.error('sync topic read states failed: ' + error.message)
       })
@@ -880,7 +880,7 @@ export struct AccountDashboardPage {
   private loadLocalContentStats(): void {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     const requestId = ++this.localStatsRequestId
-    CollectionSettings.loadLocalContentStats(context)
+    AccountLocalContentCoordinator.loadLocalContentStats(context)
       .then((stats: LocalContentStats) => {
         if (requestId !== this.localStatsRequestId) {
           return
