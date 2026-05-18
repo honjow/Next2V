@@ -67,7 +67,7 @@ import {
   IndexTitleBarCoordinator,
   IndexTitleMenuDescriptor,
 } from '../model/IndexTitleBarCoordinator'
-import type { IndexReadOnlyDestinationDescriptor } from '../model/IndexRouteCoordinator'
+import type { IndexDestinationDescriptor } from '../model/IndexRouteCoordinator'
 import { IndexRouteCoordinator } from '../model/IndexRouteCoordinator'
 
 @Entry
@@ -144,95 +144,51 @@ struct Index {
 
   @Builder
   pm(name: string, param: Object) {
-    if (IndexRouteCoordinator.readOnlyDestination(name, param)) {
-      this.readOnlyDestination(IndexRouteCoordinator.readOnlyDestination(name, param))
-    } else if (name === 'ReplyEditor') {
-      HdsNavDestination() {
-        ReplyEditorPage({
-          topicId: IndexRouteCoordinator.replyEditorRouteParams(param).topicId,
-          topicTitle: IndexRouteCoordinator.replyEditorRouteParams(param).topicTitle,
-          initialContent: IndexRouteCoordinator.replyEditorRouteParams(param).initialContent,
-        })
-      }.titleBar(this.navDestTitleBarOpts('回复'))
-    } else if (name === 'V2exWebLogin') {
-      HdsNavDestination() {
-        V2exWebLoginPage()
-      }.titleBar(this.navDestTitleBarOpts('网页登录', this.webLoginTitleMenu()))
-    } else if (name === 'V2exNativeLogin') {
-      HdsNavDestination() {
-        V2exNativeLoginPage()
-      }.titleBar(this.navDestTitleBarOpts('账号密码登录'))
-    } else if (name === 'NodePicker') {
-      HdsNavDestination() {
-        NodePickerPage()
-      }.titleBar(this.navDestTitleBarOpts('选择节点'))
-    } else if (name === 'Search') {
-      HdsNavDestination() {
-        SearchPage()
-      }.titleBar(this.navDestTitleBarOpts('搜索', this.searchTitleMenu()))
-    } else if (name === 'TopicEditor') {
-      HdsNavDestination() {
-        TopicEditorPage()
-      }.titleBar(this.navDestTitleBarOpts('发帖草稿'))
-    } else if (name === 'MyTopics') {
-      HdsNavDestination() {
-        MyTopicsPage()
-      }.titleBar(this.navDestTitleBarOpts('收藏主题'))
-    } else if (name === 'MyNodes') {
-      HdsNavDestination() {
-        MyNodesPage()
-      }.titleBar(this.navDestTitleBarOpts('收藏节点'))
-    } else if (name === 'AccountBlacklist') {
-      HdsNavDestination() {
-        AccountBlacklistPage()
-      }.titleBar(this.navDestTitleBarOpts('屏蔽与忽略'))
-    } else if (name === 'AccountFollowing') {
-      HdsNavDestination() {
-        AccountFollowingPage()
-      }.titleBar(this.navDestTitleBarOpts('关注用户'))
-    } else if (name === 'Settings') {
-      HdsNavDestination() {
-        SettingsPage()
-      }.titleBar(this.navDestTitleBarOpts('设置'))
-    } else if (name === 'Storage') {
-      HdsNavDestination() {
-        StorageSettingsPage()
-      }.titleBar(this.navDestTitleBarOpts('存储'))
-    } else if (name === 'HomeNodeSettings') {
-      HdsNavDestination() {
-        HomeNodeSettingsPage()
-      }.titleBar(this.navDestTitleBarOpts('首页栏目设置'))
-    } else if (name === 'ReadingSettings') {
-      HdsNavDestination() {
-        ReadingSettingsPage()
-      }.titleBar(this.navDestTitleBarOpts('阅读字体设置'))
-    } else if (name === 'Account') {
-      HdsNavDestination() {
-        AccountDashboardPage({ showDetail: true })
-      }.titleBar(this.navDestTitleBarOpts('账号'))
-    } else if (name === 'SavedTopics') {
-      HdsNavDestination() {
-        SavedTopicsPage()
-      }.titleBar(this.navDestTitleBarOpts('稍后读'))
-    } else if (name === 'ViewedTopics') {
-      HdsNavDestination() {
-        ViewedTopicsPage()
-      }.titleBar(this.navDestTitleBarOpts('最近浏览'))
-    } else if (name === 'SavedNodes') {
-      HdsNavDestination() {
-        SavedNodesPage()
-      }.titleBar(this.navDestTitleBarOpts('本地关注节点'))
-    } else if (name === 'About') {
-      HdsNavDestination() {
-        AboutPage()
-      }.titleBar(this.navDestTitleBarOpts('关于'))
-    }
+    this.destination(IndexRouteCoordinator.destination(name, param))
   }
 
   @Builder
-  private readOnlyDestination(descriptor: IndexReadOnlyDestinationDescriptor | null) {
+  private destination(descriptor: IndexDestinationDescriptor | null) {
     if (descriptor && descriptor.family === 'topicDetail') {
       this.topicDetailDestination(descriptor)
+    } else if (descriptor && descriptor.family === 'replyEditor') {
+      this.replyEditorDestination(descriptor)
+    } else if (descriptor && descriptor.family === 'webLogin') {
+      this.webLoginDestination(descriptor)
+    } else if (descriptor && descriptor.family === 'nativeLogin') {
+      this.nativeLoginDestination(descriptor)
+    } else if (descriptor && descriptor.family === 'nodePicker') {
+      this.nodePickerDestination(descriptor)
+    } else if (descriptor && descriptor.family === 'search') {
+      this.searchDestination(descriptor)
+    } else if (descriptor && descriptor.family === 'topicEditor') {
+      this.topicEditorDestination(descriptor)
+    } else if (descriptor && descriptor.family === 'myTopics') {
+      this.myTopicsDestination(descriptor)
+    } else if (descriptor && descriptor.family === 'myNodes') {
+      this.myNodesDestination(descriptor)
+    } else if (descriptor && descriptor.family === 'accountBlacklist') {
+      this.accountBlacklistDestination(descriptor)
+    } else if (descriptor && descriptor.family === 'accountFollowing') {
+      this.accountFollowingDestination(descriptor)
+    } else if (descriptor && descriptor.family === 'settings') {
+      this.settingsDestination(descriptor)
+    } else if (descriptor && descriptor.family === 'storage') {
+      this.storageDestination(descriptor)
+    } else if (descriptor && descriptor.family === 'homeNodeSettings') {
+      this.homeNodeSettingsDestination(descriptor)
+    } else if (descriptor && descriptor.family === 'readingSettings') {
+      this.readingSettingsDestination(descriptor)
+    } else if (descriptor && descriptor.family === 'account') {
+      this.accountDestination(descriptor)
+    } else if (descriptor && descriptor.family === 'savedTopics') {
+      this.savedTopicsDestination(descriptor)
+    } else if (descriptor && descriptor.family === 'viewedTopics') {
+      this.viewedTopicsDestination(descriptor)
+    } else if (descriptor && descriptor.family === 'savedNodes') {
+      this.savedNodesDestination(descriptor)
+    } else if (descriptor && descriptor.family === 'about') {
+      this.aboutDestination(descriptor)
     } else if (descriptor && descriptor.family === 'imagePreview') {
       this.imagePreviewDestination(descriptor)
     } else if (descriptor && descriptor.family === 'nodeTopic') {
@@ -247,7 +203,7 @@ struct Index {
   }
 
   @Builder
-  private topicDetailDestination(descriptor: IndexReadOnlyDestinationDescriptor) {
+  private topicDetailDestination(descriptor: IndexDestinationDescriptor) {
     if (descriptor.family === 'topicDetail') {
       HdsNavDestination() {
         TopicDetailPage({
@@ -265,7 +221,182 @@ struct Index {
   }
 
   @Builder
-  private imagePreviewDestination(descriptor: IndexReadOnlyDestinationDescriptor) {
+  private replyEditorDestination(descriptor: IndexDestinationDescriptor) {
+    if (descriptor.family === 'replyEditor') {
+      HdsNavDestination() {
+        ReplyEditorPage({
+          topicId: descriptor.replyEditorParams.topicId,
+          topicTitle: descriptor.replyEditorParams.topicTitle,
+          initialContent: descriptor.replyEditorParams.initialContent,
+        })
+      }.titleBar(this.navDestTitleBarOpts(descriptor.title))
+    }
+  }
+
+  @Builder
+  private webLoginDestination(descriptor: IndexDestinationDescriptor) {
+    if (descriptor.family === 'webLogin') {
+      HdsNavDestination() {
+        V2exWebLoginPage()
+      }.titleBar(this.navDestTitleBarOpts(descriptor.title, this.webLoginTitleMenu()))
+    }
+  }
+
+  @Builder
+  private nativeLoginDestination(descriptor: IndexDestinationDescriptor) {
+    if (descriptor.family === 'nativeLogin') {
+      HdsNavDestination() {
+        V2exNativeLoginPage()
+      }.titleBar(this.navDestTitleBarOpts(descriptor.title))
+    }
+  }
+
+  @Builder
+  private nodePickerDestination(descriptor: IndexDestinationDescriptor) {
+    if (descriptor.family === 'nodePicker') {
+      HdsNavDestination() {
+        NodePickerPage()
+      }.titleBar(this.navDestTitleBarOpts(descriptor.title))
+    }
+  }
+
+  @Builder
+  private searchDestination(descriptor: IndexDestinationDescriptor) {
+    if (descriptor.family === 'search') {
+      HdsNavDestination() {
+        SearchPage()
+      }.titleBar(this.navDestTitleBarOpts(descriptor.title, this.searchTitleMenu()))
+    }
+  }
+
+  @Builder
+  private topicEditorDestination(descriptor: IndexDestinationDescriptor) {
+    if (descriptor.family === 'topicEditor') {
+      HdsNavDestination() {
+        TopicEditorPage()
+      }.titleBar(this.navDestTitleBarOpts(descriptor.title))
+    }
+  }
+
+  @Builder
+  private myTopicsDestination(descriptor: IndexDestinationDescriptor) {
+    if (descriptor.family === 'myTopics') {
+      HdsNavDestination() {
+        MyTopicsPage()
+      }.titleBar(this.navDestTitleBarOpts(descriptor.title))
+    }
+  }
+
+  @Builder
+  private myNodesDestination(descriptor: IndexDestinationDescriptor) {
+    if (descriptor.family === 'myNodes') {
+      HdsNavDestination() {
+        MyNodesPage()
+      }.titleBar(this.navDestTitleBarOpts(descriptor.title))
+    }
+  }
+
+  @Builder
+  private accountBlacklistDestination(descriptor: IndexDestinationDescriptor) {
+    if (descriptor.family === 'accountBlacklist') {
+      HdsNavDestination() {
+        AccountBlacklistPage()
+      }.titleBar(this.navDestTitleBarOpts(descriptor.title))
+    }
+  }
+
+  @Builder
+  private accountFollowingDestination(descriptor: IndexDestinationDescriptor) {
+    if (descriptor.family === 'accountFollowing') {
+      HdsNavDestination() {
+        AccountFollowingPage()
+      }.titleBar(this.navDestTitleBarOpts(descriptor.title))
+    }
+  }
+
+  @Builder
+  private settingsDestination(descriptor: IndexDestinationDescriptor) {
+    if (descriptor.family === 'settings') {
+      HdsNavDestination() {
+        SettingsPage()
+      }.titleBar(this.navDestTitleBarOpts(descriptor.title))
+    }
+  }
+
+  @Builder
+  private storageDestination(descriptor: IndexDestinationDescriptor) {
+    if (descriptor.family === 'storage') {
+      HdsNavDestination() {
+        StorageSettingsPage()
+      }.titleBar(this.navDestTitleBarOpts(descriptor.title))
+    }
+  }
+
+  @Builder
+  private homeNodeSettingsDestination(descriptor: IndexDestinationDescriptor) {
+    if (descriptor.family === 'homeNodeSettings') {
+      HdsNavDestination() {
+        HomeNodeSettingsPage()
+      }.titleBar(this.navDestTitleBarOpts(descriptor.title))
+    }
+  }
+
+  @Builder
+  private readingSettingsDestination(descriptor: IndexDestinationDescriptor) {
+    if (descriptor.family === 'readingSettings') {
+      HdsNavDestination() {
+        ReadingSettingsPage()
+      }.titleBar(this.navDestTitleBarOpts(descriptor.title))
+    }
+  }
+
+  @Builder
+  private accountDestination(descriptor: IndexDestinationDescriptor) {
+    if (descriptor.family === 'account') {
+      HdsNavDestination() {
+        AccountDashboardPage({ showDetail: true })
+      }.titleBar(this.navDestTitleBarOpts(descriptor.title))
+    }
+  }
+
+  @Builder
+  private savedTopicsDestination(descriptor: IndexDestinationDescriptor) {
+    if (descriptor.family === 'savedTopics') {
+      HdsNavDestination() {
+        SavedTopicsPage()
+      }.titleBar(this.navDestTitleBarOpts(descriptor.title))
+    }
+  }
+
+  @Builder
+  private viewedTopicsDestination(descriptor: IndexDestinationDescriptor) {
+    if (descriptor.family === 'viewedTopics') {
+      HdsNavDestination() {
+        ViewedTopicsPage()
+      }.titleBar(this.navDestTitleBarOpts(descriptor.title))
+    }
+  }
+
+  @Builder
+  private savedNodesDestination(descriptor: IndexDestinationDescriptor) {
+    if (descriptor.family === 'savedNodes') {
+      HdsNavDestination() {
+        SavedNodesPage()
+      }.titleBar(this.navDestTitleBarOpts(descriptor.title))
+    }
+  }
+
+  @Builder
+  private aboutDestination(descriptor: IndexDestinationDescriptor) {
+    if (descriptor.family === 'about') {
+      HdsNavDestination() {
+        AboutPage()
+      }.titleBar(this.navDestTitleBarOpts(descriptor.title))
+    }
+  }
+
+  @Builder
+  private imagePreviewDestination(descriptor: IndexDestinationDescriptor) {
     if (descriptor.family === 'imagePreview') {
       HdsNavDestination() {
         ImagePreviewPage({ url: descriptor.imagePreviewParams.url })
@@ -274,7 +405,7 @@ struct Index {
   }
 
   @Builder
-  private nodeTopicDestination(descriptor: IndexReadOnlyDestinationDescriptor) {
+  private nodeTopicDestination(descriptor: IndexDestinationDescriptor) {
     if (descriptor.family === 'nodeTopic') {
       HdsNavDestination() {
         NodeTopicPage({
@@ -291,7 +422,7 @@ struct Index {
   }
 
   @Builder
-  private userProfileDestination(descriptor: IndexReadOnlyDestinationDescriptor) {
+  private userProfileDestination(descriptor: IndexDestinationDescriptor) {
     if (descriptor.family === 'userProfile') {
       HdsNavDestination() {
         UserProfilePage({ username: descriptor.userProfileParams.username })
@@ -304,20 +435,20 @@ struct Index {
   }
 
   @Builder
-  private userTopicsDestination(descriptor: IndexReadOnlyDestinationDescriptor) {
+  private userTopicsDestination(descriptor: IndexDestinationDescriptor) {
     if (descriptor.family === 'userTopics') {
       HdsNavDestination() {
         UserTopicsPage({ username: descriptor.userProfileParams.username })
-      }.titleBar(this.navDestTitleBarOpts('全部主题'))
+      }.titleBar(this.navDestTitleBarOpts(descriptor.title))
     }
   }
 
   @Builder
-  private userRepliesDestination(descriptor: IndexReadOnlyDestinationDescriptor) {
+  private userRepliesDestination(descriptor: IndexDestinationDescriptor) {
     if (descriptor.family === 'userReplies') {
       HdsNavDestination() {
         UserRepliesPage({ username: descriptor.userProfileParams.username })
-      }.titleBar(this.navDestTitleBarOpts('全部回复'))
+      }.titleBar(this.navDestTitleBarOpts(descriptor.title))
     }
   }
 

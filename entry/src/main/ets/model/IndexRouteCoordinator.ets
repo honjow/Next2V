@@ -12,15 +12,96 @@ export interface ReplyEditorRouteParams {
   initialContent: string
 }
 
-export interface IndexReadOnlyDestinationDescriptor {
-  family: string
+export type IndexDestinationFamily =
+  'topicDetail' |
+  'replyEditor' |
+  'webLogin' |
+  'nativeLogin' |
+  'nodePicker' |
+  'search' |
+  'topicEditor' |
+  'myTopics' |
+  'myNodes' |
+  'accountBlacklist' |
+  'accountFollowing' |
+  'settings' |
+  'storage' |
+  'homeNodeSettings' |
+  'readingSettings' |
+  'account' |
+  'savedTopics' |
+  'viewedTopics' |
+  'savedNodes' |
+  'about' |
+  'imagePreview' |
+  'nodeTopic' |
+  'userProfile' |
+  'userTopics' |
+  'userReplies'
+
+export interface IndexDestinationDescriptor {
+  family: IndexDestinationFamily
   topicDetailParams: TopicDetailParams
+  replyEditorParams: ReplyEditorRouteParams
   imagePreviewParams: ImagePreviewParams
   nodeTopicParams: NodeTopicListParams
   userProfileParams: UserProfileParams
+  title: string
 }
 
 export class IndexRouteCoordinator {
+  private static readonly DESTINATION_FAMILIES: Record<string, IndexDestinationFamily> = {
+    'TopicDetail': 'topicDetail',
+    'ReplyEditor': 'replyEditor',
+    'V2exWebLogin': 'webLogin',
+    'V2exNativeLogin': 'nativeLogin',
+    'NodePicker': 'nodePicker',
+    'Search': 'search',
+    'TopicEditor': 'topicEditor',
+    'MyTopics': 'myTopics',
+    'MyNodes': 'myNodes',
+    'AccountBlacklist': 'accountBlacklist',
+    'AccountFollowing': 'accountFollowing',
+    'Settings': 'settings',
+    'Storage': 'storage',
+    'HomeNodeSettings': 'homeNodeSettings',
+    'ReadingSettings': 'readingSettings',
+    'Account': 'account',
+    'SavedTopics': 'savedTopics',
+    'ViewedTopics': 'viewedTopics',
+    'SavedNodes': 'savedNodes',
+    'About': 'about',
+    'ImagePreview': 'imagePreview',
+    'NodeTopicList': 'nodeTopic',
+    'UserProfile': 'userProfile',
+    'UserTopics': 'userTopics',
+    'UserReplies': 'userReplies',
+  }
+
+  private static readonly DESTINATION_TITLES: Record<string, string> = {
+    'replyEditor': '回复',
+    'webLogin': '网页登录',
+    'nativeLogin': '账号密码登录',
+    'nodePicker': '选择节点',
+    'search': '搜索',
+    'topicEditor': '发帖草稿',
+    'myTopics': '收藏主题',
+    'myNodes': '收藏节点',
+    'accountBlacklist': '屏蔽与忽略',
+    'accountFollowing': '关注用户',
+    'settings': '设置',
+    'storage': '存储',
+    'homeNodeSettings': '首页栏目设置',
+    'readingSettings': '阅读字体设置',
+    'account': '账号',
+    'savedTopics': '稍后读',
+    'viewedTopics': '最近浏览',
+    'savedNodes': '本地关注节点',
+    'about': '关于',
+    'userTopics': '全部主题',
+    'userReplies': '全部回复',
+  }
+
   private static numberParam(param: Object, key: string): number {
     try {
       const value = (param as Record<string, Object>)[key]
@@ -70,42 +151,27 @@ export class IndexRouteCoordinator {
     return { username: IndexRouteCoordinator.stringParam(param, 'username') }
   }
 
-  private static readOnlyDestinationDescriptor(
-    family: string,
+  private static destinationDescriptor(
+    family: IndexDestinationFamily,
     param: Object,
-  ): IndexReadOnlyDestinationDescriptor {
+  ): IndexDestinationDescriptor {
     return {
       family: family,
       topicDetailParams: IndexRouteCoordinator.topicDetailRouteParams(param),
+      replyEditorParams: IndexRouteCoordinator.replyEditorRouteParams(param),
       imagePreviewParams: IndexRouteCoordinator.imagePreviewRouteParams(param),
       nodeTopicParams: IndexRouteCoordinator.nodeTopicRouteParams(param),
       userProfileParams: IndexRouteCoordinator.userProfileRouteParams(param),
+      title: IndexRouteCoordinator.DESTINATION_TITLES[family] || '',
     }
   }
 
-  static readOnlyDestination(
-    name: string,
-    param: Object,
-  ): IndexReadOnlyDestinationDescriptor | null {
-    if (name === 'TopicDetail') {
-      return IndexRouteCoordinator.readOnlyDestinationDescriptor('topicDetail', param)
+  static destination(name: string, param: Object): IndexDestinationDescriptor | null {
+    const family = IndexRouteCoordinator.DESTINATION_FAMILIES[(name || '').trim()]
+    if (!family) {
+      return null
     }
-    if (name === 'ImagePreview') {
-      return IndexRouteCoordinator.readOnlyDestinationDescriptor('imagePreview', param)
-    }
-    if (name === 'NodeTopicList') {
-      return IndexRouteCoordinator.readOnlyDestinationDescriptor('nodeTopic', param)
-    }
-    if (name === 'UserProfile') {
-      return IndexRouteCoordinator.readOnlyDestinationDescriptor('userProfile', param)
-    }
-    if (name === 'UserTopics') {
-      return IndexRouteCoordinator.readOnlyDestinationDescriptor('userTopics', param)
-    }
-    if (name === 'UserReplies') {
-      return IndexRouteCoordinator.readOnlyDestinationDescriptor('userReplies', param)
-    }
-    return null
+    return IndexRouteCoordinator.destinationDescriptor(family, param)
   }
 
   static commandPayload(command: string): string {
