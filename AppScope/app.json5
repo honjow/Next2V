@@ -1,6 +1,6 @@
 {
   "app": {
-    "bundleName": "com.next2v.app",
+    "bundleName": "com.honjow.next2v",
     "vendor": "next2v",
     "versionCode": 3,
     "versionName": "0.3.0",
