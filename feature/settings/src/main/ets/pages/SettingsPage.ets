@@ -1,21 +1,15 @@
 import { common } from '@kit.AbilityKit'
 import {
-  ApiConstants,
-  ApiDomainSettings,
-  AutoDailyCheckinSettings,
   CacheSettings,
   ConciseListRow,
-  CookieJarSettings,
   GroupedListSection,
   HttpClient,
-  MediaSettings,
   ReadingSettings,
   SecondaryListScaffold,
   StorageKeys,
   ThemeSettings,
   ReplyActionAlignmentSettings,
   ReplyDisplaySettings,
-  MotionHandStateService,
   ReplyCardStyleSettings,
   type CacheStats,
 } from 'shared'
@@ -30,6 +24,7 @@ import {
   SettingsPageCoordinator,
   type SettingsOption,
 } from '../model/SettingsPageCoordinator'
+import { SettingsSaveCoordinator } from '../model/SettingsSaveCoordinator'
 import { StorageSettingsCoordinator } from '../model/StorageSettingsCoordinator'
 @Component
 export struct SettingsPage {
@@ -496,31 +491,21 @@ export struct SettingsPage {
 
   private updateApiDomain(useCoDomain: boolean): void {
     this.useCoDomain = useCoDomain
-    this.http.setBaseUrl(useCoDomain ? ApiConstants.BASE_URL_CO : ApiConstants.BASE_URL_COM)
-    CookieJarSettings.refreshConfiguredState()
-    CookieJarSettings.restoreCurrentToWebCookieManager().catch((error: Error) => {
-      console.error('restore web cookie failed: ' + error.message)
-    })
+    SettingsSaveCoordinator.applyApiDomainSideEffects(this.http, useCoDomain)
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    ApiDomainSettings.save(context, useCoDomain).catch((error: Error) => {
-      console.error('save api domain failed: ' + error.message)
-    })
+    SettingsSaveCoordinator.saveApiDomain(context, useCoDomain)
   }
 
   private updateAutoLoadImages(autoLoadImages: boolean): void {
     this.autoLoadImages = autoLoadImages
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    MediaSettings.save(context, autoLoadImages, this.onlyLoadImagesOnWifi).catch((error: Error) => {
-      console.error('save media settings failed: ' + error.message)
-    })
+    SettingsSaveCoordinator.saveMedia(context, autoLoadImages, this.onlyLoadImagesOnWifi)
   }
 
   private updateAutoDailyCheckin(enabled: boolean): void {
     this.autoDailyCheckinEnabled = enabled
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    AutoDailyCheckinSettings.save(context, enabled).catch((error: Error) => {
-      console.error('save auto daily check-in setting failed: ' + error.message)
-    })
+    SettingsSaveCoordinator.saveAutoDailyCheckin(context, enabled)
   }
 
   private updateOnlyLoadImagesOnWifi(onlyLoadImagesOnWifi: boolean): void {
@@ -529,36 +514,28 @@ export struct SettingsPage {
     }
     this.onlyLoadImagesOnWifi = onlyLoadImagesOnWifi
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    MediaSettings.save(context, this.autoLoadImages, onlyLoadImagesOnWifi).catch((error: Error) => {
-      console.error('save media settings failed: ' + error.message)
-    })
+    SettingsSaveCoordinator.saveMedia(context, this.autoLoadImages, onlyLoadImagesOnWifi)
   }
 
   private updateThemeMode(mode: string): void {
     const normalizedMode = ThemeSettings.normalizeMode(mode)
     this.themeMode = normalizedMode
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    ThemeSettings.save(context, normalizedMode).catch((error: Error) => {
-      console.error('save theme settings failed: ' + error.message)
-    })
+    SettingsSaveCoordinator.saveThemeMode(context, normalizedMode)
   }
 
   private updateReplyDisplayMode(mode: string): void {
     const normalizedMode = ReplyDisplaySettings.normalizeMode(mode)
     this.replyDisplayMode = normalizedMode
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    ReplyDisplaySettings.save(context, normalizedMode).catch((error: Error) => {
-      console.error('save reply display mode failed: ' + error.message)
-    })
+    SettingsSaveCoordinator.saveReplyDisplayMode(context, normalizedMode)
   }
 
   private updateReplyCardStyle(style: string): void {
     const normalized = ReplyCardStyleSettings.normalize(style)
     this.replyCardStyle = normalized
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    ReplyCardStyleSettings.save(context, normalized).catch((error: Error) => {
-      console.error('save reply card style failed: ' + error.message)
-    })
+    SettingsSaveCoordinator.saveReplyCardStyle(context, normalized)
   }
 
   private updateReplyActionAlignmentMode(mode: string): void {
@@ -568,11 +545,9 @@ export struct SettingsPage {
       this.motionHoldingHandSupported,
     )
     this.replyActionAlignmentMode = normalized
-    MotionHandStateService.applyAlignmentMode(effective)
+    SettingsSaveCoordinator.applyReplyActionAlignmentMode(effective)
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    ReplyActionAlignmentSettings.save(context, normalized).catch((error: Error) => {
-      console.error('save reply action alignment mode failed: ' + error.message)
-    })
+    SettingsSaveCoordinator.saveReplyActionAlignmentMode(context, normalized)
   }
 
   private base64DecodeModeLabel(): string {
@@ -583,17 +558,13 @@ export struct SettingsPage {
     const normalized = ReadingSettings.normalizeBase64DecodeMode(mode)
     this.base64DecodeMode = normalized
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    ReadingSettings.saveBase64DecodeMode(context, normalized).catch((error: Error) => {
-      console.error('save base64 decode settings failed: ' + error.message)
-    })
+    SettingsSaveCoordinator.saveBase64DecodeMode(context, normalized)
   }
 
   private updateRestorePosition(value: boolean): void {
     this.readingRestorePosition = value
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    ReadingSettings.saveRestorePosition(context, value).catch((error: Error) => {
-      console.error('save reading restore position setting failed: ' + error.message)
-    })
+    SettingsSaveCoordinator.saveRestorePosition(context, value)
   }
 
   private loadCacheStats(): void {

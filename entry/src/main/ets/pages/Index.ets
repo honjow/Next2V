@@ -67,6 +67,7 @@ import {
   IndexTitleBarCoordinator,
   IndexTitleMenuDescriptor,
 } from '../model/IndexTitleBarCoordinator'
+import type { IndexReadOnlyDestinationDescriptor } from '../model/IndexRouteCoordinator'
 import { IndexRouteCoordinator } from '../model/IndexRouteCoordinator'
 
 @Entry
@@ -143,38 +144,8 @@ struct Index {
 
   @Builder
   pm(name: string, param: Object) {
-    if (name === 'TopicDetail') {
-      HdsNavDestination() {
-        TopicDetailPage({
-          topicId: IndexRouteCoordinator.topicDetailRouteParams(param).topicId,
-          targetFloor: IndexRouteCoordinator.topicDetailRouteParams(param).targetFloor || 0,
-        })
-      }
-      .titleBar(
-        this.topicDetailTitleBarOpts(IndexRouteCoordinator.topicDetailRouteParams(param).topicId),
-      )
-      .dynamicHideTitleBar({
-        hideTitleArea: this.isFoldedAndUseOuterScreen,
-        hideStatusBar: this.isFoldedAndUseOuterScreen,
-        mode: HideMode.SCROLL_UP,
-      })
-    } else if (name === 'ImagePreview') {
-      HdsNavDestination() {
-        ImagePreviewPage({ url: IndexRouteCoordinator.imagePreviewRouteParams(param).url })
-      }.titleBar(this.navDestTitleBarOpts(undefined, this.imagePreviewTitleMenu()))
-    } else if (name === 'NodeTopicList') {
-      HdsNavDestination() {
-        NodeTopicPage({
-          nodeName: IndexRouteCoordinator.nodeTopicRouteParams(param).nodeName,
-          nodeTitle: IndexRouteCoordinator.nodeTopicRouteParams(param).nodeTitle,
-        })
-      }
-      .titleBar(
-        this.nodeTopicTitleBarOpts(
-          IndexRouteCoordinator.nodeTopicRouteParams(param).nodeName,
-          IndexRouteCoordinator.nodeTopicRouteParams(param).nodeTitle,
-        ),
-      )
+    if (IndexRouteCoordinator.readOnlyDestination(name, param)) {
+      this.readOnlyDestination(IndexRouteCoordinator.readOnlyDestination(name, param))
     } else if (name === 'ReplyEditor') {
       HdsNavDestination() {
         ReplyEditorPage({
@@ -183,24 +154,6 @@ struct Index {
           initialContent: IndexRouteCoordinator.replyEditorRouteParams(param).initialContent,
         })
       }.titleBar(this.navDestTitleBarOpts('回复'))
-    } else if (name === 'UserProfile') {
-      HdsNavDestination() {
-        UserProfilePage({ username: IndexRouteCoordinator.userProfileRouteParams(param).username })
-      }
-      .titleBar(
-        this.userProfileTitleBarOpts(IndexRouteCoordinator.userProfileRouteParams(param).username),
-      )
-      .onShown(() => {
-        this.notifyUserProfileShown(IndexRouteCoordinator.userProfileRouteParams(param).username)
-      })
-    } else if (name === 'UserTopics') {
-      HdsNavDestination() {
-        UserTopicsPage({ username: IndexRouteCoordinator.userProfileRouteParams(param).username })
-      }.titleBar(this.navDestTitleBarOpts('全部主题'))
-    } else if (name === 'UserReplies') {
-      HdsNavDestination() {
-        UserRepliesPage({ username: IndexRouteCoordinator.userProfileRouteParams(param).username })
-      }.titleBar(this.navDestTitleBarOpts('全部回复'))
     } else if (name === 'V2exWebLogin') {
       HdsNavDestination() {
         V2exWebLoginPage()
@@ -273,6 +226,98 @@ struct Index {
       HdsNavDestination() {
         AboutPage()
       }.titleBar(this.navDestTitleBarOpts('关于'))
+    }
+  }
+
+  @Builder
+  private readOnlyDestination(descriptor: IndexReadOnlyDestinationDescriptor | null) {
+    if (descriptor && descriptor.family === 'topicDetail') {
+      this.topicDetailDestination(descriptor)
+    } else if (descriptor && descriptor.family === 'imagePreview') {
+      this.imagePreviewDestination(descriptor)
+    } else if (descriptor && descriptor.family === 'nodeTopic') {
+      this.nodeTopicDestination(descriptor)
+    } else if (descriptor && descriptor.family === 'userProfile') {
+      this.userProfileDestination(descriptor)
+    } else if (descriptor && descriptor.family === 'userTopics') {
+      this.userTopicsDestination(descriptor)
+    } else if (descriptor && descriptor.family === 'userReplies') {
+      this.userRepliesDestination(descriptor)
+    }
+  }
+
+  @Builder
+  private topicDetailDestination(descriptor: IndexReadOnlyDestinationDescriptor) {
+    if (descriptor.family === 'topicDetail') {
+      HdsNavDestination() {
+        TopicDetailPage({
+          topicId: descriptor.topicDetailParams.topicId,
+          targetFloor: descriptor.topicDetailParams.targetFloor || 0,
+        })
+      }
+      .titleBar(this.topicDetailTitleBarOpts(descriptor.topicDetailParams.topicId))
+      .dynamicHideTitleBar({
+        hideTitleArea: this.isFoldedAndUseOuterScreen,
+        hideStatusBar: this.isFoldedAndUseOuterScreen,
+        mode: HideMode.SCROLL_UP,
+      })
+    }
+  }
+
+  @Builder
+  private imagePreviewDestination(descriptor: IndexReadOnlyDestinationDescriptor) {
+    if (descriptor.family === 'imagePreview') {
+      HdsNavDestination() {
+        ImagePreviewPage({ url: descriptor.imagePreviewParams.url })
+      }.titleBar(this.navDestTitleBarOpts(undefined, this.imagePreviewTitleMenu()))
+    }
+  }
+
+  @Builder
+  private nodeTopicDestination(descriptor: IndexReadOnlyDestinationDescriptor) {
+    if (descriptor.family === 'nodeTopic') {
+      HdsNavDestination() {
+        NodeTopicPage({
+          nodeName: descriptor.nodeTopicParams.nodeName,
+          nodeTitle: descriptor.nodeTopicParams.nodeTitle,
+        })
+      }.titleBar(
+        this.nodeTopicTitleBarOpts(
+          descriptor.nodeTopicParams.nodeName,
+          descriptor.nodeTopicParams.nodeTitle,
+        ),
+      )
+    }
+  }
+
+  @Builder
+  private userProfileDestination(descriptor: IndexReadOnlyDestinationDescriptor) {
+    if (descriptor.family === 'userProfile') {
+      HdsNavDestination() {
+        UserProfilePage({ username: descriptor.userProfileParams.username })
+      }
+      .titleBar(this.userProfileTitleBarOpts(descriptor.userProfileParams.username))
+      .onShown(() => {
+        this.notifyUserProfileShown(descriptor.userProfileParams.username)
+      })
+    }
+  }
+
+  @Builder
+  private userTopicsDestination(descriptor: IndexReadOnlyDestinationDescriptor) {
+    if (descriptor.family === 'userTopics') {
+      HdsNavDestination() {
+        UserTopicsPage({ username: descriptor.userProfileParams.username })
+      }.titleBar(this.navDestTitleBarOpts('全部主题'))
+    }
+  }
+
+  @Builder
+  private userRepliesDestination(descriptor: IndexReadOnlyDestinationDescriptor) {
+    if (descriptor.family === 'userReplies') {
+      HdsNavDestination() {
+        UserRepliesPage({ username: descriptor.userProfileParams.username })
+      }.titleBar(this.navDestTitleBarOpts('全部回复'))
     }
   }
 

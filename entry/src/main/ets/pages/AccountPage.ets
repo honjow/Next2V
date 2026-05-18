@@ -117,7 +117,7 @@ export struct AccountDashboardPage {
           bottomPadding: ThemeConstants.FLOAT_BAR_HEIGHT + ThemeConstants.SPACE_MD
         }) {
           ListItem() {
-            this.SectionHeader('账号')
+            this.SectionHeader(AccountPageCoordinator.SECTION_ACCOUNT)
           }
 
           ListItem() {
@@ -126,7 +126,7 @@ export struct AccountDashboardPage {
 
           if (this.hasCookieAccount()) {
             ListItem() {
-              this.SectionHeader('账号内容')
+              this.SectionHeader(AccountPageCoordinator.SECTION_ACCOUNT_CONTENT)
             }
             .margin({ top: ThemeConstants.SPACE_MD })
 
@@ -136,7 +136,7 @@ export struct AccountDashboardPage {
           }
 
           ListItem() {
-            this.SectionHeader('本地内容')
+            this.SectionHeader(AccountPageCoordinator.SECTION_LOCAL_CONTENT)
           }
           .margin({ top: ThemeConstants.SPACE_MD })
 
@@ -145,7 +145,7 @@ export struct AccountDashboardPage {
           }
 
           ListItem() {
-            this.SectionHeader('更多')
+            this.SectionHeader(AccountPageCoordinator.SECTION_MORE)
           }
           .margin({ top: ThemeConstants.SPACE_MD })
 
@@ -186,7 +186,7 @@ export struct AccountDashboardPage {
 
         ListItem() {
           GroupedListSection() {
-            this.AuthActionRow('个人主页', '', () => {
+            this.AuthActionRow(AccountPageCoordinator.PROFILE_TITLE, '', () => {
               const username = this.currentUsername()
               if (username) {
                 let p: UserProfileParams = { username: username }
@@ -194,11 +194,11 @@ export struct AccountDashboardPage {
               }
             })
             this.SettingsDivider()
-            this.AuthActionRow('余额明细', '', () => {
+            this.AuthActionRow(AccountPageCoordinator.BALANCE_DETAIL_TITLE, '', () => {
               this.openV2exPathInSystemBrowser('/balance')
             })
             this.SettingsDivider()
-            this.AuthActionRow('网页账号设置', '', () => {
+            this.AuthActionRow(AccountPageCoordinator.WEB_ACCOUNT_SETTINGS_TITLE, '', () => {
               this.openV2exPathInSystemBrowser('/settings')
             })
           }
@@ -207,7 +207,7 @@ export struct AccountDashboardPage {
         ListItem() {
           GroupedListSection() {
             ConciseListRow({
-              title: '退出登录',
+              title: AccountPageCoordinator.LOGOUT_TITLE,
               showChevron: false,
               primaryColor: Color.Red,
               action: () => {
@@ -218,9 +218,9 @@ export struct AccountDashboardPage {
           }
         }
 
-        if (this.authTokenConfigured) {
+        if (this.shouldShowApiDiagnostics()) {
           ListItem() {
-            this.SectionHeader('高级 API')
+            this.SectionHeader(AccountPageCoordinator.SECTION_ADVANCED_API)
           }
           .margin({ top: ThemeConstants.SPACE_MD })
 
@@ -243,7 +243,7 @@ export struct AccountDashboardPage {
     V2exTwoFactorPrompt({
       visible: $twoFactorVisible,
       cookie: this.twoFactorCookie,
-      message: '完成两步验证后即可继续访问 V2EX 账号内容。',
+      message: AccountPageCoordinator.TWO_FACTOR_MESSAGE,
       onSuccess: () => {
         this.sessionError = ''
         this.accountMetaError = ''
@@ -271,8 +271,8 @@ export struct AccountDashboardPage {
   @Builder
   AuthSection() {
     Column() {
-      if (!this.authCookieConfigured && !this.authTokenConfigured) {
-        this.AuthActionRow('未登录', '点击登录 V2EX', () => {
+      if (!this.hasAnyAccount()) {
+        this.AuthActionRow(AccountPageCoordinator.LOGIN_TITLE, AccountPageCoordinator.LOGIN_SUBTITLE, () => {
           this.ns.pushPathByName('V2exNativeLogin', null)
         })
       } else {
@@ -310,19 +310,19 @@ export struct AccountDashboardPage {
   @Builder
   AccountContentSection() {
     GroupedListSection() {
-      this.AuthActionRow('收藏主题', '', () => {
+      this.AuthActionRow(AccountPageCoordinator.ACCOUNT_SAVED_TOPICS_TITLE, '', () => {
         this.ns.pushPathByName('MyTopics', null)
       })
       this.SettingsDivider()
-      this.AuthActionRow('收藏节点', '', () => {
+      this.AuthActionRow(AccountPageCoordinator.ACCOUNT_SAVED_NODES_TITLE, '', () => {
         this.ns.pushPathByName('MyNodes', null)
       })
       this.SettingsDivider()
-      this.AuthActionRow('关注用户', '', () => {
+      this.AuthActionRow(AccountPageCoordinator.ACCOUNT_FOLLOWING_TITLE, '', () => {
         this.ns.pushPathByName('AccountFollowing', null)
       })
       this.SettingsDivider()
-      this.AuthActionRow('屏蔽与忽略', '', () => {
+      this.AuthActionRow(AccountPageCoordinator.ACCOUNT_BLACKLIST_TITLE, '', () => {
         this.ns.pushPathByName('AccountBlacklist', null)
       })
     }
@@ -333,11 +333,11 @@ export struct AccountDashboardPage {
     Column() {
       Row({ space: ThemeConstants.SPACE_SM }) {
         Column({ space: ThemeConstants.SPACE_XS }) {
-          Text('Personal Access Token')
+          Text(AccountPageCoordinator.API_TOKEN_TITLE)
             .fontSize(ThemeConstants.FONT_SIZE_META)
             .fontWeight(FontWeight.Medium)
             .fontColor($r('sys.color.font_primary'))
-          Text('已保存，仅用于 V2EX API v2 高级能力')
+          Text(AccountPageCoordinator.API_TOKEN_SUBTITLE)
             .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
             .fontColor($r('sys.color.font_secondary'))
         }
@@ -379,7 +379,7 @@ export struct AccountDashboardPage {
 
       this.SettingsDivider()
       Row() {
-        Text('清除 API 授权')
+        Text(AccountPageCoordinator.CLEAR_API_AUTH_TITLE)
           .fontSize(ThemeConstants.FONT_SIZE_LIST_ITEM)
           .fontWeight(FontWeight.Medium)
           .fontColor(Color.Red)
@@ -409,7 +409,7 @@ export struct AccountDashboardPage {
       this.TopicDraftEntryRow()
       this.SettingsDivider()
       ConciseListRow({
-        title: '稍后读',
+        title: AccountPageCoordinator.LOCAL_READ_LATER_TITLE,
         count: this.savedTopicCount,
         action: () => {
           this.ns.pushPathByName('SavedTopics', null)
@@ -417,7 +417,7 @@ export struct AccountDashboardPage {
       })
       this.SettingsDivider()
       ConciseListRow({
-        title: '最近浏览',
+        title: AccountPageCoordinator.LOCAL_VIEWED_TOPICS_TITLE,
         count: this.viewedTopicCount,
         action: () => {
           this.ns.pushPathByName('ViewedTopics', null)
@@ -425,7 +425,7 @@ export struct AccountDashboardPage {
       })
       this.SettingsDivider()
       ConciseListRow({
-        title: '本地关注节点',
+        title: AccountPageCoordinator.LOCAL_SAVED_NODES_TITLE,
         count: this.savedNodeCount,
         action: () => {
           this.ns.pushPathByName('SavedNodes', null)
@@ -437,7 +437,7 @@ export struct AccountDashboardPage {
   @Builder
   SearchEntryRow() {
     ConciseListRow({
-      title: '搜索', action: () => {
+      title: AccountPageCoordinator.LOCAL_SEARCH_TITLE, action: () => {
         this.ns.pushPathByName('Search', null)
       }
     })
@@ -446,7 +446,7 @@ export struct AccountDashboardPage {
   @Builder
   TopicDraftEntryRow() {
     ConciseListRow({
-      title: '发帖草稿', action: () => {
+      title: AccountPageCoordinator.LOCAL_TOPIC_DRAFT_TITLE, action: () => {
         this.ns.pushPathByName('TopicEditor', null)
       }
     })
@@ -456,7 +456,7 @@ export struct AccountDashboardPage {
   StorageSection() {
     GroupedListSection() {
       ConciseListRow({
-        title: '关于 Next2V',
+        title: AccountPageCoordinator.ABOUT_TITLE,
         action: () => {
           this.ns.pushPathByName('About', null)
         }
@@ -466,6 +466,14 @@ export struct AccountDashboardPage {
 
   private hasCookieAccount(): boolean {
     return AccountPageCoordinator.hasCookieAccount(this.authCookieConfigured)
+  }
+
+  private hasAnyAccount(): boolean {
+    return AccountPageCoordinator.hasAnyAccount(this.authCookieConfigured, this.authTokenConfigured)
+  }
+
+  private shouldShowApiDiagnostics(): boolean {
+    return AccountPageCoordinator.shouldShowApiDiagnostics(this.authTokenConfigured)
   }
 
   private currentUsername(): string {
@@ -687,8 +695,8 @@ export struct AccountDashboardPage {
       return
     }
     AlertDialog.show({
-      title: '清除 API 授权',
-      message: '仅清除本地保存的 Personal Access Token，不会退出网页登录。',
+      title: AccountPageCoordinator.CLEAR_API_AUTH_TITLE,
+      message: AccountPageCoordinator.CLEAR_API_AUTH_MESSAGE,
       primaryButton: {
         value: '取消', action: () => {
         }

@@ -12,6 +12,14 @@ export interface ReplyEditorRouteParams {
   initialContent: string
 }
 
+export interface IndexReadOnlyDestinationDescriptor {
+  family: string
+  topicDetailParams: TopicDetailParams
+  imagePreviewParams: ImagePreviewParams
+  nodeTopicParams: NodeTopicListParams
+  userProfileParams: UserProfileParams
+}
+
 export class IndexRouteCoordinator {
   private static numberParam(param: Object, key: string): number {
     try {
@@ -60,6 +68,44 @@ export class IndexRouteCoordinator {
 
   static userProfileRouteParams(param: Object): UserProfileParams {
     return { username: IndexRouteCoordinator.stringParam(param, 'username') }
+  }
+
+  private static readOnlyDestinationDescriptor(
+    family: string,
+    param: Object,
+  ): IndexReadOnlyDestinationDescriptor {
+    return {
+      family: family,
+      topicDetailParams: IndexRouteCoordinator.topicDetailRouteParams(param),
+      imagePreviewParams: IndexRouteCoordinator.imagePreviewRouteParams(param),
+      nodeTopicParams: IndexRouteCoordinator.nodeTopicRouteParams(param),
+      userProfileParams: IndexRouteCoordinator.userProfileRouteParams(param),
+    }
+  }
+
+  static readOnlyDestination(
+    name: string,
+    param: Object,
+  ): IndexReadOnlyDestinationDescriptor | null {
+    if (name === 'TopicDetail') {
+      return IndexRouteCoordinator.readOnlyDestinationDescriptor('topicDetail', param)
+    }
+    if (name === 'ImagePreview') {
+      return IndexRouteCoordinator.readOnlyDestinationDescriptor('imagePreview', param)
+    }
+    if (name === 'NodeTopicList') {
+      return IndexRouteCoordinator.readOnlyDestinationDescriptor('nodeTopic', param)
+    }
+    if (name === 'UserProfile') {
+      return IndexRouteCoordinator.readOnlyDestinationDescriptor('userProfile', param)
+    }
+    if (name === 'UserTopics') {
+      return IndexRouteCoordinator.readOnlyDestinationDescriptor('userTopics', param)
+    }
+    if (name === 'UserReplies') {
+      return IndexRouteCoordinator.readOnlyDestinationDescriptor('userReplies', param)
+    }
+    return null
   }
 
   static commandPayload(command: string): string {

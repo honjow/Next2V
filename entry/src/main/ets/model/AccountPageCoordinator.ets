@@ -11,8 +11,48 @@ export interface AccountIdentity {
 }
 
 export class AccountPageCoordinator {
+  static readonly SECTION_ACCOUNT: string = '账号'
+  static readonly SECTION_ACCOUNT_CONTENT: string = '账号内容'
+  static readonly SECTION_LOCAL_CONTENT: string = '本地内容'
+  static readonly SECTION_MORE: string = '更多'
+  static readonly SECTION_ADVANCED_API: string = '高级 API'
+
+  static readonly LOGIN_TITLE: string = '未登录'
+  static readonly LOGIN_SUBTITLE: string = '点击登录 V2EX'
+  static readonly TWO_FACTOR_MESSAGE: string = '完成两步验证后即可继续访问 V2EX 账号内容。'
+
+  static readonly PROFILE_TITLE: string = '个人主页'
+  static readonly BALANCE_DETAIL_TITLE: string = '余额明细'
+  static readonly WEB_ACCOUNT_SETTINGS_TITLE: string = '网页账号设置'
+  static readonly LOGOUT_TITLE: string = '退出登录'
+
+  static readonly ACCOUNT_SAVED_TOPICS_TITLE: string = '收藏主题'
+  static readonly ACCOUNT_SAVED_NODES_TITLE: string = '收藏节点'
+  static readonly ACCOUNT_FOLLOWING_TITLE: string = '关注用户'
+  static readonly ACCOUNT_BLACKLIST_TITLE: string = '屏蔽与忽略'
+
+  static readonly API_TOKEN_TITLE: string = 'Personal Access Token'
+  static readonly API_TOKEN_SUBTITLE: string = '已保存，仅用于 V2EX API v2 高级能力'
+  static readonly CLEAR_API_AUTH_TITLE: string = '清除 API 授权'
+  static readonly CLEAR_API_AUTH_MESSAGE: string = '仅清除本地保存的 Personal Access Token，不会退出网页登录。'
+
+  static readonly LOCAL_SEARCH_TITLE: string = '搜索'
+  static readonly LOCAL_TOPIC_DRAFT_TITLE: string = '发帖草稿'
+  static readonly LOCAL_READ_LATER_TITLE: string = '稍后读'
+  static readonly LOCAL_VIEWED_TOPICS_TITLE: string = '最近浏览'
+  static readonly LOCAL_SAVED_NODES_TITLE: string = '本地关注节点'
+  static readonly ABOUT_TITLE: string = '关于 Next2V'
+
   static hasCookieAccount(authCookieConfigured: boolean): boolean {
     return authCookieConfigured
+  }
+
+  static hasAnyAccount(authCookieConfigured: boolean, authTokenConfigured: boolean): boolean {
+    return authCookieConfigured || authTokenConfigured
+  }
+
+  static shouldShowApiDiagnostics(authTokenConfigured: boolean): boolean {
+    return authTokenConfigured
   }
 
   static identity(
