@@ -24,6 +24,10 @@ Rules:
 - Redact any code or secret-bearing content if accidentally captured.
 - Do not store, commit, or quote 2FA codes, cookies, verification tokens, account identifiers, or account-specific sensitive data.
 
+## Login Captcha
+
+A normal login-page captcha is not the same as 2FA and is not automatically a blocker. When the login form shows a captcha field, first try to obtain the captcha from the current page, screenshot, or page resource and enter it without printing or storing the value. Only report `BLOCKED` after the captcha cannot be obtained or recognized, and include the non-secret state and artifact paths.
+
 ## QA Evidence Boundary
 
 If the shared device is unauthenticated, do not mark the product scenario PASS from unauthenticated screenshots, login prompts, or unrelated fallback states.
