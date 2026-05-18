@@ -9,7 +9,6 @@ import {
   EmptyState,
   HttpClient,
   LoadingFooter,
-  NotificationSettings,
   PullRefreshListScaffold,
   StorageKeys,
   ThemeConstants,
@@ -21,6 +20,7 @@ import {
   NotificationMetadata,
   NotificationPageResult
 } from '../viewmodel/NotificationCenterViewModel'
+import { NotificationCacheCoordinator } from '../model/NotificationCacheCoordinator'
 import { NotificationCardDisplay, NotificationPageCoordinator } from '../model/NotificationPageCoordinator'
 import {
   NotificationAuthRequiredState,
@@ -418,20 +418,26 @@ export struct NotificationPage {
   }
 
   private loadNotificationCache(username: string): void {
-    const ownerKey = this.notificationOwnerKey(username)
-    if (!ownerKey || (this.notifications.length > 0 && !this.notificationLoadedFromCache)) {
-      return
-    }
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    NotificationSettings.loadCache(context, ownerKey)
-      .then((snapshot) => {
-        this.notificationCacheUpdatedAt = snapshot.updatedAt
-        if (snapshot.items.length === 0 || (this.notifications.length > 0 && !this.notificationLoadedFromCache)) {
+    NotificationCacheCoordinator.load(
+      context,
+      username,
+      this.storedUsername,
+      this.sessionUsername,
+      this.notifications.length,
+      this.notificationLoadedFromCache
+    )
+      .then((result) => {
+        if (result.skipped) {
           return
         }
-        this.notifications = snapshot.items
-        this.notificationPage = snapshot.page
-        this.notificationHasMore = snapshot.hasMore
+        this.notificationCacheUpdatedAt = result.updatedAt
+        if (!result.shouldApplyItems) {
+          return
+        }
+        this.notifications = result.items
+        this.notificationPage = result.page
+        this.notificationHasMore = result.hasMore
         this.notificationLoadedFromCache = true
         this.notificationSourceLabel = this.notificationVm.sourceLabelFor(this.notificationAuthContext())
       })
@@ -441,23 +447,24 @@ export struct NotificationPage {
   }
 
   private saveNotificationCache(): void {
-    const ownerKey = this.notificationOwnerKey('')
-    if (!ownerKey) {
-      return
-    }
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    NotificationSettings.saveCache(context, ownerKey, this.notifications, this.notificationPage,
-      this.notificationHasMore)
-      .then((snapshot) => {
-        this.notificationCacheUpdatedAt = snapshot.updatedAt
+    NotificationCacheCoordinator.save(
+      context,
+      '',
+      this.storedUsername,
+      this.sessionUsername,
+      this.notifications,
+      this.notificationPage,
+      this.notificationHasMore
+    )
+      .then((result) => {
+        if (result.updatedAt > 0) {
+          this.notificationCacheUpdatedAt = result.updatedAt
+        }
       })
       .catch((error: Error) => {
         console.error('save notification cache failed: ' + error.message)
       })
-  }
-
-  private notificationOwnerKey(username: string): string {
-    return NotificationPageCoordinator.ownerKey(username, this.storedUsername, this.sessionUsername)
   }
 
   private handleExpiredCookieSession(message: string): void {
