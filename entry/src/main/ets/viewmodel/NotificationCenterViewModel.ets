@@ -26,6 +26,7 @@ export interface NotificationMetadata {
   title: string
   body: string
   replyContent: string
+  replyRenderedContent: string
   memberName: string
   avatarUrl: string
   canDeleteWithCookie: boolean
@@ -106,6 +107,7 @@ export class NotificationCenterViewModel {
       title: this.title(item),
       body: body,
       replyContent: this.replyContent(item),
+      replyRenderedContent: this.replyRenderedContent(item),
       memberName: item.member?.username || '',
       avatarUrl: item.member?.avatar_normal || item.member?.avatar_large || item.member?.avatar_mini || '',
       canDeleteWithCookie: this.webDeleteId(item) > 0 && !!this.webDeleteOnce(item)
@@ -236,7 +238,54 @@ export class NotificationCenterViewModel {
   }
 
   private replyContent(item: V2exNotification): string {
-    return item.reply_content || item.payload || item.content || item.reply_content_rendered || item.payload_rendered || ''
+    return this.firstReadableContent([
+      item.reply_content,
+      item.payload,
+      item.content,
+      item.reply_content_rendered,
+      item.payload_rendered,
+      item.content_rendered
+    ])
+  }
+
+  private firstReadableContent(candidates: (string | undefined)[]): string {
+    for (const candidate of candidates) {
+      const readable = this.readableNotificationContent(candidate || '')
+      if (readable) {
+        return readable
+      }
+    }
+    return ''
+  }
+
+  private readableNotificationContent(raw: string): string {
+    const clean = (raw || '').trim()
+    if (!clean) {
+      return ''
+    }
+    return this.decodeHtml(clean
+      .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+      .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+      .replace(/<img\b[^>]*>/gi, ' 图片 ')
+      .replace(/<br\s*\/?>/gi, ' ')
+      .replace(/<\/p>/gi, ' ')
+      .replace(/<[^>]+>/g, ' '))
+      .replace(/\s+/g, ' ')
+      .trim()
+  }
+
+  private decodeHtml(value: string): string {
+    return value
+      .replace(/&amp;/g, '&')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+  }
+
+  private replyRenderedContent(item: V2exNotification): string {
+    return item.reply_content_rendered || item.payload_rendered || item.content_rendered || ''
   }
 
   private topicId(item: V2exNotification): number {

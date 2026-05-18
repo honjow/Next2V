@@ -33,6 +33,8 @@ for (const token of [
   'extractMemberAvatar(cell, username)',
   'deleteNotification\\s*\\(',
   '\\bpayload\\b',
+  ".replace(/<img\\b[^>]*>/gi, ' 图片 ')",
+  "const username = labelUsername && labelUsername !== '图片' ? labelUsername : hrefUsername",
 ]) {
   assert(parser.includes(token), `notification parser contract missing ${token}`)
 }
@@ -67,6 +69,11 @@ for (const token of [
   'webDeleteId(item: V2exNotification): number',
   'webDeleteOnce(item: V2exNotification): string',
   'replyContent: this.replyContent(item)',
+  'replyRenderedContent: this.replyRenderedContent(item)',
+  'private replyRenderedContent(item: V2exNotification): string',
+  'private firstReadableContent(candidates: (string | undefined)[]): string',
+  'private readableNotificationContent(raw: string): string',
+  ".replace(/<img\\b[^>]*>/gi, ' 图片 ')",
   "tag === '未读'",
 ]) {
   assert(vm.includes(token), `NotificationCenterViewModel contract missing ${token}`)
@@ -106,6 +113,7 @@ for (const token of [
   'private publishUnreadCount(): void',
   'this.publishUnreadCount()',
   'replyContent: display.replyContent',
+  'replyRenderedContent: display.replyRenderedContent',
 ]) {
   assert(page.includes(token), `NotificationPage contract missing ${token}`)
 }
@@ -114,13 +122,25 @@ const components = read('entry/src/main/ets/components/NotificationPageComponent
 assert(!components.includes('NotificationSummaryCard'), 'old NotificationSummaryCard component should be removed')
 for (const token of [
   'Avatar({',
+  'MarkdownContent({',
   '@Prop replyContent: string =',
+  '@Prop replyRenderedContent: string =',
+  'source: this.replyPreviewSource()',
+  'topMargin: 0',
   '@Prop memberName: string =',
   '@Prop avatarUrl: string =',
-  'if (this.replyContent)',
+  'private replyPreviewSource(): string',
   'SymbolGlyph($r',
 ]) {
   assert(components.includes(token), `Notification UI component contract missing ${token}`)
+}
+for (const forbidden of [
+  'Image(this.replyImageUrl)',
+  '@Prop replyImageUrl',
+  '.width(120)',
+  '.height(120)',
+]) {
+  assert(!components.includes(forbidden), `Notification UI must not keep custom fixed image preview: ${forbidden}`)
 }
 
 const mainTabIcon = read('entry/src/main/ets/components/MainTabIcon.ets')

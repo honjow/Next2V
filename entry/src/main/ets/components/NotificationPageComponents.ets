@@ -1,6 +1,7 @@
 import {
   Avatar,
   DateUtils,
+  MarkdownContent,
   ThemeConstants,
   V2exNotification
 } from 'shared'
@@ -63,6 +64,7 @@ export struct NotificationCard {
   @Prop titleText: string = ''
   @Prop bodyText: string = ''
   @Prop replyContent: string = ''
+  @Prop replyRenderedContent: string = ''
   @Prop memberName: string = ''
   @Prop avatarUrl: string = ''
 
@@ -106,22 +108,8 @@ export struct NotificationCard {
           .maxLines(2)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
 
-        if (this.replyContent) {
-          Text(this.replyContent)
-            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-            .fontColor($r('sys.color.font_primary'))
-            .lineHeight(ThemeConstants.LINE_HEIGHT_BODY)
-            .maxLines(4)
-            .textOverflow({ overflow: TextOverflow.Ellipsis })
-            .width('100%')
-            .padding({
-              left: ThemeConstants.SPACE_MD,
-              right: ThemeConstants.SPACE_MD,
-              top: ThemeConstants.SPACE_SM,
-              bottom: ThemeConstants.SPACE_SM
-            })
-            .borderRadius(ThemeConstants.RADIUS_SM)
-            .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
+        if (this.replyPreviewSource()) {
+          this.ReplyPreview()
         } else if (this.bodyText) {
           Text(this.bodyText)
             .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
@@ -144,6 +132,28 @@ export struct NotificationCard {
     .alignItems(VerticalAlign.Top)
     .borderRadius(ThemeConstants.RADIUS_MD)
     .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+  }
+
+  @Builder private ReplyPreview() {
+    Column() {
+      MarkdownContent({
+        source: this.replyPreviewSource(),
+        topMargin: 0
+      })
+    }
+    .width('100%')
+    .padding({
+      left: ThemeConstants.SPACE_MD,
+      right: ThemeConstants.SPACE_MD,
+      top: ThemeConstants.SPACE_SM,
+      bottom: ThemeConstants.SPACE_SM
+    })
+    .borderRadius(ThemeConstants.RADIUS_SM)
+    .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
+  }
+
+  private replyPreviewSource(): string {
+    return this.replyRenderedContent || this.replyContent
   }
 
   @Builder private NotificationTag(text: string, backgroundColor: ResourceColor, foregroundColor: ResourceColor) {

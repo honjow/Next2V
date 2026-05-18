@@ -179,6 +179,7 @@ export struct NotificationPage {
       titleText: display.titleText,
       bodyText: display.bodyText,
       replyContent: display.replyContent,
+      replyRenderedContent: display.replyRenderedContent,
       memberName: display.memberName,
       avatarUrl: display.avatarUrl
     })

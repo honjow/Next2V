@@ -280,7 +280,9 @@ export class V2exNotificationParser {
     if (!m) {
       return undefined
     }
-    const username = V2exNotificationParser.compactText(m[2] || '') || V2exNotificationParser.decodeHtml(m[1] || '')
+    const hrefUsername = V2exNotificationParser.decodeHtml(m[1] || '')
+    const labelUsername = V2exNotificationParser.compactText(m[2] || '')
+    const username = labelUsername && labelUsername !== '图片' ? labelUsername : hrefUsername
     const avatar = V2exNotificationParser.extractMemberAvatar(cell, username)
     return {
       id: 0,
@@ -325,6 +327,7 @@ export class V2exNotificationParser {
   private static compactText(html: string): string {
     return V2exNotificationParser.decodeHtml(html.replace(/<script[\s\S]*?<\/script>/gi, ' ')
       .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+      .replace(/<img\b[^>]*>/gi, ' 图片 ')
       .replace(/<[^>]+>/g, ' '))
       .replace(/\s+/g, ' ')
       .trim()
