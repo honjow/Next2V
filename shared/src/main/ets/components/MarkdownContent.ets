@@ -3923,10 +3923,64 @@ export struct MarkdownContent {
       if (!token || token.type !== "image") {
         continue;
       }
+      if (MarkdownContent.hasAdjacentImageOnInlineLine(tokens, i)) {
+        (token as InlineImageToken).inlineImage = true;
+        continue;
+      }
       if (MarkdownContent.isImageTokenAloneOnInlineLine(tokens, i)) {
         (token as InlineImageToken).inlineImage = false;
       }
     }
+  }
+
+  private static hasAdjacentImageOnInlineLine(tokens: Token[], index: number): boolean {
+    return MarkdownContent.hasImageBeforeOnInlineLine(tokens, index) || MarkdownContent.hasImageAfterOnInlineLine(tokens, index);
+  }
+
+  private static hasImageBeforeOnInlineLine(tokens: Token[], index: number): boolean {
+    for (let i = index - 1; i >= 0; i--) {
+      const token = tokens[i] as TokenRecord;
+      if (!token) {
+        continue;
+      }
+      if (token.type === "br") {
+        return false;
+      }
+      if (token.type === "image") {
+        return true;
+      }
+      const text = String(token.text ?? token.raw ?? "");
+      if (text.indexOf('\n') >= 0 || text.indexOf('\r') >= 0) {
+        return false;
+      }
+      if (text.trim().length > 0) {
+        return false;
+      }
+    }
+    return false;
+  }
+
+  private static hasImageAfterOnInlineLine(tokens: Token[], index: number): boolean {
+    for (let i = index + 1; i < tokens.length; i++) {
+      const token = tokens[i] as TokenRecord;
+      if (!token) {
+        continue;
+      }
+      if (token.type === "br") {
+        return false;
+      }
+      if (token.type === "image") {
+        return true;
+      }
+      const text = String(token.text ?? token.raw ?? "");
+      if (text.indexOf('\n') >= 0 || text.indexOf('\r') >= 0) {
+        return false;
+      }
+      if (text.trim().length > 0) {
+        return false;
+      }
+    }
+    return false;
   }
 
   private static isImageTokenAloneOnInlineLine(tokens: Token[], index: number): boolean {
