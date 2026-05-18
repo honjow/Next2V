@@ -4,6 +4,7 @@ import { fileIo } from '@kit.CoreFileKit'
 import { photoAccessHelper } from '@kit.MediaLibraryKit'
 import { http } from '@kit.NetworkKit'
 import { MediaUrlUtils, StorageKeys, ThemeConstants } from 'shared'
+import { ImagePreviewCoordinator } from '../model/ImagePreviewCoordinator'
 
 const CONNECT_TIMEOUT_MS: number = 10000
 const READ_TIMEOUT_MS: number = 30000
@@ -27,23 +28,11 @@ export struct ImagePreviewPage {
   @StorageProp('topAvoidHeight') topH: number = 0
 
   private clampScale(value: number): number {
-    if (!Number.isFinite(value)) {
-      return 1
-    }
-    if (value < 1) {
-      return 1
-    }
-    if (value > 4) {
-      return 4
-    }
-    return value
+    return ImagePreviewCoordinator.clampScale(value)
   }
 
   private getImageWidth(): number | string {
-    if (this.viewportWidth <= 0) {
-      return '100%'
-    }
-    return this.viewportWidth * this.scaleValue
+    return ImagePreviewCoordinator.imageWidth(this.viewportWidth, this.scaleValue)
   }
 
   private normalizedUrl(): string {
@@ -51,13 +40,7 @@ export struct ImagePreviewPage {
   }
 
   private onImagePreviewActionCommand(_propName: string): void {
-    const raw = (this.imagePreviewActionCommand || '').trim()
-    if (!raw) {
-      return
-    }
-    const parts = raw.split(':')
-    const action = parts.length > 0 ? parts[parts.length - 1] : ''
-    if (action === 'save') {
+    if (ImagePreviewCoordinator.actionFromCommand(this.imagePreviewActionCommand) === 'save') {
       this.saveImage()
     }
   }
@@ -129,7 +112,7 @@ export struct ImagePreviewPage {
       }
       return {
         buffer: response.result as ArrayBuffer,
-        contentType: ImagePreviewPage.extractHeaderValue(headerBag || response.header, 'content-type')
+        contentType: ImagePreviewCoordinator.extractHeaderValue(headerBag || response.header, 'content-type')
       }
     } catch (error) {
       const e = error as Error
@@ -200,27 +183,6 @@ export struct ImagePreviewPage {
     try {
       fileIo.unlinkSync(filePath)
     } catch (_error) {
-    }
-  }
-
-  private static extractHeaderValue(headers: Object, key: string): string {
-    const cleanKey = (key || '').trim().toLowerCase()
-    if (!cleanKey) {
-      return ''
-    }
-    try {
-      const bag = headers as Record<string, Object>
-      const value = bag[cleanKey] || bag[key] || bag[cleanKey.toUpperCase()] || bag[key.toUpperCase()] || ''
-      if (typeof value === 'string') {
-        return value
-      }
-      if (Array.isArray(value)) {
-        const items = value.filter((v: Object) => typeof v === 'string') as string[]
-        return items.length > 0 ? items[0] : ''
-      }
-      return ''
-    } catch (_error) {
-      return ''
     }
   }
 
