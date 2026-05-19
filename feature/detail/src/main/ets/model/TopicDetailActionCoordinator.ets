@@ -57,6 +57,13 @@ export interface ReplyThankLockState {
   pendingReplyThankId: number
 }
 
+export interface ReplyThankedIdsSnapshot {
+  replyId: number
+  previousJson: string
+  nextJson: string
+  addedReplyId: boolean
+}
+
 export class TopicDetailActionCoordinator {
   static parseCommand(rawCommand: string): ParsedTopicDetailAction | null {
     const raw = (rawCommand || '').trim()
@@ -111,6 +118,45 @@ export class TopicDetailActionCoordinator {
       ids.push(replyId)
     }
     return JSON.stringify(ids)
+  }
+
+  static markReplyThankedWithSnapshot(
+    replyId: number,
+    thankedReplyIdsJson: string,
+  ): ReplyThankedIdsSnapshot {
+    const ids = TopicDetailActionCoordinator.readThankedReplyIds(thankedReplyIdsJson)
+    const addedReplyId = replyId > 0 && ids.indexOf(replyId) < 0
+    const nextJson = TopicDetailActionCoordinator.markReplyThanked(replyId, thankedReplyIdsJson)
+    return {
+      replyId,
+      previousJson: thankedReplyIdsJson,
+      nextJson,
+      addedReplyId,
+    }
+  }
+
+  static unmarkReplyThanked(replyId: number, thankedReplyIdsJson: string): string {
+    if (replyId <= 0) {
+      return thankedReplyIdsJson
+    }
+    const ids = TopicDetailActionCoordinator.readThankedReplyIds(thankedReplyIdsJson)
+      .filter((id: number) => id !== replyId)
+    return JSON.stringify(ids)
+  }
+
+  static rollbackReplyThankedIds(
+    snapshot: ReplyThankedIdsSnapshot | null,
+    currentJson: string = '',
+  ): string {
+    if (!snapshot) {
+      return currentJson
+    }
+    if (!snapshot.addedReplyId) {
+      return snapshot.nextJson
+    }
+    const removedJson =
+      TopicDetailActionCoordinator.unmarkReplyThanked(snapshot.replyId, snapshot.nextJson)
+    return removedJson === snapshot.previousJson ? removedJson : snapshot.previousJson
   }
 
   static topicFavoriteMessage(title: string, verb: string): string {

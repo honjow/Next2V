@@ -13,6 +13,13 @@ import type { V2exTopicWebRepliesPage, V2exTopicWebRepliesAllResult } from 'shar
 import { ReplyDataSource } from '../model/DetailModels'
 import { ReplyThreadCoordinator } from '../model/ReplyThreadCoordinator'
 
+export interface ReplyThankSnapshot {
+  replyId: number
+  previousThanks: number
+  wasThanked: boolean
+  previousRenderKey?: string
+}
+
 /**
  * 主题详情页 ViewModel
  */
@@ -137,6 +144,52 @@ export class DetailViewModel {
 
   getLoadedRepliesSnapshot(): V2exReply[] {
     return this.replies.slice()
+  }
+
+  optimisticallyMarkReplyThanked(replyId: number): ReplyThankSnapshot | null {
+    if (replyId <= 0) {
+      return null
+    }
+    let snapshot: ReplyThankSnapshot | null = null
+    this.replies.forEach((reply: V2exReply) => {
+      if (reply && reply.id === replyId) {
+        if (snapshot === null) {
+          snapshot = {
+            replyId,
+            previousThanks: Math.max(0, reply.thanks || 0),
+            wasThanked: !!reply.thanked,
+            previousRenderKey: reply.renderKey,
+          }
+        }
+        if (!reply.thanked) {
+          reply.thanks = Math.max(0, reply.thanks || 0) + 1
+        }
+        reply.thanked = true
+        reply.renderKey = `${reply.renderKey || reply.id.toString()}-thanks-${reply.thanks}-me`
+      }
+    })
+    if (snapshot !== null) {
+      this.replyDataSource.setData(this.getVisibleReplies())
+    }
+    return snapshot
+  }
+
+  rollbackReplyThank(snapshot: ReplyThankSnapshot | null): void {
+    if (!snapshot || snapshot.replyId <= 0) {
+      return
+    }
+    let changed = false
+    this.replies.forEach((reply: V2exReply) => {
+      if (reply && reply.id === snapshot.replyId) {
+        reply.thanks = snapshot.previousThanks
+        reply.thanked = snapshot.wasThanked
+        reply.renderKey = snapshot.previousRenderKey
+        changed = true
+      }
+    })
+    if (changed) {
+      this.replyDataSource.setData(this.getVisibleReplies())
+    }
   }
 
   markReplyThanked(replyId: number): void {

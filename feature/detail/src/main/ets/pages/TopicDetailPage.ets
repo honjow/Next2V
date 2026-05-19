@@ -1,4 +1,7 @@
-import { DetailViewModel } from '../viewmodel/DetailViewModel'
+import {
+  DetailViewModel,
+  type ReplyThankSnapshot,
+} from '../viewmodel/DetailViewModel'
 import { ReplyComposerSheet } from '../components/ReplyComposerSheet'
 import {
   ReplyContextListItem,
@@ -17,6 +20,7 @@ import {
 } from '../model/TopicDetailContentCoordinator'
 import {
   TopicDetailActionCoordinator,
+  type ReplyThankedIdsSnapshot,
 } from '../model/TopicDetailActionCoordinator'
 import { TopicDetailAppbarCoordinator } from '../model/TopicDetailAppbarCoordinator'
 import {
@@ -1514,14 +1518,21 @@ export struct TopicDetailPage {
       return
     }
     this.isReplyThankLoading = true
+    const replyThankSnapshot: ReplyThankSnapshot | null =
+      this.v.optimisticallyMarkReplyThanked(reply.id)
+    const thankedIdsSnapshot: ReplyThankedIdsSnapshot = this.markReplyThanked(reply.id)
     TopicDetailActionCoordinator
       .executeReplyThank(this.api, cookie, this.topicId, reply.id)
       .then(() => {
-        this.v.markReplyThanked(reply.id)
-        this.markReplyThanked(reply.id)
         promptAction.openToast({ message: '已感谢' }).catch((_error: Error) => {})
       })
       .catch((error: Error) => {
+        this.v.rollbackReplyThank(replyThankSnapshot)
+        this.thankedReplyIdsJson =
+          TopicDetailActionCoordinator.rollbackReplyThankedIds(
+            thankedIdsSnapshot,
+            this.thankedReplyIdsJson,
+          )
         promptAction
           .openToast({ message: error.message || '感谢失败' })
           .catch((_error: Error) => {})
@@ -1550,9 +1561,11 @@ export struct TopicDetailPage {
     )
   }
 
-  private markReplyThanked(replyId: number): void {
-    this.thankedReplyIdsJson =
-      TopicDetailActionCoordinator.markReplyThanked(replyId, this.thankedReplyIdsJson)
+  private markReplyThanked(replyId: number): ReplyThankedIdsSnapshot {
+    const snapshot =
+      TopicDetailActionCoordinator.markReplyThankedWithSnapshot(replyId, this.thankedReplyIdsJson)
+    this.thankedReplyIdsJson = snapshot.nextJson
+    return snapshot
   }
 
   private prepareTopicIgnore(): void {
