@@ -156,6 +156,7 @@ export interface V2exDailyMission {
 }
 
 export interface V2exUserReply {
+  reply_key?: string
   topic_id: number
   topic_title: string
   target_floor: number
@@ -163,7 +164,9 @@ export interface V2exUserReply {
   node_title: string
   topic_author: string
   content: string
+  content_rendered?: string
   created: number
+  created_text?: string
 }
 
 export interface V2exMemberActionState {

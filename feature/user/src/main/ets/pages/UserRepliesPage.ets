@@ -1,7 +1,7 @@
 import { UserRepliesViewModel } from '../viewmodel/UserViewModel'
 import {
   CardEmptyState, NodeTopicListParams, PageErrorState, PageLoadingState,
-  SecondaryListScaffold, StorageKeys, TopicDetailParams, UserProfileParams, V2exRoute,
+  SecondaryListScaffold, StorageKeys, TopicDetailParams, UserProfileParams, ImagePreviewParams, V2exRoute,
   V2exUrlRouter, V2exUserReply
 } from 'shared'
 import { common, Want } from '@kit.AbilityKit'
@@ -38,11 +38,7 @@ export struct UserRepliesPage {
             ListItem() {
               this.ReplyItem(reply)
             }
-            .onClick(() => {
-              let p: TopicDetailParams = { topicId: reply.topic_id, targetFloor: reply.target_floor }
-              this.stack.pushPathByName('TopicDetail', p as Object)
-            })
-          }, (reply: V2exUserReply) => `${reply.topic_id}-${reply.target_floor}-${reply.created}`)
+          }, (reply: V2exUserReply) => this.replyStableKey(reply))
 
           if (this.vm.isLoadingMore) {
             ListItem() {
@@ -61,9 +57,21 @@ export struct UserRepliesPage {
     UserRepliesCard({
       reply: reply,
       fallbackUsername: this.username,
+      openTopic: () => { this.openReplyTopic(reply) },
       openLink: (url: string) => { this.openContentLink(url) },
+      openImage: (url: string) => { this.openImagePreview(url) },
       openMention: (username: string) => { this.openUserProfile(username) }
     })
+  }
+
+  private openReplyTopic(reply: V2exUserReply): void {
+    if (!reply || reply.topic_id <= 0) {
+      return
+    }
+    const p: TopicDetailParams = reply.target_floor && reply.target_floor > 0
+      ? { topicId: reply.topic_id, targetFloor: reply.target_floor }
+      : { topicId: reply.topic_id }
+    this.stack.pushPathByName('TopicDetail', p as Object)
   }
 
   private openUserProfile(username: string): void {
@@ -83,6 +91,23 @@ export struct UserRepliesPage {
       return
     }
     this.openInSystemBrowser(clean)
+  }
+
+  private openImagePreview(url: string): void {
+    const normalized = (url || '').trim()
+    if (!normalized) {
+      return
+    }
+    let p: ImagePreviewParams = { url: normalized }
+    this.stack.pushPathByName('ImagePreview', p as Object)
+  }
+
+  private replyStableKey(reply: V2exUserReply): string {
+    const parsedKey = (reply.reply_key || '').trim()
+    if (parsedKey) {
+      return parsedKey
+    }
+    return `${reply.topic_id}-${reply.target_floor}-${reply.created}-${reply.created_text || ''}-${reply.topic_title}-${reply.content}`
   }
 
   private openV2exRoute(route: V2exRoute): void {

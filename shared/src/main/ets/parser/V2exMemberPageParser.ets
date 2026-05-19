@@ -12,6 +12,7 @@ interface ReplyMeta {
   nodeTitle: string
   topicAuthor: string
   created: number
+  createdText: string
 }
 
 interface TimeMeta {
@@ -106,20 +107,26 @@ export class V2exMemberPageParser {
     const replies: V2exUserReply[] = []
     const re = /(<div[^>]*class=['"][^'"]*\bdock_area\b[^'"]*['"][^>]*>[\s\S]*?)<div[^>]*class=['"][^'"]*\binner\b[^'"]*['"][^>]*>\s*<div[^>]*class=['"][^'"]*\breply_content\b[^'"]*['"][^>]*>([\s\S]*?)<\/div>\s*<\/div>/gi
     let m: RegExpExecArray | null = re.exec(section)
+    let rowIndex = 0
     while (m) {
       const meta = V2exMemberPageParser.extractReplyMeta(m[1] || '')
       if (meta.topicId > 0) {
+        const contentRendered = (m[2] || '').trim()
         replies.push({
+          reply_key: V2exMemberPageParser.buildReplyKey(meta, contentRendered, rowIndex),
           topic_id: meta.topicId,
           topic_title: meta.topicTitle,
           target_floor: meta.targetFloor,
           node_name: meta.nodeName,
           node_title: meta.nodeTitle,
           topic_author: meta.topicAuthor,
-          content: V2exMemberPageParser.replyHtmlToMarkdown(m[2] || ''),
-          created: meta.created
+          content: V2exMemberPageParser.replyHtmlToMarkdown(contentRendered),
+          content_rendered: contentRendered,
+          created: meta.created,
+          created_text: meta.createdText
         })
       }
+      rowIndex++
       m = re.exec(section)
     }
     return replies
@@ -170,7 +177,8 @@ export class V2exMemberPageParser {
       nodeName: node.name,
       nodeTitle: node.title,
       topicAuthor: author,
-      created: time.created
+      created: time.created,
+      createdText: time.text
     }
   }
 
@@ -198,7 +206,7 @@ export class V2exMemberPageParser {
   }
 
   private static extractTargetFloor(fragment: string): number {
-    const m = (fragment || '').match(/#(?:reply|r_?)(\d+)/i) || (fragment || '').match(/#(\d+)/)
+    const m = (fragment || '').match(/^#(\d+)$/)
     if (!m || !m[1]) {
       return 0
     }
@@ -206,13 +214,45 @@ export class V2exMemberPageParser {
     return Number.isFinite(parsed) ? parsed : 0
   }
 
+  private static buildReplyKey(meta: ReplyMeta, content: string, rowIndex: number): string {
+    const seed = [
+      meta.topicId.toString(),
+      meta.targetFloor.toString(),
+      meta.created.toString(),
+      meta.createdText,
+      rowIndex.toString(),
+      meta.topicTitle,
+      meta.nodeName,
+      meta.topicAuthor,
+      V2exMemberPageParser.compactText(content || '')
+    ].join('|')
+    return `user-reply-${V2exMemberPageParser.stableHash(seed)}`
+  }
+
+  private static stableHash(value: string): string {
+    let hash = 2166136261
+    for (let i = 0; i < value.length; i++) {
+      hash ^= value.charCodeAt(i)
+      hash = Math.imul(hash, 16777619)
+    }
+    return (hash >>> 0).toString(36)
+  }
+
   private static extractCreated(html: string): TimeMeta {
     const m = (html || '').match(/<span[^>]*title=['"]([^'"]+)['"][^>]*>([\s\S]*?)<\/span>/i)
     if (m && m[1]) {
       const created = V2exMemberPageParser.parseAbsoluteTime(m[1])
+      const text = V2exMemberPageParser.compactText(m[2] || '')
       if (created > 0) {
-        return { created, text: V2exMemberPageParser.compactText(m[2] || '') }
+        return { created, text }
       }
+      if (text) {
+        return { created: 0, text }
+      }
+    }
+    const fade = (html || '').match(/<span[^>]*class=['"][^'"]*\bfade\b[^'"]*['"][^>]*>([\s\S]*?)<\/span>/i)
+    if (fade && fade[1]) {
+      return { created: 0, text: V2exMemberPageParser.compactText(fade[1] || '') }
     }
     return { created: 0, text: '' }
   }

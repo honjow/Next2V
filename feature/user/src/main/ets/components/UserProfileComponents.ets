@@ -231,10 +231,45 @@ export struct UserProfileReplyCard {
     created: 0
   }
   @Prop fallbackUsername: string = ''
+  openTopic?: () => void
   openLink?: (url: string) => void
+  openImage?: (url: string) => void
   openMention?: (username: string) => void
+  private inlineActionInFlight: boolean = false
 
-  build() {
+  private replyBodySource(): string {
+    const rendered = (this.reply.content_rendered || '').trim()
+    if (rendered.length > 0) {
+      return this.reply.content_rendered || ''
+    }
+    return this.reply.content || ''
+  }
+
+  private replyTimeText(): string {
+    if (this.reply.created > 0) {
+      return DateUtils.toDateString(this.reply.created)
+    }
+    return (this.reply.created_text || '').trim()
+  }
+
+  private runInlineAction(action: () => void): void {
+    this.inlineActionInFlight = true
+    action()
+    setTimeout(() => {
+      this.inlineActionInFlight = false
+    }, 0)
+  }
+
+  private openPrimaryTopic(): void {
+    if (this.inlineActionInFlight) {
+      return
+    }
+    if (this.openTopic) {
+      this.openTopic()
+    }
+  }
+
+  @Builder private ReplyCardContent() {
     Column({ space: ThemeConstants.SPACE_SM }) {
       Row({ space: ThemeConstants.SPACE_XS }) {
         Text(this.reply.topic_author || this.fallbackUsername)
@@ -249,10 +284,12 @@ export struct UserProfileReplyCard {
           .maxLines(1)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
         Blank()
-        if (this.reply.created > 0) {
-          Text(DateUtils.toDateString(this.reply.created))
+        if (this.replyTimeText()) {
+          Text(this.replyTimeText())
             .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
             .fontColor($r('sys.color.font_secondary'))
+            .maxLines(1)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
         }
       }
       .width('100%')
@@ -264,26 +301,53 @@ export struct UserProfileReplyCard {
         .textOverflow({ overflow: TextOverflow.Ellipsis })
         .width('100%')
 
-      if (this.reply.content) {
+      if (this.replyBodySource()) {
         MarkdownContent({
-          source: this.reply.content,
+          source: this.replyBodySource(),
           topMargin: 0,
           onLinkClick: (url: string) => {
-            if (this.openLink) {
-              this.openLink(url)
-            }
+            this.runInlineAction(() => {
+              if (this.openLink) {
+                this.openLink(url)
+              }
+            })
+          },
+          onImageClick: (url: string) => {
+            this.runInlineAction(() => {
+              if (this.openImage) {
+                this.openImage(url)
+              }
+            })
           },
           onMentionClick: (username: string) => {
-            if (this.openMention) {
-              this.openMention(username)
-            }
+            this.runInlineAction(() => {
+              if (this.openMention) {
+                this.openMention(username)
+              }
+            })
           },
         })
       }
     }
+    .width('100%')
+    .alignItems(HorizontalAlign.Start)
+  }
+
+  build() {
+    Button() {
+      this.ReplyCardContent()
+    }
+    .type(ButtonType.Normal)
     .padding(ThemeConstants.SPACE_MD)
     .width('100%')
     .borderRadius(ThemeConstants.RADIUS_CARD)
     .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+    .stateStyles({
+      pressed: { .backgroundColor($r('sys.color.ohos_id_color_card_bg')) },
+      normal: { .backgroundColor($r('sys.color.ohos_id_color_card_bg')) },
+    })
+    .onClick(() => {
+      this.openPrimaryTopic()
+    })
   }
 }
