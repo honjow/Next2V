@@ -10,6 +10,14 @@ import { HtmlEntityUtils } from "../utils/HtmlEntityUtils";
 import { Base64DecodeUtils } from "../utils/Base64DecodeUtils";
 import { MarkdownCodeBlock } from "./markdown/MarkdownCodeBlock";
 import { _codeBackground, normalizeCodeLanguage } from "./markdown/MarkdownCodeInternals";
+import {
+  INLINE_IMAGE_SIZE_RECORD_LIMIT,
+  InlineImageSizeRecord,
+  _appendCacheBust,
+  _areaWidth,
+  _findInlineImageSizeRecord,
+  _inlineImageRenderSizeByUrl,
+} from "./markdown/MarkdownImageInternals";
 
 // V2Next owns the Markdown fallback parser and render-token compatibility surface here.
 // Rendered V2EX content_rendered HTML stays on the renderedHtmlToTokens path; do not
@@ -26,13 +34,6 @@ const IMAGE_BLOCK_MONO = "customImageBlock";
 const IMAGE_TABLE_MONO = "customImageTable";
 const IMAGE_TABLE_START = "@@V2NEXT_IMAGE_TABLE_START@@";
 const IMAGE_TABLE_END = "@@V2NEXT_IMAGE_TABLE_END@@";
-// Visible load sentinel for inline images whose intrinsic dimensions are not known yet.
-// Once ImageSpan reports dimensions, the measured image size wins even if the
-// paragraph width has not reported yet.
-const INLINE_IMAGE_PENDING_SIZE = 24;
-const INLINE_IMAGE_VIEWPORT_SAFE_MAX_HEIGHT = 1200;
-const INLINE_IMAGE_SIZE_RECORD_LIMIT = 64;
-
 const RENDER_BODY_FONT_SIZE = 14;
 const RENDER_BODY_LINE_HEIGHT = 20;
 const RENDER_H1_FONT_SIZE = 22;
@@ -216,12 +217,6 @@ interface InlineImageToken extends Tokens.Image {
   inlineImage?: boolean;
 }
 
-interface InlineImageSizeRecord {
-  url: string;
-  widthPx: number;
-  heightPx: number;
-}
-
 interface InlineImageRenderSize {
   width: number;
   height: number;
@@ -263,18 +258,6 @@ function _isInlineImageToken(token: Token): boolean {
   return token && token.type === "image" && image.inlineImage === true;
 }
 
-function _findInlineImageSizeRecord(records: InlineImageSizeRecord[], url: string): InlineImageSizeRecord | null {
-  if (!url || !records || records.length === 0) {
-    return null;
-  }
-  for (const record of records) {
-    if (record.url === url) {
-      return record;
-    }
-  }
-  return null;
-}
-
 function _inlineImageRenderUrl(token: Token): string {
   if (!token || token.type !== "image") {
     return "";
@@ -282,40 +265,9 @@ function _inlineImageRenderUrl(token: Token): string {
   return MediaUrlUtils.imageUrlForRender((token as Tokens.Image).href);
 }
 
-function _areaWidth(value: Area): number {
-  if (typeof value.width === 'number') {
-    return value.width;
-  }
-  if (typeof value.width === 'string') {
-    const parsed = Number.parseFloat(value.width);
-    return Number.isNaN(parsed) ? 0 : parsed;
-  }
-  return 0;
-}
-
 function _inlineImageRenderSize(token: Token, sizeRecords: InlineImageSizeRecord[], availableWidth: number): InlineImageRenderSize {
   const contentMaxWidth = Math.max(0, availableWidth);
-  const url = _inlineImageRenderUrl(token);
-  const record = _findInlineImageSizeRecord(sizeRecords, url);
-  const widthPx = record?.widthPx ?? 0;
-  const heightPx = record?.heightPx ?? 0;
-  if (widthPx <= 0 || heightPx <= 0) {
-    return {
-      width: INLINE_IMAGE_PENDING_SIZE,
-      height: INLINE_IMAGE_PENDING_SIZE,
-    };
-  }
-  if (contentMaxWidth <= 0) {
-    return {
-      width: Math.max(1, Math.round(widthPx)),
-      height: Math.max(1, Math.round(heightPx)),
-    };
-  }
-  const scale = Math.min(1, contentMaxWidth / widthPx, INLINE_IMAGE_VIEWPORT_SAFE_MAX_HEIGHT / heightPx);
-  return {
-    width: Math.max(1, Math.round(widthPx * scale)),
-    height: Math.max(1, Math.round(heightPx * scale)),
-  };
+  return _inlineImageRenderSizeByUrl(_inlineImageRenderUrl(token), sizeRecords, contentMaxWidth);
 }
 
 function _isMixedInlineImageCandidate(token: Token): boolean {
@@ -335,17 +287,6 @@ function _isMixedInlineImageCandidate(token: Token): boolean {
 function _inlineTokenKey(token: Token, index: number): string {
   const record = token as TokenRecord;
   return `${String(record.type ?? "token")}-${String(record.raw ?? record.href ?? record.text ?? index)}-${index}`;
-}
-
-function _appendCacheBust(url: string, nonce: number): string {
-  if (!url) {
-    return "";
-  }
-  if (nonce <= 0) {
-    return url;
-  }
-  const sep = url.indexOf("?") >= 0 ? "&" : "?";
-  return `${url}${sep}_r=${nonce}`;
 }
 
 function _quoteBackground(isDark: boolean): ResourceColor {

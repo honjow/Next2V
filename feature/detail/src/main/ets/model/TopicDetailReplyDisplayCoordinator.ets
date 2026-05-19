@@ -1,11 +1,24 @@
 import {
   ReplyDisplaySettings,
   V2exReply,
+  V2exTopic,
 } from 'shared'
 
 export interface ReplyDisplayModeOption {
   label: string
   mode: string
+}
+
+export interface TopicDetailReplyCardDisplayState {
+  floor: number
+  isOp: boolean
+  threadLevel: number
+  displayContent: string
+  childReplies: V2exReply[]
+  opMemberId: number
+  hideLeadingMention: boolean
+  isWrongReference: boolean
+  isDuplicateThreadItem: boolean
 }
 
 export class TopicDetailReplyDisplayCoordinator {
@@ -31,6 +44,44 @@ export class TopicDetailReplyDisplayCoordinator {
 
   static modeText(mode: string): string {
     return ReplyDisplaySettings.modeText(mode)
+  }
+
+  static isThreadMode(mode: string): boolean {
+    return mode === ReplyDisplaySettings.MODE_THREAD ||
+      mode === ReplyDisplaySettings.MODE_THREAD_WITH_MENTION ||
+      mode === ReplyDisplaySettings.MODE_THREAD_REDUNDANT
+  }
+
+  static shouldPreloadForMode(
+    mode: string,
+    allRepliesLoaded: boolean,
+    repliesHasMore: boolean,
+  ): boolean {
+    return TopicDetailReplyDisplayCoordinator.isThreadMode(mode) &&
+      !allRepliesLoaded &&
+      repliesHasMore
+  }
+
+  static replyCardDisplayState(
+    reply: V2exReply,
+    topic: V2exTopic | null,
+    resolvedFloor: number,
+    fallbackIndex: number,
+    mode: string,
+  ): TopicDetailReplyCardDisplayState {
+    const floor = TopicDetailReplyDisplayCoordinator.floorForReply(resolvedFloor, fallbackIndex)
+    const opMemberId = topic !== null ? topic.member.id : 0
+    return {
+      floor: floor,
+      isOp: topic !== null && reply.member.id === topic.member.id,
+      threadLevel: reply.threadLevel || 0,
+      displayContent: TopicDetailReplyDisplayCoordinator.displayContent(reply, mode),
+      childReplies: reply.threadChildren || [],
+      opMemberId: opMemberId,
+      hideLeadingMention: mode === ReplyDisplaySettings.MODE_THREAD,
+      isWrongReference: !!reply.isWrongReference,
+      isDuplicateThreadItem: !!reply.isDuplicateThreadItem,
+    }
   }
 
   static displayContent(reply: V2exReply, mode: string): string {

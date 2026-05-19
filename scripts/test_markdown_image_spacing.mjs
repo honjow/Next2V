@@ -397,6 +397,8 @@ if (paragraphRunWithInlineImage.length !== 2) {
 }
 
 const source = await import('node:fs').then(fs => fs.readFileSync('shared/src/main/ets/components/MarkdownContent.ets', 'utf8'))
+const imageInternalsSource = await import('node:fs').then(fs => fs.readFileSync('shared/src/main/ets/components/markdown/MarkdownImageInternals.ets', 'utf8'))
+const imageRenderingSource = `${source}\n${imageInternalsSource}`
 const customListMatch = source.match(/struct CustomList[\s\S]*?\/\/ customInlineBuilder callback/)
 if (!customListMatch) {
   console.error('FAIL could not locate CustomList source block')
@@ -433,8 +435,8 @@ if (/INLINE_IMAGE_SPAN_MAX_WIDTH|INLINE_IMAGE_SPAN_MAX_HEIGHT/.test(source)) {
   console.error('FAIL inline images must not use fixed 320x240 span caps')
   process.exit(1)
 }
-const inlineSizeSource = source.match(/function _inlineImageRenderSize[\s\S]*?\n}/)?.[0] || ''
-if (/INLINE_IMAGE_CONTENT_MAX_WIDTH\s*=\s*360/.test(source) || !/const INLINE_IMAGE_PENDING_SIZE = 24;/.test(source) || !/availableWidth: number/.test(inlineSizeSource) || !/const contentMaxWidth = Math\.max\(0, availableWidth\);/.test(inlineSizeSource) || !/widthPx[\s\S]*heightPx/.test(inlineSizeSource) || !/width: INLINE_IMAGE_PENDING_SIZE,[\s\S]*height: INLINE_IMAGE_PENDING_SIZE/.test(inlineSizeSource) || !/contentMaxWidth <= 0[\s\S]*Math\.round\(widthPx\)[\s\S]*Math\.round\(heightPx\)/.test(inlineSizeSource) || !/scale = Math\.min\(1, contentMaxWidth \/ widthPx/.test(inlineSizeSource)) {
+const inlineSizeSource = `${imageRenderingSource.match(/function _inlineImageRenderSize[\s\S]*?\n}/)?.[0] || ''}\n${imageRenderingSource.match(/function _inlineImageRenderSizeByUrl[\s\S]*?\n}/)?.[0] || ''}`
+if (/INLINE_IMAGE_CONTENT_MAX_WIDTH\s*=\s*360/.test(source) || !/const INLINE_IMAGE_PENDING_SIZE = 24;/.test(imageRenderingSource) || !/availableWidth: number/.test(inlineSizeSource) || !/const contentMaxWidth = Math\.max\(0, availableWidth\);/.test(inlineSizeSource) || !/widthPx[\s\S]*heightPx/.test(inlineSizeSource) || !/width: INLINE_IMAGE_PENDING_SIZE,[\s\S]*height: INLINE_IMAGE_PENDING_SIZE/.test(inlineSizeSource) || !/contentMaxWidth <= 0[\s\S]*Math\.round\(widthPx\)[\s\S]*Math\.round\(heightPx\)/.test(inlineSizeSource) || !/contentMaxWidth \/ widthPx/.test(inlineSizeSource)) {
   console.error('FAIL inline image dimensions should use a visible pending sentinel, then prefer known dimensions before measured width is available')
   process.exit(1)
 }
@@ -450,7 +452,7 @@ if (/return \{ width: fallback, height: fallback \}/.test(source)) {
   console.error('FAIL missing inline image records must not fall back to font-size square icons')
   process.exit(1)
 }
-if (/\(event\?\.loadingStatus \?\? 0\) !== 1/.test(source) || !/widthPx <= 0 \|\| heightPx <= 0/.test(source)) {
+if (/\(event\?\.loadingStatus \?\? 0\) !== 1/.test(source) || !/widthPx <= 0 \|\| heightPx <= 0/.test(imageRenderingSource)) {
   console.error('FAIL inline image completion should record any onComplete event with valid intrinsic dimensions, including loadingStatus 0 data-load callbacks')
   process.exit(1)
 }

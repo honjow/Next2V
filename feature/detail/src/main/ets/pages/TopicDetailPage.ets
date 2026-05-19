@@ -23,7 +23,10 @@ import {
   TopicDetailFloatingActionCoordinator,
   type TopicDetailFollowTouchState,
 } from '../model/TopicDetailFloatingActionCoordinator'
-import { TopicDetailReplyDisplayCoordinator } from '../model/TopicDetailReplyDisplayCoordinator'
+import {
+  TopicDetailReplyDisplayCoordinator,
+  type TopicDetailReplyCardDisplayState,
+} from '../model/TopicDetailReplyDisplayCoordinator'
 import { TopicDetailScrollCoordinator } from '../model/TopicDetailScrollCoordinator'
 import { common, Want } from '@kit.AbilityKit'
 import { LengthMetrics, promptAction } from '@kit.ArkUI'
@@ -512,24 +515,24 @@ export struct TopicDetailPage {
           ListItem() {
             ReplyCard({
               reply: reply,
-              floor: this.getFloorForReply(reply.id, index),
-              isOp: this.v.topic !== null && reply.member.id === this.v.topic!.member.id,
+              floor: this.replyCardDisplayState(reply, index).floor,
+              isOp: this.replyCardDisplayState(reply, index).isOp,
               isThanked: this.isReplyThanked(reply.id),
               isThankPending: this.isReplyThankPending(reply.id),
-              threadLevel: reply.threadLevel || 0,
+              threadLevel: this.replyCardDisplayState(reply, index).threadLevel,
               relationLabel: '',
-              displayContent: this.replyDisplayContent(reply),
-              childReplies: reply.threadChildren || [],
-              opMemberId: this.v.topic !== null ? this.v.topic!.member.id : 0,
-              hideLeadingMention: this.v.replyDisplayMode === 'thread',
+              displayContent: this.replyCardDisplayState(reply, index).displayContent,
+              childReplies: this.replyCardDisplayState(reply, index).childReplies,
+              opMemberId: this.replyCardDisplayState(reply, index).opMemberId,
+              hideLeadingMention: this.replyCardDisplayState(reply, index).hideLeadingMention,
               isReplyThanked: (target: V2exReply) => {
                 return this.isReplyThanked(target.id)
               },
               isReplyThankPending: (target: V2exReply) => {
                 return this.isReplyThankPending(target.id)
               },
-              isWrongReference: !!reply.isWrongReference,
-              isDuplicateThreadItem: !!reply.isDuplicateThreadItem,
+              isWrongReference: this.replyCardDisplayState(reply, index).isWrongReference,
+              isDuplicateThreadItem: this.replyCardDisplayState(reply, index).isDuplicateThreadItem,
               onUserClick: (target: V2exReply) => {
                 let p: UserProfileParams = { username: target.member.username }
                 this.stack.pushPathByName('UserProfile', p as Object)
@@ -971,11 +974,13 @@ export struct TopicDetailPage {
   private updateReplyDisplayMode(mode: string): void {
     const normalizedMode = ReplyDisplaySettings.normalizeMode(mode)
     this.replyDisplayMode = normalizedMode
-    const isThreadSwitch =
-      normalizedMode === ReplyDisplaySettings.MODE_THREAD ||
-      normalizedMode === ReplyDisplaySettings.MODE_THREAD_WITH_MENTION ||
-      normalizedMode === ReplyDisplaySettings.MODE_THREAD_REDUNDANT
-    if (isThreadSwitch && !this.v.allRepliesLoaded && this.v.repliesHasMore) {
+    if (
+      TopicDetailReplyDisplayCoordinator.shouldPreloadForMode(
+        normalizedMode,
+        this.v.allRepliesLoaded,
+        this.v.repliesHasMore,
+      )
+    ) {
       this.v.switchToThreadModeAndPreload(normalizedMode)
     } else {
       this.v.setReplyDisplayMode(normalizedMode)
@@ -997,8 +1002,17 @@ export struct TopicDetailPage {
     return TopicDetailReplyDisplayCoordinator.modeText(this.v.replyDisplayMode)
   }
 
-  private replyDisplayContent(reply: V2exReply): string {
-    return TopicDetailReplyDisplayCoordinator.displayContent(reply, this.v.replyDisplayMode)
+  private replyCardDisplayState(
+    reply: V2exReply,
+    index: number,
+  ): TopicDetailReplyCardDisplayState {
+    return TopicDetailReplyDisplayCoordinator.replyCardDisplayState(
+      reply,
+      this.v.topic,
+      this.v.getReplyFloor(reply.id),
+      index,
+      this.v.replyDisplayMode,
+    )
   }
 
   private getFloorForReply(replyId: number, index: number): number {
