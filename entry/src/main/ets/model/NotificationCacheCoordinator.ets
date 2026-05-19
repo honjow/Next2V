@@ -21,10 +21,11 @@ export class NotificationCacheCoordinator {
     username: string,
     storedUsername: string,
     sessionUsername: string,
+    source: string,
     currentCount: number,
     loadedFromCache: boolean
   ): Promise<NotificationCacheLoadResult> {
-    const ownerKey = NotificationPageCoordinator.ownerKey(username, storedUsername, sessionUsername)
+    const ownerKey = NotificationPageCoordinator.ownerKey(username, storedUsername, sessionUsername, source)
     if (!ownerKey || (currentCount > 0 && !loadedFromCache)) {
       return NotificationCacheCoordinator.skippedLoadResult()
     }
@@ -45,11 +46,12 @@ export class NotificationCacheCoordinator {
     username: string,
     storedUsername: string,
     sessionUsername: string,
+    source: string,
     items: V2exNotification[],
     page: number,
     hasMore: boolean
   ): Promise<NotificationCacheSaveResult> {
-    const ownerKey = NotificationPageCoordinator.ownerKey(username, storedUsername, sessionUsername)
+    const ownerKey = NotificationPageCoordinator.ownerKey(username, storedUsername, sessionUsername, source)
     if (!ownerKey) {
       return { updatedAt: 0 }
     }

@@ -166,12 +166,16 @@ export class NotificationCenterViewModel {
     return this.sourceLabel(this.source(context))
   }
 
+  sourceKeyFor(context: NotificationAuthContext): NotificationSource {
+    return this.source(context)
+  }
+
   private source(context: NotificationAuthContext): NotificationSource {
-    if (context.tokenConfigured && !!context.token) {
-      return 'pat'
-    }
     if (context.cookieConfigured && !!context.cookie) {
       return 'cookie'
+    }
+    if (context.tokenConfigured && !!context.token) {
+      return 'pat'
     }
     return 'none'
   }

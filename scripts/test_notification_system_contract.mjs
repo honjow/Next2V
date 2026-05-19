@@ -69,8 +69,16 @@ for (const token of [
 
 const vm = read('entry/src/main/ets/viewmodel/NotificationCenterViewModel.ets')
 assert(!vm.includes("'已读'"), 'NotificationCenterViewModel should not emit a visible read tag')
+const sourceMethodMatch = vm.match(/private source\(context: NotificationAuthContext\): NotificationSource \{([\s\S]*?)\n  \}/)
+assert(sourceMethodMatch, 'NotificationCenterViewModel missing source selector')
+assert(
+  sourceMethodMatch[1].indexOf("return 'cookie'") >= 0 &&
+    sourceMethodMatch[1].indexOf("return 'cookie'") < sourceMethodMatch[1].indexOf("return 'pat'"),
+  'NotificationCenterViewModel must prefer Web-session notifications over stale API v2 notifications when both auth sources exist'
+)
 for (const token of [
   'canDeleteItem(context: NotificationAuthContext, item: V2exNotification)',
+  'sourceKeyFor(context: NotificationAuthContext): NotificationSource',
   'unreadCount(items: V2exNotification[]): number',
   'async unreadCountFromCookie(cookie: string): Promise<number>',
   'webDeleteId(item: V2exNotification): number',
@@ -113,6 +121,59 @@ assert(localDataHandlerMatch, 'NotificationPage missing onLocalDataUpdated handl
 assert(
   !localDataHandlerMatch[1].includes('resetNotificationState()'),
   'NotificationPage must not blank the notification list on local data updates'
+)
+const loadAuthSnapshotStart = page.indexOf('private loadAuthSnapshot(forceNotifications: boolean = false): void {')
+const refreshVisibleStart = page.indexOf('private refreshVisibleNotificationsIfNeeded(): void {')
+assert(loadAuthSnapshotStart >= 0 && refreshVisibleStart > loadAuthSnapshotStart, 'NotificationPage missing loadAuthSnapshot body')
+const loadAuthSnapshotBody = page.slice(loadAuthSnapshotStart, refreshVisibleStart)
+assert(
+  loadAuthSnapshotBody.indexOf('this.loadNotifications(forceNotifications)') >= 0 &&
+    loadAuthSnapshotBody.indexOf('this.loadNotifications(forceNotifications)') <
+      loadAuthSnapshotBody.indexOf('this.loadNotificationCache(snapshot.username || this.sessionUsername)'),
+  'NotificationPage must start the authenticated refresh before loading notification cache'
+)
+assert(
+  page.includes('tokenConfigured: this.authTokenConfigured || token.length > 0'),
+  'NotificationPage auth context must treat the freshly loaded token as configured before StorageLink propagation'
+)
+const resetNotificationStateMatch = page.match(/private resetNotificationState\(\): void \{([\s\S]*?)\n  \}/)
+assert(resetNotificationStateMatch, 'NotificationPage missing resetNotificationState body')
+assert(
+  resetNotificationStateMatch[1].includes("this.authToken = ''"),
+  'NotificationPage auth reset must clear the local token so stale PAT auth cannot refresh before snapshot reload'
+)
+assert(
+  page.includes('private notificationRefreshRequestId: number = 0') &&
+    page.includes('private notificationCacheRequestId: number = 0'),
+  'NotificationPage must keep request ids for notification refresh/cache ordering'
+)
+assert(
+  page.includes('private pendingNotificationForceRefresh: boolean = false') &&
+    page.includes('this.pendingNotificationForceRefresh = true') &&
+    page.includes('private replayPendingNotificationForceRefresh(): void') &&
+    page.includes('this.loadAuthSnapshot(true)'),
+  'NotificationPage must replay a forced tab refresh that arrived during the hidden first notification load'
+)
+assert(
+  page.includes('const requestId = ++this.notificationRefreshRequestId') &&
+    page.includes('this.notificationCacheRequestId++'),
+  'NotificationPage refresh must invalidate older notification cache loads'
+)
+assert(
+  page.includes('const refreshInFlightAtStart = this.isNotificationLoading') &&
+    page.includes('if (refreshInFlightAtStart || this.isNotificationLoading)'),
+  'NotificationPage cache load must not apply while an authenticated refresh is in flight'
+)
+assert(
+  page.includes('if (this.notifications.length > 0 && !this.notificationLoadedFromCache)'),
+  'NotificationPage cache load must not overwrite already loaded fresh notifications'
+)
+const deleteItemMatch = page.match(/private deleteNotificationItem\(item: V2exNotification\): void \{([\s\S]*?)\n  \}/)
+assert(deleteItemMatch, 'NotificationPage missing deleteNotificationItem body')
+assert(
+  deleteItemMatch[1].indexOf('this.deleteNotificationWithCookie(item)') >= 0 &&
+    deleteItemMatch[1].indexOf('this.deleteNotificationWithCookie(item)') < deleteItemMatch[1].indexOf('this.deleteNotification(item)'),
+  'NotificationPage must delete Web-session notification rows with the Web delete action before falling back to PAT delete'
 )
 for (const forbidden of [
   'NotificationDeleteConfirmDialog',
@@ -209,5 +270,18 @@ for (const token of [
 ]) {
   assert(sessionParser.includes(token), `V2exSessionParser unread-count contract missing ${token}`)
 }
+
+const cacheCoordinator = read('entry/src/main/ets/model/NotificationCacheCoordinator.ets')
+assert(
+  cacheCoordinator.includes('source: string') &&
+    cacheCoordinator.includes('NotificationPageCoordinator.ownerKey(username, storedUsername, sessionUsername, source)'),
+  'Notification cache coordinator must include auth source in cache ownership'
+)
+const pageCoordinator = read('entry/src/main/ets/model/NotificationPageCoordinator.ets')
+assert(
+  pageCoordinator.includes("':source:' + cleanSource") &&
+    pageCoordinator.includes("cleanSource === 'none'"),
+  'Notification owner key must separate PAT and Web-session caches'
+)
 
 console.log('notification system contract ok')

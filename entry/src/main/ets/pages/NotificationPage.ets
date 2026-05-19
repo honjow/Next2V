@@ -60,6 +60,9 @@ export struct NotificationPage {
   private notificationVm: NotificationCenterViewModel = new NotificationCenterViewModel(this.api)
   private readonly NOTIFICATION_PAGE_SIZE: number = 20
   private authRefreshRequestId: number = 0
+  private notificationRefreshRequestId: number = 0
+  private notificationCacheRequestId: number = 0
+  private pendingNotificationForceRefresh: boolean = false
   private notificationEntryUnreadCount: number = 0
   private pendingNotificationDeletes: Set<number> = new Set<number>()
   @Prop @Watch('onRefreshKeyChanged') refreshKey: number = 0
@@ -211,8 +214,8 @@ export struct NotificationPage {
           return
         }
         this.authToken = snapshot.token
-        this.loadNotificationCache(snapshot.username || this.sessionUsername)
         this.loadNotifications(forceNotifications)
+        this.loadNotificationCache(snapshot.username || this.sessionUsername)
       })
       .catch((error: Error) => {
         if (requestId !== this.authRefreshRequestId) {
@@ -245,9 +248,10 @@ export struct NotificationPage {
 
   private notificationAuthContext(): NotificationAuthContext {
     const cookie = CookieJarSettings.getCurrentCookie()
+    const token = (this.authToken || '').trim()
     return {
-      tokenConfigured: this.authTokenConfigured,
-      token: this.authToken,
+      tokenConfigured: this.authTokenConfigured || token.length > 0,
+      token: token,
       cookieConfigured: cookie.length > 0,
       cookie: cookie
     }
@@ -298,6 +302,11 @@ export struct NotificationPage {
   private deleteNotificationItem(item: V2exNotification): void {
     const localId = item.id || 0
     if (localId <= 0 || this.pendingNotificationDeletes.has(localId)) {
+      return
+    }
+    const cookie = CookieJarSettings.getCurrentCookie()
+    if (cookie && this.notificationVm.webDeleteId(item) > 0 && this.notificationVm.webDeleteOnce(item)) {
+      this.deleteNotificationWithCookie(item)
       return
     }
     if (this.authTokenConfigured && this.authToken) {
@@ -441,8 +450,12 @@ export struct NotificationPage {
 
   private async refreshNotifications(force: boolean = false): Promise<void> {
     const authContext = this.notificationAuthContext()
+    const hasAuth = this.notificationVm.hasAuth(authContext)
+    if (force && hasAuth && (this.isNotificationLoading || this.isNotificationLoadingMore)) {
+      this.pendingNotificationForceRefresh = true
+    }
     if (!NotificationPageCoordinator.shouldRefreshNotifications(
-      this.notificationVm.hasAuth(authContext),
+      hasAuth,
       this.isNotificationLoading,
       this.isNotificationLoadingMore,
       this.notifications.length,
@@ -454,6 +467,8 @@ export struct NotificationPage {
     if (force && this.notifications.length > 0) {
       this.resetViewedUnreadState()
     }
+    const requestId = ++this.notificationRefreshRequestId
+    this.notificationCacheRequestId++
     const entryUnreadCount = this.captureNotificationEntryUnreadCount()
     this.isNotificationLoading = true
     this.notificationError = ''
@@ -461,6 +476,9 @@ export struct NotificationPage {
     this.notificationHasMore = true
     try {
       const result = await this.notificationVm.loadPage(authContext, 1, this.NOTIFICATION_PAGE_SIZE)
+      if (requestId !== this.notificationRefreshRequestId) {
+        return
+      }
       this.viewedUnreadNotificationKeys = this.viewedUnreadKeysForLoadedItems(
         result.items,
         result.source === 'cookie',
@@ -474,6 +492,9 @@ export struct NotificationPage {
       this.notificationLoadedFromCache = false
       this.saveNotificationCache()
     } catch (error) {
+      if (requestId !== this.notificationRefreshRequestId) {
+        return
+      }
       const err = error as Error
       const message = err.message || '通知加载失败'
       this.notificationError = message
@@ -482,7 +503,10 @@ export struct NotificationPage {
       this.handleExpiredCookieSession(message)
       throw err
     } finally {
-      this.isNotificationLoading = false
+      if (requestId === this.notificationRefreshRequestId) {
+        this.isNotificationLoading = false
+        this.replayPendingNotificationForceRefresh()
+      }
     }
   }
 
@@ -528,10 +552,15 @@ export struct NotificationPage {
       })
       .finally(() => {
         this.isNotificationLoadingMore = false
+        this.replayPendingNotificationForceRefresh()
       })
   }
 
   private resetNotificationState(): void {
+    this.notificationRefreshRequestId++
+    this.notificationCacheRequestId++
+    this.pendingNotificationForceRefresh = false
+    this.authToken = ''
     this.notifications = []
     this.notificationError = ''
     this.isNotificationLoading = false
@@ -547,16 +576,29 @@ export struct NotificationPage {
 
   private loadNotificationCache(username: string): void {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    const authContext = this.notificationAuthContext()
+    const requestId = ++this.notificationCacheRequestId
+    const refreshInFlightAtStart = this.isNotificationLoading
     NotificationCacheCoordinator.load(
       context,
       username,
       this.storedUsername,
       this.sessionUsername,
+      this.notificationVm.sourceKeyFor(authContext),
       this.notifications.length,
       this.notificationLoadedFromCache
     )
       .then((result) => {
+        if (requestId !== this.notificationCacheRequestId) {
+          return
+        }
         if (result.skipped) {
+          return
+        }
+        if (refreshInFlightAtStart || this.isNotificationLoading) {
+          return
+        }
+        if (this.notifications.length > 0 && !this.notificationLoadedFromCache) {
           return
         }
         this.notificationCacheUpdatedAt = result.updatedAt
@@ -582,13 +624,28 @@ export struct NotificationPage {
       })
   }
 
+  private replayPendingNotificationForceRefresh(): void {
+    if (!this.pendingNotificationForceRefresh || this.isNotificationLoading || this.isNotificationLoadingMore) {
+      return
+    }
+    if (!this.notificationVm.hasAuth(this.notificationAuthContext())) {
+      return
+    }
+    this.pendingNotificationForceRefresh = false
+    setTimeout(() => {
+      this.loadAuthSnapshot(true)
+    }, 0)
+  }
+
   private saveNotificationCache(): void {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    const authContext = this.notificationAuthContext()
     NotificationCacheCoordinator.save(
       context,
       '',
       this.storedUsername,
       this.sessionUsername,
+      this.notificationVm.sourceKeyFor(authContext),
       this.notifications,
       this.notificationPage,
       this.notificationHasMore
@@ -621,10 +678,7 @@ export struct NotificationPage {
   }
 
   private isCookieNotificationSource(context: NotificationAuthContext): boolean {
-    if (context.tokenConfigured && !!context.token) {
-      return false
-    }
-    return context.cookieConfigured && !!context.cookie
+    return this.notificationVm.sourceKeyFor(context) === 'cookie'
   }
 
   private viewedUnreadKeysForLoadedItems(

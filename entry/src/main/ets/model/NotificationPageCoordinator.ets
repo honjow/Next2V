@@ -67,7 +67,7 @@ export class NotificationPageCoordinator {
     return force || notificationCount === 0 || loadedFromCache
   }
 
-  static ownerKey(username: string, storedUsername: string, sessionUsername: string): string {
+  static ownerKey(username: string, storedUsername: string, sessionUsername: string, source: string): string {
     let owner = (username || '').trim()
     if (!owner) {
       owner = (storedUsername || '').trim()
@@ -75,6 +75,10 @@ export class NotificationPageCoordinator {
     if (!owner) {
       owner = (sessionUsername || '').trim()
     }
-    return owner ? 'member:' + owner : ''
+    const cleanSource = (source || '').trim()
+    if (!owner || !cleanSource || cleanSource === 'none') {
+      return ''
+    }
+    return 'member:' + owner + ':source:' + cleanSource
   }
 }
