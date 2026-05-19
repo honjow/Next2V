@@ -114,6 +114,11 @@ export struct UserProfilePage {
               ListItem() {
                 UserProfileEmptyCard({ message: '主题列表已隐藏' })
               }
+            } else if (this.vm.recentTopicCount === 0 && this.vm.isLoading) {
+              ListItem() {
+                UserProfileLoadingState()
+                  .padding(ThemeConstants.SPACE_LG)
+              }
             } else if (this.vm.recentTopicCount === 0) {
               ListItem() {
                 UserProfileEmptyCard({ message: '暂无主题' })
@@ -149,7 +154,12 @@ export struct UserProfilePage {
               }
             }
           } else {
-            if (this.vm.recentReplyCount === 0) {
+            if (this.vm.recentReplyCount === 0 && this.vm.isLoading) {
+              ListItem() {
+                UserProfileLoadingState()
+                  .padding(ThemeConstants.SPACE_LG)
+              }
+            } else if (this.vm.recentReplyCount === 0) {
               ListItem() {
                 UserProfileEmptyCard({ message: '暂无回复' })
               }
