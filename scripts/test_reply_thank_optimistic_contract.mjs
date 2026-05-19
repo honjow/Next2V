@@ -42,8 +42,16 @@ assert.match(executeBody, /\.finally\(\(\)\s*=>\s*\{[\s\S]*this\.isReplyThankLoa
 assert.doesNotMatch(executeBody, /\.then\(\(\)\s*=>\s*\{[\s\S]*markReplyThanked\(reply\.id\)/)
 
 const thankButtonBody = methodBody(replyCardActions, 'ThankButton')
-assert.doesNotMatch(thankButtonBody, /\.opacity\([^)]*isThankPending[^)]*\)/)
-assert.match(thankButtonBody, /\.enabled\(!this\.isThankPending\)/)
+assert.doesNotMatch(
+  thankButtonBody,
+  /\.(?:enabled|opacity)\([^)]*isThankPending[^)]*\)/,
+  'reply thank pending state must not drive disabled or opacity visuals',
+)
+assert.doesNotMatch(
+  thankButtonBody,
+  /(?:LoadingProgress|Progress)\s*\([^)]*\)[\s\S]*isThankPending|isThankPending[\s\S]*(?:LoadingProgress|Progress)\s*\([^)]*\)/,
+  'reply thank pending state must not drive loading/progress visuals',
+)
 assert.match(thankButtonBody, /if \(this\.onThankClick && !this\.isThankPending\)/)
 
 const optimisticBody = methodBody(viewModel, 'optimisticallyMarkReplyThanked')

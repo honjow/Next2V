@@ -113,7 +113,6 @@ export struct ReplyCardActions {
       .padding({ left: ThemeConstants.SPACE_XS, right: ThemeConstants.SPACE_XS })
       .borderRadius(ThemeConstants.RADIUS_ROUND)
       .backgroundColor(Color.Transparent)
-      .enabled(!this.isThankPending)
       .onClick(() => {
         if (this.onThankClick && !this.isThankPending) {
           this.onThankClick(this.reply)

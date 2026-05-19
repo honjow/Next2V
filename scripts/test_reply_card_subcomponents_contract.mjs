@@ -110,8 +110,7 @@ for (const symbol of [
   assert.ok(actions.includes(symbol), `reply action symbol missing: ${symbol}`)
 }
 assert.match(actions, /setTimeout\(\(\) => \{[\s\S]*action\(this\.reply\)[\s\S]*\},\s*80\)/)
-assert.match(actions, /opacity\(this\.isThankPending \? 0\.45 : 1\)/)
-assert.match(actions, /enabled\(!this\.isThankPending\)/)
+assert.doesNotMatch(actions, /\.(?:enabled|opacity)\([^)]*isThankPending[^)]*\)/)
 assert.match(actions, /this\.onThankClick && !this\.isThankPending/)
 assert.match(actions, /if \(this\.hasContextMenuActions\(\)\)/)
 assert.match(actions, /else if \(this\.onActionsClick\)/)
