@@ -69,7 +69,6 @@ export struct NotificationPage {
   }
 
   onRefreshKeyChanged(_propName: string): void {
-    this.resetNotificationState()
     this.loadAuthSnapshot(true)
   }
 

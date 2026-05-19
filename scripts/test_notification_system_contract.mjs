@@ -92,6 +92,22 @@ for (const token of [
 
 const page = read('entry/src/main/ets/pages/NotificationPage.ets')
 assert(!page.includes('NotificationSummaryCard({'), 'NotificationPage must not render the old summary card as the first list item')
+const refreshKeyHandlerMatch = page.match(/onRefreshKeyChanged\(_propName: string\): void \{([\s\S]*?)\n  \}/)
+assert(refreshKeyHandlerMatch, 'NotificationPage missing onRefreshKeyChanged handler')
+assert(
+  !refreshKeyHandlerMatch[1].includes('resetNotificationState()'),
+  'NotificationPage must not blank the notification list on tab re-entry refresh'
+)
+assert(
+  refreshKeyHandlerMatch[1].includes('loadAuthSnapshot(true)'),
+  'NotificationPage tab re-entry refresh must still request a forced notification refresh'
+)
+const authHandlerMatch = page.match(/onAuthChanged\(_propName: string\): void \{([\s\S]*?)\n  \}/)
+assert(authHandlerMatch, 'NotificationPage missing onAuthChanged handler')
+assert(
+  authHandlerMatch[1].includes('resetNotificationState()'),
+  'NotificationPage must still reset notification state on auth changes'
+)
 const localDataHandlerMatch = page.match(/onLocalDataUpdated\(_propName: string\): void \{([\s\S]*?)\n  \}/)
 assert(localDataHandlerMatch, 'NotificationPage missing onLocalDataUpdated handler')
 assert(
