@@ -7,6 +7,7 @@ const read = (path) => readFileSync(path, 'utf8')
 const page = read('feature/detail/src/main/ets/pages/TopicDetailPage.ets')
 const viewModel = read('feature/detail/src/main/ets/viewmodel/DetailViewModel.ets')
 const coordinator = read('feature/detail/src/main/ets/model/TopicDetailActionCoordinator.ets')
+const replyCardActions = read('shared/src/main/ets/components/reply/ReplyCardActions.ets')
 
 function methodBody(source, name) {
   const marker = `${name}(`
@@ -39,6 +40,11 @@ assert.match(executeBody, /\.then\(\(\)\s*=>\s*\{[\s\S]*已感谢[\s\S]*\}\)/)
 assert.match(executeBody, /\.catch\(\(error: Error\)\s*=>\s*\{[\s\S]*this\.v\.rollbackReplyThank\(replyThankSnapshot\)[\s\S]*rollbackReplyThankedIds\(\s*thankedIdsSnapshot,\s*this\.thankedReplyIdsJson,\s*\)[\s\S]*感谢失败/)
 assert.match(executeBody, /\.finally\(\(\)\s*=>\s*\{[\s\S]*this\.isReplyThankLoading = false[\s\S]*this\.clearReplyThankLock\(\)/)
 assert.doesNotMatch(executeBody, /\.then\(\(\)\s*=>\s*\{[\s\S]*markReplyThanked\(reply\.id\)/)
+
+const thankButtonBody = methodBody(replyCardActions, 'ThankButton')
+assert.doesNotMatch(thankButtonBody, /\.opacity\([^)]*isThankPending[^)]*\)/)
+assert.match(thankButtonBody, /\.enabled\(!this\.isThankPending\)/)
+assert.match(thankButtonBody, /if \(this\.onThankClick && !this\.isThankPending\)/)
 
 const optimisticBody = methodBody(viewModel, 'optimisticallyMarkReplyThanked')
 assert.match(viewModel, /export interface ReplyThankSnapshot/)
