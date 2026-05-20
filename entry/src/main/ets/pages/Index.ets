@@ -36,6 +36,7 @@ import { UserProfilePage, UserRepliesPage, UserTopicsPage } from 'user'
 import {
   SettingsPage,
   StorageSettingsPage,
+  DiagnosticsLogPage,
   ReadingSettingsPage,
   HomeNodeSettingsPage,
 } from 'settings'
@@ -223,6 +224,9 @@ struct Index {
     }
     if (descriptor.family === 'storage') {
       StorageSettingsPage()
+    }
+    if (descriptor.family === 'diagnosticsLog') {
+      DiagnosticsLogPage()
     }
     if (descriptor.family === 'homeNodeSettings') {
       HomeNodeSettingsPage()

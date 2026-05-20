@@ -61,6 +61,10 @@ export class DiagnosticsSettings {
     return DiagnosticLogger.exportText()
   }
 
+  static count(): number {
+    return DiagnosticLogger.count()
+  }
+
   static clearLogs(): void {
     DiagnosticLogger.clear()
     DiagnosticLogger.info('diagnostics', 'diagnostics_logs_cleared', {})

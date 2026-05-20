@@ -26,6 +26,7 @@ export type IndexDestinationFamily =
   'accountFollowing' |
   'settings' |
   'storage' |
+  'diagnosticsLog' |
   'homeNodeSettings' |
   'readingSettings' |
   'account' |
@@ -64,6 +65,7 @@ export class IndexRouteCoordinator {
     'AccountFollowing': 'accountFollowing',
     'Settings': 'settings',
     'Storage': 'storage',
+    'DiagnosticsLog': 'diagnosticsLog',
     'HomeNodeSettings': 'homeNodeSettings',
     'ReadingSettings': 'readingSettings',
     'Account': 'account',
@@ -91,6 +93,7 @@ export class IndexRouteCoordinator {
     'accountFollowing': '关注用户',
     'settings': '设置',
     'storage': '存储',
+    'diagnosticsLog': '诊断日志',
     'homeNodeSettings': '首页栏目设置',
     'readingSettings': '阅读字体设置',
     'account': '账号',
@@ -113,6 +116,7 @@ export class IndexRouteCoordinator {
     'accountFollowing': true,
     'settings': true,
     'storage': true,
+    'diagnosticsLog': true,
     'homeNodeSettings': true,
     'readingSettings': true,
     'account': true,
