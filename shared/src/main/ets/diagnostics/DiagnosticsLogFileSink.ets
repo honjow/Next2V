@@ -1,5 +1,5 @@
 import { common } from '@kit.AbilityKit'
-import { fileIo } from '@kit.CoreFileKit'
+import { fileIo, fileUri } from '@kit.CoreFileKit'
 import { DiagnosticsRedactor, DiagnosticContextObject, DiagnosticLogEntry } from './DiagnosticsRedactor'
 import { DiagnosticsLogFormatter } from './DiagnosticsLogFormatter'
 
@@ -14,6 +14,10 @@ export interface DiagnosticsLogFileInfo {
   fileName: string
   filePath: string
   directory: string
+  uri: string
+  sizeBytes: number
+  createdAtMs: number
+  isCurrent: boolean
 }
 
 export class DiagnosticsLogFileSink {
@@ -82,9 +86,46 @@ export class DiagnosticsLogFileSink {
         fileName: DiagnosticsLogFileSink.currentFileName,
         filePath: DiagnosticsLogFileSink.currentFilePath,
         directory: DiagnosticsLogFileSink.directory,
+        uri: fileUri.getUriFromPath(DiagnosticsLogFileSink.currentFilePath),
+        sizeBytes: DiagnosticsLogFileSink.approxFileBytes(DiagnosticsLogFileSink.currentFilePath),
+        createdAtMs: DiagnosticsLogFileSink.createdAtMsFromFileName(DiagnosticsLogFileSink.currentFileName),
+        isCurrent: true,
       }
     } catch (_error) {
       return null
+    }
+  }
+
+  static listRetainedLogFiles(): DiagnosticsLogFileInfo[] {
+    try {
+      if (DiagnosticsLogFileSink.directory.length <= 0) {
+        return []
+      }
+      return DiagnosticsLogFileSink.listSafeLogNames().sort().reverse().map((name: string): DiagnosticsLogFileInfo => {
+        const path = DiagnosticsLogFileSink.directory + '/' + name
+        return {
+          fileName: name,
+          filePath: path,
+          directory: DiagnosticsLogFileSink.directory,
+          uri: fileUri.getUriFromPath(path),
+          sizeBytes: DiagnosticsLogFileSink.approxFileBytes(path),
+          createdAtMs: DiagnosticsLogFileSink.createdAtMsFromFileName(name),
+          isCurrent: name === DiagnosticsLogFileSink.currentFileName,
+        }
+      })
+    } catch (_error) {
+      return []
+    }
+  }
+
+  static readLogFileText(fileName: string): string {
+    try {
+      if (DiagnosticsLogFileSink.directory.length <= 0 || !DiagnosticsLogFileSink.isDiagnosticsLogFileName(fileName)) {
+        return ''
+      }
+      return fileIo.readTextSync(DiagnosticsLogFileSink.directory + '/' + fileName)
+    } catch (_error) {
+      return ''
     }
   }
 
@@ -202,6 +243,14 @@ export class DiagnosticsLogFileSink {
   }
 
   private static fileAgeMs(fileName: string, now: number): number {
+    const createdAtMs = DiagnosticsLogFileSink.createdAtMsFromFileName(fileName)
+    if (createdAtMs <= 0) {
+      return 0
+    }
+    return Math.max(0, now - createdAtMs)
+  }
+
+  private static createdAtMsFromFileName(fileName: string): number {
     try {
       const middle = fileName.substring(DIAGNOSTICS_LOG_PREFIX.length, DIAGNOSTICS_LOG_PREFIX.length + 'YYYYMMDD-HHMMSS'.length)
       const year = Number(middle.substring(0, 4))
@@ -210,7 +259,7 @@ export class DiagnosticsLogFileSink {
       const hour = Number(middle.substring(9, 11))
       const minute = Number(middle.substring(11, 13))
       const second = Number(middle.substring(13, 15))
-      return Math.max(0, now - new Date(year, month, day, hour, minute, second).getTime())
+      return new Date(year, month, day, hour, minute, second).getTime()
     } catch (_error) {
       return 0
     }

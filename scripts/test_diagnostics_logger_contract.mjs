@@ -104,6 +104,11 @@ for (const token of [
   'fileName.includes(\'/\')',
   "fileName.includes('..')",
   'name === DiagnosticsLogFileSink.currentFileName',
+  'listRetainedLogFiles(): DiagnosticsLogFileInfo[]',
+  'DiagnosticsLogFileSink.listSafeLogNames().sort().reverse().map',
+  'fileUri.getUriFromPath(path)',
+  'readLogFileText(fileName: string)',
+  '!DiagnosticsLogFileSink.isDiagnosticsLogFileName(fileName)',
   'consoleFailure',
 ]) {
   assert(fileSink.includes(token), `DiagnosticsLogFileSink missing ${token}`)
@@ -193,54 +198,52 @@ for (const token of ['诊断日志', '分享诊断日志', '复制诊断日志',
 }
 assert(!settingsPage.includes('this.AdvancedSection()'), 'SettingsPage must not use the old combined AdvancedSection entry')
 const diagnosticsPage = read(files.diagnosticsPage)
-for (const token of ['诊断日志', '本次启动最近 ${this.logCount} 条', '日志保存在本机', '分享日志文件', '复制日志', '清空本次启动记录', 'SettingsToggleRow', 'DiagnosticsSettings.count()', 'DiagnosticsSettings.exportText()', 'DiagnosticsSettings.clearLogs()', 'saveDiagnostics']) {
+for (const token of ['诊断日志', '本次启动最近 ${this.logCount} 条', '日志文件', '清空本次启动记录', 'SettingsToggleRow', 'DiagnosticsSettings.count()', 'DiagnosticsSettings.exportText()', 'DiagnosticsSettings.clearLogs()', 'DiagnosticsLogFileSink.listRetainedLogFiles()', 'DiagnosticsLogFileSink.readLogFileText(file.fileName)', 'saveDiagnostics']) {
   assert(diagnosticsPage.includes(token), `DiagnosticsLogPage missing ${token}`)
 }
+assert(!diagnosticsPage.includes('复制日志'), 'DiagnosticsLogPage must not expose a visible copy-log row')
 assert(!diagnosticsPage.includes('重启后清空'), 'DiagnosticsLogPage must not describe logs as cleared after restart')
-for (const forbidden of ['分享诊断日志', '复制诊断日志', '清空诊断日志', '通过系统分享已脱敏的本机日志', '只复制已脱敏的本机日志']) {
+for (const forbidden of ['分享诊断日志', '复制诊断日志', '清空诊断日志', '分享日志文件', '通过系统分享已脱敏的本机日志', '只复制已脱敏的本机日志']) {
   assert(!diagnosticsPage.includes(forbidden), `DiagnosticsLogPage must avoid stale/dense wording ${forbidden}`)
 }
-const shareMethodStart = diagnosticsPage.indexOf('  private shareDiagnosticsText(): void {')
+const shareMethodStart = diagnosticsPage.indexOf('  private shareDiagnosticsLogFile(file: DiagnosticsLogFileInfo): void {')
 const shareMethodEnd = diagnosticsPage.indexOf('\n  private ', shareMethodStart + 1)
-assert(shareMethodStart >= 0 && shareMethodEnd > shareMethodStart, 'DiagnosticsLogPage shareDiagnosticsText boundary missing')
+assert(shareMethodStart >= 0 && shareMethodEnd > shareMethodStart, 'DiagnosticsLogPage shareDiagnosticsLogFile boundary missing')
 const shareMethod = diagnosticsPage.slice(shareMethodStart, shareMethodEnd)
-const shareRowStart = diagnosticsPage.indexOf("title: '分享日志文件'")
-const shareRowEnd = diagnosticsPage.indexOf('SettingsDivider()', shareRowStart)
-assert(shareRowStart >= 0 && shareRowEnd > shareRowStart, 'DiagnosticsLogPage share row boundary missing')
-const shareRow = diagnosticsPage.slice(shareRowStart, shareRowEnd)
-assert(shareRow.includes('action: () =>') && shareRow.includes('this.handleShareRowClick()'), 'DiagnosticsLogPage share row must wire click action to the share handler entry')
-assert(diagnosticsPage.includes('private handleShareRowClick(): void') && diagnosticsPage.includes('diagnostics_share_tap'), 'DiagnosticsLogPage must log share tap handler entry')
-assert(diagnosticsPage.includes('setTimeout(() =>') && diagnosticsPage.includes('this.shareDiagnosticsText()'), 'DiagnosticsLogPage must launch share from a queued UI task after the row click')
-assert(shareMethod.includes('DiagnosticsFileExport.create(context)'), 'shareDiagnosticsText must create a redacted diagnostics file before sharing')
-assert(shareMethod.includes('systemShare.SharedData') && shareMethod.includes('systemShare.ShareController'), 'shareDiagnosticsText must use system share')
+const logFilesSectionStart = diagnosticsPage.indexOf('  DiagnosticsLogFilesSection() {')
+const logFilesSectionEnd = diagnosticsPage.indexOf('\n  @Builder', logFilesSectionStart + 1)
+assert(logFilesSectionStart >= 0 && logFilesSectionEnd > logFilesSectionStart, 'DiagnosticsLogPage log files section boundary missing')
+const logFilesSection = diagnosticsPage.slice(logFilesSectionStart, logFilesSectionEnd)
+assert(logFilesSection.includes('ForEach(this.logFiles') && logFilesSection.includes('this.DiagnosticsLogFileRow(file)'), 'DiagnosticsLogPage must render retained log files as rows')
+assert(diagnosticsPage.includes('private handleShareLogFileClick(file: DiagnosticsLogFileInfo): void') && diagnosticsPage.includes('diagnostics_share_tap'), 'DiagnosticsLogPage must log selected-file share tap handler entry')
+assert(diagnosticsPage.includes('setTimeout(() =>') && diagnosticsPage.includes('this.shareDiagnosticsLogFile(file)'), 'DiagnosticsLogPage must launch selected-file share from a queued UI task after the row click')
+assert(shareMethod.includes('systemShare.SharedData') && shareMethod.includes('systemShare.ShareController'), 'shareDiagnosticsLogFile must use system share')
 assert(diagnosticsPage.includes('private diagnosticsShareController?: systemShare.ShareController'), 'DiagnosticsLogPage must keep ShareController as a page field so the native share request is not released before the system panel opens')
-assert(shareMethod.includes('this.diagnosticsShareController = new systemShare.ShareController(data)'), 'shareDiagnosticsText must retain the ShareController while show() is pending')
-assert(!shareMethod.includes('const controller = new systemShare.ShareController(data)'), 'shareDiagnosticsText must not use a short-lived local ShareController for diagnostics file share')
-assert(shareMethod.includes('.then(() =>') && shareMethod.includes('diagnostics_share_show_success'), 'shareDiagnosticsText must log successful share panel handoff')
-assert(shareMethod.includes('.catch((error: Error) =>') && shareMethod.includes('this.diagnosticsShareController = undefined'), 'shareDiagnosticsText may release retained ShareController only on failed share')
-assert(shareMethod.includes('this.getUIContext().getHostContext() as common.UIAbilityContext'), 'shareDiagnosticsText must use the proven UIAbilityContext host context for system share')
-assert(shareMethod.includes('utd: utd.UniformDataType.FILE'), 'shareDiagnosticsText must label the URI payload as a file share')
-assert(shareMethod.includes('uri: exportFile.uri'), 'shareDiagnosticsText must share the exported file uri')
-assert(shareMethod.includes('label: exportFile.fileName'), 'shareDiagnosticsText must expose the safe diagnostics filename to share preview')
+assert(shareMethod.includes('this.diagnosticsShareController = new systemShare.ShareController(data)'), 'shareDiagnosticsLogFile must retain the ShareController while show() is pending')
+assert(!shareMethod.includes('const controller = new systemShare.ShareController(data)'), 'shareDiagnosticsLogFile must not use a short-lived local ShareController for diagnostics file share')
+assert(shareMethod.includes('.then(() =>') && shareMethod.includes('diagnostics_share_show_success'), 'shareDiagnosticsLogFile must log successful share panel handoff')
+assert(shareMethod.includes('.catch((error: Error) =>') && shareMethod.includes('this.diagnosticsShareController = undefined'), 'shareDiagnosticsLogFile may release retained ShareController only on failed share')
+assert(shareMethod.includes('this.getUIContext().getHostContext() as common.UIAbilityContext'), 'shareDiagnosticsLogFile must use the proven UIAbilityContext host context for system share')
+assert(shareMethod.includes('utd: utd.UniformDataType.FILE'), 'shareDiagnosticsLogFile must label the URI payload as a file share')
+assert(shareMethod.includes('uri: file.uri'), 'shareDiagnosticsLogFile must share the selected file uri')
+assert(shareMethod.includes('label: file.fileName'), 'shareDiagnosticsLogFile must expose the selected safe diagnostics filename to share preview')
 const sharedDataStart = shareMethod.indexOf('const data = new systemShare.SharedData({')
 const sharedDataEnd = shareMethod.indexOf('\n      })', sharedDataStart)
-assert(sharedDataStart >= 0 && sharedDataEnd > sharedDataStart, 'shareDiagnosticsText SharedData block missing')
+assert(sharedDataStart >= 0 && sharedDataEnd > sharedDataStart, 'shareDiagnosticsLogFile SharedData block missing')
 const sharedDataBlock = shareMethod.slice(sharedDataStart, sharedDataEnd)
 assert(sharedDataBlock.includes("title: 'Next2V Diagnostics'"), 'diagnostics share metadata title must be English')
 assert(sharedDataBlock.includes("description: 'Redacted local diagnostics log file'"), 'diagnostics share metadata description must be English')
 assert(!/[\u4e00-\u9fff]/.test(sharedDataBlock), 'diagnostics share metadata must not contain Chinese characters')
-assert(!shareMethod.includes('content:'), 'shareDiagnosticsText must not pass diagnostics text as primary SharedData.content')
-assert(!shareMethod.includes('DiagnosticsSettings.exportText()'), 'shareDiagnosticsText must not directly pass exported text to primary share data')
-assert(shareMethod.includes('copyDiagnosticsTextWithToast'), 'shareDiagnosticsText must fall back to redacted copy path if file share fails')
-assert(shareMethod.includes('分享文件不可用，已复制，可手动粘贴'), 'shareDiagnosticsText fallback wording must not present text-share as success')
-for (const event of ['diagnostics_share_export_start', 'diagnostics_share_export_success', 'diagnostics_share_show_start', 'diagnostics_share_show_error', 'diagnostics_share_export_error']) {
-  assert(shareMethod.includes(event), `shareDiagnosticsText must log ${event}`)
+assert(!shareMethod.includes('content:'), 'shareDiagnosticsLogFile must not pass diagnostics text as primary SharedData.content')
+assert(!shareMethod.includes('DiagnosticsSettings.exportText()'), 'shareDiagnosticsLogFile must not directly pass exported text to primary share data')
+assert(shareMethod.includes('copyDiagnosticsTextWithToast'), 'shareDiagnosticsLogFile may fall back to redacted copy path if file share fails')
+assert(shareMethod.includes('分享文件不可用，已复制，可手动粘贴'), 'shareDiagnosticsLogFile fallback wording must not present text-share as success')
+for (const event of ['diagnostics_share_show_start', 'diagnostics_share_show_success', 'diagnostics_share_show_error']) {
+  assert(shareMethod.includes(event), `shareDiagnosticsLogFile must log ${event}`)
 }
-assert(shareMethod.includes("phase: 'share_export'") && shareMethod.includes("errorMessage: 'export_failed'"), 'shareDiagnosticsText export errors must log sanitized phase/name/message context')
-assert(shareMethod.includes('directoryKind: exportFile.directoryKind'), 'shareDiagnosticsText export success must log sanitized directory kind')
-assert(!shareMethod.includes('}, error as Error)'), 'shareDiagnosticsText export errors must not pass raw Error message into diagnostics')
+assert(!shareMethod.includes('}, error as Error)'), 'shareDiagnosticsLogFile sync errors must not pass raw Error message into diagnostics')
 for (const forbidden of ['DiagnosticsStore.exportText', 'DiagnosticLogger.exportText', 'cookie', 'token', 'Authorization', 'Bearer', 'two_factor', 'once', 'rawHtml', 'content_rendered', 'payload_rendered', 'body']) {
-  assert(!shareMethod.includes(forbidden), `shareDiagnosticsText must not pass raw/secret field ${forbidden}`)
+  assert(!shareMethod.includes(forbidden), `shareDiagnosticsLogFile must not pass raw/secret field ${forbidden}`)
 }
 const settingsIndex = read(files.settingsIndex)
 assert(settingsIndex.includes("export { DiagnosticsLogPage } from './pages/DiagnosticsLogPage'"), 'settings feature index must export diagnostics page')
