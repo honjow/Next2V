@@ -2,6 +2,8 @@
 
 This file is the always-loaded entrypoint. Keep the non-negotiable rules here concise, then open the linked guide that matches the current task.
 
+Worktree copies under `/home/gamer/v2next-worktrees/*/AGENTS.md` must stay aligned with this main-repo version unless a lane prompt explicitly declares a temporary override.
+
 ## Always-Loaded Rules
 
 ### Hermes/controller boundary
