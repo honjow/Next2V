@@ -1,6 +1,8 @@
 import { common } from '@kit.AbilityKit'
+import { uniformTypeDescriptor as utd } from '@kit.ArkData'
 import { pasteboard } from '@kit.BasicServicesKit'
 import { promptAction } from '@kit.ArkUI'
+import { systemShare } from '@kit.ShareKit'
 import {
   CacheSettings,
   DiagnosticsSettings,
@@ -177,6 +179,14 @@ export struct SettingsPage {
     GroupedListSection() {
       this.TogglePreferenceRow('诊断日志', this.diagnosticsEnabled, (value: boolean) => {
         this.updateDiagnosticsEnabled(value)
+      })
+      this.SettingsDivider()
+      ConciseListRow({
+        title: '分享诊断日志',
+        subtitle: '通过系统分享已脱敏的本机日志',
+        action: () => {
+          this.shareDiagnosticsText()
+        },
       })
       this.SettingsDivider()
       ConciseListRow({
@@ -547,13 +557,37 @@ export struct SettingsPage {
   }
 
   private copyDiagnosticsText(): void {
+    this.copyDiagnosticsTextWithToast('诊断日志已复制', '复制失败')
+  }
+
+  private shareDiagnosticsText(): void {
+    const text = DiagnosticsSettings.exportText() || '暂无诊断日志'
+    const data = new systemShare.SharedData({
+      utd: utd.UniformDataType.PLAIN_TEXT,
+      title: 'Next2V 诊断日志',
+      description: '已脱敏的本机诊断日志',
+      content: text,
+    })
+    const controller = new systemShare.ShareController(data)
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    controller
+      .show(context, {
+        selectionMode: systemShare.SelectionMode.SINGLE,
+        previewMode: systemShare.SharePreviewMode.DEFAULT,
+      })
+      .catch((_error: Error) => {
+        this.copyDiagnosticsTextWithToast('分享不可用，已复制，可手动粘贴', '分享失败')
+      })
+  }
+
+  private copyDiagnosticsTextWithToast(successMessage: string, failureMessage: string): void {
     try {
       const text = DiagnosticsSettings.exportText() || '暂无诊断日志'
       const data = pasteboard.createData(pasteboard.MIMETYPE_TEXT_PLAIN, text)
       pasteboard.getSystemPasteboard().setDataSync(data)
-      promptAction.openToast({ message: '诊断日志已复制' }).catch((_error: Error) => {})
+      promptAction.openToast({ message: successMessage }).catch((_error: Error) => {})
     } catch (_error) {
-      promptAction.openToast({ message: '复制失败' }).catch((_toastError: Error) => {})
+      promptAction.openToast({ message: failureMessage }).catch((_toastError: Error) => {})
     }
   }
 

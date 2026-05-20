@@ -84,7 +84,7 @@ const storageKeys = read(files.storageKeys)
 assert(storageKeys.includes('DIAGNOSTICS_ENABLED') && storageKeys.includes('DIAGNOSTICS_MIN_LEVEL'), 'diagnostics storage keys missing')
 
 const settingsPage = read(files.settingsPage)
-for (const token of ['诊断日志', '复制诊断日志', '清空诊断日志', 'pasteboard.createData', 'DiagnosticsSettings.exportText()', 'DiagnosticsSettings.clearLogs()', 'saveDiagnostics']) {
+for (const token of ['诊断日志', '分享诊断日志', '复制诊断日志', '清空诊断日志', 'systemShare.SharedData', 'systemShare.ShareController', 'utd.UniformDataType.PLAIN_TEXT', 'pasteboard.createData', 'DiagnosticsSettings.exportText()', 'DiagnosticsSettings.clearLogs()', 'saveDiagnostics']) {
   assert(settingsPage.includes(token), `SettingsPage diagnostics UI missing ${token}`)
 }
 const advancedHeaderIndex = settingsPage.indexOf("this.SectionHeader('高级')")
@@ -99,19 +99,31 @@ const diagnosticsEnd = settingsPage.indexOf('\n  @Builder', diagnosticsStart + 1
 assert(diagnosticsStart >= 0 && diagnosticsEnd > diagnosticsStart, 'SettingsPage DiagnosticsSection boundary missing')
 const diagnosticsSection = settingsPage.slice(diagnosticsStart, diagnosticsEnd)
 const diagnosticsIndex = diagnosticsSection.indexOf('诊断日志')
+const shareDiagnosticsIndex = diagnosticsSection.indexOf('分享诊断日志')
 const copyDiagnosticsIndex = diagnosticsSection.indexOf('复制诊断日志')
 const clearDiagnosticsIndex = diagnosticsSection.indexOf('清空诊断日志')
-assert(diagnosticsIndex >= 0 && copyDiagnosticsIndex > diagnosticsIndex && clearDiagnosticsIndex > copyDiagnosticsIndex, 'DiagnosticsSection controls must stay grouped in visible order')
+assert(diagnosticsIndex >= 0 && shareDiagnosticsIndex > diagnosticsIndex && copyDiagnosticsIndex > shareDiagnosticsIndex && clearDiagnosticsIndex > copyDiagnosticsIndex, 'DiagnosticsSection controls must stay grouped in visible order')
+assert(diagnosticsSection.includes('this.shareDiagnosticsText()'), 'DiagnosticsSection share row must call shareDiagnosticsText')
 assert(!diagnosticsSection.includes('API 域名'), 'DiagnosticsSection must not contain API 域名 row')
 const apiDomainStart = settingsPage.indexOf('  ApiDomainAdvancedSection() {')
 const apiDomainEnd = settingsPage.indexOf('\n  @Builder', apiDomainStart + 1)
 assert(apiDomainStart >= 0 && apiDomainEnd > apiDomainStart, 'SettingsPage ApiDomainAdvancedSection boundary missing')
 const apiDomainSection = settingsPage.slice(apiDomainStart, apiDomainEnd)
 assert(apiDomainSection.includes('API 域名'), 'ApiDomainAdvancedSection must contain API 域名 row')
-for (const token of ['诊断日志', '复制诊断日志', '清空诊断日志']) {
+for (const token of ['诊断日志', '分享诊断日志', '复制诊断日志', '清空诊断日志']) {
   assert(!apiDomainSection.includes(token), `ApiDomainAdvancedSection must not contain diagnostics token ${token}`)
 }
 assert(!settingsPage.includes('this.AdvancedSection()'), 'SettingsPage must not use the old combined AdvancedSection entry')
+const shareMethodStart = settingsPage.indexOf('  private shareDiagnosticsText(): void {')
+const shareMethodEnd = settingsPage.indexOf('\n  private ', shareMethodStart + 1)
+assert(shareMethodStart >= 0 && shareMethodEnd > shareMethodStart, 'SettingsPage shareDiagnosticsText boundary missing')
+const shareMethod = settingsPage.slice(shareMethodStart, shareMethodEnd)
+assert(shareMethod.includes("DiagnosticsSettings.exportText() || '暂无诊断日志'"), 'shareDiagnosticsText must use redacted diagnostics exportText with empty fallback')
+assert(shareMethod.includes('systemShare.SharedData') && shareMethod.includes('systemShare.ShareController'), 'shareDiagnosticsText must use system share')
+assert(shareMethod.includes('copyDiagnosticsTextWithToast'), 'shareDiagnosticsText must fall back to redacted copy path if share fails')
+for (const forbidden of ['DiagnosticsStore.exportText', 'DiagnosticLogger.exportText', 'cookie', 'token', 'Authorization', 'Bearer', 'two_factor', 'once', 'rawHtml', 'content_rendered', 'payload_rendered', 'body']) {
+  assert(!shareMethod.includes(forbidden), `shareDiagnosticsText must not pass raw/secret field ${forbidden}`)
+}
 
 const autoDaily = read(files.autoDaily)
 for (const event of [
