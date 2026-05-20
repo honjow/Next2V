@@ -240,14 +240,58 @@ for (const forbidden of [
 }
 
 const mainTabIcon = read('entry/src/main/ets/components/MainTabIcon.ets')
+const mainTabBaseIconBlock = mainTabIcon.slice(0, mainTabIcon.indexOf('if (this.badgeCount > 0)'))
 for (const token of [
   '@Prop badgeCount: number = 0',
   'if (this.badgeCount > 0)',
   'private badgeText(): string',
   "'99+'",
+  'Stack({ alignContent: Alignment.Center })',
+  'Stack({ alignContent: Alignment.TopEnd })',
+  'SymbolGlyph ignored translate-based compensation on',
+  'const MAIN_TAB_SYMBOL_GLYPH_LAYOUT_OFFSET_VP = 3',
+  'Row() {',
+  'Blank()',
+  '.width(MAIN_TAB_SYMBOL_GLYPH_LAYOUT_OFFSET_VP)',
+  '.justifyContent(FlexAlign.Start)',
+  '.alignItems(VerticalAlign.Center)',
 ]) {
   assert(mainTabIcon.includes(token), `MainTabIcon badge contract missing ${token}`)
 }
+assert(
+  mainTabIcon.indexOf('.justifyContent(FlexAlign.Start)') <
+    mainTabIcon.indexOf('if (this.badgeCount > 0)'),
+  'MainTabIcon must apply real layout compensation to the base SymbolGlyph owner before the badge overlay'
+)
+assert(
+  !mainTabIcon.includes('MAIN_TAB_SYMBOL_GLYPH_CENTER_OFFSET_X') &&
+    !mainTabIcon.includes('.translate({ x: MAIN_TAB_SYMBOL_GLYPH_CENTER_OFFSET_X })'),
+  'MainTabIcon must not rely on translate-only SymbolGlyph compensation; device QA showed it is ignored/not observable'
+)
+assert(
+  !/Row\s*\(\s*\)\s*\{\s*SymbolGlyph\s*\(/s.test(mainTabIcon),
+  'MainTabIcon must not use the start-only Row pattern; QA3 showed it over-corrects 9px left'
+)
+assert(
+  !mainTabBaseIconBlock.includes('.translate('),
+  'MainTabIcon must not apply SymbolGlyph translate-only compensation; it is not observable in real layout dumps'
+)
+assert(
+  !/Stack\s*\(\s*\{\s*alignContent:\s*Alignment\.TopEnd\s*\}\s*\)\s*\{\s*SymbolGlyph\s*\(/s.test(mainTabIcon),
+  'MainTabIcon must not align the base SymbolGlyph with a top-end badge Stack'
+)
+assert(
+  /Stack\s*\(\s*\{\s*alignContent:\s*Alignment\.Center\s*\}\s*\)\s*\{\s*Row\s*\(\s*\)\s*\{\s*Blank\s*\(\s*\)\s*\.width\(MAIN_TAB_SYMBOL_GLYPH_LAYOUT_OFFSET_VP\)\s*SymbolGlyph\s*\(/s.test(mainTabIcon),
+  'MainTabIcon base SymbolGlyph must be placed by a real-layout 3vp spacer inside the fixed icon area'
+)
+assert(
+  /Row\s*\(\s*\)\s*\{[\s\S]*Blank\s*\(\s*\)\s*\.width\(MAIN_TAB_SYMBOL_GLYPH_LAYOUT_OFFSET_VP\)[\s\S]*SymbolGlyph\s*\([\s\S]*\.fontSize\(ThemeConstants\.INDICATOR_SIZE - 6\)[\s\S]*\}\s*\.width\(ThemeConstants\.INDICATOR_SIZE\)\s*\.height\(ThemeConstants\.INDICATOR_SIZE - 2\)\s*\.justifyContent\(FlexAlign\.Start\)\s*\.alignItems\(VerticalAlign\.Center\)/s.test(mainTabIcon),
+  'MainTabIcon must offset the 22vp SymbolGlyph with a real 3vp leading spacer in the unchanged 28vp icon area'
+)
+assert(
+  /if\s*\(this\.badgeCount > 0\)\s*\{\s*Stack\s*\(\s*\{\s*alignContent:\s*Alignment\.TopEnd\s*\}\s*\)\s*\{\s*Text\(this\.badgeText\(\)\)/s.test(mainTabIcon),
+  'MainTabIcon badge must use its own top-end overlay without shifting the base icon'
+)
 
 const index = read('entry/src/main/ets/pages/Index.ets')
 for (const token of [
