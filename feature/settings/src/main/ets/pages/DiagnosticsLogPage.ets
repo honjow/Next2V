@@ -169,7 +169,7 @@ export struct DiagnosticsLogPage {
       })
       const data = new systemShare.SharedData({
         utd: utd.UniformDataType.FILE,
-        title: 'Next2V Diagnostics',
+        title: file.fileName,
         label: file.fileName,
         description: 'Redacted local diagnostics log file',
         uri: file.uri,
