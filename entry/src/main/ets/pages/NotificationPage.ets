@@ -52,6 +52,8 @@ export struct NotificationPage {
   @State private notificationCacheUpdatedAt: number = 0
   @State private notificationLoadedFromCache: boolean = false
   @State private notificationSourceLabel: string = ''
+  @State private notificationInitialSettled: boolean = false
+  @State private isNotificationAuthLoading: boolean = false
   @State private scrollEnabled: boolean = true
   @State private viewedUnreadNotificationKeys: string[] = []
   private scroller: Scroller = new Scroller()
@@ -63,6 +65,7 @@ export struct NotificationPage {
   private notificationRefreshRequestId: number = 0
   private notificationCacheRequestId: number = 0
   private pendingNotificationForceRefresh: boolean = false
+  private notificationIdentityKey: string = ''
   private notificationEntryUnreadCount: number = 0
   private pendingNotificationDeletes: Set<number> = new Set<number>()
   @Prop @Watch('onRefreshKeyChanged') refreshKey: number = 0
@@ -76,13 +79,20 @@ export struct NotificationPage {
   }
 
   onAuthChanged(_propName: string): void {
-    this.resetNotificationState()
+    const nextIdentity = this.currentNotificationIdentityKey()
+    if (this.notificationIdentityKey && nextIdentity === this.notificationIdentityKey) {
+      this.loadAuthSnapshot(true)
+      return
+    }
+    if (!nextIdentity && !this.notificationIdentityKey && this.notifications.length === 0) {
+      this.loadAuthSnapshot(true)
+      return
+    }
     this.loadAuthSnapshot(true)
   }
 
   onLocalDataUpdated(_propName: string): void {
     this.notificationError = ''
-    this.loadAuthSnapshot(true)
   }
 
   onNotificationAction(_propName: string): void {
@@ -105,7 +115,7 @@ export struct NotificationPage {
             this.ns.pushPathByName('V2exNativeLogin', null)
           }
         })
-      } else if (this.isNotificationLoading && this.notifications.length === 0) {
+      } else if (this.shouldShowNotificationInitialLoading()) {
         LoadingProgress()
           .width(ThemeConstants.LOADING_SIZE)
           .height(ThemeConstants.LOADING_SIZE)
@@ -134,7 +144,7 @@ export struct NotificationPage {
           ForEach(this.notifications, (item: V2exNotification) => {
             this.NotificationListItem(item)
           }, (item: V2exNotification) => this.notificationItemKey(item))
-          if (this.notifications.length === 0) {
+          if (this.shouldShowNotificationEmptyState()) {
             ListItem() {
               EmptyState({ message: '暂无通知', stateHeight: 240 })
             }
@@ -202,6 +212,7 @@ export struct NotificationPage {
   private loadAuthSnapshot(forceNotifications: boolean = false): void {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     const requestId = ++this.authRefreshRequestId
+    this.isNotificationAuthLoading = true
     const restoreCookieJar = CookieJarSettings.getCurrentCookie()
       ? Promise.resolve()
       : CookieJarSettings.load(context).catch((error: Error) => {
@@ -214,6 +225,11 @@ export struct NotificationPage {
           return
         }
         this.authToken = snapshot.token
+        const nextIdentity = this.currentNotificationIdentityKey(snapshot.username || this.sessionUsername)
+        if (this.notificationIdentityKey && nextIdentity !== this.notificationIdentityKey) {
+          this.resetNotificationState()
+        }
+        this.notificationIdentityKey = nextIdentity
         this.loadNotifications(forceNotifications)
         this.loadNotificationCache(snapshot.username || this.sessionUsername)
       })
@@ -222,7 +238,25 @@ export struct NotificationPage {
           return
         }
         this.notificationError = error.message || '读取通知授权失败'
+        this.notificationInitialSettled = true
       })
+      .finally(() => {
+        if (requestId === this.authRefreshRequestId) {
+          this.isNotificationAuthLoading = false
+        }
+      })
+  }
+
+  private shouldShowNotificationInitialLoading(): boolean {
+    return this.notifications.length === 0 &&
+      (this.isNotificationAuthLoading || this.isNotificationLoading || !this.notificationInitialSettled)
+  }
+
+  private shouldShowNotificationEmptyState(): boolean {
+    return this.notifications.length === 0 &&
+      this.notificationInitialSettled &&
+      !this.isNotificationAuthLoading &&
+      !this.isNotificationLoading
   }
 
   private refreshVisibleNotificationsIfNeeded(): void {
@@ -490,6 +524,7 @@ export struct NotificationPage {
       this.notificationHasMore = result.hasMore
       this.notificationSourceLabel = result.sourceLabel
       this.notificationLoadedFromCache = false
+      this.notificationInitialSettled = true
       this.saveNotificationCache()
     } catch (error) {
       if (requestId !== this.notificationRefreshRequestId) {
@@ -501,6 +536,7 @@ export struct NotificationPage {
       this.notificationHasMore = false
       this.handleTwoFactorChallenge(err)
       this.handleExpiredCookieSession(message)
+      this.notificationInitialSettled = true
       throw err
     } finally {
       if (requestId === this.notificationRefreshRequestId) {
@@ -570,6 +606,7 @@ export struct NotificationPage {
     this.notificationCacheUpdatedAt = 0
     this.notificationLoadedFromCache = false
     this.notificationSourceLabel = ''
+    this.notificationInitialSettled = false
     this.resetViewedUnreadState()
     this.publishUnreadCount()
   }
@@ -618,6 +655,7 @@ export struct NotificationPage {
         this.notificationHasMore = result.hasMore
         this.notificationLoadedFromCache = true
         this.notificationSourceLabel = this.notificationVm.sourceLabelFor(authContext)
+        this.notificationInitialSettled = true
       })
       .catch((error: Error) => {
         console.error('load notification cache failed: ' + error.message)
@@ -679,6 +717,16 @@ export struct NotificationPage {
 
   private isCookieNotificationSource(context: NotificationAuthContext): boolean {
     return this.notificationVm.sourceKeyFor(context) === 'cookie'
+  }
+
+  private currentNotificationIdentityKey(username: string = ''): string {
+    const authContext = this.notificationAuthContext()
+    return NotificationPageCoordinator.ownerKey(
+      username,
+      this.storedUsername,
+      this.sessionUsername,
+      this.notificationVm.sourceKeyFor(authContext)
+    )
   }
 
   private viewedUnreadKeysForLoadedItems(

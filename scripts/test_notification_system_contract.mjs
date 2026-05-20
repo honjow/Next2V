@@ -113,14 +113,41 @@ assert(
 const authHandlerMatch = page.match(/onAuthChanged\(_propName: string\): void \{([\s\S]*?)\n  \}/)
 assert(authHandlerMatch, 'NotificationPage missing onAuthChanged handler')
 assert(
-  authHandlerMatch[1].includes('resetNotificationState()'),
-  'NotificationPage must still reset notification state on auth changes'
+  authHandlerMatch[1].includes('currentNotificationIdentityKey()') &&
+    !authHandlerMatch[1].includes('resetNotificationState()'),
+  'NotificationPage auth watcher must compare effective identity and not unconditionally reset on AUTH_SESSION_UPDATED_AT'
 )
 const localDataHandlerMatch = page.match(/onLocalDataUpdated\(_propName: string\): void \{([\s\S]*?)\n  \}/)
 assert(localDataHandlerMatch, 'NotificationPage missing onLocalDataUpdated handler')
 assert(
   !localDataHandlerMatch[1].includes('resetNotificationState()'),
   'NotificationPage must not blank the notification list on local data updates'
+)
+assert(
+  !localDataHandlerMatch[1].includes('loadAuthSnapshot(true)') &&
+    !localDataHandlerMatch[1].includes('loadNotifications('),
+  'NotificationPage must not turn broad LOCAL_DATA_UPDATED_AT into a notification network refresh'
+)
+assert(
+  page.includes('@State private notificationInitialSettled: boolean = false') &&
+    page.includes('@State private isNotificationAuthLoading: boolean = false') &&
+    page.includes('private shouldShowNotificationInitialLoading(): boolean') &&
+    page.includes('private shouldShowNotificationEmptyState(): boolean') &&
+    page.includes('this.shouldShowNotificationEmptyState()'),
+  'NotificationPage must gate 暂无通知 behind an explicit settled initial lifecycle state'
+)
+assert(
+  page.includes('private notificationIdentityKey: string =') &&
+    page.includes('private currentNotificationIdentityKey(') &&
+    page.includes('if (this.notificationIdentityKey && nextIdentity !== this.notificationIdentityKey)') &&
+    page.includes('this.resetNotificationState()') &&
+    page.includes('this.notificationIdentityKey = nextIdentity'),
+  'NotificationPage must hard reset only after effective notification owner/source changes'
+)
+assert(
+  page.includes('this.notificationInitialSettled = true') &&
+    page.includes('if (this.notifications.length > 0 && !this.notificationLoadedFromCache)'),
+  'NotificationPage must preserve rows during soft refresh and prevent cache from overwriting fresh rows'
 )
 const loadAuthSnapshotStart = page.indexOf('private loadAuthSnapshot(forceNotifications: boolean = false): void {')
 const refreshVisibleStart = page.indexOf('private refreshVisibleNotificationsIfNeeded(): void {')
@@ -305,6 +332,13 @@ for (const token of [
 ]) {
   assert(index.includes(token), `Index notification badge contract missing ${token}`)
 }
+const accountTabHandler = index.match(/if \(i === 3\) \{([\s\S]*?)\n        \}/)
+assert(accountTabHandler, 'Index account tab handler missing')
+assert(
+  !accountTabHandler[1].includes('refreshLocalData()') &&
+    !accountTabHandler[1].includes('LOCAL_DATA_UPDATED_AT'),
+  'Switching to 我的 must not publish broad LOCAL_DATA_UPDATED_AT and indirectly force notification refresh'
+)
 
 const sessionParser = read('shared/src/main/ets/parser/V2exSessionParser.ets')
 for (const token of [

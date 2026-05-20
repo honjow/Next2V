@@ -12,6 +12,7 @@ const service = read('shared/src/main/ets/services/AutoDailyCheckinService.ets')
 const index = read('shared/src/main/ets/Index.ets')
 const settingsPage = read('feature/settings/src/main/ets/pages/SettingsPage.ets')
 const entry = read('entry/src/main/ets/entryability/EntryAbility.ets')
+const bootstrap = read('shared/src/main/ets/settings/SettingsBootstrap.ets')
 const nativeLogin = read('entry/src/main/ets/pages/V2exNativeLoginPage.ets')
 const webLogin = read('entry/src/main/ets/pages/V2exWebLoginPage.ets')
 const twoFactor = read('entry/src/main/ets/components/V2exTwoFactorPrompt.ets')
@@ -22,12 +23,12 @@ assert.match(storage, /AUTO_DAILY_CHECKIN_ENABLED:\s*string\s*=\s*'autoDailyChec
 assert.match(storage, /AUTO_DAILY_CHECKIN_LAST_ATTEMPT_DATE:\s*string\s*=\s*'autoDailyCheckinLastAttemptDate'/, 'StorageKeys must expose last attempt key')
 assert.match(storage, /AUTO_DAILY_CHECKIN_LAST_ATTEMPT_IDENTITY:\s*string\s*=\s*'autoDailyCheckinLastAttemptIdentity'/, 'StorageKeys must expose last attempt identity key')
 assert.match(storage, /AUTO_DAILY_CHECKIN_LAST_SUCCESS_DATE:\s*string\s*=\s*'autoDailyCheckinLastSuccessDate'/, 'StorageKeys must expose last success key')
-assert.match(settings, /const STORE_NAME:\s*string\s*=\s*'next2v_settings'/, 'helper must use existing settings preference store')
-assert.match(settings, /const KEY_ENABLED:\s*string\s*=\s*'autoDailyCheckinEnabled'/, 'helper must persist with the AppStorage key name')
+assert.match(settings, /const STORE_NAME:\s*string\s*=\s*STORE_NAME_SETTINGS/, 'helper must use existing settings preference store')
+assert.match(settings, /const KEY_ENABLED:\s*string\s*=\s*StorageKeys\.AUTO_DAILY_CHECKIN_ENABLED/, 'helper must persist with the AppStorage key name')
 assert.match(settings, /store\.getSync\(KEY_ENABLED,\s*true\)/, 'setting must default to true when absent')
-assert.match(settings, /AppStorage\.setOrCreate<boolean>\(StorageKeys\.AUTO_DAILY_CHECKIN_ENABLED,\s*enabled\)/, 'helper must mirror enabled into AppStorage')
-assert.match(settings, /KEY_LAST_ATTEMPT_IDENTITY:\s*string\s*=\s*'autoDailyCheckinLastAttemptIdentity'/, 'helper must persist a non-cookie attempt identity')
-assert.match(settings, /AppStorage\.setOrCreate<string>\(StorageKeys\.AUTO_DAILY_CHECKIN_LAST_ATTEMPT_IDENTITY,\s*lastAttemptIdentity\s*\|\|\s*''\)/, 'helper must mirror last attempt identity into AppStorage')
+assert.match(settings, /setAppStorageValue<boolean>\(StorageKeys\.AUTO_DAILY_CHECKIN_ENABLED,\s*enabled\)/, 'helper must mirror enabled into AppStorage')
+assert.match(settings, /KEY_LAST_ATTEMPT_IDENTITY:\s*string\s*=\s*StorageKeys\.AUTO_DAILY_CHECKIN_LAST_ATTEMPT_IDENTITY/, 'helper must persist a non-cookie attempt identity')
+assert.match(settings, /setAppStorageValue<string>\(StorageKeys\.AUTO_DAILY_CHECKIN_LAST_ATTEMPT_IDENTITY,\s*lastAttemptIdentity\s*\|\|\s*''\)/, 'helper must mirror last attempt identity into AppStorage')
 assert.match(settings, /saveLastAttemptDate\(\s*context:\s*common\.UIAbilityContext,\s*localDate:\s*string,\s*lastAttemptIdentity:\s*string,?\s*\)/, 'attempt persistence must include identity')
 assert.match(settings, /store\.putSync\(KEY_LAST_ATTEMPT_IDENTITY,\s*lastAttemptIdentity\)/, 'attempt identity must be persisted')
 assert.match(index, /AutoDailyCheckinSettings/, 'shared barrel must export the settings helper')
@@ -40,7 +41,7 @@ const accountSection = settingsPage.slice(accountSectionStart, readingSectionSta
 assert.match(settingsPage, /@StorageLink\(StorageKeys\.AUTO_DAILY_CHECKIN_ENABLED\)\s+autoDailyCheckinEnabled:\s*boolean\s*=\s*true/, 'SettingsPage must bind switch state to the new AppStorage key')
 assert.match(accountSection, /TogglePreferenceRow\('自动签到',\s*this\.autoDailyCheckinEnabled/, 'account section must show 自动签到 as a switch row')
 assert.doesNotMatch(accountSection, /Button\('自动签到'|FilterChip\(|Chip\(/, 'auto daily check-in must not be implemented as button/chip')
-assert.match(settingsPage, /AutoDailyCheckinSettings\.save\(context,\s*enabled\)/, 'switch updates must persist via helper')
+assert.match(settingsPage, /SettingsSaveCoordinator\.saveAutoDailyCheckin\(context,\s*enabled\)/, 'switch updates must persist via helper')
 
 assert.match(service, /if\s*\(!AutoDailyCheckinSettings\.isEnabled\(\)\)\s*{[\s\S]*?'disabled'/, 'service must skip when disabled')
 assert.match(service, /if\s*\(!cleanCookie\)\s*{[\s\S]*?'no-cookie'/, 'service must skip without cookie')
@@ -55,14 +56,14 @@ assert.match(service, /redeemDailyMissionWithCookie\([\s\S]*cleanCookie,[\s\S]*m
 assert.doesNotMatch(service, /promptAction\.openToast|AlertDialog\.show/, 'auto service must stay quiet and not toast/dialog')
 
 const startupOrder = [
-  'CookieJarSettings.load(this.context)',
-  'AutoDailyCheckinSettings.load(this.context)',
-  'AutoDailyCheckinService.tryCheckin',
-  'this.loadContent(windowStage, win)',
-].map((needle) => entry.indexOf(needle))
+  'restoreCookieJar(context)',
+  'restoreAutoDailyCheckin(context, settingsStore)',
+  'triggerStartupCheckin(context)',
+].map((needle) => bootstrap.indexOf(needle))
 assert.ok(startupOrder.every((idx) => idx >= 0), `startup trigger needles missing: ${startupOrder.join(', ')}`)
-assert.ok(startupOrder[0] < startupOrder[1] && startupOrder[1] < startupOrder[2] && startupOrder[2] < startupOrder[3], 'startup trigger must run after cookie/settings load and before loadContent callback chain finishes')
-assert.match(entry, /CookieJarSettings\.getCurrentCookie\(\),\s*\n\s*'startup'/, 'startup trigger must use loaded current cookie')
+assert.ok(startupOrder[0] < startupOrder[1] && startupOrder[1] < startupOrder[2], 'startup trigger must run after cookie/settings load')
+assert.match(entry, /SettingsBootstrap\.loadAll\(this\.context\)[\s\S]*this\.loadContent\(windowStage, win\)/, 'EntryAbility must load settings bootstrap before content')
+assert.match(bootstrap, /CookieJarSettings\.getCurrentCookie\(\),\s*\n\s*'startup'/, 'startup trigger must use loaded current cookie')
 
 for (const [name, source, tag] of [
   ['native login', nativeLogin, 'native-login'],

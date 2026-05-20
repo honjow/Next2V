@@ -1,6 +1,7 @@
 export const STORE_NAME_SETTINGS: string = 'next2v_settings'
 export const STORE_NAME_AUTH: string = 'next2v_auth'
 export const STORE_NAME_AUTH_SESSION: string = 'next2v_auth_session'
+export const STORE_NAME_ACCOUNT_META: string = 'next2v_account_meta'
 export const STORE_NAME_COOKIEJAR: string = 'next2v_cookiejar'
 export const STORE_NAME_FEED_TABS: string = 'next2v_feed_tabs'
 export const STORE_NAME_CACHE: string = 'next2v_cache'

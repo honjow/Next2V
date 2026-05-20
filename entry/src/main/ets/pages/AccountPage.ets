@@ -18,6 +18,7 @@ import {
 } from 'shared'
 import {
   ApiService,
+  AccountMetaSettings,
   AuthSessionSettings,
   AuthSettings,
   ConciseListRow,
@@ -99,9 +100,11 @@ export struct AccountDashboardPage {
       this.accountBalance = null
       this.dailyMission = null
       this.accountMetaError = ''
+      this.clearAccountMetaCache()
       return
     }
     this.sessionError = ''
+    this.loadAccountMetaCache()
     this.loadAccountMeta(true)
   }
 
@@ -545,6 +548,7 @@ export struct AccountDashboardPage {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     CookieJarSettings.load(context)
       .then(() => {
+        this.loadAccountMetaCache()
         this.validateCookieSession()
         this.loadAccountMeta()
       })
@@ -622,6 +626,7 @@ export struct AccountDashboardPage {
       .finally(() => {
         this.accountBalance = null
         this.dailyMission = null
+        this.clearAccountMetaCache()
       })
   }
 
@@ -702,7 +707,9 @@ export struct AccountDashboardPage {
           this.accountBalance = null
           this.dailyMission = null
           this.accountMetaError = ''
+          this.clearAccountMetaCache()
         } else {
+          this.loadAccountMetaCache()
           this.loadAccountMeta(true)
         }
       })
@@ -728,6 +735,8 @@ export struct AccountDashboardPage {
         this.sessionError = error.message || '清除 Cookie 失败'
       }),
       NotificationSettings.clearCache(context).catch((_error: Error) => {
+      }),
+      AccountMetaSettings.clearCache(context).catch((_error: Error) => {
       })
     ])
       .finally(() => {
@@ -739,6 +748,54 @@ export struct AccountDashboardPage {
         this.dailyMission = null
         this.accountMetaError = ''
       })
+  }
+
+  private accountMetaOwnerKey(): string {
+    return AccountMetaSettings.ownerKey(this.currentUsername(), 'cookie')
+  }
+
+  private loadAccountMetaCache(): void {
+    const cookie = CookieJarSettings.getCurrentCookie()
+    const ownerKey = this.accountMetaOwnerKey()
+    if (!cookie || !ownerKey) {
+      return
+    }
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    AccountMetaSettings.loadCache(context, ownerKey)
+      .then((snapshot) => {
+        if (!snapshot || snapshot.ownerKey !== this.accountMetaOwnerKey()) {
+          return
+        }
+        if (snapshot.balance) {
+          this.accountBalance = snapshot.balance
+        }
+        if (snapshot.dailyMission) {
+          this.dailyMission = snapshot.dailyMission
+        }
+      })
+      .catch((error: Error) => {
+        console.error('load account meta cache failed: ' + error.message)
+      })
+  }
+
+  private saveAccountMetaCache(): void {
+    const cookie = CookieJarSettings.getCurrentCookie()
+    const ownerKey = this.accountMetaOwnerKey()
+    if (!cookie || !ownerKey || !this.accountBalance) {
+      return
+    }
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    AccountMetaSettings.saveCache(context, ownerKey, this.accountBalance, this.dailyMission, 'cookie')
+      .catch((error: Error) => {
+        console.error('save account meta cache failed: ' + error.message)
+      })
+  }
+
+  private clearAccountMetaCache(): void {
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    AccountMetaSettings.clearCache(context).catch((error: Error) => {
+      console.error('clear account meta cache failed: ' + error.message)
+    })
   }
 
   private loadAccountMeta(force: boolean = false): void {
@@ -758,6 +815,7 @@ export struct AccountDashboardPage {
       .then((results) => {
         this.accountBalance = results[0]
         this.dailyMission = results[1]
+        this.saveAccountMetaCache()
       })
       .catch((error: Error) => {
         if (error instanceof V2exCookieTwoFactorRequiredError) {

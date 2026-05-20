@@ -305,7 +305,6 @@ struct Index {
         }
         if (i === 3) {
           this.accountRefreshKey = Date.now()
-          this.refreshLocalData()
         }
       })
     }

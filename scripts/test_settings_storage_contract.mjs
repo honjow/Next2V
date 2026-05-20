@@ -276,6 +276,7 @@ const expectedStoreNames = [
   ['STORE_NAME_SETTINGS', 'next2v_settings'],
   ['STORE_NAME_AUTH', 'next2v_auth'],
   ['STORE_NAME_AUTH_SESSION', 'next2v_auth_session'],
+  ['STORE_NAME_ACCOUNT_META', 'next2v_account_meta'],
   ['STORE_NAME_COOKIEJAR', 'next2v_cookiejar'],
   ['STORE_NAME_FEED_TABS', 'next2v_feed_tabs'],
   ['STORE_NAME_CACHE', 'next2v_cache'],
@@ -305,6 +306,7 @@ for (const value of expectedStoreValues) {
 const storeOwners = new Map([
   ['AuthSettings.ets', 'STORE_NAME_AUTH'],
   ['AuthSessionSettings.ets', 'STORE_NAME_AUTH_SESSION'],
+  ['AccountMetaSettings.ets', 'STORE_NAME_ACCOUNT_META'],
   ['CookieJarSettings.ets', 'STORE_NAME_COOKIEJAR'],
   ['FeedTabSettings.ets', 'STORE_NAME_FEED_TABS'],
   ['CacheSettings.ets', 'STORE_NAME_CACHE'],
