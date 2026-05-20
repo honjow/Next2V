@@ -106,6 +106,11 @@ for (const forbidden of ['DiagnosticsStore.exportText', 'DiagnosticLogger.export
   assert(!exportFile.includes(forbidden), `DiagnosticsFileExport must not bypass redacted settings export or mention raw/secret field ${forbidden}`)
 }
 assert(exportFile.includes('fileName.includes(\'/\')') && exportFile.includes("fileName.includes('..')"), 'DiagnosticsFileExport must guard export cleanup by safe filename')
+assert(exportFile.includes('const second = date.getSeconds().toString().padStart(2, \'0\')'), 'DiagnosticsFileExport filename must include second-resolution timestamp')
+assert(
+  exportFile.includes('return `${DIAGNOSTICS_EXPORT_PREFIX}${year}${month}${day}-${hour}${minute}${second}${DIAGNOSTICS_EXPORT_SUFFIX}`'),
+  'DiagnosticsFileExport filename must be English ASCII next2v-diagnostics-YYYYMMDD-HHMMSS.txt',
+)
 
 const index = read(files.index)
 for (const token of ['DiagnosticLogger', 'DiagnosticsRedactor', 'DiagnosticsStore', 'DiagnosticsSettings', 'DiagnosticsFileExport']) {
@@ -173,6 +178,13 @@ assert(shareMethod.includes('this.getUIContext().getHostContext() as common.UIAb
 assert(shareMethod.includes('utd: utd.UniformDataType.FILE'), 'shareDiagnosticsText must label the URI payload as a file share')
 assert(shareMethod.includes('uri: exportFile.uri'), 'shareDiagnosticsText must share the exported file uri')
 assert(shareMethod.includes('label: exportFile.fileName'), 'shareDiagnosticsText must expose the safe diagnostics filename to share preview')
+const sharedDataStart = shareMethod.indexOf('const data = new systemShare.SharedData({')
+const sharedDataEnd = shareMethod.indexOf('\n      })', sharedDataStart)
+assert(sharedDataStart >= 0 && sharedDataEnd > sharedDataStart, 'shareDiagnosticsText SharedData block missing')
+const sharedDataBlock = shareMethod.slice(sharedDataStart, sharedDataEnd)
+assert(sharedDataBlock.includes("title: 'Next2V Diagnostics'"), 'diagnostics share metadata title must be English')
+assert(sharedDataBlock.includes("description: 'Redacted local diagnostics log file'"), 'diagnostics share metadata description must be English')
+assert(!/[\u4e00-\u9fff]/.test(sharedDataBlock), 'diagnostics share metadata must not contain Chinese characters')
 assert(!shareMethod.includes('content:'), 'shareDiagnosticsText must not pass diagnostics text as primary SharedData.content')
 assert(!shareMethod.includes('DiagnosticsSettings.exportText()'), 'shareDiagnosticsText must not directly pass exported text to primary share data')
 assert(shareMethod.includes('copyDiagnosticsTextWithToast'), 'shareDiagnosticsText must fall back to redacted copy path if file share fails')

@@ -146,9 +146,9 @@ export struct DiagnosticsLogPage {
       })
       const data = new systemShare.SharedData({
         utd: utd.UniformDataType.FILE,
-        title: 'Next2V 诊断日志',
+        title: 'Next2V Diagnostics',
         label: exportFile.fileName,
-        description: '已脱敏的本机诊断日志文件',
+        description: 'Redacted local diagnostics log file',
         uri: exportFile.uri,
       })
       DiagnosticLogger.info('diagnostics', 'diagnostics_share_show_start', {
