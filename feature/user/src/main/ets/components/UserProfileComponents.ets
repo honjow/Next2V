@@ -236,6 +236,7 @@ export struct UserProfileReplyCard {
   openImage?: (url: string) => void
   openMention?: (username: string) => void
   private inlineActionInFlight: boolean = false
+  private primaryActionInFlight: boolean = false
 
   private replyBodySource(): string {
     const rendered = (this.reply.content_rendered || '').trim()
@@ -261,9 +262,13 @@ export struct UserProfileReplyCard {
   }
 
   private openPrimaryTopic(): void {
-    if (this.inlineActionInFlight) {
+    if (this.inlineActionInFlight || this.primaryActionInFlight) {
       return
     }
+    this.primaryActionInFlight = true
+    setTimeout(() => {
+      this.primaryActionInFlight = false
+    }, 0)
     if (this.openTopic) {
       this.openTopic()
     }
@@ -300,11 +305,18 @@ export struct UserProfileReplyCard {
         .maxLines(2)
         .textOverflow({ overflow: TextOverflow.Ellipsis })
         .width('100%')
+        .onClick(() => {
+          this.openPrimaryTopic()
+        })
 
       if (this.replyBodySource()) {
         MarkdownContent({
           source: this.replyBodySource(),
           topMargin: 0,
+          contentSelectable: false,
+          onContentClick: () => {
+            this.openPrimaryTopic()
+          },
           onLinkClick: (url: string) => {
             this.runInlineAction(() => {
               if (this.openLink) {
@@ -334,18 +346,14 @@ export struct UserProfileReplyCard {
   }
 
   build() {
-    Button() {
+    Column() {
       this.ReplyCardContent()
     }
-    .type(ButtonType.Normal)
     .padding(ThemeConstants.SPACE_MD)
     .width('100%')
     .borderRadius(ThemeConstants.RADIUS_CARD)
     .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
-    .stateStyles({
-      pressed: { .backgroundColor($r('sys.color.ohos_id_color_card_bg')) },
-      normal: { .backgroundColor($r('sys.color.ohos_id_color_card_bg')) },
-    })
+    .alignItems(HorizontalAlign.Start)
     .onClick(() => {
       this.openPrimaryTopic()
     })
