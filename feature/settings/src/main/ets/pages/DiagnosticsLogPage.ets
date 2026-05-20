@@ -71,8 +71,8 @@ export struct DiagnosticsLogPage {
   DiagnosticsActionsSection() {
     GroupedListSection() {
       ConciseListRow({
-        title: `最近 ${this.logCount} 条`,
-        subtitle: '重启后清空',
+        title: `本次启动最近 ${this.logCount} 条`,
+        subtitle: '日志保存在本机，分享默认使用当前日志文件',
         showChevron: false,
         action: () => {
           this.refreshLogCount()
@@ -102,7 +102,7 @@ export struct DiagnosticsLogPage {
       SettingsDivider()
 
       ConciseListRow({
-        title: '清空日志',
+        title: '清空本次启动记录',
         destructive: true,
         showChevron: false,
         action: () => {
@@ -203,6 +203,6 @@ export struct DiagnosticsLogPage {
   private clearDiagnosticsText(): void {
     DiagnosticsSettings.clearLogs()
     this.refreshLogCount()
-    promptAction.openToast({ message: '诊断日志已清空' }).catch((_error: Error) => {})
+    promptAction.openToast({ message: '本次启动记录已清空' }).catch((_error: Error) => {})
   }
 }

@@ -1,0 +1,365 @@
+import { common } from '@kit.AbilityKit'
+import { fileIo } from '@kit.CoreFileKit'
+import { DiagnosticsRedactor, DiagnosticContextObject, DiagnosticLogEntry } from './DiagnosticsRedactor'
+import { DiagnosticsLogFormatter } from './DiagnosticsLogFormatter'
+
+export const DIAGNOSTICS_LOG_DIR: string = 'diagnostics_logs'
+export const DIAGNOSTICS_LOG_PREFIX: string = 'next2v-log-'
+export const DIAGNOSTICS_LOG_SUFFIX: string = '.txt'
+export const DIAGNOSTICS_LOG_KEEP_COUNT: number = 10
+export const DIAGNOSTICS_LOG_MAX_AGE_DAYS: number = 14
+export const DIAGNOSTICS_LOG_MAX_TOTAL_BYTES: number = 5 * 1024 * 1024
+
+export interface DiagnosticsLogFileInfo {
+  fileName: string
+  filePath: string
+  directory: string
+}
+
+export class DiagnosticsLogFileSink {
+  private static directory: string = ''
+  private static currentFileName: string = ''
+  private static currentFilePath: string = ''
+  private static disabled: boolean = false
+  private static initialized: boolean = false
+
+  static initialize(context: common.UIAbilityContext): void {
+    try {
+      const filesDir = DiagnosticsLogFileSink.nonEmptyDir(context.filesDir)
+      if (filesDir.length <= 0) {
+        DiagnosticsLogFileSink.disableMemoryOnly()
+        return
+      }
+      DiagnosticsLogFileSink.directory = filesDir + '/' + DIAGNOSTICS_LOG_DIR
+      DiagnosticsLogFileSink.ensureDirectory(DiagnosticsLogFileSink.directory)
+      DiagnosticsLogFileSink.currentFileName = DiagnosticsLogFileSink.createUniqueFileName(DiagnosticsLogFileSink.directory, new Date())
+      DiagnosticsLogFileSink.currentFilePath = DiagnosticsLogFileSink.directory + '/' + DiagnosticsLogFileSink.currentFileName
+      DiagnosticsLogFileSink.writeTextFile(DiagnosticsLogFileSink.currentFilePath, '', true)
+      DiagnosticsLogFileSink.initialized = true
+      DiagnosticsLogFileSink.disabled = false
+      DiagnosticsLogFileSink.pruneRetainedLogs()
+    } catch (error) {
+      DiagnosticsLogFileSink.disableMemoryOnly()
+      DiagnosticsLogFileSink.consoleFailure('initialize', error as Error)
+    }
+  }
+
+  static append(entry: DiagnosticLogEntry): void {
+    try {
+      if (DiagnosticsLogFileSink.disabled || !DiagnosticsLogFileSink.initialized || DiagnosticsLogFileSink.currentFilePath.length <= 0) {
+        return
+      }
+      const safeEntry = DiagnosticsRedactor.sanitizeEvent(entry)
+      DiagnosticsLogFileSink.writeTextFile(
+        DiagnosticsLogFileSink.currentFilePath,
+        DiagnosticsLogFormatter.formatEntry(safeEntry) + '\n',
+        false,
+      )
+    } catch (error) {
+      DiagnosticsLogFileSink.disabled = true
+      DiagnosticsLogFileSink.consoleFailure('append', error as Error)
+    }
+  }
+
+  static exportLatestText(): string {
+    try {
+      const path = DiagnosticsLogFileSink.latestLogPath()
+      if (path.length <= 0) {
+        return ''
+      }
+      return fileIo.readTextSync(path)
+    } catch (_error) {
+      return ''
+    }
+  }
+
+  static currentInfo(): DiagnosticsLogFileInfo | null {
+    try {
+      if (!DiagnosticsLogFileSink.initialized || DiagnosticsLogFileSink.currentFileName.length <= 0) {
+        return null
+      }
+      return {
+        fileName: DiagnosticsLogFileSink.currentFileName,
+        filePath: DiagnosticsLogFileSink.currentFilePath,
+        directory: DiagnosticsLogFileSink.directory,
+      }
+    } catch (_error) {
+      return null
+    }
+  }
+
+  static close(): void {
+    try {
+      // Writes are append-only and close their file handle per entry. Kept for lifecycle symmetry.
+      DiagnosticsLogFileSink.pruneRetainedLogs()
+    } catch (_error) {
+    }
+  }
+
+  static safeErrorContext(phase: string, error: Error): DiagnosticContextObject {
+    const context: DiagnosticContextObject = new Object() as DiagnosticContextObject
+    context['phase'] = DiagnosticsLogFileSink.safeToken(phase || 'unknown')
+    context['errorName'] = DiagnosticsLogFileSink.safeShortText(error && error.name ? error.name : 'Error')
+    context['errorMessage'] = DiagnosticsLogFileSink.safeShortText(
+      DiagnosticsLogFileSink.scrubFileLocations(error && error.message ? error.message : '')
+    )
+    return context
+  }
+
+  static isDiagnosticsLogFileName(fileName: string): boolean {
+    if (!fileName.startsWith(DIAGNOSTICS_LOG_PREFIX) || !fileName.endsWith(DIAGNOSTICS_LOG_SUFFIX)) {
+      return false
+    }
+    if (fileName.includes('/') || fileName.includes('\\') || fileName.includes('..')) {
+      return false
+    }
+    const middle = fileName.substring(DIAGNOSTICS_LOG_PREFIX.length, fileName.length - DIAGNOSTICS_LOG_SUFFIX.length)
+    const baseLength = 'YYYYMMDD-HHMMSS'.length
+    if (middle.length !== baseLength && (middle.length <= baseLength + 1 || middle.charAt(baseLength) !== '-')) {
+      return false
+    }
+    if (middle.charAt(8) !== '-') {
+      return false
+    }
+    const timestampDigits = middle.substring(0, 8) + middle.substring(9, 15)
+    if (!DiagnosticsLogFileSink.allDigits(timestampDigits)) {
+      return false
+    }
+    if (middle.length > baseLength) {
+      const suffix = middle.substring(baseLength + 1)
+      if (suffix.length <= 0 || !DiagnosticsLogFileSink.allDigits(suffix)) {
+        return false
+      }
+    }
+    return true
+  }
+
+  private static latestLogPath(): string {
+    if (DiagnosticsLogFileSink.currentFilePath.length > 0 && DiagnosticsLogFileSink.fileExists(DiagnosticsLogFileSink.currentFilePath)) {
+      return DiagnosticsLogFileSink.currentFilePath
+    }
+    if (DiagnosticsLogFileSink.directory.length <= 0) {
+      return ''
+    }
+    const names = DiagnosticsLogFileSink.listSafeLogNames().sort().reverse()
+    if (names.length <= 0) {
+      return ''
+    }
+    return DiagnosticsLogFileSink.directory + '/' + names[0]
+  }
+
+  private static pruneRetainedLogs(): void {
+    if (DiagnosticsLogFileSink.directory.length <= 0) {
+      return
+    }
+    const names = DiagnosticsLogFileSink.listSafeLogNames().sort().reverse()
+    const now = Date.now()
+    let totalBytes = 0
+    names.forEach((name: string, index: number) => {
+      const path = DiagnosticsLogFileSink.directory + '/' + name
+      const protectedCurrent = name === DiagnosticsLogFileSink.currentFileName
+      const ageExpired = DiagnosticsLogFileSink.fileAgeMs(name, now) > DIAGNOSTICS_LOG_MAX_AGE_DAYS * 24 * 60 * 60 * 1000
+      const size = DiagnosticsLogFileSink.approxFileBytes(path)
+      totalBytes += size
+      if (protectedCurrent) {
+        return
+      }
+      if (index >= DIAGNOSTICS_LOG_KEEP_COUNT || ageExpired || totalBytes > DIAGNOSTICS_LOG_MAX_TOTAL_BYTES) {
+        DiagnosticsLogFileSink.unlinkBestEffort(path)
+      }
+    })
+  }
+
+  private static listSafeLogNames(): string[] {
+    try {
+      return fileIo.listFileSync(DiagnosticsLogFileSink.directory)
+        .filter((name: string) => DiagnosticsLogFileSink.isDiagnosticsLogFileName(name))
+    } catch (_error) {
+      return []
+    }
+  }
+
+  private static createUniqueFileName(directory: string, date: Date): string {
+    const stem = DiagnosticsLogFileSink.timestampStem(date)
+    for (let attempt = 0; attempt < 100; attempt += 1) {
+      const suffix = attempt === 0 ? '' : '-' + attempt.toString().padStart(2, '0')
+      const candidate = DIAGNOSTICS_LOG_PREFIX + stem + suffix + DIAGNOSTICS_LOG_SUFFIX
+      if (!DiagnosticsLogFileSink.fileExists(directory + '/' + candidate)) {
+        return candidate
+      }
+    }
+    return DIAGNOSTICS_LOG_PREFIX + stem + '-' + Date.now().toString() + DIAGNOSTICS_LOG_SUFFIX
+  }
+
+  private static timestampStem(date: Date): string {
+    const year = date.getFullYear().toString().padStart(4, '0')
+    const month = (date.getMonth() + 1).toString().padStart(2, '0')
+    const day = date.getDate().toString().padStart(2, '0')
+    const hour = date.getHours().toString().padStart(2, '0')
+    const minute = date.getMinutes().toString().padStart(2, '0')
+    const second = date.getSeconds().toString().padStart(2, '0')
+    return `${year}${month}${day}-${hour}${minute}${second}`
+  }
+
+  private static fileAgeMs(fileName: string, now: number): number {
+    try {
+      const middle = fileName.substring(DIAGNOSTICS_LOG_PREFIX.length, DIAGNOSTICS_LOG_PREFIX.length + 'YYYYMMDD-HHMMSS'.length)
+      const year = Number(middle.substring(0, 4))
+      const month = Number(middle.substring(4, 6)) - 1
+      const day = Number(middle.substring(6, 8))
+      const hour = Number(middle.substring(9, 11))
+      const minute = Number(middle.substring(11, 13))
+      const second = Number(middle.substring(13, 15))
+      return Math.max(0, now - new Date(year, month, day, hour, minute, second).getTime())
+    } catch (_error) {
+      return 0
+    }
+  }
+
+  private static approxFileBytes(path: string): number {
+    try {
+      const text = fileIo.readTextSync(path)
+      return DiagnosticsLogFileSink.byteLength(text)
+    } catch (_error) {
+      return 0
+    }
+  }
+
+  private static byteLength(value: string): number {
+    let bytes = 0
+    for (let i = 0; i < value.length; i += 1) {
+      const code = value.charCodeAt(i)
+      if (code <= 0x7F) {
+        bytes += 1
+      } else if (code <= 0x7FF) {
+        bytes += 2
+      } else if (code >= 0xD800 && code <= 0xDBFF && i + 1 < value.length) {
+        bytes += 4
+        i += 1
+      } else {
+        bytes += 3
+      }
+    }
+    return bytes
+  }
+
+  private static ensureDirectory(directory: string): void {
+    try {
+      fileIo.mkdirSync(directory, true)
+    } catch (_error) {
+      fileIo.listFileSync(directory)
+    }
+  }
+
+  private static writeTextFile(path: string, text: string, truncate: boolean): void {
+    let file: fileIo.File | null = null
+    try {
+      const mode = truncate ?
+        fileIo.OpenMode.READ_WRITE | fileIo.OpenMode.CREATE | fileIo.OpenMode.TRUNC :
+        fileIo.OpenMode.READ_WRITE | fileIo.OpenMode.CREATE | fileIo.OpenMode.APPEND
+      file = fileIo.openSync(path, mode)
+      fileIo.writeSync(file.fd, text)
+    } finally {
+      DiagnosticsLogFileSink.closeFileBestEffort(file)
+    }
+  }
+
+  private static closeFileBestEffort(file: fileIo.File | null): void {
+    if (!file) {
+      return
+    }
+    try {
+      fileIo.closeSync(file)
+    } catch (_error) {
+    }
+  }
+
+  private static fileExists(path: string): boolean {
+    try {
+      return fileIo.accessSync(path)
+    } catch (_error) {
+      return false
+    }
+  }
+
+  private static unlinkBestEffort(path: string): void {
+    try {
+      fileIo.unlinkSync(path)
+    } catch (_error) {
+    }
+  }
+
+  private static disableMemoryOnly(): void {
+    DiagnosticsLogFileSink.disabled = true
+    DiagnosticsLogFileSink.initialized = false
+    DiagnosticsLogFileSink.currentFileName = ''
+    DiagnosticsLogFileSink.currentFilePath = ''
+  }
+
+  private static consoleFailure(phase: string, error: Error): void {
+    try {
+      console.error('[next2v:diagnostics] persistent log sink disabled phase=' + DiagnosticsLogFileSink.safeToken(phase) + ' error=' + DiagnosticsLogFileSink.safeConsoleFailureMessage(error))
+    } catch (_error) {
+    }
+  }
+
+  private static safeConsoleFailureMessage(error: Error): string {
+    const message = error && error.message ? error.message : 'unknown'
+    return DiagnosticsLogFileSink.safeShortText(
+      DiagnosticsLogFileSink.scrubSensitiveConsoleText(
+        DiagnosticsLogFileSink.scrubFileLocations(message)
+      )
+    )
+  }
+
+  private static nonEmptyDir(value: string): string {
+    let clean = (value || '').trim()
+    while (clean.endsWith('/')) {
+      clean = clean.substring(0, clean.length - 1)
+    }
+    return clean
+  }
+
+  private static allDigits(value: string): boolean {
+    if (value.length <= 0) {
+      return false
+    }
+    for (let i = 0; i < value.length; i += 1) {
+      const code = value.charCodeAt(i)
+      if (code < 48 || code > 57) {
+        return false
+      }
+    }
+    return true
+  }
+
+  private static safeToken(value: string): string {
+    return (value || '').replace(/[^a-zA-Z0-9_.:-]/g, '_').slice(0, 80)
+  }
+
+  private static scrubFileLocations(value: string): string {
+    const clean = value || ''
+    return clean.replace(/\/[^\s:]+\/([^\/\s:]+)/g, '/<path>/$1')
+  }
+
+  private static scrubSensitiveConsoleText(value: string): string {
+    let clean = value || ''
+    clean = clean.replace(/(Cookie|Set-Cookie)\s*[:=][^;\n\s]+/gi, '$1=<redacted>')
+    clean = clean.replace(/Authorization\s*[:=]\s*(Bearer\s+)?[^\s;]+/gi, 'Authorization=<redacted>')
+    clean = clean.replace(/Bearer\s+[A-Za-z0-9._~+\/-]+/gi, 'Bearer <redacted>')
+    clean = clean.replace(/([?&](once|token|auth|code|password|delete_once|redeem)[^=]*=)[^&#\s]+/gi, '$1<redacted>')
+    clean = clean.replace(/\/mission\/daily\/redeem\?[^\s]+/gi, '/mission/daily/redeem?once=<redacted>')
+    clean = clean.replace(/\/delete\/notification\/\d+\?[^\s]+/gi, '/delete/notification/<id>?once=<redacted>')
+    clean = clean.replace(/\/thank\/(reply|topic)\/\d+\?[^\s]+/gi, '/thank/$1/<id>?once=<redacted>')
+    clean = clean.replace(/\/favorite\/(topic|node)\/[^\s?]+\?[^\s]+/gi, '/favorite/$1/<id>?once=<redacted>')
+    return clean
+  }
+
+  private static safeShortText(value: string): string {
+    const clean = value || ''
+    if (clean.length > 120) {
+      return clean.substring(0, 120) + '…'
+    }
+    return clean
+  }
+}

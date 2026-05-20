@@ -6,7 +6,7 @@ import { DiagnosticContextObject } from '../diagnostics/DiagnosticsRedactor'
 import { DiagnosticsSettings } from './DiagnosticsSettings'
 
 const DIAGNOSTICS_EXPORT_DIR = 'diagnostics_exports'
-const DIAGNOSTICS_EXPORT_PREFIX = 'next2v-diagnostics-'
+const DIAGNOSTICS_EXPORT_PREFIX = 'next2v-log-export-'
 const DIAGNOSTICS_EXPORT_SUFFIX = '.txt'
 const DIAGNOSTICS_EXPORT_KEEP_COUNT = 3
 

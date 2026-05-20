@@ -11,6 +11,8 @@ const assert = (condition, message) => {
 const files = {
   redactor: 'shared/src/main/ets/diagnostics/DiagnosticsRedactor.ets',
   logger: 'shared/src/main/ets/diagnostics/DiagnosticLogger.ets',
+  formatter: 'shared/src/main/ets/diagnostics/DiagnosticsLogFormatter.ets',
+  fileSink: 'shared/src/main/ets/diagnostics/DiagnosticsLogFileSink.ets',
   store: 'shared/src/main/ets/diagnostics/DiagnosticsStore.ets',
   settings: 'shared/src/main/ets/settings/DiagnosticsSettings.ets',
   exportFile: 'shared/src/main/ets/settings/DiagnosticsFileExport.ets',
@@ -26,6 +28,7 @@ const files = {
   notificationVm: 'entry/src/main/ets/viewmodel/NotificationCenterViewModel.ets',
   notificationCache: 'entry/src/main/ets/model/NotificationCacheCoordinator.ets',
   accountPage: 'entry/src/main/ets/pages/AccountPage.ets',
+  entryAbility: 'entry/src/main/ets/entryability/EntryAbility.ets',
 }
 for (const [name, rel] of Object.entries(files)) {
   assert(fs.existsSync(path.join(repo, rel)), `${name} file missing: ${rel}`)
@@ -64,6 +67,8 @@ for (const token of [
   'static error(',
   'DiagnosticsRedactor.sanitizeEvent(entry)',
   'DiagnosticsStore.append(safeEntry)',
+  'DiagnosticsLogFileSink.append(safeEntry)',
+  'initializePersistentSink(context: common.UIAbilityContext)',
   'catch (_error)',
   'Never throw to callers',
   'exportText()',
@@ -75,6 +80,44 @@ const store = read(files.store)
 assert(store.includes('DEFAULT_MAX_ENTRIES: number = 400'), 'ring buffer default must be bounded')
 assert(store.includes('slice(DiagnosticsStore.entries.length - DiagnosticsStore.maxEntries)'), 'ring buffer must keep newest entries')
 assert(store.includes('exportText()'), 'store must export redacted text')
+assert(store.includes('DiagnosticsLogFormatter.formatEntries'), 'store default export must be human-readable formatted text')
+assert(store.includes('exportJsonlText()'), 'store may retain JSONL only as non-default helper')
+
+const formatter = read(files.formatter)
+for (const token of ['formatEntry(entry: DiagnosticLogEntry)', 'formatTimestamp(ts: number)', '[ERROR] diagnostics.format_error', 'DiagnosticsRedactor.sanitizeEvent(entry)', 'formatEntries(entries: DiagnosticLogEntry[])', 'formatJsonlEntries(entries: DiagnosticLogEntry[])']) {
+  assert(formatter.includes(token), `DiagnosticsLogFormatter missing ${token}`)
+}
+assert(!formatter.includes('exportText()'), 'formatter must not own default export routing')
+
+const fileSink = read(files.fileSink)
+for (const token of [
+  'DIAGNOSTICS_LOG_DIR',
+  "DIAGNOSTICS_LOG_PREFIX: string = 'next2v-log-'",
+  "DIAGNOSTICS_LOG_SUFFIX: string = '.txt'",
+  'DIAGNOSTICS_LOG_KEEP_COUNT: number = 10',
+  'DIAGNOSTICS_LOG_MAX_AGE_DAYS: number = 14',
+  'DIAGNOSTICS_LOG_MAX_TOTAL_BYTES: number = 5 * 1024 * 1024',
+  'context.filesDir',
+  'DiagnosticsRedactor.sanitizeEvent(entry)',
+  'DiagnosticsLogFormatter.formatEntry(safeEntry)',
+  'isDiagnosticsLogFileName(fileName: string)',
+  'fileName.includes(\'/\')',
+  "fileName.includes('..')",
+  'name === DiagnosticsLogFileSink.currentFileName',
+  'consoleFailure',
+]) {
+  assert(fileSink.includes(token), `DiagnosticsLogFileSink missing ${token}`)
+}
+assert(!fileSink.includes('DiagnosticLogger.'), 'file sink must not call DiagnosticLogger and risk recursive logging')
+assert(fileSink.includes('safeConsoleFailureMessage(error: Error)'), 'console failure must use a dedicated sanitized message helper')
+assert(fileSink.includes('scrubFileLocations(message)'), 'console failure message must scrub full file locations before printing')
+assert(fileSink.includes('scrubSensitiveConsoleText('), 'console failure message must scrub sensitive-looking substrings before printing')
+assert(fileSink.includes('Authorization=<redacted>'), 'console failure scrubber must redact Authorization-like substrings')
+assert(fileSink.includes('once=<redacted>'), 'console failure scrubber must redact once-like substrings')
+
+const consoleFailureBody = fileSink.slice(fileSink.indexOf('private static consoleFailure'), fileSink.indexOf('private static safeConsoleFailureMessage'))
+assert(consoleFailureBody.includes('safeConsoleFailureMessage(error)'), 'console failure must not print raw error.message')
+assert(!consoleFailureBody.includes('error.message'), 'console failure body must avoid raw error.message')
 
 const settings = read(files.settings)
 assert(settings.includes('DEFAULT_ENABLED: boolean = true'), 'diagnostics should default enabled')
@@ -85,7 +128,7 @@ assert(settings.includes('static count(): number') && settings.includes('Diagnos
 const exportFile = read(files.exportFile)
 for (const token of [
   'DiagnosticsSettings.exportText() || \'暂无诊断日志\'',
-  'next2v-diagnostics-',
+  'next2v-log-export-',
   'YYYYMMDD-HHMMSS',
   '.txt',
   'context.cacheDir',
@@ -109,11 +152,11 @@ assert(exportFile.includes('fileName.includes(\'/\')') && exportFile.includes("f
 assert(exportFile.includes('const second = date.getSeconds().toString().padStart(2, \'0\')'), 'DiagnosticsFileExport filename must include second-resolution timestamp')
 assert(
   exportFile.includes('return `${DIAGNOSTICS_EXPORT_PREFIX}${year}${month}${day}-${hour}${minute}${second}${DIAGNOSTICS_EXPORT_SUFFIX}`'),
-  'DiagnosticsFileExport filename must be English ASCII next2v-diagnostics-YYYYMMDD-HHMMSS.txt',
+  'DiagnosticsFileExport filename must be English ASCII next2v-log-export-YYYYMMDD-HHMMSS.txt',
 )
 
 const index = read(files.index)
-for (const token of ['DiagnosticLogger', 'DiagnosticsRedactor', 'DiagnosticsStore', 'DiagnosticsSettings', 'DiagnosticsFileExport']) {
+for (const token of ['DiagnosticLogger', 'DiagnosticsLogFileSink', 'DiagnosticsLogFormatter', 'DiagnosticsRedactor', 'DiagnosticsStore', 'DiagnosticsSettings', 'DiagnosticsFileExport']) {
   assert(index.includes(token), `shared Index missing ${token}`)
 }
 const storageKeys = read(files.storageKeys)
@@ -150,9 +193,10 @@ for (const token of ['诊断日志', '分享诊断日志', '复制诊断日志',
 }
 assert(!settingsPage.includes('this.AdvancedSection()'), 'SettingsPage must not use the old combined AdvancedSection entry')
 const diagnosticsPage = read(files.diagnosticsPage)
-for (const token of ['诊断日志', '最近 ${this.logCount} 条', '重启后清空', '分享日志文件', '复制日志', '清空日志', 'SettingsToggleRow', 'DiagnosticsSettings.count()', 'DiagnosticsSettings.exportText()', 'DiagnosticsSettings.clearLogs()', 'saveDiagnostics']) {
+for (const token of ['诊断日志', '本次启动最近 ${this.logCount} 条', '日志保存在本机', '分享日志文件', '复制日志', '清空本次启动记录', 'SettingsToggleRow', 'DiagnosticsSettings.count()', 'DiagnosticsSettings.exportText()', 'DiagnosticsSettings.clearLogs()', 'saveDiagnostics']) {
   assert(diagnosticsPage.includes(token), `DiagnosticsLogPage missing ${token}`)
 }
+assert(!diagnosticsPage.includes('重启后清空'), 'DiagnosticsLogPage must not describe logs as cleared after restart')
 for (const forbidden of ['分享诊断日志', '复制诊断日志', '清空诊断日志', '通过系统分享已脱敏的本机日志', '只复制已脱敏的本机日志']) {
   assert(!diagnosticsPage.includes(forbidden), `DiagnosticsLogPage must avoid stale/dense wording ${forbidden}`)
 }
@@ -206,6 +250,10 @@ for (const token of ["'diagnosticsLog'", "'DiagnosticsLog': 'diagnosticsLog'", "
 }
 const entryIndex = read(files.entryIndex)
 assert(entryIndex.includes('DiagnosticsLogPage') && entryIndex.includes("descriptor.family === 'diagnosticsLog'"), 'entry Index must render DiagnosticsLogPage for diagnosticsLog route')
+const entryAbility = read(files.entryAbility)
+for (const token of ['DiagnosticLogger.initializePersistentSink(this.context)', 'diagnostics_session_start', 'diagnostics_session_end', 'DiagnosticLogger.closePersistentSink()']) {
+  assert(entryAbility.includes(token), `EntryAbility persistent diagnostics lifecycle missing ${token}`)
+}
 
 const autoDaily = read(files.autoDaily)
 for (const event of [

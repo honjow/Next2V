@@ -1,3 +1,4 @@
+import { DiagnosticsLogFormatter } from './DiagnosticsLogFormatter'
 import { DiagnosticsRedactor, DiagnosticLogEntry } from './DiagnosticsRedactor'
 
 const DEFAULT_MAX_ENTRIES: number = 400
@@ -36,9 +37,15 @@ export class DiagnosticsStore {
 
   static exportText(): string {
     try {
-      return DiagnosticsStore.snapshot()
-        .map((entry: DiagnosticLogEntry) => JSON.stringify(DiagnosticsRedactor.sanitizeEvent(entry)))
-        .join('\n')
+      return DiagnosticsLogFormatter.formatEntries(DiagnosticsStore.snapshot())
+    } catch (_error) {
+      return ''
+    }
+  }
+
+  static exportJsonlText(): string {
+    try {
+      return DiagnosticsLogFormatter.formatJsonlEntries(DiagnosticsStore.snapshot())
     } catch (_error) {
       return ''
     }

@@ -3,6 +3,7 @@ import { Configuration } from '@ohos.app.ability.Configuration'
 import { window } from '@kit.ArkUI'
 import { webview } from '@kit.ArkWeb'
 import {
+  DiagnosticLogger,
   FoldScreenUtil,
   SettingsBootstrap,
   StorageKeys,
@@ -20,6 +21,8 @@ export default class EntryAbility extends UIAbility {
   private keyboardHeightCallback: ((height: number) => void) | null = null
 
   onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
+    DiagnosticLogger.initializePersistentSink(this.context)
+    DiagnosticLogger.info('app', 'diagnostics_session_start', { source: 'EntryAbility.onCreate' })
     try {
       webview.WebviewController.initializeWebEngine()
     } catch (error) {
@@ -135,6 +138,7 @@ export default class EntryAbility extends UIAbility {
   }
 
   onDestroy(): void {
+    DiagnosticLogger.info('app', 'diagnostics_session_end', { source: 'EntryAbility.onDestroy' })
     if (this.mainWindow && this.keyboardHeightCallback) {
       try {
         this.mainWindow.off('keyboardHeightChange', this.keyboardHeightCallback)
@@ -143,5 +147,6 @@ export default class EntryAbility extends UIAbility {
         console.error('remove keyboard height listener failed: ' + e.message)
       }
     }
+    DiagnosticLogger.closePersistentSink()
   }
 }

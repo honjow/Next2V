@@ -1,4 +1,6 @@
+import { common } from '@kit.AbilityKit'
 import { DiagnosticsRedactor, DiagnosticContextObject, DiagnosticLogEntry } from './DiagnosticsRedactor'
+import { DiagnosticsLogFileSink } from './DiagnosticsLogFileSink'
 import { DiagnosticsStore } from './DiagnosticsStore'
 
 export type DiagnosticLogLevel = 'debug' | 'info' | 'warn' | 'error'
@@ -22,6 +24,14 @@ export class DiagnosticLogger {
     try {
       DiagnosticLogger.mirrorToConsole = enabled
     } catch (_error) {
+    }
+  }
+
+  static initializePersistentSink(context: common.UIAbilityContext): void {
+    try {
+      DiagnosticsLogFileSink.initialize(context)
+    } catch (_error) {
+      // Diagnostics must never affect app behavior.
     }
   }
 
@@ -60,6 +70,7 @@ export class DiagnosticLogger {
       }
       const safeEntry = DiagnosticsRedactor.sanitizeEvent(entry)
       DiagnosticsStore.append(safeEntry)
+      DiagnosticsLogFileSink.append(safeEntry)
       DiagnosticLogger.consoleSink(safeEntry)
     } catch (_error) {
       // Never throw to callers.
@@ -68,6 +79,10 @@ export class DiagnosticLogger {
 
   static exportText(): string {
     try {
+      const latestFileText = DiagnosticsLogFileSink.exportLatestText()
+      if (latestFileText.length > 0) {
+        return latestFileText
+      }
       return DiagnosticsStore.exportText()
     } catch (_error) {
       return ''
@@ -77,6 +92,13 @@ export class DiagnosticLogger {
   static clear(): void {
     try {
       DiagnosticsStore.clear()
+    } catch (_error) {
+    }
+  }
+
+  static closePersistentSink(): void {
+    try {
+      DiagnosticsLogFileSink.close()
     } catch (_error) {
     }
   }
