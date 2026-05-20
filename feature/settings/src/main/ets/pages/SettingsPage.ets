@@ -5,6 +5,7 @@ import { promptAction } from '@kit.ArkUI'
 import { systemShare } from '@kit.ShareKit'
 import {
   CacheSettings,
+  DiagnosticsFileExport,
   DiagnosticsSettings,
   ConciseListRow,
   GroupedListSection,
@@ -561,28 +562,33 @@ export struct SettingsPage {
   }
 
   private shareDiagnosticsText(): void {
-    const text = DiagnosticsSettings.exportText() || '暂无诊断日志'
-    const data = new systemShare.SharedData({
-      utd: utd.UniformDataType.PLAIN_TEXT,
-      title: 'Next2V 诊断日志',
-      description: '已脱敏的本机诊断日志',
-      content: text,
-    })
-    const controller = new systemShare.ShareController(data)
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    controller
-      .show(context, {
-        selectionMode: systemShare.SelectionMode.SINGLE,
-        previewMode: systemShare.SharePreviewMode.DEFAULT,
+    try {
+      const exportFile = DiagnosticsFileExport.create(context)
+      const data = new systemShare.SharedData({
+        utd: utd.UniformDataType.PLAIN_TEXT,
+        title: 'Next2V 诊断日志',
+        label: exportFile.fileName,
+        description: '已脱敏的本机诊断日志文件',
+        uri: exportFile.uri,
       })
-      .catch((_error: Error) => {
-        this.copyDiagnosticsTextWithToast('分享不可用，已复制，可手动粘贴', '分享失败')
-      })
+      const controller = new systemShare.ShareController(data)
+      controller
+        .show(context, {
+          selectionMode: systemShare.SelectionMode.SINGLE,
+          previewMode: systemShare.SharePreviewMode.DEFAULT,
+        })
+        .catch((_error: Error) => {
+          this.copyDiagnosticsTextWithToast('分享文件不可用，已复制，可手动粘贴', '分享失败', exportFile.text)
+        })
+    } catch (_error) {
+      this.copyDiagnosticsTextWithToast('分享文件不可用，已复制，可手动粘贴', '分享失败')
+    }
   }
 
-  private copyDiagnosticsTextWithToast(successMessage: string, failureMessage: string): void {
+  private copyDiagnosticsTextWithToast(successMessage: string, failureMessage: string, textOverride: string = ''): void {
     try {
-      const text = DiagnosticsSettings.exportText() || '暂无诊断日志'
+      const text = textOverride || DiagnosticsSettings.exportText() || '暂无诊断日志'
       const data = pasteboard.createData(pasteboard.MIMETYPE_TEXT_PLAIN, text)
       pasteboard.getSystemPasteboard().setDataSync(data)
       promptAction.openToast({ message: successMessage }).catch((_error: Error) => {})

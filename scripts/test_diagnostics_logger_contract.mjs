@@ -13,6 +13,7 @@ const files = {
   logger: 'shared/src/main/ets/diagnostics/DiagnosticLogger.ets',
   store: 'shared/src/main/ets/diagnostics/DiagnosticsStore.ets',
   settings: 'shared/src/main/ets/settings/DiagnosticsSettings.ets',
+  exportFile: 'shared/src/main/ets/settings/DiagnosticsFileExport.ets',
   index: 'shared/src/main/ets/Index.ets',
   storageKeys: 'shared/src/main/ets/constants/StorageKeys.ets',
   settingsPage: 'feature/settings/src/main/ets/pages/SettingsPage.ets',
@@ -76,8 +77,28 @@ assert(settings.includes('DEFAULT_ENABLED: boolean = true'), 'diagnostics should
 assert(settings.includes("DEFAULT_MIN_LEVEL: string = DiagnosticsSettings.LEVEL_INFO"), 'diagnostics default level must be info')
 assert(settings.includes('DiagnosticLogger.configure(enabled, safeLevel)'), 'settings must configure logger')
 
+const exportFile = read(files.exportFile)
+for (const token of [
+  'DiagnosticsSettings.exportText() || \'暂无诊断日志\'',
+  'next2v-diagnostics-',
+  'YYYYMMDD-HHMMSS',
+  '.txt',
+  'context.cacheDir',
+  'fileIo.mkdirSync',
+  'fileIo.writeSync',
+  'fileUri.getUriFromPath(filePath)',
+  'pruneOldExports',
+  'DIAGNOSTICS_EXPORT_KEEP_COUNT = 3',
+]) {
+  assert(exportFile.includes(token), `DiagnosticsFileExport contract missing ${token}`)
+}
+for (const forbidden of ['DiagnosticsStore.exportText', 'DiagnosticLogger.exportText', 'cookie', 'token', 'Authorization', 'Bearer', 'two_factor', 'once', 'rawHtml', 'content_rendered', 'payload_rendered', 'body']) {
+  assert(!exportFile.includes(forbidden), `DiagnosticsFileExport must not bypass redacted settings export or mention raw/secret field ${forbidden}`)
+}
+assert(exportFile.includes('fileName.includes(\'/\')') && exportFile.includes("fileName.includes('..')"), 'DiagnosticsFileExport must guard export cleanup by safe filename')
+
 const index = read(files.index)
-for (const token of ['DiagnosticLogger', 'DiagnosticsRedactor', 'DiagnosticsStore', 'DiagnosticsSettings']) {
+for (const token of ['DiagnosticLogger', 'DiagnosticsRedactor', 'DiagnosticsStore', 'DiagnosticsSettings', 'DiagnosticsFileExport']) {
   assert(index.includes(token), `shared Index missing ${token}`)
 }
 const storageKeys = read(files.storageKeys)
@@ -118,9 +139,14 @@ const shareMethodStart = settingsPage.indexOf('  private shareDiagnosticsText():
 const shareMethodEnd = settingsPage.indexOf('\n  private ', shareMethodStart + 1)
 assert(shareMethodStart >= 0 && shareMethodEnd > shareMethodStart, 'SettingsPage shareDiagnosticsText boundary missing')
 const shareMethod = settingsPage.slice(shareMethodStart, shareMethodEnd)
-assert(shareMethod.includes("DiagnosticsSettings.exportText() || '暂无诊断日志'"), 'shareDiagnosticsText must use redacted diagnostics exportText with empty fallback')
+assert(shareMethod.includes('DiagnosticsFileExport.create(context)'), 'shareDiagnosticsText must create a redacted diagnostics file before sharing')
 assert(shareMethod.includes('systemShare.SharedData') && shareMethod.includes('systemShare.ShareController'), 'shareDiagnosticsText must use system share')
-assert(shareMethod.includes('copyDiagnosticsTextWithToast'), 'shareDiagnosticsText must fall back to redacted copy path if share fails')
+assert(shareMethod.includes('uri: exportFile.uri'), 'shareDiagnosticsText must share the exported file uri')
+assert(shareMethod.includes('label: exportFile.fileName'), 'shareDiagnosticsText must expose the safe diagnostics filename to share preview')
+assert(!shareMethod.includes('content:'), 'shareDiagnosticsText must not pass diagnostics text as primary SharedData.content')
+assert(!shareMethod.includes('DiagnosticsSettings.exportText()'), 'shareDiagnosticsText must not directly pass exported text to primary share data')
+assert(shareMethod.includes('copyDiagnosticsTextWithToast'), 'shareDiagnosticsText must fall back to redacted copy path if file share fails')
+assert(shareMethod.includes('分享文件不可用，已复制，可手动粘贴'), 'shareDiagnosticsText fallback wording must not present text-share as success')
 for (const forbidden of ['DiagnosticsStore.exportText', 'DiagnosticLogger.exportText', 'cookie', 'token', 'Authorization', 'Bearer', 'two_factor', 'once', 'rawHtml', 'content_rendered', 'payload_rendered', 'body']) {
   assert(!shareMethod.includes(forbidden), `shareDiagnosticsText must not pass raw/secret field ${forbidden}`)
 }
