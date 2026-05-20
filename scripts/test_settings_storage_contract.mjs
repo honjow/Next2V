@@ -112,6 +112,8 @@ const expectedStorageKeys = [
   ['REPLY_ACTION_ALIGNMENT_MODE', 'replyActionAlignmentMode'],
   ['THEME_MODE', 'themeMode'],
   ['THEME_EFFECTIVE_DARK', 'themeEffectiveDark'],
+  ['DIAGNOSTICS_ENABLED', 'diagnosticsEnabled'],
+  ['DIAGNOSTICS_MIN_LEVEL', 'diagnosticsMinLevel'],
   ['TOPIC_READ_STATES', 'topicReadStates'],
   ['AUTH_TOKEN_CONFIGURED', 'authTokenConfigured'],
   ['AUTH_USERNAME', 'authUsername'],

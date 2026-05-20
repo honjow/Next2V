@@ -1,6 +1,9 @@
 import { common } from '@kit.AbilityKit'
+import { pasteboard } from '@kit.BasicServicesKit'
+import { promptAction } from '@kit.ArkUI'
 import {
   CacheSettings,
+  DiagnosticsSettings,
   ConciseListRow,
   GroupedListSection,
   HttpClient,
@@ -31,6 +34,7 @@ export struct SettingsPage {
   @Consume('ns') stack: NavPathStack;
   @StorageLink(StorageKeys.USE_CO_DOMAIN) useCoDomain: boolean = false;
   @StorageLink(StorageKeys.AUTO_DAILY_CHECKIN_ENABLED) autoDailyCheckinEnabled: boolean = true;
+  @StorageLink(StorageKeys.DIAGNOSTICS_ENABLED) diagnosticsEnabled: boolean = true;
   @StorageLink(StorageKeys.MEDIA_AUTO_LOAD_IMAGES) autoLoadImages: boolean = true;
   @StorageLink(StorageKeys.MEDIA_ONLY_LOAD_IMAGES_ON_WIFI) onlyLoadImagesOnWifi: boolean = false;
   @StorageLink(StorageKeys.THEME_MODE) themeMode: string = ThemeSettings.MODE_AUTO;
@@ -100,7 +104,10 @@ export struct SettingsPage {
           this.SectionHeader('高级')
         }
         ListItem() {
-          this.AdvancedSection()
+          this.DiagnosticsSection()
+        }
+        ListItem() {
+          this.ApiDomainAdvancedSection()
         }
       }
     }
@@ -166,7 +173,32 @@ export struct SettingsPage {
   }
 
   @Builder
-  AdvancedSection() {
+  DiagnosticsSection() {
+    GroupedListSection() {
+      this.TogglePreferenceRow('诊断日志', this.diagnosticsEnabled, (value: boolean) => {
+        this.updateDiagnosticsEnabled(value)
+      })
+      this.SettingsDivider()
+      ConciseListRow({
+        title: '复制诊断日志',
+        subtitle: '只复制已脱敏的本机日志',
+        action: () => {
+          this.copyDiagnosticsText()
+        },
+      })
+      this.SettingsDivider()
+      ConciseListRow({
+        title: '清空诊断日志',
+        showChevron: false,
+        action: () => {
+          this.clearDiagnosticsText()
+        },
+      })
+    }
+  }
+
+  @Builder
+  ApiDomainAdvancedSection() {
     GroupedListSection() {
       SettingsDropdownRow({
         title: 'API 域名',
@@ -506,6 +538,28 @@ export struct SettingsPage {
     this.autoDailyCheckinEnabled = enabled
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     SettingsSaveCoordinator.saveAutoDailyCheckin(context, enabled)
+  }
+
+  private updateDiagnosticsEnabled(enabled: boolean): void {
+    this.diagnosticsEnabled = enabled
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    SettingsSaveCoordinator.saveDiagnostics(context, enabled)
+  }
+
+  private copyDiagnosticsText(): void {
+    try {
+      const text = DiagnosticsSettings.exportText() || '暂无诊断日志'
+      const data = pasteboard.createData(pasteboard.MIMETYPE_TEXT_PLAIN, text)
+      pasteboard.getSystemPasteboard().setDataSync(data)
+      promptAction.openToast({ message: '诊断日志已复制' }).catch((_error: Error) => {})
+    } catch (_error) {
+      promptAction.openToast({ message: '复制失败' }).catch((_toastError: Error) => {})
+    }
+  }
+
+  private clearDiagnosticsText(): void {
+    DiagnosticsSettings.clearLogs()
+    promptAction.openToast({ message: '诊断日志已清空' }).catch((_error: Error) => {})
   }
 
   private updateOnlyLoadImagesOnWifi(onlyLoadImagesOnWifi: boolean): void {

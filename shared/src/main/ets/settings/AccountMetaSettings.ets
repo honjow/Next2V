@@ -1,6 +1,7 @@
 import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
 import { V2exBalance, V2exDailyMission } from '../network/NetworkTypes'
+import { DiagnosticLogger } from '../diagnostics/DiagnosticLogger'
 import { STORE_NAME_ACCOUNT_META } from './SettingsStores'
 
 const STORE_NAME: string = STORE_NAME_ACCOUNT_META
@@ -33,8 +34,10 @@ export class AccountMetaSettings {
       const raw = store.getSync(KEY_ACCOUNT_META_CACHE, '') as string
       const snapshot = AccountMetaSettings.parse(raw)
       if (!snapshot || snapshot.ownerKey !== ownerKey) {
+        DiagnosticLogger.info('account', 'account_meta_store_load', { ownerHash: DiagnosticLogger.ownerHash(ownerKey), hit: false, updatedAt: 0 })
         return null
       }
+      DiagnosticLogger.info('account', 'account_meta_store_load', { ownerHash: DiagnosticLogger.ownerHash(ownerKey), hit: true, updatedAt: snapshot.updatedAt })
       return snapshot
     } catch (error) {
       const e = error as Error
@@ -63,6 +66,12 @@ export class AccountMetaSettings {
       const store = await preferences.getPreferences(context, STORE_NAME)
       store.putSync(KEY_ACCOUNT_META_CACHE, JSON.stringify(snapshot))
       store.flushSync()
+      DiagnosticLogger.info('account', 'account_meta_store_save', {
+        ownerHash: DiagnosticLogger.ownerHash(ownerKey),
+        source: source || 'cookie',
+        hasBalance: !!balance,
+        hasDailyMission: !!dailyMission
+      })
       return snapshot
     } catch (error) {
       const e = error as Error
@@ -75,6 +84,7 @@ export class AccountMetaSettings {
       const store = await preferences.getPreferences(context, STORE_NAME)
       store.deleteSync(KEY_ACCOUNT_META_CACHE)
       store.flushSync()
+      DiagnosticLogger.info('account', 'account_meta_store_clear', {})
     } catch (error) {
       const e = error as Error
       throw new Error(e.message || '清理账号缓存失败')

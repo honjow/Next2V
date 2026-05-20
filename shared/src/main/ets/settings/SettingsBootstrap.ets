@@ -3,6 +3,7 @@ import { preferences } from '@kit.ArkData'
 import { ApiDomainSettings } from './ApiDomainSettings'
 import { AutoDailyCheckinSettings } from './AutoDailyCheckinSettings'
 import { CookieJarSettings } from './CookieJarSettings'
+import { DiagnosticsSettings } from './DiagnosticsSettings'
 import { FeedTabSettings } from './FeedTabSettings'
 import { MediaSettings } from './MediaSettings'
 import { ReadingSettings } from './ReadingSettings'
@@ -22,6 +23,7 @@ export class SettingsBootstrap {
       // Do not log here. Keep per-setting load(context) fallback behavior below.
     }
 
+    await SettingsBootstrap.restoreDiagnostics(context, settingsStore)
     await SettingsBootstrap.restoreApiDomain(context, settingsStore)
     await SettingsBootstrap.restoreTheme(context, settingsStore)
     await SettingsBootstrap.restoreMedia(context, settingsStore)
@@ -42,6 +44,15 @@ export class SettingsBootstrap {
     ).catch((error: Error) => {
       console.error('restore api domain failed: ' + error.message)
       ApiDomainSettings.apply(false)
+    })
+  }
+
+  private static async restoreDiagnostics(context: common.UIAbilityContext, settingsStore?: SettingsPreferencesStore): Promise<void> {
+    await (settingsStore
+      ? DiagnosticsSettings.loadFromStore(settingsStore)
+      : DiagnosticsSettings.load(context)
+    ).catch((_error: Error) => {
+      DiagnosticsSettings.apply(DiagnosticsSettings.DEFAULT_ENABLED, DiagnosticsSettings.DEFAULT_MIN_LEVEL)
     })
   }
 

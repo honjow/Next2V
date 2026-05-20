@@ -4,6 +4,7 @@ import {
   ApiDomainSettings,
   AutoDailyCheckinSettings,
   CookieJarSettings,
+  DiagnosticsSettings,
   HttpClient,
   MediaSettings,
   MotionHandStateService,
@@ -36,6 +37,12 @@ export class SettingsSaveCoordinator {
   static saveAutoDailyCheckin(context: common.UIAbilityContext, enabled: boolean): void {
     AutoDailyCheckinSettings.save(context, enabled).catch((error: Error) => {
       console.error('save auto daily check-in setting failed: ' + error.message)
+    })
+  }
+
+  static saveDiagnostics(context: common.UIAbilityContext, enabled: boolean): void {
+    DiagnosticsSettings.save(context, enabled).catch((error: Error) => {
+      console.error('save diagnostics setting failed: ' + error.message)
     })
   }
 

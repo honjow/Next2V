@@ -1,6 +1,7 @@
 import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
 import { StorageKeys } from '../constants/StorageKeys'
+import { DiagnosticLogger } from '../diagnostics/DiagnosticLogger'
 import { STORE_NAME_SETTINGS, SettingsPreferencesStore, setAppStorageValue } from './SettingsStorage'
 
 const STORE_NAME: string = STORE_NAME_SETTINGS
@@ -61,6 +62,11 @@ export class AutoDailyCheckinSettings {
     const lastAttemptIdentity = store.getSync(KEY_LAST_ATTEMPT_IDENTITY, '') as string
     const lastSuccessDate = store.getSync(KEY_LAST_SUCCESS_DATE, '') as string
     AutoDailyCheckinSettings.apply(enabled, lastAttemptDate, lastAttemptIdentity, lastSuccessDate)
+    DiagnosticLogger.info('auto_daily_checkin', 'auto_daily_setting_loaded', {
+      enabled: enabled,
+      hasLastAttempt: !!lastAttemptDate,
+      hasLastSuccess: !!lastSuccessDate
+    })
     return {
       enabled: enabled,
       lastAttemptDate: lastAttemptDate,
@@ -81,8 +87,10 @@ export class AutoDailyCheckinSettings {
       store.putSync(KEY_LAST_ATTEMPT_IDENTITY, lastAttemptIdentity)
       store.putSync(KEY_LAST_SUCCESS_DATE, lastSuccessDate)
       store.flushSync()
+      DiagnosticLogger.info('auto_daily_checkin', 'auto_daily_setting_saved', { enabled: enabled })
     } catch (error) {
       const e = error as Error
+      DiagnosticLogger.warn('auto_daily_checkin', 'auto_daily_setting_error', { operation: 'save' }, e)
       throw new Error(e.message || '保存自动签到设置失败')
     }
   }
@@ -102,8 +110,13 @@ export class AutoDailyCheckinSettings {
       store.putSync(KEY_LAST_ATTEMPT_IDENTITY, lastAttemptIdentity)
       store.putSync(KEY_LAST_SUCCESS_DATE, lastSuccessDate)
       store.flushSync()
+      DiagnosticLogger.info('auto_daily_checkin', 'auto_daily_attempt_state_saved', {
+        date: localDate,
+        hasIdentityFingerprint: !!lastAttemptIdentity
+      })
     } catch (error) {
       const e = error as Error
+      DiagnosticLogger.warn('auto_daily_checkin', 'auto_daily_setting_error', { operation: 'saveLastAttemptDate' }, e)
       throw new Error(e.message || '保存自动签到状态失败')
     }
   }
@@ -119,8 +132,10 @@ export class AutoDailyCheckinSettings {
       store.putSync(KEY_LAST_ATTEMPT_IDENTITY, lastAttemptIdentity)
       store.putSync(KEY_LAST_SUCCESS_DATE, localDate)
       store.flushSync()
+      DiagnosticLogger.info('auto_daily_checkin', 'auto_daily_success_state_saved', { date: localDate })
     } catch (error) {
       const e = error as Error
+      DiagnosticLogger.warn('auto_daily_checkin', 'auto_daily_setting_error', { operation: 'saveLastSuccessDate' }, e)
       throw new Error(e.message || '保存自动签到状态失败')
     }
   }

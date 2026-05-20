@@ -23,6 +23,7 @@ import {
   AuthSettings,
   ConciseListRow,
   CookieJarSettings,
+  DiagnosticLogger,
   GroupedListSection,
   HttpClient,
   ListDivider as SharedListDivider,
@@ -534,6 +535,10 @@ export struct AccountDashboardPage {
       .then((snapshot) => {
         this.authToken = snapshot.token
         this.storedUsername = snapshot.username
+        DiagnosticLogger.info('account', 'account_auth_snapshot_loaded', {
+          hasToken: !!snapshot.token,
+          usernameHash: DiagnosticLogger.ownerHash(snapshot.username)
+        })
         if (snapshot.token) {
           this.refreshAuthProfile(snapshot.token)
           this.refreshTokenInfo(snapshot.token)
@@ -548,12 +553,13 @@ export struct AccountDashboardPage {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     CookieJarSettings.load(context)
       .then(() => {
+        DiagnosticLogger.info('account', 'account_cookie_restore_success', {})
         this.loadAccountMetaCache()
         this.validateCookieSession()
         this.loadAccountMeta()
       })
       .catch((error: Error) => {
-        console.error('restore cookie jar failed: ' + error.message)
+        DiagnosticLogger.warn('account', 'account_cookie_restore_error', {}, error)
       })
     AuthSessionSettings.load(context)
       .catch((error: Error) => {
@@ -563,18 +569,26 @@ export struct AccountDashboardPage {
 
   private validateCookieSession(force: boolean = false): void {
     if (this.isSessionValidating) {
+      DiagnosticLogger.info('account', 'account_session_validate_skip', { reason: 'in_flight' })
       return
     }
     const cookie = CookieJarSettings.getCurrentCookie()
     if (!cookie) {
+      DiagnosticLogger.info('account', 'account_session_validate_skip', { reason: 'no_cookie' })
       return
     }
     const now = Date.now()
     if (!force && this.sessionValidatedAt > 0 && now - this.sessionValidatedAt < 10 * 60 * 1000) {
+      DiagnosticLogger.info('account', 'account_session_validate_skip', { reason: 'recent', force: force })
       return
     }
+    const startedAt = Date.now()
     this.isSessionValidating = true
     this.sessionError = ''
+    DiagnosticLogger.info('account', 'account_session_validate_start', {
+      force: force,
+      usernameHash: DiagnosticLogger.ownerHash(this.currentUsername())
+    })
     const headers: Record<string, string> = { 'Cookie': cookie }
     this.http.getTextResponseWithHeaders('/settings', headers)
       .then((res) => {
@@ -595,6 +609,11 @@ export struct AccountDashboardPage {
               validatedAt: Date.now()
             })
               .then(() => {
+                DiagnosticLogger.info('account', 'account_session_validate_success', {
+                  force: force,
+                  usernameHash: DiagnosticLogger.ownerHash(username),
+                  durationMs: Date.now() - startedAt
+                })
                 this.loadAccountMeta(true)
               })
           })
@@ -604,6 +623,7 @@ export struct AccountDashboardPage {
           this.openTwoFactorFromCookie()
           return
         }
+        DiagnosticLogger.warn('account', 'account_session_validate_error', { force: force, durationMs: Date.now() - startedAt }, error)
         const message = error.message || 'Web 会话验证失败'
         this.sessionError = message
         this.handleExpiredCookieSession(message)
@@ -617,6 +637,7 @@ export struct AccountDashboardPage {
     if (!message || message.indexOf('会话已失效') < 0) {
       return
     }
+    DiagnosticLogger.warn('account', 'account_session_expired', {})
     this.sessionError = message
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     CookieJarSettings.clearForBaseUrl(context, HttpClient.getInstance().getBaseUrl())
@@ -632,6 +653,7 @@ export struct AccountDashboardPage {
 
   private openTwoFactorFromCookie(): void {
     const cookie = CookieJarSettings.getCurrentCookie()
+    DiagnosticLogger.warn('account', 'account_session_two_factor_required', {})
     if (!cookie) {
       this.sessionError = 'V2EX 需要完成两步验证，请重新登录'
       return
@@ -720,6 +742,7 @@ export struct AccountDashboardPage {
 
   private logoutAll(): void {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    DiagnosticLogger.info('account', 'account_logout_all_start', { hadToken: this.authTokenConfigured || !!this.authToken, hadCookie: this.authCookieConfigured })
     this.isAuthLoading = false
     this.isSessionValidating = false
     this.authError = ''
@@ -747,6 +770,7 @@ export struct AccountDashboardPage {
         this.accountBalance = null
         this.dailyMission = null
         this.accountMetaError = ''
+        DiagnosticLogger.info('account', 'account_logout_all_complete', { hadToken: true, hadCookie: true })
       })
   }
 
@@ -758,14 +782,17 @@ export struct AccountDashboardPage {
     const cookie = CookieJarSettings.getCurrentCookie()
     const ownerKey = this.accountMetaOwnerKey()
     if (!cookie || !ownerKey) {
+      DiagnosticLogger.info('account', 'account_meta_cache_load_miss', { ownerHash: DiagnosticLogger.ownerHash(ownerKey) })
       return
     }
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     AccountMetaSettings.loadCache(context, ownerKey)
       .then((snapshot) => {
         if (!snapshot || snapshot.ownerKey !== this.accountMetaOwnerKey()) {
+          DiagnosticLogger.info('account', 'account_meta_cache_load_miss', { ownerHash: DiagnosticLogger.ownerHash(ownerKey) })
           return
         }
+        DiagnosticLogger.info('account', 'account_meta_cache_load_hit', { ownerHash: DiagnosticLogger.ownerHash(ownerKey) })
         if (snapshot.balance) {
           this.accountBalance = snapshot.balance
         }
@@ -774,7 +801,7 @@ export struct AccountDashboardPage {
         }
       })
       .catch((error: Error) => {
-        console.error('load account meta cache failed: ' + error.message)
+        DiagnosticLogger.warn('account', 'account_meta_cache_load_error', { ownerHash: DiagnosticLogger.ownerHash(ownerKey) }, error)
       })
   }
 
@@ -786,13 +813,17 @@ export struct AccountDashboardPage {
     }
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     AccountMetaSettings.saveCache(context, ownerKey, this.accountBalance, this.dailyMission, 'cookie')
+      .then(() => {
+        DiagnosticLogger.info('account', 'account_meta_cache_save_success', { ownerHash: DiagnosticLogger.ownerHash(ownerKey) })
+      })
       .catch((error: Error) => {
-        console.error('save account meta cache failed: ' + error.message)
+        DiagnosticLogger.warn('account', 'account_meta_cache_save_error', { ownerHash: DiagnosticLogger.ownerHash(ownerKey) }, error)
       })
   }
 
   private clearAccountMetaCache(): void {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    DiagnosticLogger.info('account', 'account_meta_store_clear', {})
     AccountMetaSettings.clearCache(context).catch((error: Error) => {
       console.error('clear account meta cache failed: ' + error.message)
     })
@@ -801,13 +832,16 @@ export struct AccountDashboardPage {
   private loadAccountMeta(force: boolean = false): void {
     const cookie = CookieJarSettings.getCurrentCookie()
     if (!cookie || this.isAccountMetaLoading) {
+      DiagnosticLogger.info('account', 'account_meta_fetch_skip', { reason: cookie ? 'in_flight' : 'no_cookie' })
       return
     }
     if (!force && this.accountBalance && this.dailyMission) {
+      DiagnosticLogger.info('account', 'account_meta_fetch_skip', { reason: 'already_loaded', force: force })
       return
     }
     this.isAccountMetaLoading = true
     this.accountMetaError = ''
+    DiagnosticLogger.info('account', 'account_meta_fetch_start', { force: force, hasBalance: !!this.accountBalance, canRedeem: this.dailyMission ? this.dailyMission.canRedeem === true : false })
     Promise.all([
       this.api.getBalanceWithCookie(cookie),
       this.api.getDailyMissionWithCookie(cookie)
@@ -815,6 +849,11 @@ export struct AccountDashboardPage {
       .then((results) => {
         this.accountBalance = results[0]
         this.dailyMission = results[1]
+        DiagnosticLogger.info('account', 'account_meta_fetch_success', {
+          force: force,
+          hasBalance: !!this.accountBalance,
+          canRedeem: this.dailyMission ? this.dailyMission.canRedeem === true : false
+        })
         this.saveAccountMetaCache()
       })
       .catch((error: Error) => {
@@ -822,6 +861,7 @@ export struct AccountDashboardPage {
           this.openTwoFactorFromCookie()
           return
         }
+        DiagnosticLogger.warn('account', 'account_meta_fetch_error', { force: force }, error)
         const message = error.message || '读取账号信息失败'
         this.accountMetaError = message
         this.handleExpiredCookieSession(message)
@@ -834,18 +874,22 @@ export struct AccountDashboardPage {
   private redeemDailyMission(): void {
     const cookie = CookieJarSettings.getCurrentCookie()
     if (!cookie || this.isDailyRedeeming) {
+      DiagnosticLogger.info('account', 'account_daily_redeem_skip', { reason: cookie ? 'in_flight' : 'no_cookie' })
       return
     }
     if (!this.dailyMission || !this.dailyMission.canRedeem || !this.dailyMission.redeemPath) {
+      DiagnosticLogger.info('account', 'account_daily_redeem_skip', { reason: 'not_redeemable' })
       promptAction.openToast({ message: '今日已签到' }).catch((_error: Error) => {
       })
       return
     }
     this.isDailyRedeeming = true
     this.accountMetaError = ''
+    DiagnosticLogger.info('account', 'account_daily_redeem_start', { canRedeem: true })
     this.api.redeemDailyMissionWithCookie(cookie, this.dailyMission.redeemPath)
       .then((mission: V2exDailyMission) => {
         this.dailyMission = mission
+        DiagnosticLogger.info('account', 'account_daily_redeem_success', { canRedeem: mission.canRedeem === true, messageCode: mission.message ? 'message_present' : '' })
         promptAction.openToast({ message: mission.message || '签到完成' }).catch((_error: Error) => {
         })
         this.loadAccountMeta(true)
@@ -855,6 +899,7 @@ export struct AccountDashboardPage {
           this.openTwoFactorFromCookie()
           return
         }
+        DiagnosticLogger.warn('account', 'account_daily_redeem_error', { canRedeem: this.dailyMission ? this.dailyMission.canRedeem === true : false }, error)
         const message = error.message || '签到失败'
         this.accountMetaError = message
         this.handleExpiredCookieSession(message)

@@ -1,4 +1,4 @@
-import { ApiService } from 'shared'
+import { ApiService, DiagnosticLogger } from 'shared'
 import type { V2exNotification } from 'shared'
 
 export type NotificationSource = 'pat' | 'cookie' | 'none'
@@ -69,6 +69,11 @@ export class NotificationCenterViewModel {
     pageSize: number
   ): Promise<NotificationPageResult> {
     const source = this.source(context)
+    DiagnosticLogger.info('notification', 'notification_source_selected', {
+      source: source,
+      hasCookie: context.cookieConfigured && !!context.cookie,
+      hasToken: context.tokenConfigured && !!context.token
+    })
     if (source === 'none') {
       return {
         items: [],
@@ -79,15 +84,27 @@ export class NotificationCenterViewModel {
       }
     }
 
-    const items = source === 'pat'
-      ? await this.api.getNotifications(context.token, page)
-      : await this.api.getNotificationsWithCookie(context.cookie, page)
-    return {
+    try {
+      const items = source === 'pat'
+        ? await this.api.getNotifications(context.token, page)
+        : await this.api.getNotificationsWithCookie(context.cookie, page)
+      DiagnosticLogger.info('notification', 'notification_page_loaded', {
+        source: source,
+        page: page,
+        count: items.length,
+        hasMore: items.length >= pageSize
+      })
+      return {
       items: items,
       page: page,
       hasMore: items.length >= pageSize,
       source: source,
-      sourceLabel: this.sourceLabel(source)
+        sourceLabel: this.sourceLabel(source)
+      }
+    } catch (error) {
+      const e = error as Error
+      DiagnosticLogger.warn('notification', 'notification_page_load_error', { source: source, page: page }, e)
+      throw e
     }
   }
 

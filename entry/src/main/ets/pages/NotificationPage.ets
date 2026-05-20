@@ -6,6 +6,7 @@ import {
   AuthSessionSettings,
   AuthSettings,
   CookieJarSettings,
+  DiagnosticLogger,
   EmptyState,
   HttpClient,
   LoadingFooter,
@@ -212,6 +213,7 @@ export struct NotificationPage {
   private loadAuthSnapshot(forceNotifications: boolean = false): void {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     const requestId = ++this.authRefreshRequestId
+    DiagnosticLogger.info('notification', 'notification_auth_snapshot_start', { force: forceNotifications, requestId: requestId })
     this.isNotificationAuthLoading = true
     const restoreCookieJar = CookieJarSettings.getCurrentCookie()
       ? Promise.resolve()
@@ -222,11 +224,16 @@ export struct NotificationPage {
       .then(() => AuthSettings.load(context))
       .then((snapshot) => {
         if (requestId !== this.authRefreshRequestId) {
+          DiagnosticLogger.info('notification', 'notification_auth_snapshot_stale_drop', { requestId: requestId })
           return
         }
         this.authToken = snapshot.token
         const nextIdentity = this.currentNotificationIdentityKey(snapshot.username || this.sessionUsername)
         if (this.notificationIdentityKey && nextIdentity !== this.notificationIdentityKey) {
+          DiagnosticLogger.info('notification', 'notification_identity_changed', {
+            oldOwnerHash: DiagnosticLogger.ownerHash(this.notificationIdentityKey),
+            newOwnerHash: DiagnosticLogger.ownerHash(nextIdentity)
+          })
           this.resetNotificationState()
         }
         this.notificationIdentityKey = nextIdentity
@@ -235,8 +242,10 @@ export struct NotificationPage {
       })
       .catch((error: Error) => {
         if (requestId !== this.authRefreshRequestId) {
+          DiagnosticLogger.info('notification', 'notification_auth_snapshot_stale_drop', { requestId: requestId })
           return
         }
+        DiagnosticLogger.warn('notification', 'notification_refresh_error', { requestId: requestId, source: this.notificationVm.sourceKeyFor(this.notificationAuthContext()), errorKind: error.name || 'Error' }, error)
         this.notificationError = error.message || '读取通知授权失败'
         this.notificationInitialSettled = true
       })
@@ -357,6 +366,7 @@ export struct NotificationPage {
       })
       return
     }
+    DiagnosticLogger.info('notification', 'notification_delete_start', { method: 'pat', id: notificationId, page: this.notificationPageForItem(item), attempt: 0 })
     const originalIndex = this.handleNotificationDeleted(item)
     if (originalIndex < 0) {
       return
@@ -378,6 +388,7 @@ export struct NotificationPage {
       })
       return
     }
+    DiagnosticLogger.info('notification', 'notification_delete_start', { method: 'cookie', id: notificationId, page: verifyPage, attempt: 0 })
     const originalIndex = this.handleNotificationDeleted(item)
     if (originalIndex < 0) {
       return
@@ -429,7 +440,11 @@ export struct NotificationPage {
       })
       this.saveNotificationCache()
       this.retryDeleteNotificationRequest(request, 0)
+        .then(() => {
+          DiagnosticLogger.info('notification', 'notification_delete_success', { id: notificationId, restored: false })
+        })
         .catch((error: Error) => {
+          DiagnosticLogger.warn('notification', 'notification_delete_error', { id: notificationId, restored: true }, error)
           this.restoreNotificationAfterDeleteFailure(item, originalIndex)
           promptAction.openToast({ message: error.message || '删除失败，已恢复' }).catch((_toastError: Error) => {
           })
@@ -487,6 +502,7 @@ export struct NotificationPage {
     const hasAuth = this.notificationVm.hasAuth(authContext)
     if (force && hasAuth && (this.isNotificationLoading || this.isNotificationLoadingMore)) {
       this.pendingNotificationForceRefresh = true
+      DiagnosticLogger.info('notification', 'notification_force_refresh_queued', { reason: 'busy' })
     }
     if (!NotificationPageCoordinator.shouldRefreshNotifications(
       hasAuth,
@@ -496,6 +512,12 @@ export struct NotificationPage {
       force,
       this.notificationLoadedFromCache
     )) {
+      DiagnosticLogger.info('notification', 'notification_refresh_skip', {
+        force: force,
+        reason: hasAuth ? 'guard' : 'no_auth',
+        currentCount: this.notifications.length,
+        loadedFromCache: this.notificationLoadedFromCache
+      })
       return
     }
     if (force && this.notifications.length > 0) {
@@ -504,6 +526,13 @@ export struct NotificationPage {
     const requestId = ++this.notificationRefreshRequestId
     this.notificationCacheRequestId++
     const entryUnreadCount = this.captureNotificationEntryUnreadCount()
+    DiagnosticLogger.info('notification', 'notification_refresh_start', {
+      force: force,
+      requestId: requestId,
+      source: this.notificationVm.sourceKeyFor(authContext),
+      currentCount: this.notifications.length,
+      loadedFromCache: this.notificationLoadedFromCache
+    })
     this.isNotificationLoading = true
     this.notificationError = ''
     this.notificationPage = 1
@@ -511,6 +540,7 @@ export struct NotificationPage {
     try {
       const result = await this.notificationVm.loadPage(authContext, 1, this.NOTIFICATION_PAGE_SIZE)
       if (requestId !== this.notificationRefreshRequestId) {
+        DiagnosticLogger.info('notification', 'notification_refresh_stale_drop', { requestId: requestId })
         return
       }
       this.viewedUnreadNotificationKeys = this.viewedUnreadKeysForLoadedItems(
@@ -525,12 +555,22 @@ export struct NotificationPage {
       this.notificationSourceLabel = result.sourceLabel
       this.notificationLoadedFromCache = false
       this.notificationInitialSettled = true
+      DiagnosticLogger.info('notification', 'notification_refresh_success', {
+        requestId: requestId,
+        source: result.source,
+        count: result.items.length,
+        page: result.page,
+        hasMore: result.hasMore,
+        unreadCountFallback: entryUnreadCount
+      })
       this.saveNotificationCache()
     } catch (error) {
       if (requestId !== this.notificationRefreshRequestId) {
+        DiagnosticLogger.info('notification', 'notification_refresh_stale_drop', { requestId: requestId })
         return
       }
       const err = error as Error
+      DiagnosticLogger.warn('notification', 'notification_refresh_error', { requestId: requestId, source: this.notificationVm.sourceKeyFor(authContext), errorKind: err.name || 'Error' }, err)
       const message = err.message || '通知加载失败'
       this.notificationError = message
       this.notificationHasMore = false
@@ -555,6 +595,7 @@ export struct NotificationPage {
       return
     }
     const nextPage = this.notificationPage + 1
+    DiagnosticLogger.info('notification', 'notification_load_more_start', { source: this.notificationVm.sourceKeyFor(authContext), page: nextPage, count: this.notifications.length })
     this.isNotificationLoadingMore = true
     this.notificationError = ''
     this.notificationVm.loadPage(authContext, nextPage, this.NOTIFICATION_PAGE_SIZE)
@@ -577,9 +618,11 @@ export struct NotificationPage {
         this.notificationHasMore = result.hasMore
         this.notificationSourceLabel = result.sourceLabel
         this.notificationLoadedFromCache = false
+        DiagnosticLogger.info('notification', 'notification_load_more_success', { source: result.source, page: result.page, count: result.items.length })
         this.saveNotificationCache()
       })
       .catch((error: Error) => {
+        DiagnosticLogger.warn('notification', 'notification_load_more_error', { source: this.notificationVm.sourceKeyFor(authContext), page: nextPage }, error)
         const message = error.message || '加载更多失败'
         this.notificationError = message
         this.notificationHasMore = false
@@ -593,6 +636,7 @@ export struct NotificationPage {
   }
 
   private resetNotificationState(): void {
+    DiagnosticLogger.info('notification', 'notification_reset', { reason: 'identity_changed' })
     this.notificationRefreshRequestId++
     this.notificationCacheRequestId++
     this.pendingNotificationForceRefresh = false
@@ -615,6 +659,12 @@ export struct NotificationPage {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     const authContext = this.notificationAuthContext()
     const requestId = ++this.notificationCacheRequestId
+    DiagnosticLogger.info('notification', 'notification_cache_load_start', {
+      requestId: requestId,
+      ownerHash: DiagnosticLogger.ownerHash(username || this.storedUsername || this.sessionUsername),
+      source: this.notificationVm.sourceKeyFor(authContext),
+      currentCount: this.notifications.length
+    })
     const refreshInFlightAtStart = this.isNotificationLoading
     NotificationCacheCoordinator.load(
       context,
@@ -627,19 +677,24 @@ export struct NotificationPage {
     )
       .then((result) => {
         if (requestId !== this.notificationCacheRequestId) {
+          DiagnosticLogger.info('notification', 'notification_cache_drop', { reason: 'stale', requestId: requestId })
           return
         }
         if (result.skipped) {
+          DiagnosticLogger.info('notification', 'notification_cache_load_skip', { reason: 'coordinator_skip' })
           return
         }
         if (refreshInFlightAtStart || this.isNotificationLoading) {
+          DiagnosticLogger.info('notification', 'notification_cache_drop', { reason: 'refresh_in_flight', requestId: requestId })
           return
         }
         if (this.notifications.length > 0 && !this.notificationLoadedFromCache) {
+          DiagnosticLogger.info('notification', 'notification_cache_drop', { reason: 'fresh_rows_present', requestId: requestId })
           return
         }
         this.notificationCacheUpdatedAt = result.updatedAt
         if (!result.shouldApplyItems) {
+          DiagnosticLogger.info('notification', 'notification_cache_drop', { reason: 'empty_or_no_apply', requestId: requestId })
           return
         }
         const authContext = this.notificationAuthContext()
@@ -656,9 +711,15 @@ export struct NotificationPage {
         this.notificationLoadedFromCache = true
         this.notificationSourceLabel = this.notificationVm.sourceLabelFor(authContext)
         this.notificationInitialSettled = true
+        DiagnosticLogger.info('notification', 'notification_cache_apply', {
+          ownerHash: DiagnosticLogger.ownerHash(username || this.storedUsername || this.sessionUsername),
+          source: this.notificationVm.sourceKeyFor(authContext),
+          count: result.items.length,
+          updatedAt: result.updatedAt
+        })
       })
       .catch((error: Error) => {
-        console.error('load notification cache failed: ' + error.message)
+        DiagnosticLogger.warn('notification', 'notification_cache_drop', { reason: 'load_error' }, error)
       })
   }
 
@@ -670,6 +731,7 @@ export struct NotificationPage {
       return
     }
     this.pendingNotificationForceRefresh = false
+    DiagnosticLogger.info('notification', 'notification_force_refresh_replayed', {})
     setTimeout(() => {
       this.loadAuthSnapshot(true)
     }, 0)
@@ -691,10 +753,19 @@ export struct NotificationPage {
       .then((result) => {
         if (result.updatedAt > 0) {
           this.notificationCacheUpdatedAt = result.updatedAt
+          DiagnosticLogger.info('notification', 'notification_cache_save_success', {
+            ownerHash: DiagnosticLogger.ownerHash(this.storedUsername || this.sessionUsername),
+            source: this.notificationVm.sourceKeyFor(authContext),
+            count: this.notifications.length
+          })
         }
       })
       .catch((error: Error) => {
-        console.error('save notification cache failed: ' + error.message)
+        DiagnosticLogger.warn('notification', 'notification_cache_save_error', {
+          ownerHash: DiagnosticLogger.ownerHash(this.storedUsername || this.sessionUsername),
+          source: this.notificationVm.sourceKeyFor(authContext),
+          count: this.notifications.length
+        }, error)
       })
   }
 
@@ -804,6 +875,7 @@ export struct NotificationPage {
       return
     }
     this.notificationError = 'V2EX 需要完成两步验证'
+    DiagnosticLogger.warn('notification', 'notification_two_factor_required', { source: this.notificationVm.sourceKeyFor(this.notificationAuthContext()) })
     TwoFactorChallengeService.request(cookie, 'notification')
   }
 
@@ -812,6 +884,7 @@ export struct NotificationPage {
       return
     }
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    DiagnosticLogger.warn('notification', 'notification_session_expired', { source: this.notificationVm.sourceKeyFor(this.notificationAuthContext()) })
     CookieJarSettings.clearForBaseUrl(context, HttpClient.getInstance().getBaseUrl())
       .then(() => AuthSessionSettings.clear(context))
       .catch((_error: Error) => {
