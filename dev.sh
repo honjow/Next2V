@@ -83,6 +83,47 @@ restore_release_bundle_name() {
   set_app_bundle_name "$RELEASE_BUNDLE"
 }
 
+current_app_bundle_name() {
+  python3 - "$PROJ/AppScope/app.json5" <<'PY'
+from pathlib import Path
+import json
+import sys
+
+data = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+print(data.get("app", {}).get("bundleName", ""))
+PY
+}
+
+hap_bundle_name() {
+  local hap_path="$1"
+  python3 - "$hap_path" <<'PY'
+import json
+import sys
+import zipfile
+
+hap = sys.argv[1]
+with zipfile.ZipFile(hap) as zf:
+    data = json.loads(zf.read("module.json").decode("utf-8"))
+print(data.get("app", {}).get("bundleName", ""))
+PY
+}
+
+assert_hap_bundle_name() {
+  local hap_path="$1"
+  local expected_bundle="$2"
+  if [ ! -f "$hap_path" ]; then
+    echo "错误: HAP 不存在，无法校验包名: $hap_path" >&2
+    exit 1
+  fi
+  local actual_bundle
+  actual_bundle="$(hap_bundle_name "$hap_path")"
+  echo "==> 校验 HAP 包名: $actual_bundle"
+  if [ "$actual_bundle" != "$expected_bundle" ]; then
+    echo "错误: HAP 包名不符合预期，expected=$expected_bundle actual=$actual_bundle" >&2
+    exit 1
+  fi
+}
+
 case "$1" in
   -h|--help)
     cat <<'EOF'
@@ -139,7 +180,9 @@ EOF
     }
     trap cleanup_debug_packaging EXIT
     restore_debug_bundle_name
+    echo "==> Debug bundleName: $(current_app_bundle_name)"
     hvigorw assembleHap --mode module -p product=default -p buildMode=debug --no-daemon
+    assert_hap_bundle_name "$PROJ/entry/build/default/outputs/default/entry-default-unsigned.hap" "$DEBUG_BUNDLE"
     cleanup_debug_packaging
     trap - EXIT
     python3 "$PROJ/scripts/sign.py" --no-install "$@"
@@ -181,8 +224,10 @@ EOF
     backup_release_build_profiles
     trap cleanup_release_packaging EXIT
     set_app_bundle_name "$RELEASE_BUNDLE"
+    echo "==> Release bundleName: $(current_app_bundle_name)"
     python3 "$PROJ/scripts/prune-release-media-resources.py" --apply
     hvigorw assembleHap --mode module -p product=default -p buildMode=release --no-daemon
+    assert_hap_bundle_name "$PROJ/entry/build/default/outputs/default/entry-default-unsigned.hap" "$RELEASE_BUNDLE"
     python3 "$PROJ/scripts/sign.py" --no-install "$@"
     cleanup_release_packaging
     trap - EXIT
@@ -211,7 +256,9 @@ EOF
     }
     trap cleanup_debug_packaging EXIT
     restore_debug_bundle_name
+    echo "==> Debug bundleName: $(current_app_bundle_name)"
     hvigorw assembleHap --mode module -p product=default -p buildMode=debug --no-daemon
+    assert_hap_bundle_name "$PROJ/entry/build/default/outputs/default/entry-default-unsigned.hap" "$DEBUG_BUNDLE"
     cleanup_debug_packaging
     trap - EXIT
     python3 "$PROJ/scripts/sign.py" "$@"

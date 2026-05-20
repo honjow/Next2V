@@ -17,7 +17,7 @@ sign.py - Next2V HAP 签名安装脚本
   缓存期内无需 -d 参数，自动使用上次选择的设备并刷新缓存时效。
   -d all 时安装到所有设备，若缓存设备在线则同步刷新其缓存时效。
 """
-import sys, os, json, subprocess, time, urllib.request, urllib.error, random, webbrowser
+import sys, os, json, subprocess, time, urllib.request, urllib.error, random, webbrowser, zipfile
 from pathlib import Path
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
@@ -51,6 +51,19 @@ DEVICE_CACHE_TTL  = 7 * 24 * 3600
 
 ECO_URL = "https://cn.devecostudio.huawei.com/console/DevEcoIDE/apply?port={port}&appid=1007&code=20698961dd4f420c8b44f49010c6f0cc"
 KEEP_AWAKE = SCRIPTS / "keep_awake.sh"
+
+# ── HAP 校验 ──────────────────────────────────────────────────────────────────
+def hap_bundle_name(hap_path: Path) -> str:
+    with zipfile.ZipFile(hap_path) as zf:
+        data = json.loads(zf.read("module.json").decode("utf-8"))
+    return data.get("app", {}).get("bundleName", "")
+
+def verify_hap_bundle_name(hap_path: Path, expected: str | None = None) -> str:
+    actual = hap_bundle_name(hap_path)
+    print(f"HAP 包名: {actual}")
+    if expected and actual != expected:
+        raise RuntimeError(f"HAP 包名不符合预期: expected={expected}, actual={actual}")
+    return actual
 
 # ── API 工具函数 ──────────────────────────────────────────────────────────────
 def api(url, data=None, method=None, headers=None, auth=None, raw=False):
@@ -326,8 +339,20 @@ def install_hap(devices: list[str]):
         print(f"  安装到 {dev}...")
         result = subprocess.run([str(HDC), "-t", dev, "install", str(SIGNED_HAP)],
                                 capture_output=True, text=True)
-        print(f"  {(result.stdout + result.stderr).strip()}")
+        output = (result.stdout + result.stderr).strip()
+        print(f"  {output}")
+        if result.returncode != 0:
+            raise RuntimeError(f"安装失败: device={dev}, code={result.returncode}, output={output}")
+        verify_installed_bundle(dev, BUNDLE_NAME)
         keep_awake(dev)
+
+def verify_installed_bundle(dev: str, bundle_name: str):
+    result = subprocess.run([str(HDC), "-t", dev, "shell", "bm", "dump", "-n", bundle_name],
+                            capture_output=True, text=True)
+    output = (result.stdout + result.stderr).strip()
+    if result.returncode != 0 or bundle_name not in output:
+        raise RuntimeError(f"安装后校验失败: device={dev}, bundle={bundle_name}, output={output[:500]}")
+    print(f"  已安装包校验通过: {bundle_name}")
 
 def keep_awake(dev: str):
     result = subprocess.run([str(KEEP_AWAKE), "-t", dev],
@@ -367,9 +392,19 @@ def main():
         print(f"ERROR: 未找到 {UNSIGNED_HAP}，请先构建")
         sys.exit(1)
 
+    unsigned_bundle = verify_hap_bundle_name(UNSIGNED_HAP)
+    if not no_install and unsigned_bundle != BUNDLE_NAME:
+        raise RuntimeError(
+            f"拒绝安装非 debug 包名 HAP: expected={BUNDLE_NAME}, actual={unsigned_bundle}. "
+            "请重新运行 bash dev.sh 构建 debug 包，或只使用 --release-build-only 生成 release 包。"
+        )
+
     if CERT_FILE.exists() and PROFILE_FILE.exists() and not force_profile:
         print("证书和 Profile 已存在，跳过 AGC API...")
         sign_hap()
+        signed_bundle = verify_hap_bundle_name(SIGNED_HAP)
+        if signed_bundle != unsigned_bundle:
+            raise RuntimeError(f"签名后 HAP 包名变化: unsigned={unsigned_bundle}, signed={signed_bundle}")
         if not no_install:
             install_hap(devices)
         return
@@ -400,6 +435,9 @@ def main():
 
     print("\n==> 签名...")
     sign_hap()
+    signed_bundle = verify_hap_bundle_name(SIGNED_HAP)
+    if signed_bundle != unsigned_bundle:
+        raise RuntimeError(f"签名后 HAP 包名变化: unsigned={unsigned_bundle}, signed={signed_bundle}")
     if not no_install:
         print("\n==> 安装...")
         install_hap(devices)
