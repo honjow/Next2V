@@ -239,7 +239,7 @@ export struct ReplyComposerSheet {
   }
 
   private confirmClearDraft(): void {
-    AlertDialog.show({
+    this.getUIContext().showAlertDialog({
       title: '清空草稿',
       message: '确定清空当前回复草稿吗？',
       primaryButton: { value: '取消', action: () => { } },
@@ -306,7 +306,7 @@ export struct ReplyComposerSheet {
     this.submitContentSnapshot = check.content
     this.isSubmitDialogShown = true
     this.persistDraft()
-    AlertDialog.show({
+    this.getUIContext().showAlertDialog({
       title: '提交回复',
       message: ReplyComposerCoordinator.sheetSubmitConfirmMessage(),
       primaryButton: { value: '取消', action: () => { this.isSubmitDialogShown = false } },

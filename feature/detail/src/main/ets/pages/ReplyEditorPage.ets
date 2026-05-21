@@ -207,7 +207,7 @@ export struct ReplyEditorPage {
       this.clearDraft()
       return
     }
-    AlertDialog.show({
+    this.getUIContext().showAlertDialog({
       title: '清空草稿',
       message: '确定清空当前草稿吗？',
       primaryButton: { value: '取消', action: () => { } },
@@ -271,7 +271,7 @@ export struct ReplyEditorPage {
     this.submitContentSnapshot = check.content
     this.isSubmitDialogShown = true
     this.persistDraft()
-    AlertDialog.show({
+    this.getUIContext().showAlertDialog({
       title: '提交回复',
       message: ReplyComposerCoordinator.pageSubmitConfirmMessage(this.topicTitle),
       primaryButton: { value: '取消', action: () => { this.isSubmitDialogShown = false } },

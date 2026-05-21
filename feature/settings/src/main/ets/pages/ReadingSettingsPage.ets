@@ -66,7 +66,7 @@ export struct ReadingSettingsPage {
   }
 
   private confirmResetReadingSettings(): void {
-    AlertDialog.show({
+    this.getUIContext().showAlertDialog({
       title: '恢复默认阅读文字缩放设置',
       message: '将文字缩放恢复为默认值。确定继续吗？',
       primaryButton: {

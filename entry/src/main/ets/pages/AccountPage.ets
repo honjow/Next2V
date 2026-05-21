@@ -696,7 +696,7 @@ export struct AccountDashboardPage {
     if (!this.authTokenConfigured || this.isAuthLoading) {
       return
     }
-    AlertDialog.show({
+    this.getUIContext().showAlertDialog({
       title: AccountPageCoordinator.CLEAR_API_AUTH_TITLE,
       message: AccountPageCoordinator.CLEAR_API_AUTH_MESSAGE,
       primaryButton: {

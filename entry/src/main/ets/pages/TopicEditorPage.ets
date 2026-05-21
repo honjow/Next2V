@@ -253,7 +253,7 @@ export struct TopicEditorPage {
       this.clearDraft()
       return
     }
-    AlertDialog.show({
+    this.getUIContext().showAlertDialog({
       title: '清空草稿',
       message: '确定清空当前发帖草稿吗？',
       primaryButton: { value: '取消', action: () => { } },
@@ -318,7 +318,7 @@ export struct TopicEditorPage {
     const cleanTitle = this.title.trim()
     const message = `确定在节点「${cleanNode}」发布主题《${cleanTitle}》吗？\n\n` +
       'V2EX 发帖通常至少消耗 20 铜币，提交后会修改你的账号状态。'
-    AlertDialog.show({
+    this.getUIContext().showAlertDialog({
       title: '确认发帖',
       message: message,
       primaryButton: { value: '取消', action: () => { } },

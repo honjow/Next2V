@@ -231,7 +231,7 @@ export struct StorageSettingsPage {
 
   private confirmClearCache(): void {
     const copy: StorageConfirmDialogCopy = StorageSettingsCoordinator.clearCacheDialogCopy()
-    AlertDialog.show({
+    this.getUIContext().showAlertDialog({
       title: copy.title,
       message: copy.message,
       primaryButton: {
@@ -262,7 +262,7 @@ export struct StorageSettingsPage {
 
   private confirmClearLocalData(): void {
     const copy: StorageConfirmDialogCopy = StorageSettingsCoordinator.clearLocalDataDialogCopy()
-    AlertDialog.show({
+    this.getUIContext().showAlertDialog({
       title: copy.title,
       message: copy.message,
       primaryButton: {

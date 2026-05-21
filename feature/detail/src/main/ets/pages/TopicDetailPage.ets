@@ -1336,7 +1336,7 @@ export struct TopicDetailPage {
 
   private showPreloadConfirmDialog(): void {
     const total = this.v.topic?.replies || 0
-    AlertDialog.show({
+    this.getUIContext().showAlertDialog({
       title: '回复数量较多',
       message: `该主题有 ${total} 条回复，加载全部回复可能需要较长时间。\n\n是否继续加载以启用完整的楼中楼视图？`,
       primaryButton: {
@@ -1356,7 +1356,7 @@ export struct TopicDetailPage {
 
   private confirmSiteFavoriteToggle(cookie: string, toggle: V2exToggleAction): void {
     const verb = this.isSiteFavorited ? '取消收藏' : '收藏'
-    AlertDialog.show({
+    this.getUIContext().showAlertDialog({
       title: '站内收藏',
       message: TopicDetailActionCoordinator.topicFavoriteMessage(this.v.topic?.title || '', verb),
       primaryButton: { value: '取消', action: () => {} },
@@ -1413,7 +1413,7 @@ export struct TopicDetailPage {
   }
 
   private confirmTopicThank(cookie: string): void {
-    AlertDialog.show({
+    this.getUIContext().showAlertDialog({
       title: '感谢主题',
       message: TopicDetailActionCoordinator.topicThankMessage(this.v.topic?.title || ''),
       autoCancel: false,
@@ -1494,7 +1494,7 @@ export struct TopicDetailPage {
   }
 
   private confirmReplyThank(cookie: string, reply: V2exReply): void {
-    AlertDialog.show({
+    this.getUIContext().showAlertDialog({
       title: '感谢回复',
       message: TopicDetailActionCoordinator.replyActionMessage('感谢', reply.member.username),
       autoCancel: false,
@@ -1656,7 +1656,7 @@ export struct TopicDetailPage {
       verb,
       this.v.topic?.title || '',
     )
-    AlertDialog.show({
+    this.getUIContext().showAlertDialog({
       title: dialog.title,
       message: dialog.message,
       primaryButton: { value: dialog.cancelLabel, action: () => {} },
@@ -1739,7 +1739,7 @@ export struct TopicDetailPage {
     executeAction: (cookie: string, action: V2exReplyModerationAction) => Promise<void>,
   ): void {
     const dialog = TopicDetailActionCoordinator.replyModerationConfirmDialog(title, verb, reply)
-    AlertDialog.show({
+    this.getUIContext().showAlertDialog({
       title: dialog.title,
       message: dialog.message,
       primaryButton: { value: dialog.cancelLabel, action: () => {} },

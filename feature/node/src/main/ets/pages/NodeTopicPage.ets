@@ -182,7 +182,7 @@ export struct NodeTopicPage {
   private confirmSiteNodeFavoriteToggle(cookie: string, nodeName: string, toggle: V2exToggleAction): void {
     const title = (this.nodeTitle || this.nodeName || '').trim()
     const verb = this.isSiteNodeFavorited ? '取消收藏' : '收藏'
-    AlertDialog.show({
+    this.getUIContext().showAlertDialog({
       title: '站内收藏',
       message: title ? `确定${verb}节点「${title}」吗？` : `确定${verb}该节点吗？`,
       primaryButton: { value: '取消', action: () => { } },

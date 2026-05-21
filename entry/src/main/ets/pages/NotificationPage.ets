@@ -326,7 +326,7 @@ export struct NotificationPage {
     if (id <= 0 || this.pendingNotificationDeletes.has(id)) {
       return
     }
-    AlertDialog.show({
+    this.getUIContext().showAlertDialog({
       title: '删除通知',
       message: '确定删除这条通知吗？',
       primaryButton: {
