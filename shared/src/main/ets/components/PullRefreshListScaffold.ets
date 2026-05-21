@@ -72,7 +72,7 @@ export struct PullRefreshListScaffold {
         }
       }
       .enableScrollInteraction(this.scrollEnabled)
-      .onScroll((_scrollOffset: number, scrollState: ScrollState) => {
+      .onDidScroll((_scrollOffset: number, scrollState: ScrollState) => {
         if (this.onDidScroll) {
           this.onDidScroll(this.scroller.currentOffset().yOffset, scrollState)
         }

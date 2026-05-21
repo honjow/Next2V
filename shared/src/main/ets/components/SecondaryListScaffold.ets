@@ -40,7 +40,7 @@ export struct SecondaryListScaffold {
     .padding({ left: this.horizontalPadding, right: this.horizontalPadding })
     .clip(false)
     .edgeEffect(EdgeEffect.None)
-    .onScroll((_scrollOffset: number, scrollState: ScrollState) => {
+    .onDidScroll((_scrollOffset: number, scrollState: ScrollState) => {
       if (this.onDidScroll) {
         this.onDidScroll(this.scroller.currentOffset().yOffset, scrollState)
       }
