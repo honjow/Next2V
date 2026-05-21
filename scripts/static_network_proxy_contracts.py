@@ -31,12 +31,16 @@ def main() -> int:
         require(f'mode {mode}', mode in settings)
 
     for key in [
+        'NETWORK_PROXY_ENABLED', 'NETWORK_PROXY_ACTIVE_PROFILE_ID', 'NETWORK_PROXY_PROFILES',
         'NETWORK_PROXY_MODE', 'NETWORK_PROXY_HOST', 'NETWORK_PROXY_PORT',
         'NETWORK_PROXY_USERNAME', 'NETWORK_PROXY_PASSWORD', 'NETWORK_PROXY_EXCLUSION_LIST'
     ]:
         require(f'storage key {key}', key in storage and key in settings)
 
-    require('settings persist json', 'writeJsonValue<NetworkProxySettingsSnapshot>' in settings and 'readJsonObject<NetworkProxySettingsSnapshot>' in settings)
+    require('settings persist json', 'writeJsonValue<NetworkProxyProfilesSnapshot>' in settings and 'readJsonObject<Object>' in settings)
+    require('profile model exists', 'NetworkProxyProfile' in settings and 'NetworkProxyProfilesSnapshot' in settings)
+    require('built-in system proxy id', 'SYSTEM_PROFILE_ID' in settings and "'system'" in settings)
+    require('legacy migration', 'migrateLegacy' in settings and 'normalizeProfilesFromPersisted' in settings)
     require('host validation', 'isValidHost' in settings and '请输入有效代理主机' in settings)
     require('port validation', 'isValidPort' in settings and '端口需为 1-65535' in settings)
     require('http proxy construction', 'connection.HttpProxy' in settings and 'username' in settings and 'exclusionList' in settings)
@@ -54,6 +58,60 @@ def main() -> int:
     require('settings main entry', "title: '网络代理'" in settings_page and "pushPathByName('NetworkProxySettings'" in settings_page)
     require('settings second page route', 'NetworkProxySettingsPage' in routes and 'networkProxySettings' in routes)
     require('settings second page modes', 'SOCKS5 代理' in proxy_page and 'HTTP 代理' in proxy_page and '系统代理' in proxy_page)
+    require('built-in system proxy selectable option exists', "title: '系统代理'" in proxy_page and 'selectProfile(NetworkProxySettings.SYSTEM_PROFILE_ID)' in proxy_page)
+    require(
+        'proxy selection uses radio controls',
+        'ProxySelectionRadio' in proxy_page
+        and "Radio({ value: profileId, group: 'networkProxyProfile' })" in proxy_page
+        and '.checked(this.proxyEnabled && this.activeProfileId === profileId)' in proxy_page
+        and 'this.selectProfile(profileId)' in proxy_page,
+    )
+    require(
+        'proxy row radios are consistently prefix aligned',
+        re.search(
+            r"title: '系统代理'.*?prefixBuilderParam: \(\): void => this\.ProxySelectionRadio\(NetworkProxySettings\.SYSTEM_PROFILE_ID\).*?ManualProfileRow",
+            proxy_page,
+            re.S,
+        ) is not None
+        and re.search(
+            r"title: '系统代理'.*?suffixBuilderParam: \(\): void => this\.ProxySelectionRadio\(NetworkProxySettings\.SYSTEM_PROFILE_ID\).*?ManualProfileRow",
+            proxy_page,
+            re.S,
+        ) is None
+        and 'prefixBuilderParam: (): void => this.ProxySelectionRadio(profile.id)' in proxy_page
+        and 'suffixBuilderParam: (): void => this.EditProfileButton(profile.id)' in proxy_page,
+    )
+    require('add proxy row', "title: '添加代理'" in proxy_page and "openEditor('')" in proxy_page)
+    require(
+        'proxy editor uses bindContentCover',
+        '.bindContentCover(this.editorOpen, this.EditorContent' in proxy_page
+        and 'AppModalScaffold' in proxy_page
+        and "title: '代理信息'" in proxy_page
+        and 'saveEditor()' in proxy_page
+        and 'closeEditor()' in proxy_page,
+    )
+    require(
+        'proxy editor is not fake route branch',
+        'if (this.editorOpen)' not in proxy_page
+        and 'EditorPage' not in proxy_page
+        and 'EditorTopBar' not in proxy_page,
+    )
+    require(
+        'proxy editor has no string modal chrome glyphs',
+        "Button('‹')" not in proxy_page
+        and "Button('✓')" not in proxy_page
+        and "Button('←')" not in proxy_page,
+    )
+    require('no duplicate local network proxy title section', "SettingsSectionHeader({ title: '网络代理' })" not in proxy_page)
+    require('editor protocol choices only', 'HTTP 代理' in proxy_page and 'SOCKS5 代理' in proxy_page and 'MTProto' not in proxy_page)
+    require(
+        'editor protocol selection uses radio controls',
+        'ProtocolRadio' in proxy_page
+        and "Radio({ value: protocol, group: 'networkProxyProtocol' })" in proxy_page
+        and '.checked(this.editorType === protocol)' in proxy_page
+        and 'this.editorType = protocol' in proxy_page,
+    )
+    require('settings has no selected text markers', '已选择' not in proxy_page)
     forbidden_proxy_explainers = [
         '不是系统全局', '本地 DNS', 'VPN', 'WebView', '图片直显',
         '实验性', '不保证', '代理仅用于应用内网络请求'
@@ -62,7 +120,7 @@ def main() -> int:
     require('settings test action', "'测试连接'" in proxy_page and 'NetworkProxyRequest.testConnection' in proxy_page)
     require(
         'settings off hides test action',
-        'currentMode() !== NetworkProxySettings.MODE_OFF' in proxy_page and 'this.ActionSection()' in proxy_page,
+        'if (this.proxyEnabled && this.activeProfileId' in proxy_page and 'this.ActionSection()' in proxy_page,
     )
     require(
         'settings bypass keyboard collapses top chrome',
