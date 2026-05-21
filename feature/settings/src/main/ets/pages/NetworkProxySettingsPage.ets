@@ -1,7 +1,6 @@
 import { common } from '@kit.AbilityKit'
 import { promptAction } from '@kit.ArkUI'
 import {
-  AppModalScaffold,
   AppTextField,
   ConciseListRow,
   GroupedListSection,
@@ -10,95 +9,99 @@ import {
   SecondaryListScaffold,
   StorageKeys,
   ThemeConstants,
-  type NetworkProxyProfile,
-  type NetworkProxyProfilesSnapshot,
+  type NetworkProxyMode,
   type NetworkProxySettingsSnapshot,
   type NetworkProxyValidationResult,
 } from 'shared'
-import { SettingsSectionHeader } from '../components/SettingsPageComponents'
+import {
+  SettingsCheckedMenuItem,
+  SettingsDropdownRow,
+  SettingsSectionHeader,
+} from '../components/SettingsPageComponents'
+import { SettingsPageCoordinator, type SettingsOption } from '../model/SettingsPageCoordinator'
 
 @Component
 export struct NetworkProxySettingsPage {
-  @StorageLink(StorageKeys.NETWORK_PROXY_ENABLED) proxyEnabled: boolean = false
-  @StorageLink(StorageKeys.NETWORK_PROXY_ACTIVE_PROFILE_ID) activeProfileId: string = NetworkProxySettings.SYSTEM_PROFILE_ID
-  @StorageLink(StorageKeys.NETWORK_PROXY_PROFILES) profilesJson: string = '[]'
+  @StorageLink(StorageKeys.NETWORK_PROXY_MODE) mode: string = NetworkProxySettings.MODE_OFF
+  @StorageLink(StorageKeys.NETWORK_PROXY_HOST) host: string = ''
+  @StorageLink(StorageKeys.NETWORK_PROXY_PORT) port: number = 0
+  @StorageLink(StorageKeys.NETWORK_PROXY_USERNAME) username: string = ''
+  @StorageLink(StorageKeys.NETWORK_PROXY_PASSWORD) password: string = ''
+  @StorageLink(StorageKeys.NETWORK_PROXY_EXCLUSION_LIST) exclusionListText: string = ''
   @StorageProp(StorageKeys.KEYBOARD_HEIGHT) keyboardH: number = 0
+  @State private portText: string = ''
+  @State private modeMenuShown: boolean = false
   @State private testStatus: string = ''
   @State private testing: boolean = false
-  @State private editorOpen: boolean = false
-  @State private editingProfileId: string = ''
-  @State private editorType: string = NetworkProxySettings.MODE_HTTP
-  @State private editorName: string = ''
-  @State private editorHost: string = ''
-  @State private editorPortText: string = ''
-  @State private editorUsername: string = ''
-  @State private editorPassword: string = ''
-  @State private editorExclusionListText: string = ''
   @State private bypassEditorFocused: boolean = false
+
+  aboutToAppear(): void {
+    this.portText = this.port > 0 ? `${this.port}` : ''
+  }
 
   build() {
     Column() {
-      this.LandingPage()
+      SecondaryListScaffold({ includeKeyboardPadding: true }) {
+        if (!this.shouldCollapseTopForKeyboard()) {
+          ListItem() {
+            SettingsSectionHeader({ title: '网络代理' })
+          }
+          ListItem() {
+            this.ModeSection()
+          }
+        }
+        if (this.needsManualProxy()) {
+          ListItem() {
+            SettingsSectionHeader({ title: '手动代理' })
+          }
+          ListItem() {
+            this.ManualSection()
+          }
+        }
+        if (this.currentMode() !== NetworkProxySettings.MODE_OFF) {
+          ListItem() {
+            this.ActionSection()
+          }
+        }
+      }
     }
     .width('100%')
     .height('100%')
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
-    .bindContentCover(this.editorOpen, this.EditorContent, { modalTransition: ModalTransition.DEFAULT })
   }
 
   @Builder
-  LandingPage() {
-    SecondaryListScaffold({ includeKeyboardPadding: false }) {
-      ListItem() {
-        this.SwitchSection()
-      }
-      ListItem() {
-        SettingsSectionHeader({ title: '代理连接' })
-      }
-      ListItem() {
-        this.ProxyConnectionSection()
-      }
-      if (this.proxyEnabled && this.activeProfileId !== '') {
-        ListItem() {
-          this.ActionSection()
-        }
-      }
-    }
-  }
-
-  @Builder
-  SwitchSection() {
+  ModeSection() {
     GroupedListSection() {
-      ConciseListRow({
-        title: '使用代理',
-        subtitle: this.proxyEnabled ? this.activeSummary() : '关闭',
-        hasSwitch: true,
-        checked: this.proxyEnabled,
-        showChevron: false,
-        switchAction: (value: boolean) => { this.setEnabled(value) },
+      SettingsDropdownRow({
+        title: '模式',
+        trailingText: NetworkProxySettings.label(this.currentMode()),
+        openAction: () => { this.showModeMenu() },
       })
+        .bindMenu(this.modeMenuShown, this.ModeMenu, {
+          placement: Placement.BottomRight,
+          aboutToDisappear: () => { this.modeMenuShown = false },
+        })
     }
   }
 
   @Builder
-  ProxyConnectionSection() {
-    GroupedListSection() {
-      ConciseListRow({
-        title: '系统代理',
-        subtitle: this.systemSubtitle(),
-        showChevron: false,
-        prefixBuilderParam: (): void => this.ProxySelectionRadio(NetworkProxySettings.SYSTEM_PROFILE_ID),
-        action: () => { this.selectProfile(NetworkProxySettings.SYSTEM_PROFILE_ID) },
-      })
-      ForEach(this.profileList(), (profile: NetworkProxyProfile) => {
-        this.ManualProfileRow(profile)
-      }, (profile: NetworkProxyProfile) => profile.id)
-      ConciseListRow({
-        title: '添加代理',
-        showChevron: true,
-        action: () => { this.openEditor('') },
-      })
+  ManualSection() {
+    Column({ space: ThemeConstants.SPACE_SM }) {
+      this.HostFieldRow()
+      this.PortFieldRow()
+      if (this.currentMode() === NetworkProxySettings.MODE_HTTP) {
+        this.UsernameFieldRow()
+        this.PasswordFieldRow()
+      } else {
+        this.StaticFieldRow('认证', '不支持认证')
+      }
+      this.BypassListRow()
     }
+    .width('100%')
+    .padding(ThemeConstants.SPACE_LG)
+    .borderRadius(ThemeConstants.RADIUS_MD)
+    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }
 
   @Builder
@@ -114,109 +117,16 @@ export struct NetworkProxySettingsPage {
   }
 
   @Builder
-  ManualProfileRow(profile: NetworkProxyProfile) {
-    ConciseListRow({
-      title: NetworkProxySettings.profileTitle(profile),
-      subtitle: this.profileSubtitle(profile),
-      showChevron: false,
-      prefixBuilderParam: (): void => this.ProxySelectionRadio(profile.id),
-      suffixBuilderParam: (): void => this.EditProfileButton(profile.id),
-      action: () => { this.selectProfile(profile.id) },
-    })
-  }
-
-  @Builder
-  EditProfileButton(profileId: string) {
-    Button() {
-      SymbolGlyph($r('sys.symbol.gearshape'))
-        .fontSize(ThemeConstants.FONT_SIZE_TITLE)
-        .fontColor([$r('sys.color.font_secondary')])
+  ModeMenu() {
+    Menu() {
+      ForEach(this.modeOptions(), (option: SettingsOption) => {
+        SettingsCheckedMenuItem({
+          label: option.label,
+          selected: this.mode === option.value,
+          selectAction: () => { this.updateMode(option.value) }
+        })
+      }, (option: SettingsOption) => option.value)
     }
-    .width(40)
-    .height(40)
-    .borderRadius(ThemeConstants.RADIUS_ROUND)
-    .backgroundColor(Color.Transparent)
-    .onClick(() => { this.openEditor(profileId) })
-  }
-
-  @Builder
-  EditorContent() {
-    AppModalScaffold({
-      title: '代理信息',
-      includeKeyboardPadding: true,
-      closeAction: () => { this.closeEditor() },
-      saveAction: () => { this.saveEditor() },
-    }) {
-      if (!this.shouldCollapseTopForKeyboard()) {
-        ListItem() {
-          this.ProtocolSection()
-        }
-      }
-      ListItem() {
-        this.EditorFieldsSection()
-      }
-    }
-  }
-
-  @Builder
-  ProtocolSection() {
-    GroupedListSection() {
-      ConciseListRow({
-        title: 'HTTP 代理',
-        showChevron: false,
-        suffixBuilderParam: (): void => this.ProtocolRadio(NetworkProxySettings.MODE_HTTP),
-        action: () => { this.editorType = NetworkProxySettings.MODE_HTTP },
-      })
-      ConciseListRow({
-        title: 'SOCKS5 代理',
-        subtitle: this.editorType === NetworkProxySettings.MODE_SOCKS5 ? '不支持认证' : '',
-        showChevron: false,
-        suffixBuilderParam: (): void => this.ProtocolRadio(NetworkProxySettings.MODE_SOCKS5),
-        action: () => { this.editorType = NetworkProxySettings.MODE_SOCKS5 },
-      })
-    }
-  }
-
-  @Builder
-  ProxySelectionRadio(profileId: string) {
-    Radio({ value: profileId, group: 'networkProxyProfile' })
-      .checked(this.proxyEnabled && this.activeProfileId === profileId)
-      .onChange((isChecked: boolean) => {
-        if (isChecked) {
-          this.selectProfile(profileId)
-        }
-      })
-  }
-
-  @Builder
-  ProtocolRadio(protocol: string) {
-    Radio({ value: protocol, group: 'networkProxyProtocol' })
-      .checked(this.editorType === protocol)
-      .onChange((isChecked: boolean) => {
-        if (isChecked) {
-          this.editorType = protocol
-        }
-      })
-  }
-
-  @Builder
-  EditorFieldsSection() {
-    Column({ space: ThemeConstants.SPACE_SM }) {
-      this.NameFieldRow()
-      this.HostFieldRow()
-      this.PortFieldRow()
-      if (this.editorType === NetworkProxySettings.MODE_HTTP) {
-        this.UsernameFieldRow()
-        this.PasswordFieldRow()
-      } else {
-        this.StaticFieldRow('认证', '不支持认证')
-      }
-      this.BypassListRow()
-    }
-    .width('100%')
-    .padding(ThemeConstants.SPACE_MD)
-    .borderRadius(ThemeConstants.RADIUS_MD)
-    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }
 
   @Builder
@@ -228,20 +138,17 @@ export struct NetworkProxySettingsPage {
   }
 
   @Builder
-  NameFieldRow() {
-    Column({ space: ThemeConstants.SPACE_XS }) {
-      this.FieldLabel('名称（可选）')
-      AppTextField({ text: $editorName, placeholder: '' })
-        .width('100%')
-    }
-    .width('100%')
-  }
-
-  @Builder
   HostFieldRow() {
     Column({ space: ThemeConstants.SPACE_XS }) {
-      this.FieldLabel('服务器')
-      AppTextField({ text: $editorHost, placeholder: '127.0.0.1' })
+      this.FieldLabel('主机')
+      AppTextField({
+        text: $host,
+        placeholder: '127.0.0.1',
+        onTextChange: (value: string) => {
+          this.host = value
+          this.saveCurrent(false)
+        }
+      })
         .width('100%')
     }
     .width('100%')
@@ -251,7 +158,14 @@ export struct NetworkProxySettingsPage {
   PortFieldRow() {
     Column({ space: ThemeConstants.SPACE_XS }) {
       this.FieldLabel('端口')
-      AppTextField({ text: $editorPortText, placeholder: '7890' })
+      AppTextField({
+        text: $portText,
+        placeholder: '7890',
+        onTextChange: (value: string) => {
+          this.port = this.parsePort(value)
+          this.saveCurrent(false)
+        }
+      })
         .width('100%')
     }
     .width('100%')
@@ -261,7 +175,14 @@ export struct NetworkProxySettingsPage {
   UsernameFieldRow() {
     Column({ space: ThemeConstants.SPACE_XS }) {
       this.FieldLabel('用户名（可选）')
-      AppTextField({ text: $editorUsername, placeholder: '' })
+      AppTextField({
+        text: $username,
+        placeholder: '',
+        onTextChange: (value: string) => {
+          this.username = value
+          this.saveCurrent(false)
+        }
+      })
         .width('100%')
     }
     .width('100%')
@@ -272,9 +193,13 @@ export struct NetworkProxySettingsPage {
     Column({ space: ThemeConstants.SPACE_XS }) {
       this.FieldLabel('密码（可选）')
       AppTextField({
-        text: $editorPassword,
+        text: $password,
         placeholder: '',
         inputType: InputType.Password,
+        onTextChange: (value: string) => {
+          this.password = value
+          this.saveCurrent(false)
+        }
       })
         .width('100%')
     }
@@ -301,9 +226,9 @@ export struct NetworkProxySettingsPage {
   @Builder
   BypassListRow() {
     Column({ space: ThemeConstants.SPACE_XS }) {
-      this.FieldLabel('绕过列表（可选）')
-      TextArea({ placeholder: '每行一个域名或 IP', text: this.editorExclusionListText })
-        .height(80)
+      this.FieldLabel('绕过列表')
+      TextArea({ placeholder: '每行一个域名或 IP', text: this.exclusionListText })
+        .height(96)
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
         .fontColor($r('sys.color.font_primary'))
         .placeholderColor($r('sys.color.font_secondary'))
@@ -312,150 +237,71 @@ export struct NetworkProxySettingsPage {
         .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
         .onFocus(() => { this.bypassEditorFocused = true })
         .onBlur(() => { this.bypassEditorFocused = false })
-        .onChange((value: string) => { this.editorExclusionListText = value })
+        .onChange((value: string) => {
+          this.exclusionListText = value
+          this.saveCurrent(false)
+        })
     }
     .width('100%')
   }
 
-  private profileList(): NetworkProxyProfile[] {
-    return NetworkProxySettings.parseProfilesJson(this.profilesJson)
+  private currentMode(): NetworkProxyMode {
+    return NetworkProxySettings.normalizeMode(this.mode)
   }
 
-  private currentProfilesSnapshot(): NetworkProxyProfilesSnapshot {
-    return NetworkProxySettings.normalizeProfiles({
-      enabled: this.proxyEnabled,
-      activeProfileId: this.activeProfileId,
-      profiles: this.profileList(),
+  private needsManualProxy(): boolean {
+    const current = this.currentMode()
+    return current === NetworkProxySettings.MODE_HTTP || current === NetworkProxySettings.MODE_SOCKS5
+  }
+
+  private shouldCollapseTopForKeyboard(): boolean {
+    return this.needsManualProxy() && this.bypassEditorFocused && this.keyboardH > 0
+  }
+
+  private modeOptions(): SettingsOption[] {
+    return [
+      { value: NetworkProxySettings.MODE_OFF, label: '关闭' },
+      { value: NetworkProxySettings.MODE_SYSTEM, label: '系统代理' },
+      { value: NetworkProxySettings.MODE_HTTP, label: 'HTTP 代理' },
+      { value: NetworkProxySettings.MODE_SOCKS5, label: 'SOCKS5 代理' },
+    ]
+  }
+
+  private snapshot(): NetworkProxySettingsSnapshot {
+    return NetworkProxySettings.normalize({
+      mode: this.currentMode(),
+      host: this.host,
+      port: this.port,
+      username: this.currentMode() === NetworkProxySettings.MODE_HTTP ? this.username : '',
+      password: this.currentMode() === NetworkProxySettings.MODE_HTTP ? this.password : '',
+      exclusionList: NetworkProxySettings.parseExclusionList(this.exclusionListText),
     })
   }
 
-  private currentEffectiveSnapshot(): NetworkProxySettingsSnapshot {
-    return NetworkProxySettings.effectiveSnapshot(this.currentProfilesSnapshot())
-  }
-
-  private activeSummary(): string {
-    return NetworkProxySettings.summary(this.currentEffectiveSnapshot())
-  }
-
-  private systemSubtitle(): string {
-    if (!this.proxyEnabled || this.activeProfileId !== NetworkProxySettings.SYSTEM_PROFILE_ID) {
-      return '内置选项'
+  private updateMode(value: string): void {
+    this.modeMenuShown = false
+    this.mode = NetworkProxySettings.normalizeMode(value)
+    if (this.mode === NetworkProxySettings.MODE_SOCKS5) {
+      this.username = ''
+      this.password = ''
     }
-    return '当前连接'
+    this.saveCurrent(true)
   }
 
-  private profileSubtitle(profile: NetworkProxyProfile): string {
-    const subtitle = NetworkProxySettings.profileSubtitle(profile)
-    if (this.proxyEnabled && this.activeProfileId === profile.id) {
-      return `${subtitle} · 当前连接`
-    }
-    return subtitle
-  }
-
-  private setEnabled(value: boolean): void {
-    this.saveProfiles({
-      enabled: value,
-      activeProfileId: this.activeProfileId || NetworkProxySettings.SYSTEM_PROFILE_ID,
-      profiles: this.profileList(),
-    }, true)
-  }
-
-  private selectProfile(profileId: string): void {
-    this.saveProfiles({
-      enabled: true,
-      activeProfileId: profileId,
-      profiles: this.profileList(),
-    }, true)
-  }
-
-  private openEditor(profileId: string): void {
-    const profile = NetworkProxySettings.findProfile(this.profileList(), profileId)
-    this.editingProfileId = profile ? profile.id : ''
-    this.editorType = profile ? profile.type : NetworkProxySettings.MODE_HTTP
-    this.editorName = profile && profile.name ? profile.name : ''
-    this.editorHost = profile ? profile.host : ''
-    this.editorPortText = profile && profile.port > 0 ? `${profile.port}` : ''
-    this.editorUsername = profile && profile.username ? profile.username : ''
-    this.editorPassword = profile && profile.password ? profile.password : ''
-    this.editorExclusionListText = profile && profile.exclusionList ? profile.exclusionList.join('\n') : ''
-    this.bypassEditorFocused = false
-    this.editorOpen = true
-  }
-
-  private closeEditor(): void {
-    this.editorOpen = false
-    this.bypassEditorFocused = false
-  }
-
-  private saveEditor(): void {
-    const port = this.parsePort(this.editorPortText)
-    const profile: NetworkProxyProfile = {
-      id: this.editingProfileId || NetworkProxySettings.newProfileId(),
-      type: this.editorType === NetworkProxySettings.MODE_SOCKS5 ? 'socks5' : 'http',
-      host: this.editorHost,
-      port,
-      exclusionList: NetworkProxySettings.parseExclusionList(this.editorExclusionListText),
-    }
-    const name = this.editorName.trim()
-    if (name) {
-      profile.name = name
-    }
-    if (profile.type === NetworkProxySettings.MODE_HTTP) {
-      const username = this.editorUsername.trim()
-      if (username) {
-        profile.username = username
-        profile.password = this.editorPassword
-      }
-    }
-    const normalizedProfile = NetworkProxySettings.normalizeProfile(profile)
-    if (!normalizedProfile) {
-      this.showToast('请输入有效代理主机')
+  private saveCurrent(showError: boolean): void {
+    const snapshot = this.snapshot()
+    const validation = NetworkProxySettings.validate(snapshot)
+    if (!validation.ok && !showError) {
+      NetworkProxySettings.apply(snapshot)
       return
     }
-    const validation = NetworkProxySettings.validate(NetworkProxySettings.snapshotFromProfile(normalizedProfile))
     if (!validation.ok) {
       this.showToast(validation.message)
-      return
-    }
-    const profiles = this.upsertProfile(normalizedProfile)
-    this.saveProfiles({
-      enabled: true,
-      activeProfileId: normalizedProfile.id,
-      profiles,
-    }, true)
-    this.editorOpen = false
-  }
-
-  private upsertProfile(profile: NetworkProxyProfile): NetworkProxyProfile[] {
-    const profiles = this.profileList()
-    let replaced = false
-    const result: NetworkProxyProfile[] = []
-    for (const item of profiles) {
-      if (item.id === profile.id) {
-        result.push(profile)
-        replaced = true
-      } else {
-        result.push(item)
-      }
-    }
-    if (!replaced) {
-      result.push(profile)
-    }
-    return result
-  }
-
-  private saveProfiles(snapshot: NetworkProxyProfilesSnapshot, showError: boolean): void {
-    const normalized = NetworkProxySettings.normalizeProfiles(snapshot)
-    const validation = NetworkProxySettings.validateProfiles(normalized)
-    if (!validation.ok) {
-      if (showError) {
-        this.showToast(validation.message)
-      }
-      NetworkProxySettings.applyProfiles(normalized)
+      NetworkProxySettings.apply(snapshot)
       return
     }
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    NetworkProxySettings.saveProfiles(context, normalized).catch((error: Error) => {
+    NetworkProxySettings.save(context, snapshot).catch((error: Error) => {
       if (showError) {
         this.showToast(error.message || '保存失败')
       }
@@ -464,20 +310,25 @@ export struct NetworkProxySettingsPage {
   }
 
   private testConnection(): void {
-    if (this.testing || !this.proxyEnabled) {
+    if (this.testing) {
       return
     }
-    const snapshot = this.currentEffectiveSnapshot()
+    const snapshot = this.snapshot()
     const validation: NetworkProxyValidationResult = NetworkProxySettings.validate(snapshot)
     if (!validation.ok) {
       this.testStatus = validation.message
       this.showToast(validation.message)
       return
     }
+    if (snapshot.mode === NetworkProxySettings.MODE_SOCKS5 && (snapshot.username || snapshot.password)) {
+      this.testStatus = 'SOCKS5 暂不支持用户名/密码认证'
+      this.showToast(this.testStatus)
+      return
+    }
     this.testing = true
     this.testStatus = '测试中…'
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    NetworkProxySettings.saveProfiles(context, this.currentProfilesSnapshot())
+    NetworkProxySettings.save(context, snapshot)
       .then(() => NetworkProxyRequest.testConnection())
       .then((response) => {
         this.testing = false
@@ -495,8 +346,9 @@ export struct NetworkProxySettingsPage {
       })
   }
 
-  private shouldCollapseTopForKeyboard(): boolean {
-    return this.bypassEditorFocused && this.keyboardH > 0
+  private showModeMenu(): void {
+    this.modeMenuShown = false
+    setTimeout(() => { this.modeMenuShown = true }, SettingsPageCoordinator.MENU_OPEN_DELAY_MS)
   }
 
   private parsePort(value: string): number {

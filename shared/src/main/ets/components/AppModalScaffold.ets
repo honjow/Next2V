@@ -12,7 +12,6 @@ export struct AppModalScaffold {
   @Prop includeKeyboardPadding: boolean = false
   @Prop enableComponentSafeArea: boolean = true
   closeAction?: () => void
-  saveAction?: () => void
   scroller: Scroller = new Scroller();
 
   build() {
@@ -41,27 +40,7 @@ export struct AppModalScaffold {
           mainTitle: this.title
         },
         menu: {
-          value: this.saveAction ? [{
-            content: {
-              icon: $r('sys.symbol.xmark'),
-              type: IconStyleMode.SMALL,
-              action: () => {
-                if (this.closeAction) {
-                  this.closeAction()
-                }
-              },
-            }
-          }, {
-            content: {
-              icon: $r('sys.symbol.checkmark'),
-              type: IconStyleMode.SMALL,
-              action: () => {
-                if (this.saveAction) {
-                  this.saveAction()
-                }
-              },
-            }
-          }] : [{
+          value: [{
             content: {
               icon: $r('sys.symbol.xmark'),
               type: IconStyleMode.SMALL,
