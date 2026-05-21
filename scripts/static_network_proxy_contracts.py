@@ -59,6 +59,10 @@ def main() -> int:
         '实验性', '不保证', '代理仅用于应用内网络请求'
     ]
     require('settings has no scope/explainer copy', not any(copy in proxy_page for copy in forbidden_proxy_explainers))
+    forbidden_fake_modal_ui = [
+        "Button('‹')", "Button('✓')", 'EditorTopBar', 'fake route branch',
+    ]
+    require('settings has no fake modal chrome', not any(copy in proxy_page for copy in forbidden_fake_modal_ui))
     require('settings test action', "'测试连接'" in proxy_page and 'NetworkProxyRequest.testConnection' in proxy_page)
     require(
         'settings off hides test action',
