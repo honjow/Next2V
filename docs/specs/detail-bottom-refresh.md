@@ -404,11 +404,11 @@ footer 三态必须明确，且只用于“自动分页”反馈：
 - 黄帽：减少多页主题初始加载成本，让长帖阅读自然连续，同时保留末页检查新回复能力。
 - 黑帽：最大风险是网络失败误判末页、底部刷新误触发顶部刷新、append 时位置跳动、公开路径一次性抓全页导致需求落空。
 - 绿帽：最小方案是复用 V2 分页 + 新增公开网页页级抓取；共享 bottom refresh opt-in 扩展，避免改其他列表。
-- 蓝帽：交给 v2frontend 实现；完成后必须提交 spec compliance、静态 diff 说明、登录/未登录设备或截图/日志验证证据。
+- 蓝帽：交给 implementer 实现；完成后必须提交 spec compliance、静态 diff 说明、登录/未登录设备或截图/日志验证证据。
 
 ## 12. 建议后续 Kanban 拆分
 
-1. v2frontend implementation：按本 spec 实现主题详情页自动分页和末页底部刷新。
+1. implementer implementation：按本 spec 实现主题详情页自动分页和末页底部刷新。
 2. reviewer spec-compliance：检查 diff 是否满足禁止项、状态机、公开/登录两条路径。
 3. QA/device：在单页、多页、失败重试、顶部刷新回归、onlyOp 回归上做真机/日志验证。
 

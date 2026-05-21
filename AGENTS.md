@@ -32,8 +32,8 @@ Before any agent or subagent builds, signs, installs, or device-tests a V2Next l
 
 UI, interaction, navigation, and settings lanes require separate gates:
 
-- `Review` by `v2reviewer`: diff, spec compliance, build logs, and static assertions only.
-- `QA on device` by `v2qa`: independent validation on shared device `192.168.50.237:12345` with fresh evidence in `.hermes-artifacts/<yyyymmdd-HHMM>-<lane>-qa/`.
+- `Review` by `reviewer`: diff, spec compliance, build logs, and static assertions only.
+- `QA on device` by `qa`: independent validation on shared device `192.168.50.237:12345` with fresh evidence in `.hermes-artifacts/<yyyymmdd-HHMM>-<lane>-qa/`.
 - Integrate requires a PASS QA result or an explicit user real-device ack recorded as user ack. Reviewer PASS alone is not enough.
 
 Before any install or device control, verify hdc readiness with a real shell probe: `hdc tconn 192.168.50.237:12345`, wait about 2 seconds, then `hdc -t 192.168.50.237:12345 shell echo ok`. `Connect OK` or `list targets` showing `Connected` is not enough. If the probe does not print `ok`, record device QA as `BLOCKED`; do not loop reconnects or run `hdc tmode port ...` unless the user explicitly asks to repair connection mode.
