@@ -1,6 +1,7 @@
 import { common } from '@kit.AbilityKit'
 import { promptAction } from '@kit.ArkUI'
 import {
+  AppTextField,
   ConciseListRow,
   GroupedListSection,
   NetworkProxyRequest,
@@ -14,7 +15,6 @@ import {
 } from 'shared'
 import {
   SettingsCheckedMenuItem,
-  SettingsDivider,
   SettingsDropdownRow,
   SettingsSectionHeader,
 } from '../components/SettingsPageComponents'
@@ -28,18 +28,27 @@ export struct NetworkProxySettingsPage {
   @StorageLink(StorageKeys.NETWORK_PROXY_USERNAME) username: string = ''
   @StorageLink(StorageKeys.NETWORK_PROXY_PASSWORD) password: string = ''
   @StorageLink(StorageKeys.NETWORK_PROXY_EXCLUSION_LIST) exclusionListText: string = ''
+  @StorageProp(StorageKeys.KEYBOARD_HEIGHT) keyboardH: number = 0
+  @State private portText: string = ''
   @State private modeMenuShown: boolean = false
   @State private testStatus: string = ''
   @State private testing: boolean = false
+  @State private bypassEditorFocused: boolean = false
+
+  aboutToAppear(): void {
+    this.portText = this.port > 0 ? `${this.port}` : ''
+  }
 
   build() {
     Column() {
-      SecondaryListScaffold() {
-        ListItem() {
-          SettingsSectionHeader({ title: '网络代理' })
-        }
-        ListItem() {
-          this.ModeSection()
+      SecondaryListScaffold({ includeKeyboardPadding: true }) {
+        if (!this.shouldCollapseTopForKeyboard()) {
+          ListItem() {
+            SettingsSectionHeader({ title: '网络代理' })
+          }
+          ListItem() {
+            this.ModeSection()
+          }
         }
         if (this.needsManualProxy()) {
           ListItem() {
@@ -49,14 +58,10 @@ export struct NetworkProxySettingsPage {
             this.ManualSection()
           }
         }
-        ListItem() {
-          SettingsSectionHeader({ title: '说明' })
-        }
-        ListItem() {
-          this.DescriptionSection()
-        }
-        ListItem() {
-          this.ActionSection()
+        if (this.currentMode() !== NetworkProxySettings.MODE_OFF) {
+          ListItem() {
+            this.ActionSection()
+          }
         }
       }
     }
@@ -70,7 +75,6 @@ export struct NetworkProxySettingsPage {
     GroupedListSection() {
       SettingsDropdownRow({
         title: '模式',
-        subtitle: '仅影响 V2Next 应用网络请求，不是系统全局 VPN',
         trailingText: NetworkProxySettings.label(this.currentMode()),
         openAction: () => { this.showModeMenu() },
       })
@@ -83,52 +87,21 @@ export struct NetworkProxySettingsPage {
 
   @Builder
   ManualSection() {
-    GroupedListSection() {
-      this.TextFieldRow('主机', '127.0.0.1', this.host, (value: string) => {
-        this.host = value
-        this.saveCurrent(false)
-      })
-      SettingsDivider()
-      this.TextFieldRow('端口', '7890', this.port > 0 ? `${this.port}` : '', (value: string) => {
-        this.port = this.parsePort(value)
-        this.saveCurrent(false)
-      })
-      SettingsDivider()
+    Column({ space: ThemeConstants.SPACE_SM }) {
+      this.HostFieldRow()
+      this.PortFieldRow()
       if (this.currentMode() === NetworkProxySettings.MODE_HTTP) {
-        this.TextFieldRow('用户名（可选）', '', this.username, (value: string) => {
-          this.username = value
-          this.saveCurrent(false)
-        })
-        SettingsDivider()
-        this.TextFieldRow('密码（可选）', '', this.password, (value: string) => {
-          this.password = value
-          this.saveCurrent(false)
-        }, true)
-        SettingsDivider()
+        this.UsernameFieldRow()
+        this.PasswordFieldRow()
       } else {
-        ConciseListRow({
-          title: '认证',
-          subtitle: 'SOCKS5 本版基于 RCP，暂不支持用户名/密码认证',
-          showChevron: false,
-        })
-        SettingsDivider()
+        this.StaticFieldRow('认证', '不支持认证')
       }
-      this.TextAreaRow('绕过列表', '每行一个域名/IP；HTTP 与 RCP 支持时使用', this.exclusionListText, (value: string) => {
-        this.exclusionListText = value
-        this.saveCurrent(false)
-      })
+      this.BypassListRow()
     }
-  }
-
-  @Builder
-  DescriptionSection() {
-    GroupedListSection() {
-      ConciseListRow({
-        title: this.descriptionTitle(),
-        subtitle: this.descriptionText(),
-        showChevron: false,
-      })
-    }
+    .width('100%')
+    .padding(ThemeConstants.SPACE_LG)
+    .borderRadius(ThemeConstants.RADIUS_MD)
+    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }
 
   @Builder
@@ -157,38 +130,119 @@ export struct NetworkProxySettingsPage {
   }
 
   @Builder
-  TextFieldRow(label: string, placeholderText: string, textValue: string, changeAction: (value: string) => void, isPassword: boolean = false) {
-    Column({ space: ThemeConstants.SPACE_XS }) {
-      Text(label)
-        .fontSize(ThemeConstants.FONT_SIZE_TAG)
-        .fontColor($r('sys.color.font_secondary'))
-        .width('100%')
-      TextInput({ placeholder: placeholderText, text: textValue })
-        .type(isPassword ? InputType.Password : InputType.Normal)
-        .height(44)
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .backgroundColor(Color.Transparent)
-        .onChange((value: string) => { changeAction(value) })
-    }
-    .width('100%')
-    .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG, top: ThemeConstants.SPACE_SM, bottom: ThemeConstants.SPACE_SM })
+  FieldLabel(label: string) {
+    Text(label)
+      .fontSize(ThemeConstants.FONT_SIZE_TAG)
+      .fontColor($r('sys.color.font_secondary'))
+      .width('100%')
   }
 
   @Builder
-  TextAreaRow(label: string, placeholderText: string, textValue: string, changeAction: (value: string) => void) {
+  HostFieldRow() {
     Column({ space: ThemeConstants.SPACE_XS }) {
-      Text(label)
-        .fontSize(ThemeConstants.FONT_SIZE_TAG)
-        .fontColor($r('sys.color.font_secondary'))
+      this.FieldLabel('主机')
+      AppTextField({
+        text: $host,
+        placeholder: '127.0.0.1',
+        onTextChange: (value: string) => {
+          this.host = value
+          this.saveCurrent(false)
+        }
+      })
         .width('100%')
-      TextArea({ placeholder: placeholderText, text: textValue })
-        .height(96)
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .backgroundColor(Color.Transparent)
-        .onChange((value: string) => { changeAction(value) })
     }
     .width('100%')
-    .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG, top: ThemeConstants.SPACE_SM, bottom: ThemeConstants.SPACE_SM })
+  }
+
+  @Builder
+  PortFieldRow() {
+    Column({ space: ThemeConstants.SPACE_XS }) {
+      this.FieldLabel('端口')
+      AppTextField({
+        text: $portText,
+        placeholder: '7890',
+        onTextChange: (value: string) => {
+          this.port = this.parsePort(value)
+          this.saveCurrent(false)
+        }
+      })
+        .width('100%')
+    }
+    .width('100%')
+  }
+
+  @Builder
+  UsernameFieldRow() {
+    Column({ space: ThemeConstants.SPACE_XS }) {
+      this.FieldLabel('用户名（可选）')
+      AppTextField({
+        text: $username,
+        placeholder: '',
+        onTextChange: (value: string) => {
+          this.username = value
+          this.saveCurrent(false)
+        }
+      })
+        .width('100%')
+    }
+    .width('100%')
+  }
+
+  @Builder
+  PasswordFieldRow() {
+    Column({ space: ThemeConstants.SPACE_XS }) {
+      this.FieldLabel('密码（可选）')
+      AppTextField({
+        text: $password,
+        placeholder: '',
+        inputType: InputType.Password,
+        onTextChange: (value: string) => {
+          this.password = value
+          this.saveCurrent(false)
+        }
+      })
+        .width('100%')
+    }
+    .width('100%')
+  }
+
+  @Builder
+  StaticFieldRow(label: string, value: string) {
+    Column({ space: ThemeConstants.SPACE_XS }) {
+      this.FieldLabel(label)
+      Text(value)
+        .fontSize(ThemeConstants.FONT_SIZE_BODY)
+        .fontColor($r('sys.color.font_secondary'))
+        .height(44)
+        .width('100%')
+        .padding({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
+        .borderRadius(ThemeConstants.RADIUS_ROUND)
+        .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+        .textAlign(TextAlign.Start)
+    }
+    .width('100%')
+  }
+
+  @Builder
+  BypassListRow() {
+    Column({ space: ThemeConstants.SPACE_XS }) {
+      this.FieldLabel('绕过列表')
+      TextArea({ placeholder: '每行一个域名或 IP', text: this.exclusionListText })
+        .height(96)
+        .fontSize(ThemeConstants.FONT_SIZE_BODY)
+        .fontColor($r('sys.color.font_primary'))
+        .placeholderColor($r('sys.color.font_secondary'))
+        .padding({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, top: ThemeConstants.SPACE_SM, bottom: ThemeConstants.SPACE_SM })
+        .borderRadius(ThemeConstants.RADIUS_MD)
+        .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+        .onFocus(() => { this.bypassEditorFocused = true })
+        .onBlur(() => { this.bypassEditorFocused = false })
+        .onChange((value: string) => {
+          this.exclusionListText = value
+          this.saveCurrent(false)
+        })
+    }
+    .width('100%')
   }
 
   private currentMode(): NetworkProxyMode {
@@ -200,12 +254,16 @@ export struct NetworkProxySettingsPage {
     return current === NetworkProxySettings.MODE_HTTP || current === NetworkProxySettings.MODE_SOCKS5
   }
 
+  private shouldCollapseTopForKeyboard(): boolean {
+    return this.needsManualProxy() && this.bypassEditorFocused && this.keyboardH > 0
+  }
+
   private modeOptions(): SettingsOption[] {
     return [
       { value: NetworkProxySettings.MODE_OFF, label: '关闭' },
       { value: NetworkProxySettings.MODE_SYSTEM, label: '系统代理' },
       { value: NetworkProxySettings.MODE_HTTP, label: 'HTTP 代理' },
-      { value: NetworkProxySettings.MODE_SOCKS5, label: 'SOCKS5 代理（实验性）' },
+      { value: NetworkProxySettings.MODE_SOCKS5, label: 'SOCKS5 代理' },
     ]
   }
 
@@ -302,20 +360,6 @@ export struct NetworkProxySettingsPage {
       return 0
     }
     return parsed
-  }
-
-  private descriptionTitle(): string {
-    if (this.currentMode() === NetworkProxySettings.MODE_SOCKS5) {
-      return 'SOCKS5 兼容性提示'
-    }
-    return '作用范围'
-  }
-
-  private descriptionText(): string {
-    if (this.currentMode() === NetworkProxySettings.MODE_SOCKS5) {
-      return '本版通过 RCP 覆盖应用内主要网络请求；SOCKS5 可能先本地 DNS 解析再连接，不保证代理侧域名规则。图片直显/WebView 不保证覆盖。'
-    }
-    return '代理只作用于 V2Next 应用发起的网络请求，不会修改系统全局网络或提供 VPN。图片直显/WebView 后续单独覆盖。'
   }
 
   private errorSummary(error: Error): string {

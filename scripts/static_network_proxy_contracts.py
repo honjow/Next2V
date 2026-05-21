@@ -53,9 +53,21 @@ def main() -> int:
 
     require('settings main entry', "title: '网络代理'" in settings_page and "pushPathByName('NetworkProxySettings'" in settings_page)
     require('settings second page route', 'NetworkProxySettingsPage' in routes and 'networkProxySettings' in routes)
-    require('settings second page modes', 'SOCKS5 代理（实验性）' in proxy_page and 'HTTP 代理' in proxy_page and '系统代理' in proxy_page)
-    require('settings scope copy', '不是系统全局 VPN' in proxy_page and '本地 DNS' in proxy_page)
+    require('settings second page modes', 'SOCKS5 代理' in proxy_page and 'HTTP 代理' in proxy_page and '系统代理' in proxy_page)
+    forbidden_proxy_explainers = [
+        '不是系统全局', '本地 DNS', 'VPN', 'WebView', '图片直显',
+        '实验性', '不保证', '代理仅用于应用内网络请求'
+    ]
+    require('settings has no scope/explainer copy', not any(copy in proxy_page for copy in forbidden_proxy_explainers))
     require('settings test action', "'测试连接'" in proxy_page and 'NetworkProxyRequest.testConnection' in proxy_page)
+    require(
+        'settings off hides test action',
+        'currentMode() !== NetworkProxySettings.MODE_OFF' in proxy_page and 'this.ActionSection()' in proxy_page,
+    )
+    require(
+        'settings bypass keyboard collapses top chrome',
+        'shouldCollapseTopForKeyboard' in proxy_page and 'bypassEditorFocused' in proxy_page and 'StorageKeys.KEYBOARD_HEIGHT' in proxy_page,
+    )
 
     create_http = []
     for path in ROOT.rglob('*.ets'):

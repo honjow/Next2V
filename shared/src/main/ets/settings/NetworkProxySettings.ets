@@ -110,7 +110,7 @@ export class NetworkProxySettings {
       case 'http':
         return 'HTTP 代理'
       case 'socks5':
-        return 'SOCKS5 代理（实验性）'
+        return 'SOCKS5 代理'
       case 'off':
       default:
         return '关闭'
