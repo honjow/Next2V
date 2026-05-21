@@ -1,6 +1,7 @@
 import { http } from '@kit.NetworkKit'
 import util from '@ohos.util'
 import { HttpClient } from './HttpClient'
+import { NetworkProxyRequest } from './NetworkProxyRequest'
 import { V2exSigninParser } from '../parser/V2exSigninParser'
 import { V2exSessionParser } from '../parser/V2exSessionParser'
 
@@ -240,9 +241,8 @@ export class V2exNativeAuthService {
       return ''
     }
     const captchaUrl = V2exNativeAuthService.absoluteUrl(this.httpClient.getBaseUrl(), challenge.captchaUrl)
-    let httpRequest = http.createHttp()
     try {
-      const response = await httpRequest.request(captchaUrl, {
+      const response = await NetworkProxyRequest.request(captchaUrl, {
         method: http.RequestMethod.GET,
         header: {
           'Accept': 'image/avif,image/webp,image/png,image/svg+xml,image/*,*/*;q=0.8',
@@ -262,8 +262,8 @@ export class V2exNativeAuthService {
       const bytes = new Uint8Array(response.result as ArrayBuffer)
       const base64 = new util.Base64Helper().encodeToStringSync(bytes)
       return `data:image/png;base64,${base64}`
-    } finally {
-      httpRequest.destroy()
+    } catch (error) {
+      throw error as Error
     }
   }
 
@@ -273,18 +273,9 @@ export class V2exNativeAuthService {
     cookieHeader: string,
     extraData: string = ''
   ): Promise<TextWithSetCookie> {
-    let httpRequest = http.createHttp()
     let headerBag: Object | null = null
     const receivedSetCookieLines: string[] = []
     let receivedLocation: string = ''
-    httpRequest.on('headersReceive', (headers: Object) => {
-      headerBag = headers
-      receivedSetCookieLines.push(...V2exNativeAuthService.extractSetCookieHeader(headers))
-      const location = V2exNativeAuthService.extractSingleHeader(headers, 'location')
-      if (location) {
-        receivedLocation = location
-      }
-    })
 
     try {
       const reqHeaders: Record<string, string> = {
@@ -310,7 +301,20 @@ export class V2exNativeAuthService {
       if (method === http.RequestMethod.POST) {
         options.extraData = extraData
       }
-      const response = await httpRequest.request(url, options)
+      const response = await NetworkProxyRequest.request(url, {
+        method: method,
+        header: reqHeaders,
+        connectTimeout: CONNECT_TIMEOUT_MS,
+        readTimeout: READ_TIMEOUT_MS,
+        usingCache: false,
+        extraData: method === http.RequestMethod.POST ? extraData : '',
+        onHeadersReceive: (headers: Object) => {
+          headerBag = headers
+          receivedSetCookieLines.push(...V2exNativeAuthService.extractSetCookieHeader(headers))
+          const location = V2exNativeAuthService.extractSingleHeader(headers, 'location')
+          if (location) { receivedLocation = location }
+        },
+      })
 
       const text = (response.result as string) || ''
       const headers = headerBag || response.header
@@ -318,8 +322,8 @@ export class V2exNativeAuthService {
       const setCookie = V2exNativeAuthService.uniqueCookieLines(receivedSetCookieLines.concat(finalSetCookie))
       const location = V2exNativeAuthService.extractSingleHeader(headers, 'location') || receivedLocation
       return { text, setCookie, statusCode: response.responseCode as number, location }
-    } finally {
-      httpRequest.destroy()
+    } catch (error) {
+      throw error as Error
     }
   }
 

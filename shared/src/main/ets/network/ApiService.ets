@@ -1,5 +1,6 @@
 import { http } from '@kit.NetworkKit'
 import { HttpClient } from './HttpClient'
+import { NetworkProxyRequest } from './NetworkProxyRequest'
 import { FeedTabSettings } from '../settings/FeedTabSettings'
 import { CookieJarSettings } from '../settings/CookieJarSettings'
 import { BlockedMemberSettings } from '../settings/BlockedMemberSettings'
@@ -1155,7 +1156,6 @@ export class ApiService {
     const url = urls.url
     const refererUrl = urls.refererUrl
 
-    let httpRequest = http.createHttp()
     try {
       const requestHeaders: Record<string, string> = {
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
@@ -1168,7 +1168,7 @@ export class ApiService {
         requestHeaders['Referer'] = refererUrl
       }
 
-      const response = await httpRequest.request(url, {
+      const response = await NetworkProxyRequest.request(url, {
         method: http.RequestMethod.GET,
         header: requestHeaders,
         connectTimeout: this.CONNECT_TIMEOUT_MS,
@@ -1184,8 +1184,8 @@ export class ApiService {
       if (statusCode < 200 || statusCode >= 400) {
         throw new Error(`HTTP ${statusCode}: ${url}`)
       }
-    } finally {
-      httpRequest.destroy()
+    } catch (error) {
+      throw error as Error
     }
   }
 
@@ -1205,11 +1205,7 @@ export class ApiService {
     const url = urls.url
     const refererUrl = urls.refererUrl
 
-    let httpRequest = http.createHttp()
     let headerBag: Object | null = null
-    httpRequest.on('headersReceive', (headers: Object) => {
-      headerBag = headers
-    })
     try {
       const requestHeaders: Record<string, string> = {
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
@@ -1239,7 +1235,16 @@ export class ApiService {
       if (method === http.RequestMethod.POST && extraData) {
         options.extraData = extraData
       }
-      const response = await httpRequest.request(url, options)
+      const response = await NetworkProxyRequest.request(url, {
+        method: method,
+        header: requestHeaders,
+        connectTimeout: this.CONNECT_TIMEOUT_MS,
+        readTimeout: this.READ_TIMEOUT_MS,
+        usingCache: false,
+        expectDataType: http.HttpDataType.STRING,
+        extraData: method === http.RequestMethod.POST ? extraData : '',
+        onHeadersReceive: (headers: Object) => { headerBag = headers },
+      })
       const statusCode = response.responseCode as number
       const text = (response.result as string) || ''
       const location = ApiService.extractHeaderValue(headerBag || response.header, 'location')
@@ -1248,8 +1253,8 @@ export class ApiService {
         throw new Error(`HTTP ${statusCode}: ${url}`)
       }
       return { statusCode, text, location }
-    } finally {
-      httpRequest.destroy()
+    } catch (error) {
+      throw error as Error
     }
   }
 

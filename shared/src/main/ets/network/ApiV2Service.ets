@@ -1,6 +1,7 @@
 import { http } from '@kit.NetworkKit'
 import { HttpClient } from './HttpClient'
 import { HttpRetryPolicy, HttpStatusError } from './HttpRetryPolicy'
+import { NetworkProxyRequest } from './NetworkProxyRequest'
 import { ApiConstants } from '../constants/ApiConstants'
 import { StorageKeys } from '../constants/StorageKeys'
 import { HtmlEntityUtils } from '../utils/HtmlEntityUtils'
@@ -116,12 +117,7 @@ export class ApiV2Service {
     extraData: string = '',
     retryCount: number = MAX_RETRIES
   ): Promise<ApiV2Response<T>> {
-    let httpRequest = http.createHttp()
     let headerBag: Object | null = null
-    httpRequest.on('headersReceive', (headers: Object) => {
-      headerBag = headers
-    })
-
     const url = `${this.httpClient.getBaseUrl()}${endpoint}`
     const trimmedToken = token.trim()
     if (!trimmedToken) {
@@ -136,19 +132,16 @@ export class ApiV2Service {
     }
 
     try {
-      const options: http.HttpRequestOptions = {
+      const response = await NetworkProxyRequest.request(url, {
         method: method,
         header: requestHeaders,
         connectTimeout: CONNECT_TIMEOUT_MS,
         readTimeout: READ_TIMEOUT_MS,
         usingCache: false,
-        expectDataType: http.HttpDataType.STRING
-      }
-      if (method === http.RequestMethod.POST && extraData) {
-        options.extraData = extraData
-      }
-
-      const response = await httpRequest.request(url, options)
+        expectDataType: http.HttpDataType.STRING,
+        extraData: method === http.RequestMethod.POST ? extraData : '',
+        onHeadersReceive: (headers: Object) => { headerBag = headers },
+      })
       const statusCode = response.responseCode as number
       const headers = ApiV2Service.normalizeHeaders(headerBag || response.header)
       const rateLimit = ApiV2Service.parseRateLimit(headers)
@@ -169,8 +162,6 @@ export class ApiV2Service {
         return this.request<T>(endpoint, method, token, extraData, retryCount - 1)
       }
       throw new Error(e.message || 'Network error')
-    } finally {
-      httpRequest.destroy()
     }
   }
 

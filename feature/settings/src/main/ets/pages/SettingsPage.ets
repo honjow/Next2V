@@ -4,6 +4,7 @@ import {
   ConciseListRow,
   GroupedListSection,
   HttpClient,
+  NetworkProxySettings,
   ReadingSettings,
   SecondaryListScaffold,
   StorageKeys,
@@ -43,6 +44,9 @@ export struct SettingsPage {
   @StorageLink(StorageKeys.MOTION_HOLDING_HAND_SUPPORTED) motionHoldingHandSupported: boolean = false;
   @StorageLink(StorageKeys.READING_RESTORE_POSITION) readingRestorePosition: boolean = false;
   @StorageLink(StorageKeys.READING_BASE64_DECODE_MODE) base64DecodeMode: string = ReadingSettings.BASE64_MODE_BADGE;
+  @StorageLink(StorageKeys.NETWORK_PROXY_MODE) networkProxyMode: string = NetworkProxySettings.MODE_OFF;
+  @StorageLink(StorageKeys.NETWORK_PROXY_HOST) networkProxyHost: string = '';
+  @StorageLink(StorageKeys.NETWORK_PROXY_PORT) networkProxyPort: number = 0;
   @State private cacheStats: CacheStats = { topicListCount: 0, topicDetailCount: 0, updatedAt: 0 };
   @State private themeMenuShown: boolean = false;
   @State private replyDisplayMenuShown: boolean = false;
@@ -104,6 +108,9 @@ export struct SettingsPage {
         }
         ListItem() {
           this.ApiDomainAdvancedSection()
+        }
+        ListItem() {
+          this.NetworkAdvancedSection()
         }
       }
     }
@@ -196,6 +203,27 @@ export struct SettingsPage {
             this.apiDomainMenuShown = false
           },
         })
+    }
+  }
+
+
+  @Builder
+  NetworkAdvancedSection() {
+    GroupedListSection() {
+      ConciseListRow({
+        title: '网络代理',
+        subtitle: NetworkProxySettings.summary({
+          mode: NetworkProxySettings.normalizeMode(this.networkProxyMode),
+          host: this.networkProxyHost,
+          port: this.networkProxyPort,
+          username: '',
+          password: '',
+          exclusionList: [],
+        }),
+        action: () => {
+          this.stack.pushPathByName('NetworkProxySettings', null)
+        },
+      })
     }
   }
 

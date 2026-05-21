@@ -3,7 +3,7 @@ import { promptAction } from '@kit.ArkUI'
 import { fileIo } from '@kit.CoreFileKit'
 import { photoAccessHelper } from '@kit.MediaLibraryKit'
 import { http } from '@kit.NetworkKit'
-import { MediaUrlUtils, StorageKeys, ThemeConstants } from 'shared'
+import { MediaUrlUtils, NetworkProxyRequest, StorageKeys, ThemeConstants } from 'shared'
 import { ImagePreviewCoordinator } from '../model/ImagePreviewCoordinator'
 
 const CONNECT_TIMEOUT_MS: number = 10000
@@ -87,14 +87,10 @@ export struct ImagePreviewPage {
   }
 
   private async downloadImage(imageUrl: string): Promise<ImageDownloadResult> {
-    let httpRequest = http.createHttp()
     let headerBag: Object | null = null
-    httpRequest.on('headersReceive', (headers: Object) => {
-      headerBag = headers
-    })
 
     try {
-      const response = await httpRequest.request(imageUrl, {
+      const response = await NetworkProxyRequest.request(imageUrl, {
         method: http.RequestMethod.GET,
         header: {
           'Accept': 'image/avif,image/webp,image/png,image/svg+xml,image/*,*/*;q=0.8',
@@ -104,7 +100,8 @@ export struct ImagePreviewPage {
         connectTimeout: CONNECT_TIMEOUT_MS,
         readTimeout: READ_TIMEOUT_MS,
         usingCache: false,
-        expectDataType: http.HttpDataType.ARRAY_BUFFER
+        expectDataType: http.HttpDataType.ARRAY_BUFFER,
+        onHeadersReceive: (headers: Object) => { headerBag = headers }
       })
       const statusCode = response.responseCode as number
       if (statusCode < 200 || statusCode >= 300) {
@@ -117,8 +114,6 @@ export struct ImagePreviewPage {
     } catch (error) {
       const e = error as Error
       throw new Error(e.message || '图片下载失败')
-    } finally {
-      httpRequest.destroy()
     }
   }
 

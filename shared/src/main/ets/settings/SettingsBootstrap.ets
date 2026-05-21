@@ -6,6 +6,7 @@ import { CookieJarSettings } from './CookieJarSettings'
 import { DiagnosticsSettings } from './DiagnosticsSettings'
 import { FeedTabSettings } from './FeedTabSettings'
 import { MediaSettings } from './MediaSettings'
+import { NetworkProxySettings } from './NetworkProxySettings'
 import { ReadingSettings } from './ReadingSettings'
 import { ReplyActionAlignmentSettings } from './ReplyActionAlignmentSettings'
 import { ReplyCardStyleSettings } from './ReplyCardStyleSettings'
@@ -27,6 +28,7 @@ export class SettingsBootstrap {
     await SettingsBootstrap.restoreApiDomain(context, settingsStore)
     await SettingsBootstrap.restoreTheme(context, settingsStore)
     await SettingsBootstrap.restoreMedia(context, settingsStore)
+    await SettingsBootstrap.restoreNetworkProxy(context, settingsStore)
     await SettingsBootstrap.restoreReplyDisplay(context, settingsStore)
     await SettingsBootstrap.restoreReading(context, settingsStore)
     await SettingsBootstrap.restoreFeedTabs(context)
@@ -73,6 +75,16 @@ export class SettingsBootstrap {
     ).catch((error: Error) => {
       console.error('restore media settings failed: ' + error.message)
       MediaSettings.apply(true, false)
+    })
+  }
+
+  private static async restoreNetworkProxy(context: common.UIAbilityContext, settingsStore?: SettingsPreferencesStore): Promise<void> {
+    await (settingsStore
+      ? NetworkProxySettings.loadFromStore(settingsStore)
+      : NetworkProxySettings.load(context)
+    ).catch((error: Error) => {
+      console.error('restore network proxy settings failed: ' + error.message)
+      NetworkProxySettings.apply(NetworkProxySettings.defaultSnapshot())
     })
   }
 

@@ -1,6 +1,7 @@
 import { http } from '@kit.NetworkKit'
 import { ApiConstants } from '../constants/ApiConstants'
 import { HttpJsonParseError, HttpRetryPolicy, HttpStatusError } from './HttpRetryPolicy'
+import { NetworkProxyRequest } from './NetworkProxyRequest'
 
 const MAX_RETRIES: number = 3
 const CONNECT_TIMEOUT_MS: number = 10000
@@ -46,7 +47,6 @@ export class HttpClient {
     headers?: Record<string, string>,
     usingCache?: boolean
   ): Promise<T> {
-    let httpRequest = http.createHttp()
     const url = `${this.baseUrl}${endpoint}`
     const reqMethod = method || http.RequestMethod.GET
     let requestHeaders: Record<string, string> = {
@@ -60,7 +60,7 @@ export class HttpClient {
     }
 
     try {
-      const response = await httpRequest.request(url, {
+      const response = await NetworkProxyRequest.request(url, {
         method: reqMethod,
         header: requestHeaders,
         connectTimeout: CONNECT_TIMEOUT_MS,
@@ -86,8 +86,6 @@ export class HttpClient {
         return this.request<T>(endpoint, method, retryCount - 1, headers, usingCache)
       }
       throw new Error(HttpClient.formatRequestError(e))
-    } finally {
-      httpRequest.destroy()
     }
   }
 
@@ -136,7 +134,6 @@ export class HttpClient {
     headers?: Record<string, string>,
     usingCache?: boolean
   ): Promise<string> {
-    let httpRequest = http.createHttp()
     const url = `${this.baseUrl}${endpoint}`
     const reqMethod = method || http.RequestMethod.GET
     let requestHeaders: Record<string, string> = {
@@ -150,7 +147,7 @@ export class HttpClient {
     }
 
     try {
-      const response = await httpRequest.request(url, {
+      const response = await NetworkProxyRequest.request(url, {
         method: reqMethod,
         header: requestHeaders,
         connectTimeout: CONNECT_TIMEOUT_MS,
@@ -171,8 +168,6 @@ export class HttpClient {
         return this.requestText(endpoint, method, retryCount - 1, headers, usingCache)
       }
       throw new Error(HttpClient.formatRequestError(e))
-    } finally {
-      httpRequest.destroy()
     }
   }
 
@@ -184,18 +179,10 @@ export class HttpClient {
     headers?: Record<string, string>,
     usingCache?: boolean
   ): Promise<TextResponseWithHeaders> {
-    let httpRequest = http.createHttp()
     const url = `${this.baseUrl}${endpoint}`
     const reqMethod = method || http.RequestMethod.GET
     let headerBag: Object | null = null
     let receivedLocation: string = ''
-    httpRequest.on('headersReceive', (received: Object) => {
-      headerBag = received
-      const location = HttpClient.extractSingleHeader(received, 'location')
-      if (location) {
-        receivedLocation = location
-      }
-    })
     let requestHeaders: Record<string, string> = {
       'Content-Type': 'text/html; charset=utf-8',
       'Accept-Encoding': 'gzip'
@@ -207,12 +194,19 @@ export class HttpClient {
     }
 
     try {
-      const response = await httpRequest.request(url, {
+      const response = await NetworkProxyRequest.request(url, {
         method: reqMethod,
         header: requestHeaders,
         connectTimeout: CONNECT_TIMEOUT_MS,
         readTimeout: READ_TIMEOUT_MS,
-        usingCache: usingCache ?? !HttpClient.hasAuthHeader(requestHeaders)
+        usingCache: usingCache ?? !HttpClient.hasAuthHeader(requestHeaders),
+        onHeadersReceive: (received: Object) => {
+          headerBag = received
+          const location = HttpClient.extractSingleHeader(received, 'location')
+          if (location) {
+            receivedLocation = location
+          }
+        }
       })
 
       const statusCode = response.responseCode as number
@@ -233,8 +227,6 @@ export class HttpClient {
         return this.requestTextResponse(endpoint, method, retryCount - 1, headers, usingCache)
       }
       throw new Error(HttpClient.formatRequestError(e))
-    } finally {
-      httpRequest.destroy()
     }
   }
 

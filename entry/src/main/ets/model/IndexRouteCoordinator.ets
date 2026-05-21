@@ -29,6 +29,7 @@ export type IndexDestinationFamily =
   'diagnosticsLog' |
   'homeNodeSettings' |
   'readingSettings' |
+  'networkProxySettings' |
   'account' |
   'savedTopics' |
   'viewedTopics' |
@@ -68,6 +69,7 @@ export class IndexRouteCoordinator {
     'DiagnosticsLog': 'diagnosticsLog',
     'HomeNodeSettings': 'homeNodeSettings',
     'ReadingSettings': 'readingSettings',
+    'NetworkProxySettings': 'networkProxySettings',
     'Account': 'account',
     'SavedTopics': 'savedTopics',
     'ViewedTopics': 'viewedTopics',
@@ -96,6 +98,7 @@ export class IndexRouteCoordinator {
     'diagnosticsLog': '诊断日志',
     'homeNodeSettings': '首页栏目设置',
     'readingSettings': '阅读字体设置',
+    'networkProxySettings': '网络代理',
     'account': '账号',
     'savedTopics': '稍后读',
     'viewedTopics': '最近浏览',
@@ -119,6 +122,7 @@ export class IndexRouteCoordinator {
     'diagnosticsLog': true,
     'homeNodeSettings': true,
     'readingSettings': true,
+    'networkProxySettings': true,
     'account': true,
     'savedTopics': true,
     'viewedTopics': true,

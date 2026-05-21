@@ -19,6 +19,8 @@ export interface ImagePreviewParams {
 
 // 网络层
 export { HttpClient } from './network/HttpClient'
+export { NetworkProxyRequest } from './network/NetworkProxyRequest'
+export type { NetworkProxyRequestOptions, NetworkProxyResponse } from './network/NetworkProxyRequest'
 export { ApiService, V2exCookieTwoFactorRequiredError } from './network/ApiService'
 export type {
   V2exReplyModerationAction,
@@ -66,6 +68,8 @@ export { AccountMetaSettings } from './settings/AccountMetaSettings'
 export type { AccountMetaSnapshot } from './settings/AccountMetaSettings'
 export { MediaSettings } from './settings/MediaSettings'
 export type { MediaSettingsSnapshot } from './settings/MediaSettings'
+export { NetworkProxySettings } from './settings/NetworkProxySettings'
+export type { NetworkProxyMode, NetworkProxySettingsSnapshot, NetworkProxyValidationResult } from './settings/NetworkProxySettings'
 export { ReadingSettings } from './settings/ReadingSettings'
 export type { ReadingSettingsSnapshot } from './settings/ReadingSettings'
 export { Base64DecodeUtils } from './utils/Base64DecodeUtils'

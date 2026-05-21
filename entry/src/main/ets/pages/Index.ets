@@ -39,6 +39,7 @@ import {
   DiagnosticsLogPage,
   ReadingSettingsPage,
   HomeNodeSettingsPage,
+  NetworkProxySettingsPage,
 } from 'settings'
 import { ComponentContent, promptAction, SymbolGlyphModifier } from '@kit.ArkUI'
 import { V2exWebLoginPage } from './V2exWebLoginPage'
@@ -233,6 +234,9 @@ struct Index {
     }
     if (descriptor.family === 'readingSettings') {
       ReadingSettingsPage()
+    }
+    if (descriptor.family === 'networkProxySettings') {
+      NetworkProxySettingsPage()
     }
     if (descriptor.family === 'account') {
       AccountDashboardPage({ showDetail: true })

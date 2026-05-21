@@ -1,4 +1,5 @@
 import { http } from '@kit.NetworkKit'
+import { NetworkProxyRequest } from './NetworkProxyRequest'
 import type { Sov2exHit, Sov2exSearchOptions, Sov2exSearchResponse } from './NetworkTypes'
 
 const SOV2EX_SEARCH_URL: string = 'https://www.sov2ex.com/api/search'
@@ -32,9 +33,8 @@ export class Sov2exService {
       params.push(`lte=${options.lte}`)
     }
 
-    const request = http.createHttp()
     try {
-      const response = await request.request(`${SOV2EX_SEARCH_URL}?${params.join('&')}`, {
+      const response = await NetworkProxyRequest.request(`${SOV2EX_SEARCH_URL}?${params.join('&')}`, {
         method: http.RequestMethod.GET,
         header: {
           'Accept': 'application/json',
@@ -51,8 +51,6 @@ export class Sov2exService {
     } catch (error) {
       const e = error as Error
       throw new Error(e.message || 'SOV2EX 搜索失败')
-    } finally {
-      request.destroy()
     }
   }
 
