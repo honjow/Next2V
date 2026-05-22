@@ -2,7 +2,7 @@ import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
 import { connection } from '@kit.NetworkKit'
 import { StorageKeys } from '../constants/StorageKeys'
-import { STORE_NAME_SETTINGS, SettingsPreferencesStore, readJsonObject, setAppStorageValue, writeJsonValue } from './SettingsStorage'
+import { STORE_NAME_SETTINGS, SettingsPreferencesStore, readJsonArray, readJsonObject, setAppStorageValue, writeJsonValue } from './SettingsStorage'
 
 export type NetworkProxyMode = 'off' | 'system' | 'http' | 'socks5'
 
@@ -20,7 +20,21 @@ export interface NetworkProxyValidationResult {
   message: string
 }
 
+export interface NetworkProxyProfile {
+  id: string
+  name: string
+  snapshot: NetworkProxySettingsSnapshot
+  updatedAt: number
+}
+
+export interface NetworkProxyProfilesState {
+  profiles: NetworkProxyProfile[]
+  activeProfileId: string
+}
+
 const KEY_NETWORK_PROXY: string = 'networkProxySettings'
+const KEY_NETWORK_PROXY_PROFILES: string = 'networkProxyProfiles'
+const KEY_NETWORK_PROXY_ACTIVE_PROFILE_ID: string = 'networkProxyActiveProfileId'
 
 export class NetworkProxySettings {
   static readonly MODE_OFF: NetworkProxyMode = 'off'
@@ -82,8 +96,8 @@ export class NetworkProxySettings {
       mode,
       host: (snapshot.host || '').trim(),
       port: NetworkProxySettings.normalizePort(snapshot.port),
-      username: (snapshot.username || '').trim(),
-      password: snapshot.password || '',
+      username: mode === 'http' ? (snapshot.username || '').trim() : '',
+      password: mode === 'http' ? (snapshot.password || '') : '',
       exclusionList: NetworkProxySettings.normalizeExclusionList(snapshot.exclusionList || []),
     }
   }
@@ -203,5 +217,127 @@ export class NetworkProxySettings {
       result.push(item)
     }
     return result
+  }
+}
+
+export class NetworkProxyProfileSettings {
+  static async load(context: common.UIAbilityContext): Promise<NetworkProxyProfilesState> {
+    const store = await preferences.getPreferences(context, STORE_NAME_SETTINGS)
+    return NetworkProxyProfileSettings.loadFromStore(store)
+  }
+
+  static async loadFromStore(store: SettingsPreferencesStore): Promise<NetworkProxyProfilesState> {
+    const profiles = NetworkProxyProfileSettings.normalizeProfiles(readJsonArray<NetworkProxyProfile>(store, KEY_NETWORK_PROXY_PROFILES, []))
+    const activeProfileId = NetworkProxyProfileSettings.validActiveId(store.getSync(KEY_NETWORK_PROXY_ACTIVE_PROFILE_ID, '') as string, profiles)
+    return { profiles, activeProfileId }
+  }
+
+  static async upsertProfile(context: common.UIAbilityContext, profile: NetworkProxyProfile): Promise<NetworkProxyProfilesState> {
+    const store = await preferences.getPreferences(context, STORE_NAME_SETTINGS)
+    const state = await NetworkProxyProfileSettings.loadFromStore(store)
+    const normalized = NetworkProxyProfileSettings.normalizeProfile(profile)
+    const nextProfiles: NetworkProxyProfile[] = []
+    let replaced = false
+    for (const item of state.profiles) {
+      if (item.id === normalized.id) {
+        nextProfiles.push(normalized)
+        replaced = true
+      } else {
+        nextProfiles.push(item)
+      }
+    }
+    if (!replaced) {
+      nextProfiles.push(normalized)
+    }
+    const activeProfileId = state.activeProfileId || normalized.id
+    NetworkProxyProfileSettings.writeState(store, nextProfiles, activeProfileId)
+    return { profiles: nextProfiles, activeProfileId }
+  }
+
+  static async setActiveProfile(context: common.UIAbilityContext, profileId: string): Promise<NetworkProxyProfilesState> {
+    const store = await preferences.getPreferences(context, STORE_NAME_SETTINGS)
+    const state = await NetworkProxyProfileSettings.loadFromStore(store)
+    const profile = NetworkProxyProfileSettings.findProfile(state.profiles, profileId)
+    if (!profile) {
+      throw new Error('配置不存在')
+    }
+    await NetworkProxySettings.save(context, profile.snapshot)
+    NetworkProxyProfileSettings.writeState(store, state.profiles, profile.id)
+    return { profiles: state.profiles, activeProfileId: profile.id }
+  }
+
+  static async deleteProfile(context: common.UIAbilityContext, profileId: string): Promise<NetworkProxyProfilesState> {
+    const store = await preferences.getPreferences(context, STORE_NAME_SETTINGS)
+    const state = await NetworkProxyProfileSettings.loadFromStore(store)
+    const nextProfiles = state.profiles.filter((profile: NetworkProxyProfile) => profile.id !== profileId)
+    let activeProfileId = state.activeProfileId
+    if (activeProfileId === profileId) {
+      activeProfileId = nextProfiles.length > 0 ? nextProfiles[0].id : ''
+      if (activeProfileId) {
+        const nextActive = NetworkProxyProfileSettings.findProfile(nextProfiles, activeProfileId)
+        if (nextActive) {
+          await NetworkProxySettings.save(context, nextActive.snapshot)
+        }
+      }
+    }
+    NetworkProxyProfileSettings.writeState(store, nextProfiles, activeProfileId)
+    return { profiles: nextProfiles, activeProfileId }
+  }
+
+  static createProfile(name: string, snapshot: NetworkProxySettingsSnapshot, id?: string): NetworkProxyProfile {
+    const now = Date.now()
+    return NetworkProxyProfileSettings.normalizeProfile({
+      id: id || `proxy-${now}`,
+      name,
+      snapshot,
+      updatedAt: now,
+    })
+  }
+
+  private static writeState(store: SettingsPreferencesStore, profiles: NetworkProxyProfile[], activeProfileId: string): void {
+    writeJsonValue<NetworkProxyProfile[]>(store, KEY_NETWORK_PROXY_PROFILES, NetworkProxyProfileSettings.normalizeProfiles(profiles), false)
+    store.putSync(KEY_NETWORK_PROXY_ACTIVE_PROFILE_ID, activeProfileId)
+    store.flushSync()
+  }
+
+  private static validActiveId(id: string, profiles: NetworkProxyProfile[]): string {
+    if (NetworkProxyProfileSettings.findProfile(profiles, id)) {
+      return id
+    }
+    return profiles.length > 0 ? profiles[0].id : ''
+  }
+
+  private static findProfile(profiles: NetworkProxyProfile[], id: string): NetworkProxyProfile | undefined {
+    for (const profile of profiles) {
+      if (profile.id === id) {
+        return profile
+      }
+    }
+    return undefined
+  }
+
+  private static normalizeProfiles(profiles: NetworkProxyProfile[]): NetworkProxyProfile[] {
+    const seen: Record<string, boolean> = {}
+    const result: NetworkProxyProfile[] = []
+    for (const raw of profiles || []) {
+      const profile = NetworkProxyProfileSettings.normalizeProfile(raw)
+      if (!profile.id || seen[profile.id]) {
+        continue
+      }
+      seen[profile.id] = true
+      result.push(profile)
+    }
+    return result
+  }
+
+  private static normalizeProfile(profile: NetworkProxyProfile): NetworkProxyProfile {
+    const id = (profile.id || `proxy-${Date.now()}`).trim()
+    const name = (profile.name || '代理配置').trim() || '代理配置'
+    return {
+      id,
+      name,
+      snapshot: NetworkProxySettings.normalize(profile.snapshot || NetworkProxySettings.defaultSnapshot()),
+      updatedAt: Math.max(0, Math.floor(Number(profile.updatedAt) || Date.now())),
+    }
   }
 }

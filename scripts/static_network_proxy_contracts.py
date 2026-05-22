@@ -37,6 +37,9 @@ def main() -> int:
         require(f'storage key {key}', key in storage and key in settings)
 
     require('settings persist json', 'writeJsonValue<NetworkProxySettingsSnapshot>' in settings and 'readJsonObject<NetworkProxySettingsSnapshot>' in settings)
+    require('profile storage keys', 'networkProxyProfiles' in settings and 'networkProxyActiveProfileId' in settings)
+    require('profile api exists', 'NetworkProxyProfileSettings' in settings and 'setActiveProfile' in settings and 'upsertProfile' in settings and 'deleteProfile' in settings)
+    require('profile switching preserves runtime snapshot', 'NetworkProxySettings.save(context, profile.snapshot)' in settings and 'NetworkProxySettings.current()' in adapter)
     require('host validation', 'isValidHost' in settings and '请输入有效代理主机' in settings)
     require('port validation', 'isValidPort' in settings and '端口需为 1-65535' in settings)
     require('http proxy construction', 'connection.HttpProxy' in settings and 'username' in settings and 'exclusionList' in settings)
@@ -63,6 +66,14 @@ def main() -> int:
         "Button('‹')", "Button('✓')", 'EditorTopBar', 'fake route branch',
     ]
     require('settings has no fake modal chrome', not any(copy in proxy_page for copy in forbidden_fake_modal_ui))
+    require('profile editor uses native tall sheet scaffold', 'bindSheet($$this.profileEditorVisible' in proxy_page and 'defaultSheetOptions(SheetSize.LARGE' in proxy_page and '[SheetSize.LARGE]' in proxy_page and 'AppModalScaffold({' in proxy_page)
+    require('profile list uses hds rows with real active control', 'ProxyConnectionSection' in proxy_page and 'ConciseListRow({' in proxy_page and "Radio({ value: profileId, group: 'networkProxyProfiles' })" in proxy_page)
+    require('profile editor avoids fake route branch', 'if (this.editorOpen)' not in proxy_page and 'fake full-page route' not in proxy_page)
+    require('profile editor protocol uses semantic radio rows', "Radio({ value: protocol, group: 'networkProxyEditorProtocol' })" in proxy_page and 'suffixBuilderParam: (): void => this.ProtocolRadio' in proxy_page and 'ProtocolChoice' not in proxy_page)
+    forbidden_protocol_buttons = ["Button('HTTP 代理')", "Button('SOCKS5 代理')", 'this.ProtocolChoice(']
+    require('profile editor has no button-as-protocol-selector', not any(copy in proxy_page for copy in forbidden_protocol_buttons))
+    require('profile editor save action is list row not primary pill', "Button('保存')" not in proxy_page and "title: '保存'" in proxy_page and "action: () => { this.saveProfileEditor() }" in proxy_page)
+    require('shared component guard names', 'AppModalScaffold.ets' not in ''.join(sys.argv[1:]))
     require('settings test action', "'测试连接'" in proxy_page and 'NetworkProxyRequest.testConnection' in proxy_page)
     require(
         'settings off hides test action',

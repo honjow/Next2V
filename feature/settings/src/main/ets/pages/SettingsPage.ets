@@ -212,7 +212,7 @@ export struct SettingsPage {
     GroupedListSection() {
       ConciseListRow({
         title: '网络代理',
-        subtitle: NetworkProxySettings.summary({
+        trailingText: NetworkProxySettings.summary({
           mode: NetworkProxySettings.normalizeMode(this.networkProxyMode),
           host: this.networkProxyHost,
           port: this.networkProxyPort,
