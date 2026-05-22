@@ -325,6 +325,10 @@
       "value": "閱讀"
     },
     {
+      "name": "settings_appearance",
+      "value": "介面"
+    },
+    {
       "name": "settings_home",
       "value": "首頁"
     },

@@ -154,6 +154,7 @@ export class AppStrings {
   static readonly R_LOGIN_TO_VIEW_FOLLOWING: Resource = $r('app.string.login_to_view_following')
   static readonly R_NO_FOLLOWING_USERS: Resource = $r('app.string.no_following_users')
   static readonly R_SETTINGS_READING: Resource = $r('app.string.settings_reading')
+  static readonly R_SETTINGS_APPEARANCE: Resource = $r('app.string.settings_appearance')
   static readonly R_SETTINGS_HOME: Resource = $r('app.string.settings_home')
   static readonly R_SETTINGS_CONTENT_MEDIA: Resource = $r('app.string.settings_content_media')
   static readonly R_SETTINGS_ADVANCED: Resource = $r('app.string.settings_advanced')

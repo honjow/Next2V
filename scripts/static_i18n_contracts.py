@@ -24,8 +24,8 @@ KEY_TERMS = {
         "SOCKS5 暂不支持用户名/密码认证", "已切换配置", "测试失败",
     ],
     "feature/settings/src/main/ets/pages/SettingsPage.ets": [
-        "账号", "阅读", "首页栏目设置", "内容与媒体", "存储", "高级", "网络代理",
-        "主题", "回复显示", "回复样式", "记住阅读位置", "Base64 解码",
+        "账号", "界面", "阅读", "首页栏目设置", "内容与媒体", "存储", "高级", "网络代理",
+        "主题", "语言", "回复显示", "回复样式", "记住阅读位置", "Base64 解码",
     ],
     "entry/src/main/ets/model/IndexRouteCoordinator.ets": [
         "网页登录", "账号密码登录", "屏蔽与忽略", "关注用户", "设置", "网络代理", "全部回复",
@@ -89,6 +89,7 @@ def assert_fallback_contract() -> None:
         if repr(locale) not in text:
             raise AssertionError(f"supported locale missing from AppStrings: {locale}")
     required_language_keys = [
+        "settings_appearance",
         "language",
         "language_follow_system",
         "language_simplified_chinese",

@@ -38,6 +38,7 @@ export struct SettingsPage {
   @StorageLink(StorageKeys.MEDIA_ONLY_LOAD_IMAGES_ON_WIFI) onlyLoadImagesOnWifi: boolean = false;
   @StorageLink(StorageKeys.THEME_MODE) themeMode: string = ThemeSettings.MODE_AUTO;
   @StorageLink(StorageKeys.LANGUAGE_MODE) languageMode: string = LanguageSettings.MODE_SYSTEM;
+  @State private languageRefreshKey: number = 0;
   @StorageLink(StorageKeys.REPLY_DISPLAY_MODE) replyDisplayMode: string =
     ReplyDisplaySettings.MODE_THREAD;
   @StorageLink(StorageKeys.REPLY_CARD_STYLE) replyCardStyle: string =
@@ -69,24 +70,30 @@ export struct SettingsPage {
     Column() {
       SecondaryListScaffold() {
         ListItem() {
-          this.SectionHeader(AppStrings.t(AppStrings.R_ACCOUNT_SECTION, 'Account'))
+          this.SectionHeader(this.t(AppStrings.R_ACCOUNT_SECTION, 'Account'))
         }
         ListItem() {
           this.AccountSection()
         }
         ListItem() {
-          this.SectionHeader(AppStrings.t(AppStrings.R_SETTINGS_READING, 'Reading'))
+          this.SectionHeader(this.t(AppStrings.R_SETTINGS_APPEARANCE, 'Appearance'))
+        }
+        ListItem() {
+          this.AppearanceSection()
+        }
+        ListItem() {
+          this.SectionHeader(this.t(AppStrings.R_SETTINGS_READING, 'Reading'))
         }
         ListItem() {
           this.ReadingSection()
         }
         ListItem() {
-          this.SectionHeader(AppStrings.t(AppStrings.R_SETTINGS_HOME, 'Home'))
+          this.SectionHeader(this.t(AppStrings.R_SETTINGS_HOME, 'Home'))
         }
         ListItem() {
           GroupedListSection() {
             ConciseListRow({
-              title: AppStrings.t(AppStrings.R_NAV_HOME_NODES, 'Home tab settings'),
+              title: this.t(AppStrings.R_NAV_HOME_NODES, 'Home tab settings'),
               action: () => {
                 this.stack.pushPathByName('HomeNodeSettings', null)
               },
@@ -94,19 +101,19 @@ export struct SettingsPage {
           }
         }
         ListItem() {
-          this.SectionHeader(AppStrings.t(AppStrings.R_SETTINGS_CONTENT_MEDIA, 'Content and media'))
+          this.SectionHeader(this.t(AppStrings.R_SETTINGS_CONTENT_MEDIA, 'Content and media'))
         }
         ListItem() {
           this.MediaSection()
         }
         ListItem() {
-          this.SectionHeader(AppStrings.t(AppStrings.R_NAV_STORAGE, 'Storage'))
+          this.SectionHeader(this.t(AppStrings.R_NAV_STORAGE, 'Storage'))
         }
         ListItem() {
           this.CacheSection()
         }
         ListItem() {
-          this.SectionHeader(AppStrings.t(AppStrings.R_SETTINGS_ADVANCED, 'Advanced'))
+          this.SectionHeader(this.t(AppStrings.R_SETTINGS_ADVANCED, 'Advanced'))
         }
         ListItem() {
           this.DiagnosticsSection()
@@ -134,19 +141,31 @@ export struct SettingsPage {
     SettingsDivider()
   }
 
+  private t(resource: Resource, fallback: string): string {
+    const _languageRefreshKey = this.languageRefreshKey
+    return AppStrings.t(resource, fallback)
+  }
+
   @Builder
   AccountSection() {
     GroupedListSection() {
       ConciseListRow({
-        title: AppStrings.t(AppStrings.R_ACCOUNT_MANAGEMENT, 'Account management'),
+        title: this.t(AppStrings.R_ACCOUNT_MANAGEMENT, 'Account management'),
         action: () => {
           this.stack.pushPathByName('Account', null)
         },
       })
       this.SettingsDivider()
-      this.TogglePreferenceRow(AppStrings.t(AppStrings.R_AUTO_CHECKIN, 'Auto check-in'), this.autoDailyCheckinEnabled, (value: boolean) => {
+      this.TogglePreferenceRow(this.t(AppStrings.R_AUTO_CHECKIN, 'Auto check-in'), this.autoDailyCheckinEnabled, (value: boolean) => {
         this.updateAutoDailyCheckin(value)
       })
+    }
+  }
+
+  @Builder
+  AppearanceSection() {
+    GroupedListSection() {
+      this.AppearancePreferenceRows()
     }
   }
 
@@ -160,7 +179,7 @@ export struct SettingsPage {
   @Builder
   MediaSection() {
     GroupedListSection() {
-      this.TogglePreferenceRow(AppStrings.t(AppStrings.R_IMAGE_AUTO_LOAD, 'Auto-load images'), this.autoLoadImages, (value: boolean) => {
+      this.TogglePreferenceRow(this.t(AppStrings.R_IMAGE_AUTO_LOAD, 'Auto-load images'), this.autoLoadImages, (value: boolean) => {
         this.updateAutoLoadImages(value)
       })
 
@@ -168,7 +187,7 @@ export struct SettingsPage {
 
       if (this.autoLoadImages) {
         this.TogglePreferenceRow(
-          AppStrings.t(AppStrings.R_WIFI_ONLY_IMAGES, 'Load images on Wi-Fi only'),
+          this.t(AppStrings.R_WIFI_ONLY_IMAGES, 'Load images on Wi-Fi only'),
           this.onlyLoadImagesOnWifi,
           (value: boolean) => {
             this.updateOnlyLoadImagesOnWifi(value)
@@ -184,7 +203,7 @@ export struct SettingsPage {
   DiagnosticsSection() {
     GroupedListSection() {
       ConciseListRow({
-        title: AppStrings.t(AppStrings.R_NAV_DIAGNOSTICS, 'Diagnostics log'),
+        title: this.t(AppStrings.R_NAV_DIAGNOSTICS, 'Diagnostics log'),
         action: () => {
           this.stack.pushPathByName('DiagnosticsLog', null)
         },
@@ -196,7 +215,7 @@ export struct SettingsPage {
   ApiDomainAdvancedSection() {
     GroupedListSection() {
       SettingsDropdownRow({
-        title: AppStrings.t(AppStrings.R_API_DOMAIN, 'API domain'),
+        title: this.t(AppStrings.R_API_DOMAIN, 'API domain'),
         trailingText: SettingsPageCoordinator.apiDomainLabel(this.useCoDomain),
         openAction: () => {
           this.showApiDomainMenu()
@@ -216,7 +235,7 @@ export struct SettingsPage {
   NetworkAdvancedSection() {
     GroupedListSection() {
       ConciseListRow({
-        title: AppStrings.t(AppStrings.R_NAV_NETWORK_PROXY, 'Network proxy'),
+        title: this.t(AppStrings.R_NAV_NETWORK_PROXY, 'Network proxy'),
         trailingText: NetworkProxySettings.summary({
           mode: NetworkProxySettings.normalizeMode(this.networkProxyMode),
           host: this.networkProxyHost,
@@ -251,7 +270,7 @@ export struct SettingsPage {
   @Builder
   DisabledWifiImagePreferenceRow() {
     SettingsToggleRow({
-      title: AppStrings.t(AppStrings.R_WIFI_ONLY_IMAGES, 'Load images on Wi-Fi only'),
+      title: this.t(AppStrings.R_WIFI_ONLY_IMAGES, 'Load images on Wi-Fi only'),
       checked: this.onlyLoadImagesOnWifi,
       isEnabled: false,
       changeAction: (_value: boolean) => {},
@@ -259,25 +278,10 @@ export struct SettingsPage {
   }
 
   @Builder
-  ReadingPreferenceRows() {
+  AppearancePreferenceRows() {
     Column() {
       SettingsDropdownRow({
-        title: AppStrings.t(AppStrings.R_LANGUAGE, 'Language'),
-        trailingText: LanguageSettings.modeText(this.languageMode),
-        openAction: () => {
-          this.showLanguageMenu()
-        },
-      })
-        .bindMenu(this.languageMenuShown, this.LanguageModeMenu, {
-          placement: Placement.BottomRight,
-          aboutToDisappear: () => {
-            this.languageMenuShown = false
-          },
-        })
-
-      this.SettingsDivider()
-      SettingsDropdownRow({
-        title: AppStrings.t(AppStrings.R_THEME, 'Theme'),
+        title: this.t(AppStrings.R_THEME, 'Theme'),
         trailingText: ThemeSettings.modeText(this.themeMode),
         openAction: () => {
           this.showThemeMenu()
@@ -292,7 +296,26 @@ export struct SettingsPage {
 
       this.SettingsDivider()
       SettingsDropdownRow({
-        title: AppStrings.t(AppStrings.R_REPLY_DISPLAY, 'Reply display'),
+        title: this.t(AppStrings.R_LANGUAGE, 'Language'),
+        trailingText: LanguageSettings.modeText(this.languageMode),
+        openAction: () => {
+          this.showLanguageMenu()
+        },
+      })
+        .bindMenu(this.languageMenuShown, this.LanguageModeMenu, {
+          placement: Placement.BottomRight,
+          aboutToDisappear: () => {
+            this.languageMenuShown = false
+          },
+        })
+    }.width('100%')
+  }
+
+  @Builder
+  ReadingPreferenceRows() {
+    Column() {
+      SettingsDropdownRow({
+        title: this.t(AppStrings.R_REPLY_DISPLAY, 'Reply display'),
         trailingText: ReplyDisplaySettings.modeText(this.replyDisplayMode),
         openAction: () => {
           this.showReplyDisplayMenu()
@@ -307,7 +330,7 @@ export struct SettingsPage {
 
       this.SettingsDivider()
       SettingsDropdownRow({
-        title: AppStrings.t(AppStrings.R_REPLY_STYLE, 'Reply style'),
+        title: this.t(AppStrings.R_REPLY_STYLE, 'Reply style'),
         trailingText: ReplyCardStyleSettings.styleText(this.replyCardStyle),
         openAction: () => {
           this.showReplyCardStyleMenu()
@@ -322,7 +345,7 @@ export struct SettingsPage {
 
       this.SettingsDivider()
       SettingsDropdownRow({
-        title: AppStrings.t(AppStrings.R_REPLY_ACTION_ALIGNMENT, 'Reply button alignment'),
+        title: this.t(AppStrings.R_REPLY_ACTION_ALIGNMENT, 'Reply button alignment'),
         trailingText: ReplyActionAlignmentSettings.modeText(
           this.replyActionAlignmentMode,
           this.motionHoldingHandSupported,
@@ -340,14 +363,14 @@ export struct SettingsPage {
 
       this.SettingsDivider()
 
-      this.TogglePreferenceRow(AppStrings.t(AppStrings.R_REMEMBER_READ_POSITION, 'Remember reading position'), this.readingRestorePosition, (value: boolean) => {
+      this.TogglePreferenceRow(this.t(AppStrings.R_REMEMBER_READ_POSITION, 'Remember reading position'), this.readingRestorePosition, (value: boolean) => {
         this.updateRestorePosition(value)
       })
 
       this.SettingsDivider()
       SettingsDropdownRow({
-        title: AppStrings.t(AppStrings.R_BASE64_DECODE, 'Base64 decode'),
-        subtitle: AppStrings.t(AppStrings.R_BASE64_SUBTITLE, 'Default to tap-to-view to avoid directly exposing email, WeChat, or other plaintext.'),
+        title: this.t(AppStrings.R_BASE64_DECODE, 'Base64 decode'),
+        subtitle: this.t(AppStrings.R_BASE64_SUBTITLE, 'Default to tap-to-view to avoid directly exposing email, WeChat, or other plaintext.'),
         trailingText: this.base64DecodeModeLabel(),
         openAction: () => {
           this.showBase64ModeMenu()
@@ -362,7 +385,7 @@ export struct SettingsPage {
 
       this.SettingsDivider()
       ConciseListRow({
-        title: AppStrings.t(AppStrings.R_NAV_READING, 'Reading font settings'),
+        title: this.t(AppStrings.R_NAV_READING, 'Reading font settings'),
         action: () => {
           this.stack.pushPathByName('ReadingSettings', null)
         },
@@ -568,7 +591,7 @@ export struct SettingsPage {
   CacheSection() {
     GroupedListSection() {
       ConciseListRow({
-        title: AppStrings.t(AppStrings.R_NAV_STORAGE, 'Storage'),
+        title: this.t(AppStrings.R_NAV_STORAGE, 'Storage'),
         subtitle: StorageSettingsCoordinator.cacheSubtitle(this.cacheStats),
         count: this.cacheStats.topicListCount + this.cacheStats.topicDetailCount,
         action: () => {
@@ -612,6 +635,7 @@ export struct SettingsPage {
     this.languageMode = normalizedMode
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     LanguageSettings.apply(context, normalizedMode)
+    this.languageRefreshKey = Date.now()
     SettingsSaveCoordinator.saveLanguageMode(context, normalizedMode)
   }
 

@@ -325,6 +325,10 @@
       "value": "Reading"
     },
     {
+      "name": "settings_appearance",
+      "value": "Appearance"
+    },
+    {
       "name": "settings_home",
       "value": "Home"
     },

@@ -325,6 +325,10 @@
       "value": "阅读"
     },
     {
+      "name": "settings_appearance",
+      "value": "界面"
+    },
+    {
       "name": "settings_home",
       "value": "首页"
     },
