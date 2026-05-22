@@ -2,6 +2,7 @@ import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
 import { connection } from '@kit.NetworkKit'
 import { StorageKeys } from '../constants/StorageKeys'
+import { AppStrings } from '../i18n/AppStrings'
 import { STORE_NAME_SETTINGS, SettingsPreferencesStore, readJsonArray, readJsonObject, setAppStorageValue, writeJsonValue } from './SettingsStorage'
 
 export type NetworkProxyMode = 'off' | 'system' | 'http' | 'socks5'
@@ -120,14 +121,14 @@ export class NetworkProxySettings {
   static label(mode: NetworkProxyMode): string {
     switch (mode) {
       case 'system':
-        return '系统代理'
+        return AppStrings.t(AppStrings.R_SYSTEM_PROXY, 'System proxy')
       case 'http':
-        return 'HTTP 代理'
+        return AppStrings.t(AppStrings.R_HTTP_PROXY, 'HTTP proxy')
       case 'socks5':
-        return 'SOCKS5 代理'
+        return AppStrings.t(AppStrings.R_SOCKS5_PROXY, 'SOCKS5 proxy')
       case 'off':
       default:
-        return '关闭'
+        return AppStrings.t(AppStrings.R_COMMON_CLOSED, 'Off')
     }
   }
 
@@ -137,7 +138,7 @@ export class NetworkProxySettings {
       if (normalized.host && normalized.port > 0) {
         return `${NetworkProxySettings.label(normalized.mode)} · ${normalized.host}:${normalized.port}`
       }
-      return `${NetworkProxySettings.label(normalized.mode)} · 未配置`
+      return `${NetworkProxySettings.label(normalized.mode)} · ${AppStrings.t(AppStrings.R_PROXY_NOT_CONFIGURED, 'Not configured')}`
     }
     return NetworkProxySettings.label(normalized.mode)
   }

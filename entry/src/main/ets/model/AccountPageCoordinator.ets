@@ -1,4 +1,5 @@
 import {
+  AppStrings,
   V2exAuthenticatedMember,
   V2exBalance,
   V2exDailyMission,
@@ -11,36 +12,36 @@ export interface AccountIdentity {
 }
 
 export class AccountPageCoordinator {
-  static readonly SECTION_ACCOUNT: string = '账号'
-  static readonly SECTION_ACCOUNT_CONTENT: string = '账号内容'
-  static readonly SECTION_LOCAL_CONTENT: string = '本地内容'
-  static readonly SECTION_MORE: string = '更多'
-  static readonly SECTION_ADVANCED_API: string = '高级 API'
+  static get SECTION_ACCOUNT(): string { return AppStrings.t(AppStrings.R_ACCOUNT_SECTION, 'Account') }
+  static get SECTION_ACCOUNT_CONTENT(): string { return AppStrings.t(AppStrings.R_ACCOUNT_CONTENT_SECTION, 'Account content') }
+  static get SECTION_LOCAL_CONTENT(): string { return AppStrings.t(AppStrings.R_LOCAL_CONTENT_SECTION, 'Local content') }
+  static get SECTION_MORE(): string { return AppStrings.t(AppStrings.R_MORE_SECTION, 'More') }
+  static get SECTION_ADVANCED_API(): string { return AppStrings.t(AppStrings.R_ADVANCED_API_SECTION, 'Advanced API') }
 
-  static readonly LOGIN_TITLE: string = '未登录'
-  static readonly LOGIN_SUBTITLE: string = '点击登录 V2EX'
+  static get LOGIN_TITLE(): string { return AppStrings.t(AppStrings.R_NOT_LOGGED_IN, 'Not logged in') }
+  static get LOGIN_SUBTITLE(): string { return AppStrings.t(AppStrings.R_TAP_TO_LOGIN_V2EX, 'Tap to log in to V2EX') }
 
-  static readonly PROFILE_TITLE: string = '个人主页'
-  static readonly BALANCE_DETAIL_TITLE: string = '余额明细'
-  static readonly WEB_ACCOUNT_SETTINGS_TITLE: string = '网页账号设置'
-  static readonly LOGOUT_TITLE: string = '退出登录'
+  static get PROFILE_TITLE(): string { return AppStrings.t(AppStrings.R_PROFILE_HOME, 'Profile') }
+  static get BALANCE_DETAIL_TITLE(): string { return AppStrings.t(AppStrings.R_BALANCE_DETAILS, 'Balance details') }
+  static get WEB_ACCOUNT_SETTINGS_TITLE(): string { return AppStrings.t(AppStrings.R_WEB_ACCOUNT_SETTINGS, 'Web account settings') }
+  static get LOGOUT_TITLE(): string { return AppStrings.t(AppStrings.R_LOGOUT, 'Log out') }
 
-  static readonly ACCOUNT_SAVED_TOPICS_TITLE: string = '收藏主题'
-  static readonly ACCOUNT_SAVED_NODES_TITLE: string = '收藏节点'
-  static readonly ACCOUNT_FOLLOWING_TITLE: string = '关注用户'
-  static readonly ACCOUNT_BLACKLIST_TITLE: string = '屏蔽与忽略'
+  static get ACCOUNT_SAVED_TOPICS_TITLE(): string { return AppStrings.t(AppStrings.R_NAV_SAVED_TOPICS, 'Favorite topics') }
+  static get ACCOUNT_SAVED_NODES_TITLE(): string { return AppStrings.t(AppStrings.R_NAV_SAVED_NODES, 'Favorite nodes') }
+  static get ACCOUNT_FOLLOWING_TITLE(): string { return AppStrings.t(AppStrings.R_NAV_FOLLOWING, 'Following') }
+  static get ACCOUNT_BLACKLIST_TITLE(): string { return AppStrings.t(AppStrings.R_NAV_BLACKLIST, 'Blocked and ignored') }
 
   static readonly API_TOKEN_TITLE: string = 'Personal Access Token'
-  static readonly API_TOKEN_SUBTITLE: string = '已保存，仅用于 V2EX API v2 高级能力'
-  static readonly CLEAR_API_AUTH_TITLE: string = '清除 API 授权'
-  static readonly CLEAR_API_AUTH_MESSAGE: string = '仅清除本地保存的 Personal Access Token，不会退出网页登录。'
+  static get API_TOKEN_SUBTITLE(): string { return AppStrings.t(AppStrings.R_API_TOKEN_SUBTITLE, 'Saved, used only for V2EX API v2 advanced features') }
+  static get CLEAR_API_AUTH_TITLE(): string { return AppStrings.t(AppStrings.R_CLEAR_API_AUTH, 'Clear API authorization') }
+  static get CLEAR_API_AUTH_MESSAGE(): string { return AppStrings.t(AppStrings.R_CLEAR_API_AUTH_MESSAGE, 'Only clears the locally saved Personal Access Token. Web login stays signed in.') }
 
-  static readonly LOCAL_SEARCH_TITLE: string = '搜索'
-  static readonly LOCAL_TOPIC_DRAFT_TITLE: string = '发帖草稿'
-  static readonly LOCAL_READ_LATER_TITLE: string = '稍后读'
-  static readonly LOCAL_VIEWED_TOPICS_TITLE: string = '最近浏览'
-  static readonly LOCAL_SAVED_NODES_TITLE: string = '本地关注节点'
-  static readonly ABOUT_TITLE: string = '关于 Next2V'
+  static get LOCAL_SEARCH_TITLE(): string { return AppStrings.t(AppStrings.R_NAV_SEARCH, 'Search') }
+  static get LOCAL_TOPIC_DRAFT_TITLE(): string { return AppStrings.t(AppStrings.R_NAV_TOPIC_DRAFT, 'Topic draft') }
+  static get LOCAL_READ_LATER_TITLE(): string { return AppStrings.t(AppStrings.R_NAV_READ_LATER, 'Read later') }
+  static get LOCAL_VIEWED_TOPICS_TITLE(): string { return AppStrings.t(AppStrings.R_NAV_RECENTLY_VIEWED, 'Recently viewed') }
+  static get LOCAL_SAVED_NODES_TITLE(): string { return AppStrings.t(AppStrings.R_NAV_LOCAL_NODES, 'Local followed nodes') }
+  static get ABOUT_TITLE(): string { return AppStrings.t(AppStrings.R_ABOUT_NEXT2V, 'About Next2V') }
 
   static hasCookieAccount(authCookieConfigured: boolean): boolean {
     return authCookieConfigured
@@ -74,28 +75,42 @@ export class AccountPageCoordinator {
     accountMetaError: string
   ): string {
     if (!hasCookieAccount) {
-      return authTokenConfigured ? 'API 授权已配置' : ''
+      return authTokenConfigured ? AppStrings.t(AppStrings.R_API_AUTH_CONFIGURED, 'API authorization configured') : ''
     }
     if (accountBalance) {
       return accountBalance.summary
     }
     if (isAccountMetaLoading) {
-      return '虚拟币同步中'
+      return AppStrings.t(AppStrings.R_BALANCE_SYNCING, 'Balance syncing')
     }
     if (accountMetaError) {
-      return '虚拟币信息不可用'
+      return AppStrings.t(AppStrings.R_BALANCE_UNAVAILABLE, 'Balance unavailable')
     }
     return ''
   }
 
+  static dailyMissionMessage(message: string): string {
+    const clean = (message || '').trim()
+    if (clean === 'already_checked_in_today') {
+      return AppStrings.t(AppStrings.R_ALREADY_CHECKED_IN_TODAY, 'Already checked in today')
+    }
+    if (clean === 'daily_checkin_available') {
+      return AppStrings.t(AppStrings.R_DAILY_CHECKIN, 'Check in')
+    }
+    if (clean === 'daily_checkin_unavailable') {
+      return AppStrings.t(AppStrings.R_DAILY_CHECKED_IN, 'Checked in')
+    }
+    return clean
+  }
+
   static dailyMissionButtonText(isDailyRedeeming: boolean, dailyMission: V2exDailyMission | null): string {
     if (isDailyRedeeming) {
-      return '签到中'
+      return AppStrings.t(AppStrings.R_DAILY_CHECKING_IN, 'Checking in')
     }
     if (dailyMission && !dailyMission.canRedeem) {
-      return '已签到'
+      return AppStrings.t(AppStrings.R_DAILY_CHECKED_IN, 'Checked in')
     }
-    return '签到'
+    return AppStrings.t(AppStrings.R_DAILY_CHECKIN, 'Check in')
   }
 
   static dailyMissionEnabled(

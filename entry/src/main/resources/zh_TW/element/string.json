@@ -6,15 +6,15 @@
     },
     {
       "name": "entry_desc",
-      "value": "Next2V - V2EX client"
+      "value": "Next2V - V2EX 客戶端"
     },
     {
       "name": "module_desc",
-      "value": "Next2V entry module"
+      "value": "Next2V 入口模組"
     },
     {
       "name": "EntryAbility_desc",
-      "value": "Next2V main ability"
+      "value": "Next2V 主 Ability"
     },
     {
       "name": "EntryAbility_label",
@@ -22,827 +22,827 @@
     },
     {
       "name": "tab_home",
-      "value": "Home"
+      "value": "首頁"
     },
     {
       "name": "tab_discover",
-      "value": "Discover"
+      "value": "探索"
     },
     {
       "name": "tab_notifications",
-      "value": "Notifications"
+      "value": "通知"
     },
     {
       "name": "tab_me",
-      "value": "Me"
+      "value": "我的"
     },
     {
       "name": "nav_reply",
-      "value": "Reply"
+      "value": "回覆"
     },
     {
       "name": "nav_web_login",
-      "value": "Web login"
+      "value": "網頁登入"
     },
     {
       "name": "nav_native_login",
-      "value": "Password login"
+      "value": "帳號密碼登入"
     },
     {
       "name": "nav_node_picker",
-      "value": "Select node"
+      "value": "選擇節點"
     },
     {
       "name": "nav_search",
-      "value": "Search"
+      "value": "搜尋"
     },
     {
       "name": "nav_topic_draft",
-      "value": "Topic draft"
+      "value": "發文草稿"
     },
     {
       "name": "nav_saved_topics",
-      "value": "Favorite topics"
+      "value": "收藏主題"
     },
     {
       "name": "nav_saved_nodes",
-      "value": "Favorite nodes"
+      "value": "收藏節點"
     },
     {
       "name": "nav_blacklist",
-      "value": "Blocked and ignored"
+      "value": "封鎖與忽略"
     },
     {
       "name": "nav_following",
-      "value": "Following"
+      "value": "關注使用者"
     },
     {
       "name": "nav_settings",
-      "value": "Settings"
+      "value": "設定"
     },
     {
       "name": "nav_storage",
-      "value": "Storage"
+      "value": "儲存"
     },
     {
       "name": "nav_diagnostics",
-      "value": "Diagnostics log"
+      "value": "診斷記錄"
     },
     {
       "name": "nav_home_nodes",
-      "value": "Home tab settings"
+      "value": "首頁欄位設定"
     },
     {
       "name": "nav_reading",
-      "value": "Reading font settings"
+      "value": "閱讀字體設定"
     },
     {
       "name": "nav_network_proxy",
-      "value": "Network proxy"
+      "value": "網路代理"
     },
     {
       "name": "nav_account",
-      "value": "Account"
+      "value": "帳號"
     },
     {
       "name": "nav_read_later",
-      "value": "Read later"
+      "value": "稍後讀"
     },
     {
       "name": "nav_recently_viewed",
-      "value": "Recently viewed"
+      "value": "最近瀏覽"
     },
     {
       "name": "nav_local_nodes",
-      "value": "Local followed nodes"
+      "value": "本機關注節點"
     },
     {
       "name": "nav_about",
-      "value": "About"
+      "value": "關於"
     },
     {
       "name": "nav_all_topics",
-      "value": "All topics"
+      "value": "全部主題"
     },
     {
       "name": "nav_all_replies",
-      "value": "All replies"
+      "value": "全部回覆"
     },
     {
       "name": "common_load_failed",
-      "value": "Load failed"
+      "value": "載入失敗"
     },
     {
       "name": "common_retry",
-      "value": "Retry"
+      "value": "重試"
     },
     {
       "name": "common_cancel",
-      "value": "Cancel"
+      "value": "取消"
     },
     {
       "name": "common_clear",
-      "value": "Clear"
+      "value": "清除"
     },
     {
       "name": "common_delete",
-      "value": "Delete"
+      "value": "刪除"
     },
     {
       "name": "common_save",
-      "value": "Save"
+      "value": "儲存"
     },
     {
       "name": "common_restore",
-      "value": "Restore"
+      "value": "恢復"
     },
     {
       "name": "common_reset",
-      "value": "Reset"
+      "value": "重設"
     },
     {
       "name": "common_closed",
-      "value": "Off"
+      "value": "關閉"
     },
     {
       "name": "common_auto",
-      "value": "Automatic"
+      "value": "自動"
     },
     {
       "name": "common_light",
-      "value": "Light"
+      "value": "淺色"
     },
     {
       "name": "common_dark",
-      "value": "Dark"
+      "value": "深色"
     },
     {
       "name": "common_cleared",
-      "value": "Cleared"
+      "value": "已清理"
     },
     {
       "name": "common_saved",
-      "value": "Saved"
+      "value": "已儲存"
     },
     {
       "name": "common_save_failed",
-      "value": "Save failed"
+      "value": "儲存失敗"
     },
     {
       "name": "common_deleted",
-      "value": "Deleted"
+      "value": "已刪除"
     },
     {
       "name": "common_delete_failed",
-      "value": "Delete failed"
+      "value": "刪除失敗"
     },
     {
       "name": "common_open_failed",
-      "value": "Open failed"
+      "value": "開啟失敗"
     },
     {
       "name": "login_required_continue",
-      "value": "Log in to continue"
+      "value": "登入後可繼續"
     },
     {
       "name": "login_action",
-      "value": "Log in"
+      "value": "去登入"
     },
     {
       "name": "account_section",
-      "value": "Account"
+      "value": "帳號"
     },
     {
       "name": "account_content_section",
-      "value": "Account content"
+      "value": "帳號內容"
     },
     {
       "name": "local_content_section",
-      "value": "Local content"
+      "value": "本機內容"
     },
     {
       "name": "more_section",
-      "value": "More"
+      "value": "更多"
     },
     {
       "name": "advanced_api_section",
-      "value": "Advanced API"
+      "value": "進階 API"
     },
     {
       "name": "not_logged_in",
-      "value": "Not logged in"
+      "value": "未登入"
     },
     {
       "name": "tap_to_login_v2ex",
-      "value": "Tap to log in to V2EX"
+      "value": "點選登入 V2EX"
     },
     {
       "name": "profile_home",
-      "value": "Profile"
+      "value": "個人首頁"
     },
     {
       "name": "balance_details",
-      "value": "Balance details"
+      "value": "餘額明細"
     },
     {
       "name": "web_account_settings",
-      "value": "Web account settings"
+      "value": "網頁帳號設定"
     },
     {
       "name": "logout",
-      "value": "Log out"
+      "value": "登出"
     },
     {
       "name": "api_token_subtitle",
-      "value": "Saved, used only for V2EX API v2 advanced features"
+      "value": "已儲存，僅用於 V2EX API v2 進階能力"
     },
     {
       "name": "clear_api_auth",
-      "value": "Clear API authorization"
+      "value": "清除 API 授權"
     },
     {
       "name": "clear_api_auth_message",
-      "value": "Only clears the locally saved Personal Access Token. Web login stays signed in."
+      "value": "只會清除本機儲存的 Personal Access Token，不會登出網頁登入。"
     },
     {
       "name": "api_auth_configured",
-      "value": "API authorization configured"
+      "value": "API 授權已設定"
     },
     {
       "name": "balance_syncing",
-      "value": "Balance syncing"
+      "value": "虛擬幣同步中"
     },
     {
       "name": "balance_unavailable",
-      "value": "Balance unavailable"
+      "value": "虛擬幣資訊不可用"
     },
     {
       "name": "daily_checkin",
-      "value": "Check in"
+      "value": "簽到"
     },
     {
       "name": "daily_checking_in",
-      "value": "Checking in"
+      "value": "簽到中"
     },
     {
       "name": "daily_checked_in",
-      "value": "Checked in"
+      "value": "已簽到"
     },
     {
       "name": "about_next2v",
-      "value": "About Next2V"
+      "value": "關於 Next2V"
     },
     {
       "name": "login_to_view_blocked",
-      "value": "Log in to view blocked and ignored items"
+      "value": "登入後可查看封鎖與忽略"
     },
     {
       "name": "blocked_users",
-      "value": "Blocked users"
+      "value": "封鎖使用者"
     },
     {
       "name": "no_blocked_users",
-      "value": "No blocked users"
+      "value": "暫無封鎖使用者"
     },
     {
       "name": "ignored_topics",
-      "value": "Ignored topics"
+      "value": "忽略主題"
     },
     {
       "name": "no_ignored_topics",
-      "value": "No ignored topics"
+      "value": "暫無忽略主題"
     },
     {
       "name": "login_to_view_following",
-      "value": "Log in to view followed users"
+      "value": "登入後可查看關注使用者"
     },
     {
       "name": "no_following_users",
-      "value": "No followed users"
+      "value": "暫無關注使用者"
     },
     {
       "name": "settings_reading",
-      "value": "Reading"
+      "value": "閱讀"
     },
     {
       "name": "settings_home",
-      "value": "Home"
+      "value": "首頁"
     },
     {
       "name": "settings_content_media",
-      "value": "Content and media"
+      "value": "內容與媒體"
     },
     {
       "name": "settings_advanced",
-      "value": "Advanced"
+      "value": "進階"
     },
     {
       "name": "account_management",
-      "value": "Account management"
+      "value": "帳號管理"
     },
     {
       "name": "auto_checkin",
-      "value": "Auto check-in"
+      "value": "自動簽到"
     },
     {
       "name": "image_auto_load",
-      "value": "Auto-load images"
+      "value": "圖片自動載入"
     },
     {
       "name": "wifi_only_images",
-      "value": "Load images on Wi-Fi only"
+      "value": "僅 Wi-Fi 載入圖片"
     },
     {
       "name": "api_domain",
-      "value": "API domain"
+      "value": "API 網域"
     },
     {
       "name": "theme",
-      "value": "Theme"
+      "value": "主題"
     },
     {
       "name": "reply_display",
-      "value": "Reply display"
+      "value": "回覆顯示"
     },
     {
       "name": "reply_style",
-      "value": "Reply style"
+      "value": "回覆樣式"
     },
     {
       "name": "reply_action_alignment",
-      "value": "Reply button alignment"
+      "value": "回覆按鈕對齊方式"
     },
     {
       "name": "remember_read_position",
-      "value": "Remember reading position"
+      "value": "記住閱讀位置"
     },
     {
       "name": "base64_decode",
-      "value": "Base64 decode"
+      "value": "Base64 解碼"
     },
     {
       "name": "base64_subtitle",
-      "value": "Default to tap-to-view to avoid directly exposing email, WeChat, or other plaintext."
+      "value": "預設點選查看，避免直接暴露信箱、微信等明文"
     },
     {
       "name": "threaded",
-      "value": "Threaded"
+      "value": "樓中樓"
     },
     {
       "name": "threaded_at",
-      "value": "Threaded (@)"
+      "value": "樓中樓(@)"
     },
     {
       "name": "threaded_redundant",
-      "value": "Redundant threaded"
+      "value": "冗餘樓中樓"
     },
     {
       "name": "op_only",
-      "value": "Original poster only"
+      "value": "只看樓主"
     },
     {
       "name": "original",
-      "value": "Original"
+      "value": "原版"
     },
     {
       "name": "density_standard",
-      "value": "Standard"
+      "value": "標準"
     },
     {
       "name": "density_compact",
-      "value": "Compact"
+      "value": "緊湊"
     },
     {
       "name": "smart_grip",
-      "value": "Smart grip"
+      "value": "智慧握姿"
     },
     {
       "name": "follow_operation",
-      "value": "Follow operation"
+      "value": "跟隨操作"
     },
     {
       "name": "fixed_left",
-      "value": "Fixed left"
+      "value": "固定左側"
     },
     {
       "name": "fixed_right",
-      "value": "Fixed right"
+      "value": "固定右側"
     },
     {
       "name": "tap_to_view",
-      "value": "Tap to view"
+      "value": "點選查看"
     },
     {
       "name": "inline_display",
-      "value": "Inline display"
+      "value": "文內顯示"
     },
     {
       "name": "reading_preview_title",
-      "value": "A topic about Next2V"
+      "value": "一篇關於 Next2V 的主題"
     },
     {
       "name": "reading_preview_intro",
-      "value": "This is the live preview area for reading text scaling. Drag the slider below to scale body text, headings, lists, quotes, and code together, approximating the reading feel in actual topic details."
+      "value": "這是閱讀文字縮放設定的即時預覽區域。拖曳下方滑桿後，本文、標題、列表、引用和程式碼會依同一比例縮放，用來接近實際主題詳情中的閱讀感受。"
     },
     {
       "name": "reading_preview_body",
-      "value": "V2EX discussions usually contain short sentences, links, quotes, and code snippets. The preview stays on the page background to avoid extra cards affecting typography judgment."
+      "value": "V2EX 的討論通常包含短句、連結、引用和程式碼片段。預覽維持在頁面背景上，避免額外卡片影響對文字排版的判斷。"
     },
     {
       "name": "reading_preview_quote",
-      "value": "> If a setting lets you finish the paragraph without pausing, it is probably the right one."
+      "value": "> 如果一種設定能讓你不用停頓就讀完整段內容，它大概就是合適的。"
     },
     {
       "name": "text_scale",
-      "value": "Text scale"
+      "value": "文字縮放"
     },
     {
       "name": "restore_default",
-      "value": "Restore default"
+      "value": "恢復預設"
     },
     {
       "name": "restore_reading_scale_title",
-      "value": "Restore default reading text scale"
+      "value": "恢復預設閱讀文字縮放設定"
     },
     {
       "name": "restore_reading_scale_message",
-      "value": "Restore text scale to the default value. Continue?"
+      "value": "將文字縮放恢復為預設值。確定繼續嗎？"
     },
     {
       "name": "clear_cache",
-      "value": "Clear cache"
+      "value": "清理快取"
     },
     {
       "name": "clear_cache_message",
-      "value": "Only offline cache will be cleared. Login state and preferences will be kept. Continue?"
+      "value": "只會清理離線快取，不會清理登入狀態或偏好設定。確定繼續嗎？"
     },
     {
       "name": "clear_local_data",
-      "value": "Clear local data"
+      "value": "清理本機資料"
     },
     {
       "name": "clear_local_data_message",
-      "value": "This clears locally saved read later items, followed nodes, recently viewed items, read state, drafts, search history, notification cache, and offline cache. Login state and preferences are kept. Continue?"
+      "value": "將清理本機儲存的稍後讀、關注節點、最近瀏覽、已讀狀態、草稿、搜尋歷史、通知快取和離線快取。登入狀態與偏好設定會保留。確定繼續嗎？"
     },
     {
       "name": "read_cache_status_failed",
-      "value": "Failed to read cache status"
+      "value": "讀取快取狀態失敗"
     },
     {
       "name": "clear_failed",
-      "value": "Clear failed"
+      "value": "清理失敗"
     },
     {
       "name": "debug_only",
-      "value": "Debug builds only"
+      "value": "僅 debug 建置可用"
     },
     {
       "name": "seed_failed",
-      "value": "Seed failed"
+      "value": "Seed 失敗"
     },
     {
       "name": "offline_cache",
-      "value": "Offline cache"
+      "value": "離線快取"
     },
     {
       "name": "cache_qa_seed",
-      "value": "Cache QA Seed"
+      "value": "快取 QA Seed"
     },
     {
       "name": "refresh_cache_status",
-      "value": "Refresh cache status"
+      "value": "重新整理快取狀態"
     },
     {
       "name": "diagnostics",
-      "value": "Diagnostics"
+      "value": "診斷"
     },
     {
       "name": "logs",
-      "value": "Logs"
+      "value": "記錄"
     },
     {
       "name": "log_file",
-      "value": "Log file"
+      "value": "記錄檔"
     },
     {
       "name": "no_local_log_files",
-      "value": "No local log files to share"
+      "value": "暫無可分享的本機記錄檔"
     },
     {
       "name": "retained_local_log_files_count",
-      "value": "Retained {count} local log files"
+      "value": "已保留 {count} 個本機記錄檔"
     },
     {
       "name": "clear_boot_records",
-      "value": "Clear this launch record"
+      "value": "清空本次啟動記錄"
     },
     {
       "name": "no_log_files",
-      "value": "No log files"
+      "value": "暫無記錄檔"
     },
     {
       "name": "reopen_keeps_logs",
-      "value": "Recent launch logs are kept after reopening the app"
+      "value": "重新開啟應用後會保留最近啟動記錄"
     },
     {
       "name": "no_diagnostics_logs",
-      "value": "No diagnostics logs"
+      "value": "暫無診斷記錄"
     },
     {
       "name": "boot_records_cleared",
-      "value": "This launch record has been cleared"
+      "value": "本次啟動記錄已清空"
     },
     {
       "name": "current_log",
-      "value": "Current log"
+      "value": "目前記錄"
     },
     {
       "name": "startup_log",
-      "value": "Startup log"
+      "value": "啟動記錄"
     },
     {
       "name": "unknown_time",
-      "value": "Unknown time"
+      "value": "時間未知"
     },
     {
       "name": "updated_at",
-      "value": "Updated {0}"
+      "value": "更新於 {0}"
     },
     {
       "name": "share_file_unavailable_copied",
-      "value": "Share file unavailable; copied for manual paste"
+      "value": "分享檔案不可用，已複製，可手動貼上"
     },
     {
       "name": "share_failed",
-      "value": "Share failed"
+      "value": "分享失敗"
     },
     {
       "name": "proxy_connection",
-      "value": "Proxy connection"
+      "value": "代理連線"
     },
     {
       "name": "use_proxy",
-      "value": "Use proxy"
+      "value": "使用代理"
     },
     {
       "name": "system_proxy",
-      "value": "System proxy"
+      "value": "系統代理"
     },
     {
       "name": "add_proxy",
-      "value": "Add proxy"
+      "value": "新增代理"
     },
     {
       "name": "testing_connection",
-      "value": "Testing connection…"
+      "value": "正在測試連線…"
     },
     {
       "name": "test_connection",
-      "value": "Test connection"
+      "value": "測試連線"
     },
     {
       "name": "proxy_info",
-      "value": "Proxy information"
+      "value": "代理資訊"
     },
     {
       "name": "proxy_type",
-      "value": "Proxy type"
+      "value": "代理類型"
     },
     {
       "name": "http_proxy",
-      "value": "HTTP proxy"
+      "value": "HTTP 代理"
     },
     {
       "name": "supports_auth",
-      "value": "Supports username/password authentication"
+      "value": "支援使用者名稱和密碼驗證"
     },
     {
       "name": "socks5_proxy",
-      "value": "SOCKS5 proxy"
+      "value": "SOCKS5 代理"
     },
     {
       "name": "auth_not_supported",
-      "value": "Authentication not supported"
+      "value": "不支援驗證"
     },
     {
       "name": "proxy_parameters",
-      "value": "Proxy parameters"
+      "value": "代理參數"
     },
     {
       "name": "authentication",
-      "value": "Authentication"
+      "value": "驗證"
     },
     {
       "name": "actions",
-      "value": "Actions"
+      "value": "操作"
     },
     {
       "name": "delete_proxy",
-      "value": "Delete proxy"
+      "value": "刪除代理"
     },
     {
       "name": "proxy_name_placeholder",
-      "value": "Name (optional)"
+      "value": "名稱（選填）"
     },
     {
       "name": "default_server_port",
-      "value": "Use server:port by default"
+      "value": "預設使用伺服器:連接埠"
     },
     {
       "name": "server",
-      "value": "Server"
+      "value": "伺服器"
     },
     {
       "name": "port",
-      "value": "Port"
+      "value": "連接埠"
     },
     {
       "name": "username_optional",
-      "value": "Username (optional)"
+      "value": "使用者名稱（選填）"
     },
     {
       "name": "password_optional",
-      "value": "Password (optional)"
+      "value": "密碼（選填）"
     },
     {
       "name": "bypass_list_optional",
-      "value": "Bypass list (optional)"
+      "value": "略過清單（選填）"
     },
     {
       "name": "one_domain_or_ip_per_line",
-      "value": "One domain or IP per line"
+      "value": "每行一個網域或 IP"
     },
     {
       "name": "current_connection",
-      "value": "Current connection"
+      "value": "目前連線"
     },
     {
       "name": "built_in_options",
-      "value": "Built-in options"
+      "value": "內建選項"
     },
     {
       "name": "proxy_config",
-      "value": "Proxy configuration"
+      "value": "代理設定"
     },
     {
       "name": "socks5_auth_unsupported",
-      "value": "SOCKS5 does not support username/password authentication yet"
+      "value": "SOCKS5 暫不支援使用者名稱/密碼驗證"
     },
     {
       "name": "testing",
-      "value": "Testing…"
+      "value": "測試中…"
     },
     {
       "name": "profile_switched",
-      "value": "Profile switched"
+      "value": "已切換設定"
     },
     {
       "name": "switch_failed",
-      "value": "Switch failed"
+      "value": "切換失敗"
     },
     {
       "name": "test_failed",
-      "value": "Test failed"
+      "value": "測試失敗"
     },
     {
       "name": "proxy_config_title",
-      "value": "Proxy configuration"
+      "value": "代理設定"
     },
     {
       "name": "proxy_not_configured",
-      "value": "Not configured"
+      "value": "未設定"
     },
     {
       "name": "local_data",
-      "value": "Local data"
+      "value": "本機資料"
     },
     {
       "name": "cache_subtitle_updated",
-      "value": "Lists {0} · Details {1} · Updated {2}"
+      "value": "清單 {0} 組 · 詳細 {1} 篇 · 更新於 {2}"
     },
     {
       "name": "cache_subtitle",
-      "value": "Lists {0} · Details {1}"
+      "value": "清單 {0} 組 · 詳細 {1} 篇"
     },
     {
       "name": "seed_all_cache_scenarios",
-      "value": "Seed all cache scenarios"
+      "value": "Seed 全部快取情境"
     },
     {
       "name": "seed_large_list_file_cache",
-      "value": "Seed large list file cache"
+      "value": "Seed 大型清單檔案快取"
     },
     {
       "name": "seed_mixed_row_cache",
-      "value": "Seed mixed row cache"
+      "value": "Seed 混合列快取"
     },
     {
       "name": "seed_invalid_path_row",
-      "value": "Seed invalid path row"
+      "value": "Seed 無效路徑列"
     },
     {
       "name": "seed_orphan_file",
-      "value": "Seed orphan file"
+      "value": "Seed 孤立檔案"
     },
     {
       "name": "seed_missing_file_row",
-      "value": "Seed missing file row"
+      "value": "Seed 遺失檔案列"
     },
     {
       "name": "seed_hash_mismatch_row",
-      "value": "Seed hash mismatch row"
+      "value": "Seed Hash 不相符列"
     },
     {
       "name": "verify_hash_repair",
-      "value": "Verify hash repair"
+      "value": "驗證 Hash 修復"
     },
     {
       "name": "seed_expired_row",
-      "value": "Seed expired row"
+      "value": "Seed 過期列"
     },
     {
       "name": "reset_seed_cache",
-      "value": "Reset seed cache"
+      "value": "重設 Seed 快取"
     },
     {
       "name": "visible_home_nodes_reorder_hint",
-      "value": "Shown columns · long-press to reorder"
+      "value": "已顯示欄位  長按欄位可拖曳排序"
     },
     {
       "name": "add_home_column",
-      "value": "Add column"
+      "value": "新增首頁欄位"
     },
     {
       "name": "hide",
-      "value": "Hide"
+      "value": "隱藏"
     },
     {
       "name": "node_name_placeholder",
-      "value": "Node name (e.g. create)"
+      "value": "節點名稱（例如 create）"
     },
     {
       "name": "add_node_column",
-      "value": "Add node column"
+      "value": "新增節點欄位"
     },
     {
       "name": "invalid_node_name",
-      "value": "Enter a valid node name"
+      "value": "請輸入有效的節點名稱"
     },
     {
       "name": "node_column_exists",
-      "value": "Node column already exists"
+      "value": "節點欄位已存在"
     },
     {
       "name": "web_session_expired_relogin",
-      "value": "Web session expired, please sign in again"
+      "value": "Web 工作階段已失效，請重新登入"
     },
     {
       "name": "web_session_validation_failed",
-      "value": "Web session validation failed"
+      "value": "Web 工作階段驗證失敗"
     },
     {
       "name": "two_factor_relogin_required",
-      "value": "V2EX requires two-factor verification. Please sign in again"
+      "value": "V2EX 需要完成兩步驟驗證，請重新登入"
     },
     {
       "name": "two_factor_required",
-      "value": "V2EX requires two-factor verification"
+      "value": "V2EX 需要完成兩步驟驗證"
     },
     {
       "name": "login_validation_failed",
-      "value": "Sign-in validation failed"
+      "value": "登入狀態驗證失敗"
     },
     {
       "name": "token_info_failed",
-      "value": "Failed to fetch token info"
+      "value": "Token 資訊取得失敗"
     },
     {
       "name": "clear_token_failed",
-      "value": "Failed to clear token"
+      "value": "清除 Token 失敗"
     },
     {
       "name": "clear_session_failed",
-      "value": "Failed to clear session"
+      "value": "清除工作階段失敗"
     },
     {
       "name": "clear_cookie_failed",
-      "value": "Failed to clear cookies"
+      "value": "清除 Cookie 失敗"
     },
     {
       "name": "read_account_failed",
-      "value": "Failed to read account info"
+      "value": "讀取帳號資訊失敗"
     },
     {
       "name": "already_checked_in_today",
-      "value": "Already checked in today"
+      "value": "今日已簽到"
     },
     {
       "name": "checkin_completed",
-      "value": "Check-in completed"
+      "value": "簽到完成"
     },
     {
       "name": "checkin_failed",
-      "value": "Check-in failed"
+      "value": "簽到失敗"
     }
   ]
 }

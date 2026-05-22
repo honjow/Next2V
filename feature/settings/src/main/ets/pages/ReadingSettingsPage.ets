@@ -1,5 +1,6 @@
 import { common } from '@kit.AbilityKit'
 import {
+  AppStrings,
   ReadingSettings,
   SecondaryListScaffold,
   StorageKeys,
@@ -67,15 +68,15 @@ export struct ReadingSettingsPage {
 
   private confirmResetReadingSettings(): void {
     this.getUIContext().showAlertDialog({
-      title: '恢复默认阅读文字缩放设置',
-      message: '将文字缩放恢复为默认值。确定继续吗？',
+      title: AppStrings.t(AppStrings.R_RESTORE_READING_SCALE_TITLE, 'Restore default reading text scale'),
+      message: AppStrings.t(AppStrings.R_RESTORE_READING_SCALE_MESSAGE, 'Restore text scale to the default value. Continue?'),
       primaryButton: {
-        value: '取消',
+        value: AppStrings.t(AppStrings.R_COMMON_CANCEL, 'Cancel'),
         action: () => {
         }
       },
       secondaryButton: {
-        value: '恢复',
+        value: AppStrings.t(AppStrings.R_COMMON_RESTORE, 'Restore'),
         fontColor: Color.Red,
         action: () => {
           this.resetReadingSettings()

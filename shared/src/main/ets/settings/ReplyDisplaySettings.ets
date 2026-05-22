@@ -1,6 +1,7 @@
 import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
 import { StorageKeys } from '../constants/StorageKeys'
+import { AppStrings } from '../i18n/AppStrings'
 import { SettingDescriptor, applyDescriptorValue, readDescriptorValue } from './SettingsDescriptor'
 import { STORE_NAME_SETTINGS, SettingsPreferencesStore } from './SettingsStorage'
 
@@ -78,17 +79,17 @@ export class ReplyDisplaySettings {
   static modeText(mode: string): string {
     const value = ReplyDisplaySettings.normalizeMode(mode)
     if (value === MODE_THREAD_WITH_MENTION) {
-      return '楼中楼(@)'
+      return AppStrings.t(AppStrings.R_THREADED_AT, 'Threaded (@)')
     }
     if (value === MODE_THREAD_REDUNDANT) {
-      return '冗余楼中楼'
+      return AppStrings.t(AppStrings.R_THREADED_REDUNDANT, 'Redundant threaded')
     }
     if (value === MODE_OP) {
-      return '只看楼主'
+      return AppStrings.t(AppStrings.R_OP_ONLY, 'Original poster only')
     }
     if (value === MODE_ORIGIN) {
-      return '原版'
+      return AppStrings.t(AppStrings.R_ORIGINAL, 'Original')
     }
-    return '楼中楼'
+    return AppStrings.t(AppStrings.R_THREADED, 'Threaded')
   }
 }

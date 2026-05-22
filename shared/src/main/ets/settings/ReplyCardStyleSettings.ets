@@ -1,6 +1,7 @@
 import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
 import { StorageKeys } from '../constants/StorageKeys'
+import { AppStrings } from '../i18n/AppStrings'
 import { SettingDescriptor, applyDescriptorValue, readDescriptorValue } from './SettingsDescriptor'
 import { STORE_NAME_SETTINGS, SettingsPreferencesStore } from './SettingsStorage'
 
@@ -71,8 +72,8 @@ export class ReplyCardStyleSettings {
 
   static styleText(style: string): string {
     if (ReplyCardStyleSettings.normalize(style) === STYLE_COMPACT) {
-      return '紧凑'
+      return AppStrings.t(AppStrings.R_DENSITY_COMPACT, 'Compact')
     }
-    return '标准'
+    return AppStrings.t(AppStrings.R_DENSITY_STANDARD, 'Standard')
   }
 }

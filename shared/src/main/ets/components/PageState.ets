@@ -1,3 +1,4 @@
+import { AppStrings } from '../i18n/AppStrings'
 import { ThemeConstants } from '../theme/ThemeConstants'
 
 @Component
@@ -20,8 +21,8 @@ export struct PageLoadingState {
 
 @Component
 export struct PageErrorState {
-  @Prop message: string = '加载失败'
-  @Prop retryLabel: string = '重试'
+  @Prop message: string = AppStrings.t(AppStrings.R_COMMON_LOAD_FAILED, 'Load failed')
+  @Prop retryLabel: string = AppStrings.t(AppStrings.R_COMMON_RETRY, 'Retry')
   @Prop secondaryLabel: string = ''
   @Prop expand: boolean = true
   retryAction?: () => void
@@ -29,7 +30,7 @@ export struct PageErrorState {
 
   build() {
     Column({ space: ThemeConstants.SPACE_SM }) {
-      Text(this.message || '加载失败')
+      Text(this.message || AppStrings.t(AppStrings.R_COMMON_LOAD_FAILED, 'Load failed'))
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
         .fontColor($r('sys.color.font_secondary'))
         .textAlign(TextAlign.Center)
@@ -63,8 +64,8 @@ export struct PageErrorState {
 
 @Component
 export struct PageLoginRequiredState {
-  @Prop message: string = '登录后可继续'
-  @Prop actionLabel: string = '去登录'
+  @Prop message: string = AppStrings.t(AppStrings.R_LOGIN_REQUIRED_CONTINUE, 'Log in to continue')
+  @Prop actionLabel: string = AppStrings.t(AppStrings.R_LOGIN_ACTION, 'Log in')
   @Prop expand: boolean = true
   action?: () => void
 

@@ -1,5 +1,6 @@
 import { common } from '@kit.AbilityKit'
 import {
+  AppStrings,
   CacheSettings,
   ConciseListRow,
   GroupedListSection,
@@ -64,24 +65,24 @@ export struct SettingsPage {
     Column() {
       SecondaryListScaffold() {
         ListItem() {
-          this.SectionHeader('账号')
+          this.SectionHeader(AppStrings.t(AppStrings.R_ACCOUNT_SECTION, 'Account'))
         }
         ListItem() {
           this.AccountSection()
         }
         ListItem() {
-          this.SectionHeader('阅读')
+          this.SectionHeader(AppStrings.t(AppStrings.R_SETTINGS_READING, 'Reading'))
         }
         ListItem() {
           this.ReadingSection()
         }
         ListItem() {
-          this.SectionHeader('首页')
+          this.SectionHeader(AppStrings.t(AppStrings.R_SETTINGS_HOME, 'Home'))
         }
         ListItem() {
           GroupedListSection() {
             ConciseListRow({
-              title: '首页栏目设置',
+              title: AppStrings.t(AppStrings.R_NAV_HOME_NODES, 'Home tab settings'),
               action: () => {
                 this.stack.pushPathByName('HomeNodeSettings', null)
               },
@@ -89,19 +90,19 @@ export struct SettingsPage {
           }
         }
         ListItem() {
-          this.SectionHeader('内容与媒体')
+          this.SectionHeader(AppStrings.t(AppStrings.R_SETTINGS_CONTENT_MEDIA, 'Content and media'))
         }
         ListItem() {
           this.MediaSection()
         }
         ListItem() {
-          this.SectionHeader('存储')
+          this.SectionHeader(AppStrings.t(AppStrings.R_NAV_STORAGE, 'Storage'))
         }
         ListItem() {
           this.CacheSection()
         }
         ListItem() {
-          this.SectionHeader('高级')
+          this.SectionHeader(AppStrings.t(AppStrings.R_SETTINGS_ADVANCED, 'Advanced'))
         }
         ListItem() {
           this.DiagnosticsSection()
@@ -133,13 +134,13 @@ export struct SettingsPage {
   AccountSection() {
     GroupedListSection() {
       ConciseListRow({
-        title: '账号管理',
+        title: AppStrings.t(AppStrings.R_ACCOUNT_MANAGEMENT, 'Account management'),
         action: () => {
           this.stack.pushPathByName('Account', null)
         },
       })
       this.SettingsDivider()
-      this.TogglePreferenceRow('自动签到', this.autoDailyCheckinEnabled, (value: boolean) => {
+      this.TogglePreferenceRow(AppStrings.t(AppStrings.R_AUTO_CHECKIN, 'Auto check-in'), this.autoDailyCheckinEnabled, (value: boolean) => {
         this.updateAutoDailyCheckin(value)
       })
     }
@@ -155,7 +156,7 @@ export struct SettingsPage {
   @Builder
   MediaSection() {
     GroupedListSection() {
-      this.TogglePreferenceRow('图片自动加载', this.autoLoadImages, (value: boolean) => {
+      this.TogglePreferenceRow(AppStrings.t(AppStrings.R_IMAGE_AUTO_LOAD, 'Auto-load images'), this.autoLoadImages, (value: boolean) => {
         this.updateAutoLoadImages(value)
       })
 
@@ -163,7 +164,7 @@ export struct SettingsPage {
 
       if (this.autoLoadImages) {
         this.TogglePreferenceRow(
-          '仅 Wi-Fi 加载图片',
+          AppStrings.t(AppStrings.R_WIFI_ONLY_IMAGES, 'Load images on Wi-Fi only'),
           this.onlyLoadImagesOnWifi,
           (value: boolean) => {
             this.updateOnlyLoadImagesOnWifi(value)
@@ -179,7 +180,7 @@ export struct SettingsPage {
   DiagnosticsSection() {
     GroupedListSection() {
       ConciseListRow({
-        title: '诊断日志',
+        title: AppStrings.t(AppStrings.R_NAV_DIAGNOSTICS, 'Diagnostics log'),
         action: () => {
           this.stack.pushPathByName('DiagnosticsLog', null)
         },
@@ -191,7 +192,7 @@ export struct SettingsPage {
   ApiDomainAdvancedSection() {
     GroupedListSection() {
       SettingsDropdownRow({
-        title: 'API 域名',
+        title: AppStrings.t(AppStrings.R_API_DOMAIN, 'API domain'),
         trailingText: SettingsPageCoordinator.apiDomainLabel(this.useCoDomain),
         openAction: () => {
           this.showApiDomainMenu()
@@ -211,7 +212,7 @@ export struct SettingsPage {
   NetworkAdvancedSection() {
     GroupedListSection() {
       ConciseListRow({
-        title: '网络代理',
+        title: AppStrings.t(AppStrings.R_NAV_NETWORK_PROXY, 'Network proxy'),
         trailingText: NetworkProxySettings.summary({
           mode: NetworkProxySettings.normalizeMode(this.networkProxyMode),
           host: this.networkProxyHost,
@@ -245,7 +246,7 @@ export struct SettingsPage {
   @Builder
   DisabledWifiImagePreferenceRow() {
     SettingsToggleRow({
-      title: '仅 Wi-Fi 加载图片',
+      title: AppStrings.t(AppStrings.R_WIFI_ONLY_IMAGES, 'Load images on Wi-Fi only'),
       checked: this.onlyLoadImagesOnWifi,
       isEnabled: false,
       changeAction: (_value: boolean) => {},
@@ -256,7 +257,7 @@ export struct SettingsPage {
   ReadingPreferenceRows() {
     Column() {
       SettingsDropdownRow({
-        title: '主题',
+        title: AppStrings.t(AppStrings.R_THEME, 'Theme'),
         trailingText: ThemeSettings.modeText(this.themeMode),
         openAction: () => {
           this.showThemeMenu()
@@ -271,7 +272,7 @@ export struct SettingsPage {
 
       this.SettingsDivider()
       SettingsDropdownRow({
-        title: '回复显示',
+        title: AppStrings.t(AppStrings.R_REPLY_DISPLAY, 'Reply display'),
         trailingText: ReplyDisplaySettings.modeText(this.replyDisplayMode),
         openAction: () => {
           this.showReplyDisplayMenu()
@@ -286,7 +287,7 @@ export struct SettingsPage {
 
       this.SettingsDivider()
       SettingsDropdownRow({
-        title: '回复样式',
+        title: AppStrings.t(AppStrings.R_REPLY_STYLE, 'Reply style'),
         trailingText: ReplyCardStyleSettings.styleText(this.replyCardStyle),
         openAction: () => {
           this.showReplyCardStyleMenu()
@@ -301,7 +302,7 @@ export struct SettingsPage {
 
       this.SettingsDivider()
       SettingsDropdownRow({
-        title: '回复按钮对齐方式',
+        title: AppStrings.t(AppStrings.R_REPLY_ACTION_ALIGNMENT, 'Reply button alignment'),
         trailingText: ReplyActionAlignmentSettings.modeText(
           this.replyActionAlignmentMode,
           this.motionHoldingHandSupported,
@@ -319,14 +320,14 @@ export struct SettingsPage {
 
       this.SettingsDivider()
 
-      this.TogglePreferenceRow('记住阅读位置', this.readingRestorePosition, (value: boolean) => {
+      this.TogglePreferenceRow(AppStrings.t(AppStrings.R_REMEMBER_READ_POSITION, 'Remember reading position'), this.readingRestorePosition, (value: boolean) => {
         this.updateRestorePosition(value)
       })
 
       this.SettingsDivider()
       SettingsDropdownRow({
-        title: 'Base64 解码',
-        subtitle: '默认点击查看，避免直接暴露邮箱/微信等明文',
+        title: AppStrings.t(AppStrings.R_BASE64_DECODE, 'Base64 decode'),
+        subtitle: AppStrings.t(AppStrings.R_BASE64_SUBTITLE, 'Default to tap-to-view to avoid directly exposing email, WeChat, or other plaintext.'),
         trailingText: this.base64DecodeModeLabel(),
         openAction: () => {
           this.showBase64ModeMenu()
@@ -341,7 +342,7 @@ export struct SettingsPage {
 
       this.SettingsDivider()
       ConciseListRow({
-        title: '阅读字体设置',
+        title: AppStrings.t(AppStrings.R_NAV_READING, 'Reading font settings'),
         action: () => {
           this.stack.pushPathByName('ReadingSettings', null)
         },
@@ -522,7 +523,7 @@ export struct SettingsPage {
   CacheSection() {
     GroupedListSection() {
       ConciseListRow({
-        title: '存储',
+        title: AppStrings.t(AppStrings.R_NAV_STORAGE, 'Storage'),
         subtitle: StorageSettingsCoordinator.cacheSubtitle(this.cacheStats),
         count: this.cacheStats.topicListCount + this.cacheStats.topicDetailCount,
         action: () => {

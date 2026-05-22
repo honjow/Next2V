@@ -1,6 +1,7 @@
 import { common } from '@kit.AbilityKit'
 import type { CacheDeviceQaSeedResult, CacheStats } from 'shared'
 import {
+  AppStrings,
   CacheDeviceQaSeed,
   CacheSettings,
   ConciseListRow,
@@ -33,7 +34,7 @@ export struct StorageSettingsPage {
     Column() {
       SecondaryListScaffold() {
         ListItem() {
-          SettingsSectionHeader({ title: '离线缓存' })
+          SettingsSectionHeader({ title: AppStrings.t(AppStrings.R_OFFLINE_CACHE, 'Offline cache') })
         }
 
         ListItem() {
@@ -42,7 +43,7 @@ export struct StorageSettingsPage {
 
         if (BuildProfile.DEBUG && CacheDeviceQaSeed.isEnabled()) {
           ListItem() {
-            SettingsSectionHeader({ title: '缓存 QA Seed' })
+            SettingsSectionHeader({ title: AppStrings.t(AppStrings.R_CACHE_QA_SEED, 'Cache QA Seed') })
           }
 
           ListItem() {
@@ -51,7 +52,7 @@ export struct StorageSettingsPage {
         }
 
         ListItem() {
-          SettingsSectionHeader({ title: '本地数据' })
+          SettingsSectionHeader({ title: AppStrings.t(AppStrings.R_LOCAL_DATA, 'Local data') })
         }
 
         ListItem() {
@@ -68,7 +69,7 @@ export struct StorageSettingsPage {
   CacheSection() {
     GroupedListSection() {
       ConciseListRow({
-        title: '离线缓存',
+        title: AppStrings.t(AppStrings.R_OFFLINE_CACHE, 'Offline cache'),
         subtitle: StorageSettingsCoordinator.cacheSubtitle(this.cacheStats),
         showChevron: false
       })
@@ -76,7 +77,7 @@ export struct StorageSettingsPage {
       SettingsDivider()
 
       ConciseListRow({
-        title: '刷新缓存状态',
+        title: AppStrings.t(AppStrings.R_REFRESH_CACHE_STATUS, 'Refresh cache status'),
         showChevron: false,
         action: () => {
           this.loadCacheStats()
@@ -86,7 +87,7 @@ export struct StorageSettingsPage {
       SettingsDivider()
 
       ConciseListRow({
-        title: '清理缓存',
+        title: AppStrings.t(AppStrings.R_CLEAR_CACHE, 'Clear cache'),
         subtitle: this.cacheMessage,
         destructive: true,
         showChevron: false,
@@ -101,7 +102,7 @@ export struct StorageSettingsPage {
   LocalDataSection() {
     GroupedListSection() {
       ConciseListRow({
-        title: '清理本地数据',
+        title: AppStrings.t(AppStrings.R_CLEAR_LOCAL_DATA, 'Clear local data'),
         subtitle: this.localDataMessage,
         destructive: true,
         showChevron: false,
@@ -116,7 +117,7 @@ export struct StorageSettingsPage {
   CacheQaSeedSection() {
     GroupedListSection() {
       ConciseListRow({
-        title: 'Seed 全部缓存场景',
+        title: AppStrings.t(AppStrings.R_SEED_ALL_CACHE_SCENARIOS, 'Seed all cache scenarios'),
         subtitle: this.seedMessage,
         showChevron: false,
         action: () => {
@@ -127,7 +128,7 @@ export struct StorageSettingsPage {
       SettingsDivider()
 
       ConciseListRow({
-        title: 'Seed 大列表文件缓存',
+        title: AppStrings.t(AppStrings.R_SEED_LARGE_LIST_FILE_CACHE, 'Seed large list file cache'),
         showChevron: false,
         action: () => {
           this.runSeedAction('large', () => CacheDeviceQaSeed.seedLargeFileBackedList(this.hostContext()))
@@ -137,7 +138,7 @@ export struct StorageSettingsPage {
       SettingsDivider()
 
       ConciseListRow({
-        title: 'Seed 混合行缓存',
+        title: AppStrings.t(AppStrings.R_SEED_MIXED_ROW_CACHE, 'Seed mixed row cache'),
         showChevron: false,
         action: () => {
           this.runSeedAction('mixed', () => CacheDeviceQaSeed.seedMixedInlineFile(this.hostContext()))
@@ -147,7 +148,7 @@ export struct StorageSettingsPage {
       SettingsDivider()
 
       ConciseListRow({
-        title: 'Seed 非法路径行',
+        title: AppStrings.t(AppStrings.R_SEED_INVALID_PATH_ROW, 'Seed invalid path row'),
         showChevron: false,
         action: () => {
           this.runSeedAction('invalid', () => CacheDeviceQaSeed.seedInvalidPathRow(this.hostContext()))
@@ -157,7 +158,7 @@ export struct StorageSettingsPage {
       SettingsDivider()
 
       ConciseListRow({
-        title: 'Seed 孤立文件',
+        title: AppStrings.t(AppStrings.R_SEED_ORPHAN_FILE, 'Seed orphan file'),
         showChevron: false,
         action: () => {
           this.runSeedAction('orphan', () => CacheDeviceQaSeed.seedOrphanPayloadFile(this.hostContext()))
@@ -167,7 +168,7 @@ export struct StorageSettingsPage {
       SettingsDivider()
 
       ConciseListRow({
-        title: 'Seed 缺失文件行',
+        title: AppStrings.t(AppStrings.R_SEED_MISSING_FILE_ROW, 'Seed missing file row'),
         showChevron: false,
         action: () => {
           this.runSeedAction('missing', () => CacheDeviceQaSeed.seedMissingFileRow(this.hostContext()))
@@ -177,7 +178,7 @@ export struct StorageSettingsPage {
       SettingsDivider()
 
       ConciseListRow({
-        title: 'Seed Hash 不匹配行',
+        title: AppStrings.t(AppStrings.R_SEED_HASH_MISMATCH_ROW, 'Seed hash mismatch row'),
         showChevron: false,
         action: () => {
           this.runSeedAction('hash', () => CacheDeviceQaSeed.seedHashMismatchRow(this.hostContext()))
@@ -187,7 +188,7 @@ export struct StorageSettingsPage {
       SettingsDivider()
 
       ConciseListRow({
-        title: '验证 Hash 修复',
+        title: AppStrings.t(AppStrings.R_VERIFY_HASH_REPAIR, 'Verify hash repair'),
         showChevron: false,
         action: () => {
           this.runSeedAction('hash-read', () => CacheDeviceQaSeed.validateHashMismatchRepair(this.hostContext()))
@@ -197,7 +198,7 @@ export struct StorageSettingsPage {
       SettingsDivider()
 
       ConciseListRow({
-        title: 'Seed 过期行',
+        title: AppStrings.t(AppStrings.R_SEED_EXPIRED_ROW, 'Seed expired row'),
         showChevron: false,
         action: () => {
           this.runSeedAction('expired', () => CacheDeviceQaSeed.seedExpiredRow(this.hostContext()))
@@ -207,7 +208,7 @@ export struct StorageSettingsPage {
       SettingsDivider()
 
       ConciseListRow({
-        title: '重置 Seed 缓存',
+        title: AppStrings.t(AppStrings.R_RESET_SEED_CACHE, 'Reset seed cache'),
         destructive: true,
         showChevron: false,
         action: () => {

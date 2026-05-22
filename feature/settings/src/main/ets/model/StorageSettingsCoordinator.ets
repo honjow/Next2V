@@ -1,3 +1,4 @@
+import { AppStrings } from 'shared'
 import type {
   CacheDeviceQaSeedResult,
   CacheStats,
@@ -13,45 +14,52 @@ export interface StorageConfirmDialogCopy {
 
 export class StorageSettingsCoordinator {
   static cacheSubtitle(stats: CacheStats): string {
-    let text = `列表 ${stats.topicListCount} 组 · 详情 ${stats.topicDetailCount} 篇`
+    const listCount = `${stats.topicListCount}`
+    const detailCount = `${stats.topicDetailCount}`
     if (stats.updatedAt > 0) {
-      text += ` · 更新于 ${DateUtils.toDateString(stats.updatedAt)}`
+      return AppStrings.format(
+        AppStrings.t(AppStrings.R_CACHE_SUBTITLE_UPDATED, 'Lists {0} · Details {1} · Updated {2}'),
+        [listCount, detailCount, DateUtils.toDateString(stats.updatedAt)]
+      )
     }
-    return text
+    return AppStrings.format(
+      AppStrings.t(AppStrings.R_CACHE_SUBTITLE, 'Lists {0} · Details {1}'),
+      [listCount, detailCount]
+    )
   }
 
   static clearCacheDialogCopy(): StorageConfirmDialogCopy {
     return {
-      title: '清理缓存',
-      message: '将只清理离线缓存，不会清理登录状态或偏好设置。确定继续吗？',
-      cancelValue: '取消',
-      confirmValue: '清理',
+      title: AppStrings.t(AppStrings.R_CLEAR_CACHE, 'Clear cache'),
+      message: AppStrings.t(AppStrings.R_CLEAR_CACHE_MESSAGE, 'Only offline cache will be cleared. Login state and preferences will be kept. Continue?'),
+      cancelValue: AppStrings.t(AppStrings.R_COMMON_CANCEL, 'Cancel'),
+      confirmValue: AppStrings.t(AppStrings.R_COMMON_CLEAR, 'Clear'),
     }
   }
 
   static clearLocalDataDialogCopy(): StorageConfirmDialogCopy {
     return {
-      title: '清理本地数据',
-      message: '将清理本机保存的稍后读、关注节点、最近浏览、已读状态、草稿、搜索历史、通知缓存和离线缓存。登录状态与偏好设置会保留。确定继续吗？',
-      cancelValue: '取消',
-      confirmValue: '清理',
+      title: AppStrings.t(AppStrings.R_CLEAR_LOCAL_DATA, 'Clear local data'),
+      message: AppStrings.t(AppStrings.R_CLEAR_LOCAL_DATA_MESSAGE, 'This clears locally saved read later items, followed nodes, recently viewed items, read state, drafts, search history, notification cache, and offline cache. Login state and preferences are kept. Continue?'),
+      cancelValue: AppStrings.t(AppStrings.R_COMMON_CANCEL, 'Cancel'),
+      confirmValue: AppStrings.t(AppStrings.R_COMMON_CLEAR, 'Clear'),
     }
   }
 
   static clearSuccessMessage(): string {
-    return '已清理'
+    return AppStrings.t(AppStrings.R_COMMON_CLEARED, 'Cleared')
   }
 
   static readCacheErrorMessage(error: Error): string {
-    return error.message || '读取缓存状态失败'
+    return error.message || AppStrings.t(AppStrings.R_READ_CACHE_STATUS_FAILED, 'Failed to read cache status')
   }
 
   static clearErrorMessage(error: Error): string {
-    return error.message || '清理失败'
+    return error.message || AppStrings.t(AppStrings.R_CLEAR_FAILED, 'Clear failed')
   }
 
   static seedUnavailableMessage(): string {
-    return '仅 debug 构建可用'
+    return AppStrings.t(AppStrings.R_DEBUG_ONLY, 'Debug builds only')
   }
 
   static seedAllSuccessMessage(results: CacheDeviceQaSeedResult[]): string {
@@ -65,6 +73,6 @@ export class StorageSettingsCoordinator {
   }
 
   static seedErrorMessage(error: Error): string {
-    return error.message || 'Seed 失败'
+    return error.message || AppStrings.t(AppStrings.R_SEED_FAILED, 'Seed failed')
   }
 }

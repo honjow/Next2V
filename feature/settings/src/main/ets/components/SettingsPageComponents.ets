@@ -1,4 +1,5 @@
 import {
+  AppStrings,
   ConciseListRow,
   GroupedListSection,
   ListDivider as SharedListDivider,
@@ -99,26 +100,26 @@ export struct ReadingPreviewPanel {
     Column() {
       Scroll() {
         Column({ space: ThemeConstants.SPACE_MD }) {
-          Text('一条关于 Next2V 的主题')
+          Text(AppStrings.t(AppStrings.R_READING_PREVIEW_TITLE, 'A topic about Next2V'))
             .fontSize(this.scaledToken(18))
             .fontWeight(FontWeight.Medium)
             .fontColor($r('sys.color.font_primary'))
             .lineHeight(this.scaledToken(24))
             .width('100%')
 
-          Text('这是阅读文字缩放设置的实时预览区域。拖动下面的滑块后，正文、标题、列表、引用和代码会按同一比例缩放，用来接近实际主题详情中的阅读感受。')
+          Text(AppStrings.t(AppStrings.R_READING_PREVIEW_INTRO, 'This is the live preview area for reading text scaling. Drag the slider below to scale body text, headings, lists, quotes, and code together, approximating the reading feel in actual topic details.'))
             .fontSize(this.bodyFontSize())
             .fontColor($r('sys.color.font_primary'))
             .lineHeight(this.bodyLineHeight())
             .width('100%')
 
-          Text('V2EX 的讨论通常包含短句、链接、引用和代码片段。预览保持在页面背景上，避免额外卡片影响对文字排版的判断。')
+          Text(AppStrings.t(AppStrings.R_READING_PREVIEW_BODY, 'V2EX discussions usually contain short sentences, links, quotes, and code snippets. The preview stays on the page background to avoid extra cards affecting typography judgment.'))
             .fontSize(this.bodyFontSize())
             .fontColor($r('sys.color.font_primary'))
             .lineHeight(this.bodyLineHeight())
             .width('100%')
 
-          Text('> 如果一种设置能让你不用停顿就读完整段内容，它大概就是合适的。')
+          Text(AppStrings.t(AppStrings.R_READING_PREVIEW_QUOTE, '> If a setting lets you finish the paragraph without pausing, it is probably the right one.'))
             .fontSize(this.scaledToken(13))
             .fontColor($r('sys.color.font_secondary'))
             .lineHeight(this.bodyLineHeight())
@@ -175,7 +176,7 @@ export struct ReadingScaleControlSection {
       Column() {
         Column({ space: ThemeConstants.SPACE_SM }) {
           Row() {
-            Text('文字缩放')
+            Text(AppStrings.t(AppStrings.R_TEXT_SCALE, 'Text scale'))
               .fontSize(ThemeConstants.FONT_SIZE_LIST_ITEM)
               .fontColor($r('sys.color.font_primary'))
               .maxLines(1)
@@ -210,7 +211,7 @@ export struct ReadingScaleControlSection {
         })
 
         ConciseListRow({
-          title: '恢复默认',
+          title: AppStrings.t(AppStrings.R_RESTORE_DEFAULT, 'Restore default'),
           destructive: true,
           showChevron: false,
           action: () => {

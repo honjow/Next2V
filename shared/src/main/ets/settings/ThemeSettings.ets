@@ -1,6 +1,7 @@
 import { common, ConfigurationConstant } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
 import { StorageKeys } from '../constants/StorageKeys'
+import { AppStrings } from '../i18n/AppStrings'
 import { STORE_NAME_SETTINGS, SettingsPreferencesStore, setAppStorageValue } from './SettingsStorage'
 
 const STORE_NAME: string = STORE_NAME_SETTINGS
@@ -72,12 +73,12 @@ export class ThemeSettings {
   static modeText(mode: string): string {
     const normalizedMode = ThemeSettings.normalizeMode(mode)
     if (normalizedMode === THEME_MODE_LIGHT) {
-      return '浅色'
+      return AppStrings.t(AppStrings.R_COMMON_LIGHT, 'Light')
     }
     if (normalizedMode === THEME_MODE_DARK) {
-      return '深色'
+      return AppStrings.t(AppStrings.R_COMMON_DARK, 'Dark')
     }
-    return '自动'
+    return AppStrings.t(AppStrings.R_COMMON_AUTO, 'Automatic')
   }
 
   private static effectiveDarkForMode(

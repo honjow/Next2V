@@ -6,15 +6,15 @@
     },
     {
       "name": "entry_desc",
-      "value": "Next2V - V2EX client"
+      "value": "Next2V - V2EX 客户端"
     },
     {
       "name": "module_desc",
-      "value": "Next2V entry module"
+      "value": "Next2V 入口模块"
     },
     {
       "name": "EntryAbility_desc",
-      "value": "Next2V main ability"
+      "value": "Next2V 主 Ability"
     },
     {
       "name": "EntryAbility_label",
@@ -22,827 +22,827 @@
     },
     {
       "name": "tab_home",
-      "value": "Home"
+      "value": "首页"
     },
     {
       "name": "tab_discover",
-      "value": "Discover"
+      "value": "发现"
     },
     {
       "name": "tab_notifications",
-      "value": "Notifications"
+      "value": "通知"
     },
     {
       "name": "tab_me",
-      "value": "Me"
+      "value": "我的"
     },
     {
       "name": "nav_reply",
-      "value": "Reply"
+      "value": "回复"
     },
     {
       "name": "nav_web_login",
-      "value": "Web login"
+      "value": "网页登录"
     },
     {
       "name": "nav_native_login",
-      "value": "Password login"
+      "value": "账号密码登录"
     },
     {
       "name": "nav_node_picker",
-      "value": "Select node"
+      "value": "选择节点"
     },
     {
       "name": "nav_search",
-      "value": "Search"
+      "value": "搜索"
     },
     {
       "name": "nav_topic_draft",
-      "value": "Topic draft"
+      "value": "发帖草稿"
     },
     {
       "name": "nav_saved_topics",
-      "value": "Favorite topics"
+      "value": "收藏主题"
     },
     {
       "name": "nav_saved_nodes",
-      "value": "Favorite nodes"
+      "value": "收藏节点"
     },
     {
       "name": "nav_blacklist",
-      "value": "Blocked and ignored"
+      "value": "屏蔽与忽略"
     },
     {
       "name": "nav_following",
-      "value": "Following"
+      "value": "关注用户"
     },
     {
       "name": "nav_settings",
-      "value": "Settings"
+      "value": "设置"
     },
     {
       "name": "nav_storage",
-      "value": "Storage"
+      "value": "存储"
     },
     {
       "name": "nav_diagnostics",
-      "value": "Diagnostics log"
+      "value": "诊断日志"
     },
     {
       "name": "nav_home_nodes",
-      "value": "Home tab settings"
+      "value": "首页栏目设置"
     },
     {
       "name": "nav_reading",
-      "value": "Reading font settings"
+      "value": "阅读字体设置"
     },
     {
       "name": "nav_network_proxy",
-      "value": "Network proxy"
+      "value": "网络代理"
     },
     {
       "name": "nav_account",
-      "value": "Account"
+      "value": "账号"
     },
     {
       "name": "nav_read_later",
-      "value": "Read later"
+      "value": "稍后读"
     },
     {
       "name": "nav_recently_viewed",
-      "value": "Recently viewed"
+      "value": "最近浏览"
     },
     {
       "name": "nav_local_nodes",
-      "value": "Local followed nodes"
+      "value": "本地关注节点"
     },
     {
       "name": "nav_about",
-      "value": "About"
+      "value": "关于"
     },
     {
       "name": "nav_all_topics",
-      "value": "All topics"
+      "value": "全部主题"
     },
     {
       "name": "nav_all_replies",
-      "value": "All replies"
+      "value": "全部回复"
     },
     {
       "name": "common_load_failed",
-      "value": "Load failed"
+      "value": "加载失败"
     },
     {
       "name": "common_retry",
-      "value": "Retry"
+      "value": "重试"
     },
     {
       "name": "common_cancel",
-      "value": "Cancel"
+      "value": "取消"
     },
     {
       "name": "common_clear",
-      "value": "Clear"
+      "value": "清除"
     },
     {
       "name": "common_delete",
-      "value": "Delete"
+      "value": "删除"
     },
     {
       "name": "common_save",
-      "value": "Save"
+      "value": "保存"
     },
     {
       "name": "common_restore",
-      "value": "Restore"
+      "value": "恢复"
     },
     {
       "name": "common_reset",
-      "value": "Reset"
+      "value": "重置"
     },
     {
       "name": "common_closed",
-      "value": "Off"
+      "value": "关闭"
     },
     {
       "name": "common_auto",
-      "value": "Automatic"
+      "value": "自动"
     },
     {
       "name": "common_light",
-      "value": "Light"
+      "value": "浅色"
     },
     {
       "name": "common_dark",
-      "value": "Dark"
+      "value": "深色"
     },
     {
       "name": "common_cleared",
-      "value": "Cleared"
+      "value": "已清理"
     },
     {
       "name": "common_saved",
-      "value": "Saved"
+      "value": "已保存"
     },
     {
       "name": "common_save_failed",
-      "value": "Save failed"
+      "value": "保存失败"
     },
     {
       "name": "common_deleted",
-      "value": "Deleted"
+      "value": "已删除"
     },
     {
       "name": "common_delete_failed",
-      "value": "Delete failed"
+      "value": "删除失败"
     },
     {
       "name": "common_open_failed",
-      "value": "Open failed"
+      "value": "打开失败"
     },
     {
       "name": "login_required_continue",
-      "value": "Log in to continue"
+      "value": "登录后可继续"
     },
     {
       "name": "login_action",
-      "value": "Log in"
+      "value": "去登录"
     },
     {
       "name": "account_section",
-      "value": "Account"
+      "value": "账号"
     },
     {
       "name": "account_content_section",
-      "value": "Account content"
+      "value": "账号内容"
     },
     {
       "name": "local_content_section",
-      "value": "Local content"
+      "value": "本地内容"
     },
     {
       "name": "more_section",
-      "value": "More"
+      "value": "更多"
     },
     {
       "name": "advanced_api_section",
-      "value": "Advanced API"
+      "value": "高级 API"
     },
     {
       "name": "not_logged_in",
-      "value": "Not logged in"
+      "value": "未登录"
     },
     {
       "name": "tap_to_login_v2ex",
-      "value": "Tap to log in to V2EX"
+      "value": "点击登录 V2EX"
     },
     {
       "name": "profile_home",
-      "value": "Profile"
+      "value": "个人主页"
     },
     {
       "name": "balance_details",
-      "value": "Balance details"
+      "value": "余额明细"
     },
     {
       "name": "web_account_settings",
-      "value": "Web account settings"
+      "value": "网页账号设置"
     },
     {
       "name": "logout",
-      "value": "Log out"
+      "value": "退出登录"
     },
     {
       "name": "api_token_subtitle",
-      "value": "Saved, used only for V2EX API v2 advanced features"
+      "value": "已保存，仅用于 V2EX API v2 高级能力"
     },
     {
       "name": "clear_api_auth",
-      "value": "Clear API authorization"
+      "value": "清除 API 授权"
     },
     {
       "name": "clear_api_auth_message",
-      "value": "Only clears the locally saved Personal Access Token. Web login stays signed in."
+      "value": "仅清除本地保存的 Personal Access Token，不会退出网页登录。"
     },
     {
       "name": "api_auth_configured",
-      "value": "API authorization configured"
+      "value": "API 授权已配置"
     },
     {
       "name": "balance_syncing",
-      "value": "Balance syncing"
+      "value": "虚拟币同步中"
     },
     {
       "name": "balance_unavailable",
-      "value": "Balance unavailable"
+      "value": "虚拟币信息不可用"
     },
     {
       "name": "daily_checkin",
-      "value": "Check in"
+      "value": "签到"
     },
     {
       "name": "daily_checking_in",
-      "value": "Checking in"
+      "value": "签到中"
     },
     {
       "name": "daily_checked_in",
-      "value": "Checked in"
+      "value": "已签到"
     },
     {
       "name": "about_next2v",
-      "value": "About Next2V"
+      "value": "关于 Next2V"
     },
     {
       "name": "login_to_view_blocked",
-      "value": "Log in to view blocked and ignored items"
+      "value": "登录后可查看屏蔽与忽略"
     },
     {
       "name": "blocked_users",
-      "value": "Blocked users"
+      "value": "屏蔽用户"
     },
     {
       "name": "no_blocked_users",
-      "value": "No blocked users"
+      "value": "暂无屏蔽用户"
     },
     {
       "name": "ignored_topics",
-      "value": "Ignored topics"
+      "value": "忽略主题"
     },
     {
       "name": "no_ignored_topics",
-      "value": "No ignored topics"
+      "value": "暂无忽略主题"
     },
     {
       "name": "login_to_view_following",
-      "value": "Log in to view followed users"
+      "value": "登录后可查看关注用户"
     },
     {
       "name": "no_following_users",
-      "value": "No followed users"
+      "value": "暂无关注用户"
     },
     {
       "name": "settings_reading",
-      "value": "Reading"
+      "value": "阅读"
     },
     {
       "name": "settings_home",
-      "value": "Home"
+      "value": "首页"
     },
     {
       "name": "settings_content_media",
-      "value": "Content and media"
+      "value": "内容与媒体"
     },
     {
       "name": "settings_advanced",
-      "value": "Advanced"
+      "value": "高级"
     },
     {
       "name": "account_management",
-      "value": "Account management"
+      "value": "账号管理"
     },
     {
       "name": "auto_checkin",
-      "value": "Auto check-in"
+      "value": "自动签到"
     },
     {
       "name": "image_auto_load",
-      "value": "Auto-load images"
+      "value": "图片自动加载"
     },
     {
       "name": "wifi_only_images",
-      "value": "Load images on Wi-Fi only"
+      "value": "仅 Wi-Fi 加载图片"
     },
     {
       "name": "api_domain",
-      "value": "API domain"
+      "value": "API 域名"
     },
     {
       "name": "theme",
-      "value": "Theme"
+      "value": "主题"
     },
     {
       "name": "reply_display",
-      "value": "Reply display"
+      "value": "回复显示"
     },
     {
       "name": "reply_style",
-      "value": "Reply style"
+      "value": "回复样式"
     },
     {
       "name": "reply_action_alignment",
-      "value": "Reply button alignment"
+      "value": "回复按钮对齐方式"
     },
     {
       "name": "remember_read_position",
-      "value": "Remember reading position"
+      "value": "记住阅读位置"
     },
     {
       "name": "base64_decode",
-      "value": "Base64 decode"
+      "value": "Base64 解码"
     },
     {
       "name": "base64_subtitle",
-      "value": "Default to tap-to-view to avoid directly exposing email, WeChat, or other plaintext."
+      "value": "默认点击查看，避免直接暴露邮箱/微信等明文"
     },
     {
       "name": "threaded",
-      "value": "Threaded"
+      "value": "楼中楼"
     },
     {
       "name": "threaded_at",
-      "value": "Threaded (@)"
+      "value": "楼中楼(@)"
     },
     {
       "name": "threaded_redundant",
-      "value": "Redundant threaded"
+      "value": "冗余楼中楼"
     },
     {
       "name": "op_only",
-      "value": "Original poster only"
+      "value": "只看楼主"
     },
     {
       "name": "original",
-      "value": "Original"
+      "value": "原版"
     },
     {
       "name": "density_standard",
-      "value": "Standard"
+      "value": "标准"
     },
     {
       "name": "density_compact",
-      "value": "Compact"
+      "value": "紧凑"
     },
     {
       "name": "smart_grip",
-      "value": "Smart grip"
+      "value": "智感握姿"
     },
     {
       "name": "follow_operation",
-      "value": "Follow operation"
+      "value": "跟随操作"
     },
     {
       "name": "fixed_left",
-      "value": "Fixed left"
+      "value": "固定左侧"
     },
     {
       "name": "fixed_right",
-      "value": "Fixed right"
+      "value": "固定右侧"
     },
     {
       "name": "tap_to_view",
-      "value": "Tap to view"
+      "value": "点击查看"
     },
     {
       "name": "inline_display",
-      "value": "Inline display"
+      "value": "文内显示"
     },
     {
       "name": "reading_preview_title",
-      "value": "A topic about Next2V"
+      "value": "一条关于 Next2V 的主题"
     },
     {
       "name": "reading_preview_intro",
-      "value": "This is the live preview area for reading text scaling. Drag the slider below to scale body text, headings, lists, quotes, and code together, approximating the reading feel in actual topic details."
+      "value": "这是阅读文字缩放设置的实时预览区域。拖动下面的滑块后，正文、标题、列表、引用和代码会按同一比例缩放，用来接近实际主题详情中的阅读感受。"
     },
     {
       "name": "reading_preview_body",
-      "value": "V2EX discussions usually contain short sentences, links, quotes, and code snippets. The preview stays on the page background to avoid extra cards affecting typography judgment."
+      "value": "V2EX 的讨论通常包含短句、链接、引用和代码片段。预览保持在页面背景上，避免额外卡片影响对文字排版的判断。"
     },
     {
       "name": "reading_preview_quote",
-      "value": "> If a setting lets you finish the paragraph without pausing, it is probably the right one."
+      "value": "> 如果一种设置能让你不用停顿就读完整段内容，它大概就是合适的。"
     },
     {
       "name": "text_scale",
-      "value": "Text scale"
+      "value": "文字缩放"
     },
     {
       "name": "restore_default",
-      "value": "Restore default"
+      "value": "恢复默认"
     },
     {
       "name": "restore_reading_scale_title",
-      "value": "Restore default reading text scale"
+      "value": "恢复默认阅读文字缩放设置"
     },
     {
       "name": "restore_reading_scale_message",
-      "value": "Restore text scale to the default value. Continue?"
+      "value": "将文字缩放恢复为默认值。确定继续吗？"
     },
     {
       "name": "clear_cache",
-      "value": "Clear cache"
+      "value": "清理缓存"
     },
     {
       "name": "clear_cache_message",
-      "value": "Only offline cache will be cleared. Login state and preferences will be kept. Continue?"
+      "value": "将只清理离线缓存，不会清理登录状态或偏好设置。确定继续吗？"
     },
     {
       "name": "clear_local_data",
-      "value": "Clear local data"
+      "value": "清理本地数据"
     },
     {
       "name": "clear_local_data_message",
-      "value": "This clears locally saved read later items, followed nodes, recently viewed items, read state, drafts, search history, notification cache, and offline cache. Login state and preferences are kept. Continue?"
+      "value": "将清理本机保存的稍后读、关注节点、最近浏览、已读状态、草稿、搜索历史、通知缓存和离线缓存。登录状态与偏好设置会保留。确定继续吗？"
     },
     {
       "name": "read_cache_status_failed",
-      "value": "Failed to read cache status"
+      "value": "读取缓存状态失败"
     },
     {
       "name": "clear_failed",
-      "value": "Clear failed"
+      "value": "清理失败"
     },
     {
       "name": "debug_only",
-      "value": "Debug builds only"
+      "value": "仅 debug 构建可用"
     },
     {
       "name": "seed_failed",
-      "value": "Seed failed"
+      "value": "Seed 失败"
     },
     {
       "name": "offline_cache",
-      "value": "Offline cache"
+      "value": "离线缓存"
     },
     {
       "name": "cache_qa_seed",
-      "value": "Cache QA Seed"
+      "value": "缓存 QA Seed"
     },
     {
       "name": "refresh_cache_status",
-      "value": "Refresh cache status"
+      "value": "刷新缓存状态"
     },
     {
       "name": "diagnostics",
-      "value": "Diagnostics"
+      "value": "诊断"
     },
     {
       "name": "logs",
-      "value": "Logs"
+      "value": "日志"
     },
     {
       "name": "log_file",
-      "value": "Log file"
+      "value": "日志文件"
     },
     {
       "name": "no_local_log_files",
-      "value": "No local log files to share"
+      "value": "暂无可分享的本机日志文件"
     },
     {
       "name": "retained_local_log_files_count",
-      "value": "Retained {count} local log files"
+      "value": "已保留 {count} 个本机日志文件"
     },
     {
       "name": "clear_boot_records",
-      "value": "Clear this launch record"
+      "value": "清空本次启动记录"
     },
     {
       "name": "no_log_files",
-      "value": "No log files"
+      "value": "暂无日志文件"
     },
     {
       "name": "reopen_keeps_logs",
-      "value": "Recent launch logs are kept after reopening the app"
+      "value": "重新打开应用后会保留最近启动日志"
     },
     {
       "name": "no_diagnostics_logs",
-      "value": "No diagnostics logs"
+      "value": "暂无诊断日志"
     },
     {
       "name": "boot_records_cleared",
-      "value": "This launch record has been cleared"
+      "value": "本次启动记录已清空"
     },
     {
       "name": "current_log",
-      "value": "Current log"
+      "value": "当前日志"
     },
     {
       "name": "startup_log",
-      "value": "Startup log"
+      "value": "启动日志"
     },
     {
       "name": "unknown_time",
-      "value": "Unknown time"
+      "value": "时间未知"
     },
     {
       "name": "updated_at",
-      "value": "Updated {0}"
+      "value": "更新于 {0}"
     },
     {
       "name": "share_file_unavailable_copied",
-      "value": "Share file unavailable; copied for manual paste"
+      "value": "分享文件不可用，已复制，可手动粘贴"
     },
     {
       "name": "share_failed",
-      "value": "Share failed"
+      "value": "分享失败"
     },
     {
       "name": "proxy_connection",
-      "value": "Proxy connection"
+      "value": "代理连接"
     },
     {
       "name": "use_proxy",
-      "value": "Use proxy"
+      "value": "使用代理"
     },
     {
       "name": "system_proxy",
-      "value": "System proxy"
+      "value": "系统代理"
     },
     {
       "name": "add_proxy",
-      "value": "Add proxy"
+      "value": "添加代理"
     },
     {
       "name": "testing_connection",
-      "value": "Testing connection…"
+      "value": "正在测试连接…"
     },
     {
       "name": "test_connection",
-      "value": "Test connection"
+      "value": "测试连接"
     },
     {
       "name": "proxy_info",
-      "value": "Proxy information"
+      "value": "代理信息"
     },
     {
       "name": "proxy_type",
-      "value": "Proxy type"
+      "value": "代理类型"
     },
     {
       "name": "http_proxy",
-      "value": "HTTP proxy"
+      "value": "HTTP 代理"
     },
     {
       "name": "supports_auth",
-      "value": "Supports username/password authentication"
+      "value": "支持用户名和密码认证"
     },
     {
       "name": "socks5_proxy",
-      "value": "SOCKS5 proxy"
+      "value": "SOCKS5 代理"
     },
     {
       "name": "auth_not_supported",
-      "value": "Authentication not supported"
+      "value": "不支持认证"
     },
     {
       "name": "proxy_parameters",
-      "value": "Proxy parameters"
+      "value": "代理参数"
     },
     {
       "name": "authentication",
-      "value": "Authentication"
+      "value": "认证"
     },
     {
       "name": "actions",
-      "value": "Actions"
+      "value": "操作"
     },
     {
       "name": "delete_proxy",
-      "value": "Delete proxy"
+      "value": "删除代理"
     },
     {
       "name": "proxy_name_placeholder",
-      "value": "Name (optional)"
+      "value": "名称（可选）"
     },
     {
       "name": "default_server_port",
-      "value": "Use server:port by default"
+      "value": "默认使用服务器:端口"
     },
     {
       "name": "server",
-      "value": "Server"
+      "value": "服务器"
     },
     {
       "name": "port",
-      "value": "Port"
+      "value": "端口"
     },
     {
       "name": "username_optional",
-      "value": "Username (optional)"
+      "value": "用户名（可选）"
     },
     {
       "name": "password_optional",
-      "value": "Password (optional)"
+      "value": "密码（可选）"
     },
     {
       "name": "bypass_list_optional",
-      "value": "Bypass list (optional)"
+      "value": "绕过列表（可选）"
     },
     {
       "name": "one_domain_or_ip_per_line",
-      "value": "One domain or IP per line"
+      "value": "每行一个域名或 IP"
     },
     {
       "name": "current_connection",
-      "value": "Current connection"
+      "value": "当前连接"
     },
     {
       "name": "built_in_options",
-      "value": "Built-in options"
+      "value": "内置选项"
     },
     {
       "name": "proxy_config",
-      "value": "Proxy configuration"
+      "value": "代理配置"
     },
     {
       "name": "socks5_auth_unsupported",
-      "value": "SOCKS5 does not support username/password authentication yet"
+      "value": "SOCKS5 暂不支持用户名/密码认证"
     },
     {
       "name": "testing",
-      "value": "Testing…"
+      "value": "测试中…"
     },
     {
       "name": "profile_switched",
-      "value": "Profile switched"
+      "value": "已切换配置"
     },
     {
       "name": "switch_failed",
-      "value": "Switch failed"
+      "value": "切换失败"
     },
     {
       "name": "test_failed",
-      "value": "Test failed"
+      "value": "测试失败"
     },
     {
       "name": "proxy_config_title",
-      "value": "Proxy configuration"
+      "value": "代理配置"
     },
     {
       "name": "proxy_not_configured",
-      "value": "Not configured"
+      "value": "未配置"
     },
     {
       "name": "local_data",
-      "value": "Local data"
+      "value": "本地数据"
     },
     {
       "name": "cache_subtitle_updated",
-      "value": "Lists {0} · Details {1} · Updated {2}"
+      "value": "列表 {0} 组 · 详情 {1} 篇 · 更新于 {2}"
     },
     {
       "name": "cache_subtitle",
-      "value": "Lists {0} · Details {1}"
+      "value": "列表 {0} 组 · 详情 {1} 篇"
     },
     {
       "name": "seed_all_cache_scenarios",
-      "value": "Seed all cache scenarios"
+      "value": "Seed 全部缓存场景"
     },
     {
       "name": "seed_large_list_file_cache",
-      "value": "Seed large list file cache"
+      "value": "Seed 大列表文件缓存"
     },
     {
       "name": "seed_mixed_row_cache",
-      "value": "Seed mixed row cache"
+      "value": "Seed 混合行缓存"
     },
     {
       "name": "seed_invalid_path_row",
-      "value": "Seed invalid path row"
+      "value": "Seed 非法路径行"
     },
     {
       "name": "seed_orphan_file",
-      "value": "Seed orphan file"
+      "value": "Seed 孤立文件"
     },
     {
       "name": "seed_missing_file_row",
-      "value": "Seed missing file row"
+      "value": "Seed 缺失文件行"
     },
     {
       "name": "seed_hash_mismatch_row",
-      "value": "Seed hash mismatch row"
+      "value": "Seed Hash 不匹配行"
     },
     {
       "name": "verify_hash_repair",
-      "value": "Verify hash repair"
+      "value": "验证 Hash 修复"
     },
     {
       "name": "seed_expired_row",
-      "value": "Seed expired row"
+      "value": "Seed 过期行"
     },
     {
       "name": "reset_seed_cache",
-      "value": "Reset seed cache"
+      "value": "重置 Seed 缓存"
     },
     {
       "name": "visible_home_nodes_reorder_hint",
-      "value": "Shown columns · long-press to reorder"
+      "value": "已显示栏目  长按栏目可拖动排序"
     },
     {
       "name": "add_home_column",
-      "value": "Add column"
+      "value": "添加栏目"
     },
     {
       "name": "hide",
-      "value": "Hide"
+      "value": "隐藏"
     },
     {
       "name": "node_name_placeholder",
-      "value": "Node name (e.g. create)"
+      "value": "节点名（如 create）"
     },
     {
       "name": "add_node_column",
-      "value": "Add node column"
+      "value": "添加节点栏目"
     },
     {
       "name": "invalid_node_name",
-      "value": "Enter a valid node name"
+      "value": "请输入有效节点名"
     },
     {
       "name": "node_column_exists",
-      "value": "Node column already exists"
+      "value": "节点栏目已存在"
     },
     {
       "name": "web_session_expired_relogin",
-      "value": "Web session expired, please sign in again"
+      "value": "Web 会话已失效，请重新登录"
     },
     {
       "name": "web_session_validation_failed",
-      "value": "Web session validation failed"
+      "value": "Web 会话验证失败"
     },
     {
       "name": "two_factor_relogin_required",
-      "value": "V2EX requires two-factor verification. Please sign in again"
+      "value": "V2EX 需要完成两步验证，请重新登录"
     },
     {
       "name": "two_factor_required",
-      "value": "V2EX requires two-factor verification"
+      "value": "V2EX 需要完成两步验证"
     },
     {
       "name": "login_validation_failed",
-      "value": "Sign-in validation failed"
+      "value": "登录状态验证失败"
     },
     {
       "name": "token_info_failed",
-      "value": "Failed to fetch token info"
+      "value": "Token 信息获取失败"
     },
     {
       "name": "clear_token_failed",
-      "value": "Failed to clear token"
+      "value": "清除 Token 失败"
     },
     {
       "name": "clear_session_failed",
-      "value": "Failed to clear session"
+      "value": "清除会话失败"
     },
     {
       "name": "clear_cookie_failed",
-      "value": "Failed to clear cookies"
+      "value": "清除 Cookie 失败"
     },
     {
       "name": "read_account_failed",
-      "value": "Failed to read account info"
+      "value": "读取账号信息失败"
     },
     {
       "name": "already_checked_in_today",
-      "value": "Already checked in today"
+      "value": "今日已签到"
     },
     {
       "name": "checkin_completed",
-      "value": "Check-in completed"
+      "value": "签到完成"
     },
     {
       "name": "checkin_failed",
-      "value": "Check-in failed"
+      "value": "签到失败"
     }
   ]
 }

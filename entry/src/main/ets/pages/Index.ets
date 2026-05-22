@@ -15,6 +15,7 @@ import {
 } from '@kit.UIDesignKit'
 import { common, Want } from '@kit.AbilityKit'
 import {
+  AppStrings,
   ApiConstants,
   ApiService,
   AuthSettings,
@@ -85,7 +86,7 @@ import { IndexRouteCoordinator } from '../model/IndexRouteCoordinator'
 struct Index {
   @Provide('ns') ns: NavPathStack = new NavPathStack();
   private tc: HdsTabsController = new HdsTabsController();
-  private tabTitles: string[] = ['首页', '发现', '通知', '我的'];
+  private tabTitles: string[] = [AppStrings.t(AppStrings.R_SETTINGS_HOME, 'Home'), AppStrings.t(AppStrings.R_TAB_DISCOVER, 'Discover'), AppStrings.t(AppStrings.R_TAB_NOTIFICATIONS, 'Notifications'), AppStrings.t(AppStrings.R_TAB_ME, 'Me')];
   @State ct: number = 0;
   @StorageLink(StorageKeys.PENDING_V2EX_URL)
   @Watch('onPendingV2exUrlChanged')
@@ -278,16 +279,16 @@ struct Index {
       HdsTabs({ controller: this.tc, index: this.ct }) {
         TabContent() {
           HomePage()
-        }.tabBar(this.TabIcon('首页', 0))
+        }.tabBar(this.TabIcon(AppStrings.t(AppStrings.R_SETTINGS_HOME, 'Home'), 0))
         TabContent() {
           DiscoverPage()
-        }.tabBar(this.TabIcon('发现', 1))
+        }.tabBar(this.TabIcon(AppStrings.t(AppStrings.R_TAB_DISCOVER, 'Discover'), 1))
         TabContent() {
           NotificationPage({ refreshKey: this.notificationRefreshKey })
-        }.tabBar(this.TabIcon('通知', 2))
+        }.tabBar(this.TabIcon(AppStrings.t(AppStrings.R_TAB_NOTIFICATIONS, 'Notifications'), 2))
         TabContent() {
           AccountDashboardPage({ refreshKey: this.accountRefreshKey })
-        }.tabBar(this.TabIcon('我的', 3))
+        }.tabBar(this.TabIcon(AppStrings.t(AppStrings.R_TAB_ME, 'Me'), 3))
       }
       .barOverlap(true)
       .barPosition(BarPosition.End)
@@ -725,7 +726,7 @@ struct Index {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     const want: Want = { action: 'ohos.want.action.viewData', uri: target }
     context.startAbility(want).catch((error: Error) => {
-      promptAction.openToast({ message: error.message || '打开失败' }).catch((_error: Error) => {})
+      promptAction.openToast({ message: error.message || AppStrings.t(AppStrings.R_COMMON_OPEN_FAILED, 'Open failed') }).catch((_error: Error) => {})
     })
   }
 
@@ -810,9 +811,9 @@ struct Index {
     } else {
       content = { 'title': titleInfo }
     }
-    if (this.tabTitles[this.ct] === '通知') {
+    if (this.tabTitles[this.ct] === AppStrings.t(AppStrings.R_TAB_NOTIFICATIONS, 'Notifications')) {
       content['menu'] = this.notificationTitleMenu()
-    } else if (this.tabTitles[this.ct] === '我的') {
+    } else if (this.tabTitles[this.ct] === AppStrings.t(AppStrings.R_TAB_ME, 'Me')) {
       content['menu'] = this.meTitleMenu()
     } else {
       content['menu'] = IndexTitleBarCoordinator.emptyMenu()

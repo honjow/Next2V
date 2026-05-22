@@ -3,6 +3,7 @@ import { Configuration } from '@ohos.app.ability.Configuration'
 import { window } from '@kit.ArkUI'
 import { webview } from '@kit.ArkWeb'
 import {
+  AppStrings,
   DiagnosticLogger,
   FoldScreenUtil,
   SettingsBootstrap,
@@ -21,6 +22,7 @@ export default class EntryAbility extends UIAbility {
   private keyboardHeightCallback: ((height: number) => void) | null = null
 
   onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
+    AppStrings.init(this.context)
     DiagnosticLogger.initializePersistentSink(this.context)
     DiagnosticLogger.info('app', 'diagnostics_session_start', { source: 'EntryAbility.onCreate' })
     try {

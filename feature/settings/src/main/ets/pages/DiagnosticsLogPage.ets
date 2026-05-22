@@ -4,6 +4,7 @@ import { pasteboard } from '@kit.BasicServicesKit'
 import { promptAction } from '@kit.ArkUI'
 import { systemShare } from '@kit.ShareKit'
 import {
+  AppStrings,
   ConciseListRow,
   DiagnosticLogger,
   DiagnosticsLogFileSink,
@@ -35,7 +36,7 @@ export struct DiagnosticsLogPage {
     Column() {
       SecondaryListScaffold() {
         ListItem() {
-          SettingsSectionHeader({ title: '诊断' })
+          SettingsSectionHeader({ title: AppStrings.t(AppStrings.R_DIAGNOSTICS, 'Diagnostics') })
         }
 
         ListItem() {
@@ -43,7 +44,7 @@ export struct DiagnosticsLogPage {
         }
 
         ListItem() {
-          SettingsSectionHeader({ title: '日志' })
+          SettingsSectionHeader({ title: AppStrings.t(AppStrings.R_LOGS, 'Logs') })
         }
 
         ListItem() {
@@ -51,7 +52,7 @@ export struct DiagnosticsLogPage {
         }
 
         ListItem() {
-          SettingsSectionHeader({ title: '日志文件' })
+          SettingsSectionHeader({ title: AppStrings.t(AppStrings.R_LOG_FILE, 'Log file') })
         }
 
         ListItem() {
@@ -68,7 +69,7 @@ export struct DiagnosticsLogPage {
   DiagnosticsToggleSection() {
     GroupedListSection() {
       SettingsToggleRow({
-        title: '诊断日志',
+        title: AppStrings.t(AppStrings.R_NAV_DIAGNOSTICS, 'Diagnostics log'),
         checked: this.diagnosticsEnabled,
         changeAction: (value: boolean) => {
           this.updateDiagnosticsEnabled(value)
@@ -82,7 +83,7 @@ export struct DiagnosticsLogPage {
     GroupedListSection() {
       ConciseListRow({
         title: `本次启动最近 ${this.logCount} 条`,
-        subtitle: this.logFiles.length > 0 ? `已保留 ${this.logFiles.length} 个本机日志文件` : '暂无可分享的本机日志文件',
+        subtitle: this.logFiles.length > 0 ? this.formatRetainedLogFilesCount(this.logFiles.length) : AppStrings.t(AppStrings.R_NO_LOCAL_LOG_FILES, 'No local log files to share'),
         showChevron: false,
         action: () => {
           this.refreshLogState()
@@ -92,7 +93,7 @@ export struct DiagnosticsLogPage {
       SettingsDivider()
 
       ConciseListRow({
-        title: '清空本次启动记录',
+        title: AppStrings.t(AppStrings.R_CLEAR_BOOT_RECORDS, 'Clear this launch record'),
         destructive: true,
         showChevron: false,
         action: () => {
@@ -107,8 +108,8 @@ export struct DiagnosticsLogPage {
     GroupedListSection() {
       if (this.logFiles.length <= 0) {
         ConciseListRow({
-          title: '暂无日志文件',
-          subtitle: '重新打开应用后会保留最近启动日志',
+          title: AppStrings.t(AppStrings.R_NO_LOG_FILES, 'No log files'),
+          subtitle: AppStrings.t(AppStrings.R_REOPEN_KEEPS_LOGS, 'Recent launch logs are kept after reopening the app'),
           showChevron: false,
           action: () => {
             this.refreshLogState()
@@ -135,6 +136,12 @@ export struct DiagnosticsLogPage {
         this.handleShareLogFileClick(file)
       },
     })
+  }
+
+  private formatRetainedLogFilesCount(count: number): string {
+    return AppStrings
+      .t(AppStrings.R_RETAINED_LOCAL_LOG_FILES_COUNT, 'Retained {count} local log files')
+      .replace('{count}', count.toString())
   }
 
   private updateDiagnosticsEnabled(enabled: boolean): void {
@@ -192,7 +199,7 @@ export struct DiagnosticsLogPage {
             source: 'diagnostics_log_page',
             fileName: file.fileName,
           }, error)
-          this.copyDiagnosticsTextWithToast('分享文件不可用，已复制，可手动粘贴', '分享失败', DiagnosticsLogFileSink.readLogFileText(file.fileName))
+          this.copyDiagnosticsTextWithToast(AppStrings.t(AppStrings.R_SHARE_FILE_UNAVAILABLE_COPIED, 'Share file unavailable; copied for manual paste'), AppStrings.t(AppStrings.R_SHARE_FAILED, 'Share failed'), DiagnosticsLogFileSink.readLogFileText(file.fileName))
         })
     } catch (_error) {
       DiagnosticLogger.warn('diagnostics', 'diagnostics_share_show_error', {
@@ -202,13 +209,13 @@ export struct DiagnosticsLogPage {
         errorName: 'Error',
         errorMessage: 'share_failed',
       })
-      this.copyDiagnosticsTextWithToast('分享文件不可用，已复制，可手动粘贴', '分享失败', DiagnosticsLogFileSink.readLogFileText(file.fileName))
+      this.copyDiagnosticsTextWithToast(AppStrings.t(AppStrings.R_SHARE_FILE_UNAVAILABLE_COPIED, 'Share file unavailable; copied for manual paste'), AppStrings.t(AppStrings.R_SHARE_FAILED, 'Share failed'), DiagnosticsLogFileSink.readLogFileText(file.fileName))
     }
   }
 
   private copyDiagnosticsTextWithToast(successMessage: string, failureMessage: string, textOverride: string = ''): void {
     try {
-      const text = textOverride || DiagnosticsSettings.exportText() || '暂无诊断日志'
+      const text = textOverride || DiagnosticsSettings.exportText() || AppStrings.t(AppStrings.R_NO_DIAGNOSTICS_LOGS, 'No diagnostics logs')
       const data = pasteboard.createData(pasteboard.MIMETYPE_TEXT_PLAIN, text)
       pasteboard.getSystemPasteboard().setDataSync(data)
       DiagnosticLogger.info('diagnostics', 'diagnostics_log_copy_success', { textLength: text.length })
@@ -222,17 +229,17 @@ export struct DiagnosticsLogPage {
   private clearDiagnosticsText(): void {
     DiagnosticsSettings.clearLogs()
     this.refreshLogState()
-    promptAction.openToast({ message: '本次启动记录已清空' }).catch((_error: Error) => {})
+    promptAction.openToast({ message: AppStrings.t(AppStrings.R_BOOT_RECORDS_CLEARED, 'This launch record has been cleared') }).catch((_error: Error) => {})
   }
 
   private logFileTitle(file: DiagnosticsLogFileInfo): string {
-    const prefix = file.isCurrent ? '当前日志' : '启动日志'
+    const prefix = file.isCurrent ? AppStrings.t(AppStrings.R_CURRENT_LOG, 'Current log') : AppStrings.t(AppStrings.R_STARTUP_LOG, 'Startup log')
     return `${prefix} · ${this.formatLogTimestamp(file.createdAtMs)}`
   }
 
   private formatLogTimestamp(value: number): string {
     if (value <= 0) {
-      return '时间未知'
+      return AppStrings.t(AppStrings.R_UNKNOWN_TIME, 'Unknown time')
     }
     const date = new Date(value)
     const year = date.getFullYear().toString().padStart(4, '0')

@@ -16,14 +16,14 @@ export class V2exAccountParser {
   static extractDailyMission(html: string): V2exDailyMission {
     const redeemPath = V2exAccountParser.extractRedeemPath(html)
     if (redeemPath) {
-      return { canRedeem: true, redeemPath, message: '今日可签到' }
+      return { canRedeem: true, redeemPath, message: 'daily_checkin_available' }
     }
     const text = V2exAccountParser.compactText(html)
     const done = text.indexOf('已领取') >= 0 || text.indexOf('已完成') >= 0 || text.indexOf('明天') >= 0
     return {
       canRedeem: false,
       redeemPath: '',
-      message: done ? '今日已签到' : '暂不可签到'
+      message: done ? 'already_checked_in_today' : 'daily_checkin_unavailable'
     }
   }
 

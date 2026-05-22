@@ -1,5 +1,6 @@
 import { promptAction } from '@kit.ArkUI'
 import {
+  AppStrings,
   AccountMemberRow,
   ApiService,
   CardEmptyState,
@@ -32,7 +33,7 @@ export struct AccountFollowingPage {
     Column() {
       if (!CookieJarSettings.getCurrentCookie()) {
         PageLoginRequiredState({
-          message: '登录后可查看关注用户',
+          message: AppStrings.t(AppStrings.R_LOGIN_TO_VIEW_FOLLOWING, 'Log in to view followed users'),
           action: () => {
             this.stack.pushPathByName('V2exNativeLogin', null)
           }
@@ -56,9 +57,9 @@ export struct AccountFollowingPage {
             this.scrollEnabled = enabled
           }
         }) {
-          ListItem() { this.SectionHeader('关注用户') }
+          ListItem() { this.SectionHeader(AppStrings.t(AppStrings.R_NAV_FOLLOWING, 'Following')) }
           if (this.members.length === 0) {
-            ListItem() { CardEmptyState({ message: '暂无关注用户', expand: false }) }
+            ListItem() { CardEmptyState({ message: AppStrings.t(AppStrings.R_NO_FOLLOWING_USERS, 'No followed users'), expand: false }) }
           } else {
             ForEach(this.members, (item: V2exAccountMemberListItem) => {
               ListItem() {
@@ -100,7 +101,7 @@ export struct AccountFollowingPage {
       this.members = result
     } catch (error) {
       const e = error as Error
-      this.errorMessage = e.message || '加载失败'
+      this.errorMessage = e.message || AppStrings.t(AppStrings.R_COMMON_LOAD_FAILED, 'Load failed')
       this.members = []
     } finally {
       this.isLoading = false

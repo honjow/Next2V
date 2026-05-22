@@ -1,6 +1,7 @@
 import { common } from '@kit.AbilityKit'
 import type { TabItem } from 'shared'
 import {
+  AppStrings,
   ApiConstants,
   AppTextField,
   ConciseListRow,
@@ -26,7 +27,7 @@ export struct HomeNodeSettingsPage {
     Column() {
       SecondaryListScaffold() {
         ListItem() {
-          SettingsSectionHeader({ title: '已显示栏目  长按栏目可拖动排序' })
+          SettingsSectionHeader({ title: AppStrings.t(AppStrings.R_VISIBLE_HOME_NODES_REORDER_HINT, 'Shown columns · long-press to reorder') })
         }
 
         GroupedListSection() {
@@ -61,7 +62,7 @@ export struct HomeNodeSettingsPage {
         }
 
         ListItem() {
-          SettingsSectionHeader({ title: '添加栏目' })
+          SettingsSectionHeader({ title: AppStrings.t(AppStrings.R_ADD_HOME_COLUMN, 'Add column') })
         }
 
         ListItem() {
@@ -69,13 +70,13 @@ export struct HomeNodeSettingsPage {
         }
 
         ListItem() {
-          SettingsSectionHeader({ title: '重置' })
+          SettingsSectionHeader({ title: AppStrings.t(AppStrings.R_COMMON_RESET, 'Reset') })
         }
 
         ListItem() {
           GroupedListSection() {
             ConciseListRow({
-              title: '恢复默认栏目',
+              title: AppStrings.t(AppStrings.R_RESTORE_DEFAULT, 'Restore defaults'),
               showChevron: false,
               action: () => {
                 this.resetFeedTabs()
@@ -93,7 +94,7 @@ export struct HomeNodeSettingsPage {
   @Builder
   ButtonSuffix(key: string, enabled: boolean) {
     HomeNodeVisibilityButton({
-      label: FeedTabSettings.isNodeKey(key) ? '删除' : '隐藏',
+      label: FeedTabSettings.isNodeKey(key) ? AppStrings.t(AppStrings.R_COMMON_DELETE, 'Delete') : AppStrings.t(AppStrings.R_HIDE, 'Hide'),
       isEnabled: enabled,
       clickAction: () => {
         this.updateFeedTabVisibility(key)
@@ -118,13 +119,13 @@ export struct HomeNodeSettingsPage {
       Column({ space: ThemeConstants.SPACE_SM }) {
         AppTextField({
           text: $nodeTabName,
-          placeholder: '节点名（如 create）',
+          placeholder: AppStrings.t(AppStrings.R_NODE_NAME_PLACEHOLDER, 'Node name (e.g. create)'),
           onTextChange: (value: string) => {
             this.nodeTabName = value
           }
         })
           .width('100%')
-        Button('添加节点栏目')
+        Button(AppStrings.t(AppStrings.R_ADD_NODE_COLUMN, 'Add node column'))
           .fontSize(ThemeConstants.FONT_SIZE_TAG)
           .height(ThemeConstants.TOUCH_TARGET_SM)
           .type(ButtonType.Normal)
@@ -170,13 +171,13 @@ export struct HomeNodeSettingsPage {
   private addNodeFeedTab(): void {
     const cleanName = FeedTabSettings.normalizeNodeName(this.nodeTabName)
     if (!cleanName) {
-      promptAction.openToast({ message: '请输入有效节点名' }).catch((_error: Error) => {
+      promptAction.openToast({ message: AppStrings.t(AppStrings.R_INVALID_NODE_NAME, 'Enter a valid node name') }).catch((_error: Error) => {
       })
       return
     }
     const nextKeys = FeedTabSettings.addNode(this.feedTabKeys, cleanName)
     if (nextKeys === this.feedTabKeys) {
-      promptAction.openToast({ message: '节点栏目已存在' }).catch((_error: Error) => {
+      promptAction.openToast({ message: AppStrings.t(AppStrings.R_NODE_COLUMN_EXISTS, 'Node column already exists') }).catch((_error: Error) => {
       })
       return
     }

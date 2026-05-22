@@ -103,7 +103,7 @@ export class AutoDailyCheckinService {
   }
 
   private static isAlreadyDoneMessage(message: string): boolean {
-    return (message || '').indexOf('已签到') >= 0 || (message || '').indexOf('已领取') >= 0 || (message || '').indexOf('已完成') >= 0
+    return (message || '') === 'already_checked_in_today' || (message || '').indexOf('已签到') >= 0 || (message || '').indexOf('已领取') >= 0 || (message || '').indexOf('已完成') >= 0
   }
 
   private static messageCode(message: string): string {

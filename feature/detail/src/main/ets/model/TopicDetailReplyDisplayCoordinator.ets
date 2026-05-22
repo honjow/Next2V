@@ -24,11 +24,11 @@ export interface TopicDetailReplyCardDisplayState {
 export class TopicDetailReplyDisplayCoordinator {
   static modeOptions(): ReplyDisplayModeOption[] {
     return [
-      { label: '楼中楼', mode: ReplyDisplaySettings.MODE_THREAD },
-      { label: '楼中楼(@)', mode: ReplyDisplaySettings.MODE_THREAD_WITH_MENTION },
-      { label: '冗余楼中楼', mode: ReplyDisplaySettings.MODE_THREAD_REDUNDANT },
-      { label: '只看楼主', mode: ReplyDisplaySettings.MODE_OP },
-      { label: '原版', mode: ReplyDisplaySettings.MODE_ORIGIN },
+      { label: ReplyDisplaySettings.modeText(ReplyDisplaySettings.MODE_THREAD), mode: ReplyDisplaySettings.MODE_THREAD },
+      { label: ReplyDisplaySettings.modeText(ReplyDisplaySettings.MODE_THREAD_WITH_MENTION), mode: ReplyDisplaySettings.MODE_THREAD_WITH_MENTION },
+      { label: ReplyDisplaySettings.modeText(ReplyDisplaySettings.MODE_THREAD_REDUNDANT), mode: ReplyDisplaySettings.MODE_THREAD_REDUNDANT },
+      { label: ReplyDisplaySettings.modeText(ReplyDisplaySettings.MODE_OP), mode: ReplyDisplaySettings.MODE_OP },
+      { label: ReplyDisplaySettings.modeText(ReplyDisplaySettings.MODE_ORIGIN), mode: ReplyDisplaySettings.MODE_ORIGIN },
     ]
   }
 

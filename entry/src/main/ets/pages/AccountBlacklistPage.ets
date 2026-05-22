@@ -1,6 +1,7 @@
 import { promptAction } from '@kit.ArkUI'
 import { common } from '@kit.AbilityKit'
 import {
+  AppStrings,
   AccountMemberRow,
   ApiService,
   BlockedMemberSettings,
@@ -37,7 +38,7 @@ export struct AccountBlacklistPage {
     Column() {
       if (!CookieJarSettings.getCurrentCookie()) {
         PageLoginRequiredState({
-          message: '登录后可查看屏蔽与忽略',
+          message: AppStrings.t(AppStrings.R_LOGIN_TO_VIEW_BLOCKED, 'Log in to view blocked and ignored items'),
           action: () => {
             this.stack.pushPathByName('V2exNativeLogin', null)
           }
@@ -53,9 +54,9 @@ export struct AccountBlacklistPage {
         })
       } else {
         SecondaryListScaffold() {
-          ListItem() { this.SectionHeader('屏蔽用户') }
+          ListItem() { this.SectionHeader(AppStrings.t(AppStrings.R_BLOCKED_USERS, 'Blocked users')) }
           if (this.members.length === 0) {
-            ListItem() { CardEmptyState({ message: '暂无屏蔽用户', expand: false }) }
+            ListItem() { CardEmptyState({ message: AppStrings.t(AppStrings.R_NO_BLOCKED_USERS, 'No blocked users'), expand: false }) }
           } else {
             ForEach(this.members, (item: V2exAccountMemberListItem) => {
               ListItem() {
@@ -65,10 +66,10 @@ export struct AccountBlacklistPage {
             }, (item: V2exAccountMemberListItem) => `blocked-${item.username}`)
           }
 
-          ListItem() { this.SectionHeader('忽略主题') }
+          ListItem() { this.SectionHeader(AppStrings.t(AppStrings.R_IGNORED_TOPICS, 'Ignored topics')) }
             .margin({ top: ThemeConstants.SPACE_MD })
           if (this.topics.length === 0) {
-            ListItem() { CardEmptyState({ message: '暂无忽略主题', expand: false }) }
+            ListItem() { CardEmptyState({ message: AppStrings.t(AppStrings.R_NO_IGNORED_TOPICS, 'No ignored topics'), expand: false }) }
           } else {
             ForEach(this.topics, (item: V2exTopic) => {
               ListItem() { TopicCard({ item: item }) }
@@ -117,7 +118,7 @@ export struct AccountBlacklistPage {
         })
       })
       .catch((error: Error) => {
-        this.errorMessage = error.message || '加载失败'
+        this.errorMessage = error.message || AppStrings.t(AppStrings.R_COMMON_LOAD_FAILED, 'Load failed')
         this.members = []
         this.topics = []
       })

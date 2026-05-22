@@ -1,6 +1,7 @@
 import { AccountCoinIcon } from './AccountCoinIcon'
 import {
   Avatar,
+  AppStrings,
   DateUtils,
   ThemeConstants,
   V2exBalance
@@ -218,7 +219,7 @@ export struct AccountRateLimitSummary {
           .fontColor($r('sys.color.font_secondary'))
       }
       if (this.updatedAt > 0) {
-        Text(`更新于 ${DateUtils.toDateString(this.updatedAt)}`)
+        Text(AppStrings.format(AppStrings.t(AppStrings.R_UPDATED_AT, 'Updated {0}'), [DateUtils.toDateString(this.updatedAt)]))
           .fontSize(ThemeConstants.FONT_SIZE_TINY)
           .fontColor($r('sys.color.font_secondary'))
       }

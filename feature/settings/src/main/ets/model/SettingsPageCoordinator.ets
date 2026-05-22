@@ -1,4 +1,5 @@
 import {
+  AppStrings,
   ReadingSettings,
   ReplyActionAlignmentSettings,
   ReplyCardStyleSettings,
@@ -16,26 +17,26 @@ export class SettingsPageCoordinator {
 
   static themeModeOptions(): SettingsOption[] {
     return [
-      { label: '自动', value: ThemeSettings.MODE_AUTO },
-      { label: '浅色', value: ThemeSettings.MODE_LIGHT },
-      { label: '深色', value: ThemeSettings.MODE_DARK },
+      { label: AppStrings.t(AppStrings.R_COMMON_AUTO, 'Automatic'), value: ThemeSettings.MODE_AUTO },
+      { label: AppStrings.t(AppStrings.R_COMMON_LIGHT, 'Light'), value: ThemeSettings.MODE_LIGHT },
+      { label: AppStrings.t(AppStrings.R_COMMON_DARK, 'Dark'), value: ThemeSettings.MODE_DARK },
     ]
   }
 
   static replyDisplayModeOptions(): SettingsOption[] {
     return [
-      { label: '楼中楼', value: ReplyDisplaySettings.MODE_THREAD },
-      { label: '楼中楼(@)', value: ReplyDisplaySettings.MODE_THREAD_WITH_MENTION },
-      { label: '冗余楼中楼', value: ReplyDisplaySettings.MODE_THREAD_REDUNDANT },
-      { label: '只看楼主', value: ReplyDisplaySettings.MODE_OP },
-      { label: '原版', value: ReplyDisplaySettings.MODE_ORIGIN },
+      { label: AppStrings.t(AppStrings.R_THREADED, 'Threaded'), value: ReplyDisplaySettings.MODE_THREAD },
+      { label: AppStrings.t(AppStrings.R_THREADED_AT, 'Threaded (@)'), value: ReplyDisplaySettings.MODE_THREAD_WITH_MENTION },
+      { label: AppStrings.t(AppStrings.R_THREADED_REDUNDANT, 'Redundant threaded'), value: ReplyDisplaySettings.MODE_THREAD_REDUNDANT },
+      { label: AppStrings.t(AppStrings.R_OP_ONLY, 'Original poster only'), value: ReplyDisplaySettings.MODE_OP },
+      { label: AppStrings.t(AppStrings.R_ORIGINAL, 'Original'), value: ReplyDisplaySettings.MODE_ORIGIN },
     ]
   }
 
   static replyCardStyleOptions(): SettingsOption[] {
     return [
-      { label: '标准', value: ReplyCardStyleSettings.STYLE_STANDARD },
-      { label: '紧凑', value: ReplyCardStyleSettings.STYLE_COMPACT },
+      { label: AppStrings.t(AppStrings.R_DENSITY_STANDARD, 'Standard'), value: ReplyCardStyleSettings.STYLE_STANDARD },
+      { label: AppStrings.t(AppStrings.R_DENSITY_COMPACT, 'Compact'), value: ReplyCardStyleSettings.STYLE_COMPACT },
     ]
   }
 
@@ -43,26 +44,26 @@ export class SettingsPageCoordinator {
     const options: SettingsOption[] = []
     if (motionHoldingHandSupported) {
       options.push({
-        label: '智感握姿',
+        label: AppStrings.t(AppStrings.R_SMART_GRIP, 'Smart grip'),
         value: ReplyActionAlignmentSettings.MODE_SMART_GRIP,
       })
     }
     options.push(
       {
-        label: '跟随操作',
+        label: AppStrings.t(AppStrings.R_FOLLOW_OPERATION, 'Follow operation'),
         value: ReplyActionAlignmentSettings.MODE_FOLLOW_OPERATION,
       },
-      { label: '固定左侧', value: ReplyActionAlignmentSettings.MODE_FIXED_LEFT },
-      { label: '固定右侧', value: ReplyActionAlignmentSettings.MODE_FIXED_RIGHT },
+      { label: AppStrings.t(AppStrings.R_FIXED_LEFT, 'Fixed left'), value: ReplyActionAlignmentSettings.MODE_FIXED_LEFT },
+      { label: AppStrings.t(AppStrings.R_FIXED_RIGHT, 'Fixed right'), value: ReplyActionAlignmentSettings.MODE_FIXED_RIGHT },
     )
     return options
   }
 
   static base64DecodeModeOptions(): SettingsOption[] {
     return [
-      { label: '关闭', value: ReadingSettings.BASE64_MODE_OFF },
-      { label: '点击查看', value: ReadingSettings.BASE64_MODE_BADGE },
-      { label: '文内显示', value: ReadingSettings.BASE64_MODE_INLINE },
+      { label: AppStrings.t(AppStrings.R_COMMON_CLOSED, 'Off'), value: ReadingSettings.BASE64_MODE_OFF },
+      { label: AppStrings.t(AppStrings.R_TAP_TO_VIEW, 'Tap to view'), value: ReadingSettings.BASE64_MODE_BADGE },
+      { label: AppStrings.t(AppStrings.R_INLINE_DISPLAY, 'Inline display'), value: ReadingSettings.BASE64_MODE_INLINE },
     ]
   }
 
@@ -75,12 +76,12 @@ export class SettingsPageCoordinator {
 
   static base64DecodeModeLabel(mode: string): string {
     if (mode === ReadingSettings.BASE64_MODE_OFF) {
-      return '关闭'
+      return AppStrings.t(AppStrings.R_COMMON_CLOSED, 'Off')
     }
     if (mode === ReadingSettings.BASE64_MODE_INLINE) {
-      return '文内显示'
+      return AppStrings.t(AppStrings.R_INLINE_DISPLAY, 'Inline display')
     }
-    return '点击查看'
+    return AppStrings.t(AppStrings.R_TAP_TO_VIEW, 'Tap to view')
   }
 
   static apiDomainLabel(useCoDomain: boolean): string {

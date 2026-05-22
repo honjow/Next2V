@@ -1,6 +1,7 @@
 import { common } from '@kit.AbilityKit'
 import { promptAction } from '@kit.ArkUI'
 import {
+  AppStrings,
   AppModalScaffold,
   AppTextField,
   ConciseListRow,
@@ -57,7 +58,7 @@ export struct NetworkProxySettingsPage {
           this.SwitchSection()
         }
         ListItem() {
-          SettingsSectionHeader({ title: '代理连接' })
+          SettingsSectionHeader({ title: AppStrings.t(AppStrings.R_PROXY_CONNECTION, 'Proxy connection') })
         }
         ListItem() {
           this.ProxyConnectionSection()
@@ -79,8 +80,8 @@ export struct NetworkProxySettingsPage {
   SwitchSection() {
     GroupedListSection() {
       ConciseListRow({
-        title: '使用代理',
-        subtitle: this.proxyEnabled() ? this.activeSummary() : '关闭',
+        title: AppStrings.t(AppStrings.R_USE_PROXY, 'Use proxy'),
+        subtitle: this.proxyEnabled() ? this.activeSummary() : AppStrings.t(AppStrings.R_COMMON_CLOSED, 'Off'),
         hasSwitch: true,
         checked: this.proxyEnabled(),
         showChevron: false,
@@ -93,7 +94,7 @@ export struct NetworkProxySettingsPage {
   ProxyConnectionSection() {
     GroupedListSection() {
       ConciseListRow({
-        title: '系统代理',
+        title: AppStrings.t(AppStrings.R_SYSTEM_PROXY, 'System proxy'),
         subtitle: this.systemSubtitle(),
         showChevron: false,
         prefixBuilderParam: (): void => this.ProxySelectionRadio(NetworkProxySettings.MODE_SYSTEM),
@@ -103,7 +104,7 @@ export struct NetworkProxySettingsPage {
         this.ManualProfileRow(profile)
       }, (profile: NetworkProxyProfile) => profile.id)
       ConciseListRow({
-        title: '添加代理',
+        title: AppStrings.t(AppStrings.R_ADD_PROXY, 'Add proxy'),
         showChevron: true,
         action: () => { this.openNewProfileEditor() },
       })
@@ -114,7 +115,7 @@ export struct NetworkProxySettingsPage {
   ActionSection() {
     GroupedListSection() {
       ConciseListRow({
-        title: this.testing ? '正在测试连接…' : '测试连接',
+        title: this.testing ? AppStrings.t(AppStrings.R_TESTING_CONNECTION, 'Testing connection…') : AppStrings.t(AppStrings.R_TEST_CONNECTION, 'Test connection'),
         subtitle: this.testStatus,
         showChevron: false,
         action: () => { this.testConnection() },
@@ -175,7 +176,7 @@ export struct NetworkProxySettingsPage {
   @Builder
   ProfileEditorSheet() {
     AppModalScaffold({
-      title: '代理信息',
+      title: AppStrings.t(AppStrings.R_PROXY_INFO, 'Proxy information'),
       includeKeyboardPadding: true,
       contentBackgroundColor: $r('sys.color.ohos_id_color_sub_background'),
       closeAction: () => { this.closeEditor() },
@@ -195,18 +196,18 @@ export struct NetworkProxySettingsPage {
   @Builder
   ProtocolSection() {
     Column({ space: ThemeConstants.SPACE_XS }) {
-      this.EditorSectionLabel('代理类型')
+      this.EditorSectionLabel(AppStrings.t(AppStrings.R_PROXY_TYPE, 'Proxy type'))
       GroupedListSection() {
         ConciseListRow({
-          title: 'HTTP 代理',
-          subtitle: '支持用户名和密码认证',
+          title: AppStrings.t(AppStrings.R_HTTP_PROXY, 'HTTP proxy'),
+          subtitle: AppStrings.t(AppStrings.R_SUPPORTS_AUTH, 'Supports username/password authentication'),
           showChevron: false,
           suffixBuilderParam: (): void => this.ProtocolRadio(NetworkProxySettings.MODE_HTTP),
           action: () => { this.updateEditorMode(NetworkProxySettings.MODE_HTTP) },
         })
         ConciseListRow({
-          title: 'SOCKS5 代理',
-          subtitle: '不支持认证',
+          title: AppStrings.t(AppStrings.R_SOCKS5_PROXY, 'SOCKS5 proxy'),
+          subtitle: AppStrings.t(AppStrings.R_AUTH_NOT_SUPPORTED, 'Authentication not supported'),
           showChevron: false,
           suffixBuilderParam: (): void => this.ProtocolRadio(NetworkProxySettings.MODE_SOCKS5),
           action: () => { this.updateEditorMode(NetworkProxySettings.MODE_SOCKS5) },
@@ -230,7 +231,7 @@ export struct NetworkProxySettingsPage {
   @Builder
   ProfileEditorFields() {
     Column({ space: ThemeConstants.SPACE_XS }) {
-      this.EditorSectionLabel('代理参数')
+      this.EditorSectionLabel(AppStrings.t(AppStrings.R_PROXY_PARAMETERS, 'Proxy parameters'))
       GroupedListSection({ inset: ThemeConstants.SPACE_XL, radius: ThemeConstants.RADIUS_CARD }) {
         Column({ space: ThemeConstants.SPACE_LG }) {
           this.EditorHostFieldRow()
@@ -239,7 +240,7 @@ export struct NetworkProxySettingsPage {
             this.EditorUsernameFieldRow()
             this.EditorPasswordFieldRow()
           } else {
-            this.StaticFieldRow('认证', '不支持认证')
+            this.StaticFieldRow(AppStrings.t(AppStrings.R_AUTHENTICATION, 'Authentication'), AppStrings.t(AppStrings.R_AUTH_NOT_SUPPORTED, 'Authentication not supported'))
           }
           this.EditorNameFieldRow()
           this.EditorBypassListRow()
@@ -253,10 +254,10 @@ export struct NetworkProxySettingsPage {
   @Builder
   EditorActionSection() {
     Column({ space: ThemeConstants.SPACE_XS }) {
-      this.EditorSectionLabel('操作')
+      this.EditorSectionLabel(AppStrings.t(AppStrings.R_ACTIONS, 'Actions'))
       GroupedListSection({ inset: ThemeConstants.SPACE_XL, radius: ThemeConstants.RADIUS_CARD }) {
         Column({ space: ThemeConstants.SPACE_MD }) {
-          Button('保存')
+          Button(AppStrings.t(AppStrings.R_COMMON_SAVE, 'Save'))
             .type(ButtonType.Normal)
             .height(ThemeConstants.TOUCH_TARGET_SM)
             .width('100%')
@@ -267,7 +268,7 @@ export struct NetworkProxySettingsPage {
             .onClick(() => { this.saveProfileEditor() })
           if (this.editingProfileId) {
             ConciseListRow({
-              title: '删除代理',
+              title: AppStrings.t(AppStrings.R_DELETE_PROXY, 'Delete proxy'),
               destructive: true,
               showChevron: false,
               action: () => { this.confirmDeleteProfile() },
@@ -308,10 +309,10 @@ export struct NetworkProxySettingsPage {
   @Builder
   EditorNameFieldRow() {
     Column({ space: ThemeConstants.SPACE_XS }) {
-      this.FieldLabel('名称（可选）')
+      this.FieldLabel(AppStrings.t(AppStrings.R_PROXY_NAME_PLACEHOLDER, 'Name (optional)'))
       AppTextField({
         text: $editorName,
-        placeholder: '默认使用服务器:端口',
+        placeholder: AppStrings.t(AppStrings.R_DEFAULT_SERVER_PORT, 'Use server:port by default'),
         onTextChange: (value: string) => { this.editorName = value }
       })
         .width('100%')
@@ -322,7 +323,7 @@ export struct NetworkProxySettingsPage {
   @Builder
   EditorHostFieldRow() {
     Column({ space: ThemeConstants.SPACE_XS }) {
-      this.FieldLabel('服务器')
+      this.FieldLabel(AppStrings.t(AppStrings.R_SERVER, 'Server'))
       AppTextField({
         text: $editorHost,
         placeholder: '127.0.0.1',
@@ -336,7 +337,7 @@ export struct NetworkProxySettingsPage {
   @Builder
   EditorPortFieldRow() {
     Column({ space: ThemeConstants.SPACE_XS }) {
-      this.FieldLabel('端口')
+      this.FieldLabel(AppStrings.t(AppStrings.R_PORT, 'Port'))
       AppTextField({
         text: $editorPortText,
         placeholder: '7890',
@@ -353,7 +354,7 @@ export struct NetworkProxySettingsPage {
   @Builder
   EditorUsernameFieldRow() {
     Column({ space: ThemeConstants.SPACE_XS }) {
-      this.FieldLabel('用户名（可选）')
+      this.FieldLabel(AppStrings.t(AppStrings.R_USERNAME_OPTIONAL, 'Username (optional)'))
       AppTextField({
         text: $editorUsername,
         placeholder: '',
@@ -367,7 +368,7 @@ export struct NetworkProxySettingsPage {
   @Builder
   EditorPasswordFieldRow() {
     Column({ space: ThemeConstants.SPACE_XS }) {
-      this.FieldLabel('密码（可选）')
+      this.FieldLabel(AppStrings.t(AppStrings.R_PASSWORD_OPTIONAL, 'Password (optional)'))
       AppTextField({
         text: $editorPassword,
         placeholder: '',
@@ -399,8 +400,8 @@ export struct NetworkProxySettingsPage {
   @Builder
   EditorBypassListRow() {
     Column({ space: ThemeConstants.SPACE_XS }) {
-      this.FieldLabel('绕过列表（可选）')
-      TextArea({ placeholder: '每行一个域名或 IP', text: this.editorExclusionListText })
+      this.FieldLabel(AppStrings.t(AppStrings.R_BYPASS_LIST_OPTIONAL, 'Bypass list (optional)'))
+      TextArea({ placeholder: AppStrings.t(AppStrings.R_ONE_DOMAIN_OR_IP_PER_LINE, 'One domain or IP per line'), text: this.editorExclusionListText })
         .height(80)
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
         .fontColor($r('sys.color.font_primary'))
@@ -430,16 +431,16 @@ export struct NetworkProxySettingsPage {
 
   private activeSummary(): string {
     if (this.currentMode() === NetworkProxySettings.MODE_SYSTEM) {
-      return '系统代理'
+      return AppStrings.t(AppStrings.R_SYSTEM_PROXY, 'System proxy')
     }
     return NetworkProxySettings.summary(this.snapshot())
   }
 
   private systemSubtitle(): string {
     if (this.currentMode() === NetworkProxySettings.MODE_SYSTEM) {
-      return '当前连接'
+      return AppStrings.t(AppStrings.R_CURRENT_CONNECTION, 'Current connection')
     }
-    return '内置选项'
+    return AppStrings.t(AppStrings.R_BUILT_IN_OPTIONS, 'Built-in options')
   }
 
   private profileTitle(profile: NetworkProxyProfile): string {
@@ -451,7 +452,7 @@ export struct NetworkProxySettingsPage {
     if (snapshot.host && snapshot.port > 0) {
       return `${snapshot.host}:${snapshot.port}`
     }
-    return '代理配置'
+    return AppStrings.t(AppStrings.R_PROXY_CONFIG_TITLE, 'Proxy configuration')
   }
 
   private profileSubtitle(profile: NetworkProxyProfile): string {
@@ -537,7 +538,7 @@ export struct NetworkProxySettingsPage {
       .then(() => { this.persistActiveProfileSnapshot(context, snapshot) })
       .catch((error: Error) => {
         if (showError) {
-          this.showToast(error.message || '保存失败')
+          this.showToast(error.message || AppStrings.t(AppStrings.R_COMMON_SAVE_FAILED, 'Save failed'))
         }
         console.error('save network proxy settings failed: ' + (error.message || 'unknown'))
       })
@@ -574,12 +575,12 @@ export struct NetworkProxySettingsPage {
       return
     }
     if (snapshot.mode === NetworkProxySettings.MODE_SOCKS5 && (snapshot.username || snapshot.password)) {
-      this.testStatus = 'SOCKS5 暂不支持用户名/密码认证'
+      this.testStatus = AppStrings.t(AppStrings.R_SOCKS5_AUTH_UNSUPPORTED, 'SOCKS5 does not support username/password authentication yet')
       this.showToast(this.testStatus)
       return
     }
     this.testing = true
-    this.testStatus = '测试中…'
+    this.testStatus = AppStrings.t(AppStrings.R_TESTING, 'Testing…')
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     NetworkProxySettings.save(context, snapshot)
       .then(() => NetworkProxyRequest.testConnection(HttpClient.getInstance().getBaseUrl()))
@@ -619,9 +620,9 @@ export struct NetworkProxySettingsPage {
         this.activeProfileId = state.activeProfileId
         this.applySnapshotToPage(profile.snapshot)
         this.testStatus = ''
-        this.showToast('已切换配置')
+        this.showToast(AppStrings.t(AppStrings.R_PROFILE_SWITCHED, 'Profile switched'))
       })
-      .catch((error: Error) => { this.showToast(error.message || '切换失败') })
+      .catch((error: Error) => { this.showToast(error.message || AppStrings.t(AppStrings.R_SWITCH_FAILED, 'Switch failed')) })
   }
 
   private openNewProfileEditor(): void {
@@ -682,9 +683,9 @@ export struct NetworkProxySettingsPage {
         this.activeProfileId = state.activeProfileId
         this.applySnapshotToPage(profile.snapshot)
         this.closeEditor()
-        this.showToast('已保存')
+        this.showToast(AppStrings.t(AppStrings.R_COMMON_SAVED, 'Saved'))
       })
-      .catch((error: Error) => { this.showToast(error.message || '保存失败') })
+      .catch((error: Error) => { this.showToast(error.message || AppStrings.t(AppStrings.R_COMMON_SAVE_FAILED, 'Save failed')) })
   }
 
   private confirmDeleteProfile(): void {
@@ -693,11 +694,11 @@ export struct NetworkProxySettingsPage {
       return
     }
     this.getUIContext().showAlertDialog({
-      title: '删除代理',
+      title: AppStrings.t(AppStrings.R_DELETE_PROXY, 'Delete proxy'),
       message: `确定删除“${this.profileTitle(profile)}”？`,
-      primaryButton: { value: '取消', action: () => { } },
+      primaryButton: { value: AppStrings.t(AppStrings.R_COMMON_CANCEL, 'Cancel'), action: () => { } },
       secondaryButton: {
-        value: '删除',
+        value: AppStrings.t(AppStrings.R_COMMON_DELETE, 'Delete'),
         action: () => { this.deleteProfile(profile) }
       }
     })
@@ -719,9 +720,9 @@ export struct NetworkProxySettingsPage {
           this.saveCurrent(false)
         }
         this.closeEditor()
-        this.showToast('已删除')
+        this.showToast(AppStrings.t(AppStrings.R_COMMON_DELETED, 'Deleted'))
       })
-      .catch((error: Error) => { this.showToast(error.message || '删除失败') })
+      .catch((error: Error) => { this.showToast(error.message || AppStrings.t(AppStrings.R_COMMON_DELETE_FAILED, 'Delete failed')) })
   }
 
   private findProfile(id: string): NetworkProxyProfile | undefined {
@@ -753,7 +754,7 @@ export struct NetworkProxySettingsPage {
     if (normalized.host && normalized.port > 0) {
       return `${normalized.host}:${normalized.port}`
     }
-    return '代理配置'
+    return AppStrings.t(AppStrings.R_PROXY_CONFIG_TITLE, 'Proxy configuration')
   }
 
   private parsePort(value: string): number {
@@ -768,7 +769,7 @@ export struct NetworkProxySettingsPage {
   }
 
   private errorSummary(error: Error): string {
-    const message = (error.message || '测试失败').trim()
+    const message = (error.message || AppStrings.t(AppStrings.R_TEST_FAILED, 'Test failed')).trim()
     if (message.length > 80) {
       return message.substring(0, 80)
     }
