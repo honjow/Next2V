@@ -24,7 +24,7 @@ export interface NetworkProxyResponse {
 export class NetworkProxyRequest {
   static async request(url: string, options: NetworkProxyRequestOptions): Promise<NetworkProxyResponse> {
     const settings = NetworkProxySettings.current()
-    if (settings.mode === 'socks5') {
+    if (settings.mode === 'socks5' || settings.proxyScheme === 'https') {
       return NetworkProxyRequest.requestViaRcp(url, options, settings)
     }
     return NetworkProxyRequest.requestViaNetworkKit(url, options, settings)
@@ -100,9 +100,6 @@ export class NetworkProxyRequest {
     const validation = NetworkProxySettings.validate(settings)
     if (!validation.ok) {
       throw new Error(validation.message)
-    }
-    if (settings.username || settings.password) {
-      throw new Error('SOCKS5 代理暂不支持用户名/密码认证')
     }
     let session: rcp.Session | null = null
     try {

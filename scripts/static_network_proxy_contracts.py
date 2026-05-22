@@ -6,6 +6,9 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 WRONG_TEST_ENDPOINT = 'api/v2/site' + '/info'
+FORBIDDEN_BLOCKED_ENDPOINT = '/d/' + 'blocked'
+FORBIDDEN_IGNORED_ENDPOINT = '/d/' + 'ignored'
+FORBIDDEN_REMOTE_VALIDATION_SKIP = "remoteValidation: " + "'skip'"
 
 
 def read(rel: str) -> str:
@@ -34,7 +37,8 @@ def main() -> int:
 
     for key in [
         'NETWORK_PROXY_MODE', 'NETWORK_PROXY_HOST', 'NETWORK_PROXY_PORT',
-        'NETWORK_PROXY_USERNAME', 'NETWORK_PROXY_PASSWORD', 'NETWORK_PROXY_EXCLUSION_LIST'
+        'NETWORK_PROXY_USERNAME', 'NETWORK_PROXY_PASSWORD', 'NETWORK_PROXY_EXCLUSION_LIST',
+        'NETWORK_PROXY_SCHEME'
     ]:
         require(f'storage key {key}', key in storage and key in settings)
 
@@ -42,18 +46,23 @@ def main() -> int:
     require('profile storage keys', 'networkProxyProfiles' in settings and 'networkProxyActiveProfileId' in settings)
     require('profile api exists', 'NetworkProxyProfileSettings' in settings and 'setActiveProfile' in settings and 'upsertProfile' in settings and 'deleteProfile' in settings)
     require('profile switching preserves runtime snapshot', 'NetworkProxySettings.save(context, profile.snapshot)' in settings and 'NetworkProxySettings.current()' in adapter)
-    require('host validation', 'isValidHost' in settings and '请输入有效代理主机' in settings)
-    require('port validation', 'isValidPort' in settings and '端口需为 1-65535' in settings)
+    require('host validation', 'isValidHost' in settings and 'R_INVALID_PROXY_HOST' in settings)
+    require('port validation', 'isValidPort' in settings and 'R_INVALID_PROXY_PORT' in settings)
     require('http proxy construction', 'connection.HttpProxy' in settings and 'username' in settings and 'exclusionList' in settings)
-    require('socks5 url construction', "`socks5://${normalized.host}:${normalized.port}`" in settings)
-    require('http url construction', "`http://${normalized.host}:${normalized.port}`" in settings)
+    require('proxy scheme model', 'NetworkProxyScheme' in settings and 'proxyScheme' in settings and "'https'" in settings)
+    require('socks5 url construction', "socks5://${userinfo}${normalized.host}:${normalized.port}" in settings)
+    require('socks5 credentials retained', "mode === 'http' || mode === 'socks5'" in settings and "normalized.username ? `${NetworkProxySettings.encodeUserInfo(normalized.username)}:${NetworkProxySettings.encodeUserInfo(normalized.password)}@` : ''" in settings)
+    require('url userinfo encoding', 'encodeURIComponent(value)' in settings and 'encodeUserInfo' in settings)
+    require('http url construction', "`${normalized.proxyScheme}://${normalized.host}:${normalized.port}`" in settings)
+    require('https proxy scheme supported', "MODE_HTTPS_PROXY" in settings and "NetworkProxySettings.MODE_HTTPS_PROXY" in proxy_page)
 
     require('bootstrap restore', 'restoreNetworkProxy' in bootstrap and 'NetworkProxySettings.load' in bootstrap)
     require('networkkit options helper', 'networkKitProxyOption' in adapter and 'usingProxy = proxy' in adapter)
     require('networkkit off/system/http semantics', 'return false' in adapter and 'return true' in adapter and 'buildHttpProxy' in adapter)
-    require('rcp socks5 selected', "settings.mode === 'socks5'" in adapter and 'requestViaRcp' in adapter)
-    require('rcp web proxy tunnel always', 'createTunnel: \'always\'' in adapter and 'buildSocks5Url' in adapter)
-    require('socks5 auth rejected', 'SOCKS5 代理暂不支持用户名/密码认证' in adapter or 'SOCKS5 暂不支持用户名/密码认证' in proxy_page)
+    require('rcp socks5 and https selected', "settings.mode === 'socks5' || settings.proxyScheme === 'https'" in adapter and 'requestViaRcp' in adapter)
+    require('rcp web proxy tunnel always', 'createTunnel: \'always\'' in adapter and 'buildSocks5Url' in adapter and 'buildHttpUrl' in adapter)
+    require('socks5 auth not rejected', 'SOCKS5 代理暂不支持用户名/密码认证' not in adapter and 'SOCKS5 暂不支持用户名/密码认证' not in proxy_page and 'R_SOCKS5_AUTH_UNSUPPORTED' not in proxy_page and 'R_AUTH_NOT_SUPPORTED' not in proxy_page)
+    require('no remoteValidation skip in product path', FORBIDDEN_REMOTE_VALIDATION_SKIP not in adapter and FORBIDDEN_REMOTE_VALIDATION_SKIP not in settings and FORBIDDEN_REMOTE_VALIDATION_SKIP not in proxy_page)
     require(
         'test connection endpoint',
         'testConnection(baseUrl: string)' in adapter
@@ -67,7 +76,7 @@ def main() -> int:
 
     require('settings main entry', ("title: '网络代理'" in settings_page or 'R_NAV_NETWORK_PROXY' in settings_page) and "pushPathByName('NetworkProxySettings'" in settings_page)
     require('settings second page route', 'NetworkProxySettingsPage' in routes and 'networkProxySettings' in routes)
-    require('settings second page modes', 'R_SOCKS5_PROXY' in proxy_page and 'R_HTTP_PROXY' in proxy_page and 'R_SYSTEM_PROXY' in proxy_page)
+    require('settings second page modes', 'R_SOCKS5_PROXY' in proxy_page and 'R_HTTP_PROXY' in proxy_page and 'R_HTTPS_PROXY_ENTRY' in proxy_page and 'R_SYSTEM_PROXY' in proxy_page)
     forbidden_proxy_explainers = [
         '不是系统全局', '本地 DNS', 'VPN', 'WebView', '图片直显',
         '实验性', '不保证', '代理仅用于应用内网络请求'
@@ -81,7 +90,7 @@ def main() -> int:
     require('profile list uses hds rows with real active control', 'ProxyConnectionSection' in proxy_page and 'ConciseListRow({' in proxy_page and "Radio({ value: profileId, group: 'networkProxyProfiles' })" in proxy_page)
     require('profile editor avoids fake route branch', 'if (this.editorOpen)' not in proxy_page and 'fake full-page route' not in proxy_page)
     require('profile editor protocol uses semantic radio rows', "Radio({ value: protocol, group: 'networkProxyEditorProtocol' })" in proxy_page and 'suffixBuilderParam: (): void => this.ProtocolRadio' in proxy_page and 'ProtocolChoice' not in proxy_page)
-    forbidden_protocol_buttons = ["Button('HTTP 代理')", "Button('SOCKS5 代理')", 'this.ProtocolChoice(']
+    forbidden_protocol_buttons = ["Button('HTTP 代理')", "Button('HTTPS 代理入口')", "Button('SOCKS5 代理')", 'this.ProtocolChoice(']
     require('profile editor has no button-as-protocol-selector', not any(copy in proxy_page for copy in forbidden_protocol_buttons))
     save_section_match = re.search(r'EditorActionSection\(\) \{(?P<body>.*?)\n  \}\n\n  @Builder\n  EditorSectionLabel', proxy_page, re.S)
     save_section = save_section_match.group('body') if save_section_match else ''
@@ -119,7 +128,9 @@ def main() -> int:
         count = read(rel).count('NetworkProxyRequest.request(')
         require(f'proxy call-site {rel}', count >= minimum, f'found {count}, expected >= {minimum}')
 
-    require('no httpclient package', '@ohos/httpclient' not in ''.join(p.read_text(encoding='utf-8', errors='ignore') for p in ROOT.rglob('*.ets')))
+    all_ets = ''.join(p.read_text(encoding='utf-8', errors='ignore') for p in ROOT.rglob('*.ets'))
+    require('no httpclient package', '@ohos/httpclient' not in all_ets)
+    require('no blocked/ignored endpoints', FORBIDDEN_BLOCKED_ENDPOINT not in all_ets and FORBIDDEN_IGNORED_ENDPOINT not in all_ets)
     print('All network proxy static contracts passed')
     return 0
 

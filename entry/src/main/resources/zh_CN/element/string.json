@@ -617,6 +617,38 @@
       "value": "支持用户名和密码认证"
     },
     {
+      "name": "https_proxy_entry",
+      "value": "HTTPS 代理入口"
+    },
+    {
+      "name": "https_proxy_entry_subtitle",
+      "value": "代理服务器使用 TLS，不是访问 HTTPS 目标站"
+    },
+    {
+      "name": "socks5_auth_optional",
+      "value": "用户名和密码可选"
+    },
+    {
+      "name": "invalid_proxy_host",
+      "value": "请输入有效代理主机"
+    },
+    {
+      "name": "invalid_proxy_port",
+      "value": "端口需为 1-65535"
+    },
+    {
+      "name": "connection_test_success",
+      "value": "连接成功（HTTP {0}）"
+    },
+    {
+      "name": "connection_test_failed",
+      "value": "连接失败：HTTP {0}"
+    },
+    {
+      "name": "confirm_delete_proxy_message",
+      "value": "确定删除“{0}”？"
+    },
+    {
       "name": "socks5_proxy",
       "value": "SOCKS5 代理"
     },

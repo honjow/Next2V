@@ -48,6 +48,7 @@ export struct SettingsPage {
   @StorageLink(StorageKeys.NETWORK_PROXY_MODE) networkProxyMode: string = NetworkProxySettings.MODE_OFF;
   @StorageLink(StorageKeys.NETWORK_PROXY_HOST) networkProxyHost: string = '';
   @StorageLink(StorageKeys.NETWORK_PROXY_PORT) networkProxyPort: number = 0;
+  @StorageLink(StorageKeys.NETWORK_PROXY_SCHEME) networkProxyScheme: string = NetworkProxySettings.MODE_HTTP_PROXY;
   @State private cacheStats: CacheStats = { topicListCount: 0, topicDetailCount: 0, updatedAt: 0 };
   @State private themeMenuShown: boolean = false;
   @State private replyDisplayMenuShown: boolean = false;
@@ -217,6 +218,7 @@ export struct SettingsPage {
           mode: NetworkProxySettings.normalizeMode(this.networkProxyMode),
           host: this.networkProxyHost,
           port: this.networkProxyPort,
+          proxyScheme: NetworkProxySettings.normalizeProxyScheme(this.networkProxyScheme),
           username: '',
           password: '',
           exclusionList: [],

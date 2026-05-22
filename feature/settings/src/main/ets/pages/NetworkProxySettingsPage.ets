@@ -26,6 +26,7 @@ export struct NetworkProxySettingsPage {
   @StorageLink(StorageKeys.NETWORK_PROXY_MODE) mode: string = NetworkProxySettings.MODE_OFF
   @StorageLink(StorageKeys.NETWORK_PROXY_HOST) host: string = ''
   @StorageLink(StorageKeys.NETWORK_PROXY_PORT) port: number = 0
+  @StorageLink(StorageKeys.NETWORK_PROXY_SCHEME) proxyScheme: string = NetworkProxySettings.MODE_HTTP_PROXY
   @StorageLink(StorageKeys.NETWORK_PROXY_USERNAME) username: string = ''
   @StorageLink(StorageKeys.NETWORK_PROXY_PASSWORD) password: string = ''
   @StorageLink(StorageKeys.NETWORK_PROXY_EXCLUSION_LIST) exclusionListText: string = ''
@@ -39,6 +40,7 @@ export struct NetworkProxySettingsPage {
   @State private editingProfileId: string = ''
   @State private editorName: string = ''
   @State private editorMode: string = NetworkProxySettings.MODE_HTTP
+  @State private editorProxyScheme: string = NetworkProxySettings.MODE_HTTP_PROXY
   @State private editorHost: string = ''
   @State private editorPort: number = 0
   @State private editorPortText: string = ''
@@ -202,15 +204,22 @@ export struct NetworkProxySettingsPage {
           title: AppStrings.t(AppStrings.R_HTTP_PROXY, 'HTTP proxy'),
           subtitle: AppStrings.t(AppStrings.R_SUPPORTS_AUTH, 'Supports username/password authentication'),
           showChevron: false,
-          suffixBuilderParam: (): void => this.ProtocolRadio(NetworkProxySettings.MODE_HTTP),
-          action: () => { this.updateEditorMode(NetworkProxySettings.MODE_HTTP) },
+          suffixBuilderParam: (): void => this.ProtocolRadio(NetworkProxySettings.MODE_HTTP_PROXY),
+          action: () => { this.updateEditorProtocol(NetworkProxySettings.MODE_HTTP_PROXY) },
+        })
+        ConciseListRow({
+          title: AppStrings.t(AppStrings.R_HTTPS_PROXY_ENTRY, 'HTTPS proxy endpoint'),
+          subtitle: AppStrings.t(AppStrings.R_HTTPS_PROXY_ENTRY_SUBTITLE, 'Proxy server uses TLS, not the HTTPS target site'),
+          showChevron: false,
+          suffixBuilderParam: (): void => this.ProtocolRadio(NetworkProxySettings.MODE_HTTPS_PROXY),
+          action: () => { this.updateEditorProtocol(NetworkProxySettings.MODE_HTTPS_PROXY) },
         })
         ConciseListRow({
           title: AppStrings.t(AppStrings.R_SOCKS5_PROXY, 'SOCKS5 proxy'),
-          subtitle: AppStrings.t(AppStrings.R_AUTH_NOT_SUPPORTED, 'Authentication not supported'),
+          subtitle: AppStrings.t(AppStrings.R_SOCKS5_AUTH_OPTIONAL, 'Username and password optional'),
           showChevron: false,
           suffixBuilderParam: (): void => this.ProtocolRadio(NetworkProxySettings.MODE_SOCKS5),
-          action: () => { this.updateEditorMode(NetworkProxySettings.MODE_SOCKS5) },
+          action: () => { this.updateEditorProtocol(NetworkProxySettings.MODE_SOCKS5) },
         })
       }
     }
@@ -220,10 +229,10 @@ export struct NetworkProxySettingsPage {
   @Builder
   ProtocolRadio(protocol: string) {
     Radio({ value: protocol, group: 'networkProxyEditorProtocol' })
-      .checked(this.editorCurrentMode() === protocol)
+      .checked(this.editorCurrentProtocol() === protocol)
       .onChange((checked: boolean) => {
         if (checked) {
-          this.updateEditorMode(protocol)
+          this.updateEditorProtocol(protocol)
         }
       })
   }
@@ -236,11 +245,9 @@ export struct NetworkProxySettingsPage {
         Column({ space: ThemeConstants.SPACE_LG }) {
           this.EditorHostFieldRow()
           this.EditorPortFieldRow()
-          if (this.editorCurrentMode() === NetworkProxySettings.MODE_HTTP) {
+          if (this.editorCurrentMode() === NetworkProxySettings.MODE_HTTP || this.editorCurrentMode() === NetworkProxySettings.MODE_SOCKS5) {
             this.EditorUsernameFieldRow()
             this.EditorPasswordFieldRow()
-          } else {
-            this.StaticFieldRow(AppStrings.t(AppStrings.R_AUTHENTICATION, 'Authentication'), AppStrings.t(AppStrings.R_AUTH_NOT_SUPPORTED, 'Authentication not supported'))
           }
           this.EditorNameFieldRow()
           this.EditorBypassListRow()
@@ -458,7 +465,7 @@ export struct NetworkProxySettingsPage {
   private profileSubtitle(profile: NetworkProxyProfile): string {
     const summary = NetworkProxySettings.summary(profile.snapshot)
     if (this.proxyEnabled() && this.activeProfileId === profile.id && this.currentMode() !== NetworkProxySettings.MODE_SYSTEM) {
-      return `${summary} · 当前连接`
+      return `${summary} · ${AppStrings.t(AppStrings.R_CURRENT_CONNECTION, 'Current connection')}`
     }
     return summary
   }
@@ -468,8 +475,9 @@ export struct NetworkProxySettingsPage {
       mode: this.currentMode(),
       host: this.host,
       port: this.port,
-      username: this.currentMode() === NetworkProxySettings.MODE_HTTP ? this.username : '',
-      password: this.currentMode() === NetworkProxySettings.MODE_HTTP ? this.password : '',
+      proxyScheme: this.currentMode() === NetworkProxySettings.MODE_HTTP ? NetworkProxySettings.normalizeProxyScheme(this.proxyScheme) : NetworkProxySettings.MODE_HTTP_PROXY,
+      username: this.currentMode() === NetworkProxySettings.MODE_HTTP || this.currentMode() === NetworkProxySettings.MODE_SOCKS5 ? this.username : '',
+      password: this.currentMode() === NetworkProxySettings.MODE_HTTP || this.currentMode() === NetworkProxySettings.MODE_SOCKS5 ? this.password : '',
       exclusionList: NetworkProxySettings.parseExclusionList(this.exclusionListText),
     })
   }
@@ -479,8 +487,9 @@ export struct NetworkProxySettingsPage {
       mode: this.editorCurrentMode(),
       host: this.editorHost,
       port: this.editorPort,
-      username: this.editorCurrentMode() === NetworkProxySettings.MODE_HTTP ? this.editorUsername : '',
-      password: this.editorCurrentMode() === NetworkProxySettings.MODE_HTTP ? this.editorPassword : '',
+      proxyScheme: this.editorCurrentMode() === NetworkProxySettings.MODE_HTTP ? NetworkProxySettings.normalizeProxyScheme(this.editorProxyScheme) : NetworkProxySettings.MODE_HTTP_PROXY,
+      username: this.editorCurrentMode() === NetworkProxySettings.MODE_HTTP || this.editorCurrentMode() === NetworkProxySettings.MODE_SOCKS5 ? this.editorUsername : '',
+      password: this.editorCurrentMode() === NetworkProxySettings.MODE_HTTP || this.editorCurrentMode() === NetworkProxySettings.MODE_SOCKS5 ? this.editorPassword : '',
       exclusionList: NetworkProxySettings.parseExclusionList(this.editorExclusionListText),
     })
   }
@@ -491,6 +500,13 @@ export struct NetworkProxySettingsPage {
       return NetworkProxySettings.MODE_SOCKS5
     }
     return NetworkProxySettings.MODE_HTTP
+  }
+
+  private editorCurrentProtocol(): string {
+    if (this.editorCurrentMode() === NetworkProxySettings.MODE_SOCKS5) {
+      return NetworkProxySettings.MODE_SOCKS5
+    }
+    return NetworkProxySettings.normalizeProxyScheme(this.editorProxyScheme)
   }
 
   private setEnabled(value: boolean): void {
@@ -513,12 +529,14 @@ export struct NetworkProxySettingsPage {
     this.saveCurrent(true)
   }
 
-  private updateEditorMode(value: string): void {
-    this.editorMode = NetworkProxySettings.normalizeMode(value) === NetworkProxySettings.MODE_SOCKS5 ? NetworkProxySettings.MODE_SOCKS5 : NetworkProxySettings.MODE_HTTP
-    if (this.editorMode === NetworkProxySettings.MODE_SOCKS5) {
-      this.editorUsername = ''
-      this.editorPassword = ''
+  private updateEditorProtocol(value: string): void {
+    if (value === NetworkProxySettings.MODE_SOCKS5) {
+      this.editorMode = NetworkProxySettings.MODE_SOCKS5
+      this.editorProxyScheme = NetworkProxySettings.MODE_HTTP_PROXY
+      return
     }
+    this.editorMode = NetworkProxySettings.MODE_HTTP
+    this.editorProxyScheme = NetworkProxySettings.normalizeProxyScheme(value)
   }
 
   private saveCurrent(showError: boolean): void {
@@ -574,11 +592,7 @@ export struct NetworkProxySettingsPage {
       this.showToast(validation.message)
       return
     }
-    if (snapshot.mode === NetworkProxySettings.MODE_SOCKS5 && (snapshot.username || snapshot.password)) {
-      this.testStatus = AppStrings.t(AppStrings.R_SOCKS5_AUTH_UNSUPPORTED, 'SOCKS5 does not support username/password authentication yet')
-      this.showToast(this.testStatus)
-      return
-    }
+
     this.testing = true
     this.testStatus = AppStrings.t(AppStrings.R_TESTING, 'Testing…')
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
@@ -587,9 +601,9 @@ export struct NetworkProxySettingsPage {
       .then((response) => {
         this.testing = false
         if (response.responseCode >= 200 && response.responseCode < 300) {
-          this.testStatus = `连接成功（HTTP ${response.responseCode}）`
+          this.testStatus = AppStrings.format(AppStrings.t(AppStrings.R_CONNECTION_TEST_SUCCESS, 'Connection succeeded (HTTP {0})'), [`${response.responseCode}`])
         } else {
-          this.testStatus = `连接失败：HTTP ${response.responseCode}`
+          this.testStatus = AppStrings.format(AppStrings.t(AppStrings.R_CONNECTION_TEST_FAILED, 'Connection failed: HTTP {0}'), [`${response.responseCode}`])
         }
         this.showToast(this.testStatus)
       })
@@ -635,6 +649,7 @@ export struct NetworkProxySettingsPage {
       mode: NetworkProxySettings.MODE_HTTP,
       host: '',
       port: 0,
+      proxyScheme: NetworkProxySettings.MODE_HTTP_PROXY,
       username: '',
       password: '',
       exclusionList: [],
@@ -650,6 +665,7 @@ export struct NetworkProxySettingsPage {
     this.editingProfileId = id
     this.editorName = name
     this.editorMode = normalized.mode === NetworkProxySettings.MODE_SOCKS5 ? NetworkProxySettings.MODE_SOCKS5 : NetworkProxySettings.MODE_HTTP
+    this.editorProxyScheme = normalized.mode === NetworkProxySettings.MODE_HTTP ? NetworkProxySettings.normalizeProxyScheme(normalized.proxyScheme || NetworkProxySettings.MODE_HTTP_PROXY) : NetworkProxySettings.MODE_HTTP_PROXY
     this.editorHost = normalized.host
     this.editorPort = normalized.port
     this.editorPortText = normalized.port > 0 ? `${normalized.port}` : ''
@@ -695,7 +711,7 @@ export struct NetworkProxySettingsPage {
     }
     this.getUIContext().showAlertDialog({
       title: AppStrings.t(AppStrings.R_DELETE_PROXY, 'Delete proxy'),
-      message: `确定删除“${this.profileTitle(profile)}”？`,
+      message: AppStrings.format(AppStrings.t(AppStrings.R_CONFIRM_DELETE_PROXY_MESSAGE, 'Delete “{0}”?'), [this.profileTitle(profile)]),
       primaryButton: { value: AppStrings.t(AppStrings.R_COMMON_CANCEL, 'Cancel'), action: () => { } },
       secondaryButton: {
         value: AppStrings.t(AppStrings.R_COMMON_DELETE, 'Delete'),
@@ -737,6 +753,7 @@ export struct NetworkProxySettingsPage {
   private applySnapshotToPage(snapshot: NetworkProxySettingsSnapshot): void {
     const normalized = NetworkProxySettings.normalize(snapshot)
     this.mode = normalized.mode
+    this.proxyScheme = normalized.proxyScheme || NetworkProxySettings.MODE_HTTP_PROXY
     this.host = normalized.host
     this.port = normalized.port
     this.portText = normalized.port > 0 ? `${normalized.port}` : ''
@@ -769,7 +786,8 @@ export struct NetworkProxySettingsPage {
   }
 
   private errorSummary(error: Error): string {
-    const message = (error.message || AppStrings.t(AppStrings.R_TEST_FAILED, 'Test failed')).trim()
+    const rawMessage = (error.message || AppStrings.t(AppStrings.R_TEST_FAILED, 'Test failed')).trim()
+    const message = rawMessage.replace(/(https?|socks5):\/\/[^\s/@:]+(:[^\s/@]*)?@/g, '$1://<credentials>@')
     if (message.length > 80) {
       return message.substring(0, 80)
     }

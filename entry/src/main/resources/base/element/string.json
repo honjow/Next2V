@@ -617,6 +617,38 @@
       "value": "Supports username/password authentication"
     },
     {
+      "name": "https_proxy_entry",
+      "value": "HTTPS proxy endpoint"
+    },
+    {
+      "name": "https_proxy_entry_subtitle",
+      "value": "Proxy server uses TLS, not the HTTPS target site"
+    },
+    {
+      "name": "socks5_auth_optional",
+      "value": "Username and password optional"
+    },
+    {
+      "name": "invalid_proxy_host",
+      "value": "Enter a valid proxy host"
+    },
+    {
+      "name": "invalid_proxy_port",
+      "value": "Port must be 1-65535"
+    },
+    {
+      "name": "connection_test_success",
+      "value": "Connection succeeded (HTTP {0})"
+    },
+    {
+      "name": "connection_test_failed",
+      "value": "Connection failed: HTTP {0}"
+    },
+    {
+      "name": "confirm_delete_proxy_message",
+      "value": "Delete “{0}”?"
+    },
+    {
       "name": "socks5_proxy",
       "value": "SOCKS5 proxy"
     },

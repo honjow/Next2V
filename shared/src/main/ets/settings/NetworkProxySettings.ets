@@ -6,11 +6,13 @@ import { AppStrings } from '../i18n/AppStrings'
 import { STORE_NAME_SETTINGS, SettingsPreferencesStore, readJsonArray, readJsonObject, setAppStorageValue, writeJsonValue } from './SettingsStorage'
 
 export type NetworkProxyMode = 'off' | 'system' | 'http' | 'socks5'
+export type NetworkProxyScheme = 'http' | 'https'
 
 export interface NetworkProxySettingsSnapshot {
   mode: NetworkProxyMode
   host: string
   port: number
+  proxyScheme?: NetworkProxyScheme
   username: string
   password: string
   exclusionList: string[]
@@ -42,9 +44,11 @@ export class NetworkProxySettings {
   static readonly MODE_SYSTEM: NetworkProxyMode = 'system'
   static readonly MODE_HTTP: NetworkProxyMode = 'http'
   static readonly MODE_SOCKS5: NetworkProxyMode = 'socks5'
+  static readonly MODE_HTTP_PROXY: NetworkProxyScheme = 'http'
+  static readonly MODE_HTTPS_PROXY: NetworkProxyScheme = 'https'
 
   static defaultSnapshot(): NetworkProxySettingsSnapshot {
-    return { mode: 'off', host: '', port: 0, username: '', password: '', exclusionList: [] }
+    return { mode: 'off', host: '', port: 0, proxyScheme: 'http', username: '', password: '', exclusionList: [] }
   }
 
   static apply(snapshot: NetworkProxySettingsSnapshot): void {
@@ -52,6 +56,7 @@ export class NetworkProxySettings {
     setAppStorageValue<string>(StorageKeys.NETWORK_PROXY_MODE, normalized.mode)
     setAppStorageValue<string>(StorageKeys.NETWORK_PROXY_HOST, normalized.host)
     setAppStorageValue<number>(StorageKeys.NETWORK_PROXY_PORT, normalized.port)
+    setAppStorageValue<string>(StorageKeys.NETWORK_PROXY_SCHEME, normalized.proxyScheme || 'http')
     setAppStorageValue<string>(StorageKeys.NETWORK_PROXY_USERNAME, normalized.username)
     setAppStorageValue<string>(StorageKeys.NETWORK_PROXY_PASSWORD, normalized.password)
     setAppStorageValue<string>(StorageKeys.NETWORK_PROXY_EXCLUSION_LIST, normalized.exclusionList.join('\n'))
@@ -85,6 +90,7 @@ export class NetworkProxySettings {
       mode: (AppStorage.get<string>(StorageKeys.NETWORK_PROXY_MODE) || 'off') as NetworkProxyMode,
       host: AppStorage.get<string>(StorageKeys.NETWORK_PROXY_HOST) || '',
       port: AppStorage.get<number>(StorageKeys.NETWORK_PROXY_PORT) || 0,
+      proxyScheme: NetworkProxySettings.normalizeProxyScheme(AppStorage.get<string>(StorageKeys.NETWORK_PROXY_SCHEME) || 'http'),
       username: AppStorage.get<string>(StorageKeys.NETWORK_PROXY_USERNAME) || '',
       password: AppStorage.get<string>(StorageKeys.NETWORK_PROXY_PASSWORD) || '',
       exclusionList: NetworkProxySettings.parseExclusionList(AppStorage.get<string>(StorageKeys.NETWORK_PROXY_EXCLUSION_LIST) || ''),
@@ -97,8 +103,9 @@ export class NetworkProxySettings {
       mode,
       host: (snapshot.host || '').trim(),
       port: NetworkProxySettings.normalizePort(snapshot.port),
-      username: mode === 'http' ? (snapshot.username || '').trim() : '',
-      password: mode === 'http' ? (snapshot.password || '') : '',
+      proxyScheme: mode === 'http' ? NetworkProxySettings.normalizeProxyScheme(snapshot.proxyScheme || 'http') : 'http',
+      username: mode === 'http' || mode === 'socks5' ? (snapshot.username || '').trim() : '',
+      password: mode === 'http' || mode === 'socks5' ? (snapshot.password || '') : '',
       exclusionList: NetworkProxySettings.normalizeExclusionList(snapshot.exclusionList || []),
     }
   }
@@ -108,6 +115,10 @@ export class NetworkProxySettings {
       return mode
     }
     return 'off'
+  }
+
+  static normalizeProxyScheme(scheme: string): NetworkProxyScheme {
+    return scheme === 'https' ? 'https' : 'http'
   }
 
   static parseExclusionList(text: string): string[] {
@@ -136,7 +147,8 @@ export class NetworkProxySettings {
     const normalized = NetworkProxySettings.normalize(snapshot)
     if (normalized.mode === 'http' || normalized.mode === 'socks5') {
       if (normalized.host && normalized.port > 0) {
-        return `${NetworkProxySettings.label(normalized.mode)} · ${normalized.host}:${normalized.port}`
+        const scheme = normalized.mode === 'http' && normalized.proxyScheme === 'https' ? AppStrings.t(AppStrings.R_HTTPS_PROXY_ENTRY, 'HTTPS proxy endpoint') : NetworkProxySettings.label(normalized.mode)
+        return `${scheme} · ${normalized.host}:${normalized.port}`
       }
       return `${NetworkProxySettings.label(normalized.mode)} · ${AppStrings.t(AppStrings.R_PROXY_NOT_CONFIGURED, 'Not configured')}`
     }
@@ -149,10 +161,10 @@ export class NetworkProxySettings {
       return { ok: true, message: '' }
     }
     if (!NetworkProxySettings.isValidHost(normalized.host)) {
-      return { ok: false, message: '请输入有效代理主机' }
+      return { ok: false, message: AppStrings.t(AppStrings.R_INVALID_PROXY_HOST, 'Enter a valid proxy host') }
     }
     if (!NetworkProxySettings.isValidPort(normalized.port)) {
-      return { ok: false, message: '端口需为 1-65535' }
+      return { ok: false, message: AppStrings.t(AppStrings.R_INVALID_PROXY_PORT, 'Port must be 1-65535') }
     }
     return { ok: true, message: '' }
   }
@@ -164,7 +176,7 @@ export class NetworkProxySettings {
 
   static buildHttpProxy(snapshot: NetworkProxySettingsSnapshot): connection.HttpProxy | undefined {
     const normalized = NetworkProxySettings.normalize(snapshot)
-    if (normalized.mode !== 'http' || !NetworkProxySettings.validate(normalized).ok) {
+    if (normalized.mode !== 'http' || normalized.proxyScheme !== 'http' || !NetworkProxySettings.validate(normalized).ok) {
       return undefined
     }
     const proxy: connection.HttpProxy = {
@@ -181,12 +193,17 @@ export class NetworkProxySettings {
 
   static buildSocks5Url(snapshot: NetworkProxySettingsSnapshot): string {
     const normalized = NetworkProxySettings.normalize(snapshot)
-    return `socks5://${normalized.host}:${normalized.port}`
+    const userinfo = normalized.username ? `${NetworkProxySettings.encodeUserInfo(normalized.username)}:${NetworkProxySettings.encodeUserInfo(normalized.password)}@` : ''
+    return `socks5://${userinfo}${normalized.host}:${normalized.port}`
   }
 
   static buildHttpUrl(snapshot: NetworkProxySettingsSnapshot): string {
     const normalized = NetworkProxySettings.normalize(snapshot)
-    return `http://${normalized.host}:${normalized.port}`
+    return `${normalized.proxyScheme}://${normalized.host}:${normalized.port}`
+  }
+
+  private static encodeUserInfo(value: string): string {
+    return encodeURIComponent(value)
   }
 
   private static normalizePort(value: number): number {

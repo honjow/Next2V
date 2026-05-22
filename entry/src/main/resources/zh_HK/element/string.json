@@ -617,6 +617,38 @@
       "value": "支援使用者名稱和密碼驗證"
     },
     {
+      "name": "https_proxy_entry",
+      "value": "HTTPS 代理入口"
+    },
+    {
+      "name": "https_proxy_entry_subtitle",
+      "value": "代理伺服器使用 TLS，不是訪問 HTTPS 目標站"
+    },
+    {
+      "name": "socks5_auth_optional",
+      "value": "使用者名稱和密碼可選"
+    },
+    {
+      "name": "invalid_proxy_host",
+      "value": "請輸入有效代理主機"
+    },
+    {
+      "name": "invalid_proxy_port",
+      "value": "連接埠需為 1-65535"
+    },
+    {
+      "name": "connection_test_success",
+      "value": "連接成功（HTTP {0}）"
+    },
+    {
+      "name": "connection_test_failed",
+      "value": "連接失敗：HTTP {0}"
+    },
+    {
+      "name": "confirm_delete_proxy_message",
+      "value": "確定刪除「{0}」？"
+    },
+    {
       "name": "socks5_proxy",
       "value": "SOCKS5 代理"
     },

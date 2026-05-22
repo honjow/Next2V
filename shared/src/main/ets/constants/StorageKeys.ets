@@ -25,6 +25,7 @@ export class StorageKeys {
   static readonly NETWORK_PROXY_MODE: string = 'networkProxyMode'
   static readonly NETWORK_PROXY_HOST: string = 'networkProxyHost'
   static readonly NETWORK_PROXY_PORT: string = 'networkProxyPort'
+  static readonly NETWORK_PROXY_SCHEME: string = 'networkProxyScheme'
   static readonly NETWORK_PROXY_USERNAME: string = 'networkProxyUsername'
   static readonly NETWORK_PROXY_PASSWORD: string = 'networkProxyPassword'
   static readonly NETWORK_PROXY_EXCLUSION_LIST: string = 'networkProxyExclusionList'
