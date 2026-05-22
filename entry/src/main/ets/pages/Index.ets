@@ -409,9 +409,9 @@ struct Index {
   }
 
   private navDestTitleBarOpts<T extends Object>(
-    title?: string,
+    title?: ResourceStr,
     menu?: Record<string, Object>,
-    subTitle?: string,
+    subTitle?: ResourceStr,
     bottomBuilder?: Record<string, Object>,
     stackBuilderComponent?: ComponentContent<T>,
     titleAccessibilityText?: string,
@@ -772,7 +772,7 @@ struct Index {
   }
 
   private topicActionItem(
-    label: string,
+    label: ResourceStr,
     icon: IconType,
     action: () => void,
   ): Record<string, Object> {

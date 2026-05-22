@@ -557,6 +557,26 @@
       "value": "已保留 {count} 个本机日志文件"
     },
     {
+      "name": "diagnostics_current_launch_recent_count",
+      "value": "本次启动最近 {0} 条"
+    },
+    {
+      "name": "diagnostics_log_file_share_hint",
+      "value": "{0} · 点按分享"
+    },
+    {
+      "name": "current_log_with_time",
+      "value": "当前日志 · {0}"
+    },
+    {
+      "name": "startup_log_with_time",
+      "value": "启动日志 · {0}"
+    },
+    {
+      "name": "retained_local_log_files_count_arg",
+      "value": "保留 {0} 个本地日志文件"
+    },
+    {
       "name": "clear_boot_records",
       "value": "清空本次启动记录"
     },

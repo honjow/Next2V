@@ -21,16 +21,16 @@ export struct PageLoadingState {
 
 @Component
 export struct PageErrorState {
-  @Prop message: string = AppStrings.t(AppStrings.R_COMMON_LOAD_FAILED, 'Load failed')
-  @Prop retryLabel: string = AppStrings.t(AppStrings.R_COMMON_RETRY, 'Retry')
-  @Prop secondaryLabel: string = ''
+  @Prop message: ResourceStr = AppStrings.R_COMMON_LOAD_FAILED
+  @Prop retryLabel: ResourceStr = AppStrings.R_COMMON_RETRY
+  @Prop secondaryLabel: ResourceStr = ''
   @Prop expand: boolean = true
   retryAction?: () => void
   secondaryAction?: () => void
 
   build() {
     Column({ space: ThemeConstants.SPACE_SM }) {
-      Text(this.message || AppStrings.t(AppStrings.R_COMMON_LOAD_FAILED, 'Load failed'))
+      Text(this.message || AppStrings.R_COMMON_LOAD_FAILED)
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
         .fontColor($r('sys.color.font_secondary'))
         .textAlign(TextAlign.Center)
@@ -64,8 +64,8 @@ export struct PageErrorState {
 
 @Component
 export struct PageLoginRequiredState {
-  @Prop message: string = AppStrings.t(AppStrings.R_LOGIN_REQUIRED_CONTINUE, 'Log in to continue')
-  @Prop actionLabel: string = AppStrings.t(AppStrings.R_LOGIN_ACTION, 'Log in')
+  @Prop message: ResourceStr = AppStrings.R_LOGIN_REQUIRED_CONTINUE
+  @Prop actionLabel: ResourceStr = AppStrings.R_LOGIN_ACTION
   @Prop expand: boolean = true
   action?: () => void
 
@@ -92,7 +92,7 @@ export struct PageLoginRequiredState {
 
 @Component
 export struct CardEmptyState {
-  @Prop message: string = ''
+  @Prop message: ResourceStr = ''
   @Prop expand: boolean = true
 
   build() {

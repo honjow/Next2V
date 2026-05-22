@@ -61,7 +61,7 @@ export struct NetworkProxySettingsPage {
           this.SwitchSection()
         }
         ListItem() {
-          SettingsSectionHeader({ title: AppStrings.t(AppStrings.R_PROXY_CONNECTION, 'Proxy connection') })
+          SettingsSectionHeader({ title: AppStrings.R_PROXY_CONNECTION })
         }
         ListItem() {
           this.ProxyConnectionSection()
@@ -83,8 +83,8 @@ export struct NetworkProxySettingsPage {
   SwitchSection() {
     GroupedListSection() {
       ConciseListRow({
-        title: AppStrings.t(AppStrings.R_USE_PROXY, 'Use proxy'),
-        subtitle: this.proxyEnabled() ? this.activeSummary() : AppStrings.t(AppStrings.R_COMMON_CLOSED, 'Off'),
+        title: AppStrings.R_USE_PROXY,
+        subtitle: this.proxyEnabled() ? this.activeSummary() : AppStrings.R_COMMON_CLOSED,
         hasSwitch: true,
         checked: this.proxyEnabled(),
         showChevron: false,
@@ -97,7 +97,7 @@ export struct NetworkProxySettingsPage {
   ProxyConnectionSection() {
     GroupedListSection() {
       ConciseListRow({
-        title: AppStrings.t(AppStrings.R_SYSTEM_PROXY, 'System proxy'),
+        title: AppStrings.R_SYSTEM_PROXY,
         showChevron: false,
         prefixBuilderParam: (): void => this.ProxySelectionRadio(NetworkProxySettings.MODE_SYSTEM),
         action: () => { this.selectSystemProxy() },
@@ -106,7 +106,7 @@ export struct NetworkProxySettingsPage {
         this.ManualProfileRow(profile)
       }, (profile: NetworkProxyProfile) => `${profile.id}-${profile.updatedAt}`)
       ConciseListRow({
-        title: AppStrings.t(AppStrings.R_ADD_PROXY, 'Add proxy'),
+        title: AppStrings.R_ADD_PROXY,
         showChevron: true,
         action: () => { this.openNewProfileEditor() },
       })
@@ -117,7 +117,7 @@ export struct NetworkProxySettingsPage {
   ActionSection() {
     GroupedListSection() {
       ConciseListRow({
-        title: this.testing ? AppStrings.t(AppStrings.R_TESTING_CONNECTION, 'Testing connection…') : AppStrings.t(AppStrings.R_TEST_CONNECTION, 'Test connection'),
+        title: this.testing ? AppStrings.R_TESTING_CONNECTION : AppStrings.R_TEST_CONNECTION,
         subtitle: this.testStatus,
         showChevron: false,
         action: () => { this.testConnection() },
@@ -128,7 +128,7 @@ export struct NetworkProxySettingsPage {
   @Builder
   ManualProfileRow(profile: NetworkProxyProfile) {
     ConciseListRow({
-      title: this.profileTitle(profile),
+      title: this.profileDisplayTitle(profile),
       subtitle: this.profileSubtitle(profile),
       showChevron: false,
       prefixBuilderParam: (): void => this.ProxySelectionRadio(profile.id),
@@ -178,7 +178,7 @@ export struct NetworkProxySettingsPage {
   @Builder
   ProfileEditorSheet() {
     AppModalScaffold({
-      title: AppStrings.t(AppStrings.R_PROXY_INFO, 'Proxy information'),
+      title: AppStrings.R_PROXY_INFO,
       includeKeyboardPadding: true,
       contentBackgroundColor: $r('sys.color.ohos_id_color_sub_background'),
       closeAction: () => { this.closeEditor() },
@@ -198,22 +198,22 @@ export struct NetworkProxySettingsPage {
   @Builder
   ProtocolSection() {
     Column({ space: ThemeConstants.SPACE_XS }) {
-      this.EditorSectionLabel(AppStrings.t(AppStrings.R_PROXY_TYPE, 'Proxy type'))
+      this.EditorSectionLabel(AppStrings.R_PROXY_TYPE)
       GroupedListSection() {
         ConciseListRow({
-          title: AppStrings.t(AppStrings.R_HTTP_PROXY, 'HTTP'),
+          title: AppStrings.R_HTTP_PROXY,
           showChevron: false,
           suffixBuilderParam: (): void => this.ProtocolRadio(NetworkProxySettings.MODE_HTTP_PROXY),
           action: () => { this.updateEditorProtocol(NetworkProxySettings.MODE_HTTP_PROXY) },
         })
         ConciseListRow({
-          title: AppStrings.t(AppStrings.R_HTTPS_PROXY_ENTRY, 'HTTPS'),
+          title: AppStrings.R_HTTPS_PROXY_ENTRY,
           showChevron: false,
           suffixBuilderParam: (): void => this.ProtocolRadio(NetworkProxySettings.MODE_HTTPS_PROXY),
           action: () => { this.updateEditorProtocol(NetworkProxySettings.MODE_HTTPS_PROXY) },
         })
         ConciseListRow({
-          title: AppStrings.t(AppStrings.R_SOCKS5_PROXY, 'SOCKS5'),
+          title: AppStrings.R_SOCKS5_PROXY,
           showChevron: false,
           suffixBuilderParam: (): void => this.ProtocolRadio(NetworkProxySettings.MODE_SOCKS5),
           action: () => { this.updateEditorProtocol(NetworkProxySettings.MODE_SOCKS5) },
@@ -237,7 +237,7 @@ export struct NetworkProxySettingsPage {
   @Builder
   ProfileEditorFields() {
     Column({ space: ThemeConstants.SPACE_XS }) {
-      this.EditorSectionLabel(AppStrings.t(AppStrings.R_PROXY_PARAMETERS, 'Proxy parameters'))
+      this.EditorSectionLabel(AppStrings.R_PROXY_PARAMETERS)
       GroupedListSection({ inset: ThemeConstants.SPACE_XL, radius: ThemeConstants.RADIUS_CARD }) {
         Column({ space: ThemeConstants.SPACE_LG }) {
           this.EditorHostFieldRow()
@@ -258,10 +258,10 @@ export struct NetworkProxySettingsPage {
   @Builder
   EditorActionSection() {
     Column({ space: ThemeConstants.SPACE_XS }) {
-      this.EditorSectionLabel(AppStrings.t(AppStrings.R_ACTIONS, 'Actions'))
+      this.EditorSectionLabel(AppStrings.R_ACTIONS)
       GroupedListSection({ inset: ThemeConstants.SPACE_XL, radius: ThemeConstants.RADIUS_CARD }) {
         Column({ space: ThemeConstants.SPACE_MD }) {
-          Button(AppStrings.t(AppStrings.R_COMMON_SAVE, 'Save'))
+          Button(AppStrings.R_COMMON_SAVE)
             .type(ButtonType.Normal)
             .height(ThemeConstants.TOUCH_TARGET_SM)
             .width('100%')
@@ -272,7 +272,7 @@ export struct NetworkProxySettingsPage {
             .onClick(() => { this.saveProfileEditor() })
           if (this.editingProfileId) {
             ConciseListRow({
-              title: AppStrings.t(AppStrings.R_DELETE_PROXY, 'Delete proxy'),
+              title: AppStrings.R_DELETE_PROXY,
               destructive: true,
               showChevron: false,
               action: () => { this.confirmDeleteProfile() },
@@ -286,7 +286,7 @@ export struct NetworkProxySettingsPage {
   }
 
   @Builder
-  EditorSectionLabel(label: string) {
+  EditorSectionLabel(label: ResourceStr) {
     Text(label)
       .fontSize(ThemeConstants.FONT_SIZE_SECTION_TITLE)
       .fontColor($r('sys.color.font_secondary'))
@@ -303,7 +303,7 @@ export struct NetworkProxySettingsPage {
   }
 
   @Builder
-  FieldLabel(label: string) {
+  FieldLabel(label: ResourceStr) {
     Text(label)
       .fontSize(ThemeConstants.FONT_SIZE_TAG)
       .fontColor($r('sys.color.font_secondary'))
@@ -313,10 +313,10 @@ export struct NetworkProxySettingsPage {
   @Builder
   EditorNameFieldRow() {
     Column({ space: ThemeConstants.SPACE_XS }) {
-      this.FieldLabel(AppStrings.t(AppStrings.R_PROXY_NAME_PLACEHOLDER, 'Name (optional)'))
+      this.FieldLabel(AppStrings.R_PROXY_NAME_PLACEHOLDER)
       AppTextField({
         text: $editorName,
-        placeholder: AppStrings.t(AppStrings.R_DEFAULT_SERVER_PORT, 'Use server:port by default'),
+        placeholder: AppStrings.R_DEFAULT_SERVER_PORT,
         onTextChange: (value: string) => { this.editorName = value }
       })
         .width('100%')
@@ -327,7 +327,7 @@ export struct NetworkProxySettingsPage {
   @Builder
   EditorHostFieldRow() {
     Column({ space: ThemeConstants.SPACE_XS }) {
-      this.FieldLabel(AppStrings.t(AppStrings.R_SERVER, 'Server'))
+      this.FieldLabel(AppStrings.R_SERVER)
       AppTextField({
         text: $editorHost,
         placeholder: '127.0.0.1',
@@ -341,7 +341,7 @@ export struct NetworkProxySettingsPage {
   @Builder
   EditorPortFieldRow() {
     Column({ space: ThemeConstants.SPACE_XS }) {
-      this.FieldLabel(AppStrings.t(AppStrings.R_PORT, 'Port'))
+      this.FieldLabel(AppStrings.R_PORT)
       AppTextField({
         text: $editorPortText,
         placeholder: '7890',
@@ -358,7 +358,7 @@ export struct NetworkProxySettingsPage {
   @Builder
   EditorUsernameFieldRow() {
     Column({ space: ThemeConstants.SPACE_XS }) {
-      this.FieldLabel(AppStrings.t(AppStrings.R_USERNAME_OPTIONAL, 'Username (optional)'))
+      this.FieldLabel(AppStrings.R_USERNAME_OPTIONAL)
       AppTextField({
         text: $editorUsername,
         placeholder: '',
@@ -372,7 +372,7 @@ export struct NetworkProxySettingsPage {
   @Builder
   EditorPasswordFieldRow() {
     Column({ space: ThemeConstants.SPACE_XS }) {
-      this.FieldLabel(AppStrings.t(AppStrings.R_PASSWORD_OPTIONAL, 'Password (optional)'))
+      this.FieldLabel(AppStrings.R_PASSWORD_OPTIONAL)
       AppTextField({
         text: $editorPassword,
         placeholder: '',
@@ -404,8 +404,8 @@ export struct NetworkProxySettingsPage {
   @Builder
   EditorBypassListRow() {
     Column({ space: ThemeConstants.SPACE_XS }) {
-      this.FieldLabel(AppStrings.t(AppStrings.R_BYPASS_LIST_OPTIONAL, 'Bypass list (optional)'))
-      TextArea({ placeholder: AppStrings.t(AppStrings.R_ONE_DOMAIN_OR_IP_PER_LINE, 'One domain or IP per line'), text: this.editorExclusionListText })
+      this.FieldLabel(AppStrings.R_BYPASS_LIST_OPTIONAL)
+      TextArea({ placeholder: AppStrings.R_ONE_DOMAIN_OR_IP_PER_LINE, text: this.editorExclusionListText })
         .height(80)
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
         .fontColor($r('sys.color.font_primary'))
@@ -433,11 +433,23 @@ export struct NetworkProxySettingsPage {
     return this.activeProfileId
   }
 
-  private activeSummary(): string {
+  private activeSummary(): ResourceStr {
     if (this.currentMode() === NetworkProxySettings.MODE_SYSTEM) {
-      return AppStrings.t(AppStrings.R_SYSTEM_PROXY, 'System proxy')
+      return AppStrings.R_SYSTEM_PROXY
     }
     return NetworkProxySettings.summary(this.snapshot())
+  }
+
+  private profileDisplayTitle(profile: NetworkProxyProfile): ResourceStr {
+    const name = (profile.name || '').trim()
+    if (name) {
+      return name
+    }
+    const snapshot = NetworkProxySettings.normalize(profile.snapshot)
+    if (snapshot.host && snapshot.port > 0) {
+      return `${snapshot.host}:${snapshot.port}`
+    }
+    return AppStrings.R_PROXY_CONFIG_TITLE
   }
 
   private profileTitle(profile: NetworkProxyProfile): string {

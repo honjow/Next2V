@@ -5,7 +5,7 @@ import { HdsNavigation, HdsNavigationTitleMode, IconStyleMode } from '@kit.UIDes
 @Component
 export struct AppModalScaffold {
   @BuilderParam content: () => void
-  @Prop title: string = ''
+  @Prop title: ResourceStr = ''
   @StorageProp(StorageKeys.BOTTOM_AVOID_HEIGHT) bottomH: number = 0
   @StorageProp(StorageKeys.KEYBOARD_HEIGHT) keyboardH: number = 0
   @Prop compact: boolean = false

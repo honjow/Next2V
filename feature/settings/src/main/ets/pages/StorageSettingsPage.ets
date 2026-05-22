@@ -34,7 +34,7 @@ export struct StorageSettingsPage {
     Column() {
       SecondaryListScaffold() {
         ListItem() {
-          SettingsSectionHeader({ title: AppStrings.t(AppStrings.R_OFFLINE_CACHE, 'Offline cache') })
+          SettingsSectionHeader({ title: AppStrings.R_OFFLINE_CACHE })
         }
 
         ListItem() {
@@ -43,7 +43,7 @@ export struct StorageSettingsPage {
 
         if (BuildProfile.DEBUG && CacheDeviceQaSeed.isEnabled()) {
           ListItem() {
-            SettingsSectionHeader({ title: AppStrings.t(AppStrings.R_CACHE_QA_SEED, 'Cache QA Seed') })
+            SettingsSectionHeader({ title: AppStrings.R_CACHE_QA_SEED })
           }
 
           ListItem() {
@@ -52,7 +52,7 @@ export struct StorageSettingsPage {
         }
 
         ListItem() {
-          SettingsSectionHeader({ title: AppStrings.t(AppStrings.R_LOCAL_DATA, 'Local data') })
+          SettingsSectionHeader({ title: AppStrings.R_LOCAL_DATA })
         }
 
         ListItem() {
@@ -69,7 +69,7 @@ export struct StorageSettingsPage {
   CacheSection() {
     GroupedListSection() {
       ConciseListRow({
-        title: AppStrings.t(AppStrings.R_OFFLINE_CACHE, 'Offline cache'),
+        title: AppStrings.R_OFFLINE_CACHE,
         subtitle: StorageSettingsCoordinator.cacheSubtitle(this.cacheStats),
         showChevron: false
       })
@@ -77,7 +77,7 @@ export struct StorageSettingsPage {
       SettingsDivider()
 
       ConciseListRow({
-        title: AppStrings.t(AppStrings.R_REFRESH_CACHE_STATUS, 'Refresh cache status'),
+        title: AppStrings.R_REFRESH_CACHE_STATUS,
         showChevron: false,
         action: () => {
           this.loadCacheStats()
@@ -87,7 +87,7 @@ export struct StorageSettingsPage {
       SettingsDivider()
 
       ConciseListRow({
-        title: AppStrings.t(AppStrings.R_CLEAR_CACHE, 'Clear cache'),
+        title: AppStrings.R_CLEAR_CACHE,
         subtitle: this.cacheMessage,
         destructive: true,
         showChevron: false,
@@ -102,7 +102,7 @@ export struct StorageSettingsPage {
   LocalDataSection() {
     GroupedListSection() {
       ConciseListRow({
-        title: AppStrings.t(AppStrings.R_CLEAR_LOCAL_DATA, 'Clear local data'),
+        title: AppStrings.R_CLEAR_LOCAL_DATA,
         subtitle: this.localDataMessage,
         destructive: true,
         showChevron: false,
@@ -117,7 +117,7 @@ export struct StorageSettingsPage {
   CacheQaSeedSection() {
     GroupedListSection() {
       ConciseListRow({
-        title: AppStrings.t(AppStrings.R_SEED_ALL_CACHE_SCENARIOS, 'Seed all cache scenarios'),
+        title: AppStrings.R_SEED_ALL_CACHE_SCENARIOS,
         subtitle: this.seedMessage,
         showChevron: false,
         action: () => {
@@ -128,7 +128,7 @@ export struct StorageSettingsPage {
       SettingsDivider()
 
       ConciseListRow({
-        title: AppStrings.t(AppStrings.R_SEED_LARGE_LIST_FILE_CACHE, 'Seed large list file cache'),
+        title: AppStrings.R_SEED_LARGE_LIST_FILE_CACHE,
         showChevron: false,
         action: () => {
           this.runSeedAction('large', () => CacheDeviceQaSeed.seedLargeFileBackedList(this.hostContext()))
@@ -138,7 +138,7 @@ export struct StorageSettingsPage {
       SettingsDivider()
 
       ConciseListRow({
-        title: AppStrings.t(AppStrings.R_SEED_MIXED_ROW_CACHE, 'Seed mixed row cache'),
+        title: AppStrings.R_SEED_MIXED_ROW_CACHE,
         showChevron: false,
         action: () => {
           this.runSeedAction('mixed', () => CacheDeviceQaSeed.seedMixedInlineFile(this.hostContext()))
@@ -148,7 +148,7 @@ export struct StorageSettingsPage {
       SettingsDivider()
 
       ConciseListRow({
-        title: AppStrings.t(AppStrings.R_SEED_INVALID_PATH_ROW, 'Seed invalid path row'),
+        title: AppStrings.R_SEED_INVALID_PATH_ROW,
         showChevron: false,
         action: () => {
           this.runSeedAction('invalid', () => CacheDeviceQaSeed.seedInvalidPathRow(this.hostContext()))
@@ -158,7 +158,7 @@ export struct StorageSettingsPage {
       SettingsDivider()
 
       ConciseListRow({
-        title: AppStrings.t(AppStrings.R_SEED_ORPHAN_FILE, 'Seed orphan file'),
+        title: AppStrings.R_SEED_ORPHAN_FILE,
         showChevron: false,
         action: () => {
           this.runSeedAction('orphan', () => CacheDeviceQaSeed.seedOrphanPayloadFile(this.hostContext()))
@@ -168,7 +168,7 @@ export struct StorageSettingsPage {
       SettingsDivider()
 
       ConciseListRow({
-        title: AppStrings.t(AppStrings.R_SEED_MISSING_FILE_ROW, 'Seed missing file row'),
+        title: AppStrings.R_SEED_MISSING_FILE_ROW,
         showChevron: false,
         action: () => {
           this.runSeedAction('missing', () => CacheDeviceQaSeed.seedMissingFileRow(this.hostContext()))
@@ -178,7 +178,7 @@ export struct StorageSettingsPage {
       SettingsDivider()
 
       ConciseListRow({
-        title: AppStrings.t(AppStrings.R_SEED_HASH_MISMATCH_ROW, 'Seed hash mismatch row'),
+        title: AppStrings.R_SEED_HASH_MISMATCH_ROW,
         showChevron: false,
         action: () => {
           this.runSeedAction('hash', () => CacheDeviceQaSeed.seedHashMismatchRow(this.hostContext()))
@@ -188,7 +188,7 @@ export struct StorageSettingsPage {
       SettingsDivider()
 
       ConciseListRow({
-        title: AppStrings.t(AppStrings.R_VERIFY_HASH_REPAIR, 'Verify hash repair'),
+        title: AppStrings.R_VERIFY_HASH_REPAIR,
         showChevron: false,
         action: () => {
           this.runSeedAction('hash-read', () => CacheDeviceQaSeed.validateHashMismatchRepair(this.hostContext()))
@@ -198,7 +198,7 @@ export struct StorageSettingsPage {
       SettingsDivider()
 
       ConciseListRow({
-        title: AppStrings.t(AppStrings.R_SEED_EXPIRED_ROW, 'Seed expired row'),
+        title: AppStrings.R_SEED_EXPIRED_ROW,
         showChevron: false,
         action: () => {
           this.runSeedAction('expired', () => CacheDeviceQaSeed.seedExpiredRow(this.hostContext()))
@@ -208,7 +208,7 @@ export struct StorageSettingsPage {
       SettingsDivider()
 
       ConciseListRow({
-        title: AppStrings.t(AppStrings.R_RESET_SEED_CACHE, 'Reset seed cache'),
+        title: AppStrings.R_RESET_SEED_CACHE,
         destructive: true,
         showChevron: false,
         action: () => {

@@ -48,7 +48,7 @@ export interface IndexDestinationDescriptor {
   imagePreviewParams: ImagePreviewParams
   nodeTopicParams: NodeTopicListParams
   userProfileParams: UserProfileParams
-  title: string
+  title: ResourceStr
 }
 
 export class IndexRouteCoordinator {
@@ -81,30 +81,30 @@ export class IndexRouteCoordinator {
     'UserReplies': 'userReplies',
   }
 
-  static destinationTitle(family: IndexDestinationFamily): string {
-    const titles: Record<string, string> = {
-      'replyEditor': AppStrings.t(AppStrings.R_NAV_REPLY, 'Reply'),
-      'webLogin': AppStrings.t(AppStrings.R_NAV_WEB_LOGIN, 'Web login'),
-      'nativeLogin': AppStrings.t(AppStrings.R_NAV_NATIVE_LOGIN, 'Password login'),
-      'nodePicker': AppStrings.t(AppStrings.R_NAV_NODE_PICKER, 'Select node'),
-      'search': AppStrings.t(AppStrings.R_NAV_SEARCH, 'Search'),
-      'topicEditor': AppStrings.t(AppStrings.R_NAV_TOPIC_DRAFT, 'Topic draft'),
-      'myTopics': AppStrings.t(AppStrings.R_NAV_SAVED_TOPICS, 'Favorite topics'),
-      'myNodes': AppStrings.t(AppStrings.R_NAV_SAVED_NODES, 'Favorite nodes'),
-      'accountFollowing': AppStrings.t(AppStrings.R_NAV_FOLLOWING, 'Following'),
-      'settings': AppStrings.t(AppStrings.R_NAV_SETTINGS, 'Settings'),
-      'storage': AppStrings.t(AppStrings.R_NAV_STORAGE, 'Storage'),
-      'diagnosticsLog': AppStrings.t(AppStrings.R_NAV_DIAGNOSTICS, 'Diagnostics log'),
-      'homeNodeSettings': AppStrings.t(AppStrings.R_NAV_HOME_NODES, 'Home tab settings'),
-      'readingSettings': AppStrings.t(AppStrings.R_NAV_READING, 'Reading font settings'),
-      'networkProxySettings': AppStrings.t(AppStrings.R_NAV_NETWORK_PROXY, 'Network proxy'),
-      'account': AppStrings.t(AppStrings.R_ACCOUNT_SECTION, 'Account'),
-      'savedTopics': AppStrings.t(AppStrings.R_NAV_READ_LATER, 'Read later'),
-      'viewedTopics': AppStrings.t(AppStrings.R_NAV_RECENTLY_VIEWED, 'Recently viewed'),
-      'savedNodes': AppStrings.t(AppStrings.R_NAV_LOCAL_NODES, 'Local followed nodes'),
-      'about': AppStrings.t(AppStrings.R_NAV_ABOUT, 'About'),
-      'userTopics': AppStrings.t(AppStrings.R_NAV_ALL_TOPICS, 'All topics'),
-      'userReplies': AppStrings.t(AppStrings.R_NAV_ALL_REPLIES, 'All replies'),
+  static destinationTitle(family: IndexDestinationFamily): ResourceStr {
+    const titles: Record<string, ResourceStr> = {
+      'replyEditor': AppStrings.R_NAV_REPLY,
+      'webLogin': AppStrings.R_NAV_WEB_LOGIN,
+      'nativeLogin': AppStrings.R_NAV_NATIVE_LOGIN,
+      'nodePicker': AppStrings.R_NAV_NODE_PICKER,
+      'search': AppStrings.R_NAV_SEARCH,
+      'topicEditor': AppStrings.R_NAV_TOPIC_DRAFT,
+      'myTopics': AppStrings.R_NAV_SAVED_TOPICS,
+      'myNodes': AppStrings.R_NAV_SAVED_NODES,
+      'accountFollowing': AppStrings.R_NAV_FOLLOWING,
+      'settings': AppStrings.R_NAV_SETTINGS,
+      'storage': AppStrings.R_NAV_STORAGE,
+      'diagnosticsLog': AppStrings.R_NAV_DIAGNOSTICS,
+      'homeNodeSettings': AppStrings.R_NAV_HOME_NODES,
+      'readingSettings': AppStrings.R_NAV_READING,
+      'networkProxySettings': AppStrings.R_NAV_NETWORK_PROXY,
+      'account': AppStrings.R_ACCOUNT_SECTION,
+      'savedTopics': AppStrings.R_NAV_READ_LATER,
+      'viewedTopics': AppStrings.R_NAV_RECENTLY_VIEWED,
+      'savedNodes': AppStrings.R_NAV_LOCAL_NODES,
+      'about': AppStrings.R_NAV_ABOUT,
+      'userTopics': AppStrings.R_NAV_ALL_TOPICS,
+      'userReplies': AppStrings.R_NAV_ALL_REPLIES,
     }
     return titles[family] || ''
   }

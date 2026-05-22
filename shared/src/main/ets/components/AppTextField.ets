@@ -3,7 +3,7 @@ import { ThemeConstants } from '../theme/ThemeConstants'
 @Component
 export struct AppTextField {
   @Link text: string
-  @Prop placeholder: string = ''
+  @Prop placeholder: ResourceStr = ''
   @Prop inputType: InputType = InputType.Normal
   onTextChange?: (value: string) => void
 

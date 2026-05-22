@@ -557,6 +557,26 @@
       "value": "Retained {count} local log files"
     },
     {
+      "name": "diagnostics_current_launch_recent_count",
+      "value": "Recent this launch {0}"
+    },
+    {
+      "name": "diagnostics_log_file_share_hint",
+      "value": "{0} · Tap to share"
+    },
+    {
+      "name": "current_log_with_time",
+      "value": "Current log · {0}"
+    },
+    {
+      "name": "startup_log_with_time",
+      "value": "Startup log · {0}"
+    },
+    {
+      "name": "retained_local_log_files_count_arg",
+      "value": "Retained {0} local log files"
+    },
+    {
       "name": "clear_boot_records",
       "value": "Clear this launch record"
     },

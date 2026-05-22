@@ -33,7 +33,7 @@ export struct AccountFollowingPage {
     Column() {
       if (!CookieJarSettings.getCurrentCookie()) {
         PageLoginRequiredState({
-          message: AppStrings.t(AppStrings.R_LOGIN_TO_VIEW_FOLLOWING, 'Log in to view followed users'),
+          message: AppStrings.R_LOGIN_TO_VIEW_FOLLOWING,
           action: () => {
             this.stack.pushPathByName('V2exNativeLogin', null)
           }
@@ -57,9 +57,9 @@ export struct AccountFollowingPage {
             this.scrollEnabled = enabled
           }
         }) {
-          ListItem() { this.SectionHeader(AppStrings.t(AppStrings.R_NAV_FOLLOWING, 'Following')) }
+          ListItem() { this.SectionHeader(AppStrings.R_NAV_FOLLOWING) }
           if (this.members.length === 0) {
-            ListItem() { CardEmptyState({ message: AppStrings.t(AppStrings.R_NO_FOLLOWING_USERS, 'No followed users'), expand: false }) }
+            ListItem() { CardEmptyState({ message: AppStrings.R_NO_FOLLOWING_USERS, expand: false }) }
           } else {
             ForEach(this.members, (item: V2exAccountMemberListItem) => {
               ListItem() {
@@ -76,7 +76,7 @@ export struct AccountFollowingPage {
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
   }
 
-  @Builder private SectionHeader(title: string) {
+  @Builder private SectionHeader(title: ResourceStr) {
     Text(title)
       .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
       .fontColor($r('sys.color.font_secondary'))

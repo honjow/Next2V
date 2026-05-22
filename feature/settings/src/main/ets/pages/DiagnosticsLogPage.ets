@@ -36,7 +36,7 @@ export struct DiagnosticsLogPage {
     Column() {
       SecondaryListScaffold() {
         ListItem() {
-          SettingsSectionHeader({ title: AppStrings.t(AppStrings.R_DIAGNOSTICS, 'Diagnostics') })
+          SettingsSectionHeader({ title: AppStrings.R_DIAGNOSTICS })
         }
 
         ListItem() {
@@ -44,7 +44,7 @@ export struct DiagnosticsLogPage {
         }
 
         ListItem() {
-          SettingsSectionHeader({ title: AppStrings.t(AppStrings.R_LOGS, 'Logs') })
+          SettingsSectionHeader({ title: AppStrings.R_LOGS })
         }
 
         ListItem() {
@@ -52,7 +52,7 @@ export struct DiagnosticsLogPage {
         }
 
         ListItem() {
-          SettingsSectionHeader({ title: AppStrings.t(AppStrings.R_LOG_FILE, 'Log file') })
+          SettingsSectionHeader({ title: AppStrings.R_LOG_FILE })
         }
 
         ListItem() {
@@ -69,7 +69,7 @@ export struct DiagnosticsLogPage {
   DiagnosticsToggleSection() {
     GroupedListSection() {
       SettingsToggleRow({
-        title: AppStrings.t(AppStrings.R_NAV_DIAGNOSTICS, 'Diagnostics log'),
+        title: AppStrings.R_NAV_DIAGNOSTICS,
         checked: this.diagnosticsEnabled,
         changeAction: (value: boolean) => {
           this.updateDiagnosticsEnabled(value)
@@ -82,8 +82,8 @@ export struct DiagnosticsLogPage {
   DiagnosticsActionsSection() {
     GroupedListSection() {
       ConciseListRow({
-        title: `本次启动最近 ${this.logCount} 条`,
-        subtitle: this.logFiles.length > 0 ? this.formatRetainedLogFilesCount(this.logFiles.length) : AppStrings.t(AppStrings.R_NO_LOCAL_LOG_FILES, 'No local log files to share'),
+        title: $r('app.string.diagnostics_current_launch_recent_count', `${this.logCount}`),
+        subtitle: this.logFiles.length > 0 ? this.formatRetainedLogFilesCount(this.logFiles.length) : AppStrings.R_NO_LOCAL_LOG_FILES,
         showChevron: false,
         action: () => {
           this.refreshLogState()
@@ -93,7 +93,7 @@ export struct DiagnosticsLogPage {
       SettingsDivider()
 
       ConciseListRow({
-        title: AppStrings.t(AppStrings.R_CLEAR_BOOT_RECORDS, 'Clear this launch record'),
+        title: AppStrings.R_CLEAR_BOOT_RECORDS,
         destructive: true,
         showChevron: false,
         action: () => {
@@ -108,8 +108,8 @@ export struct DiagnosticsLogPage {
     GroupedListSection() {
       if (this.logFiles.length <= 0) {
         ConciseListRow({
-          title: AppStrings.t(AppStrings.R_NO_LOG_FILES, 'No log files'),
-          subtitle: AppStrings.t(AppStrings.R_REOPEN_KEEPS_LOGS, 'Recent launch logs are kept after reopening the app'),
+          title: AppStrings.R_NO_LOG_FILES,
+          subtitle: AppStrings.R_REOPEN_KEEPS_LOGS,
           showChevron: false,
           action: () => {
             this.refreshLogState()
@@ -130,7 +130,7 @@ export struct DiagnosticsLogPage {
   DiagnosticsLogFileRow(file: DiagnosticsLogFileInfo) {
     ConciseListRow({
       title: this.logFileTitle(file),
-      subtitle: `${this.formatFileSize(file.sizeBytes)} · 点按分享`,
+      subtitle: $r('app.string.diagnostics_log_file_share_hint', this.formatFileSize(file.sizeBytes)),
       showChevron: false,
       action: () => {
         this.handleShareLogFileClick(file)
@@ -138,10 +138,8 @@ export struct DiagnosticsLogPage {
     })
   }
 
-  private formatRetainedLogFilesCount(count: number): string {
-    return AppStrings
-      .t(AppStrings.R_RETAINED_LOCAL_LOG_FILES_COUNT, 'Retained {count} local log files')
-      .replace('{count}', count.toString())
+  private formatRetainedLogFilesCount(count: number): ResourceStr {
+    return $r('app.string.retained_local_log_files_count_arg', `${count}`)
   }
 
   private updateDiagnosticsEnabled(enabled: boolean): void {
@@ -232,9 +230,9 @@ export struct DiagnosticsLogPage {
     promptAction.openToast({ message: AppStrings.t(AppStrings.R_BOOT_RECORDS_CLEARED, 'This launch record has been cleared') }).catch((_error: Error) => {})
   }
 
-  private logFileTitle(file: DiagnosticsLogFileInfo): string {
-    const prefix = file.isCurrent ? AppStrings.t(AppStrings.R_CURRENT_LOG, 'Current log') : AppStrings.t(AppStrings.R_STARTUP_LOG, 'Startup log')
-    return `${prefix} · ${this.formatLogTimestamp(file.createdAtMs)}`
+  private logFileTitle(file: DiagnosticsLogFileInfo): ResourceStr {
+    const timestamp = this.formatLogTimestamp(file.createdAtMs)
+    return file.isCurrent ? $r('app.string.current_log_with_time', timestamp) : $r('app.string.startup_log_with_time', timestamp)
   }
 
   private formatLogTimestamp(value: number): string {

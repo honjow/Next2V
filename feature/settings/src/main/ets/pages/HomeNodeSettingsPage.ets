@@ -27,7 +27,7 @@ export struct HomeNodeSettingsPage {
     Column() {
       SecondaryListScaffold() {
         ListItem() {
-          SettingsSectionHeader({ title: AppStrings.t(AppStrings.R_VISIBLE_HOME_NODES_REORDER_HINT, 'Shown columns · long-press to reorder') })
+          SettingsSectionHeader({ title: AppStrings.R_VISIBLE_HOME_NODES_REORDER_HINT })
         }
 
         GroupedListSection() {
@@ -62,7 +62,7 @@ export struct HomeNodeSettingsPage {
         }
 
         ListItem() {
-          SettingsSectionHeader({ title: AppStrings.t(AppStrings.R_ADD_HOME_COLUMN, 'Add column') })
+          SettingsSectionHeader({ title: AppStrings.R_ADD_HOME_COLUMN })
         }
 
         ListItem() {
@@ -70,13 +70,13 @@ export struct HomeNodeSettingsPage {
         }
 
         ListItem() {
-          SettingsSectionHeader({ title: AppStrings.t(AppStrings.R_COMMON_RESET, 'Reset') })
+          SettingsSectionHeader({ title: AppStrings.R_COMMON_RESET })
         }
 
         ListItem() {
           GroupedListSection() {
             ConciseListRow({
-              title: AppStrings.t(AppStrings.R_RESTORE_DEFAULT, 'Restore defaults'),
+              title: AppStrings.R_RESTORE_DEFAULT,
               showChevron: false,
               action: () => {
                 this.resetFeedTabs()
@@ -94,7 +94,7 @@ export struct HomeNodeSettingsPage {
   @Builder
   ButtonSuffix(key: string, enabled: boolean) {
     HomeNodeVisibilityButton({
-      label: FeedTabSettings.isNodeKey(key) ? AppStrings.t(AppStrings.R_COMMON_DELETE, 'Delete') : AppStrings.t(AppStrings.R_HIDE, 'Hide'),
+      label: FeedTabSettings.isNodeKey(key) ? AppStrings.R_COMMON_DELETE : AppStrings.R_HIDE,
       isEnabled: enabled,
       clickAction: () => {
         this.updateFeedTabVisibility(key)
@@ -119,13 +119,13 @@ export struct HomeNodeSettingsPage {
       Column({ space: ThemeConstants.SPACE_SM }) {
         AppTextField({
           text: $nodeTabName,
-          placeholder: AppStrings.t(AppStrings.R_NODE_NAME_PLACEHOLDER, 'Node name (e.g. create)'),
+          placeholder: AppStrings.R_NODE_NAME_PLACEHOLDER,
           onTextChange: (value: string) => {
             this.nodeTabName = value
           }
         })
           .width('100%')
-        Button(AppStrings.t(AppStrings.R_ADD_NODE_COLUMN, 'Add node column'))
+        Button(AppStrings.R_ADD_NODE_COLUMN)
           .fontSize(ThemeConstants.FONT_SIZE_TAG)
           .height(ThemeConstants.TOUCH_TARGET_SM)
           .type(ButtonType.Normal)

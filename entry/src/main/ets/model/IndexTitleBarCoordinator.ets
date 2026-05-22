@@ -1,3 +1,5 @@
+import { AppStrings } from 'shared'
+
 export interface TitleBarMenuStats {
   itemCount: number
   maxCount: number
@@ -15,7 +17,7 @@ export interface NodeTopicTitleBarText {
 }
 
 export interface IndexTitleMenuDescriptor {
-  label: string
+  label: ResourceStr
   action: string
   icon: string
 }
@@ -29,7 +31,7 @@ export class IndexTitleBarCoordinator {
   }
 
   static meMenuItems(): IndexTitleMenuDescriptor[] {
-    return [{ label: '设置', action: 'settings', icon: 'settings' }]
+    return [{ label: AppStrings.R_NAV_SETTINGS, action: 'settings', icon: 'settings' }]
   }
 
   static notificationMenuItems(): IndexTitleMenuDescriptor[] {
