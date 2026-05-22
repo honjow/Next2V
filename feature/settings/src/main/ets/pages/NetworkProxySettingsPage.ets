@@ -97,7 +97,6 @@ export struct NetworkProxySettingsPage {
     GroupedListSection() {
       ConciseListRow({
         title: AppStrings.t(AppStrings.R_SYSTEM_PROXY, 'System proxy'),
-        subtitle: this.systemSubtitle(),
         showChevron: false,
         prefixBuilderParam: (): void => this.ProxySelectionRadio(NetworkProxySettings.MODE_SYSTEM),
         action: () => { this.selectSystemProxy() },
@@ -201,22 +200,19 @@ export struct NetworkProxySettingsPage {
       this.EditorSectionLabel(AppStrings.t(AppStrings.R_PROXY_TYPE, 'Proxy type'))
       GroupedListSection() {
         ConciseListRow({
-          title: AppStrings.t(AppStrings.R_HTTP_PROXY, 'HTTP proxy'),
-          subtitle: AppStrings.t(AppStrings.R_SUPPORTS_AUTH, 'Supports username/password authentication'),
+          title: AppStrings.t(AppStrings.R_HTTP_PROXY, 'HTTP'),
           showChevron: false,
           suffixBuilderParam: (): void => this.ProtocolRadio(NetworkProxySettings.MODE_HTTP_PROXY),
           action: () => { this.updateEditorProtocol(NetworkProxySettings.MODE_HTTP_PROXY) },
         })
         ConciseListRow({
-          title: AppStrings.t(AppStrings.R_HTTPS_PROXY_ENTRY, 'HTTPS proxy endpoint'),
-          subtitle: AppStrings.t(AppStrings.R_HTTPS_PROXY_ENTRY_SUBTITLE, 'Proxy server uses TLS, not the HTTPS target site'),
+          title: AppStrings.t(AppStrings.R_HTTPS_PROXY_ENTRY, 'HTTPS'),
           showChevron: false,
           suffixBuilderParam: (): void => this.ProtocolRadio(NetworkProxySettings.MODE_HTTPS_PROXY),
           action: () => { this.updateEditorProtocol(NetworkProxySettings.MODE_HTTPS_PROXY) },
         })
         ConciseListRow({
-          title: AppStrings.t(AppStrings.R_SOCKS5_PROXY, 'SOCKS5 proxy'),
-          subtitle: AppStrings.t(AppStrings.R_SOCKS5_AUTH_OPTIONAL, 'Username and password optional'),
+          title: AppStrings.t(AppStrings.R_SOCKS5_PROXY, 'SOCKS5'),
           showChevron: false,
           suffixBuilderParam: (): void => this.ProtocolRadio(NetworkProxySettings.MODE_SOCKS5),
           action: () => { this.updateEditorProtocol(NetworkProxySettings.MODE_SOCKS5) },
@@ -441,13 +437,6 @@ export struct NetworkProxySettingsPage {
       return AppStrings.t(AppStrings.R_SYSTEM_PROXY, 'System proxy')
     }
     return NetworkProxySettings.summary(this.snapshot())
-  }
-
-  private systemSubtitle(): string {
-    if (this.currentMode() === NetworkProxySettings.MODE_SYSTEM) {
-      return AppStrings.t(AppStrings.R_CURRENT_CONNECTION, 'Current connection')
-    }
-    return AppStrings.t(AppStrings.R_BUILT_IN_OPTIONS, 'Built-in options')
   }
 
   private profileTitle(profile: NetworkProxyProfile): string {

@@ -610,7 +610,7 @@
     },
     {
       "name": "http_proxy",
-      "value": "HTTP proxy"
+      "value": "HTTP"
     },
     {
       "name": "supports_auth",
@@ -618,7 +618,7 @@
     },
     {
       "name": "https_proxy_entry",
-      "value": "HTTPS proxy endpoint"
+      "value": "HTTPS"
     },
     {
       "name": "https_proxy_entry_subtitle",
@@ -650,7 +650,7 @@
     },
     {
       "name": "socks5_proxy",
-      "value": "SOCKS5 proxy"
+      "value": "SOCKS5"
     },
     {
       "name": "auth_not_supported",
