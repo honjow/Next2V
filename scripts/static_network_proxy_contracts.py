@@ -72,7 +72,12 @@ def main() -> int:
     require('profile editor protocol uses semantic radio rows', "Radio({ value: protocol, group: 'networkProxyEditorProtocol' })" in proxy_page and 'suffixBuilderParam: (): void => this.ProtocolRadio' in proxy_page and 'ProtocolChoice' not in proxy_page)
     forbidden_protocol_buttons = ["Button('HTTP 代理')", "Button('SOCKS5 代理')", 'this.ProtocolChoice(']
     require('profile editor has no button-as-protocol-selector', not any(copy in proxy_page for copy in forbidden_protocol_buttons))
-    require('profile editor save action is list row not primary pill', "Button('保存')" not in proxy_page and "title: '保存'" in proxy_page and "action: () => { this.saveProfileEditor() }" in proxy_page)
+    save_section_match = re.search(r'EditorActionSection\(\) \{(?P<body>.*?)\n  \}\n\n  @Builder\n  EditorSectionLabel', proxy_page, re.S)
+    save_section = save_section_match.group('body') if save_section_match else ''
+    require(
+        'profile editor save action is normal arkui button',
+        "Button('保存')" in save_section and '.type(ButtonType.Normal)' in save_section and "title: '保存'" not in save_section,
+    )
     require('shared component guard names', 'AppModalScaffold.ets' not in ''.join(sys.argv[1:]))
     require('settings test action', "'测试连接'" in proxy_page and 'NetworkProxyRequest.testConnection' in proxy_page)
     require(
@@ -80,8 +85,8 @@ def main() -> int:
         'currentMode() !== NetworkProxySettings.MODE_OFF' in proxy_page and 'this.ActionSection()' in proxy_page,
     )
     require(
-        'settings bypass keyboard collapses top chrome',
-        'shouldCollapseTopForKeyboard' in proxy_page and 'bypassEditorFocused' in proxy_page and 'StorageKeys.KEYBOARD_HEIGHT' in proxy_page,
+        'settings bypass editor does not collapse sheet content on focus',
+        'shouldCollapseTopForKeyboard' not in proxy_page and 'bypassEditorFocused' not in proxy_page and 'StorageKeys.KEYBOARD_HEIGHT' in proxy_page,
     )
 
     create_http = []

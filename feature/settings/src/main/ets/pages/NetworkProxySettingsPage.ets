@@ -43,7 +43,6 @@ export struct NetworkProxySettingsPage {
   @State private editorUsername: string = ''
   @State private editorPassword: string = ''
   @State private editorExclusionListText: string = ''
-  @State private bypassEditorFocused: boolean = false
 
   aboutToAppear(): void {
     this.portText = this.port > 0 ? `${this.port}` : ''
@@ -180,10 +179,8 @@ export struct NetworkProxySettingsPage {
       contentBackgroundColor: $r('sys.color.ohos_id_color_sub_background'),
       closeAction: () => { this.closeEditor() },
     }) {
-      if (!this.shouldCollapseTopForKeyboard()) {
-        ListItem() {
-          this.ProtocolSection()
-        }
+      ListItem() {
+        this.ProtocolSection()
       }
       ListItem() {
         this.ProfileEditorFields()
@@ -256,21 +253,27 @@ export struct NetworkProxySettingsPage {
   EditorActionSection() {
     Column({ space: ThemeConstants.SPACE_XS }) {
       this.EditorSectionLabel('操作')
-      GroupedListSection() {
-        ConciseListRow({
-          title: '保存',
-          subtitle: '保存并使用此代理配置',
-          showChevron: false,
-          action: () => { this.saveProfileEditor() },
-        })
-        if (this.editingProfileId) {
-          ConciseListRow({
-            title: '删除代理',
-            destructive: true,
-            showChevron: false,
-            action: () => { this.confirmDeleteProfile() },
-          })
+      GroupedListSection({ inset: ThemeConstants.SPACE_XL, radius: ThemeConstants.RADIUS_CARD }) {
+        Column({ space: ThemeConstants.SPACE_MD }) {
+          Button('保存')
+            .type(ButtonType.Normal)
+            .height(ThemeConstants.TOUCH_TARGET_SM)
+            .width('100%')
+            .borderRadius(ThemeConstants.RADIUS_MD)
+            .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+            .fontSize(ThemeConstants.FONT_SIZE_BODY)
+            .fontColor(ThemeConstants.BRAND_PRIMARY)
+            .onClick(() => { this.saveProfileEditor() })
+          if (this.editingProfileId) {
+            ConciseListRow({
+              title: '删除代理',
+              destructive: true,
+              showChevron: false,
+              action: () => { this.confirmDeleteProfile() },
+            })
+          }
         }
+        .width('100%')
       }
     }
     .width('100%')
@@ -404,8 +407,6 @@ export struct NetworkProxySettingsPage {
         .padding({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD, top: ThemeConstants.SPACE_SM, bottom: ThemeConstants.SPACE_SM })
         .borderRadius(ThemeConstants.RADIUS_MD)
         .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
-        .onFocus(() => { this.bypassEditorFocused = true })
-        .onBlur(() => { this.bypassEditorFocused = false })
         .onChange((value: string) => { this.editorExclusionListText = value })
     }
     .width('100%')
@@ -653,13 +654,11 @@ export struct NetworkProxySettingsPage {
     this.editorUsername = normalized.username
     this.editorPassword = normalized.password
     this.editorExclusionListText = NetworkProxySettings.exclusionListText(normalized)
-    this.bypassEditorFocused = false
     this.profileEditorVisible = true
   }
 
   private closeEditor(): void {
     this.profileEditorVisible = false
-    this.bypassEditorFocused = false
   }
 
   private saveProfileEditor(): void {
@@ -754,10 +753,6 @@ export struct NetworkProxySettingsPage {
       return `${normalized.host}:${normalized.port}`
     }
     return '代理配置'
-  }
-
-  private shouldCollapseTopForKeyboard(): boolean {
-    return this.bypassEditorFocused && this.keyboardH > 0
   }
 
   private parsePort(value: string): number {
