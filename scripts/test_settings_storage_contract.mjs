@@ -112,8 +112,16 @@ const expectedStorageKeys = [
   ['REPLY_ACTION_ALIGNMENT_MODE', 'replyActionAlignmentMode'],
   ['THEME_MODE', 'themeMode'],
   ['THEME_EFFECTIVE_DARK', 'themeEffectiveDark'],
+  ['LANGUAGE_MODE', 'languageMode'],
   ['DIAGNOSTICS_ENABLED', 'diagnosticsEnabled'],
   ['DIAGNOSTICS_MIN_LEVEL', 'diagnosticsMinLevel'],
+  ['NETWORK_PROXY_MODE', 'networkProxyMode'],
+  ['NETWORK_PROXY_HOST', 'networkProxyHost'],
+  ['NETWORK_PROXY_PORT', 'networkProxyPort'],
+  ['NETWORK_PROXY_SCHEME', 'networkProxyScheme'],
+  ['NETWORK_PROXY_USERNAME', 'networkProxyUsername'],
+  ['NETWORK_PROXY_PASSWORD', 'networkProxyPassword'],
+  ['NETWORK_PROXY_EXCLUSION_LIST', 'networkProxyExclusionList'],
   ['TOPIC_READ_STATES', 'topicReadStates'],
   ['AUTH_TOKEN_CONFIGURED', 'authTokenConfigured'],
   ['AUTH_USERNAME', 'authUsername'],
@@ -143,7 +151,6 @@ const expectedStorageKeys = [
   ['FEED_TAB', 'feedTab'],
   ['FEED_TAB_KEYS', 'feedTabKeys'],
   ['FEED_TAB_VISUAL_INDEX', 'feedTabVisualIndex'],
-  ['BLOCKED_MEMBERS_UPDATED_AT', 'blockedMembersUpdatedAt'],
   ['MOTION_HAND_EDGE', 'motionHandEdge'],
   ['MOTION_HOLDING_HAND_SUPPORTED', 'motionHoldingHandSupported'],
   ['TOPIC_DETAIL_ACTION', 'topicDetailAction'],
@@ -286,7 +293,6 @@ const expectedStoreNames = [
   ['STORE_NAME_DRAFTS', 'next2v_drafts'],
   ['STORE_NAME_SEARCH', 'next2v_search'],
   ['STORE_NAME_NOTIFICATIONS', 'next2v_notifications'],
-  ['STORE_NAME_BLOCKED_MEMBERS', 'next2v_blocked_members'],
 ]
 assert(
   orderedStoreNames.length === expectedStoreNames.length,
@@ -316,7 +322,6 @@ const storeOwners = new Map([
   ['DraftSettings.ets', 'STORE_NAME_DRAFTS'],
   ['SearchSettings.ets', 'STORE_NAME_SEARCH'],
   ['NotificationSettings.ets', 'STORE_NAME_NOTIFICATIONS'],
-  ['BlockedMemberSettings.ets', 'STORE_NAME_BLOCKED_MEMBERS'],
 ])
 for (const [file, storeConst] of storeOwners.entries()) {
   const text = read(`shared/src/main/ets/settings/${file}`)
@@ -345,7 +350,6 @@ assert(helperText.includes('store.flushSync()'), 'JSON preferences write/delete 
 
 const jsonBusinessSettingsContracts = [
   ['SearchSettings.ets', 'STORE_NAME_SEARCH', ['withPreferencesStore']],
-  ['BlockedMemberSettings.ets', 'STORE_NAME_BLOCKED_MEMBERS', ['withPreferencesStore', 'readJsonArray', 'writeJsonValue']],
   ['DraftSettings.ets', 'STORE_NAME_DRAFTS', ['withPreferencesStore', 'readJsonArray', 'readJsonObject', 'writeJsonValue', 'deleteKeysAndFlush']],
 ]
 for (const [file, storeConst, helpers] of jsonBusinessSettingsContracts) {
@@ -361,8 +365,6 @@ assert(read('shared/src/main/ets/settings/DraftSettings.ets').includes("KEY_TOPI
 assert(read('shared/src/main/ets/settings/SearchSettings.ets').includes("KEY_HISTORY: string = 'searchHistory'"), 'SearchSettings searchHistory key changed')
 assert(read('shared/src/main/ets/settings/SearchSettings.ets').includes("KEY_SOURCE_MODE: string = 'sourceMode'"), 'SearchSettings sourceMode key changed')
 assert(read('shared/src/main/ets/settings/SearchSettings.ets').includes("LocalDataStore.open(context)"), 'SearchSettings searchHistory must use LocalDataStore RDB')
-assert(read('shared/src/main/ets/settings/BlockedMemberSettings.ets').includes("KEY_USERNAMES: string = 'usernames'"), 'BlockedMemberSettings usernames key changed')
-assert(read('shared/src/main/ets/settings/BlockedMemberSettings.ets').includes("KEY_UPDATED_AT: string = 'updatedAt'"), 'BlockedMemberSettings updatedAt key changed')
 
 const next2vSettingsFiles = [
   'ApiDomainSettings.ets',

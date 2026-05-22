@@ -30,10 +30,7 @@ KEY_TERMS = {
         "主题", "语言", "回复显示", "回复样式", "记住阅读位置", "Base64 解码",
     ],
     "entry/src/main/ets/model/IndexRouteCoordinator.ets": [
-        "网页登录", "账号密码登录", "屏蔽与忽略", "关注用户", "设置", "网络代理", "全部回复",
-    ],
-    "entry/src/main/ets/pages/AccountBlacklistPage.ets": [
-        "登录后可查看屏蔽与忽略", "屏蔽用户", "暂无屏蔽用户", "忽略主题", "暂无忽略主题",
+        "网页登录", "账号密码登录", "关注用户", "设置", "网络代理", "全部回复",
     ],
     "entry/src/main/ets/pages/AccountFollowingPage.ets": [
         "登录后可查看关注用户", "关注用户", "暂无关注用户",

@@ -25,7 +25,7 @@ const coordinator = source(coordinatorPath)
 assertIncludes(indexPath, index, 'pm(name: string, param: Object)')
 assertIncludes(indexPath, index, 'this.destination(IndexRouteCoordinator.destination(name, param))')
 assertIncludes(coordinatorPath, coordinator, 'DESTINATION_FAMILIES')
-assertIncludes(coordinatorPath, coordinator, 'DESTINATION_TITLES')
+assertIncludes(coordinatorPath, coordinator, 'static destinationTitle(family: IndexDestinationFamily)')
 assertIncludes(coordinatorPath, coordinator, 'STANDARD_TITLE_BAR_FAMILIES')
 assertIncludes(coordinatorPath, coordinator, 'static destination(name: string, param: Object)')
 assertIncludes(coordinatorPath, coordinator, 'static usesStandardTitleBar(family: IndexDestinationFamily)')
@@ -61,7 +61,6 @@ const routeNames = [
   'TopicEditor',
   'MyTopics',
   'MyNodes',
-  'AccountBlacklist',
   'AccountFollowing',
   'Settings',
   'Storage',

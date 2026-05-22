@@ -71,7 +71,6 @@ assert(!localDataText.includes('CollectionSettings'), 'LocalDataStore must not i
 assert(!localDataText.includes('DraftSettings'), 'LocalDataStore skeleton must not wire drafts')
 assert(!localDataText.includes('SearchSettings'), 'LocalDataStore must not know SearchSettings')
 assert(!localDataText.includes('CacheSettings'), 'LocalDataStore must not know CacheSettings')
-assert(!localDataText.includes('BlockedMemberSettings'), 'LocalDataStore skeleton must not wire blocked members')
 
 const indexText = read('shared/src/main/ets/Index.ets')
 assert(indexText.includes("export { LocalDataStore, LOCAL_DATA_DB_NAME, LOCAL_DATA_SCHEMA_VERSION } from './storage/LocalDataStore'"), 'shared Index must only export LocalDataStore public constants/class')
@@ -79,7 +78,6 @@ assert(indexText.includes("export { LocalDataStore, LOCAL_DATA_DB_NAME, LOCAL_DA
 const forbiddenBusinessFiles = [
   'entry/src/main/ets/entryability/EntryAbility.ets',
   'shared/src/main/ets/settings/DraftSettings.ets',
-  'shared/src/main/ets/settings/BlockedMemberSettings.ets',
   'shared/src/main/ets/settings/SettingsBootstrap.ets',
   'shared/src/main/ets/settings/SettingsStorage.ets',
 ]
