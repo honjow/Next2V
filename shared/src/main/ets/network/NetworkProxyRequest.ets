@@ -1,5 +1,6 @@
 import { connection, http } from '@kit.NetworkKit'
 import { rcp } from '@kit.RemoteCommunicationKit'
+import { ApiConstants } from '../constants/ApiConstants'
 import { NetworkProxySettings, type NetworkProxySettingsSnapshot } from '../settings/NetworkProxySettings'
 
 export interface NetworkProxyRequestOptions {
@@ -29,8 +30,8 @@ export class NetworkProxyRequest {
     return NetworkProxyRequest.requestViaNetworkKit(url, options, settings)
   }
 
-  static async testConnection(): Promise<NetworkProxyResponse> {
-    return NetworkProxyRequest.request('https://www.v2ex.com/api/v2/site/info', {
+  static async testConnection(baseUrl: string): Promise<NetworkProxyResponse> {
+    return NetworkProxyRequest.request(`${baseUrl}${ApiConstants.API_SITE_INFO}`, {
       method: http.RequestMethod.GET,
       header: { 'Accept': 'application/json', 'Accept-Encoding': 'gzip' },
       connectTimeout: 10000,

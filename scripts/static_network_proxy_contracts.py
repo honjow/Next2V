@@ -5,6 +5,7 @@ import re
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
+WRONG_TEST_ENDPOINT = 'api/v2/site' + '/info'
 
 
 def read(rel: str) -> str:
@@ -21,6 +22,7 @@ def require(name: str, condition: bool, detail: str = '') -> None:
 def main() -> int:
     settings = read('shared/src/main/ets/settings/NetworkProxySettings.ets')
     adapter = read('shared/src/main/ets/network/NetworkProxyRequest.ets')
+    api_constants = read('shared/src/main/ets/constants/ApiConstants.ets')
     storage = read('shared/src/main/ets/constants/StorageKeys.ets')
     bootstrap = read('shared/src/main/ets/settings/SettingsBootstrap.ets')
     settings_page = read('feature/settings/src/main/ets/pages/SettingsPage.ets')
@@ -52,7 +54,16 @@ def main() -> int:
     require('rcp socks5 selected', "settings.mode === 'socks5'" in adapter and 'requestViaRcp' in adapter)
     require('rcp web proxy tunnel always', 'createTunnel: \'always\'' in adapter and 'buildSocks5Url' in adapter)
     require('socks5 auth rejected', 'SOCKS5 代理暂不支持用户名/密码认证' in adapter or 'SOCKS5 暂不支持用户名/密码认证' in proxy_page)
-    require('test connection endpoint', 'testConnection' in adapter and 'api/v2/site/info' in adapter)
+    require(
+        'test connection endpoint',
+        'testConnection(baseUrl: string)' in adapter
+        and 'ApiConstants.BASE_URL_COM' not in adapter
+        and 'ApiConstants.API_SITE_INFO' in adapter
+        and 'NetworkProxyRequest.testConnection(HttpClient.getInstance().getBaseUrl())' in proxy_page
+        and "'/api/site/info.json'" in api_constants
+        and WRONG_TEST_ENDPOINT not in adapter
+        and WRONG_TEST_ENDPOINT not in api_constants,
+    )
 
     require('settings main entry', "title: '网络代理'" in settings_page and "pushPathByName('NetworkProxySettings'" in settings_page)
     require('settings second page route', 'NetworkProxySettingsPage' in routes and 'networkProxySettings' in routes)

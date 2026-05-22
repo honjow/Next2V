@@ -6,6 +6,7 @@ import {
   ConciseListRow,
   defaultSheetOptions,
   GroupedListSection,
+  HttpClient,
   NetworkProxyProfileSettings,
   NetworkProxyRequest,
   NetworkProxySettings,
@@ -581,7 +582,7 @@ export struct NetworkProxySettingsPage {
     this.testStatus = '测试中…'
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     NetworkProxySettings.save(context, snapshot)
-      .then(() => NetworkProxyRequest.testConnection())
+      .then(() => NetworkProxyRequest.testConnection(HttpClient.getInstance().getBaseUrl()))
       .then((response) => {
         this.testing = false
         if (response.responseCode >= 200 && response.responseCode < 300) {
