@@ -533,7 +533,10 @@ export class ApiService {
       throw new Error('请先登录')
     }
     const currentUsername = await this.getSessionUsernameWithCookie(cookie)
-    const html = await this.getCookieListHtml('/d/blocked', cookie, 'blocked')
+    const html = await this.getCookieHtml('/blocked', cookie)
+    if (html.indexOf('/signin') >= 0 && !V2exSessionParser.extractUsername(html)) {
+      throw new Error('Web 会话已失效，请重新登录')
+    }
     return V2exAccountListParser.extractMembers(html, currentUsername)
   }
 
@@ -554,7 +557,10 @@ export class ApiService {
       throw new Error('请先登录')
     }
     await this.getSessionUsernameWithCookie(cookie)
-    const html = await this.getCookieListHtml('/d/ignored', cookie, 'ignored')
+    const html = await this.getCookieHtml('/ignored', cookie)
+    if (html.indexOf('/signin') >= 0 && !V2exSessionParser.extractUsername(html)) {
+      throw new Error('Web 会话已失效，请重新登录')
+    }
     const ids = V2exAccountListParser.extractTopicIds(html)
     return this.getTopicsByIds(ids)
   }
@@ -1078,28 +1084,6 @@ export class ApiService {
     const res = await this.http.getTextResponseWithHeaders(endpoint, { 'Cookie': cookie })
     this.assertNoTwoFactorChallenge(endpoint, res.text, res.location)
     return res.text
-  }
-
-  private async getCookieListHtml(path: string, cookie: string, slug: string): Promise<string> {
-    const endpoint = this.cookieEndpoint(path)
-    const res = await this.http.getTextResponseWithHeaders(endpoint, { 'Cookie': cookie })
-    this.assertNoTwoFactorChallenge(endpoint, res.text, res.location)
-    if (res.statusCode >= 300 && res.statusCode < 400) {
-      throw new Error('列表地址已重定向，请稍后重试')
-    }
-    this.assertCookieListPage(res.text, slug)
-    return res.text
-  }
-
-  private assertCookieListPage(html: string, slug: string): void {
-    const clean = html || ''
-    const title = `V2EX › ${slug}`
-    if (clean.indexOf('/signin') >= 0 && !V2exSessionParser.extractUsername(clean)) {
-      throw new Error('Web 会话已失效，请重新登录')
-    }
-    if (clean.indexOf(title) < 0) {
-      throw new Error('解析列表失败，请稍后重试')
-    }
   }
 
   private topicWebRepliesClient(): V2exTopicWebRepliesClient {
