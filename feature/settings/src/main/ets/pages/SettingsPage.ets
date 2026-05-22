@@ -1,4 +1,5 @@
 import { common } from '@kit.AbilityKit'
+import { promptAction } from '@kit.ArkUI'
 import {
   AppStrings,
   CacheSettings,
@@ -38,7 +39,6 @@ export struct SettingsPage {
   @StorageLink(StorageKeys.MEDIA_ONLY_LOAD_IMAGES_ON_WIFI) onlyLoadImagesOnWifi: boolean = false;
   @StorageLink(StorageKeys.THEME_MODE) themeMode: string = ThemeSettings.MODE_AUTO;
   @StorageLink(StorageKeys.LANGUAGE_MODE) languageMode: string = LanguageSettings.MODE_SYSTEM;
-  @State private languageRefreshKey: number = 0;
   @StorageLink(StorageKeys.REPLY_DISPLAY_MODE) replyDisplayMode: string =
     ReplyDisplaySettings.MODE_THREAD;
   @StorageLink(StorageKeys.REPLY_CARD_STYLE) replyCardStyle: string =
@@ -60,6 +60,7 @@ export struct SettingsPage {
   @State private replyActionAlignmentMenuShown: boolean = false;
   @State private base64ModeMenuShown: boolean = false;
   @State private apiDomainMenuShown: boolean = false;
+  @State private languageRestarting: boolean = false;
   private http: HttpClient = HttpClient.getInstance();
 
   aboutToAppear(): void {
@@ -142,7 +143,6 @@ export struct SettingsPage {
   }
 
   private t(resource: Resource, fallback: string): string {
-    const _languageRefreshKey = this.languageRefreshKey
     return AppStrings.t(resource, fallback)
   }
 
@@ -632,11 +632,21 @@ export struct SettingsPage {
 
   private updateLanguageMode(mode: string): void {
     const normalizedMode = LanguageSettings.normalizeMode(mode)
+    if (this.languageRestarting || normalizedMode === this.languageMode) {
+      this.languageMenuShown = false
+      return
+    }
+    this.languageRestarting = true
+    this.languageMenuShown = false
     this.languageMode = normalizedMode
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    LanguageSettings.apply(context, normalizedMode)
-    this.languageRefreshKey = Date.now()
-    SettingsSaveCoordinator.saveLanguageMode(context, normalizedMode)
+    LanguageSettings.saveAndRestart(context, normalizedMode).catch((error: Error) => {
+      this.languageRestarting = false
+      console.error('switch app language failed: ' + error.message)
+      promptAction.openToast({
+        message: AppStrings.t(AppStrings.R_COMMON_SAVE_FAILED, 'Save failed'),
+      }).catch((_toastError: Error) => {})
+    })
   }
 
   private updateThemeMode(mode: string): void {

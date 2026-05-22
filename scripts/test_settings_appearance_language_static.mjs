@@ -4,6 +4,9 @@ import { readFileSync } from 'node:fs'
 
 const settingsPage = readFileSync('feature/settings/src/main/ets/pages/SettingsPage.ets', 'utf8')
 const appStrings = readFileSync('shared/src/main/ets/i18n/AppStrings.ets', 'utf8')
+const languageSettings = readFileSync('shared/src/main/ets/settings/LanguageSettings.ets', 'utf8')
+const settingsBootstrap = readFileSync('shared/src/main/ets/settings/SettingsBootstrap.ets', 'utf8')
+const settingsCoordinator = readFileSync('feature/settings/src/main/ets/model/SettingsPageCoordinator.ets', 'utf8')
 const indexPage = readFileSync('entry/src/main/ets/pages/Index.ets', 'utf8')
 const routeCoordinator = readFileSync('entry/src/main/ets/model/IndexRouteCoordinator.ets', 'utf8')
 
@@ -30,14 +33,26 @@ assert.match(readingRows, /R_REPLY_DISPLAY/, 'Reading group must keep reply disp
 assert.match(readingRows, /R_REPLY_STYLE/, 'Reading group must keep reply style')
 assert.match(readingRows, /R_REMEMBER_READ_POSITION/, 'Reading group must keep remember reading position')
 
-assert.match(settingsPage, /@State private languageRefreshKey: number = 0/, 'Settings page needs a language refresh state trigger')
-assert.match(settingsPage, /private t\(resource: Resource, fallback: string\): string \{[\s\S]*languageRefreshKey[\s\S]*AppStrings\.t/, 'Settings page localized strings must depend on refresh trigger')
-assert.match(settingsPage, /LanguageSettings\.apply\(context, normalizedMode\)[\s\S]*this\.languageRefreshKey = Date\.now\(\)/, 'Language selection must refresh current Settings page copy')
-assert.match(indexPage, /@StorageLink\(StorageKeys\.LANGUAGE_MODE\)[\s\S]*@Watch\('onLanguageModeChanged'\)[\s\S]*languageMode: string = ''/, 'Index must observe language mode for title/tab refresh')
-assert.match(indexPage, /onLanguageModeChanged\(_propName: string\): void \{[\s\S]*this\.languageRefreshKey = Date\.now\(\)/, 'Index language watcher must update refresh key')
-assert.match(indexPage, /IndexRouteCoordinator\.destination\(name, param, this\.languageRefreshKey\)/, 'Destination builder must depend on language refresh key')
-assert.match(routeCoordinator, /static destinationTitle\(family: IndexDestinationFamily\): string \{[\s\S]*AppStrings\.t\(AppStrings\.R_NAV_SETTINGS, 'Settings'\)/, 'Destination titles must be computed dynamically after language changes')
-assert.doesNotMatch(routeCoordinator, /DESTINATION_TITLES/, 'Destination titles must not be cached in a static localized map')
+assert.match(languageSettings, /import i18n from '@ohos\.i18n'/, 'Language settings must use HarmonyOS i18n System API')
+assert.match(languageSettings, /i18n\.System\.setAppPreferredLanguage\(language\)/, 'Language changes must set app preferred language')
+assert.match(languageSettings, /i18n\.System\.getAppPreferredLanguage\(\)/, 'Language bootstrap must be able to inspect app preferred language')
+assert.match(languageSettings, /context\.getApplicationContext\(\)\.setLanguage\(language\)/, 'Language changes should align ApplicationContext language')
+assert.match(languageSettings, /context\.getApplicationContext\(\)\.restartApp\(want\)/, 'Language changes must restart EntryAbility')
+assert.match(languageSettings, /bundleName: context\.abilityInfo\.bundleName[\s\S]*abilityName: context\.abilityInfo\.name/, 'restartApp must target current EntryAbility')
+assert.match(languageSettings, /DEFAULT_APP_LANGUAGE: string = 'default'/, 'Follow-system mode must map to HarmonyOS default app language')
+assert.match(languageSettings, /MODE_ZH_CN[\s\S]*'zh-Hans-CN'/, 'Simplified Chinese must map to a valid language ID')
+assert.match(languageSettings, /MODE_ZH_HK[\s\S]*'zh-Hant-HK'/, 'Traditional Chinese HK must map to a valid language ID')
+assert.match(languageSettings, /MODE_ZH_TW[\s\S]*'zh-Hant-TW'/, 'Traditional Chinese TW must map to a valid language ID')
+assert.match(languageSettings, /MODE_EN[\s\S]*'en'/, 'English must map to a valid language ID')
+assert.match(languageSettings, /restartInProgress/, 'Language restart must guard against duplicate restart taps')
+assert.match(settingsPage, /languageRestarting/, 'Settings page must guard duplicate language restart taps')
+assert.match(settingsPage, /LanguageSettings\.saveAndRestart\(context, normalizedMode\)/, 'Language selection must save, set system language, and restart')
+assert.doesNotMatch(settingsPage, /languageRefreshKey/, 'Settings page must not depend on a local languageRefreshKey patch')
+assert.doesNotMatch(indexPage, /languageRefreshKey|onLanguageModeChanged/, 'Index must not use page languageRefreshKey as the language refresh mechanism')
+assert.doesNotMatch(routeCoordinator, /_languageRefreshKey|DESTINATION_TITLES/, 'Destination titles must not depend on a manual language refresh key or cached localized map')
+assert.doesNotMatch(appStrings, /getOverrideResourceManager|activeResourceManager|resourceLocaleForMode/, 'AppStrings must not use override ResourceManager as the primary app-language mechanism')
+assert.match(settingsBootstrap, /restoreLanguage\(context, settingsStore\)/, 'SettingsBootstrap must restore saved language before UI content loads')
+assert.match(settingsBootstrap, /LanguageSettings\.loadFromStore\(settingsStore, context\)/, 'SettingsBootstrap must align saved language mode with system preferred language')
 
 assert.match(appStrings, /R_SETTINGS_APPEARANCE: Resource = \$r\('app\.string\.settings_appearance'\)/, 'AppStrings must expose settings_appearance')
 
@@ -46,6 +61,13 @@ for (const locale of ['base', 'en_US', 'zh_CN', 'zh_HK', 'zh_TW']) {
   const strings = new Map(resource.string.map(item => [item.name, item.value]))
   assert.ok(strings.has('settings_appearance'), `${locale} missing settings_appearance`)
 }
+
+const languageOptions = settingsCoordinator.slice(indexOfOrFail(settingsCoordinator, 'static languageModeOptions()'), indexOfOrFail(settingsCoordinator, 'static themeModeOptions()'))
+for (const mode of ['MODE_SYSTEM', 'MODE_ZH_CN', 'MODE_ZH_HK', 'MODE_ZH_TW', 'MODE_EN']) {
+  assert.match(languageOptions, new RegExp(`LanguageSettings\\.${mode}`), `language menu missing ${mode}`)
+}
+assert.equal((languageOptions.match(/value: LanguageSettings\./g) || []).length, 5, 'Language menu must have exactly five options')
+assert.doesNotMatch(languageOptions, /subtitle|description|explain|SettingsCheckedMenuItem|selected:|✓|✔|☑|✅/, 'Language options must not add checkmarks, fake controls, or long explanatory subtitles')
 
 const languageMenuItem = settingsPage.slice(indexOfOrFail(settingsPage, '@Builder\n  LanguageModeMenuItem'), indexOfOrFail(settingsPage, '@Builder\n  ThemeModeMenuItem'))
 assert.match(languageMenuItem, /MenuItem\(\{\s*content: option\.label\s*\}\)/, 'Language menu must use plain MenuItem labels')

@@ -11,6 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 ENTRY_RES = ROOT / "entry" / "src" / "main" / "resources"
 APPSCOPE_RES = ROOT / "AppScope" / "resources"
 APP_STRINGS = ROOT / "shared" / "src" / "main" / "ets" / "i18n" / "AppStrings.ets"
+LANGUAGE_SETTINGS = ROOT / "shared" / "src" / "main" / "ets" / "settings" / "LanguageSettings.ets"
 
 # Harmony/OpenHarmony resource qualifier directories observed/validated by build for this worktree.
 # base is English fallback. Specific locale resources use underscore directory names.
@@ -79,6 +80,7 @@ def assert_resource_sets() -> None:
 
 def assert_fallback_contract() -> None:
     text = APP_STRINGS.read_text(encoding="utf-8")
+    language_text = LANGUAGE_SETTINGS.read_text(encoding="utf-8")
     if "DEFAULT_LANGUAGE_MODE: AppLanguageMode = 'system'" not in text:
         raise AssertionError("default app language mode must be system")
     if "FALLBACK_LOCALE: string = 'en'" not in text:
@@ -106,10 +108,28 @@ def assert_fallback_contract() -> None:
         raise AssertionError("base language default option must be Follow system")
     if "getStringSync(resource)" not in text:
         raise AssertionError("AppStrings must use HarmonyOS ResourceManager getStringSync")
-    if "getOverrideResourceManager" not in text:
-        raise AssertionError("AppStrings must support an override ResourceManager for app language mode")
+    if "getOverrideResourceManager" in text or "activeResourceManager" in text:
+        raise AssertionError("AppStrings must not use override ResourceManager as the primary app language mechanism")
     if "catch (_error)" not in text or "return fallback" not in text:
         raise AssertionError("AppStrings must keep a local fallback path")
+    required_system_contracts = [
+        "i18n.System.setAppPreferredLanguage(language)",
+        "i18n.System.getAppPreferredLanguage()",
+        "context.getApplicationContext().setLanguage(language)",
+        "context.getApplicationContext().restartApp(want)",
+        "DEFAULT_APP_LANGUAGE: string = 'default'",
+    ]
+    for needle in required_system_contracts:
+        if needle not in language_text:
+            raise AssertionError(f"system language contract missing: {needle}")
+    for mode, language in {
+        "MODE_ZH_CN": "zh-Hans-CN",
+        "MODE_ZH_HK": "zh-Hant-HK",
+        "MODE_ZH_TW": "zh-Hant-TW",
+        "MODE_EN": "en",
+    }.items():
+        if mode not in language_text or language not in language_text:
+            raise AssertionError(f"language mode mapping missing: {mode} -> {language}")
 
 
 def assert_key_terms_migrated() -> None:

@@ -200,7 +200,7 @@ export class IndexRouteCoordinator {
     }
   }
 
-  static destination(name: string, param: Object, _languageRefreshKey: number = 0): IndexDestinationDescriptor | null {
+  static destination(name: string, param: Object): IndexDestinationDescriptor | null {
     const family = IndexRouteCoordinator.DESTINATION_FAMILIES[(name || '').trim()]
     if (!family) {
       return null

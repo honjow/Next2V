@@ -132,10 +132,6 @@ struct Index {
   @StorageLink(StorageKeys.TWO_FACTOR_SOURCE) twoFactorSource: string = '';
   @State private notificationRefreshKey: number = 0;
   @State private accountRefreshKey: number = 0;
-  @StorageLink(StorageKeys.LANGUAGE_MODE)
-  @Watch('onLanguageModeChanged')
-  languageMode: string = '';
-  @State private languageRefreshKey: number = 0;
   @State private isFoldedAndUseOuterScreen: boolean = false;
   private http: HttpClient = HttpClient.getInstance();
   private notificationVm: NotificationCenterViewModel = new NotificationCenterViewModel(new ApiService());
@@ -164,15 +160,9 @@ struct Index {
     this.consumePendingV2exUrl()
   }
 
-  onLanguageModeChanged(_propName: string): void {
-    this.languageRefreshKey = Date.now()
-    this.notificationRefreshKey = Date.now()
-    this.accountRefreshKey = Date.now()
-  }
-
   @Builder
   pm(name: string, param: Object) {
-    this.destination(IndexRouteCoordinator.destination(name, param, this.languageRefreshKey))
+    this.destination(IndexRouteCoordinator.destination(name, param))
   }
 
   @Builder
