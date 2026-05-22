@@ -553,14 +553,14 @@ struct Index {
   private nodeTopicTitleBarOpts(nodeName: string, nodeTitle: string): Record<string, Object> {
     let items: Record<string, Object>[] = [
       this.topicActionItem(
-        '站内收藏',
+        $r('app.string.topic_action_site_favorite'),
         this.nodeTopicSiteFavorited ? $r('sys.symbol.star_fill') : $r('sys.symbol.star'),
         () => {
           this.sendNodeTopicAction(nodeName, 'siteFavorite')
         },
       ),
       this.topicActionItem(
-        '关注节点',
+        $r('app.string.topic_action_follow_node'),
         this.nodeTopicSaved ? $r('sys.symbol.bookmark_fill') : $r('sys.symbol.bookmark'),
         () => {
           this.sendNodeTopicAction(nodeName, 'saveNode')

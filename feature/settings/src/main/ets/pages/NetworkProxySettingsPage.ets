@@ -631,7 +631,7 @@ export struct NetworkProxySettingsPage {
         this.testStatus = ''
         this.showToast(AppStrings.text(AppStrings.R_PROFILE_SWITCHED, 'Profile switched'))
       })
-      .catch((error: Error) => { this.showToast(error.message || AppStrings.text(AppStrings.R_SWITCH_FAILED, 'Switch failed')) })
+      .catch((error: Error) => { this.showToast(this.profileSwitchErrorMessage(error)) })
   }
 
   private openNewProfileEditor(): void {
@@ -694,7 +694,7 @@ export struct NetworkProxySettingsPage {
         this.closeEditor()
         this.showToast(AppStrings.text(AppStrings.R_COMMON_SAVED, 'Saved'))
       })
-      .catch((error: Error) => { this.showToast(error.message || AppStrings.text(AppStrings.R_COMMON_SAVE_FAILED, 'Save failed')) })
+      .catch((error: Error) => { this.showToast(this.profileSaveErrorMessage(error)) })
   }
 
   private confirmDeleteProfile(): void {
@@ -736,6 +736,20 @@ export struct NetworkProxySettingsPage {
   private applyProfilesState(state: NetworkProxyProfilesState): void {
     this.profiles = this.cloneProfiles(state.profiles)
     this.activeProfileId = state.activeProfileId
+  }
+
+  private profileSwitchErrorMessage(error: Error): string {
+    if (error.message === 'PROFILE_NOT_FOUND') {
+      return AppStrings.text(AppStrings.R_PROXY_PROFILE_NOT_FOUND, 'Profile does not exist')
+    }
+    return error.message || AppStrings.text(AppStrings.R_SWITCH_FAILED, 'Switch failed')
+  }
+
+  private profileSaveErrorMessage(error: Error): string {
+    if (error.message === 'PROFILE_NOT_FOUND') {
+      return AppStrings.text(AppStrings.R_PROXY_PROFILE_NOT_FOUND, 'Profile does not exist')
+    }
+    return error.message || AppStrings.text(AppStrings.R_COMMON_SAVE_FAILED, 'Save failed')
   }
 
   private cloneProfiles(profiles: NetworkProxyProfile[]): NetworkProxyProfile[] {

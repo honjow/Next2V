@@ -283,7 +283,7 @@ export class NetworkProxyProfileSettings {
     const state = await NetworkProxyProfileSettings.loadFromStore(store)
     const profile = NetworkProxyProfileSettings.findProfile(state.profiles, profileId)
     if (!profile) {
-      throw new Error('配置不存在')
+      throw new Error('PROFILE_NOT_FOUND')
     }
     await NetworkProxySettings.save(context, profile.snapshot)
     NetworkProxyProfileSettings.writeState(store, state.profiles, profile.id)
@@ -356,7 +356,8 @@ export class NetworkProxyProfileSettings {
 
   private static normalizeProfile(profile: NetworkProxyProfile): NetworkProxyProfile {
     const id = (profile.id || `proxy-${Date.now()}`).trim()
-    const name = (profile.name || '代理配置').trim() || '代理配置'
+    const defaultName = AppStrings.text(AppStrings.R_DEFAULT_PROXY_PROFILE_NAME, 'Proxy configuration')
+    const name = (profile.name || defaultName).trim() || defaultName
     return {
       id,
       name,

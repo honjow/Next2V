@@ -959,6 +959,26 @@
     {
       "name": "account_rate_limit_reset_arg",
       "value": "Reset time: %s"
+    },
+    {
+      "name": "topic_action_site_favorite",
+      "value": "Site favorite"
+    },
+    {
+      "name": "topic_action_follow_node",
+      "value": "Follow node"
+    },
+    {
+      "name": "add_x_format",
+      "value": "Add {0}"
+    },
+    {
+      "name": "proxy_profile_not_found",
+      "value": "Profile does not exist"
+    },
+    {
+      "name": "default_proxy_profile_name",
+      "value": "Proxy configuration"
     }
   ]
 }

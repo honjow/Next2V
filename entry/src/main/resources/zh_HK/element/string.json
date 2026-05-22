@@ -959,6 +959,26 @@
     {
       "name": "account_rate_limit_reset_arg",
       "value": "重設時間: %s"
+    },
+    {
+      "name": "topic_action_site_favorite",
+      "value": "站內收藏"
+    },
+    {
+      "name": "topic_action_follow_node",
+      "value": "關注節點"
+    },
+    {
+      "name": "add_x_format",
+      "value": "新增 {0}"
+    },
+    {
+      "name": "proxy_profile_not_found",
+      "value": "設定檔不存在"
+    },
+    {
+      "name": "default_proxy_profile_name",
+      "value": "代理設定"
     }
   ]
 }
