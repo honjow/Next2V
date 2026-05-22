@@ -486,12 +486,10 @@ export struct SettingsPage {
 
   @Builder
   LanguageModeMenuItem(option: SettingsOption) {
-    SettingsCheckedMenuItem({
-      label: option.label,
-      selected: LanguageSettings.normalizeMode(this.languageMode) === option.value,
-      selectAction: () => {
-        this.updateLanguageMode(option.value)
-      }
+    MenuItem({
+      content: option.label
+    }).onClick(() => {
+      this.updateLanguageMode(option.value)
     })
   }
 
