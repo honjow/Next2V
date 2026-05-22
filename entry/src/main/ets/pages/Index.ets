@@ -722,7 +722,7 @@ struct Index {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     const want: Want = { action: 'ohos.want.action.viewData', uri: target }
     context.startAbility(want).catch((error: Error) => {
-      promptAction.openToast({ message: error.message || AppStrings.t(AppStrings.R_COMMON_OPEN_FAILED, 'Open failed') }).catch((_error: Error) => {})
+      promptAction.openToast({ message: error.message || AppStrings.text(AppStrings.R_COMMON_OPEN_FAILED, 'Open failed') }).catch((_error: Error) => {})
     })
   }
 

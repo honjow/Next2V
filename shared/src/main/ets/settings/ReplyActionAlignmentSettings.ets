@@ -103,25 +103,25 @@ export class ReplyActionAlignmentSettings {
   static modeText(mode: string, smartGripSupported: boolean): string {
     const effective = ReplyActionAlignmentSettings.effectiveMode(mode, smartGripSupported)
     if (effective === ReplyActionAlignmentSettings.MODE_SMART_GRIP) {
-      return AppStrings.t(AppStrings.R_SMART_GRIP, 'Smart grip')
+      return AppStrings.text(AppStrings.R_SMART_GRIP, 'Smart grip')
     }
     if (effective === ReplyActionAlignmentSettings.MODE_FIXED_LEFT) {
-      return AppStrings.t(AppStrings.R_FIXED_LEFT, 'Fixed left')
+      return AppStrings.text(AppStrings.R_FIXED_LEFT, 'Fixed left')
     }
     if (effective === ReplyActionAlignmentSettings.MODE_FIXED_RIGHT) {
-      return AppStrings.t(AppStrings.R_FIXED_RIGHT, 'Fixed right')
+      return AppStrings.text(AppStrings.R_FIXED_RIGHT, 'Fixed right')
     }
-    return AppStrings.t(AppStrings.R_FOLLOW_OPERATION, 'Follow operation')
+    return AppStrings.text(AppStrings.R_FOLLOW_OPERATION, 'Follow operation')
   }
 
   static availableOptions(smartGripSupported: boolean): ReplyActionAlignmentOption[] {
     const options: ReplyActionAlignmentOption[] = []
     if (smartGripSupported) {
-      options.push({ label: AppStrings.t(AppStrings.R_SMART_GRIP, 'Smart grip'), mode: ReplyActionAlignmentSettings.MODE_SMART_GRIP })
+      options.push({ label: AppStrings.text(AppStrings.R_SMART_GRIP, 'Smart grip'), mode: ReplyActionAlignmentSettings.MODE_SMART_GRIP })
     }
-    options.push({ label: AppStrings.t(AppStrings.R_FOLLOW_OPERATION, 'Follow operation'), mode: ReplyActionAlignmentSettings.MODE_FOLLOW_OPERATION })
-    options.push({ label: AppStrings.t(AppStrings.R_FIXED_LEFT, 'Fixed left'), mode: ReplyActionAlignmentSettings.MODE_FIXED_LEFT })
-    options.push({ label: AppStrings.t(AppStrings.R_FIXED_RIGHT, 'Fixed right'), mode: ReplyActionAlignmentSettings.MODE_FIXED_RIGHT })
+    options.push({ label: AppStrings.text(AppStrings.R_FOLLOW_OPERATION, 'Follow operation'), mode: ReplyActionAlignmentSettings.MODE_FOLLOW_OPERATION })
+    options.push({ label: AppStrings.text(AppStrings.R_FIXED_LEFT, 'Fixed left'), mode: ReplyActionAlignmentSettings.MODE_FIXED_LEFT })
+    options.push({ label: AppStrings.text(AppStrings.R_FIXED_RIGHT, 'Fixed right'), mode: ReplyActionAlignmentSettings.MODE_FIXED_RIGHT })
     return options
   }
 }

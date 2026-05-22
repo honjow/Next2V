@@ -101,7 +101,7 @@ export struct AccountFollowingPage {
       this.members = result
     } catch (error) {
       const e = error as Error
-      this.errorMessage = e.message || AppStrings.t(AppStrings.R_COMMON_LOAD_FAILED, 'Load failed')
+      this.errorMessage = e.message || AppStrings.text(AppStrings.R_COMMON_LOAD_FAILED, 'Load failed')
       this.members = []
     } finally {
       this.isLoading = false

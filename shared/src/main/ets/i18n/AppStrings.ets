@@ -19,7 +19,7 @@ export class AppStrings {
     return text
   }
 
-  static t(resource: Resource, fallback: string): string {
+  static text(resource: Resource, fallback: string): string {
     try {
       const resourceSource = AppStrings.context?.resourceManager
       if (!resourceSource) {
@@ -62,6 +62,11 @@ export class AppStrings {
   static readonly R_NAV_ABOUT: Resource = $r('app.string.nav_about')
   static readonly R_NAV_ALL_TOPICS: Resource = $r('app.string.nav_all_topics')
   static readonly R_NAV_ALL_REPLIES: Resource = $r('app.string.nav_all_replies')
+  static readonly R_NAV_REFRESH: Resource = $r('app.string.nav_refresh')
+  static readonly R_NAV_FILTER: Resource = $r('app.string.nav_filter')
+  static readonly R_NAV_SAVE_LOGIN: Resource = $r('app.string.nav_save_login')
+  static readonly R_NAV_RELOAD: Resource = $r('app.string.nav_reload')
+  static readonly R_NAV_SAVE_IMAGE: Resource = $r('app.string.nav_save_image')
   static readonly R_COMMON_LOAD_FAILED: Resource = $r('app.string.common_load_failed')
   static readonly R_COMMON_RETRY: Resource = $r('app.string.common_retry')
   static readonly R_COMMON_CANCEL: Resource = $r('app.string.common_cancel')
@@ -89,6 +94,12 @@ export class AppStrings {
   static readonly R_ADVANCED_API_SECTION: Resource = $r('app.string.advanced_api_section')
   static readonly R_NOT_LOGGED_IN: Resource = $r('app.string.not_logged_in')
   static readonly R_TAP_TO_LOGIN_V2EX: Resource = $r('app.string.tap_to_login_v2ex')
+  static readonly R_ACCOUNT_V2EX_USER: Resource = $r('app.string.account_v2ex_user')
+  static readonly R_ACCOUNT_TOKEN_SCOPE_ARG: Resource = $r('app.string.account_token_scope_arg')
+  static readonly R_ACCOUNT_TOKEN_EXPIRATION_ARG: Resource = $r('app.string.account_token_expiration_arg')
+  static readonly R_ACCOUNT_TOKEN_LAST_USED_ARG: Resource = $r('app.string.account_token_last_used_arg')
+  static readonly R_ACCOUNT_API_QUOTA_ARG: Resource = $r('app.string.account_api_quota_arg')
+  static readonly R_ACCOUNT_RATE_LIMIT_RESET_ARG: Resource = $r('app.string.account_rate_limit_reset_arg')
   static readonly R_PROFILE_HOME: Resource = $r('app.string.profile_home')
   static readonly R_BALANCE_DETAILS: Resource = $r('app.string.balance_details')
   static readonly R_WEB_ACCOUNT_SETTINGS: Resource = $r('app.string.web_account_settings')

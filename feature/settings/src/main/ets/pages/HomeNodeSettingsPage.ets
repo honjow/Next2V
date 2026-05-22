@@ -171,13 +171,13 @@ export struct HomeNodeSettingsPage {
   private addNodeFeedTab(): void {
     const cleanName = FeedTabSettings.normalizeNodeName(this.nodeTabName)
     if (!cleanName) {
-      promptAction.openToast({ message: AppStrings.t(AppStrings.R_INVALID_NODE_NAME, 'Enter a valid node name') }).catch((_error: Error) => {
+      promptAction.openToast({ message: AppStrings.text(AppStrings.R_INVALID_NODE_NAME, 'Enter a valid node name') }).catch((_error: Error) => {
       })
       return
     }
     const nextKeys = FeedTabSettings.addNode(this.feedTabKeys, cleanName)
     if (nextKeys === this.feedTabKeys) {
-      promptAction.openToast({ message: AppStrings.t(AppStrings.R_NODE_COLUMN_EXISTS, 'Node column already exists') }).catch((_error: Error) => {
+      promptAction.openToast({ message: AppStrings.text(AppStrings.R_NODE_COLUMN_EXISTS, 'Node column already exists') }).catch((_error: Error) => {
       })
       return
     }

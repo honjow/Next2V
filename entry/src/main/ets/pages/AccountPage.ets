@@ -594,7 +594,7 @@ export struct AccountDashboardPage {
         }
         const username = V2exSessionParser.extractUsername(res.text)
         if (!username) {
-          throw new Error(AppStrings.t(AppStrings.R_WEB_SESSION_EXPIRED_RELOGIN, 'Web session expired, please sign in again'))
+          throw new Error(AppStrings.text(AppStrings.R_WEB_SESSION_EXPIRED_RELOGIN, 'Web session expired, please sign in again'))
         }
         return this.api.getMember(username)
           .then((profile) => {
@@ -621,7 +621,7 @@ export struct AccountDashboardPage {
           return
         }
         DiagnosticLogger.warn('account', 'account_session_validate_error', { force: force, durationMs: Date.now() - startedAt }, error)
-        const message = error.message || AppStrings.t(AppStrings.R_WEB_SESSION_VALIDATION_FAILED, 'Web session validation failed')
+        const message = error.message || AppStrings.text(AppStrings.R_WEB_SESSION_VALIDATION_FAILED, 'Web session validation failed')
         this.sessionError = message
         this.handleExpiredCookieSession(message)
       })
@@ -652,11 +652,11 @@ export struct AccountDashboardPage {
     const cookie = CookieJarSettings.getCurrentCookie()
     DiagnosticLogger.warn('account', 'account_session_two_factor_required', {})
     if (!cookie) {
-      this.sessionError = AppStrings.t(AppStrings.R_TWO_FACTOR_RELOGIN_REQUIRED, 'V2EX requires two-factor verification. Please sign in again')
+      this.sessionError = AppStrings.text(AppStrings.R_TWO_FACTOR_RELOGIN_REQUIRED, 'V2EX requires two-factor verification. Please sign in again')
       return
     }
-    this.sessionError = AppStrings.t(AppStrings.R_TWO_FACTOR_REQUIRED, 'V2EX requires two-factor verification')
-    this.accountMetaError = AppStrings.t(AppStrings.R_TWO_FACTOR_REQUIRED, 'V2EX requires two-factor verification')
+    this.sessionError = AppStrings.text(AppStrings.R_TWO_FACTOR_REQUIRED, 'V2EX requires two-factor verification')
+    this.accountMetaError = AppStrings.text(AppStrings.R_TWO_FACTOR_REQUIRED, 'V2EX requires two-factor verification')
     TwoFactorChallengeService.request(cookie, 'account')
   }
 
@@ -667,7 +667,7 @@ export struct AccountDashboardPage {
         this.storedUsername = profile.username || this.storedUsername
       })
       .catch((error: Error) => {
-        this.authError = error.message || AppStrings.t(AppStrings.R_LOGIN_VALIDATION_FAILED, 'Sign-in validation failed')
+        this.authError = error.message || AppStrings.text(AppStrings.R_LOGIN_VALIDATION_FAILED, 'Sign-in validation failed')
       })
   }
 
@@ -677,7 +677,7 @@ export struct AccountDashboardPage {
       .then((info: V2exTokenInfo) => {
         if (info && info.success === false) {
           this.tokenInfo = null
-          this.tokenInfoError = info.message || AppStrings.t(AppStrings.R_TOKEN_INFO_FAILED, 'Failed to fetch token info')
+          this.tokenInfoError = info.message || AppStrings.text(AppStrings.R_TOKEN_INFO_FAILED, 'Failed to fetch token info')
           return
         }
         this.tokenInfo = info
@@ -685,7 +685,7 @@ export struct AccountDashboardPage {
       })
       .catch((error: Error) => {
         this.tokenInfo = null
-        this.tokenInfoError = error.message || AppStrings.t(AppStrings.R_TOKEN_INFO_FAILED, 'Failed to fetch token info')
+        this.tokenInfoError = error.message || AppStrings.text(AppStrings.R_TOKEN_INFO_FAILED, 'Failed to fetch token info')
       })
   }
 
@@ -697,11 +697,11 @@ export struct AccountDashboardPage {
       title: AccountPageCoordinator.CLEAR_API_AUTH_TITLE,
       message: AccountPageCoordinator.CLEAR_API_AUTH_MESSAGE,
       primaryButton: {
-        value: AppStrings.t(AppStrings.R_COMMON_CANCEL, 'Cancel'), action: () => {
+        value: AppStrings.text(AppStrings.R_COMMON_CANCEL, 'Cancel'), action: () => {
         }
       },
       secondaryButton: {
-        value: AppStrings.t(AppStrings.R_COMMON_CLEAR, 'Clear'),
+        value: AppStrings.text(AppStrings.R_COMMON_CLEAR, 'Clear'),
         fontColor: Color.Red,
         action: () => {
           this.clearAuth()
@@ -746,13 +746,13 @@ export struct AccountDashboardPage {
     this.sessionError = ''
     Promise.all([
       AuthSettings.clear(context).catch((error: Error) => {
-        this.authError = error.message || AppStrings.t(AppStrings.R_CLEAR_TOKEN_FAILED, 'Failed to clear token')
+        this.authError = error.message || AppStrings.text(AppStrings.R_CLEAR_TOKEN_FAILED, 'Failed to clear token')
       }),
       AuthSessionSettings.clear(context).catch((error: Error) => {
-        this.sessionError = error.message || AppStrings.t(AppStrings.R_CLEAR_SESSION_FAILED, 'Failed to clear session')
+        this.sessionError = error.message || AppStrings.text(AppStrings.R_CLEAR_SESSION_FAILED, 'Failed to clear session')
       }),
       CookieJarSettings.clear(context).catch((error: Error) => {
-        this.sessionError = error.message || AppStrings.t(AppStrings.R_CLEAR_COOKIE_FAILED, 'Failed to clear cookies')
+        this.sessionError = error.message || AppStrings.text(AppStrings.R_CLEAR_COOKIE_FAILED, 'Failed to clear cookies')
       }),
       NotificationSettings.clearCache(context).catch((_error: Error) => {
       }),
@@ -859,7 +859,7 @@ export struct AccountDashboardPage {
           return
         }
         DiagnosticLogger.warn('account', 'account_meta_fetch_error', { force: force }, error)
-        const message = error.message || AppStrings.t(AppStrings.R_READ_ACCOUNT_FAILED, 'Failed to read account info')
+        const message = error.message || AppStrings.text(AppStrings.R_READ_ACCOUNT_FAILED, 'Failed to read account info')
         this.accountMetaError = message
         this.handleExpiredCookieSession(message)
       })
@@ -876,7 +876,7 @@ export struct AccountDashboardPage {
     }
     if (!this.dailyMission || !this.dailyMission.canRedeem || !this.dailyMission.redeemPath) {
       DiagnosticLogger.info('account', 'account_daily_redeem_skip', { reason: 'not_redeemable' })
-      promptAction.openToast({ message: AppStrings.t(AppStrings.R_ALREADY_CHECKED_IN_TODAY, 'Already checked in today') }).catch((_error: Error) => {
+      promptAction.openToast({ message: AppStrings.text(AppStrings.R_ALREADY_CHECKED_IN_TODAY, 'Already checked in today') }).catch((_error: Error) => {
       })
       return
     }
@@ -887,7 +887,7 @@ export struct AccountDashboardPage {
       .then((mission: V2exDailyMission) => {
         this.dailyMission = mission
         DiagnosticLogger.info('account', 'account_daily_redeem_success', { canRedeem: mission.canRedeem === true, messageCode: mission.message ? 'message_present' : '' })
-        promptAction.openToast({ message: AccountPageCoordinator.dailyMissionMessage(mission.message) || AppStrings.t(AppStrings.R_CHECKIN_COMPLETED, 'Check-in completed') }).catch((_error: Error) => {
+        promptAction.openToast({ message: AccountPageCoordinator.dailyMissionMessage(mission.message) || AppStrings.text(AppStrings.R_CHECKIN_COMPLETED, 'Check-in completed') }).catch((_error: Error) => {
         })
         this.loadAccountMeta(true)
       })
@@ -897,7 +897,7 @@ export struct AccountDashboardPage {
           return
         }
         DiagnosticLogger.warn('account', 'account_daily_redeem_error', { canRedeem: this.dailyMission ? this.dailyMission.canRedeem === true : false }, error)
-        const message = error.message || AppStrings.t(AppStrings.R_CHECKIN_FAILED, 'Check-in failed')
+        const message = error.message || AppStrings.text(AppStrings.R_CHECKIN_FAILED, 'Check-in failed')
         this.accountMetaError = message
         this.handleExpiredCookieSession(message)
         promptAction.openToast({ message: message }).catch((_error: Error) => {
@@ -996,7 +996,7 @@ export struct AccountDashboardPage {
     const want: Want = { action: 'ohos.want.action.viewData', uri: target }
     context.startAbility(want)
       .catch((error: Error) => {
-        promptAction.openToast({ message: error.message || AppStrings.t(AppStrings.R_COMMON_OPEN_FAILED, 'Open failed') }).catch((_error: Error) => {
+        promptAction.openToast({ message: error.message || AppStrings.text(AppStrings.R_COMMON_OPEN_FAILED, 'Open failed') }).catch((_error: Error) => {
         })
       })
   }

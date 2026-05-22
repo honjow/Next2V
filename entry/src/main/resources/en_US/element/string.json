@@ -915,6 +915,50 @@
     {
       "name": "checkin_failed",
       "value": "Check-in failed"
+    },
+    {
+      "name": "nav_refresh",
+      "value": "Refresh"
+    },
+    {
+      "name": "nav_filter",
+      "value": "Filter"
+    },
+    {
+      "name": "nav_save_login",
+      "value": "Save login"
+    },
+    {
+      "name": "nav_reload",
+      "value": "Reload"
+    },
+    {
+      "name": "nav_save_image",
+      "value": "Save image"
+    },
+    {
+      "name": "account_v2ex_user",
+      "value": "V2EX user"
+    },
+    {
+      "name": "account_token_scope_arg",
+      "value": "Token scope: %s"
+    },
+    {
+      "name": "account_token_expiration_arg",
+      "value": "Expires: %s"
+    },
+    {
+      "name": "account_token_last_used_arg",
+      "value": "Last used: %s"
+    },
+    {
+      "name": "account_api_quota_arg",
+      "value": "API quota: %s / %s"
+    },
+    {
+      "name": "account_rate_limit_reset_arg",
+      "value": "Reset time: %s"
     }
   ]
 }

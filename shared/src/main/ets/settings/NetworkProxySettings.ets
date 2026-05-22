@@ -132,14 +132,14 @@ export class NetworkProxySettings {
   static label(mode: NetworkProxyMode): string {
     switch (mode) {
       case 'system':
-        return AppStrings.t(AppStrings.R_SYSTEM_PROXY, 'System proxy')
+        return AppStrings.text(AppStrings.R_SYSTEM_PROXY, 'System proxy')
       case 'http':
-        return AppStrings.t(AppStrings.R_HTTP_PROXY, 'HTTP proxy')
+        return AppStrings.text(AppStrings.R_HTTP_PROXY, 'HTTP proxy')
       case 'socks5':
-        return AppStrings.t(AppStrings.R_SOCKS5_PROXY, 'SOCKS5 proxy')
+        return AppStrings.text(AppStrings.R_SOCKS5_PROXY, 'SOCKS5 proxy')
       case 'off':
       default:
-        return AppStrings.t(AppStrings.R_COMMON_CLOSED, 'Off')
+        return AppStrings.text(AppStrings.R_COMMON_CLOSED, 'Off')
     }
   }
 
@@ -147,10 +147,10 @@ export class NetworkProxySettings {
     const normalized = NetworkProxySettings.normalize(snapshot)
     if (normalized.mode === 'http' || normalized.mode === 'socks5') {
       if (normalized.host && normalized.port > 0) {
-        const scheme = normalized.mode === 'http' && normalized.proxyScheme === 'https' ? AppStrings.t(AppStrings.R_HTTPS_PROXY_ENTRY, 'HTTPS proxy endpoint') : NetworkProxySettings.label(normalized.mode)
+        const scheme = normalized.mode === 'http' && normalized.proxyScheme === 'https' ? AppStrings.text(AppStrings.R_HTTPS_PROXY_ENTRY, 'HTTPS proxy endpoint') : NetworkProxySettings.label(normalized.mode)
         return `${scheme} · ${normalized.host}:${normalized.port}`
       }
-      return `${NetworkProxySettings.label(normalized.mode)} · ${AppStrings.t(AppStrings.R_PROXY_NOT_CONFIGURED, 'Not configured')}`
+      return `${NetworkProxySettings.label(normalized.mode)} · ${AppStrings.text(AppStrings.R_PROXY_NOT_CONFIGURED, 'Not configured')}`
     }
     return NetworkProxySettings.label(normalized.mode)
   }
@@ -161,10 +161,10 @@ export class NetworkProxySettings {
       return { ok: true, message: '' }
     }
     if (!NetworkProxySettings.isValidHost(normalized.host)) {
-      return { ok: false, message: AppStrings.t(AppStrings.R_INVALID_PROXY_HOST, 'Enter a valid proxy host') }
+      return { ok: false, message: AppStrings.text(AppStrings.R_INVALID_PROXY_HOST, 'Enter a valid proxy host') }
     }
     if (!NetworkProxySettings.isValidPort(normalized.port)) {
-      return { ok: false, message: AppStrings.t(AppStrings.R_INVALID_PROXY_PORT, 'Port must be 1-65535') }
+      return { ok: false, message: AppStrings.text(AppStrings.R_INVALID_PROXY_PORT, 'Port must be 1-65535') }
     }
     return { ok: true, message: '' }
   }

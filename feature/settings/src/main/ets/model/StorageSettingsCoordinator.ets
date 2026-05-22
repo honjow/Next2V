@@ -24,36 +24,36 @@ export class StorageSettingsCoordinator {
 
   static clearCacheDialogCopy(): StorageConfirmDialogCopy {
     return {
-      title: AppStrings.t(AppStrings.R_CLEAR_CACHE, 'Clear cache'),
-      message: AppStrings.t(AppStrings.R_CLEAR_CACHE_MESSAGE, 'Only offline cache will be cleared. Login state and preferences will be kept. Continue?'),
-      cancelValue: AppStrings.t(AppStrings.R_COMMON_CANCEL, 'Cancel'),
-      confirmValue: AppStrings.t(AppStrings.R_COMMON_CLEAR, 'Clear'),
+      title: AppStrings.text(AppStrings.R_CLEAR_CACHE, 'Clear cache'),
+      message: AppStrings.text(AppStrings.R_CLEAR_CACHE_MESSAGE, 'Only offline cache will be cleared. Login state and preferences will be kept. Continue?'),
+      cancelValue: AppStrings.text(AppStrings.R_COMMON_CANCEL, 'Cancel'),
+      confirmValue: AppStrings.text(AppStrings.R_COMMON_CLEAR, 'Clear'),
     }
   }
 
   static clearLocalDataDialogCopy(): StorageConfirmDialogCopy {
     return {
-      title: AppStrings.t(AppStrings.R_CLEAR_LOCAL_DATA, 'Clear local data'),
-      message: AppStrings.t(AppStrings.R_CLEAR_LOCAL_DATA_MESSAGE, 'This clears locally saved read later items, followed nodes, recently viewed items, read state, drafts, search history, notification cache, and offline cache. Login state and preferences are kept. Continue?'),
-      cancelValue: AppStrings.t(AppStrings.R_COMMON_CANCEL, 'Cancel'),
-      confirmValue: AppStrings.t(AppStrings.R_COMMON_CLEAR, 'Clear'),
+      title: AppStrings.text(AppStrings.R_CLEAR_LOCAL_DATA, 'Clear local data'),
+      message: AppStrings.text(AppStrings.R_CLEAR_LOCAL_DATA_MESSAGE, 'This clears locally saved read later items, followed nodes, recently viewed items, read state, drafts, search history, notification cache, and offline cache. Login state and preferences are kept. Continue?'),
+      cancelValue: AppStrings.text(AppStrings.R_COMMON_CANCEL, 'Cancel'),
+      confirmValue: AppStrings.text(AppStrings.R_COMMON_CLEAR, 'Clear'),
     }
   }
 
   static clearSuccessMessage(): string {
-    return AppStrings.t(AppStrings.R_COMMON_CLEARED, 'Cleared')
+    return AppStrings.text(AppStrings.R_COMMON_CLEARED, 'Cleared')
   }
 
   static readCacheErrorMessage(error: Error): string {
-    return error.message || AppStrings.t(AppStrings.R_READ_CACHE_STATUS_FAILED, 'Failed to read cache status')
+    return error.message || AppStrings.text(AppStrings.R_READ_CACHE_STATUS_FAILED, 'Failed to read cache status')
   }
 
   static clearErrorMessage(error: Error): string {
-    return error.message || AppStrings.t(AppStrings.R_CLEAR_FAILED, 'Clear failed')
+    return error.message || AppStrings.text(AppStrings.R_CLEAR_FAILED, 'Clear failed')
   }
 
   static seedUnavailableMessage(): string {
-    return AppStrings.t(AppStrings.R_DEBUG_ONLY, 'Debug builds only')
+    return AppStrings.text(AppStrings.R_DEBUG_ONLY, 'Debug builds only')
   }
 
   static seedAllSuccessMessage(results: CacheDeviceQaSeedResult[]): string {
@@ -67,6 +67,6 @@ export class StorageSettingsCoordinator {
   }
 
   static seedErrorMessage(error: Error): string {
-    return error.message || AppStrings.t(AppStrings.R_SEED_FAILED, 'Seed failed')
+    return error.message || AppStrings.text(AppStrings.R_SEED_FAILED, 'Seed failed')
   }
 }

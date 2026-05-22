@@ -915,6 +915,50 @@
     {
       "name": "checkin_failed",
       "value": "簽到失敗"
+    },
+    {
+      "name": "nav_refresh",
+      "value": "刷新"
+    },
+    {
+      "name": "nav_filter",
+      "value": "篩選"
+    },
+    {
+      "name": "nav_save_login",
+      "value": "儲存登入"
+    },
+    {
+      "name": "nav_reload",
+      "value": "重新載入"
+    },
+    {
+      "name": "nav_save_image",
+      "value": "儲存圖片"
+    },
+    {
+      "name": "account_v2ex_user",
+      "value": "V2EX 用戶"
+    },
+    {
+      "name": "account_token_scope_arg",
+      "value": "Token 權限: %s"
+    },
+    {
+      "name": "account_token_expiration_arg",
+      "value": "到期: %s"
+    },
+    {
+      "name": "account_token_last_used_arg",
+      "value": "最後使用: %s"
+    },
+    {
+      "name": "account_api_quota_arg",
+      "value": "API 額度: %s / %s"
+    },
+    {
+      "name": "account_rate_limit_reset_arg",
+      "value": "重設時間: %s"
     }
   ]
 }

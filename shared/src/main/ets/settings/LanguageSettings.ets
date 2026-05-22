@@ -2,6 +2,7 @@ import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
 import i18n from '@ohos.i18n'
 import { StorageKeys } from '../constants/StorageKeys'
+import { AppStrings } from '../i18n/AppStrings'
 import { STORE_NAME_SETTINGS, SettingsPreferencesStore, setAppStorageValue } from './SettingsStorage'
 
 export type AppLanguageMode = 'default' | 'zh-Hans' | 'zh-Hant-HK' | 'zh-Hant-TW' | 'en-US'
@@ -47,7 +48,7 @@ export class LanguageSettings {
       return LanguageSettings.loadFromStore(store)
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '读取语言设置失败')
+      throw new Error(e.message || 'Failed to read language settings')
     }
   }
 
@@ -87,21 +88,21 @@ export class LanguageSettings {
     return LanguageSettings.MODE_SYSTEM
   }
 
-  static modeText(mode: string): string {
+  static modeText(mode: string): ResourceStr {
     const normalizedMode = LanguageSettings.normalizeMode(mode)
     if (normalizedMode === LanguageSettings.MODE_ZH_CN) {
-      return '简体中文'
+      return AppStrings.R_LANGUAGE_SIMPLIFIED_CHINESE
     }
     if (normalizedMode === LanguageSettings.MODE_ZH_HK) {
-      return '繁體中文（香港）'
+      return AppStrings.R_LANGUAGE_TRADITIONAL_CHINESE_HK
     }
     if (normalizedMode === LanguageSettings.MODE_ZH_TW) {
-      return '繁體中文（台灣）'
+      return AppStrings.R_LANGUAGE_TRADITIONAL_CHINESE_TW
     }
     if (normalizedMode === LanguageSettings.MODE_EN) {
-      return 'English'
+      return AppStrings.R_LANGUAGE_ENGLISH
     }
-    return '跟随系统'
+    return AppStrings.R_LANGUAGE_FOLLOW_SYSTEM
   }
 
   private static applyFromStore(store: SettingsPreferencesStore): LanguageSettingsSnapshot {

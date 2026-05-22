@@ -1,5 +1,6 @@
 import { AccountCoinIcon } from './AccountCoinIcon'
 import {
+  AppStrings,
   Avatar,
   DateUtils,
   ThemeConstants,
@@ -71,7 +72,7 @@ export struct AccountDetailHeaderCard {
   build() {
     Column({ space: ThemeConstants.SPACE_MD }) {
       Avatar({ url: this.avatarUrl, avatarSize: 72 })
-      Text(this.username || 'V2EX 用户')
+      Text(this.username || AppStrings.R_ACCOUNT_V2EX_USER)
         .fontSize(ThemeConstants.FONT_SIZE_TITLE)
         .fontWeight(FontWeight.Medium)
         .fontColor($r('sys.color.font_primary'))
@@ -127,7 +128,7 @@ export struct AccountSignedInCard {
     Row({ space: ThemeConstants.SPACE_MD }) {
       Avatar({ url: this.avatarUrl, avatarSize: 54 })
       Column({ space: ThemeConstants.SPACE_XS }) {
-        Text(this.username || 'V2EX 用户')
+        Text(this.username || AppStrings.R_ACCOUNT_V2EX_USER)
           .fontSize(ThemeConstants.FONT_SIZE_TITLE)
           .fontWeight(FontWeight.Medium)
           .fontColor($r('sys.color.font_primary'))
@@ -177,17 +178,17 @@ export struct AccountTokenSummary {
   build() {
     Column({ space: ThemeConstants.SPACE_XS }) {
       if (this.scope) {
-        Text(`Token 权限: ${this.scope}`)
+        Text($r('app.string.account_token_scope_arg', this.scope))
           .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
           .fontColor($r('sys.color.font_secondary'))
       }
       if (this.expiration > 0) {
-        Text(`到期: ${DateUtils.toDateString(this.expiration)}`)
+        Text($r('app.string.account_token_expiration_arg', DateUtils.toDateString(this.expiration)))
           .fontSize(ThemeConstants.FONT_SIZE_TINY)
           .fontColor($r('sys.color.font_secondary'))
       }
       if (this.lastUsed > 0) {
-        Text(`最后使用: ${DateUtils.toDateString(this.lastUsed)}`)
+        Text($r('app.string.account_token_last_used_arg', DateUtils.toDateString(this.lastUsed)))
           .fontSize(ThemeConstants.FONT_SIZE_TINY)
           .fontColor($r('sys.color.font_secondary'))
       }
@@ -208,12 +209,12 @@ export struct AccountRateLimitSummary {
   build() {
     Column({ space: ThemeConstants.SPACE_XS }) {
       if (this.limit > 0) {
-        Text(`API 额度: ${this.remaining} / ${this.limit}`)
+        Text($r('app.string.account_api_quota_arg', `${this.remaining}`, `${this.limit}`))
           .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
           .fontColor($r('sys.color.font_secondary'))
       }
       if (this.resetAt > 0) {
-        Text(`重置时间: ${DateUtils.toDateString(this.resetAt)}`)
+        Text($r('app.string.account_rate_limit_reset_arg', DateUtils.toDateString(this.resetAt)))
           .fontSize(ThemeConstants.FONT_SIZE_TINY)
           .fontColor($r('sys.color.font_secondary'))
       }

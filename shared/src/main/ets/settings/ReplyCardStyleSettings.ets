@@ -72,8 +72,8 @@ export class ReplyCardStyleSettings {
 
   static styleText(style: string): string {
     if (ReplyCardStyleSettings.normalize(style) === STYLE_COMPACT) {
-      return AppStrings.t(AppStrings.R_DENSITY_COMPACT, 'Compact')
+      return AppStrings.text(AppStrings.R_DENSITY_COMPACT, 'Compact')
     }
-    return AppStrings.t(AppStrings.R_DENSITY_STANDARD, 'Standard')
+    return AppStrings.text(AppStrings.R_DENSITY_STANDARD, 'Standard')
   }
 }

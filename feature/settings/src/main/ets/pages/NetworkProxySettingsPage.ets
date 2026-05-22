@@ -461,7 +461,7 @@ export struct NetworkProxySettingsPage {
     if (snapshot.host && snapshot.port > 0) {
       return `${snapshot.host}:${snapshot.port}`
     }
-    return AppStrings.t(AppStrings.R_PROXY_CONFIG_TITLE, 'Proxy configuration')
+    return AppStrings.text(AppStrings.R_PROXY_CONFIG_TITLE, 'Proxy configuration')
   }
 
   private profileSubtitle(profile: NetworkProxyProfile): string {
@@ -554,7 +554,7 @@ export struct NetworkProxySettingsPage {
       .then(() => { this.persistActiveProfileSnapshot(context, snapshot) })
       .catch((error: Error) => {
         if (showError) {
-          this.showToast(error.message || AppStrings.t(AppStrings.R_COMMON_SAVE_FAILED, 'Save failed'))
+          this.showToast(error.message || AppStrings.text(AppStrings.R_COMMON_SAVE_FAILED, 'Save failed'))
         }
         console.error('save network proxy settings failed: ' + (error.message || 'unknown'))
       })
@@ -591,16 +591,16 @@ export struct NetworkProxySettingsPage {
     }
 
     this.testing = true
-    this.testStatus = AppStrings.t(AppStrings.R_TESTING, 'Testing…')
+    this.testStatus = AppStrings.text(AppStrings.R_TESTING, 'Testing…')
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     NetworkProxySettings.save(context, snapshot)
       .then(() => NetworkProxyRequest.testConnection(HttpClient.getInstance().getBaseUrl()))
       .then((response) => {
         this.testing = false
         if (response.responseCode >= 200 && response.responseCode < 300) {
-          this.testStatus = AppStrings.format(AppStrings.t(AppStrings.R_CONNECTION_TEST_SUCCESS, 'Connection succeeded (HTTP {0})'), [`${response.responseCode}`])
+          this.testStatus = AppStrings.format(AppStrings.text(AppStrings.R_CONNECTION_TEST_SUCCESS, 'Connection succeeded (HTTP {0})'), [`${response.responseCode}`])
         } else {
-          this.testStatus = AppStrings.format(AppStrings.t(AppStrings.R_CONNECTION_TEST_FAILED, 'Connection failed: HTTP {0}'), [`${response.responseCode}`])
+          this.testStatus = AppStrings.format(AppStrings.text(AppStrings.R_CONNECTION_TEST_FAILED, 'Connection failed: HTTP {0}'), [`${response.responseCode}`])
         }
         this.showToast(this.testStatus)
       })
@@ -629,9 +629,9 @@ export struct NetworkProxySettingsPage {
         this.applyProfilesState(state)
         this.applySnapshotToPage(profile.snapshot)
         this.testStatus = ''
-        this.showToast(AppStrings.t(AppStrings.R_PROFILE_SWITCHED, 'Profile switched'))
+        this.showToast(AppStrings.text(AppStrings.R_PROFILE_SWITCHED, 'Profile switched'))
       })
-      .catch((error: Error) => { this.showToast(error.message || AppStrings.t(AppStrings.R_SWITCH_FAILED, 'Switch failed')) })
+      .catch((error: Error) => { this.showToast(error.message || AppStrings.text(AppStrings.R_SWITCH_FAILED, 'Switch failed')) })
   }
 
   private openNewProfileEditor(): void {
@@ -692,9 +692,9 @@ export struct NetworkProxySettingsPage {
         this.applyProfilesState(state)
         this.applySnapshotToPage(profile.snapshot)
         this.closeEditor()
-        this.showToast(AppStrings.t(AppStrings.R_COMMON_SAVED, 'Saved'))
+        this.showToast(AppStrings.text(AppStrings.R_COMMON_SAVED, 'Saved'))
       })
-      .catch((error: Error) => { this.showToast(error.message || AppStrings.t(AppStrings.R_COMMON_SAVE_FAILED, 'Save failed')) })
+      .catch((error: Error) => { this.showToast(error.message || AppStrings.text(AppStrings.R_COMMON_SAVE_FAILED, 'Save failed')) })
   }
 
   private confirmDeleteProfile(): void {
@@ -703,11 +703,11 @@ export struct NetworkProxySettingsPage {
       return
     }
     this.getUIContext().showAlertDialog({
-      title: AppStrings.t(AppStrings.R_DELETE_PROXY, 'Delete proxy'),
-      message: AppStrings.format(AppStrings.t(AppStrings.R_CONFIRM_DELETE_PROXY_MESSAGE, 'Delete “{0}”?'), [this.profileTitle(profile)]),
-      primaryButton: { value: AppStrings.t(AppStrings.R_COMMON_CANCEL, 'Cancel'), action: () => { } },
+      title: AppStrings.text(AppStrings.R_DELETE_PROXY, 'Delete proxy'),
+      message: AppStrings.format(AppStrings.text(AppStrings.R_CONFIRM_DELETE_PROXY_MESSAGE, 'Delete “{0}”?'), [this.profileTitle(profile)]),
+      primaryButton: { value: AppStrings.text(AppStrings.R_COMMON_CANCEL, 'Cancel'), action: () => { } },
       secondaryButton: {
-        value: AppStrings.t(AppStrings.R_COMMON_DELETE, 'Delete'),
+        value: AppStrings.text(AppStrings.R_COMMON_DELETE, 'Delete'),
         action: () => { this.deleteProfile(profile) }
       }
     })
@@ -728,9 +728,9 @@ export struct NetworkProxySettingsPage {
           this.saveCurrent(false)
         }
         this.closeEditor()
-        this.showToast(AppStrings.t(AppStrings.R_COMMON_DELETED, 'Deleted'))
+        this.showToast(AppStrings.text(AppStrings.R_COMMON_DELETED, 'Deleted'))
       })
-      .catch((error: Error) => { this.showToast(error.message || AppStrings.t(AppStrings.R_COMMON_DELETE_FAILED, 'Delete failed')) })
+      .catch((error: Error) => { this.showToast(error.message || AppStrings.text(AppStrings.R_COMMON_DELETE_FAILED, 'Delete failed')) })
   }
 
   private applyProfilesState(state: NetworkProxyProfilesState): void {
@@ -788,7 +788,7 @@ export struct NetworkProxySettingsPage {
     if (normalized.host && normalized.port > 0) {
       return `${normalized.host}:${normalized.port}`
     }
-    return AppStrings.t(AppStrings.R_PROXY_CONFIG_TITLE, 'Proxy configuration')
+    return AppStrings.text(AppStrings.R_PROXY_CONFIG_TITLE, 'Proxy configuration')
   }
 
   private parsePort(value: string): number {
@@ -803,7 +803,7 @@ export struct NetworkProxySettingsPage {
   }
 
   private errorSummary(error: Error): string {
-    const rawMessage = (error.message || AppStrings.t(AppStrings.R_TEST_FAILED, 'Test failed')).trim()
+    const rawMessage = (error.message || AppStrings.text(AppStrings.R_TEST_FAILED, 'Test failed')).trim()
     const message = rawMessage.replace(/(https?|socks5):\/\/[^\s/@:]+(:[^\s/@]*)?@/g, '$1://<credentials>@')
     if (message.length > 80) {
       return message.substring(0, 80)

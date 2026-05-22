@@ -35,22 +35,22 @@ export class IndexTitleBarCoordinator {
   }
 
   static notificationMenuItems(): IndexTitleMenuDescriptor[] {
-    return [{ label: '刷新', action: 'refresh', icon: 'refresh' }]
+    return [{ label: AppStrings.R_NAV_REFRESH, action: 'refresh', icon: 'refresh' }]
   }
 
   static searchMenuItems(): IndexTitleMenuDescriptor[] {
-    return [{ label: '筛选', action: 'filter', icon: 'filter' }]
+    return [{ label: AppStrings.R_NAV_FILTER, action: 'filter', icon: 'filter' }]
   }
 
   static webLoginMenuItems(): IndexTitleMenuDescriptor[] {
     return [
-      { label: '保存登录', action: 'save', icon: 'confirm' },
-      { label: '重新加载', action: 'reload', icon: 'refresh' },
+      { label: AppStrings.R_NAV_SAVE_LOGIN, action: 'save', icon: 'confirm' },
+      { label: AppStrings.R_NAV_RELOAD, action: 'reload', icon: 'refresh' },
     ]
   }
 
   static imagePreviewMenuItems(): IndexTitleMenuDescriptor[] {
-    return [{ label: '保存图片', action: 'save', icon: 'download' }]
+    return [{ label: AppStrings.R_NAV_SAVE_IMAGE, action: 'save', icon: 'download' }]
   }
 
   static menuStats(menu: Record<string, Object>): TitleBarMenuStats {

@@ -197,7 +197,7 @@ export struct DiagnosticsLogPage {
             source: 'diagnostics_log_page',
             fileName: file.fileName,
           }, error)
-          this.copyDiagnosticsTextWithToast(AppStrings.t(AppStrings.R_SHARE_FILE_UNAVAILABLE_COPIED, 'Share file unavailable; copied for manual paste'), AppStrings.t(AppStrings.R_SHARE_FAILED, 'Share failed'), DiagnosticsLogFileSink.readLogFileText(file.fileName))
+          this.copyDiagnosticsTextWithToast(AppStrings.text(AppStrings.R_SHARE_FILE_UNAVAILABLE_COPIED, 'Share file unavailable; copied for manual paste'), AppStrings.text(AppStrings.R_SHARE_FAILED, 'Share failed'), DiagnosticsLogFileSink.readLogFileText(file.fileName))
         })
     } catch (_error) {
       DiagnosticLogger.warn('diagnostics', 'diagnostics_share_show_error', {
@@ -207,13 +207,13 @@ export struct DiagnosticsLogPage {
         errorName: 'Error',
         errorMessage: 'share_failed',
       })
-      this.copyDiagnosticsTextWithToast(AppStrings.t(AppStrings.R_SHARE_FILE_UNAVAILABLE_COPIED, 'Share file unavailable; copied for manual paste'), AppStrings.t(AppStrings.R_SHARE_FAILED, 'Share failed'), DiagnosticsLogFileSink.readLogFileText(file.fileName))
+      this.copyDiagnosticsTextWithToast(AppStrings.text(AppStrings.R_SHARE_FILE_UNAVAILABLE_COPIED, 'Share file unavailable; copied for manual paste'), AppStrings.text(AppStrings.R_SHARE_FAILED, 'Share failed'), DiagnosticsLogFileSink.readLogFileText(file.fileName))
     }
   }
 
   private copyDiagnosticsTextWithToast(successMessage: string, failureMessage: string, textOverride: string = ''): void {
     try {
-      const text = textOverride || DiagnosticsSettings.exportText() || AppStrings.t(AppStrings.R_NO_DIAGNOSTICS_LOGS, 'No diagnostics logs')
+      const text = textOverride || DiagnosticsSettings.exportText() || AppStrings.text(AppStrings.R_NO_DIAGNOSTICS_LOGS, 'No diagnostics logs')
       const data = pasteboard.createData(pasteboard.MIMETYPE_TEXT_PLAIN, text)
       pasteboard.getSystemPasteboard().setDataSync(data)
       DiagnosticLogger.info('diagnostics', 'diagnostics_log_copy_success', { textLength: text.length })
@@ -227,7 +227,7 @@ export struct DiagnosticsLogPage {
   private clearDiagnosticsText(): void {
     DiagnosticsSettings.clearLogs()
     this.refreshLogState()
-    promptAction.openToast({ message: AppStrings.t(AppStrings.R_BOOT_RECORDS_CLEARED, 'This launch record has been cleared') }).catch((_error: Error) => {})
+    promptAction.openToast({ message: AppStrings.text(AppStrings.R_BOOT_RECORDS_CLEARED, 'This launch record has been cleared') }).catch((_error: Error) => {})
   }
 
   private logFileTitle(file: DiagnosticsLogFileInfo): ResourceStr {
@@ -237,7 +237,7 @@ export struct DiagnosticsLogPage {
 
   private formatLogTimestamp(value: number): string {
     if (value <= 0) {
-      return AppStrings.t(AppStrings.R_UNKNOWN_TIME, 'Unknown time')
+      return AppStrings.text(AppStrings.R_UNKNOWN_TIME, 'Unknown time')
     }
     const date = new Date(value)
     const year = date.getFullYear().toString().padStart(4, '0')
