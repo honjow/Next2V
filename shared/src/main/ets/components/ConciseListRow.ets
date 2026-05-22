@@ -12,8 +12,8 @@ import { ImageUtils } from '../utils/ImageUtils'
 
 @Component
 export struct ConciseListRow {
-  @Prop title: string = ''
-  @Prop subtitle: string = ''
+  @Prop title: ResourceStr = ''
+  @Prop subtitle: ResourceStr = ''
   @Prop trailingText: string = ''
   @Prop leadingImageUrl: string = ''
   @Prop count: number = -1

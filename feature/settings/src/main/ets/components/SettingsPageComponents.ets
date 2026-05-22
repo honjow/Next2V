@@ -13,7 +13,7 @@ const READING_PREVIEW_FIXED_HEIGHT: number = 220
 
 @Component
 export struct SettingsSectionHeader {
-  @Prop title: string = ''
+  @Prop title: ResourceStr = ''
 
   build() {
     SharedSectionHeader({ title: this.title })
@@ -30,7 +30,7 @@ export struct SettingsDivider {
 
 @Component
 export struct SettingsToggleRow {
-  @Prop title: string = ''
+  @Prop title: ResourceStr = ''
   @Prop checked: boolean = false
   @Prop isEnabled: boolean = true
   changeAction?: (value: boolean) => void
@@ -53,8 +53,8 @@ export struct SettingsToggleRow {
 
 @Component
 export struct SettingsDropdownRow {
-  @Prop title: string = ''
-  @Prop subtitle: string = ''
+  @Prop title: ResourceStr = ''
+  @Prop subtitle: ResourceStr = ''
   @Prop trailingText: string = ''
   openAction?: () => void
 
@@ -76,7 +76,7 @@ export struct SettingsDropdownRow {
 
 @Component
 export struct SettingsCheckedMenuItem {
-  @Prop label: string = ''
+  @Prop label: ResourceStr = ''
   @Prop selected: boolean = false
   selectAction?: () => void
 
@@ -228,7 +228,7 @@ export struct ReadingScaleControlSection {
 
 @Component
 export struct HomeNodeVisibilityButton {
-  @Prop label: string = ''
+  @Prop label: ResourceStr = ''
   @Prop isEnabled: boolean = true
   clickAction?: () => void
 

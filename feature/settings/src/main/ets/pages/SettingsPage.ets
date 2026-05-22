@@ -60,7 +60,6 @@ export struct SettingsPage {
   @State private replyActionAlignmentMenuShown: boolean = false;
   @State private base64ModeMenuShown: boolean = false;
   @State private apiDomainMenuShown: boolean = false;
-  @State private languageRestarting: boolean = false;
   private http: HttpClient = HttpClient.getInstance();
 
   aboutToAppear(): void {
@@ -71,30 +70,30 @@ export struct SettingsPage {
     Column() {
       SecondaryListScaffold() {
         ListItem() {
-          this.SectionHeader(this.t(AppStrings.R_ACCOUNT_SECTION, 'Account'))
+          this.SectionHeader(AppStrings.R_ACCOUNT_SECTION)
         }
         ListItem() {
           this.AccountSection()
         }
         ListItem() {
-          this.SectionHeader(this.t(AppStrings.R_SETTINGS_APPEARANCE, 'Appearance'))
+          this.SectionHeader(AppStrings.R_SETTINGS_APPEARANCE)
         }
         ListItem() {
           this.AppearanceSection()
         }
         ListItem() {
-          this.SectionHeader(this.t(AppStrings.R_SETTINGS_READING, 'Reading'))
+          this.SectionHeader(AppStrings.R_SETTINGS_READING)
         }
         ListItem() {
           this.ReadingSection()
         }
         ListItem() {
-          this.SectionHeader(this.t(AppStrings.R_SETTINGS_HOME, 'Home'))
+          this.SectionHeader(AppStrings.R_SETTINGS_HOME)
         }
         ListItem() {
           GroupedListSection() {
             ConciseListRow({
-              title: this.t(AppStrings.R_NAV_HOME_NODES, 'Home tab settings'),
+              title: AppStrings.R_NAV_HOME_NODES,
               action: () => {
                 this.stack.pushPathByName('HomeNodeSettings', null)
               },
@@ -102,19 +101,19 @@ export struct SettingsPage {
           }
         }
         ListItem() {
-          this.SectionHeader(this.t(AppStrings.R_SETTINGS_CONTENT_MEDIA, 'Content and media'))
+          this.SectionHeader(AppStrings.R_SETTINGS_CONTENT_MEDIA)
         }
         ListItem() {
           this.MediaSection()
         }
         ListItem() {
-          this.SectionHeader(this.t(AppStrings.R_NAV_STORAGE, 'Storage'))
+          this.SectionHeader(AppStrings.R_NAV_STORAGE)
         }
         ListItem() {
           this.CacheSection()
         }
         ListItem() {
-          this.SectionHeader(this.t(AppStrings.R_SETTINGS_ADVANCED, 'Advanced'))
+          this.SectionHeader(AppStrings.R_SETTINGS_ADVANCED)
         }
         ListItem() {
           this.DiagnosticsSection()
@@ -133,7 +132,7 @@ export struct SettingsPage {
   }
 
   @Builder
-  SectionHeader(title: string) {
+  SectionHeader(title: ResourceStr) {
     SettingsSectionHeader({ title })
   }
 
@@ -142,21 +141,18 @@ export struct SettingsPage {
     SettingsDivider()
   }
 
-  private t(resource: Resource, fallback: string): string {
-    return AppStrings.t(resource, fallback)
-  }
 
   @Builder
   AccountSection() {
     GroupedListSection() {
       ConciseListRow({
-        title: this.t(AppStrings.R_ACCOUNT_MANAGEMENT, 'Account management'),
+        title: AppStrings.R_ACCOUNT_MANAGEMENT,
         action: () => {
           this.stack.pushPathByName('Account', null)
         },
       })
       this.SettingsDivider()
-      this.TogglePreferenceRow(this.t(AppStrings.R_AUTO_CHECKIN, 'Auto check-in'), this.autoDailyCheckinEnabled, (value: boolean) => {
+      this.TogglePreferenceRow(AppStrings.R_AUTO_CHECKIN, this.autoDailyCheckinEnabled, (value: boolean) => {
         this.updateAutoDailyCheckin(value)
       })
     }
@@ -179,7 +175,7 @@ export struct SettingsPage {
   @Builder
   MediaSection() {
     GroupedListSection() {
-      this.TogglePreferenceRow(this.t(AppStrings.R_IMAGE_AUTO_LOAD, 'Auto-load images'), this.autoLoadImages, (value: boolean) => {
+      this.TogglePreferenceRow(AppStrings.R_IMAGE_AUTO_LOAD, this.autoLoadImages, (value: boolean) => {
         this.updateAutoLoadImages(value)
       })
 
@@ -187,7 +183,7 @@ export struct SettingsPage {
 
       if (this.autoLoadImages) {
         this.TogglePreferenceRow(
-          this.t(AppStrings.R_WIFI_ONLY_IMAGES, 'Load images on Wi-Fi only'),
+          AppStrings.R_WIFI_ONLY_IMAGES,
           this.onlyLoadImagesOnWifi,
           (value: boolean) => {
             this.updateOnlyLoadImagesOnWifi(value)
@@ -203,7 +199,7 @@ export struct SettingsPage {
   DiagnosticsSection() {
     GroupedListSection() {
       ConciseListRow({
-        title: this.t(AppStrings.R_NAV_DIAGNOSTICS, 'Diagnostics log'),
+        title: AppStrings.R_NAV_DIAGNOSTICS,
         action: () => {
           this.stack.pushPathByName('DiagnosticsLog', null)
         },
@@ -215,7 +211,7 @@ export struct SettingsPage {
   ApiDomainAdvancedSection() {
     GroupedListSection() {
       SettingsDropdownRow({
-        title: this.t(AppStrings.R_API_DOMAIN, 'API domain'),
+        title: AppStrings.R_API_DOMAIN,
         trailingText: SettingsPageCoordinator.apiDomainLabel(this.useCoDomain),
         openAction: () => {
           this.showApiDomainMenu()
@@ -235,7 +231,7 @@ export struct SettingsPage {
   NetworkAdvancedSection() {
     GroupedListSection() {
       ConciseListRow({
-        title: this.t(AppStrings.R_NAV_NETWORK_PROXY, 'Network proxy'),
+        title: AppStrings.R_NAV_NETWORK_PROXY,
         trailingText: NetworkProxySettings.summary({
           mode: NetworkProxySettings.normalizeMode(this.networkProxyMode),
           host: this.networkProxyHost,
@@ -254,7 +250,7 @@ export struct SettingsPage {
 
   @Builder
   TogglePreferenceRow(
-    title: string,
+    title: ResourceStr,
     checked: boolean,
     changeAction: (value: boolean) => void,
     isEnabled: boolean = true,
@@ -270,7 +266,7 @@ export struct SettingsPage {
   @Builder
   DisabledWifiImagePreferenceRow() {
     SettingsToggleRow({
-      title: this.t(AppStrings.R_WIFI_ONLY_IMAGES, 'Load images on Wi-Fi only'),
+      title: AppStrings.R_WIFI_ONLY_IMAGES,
       checked: this.onlyLoadImagesOnWifi,
       isEnabled: false,
       changeAction: (_value: boolean) => {},
@@ -281,7 +277,7 @@ export struct SettingsPage {
   AppearancePreferenceRows() {
     Column() {
       SettingsDropdownRow({
-        title: this.t(AppStrings.R_THEME, 'Theme'),
+        title: AppStrings.R_THEME,
         trailingText: ThemeSettings.modeText(this.themeMode),
         openAction: () => {
           this.showThemeMenu()
@@ -296,7 +292,7 @@ export struct SettingsPage {
 
       this.SettingsDivider()
       SettingsDropdownRow({
-        title: this.t(AppStrings.R_LANGUAGE, 'Language'),
+        title: AppStrings.R_LANGUAGE,
         trailingText: LanguageSettings.modeText(this.languageMode),
         openAction: () => {
           this.showLanguageMenu()
@@ -315,7 +311,7 @@ export struct SettingsPage {
   ReadingPreferenceRows() {
     Column() {
       SettingsDropdownRow({
-        title: this.t(AppStrings.R_REPLY_DISPLAY, 'Reply display'),
+        title: AppStrings.R_REPLY_DISPLAY,
         trailingText: ReplyDisplaySettings.modeText(this.replyDisplayMode),
         openAction: () => {
           this.showReplyDisplayMenu()
@@ -330,7 +326,7 @@ export struct SettingsPage {
 
       this.SettingsDivider()
       SettingsDropdownRow({
-        title: this.t(AppStrings.R_REPLY_STYLE, 'Reply style'),
+        title: AppStrings.R_REPLY_STYLE,
         trailingText: ReplyCardStyleSettings.styleText(this.replyCardStyle),
         openAction: () => {
           this.showReplyCardStyleMenu()
@@ -345,7 +341,7 @@ export struct SettingsPage {
 
       this.SettingsDivider()
       SettingsDropdownRow({
-        title: this.t(AppStrings.R_REPLY_ACTION_ALIGNMENT, 'Reply button alignment'),
+        title: AppStrings.R_REPLY_ACTION_ALIGNMENT,
         trailingText: ReplyActionAlignmentSettings.modeText(
           this.replyActionAlignmentMode,
           this.motionHoldingHandSupported,
@@ -363,14 +359,14 @@ export struct SettingsPage {
 
       this.SettingsDivider()
 
-      this.TogglePreferenceRow(this.t(AppStrings.R_REMEMBER_READ_POSITION, 'Remember reading position'), this.readingRestorePosition, (value: boolean) => {
+      this.TogglePreferenceRow(AppStrings.R_REMEMBER_READ_POSITION, this.readingRestorePosition, (value: boolean) => {
         this.updateRestorePosition(value)
       })
 
       this.SettingsDivider()
       SettingsDropdownRow({
-        title: this.t(AppStrings.R_BASE64_DECODE, 'Base64 decode'),
-        subtitle: this.t(AppStrings.R_BASE64_SUBTITLE, 'Default to tap-to-view to avoid directly exposing email, WeChat, or other plaintext.'),
+        title: AppStrings.R_BASE64_DECODE,
+        subtitle: AppStrings.R_BASE64_SUBTITLE,
         trailingText: this.base64DecodeModeLabel(),
         openAction: () => {
           this.showBase64ModeMenu()
@@ -385,7 +381,7 @@ export struct SettingsPage {
 
       this.SettingsDivider()
       ConciseListRow({
-        title: this.t(AppStrings.R_NAV_READING, 'Reading font settings'),
+        title: AppStrings.R_NAV_READING,
         action: () => {
           this.stack.pushPathByName('ReadingSettings', null)
         },
@@ -509,10 +505,12 @@ export struct SettingsPage {
 
   @Builder
   LanguageModeMenuItem(option: SettingsOption) {
-    MenuItem({
-      content: option.label
-    }).onClick(() => {
-      this.updateLanguageMode(option.value)
+    SettingsCheckedMenuItem({
+      label: option.label,
+      selected: LanguageSettings.normalizeMode(this.languageMode) === option.value,
+      selectAction: () => {
+        this.updateLanguageMode(option.value)
+      }
     })
   }
 
@@ -591,7 +589,7 @@ export struct SettingsPage {
   CacheSection() {
     GroupedListSection() {
       ConciseListRow({
-        title: this.t(AppStrings.R_NAV_STORAGE, 'Storage'),
+        title: AppStrings.R_NAV_STORAGE,
         subtitle: StorageSettingsCoordinator.cacheSubtitle(this.cacheStats),
         count: this.cacheStats.topicListCount + this.cacheStats.topicDetailCount,
         action: () => {
@@ -632,19 +630,17 @@ export struct SettingsPage {
 
   private updateLanguageMode(mode: string): void {
     const normalizedMode = LanguageSettings.normalizeMode(mode)
-    if (this.languageRestarting || normalizedMode === this.languageMode) {
+    if (normalizedMode === LanguageSettings.normalizeMode(this.languageMode)) {
       this.languageMenuShown = false
       return
     }
-    this.languageRestarting = true
     this.languageMenuShown = false
     this.languageMode = normalizedMode
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    LanguageSettings.saveAndRestart(context, normalizedMode).catch((error: Error) => {
-      this.languageRestarting = false
+    LanguageSettings.applyLanguage(context, normalizedMode).catch((error: Error) => {
       console.error('switch app language failed: ' + error.message)
       promptAction.openToast({
-        message: AppStrings.t(AppStrings.R_COMMON_SAVE_FAILED, 'Save failed'),
+        message: AppStrings.R_COMMON_SAVE_FAILED,
       }).catch((_toastError: Error) => {})
     })
   }

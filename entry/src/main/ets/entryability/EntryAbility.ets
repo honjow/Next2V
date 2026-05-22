@@ -7,6 +7,7 @@ import {
   AppStrings,
   DiagnosticLogger,
   FoldScreenUtil,
+  LanguageSettings,
   SettingsBootstrap,
   StorageKeys,
   ThemeSettings,
@@ -24,6 +25,10 @@ export default class EntryAbility extends UIAbility {
 
   onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
     AppStrings.init(this.context)
+    LanguageSettings.applyStoredPreferredLanguage(this.context).catch((error: Error) => {
+      console.error('restore preferred app language failed: ' + error.message)
+      LanguageSettings.apply(LanguageSettings.MODE_SYSTEM)
+    })
     DiagnosticLogger.initializePersistentSink(this.context)
     DiagnosticLogger.info('app', 'diagnostics_session_start', { source: 'EntryAbility.onCreate' })
     try {

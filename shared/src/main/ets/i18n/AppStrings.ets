@@ -1,34 +1,14 @@
 import { common } from '@kit.AbilityKit'
-import resourceManager from '@ohos.resourceManager'
 
-export type AppLanguageMode = 'system' | 'zh-CN' | 'zh-HK' | 'zh-TW' | 'en'
+export type AppLanguageMode = 'default' | 'zh-Hans' | 'zh-Hant-HK' | 'zh-Hant-TW' | 'en-US'
 
 export class AppStrings {
-  static readonly DEFAULT_LANGUAGE_MODE: AppLanguageMode = 'system'
-  static readonly FALLBACK_LOCALE: string = 'en'
-  static readonly SUPPORTED_LOCALES: string[] = ['zh-CN', 'zh-HK', 'zh-TW', 'en']
+  static readonly DEFAULT_LANGUAGE_MODE: AppLanguageMode = 'default'
+  static readonly SUPPORTED_LOCALES: string[] = ['default', 'zh-Hans', 'zh-Hant-HK', 'zh-Hant-TW', 'en-US']
   private static context: common.UIAbilityContext | null = null
-  private static overrideResourceManager: resourceManager.ResourceManager | null = null
-  private static activeLanguageMode: AppLanguageMode = AppStrings.DEFAULT_LANGUAGE_MODE
 
   static init(context: common.UIAbilityContext): void {
     AppStrings.context = context
-  }
-
-  static applyLanguageMode(context: common.UIAbilityContext, mode: AppLanguageMode): AppLanguageMode {
-    const normalizedMode = AppStrings.normalizeLanguageMode(mode)
-    AppStrings.context = context
-    AppStrings.activeLanguageMode = normalizedMode
-    AppStrings.overrideResourceManager = AppStrings.createOverrideResourceManager(context, normalizedMode)
-    return normalizedMode
-  }
-
-  static normalizeLanguageMode(value: string): AppLanguageMode {
-    const mode = (value || '').trim()
-    if (mode === 'zh-CN' || mode === 'zh-HK' || mode === 'zh-TW' || mode === 'en') {
-      return mode as AppLanguageMode
-    }
-    return AppStrings.DEFAULT_LANGUAGE_MODE
   }
 
   static format(template: string, values: string[]): string {
@@ -39,48 +19,9 @@ export class AppStrings {
     return text
   }
 
-  static currentLanguageMode(): AppLanguageMode {
-    return AppStrings.activeLanguageMode
-  }
-
-  static resourceLocaleForMode(mode: AppLanguageMode): string {
-    if (mode === 'zh-CN') {
-      return 'zh-Hans-CN'
-    }
-    if (mode === 'zh-HK') {
-      return 'zh-Hant-HK'
-    }
-    if (mode === 'zh-TW') {
-      return 'zh-Hant-TW'
-    }
-    if (mode === 'en') {
-      return 'en-US'
-    }
-    return ''
-  }
-
-  private static createOverrideResourceManager(
-    context: common.UIAbilityContext,
-    mode: AppLanguageMode,
-  ): resourceManager.ResourceManager | null {
-    const locale = AppStrings.resourceLocaleForMode(mode)
-    if (!locale) {
-      return null
-    }
-    try {
-      const configuration = context.resourceManager.getConfigurationSync()
-      configuration.locale = locale
-      return context.resourceManager.getOverrideResourceManager(configuration)
-    } catch (error) {
-      const e = error as Error
-      console.info('create language override resource manager failed: ' + (e.message || 'unknown'))
-      return null
-    }
-  }
-
   static t(resource: Resource, fallback: string): string {
     try {
-      const resourceSource = AppStrings.overrideResourceManager || AppStrings.context?.resourceManager
+      const resourceSource = AppStrings.context?.resourceManager
       if (!resourceSource) {
         return fallback
       }

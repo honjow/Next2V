@@ -11,13 +11,15 @@ ROOT = Path(__file__).resolve().parents[1]
 ENTRY_RES = ROOT / "entry" / "src" / "main" / "resources"
 APPSCOPE_RES = ROOT / "AppScope" / "resources"
 APP_STRINGS = ROOT / "shared" / "src" / "main" / "ets" / "i18n" / "AppStrings.ets"
+ENTRY_ABILITY = ROOT / "entry" / "src" / "main" / "ets" / "entryability" / "EntryAbility.ets"
+SETTINGS_PAGE = ROOT / "feature" / "settings" / "src" / "main" / "ets" / "pages" / "SettingsPage.ets"
+SETTINGS_COORDINATOR = ROOT / "feature" / "settings" / "src" / "main" / "ets" / "model" / "SettingsPageCoordinator.ets"
 LANGUAGE_SETTINGS = ROOT / "shared" / "src" / "main" / "ets" / "settings" / "LanguageSettings.ets"
 
 # Harmony/OpenHarmony resource qualifier directories observed/validated by build for this worktree.
 # base is English fallback. Specific locale resources use underscore directory names.
 REQUIRED_LOCALE_DIRS = ["base", "en_US", "zh_CN", "zh_HK", "zh_TW"]
-SUPPORTED_BCP47 = ["zh-CN", "zh-HK", "zh-TW", "en"]
-OVERRIDE_RESOURCE_LOCALES = ["zh-Hans-CN", "zh-Hant-HK", "zh-Hant-TW", "en-US"]
+SUPPORTED_APP_LANGUAGES = ["default", "zh-Hans", "zh-Hant-HK", "zh-Hant-TW", "en-US"]
 
 KEY_TERMS = {
     "feature/settings/src/main/ets/pages/NetworkProxySettingsPage.ets": [
@@ -79,15 +81,15 @@ def assert_resource_sets() -> None:
 def assert_fallback_contract() -> None:
     text = APP_STRINGS.read_text(encoding="utf-8")
     language_text = LANGUAGE_SETTINGS.read_text(encoding="utf-8")
-    if "DEFAULT_LANGUAGE_MODE: AppLanguageMode = 'system'" not in text:
-        raise AssertionError("default app language mode must be system")
-    if "FALLBACK_LOCALE: string = 'en'" not in text:
-        raise AssertionError("fallback locale must be en")
-    if "LANGUAGE_MODE: string = 'languageMode'" not in (ROOT / "shared" / "src" / "main" / "ets" / "constants" / "StorageKeys.ets").read_text(encoding="utf-8"):
+    entry_text = ENTRY_ABILITY.read_text(encoding="utf-8")
+    settings_text = SETTINGS_PAGE.read_text(encoding="utf-8")
+    coordinator_text = SETTINGS_COORDINATOR.read_text(encoding="utf-8")
+    storage_text = (ROOT / "shared" / "src" / "main" / "ets" / "constants" / "StorageKeys.ets").read_text(encoding="utf-8")
+    if "LANGUAGE_MODE: string = 'languageMode'" not in storage_text:
         raise AssertionError("language mode storage key must be languageMode")
-    for locale in SUPPORTED_BCP47:
-        if repr(locale) not in text:
-            raise AssertionError(f"supported locale missing from AppStrings: {locale}")
+    for locale in SUPPORTED_APP_LANGUAGES:
+        if repr(locale) not in language_text:
+            raise AssertionError(f"supported app language missing from LanguageSettings: {locale}")
     required_language_keys = [
         "settings_appearance",
         "language",
@@ -104,35 +106,44 @@ def assert_fallback_contract() -> None:
             raise AssertionError(f"language option resources missing for {locale}: {missing}")
     if load_strings(ENTRY_RES, "base").get("language_follow_system") != "Follow system":
         raise AssertionError("base language default option must be Follow system")
-    if "getStringSync(resource)" not in text:
-        raise AssertionError("AppStrings must use HarmonyOS ResourceManager getStringSync")
-    if "getOverrideResourceManager(configuration)" not in text:
-        raise AssertionError("AppStrings must create an override ResourceManager from persisted languageMode")
-    if "overrideResourceManager || AppStrings.context?.resourceManager" not in text:
-        raise AssertionError("AppStrings must use one selected resource source for all AppStrings reads")
-    for locale in OVERRIDE_RESOURCE_LOCALES:
-        if repr(locale) not in text:
-            raise AssertionError(f"override resource locale missing from AppStrings: {locale}")
-    if "catch (_error)" not in text or "return fallback" not in text:
-        raise AssertionError("AppStrings must keep a local fallback path")
+    forbidden_language_settings = [
+        "restartApp",
+        "terminateSelf",
+        "setLanguage(",
+        "getOverrideResourceManager",
+        "getAppPreferredLanguage",
+        "zh-Hans-CN",
+    ]
+    for needle in forbidden_language_settings:
+        if needle in language_text:
+            raise AssertionError(f"forbidden language implementation artifact remains: {needle}")
     required_system_contracts = [
-        "i18n.System.setAppPreferredLanguage(language)",
-        "i18n.System.getAppPreferredLanguage()",
-        "context.getApplicationContext().setLanguage(language)",
-        "context.getApplicationContext().restartApp(want)",
-        "DEFAULT_APP_LANGUAGE: string = 'default'",
+        "static async applyLanguage(context: common.UIAbilityContext, areaID: string)",
+        "i18n.System.setAppPreferredLanguage(normalized)",
+        "store.putSync(KEY_LANGUAGE_MODE, normalized)",
+        "store.flushSync()",
+        "MODE_SYSTEM: AppLanguageMode = 'default'",
     ]
     for needle in required_system_contracts:
         if needle not in language_text:
             raise AssertionError(f"system language contract missing: {needle}")
-    for mode, language in {
-        "MODE_ZH_CN": "zh-Hans-CN",
-        "MODE_ZH_HK": "zh-Hant-HK",
-        "MODE_ZH_TW": "zh-Hant-TW",
-        "MODE_EN": "en-US",
-    }.items():
-        if mode not in language_text or language not in language_text:
-            raise AssertionError(f"language mode mapping missing: {mode} -> {language}")
+    if "LanguageSettings.applyStoredPreferredLanguage(this.context)" not in entry_text:
+        raise AssertionError("EntryAbility.onCreate must re-apply the persisted preferred app language")
+    if "LanguageSettings.applyLanguage(context, normalizedMode)" not in settings_text:
+        raise AssertionError("SettingsPage must apply language without restarting")
+    if "title: AppStrings.R_LANGUAGE" not in settings_text:
+        raise AssertionError("SettingsPage language row must use a direct resource constant, not AppStrings.t fallback indirection")
+    if "this.t(AppStrings.R_LANGUAGE" in settings_text or "AppStrings.t(AppStrings.R_LANGUAGE" in settings_text:
+        raise AssertionError("SettingsPage language row must not use AppStrings.t fallback indirection")
+    if "SettingsCheckedMenuItem" not in settings_text or "sys.symbol.checkmark" not in (ROOT / "feature" / "settings" / "src" / "main" / "ets" / "components" / "SettingsPageComponents.ets").read_text(encoding="utf-8"):
+        raise AssertionError("language menu must use checked menu convention")
+    for label in ["跟随系统", "简体中文", "繁體中文（香港）", "繁體中文（台灣）", "English"]:
+        if label not in coordinator_text:
+            raise AssertionError(f"language menu label missing: {label}")
+    for bad in ["LOCALE_REVISION", "localeRevision", "storageLocaleRevision", "grouped-list-section-${"]:
+        for path in ROOT.rglob("*.ets"):
+            if bad in path.read_text(encoding="utf-8", errors="ignore"):
+                raise AssertionError(f"manual i18n refresh artifact remains: {bad} in {path.relative_to(ROOT)}")
 
 
 def assert_key_terms_migrated() -> None:
@@ -150,8 +161,8 @@ def assert_key_terms_migrated() -> None:
                             direct_literals.append(line.strip())
                 if direct_literals:
                     raise AssertionError(f"unmapped hard-coded UI string in {rel}: {term}: {direct_literals[:2]}")
-            if term in text and "AppStrings.t" not in text:
-                raise AssertionError(f"file contains key term but no AppStrings mapping: {rel}: {term}")
+            if term in text and "AppStrings.t" not in text and "AppStrings.R_" not in text:
+                raise AssertionError(f"file contains key term but no resource mapping: {rel}: {term}")
 
 
 def main() -> int:

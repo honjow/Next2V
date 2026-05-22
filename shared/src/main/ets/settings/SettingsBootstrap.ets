@@ -62,11 +62,11 @@ export class SettingsBootstrap {
 
   private static async restoreLanguage(context: common.UIAbilityContext, settingsStore?: SettingsPreferencesStore): Promise<void> {
     await (settingsStore
-      ? LanguageSettings.loadFromStore(settingsStore, context)
+      ? LanguageSettings.loadFromStore(settingsStore)
       : LanguageSettings.load(context)
     ).catch((error: Error) => {
       console.error('restore language settings failed: ' + error.message)
-      LanguageSettings.apply(context, LanguageSettings.MODE_SYSTEM)
+      LanguageSettings.apply(LanguageSettings.MODE_SYSTEM)
     })
   }
 

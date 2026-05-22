@@ -9,7 +9,7 @@ import {
 } from 'shared'
 
 export interface SettingsOption {
-  label: string
+  label: ResourceStr
   value: string
 }
 
@@ -18,11 +18,11 @@ export class SettingsPageCoordinator {
 
   static languageModeOptions(): SettingsOption[] {
     return [
-      { label: AppStrings.t(AppStrings.R_LANGUAGE_FOLLOW_SYSTEM, 'Follow system'), value: LanguageSettings.MODE_SYSTEM },
-      { label: AppStrings.t(AppStrings.R_LANGUAGE_SIMPLIFIED_CHINESE, 'Simplified Chinese'), value: LanguageSettings.MODE_ZH_CN },
-      { label: AppStrings.t(AppStrings.R_LANGUAGE_TRADITIONAL_CHINESE_HK, 'Traditional Chinese (Hong Kong)'), value: LanguageSettings.MODE_ZH_HK },
-      { label: AppStrings.t(AppStrings.R_LANGUAGE_TRADITIONAL_CHINESE_TW, 'Traditional Chinese (Taiwan)'), value: LanguageSettings.MODE_ZH_TW },
-      { label: AppStrings.t(AppStrings.R_LANGUAGE_ENGLISH, 'English'), value: LanguageSettings.MODE_EN },
+      { label: '跟随系统', value: LanguageSettings.MODE_SYSTEM },
+      { label: '简体中文', value: LanguageSettings.MODE_ZH_CN },
+      { label: '繁體中文（香港）', value: LanguageSettings.MODE_ZH_HK },
+      { label: '繁體中文（台灣）', value: LanguageSettings.MODE_ZH_TW },
+      { label: 'English', value: LanguageSettings.MODE_EN },
     ]
   }
 
