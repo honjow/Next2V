@@ -11,6 +11,7 @@ export struct AppModalScaffold {
   @Prop compact: boolean = false
   @Prop includeKeyboardPadding: boolean = false
   @Prop enableComponentSafeArea: boolean = true
+  @Prop contentBackgroundColor: ResourceColor = $r('sys.color.ohos_id_color_card_bg')
   closeAction?: () => void
   scroller: Scroller = new Scroller();
 
@@ -58,7 +59,7 @@ export struct AppModalScaffold {
     .bindToScrollable([this.scroller])
     .width('100%')
     .height('100%')
-    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+    .backgroundColor(this.contentBackgroundColor)
   }
 
   private keyboardPadding(): number {

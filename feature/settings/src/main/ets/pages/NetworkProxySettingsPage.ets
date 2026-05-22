@@ -177,6 +177,7 @@ export struct NetworkProxySettingsPage {
     AppModalScaffold({
       title: '代理信息',
       includeKeyboardPadding: true,
+      contentBackgroundColor: $r('sys.color.ohos_id_color_sub_background'),
       closeAction: () => { this.closeEditor() },
     }) {
       if (!this.shouldCollapseTopForKeyboard()) {
@@ -232,8 +233,8 @@ export struct NetworkProxySettingsPage {
   ProfileEditorFields() {
     Column({ space: ThemeConstants.SPACE_XS }) {
       this.EditorSectionLabel('代理参数')
-      GroupedListSection({ inset: ThemeConstants.SPACE_MD }) {
-        Column({ space: ThemeConstants.SPACE_MD }) {
+      GroupedListSection({ inset: ThemeConstants.SPACE_XL, radius: ThemeConstants.RADIUS_CARD }) {
+        Column({ space: ThemeConstants.SPACE_LG }) {
           this.EditorHostFieldRow()
           this.EditorPortFieldRow()
           if (this.editorCurrentMode() === NetworkProxySettings.MODE_HTTP) {
@@ -242,7 +243,6 @@ export struct NetworkProxySettingsPage {
           } else {
             this.StaticFieldRow('认证', '不支持认证')
           }
-          this.OptionalFieldsDivider()
           this.EditorNameFieldRow()
           this.EditorBypassListRow()
         }
@@ -285,26 +285,6 @@ export struct NetworkProxySettingsPage {
       .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG })
   }
 
-  @Builder
-  OptionalFieldsDivider() {
-    Row() {
-      Divider()
-        .strokeWidth(0.5)
-        .color($r('sys.color.ohos_id_color_list_separator'))
-        .layoutWeight(1)
-      Text('可选信息')
-        .fontSize(ThemeConstants.FONT_SIZE_SECTION_TITLE)
-        .fontColor($r('sys.color.font_secondary'))
-        .padding({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM })
-      Divider()
-        .strokeWidth(0.5)
-        .color($r('sys.color.ohos_id_color_list_separator'))
-        .layoutWeight(1)
-    }
-    .width('100%')
-    .padding({ top: ThemeConstants.SPACE_XS })
-    .alignItems(VerticalAlign.Center)
-  }
 
   @Builder
   ActionSymbol(icon: Resource) {
