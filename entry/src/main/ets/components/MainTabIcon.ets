@@ -9,7 +9,7 @@ const MAIN_TAB_SYMBOL_GLYPH_LAYOUT_OFFSET_VP = 3
 
 @Component
 export struct MainTabIcon {
-  @Prop title: string = '';
+  @Prop title: ResourceStr = '';
   @Prop idx: number = 0;
   @Prop currentIndex: number = 0;
   @Prop badgeCount: number = 0;

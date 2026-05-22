@@ -235,7 +235,7 @@ export struct AccountDashboardPage {
   }
 
   @Builder
-  SectionHeader(title: string) {
+  SectionHeader(title: ResourceStr) {
     SharedSectionHeader({ title: title })
   }
 
@@ -245,7 +245,7 @@ export struct AccountDashboardPage {
   }
 
   @Builder
-  AuthActionRow(title: string, subtitle: string, action: () => void) {
+  AuthActionRow(title: ResourceStr, subtitle: ResourceStr, action: () => void) {
     ConciseListRow({ title: title, subtitle: subtitle, action: action })
   }
 
@@ -471,7 +471,7 @@ export struct AccountDashboardPage {
     ).avatarUrl
   }
 
-  private accountMetaText(): string {
+  private accountMetaText(): ResourceStr {
     return AccountPageCoordinator.accountMetaText(
       this.hasCookieAccount(),
       this.authTokenConfigured,
@@ -481,7 +481,7 @@ export struct AccountDashboardPage {
     )
   }
 
-  private dailyMissionButtonText(): string {
+  private dailyMissionButtonText(): ResourceStr {
     return AccountPageCoordinator.dailyMissionButtonText(this.isDailyRedeeming, this.dailyMission)
   }
 

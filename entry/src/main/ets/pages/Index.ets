@@ -85,7 +85,7 @@ import { IndexRouteCoordinator } from '../model/IndexRouteCoordinator'
 struct Index {
   @Provide('ns') ns: NavPathStack = new NavPathStack();
   private tc: HdsTabsController = new HdsTabsController();
-  private tabTitles: string[] = [AppStrings.t(AppStrings.R_SETTINGS_HOME, 'Home'), AppStrings.t(AppStrings.R_TAB_DISCOVER, 'Discover'), AppStrings.t(AppStrings.R_TAB_NOTIFICATIONS, 'Notifications'), AppStrings.t(AppStrings.R_TAB_ME, 'Me')];
+  private tabTitles: ResourceStr[] = [AppStrings.R_SETTINGS_HOME, AppStrings.R_TAB_DISCOVER, AppStrings.R_TAB_NOTIFICATIONS, AppStrings.R_TAB_ME];
   @State ct: number = 0;
   @StorageLink(StorageKeys.PENDING_V2EX_URL)
   @Watch('onPendingV2exUrlChanged')
@@ -275,16 +275,16 @@ struct Index {
       HdsTabs({ controller: this.tc, index: this.ct }) {
         TabContent() {
           HomePage()
-        }.tabBar(this.TabIcon(AppStrings.t(AppStrings.R_SETTINGS_HOME, 'Home'), 0))
+        }.tabBar(this.TabIcon(AppStrings.R_SETTINGS_HOME, 0))
         TabContent() {
           DiscoverPage()
-        }.tabBar(this.TabIcon(AppStrings.t(AppStrings.R_TAB_DISCOVER, 'Discover'), 1))
+        }.tabBar(this.TabIcon(AppStrings.R_TAB_DISCOVER, 1))
         TabContent() {
           NotificationPage({ refreshKey: this.notificationRefreshKey })
-        }.tabBar(this.TabIcon(AppStrings.t(AppStrings.R_TAB_NOTIFICATIONS, 'Notifications'), 2))
+        }.tabBar(this.TabIcon(AppStrings.R_TAB_NOTIFICATIONS, 2))
         TabContent() {
           AccountDashboardPage({ refreshKey: this.accountRefreshKey })
-        }.tabBar(this.TabIcon(AppStrings.t(AppStrings.R_TAB_ME, 'Me'), 3))
+        }.tabBar(this.TabIcon(AppStrings.R_TAB_ME, 3))
       }
       .barOverlap(true)
       .barPosition(BarPosition.End)
@@ -807,9 +807,9 @@ struct Index {
     } else {
       content = { 'title': titleInfo }
     }
-    if (this.tabTitles[this.ct] === AppStrings.t(AppStrings.R_TAB_NOTIFICATIONS, 'Notifications')) {
+    if (this.ct === 2) {
       content['menu'] = this.notificationTitleMenu()
-    } else if (this.tabTitles[this.ct] === AppStrings.t(AppStrings.R_TAB_ME, 'Me')) {
+    } else if (this.ct === 3) {
       content['menu'] = this.meTitleMenu()
     } else {
       content['menu'] = IndexTitleBarCoordinator.emptyMenu()
@@ -983,7 +983,7 @@ struct Index {
   }
 
   @Builder
-  TabIcon(title: string, idx: number) {
+  TabIcon(title: ResourceStr, idx: number) {
     MainTabIcon({
       title: title,
       idx: idx,

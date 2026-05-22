@@ -278,7 +278,7 @@ export struct SettingsPage {
     Column() {
       SettingsDropdownRow({
         title: AppStrings.R_THEME,
-        trailingText: ThemeSettings.modeText(this.themeMode),
+        trailingText: SettingsPageCoordinator.themeModeLabel(this.themeMode),
         openAction: () => {
           this.showThemeMenu()
         },
@@ -293,7 +293,7 @@ export struct SettingsPage {
       this.SettingsDivider()
       SettingsDropdownRow({
         title: AppStrings.R_LANGUAGE,
-        trailingText: LanguageSettings.modeText(this.languageMode),
+        trailingText: SettingsPageCoordinator.languageModeLabel(this.languageMode),
         openAction: () => {
           this.showLanguageMenu()
         },
@@ -312,7 +312,7 @@ export struct SettingsPage {
     Column() {
       SettingsDropdownRow({
         title: AppStrings.R_REPLY_DISPLAY,
-        trailingText: ReplyDisplaySettings.modeText(this.replyDisplayMode),
+        trailingText: SettingsPageCoordinator.replyDisplayModeLabel(this.replyDisplayMode),
         openAction: () => {
           this.showReplyDisplayMenu()
         },
@@ -327,7 +327,7 @@ export struct SettingsPage {
       this.SettingsDivider()
       SettingsDropdownRow({
         title: AppStrings.R_REPLY_STYLE,
-        trailingText: ReplyCardStyleSettings.styleText(this.replyCardStyle),
+        trailingText: SettingsPageCoordinator.replyCardStyleLabel(this.replyCardStyle),
         openAction: () => {
           this.showReplyCardStyleMenu()
         },
@@ -342,7 +342,7 @@ export struct SettingsPage {
       this.SettingsDivider()
       SettingsDropdownRow({
         title: AppStrings.R_REPLY_ACTION_ALIGNMENT,
-        trailingText: ReplyActionAlignmentSettings.modeText(
+        trailingText: SettingsPageCoordinator.replyActionAlignmentLabel(
           this.replyActionAlignmentMode,
           this.motionHoldingHandSupported,
         ),
@@ -678,7 +678,7 @@ export struct SettingsPage {
     SettingsSaveCoordinator.saveReplyActionAlignmentMode(context, normalized)
   }
 
-  private base64DecodeModeLabel(): string {
+  private base64DecodeModeLabel(): ResourceStr {
     return SettingsPageCoordinator.base64DecodeModeLabel(this.base64DecodeMode)
   }
 

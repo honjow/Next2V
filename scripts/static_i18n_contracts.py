@@ -137,9 +137,16 @@ def assert_fallback_contract() -> None:
         raise AssertionError("SettingsPage language row must not use AppStrings.t fallback indirection")
     if "SettingsCheckedMenuItem" not in settings_text or "sys.symbol.checkmark" not in (ROOT / "feature" / "settings" / "src" / "main" / "ets" / "components" / "SettingsPageComponents.ets").read_text(encoding="utf-8"):
         raise AssertionError("language menu must use checked menu convention")
-    for label in ["跟随系统", "简体中文", "繁體中文（香港）", "繁體中文（台灣）", "English"]:
+    required_language_resource_labels = [
+        "AppStrings.R_LANGUAGE_FOLLOW_SYSTEM",
+        "AppStrings.R_LANGUAGE_SIMPLIFIED_CHINESE",
+        "AppStrings.R_LANGUAGE_TRADITIONAL_CHINESE_HK",
+        "AppStrings.R_LANGUAGE_TRADITIONAL_CHINESE_TW",
+        "AppStrings.R_LANGUAGE_ENGLISH",
+    ]
+    for label in required_language_resource_labels:
         if label not in coordinator_text:
-            raise AssertionError(f"language menu label missing: {label}")
+            raise AssertionError(f"language menu resource label missing: {label}")
     for bad in ["LOCALE_REVISION", "localeRevision", "storageLocaleRevision", "grouped-list-section-${"]:
         for path in ROOT.rglob("*.ets"):
             if bad in path.read_text(encoding="utf-8", errors="ignore"):

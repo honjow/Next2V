@@ -3,13 +3,13 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 
 const settingsPage = readFileSync('feature/settings/src/main/ets/pages/SettingsPage.ets', 'utf8')
-const appStrings = readFileSync('shared/src/main/ets/i18n/AppStrings.ets', 'utf8')
-const languageSettings = readFileSync('shared/src/main/ets/settings/LanguageSettings.ets', 'utf8')
-const settingsBootstrap = readFileSync('shared/src/main/ets/settings/SettingsBootstrap.ets', 'utf8')
 const settingsCoordinator = readFileSync('feature/settings/src/main/ets/model/SettingsPageCoordinator.ets', 'utf8')
+const settingsComponents = readFileSync('feature/settings/src/main/ets/components/SettingsPageComponents.ets', 'utf8')
+const languageSettings = readFileSync('shared/src/main/ets/settings/LanguageSettings.ets', 'utf8')
 const indexPage = readFileSync('entry/src/main/ets/pages/Index.ets', 'utf8')
-const entryAbility = readFileSync('entry/src/main/ets/entryability/EntryAbility.ets', 'utf8')
-const routeCoordinator = readFileSync('entry/src/main/ets/model/IndexRouteCoordinator.ets', 'utf8')
+const mainTabIcon = readFileSync('entry/src/main/ets/components/MainTabIcon.ets', 'utf8')
+const accountCoordinator = readFileSync('entry/src/main/ets/model/AccountPageCoordinator.ets', 'utf8')
+const accountPage = readFileSync('entry/src/main/ets/pages/AccountPage.ets', 'utf8')
 
 function indexOfOrFail(text, needle, label = needle) {
   const index = text.indexOf(needle)
@@ -17,69 +17,60 @@ function indexOfOrFail(text, needle, label = needle) {
   return index
 }
 
-const accountHeader = indexOfOrFail(settingsPage, "this.SectionHeader(this.t(AppStrings.R_ACCOUNT_SECTION, 'Account'))", 'account section header')
-const appearanceHeader = indexOfOrFail(settingsPage, "this.SectionHeader(this.t(AppStrings.R_SETTINGS_APPEARANCE, 'Appearance'))", 'appearance section header')
-const readingHeader = indexOfOrFail(settingsPage, "this.SectionHeader(this.t(AppStrings.R_SETTINGS_READING, 'Reading'))", 'reading section header')
+function assertNoRestartLane(label, text) {
+  assert.doesNotMatch(text, /restartApp|terminateSelf|ApplicationContext\.restartApp|LOCALE_REVISION/, `${label} must not use restart/locale revision refresh lane`)
+}
+
+const accountHeader = indexOfOrFail(settingsPage, 'this.SectionHeader(AppStrings.R_ACCOUNT_SECTION)', 'account section header')
+const appearanceHeader = indexOfOrFail(settingsPage, 'this.SectionHeader(AppStrings.R_SETTINGS_APPEARANCE)', 'appearance section header')
+const readingHeader = indexOfOrFail(settingsPage, 'this.SectionHeader(AppStrings.R_SETTINGS_READING)', 'reading section header')
 assert.ok(accountHeader < appearanceHeader, 'Appearance group must be after Account group')
 assert.ok(appearanceHeader < readingHeader, 'Appearance group must be before Reading group')
 
-const appearanceStart = indexOfOrFail(settingsPage, '@Builder\n  AppearancePreferenceRows()', 'AppearancePreferenceRows')
-const readingStart = indexOfOrFail(settingsPage, '@Builder\n  ReadingPreferenceRows()', 'ReadingPreferenceRows')
-const menuStart = indexOfOrFail(settingsPage, '@Builder\n  LanguageModeMenu()', 'LanguageModeMenu')
-const appearanceRows = settingsPage.slice(appearanceStart, readingStart)
-const readingRows = settingsPage.slice(readingStart, menuStart)
-assert.match(appearanceRows, /R_THEME[\s\S]*R_LANGUAGE/, 'Appearance group must contain Theme then Language')
-assert.doesNotMatch(readingRows, /R_THEME|R_LANGUAGE/, 'Reading group must not contain Theme or Language')
-assert.match(readingRows, /R_REPLY_DISPLAY/, 'Reading group must keep reply display')
-assert.match(readingRows, /R_REPLY_STYLE/, 'Reading group must keep reply style')
-assert.match(readingRows, /R_REMEMBER_READ_POSITION/, 'Reading group must keep remember reading position')
-
 assert.match(languageSettings, /import i18n from '@ohos\.i18n'/, 'Language settings must use HarmonyOS i18n System API')
-assert.match(languageSettings, /i18n\.System\.setAppPreferredLanguage\(language\)/, 'Language changes must set app preferred language')
-assert.match(languageSettings, /i18n\.System\.getAppPreferredLanguage\(\)/, 'Language bootstrap must be able to inspect app preferred language')
-assert.match(languageSettings, /context\.getApplicationContext\(\)\.setLanguage\(language\)/, 'Language changes should align ApplicationContext language')
-assert.match(languageSettings, /context\.getApplicationContext\(\)\.restartApp\(want\)/, 'Language changes must restart EntryAbility')
-assert.match(languageSettings, /bundleName: context\.abilityInfo\.bundleName[\s\S]*abilityName: context\.abilityInfo\.name/, 'restartApp must target current EntryAbility')
-assert.match(languageSettings, /DEFAULT_APP_LANGUAGE: string = 'default'/, 'Follow-system mode must map to HarmonyOS default app language')
-assert.match(languageSettings, /MODE_ZH_CN[\s\S]*'zh-Hans-CN'/, 'Simplified Chinese must map to a valid language ID')
-assert.match(languageSettings, /MODE_ZH_HK[\s\S]*'zh-Hant-HK'/, 'Traditional Chinese HK must map to a valid language ID')
-assert.match(languageSettings, /MODE_ZH_TW[\s\S]*'zh-Hant-TW'/, 'Traditional Chinese TW must map to a valid language ID')
-assert.match(languageSettings, /MODE_EN[\s\S]*'en-US'/, 'English must map to a valid language ID')
-assert.match(appStrings, /getOverrideResourceManager\(configuration\)/, 'AppStrings must use override ResourceManager after persisted languageMode bootstrap')
-assert.match(appStrings, /resourceLocaleForMode[\s\S]*'zh-Hans-CN'[\s\S]*'zh-Hant-HK'[\s\S]*'zh-Hant-TW'[\s\S]*'en-US'/, 'AppStrings override locales must cover all explicit modes')
-assert.match(appStrings, /overrideResourceManager \|\| AppStrings\.context\?\.resourceManager/, 'AppStrings must route all reads through one selected resource source')
-assert.match(appStrings, /currentLanguageMode\(\)/, 'AppStrings must expose the active bootstrapped language mode for static contracts')
-assert.match(languageSettings, /AppStrings\.applyLanguageMode\(context, normalizedMode\)[\s\S]*setAppStorageValue<AppLanguageMode>\(StorageKeys\.LANGUAGE_MODE, normalizedMode\)/, 'Language bootstrap must initialize AppStrings from persisted languageMode')
-assert.match(languageSettings, /restartInProgress/, 'Language restart must guard against duplicate restart taps')
-assert.match(settingsPage, /languageRestarting/, 'Settings page must guard duplicate language restart taps')
-assert.match(settingsPage, /LanguageSettings\.saveAndRestart\(context, normalizedMode\)/, 'Language selection must save, set system language, and restart')
-assert.doesNotMatch(settingsPage, /languageRefreshKey/, 'Settings page must not depend on a local languageRefreshKey patch')
-assert.doesNotMatch(indexPage, /languageRefreshKey|onLanguageModeChanged/, 'Index must not use page languageRefreshKey as the language refresh mechanism')
-assert.doesNotMatch(routeCoordinator, /_languageRefreshKey|DESTINATION_TITLES/, 'Destination titles must not depend on a manual language refresh key or cached localized map')
-assert.match(indexPage, /private tabTitles: string\[\] = \[AppStrings\.t\(AppStrings\.R_SETTINGS_HOME[\s\S]*AppStrings\.R_TAB_DISCOVER[\s\S]*AppStrings\.R_TAB_NOTIFICATIONS[\s\S]*AppStrings\.R_TAB_ME/, 'Tab labels must use AppStrings after bootstrap')
-assert.match(routeCoordinator, /destinationTitle\(family: IndexDestinationFamily\)[\s\S]*AppStrings\.t\(AppStrings\.R_NAV_SETTINGS[\s\S]*title: IndexRouteCoordinator\.destinationTitle\(family\)/, 'NavDestination titles must use AppStrings source')
-assert.match(settingsPage, /private t\(resource: Resource, fallback: string\): string[\s\S]*AppStrings\.t\(resource, fallback\)/, 'SettingsPage must use the AppStrings source')
-assert.match(settingsBootstrap, /restoreLanguage\(context, settingsStore\)[\s\S]*restoreTheme/, 'SettingsBootstrap must restore saved language before other UI settings')
-assert.match(entryAbility, /SettingsBootstrap\.loadAll\(this\.context\)\.finally\(\(\) => \{\s*this\.loadContent\(windowStage, win\)/, 'EntryAbility must load UI content only after language bootstrap')
-assert.match(settingsBootstrap, /LanguageSettings\.loadFromStore\(settingsStore, context\)/, 'SettingsBootstrap must align saved language mode with system preferred language')
+assert.match(languageSettings, /i18n\.System\.setAppPreferredLanguage\(normalized\)/, 'Language changes must set app preferred language')
+assert.doesNotMatch(languageSettings, /restartApp|terminateSelf|LOCALE_REVISION/, 'LanguageSettings must not restart or manually refresh locale')
+assert.doesNotMatch(settingsPage, /restartApp|terminateSelf|LOCALE_REVISION|languageRefreshKey/, 'SettingsPage must not restart or use manual refresh keys')
+assertNoRestartLane('Index', indexPage)
 
-assert.match(appStrings, /R_SETTINGS_APPEARANCE: Resource = \$r\('app\.string\.settings_appearance'\)/, 'AppStrings must expose settings_appearance')
+assert.match(settingsCoordinator, /export interface SettingsOption \{\s*label: ResourceStr\s*value: string\s*\}/, 'SettingsOption labels must be ResourceStr')
+for (const method of ['themeModeOptions', 'replyDisplayModeOptions', 'replyCardStyleOptions', 'replyActionAlignmentOptions', 'base64DecodeModeOptions']) {
+  const start = indexOfOrFail(settingsCoordinator, `static ${method}(`, method)
+  const next = settingsCoordinator.indexOf('\n  static ', start + 1)
+  const body = settingsCoordinator.slice(start, next === -1 ? undefined : next)
+  assert.doesNotMatch(body, /AppStrings\.t\(/, `${method} must return Resource labels, not cached strings`)
+  assert.match(body, /label: AppStrings\.R_/, `${method} must bind option labels to Resource constants`)
+}
+for (const method of ['themeModeLabel', 'languageModeLabel', 'replyDisplayModeLabel', 'replyCardStyleLabel', 'replyActionAlignmentLabel', 'base64DecodeModeLabel']) {
+  const start = indexOfOrFail(settingsCoordinator, `static ${method}(`, method)
+  const next = settingsCoordinator.indexOf('\n  static ', start + 1)
+  const body = settingsCoordinator.slice(start, next === -1 ? undefined : next)
+  assert.doesNotMatch(body, /AppStrings\.t\(/, `${method} must return ResourceStr labels, not cached strings`)
+}
+
+assert.match(settingsComponents, /@Prop trailingText: ResourceStr = ''/, 'Settings dropdown row trailing text must accept ResourceStr')
+assert.doesNotMatch(settingsComponents, /Text\(AppStrings\.t\(AppStrings\.R_READING_PREVIEW_|title: AppStrings\.t\(AppStrings\.R_RESTORE_DEFAULT|Text\(AppStrings\.t\(AppStrings\.R_TEXT_SCALE/, 'Reading preview, text scale, and restore default must bind Resource constants directly')
+assert.match(settingsComponents, /Text\(AppStrings\.R_READING_PREVIEW_TITLE\)/, 'Reading preview title must use Resource')
+assert.match(settingsComponents, /Text\(AppStrings\.R_TEXT_SCALE\)/, 'Text scale label must use Resource')
+assert.match(settingsComponents, /title: AppStrings\.R_RESTORE_DEFAULT/, 'Restore default row must use Resource')
+
+assert.match(indexPage, /private tabTitles: ResourceStr\[\] = \[AppStrings\.R_SETTINGS_HOME, AppStrings\.R_TAB_DISCOVER, AppStrings\.R_TAB_NOTIFICATIONS, AppStrings\.R_TAB_ME\]/, 'Bottom tab title cache must hold ResourceStr constants')
+assert.doesNotMatch(indexPage, /TabIcon\(AppStrings\.t\(|tabTitles: string\[\]|this\.tabTitles\[this\.ct\] === AppStrings\.t\(/, 'Bottom tabs/title menus must not compare or bind cached localized strings')
+assert.match(mainTabIcon, /@Prop title: ResourceStr = ''/, 'MainTabIcon title must accept ResourceStr')
+
+for (const getter of ['SECTION_ACCOUNT', 'SECTION_ACCOUNT_CONTENT', 'SECTION_LOCAL_CONTENT', 'SECTION_MORE', 'LOGIN_TITLE', 'LOGIN_SUBTITLE', 'PROFILE_TITLE', 'LOGOUT_TITLE', 'LOCAL_READ_LATER_TITLE', 'ABOUT_TITLE']) {
+  assert.match(accountCoordinator, new RegExp(`static get ${getter}\\(\\): ResourceStr \\{ return AppStrings\\.R_`), `${getter} must return a ResourceStr`)
+}
+assert.match(accountPage, /SectionHeader\(title: ResourceStr\)/, 'Account section headers must accept ResourceStr')
+assert.match(accountPage, /AuthActionRow\(title: ResourceStr, subtitle: ResourceStr/, 'Account action rows must accept ResourceStr labels')
+assert.doesNotMatch(accountCoordinator, /static get (SECTION_|LOGIN_|PROFILE_|LOGOUT_|LOCAL_|ABOUT_|ACCOUNT_)[^{]+\{ return AppStrings\.t\(/, 'Account root visible label getters must not return cached strings')
 
 for (const locale of ['base', 'en_US', 'zh_CN', 'zh_HK', 'zh_TW']) {
   const resource = JSON.parse(readFileSync(`entry/src/main/resources/${locale}/element/string.json`, 'utf8'))
-  const strings = new Map(resource.string.map(item => [item.name, item.value]))
-  assert.ok(strings.has('settings_appearance'), `${locale} missing settings_appearance`)
+  const names = new Set(resource.string.map(item => item.name))
+  for (const key of ['common_auto', 'common_light', 'common_dark', 'language_follow_system', 'language_simplified_chinese', 'language_traditional_chinese_hk', 'language_traditional_chinese_tw', 'language_english', 'reading_preview_title', 'reading_preview_intro', 'reading_preview_body', 'reading_preview_quote', 'text_scale', 'restore_default']) {
+    assert.ok(names.has(key), `${locale} missing ${key}`)
+  }
 }
-
-const languageOptions = settingsCoordinator.slice(indexOfOrFail(settingsCoordinator, 'static languageModeOptions()'), indexOfOrFail(settingsCoordinator, 'static themeModeOptions()'))
-for (const mode of ['MODE_SYSTEM', 'MODE_ZH_CN', 'MODE_ZH_HK', 'MODE_ZH_TW', 'MODE_EN']) {
-  assert.match(languageOptions, new RegExp(`LanguageSettings\\.${mode}`), `language menu missing ${mode}`)
-}
-assert.equal((languageOptions.match(/value: LanguageSettings\./g) || []).length, 5, 'Language menu must have exactly five options')
-assert.doesNotMatch(languageOptions, /subtitle|description|explain|SettingsCheckedMenuItem|selected:|✓|✔|☑|✅/, 'Language options must not add checkmarks, fake controls, or long explanatory subtitles')
-
-const languageMenuItem = settingsPage.slice(indexOfOrFail(settingsPage, '@Builder\n  LanguageModeMenuItem'), indexOfOrFail(settingsPage, '@Builder\n  ThemeModeMenuItem'))
-assert.match(languageMenuItem, /MenuItem\(\{\s*content: option\.label\s*\}\)/, 'Language menu must use plain MenuItem labels')
-assert.doesNotMatch(languageMenuItem, /SettingsCheckedMenuItem|selected:|✓|✔|☑|✅/, 'Language menu must not show checkmarks')
 
 console.log('test_settings_appearance_language_static: PASS')

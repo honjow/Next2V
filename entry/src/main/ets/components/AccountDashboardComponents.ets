@@ -10,7 +10,7 @@ import {
 @Component
 export struct AccountCoinBalance {
   @Prop balance: V2exBalance | null = null
-  @Prop fallbackText: string = ''
+  @Prop fallbackText: ResourceStr = ''
 
   build() {
     if (this.balance) {
@@ -64,10 +64,10 @@ export struct AccountDetailHeaderCard {
   @Prop avatarUrl: string = ''
   @Prop username: string = ''
   @Prop balance: V2exBalance | null = null
-  @Prop fallbackText: string = ''
+  @Prop fallbackText: ResourceStr = ''
   @Prop sessionError: string = ''
   @Prop accountMetaError: string = ''
-  @Prop dailyMissionMessage: string = ''
+  @Prop dailyMissionMessage: ResourceStr = ''
 
   build() {
     Column({ space: ThemeConstants.SPACE_MD }) {
@@ -104,7 +104,7 @@ export struct AccountDetailHeaderCard {
     .height(52)
   }
 
-  @Builder private MetaText(message: string, isError: boolean) {
+  @Builder private MetaText(message: ResourceStr, isError: boolean) {
     Text(message)
       .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
       .fontColor(isError ? Color.Red : $r('sys.color.font_secondary'))
@@ -118,8 +118,8 @@ export struct AccountSignedInCard {
   @Prop avatarUrl: string = ''
   @Prop username: string = ''
   @Prop balance: V2exBalance | null = null
-  @Prop fallbackText: string = ''
-  @Prop dailyMissionText: string = ''
+  @Prop fallbackText: ResourceStr = ''
+  @Prop dailyMissionText: ResourceStr = ''
   @Prop dailyMissionEnabled: boolean = false
   redeemDailyMission?: () => void
   openDetail?: () => void

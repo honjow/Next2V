@@ -55,7 +55,7 @@ export struct SettingsToggleRow {
 export struct SettingsDropdownRow {
   @Prop title: ResourceStr = ''
   @Prop subtitle: ResourceStr = ''
-  @Prop trailingText: string = ''
+  @Prop trailingText: ResourceStr = ''
   openAction?: () => void
 
   build() {
@@ -100,26 +100,26 @@ export struct ReadingPreviewPanel {
     Column() {
       Scroll() {
         Column({ space: ThemeConstants.SPACE_MD }) {
-          Text(AppStrings.t(AppStrings.R_READING_PREVIEW_TITLE, 'A topic about Next2V'))
+          Text(AppStrings.R_READING_PREVIEW_TITLE)
             .fontSize(this.scaledToken(18))
             .fontWeight(FontWeight.Medium)
             .fontColor($r('sys.color.font_primary'))
             .lineHeight(this.scaledToken(24))
             .width('100%')
 
-          Text(AppStrings.t(AppStrings.R_READING_PREVIEW_INTRO, 'This is the live preview area for reading text scaling. Drag the slider below to scale body text, headings, lists, quotes, and code together, approximating the reading feel in actual topic details.'))
+          Text(AppStrings.R_READING_PREVIEW_INTRO)
             .fontSize(this.bodyFontSize())
             .fontColor($r('sys.color.font_primary'))
             .lineHeight(this.bodyLineHeight())
             .width('100%')
 
-          Text(AppStrings.t(AppStrings.R_READING_PREVIEW_BODY, 'V2EX discussions usually contain short sentences, links, quotes, and code snippets. The preview stays on the page background to avoid extra cards affecting typography judgment.'))
+          Text(AppStrings.R_READING_PREVIEW_BODY)
             .fontSize(this.bodyFontSize())
             .fontColor($r('sys.color.font_primary'))
             .lineHeight(this.bodyLineHeight())
             .width('100%')
 
-          Text(AppStrings.t(AppStrings.R_READING_PREVIEW_QUOTE, '> If a setting lets you finish the paragraph without pausing, it is probably the right one.'))
+          Text(AppStrings.R_READING_PREVIEW_QUOTE)
             .fontSize(this.scaledToken(13))
             .fontColor($r('sys.color.font_secondary'))
             .lineHeight(this.bodyLineHeight())
@@ -176,7 +176,7 @@ export struct ReadingScaleControlSection {
       Column() {
         Column({ space: ThemeConstants.SPACE_SM }) {
           Row() {
-            Text(AppStrings.t(AppStrings.R_TEXT_SCALE, 'Text scale'))
+            Text(AppStrings.R_TEXT_SCALE)
               .fontSize(ThemeConstants.FONT_SIZE_LIST_ITEM)
               .fontColor($r('sys.color.font_primary'))
               .maxLines(1)
@@ -211,7 +211,7 @@ export struct ReadingScaleControlSection {
         })
 
         ConciseListRow({
-          title: AppStrings.t(AppStrings.R_RESTORE_DEFAULT, 'Restore default'),
+          title: AppStrings.R_RESTORE_DEFAULT,
           destructive: true,
           showChevron: false,
           action: () => {
