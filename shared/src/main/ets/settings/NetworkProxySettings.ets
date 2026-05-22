@@ -193,13 +193,19 @@ export class NetworkProxySettings {
 
   static buildSocks5Url(snapshot: NetworkProxySettingsSnapshot): string {
     const normalized = NetworkProxySettings.normalize(snapshot)
-    const userinfo = normalized.username ? `${NetworkProxySettings.encodeUserInfo(normalized.username)}:${NetworkProxySettings.encodeUserInfo(normalized.password)}@` : ''
+    const userinfo = NetworkProxySettings.buildProxyUserInfo(normalized)
     return `socks5://${userinfo}${normalized.host}:${normalized.port}`
   }
 
   static buildHttpUrl(snapshot: NetworkProxySettingsSnapshot): string {
     const normalized = NetworkProxySettings.normalize(snapshot)
-    return `${normalized.proxyScheme}://${normalized.host}:${normalized.port}`
+    const userinfo = NetworkProxySettings.buildProxyUserInfo(normalized)
+    return `${normalized.proxyScheme}://${userinfo}${normalized.host}:${normalized.port}`
+  }
+
+  private static buildProxyUserInfo(snapshot: NetworkProxySettingsSnapshot): string {
+    const normalized = NetworkProxySettings.normalize(snapshot)
+    return normalized.username ? `${NetworkProxySettings.encodeUserInfo(normalized.username)}:${NetworkProxySettings.encodeUserInfo(normalized.password)}@` : ''
   }
 
   private static encodeUserInfo(value: string): string {

@@ -51,9 +51,10 @@ def main() -> int:
     require('http proxy construction', 'connection.HttpProxy' in settings and 'username' in settings and 'exclusionList' in settings)
     require('proxy scheme model', 'NetworkProxyScheme' in settings and 'proxyScheme' in settings and "'https'" in settings)
     require('socks5 url construction', "socks5://${userinfo}${normalized.host}:${normalized.port}" in settings)
-    require('socks5 credentials retained', "mode === 'http' || mode === 'socks5'" in settings and "normalized.username ? `${NetworkProxySettings.encodeUserInfo(normalized.username)}:${NetworkProxySettings.encodeUserInfo(normalized.password)}@` : ''" in settings)
+    require('proxy credentials retained', "mode === 'http' || mode === 'socks5'" in settings and "buildProxyUserInfo" in settings and "normalized.username ? `${NetworkProxySettings.encodeUserInfo(normalized.username)}:${NetworkProxySettings.encodeUserInfo(normalized.password)}@` : ''" in settings)
     require('url userinfo encoding', 'encodeURIComponent(value)' in settings and 'encodeUserInfo' in settings)
-    require('http url construction', "`${normalized.proxyScheme}://${normalized.host}:${normalized.port}`" in settings)
+    require('http url construction with optional userinfo', "`${normalized.proxyScheme}://${userinfo}${normalized.host}:${normalized.port}`" in settings)
+    require('https userinfo redaction contract', 'https?|socks5' in read('shared/src/main/ets/diagnostics/DiagnosticsRedactor.ets') and 'https?|socks5' in read('shared/src/main/ets/diagnostics/DiagnosticsLogFileSink.ets'))
     require('https proxy scheme supported', "MODE_HTTPS_PROXY" in settings and "NetworkProxySettings.MODE_HTTPS_PROXY" in proxy_page)
 
     require('bootstrap restore', 'restoreNetworkProxy' in bootstrap and 'NetworkProxySettings.load' in bootstrap)

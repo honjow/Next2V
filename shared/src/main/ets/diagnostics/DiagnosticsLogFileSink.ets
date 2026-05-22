@@ -396,6 +396,7 @@ export class DiagnosticsLogFileSink {
     clean = clean.replace(/(Cookie|Set-Cookie)\s*[:=][^;\n\s]+/gi, '$1=<redacted>')
     clean = clean.replace(/Authorization\s*[:=]\s*(Bearer\s+)?[^\s;]+/gi, 'Authorization=<redacted>')
     clean = clean.replace(/Bearer\s+[A-Za-z0-9._~+\/-]+/gi, 'Bearer <redacted>')
+    clean = clean.replace(/\b(https?|socks5):\/\/[^\s/@]+:[^\s/@]*@/gi, '$1://<redacted>@')
     clean = clean.replace(/([?&](once|token|auth|code|password|delete_once|redeem)[^=]*=)[^&#\s]+/gi, '$1<redacted>')
     clean = clean.replace(/\/mission\/daily\/redeem\?[^\s]+/gi, '/mission/daily/redeem?once=<redacted>')
     clean = clean.replace(/\/delete\/notification\/\d+\?[^\s]+/gi, '/delete/notification/<id>?once=<redacted>')

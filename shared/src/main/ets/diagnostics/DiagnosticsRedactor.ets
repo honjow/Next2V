@@ -142,6 +142,7 @@ export class DiagnosticsRedactor {
     clean = clean.replace(/(Cookie|Set-Cookie)\s*[:=][^;\n]+/gi, `$1=${REDACTED}`)
     clean = clean.replace(/Authorization\s*[:=]\s*(Bearer\s+)?[^\s;]+/gi, `Authorization=${REDACTED}`)
     clean = clean.replace(/Bearer\s+[A-Za-z0-9._~+\/-]+/gi, `Bearer ${REDACTED}`)
+    clean = clean.replace(/\b(https?|socks5):\/\/[^\s/@]+:[^\s/@]*@/gi, `$1://${REDACTED}@`)
     clean = clean.replace(/([?&](once|token|auth|code|password|delete_once|redeem)[^=]*=)[^&#\s]+/gi, `$1${REDACTED}`)
     clean = clean.replace(/\/mission\/daily\/redeem\?[^\s]+/gi, '/mission/daily/redeem?once=<redacted>')
     clean = clean.replace(/\/delete\/notification\/\d+\?[^\s]+/gi, '/delete/notification/<id>?once=<redacted>')
