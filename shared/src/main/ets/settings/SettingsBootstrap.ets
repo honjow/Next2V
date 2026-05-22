@@ -5,6 +5,7 @@ import { AutoDailyCheckinSettings } from './AutoDailyCheckinSettings'
 import { CookieJarSettings } from './CookieJarSettings'
 import { DiagnosticsSettings } from './DiagnosticsSettings'
 import { FeedTabSettings } from './FeedTabSettings'
+import { LanguageSettings } from './LanguageSettings'
 import { MediaSettings } from './MediaSettings'
 import { NetworkProxySettings } from './NetworkProxySettings'
 import { ReadingSettings } from './ReadingSettings'
@@ -26,6 +27,7 @@ export class SettingsBootstrap {
 
     await SettingsBootstrap.restoreDiagnostics(context, settingsStore)
     await SettingsBootstrap.restoreApiDomain(context, settingsStore)
+    await SettingsBootstrap.restoreLanguage(context, settingsStore)
     await SettingsBootstrap.restoreTheme(context, settingsStore)
     await SettingsBootstrap.restoreMedia(context, settingsStore)
     await SettingsBootstrap.restoreNetworkProxy(context, settingsStore)
@@ -55,6 +57,16 @@ export class SettingsBootstrap {
       : DiagnosticsSettings.load(context)
     ).catch((_error: Error) => {
       DiagnosticsSettings.apply(DiagnosticsSettings.DEFAULT_ENABLED, DiagnosticsSettings.DEFAULT_MIN_LEVEL)
+    })
+  }
+
+  private static async restoreLanguage(context: common.UIAbilityContext, settingsStore?: SettingsPreferencesStore): Promise<void> {
+    await (settingsStore
+      ? LanguageSettings.loadFromStore(settingsStore, context)
+      : LanguageSettings.load(context)
+    ).catch((error: Error) => {
+      console.error('restore language settings failed: ' + error.message)
+      LanguageSettings.apply(context, LanguageSettings.MODE_SYSTEM)
     })
   }
 

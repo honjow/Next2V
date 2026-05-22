@@ -337,6 +337,30 @@
       "value": "高级"
     },
     {
+      "name": "language",
+      "value": "语言"
+    },
+    {
+      "name": "language_follow_system",
+      "value": "跟随系统"
+    },
+    {
+      "name": "language_simplified_chinese",
+      "value": "简体中文"
+    },
+    {
+      "name": "language_traditional_chinese_hk",
+      "value": "繁體中文（香港）"
+    },
+    {
+      "name": "language_traditional_chinese_tw",
+      "value": "繁體中文（台灣）"
+    },
+    {
+      "name": "language_english",
+      "value": "English"
+    },
+    {
       "name": "account_management",
       "value": "账号管理"
     },

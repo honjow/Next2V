@@ -1,4 +1,5 @@
 import { common } from '@kit.AbilityKit'
+import resourceManager from '@ohos.resourceManager'
 
 export type AppLanguageMode = 'system' | 'zh-CN' | 'zh-HK' | 'zh-TW' | 'en'
 
@@ -7,11 +8,49 @@ export class AppStrings {
   static readonly FALLBACK_LOCALE: string = 'en'
   static readonly SUPPORTED_LOCALES: string[] = ['zh-CN', 'zh-HK', 'zh-TW', 'en']
   private static context: common.UIAbilityContext | null = null
+  private static activeResourceManager: resourceManager.ResourceManager | null = null
 
   static init(context: common.UIAbilityContext): void {
     AppStrings.context = context
   }
 
+  static applyLanguageMode(context: common.UIAbilityContext, mode: AppLanguageMode): AppLanguageMode {
+    const normalizedMode = AppStrings.normalizeLanguageMode(mode)
+    AppStrings.context = context
+    if (normalizedMode === AppStrings.DEFAULT_LANGUAGE_MODE) {
+      AppStrings.activeResourceManager = null
+      return normalizedMode
+    }
+    try {
+      const configuration = context.resourceManager.getConfigurationSync()
+      configuration.locale = AppStrings.resourceLocaleForMode(normalizedMode)
+      AppStrings.activeResourceManager = context.resourceManager.getOverrideResourceManager(configuration)
+    } catch (_error) {
+      AppStrings.activeResourceManager = null
+    }
+    return normalizedMode
+  }
+
+  static normalizeLanguageMode(value: string): AppLanguageMode {
+    const mode = (value || '').trim()
+    if (mode === 'zh-CN' || mode === 'zh-HK' || mode === 'zh-TW' || mode === 'en') {
+      return mode as AppLanguageMode
+    }
+    return AppStrings.DEFAULT_LANGUAGE_MODE
+  }
+
+  private static resourceLocaleForMode(mode: AppLanguageMode): string {
+    if (mode === 'zh-CN') {
+      return 'zh-Hans-CN'
+    }
+    if (mode === 'zh-HK') {
+      return 'zh-Hant-HK'
+    }
+    if (mode === 'zh-TW') {
+      return 'zh-Hant-TW'
+    }
+    return 'en-US'
+  }
 
   static format(template: string, values: string[]): string {
     let text = template
@@ -27,7 +66,8 @@ export class AppStrings {
       if (!context) {
         return fallback
       }
-      return context.resourceManager.getStringSync(resource) || fallback
+      const manager = AppStrings.activeResourceManager || context.resourceManager
+      return manager.getStringSync(resource) || fallback
     } catch (_error) {
       return fallback
     }
@@ -117,6 +157,12 @@ export class AppStrings {
   static readonly R_SETTINGS_HOME: Resource = $r('app.string.settings_home')
   static readonly R_SETTINGS_CONTENT_MEDIA: Resource = $r('app.string.settings_content_media')
   static readonly R_SETTINGS_ADVANCED: Resource = $r('app.string.settings_advanced')
+  static readonly R_LANGUAGE: Resource = $r('app.string.language')
+  static readonly R_LANGUAGE_FOLLOW_SYSTEM: Resource = $r('app.string.language_follow_system')
+  static readonly R_LANGUAGE_SIMPLIFIED_CHINESE: Resource = $r('app.string.language_simplified_chinese')
+  static readonly R_LANGUAGE_TRADITIONAL_CHINESE_HK: Resource = $r('app.string.language_traditional_chinese_hk')
+  static readonly R_LANGUAGE_TRADITIONAL_CHINESE_TW: Resource = $r('app.string.language_traditional_chinese_tw')
+  static readonly R_LANGUAGE_ENGLISH: Resource = $r('app.string.language_english')
   static readonly R_ACCOUNT_MANAGEMENT: Resource = $r('app.string.account_management')
   static readonly R_AUTO_CHECKIN: Resource = $r('app.string.auto_checkin')
   static readonly R_IMAGE_AUTO_LOAD: Resource = $r('app.string.image_auto_load')

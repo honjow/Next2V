@@ -83,11 +83,30 @@ def assert_fallback_contract() -> None:
         raise AssertionError("default app language mode must be system")
     if "FALLBACK_LOCALE: string = 'en'" not in text:
         raise AssertionError("fallback locale must be en")
+    if "LANGUAGE_MODE: string = 'languageMode'" not in (ROOT / "shared" / "src" / "main" / "ets" / "constants" / "StorageKeys.ets").read_text(encoding="utf-8"):
+        raise AssertionError("language mode storage key must be languageMode")
     for locale in SUPPORTED_BCP47:
         if repr(locale) not in text:
             raise AssertionError(f"supported locale missing from AppStrings: {locale}")
-    if "resourceManager.getStringSync(resource)" not in text:
+    required_language_keys = [
+        "language",
+        "language_follow_system",
+        "language_simplified_chinese",
+        "language_traditional_chinese_hk",
+        "language_traditional_chinese_tw",
+        "language_english",
+    ]
+    for locale in REQUIRED_LOCALE_DIRS:
+        strings = load_strings(ENTRY_RES, locale)
+        missing = [key for key in required_language_keys if key not in strings]
+        if missing:
+            raise AssertionError(f"language option resources missing for {locale}: {missing}")
+    if load_strings(ENTRY_RES, "base").get("language_follow_system") != "Follow system":
+        raise AssertionError("base language default option must be Follow system")
+    if "getStringSync(resource)" not in text:
         raise AssertionError("AppStrings must use HarmonyOS ResourceManager getStringSync")
+    if "getOverrideResourceManager" not in text:
+        raise AssertionError("AppStrings must support an override ResourceManager for app language mode")
     if "catch (_error)" not in text or "return fallback" not in text:
         raise AssertionError("AppStrings must keep a local fallback path")
 

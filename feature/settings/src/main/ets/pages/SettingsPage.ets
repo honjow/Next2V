@@ -6,6 +6,7 @@ import {
   GroupedListSection,
   HttpClient,
   NetworkProxySettings,
+  LanguageSettings,
   ReadingSettings,
   SecondaryListScaffold,
   StorageKeys,
@@ -36,6 +37,7 @@ export struct SettingsPage {
   @StorageLink(StorageKeys.MEDIA_AUTO_LOAD_IMAGES) autoLoadImages: boolean = true;
   @StorageLink(StorageKeys.MEDIA_ONLY_LOAD_IMAGES_ON_WIFI) onlyLoadImagesOnWifi: boolean = false;
   @StorageLink(StorageKeys.THEME_MODE) themeMode: string = ThemeSettings.MODE_AUTO;
+  @StorageLink(StorageKeys.LANGUAGE_MODE) languageMode: string = LanguageSettings.MODE_SYSTEM;
   @StorageLink(StorageKeys.REPLY_DISPLAY_MODE) replyDisplayMode: string =
     ReplyDisplaySettings.MODE_THREAD;
   @StorageLink(StorageKeys.REPLY_CARD_STYLE) replyCardStyle: string =
@@ -51,6 +53,7 @@ export struct SettingsPage {
   @StorageLink(StorageKeys.NETWORK_PROXY_SCHEME) networkProxyScheme: string = NetworkProxySettings.MODE_HTTP_PROXY;
   @State private cacheStats: CacheStats = { topicListCount: 0, topicDetailCount: 0, updatedAt: 0 };
   @State private themeMenuShown: boolean = false;
+  @State private languageMenuShown: boolean = false;
   @State private replyDisplayMenuShown: boolean = false;
   @State private replyCardStyleMenuShown: boolean = false;
   @State private replyActionAlignmentMenuShown: boolean = false;
@@ -259,6 +262,21 @@ export struct SettingsPage {
   ReadingPreferenceRows() {
     Column() {
       SettingsDropdownRow({
+        title: AppStrings.t(AppStrings.R_LANGUAGE, 'Language'),
+        trailingText: LanguageSettings.modeText(this.languageMode),
+        openAction: () => {
+          this.showLanguageMenu()
+        },
+      })
+        .bindMenu(this.languageMenuShown, this.LanguageModeMenu, {
+          placement: Placement.BottomRight,
+          aboutToDisappear: () => {
+            this.languageMenuShown = false
+          },
+        })
+
+      this.SettingsDivider()
+      SettingsDropdownRow({
         title: AppStrings.t(AppStrings.R_THEME, 'Theme'),
         trailingText: ThemeSettings.modeText(this.themeMode),
         openAction: () => {
@@ -350,6 +368,15 @@ export struct SettingsPage {
         },
       })
     }.width('100%')
+  }
+
+  @Builder
+  LanguageModeMenu() {
+    Menu() {
+      ForEach(SettingsPageCoordinator.languageModeOptions(), (option: SettingsOption) => {
+        this.LanguageModeMenuItem(option)
+      }, (option: SettingsOption) => option.value)
+    }
   }
 
   @Builder
@@ -458,6 +485,17 @@ export struct SettingsPage {
   }
 
   @Builder
+  LanguageModeMenuItem(option: SettingsOption) {
+    SettingsCheckedMenuItem({
+      label: option.label,
+      selected: LanguageSettings.normalizeMode(this.languageMode) === option.value,
+      selectAction: () => {
+        this.updateLanguageMode(option.value)
+      }
+    })
+  }
+
+  @Builder
   ThemeModeMenuItem(option: SettingsOption) {
     SettingsCheckedMenuItem({
       label: option.label,
@@ -477,6 +515,13 @@ export struct SettingsPage {
         this.updateReplyDisplayMode(option.value)
       }
     })
+  }
+
+  private showLanguageMenu(): void {
+    this.languageMenuShown = false
+    setTimeout(() => {
+      this.languageMenuShown = true
+    }, SettingsPageCoordinator.MENU_OPEN_DELAY_MS)
   }
 
   private showThemeMenu(): void {
@@ -562,6 +607,14 @@ export struct SettingsPage {
     this.onlyLoadImagesOnWifi = onlyLoadImagesOnWifi
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     SettingsSaveCoordinator.saveMedia(context, this.autoLoadImages, onlyLoadImagesOnWifi)
+  }
+
+  private updateLanguageMode(mode: string): void {
+    const normalizedMode = LanguageSettings.normalizeMode(mode)
+    this.languageMode = normalizedMode
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    LanguageSettings.apply(context, normalizedMode)
+    SettingsSaveCoordinator.saveLanguageMode(context, normalizedMode)
   }
 
   private updateThemeMode(mode: string): void {

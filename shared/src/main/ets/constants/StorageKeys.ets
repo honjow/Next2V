@@ -20,6 +20,7 @@ export class StorageKeys {
   static readonly REPLY_ACTION_ALIGNMENT_MODE: string = 'replyActionAlignmentMode'
   static readonly THEME_MODE: string = 'themeMode'
   static readonly THEME_EFFECTIVE_DARK: string = 'themeEffectiveDark'
+  static readonly LANGUAGE_MODE: string = 'languageMode'
   static readonly DIAGNOSTICS_ENABLED: string = 'diagnosticsEnabled'
   static readonly DIAGNOSTICS_MIN_LEVEL: string = 'diagnosticsMinLevel'
   static readonly NETWORK_PROXY_MODE: string = 'networkProxyMode'

@@ -337,6 +337,30 @@
       "value": "Advanced"
     },
     {
+      "name": "language",
+      "value": "Language"
+    },
+    {
+      "name": "language_follow_system",
+      "value": "Follow system"
+    },
+    {
+      "name": "language_simplified_chinese",
+      "value": "Simplified Chinese"
+    },
+    {
+      "name": "language_traditional_chinese_hk",
+      "value": "Traditional Chinese (Hong Kong)"
+    },
+    {
+      "name": "language_traditional_chinese_tw",
+      "value": "Traditional Chinese (Taiwan)"
+    },
+    {
+      "name": "language_english",
+      "value": "English"
+    },
+    {
       "name": "account_management",
       "value": "Account management"
     },

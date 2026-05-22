@@ -6,6 +6,7 @@ import {
   CookieJarSettings,
   DiagnosticsSettings,
   HttpClient,
+  LanguageSettings,
   MediaSettings,
   MotionHandStateService,
   ReadingSettings,
@@ -53,6 +54,12 @@ export class SettingsSaveCoordinator {
   ): void {
     MediaSettings.save(context, autoLoadImages, onlyLoadImagesOnWifi).catch((error: Error) => {
       console.error('save media settings failed: ' + error.message)
+    })
+  }
+
+  static saveLanguageMode(context: common.UIAbilityContext, mode: string): void {
+    LanguageSettings.save(context, mode).catch((error: Error) => {
+      console.error('save language settings failed: ' + error.message)
     })
   }
 

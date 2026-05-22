@@ -1,5 +1,6 @@
 import {
   AppStrings,
+  LanguageSettings,
   ReadingSettings,
   ReplyActionAlignmentSettings,
   ReplyCardStyleSettings,
@@ -14,6 +15,16 @@ export interface SettingsOption {
 
 export class SettingsPageCoordinator {
   static readonly MENU_OPEN_DELAY_MS: number = 20
+
+  static languageModeOptions(): SettingsOption[] {
+    return [
+      { label: AppStrings.t(AppStrings.R_LANGUAGE_FOLLOW_SYSTEM, 'Follow system'), value: LanguageSettings.MODE_SYSTEM },
+      { label: AppStrings.t(AppStrings.R_LANGUAGE_SIMPLIFIED_CHINESE, 'Simplified Chinese'), value: LanguageSettings.MODE_ZH_CN },
+      { label: AppStrings.t(AppStrings.R_LANGUAGE_TRADITIONAL_CHINESE_HK, 'Traditional Chinese (Hong Kong)'), value: LanguageSettings.MODE_ZH_HK },
+      { label: AppStrings.t(AppStrings.R_LANGUAGE_TRADITIONAL_CHINESE_TW, 'Traditional Chinese (Taiwan)'), value: LanguageSettings.MODE_ZH_TW },
+      { label: AppStrings.t(AppStrings.R_LANGUAGE_ENGLISH, 'English'), value: LanguageSettings.MODE_EN },
+    ]
+  }
 
   static themeModeOptions(): SettingsOption[] {
     return [
