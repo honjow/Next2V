@@ -6,8 +6,8 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 WRONG_TEST_ENDPOINT = 'api/v2/site' + '/info'
-FORBIDDEN_BLOCKED_ENDPOINT = '/d/' + 'blocked'
-FORBIDDEN_IGNORED_ENDPOINT = '/d/' + 'ignored'
+FORBIDDEN_BLOCKED_ENDPOINT = '/' + 'blocked'
+FORBIDDEN_IGNORED_ENDPOINT = '/' + 'ignored'
 FORBIDDEN_REMOTE_VALIDATION_SKIP = "remoteValidation: " + "'skip'"
 
 
@@ -131,7 +131,7 @@ def main() -> int:
 
     all_ets = ''.join(p.read_text(encoding='utf-8', errors='ignore') for p in ROOT.rglob('*.ets'))
     require('no httpclient package', '@ohos/httpclient' not in all_ets)
-    require('no blocked/ignored endpoints', FORBIDDEN_BLOCKED_ENDPOINT not in all_ets and FORBIDDEN_IGNORED_ENDPOINT not in all_ets)
+    require('no phantom blocklist endpoints', FORBIDDEN_BLOCKED_ENDPOINT not in all_ets and FORBIDDEN_IGNORED_ENDPOINT not in all_ets)
     print('All network proxy static contracts passed')
     return 0
 

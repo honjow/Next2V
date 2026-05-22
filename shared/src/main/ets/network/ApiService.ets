@@ -2,7 +2,6 @@ import { http } from '@kit.NetworkKit'
 import { HttpClient } from './HttpClient'
 import { NetworkProxyRequest } from './NetworkProxyRequest'
 import { FeedTabSettings } from '../settings/FeedTabSettings'
-import { CookieJarSettings } from '../settings/CookieJarSettings'
 import { BlockedMemberSettings } from '../settings/BlockedMemberSettings'
 import { ApiConstants } from '../constants/ApiConstants'
 import { V2exTabParser } from '../parser/V2exTabParser'
@@ -528,18 +527,6 @@ export class ApiService {
     return V2exNodeParser.extractFavoriteNodes(html)
   }
 
-  async getBlockedMembersWithCookie(cookie: string): Promise<V2exAccountMemberListItem[]> {
-    if (!cookie) {
-      throw new Error('请先登录')
-    }
-    const currentUsername = await this.getSessionUsernameWithCookie(cookie)
-    const html = await this.getCookieHtml('/blocked', cookie)
-    if (html.indexOf('/signin') >= 0 && !V2exSessionParser.extractUsername(html)) {
-      throw new Error('Web 会话已失效，请重新登录')
-    }
-    return V2exAccountListParser.extractMembers(html, currentUsername)
-  }
-
   async getFollowingMembersWithCookie(cookie: string): Promise<V2exAccountMemberListItem[]> {
     if (!cookie) {
       throw new Error('请先登录')
@@ -550,19 +537,6 @@ export class ApiService {
       throw new Error('Web 会话已失效，请重新登录')
     }
     return V2exAccountListParser.extractMembers(html, currentUsername)
-  }
-
-  async getIgnoredTopicsWithCookie(cookie: string): Promise<V2exTopic[]> {
-    if (!cookie) {
-      throw new Error('请先登录')
-    }
-    await this.getSessionUsernameWithCookie(cookie)
-    const html = await this.getCookieHtml('/ignored', cookie)
-    if (html.indexOf('/signin') >= 0 && !V2exSessionParser.extractUsername(html)) {
-      throw new Error('Web 会话已失效，请重新登录')
-    }
-    const ids = V2exAccountListParser.extractTopicIds(html)
-    return this.getTopicsByIds(ids)
   }
 
   // ==================== Cookie 账号操作（站内收藏/关注） ====================
@@ -1611,47 +1585,13 @@ export class ApiService {
   }
 
   private async filterBlockedTopicAuthors(topics: V2exTopic[]): Promise<V2exTopic[]> {
-    const cookie = CookieJarSettings.getCurrentCookie()
-    if (!cookie || !topics || topics.length === 0) {
+    if (!topics || topics.length === 0) {
       return topics || []
     }
-    try {
-      const blockedMembers = await this.getBlockedMembersWithCookie(cookie)
-      const usernames = ApiService.mergeBlockedUsernames(
-        BlockedMemberSettings.getCachedUsernames(),
-        blockedMembers.map((item) => item.username),
-      )
-      BlockedMemberSettings.applyRuntimeUsernames(usernames)
-      return BlockedTopicFilter.filterTopicsByBlockedAuthors(topics, usernames)
-    } catch (error) {
-      console.error('filter blocked topic authors failed:', (error as Error).message)
-      return BlockedTopicFilter.filterTopicsByBlockedAuthors(
-        topics,
-        BlockedMemberSettings.getCachedUsernames(),
-      )
-    }
-  }
-
-  private static mergeBlockedUsernames(
-    localUsernames: string[],
-    remoteUsernames: string[],
-  ): string[] {
-    const usernames: string[] = []
-    const seen: Set<string> = new Set()
-    const append = (value: string): void => {
-      const normalized = BlockedTopicFilter.normalizeUsername(value)
-      if (normalized && !seen.has(normalized)) {
-        seen.add(normalized)
-        usernames.push(normalized)
-      }
-    }
-    for (const username of localUsernames || []) {
-      append(username)
-    }
-    for (const username of remoteUsernames || []) {
-      append(username)
-    }
-    return usernames.sort()
+    return BlockedTopicFilter.filterTopicsByBlockedAuthors(
+      topics,
+      BlockedMemberSettings.getCachedUsernames(),
+    )
   }
 
   private static normalizeTopic(topic: V2exTopic): V2exTopic {

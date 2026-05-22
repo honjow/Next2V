@@ -12,7 +12,9 @@ const userSource = fs.readFileSync(path.join(repo, 'feature/user/src/main/ets/pa
 assert.match(filterSource, /topic\.member\?\.username|topic\.member\.username/, 'filter must key off the topic author')
 assert.doesNotMatch(filterSource, /last_reply_by/, 'filter must not key off the last replier')
 assert.match(apiSource, /filterBlockedTopicAuthors\(topics\)/, 'home tab network topics must pass through blocked-author filtering')
-assert.match(apiSource, /mergeBlockedUsernames\([\s\S]*BlockedMemberSettings\.getCachedUsernames\(\)[\s\S]*blockedMembers\.map/, 'network refresh must preserve locally confirmed blocked members')
+assert.match(apiSource, /BlockedMemberSettings\.getCachedUsernames\(\)/, 'network refresh must use only the local blocked-member cache')
+assert.doesNotMatch(apiSource, /getBlockedMembersWithCookie|getIgnoredTopicsWithCookie/, 'phantom blocklist read APIs must not exist')
+assert.doesNotMatch(apiSource, /getCookieHtml\('\/' \+ 'blocked|getCookieHtml\('\/' \+ 'ignored|getCookieHtml\('\/(blocked|ignored)'\)/, 'phantom blocklist endpoint reads must not exist')
 assert.match(homeSource, /CacheSettings\.loadTopicList[\s\S]*BlockedTopicFilter\.filterTopicsByBlockedAuthors/, 'cached home topics must be filtered before display')
 assert.match(userSource, /BlockedMemberSettings\.setBlocked/, 'member block action must update the shared blocked-member snapshot')
 
@@ -37,11 +39,11 @@ const topics = [
 const filtered = filterTopicsByBlockedAuthors(topics, [' blockeduser '])
 assert.deepEqual(filtered.map((topic) => topic.id), [2, 3])
 
-function mergeBlockedUsernames(localUsernames, remoteUsernames) {
-  return Array.from(new Set([...localUsernames, ...remoteUsernames].map(normalizeUsername).filter(Boolean))).sort()
+function localBlockedUsernames(localUsernames) {
+  return Array.from(new Set(localUsernames.map(normalizeUsername).filter(Boolean))).sort()
 }
 
-assert.deepEqual(mergeBlockedUsernames([' llej '], []), ['llej'])
-assert.deepEqual(mergeBlockedUsernames(['llej'], ['BlockedUser']), ['blockeduser', 'llej'])
+assert.deepEqual(localBlockedUsernames([' llej ']), ['llej'])
+assert.deepEqual(localBlockedUsernames(['llej', 'LLEJ']), ['llej'])
 
 console.log('blocked topic filter checks passed')
