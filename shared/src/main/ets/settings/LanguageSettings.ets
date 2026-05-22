@@ -97,7 +97,7 @@ export class LanguageSettings {
       return 'zh-Hant-TW'
     }
     if (normalizedMode === LanguageSettings.MODE_EN) {
-      return 'en'
+      return 'en-US'
     }
     return DEFAULT_APP_LANGUAGE
   }

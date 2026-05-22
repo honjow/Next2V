@@ -17,6 +17,7 @@ LANGUAGE_SETTINGS = ROOT / "shared" / "src" / "main" / "ets" / "settings" / "Lan
 # base is English fallback. Specific locale resources use underscore directory names.
 REQUIRED_LOCALE_DIRS = ["base", "en_US", "zh_CN", "zh_HK", "zh_TW"]
 SUPPORTED_BCP47 = ["zh-CN", "zh-HK", "zh-TW", "en"]
+OVERRIDE_RESOURCE_LOCALES = ["zh-Hans-CN", "zh-Hant-HK", "zh-Hant-TW", "en-US"]
 
 KEY_TERMS = {
     "feature/settings/src/main/ets/pages/NetworkProxySettingsPage.ets": [
@@ -108,8 +109,13 @@ def assert_fallback_contract() -> None:
         raise AssertionError("base language default option must be Follow system")
     if "getStringSync(resource)" not in text:
         raise AssertionError("AppStrings must use HarmonyOS ResourceManager getStringSync")
-    if "getOverrideResourceManager" in text or "activeResourceManager" in text:
-        raise AssertionError("AppStrings must not use override ResourceManager as the primary app language mechanism")
+    if "getOverrideResourceManager(configuration)" not in text:
+        raise AssertionError("AppStrings must create an override ResourceManager from persisted languageMode")
+    if "overrideResourceManager || AppStrings.context?.resourceManager" not in text:
+        raise AssertionError("AppStrings must use one selected resource source for all AppStrings reads")
+    for locale in OVERRIDE_RESOURCE_LOCALES:
+        if repr(locale) not in text:
+            raise AssertionError(f"override resource locale missing from AppStrings: {locale}")
     if "catch (_error)" not in text or "return fallback" not in text:
         raise AssertionError("AppStrings must keep a local fallback path")
     required_system_contracts = [
@@ -126,7 +132,7 @@ def assert_fallback_contract() -> None:
         "MODE_ZH_CN": "zh-Hans-CN",
         "MODE_ZH_HK": "zh-Hant-HK",
         "MODE_ZH_TW": "zh-Hant-TW",
-        "MODE_EN": "en",
+        "MODE_EN": "en-US",
     }.items():
         if mode not in language_text or language not in language_text:
             raise AssertionError(f"language mode mapping missing: {mode} -> {language}")
