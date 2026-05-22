@@ -1,3 +1,4 @@
+import { AppStrings } from 'shared'
 import {
   ReplyDisplaySettings,
   V2exReply,
@@ -34,7 +35,7 @@ export class TopicDetailReplyDisplayCoordinator {
 
   static replyCountText(total: number, loaded: number): string {
     if (total > 0 && loaded < total) {
-      return `已加载 ${loaded} / ${total}`
+      return AppStrings.format(AppStrings.text($r('app.string.loaded_count_format'), 'Loaded {0} / {1}'), [`${loaded}`, `${total}`])
     }
     if (total > 0) {
       return `共 ${total} 条回复`

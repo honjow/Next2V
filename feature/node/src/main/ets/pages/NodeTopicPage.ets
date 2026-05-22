@@ -199,7 +199,7 @@ export struct NodeTopicPage {
       .then((favorited: boolean) => {
         this.isSiteNodeFavorited = favorited
         this.nodeTopicSiteFavorited = favorited
-        promptAction.openToast({ message: favorited ? '已收藏' : '已取消收藏' }).catch((_error: Error) => { })
+        promptAction.openToast({ message: favorited ? $r('app.string.favorited') : $r('app.string.unfavorited') }).catch((_error: Error) => { })
       })
       .catch((error: Error) => {
         promptAction.openToast({ message: error.message || '操作失败' }).catch((_error: Error) => { })

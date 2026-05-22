@@ -1,6 +1,7 @@
 import { common } from '@kit.AbilityKit'
 import {
   CollectionSettings,
+  AppStrings,
   EmptyState,
   LocalTopicCard,
   PullRefreshListScaffold,
@@ -21,7 +22,7 @@ export struct SavedTopicsPage {
     Column() {
       if (this.topics.length === 0) {
         Column() {
-          EmptyState({ message: '还没有稍后读主题' })
+          EmptyState({ message: AppStrings.text($r('app.string.empty_no_read_later_topics'), 'No read-later topics yet') })
         }
         .justifyContent(FlexAlign.Center)
         .width('100%')
@@ -41,7 +42,7 @@ export struct SavedTopicsPage {
                 created: item.created,
                 replyCount: this.replyCount(item),
                 hasReplyCount: this.hasKnownReplyCount(item),
-                metaLabel: '保存于',
+                metaLabel: AppStrings.text($r('app.string.saved_on_label'), 'Saved on'),
                 metaTimestamp: item.savedAt,
                 onUserClick: () => { this.openTopic(item.id) },
                 onNodeClick: () => { this.openTopic(item.id) }

@@ -43,7 +43,7 @@ export struct MarkdownCodeBlock {
         this.codeText(),
       );
       pasteboard.getSystemPasteboard().setDataSync(data);
-      promptAction.openToast({ message: "已复制代码" }).catch((error: Error) => {
+      promptAction.openToast({ message: $r('app.string.common_copy_code') }).catch((error: Error) => {
         console.error(`openToast failed: ${error.message}`);
       });
     } catch (error) {

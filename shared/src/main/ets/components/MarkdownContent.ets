@@ -3,6 +3,7 @@ import { pasteboard } from "@kit.BasicServicesKit";
 import { connection } from "@kit.NetworkKit";
 import { promptAction } from "@kit.ArkUI";
 import { StorageKeys } from "../constants/StorageKeys";
+import { AppStrings } from "../i18n/AppStrings";
 import { ReadingSettings } from "../settings/ReadingSettings";
 import { ThemeConstants } from "../theme/ThemeConstants";
 import { MediaUrlUtils } from "../utils/MediaUrlUtils";
@@ -449,7 +450,7 @@ function _copyDecodedBase64Text(decoded: string): void {
       decoded,
     );
     pasteboard.getSystemPasteboard().setDataSync(data);
-    promptAction.openToast({ message: "已复制解码文本" }).catch((_error: Error) => { });
+    promptAction.openToast({ message: $r('app.string.common_copy_decoded_text') }).catch((_error: Error) => { });
   } catch (error) {
     promptAction.openToast({ message: (error as Error).message || "复制失败" }).catch((_error: Error) => { });
   }
@@ -1941,7 +1942,7 @@ struct MarkdownAutoImage {
 
   private imagePlaceholderText(): string {
     if (!this.autoLoadImages) {
-      return "图片自动加载已关闭";
+      return AppStrings.text($r('app.string.common_image_auto_load_off'), 'Image auto-load is off');
     }
     if (this.onlyLoadImagesOnWifi && !this.networkChecked) {
       return "正在检查网络";
@@ -2076,7 +2077,7 @@ struct MarkdownAutoImage {
         Text(this.imagePlaceholderText())
           .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
           .fontColor(ThemeConstants.TEXT_SECONDARY)
-        Text('点击预览')
+        Text($r('app.string.common_click_preview'))
           .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
           .fontColor(ThemeConstants.TEXT_LINK)
       }

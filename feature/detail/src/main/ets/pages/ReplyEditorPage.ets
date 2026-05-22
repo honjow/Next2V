@@ -124,7 +124,7 @@ export struct ReplyEditorPage {
         }
 
         if (this.savedAt > 0) {
-          Text(`已保存于 ${DateUtils.toDateString(this.savedAt)}`)
+          Text($r('app.string.draft_saved_on_format', DateUtils.toDateString(this.savedAt)))
             .fontSize(ThemeConstants.FONT_SIZE_TINY)
             .fontColor($r('sys.color.font_secondary'))
         }
@@ -228,7 +228,7 @@ export struct ReplyEditorPage {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     ReplyComposerDraftCoordinator.clearDraft(context, this.topicId)
       .then(() => {
-        promptAction.openToast({ message: '已清空' }).catch((_error: Error) => { })
+        promptAction.openToast({ message: $r('app.string.common_cleared') }).catch((_error: Error) => { })
       })
       .catch((_error: Error) => {
         promptAction.openToast({ message: '清空失败' }).catch((_error2: Error) => { })
@@ -297,7 +297,7 @@ export struct ReplyEditorPage {
         this.hasSubmitted = true
         const context = this.getUIContext().getHostContext() as common.UIAbilityContext
         ReplyComposerDraftCoordinator.clearDraft(context, this.topicId).catch((_error: Error) => { })
-        promptAction.openToast({ message: '已提交' }).catch((_error: Error) => { })
+        promptAction.openToast({ message: $r('app.string.submit_completed') }).catch((_error: Error) => { })
         this.stack.pop()
       })
       .catch((error: Error) => {

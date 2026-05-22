@@ -1,5 +1,6 @@
 import { UserViewModel } from '../viewmodel/UserViewModel'
 import {
+  AppStrings,
   V2exTopic,
   V2exUserReply,
   TopicCard,
@@ -13,6 +14,7 @@ import {
   CookieJarSettings,
   V2exRoute,
   V2exUrlRouter,
+  BlockedMemberSettings,
 } from 'shared'
 import type { TopicReadState } from 'shared'
 import { promptAction, SegmentButton, SegmentButtonOptions } from '@kit.ArkUI'
@@ -112,7 +114,7 @@ export struct UserProfilePage {
           if (this.activityTab === 0) {
             if (this.vm.topicsHidden) {
               ListItem() {
-                UserProfileEmptyCard({ message: '主题列表已隐藏' })
+                UserProfileEmptyCard({ message: AppStrings.text($r('app.string.user_topics_hidden'), 'Topic list is hidden') })
               }
             } else if (this.vm.recentTopicCount === 0 && this.vm.isLoading) {
               ListItem() {
@@ -366,7 +368,7 @@ export struct UserProfilePage {
       .toggleFollow()
       .then(() => {
         this.syncActionState()
-        this.showActionToast(nextFollowing ? '已关注' : '已取消关注')
+        this.showActionToast(AppStrings.text(nextFollowing ? $r('app.string.followed') : $r('app.string.unfollowed'), nextFollowing ? 'Followed' : 'Unfollowed'))
         this.refreshActionStateLater()
       })
       .catch((error: Error) => {
@@ -389,7 +391,8 @@ export struct UserProfilePage {
       .toggleBlock()
       .then(() => {
         this.syncActionState()
-        this.showActionToast(nextBlocked ? '已屏蔽' : '已取消屏蔽')
+        this.persistBlockedMemberState(this.blocked)
+        this.showActionToast(AppStrings.text(nextBlocked ? $r('app.string.blocked') : $r('app.string.unblocked'), nextBlocked ? 'Blocked' : 'Unblocked'))
         this.refreshActionStateLater()
       })
       .catch((error: Error) => {
@@ -398,6 +401,19 @@ export struct UserProfilePage {
         this.showActionToast(this.actionFailureToast(error))
         this.reloadActionStateAfterFailure()
       })
+  }
+
+  private persistBlockedMemberState(blocked: boolean): void {
+    const username = this.displayProfileUsername()
+    if (!username) {
+      BlockedMemberSettings.publishUpdatedAt()
+      return
+    }
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    BlockedMemberSettings.setBlocked(context, username, blocked).catch((error: Error) => {
+      console.error('persist blocked member failed: ' + error.message)
+      BlockedMemberSettings.publishUpdatedAt()
+    })
   }
 
   private syncActionState(): void {

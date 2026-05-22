@@ -1,6 +1,6 @@
 import { NodeViewModel } from '../viewmodel/NodeViewModel'
 import {
-  ApiService, PullRefresh, StorageKeys, V2exNode, V2exTopic, NodeTopicListParams, TopicDetailParams,
+  ApiService, AppStrings, PullRefresh, StorageKeys, V2exNode, V2exTopic, NodeTopicListParams, TopicDetailParams,
   ThemeConstants, CollectionSettings
 } from 'shared'
 import type { SavedNode } from 'shared'
@@ -112,7 +112,7 @@ export struct DiscoverPage {
   @Builder HotTopicsSection() {
     Column({ space: ThemeConstants.SPACE_SM }) {
       Row({ space: ThemeConstants.SPACE_XS }) {
-        this.TopicModeButton('hot', '热议')
+        this.TopicModeButton('hot', AppStrings.text($r('app.string.discover_hot'), 'Hot'))
         this.TopicModeButton('rank', '热榜')
         this.TopicModeButton('latest', '最新')
         this.TopicModeButton('recent', '最近')

@@ -60,7 +60,7 @@ export struct ReplyCardActions {
       }
 
       if (this.onCopyUserClick) {
-        MenuItem({ content: '复制用户名', symbolStartIcon: this.copyUserIcon }).onClick(() => {
+        MenuItem({ content: $r('app.string.common_copy_username'), symbolStartIcon: this.copyUserIcon }).onClick(() => {
           this.runContextAction(this.onCopyUserClick)
         })
       }

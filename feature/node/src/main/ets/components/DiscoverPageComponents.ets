@@ -190,7 +190,7 @@ export struct DiscoverNodeChip {
 
 @Component
 export struct DiscoverEmptyState {
-  @Prop message: string = '没有匹配的节点'
+  @Prop message: ResourceStr = $r('app.string.search_no_nodes')
 
   build() {
     Column() {

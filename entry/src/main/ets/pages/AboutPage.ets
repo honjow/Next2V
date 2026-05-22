@@ -10,7 +10,8 @@ import {
 } from 'shared'
 
 interface AboutInfoRow {
-  label: string
+  key: string
+  label: ResourceStr
   value: string
 }
 
@@ -41,7 +42,7 @@ export struct AboutPage {
         }
 
         ListItem() {
-          this.SectionHeader('应用信息')
+          this.SectionHeader($r('app.string.about_app_info'))
         }
         .margin({ top: ThemeConstants.SPACE_MD })
 
@@ -50,7 +51,7 @@ export struct AboutPage {
         }
 
         ListItem() {
-          this.SectionHeader('项目')
+          this.SectionHeader($r('app.string.about_project'))
         }
         .margin({ top: ThemeConstants.SPACE_MD })
 
@@ -59,7 +60,7 @@ export struct AboutPage {
         }
 
         ListItem() {
-          this.SectionHeader('致谢')
+          this.SectionHeader($r('app.string.about_acknowledgements'))
         }
         .margin({ top: ThemeConstants.SPACE_MD })
 
@@ -68,7 +69,7 @@ export struct AboutPage {
         }
 
         ListItem() {
-          this.SectionHeader('开源许可')
+          this.SectionHeader($r('app.string.about_open_source_license'))
         }
         .margin({ top: ThemeConstants.SPACE_MD })
 
@@ -89,10 +90,10 @@ export struct AboutPage {
         .fontSize(28)
         .fontWeight(FontWeight.Bold)
         .fontColor($r('sys.color.font_primary'))
-      Text('HarmonyOS 原生 V2EX 客户端')
+      Text($r('app.string.about_tagline'))
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
         .fontColor($r('sys.color.font_secondary'))
-      Text(`版本 ${this.appVersion}`)
+      Text($r('app.string.about_version_format', this.appVersion))
         .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
         .fontColor($r('sys.color.font_secondary'))
     }
@@ -121,7 +122,7 @@ export struct AboutPage {
         if (index < this.appInfoRows().length - 1) {
           this.SettingsDivider()
         }
-      }, (row: AboutInfoRow) => row.label)
+      }, (row: AboutInfoRow) => row.key)
     }
   }
 
@@ -129,7 +130,7 @@ export struct AboutPage {
   ProjectSection() {
     GroupedListSection() {
       ConciseListRow({
-        title: '项目地址',
+        title: $r('app.string.about_project_url'),
         subtitle: this.projectUrl,
         action: () => {
           this.openInSystemBrowser(this.projectUrl)
@@ -137,7 +138,7 @@ export struct AboutPage {
       })
       this.SettingsDivider()
       ConciseListRow({
-        title: '开发者',
+        title: $r('app.string.about_developer'),
         trailingText: this.developerName,
         showChevron: false
       })
@@ -156,7 +157,7 @@ export struct AboutPage {
       })
       this.SettingsDivider()
       Column({ space: ThemeConstants.SPACE_XS }) {
-        Text('感谢 V2Next 项目在 V2EX 客户端体验上的探索。')
+        Text($r('app.string.about_v2next_ack'))
           .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
           .fontColor($r('sys.color.font_secondary'))
       }
@@ -170,7 +171,7 @@ export struct AboutPage {
   LicenseSection() {
     GroupedListSection() {
       ConciseListRow({
-        title: '源代码许可证',
+        title: $r('app.string.about_source_license'),
         trailingText: 'MIT License',
         action: () => {
           this.openInSystemBrowser(this.licenseUrl)
@@ -178,10 +179,10 @@ export struct AboutPage {
       })
       this.SettingsDivider()
       Column({ space: ThemeConstants.SPACE_XS }) {
-        Text('Next2V 是面向 V2EX 的第三方客户端。')
+        Text($r('app.string.about_third_party_client'))
           .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
           .fontColor($r('sys.color.font_secondary'))
-        Text('应用源代码按 MIT License 开源；V2EX 名称、标识和内容归其各自权利人所有。')
+        Text($r('app.string.about_copyright'))
           .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
           .fontColor($r('sys.color.font_secondary'))
       }
@@ -192,7 +193,7 @@ export struct AboutPage {
   }
 
   @Builder
-  SectionHeader(title: string) {
+  SectionHeader(title: ResourceStr) {
     SharedSectionHeader({ title: title })
   }
 
@@ -203,8 +204,8 @@ export struct AboutPage {
 
   private appInfoRows(): AboutInfoRow[] {
     return [
-      { label: '应用名称', value: this.appName },
-      { label: '平台', value: 'HarmonyOS' }
+      { key: 'appName', label: $r('app.string.about_app_name'), value: this.appName },
+      { key: 'platform', label: $r('app.string.about_platform'), value: 'HarmonyOS' }
     ]
   }
 
@@ -217,7 +218,7 @@ export struct AboutPage {
     const want: Want = { action: 'ohos.want.action.viewData', uri: target }
     context.startAbility(want)
       .catch((error: Error) => {
-        promptAction.openToast({ message: error.message || '打开失败' }).catch((_error: Error) => {
+        promptAction.openToast({ message: error.message || 'Open failed' }).catch((_error: Error) => {
         })
       })
   }

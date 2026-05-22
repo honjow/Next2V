@@ -1,3 +1,4 @@
+import { AppStrings } from 'shared'
 import type {
   SearchSourceMode,
   Sov2exHit,
@@ -54,41 +55,41 @@ export class SearchPageStateCoordinator {
   }
 
   static topicSectionTitle(filter: SearchResultFilter): string {
-    return filter === 'users' ? '用户相关主题' : '主题结果'
+    return filter === 'users' ? AppStrings.text($r('app.string.search_user_related_topics'), 'User-related topics') : AppStrings.text($r('app.string.search_topic_results'), 'Topic results')
   }
 
   static emptyTopicHint(filter: SearchResultFilter): string {
-    return filter === 'users' ? '没有匹配该用户的本地主题' : '没有匹配的主题'
+    return filter === 'users' ? AppStrings.text($r('app.string.search_no_local_user_topics'), 'No local topics match this user') : AppStrings.text($r('app.string.search_no_topics'), 'No matching topics')
   }
 
   static sourceModeSummary(sourceMode: SearchSourceMode): string {
     if (sourceMode === 'remote') {
-      return '使用 SOV2EX 站内搜索'
+      return AppStrings.text($r('app.string.search_sov2ex'), 'Use SOV2EX site search')
     }
     if (sourceMode === 'externalWeb') {
-      return '官方 API 暂无主题搜索，使用系统浏览器搜索 V2EX 主题'
+      return AppStrings.text($r('app.string.search_external_summary'), 'The official API has no topic search; use the system browser to search V2EX topics')
     }
     if (SearchPageStateCoordinator.usesNodeIndex(sourceMode)) {
-      return '在收藏 / 最近浏览 / 关注节点 / 离线缓存 / 节点库中搜索'
+      return AppStrings.text($r('app.string.search_local_with_nodes_summary'), 'Search favorites, recently viewed, followed nodes, offline cache, and node library')
     }
-    return '在收藏 / 最近浏览 / 关注节点 / 离线缓存中搜索'
+    return AppStrings.text($r('app.string.search_local_summary'), 'Search favorites, recently viewed, followed nodes, and offline cache')
   }
 
   static loadingSummary(isCacheLoading: boolean, isNodeIndexLoading: boolean): string {
     if (isCacheLoading && isNodeIndexLoading) {
-      return '索引加载中'
+      return AppStrings.text($r('app.string.search_index_loading'), 'Loading indexes')
     }
     if (isCacheLoading) {
-      return '缓存加载中'
+      return AppStrings.text($r('app.string.search_cache_loading'), 'Loading cache')
     }
-    return '节点加载中'
+    return AppStrings.text($r('app.string.search_nodes_loading'), 'Loading nodes')
   }
 
   static emptyNodeHint(sourceMode: SearchSourceMode): string {
     if (SearchPageStateCoordinator.usesNodeIndex(sourceMode)) {
-      return '节点库和你关注的节点会出现在这里'
+      return AppStrings.text($r('app.string.search_nodes_library_empty_hint'), 'The node library and your followed nodes will appear here')
     }
-    return '你关注的节点会出现在这里'
+    return AppStrings.text($r('app.string.search_followed_nodes_empty_hint'), 'Your followed nodes will appear here')
   }
 
   static resetRemoteState(): RemoteSearchState {

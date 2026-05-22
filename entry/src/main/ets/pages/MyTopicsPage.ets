@@ -1,6 +1,6 @@
 import { promptAction } from '@kit.ArkUI'
 import {
-  ApiService,
+  ApiService, AppStrings,
   CookieJarSettings,
   PageLoginRequiredState,
   PagedListScaffold,
@@ -63,7 +63,7 @@ export struct MyTopicsPage {
       } else if (this.topics.length === 0) {
         PagedListScaffold({
           isEmpty: true,
-          emptyMessage: '还没有收藏主题'
+          emptyMessage: AppStrings.text($r('app.string.empty_no_favorite_topics'), 'No favorite topics yet')
         }) {}
       } else {
         PagedListScaffold({

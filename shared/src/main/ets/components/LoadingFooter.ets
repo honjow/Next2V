@@ -39,7 +39,7 @@ export struct LoadingFooter {
             })
         }
       } else if (!this.hasMore) {
-        Text('没有更多了')
+        Text($r('app.string.common_no_more'))
           .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
           .fontColor($r('sys.color.font_secondary'))
       }

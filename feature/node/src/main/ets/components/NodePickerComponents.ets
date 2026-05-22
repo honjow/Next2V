@@ -121,7 +121,7 @@ export struct NodePickerErrorState {
 export struct NodePickerEmptyState {
   build() {
     Column() {
-      Text('没有匹配的节点')
+      Text($r('app.string.search_no_nodes'))
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
         .fontColor($r('sys.color.font_secondary'))
     }
@@ -153,7 +153,7 @@ export struct NodePickerRow {
       .alignItems(HorizontalAlign.Start)
       Column({ space: ThemeConstants.SPACE_XS }) {
         if (this.selectedNodeName === this.node.name) {
-          Text('已选')
+          Text($r('app.string.common_selected'))
             .fontSize(ThemeConstants.FONT_SIZE_TINY)
             .fontColor(ThemeConstants.BRAND_PRIMARY)
         }

@@ -2,6 +2,7 @@ import { common } from '@kit.AbilityKit'
 import { promptAction } from '@kit.ArkUI'
 import {
   ApiService,
+  AppStrings,
   AppTextField,
   AuthSessionSettings,
   AutoDailyCheckinService,
@@ -84,7 +85,7 @@ export struct V2exNativeLoginPage {
     Column({ space: ThemeConstants.SPACE_SM }) {
       AppTextField({
         text: $username,
-        placeholder: '用户名或邮箱',
+        placeholder: $r('app.string.username_or_email_placeholder'),
         onTextChange: (value: string) => { this.username = value }
       })
         .width('100%')
@@ -187,7 +188,7 @@ export struct V2exNativeLoginPage {
 
   private restartLoginChallenge(): void {
     this.clearSecretState()
-    this.loadChallenge('已重新获取登录表单，请重新输入密码')
+    this.loadChallenge(AppStrings.text($r('app.string.login_form_refetched'), 'Login form refreshed. Please enter your password again.'))
   }
 
   private clearSecretState(): void {
@@ -210,7 +211,7 @@ export struct V2exNativeLoginPage {
     const cleanUsername = this.username.trim()
     const pwd = this.password
     if (!cleanUsername || !pwd) {
-      this.errorMessage = '请输入用户名和密码'
+      this.errorMessage = AppStrings.text($r('app.string.login_username_password_required'), 'Enter username and password')
       return
     }
     if (!this.challenge) {

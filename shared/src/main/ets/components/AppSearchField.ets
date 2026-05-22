@@ -3,7 +3,7 @@ import { ThemeConstants } from '../theme/ThemeConstants'
 @Component
 export struct AppSearchField {
   @Link text: string
-  @Prop placeholder: string = ''
+  @Prop placeholder: ResourceStr = ''
   onTextChange?: (value: string) => void
   onSubmit?: (value: string) => void
 

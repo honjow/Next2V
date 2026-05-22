@@ -174,7 +174,7 @@
     },
     {
       "name": "common_cleared",
-      "value": "已清理"
+      "value": "已清空"
     },
     {
       "name": "common_saved",
@@ -979,6 +979,506 @@
     {
       "name": "default_proxy_profile_name",
       "value": "代理配置"
+    },
+    {
+      "name": "common_apply",
+      "value": "应用"
+    },
+    {
+      "name": "common_apply_search",
+      "value": "应用搜索"
+    },
+    {
+      "name": "common_searching",
+      "value": "搜索中"
+    },
+    {
+      "name": "common_all",
+      "value": "全部"
+    },
+    {
+      "name": "common_topic",
+      "value": "主题"
+    },
+    {
+      "name": "common_topics",
+      "value": "主题"
+    },
+    {
+      "name": "common_node",
+      "value": "节点"
+    },
+    {
+      "name": "common_nodes",
+      "value": "节点"
+    },
+    {
+      "name": "common_user",
+      "value": "用户"
+    },
+    {
+      "name": "common_local",
+      "value": "本地"
+    },
+    {
+      "name": "common_web",
+      "value": "网页"
+    },
+    {
+      "name": "common_author",
+      "value": "作者"
+    },
+    {
+      "name": "common_sort",
+      "value": "排序"
+    },
+    {
+      "name": "common_time",
+      "value": "时间"
+    },
+    {
+      "name": "common_relevance",
+      "value": "相关"
+    },
+    {
+      "name": "common_descending",
+      "value": "倒序"
+    },
+    {
+      "name": "common_ascending",
+      "value": "正序"
+    },
+    {
+      "name": "common_time_range",
+      "value": "时间范围"
+    },
+    {
+      "name": "common_unlimited",
+      "value": "不限"
+    },
+    {
+      "name": "common_one_day",
+      "value": "一天"
+    },
+    {
+      "name": "common_one_week",
+      "value": "一周"
+    },
+    {
+      "name": "common_one_month",
+      "value": "一月"
+    },
+    {
+      "name": "common_one_year",
+      "value": "一年"
+    },
+    {
+      "name": "common_selected",
+      "value": "已选"
+    },
+    {
+      "name": "common_copied",
+      "value": "已复制"
+    },
+    {
+      "name": "common_copy_username",
+      "value": "复制用户名"
+    },
+    {
+      "name": "common_copy_code",
+      "value": "已复制代码"
+    },
+    {
+      "name": "common_copy_decoded_text",
+      "value": "已复制解码文本"
+    },
+    {
+      "name": "common_no_more",
+      "value": "没有更多了"
+    },
+    {
+      "name": "common_click_preview",
+      "value": "点击预览"
+    },
+    {
+      "name": "common_image_auto_load_off",
+      "value": "图片自动加载已关闭"
+    },
+    {
+      "name": "common_invalid_floor",
+      "value": "请输入有效楼层号"
+    },
+    {
+      "name": "search_result_type",
+      "value": "结果类型"
+    },
+    {
+      "name": "search_filter_nodes_library",
+      "value": "节点库"
+    },
+    {
+      "name": "search_topics_nodes_users_placeholder",
+      "value": "搜索主题、节点、用户"
+    },
+    {
+      "name": "search_browser_v2ex_topics",
+      "value": "使用浏览器搜索 V2EX 主题"
+    },
+    {
+      "name": "search_enter_keyword_to_start",
+      "value": "输入关键词开始搜索"
+    },
+    {
+      "name": "search_open_web_search",
+      "value": "打开网页搜索"
+    },
+    {
+      "name": "search_history",
+      "value": "搜索历史"
+    },
+    {
+      "name": "search_user_related_topics",
+      "value": "用户相关主题"
+    },
+    {
+      "name": "search_topic_results",
+      "value": "主题结果"
+    },
+    {
+      "name": "search_no_local_user_topics",
+      "value": "没有匹配该用户的本地主题"
+    },
+    {
+      "name": "search_no_topics",
+      "value": "没有匹配的主题"
+    },
+    {
+      "name": "search_sov2ex",
+      "value": "使用 SOV2EX 站内搜索"
+    },
+    {
+      "name": "search_external_summary",
+      "value": "官方 API 暂无主题搜索，使用系统浏览器搜索 V2EX 主题"
+    },
+    {
+      "name": "search_local_with_nodes_summary",
+      "value": "在收藏 / 最近浏览 / 关注节点 / 离线缓存 / 节点库中搜索"
+    },
+    {
+      "name": "search_local_summary",
+      "value": "在收藏 / 最近浏览 / 关注节点 / 离线缓存中搜索"
+    },
+    {
+      "name": "search_index_loading",
+      "value": "索引加载中"
+    },
+    {
+      "name": "search_cache_loading",
+      "value": "缓存加载中"
+    },
+    {
+      "name": "search_nodes_loading",
+      "value": "节点加载中"
+    },
+    {
+      "name": "search_nodes_library_empty_hint",
+      "value": "节点库和你关注的节点会出现在这里"
+    },
+    {
+      "name": "search_followed_nodes_empty_hint",
+      "value": "你关注的节点会出现在这里"
+    },
+    {
+      "name": "search_no_nodes",
+      "value": "没有匹配的节点"
+    },
+    {
+      "name": "search_filter_hint",
+      "value": "输入关键词后按搜索，筛选在右上角"
+    },
+    {
+      "name": "about_app_info",
+      "value": "应用信息"
+    },
+    {
+      "name": "about_project",
+      "value": "项目"
+    },
+    {
+      "name": "about_acknowledgements",
+      "value": "致谢"
+    },
+    {
+      "name": "about_open_source_license",
+      "value": "开源许可"
+    },
+    {
+      "name": "about_tagline",
+      "value": "HarmonyOS 原生 V2EX 客户端"
+    },
+    {
+      "name": "about_version_format",
+      "value": "版本 {0}"
+    },
+    {
+      "name": "about_project_url",
+      "value": "项目地址"
+    },
+    {
+      "name": "about_developer",
+      "value": "开发者"
+    },
+    {
+      "name": "about_v2next_ack",
+      "value": "感谢 V2Next 项目在 V2EX 客户端体验上的探索。"
+    },
+    {
+      "name": "about_source_license",
+      "value": "源代码许可证"
+    },
+    {
+      "name": "about_third_party_client",
+      "value": "Next2V 是面向 V2EX 的第三方客户端。"
+    },
+    {
+      "name": "about_copyright",
+      "value": "应用源代码按 MIT License 开源；V2EX 名称、标识和内容归其各自权利人所有。"
+    },
+    {
+      "name": "about_app_name",
+      "value": "应用名称"
+    },
+    {
+      "name": "about_platform",
+      "value": "平台"
+    },
+    {
+      "name": "empty_no_favorite_nodes",
+      "value": "还没有收藏节点"
+    },
+    {
+      "name": "empty_no_favorite_topics",
+      "value": "还没有收藏主题"
+    },
+    {
+      "name": "empty_no_local_followed_nodes",
+      "value": "还没有本地关注节点"
+    },
+    {
+      "name": "saved_locally_on_format",
+      "value": "本地关注于 {0}"
+    },
+    {
+      "name": "empty_no_read_later_topics",
+      "value": "还没有稍后读主题"
+    },
+    {
+      "name": "saved_on_label",
+      "value": "保存于"
+    },
+    {
+      "name": "draft_saved_on_format",
+      "value": "已保存于 {0}"
+    },
+    {
+      "name": "posted_topic_format",
+      "value": "已发帖：{0}"
+    },
+    {
+      "name": "posted_topic",
+      "value": "已发帖"
+    },
+    {
+      "name": "empty_no_recent_views",
+      "value": "还没有最近浏览记录"
+    },
+    {
+      "name": "viewed_on_label",
+      "value": "浏览于"
+    },
+    {
+      "name": "two_factor_completed",
+      "value": "两步验证已完成"
+    },
+    {
+      "name": "image_saved_to_gallery",
+      "value": "已保存到图库"
+    },
+    {
+      "name": "image_save_cancelled",
+      "value": "已取消保存"
+    },
+    {
+      "name": "username_or_email_placeholder",
+      "value": "用户名或邮箱"
+    },
+    {
+      "name": "login_form_refetched",
+      "value": "已重新获取登录表单，请重新输入密码"
+    },
+    {
+      "name": "login_username_password_required",
+      "value": "请输入用户名和密码"
+    },
+    {
+      "name": "login_saved",
+      "value": "登录已保存"
+    },
+    {
+      "name": "login_cookie_missing",
+      "value": "未获取到登录 Cookie，请确认已完成登录"
+    },
+    {
+      "name": "login_cookie_invalid",
+      "value": "Cookie 登录态无效，请确认已完成登录"
+    },
+    {
+      "name": "reply_submitted",
+      "value": "回复已提交"
+    },
+    {
+      "name": "submit_completed",
+      "value": "已提交"
+    },
+    {
+      "name": "confirm_reply_action_format",
+      "value": "确定{0} {1} 的回复吗？"
+    },
+    {
+      "name": "this_user",
+      "value": "该用户"
+    },
+    {
+      "name": "already_thanked",
+      "value": "已经感谢过"
+    },
+    {
+      "name": "loaded_count_format",
+      "value": "已加载 {0} / {1}"
+    },
+    {
+      "name": "load_all_replies_warning_format",
+      "value": "该主题有 {0} 条回复，加载全部回复可能需要较长时间。\n\n是否继续加载以启用完整的楼中楼视图？"
+    },
+    {
+      "name": "favorited",
+      "value": "已收藏"
+    },
+    {
+      "name": "unfavorited",
+      "value": "已取消收藏"
+    },
+    {
+      "name": "thanked",
+      "value": "已感谢"
+    },
+    {
+      "name": "action_done_format",
+      "value": "已{0}"
+    },
+    {
+      "name": "user_topics_hidden",
+      "value": "主题列表已隐藏"
+    },
+    {
+      "name": "followed",
+      "value": "已关注"
+    },
+    {
+      "name": "unfollowed",
+      "value": "已取消关注"
+    },
+    {
+      "name": "blocked",
+      "value": "已屏蔽"
+    },
+    {
+      "name": "unblocked",
+      "value": "已取消屏蔽"
+    },
+    {
+      "name": "user_load_failed",
+      "value": "用户信息加载失败"
+    },
+    {
+      "name": "discover_today_hot",
+      "value": "今日热议"
+    },
+    {
+      "name": "discover_hot",
+      "value": "热议"
+    },
+    {
+      "name": "node_selected_format",
+      "value": "已选择节点：{0}"
+    },
+    {
+      "name": "node_cleared",
+      "value": "已清空节点"
+    },
+    {
+      "name": "storage_written_format",
+      "value": "已写入 {0} 行 / {1} 文件"
+    },
+    {
+      "name": "v2ex_tab_tech",
+      "value": "技术"
+    },
+    {
+      "name": "v2ex_tab_creative",
+      "value": "创意"
+    },
+    {
+      "name": "v2ex_tab_play",
+      "value": "好玩"
+    },
+    {
+      "name": "v2ex_tab_jobs",
+      "value": "酷工作"
+    },
+    {
+      "name": "v2ex_tab_deals",
+      "value": "交易"
+    },
+    {
+      "name": "v2ex_tab_city",
+      "value": "城市"
+    },
+    {
+      "name": "v2ex_tab_qna",
+      "value": "问与答"
+    },
+    {
+      "name": "v2ex_tab_hot",
+      "value": "最热"
+    },
+    {
+      "name": "reply_submit",
+      "value": "提交"
+    },
+    {
+      "name": "reply_submitting",
+      "value": "提交中"
+    },
+    {
+      "name": "reply_content_required",
+      "value": "回复内容不能为空"
+    },
+    {
+      "name": "reply_login_required",
+      "value": "请先登录"
+    },
+    {
+      "name": "reply_confirm_submit_sheet",
+      "value": "确定提交这条回复吗？"
+    },
+    {
+      "name": "reply_confirm_submit_page_format",
+      "value": "确定向{0}提交回复吗？\n\nV2EX 回复通常至少消耗 5 铜币，提交后会修改你的账号状态。"
+    },
+    {
+      "name": "reply_current_topic",
+      "value": "当前主题"
     }
   ]
 }

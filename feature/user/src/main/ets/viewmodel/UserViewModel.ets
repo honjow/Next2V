@@ -1,3 +1,4 @@
+import { AppStrings } from 'shared'
 import {
   V2exMemberProfile, V2exTopic, V2exUserReply, V2exMemberActionState,
   ApiService, CookieJarSettings
@@ -123,7 +124,7 @@ export class UserViewModel {
       this.recentTopicCount = topics.length
       this.topicDataSource.setData(topics)
     } catch (error) {
-      this.errorMessage = error.message || '用户信息加载失败'
+      this.errorMessage = error.message || AppStrings.text($r('app.string.user_load_failed'), 'Failed to load user information')
       console.error('Failed to load user:', error.message)
     } finally {
       this.isLoading = false

@@ -1,5 +1,6 @@
 import {
   ApiService,
+  AppStrings,
   V2exReply,
 } from 'shared'
 import type {
@@ -170,7 +171,7 @@ export class TopicDetailActionCoordinator {
   }
 
   static replyActionMessage(verb: string, username: string): string {
-    return `确定${verb} ${username || '该用户'} 的回复吗？`
+    return AppStrings.format(AppStrings.text($r('app.string.confirm_reply_action_format'), 'Confirm {0} reply by {1}?'), [verb, username || AppStrings.text($r('app.string.this_user'), 'this user')])
   }
 
   static parseActionFailureMessage(verb: string): string {
@@ -182,7 +183,7 @@ export class TopicDetailActionCoordinator {
       return { allowed: false, message: '' }
     }
     if (options.thanked || options.storageThanked) {
-      return { allowed: false, message: '已经感谢过' }
+      return { allowed: false, message: AppStrings.text($r('app.string.already_thanked'), 'Already thanked') }
     }
     if (!options.cookie) {
       return { allowed: false, message: '请先登录' }
@@ -198,7 +199,7 @@ export class TopicDetailActionCoordinator {
       return { allowed: false, message: '回复信息缺失' }
     }
     if (options.thanked) {
-      return { allowed: false, message: '已经感谢过' }
+      return { allowed: false, message: AppStrings.text($r('app.string.already_thanked'), 'Already thanked') }
     }
     if (!options.cookie) {
       return { allowed: false, message: '请先登录' }
@@ -246,7 +247,7 @@ export class TopicDetailActionCoordinator {
 
   static thankedFromTopicThankLoadError(error: Error): boolean {
     const message = error.message || ''
-    return message.indexOf('已经感谢过') >= 0
+    return message.indexOf(AppStrings.text($r('app.string.already_thanked'), 'Already thanked')) >= 0 || message.indexOf('已经感谢过') >= 0
   }
 
   static replyThankLockState(reply: V2exReply): ReplyThankLockState {

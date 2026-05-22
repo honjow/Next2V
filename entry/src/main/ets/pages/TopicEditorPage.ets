@@ -146,7 +146,7 @@ export struct TopicEditorPage {
         }
 
         if (this.savedAt > 0) {
-          Text(`已保存于 ${DateUtils.toDateString(this.savedAt)}`)
+          Text($r('app.string.draft_saved_on_format', DateUtils.toDateString(this.savedAt)))
             .fontSize(ThemeConstants.FONT_SIZE_TINY)
             .fontColor($r('sys.color.font_secondary'))
         }
@@ -277,7 +277,7 @@ export struct TopicEditorPage {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     DraftSettings.clearTopicDraft(context)
       .then(() => {
-        promptAction.openToast({ message: '已清空' }).catch((_error: Error) => { })
+        promptAction.openToast({ message: $r('app.string.common_cleared') }).catch((_error: Error) => { })
       })
       .catch((_error: Error) => {
         promptAction.openToast({ message: '清空失败' }).catch((_error2: Error) => { })
@@ -342,7 +342,7 @@ export struct TopicEditorPage {
         this.hasSubmitted = true
         const context = this.getUIContext().getHostContext() as common.UIAbilityContext
         DraftSettings.clearTopicDraft(context).catch((_error: Error) => { })
-        promptAction.openToast({ message: topicId > 0 ? `已发帖：${topicId}` : '已发帖' }).catch((_error: Error) => { })
+        promptAction.openToast({ message: topicId > 0 ? $r('app.string.posted_topic_format', `${topicId}`) : $r('app.string.posted_topic') }).catch((_error: Error) => { })
         this.stack.pop()
       })
       .catch((error: Error) => {

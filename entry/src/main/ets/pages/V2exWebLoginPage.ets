@@ -3,6 +3,7 @@ import { promptAction } from '@kit.ArkUI'
 import { webview } from '@kit.ArkWeb'
 import {
   ApiService,
+  AppStrings,
   AuthSessionSettings,
   AutoDailyCheckinService,
   CookieJarSettings,
@@ -263,7 +264,7 @@ export struct V2exWebLoginPage {
         }
         this.isSaved = true
         this.cancelAutoSave()
-        promptAction.openToast({ message: '登录已保存' }).catch((error: Error) => {
+        promptAction.openToast({ message: $r('app.string.login_saved') }).catch((error: Error) => {
           console.error('openToast failed: ' + error.message)
         })
         this.stack.pop()
@@ -298,7 +299,7 @@ export struct V2exWebLoginPage {
     const cookie = await this.fetchWebLoginCookie()
     const cleanCookie = cookie?.trim() || ''
     if (!cleanCookie) {
-      throw new Error('未获取到登录 Cookie，请确认已完成登录')
+      throw new Error(AppStrings.text($r('app.string.login_cookie_missing'), 'Login cookie was not obtained. Please confirm login is complete.'))
     }
     if (silent && !this.hasLikelyAuthCookie(cleanCookie)) {
       throw new Error('网页登录尚未完成')
@@ -306,7 +307,7 @@ export struct V2exWebLoginPage {
     const html = await this.http.getTextWithHeaders('/settings', { 'Cookie': cleanCookie })
     const username = V2exSessionParser.extractUsername(html)
     if (!username) {
-      throw new Error('Cookie 登录态无效，请确认已完成登录')
+      throw new Error(AppStrings.text($r('app.string.login_cookie_invalid'), 'Cookie login state is invalid. Please confirm login is complete.'))
     }
     return { cookie: cleanCookie, username }
   }

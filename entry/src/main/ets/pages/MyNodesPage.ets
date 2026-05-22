@@ -51,7 +51,7 @@ export struct MyNodesPage {
           }
         })
       } else if (this.nodes.length === 0) {
-        CardEmptyState({ message: '还没有收藏节点' })
+        CardEmptyState({ message: $r('app.string.empty_no_favorite_nodes') })
       } else {
         SecondaryListScaffold() {
           ForEach(this.nodes, (item: V2exFavoriteNode) => {

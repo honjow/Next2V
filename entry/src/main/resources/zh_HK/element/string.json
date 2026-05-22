@@ -174,7 +174,7 @@
     },
     {
       "name": "common_cleared",
-      "value": "已清理"
+      "value": "已清空"
     },
     {
       "name": "common_saved",
@@ -979,6 +979,506 @@
     {
       "name": "default_proxy_profile_name",
       "value": "代理設定"
+    },
+    {
+      "name": "common_apply",
+      "value": "套用"
+    },
+    {
+      "name": "common_apply_search",
+      "value": "套用搜尋"
+    },
+    {
+      "name": "common_searching",
+      "value": "搜尋中"
+    },
+    {
+      "name": "common_all",
+      "value": "全部"
+    },
+    {
+      "name": "common_topic",
+      "value": "主題"
+    },
+    {
+      "name": "common_topics",
+      "value": "主題"
+    },
+    {
+      "name": "common_node",
+      "value": "節點"
+    },
+    {
+      "name": "common_nodes",
+      "value": "節點"
+    },
+    {
+      "name": "common_user",
+      "value": "用戶"
+    },
+    {
+      "name": "common_local",
+      "value": "本機"
+    },
+    {
+      "name": "common_web",
+      "value": "網頁"
+    },
+    {
+      "name": "common_author",
+      "value": "作者"
+    },
+    {
+      "name": "common_sort",
+      "value": "排序"
+    },
+    {
+      "name": "common_time",
+      "value": "時間"
+    },
+    {
+      "name": "common_relevance",
+      "value": "相關"
+    },
+    {
+      "name": "common_descending",
+      "value": "倒序"
+    },
+    {
+      "name": "common_ascending",
+      "value": "正序"
+    },
+    {
+      "name": "common_time_range",
+      "value": "時間範圍"
+    },
+    {
+      "name": "common_unlimited",
+      "value": "不限"
+    },
+    {
+      "name": "common_one_day",
+      "value": "一天"
+    },
+    {
+      "name": "common_one_week",
+      "value": "一週"
+    },
+    {
+      "name": "common_one_month",
+      "value": "一個月"
+    },
+    {
+      "name": "common_one_year",
+      "value": "一年"
+    },
+    {
+      "name": "common_selected",
+      "value": "已選"
+    },
+    {
+      "name": "common_copied",
+      "value": "已複製"
+    },
+    {
+      "name": "common_copy_username",
+      "value": "複製用戶名"
+    },
+    {
+      "name": "common_copy_code",
+      "value": "已複製程式碼"
+    },
+    {
+      "name": "common_copy_decoded_text",
+      "value": "已複製解碼文字"
+    },
+    {
+      "name": "common_no_more",
+      "value": "沒有更多了"
+    },
+    {
+      "name": "common_click_preview",
+      "value": "點按預覽"
+    },
+    {
+      "name": "common_image_auto_load_off",
+      "value": "圖片自動載入已關閉"
+    },
+    {
+      "name": "common_invalid_floor",
+      "value": "請輸入有效樓層號"
+    },
+    {
+      "name": "search_result_type",
+      "value": "結果類型"
+    },
+    {
+      "name": "search_filter_nodes_library",
+      "value": "節點庫"
+    },
+    {
+      "name": "search_topics_nodes_users_placeholder",
+      "value": "搜尋主題、節點、用戶"
+    },
+    {
+      "name": "search_browser_v2ex_topics",
+      "value": "使用瀏覽器搜尋 V2EX 主題"
+    },
+    {
+      "name": "search_enter_keyword_to_start",
+      "value": "輸入關鍵字開始搜尋"
+    },
+    {
+      "name": "search_open_web_search",
+      "value": "開啟網頁搜尋"
+    },
+    {
+      "name": "search_history",
+      "value": "搜尋歷史"
+    },
+    {
+      "name": "search_user_related_topics",
+      "value": "用戶相關主題"
+    },
+    {
+      "name": "search_topic_results",
+      "value": "主題結果"
+    },
+    {
+      "name": "search_no_local_user_topics",
+      "value": "沒有符合該用戶的本機主題"
+    },
+    {
+      "name": "search_no_topics",
+      "value": "沒有符合的主題"
+    },
+    {
+      "name": "search_sov2ex",
+      "value": "使用 SOV2EX 站內搜尋"
+    },
+    {
+      "name": "search_external_summary",
+      "value": "官方 API 暫無主題搜尋，使用系統瀏覽器搜尋 V2EX 主題"
+    },
+    {
+      "name": "search_local_with_nodes_summary",
+      "value": "在收藏 / 最近瀏覽 / 關注節點 / 離線快取 / 節點庫中搜尋"
+    },
+    {
+      "name": "search_local_summary",
+      "value": "在收藏 / 最近瀏覽 / 關注節點 / 離線快取中搜尋"
+    },
+    {
+      "name": "search_index_loading",
+      "value": "索引載入中"
+    },
+    {
+      "name": "search_cache_loading",
+      "value": "快取載入中"
+    },
+    {
+      "name": "search_nodes_loading",
+      "value": "節點載入中"
+    },
+    {
+      "name": "search_nodes_library_empty_hint",
+      "value": "節點庫和你關注的節點會顯示在這裡"
+    },
+    {
+      "name": "search_followed_nodes_empty_hint",
+      "value": "你關注的節點會顯示在這裡"
+    },
+    {
+      "name": "search_no_nodes",
+      "value": "沒有符合的節點"
+    },
+    {
+      "name": "search_filter_hint",
+      "value": "輸入關鍵字後點按搜尋，篩選在右上角"
+    },
+    {
+      "name": "about_app_info",
+      "value": "應用資訊"
+    },
+    {
+      "name": "about_project",
+      "value": "專案"
+    },
+    {
+      "name": "about_acknowledgements",
+      "value": "致謝"
+    },
+    {
+      "name": "about_open_source_license",
+      "value": "開源授權"
+    },
+    {
+      "name": "about_tagline",
+      "value": "HarmonyOS 原生 V2EX 客戶端"
+    },
+    {
+      "name": "about_version_format",
+      "value": "版本 {0}"
+    },
+    {
+      "name": "about_project_url",
+      "value": "專案地址"
+    },
+    {
+      "name": "about_developer",
+      "value": "開發者"
+    },
+    {
+      "name": "about_v2next_ack",
+      "value": "感謝 V2Next 專案在 V2EX 客戶端體驗上的探索。"
+    },
+    {
+      "name": "about_source_license",
+      "value": "原始碼授權"
+    },
+    {
+      "name": "about_third_party_client",
+      "value": "Next2V 是面向 V2EX 的第三方客戶端。"
+    },
+    {
+      "name": "about_copyright",
+      "value": "應用原始碼按 MIT License 開源；V2EX 名稱、標誌和內容歸其各自權利人所有。"
+    },
+    {
+      "name": "about_app_name",
+      "value": "應用名稱"
+    },
+    {
+      "name": "about_platform",
+      "value": "平台"
+    },
+    {
+      "name": "empty_no_favorite_nodes",
+      "value": "還沒有收藏節點"
+    },
+    {
+      "name": "empty_no_favorite_topics",
+      "value": "還沒有收藏主題"
+    },
+    {
+      "name": "empty_no_local_followed_nodes",
+      "value": "還沒有本機關注節點"
+    },
+    {
+      "name": "saved_locally_on_format",
+      "value": "本機關注於 {0}"
+    },
+    {
+      "name": "empty_no_read_later_topics",
+      "value": "還沒有稍後讀主題"
+    },
+    {
+      "name": "saved_on_label",
+      "value": "儲存於"
+    },
+    {
+      "name": "draft_saved_on_format",
+      "value": "已儲存於 {0}"
+    },
+    {
+      "name": "posted_topic_format",
+      "value": "已發帖：{0}"
+    },
+    {
+      "name": "posted_topic",
+      "value": "已發帖"
+    },
+    {
+      "name": "empty_no_recent_views",
+      "value": "還沒有最近瀏覽記錄"
+    },
+    {
+      "name": "viewed_on_label",
+      "value": "瀏覽於"
+    },
+    {
+      "name": "two_factor_completed",
+      "value": "兩步驗證已完成"
+    },
+    {
+      "name": "image_saved_to_gallery",
+      "value": "已儲存到圖庫"
+    },
+    {
+      "name": "image_save_cancelled",
+      "value": "已取消儲存"
+    },
+    {
+      "name": "username_or_email_placeholder",
+      "value": "用戶名或電子郵件"
+    },
+    {
+      "name": "login_form_refetched",
+      "value": "已重新取得登入表單，請重新輸入密碼"
+    },
+    {
+      "name": "login_username_password_required",
+      "value": "請輸入用戶名和密碼"
+    },
+    {
+      "name": "login_saved",
+      "value": "登入已儲存"
+    },
+    {
+      "name": "login_cookie_missing",
+      "value": "未取得登入 Cookie，請確認已完成登入"
+    },
+    {
+      "name": "login_cookie_invalid",
+      "value": "Cookie 登入狀態無效，請確認已完成登入"
+    },
+    {
+      "name": "reply_submitted",
+      "value": "回覆已提交"
+    },
+    {
+      "name": "submit_completed",
+      "value": "已提交"
+    },
+    {
+      "name": "confirm_reply_action_format",
+      "value": "確定{0} {1} 的回覆嗎？"
+    },
+    {
+      "name": "this_user",
+      "value": "該用戶"
+    },
+    {
+      "name": "already_thanked",
+      "value": "已經感謝過"
+    },
+    {
+      "name": "loaded_count_format",
+      "value": "已載入 {0} / {1}"
+    },
+    {
+      "name": "load_all_replies_warning_format",
+      "value": "該主題有 {0} 則回覆，載入全部回覆可能需要較長時間。\n\n是否繼續載入以啟用完整的樓中樓檢視？"
+    },
+    {
+      "name": "favorited",
+      "value": "已收藏"
+    },
+    {
+      "name": "unfavorited",
+      "value": "已取消收藏"
+    },
+    {
+      "name": "thanked",
+      "value": "已感謝"
+    },
+    {
+      "name": "action_done_format",
+      "value": "已{0}"
+    },
+    {
+      "name": "user_topics_hidden",
+      "value": "主題列表已隱藏"
+    },
+    {
+      "name": "followed",
+      "value": "已關注"
+    },
+    {
+      "name": "unfollowed",
+      "value": "已取消關注"
+    },
+    {
+      "name": "blocked",
+      "value": "已封鎖"
+    },
+    {
+      "name": "unblocked",
+      "value": "已取消封鎖"
+    },
+    {
+      "name": "user_load_failed",
+      "value": "用戶資訊載入失敗"
+    },
+    {
+      "name": "discover_today_hot",
+      "value": "今日熱議"
+    },
+    {
+      "name": "discover_hot",
+      "value": "熱議"
+    },
+    {
+      "name": "node_selected_format",
+      "value": "已選擇節點：{0}"
+    },
+    {
+      "name": "node_cleared",
+      "value": "已清空節點"
+    },
+    {
+      "name": "storage_written_format",
+      "value": "已寫入 {0} 行 / {1} 個檔案"
+    },
+    {
+      "name": "v2ex_tab_tech",
+      "value": "技術"
+    },
+    {
+      "name": "v2ex_tab_creative",
+      "value": "創意"
+    },
+    {
+      "name": "v2ex_tab_play",
+      "value": "好玩"
+    },
+    {
+      "name": "v2ex_tab_jobs",
+      "value": "酷工作"
+    },
+    {
+      "name": "v2ex_tab_deals",
+      "value": "交易"
+    },
+    {
+      "name": "v2ex_tab_city",
+      "value": "城市"
+    },
+    {
+      "name": "v2ex_tab_qna",
+      "value": "問與答"
+    },
+    {
+      "name": "v2ex_tab_hot",
+      "value": "最熱"
+    },
+    {
+      "name": "reply_submit",
+      "value": "提交"
+    },
+    {
+      "name": "reply_submitting",
+      "value": "提交中"
+    },
+    {
+      "name": "reply_content_required",
+      "value": "回覆內容不能為空"
+    },
+    {
+      "name": "reply_login_required",
+      "value": "請先登入"
+    },
+    {
+      "name": "reply_confirm_submit_sheet",
+      "value": "確定提交這則回覆嗎？"
+    },
+    {
+      "name": "reply_confirm_submit_page_format",
+      "value": "確定向{0}提交回覆嗎？\n\nV2EX 回覆通常至少消耗 5 銅幣，提交後會修改你的帳號狀態。"
+    },
+    {
+      "name": "reply_current_topic",
+      "value": "當前主題"
     }
   ]
 }

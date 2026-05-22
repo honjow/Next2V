@@ -436,7 +436,7 @@ export struct NotificationPage {
     }
     this.pendingNotificationDeletes.add(notificationId)
     this.afterOptimisticDeleteFrame(() => {
-      promptAction.openToast({ message: '已删除' }).catch((_error: Error) => {
+      promptAction.openToast({ message: $r('app.string.common_deleted') }).catch((_error: Error) => {
       })
       this.saveNotificationCache()
       this.retryDeleteNotificationRequest(request, 0)
@@ -446,7 +446,7 @@ export struct NotificationPage {
         .catch((error: Error) => {
           DiagnosticLogger.warn('notification', 'notification_delete_error', { id: notificationId, restored: true }, error)
           this.restoreNotificationAfterDeleteFailure(item, originalIndex)
-          promptAction.openToast({ message: error.message || '删除失败，已恢复' }).catch((_toastError: Error) => {
+          promptAction.openToast({ message: error.message || 'Delete failed; restored' }).catch((_toastError: Error) => {
           })
         })
         .finally(() => {

@@ -1,3 +1,4 @@
+import { AppStrings } from 'shared'
 import { common } from '@kit.AbilityKit'
 import {
   ApiService,
@@ -26,7 +27,7 @@ export struct SavedNodesPage {
     SecondaryListScaffold() {
       if (this.nodes.length === 0) {
         ListItem() {
-          EmptyState({ message: '还没有本地关注节点', stateHeight: 220 })
+          EmptyState({ message: AppStrings.text($r('app.string.empty_no_local_followed_nodes'), 'No local followed nodes yet'), stateHeight: 220 })
         }
       } else {
         ForEach(this.nodes, (item: SavedNode) => {
@@ -63,7 +64,7 @@ export struct SavedNodesPage {
     if (item.topics > 0) {
       parts.push(`${item.topics} 个主题`)
     }
-    parts.push(`本地关注于 ${DateUtils.toDateString(item.savedAt)}`)
+    parts.push(AppStrings.format(AppStrings.text($r('app.string.saved_locally_on_format'), 'Saved locally on {0}'), [DateUtils.toDateString(item.savedAt)]))
     return parts.join(' · ')
   }
 

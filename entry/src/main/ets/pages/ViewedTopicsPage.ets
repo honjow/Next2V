@@ -1,6 +1,7 @@
 import { common } from '@kit.AbilityKit'
 import {
   CollectionSettings,
+  AppStrings,
   EmptyState,
   LocalTopicCard,
   PullRefreshListScaffold,
@@ -22,7 +23,7 @@ export struct ViewedTopicsPage {
       PullRefreshListScaffold({ onRefresh: () => this.loadTopics() }) {
         if (this.topics.length === 0) {
           ListItem() {
-            EmptyState({ message: '还没有最近浏览记录', stateHeight: 220 })
+            EmptyState({ message: AppStrings.text($r('app.string.empty_no_recent_views'), 'No recent views yet'), stateHeight: 220 })
           }
         } else {
           ForEach(this.topics, (item: ViewedTopic) => {
@@ -37,7 +38,7 @@ export struct ViewedTopicsPage {
                 memberPro: item.memberPro || 0,
                 replyCount: this.replyCount(item),
                 hasReplyCount: this.hasKnownReplyCount(item),
-                metaLabel: '浏览于',
+                metaLabel: AppStrings.text($r('app.string.viewed_on_label'), 'Viewed on'),
                 metaTimestamp: item.viewedAt,
                 onUserClick: () => { this.openTopic(item.id) },
                 onNodeClick: () => { this.openTopic(item.id) }

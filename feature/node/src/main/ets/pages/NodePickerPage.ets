@@ -1,7 +1,7 @@
 import { common } from '@kit.AbilityKit'
 import { promptAction } from '@kit.ArkUI'
 import { NodeViewModel } from '../viewmodel/NodeViewModel'
-import { DraftSettings, V2exNode, SecondaryListScaffold } from 'shared'
+import { AppStrings, DraftSettings, V2exNode, SecondaryListScaffold } from 'shared'
 import {
   NodePickerEmptyState,
   NodePickerErrorState,
@@ -102,7 +102,7 @@ export struct NodePickerPage {
       })
       .then(() => {
         this.selectedNodeName = clean
-        promptAction.openToast({ message: `已选择节点：${clean}` }).catch((_error: Error) => { })
+        promptAction.openToast({ message: AppStrings.format(AppStrings.text($r('app.string.node_selected_format'), 'Selected node: {0}'), [clean]) }).catch((_error: Error) => { })
         this.stack.pop()
       })
       .catch((error: Error) => {
@@ -128,7 +128,7 @@ export struct NodePickerPage {
       })
       .then(() => {
         this.selectedNodeName = ''
-        promptAction.openToast({ message: '已清空节点' }).catch((_error: Error) => { })
+        promptAction.openToast({ message: $r('app.string.node_cleared') }).catch((_error: Error) => { })
       })
       .catch((error: Error) => {
         this.errorMessage = error.message || '清空失败'

@@ -1,3 +1,4 @@
+import { AppStrings } from 'shared'
 export interface ReplyComposerEditResult {
   content: string
   selectionStart: number
@@ -18,7 +19,7 @@ export interface ReplySubmitCheckResult {
 
 export class ReplyComposerCoordinator {
   static submitButtonLabel(isSubmitting: boolean): string {
-    return isSubmitting ? '提交中' : '提交'
+    return AppStrings.text(isSubmitting ? $r('app.string.reply_submitting') : $r('app.string.reply_submit'), isSubmitting ? 'Submitting' : 'Submit')
   }
 
   static shouldShowTopicTitle(topicTitle: string): boolean {
@@ -26,7 +27,7 @@ export class ReplyComposerCoordinator {
   }
 
   static savedAtText(savedAt: number, formatDate: (value: number) => string): string {
-    return savedAt > 0 ? `已保存于 ${formatDate(savedAt)}` : ''
+    return savedAt > 0 ? AppStrings.format(AppStrings.text($r('app.string.draft_saved_on_format'), 'Saved on {0}'), [formatDate(savedAt)]) : ''
   }
 
   static previewEmptyMessage(): string {
@@ -180,23 +181,22 @@ export class ReplyComposerCoordinator {
     }
     const cleanContent = content.trim()
     if (!cleanContent) {
-      return { allowed: false, reason: 'empty', content: '', message: '回复内容不能为空' }
+      return { allowed: false, reason: 'empty', content: '', message: AppStrings.text($r('app.string.reply_content_required'), 'Reply content cannot be empty') }
     }
     if (!cookie) {
-      return { allowed: false, reason: 'loginRequired', content: cleanContent, message: '请先登录' }
+      return { allowed: false, reason: 'loginRequired', content: cleanContent, message: AppStrings.text($r('app.string.reply_login_required'), 'Log in first') }
     }
     return { allowed: true, reason: '', content: cleanContent, message: '' }
   }
 
   static sheetSubmitConfirmMessage(): string {
-    return '确定提交这条回复吗？'
+    return AppStrings.text($r('app.string.reply_confirm_submit_sheet'), 'Submit this reply?')
   }
 
   static pageSubmitConfirmMessage(topicTitle: string): string {
     const title = (topicTitle || '').trim()
-    const target = title ? `《${title}》` : '当前主题'
-    return `确定向${target}提交回复吗？\n\n` +
-      'V2EX 回复通常至少消耗 5 铜币，提交后会修改你的账号状态。'
+    const target = title ? `《${title}》` : AppStrings.text($r('app.string.reply_current_topic'), 'current topic')
+    return AppStrings.format(AppStrings.text($r('app.string.reply_confirm_submit_page_format'), 'Submit a reply to {0}?\n\nV2EX replies usually cost at least 5 copper coins and will change your account state.'), [target])
   }
 
   static composerBodyHeight(keyboardHeight: number): number {

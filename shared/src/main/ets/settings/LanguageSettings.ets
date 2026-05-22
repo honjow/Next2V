@@ -23,7 +23,11 @@ export class LanguageSettings {
 
   static apply(areaID: string): LanguageSettingsSnapshot {
     const normalized = LanguageSettings.normalizeMode(areaID)
-    i18n.System.setAppPreferredLanguage(normalized)
+    if (normalized === LanguageSettings.MODE_SYSTEM) {
+      LanguageSettings.applyPreferredLanguage(normalized)
+    } else {
+      i18n.System.setAppPreferredLanguage(normalized)
+    }
     setAppStorageValue<AppLanguageMode>(StorageKeys.LANGUAGE_MODE, normalized)
     return { mode: normalized }
   }
@@ -54,6 +58,12 @@ export class LanguageSettings {
 
   static async loadFromStore(store: SettingsPreferencesStore): Promise<LanguageSettingsSnapshot> {
     return LanguageSettings.applyFromStore(store)
+  }
+
+  static async loadStoredMode(context: common.UIAbilityContext): Promise<AppLanguageMode> {
+    const store = await preferences.getPreferences(context, STORE_NAME)
+    const stored = store.getSync(KEY_LANGUAGE_MODE, LanguageSettings.MODE_SYSTEM) as string
+    return LanguageSettings.normalizeMode(stored)
   }
 
   static async save(context: common.UIAbilityContext, mode: string): Promise<void> {
@@ -108,5 +118,23 @@ export class LanguageSettings {
   private static applyFromStore(store: SettingsPreferencesStore): LanguageSettingsSnapshot {
     const stored = store.getSync(KEY_LANGUAGE_MODE, LanguageSettings.MODE_SYSTEM) as string
     return LanguageSettings.apply(stored)
+  }
+
+  private static applyPreferredLanguage(mode: AppLanguageMode): void {
+    if (mode !== LanguageSettings.MODE_SYSTEM) {
+      i18n.System.setAppPreferredLanguage(mode)
+      return
+    }
+
+    let systemLanguage = ''
+    try {
+      systemLanguage = i18n.System.getSystemLanguage()
+    } catch (_error) {
+    }
+
+    if (systemLanguage) {
+      i18n.System.setAppPreferredLanguage(systemLanguage)
+    }
+    i18n.System.setAppPreferredLanguage(LanguageSettings.MODE_SYSTEM)
   }
 }

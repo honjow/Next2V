@@ -2,6 +2,7 @@ import { common, Want } from '@kit.AbilityKit'
 import { promptAction } from '@kit.ArkUI'
 import {
   ApiService,
+  AppStrings,
   type NodeTopicListParams,
   type SavedNode,
   type SavedTopic,
@@ -229,7 +230,7 @@ export struct SearchPage {
             SharedSectionHeader({ title: `节点结果 ${this.nodeResults.length}` })
             if (this.nodeResults.length === 0) {
               EmptyState({
-                message: this.keyword.trim() ? '没有匹配的节点' : this.emptyNodeHint(),
+                message: this.keyword.trim() ? AppStrings.text($r('app.string.search_no_nodes'), 'No matching nodes') : this.emptyNodeHint(),
                 stateHeight: 96
               })
                 .borderRadius(ThemeConstants.RADIUS_MD)
@@ -282,7 +283,7 @@ export struct SearchPage {
               .borderRadius(ThemeConstants.RADIUS_MD)
               .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
           } else if (!this.remoteLoading && this.remoteResults.length === 0) {
-            EmptyState({ message: '输入关键词后按搜索，筛选在右上角', stateHeight: 96 })
+            EmptyState({ message: AppStrings.text($r('app.string.search_filter_hint'), 'Enter keywords and tap Search; filter is in the top right'), stateHeight: 96 })
               .borderRadius(ThemeConstants.RADIUS_MD)
               .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
               .margin({ top: ThemeConstants.SPACE_XS })

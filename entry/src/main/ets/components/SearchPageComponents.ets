@@ -1,6 +1,7 @@
 import {
   AppActionButton,
   AppSearchField,
+  AppStrings,
   AppTextField,
   FilterChip,
   type Sov2exOrderMode,
@@ -50,19 +51,19 @@ export struct LocalSearchFilterSheetContent {
 
   build() {
     Column({ space: ThemeConstants.SPACE_SM }) {
-      Text('结果类型')
+      Text($r('app.string.search_result_type'))
         .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
         .fontColor($r('sys.color.font_secondary'))
         .width('100%')
       Row({ space: ThemeConstants.SPACE_XS }) {
-        this.ResultFilterButton('all', '全部')
-        this.ResultFilterButton('topics', '主题')
-        this.ResultFilterButton('nodes', '节点')
-        this.ResultFilterButton('users', '用户')
+        this.ResultFilterButton('all', AppStrings.text($r('app.string.common_all'), 'All'))
+        this.ResultFilterButton('topics', AppStrings.text($r('app.string.common_topics'), 'Topics'))
+        this.ResultFilterButton('nodes', AppStrings.text($r('app.string.common_nodes'), 'Nodes'))
+        this.ResultFilterButton('users', AppStrings.text($r('app.string.common_user'), 'User'))
       }
       .width('100%')
       AppActionButton({
-        label: '应用',
+        label: $r('app.string.common_apply'),
         primary: true,
         isEnabled: this.keyword.trim().length > 0,
         action: () => {
@@ -107,22 +108,22 @@ export struct RemoteSearchFilterSheetContent {
 
   build() {
     Column({ space: ThemeConstants.SPACE_SM }) {
-      Text('排序')
+      Text($r('app.string.common_sort'))
         .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
         .fontColor($r('sys.color.font_secondary'))
         .width('100%')
       Row({ space: ThemeConstants.SPACE_XS }) {
-        this.RemoteOptionButton('时间', this.remoteSort === 'created', () => {
+        this.RemoteOptionButton(AppStrings.text($r('app.string.common_time'), 'Time'), this.remoteSort === 'created', () => {
           if (this.selectSort) {
             this.selectSort('created')
           }
         })
-        this.RemoteOptionButton('相关', this.remoteSort === 'sumup', () => {
+        this.RemoteOptionButton(AppStrings.text($r('app.string.common_relevance'), 'Relevance'), this.remoteSort === 'sumup', () => {
           if (this.selectSort) {
             this.selectSort('sumup')
           }
         })
-        this.RemoteOptionButton(this.remoteOrder === '0' ? '倒序' : '正序', true, () => {
+        this.RemoteOptionButton(this.remoteOrder === '0' ? AppStrings.text($r('app.string.common_descending'), 'Descending') : AppStrings.text($r('app.string.common_ascending'), 'Ascending'), true, () => {
           if (this.toggleOrder) {
             this.toggleOrder()
           }
@@ -133,7 +134,7 @@ export struct RemoteSearchFilterSheetContent {
       Row({ space: ThemeConstants.SPACE_XS }) {
         AppTextField({
           text: $remoteUsername,
-          placeholder: '作者',
+          placeholder: $r('app.string.common_author'),
           onTextChange: (_value: string) => {
             if (this.remoteTextChange) {
               this.remoteTextChange()
@@ -143,7 +144,7 @@ export struct RemoteSearchFilterSheetContent {
           .layoutWeight(1)
         AppTextField({
           text: $remoteNode,
-          placeholder: '节点',
+          placeholder: $r('app.string.common_node'),
           onTextChange: (_value: string) => {
             if (this.remoteTextChange) {
               this.remoteTextChange()
@@ -154,23 +155,23 @@ export struct RemoteSearchFilterSheetContent {
       }
       .width('100%')
 
-      Text('时间范围')
+      Text($r('app.string.common_time_range'))
         .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
         .fontColor($r('sys.color.font_secondary'))
         .width('100%')
       Row({ space: ThemeConstants.SPACE_XS }) {
-        this.RemoteDateButton('all', '不限')
-        this.RemoteDateButton('day', '一天')
-        this.RemoteDateButton('week', '一周')
-        this.RemoteDateButton('month', '一月')
-        this.RemoteDateButton('year', '一年')
+        this.RemoteDateButton('all', AppStrings.text($r('app.string.common_unlimited'), 'Any time'))
+        this.RemoteDateButton('day', AppStrings.text($r('app.string.common_one_day'), '1 day'))
+        this.RemoteDateButton('week', AppStrings.text($r('app.string.common_one_week'), '1 week'))
+        this.RemoteDateButton('month', AppStrings.text($r('app.string.common_one_month'), '1 month'))
+        this.RemoteDateButton('year', AppStrings.text($r('app.string.common_one_year'), '1 year'))
       }
       .width('100%')
 
       Row({ space: ThemeConstants.SPACE_XS }) {
         if (this.hasRemoteFilters) {
           AppActionButton({
-            label: '清除',
+            label: $r('app.string.common_clear'),
             primary: false,
             action: () => {
               if (this.clearFilters) {
@@ -181,7 +182,7 @@ export struct RemoteSearchFilterSheetContent {
             .layoutWeight(1)
         }
         AppActionButton({
-          label: this.remoteLoading ? '搜索中' : '应用搜索',
+          label: this.remoteLoading ? $r('app.string.common_searching') : $r('app.string.common_apply_search'),
           primary: true,
           isEnabled: !this.remoteLoading && this.keyword.trim().length > 0,
           action: () => {
@@ -233,7 +234,7 @@ export struct SearchPanelHeader {
     Column({ space: ThemeConstants.SPACE_SM }) {
       AppSearchField({
         text: $keyword,
-        placeholder: '搜索主题、节点、用户',
+        placeholder: $r('app.string.search_topics_nodes_users_placeholder'),
         onTextChange: (value: string) => {
           if (this.onTextChange) {
             this.onTextChange(value)
@@ -267,10 +268,10 @@ export struct SearchPanelHeader {
   @Builder private SourceModeControls() {
     Scroll() {
       Row({ space: ThemeConstants.SPACE_SM }) {
-        this.SourceModeButton('local', '本地')
-        this.SourceModeButton('localWithNodes', '节点库')
+        this.SourceModeButton('local', AppStrings.text($r('app.string.common_local'), 'Local'))
+        this.SourceModeButton('localWithNodes', AppStrings.text($r('app.string.search_filter_nodes_library'), 'Node library'))
         this.SourceModeButton('remote', 'SOV2EX')
-        this.SourceModeButton('externalWeb', '网页')
+        this.SourceModeButton('externalWeb', AppStrings.text($r('app.string.common_web'), 'Web'))
       }
     }
     .scrollable(ScrollDirection.Horizontal)
@@ -298,11 +299,11 @@ export struct ExternalWebSearchCard {
 
   build() {
     Column({ space: ThemeConstants.SPACE_SM }) {
-      Text(this.keyword.trim() ? '使用浏览器搜索 V2EX 主题' : '输入关键词开始搜索')
+      Text(this.keyword.trim() ? $r('app.string.search_browser_v2ex_topics') : $r('app.string.search_enter_keyword_to_start'))
         .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
         .fontColor($r('sys.color.font_secondary'))
       AppActionButton({
-        label: '打开网页搜索',
+        label: $r('app.string.search_open_web_search'),
         primary: true,
         isEnabled: this.keyword.trim().length > 0,
         action: () => {
@@ -329,11 +330,11 @@ export struct SearchHistoryStrip {
   build() {
     Column({ space: ThemeConstants.SPACE_XS }) {
       Row() {
-        Text('搜索历史')
+        Text($r('app.string.search_history'))
           .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
           .fontColor($r('sys.color.font_secondary'))
         Blank()
-        Text('清空')
+        Text($r('app.string.common_clear'))
           .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
           .fontColor(ThemeConstants.BRAND_PRIMARY)
           .onClick(() => {

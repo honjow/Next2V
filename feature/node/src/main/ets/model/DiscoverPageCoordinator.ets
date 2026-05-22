@@ -1,3 +1,4 @@
+import { AppStrings } from 'shared'
 import { V2exTopic } from 'shared'
 import type { SavedNode, ViewedTopic } from 'shared'
 import { DiscoverTopicMode } from '../components/DiscoverPageComponents'
@@ -16,7 +17,7 @@ export class DiscoverPageCoordinator {
 
   static topicModeLabel(mode: DiscoverTopicMode): string {
     if (mode === 'hot') {
-      return '今日热议'
+      return AppStrings.text($r('app.string.discover_today_hot'), 'Today’s hot topics')
     }
     if (mode === 'rank') {
       return '全站热榜'

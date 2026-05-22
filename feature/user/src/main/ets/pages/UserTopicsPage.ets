@@ -19,7 +19,7 @@ export struct UserTopicsPage {
       if (this.vm.isLoading && this.vm.topicDataSource.totalCount() === 0) {
         PageLoadingState()
       } else if (this.vm.topicsHidden) {
-        CardEmptyState({ message: '主题列表已隐藏' })
+        CardEmptyState({ message: $r('app.string.user_topics_hidden') })
       } else if (this.vm.errorMessage && this.vm.topicDataSource.totalCount() === 0) {
         PageErrorState({
           message: this.vm.errorMessage || '加载失败',

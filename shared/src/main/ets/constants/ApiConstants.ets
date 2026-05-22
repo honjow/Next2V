@@ -1,7 +1,7 @@
 /** Tab 项定义 */
 export interface TabItem {
   key: string
-  label: string
+  label: ResourceStr
 }
 
 /**
@@ -32,16 +32,16 @@ export class ApiConstants {
 
   // Tab 定义（顺序即显示顺序）
   static readonly TAB_ITEMS: TabItem[] = [
-    { key: 'tech', label: '技术' },
-    { key: 'creative', label: '创意' },
-    { key: 'play', label: '好玩' },
+    { key: 'tech', label: $r('app.string.v2ex_tab_tech') },
+    { key: 'creative', label: $r('app.string.v2ex_tab_creative') },
+    { key: 'play', label: $r('app.string.v2ex_tab_play') },
     { key: 'apple', label: 'Apple' },
-    { key: 'jobs', label: '酷工作' },
-    { key: 'deals', label: '交易' },
-    { key: 'city', label: '城市' },
-    { key: 'qna', label: '问与答' },
-    { key: 'hot', label: '最热' },
-    { key: 'latest', label: '全部' },
+    { key: 'jobs', label: $r('app.string.v2ex_tab_jobs') },
+    { key: 'deals', label: $r('app.string.v2ex_tab_deals') },
+    { key: 'city', label: $r('app.string.v2ex_tab_city') },
+    { key: 'qna', label: $r('app.string.v2ex_tab_qna') },
+    { key: 'hot', label: $r('app.string.v2ex_tab_hot') },
+    { key: 'latest', label: $r('app.string.common_all') },
     { key: 'r2', label: 'R2' },
   ]
 

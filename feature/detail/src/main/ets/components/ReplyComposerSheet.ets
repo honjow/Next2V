@@ -328,7 +328,7 @@ export struct ReplyComposerSheet {
         this.hasSubmitted = true
         const context = this.getUIContext().getHostContext() as common.UIAbilityContext
         ReplyComposerDraftCoordinator.clearDraft(context, this.topicId).catch((_error: Error) => { })
-        promptAction.openToast({ message: '回复已提交' }).catch((_error: Error) => { })
+        promptAction.openToast({ message: $r('app.string.reply_submitted') }).catch((_error: Error) => { })
         if (this.submittedAction) {
           this.submittedAction()
         }

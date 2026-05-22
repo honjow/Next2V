@@ -59,7 +59,7 @@ export class StorageSettingsCoordinator {
   static seedAllSuccessMessage(results: CacheDeviceQaSeedResult[]): string {
     const rows = results.reduce((sum: number, result: CacheDeviceQaSeedResult) => sum + result.seededRows, 0)
     const files = results.reduce((sum: number, result: CacheDeviceQaSeedResult) => sum + result.seededFiles, 0)
-    return `已写入 ${rows} 行 / ${files} 文件`
+    return AppStrings.format(AppStrings.text($r('app.string.storage_written_format'), 'Wrote {0} rows / {1} files'), [`${rows}`, `${files}`])
   }
 
   static seedActionSuccessMessage(label: string, result: CacheDeviceQaSeedResult): string {

@@ -3,7 +3,7 @@ import { promptAction } from '@kit.ArkUI'
 import { fileIo } from '@kit.CoreFileKit'
 import { photoAccessHelper } from '@kit.MediaLibraryKit'
 import { http } from '@kit.NetworkKit'
-import { MediaUrlUtils, NetworkProxyRequest, StorageKeys, ThemeConstants } from 'shared'
+import { AppStrings, MediaUrlUtils, NetworkProxyRequest, StorageKeys, ThemeConstants } from 'shared'
 import { ImagePreviewCoordinator } from '../model/ImagePreviewCoordinator'
 
 const CONNECT_TIMEOUT_MS: number = 10000
@@ -73,7 +73,7 @@ export struct ImagePreviewPage {
 
       this.saveMessage = '请选择保存位置'
       await this.copySandboxImageToPhotos(tempPath, title, extension)
-      this.showToast('已保存到图库')
+      this.showToast(AppStrings.text($r('app.string.image_saved_to_gallery'), 'Saved to Gallery'))
     } catch (error) {
       const e = error as Error
       this.showToast(e.message || '保存失败')
@@ -150,7 +150,7 @@ export struct ImagePreviewPage {
     try {
       const desFileUris = await phAccessHelper.showAssetsCreationDialog([srcFileUri], photoCreationConfigs)
       if (!desFileUris || desFileUris.length === 0) {
-        throw new Error('已取消保存')
+        throw new Error(AppStrings.text($r('app.string.image_save_cancelled'), 'Save cancelled'))
       }
       srcFile = await fileIo.open(filePath, fileIo.OpenMode.READ_ONLY)
       desFile = await fileIo.open(desFileUris[0], fileIo.OpenMode.WRITE_ONLY)

@@ -1,3 +1,4 @@
+import { AppStrings } from 'shared'
 export interface JumpFloorResult {
   valid: boolean
   floor: number
@@ -19,7 +20,7 @@ export class TopicDetailScrollCoordinator {
       return {
         valid: false,
         floor: 0,
-        message: '请输入有效楼层号',
+        message: AppStrings.text($r('app.string.common_invalid_floor'), 'Enter a valid floor number'),
       }
     }
     return {

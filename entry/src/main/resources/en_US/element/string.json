@@ -979,6 +979,506 @@
     {
       "name": "default_proxy_profile_name",
       "value": "Proxy configuration"
+    },
+    {
+      "name": "common_apply",
+      "value": "Apply"
+    },
+    {
+      "name": "common_apply_search",
+      "value": "Apply search"
+    },
+    {
+      "name": "common_searching",
+      "value": "Searching"
+    },
+    {
+      "name": "common_all",
+      "value": "All"
+    },
+    {
+      "name": "common_topic",
+      "value": "Topic"
+    },
+    {
+      "name": "common_topics",
+      "value": "Topics"
+    },
+    {
+      "name": "common_node",
+      "value": "Node"
+    },
+    {
+      "name": "common_nodes",
+      "value": "Nodes"
+    },
+    {
+      "name": "common_user",
+      "value": "User"
+    },
+    {
+      "name": "common_local",
+      "value": "Local"
+    },
+    {
+      "name": "common_web",
+      "value": "Web"
+    },
+    {
+      "name": "common_author",
+      "value": "Author"
+    },
+    {
+      "name": "common_sort",
+      "value": "Sort"
+    },
+    {
+      "name": "common_time",
+      "value": "Time"
+    },
+    {
+      "name": "common_relevance",
+      "value": "Relevance"
+    },
+    {
+      "name": "common_descending",
+      "value": "Descending"
+    },
+    {
+      "name": "common_ascending",
+      "value": "Ascending"
+    },
+    {
+      "name": "common_time_range",
+      "value": "Time range"
+    },
+    {
+      "name": "common_unlimited",
+      "value": "Any time"
+    },
+    {
+      "name": "common_one_day",
+      "value": "1 day"
+    },
+    {
+      "name": "common_one_week",
+      "value": "1 week"
+    },
+    {
+      "name": "common_one_month",
+      "value": "1 month"
+    },
+    {
+      "name": "common_one_year",
+      "value": "1 year"
+    },
+    {
+      "name": "common_selected",
+      "value": "Selected"
+    },
+    {
+      "name": "common_copied",
+      "value": "Copied"
+    },
+    {
+      "name": "common_copy_username",
+      "value": "Copy username"
+    },
+    {
+      "name": "common_copy_code",
+      "value": "Copied code"
+    },
+    {
+      "name": "common_copy_decoded_text",
+      "value": "Copied decoded text"
+    },
+    {
+      "name": "common_no_more",
+      "value": "No more"
+    },
+    {
+      "name": "common_click_preview",
+      "value": "Tap to preview"
+    },
+    {
+      "name": "common_image_auto_load_off",
+      "value": "Image auto-load is off"
+    },
+    {
+      "name": "common_invalid_floor",
+      "value": "Enter a valid floor number"
+    },
+    {
+      "name": "search_result_type",
+      "value": "Result type"
+    },
+    {
+      "name": "search_filter_nodes_library",
+      "value": "Node library"
+    },
+    {
+      "name": "search_topics_nodes_users_placeholder",
+      "value": "Search topics, nodes, users"
+    },
+    {
+      "name": "search_browser_v2ex_topics",
+      "value": "Search V2EX topics in browser"
+    },
+    {
+      "name": "search_enter_keyword_to_start",
+      "value": "Enter keywords to start searching"
+    },
+    {
+      "name": "search_open_web_search",
+      "value": "Open web search"
+    },
+    {
+      "name": "search_history",
+      "value": "Search history"
+    },
+    {
+      "name": "search_user_related_topics",
+      "value": "User-related topics"
+    },
+    {
+      "name": "search_topic_results",
+      "value": "Topic results"
+    },
+    {
+      "name": "search_no_local_user_topics",
+      "value": "No local topics match this user"
+    },
+    {
+      "name": "search_no_topics",
+      "value": "No matching topics"
+    },
+    {
+      "name": "search_sov2ex",
+      "value": "Use SOV2EX site search"
+    },
+    {
+      "name": "search_external_summary",
+      "value": "The official API has no topic search; use the system browser to search V2EX topics"
+    },
+    {
+      "name": "search_local_with_nodes_summary",
+      "value": "Search favorites, recently viewed, followed nodes, offline cache, and node library"
+    },
+    {
+      "name": "search_local_summary",
+      "value": "Search favorites, recently viewed, followed nodes, and offline cache"
+    },
+    {
+      "name": "search_index_loading",
+      "value": "Loading indexes"
+    },
+    {
+      "name": "search_cache_loading",
+      "value": "Loading cache"
+    },
+    {
+      "name": "search_nodes_loading",
+      "value": "Loading nodes"
+    },
+    {
+      "name": "search_nodes_library_empty_hint",
+      "value": "The node library and your followed nodes will appear here"
+    },
+    {
+      "name": "search_followed_nodes_empty_hint",
+      "value": "Your followed nodes will appear here"
+    },
+    {
+      "name": "search_no_nodes",
+      "value": "No matching nodes"
+    },
+    {
+      "name": "search_filter_hint",
+      "value": "Enter keywords and tap Search; filter is in the top right"
+    },
+    {
+      "name": "about_app_info",
+      "value": "App information"
+    },
+    {
+      "name": "about_project",
+      "value": "Project"
+    },
+    {
+      "name": "about_acknowledgements",
+      "value": "Acknowledgements"
+    },
+    {
+      "name": "about_open_source_license",
+      "value": "Open source license"
+    },
+    {
+      "name": "about_tagline",
+      "value": "Native HarmonyOS V2EX client"
+    },
+    {
+      "name": "about_version_format",
+      "value": "Version {0}"
+    },
+    {
+      "name": "about_project_url",
+      "value": "Project URL"
+    },
+    {
+      "name": "about_developer",
+      "value": "Developer"
+    },
+    {
+      "name": "about_v2next_ack",
+      "value": "Thanks to the V2Next project for exploring the V2EX client experience."
+    },
+    {
+      "name": "about_source_license",
+      "value": "Source code license"
+    },
+    {
+      "name": "about_third_party_client",
+      "value": "Next2V is a third-party client for V2EX."
+    },
+    {
+      "name": "about_copyright",
+      "value": "The app source code is open source under the MIT License; the V2EX name, marks, and content belong to their respective rights holders."
+    },
+    {
+      "name": "about_app_name",
+      "value": "App name"
+    },
+    {
+      "name": "about_platform",
+      "value": "Platform"
+    },
+    {
+      "name": "empty_no_favorite_nodes",
+      "value": "No favorite nodes yet"
+    },
+    {
+      "name": "empty_no_favorite_topics",
+      "value": "No favorite topics yet"
+    },
+    {
+      "name": "empty_no_local_followed_nodes",
+      "value": "No local followed nodes yet"
+    },
+    {
+      "name": "saved_locally_on_format",
+      "value": "Saved locally on {0}"
+    },
+    {
+      "name": "empty_no_read_later_topics",
+      "value": "No read-later topics yet"
+    },
+    {
+      "name": "saved_on_label",
+      "value": "Saved on"
+    },
+    {
+      "name": "draft_saved_on_format",
+      "value": "Saved on {0}"
+    },
+    {
+      "name": "posted_topic_format",
+      "value": "Posted: {0}"
+    },
+    {
+      "name": "posted_topic",
+      "value": "Posted"
+    },
+    {
+      "name": "empty_no_recent_views",
+      "value": "No recent views yet"
+    },
+    {
+      "name": "viewed_on_label",
+      "value": "Viewed on"
+    },
+    {
+      "name": "two_factor_completed",
+      "value": "Two-factor verification completed"
+    },
+    {
+      "name": "image_saved_to_gallery",
+      "value": "Saved to Gallery"
+    },
+    {
+      "name": "image_save_cancelled",
+      "value": "Save cancelled"
+    },
+    {
+      "name": "username_or_email_placeholder",
+      "value": "Username or email"
+    },
+    {
+      "name": "login_form_refetched",
+      "value": "Login form refreshed. Please enter your password again."
+    },
+    {
+      "name": "login_username_password_required",
+      "value": "Enter username and password"
+    },
+    {
+      "name": "login_saved",
+      "value": "Login saved"
+    },
+    {
+      "name": "login_cookie_missing",
+      "value": "Login cookie was not obtained. Please confirm login is complete."
+    },
+    {
+      "name": "login_cookie_invalid",
+      "value": "Cookie login state is invalid. Please confirm login is complete."
+    },
+    {
+      "name": "reply_submitted",
+      "value": "Reply submitted"
+    },
+    {
+      "name": "submit_completed",
+      "value": "Submitted"
+    },
+    {
+      "name": "confirm_reply_action_format",
+      "value": "Confirm {0} reply by {1}?"
+    },
+    {
+      "name": "this_user",
+      "value": "this user"
+    },
+    {
+      "name": "already_thanked",
+      "value": "Already thanked"
+    },
+    {
+      "name": "loaded_count_format",
+      "value": "Loaded {0} / {1}"
+    },
+    {
+      "name": "load_all_replies_warning_format",
+      "value": "This topic has {0} replies. Loading all replies may take some time.\n\nContinue loading to enable the full threaded view?"
+    },
+    {
+      "name": "favorited",
+      "value": "Favorited"
+    },
+    {
+      "name": "unfavorited",
+      "value": "Unfavorited"
+    },
+    {
+      "name": "thanked",
+      "value": "Thanked"
+    },
+    {
+      "name": "action_done_format",
+      "value": "{0} done"
+    },
+    {
+      "name": "user_topics_hidden",
+      "value": "Topic list is hidden"
+    },
+    {
+      "name": "followed",
+      "value": "Followed"
+    },
+    {
+      "name": "unfollowed",
+      "value": "Unfollowed"
+    },
+    {
+      "name": "blocked",
+      "value": "Blocked"
+    },
+    {
+      "name": "unblocked",
+      "value": "Unblocked"
+    },
+    {
+      "name": "user_load_failed",
+      "value": "Failed to load user information"
+    },
+    {
+      "name": "discover_today_hot",
+      "value": "Today’s hot topics"
+    },
+    {
+      "name": "discover_hot",
+      "value": "Hot"
+    },
+    {
+      "name": "node_selected_format",
+      "value": "Selected node: {0}"
+    },
+    {
+      "name": "node_cleared",
+      "value": "Node cleared"
+    },
+    {
+      "name": "storage_written_format",
+      "value": "Wrote {0} rows / {1} files"
+    },
+    {
+      "name": "v2ex_tab_tech",
+      "value": "Tech"
+    },
+    {
+      "name": "v2ex_tab_creative",
+      "value": "Creative"
+    },
+    {
+      "name": "v2ex_tab_play",
+      "value": "Play"
+    },
+    {
+      "name": "v2ex_tab_jobs",
+      "value": "Jobs"
+    },
+    {
+      "name": "v2ex_tab_deals",
+      "value": "Deals"
+    },
+    {
+      "name": "v2ex_tab_city",
+      "value": "City"
+    },
+    {
+      "name": "v2ex_tab_qna",
+      "value": "Q&A"
+    },
+    {
+      "name": "v2ex_tab_hot",
+      "value": "Hot"
+    },
+    {
+      "name": "reply_submit",
+      "value": "Submit"
+    },
+    {
+      "name": "reply_submitting",
+      "value": "Submitting"
+    },
+    {
+      "name": "reply_content_required",
+      "value": "Reply content cannot be empty"
+    },
+    {
+      "name": "reply_login_required",
+      "value": "Log in first"
+    },
+    {
+      "name": "reply_confirm_submit_sheet",
+      "value": "Submit this reply?"
+    },
+    {
+      "name": "reply_confirm_submit_page_format",
+      "value": "Submit a reply to {0}?\n\nV2EX replies usually cost at least 5 copper coins and will change your account state."
+    },
+    {
+      "name": "reply_current_topic",
+      "value": "current topic"
     }
   ]
 }

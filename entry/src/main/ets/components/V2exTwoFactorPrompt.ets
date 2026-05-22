@@ -103,7 +103,7 @@ export struct V2exTwoFactorPrompt {
         this.code = ''
         this.errorMessage = ''
         this.visible = false
-        promptAction.openToast({ message: '两步验证已完成' }).catch((_error: Error) => { })
+        promptAction.openToast({ message: $r('app.string.two_factor_completed') }).catch((_error: Error) => { })
         if (this.onSuccess) {
           this.onSuccess()
         }

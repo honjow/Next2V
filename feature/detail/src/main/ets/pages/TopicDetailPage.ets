@@ -1,3 +1,4 @@
+import { AppStrings } from 'shared'
 import {
   DetailViewModel,
   type ReplyThankSnapshot,
@@ -1338,7 +1339,7 @@ export struct TopicDetailPage {
     const total = this.v.topic?.replies || 0
     this.getUIContext().showAlertDialog({
       title: '回复数量较多',
-      message: `该主题有 ${total} 条回复，加载全部回复可能需要较长时间。\n\n是否继续加载以启用完整的楼中楼视图？`,
+      message: AppStrings.format(AppStrings.text($r('app.string.load_all_replies_warning_format'), 'This topic has {0} replies. Loading all replies may take some time.\n\nContinue loading to enable the full threaded view?'), [`${total}`]),
       primaryButton: {
         value: '平铺显示',
         action: () => {
@@ -1380,7 +1381,7 @@ export struct TopicDetailPage {
         this.isSiteFavorited = favorited
         this.topicDetailSiteFavorited = favorited
         promptAction
-          .openToast({ message: favorited ? '已收藏' : '已取消收藏' })
+          .openToast({ message: favorited ? $r('app.string.favorited') : $r('app.string.unfavorited') })
           .catch((_error: Error) => {})
       })
       .catch((error: Error) => {
@@ -1442,7 +1443,7 @@ export struct TopicDetailPage {
       .then(() => {
         this.isTopicThanked = true
         this.topicDetailThanked = true
-        promptAction.openToast({ message: '已感谢' }).catch((_error: Error) => {})
+        promptAction.openToast({ message: $r('app.string.thanked') }).catch((_error: Error) => {})
       })
       .catch((error: Error) => {
         promptAction
@@ -1524,7 +1525,7 @@ export struct TopicDetailPage {
     TopicDetailActionCoordinator
       .executeReplyThank(this.api, cookie, this.topicId, reply.id)
       .then(() => {
-        promptAction.openToast({ message: '已感谢' }).catch((_error: Error) => {})
+        promptAction.openToast({ message: $r('app.string.thanked') }).catch((_error: Error) => {})
       })
       .catch((error: Error) => {
         this.v.rollbackReplyThank(replyThankSnapshot)
@@ -1681,7 +1682,7 @@ export struct TopicDetailPage {
     this.isModerationActionLoading = true
     executeAction(cookie, action)
       .then(() => {
-        promptAction.openToast({ message: `已${verb}` }).catch((_error: Error) => {})
+        promptAction.openToast({ message: AppStrings.format(AppStrings.text($r('app.string.action_done_format'), '{0} done'), [verb]) }).catch((_error: Error) => {})
         this.v.load()
       })
       .catch((error: Error) => {
@@ -1764,7 +1765,7 @@ export struct TopicDetailPage {
     this.isModerationActionLoading = true
     executeAction(cookie, action)
       .then(() => {
-        promptAction.openToast({ message: `已${verb}` }).catch((_error: Error) => {})
+        promptAction.openToast({ message: AppStrings.format(AppStrings.text($r('app.string.action_done_format'), '{0} done'), [verb]) }).catch((_error: Error) => {})
         this.v.load()
       })
       .catch((error: Error) => {
@@ -1785,7 +1786,7 @@ export struct TopicDetailPage {
     try {
       let data = pasteboard.createData(pasteboard.MIMETYPE_TEXT_PLAIN, content)
       pasteboard.getSystemPasteboard().setDataSync(data)
-      promptAction.openToast({ message: '已复制' }).catch((_error: Error) => {})
+      promptAction.openToast({ message: $r('app.string.common_copied') }).catch((_error: Error) => {})
     } catch (error) {
       promptAction
         .openToast({ message: (error as Error).message || '复制失败' })

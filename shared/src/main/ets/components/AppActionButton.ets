@@ -2,7 +2,7 @@ import { ThemeConstants } from '../theme/ThemeConstants'
 
 @Component
 export struct AppActionButton {
-  @Prop label: string = ''
+  @Prop label: ResourceStr = ''
   @Prop primary: boolean = false
   @Prop isEnabled: boolean = true
   action?: () => void
