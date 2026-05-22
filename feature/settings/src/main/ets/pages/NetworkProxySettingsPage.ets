@@ -16,6 +16,7 @@ import {
   ThemeConstants,
   type NetworkProxyMode,
   type NetworkProxyProfile,
+  type NetworkProxyProfilesState,
   type NetworkProxySettingsSnapshot,
   type NetworkProxyValidationResult,
 } from 'shared'
@@ -103,7 +104,7 @@ export struct NetworkProxySettingsPage {
       })
       ForEach(this.profiles, (profile: NetworkProxyProfile) => {
         this.ManualProfileRow(profile)
-      }, (profile: NetworkProxyProfile) => profile.id)
+      }, (profile: NetworkProxyProfile) => `${profile.id}-${profile.updatedAt}`)
       ConciseListRow({
         title: AppStrings.t(AppStrings.R_ADD_PROXY, 'Add proxy'),
         showChevron: true,
@@ -452,11 +453,7 @@ export struct NetworkProxySettingsPage {
   }
 
   private profileSubtitle(profile: NetworkProxyProfile): string {
-    const summary = NetworkProxySettings.summary(profile.snapshot)
-    if (this.proxyEnabled() && this.activeProfileId === profile.id && this.currentMode() !== NetworkProxySettings.MODE_SYSTEM) {
-      return `${summary} · ${AppStrings.t(AppStrings.R_CURRENT_CONNECTION, 'Current connection')}`
-    }
-    return summary
+    return NetworkProxySettings.summary(profile.snapshot)
   }
 
   private snapshot(): NetworkProxySettingsSnapshot {
@@ -562,8 +559,7 @@ export struct NetworkProxySettingsPage {
     const updated = NetworkProxyProfileSettings.createProfile(this.profileTitle(profile), snapshot, profile.id)
     NetworkProxyProfileSettings.upsertProfile(context, updated)
       .then((state) => {
-        this.profiles = state.profiles
-        this.activeProfileId = state.activeProfileId
+        this.applyProfilesState(state)
       })
       .catch((error: Error) => {
         console.error('save active network proxy profile failed: ' + (error.message || 'unknown'))
@@ -607,8 +603,7 @@ export struct NetworkProxySettingsPage {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     NetworkProxyProfileSettings.load(context)
       .then((state) => {
-        this.profiles = state.profiles
-        this.activeProfileId = state.activeProfileId
+        this.applyProfilesState(state)
       })
       .catch((error: Error) => {
         console.error('load network proxy profiles failed: ' + (error.message || 'unknown'))
@@ -619,8 +614,7 @@ export struct NetworkProxySettingsPage {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     NetworkProxyProfileSettings.setActiveProfile(context, profile.id)
       .then((state) => {
-        this.profiles = state.profiles
-        this.activeProfileId = state.activeProfileId
+        this.applyProfilesState(state)
         this.applySnapshotToPage(profile.snapshot)
         this.testStatus = ''
         this.showToast(AppStrings.t(AppStrings.R_PROFILE_SWITCHED, 'Profile switched'))
@@ -679,13 +673,11 @@ export struct NetworkProxySettingsPage {
     const profile = NetworkProxyProfileSettings.createProfile(this.editorProfileName(snapshot), snapshot, this.editingProfileId || undefined)
     NetworkProxyProfileSettings.upsertProfile(context, profile)
       .then((state) => {
-        this.profiles = state.profiles
-        this.activeProfileId = state.activeProfileId
+        this.applyProfilesState(state)
         return NetworkProxyProfileSettings.setActiveProfile(context, profile.id)
       })
       .then((state) => {
-        this.profiles = state.profiles
-        this.activeProfileId = state.activeProfileId
+        this.applyProfilesState(state)
         this.applySnapshotToPage(profile.snapshot)
         this.closeEditor()
         this.showToast(AppStrings.t(AppStrings.R_COMMON_SAVED, 'Saved'))
@@ -713,8 +705,7 @@ export struct NetworkProxySettingsPage {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     NetworkProxyProfileSettings.deleteProfile(context, profile.id)
       .then((state) => {
-        this.profiles = state.profiles
-        this.activeProfileId = state.activeProfileId
+        this.applyProfilesState(state)
         if (state.activeProfileId) {
           const active = this.findProfile(state.activeProfileId)
           if (active) {
@@ -728,6 +719,31 @@ export struct NetworkProxySettingsPage {
         this.showToast(AppStrings.t(AppStrings.R_COMMON_DELETED, 'Deleted'))
       })
       .catch((error: Error) => { this.showToast(error.message || AppStrings.t(AppStrings.R_COMMON_DELETE_FAILED, 'Delete failed')) })
+  }
+
+  private applyProfilesState(state: NetworkProxyProfilesState): void {
+    this.profiles = this.cloneProfiles(state.profiles)
+    this.activeProfileId = state.activeProfileId
+  }
+
+  private cloneProfiles(profiles: NetworkProxyProfile[]): NetworkProxyProfile[] {
+    return profiles.map((profile: NetworkProxyProfile): NetworkProxyProfile => {
+      const snapshot = NetworkProxySettings.normalize(profile.snapshot)
+      return {
+        id: profile.id,
+        name: profile.name,
+        snapshot: {
+          mode: snapshot.mode,
+          host: snapshot.host,
+          port: snapshot.port,
+          proxyScheme: snapshot.proxyScheme,
+          username: snapshot.username,
+          password: snapshot.password,
+          exclusionList: [...snapshot.exclusionList],
+        },
+        updatedAt: profile.updatedAt,
+      }
+    })
   }
 
   private findProfile(id: string): NetworkProxyProfile | undefined {

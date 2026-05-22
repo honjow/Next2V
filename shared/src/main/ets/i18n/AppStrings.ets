@@ -209,7 +209,6 @@ export class AppStrings {
   static readonly R_PASSWORD_OPTIONAL: Resource = $r('app.string.password_optional')
   static readonly R_BYPASS_LIST_OPTIONAL: Resource = $r('app.string.bypass_list_optional')
   static readonly R_ONE_DOMAIN_OR_IP_PER_LINE: Resource = $r('app.string.one_domain_or_ip_per_line')
-  static readonly R_CURRENT_CONNECTION: Resource = $r('app.string.current_connection')
   static readonly R_BUILT_IN_OPTIONS: Resource = $r('app.string.built_in_options')
   static readonly R_PROXY_CONFIG: Resource = $r('app.string.proxy_config')
   static readonly R_SOCKS5_AUTH_UNSUPPORTED: Resource = $r('app.string.socks5_auth_unsupported')

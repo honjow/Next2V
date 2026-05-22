@@ -705,10 +705,6 @@
       "value": "One domain or IP per line"
     },
     {
-      "name": "current_connection",
-      "value": "Current connection"
-    },
-    {
       "name": "built_in_options",
       "value": "Built-in options"
     },

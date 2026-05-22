@@ -705,10 +705,6 @@
       "value": "每行一個網域或 IP"
     },
     {
-      "name": "current_connection",
-      "value": "目前連線"
-    },
-    {
       "name": "built_in_options",
       "value": "內建選項"
     },
