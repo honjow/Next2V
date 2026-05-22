@@ -69,10 +69,6 @@
       "value": "收藏節點"
     },
     {
-      "name": "nav_blacklist",
-      "value": "屏蔽與忽略"
-    },
-    {
       "name": "nav_following",
       "value": "關注用戶"
     },

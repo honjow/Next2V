@@ -23,7 +23,6 @@ export type IndexDestinationFamily =
   'topicEditor' |
   'myTopics' |
   'myNodes' |
-  'accountBlacklist' |
   'accountFollowing' |
   'settings' |
   'storage' |
@@ -63,7 +62,6 @@ export class IndexRouteCoordinator {
     'TopicEditor': 'topicEditor',
     'MyTopics': 'myTopics',
     'MyNodes': 'myNodes',
-    'AccountBlacklist': 'accountBlacklist',
     'AccountFollowing': 'accountFollowing',
     'Settings': 'settings',
     'Storage': 'storage',
@@ -93,7 +91,6 @@ export class IndexRouteCoordinator {
       'topicEditor': AppStrings.t(AppStrings.R_NAV_TOPIC_DRAFT, 'Topic draft'),
       'myTopics': AppStrings.t(AppStrings.R_NAV_SAVED_TOPICS, 'Favorite topics'),
       'myNodes': AppStrings.t(AppStrings.R_NAV_SAVED_NODES, 'Favorite nodes'),
-      'accountBlacklist': AppStrings.t(AppStrings.R_NAV_BLACKLIST, 'Blocked and ignored'),
       'accountFollowing': AppStrings.t(AppStrings.R_NAV_FOLLOWING, 'Following'),
       'settings': AppStrings.t(AppStrings.R_NAV_SETTINGS, 'Settings'),
       'storage': AppStrings.t(AppStrings.R_NAV_STORAGE, 'Storage'),
@@ -119,7 +116,6 @@ export class IndexRouteCoordinator {
     'topicEditor': true,
     'myTopics': true,
     'myNodes': true,
-    'accountBlacklist': true,
     'accountFollowing': true,
     'settings': true,
     'storage': true,

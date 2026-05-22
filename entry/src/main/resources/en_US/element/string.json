@@ -69,10 +69,6 @@
       "value": "Favorite nodes"
     },
     {
-      "name": "nav_blacklist",
-      "value": "Blocked and ignored"
-    },
-    {
       "name": "nav_following",
       "value": "Following"
     },

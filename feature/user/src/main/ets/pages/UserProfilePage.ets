@@ -13,7 +13,6 @@ import {
   CookieJarSettings,
   V2exRoute,
   V2exUrlRouter,
-  BlockedMemberSettings,
 } from 'shared'
 import type { TopicReadState } from 'shared'
 import { promptAction, SegmentButton, SegmentButtonOptions } from '@kit.ArkUI'
@@ -390,7 +389,6 @@ export struct UserProfilePage {
       .toggleBlock()
       .then(() => {
         this.syncActionState()
-        this.persistBlockedMemberState(this.blocked)
         this.showActionToast(nextBlocked ? '已屏蔽' : '已取消屏蔽')
         this.refreshActionStateLater()
       })
@@ -400,19 +398,6 @@ export struct UserProfilePage {
         this.showActionToast(this.actionFailureToast(error))
         this.reloadActionStateAfterFailure()
       })
-  }
-
-  private persistBlockedMemberState(blocked: boolean): void {
-    const username = this.displayProfileUsername()
-    if (!username) {
-      BlockedMemberSettings.publishUpdatedAt()
-      return
-    }
-    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    BlockedMemberSettings.setBlocked(context, username, blocked).catch((error: Error) => {
-      console.error('persist blocked member failed: ' + error.message)
-      BlockedMemberSettings.publishUpdatedAt()
-    })
   }
 
   private syncActionState(): void {

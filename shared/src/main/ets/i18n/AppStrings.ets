@@ -107,7 +107,6 @@ export class AppStrings {
   static readonly R_NAV_TOPIC_DRAFT: Resource = $r('app.string.nav_topic_draft')
   static readonly R_NAV_SAVED_TOPICS: Resource = $r('app.string.nav_saved_topics')
   static readonly R_NAV_SAVED_NODES: Resource = $r('app.string.nav_saved_nodes')
-  static readonly R_NAV_BLACKLIST: Resource = $r('app.string.nav_blacklist')
   static readonly R_NAV_FOLLOWING: Resource = $r('app.string.nav_following')
   static readonly R_NAV_SETTINGS: Resource = $r('app.string.nav_settings')
   static readonly R_NAV_STORAGE: Resource = $r('app.string.nav_storage')

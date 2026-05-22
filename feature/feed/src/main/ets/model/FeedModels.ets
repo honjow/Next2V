@@ -1,4 +1,4 @@
-import { BlockedTopicFilter, V2exTopic } from 'shared'
+import { V2exTopic } from 'shared'
 
 /**
  * Feed 数据源 — 用于 LazyForEach 高性能列表
@@ -46,14 +46,5 @@ export class FeedDataSource implements IDataSource {
     const start = this.dataArray.length
     this.dataArray = this.dataArray.concat(data)
     this.listeners.forEach(listener => listener.onDataAdd(start))
-  }
-
-  filterBlockedAuthors(blockedUsernames: string[]): void {
-    const next = BlockedTopicFilter.filterTopicsByBlockedAuthors(this.dataArray, blockedUsernames)
-    if (next.length === this.dataArray.length) {
-      return
-    }
-    this.dataArray = next
-    this.listeners.forEach(listener => listener.onDataReloaded())
   }
 }

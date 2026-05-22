@@ -67,7 +67,6 @@ export class StorageKeys {
   static readonly FEED_TAB: string = 'feedTab'
   static readonly FEED_TAB_KEYS: string = 'feedTabKeys'
   static readonly FEED_TAB_VISUAL_INDEX: string = 'feedTabVisualIndex'
-  static readonly BLOCKED_MEMBERS_UPDATED_AT: string = 'blockedMembersUpdatedAt'
   static readonly MOTION_HAND_EDGE: string = 'motionHandEdge'
   static readonly MOTION_HOLDING_HAND_SUPPORTED: string = 'motionHoldingHandSupported'
 

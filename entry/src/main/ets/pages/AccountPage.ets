@@ -302,10 +302,6 @@ export struct AccountDashboardPage {
       this.AuthActionRow(AccountPageCoordinator.ACCOUNT_FOLLOWING_TITLE, '', () => {
         this.ns.pushPathByName('AccountFollowing', null)
       })
-      this.SettingsDivider()
-      this.AuthActionRow(AccountPageCoordinator.ACCOUNT_BLACKLIST_TITLE, '', () => {
-        this.ns.pushPathByName('AccountBlacklist', null)
-      })
     }
   }
 

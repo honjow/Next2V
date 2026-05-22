@@ -102,8 +102,6 @@ export { NotificationSettings } from './settings/NotificationSettings'
 export type { NotificationCacheSnapshot } from './settings/NotificationSettings'
 export { LocalDataSettings } from './settings/LocalDataSettings'
 export { LocalDataStore, LOCAL_DATA_DB_NAME, LOCAL_DATA_SCHEMA_VERSION } from './storage/LocalDataStore'
-export { BlockedMemberSettings } from './settings/BlockedMemberSettings'
-export type { BlockedMemberSnapshot } from './settings/BlockedMemberSettings'
 export { MotionHandStateService } from './services/MotionHandStateService'
 export type { MotionHandEdge } from './services/MotionHandStateService'
 export { TwoFactorChallengeService } from './services/TwoFactorChallengeService'
@@ -123,7 +121,6 @@ export { DiagnosticsLogFormatter } from './diagnostics/DiagnosticsLogFormatter'
 export { DiagnosticsRedactor } from './diagnostics/DiagnosticsRedactor'
 export type { DiagnosticContextObject, DiagnosticLogEntry } from './diagnostics/DiagnosticsRedactor'
 export { DiagnosticsStore } from './diagnostics/DiagnosticsStore'
-export { BlockedTopicFilter } from './utils/BlockedTopicFilter'
 export type {
   V2exTopic,
   V2exReply,

@@ -29,7 +29,6 @@ export class AccountPageCoordinator {
   static get ACCOUNT_SAVED_TOPICS_TITLE(): string { return AppStrings.t(AppStrings.R_NAV_SAVED_TOPICS, 'Favorite topics') }
   static get ACCOUNT_SAVED_NODES_TITLE(): string { return AppStrings.t(AppStrings.R_NAV_SAVED_NODES, 'Favorite nodes') }
   static get ACCOUNT_FOLLOWING_TITLE(): string { return AppStrings.t(AppStrings.R_NAV_FOLLOWING, 'Following') }
-  static get ACCOUNT_BLACKLIST_TITLE(): string { return AppStrings.t(AppStrings.R_NAV_BLACKLIST, 'Blocked and ignored') }
 
   static readonly API_TOKEN_TITLE: string = 'Personal Access Token'
   static get API_TOKEN_SUBTITLE(): string { return AppStrings.t(AppStrings.R_API_TOKEN_SUBTITLE, 'Saved, used only for V2EX API v2 advanced features') }

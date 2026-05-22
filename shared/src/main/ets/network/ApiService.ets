@@ -2,7 +2,6 @@ import { http } from '@kit.NetworkKit'
 import { HttpClient } from './HttpClient'
 import { NetworkProxyRequest } from './NetworkProxyRequest'
 import { FeedTabSettings } from '../settings/FeedTabSettings'
-import { BlockedMemberSettings } from '../settings/BlockedMemberSettings'
 import { ApiConstants } from '../constants/ApiConstants'
 import { V2exTabParser } from '../parser/V2exTabParser'
 import { V2exNotificationParser } from '../parser/V2exNotificationParser'
@@ -26,7 +25,6 @@ import type {
   V2exTopicWebRepliesPage,
 } from './V2exTopicWebRepliesClient'
 import { HtmlEntityUtils } from '../utils/HtmlEntityUtils'
-import { BlockedTopicFilter } from '../utils/BlockedTopicFilter'
 import type {
   V2exTopic,
   V2exReply,
@@ -1554,7 +1552,7 @@ export class ApiService {
       }
       topics = await this.getBatchTopics(ids)
     }
-    return this.filterBlockedTopicAuthors(topics)
+    return topics
   }
 
   async getTopicsByIds(ids: number[]): Promise<V2exTopic[]> {
@@ -1582,16 +1580,6 @@ export class ApiService {
 
   private static normalizeTopics(topics: V2exTopic[]): V2exTopic[] {
     return (topics || []).map((topic: V2exTopic) => ApiService.normalizeTopic(topic))
-  }
-
-  private async filterBlockedTopicAuthors(topics: V2exTopic[]): Promise<V2exTopic[]> {
-    if (!topics || topics.length === 0) {
-      return topics || []
-    }
-    return BlockedTopicFilter.filterTopicsByBlockedAuthors(
-      topics,
-      BlockedMemberSettings.getCachedUsernames(),
-    )
   }
 
   private static normalizeTopic(topic: V2exTopic): V2exTopic {

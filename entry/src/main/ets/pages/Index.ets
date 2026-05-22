@@ -50,7 +50,6 @@ import { SearchPage } from './SearchPage'
 import { TopicEditorPage } from './TopicEditorPage'
 import { MyTopicsPage } from './MyTopicsPage'
 import { MyNodesPage } from './MyNodesPage'
-import { AccountBlacklistPage } from './AccountBlacklistPage'
 import { AccountFollowingPage } from './AccountFollowingPage'
 import { AccountDashboardPage } from './AccountPage'
 import { SavedTopicsPage } from './SavedTopicsPage'
@@ -214,9 +213,6 @@ struct Index {
     }
     if (descriptor.family === 'myNodes') {
       MyNodesPage()
-    }
-    if (descriptor.family === 'accountBlacklist') {
-      AccountBlacklistPage()
     }
     if (descriptor.family === 'accountFollowing') {
       AccountFollowingPage()
