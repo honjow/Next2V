@@ -261,7 +261,6 @@ export struct NetworkProxySettingsPage {
           title: '保存',
           subtitle: '保存并使用此代理配置',
           showChevron: false,
-          suffixBuilderParam: (): void => this.ActionSymbol($r('sys.symbol.checkmark')),
           action: () => { this.saveProfileEditor() },
         })
         if (this.editingProfileId) {

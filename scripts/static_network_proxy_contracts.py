@@ -63,7 +63,7 @@ def main() -> int:
     ]
     require('settings has no scope/explainer copy', not any(copy in proxy_page for copy in forbidden_proxy_explainers))
     forbidden_fake_modal_ui = [
-        "Button('‹')", "Button('✓')", 'EditorTopBar', 'fake route branch',
+        "Button('‹')", "Button('" + chr(0x2713) + "')", 'EditorTopBar', 'fake route branch',
     ]
     require('settings has no fake modal chrome', not any(copy in proxy_page for copy in forbidden_fake_modal_ui))
     require('profile editor uses native tall sheet scaffold', 'bindSheet($$this.profileEditorVisible' in proxy_page and 'defaultSheetOptions(SheetSize.LARGE' in proxy_page and '[SheetSize.LARGE]' in proxy_page and 'AppModalScaffold({' in proxy_page)
