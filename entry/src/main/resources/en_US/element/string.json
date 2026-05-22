@@ -590,7 +590,7 @@
     },
     {
       "name": "updated_at",
-      "value": "Updated {0}"
+      "value": "Updated %1$s"
     },
     {
       "name": "share_file_unavailable_copied",

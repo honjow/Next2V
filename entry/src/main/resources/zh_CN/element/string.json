@@ -590,7 +590,7 @@
     },
     {
       "name": "updated_at",
-      "value": "更新于 {0}"
+      "value": "更新于 %1$s"
     },
     {
       "name": "share_file_unavailable_copied",
