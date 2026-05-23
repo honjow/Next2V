@@ -24,7 +24,6 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 # ── 配置 ──────────────────────────────────────────────────────────────────────
 PROJ        = Path(__file__).resolve().parent.parent
 SCRIPTS     = Path(__file__).resolve().parent
-SIGN_DIR    = SCRIPTS
 TOOL_LIB    = Path("/home/gamer/devtool/ohos/command-line-tools/sdk/default/openharmony/toolchains/lib")
 HAP_SIGN    = TOOL_LIB / "hap-sign-tool.jar"
 HDC         = Path("/home/gamer/devtool/ohos/command-line-tools/sdk/default/openharmony/toolchains/hdc")
@@ -32,17 +31,29 @@ UNSIGNED_HAP = PROJ / "entry/build/default/outputs/default/entry-default-unsigne
 SIGNED_HAP  = PROJ / "entry/build/default/outputs/default/entry-default-signed.hap"
 
 BUNDLE_NAME = "com.next2v.app"
-CERT_NAME   = "next2v-debug"
 
-SIGNING_MATERIALS_DIR = Path(os.environ.get("NEXT2V_SIGNING_MATERIALS_DIR", SCRIPTS))
 
-KS_FILE     = Path(os.environ.get("NEXT2V_KS_FILE", SIGNING_MATERIALS_DIR / "xiaobai.p12"))
-KS_ALIAS    = "xiaobai"
-KS_PWD      = "xiaobai123"
-CSR         = Path(os.environ.get("NEXT2V_CSR_FILE", SIGNING_MATERIALS_DIR / "xiaobai.csr"))
+def _required_env(key: str) -> str:
+    v = os.environ.get(key)
+    if not v:
+        sys.exit(
+            f"sign.py: missing required env {key}. "
+            "Source scripts/dev.env first (e.g. `source scripts/dev.env` or run via dev.sh)."
+        )
+    return v
 
-CERT_FILE    = Path(os.environ.get("NEXT2V_CERT_FILE", SIGNING_MATERIALS_DIR / f"{CERT_NAME}.cer"))
-PROFILE_FILE = Path(os.environ.get("NEXT2V_PROFILE_FILE", SIGNING_MATERIALS_DIR / f"{CERT_NAME}.p7b"))
+
+# 账号级共享调试签名（多 OH 项目复用同一份 cert，避免撞 AGC debug-cert 配额）
+HARMONY_DEBUG_DIR = Path(_required_env("HARMONY_DEBUG_DIR"))
+CERT_NAME         = _required_env("HARMONY_DEBUG_CERT_NAME")
+KS_ALIAS          = _required_env("HARMONY_DEBUG_KS_ALIAS")
+KS_PWD            = _required_env("HARMONY_DEBUG_KS_PWD")
+
+KS_FILE      = HARMONY_DEBUG_DIR / "debug.p12"
+CSR          = HARMONY_DEBUG_DIR / "debug.csr"
+CERT_FILE    = HARMONY_DEBUG_DIR / f"{CERT_NAME}.cer"
+# profile 是 per-bundleId 的，由 dev.env 显式给路径
+PROFILE_FILE = Path(_required_env("HARMONY_DEBUG_PROFILE"))
 AUTH_FILE    = Path.home() / "Documents/hap_installer/userInfo.json"
 
 # 设备选择缓存文件及有效期（7 天）

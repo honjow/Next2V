@@ -53,7 +53,7 @@ The Review/QA/Integrate quality gates still apply in direct-worker mode; replace
 
 ## Worktree Setup Preflight
 
-Every lane wrapper script that will call `bash dev.sh`, `python3 scripts/sign.py`, or any device-control command **must** source `scripts/lane-preflight.sh` from the main V2Next repo before invoking `hermes`. The wrapper must have `cd`'d into the worktree first so the preflight can detect the worktree root via git.
+Every lane wrapper script that will call `bash dev.sh`, `python3 scripts/sign.py`, or any device-control command **must** source `scripts/lane-preflight.sh` from the main V2Next repo before invoking `hermes`. The wrapper must have `cd`'d into the worktree first.
 
 ```bash
 ART=/home/gamer/git/V2Next/.hermes-artifacts/<lane>
@@ -61,9 +61,9 @@ mkdir -p "$ART"
 cd /home/gamer/v2next-worktrees/<lane>
 source /home/gamer/git/V2Next/scripts/lane-preflight.sh "$ART"
 # preflight will `exit 1` and write $ART/result.json with verdict=BLOCKED if:
-#   - sync-signing-materials.sh fails
-#   - $HOME/Documents/hap_installer/userInfo.json is missing  (verdict=signing_auth_missing)
-#   - Huawei AGC token is expired / 401             (verdict=signing_token_expired)
+#   - $V2NEXT/scripts/dev.env is missing
+#   - $HOME/Documents/hap_installer/userInfo.json is missing  (signing_auth_missing)
+#   - Huawei AGC token is expired / 401             (signing_token_expired)
 # When BLOCKED on auth, recovery is: in the MAIN repo run `bash dev.sh --build-only`
 # and complete the browser login. Lane workers cannot do interactive login.
 hermes -p implementer chat -Q -q "$PROMPT" > "$ART/worker.log" 2>&1
@@ -72,7 +72,20 @@ hermes -p implementer chat -Q -q "$PROMPT" > "$ART/worker.log" 2>&1
 The preflight handles three things atomically:
 
 1. PATH setup (ohpm + hdc + harmony toolchains)
-2. `scripts/sync-signing-materials.sh ... --dest <worktree>/scripts` — copies the four gitignored signing materials (`xiaobai.p12`, `xiaobai.csr`, `next2v-debug.cer`, `next2v-debug.p7b`) into the lane worktree
-3. `scripts/check-signing-auth.sh` — validates Huawei AGC token via `user-team-list` API; never opens a browser, never blocks for 120s.
+2. `source scripts/dev.env` — exports `HARMONY_DEBUG_*` env so `sign.py` finds the account-level shared signing materials at `~/.config/harmony/debug-signing/` (no per-worktree copy needed)
+3. `scripts/check-signing-auth.sh` — validates Huawei AGC token via `user-team-list` API; never opens a browser, never blocks for 120s
 
-Do not call `dev.sh` from a background wrapper without running preflight first; `scripts/sign.py` will otherwise try interactive Huawei/AGC login on token expiry and stall in a headless browser callback for 120s.
+### Signing materials layout (account-level shared)
+
+```
+~/.config/harmony/debug-signing/
+  ├── debug.p12              keystore (private key + cert chain)
+  ├── debug.csr              CSR
+  ├── ${HARMONY_DEBUG_CERT_NAME}.cer     account-level AGC cert (e.g. honjow-debug.cer)
+  └── profiles/
+      └── com.next2v.app.p7b project-level profile (per bundleId)
+```
+
+Cert is **account-scoped** to avoid burning AGC debug-cert quota across multiple OH projects — every project sources the same `debug.p12` / `debug.csr` / `<name>.cer`. Profiles are bundleId-scoped (per project), but AGC does not quota-limit profiles.
+
+`scripts/dev.env` declares the env vars; `dev.sh` and `lane-preflight.sh` both source it. Manual `python3 scripts/sign.py` invocations must `source scripts/dev.env` first or sign.py will exit with a clear error message.

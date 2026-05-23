@@ -21,6 +21,11 @@
 
 set -e
 PROJ="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# 加载共享 env（HarmonyOS 调试签名物料路径等）
+if [ -f "$PROJ/scripts/dev.env" ]; then
+  # shellcheck disable=SC1091
+  source "$PROJ/scripts/dev.env"
+fi
 HDC=/home/gamer/devtool/ohos/command-line-tools/sdk/default/openharmony/toolchains/hdc
 BUNDLE=com.next2v.app
 DEBUG_BUNDLE=com.next2v.app

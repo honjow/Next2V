@@ -5,10 +5,6 @@ oh_modules/
 node_modules/
 __pycache__/
 *.pyc
-scripts/next2v-debug.cer
-scripts/next2v-debug.p7b
-scripts/xiaobai.p12
-scripts/xiaobai.csr
 *.hap
 *.signed.hap
 .env.local
