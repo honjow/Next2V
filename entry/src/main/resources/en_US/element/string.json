@@ -1479,6 +1479,42 @@
     {
       "name": "reply_current_topic",
       "value": "current topic"
+    },
+    {
+      "name": "discover_rank",
+      "value": "Rank"
+    },
+    {
+      "name": "discover_latest",
+      "value": "Latest"
+    },
+    {
+      "name": "discover_recent",
+      "value": "Recent"
+    },
+    {
+      "name": "discover_section_saved_nodes",
+      "value": "Followed nodes"
+    },
+    {
+      "name": "discover_section_recent_nodes",
+      "value": "Recently viewed nodes"
+    },
+    {
+      "name": "search_source_favorite",
+      "value": "Saved"
+    },
+    {
+      "name": "search_source_recent",
+      "value": "Recent"
+    },
+    {
+      "name": "search_source_followed",
+      "value": "Followed"
+    },
+    {
+      "name": "search_source_nodes_library",
+      "value": "Node library"
     }
   ]
 }

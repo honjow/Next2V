@@ -113,9 +113,9 @@ export struct DiscoverPage {
     Column({ space: ThemeConstants.SPACE_SM }) {
       Row({ space: ThemeConstants.SPACE_XS }) {
         this.TopicModeButton('hot', AppStrings.text($r('app.string.discover_hot'), 'Hot'))
-        this.TopicModeButton('rank', '热榜')
-        this.TopicModeButton('latest', '最新')
-        this.TopicModeButton('recent', '最近')
+        this.TopicModeButton('rank', AppStrings.text($r('app.string.discover_rank'), 'Rank'))
+        this.TopicModeButton('latest', AppStrings.text($r('app.string.discover_latest'), 'Latest'))
+        this.TopicModeButton('recent', AppStrings.text($r('app.string.discover_recent'), 'Recent'))
       }
       .width('100%')
       .alignItems(VerticalAlign.Center)
@@ -166,7 +166,7 @@ export struct DiscoverPage {
     if (this.vm.nodeDataSource.totalCount() === 0) {
       DiscoverEmptyState()
     } else {
-      DiscoverSectionTitle({ title: '节点' })
+      DiscoverSectionTitle({ title: AppStrings.text($r('app.string.common_nodes'), 'Nodes') })
       GridRow({ columns: { sm: 2, md: 4, lg: 6 }, gutter: { x: ThemeConstants.SPACE_SM, y: ThemeConstants.SPACE_SM } }) {
         LazyForEach(this.vm.nodeDataSource, (node: V2exNode) => {
           GridCol({ span: { sm: 1, md: 2, lg: 2 } }) {
@@ -187,11 +187,11 @@ export struct DiscoverPage {
     if (this.savedNodes.length > 0 || this.recentNodes.length > 0) {
       Column({ space: ThemeConstants.SPACE_SM }) {
         if (this.savedNodes.length > 0) {
-          DiscoverSectionTitle({ title: '关注节点' })
+          DiscoverSectionTitle({ title: AppStrings.text($r('app.string.discover_section_saved_nodes'), 'Followed nodes') })
           this.NodeChipWrap(this.savedNodes.slice(0, 12), 'saved')
         }
         if (this.recentNodes.length > 0) {
-          DiscoverSectionTitle({ title: '最近浏览节点' })
+          DiscoverSectionTitle({ title: AppStrings.text($r('app.string.discover_section_recent_nodes'), 'Recently viewed nodes') })
           this.NodeChipWrap(this.recentNodes.slice(0, 12), 'recent')
         }
       }

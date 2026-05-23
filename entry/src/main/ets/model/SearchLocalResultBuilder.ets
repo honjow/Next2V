@@ -5,6 +5,7 @@ import {
   type V2exNode,
   type ViewedTopic,
 } from 'shared'
+import { AppStrings } from 'shared'
 import type {
   SearchNodeItem,
   SearchResultFilter,
@@ -51,7 +52,7 @@ export class SearchLocalResultBuilder {
         nodeName: item.nodeName,
         nodeTitle: item.nodeTitle,
         username: item.username,
-        source: '收藏',
+        source: AppStrings.text($r('app.string.search_source_favorite'), 'Saved'),
         updatedAt: item.savedAt || 0,
       }
       if (SearchLocalResultBuilder.topicMatches(topic, q, input.resultFilter)) {
@@ -67,7 +68,7 @@ export class SearchLocalResultBuilder {
         nodeName: item.nodeName,
         nodeTitle: item.nodeTitle,
         username: item.username,
-        source: '最近',
+        source: AppStrings.text($r('app.string.search_source_recent'), 'Recent'),
         updatedAt: item.viewedAt || 0,
       }
       if (!SearchLocalResultBuilder.topicMatches(topic, q, input.resultFilter)) {
@@ -76,7 +77,7 @@ export class SearchLocalResultBuilder {
       if (!existing) {
         bag.set(topic.id, topic)
       } else {
-        existing.source = SearchLocalResultBuilder.mergeSource(existing.source, '最近')
+        existing.source = SearchLocalResultBuilder.mergeSource(existing.source, AppStrings.text($r('app.string.search_source_recent'), 'Recent'))
         existing.updatedAt = Math.max(existing.updatedAt, item.viewedAt || 0)
       }
     }
@@ -121,7 +122,7 @@ export class SearchLocalResultBuilder {
         name: item.name,
         title: item.title,
         topics: item.topics,
-        source: '关注',
+        source: AppStrings.text($r('app.string.search_source_followed'), 'Followed'),
         updatedAt: item.savedAt || 0,
         score: score + 1200,
       })
@@ -136,14 +137,14 @@ export class SearchLocalResultBuilder {
             name: node.name,
             title: node.title,
             topics: node.topics,
-            source: '节点库',
+            source: AppStrings.text($r('app.string.search_source_nodes_library'), 'Node library'),
             updatedAt: 0,
             score: match.score,
           })
         } else {
           existing.title = existing.title || node.title
           existing.topics = Math.max(existing.topics, node.topics)
-          existing.source = SearchLocalResultBuilder.mergeSource(existing.source, '节点库')
+          existing.source = SearchLocalResultBuilder.mergeSource(existing.source, AppStrings.text($r('app.string.search_source_nodes_library'), 'Node library'))
           existing.score = Math.max(existing.score, match.score + 1200)
         }
       }

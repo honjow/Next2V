@@ -1479,6 +1479,42 @@
     {
       "name": "reply_current_topic",
       "value": "當前主題"
+    },
+    {
+      "name": "discover_rank",
+      "value": "熱榜"
+    },
+    {
+      "name": "discover_latest",
+      "value": "最新"
+    },
+    {
+      "name": "discover_recent",
+      "value": "最近"
+    },
+    {
+      "name": "discover_section_saved_nodes",
+      "value": "關注節點"
+    },
+    {
+      "name": "discover_section_recent_nodes",
+      "value": "最近瀏覽節點"
+    },
+    {
+      "name": "search_source_favorite",
+      "value": "收藏"
+    },
+    {
+      "name": "search_source_recent",
+      "value": "最近"
+    },
+    {
+      "name": "search_source_followed",
+      "value": "關注"
+    },
+    {
+      "name": "search_source_nodes_library",
+      "value": "節點庫"
     }
   ]
 }
