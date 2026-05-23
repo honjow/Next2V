@@ -82,6 +82,18 @@ LEASE_ID=$(scripts/device-lease acquire \
 
 带 `--holder-pid` 的 lease 是 **process-bound lease**。当 holder PID 位于本机且进程已不存在时，`status` 会显示 `stale: holder pid not running`，后续普通 `acquire` 可在 TTL 到期前替换该 stale lease；TTL-only lease 不会因为 `acquire_pid` 消失而被自动视为 stale。
 
+### Controller wrapper 起 dev.sh 时的陷阱
+
+当 controller 通过 background wrapper 脚本调用 `dev.sh` 之类的长流程时：
+
+1. **不要 `--holder-pid $$`**。wrapper 进程往往很短命，PID 退出后 lease 立即 stale，`scripts/device-lease run --lease $ID -- ...` 会返回 `denied: holder pid not running`，`dev.sh` 实际根本没启起来。改用 TTL-only `acquire`（不传 `--holder-pid`）。
+2. **PATH 必须显式包含**：
+   - `/home/gamer/devtool/ohos/command-line-tools/bin`（提供 `ohpm`）
+   - `/home/gamer/OpenHarmony/20/toolchains`（提供 `hdc`）
+
+   缺 `ohpm` 时 `dev.sh` 第 5 行会以 `未找到 ohpm` 直接 `exit 1`。
+3. **wrapper 结尾 release 用 `--force`**，防止 TTL 未过被卡。
+
 ### 带 lease 执行强控制命令
 
 ```bash
