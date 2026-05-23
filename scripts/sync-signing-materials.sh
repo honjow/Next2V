@@ -3,10 +3,16 @@ set -euo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: scripts/sync-signing-materials.sh [SOURCE_DIR]
+Usage: scripts/sync-signing-materials.sh [SOURCE_DIR] [--dest DEST_DIR]
 
-Copy local, gitignored HarmonyOS debug signing materials into this worktree.
-Default SOURCE_DIR: /home/gamer/git/V2Next/scripts
+Copy local, gitignored HarmonyOS debug signing materials.
+
+  SOURCE_DIR   default: /home/gamer/git/V2Next/scripts
+  --dest DIR   default: the directory containing this script (i.e. the
+               worktree's scripts/ when called as
+               $worktree/scripts/sync-signing-materials.sh). Pass --dest
+               explicitly when calling the main-repo copy from another
+               worktree.
 
 Files copied:
 - xiaobai.p12
@@ -24,7 +30,22 @@ if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
 fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SOURCE_DIR="${1:-/home/gamer/git/V2Next/scripts}"
+SOURCE_DIR=""
+DEST_DIR="$SCRIPT_DIR"
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --dest) DEST_DIR="$2"; shift 2 ;;
+    --dest=*) DEST_DIR="${1#--dest=}"; shift ;;
+    *) if [[ -z "$SOURCE_DIR" ]]; then SOURCE_DIR="$1"; shift; else echo "unknown arg: $1" >&2; exit 2; fi ;;
+  esac
+done
+SOURCE_DIR="${SOURCE_DIR:-/home/gamer/git/V2Next/scripts}"
+
+if [[ ! -d "$DEST_DIR" ]]; then
+  echo "ERROR: dest directory not found: $DEST_DIR" >&2
+  exit 1
+fi
+
 FILES=(xiaobai.p12 xiaobai.csr next2v-debug.cer next2v-debug.p7b)
 
 if [[ ! -d "$SOURCE_DIR" ]]; then
@@ -40,9 +61,9 @@ for file in "${FILES[@]}"; do
 done
 
 for file in "${FILES[@]}"; do
-  install -m 600 "$SOURCE_DIR/$file" "$SCRIPT_DIR/$file"
-  bytes=$(wc -c < "$SCRIPT_DIR/$file" | tr -d ' ')
-  echo "copied scripts/$file (${bytes} bytes)"
+  install -m 600 "$SOURCE_DIR/$file" "$DEST_DIR/$file"
+  bytes=$(wc -c < "$DEST_DIR/$file" | tr -d ' ')
+  echo "copied $(basename "$DEST_DIR")/$file (${bytes} bytes)"
 done
 
-echo "signing materials ready in $SCRIPT_DIR"
+echo "signing materials ready in $DEST_DIR"

@@ -53,11 +53,26 @@ The Review/QA/Integrate quality gates still apply in direct-worker mode; replace
 
 ## Worktree Setup Preflight
 
-Before any agent or subagent builds, signs, installs, or device-tests a V2Next lane worktree under `/home/gamer/v2next-worktrees/`, run `scripts/sync-signing-materials.sh` in that worktree, or copy the same four gitignored files from `/home/gamer/git/V2Next/scripts`:
+Every lane wrapper script that will call `bash dev.sh`, `python3 scripts/sign.py`, or any device-control command **must** source `scripts/lane-preflight.sh` from the main V2Next repo before invoking `hermes`. The wrapper must have `cd`'d into the worktree first so the preflight can detect the worktree root via git.
 
-- `scripts/xiaobai.p12`
-- `scripts/xiaobai.csr`
-- `scripts/next2v-debug.cer`
-- `scripts/next2v-debug.p7b`
+```bash
+ART=/home/gamer/git/V2Next/.hermes-artifacts/<lane>
+mkdir -p "$ART"
+cd /home/gamer/v2next-worktrees/<lane>
+source /home/gamer/git/V2Next/scripts/lane-preflight.sh "$ART"
+# preflight will `exit 1` and write $ART/result.json with verdict=BLOCKED if:
+#   - sync-signing-materials.sh fails
+#   - $HOME/Documents/hap_installer/userInfo.json is missing  (verdict=signing_auth_missing)
+#   - Huawei AGC token is expired / 401             (verdict=signing_token_expired)
+# When BLOCKED on auth, recovery is: in the MAIN repo run `bash dev.sh --build-only`
+# and complete the browser login. Lane workers cannot do interactive login.
+hermes -p implementer chat -Q -q "$PROMPT" > "$ART/worker.log" 2>&1
+```
 
-These files are intentionally gitignored and must not be committed or printed. Do this before `bash dev.sh`, otherwise `scripts/sign.py` may try Huawei/AGC login, hit an expired token, and stall in a headless browser callback.
+The preflight handles three things atomically:
+
+1. PATH setup (ohpm + hdc + harmony toolchains)
+2. `scripts/sync-signing-materials.sh ... --dest <worktree>/scripts` — copies the four gitignored signing materials (`xiaobai.p12`, `xiaobai.csr`, `next2v-debug.cer`, `next2v-debug.p7b`) into the lane worktree
+3. `scripts/check-signing-auth.sh` — validates Huawei AGC token via `user-team-list` API; never opens a browser, never blocks for 120s.
+
+Do not call `dev.sh` from a background wrapper without running preflight first; `scripts/sign.py` will otherwise try interactive Huawei/AGC login on token expiry and stall in a headless browser callback for 120s.
