@@ -2,6 +2,7 @@ import { connection, http } from '@kit.NetworkKit'
 import { rcp } from '@kit.RemoteCommunicationKit'
 import { ApiConstants } from '../constants/ApiConstants'
 import { NetworkProxySettings, type NetworkProxySettingsSnapshot } from '../settings/NetworkProxySettings'
+import { Socks5HttpClient } from './Socks5HttpClient'
 
 export interface NetworkProxyRequestOptions {
   method: http.RequestMethod
@@ -24,7 +25,10 @@ export interface NetworkProxyResponse {
 export class NetworkProxyRequest {
   static async request(url: string, options: NetworkProxyRequestOptions): Promise<NetworkProxyResponse> {
     const settings = NetworkProxySettings.current()
-    if (settings.mode === 'socks5' || settings.proxyScheme === 'https') {
+    if (settings.mode === 'socks5') {
+      return NetworkProxyRequest.requestViaSocks5Socket(url, options, settings)
+    }
+    if (settings.proxyScheme === 'https') {
       return NetworkProxyRequest.requestViaRcp(url, options, settings)
     }
     return NetworkProxyRequest.requestViaNetworkKit(url, options, settings)
@@ -52,6 +56,19 @@ export class NetworkProxyRequest {
       return NetworkProxySettings.buildHttpProxy(normalized)
     }
     return undefined
+  }
+
+  private static async requestViaSocks5Socket(
+    url: string,
+    options: NetworkProxyRequestOptions,
+    settings: NetworkProxySettingsSnapshot,
+  ): Promise<NetworkProxyResponse> {
+    const validation = NetworkProxySettings.validate(settings)
+    if (!validation.ok) {
+      throw new Error(validation.message)
+    }
+    const normalized = NetworkProxySettings.normalize(settings)
+    return Socks5HttpClient.request(url, options, normalized)
   }
 
   private static async requestViaNetworkKit(
