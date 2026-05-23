@@ -86,19 +86,42 @@ export class Socks5HttpClient {
     options: NetworkProxyRequestOptions,
     originalUrl: string,
   ): Promise<NetworkProxyResponse> {
-    const tls = socket.constructTLSSocketInstance()
+    // SOCKS5 + TLS must be layered: first connect a TCP socket through the
+    // SOCKS5 proxy to the target (since-18 TCPConnectOptions.proxy), THEN
+    // wrap the connected TCP into a TLSSocket via the since-12 overload
+    // `constructTLSSocketInstance(tcp)` and run the TLS handshake against
+    // the same target host:port (no proxy field, already proxied at L4).
+    //
+    // The previous no-arg `constructTLSSocketInstance()` + connect({proxy})
+    // combo created a TLSSocket without an underlying TCP handle; native
+    // NETSTACK then logs `tlsSocket is null` and the connect Promise never
+    // settles (device hilog evidence: 80+ "connect start", 0 "connect
+    // complete").
+    const tcp = socket.constructTCPSocketInstance()
+    let tls: socket.TLSSocket | null = null
     const reader = new ResponseReader()
-    Socks5HttpClient.attachTlsListeners(tls, reader)
     try {
+      await tcp.connect({
+        address: { address: target.host, port: target.port },
+        timeout: connectTimeout,
+        proxy: proxyOpts,
+      })
+      console.info(`[socks5-socket] socks5-tcp-up target=${target.host}:${target.port}`)
+      try {
+        tls = socket.constructTLSSocketInstance(tcp)
+      } catch (e) {
+        const err = e as Error
+        throw new Error(`constructTLSSocketInstance(tcp) failed: ${err && err.message ? err.message : err}`)
+      }
+      Socks5HttpClient.attachTlsListeners(tls, reader)
       await tls.connect({
         address: { address: target.host, port: target.port },
         secureOptions: {
           protocols: [socket.Protocol.TLSv12, socket.Protocol.TLSv13],
         },
         ALPNProtocols: ['http/1.1'],
-        proxy: proxyOpts,
-        timeout: connectTimeout,
       })
+      console.info(`[socks5-socket] tls-handshake-up target=${target.host}:${target.port}`)
       console.info(`[socks5-socket] connect complete target=${target.host}:${target.port}`)
       const buf = Socks5HttpClient.uint8ToArrayBuffer(requestBytes)
       await tls.send(buf)
@@ -106,8 +129,11 @@ export class Socks5HttpClient {
       const bodyBytes = await reader.awaitComplete(readTimeout)
       return Socks5HttpClient.finalize(bodyBytes, reader, options, originalUrl)
     } finally {
-      Socks5HttpClient.detachTlsListeners(tls, reader)
-      try { await tls.close() } catch (_e) { /* ignore */ }
+      if (tls) {
+        Socks5HttpClient.detachTlsListeners(tls, reader)
+        try { await tls.close() } catch (_e) { /* ignore */ }
+      }
+      try { await tcp.close() } catch (_e) { /* ignore */ }
     }
   }
 
