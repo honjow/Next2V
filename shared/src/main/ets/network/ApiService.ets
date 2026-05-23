@@ -42,6 +42,7 @@ import type {
   V2exNodeTopicsPageSnapshot,
   V2exNodeTopicsPageResult,
 } from './NetworkTypes'
+import { ApiError, ApiErrors, ApiErrorCode, isApiError } from './ApiError'
 
 interface CookieHtmlResponse {
   statusCode: number
@@ -115,7 +116,7 @@ export class ApiService {
     const html = await this.http.getText('/?tab=hot')
     const ids = V2exTabParser.extractTopicIds(html)
     if (ids.length === 0) {
-      throw new Error('热榜没有获取到主题，请稍后重试')
+      throw ApiErrors.hotTopicsEmpty()
     }
     return this.getBatchTopics(ids)
   }
@@ -126,7 +127,7 @@ export class ApiService {
     const html = await this.http.getText(`/recent?p=${safePage}`)
     const ids = V2exTabParser.extractTopicIds(html)
     if (ids.length === 0) {
-      throw new Error('最近更新没有获取到主题，请稍后重试')
+      throw ApiErrors.recentTopicsEmpty()
     }
     return this.getBatchTopics(ids)
   }
@@ -166,7 +167,7 @@ export class ApiService {
   async getNodeTopicsPage(nodeName: string, page: number = 1): Promise<V2exNodeTopicsPageResult> {
     const clean = (nodeName || '').trim()
     if (!clean) {
-      throw new Error('节点名称不能为空')
+      throw ApiErrors.nodeNameRequired()
     }
     const safePage = Math.max(1, Math.floor(page))
     const html = await this.http.getText(`/go/${encodeURIComponent(clean)}?p=${safePage}`)
@@ -265,7 +266,7 @@ export class ApiService {
   ): Promise<V2exMemberPageSnapshot> {
     const clean = (username || '').trim()
     if (!clean) {
-      throw new Error('无效用户名')
+      throw ApiErrors.invalidUsername()
     }
     const path = `/member/${encodeURIComponent(clean)}`
     const html = cookie ? await this.getCookieHtml(path, cookie) : await this.http.getText(path)
@@ -279,7 +280,7 @@ export class ApiService {
   ): Promise<V2exMemberTopicsPageSnapshot> {
     const clean = (username || '').trim()
     if (!clean) {
-      throw new Error('无效用户名')
+      throw ApiErrors.invalidUsername()
     }
     const safePage = Math.max(1, Math.floor(page))
     const path = `/member/${encodeURIComponent(clean)}/topics?p=${safePage}`
@@ -294,7 +295,7 @@ export class ApiService {
   ): Promise<V2exMemberRepliesPageSnapshot> {
     const clean = (username || '').trim()
     if (!clean) {
-      throw new Error('无效用户名')
+      throw ApiErrors.invalidUsername()
     }
     const safePage = Math.max(1, Math.floor(page))
     const path = `/member/${encodeURIComponent(clean)}/replies?p=${safePage}`
@@ -332,11 +333,11 @@ export class ApiService {
 
   async getNotificationsWithCookie(cookie: string, page: number = 1): Promise<V2exNotification[]> {
     if (!cookie) {
-      throw new Error('请先登录')
+      throw ApiErrors.authRequired()
     }
     const html = await this.getCookieHtml(`/notifications?p=${page}`, cookie)
     if (!V2exSessionParser.extractUsername(html)) {
-      throw new Error('Web 会话已失效，请重新登录')
+      throw ApiErrors.webSessionExpired()
     }
     return V2exNotificationParser.extractNotifications(html)
   }
@@ -347,7 +348,7 @@ export class ApiService {
     }
     const html = await this.getCookieHtml('/', cookie)
     if (!V2exSessionParser.extractUsername(html)) {
-      throw new Error('Web 会话已失效，请重新登录')
+      throw ApiErrors.webSessionExpired()
     }
     return V2exSessionParser.extractUnreadNotificationCount(html)
   }
@@ -359,10 +360,10 @@ export class ApiService {
     verifyPage: number = 1
   ): Promise<void> {
     if (!cookie) {
-      throw new Error('请先登录')
+      throw ApiErrors.authRequired()
     }
     if (notificationId <= 0 || !once) {
-      throw new Error('缺少通知删除参数')
+      throw ApiErrors.missingNotificationParam()
     }
     const safeVerifyPage = Math.max(1, Math.floor(verifyPage))
     console.info(`[NotificationDelete] cookie start id=${notificationId} page=${safeVerifyPage}`)
@@ -377,14 +378,14 @@ export class ApiService {
     const res = await this.deleteNotificationWithCookieRequest(cookie, action.id, action.once)
     console.info(`[NotificationDelete] cookie request_done id=${action.id} status=${res.statusCode} signin=${res.location.indexOf('/signin') >= 0}`)
     if (res.location.indexOf('/signin') >= 0) {
-      throw new Error('Web 会话已失效，请重新登录')
+      throw ApiErrors.webSessionExpired()
     }
     if (await this.isNotificationDeletedFromCookiePage(cookie, action.id, safeVerifyPage)) {
       console.info(`[NotificationDelete] cookie verified id=${action.id} page=${safeVerifyPage}`)
       return
     }
     console.error(`[NotificationDelete] cookie verify_failed id=${action.id} page=${safeVerifyPage}`)
-    throw new Error('删除通知未生效，请稍后重试')
+    throw ApiErrors.notificationDeleteNotApplied()
   }
 
   private async deleteNotificationWithCookieRequest(
@@ -426,7 +427,7 @@ export class ApiService {
     const id = item.delete_id || item.id || 0
     const once = (item.delete_once || '').trim()
     if (id <= 0 || !once) {
-      throw new Error('缺少通知删除参数')
+      throw ApiErrors.missingNotificationParam()
     }
     return { id, once }
   }
@@ -440,22 +441,22 @@ export class ApiService {
 
   async getBalanceWithCookie(cookie: string): Promise<V2exBalance> {
     if (!cookie) {
-      throw new Error('请先登录')
+      throw ApiErrors.authRequired()
     }
     const html = await this.getCookieHtml('/balance', cookie)
     if (!V2exSessionParser.extractUsername(html)) {
-      throw new Error('Web 会话已失效，请重新登录')
+      throw ApiErrors.webSessionExpired()
     }
     return V2exAccountParser.extractBalance(html)
   }
 
   async getDailyMissionWithCookie(cookie: string): Promise<V2exDailyMission> {
     if (!cookie) {
-      throw new Error('请先登录')
+      throw ApiErrors.authRequired()
     }
     const html = await this.getCookieHtml('/mission/daily', cookie)
     if (!V2exSessionParser.extractUsername(html)) {
-      throw new Error('Web 会话已失效，请重新登录')
+      throw ApiErrors.webSessionExpired()
     }
     return V2exAccountParser.extractDailyMission(html)
   }
@@ -465,7 +466,7 @@ export class ApiService {
     redeemPath: string,
   ): Promise<V2exDailyMission> {
     if (!redeemPath) {
-      throw new Error('今日不可签到')
+      throw ApiErrors.checkinNotAvailable()
     }
     await this.getCookieHtml(redeemPath, cookie)
     return this.getDailyMissionWithCookie(cookie)
@@ -473,12 +474,12 @@ export class ApiService {
 
   async getMyTopicsWithCookie(cookie: string, page: number = 1): Promise<V2exTopic[]> {
     if (!cookie) {
-      throw new Error('请先登录')
+      throw ApiErrors.authRequired()
     }
     const path = page > 1 ? `/my/topics?p=${page}` : '/my/topics'
     const html = await this.getCookieHtml(path, cookie)
     if (!V2exSessionParser.extractUsername(html)) {
-      throw new Error('Web 会话已失效，请重新登录')
+      throw ApiErrors.webSessionExpired()
     }
     const ids = V2exTabParser.extractTopicIds(html)
     if (ids.length === 0) {
@@ -489,7 +490,7 @@ export class ApiService {
 
   async getMyRepliesWithCookie(cookie: string, page: number = 1): Promise<V2exTopic[]> {
     if (!cookie) {
-      throw new Error('请先登录')
+      throw ApiErrors.authRequired()
     }
     const username = await this.getSessionUsernameWithCookie(cookie)
     const encodedUsername = encodeURIComponent(username)
@@ -509,30 +510,30 @@ export class ApiService {
     const html = await this.getCookieHtml('/settings', cookie)
     const username = V2exSessionParser.extractUsername(html)
     if (!username) {
-      throw new Error('Web 会话已失效，请重新登录')
+      throw ApiErrors.webSessionExpired()
     }
     return username
   }
 
   async getMyFavoriteNodesWithCookie(cookie: string): Promise<V2exFavoriteNode[]> {
     if (!cookie) {
-      throw new Error('请先登录')
+      throw ApiErrors.authRequired()
     }
     const html = await this.getCookieHtml('/my/nodes', cookie)
     if (!V2exSessionParser.extractUsername(html)) {
-      throw new Error('Web 会话已失效，请重新登录')
+      throw ApiErrors.webSessionExpired()
     }
     return V2exNodeParser.extractFavoriteNodes(html)
   }
 
   async getFollowingMembersWithCookie(cookie: string): Promise<V2exAccountMemberListItem[]> {
     if (!cookie) {
-      throw new Error('请先登录')
+      throw ApiErrors.authRequired()
     }
     const currentUsername = await this.getSessionUsernameWithCookie(cookie)
     const html = await this.getCookieHtml('/my/following', cookie)
     if (html.indexOf('/signin') >= 0 && !V2exSessionParser.extractUsername(html)) {
-      throw new Error('Web 会话已失效，请重新登录')
+      throw ApiErrors.webSessionExpired()
     }
     return V2exAccountListParser.extractMembers(html, currentUsername)
   }
@@ -547,20 +548,20 @@ export class ApiService {
     topicId: number,
   ): Promise<V2exToggleAction> {
     if (!cookie) {
-      throw new Error('请先登录')
+      throw ApiErrors.authRequired()
     }
     if (topicId <= 0) {
-      throw new Error('无效主题 ID')
+      throw ApiErrors.invalidTopicId()
     }
     const topicPath = `/t/${topicId}`
     const html = await this.getCookieHtml(topicPath, cookie)
     if (!V2exSessionParser.extractUsername(html)) {
-      throw new Error('Web 会话已失效，请重新登录')
+      throw ApiErrors.webSessionExpired()
     }
 
     const toggle = V2exCollectionActionParser.extractTopicFavoriteToggle(html, topicId)
     if (!toggle) {
-      throw new Error('解析收藏操作失败，请稍后重试')
+      throw ApiErrors.parseFavoriteActionFailed()
     }
     return toggle
   }
@@ -575,17 +576,17 @@ export class ApiService {
     toggle: V2exToggleAction,
   ): Promise<boolean> {
     if (!cookie) {
-      throw new Error('请先登录')
+      throw ApiErrors.authRequired()
     }
     if (topicId <= 0) {
-      throw new Error('无效主题 ID')
+      throw ApiErrors.invalidTopicId()
     }
     const topicPath = `/t/${topicId}`
     await this.requestTextWithCookieAllowRedirect(toggle.actionPath, cookie, topicPath)
 
     const verifyHtml = await this.getCookieHtml(topicPath, cookie)
     if (!V2exSessionParser.extractUsername(verifyHtml)) {
-      throw new Error('Web 会话已失效，请重新登录')
+      throw ApiErrors.webSessionExpired()
     }
     const after = V2exCollectionActionParser.extractTopicFavoriteToggle(verifyHtml, topicId)
     if (!after) {
@@ -612,19 +613,19 @@ export class ApiService {
   ): Promise<V2exToggleAction> {
     const cleanName = (nodeName || '').trim()
     if (!cookie) {
-      throw new Error('请先登录')
+      throw ApiErrors.authRequired()
     }
     if (!cleanName) {
-      throw new Error('无效节点')
+      throw ApiErrors.invalidNode()
     }
     const nodePath = `/go/${cleanName}`
     const html = await this.getCookieHtml(nodePath, cookie)
     if (!V2exSessionParser.extractUsername(html)) {
-      throw new Error('Web 会话已失效，请重新登录')
+      throw ApiErrors.webSessionExpired()
     }
     const toggle = V2exCollectionActionParser.extractNodeFavoriteToggle(html)
     if (!toggle) {
-      throw new Error('解析关注操作失败，请稍后重试')
+      throw ApiErrors.parseFollowActionFailed()
     }
     return toggle
   }
@@ -640,17 +641,17 @@ export class ApiService {
   ): Promise<boolean> {
     const cleanName = (nodeName || '').trim()
     if (!cookie) {
-      throw new Error('请先登录')
+      throw ApiErrors.authRequired()
     }
     if (!cleanName) {
-      throw new Error('无效节点')
+      throw ApiErrors.invalidNode()
     }
     const nodePath = `/go/${cleanName}`
     await this.requestTextWithCookieAllowRedirect(toggle.actionPath, cookie, nodePath)
 
     const verifyHtml = await this.getCookieHtml(nodePath, cookie)
     if (!V2exSessionParser.extractUsername(verifyHtml)) {
-      throw new Error('Web 会话已失效，请重新登录')
+      throw ApiErrors.webSessionExpired()
     }
     const after = V2exCollectionActionParser.extractNodeFavoriteToggle(verifyHtml)
     if (!after) {
@@ -676,10 +677,10 @@ export class ApiService {
     const cleanName = (username || '').trim()
     const cleanPath = (actionPath || '').trim()
     if (!cookie) {
-      throw new Error('请先登录')
+      throw ApiErrors.authRequired()
     }
     if (!cleanName || !cleanPath) {
-      throw new Error('缺少用户操作')
+      throw ApiErrors.missingUserAction()
     }
     const memberPath = `/member/${encodeURIComponent(cleanName)}`
     const actionRes = await this.requestHtmlWithCookieAllowRedirect(
@@ -689,7 +690,7 @@ export class ApiService {
       http.RequestMethod.GET,
     )
     if (actionRes.location.indexOf('/signin') >= 0) {
-      throw new Error('Web 会话已失效，请重新登录')
+      throw ApiErrors.webSessionExpired()
     }
     return this.getMemberPageSnapshot(cleanName, cookie)
   }
@@ -700,22 +701,22 @@ export class ApiService {
   async submitReplyWithCookie(cookie: string, topicId: number, content: string): Promise<void> {
     const cleanContent = (content || '').trim()
     if (!cookie) {
-      throw new Error('请先登录')
+      throw ApiErrors.authRequired()
     }
     if (topicId <= 0) {
-      throw new Error('无效主题 ID')
+      throw ApiErrors.invalidTopicId()
     }
     if (!cleanContent) {
-      throw new Error('回复内容不能为空')
+      throw ApiErrors.replyBodyRequired()
     }
     const topicPath = `/t/${topicId}`
     const html = await this.getCookieHtml(topicPath, cookie)
     if (!V2exSessionParser.extractUsername(html)) {
-      throw new Error('Web 会话已失效，请重新登录')
+      throw ApiErrors.webSessionExpired()
     }
     const form = V2exWriteFormParser.extractReplyForm(html)
     if (!form) {
-      throw new Error('解析回复表单失败，请改用浏览器')
+      throw ApiErrors.parseReplyFormFailed()
     }
 
     const fields: Record<string, string> = {}
@@ -743,7 +744,7 @@ export class ApiService {
       body,
     )
     if (res.location.indexOf('/signin') >= 0) {
-      throw new Error('Web 会话已失效，请重新登录')
+      throw ApiErrors.webSessionExpired()
     }
     if (ApiService.isTopicLocation(res.location, topicId)) {
       return
@@ -754,9 +755,9 @@ export class ApiService {
     }
     const problem = V2exSigninParser.extractProblemMessage(res.text)
     if (problem) {
-      throw new Error(`提交失败：${problem}`)
+      throw ApiErrors.submitFailedDetail(problem)
     }
-    throw new Error('提交失败：未确认回复已发布')
+    throw ApiErrors.replySubmitUnconfirmed()
   }
 
   async getReplyThankActionWithCookie(
@@ -765,19 +766,19 @@ export class ApiService {
     replyId: number,
   ): Promise<V2exReplyThankAction> {
     if (!cookie) {
-      throw new Error('请先登录')
+      throw ApiErrors.authRequired()
     }
     if (topicId <= 0 || replyId <= 0) {
-      throw new Error('无效回复')
+      throw ApiErrors.invalidReply()
     }
     const topicPath = `/t/${topicId}`
     const html = await this.getCookieHtml(topicPath, cookie)
     if (!V2exSessionParser.extractUsername(html)) {
-      throw new Error('Web 会话已失效，请重新登录')
+      throw ApiErrors.webSessionExpired()
     }
     const actionPath = ApiService.extractReplyThankPath(html, replyId)
     if (!actionPath) {
-      throw new Error('当前回复不可感谢或已经感谢过')
+      throw ApiErrors.replyThankNotAllowed()
     }
     return { replyId, actionPath }
   }
@@ -788,10 +789,10 @@ export class ApiService {
     action: V2exReplyThankAction,
   ): Promise<void> {
     if (!cookie) {
-      throw new Error('请先登录')
+      throw ApiErrors.authRequired()
     }
     if (topicId <= 0 || !action || action.replyId <= 0 || !action.actionPath) {
-      throw new Error('缺少感谢操作')
+      throw ApiErrors.missingThankAction()
     }
     const topicPath = `/t/${topicId}`
     const res = await this.requestHtmlWithCookieAllowRedirect(
@@ -801,12 +802,12 @@ export class ApiService {
       http.RequestMethod.POST,
     )
     if (res.location.indexOf('/signin') >= 0) {
-      throw new Error('Web 会话已失效，请重新登录')
+      throw ApiErrors.webSessionExpired()
     }
     ApiService.assertThankResponse(res.text)
     const problem = V2exSigninParser.extractProblemMessage(res.text)
     if (problem) {
-      throw new Error(`感谢失败：${problem}`)
+      throw ApiErrors.thankFailed(problem)
     }
   }
 
@@ -815,29 +816,29 @@ export class ApiService {
     topicId: number,
   ): Promise<V2exTopicThankAction> {
     if (!cookie) {
-      throw new Error('请先登录')
+      throw ApiErrors.authRequired()
     }
     if (topicId <= 0) {
-      throw new Error('无效主题')
+      throw ApiErrors.invalidTopicId()
     }
     const topicPath = `/t/${topicId}`
     const html = await this.getCookieHtml(topicPath, cookie)
     if (!V2exSessionParser.extractUsername(html)) {
-      throw new Error('Web 会话已失效，请重新登录')
+      throw ApiErrors.webSessionExpired()
     }
     const actionPath = ApiService.extractTopicThankPath(html, topicId)
     if (!actionPath) {
-      throw new Error('当前主题不可感谢或已经感谢过')
+      throw ApiErrors.topicThankNotAllowed()
     }
     return { topicId, actionPath }
   }
 
   async executeTopicThankWithCookie(cookie: string, action: V2exTopicThankAction): Promise<void> {
     if (!cookie) {
-      throw new Error('请先登录')
+      throw ApiErrors.authRequired()
     }
     if (!action || action.topicId <= 0 || !action.actionPath) {
-      throw new Error('缺少感谢操作')
+      throw ApiErrors.missingThankAction()
     }
     const topicPath = `/t/${action.topicId}`
     const res = await this.requestHtmlWithCookieAllowRedirect(
@@ -847,12 +848,12 @@ export class ApiService {
       http.RequestMethod.POST,
     )
     if (res.location.indexOf('/signin') >= 0) {
-      throw new Error('Web 会话已失效，请重新登录')
+      throw ApiErrors.webSessionExpired()
     }
     ApiService.assertThankResponse(res.text)
     const problem = V2exSigninParser.extractProblemMessage(res.text)
     if (problem) {
-      throw new Error(`感谢失败：${problem}`)
+      throw ApiErrors.thankFailed(problem)
     }
   }
 
@@ -876,7 +877,7 @@ export class ApiService {
     action: V2exTopicModerationAction,
   ): Promise<void> {
     if (!action || action.topicId <= 0 || !action.actionPath) {
-      throw new Error('缺少忽略操作')
+      throw ApiErrors.missingIgnoreAction()
     }
     await this.executeCookieActionWithCookie(
       cookie,
@@ -908,7 +909,7 @@ export class ApiService {
     action: V2exReplyModerationAction,
   ): Promise<void> {
     if (!action || action.replyId <= 0 || !action.actionPath) {
-      throw new Error('缺少忽略操作')
+      throw ApiErrors.missingIgnoreAction()
     }
     await this.executeCookieActionWithCookie(cookie, action.actionPath, `/t/${topicId}`, '忽略失败')
   }
@@ -933,7 +934,7 @@ export class ApiService {
     action: V2exTopicModerationAction,
   ): Promise<void> {
     if (!action || action.topicId <= 0 || !action.actionPath) {
-      throw new Error('缺少报告操作')
+      throw ApiErrors.missingReportAction()
     }
     await this.executeCookieActionWithCookie(
       cookie,
@@ -965,7 +966,7 @@ export class ApiService {
     action: V2exReplyModerationAction,
   ): Promise<void> {
     if (!action || action.replyId <= 0 || !action.actionPath) {
-      throw new Error('缺少报告操作')
+      throw ApiErrors.missingReportAction()
     }
     await this.executeCookieActionWithCookie(cookie, action.actionPath, `/t/${topicId}`, '报告失败')
   }
@@ -984,16 +985,16 @@ export class ApiService {
     const cleanTitle = (title || '').trim()
     const cleanContent = (content || '').trim()
     if (!cookie) {
-      throw new Error('请先登录')
+      throw ApiErrors.authRequired()
     }
     if (!cleanNode) {
-      throw new Error('请选择节点')
+      throw ApiErrors.nodeRequired()
     }
     if (!cleanTitle) {
-      throw new Error('请输入标题')
+      throw ApiErrors.titleRequired()
     }
     if (!cleanContent) {
-      throw new Error('请输入正文')
+      throw ApiErrors.bodyRequired()
     }
 
     const composePath = `/new/${cleanNode}`
@@ -1004,15 +1005,15 @@ export class ApiService {
       http.RequestMethod.GET,
     )
     if (composeRes.location.indexOf('/signin') >= 0) {
-      throw new Error('Web 会话已失效，请重新登录')
+      throw ApiErrors.webSessionExpired()
     }
     const html = composeRes.text
     if (!V2exSessionParser.extractUsername(html)) {
-      throw new Error('Web 会话已失效，请重新登录')
+      throw ApiErrors.webSessionExpired()
     }
     const form = V2exWriteFormParser.extractTopicCreateForm(html)
     if (!form) {
-      throw new Error('解析发帖表单失败，请改用浏览器')
+      throw ApiErrors.parseTopicFormFailed()
     }
 
     const fields: Record<string, string> = {}
@@ -1032,7 +1033,7 @@ export class ApiService {
       body,
     )
     if (res.location.indexOf('/signin') >= 0) {
-      throw new Error('Web 会话已失效，请重新登录')
+      throw ApiErrors.webSessionExpired()
     }
 
     const topicFromLocation = ApiService.extractTopicId(res.location)
@@ -1046,7 +1047,7 @@ export class ApiService {
 
     const problem = V2exSigninParser.extractProblemMessage(res.text)
     if (problem) {
-      throw new Error(`提交失败：${problem}`)
+      throw ApiErrors.submitFailedDetail(problem)
     }
     return 0
   }
@@ -1122,7 +1123,7 @@ export class ApiService {
   ): Promise<void> {
     const clean = (pathOrUrl || '').trim()
     if (!clean) {
-      throw new Error('缺少操作路径')
+      throw ApiErrors.missingActionPath()
     }
     const urls = ApiService.resolveCookieRequestUrls(this.http.getBaseUrl(), clean, refererPath)
     const url = urls.url
@@ -1171,7 +1172,7 @@ export class ApiService {
   ): Promise<CookieHtmlResponse> {
     const clean = (pathOrUrl || '').trim()
     if (!clean) {
-      throw new Error('缺少操作路径')
+      throw ApiErrors.missingActionPath()
     }
     const urls = ApiService.resolveCookieRequestUrls(this.http.getBaseUrl(), clean, refererPath)
     const url = urls.url
@@ -1262,13 +1263,13 @@ export class ApiService {
   private static resolveSameOriginUrl(baseUrl: string, pathOrUrl: string, label: string): string {
     const clean = (pathOrUrl || '').trim()
     if (!clean) {
-      throw new Error(`缺少${label}`)
+      throw ApiErrors.fieldRequiredDetail(label)
     }
     if (clean.startsWith('http://') || clean.startsWith('https://')) {
       const baseOrigin = ApiService.urlOrigin(baseUrl)
       const targetOrigin = ApiService.urlOrigin(clean)
       if (!baseOrigin || targetOrigin !== baseOrigin) {
-        throw new Error(`${label}不允许使用外域链接`)
+        throw ApiErrors.fieldExternalLinkForbidden(label)
       }
       return clean
     }
@@ -1374,11 +1375,11 @@ export class ApiService {
       const data = JSON.parse(clean) as Record<string, Object>
       if (data['success'] === false) {
         const message = (data['message'] as string) || '感谢失败'
-        throw new Error(`感谢失败：${message}`)
+        throw ApiErrors.thankFailed(message)
       }
     } catch (error) {
-      if (error instanceof Error && error.message.indexOf('感谢失败') === 0) {
-        throw error
+      if (isApiError(error) && error.code === ApiErrorCode.THANK_FAILED) {
+        throw error as ApiError
       }
     }
   }
@@ -1412,15 +1413,15 @@ export class ApiService {
     missingMessage: string,
   ): Promise<string> {
     if (!cookie) {
-      throw new Error('请先登录')
+      throw ApiErrors.authRequired()
     }
     if (topicId <= 0 || targetId <= 0) {
-      throw new Error('无效操作对象')
+      throw ApiErrors.invalidOperationTarget()
     }
     const topicPath = `/t/${topicId}`
     const html = await this.getCookieHtml(topicPath, cookie)
     if (!V2exSessionParser.extractUsername(html)) {
-      throw new Error('Web 会话已失效，请重新登录')
+      throw ApiErrors.webSessionExpired()
     }
     const actionPath = ApiService.extractCookieActionPath(html, action, target, targetId)
     if (!actionPath) {
@@ -1436,10 +1437,10 @@ export class ApiService {
     failurePrefix: string,
   ): Promise<void> {
     if (!cookie) {
-      throw new Error('请先登录')
+      throw ApiErrors.authRequired()
     }
     if (!actionPath) {
-      throw new Error('缺少操作路径')
+      throw ApiErrors.missingActionPath()
     }
     const res = await this.requestHtmlWithCookieAllowRedirect(
       actionPath,
@@ -1448,7 +1449,7 @@ export class ApiService {
       http.RequestMethod.GET,
     )
     if (res.location.indexOf('/signin') >= 0) {
-      throw new Error('Web 会话已失效，请重新登录')
+      throw ApiErrors.webSessionExpired()
     }
     const problem = V2exSigninParser.extractProblemMessage(res.text)
     if (problem) {
@@ -1548,7 +1549,7 @@ export class ApiService {
       const html = await this.http.getText(ApiConstants.TAB_URLS[tab])
       const ids = V2exTabParser.extractTopicIds(html)
       if (ids.length === 0) {
-        throw new Error(`Tab "${tab}" 没有获取到主题，请稍后重试`)
+        throw ApiErrors.tabTopicsEmpty(tab)
       }
       topics = await this.getBatchTopics(ids)
     }
