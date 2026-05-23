@@ -4,6 +4,7 @@ import { HttpClient } from './HttpClient'
 import { NetworkProxyRequest } from './NetworkProxyRequest'
 import { V2exSigninParser } from '../parser/V2exSigninParser'
 import { V2exSessionParser } from '../parser/V2exSessionParser'
+import { ApiErrors } from './ApiError'
 
 const CONNECT_TIMEOUT_MS: number = 10000
 const READ_TIMEOUT_MS: number = 15000
@@ -70,7 +71,7 @@ export class V2exNativeAuthService {
     const getRes = await this.requestText(signinUrl, http.RequestMethod.GET, '')
     const form = V2exSigninParser.extractForm(getRes.text)
     if (!form) {
-      throw new Error('解析登录页面失败，请改用网页登录')
+      throw ApiErrors.parseLoginPageFailed()
     }
 
     return {
@@ -87,7 +88,7 @@ export class V2exNativeAuthService {
   async login(username: string, password: string): Promise<NativeLoginSnapshot> {
     const challenge = await this.prepareLogin()
     if (challenge.captchaField) {
-      throw new Error('当前 V2EX 登录需要验证码，请使用网页登录')
+      throw ApiErrors.loginCaptchaRequired()
     }
     return this.loginWithChallenge(challenge, username, password, '')
   }
@@ -107,7 +108,7 @@ export class V2exNativeAuthService {
     ]
     if (challenge.captchaField) {
       if (!captchaCode.trim()) {
-        throw new Error('请输入验证码')
+        throw ApiErrors.captchaRequired()
       }
       pairs.push({ key: challenge.captchaField, value: captchaCode.trim() })
     }
@@ -126,7 +127,7 @@ export class V2exNativeAuthService {
 
     const loginError = V2exSigninParser.extractProblemMessage(postRes.text)
     if (V2exNativeAuthService.isSigninResponse(postRes) || loginError) {
-      throw new Error(`登录失败：${V2exNativeAuthService.loginInputErrorMessage(challenge, loginError)}`)
+      throw ApiErrors.loginFailedDetail(V2exNativeAuthService.loginInputErrorMessage(challenge, loginError))
     }
     if (DEBUG_SKIP_LOGIN_2FA) {
       return { cookie: cookieAfterPost, username: username }
@@ -158,13 +159,13 @@ export class V2exNativeAuthService {
       }
       if (postRes.location && !V2exNativeAuthService.isLocationPath(postRes.location, '/') &&
         !V2exNativeAuthService.isLocationPath(postRes.location, V2exNativeAuthService.SETTINGS_PATH)) {
-        throw new Error(`登录失败：不支持的跳转 ${postRes.location}`)
+        throw ApiErrors.loginRedirectUnsupported(postRes.location)
       }
       const settingsProblem = V2exSigninParser.extractProblemMessage(settingsRes.text)
       if (V2exNativeAuthService.isSigninResponse(settingsRes) || settingsProblem) {
-        throw new Error(`登录失败：${V2exNativeAuthService.loginInputErrorMessage(challenge, settingsProblem)}`)
+        throw ApiErrors.loginFailedDetail(V2exNativeAuthService.loginInputErrorMessage(challenge, settingsProblem))
       }
-      throw new Error('登录失败：无法确认登录状态，请改用网页登录')
+      throw ApiErrors.loginStateUnconfirmed()
     }
 
     return { cookie: cookieAfterPost, username: signedInUser }
@@ -173,7 +174,7 @@ export class V2exNativeAuthService {
   async completeTwoFactorWithCookie(cookie: string, code: string): Promise<NativeLoginSnapshot> {
     const cleanCookie = (cookie || '').trim()
     if (!cleanCookie) {
-      throw new Error('缺少登录会话，请重新登录')
+      throw ApiErrors.loginSessionMissing()
     }
     const twoFactorUrl = `${this.httpClient.getBaseUrl()}${V2exNativeAuthService.TWO_FACTOR_PATH}`
     const getRes = await this.requestText(twoFactorUrl, http.RequestMethod.GET, cleanCookie)
@@ -186,7 +187,7 @@ export class V2exNativeAuthService {
   async completeTwoFactor(challenge: NativeTwoFactorChallenge, code: string): Promise<NativeLoginSnapshot> {
     const cleanCode = code.trim()
     if (!cleanCode) {
-      throw new Error('请输入两步验证码')
+      throw ApiErrors.twoFactorCodeRequired()
     }
     const pairs = V2exNativeAuthService.twoFactorFormPairs(challenge, cleanCode)
 
@@ -214,7 +215,7 @@ export class V2exNativeAuthService {
       if (nextChallenge) {
         throw new NativeTwoFactorRequiredError(nextChallenge, `两步验证失败：${loginError}`)
       }
-      throw new Error(`两步验证失败：${loginError}`)
+      throw ApiErrors.twoFactorFailedDetail(loginError)
     }
 
     const settingsRes = await this.requestText(`${this.httpClient.getBaseUrl()}${V2exNativeAuthService.SETTINGS_PATH}`, http.RequestMethod.GET, cookieAfterPost)
@@ -231,7 +232,7 @@ export class V2exNativeAuthService {
       if (nextChallenge) {
         throw new NativeTwoFactorRequiredError(nextChallenge, '两步验证失败，请检查验证码后重试')
       }
-      throw new Error('两步验证失败，请检查验证码或改用网页登录')
+      throw ApiErrors.twoFactorFailed()
     }
     return { cookie: cookieAfterPost, username: signedInUser }
   }

@@ -6,6 +6,7 @@ import { ApiConstants } from '../constants/ApiConstants'
 import { StorageKeys } from '../constants/StorageKeys'
 import { HtmlEntityUtils } from '../utils/HtmlEntityUtils'
 import type { V2exNode, V2exReply, V2exTopic } from './NetworkTypes'
+import { ApiErrors } from './ApiError'
 
 const MAX_RETRIES: number = 3
 const CONNECT_TIMEOUT_MS: number = 10000
@@ -36,7 +37,7 @@ export class ApiV2Service {
   async getNode(token: string, nodeName: string): Promise<ApiV2Response<V2exNode>> {
     const cleanName = nodeName.trim()
     if (!cleanName) {
-      throw new Error('节点名称不能为空')
+      throw ApiErrors.nodeNameRequired()
     }
     const res = await this.get<V2exNode>(`${ApiConstants.API_V2_NODE}/${encodeURIComponent(cleanName)}`, token)
     if (res.data) {
@@ -48,7 +49,7 @@ export class ApiV2Service {
   async getNodeTopics(token: string, nodeName: string, page: number = 1): Promise<ApiV2Response<V2exTopic[]>> {
     const cleanName = nodeName.trim()
     if (!cleanName) {
-      throw new Error('节点名称不能为空')
+      throw ApiErrors.nodeNameRequired()
     }
     const cleanPage = page > 0 ? page : 1
     const res = await this.get<V2exTopic[]>(
@@ -63,7 +64,7 @@ export class ApiV2Service {
 
   async getTopic(token: string, topicId: number): Promise<ApiV2Response<V2exTopic>> {
     if (topicId <= 0) {
-      throw new Error('无效的主题 ID')
+      throw ApiErrors.invalidTopicId()
     }
     const res = await this.get<V2exTopic>(`${ApiConstants.API_V2_TOPIC}/${topicId}`, token)
     if (res.data) {
@@ -79,7 +80,7 @@ export class ApiV2Service {
     cacheBuster: number = 0
   ): Promise<ApiV2Response<V2exReply[]>> {
     if (topicId <= 0) {
-      throw new Error('无效的主题 ID')
+      throw ApiErrors.invalidTopicId()
     }
     const cleanPage = page > 0 ? page : 1
     const endpoint = cacheBuster > 0
@@ -92,7 +93,7 @@ export class ApiV2Service {
 
   async deleteNotification(token: string, notificationId: number): Promise<ApiV2Response<Object>> {
     if (notificationId <= 0) {
-      throw new Error('无效的通知 ID')
+      throw ApiErrors.invalidNotificationId()
     }
     return this.delete<Object>(`${ApiConstants.API_V2_NOTIFICATIONS}/${notificationId}`, token)
   }
@@ -121,7 +122,7 @@ export class ApiV2Service {
     const url = `${this.httpClient.getBaseUrl()}${endpoint}`
     const trimmedToken = token.trim()
     if (!trimmedToken) {
-      throw new Error('缺少 Token，请先配置 Personal Access Token')
+      throw ApiErrors.tokenMissing()
     }
 
     const requestHeaders: Record<string, string> = {
