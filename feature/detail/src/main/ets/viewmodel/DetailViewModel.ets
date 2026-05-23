@@ -8,6 +8,8 @@ import {
   StorageKeys,
   ReplyDisplaySettings,
   CookieJarSettings,
+  AppStrings,
+  translateApiError,
 } from 'shared'
 import type { V2exTopicWebRepliesPage, V2exTopicWebRepliesAllResult } from 'shared'
 import { ReplyDataSource } from '../model/DetailModels'
@@ -244,7 +246,7 @@ export class DetailViewModel {
 
   async load(forceNetwork: boolean = true): Promise<void> {
     if (this.topicId <= 0) {
-      this.errorMessage = '无效的主题 ID'
+      this.errorMessage = AppStrings.text($r('app.string.api_error_invalid_topic_id'), 'Invalid topic ID')
       return
     }
     this.isLoading = true
@@ -316,7 +318,7 @@ export class DetailViewModel {
       this.saveCache(this.topic, this.replies).catch((_e: Error) => {})
     } catch (error) {
       const e = error as Error
-      this.errorMessage = e.message || '加载失败'
+      this.errorMessage = translateApiError(e)
       await this.loadCachedData()
       console.error('Failed to load topic detail:', e.message)
     } finally {

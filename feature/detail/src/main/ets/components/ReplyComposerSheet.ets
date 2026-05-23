@@ -17,7 +17,8 @@ import {
   MarkdownToolbar,
   AppModalScaffold,
   StorageKeys,
-  ThemeConstants
+  ThemeConstants,
+  translateApiError
 } from 'shared'
 
 @Component
@@ -234,7 +235,7 @@ export struct ReplyComposerSheet {
         this.savedAt = savedAt
       })
       .catch((error: Error) => {
-        this.errorMessage = error.message || '保存草稿失败'
+        this.errorMessage = translateApiError(error)
       })
   }
 
@@ -335,7 +336,7 @@ export struct ReplyComposerSheet {
         this.close()
       })
       .catch((error: Error) => {
-        this.errorMessage = error.message || '提交失败'
+        this.errorMessage = translateApiError(error)
       })
       .finally(() => {
         this.isSubmitting = false

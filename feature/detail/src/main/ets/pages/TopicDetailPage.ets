@@ -65,6 +65,7 @@ import {
   TopicDetailParams,
   MotionHandStateService,
   defaultSheetOptions,
+  translateApiError,
 } from 'shared'
 import type { V2exTopicThankAction } from 'shared'
 import type { V2exReplyModerationAction, V2exTopicModerationAction } from 'shared'
@@ -930,7 +931,7 @@ export struct TopicDetailPage {
       .then(() => {})
       .catch((error: Error) => {
         promptAction
-          .openToast({ message: error.message || '刷新失败' })
+          .openToast({ message: translateApiError(error) })
           .catch((_toastError: Error) => {})
       })
   }
@@ -1275,7 +1276,7 @@ export struct TopicDetailPage {
     }
     const cookie = CookieJarSettings.getCurrentCookie()
     if (!cookie) {
-      promptAction.openToast({ message: '请先登录' }).catch((_error: Error) => {})
+      promptAction.openToast({ message: AppStrings.text($r('app.string.api_error_auth_required'), 'Please sign in') }).catch((_error: Error) => {})
       return
     }
     this.isSiteFavoriteLoading = true
@@ -1288,7 +1289,7 @@ export struct TopicDetailPage {
       })
       .catch((error: Error) => {
         promptAction
-          .openToast({ message: error.message || '解析站内收藏失败' })
+          .openToast({ message: translateApiError(error) })
           .catch((_error: Error) => {})
       })
       .finally(() => {
@@ -1386,7 +1387,7 @@ export struct TopicDetailPage {
       })
       .catch((error: Error) => {
         promptAction
-          .openToast({ message: error.message || '操作失败' })
+          .openToast({ message: translateApiError(error) })
           .catch((_error: Error) => {})
       })
       .finally(() => {
@@ -1447,7 +1448,7 @@ export struct TopicDetailPage {
       })
       .catch((error: Error) => {
         promptAction
-          .openToast({ message: error.message || '感谢失败' })
+          .openToast({ message: translateApiError(error) })
           .catch((_error: Error) => {})
       })
       .finally(() => {
@@ -1535,7 +1536,7 @@ export struct TopicDetailPage {
             this.thankedReplyIdsJson,
           )
         promptAction
-          .openToast({ message: error.message || '感谢失败' })
+          .openToast({ message: translateApiError(error) })
           .catch((_error: Error) => {})
       })
       .finally(() => {
@@ -1687,7 +1688,7 @@ export struct TopicDetailPage {
       })
       .catch((error: Error) => {
         promptAction
-          .openToast({ message: error.message || `${verb}失败` })
+          .openToast({ message: translateApiError(error) })
           .catch((_error: Error) => {})
       })
       .finally(() => {
@@ -1770,7 +1771,7 @@ export struct TopicDetailPage {
       })
       .catch((error: Error) => {
         promptAction
-          .openToast({ message: error.message || `${verb}失败` })
+          .openToast({ message: translateApiError(error) })
           .catch((_error: Error) => {})
       })
       .finally(() => {
@@ -1789,7 +1790,7 @@ export struct TopicDetailPage {
       promptAction.openToast({ message: $r('app.string.common_copied') }).catch((_error: Error) => {})
     } catch (error) {
       promptAction
-        .openToast({ message: (error as Error).message || '复制失败' })
+        .openToast({ message: translateApiError(error) })
         .catch((_error: Error) => {})
     }
   }
@@ -1806,7 +1807,7 @@ export struct TopicDetailPage {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     const want: Want = { action: 'ohos.want.action.viewData', uri: target }
     context.startAbility(want).catch((error: Error) => {
-      promptAction.openToast({ message: error.message || '打开失败' }).catch((_error: Error) => {})
+      promptAction.openToast({ message: translateApiError(error) }).catch((_error: Error) => {})
     })
   }
 
@@ -1831,7 +1832,7 @@ export struct TopicDetailPage {
       })
       .catch((error: Error) => {
         promptAction
-          .openToast({ message: error.message || '分享失败' })
+          .openToast({ message: translateApiError(error) })
           .catch((_error: Error) => {})
       })
   }

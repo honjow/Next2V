@@ -11,7 +11,7 @@ import {
 } from '../model/ReplyComposerDraftCoordinator'
 import {
   ApiService, AppStrings, CookieJarSettings, DateUtils, MarkdownContent, MarkdownToolbar, SecondaryFormScaffold,
-  ThemeConstants
+  ThemeConstants, translateApiError
 } from 'shared'
 
 @Component
@@ -192,7 +192,7 @@ export struct ReplyEditorPage {
         this.savedAt = savedAt
       })
       .catch((error: Error) => {
-        this.errorMessage = error.message || '保存草稿失败'
+        this.errorMessage = translateApiError(error)
       })
       .finally(() => {
         this.isSaving = false
@@ -286,7 +286,7 @@ export struct ReplyEditorPage {
     const cookie = CookieJarSettings.getCurrentCookie()
     if (!cookie) {
       this.isSubmitDialogShown = false
-      promptAction.openToast({ message: '请先登录' }).catch((_error: Error) => { })
+      promptAction.openToast({ message: AppStrings.text($r('app.string.api_error_auth_required'), 'Please sign in') }).catch((_error: Error) => { })
       return
     }
     this.isSubmitting = true
@@ -301,7 +301,7 @@ export struct ReplyEditorPage {
         this.stack.pop()
       })
       .catch((error: Error) => {
-        this.errorMessage = error.message || '提交失败'
+        this.errorMessage = translateApiError(error)
         promptAction.openToast({ message: this.errorMessage }).catch((_error2: Error) => { })
       })
       .finally(() => {
