@@ -233,6 +233,10 @@
       "value": "點擊登入 V2EX"
     },
     {
+      "name": "account_add_another",
+      "value": "新增帳號"
+    },
+    {
       "name": "profile_home",
       "value": "個人主頁"
     },

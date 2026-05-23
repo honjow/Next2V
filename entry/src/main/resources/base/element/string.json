@@ -233,6 +233,10 @@
       "value": "Tap to log in to V2EX"
     },
     {
+      "name": "account_add_another",
+      "value": "Add another account"
+    },
+    {
       "name": "profile_home",
       "value": "Profile"
     },

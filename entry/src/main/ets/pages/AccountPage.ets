@@ -252,12 +252,18 @@ export struct AccountDashboardPage {
 
   @Builder
   AuthSection() {
-    Column() {
-      if (!this.hasAnyAccount()) {
-        this.AuthActionRow(AccountPageCoordinator.LOGIN_TITLE, AccountPageCoordinator.LOGIN_SUBTITLE, () => {
-          this.ns.pushPathByName('V2exNativeLogin', null)
+    if (!this.hasAnyAccount()) {
+      GroupedListSection() {
+        ConciseListRow({
+          title: AccountPageCoordinator.LOGIN_TITLE,
+          subtitle: AccountPageCoordinator.LOGIN_SUBTITLE,
+          action: () => {
+            this.ns.pushPathByName('V2exNativeLogin', null)
+          }
         })
-      } else {
+      }
+    } else {
+      GroupedListSection() {
         AccountSignedInCard({
           avatarUrl: this.currentAvatar(),
           username: this.currentUsername(),
@@ -272,13 +278,15 @@ export struct AccountDashboardPage {
             this.ns.pushPathByName('Account', null)
           }
         })
+        this.SettingsDivider()
+        ConciseListRow({
+          title: AccountPageCoordinator.ADD_ANOTHER_ACCOUNT_TITLE,
+          action: () => {
+            this.ns.pushPathByName('V2exNativeLogin', null)
+          }
+        })
       }
     }
-    .width('100%')
-    .alignItems(HorizontalAlign.Start)
-    .borderRadius(ThemeConstants.RADIUS_CARD)
-    .padding(4)
-    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }
 
   @Builder

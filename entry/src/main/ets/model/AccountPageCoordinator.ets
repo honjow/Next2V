@@ -20,6 +20,7 @@ export class AccountPageCoordinator {
 
   static get LOGIN_TITLE(): ResourceStr { return AppStrings.R_NOT_LOGGED_IN }
   static get LOGIN_SUBTITLE(): ResourceStr { return AppStrings.R_TAP_TO_LOGIN_V2EX }
+  static get ADD_ANOTHER_ACCOUNT_TITLE(): ResourceStr { return AppStrings.R_ACCOUNT_ADD_ANOTHER }
 
   static get PROFILE_TITLE(): ResourceStr { return AppStrings.R_PROFILE_HOME }
   static get BALANCE_DETAIL_TITLE(): ResourceStr { return AppStrings.R_BALANCE_DETAILS }

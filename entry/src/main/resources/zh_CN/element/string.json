@@ -233,6 +233,10 @@
       "value": "点击登录 V2EX"
     },
     {
+      "name": "account_add_another",
+      "value": "添加账号"
+    },
+    {
       "name": "profile_home",
       "value": "个人主页"
     },

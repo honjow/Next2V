@@ -94,6 +94,7 @@ export class AppStrings {
   static readonly R_ADVANCED_API_SECTION: Resource = $r('app.string.advanced_api_section')
   static readonly R_NOT_LOGGED_IN: Resource = $r('app.string.not_logged_in')
   static readonly R_TAP_TO_LOGIN_V2EX: Resource = $r('app.string.tap_to_login_v2ex')
+  static readonly R_ACCOUNT_ADD_ANOTHER: Resource = $r('app.string.account_add_another')
   static readonly R_ACCOUNT_V2EX_USER: Resource = $r('app.string.account_v2ex_user')
   static readonly R_ACCOUNT_TOKEN_SCOPE_ARG: Resource = $r('app.string.account_token_scope_arg')
   static readonly R_ACCOUNT_TOKEN_EXPIRATION_ARG: Resource = $r('app.string.account_token_expiration_arg')
