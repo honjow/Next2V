@@ -2,12 +2,15 @@ import { http, socket } from '@kit.NetworkKit'
 import util from '@ohos.util'
 import type { NetworkProxySettingsSnapshot } from '../settings/NetworkProxySettings'
 import type { NetworkProxyRequestOptions, NetworkProxyResponse } from './NetworkProxyRequest'
+import { Socks5Handshake } from './Socks5Handshake'
 
 /**
  * SOCKS5 HTTP/1.1 client built on top of `@ohos.net.socket` TCPSocket/TLSSocket
- * with the since-18 SOCKS5 ProxyOptions. Replaces the documented-unsupported
- * `rcp.WebProxy { url: socks5://... }` path which times out on device
- * (osErr=11, code=1007900028).
+ * with a hand-rolled SOCKS5 handshake (`Socks5Handshake.ets`). The SDK's
+ * `TCPConnectOptions.proxy` SOCKS5 path does not honour user/pass auth on
+ * device — it always advertises no-auth only — so we drive the SOCKS5 bytes
+ * ourselves on a raw TCP socket and (for HTTPS) wrap the tunnelled TCP with
+ * `constructTLSSocketInstance(tcp)`.
  *
  * Scope: single-shot HTTP/1.1 over a SOCKS5 tunnel; `Connection: close` only;
  * no redirect following; no keep-alive; no compression (Accept-Encoding: identity).
@@ -27,29 +30,31 @@ export class Socks5HttpClient {
     const connectTimeout = options.connectTimeout || Socks5HttpClient.DEFAULT_CONNECT_TIMEOUT_MS
     const readTimeout = options.readTimeout || Socks5HttpClient.DEFAULT_READ_TIMEOUT_MS
 
-    const proxyOpts: socket.ProxyOptions = {
-      type: socket.ProxyTypes.SOCKS5,
-      address: { address: settings.host, port: settings.port },
-    }
-    if (settings.username) {
-      proxyOpts.username = settings.username
-      proxyOpts.password = settings.password
-    }
+    const proxyHost = settings.host
+    const proxyPort = settings.port
+    const username = settings.username || ''
+    const password = settings.password || ''
 
-    const credRedacted = settings.username ? '<user>:<pass>@' : ''
-    console.info(`[socks5-socket] connect start target=${target.host}:${target.port} scheme=${target.scheme} via ${credRedacted}${settings.host}:${settings.port}`)
+    // Manual SOCKS5 handshake on a raw TCP socket — the SDK's ProxyOptions
+    // user/pass path is broken on device (sub-negotiation never sent;
+    // greeting always advertises no-auth only). See Socks5Handshake.ets.
+    const credRedacted = username ? '<user>:<pass>@' : ''
+    console.info(`[socks5-socket] connect start target=${target.host}:${target.port} scheme=${target.scheme} via ${credRedacted}${proxyHost}:${proxyPort}`)
 
     const requestBytes = Socks5HttpClient.buildRequestBytes(url, target, options)
 
     if (target.scheme === 'https') {
-      return Socks5HttpClient.runTls(target, proxyOpts, connectTimeout, readTimeout, requestBytes, options, url)
+      return Socks5HttpClient.runTls(target, proxyHost, proxyPort, username, password, connectTimeout, readTimeout, requestBytes, options, url)
     }
-    return Socks5HttpClient.runTcp(target, proxyOpts, connectTimeout, readTimeout, requestBytes, options, url)
+    return Socks5HttpClient.runTcp(target, proxyHost, proxyPort, username, password, connectTimeout, readTimeout, requestBytes, options, url)
   }
 
   private static async runTcp(
     target: ParsedUrl,
-    proxyOpts: socket.ProxyOptions,
+    proxyHost: string,
+    proxyPort: number,
+    username: string,
+    password: string,
     connectTimeout: number,
     readTimeout: number,
     requestBytes: Uint8Array,
@@ -58,13 +63,13 @@ export class Socks5HttpClient {
   ): Promise<NetworkProxyResponse> {
     const tcp = socket.constructTCPSocketInstance()
     const reader = new ResponseReader()
-    Socks5HttpClient.attachTcpListeners(tcp, reader)
     try {
       await tcp.connect({
-        address: { address: target.host, port: target.port },
+        address: { address: proxyHost, port: proxyPort },
         timeout: connectTimeout,
-        proxy: proxyOpts,
       })
+      await Socks5Handshake.perform(tcp, target.host, target.port, username, password, connectTimeout)
+      Socks5HttpClient.attachTcpListeners(tcp, reader)
       console.info(`[socks5-socket] connect complete target=${target.host}:${target.port}`)
       const buf = Socks5HttpClient.uint8ToArrayBuffer(requestBytes)
       await tcp.send({ data: buf })
@@ -79,33 +84,31 @@ export class Socks5HttpClient {
 
   private static async runTls(
     target: ParsedUrl,
-    proxyOpts: socket.ProxyOptions,
+    proxyHost: string,
+    proxyPort: number,
+    username: string,
+    password: string,
     connectTimeout: number,
     readTimeout: number,
     requestBytes: Uint8Array,
     options: NetworkProxyRequestOptions,
     originalUrl: string,
   ): Promise<NetworkProxyResponse> {
-    // SOCKS5 + TLS must be layered: first connect a TCP socket through the
-    // SOCKS5 proxy to the target (since-18 TCPConnectOptions.proxy), THEN
-    // wrap the connected TCP into a TLSSocket via the since-12 overload
-    // `constructTLSSocketInstance(tcp)` and run the TLS handshake against
-    // the same target host:port (no proxy field, already proxied at L4).
-    //
-    // The previous no-arg `constructTLSSocketInstance()` + connect({proxy})
-    // combo created a TLSSocket without an underlying TCP handle; native
-    // NETSTACK then logs `tlsSocket is null` and the connect Promise never
-    // settles (device hilog evidence: 80+ "connect start", 0 "connect
-    // complete").
+    // Layered transport: raw TCP → manual SOCKS5 handshake → TLS wrap. The
+    // SDK's TCPConnectOptions.proxy SOCKS5 path does not honour user/pass
+    // credentials on device (greeting always advertises no-auth only), so
+    // we drive the SOCKS5 bytes ourselves on a raw TCP socket; then
+    // `constructTLSSocketInstance(tcp)` upgrades the tunnelled TCP to TLS
+    // against the real target's SNI/cert.
     const tcp = socket.constructTCPSocketInstance()
     let tls: socket.TLSSocket | null = null
     const reader = new ResponseReader()
     try {
       await tcp.connect({
-        address: { address: target.host, port: target.port },
+        address: { address: proxyHost, port: proxyPort },
         timeout: connectTimeout,
-        proxy: proxyOpts,
       })
+      await Socks5Handshake.perform(tcp, target.host, target.port, username, password, connectTimeout)
       console.info(`[socks5-socket] socks5-tcp-up target=${target.host}:${target.port}`)
       try {
         tls = socket.constructTLSSocketInstance(tcp)
