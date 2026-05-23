@@ -15,7 +15,8 @@ import {
   SecondaryListScaffold,
   ThemeConstants,
   TwoFactorChallengeService,
-  V2exNativeAuthService
+  V2exNativeAuthService,
+  translateApiError
 } from 'shared'
 import type { NativeLoginChallenge, NativeLoginSnapshot } from 'shared'
 
@@ -176,7 +177,7 @@ export struct V2exNativeLoginPage {
         if (!this.isPageActive || requestId !== this.challengeRequestId) {
           return
         }
-        this.errorMessage = error.message || '登录表单加载失败'
+        this.errorMessage = translateApiError(error)
       })
       .finally(() => {
         if (!this.isPageActive || requestId !== this.challengeRequestId) {
@@ -248,7 +249,7 @@ export struct V2exNativeLoginPage {
           this.errorMessage = '需要完成两步验证后才能登录'
           return Promise.resolve()
         }
-        this.errorMessage = error.message || '登录失败'
+        this.errorMessage = translateApiError(error)
         if (this.captchaField) {
           this.loadChallenge(this.errorMessage)
         }

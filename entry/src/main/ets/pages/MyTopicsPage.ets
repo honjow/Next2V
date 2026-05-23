@@ -7,6 +7,7 @@ import {
   StorageKeys,
   TopicCard,
   TwoFactorChallengeService,
+  translateApiError,
   type TopicDetailParams,
   type V2exTopic,
   V2exCookieTwoFactorRequiredError
@@ -120,7 +121,7 @@ export struct MyTopicsPage {
           this.openTwoFactorFromCookie()
           return
         }
-        this.errorMessage = error.message || '加载失败'
+        this.errorMessage = translateApiError(error)
         this.topics = []
         this.hasMore = false
         if (!force) {
@@ -169,7 +170,7 @@ export struct MyTopicsPage {
           this.openTwoFactorFromCookie()
           return
         }
-        promptAction.openToast({ message: error.message || '加载更多失败' }).catch((_error: Error) => {
+        promptAction.openToast({ message: translateApiError(error) }).catch((_error: Error) => {
         })
       })
       .finally(() => {

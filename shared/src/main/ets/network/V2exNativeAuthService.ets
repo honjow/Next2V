@@ -52,7 +52,7 @@ export interface NativeTwoFactorChallenge {
 export class NativeTwoFactorRequiredError extends Error {
   challenge: NativeTwoFactorChallenge
 
-  constructor(challenge: NativeTwoFactorChallenge, message: string = '需要两步验证码') {
+  constructor(challenge: NativeTwoFactorChallenge, message: string = 'Two-factor authentication required') {
     super(message)
     this.name = 'NativeTwoFactorRequiredError'
     this.challenge = challenge
@@ -205,7 +205,7 @@ export class V2exNativeAuthService {
     if (V2exNativeAuthService.isLocationPath(postRes.location, V2exNativeAuthService.TWO_FACTOR_PATH)) {
       throw new NativeTwoFactorRequiredError(
         V2exNativeAuthService.fixedTwoFactorChallenge(cookieAfterPost, challenge.hiddenFields),
-        '两步验证失败，请检查验证码后重试'
+        'Two-factor failed, please check the code'
       )
     }
 
@@ -213,7 +213,7 @@ export class V2exNativeAuthService {
     if (loginError) {
       const nextChallenge = V2exNativeAuthService.twoFactorChallengeFromHtml(cookieAfterPost, postRes.text)
       if (nextChallenge) {
-        throw new NativeTwoFactorRequiredError(nextChallenge, `两步验证失败：${loginError}`)
+        throw new NativeTwoFactorRequiredError(nextChallenge, `Two-factor failed: ${loginError}`)
       }
       throw ApiErrors.twoFactorFailedDetail(loginError)
     }
@@ -224,13 +224,13 @@ export class V2exNativeAuthService {
       if (V2exNativeAuthService.isLocationPath(settingsRes.location, V2exNativeAuthService.TWO_FACTOR_PATH)) {
         throw new NativeTwoFactorRequiredError(
           V2exNativeAuthService.fixedTwoFactorChallenge(cookieAfterPost, challenge.hiddenFields),
-          '两步验证失败，请检查验证码后重试'
+          'Two-factor failed, please check the code'
         )
       }
       const nextChallenge = V2exNativeAuthService.twoFactorChallengeFromHtml(cookieAfterPost, postRes.text) ||
         V2exNativeAuthService.twoFactorChallengeFromHtml(cookieAfterPost, settingsRes.text)
       if (nextChallenge) {
-        throw new NativeTwoFactorRequiredError(nextChallenge, '两步验证失败，请检查验证码后重试')
+        throw new NativeTwoFactorRequiredError(nextChallenge, 'Two-factor failed, please check the code')
       }
       throw ApiErrors.twoFactorFailed()
     }

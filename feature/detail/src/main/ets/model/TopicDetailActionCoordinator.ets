@@ -186,7 +186,7 @@ export class TopicDetailActionCoordinator {
       return { allowed: false, message: AppStrings.text($r('app.string.already_thanked'), 'Already thanked') }
     }
     if (!options.cookie) {
-      return { allowed: false, message: '请先登录' }
+      return { allowed: false, message: AppStrings.text($r('app.string.api_error_auth_required'), 'Login required') }
     }
     return { allowed: true, message: '' }
   }
@@ -202,7 +202,7 @@ export class TopicDetailActionCoordinator {
       return { allowed: false, message: AppStrings.text($r('app.string.already_thanked'), 'Already thanked') }
     }
     if (!options.cookie) {
-      return { allowed: false, message: '请先登录' }
+      return { allowed: false, message: AppStrings.text($r('app.string.api_error_auth_required'), 'Login required') }
     }
     return { allowed: true, message: '' }
   }
@@ -212,7 +212,7 @@ export class TopicDetailActionCoordinator {
       return { allowed: false, message: '' }
     }
     if (!options.cookie) {
-      return { allowed: false, message: '请先登录' }
+      return { allowed: false, message: AppStrings.text($r('app.string.api_error_auth_required'), 'Login required') }
     }
     if (options.reply !== undefined && !TopicDetailActionCoordinator.hasValidReply(options.reply)) {
       return { allowed: false, message: '回复信息缺失' }

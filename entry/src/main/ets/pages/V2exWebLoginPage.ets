@@ -11,7 +11,8 @@ import {
   SecondaryListScaffold,
   StorageKeys,
   ThemeConstants,
-  V2exSessionParser
+  V2exSessionParser,
+  translateApiError
 } from 'shared'
 
 const DEFAULT_V2EX_BASE_URL: string = 'https://www.v2ex.com'
@@ -175,8 +176,7 @@ export struct V2exWebLoginPage {
     try {
       this.controller.refresh()
     } catch (error) {
-      const e = error as Error
-      this.errorMessage = e.message || '重新加载失败'
+      this.errorMessage = translateApiError(error)
     }
   }
 
@@ -186,8 +186,7 @@ export struct V2exWebLoginPage {
     try {
       this.controller.loadUrl(url)
     } catch (error) {
-      const e = error as Error
-      this.errorMessage = `${e.message || '网页登录加载失败'}: ${url}`
+      this.errorMessage = `${translateApiError(error)}: ${url}`
     }
   }
 
@@ -274,7 +273,7 @@ export struct V2exWebLoginPage {
           return
         }
         if (!silent) {
-          this.errorMessage = error.message || '保存登录失败'
+          this.errorMessage = translateApiError(error)
         } else if (!this.isSaved && autoAttempt > 0 && autoAttempt < 12) {
           setTimeout(() => {
             if (this.isPageActive && !this.isSaved && requestId === this.saveRequestId) {

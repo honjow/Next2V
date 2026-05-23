@@ -15,7 +15,8 @@ import {
   ThemeConstants,
   TwoFactorChallengeService,
   V2exCookieTwoFactorRequiredError,
-  V2exNotification
+  V2exNotification,
+  translateApiError
 } from 'shared'
 import {
   NotificationAuthContext,
@@ -246,7 +247,7 @@ export struct NotificationPage {
           return
         }
         DiagnosticLogger.warn('notification', 'notification_refresh_error', { requestId: requestId, source: this.notificationVm.sourceKeyFor(this.notificationAuthContext()), errorKind: error.name || 'Error' }, error)
-        this.notificationError = error.message || '读取通知授权失败'
+        this.notificationError = translateApiError(error)
         this.notificationInitialSettled = true
       })
       .finally(() => {
@@ -493,7 +494,7 @@ export struct NotificationPage {
 
   private loadNotifications(force: boolean = false): void {
     this.refreshNotifications(force).catch((error: Error) => {
-      this.notificationError = error.message || '通知加载失败'
+      this.notificationError = translateApiError(error)
     })
   }
 
@@ -623,7 +624,7 @@ export struct NotificationPage {
       })
       .catch((error: Error) => {
         DiagnosticLogger.warn('notification', 'notification_load_more_error', { source: this.notificationVm.sourceKeyFor(authContext), page: nextPage }, error)
-        const message = error.message || '加载更多失败'
+        const message = translateApiError(error)
         this.notificationError = message
         this.notificationHasMore = false
         this.handleTwoFactorChallenge(error)

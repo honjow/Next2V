@@ -15,7 +15,8 @@ import {
   V2exBalance,
   V2exDailyMission,
   V2exTokenInfo,
-  ViewedTopic
+  ViewedTopic,
+  translateApiError
 } from 'shared'
 import {
   ApiService,
@@ -542,7 +543,7 @@ export struct AccountDashboardPage {
         }
       })
       .catch((error: Error) => {
-        this.authError = error.message
+        this.authError = translateApiError(error)
       })
   }
 
@@ -621,7 +622,7 @@ export struct AccountDashboardPage {
           return
         }
         DiagnosticLogger.warn('account', 'account_session_validate_error', { force: force, durationMs: Date.now() - startedAt }, error)
-        const message = error.message || AppStrings.text(AppStrings.R_WEB_SESSION_VALIDATION_FAILED, 'Web session validation failed')
+        const message = translateApiError(error)
         this.sessionError = message
         this.handleExpiredCookieSession(message)
       })
@@ -667,7 +668,7 @@ export struct AccountDashboardPage {
         this.storedUsername = profile.username || this.storedUsername
       })
       .catch((error: Error) => {
-        this.authError = error.message || AppStrings.text(AppStrings.R_LOGIN_VALIDATION_FAILED, 'Sign-in validation failed')
+        this.authError = translateApiError(error)
       })
   }
 
@@ -685,7 +686,7 @@ export struct AccountDashboardPage {
       })
       .catch((error: Error) => {
         this.tokenInfo = null
-        this.tokenInfoError = error.message || AppStrings.text(AppStrings.R_TOKEN_INFO_FAILED, 'Failed to fetch token info')
+        this.tokenInfoError = translateApiError(error)
       })
   }
 
@@ -733,7 +734,7 @@ export struct AccountDashboardPage {
         }
       })
       .catch((error: Error) => {
-        this.authError = error.message
+        this.authError = translateApiError(error)
       })
   }
 
@@ -746,13 +747,13 @@ export struct AccountDashboardPage {
     this.sessionError = ''
     Promise.all([
       AuthSettings.clear(context).catch((error: Error) => {
-        this.authError = error.message || AppStrings.text(AppStrings.R_CLEAR_TOKEN_FAILED, 'Failed to clear token')
+        this.authError = translateApiError(error)
       }),
       AuthSessionSettings.clear(context).catch((error: Error) => {
-        this.sessionError = error.message || AppStrings.text(AppStrings.R_CLEAR_SESSION_FAILED, 'Failed to clear session')
+        this.sessionError = translateApiError(error)
       }),
       CookieJarSettings.clear(context).catch((error: Error) => {
-        this.sessionError = error.message || AppStrings.text(AppStrings.R_CLEAR_COOKIE_FAILED, 'Failed to clear cookies')
+        this.sessionError = translateApiError(error)
       }),
       NotificationSettings.clearCache(context).catch((_error: Error) => {
       }),
@@ -859,7 +860,7 @@ export struct AccountDashboardPage {
           return
         }
         DiagnosticLogger.warn('account', 'account_meta_fetch_error', { force: force }, error)
-        const message = error.message || AppStrings.text(AppStrings.R_READ_ACCOUNT_FAILED, 'Failed to read account info')
+        const message = translateApiError(error)
         this.accountMetaError = message
         this.handleExpiredCookieSession(message)
       })
@@ -897,7 +898,7 @@ export struct AccountDashboardPage {
           return
         }
         DiagnosticLogger.warn('account', 'account_daily_redeem_error', { canRedeem: this.dailyMission ? this.dailyMission.canRedeem === true : false }, error)
-        const message = error.message || AppStrings.text(AppStrings.R_CHECKIN_FAILED, 'Check-in failed')
+        const message = translateApiError(error)
         this.accountMetaError = message
         this.handleExpiredCookieSession(message)
         promptAction.openToast({ message: message }).catch((_error: Error) => {
@@ -996,7 +997,7 @@ export struct AccountDashboardPage {
     const want: Want = { action: 'ohos.want.action.viewData', uri: target }
     context.startAbility(want)
       .catch((error: Error) => {
-        promptAction.openToast({ message: error.message || AppStrings.text(AppStrings.R_COMMON_OPEN_FAILED, 'Open failed') }).catch((_error: Error) => {
+        promptAction.openToast({ message: translateApiError(error) }).catch((_error: Error) => {
         })
       })
   }

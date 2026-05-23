@@ -4,6 +4,7 @@ import {
   ApiService,
   AppActionButton,
   AppModalScaffold,
+  AppStrings,
   AppTextField,
   AuthSessionSettings,
   AutoDailyCheckinService,
@@ -11,7 +12,8 @@ import {
   HttpClient,
   NativeTwoFactorRequiredError,
   ThemeConstants,
-  V2exNativeAuthService
+  V2exNativeAuthService,
+  translateApiError
 } from 'shared'
 import type { NativeLoginSnapshot } from 'shared'
 
@@ -84,11 +86,11 @@ export struct V2exTwoFactorPrompt {
     const cleanCookie = (this.cookie || '').trim()
     const cleanCode = this.code.trim()
     if (!cleanCookie) {
-      this.errorMessage = '缺少登录会话，请重新登录'
+      this.errorMessage = AppStrings.text($r('app.string.api_error_login_session_missing'), 'Missing login session, please sign in again')
       return
     }
     if (!cleanCode) {
-      this.errorMessage = '请输入两步验证码'
+      this.errorMessage = AppStrings.text($r('app.string.api_error_two_factor_code_required'), 'Please enter the two-factor code')
       return
     }
 
@@ -111,10 +113,10 @@ export struct V2exTwoFactorPrompt {
       .catch((error: Error) => {
         this.code = ''
         if (error instanceof NativeTwoFactorRequiredError) {
-          this.errorMessage = error.message || '两步验证失败，请检查验证码后重试'
+          this.errorMessage = error.message || AppStrings.text($r('app.string.api_error_two_factor_failed'), 'Two-factor failed')
           return
         }
-        this.errorMessage = error.message || '两步验证失败，请稍后重试'
+        this.errorMessage = translateApiError(error)
       })
       .finally(() => {
         this.isSubmitting = false

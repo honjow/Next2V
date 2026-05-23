@@ -11,6 +11,7 @@ import {
   PageLoadingState,
   PageLoginRequiredState,
   SecondaryListScaffold,
+  translateApiError,
   type NodeTopicListParams,
   type V2exFavoriteNode,
   type V2exNode
@@ -102,7 +103,7 @@ export struct MyNodesPage {
         })
       })
       .catch((error: Error) => {
-        this.errorMessage = error.message || '加载失败'
+        this.errorMessage = translateApiError(error)
         this.nodes = []
         this.isLoading = false
         if (!force && this.errorMessage) {

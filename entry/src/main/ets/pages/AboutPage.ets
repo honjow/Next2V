@@ -7,7 +7,8 @@ import {
   ListDivider as SharedListDivider,
   SecondaryListScaffold,
   SectionHeader as SharedSectionHeader,
-  ThemeConstants
+  ThemeConstants,
+  translateApiError
 } from 'shared'
 
 interface AboutInfoRow {
@@ -219,7 +220,7 @@ export struct AboutPage {
     const want: Want = { action: 'ohos.want.action.viewData', uri: target }
     context.startAbility(want)
       .catch((error: Error) => {
-        promptAction.openToast({ message: error.message || 'Open failed' }).catch((_error: Error) => {
+        promptAction.openToast({ message: translateApiError(error) }).catch((_error: Error) => {
         })
       })
   }

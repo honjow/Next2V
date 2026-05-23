@@ -2,7 +2,7 @@ import { common } from '@kit.AbilityKit'
 import { promptAction } from '@kit.ArkUI'
 import {
   ApiService, AppStrings, CookieJarSettings, DateUtils, DraftSettings, MarkdownContent, MarkdownToolbar, SecondaryFormScaffold,
-  ThemeConstants
+  ThemeConstants, translateApiError
 } from 'shared'
 
 @Component
@@ -50,7 +50,7 @@ export struct TopicEditorPage {
         }
       })
       .catch((error: Error) => {
-        this.errorMessage = error.message || '读取草稿失败'
+        this.errorMessage = translateApiError(error)
       })
   }
 
@@ -238,7 +238,7 @@ export struct TopicEditorPage {
         this.savedAt = now
       })
       .catch((error: Error) => {
-        this.errorMessage = error.message || '保存草稿失败'
+        this.errorMessage = translateApiError(error)
       })
       .finally(() => {
         this.isSaving = false
@@ -299,19 +299,19 @@ export struct TopicEditorPage {
       return
     }
     if (!this.nodeName.trim()) {
-      promptAction.openToast({ message: '请选择节点' }).catch((_error: Error) => { })
+      promptAction.openToast({ message: AppStrings.text($r('app.string.api_error_node_required'), 'Please choose a node') }).catch((_error: Error) => { })
       return
     }
     if (!this.title.trim()) {
-      promptAction.openToast({ message: '请输入标题' }).catch((_error: Error) => { })
+      promptAction.openToast({ message: AppStrings.text($r('app.string.api_error_title_required'), 'Please enter a title') }).catch((_error: Error) => { })
       return
     }
     if (this.content.trim().length === 0) {
-      promptAction.openToast({ message: '请输入正文' }).catch((_error: Error) => { })
+      promptAction.openToast({ message: AppStrings.text($r('app.string.api_error_body_required'), 'Please enter the body') }).catch((_error: Error) => { })
       return
     }
     if (!CookieJarSettings.getCurrentCookie()) {
-      promptAction.openToast({ message: '请先登录' }).catch((_error: Error) => { })
+      promptAction.openToast({ message: AppStrings.text($r('app.string.api_error_auth_required'), 'Please sign in') }).catch((_error: Error) => { })
       return
     }
     const cleanNode = this.nodeName.trim()
@@ -332,7 +332,7 @@ export struct TopicEditorPage {
     }
     const cookie = CookieJarSettings.getCurrentCookie()
     if (!cookie) {
-      promptAction.openToast({ message: '请先登录' }).catch((_error: Error) => { })
+      promptAction.openToast({ message: AppStrings.text($r('app.string.api_error_auth_required'), 'Please sign in') }).catch((_error: Error) => { })
       return
     }
     this.isSubmitting = true
@@ -346,7 +346,7 @@ export struct TopicEditorPage {
         this.stack.pop()
       })
       .catch((error: Error) => {
-        this.errorMessage = error.message || '提交失败'
+        this.errorMessage = translateApiError(error)
         promptAction.openToast({ message: this.errorMessage }).catch((_error2: Error) => { })
       })
       .finally(() => {

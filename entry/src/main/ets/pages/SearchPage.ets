@@ -22,6 +22,7 @@ import {
   type V2exNode,
   type ViewedTopic,
   defaultSheetOptions,
+  translateApiError,
 } from 'shared'
 import { SearchLocalResultBuilder } from '../model/SearchLocalResultBuilder'
 import {
@@ -449,7 +450,7 @@ export struct SearchPage {
         this.applyFilter()
       })
       .catch((error: Error) => {
-        this.errorMessage = error.message || '读取本地数据失败'
+        this.errorMessage = translateApiError(error)
       })
   }
 
@@ -621,7 +622,7 @@ export struct SearchPage {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     SearchSettingsAdapter.saveSourceMode(context, transition.mode)
       .catch((error: Error) => {
-        this.errorMessage = error.message || '保存搜索来源失败'
+        this.errorMessage = translateApiError(error)
       })
     if (transition.shouldLoadNodeIndex) {
       this.loadNodeIndex()
@@ -711,7 +712,7 @@ export struct SearchPage {
     const want: Want = { action: 'ohos.want.action.viewData', uri: url }
     context.startAbility(want)
       .catch((error: Error) => {
-        promptAction.openToast({ message: error.message || '打开失败' }).catch((_error: Error) => { })
+        promptAction.openToast({ message: translateApiError(error) }).catch((_error: Error) => { })
       })
   }
 
@@ -752,7 +753,7 @@ export struct SearchPage {
         this.recordHistoryQuery(q)
       })
       .catch((error: Error) => {
-        this.remoteError = error.message || '远程搜索失败'
+        this.remoteError = translateApiError(error)
       })
       .finally(() => {
         this.remoteLoading = false
