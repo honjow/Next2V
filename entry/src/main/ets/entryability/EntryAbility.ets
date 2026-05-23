@@ -21,7 +21,6 @@ const FALLBACK_BOTTOM_AVOID: number = 0
 export default class EntryAbility extends UIAbility {
   private mainWindow: window.Window | null = null
   private keyboardHeightCallback: ((height: number) => void) | null = null
-  private lastConfigurationLanguage: string = ''
 
   onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
     AppStrings.init(this.context)
@@ -69,25 +68,6 @@ export default class EntryAbility extends UIAbility {
 
   onConfigurationUpdate(newConfig: Configuration): void {
     ThemeSettings.refreshEffectiveDark(this.context, newConfig.colorMode)
-    this.refreshFollowSystemLanguage(newConfig.language)
-  }
-
-  private refreshFollowSystemLanguage(nextLanguage: string | undefined): void {
-    const language = (nextLanguage || '').trim()
-    if (!language || language === this.lastConfigurationLanguage) {
-      return
-    }
-    this.lastConfigurationLanguage = language
-    LanguageSettings.loadStoredMode(this.context)
-      .then((mode) => {
-        if (mode === LanguageSettings.MODE_SYSTEM) {
-          return LanguageSettings.applyStoredPreferredLanguage(this.context)
-        }
-        return
-      })
-      .catch((error: Error) => {
-        console.error('refresh preferred app language failed: ' + error.message)
-      })
   }
 
   private loadContent(windowStage: window.WindowStage, win: window.Window | null): void {

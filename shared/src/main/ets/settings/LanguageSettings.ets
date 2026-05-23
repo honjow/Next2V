@@ -23,11 +23,7 @@ export class LanguageSettings {
 
   static apply(areaID: string): LanguageSettingsSnapshot {
     const normalized = LanguageSettings.normalizeMode(areaID)
-    if (normalized === LanguageSettings.MODE_SYSTEM) {
-      LanguageSettings.applyPreferredLanguage(normalized)
-    } else {
-      i18n.System.setAppPreferredLanguage(normalized)
-    }
+    i18n.System.setAppPreferredLanguage(normalized)
     setAppStorageValue<AppLanguageMode>(StorageKeys.LANGUAGE_MODE, normalized)
     return { mode: normalized }
   }
@@ -118,23 +114,5 @@ export class LanguageSettings {
   private static applyFromStore(store: SettingsPreferencesStore): LanguageSettingsSnapshot {
     const stored = store.getSync(KEY_LANGUAGE_MODE, LanguageSettings.MODE_SYSTEM) as string
     return LanguageSettings.apply(stored)
-  }
-
-  private static applyPreferredLanguage(mode: AppLanguageMode): void {
-    if (mode !== LanguageSettings.MODE_SYSTEM) {
-      i18n.System.setAppPreferredLanguage(mode)
-      return
-    }
-
-    let systemLanguage = ''
-    try {
-      systemLanguage = i18n.System.getSystemLanguage()
-    } catch (_error) {
-    }
-
-    if (systemLanguage) {
-      i18n.System.setAppPreferredLanguage(systemLanguage)
-    }
-    i18n.System.setAppPreferredLanguage(LanguageSettings.MODE_SYSTEM)
   }
 }
