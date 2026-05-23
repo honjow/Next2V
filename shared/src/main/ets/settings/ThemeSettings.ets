@@ -1,5 +1,6 @@
 import { common, ConfigurationConstant } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
+import i18n from '@ohos.i18n'
 import { StorageKeys } from '../constants/StorageKeys'
 import { AppStrings } from '../i18n/AppStrings'
 import { STORE_NAME_SETTINGS, SettingsPreferencesStore, setAppStorageValue } from './SettingsStorage'
@@ -96,19 +97,43 @@ export class ThemeSettings {
   }
 
   private static applySystemColorMode(context: common.UIAbilityContext, mode: string): void {
+    // 根因记录（2026-05-24 由 bisect 锁定）：
+    // context.setColorMode 触发 Configuration 全量重建，OS 用 system language
+    // (zh-Hans) 回填 Configuration.language，ArkUI engine 同步 render locale = zh，
+    // 覆盖 setAppPreferredLanguage 设的 app preferred。表现：cold-start tab/Text
+    // 显示中文，但 rm.cfg.locale 仍是 en、byName 仍返回 Home（probe 全平）。
+    //
+    // 防御策略：
+    //   A) auto 模式 = COLOR_MODE_NOT_SET，已是系统默认值，不主动调用以避免触发
+    //      Configuration 重建（绝大多数用户走此路径，根除冷启动副作用）。
+    //   B) Dark/Light 模式仍需调，调完同步 re-pin app preferred language。
+    //   C) onConfigurationUpdate 兜底：任何 Configuration 重建都 re-pin（见 EntryAbility）。
+    if (mode !== THEME_MODE_DARK && mode !== THEME_MODE_LIGHT) {
+      // auto / 未知值：保持系统默认 ColorMode，不调 setColorMode。
+      return
+    }
+    let preferredBefore: string = ''
+    try {
+      preferredBefore = i18n.System.getAppPreferredLanguage()
+    } catch (_e) {
+    }
     try {
       if (mode === THEME_MODE_DARK) {
         context.setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_DARK)
-        return
-      }
-      if (mode === THEME_MODE_LIGHT) {
+      } else {
         context.setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_LIGHT)
-        return
       }
-      context.setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_NOT_SET)
     } catch (error) {
       const e = error as Error
       console.error('apply color mode failed: ' + e.message)
+    }
+    // Re-pin: setColorMode 已触发 Configuration 重建，立刻把 app preferred 写回。
+    try {
+      if (preferredBefore && preferredBefore !== 'default') {
+        i18n.System.setAppPreferredLanguage(preferredBefore)
+        console.info('[i18n][theme-repin] setAppPreferredLanguage(' + preferredBefore + ') after setColorMode(' + mode + ')')
+      }
+    } catch (_e) {
     }
   }
 }

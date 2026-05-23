@@ -1,6 +1,7 @@
 import { UIAbility, Want, AbilityConstant } from '@kit.AbilityKit'
 import { Configuration } from '@ohos.app.ability.Configuration'
 import { window } from '@kit.ArkUI'
+import i18n from '@ohos.i18n'
 import { webview } from '@kit.ArkWeb'
 import {
   AppStrings,
@@ -63,6 +64,18 @@ export default class EntryAbility extends UIAbility {
 
   onConfigurationUpdate(newConfig: Configuration): void {
     ThemeSettings.refreshEffectiveDark(this.context, newConfig.colorMode)
+    // 兜底：任何 Configuration 重建（深色模式 / 字号 / 区域等）都可能让 OS 把
+    // Configuration.language 回填成系统语言，覆盖 ArkUI engine 当前的 app
+    // preferred locale。此处把 app preferred 写回，避免 $r() 渲染回退到系统语言。
+    // 详见 ThemeSettings.applySystemColorMode 的根因注释。
+    try {
+      const preferred = i18n.System.getAppPreferredLanguage()
+      if (preferred && preferred !== 'default') {
+        i18n.System.setAppPreferredLanguage(preferred)
+        console.info('[i18n][config-repin] setAppPreferredLanguage(' + preferred + ') after Configuration update')
+      }
+    } catch (_e) {
+    }
   }
 
   private loadContent(windowStage: window.WindowStage, win: window.Window | null): void {
