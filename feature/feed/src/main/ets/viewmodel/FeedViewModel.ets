@@ -1,4 +1,4 @@
-import { V2exTopic, ApiService } from 'shared'
+import { V2exTopic, ApiService, translateApiError } from 'shared'
 import { FeedDataSource } from '../model/FeedModels'
 import { vibrator } from '@kit.SensorServiceKit'
 
@@ -79,7 +79,7 @@ export class FeedViewModel {
       this.hasMore = this.resolveHasMore(data.length, data.length)
       await this.saveCache(data)
     } catch (error) {
-      this.errorMessage = error.message || '加载失败'
+      this.errorMessage = translateApiError(error)
       await this.loadCachedData()
     } finally {
       this.isLoading = false
@@ -100,7 +100,7 @@ export class FeedViewModel {
       this.hasMore = this.resolveHasMore(data.length, data.length)
       await this.saveCache(data)
     } catch (error) {
-      this.errorMessage = error.message || '刷新失败'
+      this.errorMessage = translateApiError(error)
     } finally {
       this.isRefreshing = false
     }
@@ -121,7 +121,7 @@ export class FeedViewModel {
       this.hasMore = this.resolveHasMore(data.length, data.length)
       await this.saveCache(data)
     } catch (error) {
-      this.errorMessage = error.message || '刷新失败'
+      this.errorMessage = translateApiError(error)
     } finally {
       this.isRefreshing = false
     }
@@ -144,7 +144,7 @@ export class FeedViewModel {
       this.dataSource.appendData(unique)
       await this.saveCache(this.dataSource.getAllData())
     } catch (error) {
-      this.errorMessage = error.message || '加载更多失败'
+      this.errorMessage = translateApiError(error)
     } finally {
       this.isLoadingMore = false
     }

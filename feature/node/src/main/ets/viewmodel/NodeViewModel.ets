@@ -1,4 +1,4 @@
-import { V2exNode, V2exTopic, ApiService, ApiV2Service, NodeSearchUtils } from 'shared'
+import { V2exNode, V2exTopic, ApiService, ApiV2Service, NodeSearchUtils, translateApiError } from 'shared'
 
 /**
  * 节点数据源 — 用于 LazyForEach
@@ -67,7 +67,7 @@ export class NodeViewModel {
       this.allNodes = NodeSearchUtils.sortByPopularity(nodes)
       this.applyNodeFilter()
     } catch (error) {
-      this.errorMessage = error.message || '节点加载失败'
+      this.errorMessage = translateApiError(error)
       console.error('Failed to load nodes:', error.message)
     } finally {
       this.isLoading = false
@@ -96,7 +96,7 @@ export class NodeViewModel {
       this.nodeTopics = snapshot.topics
       this.nodeTopicsHasMore = snapshot.hasMore
     } catch (error) {
-      this.errorMessage = error.message || '节点主题加载失败'
+      this.errorMessage = translateApiError(error)
       console.error('Failed to load node topics:', error.message)
     } finally {
       this.isLoading = false
@@ -110,7 +110,7 @@ export class NodeViewModel {
       this.nodeDetail = await this.api.getNodeByName(nodeName)
     } catch (error) {
       this.nodeDetail = null
-      this.nodeDetailError = error.message || '节点信息加载失败'
+      this.nodeDetailError = translateApiError(error)
     }
   }
 
@@ -128,7 +128,7 @@ export class NodeViewModel {
       this.nodeDetail = res.data
     } catch (error) {
       this.nodeDetail = null
-      this.nodeDetailError = error.message || '节点信息加载失败'
+      this.nodeDetailError = translateApiError(error)
     }
   }
 
@@ -146,7 +146,7 @@ export class NodeViewModel {
       this.nodeTopics = items
       this.nodeTopicsHasMore = items.length >= this.V2_PAGE_SIZE
     } catch (error) {
-      this.errorMessage = error.message || '节点主题加载失败'
+      this.errorMessage = translateApiError(error)
     } finally {
       this.isLoading = false
     }
@@ -168,7 +168,7 @@ export class NodeViewModel {
       this.nodeTopicsPage = nextPage
       this.nodeTopicsHasMore = items.length >= this.V2_PAGE_SIZE
     } catch (error) {
-      this.nodeTopicsLoadMoreError = error.message || '加载更多失败'
+      this.nodeTopicsLoadMoreError = translateApiError(error)
       this.nodeTopicsHasMore = false
     } finally {
       this.isNodeTopicsLoadingMore = false
@@ -190,7 +190,7 @@ export class NodeViewModel {
       this.nodeTopicsPage = nextPage
       this.nodeTopicsHasMore = snapshot.hasMore
     } catch (error) {
-      this.nodeTopicsLoadMoreError = error.message || '加载更多失败'
+      this.nodeTopicsLoadMoreError = translateApiError(error)
     } finally {
       this.isNodeTopicsLoadingMore = false
     }

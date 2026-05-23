@@ -1,7 +1,7 @@
 import { NodeViewModel } from '../viewmodel/NodeViewModel'
 import {
   ApiService, AppStrings, PullRefresh, StorageKeys, V2exNode, V2exTopic, NodeTopicListParams, TopicDetailParams,
-  ThemeConstants, CollectionSettings
+  ThemeConstants, CollectionSettings, translateApiError
 } from 'shared'
 import type { SavedNode } from 'shared'
 import { common } from '@kit.AbilityKit'
@@ -276,7 +276,7 @@ export struct DiscoverPage {
         this.applyTopicBuckets(DiscoverPageCoordinator.withTopics(requestedMode, this.topicBuckets(), topics))
       })
       .catch((error: Error) => {
-        this.hotError = error.message || '主题加载失败'
+        this.hotError = translateApiError(error)
       })
       .finally(() => {
         this.isHotLoading = false

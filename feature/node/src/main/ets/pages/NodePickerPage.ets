@@ -1,7 +1,7 @@
 import { common } from '@kit.AbilityKit'
 import { promptAction } from '@kit.ArkUI'
 import { NodeViewModel } from '../viewmodel/NodeViewModel'
-import { AppStrings, DraftSettings, V2exNode, SecondaryListScaffold } from 'shared'
+import { AppStrings, DraftSettings, V2exNode, SecondaryListScaffold, translateApiError } from 'shared'
 import {
   NodePickerEmptyState,
   NodePickerErrorState,
@@ -106,7 +106,7 @@ export struct NodePickerPage {
         this.stack.pop()
       })
       .catch((error: Error) => {
-        this.errorMessage = error.message || '保存失败'
+        this.errorMessage = translateApiError(error)
       })
       .finally(() => {
         this.isSaving = false
@@ -131,7 +131,7 @@ export struct NodePickerPage {
         promptAction.openToast({ message: $r('app.string.node_cleared') }).catch((_error: Error) => { })
       })
       .catch((error: Error) => {
-        this.errorMessage = error.message || '清空失败'
+        this.errorMessage = translateApiError(error)
       })
       .finally(() => {
         this.isSaving = false

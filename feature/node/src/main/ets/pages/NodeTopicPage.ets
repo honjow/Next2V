@@ -2,7 +2,7 @@ import { NodeViewModel } from '../viewmodel/NodeViewModel'
 import {
   AuthSettings, CardEmptyState, CollectionSettings, SavedNode, ApiService, CookieJarSettings,
   PagedListScaffold, PageErrorState, PageLoadingState, StorageKeys, ThemeConstants, TopicCard,
-  TopicDetailParams, UserProfileParams, V2exToggleAction, V2exTopic
+  TopicDetailParams, UserProfileParams, V2exToggleAction, V2exTopic, AppStrings, translateApiError
 } from 'shared'
 import type { TopicReadState } from 'shared'
 import { common } from '@kit.AbilityKit'
@@ -156,7 +156,7 @@ export struct NodeTopicPage {
     }
     const cookie = CookieJarSettings.getCurrentCookie()
     if (!cookie) {
-      promptAction.openToast({ message: '请先登录' }).catch((_error: Error) => { })
+      promptAction.openToast({ message: AppStrings.text($r('app.string.api_error_auth_required'), 'Please sign in') }).catch((_error: Error) => { })
       return
     }
     const cleanName = (this.nodeName || '').trim()
@@ -172,7 +172,7 @@ export struct NodeTopicPage {
         this.confirmSiteNodeFavoriteToggle(cookie, cleanName, toggle)
       })
       .catch((error: Error) => {
-        promptAction.openToast({ message: error.message || '解析站内收藏失败' }).catch((_error: Error) => { })
+        promptAction.openToast({ message: translateApiError(error) }).catch((_error: Error) => { })
       })
       .finally(() => {
         this.isSiteNodeFavoriteLoading = false
@@ -202,7 +202,7 @@ export struct NodeTopicPage {
         promptAction.openToast({ message: favorited ? $r('app.string.favorited') : $r('app.string.unfavorited') }).catch((_error: Error) => { })
       })
       .catch((error: Error) => {
-        promptAction.openToast({ message: error.message || '操作失败' }).catch((_error: Error) => { })
+        promptAction.openToast({ message: translateApiError(error) }).catch((_error: Error) => { })
       })
       .finally(() => {
         this.isSiteNodeFavoriteLoading = false
@@ -230,7 +230,7 @@ export struct NodeTopicPage {
       this.syncAppbarIdentity()
     } catch (error) {
       this.token = ''
-      this.vm.nodeDetailError = error.message || '读取 Token 失败'
+      this.vm.nodeDetailError = translateApiError(error)
       await this.vm.loadNodeDetail(this.nodeName)
       await this.vm.loadNodeTopics(this.nodeName)
       this.syncAppbarIdentity()

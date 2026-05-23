@@ -1,7 +1,6 @@
-import { AppStrings } from 'shared'
 import {
   V2exMemberProfile, V2exTopic, V2exUserReply, V2exMemberActionState,
-  ApiService, CookieJarSettings
+  ApiService, CookieJarSettings, translateApiError
 } from 'shared'
 
 /**
@@ -124,7 +123,7 @@ export class UserViewModel {
       this.recentTopicCount = topics.length
       this.topicDataSource.setData(topics)
     } catch (error) {
-      this.errorMessage = error.message || AppStrings.text($r('app.string.user_load_failed'), 'Failed to load user information')
+      this.errorMessage = translateApiError(error)
       console.error('Failed to load user:', error.message)
     } finally {
       this.isLoading = false
@@ -162,7 +161,7 @@ export class UserViewModel {
       this.recentTopicCount = topics.length
       this.topicDataSource.setData(topics)
     } catch (error) {
-      this.errorMessage = error.message || '操作失败'
+      this.errorMessage = translateApiError(error)
       throw new Error(this.errorMessage)
     } finally {
       this.isActionLoading = false
@@ -198,7 +197,7 @@ export class UserTopicsViewModel {
       this.hasMore = snapshot.hasMore
       this.topicDataSource.setData(await this.api.getTopicsByIds(snapshot.topicIds))
     } catch (error) {
-      this.errorMessage = error.message || '主题加载失败'
+      this.errorMessage = translateApiError(error)
     } finally {
       this.isLoading = false
     }
@@ -218,7 +217,7 @@ export class UserTopicsViewModel {
       const topics = await this.api.getTopicsByIds(snapshot.topicIds)
       this.topicDataSource.appendData(topics)
     } catch (error) {
-      this.errorMessage = error.message || '加载更多失败'
+      this.errorMessage = translateApiError(error)
     } finally {
       this.isLoadingMore = false
     }
@@ -251,7 +250,7 @@ export class UserRepliesViewModel {
       this.hasMore = snapshot.hasMore
       this.replyDataSource.setData(snapshot.replies)
     } catch (error) {
-      this.errorMessage = error.message || '回复加载失败'
+      this.errorMessage = translateApiError(error)
     } finally {
       this.isLoading = false
     }
@@ -269,7 +268,7 @@ export class UserRepliesViewModel {
       this.page = nextPage
       this.replyDataSource.appendData(snapshot.replies)
     } catch (error) {
-      this.errorMessage = error.message || '加载更多失败'
+      this.errorMessage = translateApiError(error)
     } finally {
       this.isLoadingMore = false
     }
