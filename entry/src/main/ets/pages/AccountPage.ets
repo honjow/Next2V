@@ -16,7 +16,11 @@ import {
   V2exDailyMission,
   V2exTokenInfo,
   ViewedTopic,
-  translateApiError
+  translateApiError,
+  ApiError,
+  ApiErrorCode,
+  ApiErrors,
+  isApiError
 } from 'shared'
 import {
   ApiService,
@@ -603,7 +607,7 @@ export struct AccountDashboardPage {
         }
         const username = V2exSessionParser.extractUsername(res.text)
         if (!username) {
-          throw new Error(AppStrings.text(AppStrings.R_WEB_SESSION_EXPIRED_RELOGIN, 'Web session expired, please sign in again'))
+          throw ApiErrors.webSessionExpired()
         }
         return this.api.getMember(username)
           .then((profile) => {
@@ -632,15 +636,15 @@ export struct AccountDashboardPage {
         DiagnosticLogger.warn('account', 'account_session_validate_error', { force: force, durationMs: Date.now() - startedAt }, error)
         const message = translateApiError(error)
         this.sessionError = message
-        this.handleExpiredCookieSession(message)
+        this.handleExpiredCookieSession(error, message)
       })
       .finally(() => {
         this.isSessionValidating = false
       })
   }
 
-  private handleExpiredCookieSession(message: string): void {
-    if (!message || message.indexOf('会话已失效') < 0) {
+  private handleExpiredCookieSession(error: Error, message: string): void {
+    if (!isApiError(error) || (error as ApiError).code !== ApiErrorCode.WEB_SESSION_EXPIRED) {
       return
     }
     DiagnosticLogger.warn('account', 'account_session_expired', {})
@@ -870,7 +874,7 @@ export struct AccountDashboardPage {
         DiagnosticLogger.warn('account', 'account_meta_fetch_error', { force: force }, error)
         const message = translateApiError(error)
         this.accountMetaError = message
-        this.handleExpiredCookieSession(message)
+        this.handleExpiredCookieSession(error, message)
       })
       .finally(() => {
         this.isAccountMetaLoading = false
@@ -908,7 +912,7 @@ export struct AccountDashboardPage {
         DiagnosticLogger.warn('account', 'account_daily_redeem_error', { canRedeem: this.dailyMission ? this.dailyMission.canRedeem === true : false }, error)
         const message = translateApiError(error)
         this.accountMetaError = message
-        this.handleExpiredCookieSession(message)
+        this.handleExpiredCookieSession(error, message)
         promptAction.openToast({ message: message }).catch((_error: Error) => {
         })
       })
