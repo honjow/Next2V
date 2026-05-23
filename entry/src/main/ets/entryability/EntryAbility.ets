@@ -1,4 +1,4 @@
-import { UIAbility, Want, AbilityConstant } from '@kit.AbilityKit'
+import { UIAbility, Want, AbilityConstant, EnvironmentCallback } from '@kit.AbilityKit'
 import { Configuration } from '@ohos.app.ability.Configuration'
 import { window } from '@kit.ArkUI'
 import { webview } from '@kit.ArkWeb'
@@ -21,8 +21,12 @@ const FALLBACK_BOTTOM_AVOID: number = 0
 export default class EntryAbility extends UIAbility {
   private mainWindow: window.Window | null = null
   private keyboardHeightCallback: ((height: number) => void) | null = null
+  private environmentCallbackId: number = -1
 
   onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
+    // 必须在任何 setColorMode/SettingsBootstrap 之前抓系统真实 colorMode 进 AppStorage，
+    // 否则后续被 app override 后就拿不到系统真实值了（auto 模式判断会出错）。
+    ThemeSettings.seedSystemColorMode(this.context)
     AppStrings.init(this.context)
     LanguageSettings.applyStoredPreferredLanguage(this.context).catch((error: Error) => {
       console.error('restore preferred app language failed: ' + error.message)
@@ -40,6 +44,23 @@ export default class EntryAbility extends UIAbility {
 
     // 初始化折叠屏状态监听
     FoldScreenUtil.getInstance().init()
+
+    // 注册 application-level Environment 回调：跟随系统的语言/colorMode 变化
+    // 在这里跟进。这条回调路径不在 Configuration 重建调用链里，调 set API 不递归。
+    try {
+      const ctx = this.context
+      const envCallback: EnvironmentCallback = {
+        onConfigurationUpdated: (config: Configuration) => {
+          LanguageSettings.reapplyForFollowSystem()
+          ThemeSettings.reapplyForFollowSystem(ctx, config.colorMode)
+        },
+        onMemoryLevel: (_: AbilityConstant.MemoryLevel) => {},
+      }
+      this.environmentCallbackId = ctx.getApplicationContext().on('environment', envCallback)
+    } catch (error) {
+      const e = error as Error
+      console.error('register environment callback failed: ' + e.message)
+    }
   }
 
   onNewWant(want: Want, launchParam: AbilityConstant.LaunchParam): void {
@@ -146,6 +167,15 @@ export default class EntryAbility extends UIAbility {
 
   onDestroy(): void {
     DiagnosticLogger.info('app', 'diagnostics_session_end', { source: 'EntryAbility.onDestroy' })
+    if (this.environmentCallbackId !== -1) {
+      try {
+        this.context.getApplicationContext().off('environment', this.environmentCallbackId)
+      } catch (error) {
+        const e = error as Error
+        console.error('unregister environment callback failed: ' + e.message)
+      }
+      this.environmentCallbackId = -1
+    }
     if (this.mainWindow && this.keyboardHeightCallback) {
       try {
         this.mainWindow.off('keyboardHeightChange', this.keyboardHeightCallback)

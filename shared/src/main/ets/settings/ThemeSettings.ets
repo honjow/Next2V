@@ -1,6 +1,5 @@
 import { common, ConfigurationConstant } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
-import i18n from '@ohos.i18n'
 import { StorageKeys } from '../constants/StorageKeys'
 import { AppStrings } from '../i18n/AppStrings'
 import { STORE_NAME_SETTINGS, SettingsPreferencesStore, setAppStorageValue } from './SettingsStorage'
@@ -97,43 +96,88 @@ export class ThemeSettings {
   }
 
   private static applySystemColorMode(context: common.UIAbilityContext, mode: string): void {
-    // 根因记录（2026-05-24 由 bisect 锁定）：
-    // context.setColorMode 触发 Configuration 全量重建，OS 用 system language
-    // (zh-Hans) 回填 Configuration.language，ArkUI engine 同步 render locale = zh，
-    // 覆盖 setAppPreferredLanguage 设的 app preferred。表现：cold-start tab/Text
-    // 显示中文，但 rm.cfg.locale 仍是 en、byName 仍返回 Home（probe 全平）。
-    //
-    // 防御策略：
-    //   A) auto 模式 = COLOR_MODE_NOT_SET，已是系统默认值，不主动调用以避免触发
-    //      Configuration 重建（绝大多数用户走此路径，根除冷启动副作用）。
-    //   B) Dark/Light 模式仍需调，调完同步 re-pin app preferred language。
-    //   C) onConfigurationUpdate 兜底：任何 Configuration 重建都 re-pin（见 EntryAbility）。
-    if (mode !== THEME_MODE_DARK && mode !== THEME_MODE_LIGHT) {
-      // auto / 未知值：保持系统默认 ColorMode，不调 setColorMode。
-      return
-    }
-    let preferredBefore: string = ''
-    try {
-      preferredBefore = i18n.System.getAppPreferredLanguage()
-    } catch (_e) {
-    }
     try {
       if (mode === THEME_MODE_DARK) {
-        context.setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_DARK)
-      } else {
-        context.setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_LIGHT)
+        ThemeSettings.setColorModeIfChanged(context, ConfigurationConstant.ColorMode.COLOR_MODE_DARK)
+        return
       }
+      if (mode === THEME_MODE_LIGHT) {
+        ThemeSettings.setColorModeIfChanged(context, ConfigurationConstant.ColorMode.COLOR_MODE_LIGHT)
+        return
+      }
+      // auto: 读独立追踪的 SYSTEM_COLOR_MODE（系统真实值），不读 context.config.colorMode
+      // —— 后者在 set 过之后反映的是 app override 值，会导致 dark→auto 回不到 light。
+      const sysMode = ThemeSettings.getSystemColorMode(context)
+      if (sysMode === ConfigurationConstant.ColorMode.COLOR_MODE_DARK) {
+        ThemeSettings.setColorModeIfChanged(context, ConfigurationConstant.ColorMode.COLOR_MODE_DARK)
+        return
+      }
+      if (sysMode === ConfigurationConstant.ColorMode.COLOR_MODE_LIGHT) {
+        ThemeSettings.setColorModeIfChanged(context, ConfigurationConstant.ColorMode.COLOR_MODE_LIGHT)
+        return
+      }
+      return
     } catch (error) {
       const e = error as Error
       console.error('apply color mode failed: ' + e.message)
     }
-    // Re-pin: setColorMode 已触发 Configuration 重建，立刻把 app preferred 写回。
-    try {
-      if (preferredBefore && preferredBefore !== 'default') {
-        i18n.System.setAppPreferredLanguage(preferredBefore)
-        console.info('[i18n][theme-repin] setAppPreferredLanguage(' + preferredBefore + ') after setColorMode(' + mode + ')')
-      }
-    } catch (_e) {
+  }
+
+  // 仅在目标与当前 config.colorMode 不一致时才 set，避免无意义触发重建。
+  private static setColorModeIfChanged(context: common.UIAbilityContext, target: ConfigurationConstant.ColorMode): void {
+    if (context.config.colorMode === target) {
+      return
+    }
+    context.setColorMode(target)
+  }
+
+  // 由 EntryAbility 在 onCreate 早期（任何 setColorMode 之前）调用一次：把当时
+  // context.config.colorMode 当作系统真实值缓存进 AppStorage。后续 EnvironmentCallback
+  // 会用新的 colorMode 更新这个缓存。
+  static seedSystemColorMode(context: common.UIAbilityContext): void {
+    setAppStorageValue<number>(StorageKeys.SYSTEM_COLOR_MODE, context.config.colorMode as number)
+  }
+
+  private static getSystemColorMode(context: common.UIAbilityContext): ConfigurationConstant.ColorMode {
+    const stored = AppStorage.get<number>(StorageKeys.SYSTEM_COLOR_MODE)
+    if (stored === ConfigurationConstant.ColorMode.COLOR_MODE_DARK as number) {
+      return ConfigurationConstant.ColorMode.COLOR_MODE_DARK
+    }
+    if (stored === ConfigurationConstant.ColorMode.COLOR_MODE_LIGHT as number) {
+      return ConfigurationConstant.ColorMode.COLOR_MODE_LIGHT
+    }
+    if (stored === ConfigurationConstant.ColorMode.COLOR_MODE_NOT_SET as number) {
+      return ConfigurationConstant.ColorMode.COLOR_MODE_NOT_SET
+    }
+    // 回退：未 seed 时用 context.config.colorMode（onCreate 之前才会出现）。
+    const live = context.config.colorMode
+    if (live === ConfigurationConstant.ColorMode.COLOR_MODE_DARK) {
+      return ConfigurationConstant.ColorMode.COLOR_MODE_DARK
+    }
+    if (live === ConfigurationConstant.ColorMode.COLOR_MODE_LIGHT) {
+      return ConfigurationConstant.ColorMode.COLOR_MODE_LIGHT
+    }
+    return ConfigurationConstant.ColorMode.COLOR_MODE_NOT_SET
+  }
+
+  // 由 ApplicationContext EnvironmentCallback 调用（application-level 异步事件，
+  // 不在 Configuration 重建调用链里，可以安全调 setColorMode）。
+  static reapplyForFollowSystem(context: common.UIAbilityContext, newColorMode?: ConfigurationConstant.ColorMode): void {
+    // 先更新系统真实值缓存（这才是"系统的真实 colorMode"）。
+    if (newColorMode !== undefined) {
+      setAppStorageValue<number>(StorageKeys.SYSTEM_COLOR_MODE, newColorMode as number)
+    }
+    const mode = ThemeSettings.normalizeMode(AppStorage.get<string>(StorageKeys.THEME_MODE) || THEME_MODE_AUTO)
+    if (mode !== THEME_MODE_AUTO) {
+      return
+    }
+    const sysMode = newColorMode ?? ThemeSettings.getSystemColorMode(context)
+    if (sysMode === ConfigurationConstant.ColorMode.COLOR_MODE_DARK) {
+      ThemeSettings.setColorModeIfChanged(context, ConfigurationConstant.ColorMode.COLOR_MODE_DARK)
+      setAppStorageValue<boolean>(StorageKeys.THEME_EFFECTIVE_DARK, true)
+    } else if (sysMode === ConfigurationConstant.ColorMode.COLOR_MODE_LIGHT) {
+      ThemeSettings.setColorModeIfChanged(context, ConfigurationConstant.ColorMode.COLOR_MODE_LIGHT)
+      setAppStorageValue<boolean>(StorageKeys.THEME_EFFECTIVE_DARK, false)
     }
   }
 }

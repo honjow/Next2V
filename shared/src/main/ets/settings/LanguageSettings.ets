@@ -23,9 +23,59 @@ export class LanguageSettings {
 
   static apply(areaID: string): LanguageSettingsSnapshot {
     const normalized = LanguageSettings.normalizeMode(areaID)
-    i18n.System.setAppPreferredLanguage(normalized)
+    const targetLang = LanguageSettings.resolveTargetLanguage(normalized)
+    let current = ''
+    try { current = i18n.System.getAppPreferredLanguage() } catch (_e) {}
+    if (targetLang && targetLang !== current) {
+      try {
+        i18n.System.setAppPreferredLanguage(targetLang)
+      } catch (error) {
+        const e = error as Error
+        console.error('setAppPreferredLanguage failed: ' + e.message)
+      }
+    }
     setAppStorageValue<AppLanguageMode>(StorageKeys.LANGUAGE_MODE, normalized)
     return { mode: normalized }
+  }
+
+  // 跟随系统时取系统当前语言作为具体值 set。setAppPreferredLanguage('default')
+  // 在 OS 层无法清除上次 pin，所以不能直接传 default。
+  private static resolveTargetLanguage(mode: AppLanguageMode): string {
+    if (mode !== LanguageSettings.MODE_SYSTEM) {
+      return mode
+    }
+    try {
+      const sys = i18n.System.getSystemLanguage()
+      if (sys) {
+        return sys
+      }
+    } catch (_e) {}
+    return ''
+  }
+
+  // 由 ApplicationContext EnvironmentCallback 调用（application-level 异步事件，
+  // 不在 Configuration 重建调用链里，所以可以安全 set，不会递归）。
+  static reapplyForFollowSystem(): void {
+    const mode = (AppStorage.get<string>(StorageKeys.LANGUAGE_MODE) || LanguageSettings.MODE_SYSTEM) as string
+    if (LanguageSettings.normalizeMode(mode) !== LanguageSettings.MODE_SYSTEM) {
+      return
+    }
+    let sys = ''
+    try { sys = i18n.System.getSystemLanguage() } catch (_e) {}
+    if (!sys) {
+      return
+    }
+    let current = ''
+    try { current = i18n.System.getAppPreferredLanguage() } catch (_e) {}
+    if (sys === current) {
+      return
+    }
+    try {
+      i18n.System.setAppPreferredLanguage(sys)
+    } catch (error) {
+      const e = error as Error
+      console.error('reapplyForFollowSystem failed: ' + e.message)
+    }
   }
 
   static async applyLanguage(context: common.UIAbilityContext, areaID: string): Promise<LanguageSettingsSnapshot> {
