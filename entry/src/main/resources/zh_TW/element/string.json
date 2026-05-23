@@ -1515,6 +1515,190 @@
     {
       "name": "search_source_nodes_library",
       "value": "節點庫"
+    },
+    {
+      "name": "api_error_auth_required",
+      "value": "請先登入"
+    },
+    {
+      "name": "api_error_web_session_expired",
+      "value": "Web 工作階段已失效，請重新登入"
+    },
+    {
+      "name": "api_error_invalid_username",
+      "value": "無效的使用者名稱"
+    },
+    {
+      "name": "api_error_invalid_topic_id",
+      "value": "無效的主題 ID"
+    },
+    {
+      "name": "api_error_invalid_node",
+      "value": "無效節點"
+    },
+    {
+      "name": "api_error_invalid_reply",
+      "value": "無效回覆"
+    },
+    {
+      "name": "api_error_invalid_notification_id",
+      "value": "無效的通知 ID"
+    },
+    {
+      "name": "api_error_invalid_operation_target",
+      "value": "無效的操作對象"
+    },
+    {
+      "name": "api_error_node_name_required",
+      "value": "節點名稱不能為空"
+    },
+    {
+      "name": "api_error_missing_notification_param",
+      "value": "缺少通知刪除參數"
+    },
+    {
+      "name": "api_error_notification_delete_not_applied",
+      "value": "刪除通知未生效，請稍後重試"
+    },
+    {
+      "name": "api_error_checkin_not_available",
+      "value": "今日無法簽到"
+    },
+    {
+      "name": "api_error_parse_favorite_action_failed",
+      "value": "解析收藏操作失敗，請稍後重試"
+    },
+    {
+      "name": "api_error_parse_follow_action_failed",
+      "value": "解析關注操作失敗，請稍後重試"
+    },
+    {
+      "name": "api_error_missing_user_action",
+      "value": "缺少使用者操作"
+    },
+    {
+      "name": "api_error_reply_body_required",
+      "value": "回覆內容不能為空"
+    },
+    {
+      "name": "api_error_parse_reply_form_failed",
+      "value": "解析回覆表單失敗，請改用瀏覽器"
+    },
+    {
+      "name": "api_error_submit_failed_detail",
+      "value": "提交失敗：{0}"
+    },
+    {
+      "name": "api_error_reply_submit_unconfirmed",
+      "value": "提交失敗：未確認回覆已發布"
+    },
+    {
+      "name": "api_error_reply_thank_not_allowed",
+      "value": "目前回覆不可感謝或已感謝過"
+    },
+    {
+      "name": "api_error_missing_thank_action",
+      "value": "缺少感謝操作"
+    },
+    {
+      "name": "api_error_thank_failed",
+      "value": "感謝失敗：{0}"
+    },
+    {
+      "name": "api_error_topic_thank_not_allowed",
+      "value": "目前主題不可感謝或已感謝過"
+    },
+    {
+      "name": "api_error_missing_ignore_action",
+      "value": "缺少忽略操作"
+    },
+    {
+      "name": "api_error_missing_report_action",
+      "value": "缺少報告操作"
+    },
+    {
+      "name": "api_error_node_required",
+      "value": "請選擇節點"
+    },
+    {
+      "name": "api_error_title_required",
+      "value": "請輸入標題"
+    },
+    {
+      "name": "api_error_body_required",
+      "value": "請輸入內文"
+    },
+    {
+      "name": "api_error_parse_topic_form_failed",
+      "value": "解析發文表單失敗，請改用瀏覽器"
+    },
+    {
+      "name": "api_error_missing_action_path",
+      "value": "缺少操作路徑"
+    },
+    {
+      "name": "api_error_field_required_detail",
+      "value": "缺少{0}"
+    },
+    {
+      "name": "api_error_field_external_link_forbidden",
+      "value": "{0}不允許使用外部網域連結"
+    },
+    {
+      "name": "api_error_hot_topics_empty",
+      "value": "熱榜未取得主題，請稍後重試"
+    },
+    {
+      "name": "api_error_recent_topics_empty",
+      "value": "最近更新未取得主題，請稍後重試"
+    },
+    {
+      "name": "api_error_tab_topics_empty",
+      "value": "Tab「{0}」未取得主題，請稍後重試"
+    },
+    {
+      "name": "api_error_parse_login_page_failed",
+      "value": "解析登入頁面失敗，請改用網頁登入"
+    },
+    {
+      "name": "api_error_login_captcha_required",
+      "value": "目前 V2EX 登入需要驗證碼，請改用網頁登入"
+    },
+    {
+      "name": "api_error_captcha_required",
+      "value": "請輸入驗證碼"
+    },
+    {
+      "name": "api_error_login_failed_detail",
+      "value": "登入失敗：{0}"
+    },
+    {
+      "name": "api_error_login_redirect_unsupported",
+      "value": "登入失敗：不支援的跳轉 {0}"
+    },
+    {
+      "name": "api_error_login_state_unconfirmed",
+      "value": "登入失敗：無法確認登入狀態，請改用網頁登入"
+    },
+    {
+      "name": "api_error_login_session_missing",
+      "value": "缺少登入工作階段，請重新登入"
+    },
+    {
+      "name": "api_error_two_factor_code_required",
+      "value": "請輸入兩步驟驗證碼"
+    },
+    {
+      "name": "api_error_two_factor_failed_detail",
+      "value": "兩步驟驗證失敗：{0}"
+    },
+    {
+      "name": "api_error_two_factor_failed",
+      "value": "兩步驟驗證失敗，請檢查驗證碼或改用網頁登入"
+    },
+    {
+      "name": "api_error_token_missing",
+      "value": "缺少 Token，請先設定 Personal Access Token"
     }
   ]
 }

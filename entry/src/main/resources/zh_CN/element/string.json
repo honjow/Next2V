@@ -1515,6 +1515,190 @@
     {
       "name": "search_source_nodes_library",
       "value": "节点库"
+    },
+    {
+      "name": "api_error_auth_required",
+      "value": "请先登录"
+    },
+    {
+      "name": "api_error_web_session_expired",
+      "value": "Web 会话已失效，请重新登录"
+    },
+    {
+      "name": "api_error_invalid_username",
+      "value": "无效用户名"
+    },
+    {
+      "name": "api_error_invalid_topic_id",
+      "value": "无效主题 ID"
+    },
+    {
+      "name": "api_error_invalid_node",
+      "value": "无效节点"
+    },
+    {
+      "name": "api_error_invalid_reply",
+      "value": "无效回复"
+    },
+    {
+      "name": "api_error_invalid_notification_id",
+      "value": "无效的通知 ID"
+    },
+    {
+      "name": "api_error_invalid_operation_target",
+      "value": "无效操作对象"
+    },
+    {
+      "name": "api_error_node_name_required",
+      "value": "节点名称不能为空"
+    },
+    {
+      "name": "api_error_missing_notification_param",
+      "value": "缺少通知删除参数"
+    },
+    {
+      "name": "api_error_notification_delete_not_applied",
+      "value": "删除通知未生效，请稍后重试"
+    },
+    {
+      "name": "api_error_checkin_not_available",
+      "value": "今日不可签到"
+    },
+    {
+      "name": "api_error_parse_favorite_action_failed",
+      "value": "解析收藏操作失败，请稍后重试"
+    },
+    {
+      "name": "api_error_parse_follow_action_failed",
+      "value": "解析关注操作失败，请稍后重试"
+    },
+    {
+      "name": "api_error_missing_user_action",
+      "value": "缺少用户操作"
+    },
+    {
+      "name": "api_error_reply_body_required",
+      "value": "回复内容不能为空"
+    },
+    {
+      "name": "api_error_parse_reply_form_failed",
+      "value": "解析回复表单失败，请改用浏览器"
+    },
+    {
+      "name": "api_error_submit_failed_detail",
+      "value": "提交失败：{0}"
+    },
+    {
+      "name": "api_error_reply_submit_unconfirmed",
+      "value": "提交失败：未确认回复已发布"
+    },
+    {
+      "name": "api_error_reply_thank_not_allowed",
+      "value": "当前回复不可感谢或已经感谢过"
+    },
+    {
+      "name": "api_error_missing_thank_action",
+      "value": "缺少感谢操作"
+    },
+    {
+      "name": "api_error_thank_failed",
+      "value": "感谢失败：{0}"
+    },
+    {
+      "name": "api_error_topic_thank_not_allowed",
+      "value": "当前主题不可感谢或已经感谢过"
+    },
+    {
+      "name": "api_error_missing_ignore_action",
+      "value": "缺少忽略操作"
+    },
+    {
+      "name": "api_error_missing_report_action",
+      "value": "缺少报告操作"
+    },
+    {
+      "name": "api_error_node_required",
+      "value": "请选择节点"
+    },
+    {
+      "name": "api_error_title_required",
+      "value": "请输入标题"
+    },
+    {
+      "name": "api_error_body_required",
+      "value": "请输入正文"
+    },
+    {
+      "name": "api_error_parse_topic_form_failed",
+      "value": "解析发帖表单失败，请改用浏览器"
+    },
+    {
+      "name": "api_error_missing_action_path",
+      "value": "缺少操作路径"
+    },
+    {
+      "name": "api_error_field_required_detail",
+      "value": "缺少{0}"
+    },
+    {
+      "name": "api_error_field_external_link_forbidden",
+      "value": "{0}不允许使用外域链接"
+    },
+    {
+      "name": "api_error_hot_topics_empty",
+      "value": "热榜没有获取到主题，请稍后重试"
+    },
+    {
+      "name": "api_error_recent_topics_empty",
+      "value": "最近更新没有获取到主题，请稍后重试"
+    },
+    {
+      "name": "api_error_tab_topics_empty",
+      "value": "Tab \"{0}\" 没有获取到主题，请稍后重试"
+    },
+    {
+      "name": "api_error_parse_login_page_failed",
+      "value": "解析登录页面失败，请改用网页登录"
+    },
+    {
+      "name": "api_error_login_captcha_required",
+      "value": "当前 V2EX 登录需要验证码，请使用网页登录"
+    },
+    {
+      "name": "api_error_captcha_required",
+      "value": "请输入验证码"
+    },
+    {
+      "name": "api_error_login_failed_detail",
+      "value": "登录失败：{0}"
+    },
+    {
+      "name": "api_error_login_redirect_unsupported",
+      "value": "登录失败：不支持的跳转 {0}"
+    },
+    {
+      "name": "api_error_login_state_unconfirmed",
+      "value": "登录失败：无法确认登录状态，请改用网页登录"
+    },
+    {
+      "name": "api_error_login_session_missing",
+      "value": "缺少登录会话，请重新登录"
+    },
+    {
+      "name": "api_error_two_factor_code_required",
+      "value": "请输入两步验证码"
+    },
+    {
+      "name": "api_error_two_factor_failed_detail",
+      "value": "两步验证失败：{0}"
+    },
+    {
+      "name": "api_error_two_factor_failed",
+      "value": "两步验证失败，请检查验证码或改用网页登录"
+    },
+    {
+      "name": "api_error_token_missing",
+      "value": "缺少 Token，请先配置 Personal Access Token"
     }
   ]
 }

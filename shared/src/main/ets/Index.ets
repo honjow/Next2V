@@ -33,6 +33,7 @@ export type {
   V2exTopicWebRepliesAllResult,
 } from './network/V2exTopicWebRepliesClient'
 export { ApiV2Service } from './network/ApiV2Service'
+export { ApiError, ApiErrorCode, ApiErrors, translateApiError, isApiError } from './network/ApiError'
 export { Sov2exService } from './network/Sov2exService'
 export type { ApiV2RateLimit, ApiV2Response } from './network/ApiV2Service'
 export {

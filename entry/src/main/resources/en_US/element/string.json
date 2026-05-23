@@ -1515,6 +1515,190 @@
     {
       "name": "search_source_nodes_library",
       "value": "Node library"
+    },
+    {
+      "name": "api_error_auth_required",
+      "value": "Please sign in"
+    },
+    {
+      "name": "api_error_web_session_expired",
+      "value": "Web session expired, please sign in again"
+    },
+    {
+      "name": "api_error_invalid_username",
+      "value": "Invalid username"
+    },
+    {
+      "name": "api_error_invalid_topic_id",
+      "value": "Invalid topic ID"
+    },
+    {
+      "name": "api_error_invalid_node",
+      "value": "Invalid node"
+    },
+    {
+      "name": "api_error_invalid_reply",
+      "value": "Invalid reply"
+    },
+    {
+      "name": "api_error_invalid_notification_id",
+      "value": "Invalid notification ID"
+    },
+    {
+      "name": "api_error_invalid_operation_target",
+      "value": "Invalid operation target"
+    },
+    {
+      "name": "api_error_node_name_required",
+      "value": "Node name is required"
+    },
+    {
+      "name": "api_error_missing_notification_param",
+      "value": "Missing notification deletion parameters"
+    },
+    {
+      "name": "api_error_notification_delete_not_applied",
+      "value": "Notification deletion did not apply, please retry"
+    },
+    {
+      "name": "api_error_checkin_not_available",
+      "value": "Check-in unavailable today"
+    },
+    {
+      "name": "api_error_parse_favorite_action_failed",
+      "value": "Failed to parse favorite action, please retry"
+    },
+    {
+      "name": "api_error_parse_follow_action_failed",
+      "value": "Failed to parse follow action, please retry"
+    },
+    {
+      "name": "api_error_missing_user_action",
+      "value": "Missing user action"
+    },
+    {
+      "name": "api_error_reply_body_required",
+      "value": "Reply body is required"
+    },
+    {
+      "name": "api_error_parse_reply_form_failed",
+      "value": "Failed to parse reply form, please use a browser"
+    },
+    {
+      "name": "api_error_submit_failed_detail",
+      "value": "Submit failed: {0}"
+    },
+    {
+      "name": "api_error_reply_submit_unconfirmed",
+      "value": "Submit failed: reply publication not confirmed"
+    },
+    {
+      "name": "api_error_reply_thank_not_allowed",
+      "value": "Reply cannot be thanked or already thanked"
+    },
+    {
+      "name": "api_error_missing_thank_action",
+      "value": "Missing thank action"
+    },
+    {
+      "name": "api_error_thank_failed",
+      "value": "Thank failed: {0}"
+    },
+    {
+      "name": "api_error_topic_thank_not_allowed",
+      "value": "Topic cannot be thanked or already thanked"
+    },
+    {
+      "name": "api_error_missing_ignore_action",
+      "value": "Missing ignore action"
+    },
+    {
+      "name": "api_error_missing_report_action",
+      "value": "Missing report action"
+    },
+    {
+      "name": "api_error_node_required",
+      "value": "Please choose a node"
+    },
+    {
+      "name": "api_error_title_required",
+      "value": "Please enter a title"
+    },
+    {
+      "name": "api_error_body_required",
+      "value": "Please enter the body"
+    },
+    {
+      "name": "api_error_parse_topic_form_failed",
+      "value": "Failed to parse topic form, please use a browser"
+    },
+    {
+      "name": "api_error_missing_action_path",
+      "value": "Missing action path"
+    },
+    {
+      "name": "api_error_field_required_detail",
+      "value": "{0} is required"
+    },
+    {
+      "name": "api_error_field_external_link_forbidden",
+      "value": "{0} does not allow external links"
+    },
+    {
+      "name": "api_error_hot_topics_empty",
+      "value": "No hot topics returned, please retry"
+    },
+    {
+      "name": "api_error_recent_topics_empty",
+      "value": "No recent topics returned, please retry"
+    },
+    {
+      "name": "api_error_tab_topics_empty",
+      "value": "Tab \"{0}\" returned no topics, please retry"
+    },
+    {
+      "name": "api_error_parse_login_page_failed",
+      "value": "Failed to parse login page, please use web login"
+    },
+    {
+      "name": "api_error_login_captcha_required",
+      "value": "V2EX login requires a captcha, please use web login"
+    },
+    {
+      "name": "api_error_captcha_required",
+      "value": "Please enter the captcha"
+    },
+    {
+      "name": "api_error_login_failed_detail",
+      "value": "Login failed: {0}"
+    },
+    {
+      "name": "api_error_login_redirect_unsupported",
+      "value": "Login failed: unsupported redirect {0}"
+    },
+    {
+      "name": "api_error_login_state_unconfirmed",
+      "value": "Login failed: cannot confirm login state, please use web login"
+    },
+    {
+      "name": "api_error_login_session_missing",
+      "value": "Login session missing, please sign in again"
+    },
+    {
+      "name": "api_error_two_factor_code_required",
+      "value": "Please enter the two-factor code"
+    },
+    {
+      "name": "api_error_two_factor_failed_detail",
+      "value": "Two-factor verification failed: {0}"
+    },
+    {
+      "name": "api_error_two_factor_failed",
+      "value": "Two-factor verification failed, check code or use web login"
+    },
+    {
+      "name": "api_error_token_missing",
+      "value": "Missing token, please configure a Personal Access Token"
     }
   ]
 }
