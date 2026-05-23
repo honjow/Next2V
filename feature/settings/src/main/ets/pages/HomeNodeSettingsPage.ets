@@ -107,7 +107,7 @@ export struct HomeNodeSettingsPage {
     GroupedListSection() {
       ForEach(this.hiddenBuiltInTabs(), (tab: TabItem) => {
         ConciseListRow({
-          title: $r('app.string.add_x_format', tab.label),
+          title: AppStrings.format(AppStrings.text($r('app.string.add_x_format'), 'Add {0}'), [typeof tab.label === 'string' ? tab.label : AppStrings.text(tab.label, '')]),
           showChevron: false,
           action: () => {
             this.updateFeedTabVisibility(tab.key)

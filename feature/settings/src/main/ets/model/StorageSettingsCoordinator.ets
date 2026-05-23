@@ -17,9 +17,15 @@ export class StorageSettingsCoordinator {
     const listCount = `${stats.topicListCount}`
     const detailCount = `${stats.topicDetailCount}`
     if (stats.updatedAt > 0) {
-      return $r('app.string.cache_subtitle_updated', listCount, detailCount, DateUtils.toDateString(stats.updatedAt))
+      return AppStrings.format(
+        AppStrings.text($r('app.string.cache_subtitle_updated'), 'Lists {0} · Details {1} · Updated {2}'),
+        [listCount, detailCount, DateUtils.toDateString(stats.updatedAt)]
+      )
     }
-    return $r('app.string.cache_subtitle', listCount, detailCount)
+    return AppStrings.format(
+      AppStrings.text($r('app.string.cache_subtitle'), 'Lists {0} · Details {1}'),
+      [listCount, detailCount]
+    )
   }
 
   static clearCacheDialogCopy(): StorageConfirmDialogCopy {

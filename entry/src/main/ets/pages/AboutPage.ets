@@ -1,6 +1,7 @@
 import { bundleManager, common, Want } from '@kit.AbilityKit'
 import { promptAction } from '@kit.ArkUI'
 import {
+  AppStrings,
   ConciseListRow,
   GroupedListSection,
   ListDivider as SharedListDivider,
@@ -93,7 +94,7 @@ export struct AboutPage {
       Text($r('app.string.about_tagline'))
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
         .fontColor($r('sys.color.font_secondary'))
-      Text($r('app.string.about_version_format', this.appVersion))
+      Text(AppStrings.format(AppStrings.text($r('app.string.about_version_format'), 'Version {0}'), [this.appVersion]))
         .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
         .fontColor($r('sys.color.font_secondary'))
     }

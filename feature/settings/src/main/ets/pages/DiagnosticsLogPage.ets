@@ -82,7 +82,7 @@ export struct DiagnosticsLogPage {
   DiagnosticsActionsSection() {
     GroupedListSection() {
       ConciseListRow({
-        title: $r('app.string.diagnostics_current_launch_recent_count', `${this.logCount}`),
+        title: AppStrings.format(AppStrings.text($r('app.string.diagnostics_current_launch_recent_count'), 'Recent this launch {0}'), [`${this.logCount}`]),
         subtitle: this.logFiles.length > 0 ? this.formatRetainedLogFilesCount(this.logFiles.length) : AppStrings.R_NO_LOCAL_LOG_FILES,
         showChevron: false,
         action: () => {
@@ -130,7 +130,7 @@ export struct DiagnosticsLogPage {
   DiagnosticsLogFileRow(file: DiagnosticsLogFileInfo) {
     ConciseListRow({
       title: this.logFileTitle(file),
-      subtitle: $r('app.string.diagnostics_log_file_share_hint', this.formatFileSize(file.sizeBytes)),
+      subtitle: AppStrings.format(AppStrings.text($r('app.string.diagnostics_log_file_share_hint'), '{0} · Tap to share'), [this.formatFileSize(file.sizeBytes)]),
       showChevron: false,
       action: () => {
         this.handleShareLogFileClick(file)
@@ -139,7 +139,7 @@ export struct DiagnosticsLogPage {
   }
 
   private formatRetainedLogFilesCount(count: number): ResourceStr {
-    return $r('app.string.retained_local_log_files_count_arg', `${count}`)
+    return AppStrings.format(AppStrings.text($r('app.string.retained_local_log_files_count_arg'), 'Retained {0} local log files'), [`${count}`])
   }
 
   private updateDiagnosticsEnabled(enabled: boolean): void {
@@ -232,7 +232,9 @@ export struct DiagnosticsLogPage {
 
   private logFileTitle(file: DiagnosticsLogFileInfo): ResourceStr {
     const timestamp = this.formatLogTimestamp(file.createdAtMs)
-    return file.isCurrent ? $r('app.string.current_log_with_time', timestamp) : $r('app.string.startup_log_with_time', timestamp)
+    return file.isCurrent
+      ? AppStrings.format(AppStrings.text($r('app.string.current_log_with_time'), 'Current log · {0}'), [timestamp])
+      : AppStrings.format(AppStrings.text($r('app.string.startup_log_with_time'), 'Startup log · {0}'), [timestamp])
   }
 
   private formatLogTimestamp(value: number): string {

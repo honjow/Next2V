@@ -1,7 +1,7 @@
 import { common } from '@kit.AbilityKit'
 import { promptAction } from '@kit.ArkUI'
 import {
-  ApiService, CookieJarSettings, DateUtils, DraftSettings, MarkdownContent, MarkdownToolbar, SecondaryFormScaffold,
+  ApiService, AppStrings, CookieJarSettings, DateUtils, DraftSettings, MarkdownContent, MarkdownToolbar, SecondaryFormScaffold,
   ThemeConstants
 } from 'shared'
 
@@ -146,7 +146,7 @@ export struct TopicEditorPage {
         }
 
         if (this.savedAt > 0) {
-          Text($r('app.string.draft_saved_on_format', DateUtils.toDateString(this.savedAt)))
+          Text(AppStrings.format(AppStrings.text($r('app.string.draft_saved_on_format'), 'Saved on {0}'), [DateUtils.toDateString(this.savedAt)]))
             .fontSize(ThemeConstants.FONT_SIZE_TINY)
             .fontColor($r('sys.color.font_secondary'))
         }
@@ -342,7 +342,7 @@ export struct TopicEditorPage {
         this.hasSubmitted = true
         const context = this.getUIContext().getHostContext() as common.UIAbilityContext
         DraftSettings.clearTopicDraft(context).catch((_error: Error) => { })
-        promptAction.openToast({ message: topicId > 0 ? $r('app.string.posted_topic_format', `${topicId}`) : $r('app.string.posted_topic') }).catch((_error: Error) => { })
+        promptAction.openToast({ message: topicId > 0 ? AppStrings.format(AppStrings.text($r('app.string.posted_topic_format'), 'Posted: {0}'), [`${topicId}`]) : $r('app.string.posted_topic') }).catch((_error: Error) => { })
         this.stack.pop()
       })
       .catch((error: Error) => {

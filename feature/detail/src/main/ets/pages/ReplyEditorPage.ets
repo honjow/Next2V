@@ -10,7 +10,7 @@ import {
   type ReplyComposerDraftState,
 } from '../model/ReplyComposerDraftCoordinator'
 import {
-  ApiService, CookieJarSettings, DateUtils, MarkdownContent, MarkdownToolbar, SecondaryFormScaffold,
+  ApiService, AppStrings, CookieJarSettings, DateUtils, MarkdownContent, MarkdownToolbar, SecondaryFormScaffold,
   ThemeConstants
 } from 'shared'
 
@@ -124,7 +124,7 @@ export struct ReplyEditorPage {
         }
 
         if (this.savedAt > 0) {
-          Text($r('app.string.draft_saved_on_format', DateUtils.toDateString(this.savedAt)))
+          Text(AppStrings.format(AppStrings.text($r('app.string.draft_saved_on_format'), 'Saved on {0}'), [DateUtils.toDateString(this.savedAt)]))
             .fontSize(ThemeConstants.FONT_SIZE_TINY)
             .fontColor($r('sys.color.font_secondary'))
         }
