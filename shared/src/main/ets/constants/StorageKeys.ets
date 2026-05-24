@@ -42,6 +42,7 @@ export class StorageKeys {
   static readonly AUTH_SESSION_AVATAR: string = 'authSessionAvatar'
   static readonly AUTH_SESSION_VALIDATED_AT: string = 'authSessionValidatedAt'
   static readonly AUTH_SESSION_UPDATED_AT: string = 'authSessionUpdatedAt'
+  static readonly ACTIVE_ACCOUNT_ID: string = 'activeAccountId'
   static readonly TWO_FACTOR_VISIBLE: string = 'twoFactorVisible'
   static readonly TWO_FACTOR_COOKIE: string = 'twoFactorCookie'
   static readonly TWO_FACTOR_SOURCE: string = 'twoFactorSource'
