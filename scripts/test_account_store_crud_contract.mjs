@@ -54,6 +54,7 @@ const requiredMethods = [
   'Promise<void>',
   'static async setActiveId(context',
   'static getActiveId()',
+  'static async restoreActiveId(context',
   'static async clearAll(context',
 ]
 for (const token of requiredMethods) {
@@ -138,12 +139,16 @@ assert(
 )
 
 // ── Forbidden UI files must not be modified ─────────────────────
+// Lane B (multi-account-ui): AccountPage.ets is allowed to reference AccountStore.
+// SettingsPage.ets is allowed to reference AccountStore for account management entry.
+// Index.ets, V2exNativeLoginPage.ets, V2exWebLoginPage.ets must not reference AccountStore.
 const forbiddenUiFiles = [
-  'entry/src/main/ets/pages/AccountPage.ets',
   'entry/src/main/ets/pages/Index.ets',
-  'feature/settings/src/main/ets/pages/SettingsPage.ets',
   'entry/src/main/ets/pages/V2exNativeLoginPage.ets',
   'entry/src/main/ets/pages/V2exWebLoginPage.ets',
+]
+const allowedUiFiles = [
+  'entry/src/main/ets/pages/AccountPage.ets',
 ]
 const worktreePath = (rel) => path.join(repo, rel)
 for (const rel of forbiddenUiFiles) {
@@ -152,9 +157,51 @@ for (const rel of forbiddenUiFiles) {
     const text = read(rel)
     assert(
       !text.includes('AccountStore'),
-      `${rel} must not reference AccountStore — Lane A is data layer only`
+      `${rel} must not reference AccountStore — unauthorized UI file`
     )
   }
+}
+// Allowed UI files: verify they DO reference AccountStore (lane B contract)
+for (const rel of allowedUiFiles) {
+  if (fs.existsSync(worktreePath(rel))) {
+    const text = read(rel)
+    assert(
+      text.includes('AccountStore'),
+      `${rel} must reference AccountStore — Lane B multi-account UI requires it`
+    )
+  }
+}
+
+// ── Resource key contract ────────────────────────────────────────
+// Multi-account UI requires specific resource keys
+const requiredResourceKeys = [
+  'account_list_header',
+  'account_active_label',
+]
+const baseStringsPath = 'entry/src/main/resources/base/element/string.json'
+const baseStringsText = read(baseStringsPath)
+for (const key of requiredResourceKeys) {
+  assert(
+    baseStringsText.includes(`"name": "${key}"`),
+    `Missing resource key in base string.json: ${key}`
+  )
+}
+// Verify en_US fallbacks contain no CJK characters
+const enStringsPath = 'entry/src/main/resources/en_US/element/string.json'
+const enStringsText = read(enStringsPath)
+for (const key of requiredResourceKeys) {
+  assert(
+    enStringsText.includes(`"name": "${key}"`),
+    `Missing resource key in en_US string.json: ${key}`
+  )
+}
+// Verify AppStrings.ets registers new keys
+const appStringsText = read('shared/src/main/ets/i18n/AppStrings.ets')
+for (const key of requiredResourceKeys) {
+  assert(
+    appStringsText.includes(key),
+    `AppStrings.ets missing resource key: ${key}`
+  )
 }
 
 // ── Preferences store ownership ─────────────────────────────────
@@ -187,6 +234,25 @@ assert(
 assert(
   accountStore.includes('JSON.parse'),
   'AccountStore must parse records JSON on read'
+)
+
+// ── restoreActiveId must read persisted active ID from preferences ────
+assert(
+  accountStore.includes('static async restoreActiveId(context'),
+  'AccountStore must expose restoreActiveId method'
+)
+// restoreActiveId must use store.getSync to read from preferences
+const restoreIdx = accountStore.indexOf('restoreActiveId')
+assert(restoreIdx >= 0, 'restoreActiveId method must exist')
+const restoreSection = accountStore.slice(restoreIdx, restoreIdx + 600)
+assert(
+  restoreSection.includes('store.getSync') && restoreSection.includes('KEY_ACTIVE_ACCOUNT_ID'),
+  'restoreActiveId must read persisted active ID via store.getSync(KEY_ACTIVE_ACCOUNT_ID)'
+)
+assert(
+  restoreSection.includes('AccountStore.activeAccountId = persisted') ||
+  restoreSection.includes('AccountStore.activeAccountId ='),
+  'restoreActiveId must restore static activeAccountId from persisted value'
 )
 
 console.log('account store crud contract ok')

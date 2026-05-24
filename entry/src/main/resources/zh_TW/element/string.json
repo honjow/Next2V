@@ -237,6 +237,14 @@
       "value": "新增帳號"
     },
     {
+      "name": "account_list_header",
+      "value": "帳號列表"
+    },
+    {
+      "name": "account_active_label",
+      "value": "當前"
+    },
+    {
       "name": "profile_home",
       "value": "個人首頁"
     },
@@ -839,6 +847,18 @@
     {
       "name": "reset_seed_cache",
       "value": "重設 Seed 快取"
+    },
+    {
+      "name": "account_qa_seed",
+      "value": "多帳戶 QA Seed"
+    },
+    {
+      "name": "seed_account_records",
+      "value": "Seed 帳戶紀錄"
+    },
+    {
+      "name": "reset_seeded_accounts",
+      "value": "重設 Seed 帳戶"
     },
     {
       "name": "visible_home_nodes_reorder_hint",

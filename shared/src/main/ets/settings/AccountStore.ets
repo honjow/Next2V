@@ -32,8 +32,21 @@ function generateId(): string {
   const hex = '0123456789abcdef'
   return template.replace(/[xy]/g, (c: string): string => {
     const r: number = Math.floor(Math.random() * 16)
-    return c === 'x' ? hex[r] : hex[(r & 0x3) | 0x8]
+    if (c === 'x') {
+      return hex.charAt(r)
+    }
+    return hex.charAt((r & 0x3) | 0x8)
   })
+}
+
+export interface AccountRecordInput {
+  username: string
+  avatar: string
+  loginMode: 'cookie' | 'pat'
+  baseUrl: string
+  cookieSnapshot: string
+  tokenSnapshot: string
+  validatedAt: number
 }
 
 export class AccountStore {
@@ -59,11 +72,17 @@ export class AccountStore {
     return all.find(r => r.id === id) ?? null
   }
 
-  static async add(context: common.UIAbilityContext, input: Omit<AccountRecord, 'id' | 'addedAt' | 'updatedAt'>): Promise<AccountRecord> {
+  static async add(context: common.UIAbilityContext, input: AccountRecordInput): Promise<AccountRecord> {
     const now = Date.now()
     const record: AccountRecord = {
-      ...input,
       id: generateId(),
+      username: input.username,
+      avatar: input.avatar,
+      loginMode: input.loginMode,
+      baseUrl: input.baseUrl,
+      cookieSnapshot: input.cookieSnapshot,
+      tokenSnapshot: input.tokenSnapshot,
+      validatedAt: input.validatedAt,
       addedAt: now,
       updatedAt: now,
     }
@@ -117,6 +136,23 @@ export class AccountStore {
   }
 
   static getActiveId(): string {
+    return AccountStore.activeAccountId
+  }
+
+  /**
+   * 从 preferences 读取持久化的活跃账户 ID 并恢复到 transient static 字段。
+   * 必须在 getActiveId() 之前调用以确保进程重启后活跃 ID 不丢失。
+   */
+  static async restoreActiveId(context: common.UIAbilityContext): Promise<string> {
+    try {
+      const store = await preferences.getPreferences(context, STORE_NAME)
+      const persisted = store.getSync(KEY_ACTIVE_ACCOUNT_ID, '') as string
+      if (persisted) {
+        AccountStore.activeAccountId = persisted
+      }
+    } catch {
+      // 读取失败时保留当前 transient 值
+    }
     return AccountStore.activeAccountId
   }
 

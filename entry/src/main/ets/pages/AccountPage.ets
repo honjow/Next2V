@@ -23,6 +23,10 @@ import {
   isApiError
 } from 'shared'
 import {
+  AccountStore,
+  type AccountRecord
+} from 'shared'
+import {
   ApiService,
   AccountMetaSettings,
   AuthSessionSettings,
@@ -84,6 +88,10 @@ export struct AccountDashboardPage {
   private http: HttpClient = HttpClient.getInstance()
   private api: ApiService = new ApiService()
   private localStatsRequestId: number = 0
+  // Multi-account state
+  @State private accounts: AccountRecord[] = []
+  @State private activeAccountId: string = ''
+  @State private isAccountsLoaded: boolean = false
   showDetail: boolean = false
   @Prop @Watch('onRefreshKeyChanged') refreshKey: number = 0
 
@@ -91,6 +99,7 @@ export struct AccountDashboardPage {
     this.loadAuthSnapshot()
     this.loadSessionSnapshot()
     this.refreshLocalData()
+    this.loadAccounts()
   }
 
   onLocalDataUpdated(_propName: string): void {
@@ -129,6 +138,17 @@ export struct AccountDashboardPage {
 
           ListItem() {
             this.AuthSection()
+          }
+
+          if (this.isAccountsLoaded && this.accounts.length > 0) {
+            ListItem() {
+              this.SectionHeader(AccountPageCoordinator.ACCOUNT_LIST_HEADER)
+            }
+            .margin({ top: ThemeConstants.SPACE_MD })
+
+            ListItem() {
+              this.MultiAccountSection()
+            }
           }
 
           if (this.hasCookieAccount()) {
@@ -460,6 +480,51 @@ export struct AccountDashboardPage {
 
   private hasAnyAccount(): boolean {
     return AccountPageCoordinator.hasAnyAccount(this.authCookieConfigured, this.authTokenConfigured)
+  }
+
+  @Builder
+  MultiAccountSection() {
+    GroupedListSection() {
+      ForEach(this.accounts, (record: AccountRecord) => {
+        ConciseListRow({
+          title: record.username,
+          subtitle: this.activeAccountId === record.id ? AccountPageCoordinator.ACCOUNT_ACTIVE_LABEL : '',
+          showChevron: false,
+          action: () => {
+            this.selectAccount(record)
+          }
+        })
+      }, (record: AccountRecord) => record.id)
+    }
+  }
+
+  private selectAccount(record: AccountRecord): void {
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    AccountStore.setActiveId(context, record.id)
+      .then(() => {
+        this.activeAccountId = record.id
+      })
+      .catch((error: Error) => {
+        console.error('setActiveId failed: ' + error.message)
+      })
+  }
+
+  private loadAccounts(): void {
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    AccountStore.migrateFromSingletonIfNeeded(context)
+      .then(() => AccountStore.restoreActiveId(context))
+      .then(() => AccountStore.getAll(context))
+      .then((records: AccountRecord[]) => {
+        this.accounts = records
+        this.activeAccountId = AccountStore.getActiveId()
+        this.isAccountsLoaded = true
+      })
+      .catch((error: Error) => {
+        console.error('loadAccounts failed: ' + error.message)
+        this.accounts = []
+        this.activeAccountId = AccountStore.getActiveId()
+        this.isAccountsLoaded = true
+      })
   }
 
   private shouldShowApiDiagnostics(): boolean {
