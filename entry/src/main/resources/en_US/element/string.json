@@ -237,6 +237,14 @@
       "value": "Add another account"
     },
     {
+      "name": "account_list_header",
+      "value": "Accounts"
+    },
+    {
+      "name": "account_active_label",
+      "value": "Active"
+    },
+    {
       "name": "profile_home",
       "value": "Profile"
     },
@@ -839,6 +847,18 @@
     {
       "name": "reset_seed_cache",
       "value": "Reset seed cache"
+    },
+    {
+      "name": "account_qa_seed",
+      "value": "Account QA Seed"
+    },
+    {
+      "name": "seed_account_records",
+      "value": "Seed account records"
+    },
+    {
+      "name": "reset_seeded_accounts",
+      "value": "Reset seeded accounts"
     },
     {
       "name": "visible_home_nodes_reorder_hint",

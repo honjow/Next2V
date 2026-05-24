@@ -22,6 +22,9 @@ export class AccountPageCoordinator {
   static get LOGIN_SUBTITLE(): ResourceStr { return AppStrings.R_TAP_TO_LOGIN_V2EX }
   static get ADD_ANOTHER_ACCOUNT_TITLE(): ResourceStr { return AppStrings.R_ACCOUNT_ADD_ANOTHER }
 
+  static get ACCOUNT_LIST_HEADER(): ResourceStr { return AppStrings.R_ACCOUNT_LIST_HEADER }
+  static get ACCOUNT_ACTIVE_LABEL(): string { return AppStrings.text(AppStrings.R_ACCOUNT_ACTIVE_LABEL, 'Active') }
+
   static get PROFILE_TITLE(): ResourceStr { return AppStrings.R_PROFILE_HOME }
   static get BALANCE_DETAIL_TITLE(): ResourceStr { return AppStrings.R_BALANCE_DETAILS }
   static get WEB_ACCOUNT_SETTINGS_TITLE(): ResourceStr { return AppStrings.R_WEB_ACCOUNT_SETTINGS }

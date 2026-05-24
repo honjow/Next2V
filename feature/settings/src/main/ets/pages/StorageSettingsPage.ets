@@ -7,7 +7,8 @@ import {
   ConciseListRow,
   GroupedListSection,
   LocalDataSettings,
-  SecondaryListScaffold
+  SecondaryListScaffold,
+  AccountStoreQaSeed
 } from 'shared'
 import BuildProfile from '../../../../BuildProfile'
 import {
@@ -25,6 +26,7 @@ export struct StorageSettingsPage {
   @State private cacheMessage: string = ''
   @State private seedMessage: string = ''
   @State private localDataMessage: string = ''
+  @State private accountSeedMessage: string = ''
 
   aboutToAppear(): void {
     this.loadCacheStats()
@@ -48,6 +50,16 @@ export struct StorageSettingsPage {
 
           ListItem() {
             this.CacheQaSeedSection()
+          }
+        }
+
+        if (BuildProfile.DEBUG && AccountStoreQaSeed.isEnabled()) {
+          ListItem() {
+            SettingsSectionHeader({ title: AppStrings.R_ACCOUNT_QA_SEED })
+          }
+
+          ListItem() {
+            this.AccountQaSeedSection()
           }
         }
 
@@ -218,6 +230,31 @@ export struct StorageSettingsPage {
     }
   }
 
+  @Builder
+  AccountQaSeedSection() {
+    GroupedListSection() {
+      ConciseListRow({
+        title: AppStrings.R_SEED_ACCOUNT_RECORDS,
+        subtitle: this.accountSeedMessage,
+        showChevron: false,
+        action: () => {
+          this.runAccountSeedAction()
+        }
+      })
+
+      SettingsDivider()
+
+      ConciseListRow({
+        title: AppStrings.R_RESET_SEEDED_ACCOUNTS,
+        destructive: true,
+        showChevron: false,
+        action: () => {
+          this.runAccountResetAction()
+        }
+      })
+    }
+  }
+
   private loadCacheStats(): void {
     const context = this.hostContext()
     CacheSettings.loadStats(context)
@@ -324,6 +361,34 @@ export struct StorageSettingsPage {
       })
       .catch((error: Error) => {
         this.seedMessage = StorageSettingsCoordinator.seedErrorMessage(error)
+      })
+  }
+
+  private runAccountSeedAction(): void {
+    if (!BuildProfile.DEBUG || !AccountStoreQaSeed.isEnabled()) {
+      this.accountSeedMessage = StorageSettingsCoordinator.seedUnavailableMessage()
+      return
+    }
+    AccountStoreQaSeed.seedFakeAccounts(this.hostContext())
+      .then((count: number) => {
+        this.accountSeedMessage = `Seeded ${count} account record(s)`
+      })
+      .catch((error: Error) => {
+        this.accountSeedMessage = StorageSettingsCoordinator.seedErrorMessage(error)
+      })
+  }
+
+  private runAccountResetAction(): void {
+    if (!BuildProfile.DEBUG || !AccountStoreQaSeed.isEnabled()) {
+      this.accountSeedMessage = StorageSettingsCoordinator.seedUnavailableMessage()
+      return
+    }
+    AccountStoreQaSeed.resetSeededAccounts(this.hostContext())
+      .then(() => {
+        this.accountSeedMessage = StorageSettingsCoordinator.clearSuccessMessage()
+      })
+      .catch((error: Error) => {
+        this.accountSeedMessage = StorageSettingsCoordinator.clearErrorMessage(error)
       })
   }
 }
