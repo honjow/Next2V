@@ -111,6 +111,8 @@ const KNOWN_OK_STRINGS = [
   '会话已失效',
   // V2exAccountParser — parses Chinese server HTML coin labels
   '金币', '银币', '铜币',
+  // V2exMemberPageParser — parses Chinese server HTML for member page sections
+  '主题列表被隐藏', '最近回复', '号会员',
 ]
 
 function isKnownOk(text) {
