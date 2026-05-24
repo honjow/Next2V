@@ -1,4 +1,5 @@
 import type { V2exMember, V2exNotification } from '../network/NetworkTypes'
+import { AppStrings } from '../i18n/AppStrings'
 
 interface ParsedNotificationTopic {
   id: number
@@ -282,7 +283,7 @@ export class V2exNotificationParser {
     }
     const hrefUsername = V2exNotificationParser.decodeHtml(m[1] || '')
     const labelUsername = V2exNotificationParser.compactText(m[2] || '')
-    const username = labelUsername && labelUsername !== '图片' ? labelUsername : hrefUsername
+    const username = labelUsername && labelUsername !== V2exNotificationParser.getImagePlaceholder() ? labelUsername : hrefUsername
     const avatar = V2exNotificationParser.extractMemberAvatar(cell, username)
     return {
       id: 0,
@@ -324,10 +325,14 @@ export class V2exNotificationParser {
     }
   }
 
+  private static getImagePlaceholder(): string {
+    return AppStrings.text(AppStrings.R_MARKDOWN_PLACEHOLDER_IMAGE, 'Image')
+  }
+
   private static compactText(html: string): string {
     return V2exNotificationParser.decodeHtml(html.replace(/<script[\s\S]*?<\/script>/gi, ' ')
       .replace(/<style[\s\S]*?<\/style>/gi, ' ')
-      .replace(/<img\b[^>]*>/gi, ' 图片 ')
+      .replace(/<img\b[^>]*>/gi, ` ${V2exNotificationParser.getImagePlaceholder()} `)
       .replace(/<[^>]+>/g, ' '))
       .replace(/\s+/g, ' ')
       .trim()

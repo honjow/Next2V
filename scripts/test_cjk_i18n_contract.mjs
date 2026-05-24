@@ -113,6 +113,10 @@ const KNOWN_OK_STRINGS = [
   '金币', '银币', '铜币',
   // V2exMemberPageParser — parses Chinese server HTML for member page sections
   '主题列表被隐藏', '最近回复', '号会员',
+  // V2exNotificationParser — parses Chinese notification timestamps from V2EX server HTML
+  '刚刚', '半小时前', '秒前', '分钟前', '小时前', '天前', '年前',
+  '小时', '分钟', '秒', '天', '个月', '年',
+  '昨天', '前天', '月', '日',
 ]
 
 function isKnownOk(text) {
