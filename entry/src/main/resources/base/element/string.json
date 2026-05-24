@@ -2563,6 +2563,18 @@
     {
       "name": "account_read_list_failed",
       "value": "Failed to read account list"
+    },
+    {
+      "name": "account_balance_gold",
+      "value": "Gold"
+    },
+    {
+      "name": "account_balance_silver",
+      "value": "Silver"
+    },
+    {
+      "name": "account_balance_bronze",
+      "value": "Bronze"
     }
   ]
 }

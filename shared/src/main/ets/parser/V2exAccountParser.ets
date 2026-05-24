@@ -1,4 +1,5 @@
 import type { V2exBalance, V2exDailyMission } from '../network/NetworkTypes'
+import { AppStrings } from '../i18n/AppStrings'
 
 export class V2exAccountParser {
   static extractBalance(html: string): V2exBalance {
@@ -107,12 +108,12 @@ export class V2exAccountParser {
   private static createBalance(gold: number, silver: number, bronze: number): V2exBalance {
     const parts: string[] = []
     if (gold > 0) {
-      parts.push(`${V2exAccountParser.formatCoinAmount(gold)} 金币`)
+      parts.push(`${V2exAccountParser.formatCoinAmount(gold)} ${AppStrings.text(AppStrings.R_ACCOUNT_BALANCE_GOLD, 'Gold')}`)
     }
     if (silver > 0) {
-      parts.push(`${V2exAccountParser.formatCoinAmount(silver)} 银币`)
+      parts.push(`${V2exAccountParser.formatCoinAmount(silver)} ${AppStrings.text(AppStrings.R_ACCOUNT_BALANCE_SILVER, 'Silver')}`)
     }
-    parts.push(`${V2exAccountParser.formatCoinAmount(bronze)} 铜币`)
+    parts.push(`${V2exAccountParser.formatCoinAmount(bronze)} ${AppStrings.text(AppStrings.R_ACCOUNT_BALANCE_BRONZE, 'Bronze')}`)
     return { gold, silver, bronze, summary: parts.join(' · ') }
   }
 

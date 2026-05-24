@@ -526,4 +526,7 @@ export class AppStrings {
   static readonly R_ACCOUNT_CLEAR_DATA_FAILED: Resource = $r('app.string.account_clear_data_failed')
   static readonly R_ACCOUNT_DATA_MIGRATION_FAILED: Resource = $r('app.string.account_data_migration_failed')
   static readonly R_ACCOUNT_READ_LIST_FAILED: Resource = $r('app.string.account_read_list_failed')
+  static readonly R_ACCOUNT_BALANCE_GOLD: Resource = $r('app.string.account_balance_gold')
+  static readonly R_ACCOUNT_BALANCE_SILVER: Resource = $r('app.string.account_balance_silver')
+  static readonly R_ACCOUNT_BALANCE_BRONZE: Resource = $r('app.string.account_balance_bronze')
 }

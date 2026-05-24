@@ -109,6 +109,8 @@ const KNOWN_OK_STRINGS = [
   '提到了你', '回复了你', '回复了你的', '收藏了你', '关注了你', '感谢了你', '系统',
   // NotificationPage — session expiry detection string matching
   '会话已失效',
+  // V2exAccountParser — parses Chinese server HTML coin labels
+  '金币', '银币', '铜币',
 ]
 
 function isKnownOk(text) {

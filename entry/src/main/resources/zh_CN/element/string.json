@@ -2563,6 +2563,18 @@
     {
       "name": "account_read_list_failed",
       "value": "读取账户列表失败"
+    },
+    {
+      "name": "account_balance_gold",
+      "value": "金币"
+    },
+    {
+      "name": "account_balance_silver",
+      "value": "银币"
+    },
+    {
+      "name": "account_balance_bronze",
+      "value": "铜币"
     }
   ]
 }
