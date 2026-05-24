@@ -1,6 +1,6 @@
 import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
-import { ApiConstants } from '../constants/ApiConstants'
+import { HttpClient } from '../network/HttpClient'
 import { StorageKeys } from '../constants/StorageKeys'
 import { setAppStorageValue } from './SettingsStorage'
 import { STORE_NAME_ACCOUNTS } from './SettingsStores'
@@ -10,7 +10,7 @@ import { CookieJarSettings } from './CookieJarSettings'
 const STORE_NAME: string = STORE_NAME_ACCOUNTS
 const KEY_RECORDS: string = 'records'
 const KEY_SCHEMA_VERSION: string = 'schemaVersion'
-const KEY_ACTIVE_ACCOUNT_ID: string = 'activeAccountId'
+const KEY_ACTIVE_ACCOUNT_ID: string = StorageKeys.ACTIVE_ACCOUNT_ID
 
 export const CURRENT_SCHEMA_VERSION: number = 1
 
@@ -28,7 +28,12 @@ export interface AccountRecord {
 }
 
 function generateId(): string {
-  return Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 10)
+  let template = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'
+  const hex = '0123456789abcdef'
+  return template.replace(/[xy]/g, (c: string): string => {
+    const r: number = Math.floor(Math.random() * 16)
+    return c === 'x' ? hex[r] : hex[(r & 0x3) | 0x8]
+  })
 }
 
 export class AccountStore {
@@ -88,14 +93,14 @@ export class AccountStore {
       return
     }
     all = all.filter(r => r.id !== id)
-    await AccountStore.saveAllAndFlush(context, all)
+    const store = await preferences.getPreferences(context, STORE_NAME)
+    store.putSync(KEY_RECORDS, JSON.stringify(all))
     if (AccountStore.activeAccountId === id) {
       AccountStore.activeAccountId = ''
-      const store = await preferences.getPreferences(context, STORE_NAME)
       store.deleteSync(KEY_ACTIVE_ACCOUNT_ID)
-      store.flushSync()
       setAppStorageValue<string>(StorageKeys.ACTIVE_ACCOUNT_ID, '')
     }
+    store.flushSync()
   }
 
   static async setActiveId(context: common.UIAbilityContext, id: string): Promise<void> {
@@ -165,7 +170,7 @@ export class AccountStore {
         return null
       }
 
-      const baseUrl = ApiConstants.BASE_URL_COM
+      const baseUrl = HttpClient.getInstance().getBaseUrl()
       const now = Date.now()
       const record: AccountRecord = {
         id: generateId(),
@@ -175,7 +180,7 @@ export class AccountStore {
         baseUrl: baseUrl,
         cookieSnapshot: currentCookie,
         tokenSnapshot: '',
-        validatedAt: sessionSnapshot.validatedAt || now,
+        validatedAt: sessionSnapshot.validatedAt,
         addedAt: now,
         updatedAt: now,
       }

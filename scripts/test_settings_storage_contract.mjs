@@ -112,6 +112,7 @@ const expectedStorageKeys = [
   ['REPLY_ACTION_ALIGNMENT_MODE', 'replyActionAlignmentMode'],
   ['THEME_MODE', 'themeMode'],
   ['THEME_EFFECTIVE_DARK', 'themeEffectiveDark'],
+  ['SYSTEM_COLOR_MODE', 'systemColorMode'],
   ['LANGUAGE_MODE', 'languageMode'],
   ['DIAGNOSTICS_ENABLED', 'diagnosticsEnabled'],
   ['DIAGNOSTICS_MIN_LEVEL', 'diagnosticsMinLevel'],
@@ -131,6 +132,7 @@ const expectedStorageKeys = [
   ['AUTH_SESSION_AVATAR', 'authSessionAvatar'],
   ['AUTH_SESSION_VALIDATED_AT', 'authSessionValidatedAt'],
   ['AUTH_SESSION_UPDATED_AT', 'authSessionUpdatedAt'],
+  ['ACTIVE_ACCOUNT_ID', 'activeAccountId'],
   ['TWO_FACTOR_VISIBLE', 'twoFactorVisible'],
   ['TWO_FACTOR_COOKIE', 'twoFactorCookie'],
   ['TWO_FACTOR_SOURCE', 'twoFactorSource'],
@@ -293,6 +295,7 @@ const expectedStoreNames = [
   ['STORE_NAME_DRAFTS', 'next2v_drafts'],
   ['STORE_NAME_SEARCH', 'next2v_search'],
   ['STORE_NAME_NOTIFICATIONS', 'next2v_notifications'],
+  ['STORE_NAME_ACCOUNTS', 'next2v_accounts'],
 ]
 assert(
   orderedStoreNames.length === expectedStoreNames.length,

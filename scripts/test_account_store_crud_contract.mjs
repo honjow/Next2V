@@ -131,6 +131,12 @@ assert(
 // ── No console.* diagnostics ────────────────────────────────────
 assert(!accountStore.includes('console.'), 'AccountStore must not use console.* diagnostics')
 
+// ── UUID v4 id generation ──────────────────────────────────────
+assert(
+  /generateId/.test(accountStore) && /[xy]/g.test(accountStore) && /xxxxxxxx-xxxx-4xxx/.test(accountStore),
+  'AccountStore.generateId must produce UUID v4 (xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx)',
+)
+
 // ── Forbidden UI files must not be modified ─────────────────────
 const forbiddenUiFiles = [
   'entry/src/main/ets/pages/AccountPage.ets',
