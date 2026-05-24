@@ -521,4 +521,9 @@ export class AppStrings {
   static readonly R_COLLECTION_CLEAR_ALL_FAILED: Resource = $r('app.string.collection_clear_all_failed')
   static readonly R_DRAFT_CLEAR_FAILED: Resource = $r('app.string.draft_clear_failed')
   static readonly R_NOTIFICATION_CACHE_CLEAR_FAILED: Resource = $r('app.string.notification_cache_clear_failed')
+  static readonly R_ACCOUNT_RECORD_NOT_FOUND: Resource = $r('app.string.account_record_not_found')
+  static readonly R_ACCOUNT_ACTIVE_ID_SAVE_FAILED: Resource = $r('app.string.account_active_id_save_failed')
+  static readonly R_ACCOUNT_CLEAR_DATA_FAILED: Resource = $r('app.string.account_clear_data_failed')
+  static readonly R_ACCOUNT_DATA_MIGRATION_FAILED: Resource = $r('app.string.account_data_migration_failed')
+  static readonly R_ACCOUNT_READ_LIST_FAILED: Resource = $r('app.string.account_read_list_failed')
 }

@@ -6,6 +6,7 @@ import { setAppStorageValue } from './SettingsStorage'
 import { STORE_NAME_ACCOUNTS } from './SettingsStores'
 import { AuthSessionSettings } from './AuthSessionSettings'
 import { CookieJarSettings } from './CookieJarSettings'
+import { AppStrings } from '../i18n/AppStrings'
 
 const STORE_NAME: string = STORE_NAME_ACCOUNTS
 const KEY_RECORDS: string = 'records'
@@ -63,7 +64,7 @@ export class AccountStore {
       return Array.isArray(parsed) ? parsed : []
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '读取账户列表失败')
+      throw new Error(e.message || AppStrings.text(AppStrings.R_ACCOUNT_READ_LIST_FAILED, 'Failed to read account list'))
     }
   }
 
@@ -98,7 +99,7 @@ export class AccountStore {
     const all = await AccountStore.getAll(context)
     const index = all.findIndex(r => r.id === record.id)
     if (index < 0) {
-      throw new Error('账户记录不存在')
+      throw new Error(AppStrings.text(AppStrings.R_ACCOUNT_RECORD_NOT_FOUND, 'Account record not found'))
     }
     all[index] = record
     await AccountStore.saveAllAndFlush(context, all)
@@ -130,7 +131,7 @@ export class AccountStore {
       store.flushSync()
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '保存活跃账户ID失败')
+      throw new Error(e.message || AppStrings.text(AppStrings.R_ACCOUNT_ACTIVE_ID_SAVE_FAILED, 'Failed to save active account ID'))
     }
     setAppStorageValue<string>(StorageKeys.ACTIVE_ACCOUNT_ID, id)
   }
@@ -167,7 +168,7 @@ export class AccountStore {
       setAppStorageValue<string>(StorageKeys.ACTIVE_ACCOUNT_ID, '')
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '清除账户数据失败')
+      throw new Error(e.message || AppStrings.text(AppStrings.R_ACCOUNT_CLEAR_DATA_FAILED, 'Failed to clear account data'))
     }
   }
 
@@ -230,7 +231,7 @@ export class AccountStore {
       return record
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '账户数据迁移失败')
+      throw new Error(e.message || AppStrings.text(AppStrings.R_ACCOUNT_DATA_MIGRATION_FAILED, 'Account data migration failed'))
     }
   }
 

@@ -2543,6 +2543,26 @@
     {
       "name": "notification_cache_clear_failed",
       "value": "Failed to clear notification cache"
+    },
+    {
+      "name": "account_record_not_found",
+      "value": "Account record not found"
+    },
+    {
+      "name": "account_active_id_save_failed",
+      "value": "Failed to save active account ID"
+    },
+    {
+      "name": "account_clear_data_failed",
+      "value": "Failed to clear account data"
+    },
+    {
+      "name": "account_data_migration_failed",
+      "value": "Account data migration failed"
+    },
+    {
+      "name": "account_read_list_failed",
+      "value": "Failed to read account list"
     }
   ]
 }
