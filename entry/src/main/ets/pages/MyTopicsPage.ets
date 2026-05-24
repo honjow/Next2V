@@ -41,7 +41,7 @@ export struct MyTopicsPage {
     Column() {
       if (!CookieJarSettings.getCurrentCookie()) {
         PageLoginRequiredState({
-          message: '登录后可查看收藏主题',
+          message: AppStrings.text(AppStrings.R_LOGIN_TO_VIEW_TOPICS, 'Sign in to view favorite topics'),
           action: () => {
             this.stack.pushPathByName('V2exNativeLogin', null)
           }
@@ -56,7 +56,7 @@ export struct MyTopicsPage {
           retryAction: () => {
             this.refresh(true)
           },
-          secondaryLabel: '去登录',
+          secondaryLabel: AppStrings.text(AppStrings.R_LOGIN_ACTION, 'Log in'),
           secondaryAction: () => {
             this.stack.pushPathByName('V2exNativeLogin', null)
           }
@@ -138,10 +138,10 @@ export struct MyTopicsPage {
   private openTwoFactorFromCookie(): void {
     const cookie = CookieJarSettings.getCurrentCookie()
     if (!cookie) {
-      this.errorMessage = 'V2EX 需要完成两步验证，请重新登录'
+      this.errorMessage = AppStrings.text(AppStrings.R_TWO_FACTOR_RELOGIN_REQUIRED, 'V2EX requires two-factor verification. Please sign in again')
       return
     }
-    this.errorMessage = 'V2EX 需要完成两步验证'
+    this.errorMessage = AppStrings.text(AppStrings.R_TWO_FACTOR_REQUIRED, 'V2EX requires two-factor verification')
     TwoFactorChallengeService.request(cookie, 'myTopics')
   }
 

@@ -1,6 +1,7 @@
 import { V2exReply } from '../../network/NetworkTypes'
 import { ThemeConstants } from '../../theme/ThemeConstants'
 import { SymbolGlyphModifier } from '@kit.ArkUI'
+import { AppStrings } from '../../i18n/AppStrings'
 
 @Component
 export struct ReplyCardActions {
@@ -52,7 +53,10 @@ export struct ReplyCardActions {
   ReplyActionMenu() {
     Menu() {
       if (this.onContextClick) {
-        MenuItem({ content: '查看上下文', symbolStartIcon: this.contextIcon }).onClick(
+        MenuItem({
+          content: AppStrings.text(AppStrings.R_REPLY_VIEW_CONTEXT, 'View context'),
+          symbolStartIcon: this.contextIcon
+        }).onClick(
           () => {
             this.runContextAction(this.onContextClick)
           },
@@ -66,7 +70,10 @@ export struct ReplyCardActions {
       }
 
       if (this.onCopyContentClick) {
-        MenuItem({ content: '复制回复内容', symbolStartIcon: this.copyContentIcon }).onClick(
+        MenuItem({
+          content: AppStrings.text(AppStrings.R_REPLY_COPY_CONTENT, 'Copy reply content'),
+          symbolStartIcon: this.copyContentIcon
+        }).onClick(
           () => {
             this.runContextAction(this.onCopyContentClick)
           },
@@ -74,14 +81,17 @@ export struct ReplyCardActions {
       }
 
       if (this.onIgnoreClick) {
-        MenuItem({ content: '忽略回复', symbolStartIcon: this.ignoreIcon }).onClick(() => {
+        MenuItem({
+          content: AppStrings.text(AppStrings.R_REPLY_IGNORE_REPLY, 'Ignore reply'),
+          symbolStartIcon: this.ignoreIcon
+        }).onClick(() => {
           this.runContextAction(this.onIgnoreClick)
         })
       }
 
       if (this.onReportClick) {
         MenuItem({
-          content: '举报回复',
+          content: AppStrings.text(AppStrings.R_REPLY_REPORT_REPLY, 'Report reply'),
           symbolStartIcon: this.reportIcon,
         }).onClick(() => {
           this.runContextAction(this.onReportClick)

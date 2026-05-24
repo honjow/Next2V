@@ -1,5 +1,6 @@
 import {
   Avatar,
+  AppStrings,
   DateUtils,
   MarkdownContent,
   ThemeConstants,
@@ -48,10 +49,10 @@ export struct UserProfileErrorState {
 
   build() {
     Column() {
-      Text(this.message || '加载失败')
+      Text(this.message || AppStrings.text(AppStrings.R_COMMON_LOAD_FAILED, 'Load failed'))
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
         .fontColor($r('sys.color.font_secondary'))
-      Button('重试')
+      Button(AppStrings.text(AppStrings.R_COMMON_RETRY, 'Retry'))
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
         .margin({ top: ThemeConstants.SPACE_LG })
         .onClick(() => {
@@ -100,7 +101,10 @@ export struct UserProfileCard {
               .maxLines(2)
               .textOverflow({ overflow: TextOverflow.Ellipsis })
           }
-          Text(`第 ${this.profile.id} 号会员 · ${DateUtils.toDateString(this.profile.created)}`)
+          Text(AppStrings.format(
+            AppStrings.text(AppStrings.R_USER_PROFILE_MEMBER_NUMBER, 'Member #{0} · {1}'),
+            [String(this.profile.id), DateUtils.toDateString(this.profile.created)]
+          ))
             .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
             .fontColor($r('sys.color.font_secondary'))
             .maxLines(1)
@@ -132,10 +136,10 @@ export struct UserProfileCard {
   @Builder private ProfileMeta() {
     Column({ space: ThemeConstants.SPACE_XS }) {
       if (this.profile.location) {
-        this.MetaRow('位置', this.profile.location)
+        this.MetaRow(AppStrings.text(AppStrings.R_USER_PROFILE_LOCATION, 'Location'), this.profile.location)
       }
       if (this.profile.website) {
-        this.MetaRow('网站', this.profile.website)
+        this.MetaRow(AppStrings.text(AppStrings.R_USER_PROFILE_WEBSITE, 'Website'), this.profile.website)
       }
       if (this.profile.github) {
         this.MetaRow('GitHub', this.profile.github)

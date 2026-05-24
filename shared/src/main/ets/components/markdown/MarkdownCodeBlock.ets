@@ -4,6 +4,7 @@ import { StorageKeys } from "../../constants/StorageKeys";
 import { ReadingSettings } from "../../settings/ReadingSettings";
 import { ThemeConstants } from "../../theme/ThemeConstants";
 import { MarkdownOptions, Tokens } from "../MarkdownContent";
+import { AppStrings } from "../../i18n/AppStrings";
 import {
   CodeColorPalette,
   CodeToken,
@@ -47,7 +48,9 @@ export struct MarkdownCodeBlock {
         console.error(`openToast failed: ${error.message}`);
       });
     } catch (error) {
-      promptAction.openToast({ message: (error as Error).message || "复制失败" }).catch((_error: Error) => { });
+      promptAction.openToast({
+        message: (error as Error).message || AppStrings.text(AppStrings.R_COMMON_COPY_FAILED, 'Copy failed')
+      }).catch((_error: Error) => { });
     }
   }
 
@@ -117,7 +120,9 @@ export struct MarkdownCodeBlock {
         Blank();
 
         Button() {
-          Text(this.wrapLines ? "滚动" : "换行")
+          Text(this.wrapLines ?
+            AppStrings.text(AppStrings.R_CODE_WRAP_SCROLL, 'Scroll') :
+            AppStrings.text(AppStrings.R_CODE_WRAP_WRAP, 'Wrap'))
             .fontSize(ThemeConstants.FONT_SIZE_TAG)
             .fontColor(_codeMetaColor(this.isDarkMode()));
         }

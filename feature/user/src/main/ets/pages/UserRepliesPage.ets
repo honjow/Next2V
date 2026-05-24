@@ -1,6 +1,6 @@
 import { UserRepliesViewModel } from '../viewmodel/UserViewModel'
 import {
-  CardEmptyState, NodeTopicListParams, PageErrorState, PageLoadingState,
+  AppStrings, CardEmptyState, NodeTopicListParams, PageErrorState, PageLoadingState,
   SecondaryListScaffold, StorageKeys, TopicDetailParams, UserProfileParams, ImagePreviewParams, V2exRoute,
   V2exUrlRouter, V2exUserReply
 } from 'shared'
@@ -21,13 +21,13 @@ export struct UserRepliesPage {
         PageLoadingState()
       } else if (this.vm.errorMessage && this.vm.replyDataSource.totalCount() === 0) {
         PageErrorState({
-          message: this.vm.errorMessage || '加载失败',
+          message: this.vm.errorMessage || AppStrings.text(AppStrings.R_COMMON_LOAD_FAILED, 'Load failed'),
           retryAction: () => {
             this.vm.load()
           }
         })
       } else if (this.vm.replyDataSource.totalCount() === 0) {
-        CardEmptyState({ message: '暂无回复' })
+        CardEmptyState({ message: AppStrings.text(AppStrings.R_USER_PROFILE_NO_REPLIES, 'No replies') })
       } else {
         SecondaryListScaffold({
           onReachEnd: () => {

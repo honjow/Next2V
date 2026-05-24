@@ -1,4 +1,4 @@
-import { HtmlEntityUtils, ReplyDisplaySettings, V2exReply, V2exTopic } from 'shared'
+import { AppStrings, HtmlEntityUtils, ReplyDisplaySettings, V2exReply, V2exTopic } from 'shared'
 
 export interface ReplyThreadDisplayOptions {
   displayMode: string
@@ -287,6 +287,7 @@ export class ReplyThreadCoordinator {
     }
     const mention = users.length > 0 ? users.map((name: string) => `@${name}`).join(' ') : ''
     const floorText = floor > 0 ? `#${floor}` : ''
-    return `回复 ${mention}${mention && floorText ? ' · ' : ''}${floorText}`.trim()
+    const mentionAndFloor = [mention, floorText].filter(s => s).join(' · ')
+    return AppStrings.format(AppStrings.text(AppStrings.R_REPLY_THREAD_RELATION_LABEL_FORMAT, 'Reply {0}'), [mentionAndFloor]).trim()
   }
 }

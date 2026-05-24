@@ -72,7 +72,7 @@ export struct V2exNativeLoginPage {
   @Builder WebLoginForm() {
     GroupedListSection() {
       ConciseListRow({
-        title: '网页登录',
+        title: AppStrings.text(AppStrings.R_NAV_WEB_LOGIN, 'Web Login'),
         showChevron: true,
         action: () => {
           this.clearSecretState()
@@ -93,7 +93,7 @@ export struct V2exNativeLoginPage {
 
       AppTextField({
         text: $password,
-        placeholder: '密码',
+        placeholder: AppStrings.text(AppStrings.R_LOGIN_PASSWORD_PLACEHOLDER, 'Password'),
         inputType: InputType.Password,
         onTextChange: (value: string) => { this.password = value }
       })
@@ -112,7 +112,7 @@ export struct V2exNativeLoginPage {
       if (this.shouldShowCaptchaField()) {
         AppTextField({
           text: $captchaCode,
-          placeholder: '验证码',
+          placeholder: AppStrings.text(AppStrings.R_LOGIN_CAPTCHA_PLACEHOLDER, 'Captcha'),
           onTextChange: (value: string) => { this.captchaCode = value }
         })
           .width('100%')
@@ -139,12 +139,12 @@ export struct V2exNativeLoginPage {
 
   private loginButtonText(): string {
     if (this.isChallengeLoading) {
-      return '准备中…'
+      return AppStrings.text(AppStrings.R_LOGIN_BUTTON_PREPARING, 'Preparing\u2026')
     }
     if (this.isLoading) {
-      return '登录中…'
+      return AppStrings.text(AppStrings.R_LOGIN_BUTTON_LOGGING_IN, 'Signing in\u2026')
     }
-    return '登录'
+    return AppStrings.text(AppStrings.R_LOGIN_BUTTON_LABEL, 'Sign in')
   }
 
   private loadChallenge(message: string = ''): void {
@@ -216,11 +216,11 @@ export struct V2exNativeLoginPage {
       return
     }
     if (!this.challenge) {
-      this.errorMessage = '登录表单未加载完成，请稍后重试'
+      this.errorMessage = AppStrings.text(AppStrings.R_LOGIN_FORM_NOT_LOADED, 'Login form not loaded, please try again')
       return
     }
     if (this.captchaUrl && !this.captchaField) {
-      this.errorMessage = '登录验证码表单未加载完成，请重新获取验证码'
+      this.errorMessage = AppStrings.text(AppStrings.R_LOGIN_CAPTCHA_FORM_NOT_LOADED, 'Captcha form not loaded, please refresh')
       return
     }
     const requestId = ++this.authRequestId
@@ -246,7 +246,7 @@ export struct V2exNativeLoginPage {
         if (error instanceof NativeTwoFactorRequiredError) {
           this.password = ''
           TwoFactorChallengeService.request(error.challenge.cookie, 'nativeLogin')
-          this.errorMessage = '需要完成两步验证后才能登录'
+          this.errorMessage = AppStrings.text(AppStrings.R_TWO_FACTOR_REQUIRED, 'V2EX requires two-factor verification')
           return Promise.resolve()
         }
         this.errorMessage = translateApiError(error)
@@ -306,7 +306,7 @@ export struct V2exNativeLoginPage {
       return
     }
     this.password = ''
-    promptAction.openToast({ message: '登录成功' }).catch((error: Error) => {
+    promptAction.openToast({ message: $r('app.string.login_success') }).catch((error: Error) => {
       console.error('openToast failed: ' + error.message)
     })
     try {

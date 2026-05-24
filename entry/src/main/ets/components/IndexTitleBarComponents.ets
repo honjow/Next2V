@@ -230,7 +230,7 @@ struct DiscoverSearchComponent {
     Row() {
       AppSearchField({
         text: $keyword,
-        placeholder: '搜索节点',
+        placeholder: $r('app.string.search_discover_nodes_placeholder'),
       })
     }
     .width('100%')

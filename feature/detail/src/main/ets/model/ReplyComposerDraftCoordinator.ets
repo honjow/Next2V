@@ -1,5 +1,6 @@
 import { common } from '@kit.AbilityKit'
 import {
+  AppStrings,
   DraftSettings,
 } from 'shared'
 import { ReplyComposerCoordinator } from './ReplyComposerCoordinator'
@@ -48,7 +49,7 @@ export class ReplyComposerDraftCoordinator {
       return {
         content: '',
         savedAt: 0,
-        errorMessage: e.message || '读取草稿失败',
+        errorMessage: e.message || AppStrings.text(AppStrings.R_DRAFT_LOAD_FAILED, 'Failed to load draft'),
         selectionStart: 0,
         selectionEnd: 0,
         shouldScheduleSave: false,

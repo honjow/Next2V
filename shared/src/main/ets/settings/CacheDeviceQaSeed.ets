@@ -5,6 +5,7 @@ import BuildProfile from '../../../../BuildProfile'
 import { V2exMember, V2exNode, V2exReply, V2exTopic } from '../network/NetworkTypes'
 import { LocalDataStore } from '../storage/LocalDataStore'
 import { CacheSettings, CacheStats } from './CacheSettings'
+import { AppStrings } from '../i18n/AppStrings'
 import {
   CACHE_KIND_TOPIC_DETAIL,
   CACHE_KIND_TOPIC_LIST,
@@ -323,7 +324,7 @@ export class CacheDeviceQaSeed {
 
   private static writeSafeSeedPayloadFile(context: common.UIAbilityContext, fileName: string, payloadText: string): void {
     if (!CacheDeviceQaSeed.isSafeSeedPayloadFileName(fileName)) {
-      throw new Error('非法 QA seed 缓存文件名')
+      throw new Error(AppStrings.text(AppStrings.R_CACHE_INVALID_SEED_FILENAME, 'Invalid QA seed cache filename'))
     }
     try {
       fileIo.mkdirSync(CacheDeviceQaSeed.payloadBaseDir(context), true)

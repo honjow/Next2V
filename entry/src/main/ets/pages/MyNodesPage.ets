@@ -1,6 +1,7 @@
 import { promptAction } from '@kit.ArkUI'
 import {
   ApiService,
+  AppStrings,
   CollectionSettings,
   CardEmptyState,
   ConciseListRow,
@@ -33,7 +34,7 @@ export struct MyNodesPage {
     Column() {
       if (!CookieJarSettings.getCurrentCookie()) {
         PageLoginRequiredState({
-          message: '登录后可查看收藏节点',
+          message: AppStrings.text(AppStrings.R_LOGIN_TO_VIEW_NODES, 'Sign in to view favorite nodes'),
           action: () => {
             this.stack.pushPathByName('V2exNativeLogin', null)
           }
@@ -46,7 +47,7 @@ export struct MyNodesPage {
           retryAction: () => {
             this.refresh(true)
           },
-          secondaryLabel: '去登录',
+          secondaryLabel: AppStrings.text(AppStrings.R_LOGIN_ACTION, 'Log in'),
           secondaryAction: () => {
             this.stack.pushPathByName('V2exNativeLogin', null)
           }
@@ -121,7 +122,7 @@ export struct MyNodesPage {
   private nodeSubtitle(item: V2exFavoriteNode): string {
     const parts: string[] = [item.name]
     if ((item.topics || 0) > 0) {
-      parts.push(`${item.topics} 个主题`)
+      parts.push(AppStrings.format(AppStrings.text(AppStrings.R_NODE_TOPICS_COUNT, '{0} topics'), [String(item.topics)]))
     }
     return parts.join(' · ')
   }

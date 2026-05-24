@@ -1,3 +1,5 @@
+import { AppStrings } from 'shared/src/main/ets/i18n/AppStrings'
+
 export type TopicDetailTitleAction =
   'thankTopic' |
   'siteFavorite' |
@@ -32,15 +34,15 @@ export class TopicDetailTitleBarCoordinator {
 
   static actions(): TopicDetailTitleActionDescriptor[] {
     return [
-      { label: '感谢主题', action: 'thankTopic', stateKey: 'thanked' },
-      { label: '站内收藏', action: 'siteFavorite', stateKey: 'siteFavorited' },
-      { label: '稍后读', action: 'saveLater', stateKey: 'savedLater' },
-      { label: '忽略主题', action: 'ignoreTopic', stateKey: '' },
-      { label: '举报主题', action: 'reportTopic', stateKey: '' },
-      { label: '复制标题', action: 'copyTitle', stateKey: '' },
-      { label: '复制链接', action: 'copyLink', stateKey: '' },
-      { label: '分享链接', action: 'share', stateKey: '' },
-      { label: '浏览器打开', action: 'openBrowser', stateKey: '' },
+      { label: AppStrings.text(AppStrings.R_TOPIC_ACTION_THANK_TOPIC, 'Thank topic'), action: 'thankTopic', stateKey: 'thanked' },
+      { label: AppStrings.text(AppStrings.R_TOPIC_ACTION_SITE_FAVORITE, 'Site favorite'), action: 'siteFavorite', stateKey: 'siteFavorited' },
+      { label: AppStrings.text(AppStrings.R_TOPIC_ACTION_SAVE_LATER, 'Save later'), action: 'saveLater', stateKey: 'savedLater' },
+      { label: AppStrings.text(AppStrings.R_TOPIC_ACTION_IGNORE_TOPIC, 'Ignore topic'), action: 'ignoreTopic', stateKey: '' },
+      { label: AppStrings.text(AppStrings.R_TOPIC_ACTION_REPORT_TOPIC, 'Report topic'), action: 'reportTopic', stateKey: '' },
+      { label: AppStrings.text(AppStrings.R_TOPIC_ACTION_COPY_TITLE, 'Copy title'), action: 'copyTitle', stateKey: '' },
+      { label: AppStrings.text(AppStrings.R_TOPIC_ACTION_COPY_LINK, 'Copy link'), action: 'copyLink', stateKey: '' },
+      { label: AppStrings.text(AppStrings.R_TOPIC_ACTION_SHARE_LINK, 'Share link'), action: 'share', stateKey: '' },
+      { label: AppStrings.text(AppStrings.R_TOPIC_ACTION_OPEN_BROWSER, 'Open in browser'), action: 'openBrowser', stateKey: '' },
     ]
   }
 

@@ -297,9 +297,9 @@ struct FeedListPage {
       } else {
         Column() {
           LoadingProgress().width(ThemeConstants.LOADING_SIZE).height(ThemeConstants.LOADING_SIZE)
-          Text(this.vm.errorMessage ? this.vm.errorMessage : '加载中...')
+          Text(this.vm.errorMessage ? this.vm.errorMessage : $r('app.string.common_loading'))
             .fontSize(ThemeConstants.FONT_SIZE_BODY).fontColor($r('sys.color.font_secondary')).margin({ top: ThemeConstants.SPACE_SM })
-          if (this.vm.errorMessage) Button('重试')
+          if (this.vm.errorMessage) Button($r('app.string.common_retry'))
             .margin({ top: ThemeConstants.SPACE_LG })
             .onClick(() => this.vm.loadData())
         }.justifyContent(FlexAlign.Center).width('100%').height('100%')

@@ -452,7 +452,9 @@ function _copyDecodedBase64Text(decoded: string): void {
     pasteboard.getSystemPasteboard().setDataSync(data);
     promptAction.openToast({ message: $r('app.string.common_copy_decoded_text') }).catch((_error: Error) => { });
   } catch (error) {
-    promptAction.openToast({ message: (error as Error).message || "复制失败" }).catch((_error: Error) => { });
+    promptAction.openToast({
+      message: (error as Error).message || AppStrings.text(AppStrings.R_COMMON_COPY_FAILED, 'Copy failed')
+    }).catch((_error: Error) => { });
   }
 }
 
@@ -671,7 +673,10 @@ function SelectableInlineTokenSpans(
       }
     } else if (t.type === "base64Decode") {
       if (base64DecodeMode === ReadingSettings.BASE64_MODE_INLINE) {
-        Span(` 解码：${(t as Base64DecodeToken).decoded}`)
+        Span(AppStrings.format(
+          AppStrings.text(AppStrings.R_COMMON_DECODED_FORMAT, 'Decoded: {0}'),
+          [(t as Base64DecodeToken).decoded]
+        ))
           .fontSize(fontSize)
           .fontColor(ThemeConstants.TEXT_SECONDARY)
           .textBackgroundStyle({
@@ -1945,9 +1950,9 @@ struct MarkdownAutoImage {
       return AppStrings.text($r('app.string.common_image_auto_load_off'), 'Image auto-load is off');
     }
     if (this.onlyLoadImagesOnWifi && !this.networkChecked) {
-      return "正在检查网络";
+      return AppStrings.text(AppStrings.R_COMMON_CHECKING_NETWORK, 'Checking network');
     }
-    return "仅 Wi-Fi 时自动加载图片";
+    return AppStrings.text(AppStrings.R_COMMON_WIFI_ONLY_IMAGE_HINT, 'Wi-Fi only image hint');
   }
 
   private syncLoadState(): void {
@@ -2035,7 +2040,7 @@ struct MarkdownAutoImage {
             LoadingProgress()
               .width(ThemeConstants.LOADING_SIZE_SMALL)
               .height(ThemeConstants.LOADING_SIZE_SMALL)
-            Text('加载中...')
+            Text(AppStrings.text(AppStrings.R_COMMON_LOADING, 'Loading...'))
               .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
               .fontColor(ThemeConstants.TEXT_SECONDARY)
           }
@@ -2050,10 +2055,10 @@ struct MarkdownAutoImage {
 
         if (this.loadState === 3) {
           Column({ space: ThemeConstants.SPACE_XS }) {
-            Text('图片加载失败')
+            Text(AppStrings.text(AppStrings.R_COMMON_IMAGE_LOAD_FAILED, 'Image load failed'))
               .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
               .fontColor(ThemeConstants.TEXT_SECONDARY)
-            Text('点击重试')
+            Text(AppStrings.text(AppStrings.R_COMMON_TAP_TO_RETRY, 'Tap to retry'))
               .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
               .fontColor(ThemeConstants.TEXT_LINK)
           }
@@ -2368,10 +2373,14 @@ export struct MarkdownContent {
       const want: Want = { action: "ohos.want.action.viewData", uri: normalized };
       context.startAbility(want)
         .catch((error: Error) => {
-          promptAction.openToast({ message: error.message || "打开失败" }).catch((_error: Error) => { });
+          promptAction.openToast({
+            message: error.message || AppStrings.text(AppStrings.R_COMMON_OPEN_FAILED, 'Open failed')
+          }).catch((_error: Error) => { });
         });
     } catch (error) {
-      promptAction.openToast({ message: (error as Error).message || "打开失败" }).catch((_error: Error) => { });
+      promptAction.openToast({
+        message: (error as Error).message || AppStrings.text(AppStrings.R_COMMON_OPEN_FAILED, 'Open failed')
+      }).catch((_error: Error) => { });
     }
   }
 

@@ -20,12 +20,12 @@ export class DiscoverPageCoordinator {
       return AppStrings.text($r('app.string.discover_today_hot'), 'Today’s hot topics')
     }
     if (mode === 'rank') {
-      return '全站热榜'
+      return AppStrings.text(AppStrings.R_DISCOVER_SITE_RANK, 'Site-wide hot')
     }
     if (mode === 'recent') {
-      return '最近更新'
+      return AppStrings.text(AppStrings.R_DISCOVER_RECENT_UPDATES, 'Recently updated')
     }
-    return '最新主题'
+    return AppStrings.text(AppStrings.R_DISCOVER_LATEST_TOPICS, 'Latest topics')
   }
 
   static topicItems(mode: DiscoverTopicMode, buckets: DiscoverTopicBuckets): V2exTopic[] {

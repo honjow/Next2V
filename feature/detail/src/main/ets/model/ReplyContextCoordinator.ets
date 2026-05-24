@@ -1,4 +1,5 @@
 import {
+  AppStrings,
   HtmlEntityUtils,
   V2exReply,
 } from 'shared'
@@ -20,10 +21,10 @@ export interface ReplyContextBuildInput {
 export class ReplyContextCoordinator {
   static title(reply: V2exReply | null, getReplyFloor: (replyId: number) => number): string {
     if (reply === null) {
-      return '回复上下文'
+      return AppStrings.text(AppStrings.R_REPLY_CONTEXT_TITLE, 'Reply context')
     }
     const floor = getReplyFloor(reply.id)
-    return floor > 0 ? `#${floor} 回复上下文` : '回复上下文'
+    return floor > 0 ? AppStrings.format(AppStrings.text(AppStrings.R_REPLY_CONTEXT_WITH_FLOOR_FORMAT, '#{0} Reply context'), [`${floor}`]) : AppStrings.text(AppStrings.R_REPLY_CONTEXT_TITLE, 'Reply context')
   }
 
   static snippet(content: string): string {
@@ -32,7 +33,7 @@ export class ReplyContextCoordinator {
       .replace(/\n+/g, ' ')
       .replace(/\s+/g, ' ')
       .trim()
-    return text || '（无内容）'
+    return text || AppStrings.text(AppStrings.R_REPLY_CONTEXT_EMPTY_SNIPPET, '(No content)')
   }
 
   static build(input: ReplyContextBuildInput): ReplyContextItem[] {
@@ -54,8 +55,8 @@ export class ReplyContextCoordinator {
       items.push({ reply: reply, floor: floor, label: label, selected: selectedItem })
     }
 
-    ReplyContextCoordinator.addContextReplyByFloor(input.replies, input.selectedFloor - 2, '上文', addReply)
-    ReplyContextCoordinator.addContextReplyByFloor(input.replies, input.selectedFloor - 1, '上文', addReply)
+    ReplyContextCoordinator.addContextReplyByFloor(input.replies, input.selectedFloor - 2, AppStrings.text(AppStrings.R_REPLY_CONTEXT_LABEL_ABOVE, 'Above'), addReply)
+    ReplyContextCoordinator.addContextReplyByFloor(input.replies, input.selectedFloor - 1, AppStrings.text(AppStrings.R_REPLY_CONTEXT_LABEL_ABOVE, 'Above'), addReply)
     ReplyContextCoordinator.addMentionTargetsBeforeSelection(
       input.replies,
       input.selectedFloor,
@@ -63,15 +64,15 @@ export class ReplyContextCoordinator {
       input.selected.content_rendered,
       addReply,
     )
-    addReply(input.selected, '当前回复', true)
+    addReply(input.selected, AppStrings.text(AppStrings.R_REPLY_CONTEXT_LABEL_CURRENT, 'Current reply'), true)
     ReplyContextCoordinator.addRepliesMentioningSelectedAuthor(
       input.replies,
       input.selectedFloor,
       input.selected.member.username,
       addReply,
     )
-    ReplyContextCoordinator.addContextReplyByFloor(input.replies, input.selectedFloor + 1, '下文', addReply)
-    ReplyContextCoordinator.addContextReplyByFloor(input.replies, input.selectedFloor + 2, '下文', addReply)
+    ReplyContextCoordinator.addContextReplyByFloor(input.replies, input.selectedFloor + 1, AppStrings.text(AppStrings.R_REPLY_CONTEXT_LABEL_BELOW, 'Below'), addReply)
+    ReplyContextCoordinator.addContextReplyByFloor(input.replies, input.selectedFloor + 2, AppStrings.text(AppStrings.R_REPLY_CONTEXT_LABEL_BELOW, 'Below'), addReply)
 
     return items.sort((left: ReplyContextItem, right: ReplyContextItem) => left.floor - right.floor)
   }
@@ -119,7 +120,7 @@ export class ReplyContextCoordinator {
         reply &&
         ReplyContextCoordinator.contentMentionsUsername(reply.content, reply.content_rendered, clean)
       ) {
-        addReply(reply, `提到 @${clean}`, false)
+        addReply(reply, AppStrings.format(AppStrings.text(AppStrings.R_REPLY_CONTEXT_LABEL_MENTION_FORMAT, 'Mentioned @{0}'), [clean]), false)
         added++
       }
     }

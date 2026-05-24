@@ -1337,6 +1337,98 @@
       "value": "Cookie 登入狀態無效，請確認已完成登入"
     },
     {
+      "name": "login_password_placeholder",
+      "value": "密碼"
+    },
+    {
+      "name": "login_captcha_placeholder",
+      "value": "驗證碼"
+    },
+    {
+      "name": "login_button_preparing",
+      "value": "準備中…"
+    },
+    {
+      "name": "login_button_logging_in",
+      "value": "登入中…"
+    },
+    {
+      "name": "login_button_label",
+      "value": "登入"
+    },
+    {
+      "name": "login_form_not_loaded",
+      "value": "登入表單未載入完成，請稍後重試"
+    },
+    {
+      "name": "login_captcha_form_not_loaded",
+      "value": "登入驗證碼表單未載入完成，請重新取得驗證碼"
+    },
+    {
+      "name": "login_success",
+      "value": "登入成功"
+    },
+    {
+      "name": "two_factor_title",
+      "value": "兩步驟驗證"
+    },
+    {
+      "name": "two_factor_description",
+      "value": "V2EX 需要完成兩步驟驗證後才能繼續存取帳號內容。"
+    },
+    {
+      "name": "two_factor_code_placeholder",
+      "value": "輸入 6 位驗證碼"
+    },
+    {
+      "name": "two_factor_verifying",
+      "value": "驗證中…"
+    },
+    {
+      "name": "two_factor_verify_button",
+      "value": "完成驗證"
+    },
+    {
+      "name": "two_factor_later",
+      "value": "稍後再說"
+    },
+    {
+      "name": "login_to_view_topics",
+      "value": "登入後可查看收藏主題"
+    },
+    {
+      "name": "login_to_view_nodes",
+      "value": "登入後可查看收藏節點"
+    },
+    {
+      "name": "web_login_opening",
+      "value": "正在打開網頁登入..."
+    },
+    {
+      "name": "web_login_loading_url",
+      "value": "正在載入 {0}"
+    },
+    {
+      "name": "web_login_loading_page",
+      "value": "正在載入網頁登入..."
+    },
+    {
+      "name": "web_login_load_failed",
+      "value": "網頁登入載入失敗"
+    },
+    {
+      "name": "web_login_saving",
+      "value": "正在儲存登入狀態…"
+    },
+    {
+      "name": "web_login_opening_url",
+      "value": "正在打開 {0}"
+    },
+    {
+      "name": "web_login_not_complete",
+      "value": "網頁登入尚未完成"
+    },
+    {
       "name": "reply_submitted",
       "value": "回覆已送出"
     },
@@ -1411,6 +1503,18 @@
     {
       "name": "discover_hot",
       "value": "熱門"
+    },
+    {
+      "name": "discover_latest_topics",
+      "value": "最新主題"
+    },
+    {
+      "name": "discover_recent_updates",
+      "value": "最近更新"
+    },
+    {
+      "name": "discover_site_rank",
+      "value": "全站熱榜"
     },
     {
       "name": "node_selected_format",
@@ -1519,6 +1623,182 @@
     {
       "name": "search_source_nodes_library",
       "value": "節點庫"
+    },
+    {
+      "name": "search_source_cache_list",
+      "value": "快取（清單）"
+    },
+    {
+      "name": "search_source_cache_detail",
+      "value": "快取（詳細）"
+    },
+    {
+      "name": "relative_just_now",
+      "value": "剛剛"
+    },
+    {
+      "name": "relative_minutes_ago",
+      "value": "{0} 分鐘前"
+    },
+    {
+      "name": "relative_hours_ago",
+      "value": "{0} 小時前"
+    },
+    {
+      "name": "relative_days_ago",
+      "value": "{0} 天前"
+    },
+    {
+      "name": "relative_months_ago",
+      "value": "{0} 個月前"
+    },
+    {
+      "name": "relative_years_ago",
+      "value": "{0} 年前"
+    },
+    {
+      "name": "user_profile_location",
+      "value": "位置"
+    },
+    {
+      "name": "user_profile_website",
+      "value": "網站"
+    },
+    {
+      "name": "user_profile_member_number",
+      "value": "第 {0} 號會員 · {1}"
+    },
+    {
+      "name": "user_profile_no_topics",
+      "value": "暫無主題"
+    },
+    {
+      "name": "user_profile_no_replies",
+      "value": "暫無回覆"
+    },
+    {
+      "name": "user_profile_view_all_topics",
+      "value": "檢視全部主題"
+    },
+    {
+      "name": "user_profile_view_all_replies",
+      "value": "檢視全部回覆"
+    },
+    {
+      "name": "user_profile_action_failed",
+      "value": "操作失敗"
+    },
+    {
+      "name": "user_tab_topics_label",
+      "value": "主題"
+    },
+    {
+      "name": "user_tab_replies_label",
+      "value": "回覆"
+    },
+    {
+      "name": "user_tab_topics_count",
+      "value": "主題 {0}"
+    },
+    {
+      "name": "user_tab_replies_count",
+      "value": "回覆 {0}"
+    },
+    {
+      "name": "user_action_follow",
+      "value": "追蹤"
+    },
+    {
+      "name": "user_action_unfollow",
+      "value": "取消追蹤"
+    },
+    {
+      "name": "user_action_block",
+      "value": "封鎖"
+    },
+    {
+      "name": "user_action_unblock",
+      "value": "取消封鎖"
+    },
+    {
+      "name": "node_no_topics",
+      "value": "暫無主題"
+    },
+    {
+      "name": "node_load_failed",
+      "value": "節點主題載入失敗"
+    },
+    {
+      "name": "node_info_missing",
+      "value": "節點資訊缺失"
+    },
+    {
+      "name": "node_picker_current_node_format",
+      "value": "當前：{0}"
+    },
+    {
+      "name": "node_picker_helper",
+      "value": "點擊節點後會自動填入發帖草稿。"
+    },
+    {
+      "name": "node_picker_search_placeholder",
+      "value": "搜尋節點"
+    },
+    {
+      "name": "node_topics_count",
+      "value": "{0} 個主題"
+    },
+    {
+      "name": "site_favorite_title",
+      "value": "站內收藏"
+    },
+    {
+      "name": "site_favorite_confirm",
+      "value": "確定{0}節點「{1}」嗎？"
+    },
+    {
+      "name": "site_favorite_action_favorite",
+      "value": "收藏"
+    },
+    {
+      "name": "site_favorite_action_unfavorite",
+      "value": "取消收藏"
+    },
+    {
+      "name": "topic_editor_node_placeholder",
+      "value": "節點（如 create）"
+    },
+    {
+      "name": "topic_editor_select_node",
+      "value": "選擇"
+    },
+    {
+      "name": "topic_editor_title_placeholder",
+      "value": "標題"
+    },
+    {
+      "name": "common_loading",
+      "value": "載入中…"
+    },
+    {
+      "name": "media_youtube_video",
+      "value": "YouTube 影片"
+    },
+    {
+      "name": "media_vimeo_video",
+      "value": "Vimeo 影片"
+    },
+    {
+      "name": "media_imgur_page",
+      "value": "Imgur 圖片頁"
+    },
+    {
+      "name": "media_v2ex_link",
+      "value": "V2EX 連結"
+    },
+    {
+      "name": "media_link_label",
+      "value": "連結"
     },
     {
       "name": "api_error_auth_required",
@@ -1703,6 +1983,546 @@
     {
       "name": "api_error_token_missing",
       "value": "缺少 Token，請先設定 Personal Access Token"
+    },
+    {
+      "name": "notification_login_required",
+      "value": "登入後可查看通知"
+    },
+    {
+      "name": "notification_empty",
+      "value": "暫無通知"
+    },
+    {
+      "name": "notification_delete_title",
+      "value": "刪除通知"
+    },
+    {
+      "name": "notification_delete_confirm",
+      "value": "確定刪除此通知嗎？"
+    },
+    {
+      "name": "notification_delete_requires_api_auth",
+      "value": "刪除通知需要 V2 API 授權"
+    },
+    {
+      "name": "notification_delete_requires_web_session",
+      "value": "刪除通知需要 Web 工作階段"
+    },
+    {
+      "name": "notification_load_failed",
+      "value": "通知載入失敗"
+    },
+    {
+      "name": "notification_go_login",
+      "value": "去登入"
+    },
+    {
+      "name": "notification_tag_unread",
+      "value": "未讀"
+    },
+    {
+      "name": "notification_kind_reply",
+      "value": "回覆"
+    },
+    {
+      "name": "notification_kind_mention",
+      "value": "提及"
+    },
+    {
+      "name": "notification_kind_thanks",
+      "value": "感謝"
+    },
+    {
+      "name": "notification_kind_favorite",
+      "value": "收藏"
+    },
+    {
+      "name": "notification_kind_follow",
+      "value": "關注"
+    },
+    {
+      "name": "notification_kind_system",
+      "value": "系統"
+    },
+    {
+      "name": "notification_kind_notification",
+      "value": "通知"
+    },
+    {
+      "name": "notification_source_web",
+      "value": "Web 工作階段"
+    },
+    {
+      "name": "common_load_more",
+      "value": "載入更多"
+    },
+    {
+      "name": "search_node_results",
+      "value": "節點結果 {0}"
+    },
+    {
+      "name": "search_filter_title",
+      "value": "搜尋篩選"
+    },
+    {
+      "name": "search_web_filter_hint",
+      "value": "網頁搜尋會在系統瀏覽器中打開，不額外提供站內篩選。"
+    },
+    {
+      "name": "search_discover_nodes_placeholder",
+      "value": "搜尋節點"
+    },
+    {
+      "name": "search_N_topics",
+      "value": "{0} 主題"
+    },
+    {
+      "name": "search_N_replies",
+      "value": "{0} 回覆"
+    },
+    {
+      "name": "topic_action_thank_topic",
+      "value": "感謝主題"
+    },
+    {
+      "name": "topic_action_save_later",
+      "value": "稍後讀"
+    },
+    {
+      "name": "topic_action_ignore_topic",
+      "value": "忽略主題"
+    },
+    {
+      "name": "topic_action_report_topic",
+      "value": "舉報主題"
+    },
+    {
+      "name": "topic_action_copy_title",
+      "value": "複製標題"
+    },
+    {
+      "name": "topic_action_copy_link",
+      "value": "複製連結"
+    },
+    {
+      "name": "topic_action_share_link",
+      "value": "分享連結"
+    },
+    {
+      "name": "topic_action_open_browser",
+      "value": "瀏覽器開啟"
+    },
+    {
+      "name": "image_preview_invalid_url",
+      "value": "圖片地址無效"
+    },
+    {
+      "name": "image_preview_downloading",
+      "value": "正在下載圖片…"
+    },
+    {
+      "name": "image_preview_not_an_image",
+      "value": "該連結返回的不是圖片"
+    },
+    {
+      "name": "image_preview_download_failed",
+      "value": "圖片下載失敗"
+    },
+    {
+      "name": "image_preview_temp_file_write_failed",
+      "value": "暫存檔案寫入失敗"
+    },
+    {
+      "name": "image_preview_url_empty",
+      "value": "圖片地址為空"
+    },
+    {
+      "name": "image_preview_go_back_retry",
+      "value": "返回後重試"
+    },
+    {
+      "name": "image_preview_choose_save_location",
+      "value": "請選擇儲存位置"
+    },
+    {
+      "name": "image_preview_save_failed",
+      "value": "儲存失敗"
+    },
+    {
+      "name": "image_preview_save_to_gallery_failed",
+      "value": "儲存到圖庫失敗"
+    },
+    {
+      "name": "editor_body_placeholder",
+      "value": "正文（Markdown）"
+    },
+    {
+      "name": "editor_empty_preview",
+      "value": "暫無內容"
+    },
+    {
+      "name": "editor_submitting",
+      "value": "提交中..."
+    },
+    {
+      "name": "editor_submit",
+      "value": "提交"
+    },
+    {
+      "name": "editor_confirm_post_title",
+      "value": "確認發帖"
+    },
+    {
+      "name": "editor_publish",
+      "value": "發佈"
+    },
+    {
+      "name": "editor_clear_draft_title",
+      "value": "清空草稿"
+    },
+    {
+      "name": "editor_clear_draft_message",
+      "value": "確定清空當前發帖草稿嗎？"
+    },
+    {
+      "name": "editor_clear_draft_failed",
+      "value": "清空失敗"
+    },
+    {
+      "name": "editor_confirm_post_format",
+      "value": "確定在節點「{0}」發佈主題《{1}》嗎？\n\nV2EX 發帖通常至少消耗 20 銅幣，提交後會修改你的帳號狀態。"
+    },
+    {
+      "name": "reply_composer_title",
+      "value": "寫回覆"
+    },
+    {
+      "name": "reply_body_placeholder",
+      "value": "寫回覆（自動保存草稿）"
+    },
+    {
+      "name": "reply_clear_draft_title",
+      "value": "清空草稿"
+    },
+    {
+      "name": "reply_clear_draft_message",
+      "value": "確定清空當前回覆草稿嗎？"
+    },
+    {
+      "name": "reply_clear_draft_generic_message",
+      "value": "確定清空當前草稿嗎？"
+    },
+    {
+      "name": "reply_clear_failed",
+      "value": "清空失敗"
+    },
+    {
+      "name": "reply_confirm_submit_title",
+      "value": "提交回覆"
+    },
+    {
+      "name": "topic_detail_loading",
+      "value": "加載中..."
+    },
+    {
+      "name": "topic_still_loading",
+      "value": "主題仍在加載"
+    },
+    {
+      "name": "topic_many_replies_title",
+      "value": "回覆數量較多"
+    },
+    {
+      "name": "topic_flat_view",
+      "value": "平鋪顯示"
+    },
+    {
+      "name": "topic_continue_loading",
+      "value": "繼續加載"
+    },
+    {
+      "name": "action_favorite",
+      "value": "收藏"
+    },
+    {
+      "name": "action_unfavorite",
+      "value": "取消收藏"
+    },
+    {
+      "name": "action_thank",
+      "value": "感謝"
+    },
+    {
+      "name": "action_ignore",
+      "value": "忽略"
+    },
+    {
+      "name": "action_report",
+      "value": "舉報"
+    },
+    {
+      "name": "reply_action_reply",
+      "value": "回覆"
+    },
+    {
+      "name": "reply_action_login",
+      "value": "登入"
+    },
+    {
+      "name": "reply_ignore_title",
+      "value": "忽略回覆"
+    },
+    {
+      "name": "reply_report_title",
+      "value": "舉報回覆"
+    },
+    {
+      "name": "reply_thank_title",
+      "value": "感謝回覆"
+    },
+    {
+      "name": "topic_share_fallback_title",
+      "value": "V2EX 主題"
+    },
+    {
+      "name": "jump_to_floor_title",
+      "value": "跳轉樓層"
+    },
+    {
+      "name": "jump_to_floor_placeholder",
+      "value": "輸入樓層號"
+    },
+    {
+      "name": "jump_to_floor_button",
+      "value": "跳轉"
+    },
+    {
+      "name": "reply_context_title",
+      "value": "回覆上下文"
+    },
+    {
+      "name": "reply_context_with_floor_format",
+      "value": "#{0} 回覆上下文"
+    },
+    {
+      "name": "reply_context_empty_snippet",
+      "value": "（無內容）"
+    },
+    {
+      "name": "reply_context_label_above",
+      "value": "上文"
+    },
+    {
+      "name": "reply_context_label_below",
+      "value": "下文"
+    },
+    {
+      "name": "reply_context_label_current",
+      "value": "當前回覆"
+    },
+    {
+      "name": "reply_context_label_mention_format",
+      "value": "提到 @{0}"
+    },
+    {
+      "name": "markdown_placeholder_text",
+      "value": "文字"
+    },
+    {
+      "name": "markdown_placeholder_code",
+      "value": "程式碼"
+    },
+    {
+      "name": "markdown_placeholder_image",
+      "value": "圖片"
+    },
+    {
+      "name": "reply_thread_relation_label_format",
+      "value": "回覆 {0}"
+    },
+    {
+      "name": "confirm_topic_favorite_format",
+      "value": "確定{0}《{1}》嗎？"
+    },
+    {
+      "name": "confirm_topic_favorite_nameless_format",
+      "value": "確定{0}該主題嗎？"
+    },
+    {
+      "name": "confirm_topic_thank_format",
+      "value": "確定感謝《{0}》嗎？"
+    },
+    {
+      "name": "confirm_topic_thank_nameless",
+      "value": "確定感謝該主題嗎？"
+    },
+    {
+      "name": "parse_action_failed_format",
+      "value": "解析{0}操作失敗"
+    },
+    {
+      "name": "reply_info_missing",
+      "value": "回覆資訊缺失"
+    },
+    {
+      "name": "load_more_replies_failed",
+      "value": "加載更多失敗"
+    },
+    {
+      "name": "preloading_all_replies",
+      "value": "正在載入全部回覆…"
+    },
+    {
+      "name": "preloading_progress_format",
+      "value": "正在載入全部回覆 {0}/{1}…"
+    },
+    {
+      "name": "preloading_progress_count_format",
+      "value": "正在載入全部回覆 {0} 條…"
+    },
+    {
+      "name": "topic_detail_tool_floor",
+      "value": "樓層"
+    },
+    {
+      "name": "topic_detail_tool_latest",
+      "value": "最新"
+    },
+    {
+      "name": "reply_display_mode_origin",
+      "value": "原版"
+    },
+    {
+      "name": "reply_count_format",
+      "value": "共 {0} 則回覆"
+    },
+    {
+      "name": "draft_load_failed",
+      "value": "讀取草稿失敗"
+    },
+    {
+      "name": "common_copy_failed",
+      "value": "複製失敗"
+    },
+    {
+      "name": "common_checking_network",
+      "value": "正在檢查網路"
+    },
+    {
+      "name": "common_image_load_failed",
+      "value": "圖片載入失敗"
+    },
+    {
+      "name": "common_tap_to_retry",
+      "value": "點擊重試"
+    },
+    {
+      "name": "common_no_content",
+      "value": "暫無內容"
+    },
+    {
+      "name": "common_load_failed_tap_retry",
+      "value": "載入失敗，點擊重試"
+    },
+    {
+      "name": "common_decoded_format",
+      "value": "解碼：{0}"
+    },
+    {
+      "name": "markdown_toolbar_edit",
+      "value": "寫"
+    },
+    {
+      "name": "markdown_toolbar_preview",
+      "value": "看"
+    },
+    {
+      "name": "markdown_toolbar_image",
+      "value": "圖"
+    },
+    {
+      "name": "markdown_toolbar_clear",
+      "value": "清"
+    },
+    {
+      "name": "topic_last_reply",
+      "value": "最後回覆"
+    },
+    {
+      "name": "topic_replies_count",
+      "value": "{0} 則回覆"
+    },
+    {
+      "name": "code_wrap_scroll",
+      "value": "捲動"
+    },
+    {
+      "name": "code_wrap_wrap",
+      "value": "換行"
+    },
+    {
+      "name": "reply_view_context",
+      "value": "查看上下文"
+    },
+    {
+      "name": "reply_copy_content",
+      "value": "複製回覆內容"
+    },
+    {
+      "name": "reply_ignore_reply",
+      "value": "忽略回覆"
+    },
+    {
+      "name": "reply_report_reply",
+      "value": "檢舉回覆"
+    },
+    {
+      "name": "common_wifi_only_image_hint",
+      "value": "僅 Wi-Fi 時自動載入圖片"
+    },
+    {
+      "name": "storage_seeded_label_format",
+      "value": "{0}：{1} 列 / {2} 個檔案"
+    },
+    {
+      "name": "cache_clear_account_failed",
+      "value": "清理帳號快取失敗"
+    },
+    {
+      "name": "cache_invalid_seed_filename",
+      "value": "非法 QA seed 快取檔案名稱"
+    },
+    {
+      "name": "cache_commit_payload_failed",
+      "value": "提交快取檔案失敗"
+    },
+    {
+      "name": "cache_invalid_filename",
+      "value": "非法快取檔案名稱"
+    },
+    {
+      "name": "cache_filename_conflict",
+      "value": "快取檔案名稱衝突"
+    },
+    {
+      "name": "cache_filename_length_invalid",
+      "value": "快取檔案名稱長度無效"
+    },
+    {
+      "name": "cache_clear_failed",
+      "value": "清理快取失敗"
+    },
+    {
+      "name": "collection_clear_all_failed",
+      "value": "清理本地收藏與閱讀記錄失敗"
+    },
+    {
+      "name": "draft_clear_failed",
+      "value": "清理草稿失敗"
+    },
+    {
+      "name": "notification_cache_clear_failed",
+      "value": "清理通知快取失敗"
     }
   ]
 }

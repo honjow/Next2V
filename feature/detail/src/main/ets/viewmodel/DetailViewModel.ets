@@ -376,7 +376,7 @@ export class DetailViewModel {
       await this.saveCache(this.topic, this.replies)
     } catch (error) {
       const e = error as Error
-      this.loadMoreErrorMessage = e.message || '加载更多失败'
+      this.loadMoreErrorMessage = e.message || AppStrings.text(AppStrings.R_LOAD_MORE_REPLIES_FAILED, 'Load more failed')
       this.failedRepliesPage = nextPage
       this.repliesLoadMoreState = 'loadMoreError'
     } finally {
@@ -393,7 +393,7 @@ export class DetailViewModel {
       return
     }
     this.isPreloadingAll = true
-    this.preloadProgress = '正在加载全部回复…'
+    this.preloadProgress = AppStrings.text(AppStrings.R_PRELOADING_ALL_REPLIES, 'Loading all replies…')
     try {
       if (this.repliesSource === 'publicWebPage') {
         await this.preloadWebReplies()
@@ -420,7 +420,7 @@ export class DetailViewModel {
       this.topicId,
       cookie,
       (loaded: number, total: number) => {
-        this.preloadProgress = `正在加载全部回复 ${loaded}/${total}…`
+        this.preloadProgress = AppStrings.format(AppStrings.text(AppStrings.R_PRELOADING_PROGRESS_FORMAT, 'Loading all replies {0}/{1}…'), [`${loaded}`, `${total}`])
       },
     )
     if (result.topicSupplementMarkdown) {
@@ -435,7 +435,7 @@ export class DetailViewModel {
     let page = this.repliesPage + 1
     let hasMore = this.repliesHasMore
     while (hasMore) {
-      this.preloadProgress = `正在加载全部回复 ${this.replies.length} 条…`
+      this.preloadProgress = AppStrings.format(AppStrings.text(AppStrings.R_PRELOADING_PROGRESS_COUNT_FORMAT, 'Loading all replies {0} items…'), [`${this.replies.length}`])
       const res = await this.apiV2.getTopicReplies(this.authToken, this.topicId, page)
       const items = res.data || []
       const unique = this.uniqueNewReplies(items)

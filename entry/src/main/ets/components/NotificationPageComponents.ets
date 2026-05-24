@@ -5,6 +5,12 @@ import {
   ThemeConstants,
   V2exNotification
 } from 'shared'
+import { AppStrings } from 'shared'
+import {
+  READ_TAG_UNREAD,
+  KIND_REPLY, KIND_MENTION, KIND_THANKS, KIND_FAVORITE,
+  KIND_FOLLOW, KIND_SYSTEM, KIND_NOTIFICATION
+} from '../viewmodel/NotificationCenterViewModel'
 
 @Component
 export struct NotificationAuthRequiredState {
@@ -16,7 +22,7 @@ export struct NotificationAuthRequiredState {
       Text(this.message)
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
         .fontColor($r('sys.color.font_secondary'))
-      Button('去登录')
+      Button(AppStrings.text(AppStrings.R_NOTIFICATION_GO_LOGIN, 'Login'))
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
         .margin({ top: ThemeConstants.SPACE_LG })
         .onClick(() => {
@@ -41,7 +47,7 @@ export struct NotificationErrorState {
       Text(this.message)
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
         .fontColor($r('sys.color.font_secondary'))
-      Button('重试')
+      Button(AppStrings.text(AppStrings.R_COMMON_RETRY, 'Retry'))
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
         .margin({ top: ThemeConstants.SPACE_LG })
         .onClick(() => {
@@ -78,15 +84,15 @@ export struct NotificationCard {
       Column({ space: ThemeConstants.SPACE_SM }) {
         Row({ space: ThemeConstants.SPACE_SM }) {
           this.NotificationTag(
-            this.kindTag,
+            this.kindTagDisplay(this.kindTag),
             $r('sys.color.ohos_id_color_sub_background'),
             $r('sys.color.font_secondary')
           )
           if (this.readTag) {
             this.NotificationTag(
-              this.readTag,
-              this.readTag === '未读' ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.ohos_id_color_sub_background'),
-              this.readTag === '未读' ? Color.White : $r('sys.color.font_secondary')
+              AppStrings.text(AppStrings.R_NOTIFICATION_TAG_UNREAD, 'Unread'),
+              this.readTag === READ_TAG_UNREAD ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.ohos_id_color_sub_background'),
+              this.readTag === READ_TAG_UNREAD ? Color.White : $r('sys.color.font_secondary')
             )
           }
           if (this.memberName) {
@@ -154,6 +160,27 @@ export struct NotificationCard {
 
   private replyPreviewSource(): string {
     return this.replyRenderedContent || this.replyContent
+  }
+
+  private kindTagDisplay(code: string): string {
+    switch (code) {
+      case KIND_REPLY:
+        return AppStrings.text(AppStrings.R_NOTIFICATION_KIND_REPLY, 'Reply')
+      case KIND_MENTION:
+        return AppStrings.text(AppStrings.R_NOTIFICATION_KIND_MENTION, 'Mention')
+      case KIND_THANKS:
+        return AppStrings.text(AppStrings.R_NOTIFICATION_KIND_THANKS, 'Thanks')
+      case KIND_FAVORITE:
+        return AppStrings.text(AppStrings.R_NOTIFICATION_KIND_FAVORITE, 'Favorite')
+      case KIND_FOLLOW:
+        return AppStrings.text(AppStrings.R_NOTIFICATION_KIND_FOLLOW, 'Follow')
+      case KIND_SYSTEM:
+        return AppStrings.text(AppStrings.R_NOTIFICATION_KIND_SYSTEM, 'System')
+      case KIND_NOTIFICATION:
+        return AppStrings.text(AppStrings.R_NOTIFICATION_KIND_NOTIFICATION, 'Notification')
+      default:
+        return code
+    }
   }
 
   @Builder private NotificationTag(text: string, backgroundColor: ResourceColor, foregroundColor: ResourceColor) {

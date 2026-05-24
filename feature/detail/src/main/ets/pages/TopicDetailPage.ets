@@ -338,8 +338,8 @@ export struct TopicDetailPage {
           baseIcon: this.authCookieConfigured
             ? $r('sys.symbol.arrowshape_turn_up_left_fill')
             : $r('sys.symbol.lock'),
-          hoverTips: this.authCookieConfigured ? '回复' : '登录',
-          accessibilityText: this.authCookieConfigured ? '回复' : '登录',
+          hoverTips: this.authCookieConfigured ? AppStrings.text(AppStrings.R_REPLY_ACTION_REPLY, 'Reply') : AppStrings.text(AppStrings.R_REPLY_ACTION_LOGIN, 'Login'),
+          accessibilityText: this.authCookieConfigured ? AppStrings.text(AppStrings.R_REPLY_ACTION_REPLY, 'Reply') : AppStrings.text(AppStrings.R_REPLY_ACTION_LOGIN, 'Login'),
           onClick: () => {
             this.openReplyEditor()
           },
@@ -445,7 +445,7 @@ export struct TopicDetailPage {
         .width(ThemeConstants.LOADING_SIZE_LARGE)
         .height(ThemeConstants.LOADING_SIZE_LARGE)
         .color($r('sys.color.ohos_id_color_activated'))
-      Text('加载中...')
+      Text(AppStrings.text(AppStrings.R_TOPIC_DETAIL_LOADING, 'Loading...'))
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
         .fontColor($r('sys.color.font_secondary'))
         .margin({ top: ThemeConstants.SPACE_MD })
@@ -460,11 +460,11 @@ export struct TopicDetailPage {
       SymbolGlyph($r('sys.symbol.exclamationmark_triangle'))
         .fontSize(48)
         .fontColor([$r('sys.color.font_secondary')])
-      Text(this.v.errorMessage || '加载失败')
+      Text(this.v.errorMessage || AppStrings.text($r('app.string.common_load_failed'), 'Load failed'))
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
         .fontColor($r('sys.color.font_secondary'))
         .margin({ top: ThemeConstants.SPACE_MD })
-      Button('重试')
+      Button(AppStrings.text($r('app.string.common_retry'), 'Retry'))
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
         .margin({ top: ThemeConstants.SPACE_LG })
         .onClick(() => {
@@ -1232,7 +1232,7 @@ export struct TopicDetailPage {
 
   private handleTopicAction(action: string): void {
     if (this.v.topic === null) {
-      promptAction.openToast({ message: '主题仍在加载' }).catch((_error: Error) => {})
+      promptAction.openToast({ message: AppStrings.text(AppStrings.R_TOPIC_STILL_LOADING, 'Topic is still loading') }).catch((_error: Error) => {})
       return
     }
     if (action === 'siteFavorite') {
@@ -1339,16 +1339,16 @@ export struct TopicDetailPage {
   private showPreloadConfirmDialog(): void {
     const total = this.v.topic?.replies || 0
     this.getUIContext().showAlertDialog({
-      title: '回复数量较多',
+      title: AppStrings.text(AppStrings.R_TOPIC_MANY_REPLIES_TITLE, 'Many replies'),
       message: AppStrings.format(AppStrings.text($r('app.string.load_all_replies_warning_format'), 'This topic has {0} replies. Loading all replies may take some time.\n\nContinue loading to enable the full threaded view?'), [`${total}`]),
       primaryButton: {
-        value: '平铺显示',
+        value: AppStrings.text(AppStrings.R_TOPIC_FLAT_VIEW, 'Flat view'),
         action: () => {
           this.v.confirmPreloadFallbackFlat()
         },
       },
       secondaryButton: {
-        value: '继续加载',
+        value: AppStrings.text(AppStrings.R_TOPIC_CONTINUE_LOADING, 'Continue loading'),
         action: () => {
           this.v.confirmPreloadAll()
         },
@@ -1357,11 +1357,11 @@ export struct TopicDetailPage {
   }
 
   private confirmSiteFavoriteToggle(cookie: string, toggle: V2exToggleAction): void {
-    const verb = this.isSiteFavorited ? '取消收藏' : '收藏'
+    const verb = this.isSiteFavorited ? AppStrings.text(AppStrings.R_ACTION_UNFAVORITE, 'Unfavorite') : AppStrings.text(AppStrings.R_ACTION_FAVORITE, 'Favorite')
     this.getUIContext().showAlertDialog({
-      title: '站内收藏',
+      title: AppStrings.text($r('app.string.topic_action_site_favorite'), 'Site favorite'),
       message: TopicDetailActionCoordinator.topicFavoriteMessage(this.v.topic?.title || '', verb),
-      primaryButton: { value: '取消', action: () => {} },
+      primaryButton: { value: AppStrings.text($r('app.string.common_cancel'), 'Cancel'), action: () => {} },
       secondaryButton: {
         value: verb,
         action: () => {
@@ -1416,17 +1416,17 @@ export struct TopicDetailPage {
 
   private confirmTopicThank(cookie: string): void {
     this.getUIContext().showAlertDialog({
-      title: '感谢主题',
+      title: AppStrings.text($r('app.string.topic_action_thank_topic'), 'Thank topic'),
       message: TopicDetailActionCoordinator.topicThankMessage(this.v.topic?.title || ''),
       autoCancel: false,
       primaryButton: {
-        value: '取消',
+        value: AppStrings.text($r('app.string.common_cancel'), 'Cancel'),
         action: () => {
           this.topicThankLocked = false
         },
       },
       secondaryButton: {
-        value: '感谢',
+        value: AppStrings.text(AppStrings.R_ACTION_THANK, 'Thank'),
         action: () => {
           this.executeTopicThank(cookie)
         },
@@ -1497,17 +1497,17 @@ export struct TopicDetailPage {
 
   private confirmReplyThank(cookie: string, reply: V2exReply): void {
     this.getUIContext().showAlertDialog({
-      title: '感谢回复',
-      message: TopicDetailActionCoordinator.replyActionMessage('感谢', reply.member.username),
+      title: AppStrings.text(AppStrings.R_REPLY_THANK_TITLE, 'Thank reply'),
+      message: TopicDetailActionCoordinator.replyActionMessage(AppStrings.text(AppStrings.R_ACTION_THANK, 'Thank'), reply.member.username),
       autoCancel: false,
       primaryButton: {
-        value: '取消',
+        value: AppStrings.text($r('app.string.common_cancel'), 'Cancel'),
         action: () => {
           this.clearReplyThankLock()
         },
       },
       secondaryButton: {
-        value: '感谢',
+        value: AppStrings.text(AppStrings.R_ACTION_THANK, 'Thank'),
         action: () => {
           this.executeReplyThank(cookie, reply)
         },
@@ -1572,8 +1572,8 @@ export struct TopicDetailPage {
 
   private prepareTopicIgnore(): void {
     this.prepareTopicModeration(
-      '忽略主题',
-      '忽略',
+      AppStrings.text($r('app.string.topic_action_ignore_topic'), 'Ignore topic'),
+      AppStrings.text(AppStrings.R_ACTION_IGNORE, 'Ignore'),
       (cookie: string) => this.api.getTopicIgnoreActionWithCookie(cookie, this.topicId),
       (cookie: string, action: V2exTopicModerationAction) =>
         this.api.executeTopicIgnoreWithCookie(cookie, action),
@@ -1582,8 +1582,8 @@ export struct TopicDetailPage {
 
   private prepareTopicReport(): void {
     this.prepareTopicModeration(
-      '举报主题',
-      '举报',
+      AppStrings.text($r('app.string.topic_action_report_topic'), 'Report topic'),
+      AppStrings.text(AppStrings.R_ACTION_REPORT, 'Report'),
       (cookie: string) => this.api.getTopicReportActionWithCookie(cookie, this.topicId),
       (cookie: string, action: V2exTopicModerationAction) =>
         this.api.executeTopicReportWithCookie(cookie, action),
@@ -1593,8 +1593,8 @@ export struct TopicDetailPage {
   private prepareReplyIgnore(reply: V2exReply): void {
     this.prepareReplyModeration(
       reply,
-      '忽略回复',
-      '忽略',
+      AppStrings.text(AppStrings.R_REPLY_IGNORE_TITLE, 'Ignore reply'),
+      AppStrings.text(AppStrings.R_ACTION_IGNORE, 'Ignore'),
       (cookie: string) => this.api.getReplyIgnoreActionWithCookie(cookie, this.topicId, reply.id),
       (cookie: string, action: V2exReplyModerationAction) =>
         this.api.executeReplyIgnoreWithCookie(cookie, this.topicId, action),
@@ -1604,8 +1604,8 @@ export struct TopicDetailPage {
   private prepareReplyReport(reply: V2exReply): void {
     this.prepareReplyModeration(
       reply,
-      '举报回复',
-      '举报',
+      AppStrings.text(AppStrings.R_REPLY_REPORT_TITLE, 'Report reply'),
+      AppStrings.text(AppStrings.R_ACTION_REPORT, 'Report'),
       (cookie: string) => this.api.getReplyReportActionWithCookie(cookie, this.topicId, reply.id),
       (cookie: string, action: V2exReplyModerationAction) =>
         this.api.executeReplyReportWithCookie(cookie, this.topicId, action),
@@ -1815,7 +1815,7 @@ export struct TopicDetailPage {
     if (this.v.topic === null) {
       return
     }
-    const title = (this.v.topic.title || 'V2EX 主题').trim()
+    const title = (this.v.topic.title || AppStrings.text(AppStrings.R_TOPIC_SHARE_FALLBACK_TITLE, 'V2EX topic')).trim()
     const url = this.getTopicUrl()
     const data = new systemShare.SharedData({
       utd: utd.UniformDataType.HYPERLINK,
@@ -1861,11 +1861,11 @@ struct JumpToFloorDialog {
 
   build() {
     Column({ space: ThemeConstants.SPACE_MD }) {
-      Text('跳转楼层')
+      Text(AppStrings.text(AppStrings.R_JUMP_TO_FLOOR_TITLE, 'Jump to floor'))
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
         .fontWeight(FontWeight.Medium)
         .fontColor($r('sys.color.font_primary'))
-      TextInput({ placeholder: '输入楼层号', text: this.floorText })
+      TextInput({ placeholder: AppStrings.text(AppStrings.R_JUMP_TO_FLOOR_PLACEHOLDER, 'Enter floor number'), text: this.floorText })
         .type(InputType.Number)
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
         .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
@@ -1874,7 +1874,7 @@ struct JumpToFloorDialog {
           this.floorText = value
         })
       Row({ space: ThemeConstants.SPACE_SM }) {
-        Button('取消')
+        Button(AppStrings.text($r('app.string.common_cancel'), 'Cancel'))
           .layoutWeight(1)
           .height(40)
           .onClick(() => {
@@ -1883,7 +1883,7 @@ struct JumpToFloorDialog {
             }
             this.cancel()
           })
-        Button('跳转')
+        Button(AppStrings.text(AppStrings.R_JUMP_TO_FLOOR_BUTTON, 'Jump'))
           .layoutWeight(1)
           .height(40)
           .onClick(() => {

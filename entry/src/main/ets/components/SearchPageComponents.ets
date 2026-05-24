@@ -441,7 +441,7 @@ export struct SearchNodeRow {
         Text(this.item.source)
           .fontSize(ThemeConstants.FONT_SIZE_TINY)
           .fontColor(ThemeConstants.BRAND_PRIMARY)
-        Text(`${this.item.topics} 主题`)
+        Text(AppStrings.format(AppStrings.text($r('app.string.search_N_topics'), '{0} topics'), [String(this.item.topics)]))
           .fontSize(ThemeConstants.FONT_SIZE_TINY)
           .fontColor($r('sys.color.font_secondary'))
       }
@@ -494,7 +494,7 @@ export struct RemoteTopicRow {
               this.openUserAction(this.item.username)
             }
           })
-        Text(`${this.item.replies} 回复`)
+        Text(AppStrings.format(AppStrings.text($r('app.string.search_N_replies'), '{0} replies'), [String(this.item.replies)]))
           .fontSize(ThemeConstants.FONT_SIZE_TINY)
           .fontColor($r('sys.color.font_secondary'))
         Text(this.item.created)

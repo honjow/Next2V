@@ -55,28 +55,28 @@ export struct ImagePreviewPage {
     }
     const imageUrl = this.normalizedUrl()
     if (!MediaUrlUtils.isHttpUrl(imageUrl)) {
-      this.showToast('图片地址无效')
+      this.showToast(AppStrings.text($r('app.string.image_preview_invalid_url'), 'Invalid image URL'))
       return
     }
 
     let tempPath = ''
     this.isSaving = true
-    this.saveMessage = '正在下载图片'
+    this.saveMessage = AppStrings.text($r('app.string.image_preview_downloading'), 'Downloading image\u2026')
     try {
       const result = await this.downloadImage(imageUrl)
       if (result.contentType && result.contentType.toLowerCase().indexOf('image/') !== 0) {
-        throw new Error('该链接返回的不是图片')
+        throw new Error(AppStrings.text($r('app.string.image_preview_not_an_image'), 'The link did not return an image'))
       }
       const extension = MediaUrlUtils.preferredImageExtension(imageUrl, result.contentType)
       const title = MediaUrlUtils.imageTitleFromUrl(imageUrl)
       tempPath = this.writeTempImage(result.buffer, extension)
 
-      this.saveMessage = '请选择保存位置'
+      this.saveMessage = AppStrings.text($r('app.string.image_preview_choose_save_location'), 'Please choose a save location')
       await this.copySandboxImageToPhotos(tempPath, title, extension)
       this.showToast(AppStrings.text($r('app.string.image_saved_to_gallery'), 'Saved to Gallery'))
     } catch (error) {
       const e = error as Error
-      this.showToast(e.message || '保存失败')
+      this.showToast(e.message || AppStrings.text($r('app.string.image_preview_save_failed'), 'Save failed'))
     } finally {
       if (tempPath) {
         this.removeTempImage(tempPath)
@@ -113,7 +113,7 @@ export struct ImagePreviewPage {
       }
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '图片下载失败')
+      throw new Error(e.message || AppStrings.text($r('app.string.image_preview_download_failed'), 'Image download failed'))
     }
   }
 
@@ -127,7 +127,7 @@ export struct ImagePreviewPage {
       return filePath
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '临时文件写入失败')
+      throw new Error(e.message || AppStrings.text($r('app.string.image_preview_temp_file_write_failed'), 'Failed to write temporary file'))
     } finally {
       this.closeFile(file)
     }
@@ -157,7 +157,7 @@ export struct ImagePreviewPage {
       await fileIo.copyFile(srcFile.fd, desFile.fd)
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '保存到图库失败')
+      throw new Error(e.message || AppStrings.text($r('app.string.image_preview_save_to_gallery_failed'), 'Failed to save to Gallery'))
     } finally {
       this.closeFile(srcFile)
       this.closeFile(desFile)
@@ -186,10 +186,10 @@ export struct ImagePreviewPage {
       Column() {
         if (!this.normalizedUrl()) {
           Column({ space: ThemeConstants.SPACE_SM }) {
-            Text('图片地址为空')
+            Text(AppStrings.text($r('app.string.image_preview_url_empty'), 'Image URL is empty'))
               .fontSize(ThemeConstants.FONT_SIZE_BODY)
               .fontColor(Color.White)
-            Text('返回后重试')
+            Text(AppStrings.text($r('app.string.image_preview_go_back_retry'), 'Go back and retry'))
               .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
               .fontColor('#B3B3B3')
           }

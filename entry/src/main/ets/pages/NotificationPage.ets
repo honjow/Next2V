@@ -3,6 +3,7 @@ import { promptAction } from '@kit.ArkUI'
 import {
   ApiService,
   ApiV2Service,
+  AppStrings,
   AuthSessionSettings,
   AuthSettings,
   CookieJarSettings,
@@ -22,7 +23,8 @@ import {
   NotificationAuthContext,
   NotificationCenterViewModel,
   NotificationMetadata,
-  NotificationPageResult
+  NotificationPageResult,
+  READ_TAG_UNREAD
 } from '../viewmodel/NotificationCenterViewModel'
 import { NotificationCacheCoordinator } from '../model/NotificationCacheCoordinator'
 import { NotificationCardDisplay, NotificationPageCoordinator } from '../model/NotificationPageCoordinator'
@@ -112,7 +114,7 @@ export struct NotificationPage {
     Column() {
       if (!this.hasNotificationAuth()) {
         NotificationAuthRequiredState({
-          message: '登录后可查看通知',
+          message: AppStrings.text(AppStrings.R_NOTIFICATION_LOGIN_REQUIRED, 'Login to view notifications'),
           onLoginClick: () => {
             this.ns.pushPathByName('V2exNativeLogin', null)
           }
@@ -148,7 +150,7 @@ export struct NotificationPage {
           }, (item: V2exNotification) => this.notificationItemKey(item))
           if (this.shouldShowNotificationEmptyState()) {
             ListItem() {
-              EmptyState({ message: '暂无通知', stateHeight: 240 })
+              EmptyState({ message: AppStrings.text(AppStrings.R_NOTIFICATION_EMPTY, 'No notifications'), stateHeight: 240 })
             }
           }
           if (this.notifications.length > 0) {
@@ -317,7 +319,7 @@ export struct NotificationPage {
   private notificationCardDisplay(item: V2exNotification): NotificationCardDisplay {
     const display = NotificationPageCoordinator.displayFor(this.notificationMeta(item))
     if (!display.readTag && this.isViewedUnreadNotification(item)) {
-      display.readTag = '未读'
+      display.readTag = READ_TAG_UNREAD
     }
     return display
   }
@@ -328,14 +330,14 @@ export struct NotificationPage {
       return
     }
     this.getUIContext().showAlertDialog({
-      title: '删除通知',
-      message: '确定删除这条通知吗？',
+      title: AppStrings.text(AppStrings.R_NOTIFICATION_DELETE_TITLE, 'Delete notification'),
+      message: AppStrings.text(AppStrings.R_NOTIFICATION_DELETE_CONFIRM, 'Delete this notification?'),
       primaryButton: {
-        value: '取消', action: () => {
+        value: $r('app.string.common_cancel'), action: () => {
         }
       },
       secondaryButton: {
-        value: '删除',
+        value: $r('app.string.common_delete'),
         action: () => {
           this.deleteNotificationItem(item)
         }
@@ -363,7 +365,7 @@ export struct NotificationPage {
   private deleteNotification(item: V2exNotification): void {
     const notificationId = item.id || 0
     if (!this.authTokenConfigured || !this.authToken || notificationId <= 0) {
-      promptAction.openToast({ message: '删除通知需要 V2 API 授权' }).catch((_error: Error) => {
+      promptAction.openToast({ message: AppStrings.text(AppStrings.R_NOTIFICATION_DELETE_REQUIRES_API_AUTH, 'Delete notification requires V2 API authorization') }).catch((_error: Error) => {
       })
       return
     }
@@ -385,7 +387,7 @@ export struct NotificationPage {
     const once = this.notificationVm.webDeleteOnce(item)
     const verifyPage = this.notificationPageForItem(item)
     if (!cookie || notificationId <= 0 || !once) {
-      promptAction.openToast({ message: '删除通知需要 Web 会话' }).catch((_error: Error) => {
+      promptAction.openToast({ message: AppStrings.text(AppStrings.R_NOTIFICATION_DELETE_REQUIRES_WEB_SESSION, 'Delete notification requires web session') }).catch((_error: Error) => {
       })
       return
     }
@@ -572,7 +574,7 @@ export struct NotificationPage {
       }
       const err = error as Error
       DiagnosticLogger.warn('notification', 'notification_refresh_error', { requestId: requestId, source: this.notificationVm.sourceKeyFor(authContext), errorKind: err.name || 'Error' }, err)
-      const message = err.message || '通知加载失败'
+      const message = err.message || AppStrings.text(AppStrings.R_NOTIFICATION_LOAD_FAILED, 'Notifications load failed')
       this.notificationError = message
       this.notificationHasMore = false
       this.handleTwoFactorChallenge(err)
@@ -822,7 +824,7 @@ export struct NotificationPage {
 
   private unreadKeysFromItems(items: V2exNotification[]): string[] {
     return items
-      .filter((item: V2exNotification) => this.notificationVm.metadata(item).readTag === '未读')
+      .filter((item: V2exNotification) => this.notificationVm.metadata(item).readTag === READ_TAG_UNREAD)
       .map((item: V2exNotification) => this.notificationItemKey(item))
       .filter((key: string) => !!key)
   }

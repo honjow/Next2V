@@ -1337,6 +1337,98 @@
       "value": "Cookie 登录态无效，请确认已完成登录"
     },
     {
+      "name": "login_password_placeholder",
+      "value": "密码"
+    },
+    {
+      "name": "login_captcha_placeholder",
+      "value": "验证码"
+    },
+    {
+      "name": "login_button_preparing",
+      "value": "准备中…"
+    },
+    {
+      "name": "login_button_logging_in",
+      "value": "登录中…"
+    },
+    {
+      "name": "login_button_label",
+      "value": "登录"
+    },
+    {
+      "name": "login_form_not_loaded",
+      "value": "登录表单未加载完成，请稍后重试"
+    },
+    {
+      "name": "login_captcha_form_not_loaded",
+      "value": "登录验证码表单未加载完成，请重新获取验证码"
+    },
+    {
+      "name": "login_success",
+      "value": "登录成功"
+    },
+    {
+      "name": "two_factor_title",
+      "value": "两步验证"
+    },
+    {
+      "name": "two_factor_description",
+      "value": "V2EX 需要完成两步验证后才能继续访问账号内容。"
+    },
+    {
+      "name": "two_factor_code_placeholder",
+      "value": "输入 6 位验证码"
+    },
+    {
+      "name": "two_factor_verifying",
+      "value": "验证中…"
+    },
+    {
+      "name": "two_factor_verify_button",
+      "value": "完成验证"
+    },
+    {
+      "name": "two_factor_later",
+      "value": "稍后再说"
+    },
+    {
+      "name": "login_to_view_topics",
+      "value": "登录后可查看收藏主题"
+    },
+    {
+      "name": "login_to_view_nodes",
+      "value": "登录后可查看收藏节点"
+    },
+    {
+      "name": "web_login_opening",
+      "value": "正在打开网页登录..."
+    },
+    {
+      "name": "web_login_loading_url",
+      "value": "正在加载 {0}"
+    },
+    {
+      "name": "web_login_loading_page",
+      "value": "正在加载网页登录..."
+    },
+    {
+      "name": "web_login_load_failed",
+      "value": "网页登录加载失败"
+    },
+    {
+      "name": "web_login_saving",
+      "value": "正在保存登录状态…"
+    },
+    {
+      "name": "web_login_opening_url",
+      "value": "正在打开 {0}"
+    },
+    {
+      "name": "web_login_not_complete",
+      "value": "网页登录尚未完成"
+    },
+    {
       "name": "reply_submitted",
       "value": "回复已提交"
     },
@@ -1411,6 +1503,18 @@
     {
       "name": "discover_hot",
       "value": "热议"
+    },
+    {
+      "name": "discover_latest_topics",
+      "value": "最新主题"
+    },
+    {
+      "name": "discover_recent_updates",
+      "value": "最近更新"
+    },
+    {
+      "name": "discover_site_rank",
+      "value": "全站热榜"
     },
     {
       "name": "node_selected_format",
@@ -1519,6 +1623,182 @@
     {
       "name": "search_source_nodes_library",
       "value": "节点库"
+    },
+    {
+      "name": "search_source_cache_list",
+      "value": "缓存(列表)"
+    },
+    {
+      "name": "search_source_cache_detail",
+      "value": "缓存(详情)"
+    },
+    {
+      "name": "relative_just_now",
+      "value": "刚刚"
+    },
+    {
+      "name": "relative_minutes_ago",
+      "value": "{0} 分钟前"
+    },
+    {
+      "name": "relative_hours_ago",
+      "value": "{0} 小时前"
+    },
+    {
+      "name": "relative_days_ago",
+      "value": "{0} 天前"
+    },
+    {
+      "name": "relative_months_ago",
+      "value": "{0} 个月前"
+    },
+    {
+      "name": "relative_years_ago",
+      "value": "{0} 年前"
+    },
+    {
+      "name": "user_profile_location",
+      "value": "位置"
+    },
+    {
+      "name": "user_profile_website",
+      "value": "网站"
+    },
+    {
+      "name": "user_profile_member_number",
+      "value": "第 {0} 号会员 · {1}"
+    },
+    {
+      "name": "user_profile_no_topics",
+      "value": "暂无主题"
+    },
+    {
+      "name": "user_profile_no_replies",
+      "value": "暂无回复"
+    },
+    {
+      "name": "user_profile_view_all_topics",
+      "value": "查看全部主题"
+    },
+    {
+      "name": "user_profile_view_all_replies",
+      "value": "查看全部回复"
+    },
+    {
+      "name": "user_profile_action_failed",
+      "value": "操作失败"
+    },
+    {
+      "name": "user_tab_topics_label",
+      "value": "主题"
+    },
+    {
+      "name": "user_tab_replies_label",
+      "value": "回复"
+    },
+    {
+      "name": "user_tab_topics_count",
+      "value": "主题 {0}"
+    },
+    {
+      "name": "user_tab_replies_count",
+      "value": "回复 {0}"
+    },
+    {
+      "name": "user_action_follow",
+      "value": "关注"
+    },
+    {
+      "name": "user_action_unfollow",
+      "value": "取消关注"
+    },
+    {
+      "name": "user_action_block",
+      "value": "屏蔽"
+    },
+    {
+      "name": "user_action_unblock",
+      "value": "取消屏蔽"
+    },
+    {
+      "name": "node_no_topics",
+      "value": "暂无主题"
+    },
+    {
+      "name": "node_load_failed",
+      "value": "节点主题加载失败"
+    },
+    {
+      "name": "node_info_missing",
+      "value": "节点信息缺失"
+    },
+    {
+      "name": "node_picker_current_node_format",
+      "value": "当前：{0}"
+    },
+    {
+      "name": "node_picker_helper",
+      "value": "点击节点后会自动填入发帖草稿。"
+    },
+    {
+      "name": "node_picker_search_placeholder",
+      "value": "搜索节点"
+    },
+    {
+      "name": "node_topics_count",
+      "value": "{0} 个主题"
+    },
+    {
+      "name": "site_favorite_title",
+      "value": "站内收藏"
+    },
+    {
+      "name": "site_favorite_confirm",
+      "value": "确定{0}节点「{1}」吗？"
+    },
+    {
+      "name": "site_favorite_action_favorite",
+      "value": "收藏"
+    },
+    {
+      "name": "site_favorite_action_unfavorite",
+      "value": "取消收藏"
+    },
+    {
+      "name": "topic_editor_node_placeholder",
+      "value": "节点（如 create）"
+    },
+    {
+      "name": "topic_editor_select_node",
+      "value": "选择"
+    },
+    {
+      "name": "topic_editor_title_placeholder",
+      "value": "标题"
+    },
+    {
+      "name": "common_loading",
+      "value": "加载中…"
+    },
+    {
+      "name": "media_youtube_video",
+      "value": "YouTube 视频"
+    },
+    {
+      "name": "media_vimeo_video",
+      "value": "Vimeo 视频"
+    },
+    {
+      "name": "media_imgur_page",
+      "value": "Imgur 图片页"
+    },
+    {
+      "name": "media_v2ex_link",
+      "value": "V2EX 链接"
+    },
+    {
+      "name": "media_link_label",
+      "value": "链接"
     },
     {
       "name": "api_error_auth_required",
@@ -1703,6 +1983,546 @@
     {
       "name": "api_error_token_missing",
       "value": "Missing token, please configure a Personal Access Token"
+    },
+    {
+      "name": "notification_login_required",
+      "value": "登录后可查看通知"
+    },
+    {
+      "name": "notification_empty",
+      "value": "暂无通知"
+    },
+    {
+      "name": "notification_delete_title",
+      "value": "删除通知"
+    },
+    {
+      "name": "notification_delete_confirm",
+      "value": "确定删除这条通知吗？"
+    },
+    {
+      "name": "notification_delete_requires_api_auth",
+      "value": "删除通知需要 V2 API 授权"
+    },
+    {
+      "name": "notification_delete_requires_web_session",
+      "value": "删除通知需要 Web 会话"
+    },
+    {
+      "name": "notification_load_failed",
+      "value": "通知加载失败"
+    },
+    {
+      "name": "notification_go_login",
+      "value": "去登录"
+    },
+    {
+      "name": "notification_tag_unread",
+      "value": "未读"
+    },
+    {
+      "name": "notification_kind_reply",
+      "value": "回复"
+    },
+    {
+      "name": "notification_kind_mention",
+      "value": "提及"
+    },
+    {
+      "name": "notification_kind_thanks",
+      "value": "感谢"
+    },
+    {
+      "name": "notification_kind_favorite",
+      "value": "收藏"
+    },
+    {
+      "name": "notification_kind_follow",
+      "value": "关注"
+    },
+    {
+      "name": "notification_kind_system",
+      "value": "系统"
+    },
+    {
+      "name": "notification_kind_notification",
+      "value": "通知"
+    },
+    {
+      "name": "notification_source_web",
+      "value": "Web 会话"
+    },
+    {
+      "name": "common_load_more",
+      "value": "加载更多"
+    },
+    {
+      "name": "search_node_results",
+      "value": "节点结果 {0}"
+    },
+    {
+      "name": "search_filter_title",
+      "value": "搜索筛选"
+    },
+    {
+      "name": "search_web_filter_hint",
+      "value": "网页搜索会在系统浏览器中打开，不额外提供站内筛选。"
+    },
+    {
+      "name": "search_discover_nodes_placeholder",
+      "value": "搜索节点"
+    },
+    {
+      "name": "search_N_topics",
+      "value": "{0} 主题"
+    },
+    {
+      "name": "search_N_replies",
+      "value": "{0} 回复"
+    },
+    {
+      "name": "topic_action_thank_topic",
+      "value": "感谢主题"
+    },
+    {
+      "name": "topic_action_save_later",
+      "value": "稍后读"
+    },
+    {
+      "name": "topic_action_ignore_topic",
+      "value": "忽略主题"
+    },
+    {
+      "name": "topic_action_report_topic",
+      "value": "举报主题"
+    },
+    {
+      "name": "topic_action_copy_title",
+      "value": "复制标题"
+    },
+    {
+      "name": "topic_action_copy_link",
+      "value": "复制链接"
+    },
+    {
+      "name": "topic_action_share_link",
+      "value": "分享链接"
+    },
+    {
+      "name": "topic_action_open_browser",
+      "value": "浏览器打开"
+    },
+    {
+      "name": "image_preview_invalid_url",
+      "value": "图片地址无效"
+    },
+    {
+      "name": "image_preview_downloading",
+      "value": "正在下载图片…"
+    },
+    {
+      "name": "image_preview_not_an_image",
+      "value": "该链接返回的不是图片"
+    },
+    {
+      "name": "image_preview_download_failed",
+      "value": "图片下载失败"
+    },
+    {
+      "name": "image_preview_temp_file_write_failed",
+      "value": "临时文件写入失败"
+    },
+    {
+      "name": "image_preview_url_empty",
+      "value": "图片地址为空"
+    },
+    {
+      "name": "image_preview_go_back_retry",
+      "value": "返回后重试"
+    },
+    {
+      "name": "image_preview_choose_save_location",
+      "value": "请选择保存位置"
+    },
+    {
+      "name": "image_preview_save_failed",
+      "value": "保存失败"
+    },
+    {
+      "name": "image_preview_save_to_gallery_failed",
+      "value": "保存到图库失败"
+    },
+    {
+      "name": "editor_body_placeholder",
+      "value": "正文（Markdown）"
+    },
+    {
+      "name": "editor_empty_preview",
+      "value": "暂无内容"
+    },
+    {
+      "name": "editor_submitting",
+      "value": "提交中..."
+    },
+    {
+      "name": "editor_submit",
+      "value": "提交"
+    },
+    {
+      "name": "editor_confirm_post_title",
+      "value": "确认发帖"
+    },
+    {
+      "name": "editor_publish",
+      "value": "发布"
+    },
+    {
+      "name": "editor_clear_draft_title",
+      "value": "清空草稿"
+    },
+    {
+      "name": "editor_clear_draft_message",
+      "value": "确定清空当前发帖草稿吗？"
+    },
+    {
+      "name": "editor_clear_draft_failed",
+      "value": "清空失败"
+    },
+    {
+      "name": "editor_confirm_post_format",
+      "value": "确定在节点「{0}」发布主题《{1}》吗？\n\nV2EX 发帖通常至少消耗 20 铜币，提交后会修改你的账号状态。"
+    },
+    {
+      "name": "reply_composer_title",
+      "value": "写回复"
+    },
+    {
+      "name": "reply_body_placeholder",
+      "value": "写回复（自动保存草稿）"
+    },
+    {
+      "name": "reply_clear_draft_title",
+      "value": "清空草稿"
+    },
+    {
+      "name": "reply_clear_draft_message",
+      "value": "确定清空当前回复草稿吗？"
+    },
+    {
+      "name": "reply_clear_draft_generic_message",
+      "value": "确定清空当前草稿吗？"
+    },
+    {
+      "name": "reply_clear_failed",
+      "value": "清空失败"
+    },
+    {
+      "name": "reply_confirm_submit_title",
+      "value": "提交回复"
+    },
+    {
+      "name": "topic_detail_loading",
+      "value": "加载中..."
+    },
+    {
+      "name": "topic_still_loading",
+      "value": "主题仍在加载"
+    },
+    {
+      "name": "topic_many_replies_title",
+      "value": "回复数量较多"
+    },
+    {
+      "name": "topic_flat_view",
+      "value": "平铺显示"
+    },
+    {
+      "name": "topic_continue_loading",
+      "value": "继续加载"
+    },
+    {
+      "name": "action_favorite",
+      "value": "收藏"
+    },
+    {
+      "name": "action_unfavorite",
+      "value": "取消收藏"
+    },
+    {
+      "name": "action_thank",
+      "value": "感谢"
+    },
+    {
+      "name": "action_ignore",
+      "value": "忽略"
+    },
+    {
+      "name": "action_report",
+      "value": "举报"
+    },
+    {
+      "name": "reply_action_reply",
+      "value": "回复"
+    },
+    {
+      "name": "reply_action_login",
+      "value": "登录"
+    },
+    {
+      "name": "reply_ignore_title",
+      "value": "忽略回复"
+    },
+    {
+      "name": "reply_report_title",
+      "value": "举报回复"
+    },
+    {
+      "name": "reply_thank_title",
+      "value": "感谢回复"
+    },
+    {
+      "name": "topic_share_fallback_title",
+      "value": "V2EX 主题"
+    },
+    {
+      "name": "jump_to_floor_title",
+      "value": "跳转楼层"
+    },
+    {
+      "name": "jump_to_floor_placeholder",
+      "value": "输入楼层号"
+    },
+    {
+      "name": "jump_to_floor_button",
+      "value": "跳转"
+    },
+    {
+      "name": "reply_context_title",
+      "value": "回复上下文"
+    },
+    {
+      "name": "reply_context_with_floor_format",
+      "value": "#{0} 回复上下文"
+    },
+    {
+      "name": "reply_context_empty_snippet",
+      "value": "（无内容）"
+    },
+    {
+      "name": "reply_context_label_above",
+      "value": "上文"
+    },
+    {
+      "name": "reply_context_label_below",
+      "value": "下文"
+    },
+    {
+      "name": "reply_context_label_current",
+      "value": "当前回复"
+    },
+    {
+      "name": "reply_context_label_mention_format",
+      "value": "提到 @{0}"
+    },
+    {
+      "name": "markdown_placeholder_text",
+      "value": "文字"
+    },
+    {
+      "name": "markdown_placeholder_code",
+      "value": "代码"
+    },
+    {
+      "name": "markdown_placeholder_image",
+      "value": "图片"
+    },
+    {
+      "name": "reply_thread_relation_label_format",
+      "value": "回复 {0}"
+    },
+    {
+      "name": "confirm_topic_favorite_format",
+      "value": "确定{0}《{1}》吗？"
+    },
+    {
+      "name": "confirm_topic_favorite_nameless_format",
+      "value": "确定{0}该主题吗？"
+    },
+    {
+      "name": "confirm_topic_thank_format",
+      "value": "确定感谢《{0}》吗？"
+    },
+    {
+      "name": "confirm_topic_thank_nameless",
+      "value": "确定感谢该主题吗？"
+    },
+    {
+      "name": "parse_action_failed_format",
+      "value": "解析{0}操作失败"
+    },
+    {
+      "name": "reply_info_missing",
+      "value": "回复信息缺失"
+    },
+    {
+      "name": "load_more_replies_failed",
+      "value": "加载更多失败"
+    },
+    {
+      "name": "preloading_all_replies",
+      "value": "正在加载全部回复…"
+    },
+    {
+      "name": "preloading_progress_format",
+      "value": "正在加载全部回复 {0}/{1}…"
+    },
+    {
+      "name": "preloading_progress_count_format",
+      "value": "正在加载全部回复 {0} 条…"
+    },
+    {
+      "name": "topic_detail_tool_floor",
+      "value": "楼层"
+    },
+    {
+      "name": "topic_detail_tool_latest",
+      "value": "最新"
+    },
+    {
+      "name": "reply_display_mode_origin",
+      "value": "原版"
+    },
+    {
+      "name": "reply_count_format",
+      "value": "共 {0} 条回复"
+    },
+    {
+      "name": "draft_load_failed",
+      "value": "读取草稿失败"
+    },
+    {
+      "name": "common_copy_failed",
+      "value": "复制失败"
+    },
+    {
+      "name": "common_checking_network",
+      "value": "正在检查网络"
+    },
+    {
+      "name": "common_image_load_failed",
+      "value": "图片加载失败"
+    },
+    {
+      "name": "common_tap_to_retry",
+      "value": "点击重试"
+    },
+    {
+      "name": "common_no_content",
+      "value": "暂无内容"
+    },
+    {
+      "name": "common_load_failed_tap_retry",
+      "value": "加载失败，点击重试"
+    },
+    {
+      "name": "common_decoded_format",
+      "value": "解码：{0}"
+    },
+    {
+      "name": "markdown_toolbar_edit",
+      "value": "写"
+    },
+    {
+      "name": "markdown_toolbar_preview",
+      "value": "看"
+    },
+    {
+      "name": "markdown_toolbar_image",
+      "value": "图"
+    },
+    {
+      "name": "markdown_toolbar_clear",
+      "value": "清"
+    },
+    {
+      "name": "topic_last_reply",
+      "value": "最后回复"
+    },
+    {
+      "name": "topic_replies_count",
+      "value": "{0} 回复"
+    },
+    {
+      "name": "code_wrap_scroll",
+      "value": "滚动"
+    },
+    {
+      "name": "code_wrap_wrap",
+      "value": "换行"
+    },
+    {
+      "name": "reply_view_context",
+      "value": "查看上下文"
+    },
+    {
+      "name": "reply_copy_content",
+      "value": "复制回复内容"
+    },
+    {
+      "name": "reply_ignore_reply",
+      "value": "忽略回复"
+    },
+    {
+      "name": "reply_report_reply",
+      "value": "举报回复"
+    },
+    {
+      "name": "common_wifi_only_image_hint",
+      "value": "仅 Wi-Fi 时自动加载图片"
+    },
+    {
+      "name": "storage_seeded_label_format",
+      "value": "{0}: {1} rows / {2} files"
+    },
+    {
+      "name": "cache_clear_account_failed",
+      "value": "Failed to clear account cache"
+    },
+    {
+      "name": "cache_invalid_seed_filename",
+      "value": "Invalid QA seed cache filename"
+    },
+    {
+      "name": "cache_commit_payload_failed",
+      "value": "Failed to commit cache file"
+    },
+    {
+      "name": "cache_invalid_filename",
+      "value": "Invalid cache filename"
+    },
+    {
+      "name": "cache_filename_conflict",
+      "value": "Cache filename conflict"
+    },
+    {
+      "name": "cache_filename_length_invalid",
+      "value": "Invalid cache filename length"
+    },
+    {
+      "name": "cache_clear_failed",
+      "value": "Failed to clear cache"
+    },
+    {
+      "name": "collection_clear_all_failed",
+      "value": "Failed to clear local collection and reading records"
+    },
+    {
+      "name": "draft_clear_failed",
+      "value": "Failed to clear drafts"
+    },
+    {
+      "name": "notification_cache_clear_failed",
+      "value": "Failed to clear notification cache"
     }
   ]
 }

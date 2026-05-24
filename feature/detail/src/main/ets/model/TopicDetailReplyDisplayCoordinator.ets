@@ -38,9 +38,9 @@ export class TopicDetailReplyDisplayCoordinator {
       return AppStrings.format(AppStrings.text($r('app.string.loaded_count_format'), 'Loaded {0} / {1}'), [`${loaded}`, `${total}`])
     }
     if (total > 0) {
-      return `共 ${total} 条回复`
+      return AppStrings.format(AppStrings.text(AppStrings.R_REPLY_COUNT_FORMAT, '{0} replies'), [`${total}`])
     }
-    return `共 ${loaded} 条回复`
+    return AppStrings.format(AppStrings.text(AppStrings.R_REPLY_COUNT_FORMAT, '{0} replies'), [`${loaded}`])
   }
 
   static modeText(mode: string): string {

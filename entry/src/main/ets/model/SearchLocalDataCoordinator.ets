@@ -1,6 +1,7 @@
 import { common } from '@kit.AbilityKit'
 import {
   ApiService,
+  AppStrings,
   CacheSettings,
   type CacheKeyIndex,
   CollectionSettings,
@@ -68,7 +69,7 @@ export class SearchLocalDataCoordinator {
           nodeName: topic.node.name,
           nodeTitle: topic.node.title,
           username: topic.member.username,
-          source: '缓存(列表)',
+          source: AppStrings.text($r('app.string.search_source_cache_list'), 'Cache (list)'),
           updatedAt: index.updatedAt,
         }
         listTopics.set(item.id, item)
@@ -94,7 +95,7 @@ export class SearchLocalDataCoordinator {
         nodeName: topic.node.name,
         nodeTitle: topic.node.title,
         username: topic.member.username,
-        source: '缓存(详情)',
+        source: AppStrings.text($r('app.string.search_source_cache_detail'), 'Cache (detail)'),
         updatedAt: detail.cachedAt || index.updatedAt,
       }
       detailTopics.set(item.id, item)

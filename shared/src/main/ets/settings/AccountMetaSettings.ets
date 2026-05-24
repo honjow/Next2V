@@ -2,6 +2,7 @@ import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
 import { V2exBalance, V2exDailyMission } from '../network/NetworkTypes'
 import { DiagnosticLogger } from '../diagnostics/DiagnosticLogger'
+import { AppStrings } from '../i18n/AppStrings'
 import { STORE_NAME_ACCOUNT_META } from './SettingsStores'
 
 const STORE_NAME: string = STORE_NAME_ACCOUNT_META
@@ -87,7 +88,7 @@ export class AccountMetaSettings {
       DiagnosticLogger.info('account', 'account_meta_store_clear', {})
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '清理账号缓存失败')
+      throw new Error(e.message || AppStrings.text(AppStrings.R_CACHE_CLEAR_ACCOUNT_FAILED, 'Failed to clear account cache'))
     }
   }
 

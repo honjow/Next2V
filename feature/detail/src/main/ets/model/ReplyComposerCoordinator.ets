@@ -31,7 +31,7 @@ export class ReplyComposerCoordinator {
   }
 
   static previewEmptyMessage(): string {
-    return '暂无内容'
+    return AppStrings.text(AppStrings.R_EDITOR_EMPTY_PREVIEW, 'No content yet')
   }
 
   static normalizeInitialContent(value: string): string {
@@ -106,13 +106,13 @@ export class ReplyComposerCoordinator {
     selectionEnd: number,
   ): ReplyComposerEditResult {
     if (command === 'bold') {
-      return ReplyComposerCoordinator.insertInlineMarkdown(content, selectionStart, selectionEnd, '**', '**', '文字')
+      return ReplyComposerCoordinator.insertInlineMarkdown(content, selectionStart, selectionEnd, '**', '**', AppStrings.text(AppStrings.R_MARKDOWN_PLACEHOLDER_TEXT, 'Text'))
     }
     if (command === 'italic') {
-      return ReplyComposerCoordinator.insertInlineMarkdown(content, selectionStart, selectionEnd, '*', '*', '文字')
+      return ReplyComposerCoordinator.insertInlineMarkdown(content, selectionStart, selectionEnd, '*', '*', AppStrings.text(AppStrings.R_MARKDOWN_PLACEHOLDER_TEXT, 'Text'))
     }
     if (command === 'code') {
-      return ReplyComposerCoordinator.insertInlineMarkdown(content, selectionStart, selectionEnd, '`', '`', '代码')
+      return ReplyComposerCoordinator.insertInlineMarkdown(content, selectionStart, selectionEnd, '`', '`', AppStrings.text(AppStrings.R_MARKDOWN_PLACEHOLDER_CODE, 'Code'))
     }
     if (command === 'quote') {
       return ReplyComposerCoordinator.insertLinePrefix(content, selectionStart, selectionEnd, '> ')
@@ -121,24 +121,26 @@ export class ReplyComposerCoordinator {
       return ReplyComposerCoordinator.insertLinePrefix(content, selectionStart, selectionEnd, '- ')
     }
     if (command === 'link') {
+      const textHolder = AppStrings.text(AppStrings.R_MARKDOWN_PLACEHOLDER_TEXT, 'Text')
       return ReplyComposerCoordinator.insertInlineMarkdown(
         content,
         selectionStart,
         selectionEnd,
         '[',
         '](https://)',
-        '文字',
-        '[文字](https://'.length,
+        textHolder,
+        1 + textHolder.length + '](https://'.length,
       )
     }
+    const imgHolder = AppStrings.text(AppStrings.R_MARKDOWN_PLACEHOLDER_IMAGE, 'Image')
     return ReplyComposerCoordinator.insertInlineMarkdown(
       content,
       selectionStart,
       selectionEnd,
       '![',
       '](https://)',
-      '图片',
-      '![图片](https://'.length,
+      imgHolder,
+      2 + imgHolder.length + '](https://'.length,
     )
   }
 

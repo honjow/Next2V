@@ -1,3 +1,5 @@
+import { AppStrings } from '../i18n/AppStrings'
+
 const SECONDS_PER_MINUTE: number = 60
 const SECONDS_PER_HOUR: number = 3600
 const SECONDS_PER_DAY: number = 86400
@@ -6,30 +8,45 @@ const SECONDS_PER_YEAR: number = 31536000
 const MS_PER_SECOND: number = 1000
 
 /**
- * 时间格式化工具
+ * Time formatting utilities.
  */
 export class DateUtils {
-  /** Unix 秒时间戳转为相对时间字符串 */
+  /** Unix timestamp (seconds) to relative time string, localized via AppStrings. */
   static toRelativeTime(unixSeconds: number): string {
     const now = Date.now() / MS_PER_SECOND
     const diff = now - unixSeconds
 
     if (diff < SECONDS_PER_MINUTE) {
-      return '刚刚'
+      return AppStrings.text(AppStrings.R_RELATIVE_JUST_NOW, 'Just now')
     }
     if (diff < SECONDS_PER_HOUR) {
-      return `${Math.floor(diff / SECONDS_PER_MINUTE)} 分钟前`
+      return AppStrings.format(
+        AppStrings.text(AppStrings.R_RELATIVE_MINUTES_AGO, '{0} min ago'),
+        [String(Math.floor(diff / SECONDS_PER_MINUTE))]
+      )
     }
     if (diff < SECONDS_PER_DAY) {
-      return `${Math.floor(diff / SECONDS_PER_HOUR)} 小时前`
+      return AppStrings.format(
+        AppStrings.text(AppStrings.R_RELATIVE_HOURS_AGO, '{0} h ago'),
+        [String(Math.floor(diff / SECONDS_PER_HOUR))]
+      )
     }
     if (diff < SECONDS_PER_MONTH) {
-      return `${Math.floor(diff / SECONDS_PER_DAY)} 天前`
+      return AppStrings.format(
+        AppStrings.text(AppStrings.R_RELATIVE_DAYS_AGO, '{0} d ago'),
+        [String(Math.floor(diff / SECONDS_PER_DAY))]
+      )
     }
     if (diff < SECONDS_PER_YEAR) {
-      return `${Math.floor(diff / SECONDS_PER_MONTH)} 个月前`
+      return AppStrings.format(
+        AppStrings.text(AppStrings.R_RELATIVE_MONTHS_AGO, '{0} mo ago'),
+        [String(Math.floor(diff / SECONDS_PER_MONTH))]
+      )
     }
-    return `${Math.floor(diff / SECONDS_PER_YEAR)} 年前`
+    return AppStrings.format(
+      AppStrings.text(AppStrings.R_RELATIVE_YEARS_AGO, '{0} y ago'),
+      [String(Math.floor(diff / SECONDS_PER_YEAR))]
+    )
   }
 
   /** Unix 秒时间戳转为格式化日期 */

@@ -1,5 +1,6 @@
 import {
   AppModalScaffold,
+  AppStrings,
   Avatar,
   ImageUtils,
   ThemeConstants,
@@ -106,7 +107,7 @@ export struct TopicDetailReplyDivider {
   @Link replyDisplayMenuShown: boolean
   @Prop replyCountText: string = ''
   @Prop replyDisplayMode: string = 'origin'
-  @Prop replyDisplayModeText: string = '原版'
+  @Prop replyDisplayModeText: string = AppStrings.text(AppStrings.R_REPLY_DISPLAY_MODE_ORIGIN, 'Original')
   onJumpToFloor?: () => void
   onLatest?: () => void
   onShowDisplayMenu?: () => void
@@ -121,13 +122,13 @@ export struct TopicDetailReplyDivider {
         .textOverflow({ overflow: TextOverflow.Ellipsis })
         .layoutWeight(1)
       Row({ space: ThemeConstants.SPACE_XS }) {
-        this.ToolButton('楼层', false, () => {
+        this.ToolButton(AppStrings.text(AppStrings.R_TOPIC_DETAIL_TOOL_FLOOR, 'Floor'), false, () => {
           if (this.onJumpToFloor) {
             this.onJumpToFloor()
           }
         })
         this.DisplayModeButton()
-        this.ToolButton('最新', false, () => {
+        this.ToolButton(AppStrings.text(AppStrings.R_TOPIC_DETAIL_TOOL_LATEST, 'Latest'), false, () => {
           if (this.onLatest) {
             this.onLatest()
           }
@@ -212,7 +213,7 @@ export struct TopicDetailReplyDivider {
 @Component
 export struct ReplyContextSheetContent {
   @BuilderParam content: () => void
-  @Prop title: string = '回复上下文'
+  @Prop title: string = AppStrings.text(AppStrings.R_REPLY_CONTEXT_TITLE, 'Reply context')
   closeAction?: () => void
 
   build() {

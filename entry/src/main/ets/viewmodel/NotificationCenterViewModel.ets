@@ -3,6 +3,15 @@ import type { V2exNotification } from 'shared'
 
 export type NotificationSource = 'pat' | 'cookie' | 'none'
 
+export const READ_TAG_UNREAD = 'unread'
+export const KIND_REPLY = 'reply'
+export const KIND_MENTION = 'mention'
+export const KIND_THANKS = 'thanks'
+export const KIND_FAVORITE = 'favorite'
+export const KIND_FOLLOW = 'follow'
+export const KIND_SYSTEM = 'system'
+export const KIND_NOTIFICATION = 'notification'
+
 export interface NotificationAuthContext {
   tokenConfigured: boolean
   token: string
@@ -158,7 +167,7 @@ export class NotificationCenterViewModel {
       const kind = this.metadata(item).kindTag
       counts[kind] = (counts[kind] || 0) + 1
     })
-    const order: string[] = ['回复', '提及', '感谢', '收藏', '关注', '系统', '通知']
+    const order: string[] = [KIND_REPLY, KIND_MENTION, KIND_THANKS, KIND_FAVORITE, KIND_FOLLOW, KIND_SYSTEM, KIND_NOTIFICATION]
     const parts: string[] = []
     order.forEach((kind: string) => {
       const count = counts[kind] || 0
@@ -174,7 +183,7 @@ export class NotificationCenterViewModel {
       return 'API v2'
     }
     if (source === 'cookie') {
-      return 'Web 会话'
+      return 'cookie'
     }
     return ''
   }
@@ -202,28 +211,28 @@ export class NotificationCenterViewModel {
 
     const unread = this.flag(bag.unread)
     if (unread !== null) {
-      return unread ? '未读' : ''
+      return unread ? READ_TAG_UNREAD : ''
     }
     const isUnread = this.flag(bag.is_unread)
     if (isUnread !== null) {
-      return isUnread ? '未读' : ''
+      return isUnread ? READ_TAG_UNREAD : ''
     }
     const isUnreadCamel = this.flag(bag.isUnread)
     if (isUnreadCamel !== null) {
-      return isUnreadCamel ? '未读' : ''
+      return isUnreadCamel ? READ_TAG_UNREAD : ''
     }
 
     const read = this.flag(bag.read)
     if (read !== null) {
-      return read ? '' : '未读'
+      return read ? '' : READ_TAG_UNREAD
     }
     const isRead = this.flag(bag.is_read)
     if (isRead !== null) {
-      return isRead ? '' : '未读'
+      return isRead ? '' : READ_TAG_UNREAD
     }
     const isReadCamel = this.flag(bag.isRead)
     if (isReadCamel !== null) {
-      return isReadCamel ? '' : '未读'
+      return isReadCamel ? '' : READ_TAG_UNREAD
     }
     return ''
   }
@@ -231,28 +240,28 @@ export class NotificationCenterViewModel {
   private kindTag(item: V2exNotification, body: string): string {
     const text = `${item.title || ''} ${body} ${this.replyContent(item)} ${item.payload || ''} ${item.payload_rendered || ''}`.toLowerCase()
     if (this.containsAny(text, ['提到了你', 'mentioned you', 'mention'])) {
-      return '提及'
+      return KIND_MENTION
     }
     if (this.containsAny(text, ['回复了你', '回复了你的', 'replied', 'reply'])) {
-      return '回复'
+      return KIND_REPLY
     }
     if (this.containsAny(text, ['感谢了你', 'thanks', 'thanked'])) {
-      return '感谢'
+      return KIND_THANKS
     }
     if (this.containsAny(text, ['收藏了你', 'favorite', 'favorited', '收藏'])) {
-      return '收藏'
+      return KIND_FAVORITE
     }
     if (this.containsAny(text, ['关注了你', 'followed', '关注'])) {
-      return '关注'
+      return KIND_FOLLOW
     }
     if (this.containsAny(text, ['system', '系统'])) {
-      return '系统'
+      return KIND_SYSTEM
     }
-    return body || item.title ? '通知' : '系统'
+    return body || item.title ? KIND_NOTIFICATION : KIND_SYSTEM
   }
 
   private title(item: V2exNotification): string {
-    return item.topic_title || item.title || item.member?.username || '通知'
+    return item.topic_title || item.title || item.member?.username || '...'
   }
 
   private body(item: V2exNotification): string {
@@ -260,21 +269,21 @@ export class NotificationCenterViewModel {
   }
 
   private displayBody(kindTag: string, body: string): string {
-    if (kindTag === '收藏') {
+    if (kindTag === KIND_FAVORITE) {
       return ''
     }
     return body
   }
 
   private displayReplyContent(kindTag: string, item: V2exNotification): string {
-    if (kindTag === '收藏') {
+    if (kindTag === KIND_FAVORITE) {
       return ''
     }
     return this.replyContent(item)
   }
 
   private displayReplyRenderedContent(kindTag: string, item: V2exNotification): string {
-    if (kindTag === '收藏') {
+    if (kindTag === KIND_FAVORITE) {
       return ''
     }
     return this.replyRenderedContent(item)
@@ -309,7 +318,7 @@ export class NotificationCenterViewModel {
     return this.decodeHtml(clean
       .replace(/<script[\s\S]*?<\/script>/gi, ' ')
       .replace(/<style[\s\S]*?<\/style>/gi, ' ')
-      .replace(/<img\b[^>]*>/gi, ' 图片 ')
+      .replace(/<img\b[^>]*>/gi, ' [IMG] ')
       .replace(/<br\s*\/?>/gi, ' ')
       .replace(/<\/p>/gi, ' ')
       .replace(/<[^>]+>/g, ' '))
@@ -369,7 +378,7 @@ export class NotificationCenterViewModel {
 
   private isUnread(item: V2exNotification): boolean {
     const tag = this.readTag(item)
-    return tag === '未读'
+    return tag === READ_TAG_UNREAD
   }
 
   private containsAny(text: string, needles: string[]): boolean {

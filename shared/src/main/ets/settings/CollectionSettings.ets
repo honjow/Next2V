@@ -21,6 +21,7 @@ import type {
 import { LocalDataPublisher } from './LocalDataPublisher'
 import { deleteKeysAndFlush, withPreferencesStore } from './SettingsStorage'
 import { STORE_NAME_COLLECTIONS } from './SettingsStores'
+import { AppStrings } from '../i18n/AppStrings'
 
 export type {
   LocalContentStats,
@@ -445,7 +446,7 @@ export class CollectionSettings {
       ])
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '清理本地收藏与阅读记录失败')
+      throw new Error(e.message || AppStrings.text(AppStrings.R_COLLECTION_CLEAR_ALL_FAILED, 'Failed to clear local collection and reading records'))
     }
   }
 

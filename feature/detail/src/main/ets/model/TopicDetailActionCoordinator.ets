@@ -162,12 +162,12 @@ export class TopicDetailActionCoordinator {
 
   static topicFavoriteMessage(title: string, verb: string): string {
     const cleanTitle = (title || '').trim()
-    return cleanTitle ? `确定${verb}《${cleanTitle}》吗？` : `确定${verb}该主题吗？`
+    return cleanTitle ? AppStrings.format(AppStrings.text(AppStrings.R_CONFIRM_TOPIC_FAVORITE_FORMAT, '{0}《{1}》?'), [verb, cleanTitle]) : AppStrings.format(AppStrings.text(AppStrings.R_CONFIRM_TOPIC_FAVORITE_NAMELESS_FORMAT, '{0} this topic?'), [verb])
   }
 
   static topicThankMessage(title: string): string {
     const cleanTitle = (title || '').trim()
-    return cleanTitle ? `确定感谢《${cleanTitle}》吗？` : '确定感谢该主题吗？'
+    return cleanTitle ? AppStrings.format(AppStrings.text(AppStrings.R_CONFIRM_TOPIC_THANK_FORMAT, 'Thank《{0}》?'), [cleanTitle]) : AppStrings.text(AppStrings.R_CONFIRM_TOPIC_THANK_NAMELESS, 'Thank this topic?')
   }
 
   static replyActionMessage(verb: string, username: string): string {
@@ -175,7 +175,7 @@ export class TopicDetailActionCoordinator {
   }
 
   static parseActionFailureMessage(verb: string): string {
-    return `解析${verb}操作失败`
+    return AppStrings.format(AppStrings.text(AppStrings.R_PARSE_ACTION_FAILED_FORMAT, 'Failed to parse {0} action'), [verb])
   }
 
   static topicThankGuard(options: TopicThankGuardOptions): ActionGuardResult {
@@ -196,7 +196,7 @@ export class TopicDetailActionCoordinator {
       return { allowed: false, message: '' }
     }
     if (!TopicDetailActionCoordinator.hasValidReply(options.reply)) {
-      return { allowed: false, message: '回复信息缺失' }
+      return { allowed: false, message: AppStrings.text(AppStrings.R_REPLY_INFO_MISSING, 'Reply info missing') }
     }
     if (options.thanked) {
       return { allowed: false, message: AppStrings.text($r('app.string.already_thanked'), 'Already thanked') }
@@ -215,7 +215,7 @@ export class TopicDetailActionCoordinator {
       return { allowed: false, message: AppStrings.text($r('app.string.api_error_auth_required'), 'Login required') }
     }
     if (options.reply !== undefined && !TopicDetailActionCoordinator.hasValidReply(options.reply)) {
-      return { allowed: false, message: '回复信息缺失' }
+      return { allowed: false, message: AppStrings.text(AppStrings.R_REPLY_INFO_MISSING, 'Reply info missing') }
     }
     return { allowed: true, message: '' }
   }
@@ -231,7 +231,7 @@ export class TopicDetailActionCoordinator {
     return {
       title,
       message: TopicDetailActionCoordinator.topicFavoriteMessage(topicTitle, verb),
-      cancelLabel: '取消',
+      cancelLabel: AppStrings.text($r('app.string.common_cancel'), 'Cancel'),
       confirmLabel: verb,
     }
   }
@@ -240,14 +240,14 @@ export class TopicDetailActionCoordinator {
     return {
       title,
       message: TopicDetailActionCoordinator.replyActionMessage(verb, reply.member.username),
-      cancelLabel: '取消',
+      cancelLabel: AppStrings.text($r('app.string.common_cancel'), 'Cancel'),
       confirmLabel: verb,
     }
   }
 
   static thankedFromTopicThankLoadError(error: Error): boolean {
     const message = error.message || ''
-    return message.indexOf(AppStrings.text($r('app.string.already_thanked'), 'Already thanked')) >= 0 || message.indexOf('已经感谢过') >= 0
+    return message.indexOf(AppStrings.text($r('app.string.already_thanked'), 'Already thanked')) >= 0
   }
 
   static replyThankLockState(reply: V2exReply): ReplyThankLockState {

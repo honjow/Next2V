@@ -66,7 +66,7 @@ export struct TopicEditorPage {
       SecondaryFormScaffold({ includeKeyboardPadding: true }) {
       Column({ space: ThemeConstants.SPACE_SM }) {
         Row({ space: ThemeConstants.SPACE_SM }) {
-          TextInput({ placeholder: '节点（如 create）', text: this.nodeName })
+          TextInput({ placeholder: AppStrings.text(AppStrings.R_TOPIC_EDITOR_NODE_PLACEHOLDER, 'Node (e.g. create)'), text: this.nodeName })
             .height(44)
             .fontSize(ThemeConstants.FONT_SIZE_BODY)
             .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
@@ -76,7 +76,7 @@ export struct TopicEditorPage {
               this.nodeName = value
               this.scheduleSaveDraft()
             })
-          Button('选择')
+          Button(AppStrings.text(AppStrings.R_TOPIC_EDITOR_SELECT_NODE, 'Select'))
             .fontSize(ThemeConstants.FONT_SIZE_TAG)
             .height(44)
             .type(ButtonType.Normal)
@@ -86,7 +86,7 @@ export struct TopicEditorPage {
         }
         .width('100%')
 
-        TextInput({ placeholder: '标题', text: this.title })
+        TextInput({ placeholder: AppStrings.text(AppStrings.R_TOPIC_EDITOR_TITLE_PLACEHOLDER, 'Title'), text: this.title })
           .height(44)
           .fontSize(ThemeConstants.FONT_SIZE_BODY)
           .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
@@ -100,12 +100,15 @@ export struct TopicEditorPage {
           previewActive: this.isPreview,
           onEdit: () => { this.isPreview = false },
           onPreview: () => { this.isPreview = true },
-          onBold: () => { this.insertInlineMarkdown('**', '**', '文字') },
-          onItalic: () => { this.insertInlineMarkdown('*', '*', '文字') },
-          onCode: () => { this.insertInlineMarkdown('`', '`', '代码') },
+          onBold: () => { this.insertInlineMarkdown('**', '**', AppStrings.text(AppStrings.R_MARKDOWN_PLACEHOLDER_TEXT, 'Text')) },
+          onItalic: () => { this.insertInlineMarkdown('*', '*', AppStrings.text(AppStrings.R_MARKDOWN_PLACEHOLDER_TEXT, 'Text')) },
+          onCode: () => { this.insertInlineMarkdown('`', '`', AppStrings.text(AppStrings.R_MARKDOWN_PLACEHOLDER_CODE, 'Code')) },
           onQuote: () => { this.insertLinePrefix('> ') },
           onList: () => { this.insertLinePrefix('- ') },
-          onLink: () => { this.insertInlineMarkdown('[', '](https://)', '文字', '[文字](https://'.length) },
+          onLink: () => {
+            const textHolder = AppStrings.text(AppStrings.R_MARKDOWN_PLACEHOLDER_TEXT, 'Text')
+            this.insertInlineMarkdown('[', '](https://)', textHolder, 1 + textHolder.length + '](https://'.length)
+          },
           onImage: () => { this.insertImageLinkTemplate() },
           onClear: () => { this.confirmClearDraft() }
         })
@@ -117,7 +120,7 @@ export struct TopicEditorPage {
         }
 
         if (!this.isPreview) {
-          TextArea({ placeholder: '正文（Markdown）', text: this.content, controller: this.contentController })
+          TextArea({ placeholder: AppStrings.text(AppStrings.R_EDITOR_BODY_PLACEHOLDER, 'Body (Markdown)'), text: this.content, controller: this.contentController })
             .fontSize(ThemeConstants.FONT_SIZE_BODY)
             .height(320)
             .borderRadius(ThemeConstants.RADIUS_MD)
@@ -132,7 +135,7 @@ export struct TopicEditorPage {
             })
         } else {
           if (this.content.trim().length === 0) {
-            Text('暂无内容')
+            Text(AppStrings.text(AppStrings.R_EDITOR_EMPTY_PREVIEW, 'No content yet'))
               .fontSize(ThemeConstants.FONT_SIZE_BODY)
               .fontColor($r('sys.color.font_secondary'))
               .padding({ top: ThemeConstants.SPACE_MD, bottom: ThemeConstants.SPACE_MD })
@@ -151,7 +154,7 @@ export struct TopicEditorPage {
             .fontColor($r('sys.color.font_secondary'))
         }
 
-        Button(this.isSubmitting ? '提交中...' : '提交')
+        Button(this.isSubmitting ? AppStrings.text(AppStrings.R_EDITOR_SUBMITTING, 'Submitting...') : AppStrings.text(AppStrings.R_EDITOR_SUBMIT, 'Submit'))
           .fontSize(ThemeConstants.FONT_SIZE_TAG)
           .height(40)
           .width('100%')
@@ -169,7 +172,8 @@ export struct TopicEditorPage {
   }
 
   private insertImageLinkTemplate(): void {
-    this.insertInlineMarkdown('![', '](https://)', '图片', '![图片](https://'.length)
+    const imgHolder = AppStrings.text(AppStrings.R_MARKDOWN_PLACEHOLDER_IMAGE, 'Image')
+    this.insertInlineMarkdown('![', '](https://)', imgHolder, 2 + imgHolder.length + '](https://'.length)
   }
 
   private insertInlineMarkdown(prefix: string, suffix: string, placeholder: string, caretOffset: number = -1): void {
@@ -254,11 +258,11 @@ export struct TopicEditorPage {
       return
     }
     this.getUIContext().showAlertDialog({
-      title: '清空草稿',
-      message: '确定清空当前发帖草稿吗？',
-      primaryButton: { value: '取消', action: () => { } },
+      title: AppStrings.text(AppStrings.R_EDITOR_CLEAR_DRAFT_TITLE, 'Clear draft'),
+      message: AppStrings.text(AppStrings.R_EDITOR_CLEAR_DRAFT_MESSAGE, 'Clear this topic draft?'),
+      primaryButton: { value: AppStrings.text($r('app.string.common_cancel'), 'Cancel'), action: () => { } },
       secondaryButton: {
-        value: '清空',
+        value: AppStrings.text($r('app.string.common_clear'), 'Clear'),
         fontColor: Color.Red,
         action: () => { this.clearDraft() }
       }
@@ -280,7 +284,7 @@ export struct TopicEditorPage {
         promptAction.openToast({ message: $r('app.string.common_cleared') }).catch((_error: Error) => { })
       })
       .catch((_error: Error) => {
-        promptAction.openToast({ message: '清空失败' }).catch((_error2: Error) => { })
+        promptAction.openToast({ message: AppStrings.text(AppStrings.R_EDITOR_CLEAR_DRAFT_FAILED, 'Clear failed') }).catch((_error2: Error) => { })
       })
   }
 
@@ -316,13 +320,12 @@ export struct TopicEditorPage {
     }
     const cleanNode = this.nodeName.trim()
     const cleanTitle = this.title.trim()
-    const message = `确定在节点「${cleanNode}」发布主题《${cleanTitle}》吗？\n\n` +
-      'V2EX 发帖通常至少消耗 20 铜币，提交后会修改你的账号状态。'
+    const message = AppStrings.format(AppStrings.text(AppStrings.R_EDITOR_CONFIRM_POST_FORMAT, 'Post《{1}》in node「{0}」?\n\nV2EX posting usually costs at least 20 copper coins and will change your account state.'), [cleanNode, cleanTitle])
     this.getUIContext().showAlertDialog({
-      title: '确认发帖',
+      title: AppStrings.text(AppStrings.R_EDITOR_CONFIRM_POST_TITLE, 'Confirm post'),
       message: message,
-      primaryButton: { value: '取消', action: () => { } },
-      secondaryButton: { value: '发布', action: () => { this.submit() } }
+      primaryButton: { value: AppStrings.text($r('app.string.common_cancel'), 'Cancel'), action: () => { } },
+      secondaryButton: { value: AppStrings.text(AppStrings.R_EDITOR_PUBLISH, 'Publish'), action: () => { this.submit() } }
     })
   }
 

@@ -2,6 +2,7 @@ import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
 import { V2exNotification } from '../network/NetworkTypes'
 import { STORE_NAME_NOTIFICATIONS } from './SettingsStores'
+import { AppStrings } from '../i18n/AppStrings'
 
 const STORE_NAME: string = STORE_NAME_NOTIFICATIONS
 const KEY_CACHE: string = 'lastLoadedNotifications'
@@ -69,7 +70,7 @@ export class NotificationSettings {
       store.flushSync()
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '清理通知缓存失败')
+      throw new Error(e.message || AppStrings.text(AppStrings.R_NOTIFICATION_CACHE_CLEAR_FAILED, 'Failed to clear notification cache'))
     }
   }
 

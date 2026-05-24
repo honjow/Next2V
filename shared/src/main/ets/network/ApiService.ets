@@ -63,7 +63,7 @@ interface SameOriginRequestUrls {
 export class V2exCookieTwoFactorRequiredError extends Error {
   path: string
 
-  constructor(path: string, message: string = 'V2EX 需要完成两步验证') {
+  constructor(path: string, message: string = 'V2EX requires two-factor verification') {
     super(message)
     this.name = 'V2exCookieTwoFactorRequiredError'
     this.path = path
@@ -867,7 +867,7 @@ export class ApiService {
       'ignore',
       'topic',
       topicId,
-      '主题不可忽略或已被忽略',
+      'Topic cannot be ignored or already ignored',
     )
     return { topicId, actionPath }
   }
@@ -883,7 +883,7 @@ export class ApiService {
       cookie,
       action.actionPath,
       `/t/${action.topicId}`,
-      '忽略失败',
+      'Ignore failed',
     )
   }
 
@@ -898,7 +898,7 @@ export class ApiService {
       'ignore',
       'reply',
       replyId,
-      '回复不可忽略或已被忽略',
+      'Reply cannot be ignored or already ignored',
     )
     return { replyId, actionPath }
   }
@@ -911,7 +911,7 @@ export class ApiService {
     if (!action || action.replyId <= 0 || !action.actionPath) {
       throw ApiErrors.missingIgnoreAction()
     }
-    await this.executeCookieActionWithCookie(cookie, action.actionPath, `/t/${topicId}`, '忽略失败')
+    await this.executeCookieActionWithCookie(cookie, action.actionPath, `/t/${topicId}`, 'Ignore failed')
   }
 
   async getTopicReportActionWithCookie(
@@ -924,7 +924,7 @@ export class ApiService {
       'report',
       'topic',
       topicId,
-      '主题不可报告或已报告',
+      'Topic cannot be reported or already reported',
     )
     return { topicId, actionPath }
   }
@@ -940,7 +940,7 @@ export class ApiService {
       cookie,
       action.actionPath,
       `/t/${action.topicId}`,
-      '报告失败',
+      'Report failed',
     )
   }
 
@@ -955,7 +955,7 @@ export class ApiService {
       'report',
       'reply',
       replyId,
-      '回复不可报告或已报告',
+      'Reply cannot be reported or already reported',
     )
     return { replyId, actionPath }
   }
@@ -968,7 +968,7 @@ export class ApiService {
     if (!action || action.replyId <= 0 || !action.actionPath) {
       throw ApiErrors.missingReportAction()
     }
-    await this.executeCookieActionWithCookie(cookie, action.actionPath, `/t/${topicId}`, '报告失败')
+    await this.executeCookieActionWithCookie(cookie, action.actionPath, `/t/${topicId}`, 'Report failed')
   }
 
   /**
@@ -1254,9 +1254,9 @@ export class ApiService {
   }
 
   private static resolveCookieRequestUrls(baseUrl: string, pathOrUrl: string, refererPath: string): SameOriginRequestUrls {
-    const url = ApiService.resolveSameOriginUrl(baseUrl, pathOrUrl, '操作路径')
+    const url = ApiService.resolveSameOriginUrl(baseUrl, pathOrUrl, 'action path')
     const refererClean = (refererPath || '').trim()
-    const refererUrl = refererClean ? ApiService.resolveSameOriginUrl(baseUrl, refererClean, '来源路径') : ''
+    const refererUrl = refererClean ? ApiService.resolveSameOriginUrl(baseUrl, refererClean, 'referer path') : ''
     return { url, refererUrl }
   }
 
@@ -1308,7 +1308,7 @@ export class ApiService {
   }
 
   private static safeOperationErrorMessage(error: Error): string {
-    const message = error.message || '请求失败'
+    const message = error.message || 'Request failed'
     return message
       .replace(/once=[^\s&]+/gi, 'once=<redacted>')
       .replace(/https?:\/\/[^\s]+/gi, '<url>')
@@ -1374,7 +1374,7 @@ export class ApiService {
     try {
       const data = JSON.parse(clean) as Record<string, Object>
       if (data['success'] === false) {
-        const message = (data['message'] as string) || '感谢失败'
+        const message = (data['message'] as string) || 'Thank failed'
         throw ApiErrors.thankFailed(message)
       }
     } catch (error) {

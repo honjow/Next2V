@@ -44,7 +44,7 @@ export struct NodeTopicPage {
         isLoadingMore: this.vm.isNodeTopicsLoadingMore,
         hasMore: this.vm.nodeTopicsHasMore,
         loadMoreErrorMessage: this.vm.nodeTopicsLoadMoreError,
-        loadMoreRetryLabel: '重试',
+        loadMoreRetryLabel: AppStrings.text(AppStrings.R_COMMON_RETRY, 'Retry'),
         showFooter: this.vm.nodeTopics.length > 0,
         onRefresh: async () => { await this.refreshData() },
         onReachEnd: () => { this.loadMore() },
@@ -96,12 +96,12 @@ export struct NodeTopicPage {
   }
 
   @Builder EmptyView() {
-    CardEmptyState({ message: '暂无主题', expand: false })
+    CardEmptyState({ message: AppStrings.text(AppStrings.R_NODE_NO_TOPICS, 'No topics'), expand: false })
   }
 
   @Builder ErrorView() {
     PageErrorState({
-      message: this.vm.errorMessage || '节点主题加载失败',
+      message: this.vm.errorMessage || AppStrings.text(AppStrings.R_NODE_LOAD_FAILED, 'Failed to load node topics'),
       expand: false,
       retryAction: () => {
         this.loadData()
@@ -161,7 +161,7 @@ export struct NodeTopicPage {
     }
     const cleanName = (this.nodeName || '').trim()
     if (!cleanName) {
-      promptAction.openToast({ message: '节点信息缺失' }).catch((_error: Error) => { })
+      promptAction.openToast({ message: AppStrings.text(AppStrings.R_NODE_INFO_MISSING, 'Node info missing') }).catch((_error: Error) => { })
       return
     }
     this.isSiteNodeFavoriteLoading = true
@@ -181,11 +181,21 @@ export struct NodeTopicPage {
 
   private confirmSiteNodeFavoriteToggle(cookie: string, nodeName: string, toggle: V2exToggleAction): void {
     const title = (this.nodeTitle || this.nodeName || '').trim()
-    const verb = this.isSiteNodeFavorited ? '取消收藏' : '收藏'
+    const verb = this.isSiteNodeFavorited
+      ? AppStrings.text(AppStrings.R_SITE_FAVORITE_ACTION_UNFAVORITE, 'Unfavorite')
+      : AppStrings.text(AppStrings.R_SITE_FAVORITE_ACTION_FAVORITE, 'Favorite')
     this.getUIContext().showAlertDialog({
-      title: '站内收藏',
-      message: title ? `确定${verb}节点「${title}」吗？` : `确定${verb}该节点吗？`,
-      primaryButton: { value: '取消', action: () => { } },
+      title: AppStrings.text(AppStrings.R_SITE_FAVORITE_TITLE, 'Site Favorite'),
+      message: title
+        ? AppStrings.format(
+            AppStrings.text(AppStrings.R_SITE_FAVORITE_CONFIRM, 'Confirm {0} node "{1}"?'),
+            [verb, title]
+          )
+        : `${verb} this node?`,
+      primaryButton: {
+        value: AppStrings.text(AppStrings.R_COMMON_CANCEL, 'Cancel'),
+        action: () => { }
+      },
       secondaryButton: { value: verb, action: () => { this.executeSiteNodeFavoriteToggle(cookie, nodeName, toggle) } }
     })
   }
@@ -254,7 +264,7 @@ export struct NodeTopicPage {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     const nodeName = this.currentNodeName()
     if (!nodeName) {
-      promptAction.openToast({ message: '节点信息缺失' }).catch((_error: Error) => { })
+      promptAction.openToast({ message: AppStrings.text(AppStrings.R_NODE_INFO_MISSING, 'Node info missing') }).catch((_error: Error) => { })
       return
     }
     const node: SavedNode = {
@@ -350,7 +360,10 @@ export struct NodeTopicPage {
     }
     const topicCount = this.vm.nodeDetail?.topics || 0
     if (topicCount > 0) {
-      subtitleParts.push(`${topicCount} 个主题`)
+      subtitleParts.push(AppStrings.format(
+        AppStrings.text(AppStrings.R_NODE_TOPICS_COUNT, '{0} topics'),
+        [String(topicCount)]
+      ))
     }
     this.nodeTopicSubtitle = subtitleParts.join(' · ')
   }

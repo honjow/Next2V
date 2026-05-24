@@ -390,15 +390,15 @@ export class V2exNativeAuthService {
     const problem = (problemMessage || '').trim()
     if (problem) {
       if (problem.indexOf('验证码') >= 0 || problem.toLowerCase().indexOf('captcha') >= 0) {
-        return '验证码不正确，请重新输入'
+        return 'The captcha is incorrect. Please try again.'
       }
       if (problem.indexOf('密码') >= 0 || problem.toLowerCase().indexOf('password') >= 0 ||
         problem.toLowerCase().indexOf('username') >= 0 || problem.indexOf('用户名') >= 0) {
-        return '用户名或密码不正确，请检查后重试'
+        return 'The username or password is incorrect. Please check and try again.'
       }
       return problem
     }
-    return challenge.captchaField ? '用户名、密码或验证码不正确，请检查后重试' : '用户名或密码不正确，请检查后重试'
+    return challenge.captchaField ? 'The username, password, or captcha is incorrect. Please check and try again.' : 'The username or password is incorrect. Please check and try again.'
   }
 
   private static locationPath(location: string): string {

@@ -4,6 +4,7 @@ import { BusinessError } from '@ohos.base'
 import { DiagnosticLogger } from '../diagnostics/DiagnosticLogger'
 import { DiagnosticContextObject } from '../diagnostics/DiagnosticsRedactor'
 import { DiagnosticsSettings } from './DiagnosticsSettings'
+import { AppStrings } from '../i18n/AppStrings'
 
 const DIAGNOSTICS_EXPORT_DIR = 'diagnostics_exports'
 const DIAGNOSTICS_EXPORT_PREFIX = 'next2v-log-export-'
@@ -29,7 +30,7 @@ export class DiagnosticsFileExport {
     let fileName = ''
     let target: DiagnosticsExportTarget | null = null
     try {
-      const text = DiagnosticsSettings.exportText() || '暂无诊断日志'
+      const text = DiagnosticsSettings.exportText() || AppStrings.text(AppStrings.R_NO_DIAGNOSTICS_LOGS, 'No diagnostics logs')
       fileName = DiagnosticsFileExport.safeFileName(new Date())
       phase = 'choose_directory'
       target = DiagnosticsFileExport.exportTarget(context)

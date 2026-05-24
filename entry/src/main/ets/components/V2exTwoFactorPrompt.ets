@@ -21,7 +21,7 @@ import type { NativeLoginSnapshot } from 'shared'
 export struct V2exTwoFactorPrompt {
   @Link visible: boolean
   @Prop cookie: string = ''
-  @Prop title: string = '两步验证'
+  @Prop title: string = AppStrings.text(AppStrings.R_TWO_FACTOR_TITLE, 'Two-Factor Verification')
   onSuccess?: () => void
   onCancel?: () => void
 
@@ -40,14 +40,14 @@ export struct V2exTwoFactorPrompt {
     }) {
       ListItem() {
         Column({ space: ThemeConstants.SPACE_MD }) {
-          Text('V2EX 需要完成两步验证后才能继续访问账号内容。')
+          Text(AppStrings.text(AppStrings.R_TWO_FACTOR_DESCRIPTION, 'V2EX requires two-factor verification to continue accessing account content.'))
             .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
             .fontColor($r('sys.color.font_secondary'))
             .width('100%')
 
           AppTextField({
             text: $code,
-            placeholder: '输入 6 位验证码',
+            placeholder: AppStrings.text(AppStrings.R_TWO_FACTOR_CODE_PLACEHOLDER, 'Enter 6-digit code'),
             inputType: InputType.Number,
             onTextChange: (value: string) => { this.code = value }
           })
@@ -61,14 +61,14 @@ export struct V2exTwoFactorPrompt {
           }
 
           AppActionButton({
-            label: this.isSubmitting ? '验证中…' : '完成验证',
+            label: this.isSubmitting ? AppStrings.text(AppStrings.R_TWO_FACTOR_VERIFYING, 'Verifying\u2026') : AppStrings.text(AppStrings.R_TWO_FACTOR_VERIFY_BUTTON, 'Verify'),
             primary: true,
             isEnabled: !this.isSubmitting,
             action: () => { this.submit() }
           })
 
           AppActionButton({
-            label: '稍后再说',
+            label: AppStrings.text(AppStrings.R_TWO_FACTOR_LATER, 'Later'),
             primary: false,
             isEnabled: !this.isSubmitting,
             action: () => { this.cancel() }

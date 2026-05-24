@@ -1337,6 +1337,98 @@
       "value": "Cookie login state is invalid. Please confirm login is complete."
     },
     {
+      "name": "login_password_placeholder",
+      "value": "Password"
+    },
+    {
+      "name": "login_captcha_placeholder",
+      "value": "Captcha"
+    },
+    {
+      "name": "login_button_preparing",
+      "value": "Preparing…"
+    },
+    {
+      "name": "login_button_logging_in",
+      "value": "Signing in…"
+    },
+    {
+      "name": "login_button_label",
+      "value": "Sign in"
+    },
+    {
+      "name": "login_form_not_loaded",
+      "value": "Login form not loaded, please try again"
+    },
+    {
+      "name": "login_captcha_form_not_loaded",
+      "value": "Captcha form not loaded, please refresh"
+    },
+    {
+      "name": "login_success",
+      "value": "Login successful"
+    },
+    {
+      "name": "two_factor_title",
+      "value": "Two-Factor Verification"
+    },
+    {
+      "name": "two_factor_description",
+      "value": "V2EX requires two-factor verification to continue accessing account content."
+    },
+    {
+      "name": "two_factor_code_placeholder",
+      "value": "Enter 6-digit code"
+    },
+    {
+      "name": "two_factor_verifying",
+      "value": "Verifying…"
+    },
+    {
+      "name": "two_factor_verify_button",
+      "value": "Verify"
+    },
+    {
+      "name": "two_factor_later",
+      "value": "Later"
+    },
+    {
+      "name": "login_to_view_topics",
+      "value": "Sign in to view favorite topics"
+    },
+    {
+      "name": "login_to_view_nodes",
+      "value": "Sign in to view favorite nodes"
+    },
+    {
+      "name": "web_login_opening",
+      "value": "Opening web login..."
+    },
+    {
+      "name": "web_login_loading_url",
+      "value": "Loading {0}"
+    },
+    {
+      "name": "web_login_loading_page",
+      "value": "Loading web login..."
+    },
+    {
+      "name": "web_login_load_failed",
+      "value": "Web login failed to load"
+    },
+    {
+      "name": "web_login_saving",
+      "value": "Saving login state..."
+    },
+    {
+      "name": "web_login_opening_url",
+      "value": "Opening {0}"
+    },
+    {
+      "name": "web_login_not_complete",
+      "value": "Web login not yet complete"
+    },
+    {
       "name": "reply_submitted",
       "value": "Reply submitted"
     },
@@ -1411,6 +1503,18 @@
     {
       "name": "discover_hot",
       "value": "Hot"
+    },
+    {
+      "name": "discover_latest_topics",
+      "value": "Latest topics"
+    },
+    {
+      "name": "discover_recent_updates",
+      "value": "Recently updated"
+    },
+    {
+      "name": "discover_site_rank",
+      "value": "Site-wide hot"
     },
     {
       "name": "node_selected_format",
@@ -1519,6 +1623,182 @@
     {
       "name": "search_source_nodes_library",
       "value": "Node library"
+    },
+    {
+      "name": "search_source_cache_list",
+      "value": "Cache (list)"
+    },
+    {
+      "name": "search_source_cache_detail",
+      "value": "Cache (detail)"
+    },
+    {
+      "name": "relative_just_now",
+      "value": "Just now"
+    },
+    {
+      "name": "relative_minutes_ago",
+      "value": "{0} min ago"
+    },
+    {
+      "name": "relative_hours_ago",
+      "value": "{0} h ago"
+    },
+    {
+      "name": "relative_days_ago",
+      "value": "{0} d ago"
+    },
+    {
+      "name": "relative_months_ago",
+      "value": "{0} mo ago"
+    },
+    {
+      "name": "relative_years_ago",
+      "value": "{0} y ago"
+    },
+    {
+      "name": "user_profile_location",
+      "value": "Location"
+    },
+    {
+      "name": "user_profile_website",
+      "value": "Website"
+    },
+    {
+      "name": "user_profile_member_number",
+      "value": "Member #{0} · {1}"
+    },
+    {
+      "name": "user_profile_no_topics",
+      "value": "No topics"
+    },
+    {
+      "name": "user_profile_no_replies",
+      "value": "No replies"
+    },
+    {
+      "name": "user_profile_view_all_topics",
+      "value": "View all topics"
+    },
+    {
+      "name": "user_profile_view_all_replies",
+      "value": "View all replies"
+    },
+    {
+      "name": "user_profile_action_failed",
+      "value": "Action failed"
+    },
+    {
+      "name": "user_tab_topics_label",
+      "value": "Topics"
+    },
+    {
+      "name": "user_tab_replies_label",
+      "value": "Replies"
+    },
+    {
+      "name": "user_tab_topics_count",
+      "value": "Topics {0}"
+    },
+    {
+      "name": "user_tab_replies_count",
+      "value": "Replies {0}"
+    },
+    {
+      "name": "user_action_follow",
+      "value": "Follow"
+    },
+    {
+      "name": "user_action_unfollow",
+      "value": "Unfollow"
+    },
+    {
+      "name": "user_action_block",
+      "value": "Block"
+    },
+    {
+      "name": "user_action_unblock",
+      "value": "Unblock"
+    },
+    {
+      "name": "node_no_topics",
+      "value": "No topics"
+    },
+    {
+      "name": "node_load_failed",
+      "value": "Failed to load node topics"
+    },
+    {
+      "name": "node_info_missing",
+      "value": "Node info missing"
+    },
+    {
+      "name": "node_picker_current_node_format",
+      "value": "Current: {0}"
+    },
+    {
+      "name": "node_picker_helper",
+      "value": "Click a node to auto-fill into the topic draft."
+    },
+    {
+      "name": "node_picker_search_placeholder",
+      "value": "Search nodes"
+    },
+    {
+      "name": "node_topics_count",
+      "value": "{0} topics"
+    },
+    {
+      "name": "site_favorite_title",
+      "value": "Site Favorite"
+    },
+    {
+      "name": "site_favorite_confirm",
+      "value": "Confirm {0} node \"{1}\"?"
+    },
+    {
+      "name": "site_favorite_action_favorite",
+      "value": "Favorite"
+    },
+    {
+      "name": "site_favorite_action_unfavorite",
+      "value": "Unfavorite"
+    },
+    {
+      "name": "topic_editor_node_placeholder",
+      "value": "Node (e.g. create)"
+    },
+    {
+      "name": "topic_editor_select_node",
+      "value": "Select"
+    },
+    {
+      "name": "topic_editor_title_placeholder",
+      "value": "Title"
+    },
+    {
+      "name": "common_loading",
+      "value": "Loading…"
+    },
+    {
+      "name": "media_youtube_video",
+      "value": "YouTube video"
+    },
+    {
+      "name": "media_vimeo_video",
+      "value": "Vimeo video"
+    },
+    {
+      "name": "media_imgur_page",
+      "value": "Imgur page"
+    },
+    {
+      "name": "media_v2ex_link",
+      "value": "V2EX link"
+    },
+    {
+      "name": "media_link_label",
+      "value": "Link"
     },
     {
       "name": "api_error_auth_required",
@@ -1703,6 +1983,546 @@
     {
       "name": "api_error_token_missing",
       "value": "Missing token, please configure a Personal Access Token"
+    },
+    {
+      "name": "notification_login_required",
+      "value": "Login to view notifications"
+    },
+    {
+      "name": "notification_empty",
+      "value": "No notifications"
+    },
+    {
+      "name": "notification_delete_title",
+      "value": "Delete notification"
+    },
+    {
+      "name": "notification_delete_confirm",
+      "value": "Delete this notification?"
+    },
+    {
+      "name": "notification_delete_requires_api_auth",
+      "value": "Delete notification requires V2 API authorization"
+    },
+    {
+      "name": "notification_delete_requires_web_session",
+      "value": "Delete notification requires web session"
+    },
+    {
+      "name": "notification_load_failed",
+      "value": "Notifications load failed"
+    },
+    {
+      "name": "notification_go_login",
+      "value": "Login"
+    },
+    {
+      "name": "notification_tag_unread",
+      "value": "Unread"
+    },
+    {
+      "name": "notification_kind_reply",
+      "value": "Reply"
+    },
+    {
+      "name": "notification_kind_mention",
+      "value": "Mention"
+    },
+    {
+      "name": "notification_kind_thanks",
+      "value": "Thanks"
+    },
+    {
+      "name": "notification_kind_favorite",
+      "value": "Favorite"
+    },
+    {
+      "name": "notification_kind_follow",
+      "value": "Follow"
+    },
+    {
+      "name": "notification_kind_system",
+      "value": "System"
+    },
+    {
+      "name": "notification_kind_notification",
+      "value": "Notification"
+    },
+    {
+      "name": "notification_source_web",
+      "value": "Web session"
+    },
+    {
+      "name": "common_load_more",
+      "value": "Load more"
+    },
+    {
+      "name": "search_node_results",
+      "value": "Node results {0}"
+    },
+    {
+      "name": "search_filter_title",
+      "value": "Search filter"
+    },
+    {
+      "name": "search_web_filter_hint",
+      "value": "Web search opens in the system browser without additional in-app filtering."
+    },
+    {
+      "name": "search_discover_nodes_placeholder",
+      "value": "Search nodes"
+    },
+    {
+      "name": "search_N_topics",
+      "value": "{0} topics"
+    },
+    {
+      "name": "search_N_replies",
+      "value": "{0} replies"
+    },
+    {
+      "name": "topic_action_thank_topic",
+      "value": "Thank topic"
+    },
+    {
+      "name": "topic_action_save_later",
+      "value": "Save later"
+    },
+    {
+      "name": "topic_action_ignore_topic",
+      "value": "Ignore topic"
+    },
+    {
+      "name": "topic_action_report_topic",
+      "value": "Report topic"
+    },
+    {
+      "name": "topic_action_copy_title",
+      "value": "Copy title"
+    },
+    {
+      "name": "topic_action_copy_link",
+      "value": "Copy link"
+    },
+    {
+      "name": "topic_action_share_link",
+      "value": "Share link"
+    },
+    {
+      "name": "topic_action_open_browser",
+      "value": "Open in browser"
+    },
+    {
+      "name": "image_preview_invalid_url",
+      "value": "Invalid image URL"
+    },
+    {
+      "name": "image_preview_downloading",
+      "value": "Downloading image…"
+    },
+    {
+      "name": "image_preview_not_an_image",
+      "value": "The link did not return an image"
+    },
+    {
+      "name": "image_preview_download_failed",
+      "value": "Image download failed"
+    },
+    {
+      "name": "image_preview_temp_file_write_failed",
+      "value": "Failed to write temporary file"
+    },
+    {
+      "name": "image_preview_url_empty",
+      "value": "Image URL is empty"
+    },
+    {
+      "name": "image_preview_go_back_retry",
+      "value": "Go back and retry"
+    },
+    {
+      "name": "image_preview_choose_save_location",
+      "value": "Please choose a save location"
+    },
+    {
+      "name": "image_preview_save_failed",
+      "value": "Save failed"
+    },
+    {
+      "name": "image_preview_save_to_gallery_failed",
+      "value": "Failed to save to Gallery"
+    },
+    {
+      "name": "editor_body_placeholder",
+      "value": "Body (Markdown)"
+    },
+    {
+      "name": "editor_empty_preview",
+      "value": "No content yet"
+    },
+    {
+      "name": "editor_submitting",
+      "value": "Submitting..."
+    },
+    {
+      "name": "editor_submit",
+      "value": "Submit"
+    },
+    {
+      "name": "editor_confirm_post_title",
+      "value": "Confirm post"
+    },
+    {
+      "name": "editor_publish",
+      "value": "Publish"
+    },
+    {
+      "name": "editor_clear_draft_title",
+      "value": "Clear draft"
+    },
+    {
+      "name": "editor_clear_draft_message",
+      "value": "Clear this topic draft?"
+    },
+    {
+      "name": "editor_clear_draft_failed",
+      "value": "Clear failed"
+    },
+    {
+      "name": "editor_confirm_post_format",
+      "value": "Post《{1}》in node「{0}」?\n\nV2EX posting usually costs at least 20 copper coins and will change your account state."
+    },
+    {
+      "name": "reply_composer_title",
+      "value": "Write reply"
+    },
+    {
+      "name": "reply_body_placeholder",
+      "value": "Reply body (auto-saved)"
+    },
+    {
+      "name": "reply_clear_draft_title",
+      "value": "Clear draft"
+    },
+    {
+      "name": "reply_clear_draft_message",
+      "value": "Clear this reply draft?"
+    },
+    {
+      "name": "reply_clear_draft_generic_message",
+      "value": "Clear current draft?"
+    },
+    {
+      "name": "reply_clear_failed",
+      "value": "Clear failed"
+    },
+    {
+      "name": "reply_confirm_submit_title",
+      "value": "Submit reply"
+    },
+    {
+      "name": "topic_detail_loading",
+      "value": "Loading..."
+    },
+    {
+      "name": "topic_still_loading",
+      "value": "Topic is still loading"
+    },
+    {
+      "name": "topic_many_replies_title",
+      "value": "Many replies"
+    },
+    {
+      "name": "topic_flat_view",
+      "value": "Flat view"
+    },
+    {
+      "name": "topic_continue_loading",
+      "value": "Continue loading"
+    },
+    {
+      "name": "action_favorite",
+      "value": "Favorite"
+    },
+    {
+      "name": "action_unfavorite",
+      "value": "Unfavorite"
+    },
+    {
+      "name": "action_thank",
+      "value": "Thank"
+    },
+    {
+      "name": "action_ignore",
+      "value": "Ignore"
+    },
+    {
+      "name": "action_report",
+      "value": "Report"
+    },
+    {
+      "name": "reply_action_reply",
+      "value": "Reply"
+    },
+    {
+      "name": "reply_action_login",
+      "value": "Login"
+    },
+    {
+      "name": "reply_ignore_title",
+      "value": "Ignore reply"
+    },
+    {
+      "name": "reply_report_title",
+      "value": "Report reply"
+    },
+    {
+      "name": "reply_thank_title",
+      "value": "Thank reply"
+    },
+    {
+      "name": "topic_share_fallback_title",
+      "value": "V2EX topic"
+    },
+    {
+      "name": "jump_to_floor_title",
+      "value": "Jump to floor"
+    },
+    {
+      "name": "jump_to_floor_placeholder",
+      "value": "Enter floor number"
+    },
+    {
+      "name": "jump_to_floor_button",
+      "value": "Jump"
+    },
+    {
+      "name": "reply_context_title",
+      "value": "Reply context"
+    },
+    {
+      "name": "reply_context_with_floor_format",
+      "value": "#{0} Reply context"
+    },
+    {
+      "name": "reply_context_empty_snippet",
+      "value": "(No content)"
+    },
+    {
+      "name": "reply_context_label_above",
+      "value": "Above"
+    },
+    {
+      "name": "reply_context_label_below",
+      "value": "Below"
+    },
+    {
+      "name": "reply_context_label_current",
+      "value": "Current reply"
+    },
+    {
+      "name": "reply_context_label_mention_format",
+      "value": "Mentioned @{0}"
+    },
+    {
+      "name": "markdown_placeholder_text",
+      "value": "Text"
+    },
+    {
+      "name": "markdown_placeholder_code",
+      "value": "Code"
+    },
+    {
+      "name": "markdown_placeholder_image",
+      "value": "Image"
+    },
+    {
+      "name": "reply_thread_relation_label_format",
+      "value": "Reply {0}"
+    },
+    {
+      "name": "confirm_topic_favorite_format",
+      "value": "{0}《{1}》?"
+    },
+    {
+      "name": "confirm_topic_favorite_nameless_format",
+      "value": "{0} this topic?"
+    },
+    {
+      "name": "confirm_topic_thank_format",
+      "value": "Thank《{0}》?"
+    },
+    {
+      "name": "confirm_topic_thank_nameless",
+      "value": "Thank this topic?"
+    },
+    {
+      "name": "parse_action_failed_format",
+      "value": "Failed to parse {0} action"
+    },
+    {
+      "name": "reply_info_missing",
+      "value": "Reply info missing"
+    },
+    {
+      "name": "load_more_replies_failed",
+      "value": "Load more failed"
+    },
+    {
+      "name": "preloading_all_replies",
+      "value": "Loading all replies…"
+    },
+    {
+      "name": "preloading_progress_format",
+      "value": "Loading all replies {0}/{1}…"
+    },
+    {
+      "name": "preloading_progress_count_format",
+      "value": "Loading all replies {0} items…"
+    },
+    {
+      "name": "topic_detail_tool_floor",
+      "value": "Floor"
+    },
+    {
+      "name": "topic_detail_tool_latest",
+      "value": "Latest"
+    },
+    {
+      "name": "reply_display_mode_origin",
+      "value": "Original"
+    },
+    {
+      "name": "reply_count_format",
+      "value": "{0} replies"
+    },
+    {
+      "name": "draft_load_failed",
+      "value": "Failed to load draft"
+    },
+    {
+      "name": "common_copy_failed",
+      "value": "Copy failed"
+    },
+    {
+      "name": "common_checking_network",
+      "value": "Checking network…"
+    },
+    {
+      "name": "common_image_load_failed",
+      "value": "Image load failed"
+    },
+    {
+      "name": "common_tap_to_retry",
+      "value": "Tap to retry"
+    },
+    {
+      "name": "common_no_content",
+      "value": "No content"
+    },
+    {
+      "name": "common_load_failed_tap_retry",
+      "value": "Load failed, tap to retry"
+    },
+    {
+      "name": "common_decoded_format",
+      "value": "Decoded: {0}"
+    },
+    {
+      "name": "markdown_toolbar_edit",
+      "value": "Edit"
+    },
+    {
+      "name": "markdown_toolbar_preview",
+      "value": "Preview"
+    },
+    {
+      "name": "markdown_toolbar_image",
+      "value": "Image"
+    },
+    {
+      "name": "markdown_toolbar_clear",
+      "value": "Clear"
+    },
+    {
+      "name": "topic_last_reply",
+      "value": "Last reply"
+    },
+    {
+      "name": "topic_replies_count",
+      "value": "{0} replies"
+    },
+    {
+      "name": "code_wrap_scroll",
+      "value": "Scroll"
+    },
+    {
+      "name": "code_wrap_wrap",
+      "value": "Wrap"
+    },
+    {
+      "name": "reply_view_context",
+      "value": "View context"
+    },
+    {
+      "name": "reply_copy_content",
+      "value": "Copy reply content"
+    },
+    {
+      "name": "reply_ignore_reply",
+      "value": "Ignore reply"
+    },
+    {
+      "name": "reply_report_reply",
+      "value": "Report reply"
+    },
+    {
+      "name": "common_wifi_only_image_hint",
+      "value": "Auto-load images on Wi-Fi only"
+    },
+    {
+      "name": "storage_seeded_label_format",
+      "value": "{0}: {1} rows / {2} files"
+    },
+    {
+      "name": "cache_clear_account_failed",
+      "value": "Failed to clear account cache"
+    },
+    {
+      "name": "cache_invalid_seed_filename",
+      "value": "Invalid QA seed cache filename"
+    },
+    {
+      "name": "cache_commit_payload_failed",
+      "value": "Failed to commit cache file"
+    },
+    {
+      "name": "cache_invalid_filename",
+      "value": "Invalid cache filename"
+    },
+    {
+      "name": "cache_filename_conflict",
+      "value": "Cache filename conflict"
+    },
+    {
+      "name": "cache_filename_length_invalid",
+      "value": "Invalid cache filename length"
+    },
+    {
+      "name": "cache_clear_failed",
+      "value": "Failed to clear cache"
+    },
+    {
+      "name": "collection_clear_all_failed",
+      "value": "Failed to clear local collection and reading records"
+    },
+    {
+      "name": "draft_clear_failed",
+      "value": "Failed to clear drafts"
+    },
+    {
+      "name": "notification_cache_clear_failed",
+      "value": "Failed to clear notification cache"
     }
   ]
 }

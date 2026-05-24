@@ -11,6 +11,7 @@ import {
 } from '../model/ReplyComposerDraftCoordinator'
 import {
   ApiService,
+  AppStrings,
   CookieJarSettings,
   DateUtils,
   MarkdownContent,
@@ -78,7 +79,7 @@ export struct ReplyComposerSheet {
 
   build() {
     AppModalScaffold({
-      title: '写回复',
+      title: AppStrings.text(AppStrings.R_REPLY_COMPOSER_TITLE, 'Write reply'),
       compact: true,
       includeKeyboardPadding: true,
       closeAction: () => {
@@ -145,7 +146,7 @@ export struct ReplyComposerSheet {
               .scrollBar(BarState.Off)
             }
           } else {
-            TextArea({ placeholder: '写回复（自动保存草稿）', text: this.content, controller: this.contentController })
+            TextArea({ placeholder: AppStrings.text(AppStrings.R_REPLY_BODY_PLACEHOLDER, 'Reply body (auto-saved)'), text: this.content, controller: this.contentController })
               .fontSize(ThemeConstants.FONT_SIZE_BODY)
               .height(this.composerBodyHeight())
               .width('100%')
@@ -241,11 +242,11 @@ export struct ReplyComposerSheet {
 
   private confirmClearDraft(): void {
     this.getUIContext().showAlertDialog({
-      title: '清空草稿',
-      message: '确定清空当前回复草稿吗？',
-      primaryButton: { value: '取消', action: () => { } },
+      title: AppStrings.text(AppStrings.R_REPLY_CLEAR_DRAFT_TITLE, 'Clear draft'),
+      message: AppStrings.text(AppStrings.R_REPLY_CLEAR_DRAFT_MESSAGE, 'Clear this reply draft?'),
+      primaryButton: { value: AppStrings.text($r('app.string.common_cancel'), 'Cancel'), action: () => { } },
       secondaryButton: {
-        value: '清空',
+        value: AppStrings.text($r('app.string.common_clear'), 'Clear'),
         action: () => {
           this.content = ''
           this.savedAt = 0
@@ -308,10 +309,10 @@ export struct ReplyComposerSheet {
     this.isSubmitDialogShown = true
     this.persistDraft()
     this.getUIContext().showAlertDialog({
-      title: '提交回复',
+      title: AppStrings.text(AppStrings.R_REPLY_CONFIRM_SUBMIT_TITLE, 'Submit reply'),
       message: ReplyComposerCoordinator.sheetSubmitConfirmMessage(),
-      primaryButton: { value: '取消', action: () => { this.isSubmitDialogShown = false } },
-      secondaryButton: { value: '提交', action: () => { this.submitReply() } }
+      primaryButton: { value: AppStrings.text($r('app.string.common_cancel'), 'Cancel'), action: () => { this.isSubmitDialogShown = false } },
+      secondaryButton: { value: AppStrings.text($r('app.string.reply_submit'), 'Submit'), action: () => { this.submitReply() } }
     })
   }
 

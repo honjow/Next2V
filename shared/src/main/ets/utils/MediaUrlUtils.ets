@@ -1,3 +1,5 @@
+import { AppStrings } from '../i18n/AppStrings'
+
 const IMAGE_EXT_REGEX: RegExp = /\.(jpe?g|png|gif|webp|bmp|svg|avif|heic|heif)(?:[?#].*)?$/i
 const IMAGE_QUERY_EXT_REGEX: RegExp = /[?&](?:format|fm|ext|type|output)=([a-z0-9/]+)/i
 const ILLEGAL_TITLE_CHARS: RegExp = /[\\/:*?"<>|]/g
@@ -203,7 +205,7 @@ export class MediaUrlUtils {
     if (youtubeId) {
       return {
         url: url,
-        title: titleFromText || 'YouTube 视频',
+        title: titleFromText || AppStrings.text(AppStrings.R_MEDIA_YOUTUBE_VIDEO, 'YouTube video'),
         subtitle: host || url,
         label: 'YouTube'
       }
@@ -213,7 +215,7 @@ export class MediaUrlUtils {
     if (vimeoId) {
       return {
         url: url,
-        title: titleFromText || 'Vimeo 视频',
+        title: titleFromText || AppStrings.text(AppStrings.R_MEDIA_VIMEO_VIDEO, 'Vimeo video'),
         subtitle: host || url,
         label: 'Vimeo'
       }
@@ -232,7 +234,7 @@ export class MediaUrlUtils {
     if (MediaUrlUtils.isImgurPage(url)) {
       return {
         url: url,
-        title: titleFromText || 'Imgur 图片页',
+        title: titleFromText || AppStrings.text(AppStrings.R_MEDIA_IMGUR_PAGE, 'Imgur page'),
         subtitle: host || url,
         label: 'Imgur'
       }
@@ -241,7 +243,7 @@ export class MediaUrlUtils {
     if (MediaUrlUtils.isHostOrSubdomain(host, 'v2ex.com') || MediaUrlUtils.isHostOrSubdomain(host, 'v2ex.co')) {
       return {
         url: url,
-        title: titleFromText || 'V2EX 链接',
+        title: titleFromText || AppStrings.text(AppStrings.R_MEDIA_V2EX_LINK, 'V2EX link'),
         subtitle: host || url,
         label: 'V2EX'
       }
@@ -251,7 +253,7 @@ export class MediaUrlUtils {
       url: url,
       title: titleFromText || host || url,
       subtitle: url,
-      label: '链接'
+      label: AppStrings.text(AppStrings.R_MEDIA_LINK_LABEL, 'Link')
     }
   }
 

@@ -2,6 +2,7 @@ import { common } from '@kit.AbilityKit'
 import { StorageKeys } from '../constants/StorageKeys'
 import { deleteKeysAndFlush, readJsonArray, readJsonObject, setAppStorageValue, withPreferencesStore, writeJsonValue } from './SettingsStorage'
 import { STORE_NAME_DRAFTS } from './SettingsStores'
+import { AppStrings } from '../i18n/AppStrings'
 
 const STORE_NAME: string = STORE_NAME_DRAFTS
 const KEY_REPLY_DRAFTS: string = 'replyDrafts'
@@ -113,7 +114,7 @@ export class DraftSettings {
       DraftSettings.touchLocalData()
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '清理草稿失败')
+      throw new Error(e.message || AppStrings.text(AppStrings.R_DRAFT_CLEAR_FAILED, 'Failed to clear drafts'))
     }
   }
 

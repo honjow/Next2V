@@ -199,7 +199,7 @@ export struct SearchPage {
             SharedSectionHeader({ title: `${this.topicSectionTitle()} ${this.topicResults.length}` })
             if (this.topicResults.length === 0) {
               EmptyState({
-                message: this.keyword.trim() ? this.emptyTopicHint() : '输入关键词开始搜索',
+                message: this.keyword.trim() ? this.emptyTopicHint() : AppStrings.text($r('app.string.search_enter_keyword_to_start'), 'Enter keywords to start searching'),
                 stateHeight: 96
               })
                 .borderRadius(ThemeConstants.RADIUS_MD)
@@ -228,7 +228,7 @@ export struct SearchPage {
       if (this.showNodeResults()) {
         ListItem() {
           Column() {
-            SharedSectionHeader({ title: `节点结果 ${this.nodeResults.length}` })
+            SharedSectionHeader({ title: AppStrings.format(AppStrings.text($r('app.string.search_node_results'), 'Node results {0}'), [String(this.nodeResults.length)]) })
             if (this.nodeResults.length === 0) {
               EmptyState({
                 message: this.keyword.trim() ? AppStrings.text($r('app.string.search_no_nodes'), 'No matching nodes') : this.emptyNodeHint(),
@@ -307,11 +307,11 @@ export struct SearchPage {
       }, (item: RemoteTopicItem) => `r:${item.id}`)
 
       if (this.remoteLoading) {
-        ListItem() { EmptyState({ message: '搜索中', stateHeight: 88 }) }
+        ListItem() { EmptyState({ message: AppStrings.text($r('app.string.common_searching'), 'Searching'), stateHeight: 88 }) }
       } else if (this.remoteResults.length < this.remoteTotal) {
         ListItem() {
           AppActionButton({
-            label: '加载更多',
+            label: $r('app.string.common_load_more'),
             primary: false,
             action: () => { this.executeRemoteSearch(false) }
           })
@@ -332,7 +332,7 @@ export struct SearchPage {
 
   @Builder SearchFilterSheet() {
     AppModalScaffold({
-      title: '搜索筛选',
+      title: $r('app.string.search_filter_title'),
       closeAction: () => {
         this.filterSheetVisible = false
       }
@@ -341,7 +341,7 @@ export struct SearchPage {
         ListItem() { this.RemoteFilterSheetContent() }
       } else if (this.sourceMode === 'externalWeb') {
         ListItem() {
-          Text('网页搜索会在系统浏览器中打开，不额外提供站内筛选。')
+          Text($r('app.string.search_web_filter_hint'))
             .fontSize(ThemeConstants.FONT_SIZE_BODY)
             .fontColor($r('sys.color.font_secondary'))
             .width('100%')

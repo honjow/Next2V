@@ -1,5 +1,6 @@
 import { common } from '@kit.AbilityKit'
 import { fileIo } from '@kit.CoreFileKit'
+import { AppStrings } from '../i18n/AppStrings'
 import {
   CACHE_PAYLOAD_DIR_NAME,
   CACHE_PAYLOAD_FILE_SUFFIX,
@@ -55,7 +56,7 @@ export function commitStagedPayloadFile(context: common.UIAbilityContext, payloa
   } catch (error) {
     cleanupPreparedPayloadFile(context, payloadPlan)
     const e = error as Error
-    throw new Error(e.message || '提交缓存文件失败')
+    throw new Error(e.message || AppStrings.text(AppStrings.R_CACHE_COMMIT_PAYLOAD_FAILED, 'Failed to commit cache file'))
   }
 }
 
@@ -187,7 +188,7 @@ function ensurePayloadDirectory(context: common.UIAbilityContext): void {
 
 function writePayloadFile(context: common.UIAbilityContext, relativeName: string, payloadText: string): void {
   if (!isSafePayloadFileName(relativeName)) {
-    throw new Error('非法缓存文件名')
+    throw new Error(AppStrings.text(AppStrings.R_CACHE_INVALID_FILENAME, 'Invalid cache filename'))
   }
   let file: fileIo.File | null = null
   try {
@@ -213,7 +214,7 @@ function closeFileBestEffort(file: fileIo.File | null): void {
 
 function committedPayloadFileName(context: common.UIAbilityContext, baseName: string): string {
   if (!isCachePayloadFileName(baseName)) {
-    throw new Error('非法缓存文件名')
+    throw new Error(AppStrings.text(AppStrings.R_CACHE_INVALID_FILENAME, 'Invalid cache filename'))
   }
   const stem = baseName.substring(0, baseName.length - CACHE_PAYLOAD_FILE_SUFFIX.length)
   for (let attempt = 0; attempt < 8; attempt++) {
@@ -222,12 +223,12 @@ function committedPayloadFileName(context: common.UIAbilityContext, baseName: st
       return candidate
     }
   }
-  throw new Error('缓存文件名冲突')
+  throw new Error(AppStrings.text(AppStrings.R_CACHE_FILENAME_CONFLICT, 'Cache filename conflict'))
 }
 
 function stagedPayloadFileName(committedName: string): string {
   if (!isCachePayloadFileName(committedName)) {
-    throw new Error('非法缓存文件名')
+    throw new Error(AppStrings.text(AppStrings.R_CACHE_INVALID_FILENAME, 'Invalid cache filename'))
   }
   return committedName + CACHE_PAYLOAD_STAGED_SUFFIX
 }
@@ -266,7 +267,7 @@ function encodePayloadKey(value: string): string {
     }
   }
   if (encoded.length <= 0 || encoded.length > MAX_CACHE_PAYLOAD_FILENAME_STEM_LENGTH) {
-    throw new Error('缓存文件名长度无效')
+    throw new Error(AppStrings.text(AppStrings.R_CACHE_FILENAME_LENGTH_INVALID, 'Invalid cache filename length'))
   }
   return encoded
 }

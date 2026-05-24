@@ -69,7 +69,7 @@ export class StorageSettingsCoordinator {
   }
 
   static seedActionSuccessMessage(label: string, result: CacheDeviceQaSeedResult): string {
-    return `${label}: ${result.seededRows} 行 / ${result.seededFiles} 文件`
+    return AppStrings.format(AppStrings.text($r('app.string.storage_seeded_label_format'), '{0}: {1} rows / {2} files'), [label, `${result.seededRows}`, `${result.seededFiles}`])
   }
 
   static seedErrorMessage(error: Error): string {

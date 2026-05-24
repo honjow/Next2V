@@ -35,7 +35,10 @@ export struct UserProfilePage {
   @State private activityTab: number = 0;
   @State private tabSelectedIndexes: number[] = [0];
   @State private tabOptions: SegmentButtonOptions = SegmentButtonOptions.tab({
-    buttons: [{ text: '主题' }, { text: '回复' }],
+    buttons: [
+      { text: AppStrings.text(AppStrings.R_USER_TAB_TOPICS_LABEL, 'Topics') },
+      { text: AppStrings.text(AppStrings.R_USER_TAB_REPLIES_LABEL, 'Replies') }
+    ],
     buttonPadding: { top: 10, bottom: 10, left: 8, right: 8 },
   });
   @State private following: boolean = false;
@@ -122,7 +125,7 @@ export struct UserProfilePage {
               }
             } else if (this.vm.recentTopicCount === 0) {
               ListItem() {
-                UserProfileEmptyCard({ message: '暂无主题' })
+                UserProfileEmptyCard({ message: AppStrings.text(AppStrings.R_USER_PROFILE_NO_TOPICS, 'No topics') })
               }
             } else {
               LazyForEach(
@@ -150,7 +153,7 @@ export struct UserProfilePage {
               )
               if (this.shouldShowAllActivityButton()) {
                 ListItem() {
-                  this.AllActivityEntry('查看全部主题')
+                  this.AllActivityEntry(AppStrings.text(AppStrings.R_USER_PROFILE_VIEW_ALL_TOPICS, 'View all topics'))
                 }
               }
             }
@@ -162,7 +165,7 @@ export struct UserProfilePage {
               }
             } else if (this.vm.recentReplyCount === 0) {
               ListItem() {
-                UserProfileEmptyCard({ message: '暂无回复' })
+                UserProfileEmptyCard({ message: AppStrings.text(AppStrings.R_USER_PROFILE_NO_REPLIES, 'No replies') })
               }
             } else {
               LazyForEach(
@@ -176,7 +179,7 @@ export struct UserProfilePage {
               )
               if (this.shouldShowAllActivityButton()) {
                 ListItem() {
-                  this.AllActivityEntry('查看全部回复')
+                  this.AllActivityEntry(AppStrings.text(AppStrings.R_USER_PROFILE_VIEW_ALL_REPLIES, 'View all replies'))
                 }
               }
             }
@@ -185,7 +188,7 @@ export struct UserProfilePage {
       } else {
         Column() {
           UserProfileErrorState({
-            message: this.vm.errorMessage || '加载失败',
+            message: this.vm.errorMessage || AppStrings.text(AppStrings.R_COMMON_LOAD_FAILED, 'Load failed'),
             retryAction: () => {
               this.vm.load()
             }
@@ -517,10 +520,11 @@ export struct UserProfilePage {
 
   private actionFailureToast(error: Error): string {
     const message = (error?.message || '').trim()
-    if (message === 'Web 会话已失效，请重新登录') {
+    // Web session expired is reported by the API layer; pass it through.
+    if (message === 'Web session expired' || message === 'Web 会话已失效，请重新登录') {
       return message
     }
-    return '操作失败'
+    return AppStrings.text(AppStrings.R_USER_PROFILE_ACTION_FAILED, 'Action failed')
   }
 
   private reloadActionStateAfterFailure(): void {

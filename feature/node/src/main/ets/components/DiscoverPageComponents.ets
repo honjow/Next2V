@@ -1,4 +1,4 @@
-import { FilterChip, ThemeConstants, V2exNode, V2exTopic } from 'shared'
+import { AppStrings, FilterChip, ThemeConstants, V2exNode, V2exTopic } from 'shared'
 import type { SavedNode } from 'shared'
 
 export type DiscoverTopicMode = 'hot' | 'rank' | 'latest' | 'recent'
@@ -139,7 +139,10 @@ export struct DiscoverNodeCard {
         .fontColor($r('sys.color.font_primary'))
         .maxLines(1)
         .textOverflow({ overflow: TextOverflow.Ellipsis })
-      Text(`${this.node.topics} 主题`)
+      Text(AppStrings.format(
+        AppStrings.text(AppStrings.R_NODE_TOPICS_COUNT, '{0} topics'),
+        [String(this.node.topics)]
+      ))
         .fontSize(ThemeConstants.FONT_SIZE_TINY)
         .fontColor($r('sys.color.font_secondary'))
         .margin({ top: ThemeConstants.SPACE_XS })
@@ -216,7 +219,7 @@ export struct DiscoverErrorState {
       Text(this.message)
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
         .fontColor($r('sys.color.font_secondary'))
-      Button('重试')
+      Button($r('app.string.common_retry'))
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
         .margin({ top: ThemeConstants.SPACE_LG })
         .onClick(() => {

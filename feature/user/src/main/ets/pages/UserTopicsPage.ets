@@ -1,6 +1,6 @@
 import { UserTopicsViewModel } from '../viewmodel/UserViewModel'
 import {
-  CardEmptyState, NodeTopicListParams, PageErrorState, PageLoadingState, SecondaryListScaffold,
+  AppStrings, CardEmptyState, NodeTopicListParams, PageErrorState, PageLoadingState, SecondaryListScaffold,
   StorageKeys, TopicCard, TopicDetailParams, V2exTopic
 } from 'shared'
 import type { TopicReadState } from 'shared'
@@ -22,13 +22,13 @@ export struct UserTopicsPage {
         CardEmptyState({ message: $r('app.string.user_topics_hidden') })
       } else if (this.vm.errorMessage && this.vm.topicDataSource.totalCount() === 0) {
         PageErrorState({
-          message: this.vm.errorMessage || '加载失败',
+          message: this.vm.errorMessage || AppStrings.text(AppStrings.R_COMMON_LOAD_FAILED, 'Load failed'),
           retryAction: () => {
             this.vm.load()
           }
         })
       } else if (this.vm.topicDataSource.totalCount() === 0) {
-        CardEmptyState({ message: '暂无主题' })
+        CardEmptyState({ message: AppStrings.text(AppStrings.R_USER_PROFILE_NO_TOPICS, 'No topics') })
       } else {
         SecondaryListScaffold({
           onReachEnd: () => {

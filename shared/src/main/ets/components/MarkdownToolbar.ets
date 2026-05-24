@@ -1,4 +1,5 @@
 import { ThemeConstants } from '../theme/ThemeConstants'
+import { AppStrings } from '../i18n/AppStrings'
 
 @Component
 export struct MarkdownToolbar {
@@ -18,16 +19,16 @@ export struct MarkdownToolbar {
   build() {
     Scroll() {
       Row({ space: ThemeConstants.SPACE_XS }) {
-        this.ToolButton('写', !this.previewActive, () => { this.fire(this.onEdit) })
-        this.ToolButton('看', this.previewActive, () => { this.fire(this.onPreview) })
+        this.ToolButton(AppStrings.text(AppStrings.R_MARKDOWN_TOOLBAR_EDIT, 'Edit'), !this.previewActive, () => { this.fire(this.onEdit) })
+        this.ToolButton(AppStrings.text(AppStrings.R_MARKDOWN_TOOLBAR_PREVIEW, 'Preview'), this.previewActive, () => { this.fire(this.onPreview) })
         this.ToolButton('B', false, () => { this.fire(this.onBold) }, FontWeight.Bold)
         this.ToolButton('I', false, () => { this.fire(this.onItalic) }, FontWeight.Medium, FontStyle.Italic)
         this.ToolButton('`', false, () => { this.fire(this.onCode) })
         this.ToolButton('>', false, () => { this.fire(this.onQuote) })
         this.ToolButton('-', false, () => { this.fire(this.onList) })
         this.ToolButton('[]', false, () => { this.fire(this.onLink) })
-        this.ToolButton('图', false, () => { this.fire(this.onImage) })
-        this.ToolButton('清', false, () => { this.fire(this.onClear) })
+        this.ToolButton(AppStrings.text(AppStrings.R_MARKDOWN_TOOLBAR_IMAGE, 'Image'), false, () => { this.fire(this.onImage) })
+        this.ToolButton(AppStrings.text(AppStrings.R_MARKDOWN_TOOLBAR_CLEAR, 'Clear'), false, () => { this.fire(this.onClear) })
       }
       .height(32)
       .alignItems(VerticalAlign.Center)

@@ -95,7 +95,7 @@ export struct ReplyEditorPage {
         }
 
         if (!this.isPreview) {
-          TextArea({ placeholder: '写回复（自动保存草稿）', text: this.content, controller: this.contentController })
+          TextArea({ placeholder: AppStrings.text(AppStrings.R_REPLY_BODY_PLACEHOLDER, 'Reply body (auto-saved)'), text: this.content, controller: this.contentController })
             .fontSize(ThemeConstants.FONT_SIZE_BODY)
             .height(320)
             .borderRadius(ThemeConstants.RADIUS_MD)
@@ -110,7 +110,7 @@ export struct ReplyEditorPage {
             })
         } else {
           if (this.content.trim().length === 0) {
-            Text('暂无内容')
+            Text(AppStrings.text(AppStrings.R_EDITOR_EMPTY_PREVIEW, 'No content yet'))
               .fontSize(ThemeConstants.FONT_SIZE_BODY)
               .fontColor($r('sys.color.font_secondary'))
               .padding({ top: ThemeConstants.SPACE_MD, bottom: ThemeConstants.SPACE_MD })
@@ -129,7 +129,7 @@ export struct ReplyEditorPage {
             .fontColor($r('sys.color.font_secondary'))
         }
 
-        Button(this.isSubmitting ? '提交中...' : '提交')
+        Button(this.isSubmitting ? AppStrings.text(AppStrings.R_EDITOR_SUBMITTING, 'Submitting...') : AppStrings.text(AppStrings.R_EDITOR_SUBMIT, 'Submit'))
           .fontSize(ThemeConstants.FONT_SIZE_TAG)
           .height(40)
           .width('100%')
@@ -208,11 +208,11 @@ export struct ReplyEditorPage {
       return
     }
     this.getUIContext().showAlertDialog({
-      title: '清空草稿',
-      message: '确定清空当前草稿吗？',
-      primaryButton: { value: '取消', action: () => { } },
+      title: AppStrings.text(AppStrings.R_REPLY_CLEAR_DRAFT_TITLE, 'Clear draft'),
+      message: AppStrings.text(AppStrings.R_REPLY_CLEAR_DRAFT_GENERIC_MESSAGE, 'Clear current draft?'),
+      primaryButton: { value: AppStrings.text($r('app.string.common_cancel'), 'Cancel'), action: () => { } },
       secondaryButton: {
-        value: '清空',
+        value: AppStrings.text($r('app.string.common_clear'), 'Clear'),
         fontColor: Color.Red,
         action: () => { this.clearDraft() }
       }
@@ -231,7 +231,7 @@ export struct ReplyEditorPage {
         promptAction.openToast({ message: $r('app.string.common_cleared') }).catch((_error: Error) => { })
       })
       .catch((_error: Error) => {
-        promptAction.openToast({ message: '清空失败' }).catch((_error2: Error) => { })
+        promptAction.openToast({ message: AppStrings.text(AppStrings.R_REPLY_CLEAR_FAILED, 'Clear failed') }).catch((_error2: Error) => { })
       })
   }
 
@@ -272,10 +272,10 @@ export struct ReplyEditorPage {
     this.isSubmitDialogShown = true
     this.persistDraft()
     this.getUIContext().showAlertDialog({
-      title: '提交回复',
+      title: AppStrings.text(AppStrings.R_REPLY_CONFIRM_SUBMIT_TITLE, 'Submit reply'),
       message: ReplyComposerCoordinator.pageSubmitConfirmMessage(this.topicTitle),
-      primaryButton: { value: '取消', action: () => { this.isSubmitDialogShown = false } },
-      secondaryButton: { value: '提交', action: () => { this.submit() } }
+      primaryButton: { value: AppStrings.text($r('app.string.common_cancel'), 'Cancel'), action: () => { this.isSubmitDialogShown = false } },
+      secondaryButton: { value: AppStrings.text($r('app.string.reply_submit'), 'Submit'), action: () => { this.submit() } }
     })
   }
 

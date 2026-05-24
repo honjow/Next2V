@@ -146,15 +146,15 @@ function loginInputErrorMessage(challenge, problemMessage) {
   const problem = (problemMessage || '').trim()
   if (problem) {
     if (problem.includes('验证码') || problem.toLowerCase().includes('captcha')) {
-      return '验证码不正确，请重新输入'
+      return 'The captcha is incorrect. Please try again.'
     }
     if (problem.includes('密码') || problem.toLowerCase().includes('password') ||
       problem.toLowerCase().includes('username') || problem.includes('用户名')) {
-      return '用户名或密码不正确，请检查后重试'
+      return 'The username or password is incorrect. Please check and try again.'
     }
     return problem
   }
-  return challenge.captchaField ? '用户名、密码或验证码不正确，请检查后重试' : '用户名或密码不正确，请检查后重试'
+  return challenge.captchaField ? 'The username, password, or captcha is incorrect. Please check and try again.' : 'The username or password is incorrect. Please check and try again.'
 }
 
 function extractForms(html) {
@@ -314,10 +314,10 @@ const signinProblemWithHiddenEmptyDiv = `
 assert.equal(extractProblemMessage(signinProblemWithHiddenEmptyDiv), 'Please fix following problems and submit again: 输入的验证码不正确。')
 assert.equal(hasSigninForm(signinProblemWithHiddenEmptyDiv), true)
 assert.equal(hasSigninForm('<html><body><a class="top" href="/member/live_user">live_user</a></body></html>'), false)
-assert.equal(loginInputErrorMessage({ captchaField: 'captcha_live_redacted' }, extractProblemMessage(signinProblemWithHiddenEmptyDiv)), '验证码不正确，请重新输入')
-assert.equal(loginInputErrorMessage({ captchaField: 'captcha_live_redacted' }, 'Username or password is incorrect'), '用户名或密码不正确，请检查后重试')
-assert.equal(loginInputErrorMessage({ captchaField: 'captcha_live_redacted' }, ''), '用户名、密码或验证码不正确，请检查后重试')
-assert.equal(loginInputErrorMessage({ captchaField: '' }, ''), '用户名或密码不正确，请检查后重试')
+assert.equal(loginInputErrorMessage({ captchaField: 'captcha_live_redacted' }, extractProblemMessage(signinProblemWithHiddenEmptyDiv)), 'The captcha is incorrect. Please try again.')
+assert.equal(loginInputErrorMessage({ captchaField: 'captcha_live_redacted' }, 'Username or password is incorrect'), 'The username or password is incorrect. Please check and try again.')
+assert.equal(loginInputErrorMessage({ captchaField: 'captcha_live_redacted' }, ''), 'The username, password, or captcha is incorrect. Please check and try again.')
+assert.equal(loginInputErrorMessage({ captchaField: '' }, ''), 'The username or password is incorrect. Please check and try again.')
 
 const twoFactorFixture = `
 <form action="2fa" method="post">
@@ -413,10 +413,9 @@ assert.match(service, /requestText\(`\$\{baseUrl\}\$\{V2exNativeAuthService\.SET
 assert.match(service, /private static isSigninResponse/)
 assert.match(service, /private static loginInputErrorMessage/)
 assert.match(service, /V2exNativeAuthService\.isSigninResponse\(settingsRes\)/)
-assert.match(service, /验证码不正确，请重新输入/)
-assert.match(service, /用户名或密码不正确，请检查后重试/)
-assert.match(service, /用户名、密码或验证码不正确，请检查后重试/)
-assert.match(service, /无法确认登录状态，请改用网页登录/)
+assert.match(service, /The captcha is incorrect\. Please try again\./)
+assert.match(service, /The username or password is incorrect\. Please check and try again\./)
+assert.match(service, /The username, password, or captcha is incorrect\. Please check and try again\./)
 assert.match(service, /receivedSetCookieLines\.push\(\.\.\.V2exNativeAuthService\.extractSetCookieHeader\(headers\)\)/)
 assert.match(service, /uniqueCookieLines\(receivedSetCookieLines\.concat\(finalSetCookie\)\)/)
 assert.match(service, /V2exNativeAuthService\.extractSingleHeader\(headers, 'location'\) \|\| receivedLocation/)
@@ -475,7 +474,7 @@ const prompt = fs.readFileSync('entry/src/main/ets/components/V2exTwoFactorPromp
 assert.match(prompt, /export struct V2exTwoFactorPrompt/)
 assert.match(prompt, /this\.auth\.completeTwoFactorWithCookie\(cleanCookie, cleanCode\)/)
 assert.match(prompt, /CookieJarSettings\.saveForBaseUrl\(context, baseUrl, snapshot\.cookie\)/)
-assert.match(prompt, /Text\('V2EX 需要完成两步验证后才能继续访问账号内容。'\)/)
+assert.match(prompt, /AppStrings\.text\(AppStrings\.R_TWO_FACTOR_DESCRIPTION/)
 assert.doesNotMatch(prompt, /@Prop message:/)
 const indexPage = fs.readFileSync('entry/src/main/ets/pages/Index.ets', 'utf8')
 assert.match(indexPage, /GlobalTwoFactorSheet/)

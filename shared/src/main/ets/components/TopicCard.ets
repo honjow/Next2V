@@ -5,12 +5,13 @@ import { UserName } from './UserName'
 import { TimeAgo } from './TimeAgo'
 import { NodeTag } from './NodeTag'
 import { ImageUtils } from '../utils/ImageUtils'
+import { AppStrings } from '../i18n/AppStrings'
 
 @Component
 export struct TopicCard {
   @Prop item: V2exTopic
   @Prop isUnread: boolean = false
-  @Prop metaLabel: string = '最后回复'
+  @Prop metaLabel: string = AppStrings.text(AppStrings.R_TOPIC_LAST_REPLY, 'Last reply')
   @Prop metaTimestamp: number = 0
   @Prop showReplyCount: boolean = true
   onUserClick?: () => void
@@ -81,7 +82,9 @@ export struct TopicCard {
           }
         }
         if (this.showReplyCount) {
-          Text(`${this.item.replies} 回复`)
+          Text(AppStrings.format(
+            AppStrings.text(AppStrings.R_TOPIC_REPLIES_COUNT, '{0} replies'),
+            [`${this.item.replies}`]))
             .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
             .fontColor($r('sys.color.font_secondary'))
         }

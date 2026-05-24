@@ -35,7 +35,7 @@ export struct V2exWebLoginPage {
   private api: ApiService = new ApiService()
 
   @State private errorMessage: string = ''
-  @State private pageMessage: string = '正在打开网页登录...'
+  @State private pageMessage: string = AppStrings.text(AppStrings.R_WEB_LOGIN_OPENING, 'Opening web login...')
   @State private isSaving: boolean = false
   @State private isSaved: boolean = false
   @State private lastUrl: string = ''
@@ -89,7 +89,7 @@ export struct V2exWebLoginPage {
                 this.loadSigninPage()
               })
               .onPageBegin((event?: PageEndEvent) => {
-                this.pageMessage = event?.url ? `正在加载 ${event.url}` : '正在加载网页登录...'
+                this.pageMessage = event?.url ? AppStrings.format(AppStrings.text(AppStrings.R_WEB_LOGIN_LOADING_URL, 'Loading {0}'), [event.url]) : AppStrings.text(AppStrings.R_WEB_LOGIN_LOADING_PAGE, 'Loading web login...')
                 if (event && event.url) {
                   this.lastUrl = event.url
                 }
@@ -110,7 +110,7 @@ export struct V2exWebLoginPage {
               })
               .onErrorReceive((event) => {
                 if (event?.request?.isMainFrame()) {
-                  this.pageMessage = event.error.getErrorInfo() || '网页登录加载失败'
+                  this.pageMessage = event.error.getErrorInfo() || AppStrings.text(AppStrings.R_WEB_LOGIN_LOAD_FAILED, 'Web login failed to load')
                 }
               })
           }
@@ -151,7 +151,7 @@ export struct V2exWebLoginPage {
 
   private statusText(): string {
     if (this.isSaving) {
-      return '正在保存登录状态…'
+      return AppStrings.text(AppStrings.R_WEB_LOGIN_SAVING, 'Saving login state...')
     }
     if (this.errorMessage) {
       return this.errorMessage
@@ -182,7 +182,7 @@ export struct V2exWebLoginPage {
 
   private loadSigninPage(): void {
     const url = this.currentSigninUrl()
-    this.pageMessage = `正在打开 ${url}`
+    this.pageMessage = AppStrings.format(AppStrings.text(AppStrings.R_WEB_LOGIN_OPENING_URL, 'Opening {0}'), [url])
     try {
       this.controller.loadUrl(url)
     } catch (error) {
@@ -301,7 +301,7 @@ export struct V2exWebLoginPage {
       throw new Error(AppStrings.text($r('app.string.login_cookie_missing'), 'Login cookie was not obtained. Please confirm login is complete.'))
     }
     if (silent && !this.hasLikelyAuthCookie(cleanCookie)) {
-      throw new Error('网页登录尚未完成')
+      throw new Error(AppStrings.text(AppStrings.R_WEB_LOGIN_NOT_COMPLETE, 'Web login not yet complete'))
     }
     const html = await this.http.getTextWithHeaders('/settings', { 'Cookie': cleanCookie })
     const username = V2exSessionParser.extractUsername(html)

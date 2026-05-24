@@ -1,3 +1,4 @@
+import { AppStrings } from 'shared'
 import { V2exMemberActionState } from 'shared'
 
 export interface UserProfileTabLabels {
@@ -22,9 +23,19 @@ export interface UserProfileAppbarIdentity {
 
 export class UserProfilePageCoordinator {
   static tabLabels(topicCount: number, replyCount: number): UserProfileTabLabels {
+    if (topicCount > 0) {
+      const template = AppStrings.text(AppStrings.R_USER_TAB_TOPICS_COUNT, 'Topics {0}')
+      const topicLabel = AppStrings.format(template, [String(topicCount)])
+      const replyLabel = replyCount > 0
+        ? AppStrings.format(AppStrings.text(AppStrings.R_USER_TAB_REPLIES_COUNT, 'Replies {0}'), [String(replyCount)])
+        : AppStrings.text(AppStrings.R_USER_TAB_REPLIES_LABEL, 'Replies')
+      return { topicLabel, replyLabel }
+    }
     return {
-      topicLabel: topicCount > 0 ? `主题 ${topicCount}` : '主题',
-      replyLabel: replyCount > 0 ? `回复 ${replyCount}` : '回复'
+      topicLabel: AppStrings.text(AppStrings.R_USER_TAB_TOPICS_LABEL, 'Topics'),
+      replyLabel: replyCount > 0
+        ? AppStrings.format(AppStrings.text(AppStrings.R_USER_TAB_REPLIES_COUNT, 'Replies {0}'), [String(replyCount)])
+        : AppStrings.text(AppStrings.R_USER_TAB_REPLIES_LABEL, 'Replies')
     }
   }
 
@@ -106,8 +117,8 @@ export class UserProfilePageCoordinator {
     return {
       username: username,
       available: hasFollowAction || hasBlockAction,
-      followLabel: hasFollowAction ? (following ? '取消关注' : '关注') : '',
-      blockLabel: hasBlockAction ? (blocked ? '取消屏蔽' : '屏蔽') : '',
+      followLabel: hasFollowAction ? (following ? AppStrings.text(AppStrings.R_USER_ACTION_UNFOLLOW, 'Unfollow') : AppStrings.text(AppStrings.R_USER_ACTION_FOLLOW, 'Follow')) : '',
+      blockLabel: hasBlockAction ? (blocked ? AppStrings.text(AppStrings.R_USER_ACTION_UNBLOCK, 'Unblock') : AppStrings.text(AppStrings.R_USER_ACTION_BLOCK, 'Block')) : '',
       following: hasFollowAction && following,
       blocked: hasBlockAction && blocked
     }

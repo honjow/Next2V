@@ -2,6 +2,7 @@ import { ThemeConstants } from '../theme/ThemeConstants'
 import { CardEmptyState, PageErrorState, PageLoadingState } from './PageState'
 import { LoadingFooter } from './LoadingFooter'
 import { PullRefreshListScaffold } from './PullRefreshListScaffold'
+import { AppStrings } from '../i18n/AppStrings'
 
 @Component
 export struct PagedListScaffold {
@@ -45,7 +46,9 @@ export struct PagedListScaffold {
         secondaryAction: this.secondaryAction
       })
     } else if (this.isEmpty) {
-      CardEmptyState({ message: this.emptyMessage || '暂无内容' })
+      CardEmptyState({
+        message: this.emptyMessage || AppStrings.text(AppStrings.R_COMMON_NO_CONTENT, 'No content')
+      })
     } else {
       PullRefreshListScaffold({
         scroller: this.scroller,
@@ -67,7 +70,7 @@ export struct PagedListScaffold {
               isLoading: this.isLoadingMore,
               hasMore: this.hasMore,
               isError: this.loadMoreErrorMessage.length > 0,
-              errorMessage: this.loadMoreErrorMessage || '加载失败，点击重试',
+              errorMessage: this.loadMoreErrorMessage || AppStrings.text(AppStrings.R_COMMON_LOAD_FAILED_TAP_RETRY, 'Load failed, tap to retry'),
               retryLabel: this.loadMoreRetryLabel,
               onRetry: () => {
                 if (this.onLoadMoreRetry) {
