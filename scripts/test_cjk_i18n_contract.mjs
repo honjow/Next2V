@@ -85,7 +85,10 @@ function isCommentOnly(line, cjkMatch) {
 // These are server-parsing patterns, debug strings, or legacy internal errors
 const KNOWN_OK_STRINGS = [
   // V2exNativeAuthService / V2exSigninParser — parse Chinese server response patterns
-  '验证码', '密码', '用户名', '两步', '二步', '动态验证码', '安全码',
+  '验证码', '密码', '用户名', '两步', '二步', '动态验证码',
+  // V2exSigninParser — matches V2EX two-factor placeholder prefix (e.g. "动态验证码")
+  '动态',
+  '安全码',
   // V2exWriteFormParser — parses Chinese HTML field names
   '标题',
   // AutoDailyCheckinService — matches Chinese server response text

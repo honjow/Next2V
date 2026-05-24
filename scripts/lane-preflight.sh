@@ -42,22 +42,33 @@ JSON
   exit 1
 fi
 
-# 3) 签名 token 预检（绕过 headless browser login 死路）
+# 3) 本地签名材料优先。
+# sign.py 的正常非交互路径是：debug.p12 + cert + profile 已存在时直接签名，跳过 AGC API。
+# 因此 preflight 不能在材料齐全时先探测 AGC token；否则一个无关的 401 会把已可用的本地签名路径误报为 token 过期。
+KS_FILE="$HARMONY_DEBUG_DIR/debug.p12"
+CERT_FILE="$HARMONY_DEBUG_DIR/${HARMONY_DEBUG_CERT_NAME}.cer"
+PROFILE_FILE="$HARMONY_DEBUG_PROFILE"
+if [ -s "$KS_FILE" ] && [ -s "$CERT_FILE" ] && [ -s "$PROFILE_FILE" ]; then
+  echo "lane-preflight: local signing materials present; skip AGC auth probe at $(date -Iseconds)" >> "$LANE_ART/preflight.log"
+  return 0 2>/dev/null || exit 0
+fi
+
+# 4) 只有本地签名材料缺失时才检查 AGC auth，避免 worker 卡进 headless browser login。
 "$V2NEXT_REPO/scripts/check-signing-auth.sh" >>"$LANE_ART/preflight.log" 2>&1
 auth_code=$?
 case "$auth_code" in
   0) ;;
   2)
     cat > "$LANE_ART/result.json" <<JSON
-{"verdict":"BLOCKED","blocked_reason":"signing_auth_missing","artifact_dir":"$LANE_ART","action_required":"in main repo run: bash dev.sh --build-only (manual browser login)"}
+{"verdict":"BLOCKED","blocked_reason":"signing_auth_missing","artifact_dir":"$LANE_ART","missing_materials":["$KS_FILE","$CERT_FILE","$PROFILE_FILE"],"action_required":"in main repo run: bash dev.sh --build-only (manual browser login)"}
 JSON
-    echo "lane-preflight: AUTH_FILE missing → BLOCKED" >&2
+    echo "lane-preflight: AUTH_FILE missing and local signing materials incomplete → BLOCKED" >&2
     exit 1 ;;
   3)
     cat > "$LANE_ART/result.json" <<JSON
-{"verdict":"BLOCKED","blocked_reason":"signing_token_expired","artifact_dir":"$LANE_ART","action_required":"in main repo run: bash dev.sh --build-only (refresh Huawei AGC token via browser)"}
+{"verdict":"BLOCKED","blocked_reason":"signing_auth_probe_401_with_missing_local_materials","artifact_dir":"$LANE_ART","missing_materials":["$KS_FILE","$CERT_FILE","$PROFILE_FILE"],"action_required":"in main repo run: bash dev.sh --build-only (refresh Huawei AGC auth or regenerate missing signing materials)"}
 JSON
-    echo "lane-preflight: signing token expired → BLOCKED" >&2
+    echo "lane-preflight: AGC auth probe returned 401 and local signing materials incomplete → BLOCKED" >&2
     exit 1 ;;
   *)
     cat > "$LANE_ART/result.json" <<JSON
