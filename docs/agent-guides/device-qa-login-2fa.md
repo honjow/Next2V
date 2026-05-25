@@ -26,7 +26,23 @@ Rules:
 
 ## Login Captcha
 
-A normal login-page captcha is not the same as 2FA and is not automatically a blocker. When the login form shows a captcha field, first try to obtain the captcha from the current page, screenshot, or page resource and enter it without printing or storing the value. Only report `BLOCKED` after the captcha cannot be obtained or recognized, and include the non-secret state and artifact paths.
+A normal login-page captcha is not the same as 2FA and is not automatically a blocker. CAPTCHA handling is a QA-worker responsibility, not a controller responsibility.
+
+Required QA sequence when a login form shows a captcha field:
+
+1. Capture a fresh screenshot/layout from the current QA run.
+2. Use the QA worker's own vision/OCR or image preprocessing to read the captcha. Do not rely on a controller-read value, chat-transcribed value, or stale artifact.
+3. Enter credentials from local `.env.local` and the QA-read captcha inside the device/login flow.
+4. Submit once; if the captcha changes or fails, capture a fresh screenshot and retry OCR/preprocessing once.
+5. Continue the original product scenario after login succeeds.
+
+Evidence rules:
+
+- Result JSON must include screenshot/layout paths, OCR attempt status, submit result, and any cooldown/error state.
+- Do not print or store the raw captcha value in chat, prompts, commits, or long-lived docs. If an artifact needs to mention it, redact the value and keep only attempt metadata.
+- Controller must not read or provide captcha values for QA proof. If a controller accidentally reads one, QA must treat it as invalid and re-read inside the QA run.
+
+Only report `BLOCKED` after QA-owned fresh OCR/preprocessing attempts fail, login enters cooldown/IP restriction, `.env.local` is missing/invalid, a real-time 2FA code is required, or the page is no longer an actionable login form. Include the non-secret state and artifact paths.
 
 ## QA Evidence Boundary
 
