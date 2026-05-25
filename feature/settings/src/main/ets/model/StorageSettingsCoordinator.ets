@@ -59,11 +59,11 @@ export class StorageSettingsCoordinator {
   static seedAllSuccessMessage(results: CacheDeviceQaSeedResult[]): string {
     const rows = results.reduce((sum: number, result: CacheDeviceQaSeedResult) => sum + result.seededRows, 0)
     const files = results.reduce((sum: number, result: CacheDeviceQaSeedResult) => sum + result.seededFiles, 0)
-    return AppStrings.format(AppStrings.text($r('app.string.storage_written_format'), 'Wrote {0} rows / {1} files'), [`${rows}`, `${files}`])
+    return AppStrings.format(AppStrings.text(AppStrings.R_STORAGE_WRITTEN_FORMAT, 'Wrote {0} rows / {1} files'), [`${rows}`, `${files}`])
   }
 
   static seedActionSuccessMessage(label: string, result: CacheDeviceQaSeedResult): string {
-    return AppStrings.format(AppStrings.text($r('app.string.storage_seeded_label_format'), '{0}: {1} rows / {2} files'), [label, `${result.seededRows}`, `${result.seededFiles}`])
+    return AppStrings.format(AppStrings.text(AppStrings.R_STORAGE_SEEDED_LABEL_FORMAT, '{0}: {1} rows / {2} files'), [label, `${result.seededRows}`, `${result.seededFiles}`])
   }
 
   static seedErrorMessage(error: Error): string {

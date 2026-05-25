@@ -14,7 +14,7 @@ export class AppStrings {
   static format(template: string, values: string[]): string {
     let text = template
     values.forEach((value: string, index: number) => {
-      text = text.replace(`{${index}}`, value)
+      text = text.split(`{${index}}`).join(value)
     })
     return text
   }
@@ -256,6 +256,8 @@ export class AppStrings {
   static readonly R_LOCAL_DATA: Resource = $r('app.string.local_data')
   static readonly R_CACHE_SUBTITLE: Resource = $r('app.string.cache_subtitle')
   static readonly R_CACHE_SUBTITLE_UPDATED: Resource = $r('app.string.cache_subtitle_updated')
+  static readonly R_STORAGE_WRITTEN_FORMAT: Resource = $r('app.string.storage_written_format')
+  static readonly R_STORAGE_SEEDED_LABEL_FORMAT: Resource = $r('app.string.storage_seeded_label_format')
   static readonly R_SEED_ALL_CACHE_SCENARIOS: Resource = $r('app.string.seed_all_cache_scenarios')
   static readonly R_SEED_LARGE_LIST_FILE_CACHE: Resource = $r('app.string.seed_large_list_file_cache')
   static readonly R_SEED_MIXED_ROW_CACHE: Resource = $r('app.string.seed_mixed_row_cache')

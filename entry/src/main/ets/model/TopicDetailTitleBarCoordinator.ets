@@ -12,7 +12,7 @@ export type TopicDetailTitleAction =
   'openBrowser'
 
 export interface TopicDetailTitleActionDescriptor {
-  label: string
+  label: ResourceStr
   action: TopicDetailTitleAction
   stateKey: string
 }
@@ -34,15 +34,15 @@ export class TopicDetailTitleBarCoordinator {
 
   static actions(): TopicDetailTitleActionDescriptor[] {
     return [
-      { label: AppStrings.text(AppStrings.R_TOPIC_ACTION_THANK_TOPIC, 'Thank topic'), action: 'thankTopic', stateKey: 'thanked' },
-      { label: AppStrings.text(AppStrings.R_TOPIC_ACTION_SITE_FAVORITE, 'Site favorite'), action: 'siteFavorite', stateKey: 'siteFavorited' },
-      { label: AppStrings.text(AppStrings.R_TOPIC_ACTION_SAVE_LATER, 'Save later'), action: 'saveLater', stateKey: 'savedLater' },
-      { label: AppStrings.text(AppStrings.R_TOPIC_ACTION_IGNORE_TOPIC, 'Ignore topic'), action: 'ignoreTopic', stateKey: '' },
-      { label: AppStrings.text(AppStrings.R_TOPIC_ACTION_REPORT_TOPIC, 'Report topic'), action: 'reportTopic', stateKey: '' },
-      { label: AppStrings.text(AppStrings.R_TOPIC_ACTION_COPY_TITLE, 'Copy title'), action: 'copyTitle', stateKey: '' },
-      { label: AppStrings.text(AppStrings.R_TOPIC_ACTION_COPY_LINK, 'Copy link'), action: 'copyLink', stateKey: '' },
-      { label: AppStrings.text(AppStrings.R_TOPIC_ACTION_SHARE_LINK, 'Share link'), action: 'share', stateKey: '' },
-      { label: AppStrings.text(AppStrings.R_TOPIC_ACTION_OPEN_BROWSER, 'Open in browser'), action: 'openBrowser', stateKey: '' },
+      { label: AppStrings.R_TOPIC_ACTION_THANK_TOPIC, action: 'thankTopic', stateKey: 'thanked' },
+      { label: AppStrings.R_TOPIC_ACTION_SITE_FAVORITE, action: 'siteFavorite', stateKey: 'siteFavorited' },
+      { label: AppStrings.R_TOPIC_ACTION_SAVE_LATER, action: 'saveLater', stateKey: 'savedLater' },
+      { label: AppStrings.R_TOPIC_ACTION_IGNORE_TOPIC, action: 'ignoreTopic', stateKey: '' },
+      { label: AppStrings.R_TOPIC_ACTION_REPORT_TOPIC, action: 'reportTopic', stateKey: '' },
+      { label: AppStrings.R_TOPIC_ACTION_COPY_TITLE, action: 'copyTitle', stateKey: '' },
+      { label: AppStrings.R_TOPIC_ACTION_COPY_LINK, action: 'copyLink', stateKey: '' },
+      { label: AppStrings.R_TOPIC_ACTION_SHARE_LINK, action: 'share', stateKey: '' },
+      { label: AppStrings.R_TOPIC_ACTION_OPEN_BROWSER, action: 'openBrowser', stateKey: '' },
     ]
   }
 

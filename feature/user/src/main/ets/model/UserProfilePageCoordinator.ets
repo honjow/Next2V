@@ -117,8 +117,8 @@ export class UserProfilePageCoordinator {
     return {
       username: username,
       available: hasFollowAction || hasBlockAction,
-      followLabel: hasFollowAction ? (following ? AppStrings.text(AppStrings.R_USER_ACTION_UNFOLLOW, 'Unfollow') : AppStrings.text(AppStrings.R_USER_ACTION_FOLLOW, 'Follow')) : '',
-      blockLabel: hasBlockAction ? (blocked ? AppStrings.text(AppStrings.R_USER_ACTION_UNBLOCK, 'Unblock') : AppStrings.text(AppStrings.R_USER_ACTION_BLOCK, 'Block')) : '',
+      followLabel: hasFollowAction ? 'available' : '',
+      blockLabel: hasBlockAction ? 'available' : '',
       following: hasFollowAction && following,
       blocked: hasBlockAction && blocked
     }

@@ -622,7 +622,7 @@ struct Index {
     if (this.userProfileFollowLabel) {
       items.push(
         this.topicActionItem(
-          this.userProfileFollowLabel,
+          this.userProfileFollowing ? AppStrings.R_USER_ACTION_UNFOLLOW : AppStrings.R_USER_ACTION_FOLLOW,
           this.userProfileFollowing
             ? $r('sys.symbol.person_xmark')
             : $r('sys.symbol.person_badge_plus'),
@@ -634,9 +634,13 @@ struct Index {
     }
     if (this.userProfileBlockLabel) {
       items.push(
-        this.topicActionItem(this.userProfileBlockLabel, this.userProfileBlockIcon(), () => {
-          this.sendUserProfileAction('block')
-        }),
+        this.topicActionItem(
+          this.userProfileBlocked ? AppStrings.R_USER_ACTION_UNBLOCK : AppStrings.R_USER_ACTION_BLOCK,
+          this.userProfileBlockIcon(),
+          () => {
+            this.sendUserProfileAction('block')
+          },
+        ),
       )
     }
     return { 'value': items, 'maxCount': 1 }
