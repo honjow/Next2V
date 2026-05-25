@@ -149,11 +149,12 @@ const sourceChecks = [
     rel: 'feature/settings/src/main/ets/model/StorageSettingsCoordinator.ets',
     forbidden: ['列表', '详情', '更新于'],
     required: [
-      "$r('app.string.cache_subtitle_updated', listCount, detailCount, DateUtils.toDateString(stats.updatedAt))",
-      "$r('app.string.cache_subtitle', listCount, detailCount)",
+      "AppStrings.R_CACHE_SUBTITLE_UPDATED",
+      "AppStrings.R_CACHE_SUBTITLE",
+      "AppStrings.format",
     ],
     forbiddenPatterns: [
-      /AppStrings\.text\(\$r\('app\.string\.cache_subtitle/,
+      /\$r\('app\.string\.cache_subtitle/,
     ],
   },
   {

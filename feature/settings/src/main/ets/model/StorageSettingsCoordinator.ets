@@ -13,13 +13,19 @@ export interface StorageConfirmDialogCopy {
 }
 
 export class StorageSettingsCoordinator {
-  static cacheSubtitle(stats: CacheStats): ResourceStr {
+  static cacheSubtitle(stats: CacheStats): string {
     const listCount = `${stats.topicListCount}`
     const detailCount = `${stats.topicDetailCount}`
     if (stats.updatedAt > 0) {
-      return $r('app.string.cache_subtitle_updated', listCount, detailCount, DateUtils.toDateString(stats.updatedAt))
+      return AppStrings.format(
+        AppStrings.text(AppStrings.R_CACHE_SUBTITLE_UPDATED,
+          'Lists {0} · Details {1} · Updated {2}'),
+        [listCount, detailCount, DateUtils.toDateString(stats.updatedAt)])
     }
-    return $r('app.string.cache_subtitle', listCount, detailCount)
+    return AppStrings.format(
+      AppStrings.text(AppStrings.R_CACHE_SUBTITLE,
+        'Lists {0} · Details {1}'),
+      [listCount, detailCount])
   }
 
   static clearCacheDialogCopy(): StorageConfirmDialogCopy {
