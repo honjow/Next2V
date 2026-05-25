@@ -638,12 +638,12 @@ function checkRegressionKeys() {
     {
       rel: 'feature/settings/src/main/ets/model/StorageSettingsCoordinator.ets',
       requiredTokens: [
-        "cache_subtitle_updated",
-        "cache_subtitle",
+        "AppStrings.R_CACHE_SUBTITLE_UPDATED",
+        "AppStrings.R_CACHE_SUBTITLE",
+        "AppStrings.format",
       ],
       forbiddenPatterns: [
-        /AppStrings\.text\(\$r\('app\.string\.cache_subtitle/,
-        /AppStrings\.text\(AppStrings\.R_CACHE_SUBTITLE/,
+        /\$r\('app\.string\.cache_subtitle/,
       ],
     },
   ]

@@ -33,6 +33,15 @@ CJK_ALLOWLIST = [
 ]
 
 CJK_RE = re.compile(r"[\u4e00-\u9fff\u3400-\u4dbf\uf900-\ufaff]")
+SKIPPED_SCAN_DIRS = {".git", ".hermes-artifacts", "build", "node_modules", "oh_modules"}
+
+
+def iter_project_ets() -> list[Path]:
+    return [
+        path
+        for path in ROOT.rglob("*.ets")
+        if not any(part in SKIPPED_SCAN_DIRS for part in path.relative_to(ROOT).parts)
+    ]
 
 
 def load_strings(base: Path, locale: str) -> dict[str, str]:
@@ -77,7 +86,7 @@ def assert_resource_sets() -> None:
 def assert_cjk_free() -> None:
     """Fail if any CJK character exists outside the allowlist, including in comments."""
     hits: list[str] = []
-    for ets_path in sorted(ROOT.rglob("*.ets")):
+    for ets_path in sorted(iter_project_ets()):
         rel = str(ets_path.relative_to(ROOT))
         # Skip resource directories
         if "resources" in ets_path.parts:
@@ -179,7 +188,7 @@ def assert_fallback_contract() -> None:
             raise AssertionError(f"language menu resource label missing: {label}")
 
     for bad in ["LOCALE_REVISION", "localeRevision", "storageLocaleRevision", "grouped-list-section-${\""]:
-        for path in ROOT.rglob("*.ets"):
+        for path in iter_project_ets():
             if bad in path.read_text(encoding="utf-8", errors="ignore"):
                 raise AssertionError(f"manual i18n refresh artifact remains: {bad} in {path.relative_to(ROOT)}")
 

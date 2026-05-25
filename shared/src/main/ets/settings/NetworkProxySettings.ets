@@ -149,12 +149,21 @@ export class NetworkProxySettings {
       if (normalized.host && normalized.port > 0) {
         const port = `${normalized.port}`
         if (normalized.mode === 'socks5') {
-          return $r('app.string.proxy_summary_socks5', normalized.host, port)
+          return AppStrings.format(
+            AppStrings.text(AppStrings.R_PROXY_SUMMARY_SOCKS5,
+              'SOCKS5 proxy · {0}:{1}'),
+            [normalized.host, port])
         }
         if (normalized.proxyScheme === 'https') {
-          return $r('app.string.proxy_summary_https', normalized.host, port)
+          return AppStrings.format(
+            AppStrings.text(AppStrings.R_PROXY_SUMMARY_HTTPS,
+              'HTTPS proxy endpoint · {0}:{1}'),
+            [normalized.host, port])
         }
-        return $r('app.string.proxy_summary_http', normalized.host, port)
+        return AppStrings.format(
+          AppStrings.text(AppStrings.R_PROXY_SUMMARY_HTTP,
+            'HTTP proxy · {0}:{1}'),
+          [normalized.host, port])
       }
       if (normalized.mode === 'socks5') {
         return AppStrings.R_PROXY_SUMMARY_SOCKS5_NOT_CONFIGURED
