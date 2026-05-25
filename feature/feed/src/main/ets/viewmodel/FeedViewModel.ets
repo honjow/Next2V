@@ -3,8 +3,8 @@ import { FeedDataSource } from '../model/FeedModels'
 import { vibrator } from '@kit.SensorServiceKit'
 
 /**
- * Feed 页面 ViewModel
- * MVVM: ViewModel 持有状态和业务逻辑，View 纯渲染
+ * Feed page ViewModel
+ * MVVM: ViewModel holds state and business logic, View is pure rendering
  */
 @Observed
 export class FeedViewModel {
@@ -55,7 +55,7 @@ export class FeedViewModel {
     }
   }
 
-  /** 切换 tab 并加载数据 */
+  /** Switch tab and load data */
   async switchTab(tab: string): Promise<void> {
     if (tab === this.activeTab && this.dataSource.totalCount() > 0) {
       return
@@ -107,10 +107,10 @@ export class FeedViewModel {
   }
 
   /**
-   * 供系统 Refresh 组件使用（$$ 绑定已设 isRefreshing=true，跳过 guard）
+   * For use by the system Refresh component ($$ binding already set isRefreshing=true, skip guard)
    */
   async refreshForce(): Promise<void> {
-    // $$ 绑定已设 isRefreshing=true，不重复设置
+    // $$ binding already set isRefreshing=true, do not set again
     this.errorMessage = ''
     this.triggerHaptic()
 
@@ -154,7 +154,7 @@ export class FeedViewModel {
     return this.pagedLoader !== null && this.hasMore && !this.isLoading && !this.isRefreshing && !this.isLoadingMore
   }
 
-  /** HD 震动反馈 */
+  /** HD haptic feedback */
   private triggerHaptic(): void {
     try {
       if (vibrator.isHdHapticSupported()) {
@@ -175,7 +175,7 @@ export class FeedViewModel {
         })
       }
     } catch (e) {
-      // 静默失败
+      // Silent failure
     }
   }
 

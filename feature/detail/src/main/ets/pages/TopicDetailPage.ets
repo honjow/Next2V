@@ -509,12 +509,12 @@ export struct TopicDetailPage {
         this.TopicCard()
       }
 
-      // 回复分隔
+      // Reply divider
       ListItem() {
         this.ReplyDivider()
       }
 
-      // 回复列表
+      // Reply list
       LazyForEach(
         this.v.replyDataSource,
         (reply: V2exReply, index: number) => {
@@ -708,7 +708,7 @@ export struct TopicDetailPage {
         },
       })
 
-      // 正文
+      // Topic body
       if (this.topicBodyBlocks().length > 0) {
         ForEach(
           this.topicBodyBlocks(),

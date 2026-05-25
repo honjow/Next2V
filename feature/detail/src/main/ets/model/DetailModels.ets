@@ -1,7 +1,7 @@
 import { V2exReply } from 'shared'
 
 /**
- * 回复数据源 — 用于 LazyForEach
+ * Reply data source — for LazyForEach
  */
 export class ReplyDataSource implements IDataSource {
   private dataArray: V2exReply[] = []

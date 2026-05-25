@@ -1,4 +1,4 @@
-/** AppStorage 键名常量，避免跨模块硬编码字符串 */
+/** AppStorage key constants to avoid cross-module hard-coded strings */
 export class StorageKeys {
   // Runtime window/layout state
   static readonly TOP_AVOID_HEIGHT: string = 'topAvoidHeight'

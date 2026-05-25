@@ -132,13 +132,13 @@ export struct MyNodesPage {
   }
 
   private loadNodesWithIcons(favorites: V2exFavoriteNode[], onDone: () => void): void {
-    // 所有节点都已有 icon，直接赋值
+    // All nodes already have icons, assign directly
     if (favorites.every((item: V2exFavoriteNode) => this.nodeIcon(item))) {
       this.nodes = favorites
       onDone()
       return
     }
-    // 部分节点缺 icon，先拉全量节点数据，合并后再赋值
+    // Some nodes missing icons, fetch full node data first, merge then assign
     this.api.getAllNodes()
       .then((allNodes: V2exNode[]) => {
         const nodeByName: Record<string, V2exNode> = {}
@@ -163,7 +163,7 @@ export struct MyNodesPage {
       })
       .catch((error: Error) => {
         console.error('enrich favorite node icons failed: ' + error.message)
-        // 降级：用不带 icon 的数据
+        // Fallback: use data without icons
         this.nodes = favorites
       })
       .finally(() => {

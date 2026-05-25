@@ -33,7 +33,8 @@ const EXCLUDED_FILE_PATTERNS = [
 
 // Files/dirs where CJK is explicitly allowed
 const ALLOWED_FILES = new Set([
-  // Comments in source — allowed
+  // Generated locale tables mirror resource JSON; CJK values in non-English locales expected
+  'shared/src/main/ets/i18n/StringMap.ets',
 ])
 
 const ALLOWED_PATTERNS = [

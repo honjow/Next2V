@@ -1,4 +1,4 @@
-// V2EX API 响应类型定义
+// V2EX API response type definitions
 
 export interface V2exMember {
   id: number

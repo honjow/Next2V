@@ -1,8 +1,8 @@
 import { webview } from '@kit.ArkWeb'
 
 /**
- * HTML 内容渲染组件
- * 将 V2EX 返回的 content_rendered（HTML）以 Web 组件渲染
+ * HTML content rendering component
+ * Renders V2EX content_rendered (HTML) via Web component
  */
 @Component
 export struct HtmlContent {

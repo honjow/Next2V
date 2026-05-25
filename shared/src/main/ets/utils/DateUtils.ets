@@ -49,7 +49,7 @@ export class DateUtils {
     )
   }
 
-  /** Unix 秒时间戳转为格式化日期 */
+  /** Convert Unix second timestamp to formatted date */
   static toDateString(unixSeconds: number): string {
     const date = new Date(unixSeconds * MS_PER_SECOND)
     const y = date.getFullYear()

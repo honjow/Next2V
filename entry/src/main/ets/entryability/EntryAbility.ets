@@ -24,8 +24,9 @@ export default class EntryAbility extends UIAbility {
   private environmentCallbackId: number = -1
 
   onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
-    // 必须在任何 setColorMode/SettingsBootstrap 之前抓系统真实 colorMode 进 AppStorage，
-    // 否则后续被 app override 后就拿不到系统真实值了（auto 模式判断会出错）。
+    // Must snapshot the real system colorMode into AppStorage BEFORE any
+    // setColorMode or SettingsBootstrap, otherwise the app override masks
+    // the real system value (auto mode detection breaks).
     ThemeSettings.seedSystemColorMode(this.context)
     AppStrings.init(this.context)
     LanguageSettings.applyStoredPreferredLanguage(this.context).catch((error: Error) => {
@@ -42,11 +43,12 @@ export default class EntryAbility extends UIAbility {
     }
     this.captureIncomingUrl(want)
 
-    // 初始化折叠屏状态监听
+    // Initialize foldable screen state listener
     FoldScreenUtil.getInstance().init()
 
-    // 注册 application-level Environment 回调：跟随系统的语言/colorMode 变化
-    // 在这里跟进。这条回调路径不在 Configuration 重建调用链里，调 set API 不递归。
+    // Register application-level Environment callback for follow-system
+    // language/colorMode changes. This callback path is outside the
+    // Configuration rebuild call chain, so calling set APIs is safe.
     try {
       const ctx = this.context
       const envCallback: EnvironmentCallback = {

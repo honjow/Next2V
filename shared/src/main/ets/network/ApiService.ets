@@ -91,27 +91,27 @@ export interface V2exReplyModerationAction {
 }
 
 /**
- * V2EX API 调用层
- * V1 公开接口（无需认证）+ V2 认证接口占位
+ * V2EX API call layer
+ * V1 public API (no auth) + V2 authenticated API placeholder
  */
 export class ApiService {
   private http: HttpClient = HttpClient.getInstance()
   private readonly CONNECT_TIMEOUT_MS: number = 10000
   private readonly READ_TIMEOUT_MS: number = 15000
 
-  // ==================== V1 公开接口 ====================
+  // ==================== V1 Public API (V1) ====================
 
-  /** 获取最新 20 条主题 */
+  /** Get the latest 20 topics */
   async getLatestTopics(): Promise<V2exTopic[]> {
     return ApiService.normalizeTopics(await this.http.get<V2exTopic[]>(ApiConstants.API_LATEST))
   }
 
-  /** 获取每日 10 条热门 */
+  /** Get 10 daily hot topics */
   async getHotTopics(): Promise<V2exTopic[]> {
     return ApiService.normalizeTopics(await this.http.get<V2exTopic[]>(ApiConstants.API_HOT))
   }
 
-  /** 获取网站 hot tab 热榜主题 */
+  /** Get site hot tab trending topics */
   async getHotTabTopics(): Promise<V2exTopic[]> {
     const html = await this.http.getText('/?tab=hot')
     const ids = V2exTabParser.extractTopicIds(html)
@@ -121,7 +121,7 @@ export class ApiService {
     return this.getBatchTopics(ids)
   }
 
-  /** 获取全站最近更新主题 */
+  /** Get all-site recently updated topics */
   async getRecentTopics(page: number = 1): Promise<V2exTopic[]> {
     const safePage = Math.max(1, Math.floor(page))
     const html = await this.http.getText(`/recent?p=${safePage}`)
@@ -132,7 +132,7 @@ export class ApiService {
     return this.getBatchTopics(ids)
   }
 
-  /** 根据 ID 获取单条主题 */
+  /** Get a single topic by ID */
   async getTopicById(topicId: number, cacheBuster: number = 0): Promise<V2exTopic[]> {
     const endpoint =
       cacheBuster > 0
@@ -145,7 +145,7 @@ export class ApiService {
     return ApiService.normalizeTopics(topics)
   }
 
-  /** 根据用户名获取其主题 */
+  /** Get topics by username */
   async getTopicsByUsername(username: string): Promise<V2exTopic[]> {
     return ApiService.normalizeTopics(
       await this.http.get<V2exTopic[]>(
@@ -154,7 +154,7 @@ export class ApiService {
     )
   }
 
-  /** 根据节点名获取主题 */
+  /** Get topics by node name */
   async getTopicsByNode(nodeName: string): Promise<V2exTopic[]> {
     return ApiService.normalizeTopics(
       await this.http.get<V2exTopic[]>(
@@ -163,7 +163,7 @@ export class ApiService {
     )
   }
 
-  /** 根据节点网页获取主题，支持 /go/{node}?p=N 分页。 */
+  /** Get topics from node page, supports /go/{node}?p=N pagination. */
   async getNodeTopicsPage(nodeName: string, page: number = 1): Promise<V2exNodeTopicsPageResult> {
     const clean = (nodeName || '').trim()
     if (!clean) {
@@ -181,7 +181,7 @@ export class ApiService {
     }
   }
 
-  /** 获取主题的回复列表 */
+  /** Get reply list for a topic */
   async getReplies(topicId: number, cacheBuster: number = 0): Promise<V2exReply[]> {
     const endpoint =
       cacheBuster > 0
@@ -194,7 +194,7 @@ export class ApiService {
     return ApiService.normalizeReplies(replies)
   }
 
-  /** 获取主题回复；当旧公开 API 少于主题回复数时，以公开网页 HTML 为准。 */
+  /** Get topic replies; when public API returns fewer than total, fall back to public web page HTML. */
   async getRepliesWithWebFallback(
     topicId: number,
     expectedReplies: number = 0,
@@ -213,7 +213,7 @@ export class ApiService {
     return apiReplies
   }
 
-  /** 获取公开主题网页中的单页回复，用于主题详情页按页追加和末页刷新。 */
+  /** Get a single page of replies from public topic page, for detail page page-by-page append and last-page refresh. */
   async getTopicWebRepliesPage(
     topicId: number,
     page: number = 1,
@@ -223,7 +223,7 @@ export class ApiService {
     return this.topicWebRepliesClient().getPage(topicId, page, cacheBuster, cookie)
   }
 
-  /** 获取公开主题网页中的实际回复，用于旧 replies API 为空或滞后时兜底。 */
+  /** Get actual replies from public topic page, as fallback when legacy replies API is empty or stale. */
   async getTopicWebReplies(topicId: number, cookie: string = ''): Promise<V2exReply[]> {
     return this.topicWebRepliesClient().getReplies(topicId, cookie)
   }
@@ -240,26 +240,26 @@ export class ApiService {
     return this.topicWebRepliesClient().getAll(topicId, cookie, onProgress)
   }
 
-  /** 获取所有节点 */
+  /** Get all nodes */
   async getAllNodes(): Promise<V2exNode[]> {
     return this.http.get<V2exNode[]>(ApiConstants.API_NODES_ALL)
   }
 
-  /** 根据名称获取节点详情 */
+  /** Get node detail by name */
   async getNodeByName(name: string): Promise<V2exNode> {
     return this.http.get<V2exNode>(
       `${ApiConstants.API_NODE_SHOW}?${ApiService.queryParam('name', name)}`,
     )
   }
 
-  /** 获取用户信息 */
+  /** Get user info */
   async getMember(username: string): Promise<V2exMemberProfile> {
     return this.http.get<V2exMemberProfile>(
       `${ApiConstants.API_MEMBER_SHOW}?${ApiService.queryParam('username', username)}`,
     )
   }
 
-  /** 获取成员页实际展示的主题、回复和可用操作。主题列表遵循用户网页隐藏设置。 */
+  /** Get topics, replies, and available actions from member page. Topic list respects user's web hide settings. */
   async getMemberPageSnapshot(
     username: string,
     cookie: string = '',
@@ -303,12 +303,12 @@ export class ApiService {
     return V2exMemberPageParser.parseRepliesPage(html)
   }
 
-  /** 获取站点信息 */
+  /** Get site info */
   async getSiteInfo(): Promise<V2exSiteInfo> {
     return this.http.get<V2exSiteInfo>(ApiConstants.API_SITE_INFO)
   }
 
-  // ==================== V2 Token 只读接口 ====================
+  // ==================== V2 Token Read-only endpoints ====================
 
   async getAuthenticatedMember(token: string): Promise<V2exAuthenticatedMember> {
     return this.http.getWithHeaders<V2exAuthenticatedMember>(
@@ -538,10 +538,10 @@ export class ApiService {
     return V2exAccountListParser.extractMembers(html, currentUsername)
   }
 
-  // ==================== Cookie 账号操作（站内收藏/关注） ====================
+  // ==================== Cookie account actions (site favorites/follows) ====================
 
   /**
-   * 获取主题收藏/取消收藏的切换链接（依赖 Cookie 会话）
+   * Get the favorite/unfavorite toggle link for a topic (requires Cookie session)
    */
   async getTopicFavoriteToggleActionWithCookie(
     cookie: string,
@@ -567,8 +567,8 @@ export class ApiService {
   }
 
   /**
-   * 执行主题收藏切换（依赖 Cookie 会话）
-   * - 返回操作后的收藏状态
+   * Execute topic favorite toggle (requires Cookie session)
+   * - Returns favorite state after operation
    */
   async executeTopicFavoriteToggleWithCookie(
     cookie: string,
@@ -596,8 +596,8 @@ export class ApiService {
   }
 
   /**
-   * 站内收藏/取消收藏主题（依赖 Cookie 会话）
-   * - 返回操作后的收藏状态
+   * Site favorite/unfavorite topic (requires Cookie session)
+   * - Returns favorite state after operation
    */
   async toggleTopicFavoriteWithCookie(cookie: string, topicId: number): Promise<boolean> {
     const toggle = await this.getTopicFavoriteToggleActionWithCookie(cookie, topicId)
@@ -605,7 +605,7 @@ export class ApiService {
   }
 
   /**
-   * 获取节点关注/取消关注的切换链接（依赖 Cookie 会话）
+   * Get the follow/unfollow toggle link for a node (requires Cookie session)
    */
   async getNodeFavoriteToggleActionWithCookie(
     cookie: string,
@@ -631,8 +631,8 @@ export class ApiService {
   }
 
   /**
-   * 执行节点关注切换（依赖 Cookie 会话）
-   * - 返回操作后的关注状态
+   * Execute node follow toggle (requires Cookie session)
+   * - Returns follow state after operation
    */
   async executeNodeFavoriteToggleWithCookie(
     cookie: string,
@@ -661,8 +661,8 @@ export class ApiService {
   }
 
   /**
-   * 站内关注/取消关注节点（依赖 Cookie 会话）
-   * - 返回操作后的关注状态
+   * Site follow/unfollow node (requires Cookie session)
+   * - Returns follow state after operation
    */
   async toggleNodeFavoriteWithCookie(cookie: string, nodeName: string): Promise<boolean> {
     const toggle = await this.getNodeFavoriteToggleActionWithCookie(cookie, nodeName)
@@ -696,7 +696,7 @@ export class ApiService {
   }
 
   /**
-   * 提交主题回复（依赖 Cookie 会话）
+   * Submit topic reply (requires Cookie session)
    */
   async submitReplyWithCookie(cookie: string, topicId: number, content: string): Promise<void> {
     const cleanContent = (content || '').trim()
@@ -972,8 +972,8 @@ export class ApiService {
   }
 
   /**
-   * 提交新主题（依赖 Cookie 会话）
-   * - 返回新主题 ID（无法解析时返回 0）
+   * Submit new topic (requires Cookie session)
+   * - Returns new topic ID (0 when unparseable)
    */
   async createTopicWithCookie(
     cookie: string,
@@ -1528,13 +1528,13 @@ export class ApiService {
       .replace(/&gt;/g, '>')
   }
 
-  // ==================== Tab 聚合接口 ====================
+  // ==================== Tab Aggregate endpoints ====================
 
   /**
-   * 根据 tab key 获取主题列表
-   * - latest 走 JSON API
-   * - hot 使用网站最热 tab（/?tab=hot），避免退回每日 10 条热门 API
-   * - 其余 tab 先 HTML 抓取 ID，再逐个并发获取详情
+   * Get topic list by tab key
+   * - latest uses JSON API
+   * - hot uses the site hottest tab (/?tab=hot), to avoid falling back to the daily 10 hot topics API
+   * - Other tabs: scrape IDs from HTML first, then fetch details concurrently
    */
   async getTabTopics(tab: string): Promise<V2exTopic[]> {
     const nodeName = FeedTabSettings.nodeNameFromKey(tab)
@@ -1564,7 +1564,7 @@ export class ApiService {
   }
 
   /**
-   * 批量获取主题详情（逐个 ID 并发请求，每批 CONCURRENCY 个）
+   * Batch fetch topic details (concurrent per ID, CONCURRENCY per batch)
    */
   private async getBatchTopics(ids: number[]): Promise<V2exTopic[]> {
     const CONCURRENCY = ApiConstants.TAB_HTML_BATCH_SIZE

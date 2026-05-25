@@ -114,10 +114,12 @@ const BRAND_TOKENS = new Set([
   'YouTube', 'Vimeo', 'Gist', 'Imgur', 'Apple',
 ])
 
-// Paths where CJK is allowed (parser/server/test/comment)
+// Paths where CJK is allowed (parser/server/test/comment/generated)
 const CJK_ALLOW_PATH_PATTERNS = [
   /^shared\/src\/main\/ets\/parser\//,
   /^shared\/src\/main\/ets\/settings\/CollectionParsers\.ets/,
+  // Generated locale tables mirror resource JSON; CJK values in non-English locales expected
+  /^shared\/src\/main\/ets\/i18n\/StringMap\.ets$/,
   /__tests__\//,
   /\/test\//,
   /\/tests\//,

@@ -147,14 +147,14 @@ struct Index {
     this.consumePendingV2exUrl()
     this.refreshNotificationBadge()
 
-    // 注册折叠屏状态变化回调
+    // Register foldable screen state change callback
     const foldScreenUtil = FoldScreenUtil.getInstance()
     this.isFoldedAndUseOuterScreen = foldScreenUtil.isFoldedAndUseOuterScreen()
     foldScreenUtil.registerCallback(this.foldScreenCallback)
   }
 
   aboutToDisappear(): void {
-    // 取消注册折叠屏状态变化回调
+    // Unregister foldable screen state change callback
     FoldScreenUtil.getInstance().unregisterCallback(this.foldScreenCallback)
   }
 
@@ -658,7 +658,7 @@ struct Index {
     // AppStorage @Watch broadcasts the action to every live TopicDetailPage
     // in the nav stack — both top and underneath — causing duplicate
     // dialogs (e.g. opening detail B from a link in detail A and tapping
-    // 收藏 fired the toggle on both topics).
+    // Favorite fired the toggle on both topics).
     AppStorage.setOrCreate<string>(
       StorageKeys.TOPIC_DETAIL_ACTION,
       IndexRouteCoordinator.topicActionCommand(topicId, action, Date.now()),

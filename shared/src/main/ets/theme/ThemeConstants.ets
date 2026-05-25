@@ -1,19 +1,19 @@
 /**
- * 品牌和 UI 主题 Token
- * 优先使用系统色彩 Token（$r('sys.color.xxx')），此处定义品牌特有值
+ * Brand and UI theme tokens
+ * Prefer system color tokens ($r('sys.color.xxx')), define brand-specific values here
  */
 export class ThemeConstants {
-  // 品牌色
+  // Brand colors
   static readonly BRAND_PRIMARY: ResourceColor = $r("sys.color.ohos_id_color_activated");
   static readonly BRAND_ACCENT: ResourceColor = $r("sys.color.font_secondary");
 
-  // 文本色（系统 Token 的语义别名，避免各处重复写 $r）
+  // Text colors (semantic aliases for system tokens, avoiding repeated $r calls)
   static readonly TEXT_PRIMARY: ResourceColor = $r("sys.color.font_primary");
   static readonly TEXT_SECONDARY: ResourceColor = $r("sys.color.font_secondary");
   static readonly TEXT_LINK: ResourceColor = $r("sys.color.ohos_id_color_activated");
   static readonly BG_SUB: ResourceColor = $r("sys.color.ohos_id_color_sub_background");
 
-  // 间距
+  // Spacing
   static readonly SPACE_XS: number = 4;
   static readonly SPACE_SM: number = 8;
   static readonly SPACE_MD: number = 12;
@@ -21,7 +21,7 @@ export class ThemeConstants {
   static readonly SPACE_XL: number = 24;
   static readonly SPACE_XXL: number = 32;
 
-  // 字号
+  // Font sizes
   static readonly FONT_SIZE_TINY: number = 10;
   static readonly FONT_SIZE_TAG: number = 11;
   static readonly FONT_SIZE_CODE: number = 12;
@@ -36,7 +36,7 @@ export class ThemeConstants {
   static readonly FONT_SIZE_H2: number = 22;
   static readonly FONT_SIZE_H1: number = 24;
 
-  // 圆角
+  // Border radius
   static readonly RADIUS_SM: number = 4;
   static readonly RADIUS_MD: number = 22;
   static readonly RADIUS_CARD: number = 24;
@@ -45,7 +45,7 @@ export class ThemeConstants {
   static readonly LIST_ROW_TEXT_INDENT: number = 8;
   static readonly RADIUS_ROUND: number = 999;
 
-  // 尺寸
+  // Dimensions
   static readonly TITLE_BAR_HEIGHT: number = 56;
   static readonly FLOAT_BAR_HEIGHT: number = 76;
   static readonly LOADING_SIZE: number = 32;
@@ -61,17 +61,17 @@ export class ThemeConstants {
   static readonly LINE_HEIGHT_BODY: number = 20;
   static readonly LINE_HEIGHT_CODE: number = 18;
 
-  // 图标与触摸目标
+  // Icons and touch targets
   static readonly ICON_SIZE_SM: number = 16;
   static readonly TOUCH_TARGET_SM: number = 36;
 
-  // 代码块颜色（非系统 Token，需自定义）
+  // Code block colors (not system tokens, must be custom defined)
   static readonly CODE_BG: ResourceColor = "#303236";
   static readonly CODE_TEXT: ResourceColor = "#FFFFFF";
   static readonly CODE_ICON: ResourceColor = "#CCCCCC";
   static readonly PRESSED_OVERLAY: ResourceColor = "#40FFFFFF";
 
-  // 动画
+  // Animations
   static readonly ANIM_DURATION: number = 400;
   static readonly ANIM_STATE_RESET_MS: number = 420;
   static readonly ANIM_DONE_DELAY_MS: number = 200;

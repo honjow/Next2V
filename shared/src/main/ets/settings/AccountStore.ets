@@ -141,8 +141,8 @@ export class AccountStore {
   }
 
   /**
-   * 从 preferences 读取持久化的活跃账户 ID 并恢复到 transient static 字段。
-   * 必须在 getActiveId() 之前调用以确保进程重启后活跃 ID 不丢失。
+   * Read the persisted active account ID from preferences and restore to transient static field.
+   * Must be called before getActiveId() to ensure active ID survives process restart.
    */
   static async restoreActiveId(context: common.UIAbilityContext): Promise<string> {
     try {
@@ -152,7 +152,7 @@ export class AccountStore {
         AccountStore.activeAccountId = persisted
       }
     } catch {
-      // 读取失败时保留当前 transient 值
+      // Retain current transient value on read failure
     }
     return AccountStore.activeAccountId
   }
@@ -173,9 +173,9 @@ export class AccountStore {
   }
 
   /**
-   * 从单账户 (CookieJarSettings + AuthSessionSettings) 迁移到 AccountStore。
-   * 读原 store，只写 AccountStore + ACTIVE_ACCOUNT_ID，不修改原 store。
-   * 幂等：已有记录或 schemaVersion 已存在则跳过。
+   * Migrate from single account (CookieJarSettings + AuthSessionSettings) to AccountStore.
+   * Read original store, write only AccountStore + ACTIVE_ACCOUNT_ID, do not modify original store.
+   * Idempotent: skip if records exist or schemaVersion is already present.
    */
   static async migrateFromSingletonIfNeeded(context: common.UIAbilityContext): Promise<AccountRecord | null> {
     try {

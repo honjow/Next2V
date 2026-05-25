@@ -7,10 +7,10 @@ const HTTP_PREFIX: string = 'http'
 export type AvatarSize = 'large' | 'xlarge' | 'xxlarge' | 'xxxlarge'
 
 /**
- * 图片 URL 处理工具
+ * Image URL processing utility
  */
 export class ImageUtils {
-  /** V2EX 返回的头像 URL 是 // 开头，需要补 https: 前缀 */
+  /** V2EX avatar URLs start with //, need https: prefix prepended */
   static avatarUrl(path: string, size: AvatarSize = 'large'): string {
     if (!path) {
       return ''
@@ -38,7 +38,7 @@ export class ImageUtils {
     return ImageUtils.avatarUrl(source)
   }
 
-  /** 将 V2EX 头像 URL 的 mini/normal 尺寸安全升级为 API/CDN 常见的 large 尺寸。 */
+  /** Safely upgrade V2EX avatar URL from mini/normal to large size (common in API/CDN). */
   private static preferLargeAvatar(path: string, size: AvatarSize = 'large'): string {
     return (path || '')
       .replace(/_(?:mini|normal)(\.\w+)([?#].*)?$/, `_${size}$1$2`)

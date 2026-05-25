@@ -21,6 +21,12 @@ export class LanguageSettings {
   static readonly MODE_ZH_TW: AppLanguageMode = 'zh-Hant-TW'
   static readonly MODE_EN: AppLanguageMode = 'en-US'
 
+  // Cache the last system language applied in follow-system mode.
+  // When reapplyForFollowSystem sees the same value, it short-circuits
+  // to avoid setAppPreferredLanguage churn that triggers recursive
+  // onConfigurationUpdated → reapplyForFollowSystem loops.
+  private static lastAppliedFollowSystemLanguage: string = ''
+
   static apply(areaID: string): LanguageSettingsSnapshot {
     const mode = LanguageSettings.normalizeMode(areaID)
     const normalized = LanguageSettings.resolveTargetLanguage(mode)
@@ -32,12 +38,18 @@ export class LanguageSettings {
         console.error('setAppPreferredLanguage failed: ' + e.message)
       }
     }
+    // Seed the follow-system guard cache so reapplyForFollowSystem
+    // does not re-apply the same language on the first Environment callback.
+    if (mode === LanguageSettings.MODE_SYSTEM && normalized) {
+      LanguageSettings.lastAppliedFollowSystemLanguage = normalized
+    }
     setAppStorageValue<AppLanguageMode>(StorageKeys.LANGUAGE_MODE, mode)
     return { mode }
   }
 
-  // 跟随系统时取系统当前语言作为具体值 set。setAppPreferredLanguage('default')
-  // 在 OS 层无法清除上次 pin，所以不能直接传 default。
+  // Follow-system mode: resolve the current system language as the concrete
+  // value to set. setAppPreferredLanguage('default') cannot clear a previous
+  // pin at the OS level, so we must pass the resolved locale explicitly.
   private static resolveTargetLanguage(mode: AppLanguageMode): string {
     if (mode !== LanguageSettings.MODE_SYSTEM) {
       return mode
@@ -51,8 +63,8 @@ export class LanguageSettings {
     return ''
   }
 
-  // 由 ApplicationContext EnvironmentCallback 调用（application-level 异步事件，
-  // 不在 Configuration 重建调用链里，所以可以安全 set，不会递归）。
+  // Called by ApplicationContext EnvironmentCallback (application-level async event,
+  // outside the Configuration rebuild call chain, so setAppPreferredLanguage is safe).
   static reapplyForFollowSystem(): void {
     const mode = (AppStorage.get<string>(StorageKeys.LANGUAGE_MODE) || LanguageSettings.MODE_SYSTEM) as string
     if (LanguageSettings.normalizeMode(mode) !== LanguageSettings.MODE_SYSTEM) {
@@ -63,8 +75,16 @@ export class LanguageSettings {
     if (!sys) {
       return
     }
+    // Short-circuit: skip if this is the same system language we already applied.
+    // Without this guard, every setAppPreferredLanguage(sys) triggers another
+    // onConfigurationUpdated callback, which calls reapplyForFollowSystem again,
+    // creating an infinite config-change loop that freezes the app.
+    if (sys === LanguageSettings.lastAppliedFollowSystemLanguage) {
+      return
+    }
     try {
       i18n.System.setAppPreferredLanguage(sys)
+      LanguageSettings.lastAppliedFollowSystemLanguage = sys
     } catch (error) {
       const e = error as Error
       console.error('reapplyForFollowSystem failed: ' + e.message)

@@ -15,11 +15,11 @@ export interface TextResponseWithHeaders {
 }
 
 /**
- * 通用 HTTP 客户端
- * - 超时控制（连接 10s / 读取 15s）
- * - 指数退避重试（最多 3 次）
- * - 请求后自动 destroy 防止内存泄漏
- * - 启用 HTTP 缓存
+ * General-purpose HTTP client
+ * - Timeout control (connect 10s / read 15s)
+ * - Exponential backoff retry (max 3 attempts)
+ * - Auto-destroy after request to prevent memory leaks
+ * - Enable HTTP caching
  */
 export class HttpClient {
   private static instance: HttpClient
@@ -109,23 +109,23 @@ export class HttpClient {
     return this.request<T>(endpoint, http.RequestMethod.GET, MAX_RETRIES, merged, false)
   }
 
-  /** GET 请求获取纯文本（用于 HTML 抓取） */
+  /** GET request for plain text (for HTML scraping) */
   async getText(endpoint: string): Promise<string> {
     return this.requestText(endpoint, http.RequestMethod.GET)
   }
 
-  /** GET 请求获取纯文本（附带自定义 headers，例如 Cookie） */
+  /** GET request for plain text with custom headers (e.g. Cookie) */
   async getTextWithHeaders(endpoint: string, headers: Record<string, string>): Promise<string> {
     return this.requestText(endpoint, http.RequestMethod.GET, MAX_RETRIES, headers)
   }
 
-  /** GET 请求获取纯文本和响应头（用于 Cookie 私有页识别 /2fa redirect） */
+  /** GET request for plain text and response headers (for Cookie private-page detection / 2FA redirect) */
   async getTextResponseWithHeaders(endpoint: string, headers: Record<string, string>): Promise<TextResponseWithHeaders> {
     return this.requestTextResponse(endpoint, http.RequestMethod.GET, MAX_RETRIES, headers)
   }
 
   /**
-   * 纯文本请求，返回原始字符串（不执行 JSON.parse）
+   * Plain text request, returns raw string (no JSON.parse)
    */
   async requestText(
     endpoint: string,

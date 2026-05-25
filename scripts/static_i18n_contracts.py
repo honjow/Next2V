@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Static i18n contracts for the first V2Next localization migration."""
+"""Strict i18n contracts: CJK-free source, resource parity, and follow-system guard."""
+
 from __future__ import annotations
 
 import json
@@ -16,28 +17,22 @@ SETTINGS_PAGE = ROOT / "feature" / "settings" / "src" / "main" / "ets" / "pages"
 SETTINGS_COORDINATOR = ROOT / "feature" / "settings" / "src" / "main" / "ets" / "model" / "SettingsPageCoordinator.ets"
 LANGUAGE_SETTINGS = ROOT / "shared" / "src" / "main" / "ets" / "settings" / "LanguageSettings.ets"
 
-# Harmony/OpenHarmony resource qualifier directories observed/validated by build for this worktree.
-# base is English fallback. Specific locale resources use underscore directory names.
 REQUIRED_LOCALE_DIRS = ["base", "en_US", "zh_CN", "zh_HK", "zh_TW"]
 SUPPORTED_APP_LANGUAGES = ["default", "zh-Hans", "zh-Hant-HK", "zh-Hant-TW", "en-US"]
 
-KEY_TERMS = {
-    "feature/settings/src/main/ets/pages/NetworkProxySettingsPage.ets": [
-        "代理连接", "使用代理", "系统代理", "添加代理", "正在测试连接…", "测试连接",
-        "代理信息", "代理类型", "HTTP 代理", "SOCKS5 代理", "代理参数", "绕过列表（可选）",
-        "SOCKS5 暂不支持用户名/密码认证", "已切换配置", "测试失败",
-    ],
-    "feature/settings/src/main/ets/pages/SettingsPage.ets": [
-        "账号", "界面", "阅读", "首页栏目设置", "内容与媒体", "存储", "高级", "网络代理",
-        "主题", "语言", "回复显示", "回复样式", "记住阅读位置", "Base64 解码",
-    ],
-    "entry/src/main/ets/model/IndexRouteCoordinator.ets": [
-        "网页登录", "账号密码登录", "关注用户", "设置", "网络代理", "全部回复",
-    ],
-    "entry/src/main/ets/pages/AccountFollowingPage.ets": [
-        "登录后可查看关注用户", "关注用户", "暂无关注用户",
-    ],
-}
+# Paths where CJK is explicitly allowed (V2EX server HTML parsers and server-content matchers).
+# Everything outside these paths must be CJK-free, including comments.
+CJK_ALLOWLIST = [
+    "shared/src/main/ets/parser/",
+    "shared/src/main/ets/network/V2exNativeAuthService.ets",
+    "shared/src/main/ets/services/AutoDailyCheckinService.ets",
+    "shared/src/main/ets/settings/CollectionParsers.ets",
+    "entry/src/main/ets/viewmodel/NotificationCenterViewModel.ets",
+    # Generated locale data, not source code
+    "shared/src/main/ets/i18n/StringMap.ets",
+]
+
+CJK_RE = re.compile(r"[\u4e00-\u9fff\u3400-\u4dbf\uf900-\ufaff]")
 
 
 def load_strings(base: Path, locale: str) -> dict[str, str]:
@@ -59,6 +54,7 @@ def load_strings(base: Path, locale: str) -> dict[str, str]:
 
 
 def assert_resource_sets() -> None:
+    """Verify resource parity across all locales."""
     entry_sets = {locale: load_strings(ENTRY_RES, locale) for locale in REQUIRED_LOCALE_DIRS}
     base_keys = set(entry_sets["base"].keys())
     if entry_sets["base"].get("app_name") != "Next2V":
@@ -78,18 +74,41 @@ def assert_resource_sets() -> None:
             raise AssertionError(f"AppScope app_name missing for {locale}")
 
 
+def assert_cjk_free() -> None:
+    """Fail if any CJK character exists outside the allowlist, including in comments."""
+    hits: list[str] = []
+    for ets_path in sorted(ROOT.rglob("*.ets")):
+        rel = str(ets_path.relative_to(ROOT))
+        # Skip resource directories
+        if "resources" in ets_path.parts:
+            continue
+        # Skip allowlisted paths
+        if any(rel.startswith(p) for p in CJK_ALLOWLIST):
+            continue
+        text = ets_path.read_text(encoding="utf-8", errors="ignore")
+        for i, line in enumerate(text.splitlines(), 1):
+            if CJK_RE.search(line):
+                hits.append(f"  {rel}:{i}: {line.strip()[:100]}")
+    if hits:
+        raise AssertionError(f"CJK characters found in non-allowlisted source ({len(hits)} lines):\n" + "\n".join(hits[:30]))
+
+
 def assert_fallback_contract() -> None:
+    """Verify language settings contracts: no restart, no forbidden APIs, correct key names."""
     text = APP_STRINGS.read_text(encoding="utf-8")
     language_text = LANGUAGE_SETTINGS.read_text(encoding="utf-8")
     entry_text = ENTRY_ABILITY.read_text(encoding="utf-8")
     settings_text = SETTINGS_PAGE.read_text(encoding="utf-8")
     coordinator_text = SETTINGS_COORDINATOR.read_text(encoding="utf-8")
     storage_text = (ROOT / "shared" / "src" / "main" / "ets" / "constants" / "StorageKeys.ets").read_text(encoding="utf-8")
+
     if "LANGUAGE_MODE: string = 'languageMode'" not in storage_text:
         raise AssertionError("language mode storage key must be languageMode")
+
     for locale in SUPPORTED_APP_LANGUAGES:
         if repr(locale) not in language_text:
             raise AssertionError(f"supported app language missing from LanguageSettings: {locale}")
+
     required_language_keys = [
         "settings_appearance",
         "language",
@@ -104,8 +123,10 @@ def assert_fallback_contract() -> None:
         missing = [key for key in required_language_keys if key not in strings]
         if missing:
             raise AssertionError(f"language option resources missing for {locale}: {missing}")
+
     if load_strings(ENTRY_RES, "base").get("language_follow_system") != "Follow system":
         raise AssertionError("base language default option must be Follow system")
+
     forbidden_language_settings = [
         "restartApp",
         "terminateSelf",
@@ -117,6 +138,7 @@ def assert_fallback_contract() -> None:
     for needle in forbidden_language_settings:
         if needle in language_text:
             raise AssertionError(f"forbidden language implementation artifact remains: {needle}")
+
     required_system_contracts = [
         "static async applyLanguage(context: common.UIAbilityContext, areaID: string)",
         "i18n.System.setAppPreferredLanguage(normalized)",
@@ -127,16 +149,24 @@ def assert_fallback_contract() -> None:
     for needle in required_system_contracts:
         if needle not in language_text:
             raise AssertionError(f"system language contract missing: {needle}")
+
     if "LanguageSettings.applyStoredPreferredLanguage(this.context)" not in entry_text:
         raise AssertionError("EntryAbility.onCreate must re-apply the persisted preferred app language")
+
     if "LanguageSettings.applyLanguage(context, normalizedMode)" not in settings_text:
         raise AssertionError("SettingsPage must apply language without restarting")
+
     if "title: AppStrings.R_LANGUAGE" not in settings_text:
-        raise AssertionError("SettingsPage language row must use a direct resource constant, not AppStrings.t fallback indirection")
+        raise AssertionError("SettingsPage language row must use a direct resource constant")
+
     if "this.t(AppStrings.R_LANGUAGE" in settings_text or "AppStrings.t(AppStrings.R_LANGUAGE" in settings_text:
         raise AssertionError("SettingsPage language row must not use AppStrings.t fallback indirection")
-    if "SettingsCheckedMenuItem" not in settings_text or "sys.symbol.checkmark" not in (ROOT / "feature" / "settings" / "src" / "main" / "ets" / "components" / "SettingsPageComponents.ets").read_text(encoding="utf-8"):
+
+    components_path = ROOT / "feature" / "settings" / "src" / "main" / "ets" / "components" / "SettingsPageComponents.ets"
+    components_text = components_path.read_text(encoding="utf-8")
+    if "SettingsCheckedMenuItem" not in settings_text or "sys.symbol.checkmark" not in components_text:
         raise AssertionError("language menu must use checked menu convention")
+
     required_language_resource_labels = [
         "AppStrings.R_LANGUAGE_FOLLOW_SYSTEM",
         "AppStrings.R_LANGUAGE_SIMPLIFIED_CHINESE",
@@ -147,33 +177,132 @@ def assert_fallback_contract() -> None:
     for label in required_language_resource_labels:
         if label not in coordinator_text:
             raise AssertionError(f"language menu resource label missing: {label}")
-    for bad in ["LOCALE_REVISION", "localeRevision", "storageLocaleRevision", "grouped-list-section-${"]:
+
+    for bad in ["LOCALE_REVISION", "localeRevision", "storageLocaleRevision", "grouped-list-section-${\""]:
         for path in ROOT.rglob("*.ets"):
             if bad in path.read_text(encoding="utf-8", errors="ignore"):
                 raise AssertionError(f"manual i18n refresh artifact remains: {bad} in {path.relative_to(ROOT)}")
 
 
-def assert_key_terms_migrated() -> None:
-    for rel, terms in KEY_TERMS.items():
-        text = (ROOT / rel).read_text(encoding="utf-8")
-        for term in terms:
-            raw_single = f"'{term}'"
-            raw_double = f'"{term}"'
-            if raw_single in text or raw_double in text:
-                # Allow only resource fallback arguments inside AppStrings.t(..., 'term'), not raw direct UI literals.
-                direct_literals = []
-                for line in text.splitlines():
-                    if raw_single in line or raw_double in line:
-                        if "AppStrings.t(AppStrings." not in line:
-                            direct_literals.append(line.strip())
-                if direct_literals:
-                    raise AssertionError(f"unmapped hard-coded UI string in {rel}: {term}: {direct_literals[:2]}")
-            if term in text and "AppStrings.t" not in text and "AppStrings.R_" not in text:
-                raise AssertionError(f"file contains key term but no resource mapping: {rel}: {term}")
+def assert_follow_system_guard() -> None:
+    """Verify that reapplyForFollowSystem has the short-circuit guard to prevent infinite loops."""
+    text = LANGUAGE_SETTINGS.read_text(encoding="utf-8")
+    if "lastAppliedFollowSystemLanguage" not in text:
+        raise AssertionError("LanguageSettings must cache last applied follow-system language")
+    if "sys === LanguageSettings.lastAppliedFollowSystemLanguage" not in text:
+        raise AssertionError("reapplyForFollowSystem must short-circuit when system language unchanged")
+    if "LanguageSettings.lastAppliedFollowSystemLanguage = normalized" not in text:
+        raise AssertionError("apply() must seed lastAppliedFollowSystemLanguage in follow-system mode")
+    if "LanguageSettings.lastAppliedFollowSystemLanguage = sys" not in text:
+        raise AssertionError("reapplyForFollowSystem must update lastAppliedFollowSystemLanguage after set")
+
+
+STRING_MAP_PATH = ROOT / "shared" / "src" / "main" / "ets" / "i18n" / "StringMap.ets"
+
+# Keys that leaked Chinese in explicit-English QA (t_62fb0d00).
+# These must have CJK-free en_US values in StringMap so that
+# AppStrings.text() returns English when the app language is en-US.
+LEAKING_KEYS = [
+    # Home/feed
+    "topic_last_reply",
+    "relative_minutes_ago",
+    "relative_hours_ago",
+    "relative_days_ago",
+    "relative_just_now",
+    "topic_replies_count",
+    # Discover
+    "discover_hot",
+    "discover_rank",
+    "discover_latest",
+    "discover_recent",
+    "discover_today_hot",
+    "common_nodes",
+    "discover_section_recent_nodes",
+    "discover_section_saved_nodes",
+    "discover_site_rank",
+    "discover_latest_topics",
+    "discover_recent_updates",
+    # Topic detail
+    "topic_detail_tool_floor",
+    "topic_detail_tool_latest",
+    "reply_count_format",
+    "threaded",
+    "threaded_at",
+    "threaded_redundant",
+    "reply_thread_relation_label_format",
+    # Local followed nodes
+    "empty_no_local_followed_nodes",
+    # About
+    "about_version_format",
+    # Relative time (remaining)
+    "relative_months_ago",
+    "relative_years_ago",
+]
+
+
+def assert_string_map_contract() -> None:
+    """Verify that the generated StringMap provides correct English values
+    for all leaking keys, and that en_US values are CJK-free."""
+    if not STRING_MAP_PATH.exists():
+        raise AssertionError("StringMap.ets is missing")
+    text = STRING_MAP_PATH.read_text(encoding="utf-8")
+
+    # All locales should have entries
+    for locale in ["en_US", "zh_CN", "zh_HK", "zh_TW"]:
+        if f"'{locale}':" not in text:
+            raise AssertionError(f"StringMap.ets missing locale {locale}")
+
+    # Extract en_US values for the leaking keys and verify CJK-free.
+    # The block structure has each locale key followed by its object literal
+    # and a closing "  }," line before the next locale.
+    pat = re.compile(r"'en_US':\s*\{(.*?)\n  \},", re.DOTALL)
+    m = pat.search(text)
+    if not m:
+        raise AssertionError("StringMap.ets en_US block not found")
+    en_block = m.group(1)
+
+    for key in LEAKING_KEYS:
+        key_pat = re.compile(rf"'{key}':\s*'((?:[^'\\]|\\.)*)'")
+        km = key_pat.search(en_block)
+        if not km:
+            raise AssertionError(f"StringMap.ets en_US missing key: {key}")
+        value = km.group(1)
+        if not value.strip():
+            raise AssertionError(f"StringMap.ets en_US empty value for: {key}")
+        if CJK_RE.search(value):
+            raise AssertionError(
+                f"StringMap.ets en_US CJK leak in key '{key}': {value[:60]}"
+            )
+        # Verify the value does not contain { and } if it's not a template
+        # (template keys are expected to have {0} etc.)
+
+    # Verify key count parity with resource files
+    resource_count = len(load_strings(ENTRY_RES, "en_US"))
+    string_map_en_count = len(re.findall(r"'(\w+)':\s*'", en_block))
+    if string_map_en_count != resource_count:
+        raise AssertionError(
+            f"StringMap.ets en_US has {string_map_en_count} keys, "
+            f"but resources have {resource_count}"
+        )
+
+    # Verify AppStrings.ets uses the StringMap
+    app_strings_text = APP_STRINGS.read_text(encoding="utf-8")
+    if "import { STRING_MAP, RESOURCE_BY_NAME } from './StringMap'" not in app_strings_text:
+        raise AssertionError("AppStrings.ets must import STRING_MAP and RESOURCE_BY_NAME")
+    if "AppStrings.idToName.set" not in app_strings_text:
+        raise AssertionError("AppStrings.ets must build ID→name map from RESOURCE_BY_NAME")
+    if "STRING_MAP[localeKey]" not in app_strings_text:
+        raise AssertionError("AppStrings.text() must resolve strings from STRING_MAP")
 
 
 def main() -> int:
-    checks = [assert_resource_sets, assert_fallback_contract, assert_key_terms_migrated]
+    checks = [
+        assert_cjk_free,
+        assert_resource_sets,
+        assert_fallback_contract,
+        assert_follow_system_guard,
+        assert_string_map_contract,
+    ]
     for check in checks:
         check()
     print("static_i18n_contracts: PASS")

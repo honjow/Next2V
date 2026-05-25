@@ -27,9 +27,9 @@ export interface ApiV2Response<T> {
 }
 
 /**
- * V2EX API v2 调用层（Token 认证）
- * - 仅做基础请求封装：GET/POST/DELETE
- * - 额外返回响应 headers（用于 rate-limit 等信息展示）
+ * V2EX API v2 call layer (Token auth)
+ * - Basic request wrapper only: GET/POST/DELETE
+ * - Also returns response headers (for rate-limit info display)
  */
 export class ApiV2Service {
   private httpClient: HttpClient = HttpClient.getInstance()

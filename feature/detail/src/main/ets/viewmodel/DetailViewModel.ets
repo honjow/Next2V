@@ -23,7 +23,7 @@ export interface ReplyThankSnapshot {
 }
 
 /**
- * 主题详情页 ViewModel
+ * Topic detail page ViewModel
  */
 @Observed
 export class DetailViewModel {

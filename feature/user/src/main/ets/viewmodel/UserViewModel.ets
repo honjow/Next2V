@@ -4,7 +4,7 @@ import {
 } from 'shared'
 
 /**
- * 主题数据源 — 用于 LazyForEach
+ * Topic data source — for LazyForEach
  */
 export class TopicDataSource implements IDataSource {
   private dataArray: V2exTopic[] = []
@@ -87,7 +87,7 @@ export class ReplyDataSource implements IDataSource {
 }
 
 /**
- * 用户主页 ViewModel
+ * User profile ViewModel
  */
 @Observed
 export class UserViewModel {

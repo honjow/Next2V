@@ -1,7 +1,7 @@
 import { V2exNode, V2exTopic, ApiService, ApiV2Service, NodeSearchUtils, translateApiError } from 'shared'
 
 /**
- * 节点数据源 — 用于 LazyForEach
+ * Node data source — for LazyForEach
  */
 export class NodeDataSource implements IDataSource {
   private dataArray: V2exNode[] = []
@@ -35,7 +35,7 @@ export class NodeDataSource implements IDataSource {
 }
 
 /**
- * 节点页 ViewModel
+ * Node page ViewModel
  */
 @Observed
 export class NodeViewModel {
@@ -58,7 +58,7 @@ export class NodeViewModel {
   private apiV2: ApiV2Service = new ApiV2Service()
   private readonly V2_PAGE_SIZE: number = 10
 
-  /** 加载所有节点 */
+  /** Load all nodes */
   async loadAllNodes(): Promise<void> {
     this.isLoading = true
     this.errorMessage = ''
@@ -83,7 +83,7 @@ export class NodeViewModel {
     this.nodeDataSource.setData(NodeSearchUtils.filter(this.allNodes, this.keyword))
   }
 
-  /** 加载指定节点下的主题 */
+  /** Load topics under the specified node */
   async loadNodeTopics(nodeName: string): Promise<void> {
     this.isLoading = true
     this.errorMessage = ''
@@ -103,7 +103,7 @@ export class NodeViewModel {
     }
   }
 
-  /** 加载节点详情（公开 API，用于未配置 Token 时仍显示真实主题总数） */
+  /** Load node detail (public API, for showing real topic count when Token is not configured) */
   async loadNodeDetail(nodeName: string): Promise<void> {
     this.nodeDetailError = ''
     try {
@@ -114,7 +114,7 @@ export class NodeViewModel {
     }
   }
 
-  /** 加载节点详情（API v2，需要 Token） */
+  /** Load node detail (API v2, requires Token) */
   async loadNodeDetailV2(nodeName: string, token: string): Promise<void> {
     const cleanToken = token.trim()
     if (!cleanToken) {
@@ -132,7 +132,7 @@ export class NodeViewModel {
     }
   }
 
-  /** 加载指定节点下的主题（API v2，支持分页，需要 Token） */
+  /** Load topics under the specified node (API v2, supports pagination, requires Token) */
   async loadNodeTopicsV2(nodeName: string, token: string): Promise<void> {
     this.isLoading = true
     this.errorMessage = ''

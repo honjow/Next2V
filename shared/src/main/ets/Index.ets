@@ -1,4 +1,4 @@
-// 路由参数类型
+// Route parameter types
 export interface TopicDetailParams {
   topicId: number
   targetFloor?: number
@@ -17,7 +17,7 @@ export interface ImagePreviewParams {
   url: string
 }
 
-// 网络层
+// Network layer
 export { HttpClient } from './network/HttpClient'
 export { NetworkProxyRequest } from './network/NetworkProxyRequest'
 export type { NetworkProxyRequestOptions, NetworkProxyResponse } from './network/NetworkProxyRequest'
@@ -155,7 +155,7 @@ export type {
   Sov2exSearchResponse,
 } from './network/NetworkTypes'
 
-// 解析
+// Parsers
 export { V2exTabParser } from './parser/V2exTabParser'
 export { V2exAccountParser } from './parser/V2exAccountParser'
 export { V2exNotificationParser } from './parser/V2exNotificationParser'
@@ -171,7 +171,7 @@ export { V2exTopicRepliesParser } from './parser/V2exTopicRepliesParser'
 export { V2exAccountListParser } from './parser/V2exAccountListParser'
 export type { V2exAccountMemberListItem } from './parser/V2exAccountListParser'
 
-// 工具
+// Utilities
 export { defaultSheetOptions, towFASheetOptions } from './utils/BindSheetHelper'
 export { DateUtils } from './utils/DateUtils'
 export { ImageUtils } from './utils/ImageUtils'
@@ -182,16 +182,16 @@ export type { NodeSearchMatch } from './utils/NodeSearchUtils'
 export { V2exUrlRouter } from './utils/V2exUrlRouter'
 export type { V2exRoute, V2exRouteKind } from './utils/V2exUrlRouter'
 
-// 自适应工具
+// Adaptive utilities
 export { BreakpointSystem } from './utils/BreakpointSystem'
 export { BreakPointType } from './utils/BreakPointType'
 export type { Breakpoint } from './utils/BreakpointSystem'
 export { FoldScreenUtil } from './utils/FoldScreenUtil'
 
-// 主题
+// Themes
 export { ThemeConstants } from './theme/ThemeConstants'
 
-// 公共组件
+// Shared components
 export { Avatar } from './components/Avatar'
 export { UserName } from './components/UserName'
 export { TimeAgo } from './components/TimeAgo'

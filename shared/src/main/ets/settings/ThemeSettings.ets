@@ -105,8 +105,9 @@ export class ThemeSettings {
         ThemeSettings.setColorModeIfChanged(context, ConfigurationConstant.ColorMode.COLOR_MODE_LIGHT)
         return
       }
-      // auto: 读独立追踪的 SYSTEM_COLOR_MODE（系统真实值），不读 context.config.colorMode
-      // —— 后者在 set 过之后反映的是 app override 值，会导致 dark→auto 回不到 light。
+      // auto: read the independently tracked SYSTEM_COLOR_MODE (the real system value),
+      // not context.config.colorMode — the latter reflects the app override after set,
+      // which would prevent dark→auto from returning to light.
       const sysMode = ThemeSettings.getSystemColorMode(context)
       if (sysMode === ConfigurationConstant.ColorMode.COLOR_MODE_DARK) {
         ThemeSettings.setColorModeIfChanged(context, ConfigurationConstant.ColorMode.COLOR_MODE_DARK)
@@ -123,7 +124,8 @@ export class ThemeSettings {
     }
   }
 
-  // 仅在目标与当前 config.colorMode 不一致时才 set，避免无意义触发重建。
+  // Only call setColorMode when the target differs from context.config.colorMode,
+  // to avoid triggering unnecessary rebuilds.
   private static setColorModeIfChanged(context: common.UIAbilityContext, target: ConfigurationConstant.ColorMode): void {
     if (context.config.colorMode === target) {
       return
@@ -131,9 +133,9 @@ export class ThemeSettings {
     context.setColorMode(target)
   }
 
-  // 由 EntryAbility 在 onCreate 早期（任何 setColorMode 之前）调用一次：把当时
-  // context.config.colorMode 当作系统真实值缓存进 AppStorage。后续 EnvironmentCallback
-  // 会用新的 colorMode 更新这个缓存。
+  // Called once by EntryAbility early in onCreate (before any setColorMode):
+  // snapshots context.config.colorMode as the real system value into AppStorage.
+  // The EnvironmentCallback later updates this cache with new colorMode values.
   static seedSystemColorMode(context: common.UIAbilityContext): void {
     setAppStorageValue<number>(StorageKeys.SYSTEM_COLOR_MODE, context.config.colorMode as number)
   }
@@ -149,7 +151,8 @@ export class ThemeSettings {
     if (stored === ConfigurationConstant.ColorMode.COLOR_MODE_NOT_SET as number) {
       return ConfigurationConstant.ColorMode.COLOR_MODE_NOT_SET
     }
-    // 回退：未 seed 时用 context.config.colorMode（onCreate 之前才会出现）。
+    // Fallback: when not seeded, use context.config.colorMode
+    // (only possible before onCreate).
     const live = context.config.colorMode
     if (live === ConfigurationConstant.ColorMode.COLOR_MODE_DARK) {
       return ConfigurationConstant.ColorMode.COLOR_MODE_DARK
@@ -160,10 +163,10 @@ export class ThemeSettings {
     return ConfigurationConstant.ColorMode.COLOR_MODE_NOT_SET
   }
 
-  // 由 ApplicationContext EnvironmentCallback 调用（application-level 异步事件，
-  // 不在 Configuration 重建调用链里，可以安全调 setColorMode）。
+  // Called by ApplicationContext EnvironmentCallback (application-level async event,
+  // outside the Configuration rebuild call chain, so setColorMode is safe).
   static reapplyForFollowSystem(context: common.UIAbilityContext, newColorMode?: ConfigurationConstant.ColorMode): void {
-    // 先更新系统真实值缓存（这才是"系统的真实 colorMode"）。
+    // First, update the cached real system colorMode.
     if (newColorMode !== undefined) {
       setAppStorageValue<number>(StorageKeys.SYSTEM_COLOR_MODE, newColorMode as number)
     }

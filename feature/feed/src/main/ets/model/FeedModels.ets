@@ -1,7 +1,7 @@
 import { V2exTopic } from 'shared'
 
 /**
- * Feed 数据源 — 用于 LazyForEach 高性能列表
+ * Feed data source — for LazyForEach high-performance list
  */
 export class FeedDataSource implements IDataSource {
   private dataArray: V2exTopic[] = []
@@ -28,7 +28,7 @@ export class FeedDataSource implements IDataSource {
     }
   }
 
-  /** 替换全部数据 */
+  /** Replace all data */
   setData(data: V2exTopic[]): void {
     this.dataArray = data
     this.listeners.forEach(listener => listener.onDataReloaded())
@@ -38,7 +38,7 @@ export class FeedDataSource implements IDataSource {
     return this.dataArray
   }
 
-  /** 追加数据（触底加载） */
+  /** Append data (load on scroll to bottom) */
   appendData(data: V2exTopic[]): void {
     if (data.length === 0) {
       return

@@ -1,14 +1,48 @@
 import { common } from '@kit.AbilityKit'
+import { STRING_MAP, RESOURCE_BY_NAME } from './StringMap'
+import { StorageKeys } from '../constants/StorageKeys'
 
 export type AppLanguageMode = 'default' | 'zh-Hans' | 'zh-Hant-HK' | 'zh-Hant-TW' | 'en-US'
+
+const LOCALE_KEY_MAP: Record<AppLanguageMode, string> = {
+  'default': '',
+  'zh-Hans': 'zh_CN',
+  'zh-Hant-HK': 'zh_HK',
+  'zh-Hant-TW': 'zh_TW',
+  'en-US': 'en_US',
+}
 
 export class AppStrings {
   static readonly DEFAULT_LANGUAGE_MODE: AppLanguageMode = 'default'
   static readonly SUPPORTED_LOCALES: string[] = ['default', 'zh-Hans', 'zh-Hant-HK', 'zh-Hant-TW', 'en-US']
   private static context: common.UIAbilityContext | null = null
+  private static idToName: Map<number, string> = new Map()
+  private static mapReady: boolean = false
 
   static init(context: common.UIAbilityContext): void {
     AppStrings.context = context
+    AppStrings.buildIdToNameMap()
+  }
+
+  /**
+   * Build a reverse map from resource ID to resource name.
+   * Called once at init so that text() can resolve any Resource to its name
+   * and look up the correct locale string in STRING_MAP.
+   */
+  private static buildIdToNameMap(): void {
+    try {
+      const entries = Object.entries(RESOURCE_BY_NAME) as [string, Resource][]
+      for (let i = 0; i < entries.length; i++) {
+        const name = entries[i][0]
+        const resource = entries[i][1]
+        if (resource && typeof resource.id === 'number' && resource.id > 0) {
+          AppStrings.idToName.set(resource.id, name)
+        }
+      }
+      AppStrings.mapReady = AppStrings.idToName.size > 0
+    } catch (_error) {
+      console.error('AppStrings.buildIdToNameMap failed')
+    }
   }
 
   static format(template: string, values: string[]): string {
@@ -19,7 +53,44 @@ export class AppStrings {
     return text
   }
 
+  /**
+   * Resolve a localized string for the given Resource.
+   *
+   * When the app language mode is explicitly set (not 'default'),
+   * this method looks up the string in the pre-loaded STRING_MAP
+   * keyed by the current locale. This avoids depending on
+   * resourceManager.getStringSync which resolves using the
+   * cold-start locale (i18n.System.setAppPreferredLanguage only
+   * takes effect on cold start per HarmonyOS docs).
+   *
+   * Falls back to resourceManager.getStringSync for:
+   * - Follow-system mode (let the system resolve)
+   * - Resources not found in the string map (e.g. system resources)
+   * - Before the ID→name map is ready
+   */
   static text(resource: Resource, fallback: string): string {
+    // When language mode is explicit, try the pre-loaded string map first.
+    const mode = AppStrings.currentLanguageMode()
+    const localeKey = LOCALE_KEY_MAP[mode] || ''
+    if (localeKey && AppStrings.mapReady) {
+      try {
+        const name = AppStrings.idToName.get(resource.id)
+        if (name) {
+          const localeMap = STRING_MAP[localeKey]
+          if (localeMap) {
+            const value = localeMap[name]
+            if (value !== undefined && value !== null) {
+              return value
+            }
+          }
+        }
+      } catch (_error) {
+        // Fall through to resourceManager path
+      }
+    }
+
+    // Fallback: use resourceManager (correct for follow-system mode
+    // or as a safety net when the string map is unavailable).
     try {
       const resourceSource = AppStrings.context?.resourceManager
       if (!resourceSource) {
@@ -29,6 +100,22 @@ export class AppStrings {
     } catch (_error) {
       return fallback
     }
+  }
+
+  /**
+   * Return the current app language mode.
+   * Reads from AppStorage (set by LanguageSettings.apply).
+   */
+  private static currentLanguageMode(): AppLanguageMode {
+    try {
+      const mode = AppStorage.get<string>(StorageKeys.LANGUAGE_MODE)
+      if (mode) {
+        return mode as AppLanguageMode
+      }
+    } catch (_error) {
+      // AppStorage may not be available during early init
+    }
+    return AppStrings.DEFAULT_LANGUAGE_MODE
   }
 
   static readonly R_APP_NAME: Resource = $r('app.string.app_name')

@@ -1,8 +1,8 @@
 import { display } from '@kit.ArkUI'
 
 /**
- * 折叠屏状态工具类
- * 用于判断折叠屏的折叠状态和显示模式
+ * Foldable screen state utility
+ * Determines foldable screen fold state and display mode
  */
 export class FoldScreenUtil {
   private static instance: FoldScreenUtil
@@ -13,7 +13,7 @@ export class FoldScreenUtil {
   private constructor() {}
 
   /**
-   * 获取单例实例
+   * Get singleton instance
    */
   static getInstance(): FoldScreenUtil {
     if (!FoldScreenUtil.instance) {
@@ -23,8 +23,8 @@ export class FoldScreenUtil {
   }
 
   /**
-   * 初始化监听器
-   * 建议在应用启动时调用一次
+   * Initialize listeners
+   * Call once at app startup
    */
   init(): void {
     if (this.isInitialized) {
@@ -33,22 +33,22 @@ export class FoldScreenUtil {
     
     this.isInitialized = true
     
-    // 初始化状态
+    // Initialize state
     this.updateState()
     
-    // 监听折叠状态变化
+    // Listen for fold state changes
     display.on('foldStatusChange', () => {
       this.updateState()
     })
     
-    // 监听显示模式变化（内屏/外屏切换）
+    // Listen for display mode changes (inner/outer screen switch)
     display.on('foldDisplayModeChange', () => {
       this.updateState()
     })
   }
 
   /**
-   * 更新折叠屏状态
+   * Update foldable screen state
    */
   private updateState(): void {
     let newState = false
@@ -60,7 +60,7 @@ export class FoldScreenUtil {
         const foldStatus = display.getFoldStatus()
         const foldDisplayMode = display.getFoldDisplayMode()
         
-        // 只有在折叠状态 + 外屏显示时，才返回 true
+        // Only return true when folded + outer screen display
         newState = 
           foldStatus === display.FoldStatus.FOLD_STATUS_FOLDED &&
           foldDisplayMode === display.FoldDisplayMode.FOLD_DISPLAY_MODE_MAIN
@@ -70,7 +70,7 @@ export class FoldScreenUtil {
       newState = false
     }
     
-    // 状态变化时通知所有监听者
+    // Notify all listeners on state change
     if (this.isFoldedAndOuterScreen !== newState) {
       this.isFoldedAndOuterScreen = newState
       this.notifyCallbacks()
@@ -78,7 +78,7 @@ export class FoldScreenUtil {
   }
 
   /**
-   * 通知所有回调
+   * Notify all callbacks
    */
   private notifyCallbacks(): void {
     this.callbacks.forEach(callback => {
@@ -91,7 +91,7 @@ export class FoldScreenUtil {
   }
 
   /**
-   * 判断是否为折叠屏设备
+   * Check if device is foldable
    */
   isFoldable(): boolean {
     try {
@@ -103,7 +103,7 @@ export class FoldScreenUtil {
   }
 
   /**
-   * 获取当前折叠状态
+   * Get current fold state
    */
   getFoldStatus(): display.FoldStatus {
     try {
@@ -115,7 +115,7 @@ export class FoldScreenUtil {
   }
 
   /**
-   * 获取当前显示模式
+   * Get current display mode
    */
   getFoldDisplayMode(): display.FoldDisplayMode {
     try {
@@ -127,24 +127,24 @@ export class FoldScreenUtil {
   }
 
   /**
-   * 判断是否处于折叠状态且使用外屏
-   * 这是核心方法，用于控制 hideTitleArea
+   * Check if folded and using outer screen
+   * Core method, controls hideTitleArea
    */
   isFoldedAndUseOuterScreen(): boolean {
     return this.isFoldedAndOuterScreen
   }
 
   /**
-   * 注册状态变化回调
-   * @param callback 状态变化时的回调函数
+   * Register state change callback
+   * @param callback Callback when state changes
    */
   registerCallback(callback: (value: boolean) => void): void {
     this.callbacks.push(callback)
   }
 
   /**
-   * 取消注册回调
-   * @param callback 要取消的回调函数
+   * Unregister callback
+   * @param callback Callback to unregister
    */
   unregisterCallback(callback: (value: boolean) => void): void {
     const index = this.callbacks.indexOf(callback)
@@ -154,14 +154,14 @@ export class FoldScreenUtil {
   }
 
   /**
-   * 清除所有回调
+   * Clear all callbacks
    */
   clearCallbacks(): void {
     this.callbacks = []
   }
 
   /**
-   * 获取折叠状态描述（用于调试）
+   * Get fold state description (for debugging)
    */
   getStatusDescription(): string {
     const isFoldable = this.isFoldable()

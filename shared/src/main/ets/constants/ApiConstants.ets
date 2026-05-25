@@ -1,18 +1,18 @@
-/** Tab 项定义 */
+/** Tab item definition */
 export interface TabItem {
   key: string
   label: ResourceStr
 }
 
 /**
- * V2EX API 常量和基础 URL 配置
+ * V2EX API constants and base URL configuration
  */
 export class ApiConstants {
-  // 基础域名（可在设置中切换）
+  // Base domain (configurable in settings)
   static readonly BASE_URL_COM: string = 'https://www.v2ex.com'
   static readonly BASE_URL_CO: string = 'https://www.v2ex.co'
 
-  // V1 API（无需认证，纯读取）
+  // V1 API (no auth, read-only)
   static readonly API_LATEST: string = '/api/topics/latest.json'
   static readonly API_HOT: string = '/api/topics/hot.json'
   static readonly API_TOPIC_SHOW: string = '/api/topics/show.json'
@@ -23,14 +23,14 @@ export class ApiConstants {
   static readonly API_SITE_INFO: string = '/api/site/info.json'
   static readonly API_SITE_STATS: string = '/api/site/stats.json'
 
-  // V2 API（需要 Token 认证）
+  // V2 API (requires Token auth)
   static readonly API_V2_NOTIFICATIONS: string = '/api/v2/notifications'
   static readonly API_V2_MEMBER: string = '/api/v2/member'
   static readonly API_V2_TOKEN: string = '/api/v2/token'
   static readonly API_V2_NODE: string = '/api/v2/nodes'
   static readonly API_V2_TOPIC: string = '/api/v2/topics'
 
-  // Tab 定义（顺序即显示顺序）
+  // Tab definitions (order matches display order)
   static readonly TAB_ITEMS: TabItem[] = [
     { key: 'tech', label: $r('app.string.v2ex_tab_tech') },
     { key: 'creative', label: $r('app.string.v2ex_tab_creative') },
@@ -45,7 +45,7 @@ export class ApiConstants {
     { key: 'r2', label: 'R2' },
   ]
 
-  /** Tab 页面对应的 URL query（latest 无独立 URL，走 API） */
+  /** URL query per tab page (latest has no standalone URL, uses API) */
   static readonly TAB_URLS: Record<string, string> = {
     'tech': '/?tab=tech',
     'creative': '/?tab=creative',
@@ -59,9 +59,9 @@ export class ApiConstants {
     'r2': '/?tab=r2',
   }
 
-  /** HTML 抓取后并发请求的批次大小 */
+  /** Concurrency batch size after HTML scrape */
   static readonly TAB_HTML_BATCH_SIZE: number = 5
 
-  /** TabBar 高度 */
+  /** TabBar height */
   static readonly TAB_BAR_HEIGHT: number = 38
 }
