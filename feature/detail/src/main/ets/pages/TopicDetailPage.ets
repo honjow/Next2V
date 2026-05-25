@@ -1279,21 +1279,15 @@ export struct TopicDetailPage {
       promptAction.openToast({ message: AppStrings.text($r('app.string.api_error_auth_required'), 'Please sign in') }).catch((_error: Error) => {})
       return
     }
-    this.isSiteFavoriteLoading = true
     this.api
       .getTopicFavoriteToggleActionWithCookie(cookie, this.topicId)
       .then((toggle) => {
-        this.isSiteFavorited = toggle.currentlyOn
-        this.topicDetailSiteFavorited = toggle.currentlyOn
-        this.confirmSiteFavoriteToggle(cookie, toggle)
+        this.executeSiteFavoriteToggle(cookie, toggle)
       })
       .catch((error: Error) => {
         promptAction
           .openToast({ message: translateApiError(error) })
           .catch((_error: Error) => {})
-      })
-      .finally(() => {
-        this.isSiteFavoriteLoading = false
       })
   }
 
@@ -1498,7 +1492,7 @@ export struct TopicDetailPage {
   private confirmReplyThank(cookie: string, reply: V2exReply): void {
     this.getUIContext().showAlertDialog({
       title: AppStrings.text(AppStrings.R_REPLY_THANK_TITLE, 'Thank reply'),
-      message: TopicDetailActionCoordinator.replyActionMessage(AppStrings.text(AppStrings.R_ACTION_THANK, 'Thank'), reply.member.username),
+      message: TopicDetailActionCoordinator.replyThankMessage(reply.member.username),
       autoCancel: false,
       primaryButton: {
         value: AppStrings.text($r('app.string.common_cancel'), 'Cancel'),
