@@ -23,13 +23,13 @@ export class AccountPageCoordinator {
   static get ADD_ANOTHER_ACCOUNT_TITLE(): ResourceStr { return AppStrings.R_ACCOUNT_ADD_ANOTHER }
 
   static get ACCOUNT_LIST_HEADER(): ResourceStr { return AppStrings.R_ACCOUNT_LIST_HEADER }
-  static get ACCOUNT_ACTIVE_LABEL(): string { return AppStrings.text(AppStrings.R_ACCOUNT_ACTIVE_LABEL, 'Active') }
+  static get ACCOUNT_ACTIVE_LABEL(): ResourceStr { return AppStrings.R_ACCOUNT_ACTIVE_LABEL }
   static get REMOVE_ACCOUNT_TITLE(): ResourceStr { return AppStrings.R_ACCOUNT_REMOVE_TITLE }
   static removeAccountMessage(username: string): string {
     return AppStrings.format(AppStrings.text(AppStrings.R_ACCOUNT_REMOVE_MESSAGE_ARG, 'Remove "{0}"? Other accounts will not be affected.'), [username])
   }
-  static get SWITCH_LABEL(): string { return AppStrings.text(AppStrings.R_ACCOUNT_SWITCH_LABEL, 'Switch') }
-  static get REMOVE_LABEL(): string { return AppStrings.text(AppStrings.R_ACCOUNT_REMOVE_LABEL, 'Remove') }
+  static get SWITCH_LABEL(): ResourceStr { return AppStrings.R_ACCOUNT_SWITCH_LABEL }
+  static get REMOVE_LABEL(): ResourceStr { return AppStrings.R_ACCOUNT_REMOVE_LABEL }
 
   static get PROFILE_TITLE(): ResourceStr { return AppStrings.R_PROFILE_HOME }
   static get BALANCE_DETAIL_TITLE(): ResourceStr { return AppStrings.R_BALANCE_DETAILS }

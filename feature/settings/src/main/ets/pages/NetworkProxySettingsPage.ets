@@ -464,7 +464,7 @@ export struct NetworkProxySettingsPage {
     return AppStrings.text(AppStrings.R_PROXY_CONFIG_TITLE, 'Proxy configuration')
   }
 
-  private profileSubtitle(profile: NetworkProxyProfile): string {
+  private profileSubtitle(profile: NetworkProxyProfile): ResourceStr {
     return NetworkProxySettings.summary(profile.snapshot)
   }
 

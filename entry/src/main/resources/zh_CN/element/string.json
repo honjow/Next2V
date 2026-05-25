@@ -817,6 +817,26 @@
       "value": "未配置"
     },
     {
+      "name": "proxy_summary_http",
+      "value": "HTTP 代理 · {0}:{1}"
+    },
+    {
+      "name": "proxy_summary_https",
+      "value": "HTTPS 代理端点 · {0}:{1}"
+    },
+    {
+      "name": "proxy_summary_socks5",
+      "value": "SOCKS5 代理 · {0}:{1}"
+    },
+    {
+      "name": "proxy_summary_http_not_configured",
+      "value": "HTTP 代理 · 未配置"
+    },
+    {
+      "name": "proxy_summary_socks5_not_configured",
+      "value": "SOCKS5 代理 · 未配置"
+    },
+    {
       "name": "local_data",
       "value": "本地数据"
     },

@@ -242,7 +242,7 @@
     },
     {
       "name": "account_active_label",
-      "value": "Active"
+      "value": "Current"
     },
     {
       "name": "account_remove_title",
@@ -815,6 +815,26 @@
     {
       "name": "proxy_not_configured",
       "value": "Not configured"
+    },
+    {
+      "name": "proxy_summary_http",
+      "value": "HTTP proxy · {0}:{1}"
+    },
+    {
+      "name": "proxy_summary_https",
+      "value": "HTTPS proxy endpoint · {0}:{1}"
+    },
+    {
+      "name": "proxy_summary_socks5",
+      "value": "SOCKS5 proxy · {0}:{1}"
+    },
+    {
+      "name": "proxy_summary_http_not_configured",
+      "value": "HTTP proxy · Not configured"
+    },
+    {
+      "name": "proxy_summary_socks5_not_configured",
+      "value": "SOCKS5 proxy · Not configured"
     },
     {
       "name": "local_data",

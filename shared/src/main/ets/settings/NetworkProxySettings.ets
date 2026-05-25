@@ -143,16 +143,28 @@ export class NetworkProxySettings {
     }
   }
 
-  static summary(snapshot: NetworkProxySettingsSnapshot): string {
+  static summary(snapshot: NetworkProxySettingsSnapshot): ResourceStr {
     const normalized = NetworkProxySettings.normalize(snapshot)
     if (normalized.mode === 'http' || normalized.mode === 'socks5') {
       if (normalized.host && normalized.port > 0) {
-        const scheme = normalized.mode === 'http' && normalized.proxyScheme === 'https' ? AppStrings.text(AppStrings.R_HTTPS_PROXY_ENTRY, 'HTTPS proxy endpoint') : NetworkProxySettings.label(normalized.mode)
-        return `${scheme} · ${normalized.host}:${normalized.port}`
+        const port = `${normalized.port}`
+        if (normalized.mode === 'socks5') {
+          return $r('app.string.proxy_summary_socks5', normalized.host, port)
+        }
+        if (normalized.proxyScheme === 'https') {
+          return $r('app.string.proxy_summary_https', normalized.host, port)
+        }
+        return $r('app.string.proxy_summary_http', normalized.host, port)
       }
-      return `${NetworkProxySettings.label(normalized.mode)} · ${AppStrings.text(AppStrings.R_PROXY_NOT_CONFIGURED, 'Not configured')}`
+      if (normalized.mode === 'socks5') {
+        return AppStrings.R_PROXY_SUMMARY_SOCKS5_NOT_CONFIGURED
+      }
+      return AppStrings.R_PROXY_SUMMARY_HTTP_NOT_CONFIGURED
     }
-    return NetworkProxySettings.label(normalized.mode)
+    if (normalized.mode === 'system') {
+      return AppStrings.R_SYSTEM_PROXY
+    }
+    return AppStrings.R_COMMON_CLOSED
   }
 
   static validate(snapshot: NetworkProxySettingsSnapshot): NetworkProxyValidationResult {
