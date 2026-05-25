@@ -298,7 +298,7 @@ export struct NotificationPage {
     return {
       tokenConfigured: this.authTokenConfigured || token.length > 0,
       token: token,
-      cookieConfigured: cookie.length > 0,
+      cookieConfigured: this.authCookieConfigured || cookie.length > 0,
       cookie: cookie
     }
   }

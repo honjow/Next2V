@@ -406,7 +406,13 @@ export struct AccountDashboardPage {
     if (!username) {
       return false
     }
-    return !!this.activeAccountId && !!this.activeAccountUsername && this.hasCookieAccount()
+    return this.hasRestoredActiveAccountIdentity()
+  }
+
+  private hasRestoredActiveAccountIdentity(): boolean {
+    return !!this.activeAccountId &&
+      this.hasCookieAccount() &&
+      !!(this.activeAccountUsername || this.sessionUsername)
   }
 
   private loadAccounts(): void {

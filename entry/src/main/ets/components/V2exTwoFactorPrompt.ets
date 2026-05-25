@@ -1,6 +1,7 @@
 import { common } from '@kit.AbilityKit'
 import { promptAction } from '@kit.ArkUI'
 import {
+  AccountSessionCoordinator,
   ApiService,
   AppActionButton,
   AppModalScaffold,
@@ -142,6 +143,7 @@ export struct V2exTwoFactorPrompt {
       avatar,
       validatedAt: Date.now()
     })
+    await AccountSessionCoordinator.registerCurrentSession(context, snapshot.username, avatar, 'cookie')
     AutoDailyCheckinService.tryCheckin(context, snapshot.cookie, 'two-factor-login').catch((error: Error) => {
       console.info('auto daily check-in two-factor-login trigger failed: ' + error.message)
     })

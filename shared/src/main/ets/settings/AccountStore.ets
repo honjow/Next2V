@@ -150,6 +150,7 @@ export class AccountStore {
       const persisted = store.getSync(KEY_ACTIVE_ACCOUNT_ID, '') as string
       if (persisted) {
         AccountStore.activeAccountId = persisted
+        setAppStorageValue<string>(StorageKeys.ACTIVE_ACCOUNT_ID, persisted)
       }
     } catch {
       // Retain current transient value on read failure

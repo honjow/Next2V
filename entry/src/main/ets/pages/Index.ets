@@ -139,6 +139,9 @@ struct Index {
   @StorageLink(StorageKeys.USER_PROFILE_APPBAR_AVATAR_STATES)
   userProfileAppbarAvatarStates: string = '{}';
   @StorageLink(StorageKeys.NOTIFICATION_UNREAD_COUNT) notificationUnreadCount: number = 0;
+  @StorageLink(StorageKeys.AUTH_SESSION_UPDATED_AT)
+  @Watch('onAuthSessionUpdated')
+  authSessionUpdatedAt: number = 0;
   @StorageLink(StorageKeys.TWO_FACTOR_VISIBLE) twoFactorVisible: boolean = false;
   @StorageLink(StorageKeys.TWO_FACTOR_COOKIE) twoFactorCookie: string = '';
   @StorageLink(StorageKeys.TWO_FACTOR_SOURCE) twoFactorSource: string = '';
@@ -172,6 +175,15 @@ struct Index {
 
   onPendingV2exUrlChanged(_propName: string): void {
     this.consumePendingV2exUrl()
+  }
+
+  onAuthSessionUpdated(_propName: string): void {
+    if (this.authSessionUpdatedAt <= 0) {
+      return
+    }
+    this.notificationRefreshKey = Date.now()
+    this.accountRefreshKey = Date.now()
+    this.refreshNotificationBadge()
   }
 
   @Builder
