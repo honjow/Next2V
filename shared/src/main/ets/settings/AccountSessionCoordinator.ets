@@ -137,9 +137,46 @@ export class AccountSessionCoordinator {
     } else {
       // No accounts left — clear current runtime identity
       console.info('AccountSessionCoordinator: removeAccount no accounts remain, clearing session')
+      await AccountStore.setActiveId(context, '')
       await CookieJarSettings.clear(context)
       await AuthSessionSettings.clear(context)
     }
+  }
+
+  /**
+   * Remove/sign out the currently active account as one state-machine operation.
+   * This is the page-safe logout entry point: it removes the active AccountStore
+   * record, switches to a remaining account through removeAccount(), or clears
+   * active id + cookie/session runtime state if no account remains.
+   */
+  static async removeActiveAccount(context: common.UIAbilityContext): Promise<void> {
+    await AccountStore.migrateFromSingletonIfNeeded(context)
+    await AccountStore.restoreActiveId(context)
+
+    let activeId = AccountStore.getActiveId()
+    if (!activeId) {
+      const records = await AccountStore.getAll(context)
+      const session = await AuthSessionSettings.load(context).catch((_error: Error): AuthSessionSnapshot => {
+        return { loginMode: 'none', username: '', avatar: '', validatedAt: 0 }
+      })
+      const currentCookie = CookieJarSettings.getCurrentCookie()
+      const baseUrl = HttpClient.getInstance().getBaseUrl()
+      const matchingRecord = records.find((record: AccountRecord) =>
+        record.baseUrl === baseUrl &&
+        ((session.username && record.username === session.username) ||
+          (currentCookie && record.cookieSnapshot === currentCookie))
+      )
+      activeId = matchingRecord?.id || ''
+    }
+
+    if (activeId) {
+      await AccountSessionCoordinator.removeAccount(context, activeId)
+      return
+    }
+
+    await AccountStore.setActiveId(context, '')
+    await CookieJarSettings.clear(context)
+    await AuthSessionSettings.clear(context)
   }
 
   /**

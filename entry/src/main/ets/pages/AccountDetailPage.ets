@@ -5,6 +5,7 @@ import {
 } from '../components/AccountDashboardComponents'
 import {
   AccountMetaSettings,
+  AccountSessionCoordinator,
   ApiService,
   AppStrings,
   AuthSettings,
@@ -349,7 +350,6 @@ export struct AccountDetailPage {
         fontColor: Color.Red,
         action: () => {
           this.performLogout(context)
-          this.ns.pop()
         }
       }
     })
@@ -357,10 +357,16 @@ export struct AccountDetailPage {
 
   private performLogout(context: common.UIAbilityContext): void {
     this.isLoggingOut = true
-    const baseUrl = this.http.getBaseUrl()
-    CookieJarSettings.clearForBaseUrl(context, baseUrl)
-      .then(() => AuthSessionSettings.clear(context))
+    AccountSessionCoordinator.removeActiveAccount(context)
       .then(() => {
+        this.authToken = ''
+        this.authProfile = null
+        this.storedUsername = ''
+        this.sessionUsername = ''
+        this.sessionAvatar = ''
+        this.accountBalance = null
+        this.dailyMission = null
+        this.accountMetaError = ''
         this.ns.pop()
       })
       .catch((error: Error) => {

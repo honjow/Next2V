@@ -60,6 +60,7 @@ export struct AccountDashboardPage {
   @StorageLink(StorageKeys.AUTH_SESSION_AVATAR) sessionAvatar: string = ''
   @StorageLink(StorageKeys.AUTH_SESSION_VALIDATED_AT) sessionValidatedAt: number = 0
   @StorageLink(StorageKeys.AUTH_SESSION_UPDATED_AT) @Watch('onAuthSessionUpdated') authSessionUpdatedAt: number = 0
+  @StorageLink(StorageKeys.ACTIVE_ACCOUNT_ID) activeAccountId: string = ''
   @StorageLink(StorageKeys.API_RATE_LIMIT_LIMIT) apiRateLimitLimit: number = 0
   @StorageLink(StorageKeys.API_RATE_LIMIT_REMAINING) apiRateLimitRemaining: number = 0
   @StorageLink(StorageKeys.API_RATE_LIMIT_RESET) apiRateLimitReset: number = 0
@@ -217,7 +218,7 @@ export struct AccountDashboardPage {
             this.redeemDailyMission()
           },
           openDetail: () => {
-            if (this.currentUsername()) {
+            if (this.canOpenActiveAccountDetail()) {
               this.ns.pushPathByName('AccountDetail', null)
             }
           }
@@ -398,6 +399,14 @@ export struct AccountDashboardPage {
       this.accountsCount,
       this.sessionUsername
     )
+  }
+
+  private canOpenActiveAccountDetail(): boolean {
+    const username = this.currentUsername()
+    if (!username) {
+      return false
+    }
+    return !!this.activeAccountId && !!this.activeAccountUsername && this.hasCookieAccount()
   }
 
   private loadAccounts(): void {
