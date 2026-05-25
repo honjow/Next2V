@@ -17,30 +17,29 @@ import {
   ThemeConstants,
   TwoFactorChallengeService,
   V2exNativeAuthService,
-  translateApiError
+  translateApiError,
 } from 'shared'
 import type { NativeLoginChallenge, NativeLoginSnapshot } from 'shared'
-
 @Component
 export struct V2exNativeLoginPage {
-  @Consume('ns') stack: NavPathStack
+  @Consume('ns') stack: NavPathStack;
 
-  @State private username: string = ''
-  @State private password: string = ''
-  @State private captchaCode: string = ''
-  @State private captchaField: string = ''
-  @State private captchaUrl: string = ''
-  @State private errorMessage: string = ''
-  @State private isLoading: boolean = false
-  @State private isChallengeLoading: boolean = false
+  @State private username: string = '';
+  @State private password: string = '';
+  @State private captchaCode: string = '';
+  @State private captchaField: string = '';
+  @State private captchaUrl: string = '';
+  @State private errorMessage: string = '';
+  @State private isLoading: boolean = false;
+  @State private isChallengeLoading: boolean = false;
 
-  private challenge: NativeLoginChallenge | null = null
-  private auth: V2exNativeAuthService = new V2exNativeAuthService()
-  private api: ApiService = new ApiService()
-  private http: HttpClient = HttpClient.getInstance()
-  private isPageActive: boolean = false
-  private challengeRequestId: number = 0
-  private authRequestId: number = 0
+  private challenge: NativeLoginChallenge | null = null;
+  private auth: V2exNativeAuthService = new V2exNativeAuthService();
+  private api: ApiService = new ApiService();
+  private http: HttpClient = HttpClient.getInstance();
+  private isPageActive: boolean = false;
+  private challengeRequestId: number = 0;
+  private authRequestId: number = 0;
 
   aboutToAppear(): void {
     this.isPageActive = true
@@ -59,7 +58,6 @@ export struct V2exNativeLoginPage {
         ListItem() {
           this.LoginForm()
         }
-
         ListItem() {
           this.WebLoginForm()
         }
@@ -78,9 +76,30 @@ export struct V2exNativeLoginPage {
         action: () => {
           this.clearSecretState()
           this.stack.pushPathByName('V2exWebLogin', null)
-        }
+        },
       })
     }
+  }
+
+  @Builder CaptchaImageSlot() {
+    Stack({ alignContent: Alignment.Center }) {
+      if (this.captchaUrl) {
+        Image(this.captchaUrl).width('100%').height('100%').objectFit(ImageFit.Contain)
+      } else if (this.isChallengeLoading) {
+        LoadingProgress().width(ThemeConstants.LOADING_SIZE).height(ThemeConstants.LOADING_SIZE)
+      }
+    }
+    .width('100%')
+    // V2EX sign-in captcha is rendered at 320x80.
+    .aspectRatio(4)
+    .backgroundColor(this.captchaUrl ? Color.White : $r('sys.color.ohos_id_color_button_normal'))
+    .borderRadius(ThemeConstants.RADIUS_MD)
+    .clip(true)
+    .onClick(() => {
+      if (!this.isChallengeLoading) {
+        this.loadChallenge()
+      }
+    })
   }
 
   @Builder LoginForm() {
@@ -88,48 +107,42 @@ export struct V2exNativeLoginPage {
       AppTextField({
         text: $username,
         placeholder: $r('app.string.username_or_email_placeholder'),
-        onTextChange: (value: string) => { this.username = value }
-      })
-        .width('100%')
-
+        onTextChange: (value: string) => {
+          this.username = value
+        },
+      }).width('100%')
       AppTextField({
         text: $password,
         placeholder: AppStrings.text(AppStrings.R_LOGIN_PASSWORD_PLACEHOLDER, 'Password'),
         inputType: InputType.Password,
-        onTextChange: (value: string) => { this.password = value }
-      })
-        .width('100%')
+        onTextChange: (value: string) => {
+          this.password = value
+        },
+      }).width('100%')
 
-      if (this.captchaUrl) {
-        Image(this.captchaUrl)
-          .width('100%')
-          .objectFit(ImageFit.Contain)
-          .backgroundColor(Color.White)
-          .borderRadius(ThemeConstants.RADIUS_MD)
-          .margin(ThemeConstants.SPACE_SM)
-          .onClick(() => { this.loadChallenge() })
-      }
-
-      if (this.shouldShowCaptchaField()) {
-        AppTextField({
-          text: $captchaCode,
-          placeholder: AppStrings.text(AppStrings.R_LOGIN_CAPTCHA_PLACEHOLDER, 'Captcha'),
-          onTextChange: (value: string) => { this.captchaCode = value }
-        })
-          .width('100%')
+      if (this.shouldShowCaptchaSection()) {
+        Column({ space: ThemeConstants.SPACE_SM }) {
+          this.CaptchaImageSlot()
+          AppTextField({
+            text: $captchaCode,
+            placeholder: AppStrings.text(AppStrings.R_LOGIN_CAPTCHA_PLACEHOLDER, 'Captcha'),
+            onTextChange: (value: string) => {
+              this.captchaCode = value
+            },
+          }).width('100%')
+        }.width('100%')
       }
 
       if (this.errorMessage) {
-        Text(this.errorMessage)
-          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-          .fontColor(Color.Red)
+        Text(this.errorMessage).fontSize(ThemeConstants.FONT_SIZE_CAPTION).fontColor(Color.Red)
       }
-
       AppActionButton({
         label: this.loginButtonText(),
         primary: true,
         isEnabled: !this.isLoading && !this.isChallengeLoading,
-        action: () => { this.login() }
+        action: () => {
+          this.login()
+        },
       })
     }
     .width('100%')
@@ -154,9 +167,8 @@ export struct V2exNativeLoginPage {
     this.errorMessage = message
     this.captchaCode = ''
     this.challenge = null
-    this.captchaField = ''
-    this.captchaUrl = ''
-    this.auth.prepareLogin()
+    this.auth
+      .prepareLogin()
       .then((challenge: NativeLoginChallenge) => {
         if (!this.isPageActive || requestId !== this.challengeRequestId) {
           return ''
@@ -164,6 +176,7 @@ export struct V2exNativeLoginPage {
         this.challenge = challenge
         this.captchaField = challenge.captchaField
         if (!challenge.captchaUrl) {
+          this.captchaUrl = ''
           return ''
         }
         return this.auth.fetchCaptchaDataUrl(challenge)
@@ -190,7 +203,12 @@ export struct V2exNativeLoginPage {
 
   private restartLoginChallenge(): void {
     this.clearSecretState()
-    this.loadChallenge(AppStrings.text($r('app.string.login_form_refetched'), 'Login form refreshed. Please enter your password again.'))
+    this.loadChallenge(
+      AppStrings.text(
+        $r('app.string.login_form_refetched'),
+        'Login form refreshed. Please enter your password again.',
+      ),
+    )
   }
 
   private clearSecretState(): void {
@@ -213,15 +231,24 @@ export struct V2exNativeLoginPage {
     const cleanUsername = this.username.trim()
     const pwd = this.password
     if (!cleanUsername || !pwd) {
-      this.errorMessage = AppStrings.text($r('app.string.login_username_password_required'), 'Enter username and password')
+      this.errorMessage = AppStrings.text(
+        $r('app.string.login_username_password_required'),
+        'Enter username and password',
+      )
       return
     }
     if (!this.challenge) {
-      this.errorMessage = AppStrings.text(AppStrings.R_LOGIN_FORM_NOT_LOADED, 'Login form not loaded, please try again')
+      this.errorMessage = AppStrings.text(
+        AppStrings.R_LOGIN_FORM_NOT_LOADED,
+        'Login form not loaded, please try again',
+      )
       return
     }
     if (this.captchaUrl && !this.captchaField) {
-      this.errorMessage = AppStrings.text(AppStrings.R_LOGIN_CAPTCHA_FORM_NOT_LOADED, 'Captcha form not loaded, please refresh')
+      this.errorMessage = AppStrings.text(
+        AppStrings.R_LOGIN_CAPTCHA_FORM_NOT_LOADED,
+        'Captcha form not loaded, please refresh',
+      )
       return
     }
     const requestId = ++this.authRequestId
@@ -233,7 +260,8 @@ export struct V2exNativeLoginPage {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     const baseUrl = this.http.getBaseUrl()
 
-    this.auth.loginWithChallenge(challenge, cleanUsername, pwd, captchaCode)
+    this.auth
+      .loginWithChallenge(challenge, cleanUsername, pwd, captchaCode)
       .then((snapshot: NativeLoginSnapshot) => {
         if (!this.isCurrentAuthRequest(requestId)) {
           return
@@ -247,7 +275,10 @@ export struct V2exNativeLoginPage {
         if (error instanceof NativeTwoFactorRequiredError) {
           this.password = ''
           TwoFactorChallengeService.request(error.challenge.cookie, 'nativeLogin')
-          this.errorMessage = AppStrings.text(AppStrings.R_TWO_FACTOR_REQUIRED, 'V2EX requires two-factor verification')
+          this.errorMessage = AppStrings.text(
+            AppStrings.R_TWO_FACTOR_REQUIRED,
+            'V2EX requires two-factor verification',
+          )
           return Promise.resolve()
         }
         this.errorMessage = translateApiError(error)
@@ -264,12 +295,11 @@ export struct V2exNativeLoginPage {
       })
   }
 
-
   private async finishLogin(
     context: common.UIAbilityContext,
     baseUrl: string,
     snapshot: NativeLoginSnapshot,
-    requestId: number
+    requestId: number,
   ): Promise<void> {
     if (!this.isCurrentAuthRequest(requestId)) {
       return
@@ -292,12 +322,19 @@ export struct V2exNativeLoginPage {
         loginMode: 'cookie',
         username: snapshot.username,
         avatar,
-        validatedAt: Date.now()
+        validatedAt: Date.now(),
       })
-      await AccountSessionCoordinator.registerCurrentSession(context, snapshot.username, avatar, 'cookie')
-      AutoDailyCheckinService.tryCheckin(context, snapshot.cookie, 'native-login').catch((error: Error) => {
-        console.info('auto daily check-in native-login trigger failed: ' + error.message)
-      })
+      await AccountSessionCoordinator.registerCurrentSession(
+        context,
+        snapshot.username,
+        avatar,
+        'cookie',
+      )
+      AutoDailyCheckinService.tryCheckin(context, snapshot.cookie, 'native-login').catch(
+        (error: Error) => {
+          console.info('auto daily check-in native-login trigger failed: ' + error.message)
+        },
+      )
     } catch (error) {
       await this.clearPersistedLogin(context)
       const caught = error as Error
@@ -320,19 +357,29 @@ export struct V2exNativeLoginPage {
   }
 
   private async clearPersistedLogin(context: common.UIAbilityContext): Promise<void> {
-    const restored = await AccountSessionCoordinator.restoreActiveAccount(context).catch((_error: Error) => null)
+    const restored = await AccountSessionCoordinator.restoreActiveAccount(context).catch(
+      (_error: Error) => null,
+    )
     if (restored) {
-      console.info('V2exNativeLoginPage: restored previous active account after login persist failure')
+      console.info(
+        'V2exNativeLoginPage: restored previous active account after login persist failure',
+      )
       return
     }
     await Promise.all([
-      CookieJarSettings.clearForBaseUrl(context, this.http.getBaseUrl()).catch((clearError: Error) => {
-        console.error('clear cookie after login persist failure: ' + clearError.message)
-      }),
+      CookieJarSettings.clearForBaseUrl(context, this.http.getBaseUrl()).catch(
+        (clearError: Error) => {
+          console.error('clear cookie after login persist failure: ' + clearError.message)
+        },
+      ),
       AuthSessionSettings.clear(context).catch((clearError: Error) => {
         console.error('clear auth session after login persist failure: ' + clearError.message)
-      })
+      }),
     ])
+  }
+
+  private shouldShowCaptchaSection(): boolean {
+    return this.isChallengeLoading || !!this.captchaField || !!this.captchaUrl
   }
 
   private shouldShowCaptchaField(): boolean {
