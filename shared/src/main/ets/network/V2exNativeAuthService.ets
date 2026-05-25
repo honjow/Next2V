@@ -69,6 +69,14 @@ export class V2exNativeAuthService {
     const signinUrl = `${baseUrl}/signin`
 
     const getRes = await this.requestText(signinUrl, http.RequestMethod.GET, '')
+    if (V2exNativeAuthService.isLocationPath(getRes.location, '/signin/cooldown')) {
+      throw ApiErrors.loginRestricted('')
+    }
+    const restriction = V2exSigninParser.extractLoginRestriction(getRes.text)
+    if (restriction) {
+      throw ApiErrors.loginRestricted(restriction.restrictedIp)
+    }
+
     const form = V2exSigninParser.extractForm(getRes.text)
     if (!form) {
       throw ApiErrors.parseLoginPageFailed()
@@ -125,6 +133,11 @@ export class V2exNativeAuthService {
       throw new NativeTwoFactorRequiredError(V2exNativeAuthService.fixedTwoFactorChallenge(cookieAfterPost))
     }
 
+    const postRestriction = V2exSigninParser.extractLoginRestriction(postRes.text)
+    if (postRestriction) {
+      throw ApiErrors.loginRestricted(postRestriction.restrictedIp)
+    }
+
     const loginError = V2exSigninParser.extractProblemMessage(postRes.text)
     if (V2exNativeAuthService.isSigninResponse(postRes) || loginError) {
       throw ApiErrors.loginFailedDetail(V2exNativeAuthService.loginInputErrorMessage(challenge, loginError))
@@ -161,6 +174,11 @@ export class V2exNativeAuthService {
         !V2exNativeAuthService.isLocationPath(postRes.location, V2exNativeAuthService.SETTINGS_PATH)) {
         throw ApiErrors.loginRedirectUnsupported(postRes.location)
       }
+      const settingsRestriction = V2exSigninParser.extractLoginRestriction(settingsRes.text)
+      if (settingsRestriction) {
+        throw ApiErrors.loginRestricted(settingsRestriction.restrictedIp)
+      }
+
       const settingsProblem = V2exSigninParser.extractProblemMessage(settingsRes.text)
       if (V2exNativeAuthService.isSigninResponse(settingsRes) || settingsProblem) {
         throw ApiErrors.loginFailedDetail(V2exNativeAuthService.loginInputErrorMessage(challenge, settingsProblem))

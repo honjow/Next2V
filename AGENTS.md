@@ -15,3 +15,4 @@ Worktree copies under `/home/gamer/v2next-worktrees/*/AGENTS.md` must mirror thi
 - [Device QA login and 2FA](docs/agent-guides/device-qa-login-2fa.md)
 - [Commit messages](docs/agent-guides/commit-messages.md)
 - [Shared device lease (`192.168.50.237:12345`)](docs/device-lease.md)
+- [Multi-account contract](docs/agent-guides/multi-account-contract.md) — mandatory blockers for account management entry, pending add-account state machine, honest logged-out UI, switch/remove/restore semantics.

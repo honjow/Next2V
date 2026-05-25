@@ -55,7 +55,7 @@ export class ReadingSettings {
       return ReadingSettings.loadFromStore(store)
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '读取阅读设置失败')
+      throw new Error(e.message || 'Failed to read reading settings')
     }
   }
 
@@ -90,7 +90,7 @@ export class ReadingSettings {
       store.flushSync()
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '保存阅读设置失败')
+      throw new Error(e.message || 'Failed to save reading settings')
     }
   }
 
@@ -108,7 +108,7 @@ export class ReadingSettings {
       store.flushSync()
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '保存阅读设置失败')
+      throw new Error(e.message || 'Failed to save reading settings')
     }
   }
 
@@ -120,7 +120,7 @@ export class ReadingSettings {
       store.flushSync()
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '保存阅读位置设置失败')
+      throw new Error(e.message || 'Failed to save reading position settings')
     }
   }
 
@@ -133,7 +133,7 @@ export class ReadingSettings {
       store.flushSync()
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '保存 Base64 解码设置失败')
+      throw new Error(e.message || 'Failed to save Base64 decode settings')
     }
   }
 

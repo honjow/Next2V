@@ -98,7 +98,7 @@ export class IndexRouteCoordinator {
       'homeNodeSettings': AppStrings.R_NAV_HOME_NODES,
       'readingSettings': AppStrings.R_NAV_READING,
       'networkProxySettings': AppStrings.R_NAV_NETWORK_PROXY,
-      'account': AppStrings.R_ACCOUNT_SECTION,
+      'account': AppStrings.R_ACCOUNT_MANAGEMENT,
       'savedTopics': AppStrings.R_NAV_READ_LATER,
       'viewedTopics': AppStrings.R_NAV_RECENTLY_VIEWED,
       'savedNodes': AppStrings.R_NAV_LOCAL_NODES,

@@ -174,7 +174,7 @@
     },
     {
       "name": "common_cleared",
-      "value": "已清空"
+      "value": "Cleared"
     },
     {
       "name": "common_saved",
@@ -194,7 +194,7 @@
     },
     {
       "name": "common_open_failed",
-      "value": "打开失败"
+      "value": "Open failed"
     },
     {
       "name": "login_required_continue",
@@ -243,6 +243,26 @@
     {
       "name": "account_active_label",
       "value": "Active"
+    },
+    {
+      "name": "account_remove_title",
+      "value": "Remove Account"
+    },
+    {
+      "name": "account_remove_message_arg",
+      "value": "Remove \"{0}\"? Other accounts will not be affected."
+    },
+    {
+      "name": "account_switch_label",
+      "value": "Switch"
+    },
+    {
+      "name": "account_remove_label",
+      "value": "Remove"
+    },
+    {
+      "name": "common_remove",
+      "value": "Remove"
     },
     {
       "name": "profile_home",
@@ -1006,819 +1026,819 @@
     },
     {
       "name": "common_apply",
-      "value": "应用"
+      "value": "Apply"
     },
     {
       "name": "common_apply_search",
-      "value": "应用搜索"
+      "value": "Apply search"
     },
     {
       "name": "common_searching",
-      "value": "搜索中"
+      "value": "Searching"
     },
     {
       "name": "common_all",
-      "value": "全部"
+      "value": "All"
     },
     {
       "name": "common_topic",
-      "value": "主题"
+      "value": "Topic"
     },
     {
       "name": "common_topics",
-      "value": "主题"
+      "value": "Topics"
     },
     {
       "name": "common_node",
-      "value": "节点"
+      "value": "Node"
     },
     {
       "name": "common_nodes",
-      "value": "节点"
+      "value": "Nodes"
     },
     {
       "name": "common_user",
-      "value": "用户"
+      "value": "User"
     },
     {
       "name": "common_local",
-      "value": "本地"
+      "value": "Local"
     },
     {
       "name": "common_web",
-      "value": "网页"
+      "value": "Web"
     },
     {
       "name": "common_author",
-      "value": "作者"
+      "value": "Author"
     },
     {
       "name": "common_sort",
-      "value": "排序"
+      "value": "Sort"
     },
     {
       "name": "common_time",
-      "value": "时间"
+      "value": "Time"
     },
     {
       "name": "common_relevance",
-      "value": "相关"
+      "value": "Relevance"
     },
     {
       "name": "common_descending",
-      "value": "倒序"
+      "value": "Descending"
     },
     {
       "name": "common_ascending",
-      "value": "正序"
+      "value": "Ascending"
     },
     {
       "name": "common_time_range",
-      "value": "时间范围"
+      "value": "Time range"
     },
     {
       "name": "common_unlimited",
-      "value": "不限"
+      "value": "Any time"
     },
     {
       "name": "common_one_day",
-      "value": "一天"
+      "value": "1 day"
     },
     {
       "name": "common_one_week",
-      "value": "一周"
+      "value": "1 week"
     },
     {
       "name": "common_one_month",
-      "value": "一月"
+      "value": "1 month"
     },
     {
       "name": "common_one_year",
-      "value": "一年"
+      "value": "1 year"
     },
     {
       "name": "common_selected",
-      "value": "已选"
+      "value": "Selected"
     },
     {
       "name": "common_copied",
-      "value": "已复制"
+      "value": "Copied"
     },
     {
       "name": "common_copy_username",
-      "value": "复制用户名"
+      "value": "Copy username"
     },
     {
       "name": "common_copy_code",
-      "value": "已复制代码"
+      "value": "Copied code"
     },
     {
       "name": "common_copy_decoded_text",
-      "value": "已复制解码文本"
+      "value": "Copied decoded text"
     },
     {
       "name": "common_no_more",
-      "value": "没有更多了"
+      "value": "No more"
     },
     {
       "name": "common_click_preview",
-      "value": "点击预览"
+      "value": "Tap to preview"
     },
     {
       "name": "common_image_auto_load_off",
-      "value": "图片自动加载已关闭"
+      "value": "Image auto-load is off"
     },
     {
       "name": "common_invalid_floor",
-      "value": "请输入有效楼层号"
+      "value": "Enter a valid floor number"
     },
     {
       "name": "search_result_type",
-      "value": "结果类型"
+      "value": "Result type"
     },
     {
       "name": "search_filter_nodes_library",
-      "value": "节点库"
+      "value": "Node library"
     },
     {
       "name": "search_topics_nodes_users_placeholder",
-      "value": "搜索主题、节点、用户"
+      "value": "Search topics, nodes, users"
     },
     {
       "name": "search_browser_v2ex_topics",
-      "value": "使用浏览器搜索 V2EX 主题"
+      "value": "Search V2EX topics in browser"
     },
     {
       "name": "search_enter_keyword_to_start",
-      "value": "输入关键词开始搜索"
+      "value": "Enter keywords to start searching"
     },
     {
       "name": "search_open_web_search",
-      "value": "打开网页搜索"
+      "value": "Open web search"
     },
     {
       "name": "search_history",
-      "value": "搜索历史"
+      "value": "Search history"
     },
     {
       "name": "search_user_related_topics",
-      "value": "用户相关主题"
+      "value": "User-related topics"
     },
     {
       "name": "search_topic_results",
-      "value": "主题结果"
+      "value": "Topic results"
     },
     {
       "name": "search_no_local_user_topics",
-      "value": "没有匹配该用户的本地主题"
+      "value": "No local topics match this user"
     },
     {
       "name": "search_no_topics",
-      "value": "没有匹配的主题"
+      "value": "No matching topics"
     },
     {
       "name": "search_sov2ex",
-      "value": "使用 SOV2EX 站内搜索"
+      "value": "Use SOV2EX site search"
     },
     {
       "name": "search_external_summary",
-      "value": "官方 API 暂无主题搜索，使用系统浏览器搜索 V2EX 主题"
+      "value": "The official API has no topic search; use the system browser to search V2EX topics"
     },
     {
       "name": "search_local_with_nodes_summary",
-      "value": "在收藏 / 最近浏览 / 关注节点 / 离线缓存 / 节点库中搜索"
+      "value": "Search favorites, recently viewed, followed nodes, offline cache, and node library"
     },
     {
       "name": "search_local_summary",
-      "value": "在收藏 / 最近浏览 / 关注节点 / 离线缓存中搜索"
+      "value": "Search favorites, recently viewed, followed nodes, and offline cache"
     },
     {
       "name": "search_index_loading",
-      "value": "索引加载中"
+      "value": "Loading indexes"
     },
     {
       "name": "search_cache_loading",
-      "value": "缓存加载中"
+      "value": "Loading cache"
     },
     {
       "name": "search_nodes_loading",
-      "value": "节点加载中"
+      "value": "Loading nodes"
     },
     {
       "name": "search_nodes_library_empty_hint",
-      "value": "节点库和你关注的节点会出现在这里"
+      "value": "The node library and your followed nodes will appear here"
     },
     {
       "name": "search_followed_nodes_empty_hint",
-      "value": "你关注的节点会出现在这里"
+      "value": "Your followed nodes will appear here"
     },
     {
       "name": "search_no_nodes",
-      "value": "没有匹配的节点"
+      "value": "No matching nodes"
     },
     {
       "name": "search_filter_hint",
-      "value": "输入关键词后按搜索，筛选在右上角"
+      "value": "Enter keywords and tap Search; filter is in the top right"
     },
     {
       "name": "about_app_info",
-      "value": "应用信息"
+      "value": "App information"
     },
     {
       "name": "about_project",
-      "value": "项目"
+      "value": "Project"
     },
     {
       "name": "about_acknowledgements",
-      "value": "致谢"
+      "value": "Acknowledgements"
     },
     {
       "name": "about_open_source_license",
-      "value": "开源许可"
+      "value": "Open source license"
     },
     {
       "name": "about_tagline",
-      "value": "HarmonyOS 原生 V2EX 客户端"
+      "value": "Native HarmonyOS V2EX client"
     },
     {
       "name": "about_version_format",
-      "value": "版本 {0}"
+      "value": "Version {0}"
     },
     {
       "name": "about_project_url",
-      "value": "项目地址"
+      "value": "Project URL"
     },
     {
       "name": "about_developer",
-      "value": "开发者"
+      "value": "Developer"
     },
     {
       "name": "about_v2next_ack",
-      "value": "感谢 V2Next 项目在 V2EX 客户端体验上的探索。"
+      "value": "Thanks to the V2Next project for exploring the V2EX client experience."
     },
     {
       "name": "about_source_license",
-      "value": "源代码许可证"
+      "value": "Source code license"
     },
     {
       "name": "about_third_party_client",
-      "value": "Next2V 是面向 V2EX 的第三方客户端。"
+      "value": "Next2V is a third-party client for V2EX."
     },
     {
       "name": "about_copyright",
-      "value": "应用源代码按 MIT License 开源；V2EX 名称、标识和内容归其各自权利人所有。"
+      "value": "The app source code is open source under the MIT License; the V2EX name, marks, and content belong to their respective rights holders."
     },
     {
       "name": "about_app_name",
-      "value": "应用名称"
+      "value": "App name"
     },
     {
       "name": "about_platform",
-      "value": "平台"
+      "value": "Platform"
     },
     {
       "name": "empty_no_favorite_nodes",
-      "value": "还没有收藏节点"
+      "value": "No favorite nodes yet"
     },
     {
       "name": "empty_no_favorite_topics",
-      "value": "还没有收藏主题"
+      "value": "No favorite topics yet"
     },
     {
       "name": "empty_no_local_followed_nodes",
-      "value": "还没有本地关注节点"
+      "value": "No local followed nodes yet"
     },
     {
       "name": "saved_locally_on_format",
-      "value": "本地关注于 {0}"
+      "value": "Saved locally on {0}"
     },
     {
       "name": "empty_no_read_later_topics",
-      "value": "还没有稍后读主题"
+      "value": "No read-later topics yet"
     },
     {
       "name": "saved_on_label",
-      "value": "保存于"
+      "value": "Saved on"
     },
     {
       "name": "draft_saved_on_format",
-      "value": "已保存于 {0}"
+      "value": "Saved on {0}"
     },
     {
       "name": "posted_topic_format",
-      "value": "已发帖：{0}"
+      "value": "Posted: {0}"
     },
     {
       "name": "posted_topic",
-      "value": "已发帖"
+      "value": "Posted"
     },
     {
       "name": "empty_no_recent_views",
-      "value": "还没有最近浏览记录"
+      "value": "No recent views yet"
     },
     {
       "name": "viewed_on_label",
-      "value": "浏览于"
+      "value": "Viewed on"
     },
     {
       "name": "two_factor_completed",
-      "value": "两步验证已完成"
+      "value": "Two-factor verification completed"
     },
     {
       "name": "image_saved_to_gallery",
-      "value": "已保存到图库"
+      "value": "Saved to Gallery"
     },
     {
       "name": "image_save_cancelled",
-      "value": "已取消保存"
+      "value": "Save cancelled"
     },
     {
       "name": "username_or_email_placeholder",
-      "value": "用户名或邮箱"
+      "value": "Username or email"
     },
     {
       "name": "login_form_refetched",
-      "value": "已重新获取登录表单，请重新输入密码"
+      "value": "Login form refreshed. Please enter your password again."
     },
     {
       "name": "login_username_password_required",
-      "value": "请输入用户名和密码"
+      "value": "Enter username and password"
     },
     {
       "name": "login_saved",
-      "value": "登录已保存"
+      "value": "Login saved"
     },
     {
       "name": "login_cookie_missing",
-      "value": "未获取到登录 Cookie，请确认已完成登录"
+      "value": "Login cookie was not obtained. Please confirm login is complete."
     },
     {
       "name": "login_cookie_invalid",
-      "value": "Cookie 登录态无效，请确认已完成登录"
+      "value": "Cookie login state is invalid. Please confirm login is complete."
     },
     {
       "name": "login_password_placeholder",
-      "value": "密码"
+      "value": "Password"
     },
     {
       "name": "login_captcha_placeholder",
-      "value": "验证码"
+      "value": "Captcha"
     },
     {
       "name": "login_button_preparing",
-      "value": "准备中…"
+      "value": "Preparing…"
     },
     {
       "name": "login_button_logging_in",
-      "value": "登录中…"
+      "value": "Signing in…"
     },
     {
       "name": "login_button_label",
-      "value": "登录"
+      "value": "Sign in"
     },
     {
       "name": "login_form_not_loaded",
-      "value": "登录表单未加载完成，请稍后重试"
+      "value": "Login form not loaded, please try again"
     },
     {
       "name": "login_captcha_form_not_loaded",
-      "value": "登录验证码表单未加载完成，请重新获取验证码"
+      "value": "Captcha form not loaded, please refresh"
     },
     {
       "name": "login_success",
-      "value": "登录成功"
+      "value": "Login successful"
     },
     {
       "name": "two_factor_title",
-      "value": "两步验证"
+      "value": "Two-Factor Verification"
     },
     {
       "name": "two_factor_description",
-      "value": "V2EX 需要完成两步验证后才能继续访问账号内容。"
+      "value": "V2EX requires two-factor verification to continue accessing account content."
     },
     {
       "name": "two_factor_code_placeholder",
-      "value": "输入 6 位验证码"
+      "value": "Enter 6-digit code"
     },
     {
       "name": "two_factor_verifying",
-      "value": "验证中…"
+      "value": "Verifying…"
     },
     {
       "name": "two_factor_verify_button",
-      "value": "完成验证"
+      "value": "Verify"
     },
     {
       "name": "two_factor_later",
-      "value": "稍后再说"
+      "value": "Later"
     },
     {
       "name": "login_to_view_topics",
-      "value": "登录后可查看收藏主题"
+      "value": "Sign in to view favorite topics"
     },
     {
       "name": "login_to_view_nodes",
-      "value": "登录后可查看收藏节点"
+      "value": "Sign in to view favorite nodes"
     },
     {
       "name": "web_login_opening",
-      "value": "正在打开网页登录..."
+      "value": "Opening web login..."
     },
     {
       "name": "web_login_loading_url",
-      "value": "正在加载 {0}"
+      "value": "Loading {0}"
     },
     {
       "name": "web_login_loading_page",
-      "value": "正在加载网页登录..."
+      "value": "Loading web login..."
     },
     {
       "name": "web_login_load_failed",
-      "value": "网页登录加载失败"
+      "value": "Web login failed to load"
     },
     {
       "name": "web_login_saving",
-      "value": "正在保存登录状态…"
+      "value": "Saving login state..."
     },
     {
       "name": "web_login_opening_url",
-      "value": "正在打开 {0}"
+      "value": "Opening {0}"
     },
     {
       "name": "web_login_not_complete",
-      "value": "网页登录尚未完成"
+      "value": "Web login not yet complete"
     },
     {
       "name": "reply_submitted",
-      "value": "回复已提交"
+      "value": "Reply submitted"
     },
     {
       "name": "submit_completed",
-      "value": "已提交"
+      "value": "Submitted"
     },
     {
       "name": "confirm_reply_action_format",
-      "value": "确定{0} {1} 的回复吗？"
+      "value": "Confirm {0} reply by {1}?"
     },
     {
       "name": "this_user",
-      "value": "该用户"
+      "value": "this user"
     },
     {
       "name": "already_thanked",
-      "value": "已经感谢过"
+      "value": "Already thanked"
     },
     {
       "name": "loaded_count_format",
-      "value": "已加载 {0} / {1}"
+      "value": "Loaded {0} / {1}"
     },
     {
       "name": "load_all_replies_warning_format",
-      "value": "该主题有 {0} 条回复，加载全部回复可能需要较长时间。\n\n是否继续加载以启用完整的楼中楼视图？"
+      "value": "This topic has {0} replies. Loading all replies may take some time.\n\nContinue loading to enable the full threaded view?"
     },
     {
       "name": "favorited",
-      "value": "已收藏"
+      "value": "Favorited"
     },
     {
       "name": "unfavorited",
-      "value": "已取消收藏"
+      "value": "Unfavorited"
     },
     {
       "name": "thanked",
-      "value": "已感谢"
+      "value": "Thanked"
     },
     {
       "name": "action_done_format",
-      "value": "已{0}"
+      "value": "{0} done"
     },
     {
       "name": "user_topics_hidden",
-      "value": "主题列表已隐藏"
+      "value": "Topic list is hidden"
     },
     {
       "name": "followed",
-      "value": "已关注"
+      "value": "Followed"
     },
     {
       "name": "unfollowed",
-      "value": "已取消关注"
+      "value": "Unfollowed"
     },
     {
       "name": "blocked",
-      "value": "已屏蔽"
+      "value": "Blocked"
     },
     {
       "name": "unblocked",
-      "value": "已取消屏蔽"
+      "value": "Unblocked"
     },
     {
       "name": "user_load_failed",
-      "value": "用户信息加载失败"
+      "value": "Failed to load user information"
     },
     {
       "name": "discover_today_hot",
-      "value": "今日热议"
+      "value": "Today’s hot topics"
     },
     {
       "name": "discover_hot",
-      "value": "热议"
+      "value": "Hot"
     },
     {
       "name": "discover_latest_topics",
-      "value": "最新主题"
+      "value": "Latest topics"
     },
     {
       "name": "discover_recent_updates",
-      "value": "最近更新"
+      "value": "Recently updated"
     },
     {
       "name": "discover_site_rank",
-      "value": "全站热榜"
+      "value": "Site-wide hot"
     },
     {
       "name": "node_selected_format",
-      "value": "已选择节点：{0}"
+      "value": "Selected node: {0}"
     },
     {
       "name": "node_cleared",
-      "value": "已清空节点"
+      "value": "Node cleared"
     },
     {
       "name": "storage_written_format",
-      "value": "已写入 {0} 行 / {1} 文件"
+      "value": "Wrote {0} rows / {1} files"
     },
     {
       "name": "v2ex_tab_tech",
-      "value": "技术"
+      "value": "Tech"
     },
     {
       "name": "v2ex_tab_creative",
-      "value": "创意"
+      "value": "Creative"
     },
     {
       "name": "v2ex_tab_play",
-      "value": "好玩"
+      "value": "Play"
     },
     {
       "name": "v2ex_tab_jobs",
-      "value": "酷工作"
+      "value": "Jobs"
     },
     {
       "name": "v2ex_tab_deals",
-      "value": "交易"
+      "value": "Deals"
     },
     {
       "name": "v2ex_tab_city",
-      "value": "城市"
+      "value": "City"
     },
     {
       "name": "v2ex_tab_qna",
-      "value": "问与答"
+      "value": "Q&A"
     },
     {
       "name": "v2ex_tab_hot",
-      "value": "最热"
+      "value": "Hot"
     },
     {
       "name": "reply_submit",
-      "value": "提交"
+      "value": "Submit"
     },
     {
       "name": "reply_submitting",
-      "value": "提交中"
+      "value": "Submitting"
     },
     {
       "name": "reply_content_required",
-      "value": "回复内容不能为空"
+      "value": "Reply content cannot be empty"
     },
     {
       "name": "reply_login_required",
-      "value": "请先登录"
+      "value": "Log in first"
     },
     {
       "name": "reply_confirm_submit_sheet",
-      "value": "确定提交这条回复吗？"
+      "value": "Submit this reply?"
     },
     {
       "name": "reply_confirm_submit_page_format",
-      "value": "确定向{0}提交回复吗？\n\nV2EX 回复通常至少消耗 5 铜币，提交后会修改你的账号状态。"
+      "value": "Submit a reply to {0}?\n\nV2EX replies usually cost at least 5 copper coins and will change your account state."
     },
     {
       "name": "reply_current_topic",
-      "value": "当前主题"
+      "value": "current topic"
     },
     {
       "name": "discover_rank",
-      "value": "热榜"
+      "value": "Rank"
     },
     {
       "name": "discover_latest",
-      "value": "最新"
+      "value": "Latest"
     },
     {
       "name": "discover_recent",
-      "value": "最近"
+      "value": "Recent"
     },
     {
       "name": "discover_section_saved_nodes",
-      "value": "关注节点"
+      "value": "Followed nodes"
     },
     {
       "name": "discover_section_recent_nodes",
-      "value": "最近浏览节点"
+      "value": "Recently viewed nodes"
     },
     {
       "name": "search_source_favorite",
-      "value": "收藏"
+      "value": "Saved"
     },
     {
       "name": "search_source_recent",
-      "value": "最近"
+      "value": "Recent"
     },
     {
       "name": "search_source_followed",
-      "value": "关注"
+      "value": "Followed"
     },
     {
       "name": "search_source_nodes_library",
-      "value": "节点库"
+      "value": "Node library"
     },
     {
       "name": "search_source_cache_list",
-      "value": "缓存(列表)"
+      "value": "Cache (list)"
     },
     {
       "name": "search_source_cache_detail",
-      "value": "缓存(详情)"
+      "value": "Cache (detail)"
     },
     {
       "name": "relative_just_now",
-      "value": "刚刚"
+      "value": "Just now"
     },
     {
       "name": "relative_minutes_ago",
-      "value": "{0} 分钟前"
+      "value": "{0} min ago"
     },
     {
       "name": "relative_hours_ago",
-      "value": "{0} 小时前"
+      "value": "{0} h ago"
     },
     {
       "name": "relative_days_ago",
-      "value": "{0} 天前"
+      "value": "{0} d ago"
     },
     {
       "name": "relative_months_ago",
-      "value": "{0} 个月前"
+      "value": "{0} mo ago"
     },
     {
       "name": "relative_years_ago",
-      "value": "{0} 年前"
+      "value": "{0} y ago"
     },
     {
       "name": "user_profile_location",
-      "value": "位置"
+      "value": "Location"
     },
     {
       "name": "user_profile_website",
-      "value": "网站"
+      "value": "Website"
     },
     {
       "name": "user_profile_member_number",
-      "value": "第 {0} 号会员 · {1}"
+      "value": "Member #{0} · {1}"
     },
     {
       "name": "user_profile_no_topics",
-      "value": "暂无主题"
+      "value": "No topics"
     },
     {
       "name": "user_profile_no_replies",
-      "value": "暂无回复"
+      "value": "No replies"
     },
     {
       "name": "user_profile_view_all_topics",
-      "value": "查看全部主题"
+      "value": "View all topics"
     },
     {
       "name": "user_profile_view_all_replies",
-      "value": "查看全部回复"
+      "value": "View all replies"
     },
     {
       "name": "user_profile_action_failed",
-      "value": "操作失败"
+      "value": "Action failed"
     },
     {
       "name": "user_tab_topics_label",
-      "value": "主题"
+      "value": "Topics"
     },
     {
       "name": "user_tab_replies_label",
-      "value": "回复"
+      "value": "Replies"
     },
     {
       "name": "user_tab_topics_count",
-      "value": "主题 {0}"
+      "value": "Topics {0}"
     },
     {
       "name": "user_tab_replies_count",
-      "value": "回复 {0}"
+      "value": "Replies {0}"
     },
     {
       "name": "user_action_follow",
-      "value": "关注"
+      "value": "Follow"
     },
     {
       "name": "user_action_unfollow",
-      "value": "取消关注"
+      "value": "Unfollow"
     },
     {
       "name": "user_action_block",
-      "value": "屏蔽"
+      "value": "Block"
     },
     {
       "name": "user_action_unblock",
-      "value": "取消屏蔽"
+      "value": "Unblock"
     },
     {
       "name": "node_no_topics",
-      "value": "暂无主题"
+      "value": "No topics"
     },
     {
       "name": "node_load_failed",
-      "value": "节点主题加载失败"
+      "value": "Failed to load node topics"
     },
     {
       "name": "node_info_missing",
-      "value": "节点信息缺失"
+      "value": "Node info missing"
     },
     {
       "name": "node_picker_current_node_format",
-      "value": "当前：{0}"
+      "value": "Current: {0}"
     },
     {
       "name": "node_picker_helper",
-      "value": "点击节点后会自动填入发帖草稿。"
+      "value": "Click a node to auto-fill into the topic draft."
     },
     {
       "name": "node_picker_search_placeholder",
-      "value": "搜索节点"
+      "value": "Search nodes"
     },
     {
       "name": "node_topics_count",
-      "value": "{0} 个主题"
+      "value": "{0} topics"
     },
     {
       "name": "site_favorite_title",
-      "value": "站内收藏"
+      "value": "Site Favorite"
     },
     {
       "name": "site_favorite_confirm",
-      "value": "确定{0}节点「{1}」吗？"
+      "value": "Confirm {0} node \"{1}\"?"
     },
     {
       "name": "site_favorite_action_favorite",
-      "value": "收藏"
+      "value": "Favorite"
     },
     {
       "name": "site_favorite_action_unfavorite",
-      "value": "取消收藏"
+      "value": "Unfavorite"
     },
     {
       "name": "topic_editor_node_placeholder",
-      "value": "节点（如 create）"
+      "value": "Node (e.g. create)"
     },
     {
       "name": "topic_editor_select_node",
-      "value": "选择"
+      "value": "Select"
     },
     {
       "name": "topic_editor_title_placeholder",
-      "value": "标题"
+      "value": "Title"
     },
     {
       "name": "common_loading",
-      "value": "加载中…"
+      "value": "Loading…"
     },
     {
       "name": "media_youtube_video",
-      "value": "YouTube 视频"
+      "value": "YouTube video"
     },
     {
       "name": "media_vimeo_video",
-      "value": "Vimeo 视频"
+      "value": "Vimeo video"
     },
     {
       "name": "media_imgur_page",
-      "value": "Imgur 图片页"
+      "value": "Imgur page"
     },
     {
       "name": "media_v2ex_link",
-      "value": "V2EX 链接"
+      "value": "V2EX link"
     },
     {
       "name": "media_link_label",
-      "value": "链接"
+      "value": "Link"
     },
     {
       "name": "api_error_auth_required",
@@ -1965,6 +1985,14 @@
       "value": "Failed to parse login page, please use web login"
     },
     {
+      "name": "api_error_login_restricted",
+      "value": "Login is temporarily restricted by V2EX. Please wait and try again later."
+    },
+    {
+      "name": "api_error_login_restricted_with_ip",
+      "value": "Login is temporarily restricted by V2EX for IP {0}. Please wait and try again later."
+    },
+    {
       "name": "api_error_login_captcha_required",
       "value": "V2EX login requires a captcha, please use web login"
     },
@@ -2006,499 +2034,499 @@
     },
     {
       "name": "notification_login_required",
-      "value": "登录后可查看通知"
+      "value": "Login to view notifications"
     },
     {
       "name": "notification_empty",
-      "value": "暂无通知"
+      "value": "No notifications"
     },
     {
       "name": "notification_delete_title",
-      "value": "删除通知"
+      "value": "Delete notification"
     },
     {
       "name": "notification_delete_confirm",
-      "value": "确定删除这条通知吗？"
+      "value": "Delete this notification?"
     },
     {
       "name": "notification_delete_requires_api_auth",
-      "value": "删除通知需要 V2 API 授权"
+      "value": "Delete notification requires V2 API authorization"
     },
     {
       "name": "notification_delete_requires_web_session",
-      "value": "删除通知需要 Web 会话"
+      "value": "Delete notification requires web session"
     },
     {
       "name": "notification_load_failed",
-      "value": "通知加载失败"
+      "value": "Notifications load failed"
     },
     {
       "name": "notification_go_login",
-      "value": "去登录"
+      "value": "Login"
     },
     {
       "name": "notification_tag_unread",
-      "value": "未读"
+      "value": "Unread"
     },
     {
       "name": "notification_kind_reply",
-      "value": "回复"
+      "value": "Reply"
     },
     {
       "name": "notification_kind_mention",
-      "value": "提及"
+      "value": "Mention"
     },
     {
       "name": "notification_kind_thanks",
-      "value": "感谢"
+      "value": "Thanks"
     },
     {
       "name": "notification_kind_favorite",
-      "value": "收藏"
+      "value": "Favorite"
     },
     {
       "name": "notification_kind_follow",
-      "value": "关注"
+      "value": "Follow"
     },
     {
       "name": "notification_kind_system",
-      "value": "系统"
+      "value": "System"
     },
     {
       "name": "notification_kind_notification",
-      "value": "通知"
+      "value": "Notification"
     },
     {
       "name": "notification_source_web",
-      "value": "Web 会话"
+      "value": "Web session"
     },
     {
       "name": "common_load_more",
-      "value": "加载更多"
+      "value": "Load more"
     },
     {
       "name": "search_node_results",
-      "value": "节点结果 {0}"
+      "value": "Node results {0}"
     },
     {
       "name": "search_filter_title",
-      "value": "搜索筛选"
+      "value": "Search filter"
     },
     {
       "name": "search_web_filter_hint",
-      "value": "网页搜索会在系统浏览器中打开，不额外提供站内筛选。"
+      "value": "Web search opens in the system browser without additional in-app filtering."
     },
     {
       "name": "search_discover_nodes_placeholder",
-      "value": "搜索节点"
+      "value": "Search nodes"
     },
     {
       "name": "search_N_topics",
-      "value": "{0} 主题"
+      "value": "{0} topics"
     },
     {
       "name": "search_N_replies",
-      "value": "{0} 回复"
+      "value": "{0} replies"
     },
     {
       "name": "topic_action_thank_topic",
-      "value": "感谢主题"
+      "value": "Thank topic"
     },
     {
       "name": "topic_action_save_later",
-      "value": "稍后读"
+      "value": "Save later"
     },
     {
       "name": "topic_action_ignore_topic",
-      "value": "忽略主题"
+      "value": "Ignore topic"
     },
     {
       "name": "topic_action_report_topic",
-      "value": "举报主题"
+      "value": "Report topic"
     },
     {
       "name": "topic_action_copy_title",
-      "value": "复制标题"
+      "value": "Copy title"
     },
     {
       "name": "topic_action_copy_link",
-      "value": "复制链接"
+      "value": "Copy link"
     },
     {
       "name": "topic_action_share_link",
-      "value": "分享链接"
+      "value": "Share link"
     },
     {
       "name": "topic_action_open_browser",
-      "value": "浏览器打开"
+      "value": "Open in browser"
     },
     {
       "name": "image_preview_invalid_url",
-      "value": "图片地址无效"
+      "value": "Invalid image URL"
     },
     {
       "name": "image_preview_downloading",
-      "value": "正在下载图片…"
+      "value": "Downloading image…"
     },
     {
       "name": "image_preview_not_an_image",
-      "value": "该链接返回的不是图片"
+      "value": "The link did not return an image"
     },
     {
       "name": "image_preview_download_failed",
-      "value": "图片下载失败"
+      "value": "Image download failed"
     },
     {
       "name": "image_preview_temp_file_write_failed",
-      "value": "临时文件写入失败"
+      "value": "Failed to write temporary file"
     },
     {
       "name": "image_preview_url_empty",
-      "value": "图片地址为空"
+      "value": "Image URL is empty"
     },
     {
       "name": "image_preview_go_back_retry",
-      "value": "返回后重试"
+      "value": "Go back and retry"
     },
     {
       "name": "image_preview_choose_save_location",
-      "value": "请选择保存位置"
+      "value": "Please choose a save location"
     },
     {
       "name": "image_preview_save_failed",
-      "value": "保存失败"
+      "value": "Save failed"
     },
     {
       "name": "image_preview_save_to_gallery_failed",
-      "value": "保存到图库失败"
+      "value": "Failed to save to Gallery"
     },
     {
       "name": "editor_body_placeholder",
-      "value": "正文（Markdown）"
+      "value": "Body (Markdown)"
     },
     {
       "name": "editor_empty_preview",
-      "value": "暂无内容"
+      "value": "No content yet"
     },
     {
       "name": "editor_submitting",
-      "value": "提交中..."
+      "value": "Submitting..."
     },
     {
       "name": "editor_submit",
-      "value": "提交"
+      "value": "Submit"
     },
     {
       "name": "editor_confirm_post_title",
-      "value": "确认发帖"
+      "value": "Confirm post"
     },
     {
       "name": "editor_publish",
-      "value": "发布"
+      "value": "Publish"
     },
     {
       "name": "editor_clear_draft_title",
-      "value": "清空草稿"
+      "value": "Clear draft"
     },
     {
       "name": "editor_clear_draft_message",
-      "value": "确定清空当前发帖草稿吗？"
+      "value": "Clear this topic draft?"
     },
     {
       "name": "editor_clear_draft_failed",
-      "value": "清空失败"
+      "value": "Clear failed"
     },
     {
       "name": "editor_confirm_post_format",
-      "value": "确定在节点「{0}」发布主题《{1}》吗？\n\nV2EX 发帖通常至少消耗 20 铜币，提交后会修改你的账号状态。"
+      "value": "Post《{1}》in node「{0}」?\n\nV2EX posting usually costs at least 20 copper coins and will change your account state."
     },
     {
       "name": "reply_composer_title",
-      "value": "写回复"
+      "value": "Write reply"
     },
     {
       "name": "reply_body_placeholder",
-      "value": "写回复（自动保存草稿）"
+      "value": "Reply body (auto-saved)"
     },
     {
       "name": "reply_clear_draft_title",
-      "value": "清空草稿"
+      "value": "Clear draft"
     },
     {
       "name": "reply_clear_draft_message",
-      "value": "确定清空当前回复草稿吗？"
+      "value": "Clear this reply draft?"
     },
     {
       "name": "reply_clear_draft_generic_message",
-      "value": "确定清空当前草稿吗？"
+      "value": "Clear current draft?"
     },
     {
       "name": "reply_clear_failed",
-      "value": "清空失败"
+      "value": "Clear failed"
     },
     {
       "name": "reply_confirm_submit_title",
-      "value": "提交回复"
+      "value": "Submit reply"
     },
     {
       "name": "topic_detail_loading",
-      "value": "加载中..."
+      "value": "Loading..."
     },
     {
       "name": "topic_still_loading",
-      "value": "主题仍在加载"
+      "value": "Topic is still loading"
     },
     {
       "name": "topic_many_replies_title",
-      "value": "回复数量较多"
+      "value": "Many replies"
     },
     {
       "name": "topic_flat_view",
-      "value": "平铺显示"
+      "value": "Flat view"
     },
     {
       "name": "topic_continue_loading",
-      "value": "继续加载"
+      "value": "Continue loading"
     },
     {
       "name": "action_favorite",
-      "value": "收藏"
+      "value": "Favorite"
     },
     {
       "name": "action_unfavorite",
-      "value": "取消收藏"
+      "value": "Unfavorite"
     },
     {
       "name": "action_thank",
-      "value": "感谢"
+      "value": "Thank"
     },
     {
       "name": "action_ignore",
-      "value": "忽略"
+      "value": "Ignore"
     },
     {
       "name": "action_report",
-      "value": "举报"
+      "value": "Report"
     },
     {
       "name": "reply_action_reply",
-      "value": "回复"
+      "value": "Reply"
     },
     {
       "name": "reply_action_login",
-      "value": "登录"
+      "value": "Login"
     },
     {
       "name": "reply_ignore_title",
-      "value": "忽略回复"
+      "value": "Ignore reply"
     },
     {
       "name": "reply_report_title",
-      "value": "举报回复"
+      "value": "Report reply"
     },
     {
       "name": "reply_thank_title",
-      "value": "感谢回复"
+      "value": "Thank reply"
     },
     {
       "name": "topic_share_fallback_title",
-      "value": "V2EX 主题"
+      "value": "V2EX topic"
     },
     {
       "name": "jump_to_floor_title",
-      "value": "跳转楼层"
+      "value": "Jump to floor"
     },
     {
       "name": "jump_to_floor_placeholder",
-      "value": "输入楼层号"
+      "value": "Enter floor number"
     },
     {
       "name": "jump_to_floor_button",
-      "value": "跳转"
+      "value": "Jump"
     },
     {
       "name": "reply_context_title",
-      "value": "回复上下文"
+      "value": "Reply context"
     },
     {
       "name": "reply_context_with_floor_format",
-      "value": "#{0} 回复上下文"
+      "value": "#{0} Reply context"
     },
     {
       "name": "reply_context_empty_snippet",
-      "value": "（无内容）"
+      "value": "(No content)"
     },
     {
       "name": "reply_context_label_above",
-      "value": "上文"
+      "value": "Above"
     },
     {
       "name": "reply_context_label_below",
-      "value": "下文"
+      "value": "Below"
     },
     {
       "name": "reply_context_label_current",
-      "value": "当前回复"
+      "value": "Current reply"
     },
     {
       "name": "reply_context_label_mention_format",
-      "value": "提到 @{0}"
+      "value": "Mentioned @{0}"
     },
     {
       "name": "markdown_placeholder_text",
-      "value": "文字"
+      "value": "Text"
     },
     {
       "name": "markdown_placeholder_code",
-      "value": "代码"
+      "value": "Code"
     },
     {
       "name": "markdown_placeholder_image",
-      "value": "图片"
+      "value": "Image"
     },
     {
       "name": "reply_thread_relation_label_format",
-      "value": "回复 {0}"
+      "value": "Reply {0}"
     },
     {
       "name": "confirm_topic_favorite_format",
-      "value": "确定{0}《{1}》吗？"
+      "value": "{0}《{1}》?"
     },
     {
       "name": "confirm_topic_favorite_nameless_format",
-      "value": "确定{0}该主题吗？"
+      "value": "{0} this topic?"
     },
     {
       "name": "confirm_topic_thank_format",
-      "value": "确定感谢《{0}》吗？"
+      "value": "Thank《{0}》?"
     },
     {
       "name": "confirm_topic_thank_nameless",
-      "value": "确定感谢该主题吗？"
+      "value": "Thank this topic?"
     },
     {
       "name": "parse_action_failed_format",
-      "value": "解析{0}操作失败"
+      "value": "Failed to parse {0} action"
     },
     {
       "name": "reply_info_missing",
-      "value": "回复信息缺失"
+      "value": "Reply info missing"
     },
     {
       "name": "load_more_replies_failed",
-      "value": "加载更多失败"
+      "value": "Load more failed"
     },
     {
       "name": "preloading_all_replies",
-      "value": "正在加载全部回复…"
+      "value": "Loading all replies…"
     },
     {
       "name": "preloading_progress_format",
-      "value": "正在加载全部回复 {0}/{1}…"
+      "value": "Loading all replies {0}/{1}…"
     },
     {
       "name": "preloading_progress_count_format",
-      "value": "正在加载全部回复 {0} 条…"
+      "value": "Loading all replies {0} items…"
     },
     {
       "name": "topic_detail_tool_floor",
-      "value": "楼层"
+      "value": "Floor"
     },
     {
       "name": "topic_detail_tool_latest",
-      "value": "最新"
+      "value": "Latest"
     },
     {
       "name": "reply_display_mode_origin",
-      "value": "原版"
+      "value": "Original"
     },
     {
       "name": "reply_count_format",
-      "value": "共 {0} 条回复"
+      "value": "{0} replies"
     },
     {
       "name": "draft_load_failed",
-      "value": "读取草稿失败"
+      "value": "Failed to load draft"
     },
     {
       "name": "common_copy_failed",
-      "value": "复制失败"
+      "value": "Copy failed"
     },
     {
       "name": "common_checking_network",
-      "value": "正在检查网络"
+      "value": "Checking network…"
     },
     {
       "name": "common_image_load_failed",
-      "value": "图片加载失败"
+      "value": "Image load failed"
     },
     {
       "name": "common_tap_to_retry",
-      "value": "点击重试"
+      "value": "Tap to retry"
     },
     {
       "name": "common_no_content",
-      "value": "暂无内容"
+      "value": "No content"
     },
     {
       "name": "common_load_failed_tap_retry",
-      "value": "加载失败，点击重试"
+      "value": "Load failed, tap to retry"
     },
     {
       "name": "common_decoded_format",
-      "value": "解码：{0}"
+      "value": "Decoded: {0}"
     },
     {
       "name": "markdown_toolbar_edit",
-      "value": "写"
+      "value": "Edit"
     },
     {
       "name": "markdown_toolbar_preview",
-      "value": "看"
+      "value": "Preview"
     },
     {
       "name": "markdown_toolbar_image",
-      "value": "图"
+      "value": "Image"
     },
     {
       "name": "markdown_toolbar_clear",
-      "value": "清"
+      "value": "Clear"
     },
     {
       "name": "topic_last_reply",
-      "value": "最后回复"
+      "value": "Last reply"
     },
     {
       "name": "topic_replies_count",
-      "value": "{0} 回复"
+      "value": "{0} replies"
     },
     {
       "name": "code_wrap_scroll",
-      "value": "滚动"
+      "value": "Scroll"
     },
     {
       "name": "code_wrap_wrap",
-      "value": "换行"
+      "value": "Wrap"
     },
     {
       "name": "reply_view_context",
-      "value": "查看上下文"
+      "value": "View context"
     },
     {
       "name": "reply_copy_content",
-      "value": "复制回复内容"
+      "value": "Copy reply content"
     },
     {
       "name": "reply_ignore_reply",
-      "value": "忽略回复"
+      "value": "Ignore reply"
     },
     {
       "name": "reply_report_reply",
-      "value": "举报回复"
+      "value": "Report reply"
     },
     {
       "name": "common_wifi_only_image_hint",
-      "value": "仅 Wi-Fi 时自动加载图片"
+      "value": "Auto-load images on Wi-Fi only"
     },
     {
       "name": "storage_seeded_label_format",

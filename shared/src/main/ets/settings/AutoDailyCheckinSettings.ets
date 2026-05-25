@@ -52,7 +52,7 @@ export class AutoDailyCheckinSettings {
       return AutoDailyCheckinSettings.loadFromStore(store)
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '读取自动签到设置失败')
+      throw new Error(e.message || 'Failed to read auto check-in settings')
     }
   }
 
@@ -91,7 +91,7 @@ export class AutoDailyCheckinSettings {
     } catch (error) {
       const e = error as Error
       DiagnosticLogger.warn('auto_daily_checkin', 'auto_daily_setting_error', { operation: 'save' }, e)
-      throw new Error(e.message || '保存自动签到设置失败')
+      throw new Error(e.message || 'Failed to save auto check-in settings')
     }
   }
 
@@ -117,7 +117,7 @@ export class AutoDailyCheckinSettings {
     } catch (error) {
       const e = error as Error
       DiagnosticLogger.warn('auto_daily_checkin', 'auto_daily_setting_error', { operation: 'saveLastAttemptDate' }, e)
-      throw new Error(e.message || '保存自动签到状态失败')
+      throw new Error(e.message || 'Failed to save auto check-in state')
     }
   }
 
@@ -136,7 +136,7 @@ export class AutoDailyCheckinSettings {
     } catch (error) {
       const e = error as Error
       DiagnosticLogger.warn('auto_daily_checkin', 'auto_daily_setting_error', { operation: 'saveLastSuccessDate' }, e)
-      throw new Error(e.message || '保存自动签到状态失败')
+      throw new Error(e.message || 'Failed to save auto check-in state')
     }
   }
 }

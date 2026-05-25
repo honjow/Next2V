@@ -30,8 +30,10 @@ Before editing or delegating implementation:
 6. Keep diagnostic changes out of final diffs. Fake network calls, artificial delays, mocked services, diagnostic UI, logging overlays, and temporary instrumentation may only be used as isolated verification scaffolding; remove them before final validation unless the user explicitly asks to keep them.
 7. Evidence must match the preserved product path. A test performed with a different component, confirmation flow, mock path, or altered UI cannot be used as proof that the original preserved path works.
 8. If implementation is delegated, require a spec-compliance review before code-quality review. The controller must still inspect the diff and independently verify build/device results; implementation-agent self-reports are not proof.
-9. UI/interaction completion requires scenario validation when tooling is available: the requested state appears, preserved information remains, actions actually work, failure/unauthenticated states are handled where relevant, and the state is correct after navigation away/re-entry.
-10. If the spec is found wrong or ambiguous, stop and revise the spec before continuing. Do not patch over a mistaken product interpretation.
+9. Before any delegated worker starts, persist the exact worker prompt and a lane manifest under `.hermes-artifacts/<task>/<lane>/prompt.md` and `manifest.json`; the worker result must be `.hermes-artifacts/<task>/<lane>/result.json`.
+10. Worker PASS is advisory. The controller must write `.hermes-artifacts/<task>/<lane>/controller-postflight.json` after independently reading the prompt/manifest/result, inspecting relevant diffs/files, and running or blocking validation commands with evidence. Gate PASS requires controller-postflight PASS.
+11. UI/interaction completion requires scenario validation when tooling is available: the requested state appears, preserved information remains, actions actually work, failure/unauthenticated states are handled where relevant, and the state is correct after navigation away/re-entry.
+12. If the spec is found wrong or ambiguous, stop and revise the spec before continuing. Do not patch over a mistaken product interpretation.
 
 ## Direct Worker Controller Mode
 
@@ -46,8 +48,9 @@ Required contract:
 5. Each stage must produce a machine-readable result JSON with `verdict: PASS|FAIL|BLOCKED|REQUEST_CHANGES`, `summary`, `artifact_dir`, `commands`, `changed_files`, `evidence`, and `commit` when applicable.
 6. Advance only on `verdict=PASS`. `FAIL`, `BLOCKED`, or `REQUEST_CHANGES` must stop or trigger a narrow recovery worker with evidence; do not call a live process or heartbeat "progress".
 7. If a worker exits 0 without the result JSON, inspect required artifacts before declaring failure. For spec stages, a `summary.md` containing `Verdict: SPEC_READY` may be converted into a result JSON by the controller/recovery worker. For QA, only synthesize from `validation-summary.md` when it explicitly says PASS and screenshots/layout/logs exist. For integrate, verify commit and push evidence first.
-8. Do not rerun already-PASS upstream stages after a later blocker; resume from the failed/missing stage.
-9. No-progress escalation is mandatory: monitor process liveness, log growth, artifact creation, git diff/commit state, elapsed time, and no-output threshold; then inspect logs and kill/restart/split/switch worker or stop as a real blocker.
+8. Each stage must also have `prompt.md` and `manifest.json` before launch, and after worker PASS the controller must write `controller-postflight.json`; without postflight PASS the next stage cannot start.
+9. Do not rerun already-PASS upstream stages after a later blocker; resume from the failed/missing stage.
+10. No-progress escalation is mandatory: monitor process liveness, log growth, artifact creation, git diff/commit state, elapsed time, and no-output threshold; then inspect logs and kill/restart/split/switch worker or stop as a real blocker.
 
 The Review/QA/Integrate quality gates still apply in direct-worker mode; replace Kanban parent/child status with result JSON artifacts and controller verification.
 

@@ -72,7 +72,7 @@ function* walkDir(dir) {
 // Categories
 // ------------------------------------------------------------
 
-const findings = { must_fix: [], allowed: [], needs_review: [] }
+const findings = { must_fix: [], allowed: [], server_parsing: [] }
 let passed = 0
 let failed = 0
 
@@ -81,54 +81,66 @@ function isCommentOnly(line, cjkMatch) {
   return trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/**')
 }
 
-// Known-OK CJK strings in non-resource files (whitelist)
-// These are server-parsing patterns, debug strings, or legacy internal errors
-const KNOWN_OK_STRINGS = [
-  // V2exNativeAuthService / V2exSigninParser — parse Chinese server response patterns
-  '验证码', '密码', '用户名', '两步', '二步', '动态验证码',
-  // V2exSigninParser — matches V2EX two-factor placeholder prefix (e.g. "动态验证码")
-  '动态',
-  '安全码',
-  // V2exWriteFormParser — parses Chinese HTML field names
-  '标题',
-  // AutoDailyCheckinService — matches Chinese server response text
-  '已签到', '已领取', '已完成', '成功', '领取',
-  // V2exTopicRepliesParser — parses Chinese "感谢" text
-  '已感谢', '感谢已发送', '感谢', '个',
-  // FoldScreenUtil — debug-only status descriptors
-  '未知', '展开', '折叠', '半折叠', '其他', '全屏', '主屏', '副屏', '协同',
-  '折叠屏', '状态', '模式', '隐藏标题栏',
-  // Settings files — internal error fallback messages
-  '读取', '保存', '清空', '设置失败', '历史失败',
-  '主题设置', '搜索历史', '搜索来源', '回复显示', '回复样式',
-  '回复按钮对齐方式', '阅读设置', '阅读位置',
-  // HttpClient / Sov2ex — service error fallbacks
-  'HTTP', 'SOV2EX', '搜索失败',
-  // V2exTopicWebRepliesClient
-  '无效的主题',
-  // DateUtils — JSDoc comments (already i18n'd)
-  '时间戳',
-  // NotificationCenterViewModel — matches V2EX server notification text for kind classification
-  '提到了你', '回复了你', '回复了你的', '收藏了你', '关注了你', '感谢了你', '系统',
-  // NotificationPage — session expiry detection string matching
-  '会话已失效',
-  // V2exAccountParser — parses Chinese server HTML coin labels
-  '金币', '银币', '铜币',
-  // V2exMemberPageParser — parses Chinese server HTML for member page sections
-  '主题列表被隐藏', '最近回复', '号会员',
-  // V2exNotificationParser — parses Chinese notification timestamps from V2EX server HTML
-  '刚刚', '半小时前', '秒前', '分钟前', '小时前', '天前', '年前',
-  '小时', '分钟', '秒', '天', '个月', '年',
-  '昨天', '前天', '月', '日',
+// Server-facing CJK is not localization debt: these strings are grammar for V2EX HTML / server messages.
+// Keep this allowlist path-aware. Do not add broad tokens like "个" globally: that hides real UI copy.
+const SERVER_PARSE_ALLOWLIST = [
+  {
+    file: /^entry\/src\/main\/ets\/viewmodel\/NotificationCenterViewModel\.ets$/,
+    tokens: ['提到了你', '回复了你', '回复了你的', '感谢了你', '收藏了你', '收藏', '关注了你', '关注', '系统']
+  },
+  {
+    file: /^shared\/src\/main\/ets\/network\/V2exNativeAuthService\.ets$/,
+    tokens: ['验证码', '密码', '用户名']
+  },
+  {
+    file: /^shared\/src\/main\/ets\/parser\//,
+    tokens: [
+      '金币', '银币', '铜币', '已领取', '已完成', '明天',
+      '主题列表被隐藏', '最近回复', '号会员',
+      '刚刚', '半小时前', '秒前', '分钟前', '小时前', '天前', '个月前', '年前',
+      '小时', '分钟', '秒', '天', '个月', '年', '昨天', '前天', '月', '日',
+      '登录受限', '受限的 IP 地址', '两步', '二步', '动态验证码', '安全码', '验证码', '动态',
+      '感谢', '已感谢', '感谢已发送', '个', '标题'
+    ]
+  },
+  {
+    file: /^shared\/src\/main\/ets\/services\/AutoDailyCheckinService\.ets$/,
+    tokens: ['已签到', '已领取', '已完成', '成功', '领取']
+  },
+  {
+    file: /^shared\/src\/main\/ets\/settings\/CollectionParsers\.ets$/,
+    tokens: ['个主题']
+  }
 ]
 
-function isKnownOk(text) {
-  for (const ok of KNOWN_OK_STRINGS) {
-    if (text.includes(ok)) {
-      return true
+function isServerParsingOk(rel, text) {
+  for (const entry of SERVER_PARSE_ALLOWLIST) {
+    if (!entry.file.test(rel)) continue
+    for (const token of entry.tokens) {
+      if (text.includes(token)) return true
     }
   }
   return false
+}
+
+function scanDefaultResourceCjk() {
+  const resourceFiles = [
+    'entry/src/main/resources/base/element/string.json',
+    'entry/src/main/resources/en_US/element/string.json'
+  ]
+  for (const rel of resourceFiles) {
+    const full = path.join(WORKTREE, rel)
+    if (!fs.existsSync(full)) continue
+    const data = JSON.parse(fs.readFileSync(full, 'utf-8'))
+    const values = data.string || []
+    for (const item of values) {
+      const value = String(item.value || '')
+      if (CJK_RE.test(value)) {
+        findings.must_fix.push(`${rel}:${item.name}: MUST_FIX — default/en_US resource contains CJK (${value.substring(0, 80)})`)
+        failed++
+      }
+    }
+  }
 }
 
 for (const { full, rel } of walkDir(WORKTREE)) {
@@ -159,8 +171,8 @@ for (const { full, rel } of walkDir(WORKTREE)) {
       continue
     }
 
-    if (isKnownOk(line)) {
-      findings.needs_review.push(`${key}: known server-parsing/legacy (${line.trim().substring(0, 80)})`)
+    if (isServerParsingOk(rel, line)) {
+      findings.server_parsing.push(`${key}: server-parsing (${line.trim().substring(0, 80)})`)
       passed++
       continue
     }
@@ -171,13 +183,15 @@ for (const { full, rel } of walkDir(WORKTREE)) {
   }
 }
 
+scanDefaultResourceCjk()
+
 // ------------------------------------------------------------
 // Report
 // ------------------------------------------------------------
 
 console.log('=== CJK i18n Contract Test ===\n')
 console.log(`Total CJK hits: ${passed + failed}`)
-console.log(`  Passed (allowed/comment/known): ${passed}`)
+console.log(`  Passed (allowed/comment/server-parsing): ${passed}`)
 console.log(`  Failed (must_fix): ${failed}\n`)
 
 if (findings.must_fix.length > 0) {
@@ -187,13 +201,13 @@ if (findings.must_fix.length > 0) {
   }
 }
 
-if (findings.needs_review.length > 0) {
-  console.log(`\n--- NEEDS_REVIEW (${findings.needs_review.length}) ---`)
-  for (const f of findings.needs_review.slice(0, 30)) {
+if (findings.server_parsing.length > 0) {
+  console.log(`\n--- SERVER_PARSING_ALLOWED (${findings.server_parsing.length}) ---`)
+  for (const f of findings.server_parsing.slice(0, 30)) {
     console.log(`  ${f}`)
   }
-  if (findings.needs_review.length > 30) {
-    console.log(`  ... and ${findings.needs_review.length - 30} more`)
+  if (findings.server_parsing.length > 30) {
+    console.log(`  ... and ${findings.server_parsing.length - 30} more`)
   }
 }
 

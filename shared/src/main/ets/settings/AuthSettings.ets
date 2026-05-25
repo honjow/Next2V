@@ -23,7 +23,7 @@ export class AuthSettings {
       return { token, username }
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '读取登录设置失败')
+      throw new Error(e.message || 'Failed to read login settings')
     }
   }
 
@@ -39,7 +39,7 @@ export class AuthSettings {
       AuthSettings.apply(cleanToken, username)
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '保存登录设置失败')
+      throw new Error(e.message || 'Failed to save login settings')
     }
   }
 
@@ -52,7 +52,7 @@ export class AuthSettings {
       AuthSettings.apply('', '')
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '清除登录设置失败')
+      throw new Error(e.message || 'Failed to clear login settings')
     }
   }
 

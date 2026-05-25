@@ -20,7 +20,7 @@ export class ApiDomainSettings {
       return ApiDomainSettings.loadFromStore(store)
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '读取 API 域名设置失败')
+      throw new Error(e.message || 'Failed to read API domain settings')
     }
   }
 
@@ -38,7 +38,7 @@ export class ApiDomainSettings {
       store.flushSync()
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '保存 API 域名设置失败')
+      throw new Error(e.message || 'Failed to save API domain settings')
     }
   }
 }

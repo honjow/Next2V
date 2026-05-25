@@ -62,7 +62,7 @@ export struct SavedNodesPage {
   private nodeSubtitle(item: SavedNode): string {
     const parts: string[] = [item.name]
     if (item.topics > 0) {
-      parts.push(`${item.topics} 个主题`)
+      parts.push(AppStrings.format(AppStrings.text(AppStrings.R_NODE_TOPICS_COUNT, '{0} topics'), [String(item.topics)]))
     }
     parts.push(AppStrings.format(AppStrings.text($r('app.string.saved_locally_on_format'), 'Saved locally on {0}'), [DateUtils.toDateString(item.savedAt)]))
     return parts.join(' · ')

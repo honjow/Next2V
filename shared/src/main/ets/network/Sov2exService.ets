@@ -50,7 +50,7 @@ export class Sov2exService {
       return Sov2exService.normalizeResponse(JSON.parse(response.result as string) as Sov2exSearchResponse)
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || 'SOV2EX 搜索失败')
+      throw new Error(e.message || 'SOV2EX search failed')
     }
   }
 

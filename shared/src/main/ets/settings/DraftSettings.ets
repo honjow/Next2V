@@ -31,7 +31,7 @@ export class DraftSettings {
       })
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '读取草稿失败')
+      throw new Error(e.message || 'Failed to read draft')
     }
   }
 
@@ -56,7 +56,7 @@ export class DraftSettings {
       DraftSettings.touchLocalData()
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '保存草稿失败')
+      throw new Error(e.message || 'Failed to save draft')
     }
   }
 
@@ -68,7 +68,7 @@ export class DraftSettings {
       DraftSettings.touchLocalData()
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '清空草稿失败')
+      throw new Error(e.message || 'Failed to clear draft')
     }
   }
 
@@ -126,7 +126,7 @@ export class DraftSettings {
       })
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '读取草稿失败')
+      throw new Error(e.message || 'Failed to read draft')
     }
   }
 
@@ -138,7 +138,7 @@ export class DraftSettings {
       DraftSettings.touchLocalData()
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '保存草稿失败')
+      throw new Error(e.message || 'Failed to save draft')
     }
   }
 

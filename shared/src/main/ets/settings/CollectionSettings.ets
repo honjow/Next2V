@@ -83,7 +83,7 @@ export class CollectionSettings {
       return topics
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '读取稍后读失败')
+      throw new Error(e.message || 'Failed to read read-later items')
     }
   }
 
@@ -110,7 +110,7 @@ export class CollectionSettings {
       return await CollectionSettings.loadSavedTopics(context)
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '保存稍后读失败')
+      throw new Error(e.message || 'Failed to save read-later items')
     }
   }
 
@@ -125,7 +125,7 @@ export class CollectionSettings {
       return await CollectionSettings.loadSavedTopics(context)
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '保存稍后读失败')
+      throw new Error(e.message || 'Failed to save read-later items')
     }
   }
 
@@ -143,7 +143,7 @@ export class CollectionSettings {
       return nodes
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '读取关注节点失败')
+      throw new Error(e.message || 'Failed to read followed nodes')
     }
   }
 
@@ -174,7 +174,7 @@ export class CollectionSettings {
       return await CollectionSettings.loadSavedNodes(context)
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '保存关注节点失败')
+      throw new Error(e.message || 'Failed to save followed nodes')
     }
   }
 
@@ -189,7 +189,7 @@ export class CollectionSettings {
       return await CollectionSettings.loadSavedNodes(context)
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '保存关注节点失败')
+      throw new Error(e.message || 'Failed to save followed nodes')
     }
   }
 
@@ -266,7 +266,7 @@ export class CollectionSettings {
       return topics
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '读取最近浏览失败')
+      throw new Error(e.message || 'Failed to read recently viewed items')
     }
   }
 
@@ -282,7 +282,7 @@ export class CollectionSettings {
       return stats
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '读取本地内容统计失败')
+      throw new Error(e.message || 'Failed to read local content statistics')
     }
   }
 
@@ -319,7 +319,7 @@ export class CollectionSettings {
       return await CollectionSettings.loadViewedTopics(context)
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '保存最近浏览失败')
+      throw new Error(e.message || 'Failed to save recently viewed items')
     }
   }
 
@@ -341,7 +341,7 @@ export class CollectionSettings {
       }
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '读取阅读位置失败')
+      throw new Error(e.message || 'Failed to read reading position')
     }
   }
 
@@ -364,7 +364,7 @@ export class CollectionSettings {
       return await CollectionSettings.loadTopicReadPositions(context)
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '保存阅读位置失败')
+      throw new Error(e.message || 'Failed to save reading position')
     }
   }
 
@@ -375,7 +375,7 @@ export class CollectionSettings {
       return CollectionSettings.readTopicReadPositionsResult(resultSet)
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '读取阅读位置失败')
+      throw new Error(e.message || 'Failed to read reading position')
     }
   }
 
@@ -411,7 +411,7 @@ export class CollectionSettings {
       return next
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '保存已读状态失败')
+      throw new Error(e.message || 'Failed to save read state')
     }
   }
 
@@ -422,7 +422,7 @@ export class CollectionSettings {
       return CollectionSettings.readTopicReadStatesResult(resultSet)
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '读取已读状态失败')
+      throw new Error(e.message || 'Failed to read read state')
     }
   }
 
@@ -464,7 +464,7 @@ export class CollectionSettings {
       CollectionSettings.deleteLegacyCollectionKeysBestEffort(context, [KEY_SAVED_NODES])
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '保存关注节点失败')
+      throw new Error(e.message || 'Failed to save followed nodes')
     }
   }
 

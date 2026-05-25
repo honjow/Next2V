@@ -35,7 +35,7 @@ export class V2exTopicWebRepliesClient {
     cookie: string = '',
   ): Promise<V2exTopicWebRepliesPage> {
     if (topicId <= 0) {
-      throw new Error('无效的主题 ID')
+      throw new Error('Invalid topic ID')
     }
     const safePage = Math.max(1, Math.floor(page))
     const path = `/t/${topicId}?p=${safePage}&_=${cacheBuster}`

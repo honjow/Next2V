@@ -44,7 +44,7 @@ export class ReplyCardStyleSettings {
       return ReplyCardStyleSettings.loadFromStore(store)
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '读取回复样式设置失败')
+      throw new Error(e.message || 'Failed to read reply style settings')
     }
   }
 
@@ -62,7 +62,7 @@ export class ReplyCardStyleSettings {
       store.flushSync()
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '保存回复样式设置失败')
+      throw new Error(e.message || 'Failed to save reply style settings')
     }
   }
 

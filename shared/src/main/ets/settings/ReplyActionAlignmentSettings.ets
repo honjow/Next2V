@@ -57,7 +57,7 @@ export class ReplyActionAlignmentSettings {
       return ReplyActionAlignmentSettings.loadFromStore(store)
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '读取回复按钮对齐方式失败')
+      throw new Error(e.message || 'Failed to read reply action alignment settings')
     }
   }
 
@@ -75,7 +75,7 @@ export class ReplyActionAlignmentSettings {
       store.flushSync()
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '保存回复按钮对齐方式失败')
+      throw new Error(e.message || 'Failed to save reply action alignment settings')
     }
   }
 

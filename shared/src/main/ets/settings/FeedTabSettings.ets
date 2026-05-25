@@ -123,7 +123,7 @@ export class FeedTabSettings {
       return normalized
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '读取首页栏目设置失败')
+      throw new Error(e.message || 'Failed to read home tab settings')
     }
   }
 
@@ -142,7 +142,7 @@ export class FeedTabSettings {
       return normalized
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '保存首页栏目设置失败')
+      throw new Error(e.message || 'Failed to save home tab settings')
     }
   }
 
@@ -157,7 +157,7 @@ export class FeedTabSettings {
       return selectedKey
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '保存首页选中栏目失败')
+      throw new Error(e.message || 'Failed to save selected home tab')
     }
   }
 

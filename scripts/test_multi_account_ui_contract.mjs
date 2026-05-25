@@ -10,47 +10,77 @@ const assert = (condition, message) => {
   }
 }
 
-// ── Target page must reference AccountStore ──────────────────────
 const accountPageRel = 'entry/src/main/ets/pages/AccountPage.ets'
 assert(fs.existsSync(path.join(repo, accountPageRel)), 'AccountPage.ets must exist')
 const accountPage = read(accountPageRel)
-const expectedTokens = [
-  'import {',
+
+// Me tab boundary: overview/content only, no multi-account management controls.
+for (const token of [
+  'AccountSessionCoordinator',
+  'prepareAddAccount',
+  'switchToAccount',
+  'MultiAccountSection',
+  'performRemoveAccount',
+  'AccountPageCoordinator.SWITCH_LABEL',
+  'AccountPageCoordinator.REMOVE_LABEL',
+  'AccountPageCoordinator.ADD_ANOTHER_ACCOUNT_TITLE',
+]) {
+  assert(!accountPage.includes(token), `AccountPage.ets must not expose multi-account management token: ${token}`)
+}
+
+// Settings -> Account management owns add/switch/remove UI and state.
+const managementPageRel = 'entry/src/main/ets/pages/AccountManagementPage.ets'
+assert(fs.existsSync(path.join(repo, managementPageRel)), 'AccountManagementPage.ets must exist')
+const managementPage = read(managementPageRel)
+for (const token of [
   'AccountStore',
+  'AccountSessionCoordinator',
   'AccountRecord',
-  "from 'shared'",
   'loadAccounts()',
   'restoreActiveId(context)',
   'migrateFromSingletonIfNeeded',
   'getAll(context)',
   'getActiveId()',
-  'setActiveId',
-  'MultiAccountSection()',
+  'prepareAddAccount',
+  'switchToAccount',
+  'performRemoveAccount',
   '@State private accounts: AccountRecord[]',
   '@State private activeAccountId: string',
-  '@State private isAccountsLoaded: boolean',
-]
-for (const token of expectedTokens) {
-  assert(accountPage.includes(token), `AccountPage.ets missing expected token: ${token}`)
+  '@State private isLoaded: boolean',
+]) {
+  assert(managementPage.includes(token), `AccountManagementPage.ets missing expected token: ${token}`)
 }
 
-// ── Non-target pages must not reference AccountStore ─────────────
-const forbiddenUiFiles = [
-  'entry/src/main/ets/pages/Index.ets',
+// Account route must not reuse the Me/dashboard detail variant.
+const indexPage = read('entry/src/main/ets/pages/Index.ets')
+assert(
+  indexPage.includes("import { AccountManagementPage } from './AccountManagementPage'"),
+  'Index.ets must import AccountManagementPage'
+)
+assert(
+  /descriptor\.family\s*===\s*'account'[\s\S]{0,120}AccountManagementPage\(\)/.test(indexPage),
+  'Index.ets account destination must render AccountManagementPage'
+)
+assert(
+  !/descriptor\.family\s*===\s*'account'[\s\S]{0,160}AccountDashboardPage\s*\(\s*\{\s*showDetail\s*:\s*true\s*\}/.test(indexPage),
+  'Index.ets account destination must not render AccountDashboardPage({ showDetail: true })'
+)
+
+// Login pages must use AccountSessionCoordinator, not AccountStore directly.
+for (const rel of [
   'entry/src/main/ets/pages/V2exNativeLoginPage.ets',
   'entry/src/main/ets/pages/V2exWebLoginPage.ets',
-]
-for (const rel of forbiddenUiFiles) {
-  if (fs.existsSync(path.join(repo, rel))) {
-    const text = read(rel)
-    assert(
-      !text.includes('AccountStore'),
-      `${rel} must not reference AccountStore`
-    )
-  }
+]) {
+  const text = read(rel)
+  assert(
+    !text.includes('AccountStore'),
+    `${rel} must not reference AccountStore - use AccountSessionCoordinator instead`
+  )
+  assert(text.includes('AccountSessionCoordinator'), `${rel} must import AccountSessionCoordinator`)
+  assert(text.includes('registerCurrentSession'), `${rel} must call AccountSessionCoordinator.registerCurrentSession()`)
 }
 
-// ── Resource key completeness ────────────────────────────────────
+// Resource key completeness
 const requiredKeys = ['account_list_header', 'account_active_label']
 const locales = ['base', 'en_US', 'zh_CN', 'zh_HK', 'zh_TW']
 for (const locale of locales) {
@@ -60,34 +90,20 @@ for (const locale of locales) {
   }
   const text = read(stringsPath)
   for (const key of requiredKeys) {
-    assert(
-      text.includes(`"name": "${key}"`),
-      `Missing resource key "${key}" in ${locale}/string.json`
-    )
+    assert(text.includes(`"name": "${key}"`), `Missing resource key "${key}" in ${locale}/string.json`)
   }
 }
 
-// ── AppStrings.ets must register new keys ────────────────────────
 const appStrings = read('shared/src/main/ets/i18n/AppStrings.ets')
-const appStringsKeys = ['R_ACCOUNT_LIST_HEADER', 'R_ACCOUNT_ACTIVE_LABEL']
-for (const key of appStringsKeys) {
-  assert(
-    appStrings.includes(key),
-    `AppStrings.ets missing key: ${key}`
-  )
+for (const key of ['R_ACCOUNT_LIST_HEADER', 'R_ACCOUNT_ACTIVE_LABEL']) {
+  assert(appStrings.includes(key), `AppStrings.ets missing key: ${key}`)
 }
 
-// ── AccountPageCoordinator must expose constants ─────────────────
 const coordinator = read('entry/src/main/ets/model/AccountPageCoordinator.ets')
-const coordinatorTokens = ['ACCOUNT_LIST_HEADER', 'ACCOUNT_ACTIVE_LABEL']
-for (const token of coordinatorTokens) {
-  assert(
-    coordinator.includes(token),
-    `AccountPageCoordinator.ets missing token: ${token}`
-  )
+for (const token of ['ACCOUNT_LIST_HEADER', 'ACCOUNT_ACTIVE_LABEL']) {
+  assert(coordinator.includes(token), `AccountPageCoordinator.ets missing token: ${token}`)
 }
 
-// ── Shared Index.ets must export AccountStore ────────────────────
 const sharedIndex = read('shared/src/main/ets/Index.ets')
 assert(
   sharedIndex.includes("export { AccountStore } from './settings/AccountStore'"),
@@ -97,52 +113,94 @@ assert(
   sharedIndex.includes('AccountRecord') && sharedIndex.includes("'./settings/AccountStore'"),
   'shared/Index.ets must export AccountRecord type'
 )
+assert(
+  sharedIndex.includes("export { AccountSessionCoordinator } from './settings/AccountSessionCoordinator'"),
+  'shared/Index.ets must export AccountSessionCoordinator'
+)
 
-// ── en_US fallbacks must not contain CJK ─────────────────────────
 const enStrings = read('entry/src/main/resources/en_US/element/string.json')
 for (const key of requiredKeys) {
-  // Extract the value for this key from en_US strings
   const match = enStrings.match(new RegExp(`"name": "${key}"[^}]*"value": "([^"]*)"`))
   if (match) {
-    const value = match[1]
-    const hasCJK = /[\u4e00-\u9fff\u3400-\u4dbf\uf900-\ufaff]/.test(value)
-    assert(
-      !hasCJK,
-      `en_US fallback for "${key}" must not contain CJK characters: "${value}"`
-    )
+    const hasCJK = /[\u4e00-\u9fff\u3400-\u4dbf\uf900-\ufaff]/.test(match[1])
+    assert(!hasCJK, `en_US fallback for "${key}" must not contain CJK characters: "${match[1]}"`)
   }
 }
 
-// ── AccountPage multi-account section must use SectionHeader ─────
-// Verify the MultiAccountSection renders accounts with section header
 assert(
-  accountPage.includes('AccountPageCoordinator.ACCOUNT_LIST_HEADER'),
-  'AccountPage must use ACCOUNT_LIST_HEADER for multi-account section'
+  managementPage.includes('AccountPageCoordinator.ACCOUNT_LIST_HEADER'),
+  'AccountManagementPage must use ACCOUNT_LIST_HEADER for multi-account section'
+)
+assert(
+  managementPage.includes('isLoaded && this.accounts.length > 0'),
+  'AccountManagementPage must gate multi-account section on isLoaded and accounts.length'
+)
+assert(
+  managementPage.includes('(record: AccountRecord'),
+  'AccountManagementPage must use AccountRecord type in ForEach'
 )
 
-// ── AccountPage must conditionally render on isAccountsLoaded ────
-assert(
-  accountPage.includes('isAccountsLoaded && this.accounts.length > 0'),
-  'AccountPage must gate multi-account section on isAccountsLoaded and accounts.length'
-)
-
-// ── AccountRecord DTO used in ForEach ─────────────────────────────
-assert(
-  accountPage.includes('(record: AccountRecord)'),
-  'AccountPage must use AccountRecord type in ForEach key generator'
-)
-
-// ── AccountPage load path must restore active ID before reading ──────
-// Verify loadAccounts method calls restoreActiveId before getActiveId
-const loadIdx = accountPage.indexOf('private loadAccounts()')
-assert(loadIdx >= 0, 'AccountPage must define private loadAccounts()')
-const loadMethod = accountPage.slice(loadIdx, loadIdx + 800)
-// restoreActiveId must appear before getActiveId in loadAccounts
+const loadIdx = managementPage.indexOf('private loadAccounts()')
+assert(loadIdx >= 0, 'AccountManagementPage must define private loadAccounts()')
+const loadMethod = managementPage.slice(loadIdx, loadIdx + 800)
 const restorePos = loadMethod.indexOf('restoreActiveId')
 const getActivePos = loadMethod.indexOf('getActiveId')
 assert(
   restorePos >= 0 && getActivePos >= 0 && restorePos < getActivePos,
-  'AccountPage.loadAccounts must call restoreActiveId before getActiveId to restore persisted active state'
+  'AccountManagementPage.loadAccounts must call restoreActiveId before getActiveId to restore persisted active state'
+)
+
+// Logged-out honesty: a lone stale cookie must not produce fake/generic signed-in UI.
+assert(
+  coordinator.includes('accountsCount') && coordinator.includes('sessionUsername'),
+  'AccountPageCoordinator.hasAnyAccount must accept accountsCount and sessionUsername params'
+)
+assert(/accountsCount\s*>\s*0/.test(coordinator), 'AccountPageCoordinator.hasAnyAccount must check accountsCount > 0 first')
+assert(
+  /authCookieConfigured[\s\S]{0,200}sessionUsername/.test(coordinator),
+  'AccountPageCoordinator.hasAnyAccount must not return true on authCookieConfigured alone'
+)
+assert(
+  /hasAnyAccount\([\s\S]*?this\.accountsCount/.test(accountPage),
+  'AccountPage.hasAnyAccount must pass account count from AccountStore'
+)
+assert(
+  /hasAnyAccount\([\s\S]*?this\.sessionUsername/.test(accountPage),
+  'AccountPage.hasAnyAccount must pass this.sessionUsername'
+)
+assert(
+  accountPage.includes('@State private activeAccountUsername') &&
+    accountPage.includes('@State private activeAccountAvatar') &&
+    accountPage.includes('AccountStore.getById(context, activeId)'),
+  'AccountPage must load active AccountStore identity fallback for Me signed-in card'
+)
+assert(
+  /identity\([\s\S]*?this\.activeAccountUsername[\s\S]*?this\.activeAccountAvatar/.test(accountPage),
+  'AccountPage current identity must pass active AccountStore username/avatar fallback'
+)
+const refreshKeyHandlerMatch = accountPage.match(/onRefreshKeyChanged\(_propName: string\): void \{([\s\S]*?)\n  \}/)
+assert(refreshKeyHandlerMatch, 'AccountPage must define onRefreshKeyChanged handler')
+assert(
+  refreshKeyHandlerMatch[1].includes('this.loadAccounts()'),
+  'AccountPage.onRefreshKeyChanged must refresh AccountStore state for mounted Me tab'
+)
+const visibleAreaHandlerMatch = accountPage.match(/\.onVisibleAreaChange\(\[0\.0, 1\.0\],\s*\(isVisible: boolean, _currentRatio: number\) => \{([\s\S]*?)\n\s*\}\)/)
+assert(visibleAreaHandlerMatch, 'AccountPage must define visible-area refresh handler')
+assert(
+  /if\s*\(isVisible\)\s*\{[\s\S]*?this\.loadAccounts\(\)/.test(visibleAreaHandlerMatch[1]),
+  'AccountPage visible refresh path must call loadAccounts() when Me becomes visible'
+)
+assert(
+  accountPage.includes('!this.hasAnyAccount()'),
+  'AccountPage must have logged-out branch for !hasAnyAccount()'
+)
+assert(
+  managementPage.includes('LoggedOutSection') && managementPage.includes('this.accounts.length === 0'),
+  'AccountManagementPage must render an honest logged-out management state'
+)
+assert(
+  !managementPage.includes('AccountDetailHeaderCard') && !managementPage.includes('R_ACCOUNT_V2EX_USER'),
+  'AccountManagementPage must not render fake/generic signed-in account detail'
 )
 
 console.log('multi-account ui contract ok')

@@ -50,7 +50,7 @@ export class ReplyDisplaySettings {
       return ReplyDisplaySettings.loadFromStore(store)
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '读取回复显示设置失败')
+      throw new Error(e.message || 'Failed to read reply display settings')
     }
   }
 
@@ -68,7 +68,7 @@ export class ReplyDisplaySettings {
       store.flushSync()
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '保存回复显示设置失败')
+      throw new Error(e.message || 'Failed to save reply display settings')
     }
   }
 

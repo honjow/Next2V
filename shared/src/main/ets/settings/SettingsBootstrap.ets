@@ -3,6 +3,8 @@ import { preferences } from '@kit.ArkData'
 import { ApiDomainSettings } from './ApiDomainSettings'
 import { AutoDailyCheckinSettings } from './AutoDailyCheckinSettings'
 import { CookieJarSettings } from './CookieJarSettings'
+import { AccountStore } from './AccountStore'
+import { AccountSessionCoordinator } from './AccountSessionCoordinator'
 import { DiagnosticsSettings } from './DiagnosticsSettings'
 import { FeedTabSettings } from './FeedTabSettings'
 import { LanguageSettings } from './LanguageSettings'
@@ -35,6 +37,7 @@ export class SettingsBootstrap {
     await SettingsBootstrap.restoreReading(context, settingsStore)
     await SettingsBootstrap.restoreFeedTabs(context)
     await SettingsBootstrap.restoreCookieJar(context)
+    await SettingsBootstrap.restoreMultiAccount(context)
     await SettingsBootstrap.restoreAutoDailyCheckin(context, settingsStore)
     SettingsBootstrap.triggerStartupCheckin(context)
     await SettingsBootstrap.restoreReplyCardStyle(context, settingsStore)
@@ -135,6 +138,17 @@ export class SettingsBootstrap {
         coCookie: '',
         updatedAt: 0,
       })
+    })
+  }
+
+  private static async restoreMultiAccount(context: common.UIAbilityContext): Promise<void> {
+    // Migrate singleton to multi-account if needed
+    await AccountStore.migrateFromSingletonIfNeeded(context).catch((error: Error) => {
+      console.error('account migration failed: ' + error.message)
+    })
+    // Restore active account's cookie/session from AccountStore into runtime
+    await AccountSessionCoordinator.restoreActiveAccount(context).catch((error: Error) => {
+      console.error('restore active account failed: ' + error.message)
     })
   }
 

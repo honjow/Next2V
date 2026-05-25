@@ -13,6 +13,11 @@ export interface V2exTwoFactorForm {
   hiddenFields: Record<string, string>
 }
 
+export interface V2exLoginRestriction {
+  restrictedIp: string
+  message: string
+}
+
 interface V2exSigninInput {
   type: string
   name: string
@@ -44,6 +49,21 @@ export class V2exSigninParser {
     }
 
     return { usernameField, passwordField, captchaField, captchaUrl, once, next }
+  }
+
+  static extractLoginRestriction(html: string): V2exLoginRestriction | null {
+    if (!html) {
+      return null
+    }
+    const text = V2exSigninParser.compactText(html)
+    if (text.indexOf('登录受限') < 0 && text.indexOf('login restricted') < 0) {
+      return null
+    }
+    const ipMatch = text.match(/(?:受限的 IP 地址|restricted IP address)\s*›?\s*((?:\d{1,3}\.){3}\d{1,3})/i)
+    return {
+      restrictedIp: ipMatch && ipMatch[1] ? ipMatch[1] : '',
+      message: text
+    }
   }
 
   static extractProblemMessage(html: string): string {

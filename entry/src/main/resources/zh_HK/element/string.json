@@ -245,6 +245,26 @@
       "value": "當前"
     },
     {
+      "name": "account_remove_title",
+      "value": "移除賬號"
+    },
+    {
+      "name": "account_remove_message_arg",
+      "value": "移除“{0}”？其他賬號不受影響。"
+    },
+    {
+      "name": "account_switch_label",
+      "value": "切換"
+    },
+    {
+      "name": "account_remove_label",
+      "value": "移除"
+    },
+    {
+      "name": "common_remove",
+      "value": "移除"
+    },
+    {
       "name": "profile_home",
       "value": "個人主頁"
     },
@@ -1963,6 +1983,14 @@
     {
       "name": "api_error_parse_login_page_failed",
       "value": "解析登入頁面失敗，請改用網頁登入"
+    },
+    {
+      "name": "api_error_login_restricted",
+      "value": "V2EX 暫時限制登入。請稍後再試。"
+    },
+    {
+      "name": "api_error_login_restricted_with_ip",
+      "value": "V2EX 暫時限制目前 IP {0} 登入。請稍後再試。"
     },
     {
       "name": "api_error_login_captcha_required",

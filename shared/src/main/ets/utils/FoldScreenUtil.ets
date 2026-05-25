@@ -171,42 +171,42 @@ export class FoldScreenUtil {
     let statusStr = ''
     switch (foldStatus) {
       case display.FoldStatus.FOLD_STATUS_UNKNOWN:
-        statusStr = '未知'
+        statusStr = 'unknown'
         break
       case display.FoldStatus.FOLD_STATUS_EXPANDED:
-        statusStr = '展开'
+        statusStr = 'expanded'
         break
       case display.FoldStatus.FOLD_STATUS_FOLDED:
-        statusStr = '折叠'
+        statusStr = 'folded'
         break
       case display.FoldStatus.FOLD_STATUS_HALF_FOLDED:
-        statusStr = '半折叠'
+        statusStr = 'half-folded'
         break
       default:
-        statusStr = '其他'
+        statusStr = 'other'
     }
     
     let modeStr = ''
     switch (displayMode) {
       case display.FoldDisplayMode.FOLD_DISPLAY_MODE_UNKNOWN:
-        modeStr = '未知'
+        modeStr = 'unknown'
         break
       case display.FoldDisplayMode.FOLD_DISPLAY_MODE_FULL:
-        modeStr = '全屏'
+        modeStr = 'full-screen'
         break
       case display.FoldDisplayMode.FOLD_DISPLAY_MODE_MAIN:
-        modeStr = '主屏(外屏)'
+        modeStr = 'main screen (outer)'
         break
       case display.FoldDisplayMode.FOLD_DISPLAY_MODE_SUB:
-        modeStr = '副屏'
+        modeStr = 'sub screen'
         break
       case display.FoldDisplayMode.FOLD_DISPLAY_MODE_COORDINATION:
-        modeStr = '协同'
+        modeStr = 'collaboration'
         break
       default:
-        modeStr = '其他'
+        modeStr = 'other'
     }
     
-    return `折叠屏:${isFoldable}, 状态:${statusStr}, 模式:${modeStr}, 隐藏标题栏:${this.isFoldedAndOuterScreen}`
+    return `foldable:${isFoldable}, status:${statusStr}, mode:${modeStr}, hideTitleBar:${this.isFoldedAndOuterScreen}`
   }
 }

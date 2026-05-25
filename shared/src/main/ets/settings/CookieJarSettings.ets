@@ -53,7 +53,7 @@ export class CookieJarSettings {
       return { comCookie, coCookie, updatedAt }
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '读取 Cookie 设置失败')
+      throw new Error(e.message || 'Failed to read cookie settings')
     }
   }
 
@@ -79,7 +79,7 @@ export class CookieJarSettings {
       await CookieJarSettings.restoreToWebCookieManager()
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '保存 Cookie 设置失败')
+      throw new Error(e.message || 'Failed to save cookie settings')
     }
   }
 
@@ -99,7 +99,7 @@ export class CookieJarSettings {
       }
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '清除 Cookie 设置失败')
+      throw new Error(e.message || 'Failed to clear cookie settings')
     }
   }
 
@@ -130,7 +130,7 @@ export class CookieJarSettings {
       CookieJarSettings.expireWebCookiesForBaseUrl(cleanBaseUrl, previousCookie)
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '清除当前域 Cookie 设置失败')
+      throw new Error(e.message || 'Failed to clear current-domain cookie settings')
     }
   }
 

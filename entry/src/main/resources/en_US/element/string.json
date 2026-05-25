@@ -245,6 +245,26 @@
       "value": "Active"
     },
     {
+      "name": "account_remove_title",
+      "value": "Remove Account"
+    },
+    {
+      "name": "account_remove_message_arg",
+      "value": "Remove \"{0}\"? Other accounts will not be affected."
+    },
+    {
+      "name": "account_switch_label",
+      "value": "Switch"
+    },
+    {
+      "name": "account_remove_label",
+      "value": "Remove"
+    },
+    {
+      "name": "common_remove",
+      "value": "Remove"
+    },
+    {
       "name": "profile_home",
       "value": "Profile"
     },
@@ -1963,6 +1983,14 @@
     {
       "name": "api_error_parse_login_page_failed",
       "value": "Failed to parse login page, please use web login"
+    },
+    {
+      "name": "api_error_login_restricted",
+      "value": "Login is temporarily restricted by V2EX. Please wait and try again later."
+    },
+    {
+      "name": "api_error_login_restricted_with_ip",
+      "value": "Login is temporarily restricted by V2EX for IP {0}. Please wait and try again later."
     },
     {
       "name": "api_error_login_captcha_required",

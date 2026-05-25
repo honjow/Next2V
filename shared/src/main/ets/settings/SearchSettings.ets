@@ -24,7 +24,7 @@ export class SearchSettings {
       return SearchSettings.readHistoryResult(resultSet)
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '读取搜索历史失败')
+      throw new Error(e.message || 'Failed to read search history')
     }
   }
 
@@ -42,7 +42,7 @@ export class SearchSettings {
       return await SearchSettings.loadHistory(context)
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '保存搜索历史失败')
+      throw new Error(e.message || 'Failed to save search history')
     }
   }
 
@@ -52,7 +52,7 @@ export class SearchSettings {
       await store.executeSql(SQL_CLEAR_HISTORY)
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '清空搜索历史失败')
+      throw new Error(e.message || 'Failed to clear search history')
     }
   }
 
@@ -64,7 +64,7 @@ export class SearchSettings {
       })
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '读取搜索来源失败')
+      throw new Error(e.message || 'Failed to read search sources')
     }
   }
 
@@ -78,7 +78,7 @@ export class SearchSettings {
       })
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '保存搜索来源失败')
+      throw new Error(e.message || 'Failed to save search sources')
     }
   }
 

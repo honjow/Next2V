@@ -35,7 +35,7 @@ export class ThemeSettings {
       return ThemeSettings.loadFromStore(store, context)
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '读取主题设置失败')
+      throw new Error(e.message || 'Failed to read theme settings')
     }
   }
 
@@ -53,7 +53,7 @@ export class ThemeSettings {
       store.flushSync()
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '保存主题设置失败')
+      throw new Error(e.message || 'Failed to save theme settings')
     }
   }
 

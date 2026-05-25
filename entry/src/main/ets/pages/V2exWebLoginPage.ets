@@ -5,6 +5,7 @@ import {
   ApiService,
   AppStrings,
   AuthSessionSettings,
+  AccountSessionCoordinator,
   AutoDailyCheckinService,
   CookieJarSettings,
   HttpClient,
@@ -250,6 +251,7 @@ export struct V2exWebLoginPage {
           return
         }
         await AuthSessionSettings.save(context, { loginMode: 'cookie', username, avatar, validatedAt: Date.now() })
+        await AccountSessionCoordinator.registerCurrentSession(context, username, avatar, 'cookie')
         AutoDailyCheckinService.tryCheckin(context, validated.cookie, 'web-login').catch((error: Error) => {
           console.info('auto daily check-in web-login trigger failed: ' + error.message)
         })
@@ -316,6 +318,11 @@ export struct V2exWebLoginPage {
   }
 
   private async clearPersistedLogin(context: common.UIAbilityContext): Promise<void> {
+    const restored = await AccountSessionCoordinator.restoreActiveAccount(context).catch((_error: Error) => null)
+    if (restored) {
+      console.info('V2exWebLoginPage: restored previous active account after web login persist failure')
+      return
+    }
     await Promise.all([
       CookieJarSettings.clearForBaseUrl(context, this.baseUrl).catch((clearError: Error) => {
         console.error('clear cookie after web login persist failure: ' + clearError.message)

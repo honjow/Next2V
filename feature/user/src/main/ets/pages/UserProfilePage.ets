@@ -521,7 +521,7 @@ export struct UserProfilePage {
   private actionFailureToast(error: Error): string {
     const message = (error?.message || '').trim()
     // Web session expired is reported by the API layer; pass it through.
-    if (message === 'Web session expired' || message === 'Web 会话已失效，请重新登录') {
+    if (message === 'Web session expired' || message === AppStrings.text(AppStrings.R_WEB_SESSION_EXPIRED_RELOGIN, 'Web session expired, please log in again')) {
       return message
     }
     return AppStrings.text(AppStrings.R_USER_PROFILE_ACTION_FAILED, 'Action failed')

@@ -245,6 +245,26 @@
       "value": "当前"
     },
     {
+      "name": "account_remove_title",
+      "value": "移除账号"
+    },
+    {
+      "name": "account_remove_message_arg",
+      "value": "移除“{0}”？其他账号不受影响。"
+    },
+    {
+      "name": "account_switch_label",
+      "value": "切换"
+    },
+    {
+      "name": "account_remove_label",
+      "value": "移除"
+    },
+    {
+      "name": "common_remove",
+      "value": "移除"
+    },
+    {
       "name": "profile_home",
       "value": "个人主页"
     },
@@ -1963,6 +1983,14 @@
     {
       "name": "api_error_parse_login_page_failed",
       "value": "解析登录页面失败，请改用网页登录"
+    },
+    {
+      "name": "api_error_login_restricted",
+      "value": "V2EX 暂时限制登录。请稍后再试。"
+    },
+    {
+      "name": "api_error_login_restricted_with_ip",
+      "value": "V2EX 暂时限制当前 IP {0} 登录。请稍后再试。"
     },
     {
       "name": "api_error_login_captcha_required",

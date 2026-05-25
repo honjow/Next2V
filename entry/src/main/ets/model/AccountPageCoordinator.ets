@@ -24,6 +24,12 @@ export class AccountPageCoordinator {
 
   static get ACCOUNT_LIST_HEADER(): ResourceStr { return AppStrings.R_ACCOUNT_LIST_HEADER }
   static get ACCOUNT_ACTIVE_LABEL(): string { return AppStrings.text(AppStrings.R_ACCOUNT_ACTIVE_LABEL, 'Active') }
+  static get REMOVE_ACCOUNT_TITLE(): ResourceStr { return AppStrings.R_ACCOUNT_REMOVE_TITLE }
+  static removeAccountMessage(username: string): string {
+    return AppStrings.format(AppStrings.text(AppStrings.R_ACCOUNT_REMOVE_MESSAGE_ARG, 'Remove "{0}"? Other accounts will not be affected.'), [username])
+  }
+  static get SWITCH_LABEL(): string { return AppStrings.text(AppStrings.R_ACCOUNT_SWITCH_LABEL, 'Switch') }
+  static get REMOVE_LABEL(): string { return AppStrings.text(AppStrings.R_ACCOUNT_REMOVE_LABEL, 'Remove') }
 
   static get PROFILE_TITLE(): ResourceStr { return AppStrings.R_PROFILE_HOME }
   static get BALANCE_DETAIL_TITLE(): ResourceStr { return AppStrings.R_BALANCE_DETAILS }
@@ -50,8 +56,29 @@ export class AccountPageCoordinator {
     return authCookieConfigured
   }
 
-  static hasAnyAccount(authCookieConfigured: boolean, authTokenConfigured: boolean): boolean {
-    return authCookieConfigured || authTokenConfigured
+  /**
+   * Returns true only when the app has identifiable accounts.
+   *
+   * Gate priority:
+   *   1. AccountStore records exist (definitive identity)
+   *   2. Token-based auth (PAT) is configured (legacy, token-only identity)
+   *   3. Cookie is configured AND session contains a real username
+   *
+   * A lone stale cookie WITHOUT an accompanying session username
+   * or AccountStore record does NOT qualify — this prevents the
+   * generic "V2EX user" placeholder account-screen deception.
+   */
+  static hasAnyAccount(authCookieConfigured: boolean, authTokenConfigured: boolean, accountsCount: number, sessionUsername: string): boolean {
+    if (accountsCount > 0) {
+      return true
+    }
+    if (authTokenConfigured) {
+      return true
+    }
+    if (authCookieConfigured && (sessionUsername || '').trim().length > 0) {
+      return true
+    }
+    return false
   }
 
   static shouldShowApiDiagnostics(authTokenConfigured: boolean): boolean {
@@ -62,11 +89,13 @@ export class AccountPageCoordinator {
     sessionUsername: string,
     sessionAvatar: string,
     authProfile: V2exAuthenticatedMember | null,
-    storedUsername: string
+    storedUsername: string,
+    activeAccountUsername: string = '',
+    activeAccountAvatar: string = ''
   ): AccountIdentity {
     return {
-      username: sessionUsername || authProfile?.username || storedUsername || '',
-      avatarUrl: sessionAvatar || authProfile?.avatar_normal || authProfile?.avatar_large || ''
+      username: sessionUsername || authProfile?.username || storedUsername || activeAccountUsername || '',
+      avatarUrl: sessionAvatar || authProfile?.avatar_normal || authProfile?.avatar_large || activeAccountAvatar || ''
     }
   }
 

@@ -38,14 +38,17 @@ assert(seed.includes("SEED_USERNAME_PREFIX: string = 'qa_debug_user_'"), 'SEED_U
 assert(seed.includes("cookieSnapshot: ''"), 'seedFakeAccounts must set cookieSnapshot to empty string')
 assert(seed.includes("tokenSnapshot: ''"), 'seedFakeAccounts must set tokenSnapshot to empty string')
 
-// ── No network/auth imports ─────────────────────────────────────
-assert(!seed.includes('HttpClient') && !seed.includes('AuthSessionSettings') && !seed.includes('CookieJarSettings') && !seed.includes('V2exNativeAuthService'), 'AccountStoreQaSeed must not import network/auth modules')
+// ── No network/cookie auth modules ──────────────────────────────
+assert(!seed.includes('HttpClient') && !seed.includes('CookieJarSettings') && !seed.includes('V2exNativeAuthService'), 'AccountStoreQaSeed must not import network or cookie auth modules')
 
 // ── Uses AccountStore for CRUD ──────────────────────────────────
 assert(seed.includes("import { AccountStore } from './AccountStore'"), 'AccountStoreQaSeed must import AccountStore')
 assert(seed.includes('AccountStore.add'), 'AccountStoreQaSeed must call AccountStore.add for seeding')
 assert(seed.includes('AccountStore.getAll'), 'AccountStoreQaSeed must call AccountStore.getAll for reset')
 assert(seed.includes('AccountStore.remove'), 'AccountStoreQaSeed must call AccountStore.remove for targeted reset')
+assert(seed.includes('AccountStore.setActiveId'), 'AccountStoreQaSeed must set active ID after debug seeding when needed')
+assert(seed.includes('AccountStore.restoreActiveId'), 'AccountStoreQaSeed must restore/check persisted active ID after seeding')
+assert(seed.includes('AuthSessionSettings.save'), 'AccountStoreQaSeed must apply matching AuthSession snapshot for active seeded account')
 
 // ── resetSeededAccounts targets seed prefix only ────────────────
 const resetMethod = seed.slice(seed.indexOf('resetSeededAccounts'))

@@ -25,7 +25,7 @@ export class MediaSettings {
       return MediaSettings.loadFromStore(store)
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '读取媒体设置失败')
+      throw new Error(e.message || 'Failed to read media settings')
     }
   }
 
@@ -48,7 +48,7 @@ export class MediaSettings {
       store.flushSync()
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '保存媒体设置失败')
+      throw new Error(e.message || 'Failed to save media settings')
     }
   }
 }

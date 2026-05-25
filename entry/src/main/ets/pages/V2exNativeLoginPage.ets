@@ -5,6 +5,7 @@ import {
   AppStrings,
   AppTextField,
   AuthSessionSettings,
+  AccountSessionCoordinator,
   AutoDailyCheckinService,
   AppActionButton,
   ConciseListRow,
@@ -293,6 +294,7 @@ export struct V2exNativeLoginPage {
         avatar,
         validatedAt: Date.now()
       })
+      await AccountSessionCoordinator.registerCurrentSession(context, snapshot.username, avatar, 'cookie')
       AutoDailyCheckinService.tryCheckin(context, snapshot.cookie, 'native-login').catch((error: Error) => {
         console.info('auto daily check-in native-login trigger failed: ' + error.message)
       })
@@ -318,6 +320,11 @@ export struct V2exNativeLoginPage {
   }
 
   private async clearPersistedLogin(context: common.UIAbilityContext): Promise<void> {
+    const restored = await AccountSessionCoordinator.restoreActiveAccount(context).catch((_error: Error) => null)
+    if (restored) {
+      console.info('V2exNativeLoginPage: restored previous active account after login persist failure')
+      return
+    }
     await Promise.all([
       CookieJarSettings.clearForBaseUrl(context, this.http.getBaseUrl()).catch((clearError: Error) => {
         console.error('clear cookie after login persist failure: ' + clearError.message)

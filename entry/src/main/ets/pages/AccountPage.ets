@@ -1,7 +1,6 @@
-import { common, Want } from '@kit.AbilityKit'
+import { common } from '@kit.AbilityKit'
 import { promptAction } from '@kit.ArkUI'
 import {
-  AccountDetailHeaderCard,
   AccountRateLimitSummary,
   AccountSignedInCard,
   AccountTokenSummary
@@ -24,8 +23,8 @@ import {
 } from 'shared'
 import {
   AccountStore,
-  type AccountRecord
 } from 'shared'
+import type { AccountRecord } from 'shared'
 import {
   ApiService,
   AccountMetaSettings,
@@ -88,11 +87,10 @@ export struct AccountDashboardPage {
   private http: HttpClient = HttpClient.getInstance()
   private api: ApiService = new ApiService()
   private localStatsRequestId: number = 0
-  // Multi-account state
-  @State private accounts: AccountRecord[] = []
-  @State private activeAccountId: string = ''
+  @State private accountsCount: number = 0
   @State private isAccountsLoaded: boolean = false
-  showDetail: boolean = false
+  @State private activeAccountUsername: string = ''
+  @State private activeAccountAvatar: string = ''
   @Prop @Watch('onRefreshKeyChanged') refreshKey: number = 0
 
   aboutToAppear(): void {
@@ -108,6 +106,7 @@ export struct AccountDashboardPage {
 
   onRefreshKeyChanged(_propName: string): void {
     this.refreshLocalData()
+    this.loadAccounts()
   }
 
   onAuthSessionUpdated(_propName: string): void {
@@ -125,138 +124,57 @@ export struct AccountDashboardPage {
   }
 
   build() {
-    if (this.showDetail) {
-      this.AccountDetailPage()
-    } else {
-      Column() {
-        SecondaryListScaffold({
-          bottomPadding: ThemeConstants.FLOAT_BAR_HEIGHT + ThemeConstants.SPACE_MD
-        }) {
-          ListItem() {
-            this.SectionHeader(AccountPageCoordinator.SECTION_ACCOUNT)
-          }
-
-          ListItem() {
-            this.AuthSection()
-          }
-
-          if (this.isAccountsLoaded && this.accounts.length > 0) {
-            ListItem() {
-              this.SectionHeader(AccountPageCoordinator.ACCOUNT_LIST_HEADER)
-            }
-            .margin({ top: ThemeConstants.SPACE_MD })
-
-            ListItem() {
-              this.MultiAccountSection()
-            }
-          }
-
-          if (this.hasCookieAccount()) {
-            ListItem() {
-              this.SectionHeader(AccountPageCoordinator.SECTION_ACCOUNT_CONTENT)
-            }
-            .margin({ top: ThemeConstants.SPACE_MD })
-
-            ListItem() {
-              this.AccountContentSection()
-            }
-          }
-
-          ListItem() {
-            this.SectionHeader(AccountPageCoordinator.SECTION_LOCAL_CONTENT)
-          }
-          .margin({ top: ThemeConstants.SPACE_MD })
-
-          ListItem() {
-            this.LocalContentSection()
-          }
-
-          ListItem() {
-            this.SectionHeader(AccountPageCoordinator.SECTION_MORE)
-          }
-          .margin({ top: ThemeConstants.SPACE_MD })
-
-          ListItem() {
-            this.StorageSection()
-          }
-        }
-      }
-      .width('100%')
-      .height('100%')
-      .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
-      .onVisibleAreaChange([0.0, 1.0], (isVisible: boolean, _currentRatio: number) => {
-        if (isVisible) {
-          this.refreshLocalData()
-        }
-      })
-    }
-  }
-
-  @Builder
-  AccountDetailPage() {
     Column() {
-      SecondaryListScaffold({ bottomPadding: ThemeConstants.SPACE_MD }) {
+      SecondaryListScaffold({
+        bottomPadding: ThemeConstants.FLOAT_BAR_HEIGHT + ThemeConstants.SPACE_MD
+      }) {
         ListItem() {
-          AccountDetailHeaderCard({
-            avatarUrl: this.currentAvatar(),
-            username: this.currentUsername(),
-            balance: this.accountBalance,
-            fallbackText: this.accountMetaText(),
-            sessionError: this.sessionError,
-            accountMetaError: this.accountMetaError,
-            dailyMissionMessage: AccountPageCoordinator.dailyMissionMessage(this.dailyMission ? this.dailyMission.message : '')
-          })
+          this.SectionHeader(AccountPageCoordinator.SECTION_ACCOUNT)
         }
 
         ListItem() {
-          GroupedListSection() {
-            this.AuthActionRow(AccountPageCoordinator.PROFILE_TITLE, '', () => {
-              const username = this.currentUsername()
-              if (username) {
-                let p: UserProfileParams = { username: username }
-                this.ns.pushPathByName('UserProfile', p as Object)
-              }
-            })
-            this.SettingsDivider()
-            this.AuthActionRow(AccountPageCoordinator.BALANCE_DETAIL_TITLE, '', () => {
-              this.openV2exPathInSystemBrowser('/balance')
-            })
-            this.SettingsDivider()
-            this.AuthActionRow(AccountPageCoordinator.WEB_ACCOUNT_SETTINGS_TITLE, '', () => {
-              this.openV2exPathInSystemBrowser('/settings')
-            })
-          }
+          this.AuthSection()
         }
 
-        ListItem() {
-          GroupedListSection() {
-            ConciseListRow({
-              title: AccountPageCoordinator.LOGOUT_TITLE,
-              showChevron: false,
-              primaryColor: Color.Red,
-              action: () => {
-                this.logoutAll()
-                this.ns.pop()
-              }
-            })
-          }
-        }
-
-        if (this.shouldShowApiDiagnostics()) {
+        if (this.hasCookieAccount()) {
           ListItem() {
-            this.SectionHeader(AccountPageCoordinator.SECTION_ADVANCED_API)
+            this.SectionHeader(AccountPageCoordinator.SECTION_ACCOUNT_CONTENT)
           }
           .margin({ top: ThemeConstants.SPACE_MD })
 
           ListItem() {
-            this.ApiDiagnosticsSection()
+            this.AccountContentSection()
           }
+        }
+
+        ListItem() {
+          this.SectionHeader(AccountPageCoordinator.SECTION_LOCAL_CONTENT)
+        }
+        .margin({ top: ThemeConstants.SPACE_MD })
+
+        ListItem() {
+          this.LocalContentSection()
+        }
+
+        ListItem() {
+          this.SectionHeader(AccountPageCoordinator.SECTION_MORE)
+        }
+        .margin({ top: ThemeConstants.SPACE_MD })
+
+        ListItem() {
+          this.StorageSection()
         }
       }
     }
     .width('100%')
     .height('100%')
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
+    .onVisibleAreaChange([0.0, 1.0], (isVisible: boolean, _currentRatio: number) => {
+      if (isVisible) {
+        this.refreshLocalData()
+        this.loadAccounts()
+      }
+    })
   }
 
   @Builder
@@ -299,14 +217,11 @@ export struct AccountDashboardPage {
             this.redeemDailyMission()
           },
           openDetail: () => {
-            this.ns.pushPathByName('Account', null)
-          }
-        })
-        this.SettingsDivider()
-        ConciseListRow({
-          title: AccountPageCoordinator.ADD_ANOTHER_ACCOUNT_TITLE,
-          action: () => {
-            this.ns.pushPathByName('V2exNativeLogin', null)
+            const username = this.currentUsername()
+            if (username) {
+              let p: UserProfileParams = { username: username }
+              this.ns.pushPathByName('UserProfile', p as Object)
+            }
           }
         })
       }
@@ -479,34 +394,12 @@ export struct AccountDashboardPage {
   }
 
   private hasAnyAccount(): boolean {
-    return AccountPageCoordinator.hasAnyAccount(this.authCookieConfigured, this.authTokenConfigured)
-  }
-
-  @Builder
-  MultiAccountSection() {
-    GroupedListSection() {
-      ForEach(this.accounts, (record: AccountRecord) => {
-        ConciseListRow({
-          title: record.username,
-          subtitle: this.activeAccountId === record.id ? AccountPageCoordinator.ACCOUNT_ACTIVE_LABEL : '',
-          showChevron: false,
-          action: () => {
-            this.selectAccount(record)
-          }
-        })
-      }, (record: AccountRecord) => record.id)
-    }
-  }
-
-  private selectAccount(record: AccountRecord): void {
-    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    AccountStore.setActiveId(context, record.id)
-      .then(() => {
-        this.activeAccountId = record.id
-      })
-      .catch((error: Error) => {
-        console.error('setActiveId failed: ' + error.message)
-      })
+    return AccountPageCoordinator.hasAnyAccount(
+      this.authCookieConfigured,
+      this.authTokenConfigured,
+      this.accountsCount,
+      this.sessionUsername
+    )
   }
 
   private loadAccounts(): void {
@@ -515,20 +408,43 @@ export struct AccountDashboardPage {
       .then(() => AccountStore.restoreActiveId(context))
       .then(() => AccountStore.getAll(context))
       .then((records: AccountRecord[]) => {
-        this.accounts = records
-        this.activeAccountId = AccountStore.getActiveId()
+        this.accountsCount = records.length
+        this.loadActiveAccountIdentity(context, records)
         this.isAccountsLoaded = true
       })
       .catch((error: Error) => {
         console.error('loadAccounts failed: ' + error.message)
-        this.accounts = []
-        this.activeAccountId = AccountStore.getActiveId()
+        this.accountsCount = 0
+        this.activeAccountUsername = ''
+        this.activeAccountAvatar = ''
         this.isAccountsLoaded = true
       })
   }
 
-  private shouldShowApiDiagnostics(): boolean {
-    return AccountPageCoordinator.shouldShowApiDiagnostics(this.authTokenConfigured)
+  private loadActiveAccountIdentity(context: common.UIAbilityContext, records: AccountRecord[]): void {
+    if (records.length === 0) {
+      this.activeAccountUsername = ''
+      this.activeAccountAvatar = ''
+      return
+    }
+    const activeId = AccountStore.getActiveId()
+    const fallbackRecord = records.find((record: AccountRecord) => record.id === activeId) ?? records[0]
+    if (!activeId) {
+      this.applyActiveAccountIdentity(fallbackRecord)
+      return
+    }
+    AccountStore.getById(context, activeId)
+      .then((record: AccountRecord | null) => {
+        this.applyActiveAccountIdentity(record ?? fallbackRecord)
+      })
+      .catch((_error: Error) => {
+        this.applyActiveAccountIdentity(fallbackRecord)
+      })
+  }
+
+  private applyActiveAccountIdentity(record: AccountRecord | null): void {
+    this.activeAccountUsername = record?.username || ''
+    this.activeAccountAvatar = record?.avatar || ''
   }
 
   private currentUsername(): string {
@@ -536,7 +452,9 @@ export struct AccountDashboardPage {
       this.sessionUsername,
       this.sessionAvatar,
       this.authProfile,
-      this.storedUsername
+      this.storedUsername,
+      this.activeAccountUsername,
+      this.activeAccountAvatar
     ).username
   }
 
@@ -545,7 +463,9 @@ export struct AccountDashboardPage {
       this.sessionUsername,
       this.sessionAvatar,
       this.authProfile,
-      this.storedUsername
+      this.storedUsername,
+      this.activeAccountUsername,
+      this.activeAccountAvatar
     ).avatarUrl
   }
 
@@ -815,40 +735,6 @@ export struct AccountDashboardPage {
       })
   }
 
-  private logoutAll(): void {
-    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    DiagnosticLogger.info('account', 'account_logout_all_start', { hadToken: this.authTokenConfigured || !!this.authToken, hadCookie: this.authCookieConfigured })
-    this.isAuthLoading = false
-    this.isSessionValidating = false
-    this.authError = ''
-    this.sessionError = ''
-    Promise.all([
-      AuthSettings.clear(context).catch((error: Error) => {
-        this.authError = translateApiError(error)
-      }),
-      AuthSessionSettings.clear(context).catch((error: Error) => {
-        this.sessionError = translateApiError(error)
-      }),
-      CookieJarSettings.clear(context).catch((error: Error) => {
-        this.sessionError = translateApiError(error)
-      }),
-      NotificationSettings.clearCache(context).catch((_error: Error) => {
-      }),
-      AccountMetaSettings.clearCache(context).catch((_error: Error) => {
-      })
-    ])
-      .finally(() => {
-        this.authToken = ''
-        this.authProfile = null
-        this.tokenInfo = null
-        this.tokenInfoError = ''
-        this.accountBalance = null
-        this.dailyMission = null
-        this.accountMetaError = ''
-        DiagnosticLogger.info('account', 'account_logout_all_complete', { hadToken: true, hadCookie: true })
-      })
-  }
-
   private accountMetaOwnerKey(): string {
     return AccountMetaSettings.ownerKey(this.currentUsername(), 'cookie')
   }
@@ -1055,27 +941,4 @@ export struct AccountDashboardPage {
       })
   }
 
-  private openV2exPathInSystemBrowser(path: string): void {
-    const baseUrl = this.http.getBaseUrl()
-    const cleanPath = (path || '').trim()
-    if (!baseUrl || !cleanPath) {
-      return
-    }
-    const url = cleanPath.startsWith('/') ? `${baseUrl}${cleanPath}` : `${baseUrl}/${cleanPath}`
-    this.openInSystemBrowser(url)
-  }
-
-  private openInSystemBrowser(url: string): void {
-    const target = (url || '').trim()
-    if (!target) {
-      return
-    }
-    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    const want: Want = { action: 'ohos.want.action.viewData', uri: target }
-    context.startAbility(want)
-      .catch((error: Error) => {
-        promptAction.openToast({ message: translateApiError(error) }).catch((_error: Error) => {
-        })
-      })
-  }
 }

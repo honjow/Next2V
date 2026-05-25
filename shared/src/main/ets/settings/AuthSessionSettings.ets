@@ -44,7 +44,7 @@ export class AuthSessionSettings {
       return snapshot
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '读取会话设置失败')
+      throw new Error(e.message || 'Failed to read session settings')
     }
   }
 
@@ -59,7 +59,7 @@ export class AuthSessionSettings {
       AuthSessionSettings.apply(snapshot)
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '保存会话设置失败')
+      throw new Error(e.message || 'Failed to save session settings')
     }
   }
 
@@ -74,7 +74,7 @@ export class AuthSessionSettings {
       AuthSessionSettings.apply(DEFAULT_SNAPSHOT)
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '清除会话设置失败')
+      throw new Error(e.message || 'Failed to clear session settings')
     }
   }
 

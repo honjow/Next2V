@@ -154,9 +154,11 @@ export struct AccountSignedInCard {
           }
         })
 
-      Text('›')
-        .fontSize(ThemeConstants.FONT_SIZE_TITLE)
-        .fontColor($r('sys.color.font_secondary'))
+      if (this.openDetail) {
+        Text('›')
+          .fontSize(ThemeConstants.FONT_SIZE_TITLE)
+          .fontColor($r('sys.color.font_secondary'))
+      }
     }
     .alignItems(VerticalAlign.Center)
     .width('100%')

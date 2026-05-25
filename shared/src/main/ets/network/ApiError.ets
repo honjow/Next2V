@@ -46,6 +46,7 @@ export enum ApiErrorCode {
   RECENT_TOPICS_EMPTY = 'RECENT_TOPICS_EMPTY',
   TAB_TOPICS_EMPTY = 'TAB_TOPICS_EMPTY',
   PARSE_LOGIN_PAGE_FAILED = 'PARSE_LOGIN_PAGE_FAILED',
+  LOGIN_RESTRICTED = 'LOGIN_RESTRICTED',
   LOGIN_CAPTCHA_REQUIRED = 'LOGIN_CAPTCHA_REQUIRED',
   CAPTCHA_REQUIRED = 'CAPTCHA_REQUIRED',
   LOGIN_FAILED_DETAIL = 'LOGIN_FAILED_DETAIL',
@@ -407,6 +408,16 @@ export class ApiErrors {
       ApiErrorCode.PARSE_LOGIN_PAGE_FAILED,
       AppStrings.R_API_ERROR_PARSE_LOGIN_PAGE_FAILED,
       'Failed to parse login page',
+    )
+  }
+  static loginRestricted(ip: string): ApiError {
+    const cleanIp = (ip || '').trim()
+    const context: Record<string, string> = { '0': cleanIp }
+    return new ApiError(
+      ApiErrorCode.LOGIN_RESTRICTED,
+      cleanIp ? AppStrings.R_API_ERROR_LOGIN_RESTRICTED_WITH_IP : AppStrings.R_API_ERROR_LOGIN_RESTRICTED,
+      cleanIp ? `Login temporarily restricted for IP ${cleanIp}` : 'Login temporarily restricted',
+      { context },
     )
   }
   static loginCaptchaRequired(): ApiError {

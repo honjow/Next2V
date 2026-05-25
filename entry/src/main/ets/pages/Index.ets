@@ -53,6 +53,7 @@ import { MyTopicsPage } from './MyTopicsPage'
 import { MyNodesPage } from './MyNodesPage'
 import { AccountFollowingPage } from './AccountFollowingPage'
 import { AccountDashboardPage } from './AccountPage'
+import { AccountManagementPage } from './AccountManagementPage'
 import { SavedTopicsPage } from './SavedTopicsPage'
 import { ViewedTopicsPage } from './ViewedTopicsPage'
 import { SavedNodesPage } from './SavedNodesPage'
@@ -237,7 +238,7 @@ struct Index {
       NetworkProxySettingsPage()
     }
     if (descriptor.family === 'account') {
-      AccountDashboardPage({ showDetail: true })
+      AccountManagementPage()
     }
     if (descriptor.family === 'savedTopics') {
       SavedTopicsPage()

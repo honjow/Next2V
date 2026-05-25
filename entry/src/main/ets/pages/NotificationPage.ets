@@ -877,13 +877,13 @@ export struct NotificationPage {
     if (!cookie) {
       return
     }
-    this.notificationError = 'V2EX 需要完成两步验证'
+    this.notificationError = AppStrings.text(AppStrings.R_TWO_FACTOR_REQUIRED, 'V2EX requires two-factor verification')
     DiagnosticLogger.warn('notification', 'notification_two_factor_required', { source: this.notificationVm.sourceKeyFor(this.notificationAuthContext()) })
     TwoFactorChallengeService.request(cookie, 'notification')
   }
 
   private handleExpiredCookieSession(message: string): void {
-    if (!message || message.indexOf('会话已失效') < 0) {
+    if (!message || (message.indexOf('Web session expired') < 0 && message.indexOf(AppStrings.text(AppStrings.R_WEB_SESSION_EXPIRED_RELOGIN, 'Web session expired, please log in again')) < 0)) {
       return
     }
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext

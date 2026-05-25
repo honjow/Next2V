@@ -134,7 +134,7 @@ export class CacheSettings {
       CacheSettings.deleteLegacyCacheBestEffort(context)
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '保存列表缓存失败')
+      throw new Error(e.message || 'Failed to save list cache')
     }
   }
 
@@ -186,7 +186,7 @@ export class CacheSettings {
       CacheSettings.deleteLegacyCacheBestEffort(context)
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '保存详情缓存失败')
+      throw new Error(e.message || 'Failed to save detail cache')
     }
   }
 
@@ -297,7 +297,7 @@ export class CacheSettings {
     } catch (error) {
       cleanupPreparedPayloadFile(context, payloadPlan)
       const e = error as Error
-      throw new Error(e.message || '保存缓存失败')
+      throw new Error(e.message || 'Failed to save cache')
     }
   }
 

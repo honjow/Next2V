@@ -42,7 +42,7 @@ export class AccountMetaSettings {
       return snapshot
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '读取账号缓存失败')
+      throw new Error(e.message || 'Failed to read account cache')
     }
   }
 
@@ -76,7 +76,7 @@ export class AccountMetaSettings {
       return snapshot
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '保存账号缓存失败')
+      throw new Error(e.message || 'Failed to save account cache')
     }
   }
 

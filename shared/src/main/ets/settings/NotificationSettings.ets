@@ -31,7 +31,7 @@ export class NotificationSettings {
       return snapshot
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '读取通知缓存失败')
+      throw new Error(e.message || 'Failed to read notification cache')
     }
   }
 
@@ -59,7 +59,7 @@ export class NotificationSettings {
       return snapshot
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || '保存通知缓存失败')
+      throw new Error(e.message || 'Failed to save notification cache')
     }
   }
 
