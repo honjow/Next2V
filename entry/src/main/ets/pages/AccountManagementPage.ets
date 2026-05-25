@@ -27,15 +27,6 @@ export struct AccountManagementPage {
   build() {
     Column() {
       SecondaryListScaffold({ bottomPadding: ThemeConstants.SPACE_MD }) {
-        ListItem() {
-          this.SectionHeader(AccountPageCoordinator.SECTION_ACCOUNT)
-        }
-
-        if (this.isLoaded && this.accounts.length === 0) {
-          ListItem() {
-            this.LoggedOutSection()
-          }
-        }
 
         if (this.isLoaded && this.accounts.length > 0) {
           ListItem() {

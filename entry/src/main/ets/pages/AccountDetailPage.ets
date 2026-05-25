@@ -115,28 +115,9 @@ export struct AccountDetailPage {
         }
 
         ListItem() {
-          this.SectionHeader(AccountPageCoordinator.SECTION_ACCOUNT)
-        }
-        .margin({ top: ThemeConstants.SPACE_MD })
-
-        ListItem() {
           GroupedListSection() {
-            this.AccountRow(AccountPageCoordinator.ACCOUNT_SAVED_TOPICS_TITLE, () => {
-              this.ns.pushPathByName('MyTopics', null)
-            })
-            this.SettingsDivider()
-            this.AccountRow(AccountPageCoordinator.ACCOUNT_SAVED_NODES_TITLE, () => {
-              this.ns.pushPathByName('MyNodes', null)
-            })
-            this.SettingsDivider()
-            this.AccountRow(AccountPageCoordinator.ACCOUNT_FOLLOWING_TITLE, () => {
-              this.ns.pushPathByName('AccountFollowing', null)
-            })
+            this.LogoutRow()
           }
-        }
-
-        ListItem() {
-          this.LogoutRow()
         }
         .margin({ top: ThemeConstants.SPACE_MD })
       }
@@ -163,23 +144,13 @@ export struct AccountDetailPage {
 
   @Builder
   LogoutRow() {
-    Row() {
-      Text(AccountPageCoordinator.LOGOUT_TITLE)
-        .fontSize(ThemeConstants.FONT_SIZE_LIST_ITEM)
-        .fontWeight(FontWeight.Medium)
-        .fontColor(Color.Red)
-        .layoutWeight(1)
-      Text('›')
-        .fontSize(ThemeConstants.FONT_SIZE_TITLE)
-        .fontColor($r('sys.color.font_secondary'))
-    }
-    .width('100%')
-    .padding(ThemeConstants.SPACE_LG)
-    .borderRadius(ThemeConstants.RADIUS_CARD)
-    .clip(true)
-    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
-    .onClick(() => {
-      this.confirmLogout()
+    ConciseListRow({
+      title: AccountPageCoordinator.LOGOUT_TITLE,
+      showChevron: false,
+      primaryColor: Color.Red,
+      action: () => {
+        this.confirmLogout()
+      }
     })
   }
 
@@ -378,6 +349,7 @@ export struct AccountDetailPage {
         fontColor: Color.Red,
         action: () => {
           this.performLogout(context)
+          this.ns.pop()
         }
       }
     })
