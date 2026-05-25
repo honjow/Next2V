@@ -1674,15 +1674,15 @@
     },
     {
       "name": "relative_just_now",
-      "value": "刚刚"
+      "value": "剛剛"
     },
     {
       "name": "relative_minutes_ago",
-      "value": "{0} 分钟前"
+      "value": "{0} 分鐘前"
     },
     {
       "name": "relative_hours_ago",
-      "value": "{0} 小时前"
+      "value": "{0} 小時前"
     },
     {
       "name": "relative_days_ago",
@@ -1690,7 +1690,7 @@
     },
     {
       "name": "relative_months_ago",
-      "value": "{0} 个月前"
+      "value": "{0} 個月前"
     },
     {
       "name": "relative_years_ago",

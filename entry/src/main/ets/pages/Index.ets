@@ -15,6 +15,7 @@ import {
 } from '@kit.UIDesignKit'
 import { common, Want } from '@kit.AbilityKit'
 import {
+  AccountSessionCoordinator,
   AppStrings,
   ApiConstants,
   ApiService,
@@ -367,6 +368,9 @@ struct Index {
   }
 
   private destinationTitleBarOpts(descriptor: IndexDestinationDescriptor): Record<string, Object> {
+    if (descriptor.family === 'account') {
+      return this.navDestTitleBarOpts(descriptor.title, this.accountManagementTitleMenu())
+    }
     if (IndexRouteCoordinator.usesStandardTitleBar(descriptor.family)) {
       return this.navDestTitleBarOpts(descriptor.title)
     }
@@ -878,6 +882,21 @@ struct Index {
     return { 'value': items, 'maxCount': IndexTitleBarCoordinator.SINGLE_ITEM_MENU_MAX_COUNT }
   }
 
+  private accountManagementTitleMenu(): Record<string, Object> {
+    let items: Record<string, Object>[] = IndexTitleBarCoordinator.accountManagementMenuItems().map(
+      (descriptor: IndexTitleMenuDescriptor) => this.topicActionItem(
+        descriptor.label,
+        this.mainTitleMenuIcon(descriptor.icon),
+        () => {
+          if (descriptor.action === 'addAccount') {
+            this.startAddAccount()
+          }
+        },
+      )
+    )
+    return { 'value': items, 'maxCount': IndexTitleBarCoordinator.SINGLE_ITEM_MENU_MAX_COUNT }
+  }
+
   private webLoginTitleMenu(): Record<string, Object> {
     let items: Record<string, Object>[] = IndexTitleBarCoordinator.webLoginMenuItems().map(
       (descriptor: IndexTitleMenuDescriptor) => this.topicActionItem(
@@ -908,6 +927,9 @@ struct Index {
     if (icon === 'settings') {
       return $r('sys.symbol.gearshape')
     }
+    if (icon === 'add') {
+      return $r('sys.symbol.plus')
+    }
     if (icon === 'filter') {
       return $r('sys.symbol.funnel')
     }
@@ -928,6 +950,17 @@ struct Index {
       StorageKeys.WEB_LOGIN_ACTION,
       IndexRouteCoordinator.simpleCommand(action, Date.now()),
     )
+  }
+
+  private startAddAccount(): void {
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    AccountSessionCoordinator.prepareAddAccount(context)
+      .then(() => {
+        this.ns.pushPathByName('V2exNativeLogin', null)
+      })
+      .catch((error: Error) => {
+        console.error('prepareAddAccount failed: ' + error.message)
+      })
   }
 
   private refreshNotificationBadge(): void {

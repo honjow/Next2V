@@ -35,10 +35,6 @@ export struct AccountManagementPage {
           ListItem() {
             this.LoggedOutSection()
           }
-        } else {
-          ListItem() {
-            this.AddAccountSection()
-          }
         }
 
         if (this.isLoaded && this.accounts.length > 0) {
@@ -87,64 +83,16 @@ export struct AccountManagementPage {
   }
 
   @Builder
-  private AddAccountSection() {
-    GroupedListSection() {
-      ConciseListRow({
-        title: AccountPageCoordinator.ADD_ANOTHER_ACCOUNT_TITLE,
-        subtitle: AccountPageCoordinator.LOGIN_SUBTITLE,
-        action: () => {
-          this.startAddAccount()
-        }
-      })
-    }
-  }
-
-  @Builder
   private AccountListSection() {
     GroupedListSection() {
       ForEach(this.accounts, (record: AccountRecord, index: number) => {
         Column() {
-          Row() {
-            Column({ space: ThemeConstants.SPACE_XS }) {
-              Text(record.username)
-                .fontSize(ThemeConstants.FONT_SIZE_LIST_ITEM)
-                .fontWeight(FontWeight.Medium)
-                .fontColor($r('sys.color.font_primary'))
-                .maxLines(1)
-                .textOverflow({ overflow: TextOverflow.Ellipsis })
-              if (this.activeAccountId === record.id) {
-                Text(AccountPageCoordinator.ACCOUNT_ACTIVE_LABEL)
-                  .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-                  .fontColor($r('sys.color.font_secondary'))
-              }
-            }
-            .layoutWeight(1)
-            .alignItems(HorizontalAlign.Start)
-
-            if (this.activeAccountId !== record.id) {
-              Text(AccountPageCoordinator.SWITCH_LABEL)
-                .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-                .fontColor($r('sys.color.font_secondary'))
-                .padding(ThemeConstants.SPACE_SM)
-                .onClick(() => {
-                  this.switchAccount(record)
-                })
-            }
-
-            Text(AccountPageCoordinator.REMOVE_LABEL)
-              .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-              .fontColor(Color.Red)
-              .padding(ThemeConstants.SPACE_SM)
-              .onClick(() => {
-                this.confirmRemoveAccount(record)
-              })
-          }
-          .width('100%')
-          .padding({
-            left: ThemeConstants.SPACE_LG,
-            right: ThemeConstants.SPACE_LG,
-            top: ThemeConstants.SPACE_SM,
-            bottom: ThemeConstants.SPACE_SM
+          ConciseListRow({
+            title: record.username,
+            subtitle: this.activeAccountId === record.id ? AccountPageCoordinator.ACCOUNT_ACTIVE_LABEL : '',
+            leadingImageUrl: record.avatar,
+            showChevron: false,
+            suffixBuilderParam: (): void => this.AccountRowActions(record)
           })
 
           if (index < this.accounts.length - 1) {
@@ -153,6 +101,30 @@ export struct AccountManagementPage {
         }
       }, (record: AccountRecord) => record.id)
     }
+  }
+
+  @Builder
+  private AccountRowActions(record: AccountRecord) {
+    Row({ space: ThemeConstants.SPACE_XS }) {
+      if (this.activeAccountId !== record.id) {
+        Text(AccountPageCoordinator.SWITCH_LABEL)
+          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+          .fontColor($r('sys.color.font_secondary'))
+          .padding(ThemeConstants.SPACE_SM)
+          .onClick(() => {
+            this.switchAccount(record)
+          })
+      }
+
+      Text(AccountPageCoordinator.REMOVE_LABEL)
+        .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+        .fontColor(Color.Red)
+        .padding(ThemeConstants.SPACE_SM)
+        .onClick(() => {
+          this.confirmRemoveAccount(record)
+        })
+    }
+    .alignItems(VerticalAlign.Center)
   }
 
   private startAddAccount(): void {

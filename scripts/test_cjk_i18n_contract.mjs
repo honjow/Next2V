@@ -143,6 +143,35 @@ function scanDefaultResourceCjk() {
   }
 }
 
+function scanZhHkRelativeTimeVariants() {
+  const rel = 'entry/src/main/resources/zh_HK/element/string.json'
+  const full = path.join(WORKTREE, rel)
+  if (!fs.existsSync(full)) return
+
+  const data = JSON.parse(fs.readFileSync(full, 'utf-8'))
+  const valuesByName = new Map((data.string || []).map(item => [item.name, String(item.value || '')]))
+  const checks = [
+    ['relative_just_now', '刚'],
+    ['relative_minutes_ago', '分钟'],
+    ['relative_hours_ago', '小时'],
+    ['relative_months_ago', '个月']
+  ]
+
+  for (const [name, simplifiedVariant] of checks) {
+    const value = valuesByName.get(name)
+    if (value === undefined) {
+      findings.must_fix.push(`${rel}:${name}: MUST_FIX — zh_HK relative-time resource is missing`)
+      failed++
+    } else if (value.includes(simplifiedVariant)) {
+      findings.must_fix.push(`${rel}:${name}: MUST_FIX — zh_HK relative-time resource contains simplified variant ${simplifiedVariant} (${value})`)
+      failed++
+    } else {
+      findings.allowed.push(`${rel}:${name}: zh_HK relative-time resource avoids simplified variant ${simplifiedVariant}`)
+      passed++
+    }
+  }
+}
+
 for (const { full, rel } of walkDir(WORKTREE)) {
   const content = fs.readFileSync(full, 'utf-8')
   const lines = content.split('\n')
@@ -184,6 +213,7 @@ for (const { full, rel } of walkDir(WORKTREE)) {
 }
 
 scanDefaultResourceCjk()
+scanZhHkRelativeTimeVariants()
 
 // ------------------------------------------------------------
 // Report

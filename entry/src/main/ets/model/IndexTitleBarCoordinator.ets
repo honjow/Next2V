@@ -42,6 +42,10 @@ export class IndexTitleBarCoordinator {
     return [{ label: AppStrings.R_NAV_FILTER, action: 'filter', icon: 'filter' }]
   }
 
+  static accountManagementMenuItems(): IndexTitleMenuDescriptor[] {
+    return [{ label: AppStrings.R_ACCOUNT_ADD_ANOTHER, action: 'addAccount', icon: 'add' }]
+  }
+
   static webLoginMenuItems(): IndexTitleMenuDescriptor[] {
     return [
       { label: AppStrings.R_NAV_SAVE_LOGIN, action: 'save', icon: 'confirm' },
