@@ -54,7 +54,9 @@ import { MyTopicsPage } from './MyTopicsPage'
 import { MyNodesPage } from './MyNodesPage'
 import { AccountFollowingPage } from './AccountFollowingPage'
 import { AccountDashboardPage } from './AccountPage'
+import { AccountDetailPage } from './AccountDetailPage'
 import { AccountManagementPage } from './AccountManagementPage'
+import { AccountWebViewPage } from './AccountWebViewPage'
 import { SavedTopicsPage } from './SavedTopicsPage'
 import { ViewedTopicsPage } from './ViewedTopicsPage'
 import { SavedNodesPage } from './SavedNodesPage'
@@ -240,6 +242,12 @@ struct Index {
     }
     if (descriptor.family === 'account') {
       AccountManagementPage()
+    }
+    if (descriptor.family === 'accountDetail') {
+      AccountDetailPage()
+    }
+    if (descriptor.family === 'accountWebView') {
+      AccountWebViewPage()
     }
     if (descriptor.family === 'savedTopics') {
       SavedTopicsPage()

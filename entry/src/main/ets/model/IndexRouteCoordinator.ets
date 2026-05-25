@@ -31,6 +31,8 @@ export type IndexDestinationFamily =
   'readingSettings' |
   'networkProxySettings' |
   'account' |
+  'accountDetail' |
+  'accountWebView' |
   'savedTopics' |
   'viewedTopics' |
   'savedNodes' |
@@ -70,6 +72,8 @@ export class IndexRouteCoordinator {
     'ReadingSettings': 'readingSettings',
     'NetworkProxySettings': 'networkProxySettings',
     'Account': 'account',
+    'AccountDetail': 'accountDetail',
+    'AccountWebView': 'accountWebView',
     'SavedTopics': 'savedTopics',
     'ViewedTopics': 'viewedTopics',
     'SavedNodes': 'savedNodes',
@@ -99,6 +103,8 @@ export class IndexRouteCoordinator {
       'readingSettings': AppStrings.R_NAV_READING,
       'networkProxySettings': AppStrings.R_NAV_NETWORK_PROXY,
       'account': AppStrings.R_ACCOUNT_MANAGEMENT,
+      'accountDetail': AppStrings.R_NAV_ACCOUNT,
+      'accountWebView': '',
       'savedTopics': AppStrings.R_NAV_READ_LATER,
       'viewedTopics': AppStrings.R_NAV_RECENTLY_VIEWED,
       'savedNodes': AppStrings.R_NAV_LOCAL_NODES,
@@ -124,6 +130,8 @@ export class IndexRouteCoordinator {
     'readingSettings': true,
     'networkProxySettings': true,
     'account': true,
+    'accountDetail': true,
+    'accountWebView': false,
     'savedTopics': true,
     'viewedTopics': true,
     'savedNodes': true,

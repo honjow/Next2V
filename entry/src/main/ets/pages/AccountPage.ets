@@ -217,10 +217,8 @@ export struct AccountDashboardPage {
             this.redeemDailyMission()
           },
           openDetail: () => {
-            const username = this.currentUsername()
-            if (username) {
-              let p: UserProfileParams = { username: username }
-              this.ns.pushPathByName('UserProfile', p as Object)
+            if (this.currentUsername()) {
+              this.ns.pushPathByName('AccountDetail', null)
             }
           }
         })

@@ -111,4 +111,5 @@ export class StorageKeys {
   static readonly PENDING_V2EX_URL: string = 'pendingV2exUrl'
   static readonly PENDING_SEARCH_QUERY: string = 'pendingSearchQuery'
   static readonly DISCOVER_NODE_KEYWORD: string = 'discoverNodeKeyword'
+  static readonly ACCOUNT_WEB_VIEW_URL: string = 'accountWebViewUrl'
 }
