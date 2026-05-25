@@ -581,6 +581,7 @@ export class AppStrings {
   static readonly R_CONFIRM_TOPIC_FAVORITE_NAMELESS_FORMAT: Resource = $r('app.string.confirm_topic_favorite_nameless_format')
   static readonly R_CONFIRM_TOPIC_THANK_FORMAT: Resource = $r('app.string.confirm_topic_thank_format')
   static readonly R_CONFIRM_TOPIC_THANK_NAMELESS: Resource = $r('app.string.confirm_topic_thank_nameless')
+  static readonly R_CONFIRM_REPLY_THANK_FORMAT: Resource = $r('app.string.confirm_reply_thank_format')
   static readonly R_PARSE_ACTION_FAILED_FORMAT: Resource = $r('app.string.parse_action_failed_format')
   static readonly R_REPLY_INFO_MISSING: Resource = $r('app.string.reply_info_missing')
   static readonly R_LOAD_MORE_REPLIES_FAILED: Resource = $r('app.string.load_more_replies_failed')

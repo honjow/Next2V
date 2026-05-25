@@ -2418,11 +2418,15 @@
     },
     {
       "name": "confirm_topic_thank_format",
-      "value": "确定感谢《{0}》吗？"
+      "value": "确定感谢《{0}》吗？\n\n将消耗 10 铜币。"
     },
     {
       "name": "confirm_topic_thank_nameless",
-      "value": "确定感谢该主题吗？"
+      "value": "确定感谢该主题吗？\n\n将消耗 10 铜币。"
+    },
+    {
+      "name": "confirm_reply_thank_format",
+      "value": "确定感谢 {0} 的回复吗？\n\n将消耗 10 铜币。"
     },
     {
       "name": "parse_action_failed_format",

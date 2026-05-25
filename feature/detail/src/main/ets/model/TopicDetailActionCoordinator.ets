@@ -170,6 +170,10 @@ export class TopicDetailActionCoordinator {
     return cleanTitle ? AppStrings.format(AppStrings.text(AppStrings.R_CONFIRM_TOPIC_THANK_FORMAT, 'Thank《{0}》?'), [cleanTitle]) : AppStrings.text(AppStrings.R_CONFIRM_TOPIC_THANK_NAMELESS, 'Thank this topic?')
   }
 
+  static replyThankMessage(username: string): string {
+    return AppStrings.format(AppStrings.text(AppStrings.R_CONFIRM_REPLY_THANK_FORMAT, 'Thank reply by {0}?\n\nThis costs 10 copper coins.'), [username || AppStrings.text($r('app.string.this_user'), 'this user')])
+  }
+
   static replyActionMessage(verb: string, username: string): string {
     return AppStrings.format(AppStrings.text($r('app.string.confirm_reply_action_format'), 'Confirm {0} reply by {1}?'), [verb, username || AppStrings.text($r('app.string.this_user'), 'this user')])
   }

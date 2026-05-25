@@ -2418,11 +2418,15 @@
     },
     {
       "name": "confirm_topic_thank_format",
-      "value": "確定感謝《{0}》嗎？"
+      "value": "確定感謝《{0}》嗎？\n\n將消耗 10 銅幣。"
     },
     {
       "name": "confirm_topic_thank_nameless",
-      "value": "確定感謝該主題嗎？"
+      "value": "確定感謝該主題嗎？\n\n將消耗 10 銅幣。"
+    },
+    {
+      "name": "confirm_reply_thank_format",
+      "value": "確定感謝 {0} 的回覆嗎？\n\n將消耗 10 銅幣。"
     },
     {
       "name": "parse_action_failed_format",

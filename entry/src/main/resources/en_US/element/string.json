@@ -2418,11 +2418,15 @@
     },
     {
       "name": "confirm_topic_thank_format",
-      "value": "Thank《{0}》?"
+      "value": "Thank《{0}》?\n\nThis costs 10 copper coins."
     },
     {
       "name": "confirm_topic_thank_nameless",
-      "value": "Thank this topic?"
+      "value": "Thank this topic?\n\nThis costs 10 copper coins."
+    },
+    {
+      "name": "confirm_reply_thank_format",
+      "value": "Thank reply by {0}?\n\nThis costs 10 copper coins."
     },
     {
       "name": "parse_action_failed_format",

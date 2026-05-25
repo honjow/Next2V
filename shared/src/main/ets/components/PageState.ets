@@ -103,8 +103,6 @@ export struct CardEmptyState {
         .textAlign(TextAlign.Center)
         .width('100%')
         .padding(ThemeConstants.SPACE_LG)
-        .borderRadius(ThemeConstants.RADIUS_CARD)
-        .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
     }
     .justifyContent(FlexAlign.Center)
     .width('100%')
