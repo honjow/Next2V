@@ -54,7 +54,8 @@ CSR          = HARMONY_DEBUG_DIR / "debug.csr"
 CERT_FILE    = HARMONY_DEBUG_DIR / f"{CERT_NAME}.cer"
 # profile 是 per-bundleId 的，由 dev.env 显式给路径
 PROFILE_FILE = Path(_required_env("HARMONY_DEBUG_PROFILE"))
-AUTH_FILE    = Path.home() / "Documents/hap_installer/userInfo.json"
+REAL_HOME    = Path(os.environ.get("V2NEXT_REAL_HOME", "/home/gamer"))
+AUTH_FILE    = REAL_HOME / "Documents/hap_installer/userInfo.json"
 
 # 设备选择缓存文件及有效期（7 天）
 DEVICE_CACHE_FILE = Path.home() / ".cache" / "next2v_device.json"

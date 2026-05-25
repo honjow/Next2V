@@ -22,20 +22,18 @@ export class LanguageSettings {
   static readonly MODE_EN: AppLanguageMode = 'en-US'
 
   static apply(areaID: string): LanguageSettingsSnapshot {
-    const normalized = LanguageSettings.normalizeMode(areaID)
-    const targetLang = LanguageSettings.resolveTargetLanguage(normalized)
-    let current = ''
-    try { current = i18n.System.getAppPreferredLanguage() } catch (_e) {}
-    if (targetLang && targetLang !== current) {
+    const mode = LanguageSettings.normalizeMode(areaID)
+    const normalized = LanguageSettings.resolveTargetLanguage(mode)
+    if (normalized) {
       try {
-        i18n.System.setAppPreferredLanguage(targetLang)
+        i18n.System.setAppPreferredLanguage(normalized)
       } catch (error) {
         const e = error as Error
         console.error('setAppPreferredLanguage failed: ' + e.message)
       }
     }
-    setAppStorageValue<AppLanguageMode>(StorageKeys.LANGUAGE_MODE, normalized)
-    return { mode: normalized }
+    setAppStorageValue<AppLanguageMode>(StorageKeys.LANGUAGE_MODE, mode)
+    return { mode }
   }
 
   // 跟随系统时取系统当前语言作为具体值 set。setAppPreferredLanguage('default')
@@ -63,11 +61,6 @@ export class LanguageSettings {
     let sys = ''
     try { sys = i18n.System.getSystemLanguage() } catch (_e) {}
     if (!sys) {
-      return
-    }
-    let current = ''
-    try { current = i18n.System.getAppPreferredLanguage() } catch (_e) {}
-    if (sys === current) {
       return
     }
     try {

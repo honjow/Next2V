@@ -22,7 +22,11 @@ When validating a hypothesis, keep test scaffolding isolated and temporary. Fake
 
 ## Worktree Signing Preflight
 
-Before any agent or subagent builds, signs, installs, or device-tests a V2Next lane worktree under `/home/gamer/v2next-worktrees/`, run `scripts/sync-signing-materials.sh` in that worktree, or copy the same four gitignored signing files from `/home/gamer/git/V2Next/scripts`. These files are secret-bearing local materials, must not be printed or committed, and prevent `scripts/sign.py` from stalling on Huawei/AGC login during `bash dev.sh`.
+Signing/profile material lookup must be anchored to the real user home, not to a Kanban/profile worker's sandbox `HOME`. For V2Next the stable material root is `/home/gamer/.config/harmony/debug-signing` unless `V2NEXT_REAL_HOME` is explicitly changed for a real account-home migration.
+
+Before any agent or subagent builds, signs, installs, or device-tests a V2Next lane worktree under `/home/gamer/v2next-worktrees/`, run `scripts/lane-preflight.sh` from the main repo. The preflight must set `NEXT2V_SIGN_NONINTERACTIVE=1` and verify that `debug.p12`, the debug certificate, and `profiles/com.next2v.app.p7b` resolve under `/home/gamer/.config/harmony/debug-signing`.
+
+Workers must never generate a Profile, open a browser, call Huawei/AGC login, or rely on `Path.home()`, `${HOME}`, or `~` to find signing materials. If local materials are missing, the worker must fail fast with the exact missing path and mark the gate `BLOCKED`.
 
 ## Review vs QA Separation
 

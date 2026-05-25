@@ -63,25 +63,20 @@ ART=/home/gamer/git/V2Next/.hermes-artifacts/<lane>
 mkdir -p "$ART"
 cd /home/gamer/v2next-worktrees/<lane>
 source /home/gamer/git/V2Next/scripts/lane-preflight.sh "$ART"
-# preflight will `exit 1` and write $ART/result.json with verdict=BLOCKED if:
-#   - $V2NEXT/scripts/dev.env is missing
-#   - $HOME/Documents/hap_installer/userInfo.json is missing  (signing_auth_missing)
-#   - Huawei AGC token is expired / 401             (signing_token_expired)
-# When BLOCKED on auth, recovery is: in the MAIN repo run `bash dev.sh --build-only`
-# and complete the browser login. Lane workers cannot do interactive login.
 hermes -p implementer chat -Q -q "$PROMPT" > "$ART/worker.log" 2>&1
 ```
 
-The preflight handles three things atomically:
+The preflight handles these things atomically:
 
-1. PATH setup (ohpm + hdc + harmony toolchains)
-2. `source scripts/dev.env` — exports `HARMONY_DEBUG_*` env so `sign.py` finds the account-level shared signing materials at `~/.config/harmony/debug-signing/` (no per-worktree copy needed)
-3. `scripts/check-signing-auth.sh` — validates Huawei AGC token via `user-team-list` API; never opens a browser, never blocks for 120s
+1. PATH setup (ohpm + hdc + harmony toolchains).
+2. Sources `scripts/dev.env` and then re-asserts the real-home signing path. Worker/profile `HOME` is untrusted; signing materials must resolve under `/home/gamer/.config/harmony/debug-signing` unless `V2NEXT_REAL_HOME` is explicitly changed for a real home migration.
+3. Exports `NEXT2V_SIGN_NONINTERACTIVE=1`. Worker build/sign flows must never open a browser, call Huawei/AGC login, or generate a Profile. Missing local materials produce a fast `BLOCKED` result with exact paths.
+4. Skips AGC auth probes when local signing materials are present. `scripts/check-signing-auth.sh` is only relevant when local materials are incomplete and the task is explicitly about refreshing/recovering them.
 
 ### Signing materials layout (account-level shared)
 
 ```
-~/.config/harmony/debug-signing/
+/home/gamer/.config/harmony/debug-signing/
   ├── debug.p12              keystore (private key + cert chain)
   ├── debug.csr              CSR
   ├── ${HARMONY_DEBUG_CERT_NAME}.cer     account-level AGC cert (e.g. honjow-debug.cer)
@@ -89,6 +84,6 @@ The preflight handles three things atomically:
       └── com.next2v.app.p7b project-level profile (per bundleId)
 ```
 
-Cert is **account-scoped** to avoid burning AGC debug-cert quota across multiple OH projects — every project sources the same `debug.p12` / `debug.csr` / `<name>.cer`. Profiles are bundleId-scoped (per project), but AGC does not quota-limit profiles.
+Cert is **account-scoped** to avoid burning AGC debug-cert quota across multiple OH projects — every project uses the same `debug.p12` / `debug.csr` / `<name>.cer`. Profiles are bundleId-scoped (per project), but AGC does not quota-limit profiles.
 
-`scripts/dev.env` declares the env vars; `dev.sh` and `lane-preflight.sh` both source it. Manual `python3 scripts/sign.py` invocations must `source scripts/dev.env` first or sign.py will exit with a clear error message.
+`bash dev.sh --build-only`, `bash dev.sh --no-build`, and worker QA signing runs default to non-interactive local signing. Interactive AGC/Profile regeneration is allowed only through explicit refresh/recovery commands, never as a hidden fallback in normal worker gates.

@@ -15,7 +15,7 @@
 #   - 调用 check-signing-auth.sh 验 Huawei AGC token；缺失/过期写 BLOCKED 并 exit
 # 不写日志/不打印 secret。
 #
-# 注意：签名物料现统一放 ~/.config/harmony/debug-signing/，不再 copy 进 worktree。
+# 注意：签名物料现统一放真实用户 home 的 .config/harmony/debug-signing/，不再 copy 进 worktree。
 
 set +e  # 本脚本由调用方 source；只在硬阻塞时主动 exit
 
@@ -41,6 +41,17 @@ JSON
   echo "lane-preflight: $V2NEXT_REPO/scripts/dev.env not found → BLOCKED" >&2
   exit 1
 fi
+
+# 2a) 签名物料绑定真实用户 home，而不是 worker HOME。source dev.env 后再次
+# 固定这些路径，防止 profile/sandbox HOME 改写签名/profile 查找位置。
+export V2NEXT_REAL_HOME="${V2NEXT_REAL_HOME:-/home/gamer}"
+export HARMONY_DEBUG_DIR="${V2NEXT_REAL_HOME}/.config/harmony/debug-signing"
+export HARMONY_DEBUG_PROFILE="${HARMONY_DEBUG_DIR}/profiles/com.next2v.app.p7b"
+echo "lane-preflight: HOME=${HOME}; V2NEXT_REAL_HOME=${V2NEXT_REAL_HOME}; HARMONY_DEBUG_DIR=${HARMONY_DEBUG_DIR}" >> "$LANE_ART/preflight.log"
+
+# 2b) 强制非交互签名模式：本地物料缺失时 sign.py 必须带明确路径快速失败，
+# 不能打开浏览器登录并在 headless Kanban worker 里超时。
+export NEXT2V_SIGN_NONINTERACTIVE=1
 
 # 3) 本地签名材料优先。
 # sign.py 的正常非交互路径是：debug.p12 + cert + profile 已存在时直接签名，跳过 AGC API。

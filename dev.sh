@@ -190,7 +190,7 @@ EOF
     assert_hap_bundle_name "$PROJ/entry/build/default/outputs/default/entry-default-unsigned.hap" "$DEBUG_BUNDLE"
     cleanup_debug_packaging
     trap - EXIT
-    python3 "$PROJ/scripts/sign.py" --no-install "$@"
+    NEXT2V_SIGN_NONINTERACTIVE="${NEXT2V_SIGN_NONINTERACTIVE:-1}" python3 "$PROJ/scripts/sign.py" --no-install "$@"
     ;;
   --release-build-only)
     shift
@@ -233,13 +233,13 @@ EOF
     python3 "$PROJ/scripts/prune-release-media-resources.py" --apply
     hvigorw assembleHap --mode module -p product=default -p buildMode=release --no-daemon
     assert_hap_bundle_name "$PROJ/entry/build/default/outputs/default/entry-default-unsigned.hap" "$RELEASE_BUNDLE"
-    python3 "$PROJ/scripts/sign.py" --no-install "$@"
+    NEXT2V_SIGN_NONINTERACTIVE="${NEXT2V_SIGN_NONINTERACTIVE:-1}" python3 "$PROJ/scripts/sign.py" --no-install "$@"
     cleanup_release_packaging
     trap - EXIT
     ;;
   --no-build)
     shift
-    python3 "$PROJ/scripts/sign.py" "$@"
+    NEXT2V_SIGN_NONINTERACTIVE="${NEXT2V_SIGN_NONINTERACTIVE:-1}" python3 "$PROJ/scripts/sign.py" "$@"
     ;;
   *)
     # 构建 + 签名 + 安装
@@ -266,6 +266,6 @@ EOF
     assert_hap_bundle_name "$PROJ/entry/build/default/outputs/default/entry-default-unsigned.hap" "$DEBUG_BUNDLE"
     cleanup_debug_packaging
     trap - EXIT
-    python3 "$PROJ/scripts/sign.py" "$@"
+    NEXT2V_SIGN_NONINTERACTIVE="${NEXT2V_SIGN_NONINTERACTIVE:-1}" python3 "$PROJ/scripts/sign.py" "$@"
     ;;
 esac
