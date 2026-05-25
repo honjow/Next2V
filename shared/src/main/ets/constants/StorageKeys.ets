@@ -52,7 +52,8 @@ export class StorageKeys {
   // Auto daily check-in state
   static readonly AUTO_DAILY_CHECKIN_ENABLED: string = 'autoDailyCheckinEnabled'
   static readonly AUTO_DAILY_CHECKIN_LAST_ATTEMPT_DATE: string = 'autoDailyCheckinLastAttemptDate'
-  static readonly AUTO_DAILY_CHECKIN_LAST_ATTEMPT_IDENTITY: string = 'autoDailyCheckinLastAttemptIdentity'
+  static readonly AUTO_DAILY_CHECKIN_LAST_ATTEMPT_IDENTITY: string =
+    'autoDailyCheckinLastAttemptIdentity'
   static readonly AUTO_DAILY_CHECKIN_LAST_SUCCESS_DATE: string = 'autoDailyCheckinLastSuccessDate'
 
   // API/local data/cache metadata
@@ -107,6 +108,7 @@ export class StorageKeys {
   static readonly NOTIFICATION_UNREAD_COUNT: string = 'notificationUnreadCount'
   static readonly SEARCH_ACTION: string = 'searchAction'
   static readonly WEB_LOGIN_ACTION: string = 'webLoginAction'
+  static readonly NATIVE_LOGIN_SHOWN: string = 'nativeLoginShown'
   static readonly IMAGE_PREVIEW_ACTION: string = 'imagePreviewAction'
   static readonly PENDING_V2EX_URL: string = 'pendingV2exUrl'
   static readonly PENDING_SEARCH_QUERY: string = 'pendingSearchQuery'

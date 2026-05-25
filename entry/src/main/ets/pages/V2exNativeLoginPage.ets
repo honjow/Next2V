@@ -14,12 +14,14 @@ import {
   HttpClient,
   NativeTwoFactorRequiredError,
   SecondaryListScaffold,
+  StorageKeys,
   ThemeConstants,
   TwoFactorChallengeService,
   V2exNativeAuthService,
   translateApiError,
 } from 'shared'
 import type { NativeLoginChallenge, NativeLoginSnapshot } from 'shared'
+import { IndexRouteCoordinator } from '../model/IndexRouteCoordinator'
 @Component
 export struct V2exNativeLoginPage {
   @Consume('ns') stack: NavPathStack;
@@ -32,6 +34,9 @@ export struct V2exNativeLoginPage {
   @State private errorMessage: string = '';
   @State private isLoading: boolean = false;
   @State private isChallengeLoading: boolean = false;
+  @StorageLink(StorageKeys.NATIVE_LOGIN_SHOWN)
+  @Watch('onNativeLoginShown')
+  private nativeLoginShown: string = '';
 
   private challenge: NativeLoginChallenge | null = null;
   private auth: V2exNativeAuthService = new V2exNativeAuthService();
@@ -48,8 +53,18 @@ export struct V2exNativeLoginPage {
   }
 
   aboutToDisappear(): void {
-    this.isPageActive = false
-    this.clearSecretState()
+    this.pausePage()
+  }
+
+  onNativeLoginShown(_propName: string): void {
+    if (IndexRouteCoordinator.commandPayload(this.nativeLoginShown) !== 'resume') {
+      return
+    }
+    if (this.isPageActive) {
+      return
+    }
+    this.isPageActive = true
+    this.loadChallenge()
   }
 
   build() {
@@ -74,7 +89,8 @@ export struct V2exNativeLoginPage {
         title: AppStrings.text(AppStrings.R_NAV_WEB_LOGIN, 'Web Login'),
         showChevron: true,
         action: () => {
-          this.clearSecretState()
+          this.password = ''
+          this.captchaCode = ''
           this.stack.pushPathByName('V2exWebLogin', null)
         },
       })
@@ -209,6 +225,14 @@ export struct V2exNativeLoginPage {
         'Login form refreshed. Please enter your password again.',
       ),
     )
+  }
+
+  private pausePage(): void {
+    this.isPageActive = false
+    this.challengeRequestId++
+    this.authRequestId++
+    this.password = ''
+    this.captchaCode = ''
   }
 
   private clearSecretState(): void {

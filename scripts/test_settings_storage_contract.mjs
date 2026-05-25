@@ -188,6 +188,7 @@ const expectedStorageKeys = [
   ['NOTIFICATION_UNREAD_COUNT', 'notificationUnreadCount'],
   ['SEARCH_ACTION', 'searchAction'],
   ['WEB_LOGIN_ACTION', 'webLoginAction'],
+  ['NATIVE_LOGIN_SHOWN', 'nativeLoginShown'],
   ['IMAGE_PREVIEW_ACTION', 'imagePreviewAction'],
   ['PENDING_V2EX_URL', 'pendingV2exUrl'],
   ['PENDING_SEARCH_QUERY', 'pendingSearchQuery'],

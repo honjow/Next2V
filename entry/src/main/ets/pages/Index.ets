@@ -75,13 +75,16 @@ import { V2exTwoFactorPrompt } from '../components/V2exTwoFactorPrompt'
 import {
   TopicDetailTitleAction,
   TopicDetailTitleActionDescriptor,
-  TopicDetailTitleBarCoordinator
+  TopicDetailTitleBarCoordinator,
 } from '../model/TopicDetailTitleBarCoordinator'
 import {
   IndexTitleBarCoordinator,
   IndexTitleMenuDescriptor,
 } from '../model/IndexTitleBarCoordinator'
-import { NotificationCenterViewModel, NotificationAuthContext } from '../viewmodel/NotificationCenterViewModel'
+import {
+  NotificationCenterViewModel,
+  NotificationAuthContext,
+} from '../viewmodel/NotificationCenterViewModel'
 import type { IndexDestinationDescriptor } from '../model/IndexRouteCoordinator'
 import { IndexRouteCoordinator } from '../model/IndexRouteCoordinator'
 
@@ -90,7 +93,12 @@ import { IndexRouteCoordinator } from '../model/IndexRouteCoordinator'
 struct Index {
   @Provide('ns') ns: NavPathStack = new NavPathStack();
   private tc: HdsTabsController = new HdsTabsController();
-  private tabTitles: ResourceStr[] = [AppStrings.R_SETTINGS_HOME, AppStrings.R_TAB_DISCOVER, AppStrings.R_TAB_NOTIFICATIONS, AppStrings.R_TAB_ME];
+  private tabTitles: ResourceStr[] = [
+    AppStrings.R_SETTINGS_HOME,
+    AppStrings.R_TAB_DISCOVER,
+    AppStrings.R_TAB_NOTIFICATIONS,
+    AppStrings.R_TAB_ME,
+  ];
   @State ct: number = 0;
   @StorageLink(StorageKeys.PENDING_V2EX_URL)
   @Watch('onPendingV2exUrlChanged')
@@ -138,7 +146,9 @@ struct Index {
   @State private accountRefreshKey: number = 0;
   @State private isFoldedAndUseOuterScreen: boolean = false;
   private http: HttpClient = HttpClient.getInstance();
-  private notificationVm: NotificationCenterViewModel = new NotificationCenterViewModel(new ApiService());
+  private notificationVm: NotificationCenterViewModel = new NotificationCenterViewModel(
+    new ApiService(),
+  );
   private notificationBadgeRequestId: number = 0;
   private foldScreenCallback: (value: boolean) => void = (value: boolean) => {
     this.isFoldedAndUseOuterScreen = value
@@ -343,9 +353,13 @@ struct Index {
     .width('100%')
     .height('100%')
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
-    .bindSheet($$this.twoFactorVisible, this.GlobalTwoFactorSheet(), towFASheetOptions(SheetSize.MEDIUM, () => {
-      TwoFactorChallengeService.cancel()
-    }))
+    .bindSheet(
+      $$this.twoFactorVisible,
+      this.GlobalTwoFactorSheet(),
+      towFASheetOptions(SheetSize.MEDIUM, () => {
+        TwoFactorChallengeService.cancel()
+      }),
+    )
   }
 
   @Builder
@@ -371,7 +385,7 @@ struct Index {
       },
       onCancel: () => {
         TwoFactorChallengeService.cancel()
-      }
+      },
     })
   }
 
@@ -407,8 +421,7 @@ struct Index {
   }
 
   private destinationHideTitleBarOpts(descriptor: IndexDestinationDescriptor): DynamicHideParams {
-    const hideForTopicDetail =
-      descriptor.family === 'topicDetail' && this.isFoldedAndUseOuterScreen
+    const hideForTopicDetail = descriptor.family === 'topicDetail' && this.isFoldedAndUseOuterScreen
     return {
       hideTitleArea: hideForTopicDetail,
       hideStatusBar: hideForTopicDetail,
@@ -419,6 +432,9 @@ struct Index {
   private onDestinationShown(descriptor: IndexDestinationDescriptor): void {
     if (descriptor.family === 'userProfile') {
       this.notifyUserProfileShown(descriptor.userProfileParams.username)
+    }
+    if (descriptor.family === 'nativeLogin') {
+      this.notifyNativeLoginShown()
     }
   }
 
@@ -488,13 +504,14 @@ struct Index {
 
   private topicDetailTitleBarOpts(topicId: number): Record<string, Object> {
     let items: Record<string, Object>[] = TopicDetailTitleBarCoordinator.actions().map(
-      (descriptor: TopicDetailTitleActionDescriptor) => this.topicActionItem(
-        descriptor.label,
-        this.topicDetailTitleActionIcon(descriptor.action),
-        () => {
-          this.sendTopicAction(topicId, descriptor.action)
-        },
-      )
+      (descriptor: TopicDetailTitleActionDescriptor) =>
+        this.topicActionItem(
+          descriptor.label,
+          this.topicDetailTitleActionIcon(descriptor.action),
+          () => {
+            this.sendTopicAction(topicId, descriptor.action)
+          },
+        ),
     )
     let menu: Record<string, Object> = {
       'value': items,
@@ -586,7 +603,7 @@ struct Index {
       nodeName,
       nodeTitle,
       this.nodeTopicTitle,
-      this.nodeTopicSubtitle
+      this.nodeTopicSubtitle,
     )
     return this.navDestTitleBarOpts(text.title, menu, text.subtitle)
   }
@@ -598,7 +615,7 @@ struct Index {
       this.userProfileAppbarTitleUsername,
       this.userProfileAppbarTitleAvatarUrl,
       this.userProfileAppbarTitleStates,
-      this.userProfileAppbarAvatarStates
+      this.userProfileAppbarAvatarStates,
     )
     const profileMenu = this.userProfileTitleMenu(username)
     if (identity.title.trim()) {
@@ -619,18 +636,22 @@ struct Index {
   }
 
   private userProfileTitleMenu(username: string): Record<string, Object> {
-    if (!IndexTitleBarCoordinator.userProfileActionsAvailable(
-      username,
-      this.userProfileActionsUsername,
-      this.userProfileActionsAvailable
-    )) {
+    if (
+      !IndexTitleBarCoordinator.userProfileActionsAvailable(
+        username,
+        this.userProfileActionsUsername,
+        this.userProfileActionsAvailable,
+      )
+    ) {
       return IndexTitleBarCoordinator.emptyMenu()
     }
     let items: Record<string, Object>[] = []
     if (this.userProfileFollowLabel) {
       items.push(
         this.topicActionItem(
-          this.userProfileFollowing ? AppStrings.R_USER_ACTION_UNFOLLOW : AppStrings.R_USER_ACTION_FOLLOW,
+          this.userProfileFollowing
+            ? AppStrings.R_USER_ACTION_UNFOLLOW
+            : AppStrings.R_USER_ACTION_FOLLOW,
           this.userProfileFollowing
             ? $r('sys.symbol.person_xmark')
             : $r('sys.symbol.person_badge_plus'),
@@ -643,7 +664,9 @@ struct Index {
     if (this.userProfileBlockLabel) {
       items.push(
         this.topicActionItem(
-          this.userProfileBlocked ? AppStrings.R_USER_ACTION_UNBLOCK : AppStrings.R_USER_ACTION_BLOCK,
+          this.userProfileBlocked
+            ? AppStrings.R_USER_ACTION_UNBLOCK
+            : AppStrings.R_USER_ACTION_BLOCK,
           this.userProfileBlockIcon(),
           () => {
             this.sendUserProfileAction('block')
@@ -698,6 +721,13 @@ struct Index {
     AppStorage.setOrCreate<string>(
       StorageKeys.USER_PROFILE_SHOWN,
       IndexRouteCoordinator.userProfileShownCommand(username, Date.now()),
+    )
+  }
+
+  private notifyNativeLoginShown(): void {
+    AppStorage.setOrCreate<string>(
+      StorageKeys.NATIVE_LOGIN_SHOWN,
+      IndexRouteCoordinator.simpleCommand('resume', Date.now()),
     )
   }
 
@@ -855,82 +885,64 @@ struct Index {
 
   private meTitleMenu(): Record<string, Object> {
     let items: Record<string, Object>[] = IndexTitleBarCoordinator.meMenuItems().map(
-      (descriptor: IndexTitleMenuDescriptor) => this.topicActionItem(
-        descriptor.label,
-        this.mainTitleMenuIcon(descriptor.icon),
-        () => {
+      (descriptor: IndexTitleMenuDescriptor) =>
+        this.topicActionItem(descriptor.label, this.mainTitleMenuIcon(descriptor.icon), () => {
           if (descriptor.action === 'settings') {
             this.ns.pushPathByName('Settings', null)
           }
-        },
-      )
+        }),
     )
     return { 'value': items, 'maxCount': IndexTitleBarCoordinator.SINGLE_ITEM_MENU_MAX_COUNT }
   }
 
   private notificationTitleMenu(): Record<string, Object> {
     let items: Record<string, Object>[] = IndexTitleBarCoordinator.notificationMenuItems().map(
-      (descriptor: IndexTitleMenuDescriptor) => this.topicActionItem(
-        descriptor.label,
-        this.mainTitleMenuIcon(descriptor.icon),
-        () => {
+      (descriptor: IndexTitleMenuDescriptor) =>
+        this.topicActionItem(descriptor.label, this.mainTitleMenuIcon(descriptor.icon), () => {
           this.sendNotificationAction(descriptor.action)
-        },
-      )
+        }),
     )
     return { 'value': items, 'maxCount': IndexTitleBarCoordinator.SINGLE_ITEM_MENU_MAX_COUNT }
   }
 
   private searchTitleMenu(): Record<string, Object> {
     let items: Record<string, Object>[] = IndexTitleBarCoordinator.searchMenuItems().map(
-      (descriptor: IndexTitleMenuDescriptor) => this.topicActionItem(
-        descriptor.label,
-        this.mainTitleMenuIcon(descriptor.icon),
-        () => {
+      (descriptor: IndexTitleMenuDescriptor) =>
+        this.topicActionItem(descriptor.label, this.mainTitleMenuIcon(descriptor.icon), () => {
           this.sendSearchAction(descriptor.action)
-        },
-      )
+        }),
     )
     return { 'value': items, 'maxCount': IndexTitleBarCoordinator.SINGLE_ITEM_MENU_MAX_COUNT }
   }
 
   private accountManagementTitleMenu(): Record<string, Object> {
     let items: Record<string, Object>[] = IndexTitleBarCoordinator.accountManagementMenuItems().map(
-      (descriptor: IndexTitleMenuDescriptor) => this.topicActionItem(
-        descriptor.label,
-        this.mainTitleMenuIcon(descriptor.icon),
-        () => {
+      (descriptor: IndexTitleMenuDescriptor) =>
+        this.topicActionItem(descriptor.label, this.mainTitleMenuIcon(descriptor.icon), () => {
           if (descriptor.action === 'addAccount') {
             this.startAddAccount()
           }
-        },
-      )
+        }),
     )
     return { 'value': items, 'maxCount': IndexTitleBarCoordinator.SINGLE_ITEM_MENU_MAX_COUNT }
   }
 
   private webLoginTitleMenu(): Record<string, Object> {
     let items: Record<string, Object>[] = IndexTitleBarCoordinator.webLoginMenuItems().map(
-      (descriptor: IndexTitleMenuDescriptor) => this.topicActionItem(
-        descriptor.label,
-        this.mainTitleMenuIcon(descriptor.icon),
-        () => {
+      (descriptor: IndexTitleMenuDescriptor) =>
+        this.topicActionItem(descriptor.label, this.mainTitleMenuIcon(descriptor.icon), () => {
           this.sendWebLoginAction(descriptor.action)
-        },
-      )
+        }),
     )
     return { 'value': items, 'maxCount': IndexTitleBarCoordinator.WEB_LOGIN_MENU_MAX_COUNT }
   }
 
   private imagePreviewTitleMenu(): Record<string, Object> {
     let items: Record<string, Object>[] = IndexTitleBarCoordinator.imagePreviewMenuItems().map(
-      (descriptor: IndexTitleMenuDescriptor) => this.topicActionItem(
-        descriptor.label,
-        this.mainTitleMenuIcon(descriptor.icon),
-        () => {
+      (descriptor: IndexTitleMenuDescriptor) =>
+        this.topicActionItem(descriptor.label, this.mainTitleMenuIcon(descriptor.icon), () => {
           this.sendImagePreviewAction(descriptor.action)
-        },
-      )
+        }),
     )
     return { 'value': items, 'maxCount': IndexTitleBarCoordinator.SINGLE_ITEM_MENU_MAX_COUNT }
   }
@@ -980,8 +992,7 @@ struct Index {
     const requestId = ++this.notificationBadgeRequestId
     const restoreCookieJar = CookieJarSettings.getCurrentCookie()
       ? Promise.resolve()
-      : CookieJarSettings.load(context).catch((_error: Error) => {
-      })
+      : CookieJarSettings.load(context).catch((_error: Error) => {})
     restoreCookieJar
       .then(() => AuthSettings.load(context))
       .then((snapshot) => {
@@ -994,35 +1005,34 @@ struct Index {
             tokenConfigured: true,
             token: snapshot.token,
             cookieConfigured: false,
-            cookie: ''
+            cookie: '',
           }
-          this.notificationVm.loadPage(authContext, 1, 20)
+          this.notificationVm
+            .loadPage(authContext, 1, 20)
             .then((result) => {
               if (this.canApplyNotificationBadgeRequest(requestId)) {
                 this.notificationUnreadCount = this.notificationVm.unreadCount(result.items)
               }
             })
-            .catch((_error: Error) => {
-            })
+            .catch((_error: Error) => {})
           return
         }
         if (cookie) {
-          this.notificationVm.unreadCountFromCookie(cookie)
+          this.notificationVm
+            .unreadCountFromCookie(cookie)
             .then((count: number) => {
               if (this.canApplyNotificationBadgeRequest(requestId)) {
                 this.notificationUnreadCount = count
               }
             })
-            .catch((_error: Error) => {
-            })
+            .catch((_error: Error) => {})
           return
         }
         if (this.canApplyNotificationBadgeRequest(requestId)) {
           this.notificationUnreadCount = 0
         }
       })
-      .catch((_error: Error) => {
-      })
+      .catch((_error: Error) => {})
   }
 
   private canApplyNotificationBadgeRequest(requestId: number): boolean {
