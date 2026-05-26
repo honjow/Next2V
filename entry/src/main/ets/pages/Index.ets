@@ -84,7 +84,6 @@ import {
 } from '../model/IndexTitleBarCoordinator'
 import {
   NotificationCenterViewModel,
-  NotificationAuthContext,
 } from '../viewmodel/NotificationCenterViewModel'
 import type { IndexDestinationDescriptor } from '../model/IndexRouteCoordinator'
 import { IndexRouteCoordinator } from '../model/IndexRouteCoordinator'
@@ -317,7 +316,7 @@ struct Index {
           DiscoverPage()
         }.tabBar(this.TabIcon(AppStrings.R_TAB_DISCOVER, 1))
         TabContent() {
-          NotificationPage({ refreshKey: this.notificationRefreshKey })
+          NotificationPage({ refreshKey: this.notificationRefreshKey, currentTab: this.ct })
         }.tabBar(this.TabIcon(AppStrings.R_TAB_NOTIFICATIONS, 2))
         TabContent() {
           AccountDashboardPage({ refreshKey: this.accountRefreshKey })
@@ -1016,23 +1015,6 @@ struct Index {
           return
         }
         const cookie = CookieJarSettings.getCurrentCookie()
-        if (snapshot.token) {
-          const authContext: NotificationAuthContext = {
-            tokenConfigured: true,
-            token: snapshot.token,
-            cookieConfigured: false,
-            cookie: '',
-          }
-          this.notificationVm
-            .loadPage(authContext, 1, 20)
-            .then((result) => {
-              if (this.canApplyNotificationBadgeRequest(requestId)) {
-                this.notificationUnreadCount = this.notificationVm.unreadCount(result.items)
-              }
-            })
-            .catch((_error: Error) => {})
-          return
-        }
         if (cookie) {
           this.notificationVm
             .unreadCountFromCookie(cookie)
@@ -1044,7 +1026,7 @@ struct Index {
             .catch((_error: Error) => {})
           return
         }
-        if (this.canApplyNotificationBadgeRequest(requestId)) {
+        if (this.canApplyNotificationBadgeRequest(requestId) && !snapshot.token) {
           this.notificationUnreadCount = 0
         }
       })

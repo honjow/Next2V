@@ -73,6 +73,7 @@ export struct NotificationPage {
   private notificationEntryUnreadCount: number = 0
   private pendingNotificationDeletes: Set<number> = new Set<number>()
   @Prop @Watch('onRefreshKeyChanged') refreshKey: number = 0
+  @Prop currentTab: number = 0
 
   aboutToAppear(): void {
     this.loadAuthSnapshot(false)
@@ -83,6 +84,9 @@ export struct NotificationPage {
   }
 
   onAuthChanged(_propName: string): void {
+    if (this.deferNotificationRefreshUntilVisible()) {
+      return
+    }
     const nextIdentity = this.currentNotificationIdentityKey()
     if (this.notificationIdentityKey && nextIdentity === this.notificationIdentityKey) {
       this.loadAuthSnapshot(true)
@@ -239,9 +243,11 @@ export struct NotificationPage {
           })
           this.resetNotificationState()
         }
-        this.notificationIdentityKey = nextIdentity
-        this.loadNotifications(forceNotifications)
         this.loadNotificationCache(snapshot.username || this.sessionUsername)
+        this.notificationIdentityKey = nextIdentity
+        if (this.shouldLoadNotificationListForCurrentTab(forceNotifications)) {
+          this.loadNotifications(forceNotifications)
+        }
       })
       .catch((error: Error) => {
         if (requestId !== this.authRefreshRequestId) {
@@ -262,6 +268,27 @@ export struct NotificationPage {
   private shouldShowNotificationInitialLoading(): boolean {
     return this.notifications.length === 0 &&
       (this.isNotificationAuthLoading || this.isNotificationLoading || !this.notificationInitialSettled)
+  }
+
+  private deferNotificationRefreshUntilVisible(): boolean {
+    if (this.currentTab === 2) {
+      return false
+    }
+    this.pendingNotificationForceRefresh = true
+    DiagnosticLogger.info('notification', 'notification_auth_refresh_deferred', { reason: 'inactive_tab' })
+    return true
+  }
+
+  private shouldLoadNotificationListForCurrentTab(forceNotifications: boolean): boolean {
+    if (this.currentTab === 2) {
+      return true
+    }
+    // /notifications list reads mark V2EX unread state as consumed, so hidden tab/auth restores may only restore local cache and must wait for explicit tab entry.
+    if (forceNotifications) {
+      this.pendingNotificationForceRefresh = true
+    }
+    DiagnosticLogger.info('notification', 'notification_list_refresh_deferred', { force: forceNotifications, reason: 'inactive_tab' })
+    return false
   }
 
   private shouldShowNotificationEmptyState(): boolean {
@@ -501,6 +528,9 @@ export struct NotificationPage {
   }
 
   private async refreshNotifications(force: boolean = false): Promise<void> {
+    if (!this.shouldLoadNotificationListForCurrentTab(force)) {
+      return
+    }
     const authContext = this.notificationAuthContext()
     const hasAuth = this.notificationVm.hasAuth(authContext)
     if (force && hasAuth && (this.isNotificationLoading || this.isNotificationLoadingMore)) {
