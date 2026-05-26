@@ -111,7 +111,7 @@ export struct DomainSettingsPage {
         if (this.validatedCustomBaseUrl) {
           ConciseListRow({
             title: this.validatedCustomBaseUrl,
-            subtitle: '切换后不会自动共享其他域名的 Cookie，需要重新登录。',
+            subtitle: 'V2EX 官方镜像共享登录状态；自定义域名使用独立会话。',
             showChevron: false,
             prefixBuilderParam: (): void => this.DomainRadio(this.validatedCustomBaseUrl),
             action: () => { this.selectBaseUrl(this.validatedCustomBaseUrl) },
@@ -148,7 +148,7 @@ export struct DomainSettingsPage {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     ApiDomainSettings.save(context, normalized)
       .then(() => {
-        promptAction.openToast({ message: 'V2EX 站点已切换，请按需重新登录' }).catch((_error: Error) => {})
+        promptAction.openToast({ message: 'V2EX 站点已切换' }).catch((_error: Error) => {})
       })
       .catch((error: Error) => {
         console.error('save V2EX site failed: ' + error.message)

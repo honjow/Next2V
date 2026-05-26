@@ -30,6 +30,7 @@ export class AccountSessionCoordinator {
   ): Promise<AccountRecord> {
     const cookie = CookieJarSettings.getCurrentCookie()
     const baseUrl = HttpClient.getInstance().getBaseUrl()
+    const credentialScope = CookieJarSettings.credentialScopeKey(baseUrl)
 
     console.info('AccountSessionCoordinator: registerCurrentSession start username=' + username +
       ' loginMode=' + loginMode + ' hasSessionSnapshot=' + (cookie.length > 0))
@@ -45,12 +46,13 @@ export class AccountSessionCoordinator {
       validatedAt: now
     }
 
-    // Check if we already have a record for this username+loginMode on this baseUrl
+    // V2EX-owned mirrors represent one account identity; custom/non-V2EX hosts remain
+    // exact scoped so their credentials cannot be merged with arbitrary servers.
     const existing = await AccountStore.getAll(context)
     const match = existing.find(r =>
       r.username === username &&
       r.loginMode === loginMode &&
-      r.baseUrl === baseUrl
+      CookieJarSettings.credentialScopeKey(r.baseUrl) === credentialScope
     )
 
     let record: AccountRecord
@@ -79,11 +81,8 @@ export class AccountSessionCoordinator {
     console.info('AccountSessionCoordinator: switchToAccount id=' + record.id +
       ' username=' + record.username + ' hasSessionSnapshot=' + (record.cookieSnapshot.length > 0))
 
-    // When switching accounts, the stored baseUrl in AccountRecord must be applied
-    // to HttpClient BEFORE restoring cookies. An account logged in on cn.v2ex.com
-    // has cookies that are only meaningful for cn.v2ex.com. Setting the baseUrl first
-    // ensures CookieJarSettings.saveForBaseUrl targets the correct domain slot.
-    HttpClient.getInstance().setBaseUrl(record.baseUrl)
+    const restoreBaseUrl = AccountSessionCoordinator.restoreBaseUrlForRecord(record)
+    HttpClient.getInstance().setBaseUrl(restoreBaseUrl)
 
     // 1. Apply cookie to CookieJarSettings
     if (record.cookieSnapshot) {
@@ -167,8 +166,9 @@ export class AccountSessionCoordinator {
       })
       const currentCookie = CookieJarSettings.getCurrentCookie()
       const baseUrl = HttpClient.getInstance().getBaseUrl()
+      const credentialScope = CookieJarSettings.credentialScopeKey(baseUrl)
       const matchingRecord = records.find((record: AccountRecord) =>
-        record.baseUrl === baseUrl &&
+        CookieJarSettings.credentialScopeKey(record.baseUrl) === credentialScope &&
         ((session.username && record.username === session.username) ||
           (currentCookie && record.cookieSnapshot === currentCookie))
       )
@@ -222,9 +222,8 @@ export class AccountSessionCoordinator {
     console.info('AccountSessionCoordinator: restoreActiveAccount restoring id=' + record.id +
       ' username=' + record.username + ' hasSessionSnapshot=' + (record.cookieSnapshot.length > 0))
 
-    // Apply the account domain before cookie restore so the runtime namespace matches
-    // the account record that owns this session snapshot.
-    HttpClient.getInstance().setBaseUrl(record.baseUrl)
+    const restoreBaseUrl = AccountSessionCoordinator.restoreBaseUrlForRecord(record)
+    HttpClient.getInstance().setBaseUrl(restoreBaseUrl)
 
     // Apply cookie — but DON'T double-restore if CookieJarSettings already loaded
     // We directly apply the snapshot from AccountStore into the runtime
@@ -243,5 +242,15 @@ export class AccountSessionCoordinator {
     await CookieJarSettings.restoreCurrentToWebCookieManager()
 
     return record
+  }
+
+  private static restoreBaseUrlForRecord(record: AccountRecord): string {
+    const selectedBaseUrl = HttpClient.getInstance().getBaseUrl()
+    const selectedScope = CookieJarSettings.credentialScopeKey(selectedBaseUrl)
+    const recordScope = CookieJarSettings.credentialScopeKey(record.baseUrl)
+    // Preserve the user's selected V2EX mirror when the account belongs to the same
+    // first-party credential namespace; only fall back to the record URL when switching
+    // across safety boundaries such as a custom/non-V2EX host.
+    return selectedScope === recordScope ? selectedBaseUrl : record.baseUrl
   }
 }

@@ -29,13 +29,20 @@ export class CookieJarSettings {
   private static updatedAt: number = 0
 
   static getCookieForBaseUrl(baseUrl: string): string {
-    // Cookies are keyed by exact baseUrl string, not shared across domains.
-    // While all *.v2ex.com subdomains proxy the same origin and cookies are technically
-    // interchangeable, silently sharing cookies would leak credentials to a user-entered
-    // custom domain that could be a phishing site. Explicit re-login per domain is the
-    // safe default; a future opt-in 'copy cookie' action may be added for convenience.
+    const scopeKey = CookieJarSettings.credentialScopeKey(baseUrl)
+    return (CookieJarSettings.cookiesByBaseUrl[scopeKey] || '').trim()
+  }
+
+  static credentialScopeKey(baseUrl: string): string {
     const normalized = CookieJarSettings.normalizeBaseUrl(baseUrl)
-    return (CookieJarSettings.cookiesByBaseUrl[normalized] || '').trim()
+    const host = CookieJarSettings.hostForBaseUrl(normalized)
+    if (CookieJarSettings.isV2exOwnedHost(host)) {
+      // V2EX mirrors are first-party surfaces for the same account, so they share one
+      // auth namespace; custom/non-V2EX hosts stay exact-baseUrl scoped to avoid
+      // sending V2EX credentials to arbitrary user-entered servers.
+      return 'v2ex.com'
+    }
+    return normalized
   }
 
   static getCurrentCookie(): string {
@@ -72,16 +79,16 @@ export class CookieJarSettings {
     const comCookie = (store.getSync(KEY_COOKIE_COM, '') as string).trim()
     const coCookie = (store.getSync(KEY_COOKIE_CO, '') as string).trim()
     if (comCookie) {
-      migrated[ApiConstants.BASE_URL_COM] = comCookie
+      migrated[CookieJarSettings.credentialScopeKey(ApiConstants.BASE_URL_COM)] = comCookie
     }
     if (coCookie) {
-      migrated[ApiConstants.BASE_URL_CO] = coCookie
+      migrated[CookieJarSettings.credentialScopeKey(ApiConstants.BASE_URL_CO)] = coCookie
       if (!comCookie || ApiDomainSettings.didMigrateFromLegacyCoDomain()) {
         // Legacy useCoDomain=true users are redirected from the DNS-dead v2ex.co
         // endpoint to www.v2ex.com. Copy the active old co slot to the selected
         // fallback domain so those users keep their session; this is limited to
         // the first-party legacy domain and never applies to custom hosts.
-        migrated[ApiConstants.BASE_URL_COM] = coCookie
+        migrated[CookieJarSettings.credentialScopeKey(ApiConstants.BASE_URL_COM)] = coCookie
       }
     }
     if (Object.keys(migrated).length > 0) {
@@ -95,13 +102,13 @@ export class CookieJarSettings {
 
   static async saveForBaseUrl(context: common.UIAbilityContext, baseUrl: string, cookie: string): Promise<void> {
     const cleanCookie = cookie.trim()
-    const normalized = CookieJarSettings.normalizeBaseUrl(baseUrl)
+    const scopeKey = CookieJarSettings.credentialScopeKey(baseUrl)
     try {
       const store = await preferences.getPreferences(context, STORE_NAME)
       if (cleanCookie) {
-        CookieJarSettings.cookiesByBaseUrl[normalized] = cleanCookie
+        CookieJarSettings.cookiesByBaseUrl[scopeKey] = cleanCookie
       } else {
-        CookieJarSettings.cookiesByBaseUrl = CookieJarSettings.withoutBaseUrl(CookieJarSettings.cookiesByBaseUrl, normalized)
+        CookieJarSettings.cookiesByBaseUrl = CookieJarSettings.withoutBaseUrl(CookieJarSettings.cookiesByBaseUrl, scopeKey)
       }
       CookieJarSettings.updatedAt = Date.now()
       store.putSync(KEY_COOKIES_BY_BASE_URL, JSON.stringify(CookieJarSettings.cookiesByBaseUrl))
@@ -143,10 +150,11 @@ export class CookieJarSettings {
 
   static async clearForBaseUrl(context: common.UIAbilityContext, baseUrl: string): Promise<void> {
     const cleanBaseUrl = CookieJarSettings.normalizeBaseUrl(baseUrl)
+    const scopeKey = CookieJarSettings.credentialScopeKey(cleanBaseUrl)
     try {
       const store = await preferences.getPreferences(context, STORE_NAME)
       const previousCookie = CookieJarSettings.getCookieForBaseUrl(cleanBaseUrl)
-      CookieJarSettings.cookiesByBaseUrl = CookieJarSettings.withoutBaseUrl(CookieJarSettings.cookiesByBaseUrl, cleanBaseUrl)
+      CookieJarSettings.cookiesByBaseUrl = CookieJarSettings.withoutBaseUrl(CookieJarSettings.cookiesByBaseUrl, scopeKey)
       CookieJarSettings.updatedAt = Object.keys(CookieJarSettings.cookiesByBaseUrl).length > 0 ? Date.now() : 0
       if (CookieJarSettings.updatedAt > 0) {
         store.putSync(KEY_UPDATED_AT, CookieJarSettings.updatedAt)
@@ -186,10 +194,20 @@ export class CookieJarSettings {
     return raw.endsWith('/') ? raw.slice(0, raw.length - 1) : raw
   }
 
+  private static hostForBaseUrl(baseUrl: string): string {
+    const normalized = CookieJarSettings.normalizeBaseUrl(baseUrl)
+    const match = normalized.match(/^https?:\/\/([^\/\s?#]+)/i)
+    return match ? (match[1] || '').toLowerCase() : ''
+  }
+
+  private static isV2exOwnedHost(host: string): boolean {
+    return host === 'v2ex.com' || host.endsWith('.v2ex.com')
+  }
+
   private static cloneCookieMap(source: Record<string, string>): Record<string, string> {
     const result = JSON.parse('{}') as Record<string, string>
     Object.keys(source).forEach((key: string) => {
-      const normalized = CookieJarSettings.normalizeBaseUrl(key)
+      const normalized = CookieJarSettings.credentialScopeKey(key)
       const value = (source[key] || '').trim()
       if (value) {
         result[normalized] = value
@@ -199,10 +217,10 @@ export class CookieJarSettings {
   }
 
   private static withoutBaseUrl(source: Record<string, string>, baseUrl: string): Record<string, string> {
-    const normalizedBaseUrl = CookieJarSettings.normalizeBaseUrl(baseUrl)
+    const normalizedBaseUrl = CookieJarSettings.credentialScopeKey(baseUrl)
     const result = JSON.parse('{}') as Record<string, string>
     Object.keys(source).forEach((key: string) => {
-      const normalized = CookieJarSettings.normalizeBaseUrl(key)
+      const normalized = CookieJarSettings.credentialScopeKey(key)
       const value = (source[key] || '').trim()
       if (value && normalized !== normalizedBaseUrl) {
         result[normalized] = value

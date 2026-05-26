@@ -2,9 +2,9 @@
 /**
  * V2EX domain selection contract.
  *
- * Verifies that V2EX site configuration is string/baseUrl based, preserves
- * cookie ownership per exact baseUrl, exposes preset/custom settings UI, and
- * keeps proxy tests using the selected base URL.
+ * Verifies that V2EX site configuration is string/baseUrl based, shares auth
+ * across V2EX-owned mirrors only, exposes preset/custom settings UI, and keeps
+ * proxy tests using the selected base URL.
  */
 import fs from 'node:fs'
 import path from 'node:path'
@@ -63,13 +63,21 @@ assert(apiDomain.includes('ApiConstants.BASE_URL_COM'), 'ApiDomainSettings must 
 
 assert(cookieJar.includes('cookiesByBaseUrl'), 'CookieJarSettings must persist cookiesByBaseUrl map')
 assert(cookieJar.includes('Record<string, string>') || cookieJar.includes('Map<string, string>'), 'CookieJarSettings must represent cookies by baseUrl')
-assert(cookieJar.includes('not shared across domains'), 'CookieJarSettings must document no silent cookie sharing')
+assert(cookieJar.includes('credentialScopeKey'), 'CookieJarSettings must derive a durable credential scope key')
+assert(cookieJar.includes('isV2exOwnedHost'), 'CookieJarSettings must identify V2EX-owned hosts for shared auth scope')
+assert(cookieJar.includes("return 'v2ex.com'"), 'V2EX-owned domains must share the v2ex.com credential scope')
+assert(cookieJar.includes('custom/non-V2EX hosts stay exact-baseUrl scoped'), 'CookieJarSettings must document the custom-host safety boundary')
+assert(!cookieJar.includes('not shared across domains'), 'CookieJarSettings must remove the stale exact-domain-only rationale')
+assert(/getCookieForBaseUrl[\s\S]*credentialScopeKey\(baseUrl\)[\s\S]*cookiesByBaseUrl\[scopeKey\]/.test(cookieJar), 'getCookieForBaseUrl must look up by credential scope, not raw baseUrl only')
+assert(/saveForBaseUrl[\s\S]*credentialScopeKey\(baseUrl\)[\s\S]*cookiesByBaseUrl\[scopeKey\]/.test(cookieJar), 'saveForBaseUrl must store V2EX cookies under the shared credential scope')
+assert(/host\s*===\s*'v2ex\.com'\s*\|\|\s*host\.endsWith\('\.v2ex\.com'\)/.test(cookieJar), 'V2EX-owned scope must be limited to v2ex.com and subdomains')
+assert(!cookieJar.includes("return 'v2ex.com'") || cookieJar.includes('return normalized'), 'Non-V2EX custom hosts must keep an exact normalized scope')
 assert(cookieJar.includes('JSON.parse') && cookieJar.includes('JSON.stringify'), 'CookieJarSettings must serialize cookie map')
-assert(cookieJar.includes('migrated[ApiConstants.BASE_URL_CO] = coCookie'), 'CookieJarSettings must preserve legacy coCookie ownership during migration')
-assert(cookieJar.includes('didMigrateFromLegacyCoDomain()') && cookieJar.includes('migrated[ApiConstants.BASE_URL_COM] = coCookie'), 'CookieJarSettings must keep active co-domain users logged in after fallback to www')
+assert(cookieJar.includes('credentialScopeKey(ApiConstants.BASE_URL_CO)') && cookieJar.includes('= coCookie'), 'CookieJarSettings must preserve legacy coCookie ownership during migration')
+assert(cookieJar.includes('didMigrateFromLegacyCoDomain()') && cookieJar.includes('credentialScopeKey(ApiConstants.BASE_URL_COM)') && cookieJar.includes('= coCookie'), 'CookieJarSettings must keep active co-domain users logged in after fallback to www')
 assert(!/baseUrl\s*===\s*ApiConstants\.BASE_URL_CO\s*\?/.test(cookieJar), 'CookieJarSettings must not branch binary com/co for lookup')
 
-assert(httpClient.includes('Base URL changes do NOT automatically preserve or migrate cookies'), 'HttpClient.setBaseUrl must document cookie namespace invariant')
+assert(httpClient.includes('Base URL is a request/web origin preference') && httpClient.includes('shared V2EX first-party scope'), 'HttpClient.setBaseUrl must document selected origin vs credential scope')
 assert(settingsSave.includes('applyApiDomainSideEffects') && !settingsSave.includes('useCoDomain: boolean'), 'SettingsSaveCoordinator must accept baseUrl side effects, not boolean')
 assert(settingsSave.includes('restoreCurrentToWebCookieManager'), 'Domain side-effects must restore WebCookieManager for selected baseUrl')
 
@@ -83,6 +91,8 @@ assert(domainCoordinator.includes('https') && domainCoordinator.includes('v2ex.c
 assert(domainPage.includes('Custom site domain') || domainPage.includes('自定义站点域名'), 'DomainSettingsPage must expose custom site domain UI')
 assert(domainPage.includes('Radio'), 'DomainSettingsPage must expose radio selection for presets')
 assert(domainPage.includes('validateCustomDomain'), 'DomainSettingsPage must wire validation action')
+assert(domainPage.includes('V2EX 官方镜像共享登录状态；自定义域名使用独立会话。'), 'DomainSettingsPage must explain shared first-party auth and exact custom-host sessions')
+assert(!domainPage.includes('需要重新登录') && !domainPage.includes('按需重新登录'), 'DomainSettingsPage must not warn that V2EX mirror switching requires relogin')
 assert(settingsPage.includes("pushPathByName('DomainSettings'"), 'SettingsPage site domain row must navigate to DomainSettings')
 assert(!settingsPage.includes('apiDomainMenuShown'), 'SettingsPage must remove old boolean site domain dropdown menu')
 
@@ -101,7 +111,10 @@ for (const [name, content] of [
 }
 
 assert(networkProxyPage.includes('NetworkProxyRequest.testConnection(HttpClient.getInstance().getBaseUrl())'), 'Proxy connection test must use selected HttpClient baseUrl')
-assert(accountSession.includes('HttpClient.getInstance().setBaseUrl(record.baseUrl)'), 'AccountSessionCoordinator.switch/restore must apply account baseUrl before cookie save')
+assert(accountSession.includes('restoreBaseUrlForRecord'), 'AccountSessionCoordinator must preserve selected V2EX mirror when restoring same-scope accounts')
+assert(accountSession.includes('CookieJarSettings.credentialScopeKey(r.baseUrl) === credentialScope'), 'AccountSessionCoordinator.registerCurrentSession must match accounts by shared credential scope')
+assert(!/r\.baseUrl\s*===\s*baseUrl/.test(accountSession), 'AccountSessionCoordinator must not split V2EX account identity by raw mirror baseUrl')
+assert(!accountSession.includes('HttpClient.getInstance().setBaseUrl(record.baseUrl)'), 'AccountSessionCoordinator must not always force selected V2EX site back to login-time baseUrl')
 assert(imageUtils.includes('HttpClient.getInstance().getBaseUrl()'), 'ImageUtils fallback must use current baseUrl')
 
 assert(v2exUrlRouter.includes('withSelectedBaseUrl'), 'V2exUrlRouter must expose selected-baseUrl URL rewriting')

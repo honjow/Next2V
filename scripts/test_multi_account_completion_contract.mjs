@@ -204,6 +204,20 @@ assert(
   coordinator.includes('CookieJarSettings.getCurrentCookie()'),
   'AccountSessionCoordinator.registerCurrentSession must read cookie via CookieJarSettings.getCurrentCookie()'
 )
+assert(
+  coordinator.includes('CookieJarSettings.credentialScopeKey(baseUrl)') &&
+    coordinator.includes('CookieJarSettings.credentialScopeKey(r.baseUrl) === credentialScope'),
+  'registerCurrentSession must reuse the same account record across V2EX mirrors by credential scope'
+)
+assert(
+  coordinator.includes('restoreBaseUrlForRecord') &&
+    coordinator.includes('selectedScope === recordScope ? selectedBaseUrl : record.baseUrl'),
+  'switch/restore must preserve selected V2EX mirror while keeping custom-host accounts exact-scoped'
+)
+assert(
+  !/r\.baseUrl\s*===\s*baseUrl/.test(coordinator),
+  'AccountSessionCoordinator must not split the same account by raw V2EX mirror baseUrl'
+)
 
 const prepareMatch = coordinator.match(/static\s+async\s+prepareAddAccount[\s\S]*?\n  \}/)
 assert(prepareMatch, 'AccountSessionCoordinator.prepareAddAccount body must be present')
