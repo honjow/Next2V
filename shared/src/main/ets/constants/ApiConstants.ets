@@ -4,13 +4,33 @@ export interface TabItem {
   label: ResourceStr
 }
 
+export interface ApiDomainOption {
+  id: string
+  label: string
+  baseUrl: string
+  hint: string
+  recommended: boolean
+}
+
 /**
  * V2EX API constants and base URL configuration
  */
 export class ApiConstants {
   // Base domain (configurable in settings)
   static readonly BASE_URL_COM: string = 'https://www.v2ex.com'
+  // Kept only so old useCoDomain/cookieCo preferences can be migrated away.
   static readonly BASE_URL_CO: string = 'https://www.v2ex.co'
+
+  static readonly PRESET_DOMAINS: ApiDomainOption[] = [
+    { id: 'www', label: 'www.v2ex.com', baseUrl: 'https://www.v2ex.com', hint: '全球默认', recommended: true },
+    { id: 'edge', label: 'edge.v2ex.com', baseUrl: 'https://edge.v2ex.com', hint: 'Edge CDN', recommended: true },
+    { id: 'global', label: 'global.v2ex.com', baseUrl: 'https://global.v2ex.com', hint: '全球加速', recommended: true },
+    { id: 'fast', label: 'fast.v2ex.com', baseUrl: 'https://fast.v2ex.com', hint: '快速线路', recommended: true },
+    { id: 'cn', label: 'cn.v2ex.com', baseUrl: 'https://cn.v2ex.com', hint: '中国大陆', recommended: true },
+    { id: 'us', label: 'us.v2ex.com', baseUrl: 'https://us.v2ex.com', hint: '美国', recommended: true },
+    { id: 'jp', label: 'jp.v2ex.com', baseUrl: 'https://jp.v2ex.com', hint: '日本', recommended: true },
+    { id: 'hk', label: 'hk.v2ex.com', baseUrl: 'https://hk.v2ex.com', hint: '香港', recommended: true },
+  ]
 
   // V1 API (no auth, read-only)
   static readonly API_LATEST: string = '/api/topics/latest.json'

@@ -8,6 +8,7 @@ export class StorageKeys {
 
   // Persistent user settings / preferences-backed AppStorage
   static readonly USE_CO_DOMAIN: string = 'useCoDomain'
+  static readonly SELECTED_BASE_URL: string = 'selectedBaseUrl'
   static readonly MEDIA_AUTO_LOAD_IMAGES: string = 'mediaAutoLoadImages'
   static readonly MEDIA_ONLY_LOAD_IMAGES_ON_WIFI: string = 'mediaOnlyLoadImagesOnWifi'
   static readonly READING_TEXT_SCALE: string = 'readingTextScale'

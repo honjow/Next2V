@@ -6,15 +6,52 @@ import { HttpClient } from '../network/HttpClient'
 import { STORE_NAME_SETTINGS, SettingsPreferencesStore, setAppStorageValue } from './SettingsStorage'
 
 const STORE_NAME: string = STORE_NAME_SETTINGS
+const KEY_SELECTED_BASE_URL: string = StorageKeys.SELECTED_BASE_URL
 const KEY_USE_CO_DOMAIN: string = StorageKeys.USE_CO_DOMAIN
 
+export interface ApiDomainSnapshot {
+  baseUrl: string
+  migratedFromCoDomain: boolean
+}
+
+export interface DomainValidationResult {
+  ok: boolean
+  baseUrl: string
+  message: string
+}
+
 export class ApiDomainSettings {
-  static apply(useCoDomain: boolean): void {
-    HttpClient.getInstance().setBaseUrl(useCoDomain ? ApiConstants.BASE_URL_CO : ApiConstants.BASE_URL_COM)
-    setAppStorageValue<boolean>(StorageKeys.USE_CO_DOMAIN, useCoDomain)
+  private static migratedFromLegacyCoDomain: boolean = false
+
+  static didMigrateFromLegacyCoDomain(): boolean {
+    return ApiDomainSettings.migratedFromLegacyCoDomain
   }
 
-  static async load(context: common.UIAbilityContext): Promise<boolean> {
+  static normalizeBaseUrl(value: string): string {
+    const raw = (value || '').trim()
+    if (!raw) {
+      return ApiConstants.BASE_URL_COM
+    }
+    const withoutTrailingSlash = raw.endsWith('/') ? raw.slice(0, raw.length - 1) : raw
+    const lower = withoutTrailingSlash.toLowerCase()
+    const preset = ApiConstants.PRESET_DOMAINS.find(option => option.baseUrl.toLowerCase() === lower)
+    if (preset) {
+      return preset.baseUrl
+    }
+    if (lower === ApiConstants.BASE_URL_CO) {
+      return ApiConstants.BASE_URL_COM
+    }
+    return withoutTrailingSlash
+  }
+
+  static apply(baseUrl: string): void {
+    const normalized = ApiDomainSettings.normalizeBaseUrl(baseUrl)
+    HttpClient.getInstance().setBaseUrl(normalized)
+    setAppStorageValue<string>(StorageKeys.SELECTED_BASE_URL, normalized)
+    setAppStorageValue<boolean>(StorageKeys.USE_CO_DOMAIN, false)
+  }
+
+  static async load(context: common.UIAbilityContext): Promise<string> {
     try {
       const store = await preferences.getPreferences(context, STORE_NAME)
       return ApiDomainSettings.loadFromStore(store)
@@ -24,17 +61,38 @@ export class ApiDomainSettings {
     }
   }
 
-  static async loadFromStore(store: SettingsPreferencesStore): Promise<boolean> {
-    const useCoDomain = store.getSync(KEY_USE_CO_DOMAIN, false) as boolean
-    ApiDomainSettings.apply(useCoDomain)
-    return useCoDomain
+  static async loadFromStore(store: SettingsPreferencesStore): Promise<string> {
+    const selected = store.getSync(KEY_SELECTED_BASE_URL, '') as string
+    if (selected) {
+      const normalized = ApiDomainSettings.normalizeBaseUrl(selected)
+      ApiDomainSettings.apply(normalized)
+      return normalized
+    }
+    const migrated = ApiDomainSettings.migrateFromUseCoDomain(store)
+    ApiDomainSettings.apply(migrated.baseUrl)
+    return migrated.baseUrl
   }
 
-  static async save(context: common.UIAbilityContext, useCoDomain: boolean): Promise<void> {
-    ApiDomainSettings.apply(useCoDomain)
+  static migrateFromUseCoDomain(store: SettingsPreferencesStore): ApiDomainSnapshot {
+    const useCoDomain = store.getSync(KEY_USE_CO_DOMAIN, false) as boolean
+    const baseUrl = useCoDomain ? ApiConstants.BASE_URL_COM : ApiConstants.BASE_URL_COM
+    ApiDomainSettings.migratedFromLegacyCoDomain = useCoDomain
+    // v2ex.co has been DNS-dead since at least 2026-05-26. Users migrating from
+    // the boolean useCoDomain=true are redirected to www.v2ex.com; the old key is
+    // deleted after the new baseUrl is persisted so future startup is idempotent.
+    store.putSync(KEY_SELECTED_BASE_URL, baseUrl)
+    store.deleteSync(KEY_USE_CO_DOMAIN)
+    store.flushSync()
+    return { baseUrl, migratedFromCoDomain: useCoDomain }
+  }
+
+  static async save(context: common.UIAbilityContext, baseUrl: string): Promise<void> {
+    const normalized = ApiDomainSettings.normalizeBaseUrl(baseUrl)
+    ApiDomainSettings.apply(normalized)
     try {
       const store = await preferences.getPreferences(context, STORE_NAME)
-      store.putSync(KEY_USE_CO_DOMAIN, useCoDomain)
+      store.putSync(KEY_SELECTED_BASE_URL, normalized)
+      store.deleteSync(KEY_USE_CO_DOMAIN)
       store.flushSync()
     } catch (error) {
       const e = error as Error

@@ -1,6 +1,7 @@
 import { common } from '@kit.AbilityKit'
 import { promptAction } from '@kit.ArkUI'
 import {
+  ApiDomainSettings,
   AppStrings,
   CacheSettings,
   ConciseListRow,
@@ -33,7 +34,7 @@ import { StorageSettingsCoordinator } from '../model/StorageSettingsCoordinator'
 @Component
 export struct SettingsPage {
   @Consume('ns') stack: NavPathStack;
-  @StorageLink(StorageKeys.USE_CO_DOMAIN) useCoDomain: boolean = false;
+  @StorageLink(StorageKeys.SELECTED_BASE_URL) selectedBaseUrl: string = ApiDomainSettings.normalizeBaseUrl('');
   @StorageLink(StorageKeys.AUTO_DAILY_CHECKIN_ENABLED) autoDailyCheckinEnabled: boolean = true;
   @StorageLink(StorageKeys.MEDIA_AUTO_LOAD_IMAGES) autoLoadImages: boolean = true;
   @StorageLink(StorageKeys.MEDIA_ONLY_LOAD_IMAGES_ON_WIFI) onlyLoadImagesOnWifi: boolean = false;
@@ -59,7 +60,6 @@ export struct SettingsPage {
   @State private replyCardStyleMenuShown: boolean = false;
   @State private replyActionAlignmentMenuShown: boolean = false;
   @State private base64ModeMenuShown: boolean = false;
-  @State private apiDomainMenuShown: boolean = false;
   private http: HttpClient = HttpClient.getInstance();
 
   aboutToAppear(): void {
@@ -210,19 +210,13 @@ export struct SettingsPage {
   @Builder
   ApiDomainAdvancedSection() {
     GroupedListSection() {
-      SettingsDropdownRow({
+      ConciseListRow({
         title: AppStrings.R_API_DOMAIN,
-        trailingText: SettingsPageCoordinator.apiDomainLabel(this.useCoDomain),
-        openAction: () => {
-          this.showApiDomainMenu()
+        trailingText: SettingsPageCoordinator.apiDomainLabel(this.selectedBaseUrl),
+        action: () => {
+          this.stack.pushPathByName('DomainSettings', null)
         },
       })
-        .bindMenu(this.apiDomainMenuShown, this.ApiDomainMenu, {
-          placement: Placement.BottomRight,
-          aboutToDisappear: () => {
-            this.apiDomainMenuShown = false
-          },
-        })
     }
   }
 
@@ -483,25 +477,6 @@ export struct SettingsPage {
     })
   }
 
-  @Builder
-  ApiDomainMenu() {
-    Menu() {
-      ForEach(SettingsPageCoordinator.apiDomainOptions(), (option: SettingsOption) => {
-        this.ApiDomainMenuItem(option)
-      }, (option: SettingsOption) => option.value)
-    }
-  }
-
-  @Builder
-  ApiDomainMenuItem(option: SettingsOption) {
-    SettingsCheckedMenuItem({
-      label: option.label,
-      selected: this.useCoDomain === (option.value === 'true'),
-      selectAction: () => {
-        this.updateApiDomain(option.value === 'true')
-      }
-    })
-  }
 
   @Builder
   LanguageModeMenuItem(option: SettingsOption) {
@@ -578,12 +553,6 @@ export struct SettingsPage {
     }, SettingsPageCoordinator.MENU_OPEN_DELAY_MS)
   }
 
-  private showApiDomainMenu(): void {
-    this.apiDomainMenuShown = false
-    setTimeout(() => {
-      this.apiDomainMenuShown = true
-    }, SettingsPageCoordinator.MENU_OPEN_DELAY_MS)
-  }
 
   @Builder
   CacheSection() {
@@ -599,12 +568,6 @@ export struct SettingsPage {
     }
   }
 
-  private updateApiDomain(useCoDomain: boolean): void {
-    this.useCoDomain = useCoDomain
-    SettingsSaveCoordinator.applyApiDomainSideEffects(this.http, useCoDomain)
-    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    SettingsSaveCoordinator.saveApiDomain(context, useCoDomain)
-  }
 
   private updateAutoLoadImages(autoLoadImages: boolean): void {
     this.autoLoadImages = autoLoadImages
