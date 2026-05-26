@@ -1279,15 +1279,30 @@ export struct TopicDetailPage {
       promptAction.openToast({ message: AppStrings.text($r('app.string.api_error_auth_required'), 'Please sign in') }).catch((_error: Error) => {})
       return
     }
+    const previousIsSiteFavorited = this.isSiteFavorited
+    const previousTopicDetailSiteFavorited = this.topicDetailSiteFavorited
+    const targetFavorited = !this.isSiteFavorited
+    this.isSiteFavoriteLoading = true
+    this.isSiteFavorited = targetFavorited
+    this.topicDetailSiteFavorited = targetFavorited
     this.api
-      .getTopicFavoriteToggleActionWithCookie(cookie, this.topicId)
-      .then((toggle) => {
-        this.executeSiteFavoriteToggle(cookie, toggle)
+      .toggleTopicFavoriteWithCookie(cookie, this.topicId)
+      .then((favorited: boolean) => {
+        this.isSiteFavorited = favorited
+        this.topicDetailSiteFavorited = favorited
+        promptAction
+          .openToast({ message: favorited ? $r('app.string.favorited') : $r('app.string.unfavorited') })
+          .catch((_error: Error) => {})
       })
       .catch((error: Error) => {
+        this.isSiteFavorited = previousIsSiteFavorited
+        this.topicDetailSiteFavorited = previousTopicDetailSiteFavorited
         promptAction
           .openToast({ message: translateApiError(error) })
           .catch((_error: Error) => {})
+      })
+      .finally(() => {
+        this.isSiteFavoriteLoading = false
       })
   }
 
@@ -1348,45 +1363,6 @@ export struct TopicDetailPage {
         },
       },
     })
-  }
-
-  private confirmSiteFavoriteToggle(cookie: string, toggle: V2exToggleAction): void {
-    const verb = this.isSiteFavorited ? AppStrings.text(AppStrings.R_ACTION_UNFAVORITE, 'Unfavorite') : AppStrings.text(AppStrings.R_ACTION_FAVORITE, 'Favorite')
-    this.getUIContext().showAlertDialog({
-      title: AppStrings.text($r('app.string.topic_action_site_favorite'), 'Site favorite'),
-      message: TopicDetailActionCoordinator.topicFavoriteMessage(this.v.topic?.title || '', verb),
-      primaryButton: { value: AppStrings.text($r('app.string.common_cancel'), 'Cancel'), action: () => {} },
-      secondaryButton: {
-        value: verb,
-        action: () => {
-          this.executeSiteFavoriteToggle(cookie, toggle)
-        },
-      },
-    })
-  }
-
-  private executeSiteFavoriteToggle(cookie: string, toggle: V2exToggleAction): void {
-    if (this.isSiteFavoriteLoading) {
-      return
-    }
-    this.isSiteFavoriteLoading = true
-    TopicDetailActionCoordinator
-      .executeSiteFavoriteToggle(this.api, cookie, this.topicId, toggle)
-      .then((favorited: boolean) => {
-        this.isSiteFavorited = favorited
-        this.topicDetailSiteFavorited = favorited
-        promptAction
-          .openToast({ message: favorited ? $r('app.string.favorited') : $r('app.string.unfavorited') })
-          .catch((_error: Error) => {})
-      })
-      .catch((error: Error) => {
-        promptAction
-          .openToast({ message: translateApiError(error) })
-          .catch((_error: Error) => {})
-      })
-      .finally(() => {
-        this.isSiteFavoriteLoading = false
-      })
   }
 
   private prepareTopicThank(): void {
