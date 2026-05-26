@@ -69,6 +69,8 @@ assert(cookieJar.includes("return 'v2ex.com'"), 'V2EX-owned domains must share t
 assert(cookieJar.includes('custom/non-V2EX hosts stay exact-baseUrl scoped'), 'CookieJarSettings must document the custom-host safety boundary')
 assert(!cookieJar.includes('not shared across domains'), 'CookieJarSettings must remove the stale exact-domain-only rationale')
 assert(/getCookieForBaseUrl[\s\S]*credentialScopeKey\(baseUrl\)[\s\S]*cookiesByBaseUrl\[scopeKey\]/.test(cookieJar), 'getCookieForBaseUrl must look up by credential scope, not raw baseUrl only')
+assert(cookieJar.includes('findCompatibleCookieForScope') && cookieJar.includes('cookie_scope_compat_lookup'), 'CookieJarSettings must bridge stale exact-domain runtime cookies into the shared V2EX scope with diagnostics')
+assert(/findCompatibleCookieForScope[\s\S]*credentialScopeKey\(key\)[\s\S]*normalized\s*===\s*normalizedScope/.test(cookieJar), 'CookieJarSettings compatible lookup must compare normalized credential scopes for runtime split regression')
 assert(/saveForBaseUrl[\s\S]*credentialScopeKey\(baseUrl\)[\s\S]*cookiesByBaseUrl\[scopeKey\]/.test(cookieJar), 'saveForBaseUrl must store V2EX cookies under the shared credential scope')
 assert(/host\s*===\s*'v2ex\.com'\s*\|\|\s*host\.endsWith\('\.v2ex\.com'\)/.test(cookieJar), 'V2EX-owned scope must be limited to v2ex.com and subdomains')
 assert(!cookieJar.includes("return 'v2ex.com'") || cookieJar.includes('return normalized'), 'Non-V2EX custom hosts must keep an exact normalized scope')

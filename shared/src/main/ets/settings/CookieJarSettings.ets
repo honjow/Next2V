@@ -2,6 +2,7 @@ import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
 import { webview } from '@kit.ArkWeb'
 import { ApiConstants } from '../constants/ApiConstants'
+import { DiagnosticLogger } from '../diagnostics/DiagnosticLogger'
 import { StorageKeys } from '../constants/StorageKeys'
 import { HttpClient } from '../network/HttpClient'
 import { ApiDomainSettings } from './ApiDomainSettings'
@@ -24,13 +25,32 @@ interface CookiePair {
   value: string
 }
 
+interface CookieScopeLookup {
+  cookie: string
+  sourceScope: string
+}
+
 export class CookieJarSettings {
   private static cookiesByBaseUrl: Record<string, string> = {}
   private static updatedAt: number = 0
 
   static getCookieForBaseUrl(baseUrl: string): string {
     const scopeKey = CookieJarSettings.credentialScopeKey(baseUrl)
-    return (CookieJarSettings.cookiesByBaseUrl[scopeKey] || '').trim()
+    const scoped = (CookieJarSettings.cookiesByBaseUrl[scopeKey] || '').trim()
+    if (scoped) {
+      return scoped
+    }
+    const compatible = CookieJarSettings.findCompatibleCookieForScope(scopeKey)
+    if (compatible) {
+      DiagnosticLogger.info('auth', 'cookie_scope_compat_lookup', {
+        requestedScope: CookieJarSettings.safeScopeForLog(scopeKey),
+        selectedHost: CookieJarSettings.hostForBaseUrl(baseUrl),
+        sourceScope: CookieJarSettings.safeScopeForLog(compatible.sourceScope),
+        hasCookie: true
+      })
+      return compatible.cookie
+    }
+    return ''
   }
 
   static credentialScopeKey(baseUrl: string): string {
@@ -227,6 +247,27 @@ export class CookieJarSettings {
       }
     })
     return result
+  }
+
+  private static findCompatibleCookieForScope(scopeKey: string): CookieScopeLookup | null {
+    const normalizedScope = CookieJarSettings.credentialScopeKey(scopeKey)
+    const keys = Object.keys(CookieJarSettings.cookiesByBaseUrl)
+    for (const key of keys) {
+      const normalized = CookieJarSettings.credentialScopeKey(key)
+      const value = (CookieJarSettings.cookiesByBaseUrl[key] || '').trim()
+      if (value && normalized === normalizedScope) {
+        return { cookie: value, sourceScope: key }
+      }
+    }
+    return null
+  }
+
+  private static safeScopeForLog(scope: string): string {
+    if (scope === 'v2ex.com') {
+      return scope
+    }
+    const host = CookieJarSettings.hostForBaseUrl(scope)
+    return host || 'custom'
   }
 
   private static parseCookieMap(raw: string): Record<string, string> {
