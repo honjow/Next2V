@@ -3,6 +3,7 @@ import { promptAction } from '@kit.ArkUI'
 import { webview } from '@kit.ArkWeb'
 import {
   ApiService,
+  ApiConstants,
   AppStrings,
   AuthSessionSettings,
   AccountSessionCoordinator,
@@ -15,8 +16,6 @@ import {
   V2exSessionParser,
   translateApiError
 } from 'shared'
-
-const DEFAULT_V2EX_BASE_URL: string = 'https://www.v2ex.com'
 
 interface PageEndEvent {
   url: string
@@ -52,9 +51,9 @@ export struct V2exWebLoginPage {
   }
 
   private currentSigninUrl(): string {
-    const cleanBase = (this.baseUrl || DEFAULT_V2EX_BASE_URL).trim().replace(/\/+$/, '')
+    const cleanBase = (this.baseUrl || ApiConstants.BASE_URL_COM).trim().replace(/\/+$/, '')
     const hasProtocol = cleanBase.indexOf('http://') === 0 || cleanBase.indexOf('https://') === 0
-    let normalizedBase = DEFAULT_V2EX_BASE_URL
+    let normalizedBase = ApiConstants.BASE_URL_COM
     if (hasProtocol) {
       normalizedBase = cleanBase
     }

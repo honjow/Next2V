@@ -84,7 +84,8 @@ export interface BackupPreferencesSection {
 }
 
 export interface BackupApiDomainPreferences {
-  useCoDomain: boolean
+  baseUrl: string
+  useCoDomain?: boolean
 }
 
 export interface BackupLanguagePreferences {

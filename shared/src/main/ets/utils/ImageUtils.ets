@@ -1,4 +1,4 @@
-import { ApiConstants } from '../constants/ApiConstants'
+import { HttpClient } from '../network/HttpClient'
 import type { V2exMember } from '../network/NetworkTypes'
 
 const PROTOCOL_RELATIVE_PREFIX: string = '//'
@@ -22,7 +22,7 @@ export class ImageUtils {
     if (source.startsWith(HTTP_PREFIX)) {
       return source
     }
-    return `${ApiConstants.BASE_URL_COM}${source}`
+    return `${HttpClient.getInstance().getBaseUrl()}${source}`
   }
 
   /**

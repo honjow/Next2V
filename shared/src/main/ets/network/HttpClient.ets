@@ -33,7 +33,13 @@ export class HttpClient {
   }
 
   setBaseUrl(url: string): void {
-    this.baseUrl = url
+    // Base URL changes do NOT automatically preserve or migrate cookies.
+    // CookieJarSettings keys cookies by the full baseUrl string. Changing the
+    // baseUrl effectively switches to a different cookie namespace. Callers must
+    // ensure CookieJarSettings.refreshConfiguredState() and restoreToWebCookieManager()
+    // are invoked after changing the base URL.
+    const cleanUrl = (url || ApiConstants.BASE_URL_COM).trim()
+    this.baseUrl = cleanUrl.endsWith('/') ? cleanUrl.slice(0, cleanUrl.length - 1) : cleanUrl
   }
 
   getBaseUrl(): string {

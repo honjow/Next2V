@@ -43,6 +43,7 @@ import {
   ReadingSettingsPage,
   HomeNodeSettingsPage,
   NetworkProxySettingsPage,
+  DomainSettingsPage,
 } from 'settings'
 import { ComponentContent, promptAction, SymbolGlyphModifier } from '@kit.ArkUI'
 import { V2exWebLoginPage } from './V2exWebLoginPage'
@@ -261,6 +262,9 @@ struct Index {
     }
     if (descriptor.family === 'networkProxySettings') {
       NetworkProxySettingsPage()
+    }
+    if (descriptor.family === 'domainSettings') {
+      DomainSettingsPage()
     }
     if (descriptor.family === 'account') {
       AccountManagementPage()

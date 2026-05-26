@@ -1,6 +1,5 @@
 import { common } from '@kit.AbilityKit'
 import {
-  ApiConstants,
   ApiDomainSettings,
   AutoDailyCheckinSettings,
   CookieJarSettings,
@@ -17,8 +16,8 @@ import {
 } from 'shared'
 
 export class SettingsSaveCoordinator {
-  static applyApiDomainSideEffects(http: HttpClient, useCoDomain: boolean): void {
-    http.setBaseUrl(useCoDomain ? ApiConstants.BASE_URL_CO : ApiConstants.BASE_URL_COM)
+  static applyApiDomainSideEffects(http: HttpClient, baseUrl: string): void {
+    http.setBaseUrl(baseUrl)
     CookieJarSettings.refreshConfiguredState()
     CookieJarSettings.restoreCurrentToWebCookieManager().catch((error: Error) => {
       console.error('restore web cookie failed: ' + error.message)
@@ -29,8 +28,8 @@ export class SettingsSaveCoordinator {
     MotionHandStateService.applyAlignmentMode(mode)
   }
 
-  static saveApiDomain(context: common.UIAbilityContext, useCoDomain: boolean): void {
-    ApiDomainSettings.save(context, useCoDomain).catch((error: Error) => {
+  static saveApiDomain(context: common.UIAbilityContext, baseUrl: string): void {
+    ApiDomainSettings.save(context, baseUrl).catch((error: Error) => {
       console.error('save api domain failed: ' + error.message)
     })
   }

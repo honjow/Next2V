@@ -50,7 +50,7 @@ export class SettingsBootstrap {
       : ApiDomainSettings.load(context)
     ).catch((error: Error) => {
       console.error('restore api domain failed: ' + error.message)
-      ApiDomainSettings.apply(false)
+      ApiDomainSettings.apply('https://www.v2ex.com')
     })
   }
 
@@ -134,8 +134,7 @@ export class SettingsBootstrap {
     await CookieJarSettings.load(context).catch((error: Error) => {
       console.error('restore cookie jar failed: ' + error.message)
       CookieJarSettings.apply({
-        comCookie: '',
-        coCookie: '',
+        cookiesByBaseUrl: {},
         updatedAt: 0,
       })
     })

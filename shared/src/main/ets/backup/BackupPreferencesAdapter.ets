@@ -19,7 +19,7 @@ export class BackupPreferencesAdapter {
     const reading = await ReadingSettings.load(context)
     const checkin = await AutoDailyCheckinSettings.load(context)
     return {
-      apiDomain: { useCoDomain: await ApiDomainSettings.load(context) },
+      apiDomain: { baseUrl: await ApiDomainSettings.load(context) },
       language: { mode: language.mode },
       theme: { mode: theme.mode },
       media: { autoLoadImages: media.autoLoadImages, onlyLoadImagesOnWifi: media.onlyLoadImagesOnWifi },
@@ -41,8 +41,10 @@ export class BackupPreferencesAdapter {
   }
 
   static async restoreSection(context: common.UIAbilityContext, section: BackupPreferencesSection): Promise<void> {
-    if (section.apiDomain && typeof section.apiDomain.useCoDomain === 'boolean') {
-      await ApiDomainSettings.save(context, section.apiDomain.useCoDomain)
+    if (section.apiDomain && section.apiDomain.baseUrl) {
+      await ApiDomainSettings.save(context, section.apiDomain.baseUrl)
+    } else if (section.apiDomain && typeof section.apiDomain.useCoDomain === 'boolean') {
+      await ApiDomainSettings.save(context, section.apiDomain.useCoDomain ? 'https://www.v2ex.co' : 'https://www.v2ex.com')
     }
     if (section.language && section.language.mode) {
       await LanguageSettings.save(context, section.language.mode)

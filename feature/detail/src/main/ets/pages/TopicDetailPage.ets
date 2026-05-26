@@ -1904,11 +1904,9 @@ export struct TopicDetailPage {
     const baseUrl = HttpClient.getInstance().getBaseUrl()
     if (this.v.topic !== null) {
       const raw = (this.v.topic!.url || '').trim()
-      if (raw.startsWith('http://') || raw.startsWith('https://')) {
-        return raw
-      }
-      if (raw.startsWith('/')) {
-        return `${baseUrl}${raw}`
+      const resolved = V2exUrlRouter.withSelectedBaseUrl(raw, baseUrl)
+      if (resolved) {
+        return resolved
       }
     }
     return `${baseUrl}/t/${this.topicId}`

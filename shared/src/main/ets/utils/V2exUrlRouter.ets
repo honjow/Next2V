@@ -52,18 +52,92 @@ export class V2exUrlRouter {
   }
 
   static pathFromUrl(rawUrl: string): string {
+    const path = V2exUrlRouter.normalizeFirstPartyPath(rawUrl)
+    if (!path) {
+      return ''
+    }
+    return path
+  }
+
+  static withSelectedBaseUrl(rawUrl: string, selectedBaseUrl: string): string {
+    const path = V2exUrlRouter.normalizeFirstPartyPath(rawUrl)
+    if (!path) {
+      return (rawUrl || '').trim()
+    }
+    const baseUrl = V2exUrlRouter.cleanBaseUrl(selectedBaseUrl)
+    if (!baseUrl) {
+      return path
+    }
+    return `${baseUrl}${path}`
+  }
+
+  static isFirstPartySiteUrl(rawUrl: string): boolean {
+    return V2exUrlRouter.normalizeFirstPartyPath(rawUrl).length > 0
+  }
+
+  static normalizeFirstPartyPath(rawUrl: string): string {
     const clean = (rawUrl || '').trim()
     if (!clean) {
       return ''
     }
     if (clean.startsWith('/')) {
-      return clean
+      return V2exUrlRouter.isSitePath(clean) ? clean : ''
     }
-    const match = clean.match(/^https?:\/\/(?:www\.)?v2ex\.(?:com|co)(\/[^]*)?$/i)
-    if (!match) {
+    const match = clean.match(/^https?:\/\/([^/?#]+)([^]*)?$/i)
+    if (!match || !match[1]) {
       return ''
     }
-    return match[1] || '/'
+    const host = match[1].toLowerCase()
+    if (!V2exUrlRouter.isV2exSiteHost(host)) {
+      return ''
+    }
+    const path = match[2] || '/'
+    return V2exUrlRouter.isSitePath(path) ? path : ''
+  }
+
+  private static cleanBaseUrl(baseUrl: string): string {
+    const clean = (baseUrl || '').trim()
+    if (!clean) {
+      return ''
+    }
+    return clean.endsWith('/') ? clean.slice(0, clean.length - 1) : clean
+  }
+
+  private static isV2exSiteHost(host: string): boolean {
+    if (host === 'v2ex.com' || host === 'www.v2ex.com' || host === 'v2ex.co' || host === 'www.v2ex.co') {
+      return true
+    }
+    const v2exComMirrors = [
+      'edge.v2ex.com',
+      'global.v2ex.com',
+      'fast.v2ex.com',
+      'cn.v2ex.com',
+      'us.v2ex.com',
+      'jp.v2ex.com',
+      'hk.v2ex.com',
+    ]
+    return v2exComMirrors.includes(host)
+  }
+
+  private static isSitePath(pathWithQueryAndHash: string): boolean {
+    const path = (pathWithQueryAndHash || '').trim()
+    if (!path.startsWith('/')) {
+      return false
+    }
+    if (path === '/' || path.startsWith('/?')) {
+      return true
+    }
+    const pathOnly = path.split('?')[0].split('#')[0]
+    return pathOnly === '/settings' ||
+      pathOnly === '/balance' ||
+      pathOnly === '/signin' ||
+      pathOnly === '/mission/daily' ||
+      pathOnly === '/notifications' ||
+      pathOnly === '/recent' ||
+      pathOnly === '/search' ||
+      pathOnly.startsWith('/t/') ||
+      pathOnly.startsWith('/go/') ||
+      pathOnly.startsWith('/member/')
   }
 
   private static queryValue(rawQuery: string, key: string): string {

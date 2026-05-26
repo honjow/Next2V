@@ -30,6 +30,7 @@ export type IndexDestinationFamily =
   'homeNodeSettings' |
   'readingSettings' |
   'networkProxySettings' |
+  'domainSettings' |
   'account' |
   'accountDetail' |
   'accountWebView' |
@@ -71,6 +72,7 @@ export class IndexRouteCoordinator {
     'HomeNodeSettings': 'homeNodeSettings',
     'ReadingSettings': 'readingSettings',
     'NetworkProxySettings': 'networkProxySettings',
+    'DomainSettings': 'domainSettings',
     'Account': 'account',
     'AccountDetail': 'accountDetail',
     'AccountWebView': 'accountWebView',
@@ -102,6 +104,7 @@ export class IndexRouteCoordinator {
       'homeNodeSettings': AppStrings.R_NAV_HOME_NODES,
       'readingSettings': AppStrings.R_NAV_READING,
       'networkProxySettings': AppStrings.R_NAV_NETWORK_PROXY,
+      'domainSettings': AppStrings.R_API_DOMAIN,
       'account': AppStrings.R_ACCOUNT_MANAGEMENT,
       'accountDetail': AppStrings.R_NAV_ACCOUNT,
       'accountWebView': '',
@@ -129,6 +132,7 @@ export class IndexRouteCoordinator {
     'homeNodeSettings': true,
     'readingSettings': true,
     'networkProxySettings': true,
+    'domainSettings': true,
     'account': true,
     'accountDetail': true,
     'accountWebView': false,

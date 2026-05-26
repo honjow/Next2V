@@ -25,6 +25,7 @@ import type {
   V2exTopicWebRepliesPage,
 } from './V2exTopicWebRepliesClient'
 import { HtmlEntityUtils } from '../utils/HtmlEntityUtils'
+import { V2exUrlRouter } from '../utils/V2exUrlRouter'
 import type {
   V2exTopic,
   V2exReply,
@@ -1587,10 +1588,14 @@ export class ApiService {
     if (!topic) {
       return topic
     }
+    // V2EX API payloads may keep canonical www URLs; selected site origin must
+    // propagate to app-owned share/open/copy flows, not only network requests.
+    topic.url = V2exUrlRouter.withSelectedBaseUrl(topic.url, HttpClient.getInstance().getBaseUrl())
     topic.title = HtmlEntityUtils.decode(topic.title)
     topic.content = HtmlEntityUtils.decode(topic.content)
     topic.content_rendered = HtmlEntityUtils.decode(topic.content_rendered)
     if (topic.node) {
+      topic.node.url = V2exUrlRouter.withSelectedBaseUrl(topic.node.url, HttpClient.getInstance().getBaseUrl())
       topic.node.title = HtmlEntityUtils.decode(topic.node.title)
       topic.node.title_alternative = HtmlEntityUtils.decode(topic.node.title_alternative)
       topic.node.header = HtmlEntityUtils.decode(topic.node.header || '')

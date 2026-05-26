@@ -6,6 +6,7 @@ import {
   ReplyCardStyleSettings,
   ReplyDisplaySettings,
   ThemeSettings,
+  ApiDomainSettings,
 } from 'shared'
 
 export interface SettingsOption {
@@ -145,12 +146,6 @@ export class SettingsPageCoordinator {
     return AppStrings.R_FOLLOW_OPERATION
   }
 
-  static apiDomainOptions(): SettingsOption[] {
-    return [
-      { label: 'v2ex.com', value: 'false' },
-      { label: 'v2ex.co', value: 'true' },
-    ]
-  }
 
   static base64DecodeModeLabel(mode: string): ResourceStr {
     if (mode === ReadingSettings.BASE64_MODE_OFF) {
@@ -162,8 +157,8 @@ export class SettingsPageCoordinator {
     return AppStrings.R_TAP_TO_VIEW
   }
 
-  static apiDomainLabel(useCoDomain: boolean): string {
-    return useCoDomain ? 'v2ex.co' : 'v2ex.com'
+  static apiDomainLabel(baseUrl: string): string {
+    return ApiDomainSettings.normalizeBaseUrl(baseUrl).replace(/^https:\/\//, '')
   }
 
 }

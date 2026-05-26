@@ -79,6 +79,12 @@ export class AccountSessionCoordinator {
     console.info('AccountSessionCoordinator: switchToAccount id=' + record.id +
       ' username=' + record.username + ' hasSessionSnapshot=' + (record.cookieSnapshot.length > 0))
 
+    // When switching accounts, the stored baseUrl in AccountRecord must be applied
+    // to HttpClient BEFORE restoring cookies. An account logged in on cn.v2ex.com
+    // has cookies that are only meaningful for cn.v2ex.com. Setting the baseUrl first
+    // ensures CookieJarSettings.saveForBaseUrl targets the correct domain slot.
+    HttpClient.getInstance().setBaseUrl(record.baseUrl)
+
     // 1. Apply cookie to CookieJarSettings
     if (record.cookieSnapshot) {
       await CookieJarSettings.saveForBaseUrl(context, record.baseUrl, record.cookieSnapshot)
@@ -215,6 +221,10 @@ export class AccountSessionCoordinator {
 
     console.info('AccountSessionCoordinator: restoreActiveAccount restoring id=' + record.id +
       ' username=' + record.username + ' hasSessionSnapshot=' + (record.cookieSnapshot.length > 0))
+
+    // Apply the account domain before cookie restore so the runtime namespace matches
+    // the account record that owns this session snapshot.
+    HttpClient.getInstance().setBaseUrl(record.baseUrl)
 
     // Apply cookie — but DON'T double-restore if CookieJarSettings already loaded
     // We directly apply the snapshot from AccountStore into the runtime
