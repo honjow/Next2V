@@ -20,6 +20,12 @@ User product decisions are hard constraints, not suggestions. Unless the user ex
 
 When validating a hypothesis, keep test scaffolding isolated and temporary. Fake network requests, artificial delays, mocked services, diagnostic UI, or instrumentation must be removed before final implementation unless the user explicitly asks to keep them. Do not treat evidence gathered under a changed UI/component path as proof for the preserved UI path.
 
+## Code Comment Intent
+
+Comments should document why a non-obvious decision exists, not restate what the code mechanically does. Add or preserve concise rationale comments for product constraints, platform quirks, state-machine invariants, rollback/atomicity boundaries, security/privacy exclusions, destructive-write safeguards, and any implementation that looks indirect because it preserves user-visible semantics.
+
+Avoid decorative comments that paraphrase identifiers or obvious control flow. If a future maintainer could safely remove or "simplify" the code without knowing the hidden reason, the reason belongs in a comment near the invariant or branch.
+
 ## Worktree Signing Preflight
 
 Signing/profile material lookup must be anchored to the real user home, not to a Kanban/profile worker's sandbox `HOME`. For V2Next the stable material root is `/home/gamer/.config/harmony/debug-signing` unless `V2NEXT_REAL_HOME` is explicitly changed for a real account-home migration.
