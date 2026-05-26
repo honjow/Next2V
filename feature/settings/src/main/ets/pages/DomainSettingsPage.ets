@@ -30,13 +30,13 @@ export struct DomainSettingsPage {
     Column() {
       SecondaryListScaffold({ includeKeyboardPadding: true }) {
         ListItem() {
-          SettingsSectionHeader({ title: '内置域名' })
+          SettingsSectionHeader({ title: 'V2EX 站点' })
         }
         ListItem() {
           this.PresetSection()
         }
         ListItem() {
-          SettingsSectionHeader({ title: 'Custom Domain' })
+          SettingsSectionHeader({ title: '自定义站点域名' })
         }
         ListItem() {
           this.CustomDomainSection()
@@ -148,10 +148,10 @@ export struct DomainSettingsPage {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     ApiDomainSettings.save(context, normalized)
       .then(() => {
-        promptAction.openToast({ message: 'API 域名已切换，请按需重新登录' }).catch((_error: Error) => {})
+        promptAction.openToast({ message: 'V2EX 站点已切换，请按需重新登录' }).catch((_error: Error) => {})
       })
       .catch((error: Error) => {
-        console.error('save api domain failed: ' + error.message)
+        console.error('save V2EX site failed: ' + error.message)
         promptAction.openToast({ message: '保存失败' }).catch((_toastError: Error) => {})
       })
   }

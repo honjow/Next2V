@@ -2,7 +2,7 @@
 /**
  * V2EX domain selection contract.
  *
- * Verifies that API domain configuration is string/baseUrl based, preserves
+ * Verifies that V2EX site configuration is string/baseUrl based, preserves
  * cookie ownership per exact baseUrl, exposes preset/custom settings UI, and
  * keeps proxy tests using the selected base URL.
  */
@@ -30,6 +30,14 @@ const sharedIndex = read('shared/src/main/ets/Index.ets')
 const settingsIndex = read('feature/settings/src/main/ets/Index.ets')
 const entryIndex = read('entry/src/main/ets/pages/Index.ets')
 const routeCoordinator = read('entry/src/main/ets/model/IndexRouteCoordinator.ets')
+const stringMap = read('shared/src/main/ets/i18n/StringMap.ets')
+const resourceStrings = [
+  'entry/src/main/resources/base/element/string.json',
+  'entry/src/main/resources/en_US/element/string.json',
+  'entry/src/main/resources/zh_CN/element/string.json',
+  'entry/src/main/resources/zh_HK/element/string.json',
+  'entry/src/main/resources/zh_TW/element/string.json',
+].map(read).join('\n')
 
 assert(apiConstants.includes('PRESET_DOMAINS'), 'ApiConstants must define PRESET_DOMAINS')
 for (const host of ['www', 'edge', 'global', 'fast', 'cn', 'us', 'jp', 'hk']) {
@@ -65,17 +73,25 @@ const domainPage = read('feature/settings/src/main/ets/pages/DomainSettingsPage.
 assert(domainCoordinator.includes('validateCustomDomain'), 'DomainSettingsCoordinator must validate custom domains')
 assert(domainCoordinator.includes('/api/site/info.json'), 'Custom validation must probe /api/site/info.json')
 assert(domainCoordinator.includes('https') && domainCoordinator.includes('v2ex.com'), 'Custom validation must require HTTPS and V2EX identity')
-assert(domainPage.includes('Custom Domain') || domainPage.includes('自定义域名'), 'DomainSettingsPage must expose custom domain UI')
+assert(domainPage.includes('Custom site domain') || domainPage.includes('自定义站点域名'), 'DomainSettingsPage must expose custom site domain UI')
 assert(domainPage.includes('Radio'), 'DomainSettingsPage must expose radio selection for presets')
 assert(domainPage.includes('validateCustomDomain'), 'DomainSettingsPage must wire validation action')
-assert(settingsPage.includes("pushPathByName('DomainSettings'"), 'SettingsPage API domain row must navigate to DomainSettings')
-assert(!settingsPage.includes('apiDomainMenuShown'), 'SettingsPage must remove old boolean API domain dropdown menu')
+assert(settingsPage.includes("pushPathByName('DomainSettings'"), 'SettingsPage site domain row must navigate to DomainSettings')
+assert(!settingsPage.includes('apiDomainMenuShown'), 'SettingsPage must remove old boolean site domain dropdown menu')
 
 assert(sharedIndex.includes('ApiDomainOption') && sharedIndex.includes('DomainValidationResult'), 'shared Index must export domain selection types')
 assert(settingsIndex.includes('DomainSettingsPage'), 'settings Index must export DomainSettingsPage')
 assert(entryIndex.includes('DomainSettingsPage'), 'entry Index must import/render DomainSettingsPage')
 assert(routeCoordinator.includes("'DomainSettings': 'domainSettings'"), 'IndexRouteCoordinator must register DomainSettings route')
-assert(routeCoordinator.includes('R_API_DOMAIN'), 'DomainSettings route title must use API domain title')
+assert(routeCoordinator.includes('R_API_DOMAIN'), 'DomainSettings route title must use site domain title resource')
+
+for (const [name, content] of [
+  ['DomainSettingsPage', domainPage],
+  ['StringMap', stringMap],
+  ['resource strings', resourceStrings],
+]) {
+  assert(!/API\s+domain|API\s+域名|API\s+網域/i.test(content), `${name} must not expose API-only domain wording`)
+}
 
 assert(networkProxyPage.includes('NetworkProxyRequest.testConnection(HttpClient.getInstance().getBaseUrl())'), 'Proxy connection test must use selected HttpClient baseUrl')
 assert(accountSession.includes('HttpClient.getInstance().setBaseUrl(record.baseUrl)'), 'AccountSessionCoordinator.switch/restore must apply account baseUrl before cookie save')

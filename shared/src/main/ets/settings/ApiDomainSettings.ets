@@ -20,6 +20,9 @@ export interface DomainValidationResult {
   message: string
 }
 
+// Legacy ApiDomainSettings naming is kept to avoid cross-module churn; it now
+// represents the selected V2EX base URL shared by API calls, HTML pages, cookie
+// ownership, and proxy validation rather than an API-only endpoint.
 export class ApiDomainSettings {
   private static migratedFromLegacyCoDomain: boolean = false
 
@@ -57,7 +60,7 @@ export class ApiDomainSettings {
       return ApiDomainSettings.loadFromStore(store)
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || 'Failed to read API domain settings')
+      throw new Error(e.message || 'Failed to read V2EX site settings')
     }
   }
 
@@ -96,7 +99,7 @@ export class ApiDomainSettings {
       store.flushSync()
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || 'Failed to save API domain settings')
+      throw new Error(e.message || 'Failed to save V2EX site settings')
     }
   }
 }
