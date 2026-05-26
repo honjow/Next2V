@@ -3,12 +3,17 @@ import { BackupChecksum } from './BackupChecksum'
 import { BackupLocalDataAdapter } from './BackupLocalDataAdapter'
 import { BackupPreferencesAdapter } from './BackupPreferencesAdapter'
 import { BackupValidator } from './BackupValidator'
-import type { BackupEnvelopeV1, BackupParseResult, BackupPreview, BackupRestoreResult, BackupSectionName } from './BackupTypes'
+import type { BackupDataV1, BackupEnvelopeV1, BackupParseResult, BackupPreview, BackupRestoreResult, BackupSectionName } from './BackupTypes'
 import { BACKUP_APP_ID, BACKUP_MAGIC, BACKUP_MIN_SUPPORTED_SCHEMA_VERSION, BACKUP_SCHEMA_VERSION } from './BackupTypes'
 
 export interface BackupAppMetadata {
   versionName: string
   versionCode: number
+}
+
+interface BackupRollbackSnapshot {
+  sections: BackupSectionName[]
+  data: BackupDataV1
 }
 
 export class BackupService {
@@ -64,27 +69,56 @@ export class BackupService {
     if (!validation.ok) {
       return { ok: false, restoredSections: [], failedSections: envelope.sections || [], message: validation.message }
     }
-    const restored: BackupSectionName[] = []
-    const failed: BackupSectionName[] = []
+    const rollbackSnapshot = await BackupService.createRollbackSnapshot(context)
     for (let i = 0; i < envelope.sections.length; i++) {
       const section = envelope.sections[i]
       try {
-        if (section === 'preferences' && envelope.data.preferences) {
-          await BackupPreferencesAdapter.restoreSection(context, envelope.data.preferences)
-        } else if (section === 'drafts' && envelope.data.drafts) {
-          await BackupLocalDataAdapter.restoreDrafts(context, envelope.data.drafts)
-        } else if (section === 'collections' && envelope.data.collections) {
-          await BackupLocalDataAdapter.restoreCollections(context, envelope.data.collections)
-        } else if (section === 'search' && envelope.data.search) {
-          await BackupLocalDataAdapter.restoreSearch(context, envelope.data.search)
-        } else if (section === 'notifications' && envelope.data.notifications) {
-          await BackupLocalDataAdapter.restoreNotifications(context, envelope.data.notifications)
+        await BackupService.restoreSection(context, section, envelope.data)
+      } catch (error) {
+        try {
+          await BackupService.rollbackRestore(context, rollbackSnapshot)
+        } catch (rollbackError) {
+          const e = rollbackError as Error
+          return { ok: false, restoredSections: [], failedSections: [section], message: `Backup import failed; rollback also failed: ${e.message || 'unknown error'}` }
         }
-        restored.push(section)
-      } catch (_error) {
-        failed.push(section)
+        return { ok: false, restoredSections: [], failedSections: [section], message: 'Backup import failed and local data was restored.' }
       }
     }
-    return { ok: failed.length === 0, restoredSections: restored, failedSections: failed, message: failed.length === 0 ? 'Backup import complete.' : 'Some backup sections could not be restored.' }
+    return { ok: true, restoredSections: envelope.sections, failedSections: [], message: 'Backup import complete.' }
+  }
+
+  private static async createRollbackSnapshot(context: common.UIAbilityContext): Promise<BackupRollbackSnapshot> {
+    return {
+      sections: ['preferences', 'drafts', 'collections', 'search', 'notifications'],
+      data: {
+        preferences: await BackupPreferencesAdapter.exportSection(context),
+        drafts: await BackupLocalDataAdapter.exportDrafts(context),
+        collections: await BackupLocalDataAdapter.exportCollections(context),
+        search: await BackupLocalDataAdapter.exportSearch(context),
+        notifications: await BackupLocalDataAdapter.exportNotifications(context)
+      }
+    }
+  }
+
+  private static async rollbackRestore(context: common.UIAbilityContext, snapshot: BackupRollbackSnapshot): Promise<void> {
+    for (let i = snapshot.sections.length - 1; i >= 0; i--) {
+      await BackupService.restoreSection(context, snapshot.sections[i], snapshot.data)
+    }
+  }
+
+  private static async restoreSection(context: common.UIAbilityContext, section: BackupSectionName, data: BackupDataV1): Promise<void> {
+    if (section === 'preferences' && data.preferences) {
+      await BackupPreferencesAdapter.restoreSection(context, data.preferences)
+    } else if (section === 'drafts' && data.drafts) {
+      await BackupLocalDataAdapter.restoreDrafts(context, data.drafts)
+    } else if (section === 'collections' && data.collections) {
+      await BackupLocalDataAdapter.restoreCollections(context, data.collections)
+    } else if (section === 'search' && data.search) {
+      await BackupLocalDataAdapter.restoreSearch(context, data.search)
+    } else if (section === 'notifications' && data.notifications) {
+      await BackupLocalDataAdapter.restoreNotifications(context, data.notifications)
+    } else {
+      throw new Error(`Missing backup data for ${section}`)
+    }
   }
 }

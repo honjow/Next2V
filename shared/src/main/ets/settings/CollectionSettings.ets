@@ -1,5 +1,6 @@
 import { common } from '@kit.AbilityKit'
 import { relationalStore } from '@kit.ArkData'
+import type { BackupCollectionsSection } from '../backup/BackupTypes'
 import { V2exTopic } from '../network/NetworkTypes'
 import { LocalDataStore } from '../storage/LocalDataStore'
 import {
@@ -450,6 +451,53 @@ export class CollectionSettings {
     }
   }
 
+  static async restoreBackup(context: common.UIAbilityContext, section: BackupCollectionsSection): Promise<void> {
+    try {
+      const store = await LocalDataStore.open(context)
+      await store.executeSql(SQL_CLEAR_SAVED_TOPICS)
+      await store.executeSql(SQL_CLEAR_SAVED_NODES)
+      await store.executeSql(SQL_CLEAR_VIEWED_TOPICS)
+      await store.executeSql(SQL_CLEAR_TOPIC_READ_POSITIONS)
+      await store.executeSql(SQL_CLEAR_TOPIC_READ_STATES)
+      const topics = (section.savedTopics || []) as SavedTopic[]
+      for (let i = 0; i < topics.length; i++) {
+        await CollectionSettings.upsertSavedTopic(store, topics[i])
+      }
+      const nodes = (section.savedNodes || []) as SavedNode[]
+      for (let i = 0; i < nodes.length; i++) {
+        await CollectionSettings.upsertSavedNode(store, nodes[i])
+      }
+      const viewed = (section.viewedTopics || []) as ViewedTopic[]
+      for (let i = 0; i < viewed.length; i++) {
+        await CollectionSettings.upsertViewedTopic(store, viewed[i])
+      }
+      const positions = (section.readPositions || []) as TopicReadPosition[]
+      for (let i = 0; i < positions.length; i++) {
+        await CollectionSettings.upsertTopicReadPosition(store, positions[i])
+      }
+      const states = (section.readStates || []) as TopicReadState[]
+      for (let i = 0; i < states.length; i++) {
+        await CollectionSettings.upsertTopicReadState(store, states[i])
+      }
+      await CollectionSettings.publishSavedTopicCount(store)
+      await CollectionSettings.publishSavedNodeCount(store)
+      await CollectionSettings.publishViewedTopicCount(store)
+      await CollectionSettings.syncTopicReadStates(context)
+      await CollectionSettings.loadLocalContentStats(context)
+      LocalDataPublisher.touchLocalData()
+      CollectionSettings.deleteLegacyCollectionKeysBestEffort(context, [
+        KEY_SAVED_TOPICS,
+        KEY_SAVED_NODES,
+        KEY_VIEWED_TOPICS,
+        KEY_TOPIC_READ_POSITIONS,
+        KEY_TOPIC_READ_STATES
+      ])
+    } catch (error) {
+      const e = error as Error
+      throw new Error(e.message || 'Failed to restore local collection and reading records')
+    }
+  }
+
   private static async writeSavedNodes(context: common.UIAbilityContext, nodes: SavedNode[]): Promise<void> {
     try {
       const store = await LocalDataStore.open(context)
@@ -500,6 +548,37 @@ export class CollectionSettings {
       node.savedAt || Math.floor(Date.now() / 1000)
     ]
     await store.executeSql(SQL_UPSERT_SAVED_NODE, args)
+  }
+
+  private static async upsertViewedTopic(store: relationalStore.RdbStore, topic: ViewedTopic): Promise<void> {
+    const args: relationalStore.ValueType[] = [
+      topic.id,
+      topic.title,
+      topic.nodeName,
+      topic.nodeTitle,
+      topic.username,
+      topic.avatar || '',
+      topic.memberPro || 0,
+      topic.replies || 0,
+      topic.viewedAt
+    ]
+    await store.executeSql(SQL_UPSERT_VIEWED_TOPIC, args)
+  }
+
+  private static async upsertTopicReadPosition(store: relationalStore.RdbStore, position: TopicReadPosition): Promise<void> {
+    if (position.id <= 0 || position.floor <= 0) {
+      return
+    }
+    const args: relationalStore.ValueType[] = [position.id, position.floor, position.updatedAt]
+    await store.executeSql(SQL_UPSERT_TOPIC_READ_POSITION, args)
+  }
+
+  private static async upsertTopicReadState(store: relationalStore.RdbStore, state: TopicReadState): Promise<void> {
+    if (state.id <= 0 || state.touchedAt <= 0) {
+      return
+    }
+    const args: relationalStore.ValueType[] = [state.id, state.touchedAt, state.updatedAt]
+    await store.executeSql(SQL_UPSERT_TOPIC_READ_STATE, args)
   }
 
   private static readSavedTopicsResult(resultSet: relationalStore.ResultSet): SavedTopic[] {
