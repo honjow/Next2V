@@ -365,7 +365,6 @@ export class AppStrings {
   static readonly R_ADD_NODE_COLUMN: Resource = $r('app.string.add_node_column')
   static readonly R_INVALID_NODE_NAME: Resource = $r('app.string.invalid_node_name')
   static readonly R_NODE_COLUMN_EXISTS: Resource = $r('app.string.node_column_exists')
-  static readonly R_WEB_SESSION_EXPIRED_RELOGIN: Resource = $r('app.string.web_session_expired_relogin')
   static readonly R_WEB_SESSION_VALIDATION_FAILED: Resource = $r('app.string.web_session_validation_failed')
   static readonly R_TWO_FACTOR_RELOGIN_REQUIRED: Resource = $r('app.string.two_factor_relogin_required')
   static readonly R_TWO_FACTOR_REQUIRED: Resource = $r('app.string.two_factor_required')

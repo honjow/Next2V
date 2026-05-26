@@ -929,10 +929,6 @@
       "value": "Node column already exists"
     },
     {
-      "name": "web_session_expired_relogin",
-      "value": "Web session expired, please sign in again"
-    },
-    {
       "name": "web_session_validation_failed",
       "value": "Web session validation failed"
     },

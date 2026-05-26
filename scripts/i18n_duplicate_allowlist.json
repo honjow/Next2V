@@ -1,0 +1,438 @@
+{
+  "schema_version": 1,
+  "source_audit": "../.hermes-artifacts/20260526-i18n-resource-dedupe/audit-result.json",
+  "notes": "Duplicate key sets reviewed during i18n-resource-dedupe audit. KEEP_SEMANTIC and NEEDS_REVIEW duplicates are allowed so future unreviewed equal-value groups fail the static contract; MERGE_SAFE keys are guarded via merged_keys.",
+  "merged_keys": [
+    "web_session_expired_relogin"
+  ],
+  "approved_duplicate_groups": [
+    {
+      "keys": [
+        "EntryAbility_label",
+        "app_name"
+      ],
+      "classification": "KEEP_SEMANTIC",
+      "rationale": "System-level labels. app_name = app display name, EntryAbility_label = entry ability label. Different framework purposes even though both are 'Next2V'."
+    },
+    {
+      "keys": [
+        "account_remove_label",
+        "common_remove"
+      ],
+      "classification": "KEEP_SEMANTIC",
+      "rationale": "account_remove_label = account management 'Remove' action, common_remove = generic 'Remove'. Different usage contexts."
+    },
+    {
+      "keys": [
+        "account_section",
+        "nav_account"
+      ],
+      "classification": "KEEP_SEMANTIC",
+      "rationale": "account_section = settings section header, nav_account = bottom nav tab. Different UI domains."
+    },
+    {
+      "keys": [
+        "action_favorite",
+        "notification_kind_favorite",
+        "search_source_favorite",
+        "site_favorite_action_favorite"
+      ],
+      "classification": "KEEP_SEMANTIC",
+      "rationale": "Four distinct domains: action (swipe), notification type, search filter, site favorite dialog. Different values in base/en_US (action/search/src = Favorite but search_source_favorite = Saved)."
+    },
+    {
+      "keys": [
+        "action_favorite",
+        "notification_kind_favorite",
+        "site_favorite_action_favorite"
+      ],
+      "classification": "KEEP_SEMANTIC",
+      "rationale": "Three distinct domains: action, notification, site favorite. Same value in base/en_US but different UI contexts."
+    },
+    {
+      "keys": [
+        "action_thank",
+        "notification_kind_thanks"
+      ],
+      "classification": "KEEP_SEMANTIC",
+      "rationale": "action_thank = 'Thank' action, notification_kind_thanks = 'Thanks' notification type. Different grammatical forms. Different values in base/en_US."
+    },
+    {
+      "keys": [
+        "action_unfavorite",
+        "site_favorite_action_unfavorite"
+      ],
+      "classification": "NEEDS_REVIEW",
+      "rationale": "Mirror of action_favorite/site_favorite_action_favorite. Same logic applies."
+    },
+    {
+      "keys": [
+        "api_error_auth_required",
+        "reply_login_required"
+      ],
+      "classification": "KEEP_SEMANTIC",
+      "rationale": "api_error_auth_required = API error 'Please sign in', reply_login_required = client-side 'Log in first'. Different origins and phrasing."
+    },
+    {
+      "keys": [
+        "api_error_reply_body_required",
+        "reply_content_required"
+      ],
+      "classification": "KEEP_SEMANTIC",
+      "rationale": "api_error_reply_body_required = API error for empty reply, reply_content_required = client-side validation message. Different origins. Different values in base/en_US."
+    },
+    {
+      "keys": [
+        "clear_failed",
+        "editor_clear_draft_failed",
+        "reply_clear_failed"
+      ],
+      "classification": "KEEP_SEMANTIC",
+      "rationale": "clear_failed = generic cleanup failure, editor/reply_clear_failed = draft clear failures. Different values in zh_CN (清理失败 vs 清空失败). Different error contexts."
+    },
+    {
+      "keys": [
+        "common_clear",
+        "markdown_toolbar_clear"
+      ],
+      "classification": "KEEP_SEMANTIC",
+      "rationale": "common_clear = generic 'Clear' used broadly (search, editors), markdown_toolbar_clear = markdown toolbar 'Clear' button. Different values in zh_CN (清除 vs 清). Different UI contexts."
+    },
+    {
+      "keys": [
+        "common_no_content",
+        "editor_empty_preview"
+      ],
+      "classification": "KEEP_SEMANTIC",
+      "rationale": "common_no_content = generic empty state, editor_empty_preview = editor preview empty state. Different contexts."
+    },
+    {
+      "keys": [
+        "common_node",
+        "common_nodes"
+      ],
+      "classification": "KEEP_SEMANTIC",
+      "rationale": "Singular 'Node' vs plural 'Nodes'. Different grammatical usage. Different values in base/en_US."
+    },
+    {
+      "keys": [
+        "common_save",
+        "nav_storage"
+      ],
+      "classification": "KEEP_SEMANTIC",
+      "rationale": "common_save = 'Save' action, nav_storage = 'Storage' nav tab. Completely different semantics. Different values in base/en_US (Save vs Storage)."
+    },
+    {
+      "keys": [
+        "common_save_failed",
+        "image_preview_save_failed"
+      ],
+      "classification": "KEEP_SEMANTIC",
+      "rationale": "common_save_failed = generic error used in Settings/Proxy pages; image_preview_save_failed = image-specific error in ImagePreviewPage. Different error origins and contexts."
+    },
+    {
+      "keys": [
+        "common_saved",
+        "search_source_favorite"
+      ],
+      "classification": "KEEP_SEMANTIC",
+      "rationale": "common_saved = 'Saved' toast, search_source_favorite = search source label. Different values in zh_CN (已保存 vs 收藏). Different semantics."
+    },
+    {
+      "keys": [
+        "common_topic",
+        "common_topics",
+        "theme",
+        "user_tab_topics_label"
+      ],
+      "classification": "KEEP_SEMANTIC",
+      "rationale": "4 distinct keys: common_topic='Topic' (singular), common_topics='Topics' (plural), theme='Theme' (appearance), user_tab_topics_label='Topics' (user profile tab). Different grammatical and semantic roles."
+    },
+    {
+      "keys": [
+        "common_topics",
+        "user_tab_topics_label"
+      ],
+      "classification": "KEEP_SEMANTIC",
+      "rationale": "common_topics = search filter button, user_tab_topics_label = user profile tab. Different UI contexts."
+    },
+    {
+      "keys": [
+        "default_proxy_profile_name",
+        "proxy_config",
+        "proxy_config_title"
+      ],
+      "classification": "KEEP_SEMANTIC",
+      "rationale": "default_proxy_profile_name = default profile name (data value), proxy_config = section label, proxy_config_title = page title. Different semantic roles. Also diverges in zh_HK where default_proxy_profile_name != others."
+    },
+    {
+      "keys": [
+        "discover_hot",
+        "v2ex_tab_hot"
+      ],
+      "classification": "KEEP_SEMANTIC",
+      "rationale": "discover_hot = DiscoverPage filter, v2ex_tab_hot = V2EX API tab. Different values in zh_CN (热议 vs 最热). Different contexts and API domains."
+    },
+    {
+      "keys": [
+        "discover_latest",
+        "topic_detail_tool_latest"
+      ],
+      "classification": "KEEP_SEMANTIC",
+      "rationale": "discover_latest = DiscoverPage topic mode filter, topic_detail_tool_latest = topic detail toolbar button. Different pages and contexts."
+    },
+    {
+      "keys": [
+        "discover_recent",
+        "search_source_recent"
+      ],
+      "classification": "KEEP_SEMANTIC",
+      "rationale": "discover_recent = DiscoverPage filter, search_source_recent = search result source label. Different UI features."
+    },
+    {
+      "keys": [
+        "discover_section_saved_nodes",
+        "topic_action_follow_node"
+      ],
+      "classification": "KEEP_SEMANTIC",
+      "rationale": "discover_section_saved_nodes = 'Followed nodes' section title, topic_action_follow_node = 'Follow node' action. Different semantics. Different values in base/en_US."
+    },
+    {
+      "keys": [
+        "editor_clear_draft_failed",
+        "reply_clear_failed"
+      ],
+      "classification": "NEEDS_REVIEW",
+      "rationale": "Both = 'Clear draft failed' (清空失败) in all locales (full parity). Editor vs reply composer — different UI entry points but same action semantics. Could merge to single key like clear_draft_failed. However, editor/reply have separate async workflows and could diverge later."
+    },
+    {
+      "keys": [
+        "editor_clear_draft_title",
+        "reply_clear_draft_title"
+      ],
+      "classification": "KEEP_SEMANTIC",
+      "rationale": "editor_clear_draft_title = topic editor clear draft, reply_clear_draft_title = reply editor clear draft. Different UI domains."
+    },
+    {
+      "keys": [
+        "editor_submit",
+        "reply_submit"
+      ],
+      "classification": "KEEP_SEMANTIC",
+      "rationale": "editor_submit = TopicEditorPage submit, reply_submit = ReplyEditorPage/ReplyComposerSheet submit. Different composer contexts."
+    },
+    {
+      "keys": [
+        "followed",
+        "search_source_followed"
+      ],
+      "classification": "KEEP_SEMANTIC",
+      "rationale": "followed = toast 'Followed', search_source_followed = search filter label. Different values in zh_CN (已关注 vs 关注). Different UI contexts."
+    },
+    {
+      "keys": [
+        "ignored_topics",
+        "topic_action_ignore_topic"
+      ],
+      "classification": "KEEP_SEMANTIC",
+      "rationale": "ignored_topics = 'Ignored topics' page title, topic_action_ignore_topic = 'Ignore topic' action. Different semantics. Different values in base/en_US."
+    },
+    {
+      "keys": [
+        "login_action",
+        "notification_go_login"
+      ],
+      "classification": "KEEP_SEMANTIC",
+      "rationale": "login_action = 'Log in' action, notification_go_login = 'Go login' prompt. Similar but different phrasing nuance."
+    },
+    {
+      "keys": [
+        "login_button_label",
+        "reply_action_login"
+      ],
+      "classification": "KEEP_SEMANTIC",
+      "rationale": "login_button_label = login button text, reply_action_login = reply composer 'Login to reply' text. Different UX entry points."
+    },
+    {
+      "keys": [
+        "markdown_placeholder_image",
+        "markdown_toolbar_image"
+      ],
+      "classification": "KEEP_SEMANTIC",
+      "rationale": "markdown_placeholder_image = placeholder text in editor, markdown_toolbar_image = toolbar button label. Different values in zh_CN (图片 vs 图). Different UI roles."
+    },
+    {
+      "keys": [
+        "nav_read_later",
+        "topic_action_save_later"
+      ],
+      "classification": "KEEP_SEMANTIC",
+      "rationale": "nav_read_later = 'Read later' nav tab, topic_action_save_later = 'Save later' action. Different semantics. Different values in base/en_US."
+    },
+    {
+      "keys": [
+        "nav_reply",
+        "notification_kind_reply",
+        "reply_action_reply"
+      ],
+      "classification": "KEEP_SEMANTIC",
+      "rationale": "nav_reply = bottom nav tab, notification_kind_reply = notification type label, reply_action_reply = reply action text. Three distinct UI domains."
+    },
+    {
+      "keys": [
+        "nav_reply",
+        "notification_kind_reply",
+        "reply_action_reply",
+        "user_tab_replies_label"
+      ],
+      "classification": "KEEP_SEMANTIC",
+      "rationale": "Chinese locale group: adds user_tab_replies_label (user profile tab) to the reply group. All distinct domains."
+    },
+    {
+      "keys": [
+        "node_no_topics",
+        "user_profile_no_topics"
+      ],
+      "classification": "KEEP_SEMANTIC",
+      "rationale": "node_no_topics = empty state in node page, user_profile_no_topics = empty state in user profile. Different pages."
+    },
+    {
+      "keys": [
+        "node_picker_search_placeholder",
+        "search_discover_nodes_placeholder"
+      ],
+      "classification": "KEEP_SEMANTIC",
+      "rationale": "node_picker_search_placeholder = NodePickerComponents TextInput placeholder, search_discover_nodes_placeholder = IndexTitleBar search field placeholder. Different input contexts."
+    },
+    {
+      "keys": [
+        "node_topics_count",
+        "search_N_topics"
+      ],
+      "classification": "KEEP_SEMANTIC",
+      "rationale": "node_topics_count = node page topic count format, search_N_topics = search result count format. Different values in zh_CN ({0} 个主题 vs {0} 主题). Different formats."
+    },
+    {
+      "keys": [
+        "notification_go_login",
+        "reply_action_login"
+      ],
+      "classification": "KEEP_SEMANTIC",
+      "rationale": "notification_go_login = notification prompt, reply_action_login = reply composer login action. Different UX origin."
+    },
+    {
+      "keys": [
+        "notification_kind_follow",
+        "search_source_followed"
+      ],
+      "classification": "KEEP_SEMANTIC",
+      "rationale": "notification type vs search filter. Different contexts."
+    },
+    {
+      "keys": [
+        "notification_kind_follow",
+        "search_source_followed",
+        "user_action_follow"
+      ],
+      "classification": "KEEP_SEMANTIC",
+      "rationale": "Three distinct contexts: notification type, search filter, follow action."
+    },
+    {
+      "keys": [
+        "notification_kind_follow",
+        "user_action_follow"
+      ],
+      "classification": "KEEP_SEMANTIC",
+      "rationale": "notification_kind_follow = notification type, user_action_follow = follow action. Different UI contexts."
+    },
+    {
+      "keys": [
+        "notification_kind_notification",
+        "tab_notifications"
+      ],
+      "classification": "KEEP_SEMANTIC",
+      "rationale": "notification_kind_notification = notification type label, tab_notifications = bottom tab. Different domains. Different values in base/en_US (Notification vs Notifications)."
+    },
+    {
+      "keys": [
+        "original",
+        "reply_display_mode_origin"
+      ],
+      "classification": "KEEP_SEMANTIC",
+      "rationale": "original = theme/layout label, reply_display_mode_origin = reply display mode selector. Different UI features."
+    },
+    {
+      "keys": [
+        "proxy_config",
+        "proxy_config_title"
+      ],
+      "classification": "NEEDS_REVIEW",
+      "rationale": "Both = 'Proxy configuration' (代理配置/代理設定) in all locales. proxy_config used as section label, proxy_config_title as page title. Same value but different UI roles (label vs title). Could merge if the distinction is unnecessary."
+    },
+    {
+      "keys": [
+        "reply_count_format",
+        "search_N_replies",
+        "topic_replies_count"
+      ],
+      "classification": "KEEP_SEMANTIC",
+      "rationale": "Three different reply count formats: reply_count_format for topic detail, search_N_replies for search results, topic_replies_count for topic list. Different values in zh_CN (共 {0} 条回复 vs {0} 回复). Different formats."
+    },
+    {
+      "keys": [
+        "reply_ignore_reply",
+        "reply_ignore_title"
+      ],
+      "classification": "KEEP_SEMANTIC",
+      "rationale": "reply_ignore_title = dialog title, reply_ignore_reply = dialog body text. Different dialog roles."
+    },
+    {
+      "keys": [
+        "reply_report_reply",
+        "reply_report_title"
+      ],
+      "classification": "KEEP_SEMANTIC",
+      "rationale": "reply_report_title = dialog title, reply_report_reply = dialog body text. Different dialog roles."
+    },
+    {
+      "keys": [
+        "reply_thread_relation_label_format",
+        "user_tab_replies_count"
+      ],
+      "classification": "KEEP_SEMANTIC",
+      "rationale": "reply_thread_relation_label_format = reply thread 'Reply {0}', user_tab_replies_count = user profile tab 'Replies {0}'. Different format contexts. Different values in base/en_US."
+    },
+    {
+      "keys": [
+        "search_N_replies",
+        "topic_replies_count"
+      ],
+      "classification": "KEEP_SEMANTIC",
+      "rationale": "search results vs topic list. Different contexts even though same value in zh_CN/HK."
+    },
+    {
+      "keys": [
+        "search_filter_nodes_library",
+        "search_source_nodes_library"
+      ],
+      "classification": "KEEP_SEMANTIC",
+      "rationale": "search_filter_nodes_library = search mode filter button, search_source_nodes_library = search result source label. Different UI elements."
+    },
+    {
+      "keys": [
+        "settings_home",
+        "tab_home"
+      ],
+      "classification": "KEEP_SEMANTIC",
+      "rationale": "settings_home = settings page title, tab_home = bottom tab label. Different UI contexts."
+    },
+    {
+      "keys": [
+        "site_favorite_title",
+        "topic_action_site_favorite"
+      ],
+      "classification": "KEEP_SEMANTIC",
+      "rationale": "site_favorite_title = 'Site Favorite' dialog title, topic_action_site_favorite = 'Site favorite' action. Different UI roles. Different casing in base/en_US."
+    }
+  ]
+}

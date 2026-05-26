@@ -79,7 +79,7 @@ export struct AccountWebViewPage {
   @Builder
   LoggedOutBar() {
     Row() {
-      Text(AppStrings.text(AppStrings.R_WEB_SESSION_EXPIRED_RELOGIN, 'Not logged in'))
+      Text(AppStrings.text(AppStrings.R_API_ERROR_WEB_SESSION_EXPIRED, 'Not logged in'))
         .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
         .fontColor(Color.Red)
         .maxLines(1)
@@ -117,7 +117,7 @@ export struct AccountWebViewPage {
   private loadTargetUrl(): void {
     const cookie = CookieJarSettings.getCurrentCookie()
     if (!cookie) {
-      this.errorMessage = AppStrings.text(AppStrings.R_WEB_SESSION_EXPIRED_RELOGIN, 'Please log in first to view this page')
+      this.errorMessage = AppStrings.text(AppStrings.R_API_ERROR_WEB_SESSION_EXPIRED, 'Please log in first to view this page')
       return
     }
 

@@ -883,7 +883,7 @@ export struct NotificationPage {
   }
 
   private handleExpiredCookieSession(message: string): void {
-    if (!message || (message.indexOf('Web session expired') < 0 && message.indexOf(AppStrings.text(AppStrings.R_WEB_SESSION_EXPIRED_RELOGIN, 'Web session expired, please log in again')) < 0)) {
+    if (!message || (message.indexOf('Web session expired') < 0 && message.indexOf(AppStrings.text(AppStrings.R_API_ERROR_WEB_SESSION_EXPIRED, 'Web session expired, please log in again')) < 0)) {
       return
     }
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext

@@ -929,10 +929,6 @@
       "value": "節點欄位已存在"
     },
     {
-      "name": "web_session_expired_relogin",
-      "value": "Web 工作階段已失效，請重新登入"
-    },
-    {
       "name": "web_session_validation_failed",
       "value": "Web 工作階段驗證失敗"
     },

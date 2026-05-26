@@ -929,10 +929,6 @@
       "value": "节点栏目已存在"
     },
     {
-      "name": "web_session_expired_relogin",
-      "value": "Web 会话已失效，请重新登录"
-    },
-    {
       "name": "web_session_validation_failed",
       "value": "Web 会话验证失败"
     },
