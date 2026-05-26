@@ -2623,6 +2623,66 @@
     {
       "name": "account_balance_bronze",
       "value": "Bronze"
+    },
+    {
+      "name": "backup_section",
+      "value": "Backup"
+    },
+    {
+      "name": "export_backup",
+      "value": "Export backup"
+    },
+    {
+      "name": "import_backup",
+      "value": "Import backup"
+    },
+    {
+      "name": "backup_export_subtitle",
+      "value": "Back up settings and local data; login/session data is excluded."
+    },
+    {
+      "name": "backup_import_subtitle",
+      "value": "Preview backup contents before replacing local data."
+    },
+    {
+      "name": "backup_export_message",
+      "value": "Export settings and local data to a V2Next backup file. Login state, cookies, tokens, and offline cache are excluded. Continue?"
+    },
+    {
+      "name": "backup_import_preview_message",
+      "value": "Backup from {0}, app {1} ({2}). Sections: {3}. Login state, cookies, and tokens will not be changed."
+    },
+    {
+      "name": "backup_import_confirm_message",
+      "value": "This will overwrite supported local settings, drafts, read-later/follow/history/search data from the backup. Login state is kept. Continue?"
+    },
+    {
+      "name": "backup_exported",
+      "value": "Backup exported."
+    },
+    {
+      "name": "backup_import_complete",
+      "value": "Backup import complete."
+    },
+    {
+      "name": "backup_error_invalid",
+      "value": "This file is not a V2Next backup."
+    },
+    {
+      "name": "backup_error_foreign",
+      "value": "This file is not a V2Next backup."
+    },
+    {
+      "name": "backup_error_version",
+      "value": "Unsupported backup version."
+    },
+    {
+      "name": "backup_error_checksum",
+      "value": "Backup is damaged or failed checksum validation."
+    },
+    {
+      "name": "backup_error_too_large",
+      "value": "Backup file is too large."
     }
   ]
 }

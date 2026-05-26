@@ -2623,6 +2623,66 @@
     {
       "name": "account_balance_bronze",
       "value": "銅幣"
+    },
+    {
+      "name": "backup_section",
+      "value": "備份"
+    },
+    {
+      "name": "export_backup",
+      "value": "匯出備份"
+    },
+    {
+      "name": "import_backup",
+      "value": "匯入備份"
+    },
+    {
+      "name": "backup_export_subtitle",
+      "value": "備份設定和本機資料；不包含登入/工作階段資料。"
+    },
+    {
+      "name": "backup_import_subtitle",
+      "value": "先預覽備份內容，再取代本機資料。"
+    },
+    {
+      "name": "backup_export_message",
+      "value": "將設定和本機資料匯出為 V2Next 備份檔。不會包含登入狀態、Cookie、權杖和離線快取。繼續嗎？"
+    },
+    {
+      "name": "backup_import_preview_message",
+      "value": "備份時間 {0}，應用程式 {1}（{2}）。包含：{3}。登入狀態、Cookie 和權杖不會被更改。"
+    },
+    {
+      "name": "backup_import_confirm_message",
+      "value": "這會用備份覆寫支援的本機設定、草稿、稍後讀/關注/歷史/搜尋資料。登入狀態會保留。繼續嗎？"
+    },
+    {
+      "name": "backup_exported",
+      "value": "備份已匯出。"
+    },
+    {
+      "name": "backup_import_complete",
+      "value": "備份匯入完成。"
+    },
+    {
+      "name": "backup_error_invalid",
+      "value": "這不是 V2Next 備份檔。"
+    },
+    {
+      "name": "backup_error_foreign",
+      "value": "這不是 V2Next 備份檔。"
+    },
+    {
+      "name": "backup_error_version",
+      "value": "不支援的備份版本。"
+    },
+    {
+      "name": "backup_error_checksum",
+      "value": "備份已損壞或校驗失敗。"
+    },
+    {
+      "name": "backup_error_too_large",
+      "value": "備份檔過大。"
     }
   ]
 }

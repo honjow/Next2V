@@ -118,6 +118,30 @@ export class DraftSettings {
     }
   }
 
+  static async exportReplyDraftsForBackup(context: common.UIAbilityContext): Promise<ReplyDraft[]> {
+    return await DraftSettings.loadAllReplyDrafts(context)
+  }
+
+  static async restoreBackup(context: common.UIAbilityContext, replyDrafts: ReplyDraft[], topicDraft: TopicDraft | null): Promise<void> {
+    const cleanReplies = DraftSettings.parseReplyDrafts(replyDrafts || [])
+    const cleanTopic = DraftSettings.parseTopicDraft(topicDraft)
+    try {
+      await withPreferencesStore<void>(context, STORE_NAME, (store) => {
+        if (cleanTopic) {
+          writeJsonValue<TopicDraft>(store, KEY_TOPIC_DRAFT, cleanTopic, false)
+        } else {
+          store.deleteSync(KEY_TOPIC_DRAFT)
+        }
+        writeJsonValue<ReplyDraft[]>(store, KEY_REPLY_DRAFTS, cleanReplies, false)
+        store.flushSync()
+      })
+      DraftSettings.touchLocalData()
+    } catch (error) {
+      const e = error as Error
+      throw new Error(e.message || 'Failed to restore drafts')
+    }
+  }
+
   private static async loadAllReplyDrafts(context: common.UIAbilityContext): Promise<ReplyDraft[]> {
     try {
       return await withPreferencesStore<ReplyDraft[]>(context, STORE_NAME, (store) => {

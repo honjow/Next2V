@@ -74,6 +74,40 @@ export class NotificationSettings {
     }
   }
 
+  static async exportCacheForBackup(context: common.UIAbilityContext): Promise<NotificationCacheSnapshot> {
+    try {
+      const store = await preferences.getPreferences(context, STORE_NAME)
+      const raw = store.getSync(KEY_CACHE, '') as string
+      const snapshot = NotificationSettings.parseCache(raw)
+      return snapshot || NotificationSettings.empty('')
+    } catch (error) {
+      const e = error as Error
+      throw new Error(e.message || 'Failed to export notification cache')
+    }
+  }
+
+  static async restoreCacheFromBackup(context: common.UIAbilityContext, snapshot: NotificationCacheSnapshot): Promise<void> {
+    try {
+      const normalized: NotificationCacheSnapshot = {
+        ownerKey: snapshot.ownerKey || '',
+        items: NotificationSettings.normalizeItems(snapshot.items),
+        page: snapshot.page > 0 ? snapshot.page : 1,
+        hasMore: snapshot.hasMore === true,
+        updatedAt: snapshot.updatedAt > 0 ? snapshot.updatedAt : 0
+      }
+      const store = await preferences.getPreferences(context, STORE_NAME)
+      if (!normalized.ownerKey || normalized.items.length === 0) {
+        store.deleteSync(KEY_CACHE)
+      } else {
+        store.putSync(KEY_CACHE, JSON.stringify(normalized))
+      }
+      store.flushSync()
+    } catch (error) {
+      const e = error as Error
+      throw new Error(e.message || 'Failed to restore notification cache')
+    }
+  }
+
   private static empty(ownerKey: string): NotificationCacheSnapshot {
     return {
       ownerKey: ownerKey,

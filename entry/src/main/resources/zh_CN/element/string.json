@@ -2623,6 +2623,66 @@
     {
       "name": "account_balance_bronze",
       "value": "铜币"
+    },
+    {
+      "name": "backup_section",
+      "value": "备份"
+    },
+    {
+      "name": "export_backup",
+      "value": "导出备份"
+    },
+    {
+      "name": "import_backup",
+      "value": "导入备份"
+    },
+    {
+      "name": "backup_export_subtitle",
+      "value": "备份设置和本地数据；不包含登录/会话数据。"
+    },
+    {
+      "name": "backup_import_subtitle",
+      "value": "先预览备份内容，再替换本地数据。"
+    },
+    {
+      "name": "backup_export_message",
+      "value": "将设置和本地数据导出为 V2Next 备份文件。不会包含登录状态、Cookie、令牌和离线缓存。继续吗？"
+    },
+    {
+      "name": "backup_import_preview_message",
+      "value": "备份时间 {0}，应用 {1}（{2}）。包含：{3}。登录状态、Cookie 和令牌不会被更改。"
+    },
+    {
+      "name": "backup_import_confirm_message",
+      "value": "这会用备份覆盖支持的本地设置、草稿、稍后读/关注/历史/搜索数据。登录状态会保留。继续吗？"
+    },
+    {
+      "name": "backup_exported",
+      "value": "备份已导出。"
+    },
+    {
+      "name": "backup_import_complete",
+      "value": "备份导入完成。"
+    },
+    {
+      "name": "backup_error_invalid",
+      "value": "这不是 V2Next 备份文件。"
+    },
+    {
+      "name": "backup_error_foreign",
+      "value": "这不是 V2Next 备份文件。"
+    },
+    {
+      "name": "backup_error_version",
+      "value": "不支持的备份版本。"
+    },
+    {
+      "name": "backup_error_checksum",
+      "value": "备份已损坏或校验失败。"
+    },
+    {
+      "name": "backup_error_too_large",
+      "value": "备份文件过大。"
     }
   ]
 }

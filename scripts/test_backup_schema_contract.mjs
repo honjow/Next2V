@@ -1,0 +1,14 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+const root = process.cwd();
+const types = fs.readFileSync(`${root}/shared/src/main/ets/backup/BackupTypes.ets`, 'utf8');
+const validator = fs.readFileSync(`${root}/shared/src/main/ets/backup/BackupValidator.ets`, 'utf8');
+const index = fs.readFileSync(`${root}/shared/src/main/ets/Index.ets`, 'utf8');
+assert.match(types, /BACKUP_MAGIC:\s*string\s*=\s*'NEXT2V_BACKUP'/);
+assert.match(types, /BACKUP_APP_ID:\s*string\s*=\s*'com\.honjow\.next2v'/);
+assert.match(types, /BACKUP_SCHEMA_VERSION:\s*number\s*=\s*1/);
+for (const section of ['preferences','drafts','collections','search','notifications']) assert.ok(types.includes(`'${section}'`), `missing section ${section}`);
+for (const word of ['magic','appId','schemaVersion','sections','checksum','MAX_BACKUP_BYTES','too_large']) assert.ok(validator.includes(word), `validator missing ${word}`);
+assert.ok(index.includes("./backup/BackupService"), 'Index exports BackupService');
+assert.ok(index.includes("./backup/BackupValidator"), 'Index exports BackupValidator');
+console.log('PASS backup schema contract');

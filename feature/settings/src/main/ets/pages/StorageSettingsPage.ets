@@ -1,7 +1,8 @@
 import { common } from '@kit.AbilityKit'
-import type { CacheDeviceQaSeedResult, CacheStats } from 'shared'
+import type { BackupEnvelopeV1, CacheDeviceQaSeedResult, CacheStats } from 'shared'
 import {
   AppStrings,
+  BackupService,
   CacheDeviceQaSeed,
   CacheSettings,
   ConciseListRow,
@@ -19,6 +20,7 @@ import {
   StorageSettingsCoordinator,
   type StorageConfirmDialogCopy,
 } from '../model/StorageSettingsCoordinator'
+import { BackupFilePickerCoordinator } from '../model/BackupFilePickerCoordinator'
 
 @Component
 export struct StorageSettingsPage {
@@ -26,6 +28,8 @@ export struct StorageSettingsPage {
   @State private cacheMessage: string = ''
   @State private seedMessage: string = ''
   @State private localDataMessage: string = ''
+  @State private backupMessage: string = ''
+  @State private pendingBackupEnvelope: BackupEnvelopeV1 | null = null
   @State private accountSeedMessage: string = ''
 
   aboutToAppear(): void {
@@ -61,6 +65,14 @@ export struct StorageSettingsPage {
           ListItem() {
             this.AccountQaSeedSection()
           }
+        }
+
+        ListItem() {
+          SettingsSectionHeader({ title: AppStrings.R_BACKUP_SECTION })
+        }
+
+        ListItem() {
+          this.BackupSection()
         }
 
         ListItem() {
@@ -105,6 +117,31 @@ export struct StorageSettingsPage {
         showChevron: false,
         action: () => {
           this.confirmClearCache()
+        }
+      })
+    }
+  }
+
+  @Builder
+  BackupSection() {
+    GroupedListSection() {
+      ConciseListRow({
+        title: AppStrings.R_EXPORT_BACKUP,
+        subtitle: this.backupMessage || AppStrings.text(AppStrings.R_BACKUP_EXPORT_SUBTITLE, 'Back up settings and local data; login/session data is excluded.'),
+        showChevron: false,
+        action: () => {
+          this.confirmExportBackup()
+        }
+      })
+
+      SettingsDivider()
+
+      ConciseListRow({
+        title: AppStrings.R_IMPORT_BACKUP,
+        subtitle: AppStrings.text(AppStrings.R_BACKUP_IMPORT_SUBTITLE, 'Preview backup contents before replacing local data.'),
+        showChevron: false,
+        action: () => {
+          this.selectImportBackup()
         }
       })
     }
@@ -327,6 +364,94 @@ export struct StorageSettingsPage {
       })
       .catch((error: Error) => {
         this.localDataMessage = StorageSettingsCoordinator.clearErrorMessage(error)
+      })
+  }
+
+  private confirmExportBackup(): void {
+    const copy: StorageConfirmDialogCopy = StorageSettingsCoordinator.backupExportDialogCopy()
+    this.getUIContext().showAlertDialog({
+      title: copy.title,
+      message: copy.message,
+      primaryButton: { value: copy.cancelValue, action: () => {} },
+      secondaryButton: {
+        value: copy.confirmValue,
+        action: () => {
+          this.exportBackup()
+        }
+      }
+    })
+  }
+
+  private exportBackup(): void {
+    BackupFilePickerCoordinator.exportBackup(this.hostContext(), { versionName: '0.6.1', versionCode: 7 })
+      .then((_uri: string) => {
+        this.backupMessage = StorageSettingsCoordinator.backupSuccessMessage(true)
+      })
+      .catch((error: Error) => {
+        this.backupMessage = StorageSettingsCoordinator.backupErrorMessage(error.message)
+      })
+  }
+
+  private selectImportBackup(): void {
+    BackupFilePickerCoordinator.selectImport(this.hostContext())
+      .then((selection) => {
+        if (!selection.parseResult.ok || !selection.parseResult.envelope) {
+          this.backupMessage = StorageSettingsCoordinator.backupErrorMessage(selection.parseResult.message)
+          return
+        }
+        this.pendingBackupEnvelope = selection.parseResult.envelope
+        const preview = BackupService.preview(selection.parseResult.envelope)
+        const copy: StorageConfirmDialogCopy = StorageSettingsCoordinator.backupImportPreviewCopy(preview)
+        this.getUIContext().showAlertDialog({
+          title: copy.title,
+          message: copy.message,
+          primaryButton: { value: copy.cancelValue, action: () => {} },
+          secondaryButton: {
+            value: copy.confirmValue,
+            action: () => {
+              this.confirmImportBackup()
+            }
+          }
+        })
+      })
+      .catch((error: Error) => {
+        this.backupMessage = StorageSettingsCoordinator.backupErrorMessage(error.message)
+      })
+  }
+
+  private confirmImportBackup(): void {
+    if (!this.pendingBackupEnvelope) {
+      return
+    }
+    const preview = BackupService.preview(this.pendingBackupEnvelope)
+    const copy: StorageConfirmDialogCopy = StorageSettingsCoordinator.backupImportConfirmDialogCopy(preview)
+    this.getUIContext().showAlertDialog({
+      title: copy.title,
+      message: copy.message,
+      primaryButton: { value: copy.cancelValue, action: () => {} },
+      secondaryButton: {
+        value: copy.confirmValue,
+        fontColor: Color.Red,
+        action: () => {
+          this.restorePendingBackup()
+        }
+      }
+    })
+  }
+
+  private restorePendingBackup(): void {
+    const envelope = this.pendingBackupEnvelope
+    if (!envelope) {
+      return
+    }
+    BackupFilePickerCoordinator.restoreSelected(this.hostContext(), envelope)
+      .then(() => {
+        this.backupMessage = StorageSettingsCoordinator.backupSuccessMessage(false)
+        this.pendingBackupEnvelope = null
+        this.loadCacheStats()
+      })
+      .catch((error: Error) => {
+        this.backupMessage = StorageSettingsCoordinator.backupErrorMessage(error.message)
       })
   }
 

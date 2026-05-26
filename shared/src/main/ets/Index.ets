@@ -105,6 +105,24 @@ export type { SearchSourceMode } from './settings/SearchSettings'
 export { NotificationSettings } from './settings/NotificationSettings'
 export type { NotificationCacheSnapshot } from './settings/NotificationSettings'
 export { LocalDataSettings } from './settings/LocalDataSettings'
+export { BackupService } from './backup/BackupService'
+export type { BackupAppMetadata } from './backup/BackupService'
+export { BackupValidator } from './backup/BackupValidator'
+export { BackupChecksum } from './backup/BackupChecksum'
+export {
+  BACKUP_MAGIC,
+  BACKUP_APP_ID,
+  BACKUP_SCHEMA_VERSION,
+  BACKUP_FILE_SUFFIX,
+  MAX_BACKUP_BYTES,
+} from './backup/BackupTypes'
+export type {
+  BackupEnvelopeV1,
+  BackupSectionName,
+  BackupPreview,
+  BackupParseResult,
+  BackupRestoreResult,
+} from './backup/BackupTypes'
 export { LocalDataStore, LOCAL_DATA_DB_NAME, LOCAL_DATA_SCHEMA_VERSION } from './storage/LocalDataStore'
 export { MotionHandStateService } from './services/MotionHandStateService'
 export type { MotionHandEdge } from './services/MotionHandStateService'

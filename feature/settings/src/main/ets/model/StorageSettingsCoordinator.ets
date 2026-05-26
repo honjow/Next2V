@@ -2,6 +2,7 @@ import { AppStrings } from 'shared'
 import type {
   CacheDeviceQaSeedResult,
   CacheStats,
+  BackupPreview,
 } from 'shared'
 import { DateUtils } from 'shared'
 
@@ -12,6 +13,7 @@ export interface StorageConfirmDialogCopy {
   confirmValue: string
 }
 
+// backup copy intentionally says login state, cookies, tokens, and overwrite before restore.
 export class StorageSettingsCoordinator {
   static cacheSubtitle(stats: CacheStats): string {
     const listCount = `${stats.topicListCount}`
@@ -74,5 +76,56 @@ export class StorageSettingsCoordinator {
 
   static seedErrorMessage(error: Error): string {
     return error.message || AppStrings.text(AppStrings.R_SEED_FAILED, 'Seed failed')
+  }
+
+  static backupExportDialogCopy(): StorageConfirmDialogCopy {
+    return {
+      title: AppStrings.text(AppStrings.R_EXPORT_BACKUP, 'Export backup'),
+      message: AppStrings.text(AppStrings.R_BACKUP_EXPORT_MESSAGE, 'Export settings and local data to a V2Next backup file. Login state, cookies, tokens, and offline cache are excluded. Continue?'),
+      cancelValue: AppStrings.text(AppStrings.R_COMMON_CANCEL, 'Cancel'),
+      confirmValue: AppStrings.text(AppStrings.R_EXPORT_BACKUP, 'Export backup'),
+    }
+  }
+
+  static backupImportPreviewCopy(preview: BackupPreview): StorageConfirmDialogCopy {
+    const sections = preview.sections.join(', ')
+    return {
+      title: AppStrings.text(AppStrings.R_IMPORT_BACKUP, 'Import backup'),
+      message: AppStrings.format(AppStrings.text(AppStrings.R_BACKUP_IMPORT_PREVIEW_MESSAGE, 'Backup from {0}, app {1} ({2}). Sections: {3}. Login state, cookies, and tokens will not be changed.'), [preview.createdAt, preview.appVersion, `${preview.appVersionCode}`, sections]),
+      cancelValue: AppStrings.text(AppStrings.R_COMMON_CANCEL, 'Cancel'),
+      confirmValue: AppStrings.text(AppStrings.R_COMMON_RESTORE, 'Restore'),
+    }
+  }
+
+  static backupImportConfirmDialogCopy(_preview: BackupPreview): StorageConfirmDialogCopy {
+    return {
+      title: AppStrings.text(AppStrings.R_IMPORT_BACKUP, 'Import backup'),
+      message: AppStrings.text(AppStrings.R_BACKUP_IMPORT_CONFIRM_MESSAGE, 'This will overwrite supported local settings, drafts, read-later/follow/history/search data from the backup. Login state is kept. Continue?'),
+      cancelValue: AppStrings.text(AppStrings.R_COMMON_CANCEL, 'Cancel'),
+      confirmValue: AppStrings.text(AppStrings.R_COMMON_RESTORE, 'Restore'),
+    }
+  }
+
+  static backupSuccessMessage(exported: boolean): string {
+    if (exported) {
+      return AppStrings.text(AppStrings.R_BACKUP_EXPORTED, 'Backup exported.')
+    }
+    return AppStrings.text(AppStrings.R_BACKUP_IMPORT_COMPLETE, 'Backup import complete.')
+  }
+
+  static backupErrorMessage(errorCode: string): string {
+    if (errorCode === 'foreign_backup') {
+      return AppStrings.text(AppStrings.R_BACKUP_ERROR_FOREIGN, 'This file is not a V2Next backup.')
+    }
+    if (errorCode === 'unsupported_version') {
+      return AppStrings.text(AppStrings.R_BACKUP_ERROR_VERSION, 'Unsupported backup version.')
+    }
+    if (errorCode === 'bad_checksum') {
+      return AppStrings.text(AppStrings.R_BACKUP_ERROR_CHECKSUM, 'Backup is damaged or failed checksum validation.')
+    }
+    if (errorCode === 'too_large') {
+      return AppStrings.text(AppStrings.R_BACKUP_ERROR_TOO_LARGE, 'Backup file is too large.')
+    }
+    return errorCode || AppStrings.text(AppStrings.R_BACKUP_ERROR_INVALID, 'This file is not a V2Next backup.')
   }
 }

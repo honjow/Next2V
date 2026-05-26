@@ -1,0 +1,77 @@
+import { common } from '@kit.AbilityKit'
+import type { BackupPreferencesSection } from './BackupTypes'
+import { ApiDomainSettings } from '../settings/ApiDomainSettings'
+import { AutoDailyCheckinSettings } from '../settings/AutoDailyCheckinSettings'
+import { FeedTabSettings } from '../settings/FeedTabSettings'
+import { LanguageSettings } from '../settings/LanguageSettings'
+import { MediaSettings } from '../settings/MediaSettings'
+import { ReadingSettings } from '../settings/ReadingSettings'
+import { ReplyActionAlignmentSettings } from '../settings/ReplyActionAlignmentSettings'
+import { ReplyCardStyleSettings } from '../settings/ReplyCardStyleSettings'
+import { ReplyDisplaySettings } from '../settings/ReplyDisplaySettings'
+import { ThemeSettings } from '../settings/ThemeSettings'
+
+export class BackupPreferencesAdapter {
+  static async exportSection(context: common.UIAbilityContext): Promise<BackupPreferencesSection> {
+    const language = await LanguageSettings.load(context)
+    const theme = await ThemeSettings.load(context)
+    const media = await MediaSettings.load(context)
+    const reading = await ReadingSettings.load(context)
+    const checkin = await AutoDailyCheckinSettings.load(context)
+    return {
+      apiDomain: { useCoDomain: await ApiDomainSettings.load(context) },
+      language: { mode: language.mode },
+      theme: { mode: theme.mode },
+      media: { autoLoadImages: media.autoLoadImages, onlyLoadImagesOnWifi: media.onlyLoadImagesOnWifi },
+      reading: {
+        textScale: reading.textScale,
+        lineHeight: reading.lineHeight,
+        density: reading.density,
+        restorePosition: reading.restorePosition,
+        base64DecodeMode: reading.base64DecodeMode
+      },
+      reply: {
+        displayMode: await ReplyDisplaySettings.load(context),
+        cardStyle: await ReplyCardStyleSettings.load(context),
+        actionAlignmentMode: await ReplyActionAlignmentSettings.load(context)
+      },
+      feedTabs: { visibleKeys: await FeedTabSettings.load(context) },
+      autoDailyCheckin: { enabled: checkin.enabled }
+    }
+  }
+
+  static async restoreSection(context: common.UIAbilityContext, section: BackupPreferencesSection): Promise<void> {
+    if (section.apiDomain && typeof section.apiDomain.useCoDomain === 'boolean') {
+      await ApiDomainSettings.save(context, section.apiDomain.useCoDomain)
+    }
+    if (section.language && section.language.mode) {
+      await LanguageSettings.save(context, section.language.mode)
+    }
+    if (section.theme && section.theme.mode) {
+      await ThemeSettings.save(context, section.theme.mode)
+    }
+    if (section.media) {
+      await MediaSettings.save(context, section.media.autoLoadImages === true, section.media.onlyLoadImagesOnWifi === true)
+    }
+    if (section.reading) {
+      await ReadingSettings.save(context, Number(section.reading.textScale || 1), Number(section.reading.lineHeight || 1.55), String(section.reading.density || 'comfortable'))
+      await ReadingSettings.saveRestorePosition(context, section.reading.restorePosition === true)
+      await ReadingSettings.saveBase64DecodeMode(context, String(section.reading.base64DecodeMode || 'off'))
+    }
+    if (section.reply) {
+      await ReplyDisplaySettings.save(context, section.reply.displayMode || '')
+      await ReplyCardStyleSettings.save(context, section.reply.cardStyle || '')
+      await ReplyActionAlignmentSettings.save(context, section.reply.actionAlignmentMode || '')
+    }
+    if (section.feedTabs && section.feedTabs.visibleKeys) {
+      await FeedTabSettings.save(context, section.feedTabs.visibleKeys)
+    }
+    if (section.autoDailyCheckin && typeof section.autoDailyCheckin.enabled === 'boolean') {
+      await AutoDailyCheckinSettings.save(context, section.autoDailyCheckin.enabled)
+    }
+  }
+
+  static count(section: BackupPreferencesSection): number {
+    return Object.keys(section).length
+  }
+}

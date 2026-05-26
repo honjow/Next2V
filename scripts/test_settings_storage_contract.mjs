@@ -193,6 +193,7 @@ const expectedStorageKeys = [
   ['PENDING_V2EX_URL', 'pendingV2exUrl'],
   ['PENDING_SEARCH_QUERY', 'pendingSearchQuery'],
   ['DISCOVER_NODE_KEYWORD', 'discoverNodeKeyword'],
+  ['ACCOUNT_WEB_VIEW_URL', 'accountWebViewUrl'],
 ]
 assert(
   orderedStorageKeys.length === expectedStorageKeys.length,
