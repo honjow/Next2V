@@ -5,6 +5,7 @@ import { NetworkProxyRequest } from './NetworkProxyRequest'
 import { ApiConstants } from '../constants/ApiConstants'
 import { StorageKeys } from '../constants/StorageKeys'
 import { HtmlEntityUtils } from '../utils/HtmlEntityUtils'
+import { V2exUrlRouter } from '../utils/V2exUrlRouter'
 import type { V2exNode, V2exReply, V2exTopic } from './NetworkTypes'
 import { ApiErrors } from './ApiError'
 
@@ -221,6 +222,9 @@ export class ApiV2Service {
     if (!topic) {
       return topic
     }
+    // V2EX API payloads may keep canonical www URLs; selected site origin must
+    // propagate to app-owned share/open/copy flows, not only network requests.
+    topic.url = V2exUrlRouter.withSelectedBaseUrl(topic.url, HttpClient.getInstance().getBaseUrl())
     topic.title = HtmlEntityUtils.decode(topic.title)
     topic.content = HtmlEntityUtils.decode(topic.content)
     topic.content_rendered = HtmlEntityUtils.decode(topic.content_rendered)
@@ -253,6 +257,7 @@ export class ApiV2Service {
     if (!node) {
       return node
     }
+    node.url = V2exUrlRouter.withSelectedBaseUrl(node.url, HttpClient.getInstance().getBaseUrl())
     node.title = HtmlEntityUtils.decode(node.title)
     node.title_alternative = HtmlEntityUtils.decode(node.title_alternative)
     node.header = HtmlEntityUtils.decode(node.header || '')

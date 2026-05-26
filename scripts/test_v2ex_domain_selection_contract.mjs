@@ -26,6 +26,13 @@ const settingsSave = read('feature/settings/src/main/ets/model/SettingsSaveCoord
 const networkProxyPage = read('feature/settings/src/main/ets/pages/NetworkProxySettingsPage.ets')
 const accountSession = read('shared/src/main/ets/settings/AccountSessionCoordinator.ets')
 const imageUtils = read('shared/src/main/ets/utils/ImageUtils.ets')
+const apiService = read('shared/src/main/ets/network/ApiService.ets')
+const apiV2Service = read('shared/src/main/ets/network/ApiV2Service.ets')
+const v2exUrlRouter = read('shared/src/main/ets/utils/V2exUrlRouter.ets')
+const topicDetailPage = read('feature/detail/src/main/ets/pages/TopicDetailPage.ets')
+const webLoginPage = read('entry/src/main/ets/pages/V2exWebLoginPage.ets')
+const accountDetailPage = read('entry/src/main/ets/pages/AccountDetailPage.ets')
+const accountWebViewPage = read('entry/src/main/ets/pages/AccountWebViewPage.ets')
 const sharedIndex = read('shared/src/main/ets/Index.ets')
 const settingsIndex = read('feature/settings/src/main/ets/Index.ets')
 const entryIndex = read('entry/src/main/ets/pages/Index.ets')
@@ -96,5 +103,59 @@ for (const [name, content] of [
 assert(networkProxyPage.includes('NetworkProxyRequest.testConnection(HttpClient.getInstance().getBaseUrl())'), 'Proxy connection test must use selected HttpClient baseUrl')
 assert(accountSession.includes('HttpClient.getInstance().setBaseUrl(record.baseUrl)'), 'AccountSessionCoordinator.switch/restore must apply account baseUrl before cookie save')
 assert(imageUtils.includes('HttpClient.getInstance().getBaseUrl()'), 'ImageUtils fallback must use current baseUrl')
+
+assert(v2exUrlRouter.includes('withSelectedBaseUrl'), 'V2exUrlRouter must expose selected-baseUrl URL rewriting')
+assert(v2exUrlRouter.includes('isFirstPartySiteUrl'), 'V2exUrlRouter must identify first-party V2EX site URLs')
+assert(v2exUrlRouter.includes('normalizeFirstPartyPath'), 'V2exUrlRouter must keep site-path rewriting away from image/CDN URLs')
+for (const [name, content] of [
+  ['ApiService', apiService],
+  ['ApiV2Service', apiV2Service],
+]) {
+  assert(content.includes('V2exUrlRouter.withSelectedBaseUrl'), `${name} must rewrite API topic/node URLs to selected baseUrl`)
+  assert(/topic\.url\s*=\s*V2exUrlRouter\.withSelectedBaseUrl/.test(content), `${name} must normalize topic.url instead of preserving canonical www payload URLs`)
+  assert(/topic\.node\.url\s*=\s*V2exUrlRouter\.withSelectedBaseUrl/.test(content) || /node\.url\s*=\s*V2exUrlRouter\.withSelectedBaseUrl/.test(content), `${name} must normalize node.url instead of preserving canonical www payload URLs`)
+}
+assert(topicDetailPage.includes('V2exUrlRouter.withSelectedBaseUrl'), 'TopicDetailPage share/open URL must resolve model URLs through selected baseUrl')
+assert(!/return\s+raw\s*\n/.test(topicDetailPage), 'TopicDetailPage must not return absolute API payload topic.url unchanged')
+assert(webLoginPage.includes('HttpClient.getInstance().getBaseUrl()') || webLoginPage.includes('this.http.getBaseUrl()'), 'V2exWebLoginPage must start from selected baseUrl')
+assert(accountDetailPage.includes("this.webBaseUrl() + '/balance'") && accountDetailPage.includes("this.webBaseUrl() + '/settings'"), 'Account detail first-party web entries must use selected baseUrl')
+assert(accountWebViewPage.includes('normalizeFirstPartyTargetUrl'), 'AccountWebViewPage must normalize stored first-party targets to selected baseUrl')
+assert(accountWebViewPage.includes('V2exUrlRouter.isFirstPartySiteUrl'), 'AccountWebViewPage must allow first-party V2EX URLs via shared resolver, not a hardcoded www-only list')
+assert(accountWebViewPage.includes('this.injectCookie(cookie, this.webBaseUrl())'), 'AccountWebViewPage must inject selected-baseUrl cookies, not cookies scoped to stale target URL')
+
+const firstPartySourceRoots = [
+  'shared/src/main/ets',
+  'entry/src/main/ets',
+  'feature/settings/src/main/ets',
+  'feature/detail/src/main/ets',
+]
+const hardcodedSiteUrlAllowList = new Set([
+  'shared/src/main/ets/constants/ApiConstants.ets',
+  'shared/src/main/ets/settings/ApiDomainSettings.ets',
+  'shared/src/main/ets/backup/BackupPreferencesAdapter.ets',
+  'shared/src/main/ets/settings/CacheDeviceQaSeed.ets',
+  'shared/src/main/ets/settings/AccountStoreQaSeed.ets',
+  'shared/src/main/ets/settings/SettingsBootstrap.ets',
+  'shared/src/main/ets/settings/CookieJarSettings.ets',
+  'shared/src/main/ets/utils/MediaUrlUtils.ets',
+  'shared/src/main/ets/utils/V2exUrlRouter.ets',
+  'entry/src/main/ets/model/SearchPageStateCoordinator.ets',
+  'feature/settings/src/main/ets/pages/DomainSettingsPage.ets',
+])
+const walk = (relDir) => {
+  const abs = path.join(repo, relDir)
+  const out = []
+  for (const entry of fs.readdirSync(abs, { withFileTypes: true })) {
+    const rel = path.join(relDir, entry.name)
+    if (entry.isDirectory()) out.push(...walk(rel))
+    if (entry.isFile() && entry.name.endsWith('.ets')) out.push(rel)
+  }
+  return out
+}
+for (const rel of firstPartySourceRoots.flatMap(walk)) {
+  if (hardcodedSiteUrlAllowList.has(rel)) continue
+  const content = read(rel)
+  assert(!/https:\/\/(?:www\.)?v2ex\.(?:com|co)(?:[/'"`]|$)/.test(content), `${rel} must not hardcode first-party V2EX site URLs; use HttpClient.getInstance().getBaseUrl() or V2exUrlRouter`)
+}
 
 console.log('V2EX domain selection contract PASS')

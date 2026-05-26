@@ -6,6 +6,7 @@ import {
   SecondaryListScaffold,
   StorageKeys,
   ThemeConstants,
+  V2exUrlRouter,
 } from 'shared'
 
 @Component
@@ -121,16 +122,18 @@ export struct AccountWebViewPage {
       return
     }
 
-    if (!this.isV2exAllowedUrl(this.targetUrl)) {
+    const normalizedTargetUrl = this.normalizeFirstPartyTargetUrl(this.targetUrl)
+    if (!normalizedTargetUrl || !this.isV2exAllowedUrl(normalizedTargetUrl)) {
       this.errorMessage = AppStrings.text(AppStrings.R_COMMON_LOAD_FAILED, 'Unsupported URL')
       return
     }
 
-    this.injectCookie(cookie, this.targetUrl)
+    this.targetUrl = normalizedTargetUrl
+    this.injectCookie(cookie, this.webBaseUrl())
       .then(() => {
         this.hasInjectedCookie = true
         try {
-          this.controller.loadUrl(this.targetUrl)
+          this.controller.loadUrl(normalizedTargetUrl)
         } catch (error) {
           const e = error as Error
           this.errorMessage = e.message || AppStrings.text(AppStrings.R_COMMON_LOAD_FAILED, 'Failed to load page')
@@ -168,14 +171,10 @@ export struct AccountWebViewPage {
   }
 
   private isV2exAllowedUrl(url: string): boolean {
-    const cleanUrl = (url || '').trim()
-    if (!cleanUrl) {
-      return false
-    }
-    const normalizedUrl = cleanUrl.toLowerCase()
-    return normalizedUrl.startsWith('https://www.v2ex.com') ||
-      normalizedUrl.startsWith('https://v2ex.com') ||
-      normalizedUrl.startsWith('https://www.v2ex.co') ||
-      normalizedUrl.startsWith('https://v2ex.co')
+    return V2exUrlRouter.isFirstPartySiteUrl(url)
+  }
+
+  private normalizeFirstPartyTargetUrl(url: string): string {
+    return V2exUrlRouter.withSelectedBaseUrl(url, this.webBaseUrl())
   }
 }
