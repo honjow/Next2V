@@ -87,7 +87,7 @@ function isCommentOnly(line, cjkMatch) {
 const SERVER_PARSE_ALLOWLIST = [
   {
     file: /^entry\/src\/main\/ets\/viewmodel\/NotificationCenterViewModel\.ets$/,
-    tokens: ['提到了你', '回复了你', '回复了你的', '感谢了你', '收藏了你', '收藏', '关注了你', '关注', '系统']
+    tokens: ['提到了你', '回复了你', '回复了你的', '回复', '感谢了你', '收藏了你', '收藏', '关注了你', '关注', '系统']
   },
   {
     file: /^shared\/src\/main\/ets\/network\/V2exNativeAuthService\.ets$/,

@@ -126,15 +126,16 @@ export class NotificationCenterViewModel {
   metadata(item: V2exNotification): NotificationMetadata {
     const body = this.body(item)
     const kindTag = this.kindTag(item, body)
+    const compactTopicThanks = this.shouldCompactTopicThanks(kindTag, item, body)
     return {
       kindTag: kindTag,
       readTag: this.readTag(item),
       topicId: this.topicId(item),
       targetFloor: this.targetFloor(item),
       title: this.title(item),
-      body: this.displayBody(kindTag, body),
-      replyContent: this.displayReplyContent(kindTag, item),
-      replyRenderedContent: this.displayReplyRenderedContent(kindTag, item),
+      body: this.displayBody(kindTag, body, compactTopicThanks),
+      replyContent: this.displayReplyContent(kindTag, item, compactTopicThanks),
+      replyRenderedContent: this.displayReplyRenderedContent(kindTag, item, compactTopicThanks),
       memberName: item.member?.username || '',
       avatarUrl: item.member?.avatar_normal || item.member?.avatar_large || item.member?.avatar_mini || '',
       canDeleteWithCookie: this.webDeleteId(item) > 0 && !!this.webDeleteOnce(item)
@@ -268,25 +269,43 @@ export class NotificationCenterViewModel {
     return item.text || item.content || item.content_rendered || ''
   }
 
-  private displayBody(kindTag: string, body: string): string {
-    if (kindTag === KIND_FAVORITE) {
+  private displayBody(kindTag: string, body: string, compactTopicThanks: boolean): string {
+    if (kindTag === KIND_FAVORITE || compactTopicThanks) {
       return ''
     }
     return body
   }
 
-  private displayReplyContent(kindTag: string, item: V2exNotification): string {
-    if (kindTag === KIND_FAVORITE) {
+  private displayReplyContent(kindTag: string, item: V2exNotification, compactTopicThanks: boolean): string {
+    if (kindTag === KIND_FAVORITE || compactTopicThanks) {
       return ''
     }
     return this.replyContent(item)
   }
 
-  private displayReplyRenderedContent(kindTag: string, item: V2exNotification): string {
-    if (kindTag === KIND_FAVORITE) {
+  private displayReplyRenderedContent(kindTag: string, item: V2exNotification, compactTopicThanks: boolean): string {
+    if (kindTag === KIND_FAVORITE || compactTopicThanks) {
       return ''
     }
     return this.replyRenderedContent(item)
+  }
+
+  private shouldCompactTopicThanks(kindTag: string, item: V2exNotification, body: string): boolean {
+    if (kindTag !== KIND_THANKS) {
+      return false
+    }
+    return !this.hasReplyThankContext(item, body)
+  }
+
+  private hasReplyThankContext(item: V2exNotification, body: string): boolean {
+    if (this.targetFloor(item) > 0) {
+      return true
+    }
+    if (this.replyContent(item) || this.replyRenderedContent(item)) {
+      return true
+    }
+    // Narrow fallback for Web rows whose reply anchor/payload was not parsed.
+    return body.indexOf('回复') >= 0 || body.toLowerCase().indexOf('reply') >= 0
   }
 
   private replyContent(item: V2exNotification): string {
