@@ -42,6 +42,11 @@ assertContains(method, 'this.topicDetailSiteFavorited = targetFavorited', 'must 
 assertContains(method, '.toggleTopicFavoriteWithCookie(cookie, this.topicId)', 'must run existing topic favorite API toggle call')
 assertContains(method, 'this.isSiteFavorited = favorited', 'success must apply server returned favorite state to component')
 assertContains(method, 'this.topicDetailSiteFavorited = favorited', 'success must apply server returned favorite state to appbar/storage')
+const favoriteSuccessMatch = method.match(/\.then\(\(favorited: boolean\) => \{[\s\S]*?\n      \}\)/)
+if (!favoriteSuccessMatch) {
+  fail('favorite success block not found')
+}
+assertNotContains(favoriteSuccessMatch[0], 'openToast', 'favorite/unfavorite success path must not show toast')
 assertContains(method, 'this.isSiteFavorited = previousIsSiteFavorited', 'failure must rollback component state')
 assertContains(method, 'this.topicDetailSiteFavorited = previousTopicDetailSiteFavorited', 'failure must rollback appbar/storage state')
 assertContains(method, 'translateApiError(error)', 'failure must show translated API error toast')

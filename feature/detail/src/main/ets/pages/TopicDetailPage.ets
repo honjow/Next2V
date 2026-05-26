@@ -1290,9 +1290,6 @@ export struct TopicDetailPage {
       .then((favorited: boolean) => {
         this.isSiteFavorited = favorited
         this.topicDetailSiteFavorited = favorited
-        promptAction
-          .openToast({ message: favorited ? $r('app.string.favorited') : $r('app.string.unfavorited') })
-          .catch((_error: Error) => {})
       })
       .catch((error: Error) => {
         this.isSiteFavorited = previousIsSiteFavorited
@@ -1408,15 +1405,20 @@ export struct TopicDetailPage {
     if (this.isTopicThankLoading) {
       return
     }
+    const previousIsTopicThanked = this.isTopicThanked
+    const previousTopicDetailThanked = this.topicDetailThanked
     this.isTopicThankLoading = true
+    this.isTopicThanked = true
+    this.topicDetailThanked = true
     TopicDetailActionCoordinator
       .executeTopicThank(this.api, cookie, this.topicId)
       .then(() => {
         this.isTopicThanked = true
         this.topicDetailThanked = true
-        promptAction.openToast({ message: $r('app.string.thanked') }).catch((_error: Error) => {})
       })
       .catch((error: Error) => {
+        this.isTopicThanked = previousIsTopicThanked
+        this.topicDetailThanked = previousTopicDetailThanked
         promptAction
           .openToast({ message: translateApiError(error) })
           .catch((_error: Error) => {})
@@ -1495,9 +1497,7 @@ export struct TopicDetailPage {
     const thankedIdsSnapshot: ReplyThankedIdsSnapshot = this.markReplyThanked(reply.id)
     TopicDetailActionCoordinator
       .executeReplyThank(this.api, cookie, this.topicId, reply.id)
-      .then(() => {
-        promptAction.openToast({ message: $r('app.string.thanked') }).catch((_error: Error) => {})
-      })
+      .then(() => {})
       .catch((error: Error) => {
         this.v.rollbackReplyThank(replyThankSnapshot)
         this.thankedReplyIdsJson =
