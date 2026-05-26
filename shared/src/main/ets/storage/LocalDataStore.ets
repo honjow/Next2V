@@ -2,7 +2,7 @@ import { common } from '@kit.AbilityKit'
 import { relationalStore } from '@kit.ArkData'
 
 export const LOCAL_DATA_DB_NAME: string = 'V2Next.db'
-export const LOCAL_DATA_SCHEMA_VERSION: number = 4
+export const LOCAL_DATA_SCHEMA_VERSION: number = 5
 export const LOCAL_DATA_SCHEMA_META_TABLE: string = 'schema_meta'
 
 export const SQL_CREATE_SCHEMA_META_TABLE: string = 'CREATE TABLE IF NOT EXISTS schema_meta (key TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL)'
@@ -22,7 +22,10 @@ export const SQL_CREATE_COLLECTION_TOPIC_READ_POSITIONS_TABLE: string = 'CREATE 
 export const SQL_CREATE_COLLECTION_TOPIC_READ_POSITIONS_INDEX: string = 'CREATE INDEX IF NOT EXISTS idx_collection_topic_read_positions_updated_at ON collection_topic_read_positions (updated_at DESC, topic_id DESC)'
 export const SQL_CREATE_COLLECTION_TOPIC_READ_STATES_TABLE: string = 'CREATE TABLE IF NOT EXISTS collection_topic_read_states (topic_id INTEGER PRIMARY KEY NOT NULL, touched_at INTEGER NOT NULL, updated_at INTEGER NOT NULL)'
 export const SQL_CREATE_COLLECTION_TOPIC_READ_STATES_INDEX: string = 'CREATE INDEX IF NOT EXISTS idx_collection_topic_read_states_updated_at ON collection_topic_read_states (updated_at DESC, topic_id DESC)'
-export const SQL_UPSERT_SCHEMA_VERSION: string = 'INSERT OR REPLACE INTO schema_meta (key, value) VALUES (\'schema_version\', \'4\')'
+export const SQL_CREATE_TOPIC_ACTION_OVERLAYS_TABLE: string = 'CREATE TABLE IF NOT EXISTS topic_action_overlays (owner_key TEXT NOT NULL, base_url TEXT NOT NULL, account_id TEXT NOT NULL, login_mode TEXT NOT NULL, topic_id INTEGER NOT NULL, favorite_known INTEGER NOT NULL DEFAULT 0, favorite_value INTEGER NOT NULL DEFAULT 0, topic_thank_known INTEGER NOT NULL DEFAULT 0, topic_thank_value INTEGER NOT NULL DEFAULT 0, reply_thanked_ids_json TEXT NOT NULL DEFAULT \'[]\', reply_thank_counts_json TEXT NOT NULL DEFAULT \'{}\', source TEXT NOT NULL, updated_at INTEGER NOT NULL, expires_at INTEGER NOT NULL, PRIMARY KEY(owner_key, topic_id))'
+export const SQL_CREATE_TOPIC_ACTION_OVERLAYS_EXPIRES_AT_INDEX: string = 'CREATE INDEX IF NOT EXISTS idx_topic_action_overlays_expires_at ON topic_action_overlays (expires_at)'
+export const SQL_CREATE_TOPIC_ACTION_OVERLAYS_ACCOUNT_INDEX: string = 'CREATE INDEX IF NOT EXISTS idx_topic_action_overlays_account ON topic_action_overlays (base_url, account_id)'
+export const SQL_UPSERT_SCHEMA_VERSION: string = 'INSERT OR REPLACE INTO schema_meta (key, value) VALUES (\'schema_version\', \'5\')'
 
 const LOCAL_DATA_STORE_CONFIG: relationalStore.StoreConfig = {
   name: LOCAL_DATA_DB_NAME,
@@ -49,6 +52,9 @@ export class LocalDataStore {
     await store.execute(SQL_CREATE_COLLECTION_TOPIC_READ_POSITIONS_INDEX)
     await store.execute(SQL_CREATE_COLLECTION_TOPIC_READ_STATES_TABLE)
     await store.execute(SQL_CREATE_COLLECTION_TOPIC_READ_STATES_INDEX)
+    await store.execute(SQL_CREATE_TOPIC_ACTION_OVERLAYS_TABLE)
+    await store.execute(SQL_CREATE_TOPIC_ACTION_OVERLAYS_EXPIRES_AT_INDEX)
+    await store.execute(SQL_CREATE_TOPIC_ACTION_OVERLAYS_ACCOUNT_INDEX)
     await store.execute(SQL_UPSERT_SCHEMA_VERSION)
     if (store.version !== LOCAL_DATA_SCHEMA_VERSION) {
       store.version = LOCAL_DATA_SCHEMA_VERSION

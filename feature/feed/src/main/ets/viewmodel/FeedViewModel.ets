@@ -1,4 +1,5 @@
-import { V2exTopic, ApiService, translateApiError } from 'shared'
+import { V2exTopic, ApiService, translateApiError, CacheMergeCoordinator } from 'shared'
+import type { TopicReadState } from 'shared'
 import { FeedDataSource } from '../model/FeedModels'
 import { vibrator } from '@kit.SensorServiceKit'
 
@@ -22,6 +23,7 @@ export class FeedViewModel {
   private pagedLoader: ((page: number) => Promise<V2exTopic[]>) | null = null
   private cacheLoader: (() => Promise<V2exTopic[]>) | null = null
   private cacheSaver: ((topics: V2exTopic[]) => Promise<void>) | null = null
+  private readStateLoader: (() => Promise<TopicReadState[]>) | null = null
 
   setLoader(loader: () => Promise<V2exTopic[]>): void {
     this.loader = loader
@@ -35,9 +37,14 @@ export class FeedViewModel {
     this.page = 0
   }
 
-  setCacheHandlers(loader: () => Promise<V2exTopic[]>, saver: (topics: V2exTopic[]) => Promise<void>): void {
+  setCacheHandlers(
+    loader: () => Promise<V2exTopic[]>,
+    saver: (topics: V2exTopic[]) => Promise<void>,
+    readStateLoader?: () => Promise<TopicReadState[]>,
+  ): void {
     this.cacheLoader = loader
     this.cacheSaver = saver
+    this.readStateLoader = readStateLoader || null
   }
 
   async loadCachedData(): Promise<void> {
@@ -47,7 +54,7 @@ export class FeedViewModel {
     try {
       const data = await this.cacheLoader()
       if (data.length > 0) {
-        this.dataSource.setData(data)
+        this.dataSource.setData(await this.mergeTopicListWithReadStates(data))
         this.hasMore = this.pagedLoader !== null ? true : data.length >= 20
       }
     } catch (error) {
@@ -74,7 +81,8 @@ export class FeedViewModel {
 
     try {
       const data = await this.loadPage(1)
-      this.dataSource.setData(data)
+      const merged = await this.mergeTopicListWithReadStates(data)
+      this.dataSource.setData(merged)
       this.page = 1
       this.hasMore = this.resolveHasMore(data.length, data.length)
       await this.saveCache(data)
@@ -95,7 +103,8 @@ export class FeedViewModel {
 
     try {
       const data = await this.loadPage(1)
-      this.dataSource.setData(data)
+      const merged = await this.mergeTopicListWithReadStates(data)
+      this.dataSource.setData(merged)
       this.page = 1
       this.hasMore = this.resolveHasMore(data.length, data.length)
       await this.saveCache(data)
@@ -116,7 +125,8 @@ export class FeedViewModel {
 
     try {
       const data = await this.loadPage(1)
-      this.dataSource.setData(data)
+      const merged = await this.mergeTopicListWithReadStates(data)
+      this.dataSource.setData(merged)
       this.page = 1
       this.hasMore = this.resolveHasMore(data.length, data.length)
       await this.saveCache(data)
@@ -139,9 +149,10 @@ export class FeedViewModel {
       const nextPage = Math.max(1, this.page + 1)
       const data = await this.loadPage(nextPage)
       const unique = this.filterNewTopics(data)
+      const mergedUnique = await this.mergeTopicListWithReadStates(unique)
       this.page = nextPage
       this.hasMore = this.resolveHasMore(data.length, unique.length)
-      this.dataSource.appendData(unique)
+      this.dataSource.appendData(mergedUnique)
       await this.saveCache(this.dataSource.getAllData())
     } catch (error) {
       this.errorMessage = translateApiError(error)
@@ -195,6 +206,18 @@ export class FeedViewModel {
       return this.pagedLoader(page)
     }
     return this.loader()
+  }
+
+  private async mergeTopicListWithReadStates(data: V2exTopic[]): Promise<V2exTopic[]> {
+    if (!this.readStateLoader || data.length === 0) {
+      return data
+    }
+    try {
+      const readStates = await this.readStateLoader()
+      return CacheMergeCoordinator.mergeTopicListWithReadStates(data, readStates)
+    } catch (_error) {
+      return data
+    }
   }
 
   private resolveHasMore(fetchedCount: number, uniqueCount: number): boolean {

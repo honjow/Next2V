@@ -2,7 +2,7 @@ import { FeedViewModel } from '../viewmodel/FeedViewModel'
 import {
   V2exTopic, TopicCard, LoadingFooter, TopicDetailParams, ThemeConstants,
   StorageKeys, PullRefreshListScaffold, ApiConstants, TabItem, ApiService, NodeTopicListParams,
-  UserProfileParams, CacheSettings, FeedTabSettings
+  UserProfileParams, CacheSettings, FeedTabSettings, CollectionSettings
 } from 'shared'
 import type { TopicReadState } from 'shared'
 import { common } from '@kit.AbilityKit'
@@ -237,7 +237,8 @@ struct FeedListPage {
         const topics = await CacheSettings.loadTopicList(context, `tab:${this.tabKey}`)
         return topics
       },
-      (topics: V2exTopic[]) => CacheSettings.saveTopicList(context, `tab:${this.tabKey}`, topics)
+      (topics: V2exTopic[]) => CacheSettings.saveTopicList(context, `tab:${this.tabKey}`, topics),
+      () => CollectionSettings.syncTopicReadStates(context),
     )
     this.vm.loadCachedData()
     this.vm.loadData()

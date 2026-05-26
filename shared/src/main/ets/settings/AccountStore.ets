@@ -7,6 +7,7 @@ import { STORE_NAME_ACCOUNTS } from './SettingsStores'
 import { AuthSessionSettings } from './AuthSessionSettings'
 import { CookieJarSettings } from './CookieJarSettings'
 import { AppStrings } from '../i18n/AppStrings'
+import { TopicDetailActionOverlaySettings } from '../cache/TopicDetailActionOverlaySettings'
 
 const STORE_NAME: string = STORE_NAME_ACCOUNTS
 const KEY_RECORDS: string = 'records'
@@ -113,6 +114,7 @@ export class AccountStore {
       return
     }
     all = all.filter(r => r.id !== id)
+    await TopicDetailActionOverlaySettings.clearByOwner(context, removed.baseUrl, removed.id)
     const store = await preferences.getPreferences(context, STORE_NAME)
     store.putSync(KEY_RECORDS, JSON.stringify(all))
     if (AccountStore.activeAccountId === id) {

@@ -10,8 +10,9 @@ import {
   CookieJarSettings,
   AppStrings,
   translateApiError,
+  CacheMergeCoordinator,
 } from 'shared'
-import type { V2exTopicWebRepliesPage, V2exTopicWebRepliesAllResult } from 'shared'
+import type { V2exTopicWebRepliesPage, V2exTopicWebRepliesAllResult, TopicDetailActionOverlay } from 'shared'
 import { ReplyDataSource } from '../model/DetailModels'
 import { ReplyThreadCoordinator } from '../model/ReplyThreadCoordinator'
 
@@ -56,6 +57,7 @@ export class DetailViewModel {
   private cacheLoader: (() => Promise<TopicDetailCache | null>) | null = null
   private cacheSaver: ((topic: V2exTopic | null, replies: V2exReply[]) => Promise<void>) | null =
     null
+  private actionOverlay: TopicDetailActionOverlay | null = null
   private repliesSource: string = 'publicApi'
   private repliesPageCount: number = 1
   private failedRepliesPage: number = 0
@@ -218,6 +220,13 @@ export class DetailViewModel {
     this.authToken = token.trim()
   }
 
+  setTopicActionOverlay(overlay: TopicDetailActionOverlay | null): void {
+    this.actionOverlay = overlay
+    if (this.topic !== null || this.replies.length > 0) {
+      this.publishMergedTopicDetail(this.topic, this.replies)
+    }
+  }
+
   setCacheHandlers(
     loader: () => Promise<TopicDetailCache | null>,
     saver: (topic: V2exTopic | null, replies: V2exReply[]) => Promise<void>,
@@ -235,9 +244,10 @@ export class DetailViewModel {
       if (!cached) {
         return
       }
-      this.topic = this.normalizeTopicForRender(cached.topic)
-      this.replies = this.normalizeRepliesForRender(cached.replies)
-      this.replyDataSource.setData(this.getVisibleReplies())
+      this.publishMergedTopicDetail(
+        this.normalizeTopicForRender(cached.topic),
+        this.normalizeRepliesForRender(cached.replies),
+      )
       this.repliesLoaded = this.replies.length
     } catch (error) {
       console.error('load topic cache failed:', (error as Error).message)
@@ -307,9 +317,10 @@ export class DetailViewModel {
         this.repliesUseV2 = false
       }
 
-      this.topic = this.normalizeTopicForRender(topic)
-      this.replies = this.normalizeRepliesForRender(replies)
-      this.replyDataSource.setData(this.getVisibleReplies())
+      this.publishMergedTopicDetail(
+        this.normalizeTopicForRender(topic),
+        this.normalizeRepliesForRender(replies),
+      )
       this.repliesLoaded = this.replies.length
       this.repliesLoadMoreState = this.repliesHasMore ? 'idle' : 'endReached'
       if (!this.repliesHasMore) {
@@ -403,7 +414,7 @@ export class DetailViewModel {
       this.allRepliesLoaded = true
       this.repliesHasMore = false
       this.repliesLoadMoreState = 'endReached'
-      this.replyDataSource.setData(this.getVisibleReplies())
+      this.publishMergedTopicDetail(this.topic, this.replies)
       this.repliesLoaded = this.replies.length
       this.saveCache(this.topic, this.replies).catch((_e: Error) => {})
     } catch (error) {
@@ -545,8 +556,7 @@ export class DetailViewModel {
     if (unique.length === 0) {
       return
     }
-    this.replies = this.replies.concat(unique)
-    this.replyDataSource.setData(this.getVisibleReplies())
+    this.publishMergedTopicDetail(this.topic, this.replies.concat(unique))
     this.repliesLoaded = this.replies.length
   }
 
@@ -559,6 +569,15 @@ export class DetailViewModel {
     } catch (error) {
       console.error('save topic cache failed:', (error as Error).message)
     }
+  }
+
+  private publishMergedTopicDetail(topic: V2exTopic | null, replies: V2exReply[]): void {
+    // Cached and network replacements use one publication point so user-action overlays are applied before
+    // the topic/reply data sources can render a default false/empty first frame.
+    const merged = CacheMergeCoordinator.mergeTopicDetail(topic, replies, this.actionOverlay)
+    this.topic = merged.topic
+    this.replies = merged.replies
+    this.replyDataSource.setData(this.getVisibleReplies())
   }
 
   private mergeTopicSupplements(

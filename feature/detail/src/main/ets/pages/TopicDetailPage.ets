@@ -66,8 +66,10 @@ import {
   MotionHandStateService,
   defaultSheetOptions,
   translateApiError,
+  CacheOwnerResolver,
+  TopicDetailActionOverlaySettings,
 } from 'shared'
-import type { V2exTopicThankAction } from 'shared'
+import type { V2exTopicThankAction, CacheScope, TopicDetailActionOverlay } from 'shared'
 import type { V2exReplyModerationAction, V2exTopicModerationAction } from 'shared'
 
 @Component
@@ -140,6 +142,8 @@ export struct TopicDetailPage {
   private readonly FOLLOW_OPERATION_VERTICAL_DOMINANCE_RATIO: number = 1.2;
   private readonly titleVisibilityHysteresis: number = 4;
   private api: ApiService = new ApiService();
+  private cacheScope: CacheScope | null = null;
+  private topicActionOverlay: TopicDetailActionOverlay | null = null;
   private topicThankLocked: boolean = false;
   private replyThankLockedId: number = 0;
   private jumpFloorDialogController: CustomDialogController | null = new CustomDialogController({
@@ -181,32 +185,100 @@ export struct TopicDetailPage {
       (topic: V2exTopic | null, replies: V2exReply[]) =>
         CacheSettings.saveTopicDetail(context, this.topicId, topic, replies),
     )
-    this.v.loadCachedData()
-    AuthSettings.load(context)
-      .then((snapshot) => {
-        this.v.setToken(snapshot.token || '')
-      })
-      .catch((_error: Error) => {
-        this.v.setToken('')
-      })
-      .finally(() => {
-        this.v.load().then(() => {
-          this.recordViewedTopic()
-          this.markTopicReadState()
-          this.restoreInitialPosition()
-          this.v.triggerThreadPreloadIfNeeded()
-          if (this.v.needsPreloadConfirm) {
-            this.showPreloadConfirmDialog()
-          }
-        })
-      })
+    this.initializeCachedThenNetworkLoad(context)
     this.loadSavedState()
-    this.loadSiteFavoriteState()
-    this.loadTopicThankState()
   }
 
   aboutToDisappear(): void {
     this.persistReadPosition()
+  }
+
+  private initializeCachedThenNetworkLoad(context: common.UIAbilityContext): void {
+    this.loadTopicActionOverlay(context)
+      .then(() => {
+        this.v.loadCachedData()
+        this.loadSiteFavoriteState()
+        this.loadTopicThankState()
+      })
+      .finally(() => {
+        AuthSettings.load(context)
+          .then((snapshot) => {
+            this.v.setToken(snapshot.token || '')
+          })
+          .catch((_error: Error) => {
+            this.v.setToken('')
+          })
+          .finally(() => {
+            this.v.load().then(() => {
+              this.recordViewedTopic()
+              this.markTopicReadState()
+              this.restoreInitialPosition()
+              this.v.triggerThreadPreloadIfNeeded()
+              if (this.v.needsPreloadConfirm) {
+                this.showPreloadConfirmDialog()
+              }
+            })
+          })
+      })
+  }
+
+  private async loadTopicActionOverlay(context: common.UIAbilityContext): Promise<void> {
+    this.cacheScope = await CacheOwnerResolver.resolveActivePrivateScope(context)
+    this.topicActionOverlay = await TopicDetailActionOverlaySettings.loadTopicOverlay(
+      context,
+      this.cacheScope,
+      this.topicId,
+    )
+    this.applyTopicActionOverlay(this.topicActionOverlay)
+  }
+
+  private applyTopicActionOverlay(overlay: TopicDetailActionOverlay | null): void {
+    this.v.setTopicActionOverlay(overlay)
+    if (!overlay) {
+      return
+    }
+    if (overlay.favoriteKnown) {
+      this.isSiteFavorited = overlay.favoriteValue
+      this.topicDetailSiteFavorited = overlay.favoriteValue
+    }
+    if (overlay.topicThankKnown && overlay.topicThankValue) {
+      this.isTopicThanked = true
+      this.topicDetailThanked = true
+    }
+    if (overlay.replyThankedIds.length > 0) {
+      this.thankedReplyIdsJson = JSON.stringify(overlay.replyThankedIds)
+    }
+  }
+
+  private persistTopicFavoriteOverlay(value: boolean): void {
+    if (!this.cacheScope || this.topicId <= 0) {
+      return
+    }
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    TopicDetailActionOverlaySettings.commitTopicFavorite(context, this.cacheScope, this.topicId, value)
+      .then(() => this.loadTopicActionOverlay(context))
+      .catch((_error: Error) => {})
+  }
+
+  private persistTopicThankOverlay(): void {
+    if (!this.cacheScope || this.topicId <= 0) {
+      return
+    }
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    TopicDetailActionOverlaySettings.commitTopicThank(context, this.cacheScope, this.topicId)
+      .then(() => this.loadTopicActionOverlay(context))
+      .catch((_error: Error) => {})
+  }
+
+  private persistReplyThankOverlay(replyId: number): void {
+    if (!this.cacheScope || this.topicId <= 0 || replyId <= 0) {
+      return
+    }
+    const countAfterSuccess = this.v.getLoadedRepliesSnapshot().find((item: V2exReply) => item.id === replyId)?.thanks
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    TopicDetailActionOverlaySettings.commitReplyThank(context, this.cacheScope, this.topicId, replyId, countAfterSuccess)
+      .then(() => this.loadTopicActionOverlay(context))
+      .catch((_error: Error) => {})
   }
 
   private openImagePreview(url: string): void {
@@ -1290,8 +1362,11 @@ export struct TopicDetailPage {
       .then((favorited: boolean) => {
         this.isSiteFavorited = favorited
         this.topicDetailSiteFavorited = favorited
+        this.persistTopicFavoriteOverlay(favorited)
       })
       .catch((error: Error) => {
+        // Rollback failed optimistic action and leave durable overlay unchanged so stale private
+        // account state never overwrites the server-confirmed cache with a failed mutation.
         this.isSiteFavorited = previousIsSiteFavorited
         this.topicDetailSiteFavorited = previousTopicDetailSiteFavorited
         promptAction
@@ -1306,6 +1381,9 @@ export struct TopicDetailPage {
   private loadSiteFavoriteState(): void {
     const cookie = CookieJarSettings.getCurrentCookie()
     if (!cookie || this.topicId <= 0) {
+      if (this.topicActionOverlay?.favoriteKnown) {
+        return
+      }
       this.isSiteFavorited = false
       this.topicDetailSiteFavorited = false
       return
@@ -1317,6 +1395,9 @@ export struct TopicDetailPage {
         this.topicDetailSiteFavorited = toggle.currentlyOn
       })
       .catch((_error: Error) => {
+        if (this.topicActionOverlay?.favoriteKnown) {
+          return
+        }
         this.isSiteFavorited = false
         this.topicDetailSiteFavorited = false
       })
@@ -1325,6 +1406,9 @@ export struct TopicDetailPage {
   private loadTopicThankState(): void {
     const cookie = CookieJarSettings.getCurrentCookie()
     if (!cookie || this.topicId <= 0) {
+      if (this.topicActionOverlay?.topicThankKnown) {
+        return
+      }
       this.isTopicThanked = false
       this.topicDetailThanked = false
       return
@@ -1332,11 +1416,17 @@ export struct TopicDetailPage {
     this.api
       .getTopicThankActionWithCookie(cookie, this.topicId)
       .then((_action: V2exTopicThankAction) => {
+        if (this.topicActionOverlay?.topicThankKnown) {
+          return
+        }
         this.isTopicThanked = false
         this.topicDetailThanked = false
       })
       .catch((error: Error) => {
         const thanked = TopicDetailActionCoordinator.thankedFromTopicThankLoadError(error)
+        if (!thanked && this.topicActionOverlay?.topicThankKnown) {
+          return
+        }
         this.isTopicThanked = thanked
         this.topicDetailThanked = thanked
       })
@@ -1415,6 +1505,7 @@ export struct TopicDetailPage {
       .then(() => {
         this.isTopicThanked = true
         this.topicDetailThanked = true
+        this.persistTopicThankOverlay()
       })
       .catch((error: Error) => {
         this.isTopicThanked = previousIsTopicThanked
@@ -1497,7 +1588,9 @@ export struct TopicDetailPage {
     const thankedIdsSnapshot: ReplyThankedIdsSnapshot = this.markReplyThanked(reply.id)
     TopicDetailActionCoordinator
       .executeReplyThank(this.api, cookie, this.topicId, reply.id)
-      .then(() => {})
+      .then(() => {
+        this.persistReplyThankOverlay(reply.id)
+      })
       .catch((error: Error) => {
         this.v.rollbackReplyThank(replyThankSnapshot)
         this.thankedReplyIdsJson =

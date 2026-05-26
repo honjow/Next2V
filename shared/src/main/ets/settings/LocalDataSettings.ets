@@ -1,6 +1,7 @@
 import { common } from '@kit.AbilityKit'
 import { StorageKeys } from '../constants/StorageKeys'
 import { CacheSettings } from './CacheSettings'
+import { TopicDetailActionOverlaySettings } from '../cache/TopicDetailActionOverlaySettings'
 import { CollectionSettings } from './CollectionSettings'
 import { DraftSettings } from './DraftSettings'
 import { NotificationSettings } from './NotificationSettings'
@@ -14,6 +15,7 @@ export class LocalDataSettings {
       DraftSettings.clearAll(context),
       SearchSettings.clearHistory(context),
       CacheSettings.clear(context),
+      TopicDetailActionOverlaySettings.clearAll(context),
       NotificationSettings.clearCache(context)
     ])
     setAppStorageValue<number>(StorageKeys.LOCAL_DATA_UPDATED_AT, Math.floor(Date.now() / 1000))
