@@ -11,6 +11,7 @@ Rules:
 - Do not commit `.env.local`.
 - Do not print `.env.local` contents.
 - Do not copy values from `.env.local` into prompts, result JSON, artifacts, or chat.
+- For lane worktrees under `/home/gamer/v2next-worktrees/`, the controller must copy `/home/gamer/git/V2Next/.env.local` to `<lane>/.env.local` with mode `600` before dispatching any login-required QA. A missing worktree-local file is a controller preflight failure, not a valid product QA blocker.
 - Do not ask the user to paste passwords, cookies, PATs, 2FA verification codes, or other credentials.
 - A worker/controller may use `.env.local` only inside the local execution environment for the exact QA login action.
 
