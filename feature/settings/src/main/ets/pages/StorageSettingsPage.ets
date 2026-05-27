@@ -383,7 +383,7 @@ export struct StorageSettingsPage {
   }
 
   private exportBackup(): void {
-    BackupFilePickerCoordinator.exportBackup(this.hostContext(), { versionName: '0.7.0', versionCode: 8 })
+    BackupFilePickerCoordinator.exportBackup(this.hostContext(), { versionName: '0.8.0', versionCode: 9 })
       .then((_uri: string) => {
         this.backupMessage = StorageSettingsCoordinator.backupSuccessMessage(true)
       })
