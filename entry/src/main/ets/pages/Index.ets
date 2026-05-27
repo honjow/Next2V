@@ -268,16 +268,7 @@ struct Index {
   }
 
   private onHomeTabDidScroll(index: number, offset: number, state: ScrollState): void {
-    if (index !== this.ct || !this.homeTabAutoHide) {
-      this.homeTabLastScrollOffsets[index] = offset
-      return
-    }
-    if (offset <= this.HOME_TAB_SCROLL_DELTA_PX) {
-      this.homeTabLastScrollOffsets[index] = offset
-      this.restoreHomeTabIfHidden()
-      return
-    }
-    if (state === ScrollState.Idle) {
+    if (index !== this.ct || state === ScrollState.Idle || !this.homeTabAutoHide) {
       this.homeTabLastScrollOffsets[index] = offset
       return
     }
