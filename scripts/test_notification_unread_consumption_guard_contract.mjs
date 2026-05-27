@@ -47,7 +47,9 @@ assert(
   'Index.refreshNotificationBadge may keep only the proven safe cookie homepage badge scrape'
 )
 assert(
-  index.includes('NotificationPage({ refreshKey: this.notificationRefreshKey, currentTab: this.ct })'),
+  index.includes('NotificationPage({') &&
+    index.includes('refreshKey: this.notificationRefreshKey') &&
+    index.includes('currentTab: this.ct'),
   'Index must pass active tab state into NotificationPage so hidden mounted pages cannot list-refresh off-tab'
 )
 

@@ -298,14 +298,37 @@ export class NotificationCenterViewModel {
   }
 
   private hasReplyThankContext(item: V2exNotification, body: string): boolean {
+    // Web topic-thank rows can carry anchors/payloads that look like reply data;
+    // the topic-thank sentence is metadata and must win before floor checks.
+    if (this.isTopicThankDescription(body) ||
+      this.isTopicThankDescription(item.reply_content || '') ||
+      this.isTopicThankDescription(item.reply_content_rendered || '') ||
+      this.isTopicThankDescription(item.payload || '') ||
+      this.isTopicThankDescription(item.payload_rendered || '')) {
+      return false
+    }
     if (this.targetFloor(item) > 0) {
       return true
     }
-    if (this.replyContent(item) || this.replyRenderedContent(item)) {
+    // Generic notification content/text describes the notification itself; only
+    // explicit reply fields prove that a topic-thank row has reply context.
+    if (this.explicitReplyThankContext(item)) {
       return true
     }
     // Narrow fallback for Web rows whose reply anchor/payload was not parsed.
     return body.indexOf('回复') >= 0 || body.toLowerCase().indexOf('reply') >= 0
+  }
+
+  private explicitReplyThankContext(item: V2exNotification): boolean {
+    return !!(item.reply_content || item.reply_content_rendered)
+  }
+
+  private isTopicThankDescription(value: string): boolean {
+    const text = this.readableNotificationContent(value || '').toLowerCase()
+    return text.indexOf('感谢了你发布的主题') >= 0 ||
+      text.indexOf('感谢了你的主题') >= 0 ||
+      text.indexOf('thanked your topic') >= 0 ||
+      text.indexOf('thanked the topic you created') >= 0
   }
 
   private replyContent(item: V2exNotification): string {
