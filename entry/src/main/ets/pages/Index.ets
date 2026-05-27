@@ -268,7 +268,16 @@ struct Index {
   }
 
   private onHomeTabDidScroll(index: number, offset: number, state: ScrollState): void {
-    if (index !== this.ct || state === ScrollState.Idle || !this.homeTabAutoHide) {
+    if (index !== this.ct || !this.homeTabAutoHide) {
+      this.homeTabLastScrollOffsets[index] = offset
+      return
+    }
+    if (offset <= this.HOME_TAB_SCROLL_DELTA_PX) {
+      this.homeTabLastScrollOffsets[index] = offset
+      this.restoreHomeTabIfHidden()
+      return
+    }
+    if (state === ScrollState.Idle) {
       this.homeTabLastScrollOffsets[index] = offset
       return
     }
@@ -281,12 +290,8 @@ struct Index {
       this.applyHomeTabScrollAnimation(true)
       return
     }
-    if (isForwardScroll || offset > this.HOME_TAB_SCROLL_DELTA_PX) {
+    if (isForwardScroll) {
       this.applyHomeTabScrollAnimation(false)
-      return
-    }
-    if (offset <= this.HOME_TAB_SCROLL_DELTA_PX) {
-      this.applyHomeTabScrollAnimation(true)
     }
   }
 
