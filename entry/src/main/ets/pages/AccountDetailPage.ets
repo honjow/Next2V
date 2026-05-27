@@ -1,9 +1,10 @@
 import { common } from '@kit.AbilityKit'
 import { promptAction } from '@kit.ArkUI'
 import {
-  AccountSignedInCard,
+  AccountDetailHeaderCard,
 } from '../components/AccountDashboardComponents'
 import {
+  AccountStore,
   AccountMetaSettings,
   AccountSessionCoordinator,
   ApiService,
@@ -27,6 +28,7 @@ import {
   V2exAuthenticatedMember,
   translateApiError,
 } from 'shared'
+import type { AccountRecord } from 'shared'
 import { AccountPageCoordinator } from '../model/AccountPageCoordinator'
 
 @Component
@@ -38,6 +40,7 @@ export struct AccountDetailPage {
   @StorageLink(StorageKeys.AUTH_SESSION_USERNAME) sessionUsername: string = ''
   @StorageLink(StorageKeys.AUTH_SESSION_AVATAR) sessionAvatar: string = ''
   @StorageLink(StorageKeys.AUTH_SESSION_UPDATED_AT) @Watch('onAuthSessionUpdated') authSessionUpdatedAt: number = 0
+  @StorageLink(StorageKeys.ACTIVE_ACCOUNT_ID) @Watch('onActiveAccountChanged') activeAccountId: string = ''
 
   @State private authToken: string = ''
   @State private authProfile: V2exAuthenticatedMember | null = null
@@ -48,18 +51,31 @@ export struct AccountDetailPage {
   @State private isAccountMetaLoading: boolean = false
   @State private isDailyRedeeming: boolean = false
   @State private isLoggingOut: boolean = false
+  @State private activeAccountUsername: string = ''
+  @State private activeAccountAvatar: string = ''
 
   private http: HttpClient = HttpClient.getInstance()
   private api: ApiService = new ApiService()
+  private accountMetaRequestId: number = 0
 
   aboutToAppear(): void {
     this.loadAuthSnapshot()
     this.loadSessionSnapshot()
+    this.loadAccounts()
   }
 
   onAuthSessionUpdated(_propName: string): void {
+    this.resetAccountMeta()
+    this.loadAccounts()
     this.loadAccountMetaCache()
-    this.loadAccountMeta()
+    this.loadAccountMeta(true)
+  }
+
+  onActiveAccountChanged(_propName: string): void {
+    this.resetAccountMeta()
+    this.loadAccounts()
+    this.loadAccountMetaCache()
+    this.loadAccountMeta(true)
   }
 
   build() {
@@ -70,18 +86,14 @@ export struct AccountDetailPage {
       }) {
         ListItem() {
           GroupedListSection() {
-            AccountSignedInCard({
+            AccountDetailHeaderCard({
               avatarUrl: this.currentAvatar(),
               username: this.currentUsername(),
               balance: this.accountBalance,
-              fallbackText: this.accountMetaText(),
-              dailyMissionText: this.dailyMissionButtonText(),
-              dailyMissionEnabled: this.dailyMissionEnabled(),
-              redeemDailyMission: () => {
-                this.redeemDailyMission()
-              },
-              openDetail: () => {
-              }
+              fallbackText: this.accountMetaFallbackText(),
+              sessionError: this.authError,
+              accountMetaError: this.accountMetaError,
+              dailyMissionMessage: this.dailyMissionStatusText()
             })
           }
         }
@@ -156,24 +168,30 @@ export struct AccountDetailPage {
   }
 
   private currentUsername(): string {
+    if (this.activeAccountId && this.activeAccountUsername) {
+      return this.activeAccountUsername
+    }
     return AccountPageCoordinator.identity(
       this.sessionUsername,
       this.sessionAvatar,
       this.authProfile,
       this.storedUsername,
-      '',
-      ''
+      this.activeAccountUsername,
+      this.activeAccountAvatar
     ).username
   }
 
   private currentAvatar(): string {
+    if (this.activeAccountId && this.activeAccountAvatar) {
+      return this.activeAccountAvatar
+    }
     return AccountPageCoordinator.identity(
       this.sessionUsername,
       this.sessionAvatar,
       this.authProfile,
       this.storedUsername,
-      '',
-      ''
+      this.activeAccountUsername,
+      this.activeAccountAvatar
     ).avatarUrl
   }
 
@@ -193,6 +211,17 @@ export struct AccountDetailPage {
 
   private dailyMissionButtonText(): ResourceStr {
     return AccountPageCoordinator.dailyMissionButtonText(this.isDailyRedeeming, this.dailyMission)
+  }
+
+  private accountMetaFallbackText(): ResourceStr {
+    return this.accountMetaError ? '' : this.accountMetaText()
+  }
+
+  private dailyMissionStatusText(): ResourceStr {
+    if (!this.dailyMission) {
+      return ''
+    }
+    return AccountPageCoordinator.dailyMissionMessage(this.dailyMission.message)
   }
 
   private dailyMissionEnabled(): boolean {
@@ -236,8 +265,69 @@ export struct AccountDetailPage {
       })
   }
 
+  private loadAccounts(): void {
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    AccountStore.migrateFromSingletonIfNeeded(context)
+      .then(() => AccountStore.restoreActiveId(context))
+      .then(() => AccountStore.getAll(context))
+      .then((records: AccountRecord[]) => {
+        this.loadActiveAccountIdentity(context, records)
+      })
+      .catch((error: Error) => {
+        console.error('AccountDetailPage loadAccounts failed: ' + error.message)
+        this.activeAccountUsername = ''
+        this.activeAccountAvatar = ''
+      })
+  }
+
+  private loadActiveAccountIdentity(context: common.UIAbilityContext, records: AccountRecord[]): void {
+    if (records.length === 0) {
+      this.activeAccountUsername = ''
+      this.activeAccountAvatar = ''
+      return
+    }
+    const activeId = AccountStore.getActiveId()
+    const fallbackRecord = records.find((record: AccountRecord) => record.id === activeId) ?? records[0]
+    if (!activeId) {
+      this.applyActiveAccountIdentity(fallbackRecord)
+      return
+    }
+    AccountStore.getById(context, activeId)
+      .then((record: AccountRecord | null) => {
+        this.applyActiveAccountIdentity(record ?? fallbackRecord)
+      })
+      .catch((_error: Error) => {
+        this.applyActiveAccountIdentity(fallbackRecord)
+      })
+  }
+
+  private applyActiveAccountIdentity(record: AccountRecord | null): void {
+    const nextUsername = record?.username || ''
+    const nextAvatar = record?.avatar || ''
+    const changed = nextUsername !== this.activeAccountUsername || nextAvatar !== this.activeAccountAvatar
+    this.activeAccountUsername = nextUsername
+    this.activeAccountAvatar = nextAvatar
+    if (changed) {
+      this.resetAccountMeta()
+      this.loadAccountMetaCache()
+      this.loadAccountMeta(true)
+    }
+  }
+
   private accountMetaOwnerKey(): string {
-    return AccountMetaSettings.ownerKey(this.currentUsername(), 'cookie')
+    return AccountMetaSettings.ownerKey(this.currentUsername(), this.accountMetaSource())
+  }
+
+  private accountMetaSource(): string {
+    return this.activeAccountId ? 'cookie:' + this.activeAccountId : 'cookie'
+  }
+
+  private resetAccountMeta(): void {
+    this.accountBalance = null
+    this.dailyMission = null
+    this.accountMetaError = ''
+    this.isAccountMetaLoading = false
+    this.accountMetaRequestId++
   }
 
   private loadAccountMetaCache(): void {
@@ -263,26 +353,34 @@ export struct AccountDetailPage {
       })
   }
 
-  private loadAccountMeta(): void {
+  private loadAccountMeta(force: boolean = false): void {
     const cookie = CookieJarSettings.getCurrentCookie()
     if (!cookie || this.isAccountMetaLoading) {
       return
     }
-    if (this.accountBalance && this.dailyMission) {
+    if (!force && this.accountBalance && this.dailyMission) {
       return
     }
     this.isAccountMetaLoading = true
     this.accountMetaError = ''
+    const requestId = ++this.accountMetaRequestId
+    const ownerKey = this.accountMetaOwnerKey()
     Promise.all([
       this.api.getBalanceWithCookie(cookie),
       this.api.getDailyMissionWithCookie(cookie)
     ])
       .then((results) => {
+        if (requestId !== this.accountMetaRequestId || cookie !== CookieJarSettings.getCurrentCookie() || ownerKey !== this.accountMetaOwnerKey()) {
+          return
+        }
         this.accountBalance = results[0]
         this.dailyMission = results[1]
         this.saveAccountMetaCache()
       })
       .catch((error: Error) => {
+        if (requestId !== this.accountMetaRequestId || cookie !== CookieJarSettings.getCurrentCookie() || ownerKey !== this.accountMetaOwnerKey()) {
+          return
+        }
         const message = translateApiError(error)
         this.accountMetaError = message
       })
@@ -298,7 +396,7 @@ export struct AccountDetailPage {
       return
     }
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    AccountMetaSettings.saveCache(context, ownerKey, this.accountBalance, this.dailyMission, 'cookie')
+    AccountMetaSettings.saveCache(context, ownerKey, this.accountBalance, this.dailyMission, this.accountMetaSource())
       .catch((_error: Error) => {
       })
   }

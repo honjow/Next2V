@@ -60,7 +60,7 @@ export struct AccountDashboardPage {
   @StorageLink(StorageKeys.AUTH_SESSION_AVATAR) sessionAvatar: string = ''
   @StorageLink(StorageKeys.AUTH_SESSION_VALIDATED_AT) sessionValidatedAt: number = 0
   @StorageLink(StorageKeys.AUTH_SESSION_UPDATED_AT) @Watch('onAuthSessionUpdated') authSessionUpdatedAt: number = 0
-  @StorageLink(StorageKeys.ACTIVE_ACCOUNT_ID) activeAccountId: string = ''
+  @StorageLink(StorageKeys.ACTIVE_ACCOUNT_ID) @Watch('onActiveAccountChanged') activeAccountId: string = ''
   @StorageLink(StorageKeys.API_RATE_LIMIT_LIMIT) apiRateLimitLimit: number = 0
   @StorageLink(StorageKeys.API_RATE_LIMIT_REMAINING) apiRateLimitRemaining: number = 0
   @StorageLink(StorageKeys.API_RATE_LIMIT_RESET) apiRateLimitReset: number = 0
@@ -88,6 +88,7 @@ export struct AccountDashboardPage {
   private http: HttpClient = HttpClient.getInstance()
   private api: ApiService = new ApiService()
   private localStatsRequestId: number = 0
+  private accountMetaRequestId: number = 0
   @State private accountsCount: number = 0
   @State private isAccountsLoaded: boolean = false
   @State private activeAccountUsername: string = ''
@@ -112,14 +113,21 @@ export struct AccountDashboardPage {
 
   onAuthSessionUpdated(_propName: string): void {
     const cookie = CookieJarSettings.getCurrentCookie()
+    this.loadAccounts()
     if (!cookie) {
-      this.accountBalance = null
-      this.dailyMission = null
-      this.accountMetaError = ''
+      this.resetAccountMeta()
       this.clearAccountMetaCache()
       return
     }
     this.sessionError = ''
+    this.resetAccountMeta()
+    this.loadAccountMetaCache()
+    this.loadAccountMeta(true)
+  }
+
+  onActiveAccountChanged(_propName: string): void {
+    this.loadAccounts()
+    this.resetAccountMeta()
     this.loadAccountMetaCache()
     this.loadAccountMeta(true)
   }
@@ -308,9 +316,9 @@ export struct AccountDashboardPage {
           .fontWeight(FontWeight.Medium)
           .fontColor(Color.Red)
           .layoutWeight(1)
-        Text('›')
-          .fontSize(ThemeConstants.FONT_SIZE_TITLE)
-          .fontColor($r('sys.color.font_secondary'))
+        SymbolGlyph($r('sys.symbol.chevron_right'))
+          .fontSize(ThemeConstants.ICON_SIZE_SM)
+          .fontColor([$r('sys.color.font_secondary')])
       }
       .width('100%')
       .padding(ThemeConstants.SPACE_LG)
@@ -456,11 +464,22 @@ export struct AccountDashboardPage {
   }
 
   private applyActiveAccountIdentity(record: AccountRecord | null): void {
-    this.activeAccountUsername = record?.username || ''
-    this.activeAccountAvatar = record?.avatar || ''
+    const nextUsername = record?.username || ''
+    const nextAvatar = record?.avatar || ''
+    const changed = nextUsername !== this.activeAccountUsername || nextAvatar !== this.activeAccountAvatar
+    this.activeAccountUsername = nextUsername
+    this.activeAccountAvatar = nextAvatar
+    if (changed) {
+      this.resetAccountMeta()
+      this.loadAccountMetaCache()
+      this.loadAccountMeta(true)
+    }
   }
 
   private currentUsername(): string {
+    if (this.activeAccountId && this.activeAccountUsername) {
+      return this.activeAccountUsername
+    }
     return AccountPageCoordinator.identity(
       this.sessionUsername,
       this.sessionAvatar,
@@ -472,6 +491,9 @@ export struct AccountDashboardPage {
   }
 
   private currentAvatar(): string {
+    if (this.activeAccountId && this.activeAccountAvatar) {
+      return this.activeAccountAvatar
+    }
     return AccountPageCoordinator.identity(
       this.sessionUsername,
       this.sessionAvatar,
@@ -749,7 +771,19 @@ export struct AccountDashboardPage {
   }
 
   private accountMetaOwnerKey(): string {
-    return AccountMetaSettings.ownerKey(this.currentUsername(), 'cookie')
+    return AccountMetaSettings.ownerKey(this.currentUsername(), this.accountMetaSource())
+  }
+
+  private accountMetaSource(): string {
+    return this.activeAccountId ? 'cookie:' + this.activeAccountId : 'cookie'
+  }
+
+  private resetAccountMeta(): void {
+    this.accountBalance = null
+    this.dailyMission = null
+    this.accountMetaError = ''
+    this.isAccountMetaLoading = false
+    this.accountMetaRequestId++
   }
 
   private loadAccountMetaCache(): void {
@@ -786,7 +820,7 @@ export struct AccountDashboardPage {
       return
     }
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    AccountMetaSettings.saveCache(context, ownerKey, this.accountBalance, this.dailyMission, 'cookie')
+    AccountMetaSettings.saveCache(context, ownerKey, this.accountBalance, this.dailyMission, this.accountMetaSource())
       .then(() => {
         DiagnosticLogger.info('account', 'account_meta_cache_save_success', { ownerHash: DiagnosticLogger.ownerHash(ownerKey) })
       })
@@ -815,12 +849,18 @@ export struct AccountDashboardPage {
     }
     this.isAccountMetaLoading = true
     this.accountMetaError = ''
+    const requestId = ++this.accountMetaRequestId
+    const ownerKey = this.accountMetaOwnerKey()
     DiagnosticLogger.info('account', 'account_meta_fetch_start', { force: force, hasBalance: !!this.accountBalance, canRedeem: this.dailyMission ? this.dailyMission.canRedeem === true : false })
     Promise.all([
       this.api.getBalanceWithCookie(cookie),
       this.api.getDailyMissionWithCookie(cookie)
     ])
       .then((results) => {
+        if (requestId !== this.accountMetaRequestId || cookie !== CookieJarSettings.getCurrentCookie() || ownerKey !== this.accountMetaOwnerKey()) {
+          DiagnosticLogger.info('account', 'account_meta_fetch_stale', { ownerHash: DiagnosticLogger.ownerHash(ownerKey) })
+          return
+        }
         this.accountBalance = results[0]
         this.dailyMission = results[1]
         DiagnosticLogger.info('account', 'account_meta_fetch_success', {
@@ -831,6 +871,10 @@ export struct AccountDashboardPage {
         this.saveAccountMetaCache()
       })
       .catch((error: Error) => {
+        if (requestId !== this.accountMetaRequestId || cookie !== CookieJarSettings.getCurrentCookie() || ownerKey !== this.accountMetaOwnerKey()) {
+          DiagnosticLogger.info('account', 'account_meta_fetch_stale_error', { ownerHash: DiagnosticLogger.ownerHash(ownerKey) })
+          return
+        }
         if (error instanceof V2exCookieTwoFactorRequiredError) {
           this.openTwoFactorFromCookie()
           return
