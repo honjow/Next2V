@@ -294,7 +294,6 @@ export class DetailViewModel {
         if (topics.length > 0) {
           topic = topics[0]
         }
-        const apiReplies = await this.api.getReplies(this.topicId, cacheBuster)
         const webCookie = CookieJarSettings.getCurrentCookie()
         const firstPage = await this.api.getTopicWebRepliesPage(
           this.topicId,
@@ -310,6 +309,7 @@ export class DetailViewModel {
           this.repliesPageCount = firstPage.pageCount
           this.repliesHasMore = firstPage.hasMore
         } else {
+          const apiReplies = await this.api.getReplies(this.topicId, cacheBuster)
           replies = apiReplies
           this.repliesSource = 'publicApi'
           this.repliesHasMore = false

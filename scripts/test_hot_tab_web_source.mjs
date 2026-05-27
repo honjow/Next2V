@@ -9,8 +9,8 @@ const constantsSource = fs.readFileSync(path.join(repo, 'shared/src/main/ets/con
 const parserSource = fs.readFileSync(path.join(repo, 'shared/src/main/ets/parser/V2exTabParser.ets'), 'utf8')
 const fixtureHtml = fs.readFileSync(path.join(repo, 'scripts/fixtures/hot_tab_main_list_sample.html'), 'utf8')
 
-assert.match(apiSource, /async\s+getHotTopics\(\):\s+Promise<V2exTopic\[\]>\s*{[\s\S]*ApiConstants\.API_HOT[\s\S]*?}/, 'legacy getHotTopics() API method must remain available')
-assert.match(apiSource, /async\s+getHotTabTopics\(\):\s+Promise<V2exTopic\[\]>\s*{[\s\S]*getText\('\/\?tab=hot'\)[\s\S]*V2exTabParser\.extractTopicIds[\s\S]*getBatchTopics\(ids\)[\s\S]*?}/, 'getHotTabTopics() must fetch and parse /?tab=hot HTML')
+assert.match(apiSource, /async\s+getHotTopics\(\):\s+Promise<V2exTopic\[\]>\s*{[\s\S]*this\.getHotTabTopics\(\)[\s\S]*?}/, 'getHotTopics() must use HTML hot tab instead of legacy API')
+assert.match(apiSource, /async\s+getHotTabTopics\(\):\s+Promise<V2exTopic\[\]>\s*{[\s\S]*getText\('\/\?tab=hot'\)[\s\S]*V2exTabParser\.parseTopicList\(html\)[\s\S]*?}/, 'getHotTabTopics() must fetch and parse /?tab=hot HTML')
 assert.match(constantsSource, /'hot':\s*'\/\?tab=hot'/, 'TAB_URLS.hot must continue to point at /?tab=hot')
 
 const getTabStart = apiSource.indexOf('async getTabTopics(tab: string)')

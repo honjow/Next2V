@@ -103,66 +103,70 @@ export class ApiService {
 
   // ==================== V1 Public API (V1) ====================
 
-  /** Get the latest 20 topics */
+  /** Get the latest topics from the public HTML feed to avoid legacy JSON API rate limits. */
   async getLatestTopics(): Promise<V2exTopic[]> {
-    return ApiService.normalizeTopics(await this.http.get<V2exTopic[]>(ApiConstants.API_LATEST))
+    return this.getRecentTopics(1)
   }
 
-  /** Get 10 daily hot topics */
+  /** Get hot topics from the public HTML hot tab to avoid legacy JSON API rate limits. */
   async getHotTopics(): Promise<V2exTopic[]> {
-    return ApiService.normalizeTopics(await this.http.get<V2exTopic[]>(ApiConstants.API_HOT))
+    return this.getHotTabTopics()
   }
 
   /** Get site hot tab trending topics */
   async getHotTabTopics(): Promise<V2exTopic[]> {
     const html = await this.http.getText('/?tab=hot')
-    const ids = V2exTabParser.extractTopicIds(html)
-    if (ids.length === 0) {
+    const topics = V2exTabParser.parseTopicList(html)
+    if (topics.length === 0) {
       throw ApiErrors.hotTopicsEmpty()
     }
-    return this.getBatchTopics(ids)
+    return ApiService.normalizeTopics(topics)
   }
 
   /** Get all-site recently updated topics */
   async getRecentTopics(page: number = 1): Promise<V2exTopic[]> {
     const safePage = Math.max(1, Math.floor(page))
     const html = await this.http.getText(`/recent?p=${safePage}`)
-    const ids = V2exTabParser.extractTopicIds(html)
-    if (ids.length === 0) {
+    const topics = V2exTabParser.parseTopicList(html)
+    if (topics.length === 0) {
       throw ApiErrors.recentTopicsEmpty()
     }
-    return this.getBatchTopics(ids)
+    return ApiService.normalizeTopics(topics)
   }
 
   /** Get a single topic by ID */
   async getTopicById(topicId: number, cacheBuster: number = 0): Promise<V2exTopic[]> {
-    const endpoint =
-      cacheBuster > 0
-        ? `${ApiConstants.API_TOPIC_SHOW}?id=${topicId}&_=${cacheBuster}`
-        : `${ApiConstants.API_TOPIC_SHOW}?id=${topicId}`
-    const topics =
-      cacheBuster > 0
-        ? await this.http.getNoCache<V2exTopic[]>(endpoint)
-        : await this.http.get<V2exTopic[]>(endpoint)
-    return ApiService.normalizeTopics(topics)
+    if (topicId <= 0) {
+      return []
+    }
+    try {
+      const path = cacheBuster > 0 ? `/t/${topicId}?_=${cacheBuster}` : `/t/${topicId}`
+      const html = await this.http.getText(path)
+      return [ApiService.topicFromHtml(topicId, html)]
+    } catch (error) {
+      DiagnosticLogger.exception('network', 'topic_html_fallback_exception', error as Error, { topicId: topicId })
+      const endpoint =
+        cacheBuster > 0
+          ? `${ApiConstants.API_TOPIC_SHOW}?id=${topicId}&_=${cacheBuster}`
+          : `${ApiConstants.API_TOPIC_SHOW}?id=${topicId}`
+      const topics =
+        cacheBuster > 0
+          ? await this.http.getNoCache<V2exTopic[]>(endpoint)
+          : await this.http.get<V2exTopic[]>(endpoint)
+      return ApiService.normalizeTopics(topics)
+    }
   }
 
   /** Get topics by username */
   async getTopicsByUsername(username: string): Promise<V2exTopic[]> {
-    return ApiService.normalizeTopics(
-      await this.http.get<V2exTopic[]>(
-        `${ApiConstants.API_TOPIC_SHOW}?${ApiService.queryParam('username', username)}`,
-      ),
-    )
+    const snapshot = await this.getMemberTopicsPage(username, 1)
+    return this.getTopicsByIds(snapshot.topicIds)
   }
 
   /** Get topics by node name */
   async getTopicsByNode(nodeName: string): Promise<V2exTopic[]> {
-    return ApiService.normalizeTopics(
-      await this.http.get<V2exTopic[]>(
-        `${ApiConstants.API_TOPIC_SHOW}?${ApiService.queryParam('node_name', nodeName)}`,
-      ),
-    )
+    const result = await this.getNodeTopicsPage(nodeName, 1)
+    return result.topics
   }
 
   /** Get topics from node page, supports /go/{node}?p=N pagination. */
@@ -174,11 +178,12 @@ export class ApiService {
     const safePage = Math.max(1, Math.floor(page))
     const html = await this.http.getText(`/go/${encodeURIComponent(clean)}?p=${safePage}`)
     const snapshot: V2exNodeTopicsPageSnapshot = V2exNodeParser.parseNodeTopicsPage(html)
-    if (snapshot.topicIds.length === 0) {
+    const topics = V2exTabParser.parseTopicList(html)
+    if (topics.length === 0) {
       return { topics: [], hasMore: false }
     }
     return {
-      topics: await this.getBatchTopics(snapshot.topicIds),
+      topics: ApiService.normalizeTopics(topics),
       hasMore: snapshot.hasMore,
     }
   }
@@ -258,9 +263,19 @@ export class ApiService {
 
   /** Get user info */
   async getMember(username: string): Promise<V2exMemberProfile> {
-    return this.http.get<V2exMemberProfile>(
-      `${ApiConstants.API_MEMBER_SHOW}?${ApiService.queryParam('username', username)}`,
-    )
+    const clean = (username || '').trim()
+    if (!clean) {
+      throw ApiErrors.invalidUsername()
+    }
+    try {
+      const html = await this.http.getText(`/member/${encodeURIComponent(clean)}`)
+      return ApiService.memberProfileFromHtml(clean, html)
+    } catch (error) {
+      DiagnosticLogger.exception('network', 'member_profile_html_fallback_exception', error as Error, { username: clean })
+      return this.http.get<V2exMemberProfile>(
+        `${ApiConstants.API_MEMBER_SHOW}?${ApiService.queryParam('username', clean)}`,
+      )
+    }
   }
 
   /** Get topics, replies, and available actions from member page. Topic list respects user's web hide settings. */
@@ -1575,11 +1590,11 @@ export class ApiService {
       topics = await this.getHotTabTopics()
     } else {
       const html = await this.http.getText(ApiConstants.TAB_URLS[tab])
-      const ids = V2exTabParser.extractTopicIds(html)
-      if (ids.length === 0) {
+      const parsedTopics = V2exTabParser.parseTopicList(html)
+      if (parsedTopics.length === 0) {
         throw ApiErrors.tabTopicsEmpty(tab)
       }
-      topics = await this.getBatchTopics(ids)
+      topics = ApiService.normalizeTopics(parsedTopics)
     }
     return topics
   }
@@ -1605,6 +1620,81 @@ export class ApiService {
       results.push(...batchResults.map((r) => r[0]).filter((t) => t !== undefined))
     }
     return ApiService.normalizeTopics(results)
+  }
+
+  private static topicFromHtml(topicId: number, html: string): V2exTopic {
+    const headerMatch = (html || '').match(/<div[^>]*class=["']header["'][^>]*>([\s\S]*?)<\/div>\s*<div[^>]*class=["']cell["']/i)
+    const header = headerMatch ? headerMatch[1] : html
+    const title = ApiService.extractFirst(header, /<h1[^>]*>([\s\S]*?)<\/h1>/i)
+    const author = ApiService.extractFirst(header, /<a[^>]*href=["']\/member\/([^"']+)["'][^>]*>/i)
+    const nodeName = ApiService.extractFirst(header, /<a[^>]*href=["']\/go\/([^"']+)["'][^>]*>/i)
+    const nodeTitle = ApiService.extractFirst(header, /<a[^>]*href=["']\/go\/[^"']+["'][^>]*>([\s\S]*?)<\/a>/i)
+    const avatarTagMatch = header.match(/<img[^>]*class=["']avatar["'][^>]*>/i)
+    const avatarTag = avatarTagMatch ? avatarTagMatch[0] : ''
+    const avatar = ApiService.extractAttr(avatarTag, 'src')
+    const memberId = ApiService.parseNumber(ApiService.extractAttr(avatarTag, 'data-uid'))
+    const created = ApiService.parseTimeSeconds(ApiService.extractFirst(header, /<span[^>]*title=["']([^"']+\+08:00)["'][^>]*>/i))
+    const contentRendered = ApiService.extractFirst(html, /<div[^>]*class=["'][^"']*\btopic_content\b[^"']*["'][^>]*>([\s\S]*?)<\/div>\s*<\/div>/i)
+    const replies = ApiService.parseNumber(ApiService.extractFirst(html, /<span[^>]*class=["']gray["'][^>]*>(\d+)\s+repl(?:y|ies)/i))
+    return {
+      id: topicId,
+      title: title,
+      url: V2exUrlRouter.withSelectedBaseUrl(`/t/${topicId}`, HttpClient.getInstance().getBaseUrl()),
+      content: ApiService.decodePlain(contentRendered),
+      content_rendered: contentRendered,
+      replies: replies,
+      member: {
+        id: memberId,
+        username: author,
+        tagline: '',
+        avatar_mini: avatar,
+        avatar_normal: avatar,
+        avatar_large: avatar
+      },
+      node: {
+        id: 0,
+        name: nodeName,
+        title: nodeTitle || nodeName,
+        title_alternative: '',
+        url: nodeName ? V2exUrlRouter.withSelectedBaseUrl(`/go/${nodeName}`, HttpClient.getInstance().getBaseUrl()) : '',
+        topics: 0,
+        avatar_mini: '',
+        avatar_normal: '',
+        avatar_large: ''
+      },
+      created: created,
+      last_modified: created,
+      last_touched: created
+    }
+  }
+
+  private static memberProfileFromHtml(username: string, html: string): V2exMemberProfile {
+    const clean = (username || '').trim()
+    const avatarTagMatch = (html || '').match(/<img[^>]*class=["']avatar["'][^>]*alt=["'][^"']*["'][^>]*>/i) ||
+      (html || '').match(/<img[^>]*alt=["'][^"']*["'][^>]*class=["']avatar["'][^>]*>/i)
+    const avatarTag = avatarTagMatch ? avatarTagMatch[0] : ''
+    const pageUsername = ApiService.extractFirst(html, /<h1[^>]*>([\s\S]*?)<\/h1>/i) || clean
+    const memberId = ApiService.parseNumber(ApiService.extractFirst(html, /V2EX member #(\d+)/i) || ApiService.extractAttr(avatarTag, 'data-uid'))
+    const avatar = ApiService.extractAttr(avatarTag, 'src')
+    const created = ApiService.parseTimeSeconds(ApiService.extractFirst(html, /joined on ([^<]+?\+08:00)/i))
+    return {
+      status: pageUsername ? 'found' : 'unknown',
+      id: memberId,
+      url: V2exUrlRouter.withSelectedBaseUrl(`/member/${encodeURIComponent(clean)}`, HttpClient.getInstance().getBaseUrl()),
+      username: ApiService.decodePlain(pageUsername || clean),
+      website: '',
+      twitter: '',
+      psn: '',
+      github: '',
+      btc: '',
+      location: '',
+      tagline: '',
+      bio: '',
+      avatar_mini: avatar,
+      avatar_normal: avatar,
+      avatar_large: avatar,
+      created: created
+    }
   }
 
   private static normalizeTopics(topics: V2exTopic[]): V2exTopic[] {
@@ -1658,5 +1748,30 @@ export class ApiService {
 
   private static queryParam(name: string, value: string): string {
     return `${encodeURIComponent(name)}=${encodeURIComponent((value || '').trim())}`
+  }
+
+  private static extractAttr(tag: string, attr: string): string {
+    const escaped = attr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const match = (tag || '').match(new RegExp(`${escaped}=["']([^"']*)["']`, 'i'))
+    return match && match[1] ? ApiService.decodePlain(match[1]) : ''
+  }
+
+  private static extractFirst(text: string, pattern: RegExp): string {
+    const match = (text || '').match(pattern)
+    return match && match[1] ? ApiService.decodePlain(match[1]) : ''
+  }
+
+  private static parseNumber(value: string): number {
+    const n = parseInt((value || '').replace(/[^0-9]/g, ''), 10)
+    return Number.isFinite(n) ? n : 0
+  }
+
+  private static parseTimeSeconds(value: string): number {
+    const timestamp = Date.parse((value || '').trim().replace(' +08:00', '+08:00'))
+    return Number.isFinite(timestamp) ? Math.floor(timestamp / 1000) : 0
+  }
+
+  private static decodePlain(value: string): string {
+    return HtmlEntityUtils.decode((value || '').replace(/<[^>]+>/g, '').trim())
   }
 }
