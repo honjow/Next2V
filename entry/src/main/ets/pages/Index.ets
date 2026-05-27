@@ -6,6 +6,7 @@ import {
   HdsNavDestination,
   HdsNavigation,
   HdsNavigationTitleMode,
+  HdsAnimationMode,
   HdsTabs,
   HdsTabsController,
   HdsTabsFloatingStyle,
@@ -23,6 +24,7 @@ import {
   CookieJarSettings,
   FoldScreenUtil,
   HttpClient,
+  HomeTabSettings,
   MotionHandStateService,
   StorageKeys,
   ThemeConstants,
@@ -92,13 +94,24 @@ import { IndexRouteCoordinator } from '../model/IndexRouteCoordinator'
 @Component
 struct Index {
   @Provide('ns') ns: NavPathStack = new NavPathStack();
+  private readonly HOME_TAB_SCROLL_DELTA_PX: number = 6
+  private readonly HOME_TAB_ANIMATION_GUARD_MS: number = 180
   private tc: HdsTabsController = new HdsTabsController();
+  private homeTabScrollers: Scroller[] = [
+    new Scroller(),
+    new Scroller(),
+    new Scroller(),
+    new Scroller(),
+  ];
   private tabTitles: ResourceStr[] = [
     AppStrings.R_SETTINGS_HOME,
     AppStrings.R_TAB_DISCOVER,
     AppStrings.R_TAB_NOTIFICATIONS,
     AppStrings.R_TAB_ME,
   ];
+  private homeTabLastScrollOffsets: number[] = [0, 0, 0, 0]
+  private homeTabVisibleByScroll: boolean = true
+  private homeTabAnimationGuardTimerId: number = -1
   @State ct: number = 0;
   @StorageLink(StorageKeys.PENDING_V2EX_URL)
   @Watch('onPendingV2exUrlChanged')
@@ -139,6 +152,9 @@ struct Index {
   @StorageLink(StorageKeys.USER_PROFILE_APPBAR_AVATAR_STATES)
   userProfileAppbarAvatarStates: string = '{}';
   @StorageLink(StorageKeys.NOTIFICATION_UNREAD_COUNT) notificationUnreadCount: number = 0;
+  @StorageLink(StorageKeys.HOME_TAB_AUTO_HIDE)
+  @Watch('onHomeTabAutoHideChanged')
+  homeTabAutoHide: boolean = HomeTabSettings.DEFAULT_AUTO_HIDE;
   @StorageLink(StorageKeys.AUTH_SESSION_UPDATED_AT)
   @Watch('onAuthSessionUpdated')
   authSessionUpdatedAt: number = 0;
@@ -172,10 +188,106 @@ struct Index {
   aboutToDisappear(): void {
     // Unregister foldable screen state change callback
     FoldScreenUtil.getInstance().unregisterCallback(this.foldScreenCallback)
+    this.clearHomeTabAnimationGuardTimer()
   }
 
   onPendingV2exUrlChanged(_propName: string): void {
     this.consumePendingV2exUrl()
+  }
+
+  onHomeTabAutoHideChanged(_propName: string): void {
+    this.applyHomeTabAutoHide()
+  }
+
+  private setHomeTabScroller(index: number, scroller: Scroller): void {
+    const oldScroller = this.homeTabScrollers[index]
+    if (oldScroller === scroller) {
+      if (this.homeTabAutoHide) {
+        this.tc.bindScroller(index, scroller)
+      }
+      return
+    }
+    if (oldScroller) {
+      this.tc.unbindScroller(oldScroller)
+    }
+    this.homeTabScrollers[index] = scroller
+    if (this.homeTabAutoHide) {
+      this.tc.bindScroller(index, scroller)
+      this.restoreHomeTabIfHidden()
+    }
+  }
+
+  private applyHomeTabAutoHide(): void {
+    if (this.homeTabAutoHide) {
+      for (let index = 0; index < this.homeTabScrollers.length; index++) {
+        this.tc.bindScroller(index, this.homeTabScrollers[index])
+      }
+      this.restoreHomeTabIfHidden()
+      return
+    }
+    for (let index = 0; index < this.homeTabScrollers.length; index++) {
+      this.tc.unbindScroller(this.homeTabScrollers[index])
+    }
+    this.restoreHomeTabIfHidden()
+  }
+
+  private restoreHomeTabIfHidden(): void {
+    if (this.homeTabVisibleByScroll) {
+      return
+    }
+    this.homeTabVisibleByScroll = true
+    this.tc.applyShowAnimation(HdsAnimationMode.SCROLL_ANIMATION)
+  }
+
+  private clearHomeTabAnimationGuardTimer(): void {
+    if (this.homeTabAnimationGuardTimerId === -1) {
+      return
+    }
+    clearTimeout(this.homeTabAnimationGuardTimerId)
+    this.homeTabAnimationGuardTimerId = -1
+  }
+
+  private startHomeTabAnimationGuardTimer(): void {
+    this.clearHomeTabAnimationGuardTimer()
+    this.homeTabAnimationGuardTimerId = setTimeout((): void => {
+      this.homeTabAnimationGuardTimerId = -1
+    }, this.HOME_TAB_ANIMATION_GUARD_MS)
+  }
+
+  private applyHomeTabScrollAnimation(visible: boolean): void {
+    if (!this.homeTabAutoHide || this.homeTabAnimationGuardTimerId !== -1 || this.homeTabVisibleByScroll === visible) {
+      return
+    }
+    this.homeTabVisibleByScroll = visible
+    if (visible) {
+      this.tc.applyShowAnimation(HdsAnimationMode.SCROLL_ANIMATION)
+    } else {
+      this.tc.applyHideAnimation(HdsAnimationMode.SCROLL_ANIMATION)
+    }
+    this.startHomeTabAnimationGuardTimer()
+  }
+
+  private onHomeTabDidScroll(index: number, offset: number, state: ScrollState): void {
+    if (index !== this.ct || state === ScrollState.Idle || !this.homeTabAutoHide) {
+      this.homeTabLastScrollOffsets[index] = offset
+      return
+    }
+    const lastOffset = this.homeTabLastScrollOffsets[index]
+    this.homeTabLastScrollOffsets[index] = offset
+    const delta = offset - lastOffset
+    const isReverseScroll = delta < -this.HOME_TAB_SCROLL_DELTA_PX
+    const isForwardScroll = delta > this.HOME_TAB_SCROLL_DELTA_PX
+    if (isReverseScroll) {
+      this.applyHomeTabScrollAnimation(true)
+      return
+    }
+    if (isForwardScroll || offset > this.HOME_TAB_SCROLL_DELTA_PX) {
+      this.applyHomeTabScrollAnimation(false)
+      return
+    }
+    if (offset <= this.HOME_TAB_SCROLL_DELTA_PX) {
+      this.applyHomeTabScrollAnimation(true)
+    }
   }
 
   onAuthSessionUpdated(_propName: string): void {
@@ -311,23 +423,47 @@ struct Index {
     HdsNavigation(this.ns) {
       HdsTabs({ controller: this.tc, index: this.ct }) {
         TabContent() {
-          HomePage()
+          HomePage({
+            onScrollerReady: (scroller: Scroller) => {
+              this.setHomeTabScroller(0, scroller)
+            },
+            onDidScroll: (offset: number, state: ScrollState) => {
+              this.onHomeTabDidScroll(0, offset, state)
+            },
+          })
         }.tabBar(this.TabIcon(AppStrings.R_SETTINGS_HOME, 0))
         TabContent() {
-          DiscoverPage()
+          DiscoverPage({
+            scroller: this.homeTabScrollers[1],
+            onDidScroll: (offset: number, state: ScrollState) => {
+              this.onHomeTabDidScroll(1, offset, state)
+            },
+          })
         }.tabBar(this.TabIcon(AppStrings.R_TAB_DISCOVER, 1))
         TabContent() {
-          NotificationPage({ refreshKey: this.notificationRefreshKey, currentTab: this.ct })
+          NotificationPage({
+            refreshKey: this.notificationRefreshKey,
+            currentTab: this.ct,
+            scroller: this.homeTabScrollers[2],
+            onDidScroll: (offset: number, state: ScrollState) => {
+              this.onHomeTabDidScroll(2, offset, state)
+            },
+          })
         }.tabBar(this.TabIcon(AppStrings.R_TAB_NOTIFICATIONS, 2))
         TabContent() {
-          AccountDashboardPage({ refreshKey: this.accountRefreshKey })
+          AccountDashboardPage({
+            refreshKey: this.accountRefreshKey,
+            scroller: this.homeTabScrollers[3],
+            onDidScroll: (offset: number, state: ScrollState) => {
+              this.onHomeTabDidScroll(3, offset, state)
+            },
+          })
         }.tabBar(this.TabIcon(AppStrings.R_TAB_ME, 3))
       }
       .barOverlap(true)
       .barPosition(BarPosition.End)
       .barMode(BarMode.Fixed)
       .scrollable(false)
-      .animationDuration(0)
       .barFloatingStyle({
         barBottomMargin: ThemeConstants.SPACE_XL,
         adaptToHandedness: true,
@@ -336,6 +472,9 @@ struct Index {
           materialLevel: hdsMaterial.MaterialLevel.ADAPTIVE,
         },
       } as HdsTabsFloatingStyle)
+      .onAppear(() => {
+        this.applyHomeTabAutoHide()
+      })
       .onChange((i: number) => {
         this.ct = i
         if (i === 2) {
@@ -347,6 +486,9 @@ struct Index {
         }
         if (i === 3) {
           this.accountRefreshKey = Date.now()
+        }
+        if (this.homeTabAutoHide) {
+          this.restoreHomeTabIfHidden()
         }
       })
     }

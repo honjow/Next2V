@@ -21,6 +21,9 @@ export struct HomePage {
     distance: 1
   })
   private isHorizontalSwiping: boolean = false
+  private feedScrollers: Map<string, Scroller> = new Map<string, Scroller>()
+  onScrollerReady?: (scroller: Scroller) => void
+  onDidScroll?: (offset: number, state: ScrollState) => void
 
   aboutToAppear(): void {
     AppStorage.setOrCreate('listScrollEnabled', true)
@@ -31,6 +34,41 @@ export struct HomePage {
     }
     this.currentTabIndex = nextIndex
     this.setVisualTabIndex(nextIndex)
+    this.notifyMainScrollerReady()
+  }
+
+  private scrollerForTab(tabKey: string): Scroller {
+    const existing = this.feedScrollers.get(tabKey)
+    if (existing) {
+      return existing
+    }
+    const scroller = new Scroller()
+    this.feedScrollers.set(tabKey, scroller)
+    return scroller
+  }
+
+  private notifyMainScrollerReady(): void {
+    if (!this.onScrollerReady) {
+      return
+    }
+    const scroller = this.feedScrollers.get(this.feedTab)
+    if (scroller) {
+      this.onScrollerReady(scroller)
+    }
+  }
+
+  private onFeedScrollerReady(tabKey: string, scroller: Scroller): void {
+    this.feedScrollers.set(tabKey, scroller)
+    if (tabKey === this.feedTab) {
+      this.notifyMainScrollerReady()
+    }
+  }
+
+  private onFeedDidScroll(tabKey: string, offset: number, state: ScrollState): void {
+    if (tabKey !== this.feedTab || !this.onDidScroll) {
+      return
+    }
+    this.onDidScroll(offset, state)
   }
 
   private setListScrollEnabled(enabled: boolean): void {
@@ -84,6 +122,7 @@ export struct HomePage {
     }
     this.currentTabIndex = nextIndex
     this.animateVisualTabIndex(nextIndex)
+    this.notifyMainScrollerReady()
     this.swiperController.changeIndex(nextIndex, true)
   }
 
@@ -104,6 +143,7 @@ export struct HomePage {
     }
     this.currentTabIndex = nextIndex
     this.setVisualTabIndex(nextIndex)
+    this.notifyMainScrollerReady()
     this.swiperController.changeIndex(nextIndex, false)
   }
 
@@ -151,7 +191,14 @@ export struct HomePage {
       Swiper(this.swiperController) {
         ForEach(this.visibleTabs(), (tab: TabItem) => {
           FeedListPage({
-            tabKey: tab.key
+            tabKey: tab.key,
+            scroller: this.scrollerForTab(tab.key),
+            onScrollerReady: (tabKey: string, scroller: Scroller) => {
+              this.onFeedScrollerReady(tabKey, scroller)
+            },
+            onDidScroll: (tabKey: string, offset: number, state: ScrollState) => {
+              this.onFeedDidScroll(tabKey, offset, state)
+            },
           })
         }, (tab: TabItem) => tab.key)
       }
@@ -182,6 +229,7 @@ export struct HomePage {
         if (key !== this.feedTab) {
           this.feedTab = key
         }
+        this.notifyMainScrollerReady()
         this.persistSelectedTab(key)
       })
       .onAreaChange((_oldValue: Area, newValue: Area) => {
@@ -222,10 +270,15 @@ struct FeedListPage {
   private readonly PULL_THRESHOLD: number = 60
   private readonly TBH: number = ThemeConstants.TITLE_BAR_HEIGHT
   private readonly BB_H: number = ApiConstants.TAB_BAR_HEIGHT
-  private scroller: Scroller = new Scroller()
+  scroller: Scroller = new Scroller()
+  onScrollerReady?: (tabKey: string, scroller: Scroller) => void
+  onDidScroll?: (tabKey: string, offset: number, state: ScrollState) => void
   private api: ApiService = new ApiService()
 
   aboutToAppear(): void {
+    if (this.onScrollerReady) {
+      this.onScrollerReady(this.tabKey, this.scroller)
+    }
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     if (this.tabKey === 'latest') {
       this.vm.setPagedLoader((page: number) => this.api.getRecentTopics(page))
@@ -259,7 +312,12 @@ struct FeedListPage {
             onRefresh: async () => { await this.vm.refresh() },
             onBottomRefresh: async () => { await this.vm.loadMore() },
             canStartBottomRefresh: () => this.vm.canLoadMore(),
-            onReachEnd: () => { this.vm.loadMore() }
+            onReachEnd: () => { this.vm.loadMore() },
+            onDidScroll: (offset: number, state: ScrollState) => {
+              if (this.onDidScroll) {
+                this.onDidScroll(this.tabKey, offset, state)
+              }
+            }
           }) {
               LazyForEach(this.vm.dataSource, (item: V2exTopic) => {
                 ListItem() {

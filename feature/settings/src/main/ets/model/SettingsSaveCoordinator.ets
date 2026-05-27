@@ -4,6 +4,7 @@ import {
   AutoDailyCheckinSettings,
   CookieJarSettings,
   DiagnosticsSettings,
+  HomeTabSettings,
   HttpClient,
   LanguageSettings,
   MediaSettings,
@@ -53,6 +54,12 @@ export class SettingsSaveCoordinator {
   ): void {
     MediaSettings.save(context, autoLoadImages, onlyLoadImagesOnWifi).catch((error: Error) => {
       console.error('save media settings failed: ' + error.message)
+    })
+  }
+
+  static saveHomeTabAutoHide(context: common.UIAbilityContext, enabled: boolean): void {
+    HomeTabSettings.save(context, enabled).catch((error: Error) => {
+      console.error('save home tab auto-hide setting failed: ' + error.message)
     })
   }
 

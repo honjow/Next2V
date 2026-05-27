@@ -6,6 +6,7 @@ import {
   CacheSettings,
   ConciseListRow,
   GroupedListSection,
+  HomeTabSettings,
   HttpClient,
   NetworkProxySettings,
   LanguageSettings,
@@ -46,6 +47,7 @@ export struct SettingsPage {
     ReplyCardStyleSettings.STYLE_STANDARD;
   @StorageLink(StorageKeys.REPLY_ACTION_ALIGNMENT_MODE) replyActionAlignmentMode: string =
     ReplyActionAlignmentSettings.MODE_UNSET;
+  @StorageLink(StorageKeys.HOME_TAB_AUTO_HIDE) homeTabAutoHide: boolean = HomeTabSettings.DEFAULT_AUTO_HIDE;
   @StorageLink(StorageKeys.MOTION_HOLDING_HAND_SUPPORTED) motionHoldingHandSupported: boolean = false;
   @StorageLink(StorageKeys.READING_RESTORE_POSITION) readingRestorePosition: boolean = false;
   @StorageLink(StorageKeys.READING_BASE64_DECODE_MODE) base64DecodeMode: string = ReadingSettings.BASE64_MODE_BADGE;
@@ -97,6 +99,10 @@ export struct SettingsPage {
               action: () => {
                 this.stack.pushPathByName('HomeNodeSettings', null)
               },
+            })
+            this.SettingsDivider()
+            this.TogglePreferenceRow(AppStrings.R_HOME_TAB_AUTO_HIDE, this.homeTabAutoHide, (value: boolean) => {
+              this.updateHomeTabAutoHide(value)
             })
           }
         }
@@ -579,6 +585,12 @@ export struct SettingsPage {
     this.autoDailyCheckinEnabled = enabled
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     SettingsSaveCoordinator.saveAutoDailyCheckin(context, enabled)
+  }
+
+  private updateHomeTabAutoHide(enabled: boolean): void {
+    this.homeTabAutoHide = enabled
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    SettingsSaveCoordinator.saveHomeTabAutoHide(context, enabled)
   }
 
 

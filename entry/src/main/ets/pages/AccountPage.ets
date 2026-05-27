@@ -94,6 +94,8 @@ export struct AccountDashboardPage {
   @State private activeAccountUsername: string = ''
   @State private activeAccountAvatar: string = ''
   @Prop @Watch('onRefreshKeyChanged') refreshKey: number = 0
+  scroller: Scroller = new Scroller()
+  onDidScroll?: (offset: number, state: ScrollState) => void
 
   aboutToAppear(): void {
     this.loadAuthSnapshot()
@@ -135,7 +137,13 @@ export struct AccountDashboardPage {
   build() {
     Column() {
       SecondaryListScaffold({
-        bottomPadding: ThemeConstants.FLOAT_BAR_HEIGHT + ThemeConstants.SPACE_MD
+        scroller: this.scroller,
+        bottomPadding: ThemeConstants.FLOAT_BAR_HEIGHT + ThemeConstants.SPACE_MD,
+        onDidScroll: (offset: number, state: ScrollState) => {
+          if (this.onDidScroll) {
+            this.onDidScroll(offset, state)
+          }
+        }
       }) {
         ListItem() {
           this.SectionHeader(AccountPageCoordinator.SECTION_ACCOUNT)

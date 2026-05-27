@@ -401,6 +401,10 @@
       "value": "自動簽到"
     },
     {
+      "name": "home_tab_auto_hide",
+      "value": "自動隱藏首頁標籤列"
+    },
+    {
       "name": "image_auto_load",
       "value": "圖片自動載入"
     },

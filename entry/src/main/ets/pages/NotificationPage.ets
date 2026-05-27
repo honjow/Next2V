@@ -60,7 +60,8 @@ export struct NotificationPage {
   @State private isNotificationAuthLoading: boolean = false
   @State private scrollEnabled: boolean = true
   @State private viewedUnreadNotificationKeys: string[] = []
-  private scroller: Scroller = new Scroller()
+  scroller: Scroller = new Scroller()
+  onDidScroll?: (offset: number, state: ScrollState) => void
   private api: ApiService = new ApiService()
   private apiV2: ApiV2Service = new ApiV2Service()
   private notificationVm: NotificationCenterViewModel = new NotificationCenterViewModel(this.api)
@@ -147,6 +148,11 @@ export struct NotificationPage {
           },
           onReachEnd: () => {
             this.loadMoreNotifications()
+          },
+          onDidScroll: (offset: number, state: ScrollState) => {
+            if (this.onDidScroll) {
+              this.onDidScroll(offset, state)
+            }
           }
         }) {
           ForEach(this.notifications, (item: V2exNotification) => {

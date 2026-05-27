@@ -40,7 +40,8 @@ export struct DiscoverPage {
   private readonly BBH: number = 48
   private readonly GAP: number = ThemeConstants.SPACE_MD
   private readonly PULL_REFRESH_THRESHOLD: number = 84
-  private scroller: Scroller = new Scroller()
+  scroller: Scroller = new Scroller()
+  onDidScroll?: (offset: number, state: ScrollState) => void
   private api: ApiService = new ApiService()
 
   private onKeywordChanged(): void {
@@ -98,6 +99,11 @@ export struct DiscoverPage {
                 .width('100%')
             }
               .enableScrollInteraction(this.scrollEnabled)
+              .onDidScroll((_scrollOffset: number, scrollState: ScrollState) => {
+                if (this.onDidScroll) {
+                  this.onDidScroll(this.scroller.currentOffset().yOffset, scrollState)
+                }
+              })
               .scrollBar(BarState.Off)
           }
         }

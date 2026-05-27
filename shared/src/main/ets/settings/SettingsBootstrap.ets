@@ -7,6 +7,7 @@ import { AccountStore } from './AccountStore'
 import { AccountSessionCoordinator } from './AccountSessionCoordinator'
 import { DiagnosticsSettings } from './DiagnosticsSettings'
 import { FeedTabSettings } from './FeedTabSettings'
+import { HomeTabSettings } from './HomeTabSettings'
 import { LanguageSettings } from './LanguageSettings'
 import { MediaSettings } from './MediaSettings'
 import { NetworkProxySettings } from './NetworkProxySettings'
@@ -35,6 +36,7 @@ export class SettingsBootstrap {
     await SettingsBootstrap.restoreNetworkProxy(context, settingsStore)
     await SettingsBootstrap.restoreReplyDisplay(context, settingsStore)
     await SettingsBootstrap.restoreReading(context, settingsStore)
+    await SettingsBootstrap.restoreHomeTabs(context, settingsStore)
     await SettingsBootstrap.restoreFeedTabs(context)
     await SettingsBootstrap.restoreCookieJar(context)
     await SettingsBootstrap.restoreMultiAccount(context)
@@ -127,6 +129,16 @@ export class SettingsBootstrap {
     await FeedTabSettings.load(context).catch((error: Error) => {
       console.error('restore feed tab settings failed: ' + error.message)
       FeedTabSettings.apply(FeedTabSettings.defaultKeysJson())
+    })
+  }
+
+  private static async restoreHomeTabs(context: common.UIAbilityContext, settingsStore?: SettingsPreferencesStore): Promise<void> {
+    await (settingsStore
+      ? HomeTabSettings.loadFromStore(settingsStore)
+      : HomeTabSettings.load(context)
+    ).catch((error: Error) => {
+      console.error('restore home tab settings failed: ' + error.message)
+      HomeTabSettings.apply(HomeTabSettings.DEFAULT_AUTO_HIDE)
     })
   }
 

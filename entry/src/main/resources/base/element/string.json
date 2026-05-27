@@ -401,6 +401,10 @@
       "value": "Auto check-in"
     },
     {
+      "name": "home_tab_auto_hide",
+      "value": "Auto-hide home tabs"
+    },
+    {
       "name": "image_auto_load",
       "value": "Auto-load images"
     },

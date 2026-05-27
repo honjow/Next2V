@@ -229,6 +229,7 @@ export class AppStrings {
   static readonly R_LANGUAGE_ENGLISH: Resource = $r('app.string.language_english')
   static readonly R_ACCOUNT_MANAGEMENT: Resource = $r('app.string.account_management')
   static readonly R_AUTO_CHECKIN: Resource = $r('app.string.auto_checkin')
+  static readonly R_HOME_TAB_AUTO_HIDE: Resource = $r('app.string.home_tab_auto_hide')
   static readonly R_IMAGE_AUTO_LOAD: Resource = $r('app.string.image_auto_load')
   static readonly R_WIFI_ONLY_IMAGES: Resource = $r('app.string.wifi_only_images')
   static readonly R_API_DOMAIN: Resource = $r('app.string.api_domain')
