@@ -28,8 +28,9 @@ assert.match(nodePage, /V2exTabParser\.parseTopicList\(html\)/, 'node page must 
 assert.doesNotMatch(nodePage, /getBatchTopics\(snapshot\.topicIds\)/, 'node page must not fan out to legacy /api/topics/show.json')
 
 const topicById = methodBody(api, 'async getTopicById', '/** Get topics by username')
-assert.match(topicById, /this\.http\.getText\(path\)/, 'topic detail must fetch /t/{id} HTML before legacy JSON API')
-assert.match(topicById, /topicFromHtml\(topicId, html\)/, 'topic detail must parse topic metadata from HTML')
+assert.match(topicById, /ApiConstants\.API_TOPIC_SHOW/, 'topic detail may use single-topic legacy JSON for canonical rendered content')
+assert.match(topicById, /content\/content_rendered is the\s*\/\/ stable input|stable input for V2Next/, 'topic detail must document why JSON remains primary')
+assert.match(topicById, /catch \(error\)[\s\S]*this\.http\.getText\(path\)[\s\S]*topicFromHtml\(topicId, html\)/, 'topic detail must fall back to HTML only when JSON is unavailable')
 
 const member = methodBody(api, 'async getMember(username: string)', '/** Get topics, replies')
 assert.match(member, /this\.http\.getText\(`\/member\/\$\{encodeURIComponent\(clean\)\}`\)/, 'member profile must fetch HTML member page before legacy JSON API')

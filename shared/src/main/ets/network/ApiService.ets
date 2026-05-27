@@ -139,21 +139,23 @@ export class ApiService {
     if (topicId <= 0) {
       return []
     }
+    const endpoint =
+      cacheBuster > 0
+        ? `${ApiConstants.API_TOPIC_SHOW}?id=${topicId}&_=${cacheBuster}`
+        : `${ApiConstants.API_TOPIC_SHOW}?id=${topicId}`
     try {
-      const path = cacheBuster > 0 ? `/t/${topicId}?_=${cacheBuster}` : `/t/${topicId}`
-      const html = await this.http.getText(path)
-      return [ApiService.topicFromHtml(topicId, html)]
-    } catch (error) {
-      DiagnosticLogger.exception('network', 'topic_html_fallback_exception', error as Error, { topicId: topicId })
-      const endpoint =
-        cacheBuster > 0
-          ? `${ApiConstants.API_TOPIC_SHOW}?id=${topicId}&_=${cacheBuster}`
-          : `${ApiConstants.API_TOPIC_SHOW}?id=${topicId}`
+      // Keep topic detail content on legacy JSON first: its content/content_rendered is the
+      // stable input for V2Next's rendered-content parser. HTML is only a no-account fallback.
       const topics =
         cacheBuster > 0
           ? await this.http.getNoCache<V2exTopic[]>(endpoint)
           : await this.http.get<V2exTopic[]>(endpoint)
       return ApiService.normalizeTopics(topics)
+    } catch (error) {
+      DiagnosticLogger.exception('network', 'topic_json_fallback_to_html_exception', error as Error, { topicId: topicId })
+      const path = cacheBuster > 0 ? `/t/${topicId}?_=${cacheBuster}` : `/t/${topicId}`
+      const html = await this.http.getText(path)
+      return [ApiService.topicFromHtml(topicId, html)]
     }
   }
 
