@@ -53,6 +53,10 @@ export class IndexTitleBarCoordinator {
     ]
   }
 
+  static accountWebViewMenuItems(): IndexTitleMenuDescriptor[] {
+    return [{ label: AppStrings.R_NAV_RELOAD, action: 'reload', icon: 'refresh' }]
+  }
+
   static imagePreviewMenuItems(): IndexTitleMenuDescriptor[] {
     return [{ label: AppStrings.R_NAV_SAVE_IMAGE, action: 'save', icon: 'download' }]
   }

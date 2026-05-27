@@ -145,6 +145,7 @@ struct Index {
   @StorageLink(StorageKeys.TWO_FACTOR_VISIBLE) twoFactorVisible: boolean = false;
   @StorageLink(StorageKeys.TWO_FACTOR_COOKIE) twoFactorCookie: string = '';
   @StorageLink(StorageKeys.TWO_FACTOR_SOURCE) twoFactorSource: string = '';
+  @StorageLink(StorageKeys.ACCOUNT_WEB_VIEW_URL) accountWebViewUrl: string = '';
   @State private notificationRefreshKey: number = 0;
   @State private accountRefreshKey: number = 0;
   @State private isFoldedAndUseOuterScreen: boolean = false;
@@ -416,6 +417,9 @@ struct Index {
     }
     if (descriptor.family === 'webLogin') {
       return this.navDestTitleBarOpts(descriptor.title, this.webLoginTitleMenu())
+    }
+    if (descriptor.family === 'accountWebView') {
+      return this.navDestTitleBarOpts(this.accountWebViewTitle(), this.accountWebViewTitleMenu())
     }
     if (descriptor.family === 'search') {
       return this.navDestTitleBarOpts(descriptor.title, this.searchTitleMenu())
@@ -952,6 +956,27 @@ struct Index {
     return { 'value': items, 'maxCount': IndexTitleBarCoordinator.WEB_LOGIN_MENU_MAX_COUNT }
   }
 
+  private accountWebViewTitleMenu(): Record<string, Object> {
+    let items: Record<string, Object>[] = IndexTitleBarCoordinator.accountWebViewMenuItems().map(
+      (descriptor: IndexTitleMenuDescriptor) =>
+        this.topicActionItem(descriptor.label, this.mainTitleMenuIcon(descriptor.icon), () => {
+          this.sendAccountWebViewAction(descriptor.action)
+        }),
+    )
+    return { 'value': items, 'maxCount': IndexTitleBarCoordinator.SINGLE_ITEM_MENU_MAX_COUNT }
+  }
+
+  private accountWebViewTitle(): ResourceStr {
+    const path = (this.accountWebViewUrl || '').trim().toLowerCase()
+    if (path.indexOf('/balance') >= 0) {
+      return AppStrings.R_BALANCE_DETAILS
+    }
+    if (path.indexOf('/settings') >= 0) {
+      return AppStrings.R_WEB_ACCOUNT_SETTINGS
+    }
+    return AppStrings.R_NAV_WEB_LOGIN
+  }
+
   private imagePreviewTitleMenu(): Record<string, Object> {
     let items: Record<string, Object>[] = IndexTitleBarCoordinator.imagePreviewMenuItems().map(
       (descriptor: IndexTitleMenuDescriptor) =>
@@ -987,6 +1012,13 @@ struct Index {
   private sendWebLoginAction(action: string): void {
     AppStorage.setOrCreate<string>(
       StorageKeys.WEB_LOGIN_ACTION,
+      IndexRouteCoordinator.simpleCommand(action, Date.now()),
+    )
+  }
+
+  private sendAccountWebViewAction(action: string): void {
+    AppStorage.setOrCreate<string>(
+      StorageKeys.ACCOUNT_WEB_VIEW_ACTION,
       IndexRouteCoordinator.simpleCommand(action, Date.now()),
     )
   }
