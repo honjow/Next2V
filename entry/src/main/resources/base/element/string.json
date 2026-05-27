@@ -1861,6 +1861,10 @@
       "value": "Vimeo video"
     },
     {
+      "name": "media_video_link",
+      "value": "Video"
+    },
+    {
       "name": "media_imgur_page",
       "value": "Imgur page"
     },
@@ -2497,8 +2501,16 @@
       "value": "Image load failed"
     },
     {
+      "name": "common_video_load_failed",
+      "value": "Video load failed"
+    },
+    {
       "name": "common_tap_to_retry",
       "value": "Tap to retry"
+    },
+    {
+      "name": "common_open_external",
+      "value": "Open externally"
     },
     {
       "name": "common_no_content",

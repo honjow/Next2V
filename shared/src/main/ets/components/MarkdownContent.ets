@@ -7,6 +7,7 @@ import { AppStrings } from "../i18n/AppStrings";
 import { ReadingSettings } from "../settings/ReadingSettings";
 import { ThemeConstants } from "../theme/ThemeConstants";
 import { MediaUrlUtils } from "../utils/MediaUrlUtils";
+import { DiagnosticLogger } from "../diagnostics/DiagnosticLogger";
 import { HtmlEntityUtils } from "../utils/HtmlEntityUtils";
 import { Base64DecodeUtils } from "../utils/Base64DecodeUtils";
 import { MarkdownCodeBlock } from "./markdown/MarkdownCodeBlock";
@@ -121,6 +122,7 @@ export namespace Tokens {
   export interface Text extends Token { text: string; }
   export interface Del extends Token { text: string; }
   export interface Image extends Token { href: string; title?: string | null; text: string; inlineImage?: boolean; }
+  export interface Video extends Token { href: string; title?: string | null; text: string; }
   export interface Code extends Token { text: string; lang?: string; }
   export interface ListItem extends Token { task?: boolean; checked?: boolean; loose?: boolean; tokens: Token[]; }
   export interface List extends Token { ordered?: boolean; start?: number; loose?: boolean; items: ListItem[]; }
@@ -220,6 +222,12 @@ interface InlineImageToken extends Tokens.Image {
   inlineImage?: boolean;
 }
 
+interface MarkdownVideoDiagnosticsContext {
+  urlHash: string;
+  host: string;
+  extension: string;
+}
+
 interface InlineImageRenderSize {
   width: number;
   height: number;
@@ -259,6 +267,17 @@ interface MarkdownRenderOptions extends MarkdownOptions {
 function _isInlineImageToken(token: Token): boolean {
   const image = token as InlineImageToken;
   return token && token.type === "image" && image.inlineImage === true;
+}
+
+function _isVideoToken(token: Token): boolean {
+  return token && token.type === "video" && MediaUrlUtils.videoUrlForRender((token as Tokens.Video).href).length > 0;
+}
+
+function _videoRenderUrl(token: Token): string {
+  if (!token || token.type !== "video") {
+    return "";
+  }
+  return MediaUrlUtils.videoUrlForRender((token as Tokens.Video).href);
 }
 
 function _inlineImageRenderUrl(token: Token): string {
@@ -354,6 +373,11 @@ function CustomBlockBuilder(token: Token, options: MarkdownOptions) {
       reportImageComplete: (options as MarkdownRenderOptions).reportInlineImageComplete,
       reportImageError: (options as MarkdownRenderOptions).reportInlineImageError,
     });
+  } else if (token.type === "video") {
+    MarkdownVideoPlayer({
+      url: _videoRenderUrl(token),
+      options: options,
+    });
   } else if (token.type === IMAGE_TABLE_MONO) {
     MarkdownImageTable({
       tableToken: token as ImageTableToken,
@@ -415,6 +439,26 @@ function _openInlineImage(options: MarkdownOptions, url: string): void {
   if (click) {
     click(normalized);
   }
+}
+
+function _openInlineVideo(options: MarkdownOptions, url: string): void {
+  const normalized = MediaUrlUtils.normalizeUrl(url);
+  if (!normalized) {
+    return;
+  }
+  const context: MarkdownVideoDiagnosticsContext = _videoDiagnosticsContext(normalized);
+  DiagnosticLogger.info('network', 'markdown_video_open_external', context);
+  _openInlineLink(options, normalized);
+}
+
+function _videoDiagnosticsContext(url: string): MarkdownVideoDiagnosticsContext {
+  const normalized = MediaUrlUtils.normalizeUrl(url);
+  const context: MarkdownVideoDiagnosticsContext = {
+    urlHash: DiagnosticLogger.ownerHash(normalized),
+    host: MediaUrlUtils.hostFromUrl(normalized),
+    extension: MediaUrlUtils.videoExtensionFromUrl(normalized),
+  };
+  return context;
 }
 
 function _memberNameFromLink(token: Tokens.Link): string {
@@ -962,20 +1006,20 @@ struct MarkdownParagraph {
     return this.inlineTokens().filter((token: Token) => token && (token.type !== "image" || _isInlineImageToken(token)) && token.type !== "br");
   }
 
-  private blockImageTokens(): Tokens.Image[] {
-    return this.inlineTokens().filter((token: Token) => token && token.type === "image" && !_isInlineImageToken(token)) as Tokens.Image[];
+  private blockMediaTokens(): Token[] {
+    return this.inlineTokens().filter((token: Token) => token && ((token.type === "image" && !_isInlineImageToken(token)) || _isVideoToken(token)));
   }
 
   private hasInlineImage(): boolean {
     return this.inlineTokens().some((token: Token) => _isInlineImageToken(token));
   }
 
-  private hasBlockImage(): boolean {
-    return this.blockImageTokens().length > 0;
+  private hasBlockMedia(): boolean {
+    return this.blockMediaTokens().length > 0;
   }
 
   build() {
-    if (this.hasBlockImage()) {
+    if (this.hasBlockMedia()) {
       Column({ space: ThemeConstants.SPACE_SM }) {
         ForEach(this.inlineTokens(), (token: Token, tokenIdx: number) => {
           if (token && token.type === "image" && !_isInlineImageToken(token)) {
@@ -984,6 +1028,11 @@ struct MarkdownParagraph {
               options: this.options,
               reportImageComplete: this.reportImageComplete,
               reportImageError: this.reportImageError,
+            });
+          } else if (_isVideoToken(token)) {
+            MarkdownVideoPlayer({
+              url: _videoRenderUrl(token),
+              options: this.options,
             });
           } else if (token && token.type !== "br" && String((token as TokenRecord).text ?? (token as TokenRecord).raw ?? "").trim().length > 0) {
             if (this.base64DecodeMode === ReadingSettings.BASE64_MODE_BADGE && _tokensContainBase64Decode([token])) {
@@ -1211,6 +1260,11 @@ struct MarkdownBlockquote {
               options: this.options,
               reportImageComplete: this.reportImageComplete,
               reportImageError: this.reportImageError,
+            });
+          } else if (_isVideoToken(child)) {
+            MarkdownVideoPlayer({
+              url: _videoRenderUrl(child),
+              options: this.options,
             });
           } else if (child.type !== "space" && String((child as TokenRecord).text ?? (child as TokenRecord).raw ?? "").trim().length > 0) {
             Text(String((child as TokenRecord).text ?? (child as TokenRecord).raw ?? ""))
@@ -1888,6 +1942,112 @@ struct MarkdownImageTable {
 }
 
 @Component
+struct MarkdownVideoPlayer {
+  @Prop url: string = "";
+  @Prop options: MarkdownOptions;
+  @State private loadState: number = 0 // 0: idle, 1: prepared, 2: error
+  private controller: VideoController = new VideoController()
+
+  aboutToAppear(): void {
+    if (this.url) {
+      DiagnosticLogger.info('network', 'markdown_video_player_appear', _videoDiagnosticsContext(this.url));
+    }
+  }
+
+  private retryLoad(): void {
+    if (!this.url) {
+      return;
+    }
+    this.loadState = 0;
+    DiagnosticLogger.info('network', 'markdown_video_retry', _videoDiagnosticsContext(this.url));
+    try {
+      this.controller.stop();
+    } catch (_error) {
+    }
+    setTimeout(() => {
+      try {
+        this.controller.start();
+      } catch (_error) {
+      }
+    }, 80);
+  }
+
+  build() {
+    Column({ space: ThemeConstants.SPACE_XS }) {
+      Stack({ alignContent: Alignment.Center }) {
+        Video({
+          src: this.url,
+          controller: this.controller,
+        })
+          .width('100%')
+          .height(220)
+          .objectFit(ImageFit.Contain)
+          .controls(true)
+          .autoPlay(false)
+          .borderRadius(ThemeConstants.RADIUS_SM)
+          .onPrepared(() => {
+            this.loadState = 1;
+            DiagnosticLogger.info('network', 'markdown_video_prepared', _videoDiagnosticsContext(this.url));
+          })
+          .onError(() => {
+            this.loadState = 2;
+            DiagnosticLogger.warn('network', 'markdown_video_load_failed', _videoDiagnosticsContext(this.url));
+          })
+
+        if (this.loadState === 2) {
+          Column({ space: ThemeConstants.SPACE_XS }) {
+            Text(AppStrings.text(AppStrings.R_COMMON_VIDEO_LOAD_FAILED, 'Video load failed'))
+              .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+              .fontColor(ThemeConstants.TEXT_SECONDARY)
+            Row({ space: ThemeConstants.SPACE_MD }) {
+              Text(AppStrings.text(AppStrings.R_COMMON_RETRY, 'Retry'))
+                .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+                .fontColor(ThemeConstants.TEXT_LINK)
+                .onClick(() => {
+                  this.retryLoad();
+                })
+              Text(AppStrings.text(AppStrings.R_COMMON_OPEN_EXTERNAL, 'Open externally'))
+                .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+                .fontColor(ThemeConstants.TEXT_LINK)
+                .onClick(() => {
+                  _openInlineVideo(this.options, this.url);
+                })
+            }
+            .justifyContent(FlexAlign.Center)
+          }
+          .justifyContent(FlexAlign.Center)
+          .alignItems(HorizontalAlign.Center)
+          .width('100%')
+          .height(220)
+          .borderRadius(ThemeConstants.RADIUS_SM)
+          .backgroundColor(ThemeConstants.BG_SUB)
+        }
+      }
+      .width('100%')
+      .borderRadius(ThemeConstants.RADIUS_SM)
+      .backgroundColor(ThemeConstants.BG_SUB)
+
+      Row({ space: ThemeConstants.SPACE_SM }) {
+        Text(AppStrings.text(AppStrings.R_MEDIA_VIDEO_LINK, 'Video'))
+          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+          .fontColor(ThemeConstants.TEXT_SECONDARY)
+        Text(MediaUrlUtils.normalizeUrl(this.url))
+          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+          .fontColor(ThemeConstants.TEXT_LINK)
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+          .layoutWeight(1)
+      }
+      .width('100%')
+      .onClick(() => {
+        _openInlineVideo(this.options, this.url);
+      })
+    }
+    .width('100%')
+  }
+}
+
+@Component
 struct MarkdownAutoImage {
   @Prop url: string = "";
   @Prop options: MarkdownOptions;
@@ -2184,6 +2344,8 @@ struct CustomList {
                 });
               } else if (child.type === IMAGE_BLOCK_MONO || child.type === "image") {
                 MarkdownAutoImage({ url: MediaUrlUtils.imageUrlForRender((child as Tokens.Image).href), options: this.options });
+              } else if (_isVideoToken(child)) {
+                MarkdownVideoPlayer({ url: _videoRenderUrl(child), options: this.options });
               } else if (child.type === "space") {
                 Blank().height(0);
               }
@@ -4142,10 +4304,15 @@ export struct MarkdownContent {
       if (nestedImage) {
         return [nestedImage as Token];
       }
-      const href = MediaUrlUtils.imageUrlForRender(String(record.href ?? ""));
+      const hrefRaw = String(record.href ?? "");
+      const href = MediaUrlUtils.imageUrlForRender(hrefRaw);
+      const videoHref = MediaUrlUtils.videoUrlForRender(hrefRaw);
       const text = String(record.text ?? "").trim();
       const normalizedText = MediaUrlUtils.normalizeUrl(text);
-      if (href && (!text || normalizedText === MediaUrlUtils.normalizeUrl(String(record.href ?? "")))) {
+      if (videoHref && (!text || normalizedText === MediaUrlUtils.normalizeUrl(hrefRaw))) {
+        return [MarkdownContent.buildVideoToken(String(record.raw ?? text), videoHref, text) as Token];
+      }
+      if (href && (!text || normalizedText === MediaUrlUtils.normalizeUrl(hrefRaw))) {
         // Treat bare/autolinked image URLs as inline candidates first. A later
         // pass demotes images that are actually alone on their source line to
         // block images, while mixed text + URL replies keep webpage inline flow.
@@ -4190,7 +4357,8 @@ export struct MarkdownContent {
     while (m) {
       const rawUrl = m[0].replace(/[.,!?;:，。！？；：]+$/g, "");
       const renderUrl = MediaUrlUtils.imageUrlForRender(rawUrl);
-      if (!renderUrl) {
+      const videoUrl = MediaUrlUtils.videoUrlForRender(rawUrl);
+      if (!renderUrl && !videoUrl) {
         m = re.exec(text);
         continue;
       }
@@ -4201,7 +4369,11 @@ export struct MarkdownContent {
       const nextBreak = text.indexOf('\n', m.index + rawUrl.length);
       const afterEnd = nextBreak >= 0 ? nextBreak : text.length;
       const afterOnLine = text.slice(m.index + rawUrl.length, afterEnd).trim().length > 0;
-      result.push(MarkdownContent.buildImageToken(rawUrl, renderUrl, "", beforeOnLine || afterOnLine) as Token);
+      if (videoUrl) {
+        result.push(MarkdownContent.buildVideoToken(rawUrl, videoUrl, "") as Token);
+      } else {
+        result.push(MarkdownContent.buildImageToken(rawUrl, renderUrl, "", beforeOnLine || afterOnLine) as Token);
+      }
       last = m.index + rawUrl.length;
       m = re.exec(text);
     }
@@ -4233,6 +4405,16 @@ export struct MarkdownContent {
       inlineImage: inlineImage,
     } as InlineImageToken;
     return imageToken;
+  }
+
+  private static buildVideoToken(raw: string, href: string, text: string): Tokens.Video {
+    return {
+      type: "video",
+      raw: raw,
+      href: href,
+      title: null,
+      text: text || href,
+    } as Tokens.Video;
   }
 
   private static promoteStandaloneImageParagraphs(tokens: Token[]): void {

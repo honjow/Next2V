@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 
 const IMAGE_EXT_REGEX = /\.(jpe?g|png|gif|webp|bmp|svg|avif|heic|heif)(?:[?#].*)?$/i;
-const IMAGE_QUERY_EXT_REGEX = /[?&](?:format|fm|ext|type|output)=([a-z0-9/]+)/i;
+const VIDEO_EXT_REGEX = /\.(mp4|webm|mov|m4v|m3u8)(?:[?#].*)?$/i;
+const MEDIA_QUERY_EXT_REGEX = /[?&](?:format|fm|ext|type|output)=([a-z0-9/]+)/i;
 const IMGUR_SINGLE_IMAGE_PAGE_REGEX = /^https?:\/\/(?:www\.)?imgur\.com\/([A-Za-z0-9]{5,12})(?:[?#].*)?$/i;
 const IMGUR_COLLECTION_PAGE_REGEX = /^https?:\/\/(?:www\.)?imgur\.com\/(?:gallery|a)\//i;
 
@@ -50,7 +51,7 @@ function normalizeImageExtension(raw) {
 
 function imageExtensionFromUrl(raw) {
   const clean = normalizeUrl(raw).split('#')[0];
-  const queryMatch = clean.match(IMAGE_QUERY_EXT_REGEX);
+  const queryMatch = clean.match(MEDIA_QUERY_EXT_REGEX);
   const queryExt = normalizeImageExtension(queryMatch?.[1] || '');
   if (queryExt) {
     return queryExt;
@@ -58,6 +59,26 @@ function imageExtensionFromUrl(raw) {
   const path = clean.split('?')[0];
   const match = path.match(/\.([a-z0-9]+)$/i);
   return normalizeImageExtension(match?.[1] || '');
+}
+
+function normalizeVideoExtension(raw) {
+  let ext = (raw || '').toLowerCase().trim();
+  if (ext.includes('/')) {
+    ext = ext.split('/').pop() || '';
+  }
+  return ['mp4', 'webm', 'mov', 'm4v', 'm3u8'].includes(ext) ? ext : '';
+}
+
+function videoExtensionFromUrl(raw) {
+  const clean = normalizeUrl(raw).split('#')[0];
+  const queryMatch = clean.match(MEDIA_QUERY_EXT_REGEX);
+  const queryExt = normalizeVideoExtension(queryMatch?.[1] || '');
+  if (queryExt) {
+    return queryExt;
+  }
+  const path = clean.split('?')[0];
+  const match = path.match(/\.([a-z0-9]+)$/i);
+  return normalizeVideoExtension(match?.[1] || '');
 }
 
 function isHttpUrl(raw) {
@@ -97,49 +118,55 @@ function resolveMediaUrl(raw) {
   const originalUrl = (raw ?? '').trim();
   const normalizedUrl = normalizeUrl(originalUrl);
   if (!normalizedUrl || !isHttpUrl(normalizedUrl)) {
-    return { kind: 'unsupported', renderUrl: normalizedUrl, isImage: false, shouldProbe: false };
+    return { kind: 'unsupported', renderUrl: normalizedUrl, isImage: false, isVideo: false, shouldProbe: false };
+  }
+  if (VIDEO_EXT_REGEX.test(normalizedUrl) || videoExtensionFromUrl(normalizedUrl)) {
+    return { kind: 'directVideo', renderUrl: normalizedUrl, isImage: false, isVideo: true, shouldProbe: false };
   }
   if (IMAGE_EXT_REGEX.test(normalizedUrl) || imageExtensionFromUrl(normalizedUrl)) {
-    return { kind: 'directImage', renderUrl: normalizedUrl, isImage: true, shouldProbe: false };
+    return { kind: 'directImage', renderUrl: normalizedUrl, isImage: true, isVideo: false, shouldProbe: false };
   }
   if (IMAGE_HOST_PREFIXES.some((prefix) => normalizedUrl.startsWith(prefix))) {
-    return { kind: 'knownImageHostDirect', renderUrl: normalizedUrl, isImage: true, shouldProbe: false };
+    return { kind: 'knownImageHostDirect', renderUrl: normalizedUrl, isImage: true, isVideo: false, shouldProbe: false };
   }
   const imgurDirect = resolveImgurSingleImagePage(normalizedUrl);
   if (imgurDirect) {
-    return { kind: 'imageHostPageResolved', renderUrl: imgurDirect, isImage: true, shouldProbe: false };
+    return { kind: 'imageHostPageResolved', renderUrl: imgurDirect, isImage: true, isVideo: false, shouldProbe: false };
   }
   if (IMGUR_COLLECTION_PAGE_REGEX.test(normalizedUrl)) {
-    return { kind: 'nonImageLink', renderUrl: normalizedUrl, isImage: false, shouldProbe: false };
+    return { kind: 'nonImageLink', renderUrl: normalizedUrl, isImage: false, isVideo: false, shouldProbe: false };
   }
   if (isProbeCandidate(normalizedUrl)) {
-    return { kind: 'probeRequired', renderUrl: normalizedUrl, isImage: false, shouldProbe: true };
+    return { kind: 'probeRequired', renderUrl: normalizedUrl, isImage: false, isVideo: false, shouldProbe: true };
   }
-  return { kind: 'nonImageLink', renderUrl: normalizedUrl, isImage: false, shouldProbe: false };
+  return { kind: 'nonImageLink', renderUrl: normalizedUrl, isImage: false, isVideo: false, shouldProbe: false };
 }
 
 const cases = [
-  ['https://example.com/a.jpg', 'directImage', 'https://example.com/a.jpg', true, false],
-  ['https://example.com/a?format=webp', 'directImage', 'https://example.com/a?format=webp', true, false],
-  ['https://i.imgur.com/abc123.jpg', 'directImage', 'https://i.imgur.com/abc123.jpg', true, false],
-  ['https://imgur.com/abc123', 'imageHostPageResolved', 'https://i.imgur.com/abc123.png', true, false],
-  ['https://imgur.com/a/abc123', 'nonImageLink', 'https://imgur.com/a/abc123', false, false],
-  ['https://github.com/org/repo', 'nonImageLink', 'https://github.com/org/repo', false, false],
-  ['https://raw.githubusercontent.com/org/repo/main/image', 'knownImageHostDirect', 'https://raw.githubusercontent.com/org/repo/main/image', true, false],
-  ['https://example.com/download/123', 'probeRequired', 'https://example.com/download/123', false, true],
+  ['https://i.imgur.com/HUuMBP5.mp4', 'directVideo', 'https://i.imgur.com/HUuMBP5.mp4', false, true, false],
+  ['https://example.com/cdn?id=7&type=video/mp4', 'directVideo', 'https://example.com/cdn?id=7&type=video/mp4', false, true, false],
+  ['https://example.com/a.jpg', 'directImage', 'https://example.com/a.jpg', true, false, false],
+  ['https://example.com/a?format=webp', 'directImage', 'https://example.com/a?format=webp', true, false, false],
+  ['https://i.imgur.com/abc123.jpg', 'directImage', 'https://i.imgur.com/abc123.jpg', true, false, false],
+  ['https://imgur.com/abc123', 'imageHostPageResolved', 'https://i.imgur.com/abc123.png', true, false, false],
+  ['https://imgur.com/a/abc123', 'nonImageLink', 'https://imgur.com/a/abc123', false, false, false],
+  ['https://github.com/org/repo', 'nonImageLink', 'https://github.com/org/repo', false, false, false],
+  ['https://raw.githubusercontent.com/org/repo/main/image', 'knownImageHostDirect', 'https://raw.githubusercontent.com/org/repo/main/image', true, false, false],
+  ['https://example.com/download/123', 'probeRequired', 'https://example.com/download/123', false, false, true],
 ];
 
 let failed = 0;
-for (const [url, kind, renderUrl, isImage, shouldProbe] of cases) {
+for (const [url, kind, renderUrl, isImage, isVideo, shouldProbe] of cases) {
   const actual = resolveMediaUrl(url);
   const ok = actual.kind === kind &&
     actual.renderUrl === renderUrl &&
     actual.isImage === isImage &&
+    actual.isVideo === isVideo &&
     actual.shouldProbe === shouldProbe;
   if (!ok) {
     failed += 1;
     console.error(`FAIL ${url}`);
-    console.error(`  expected ${JSON.stringify({ kind, renderUrl, isImage, shouldProbe })}`);
+    console.error(`  expected ${JSON.stringify({ kind, renderUrl, isImage, isVideo, shouldProbe })}`);
     console.error(`  actual   ${JSON.stringify(actual)}`);
   }
 }

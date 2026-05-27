@@ -1,7 +1,8 @@
 import { AppStrings } from '../i18n/AppStrings'
 
 const IMAGE_EXT_REGEX: RegExp = /\.(jpe?g|png|gif|webp|bmp|svg|avif|heic|heif)(?:[?#].*)?$/i
-const IMAGE_QUERY_EXT_REGEX: RegExp = /[?&](?:format|fm|ext|type|output)=([a-z0-9/]+)/i
+const VIDEO_EXT_REGEX: RegExp = /\.(mp4|webm|mov|m4v|m3u8)(?:[?#].*)?$/i
+const MEDIA_QUERY_EXT_REGEX: RegExp = /[?&](?:format|fm|ext|type|output)=([a-z0-9/]+)/i
 const ILLEGAL_TITLE_CHARS: RegExp = /[\\/:*?"<>|]/g
 const YOUTUBE_ID_REGEX: RegExp = /(?:youtube\.com\/(?:watch\?[^#]*v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{6,})/i
 const VIMEO_ID_REGEX: RegExp = /vimeo\.com\/(?:.*\/)?([0-9]{6,})/i
@@ -39,6 +40,7 @@ export interface MediaLinkPreview {
 
 export type MediaUrlKind =
   'directImage' |
+  'directVideo' |
   'knownImageHostDirect' |
   'imageHostPageResolved' |
   'probeRequired' |
@@ -51,6 +53,7 @@ export interface MediaUrlResult {
   renderUrl: string
   kind: MediaUrlKind
   isImage: boolean
+  isVideo: boolean
   shouldProbe: boolean
 }
 
@@ -88,45 +91,56 @@ export class MediaUrlUtils {
     return result.isImage ? result.renderUrl : ''
   }
 
+  static videoUrlForRender(raw: string): string {
+    const result = MediaUrlUtils.resolveMediaUrl(raw)
+    return result.isVideo ? result.renderUrl : ''
+  }
+
   static resolveMediaUrl(raw: string): MediaUrlResult {
     const originalUrl = (raw ?? '').trim()
     const normalizedUrl = MediaUrlUtils.normalizeUrl(originalUrl)
     if (!normalizedUrl) {
-      return MediaUrlUtils.result(originalUrl, normalizedUrl, '', 'unsupported', false, false)
+      return MediaUrlUtils.result(originalUrl, normalizedUrl, '', 'unsupported', false, false, false)
     }
     if (!MediaUrlUtils.isHttpUrl(normalizedUrl)) {
-      return MediaUrlUtils.result(originalUrl, normalizedUrl, normalizedUrl, 'unsupported', false, false)
+      return MediaUrlUtils.result(originalUrl, normalizedUrl, normalizedUrl, 'unsupported', false, false, false)
+    }
+    if (VIDEO_EXT_REGEX.test(normalizedUrl) || MediaUrlUtils.videoExtensionFromUrl(normalizedUrl)) {
+      return MediaUrlUtils.result(originalUrl, normalizedUrl, normalizedUrl, 'directVideo', false, true, false)
     }
     if (IMAGE_EXT_REGEX.test(normalizedUrl) || MediaUrlUtils.imageExtensionFromUrl(normalizedUrl)) {
-      return MediaUrlUtils.result(originalUrl, normalizedUrl, normalizedUrl, 'directImage', true, false)
+      return MediaUrlUtils.result(originalUrl, normalizedUrl, normalizedUrl, 'directImage', true, false, false)
     }
     if (IMAGE_HOST_PREFIXES.some((prefix: string) => normalizedUrl.startsWith(prefix))) {
-      return MediaUrlUtils.result(originalUrl, normalizedUrl, normalizedUrl, 'knownImageHostDirect', true, false)
+      return MediaUrlUtils.result(originalUrl, normalizedUrl, normalizedUrl, 'knownImageHostDirect', true, false, false)
     }
 
     const imgurDirect = MediaUrlUtils.resolveImgurSingleImagePage(normalizedUrl)
     if (imgurDirect) {
-      return MediaUrlUtils.result(originalUrl, normalizedUrl, imgurDirect, 'imageHostPageResolved', true, false)
+      return MediaUrlUtils.result(originalUrl, normalizedUrl, imgurDirect, 'imageHostPageResolved', true, false, false)
     }
     if (IMGUR_COLLECTION_PAGE_REGEX.test(normalizedUrl)) {
-      return MediaUrlUtils.result(originalUrl, normalizedUrl, normalizedUrl, 'nonImageLink', false, false)
+      return MediaUrlUtils.result(originalUrl, normalizedUrl, normalizedUrl, 'nonImageLink', false, false, false)
     }
 
     if (MediaUrlUtils.isProbeCandidate(normalizedUrl)) {
-      return MediaUrlUtils.result(originalUrl, normalizedUrl, normalizedUrl, 'probeRequired', false, true)
+      return MediaUrlUtils.result(originalUrl, normalizedUrl, normalizedUrl, 'probeRequired', false, false, true)
     }
-    return MediaUrlUtils.result(originalUrl, normalizedUrl, normalizedUrl, 'nonImageLink', false, false)
+    return MediaUrlUtils.result(originalUrl, normalizedUrl, normalizedUrl, 'nonImageLink', false, false, false)
   }
 
   static resolveByContentType(raw: string, contentType: string): MediaUrlResult {
     const base = MediaUrlUtils.resolveMediaUrl(raw)
-    if (base.isImage || !base.shouldProbe) {
+    if (base.isImage || base.isVideo || !base.shouldProbe) {
       return base
     }
     if (MediaUrlUtils.imageExtensionFromContentType(contentType)) {
-      return MediaUrlUtils.result(base.originalUrl, base.normalizedUrl, base.normalizedUrl, 'directImage', true, false)
+      return MediaUrlUtils.result(base.originalUrl, base.normalizedUrl, base.normalizedUrl, 'directImage', true, false, false)
     }
-    return MediaUrlUtils.result(base.originalUrl, base.normalizedUrl, base.normalizedUrl, 'nonImageLink', false, false)
+    if (MediaUrlUtils.videoExtensionFromContentType(contentType)) {
+      return MediaUrlUtils.result(base.originalUrl, base.normalizedUrl, base.normalizedUrl, 'directVideo', false, true, false)
+    }
+    return MediaUrlUtils.result(base.originalUrl, base.normalizedUrl, base.normalizedUrl, 'nonImageLink', false, false, false)
   }
 
   static imageExtensionFromContentType(contentType: string): string {
@@ -164,7 +178,7 @@ export class MediaUrlUtils {
   static imageExtensionFromUrl(raw: string): string {
     const url = MediaUrlUtils.normalizeUrl(raw)
     const clean = url.split('#')[0]
-    const queryMatch = clean.match(IMAGE_QUERY_EXT_REGEX)
+    const queryMatch = clean.match(MEDIA_QUERY_EXT_REGEX)
     const queryExt = MediaUrlUtils.normalizeImageExtension(queryMatch?.[1] || '')
     if (queryExt) {
       return queryExt
@@ -173,6 +187,40 @@ export class MediaUrlUtils {
     const path = clean.split('?')[0]
     const match = path.match(/\.([a-z0-9]+)$/i)
     return MediaUrlUtils.normalizeImageExtension(match?.[1] || '')
+  }
+
+  static videoExtensionFromContentType(contentType: string): string {
+    const clean = (contentType || '').toLowerCase().split(';')[0].trim()
+    if (clean === 'video/mp4' || clean === 'application/mp4') {
+      return 'mp4'
+    }
+    if (clean === 'video/webm') {
+      return 'webm'
+    }
+    if (clean === 'video/quicktime') {
+      return 'mov'
+    }
+    if (clean === 'video/x-m4v') {
+      return 'm4v'
+    }
+    if (clean === 'application/vnd.apple.mpegurl' || clean === 'application/x-mpegurl' || clean === 'audio/mpegurl') {
+      return 'm3u8'
+    }
+    return ''
+  }
+
+  static videoExtensionFromUrl(raw: string): string {
+    const url = MediaUrlUtils.normalizeUrl(raw)
+    const clean = url.split('#')[0]
+    const queryMatch = clean.match(MEDIA_QUERY_EXT_REGEX)
+    const queryExt = MediaUrlUtils.normalizeVideoExtension(queryMatch?.[1] || '')
+    if (queryExt) {
+      return queryExt
+    }
+
+    const path = clean.split('?')[0]
+    const match = path.match(/\.([a-z0-9]+)$/i)
+    return MediaUrlUtils.normalizeVideoExtension(match?.[1] || '')
   }
 
   static preferredImageExtension(raw: string, contentType: string = ''): string {
@@ -218,6 +266,16 @@ export class MediaUrlUtils {
         title: titleFromText || AppStrings.text(AppStrings.R_MEDIA_VIMEO_VIDEO, 'Vimeo video'),
         subtitle: host || url,
         label: 'Vimeo'
+      }
+    }
+
+    const videoExt = MediaUrlUtils.videoExtensionFromUrl(url)
+    if (videoExt) {
+      return {
+        url: url,
+        title: titleFromText || MediaUrlUtils.imageTitleFromUrl(url, 'v2next_video'),
+        subtitle: host || url,
+        label: AppStrings.text(AppStrings.R_MEDIA_VIDEO_LINK, 'Video')
       }
     }
 
@@ -273,6 +331,17 @@ export class MediaUrlUtils {
     }
     if (ext === 'png' || ext === 'gif' || ext === 'webp' || ext === 'bmp' ||
       ext === 'svg' || ext === 'avif' || ext === 'heic' || ext === 'heif') {
+      return ext
+    }
+    return ''
+  }
+
+  private static normalizeVideoExtension(raw: string): string {
+    let ext = (raw || '').toLowerCase().trim()
+    if (ext.indexOf('/') >= 0) {
+      ext = ext.split('/').pop() || ''
+    }
+    if (ext === 'mp4' || ext === 'webm' || ext === 'mov' || ext === 'm4v' || ext === 'm3u8') {
       return ext
     }
     return ''
@@ -341,6 +410,7 @@ export class MediaUrlUtils {
     renderUrl: string,
     kind: MediaUrlKind,
     isImage: boolean,
+    isVideo: boolean,
     shouldProbe: boolean
   ): MediaUrlResult {
     return {
@@ -349,6 +419,7 @@ export class MediaUrlUtils {
       renderUrl: renderUrl,
       kind: kind,
       isImage: isImage,
+      isVideo: isVideo,
       shouldProbe: shouldProbe
     }
   }
