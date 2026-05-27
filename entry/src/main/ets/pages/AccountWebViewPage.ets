@@ -2,12 +2,17 @@ import { webview } from '@kit.ArkWeb'
 import {
   AppStrings,
   CookieJarSettings,
+  DiagnosticLogger,
   HttpClient,
   SecondaryListScaffold,
   StorageKeys,
   ThemeConstants,
   V2exUrlRouter,
 } from 'shared'
+
+interface PageEndEvent {
+  url: string
+}
 
 @Component
 export struct AccountWebViewPage {
@@ -48,14 +53,22 @@ export struct AccountWebViewPage {
               .onControllerAttached(() => {
                 this.loadTargetUrl()
               })
-              .onPageBegin(() => {
+              .onPageBegin((event?: PageEndEvent) => {
                 this.isLoading = true
                 this.errorMessage = ''
                 this.pageMessage = AppStrings.text(AppStrings.R_COMMON_LOADING, 'Loading…')
+                DiagnosticLogger.info('webview', 'account_webview_page_begin', {
+                  url: event && event.url ? event.url : this.targetUrl,
+                  hasCookie: this.hasInjectedCookie
+                })
               })
-              .onPageEnd(() => {
+              .onPageEnd((event?: PageEndEvent) => {
                 this.isLoading = false
                 this.pageMessage = ''
+                DiagnosticLogger.info('webview', 'account_webview_page_end', {
+                  url: event && event.url ? event.url : this.targetUrl,
+                  hasCookie: this.hasInjectedCookie
+                })
               })
               .onErrorReceive((event) => {
                 if (event?.request?.isMainFrame()) {
@@ -63,6 +76,12 @@ export struct AccountWebViewPage {
                   this.pageMessage = ''
                   this.errorMessage = event.error.getErrorInfo() ||
                     AppStrings.text(AppStrings.R_COMMON_LOAD_FAILED, 'Failed to load page')
+                  DiagnosticLogger.warn('webview', 'account_webview_load_error', {
+                    url: this.targetUrl,
+                    isMainFrame: true,
+                    errorInfo: this.errorMessage,
+                    hasCookie: this.hasInjectedCookie
+                  })
                 }
               })
           }
@@ -128,6 +147,7 @@ export struct AccountWebViewPage {
       this.controller.refresh()
     } catch (error) {
       const e = error as Error
+      DiagnosticLogger.exception('webview', 'account_webview_reload_exception', e, { url: this.targetUrl })
       this.isLoading = false
       this.pageMessage = ''
       this.errorMessage = e.message || AppStrings.text(AppStrings.R_COMMON_LOAD_FAILED, 'Failed to refresh page')
@@ -166,12 +186,14 @@ export struct AccountWebViewPage {
           this.controller.loadUrl(normalizedTargetUrl)
         } catch (error) {
           const e = error as Error
+          DiagnosticLogger.exception('webview', 'account_webview_load_url_exception', e, { url: normalizedTargetUrl })
           this.errorMessage = e.message || AppStrings.text(AppStrings.R_COMMON_LOAD_FAILED, 'Failed to load page')
           this.pageMessage = ''
           this.isLoading = false
         }
       })
       .catch((error: Error) => {
+        DiagnosticLogger.exception('webview', 'account_webview_inject_cookie_exception', error, { url: normalizedTargetUrl, baseUrl: this.webBaseUrl() })
         this.errorMessage = error.message || AppStrings.text(AppStrings.R_COMMON_LOAD_FAILED, 'Failed to inject cookie')
         this.pageMessage = ''
         this.isLoading = false
@@ -188,14 +210,17 @@ export struct AccountWebViewPage {
       )
       try {
         webview.WebCookieManager.saveCookieSync()
-      } catch (_error) {
+      } catch (error) {
+        DiagnosticLogger.exception('webview', 'account_webview_save_cookie_sync_exception', error as Error, { baseUrl: baseUrl })
         try {
           await webview.WebCookieManager.saveCookieAsync()
-        } catch (_e) {
+        } catch (e) {
+          DiagnosticLogger.exception('webview', 'account_webview_save_cookie_async_exception', e as Error, { baseUrl: baseUrl })
         }
       }
     } catch (error) {
       const e = error as Error
+      DiagnosticLogger.exception('webview', 'account_webview_config_cookie_exception', e, { baseUrl: baseUrl })
       throw new Error('Failed to inject cookie: ' + (e.message || 'unknown'))
     }
   }

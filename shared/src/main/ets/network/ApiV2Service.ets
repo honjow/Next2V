@@ -8,6 +8,7 @@ import { HtmlEntityUtils } from '../utils/HtmlEntityUtils'
 import { V2exUrlRouter } from '../utils/V2exUrlRouter'
 import type { V2exNode, V2exReply, V2exTopic } from './NetworkTypes'
 import { ApiErrors } from './ApiError'
+import { DiagnosticLogger } from '../diagnostics/DiagnosticLogger'
 
 const MAX_RETRIES: number = 3
 const CONNECT_TIMEOUT_MS: number = 10000
@@ -148,6 +149,14 @@ export class ApiV2Service {
       const headers = ApiV2Service.normalizeHeaders(headerBag || response.header)
       const rateLimit = ApiV2Service.parseRateLimit(headers)
       ApiV2Service.saveRateLimitSnapshot(rateLimit)
+      DiagnosticLogger.info('network', 'api_v2_response_status', {
+        method: ApiV2Service.methodLabel(method),
+        url: url,
+        endpoint: endpoint,
+        statusCode: statusCode,
+        hasToken: token.trim().length > 0,
+        rateLimitRemaining: rateLimit ? rateLimit.remaining : -1
+      })
 
       if (statusCode < 200 || statusCode >= 300) {
         const apiMessage = ApiV2Service.extractApiMessage((response.result as string) || '')
@@ -158,6 +167,13 @@ export class ApiV2Service {
       return { data, headers, rateLimit, statusCode }
     } catch (error) {
       const e = error as Error
+      DiagnosticLogger.exception('network', 'api_v2_request_exception', e, {
+        method: ApiV2Service.methodLabel(method),
+        url: url,
+        endpoint: endpoint,
+        retryCount: retryCount,
+        willRetry: retryCount > 0 && HttpRetryPolicy.shouldRetry(method, e)
+      })
       if (retryCount > 0 && HttpRetryPolicy.shouldRetry(method, e)) {
         const delay = BACKOFF_BASE_MS * Math.pow(2, MAX_RETRIES - retryCount)
         await new Promise<void>(resolve => setTimeout(resolve, delay))
@@ -279,6 +295,19 @@ export class ApiV2Service {
     } catch (e) {
       return ''
     }
+  }
+
+  private static methodLabel(method: http.RequestMethod): string {
+    if (method === http.RequestMethod.POST) {
+      return 'POST'
+    }
+    if (method === http.RequestMethod.PUT) {
+      return 'PUT'
+    }
+    if (method === http.RequestMethod.DELETE) {
+      return 'DELETE'
+    }
+    return 'GET'
   }
 
   private static normalizeHeaders(headers: Object): Record<string, Object> {

@@ -9,6 +9,7 @@ import {
   AccountSessionCoordinator,
   AutoDailyCheckinService,
   CookieJarSettings,
+  DiagnosticLogger,
   HttpClient,
   StorageKeys,
   V2exWebViewScaffold,
@@ -97,6 +98,9 @@ export struct V2exWebLoginPage {
             if (event && event.url) {
               this.lastUrl = event.url
             }
+            DiagnosticLogger.info('webview', 'web_login_page_begin', {
+              url: event && event.url ? event.url : this.currentSigninUrl()
+            })
             this.scheduleAutoSave()
           })
           .onPageEnd((event?: PageEndEvent) => {
@@ -104,6 +108,9 @@ export struct V2exWebLoginPage {
             if (event && event.url) {
               this.lastUrl = event.url
             }
+            DiagnosticLogger.info('webview', 'web_login_page_end', {
+              url: event && event.url ? event.url : this.lastUrl
+            })
             this.scheduleAutoSave()
           })
           .onLoadFinished((event?: PageEndEvent) => {
@@ -115,6 +122,11 @@ export struct V2exWebLoginPage {
           .onErrorReceive((event) => {
             if (event?.request?.isMainFrame()) {
               this.pageMessage = event.error.getErrorInfo() || AppStrings.text(AppStrings.R_WEB_LOGIN_LOAD_FAILED, 'Web login failed to load')
+              DiagnosticLogger.warn('webview', 'web_login_load_error', {
+                url: this.lastUrl || this.currentSigninUrl(),
+                isMainFrame: true,
+                errorInfo: this.pageMessage
+              })
             }
           })
       }
@@ -171,6 +183,7 @@ export struct V2exWebLoginPage {
     try {
       this.controller.refresh()
     } catch (error) {
+      DiagnosticLogger.exception('webview', 'web_login_reload_exception', error as Error, { url: this.lastUrl })
       this.errorMessage = translateApiError(error)
     }
   }
@@ -187,6 +200,7 @@ export struct V2exWebLoginPage {
         this.controller.loadUrl(url)
       })
       .catch((error: Error) => {
+        DiagnosticLogger.exception('webview', 'web_login_load_signin_exception', error, { url: url })
         this.errorMessage = `${translateApiError(error)}: ${url}`
       })
   }
@@ -238,7 +252,8 @@ export struct V2exWebLoginPage {
         try {
           const profile = await this.api.getMember(username)
           avatar = profile.avatar_normal || profile.avatar_large || profile.avatar_mini || ''
-        } catch (_error) {
+        } catch (error) {
+          DiagnosticLogger.exception('auth', 'web_login_avatar_fetch_exception', error as Error, { username: username })
           avatar = ''
         }
         if (!this.isCurrentSaveRequest(requestId)) {
@@ -253,6 +268,7 @@ export struct V2exWebLoginPage {
         await AuthSessionSettings.save(context, { loginMode: 'cookie', username, avatar, validatedAt: Date.now() })
         await AccountSessionCoordinator.registerCurrentSession(context, username, avatar, 'cookie')
         AutoDailyCheckinService.tryCheckin(context, validated.cookie, 'web-login').catch((error: Error) => {
+          DiagnosticLogger.exception('auto_daily_checkin', 'web_login_auto_checkin_exception', error)
           console.info('auto daily check-in web-login trigger failed: ' + error.message)
         })
         if (!this.isCurrentSaveRequest(requestId)) {
@@ -266,11 +282,17 @@ export struct V2exWebLoginPage {
         this.isSaved = true
         this.cancelAutoSave()
         promptAction.openToast({ message: $r('app.string.login_saved') }).catch((error: Error) => {
+          DiagnosticLogger.exception('ui_lifecycle', 'web_login_saved_toast_exception', error)
           console.error('openToast failed: ' + error.message)
         })
         this.stack.pop()
       })
       .catch((error: Error) => {
+        DiagnosticLogger.exception('auth', 'web_login_save_exception', error, {
+          silent: silent,
+          autoAttempt: autoAttempt,
+          lastUrl: this.lastUrl
+        })
         if (!this.isPageActive || requestId !== this.saveRequestId) {
           return
         }
@@ -321,16 +343,21 @@ export struct V2exWebLoginPage {
   }
 
   private async clearPersistedLogin(context: common.UIAbilityContext): Promise<void> {
-    const restored = await AccountSessionCoordinator.restoreActiveAccount(context).catch((_error: Error) => null)
+    const restored = await AccountSessionCoordinator.restoreActiveAccount(context).catch((error: Error) => {
+      DiagnosticLogger.exception('auth', 'web_login_restore_active_after_failure_exception', error)
+      return null
+    })
     if (restored) {
       console.info('V2exWebLoginPage: restored previous active account after web login persist failure')
       return
     }
     await Promise.all([
       CookieJarSettings.clearForBaseUrl(context, this.baseUrl).catch((clearError: Error) => {
+        DiagnosticLogger.exception('auth', 'web_login_clear_cookie_after_failure_exception', clearError)
         console.error('clear cookie after web login persist failure: ' + clearError.message)
       }),
       AuthSessionSettings.clear(context).catch((clearError: Error) => {
+        DiagnosticLogger.exception('auth', 'web_login_clear_auth_after_failure_exception', clearError)
         console.error('clear auth session after web login persist failure: ' + clearError.message)
       })
     ])
@@ -339,10 +366,12 @@ export struct V2exWebLoginPage {
   private async fetchWebLoginCookie(): Promise<string> {
     try {
       webview.WebCookieManager.saveCookieSync()
-    } catch (_error) {
+    } catch (error) {
+      DiagnosticLogger.exception('webview', 'web_login_save_cookie_sync_exception', error as Error)
       try {
         await webview.WebCookieManager.saveCookieAsync()
-      } catch (_e) {
+      } catch (e) {
+        DiagnosticLogger.exception('webview', 'web_login_save_cookie_async_exception', e as Error)
       }
     }
 
@@ -356,7 +385,8 @@ export struct V2exWebLoginPage {
       try {
         const cookie = await webview.WebCookieManager.fetchCookie(url)
         this.mergeCookieHeader(merged, cookie || '')
-      } catch (_error) {
+      } catch (error) {
+        DiagnosticLogger.exception('webview', 'web_login_fetch_cookie_exception', error as Error, { url: url })
       }
     }
     const parts: string[] = []

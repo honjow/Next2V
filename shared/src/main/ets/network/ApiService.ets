@@ -20,6 +20,7 @@ import {
   type V2exAccountMemberListItem,
 } from '../parser/V2exAccountListParser'
 import { V2exTopicWebRepliesClient } from './V2exTopicWebRepliesClient'
+import { DiagnosticLogger } from '../diagnostics/DiagnosticLogger'
 import type {
   V2exTopicWebRepliesAllResult,
   V2exTopicWebRepliesPage,
@@ -208,7 +209,9 @@ export class ApiService {
           return webReplies
         }
       } catch (error) {
-        console.error('topic web replies fallback failed:', (error as Error).message)
+        const e = error as Error
+        DiagnosticLogger.exception('network', 'topic_web_replies_fallback_exception', e, { topicId: topicId })
+        console.error('topic web replies fallback failed:', e.message)
       }
     }
     return apiReplies
@@ -408,6 +411,7 @@ export class ApiService {
       )
     } catch (error) {
       const e = error as Error
+      DiagnosticLogger.exception('network', 'notification_delete_cookie_request_exception', e, { notificationId: notificationId })
       console.error(`[NotificationDelete] cookie request_failed id=${notificationId} message=${ApiService.safeOperationErrorMessage(e)}`)
       throw new Error(ApiService.safeOperationErrorMessage(e))
     }
@@ -1152,6 +1156,13 @@ export class ApiService {
       })
       const statusCode = response.responseCode as number
       const location = ApiService.extractHeaderValue(response.header, 'location')
+      DiagnosticLogger.info('network', 'cookie_private_request_status', {
+        method: 'GET',
+        url: url,
+        statusCode: statusCode,
+        location: location,
+        hasCookie: true
+      })
       if (ApiService.isLocationPath(location, '/2fa')) {
         throw new V2exCookieTwoFactorRequiredError(clean)
       }
@@ -1159,7 +1170,9 @@ export class ApiService {
         throw new Error(`HTTP ${statusCode}: ${url}`)
       }
     } catch (error) {
-      throw error as Error
+      const e = error as Error
+      DiagnosticLogger.exception('network', 'cookie_private_request_exception', e, { pathOrUrl: clean, url: url })
+      throw e
     }
   }
 
@@ -1222,13 +1235,24 @@ export class ApiService {
       const statusCode = response.responseCode as number
       const text = (response.result as string) || ''
       const location = ApiService.extractHeaderValue(headerBag || response.header, 'location')
+      DiagnosticLogger.info('network', 'cookie_html_request_status', {
+        method: method === http.RequestMethod.POST ? 'POST' : 'GET',
+        url: url,
+        refererUrl: refererUrl,
+        statusCode: statusCode,
+        location: location,
+        hasCookie: true,
+        bodyLength: text.length
+      })
       this.assertNoTwoFactorChallenge(clean, text, location)
       if (statusCode < 200 || statusCode >= 400) {
         throw new Error(`HTTP ${statusCode}: ${url}`)
       }
       return { statusCode, text, location }
     } catch (error) {
-      throw error as Error
+      const e = error as Error
+      DiagnosticLogger.exception('network', 'cookie_html_request_exception', e, { pathOrUrl: clean, url: url, refererUrl: refererUrl })
+      throw e
     }
   }
 
@@ -1382,6 +1406,7 @@ export class ApiService {
       if (isApiError(error) && error.code === ApiErrorCode.THANK_FAILED) {
         throw error as ApiError
       }
+      DiagnosticLogger.exception('network', 'thank_response_json_parse_exception', error as Error)
     }
   }
 
@@ -1503,7 +1528,9 @@ export class ApiService {
         return replyContent.indexOf(cleanContent) >= 0 || cleanContent.indexOf(replyContent) >= 0
       })
     } catch (error) {
-      console.error('verify submitted reply failed: ' + (error as Error).message)
+      const e = error as Error
+      DiagnosticLogger.exception('network', 'verify_submitted_reply_exception', e, { topicId: topicId })
+      console.error('verify submitted reply failed: ' + e.message)
       return false
     }
   }

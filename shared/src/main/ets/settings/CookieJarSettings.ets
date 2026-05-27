@@ -215,10 +215,12 @@ export class CookieJarSettings {
     CookieJarSettings.expireWebCookiesForBaseUrl(cleanBaseUrl, previousCookie)
     try {
       webview.WebCookieManager.saveCookieSync()
-    } catch (_error) {
+    } catch (error) {
+      DiagnosticLogger.exception('webview', 'clear_web_cookies_save_sync_exception', error as Error, { baseUrl: cleanBaseUrl })
       try {
         await webview.WebCookieManager.saveCookieAsync()
-      } catch (_e) {
+      } catch (e) {
+        DiagnosticLogger.exception('webview', 'clear_web_cookies_save_async_exception', e as Error, { baseUrl: cleanBaseUrl })
       }
     }
   }
@@ -308,15 +310,18 @@ export class CookieJarSettings {
         webview.WebCookieManager.configCookieSync(baseUrl, `${pair.name}=${pair.value}; Path=/`, false, true)
       } catch (error) {
         const e = error as Error
+        DiagnosticLogger.exception('webview', 'restore_web_cookie_config_exception', e, { baseUrl: baseUrl, cookieName: pair.name })
         console.error('config cookie failed: ' + (e.message || 'unknown'))
       }
     }
     try {
       webview.WebCookieManager.saveCookieSync()
     } catch (error) {
+      DiagnosticLogger.exception('webview', 'restore_web_cookie_save_sync_exception', error as Error, { baseUrl: baseUrl })
       try {
         await webview.WebCookieManager.saveCookieAsync()
       } catch (e) {
+        DiagnosticLogger.exception('webview', 'restore_web_cookie_save_async_exception', e as Error, { baseUrl: baseUrl })
         // Ignore web cookie save failures; cookies will still live in-memory.
       }
     }

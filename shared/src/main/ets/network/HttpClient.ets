@@ -2,6 +2,7 @@ import { http } from '@kit.NetworkKit'
 import { ApiConstants } from '../constants/ApiConstants'
 import { HttpJsonParseError, HttpRetryPolicy, HttpStatusError } from './HttpRetryPolicy'
 import { NetworkProxyRequest } from './NetworkProxyRequest'
+import { DiagnosticLogger } from '../diagnostics/DiagnosticLogger'
 
 const MAX_RETRIES: number = 3
 const CONNECT_TIMEOUT_MS: number = 10000
@@ -85,6 +86,13 @@ export class HttpClient {
       }
     } catch (error) {
       const e = error as Error
+      DiagnosticLogger.exception('network', 'http_json_request_exception', e, {
+        method: HttpClient.methodLabel(reqMethod),
+        url: url,
+        endpoint: endpoint,
+        retryCount: retryCount,
+        willRetry: retryCount > 0 && HttpRetryPolicy.shouldRetry(reqMethod, e)
+      })
       if (retryCount > 0 && HttpRetryPolicy.shouldRetry(reqMethod, e)) {
         const delay = BACKOFF_BASE_MS * Math.pow(2, MAX_RETRIES - retryCount)
         await new Promise<void>(resolve => setTimeout(resolve, delay))
@@ -167,6 +175,13 @@ export class HttpClient {
       return response.result as string
     } catch (error) {
       const e = error as Error
+      DiagnosticLogger.exception('network', 'http_text_request_exception', e, {
+        method: HttpClient.methodLabel(reqMethod),
+        url: url,
+        endpoint: endpoint,
+        retryCount: retryCount,
+        willRetry: retryCount > 0 && HttpRetryPolicy.shouldRetry(reqMethod, e)
+      })
       if (retryCount > 0 && HttpRetryPolicy.shouldRetry(reqMethod, e)) {
         const delay = BACKOFF_BASE_MS * Math.pow(2, MAX_RETRIES - retryCount)
         await new Promise<void>(resolve => setTimeout(resolve, delay))
@@ -217,6 +232,27 @@ export class HttpClient {
       const statusCode = response.responseCode as number
       const responseHeaders = headerBag || response.header
       const location = HttpClient.extractSingleHeader(responseHeaders, 'location') || receivedLocation
+      if (statusCode >= 400) {
+        DiagnosticLogger.warn('network', 'http_text_response_error_status', {
+          method: HttpClient.methodLabel(reqMethod),
+          url: url,
+          endpoint: endpoint,
+          statusCode: statusCode,
+          location: location,
+          hasCookie: HttpClient.hasAuthHeader(requestHeaders),
+          usingCache: usingCache ?? !HttpClient.hasAuthHeader(requestHeaders)
+        })
+      } else {
+        DiagnosticLogger.info('network', 'http_text_response_status', {
+          method: HttpClient.methodLabel(reqMethod),
+          url: url,
+          endpoint: endpoint,
+          statusCode: statusCode,
+          location: location,
+          hasCookie: HttpClient.hasAuthHeader(requestHeaders),
+          usingCache: usingCache ?? !HttpClient.hasAuthHeader(requestHeaders)
+        })
+      }
       if (statusCode >= 300 && statusCode < 400) {
         return { statusCode, text: (response.result as string) || '', location }
       }
@@ -226,6 +262,13 @@ export class HttpClient {
       return { statusCode, text: (response.result as string) || '', location }
     } catch (error) {
       const e = error as Error
+      DiagnosticLogger.exception('network', 'http_text_response_request_exception', e, {
+        method: HttpClient.methodLabel(reqMethod),
+        url: url,
+        endpoint: endpoint,
+        retryCount: retryCount,
+        willRetry: retryCount > 0 && HttpRetryPolicy.shouldRetry(reqMethod, e)
+      })
       if (retryCount > 0 && HttpRetryPolicy.shouldRetry(reqMethod, e)) {
         const delay = BACKOFF_BASE_MS * Math.pow(2, MAX_RETRIES - retryCount)
         await new Promise<void>(resolve => setTimeout(resolve, delay))
@@ -270,6 +313,19 @@ export class HttpClient {
     const cookie = headers['Cookie'] || headers['cookie'] || ''
     const authorization = headers['Authorization'] || headers['authorization'] || ''
     return cookie.trim().length > 0 || authorization.trim().length > 0
+  }
+
+  private static methodLabel(method: http.RequestMethod): string {
+    if (method === http.RequestMethod.POST) {
+      return 'POST'
+    }
+    if (method === http.RequestMethod.PUT) {
+      return 'PUT'
+    }
+    if (method === http.RequestMethod.DELETE) {
+      return 'DELETE'
+    }
+    return 'GET'
   }
 
   private static formatRequestError(error: Error): string {

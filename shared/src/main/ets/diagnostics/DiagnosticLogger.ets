@@ -4,7 +4,7 @@ import { DiagnosticsLogFileSink } from './DiagnosticsLogFileSink'
 import { DiagnosticsStore } from './DiagnosticsStore'
 
 export type DiagnosticLogLevel = 'debug' | 'info' | 'warn' | 'error'
-export type DiagnosticLogCategory = 'app' | 'auth' | 'two_factor' | 'auto_daily_checkin' | 'notification' | 'account' | 'cache' | 'storage' | 'ui_lifecycle' | 'diagnostics'
+export type DiagnosticLogCategory = 'app' | 'auth' | 'two_factor' | 'auto_daily_checkin' | 'notification' | 'account' | 'cache' | 'storage' | 'ui_lifecycle' | 'diagnostics' | 'network' | 'webview'
 
 export class DiagnosticLogger {
   private static enabled: boolean = true
@@ -48,6 +48,10 @@ export class DiagnosticLogger {
   }
 
   static error(category: DiagnosticLogCategory, event: string, context: DiagnosticContextObject = {}, error?: Error): void {
+    DiagnosticLogger.log('error', category, event, context, error)
+  }
+
+  static exception(category: DiagnosticLogCategory, event: string, error: Error, context: DiagnosticContextObject = {}): void {
     DiagnosticLogger.log('error', category, event, context, error)
   }
 
