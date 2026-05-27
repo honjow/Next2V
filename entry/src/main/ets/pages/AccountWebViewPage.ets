@@ -4,9 +4,9 @@ import {
   CookieJarSettings,
   DiagnosticLogger,
   HttpClient,
-  SecondaryListScaffold,
   StorageKeys,
-  ThemeConstants,
+  V2exWebView,
+  V2exWebViewScaffold,
   V2exUrlRouter,
 } from 'shared'
 
@@ -38,85 +38,49 @@ export struct AccountWebViewPage {
   }
 
   build() {
-    Column() {
-      Column() {
-        SecondaryListScaffold({ horizontalPadding: 0, bottomPadding: 0, listSpace: 0 }) {
-          ListItem() {
-            Web({ src: '', controller: this.controller })
-              .darkMode(WebDarkMode.Off)
-              .backgroundColor(Color.White)
-              .javaScriptAccess(true)
-              .domStorageAccess(true)
-              .onlineImageAccess(true)
-              .width('100%')
-              .height('100%')
-              .onControllerAttached(() => {
-                this.loadTargetUrl()
-              })
-              .onPageBegin((event?: PageEndEvent) => {
-                this.isLoading = true
-                this.errorMessage = ''
-                this.pageMessage = AppStrings.text(AppStrings.R_COMMON_LOADING, 'Loading…')
-                DiagnosticLogger.info('webview', 'account_webview_page_begin', {
-                  url: event && event.url ? event.url : this.targetUrl,
-                  hasCookie: this.hasInjectedCookie
-                })
-              })
-              .onPageEnd((event?: PageEndEvent) => {
-                this.isLoading = false
-                this.pageMessage = ''
-                DiagnosticLogger.info('webview', 'account_webview_page_end', {
-                  url: event && event.url ? event.url : this.targetUrl,
-                  hasCookie: this.hasInjectedCookie
-                })
-              })
-              .onErrorReceive((event) => {
-                if (event?.request?.isMainFrame()) {
-                  this.isLoading = false
-                  this.pageMessage = ''
-                  this.errorMessage = event.error.getErrorInfo() ||
-                    AppStrings.text(AppStrings.R_COMMON_LOAD_FAILED, 'Failed to load page')
-                  DiagnosticLogger.warn('webview', 'account_webview_load_error', {
-                    url: this.targetUrl,
-                    isMainFrame: true,
-                    errorInfo: this.errorMessage,
-                    hasCookie: this.hasInjectedCookie
-                  })
-                }
-              })
+    V2exWebViewScaffold({
+      isStatusVisible: this.isLoading || !!this.errorMessage || !!this.pageMessage,
+      isStatusError: !!this.errorMessage,
+      statusText: this.statusText(),
+      statusMaxLines: 2
+    }) {
+      V2exWebView({
+        controller: this.controller,
+        onControllerAttached: () => {
+          this.loadTargetUrl()
+        },
+        onPageBegin: (event?: PageEndEvent) => {
+          this.isLoading = true
+          this.errorMessage = ''
+          this.pageMessage = AppStrings.text(AppStrings.R_COMMON_LOADING, 'Loading…')
+          DiagnosticLogger.info('webview', 'account_webview_page_begin', {
+            url: event && event.url ? event.url : this.targetUrl,
+            hasCookie: this.hasInjectedCookie
+          })
+        },
+        onPageEnd: (event?: PageEndEvent) => {
+          this.isLoading = false
+          this.pageMessage = ''
+          DiagnosticLogger.info('webview', 'account_webview_page_end', {
+            url: event && event.url ? event.url : this.targetUrl,
+            hasCookie: this.hasInjectedCookie
+          })
+        },
+        onErrorReceive: (event) => {
+          if (event?.request?.isMainFrame()) {
+            this.isLoading = false
+            this.pageMessage = ''
+            this.errorMessage = event.error.getErrorInfo() ||
+              AppStrings.text(AppStrings.R_COMMON_LOAD_FAILED, 'Failed to load page')
+            DiagnosticLogger.warn('webview', 'account_webview_load_error', {
+              url: this.targetUrl,
+              isMainFrame: true,
+              errorInfo: this.errorMessage,
+              hasCookie: this.hasInjectedCookie
+            })
           }
-          .height('100%')
-          .clip(false)
         }
-      }
-      .width('100%')
-      .layoutWeight(1)
-
-      this.StatusBar()
-    }
-    .width('100%')
-    .height('100%')
-    .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
-  }
-
-  @Builder
-  StatusBar() {
-    if (this.isLoading || this.errorMessage || this.pageMessage) {
-      Row() {
-        Text(this.statusText())
-          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-          .fontColor(this.errorMessage ? Color.Red : $r('sys.color.font_secondary'))
-          .maxLines(2)
-          .textOverflow({ overflow: TextOverflow.Ellipsis })
-      }
-      .width('100%')
-      .padding({
-        left: ThemeConstants.SPACE_MD,
-        right: ThemeConstants.SPACE_MD,
-        top: ThemeConstants.SPACE_XS,
-        bottom: ThemeConstants.SPACE_XS
       })
-      .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
     }
   }
 

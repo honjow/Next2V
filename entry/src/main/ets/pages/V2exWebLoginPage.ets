@@ -12,8 +12,8 @@ import {
   DiagnosticLogger,
   HttpClient,
   StorageKeys,
+  V2exWebView,
   V2exWebViewScaffold,
-  ThemeConstants,
   V2exSessionParser,
   translateApiError
 } from 'shared'
@@ -81,78 +81,48 @@ export struct V2exWebLoginPage {
       statusText: this.statusText(),
       statusMaxLines: 1
     }) {
-      ListItem() {
-        Web({ src: '', controller: this.controller })
-          .darkMode(WebDarkMode.Off)
-          .backgroundColor(Color.White)
-          .javaScriptAccess(true)
-          .domStorageAccess(true)
-          .onlineImageAccess(true)
-          .width('100%')
-          .height('100%')
-          .onControllerAttached(() => {
-            this.loadSigninPage()
+      V2exWebView({
+        controller: this.controller,
+        onControllerAttached: () => {
+          this.loadSigninPage()
+        },
+        onPageBegin: (event?: PageEndEvent) => {
+          this.pageMessage = event?.url ? AppStrings.format(AppStrings.text(AppStrings.R_WEB_LOGIN_LOADING_URL, 'Loading {0}'), [event.url]) : AppStrings.text(AppStrings.R_WEB_LOGIN_LOADING_PAGE, 'Loading web login...')
+          if (event && event.url) {
+            this.lastUrl = event.url
+          }
+          DiagnosticLogger.info('webview', 'web_login_page_begin', {
+            url: event && event.url ? event.url : this.currentSigninUrl()
           })
-          .onPageBegin((event?: PageEndEvent) => {
-            this.pageMessage = event?.url ? AppStrings.format(AppStrings.text(AppStrings.R_WEB_LOGIN_LOADING_URL, 'Loading {0}'), [event.url]) : AppStrings.text(AppStrings.R_WEB_LOGIN_LOADING_PAGE, 'Loading web login...')
-            if (event && event.url) {
-              this.lastUrl = event.url
-            }
-            DiagnosticLogger.info('webview', 'web_login_page_begin', {
-              url: event && event.url ? event.url : this.currentSigninUrl()
+          this.scheduleAutoSave()
+        },
+        onPageEnd: (event?: PageEndEvent) => {
+          this.pageMessage = ''
+          if (event && event.url) {
+            this.lastUrl = event.url
+          }
+          DiagnosticLogger.info('webview', 'web_login_page_end', {
+            url: event && event.url ? event.url : this.lastUrl
+          })
+          this.scheduleAutoSave()
+        },
+        onLoadFinished: (event?: PageEndEvent) => {
+          if (event && event.url) {
+            this.lastUrl = event.url
+          }
+          this.scheduleAutoSave()
+        },
+        onErrorReceive: (event) => {
+          if (event?.request?.isMainFrame()) {
+            this.pageMessage = event.error.getErrorInfo() || AppStrings.text(AppStrings.R_WEB_LOGIN_LOAD_FAILED, 'Web login failed to load')
+            DiagnosticLogger.warn('webview', 'web_login_load_error', {
+              url: this.lastUrl || this.currentSigninUrl(),
+              isMainFrame: true,
+              errorInfo: this.pageMessage
             })
-            this.scheduleAutoSave()
-          })
-          .onPageEnd((event?: PageEndEvent) => {
-            this.pageMessage = ''
-            if (event && event.url) {
-              this.lastUrl = event.url
-            }
-            DiagnosticLogger.info('webview', 'web_login_page_end', {
-              url: event && event.url ? event.url : this.lastUrl
-            })
-            this.scheduleAutoSave()
-          })
-          .onLoadFinished((event?: PageEndEvent) => {
-            if (event && event.url) {
-              this.lastUrl = event.url
-            }
-            this.scheduleAutoSave()
-          })
-          .onErrorReceive((event) => {
-            if (event?.request?.isMainFrame()) {
-              this.pageMessage = event.error.getErrorInfo() || AppStrings.text(AppStrings.R_WEB_LOGIN_LOAD_FAILED, 'Web login failed to load')
-              DiagnosticLogger.warn('webview', 'web_login_load_error', {
-                url: this.lastUrl || this.currentSigninUrl(),
-                isMainFrame: true,
-                errorInfo: this.pageMessage
-              })
-            }
-          })
-      }
-      .height('100%')
-      .clip(false)
-    }
-  }
-
-  @Builder
-  StatusBar() {
-    if (this.isSaving || this.errorMessage || this.pageMessage) {
-      Row() {
-        Text(this.statusText())
-          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-          .fontColor(this.errorMessage ? Color.Red : $r('sys.color.font_secondary'))
-          .maxLines(1)
-          .textOverflow({ overflow: TextOverflow.Ellipsis })
-      }
-      .width('100%')
-      .padding({
-        left: ThemeConstants.SPACE_MD,
-        right: ThemeConstants.SPACE_MD,
-        top: ThemeConstants.SPACE_XS,
-        bottom: ThemeConstants.SPACE_XS
+          }
+        }
       })
-      .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
     }
   }
 
