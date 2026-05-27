@@ -14,6 +14,10 @@ UI, interaction, navigation, and settings lanes must preserve role separation. T
 
 Device evidence must be captured during the QA card itself and stored in `.hermes-artifacts/<yyyymmdd-HHMM>-<lane>-qa/`. Do not reuse the implementation card's artifact directory. At minimum, include `validation-summary.md` and screenshots for key states.
 
+For UI visual QA, the verdict must map every user-stated acceptance criterion to explicit screenshot/layout evidence. If the task has coupled visual requirements, validate each part separately. Example: an immersive/translucent WebView titlebar requires both (1) Web surface behind the titlebar for blur/material sampling and (2) inner Web content top avoidance so first content is not covered. Proving only one side is not PASS. Layout nodes (`MaskBlur`, `HdsTitleBar`, etc.), source parity, build success, or navigation success are supporting evidence only; they cannot replace screenshot evidence for the actual visual condition.
+
+`PASS_WITH_LIMITATION` is forbidden for hard visual gates. Missing baseline screenshot, unstable reference capture, or unverified visual criterion is `BLOCKED` or `FAIL`, not PASS.
+
 Before installing or controlling the device, QA must prove hdc readiness with a real shell probe: `hdc tconn 192.168.50.237:12345`, wait about 2 seconds, then `hdc -t 192.168.50.237:12345 shell echo ok`. `Connect OK` or `list targets -v` showing `Connected` is not enough evidence because the target can appear connected before shell commands produce output. If the probe does not print `ok`, record QA as `BLOCKED` with the probe output instead of repeatedly reconnecting. Do not use `hdc tmode port ...` during normal QA unless the user explicitly asks to repair device connection mode.
 
 If a later device command cannot find the target, stop that attempt, record the output, and restart QA from the standard hdc probe. Do not substitute `Connect OK` or `list targets` output for the shell probe.
