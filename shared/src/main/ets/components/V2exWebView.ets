@@ -12,6 +12,11 @@ export struct V2exWebView {
   build() {
     ListItem() {
       Web({ src: '', controller: this.controller })
+        .nestedScroll({
+          scrollUp: NestedScrollMode.PARENT_FIRST,
+          scrollDown: NestedScrollMode.PARENT_FIRST,
+        })
+        .overScrollMode(OverScrollMode.NEVER)
         .darkMode(WebDarkMode.Off)
         .backgroundColor(Color.White)
         .javaScriptAccess(true)
