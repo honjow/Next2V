@@ -73,6 +73,10 @@ const TABLE_PROTECTED_WIDE_DISPLAY_UNIT = 1.08;
 const TABLE_BORDER_COLOR = "#1A000000";
 const TABLE_OUTER_BORDER_WIDTH = 1;
 const TABLE_CELL_VERTICAL_DIVIDER_WIDTH = 1;
+const MEDIA_VIDEO_MAX_WIDTH = 760;
+const MEDIA_VIDEO_MIN_HEIGHT = 220;
+const MEDIA_VIDEO_MAX_HEIGHT = 420;
+const MEDIA_VIDEO_ASPECT_RATIO = 9 / 16;
 
 type TokenValue = Object | string | number | boolean | null | undefined;
 
@@ -1946,6 +1950,7 @@ struct MarkdownVideoPlayer {
   @Prop url: string = "";
   @Prop options: MarkdownOptions;
   @State private loadState: number = 0 // 0: idle, 1: prepared, 2: error
+  @State private videoAvailableWidth: number = 0;
   private controller: VideoController = new VideoController()
 
   aboutToAppear(): void {
@@ -1972,6 +1977,30 @@ struct MarkdownVideoPlayer {
     }, 80);
   }
 
+  private updateVideoAvailableWidth(value: Area): void {
+    this.videoAvailableWidth = _areaWidth(value);
+  }
+
+  private videoMeasuredWidth(): number {
+    if (this.videoAvailableWidth <= 0) {
+      return 0;
+    }
+    return Math.min(this.videoAvailableWidth, MEDIA_VIDEO_MAX_WIDTH);
+  }
+
+  private videoFrameWidth(): Length {
+    const width = this.videoMeasuredWidth();
+    return width > 0 ? width : '100%';
+  }
+
+  private videoFrameHeight(): number {
+    const width = this.videoMeasuredWidth();
+    if (width <= 0) {
+      return 240;
+    }
+    return Math.max(MEDIA_VIDEO_MIN_HEIGHT, Math.min(MEDIA_VIDEO_MAX_HEIGHT, width * MEDIA_VIDEO_ASPECT_RATIO));
+  }
+
   build() {
     Column({ space: ThemeConstants.SPACE_XS }) {
       Stack({ alignContent: Alignment.Center }) {
@@ -1979,8 +2008,8 @@ struct MarkdownVideoPlayer {
           src: this.url,
           controller: this.controller,
         })
-          .width('100%')
-          .height(220)
+          .width(this.videoFrameWidth())
+          .height(this.videoFrameHeight())
           .objectFit(ImageFit.Contain)
           .controls(true)
           .autoPlay(false)
@@ -2017,13 +2046,14 @@ struct MarkdownVideoPlayer {
           }
           .justifyContent(FlexAlign.Center)
           .alignItems(HorizontalAlign.Center)
-          .width('100%')
-          .height(220)
+          .width(this.videoFrameWidth())
+          .height(this.videoFrameHeight())
           .borderRadius(ThemeConstants.RADIUS_SM)
           .backgroundColor(ThemeConstants.BG_SUB)
         }
       }
-      .width('100%')
+      .width(this.videoFrameWidth())
+      .height(this.videoFrameHeight())
       .borderRadius(ThemeConstants.RADIUS_SM)
       .backgroundColor(ThemeConstants.BG_SUB)
 
@@ -2038,12 +2068,16 @@ struct MarkdownVideoPlayer {
           .textOverflow({ overflow: TextOverflow.Ellipsis })
           .layoutWeight(1)
       }
-      .width('100%')
+      .width(this.videoFrameWidth())
       .onClick(() => {
         _openInlineVideo(this.options, this.url);
       })
     }
     .width('100%')
+    .alignItems(HorizontalAlign.Center)
+    .onAreaChange((_oldValue: Area, newValue: Area) => {
+      this.updateVideoAvailableWidth(newValue);
+    })
   }
 }
 

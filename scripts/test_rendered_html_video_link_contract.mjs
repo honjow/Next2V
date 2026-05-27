@@ -17,6 +17,26 @@ if (!/markdown_video_load_failed/.test(source) || !/R_COMMON_OPEN_EXTERNAL/.test
   process.exit(1);
 }
 
+const videoPlayerStart = source.indexOf('struct MarkdownVideoPlayer');
+const videoPlayerEnd = source.indexOf('@Component\nstruct MarkdownAutoImage', videoPlayerStart);
+const videoPlayerBody = videoPlayerStart >= 0 && videoPlayerEnd > videoPlayerStart ? source.slice(videoPlayerStart, videoPlayerEnd) : '';
+if (!/MEDIA_VIDEO_MAX_WIDTH\s*=\s*760/.test(source) || !/MEDIA_VIDEO_MIN_HEIGHT\s*=\s*220/.test(source) || !/MEDIA_VIDEO_MAX_HEIGHT\s*=\s*420/.test(source)) {
+  console.error('FAIL video player must declare bounded media-card width and height constants');
+  process.exit(1);
+}
+if (!/private videoFrameWidth\(\): Length/.test(videoPlayerBody) || !/private videoFrameHeight\(\): number/.test(videoPlayerBody)) {
+  console.error('FAIL video player must compute frame width and height from measured content width');
+  process.exit(1);
+}
+if (!/\.width\(this\.videoFrameWidth\(\)\)/.test(videoPlayerBody) || !/\.height\(this\.videoFrameHeight\(\)\)/.test(videoPlayerBody)) {
+  console.error('FAIL video Video component must use responsive frame width/height, not full-width fixed-height sizing');
+  process.exit(1);
+}
+if (/Video\(\{[\s\S]*?\.width\('100%'\)[\s\S]*?\.height\(220\)/.test(videoPlayerBody)) {
+  console.error('FAIL video player must not render as width 100% plus fixed height 220');
+  process.exit(1);
+}
+
 const IMAGE_EXT_REGEX = /\.(jpe?g|png|gif|webp|bmp|svg|avif|heic|heif)(?:[?#].*)?$/i;
 const VIDEO_EXT_REGEX = /\.(mp4|webm|mov|m4v|m3u8)(?:[?#].*)?$/i;
 const MEDIA_QUERY_EXT_REGEX = /[?&](?:format|fm|ext|type|output)=([a-z0-9/]+)/i;
