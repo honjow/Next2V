@@ -173,7 +173,7 @@ export interface MarkdownOptions {
 
 type RenderSourceKind = "markdown" | "renderedHtml";
 type RenderBlockKind = "paragraph" | "heading" | "list" | "blockquote" | "code" | "imageBlock" | "imageTable" | "table";
-type RenderInlineKind = "text" | "link" | "strong" | "em" | "codespan" | "image" | "break" | "base64Decode";
+type RenderInlineKind = "text" | "link" | "strong" | "em" | "del" | "codespan" | "image" | "break" | "base64Decode";
 type RenderToken = Token;
 
 interface Base64DecodeToken extends Token {
@@ -214,6 +214,7 @@ const RENDER_STYLE_CONTRACT_TABLE: RenderContractStyleRow[] = [
   { name: "link", semanticKind: "link", fontSize: "inherited/body", color: "TEXT_LINK", style: "underline except member links" },
   { name: "strong", semanticKind: "strong", fontSize: "inherited/body", weight: "Bold", color: "TEXT_PRIMARY" },
   { name: "em", semanticKind: "em", fontSize: "inherited/body", style: "Italic", color: "TEXT_PRIMARY" },
+  { name: "del", semanticKind: "del", fontSize: "inherited/body", color: "TEXT_SECONDARY", style: "line-through" },
   { name: "codespan", semanticKind: "codespan", fontSize: "inherited/body", color: "TEXT_PRIMARY", background: "BG_SUB" },
   { name: "base64Decode", semanticKind: "base64Decode", fontSize: "inherited/body", color: "TEXT_LINK", roleDecision: "ordinary text enhancement only; original token text remains visible and decoded text is badge-gated by default" },
   { name: "imageBlock", semanticKind: "imageBlock", fontSize: "n/a", roleDecision: "source structure / Markdown block semantics; never intrinsic big/small" },
@@ -741,10 +742,22 @@ function SelectableInlineTokenSpans(
           });
       }
     } else if (t.type === "del") {
-      Span((t as Tokens.Del).text)
-        .fontSize(fontSize)
-        .fontColor(ThemeConstants.TEXT_SECONDARY)
-        .decoration({ type: TextDecorationType.LineThrough });
+      ForEach((t as Tokens.Del).tokens && (t as Tokens.Del).tokens!.length > 0 ? (t as Tokens.Del).tokens! : [{ type: "text", raw: (t as Tokens.Del).text, text: (t as Tokens.Del).text } as Token], (child: Token, childIndex: number) => {
+        if (child.type === "link") {
+          Span((child as Tokens.Link).text)
+            .fontSize(fontSize)
+            .fontColor(ThemeConstants.TEXT_LINK)
+            .decoration({ type: TextDecorationType.LineThrough, color: ThemeConstants.TEXT_LINK })
+            .onClick(() => {
+              _openInlineLink(options, (child as Tokens.Link).href);
+            });
+        } else {
+          Span(String((child as TokenRecord).text ?? (child as TokenRecord).raw ?? ""))
+            .fontSize(fontSize)
+            .fontColor(ThemeConstants.TEXT_SECONDARY)
+            .decoration({ type: TextDecorationType.LineThrough });
+        }
+      }, (child: Token, childIndex: number) => _inlineTokenKey(child, childIndex));
     } else if (_isInlineImageToken(t)) {
       ImageSpan(_inlineImageRenderUrl(t))
         .width(_inlineImageRenderSize(t, inlineImageSizeRecords, availableWidth).width)
@@ -1333,10 +1346,19 @@ function InlineTokenSpans(
           .decoration({ type: TextDecorationType.Underline, color: ThemeConstants.TEXT_LINK });
       }
     } else if (t.type === "del") {
-      Span((t as Tokens.Del).text)
-        .fontSize(fontSize)
-        .fontColor(ThemeConstants.TEXT_SECONDARY)
-        .decoration({ type: TextDecorationType.LineThrough });
+      ForEach((t as Tokens.Del).tokens && (t as Tokens.Del).tokens!.length > 0 ? (t as Tokens.Del).tokens! : [{ type: "text", raw: (t as Tokens.Del).text, text: (t as Tokens.Del).text } as Token], (child: Token, childIndex: number) => {
+        if (child.type === "link") {
+          Span((child as Tokens.Link).text)
+            .fontSize(fontSize)
+            .fontColor(ThemeConstants.TEXT_LINK)
+            .decoration({ type: TextDecorationType.LineThrough, color: ThemeConstants.TEXT_LINK });
+        } else {
+          Span(String((child as TokenRecord).text ?? (child as TokenRecord).raw ?? ""))
+            .fontSize(fontSize)
+            .fontColor(ThemeConstants.TEXT_SECONDARY)
+            .decoration({ type: TextDecorationType.LineThrough });
+        }
+      }, (child: Token, childIndex: number) => _inlineTokenKey(child, childIndex));
     } else if (_isInlineImageToken(t)) {
       ImageSpan(_inlineImageRenderUrl(t))
         .width(_inlineImageRenderSize(t, inlineImageSizeRecords, availableWidth).width)
@@ -3135,7 +3157,7 @@ export struct MarkdownContent {
   private static inlineHtmlToTokens(value: string, _sizeRecords: InlineImageSizeRecord[] = []): Token[] {
     const tokens: Token[] = [];
     const source = value || '';
-    const inlineRe = /<a\b[^>]*>[\s\S]*?<\/a>|<img\b[^>]*>|<br\s*\/?>|<code\b[^>]*>[\s\S]*?<\/code>|<(strong|b|em|i)\b[^>]*>[\s\S]*?<\/\1>/gi;
+    const inlineRe = /<a\b[^>]*>[\s\S]*?<\/a>|<img\b[^>]*>|<br\s*\/?>|<code\b[^>]*>[\s\S]*?<\/code>|<(strong|b|em|i|del|s|strike)\b[^>]*>[\s\S]*?<\/\1>/gi;
     let last = 0;
     let match: RegExpExecArray | null = inlineRe.exec(source);
     while (match) {
@@ -3202,6 +3224,12 @@ export struct MarkdownContent {
       const text = MarkdownContent.stripHtmlTags(part);
       return [{ type: 'em', raw: part, text: text, tokens: [MarkdownContent.buildTextToken(text) as Token] } as Tokens.Em];
     }
+    if (/^<(del|s|strike)/i.test(part)) {
+      const bodyMatch = /^<(?:del|s|strike)\b[^>]*>([\s\S]*?)<\/(?:del|s|strike)>$/i.exec(part);
+      const body = bodyMatch ? bodyMatch[1] : MarkdownContent.stripHtmlTags(part);
+      const text = MarkdownContent.stripHtmlTags(part);
+      return [{ type: 'del', raw: part, text: text, tokens: MarkdownContent.inlineHtmlToTokens(body) } as Tokens.Del];
+    }
     return [];
   }
 
@@ -3226,7 +3254,7 @@ export struct MarkdownContent {
   private static parseMarkdownInlineTextTokens(text: string): Token[] {
     const result: Token[] = [];
     const source = text || '';
-    const re = /\[([^\]\n]+)\]\(\s*(https?:\/\/[^\s)]+)\s*\)|\*\*([^*]+)\*\*|\*([^*]+)\*|`([^`]+)`/g;
+    const re = /\[([^\]\n]+)\]\(\s*(https?:\/\/[^\s)]+)\s*\)|\*\*([^*]+)\*\*|\*([^*]+)\*|~~([^~]+)~~|`([^`]+)`/g;
     let last = 0;
     let match: RegExpExecArray | null = re.exec(source);
     while (match) {
@@ -3251,7 +3279,10 @@ export struct MarkdownContent {
         const value = match[4] || '';
         result.push({ type: 'em', raw: match[0], text: value, tokens: [MarkdownContent.buildTextToken(value) as Token] } as Tokens.Em);
       } else if (match[5]) {
-        result.push({ type: 'codespan', raw: match[0], text: match[5] || '' } as Tokens.Codespan);
+        const value = match[5] || '';
+        result.push({ type: 'del', raw: match[0], text: value, tokens: MarkdownContent.parseMarkdownInlineTextTokens(value) } as Tokens.Del);
+      } else if (match[6]) {
+        result.push({ type: 'codespan', raw: match[0], text: match[6] || '' } as Tokens.Codespan);
       }
       last = match.index + match[0].length;
       match = re.exec(source);

@@ -70,12 +70,13 @@ function extractPreCodeTextFromRenderedHtml(preHtml) {
 
 function parseMarkdownInlineTextTokens(text) {
   const result = []
-  const re = /\[([^\]\n]+)\]\(\s*(https?:\/\/[^\s)]+)\s*\)/g
+  const re = /\[([^\]\n]+)\]\(\s*(https?:\/\/[^\s)]+)\s*\)|~~([^~]+)~~/g
   let last = 0
   let match
   while ((match = re.exec(text || ''))) {
     if (match.index > last) result.push({ type: 'text', text: text.slice(last, match.index) })
-    result.push({ type: 'link', href: match[2], text: match[1] })
+    if (match[2]) result.push({ type: 'link', href: match[2], text: match[1] })
+    else result.push({ type: 'del', text: match[3], tokens: parseMarkdownInlineTextTokens(match[3]) })
     last = match.index + match[0].length
   }
   if (last === 0) return [{ type: 'text', text }]
@@ -104,7 +105,7 @@ function trimTextEdges(tokens) {
 function inlineHtmlToTokens(html) {
   const tokens = []
   let index = 0
-  const re = /<a\b[^>]*>[\s\S]*?<\/a>|<img\b[^>]*>|<br\s*\/?>|<code\b[^>]*>[\s\S]*?<\/code>|<(strong|b|em|i)\b[^>]*>[\s\S]*?<\/\1>/gi
+  const re = /<a\b[^>]*>[\s\S]*?<\/a>|<img\b[^>]*>|<br\s*\/?>|<code\b[^>]*>[\s\S]*?<\/code>|<(strong|b|em|i|del|s|strike)\b[^>]*>[\s\S]*?<\/\1>/gi
   let match
   while ((match = re.exec(html || ''))) {
     appendText(tokens, html.slice(index, match.index))
@@ -131,6 +132,10 @@ function inlineHtmlToTokens(html) {
     } else if (/^<code/i.test(part)) tokens.push({ type: 'codespan', text: stripTags(part) })
     else if (/^<(strong|b)/i.test(part)) tokens.push({ type: 'strong', text: stripTags(part) })
     else if (/^<(em|i)/i.test(part)) tokens.push({ type: 'em', text: stripTags(part) })
+    else if (/^<(del|s|strike)/i.test(part)) {
+      const body = part.match(/^<(?:del|s|strike)\b[^>]*>([\s\S]*?)<\/(?:del|s|strike)>$/i)?.[1] || stripTags(part)
+      tokens.push({ type: 'del', text: stripTags(part), tokens: inlineHtmlToTokens(body) })
+    }
     index = re.lastIndex
   }
   appendText(tokens, (html || '').slice(index).replace(/<[^>]+>/g, ''))
@@ -228,6 +233,19 @@ assert.deepEqual(malformedCfTokens, [{ type: 'text', text: '[email protected]' }
 const dataClassLinkTokens = inlineHtmlToTokens('<a data-class="__cf_email__" data-cfemail="6e1a1a0f0f1e1a0f2e5f585d400d0103" href="https://example.com">Example</a>')
 assert.deepEqual(dataClassLinkTokens, [{ type: 'link', href: 'https://example.com', text: 'Example' }])
 assert.equal(dataClassLinkTokens.some(t => t.text === 'ttaapta@163.com'), false)
+
+const topic1201760Fixture = JSON.parse(readFileSync('scripts/fixtures/topic-1201760-strikethrough.json', 'utf8'))
+const topic1201760DelBodies = [...topic1201760Fixture.content_rendered.matchAll(/<del>[\s\S]*?<\/del>/gi)]
+assert.equal(topic1201760DelBodies.length, 2)
+for (const [index, match] of topic1201760DelBodies.entries()) {
+  const tokens = inlineHtmlToTokens(match[0])
+  assert.deepEqual(tokens.map(t => t.type), ['del'])
+  assert.equal(tokens[0].text, stripTags(topic1201760Fixture.expected_deleted_texts[index]))
+  assert.equal(tokens[0].tokens[0].type, 'text')
+  if (index === 0) {
+    assert.equal(tokens[0].tokens.some(t => t.type === 'link' && t.href === 'http://Claude.ai'), true)
+  }
+}
 
 const prefixedClassLinkTokens = inlineHtmlToTokens('<a xclass="__cf_email__" data-cfemail="6e1a1a0f0f1e1a0f2e5f585d400d0103" href="https://example.com/prefixed">Prefixed</a>')
 assert.deepEqual(prefixedClassLinkTokens, [{ type: 'link', href: 'https://example.com/prefixed', text: 'Prefixed' }])
@@ -331,15 +349,19 @@ assert.doesNotMatch(source, /bodyFontSize\(\) \+ \d/)
 assert.doesNotMatch(source, /min\(bodyFontSize\(\) \+/)
 assert.doesNotMatch(source, /Math\.min\(body \+/)
 assert.doesNotMatch(source, /name: "h[2-6]"[^{\n]*fontSize: "bodyFontSize\(\)"/)
-assert.match(settingsPageComponentsSource, /Text\('文字缩放'\)/)
+assert.match(settingsPageComponentsSource, /Text\((?:'文字缩放'|AppStrings\.R_TEXT_SCALE)\)/)
 assert.doesNotMatch(readingSettingsPageSource, /Text\('行距'\)|updateReadingLineHeight|readingLineHeightMin|@StorageLink\(StorageKeys\.READING_LINE_HEIGHT\)|value:\s*this\.readingLineHeight/)
-assert.match(readingSettingsPageSource, /将文字缩放恢复为默认值/)
+assert.match(readingSettingsPageSource, /将文字缩放恢复为默认值|R_RESTORE_READING_SCALE_MESSAGE/)
 assert.match(source, /private headingInlineTokens\(token: Token\): Token\[\]/)
 assert.match(source, /const RENDER_STYLE_CONTRACT_TABLE: RenderContractStyleRow\[\]/)
 assert.match(source, /parseMarkdownToRenderAst\(source: string/)
 assert.match(source, /parseRenderedHtmlToRenderAst\(contentRendered: string/)
 assert.match(source, /const blockRe = \/<\(table\|h\[1-6\]\|p\|ul\|ol\|blockquote\|pre\|div\)/)
 assert.match(source, /tag === 'blockquote'/)
+assert.match(source, /name: "del"[\s\S]*semanticKind: "del"[\s\S]*style: "line-through"/)
+assert.match(source, /strong\|b\|em\|i\|del\|s\|strike/)
+assert.match(source, /type: 'del'/)
+assert.match(source, /t\.type === "del"[\s\S]{0,900}TextDecorationType\.LineThrough/)
 assert.match(source, /tag === 'pre'/)
 assert.match(source, /private static extractPreCodeTextFromRenderedHtml\(body: string\): string/)
 const preBranch = source.match(/if \(tag === 'pre'\) \{[\s\S]*?\n    \}/)?.[0] || ''
@@ -370,4 +392,4 @@ assert.match(source, /\.onAreaChange\(\(_oldValue: Area, newValue: Area\) => \{\
 assert.match(source, /SelectableInlineTokenSpans\([\s\S]*this\.inlineContentMaxWidth\(\)/)
 assert.doesNotMatch(source, /return \{ width: fallback, height: fallback \}/)
 
-console.log('PASS: V2EX rendered HTML mirror/static checks preserve adjacent images, topic1212780 image-first mixed inline content, markdown links, and member links')
+console.log('PASS: V2EX rendered HTML mirror/static checks preserve adjacent images, topic1201760 del/strikethrough tokens, topic1212780 image-first mixed inline content, markdown links, and member links')
