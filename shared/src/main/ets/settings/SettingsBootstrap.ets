@@ -1,6 +1,7 @@
 import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
 import { ApiDomainSettings } from './ApiDomainSettings'
+import { AvatarAppearanceSettings } from './AvatarAppearanceSettings'
 import { AutoDailyCheckinSettings } from './AutoDailyCheckinSettings'
 import { CookieJarSettings } from './CookieJarSettings'
 import { AccountStore } from './AccountStore'
@@ -32,6 +33,7 @@ export class SettingsBootstrap {
     await SettingsBootstrap.restoreApiDomain(context, settingsStore)
     await SettingsBootstrap.restoreLanguage(context, settingsStore)
     await SettingsBootstrap.restoreTheme(context, settingsStore)
+    await SettingsBootstrap.restoreAvatarAppearance(context, settingsStore)
     await SettingsBootstrap.restoreMedia(context, settingsStore)
     await SettingsBootstrap.restoreNetworkProxy(context, settingsStore)
     await SettingsBootstrap.restoreReplyDisplay(context, settingsStore)
@@ -82,6 +84,16 @@ export class SettingsBootstrap {
     ).catch((error: Error) => {
       console.error('restore theme settings failed: ' + error.message)
       ThemeSettings.apply(context, ThemeSettings.MODE_AUTO)
+    })
+  }
+
+  private static async restoreAvatarAppearance(context: common.UIAbilityContext, settingsStore?: SettingsPreferencesStore): Promise<void> {
+    await (settingsStore
+      ? AvatarAppearanceSettings.loadFromStore(settingsStore)
+      : AvatarAppearanceSettings.load(context)
+    ).catch((error: Error) => {
+      console.error('restore avatar appearance failed: ' + error.message)
+      AvatarAppearanceSettings.apply(AvatarAppearanceSettings.APPEARANCE_CIRCLE)
     })
   }
 

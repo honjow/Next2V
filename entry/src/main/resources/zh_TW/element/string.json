@@ -421,6 +421,18 @@
       "value": "主題"
     },
     {
+      "name": "avatar_appearance",
+      "value": "頭像外觀"
+    },
+    {
+      "name": "avatar_appearance_soft",
+      "value": "圓角"
+    },
+    {
+      "name": "avatar_appearance_circle",
+      "value": "圓形"
+    },
+    {
       "name": "reply_display",
       "value": "回覆顯示"
     },

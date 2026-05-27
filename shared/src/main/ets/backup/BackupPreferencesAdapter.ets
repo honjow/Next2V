@@ -2,6 +2,7 @@ import { common } from '@kit.AbilityKit'
 import type { BackupPreferencesSection } from './BackupTypes'
 import { ApiDomainSettings } from '../settings/ApiDomainSettings'
 import { AutoDailyCheckinSettings } from '../settings/AutoDailyCheckinSettings'
+import { AvatarAppearanceSettings } from '../settings/AvatarAppearanceSettings'
 import { FeedTabSettings } from '../settings/FeedTabSettings'
 import { LanguageSettings } from '../settings/LanguageSettings'
 import { MediaSettings } from '../settings/MediaSettings'
@@ -18,10 +19,12 @@ export class BackupPreferencesAdapter {
     const media = await MediaSettings.load(context)
     const reading = await ReadingSettings.load(context)
     const checkin = await AutoDailyCheckinSettings.load(context)
+    const avatarAppearance = await AvatarAppearanceSettings.load(context)
     return {
       apiDomain: { baseUrl: await ApiDomainSettings.load(context) },
       language: { mode: language.mode },
       theme: { mode: theme.mode },
+      appearance: { avatarAppearance: avatarAppearance },
       media: { autoLoadImages: media.autoLoadImages, onlyLoadImagesOnWifi: media.onlyLoadImagesOnWifi },
       reading: {
         textScale: reading.textScale,
@@ -51,6 +54,9 @@ export class BackupPreferencesAdapter {
     }
     if (section.theme && section.theme.mode) {
       await ThemeSettings.save(context, section.theme.mode)
+    }
+    if (section.appearance) {
+      await AvatarAppearanceSettings.save(context, section.appearance.avatarAppearance || AvatarAppearanceSettings.APPEARANCE_CIRCLE)
     }
     if (section.media) {
       await MediaSettings.save(context, section.media.autoLoadImages === true, section.media.onlyLoadImagesOnWifi === true)

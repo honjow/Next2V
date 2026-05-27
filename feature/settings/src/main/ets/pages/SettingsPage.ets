@@ -3,6 +3,7 @@ import { promptAction } from '@kit.ArkUI'
 import {
   ApiDomainSettings,
   AppStrings,
+  AvatarAppearanceSettings,
   CacheSettings,
   ConciseListRow,
   GroupedListSection,
@@ -45,6 +46,8 @@ export struct SettingsPage {
     ReplyDisplaySettings.MODE_THREAD;
   @StorageLink(StorageKeys.REPLY_CARD_STYLE) replyCardStyle: string =
     ReplyCardStyleSettings.STYLE_STANDARD;
+  @StorageLink(StorageKeys.AVATAR_APPEARANCE) avatarAppearance: string =
+    AvatarAppearanceSettings.APPEARANCE_CIRCLE;
   @StorageLink(StorageKeys.REPLY_ACTION_ALIGNMENT_MODE) replyActionAlignmentMode: string =
     ReplyActionAlignmentSettings.MODE_UNSET;
   @StorageLink(StorageKeys.HOME_TAB_AUTO_HIDE) homeTabAutoHide: boolean = HomeTabSettings.DEFAULT_AUTO_HIDE;
@@ -58,6 +61,7 @@ export struct SettingsPage {
   @State private cacheStats: CacheStats = { topicListCount: 0, topicDetailCount: 0, updatedAt: 0 };
   @State private themeMenuShown: boolean = false;
   @State private languageMenuShown: boolean = false;
+  @State private avatarAppearanceMenuShown: boolean = false;
   @State private replyDisplayMenuShown: boolean = false;
   @State private replyCardStyleMenuShown: boolean = false;
   @State private replyActionAlignmentMenuShown: boolean = false;
@@ -292,6 +296,21 @@ export struct SettingsPage {
 
       this.SettingsDivider()
       SettingsDropdownRow({
+        title: AppStrings.R_AVATAR_APPEARANCE,
+        trailingText: SettingsPageCoordinator.avatarAppearanceLabel(this.avatarAppearance),
+        openAction: () => {
+          this.showAvatarAppearanceMenu()
+        },
+      })
+        .bindMenu(this.avatarAppearanceMenuShown, this.AvatarAppearanceMenu, {
+          placement: Placement.BottomRight,
+          aboutToDisappear: () => {
+            this.avatarAppearanceMenuShown = false
+          },
+        })
+
+      this.SettingsDivider()
+      SettingsDropdownRow({
         title: AppStrings.R_LANGUAGE,
         trailingText: SettingsPageCoordinator.languageModeLabel(this.languageMode),
         openAction: () => {
@@ -408,6 +427,15 @@ export struct SettingsPage {
   }
 
   @Builder
+  AvatarAppearanceMenu() {
+    Menu() {
+      ForEach(SettingsPageCoordinator.avatarAppearanceOptions(), (option: SettingsOption) => {
+        this.AvatarAppearanceMenuItem(option)
+      }, (option: SettingsOption) => option.value)
+    }
+  }
+
+  @Builder
   ReplyDisplayModeMenu() {
     Menu() {
       ForEach(SettingsPageCoordinator.replyDisplayModeOptions(), (option: SettingsOption) => {
@@ -445,6 +473,17 @@ export struct SettingsPage {
         this.Base64ModeMenuItem(option)
       }, (option: SettingsOption) => option.value)
     }
+  }
+
+  @Builder
+  AvatarAppearanceMenuItem(option: SettingsOption) {
+    SettingsCheckedMenuItem({
+      label: option.label,
+      selected: AvatarAppearanceSettings.normalize(this.avatarAppearance) === option.value,
+      selectAction: () => {
+        this.updateAvatarAppearance(option.value)
+      }
+    })
   }
 
   @Builder
@@ -528,6 +567,13 @@ export struct SettingsPage {
     this.themeMenuShown = false
     setTimeout(() => {
       this.themeMenuShown = true
+    }, SettingsPageCoordinator.MENU_OPEN_DELAY_MS)
+  }
+
+  private showAvatarAppearanceMenu(): void {
+    this.avatarAppearanceMenuShown = false
+    setTimeout(() => {
+      this.avatarAppearanceMenuShown = true
     }, SettingsPageCoordinator.MENU_OPEN_DELAY_MS)
   }
 
@@ -618,6 +664,13 @@ export struct SettingsPage {
         message: AppStrings.R_COMMON_SAVE_FAILED,
       }).catch((_toastError: Error) => {})
     })
+  }
+
+  private updateAvatarAppearance(appearance: string): void {
+    const normalized = AvatarAppearanceSettings.normalize(appearance)
+    this.avatarAppearance = normalized
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    SettingsSaveCoordinator.saveAvatarAppearance(context, normalized)
   }
 
   private updateThemeMode(mode: string): void {

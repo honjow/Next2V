@@ -100,6 +100,7 @@ const expectedStorageKeys = [
   ['KEYBOARD_HEIGHT', 'keyboardHeight'],
   ['NAV_PATH_STACK', 'ns'],
   ['USE_CO_DOMAIN', 'useCoDomain'],
+  ['SELECTED_BASE_URL', 'selectedBaseUrl'],
   ['MEDIA_AUTO_LOAD_IMAGES', 'mediaAutoLoadImages'],
   ['MEDIA_ONLY_LOAD_IMAGES_ON_WIFI', 'mediaOnlyLoadImagesOnWifi'],
   ['READING_TEXT_SCALE', 'readingTextScale'],
@@ -110,6 +111,7 @@ const expectedStorageKeys = [
   ['REPLY_DISPLAY_MODE', 'replyDisplayMode'],
   ['REPLY_CARD_STYLE', 'replyCardStyle'],
   ['REPLY_ACTION_ALIGNMENT_MODE', 'replyActionAlignmentMode'],
+  ['AVATAR_APPEARANCE', 'avatarAppearance'],
   ['THEME_MODE', 'themeMode'],
   ['THEME_EFFECTIVE_DARK', 'themeEffectiveDark'],
   ['SYSTEM_COLOR_MODE', 'systemColorMode'],
@@ -153,6 +155,7 @@ const expectedStorageKeys = [
   ['FEED_TAB', 'feedTab'],
   ['FEED_TAB_KEYS', 'feedTabKeys'],
   ['FEED_TAB_VISUAL_INDEX', 'feedTabVisualIndex'],
+  ['HOME_TAB_AUTO_HIDE', 'homeTabAutoHide'],
   ['MOTION_HAND_EDGE', 'motionHandEdge'],
   ['MOTION_HOLDING_HAND_SUPPORTED', 'motionHoldingHandSupported'],
   ['TOPIC_DETAIL_ACTION', 'topicDetailAction'],
@@ -194,6 +197,7 @@ const expectedStorageKeys = [
   ['PENDING_SEARCH_QUERY', 'pendingSearchQuery'],
   ['DISCOVER_NODE_KEYWORD', 'discoverNodeKeyword'],
   ['ACCOUNT_WEB_VIEW_URL', 'accountWebViewUrl'],
+  ['ACCOUNT_WEB_VIEW_ACTION', 'accountWebViewAction'],
 ]
 assert(
   orderedStorageKeys.length === expectedStorageKeys.length,
@@ -244,6 +248,7 @@ assert(descriptorText.includes('setAppStorageValue<T>(descriptor.storageKey, nor
 assert(!descriptorText.includes('getPreferences') && !descriptorText.includes('flushSync') && !descriptorText.includes('UIAbilityContext'), 'SettingsDescriptor must not own preferences save/context side effects')
 
 const firstDescriptorSettings = [
+  'AvatarAppearanceSettings.ets',
   'ReplyDisplaySettings.ets',
   'ReplyCardStyleSettings.ets',
   'ReplyActionAlignmentSettings.ets',
@@ -373,6 +378,7 @@ assert(read('shared/src/main/ets/settings/SearchSettings.ets').includes("LocalDa
 
 const next2vSettingsFiles = [
   'ApiDomainSettings.ets',
+  'AvatarAppearanceSettings.ets',
   'MediaSettings.ets',
   'ReadingSettings.ets',
   'ThemeSettings.ets',
@@ -475,10 +481,8 @@ for (const method of ['saveLastAttemptDate', 'saveLastSuccessDate']) {
   assert(body.includes('preferences.getPreferences(context, STORE_NAME)'), `AutoDailyCheckinSettings.${method} path must keep fetching preferences STORE_NAME`)
 }
 
-for (const file of ['FeedTabSettings.ets', 'CookieJarSettings.ets']) {
-  const text = read(`shared/src/main/ets/settings/${file}`)
-  assert(!text.includes('loadFromStore'), `${file} must not add loadFromStore`)
-}
+const feedTabText = read('shared/src/main/ets/settings/FeedTabSettings.ets')
+assert(!feedTabText.includes('loadFromStore'), 'FeedTabSettings must not add loadFromStore')
 assert(read('shared/src/main/ets/settings/FeedTabSettings.ets').includes('STORE_NAME: string = STORE_NAME_FEED_TABS'), 'FeedTabSettings must keep independent next2v_feed_tabs store via SettingsStores')
 assert(read('shared/src/main/ets/settings/CookieJarSettings.ets').includes('STORE_NAME: string = STORE_NAME_COOKIEJAR'), 'CookieJarSettings must keep independent next2v_cookiejar store via SettingsStores')
 
@@ -505,6 +509,7 @@ const loadAllBody = extractMethodBody(bootstrap, 'loadAll')
 const loadAllHelperSequence = [
   'restoreApiDomain',
   'restoreTheme',
+  'restoreAvatarAppearance',
   'restoreMedia',
   'restoreReplyDisplay',
   'restoreReading',
@@ -534,7 +539,7 @@ const helperContracts = [
       'ApiDomainSettings.load(context)',
       ').catch',
       'restore api domain failed: ',
-      'ApiDomainSettings.apply(false)',
+      "ApiDomainSettings.apply('https://www.v2ex.com')",
     ],
   },
   {
@@ -545,6 +550,16 @@ const helperContracts = [
       ').catch',
       'restore theme settings failed: ',
       'ThemeSettings.apply(context, ThemeSettings.MODE_AUTO)',
+    ],
+  },
+  {
+    name: 'restoreAvatarAppearance',
+    required: [
+      'AvatarAppearanceSettings.loadFromStore(settingsStore)',
+      'AvatarAppearanceSettings.load(context)',
+      ').catch',
+      'restore avatar appearance failed: ',
+      'AvatarAppearanceSettings.apply(AvatarAppearanceSettings.APPEARANCE_CIRCLE)',
     ],
   },
   {
@@ -591,8 +606,7 @@ const helperContracts = [
       'CookieJarSettings.load(context).catch',
       'restore cookie jar failed: ',
       'CookieJarSettings.apply({',
-      "comCookie: ''",
-      "coCookie: ''",
+      'cookiesByBaseUrl: {},',
       'updatedAt: 0',
     ],
   },

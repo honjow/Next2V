@@ -1,5 +1,6 @@
 import {
   AppStrings,
+  AvatarAppearanceSettings,
   LanguageSettings,
   ReadingSettings,
   ReplyActionAlignmentSettings,
@@ -32,6 +33,13 @@ export class SettingsPageCoordinator {
       { label: AppStrings.R_COMMON_AUTO, value: ThemeSettings.MODE_AUTO },
       { label: AppStrings.R_COMMON_LIGHT, value: ThemeSettings.MODE_LIGHT },
       { label: AppStrings.R_COMMON_DARK, value: ThemeSettings.MODE_DARK },
+    ]
+  }
+
+  static avatarAppearanceOptions(): SettingsOption[] {
+    return [
+      { label: AppStrings.R_AVATAR_APPEARANCE_SOFT, value: AvatarAppearanceSettings.APPEARANCE_SOFT },
+      { label: AppStrings.R_AVATAR_APPEARANCE_CIRCLE, value: AvatarAppearanceSettings.APPEARANCE_CIRCLE },
     ]
   }
 
@@ -106,6 +114,13 @@ export class SettingsPageCoordinator {
       return AppStrings.R_COMMON_DARK
     }
     return AppStrings.R_COMMON_AUTO
+  }
+
+  static avatarAppearanceLabel(appearance: string): ResourceStr {
+    if (AvatarAppearanceSettings.normalize(appearance) === AvatarAppearanceSettings.APPEARANCE_SOFT) {
+      return AppStrings.R_AVATAR_APPEARANCE_SOFT
+    }
+    return AppStrings.R_AVATAR_APPEARANCE_CIRCLE
   }
 
   static replyDisplayModeLabel(mode: string): ResourceStr {

@@ -2,6 +2,7 @@ import { common } from '@kit.AbilityKit'
 import {
   ApiDomainSettings,
   AutoDailyCheckinSettings,
+  AvatarAppearanceSettings,
   CookieJarSettings,
   DiagnosticsSettings,
   HomeTabSettings,
@@ -66,6 +67,12 @@ export class SettingsSaveCoordinator {
   static saveLanguageMode(context: common.UIAbilityContext, mode: string): void {
     LanguageSettings.save(context, mode).catch((error: Error) => {
       console.error('save language settings failed: ' + error.message)
+    })
+  }
+
+  static saveAvatarAppearance(context: common.UIAbilityContext, appearance: string): void {
+    AvatarAppearanceSettings.save(context, appearance).catch((error: Error) => {
+      console.error('save avatar appearance failed: ' + error.message)
     })
   }
 

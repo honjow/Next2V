@@ -87,6 +87,7 @@ export { Base64DecodeUtils } from './utils/Base64DecodeUtils'
 export type { Base64DecodeResult } from './utils/Base64DecodeUtils'
 export { ReplyDisplaySettings } from './settings/ReplyDisplaySettings'
 export { ReplyCardStyleSettings } from './settings/ReplyCardStyleSettings'
+export { AvatarAppearanceSettings } from './settings/AvatarAppearanceSettings'
 export { ReplyActionAlignmentSettings } from './settings/ReplyActionAlignmentSettings'
 export type {
   ReplyActionAlignmentMode,

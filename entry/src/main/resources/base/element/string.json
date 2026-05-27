@@ -421,6 +421,18 @@
       "value": "Theme"
     },
     {
+      "name": "avatar_appearance",
+      "value": "Avatar Appearance"
+    },
+    {
+      "name": "avatar_appearance_soft",
+      "value": "Soft"
+    },
+    {
+      "name": "avatar_appearance_circle",
+      "value": "Circle"
+    },
+    {
       "name": "reply_display",
       "value": "Reply display"
     },

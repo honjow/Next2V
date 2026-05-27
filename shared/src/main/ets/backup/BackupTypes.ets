@@ -76,6 +76,7 @@ export interface BackupPreferencesSection {
   apiDomain?: BackupApiDomainPreferences
   language?: BackupLanguagePreferences
   theme?: BackupThemePreferences
+  appearance?: BackupAppearancePreferences
   media?: BackupMediaPreferences
   reading?: BackupReadingPreferences
   reply?: BackupReplyPreferences
@@ -94,6 +95,10 @@ export interface BackupLanguagePreferences {
 
 export interface BackupThemePreferences {
   mode: string
+}
+
+export interface BackupAppearancePreferences {
+  avatarAppearance: string
 }
 
 export interface BackupMediaPreferences {

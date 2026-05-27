@@ -34,14 +34,14 @@ assert.doesNotMatch(settingsPage, /restartApp|terminateSelf|LOCALE_REVISION|lang
 assertNoRestartLane('Index', indexPage)
 
 assert.match(settingsCoordinator, /export interface SettingsOption \{\s*label: ResourceStr\s*value: string\s*\}/, 'SettingsOption labels must be ResourceStr')
-for (const method of ['themeModeOptions', 'replyDisplayModeOptions', 'replyCardStyleOptions', 'replyActionAlignmentOptions', 'base64DecodeModeOptions']) {
+for (const method of ['themeModeOptions', 'avatarAppearanceOptions', 'replyDisplayModeOptions', 'replyCardStyleOptions', 'replyActionAlignmentOptions', 'base64DecodeModeOptions']) {
   const start = indexOfOrFail(settingsCoordinator, `static ${method}(`, method)
   const next = settingsCoordinator.indexOf('\n  static ', start + 1)
   const body = settingsCoordinator.slice(start, next === -1 ? undefined : next)
   assert.doesNotMatch(body, /AppStrings\.t\(/, `${method} must return Resource labels, not cached strings`)
   assert.match(body, /label: AppStrings\.R_/, `${method} must bind option labels to Resource constants`)
 }
-for (const method of ['themeModeLabel', 'languageModeLabel', 'replyDisplayModeLabel', 'replyCardStyleLabel', 'replyActionAlignmentLabel', 'base64DecodeModeLabel']) {
+for (const method of ['themeModeLabel', 'languageModeLabel', 'avatarAppearanceLabel', 'replyDisplayModeLabel', 'replyCardStyleLabel', 'replyActionAlignmentLabel', 'base64DecodeModeLabel']) {
   const start = indexOfOrFail(settingsCoordinator, `static ${method}(`, method)
   const next = settingsCoordinator.indexOf('\n  static ', start + 1)
   const body = settingsCoordinator.slice(start, next === -1 ? undefined : next)
@@ -54,7 +54,7 @@ assert.match(settingsComponents, /Text\(AppStrings\.R_READING_PREVIEW_TITLE\)/, 
 assert.match(settingsComponents, /Text\(AppStrings\.R_TEXT_SCALE\)/, 'Text scale label must use Resource')
 assert.match(settingsComponents, /title: AppStrings\.R_RESTORE_DEFAULT/, 'Restore default row must use Resource')
 
-assert.match(indexPage, /private tabTitles: ResourceStr\[\] = \[AppStrings\.R_SETTINGS_HOME, AppStrings\.R_TAB_DISCOVER, AppStrings\.R_TAB_NOTIFICATIONS, AppStrings\.R_TAB_ME\]/, 'Bottom tab title cache must hold ResourceStr constants')
+assert.match(indexPage, /private tabTitles: ResourceStr\[\] = \[\s*AppStrings\.R_SETTINGS_HOME,\s*AppStrings\.R_TAB_DISCOVER,\s*AppStrings\.R_TAB_NOTIFICATIONS,\s*AppStrings\.R_TAB_ME,?\s*\]/, 'Bottom tab title cache must hold ResourceStr constants')
 assert.doesNotMatch(indexPage, /TabIcon\(AppStrings\.t\(|tabTitles: string\[\]|this\.tabTitles\[this\.ct\] === AppStrings\.t\(/, 'Bottom tabs/title menus must not compare or bind cached localized strings')
 assert.match(mainTabIcon, /@Prop title: ResourceStr = ''/, 'MainTabIcon title must accept ResourceStr')
 
@@ -68,7 +68,7 @@ assert.doesNotMatch(accountCoordinator, /static get (SECTION_|LOGIN_|PROFILE_|LO
 for (const locale of ['base', 'en_US', 'zh_CN', 'zh_HK', 'zh_TW']) {
   const resource = JSON.parse(readFileSync(`entry/src/main/resources/${locale}/element/string.json`, 'utf8'))
   const names = new Set(resource.string.map(item => item.name))
-  for (const key of ['common_auto', 'common_light', 'common_dark', 'language_follow_system', 'language_simplified_chinese', 'language_traditional_chinese_hk', 'language_traditional_chinese_tw', 'language_english', 'reading_preview_title', 'reading_preview_intro', 'reading_preview_body', 'reading_preview_quote', 'text_scale', 'restore_default']) {
+  for (const key of ['common_auto', 'common_light', 'common_dark', 'avatar_appearance', 'avatar_appearance_soft', 'avatar_appearance_circle', 'language_follow_system', 'language_simplified_chinese', 'language_traditional_chinese_hk', 'language_traditional_chinese_tw', 'language_english', 'reading_preview_title', 'reading_preview_intro', 'reading_preview_body', 'reading_preview_quote', 'text_scale', 'restore_default']) {
     assert.ok(names.has(key), `${locale} missing ${key}`)
   }
 }
