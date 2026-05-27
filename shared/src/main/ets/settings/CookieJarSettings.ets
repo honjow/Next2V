@@ -209,6 +209,20 @@ export class CookieJarSettings {
     await CookieJarSettings.restoreToWebCookieManager()
   }
 
+  static async clearWebCookiesForBaseUrl(baseUrl: string): Promise<void> {
+    const cleanBaseUrl = CookieJarSettings.normalizeBaseUrl(baseUrl)
+    const previousCookie = CookieJarSettings.getCookieForBaseUrl(cleanBaseUrl)
+    CookieJarSettings.expireWebCookiesForBaseUrl(cleanBaseUrl, previousCookie)
+    try {
+      webview.WebCookieManager.saveCookieSync()
+    } catch (_error) {
+      try {
+        await webview.WebCookieManager.saveCookieAsync()
+      } catch (_e) {
+      }
+    }
+  }
+
   private static normalizeBaseUrl(baseUrl: string): string {
     const raw = (baseUrl || ApiConstants.BASE_URL_COM).trim()
     return raw.endsWith('/') ? raw.slice(0, raw.length - 1) : raw

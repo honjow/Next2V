@@ -39,6 +39,12 @@ for (const method of requiredMethods) {
   )
 }
 
+const cookieJar = read('shared/src/main/ets/settings/CookieJarSettings.ets')
+assert(
+  cookieJar.includes('clearWebCookiesForBaseUrl'),
+  'CookieJarSettings must expose clearWebCookiesForBaseUrl() for isolated web login'
+)
+
 // ── Shared Index exports AccountSessionCoordinator ───────────────
 const sharedIndex = read('shared/src/main/ets/Index.ets')
 assert(
@@ -64,8 +70,10 @@ assert(
   'V2exWebLoginPage must import AccountSessionCoordinator'
 )
 assert(
-  webLogin.includes('registerCurrentSession'),
-  'V2exWebLoginPage must call AccountSessionCoordinator.registerCurrentSession()'
+  webLogin.includes('this.loginStartCookie = CookieJarSettings.getCurrentCookie()') &&
+    webLogin.includes('CookieJarSettings.clearWebCookiesForBaseUrl(this.baseUrl)') &&
+    webLogin.includes('sameCookieHeader(cleanCookie, this.loginStartCookie)'),
+  'V2exWebLoginPage must isolate WebView login from the existing active account cookie and ignore unchanged startup cookies during auto-save'
 )
 
 // ── Settings Account route must use independent management page ───

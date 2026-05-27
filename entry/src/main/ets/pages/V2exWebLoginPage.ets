@@ -44,6 +44,7 @@ export struct V2exWebLoginPage {
   private isAutoSaving: boolean = false
   private isPageActive: boolean = false
   private saveRequestId: number = 0
+  private loginStartCookie: string = ''
   @StorageLink(StorageKeys.WEB_LOGIN_ACTION) @Watch('onWebLoginAction') webLoginAction: string = ''
 
   private get baseUrl(): string {
@@ -177,11 +178,17 @@ export struct V2exWebLoginPage {
   private loadSigninPage(): void {
     const url = this.currentSigninUrl()
     this.pageMessage = AppStrings.format(AppStrings.text(AppStrings.R_WEB_LOGIN_OPENING_URL, 'Opening {0}'), [url])
-    try {
-      this.controller.loadUrl(url)
-    } catch (error) {
-      this.errorMessage = `${translateApiError(error)}: ${url}`
-    }
+    this.loginStartCookie = CookieJarSettings.getCurrentCookie()
+    CookieJarSettings.clearWebCookiesForBaseUrl(this.baseUrl)
+      .then(() => {
+        if (!this.isPageActive) {
+          return
+        }
+        this.controller.loadUrl(url)
+      })
+      .catch((error: Error) => {
+        this.errorMessage = `${translateApiError(error)}: ${url}`
+      })
   }
 
   private scheduleAutoSave(delay: number = 900): void {
@@ -298,6 +305,9 @@ export struct V2exWebLoginPage {
     if (silent && !this.hasLikelyAuthCookie(cleanCookie)) {
       throw new Error(AppStrings.text(AppStrings.R_WEB_LOGIN_NOT_COMPLETE, 'Web login not yet complete'))
     }
+    if (silent && this.sameCookieHeader(cleanCookie, this.loginStartCookie)) {
+      throw new Error(AppStrings.text(AppStrings.R_WEB_LOGIN_NOT_COMPLETE, 'Web login not yet complete'))
+    }
     const html = await this.http.getTextWithHeaders('/settings', { 'Cookie': cleanCookie })
     const username = V2exSessionParser.extractUsername(html)
     if (!username) {
@@ -394,5 +404,27 @@ export struct V2exWebLoginPage {
       names.indexOf('PB3_SESSION') >= 0 ||
       names.indexOf('PB3_AUTH') >= 0 ||
       names.indexOf('V2EX_SESSION') >= 0
+  }
+
+  private sameCookieHeader(a: string, b: string): boolean {
+    return this.normalizedCookieHeader(a) === this.normalizedCookieHeader(b)
+  }
+
+  private normalizedCookieHeader(cookieHeader: string): string {
+    const pairs: string[] = []
+    const parts = cookieHeader.split(';').map((part: string) => part.trim()).filter((part: string) => part.length > 0)
+    for (const part of parts) {
+      const idx = part.indexOf('=')
+      if (idx <= 0) {
+        continue
+      }
+      const name = part.slice(0, idx).trim()
+      const value = part.slice(idx + 1).trim()
+      if (!name || !value) {
+        continue
+      }
+      pairs.push(`${name}=${value}`)
+    }
+    return pairs.sort().join(';')
   }
 }
