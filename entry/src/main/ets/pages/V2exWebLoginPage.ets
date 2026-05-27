@@ -10,8 +10,8 @@ import {
   AutoDailyCheckinService,
   CookieJarSettings,
   HttpClient,
-  SecondaryListScaffold,
   StorageKeys,
+  V2exWebViewScaffold,
   ThemeConstants,
   V2exSessionParser,
   translateApiError
@@ -73,59 +73,53 @@ export struct V2exWebLoginPage {
   }
 
   build() {
-    Column() {
-      Column() {
-        SecondaryListScaffold({ horizontalPadding: 0, bottomPadding: 0, listSpace: 0 }) {
-          ListItem() {
-            Web({ src: '', controller: this.controller })
-              .darkMode(WebDarkMode.Off)
-              .backgroundColor(Color.White)
-              .javaScriptAccess(true)
-              .domStorageAccess(true)
-              .onlineImageAccess(true)
-              .width('100%')
-              .height('100%')
-              .onControllerAttached(() => {
-                this.loadSigninPage()
-              })
-              .onPageBegin((event?: PageEndEvent) => {
-                this.pageMessage = event?.url ? AppStrings.format(AppStrings.text(AppStrings.R_WEB_LOGIN_LOADING_URL, 'Loading {0}'), [event.url]) : AppStrings.text(AppStrings.R_WEB_LOGIN_LOADING_PAGE, 'Loading web login...')
-                if (event && event.url) {
-                  this.lastUrl = event.url
-                }
-                this.scheduleAutoSave()
-              })
-              .onPageEnd((event?: PageEndEvent) => {
-                this.pageMessage = ''
-                if (event && event.url) {
-                  this.lastUrl = event.url
-                }
-                this.scheduleAutoSave()
-              })
-              .onLoadFinished((event?: PageEndEvent) => {
-                if (event && event.url) {
-                  this.lastUrl = event.url
-                }
-                this.scheduleAutoSave()
-              })
-              .onErrorReceive((event) => {
-                if (event?.request?.isMainFrame()) {
-                  this.pageMessage = event.error.getErrorInfo() || AppStrings.text(AppStrings.R_WEB_LOGIN_LOAD_FAILED, 'Web login failed to load')
-                }
-              })
-          }
+    V2exWebViewScaffold({
+      isStatusVisible: this.isSaving || !!this.errorMessage || !!this.pageMessage,
+      isStatusError: !!this.errorMessage,
+      statusText: this.statusText(),
+      statusMaxLines: 1
+    }) {
+      ListItem() {
+        Web({ src: '', controller: this.controller })
+          .darkMode(WebDarkMode.Off)
+          .backgroundColor(Color.White)
+          .javaScriptAccess(true)
+          .domStorageAccess(true)
+          .onlineImageAccess(true)
+          .width('100%')
           .height('100%')
-          .clip(false)
-        }
+          .onControllerAttached(() => {
+            this.loadSigninPage()
+          })
+          .onPageBegin((event?: PageEndEvent) => {
+            this.pageMessage = event?.url ? AppStrings.format(AppStrings.text(AppStrings.R_WEB_LOGIN_LOADING_URL, 'Loading {0}'), [event.url]) : AppStrings.text(AppStrings.R_WEB_LOGIN_LOADING_PAGE, 'Loading web login...')
+            if (event && event.url) {
+              this.lastUrl = event.url
+            }
+            this.scheduleAutoSave()
+          })
+          .onPageEnd((event?: PageEndEvent) => {
+            this.pageMessage = ''
+            if (event && event.url) {
+              this.lastUrl = event.url
+            }
+            this.scheduleAutoSave()
+          })
+          .onLoadFinished((event?: PageEndEvent) => {
+            if (event && event.url) {
+              this.lastUrl = event.url
+            }
+            this.scheduleAutoSave()
+          })
+          .onErrorReceive((event) => {
+            if (event?.request?.isMainFrame()) {
+              this.pageMessage = event.error.getErrorInfo() || AppStrings.text(AppStrings.R_WEB_LOGIN_LOAD_FAILED, 'Web login failed to load')
+            }
+          })
       }
-      .width('100%')
-      .layoutWeight(1)
-
-      this.StatusBar()
+      .height('100%')
+      .clip(false)
     }
-    .width('100%')
-    .height('100%')
-    .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
   }
 
   @Builder
