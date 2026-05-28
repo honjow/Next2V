@@ -177,6 +177,33 @@ export function normalizeCodeLanguage(lang: string): string {
   if (first === 'shell' || first === 'bash' || first === 'sh' || first === 'zsh') {
     return 'shell';
   }
+  if (first === 'py' || first === 'python') {
+    return 'python';
+  }
+  if (first === 'go' || first === 'golang') {
+    return 'go';
+  }
+  if (first === 'rs' || first === 'rust') {
+    return 'rust';
+  }
+  if (first === 'java') {
+    return 'java';
+  }
+  if (first === 'kt' || first === 'kotlin') {
+    return 'kotlin';
+  }
+  if (first === 'swift') {
+    return 'swift';
+  }
+  if (first === 'sql') {
+    return 'sql';
+  }
+  if (first === 'diff' || first === 'patch') {
+    return 'diff';
+  }
+  if (first === 'yaml' || first === 'yml') {
+    return 'yaml';
+  }
   if (first === 'css') {
     return 'css';
   }
@@ -394,8 +421,187 @@ function highlightShellLine(code: string): CodeToken[] {
   return result;
 }
 
+const _tsJsKeywords: Set<string> = new Set([
+  'as', 'async', 'await', 'break', 'case', 'catch', 'class', 'const', 'constructor', 'continue',
+  'debugger', 'default', 'delete', 'do', 'else', 'enum', 'export', 'extends', 'finally', 'for',
+  'from', 'function', 'get', 'if', 'implements', 'import', 'in', 'instanceof', 'interface', 'let',
+  'new', 'of', 'override', 'private', 'protected', 'public', 'readonly', 'return', 'set', 'static',
+  'super', 'switch', 'this', 'throw', 'try', 'type', 'typeof', 'var', 'void', 'while', 'yield',
+]);
+const _tsJsTypes: Set<string> = new Set(['Array', 'Boolean', 'Error', 'Map', 'Number', 'Object', 'Promise', 'Record', 'Set', 'String', 'any', 'boolean', 'never', 'null', 'number', 'object', 'string', 'undefined', 'unknown', 'void']);
+const _pythonKeywords: Set<string> = new Set(['False', 'None', 'True', 'and', 'as', 'assert', 'async', 'await', 'break', 'class', 'continue', 'def', 'del', 'elif', 'else', 'except', 'finally', 'for', 'from', 'global', 'if', 'import', 'in', 'is', 'lambda', 'nonlocal', 'not', 'or', 'pass', 'raise', 'return', 'try', 'while', 'with', 'yield']);
+const _cssKeywords: Set<string> = new Set(['@container', '@font-face', '@import', '@keyframes', '@media', '@supports', 'display', 'flex', 'grid', 'none', 'relative', 'absolute', 'fixed', 'sticky', 'block', 'inline', 'center', 'solid', 'transparent', 'var']);
+const _sqlKeywords: Set<string> = new Set(['ADD', 'ALTER', 'AND', 'AS', 'ASC', 'BY', 'CREATE', 'DELETE', 'DESC', 'DISTINCT', 'DROP', 'FROM', 'GROUP', 'HAVING', 'IN', 'INSERT', 'INTO', 'JOIN', 'LEFT', 'LIKE', 'LIMIT', 'NOT', 'NULL', 'ON', 'OR', 'ORDER', 'RIGHT', 'SELECT', 'SET', 'TABLE', 'UPDATE', 'VALUES', 'WHERE']);
+
+function _highlightRegexLine(source: string, re: RegExp, classifier: (value: string) => CodeHighLight): CodeToken[] {
+  const tokens: CodeToken[] = [];
+  let last = 0;
+  let match: RegExpExecArray | null = re.exec(source || '');
+  while (match) {
+    if (match.index > last) {
+      _pushCodeToken(tokens, 'text', (source || '').slice(last, match.index));
+    }
+    const value = match[0];
+    _pushCodeToken(tokens, classifier(value), value);
+    last = re.lastIndex;
+    match = re.exec(source || '');
+  }
+  if (last < (source || '').length) {
+    _pushCodeToken(tokens, 'text', (source || '').slice(last));
+  }
+  return tokens;
+}
+
+function highlightTsJsLine(code: string): CodeToken[] {
+  const source = code || '';
+  const commentIndex = _lineCommentIndex(source);
+  if (commentIndex >= 0) {
+    const before = highlightTsJsLine(source.slice(0, commentIndex));
+    before.push({ type: 'comment', text: source.slice(commentIndex) } as CodeToken);
+    return before;
+  }
+  const re = /`(?:\\.|[^`\\])*`|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|=>|\b\d+(?:\.\d+)?\b|\b[A-Za-z_$][\w$]*\b|[{}()[\].,;:?<>+\-*\/%=!&|]+/g;
+  return _highlightRegexLine(source, re, (value: string): CodeHighLight => {
+    if (value.startsWith('"') || value.startsWith("'") || value.startsWith('`')) {
+      return 'string';
+    }
+    if (/^\d/.test(value)) {
+      return 'number';
+    }
+    if (value === 'true' || value === 'false') {
+      return 'boolean';
+    }
+    if (_tsJsKeywords.has(value)) {
+      return 'keyword';
+    }
+    if (_tsJsTypes.has(value)) {
+      return 'type';
+    }
+    if (/^[{}()[\].,;:?<>+\-*\/%=!&|]+$/.test(value)) {
+      return 'punctuation';
+    }
+    return 'text';
+  });
+}
+
+function highlightPythonLine(code: string): CodeToken[] {
+  const source = code || '';
+  const hash = source.indexOf('#');
+  const body = hash >= 0 ? source.slice(0, hash) : source;
+  const result = _highlightRegexLine(body, /"""[\s\S]*?"""|'''[\s\S]*?'''|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|\b\d+(?:\.\d+)?\b|\b[A-Za-z_]\w*\b|[{}()[\].,;:@<>+\-*\/%=!&|]+/g, (value: string): CodeHighLight => {
+    if (value.startsWith('"') || value.startsWith("'")) {
+      return 'string';
+    }
+    if (/^\d/.test(value)) {
+      return 'number';
+    }
+    if (_pythonKeywords.has(value)) {
+      return value === 'True' || value === 'False' ? 'boolean' : 'keyword';
+    }
+    if (/^[{}()[\].,;:@<>+\-*\/%=!&|]+$/.test(value)) {
+      return 'punctuation';
+    }
+    return 'text';
+  });
+  if (hash >= 0) {
+    _pushCodeToken(result, 'comment', source.slice(hash));
+  }
+  return result;
+}
+
+function highlightCssLine(code: string): CodeToken[] {
+  const source = code || '';
+  return _highlightRegexLine(source, /\/\*[\s\S]*?\*\/|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|#[0-9A-Fa-f]{3,8}\b|@[A-Za-z-]+|--[A-Za-z0-9_-]+|\b\d+(?:\.\d+)?(?:px|vp|em|rem|%|s|ms)?\b|\b[A-Za-z-]+\b|[{}()[\].,;:#<>+\-*\/%=!]+/g, (value: string): CodeHighLight => {
+    if (value.startsWith('/*')) {
+      return 'comment';
+    }
+    if (value.startsWith('"') || value.startsWith("'")) {
+      return 'string';
+    }
+    if (value.startsWith('@') || _cssKeywords.has(value)) {
+      return 'keyword';
+    }
+    if (value.startsWith('#') || /^\d/.test(value)) {
+      return 'number';
+    }
+    if (value.startsWith('--')) {
+      return 'attr';
+    }
+    if (/^[{}()[\].,;:#<>+\-*\/%=!]+$/.test(value)) {
+      return 'punctuation';
+    }
+    return 'text';
+  });
+}
+
+function highlightSqlLine(code: string): CodeToken[] {
+  const source = code || '';
+  const comment = source.indexOf('--');
+  const body = comment >= 0 ? source.slice(0, comment) : source;
+  const result = _highlightRegexLine(body, /"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|\b\d+(?:\.\d+)?\b|\b[A-Za-z_]\w*\b|[(),.;=*<>+\-/]+/g, (value: string): CodeHighLight => {
+    if (value.startsWith('"') || value.startsWith("'")) {
+      return 'string';
+    }
+    if (/^\d/.test(value)) {
+      return 'number';
+    }
+    if (_sqlKeywords.has(value.toUpperCase())) {
+      return 'keyword';
+    }
+    if (/^[(),.;=*<>+\-/]+$/.test(value)) {
+      return 'punctuation';
+    }
+    return 'text';
+  });
+  if (comment >= 0) {
+    _pushCodeToken(result, 'comment', source.slice(comment));
+  }
+  return result;
+}
+
+function highlightDiffLine(code: string): CodeToken[] {
+  const source = code || '';
+  if (source.startsWith('+++') || source.startsWith('---')) {
+    return [{ type: 'keyword', text: source } as CodeToken];
+  }
+  if (source.startsWith('+')) {
+    return [{ type: 'string', text: source } as CodeToken];
+  }
+  if (source.startsWith('-')) {
+    return [{ type: 'comment', text: source } as CodeToken];
+  }
+  if (source.startsWith('@@')) {
+    return [{ type: 'number', text: source } as CodeToken];
+  }
+  return [{ type: 'text', text: source } as CodeToken];
+}
+
+function sniffCodeLanguage(code: string): string {
+  const source = (code || '').trim();
+  if (!source) {
+    return '';
+  }
+  if (source.startsWith('+') || source.startsWith('-') || source.startsWith('@@')) {
+    return 'diff';
+  }
+  if (/^\s*(SELECT|INSERT|UPDATE|DELETE)\b/i.test(source) || /\bFROM\b/i.test(source)) {
+    return 'sql';
+  }
+  if (/^\s*(def|class|import|from)\b/.test(source) || /:\s*$/.test(source)) {
+    return 'python';
+  }
+  if (/^\s*[@.#]?[A-Za-z0-9_-]+\s*\{/.test(source) || /\b(color|display|margin|padding)\s*:/.test(source)) {
+    return 'css';
+  }
+  if (/^\s*(const|let|var|function|class|interface|type|import|export)\b/.test(source) || source.includes('=>')) {
+    return 'typescript';
+  }
+  return '';
+}
+
 export function highlightCodeLine(code: string, lang: string): CodeToken[] {
-  const normalized = normalizeCodeLanguage(lang);
+  const explicit = normalizeCodeLanguage(lang);
+  const normalized = explicit === 'generic' ? (sniffCodeLanguage(code) || explicit) : explicit;
   if (normalized === 'xml' || normalized === 'html') {
     return highlightXmlLine(code);
   }
@@ -404,6 +610,21 @@ export function highlightCodeLine(code: string, lang: string): CodeToken[] {
   }
   if (normalized === 'shell') {
     return highlightShellLine(code);
+  }
+  if (normalized === 'typescript' || normalized === 'javascript') {
+    return highlightTsJsLine(code);
+  }
+  if (normalized === 'python') {
+    return highlightPythonLine(code);
+  }
+  if (normalized === 'css') {
+    return highlightCssLine(code);
+  }
+  if (normalized === 'sql') {
+    return highlightSqlLine(code);
+  }
+  if (normalized === 'diff') {
+    return highlightDiffLine(code);
   }
   return highlightLine(code);
 }
