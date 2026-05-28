@@ -30,6 +30,7 @@ export struct PullRefresh {
   private touchStartY: number = 0;
   private touchStartPullOffset: number = 0;
   private touchStartBottomPullOffset: number = 0;
+  private touchStartedAtBottom: boolean = false;
   private isTracking: boolean = false;
   private isBottomTracking: boolean = false;
   private isHorizontalGesture: boolean = false;
@@ -157,6 +158,7 @@ export struct PullRefresh {
     this.isTracking = false
     this.isBottomTracking = false
     this.isHorizontalGesture = false
+    this.touchStartedAtBottom = false
   }
 
   private areaLength(value: Length | undefined): number {
@@ -198,6 +200,11 @@ export struct PullRefresh {
           this.touchStartPullOffset = this.pullOffset
           this.touchStartBottomPullOffset = this.bottomPullOffset
           this.resetTouchState()
+          // A continuous scroll that merely arrives at the bottom must not arm
+          // the manual bottom-refresh surface. Require a fresh gesture that
+          // started at pixel-true bottom so auto-pagination footer changes in
+          // the same touch sequence cannot switch loader surfaces.
+          this.touchStartedAtBottom = this.isListAtBottom()
           return
         }
 
@@ -217,6 +224,7 @@ export struct PullRefresh {
               this.onScrollEnableChange(false)
             } else if (
               deltaY < -PULL_START_DRAG_VP &&
+              this.touchStartedAtBottom &&
               this.isListAtBottom() &&
               this.canStartBottomRefresh()
             ) {

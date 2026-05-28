@@ -40,8 +40,18 @@ assert.match(
 )
 assert.match(
   pullRefresh,
-  /deltaY\s*<\s*-PULL_START_DRAG_VP[\s\S]*this\.isListAtBottom\(\)[\s\S]*this\.canStartBottomRefresh\(\)/,
-  'manual bottom gesture should remain gated by exact bottom position and page business state'
+  /deltaY\s*<\s*-PULL_START_DRAG_VP[\s\S]*this\.touchStartedAtBottom[\s\S]*this\.isListAtBottom\(\)[\s\S]*this\.canStartBottomRefresh\(\)/,
+  'manual bottom gesture should require a touch that began at pixel-true bottom before business-state gating'
+)
+assert.match(
+  pullRefresh,
+  /event\.type\s*===\s*TouchType\.Down[\s\S]*this\.resetTouchState\(\)[\s\S]*this\.touchStartedAtBottom\s*=\s*this\.isListAtBottom\(\)/,
+  'bottom-pull eligibility should be captured at TouchDown, preventing continuous scroll-to-bottom from arming refresh mid-gesture'
+)
+assert.match(
+  pullRefresh,
+  /private resetTouchState\(\): void \{[\s\S]*this\.touchStartedAtBottom\s*=\s*false[\s\S]*\n  \}/,
+  'touch-start bottom latch should reset after each gesture'
 )
 
 const canBottomRefresh = methodBody(
