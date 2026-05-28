@@ -177,7 +177,7 @@ export struct DiscoverPage {
           .borderRadius(ThemeConstants.RADIUS_MD)
           .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
       } else {
-        ForEach(this.topicSurfaceItems().slice(0, 6), (topic: V2exTopic) => {
+        ForEach(this.topicSurfaceItems().slice(0, 10), (topic: V2exTopic) => {
           this.HotTopicRow(topic)
         }, (topic: V2exTopic) => `${this.topicMode}-${topic.id}`)
       }
