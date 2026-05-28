@@ -1,18 +1,15 @@
 import { AppStrings } from 'shared'
-import { V2exNode, V2exTopic } from 'shared'
+import { V2exTopic } from 'shared'
 import type { SavedNode, ViewedTopic } from 'shared'
 import { DiscoverTopicMode } from '../components/DiscoverPageComponents'
 
 export interface DiscoverTopicBuckets {
   hot: V2exTopic[]
-  rank: V2exTopic[]
   latest: V2exTopic[]
   recent: V2exTopic[]
 }
 
 export class DiscoverPageCoordinator {
-  static readonly DEFAULT_NODE_PREVIEW_LIMIT: number = 24
-
   static hasNodeSearchQuery(keyword: string): boolean {
     return (keyword || '').trim().length > 0
   }
@@ -20,9 +17,6 @@ export class DiscoverPageCoordinator {
   static topicModeLabel(mode: DiscoverTopicMode): string {
     if (mode === 'hot') {
       return AppStrings.text($r('app.string.discover_today_hot'), 'Today’s hot topics')
-    }
-    if (mode === 'rank') {
-      return AppStrings.text(AppStrings.R_DISCOVER_SITE_RANK, 'Site-wide hot')
     }
     if (mode === 'recent') {
       return AppStrings.text(AppStrings.R_DISCOVER_RECENT_UPDATES, 'Recently updated')
@@ -33,9 +27,6 @@ export class DiscoverPageCoordinator {
   static topicItems(mode: DiscoverTopicMode, buckets: DiscoverTopicBuckets): V2exTopic[] {
     if (mode === 'hot') {
       return buckets.hot
-    }
-    if (mode === 'rank') {
-      return buckets.rank
     }
     if (mode === 'recent') {
       return buckets.recent
@@ -50,22 +41,13 @@ export class DiscoverPageCoordinator {
     return DiscoverPageCoordinator.topicItems(mode, buckets).length === 0
   }
 
-  static defaultNodePreview(nodes: V2exNode[], limit: number = DiscoverPageCoordinator.DEFAULT_NODE_PREVIEW_LIMIT): V2exNode[] {
-    return (nodes || []).slice(0, limit)
-  }
-
   static withTopics(mode: DiscoverTopicMode, buckets: DiscoverTopicBuckets, topics: V2exTopic[]): DiscoverTopicBuckets {
     const nextTopics = topics || []
     return {
       hot: mode === 'hot' ? nextTopics : buckets.hot,
-      rank: mode === 'rank' ? nextTopics : buckets.rank,
       latest: mode === 'latest' ? nextTopics : buckets.latest,
       recent: mode === 'recent' ? nextTopics : buckets.recent,
     }
-  }
-
-  static withoutTopics(mode: DiscoverTopicMode, buckets: DiscoverTopicBuckets): DiscoverTopicBuckets {
-    return DiscoverPageCoordinator.withTopics(mode, buckets, [])
   }
 
   static recentNodesFromViewedTopics(viewedTopics: ViewedTopic[], savedNodes: SavedNode[], limit: number = 12): SavedNode[] {

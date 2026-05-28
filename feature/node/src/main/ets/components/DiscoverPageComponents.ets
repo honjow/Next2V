@@ -1,7 +1,7 @@
 import { AppStrings, FilterChip, ThemeConstants, V2exNode, V2exTopic } from 'shared'
 import type { SavedNode } from 'shared'
 
-export type DiscoverTopicMode = 'hot' | 'rank' | 'latest' | 'recent'
+export type DiscoverTopicMode = 'hot' | 'latest' | 'recent'
 
 @Component
 export struct DiscoverSectionTitle {

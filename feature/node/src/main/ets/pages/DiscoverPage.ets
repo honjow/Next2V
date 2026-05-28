@@ -3,7 +3,7 @@ import {
   ApiService, AppStrings, DiagnosticLogger, PullRefresh, StorageKeys, V2exNode, V2exTopic, NodeTopicListParams, TopicDetailParams,
   ThemeConstants, CollectionSettings, translateApiError
 } from 'shared'
-import type { SavedNode } from 'shared'
+import type { SavedNode, V2exNodeNavigationSection } from 'shared'
 import { common } from '@kit.AbilityKit'
 import { LengthMetrics } from '@kit.ArkUI'
 import {
@@ -24,12 +24,12 @@ export struct DiscoverPage {
   @State vm: NodeViewModel = new NodeViewModel()
   @State private topicMode: DiscoverTopicMode = 'hot'
   @State private hotTopics: V2exTopic[] = []
-  @State private rankTopics: V2exTopic[] = []
   @State private latestTopics: V2exTopic[] = []
   @State private recentTopics: V2exTopic[] = []
   @State private hotError: string = ''
   @State private isHotLoading: boolean = false
   @State private scrollEnabled: boolean = true
+  @State private nodeNavigationSections: V2exNodeNavigationSection[] = []
   @StorageLink(StorageKeys.DISCOVER_NODE_KEYWORD) @Watch('onKeywordChanged') nodeKeyword: string = ''
   @State private savedNodes: SavedNode[] = []
   @State private recentNodes: SavedNode[] = []
@@ -48,6 +48,9 @@ export struct DiscoverPage {
 
   private onKeywordChanged(): void {
     this.vm.setNodeFilter(this.nodeKeyword)
+    if (this.hasNodeSearchQuery() && this.vm.nodeIndexPhase !== 'loading' && this.vm.nodeIndexPhase !== 'loaded') {
+      this.vm.loadAllNodes({ publishDefaultNodes: true })
+    }
   }
 
   private onCurrentTabChanged(_propName: string): void {
@@ -85,8 +88,8 @@ export struct DiscoverPage {
       started: this.hasStartedInitialLoad,
       skipped: false
     })
-    this.vm.loadAllNodes({ publishDefaultNodes: false })
     this.loadLocalNodeSections()
+    this.loadNodeNavigationSections()
     this.loadTopicSurface()
   }
 
@@ -105,7 +108,7 @@ export struct DiscoverPage {
           message: this.vm.errorMessage,
           topPadding: this.topH + this.TBH + this.BBH,
           bottomPadding: this.discoverBottomPadding(),
-          retryAction: () => { this.vm.loadAllNodes({ forceRefresh: true, publishDefaultNodes: false }) }
+          retryAction: () => { this.vm.loadAllNodes({ forceRefresh: true, publishDefaultNodes: true }) }
         })
       } else {
         Column() {
@@ -123,7 +126,7 @@ export struct DiscoverPage {
                 } else {
                   this.LocalNodeSections()
                   this.HotTopicsSection()
-                  this.TopNodePreviewSection()
+                  this.NodeNavigationSections()
                 }
               }
                 .padding({
@@ -154,7 +157,6 @@ export struct DiscoverPage {
     Column({ space: ThemeConstants.SPACE_SM }) {
       Row({ space: ThemeConstants.SPACE_XS }) {
         this.TopicModeButton('hot', AppStrings.text($r('app.string.discover_hot'), 'Hot'))
-        this.TopicModeButton('rank', AppStrings.text($r('app.string.discover_rank'), 'Rank'))
         this.TopicModeButton('latest', AppStrings.text($r('app.string.discover_latest'), 'Latest'))
         this.TopicModeButton('recent', AppStrings.text($r('app.string.discover_recent'), 'Recent'))
       }
@@ -229,22 +231,22 @@ export struct DiscoverPage {
     }
   }
 
-  @Builder TopNodePreviewSection() {
-    if (this.topNodePreviewItems().length > 0) {
-      DiscoverSectionTitle({ title: AppStrings.text($r('app.string.common_nodes'), 'Nodes') })
-      GridRow({ columns: { sm: 2, md: 4, lg: 6 }, gutter: { x: ThemeConstants.SPACE_SM, y: ThemeConstants.SPACE_SM } }) {
-        ForEach(this.topNodePreviewItems(), (node: V2exNode) => {
-          GridCol({ span: { sm: 1, md: 2, lg: 2 } }) {
-            DiscoverNodeCard({
-              node: node,
-              openAction: () => {
-                let p: NodeTopicListParams = { nodeName: node.name, nodeTitle: node.title }
-                this.ns.pushPathByName('NodeTopicList', p as Object)
-              }
-            })
+  @Builder NodeNavigationSections() {
+    if (this.nodeNavigationSections.length > 0) {
+      Column({ space: ThemeConstants.SPACE_SM }) {
+        DiscoverSectionTitle({ title: '节点导航' })
+        ForEach(this.nodeNavigationSections, (section: V2exNodeNavigationSection) => {
+          Column({ space: ThemeConstants.SPACE_SM }) {
+            Text(section.title)
+              .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+              .fontColor($r('sys.color.font_secondary'))
+              .width('100%')
+            this.NodeChipWrap(this.navigationNodes(section), `navigation-${section.title}`)
           }
-        }, (node: V2exNode) => `preview-${node.id}`)
+          .width('100%')
+        }, (section: V2exNodeNavigationSection) => section.title)
       }
+      .width('100%')
     }
   }
 
@@ -299,10 +301,6 @@ export struct DiscoverPage {
     return DiscoverPageCoordinator.topicItems(this.topicMode, this.topicBuckets())
   }
 
-  private topNodePreviewItems(): V2exNode[] {
-    return DiscoverPageCoordinator.defaultNodePreview(this.vm.defaultNodePreview())
-  }
-
   private topicSectionTitle(): string {
     return DiscoverPageCoordinator.topicModeLabel(this.topicMode)
   }
@@ -315,32 +313,41 @@ export struct DiscoverPage {
     this.loadTopicSurface()
   }
 
-  private reloadTopicSurface(): void {
-    this.applyTopicBuckets(DiscoverPageCoordinator.withoutTopics(this.topicMode, this.topicBuckets()))
-    this.loadTopicSurface()
-  }
-
   private async refreshDiscover(): Promise<void> {
-    await this.vm.loadAllNodes({ forceRefresh: true, publishDefaultNodes: false })
     this.loadLocalNodeSections()
-    this.reloadTopicSurface()
+    this.loadNodeNavigationSections()
+    await this.loadTopicSurface(true)
   }
 
-  private loadTopicSurface(): void {
-    if (!DiscoverPageCoordinator.shouldLoadTopicSurface(this.topicMode, this.topicBuckets(), this.isHotLoading)) {
-      return
+  private navigationNodes(section: V2exNodeNavigationSection): SavedNode[] {
+    return (section.nodes || []).map((node): SavedNode => {
+      return { name: node.name, title: node.title || node.name, topics: 0, savedAt: 0 }
+    })
+  }
+
+  private loadNodeNavigationSections(): void {
+    this.api.getNodeNavigationSections()
+      .then((sections: V2exNodeNavigationSection[]) => {
+        this.nodeNavigationSections = sections
+      })
+      .catch((_error: Error) => {
+        this.nodeNavigationSections = []
+      })
+  }
+
+  private loadTopicSurface(forceRefresh: boolean = false): Promise<void> {
+    if (!forceRefresh && !DiscoverPageCoordinator.shouldLoadTopicSurface(this.topicMode, this.topicBuckets(), this.isHotLoading)) {
+      return Promise.resolve()
     }
     this.isHotLoading = true
     this.hotError = ''
     const requestedMode = this.topicMode
     const request = requestedMode === 'hot'
       ? this.api.getHotTopics()
-      : requestedMode === 'rank'
-        ? this.api.getHotTabTopics()
-        : requestedMode === 'recent'
-          ? this.api.getRecentTopics()
-          : this.api.getLatestTopics()
-    request
+      : requestedMode === 'recent'
+        ? this.api.getRecentTopics()
+        : this.api.getLatestTopics()
+    return request
       .then((topics: V2exTopic[]) => {
         this.applyTopicBuckets(DiscoverPageCoordinator.withTopics(requestedMode, this.topicBuckets(), topics))
       })
@@ -374,7 +381,6 @@ export struct DiscoverPage {
   private topicBuckets(): DiscoverTopicBuckets {
     return {
       hot: this.hotTopics,
-      rank: this.rankTopics,
       latest: this.latestTopics,
       recent: this.recentTopics
     }
@@ -382,7 +388,6 @@ export struct DiscoverPage {
 
   private applyTopicBuckets(buckets: DiscoverTopicBuckets): void {
     this.hotTopics = buckets.hot
-    this.rankTopics = buckets.rank
     this.latestTopics = buckets.latest
     this.recentTopics = buckets.recent
   }

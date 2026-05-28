@@ -42,6 +42,7 @@ mustContain(discoverPage, 'this.requestInitialLoad(\'currentTabChanged\')', 'cur
 const aboutBody = methodBody(discoverPage, 'aboutToAppear(): void')
 assert.equal(aboutBody.includes('this.vm.loadAllNodes()'), false, 'aboutToAppear must not directly load all nodes')
 assert.equal(aboutBody.includes('this.loadLocalNodeSections()'), false, 'aboutToAppear must not directly load local node sections')
+assert.equal(aboutBody.includes('this.loadNodeNavigationSections()'), false, 'aboutToAppear must not directly load node navigation')
 assert.equal(aboutBody.includes('this.loadTopicSurface()'), false, 'aboutToAppear must not directly load topic surface')
 
 const requestBody = methodBody(discoverPage, 'private requestInitialLoad(reason: string): void')
@@ -51,18 +52,26 @@ mustContain(requestBody, 'this.hasStartedInitialLoad = true', 'initial load help
 
 const gateIndex = requestBody.indexOf('if (this.currentTab !== 1)')
 const startedIndex = requestBody.indexOf('this.hasStartedInitialLoad = true')
-const loadNodesIndex = requestBody.indexOf('this.vm.loadAllNodes(')
 const loadLocalIndex = requestBody.indexOf('this.loadLocalNodeSections()')
+const loadNavigationIndex = requestBody.indexOf('this.loadNodeNavigationSections()')
 const loadTopicIndex = requestBody.indexOf('this.loadTopicSurface()')
 assert.ok(gateIndex !== -1 && startedIndex !== -1, 'initial load gate and started guard must exist')
-assert.ok(loadNodesIndex !== -1, 'initial load helper must load all nodes after selected')
+assert.equal(requestBody.includes('this.vm.loadAllNodes('), false, 'initial Discover entry must not load the full node index')
 assert.ok(loadLocalIndex !== -1, 'initial load helper must load local node sections after selected')
+assert.ok(loadNavigationIndex !== -1, 'initial load helper must load node navigation after selected')
 assert.ok(loadTopicIndex !== -1, 'initial load helper must load topic surface after selected')
-assert.ok(gateIndex < loadNodesIndex, 'currentTab gate must precede loadAllNodes')
 assert.ok(gateIndex < loadLocalIndex, 'currentTab gate must precede loadLocalNodeSections')
+assert.ok(gateIndex < loadNavigationIndex, 'currentTab gate must precede loadNodeNavigationSections')
 assert.ok(gateIndex < loadTopicIndex, 'currentTab gate must precede loadTopicSurface')
-assert.ok(startedIndex < loadNodesIndex, 'started guard should be set before loadAllNodes')
 assert.ok(startedIndex < loadLocalIndex, 'started guard should be set before loadLocalNodeSections')
+assert.ok(startedIndex < loadNavigationIndex, 'started guard should be set before loadNodeNavigationSections')
 assert.ok(startedIndex < loadTopicIndex, 'started guard should be set before loadTopicSurface')
+
+const keywordBody = methodBody(discoverPage, 'private onKeywordChanged(): void')
+assert.ok(keywordBody.includes('this.vm.loadAllNodes({ publishDefaultNodes: true })'), 'node index should load only after node search intent')
+
+const refreshBody = methodBody(discoverPage, 'private async refreshDiscover(): Promise<void>')
+assert.equal(refreshBody.includes('loadAllNodes'), false, 'pull refresh must not force-refresh the full node index')
+assert.ok(refreshBody.includes('await this.loadTopicSurface(true)'), 'pull refresh should refresh topic surface in place')
 
 console.log('test_discover_lazy_initial_load_contract: PASS')

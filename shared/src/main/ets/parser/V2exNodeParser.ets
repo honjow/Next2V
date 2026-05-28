@@ -11,6 +11,11 @@ export interface V2exFavoriteNode {
   avatarXLarge?: string
 }
 
+export interface V2exNodeNavigationSection {
+  title: string
+  nodes: V2exFavoriteNode[]
+}
+
 /**
  * V2EX 节点相关 HTML 解析器
  * - 当前用于解析 /my/nodes 的收藏节点列表
@@ -44,6 +49,64 @@ export class V2exNodeParser {
       m = linkRe.exec(html)
     }
     return nodes
+  }
+
+  static extractNodeNavigationSections(html: string): V2exNodeNavigationSection[] {
+    if (!html) {
+      return []
+    }
+    const sections: V2exNodeNavigationSection[] = []
+    const boxRe = /<div class=['"]box['"][^>]*>([\s\S]*?)<\/div>\s*(?:<div class=['"]sep20['"]><\/div>|<div class=['"]sep['"]><\/div>)/gi
+    let boxMatch: RegExpExecArray | null = boxRe.exec(html)
+    while (boxMatch) {
+      const box = boxMatch[1] || ''
+      const nodes = V2exNodeParser.extractFavoriteNodes(box).map((node: V2exFavoriteNode): V2exFavoriteNode => {
+        return { name: node.name, title: node.title }
+      })
+      if (nodes.length > 0) {
+        sections.push({ title: V2exNodeParser.normalizeNavigationSectionTitle(V2exNodeParser.extractNavigationSectionTitle(box) || '节点导航'), nodes: nodes })
+      }
+      boxMatch = boxRe.exec(html)
+    }
+    return sections
+  }
+
+  private static extractNavigationSectionTitle(html: string): string {
+    const titleMatch = html.match(/<span[^>]+class=['"][^'"]*(?:fade|gray)[^'"]*['"][^>]*>([\s\S]*?)<\/span>/i)
+    if (!titleMatch) {
+      return ''
+    }
+    return V2exNodeParser.compactText(titleMatch[1] || '')
+  }
+
+  static extractStructuredNodeNavigationSections(html: string): V2exNodeNavigationSection[] {
+    if (!html || html.indexOf('节点导航') < 0) {
+      return []
+    }
+    const markerIndex = html.indexOf('节点导航')
+    const source = html.slice(markerIndex)
+    const sections: V2exNodeNavigationSection[] = []
+    const cellRe = /<div class=['"]cell['"][^>]*>\s*<table[\s\S]*?<tr>\s*<td[^>]*>\s*<span[^>]+class=['"][^'"]*fade[^'"]*['"][^>]*>([\s\S]*?)<\/span>\s*<\/td>\s*<td[\s\S]*?>([\s\S]*?)<\/td>\s*<\/tr>\s*<\/table>\s*<\/div>/gi
+    let cellMatch: RegExpExecArray | null = cellRe.exec(source)
+    while (cellMatch) {
+      const title = V2exNodeParser.normalizeNavigationSectionTitle(V2exNodeParser.compactText(cellMatch[1] || ''))
+      const nodes = V2exNodeParser.extractFavoriteNodes(cellMatch[2] || '').map((node: V2exFavoriteNode): V2exFavoriteNode => {
+        return { name: node.name, title: node.title }
+      })
+      if (title && title !== '节点导航' && nodes.length > 0) {
+        sections.push({ title: title, nodes: nodes })
+      }
+      cellMatch = cellRe.exec(source)
+    }
+    return sections
+  }
+
+  private static normalizeNavigationSectionTitle(title: string): string {
+    const clean = (title || '').trim()
+    if (clean === 'Hottest Nodes') {
+      return '最热节点'
+    }
+    return clean
   }
 
   private static extractNodeTitleParts(text: string, name: string): V2exFavoriteNode {

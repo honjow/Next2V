@@ -7,7 +7,7 @@ import { V2exTabParser } from '../parser/V2exTabParser'
 import { V2exNotificationParser } from '../parser/V2exNotificationParser'
 import { V2exAccountParser } from '../parser/V2exAccountParser'
 import { V2exSessionParser } from '../parser/V2exSessionParser'
-import { V2exNodeParser, type V2exFavoriteNode } from '../parser/V2exNodeParser'
+import { V2exNodeParser, type V2exFavoriteNode, type V2exNodeNavigationSection } from '../parser/V2exNodeParser'
 import {
   V2exCollectionActionParser,
   type V2exToggleAction,
@@ -121,6 +121,16 @@ export class ApiService {
       throw ApiErrors.hotTopicsEmpty()
     }
     return ApiService.normalizeTopics(topics)
+  }
+
+  async getNodeNavigationSections(): Promise<V2exNodeNavigationSection[]> {
+    const homeHtml = await this.http.getText('/')
+    const navigationHtml = await this.http.getText('/?tab=nodes')
+    const homeSections = V2exNodeParser.extractNodeNavigationSections(homeHtml)
+      .filter((section: V2exNodeNavigationSection) => section.title === '最热节点' || section.title === '最近新增节点')
+    const structuredSections = V2exNodeParser.extractStructuredNodeNavigationSections(navigationHtml)
+      .filter((section: V2exNodeNavigationSection) => section.title !== '节点导航' && section.title !== 'V2EX / Curated Nodes')
+    return homeSections.concat(structuredSections)
   }
 
   /** Get all-site recently updated topics */
