@@ -8,13 +8,10 @@ import {
 import {
   AppStrings,
   LocalContentStats,
-  SavedNode,
-  SavedTopic,
   V2exAuthenticatedMember,
   V2exBalance,
   V2exDailyMission,
   V2exTokenInfo,
-  ViewedTopic,
   translateApiError,
   ApiError,
   ApiErrorCode,
@@ -77,9 +74,6 @@ export struct AccountDashboardPage {
   @State private sessionError: string = ''
   @State private isSessionValidating: boolean = false
   @State private isAuthLoading: boolean = false
-  @State private savedTopics: SavedTopic[] = []
-  @State private savedNodes: SavedNode[] = []
-  @State private viewedTopics: ViewedTopic[] = []
   @State private accountBalance: V2exBalance | null = null
   @State private dailyMission: V2exDailyMission | null = null
   @State private accountMetaError: string = ''
@@ -88,6 +82,9 @@ export struct AccountDashboardPage {
   private http: HttpClient = HttpClient.getInstance()
   private api: ApiService = new ApiService()
   private localStatsRequestId: number = 0
+  private localStatsInFlight: boolean = false
+  private accountListInFlight: boolean = false
+  private dashboardRefreshTimerId: number = -1
   private accountMetaRequestId: number = 0
   @State private accountsCount: number = 0
   @State private isAccountsLoaded: boolean = false
@@ -100,17 +97,19 @@ export struct AccountDashboardPage {
   aboutToAppear(): void {
     this.loadAuthSnapshot()
     this.loadSessionSnapshot()
-    this.refreshLocalData()
-    this.loadAccounts()
+    this.requestDashboardRefresh('appear')
+  }
+
+  aboutToDisappear(): void {
+    this.clearDashboardRefreshTimer()
   }
 
   onLocalDataUpdated(_propName: string): void {
-    this.refreshLocalData()
+    this.requestDashboardRefresh('local_data_updated')
   }
 
   onRefreshKeyChanged(_propName: string): void {
-    this.refreshLocalData()
-    this.loadAccounts()
+    this.requestDashboardRefresh('refresh_key')
   }
 
   onAuthSessionUpdated(_propName: string): void {
@@ -188,8 +187,7 @@ export struct AccountDashboardPage {
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
     .onVisibleAreaChange([0.0, 1.0], (isVisible: boolean, _currentRatio: number) => {
       if (isVisible) {
-        this.refreshLocalData()
-        this.loadAccounts()
+        this.requestDashboardRefresh('visible')
       }
     })
   }
@@ -432,6 +430,11 @@ export struct AccountDashboardPage {
   }
 
   private loadAccounts(): void {
+    if (this.accountListInFlight) {
+      DiagnosticLogger.info('account', 'account_list_load_skip', { reason: 'in_flight' })
+      return
+    }
+    this.accountListInFlight = true
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     AccountStore.migrateFromSingletonIfNeeded(context)
       .then(() => AccountStore.restoreActiveId(context))
@@ -447,6 +450,9 @@ export struct AccountDashboardPage {
         this.activeAccountUsername = ''
         this.activeAccountAvatar = ''
         this.isAccountsLoaded = true
+      })
+      .finally(() => {
+        this.accountListInFlight = false
       })
   }
 
@@ -937,59 +943,37 @@ export struct AccountDashboardPage {
       })
   }
 
-  private loadSavedTopics(): void {
-    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    AccountLocalContentCoordinator.loadSavedTopics(context)
-      .then((result) => {
-        this.savedTopics = result.items
-        this.savedTopicCount = result.count
-      })
-      .catch((error: Error) => {
-        console.error('load saved topics failed: ' + error.message)
-      })
+  private clearDashboardRefreshTimer(): void {
+    if (this.dashboardRefreshTimerId === -1) {
+      return
+    }
+    clearTimeout(this.dashboardRefreshTimerId)
+    this.dashboardRefreshTimerId = -1
   }
 
-  private loadSavedNodes(): void {
-    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    AccountLocalContentCoordinator.loadSavedNodes(context)
-      .then((result) => {
-        this.savedNodes = result.items
-        this.savedNodeCount = result.count
-      })
-      .catch((error: Error) => {
-        console.error('load saved nodes failed: ' + error.message)
-      })
+  private requestDashboardRefresh(reason: string): void {
+    if (this.dashboardRefreshTimerId !== -1) {
+      DiagnosticLogger.info('account', 'account_dashboard_refresh_coalesced', { reason: reason })
+      return
+    }
+    this.dashboardRefreshTimerId = setTimeout((): void => {
+      this.dashboardRefreshTimerId = -1
+      this.refreshDashboardSnapshot(reason)
+    }, 0)
   }
 
-  private loadViewedTopics(): void {
-    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    AccountLocalContentCoordinator.loadViewedTopics(context)
-      .then((result) => {
-        this.viewedTopics = result.items
-        this.viewedTopicCount = result.count
-      })
-      .catch((error: Error) => {
-        console.error('load viewed topics failed: ' + error.message)
-      })
-  }
-
-  private loadTopicReadStates(): void {
-    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    AccountLocalContentCoordinator.syncTopicReadStates(context)
-      .catch((error: Error) => {
-        console.error('sync topic read states failed: ' + error.message)
-      })
-  }
-
-  private refreshLocalData(): void {
+  private refreshDashboardSnapshot(reason: string): void {
+    DiagnosticLogger.info('account', 'account_dashboard_refresh_start', { reason: reason })
     this.loadLocalContentStats()
-    this.loadSavedTopics()
-    this.loadSavedNodes()
-    this.loadViewedTopics()
-    this.loadTopicReadStates()
+    this.loadAccounts()
   }
 
   private loadLocalContentStats(): void {
+    if (this.localStatsInFlight) {
+      DiagnosticLogger.info('account', 'account_local_stats_load_skip', { reason: 'in_flight' })
+      return
+    }
+    this.localStatsInFlight = true
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     const requestId = ++this.localStatsRequestId
     AccountLocalContentCoordinator.loadLocalContentStats(context)
@@ -1003,6 +987,9 @@ export struct AccountDashboardPage {
       })
       .catch((error: Error) => {
         console.error('load local content stats failed: ' + error.message)
+      })
+      .finally(() => {
+        this.localStatsInFlight = false
       })
   }
 
