@@ -21,12 +21,12 @@ export class SettingsPageCoordinator {
   static languageModeOptions(): SettingsOption[] {
     return [
       { label: AppStrings.R_LANGUAGE_FOLLOW_SYSTEM, value: LanguageSettings.MODE_SYSTEM },
-      { label: AppStrings.R_LANGUAGE_SIMPLIFIED_CHINESE, value: LanguageSettings.MODE_ZH_CN },
-      { label: AppStrings.R_LANGUAGE_TRADITIONAL_CHINESE_HK, value: LanguageSettings.MODE_ZH_HK },
-      { label: AppStrings.R_LANGUAGE_TRADITIONAL_CHINESE_TW, value: LanguageSettings.MODE_ZH_TW },
-      { label: AppStrings.R_LANGUAGE_ENGLISH, value: LanguageSettings.MODE_EN },
-      { label: AppStrings.R_LANGUAGE_JAPANESE, value: LanguageSettings.MODE_JA },
-      { label: AppStrings.R_LANGUAGE_KOREAN, value: LanguageSettings.MODE_KO },
+      { label: '简体中文', value: LanguageSettings.MODE_ZH_CN },
+      { label: '繁體中文（香港）', value: LanguageSettings.MODE_ZH_HK },
+      { label: '繁體中文（台灣）', value: LanguageSettings.MODE_ZH_TW },
+      { label: 'English', value: LanguageSettings.MODE_EN },
+      { label: '日本語', value: LanguageSettings.MODE_JA },
+      { label: '한국어', value: LanguageSettings.MODE_KO },
     ]
   }
 
@@ -93,22 +93,22 @@ export class SettingsPageCoordinator {
   static languageModeLabel(mode: string): ResourceStr {
     const normalizedMode = LanguageSettings.normalizeMode(mode)
     if (normalizedMode === LanguageSettings.MODE_ZH_CN) {
-      return AppStrings.R_LANGUAGE_SIMPLIFIED_CHINESE
+      return '简体中文'
     }
     if (normalizedMode === LanguageSettings.MODE_ZH_HK) {
-      return AppStrings.R_LANGUAGE_TRADITIONAL_CHINESE_HK
+      return '繁體中文（香港）'
     }
     if (normalizedMode === LanguageSettings.MODE_ZH_TW) {
-      return AppStrings.R_LANGUAGE_TRADITIONAL_CHINESE_TW
+      return '繁體中文（台灣）'
     }
     if (normalizedMode === LanguageSettings.MODE_EN) {
-      return AppStrings.R_LANGUAGE_ENGLISH
+      return 'English'
     }
     if (normalizedMode === LanguageSettings.MODE_JA) {
-      return AppStrings.R_LANGUAGE_JAPANESE
+      return '日本語'
     }
     if (normalizedMode === LanguageSettings.MODE_KO) {
-      return AppStrings.R_LANGUAGE_KOREAN
+      return '한국어'
     }
     return AppStrings.R_LANGUAGE_FOLLOW_SYSTEM
   }

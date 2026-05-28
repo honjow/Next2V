@@ -84,6 +84,13 @@ function isCommentOnly(line, cjkMatch) {
 
 // Server-facing CJK is not localization debt: these strings are grammar for V2EX HTML / server messages.
 // Keep this allowlist path-aware. Do not add broad tokens like "个" globally: that hides real UI copy.
+const NATIVE_LANGUAGE_LABEL_ALLOWLIST = [
+  {
+    file: /^feature\/settings\/src\/main\/ets\/model\/SettingsPageCoordinator\.ets$/,
+    tokens: ['简体中文', '繁體中文（香港）', '繁體中文（台灣）', '日本語', '한국어']
+  },
+]
+
 const SERVER_PARSE_ALLOWLIST = [
   {
     file: /^entry\/src\/main\/ets\/viewmodel\/NotificationCenterViewModel\.ets$/,
@@ -113,6 +120,16 @@ const SERVER_PARSE_ALLOWLIST = [
     tokens: ['个主题']
   }
 ]
+
+function isNativeLanguageLabelOk(rel, text) {
+  for (const entry of NATIVE_LANGUAGE_LABEL_ALLOWLIST) {
+    if (!entry.file.test(rel)) continue
+    for (const token of entry.tokens) {
+      if (text.includes(token)) return true
+    }
+  }
+  return false
+}
 
 function isServerParsingOk(rel, text) {
   for (const entry of SERVER_PARSE_ALLOWLIST) {
@@ -197,6 +214,12 @@ for (const { full, rel } of walkDir(WORKTREE)) {
 
     if (isCommentOnly(line, match)) {
       findings.allowed.push(`${key}: comment (${line.trim().substring(0, 80)})`)
+      passed++
+      continue
+    }
+
+    if (isNativeLanguageLabelOk(rel, line)) {
+      findings.allowed.push(`${key}: native language label (${line.trim().substring(0, 80)})`)
       passed++
       continue
     }
