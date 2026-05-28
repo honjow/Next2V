@@ -34,8 +34,8 @@ import {
 } from '../model/TopicDetailReplyDisplayCoordinator'
 import { TopicDetailScrollCoordinator } from '../model/TopicDetailScrollCoordinator'
 import { common, Want } from '@kit.AbilityKit'
-import { LengthMetrics, promptAction } from '@kit.ArkUI'
-import { ActionBarButton, ActionBarStyle, HdsActionBar } from '@kit.UIDesignKit'
+import { promptAction } from '@kit.ArkUI'
+import { HdsMiniBarButton } from '../components/HdsMiniBarButton'
 import { uniformTypeDescriptor as utd } from '@kit.ArkData'
 import { pasteboard } from '@kit.BasicServicesKit'
 import { systemShare } from '@kit.ShareKit'
@@ -138,6 +138,7 @@ export struct TopicDetailPage {
   @State private isTitleCoveredByAppbar: boolean = false;
   private readonly HDS_ACTION_BAR_CLEARANCE: number = 72;
   private readonly TOPIC_DETAIL_REPLY_BUTTON_SIZE: number = 56;
+  private readonly TOPIC_DETAIL_REPLY_BUTTON_ACTIVITY_PADDING: number = ThemeConstants.SPACE_LG;
   private readonly FOLLOW_OPERATION_VERTICAL_SCROLL_THRESHOLD: number = 24;
   private readonly FOLLOW_OPERATION_VERTICAL_DOMINANCE_RATIO: number = 1.2;
   private readonly titleVisibilityHysteresis: number = 4;
@@ -404,33 +405,27 @@ export struct TopicDetailPage {
 
   @Builder TopicDetailReplyActionBar() {
     Row() {
-      HdsActionBar({
-        primaryButton: new ActionBarButton({
-          width: LengthMetrics.vp(this.TOPIC_DETAIL_REPLY_BUTTON_SIZE),
-          baseIcon: this.authCookieConfigured
-            ? $r('sys.symbol.arrowshape_turn_up_left_fill')
-            : $r('sys.symbol.lock'),
-          hoverTips: this.authCookieConfigured ? AppStrings.text(AppStrings.R_REPLY_ACTION_REPLY, 'Reply') : AppStrings.text(AppStrings.R_REPLY_ACTION_LOGIN, 'Login'),
-          accessibilityText: this.authCookieConfigured ? AppStrings.text(AppStrings.R_REPLY_ACTION_REPLY, 'Reply') : AppStrings.text(AppStrings.R_REPLY_ACTION_LOGIN, 'Login'),
-          onClick: () => {
-            this.openReplyEditor()
-          },
-        }),
-        actionBarStyle: new ActionBarStyle({
-          height: LengthMetrics.vp(this.TOPIC_DETAIL_REPLY_BUTTON_SIZE),
-          margin: LengthMetrics.vp(0),
-        }),
-      })
+      HdsMiniBarButton({
+        barWidth: this.TOPIC_DETAIL_REPLY_BUTTON_SIZE,
+        barHeight: this.TOPIC_DETAIL_REPLY_BUTTON_SIZE,
+        activityPadding: this.TOPIC_DETAIL_REPLY_BUTTON_ACTIVITY_PADDING,
+        onButtonClick: () => {
+          this.openReplyEditor()
+        },
+      }) {
+        SymbolGlyph(this.authCookieConfigured
+          ? $r('sys.symbol.pencil_line_1')
+          : $r('sys.symbol.lock'))
+          .fontSize(28)
+          .fontColor([$r('sys.color.ohos_id_color_text_primary')])
+          .fontWeight(FontWeight.Bold)
+      }
     }
     .width('100%')
-    .height(this.TOPIC_DETAIL_REPLY_BUTTON_SIZE)
+    .height(this.TOPIC_DETAIL_REPLY_BUTTON_SIZE + this.TOPIC_DETAIL_REPLY_BUTTON_ACTIVITY_PADDING * 2)
     .justifyContent(this.topicDetailReplyActionBarAlign())
     .alignItems(VerticalAlign.Center)
-    .padding({
-      left: ThemeConstants.SPACE_LG,
-      right: ThemeConstants.SPACE_LG,
-    })
-    .position({ x: 0, y: this.topicDetailReplyActionBarTop() })
+    .position({ x: 0, y: this.topicDetailReplyActionBarTop() - this.TOPIC_DETAIL_REPLY_BUTTON_ACTIVITY_PADDING })
     .hitTestBehavior(HitTestMode.Transparent)
   }
 
