@@ -580,6 +580,88 @@ function highlightDiffLine(code: string): CodeToken[] {
   return [{ type: 'text', text: source } as CodeToken];
 }
 
+function yamlCommentIndex(code: string): number {
+  let quote = '';
+  let escaped = false;
+  for (let i = 0; i < (code || '').length; i++) {
+    const ch = code.charAt(i);
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+    if (ch === '\\') {
+      escaped = true;
+      continue;
+    }
+    if (quote) {
+      if (ch === quote) {
+        quote = '';
+      }
+      continue;
+    }
+    if (ch === '"' || ch === "'") {
+      quote = ch;
+      continue;
+    }
+    if (ch === '#') {
+      return i;
+    }
+  }
+  return -1;
+}
+
+function pushYamlScalar(tokens: CodeToken[], scalar: string): void {
+  const re = /"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|\b(?:true|false|null|yes|no|on|off)\b|-?\b\d+(?:\.\d+)?\b|[{}[\],]|[^\s{}[\],]+|\s+/gi;
+  let match: RegExpExecArray | null = re.exec(scalar || '');
+  while (match) {
+    const value = match[0];
+    if (/^\s+$/.test(value)) {
+      _pushCodeToken(tokens, 'text', value);
+    } else if (value.startsWith('"') || value.startsWith("'")) {
+      _pushCodeToken(tokens, 'string', value);
+    } else if (/^(?:true|false|null|yes|no|on|off)$/i.test(value)) {
+      _pushCodeToken(tokens, 'boolean', value);
+    } else if (/^-?\d/.test(value)) {
+      _pushCodeToken(tokens, 'number', value);
+    } else if (/^[{}[\],]$/.test(value)) {
+      _pushCodeToken(tokens, 'punctuation', value);
+    } else {
+      _pushCodeToken(tokens, 'string', value);
+    }
+    match = re.exec(scalar || '');
+  }
+}
+
+function highlightYamlLine(code: string): CodeToken[] {
+  const source = code || '';
+  const commentIndex = yamlCommentIndex(source);
+  const body = commentIndex >= 0 ? source.slice(0, commentIndex) : source;
+  const tokens: CodeToken[] = [];
+  const yamlKey = /^(\s*)(-\s+)?([A-Za-z_][\w.-]*)(\s*:\s*)(.*)$/.exec(body);
+  if (yamlKey) {
+    _pushCodeToken(tokens, 'text', yamlKey[1] || '');
+    const yamlListPrefix = yamlKey[2] || '';
+    _pushCodeToken(tokens, 'punctuation', yamlListPrefix);
+    _pushCodeToken(tokens, 'key', yamlKey[3] || '');
+    _pushCodeToken(tokens, 'punctuation', yamlKey[4] || '');
+    pushYamlScalar(tokens, yamlKey[5] || '');
+  } else {
+    const yamlList = /^(\s*)(-\s+)(.*)$/.exec(body);
+    if (yamlList) {
+      _pushCodeToken(tokens, 'text', yamlList[1] || '');
+      const yamlListPrefix = yamlList[2] || '';
+      _pushCodeToken(tokens, 'punctuation', yamlListPrefix);
+      pushYamlScalar(tokens, yamlList[3] || '');
+    } else {
+      pushYamlScalar(tokens, body);
+    }
+  }
+  if (commentIndex >= 0) {
+    _pushCodeToken(tokens, 'comment', source.slice(commentIndex));
+  }
+  return tokens;
+}
+
 function looksLikeJson(source: string): boolean {
   return /^\s*[\[{]/.test(source) && /"[^"\n]+"\s*:|\[\s*("|-?\d|true|false|null|\{|\[)/.test(source);
 }
@@ -681,6 +763,9 @@ export function highlightCodeLine(code: string, lang: string): CodeToken[] {
   }
   if (normalized === 'diff') {
     return highlightDiffLine(code);
+  }
+  if (normalized === 'yaml') {
+    return highlightYamlLine(code);
   }
   return highlightLine(code);
 }

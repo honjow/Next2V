@@ -20,6 +20,7 @@ for (const fn of [
   'function highlightCssLine(code: string): CodeToken[]',
   'function highlightSqlLine(code: string): CodeToken[]',
   'function highlightDiffLine(code: string): CodeToken[]',
+  'function highlightYamlLine(code: string): CodeToken[]',
   'function sniffCodeLanguage(code: string): string',
 ]) {
   assert.ok(source.includes(fn), `missing highlighter function: ${fn}`);
@@ -36,6 +37,7 @@ for (const branch of [
   "normalized === 'css'",
   "normalized === 'sql'",
   "normalized === 'diff'",
+  "normalized === 'yaml'",
 ]) {
   assert.ok(dispatchSource.includes(branch), `missing highlight dispatch branch: ${branch}`);
 }
@@ -46,6 +48,9 @@ for (const token of [
   "'SELECT'",
   "'@media'",
   "source.startsWith('+')",
+  "yamlKey",
+  "yamlListPrefix",
+  "[A-Za-z_][\\w.-]*",
 ]) {
   assert.ok(source.includes(token), `missing representative token rule: ${token}`);
 }
