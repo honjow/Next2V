@@ -14,6 +14,7 @@ export struct TopicCard {
   @Prop metaLabel: string = AppStrings.text(AppStrings.R_TOPIC_LAST_REPLY, 'Last reply')
   @Prop metaTimestamp: number = 0
   @Prop showReplyCount: boolean = true
+  @Prop showNodeTag: boolean = true
   onUserClick?: () => void
   onNodeClick?: () => void
 
@@ -40,10 +41,12 @@ export struct TopicCard {
         }
         .layoutWeight(1)
         .alignItems(HorizontalAlign.Start)
-        NodeTag({ nodeName: this.item.node.name, nodeTitle: this.item.node.title })
-          .onClick(() => {
-            if (this.onNodeClick) { this.onNodeClick() }
-          })
+        if (this.showNodeTag) {
+          NodeTag({ nodeName: this.item.node.name, nodeTitle: this.item.node.title })
+            .onClick(() => {
+              if (this.onNodeClick) { this.onNodeClick() }
+            })
+        }
       }
       .width('100%')
       .alignItems(VerticalAlign.Center)

@@ -62,6 +62,7 @@ export struct NodeTopicPage {
               TopicCard({
                 item: topic,
                 isUnread: this.isTopicUnread(topic),
+                showNodeTag: false,
                 onUserClick: () => {
                   let p: UserProfileParams = { username: topic.member.username }
                   this.stack.pushPathByName('UserProfile', p as Object)
