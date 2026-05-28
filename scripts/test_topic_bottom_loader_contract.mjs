@@ -40,18 +40,28 @@ assert.match(
 )
 assert.match(
   pullRefresh,
-  /deltaY\s*<\s*-PULL_START_DRAG_VP[\s\S]*this\.touchStartedAtBottom[\s\S]*this\.isListAtBottom\(\)[\s\S]*this\.canStartBottomRefresh\(\)/,
-  'manual bottom gesture should require a touch that began at pixel-true bottom before business-state gating'
+  /deltaY\s*<\s*-PULL_START_DRAG_VP[\s\S]*this\.isListAtBottom\(\)[\s\S]*this\.canStartBottomRefresh\(\)/,
+  'manual bottom gesture should remain gated by exact bottom position and page business state'
 )
 assert.match(
   pullRefresh,
-  /event\.type\s*===\s*TouchType\.Down[\s\S]*this\.resetTouchState\(\)[\s\S]*this\.touchStartedAtBottom\s*=\s*this\.isListAtBottom\(\)/,
-  'bottom-pull eligibility should be captured at TouchDown, preventing continuous scroll-to-bottom from arming refresh mid-gesture'
+  /this\.topEdgeDragStartY\s*=\s*event\.touches\[0\]\.y\s*-\s*PULL_START_DRAG_VP[\s\S]*this\.touchStartPullOffset\s*=\s*0/,
+  'top pull tracking should rebase the drag origin when a gesture enters the top edge'
 )
 assert.match(
   pullRefresh,
-  /private resetTouchState\(\): void \{[\s\S]*this\.touchStartedAtBottom\s*=\s*false[\s\S]*\n  \}/,
-  'touch-start bottom latch should reset after each gesture'
+  /this\.bottomEdgeDragStartY\s*=\s*event\.touches\[0\]\.y\s*\+\s*PULL_START_DRAG_VP[\s\S]*this\.touchStartBottomPullOffset\s*=\s*0/,
+  'bottom pull tracking should rebase the drag origin when a gesture enters the bottom edge'
+)
+assert.match(
+  pullRefresh,
+  /const topPullDelta\s*=\s*event\.touches\[0\]\.y\s*-\s*this\.topEdgeDragStartY[\s\S]*this\.touchStartPullOffset\s*\+\s*topPullDelta\s*\*\s*PULL_RESISTANCE_FACTOR/,
+  'top pull offset should use edge-entry delta instead of original TouchDown delta'
+)
+assert.match(
+  pullRefresh,
+  /const bottomPullDelta\s*=\s*this\.bottomEdgeDragStartY\s*-\s*event\.touches\[0\]\.y[\s\S]*this\.touchStartBottomPullOffset\s*\+\s*bottomPullDelta\s*\*\s*PULL_RESISTANCE_FACTOR/,
+  'bottom pull offset should use edge-entry delta instead of original TouchDown delta'
 )
 
 const canBottomRefresh = methodBody(

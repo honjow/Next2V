@@ -30,7 +30,8 @@ export struct PullRefresh {
   private touchStartY: number = 0;
   private touchStartPullOffset: number = 0;
   private touchStartBottomPullOffset: number = 0;
-  private touchStartedAtBottom: boolean = false;
+  private topEdgeDragStartY: number = 0;
+  private bottomEdgeDragStartY: number = 0;
   private isTracking: boolean = false;
   private isBottomTracking: boolean = false;
   private isHorizontalGesture: boolean = false;
@@ -158,7 +159,8 @@ export struct PullRefresh {
     this.isTracking = false
     this.isBottomTracking = false
     this.isHorizontalGesture = false
-    this.touchStartedAtBottom = false
+    this.topEdgeDragStartY = 0
+    this.bottomEdgeDragStartY = 0
   }
 
   private areaLength(value: Length | undefined): number {
@@ -200,11 +202,6 @@ export struct PullRefresh {
           this.touchStartPullOffset = this.pullOffset
           this.touchStartBottomPullOffset = this.bottomPullOffset
           this.resetTouchState()
-          // A continuous scroll that merely arrives at the bottom must not arm
-          // the manual bottom-refresh surface. Require a fresh gesture that
-          // started at pixel-true bottom so auto-pagination footer changes in
-          // the same touch sequence cannot switch loader surfaces.
-          this.touchStartedAtBottom = this.isListAtBottom()
           return
         }
 
@@ -221,23 +218,27 @@ export struct PullRefresh {
             }
             if (deltaY > PULL_START_DRAG_VP && this.isListAtTop()) {
               this.isTracking = true
+              this.topEdgeDragStartY = event.touches[0].y - PULL_START_DRAG_VP
+              this.touchStartPullOffset = 0
               this.onScrollEnableChange(false)
             } else if (
               deltaY < -PULL_START_DRAG_VP &&
-              this.touchStartedAtBottom &&
               this.isListAtBottom() &&
               this.canStartBottomRefresh()
             ) {
               this.isBottomTracking = true
+              this.bottomEdgeDragStartY = event.touches[0].y + PULL_START_DRAG_VP
+              this.touchStartBottomPullOffset = 0
               this.onScrollEnableChange(false)
             } else {
               return
             }
           }
           if (this.isTracking) {
+            const topPullDelta = event.touches[0].y - this.topEdgeDragStartY
             this.pullOffset = Math.max(
               0,
-              this.touchStartPullOffset + deltaY * PULL_RESISTANCE_FACTOR,
+              this.touchStartPullOffset + topPullDelta * PULL_RESISTANCE_FACTOR,
             )
             if (this.pullOffset >= this.threshold) {
               this.refreshState = 1
@@ -246,9 +247,10 @@ export struct PullRefresh {
               this.refreshState = 0
             }
           } else if (this.isBottomTracking) {
+            const bottomPullDelta = this.bottomEdgeDragStartY - event.touches[0].y
             this.bottomPullOffset = Math.max(
               0,
-              this.touchStartBottomPullOffset - deltaY * PULL_RESISTANCE_FACTOR,
+              this.touchStartBottomPullOffset + bottomPullDelta * PULL_RESISTANCE_FACTOR,
             )
             if (this.bottomPullOffset >= this.threshold) {
               this.bottomRefreshState = 1
