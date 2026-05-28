@@ -73,6 +73,7 @@ export class StorageKeys {
   static readonly FEED_TAB_KEYS: string = 'feedTabKeys'
   static readonly FEED_TAB_VISUAL_INDEX: string = 'feedTabVisualIndex'
   static readonly HOME_TAB_AUTO_HIDE: string = 'homeTabAutoHide'
+  static readonly TOPIC_DETAIL_REPLY_BUTTON_AUTO_HIDE: string = 'topicDetailReplyButtonAutoHide'
   static readonly MOTION_HAND_EDGE: string = 'motionHandEdge'
   static readonly MOTION_HOLDING_HAND_SUPPORTED: string = 'motionHoldingHandSupported'
 

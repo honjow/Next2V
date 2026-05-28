@@ -15,6 +15,7 @@ import {
   ReplyCardStyleSettings,
   ReplyDisplaySettings,
   ThemeSettings,
+  TopicDetailReplyActionSettings,
 } from 'shared'
 
 export class SettingsSaveCoordinator {
@@ -61,6 +62,12 @@ export class SettingsSaveCoordinator {
   static saveHomeTabAutoHide(context: common.UIAbilityContext, enabled: boolean): void {
     HomeTabSettings.save(context, enabled).catch((error: Error) => {
       console.error('save home tab auto-hide setting failed: ' + error.message)
+    })
+  }
+
+  static saveTopicDetailReplyButtonAutoHide(context: common.UIAbilityContext, enabled: boolean): void {
+    TopicDetailReplyActionSettings.save(context, enabled).catch((error: Error) => {
+      console.error('save topic detail reply button auto-hide setting failed: ' + error.message)
     })
   }
 

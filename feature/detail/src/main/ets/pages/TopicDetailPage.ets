@@ -35,6 +35,7 @@ import {
 import { TopicDetailScrollCoordinator } from '../model/TopicDetailScrollCoordinator'
 import { common, Want } from '@kit.AbilityKit'
 import { promptAction } from '@kit.ArkUI'
+import { HdsAnimationMode, HdsTabsController } from '@kit.UIDesignKit'
 import { HdsMiniBarButton } from '../components/HdsMiniBarButton'
 import { uniformTypeDescriptor as utd } from '@kit.ArkData'
 import { pasteboard } from '@kit.BasicServicesKit'
@@ -68,6 +69,7 @@ import {
   translateApiError,
   CacheOwnerResolver,
   TopicDetailActionOverlaySettings,
+  TopicDetailReplyActionSettings,
 } from 'shared'
 import type { V2exTopicThankAction, CacheScope, TopicDetailActionOverlay } from 'shared'
 import type { V2exReplyModerationAction, V2exTopicModerationAction } from 'shared'
@@ -107,6 +109,9 @@ export struct TopicDetailPage {
   @StorageLink(StorageKeys.READING_DENSITY) readingDensity: string =
     ReadingSettings.DENSITY_STANDARD;
   @StorageLink(StorageKeys.READING_RESTORE_POSITION) readingRestorePosition: boolean = false;
+  @StorageLink(StorageKeys.TOPIC_DETAIL_REPLY_BUTTON_AUTO_HIDE)
+  @Watch('onTopicDetailReplyButtonAutoHideChanged')
+  topicDetailReplyButtonAutoHide: boolean = TopicDetailReplyActionSettings.DEFAULT_AUTO_HIDE;
   @StorageProp(StorageKeys.TOP_AVOID_HEIGHT) topH: number = 0;
   @StorageProp(StorageKeys.BOTTOM_AVOID_HEIGHT) bottomH: number = 0;
   private scroller: Scroller = new Scroller();
@@ -139,6 +144,8 @@ export struct TopicDetailPage {
   private readonly HDS_ACTION_BAR_CLEARANCE: number = 72;
   private readonly TOPIC_DETAIL_REPLY_BUTTON_SIZE: number = 56;
   private readonly TOPIC_DETAIL_REPLY_BUTTON_ACTIVITY_PADDING: number = ThemeConstants.SPACE_LG;
+  private readonly TOPIC_DETAIL_REPLY_BUTTON_SCROLL_DELTA_PX: number = 6;
+  private readonly TOPIC_DETAIL_REPLY_BUTTON_ANIMATION_GUARD_MS: number = 180;
   private readonly FOLLOW_OPERATION_VERTICAL_SCROLL_THRESHOLD: number = 24;
   private readonly FOLLOW_OPERATION_VERTICAL_DOMINANCE_RATIO: number = 1.2;
   private readonly titleVisibilityHysteresis: number = 4;
@@ -163,6 +170,10 @@ export struct TopicDetailPage {
   private lastReadFloor: number = 0;
   private hasRestoredReadPosition: boolean = false;
   private hasJumpedToTargetFloor: boolean = false;
+  private replyButtonController: HdsTabsController = new HdsTabsController();
+  private replyButtonVisibleByScroll: boolean = true;
+  private replyButtonAnimationGuardTimerId: number = -1;
+  private replyButtonLastScrollOffset: number = 0;
   private followTouchState: TopicDetailFollowTouchState =
     TopicDetailFloatingActionCoordinator.initialTouchState();
 
@@ -174,6 +185,10 @@ export struct TopicDetailPage {
     this.hasJumpedToTargetFloor = false
     this.jumpFloorText = ''
     this.currentScrollOffset = 0
+    this.replyButtonLastScrollOffset = 0
+    this.replyButtonVisibleByScroll = true
+    this.clearReplyButtonAnimationGuardTimer()
+    this.applyReplyButtonAutoHideBinding()
     this.titleContentBottom = 0
     this.followTouchState = TopicDetailFloatingActionCoordinator.initialTouchState()
     this.visualMotionHandEdge = this.motionHandEdge
@@ -192,6 +207,8 @@ export struct TopicDetailPage {
 
   aboutToDisappear(): void {
     this.persistReadPosition()
+    this.replyButtonController.unbindScroller(this.scroller)
+    this.clearReplyButtonAnimationGuardTimer()
   }
 
   private initializeCachedThenNetworkLoad(context: common.UIAbilityContext): void {
@@ -406,6 +423,7 @@ export struct TopicDetailPage {
   @Builder TopicDetailReplyActionBar() {
     Row() {
       HdsMiniBarButton({
+        controller: this.replyButtonController,
         barWidth: this.TOPIC_DETAIL_REPLY_BUTTON_SIZE,
         barHeight: this.TOPIC_DETAIL_REPLY_BUTTON_SIZE,
         activityPadding: this.TOPIC_DETAIL_REPLY_BUTTON_ACTIVITY_PADDING,
@@ -439,6 +457,87 @@ export struct TopicDetailPage {
 
   private topicDetailReplyActionBarAlign(): FlexAlign {
     return TopicDetailFloatingActionCoordinator.actionBarAlign(this.visualMotionHandEdge)
+  }
+
+  private clearReplyButtonAnimationGuardTimer(): void {
+    if (this.replyButtonAnimationGuardTimerId === -1) {
+      return
+    }
+    clearTimeout(this.replyButtonAnimationGuardTimerId)
+    this.replyButtonAnimationGuardTimerId = -1
+  }
+
+  private applyReplyButtonAutoHideBinding(): void {
+    if (this.topicDetailReplyButtonAutoHide) {
+      this.replyButtonController.bindScroller(0, this.scroller)
+      this.restoreReplyButtonIfHidden()
+      return
+    }
+    this.replyButtonController.unbindScroller(this.scroller)
+    this.restoreReplyButtonIfHidden()
+  }
+
+  private startReplyButtonAnimationGuardTimer(): void {
+    this.clearReplyButtonAnimationGuardTimer()
+    this.replyButtonAnimationGuardTimerId = setTimeout((): void => {
+      this.replyButtonAnimationGuardTimerId = -1
+    }, this.TOPIC_DETAIL_REPLY_BUTTON_ANIMATION_GUARD_MS)
+  }
+
+  private restoreReplyButtonIfHidden(): void {
+    if (this.replyButtonVisibleByScroll) {
+      return
+    }
+    this.replyButtonVisibleByScroll = true
+    this.replyButtonController.applyShowAnimation(HdsAnimationMode.SCROLL_ANIMATION)
+  }
+
+  private applyReplyButtonScrollAnimation(visible: boolean): void {
+    if (
+      !this.topicDetailReplyButtonAutoHide ||
+      this.replyButtonAnimationGuardTimerId !== -1 ||
+      this.replyButtonVisibleByScroll === visible
+    ) {
+      return
+    }
+    this.replyButtonVisibleByScroll = visible
+    if (visible) {
+      this.replyButtonController.applyShowAnimation(HdsAnimationMode.SCROLL_ANIMATION)
+    } else {
+      this.replyButtonController.applyHideAnimation(HdsAnimationMode.SCROLL_ANIMATION)
+    }
+    this.startReplyButtonAnimationGuardTimer()
+  }
+
+  private onTopicDetailReplyButtonAutoHideChanged(_propName: string): void {
+    this.applyReplyButtonAutoHideBinding()
+  }
+
+  private applyReplyButtonAutoHideByScroll(offset: number, state: ScrollState): void {
+    if (!this.topicDetailReplyButtonAutoHide) {
+      this.replyButtonLastScrollOffset = offset
+      this.restoreReplyButtonIfHidden()
+      return
+    }
+    if (offset <= this.TOPIC_DETAIL_REPLY_BUTTON_SCROLL_DELTA_PX) {
+      this.replyButtonLastScrollOffset = offset
+      this.restoreReplyButtonIfHidden()
+      return
+    }
+    if (state === ScrollState.Idle) {
+      this.replyButtonLastScrollOffset = offset
+      return
+    }
+    const lastOffset = this.replyButtonLastScrollOffset
+    this.replyButtonLastScrollOffset = offset
+    const delta = offset - lastOffset
+    const isReverseScroll = delta < -this.TOPIC_DETAIL_REPLY_BUTTON_SCROLL_DELTA_PX
+    const isForwardScroll = delta > this.TOPIC_DETAIL_REPLY_BUTTON_SCROLL_DELTA_PX
+    if (isReverseScroll) {
+      this.applyReplyButtonScrollAnimation(true)
+    } else if (isForwardScroll) {
+      this.applyReplyButtonScrollAnimation(false)
+    }
   }
 
   private trackReplyActionFollowOperation(event: TouchEvent): void {
@@ -557,9 +656,10 @@ export struct TopicDetailPage {
       onScrollIndex: (_start: number, end: number, center: number) => {
         this.handleReplyListScrollIndex(end, center)
       },
-      onDidScroll: (offset: number, _state: ScrollState) => {
+      onDidScroll: (offset: number, state: ScrollState) => {
         this.currentScrollOffset = Math.max(0, offset)
         this.evaluateAppbarIdentityVisibility()
+        this.applyReplyButtonAutoHideByScroll(this.currentScrollOffset, state)
       },
       onReachEnd: () => {
         this.handleReplyListReachEnd()

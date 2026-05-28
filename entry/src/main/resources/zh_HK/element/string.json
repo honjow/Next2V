@@ -361,6 +361,10 @@
       "value": "首頁"
     },
     {
+      "name": "settings_navigation_actions",
+      "value": "導覽與操作"
+    },
+    {
       "name": "settings_content_media",
       "value": "內容與媒體"
     },
@@ -403,6 +407,10 @@
     {
       "name": "home_tab_auto_hide",
       "value": "自動隱藏首頁標籤列"
+    },
+    {
+      "name": "topic_detail_reply_button_auto_hide",
+      "value": "自動隱藏回覆按鈕"
     },
     {
       "name": "image_auto_load",

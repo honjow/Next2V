@@ -361,6 +361,10 @@
       "value": "Home"
     },
     {
+      "name": "settings_navigation_actions",
+      "value": "Navigation and actions"
+    },
+    {
       "name": "settings_content_media",
       "value": "Content and media"
     },
@@ -403,6 +407,10 @@
     {
       "name": "home_tab_auto_hide",
       "value": "Auto-hide home tabs"
+    },
+    {
+      "name": "topic_detail_reply_button_auto_hide",
+      "value": "Auto-hide reply button"
     },
     {
       "name": "image_auto_load",

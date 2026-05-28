@@ -57,6 +57,8 @@ export type { ApiDomainSnapshot, DomainValidationResult } from './settings/ApiDo
 export { FeedTabSettings } from './settings/FeedTabSettings'
 export { HomeTabSettings } from './settings/HomeTabSettings'
 export type { HomeTabSettingsSnapshot } from './settings/HomeTabSettings'
+export { TopicDetailReplyActionSettings } from './settings/TopicDetailReplyActionSettings'
+export type { TopicDetailReplyActionSettingsSnapshot } from './settings/TopicDetailReplyActionSettings'
 export { ThemeSettings } from './settings/ThemeSettings'
 export { LanguageSettings } from './settings/LanguageSettings'
 export type { LanguageSettingsSnapshot } from './settings/LanguageSettings'

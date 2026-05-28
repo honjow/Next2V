@@ -18,6 +18,7 @@ import {
   ReplyActionAlignmentSettings,
   ReplyDisplaySettings,
   ReplyCardStyleSettings,
+  TopicDetailReplyActionSettings,
   type CacheStats,
 } from 'shared'
 import {
@@ -51,6 +52,8 @@ export struct SettingsPage {
   @StorageLink(StorageKeys.REPLY_ACTION_ALIGNMENT_MODE) replyActionAlignmentMode: string =
     ReplyActionAlignmentSettings.MODE_UNSET;
   @StorageLink(StorageKeys.HOME_TAB_AUTO_HIDE) homeTabAutoHide: boolean = HomeTabSettings.DEFAULT_AUTO_HIDE;
+  @StorageLink(StorageKeys.TOPIC_DETAIL_REPLY_BUTTON_AUTO_HIDE)
+  topicDetailReplyButtonAutoHide: boolean = TopicDetailReplyActionSettings.DEFAULT_AUTO_HIDE;
   @StorageLink(StorageKeys.MOTION_HOLDING_HAND_SUPPORTED) motionHoldingHandSupported: boolean = false;
   @StorageLink(StorageKeys.READING_RESTORE_POSITION) readingRestorePosition: boolean = false;
   @StorageLink(StorageKeys.READING_BASE64_DECODE_MODE) base64DecodeMode: string = ReadingSettings.BASE64_MODE_BADGE;
@@ -94,7 +97,7 @@ export struct SettingsPage {
           this.ReadingSection()
         }
         ListItem() {
-          this.SectionHeader(AppStrings.R_SETTINGS_HOME)
+          this.SectionHeader(AppStrings.R_SETTINGS_NAVIGATION_ACTIONS)
         }
         ListItem() {
           GroupedListSection() {
@@ -107,6 +110,10 @@ export struct SettingsPage {
             this.SettingsDivider()
             this.TogglePreferenceRow(AppStrings.R_HOME_TAB_AUTO_HIDE, this.homeTabAutoHide, (value: boolean) => {
               this.updateHomeTabAutoHide(value)
+            })
+            this.SettingsDivider()
+            this.TogglePreferenceRow(AppStrings.R_TOPIC_DETAIL_REPLY_BUTTON_AUTO_HIDE, this.topicDetailReplyButtonAutoHide, (value: boolean) => {
+              this.updateTopicDetailReplyButtonAutoHide(value)
             })
           }
         }
@@ -637,6 +644,12 @@ export struct SettingsPage {
     this.homeTabAutoHide = enabled
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     SettingsSaveCoordinator.saveHomeTabAutoHide(context, enabled)
+  }
+
+  private updateTopicDetailReplyButtonAutoHide(enabled: boolean): void {
+    this.topicDetailReplyButtonAutoHide = enabled
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    SettingsSaveCoordinator.saveTopicDetailReplyButtonAutoHide(context, enabled)
   }
 
 

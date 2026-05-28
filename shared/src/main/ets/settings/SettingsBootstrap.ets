@@ -9,6 +9,7 @@ import { AccountSessionCoordinator } from './AccountSessionCoordinator'
 import { DiagnosticsSettings } from './DiagnosticsSettings'
 import { FeedTabSettings } from './FeedTabSettings'
 import { HomeTabSettings } from './HomeTabSettings'
+import { TopicDetailReplyActionSettings } from './TopicDetailReplyActionSettings'
 import { LanguageSettings } from './LanguageSettings'
 import { MediaSettings } from './MediaSettings'
 import { NetworkProxySettings } from './NetworkProxySettings'
@@ -39,6 +40,7 @@ export class SettingsBootstrap {
     await SettingsBootstrap.restoreReplyDisplay(context, settingsStore)
     await SettingsBootstrap.restoreReading(context, settingsStore)
     await SettingsBootstrap.restoreHomeTabs(context, settingsStore)
+    await SettingsBootstrap.restoreTopicDetailReplyAction(context, settingsStore)
     await SettingsBootstrap.restoreFeedTabs(context)
     await SettingsBootstrap.restoreCookieJar(context)
     await SettingsBootstrap.restoreMultiAccount(context)
@@ -151,6 +153,16 @@ export class SettingsBootstrap {
     ).catch((error: Error) => {
       console.error('restore home tab settings failed: ' + error.message)
       HomeTabSettings.apply(HomeTabSettings.DEFAULT_AUTO_HIDE)
+    })
+  }
+
+  private static async restoreTopicDetailReplyAction(context: common.UIAbilityContext, settingsStore?: SettingsPreferencesStore): Promise<void> {
+    await (settingsStore
+      ? TopicDetailReplyActionSettings.loadFromStore(settingsStore)
+      : TopicDetailReplyActionSettings.load(context)
+    ).catch((error: Error) => {
+      console.error('restore topic detail reply action settings failed: ' + error.message)
+      TopicDetailReplyActionSettings.apply(TopicDetailReplyActionSettings.DEFAULT_AUTO_HIDE)
     })
   }
 

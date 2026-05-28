@@ -361,6 +361,10 @@
       "value": "首页"
     },
     {
+      "name": "settings_navigation_actions",
+      "value": "导航与操作"
+    },
+    {
       "name": "settings_content_media",
       "value": "内容与媒体"
     },
@@ -403,6 +407,10 @@
     {
       "name": "home_tab_auto_hide",
       "value": "自动隐藏首页标签栏"
+    },
+    {
+      "name": "topic_detail_reply_button_auto_hide",
+      "value": "自动隐藏回复按钮"
     },
     {
       "name": "image_auto_load",
