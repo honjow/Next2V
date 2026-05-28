@@ -185,7 +185,7 @@ export class ApiService {
       return { topics: [], hasMore: false }
     }
     return {
-      topics: ApiService.normalizeTopics(topics),
+      topics: ApiService.normalizeNodeTopics(topics, clean, clean),
       hasMore: snapshot.hasMore,
     }
   }
@@ -1701,6 +1701,40 @@ export class ApiService {
 
   private static normalizeTopics(topics: V2exTopic[]): V2exTopic[] {
     return (topics || []).map((topic: V2exTopic) => ApiService.normalizeTopic(topic))
+  }
+
+  private static normalizeNodeTopics(topics: V2exTopic[], nodeName: string, nodeTitle: string): V2exTopic[] {
+    const cleanName = (nodeName || '').trim()
+    const cleanTitle = (nodeTitle || cleanName).trim()
+    return ApiService.normalizeTopics(topics).map((topic: V2exTopic): V2exTopic => {
+      if (!topic || !cleanName) {
+        return topic
+      }
+      if (!topic.node) {
+        topic.node = {
+          id: 0,
+          name: cleanName,
+          title: cleanTitle,
+          title_alternative: '',
+          url: V2exUrlRouter.withSelectedBaseUrl(`/go/${cleanName}`, HttpClient.getInstance().getBaseUrl()),
+          topics: 0,
+          avatar_mini: '',
+          avatar_normal: '',
+          avatar_large: ''
+        }
+        return topic
+      }
+      if (!topic.node.name) {
+        topic.node.name = cleanName
+      }
+      if (!topic.node.title) {
+        topic.node.title = cleanTitle
+      }
+      if (!topic.node.url) {
+        topic.node.url = V2exUrlRouter.withSelectedBaseUrl(`/go/${cleanName}`, HttpClient.getInstance().getBaseUrl())
+      }
+      return topic
+    })
   }
 
   private static normalizeTopic(topic: V2exTopic): V2exTopic {

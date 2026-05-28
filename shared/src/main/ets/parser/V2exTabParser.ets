@@ -57,7 +57,7 @@ export class V2exTabParser {
 
   private static extractTopicCells(html: string): string[] {
     const cells: string[] = []
-    const cellRegex = /<div\s+class=["']cell item["'][\s\S]*?(?=<div\s+class=["']cell item["']|<\/div>\s*<\/div>\s*<div\s+class=["']inner["']|<\/body>)/gi
+    const cellRegex = /<div\s+class=["']cell(?:\s+item|[^"']*\bt_\d+\b)[^"']*["'][\s\S]*?(?=<div\s+class=["']cell(?:\s+item|[^"']*\bt_\d+\b)[^"']*["']|<\/div>\s*<\/div>\s*<div\s+class=["']inner["']|<\/body>)/gi
     let match: RegExpExecArray | null
     while ((match = cellRegex.exec(html)) !== null) {
       const cell = match[0] || ''
