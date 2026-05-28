@@ -6,15 +6,15 @@
     },
     {
       "name": "entry_desc",
-      "value": "Next2V - V2EX 客戶端"
+      "value": "Next2V - V2EX クライアント"
     },
     {
       "name": "module_desc",
-      "value": "Next2V 入口模組"
+      "value": "Next2V エントリーモジュール"
     },
     {
       "name": "EntryAbility_desc",
-      "value": "Next2V 主 Ability"
+      "value": "Next2V メイン機能"
     },
     {
       "name": "EntryAbility_label",
@@ -22,11 +22,11 @@
     },
     {
       "name": "tab_home",
-      "value": "首頁"
+      "value": "ホーム"
     },
     {
       "name": "tab_discover",
-      "value": "發現"
+      "value": "発見"
     },
     {
       "name": "tab_notifications",
@@ -34,43 +34,43 @@
     },
     {
       "name": "tab_me",
-      "value": "我的"
+      "value": "自分"
     },
     {
       "name": "nav_reply",
-      "value": "回覆"
+      "value": "返信"
     },
     {
       "name": "nav_web_login",
-      "value": "網頁登入"
+      "value": "Web ログイン"
     },
     {
       "name": "nav_native_login",
-      "value": "帳號密碼登入"
+      "value": "パスワードログイン"
     },
     {
       "name": "nav_node_picker",
-      "value": "選擇節點"
+      "value": "ノードを選択"
     },
     {
       "name": "nav_search",
-      "value": "搜尋"
+      "value": "検索"
     },
     {
       "name": "nav_topic_draft",
-      "value": "發帖草稿"
+      "value": "トピック下書き"
     },
     {
       "name": "nav_saved_topics",
-      "value": "收藏主題"
+      "value": "お気に入りトピック"
     },
     {
       "name": "nav_saved_nodes",
-      "value": "收藏節點"
+      "value": "お気に入りノード"
     },
     {
       "name": "nav_following",
-      "value": "關注用戶"
+      "value": "フォロー中"
     },
     {
       "name": "nav_settings",
@@ -78,87 +78,87 @@
     },
     {
       "name": "nav_storage",
-      "value": "儲存"
+      "value": "ストレージ"
     },
     {
       "name": "nav_diagnostics",
-      "value": "診斷日誌"
+      "value": "診断ログ"
     },
     {
       "name": "nav_home_nodes",
-      "value": "首頁欄目設定"
+      "value": "ホームタブ設定"
     },
     {
       "name": "nav_reading",
-      "value": "閱讀字體設定"
+      "value": "読書フォント設定"
     },
     {
       "name": "nav_network_proxy",
-      "value": "網絡代理"
+      "value": "ネットワークプロキシ"
     },
     {
       "name": "nav_account",
-      "value": "帳號"
+      "value": "アカウント"
     },
     {
       "name": "nav_read_later",
-      "value": "稍後讀"
+      "value": "あとで読む"
     },
     {
       "name": "nav_recently_viewed",
-      "value": "最近瀏覽"
+      "value": "最近表示"
     },
     {
       "name": "nav_local_nodes",
-      "value": "本地關注節點"
+      "value": "ローカルのフォローノード"
     },
     {
       "name": "nav_about",
-      "value": "關於"
+      "value": "概要"
     },
     {
       "name": "nav_all_topics",
-      "value": "全部主題"
+      "value": "すべてのトピック"
     },
     {
       "name": "nav_all_replies",
-      "value": "全部回覆"
+      "value": "すべての返信"
     },
     {
       "name": "common_load_failed",
-      "value": "載入失敗"
+      "value": "読み込みに失敗しました"
     },
     {
       "name": "common_retry",
-      "value": "重試"
+      "value": "再試行"
     },
     {
       "name": "common_cancel",
-      "value": "取消"
+      "value": "キャンセル"
     },
     {
       "name": "common_clear",
-      "value": "清除"
+      "value": "クリア"
     },
     {
       "name": "common_delete",
-      "value": "刪除"
+      "value": "削除"
     },
     {
       "name": "common_save",
-      "value": "儲存"
+      "value": "保存"
     },
     {
       "name": "common_restore",
-      "value": "恢復"
+      "value": "復元"
     },
     {
       "name": "common_reset",
-      "value": "重設"
+      "value": "リセット"
     },
     {
       "name": "common_closed",
-      "value": "關閉"
+      "value": "オフ"
     },
     {
       "name": "common_auto",
@@ -166,331 +166,331 @@
     },
     {
       "name": "common_light",
-      "value": "淺色"
+      "value": "ライト"
     },
     {
       "name": "common_dark",
-      "value": "深色"
+      "value": "ダーク"
     },
     {
       "name": "common_cleared",
-      "value": "已清空"
+      "value": "クリアしました"
     },
     {
       "name": "common_saved",
-      "value": "已儲存"
+      "value": "保存しました"
     },
     {
       "name": "common_save_failed",
-      "value": "儲存失敗"
+      "value": "保存に失敗しました"
     },
     {
       "name": "common_deleted",
-      "value": "已刪除"
+      "value": "削除しました"
     },
     {
       "name": "common_delete_failed",
-      "value": "刪除失敗"
+      "value": "削除に失敗しました"
     },
     {
       "name": "common_open_failed",
-      "value": "開啟失敗"
+      "value": "開けませんでした"
     },
     {
       "name": "login_required_continue",
-      "value": "登入後可繼續"
+      "value": "続行するにはログインしてください"
     },
     {
       "name": "login_action",
-      "value": "去登入"
+      "value": "ログイン"
     },
     {
       "name": "account_section",
-      "value": "帳號"
+      "value": "アカウント"
     },
     {
       "name": "account_content_section",
-      "value": "帳號內容"
+      "value": "アカウント内容"
     },
     {
       "name": "local_content_section",
-      "value": "本地內容"
+      "value": "ローカル内容"
     },
     {
       "name": "more_section",
-      "value": "更多"
+      "value": "その他"
     },
     {
       "name": "advanced_api_section",
-      "value": "進階 API"
+      "value": "高度な API"
     },
     {
       "name": "not_logged_in",
-      "value": "未登入"
+      "value": "未ログイン"
     },
     {
       "name": "tap_to_login_v2ex",
-      "value": "點擊登入 V2EX"
+      "value": "タップして V2EX にログイン"
     },
     {
       "name": "account_add_another",
-      "value": "新增帳號"
+      "value": "別のアカウントを追加"
     },
     {
       "name": "account_list_header",
-      "value": "賬號列表"
+      "value": "アカウント"
     },
     {
       "name": "account_active_label",
-      "value": "當前"
+      "value": "現在"
     },
     {
       "name": "account_remove_title",
-      "value": "移除賬號"
+      "value": "アカウントを削除"
     },
     {
       "name": "account_remove_message_arg",
-      "value": "移除“{0}”？其他賬號不受影響。"
+      "value": "「{0}」を削除しますか？他のアカウントには影響しません。"
     },
     {
       "name": "account_switch_label",
-      "value": "切換"
+      "value": "切り替え"
     },
     {
       "name": "account_remove_label",
-      "value": "移除"
+      "value": "削除"
     },
     {
       "name": "common_remove",
-      "value": "移除"
+      "value": "削除"
     },
     {
       "name": "profile_home",
-      "value": "個人主頁"
+      "value": "プロフィール"
     },
     {
       "name": "balance_details",
-      "value": "餘額明細"
+      "value": "残高の詳細"
     },
     {
       "name": "web_account_settings",
-      "value": "網頁帳號設定"
+      "value": "Web アカウント設定"
     },
     {
       "name": "logout",
-      "value": "登出"
+      "value": "ログアウト"
     },
     {
       "name": "api_token_subtitle",
-      "value": "已儲存，僅用於 V2EX API v2 進階能力"
+      "value": "保存済み。V2EX API v2 の高度な機能にのみ使用されます"
     },
     {
       "name": "clear_api_auth",
-      "value": "清除 API 授權"
+      "value": "API 認証をクリア"
     },
     {
       "name": "clear_api_auth_message",
-      "value": "只會清除本機儲存的 Personal Access Token，不會登出網頁登入。"
+      "value": "ローカルに保存された Personal Access Token のみをクリアします。Web ログインはサインイン状態のままです。"
     },
     {
       "name": "api_auth_configured",
-      "value": "API 授權已配置"
+      "value": "API 認証が設定済み"
     },
     {
       "name": "balance_syncing",
-      "value": "虛擬幣同步中"
+      "value": "残高を同期中"
     },
     {
       "name": "balance_unavailable",
-      "value": "虛擬幣資訊不可用"
+      "value": "残高を利用できません"
     },
     {
       "name": "daily_checkin",
-      "value": "簽到"
+      "value": "チェックイン"
     },
     {
       "name": "daily_checking_in",
-      "value": "簽到中"
+      "value": "チェックイン中"
     },
     {
       "name": "daily_checked_in",
-      "value": "已簽到"
+      "value": "チェックイン済み"
     },
     {
       "name": "about_next2v",
-      "value": "關於 Next2V"
+      "value": "Next2V について"
     },
     {
       "name": "login_to_view_blocked",
-      "value": "登入後可查看屏蔽與忽略"
+      "value": "ブロック・無視した項目を表示するにはログインしてください"
     },
     {
       "name": "blocked_users",
-      "value": "屏蔽用戶"
+      "value": "ブロックしたユーザー"
     },
     {
       "name": "no_blocked_users",
-      "value": "暫無屏蔽用戶"
+      "value": "ブロックしたユーザーはいません"
     },
     {
       "name": "ignored_topics",
-      "value": "忽略主題"
+      "value": "無視したトピック"
     },
     {
       "name": "no_ignored_topics",
-      "value": "暫無忽略主題"
+      "value": "無視したトピックはありません"
     },
     {
       "name": "login_to_view_following",
-      "value": "登入後可查看關注用戶"
+      "value": "フォロー中のユーザーを表示するにはログインしてください"
     },
     {
       "name": "no_following_users",
-      "value": "暫無關注用戶"
+      "value": "フォロー中のユーザーはいません"
     },
     {
       "name": "settings_reading",
-      "value": "閱讀"
+      "value": "読書"
     },
     {
       "name": "settings_appearance",
-      "value": "介面"
+      "value": "外観"
     },
     {
       "name": "settings_home",
-      "value": "首頁"
+      "value": "ホーム"
     },
     {
       "name": "settings_navigation_actions",
-      "value": "導覽與操作"
+      "value": "ナビゲーションと操作"
     },
     {
       "name": "settings_content_media",
-      "value": "內容與媒體"
+      "value": "コンテンツとメディア"
     },
     {
       "name": "settings_advanced",
-      "value": "進階"
+      "value": "詳細"
     },
     {
       "name": "language",
-      "value": "語言"
+      "value": "言語"
     },
     {
       "name": "language_follow_system",
-      "value": "跟隨系統"
+      "value": "システムに従う"
     },
     {
       "name": "language_simplified_chinese",
-      "value": "簡體中文"
+      "value": "簡体字中国語"
     },
     {
       "name": "language_traditional_chinese_hk",
-      "value": "繁體中文（香港）"
+      "value": "繁体字中国語（香港）"
     },
     {
       "name": "language_traditional_chinese_tw",
-      "value": "繁體中文（台灣）"
+      "value": "繁体字中国語（台湾）"
     },
     {
       "name": "language_english",
-      "value": "English"
+      "value": "英語"
     },
     {
       "name": "language_korean",
-      "value": "韓語"
+      "value": "韓国語"
     },
     {
       "name": "language_japanese",
-      "value": "日語"
+      "value": "日本語"
     },
     {
       "name": "account_management",
-      "value": "帳號管理"
+      "value": "アカウント管理"
     },
     {
       "name": "auto_checkin",
-      "value": "自動簽到"
+      "value": "自動チェックイン"
     },
     {
       "name": "home_tab_auto_hide",
-      "value": "自動隱藏首頁標籤列"
+      "value": "ホームタブを自動的に隠す"
     },
     {
       "name": "topic_detail_reply_button_auto_hide",
-      "value": "自動隱藏回覆按鈕"
+      "value": "返信ボタンを自動的に隠す"
     },
     {
       "name": "image_auto_load",
-      "value": "圖片自動載入"
+      "value": "画像を自動読み込み"
     },
     {
       "name": "wifi_only_images",
-      "value": "僅 Wi-Fi 載入圖片"
+      "value": "Wi-Fi のみで画像を読み込む"
     },
     {
       "name": "api_domain",
-      "value": "V2EX 站點"
+      "value": "V2EX サイト"
     },
     {
       "name": "theme",
-      "value": "主題"
+      "value": "テーマ"
     },
     {
       "name": "avatar_appearance",
-      "value": "頭像外觀"
+      "value": "アバターの外観"
     },
     {
       "name": "avatar_appearance_soft",
-      "value": "圓角"
+      "value": "ソフト"
     },
     {
       "name": "avatar_appearance_circle",
-      "value": "圓形"
+      "value": "円形"
     },
     {
       "name": "reply_display",
-      "value": "回覆顯示"
+      "value": "返信表示"
     },
     {
       "name": "reply_style",
-      "value": "回覆樣式"
+      "value": "返信スタイル"
     },
     {
       "name": "reply_action_alignment",
-      "value": "回覆按鈕對齊方式"
+      "value": "返信ボタンの配置"
     },
     {
       "name": "remember_read_position",
-      "value": "記住閱讀位置"
+      "value": "読書位置を記憶"
     },
     {
       "name": "base64_decode",
-      "value": "Base64 解碼"
+      "value": "Base64 デコード"
     },
     {
       "name": "base64_subtitle",
-      "value": "預設點擊查看，避免直接暴露電郵、微信等明文"
+      "value": "メール、WeChat などの平文を直接表示しないよう、初期設定ではタップして表示します。"
     },
     {
       "name": "threaded",
-      "value": "樓中樓"
+      "value": "スレッド表示"
     },
     {
       "name": "threaded_at",
-      "value": "樓中樓(@)"
+      "value": "スレッド表示（@）"
     },
     {
       "name": "threaded_redundant",
-      "value": "冗餘樓中樓"
+      "value": "冗長なスレッド表示"
     },
     {
       "name": "op_only",
-      "value": "只看樓主"
+      "value": "投稿者のみ"
     },
     {
       "name": "original",
-      "value": "原版"
+      "value": "元の表示"
     },
     {
       "name": "density_standard",
@@ -498,223 +498,223 @@
     },
     {
       "name": "density_compact",
-      "value": "緊湊"
+      "value": "コンパクト"
     },
     {
       "name": "smart_grip",
-      "value": "智感握姿"
+      "value": "スマートグリップ"
     },
     {
       "name": "follow_operation",
-      "value": "跟隨操作"
+      "value": "操作に追従"
     },
     {
       "name": "fixed_left",
-      "value": "固定左側"
+      "value": "左固定"
     },
     {
       "name": "fixed_right",
-      "value": "固定右側"
+      "value": "右固定"
     },
     {
       "name": "tap_to_view",
-      "value": "點擊查看"
+      "value": "タップして表示"
     },
     {
       "name": "inline_display",
-      "value": "文內顯示"
+      "value": "インライン表示"
     },
     {
       "name": "reading_preview_title",
-      "value": "一條關於 Next2V 的主題"
+      "value": "Next2V に関するトピック"
     },
     {
       "name": "reading_preview_intro",
-      "value": "這是閱讀文字縮放設定的即時預覽區域。拖動下面的滑桿後，正文、標題、列表、引用和程式碼會按同一比例縮放，用來接近實際主題詳情中的閱讀感受。"
+      "value": "ここは読書テキスト倍率のライブプレビュー領域です。下のスライダーを動かして本文、見出し、リスト、引用、コードをまとめて拡大縮小し、実際のトピック詳細に近い読書感を確認できます。"
     },
     {
       "name": "reading_preview_body",
-      "value": "V2EX 的討論通常包含短句、連結、引用和程式碼片段。預覽保持在頁面背景上，避免額外卡片影響對文字排版的判斷。"
+      "value": "V2EX の議論には通常、短い文、リンク、引用、コードスニペットが含まれます。プレビューはページ背景上に置かれ、余分なカードが文字組みの判断に影響しないようにしています。"
     },
     {
       "name": "reading_preview_quote",
-      "value": "> 如果一種設定能讓你不用停頓就讀完整段內容，它大概就是合適的。"
+      "value": "> 設定によって途中で止まらず段落を読み終えられるなら、おそらくそれが適切な設定です。"
     },
     {
       "name": "text_scale",
-      "value": "文字縮放"
+      "value": "テキスト倍率"
     },
     {
       "name": "restore_default",
-      "value": "恢復預設"
+      "value": "既定に戻す"
     },
     {
       "name": "restore_reading_scale_title",
-      "value": "恢復預設閱讀文字縮放設定"
+      "value": "読書テキスト倍率を既定に戻す"
     },
     {
       "name": "restore_reading_scale_message",
-      "value": "將文字縮放恢復為預設值。確定繼續嗎？"
+      "value": "テキスト倍率を既定値に戻します。続行しますか？"
     },
     {
       "name": "clear_cache",
-      "value": "清理快取"
+      "value": "キャッシュをクリア"
     },
     {
       "name": "clear_cache_message",
-      "value": "只會清理離線快取，不會清理登入狀態或偏好設定。確定繼續嗎？"
+      "value": "オフラインキャッシュのみをクリアします。ログイン状態と設定は保持されます。続行しますか？"
     },
     {
       "name": "clear_local_data",
-      "value": "清理本地資料"
+      "value": "ローカルデータをクリア"
     },
     {
       "name": "clear_local_data_message",
-      "value": "將清理本機儲存的稍後讀、關注節點、最近瀏覽、已讀狀態、草稿、搜尋歷史、通知快取和離線快取。登入狀態與偏好設定會保留。確定繼續嗎？"
+      "value": "ローカルに保存されたあとで読む項目、フォローノード、最近表示した項目、既読状態、下書き、検索履歴、通知キャッシュ、オフラインキャッシュをクリアします。ログイン状態と設定は保持されます。続行しますか？"
     },
     {
       "name": "read_cache_status_failed",
-      "value": "讀取快取狀態失敗"
+      "value": "キャッシュ状態の読み取りに失敗しました"
     },
     {
       "name": "clear_failed",
-      "value": "清理失敗"
+      "value": "クリアに失敗しました"
     },
     {
       "name": "debug_only",
-      "value": "僅 debug 構建可用"
+      "value": "デバッグビルドのみ"
     },
     {
       "name": "seed_failed",
-      "value": "Seed 失敗"
+      "value": "シードに失敗しました"
     },
     {
       "name": "offline_cache",
-      "value": "離線快取"
+      "value": "オフラインキャッシュ"
     },
     {
       "name": "cache_qa_seed",
-      "value": "快取 QA Seed"
+      "value": "キャッシュ QA シード"
     },
     {
       "name": "refresh_cache_status",
-      "value": "刷新快取狀態"
+      "value": "キャッシュ状態を更新"
     },
     {
       "name": "diagnostics",
-      "value": "診斷"
+      "value": "診断"
     },
     {
       "name": "logs",
-      "value": "日誌"
+      "value": "ログ"
     },
     {
       "name": "log_file",
-      "value": "日誌檔案"
+      "value": "ログファイル"
     },
     {
       "name": "no_local_log_files",
-      "value": "暫無可分享的本機日誌檔案"
+      "value": "共有できるローカルログファイルはありません"
     },
     {
       "name": "retained_local_log_files_count",
-      "value": "已保留 {count} 個本機日誌檔案"
+      "value": "ローカルログファイルを {count} 件保持"
     },
     {
       "name": "diagnostics_current_launch_recent_count",
-      "value": "本次啟動最近 {0} 條"
+      "value": "この起動での最近の件数 {0}"
     },
     {
       "name": "diagnostics_log_file_share_hint",
-      "value": "{0} · 點按分享"
+      "value": "{0} · タップして共有"
     },
     {
       "name": "current_log_with_time",
-      "value": "目前記錄 · {0}"
+      "value": "現在のログ · {0}"
     },
     {
       "name": "startup_log_with_time",
-      "value": "啟動記錄 · {0}"
+      "value": "起動ログ · {0}"
     },
     {
       "name": "retained_local_log_files_count_arg",
-      "value": "保留 {0} 個本機記錄檔"
+      "value": "ローカルログファイルを {0} 件保持"
     },
     {
       "name": "clear_boot_records",
-      "value": "清空本次啟動記錄"
+      "value": "この起動記録をクリア"
     },
     {
       "name": "no_log_files",
-      "value": "暫無日誌檔案"
+      "value": "ログファイルはありません"
     },
     {
       "name": "reopen_keeps_logs",
-      "value": "重新開啟應用後會保留最近啟動日誌"
+      "value": "アプリを再起動しても最近の起動ログは保持されます"
     },
     {
       "name": "no_diagnostics_logs",
-      "value": "暫無診斷日誌"
+      "value": "診断ログはありません"
     },
     {
       "name": "boot_records_cleared",
-      "value": "本次啟動記錄已清空"
+      "value": "この起動記録をクリアしました"
     },
     {
       "name": "current_log",
-      "value": "目前日誌"
+      "value": "現在のログ"
     },
     {
       "name": "startup_log",
-      "value": "啟動日誌"
+      "value": "起動ログ"
     },
     {
       "name": "unknown_time",
-      "value": "時間未知"
+      "value": "不明な時刻"
     },
     {
       "name": "updated_at",
-      "value": "更新於 %1$s"
+      "value": "%1$s に更新"
     },
     {
       "name": "share_file_unavailable_copied",
-      "value": "分享檔案不可用，已複製，可手動貼上"
+      "value": "共有ファイルを利用できないため、手動貼り付け用にコピーしました"
     },
     {
       "name": "share_failed",
-      "value": "分享失敗"
+      "value": "共有に失敗しました"
     },
     {
       "name": "proxy_connection",
-      "value": "代理連線"
+      "value": "プロキシ接続"
     },
     {
       "name": "use_proxy",
-      "value": "使用代理"
+      "value": "プロキシを使用"
     },
     {
       "name": "system_proxy",
-      "value": "系統代理"
+      "value": "システムプロキシ"
     },
     {
       "name": "add_proxy",
-      "value": "新增代理"
+      "value": "プロキシを追加"
     },
     {
       "name": "testing_connection",
-      "value": "正在測試連線…"
+      "value": "接続をテスト中…"
     },
     {
       "name": "test_connection",
-      "value": "測試連線"
+      "value": "接続をテスト"
     },
     {
       "name": "proxy_info",
-      "value": "代理資訊"
+      "value": "プロキシ情報"
     },
     {
       "name": "proxy_type",
-      "value": "代理類型"
+      "value": "プロキシタイプ"
     },
     {
       "name": "http_proxy",
@@ -722,7 +722,7 @@
     },
     {
       "name": "supports_auth",
-      "value": "支援使用者名稱和密碼驗證"
+      "value": "ユーザー名/パスワード認証に対応"
     },
     {
       "name": "https_proxy_entry",
@@ -730,31 +730,31 @@
     },
     {
       "name": "https_proxy_entry_subtitle",
-      "value": "代理伺服器使用 TLS，不是訪問 HTTPS 目標站"
+      "value": "HTTPS の対象サイトではなく、プロキシサーバーが TLS を使用します"
     },
     {
       "name": "socks5_auth_optional",
-      "value": "使用者名稱和密碼可選"
+      "value": "ユーザー名とパスワードは任意"
     },
     {
       "name": "invalid_proxy_host",
-      "value": "請輸入有效代理主機"
+      "value": "有効なプロキシホストを入力してください"
     },
     {
       "name": "invalid_proxy_port",
-      "value": "連接埠需為 1-65535"
+      "value": "ポートは 1〜65535 である必要があります"
     },
     {
       "name": "connection_test_success",
-      "value": "連接成功（HTTP {0}）"
+      "value": "接続に成功しました（HTTP {0}）"
     },
     {
       "name": "connection_test_failed",
-      "value": "連接失敗：HTTP {0}"
+      "value": "接続に失敗しました: HTTP {0}"
     },
     {
       "name": "confirm_delete_proxy_message",
-      "value": "確定刪除「{0}」？"
+      "value": "“{0}”を削除しますか？"
     },
     {
       "name": "socks5_proxy",
@@ -762,15 +762,15 @@
     },
     {
       "name": "auth_not_supported",
-      "value": "不支援驗證"
+      "value": "認証はサポートされていません"
     },
     {
       "name": "proxy_parameters",
-      "value": "代理參數"
+      "value": "プロキシパラメーター"
     },
     {
       "name": "authentication",
-      "value": "驗證"
+      "value": "認証"
     },
     {
       "name": "actions",
@@ -778,71 +778,71 @@
     },
     {
       "name": "delete_proxy",
-      "value": "刪除代理"
+      "value": "プロキシを削除"
     },
     {
       "name": "proxy_name_placeholder",
-      "value": "名稱（可選）"
+      "value": "名前（任意）"
     },
     {
       "name": "default_server_port",
-      "value": "預設使用伺服器:連接埠"
+      "value": "既定で server:port を使用"
     },
     {
       "name": "server",
-      "value": "伺服器"
+      "value": "サーバー"
     },
     {
       "name": "port",
-      "value": "連接埠"
+      "value": "ポート"
     },
     {
       "name": "username_optional",
-      "value": "使用者名稱（可選）"
+      "value": "ユーザー名（任意）"
     },
     {
       "name": "password_optional",
-      "value": "密碼（可選）"
+      "value": "パスワード（任意）"
     },
     {
       "name": "bypass_list_optional",
-      "value": "繞過列表（可選）"
+      "value": "バイパスリスト（任意）"
     },
     {
       "name": "one_domain_or_ip_per_line",
-      "value": "每行一個網域或 IP"
+      "value": "1 行に 1 つのドメインまたは IP"
     },
     {
       "name": "built_in_options",
-      "value": "內建選項"
+      "value": "組み込みオプション"
     },
     {
       "name": "proxy_config",
-      "value": "代理配置"
+      "value": "プロキシ設定"
     },
     {
       "name": "socks5_auth_unsupported",
-      "value": "SOCKS5 暫不支援使用者名稱/密碼驗證"
+      "value": "SOCKS5 はまだユーザー名/パスワード認証に対応していません"
     },
     {
       "name": "testing",
-      "value": "測試中…"
+      "value": "テスト中…"
     },
     {
       "name": "profile_switched",
-      "value": "已切換配置"
+      "value": "プロファイルを切り替えました"
     },
     {
       "name": "switch_failed",
-      "value": "切換失敗"
+      "value": "切り替えに失敗しました"
     },
     {
       "name": "test_failed",
-      "value": "測試失敗"
+      "value": "テストに失敗しました"
     },
     {
       "name": "proxy_config_title",
-      "value": "代理配置"
+      "value": "プロキシ設定"
     },
     {
       "name": "proxy_not_configured",
@@ -850,271 +850,271 @@
     },
     {
       "name": "proxy_summary_http",
-      "value": "HTTP 代理 · {0}:{1}"
+      "value": "HTTP プロキシ · {0}:{1}"
     },
     {
       "name": "proxy_summary_https",
-      "value": "HTTPS 代理端點 · {0}:{1}"
+      "value": "HTTPS プロキシエンドポイント · {0}:{1}"
     },
     {
       "name": "proxy_summary_socks5",
-      "value": "SOCKS5 代理 · {0}:{1}"
+      "value": "SOCKS5 プロキシ · {0}:{1}"
     },
     {
       "name": "proxy_summary_http_not_configured",
-      "value": "HTTP 代理 · 未設定"
+      "value": "HTTP プロキシ · 未設定"
     },
     {
       "name": "proxy_summary_socks5_not_configured",
-      "value": "SOCKS5 代理 · 未設定"
+      "value": "SOCKS5 プロキシ · 未設定"
     },
     {
       "name": "local_data",
-      "value": "本機資料"
+      "value": "ローカルデータ"
     },
     {
       "name": "cache_subtitle_updated",
-      "value": "清單 {0} 組 · 詳情 {1} 篇 · 更新於 {2}"
+      "value": "一覧 {0} · 詳細 {1} · 更新 {2}"
     },
     {
       "name": "cache_subtitle",
-      "value": "清單 {0} 組 · 詳情 {1} 篇"
+      "value": "一覧 {0} · 詳細 {1}"
     },
     {
       "name": "seed_all_cache_scenarios",
-      "value": "Seed 全部快取場景"
+      "value": "すべてのキャッシュシナリオをシード"
     },
     {
       "name": "seed_large_list_file_cache",
-      "value": "Seed 大型清單檔案快取"
+      "value": "大きな一覧ファイルキャッシュをシード"
     },
     {
       "name": "seed_mixed_row_cache",
-      "value": "Seed 混合列快取"
+      "value": "混在行キャッシュをシード"
     },
     {
       "name": "seed_invalid_path_row",
-      "value": "Seed 無效路徑列"
+      "value": "無効なパス行をシード"
     },
     {
       "name": "seed_orphan_file",
-      "value": "Seed 孤立檔案"
+      "value": "孤立ファイルをシード"
     },
     {
       "name": "seed_missing_file_row",
-      "value": "Seed 遺失檔案列"
+      "value": "欠落ファイル行をシード"
     },
     {
       "name": "seed_hash_mismatch_row",
-      "value": "Seed Hash 不相符列"
+      "value": "ハッシュ不一致行をシード"
     },
     {
       "name": "verify_hash_repair",
-      "value": "驗證 Hash 修復"
+      "value": "ハッシュ修復を検証"
     },
     {
       "name": "seed_expired_row",
-      "value": "Seed 過期列"
+      "value": "期限切れ行をシード"
     },
     {
       "name": "reset_seed_cache",
-      "value": "重設 Seed 快取"
+      "value": "シードキャッシュをリセット"
     },
     {
       "name": "account_qa_seed",
-      "value": "多賬戶 QA Seed"
+      "value": "アカウント QA シード"
     },
     {
       "name": "seed_account_records",
-      "value": "Seed 賬戶記錄"
+      "value": "アカウント記録をシード"
     },
     {
       "name": "reset_seeded_accounts",
-      "value": "重設 Seed 賬戶"
+      "value": "シード済みアカウントをリセット"
     },
     {
       "name": "visible_home_nodes_reorder_hint",
-      "value": "已顯示欄目  長按欄目可拖曳排序"
+      "value": "表示中の列 · 長押しで並べ替え"
     },
     {
       "name": "add_home_column",
-      "value": "新增欄目"
+      "value": "列を追加"
     },
     {
       "name": "hide",
-      "value": "隱藏"
+      "value": "隠す"
     },
     {
       "name": "node_name_placeholder",
-      "value": "節點名稱（例如 create）"
+      "value": "ノード名（例: create）"
     },
     {
       "name": "add_node_column",
-      "value": "新增節點欄目"
+      "value": "ノード列を追加"
     },
     {
       "name": "invalid_node_name",
-      "value": "請輸入有效節點名稱"
+      "value": "有効なノード名を入力してください"
     },
     {
       "name": "node_column_exists",
-      "value": "節點欄目已存在"
+      "value": "ノード列は既に存在します"
     },
     {
       "name": "web_session_validation_failed",
-      "value": "Web 工作階段驗證失敗"
+      "value": "Web セッション検証に失敗しました"
     },
     {
       "name": "two_factor_relogin_required",
-      "value": "V2EX 需要完成兩步驗證，請重新登入"
+      "value": "V2EX では二要素認証が必要です。再度サインインしてください"
     },
     {
       "name": "two_factor_required",
-      "value": "V2EX 需要完成兩步驗證"
+      "value": "V2EX では二要素認証が必要です"
     },
     {
       "name": "login_validation_failed",
-      "value": "登入狀態驗證失敗"
+      "value": "サインイン検証に失敗しました"
     },
     {
       "name": "token_info_failed",
-      "value": "Token 資訊取得失敗"
+      "value": "トークン情報の取得に失敗しました"
     },
     {
       "name": "clear_token_failed",
-      "value": "清除 Token 失敗"
+      "value": "トークンのクリアに失敗しました"
     },
     {
       "name": "clear_session_failed",
-      "value": "清除工作階段失敗"
+      "value": "セッションのクリアに失敗しました"
     },
     {
       "name": "clear_cookie_failed",
-      "value": "清除 Cookie 失敗"
+      "value": "Cookie のクリアに失敗しました"
     },
     {
       "name": "read_account_failed",
-      "value": "讀取帳戶資訊失敗"
+      "value": "アカウント情報の読み取りに失敗しました"
     },
     {
       "name": "already_checked_in_today",
-      "value": "今日已簽到"
+      "value": "今日は既にチェックイン済みです"
     },
     {
       "name": "checkin_completed",
-      "value": "簽到完成"
+      "value": "チェックインが完了しました"
     },
     {
       "name": "checkin_failed",
-      "value": "簽到失敗"
+      "value": "チェックインに失敗しました"
     },
     {
       "name": "nav_refresh",
-      "value": "刷新"
+      "value": "更新"
     },
     {
       "name": "nav_filter",
-      "value": "篩選"
+      "value": "フィルター"
     },
     {
       "name": "nav_save_login",
-      "value": "儲存登入"
+      "value": "ログインを保存"
     },
     {
       "name": "nav_reload",
-      "value": "重新載入"
+      "value": "再読み込み"
     },
     {
       "name": "nav_save_image",
-      "value": "儲存圖片"
+      "value": "画像を保存"
     },
     {
       "name": "account_v2ex_user",
-      "value": "V2EX 用戶"
+      "value": "V2EX ユーザー"
     },
     {
       "name": "account_token_scope_arg",
-      "value": "Token 權限: %s"
+      "value": "トークン範囲: %s"
     },
     {
       "name": "account_token_expiration_arg",
-      "value": "到期: %s"
+      "value": "有効期限: %s"
     },
     {
       "name": "account_token_last_used_arg",
-      "value": "最後使用: %s"
+      "value": "最終使用: %s"
     },
     {
       "name": "account_api_quota_arg",
-      "value": "API 額度: %s / %s"
+      "value": "API クォータ: %s / %s"
     },
     {
       "name": "account_rate_limit_reset_arg",
-      "value": "重設時間: %s"
+      "value": "リセット時刻: %s"
     },
     {
       "name": "topic_action_site_favorite",
-      "value": "站內收藏"
+      "value": "サイトのお気に入り"
     },
     {
       "name": "topic_action_follow_node",
-      "value": "關注節點"
+      "value": "ノードをフォロー"
     },
     {
       "name": "add_x_format",
-      "value": "新增 {0}"
+      "value": "{0} を追加"
     },
     {
       "name": "proxy_profile_not_found",
-      "value": "設定檔不存在"
+      "value": "プロファイルが存在しません"
     },
     {
       "name": "default_proxy_profile_name",
-      "value": "代理設定"
+      "value": "プロキシ設定"
     },
     {
       "name": "common_apply",
-      "value": "套用"
+      "value": "適用"
     },
     {
       "name": "common_apply_search",
-      "value": "套用搜尋"
+      "value": "検索を適用"
     },
     {
       "name": "common_searching",
-      "value": "搜尋中"
+      "value": "検索中"
     },
     {
       "name": "common_all",
-      "value": "全部"
+      "value": "すべて"
     },
     {
       "name": "common_topic",
-      "value": "主題"
+      "value": "トピック"
     },
     {
       "name": "common_topics",
-      "value": "主題"
+      "value": "トピック"
     },
     {
       "name": "common_node",
-      "value": "節點"
+      "value": "ノード"
     },
     {
       "name": "common_nodes",
-      "value": "節點"
+      "value": "ノード"
     },
     {
       "name": "common_user",
-      "value": "用戶"
+      "value": "ユーザー"
     },
     {
       "name": "common_local",
-      "value": "本機"
+      "value": "ローカル"
     },
     {
       "name": "common_web",
-      "value": "網頁"
+      "value": "Web"
     },
     {
       "name": "common_author",
@@ -1122,315 +1122,315 @@
     },
     {
       "name": "common_sort",
-      "value": "排序"
+      "value": "並べ替え"
     },
     {
       "name": "common_time",
-      "value": "時間"
+      "value": "時刻"
     },
     {
       "name": "common_relevance",
-      "value": "相關"
+      "value": "関連度"
     },
     {
       "name": "common_descending",
-      "value": "倒序"
+      "value": "降順"
     },
     {
       "name": "common_ascending",
-      "value": "正序"
+      "value": "昇順"
     },
     {
       "name": "common_time_range",
-      "value": "時間範圍"
+      "value": "期間"
     },
     {
       "name": "common_unlimited",
-      "value": "不限"
+      "value": "いつでも"
     },
     {
       "name": "common_one_day",
-      "value": "一天"
+      "value": "1 日"
     },
     {
       "name": "common_one_week",
-      "value": "一週"
+      "value": "1 週間"
     },
     {
       "name": "common_one_month",
-      "value": "一個月"
+      "value": "1 か月"
     },
     {
       "name": "common_one_year",
-      "value": "一年"
+      "value": "1 年"
     },
     {
       "name": "common_selected",
-      "value": "已選"
+      "value": "選択済み"
     },
     {
       "name": "common_copied",
-      "value": "已複製"
+      "value": "コピーしました"
     },
     {
       "name": "common_copy_username",
-      "value": "複製用戶名"
+      "value": "ユーザー名をコピー"
     },
     {
       "name": "common_copy_code",
-      "value": "已複製程式碼"
+      "value": "コードをコピーしました"
     },
     {
       "name": "common_copy_decoded_text",
-      "value": "已複製解碼文字"
+      "value": "デコード済みテキストをコピーしました"
     },
     {
       "name": "common_no_more",
-      "value": "沒有更多了"
+      "value": "これ以上ありません"
     },
     {
       "name": "common_click_preview",
-      "value": "點按預覽"
+      "value": "タップしてプレビュー"
     },
     {
       "name": "common_image_auto_load_off",
-      "value": "圖片自動載入已關閉"
+      "value": "画像の自動読み込みはオフです"
     },
     {
       "name": "common_invalid_floor",
-      "value": "請輸入有效樓層號"
+      "value": "有効な階番号を入力してください"
     },
     {
       "name": "search_result_type",
-      "value": "結果類型"
+      "value": "結果タイプ"
     },
     {
       "name": "search_filter_nodes_library",
-      "value": "節點庫"
+      "value": "ノードライブラリ"
     },
     {
       "name": "search_topics_nodes_users_placeholder",
-      "value": "搜尋主題、節點、用戶"
+      "value": "トピック、ノード、ユーザーを検索"
     },
     {
       "name": "search_browser_v2ex_topics",
-      "value": "使用瀏覽器搜尋 V2EX 主題"
+      "value": "ブラウザーで V2EX トピックを検索"
     },
     {
       "name": "search_enter_keyword_to_start",
-      "value": "輸入關鍵字開始搜尋"
+      "value": "キーワードを入力して検索を開始"
     },
     {
       "name": "search_open_web_search",
-      "value": "開啟網頁搜尋"
+      "value": "Web 検索を開く"
     },
     {
       "name": "search_history",
-      "value": "搜尋歷史"
+      "value": "検索履歴"
     },
     {
       "name": "search_user_related_topics",
-      "value": "用戶相關主題"
+      "value": "ユーザー関連トピック"
     },
     {
       "name": "search_topic_results",
-      "value": "主題結果"
+      "value": "トピック結果"
     },
     {
       "name": "search_no_local_user_topics",
-      "value": "沒有符合該用戶的本機主題"
+      "value": "このユーザーに一致するローカルトピックはありません"
     },
     {
       "name": "search_no_topics",
-      "value": "沒有符合的主題"
+      "value": "一致するトピックはありません"
     },
     {
       "name": "search_sov2ex",
-      "value": "使用 SOV2EX 站內搜尋"
+      "value": "SOV2EX サイト検索を使用"
     },
     {
       "name": "search_external_summary",
-      "value": "官方 API 暫無主題搜尋，使用系統瀏覽器搜尋 V2EX 主題"
+      "value": "公式 API にはトピック検索がありません。システムブラウザーで V2EX トピックを検索してください"
     },
     {
       "name": "search_local_with_nodes_summary",
-      "value": "在收藏 / 最近瀏覽 / 關注節點 / 離線快取 / 節點庫中搜尋"
+      "value": "お気に入り、最近表示、フォローノード、オフラインキャッシュ、ノードライブラリを検索"
     },
     {
       "name": "search_local_summary",
-      "value": "在收藏 / 最近瀏覽 / 關注節點 / 離線快取中搜尋"
+      "value": "お気に入り、最近表示、フォローノード、オフラインキャッシュを検索"
     },
     {
       "name": "search_index_loading",
-      "value": "索引載入中"
+      "value": "インデックスを読み込み中"
     },
     {
       "name": "search_cache_loading",
-      "value": "快取載入中"
+      "value": "キャッシュを読み込み中"
     },
     {
       "name": "search_nodes_loading",
-      "value": "節點載入中"
+      "value": "ノードを読み込み中"
     },
     {
       "name": "search_nodes_library_empty_hint",
-      "value": "節點庫和你關注的節點會顯示在這裡"
+      "value": "ノードライブラリとフォロー中のノードがここに表示されます"
     },
     {
       "name": "search_followed_nodes_empty_hint",
-      "value": "你關注的節點會顯示在這裡"
+      "value": "フォロー中のノードがここに表示されます"
     },
     {
       "name": "search_no_nodes",
-      "value": "沒有符合的節點"
+      "value": "一致するノードはありません"
     },
     {
       "name": "search_filter_hint",
-      "value": "輸入關鍵字後點按搜尋，篩選在右上角"
+      "value": "キーワードを入力して検索をタップしてください。フィルターは右上にあります"
     },
     {
       "name": "about_app_info",
-      "value": "應用資訊"
+      "value": "アプリ情報"
     },
     {
       "name": "about_project",
-      "value": "專案"
+      "value": "プロジェクト"
     },
     {
       "name": "about_acknowledgements",
-      "value": "致謝"
+      "value": "謝辞"
     },
     {
       "name": "about_open_source_license",
-      "value": "開源授權"
+      "value": "オープンソースライセンス"
     },
     {
       "name": "about_tagline",
-      "value": "HarmonyOS 原生 V2EX 客戶端"
+      "value": "ネイティブ HarmonyOS V2EX クライアント"
     },
     {
       "name": "about_version_format",
-      "value": "版本 {0}"
+      "value": "バージョン {0}"
     },
     {
       "name": "about_project_url",
-      "value": "專案地址"
+      "value": "プロジェクト URL"
     },
     {
       "name": "about_developer",
-      "value": "開發者"
+      "value": "開発者"
     },
     {
       "name": "about_v2next_ack",
-      "value": "感謝 V2Next 專案在 V2EX 客戶端體驗上的探索。"
+      "value": "V2EX クライアント体験を探求した V2Next プロジェクトに感謝します。"
     },
     {
       "name": "about_source_license",
-      "value": "原始碼授權"
+      "value": "ソースコードライセンス"
     },
     {
       "name": "about_third_party_client",
-      "value": "Next2V 是面向 V2EX 的第三方客戶端。"
+      "value": "Next2V は V2EX のサードパーティークライアントです。"
     },
     {
       "name": "about_copyright",
-      "value": "應用原始碼按 MIT License 開源；V2EX 名稱、標誌和內容歸其各自權利人所有。"
+      "value": "アプリのソースコードは MIT License の下でオープンソース化されています。V2EX の名称、商標、コンテンツはそれぞれの権利者に帰属します。"
     },
     {
       "name": "about_app_name",
-      "value": "應用名稱"
+      "value": "アプリ名"
     },
     {
       "name": "about_platform",
-      "value": "平台"
+      "value": "プラットフォーム"
     },
     {
       "name": "empty_no_favorite_nodes",
-      "value": "還沒有收藏節點"
+      "value": "お気に入りノードはまだありません"
     },
     {
       "name": "empty_no_favorite_topics",
-      "value": "還沒有收藏主題"
+      "value": "お気に入りトピックはまだありません"
     },
     {
       "name": "empty_no_local_followed_nodes",
-      "value": "還沒有本機關注節點"
+      "value": "ローカルのフォローノードはまだありません"
     },
     {
       "name": "saved_locally_on_format",
-      "value": "本機關注於 {0}"
+      "value": "{0} にローカル保存"
     },
     {
       "name": "empty_no_read_later_topics",
-      "value": "還沒有稍後讀主題"
+      "value": "あとで読むトピックはまだありません"
     },
     {
       "name": "saved_on_label",
-      "value": "儲存於"
+      "value": "保存日"
     },
     {
       "name": "draft_saved_on_format",
-      "value": "已儲存於 {0}"
+      "value": "{0} に保存"
     },
     {
       "name": "posted_topic_format",
-      "value": "已發帖：{0}"
+      "value": "投稿済み: {0}"
     },
     {
       "name": "posted_topic",
-      "value": "已發帖"
+      "value": "投稿済み"
     },
     {
       "name": "empty_no_recent_views",
-      "value": "還沒有最近瀏覽記錄"
+      "value": "最近表示した項目はまだありません"
     },
     {
       "name": "viewed_on_label",
-      "value": "瀏覽於"
+      "value": "表示日"
     },
     {
       "name": "two_factor_completed",
-      "value": "兩步驗證已完成"
+      "value": "二要素認証が完了しました"
     },
     {
       "name": "image_saved_to_gallery",
-      "value": "已儲存到圖庫"
+      "value": "ギャラリーに保存しました"
     },
     {
       "name": "image_save_cancelled",
-      "value": "已取消儲存"
+      "value": "保存をキャンセルしました"
     },
     {
       "name": "username_or_email_placeholder",
-      "value": "用戶名或電子郵件"
+      "value": "ユーザー名またはメール"
     },
     {
       "name": "login_form_refetched",
-      "value": "已重新取得登入表單，請重新輸入密碼"
+      "value": "ログインフォームを更新しました。パスワードをもう一度入力してください。"
     },
     {
       "name": "login_username_password_required",
-      "value": "請輸入用戶名和密碼"
+      "value": "ユーザー名とパスワードを入力してください"
     },
     {
       "name": "login_saved",
-      "value": "登入已儲存"
+      "value": "ログインを保存しました"
     },
     {
       "name": "login_cookie_missing",
-      "value": "未取得登入 Cookie，請確認已完成登入"
+      "value": "ログイン Cookie を取得できませんでした。ログインが完了しているか確認してください。"
     },
     {
       "name": "login_cookie_invalid",
-      "value": "Cookie 登入狀態無效，請確認已完成登入"
+      "value": "Cookie のログイン状態が無効です。ログインが完了しているか確認してください。"
     },
     {
       "name": "login_password_placeholder",
-      "value": "密碼"
+      "value": "パスワード"
     },
     {
       "name": "login_captcha_placeholder",
-      "value": "驗證碼"
+      "value": "Captcha"
     },
     {
       "name": "login_button_preparing",
@@ -1438,163 +1438,163 @@
     },
     {
       "name": "login_button_logging_in",
-      "value": "登入中…"
+      "value": "サインイン中…"
     },
     {
       "name": "login_button_label",
-      "value": "登入"
+      "value": "サインイン"
     },
     {
       "name": "login_form_not_loaded",
-      "value": "登入表單未載入完成，請稍後重試"
+      "value": "ログインフォームが読み込まれていません。もう一度お試しください"
     },
     {
       "name": "login_captcha_form_not_loaded",
-      "value": "登入驗證碼表單未載入完成，請重新取得驗證碼"
+      "value": "Captcha フォームが読み込まれていません。更新してください"
     },
     {
       "name": "login_success",
-      "value": "登入成功"
+      "value": "ログインに成功しました"
     },
     {
       "name": "two_factor_title",
-      "value": "雙重驗證"
+      "value": "二要素認証"
     },
     {
       "name": "two_factor_description",
-      "value": "V2EX 需要完成雙重驗證後才能繼續存取帳號內容。"
+      "value": "アカウント内容へのアクセスを続けるには、V2EX の二要素認証が必要です。"
     },
     {
       "name": "two_factor_code_placeholder",
-      "value": "輸入 6 位驗證碼"
+      "value": "6 桁のコードを入力"
     },
     {
       "name": "two_factor_verifying",
-      "value": "驗證中…"
+      "value": "検証中…"
     },
     {
       "name": "two_factor_verify_button",
-      "value": "完成驗證"
+      "value": "検証"
     },
     {
       "name": "two_factor_later",
-      "value": "稍後再說"
+      "value": "後で"
     },
     {
       "name": "login_to_view_topics",
-      "value": "登入後可查看收藏主題"
+      "value": "お気に入りトピックを表示するにはサインインしてください"
     },
     {
       "name": "login_to_view_nodes",
-      "value": "登入後可查看收藏節點"
+      "value": "お気に入りノードを表示するにはサインインしてください"
     },
     {
       "name": "web_login_opening",
-      "value": "正在打開網頁登入..."
+      "value": "Web ログインを開いています..."
     },
     {
       "name": "web_login_loading_url",
-      "value": "正在載入 {0}"
+      "value": "{0} を読み込み中"
     },
     {
       "name": "web_login_loading_page",
-      "value": "正在載入網頁登入..."
+      "value": "Web ログインを読み込み中..."
     },
     {
       "name": "web_login_load_failed",
-      "value": "網頁登入載入失敗"
+      "value": "Web ログインの読み込みに失敗しました"
     },
     {
       "name": "web_login_saving",
-      "value": "正在儲存登入狀態…"
+      "value": "ログイン状態を保存中..."
     },
     {
       "name": "web_login_opening_url",
-      "value": "正在打開 {0}"
+      "value": "{0} を開いています"
     },
     {
       "name": "web_login_not_complete",
-      "value": "網頁登入尚未完成"
+      "value": "Web ログインはまだ完了していません"
     },
     {
       "name": "reply_submitted",
-      "value": "回覆已提交"
+      "value": "返信を送信しました"
     },
     {
       "name": "submit_completed",
-      "value": "已提交"
+      "value": "送信しました"
     },
     {
       "name": "confirm_reply_action_format",
-      "value": "確定{0} {1} 的回覆嗎？"
+      "value": "{0} を {1} の返信に行いますか？"
     },
     {
       "name": "this_user",
-      "value": "該用戶"
+      "value": "このユーザー"
     },
     {
       "name": "already_thanked",
-      "value": "已經感謝過"
+      "value": "既に感謝済みです"
     },
     {
       "name": "loaded_count_format",
-      "value": "已載入 {0} / {1}"
+      "value": "読み込み済み {0} / {1}"
     },
     {
       "name": "load_all_replies_warning_format",
-      "value": "該主題有 {0} 則回覆，載入全部回覆可能需要較長時間。\n\n是否繼續載入以啟用完整的樓中樓檢視？"
+      "value": "このトピックには {0} 件の返信があります。すべての返信の読み込みには時間がかかる場合があります。\n\n完全なスレッド表示を有効にするため読み込みを続行しますか？"
     },
     {
       "name": "favorited",
-      "value": "已收藏"
+      "value": "お気に入りに追加しました"
     },
     {
       "name": "unfavorited",
-      "value": "已取消收藏"
+      "value": "お気に入りを解除しました"
     },
     {
       "name": "thanked",
-      "value": "已感謝"
+      "value": "感謝しました"
     },
     {
       "name": "action_done_format",
-      "value": "已{0}"
+      "value": "{0} 完了"
     },
     {
       "name": "user_topics_hidden",
-      "value": "主題列表已隱藏"
+      "value": "トピック一覧は非表示です"
     },
     {
       "name": "followed",
-      "value": "已關注"
+      "value": "フォローしました"
     },
     {
       "name": "unfollowed",
-      "value": "已取消關注"
+      "value": "フォローを解除しました"
     },
     {
       "name": "blocked",
-      "value": "已封鎖"
+      "value": "ブロックしました"
     },
     {
       "name": "unblocked",
-      "value": "已取消封鎖"
+      "value": "ブロックを解除しました"
     },
     {
       "name": "user_load_failed",
-      "value": "用戶資訊載入失敗"
+      "value": "ユーザー情報の読み込みに失敗しました"
     },
     {
       "name": "discover_today_hot",
-      "value": "今日熱議"
+      "value": "今日のホットトピック"
     },
     {
       "name": "discover_hot",
-      "value": "熱議"
+      "value": "ホット"
     },
     {
       "name": "discover_latest_topics",
-      "value": "最新主題"
+      "value": "最新トピック"
     },
     {
       "name": "discover_recent_updates",
@@ -1602,83 +1602,83 @@
     },
     {
       "name": "discover_site_rank",
-      "value": "全站熱榜"
+      "value": "サイト全体のホット"
     },
     {
       "name": "node_selected_format",
-      "value": "已選擇節點：{0}"
+      "value": "選択したノード: {0}"
     },
     {
       "name": "node_cleared",
-      "value": "已清空節點"
+      "value": "ノードをクリアしました"
     },
     {
       "name": "storage_written_format",
-      "value": "已寫入 {0} 行 / {1} 個檔案"
+      "value": "{0} 行 / {1} ファイルを書き込みました"
     },
     {
       "name": "v2ex_tab_tech",
-      "value": "技術"
+      "value": "テック"
     },
     {
       "name": "v2ex_tab_creative",
-      "value": "創意"
+      "value": "クリエイティブ"
     },
     {
       "name": "v2ex_tab_play",
-      "value": "好玩"
+      "value": "遊び"
     },
     {
       "name": "v2ex_tab_jobs",
-      "value": "酷工作"
+      "value": "仕事"
     },
     {
       "name": "v2ex_tab_deals",
-      "value": "交易"
+      "value": "お得情報"
     },
     {
       "name": "v2ex_tab_city",
-      "value": "城市"
+      "value": "都市"
     },
     {
       "name": "v2ex_tab_qna",
-      "value": "問與答"
+      "value": "Q&A"
     },
     {
       "name": "v2ex_tab_hot",
-      "value": "最熱"
+      "value": "ホット"
     },
     {
       "name": "reply_submit",
-      "value": "提交"
+      "value": "送信"
     },
     {
       "name": "reply_submitting",
-      "value": "提交中"
+      "value": "送信中"
     },
     {
       "name": "reply_content_required",
-      "value": "回覆內容不能為空"
+      "value": "返信内容を空にすることはできません"
     },
     {
       "name": "reply_login_required",
-      "value": "請先登入"
+      "value": "先にログインしてください"
     },
     {
       "name": "reply_confirm_submit_sheet",
-      "value": "確定提交這則回覆嗎？"
+      "value": "この返信を送信しますか？"
     },
     {
       "name": "reply_confirm_submit_page_format",
-      "value": "確定向{0}提交回覆嗎？\n\nV2EX 回覆通常至少消耗 5 銅幣，提交後會修改你的帳號狀態。"
+      "value": "{0} に返信を送信しますか？\n\nV2EX の返信には通常少なくとも 5 copper coins が必要で、アカウント状態が変更されます。"
     },
     {
       "name": "reply_current_topic",
-      "value": "當前主題"
+      "value": "現在のトピック"
     },
     {
       "name": "discover_rank",
-      "value": "熱榜"
+      "value": "ランキング"
     },
     {
       "name": "discover_latest",
@@ -1690,27 +1690,27 @@
     },
     {
       "name": "discover_section_saved_nodes",
-      "value": "關注節點"
+      "value": "フォローノード"
     },
     {
       "name": "discover_section_recent_nodes",
-      "value": "最近瀏覽節點"
+      "value": "最近表示したノード"
     },
     {
       "name": "discover_node_navigation",
-      "value": "節點導航"
+      "value": "ノードナビゲーション"
     },
     {
       "name": "discover_node_navigation_hottest",
-      "value": "最熱節點"
+      "value": "最もホットなノード"
     },
     {
       "name": "discover_node_navigation_recently_created",
-      "value": "最近新增節點"
+      "value": "最近作成されたノード"
     },
     {
       "name": "search_source_favorite",
-      "value": "收藏"
+      "value": "保存済み"
     },
     {
       "name": "search_source_recent",
@@ -1718,39 +1718,39 @@
     },
     {
       "name": "search_source_followed",
-      "value": "關注"
+      "value": "フォロー中"
     },
     {
       "name": "search_source_nodes_library",
-      "value": "節點庫"
+      "value": "ノードライブラリ"
     },
     {
       "name": "search_source_cache_list",
-      "value": "快取（清單）"
+      "value": "キャッシュ（一覧）"
     },
     {
       "name": "search_source_cache_detail",
-      "value": "快取（詳情）"
+      "value": "キャッシュ（詳細）"
     },
     {
       "name": "relative_just_now",
-      "value": "剛剛"
+      "value": "たった今"
     },
     {
       "name": "relative_minutes_ago",
-      "value": "{0} 分鐘前"
+      "value": "{0} 分前"
     },
     {
       "name": "relative_hours_ago",
-      "value": "{0} 小時前"
+      "value": "{0} 時間前"
     },
     {
       "name": "relative_days_ago",
-      "value": "{0} 天前"
+      "value": "{0} 日前"
     },
     {
       "name": "relative_months_ago",
-      "value": "{0} 個月前"
+      "value": "{0} か月前"
     },
     {
       "name": "relative_years_ago",
@@ -1758,387 +1758,387 @@
     },
     {
       "name": "user_profile_location",
-      "value": "位置"
+      "value": "場所"
     },
     {
       "name": "user_profile_website",
-      "value": "網站"
+      "value": "Web サイト"
     },
     {
       "name": "user_profile_member_number",
-      "value": "第 {0} 號會員 · {1}"
+      "value": "メンバー #{0} · {1}"
     },
     {
       "name": "user_profile_no_topics",
-      "value": "暫無主題"
+      "value": "トピックはありません"
     },
     {
       "name": "user_profile_no_replies",
-      "value": "暫無回覆"
+      "value": "返信はありません"
     },
     {
       "name": "user_profile_view_all_topics",
-      "value": "檢視全部主題"
+      "value": "すべてのトピックを表示"
     },
     {
       "name": "user_profile_view_all_replies",
-      "value": "檢視全部回覆"
+      "value": "すべての返信を表示"
     },
     {
       "name": "user_profile_action_failed",
-      "value": "操作失敗"
+      "value": "操作に失敗しました"
     },
     {
       "name": "user_tab_topics_label",
-      "value": "主題"
+      "value": "トピック"
     },
     {
       "name": "user_tab_replies_label",
-      "value": "回覆"
+      "value": "返信"
     },
     {
       "name": "user_tab_topics_count",
-      "value": "主題 {0}"
+      "value": "トピック {0}"
     },
     {
       "name": "user_tab_replies_count",
-      "value": "回覆 {0}"
+      "value": "返信 {0}"
     },
     {
       "name": "user_action_follow",
-      "value": "關注"
+      "value": "フォロー"
     },
     {
       "name": "user_action_unfollow",
-      "value": "取消關注"
+      "value": "フォロー解除"
     },
     {
       "name": "user_action_block",
-      "value": "封鎖"
+      "value": "ブロック"
     },
     {
       "name": "user_action_unblock",
-      "value": "取消封鎖"
+      "value": "ブロック解除"
     },
     {
       "name": "node_no_topics",
-      "value": "暫無主題"
+      "value": "トピックはありません"
     },
     {
       "name": "node_load_failed",
-      "value": "節點主題載入失敗"
+      "value": "ノードトピックの読み込みに失敗しました"
     },
     {
       "name": "node_info_missing",
-      "value": "節點資訊缺失"
+      "value": "ノード情報がありません"
     },
     {
       "name": "node_picker_current_node_format",
-      "value": "當前：{0}"
+      "value": "現在: {0}"
     },
     {
       "name": "node_picker_helper",
-      "value": "點擊節點後會自動填入發帖草稿。"
+      "value": "ノードをクリックするとトピック下書きに自動入力されます。"
     },
     {
       "name": "node_picker_search_placeholder",
-      "value": "搜尋節點"
+      "value": "ノードを検索"
     },
     {
       "name": "node_topics_count",
-      "value": "{0} 個主題"
+      "value": "{0} 件のトピック"
     },
     {
       "name": "site_favorite_title",
-      "value": "站內收藏"
+      "value": "サイトのお気に入り"
     },
     {
       "name": "site_favorite_confirm",
-      "value": "確定{0}節點「{1}」嗎？"
+      "value": "{0} ノード「{1}」を確認しますか？"
     },
     {
       "name": "site_favorite_action_favorite",
-      "value": "收藏"
+      "value": "お気に入り"
     },
     {
       "name": "site_favorite_action_unfavorite",
-      "value": "取消收藏"
+      "value": "お気に入り解除"
     },
     {
       "name": "topic_editor_node_placeholder",
-      "value": "節點（如 create）"
+      "value": "ノード（例: create）"
     },
     {
       "name": "topic_editor_select_node",
-      "value": "選擇"
+      "value": "選択"
     },
     {
       "name": "topic_editor_title_placeholder",
-      "value": "標題"
+      "value": "タイトル"
     },
     {
       "name": "common_loading",
-      "value": "載入中…"
+      "value": "読み込み中…"
     },
     {
       "name": "media_youtube_video",
-      "value": "YouTube 影片"
+      "value": "YouTube 動画"
     },
     {
       "name": "media_vimeo_video",
-      "value": "Vimeo 影片"
+      "value": "Vimeo 動画"
     },
     {
       "name": "media_video_link",
-      "value": "影片"
+      "value": "動画"
     },
     {
       "name": "media_imgur_page",
-      "value": "Imgur 圖片頁"
+      "value": "Imgur ページ"
     },
     {
       "name": "media_v2ex_link",
-      "value": "V2EX 連結"
+      "value": "V2EX リンク"
     },
     {
       "name": "media_link_label",
-      "value": "連結"
+      "value": "リンク"
     },
     {
       "name": "api_error_auth_required",
-      "value": "請先登入"
+      "value": "サインインしてください"
     },
     {
       "name": "api_error_web_session_expired",
-      "value": "Web 工作階段已失效，請重新登入"
+      "value": "Web セッションの期限が切れました。再度サインインしてください"
     },
     {
       "name": "api_error_invalid_username",
-      "value": "無效的使用者名稱"
+      "value": "無効なユーザー名"
     },
     {
       "name": "api_error_invalid_topic_id",
-      "value": "無效的主題 ID"
+      "value": "無効なトピック ID"
     },
     {
       "name": "api_error_invalid_node",
-      "value": "無效節點"
+      "value": "無効なノード"
     },
     {
       "name": "api_error_invalid_reply",
-      "value": "無效回覆"
+      "value": "無効な返信"
     },
     {
       "name": "api_error_invalid_notification_id",
-      "value": "無效的通知 ID"
+      "value": "無効な通知 ID"
     },
     {
       "name": "api_error_invalid_operation_target",
-      "value": "無效的操作對象"
+      "value": "無効な操作対象"
     },
     {
       "name": "api_error_node_name_required",
-      "value": "節點名稱不能為空"
+      "value": "ノード名が必要です"
     },
     {
       "name": "api_error_missing_notification_param",
-      "value": "缺少通知刪除參數"
+      "value": "通知削除パラメーターが不足しています"
     },
     {
       "name": "api_error_notification_delete_not_applied",
-      "value": "刪除通知未生效，請稍後重試"
+      "value": "通知削除が適用されませんでした。再試行してください"
     },
     {
       "name": "api_error_checkin_not_available",
-      "value": "今日無法簽到"
+      "value": "今日はチェックインできません"
     },
     {
       "name": "api_error_parse_favorite_action_failed",
-      "value": "解析收藏操作失敗，請稍後重試"
+      "value": "お気に入り操作の解析に失敗しました。再試行してください"
     },
     {
       "name": "api_error_parse_follow_action_failed",
-      "value": "解析關注操作失敗，請稍後重試"
+      "value": "フォロー操作の解析に失敗しました。再試行してください"
     },
     {
       "name": "api_error_missing_user_action",
-      "value": "缺少使用者操作"
+      "value": "ユーザー操作が不足しています"
     },
     {
       "name": "api_error_reply_body_required",
-      "value": "回覆內容不能為空"
+      "value": "返信本文が必要です"
     },
     {
       "name": "api_error_parse_reply_form_failed",
-      "value": "解析回覆表單失敗，請改用瀏覽器"
+      "value": "返信フォームの解析に失敗しました。ブラウザーを使用してください"
     },
     {
       "name": "api_error_submit_failed_detail",
-      "value": "提交失敗：{0}"
+      "value": "送信に失敗しました: {0}"
     },
     {
       "name": "api_error_reply_submit_unconfirmed",
-      "value": "提交失敗：未確認回覆已發布"
+      "value": "送信に失敗しました: 返信の公開を確認できません"
     },
     {
       "name": "api_error_reply_thank_not_allowed",
-      "value": "目前回覆不可感謝或已感謝過"
+      "value": "返信に感謝できない、または既に感謝済みです"
     },
     {
       "name": "api_error_missing_thank_action",
-      "value": "缺少感謝操作"
+      "value": "感謝操作が不足しています"
     },
     {
       "name": "api_error_thank_failed",
-      "value": "感謝失敗：{0}"
+      "value": "感謝に失敗しました: {0}"
     },
     {
       "name": "api_error_topic_thank_not_allowed",
-      "value": "目前主題不可感謝或已感謝過"
+      "value": "トピックに感謝できない、または既に感謝済みです"
     },
     {
       "name": "api_error_missing_ignore_action",
-      "value": "缺少忽略操作"
+      "value": "無視操作が不足しています"
     },
     {
       "name": "api_error_missing_report_action",
-      "value": "缺少報告操作"
+      "value": "通報操作が不足しています"
     },
     {
       "name": "api_error_node_required",
-      "value": "請選擇節點"
+      "value": "ノードを選択してください"
     },
     {
       "name": "api_error_title_required",
-      "value": "請輸入標題"
+      "value": "タイトルを入力してください"
     },
     {
       "name": "api_error_body_required",
-      "value": "請輸入內文"
+      "value": "本文を入力してください"
     },
     {
       "name": "api_error_parse_topic_form_failed",
-      "value": "解析發文表單失敗，請改用瀏覽器"
+      "value": "トピックフォームの解析に失敗しました。ブラウザーを使用してください"
     },
     {
       "name": "api_error_missing_action_path",
-      "value": "缺少操作路徑"
+      "value": "操作パスが不足しています"
     },
     {
       "name": "api_error_field_required_detail",
-      "value": "缺少{0}"
+      "value": "{0} は必須です"
     },
     {
       "name": "api_error_field_external_link_forbidden",
-      "value": "{0}不允許使用外部網域連結"
+      "value": "{0} では外部リンクを使用できません"
     },
     {
       "name": "api_error_hot_topics_empty",
-      "value": "熱榜未取得主題，請稍後重試"
+      "value": "ホットトピックが返されませんでした。再試行してください"
     },
     {
       "name": "api_error_recent_topics_empty",
-      "value": "最近更新未取得主題，請稍後重試"
+      "value": "最近のトピックが返されませんでした。再試行してください"
     },
     {
       "name": "api_error_tab_topics_empty",
-      "value": "Tab「{0}」未取得主題，請稍後重試"
+      "value": "タブ「{0}」はトピックを返しませんでした。再試行してください"
     },
     {
       "name": "api_error_parse_login_page_failed",
-      "value": "解析登入頁面失敗，請改用網頁登入"
+      "value": "ログインページの解析に失敗しました。Web ログインを使用してください"
     },
     {
       "name": "api_error_login_restricted",
-      "value": "V2EX 暫時限制登入。請稍後再試。"
+      "value": "V2EX によりログインが一時的に制限されています。しばらく待ってから再試行してください。"
     },
     {
       "name": "api_error_login_restricted_with_ip",
-      "value": "V2EX 暫時限制目前 IP {0} 登入。請稍後再試。"
+      "value": "IP {0} からのログインが V2EX により一時的に制限されています。しばらく待ってから再試行してください。"
     },
     {
       "name": "api_error_login_captcha_required",
-      "value": "目前 V2EX 登入需要驗證碼，請改用網頁登入"
+      "value": "V2EX ログインには captcha が必要です。Web ログインを使用してください"
     },
     {
       "name": "api_error_captcha_required",
-      "value": "請輸入驗證碼"
+      "value": "captcha を入力してください"
     },
     {
       "name": "api_error_login_failed_detail",
-      "value": "登入失敗：{0}"
+      "value": "ログインに失敗しました: {0}"
     },
     {
       "name": "api_error_login_redirect_unsupported",
-      "value": "登入失敗：不支援的跳轉 {0}"
+      "value": "ログインに失敗しました: 未対応のリダイレクト {0}"
     },
     {
       "name": "api_error_login_state_unconfirmed",
-      "value": "登入失敗：無法確認登入狀態，請改用網頁登入"
+      "value": "ログインに失敗しました: ログイン状態を確認できません。Web ログインを使用してください"
     },
     {
       "name": "api_error_login_session_missing",
-      "value": "缺少登入工作階段，請重新登入"
+      "value": "ログインセッションがありません。再度サインインしてください"
     },
     {
       "name": "api_error_two_factor_code_required",
-      "value": "請輸入兩步驟驗證碼"
+      "value": "二要素コードを入力してください"
     },
     {
       "name": "api_error_two_factor_failed_detail",
-      "value": "兩步驟驗證失敗：{0}"
+      "value": "二要素認証に失敗しました: {0}"
     },
     {
       "name": "api_error_two_factor_failed",
-      "value": "兩步驟驗證失敗，請檢查驗證碼或改用網頁登入"
+      "value": "二要素認証に失敗しました。コードを確認するか Web ログインを使用してください"
     },
     {
       "name": "api_error_token_missing",
-      "value": "缺少 Token，請先設定 Personal Access Token"
+      "value": "トークンがありません。Personal Access Token を設定してください"
     },
     {
       "name": "notification_login_required",
-      "value": "登入後可查看通知"
+      "value": "通知を表示するにはログインしてください"
     },
     {
       "name": "notification_empty",
-      "value": "暫無通知"
+      "value": "通知はありません"
     },
     {
       "name": "notification_delete_title",
-      "value": "刪除通知"
+      "value": "通知を削除"
     },
     {
       "name": "notification_delete_confirm",
-      "value": "確定刪除此通知嗎？"
+      "value": "この通知を削除しますか？"
     },
     {
       "name": "notification_delete_requires_api_auth",
-      "value": "刪除通知需要 V2 API 授權"
+      "value": "通知の削除には V2 API 認証が必要です"
     },
     {
       "name": "notification_delete_requires_web_session",
-      "value": "刪除通知需要 Web 工作階段"
+      "value": "通知の削除には Web セッションが必要です"
     },
     {
       "name": "notification_load_failed",
-      "value": "通知載入失敗"
+      "value": "通知の読み込みに失敗しました"
     },
     {
       "name": "notification_go_login",
-      "value": "去登入"
+      "value": "ログイン"
     },
     {
       "name": "notification_tag_unread",
-      "value": "未讀"
+      "value": "未読"
     },
     {
       "name": "notification_kind_reply",
-      "value": "回覆"
+      "value": "返信"
     },
     {
       "name": "notification_kind_mention",
-      "value": "提及"
+      "value": "メンション"
     },
     {
       "name": "notification_kind_thanks",
@@ -2146,15 +2146,15 @@
     },
     {
       "name": "notification_kind_favorite",
-      "value": "收藏"
+      "value": "お気に入り"
     },
     {
       "name": "notification_kind_follow",
-      "value": "關注"
+      "value": "フォロー"
     },
     {
       "name": "notification_kind_system",
-      "value": "系統"
+      "value": "システム"
     },
     {
       "name": "notification_kind_notification",
@@ -2162,203 +2162,203 @@
     },
     {
       "name": "notification_source_web",
-      "value": "Web 工作階段"
+      "value": "Web セッション"
     },
     {
       "name": "common_load_more",
-      "value": "載入更多"
+      "value": "さらに読み込む"
     },
     {
       "name": "search_node_results",
-      "value": "節點結果 {0}"
+      "value": "ノード結果 {0}"
     },
     {
       "name": "search_filter_title",
-      "value": "搜尋篩選"
+      "value": "検索フィルター"
     },
     {
       "name": "search_web_filter_hint",
-      "value": "網頁搜尋會在系統瀏覽器中打開，不額外提供站內篩選。"
+      "value": "Web 検索は追加のアプリ内フィルターなしでシステムブラウザーで開きます。"
     },
     {
       "name": "search_discover_nodes_placeholder",
-      "value": "搜尋節點"
+      "value": "ノードを検索"
     },
     {
       "name": "search_N_topics",
-      "value": "{0} 主題"
+      "value": "{0} 件のトピック"
     },
     {
       "name": "search_N_replies",
-      "value": "{0} 回覆"
+      "value": "{0} 件の返信"
     },
     {
       "name": "topic_action_thank_topic",
-      "value": "感謝主題"
+      "value": "トピックに感謝"
     },
     {
       "name": "topic_action_save_later",
-      "value": "稍後讀"
+      "value": "あとで保存"
     },
     {
       "name": "topic_action_ignore_topic",
-      "value": "忽略主題"
+      "value": "トピックを無視"
     },
     {
       "name": "topic_action_report_topic",
-      "value": "舉報主題"
+      "value": "トピックを通報"
     },
     {
       "name": "topic_action_copy_title",
-      "value": "複製標題"
+      "value": "タイトルをコピー"
     },
     {
       "name": "topic_action_copy_link",
-      "value": "複製連結"
+      "value": "リンクをコピー"
     },
     {
       "name": "topic_action_share_link",
-      "value": "分享連結"
+      "value": "リンクを共有"
     },
     {
       "name": "topic_action_open_browser",
-      "value": "瀏覽器開啟"
+      "value": "ブラウザーで開く"
     },
     {
       "name": "image_preview_invalid_url",
-      "value": "圖片地址無效"
+      "value": "無効な画像 URL"
     },
     {
       "name": "image_preview_downloading",
-      "value": "正在下載圖片…"
+      "value": "画像をダウンロード中…"
     },
     {
       "name": "image_preview_not_an_image",
-      "value": "該連結返回的不是圖片"
+      "value": "リンクは画像を返しませんでした"
     },
     {
       "name": "image_preview_download_failed",
-      "value": "圖片下載失敗"
+      "value": "画像のダウンロードに失敗しました"
     },
     {
       "name": "image_preview_temp_file_write_failed",
-      "value": "暫存檔案寫入失敗"
+      "value": "一時ファイルの書き込みに失敗しました"
     },
     {
       "name": "image_preview_url_empty",
-      "value": "圖片地址為空"
+      "value": "画像 URL が空です"
     },
     {
       "name": "image_preview_go_back_retry",
-      "value": "返回後重試"
+      "value": "戻って再試行"
     },
     {
       "name": "image_preview_choose_save_location",
-      "value": "請選擇儲存位置"
+      "value": "保存場所を選択してください"
     },
     {
       "name": "image_preview_save_failed",
-      "value": "儲存失敗"
+      "value": "保存に失敗しました"
     },
     {
       "name": "image_preview_save_to_gallery_failed",
-      "value": "儲存到圖庫失敗"
+      "value": "ギャラリーへの保存に失敗しました"
     },
     {
       "name": "editor_body_placeholder",
-      "value": "正文（Markdown）"
+      "value": "本文（Markdown）"
     },
     {
       "name": "editor_empty_preview",
-      "value": "暫無內容"
+      "value": "まだ内容がありません"
     },
     {
       "name": "editor_submitting",
-      "value": "提交中..."
+      "value": "送信中..."
     },
     {
       "name": "editor_submit",
-      "value": "提交"
+      "value": "送信"
     },
     {
       "name": "editor_confirm_post_title",
-      "value": "確認發帖"
+      "value": "投稿を確認"
     },
     {
       "name": "editor_publish",
-      "value": "發佈"
+      "value": "公開"
     },
     {
       "name": "editor_clear_draft_title",
-      "value": "清空草稿"
+      "value": "下書きをクリア"
     },
     {
       "name": "editor_clear_draft_message",
-      "value": "確定清空當前發帖草稿嗎？"
+      "value": "このトピック下書きをクリアしますか？"
     },
     {
       "name": "editor_clear_draft_failed",
-      "value": "清空失敗"
+      "value": "クリアに失敗しました"
     },
     {
       "name": "editor_confirm_post_format",
-      "value": "確定在節點「{0}」發佈主題《{1}》嗎？\n\nV2EX 發帖通常至少消耗 20 銅幣，提交後會修改你的賬號狀態。"
+      "value": "《{1}》をノード「{0}」に投稿しますか？\n\nV2EX の投稿には通常少なくとも 20 copper coins が必要で、アカウント状態が変更されます。"
     },
     {
       "name": "reply_composer_title",
-      "value": "寫回覆"
+      "value": "返信を書く"
     },
     {
       "name": "reply_body_placeholder",
-      "value": "寫回覆（自動保存草稿）"
+      "value": "返信本文（自動保存）"
     },
     {
       "name": "reply_clear_draft_title",
-      "value": "清空草稿"
+      "value": "下書きをクリア"
     },
     {
       "name": "reply_clear_draft_message",
-      "value": "確定清空當前回覆草稿嗎？"
+      "value": "この返信下書きをクリアしますか？"
     },
     {
       "name": "reply_clear_draft_generic_message",
-      "value": "確定清空當前草稿嗎？"
+      "value": "現在の下書きをクリアしますか？"
     },
     {
       "name": "reply_clear_failed",
-      "value": "清空失敗"
+      "value": "クリアに失敗しました"
     },
     {
       "name": "reply_confirm_submit_title",
-      "value": "提交回覆"
+      "value": "返信を送信"
     },
     {
       "name": "topic_detail_loading",
-      "value": "加載中..."
+      "value": "読み込み中..."
     },
     {
       "name": "topic_still_loading",
-      "value": "主題仍在加載"
+      "value": "トピックはまだ読み込み中です"
     },
     {
       "name": "topic_many_replies_title",
-      "value": "回覆數量較多"
+      "value": "返信が多い"
     },
     {
       "name": "topic_flat_view",
-      "value": "平鋪顯示"
+      "value": "フラット表示"
     },
     {
       "name": "topic_continue_loading",
-      "value": "繼續加載"
+      "value": "読み込みを続行"
     },
     {
       "name": "action_favorite",
-      "value": "收藏"
+      "value": "お気に入り"
     },
     {
       "name": "action_unfavorite",
-      "value": "取消收藏"
+      "value": "お気に入り解除"
     },
     {
       "name": "action_thank",
@@ -2366,139 +2366,139 @@
     },
     {
       "name": "action_ignore",
-      "value": "忽略"
+      "value": "無視"
     },
     {
       "name": "action_report",
-      "value": "舉報"
+      "value": "通報"
     },
     {
       "name": "reply_action_reply",
-      "value": "回覆"
+      "value": "返信"
     },
     {
       "name": "reply_action_login",
-      "value": "登錄"
+      "value": "ログイン"
     },
     {
       "name": "reply_ignore_title",
-      "value": "忽略回覆"
+      "value": "返信を無視"
     },
     {
       "name": "reply_report_title",
-      "value": "舉報回覆"
+      "value": "返信を通報"
     },
     {
       "name": "reply_thank_title",
-      "value": "感謝回覆"
+      "value": "返信に感謝"
     },
     {
       "name": "topic_share_fallback_title",
-      "value": "V2EX 主題"
+      "value": "V2EX トピック"
     },
     {
       "name": "jump_to_floor_title",
-      "value": "跳轉樓層"
+      "value": "階へジャンプ"
     },
     {
       "name": "jump_to_floor_placeholder",
-      "value": "輸入樓層號"
+      "value": "階番号を入力"
     },
     {
       "name": "jump_to_floor_button",
-      "value": "跳轉"
+      "value": "ジャンプ"
     },
     {
       "name": "reply_context_title",
-      "value": "回覆上下文"
+      "value": "返信コンテキスト"
     },
     {
       "name": "reply_context_with_floor_format",
-      "value": "#{0} 回覆上下文"
+      "value": "#{0} 返信コンテキスト"
     },
     {
       "name": "reply_context_empty_snippet",
-      "value": "（無內容）"
+      "value": "（内容なし）"
     },
     {
       "name": "reply_context_label_above",
-      "value": "上文"
+      "value": "上"
     },
     {
       "name": "reply_context_label_below",
-      "value": "下文"
+      "value": "下"
     },
     {
       "name": "reply_context_label_current",
-      "value": "當前回覆"
+      "value": "現在の返信"
     },
     {
       "name": "reply_context_label_mention_format",
-      "value": "提到 @{0}"
+      "value": "@{0} にメンション"
     },
     {
       "name": "markdown_placeholder_text",
-      "value": "文字"
+      "value": "テキスト"
     },
     {
       "name": "markdown_placeholder_code",
-      "value": "代碼"
+      "value": "コード"
     },
     {
       "name": "markdown_placeholder_image",
-      "value": "圖片"
+      "value": "画像"
     },
     {
       "name": "reply_thread_relation_label_format",
-      "value": "回覆 {0}"
+      "value": "返信 {0}"
     },
     {
       "name": "confirm_topic_favorite_format",
-      "value": "確定{0}《{1}》嗎？"
+      "value": "{0}《{1}》?"
     },
     {
       "name": "confirm_topic_favorite_nameless_format",
-      "value": "確定{0}該主題嗎？"
+      "value": "このトピックを {0} しますか？"
     },
     {
       "name": "confirm_topic_thank_format",
-      "value": "確定感謝《{0}》嗎？\n\n將消耗 10 銅幣。"
+      "value": "《{0}》に感謝しますか？\n\nこれには 10 copper coins が必要です。"
     },
     {
       "name": "confirm_topic_thank_nameless",
-      "value": "確定感謝該主題嗎？\n\n將消耗 10 銅幣。"
+      "value": "このトピックに感謝しますか？\n\nこれには 10 copper coins が必要です。"
     },
     {
       "name": "confirm_reply_thank_format",
-      "value": "確定感謝 {0} 的回覆嗎？\n\n將消耗 10 銅幣。"
+      "value": "{0} の返信に感謝しますか？\n\nこれには 10 copper coins が必要です。"
     },
     {
       "name": "parse_action_failed_format",
-      "value": "解析{0}操作失敗"
+      "value": "{0} 操作の解析に失敗しました"
     },
     {
       "name": "reply_info_missing",
-      "value": "回覆資訊缺失"
+      "value": "返信情報がありません"
     },
     {
       "name": "load_more_replies_failed",
-      "value": "加載更多失敗"
+      "value": "さらに読み込みに失敗しました"
     },
     {
       "name": "preloading_all_replies",
-      "value": "正在加載全部回覆…"
+      "value": "すべての返信を読み込み中…"
     },
     {
       "name": "preloading_progress_format",
-      "value": "正在加載全部回覆 {0}/{1}…"
+      "value": "すべての返信を読み込み中 {0}/{1}…"
     },
     {
       "name": "preloading_progress_count_format",
-      "value": "正在加載全部回覆 {0} 條…"
+      "value": "すべての返信を読み込み中 {0} 件…"
     },
     {
       "name": "topic_detail_tool_floor",
-      "value": "樓層"
+      "value": "階"
     },
     {
       "name": "topic_detail_tool_latest",
@@ -2506,239 +2506,239 @@
     },
     {
       "name": "reply_display_mode_origin",
-      "value": "原版"
+      "value": "元の表示"
     },
     {
       "name": "reply_count_format",
-      "value": "共 {0} 條回覆"
+      "value": "{0} 件の返信"
     },
     {
       "name": "draft_load_failed",
-      "value": "讀取草稿失敗"
+      "value": "下書きの読み込みに失敗しました"
     },
     {
       "name": "common_copy_failed",
-      "value": "複製失敗"
+      "value": "コピーに失敗しました"
     },
     {
       "name": "common_checking_network",
-      "value": "正在檢查網絡"
+      "value": "ネットワークを確認中…"
     },
     {
       "name": "common_image_load_failed",
-      "value": "圖片載入失敗"
+      "value": "画像の読み込みに失敗しました"
     },
     {
       "name": "common_video_load_failed",
-      "value": "影片載入失敗"
+      "value": "動画の読み込みに失敗しました"
     },
     {
       "name": "common_tap_to_retry",
-      "value": "點擊重試"
+      "value": "タップして再試行"
     },
     {
       "name": "common_open_external",
-      "value": "外部開啟"
+      "value": "外部で開く"
     },
     {
       "name": "common_no_content",
-      "value": "暫無內容"
+      "value": "内容がありません"
     },
     {
       "name": "common_load_failed_tap_retry",
-      "value": "載入失敗，點擊重試"
+      "value": "読み込みに失敗しました。タップして再試行"
     },
     {
       "name": "common_decoded_format",
-      "value": "解碼：{0}"
+      "value": "デコード済み: {0}"
     },
     {
       "name": "markdown_toolbar_edit",
-      "value": "寫"
+      "value": "編集"
     },
     {
       "name": "markdown_toolbar_preview",
-      "value": "看"
+      "value": "プレビュー"
     },
     {
       "name": "markdown_toolbar_image",
-      "value": "圖"
+      "value": "画像"
     },
     {
       "name": "markdown_toolbar_clear",
-      "value": "清"
+      "value": "クリア"
     },
     {
       "name": "topic_last_reply",
-      "value": "最後回覆"
+      "value": "最終返信"
     },
     {
       "name": "topic_replies_count",
-      "value": "{0} 回覆"
+      "value": "{0} 件の返信"
     },
     {
       "name": "code_wrap_scroll",
-      "value": "滾動"
+      "value": "スクロール"
     },
     {
       "name": "code_wrap_wrap",
-      "value": "換行"
+      "value": "折り返し"
     },
     {
       "name": "reply_view_context",
-      "value": "查看上下文"
+      "value": "コンテキストを表示"
     },
     {
       "name": "reply_copy_content",
-      "value": "複製回覆內容"
+      "value": "返信内容をコピー"
     },
     {
       "name": "reply_ignore_reply",
-      "value": "忽略回覆"
+      "value": "返信を無視"
     },
     {
       "name": "reply_report_reply",
-      "value": "舉報回覆"
+      "value": "返信を通報"
     },
     {
       "name": "common_wifi_only_image_hint",
-      "value": "僅 Wi-Fi 時自動載入圖片"
+      "value": "Wi-Fi のみで画像を自動読み込み"
     },
     {
       "name": "storage_seeded_label_format",
-      "value": "{0}：{1} 行 / {2} 個檔案"
+      "value": "{0}: {1} 行 / {2} ファイル"
     },
     {
       "name": "cache_clear_account_failed",
-      "value": "清理帳號快取失敗"
+      "value": "アカウントキャッシュのクリアに失敗しました"
     },
     {
       "name": "cache_invalid_seed_filename",
-      "value": "非法 QA seed 快取檔案名稱"
+      "value": "無効な QA シードキャッシュファイル名"
     },
     {
       "name": "cache_commit_payload_failed",
-      "value": "提交快取檔案失敗"
+      "value": "キャッシュファイルのコミットに失敗しました"
     },
     {
       "name": "cache_invalid_filename",
-      "value": "非法快取檔案名稱"
+      "value": "無効なキャッシュファイル名"
     },
     {
       "name": "cache_filename_conflict",
-      "value": "快取檔案名稱衝突"
+      "value": "キャッシュファイル名の競合"
     },
     {
       "name": "cache_filename_length_invalid",
-      "value": "快取檔案名稱長度無效"
+      "value": "無効なキャッシュファイル名の長さ"
     },
     {
       "name": "cache_clear_failed",
-      "value": "清理快取失敗"
+      "value": "キャッシュのクリアに失敗しました"
     },
     {
       "name": "collection_clear_all_failed",
-      "value": "清理本地收藏與閱讀記錄失敗"
+      "value": "ローカルコレクションと読書記録のクリアに失敗しました"
     },
     {
       "name": "draft_clear_failed",
-      "value": "清理草稿失敗"
+      "value": "下書きのクリアに失敗しました"
     },
     {
       "name": "notification_cache_clear_failed",
-      "value": "清理通知快取失敗"
+      "value": "通知キャッシュのクリアに失敗しました"
     },
     {
       "name": "account_record_not_found",
-      "value": "賬戶記錄不存在"
+      "value": "アカウント記録が見つかりません"
     },
     {
       "name": "account_active_id_save_failed",
-      "value": "儲存活躍賬戶ID失敗"
+      "value": "有効なアカウント ID の保存に失敗しました"
     },
     {
       "name": "account_clear_data_failed",
-      "value": "清除賬戶資料失敗"
+      "value": "アカウントデータのクリアに失敗しました"
     },
     {
       "name": "account_data_migration_failed",
-      "value": "賬戶資料遷移失敗"
+      "value": "アカウントデータの移行に失敗しました"
     },
     {
       "name": "account_read_list_failed",
-      "value": "讀取賬戶列表失敗"
+      "value": "アカウント一覧の読み取りに失敗しました"
     },
     {
       "name": "account_balance_gold",
-      "value": "金幣"
+      "value": "金"
     },
     {
       "name": "account_balance_silver",
-      "value": "銀幣"
+      "value": "銀"
     },
     {
       "name": "account_balance_bronze",
-      "value": "銅幣"
+      "value": "銅"
     },
     {
       "name": "backup_section",
-      "value": "備份"
+      "value": "バックアップ"
     },
     {
       "name": "export_backup",
-      "value": "匯出備份"
+      "value": "バックアップをエクスポート"
     },
     {
       "name": "import_backup",
-      "value": "匯入備份"
+      "value": "バックアップをインポート"
     },
     {
       "name": "backup_export_subtitle",
-      "value": "備份設定和本機資料；不包含登入/工作階段資料。"
+      "value": "設定とローカルデータをバックアップします。ログイン/セッションデータは除外されます。"
     },
     {
       "name": "backup_import_subtitle",
-      "value": "先預覽備份內容，再取代本機資料。"
+      "value": "ローカルデータを置き換える前にバックアップ内容をプレビューします。"
     },
     {
       "name": "backup_export_message",
-      "value": "將設定和本機資料匯出為 V2Next 備份檔。不會包含登入狀態、Cookie、權杖和離線快取。繼續嗎？"
+      "value": "設定とローカルデータを V2Next バックアップファイルにエクスポートします。ログイン状態、Cookie、トークン、オフラインキャッシュは除外されます。続行しますか？"
     },
     {
       "name": "backup_import_preview_message",
-      "value": "備份時間 {0}，應用程式 {1}（{2}）。包含：{3}。登入狀態、Cookie 和權杖不會被更改。"
+      "value": "{0} からのバックアップ、アプリ {1} ({2})。セクション: {3}。ログイン状態、Cookie、トークンは変更されません。"
     },
     {
       "name": "backup_import_confirm_message",
-      "value": "這會用備份覆寫支援的本機設定、草稿、稍後讀/關注/歷史/搜尋資料。登入狀態會保留。繼續嗎？"
+      "value": "バックアップ内の対応するローカル設定、下書き、あとで読む/フォロー/履歴/検索データで上書きします。ログイン状態は保持されます。続行しますか？"
     },
     {
       "name": "backup_exported",
-      "value": "備份已匯出。"
+      "value": "バックアップをエクスポートしました。"
     },
     {
       "name": "backup_import_complete",
-      "value": "備份匯入完成。"
+      "value": "バックアップのインポートが完了しました。"
     },
     {
       "name": "backup_error_invalid",
-      "value": "這不是 V2Next 備份檔。"
+      "value": "このファイルは V2Next バックアップではありません。"
     },
     {
       "name": "backup_error_foreign",
-      "value": "這不是 V2Next 備份檔。"
+      "value": "このファイルは V2Next バックアップではありません。"
     },
     {
       "name": "backup_error_version",
-      "value": "不支援的備份版本。"
+      "value": "サポートされていないバックアップバージョンです。"
     },
     {
       "name": "backup_error_checksum",
-      "value": "備份已損壞或校驗失敗。"
+      "value": "バックアップが破損しているか、チェックサム検証に失敗しました。"
     },
     {
       "name": "backup_error_too_large",
-      "value": "備份檔過大。"
+      "value": "バックアップファイルが大きすぎます。"
     }
   ]
 }

@@ -25,6 +25,8 @@ export class SettingsPageCoordinator {
       { label: AppStrings.R_LANGUAGE_TRADITIONAL_CHINESE_HK, value: LanguageSettings.MODE_ZH_HK },
       { label: AppStrings.R_LANGUAGE_TRADITIONAL_CHINESE_TW, value: LanguageSettings.MODE_ZH_TW },
       { label: AppStrings.R_LANGUAGE_ENGLISH, value: LanguageSettings.MODE_EN },
+      { label: AppStrings.R_LANGUAGE_JAPANESE, value: LanguageSettings.MODE_JA },
+      { label: AppStrings.R_LANGUAGE_KOREAN, value: LanguageSettings.MODE_KO },
     ]
   }
 
@@ -101,6 +103,12 @@ export class SettingsPageCoordinator {
     }
     if (normalizedMode === LanguageSettings.MODE_EN) {
       return AppStrings.R_LANGUAGE_ENGLISH
+    }
+    if (normalizedMode === LanguageSettings.MODE_JA) {
+      return AppStrings.R_LANGUAGE_JAPANESE
+    }
+    if (normalizedMode === LanguageSettings.MODE_KO) {
+      return AppStrings.R_LANGUAGE_KOREAN
     }
     return AppStrings.R_LANGUAGE_FOLLOW_SYSTEM
   }

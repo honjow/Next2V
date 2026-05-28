@@ -11,7 +11,7 @@ import path from 'node:path'
 
 const repo = process.cwd()
 const CJK_RE = /[\u3400-\u9FFF\u3040-\u30FF\uAC00-\uD7AF]/
-const locales = ['base', 'en_US', 'zh_CN', 'zh_HK', 'zh_TW']
+const locales = ['base', 'en_US', 'zh_CN', 'zh_HK', 'zh_TW', 'ja_JP', 'ko_KR']
 const englishLocales = ['base', 'en_US']
 const resourceRoot = path.join(repo, 'entry/src/main/resources')
 const failures = []

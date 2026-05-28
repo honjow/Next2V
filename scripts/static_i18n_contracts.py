@@ -17,8 +17,8 @@ SETTINGS_PAGE = ROOT / "feature" / "settings" / "src" / "main" / "ets" / "pages"
 SETTINGS_COORDINATOR = ROOT / "feature" / "settings" / "src" / "main" / "ets" / "model" / "SettingsPageCoordinator.ets"
 LANGUAGE_SETTINGS = ROOT / "shared" / "src" / "main" / "ets" / "settings" / "LanguageSettings.ets"
 
-REQUIRED_LOCALE_DIRS = ["base", "en_US", "zh_CN", "zh_HK", "zh_TW"]
-SUPPORTED_APP_LANGUAGES = ["default", "zh-Hans", "zh-Hant-HK", "zh-Hant-TW", "en-US"]
+REQUIRED_LOCALE_DIRS = ["base", "en_US", "zh_CN", "zh_HK", "zh_TW", "ja_JP", "ko_KR"]
+SUPPORTED_APP_LANGUAGES = ["default", "zh-Hans", "zh-Hant-HK", "zh-Hant-TW", "en-US", "ja-JP", "ko-KR"]
 
 # Paths where CJK is explicitly allowed (V2EX server HTML parsers and server-content matchers).
 # Everything outside these paths must be CJK-free, including comments.
@@ -126,6 +126,8 @@ def assert_fallback_contract() -> None:
         "language_traditional_chinese_hk",
         "language_traditional_chinese_tw",
         "language_english",
+        "language_japanese",
+        "language_korean",
     ]
     for locale in REQUIRED_LOCALE_DIRS:
         strings = load_strings(ENTRY_RES, locale)
@@ -182,6 +184,8 @@ def assert_fallback_contract() -> None:
         "AppStrings.R_LANGUAGE_TRADITIONAL_CHINESE_HK",
         "AppStrings.R_LANGUAGE_TRADITIONAL_CHINESE_TW",
         "AppStrings.R_LANGUAGE_ENGLISH",
+        "AppStrings.R_LANGUAGE_JAPANESE",
+        "AppStrings.R_LANGUAGE_KOREAN",
     ]
     for label in required_language_resource_labels:
         if label not in coordinator_text:
@@ -257,7 +261,7 @@ def assert_string_map_contract() -> None:
     text = STRING_MAP_PATH.read_text(encoding="utf-8")
 
     # All locales should have entries
-    for locale in ["en_US", "zh_CN", "zh_HK", "zh_TW"]:
+    for locale in ["en_US", "zh_CN", "zh_HK", "zh_TW", "ja_JP", "ko_KR"]:
         if f"'{locale}':" not in text:
             raise AssertionError(f"StringMap.ets missing locale {locale}")
 

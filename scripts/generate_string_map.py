@@ -13,7 +13,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 RESOURCES = ROOT / "entry" / "src" / "main" / "resources"
 OUTPUT = ROOT / "shared" / "src" / "main" / "ets" / "i18n" / "StringMap.ets"
-LOCALES = ["en_US", "zh_CN", "zh_HK", "zh_TW"]
+LOCALES = ["en_US", "zh_CN", "zh_HK", "zh_TW", "ja_JP", "ko_KR"]
 
 
 def load_locale_strings(locale: str) -> dict[str, str]:

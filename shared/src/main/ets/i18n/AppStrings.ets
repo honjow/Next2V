@@ -2,7 +2,7 @@ import { common } from '@kit.AbilityKit'
 import { STRING_MAP, RESOURCE_BY_NAME } from './StringMap'
 import { StorageKeys } from '../constants/StorageKeys'
 
-export type AppLanguageMode = 'default' | 'zh-Hans' | 'zh-Hant-HK' | 'zh-Hant-TW' | 'en-US'
+export type AppLanguageMode = 'default' | 'zh-Hans' | 'zh-Hant-HK' | 'zh-Hant-TW' | 'en-US' | 'ja-JP' | 'ko-KR'
 
 const LOCALE_KEY_MAP: Record<AppLanguageMode, string> = {
   'default': '',
@@ -10,11 +10,13 @@ const LOCALE_KEY_MAP: Record<AppLanguageMode, string> = {
   'zh-Hant-HK': 'zh_HK',
   'zh-Hant-TW': 'zh_TW',
   'en-US': 'en_US',
+  'ja-JP': 'ja_JP',
+  'ko-KR': 'ko_KR',
 }
 
 export class AppStrings {
   static readonly DEFAULT_LANGUAGE_MODE: AppLanguageMode = 'default'
-  static readonly SUPPORTED_LOCALES: string[] = ['default', 'zh-Hans', 'zh-Hant-HK', 'zh-Hant-TW', 'en-US']
+  static readonly SUPPORTED_LOCALES: string[] = ['default', 'zh-Hans', 'zh-Hant-HK', 'zh-Hant-TW', 'en-US', 'ja-JP', 'ko-KR']
   private static context: common.UIAbilityContext | null = null
   private static idToName: Map<number, string> = new Map()
   private static mapReady: boolean = false
@@ -228,6 +230,8 @@ export class AppStrings {
   static readonly R_LANGUAGE_TRADITIONAL_CHINESE_HK: Resource = $r('app.string.language_traditional_chinese_hk')
   static readonly R_LANGUAGE_TRADITIONAL_CHINESE_TW: Resource = $r('app.string.language_traditional_chinese_tw')
   static readonly R_LANGUAGE_ENGLISH: Resource = $r('app.string.language_english')
+  static readonly R_LANGUAGE_JAPANESE: Resource = $r('app.string.language_japanese')
+  static readonly R_LANGUAGE_KOREAN: Resource = $r('app.string.language_korean')
   static readonly R_ACCOUNT_MANAGEMENT: Resource = $r('app.string.account_management')
   static readonly R_AUTO_CHECKIN: Resource = $r('app.string.auto_checkin')
   static readonly R_HOME_TAB_AUTO_HIDE: Resource = $r('app.string.home_tab_auto_hide')

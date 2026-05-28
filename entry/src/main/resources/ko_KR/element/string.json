@@ -6,15 +6,15 @@
     },
     {
       "name": "entry_desc",
-      "value": "Next2V - V2EX 客戶端"
+      "value": "Next2V - V2EX 클라이언트"
     },
     {
       "name": "module_desc",
-      "value": "Next2V 入口模組"
+      "value": "Next2V entry 모듈"
     },
     {
       "name": "EntryAbility_desc",
-      "value": "Next2V 主 Ability"
+      "value": "Next2V 메인 ability"
     },
     {
       "name": "EntryAbility_label",
@@ -22,699 +22,699 @@
     },
     {
       "name": "tab_home",
-      "value": "首頁"
+      "value": "홈"
     },
     {
       "name": "tab_discover",
-      "value": "發現"
+      "value": "둘러보기"
     },
     {
       "name": "tab_notifications",
-      "value": "通知"
+      "value": "알림"
     },
     {
       "name": "tab_me",
-      "value": "我的"
+      "value": "내 정보"
     },
     {
       "name": "nav_reply",
-      "value": "回覆"
+      "value": "답글"
     },
     {
       "name": "nav_web_login",
-      "value": "網頁登入"
+      "value": "Web 로그인"
     },
     {
       "name": "nav_native_login",
-      "value": "帳號密碼登入"
+      "value": "비밀번호 로그인"
     },
     {
       "name": "nav_node_picker",
-      "value": "選擇節點"
+      "value": "노드 선택"
     },
     {
       "name": "nav_search",
-      "value": "搜尋"
+      "value": "검색"
     },
     {
       "name": "nav_topic_draft",
-      "value": "發帖草稿"
+      "value": "토픽 초안"
     },
     {
       "name": "nav_saved_topics",
-      "value": "收藏主題"
+      "value": "즐겨찾기 토픽"
     },
     {
       "name": "nav_saved_nodes",
-      "value": "收藏節點"
+      "value": "즐겨찾기 노드"
     },
     {
       "name": "nav_following",
-      "value": "關注用戶"
+      "value": "팔로잉"
     },
     {
       "name": "nav_settings",
-      "value": "設定"
+      "value": "설정"
     },
     {
       "name": "nav_storage",
-      "value": "儲存"
+      "value": "저장소"
     },
     {
       "name": "nav_diagnostics",
-      "value": "診斷日誌"
+      "value": "진단 로그"
     },
     {
       "name": "nav_home_nodes",
-      "value": "首頁欄目設定"
+      "value": "홈 탭 설정"
     },
     {
       "name": "nav_reading",
-      "value": "閱讀字體設定"
+      "value": "읽기 글꼴 설정"
     },
     {
       "name": "nav_network_proxy",
-      "value": "網絡代理"
+      "value": "네트워크 프록시"
     },
     {
       "name": "nav_account",
-      "value": "帳號"
+      "value": "계정"
     },
     {
       "name": "nav_read_later",
-      "value": "稍後讀"
+      "value": "나중에 읽기"
     },
     {
       "name": "nav_recently_viewed",
-      "value": "最近瀏覽"
+      "value": "최근 본 항목"
     },
     {
       "name": "nav_local_nodes",
-      "value": "本地關注節點"
+      "value": "로컬 팔로우 노드"
     },
     {
       "name": "nav_about",
-      "value": "關於"
+      "value": "정보"
     },
     {
       "name": "nav_all_topics",
-      "value": "全部主題"
+      "value": "모든 토픽"
     },
     {
       "name": "nav_all_replies",
-      "value": "全部回覆"
+      "value": "모든 답글"
     },
     {
       "name": "common_load_failed",
-      "value": "載入失敗"
+      "value": "로드 실패"
     },
     {
       "name": "common_retry",
-      "value": "重試"
+      "value": "다시 시도"
     },
     {
       "name": "common_cancel",
-      "value": "取消"
+      "value": "취소"
     },
     {
       "name": "common_clear",
-      "value": "清除"
+      "value": "지우기"
     },
     {
       "name": "common_delete",
-      "value": "刪除"
+      "value": "삭제"
     },
     {
       "name": "common_save",
-      "value": "儲存"
+      "value": "저장"
     },
     {
       "name": "common_restore",
-      "value": "恢復"
+      "value": "복원"
     },
     {
       "name": "common_reset",
-      "value": "重設"
+      "value": "초기화"
     },
     {
       "name": "common_closed",
-      "value": "關閉"
+      "value": "꺼짐"
     },
     {
       "name": "common_auto",
-      "value": "自動"
+      "value": "자동"
     },
     {
       "name": "common_light",
-      "value": "淺色"
+      "value": "라이트"
     },
     {
       "name": "common_dark",
-      "value": "深色"
+      "value": "다크"
     },
     {
       "name": "common_cleared",
-      "value": "已清空"
+      "value": "지웠습니다"
     },
     {
       "name": "common_saved",
-      "value": "已儲存"
+      "value": "저장됨"
     },
     {
       "name": "common_save_failed",
-      "value": "儲存失敗"
+      "value": "저장 실패"
     },
     {
       "name": "common_deleted",
-      "value": "已刪除"
+      "value": "삭제됨"
     },
     {
       "name": "common_delete_failed",
-      "value": "刪除失敗"
+      "value": "삭제 실패"
     },
     {
       "name": "common_open_failed",
-      "value": "開啟失敗"
+      "value": "열기 실패"
     },
     {
       "name": "login_required_continue",
-      "value": "登入後可繼續"
+      "value": "계속하려면 로그인하세요"
     },
     {
       "name": "login_action",
-      "value": "去登入"
+      "value": "로그인"
     },
     {
       "name": "account_section",
-      "value": "帳號"
+      "value": "계정"
     },
     {
       "name": "account_content_section",
-      "value": "帳號內容"
+      "value": "계정 콘텐츠"
     },
     {
       "name": "local_content_section",
-      "value": "本地內容"
+      "value": "로컬 콘텐츠"
     },
     {
       "name": "more_section",
-      "value": "更多"
+      "value": "더 보기"
     },
     {
       "name": "advanced_api_section",
-      "value": "進階 API"
+      "value": "고급 API"
     },
     {
       "name": "not_logged_in",
-      "value": "未登入"
+      "value": "로그인되지 않음"
     },
     {
       "name": "tap_to_login_v2ex",
-      "value": "點擊登入 V2EX"
+      "value": "탭하여 V2EX에 로그인"
     },
     {
       "name": "account_add_another",
-      "value": "新增帳號"
+      "value": "다른 계정 추가"
     },
     {
       "name": "account_list_header",
-      "value": "賬號列表"
+      "value": "계정"
     },
     {
       "name": "account_active_label",
-      "value": "當前"
+      "value": "현재"
     },
     {
       "name": "account_remove_title",
-      "value": "移除賬號"
+      "value": "계정 제거"
     },
     {
       "name": "account_remove_message_arg",
-      "value": "移除“{0}”？其他賬號不受影響。"
+      "value": "\"{0}\"을(를) 제거할까요? 다른 계정에는 영향을 주지 않습니다."
     },
     {
       "name": "account_switch_label",
-      "value": "切換"
+      "value": "전환"
     },
     {
       "name": "account_remove_label",
-      "value": "移除"
+      "value": "제거"
     },
     {
       "name": "common_remove",
-      "value": "移除"
+      "value": "제거"
     },
     {
       "name": "profile_home",
-      "value": "個人主頁"
+      "value": "프로필"
     },
     {
       "name": "balance_details",
-      "value": "餘額明細"
+      "value": "잔액 상세"
     },
     {
       "name": "web_account_settings",
-      "value": "網頁帳號設定"
+      "value": "Web 계정 설정"
     },
     {
       "name": "logout",
-      "value": "登出"
+      "value": "로그아웃"
     },
     {
       "name": "api_token_subtitle",
-      "value": "已儲存，僅用於 V2EX API v2 進階能力"
+      "value": "저장됨, V2EX API v2 고급 기능에만 사용됨"
     },
     {
       "name": "clear_api_auth",
-      "value": "清除 API 授權"
+      "value": "API 인증 지우기"
     },
     {
       "name": "clear_api_auth_message",
-      "value": "只會清除本機儲存的 Personal Access Token，不會登出網頁登入。"
+      "value": "로컬에 저장된 Personal Access Token만 지웁니다. Web 로그인 상태는 유지됩니다."
     },
     {
       "name": "api_auth_configured",
-      "value": "API 授權已配置"
+      "value": "API 인증이 구성됨"
     },
     {
       "name": "balance_syncing",
-      "value": "虛擬幣同步中"
+      "value": "잔액 동기화 중"
     },
     {
       "name": "balance_unavailable",
-      "value": "虛擬幣資訊不可用"
+      "value": "잔액을 사용할 수 없음"
     },
     {
       "name": "daily_checkin",
-      "value": "簽到"
+      "value": "체크인"
     },
     {
       "name": "daily_checking_in",
-      "value": "簽到中"
+      "value": "체크인 중"
     },
     {
       "name": "daily_checked_in",
-      "value": "已簽到"
+      "value": "체크인 완료"
     },
     {
       "name": "about_next2v",
-      "value": "關於 Next2V"
+      "value": "Next2V 정보"
     },
     {
       "name": "login_to_view_blocked",
-      "value": "登入後可查看屏蔽與忽略"
+      "value": "차단 및 무시 항목을 보려면 로그인하세요"
     },
     {
       "name": "blocked_users",
-      "value": "屏蔽用戶"
+      "value": "차단한 사용자"
     },
     {
       "name": "no_blocked_users",
-      "value": "暫無屏蔽用戶"
+      "value": "차단한 사용자가 없습니다"
     },
     {
       "name": "ignored_topics",
-      "value": "忽略主題"
+      "value": "무시한 토픽"
     },
     {
       "name": "no_ignored_topics",
-      "value": "暫無忽略主題"
+      "value": "무시한 토픽이 없습니다"
     },
     {
       "name": "login_to_view_following",
-      "value": "登入後可查看關注用戶"
+      "value": "팔로우한 사용자를 보려면 로그인하세요"
     },
     {
       "name": "no_following_users",
-      "value": "暫無關注用戶"
+      "value": "팔로우한 사용자가 없습니다"
     },
     {
       "name": "settings_reading",
-      "value": "閱讀"
+      "value": "읽기"
     },
     {
       "name": "settings_appearance",
-      "value": "介面"
+      "value": "모양"
     },
     {
       "name": "settings_home",
-      "value": "首頁"
+      "value": "홈"
     },
     {
       "name": "settings_navigation_actions",
-      "value": "導覽與操作"
+      "value": "탐색 및 동작"
     },
     {
       "name": "settings_content_media",
-      "value": "內容與媒體"
+      "value": "콘텐츠 및 미디어"
     },
     {
       "name": "settings_advanced",
-      "value": "進階"
+      "value": "고급"
     },
     {
       "name": "language",
-      "value": "語言"
+      "value": "언어"
     },
     {
       "name": "language_follow_system",
-      "value": "跟隨系統"
+      "value": "시스템 따르기"
     },
     {
       "name": "language_simplified_chinese",
-      "value": "簡體中文"
+      "value": "중국어 간체"
     },
     {
       "name": "language_traditional_chinese_hk",
-      "value": "繁體中文（香港）"
+      "value": "중국어 번체(홍콩)"
     },
     {
       "name": "language_traditional_chinese_tw",
-      "value": "繁體中文（台灣）"
+      "value": "중국어 번체(대만)"
     },
     {
       "name": "language_english",
-      "value": "English"
+      "value": "영어"
     },
     {
       "name": "language_korean",
-      "value": "韓語"
+      "value": "한국어"
     },
     {
       "name": "language_japanese",
-      "value": "日語"
+      "value": "일본어"
     },
     {
       "name": "account_management",
-      "value": "帳號管理"
+      "value": "계정 관리"
     },
     {
       "name": "auto_checkin",
-      "value": "自動簽到"
+      "value": "자동 체크인"
     },
     {
       "name": "home_tab_auto_hide",
-      "value": "自動隱藏首頁標籤列"
+      "value": "홈 탭 자동 숨김"
     },
     {
       "name": "topic_detail_reply_button_auto_hide",
-      "value": "自動隱藏回覆按鈕"
+      "value": "답글 버튼 자동 숨김"
     },
     {
       "name": "image_auto_load",
-      "value": "圖片自動載入"
+      "value": "이미지 자동 로드"
     },
     {
       "name": "wifi_only_images",
-      "value": "僅 Wi-Fi 載入圖片"
+      "value": "Wi-Fi에서만 이미지 로드"
     },
     {
       "name": "api_domain",
-      "value": "V2EX 站點"
+      "value": "V2EX 사이트"
     },
     {
       "name": "theme",
-      "value": "主題"
+      "value": "테마"
     },
     {
       "name": "avatar_appearance",
-      "value": "頭像外觀"
+      "value": "아바타 모양"
     },
     {
       "name": "avatar_appearance_soft",
-      "value": "圓角"
+      "value": "부드럽게"
     },
     {
       "name": "avatar_appearance_circle",
-      "value": "圓形"
+      "value": "원형"
     },
     {
       "name": "reply_display",
-      "value": "回覆顯示"
+      "value": "답글 표시"
     },
     {
       "name": "reply_style",
-      "value": "回覆樣式"
+      "value": "답글 스타일"
     },
     {
       "name": "reply_action_alignment",
-      "value": "回覆按鈕對齊方式"
+      "value": "답글 버튼 정렬"
     },
     {
       "name": "remember_read_position",
-      "value": "記住閱讀位置"
+      "value": "읽기 위치 기억"
     },
     {
       "name": "base64_decode",
-      "value": "Base64 解碼"
+      "value": "Base64 디코드"
     },
     {
       "name": "base64_subtitle",
-      "value": "預設點擊查看，避免直接暴露電郵、微信等明文"
+      "value": "이메일, WeChat 또는 기타 평문이 바로 노출되지 않도록 기본값은 탭하여 보기입니다."
     },
     {
       "name": "threaded",
-      "value": "樓中樓"
+      "value": "스레드형"
     },
     {
       "name": "threaded_at",
-      "value": "樓中樓(@)"
+      "value": "스레드형 (@)"
     },
     {
       "name": "threaded_redundant",
-      "value": "冗餘樓中樓"
+      "value": "중복 스레드형"
     },
     {
       "name": "op_only",
-      "value": "只看樓主"
+      "value": "작성자만"
     },
     {
       "name": "original",
-      "value": "原版"
+      "value": "원본"
     },
     {
       "name": "density_standard",
-      "value": "標準"
+      "value": "표준"
     },
     {
       "name": "density_compact",
-      "value": "緊湊"
+      "value": "컴팩트"
     },
     {
       "name": "smart_grip",
-      "value": "智感握姿"
+      "value": "스마트 그립"
     },
     {
       "name": "follow_operation",
-      "value": "跟隨操作"
+      "value": "팔로우 작업"
     },
     {
       "name": "fixed_left",
-      "value": "固定左側"
+      "value": "왼쪽 고정"
     },
     {
       "name": "fixed_right",
-      "value": "固定右側"
+      "value": "오른쪽 고정"
     },
     {
       "name": "tap_to_view",
-      "value": "點擊查看"
+      "value": "탭하여 보기"
     },
     {
       "name": "inline_display",
-      "value": "文內顯示"
+      "value": "인라인 표시"
     },
     {
       "name": "reading_preview_title",
-      "value": "一條關於 Next2V 的主題"
+      "value": "Next2V에 관한 토픽"
     },
     {
       "name": "reading_preview_intro",
-      "value": "這是閱讀文字縮放設定的即時預覽區域。拖動下面的滑桿後，正文、標題、列表、引用和程式碼會按同一比例縮放，用來接近實際主題詳情中的閱讀感受。"
+      "value": "읽기 텍스트 배율을 위한 실시간 미리보기 영역입니다. 아래 슬라이더를 드래그해 본문, 제목, 목록, 인용문, 코드를 함께 조정하여 실제 토픽 상세 화면의 읽기 느낌에 가깝게 확인할 수 있습니다."
     },
     {
       "name": "reading_preview_body",
-      "value": "V2EX 的討論通常包含短句、連結、引用和程式碼片段。預覽保持在頁面背景上，避免額外卡片影響對文字排版的判斷。"
+      "value": "V2EX 토론에는 보통 짧은 문장, 링크, 인용문, 코드 조각이 포함됩니다. 미리보기는 추가 카드가 타이포그래피 판단에 영향을 주지 않도록 페이지 배경 위에 유지됩니다."
     },
     {
       "name": "reading_preview_quote",
-      "value": "> 如果一種設定能讓你不用停頓就讀完整段內容，它大概就是合適的。"
+      "value": "> 설정 덕분에 멈추지 않고 문단을 읽을 수 있다면, 아마 올바른 설정일 것입니다."
     },
     {
       "name": "text_scale",
-      "value": "文字縮放"
+      "value": "텍스트 배율"
     },
     {
       "name": "restore_default",
-      "value": "恢復預設"
+      "value": "기본값 복원"
     },
     {
       "name": "restore_reading_scale_title",
-      "value": "恢復預設閱讀文字縮放設定"
+      "value": "읽기 텍스트 배율 기본값 복원"
     },
     {
       "name": "restore_reading_scale_message",
-      "value": "將文字縮放恢復為預設值。確定繼續嗎？"
+      "value": "텍스트 배율을 기본값으로 복원합니다. 계속할까요?"
     },
     {
       "name": "clear_cache",
-      "value": "清理快取"
+      "value": "캐시 지우기"
     },
     {
       "name": "clear_cache_message",
-      "value": "只會清理離線快取，不會清理登入狀態或偏好設定。確定繼續嗎？"
+      "value": "오프라인 캐시만 지워집니다. 로그인 상태와 환경설정은 유지됩니다. 계속할까요?"
     },
     {
       "name": "clear_local_data",
-      "value": "清理本地資料"
+      "value": "로컬 데이터 지우기"
     },
     {
       "name": "clear_local_data_message",
-      "value": "將清理本機儲存的稍後讀、關注節點、最近瀏覽、已讀狀態、草稿、搜尋歷史、通知快取和離線快取。登入狀態與偏好設定會保留。確定繼續嗎？"
+      "value": "로컬에 저장된 나중에 읽기 항목, 팔로우한 노드, 최근 본 항목, 읽기 상태, 초안, 검색 기록, 알림 캐시, 오프라인 캐시를 지웁니다. 로그인 상태와 환경설정은 유지됩니다. 계속할까요?"
     },
     {
       "name": "read_cache_status_failed",
-      "value": "讀取快取狀態失敗"
+      "value": "캐시 상태 읽기 실패"
     },
     {
       "name": "clear_failed",
-      "value": "清理失敗"
+      "value": "지우기 실패"
     },
     {
       "name": "debug_only",
-      "value": "僅 debug 構建可用"
+      "value": "Debug 빌드 전용"
     },
     {
       "name": "seed_failed",
-      "value": "Seed 失敗"
+      "value": "Seed 실패"
     },
     {
       "name": "offline_cache",
-      "value": "離線快取"
+      "value": "오프라인 캐시"
     },
     {
       "name": "cache_qa_seed",
-      "value": "快取 QA Seed"
+      "value": "Cache QA Seed"
     },
     {
       "name": "refresh_cache_status",
-      "value": "刷新快取狀態"
+      "value": "캐시 상태 새로 고침"
     },
     {
       "name": "diagnostics",
-      "value": "診斷"
+      "value": "진단"
     },
     {
       "name": "logs",
-      "value": "日誌"
+      "value": "로그"
     },
     {
       "name": "log_file",
-      "value": "日誌檔案"
+      "value": "로그 파일"
     },
     {
       "name": "no_local_log_files",
-      "value": "暫無可分享的本機日誌檔案"
+      "value": "공유할 로컬 로그 파일이 없습니다"
     },
     {
       "name": "retained_local_log_files_count",
-      "value": "已保留 {count} 個本機日誌檔案"
+      "value": "로컬 로그 파일 {count}개 보관됨"
     },
     {
       "name": "diagnostics_current_launch_recent_count",
-      "value": "本次啟動最近 {0} 條"
+      "value": "이번 실행 최근 항목 {0}개"
     },
     {
       "name": "diagnostics_log_file_share_hint",
-      "value": "{0} · 點按分享"
+      "value": "{0} · 탭하여 공유"
     },
     {
       "name": "current_log_with_time",
-      "value": "目前記錄 · {0}"
+      "value": "현재 로그 · {0}"
     },
     {
       "name": "startup_log_with_time",
-      "value": "啟動記錄 · {0}"
+      "value": "시작 로그 · {0}"
     },
     {
       "name": "retained_local_log_files_count_arg",
-      "value": "保留 {0} 個本機記錄檔"
+      "value": "로컬 로그 파일 {0}개 보관됨"
     },
     {
       "name": "clear_boot_records",
-      "value": "清空本次啟動記錄"
+      "value": "이번 실행 기록 지우기"
     },
     {
       "name": "no_log_files",
-      "value": "暫無日誌檔案"
+      "value": "로그 파일 없음"
     },
     {
       "name": "reopen_keeps_logs",
-      "value": "重新開啟應用後會保留最近啟動日誌"
+      "value": "최근 실행 로그는 앱을 다시 열어도 유지됩니다"
     },
     {
       "name": "no_diagnostics_logs",
-      "value": "暫無診斷日誌"
+      "value": "진단 로그 없음"
     },
     {
       "name": "boot_records_cleared",
-      "value": "本次啟動記錄已清空"
+      "value": "이번 실행 기록이 지워졌습니다"
     },
     {
       "name": "current_log",
-      "value": "目前日誌"
+      "value": "현재 로그"
     },
     {
       "name": "startup_log",
-      "value": "啟動日誌"
+      "value": "시작 로그"
     },
     {
       "name": "unknown_time",
-      "value": "時間未知"
+      "value": "알 수 없는 시간"
     },
     {
       "name": "updated_at",
-      "value": "更新於 %1$s"
+      "value": "업데이트됨 %1$s"
     },
     {
       "name": "share_file_unavailable_copied",
-      "value": "分享檔案不可用，已複製，可手動貼上"
+      "value": "공유 파일을 사용할 수 없어 수동 붙여넣기용으로 복사했습니다"
     },
     {
       "name": "share_failed",
-      "value": "分享失敗"
+      "value": "공유 실패"
     },
     {
       "name": "proxy_connection",
-      "value": "代理連線"
+      "value": "프록시 연결"
     },
     {
       "name": "use_proxy",
-      "value": "使用代理"
+      "value": "프록시 사용"
     },
     {
       "name": "system_proxy",
-      "value": "系統代理"
+      "value": "시스템 프록시"
     },
     {
       "name": "add_proxy",
-      "value": "新增代理"
+      "value": "프록시 추가"
     },
     {
       "name": "testing_connection",
-      "value": "正在測試連線…"
+      "value": "연결 테스트 중…"
     },
     {
       "name": "test_connection",
-      "value": "測試連線"
+      "value": "연결 테스트"
     },
     {
       "name": "proxy_info",
-      "value": "代理資訊"
+      "value": "프록시 정보"
     },
     {
       "name": "proxy_type",
-      "value": "代理類型"
+      "value": "프록시 유형"
     },
     {
       "name": "http_proxy",
@@ -722,7 +722,7 @@
     },
     {
       "name": "supports_auth",
-      "value": "支援使用者名稱和密碼驗證"
+      "value": "사용자 이름/비밀번호 인증 지원"
     },
     {
       "name": "https_proxy_entry",
@@ -730,31 +730,31 @@
     },
     {
       "name": "https_proxy_entry_subtitle",
-      "value": "代理伺服器使用 TLS，不是訪問 HTTPS 目標站"
+      "value": "프록시 서버가 TLS를 사용하며, HTTPS 대상 사이트를 의미하지 않습니다"
     },
     {
       "name": "socks5_auth_optional",
-      "value": "使用者名稱和密碼可選"
+      "value": "사용자 이름과 비밀번호는 선택 사항"
     },
     {
       "name": "invalid_proxy_host",
-      "value": "請輸入有效代理主機"
+      "value": "올바른 프록시 호스트를 입력하세요"
     },
     {
       "name": "invalid_proxy_port",
-      "value": "連接埠需為 1-65535"
+      "value": "포트는 1-65535여야 합니다"
     },
     {
       "name": "connection_test_success",
-      "value": "連接成功（HTTP {0}）"
+      "value": "연결 성공 (HTTP {0})"
     },
     {
       "name": "connection_test_failed",
-      "value": "連接失敗：HTTP {0}"
+      "value": "연결 실패: HTTP {0}"
     },
     {
       "name": "confirm_delete_proxy_message",
-      "value": "確定刪除「{0}」？"
+      "value": "“{0}”을(를) 삭제할까요?"
     },
     {
       "name": "socks5_proxy",
@@ -762,1983 +762,1983 @@
     },
     {
       "name": "auth_not_supported",
-      "value": "不支援驗證"
+      "value": "인증이 지원되지 않음"
     },
     {
       "name": "proxy_parameters",
-      "value": "代理參數"
+      "value": "프록시 매개변수"
     },
     {
       "name": "authentication",
-      "value": "驗證"
+      "value": "인증"
     },
     {
       "name": "actions",
-      "value": "操作"
+      "value": "동작"
     },
     {
       "name": "delete_proxy",
-      "value": "刪除代理"
+      "value": "프록시 삭제"
     },
     {
       "name": "proxy_name_placeholder",
-      "value": "名稱（可選）"
+      "value": "이름(선택 사항)"
     },
     {
       "name": "default_server_port",
-      "value": "預設使用伺服器:連接埠"
+      "value": "기본적으로 server:port 사용"
     },
     {
       "name": "server",
-      "value": "伺服器"
+      "value": "서버"
     },
     {
       "name": "port",
-      "value": "連接埠"
+      "value": "포트"
     },
     {
       "name": "username_optional",
-      "value": "使用者名稱（可選）"
+      "value": "사용자 이름(선택 사항)"
     },
     {
       "name": "password_optional",
-      "value": "密碼（可選）"
+      "value": "비밀번호(선택 사항)"
     },
     {
       "name": "bypass_list_optional",
-      "value": "繞過列表（可選）"
+      "value": "우회 목록(선택 사항)"
     },
     {
       "name": "one_domain_or_ip_per_line",
-      "value": "每行一個網域或 IP"
+      "value": "한 줄에 도메인 또는 IP 하나"
     },
     {
       "name": "built_in_options",
-      "value": "內建選項"
+      "value": "기본 제공 옵션"
     },
     {
       "name": "proxy_config",
-      "value": "代理配置"
+      "value": "프록시 구성"
     },
     {
       "name": "socks5_auth_unsupported",
-      "value": "SOCKS5 暫不支援使用者名稱/密碼驗證"
+      "value": "SOCKS5는 아직 사용자 이름/비밀번호 인증을 지원하지 않습니다"
     },
     {
       "name": "testing",
-      "value": "測試中…"
+      "value": "테스트 중…"
     },
     {
       "name": "profile_switched",
-      "value": "已切換配置"
+      "value": "프로필 전환됨"
     },
     {
       "name": "switch_failed",
-      "value": "切換失敗"
+      "value": "전환 실패"
     },
     {
       "name": "test_failed",
-      "value": "測試失敗"
+      "value": "테스트 실패"
     },
     {
       "name": "proxy_config_title",
-      "value": "代理配置"
+      "value": "프록시 구성"
     },
     {
       "name": "proxy_not_configured",
-      "value": "未設定"
+      "value": "구성되지 않음"
     },
     {
       "name": "proxy_summary_http",
-      "value": "HTTP 代理 · {0}:{1}"
+      "value": "HTTP 프록시 · {0}:{1}"
     },
     {
       "name": "proxy_summary_https",
-      "value": "HTTPS 代理端點 · {0}:{1}"
+      "value": "HTTPS 프록시 엔드포인트 · {0}:{1}"
     },
     {
       "name": "proxy_summary_socks5",
-      "value": "SOCKS5 代理 · {0}:{1}"
+      "value": "SOCKS5 프록시 · {0}:{1}"
     },
     {
       "name": "proxy_summary_http_not_configured",
-      "value": "HTTP 代理 · 未設定"
+      "value": "HTTP 프록시 · 구성되지 않음"
     },
     {
       "name": "proxy_summary_socks5_not_configured",
-      "value": "SOCKS5 代理 · 未設定"
+      "value": "SOCKS5 프록시 · 구성되지 않음"
     },
     {
       "name": "local_data",
-      "value": "本機資料"
+      "value": "로컬 데이터"
     },
     {
       "name": "cache_subtitle_updated",
-      "value": "清單 {0} 組 · 詳情 {1} 篇 · 更新於 {2}"
+      "value": "목록 {0} · 상세 {1} · 업데이트됨 {2}"
     },
     {
       "name": "cache_subtitle",
-      "value": "清單 {0} 組 · 詳情 {1} 篇"
+      "value": "목록 {0} · 상세 {1}"
     },
     {
       "name": "seed_all_cache_scenarios",
-      "value": "Seed 全部快取場景"
+      "value": "모든 캐시 시나리오 Seed"
     },
     {
       "name": "seed_large_list_file_cache",
-      "value": "Seed 大型清單檔案快取"
+      "value": "대용량 목록 파일 캐시 Seed"
     },
     {
       "name": "seed_mixed_row_cache",
-      "value": "Seed 混合列快取"
+      "value": "혼합 행 캐시 Seed"
     },
     {
       "name": "seed_invalid_path_row",
-      "value": "Seed 無效路徑列"
+      "value": "잘못된 경로 행 Seed"
     },
     {
       "name": "seed_orphan_file",
-      "value": "Seed 孤立檔案"
+      "value": "고아 파일 Seed"
     },
     {
       "name": "seed_missing_file_row",
-      "value": "Seed 遺失檔案列"
+      "value": "누락 파일 행 Seed"
     },
     {
       "name": "seed_hash_mismatch_row",
-      "value": "Seed Hash 不相符列"
+      "value": "해시 불일치 행 Seed"
     },
     {
       "name": "verify_hash_repair",
-      "value": "驗證 Hash 修復"
+      "value": "해시 복구 확인"
     },
     {
       "name": "seed_expired_row",
-      "value": "Seed 過期列"
+      "value": "만료된 행 Seed"
     },
     {
       "name": "reset_seed_cache",
-      "value": "重設 Seed 快取"
+      "value": "Seed 캐시 초기화"
     },
     {
       "name": "account_qa_seed",
-      "value": "多賬戶 QA Seed"
+      "value": "Account QA Seed"
     },
     {
       "name": "seed_account_records",
-      "value": "Seed 賬戶記錄"
+      "value": "계정 레코드 Seed"
     },
     {
       "name": "reset_seeded_accounts",
-      "value": "重設 Seed 賬戶"
+      "value": "Seed된 계정 초기화"
     },
     {
       "name": "visible_home_nodes_reorder_hint",
-      "value": "已顯示欄目  長按欄目可拖曳排序"
+      "value": "표시된 열 · 길게 눌러 재정렬"
     },
     {
       "name": "add_home_column",
-      "value": "新增欄目"
+      "value": "열 추가"
     },
     {
       "name": "hide",
-      "value": "隱藏"
+      "value": "숨기기"
     },
     {
       "name": "node_name_placeholder",
-      "value": "節點名稱（例如 create）"
+      "value": "노드 이름(예: create)"
     },
     {
       "name": "add_node_column",
-      "value": "新增節點欄目"
+      "value": "노드 열 추가"
     },
     {
       "name": "invalid_node_name",
-      "value": "請輸入有效節點名稱"
+      "value": "올바른 노드 이름을 입력하세요"
     },
     {
       "name": "node_column_exists",
-      "value": "節點欄目已存在"
+      "value": "노드 열이 이미 존재합니다"
     },
     {
       "name": "web_session_validation_failed",
-      "value": "Web 工作階段驗證失敗"
+      "value": "Web 세션 검증 실패"
     },
     {
       "name": "two_factor_relogin_required",
-      "value": "V2EX 需要完成兩步驗證，請重新登入"
+      "value": "V2EX에서 2단계 인증이 필요합니다. 다시 로그인하세요"
     },
     {
       "name": "two_factor_required",
-      "value": "V2EX 需要完成兩步驗證"
+      "value": "V2EX에서 2단계 인증이 필요합니다"
     },
     {
       "name": "login_validation_failed",
-      "value": "登入狀態驗證失敗"
+      "value": "로그인 검증 실패"
     },
     {
       "name": "token_info_failed",
-      "value": "Token 資訊取得失敗"
+      "value": "토큰 정보 가져오기 실패"
     },
     {
       "name": "clear_token_failed",
-      "value": "清除 Token 失敗"
+      "value": "토큰 지우기 실패"
     },
     {
       "name": "clear_session_failed",
-      "value": "清除工作階段失敗"
+      "value": "세션 지우기 실패"
     },
     {
       "name": "clear_cookie_failed",
-      "value": "清除 Cookie 失敗"
+      "value": "쿠키 지우기 실패"
     },
     {
       "name": "read_account_failed",
-      "value": "讀取帳戶資訊失敗"
+      "value": "계정 정보 읽기 실패"
     },
     {
       "name": "already_checked_in_today",
-      "value": "今日已簽到"
+      "value": "오늘 이미 체크인했습니다"
     },
     {
       "name": "checkin_completed",
-      "value": "簽到完成"
+      "value": "체크인 완료"
     },
     {
       "name": "checkin_failed",
-      "value": "簽到失敗"
+      "value": "체크인 실패"
     },
     {
       "name": "nav_refresh",
-      "value": "刷新"
+      "value": "새로 고침"
     },
     {
       "name": "nav_filter",
-      "value": "篩選"
+      "value": "필터"
     },
     {
       "name": "nav_save_login",
-      "value": "儲存登入"
+      "value": "로그인 저장"
     },
     {
       "name": "nav_reload",
-      "value": "重新載入"
+      "value": "다시 로드"
     },
     {
       "name": "nav_save_image",
-      "value": "儲存圖片"
+      "value": "이미지 저장"
     },
     {
       "name": "account_v2ex_user",
-      "value": "V2EX 用戶"
+      "value": "V2EX 사용자"
     },
     {
       "name": "account_token_scope_arg",
-      "value": "Token 權限: %s"
+      "value": "토큰 범위: %s"
     },
     {
       "name": "account_token_expiration_arg",
-      "value": "到期: %s"
+      "value": "만료: %s"
     },
     {
       "name": "account_token_last_used_arg",
-      "value": "最後使用: %s"
+      "value": "마지막 사용: %s"
     },
     {
       "name": "account_api_quota_arg",
-      "value": "API 額度: %s / %s"
+      "value": "API 할당량: %s / %s"
     },
     {
       "name": "account_rate_limit_reset_arg",
-      "value": "重設時間: %s"
+      "value": "초기화 시간: %s"
     },
     {
       "name": "topic_action_site_favorite",
-      "value": "站內收藏"
+      "value": "사이트 즐겨찾기"
     },
     {
       "name": "topic_action_follow_node",
-      "value": "關注節點"
+      "value": "노드 팔로우"
     },
     {
       "name": "add_x_format",
-      "value": "新增 {0}"
+      "value": "{0} 추가"
     },
     {
       "name": "proxy_profile_not_found",
-      "value": "設定檔不存在"
+      "value": "프로필이 존재하지 않습니다"
     },
     {
       "name": "default_proxy_profile_name",
-      "value": "代理設定"
+      "value": "프록시 구성"
     },
     {
       "name": "common_apply",
-      "value": "套用"
+      "value": "적용"
     },
     {
       "name": "common_apply_search",
-      "value": "套用搜尋"
+      "value": "검색 적용"
     },
     {
       "name": "common_searching",
-      "value": "搜尋中"
+      "value": "검색 중"
     },
     {
       "name": "common_all",
-      "value": "全部"
+      "value": "전체"
     },
     {
       "name": "common_topic",
-      "value": "主題"
+      "value": "토픽"
     },
     {
       "name": "common_topics",
-      "value": "主題"
+      "value": "토픽"
     },
     {
       "name": "common_node",
-      "value": "節點"
+      "value": "노드"
     },
     {
       "name": "common_nodes",
-      "value": "節點"
+      "value": "노드"
     },
     {
       "name": "common_user",
-      "value": "用戶"
+      "value": "사용자"
     },
     {
       "name": "common_local",
-      "value": "本機"
+      "value": "로컬"
     },
     {
       "name": "common_web",
-      "value": "網頁"
+      "value": "Web"
     },
     {
       "name": "common_author",
-      "value": "作者"
+      "value": "작성자"
     },
     {
       "name": "common_sort",
-      "value": "排序"
+      "value": "정렬"
     },
     {
       "name": "common_time",
-      "value": "時間"
+      "value": "시간"
     },
     {
       "name": "common_relevance",
-      "value": "相關"
+      "value": "관련도"
     },
     {
       "name": "common_descending",
-      "value": "倒序"
+      "value": "내림차순"
     },
     {
       "name": "common_ascending",
-      "value": "正序"
+      "value": "오름차순"
     },
     {
       "name": "common_time_range",
-      "value": "時間範圍"
+      "value": "시간 범위"
     },
     {
       "name": "common_unlimited",
-      "value": "不限"
+      "value": "전체 기간"
     },
     {
       "name": "common_one_day",
-      "value": "一天"
+      "value": "1일"
     },
     {
       "name": "common_one_week",
-      "value": "一週"
+      "value": "1주"
     },
     {
       "name": "common_one_month",
-      "value": "一個月"
+      "value": "1개월"
     },
     {
       "name": "common_one_year",
-      "value": "一年"
+      "value": "1년"
     },
     {
       "name": "common_selected",
-      "value": "已選"
+      "value": "선택됨"
     },
     {
       "name": "common_copied",
-      "value": "已複製"
+      "value": "복사됨"
     },
     {
       "name": "common_copy_username",
-      "value": "複製用戶名"
+      "value": "사용자 이름 복사"
     },
     {
       "name": "common_copy_code",
-      "value": "已複製程式碼"
+      "value": "코드 복사됨"
     },
     {
       "name": "common_copy_decoded_text",
-      "value": "已複製解碼文字"
+      "value": "디코드된 텍스트 복사됨"
     },
     {
       "name": "common_no_more",
-      "value": "沒有更多了"
+      "value": "더 이상 없음"
     },
     {
       "name": "common_click_preview",
-      "value": "點按預覽"
+      "value": "탭하여 미리보기"
     },
     {
       "name": "common_image_auto_load_off",
-      "value": "圖片自動載入已關閉"
+      "value": "이미지 자동 로드가 꺼져 있습니다"
     },
     {
       "name": "common_invalid_floor",
-      "value": "請輸入有效樓層號"
+      "value": "올바른 층 번호를 입력하세요"
     },
     {
       "name": "search_result_type",
-      "value": "結果類型"
+      "value": "결과 유형"
     },
     {
       "name": "search_filter_nodes_library",
-      "value": "節點庫"
+      "value": "노드 라이브러리"
     },
     {
       "name": "search_topics_nodes_users_placeholder",
-      "value": "搜尋主題、節點、用戶"
+      "value": "토픽, 노드, 사용자 검색"
     },
     {
       "name": "search_browser_v2ex_topics",
-      "value": "使用瀏覽器搜尋 V2EX 主題"
+      "value": "브라우저에서 V2EX 토픽 검색"
     },
     {
       "name": "search_enter_keyword_to_start",
-      "value": "輸入關鍵字開始搜尋"
+      "value": "검색을 시작하려면 키워드를 입력하세요"
     },
     {
       "name": "search_open_web_search",
-      "value": "開啟網頁搜尋"
+      "value": "Web 검색 열기"
     },
     {
       "name": "search_history",
-      "value": "搜尋歷史"
+      "value": "검색 기록"
     },
     {
       "name": "search_user_related_topics",
-      "value": "用戶相關主題"
+      "value": "사용자 관련 토픽"
     },
     {
       "name": "search_topic_results",
-      "value": "主題結果"
+      "value": "토픽 결과"
     },
     {
       "name": "search_no_local_user_topics",
-      "value": "沒有符合該用戶的本機主題"
+      "value": "이 사용자와 일치하는 로컬 토픽이 없습니다"
     },
     {
       "name": "search_no_topics",
-      "value": "沒有符合的主題"
+      "value": "일치하는 토픽이 없습니다"
     },
     {
       "name": "search_sov2ex",
-      "value": "使用 SOV2EX 站內搜尋"
+      "value": "SOV2EX 사이트 검색 사용"
     },
     {
       "name": "search_external_summary",
-      "value": "官方 API 暫無主題搜尋，使用系統瀏覽器搜尋 V2EX 主題"
+      "value": "공식 API에는 토픽 검색이 없습니다. 시스템 브라우저로 V2EX 토픽을 검색하세요"
     },
     {
       "name": "search_local_with_nodes_summary",
-      "value": "在收藏 / 最近瀏覽 / 關注節點 / 離線快取 / 節點庫中搜尋"
+      "value": "즐겨찾기, 최근 본 항목, 팔로우한 노드, 오프라인 캐시, 노드 라이브러리 검색"
     },
     {
       "name": "search_local_summary",
-      "value": "在收藏 / 最近瀏覽 / 關注節點 / 離線快取中搜尋"
+      "value": "즐겨찾기, 최근 본 항목, 팔로우한 노드, 오프라인 캐시 검색"
     },
     {
       "name": "search_index_loading",
-      "value": "索引載入中"
+      "value": "인덱스 로드 중"
     },
     {
       "name": "search_cache_loading",
-      "value": "快取載入中"
+      "value": "캐시 로드 중"
     },
     {
       "name": "search_nodes_loading",
-      "value": "節點載入中"
+      "value": "노드 로드 중"
     },
     {
       "name": "search_nodes_library_empty_hint",
-      "value": "節點庫和你關注的節點會顯示在這裡"
+      "value": "노드 라이브러리와 팔로우한 노드가 여기에 표시됩니다"
     },
     {
       "name": "search_followed_nodes_empty_hint",
-      "value": "你關注的節點會顯示在這裡"
+      "value": "팔로우한 노드가 여기에 표시됩니다"
     },
     {
       "name": "search_no_nodes",
-      "value": "沒有符合的節點"
+      "value": "일치하는 노드가 없습니다"
     },
     {
       "name": "search_filter_hint",
-      "value": "輸入關鍵字後點按搜尋，篩選在右上角"
+      "value": "키워드를 입력하고 검색을 탭하세요. 필터는 오른쪽 위에 있습니다"
     },
     {
       "name": "about_app_info",
-      "value": "應用資訊"
+      "value": "앱 정보"
     },
     {
       "name": "about_project",
-      "value": "專案"
+      "value": "프로젝트"
     },
     {
       "name": "about_acknowledgements",
-      "value": "致謝"
+      "value": "감사의 말"
     },
     {
       "name": "about_open_source_license",
-      "value": "開源授權"
+      "value": "오픈 소스 라이선스"
     },
     {
       "name": "about_tagline",
-      "value": "HarmonyOS 原生 V2EX 客戶端"
+      "value": "네이티브 HarmonyOS V2EX 클라이언트"
     },
     {
       "name": "about_version_format",
-      "value": "版本 {0}"
+      "value": "버전 {0}"
     },
     {
       "name": "about_project_url",
-      "value": "專案地址"
+      "value": "프로젝트 URL"
     },
     {
       "name": "about_developer",
-      "value": "開發者"
+      "value": "개발자"
     },
     {
       "name": "about_v2next_ack",
-      "value": "感謝 V2Next 專案在 V2EX 客戶端體驗上的探索。"
+      "value": "V2EX 클라이언트 경험을 탐구한 V2Next 프로젝트에 감사드립니다."
     },
     {
       "name": "about_source_license",
-      "value": "原始碼授權"
+      "value": "소스 코드 라이선스"
     },
     {
       "name": "about_third_party_client",
-      "value": "Next2V 是面向 V2EX 的第三方客戶端。"
+      "value": "Next2V는 V2EX의 타사 클라이언트입니다."
     },
     {
       "name": "about_copyright",
-      "value": "應用原始碼按 MIT License 開源；V2EX 名稱、標誌和內容歸其各自權利人所有。"
+      "value": "앱 소스 코드는 MIT License에 따라 오픈 소스로 제공됩니다. V2EX 이름, 상표 및 콘텐츠는 각 권리자에게 속합니다."
     },
     {
       "name": "about_app_name",
-      "value": "應用名稱"
+      "value": "앱 이름"
     },
     {
       "name": "about_platform",
-      "value": "平台"
+      "value": "플랫폼"
     },
     {
       "name": "empty_no_favorite_nodes",
-      "value": "還沒有收藏節點"
+      "value": "즐겨찾기 노드가 아직 없습니다"
     },
     {
       "name": "empty_no_favorite_topics",
-      "value": "還沒有收藏主題"
+      "value": "즐겨찾기 토픽이 아직 없습니다"
     },
     {
       "name": "empty_no_local_followed_nodes",
-      "value": "還沒有本機關注節點"
+      "value": "로컬 팔로우 노드가 아직 없습니다"
     },
     {
       "name": "saved_locally_on_format",
-      "value": "本機關注於 {0}"
+      "value": "{0}에 로컬 저장됨"
     },
     {
       "name": "empty_no_read_later_topics",
-      "value": "還沒有稍後讀主題"
+      "value": "나중에 읽기 토픽이 아직 없습니다"
     },
     {
       "name": "saved_on_label",
-      "value": "儲存於"
+      "value": "저장 날짜"
     },
     {
       "name": "draft_saved_on_format",
-      "value": "已儲存於 {0}"
+      "value": "{0}에 저장됨"
     },
     {
       "name": "posted_topic_format",
-      "value": "已發帖：{0}"
+      "value": "게시됨: {0}"
     },
     {
       "name": "posted_topic",
-      "value": "已發帖"
+      "value": "게시됨"
     },
     {
       "name": "empty_no_recent_views",
-      "value": "還沒有最近瀏覽記錄"
+      "value": "최근 본 항목이 아직 없습니다"
     },
     {
       "name": "viewed_on_label",
-      "value": "瀏覽於"
+      "value": "본 날짜"
     },
     {
       "name": "two_factor_completed",
-      "value": "兩步驗證已完成"
+      "value": "2단계 인증 완료"
     },
     {
       "name": "image_saved_to_gallery",
-      "value": "已儲存到圖庫"
+      "value": "Gallery에 저장됨"
     },
     {
       "name": "image_save_cancelled",
-      "value": "已取消儲存"
+      "value": "저장 취소됨"
     },
     {
       "name": "username_or_email_placeholder",
-      "value": "用戶名或電子郵件"
+      "value": "사용자 이름 또는 이메일"
     },
     {
       "name": "login_form_refetched",
-      "value": "已重新取得登入表單，請重新輸入密碼"
+      "value": "로그인 양식이 새로 고쳐졌습니다. 비밀번호를 다시 입력하세요."
     },
     {
       "name": "login_username_password_required",
-      "value": "請輸入用戶名和密碼"
+      "value": "사용자 이름과 비밀번호를 입력하세요"
     },
     {
       "name": "login_saved",
-      "value": "登入已儲存"
+      "value": "로그인 저장됨"
     },
     {
       "name": "login_cookie_missing",
-      "value": "未取得登入 Cookie，請確認已完成登入"
+      "value": "로그인 쿠키를 얻지 못했습니다. 로그인이 완료되었는지 확인하세요."
     },
     {
       "name": "login_cookie_invalid",
-      "value": "Cookie 登入狀態無效，請確認已完成登入"
+      "value": "쿠키 로그인 상태가 유효하지 않습니다. 로그인이 완료되었는지 확인하세요."
     },
     {
       "name": "login_password_placeholder",
-      "value": "密碼"
+      "value": "비밀번호"
     },
     {
       "name": "login_captcha_placeholder",
-      "value": "驗證碼"
+      "value": "Captcha"
     },
     {
       "name": "login_button_preparing",
-      "value": "準備中…"
+      "value": "준비 중…"
     },
     {
       "name": "login_button_logging_in",
-      "value": "登入中…"
+      "value": "로그인 중…"
     },
     {
       "name": "login_button_label",
-      "value": "登入"
+      "value": "로그인"
     },
     {
       "name": "login_form_not_loaded",
-      "value": "登入表單未載入完成，請稍後重試"
+      "value": "로그인 양식이 로드되지 않았습니다. 다시 시도하세요"
     },
     {
       "name": "login_captcha_form_not_loaded",
-      "value": "登入驗證碼表單未載入完成，請重新取得驗證碼"
+      "value": "Captcha 양식이 로드되지 않았습니다. 새로 고침하세요"
     },
     {
       "name": "login_success",
-      "value": "登入成功"
+      "value": "로그인 성공"
     },
     {
       "name": "two_factor_title",
-      "value": "雙重驗證"
+      "value": "2단계 인증"
     },
     {
       "name": "two_factor_description",
-      "value": "V2EX 需要完成雙重驗證後才能繼續存取帳號內容。"
+      "value": "계정 콘텐츠에 계속 접근하려면 V2EX에서 2단계 인증이 필요합니다."
     },
     {
       "name": "two_factor_code_placeholder",
-      "value": "輸入 6 位驗證碼"
+      "value": "6자리 코드를 입력하세요"
     },
     {
       "name": "two_factor_verifying",
-      "value": "驗證中…"
+      "value": "확인 중…"
     },
     {
       "name": "two_factor_verify_button",
-      "value": "完成驗證"
+      "value": "확인"
     },
     {
       "name": "two_factor_later",
-      "value": "稍後再說"
+      "value": "나중에"
     },
     {
       "name": "login_to_view_topics",
-      "value": "登入後可查看收藏主題"
+      "value": "즐겨찾기 토픽을 보려면 로그인하세요"
     },
     {
       "name": "login_to_view_nodes",
-      "value": "登入後可查看收藏節點"
+      "value": "즐겨찾기 노드를 보려면 로그인하세요"
     },
     {
       "name": "web_login_opening",
-      "value": "正在打開網頁登入..."
+      "value": "Web 로그인 여는 중..."
     },
     {
       "name": "web_login_loading_url",
-      "value": "正在載入 {0}"
+      "value": "{0} 로드 중"
     },
     {
       "name": "web_login_loading_page",
-      "value": "正在載入網頁登入..."
+      "value": "Web 로그인 페이지 로드 중..."
     },
     {
       "name": "web_login_load_failed",
-      "value": "網頁登入載入失敗"
+      "value": "Web 로그인 로드 실패"
     },
     {
       "name": "web_login_saving",
-      "value": "正在儲存登入狀態…"
+      "value": "로그인 상태 저장 중..."
     },
     {
       "name": "web_login_opening_url",
-      "value": "正在打開 {0}"
+      "value": "{0} 여는 중"
     },
     {
       "name": "web_login_not_complete",
-      "value": "網頁登入尚未完成"
+      "value": "Web 로그인이 아직 완료되지 않았습니다"
     },
     {
       "name": "reply_submitted",
-      "value": "回覆已提交"
+      "value": "답글이 제출되었습니다"
     },
     {
       "name": "submit_completed",
-      "value": "已提交"
+      "value": "제출됨"
     },
     {
       "name": "confirm_reply_action_format",
-      "value": "確定{0} {1} 的回覆嗎？"
+      "value": "{0} 작업을 {1}의 답글에 할까요?"
     },
     {
       "name": "this_user",
-      "value": "該用戶"
+      "value": "이 사용자"
     },
     {
       "name": "already_thanked",
-      "value": "已經感謝過"
+      "value": "이미 감사했습니다"
     },
     {
       "name": "loaded_count_format",
-      "value": "已載入 {0} / {1}"
+      "value": "로드됨 {0} / {1}"
     },
     {
       "name": "load_all_replies_warning_format",
-      "value": "該主題有 {0} 則回覆，載入全部回覆可能需要較長時間。\n\n是否繼續載入以啟用完整的樓中樓檢視？"
+      "value": "이 토픽에는 답글이 {0}개 있습니다. 모든 답글을 로드하는 데 시간이 걸릴 수 있습니다.\n\n전체 스레드 보기를 사용하려면 계속 로드할까요?"
     },
     {
       "name": "favorited",
-      "value": "已收藏"
+      "value": "즐겨찾기됨"
     },
     {
       "name": "unfavorited",
-      "value": "已取消收藏"
+      "value": "즐겨찾기 해제됨"
     },
     {
       "name": "thanked",
-      "value": "已感謝"
+      "value": "감사함"
     },
     {
       "name": "action_done_format",
-      "value": "已{0}"
+      "value": "{0} 완료"
     },
     {
       "name": "user_topics_hidden",
-      "value": "主題列表已隱藏"
+      "value": "토픽 목록이 숨겨져 있습니다"
     },
     {
       "name": "followed",
-      "value": "已關注"
+      "value": "팔로우됨"
     },
     {
       "name": "unfollowed",
-      "value": "已取消關注"
+      "value": "팔로우 해제됨"
     },
     {
       "name": "blocked",
-      "value": "已封鎖"
+      "value": "차단됨"
     },
     {
       "name": "unblocked",
-      "value": "已取消封鎖"
+      "value": "차단 해제됨"
     },
     {
       "name": "user_load_failed",
-      "value": "用戶資訊載入失敗"
+      "value": "사용자 정보 로드 실패"
     },
     {
       "name": "discover_today_hot",
-      "value": "今日熱議"
+      "value": "오늘의 인기 토픽"
     },
     {
       "name": "discover_hot",
-      "value": "熱議"
+      "value": "인기"
     },
     {
       "name": "discover_latest_topics",
-      "value": "最新主題"
+      "value": "최신 토픽"
     },
     {
       "name": "discover_recent_updates",
-      "value": "最近更新"
+      "value": "최근 업데이트"
     },
     {
       "name": "discover_site_rank",
-      "value": "全站熱榜"
+      "value": "사이트 전체 인기"
     },
     {
       "name": "node_selected_format",
-      "value": "已選擇節點：{0}"
+      "value": "선택된 노드: {0}"
     },
     {
       "name": "node_cleared",
-      "value": "已清空節點"
+      "value": "노드가 지워졌습니다"
     },
     {
       "name": "storage_written_format",
-      "value": "已寫入 {0} 行 / {1} 個檔案"
+      "value": "{0}행 / {1}파일 기록됨"
     },
     {
       "name": "v2ex_tab_tech",
-      "value": "技術"
+      "value": "기술"
     },
     {
       "name": "v2ex_tab_creative",
-      "value": "創意"
+      "value": "창작"
     },
     {
       "name": "v2ex_tab_play",
-      "value": "好玩"
+      "value": "놀이"
     },
     {
       "name": "v2ex_tab_jobs",
-      "value": "酷工作"
+      "value": "채용"
     },
     {
       "name": "v2ex_tab_deals",
-      "value": "交易"
+      "value": "거래"
     },
     {
       "name": "v2ex_tab_city",
-      "value": "城市"
+      "value": "도시"
     },
     {
       "name": "v2ex_tab_qna",
-      "value": "問與答"
+      "value": "Q&A"
     },
     {
       "name": "v2ex_tab_hot",
-      "value": "最熱"
+      "value": "인기"
     },
     {
       "name": "reply_submit",
-      "value": "提交"
+      "value": "제출"
     },
     {
       "name": "reply_submitting",
-      "value": "提交中"
+      "value": "제출 중"
     },
     {
       "name": "reply_content_required",
-      "value": "回覆內容不能為空"
+      "value": "답글 내용은 비워 둘 수 없습니다"
     },
     {
       "name": "reply_login_required",
-      "value": "請先登入"
+      "value": "먼저 로그인하세요"
     },
     {
       "name": "reply_confirm_submit_sheet",
-      "value": "確定提交這則回覆嗎？"
+      "value": "이 답글을 제출할까요?"
     },
     {
       "name": "reply_confirm_submit_page_format",
-      "value": "確定向{0}提交回覆嗎？\n\nV2EX 回覆通常至少消耗 5 銅幣，提交後會修改你的帳號狀態。"
+      "value": "{0}에 답글을 제출할까요?\n\nV2EX 답글은 보통 최소 5 copper coins가 필요하며 계정 상태가 변경됩니다."
     },
     {
       "name": "reply_current_topic",
-      "value": "當前主題"
+      "value": "현재 토픽"
     },
     {
       "name": "discover_rank",
-      "value": "熱榜"
+      "value": "순위"
     },
     {
       "name": "discover_latest",
-      "value": "最新"
+      "value": "최신"
     },
     {
       "name": "discover_recent",
-      "value": "最近"
+      "value": "최근"
     },
     {
       "name": "discover_section_saved_nodes",
-      "value": "關注節點"
+      "value": "팔로우한 노드"
     },
     {
       "name": "discover_section_recent_nodes",
-      "value": "最近瀏覽節點"
+      "value": "최근 본 노드"
     },
     {
       "name": "discover_node_navigation",
-      "value": "節點導航"
+      "value": "노드 탐색"
     },
     {
       "name": "discover_node_navigation_hottest",
-      "value": "最熱節點"
+      "value": "가장 인기 있는 노드"
     },
     {
       "name": "discover_node_navigation_recently_created",
-      "value": "最近新增節點"
+      "value": "최근 생성된 노드"
     },
     {
       "name": "search_source_favorite",
-      "value": "收藏"
+      "value": "저장됨"
     },
     {
       "name": "search_source_recent",
-      "value": "最近"
+      "value": "최근"
     },
     {
       "name": "search_source_followed",
-      "value": "關注"
+      "value": "팔로우됨"
     },
     {
       "name": "search_source_nodes_library",
-      "value": "節點庫"
+      "value": "노드 라이브러리"
     },
     {
       "name": "search_source_cache_list",
-      "value": "快取（清單）"
+      "value": "캐시(목록)"
     },
     {
       "name": "search_source_cache_detail",
-      "value": "快取（詳情）"
+      "value": "캐시(상세)"
     },
     {
       "name": "relative_just_now",
-      "value": "剛剛"
+      "value": "방금 전"
     },
     {
       "name": "relative_minutes_ago",
-      "value": "{0} 分鐘前"
+      "value": "{0}분 전"
     },
     {
       "name": "relative_hours_ago",
-      "value": "{0} 小時前"
+      "value": "{0}시간 전"
     },
     {
       "name": "relative_days_ago",
-      "value": "{0} 天前"
+      "value": "{0}일 전"
     },
     {
       "name": "relative_months_ago",
-      "value": "{0} 個月前"
+      "value": "{0}개월 전"
     },
     {
       "name": "relative_years_ago",
-      "value": "{0} 年前"
+      "value": "{0}년 전"
     },
     {
       "name": "user_profile_location",
-      "value": "位置"
+      "value": "위치"
     },
     {
       "name": "user_profile_website",
-      "value": "網站"
+      "value": "웹사이트"
     },
     {
       "name": "user_profile_member_number",
-      "value": "第 {0} 號會員 · {1}"
+      "value": "회원 #{0} · {1}"
     },
     {
       "name": "user_profile_no_topics",
-      "value": "暫無主題"
+      "value": "토픽 없음"
     },
     {
       "name": "user_profile_no_replies",
-      "value": "暫無回覆"
+      "value": "답글 없음"
     },
     {
       "name": "user_profile_view_all_topics",
-      "value": "檢視全部主題"
+      "value": "모든 토픽 보기"
     },
     {
       "name": "user_profile_view_all_replies",
-      "value": "檢視全部回覆"
+      "value": "모든 답글 보기"
     },
     {
       "name": "user_profile_action_failed",
-      "value": "操作失敗"
+      "value": "작업 실패"
     },
     {
       "name": "user_tab_topics_label",
-      "value": "主題"
+      "value": "토픽"
     },
     {
       "name": "user_tab_replies_label",
-      "value": "回覆"
+      "value": "답글"
     },
     {
       "name": "user_tab_topics_count",
-      "value": "主題 {0}"
+      "value": "토픽 {0}"
     },
     {
       "name": "user_tab_replies_count",
-      "value": "回覆 {0}"
+      "value": "답글 {0}"
     },
     {
       "name": "user_action_follow",
-      "value": "關注"
+      "value": "팔로우"
     },
     {
       "name": "user_action_unfollow",
-      "value": "取消關注"
+      "value": "팔로우 해제"
     },
     {
       "name": "user_action_block",
-      "value": "封鎖"
+      "value": "차단"
     },
     {
       "name": "user_action_unblock",
-      "value": "取消封鎖"
+      "value": "차단 해제"
     },
     {
       "name": "node_no_topics",
-      "value": "暫無主題"
+      "value": "토픽 없음"
     },
     {
       "name": "node_load_failed",
-      "value": "節點主題載入失敗"
+      "value": "노드 토픽 로드 실패"
     },
     {
       "name": "node_info_missing",
-      "value": "節點資訊缺失"
+      "value": "노드 정보 누락"
     },
     {
       "name": "node_picker_current_node_format",
-      "value": "當前：{0}"
+      "value": "현재: {0}"
     },
     {
       "name": "node_picker_helper",
-      "value": "點擊節點後會自動填入發帖草稿。"
+      "value": "노드를 클릭하면 토픽 초안에 자동으로 입력됩니다."
     },
     {
       "name": "node_picker_search_placeholder",
-      "value": "搜尋節點"
+      "value": "노드 검색"
     },
     {
       "name": "node_topics_count",
-      "value": "{0} 個主題"
+      "value": "토픽 {0}개"
     },
     {
       "name": "site_favorite_title",
-      "value": "站內收藏"
+      "value": "사이트 즐겨찾기"
     },
     {
       "name": "site_favorite_confirm",
-      "value": "確定{0}節點「{1}」嗎？"
+      "value": "{0} 노드 \"{1}\"을(를) 확인할까요?"
     },
     {
       "name": "site_favorite_action_favorite",
-      "value": "收藏"
+      "value": "즐겨찾기"
     },
     {
       "name": "site_favorite_action_unfavorite",
-      "value": "取消收藏"
+      "value": "즐겨찾기 해제"
     },
     {
       "name": "topic_editor_node_placeholder",
-      "value": "節點（如 create）"
+      "value": "노드(예: create)"
     },
     {
       "name": "topic_editor_select_node",
-      "value": "選擇"
+      "value": "선택"
     },
     {
       "name": "topic_editor_title_placeholder",
-      "value": "標題"
+      "value": "제목"
     },
     {
       "name": "common_loading",
-      "value": "載入中…"
+      "value": "로드 중…"
     },
     {
       "name": "media_youtube_video",
-      "value": "YouTube 影片"
+      "value": "YouTube 동영상"
     },
     {
       "name": "media_vimeo_video",
-      "value": "Vimeo 影片"
+      "value": "Vimeo 동영상"
     },
     {
       "name": "media_video_link",
-      "value": "影片"
+      "value": "동영상"
     },
     {
       "name": "media_imgur_page",
-      "value": "Imgur 圖片頁"
+      "value": "Imgur 페이지"
     },
     {
       "name": "media_v2ex_link",
-      "value": "V2EX 連結"
+      "value": "V2EX 링크"
     },
     {
       "name": "media_link_label",
-      "value": "連結"
+      "value": "링크"
     },
     {
       "name": "api_error_auth_required",
-      "value": "請先登入"
+      "value": "로그인하세요"
     },
     {
       "name": "api_error_web_session_expired",
-      "value": "Web 工作階段已失效，請重新登入"
+      "value": "Web 세션이 만료되었습니다. 다시 로그인하세요"
     },
     {
       "name": "api_error_invalid_username",
-      "value": "無效的使用者名稱"
+      "value": "잘못된 사용자 이름"
     },
     {
       "name": "api_error_invalid_topic_id",
-      "value": "無效的主題 ID"
+      "value": "잘못된 토픽 ID"
     },
     {
       "name": "api_error_invalid_node",
-      "value": "無效節點"
+      "value": "잘못된 노드"
     },
     {
       "name": "api_error_invalid_reply",
-      "value": "無效回覆"
+      "value": "잘못된 답글"
     },
     {
       "name": "api_error_invalid_notification_id",
-      "value": "無效的通知 ID"
+      "value": "잘못된 알림 ID"
     },
     {
       "name": "api_error_invalid_operation_target",
-      "value": "無效的操作對象"
+      "value": "잘못된 작업 대상"
     },
     {
       "name": "api_error_node_name_required",
-      "value": "節點名稱不能為空"
+      "value": "노드 이름이 필요합니다"
     },
     {
       "name": "api_error_missing_notification_param",
-      "value": "缺少通知刪除參數"
+      "value": "알림 삭제 매개변수가 누락되었습니다"
     },
     {
       "name": "api_error_notification_delete_not_applied",
-      "value": "刪除通知未生效，請稍後重試"
+      "value": "알림 삭제가 적용되지 않았습니다. 다시 시도하세요"
     },
     {
       "name": "api_error_checkin_not_available",
-      "value": "今日無法簽到"
+      "value": "오늘은 체크인을 사용할 수 없습니다"
     },
     {
       "name": "api_error_parse_favorite_action_failed",
-      "value": "解析收藏操作失敗，請稍後重試"
+      "value": "즐겨찾기 작업 파싱 실패, 다시 시도하세요"
     },
     {
       "name": "api_error_parse_follow_action_failed",
-      "value": "解析關注操作失敗，請稍後重試"
+      "value": "팔로우 작업 파싱 실패, 다시 시도하세요"
     },
     {
       "name": "api_error_missing_user_action",
-      "value": "缺少使用者操作"
+      "value": "사용자 작업 누락"
     },
     {
       "name": "api_error_reply_body_required",
-      "value": "回覆內容不能為空"
+      "value": "답글 본문이 필요합니다"
     },
     {
       "name": "api_error_parse_reply_form_failed",
-      "value": "解析回覆表單失敗，請改用瀏覽器"
+      "value": "답글 양식 파싱 실패, 브라우저를 사용하세요"
     },
     {
       "name": "api_error_submit_failed_detail",
-      "value": "提交失敗：{0}"
+      "value": "제출 실패: {0}"
     },
     {
       "name": "api_error_reply_submit_unconfirmed",
-      "value": "提交失敗：未確認回覆已發布"
+      "value": "제출 실패: 답글 게시가 확인되지 않았습니다"
     },
     {
       "name": "api_error_reply_thank_not_allowed",
-      "value": "目前回覆不可感謝或已感謝過"
+      "value": "답글에 감사할 수 없거나 이미 감사했습니다"
     },
     {
       "name": "api_error_missing_thank_action",
-      "value": "缺少感謝操作"
+      "value": "감사 작업 누락"
     },
     {
       "name": "api_error_thank_failed",
-      "value": "感謝失敗：{0}"
+      "value": "감사 실패: {0}"
     },
     {
       "name": "api_error_topic_thank_not_allowed",
-      "value": "目前主題不可感謝或已感謝過"
+      "value": "토픽에 감사할 수 없거나 이미 감사했습니다"
     },
     {
       "name": "api_error_missing_ignore_action",
-      "value": "缺少忽略操作"
+      "value": "무시 작업 누락"
     },
     {
       "name": "api_error_missing_report_action",
-      "value": "缺少報告操作"
+      "value": "신고 작업 누락"
     },
     {
       "name": "api_error_node_required",
-      "value": "請選擇節點"
+      "value": "노드를 선택하세요"
     },
     {
       "name": "api_error_title_required",
-      "value": "請輸入標題"
+      "value": "제목을 입력하세요"
     },
     {
       "name": "api_error_body_required",
-      "value": "請輸入內文"
+      "value": "본문을 입력하세요"
     },
     {
       "name": "api_error_parse_topic_form_failed",
-      "value": "解析發文表單失敗，請改用瀏覽器"
+      "value": "토픽 양식 파싱 실패, 브라우저를 사용하세요"
     },
     {
       "name": "api_error_missing_action_path",
-      "value": "缺少操作路徑"
+      "value": "작업 경로 누락"
     },
     {
       "name": "api_error_field_required_detail",
-      "value": "缺少{0}"
+      "value": "{0}은(는) 필수입니다"
     },
     {
       "name": "api_error_field_external_link_forbidden",
-      "value": "{0}不允許使用外部網域連結"
+      "value": "{0}에는 외부 링크를 사용할 수 없습니다"
     },
     {
       "name": "api_error_hot_topics_empty",
-      "value": "熱榜未取得主題，請稍後重試"
+      "value": "반환된 인기 토픽이 없습니다. 다시 시도하세요"
     },
     {
       "name": "api_error_recent_topics_empty",
-      "value": "最近更新未取得主題，請稍後重試"
+      "value": "반환된 최근 토픽이 없습니다. 다시 시도하세요"
     },
     {
       "name": "api_error_tab_topics_empty",
-      "value": "Tab「{0}」未取得主題，請稍後重試"
+      "value": "탭 \"{0}\"에서 토픽이 반환되지 않았습니다. 다시 시도하세요"
     },
     {
       "name": "api_error_parse_login_page_failed",
-      "value": "解析登入頁面失敗，請改用網頁登入"
+      "value": "로그인 페이지 파싱 실패, Web 로그인을 사용하세요"
     },
     {
       "name": "api_error_login_restricted",
-      "value": "V2EX 暫時限制登入。請稍後再試。"
+      "value": "V2EX에서 로그인이 일시적으로 제한되었습니다. 잠시 후 다시 시도하세요."
     },
     {
       "name": "api_error_login_restricted_with_ip",
-      "value": "V2EX 暫時限制目前 IP {0} 登入。請稍後再試。"
+      "value": "IP {0}에 대해 V2EX 로그인이 일시적으로 제한되었습니다. 잠시 후 다시 시도하세요."
     },
     {
       "name": "api_error_login_captcha_required",
-      "value": "目前 V2EX 登入需要驗證碼，請改用網頁登入"
+      "value": "V2EX 로그인에는 Captcha가 필요합니다. Web 로그인을 사용하세요"
     },
     {
       "name": "api_error_captcha_required",
-      "value": "請輸入驗證碼"
+      "value": "Captcha를 입력하세요"
     },
     {
       "name": "api_error_login_failed_detail",
-      "value": "登入失敗：{0}"
+      "value": "로그인 실패: {0}"
     },
     {
       "name": "api_error_login_redirect_unsupported",
-      "value": "登入失敗：不支援的跳轉 {0}"
+      "value": "로그인 실패: 지원되지 않는 리디렉션 {0}"
     },
     {
       "name": "api_error_login_state_unconfirmed",
-      "value": "登入失敗：無法確認登入狀態，請改用網頁登入"
+      "value": "로그인 실패: 로그인 상태를 확인할 수 없습니다. Web 로그인을 사용하세요"
     },
     {
       "name": "api_error_login_session_missing",
-      "value": "缺少登入工作階段，請重新登入"
+      "value": "로그인 세션이 없습니다. 다시 로그인하세요"
     },
     {
       "name": "api_error_two_factor_code_required",
-      "value": "請輸入兩步驟驗證碼"
+      "value": "2단계 인증 코드를 입력하세요"
     },
     {
       "name": "api_error_two_factor_failed_detail",
-      "value": "兩步驟驗證失敗：{0}"
+      "value": "2단계 인증 실패: {0}"
     },
     {
       "name": "api_error_two_factor_failed",
-      "value": "兩步驟驗證失敗，請檢查驗證碼或改用網頁登入"
+      "value": "2단계 인증 실패, 코드를 확인하거나 Web 로그인을 사용하세요"
     },
     {
       "name": "api_error_token_missing",
-      "value": "缺少 Token，請先設定 Personal Access Token"
+      "value": "토큰이 없습니다. Personal Access Token을 구성하세요"
     },
     {
       "name": "notification_login_required",
-      "value": "登入後可查看通知"
+      "value": "알림을 보려면 로그인하세요"
     },
     {
       "name": "notification_empty",
-      "value": "暫無通知"
+      "value": "알림 없음"
     },
     {
       "name": "notification_delete_title",
-      "value": "刪除通知"
+      "value": "알림 삭제"
     },
     {
       "name": "notification_delete_confirm",
-      "value": "確定刪除此通知嗎？"
+      "value": "이 알림을 삭제할까요?"
     },
     {
       "name": "notification_delete_requires_api_auth",
-      "value": "刪除通知需要 V2 API 授權"
+      "value": "알림 삭제에는 V2 API 인증이 필요합니다"
     },
     {
       "name": "notification_delete_requires_web_session",
-      "value": "刪除通知需要 Web 工作階段"
+      "value": "알림 삭제에는 Web 세션이 필요합니다"
     },
     {
       "name": "notification_load_failed",
-      "value": "通知載入失敗"
+      "value": "알림 로드 실패"
     },
     {
       "name": "notification_go_login",
-      "value": "去登入"
+      "value": "로그인"
     },
     {
       "name": "notification_tag_unread",
-      "value": "未讀"
+      "value": "읽지 않음"
     },
     {
       "name": "notification_kind_reply",
-      "value": "回覆"
+      "value": "답글"
     },
     {
       "name": "notification_kind_mention",
-      "value": "提及"
+      "value": "멘션"
     },
     {
       "name": "notification_kind_thanks",
-      "value": "感謝"
+      "value": "감사"
     },
     {
       "name": "notification_kind_favorite",
-      "value": "收藏"
+      "value": "즐겨찾기"
     },
     {
       "name": "notification_kind_follow",
-      "value": "關注"
+      "value": "팔로우"
     },
     {
       "name": "notification_kind_system",
-      "value": "系統"
+      "value": "시스템"
     },
     {
       "name": "notification_kind_notification",
-      "value": "通知"
+      "value": "알림"
     },
     {
       "name": "notification_source_web",
-      "value": "Web 工作階段"
+      "value": "Web 세션"
     },
     {
       "name": "common_load_more",
-      "value": "載入更多"
+      "value": "더 로드"
     },
     {
       "name": "search_node_results",
-      "value": "節點結果 {0}"
+      "value": "노드 결과 {0}"
     },
     {
       "name": "search_filter_title",
-      "value": "搜尋篩選"
+      "value": "검색 필터"
     },
     {
       "name": "search_web_filter_hint",
-      "value": "網頁搜尋會在系統瀏覽器中打開，不額外提供站內篩選。"
+      "value": "Web 검색은 추가 앱 내 필터 없이 시스템 브라우저에서 열립니다."
     },
     {
       "name": "search_discover_nodes_placeholder",
-      "value": "搜尋節點"
+      "value": "노드 검색"
     },
     {
       "name": "search_N_topics",
-      "value": "{0} 主題"
+      "value": "토픽 {0}개"
     },
     {
       "name": "search_N_replies",
-      "value": "{0} 回覆"
+      "value": "답글 {0}개"
     },
     {
       "name": "topic_action_thank_topic",
-      "value": "感謝主題"
+      "value": "토픽에 감사"
     },
     {
       "name": "topic_action_save_later",
-      "value": "稍後讀"
+      "value": "나중에 저장"
     },
     {
       "name": "topic_action_ignore_topic",
-      "value": "忽略主題"
+      "value": "토픽 무시"
     },
     {
       "name": "topic_action_report_topic",
-      "value": "舉報主題"
+      "value": "토픽 신고"
     },
     {
       "name": "topic_action_copy_title",
-      "value": "複製標題"
+      "value": "제목 복사"
     },
     {
       "name": "topic_action_copy_link",
-      "value": "複製連結"
+      "value": "링크 복사"
     },
     {
       "name": "topic_action_share_link",
-      "value": "分享連結"
+      "value": "링크 공유"
     },
     {
       "name": "topic_action_open_browser",
-      "value": "瀏覽器開啟"
+      "value": "브라우저에서 열기"
     },
     {
       "name": "image_preview_invalid_url",
-      "value": "圖片地址無效"
+      "value": "잘못된 이미지 URL"
     },
     {
       "name": "image_preview_downloading",
-      "value": "正在下載圖片…"
+      "value": "이미지 다운로드 중…"
     },
     {
       "name": "image_preview_not_an_image",
-      "value": "該連結返回的不是圖片"
+      "value": "링크가 이미지를 반환하지 않았습니다"
     },
     {
       "name": "image_preview_download_failed",
-      "value": "圖片下載失敗"
+      "value": "이미지 다운로드 실패"
     },
     {
       "name": "image_preview_temp_file_write_failed",
-      "value": "暫存檔案寫入失敗"
+      "value": "임시 파일 쓰기 실패"
     },
     {
       "name": "image_preview_url_empty",
-      "value": "圖片地址為空"
+      "value": "이미지 URL이 비어 있습니다"
     },
     {
       "name": "image_preview_go_back_retry",
-      "value": "返回後重試"
+      "value": "돌아가서 다시 시도"
     },
     {
       "name": "image_preview_choose_save_location",
-      "value": "請選擇儲存位置"
+      "value": "저장 위치를 선택하세요"
     },
     {
       "name": "image_preview_save_failed",
-      "value": "儲存失敗"
+      "value": "저장 실패"
     },
     {
       "name": "image_preview_save_to_gallery_failed",
-      "value": "儲存到圖庫失敗"
+      "value": "Gallery에 저장 실패"
     },
     {
       "name": "editor_body_placeholder",
-      "value": "正文（Markdown）"
+      "value": "본문(Markdown)"
     },
     {
       "name": "editor_empty_preview",
-      "value": "暫無內容"
+      "value": "아직 콘텐츠가 없습니다"
     },
     {
       "name": "editor_submitting",
-      "value": "提交中..."
+      "value": "제출 중..."
     },
     {
       "name": "editor_submit",
-      "value": "提交"
+      "value": "제출"
     },
     {
       "name": "editor_confirm_post_title",
-      "value": "確認發帖"
+      "value": "게시 확인"
     },
     {
       "name": "editor_publish",
-      "value": "發佈"
+      "value": "게시"
     },
     {
       "name": "editor_clear_draft_title",
-      "value": "清空草稿"
+      "value": "초안 지우기"
     },
     {
       "name": "editor_clear_draft_message",
-      "value": "確定清空當前發帖草稿嗎？"
+      "value": "이 토픽 초안을 지울까요?"
     },
     {
       "name": "editor_clear_draft_failed",
-      "value": "清空失敗"
+      "value": "지우기 실패"
     },
     {
       "name": "editor_confirm_post_format",
-      "value": "確定在節點「{0}」發佈主題《{1}》嗎？\n\nV2EX 發帖通常至少消耗 20 銅幣，提交後會修改你的賬號狀態。"
+      "value": "《{1}》을(를) 노드「{0}」에 게시할까요?\n\nV2EX 게시에는 보통 최소 20 copper coins가 필요하며 계정 상태가 변경됩니다."
     },
     {
       "name": "reply_composer_title",
-      "value": "寫回覆"
+      "value": "답글 작성"
     },
     {
       "name": "reply_body_placeholder",
-      "value": "寫回覆（自動保存草稿）"
+      "value": "답글 본문(자동 저장됨)"
     },
     {
       "name": "reply_clear_draft_title",
-      "value": "清空草稿"
+      "value": "초안 지우기"
     },
     {
       "name": "reply_clear_draft_message",
-      "value": "確定清空當前回覆草稿嗎？"
+      "value": "이 답글 초안을 지울까요?"
     },
     {
       "name": "reply_clear_draft_generic_message",
-      "value": "確定清空當前草稿嗎？"
+      "value": "현재 초안을 지울까요?"
     },
     {
       "name": "reply_clear_failed",
-      "value": "清空失敗"
+      "value": "지우기 실패"
     },
     {
       "name": "reply_confirm_submit_title",
-      "value": "提交回覆"
+      "value": "답글 제출"
     },
     {
       "name": "topic_detail_loading",
-      "value": "加載中..."
+      "value": "로드 중..."
     },
     {
       "name": "topic_still_loading",
-      "value": "主題仍在加載"
+      "value": "토픽이 아직 로드 중입니다"
     },
     {
       "name": "topic_many_replies_title",
-      "value": "回覆數量較多"
+      "value": "답글이 많음"
     },
     {
       "name": "topic_flat_view",
-      "value": "平鋪顯示"
+      "value": "평면 보기"
     },
     {
       "name": "topic_continue_loading",
-      "value": "繼續加載"
+      "value": "계속 로드"
     },
     {
       "name": "action_favorite",
-      "value": "收藏"
+      "value": "즐겨찾기"
     },
     {
       "name": "action_unfavorite",
-      "value": "取消收藏"
+      "value": "즐겨찾기 해제"
     },
     {
       "name": "action_thank",
-      "value": "感謝"
+      "value": "감사"
     },
     {
       "name": "action_ignore",
-      "value": "忽略"
+      "value": "무시"
     },
     {
       "name": "action_report",
-      "value": "舉報"
+      "value": "신고"
     },
     {
       "name": "reply_action_reply",
-      "value": "回覆"
+      "value": "답글"
     },
     {
       "name": "reply_action_login",
-      "value": "登錄"
+      "value": "로그인"
     },
     {
       "name": "reply_ignore_title",
-      "value": "忽略回覆"
+      "value": "답글 무시"
     },
     {
       "name": "reply_report_title",
-      "value": "舉報回覆"
+      "value": "답글 신고"
     },
     {
       "name": "reply_thank_title",
-      "value": "感謝回覆"
+      "value": "답글에 감사"
     },
     {
       "name": "topic_share_fallback_title",
-      "value": "V2EX 主題"
+      "value": "V2EX 토픽"
     },
     {
       "name": "jump_to_floor_title",
-      "value": "跳轉樓層"
+      "value": "층으로 이동"
     },
     {
       "name": "jump_to_floor_placeholder",
-      "value": "輸入樓層號"
+      "value": "층 번호 입력"
     },
     {
       "name": "jump_to_floor_button",
-      "value": "跳轉"
+      "value": "이동"
     },
     {
       "name": "reply_context_title",
-      "value": "回覆上下文"
+      "value": "답글 맥락"
     },
     {
       "name": "reply_context_with_floor_format",
-      "value": "#{0} 回覆上下文"
+      "value": "#{0} 답글 맥락"
     },
     {
       "name": "reply_context_empty_snippet",
-      "value": "（無內容）"
+      "value": "(내용 없음)"
     },
     {
       "name": "reply_context_label_above",
-      "value": "上文"
+      "value": "위"
     },
     {
       "name": "reply_context_label_below",
-      "value": "下文"
+      "value": "아래"
     },
     {
       "name": "reply_context_label_current",
-      "value": "當前回覆"
+      "value": "현재 답글"
     },
     {
       "name": "reply_context_label_mention_format",
-      "value": "提到 @{0}"
+      "value": "@{0} 언급됨"
     },
     {
       "name": "markdown_placeholder_text",
-      "value": "文字"
+      "value": "텍스트"
     },
     {
       "name": "markdown_placeholder_code",
-      "value": "代碼"
+      "value": "코드"
     },
     {
       "name": "markdown_placeholder_image",
-      "value": "圖片"
+      "value": "이미지"
     },
     {
       "name": "reply_thread_relation_label_format",
-      "value": "回覆 {0}"
+      "value": "답글 {0}"
     },
     {
       "name": "confirm_topic_favorite_format",
-      "value": "確定{0}《{1}》嗎？"
+      "value": "{0}《{1}》?"
     },
     {
       "name": "confirm_topic_favorite_nameless_format",
-      "value": "確定{0}該主題嗎？"
+      "value": "이 토픽을 {0}할까요?"
     },
     {
       "name": "confirm_topic_thank_format",
-      "value": "確定感謝《{0}》嗎？\n\n將消耗 10 銅幣。"
+      "value": "《{0}》에 감사할까요?\n\n10 copper coins가 필요합니다."
     },
     {
       "name": "confirm_topic_thank_nameless",
-      "value": "確定感謝該主題嗎？\n\n將消耗 10 銅幣。"
+      "value": "이 토픽에 감사할까요?\n\n10 copper coins가 필요합니다."
     },
     {
       "name": "confirm_reply_thank_format",
-      "value": "確定感謝 {0} 的回覆嗎？\n\n將消耗 10 銅幣。"
+      "value": "{0}의 답글에 감사할까요?\n\n10 copper coins가 필요합니다."
     },
     {
       "name": "parse_action_failed_format",
-      "value": "解析{0}操作失敗"
+      "value": "{0} 작업 파싱 실패"
     },
     {
       "name": "reply_info_missing",
-      "value": "回覆資訊缺失"
+      "value": "답글 정보 누락"
     },
     {
       "name": "load_more_replies_failed",
-      "value": "加載更多失敗"
+      "value": "더 로드 실패"
     },
     {
       "name": "preloading_all_replies",
-      "value": "正在加載全部回覆…"
+      "value": "모든 답글 로드 중…"
     },
     {
       "name": "preloading_progress_format",
-      "value": "正在加載全部回覆 {0}/{1}…"
+      "value": "모든 답글 로드 중 {0}/{1}…"
     },
     {
       "name": "preloading_progress_count_format",
-      "value": "正在加載全部回覆 {0} 條…"
+      "value": "모든 답글 {0}개 로드 중…"
     },
     {
       "name": "topic_detail_tool_floor",
-      "value": "樓層"
+      "value": "층"
     },
     {
       "name": "topic_detail_tool_latest",
-      "value": "最新"
+      "value": "최신"
     },
     {
       "name": "reply_display_mode_origin",
-      "value": "原版"
+      "value": "원본"
     },
     {
       "name": "reply_count_format",
-      "value": "共 {0} 條回覆"
+      "value": "답글 {0}개"
     },
     {
       "name": "draft_load_failed",
-      "value": "讀取草稿失敗"
+      "value": "초안 로드 실패"
     },
     {
       "name": "common_copy_failed",
-      "value": "複製失敗"
+      "value": "복사 실패"
     },
     {
       "name": "common_checking_network",
-      "value": "正在檢查網絡"
+      "value": "네트워크 확인 중…"
     },
     {
       "name": "common_image_load_failed",
-      "value": "圖片載入失敗"
+      "value": "이미지 로드 실패"
     },
     {
       "name": "common_video_load_failed",
-      "value": "影片載入失敗"
+      "value": "동영상 로드 실패"
     },
     {
       "name": "common_tap_to_retry",
-      "value": "點擊重試"
+      "value": "탭하여 다시 시도"
     },
     {
       "name": "common_open_external",
-      "value": "外部開啟"
+      "value": "외부에서 열기"
     },
     {
       "name": "common_no_content",
-      "value": "暫無內容"
+      "value": "콘텐츠 없음"
     },
     {
       "name": "common_load_failed_tap_retry",
-      "value": "載入失敗，點擊重試"
+      "value": "로드 실패, 탭하여 다시 시도"
     },
     {
       "name": "common_decoded_format",
-      "value": "解碼：{0}"
+      "value": "디코드됨: {0}"
     },
     {
       "name": "markdown_toolbar_edit",
-      "value": "寫"
+      "value": "편집"
     },
     {
       "name": "markdown_toolbar_preview",
-      "value": "看"
+      "value": "미리보기"
     },
     {
       "name": "markdown_toolbar_image",
-      "value": "圖"
+      "value": "이미지"
     },
     {
       "name": "markdown_toolbar_clear",
-      "value": "清"
+      "value": "지우기"
     },
     {
       "name": "topic_last_reply",
-      "value": "最後回覆"
+      "value": "마지막 답글"
     },
     {
       "name": "topic_replies_count",
-      "value": "{0} 回覆"
+      "value": "답글 {0}개"
     },
     {
       "name": "code_wrap_scroll",
-      "value": "滾動"
+      "value": "스크롤"
     },
     {
       "name": "code_wrap_wrap",
-      "value": "換行"
+      "value": "줄 바꿈"
     },
     {
       "name": "reply_view_context",
-      "value": "查看上下文"
+      "value": "맥락 보기"
     },
     {
       "name": "reply_copy_content",
-      "value": "複製回覆內容"
+      "value": "답글 내용 복사"
     },
     {
       "name": "reply_ignore_reply",
-      "value": "忽略回覆"
+      "value": "답글 무시"
     },
     {
       "name": "reply_report_reply",
-      "value": "舉報回覆"
+      "value": "답글 신고"
     },
     {
       "name": "common_wifi_only_image_hint",
-      "value": "僅 Wi-Fi 時自動載入圖片"
+      "value": "Wi-Fi에서만 이미지 자동 로드"
     },
     {
       "name": "storage_seeded_label_format",
-      "value": "{0}：{1} 行 / {2} 個檔案"
+      "value": "{0}: {1}행 / {2}파일"
     },
     {
       "name": "cache_clear_account_failed",
-      "value": "清理帳號快取失敗"
+      "value": "계정 캐시 지우기 실패"
     },
     {
       "name": "cache_invalid_seed_filename",
-      "value": "非法 QA seed 快取檔案名稱"
+      "value": "잘못된 QA seed 캐시 파일 이름"
     },
     {
       "name": "cache_commit_payload_failed",
-      "value": "提交快取檔案失敗"
+      "value": "캐시 파일 커밋 실패"
     },
     {
       "name": "cache_invalid_filename",
-      "value": "非法快取檔案名稱"
+      "value": "잘못된 캐시 파일 이름"
     },
     {
       "name": "cache_filename_conflict",
-      "value": "快取檔案名稱衝突"
+      "value": "캐시 파일 이름 충돌"
     },
     {
       "name": "cache_filename_length_invalid",
-      "value": "快取檔案名稱長度無效"
+      "value": "잘못된 캐시 파일 이름 길이"
     },
     {
       "name": "cache_clear_failed",
-      "value": "清理快取失敗"
+      "value": "캐시 지우기 실패"
     },
     {
       "name": "collection_clear_all_failed",
-      "value": "清理本地收藏與閱讀記錄失敗"
+      "value": "로컬 컬렉션 및 읽기 기록 지우기 실패"
     },
     {
       "name": "draft_clear_failed",
-      "value": "清理草稿失敗"
+      "value": "초안 지우기 실패"
     },
     {
       "name": "notification_cache_clear_failed",
-      "value": "清理通知快取失敗"
+      "value": "알림 캐시 지우기 실패"
     },
     {
       "name": "account_record_not_found",
-      "value": "賬戶記錄不存在"
+      "value": "계정 레코드를 찾을 수 없음"
     },
     {
       "name": "account_active_id_save_failed",
-      "value": "儲存活躍賬戶ID失敗"
+      "value": "활성 계정 ID 저장 실패"
     },
     {
       "name": "account_clear_data_failed",
-      "value": "清除賬戶資料失敗"
+      "value": "계정 데이터 지우기 실패"
     },
     {
       "name": "account_data_migration_failed",
-      "value": "賬戶資料遷移失敗"
+      "value": "계정 데이터 마이그레이션 실패"
     },
     {
       "name": "account_read_list_failed",
-      "value": "讀取賬戶列表失敗"
+      "value": "계정 목록 읽기 실패"
     },
     {
       "name": "account_balance_gold",
-      "value": "金幣"
+      "value": "골드"
     },
     {
       "name": "account_balance_silver",
-      "value": "銀幣"
+      "value": "실버"
     },
     {
       "name": "account_balance_bronze",
-      "value": "銅幣"
+      "value": "브론즈"
     },
     {
       "name": "backup_section",
-      "value": "備份"
+      "value": "백업"
     },
     {
       "name": "export_backup",
-      "value": "匯出備份"
+      "value": "백업 내보내기"
     },
     {
       "name": "import_backup",
-      "value": "匯入備份"
+      "value": "백업 가져오기"
     },
     {
       "name": "backup_export_subtitle",
-      "value": "備份設定和本機資料；不包含登入/工作階段資料。"
+      "value": "설정과 로컬 데이터를 백업합니다. 로그인/세션 데이터는 제외됩니다."
     },
     {
       "name": "backup_import_subtitle",
-      "value": "先預覽備份內容，再取代本機資料。"
+      "value": "로컬 데이터를 교체하기 전에 백업 내용을 미리 봅니다."
     },
     {
       "name": "backup_export_message",
-      "value": "將設定和本機資料匯出為 V2Next 備份檔。不會包含登入狀態、Cookie、權杖和離線快取。繼續嗎？"
+      "value": "설정과 로컬 데이터를 V2Next 백업 파일로 내보냅니다. 로그인 상태, 쿠키, 토큰, 오프라인 캐시는 제외됩니다. 계속할까요?"
     },
     {
       "name": "backup_import_preview_message",
-      "value": "備份時間 {0}，應用程式 {1}（{2}）。包含：{3}。登入狀態、Cookie 和權杖不會被更改。"
+      "value": "{0}의 백업, 앱 {1} ({2}). 섹션: {3}. 로그인 상태, 쿠키, 토큰은 변경되지 않습니다."
     },
     {
       "name": "backup_import_confirm_message",
-      "value": "這會用備份覆寫支援的本機設定、草稿、稍後讀/關注/歷史/搜尋資料。登入狀態會保留。繼續嗎？"
+      "value": "지원되는 로컬 설정, 초안, 나중에 읽기/팔로우/기록/검색 데이터를 백업으로 덮어씁니다. 로그인 상태는 유지됩니다. 계속할까요?"
     },
     {
       "name": "backup_exported",
-      "value": "備份已匯出。"
+      "value": "백업을 내보냈습니다."
     },
     {
       "name": "backup_import_complete",
-      "value": "備份匯入完成。"
+      "value": "백업 가져오기가 완료되었습니다."
     },
     {
       "name": "backup_error_invalid",
-      "value": "這不是 V2Next 備份檔。"
+      "value": "이 파일은 V2Next 백업이 아닙니다."
     },
     {
       "name": "backup_error_foreign",
-      "value": "這不是 V2Next 備份檔。"
+      "value": "이 파일은 V2Next 백업이 아닙니다."
     },
     {
       "name": "backup_error_version",
-      "value": "不支援的備份版本。"
+      "value": "지원되지 않는 백업 버전입니다."
     },
     {
       "name": "backup_error_checksum",
-      "value": "備份已損壞或校驗失敗。"
+      "value": "백업이 손상되었거나 체크섬 검증에 실패했습니다."
     },
     {
       "name": "backup_error_too_large",
-      "value": "備份檔過大。"
+      "value": "백업 파일이 너무 큽니다."
     }
   ]
 }

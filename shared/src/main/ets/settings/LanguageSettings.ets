@@ -5,7 +5,7 @@ import { StorageKeys } from '../constants/StorageKeys'
 import { AppStrings } from '../i18n/AppStrings'
 import { STORE_NAME_SETTINGS, SettingsPreferencesStore, setAppStorageValue } from './SettingsStorage'
 
-export type AppLanguageMode = 'default' | 'zh-Hans' | 'zh-Hant-HK' | 'zh-Hant-TW' | 'en-US'
+export type AppLanguageMode = 'default' | 'zh-Hans' | 'zh-Hant-HK' | 'zh-Hant-TW' | 'en-US' | 'ja-JP' | 'ko-KR'
 
 const STORE_NAME: string = STORE_NAME_SETTINGS
 const KEY_LANGUAGE_MODE: string = StorageKeys.LANGUAGE_MODE
@@ -20,6 +20,8 @@ export class LanguageSettings {
   static readonly MODE_ZH_HK: AppLanguageMode = 'zh-Hant-HK'
   static readonly MODE_ZH_TW: AppLanguageMode = 'zh-Hant-TW'
   static readonly MODE_EN: AppLanguageMode = 'en-US'
+  static readonly MODE_JA: AppLanguageMode = 'ja-JP'
+  static readonly MODE_KO: AppLanguageMode = 'ko-KR'
 
   // Cache the last system language applied in follow-system mode.
   // When reapplyForFollowSystem sees the same value, it short-circuits
@@ -135,7 +137,9 @@ export class LanguageSettings {
       mode === LanguageSettings.MODE_ZH_CN ||
       mode === LanguageSettings.MODE_ZH_HK ||
       mode === LanguageSettings.MODE_ZH_TW ||
-      mode === LanguageSettings.MODE_EN) {
+      mode === LanguageSettings.MODE_EN ||
+      mode === LanguageSettings.MODE_JA ||
+      mode === LanguageSettings.MODE_KO) {
       return mode as AppLanguageMode
     }
     // Backward-compatible normalization for values persisted by the discarded restart lane.
@@ -154,6 +158,12 @@ export class LanguageSettings {
     if (mode === 'en') {
       return LanguageSettings.MODE_EN
     }
+    if (mode === 'ja') {
+      return LanguageSettings.MODE_JA
+    }
+    if (mode === 'ko') {
+      return LanguageSettings.MODE_KO
+    }
     return LanguageSettings.MODE_SYSTEM
   }
 
@@ -170,6 +180,12 @@ export class LanguageSettings {
     }
     if (normalizedMode === LanguageSettings.MODE_EN) {
       return AppStrings.R_LANGUAGE_ENGLISH
+    }
+    if (normalizedMode === LanguageSettings.MODE_JA) {
+      return AppStrings.R_LANGUAGE_JAPANESE
+    }
+    if (normalizedMode === LanguageSettings.MODE_KO) {
+      return AppStrings.R_LANGUAGE_KOREAN
     }
     return AppStrings.R_LANGUAGE_FOLLOW_SYSTEM
   }
