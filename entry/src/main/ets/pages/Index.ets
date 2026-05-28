@@ -470,6 +470,7 @@ struct Index {
       .barPosition(BarPosition.End)
       .barMode(BarMode.Fixed)
       .scrollable(false)
+      .animationDuration(0)
       .barFloatingStyle({
         barBottomMargin: ThemeConstants.SPACE_XL,
         adaptToHandedness: true,
