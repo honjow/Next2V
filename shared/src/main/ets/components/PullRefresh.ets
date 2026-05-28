@@ -171,11 +171,13 @@ export struct PullRefresh {
   }
 
   private bottomIndicatorY(): number {
+    // Keep the bottom manual-refresh spinner anchored to the viewport/safe-area.
+    // The list content already moves upward by bottomPullOffset, so also moving
+    // this overlay by the pull distance makes it jump during one continuous pull.
     return Math.max(
       0,
       this.containerHeight -
         this.bottomIndicatorBottom -
-        this.bottomPullOffset / 2 -
         ThemeConstants.TITLE_BAR_HEIGHT / 2 +
         ThemeConstants.SPACE_SM,
     )

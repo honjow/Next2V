@@ -75,4 +75,15 @@ assert.match(
   'scroll disabling during active pull gestures should remain wired',
 )
 
+const bottomIndicatorYStart = source.indexOf('private bottomIndicatorY(): number')
+assert.notEqual(bottomIndicatorYStart, -1, 'bottom indicator anchor helper should remain present')
+const bottomIndicatorYEnd = source.indexOf('\n  }\n\n  build()', bottomIndicatorYStart)
+assert.notEqual(bottomIndicatorYEnd, -1, 'bottom indicator anchor helper should end before build()')
+const bottomIndicatorY = source.slice(bottomIndicatorYStart, bottomIndicatorYEnd)
+assert.equal(
+  /this\.bottomPullOffset/.test(bottomIndicatorY),
+  false,
+  'bottom indicator Y anchor must not read this.bottomPullOffset; active pull already moves content upward, so the overlay must stay viewport-stable',
+)
+
 console.log('PASS PullRefresh bottom manual-refresh text hints are hidden while spinner feedback and behavior hooks remain present')
