@@ -2,7 +2,7 @@ import { NodeViewModel } from '../viewmodel/NodeViewModel'
 import {
   AuthSettings, CardEmptyState, CollectionSettings, SavedNode, ApiService, CookieJarSettings,
   PagedListScaffold, PageErrorState, PageLoadingState, StorageKeys, ThemeConstants, TopicCard,
-  TopicDetailParams, UserProfileParams, V2exToggleAction, V2exTopic, AppStrings, translateApiError
+  TopicDetailParams, UserProfileParams, V2exToggleAction, V2exTopic, AppStrings, DiagnosticLogger, translateApiError
 } from 'shared'
 import type { TopicReadState } from 'shared'
 import { common } from '@kit.AbilityKit'
@@ -28,6 +28,7 @@ export struct NodeTopicPage {
   @State private isSiteNodeFavoriteLoading: boolean = false
   @State private token: string = ''
   private api: ApiService = new ApiService()
+  private nodeTopicsRequestId: number = 0
 
   aboutToAppear(): void {
     this.syncNodeTitleState(false, false)
@@ -228,27 +229,80 @@ export struct NodeTopicPage {
 
   private async loadData(): Promise<void> {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    const nodeName = this.currentNodeName() || this.nodeName
+    const requestId = ++this.nodeTopicsRequestId
+    let source = 'web'
     try {
       const snapshot = await AuthSettings.load(context)
       this.token = snapshot.token || ''
       if (this.token) {
-        await this.vm.loadNodeDetailV2(this.nodeName, this.token)
-        await this.vm.loadNodeTopicsV2(this.nodeName, this.token)
+        source = 'api_v2'
+        this.vm.beginNodeTopicsPageOneLoad(nodeName, 'api_v2', requestId)
+        this.logNodeTopicLoadStart(nodeName, source, requestId)
+        await this.vm.loadNodeDetailV2(nodeName, this.token)
+        const topicsLoaded = await this.vm.loadNodeTopicsV2(nodeName, this.token, { requestId: requestId, source: 'api_v2' })
+        if (!topicsLoaded) {
+          await this.loadNodeTopicsWebFallback(nodeName, requestId)
+        }
       } else {
-        await this.vm.loadNodeDetail(this.nodeName)
-        await this.vm.loadNodeTopics(this.nodeName)
+        source = 'web'
+        this.vm.beginNodeTopicsPageOneLoad(nodeName, 'web', requestId)
+        this.logNodeTopicLoadStart(nodeName, source, requestId)
+        await this.vm.loadNodeDetail(nodeName)
+        await this.vm.loadNodeTopics(nodeName, { requestId: requestId, source: 'web' })
       }
       this.syncAppbarIdentity()
     } catch (error) {
+      const e = error as Error
       this.token = ''
       this.vm.nodeDetailError = translateApiError(error)
-      await this.vm.loadNodeDetail(this.nodeName)
-      await this.vm.loadNodeTopics(this.nodeName)
+      this.vm.beginNodeTopicsPageOneLoad(nodeName, 'web', requestId)
+      this.logNodeTopicLoadStart(nodeName, 'web', requestId)
+      DiagnosticLogger.warn('ui_lifecycle', 'node_topic_source_fail', {
+        nodeName: nodeName,
+        source: source,
+        page: 1,
+        requestId: requestId,
+        count: 0,
+        firstIds: [],
+        errorKind: e.name || 'Error'
+      }, e)
+      await this.vm.loadNodeDetail(nodeName)
+      await this.vm.loadNodeTopics(nodeName, { requestId: requestId, source: 'web', fallback: true })
       this.syncAppbarIdentity()
     }
   }
 
+  private async loadNodeTopicsWebFallback(nodeName: string, requestId: number): Promise<void> {
+    DiagnosticLogger.info('ui_lifecycle', 'node_topic_fallback', {
+      nodeName: nodeName,
+      source: 'web',
+      page: 1,
+      requestId: requestId,
+      count: 0,
+      firstIds: []
+    })
+    if (!this.vm.switchNodeTopicsPageOneSource(nodeName, 'web', requestId)) {
+      return
+    }
+    await this.vm.loadNodeTopics(nodeName, { requestId: requestId, source: 'web', fallback: true })
+  }
+
+  private logNodeTopicLoadStart(nodeName: string, source: string, requestId: number): void {
+    DiagnosticLogger.info('ui_lifecycle', 'node_topic_page_load_start', {
+      nodeName: nodeName,
+      source: source,
+      page: 1,
+      requestId: requestId,
+      count: 0,
+      firstIds: []
+    })
+  }
+
   private loadMore(): void {
+    if (this.vm.isLoading || !this.vm.hasNodeTopicsPageOneSettled()) {
+      return
+    }
     if (this.vm.nodeTopicsUseV2 && this.token) {
       this.vm.loadMoreNodeTopicsV2(this.nodeName, this.token)
         .finally(() => { this.syncAppbarIdentity() })

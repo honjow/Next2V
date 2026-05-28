@@ -7,6 +7,14 @@ export interface NodeIndexLoadOptions {
   publishDefaultNodes?: boolean
 }
 
+export type NodeTopicPageOneSource = 'api_v2' | 'web'
+
+export interface NodeTopicPageOneLoadOptions {
+  requestId?: number
+  source?: NodeTopicPageOneSource
+  fallback?: boolean
+}
+
 /**
  * Node data source — for LazyForEach
  */
@@ -66,6 +74,11 @@ export class NodeViewModel {
   private api: ApiService = new ApiService()
   private apiV2: ApiV2Service = new ApiV2Service()
   private readonly V2_PAGE_SIZE: number = 10
+  private activeNodeTopicsRequestId: number = 0
+  private activeNodeTopicsNodeName: string = ''
+  private activeNodeTopicsSource: string = ''
+  private nodeTopicsPageOneSettled: boolean = false
+  private nodeTopicsPageOnePublished: boolean = false
 
   /** Load all nodes */
   async loadAllNodes(options?: NodeIndexLoadOptions): Promise<void> {
@@ -123,8 +136,134 @@ export class NodeViewModel {
     })
   }
 
+  beginNodeTopicsPageOneLoad(nodeName: string, source: NodeTopicPageOneSource, requestId: number): void {
+    this.activeNodeTopicsRequestId = requestId
+    this.activeNodeTopicsNodeName = (nodeName || '').trim()
+    this.activeNodeTopicsSource = source
+    this.nodeTopicsPageOneSettled = false
+    this.nodeTopicsPageOnePublished = false
+    this.nodeTopicsLoadMoreError = ''
+  }
+
+  switchNodeTopicsPageOneSource(nodeName: string, source: NodeTopicPageOneSource, requestId: number): boolean {
+    if (!this.isCurrentNodeTopicsRequest(nodeName, requestId) || this.nodeTopicsPageOnePublished) {
+      this.logNodeTopicPublishIgnored(nodeName, source, requestId, 1, 0, 'fallback_after_publish')
+      return false
+    }
+    this.activeNodeTopicsSource = source
+    return true
+  }
+
+  hasNodeTopicsPageOneSettled(): boolean {
+    return this.nodeTopicsPageOneSettled
+  }
+
+  private isCurrentNodeTopicsRequest(nodeName: string, requestId: number): boolean {
+    return requestId <= 0 || (this.activeNodeTopicsRequestId === requestId && this.activeNodeTopicsNodeName === (nodeName || '').trim())
+  }
+
+  private shouldPublishNodeTopicsPageOne(
+    nodeName: string,
+    source: NodeTopicPageOneSource,
+    requestId: number,
+    page: number,
+    count: number,
+    fallback: boolean = false
+  ): boolean {
+    if (requestId <= 0) {
+      return true
+    }
+    if (!this.isCurrentNodeTopicsRequest(nodeName, requestId)) {
+      this.logNodeTopicPublishIgnored(nodeName, source, requestId, page, count, 'stale_request')
+      return false
+    }
+    if (this.activeNodeTopicsSource !== source) {
+      this.logNodeTopicPublishIgnored(nodeName, source, requestId, page, count, 'losing_source')
+      return false
+    }
+    if (this.nodeTopicsPageOnePublished && fallback) {
+      this.logNodeTopicPublishIgnored(nodeName, source, requestId, page, count, 'fallback_after_publish')
+      return false
+    }
+    return true
+  }
+
+  private publishNodeTopicsPageOne(
+    nodeName: string,
+    source: NodeTopicPageOneSource,
+    requestId: number,
+    topics: V2exTopic[],
+    hasMore: boolean
+  ): void {
+    this.nodeTopics = topics
+    this.nodeTopicsHasMore = hasMore
+    this.nodeTopicsPageOnePublished = true
+    this.nodeTopicsPageOneSettled = true
+    DiagnosticLogger.info('ui_lifecycle', 'node_topic_source_success', {
+      nodeName: (nodeName || '').trim(),
+      source: source,
+      page: 1,
+      requestId: requestId,
+      count: topics.length,
+      firstIds: this.firstTopicIds(topics)
+    })
+  }
+
+  private markNodeTopicsPageOneFailed(
+    nodeName: string,
+    source: NodeTopicPageOneSource,
+    requestId: number,
+    error: Error
+  ): void {
+    if (this.isCurrentNodeTopicsRequest(nodeName, requestId) && this.activeNodeTopicsSource === source && !this.nodeTopicsPageOnePublished) {
+      this.nodeTopicsPageOneSettled = true
+    }
+    DiagnosticLogger.warn('ui_lifecycle', 'node_topic_source_fail', {
+      nodeName: (nodeName || '').trim(),
+      source: source,
+      page: 1,
+      requestId: requestId,
+      count: 0,
+      firstIds: [],
+      errorKind: error.name || 'Error'
+    }, error)
+  }
+
+  private logNodeTopicPublishIgnored(
+    nodeName: string,
+    source: NodeTopicPageOneSource,
+    requestId: number,
+    page: number,
+    count: number,
+    reason: string
+  ): void {
+    DiagnosticLogger.info('ui_lifecycle', 'node_topic_publish_ignored', {
+      nodeName: (nodeName || '').trim(),
+      source: source,
+      page: page,
+      requestId: requestId,
+      count: count,
+      firstIds: [],
+      reason: reason,
+      activeRequestId: this.activeNodeTopicsRequestId,
+      activeSource: this.activeNodeTopicsSource
+    })
+  }
+
+  private firstTopicIds(topics: V2exTopic[]): number[] {
+    const ids: number[] = []
+    const total = Math.min(3, topics.length)
+    for (let i = 0; i < total; i++) {
+      ids.push(topics[i].id)
+    }
+    return ids
+  }
+
   /** Load topics under the specified node */
-  async loadNodeTopics(nodeName: string): Promise<void> {
+  async loadNodeTopics(nodeName: string, options?: NodeTopicPageOneLoadOptions): Promise<boolean> {
+    const loadOptions = options || {}
+    const requestId = loadOptions.requestId || 0
+    const source: NodeTopicPageOneSource = loadOptions.source || 'web'
     this.isLoading = true
     this.errorMessage = ''
     this.nodeTopicsUseV2 = false
@@ -133,11 +272,17 @@ export class NodeViewModel {
     this.nodeTopicsLoadMoreError = ''
     try {
       const snapshot = await this.api.getNodeTopicsPage(nodeName, 1)
-      this.nodeTopics = snapshot.topics
-      this.nodeTopicsHasMore = snapshot.hasMore
+      if (!this.shouldPublishNodeTopicsPageOne(nodeName, source, requestId, 1, snapshot.topics.length, loadOptions.fallback === true)) {
+        return false
+      }
+      this.publishNodeTopicsPageOne(nodeName, source, requestId, snapshot.topics, snapshot.hasMore)
+      return true
     } catch (error) {
+      const e = error as Error
       this.errorMessage = translateApiError(error)
-      console.error('Failed to load node topics:', error.message)
+      this.markNodeTopicsPageOneFailed(nodeName, source, requestId, e)
+      console.error('Failed to load node topics:', e.message)
+      return false
     } finally {
       this.isLoading = false
     }
@@ -173,7 +318,10 @@ export class NodeViewModel {
   }
 
   /** Load topics under the specified node (API v2, supports pagination, requires Token) */
-  async loadNodeTopicsV2(nodeName: string, token: string): Promise<void> {
+  async loadNodeTopicsV2(nodeName: string, token: string, options?: NodeTopicPageOneLoadOptions): Promise<boolean> {
+    const loadOptions = options || {}
+    const requestId = loadOptions.requestId || 0
+    const source: NodeTopicPageOneSource = loadOptions.source || 'api_v2'
     this.isLoading = true
     this.errorMessage = ''
     this.nodeTopicsUseV2 = true
@@ -183,17 +331,23 @@ export class NodeViewModel {
     try {
       const res = await this.apiV2.getNodeTopics(token, nodeName, 1)
       const items = res.data || []
-      this.nodeTopics = items
-      this.nodeTopicsHasMore = items.length >= this.V2_PAGE_SIZE
+      if (!this.shouldPublishNodeTopicsPageOne(nodeName, source, requestId, 1, items.length, loadOptions.fallback === true)) {
+        return false
+      }
+      this.publishNodeTopicsPageOne(nodeName, source, requestId, items, items.length >= this.V2_PAGE_SIZE)
+      return true
     } catch (error) {
+      const e = error as Error
       this.errorMessage = translateApiError(error)
+      this.markNodeTopicsPageOneFailed(nodeName, source, requestId, e)
+      return false
     } finally {
       this.isLoading = false
     }
   }
 
   async loadMoreNodeTopicsV2(nodeName: string, token: string): Promise<void> {
-    if (!this.nodeTopicsUseV2 || this.isNodeTopicsLoadingMore || !this.nodeTopicsHasMore) {
+    if (!this.nodeTopicsUseV2 || this.isLoading || !this.nodeTopicsPageOneSettled || this.isNodeTopicsLoadingMore || !this.nodeTopicsHasMore) {
       return
     }
     const nextPage = this.nodeTopicsPage + 1
@@ -216,7 +370,7 @@ export class NodeViewModel {
   }
 
   async loadMoreNodeTopics(nodeName: string): Promise<void> {
-    if (this.nodeTopicsUseV2 || this.isNodeTopicsLoadingMore || !this.nodeTopicsHasMore) {
+    if (this.nodeTopicsUseV2 || this.isLoading || !this.nodeTopicsPageOneSettled || this.isNodeTopicsLoadingMore || !this.nodeTopicsHasMore) {
       return
     }
     const nextPage = this.nodeTopicsPage + 1
