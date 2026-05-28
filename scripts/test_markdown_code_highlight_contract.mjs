@@ -55,6 +55,21 @@ for (const token of [
   assert.ok(source.includes(token), `missing representative token rule: ${token}`);
 }
 
+for (const color of [
+  '"text": "#4C4F69"',
+  '"string": "#40A02B"',
+  '"keyword": "#8839EF"',
+  '"boolean": "#FE640B"',
+  '"punctuation": "#7C7F93"',
+  '"text": "#CDD6F4"',
+  '"string": "#A6E3A1"',
+  '"keyword": "#CBA6F7"',
+  '"boolean": "#FAB387"',
+  '"punctuation": "#9399B2"',
+]) {
+  assert.ok(source.includes(color), `missing code color contract: ${color}`);
+}
+
 for (const sniffRule of [
   'looksLikeJson',
   'looksLikeHtml',
