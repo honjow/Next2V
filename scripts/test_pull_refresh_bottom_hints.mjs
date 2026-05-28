@@ -4,7 +4,7 @@ import assert from 'node:assert/strict'
 const sourcePath = new URL('../shared/src/main/ets/components/PullRefresh.ets', import.meta.url)
 const source = fs.readFileSync(sourcePath, 'utf8')
 
-const bottomIndicatorStart = source.indexOf('if (this.bottomPullOffset > 0 || this.bottomRefreshState > 0)')
+const bottomIndicatorStart = source.indexOf("Row({ space: ThemeConstants.SPACE_SM })")
 assert.notEqual(bottomIndicatorStart, -1, 'bottom indicator guard should remain present')
 const bottomIndicatorEnd = source.indexOf('.clip(false)', bottomIndicatorStart)
 assert.notEqual(bottomIndicatorEnd, -1, 'bottom indicator block should remain before Stack clipping configuration')
@@ -80,10 +80,15 @@ assert.notEqual(bottomIndicatorYStart, -1, 'bottom indicator anchor helper shoul
 const bottomIndicatorYEnd = source.indexOf('\n  }\n\n  build()', bottomIndicatorYStart)
 assert.notEqual(bottomIndicatorYEnd, -1, 'bottom indicator anchor helper should end before build()')
 const bottomIndicatorY = source.slice(bottomIndicatorYStart, bottomIndicatorYEnd)
+assert.match(
+  bottomIndicatorY,
+  /this\.bottomPullOffset\s*\/\s*2/,
+  'bottom indicator Y should mirror top indicator positioning and track half of real edge-rebased pull distance',
+)
 assert.equal(
-  /this\.bottomPullOffset/.test(bottomIndicatorY),
+  /if \(this\.bottomPullOffset > 0 \|\| this\.bottomRefreshState > 0\)/.test(source),
   false,
-  'bottom indicator Y anchor must not read this.bottomPullOffset; active pull already moves content upward, so the overlay must stay viewport-stable',
+  'bottom indicator should remain mounted like top indicator instead of being conditionally inserted during pull',
 )
 
-console.log('PASS PullRefresh bottom manual-refresh text hints are hidden while spinner feedback and behavior hooks remain present')
+console.log('PASS PullRefresh bottom manual-refresh text hints are hidden while spinner feedback and centered positioning remain present')

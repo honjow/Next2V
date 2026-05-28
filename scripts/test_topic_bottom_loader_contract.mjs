@@ -22,15 +22,15 @@ const bottomIndicatorY = methodBody(
   'private bottomIndicatorY(): number',
   '\n  build()'
 )
-assert.equal(
-  /this\.bottomPullOffset/.test(bottomIndicatorY),
-  false,
-  'manual bottom spinner y-position must be viewport/safe-area anchored, not tied to pull distance'
-)
 assert.match(
   bottomIndicatorY,
-  /this\.containerHeight\s*-\s*this\.bottomIndicatorBottom[\s\S]*ThemeConstants\.TITLE_BAR_HEIGHT\s*\/\s*2/,
-  'manual bottom spinner should remain anchored from container height and bottom safe-area padding'
+  /this\.containerHeight\s*-\s*this\.bottomIndicatorBottom[\s\S]*this\.bottomPullOffset\s*\/\s*2[\s\S]*ThemeConstants\.TITLE_BAR_HEIGHT\s*\/\s*2/,
+  'manual bottom spinner should mirror top indicator positioning by centering in the exposed pull-up area'
+)
+assert.equal(
+  /if \(this\.bottomPullOffset > 0 \|\| this\.bottomRefreshState > 0\)/.test(pullRefresh),
+  false,
+  'manual bottom spinner should remain mounted like the top spinner so rebound position keeps updating'
 )
 
 assert.match(
@@ -105,4 +105,4 @@ assert.equal(
   'manual bottom refresh must not reuse loose last-visible-item auto-pagination state'
 )
 
-console.log('PASS topic bottom loader contract: manual spinner anchor is stable and separated from auto-pagination footer')
+console.log('PASS topic bottom loader contract: manual spinner is pull-area centered and separated from auto-pagination footer')

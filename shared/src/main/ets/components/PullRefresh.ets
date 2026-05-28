@@ -175,13 +175,14 @@ export struct PullRefresh {
   }
 
   private bottomIndicatorY(): number {
-    // Keep the bottom manual-refresh spinner anchored to the viewport/safe-area.
-    // The list content already moves upward by bottomPullOffset, so also moving
-    // this overlay by the pull distance makes it jump during one continuous pull.
+    // Mirror the top refresh indicator: keep the node mounted and derive its
+    // absolute position from the current pull offset so drag and rebound share
+    // one coordinate formula.
     return Math.max(
       0,
       this.containerHeight -
         this.bottomIndicatorBottom -
+        this.bottomPullOffset / 2 -
         ThemeConstants.TITLE_BAR_HEIGHT / 2 +
         ThemeConstants.SPACE_SM,
     )
@@ -302,27 +303,27 @@ export struct PullRefresh {
       .position({ y: this.indicatorTop + this.pullOffset / 2 })
       .hitTestBehavior(HitTestMode.None)
 
-      if (this.bottomPullOffset > 0 || this.bottomRefreshState > 0) {
-        Row({ space: ThemeConstants.SPACE_SM }) {
-          LoadingProgress()
-            .width(ThemeConstants.LOADING_SIZE_SMALL)
-            .height(ThemeConstants.LOADING_SIZE_SMALL)
-            .color($r('sys.color.font_secondary'))
-        }
-        .width('100%')
-        .height(ThemeConstants.TITLE_BAR_HEIGHT)
-        .justifyContent(FlexAlign.Center)
-        .opacity(
-          this.bottomRefreshState >= 2
-            ? 1
-            : Math.min(
+      Row({ space: ThemeConstants.SPACE_SM }) {
+        LoadingProgress()
+          .width(ThemeConstants.LOADING_SIZE_SMALL)
+          .height(ThemeConstants.LOADING_SIZE_SMALL)
+          .color($r('sys.color.font_secondary'))
+      }
+      .width('100%')
+      .height(ThemeConstants.TITLE_BAR_HEIGHT)
+      .justifyContent(FlexAlign.Center)
+      .opacity(
+        this.bottomRefreshState >= 2
+          ? 1
+          : this.bottomPullOffset > 0
+            ? Math.min(
                 Math.max(this.bottomPullOffset / this.threshold, 0.2),
                 1,
-              ),
-        )
-        .position({ y: this.bottomIndicatorY() })
-        .hitTestBehavior(HitTestMode.None)
-      }
+              )
+            : 0,
+      )
+      .position({ y: this.bottomIndicatorY() })
+      .hitTestBehavior(HitTestMode.None)
     }
     .width('100%')
     .height('100%')
