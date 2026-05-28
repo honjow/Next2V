@@ -13,6 +13,7 @@ export interface V2exFavoriteNode {
 
 export interface V2exNodeNavigationSection {
   title: string
+  titleKey?: string
   nodes: V2exFavoriteNode[]
 }
 
@@ -63,8 +64,10 @@ export class V2exNodeParser {
       const nodes = V2exNodeParser.extractFavoriteNodes(box).map((node: V2exFavoriteNode): V2exFavoriteNode => {
         return { name: node.name, title: node.title }
       })
-      if (nodes.length > 0) {
-        sections.push({ title: V2exNodeParser.normalizeNavigationSectionTitle(V2exNodeParser.extractNavigationSectionTitle(box) || '节点导航'), nodes: nodes })
+      const title = V2exNodeParser.extractNavigationSectionTitle(box)
+      const titleKey = V2exNodeParser.homeNavigationSectionTitleKey(title)
+      if (title && titleKey && nodes.length > 0) {
+        sections.push({ title: title, titleKey: titleKey, nodes: nodes })
       }
       boxMatch = boxRe.exec(html)
     }
@@ -80,33 +83,151 @@ export class V2exNodeParser {
   }
 
   static extractStructuredNodeNavigationSections(html: string): V2exNodeNavigationSection[] {
-    if (!html || html.indexOf('节点导航') < 0) {
+    if (!html) {
       return []
     }
-    const markerIndex = html.indexOf('节点导航')
-    const source = html.slice(markerIndex)
     const sections: V2exNodeNavigationSection[] = []
-    const cellRe = /<div class=['"]cell['"][^>]*>\s*<table[\s\S]*?<tr>\s*<td[^>]*>\s*<span[^>]+class=['"][^'"]*fade[^'"]*['"][^>]*>([\s\S]*?)<\/span>\s*<\/td>\s*<td[\s\S]*?>([\s\S]*?)<\/td>\s*<\/tr>\s*<\/table>\s*<\/div>/gi
-    let cellMatch: RegExpExecArray | null = cellRe.exec(source)
-    while (cellMatch) {
-      const title = V2exNodeParser.normalizeNavigationSectionTitle(V2exNodeParser.compactText(cellMatch[1] || ''))
-      const nodes = V2exNodeParser.extractFavoriteNodes(cellMatch[2] || '').map((node: V2exFavoriteNode): V2exFavoriteNode => {
-        return { name: node.name, title: node.title }
-      })
-      if (title && title !== '节点导航' && nodes.length > 0) {
-        sections.push({ title: title, nodes: nodes })
+    const rowContainers = V2exNodeParser.extractNodeNavigationRowContainers(html)
+    for (let i = 0; i < rowContainers.length; i++) {
+      const section = V2exNodeParser.extractNodeNavigationRow(rowContainers[i] || '')
+      if (section) {
+        sections.push(section)
       }
-      cellMatch = cellRe.exec(source)
     }
     return sections
   }
 
-  private static normalizeNavigationSectionTitle(title: string): string {
-    const clean = (title || '').trim()
-    if (clean === 'Hottest Nodes') {
-      return '最热节点'
+  private static extractNodeNavigationRow(cellHtml: string): V2exNodeNavigationSection | null {
+    if (!cellHtml || cellHtml.indexOf('<table') < 0 || cellHtml.indexOf('/go/') < 0) {
+      return null
     }
-    return clean
+    const firstRow = V2exNodeParser.extractFirstTagBlock(cellHtml, 'tr')
+    if (!firstRow) {
+      return null
+    }
+    const cells = V2exNodeParser.extractTagBlocks(firstRow, 'td')
+    if (cells.length < 2) {
+      return null
+    }
+    const title = V2exNodeParser.extractNavigationRowTitle(cells[0] || '')
+    if (!title) {
+      return null
+    }
+    let linksHtml = ''
+    for (let i = 1; i < cells.length; i++) {
+      linksHtml += cells[i] || ''
+    }
+    const nodes = V2exNodeParser.extractFavoriteNodes(linksHtml).map((node: V2exFavoriteNode): V2exFavoriteNode => {
+      return { name: node.name, title: node.title }
+    })
+    if (nodes.length === 0) {
+      return null
+    }
+    return { title: title, nodes: nodes }
+  }
+
+  private static extractNavigationRowTitle(html: string): string {
+    const spanBlocks = V2exNodeParser.extractTagBlocks(html, 'span')
+    for (let i = 0; i < spanBlocks.length; i++) {
+      const span = spanBlocks[i] || ''
+      if (V2exNodeParser.tagHasClass(span, 'fade')) {
+        return V2exNodeParser.compactText(span)
+      }
+    }
+    return ''
+  }
+
+  private static extractNodeNavigationRowContainers(html: string): string[] {
+    const containers: string[] = []
+    if (!html) {
+      return containers
+    }
+    const divStartRe = /<div\b[^>]*>/gi
+    let match: RegExpExecArray | null = divStartRe.exec(html)
+    while (match) {
+      const openTag = match[0] || ''
+      const start = match.index
+      if (V2exNodeParser.tagHasClass(openTag, 'cell') || V2exNodeParser.tagHasClass(openTag, 'inner')) {
+        const end = V2exNodeParser.findMatchingTagEnd(html, 'div', start)
+        if (end > start) {
+          containers.push(html.slice(start, end))
+          divStartRe.lastIndex = end
+        }
+      }
+      match = divStartRe.exec(html)
+    }
+    return containers
+  }
+
+  private static extractFirstTagBlock(html: string, tagName: string): string {
+    const blocks = V2exNodeParser.extractTagBlocks(html, tagName)
+    return blocks.length > 0 ? (blocks[0] || '') : ''
+  }
+
+  private static extractTagBlocks(html: string, tagName: string): string[] {
+    const blocks: string[] = []
+    if (!html || !tagName) {
+      return blocks
+    }
+    const tagRe = new RegExp(`<\\/?${tagName}\\b[^>]*>`, 'gi')
+    let match: RegExpExecArray | null = tagRe.exec(html)
+    while (match) {
+      const tag = match[0] || ''
+      const start = match.index
+      if (!tag.startsWith('</')) {
+        const end = V2exNodeParser.findMatchingTagEnd(html, tagName, start)
+        if (end > start) {
+          blocks.push(html.slice(start, end))
+          tagRe.lastIndex = end
+        }
+      }
+      match = tagRe.exec(html)
+    }
+    return blocks
+  }
+
+  private static findMatchingTagEnd(html: string, tagName: string, start: number): number {
+    const tagRe = new RegExp(`<\\/?${tagName}\\b[^>]*>`, 'gi')
+    tagRe.lastIndex = Math.max(0, start)
+    let depth = 0
+    let match: RegExpExecArray | null = tagRe.exec(html)
+    while (match) {
+      const tag = match[0] || ''
+      if (tag.startsWith('</')) {
+        depth--
+        if (depth === 0) {
+          return tagRe.lastIndex
+        }
+      } else if (!tag.endsWith('/>')) {
+        depth++
+      }
+      match = tagRe.exec(html)
+    }
+    return -1
+  }
+
+  private static tagHasClass(tagHtml: string, className: string): boolean {
+    const firstTagEnd = tagHtml.indexOf('>')
+    const firstTag = firstTagEnd >= 0 ? tagHtml.slice(0, firstTagEnd + 1) : tagHtml
+    const classMatch = firstTag.match(/\sclass=['\"]([^'\"]*)['\"]/i)
+    if (!classMatch) {
+      return false
+    }
+    const classes = (classMatch[1] || '').split(/\s+/)
+    return classes.indexOf(className) >= 0
+  }
+
+  private static homeNavigationSectionTitleKey(title: string): string {
+    const clean = (title || '').trim()
+    switch (clean) {
+      case 'Hottest Nodes':
+        return 'discover_node_navigation_hottest'
+      case 'Recently Created':
+      case 'Recently Created Nodes':
+        return 'discover_node_navigation_recently_created'
+      default:
+        return ''
+    }
   }
 
   private static extractNodeTitleParts(text: string, name: string): V2exFavoriteNode {

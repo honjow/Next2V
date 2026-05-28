@@ -127,9 +127,8 @@ export class ApiService {
     const homeHtml = await this.http.getText('/')
     const navigationHtml = await this.http.getText('/?tab=nodes')
     const homeSections = V2exNodeParser.extractNodeNavigationSections(homeHtml)
-      .filter((section: V2exNodeNavigationSection) => section.title === '最热节点' || section.title === '最近新增节点')
+      .filter((section: V2exNodeNavigationSection) => section.titleKey === 'discover_node_navigation_hottest' || section.titleKey === 'discover_node_navigation_recently_created')
     const structuredSections = V2exNodeParser.extractStructuredNodeNavigationSections(navigationHtml)
-      .filter((section: V2exNodeNavigationSection) => section.title !== '节点导航' && section.title !== 'V2EX / Curated Nodes')
     return homeSections.concat(structuredSections)
   }
 

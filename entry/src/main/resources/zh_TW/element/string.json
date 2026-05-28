@@ -1689,6 +1689,18 @@
       "value": "最近瀏覽節點"
     },
     {
+      "name": "discover_node_navigation",
+      "value": "節點導航"
+    },
+    {
+      "name": "discover_node_navigation_hottest",
+      "value": "最熱門節點"
+    },
+    {
+      "name": "discover_node_navigation_recently_created",
+      "value": "最近新增節點"
+    },
+    {
       "name": "search_source_favorite",
       "value": "收藏"
     },

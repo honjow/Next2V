@@ -234,10 +234,10 @@ export struct DiscoverPage {
   @Builder NodeNavigationSections() {
     if (this.nodeNavigationSections.length > 0) {
       Column({ space: ThemeConstants.SPACE_SM }) {
-        DiscoverSectionTitle({ title: '节点导航' })
+        DiscoverSectionTitle({ title: AppStrings.text($r('app.string.discover_node_navigation'), 'Node navigation') })
         ForEach(this.nodeNavigationSections, (section: V2exNodeNavigationSection) => {
           Column({ space: ThemeConstants.SPACE_SM }) {
-            Text(section.title)
+            Text(this.navigationSectionTitle(section))
               .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
               .fontColor($r('sys.color.font_secondary'))
               .width('100%')
@@ -317,6 +317,16 @@ export struct DiscoverPage {
     this.loadLocalNodeSections()
     this.loadNodeNavigationSections()
     await this.loadTopicSurface(true)
+  }
+
+  private navigationSectionTitle(section: V2exNodeNavigationSection): string {
+    if (section.titleKey === 'discover_node_navigation_hottest') {
+      return AppStrings.text($r('app.string.discover_node_navigation_hottest'), section.title || 'Hottest Nodes')
+    }
+    if (section.titleKey === 'discover_node_navigation_recently_created') {
+      return AppStrings.text($r('app.string.discover_node_navigation_recently_created'), section.title || 'Recently Created')
+    }
+    return section.title
   }
 
   private navigationNodes(section: V2exNodeNavigationSection): SavedNode[] {

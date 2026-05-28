@@ -1689,6 +1689,18 @@
       "value": "Recently viewed nodes"
     },
     {
+      "name": "discover_node_navigation",
+      "value": "Node navigation"
+    },
+    {
+      "name": "discover_node_navigation_hottest",
+      "value": "Hottest nodes"
+    },
+    {
+      "name": "discover_node_navigation_recently_created",
+      "value": "Recently created nodes"
+    },
+    {
       "name": "search_source_favorite",
       "value": "Saved"
     },
