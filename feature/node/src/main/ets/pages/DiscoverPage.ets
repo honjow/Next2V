@@ -1,6 +1,6 @@
 import { NodeViewModel } from '../viewmodel/NodeViewModel'
 import {
-  ApiService, AppStrings, PullRefresh, StorageKeys, V2exNode, V2exTopic, NodeTopicListParams, TopicDetailParams,
+  ApiService, AppStrings, DiagnosticLogger, PullRefresh, StorageKeys, V2exNode, V2exTopic, NodeTopicListParams, TopicDetailParams,
   ThemeConstants, CollectionSettings, translateApiError
 } from 'shared'
 import type { SavedNode } from 'shared'
@@ -43,13 +43,48 @@ export struct DiscoverPage {
   scroller: Scroller = new Scroller()
   onDidScroll?: (offset: number, state: ScrollState) => void
   private api: ApiService = new ApiService()
+  private hasStartedInitialLoad: boolean = false
+  @Prop @Watch('onCurrentTabChanged') currentTab: number = 0
 
   private onKeywordChanged(): void {
     this.vm.setNodeFilter(this.nodeKeyword)
   }
 
+  private onCurrentTabChanged(_propName: string): void {
+    this.requestInitialLoad('currentTabChanged')
+  }
+
   aboutToAppear(): void {
     AppStorage.setOrCreate(StorageKeys.DISCOVER_NODE_KEYWORD, this.vm.keyword)
+    this.requestInitialLoad('aboutToAppear')
+  }
+
+  private requestInitialLoad(reason: string): void {
+    if (this.hasStartedInitialLoad) {
+      DiagnosticLogger.info('ui_lifecycle', 'discover_initial_load_skip_started', {
+        reason: reason,
+        currentTab: this.currentTab,
+        started: this.hasStartedInitialLoad,
+        skipped: true
+      })
+      return
+    }
+    if (this.currentTab !== 1) {
+      DiagnosticLogger.info('ui_lifecycle', 'discover_initial_load_skip_off_tab', {
+        reason: reason,
+        currentTab: this.currentTab,
+        started: this.hasStartedInitialLoad,
+        skipped: true
+      })
+      return
+    }
+    this.hasStartedInitialLoad = true
+    DiagnosticLogger.info('ui_lifecycle', 'discover_initial_load_start', {
+      reason: reason,
+      currentTab: this.currentTab,
+      started: this.hasStartedInitialLoad,
+      skipped: false
+    })
     this.vm.loadAllNodes()
     this.loadLocalNodeSections()
     this.loadTopicSurface()

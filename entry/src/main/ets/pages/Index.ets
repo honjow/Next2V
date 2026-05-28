@@ -439,6 +439,7 @@ struct Index {
         }.tabBar(this.TabIcon(AppStrings.R_SETTINGS_HOME, 0))
         TabContent() {
           DiscoverPage({
+            currentTab: this.ct,
             scroller: this.homeTabScrollers[1],
             onDidScroll: (offset: number, state: ScrollState) => {
               this.onHomeTabDidScroll(1, offset, state)
