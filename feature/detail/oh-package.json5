@@ -1,6 +1,6 @@
 {
   "name": "detail",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "description": "Next2V detail module - topic detail & replies",
   "main": "src/main/ets/Index.ets",
   "dependencies": {
