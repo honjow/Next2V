@@ -27,7 +27,8 @@ for (const fn of [
 
 const dispatchSource = source;
 assert.ok(dispatchSource.includes("const explicit = normalizeCodeLanguage(lang);"), 'missing explicit language normalization');
-assert.ok(dispatchSource.includes("explicit === 'generic' ? (sniffCodeLanguage(code) || explicit) : explicit"), 'empty/generic language must use sniff fallback');
+assert.ok(dispatchSource.includes("const normalized = explicit ? explicit : sniffCodeLanguage(code);"), 'sniff must run only when lang is empty');
+assert.ok(!dispatchSource.includes("explicit === 'generic' ? (sniffCodeLanguage(code) || explicit) : explicit"), 'sniff must not override unknown explicit language labels');
 
 for (const branch of [
   "normalized === 'typescript' || normalized === 'javascript'",
@@ -47,6 +48,32 @@ for (const token of [
   "source.startsWith('+')",
 ]) {
   assert.ok(source.includes(token), `missing representative token rule: ${token}`);
+}
+
+for (const sniffRule of [
+  'looksLikeJson',
+  'looksLikeHtml',
+  'looksLikeShell',
+  'looksLikePython',
+  'looksLikeGo',
+  'looksLikeRust',
+  'looksLikeSql',
+  'looksLikeDiff',
+]) {
+  assert.ok(source.includes(sniffRule), `missing Phase 2 sniff rule: ${sniffRule}`);
+}
+
+for (const sniffReturn of [
+  "return 'json';",
+  "return 'html';",
+  "return 'shell';",
+  "return 'python';",
+  "return 'go';",
+  "return 'rust';",
+  "return 'sql';",
+  "return 'diff';",
+]) {
+  assert.ok(source.includes(sniffReturn), `missing Phase 2 sniff return: ${sniffReturn}`);
 }
 
 console.log('markdown code highlight contract ok');

@@ -64,6 +64,10 @@ const _keywords: Set<string> = new Set([
   "abstract",
   "readonly",
   "override",
+  "func",
+  "package",
+  "fn",
+  "mut",
 ]);
 
 const _types: Set<string> = new Set([
@@ -576,32 +580,84 @@ function highlightDiffLine(code: string): CodeToken[] {
   return [{ type: 'text', text: source } as CodeToken];
 }
 
+function looksLikeJson(source: string): boolean {
+  return /^\s*[\[{]/.test(source) && /"[^"\n]+"\s*:|\[\s*("|-?\d|true|false|null|\{|\[)/.test(source);
+}
+
+function looksLikeHtml(source: string): boolean {
+  return /<[A-Za-z][\w:-]*(?:\s+[A-Za-z_:][\w:.-]*(?:\s*=\s*(?:"[^"]*"|'[^']*'))?)*\s*\/?>/.test(source);
+}
+
+function looksLikeShell(source: string): boolean {
+  const lines = source.split(/\r?\n/).filter((line: string): boolean => line.trim().length > 0);
+  if (lines.length === 0) {
+    return false;
+  }
+  let shellLike = 0;
+  for (const line of lines) {
+    if (/^\s*(?:\$\s*)?(?:sudo|apt|brew|git|curl|wget|npm|pnpm|yarn|node|bash|sh|cd|ls|mkdir|rm|cp|mv)\b/.test(line)) {
+      shellLike += 1;
+    }
+  }
+  return shellLike >= Math.min(2, lines.length);
+}
+
+function looksLikePython(source: string): boolean {
+  return /^\s*(?:def|class)\s+[A-Za-z_]\w*.*:\s*$/m.test(source) ||
+    /^\s*(?:from\s+[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*\s+import|import\s+[A-Za-z_]\w*|print\s*\()/m.test(source);
+}
+
+function looksLikeGo(source: string): boolean {
+  return /^\s*package\s+main\b/m.test(source) || /^\s*func\s+main\s*\(\s*\)/m.test(source);
+}
+
+function looksLikeRust(source: string): boolean {
+  return /^\s*fn\s+main\s*\(\s*\)/m.test(source) || /\blet\s+mut\b/.test(source);
+}
+
+function looksLikeSql(source: string): boolean {
+  return /\bSELECT\b[\s\S]+\bFROM\b/i.test(source) || /^\s*(?:INSERT\s+INTO|UPDATE|DELETE\s+FROM)\b/i.test(source);
+}
+
+function looksLikeDiff(source: string): boolean {
+  return /^diff --git\b/m.test(source) || /^@@\s+-\d+/m.test(source) || /^(?:\+\+\+|---)\s+/m.test(source);
+}
+
 function sniffCodeLanguage(code: string): string {
   const source = (code || '').trim();
   if (!source) {
     return '';
   }
-  if (source.startsWith('+') || source.startsWith('-') || source.startsWith('@@')) {
+  if (looksLikeDiff(source)) {
     return 'diff';
   }
-  if (/^\s*(SELECT|INSERT|UPDATE|DELETE)\b/i.test(source) || /\bFROM\b/i.test(source)) {
-    return 'sql';
+  if (looksLikeJson(source)) {
+    return 'json';
   }
-  if (/^\s*(def|class|import|from)\b/.test(source) || /:\s*$/.test(source)) {
+  if (looksLikeHtml(source)) {
+    return 'html';
+  }
+  if (looksLikeShell(source)) {
+    return 'shell';
+  }
+  if (looksLikePython(source)) {
     return 'python';
   }
-  if (/^\s*[@.#]?[A-Za-z0-9_-]+\s*\{/.test(source) || /\b(color|display|margin|padding)\s*:/.test(source)) {
-    return 'css';
+  if (looksLikeGo(source)) {
+    return 'go';
   }
-  if (/^\s*(const|let|var|function|class|interface|type|import|export)\b/.test(source) || source.includes('=>')) {
-    return 'typescript';
+  if (looksLikeRust(source)) {
+    return 'rust';
+  }
+  if (looksLikeSql(source)) {
+    return 'sql';
   }
   return '';
 }
 
 export function highlightCodeLine(code: string, lang: string): CodeToken[] {
   const explicit = normalizeCodeLanguage(lang);
-  const normalized = explicit === 'generic' ? (sniffCodeLanguage(code) || explicit) : explicit;
+  const normalized = explicit ? explicit : sniffCodeLanguage(code);
   if (normalized === 'xml' || normalized === 'html') {
     return highlightXmlLine(code);
   }
