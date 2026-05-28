@@ -88,6 +88,38 @@ restore_release_bundle_name() {
   set_app_bundle_name "$RELEASE_BUNDLE"
 }
 
+backup_debug_branding_resources() {
+  DEBUG_BRANDING_BACKUP_DIR="$(mktemp -d)"
+  mkdir -p "$DEBUG_BRANDING_BACKUP_DIR/AppScope/resources/base/media"
+  mkdir -p "$DEBUG_BRANDING_BACKUP_DIR/entry/src/main/resources/base/media"
+  cp "$PROJ/AppScope/resources/base/media/app_icon_layered.json" \
+    "$DEBUG_BRANDING_BACKUP_DIR/AppScope/resources/base/media/app_icon_layered.json"
+  cp "$PROJ/entry/src/main/resources/base/media/app_icon_layered.json" \
+    "$DEBUG_BRANDING_BACKUP_DIR/entry/src/main/resources/base/media/app_icon_layered.json"
+  cp "$PROJ/entry/src/main/resources/base/media/startup_foreground.png" \
+    "$DEBUG_BRANDING_BACKUP_DIR/entry/src/main/resources/base/media/startup_foreground.png"
+}
+
+apply_debug_branding_resources() {
+  cp "$PROJ/AppScope/resources/base/media/app_icon_slate_solid_layered.json" \
+    "$PROJ/AppScope/resources/base/media/app_icon_layered.json"
+  cp "$PROJ/entry/src/main/resources/base/media/app_icon_slate_solid_layered.json" \
+    "$PROJ/entry/src/main/resources/base/media/app_icon_layered.json"
+  cp "$PROJ/entry/src/main/resources/base/media/startup_foreground_slate_solid.png" \
+    "$PROJ/entry/src/main/resources/base/media/startup_foreground.png"
+}
+
+restore_debug_branding_resources() {
+  [ -n "${DEBUG_BRANDING_BACKUP_DIR:-}" ] && [ -d "$DEBUG_BRANDING_BACKUP_DIR" ] || return 0
+  cp "$DEBUG_BRANDING_BACKUP_DIR/AppScope/resources/base/media/app_icon_layered.json" \
+    "$PROJ/AppScope/resources/base/media/app_icon_layered.json"
+  cp "$DEBUG_BRANDING_BACKUP_DIR/entry/src/main/resources/base/media/app_icon_layered.json" \
+    "$PROJ/entry/src/main/resources/base/media/app_icon_layered.json"
+  cp "$DEBUG_BRANDING_BACKUP_DIR/entry/src/main/resources/base/media/startup_foreground.png" \
+    "$PROJ/entry/src/main/resources/base/media/startup_foreground.png"
+  rm -rf "$DEBUG_BRANDING_BACKUP_DIR"
+}
+
 current_app_bundle_name() {
   python3 - "$PROJ/AppScope/app.json5" <<'PY'
 from pathlib import Path
@@ -173,8 +205,10 @@ EOF
     cd "$PROJ"
     DEBUG_APP_SCOPE_BACKUP="$(mktemp)"
     cp "$PROJ/AppScope/app.json5" "$DEBUG_APP_SCOPE_BACKUP"
+    backup_debug_branding_resources
     cleanup_debug_packaging() {
       local status=0
+      restore_debug_branding_resources || status=$?
       if [ -n "${DEBUG_APP_SCOPE_BACKUP:-}" ] && [ -f "$DEBUG_APP_SCOPE_BACKUP" ]; then
         cp "$DEBUG_APP_SCOPE_BACKUP" "$PROJ/AppScope/app.json5" || status=$?
         rm -f "$DEBUG_APP_SCOPE_BACKUP"
@@ -185,7 +219,9 @@ EOF
     }
     trap cleanup_debug_packaging EXIT
     restore_debug_bundle_name
+    apply_debug_branding_resources
     echo "==> Debug bundleName: $(current_app_bundle_name)"
+    echo "==> Debug branding: slate_solid icon/startup"
     hvigorw assembleHap --mode module -p product=default -p buildMode=debug --no-daemon
     assert_hap_bundle_name "$PROJ/entry/build/default/outputs/default/entry-default-unsigned.hap" "$DEBUG_BUNDLE"
     cleanup_debug_packaging
@@ -249,8 +285,10 @@ EOF
     cd "$PROJ"
     DEBUG_APP_SCOPE_BACKUP="$(mktemp)"
     cp "$PROJ/AppScope/app.json5" "$DEBUG_APP_SCOPE_BACKUP"
+    backup_debug_branding_resources
     cleanup_debug_packaging() {
       local status=0
+      restore_debug_branding_resources || status=$?
       if [ -n "${DEBUG_APP_SCOPE_BACKUP:-}" ] && [ -f "$DEBUG_APP_SCOPE_BACKUP" ]; then
         cp "$DEBUG_APP_SCOPE_BACKUP" "$PROJ/AppScope/app.json5" || status=$?
         rm -f "$DEBUG_APP_SCOPE_BACKUP"
@@ -261,7 +299,9 @@ EOF
     }
     trap cleanup_debug_packaging EXIT
     restore_debug_bundle_name
+    apply_debug_branding_resources
     echo "==> Debug bundleName: $(current_app_bundle_name)"
+    echo "==> Debug branding: slate_solid icon/startup"
     hvigorw assembleHap --mode module -p product=default -p buildMode=debug --no-daemon
     assert_hap_bundle_name "$PROJ/entry/build/default/outputs/default/entry-default-unsigned.hap" "$DEBUG_BUNDLE"
     cleanup_debug_packaging
