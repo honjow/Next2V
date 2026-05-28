@@ -1,4 +1,11 @@
-import { V2exNode, V2exTopic, ApiService, ApiV2Service, NodeSearchUtils, translateApiError } from 'shared'
+import { V2exNode, V2exTopic, ApiService, ApiV2Service, DiagnosticLogger, NodeIndexRepository, NodeSearchUtils, translateApiError } from 'shared'
+
+export type NodeIndexLoadPhase = 'idle' | 'loading' | 'loaded' | 'error'
+
+export interface NodeIndexLoadOptions {
+  forceRefresh?: boolean
+  publishDefaultNodes?: boolean
+}
 
 /**
  * Node data source — for LazyForEach
@@ -49,24 +56,39 @@ export class NodeViewModel {
   isNodeTopicsLoadingMore: boolean = false
   nodeTopicsLoadMoreError: string = ''
   isLoading: boolean = false
+  nodeIndexPhase: NodeIndexLoadPhase = 'idle'
   keyword: string = ''
   errorMessage: string = ''
 
   private allNodes: V2exNode[] = []
+  private publishDefaultNodes: boolean = true
 
   private api: ApiService = new ApiService()
   private apiV2: ApiV2Service = new ApiV2Service()
   private readonly V2_PAGE_SIZE: number = 10
 
   /** Load all nodes */
-  async loadAllNodes(): Promise<void> {
+  async loadAllNodes(options?: NodeIndexLoadOptions): Promise<void> {
+    const loadOptions: NodeIndexLoadOptions = options || {}
+    const publishDefaultNodes = loadOptions.publishDefaultNodes !== false
+    this.publishDefaultNodes = publishDefaultNodes
     this.isLoading = true
+    this.nodeIndexPhase = 'loading'
     this.errorMessage = ''
+    const startedAt = Date.now()
     try {
-      const nodes = await this.api.getAllNodes()
-      this.allNodes = NodeSearchUtils.sortByPopularity(nodes)
-      this.applyNodeFilter()
+      const result = await NodeIndexRepository.getNodes(this.api, loadOptions.forceRefresh === true)
+      this.allNodes = result.nodes
+      this.nodeIndexPhase = 'loaded'
+      this.applyNodeFilter(publishDefaultNodes)
+      DiagnosticLogger.info('ui_lifecycle', 'node_index_viewmodel_load_done', {
+        count: this.allNodes.length,
+        fromCache: result.fromCache,
+        publishDefaultNodes: publishDefaultNodes,
+        totalMs: Date.now() - startedAt
+      })
     } catch (error) {
+      this.nodeIndexPhase = 'error'
       this.errorMessage = translateApiError(error)
       console.error('Failed to load nodes:', error.message)
     } finally {
@@ -79,8 +101,26 @@ export class NodeViewModel {
     this.applyNodeFilter()
   }
 
-  private applyNodeFilter(): void {
-    this.nodeDataSource.setData(NodeSearchUtils.filter(this.allNodes, this.keyword))
+  hasNodeIndexSettled(): boolean {
+    return this.nodeIndexPhase === 'loaded' || this.nodeIndexPhase === 'error'
+  }
+
+  defaultNodePreview(): V2exNode[] {
+    return this.allNodes
+  }
+
+  private applyNodeFilter(publishDefaultNodes: boolean = this.publishDefaultNodes): void {
+    const startedAt = Date.now()
+    const hasKeyword = (this.keyword || '').trim().length > 0
+    const data = (!hasKeyword && !publishDefaultNodes) ? [] : NodeSearchUtils.filter(this.allNodes, this.keyword)
+    this.nodeDataSource.setData(data)
+    DiagnosticLogger.info('ui_lifecycle', 'node_index_publish_done', {
+      keywordLength: (this.keyword || '').trim().length,
+      allCount: this.allNodes.length,
+      publishedCount: data.length,
+      publishDefaultNodes: publishDefaultNodes,
+      totalMs: Date.now() - startedAt
+    })
   }
 
   /** Load topics under the specified node */

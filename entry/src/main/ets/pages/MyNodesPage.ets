@@ -8,6 +8,7 @@ import {
   CookieJarSettings,
   GroupedListSection,
   ImageUtils,
+  NodeIndexRepository,
   PageErrorState,
   PageLoadingState,
   PageLoginRequiredState,
@@ -139,8 +140,9 @@ export struct MyNodesPage {
       return
     }
     // Some nodes missing icons, fetch full node data first, merge then assign
-    this.api.getAllNodes()
-      .then((allNodes: V2exNode[]) => {
+    NodeIndexRepository.getNodes(this.api)
+      .then((result) => {
+        const allNodes: V2exNode[] = result.nodes
         const nodeByName: Record<string, V2exNode> = {}
         allNodes.forEach((node: V2exNode) => {
           nodeByName[node.name] = node

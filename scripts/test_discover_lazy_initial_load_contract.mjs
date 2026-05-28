@@ -30,7 +30,7 @@ function methodBody(text, signature) {
 
 mustContain(indexPage, 'DiscoverPage({', 'DiscoverPage construction')
 mustContain(indexPage, 'currentTab: this.ct', 'Index must pass current tab to DiscoverPage')
-assert.equal(indexPage.includes('.animationDuration(0)'), false, 'Index must not disable HDS tab animation')
+assert.equal(indexPage.includes('.animationDuration(0)'), true, 'Index must preserve user-restored HDS tab animationDuration(0)')
 
 mustContain(discoverPage, 'currentTab: number = 0', 'DiscoverPage currentTab prop')
 mustContain(discoverPage, "@Watch('onCurrentTabChanged')", 'DiscoverPage currentTab watcher')
@@ -51,7 +51,7 @@ mustContain(requestBody, 'this.hasStartedInitialLoad = true', 'initial load help
 
 const gateIndex = requestBody.indexOf('if (this.currentTab !== 1)')
 const startedIndex = requestBody.indexOf('this.hasStartedInitialLoad = true')
-const loadNodesIndex = requestBody.indexOf('this.vm.loadAllNodes()')
+const loadNodesIndex = requestBody.indexOf('this.vm.loadAllNodes(')
 const loadLocalIndex = requestBody.indexOf('this.loadLocalNodeSections()')
 const loadTopicIndex = requestBody.indexOf('this.loadTopicSurface()')
 assert.ok(gateIndex !== -1 && startedIndex !== -1, 'initial load gate and started guard must exist')

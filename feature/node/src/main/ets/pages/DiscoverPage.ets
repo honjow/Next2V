@@ -85,7 +85,7 @@ export struct DiscoverPage {
       started: this.hasStartedInitialLoad,
       skipped: false
     })
-    this.vm.loadAllNodes()
+    this.vm.loadAllNodes({ publishDefaultNodes: false })
     this.loadLocalNodeSections()
     this.loadTopicSurface()
   }
@@ -105,7 +105,7 @@ export struct DiscoverPage {
           message: this.vm.errorMessage,
           topPadding: this.topH + this.TBH + this.BBH,
           bottomPadding: this.discoverBottomPadding(),
-          retryAction: () => { this.vm.loadAllNodes() }
+          retryAction: () => { this.vm.loadAllNodes({ forceRefresh: true, publishDefaultNodes: false }) }
         })
       } else {
         Column() {
@@ -123,7 +123,7 @@ export struct DiscoverPage {
                 } else {
                   this.LocalNodeSections()
                   this.HotTopicsSection()
-                  this.NodeResultsSection()
+                  this.TopNodePreviewSection()
                 }
               }
                 .padding({
@@ -204,8 +204,13 @@ export struct DiscoverPage {
   }
 
   @Builder NodeResultsSection() {
-    if (this.vm.nodeDataSource.totalCount() === 0) {
+    if (this.vm.nodeDataSource.totalCount() === 0 && this.vm.hasNodeIndexSettled()) {
       DiscoverEmptyState()
+    } else if (this.vm.nodeDataSource.totalCount() === 0) {
+      LoadingProgress()
+        .width(ThemeConstants.LOADING_SIZE)
+        .height(ThemeConstants.LOADING_SIZE)
+        .margin({ top: ThemeConstants.SPACE_MD, bottom: ThemeConstants.SPACE_MD })
     } else {
       DiscoverSectionTitle({ title: AppStrings.text($r('app.string.common_nodes'), 'Nodes') })
       GridRow({ columns: { sm: 2, md: 4, lg: 6 }, gutter: { x: ThemeConstants.SPACE_SM, y: ThemeConstants.SPACE_SM } }) {
@@ -220,6 +225,25 @@ export struct DiscoverPage {
             })
           }
         }, (node: V2exNode) => node.id.toString())
+      }
+    }
+  }
+
+  @Builder TopNodePreviewSection() {
+    if (this.topNodePreviewItems().length > 0) {
+      DiscoverSectionTitle({ title: AppStrings.text($r('app.string.common_nodes'), 'Nodes') })
+      GridRow({ columns: { sm: 2, md: 4, lg: 6 }, gutter: { x: ThemeConstants.SPACE_SM, y: ThemeConstants.SPACE_SM } }) {
+        ForEach(this.topNodePreviewItems(), (node: V2exNode) => {
+          GridCol({ span: { sm: 1, md: 2, lg: 2 } }) {
+            DiscoverNodeCard({
+              node: node,
+              openAction: () => {
+                let p: NodeTopicListParams = { nodeName: node.name, nodeTitle: node.title }
+                this.ns.pushPathByName('NodeTopicList', p as Object)
+              }
+            })
+          }
+        }, (node: V2exNode) => `preview-${node.id}`)
       }
     }
   }
@@ -275,6 +299,10 @@ export struct DiscoverPage {
     return DiscoverPageCoordinator.topicItems(this.topicMode, this.topicBuckets())
   }
 
+  private topNodePreviewItems(): V2exNode[] {
+    return DiscoverPageCoordinator.defaultNodePreview(this.vm.defaultNodePreview())
+  }
+
   private topicSectionTitle(): string {
     return DiscoverPageCoordinator.topicModeLabel(this.topicMode)
   }
@@ -293,7 +321,7 @@ export struct DiscoverPage {
   }
 
   private async refreshDiscover(): Promise<void> {
-    await this.vm.loadAllNodes()
+    await this.vm.loadAllNodes({ forceRefresh: true, publishDefaultNodes: false })
     this.loadLocalNodeSections()
     this.reloadTopicSurface()
   }

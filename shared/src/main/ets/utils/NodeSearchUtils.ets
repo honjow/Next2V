@@ -18,7 +18,7 @@ export class NodeSearchUtils {
   static filter(nodes: V2exNode[], keyword: string): V2exNode[] {
     const cleanKeyword = NodeSearchUtils.clean(keyword)
     if (!cleanKeyword) {
-      return NodeSearchUtils.sortByPopularity(nodes)
+      return nodes
     }
     return NodeSearchUtils.search(nodes, cleanKeyword).map((item: NodeSearchMatch) => item.node)
   }

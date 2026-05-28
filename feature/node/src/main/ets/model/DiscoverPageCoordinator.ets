@@ -1,5 +1,5 @@
 import { AppStrings } from 'shared'
-import { V2exTopic } from 'shared'
+import { V2exNode, V2exTopic } from 'shared'
 import type { SavedNode, ViewedTopic } from 'shared'
 import { DiscoverTopicMode } from '../components/DiscoverPageComponents'
 
@@ -11,6 +11,8 @@ export interface DiscoverTopicBuckets {
 }
 
 export class DiscoverPageCoordinator {
+  static readonly DEFAULT_NODE_PREVIEW_LIMIT: number = 24
+
   static hasNodeSearchQuery(keyword: string): boolean {
     return (keyword || '').trim().length > 0
   }
@@ -46,6 +48,10 @@ export class DiscoverPageCoordinator {
       return false
     }
     return DiscoverPageCoordinator.topicItems(mode, buckets).length === 0
+  }
+
+  static defaultNodePreview(nodes: V2exNode[], limit: number = DiscoverPageCoordinator.DEFAULT_NODE_PREVIEW_LIMIT): V2exNode[] {
+    return (nodes || []).slice(0, limit)
   }
 
   static withTopics(mode: DiscoverTopicMode, buckets: DiscoverTopicBuckets, topics: V2exTopic[]): DiscoverTopicBuckets {

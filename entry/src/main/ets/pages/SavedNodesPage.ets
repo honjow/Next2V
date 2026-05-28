@@ -7,6 +7,7 @@ import {
   DateUtils,
   EmptyState,
   GroupedListSection,
+  NodeIndexRepository,
   SecondaryListScaffold,
   type NodeTopicListParams,
   type SavedNode,
@@ -86,8 +87,9 @@ export struct SavedNodesPage {
     if (items.every((item: SavedNode) => this.nodeIcon(item))) {
       return
     }
-    this.api.getAllNodes()
-      .then((allNodes: V2exNode[]) => {
+    NodeIndexRepository.getNodes(this.api)
+      .then((result) => {
+        const allNodes: V2exNode[] = result.nodes
         const nodeByName: Record<string, V2exNode> = {}
         allNodes.forEach((node: V2exNode) => {
           nodeByName[node.name] = node

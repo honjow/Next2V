@@ -5,7 +5,7 @@ import {
   CacheSettings,
   type CacheKeyIndex,
   CollectionSettings,
-  NodeSearchUtils,
+  NodeIndexRepository,
   type SavedNode,
   type SavedTopic,
   type V2exNode,
@@ -51,8 +51,8 @@ export class SearchLocalDataCoordinator {
   }
 
   static async loadNodeIndex(api: ApiService): Promise<V2exNode[]> {
-    const nodes = await api.getAllNodes()
-    return NodeSearchUtils.sortByPopularity(nodes)
+    const result = await NodeIndexRepository.getNodes(api)
+    return result.nodes
   }
 
   private static async loadCachedTopicLists(
