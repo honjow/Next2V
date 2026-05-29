@@ -31,9 +31,9 @@ interface BlockedMemberListItem {
 @Component
 export struct BlockedListsPage {
   @Consume('ns') stack: NavPathStack
-  @StorageLink(StorageKeys.BLOCKED_LIST_IGNORED_TOPIC_IDS) ignoredTopicIdsJson: string = '[]'
-  @StorageLink(StorageKeys.BLOCKED_LIST_BLOCKED_MEMBER_IDS) blockedMemberIdsJson: string = '[]'
-  @StorageLink(StorageKeys.BLOCKED_LIST_UPDATED_AT) updatedAt: number = 0
+  @StorageLink(StorageKeys.BLOCKED_LIST_IGNORED_TOPIC_IDS) @Watch('onBlockedListStorageChanged') ignoredTopicIdsJson: string = '[]'
+  @StorageLink(StorageKeys.BLOCKED_LIST_BLOCKED_MEMBER_IDS) @Watch('onBlockedListStorageChanged') blockedMemberIdsJson: string = '[]'
+  @StorageLink(StorageKeys.BLOCKED_LIST_UPDATED_AT) @Watch('onBlockedListStorageChanged') updatedAt: number = 0
   @StorageLink(StorageKeys.BLOCKED_LIST_SELECTED_TAB) selectedTab: number = 0
   @StorageProp(StorageKeys.TOP_AVOID_HEIGHT) topH: number = 0
   @StorageProp(StorageKeys.BOTTOM_AVOID_HEIGHT) bottomH: number = 0
@@ -48,6 +48,7 @@ export struct BlockedListsPage {
   private readonly MEMBER_AVATAR_SIZE: number = ThemeConstants.AVATAR_SIZE_TOPIC
   private readonly MEMBER_ROW_MIN_HEIGHT: number = 64
   private api: ApiService = new ApiService()
+  private lastStorageSignature: string = ''
 
   aboutToAppear(): void {
     this.refreshAll('page_open')
@@ -123,7 +124,7 @@ export struct BlockedListsPage {
 
   @Builder
   BlockedMembersList() {
-    ForEach(this.members, (item: BlockedMemberListItem) => {
+    ForEach(this.renderableMembers(), (item: BlockedMemberListItem) => {
       ListItem() {
         this.BlockedMemberCard(item)
       }
@@ -193,22 +194,10 @@ export struct BlockedListsPage {
     if (!this.snapshot.ownerKey) {
       return false
     }
-    if (this.selectedTab === 0) {
-      if (this.snapshot.blockedMemberIds.length === 0) {
-        return (this.syncInFlight || this.loadingMembers) && this.members.length === 0
-      }
-      if (this.hasResolvedMembers()) {
-        return false
-      }
-      return this.syncInFlight || this.loadingMembers || this.members.length === 0
-    }
-    if (this.snapshot.ignoredTopicIds.length === 0) {
-      return (this.syncInFlight || this.loadingTopics) && this.topics.length === 0
-    }
-    if (this.topics.length > 0) {
+    if (this.hasAnyRenderableForCurrentTab() || this.hasIdsForCurrentTab()) {
       return false
     }
-    return this.syncInFlight || this.loadingTopics
+    return this.isRefreshPendingForCurrentTab()
   }
 
   private hasPageStateMessage(): boolean {
@@ -223,7 +212,7 @@ export struct BlockedListsPage {
       if (this.snapshot.blockedMemberIds.length === 0) {
         return AppStrings.text(AppStrings.R_NO_BLOCKED_USERS, 'No blocked users')
       }
-      if (this.members.length === 0) {
+      if (this.renderableMembers().length === 0) {
         return AppStrings.text(AppStrings.R_COMMON_LOAD_FAILED, 'Load failed')
       }
       return ''
@@ -259,18 +248,37 @@ export struct BlockedListsPage {
     return this.resolvedMemberCount() > 0
   }
 
-  private resolvedMemberCount(): number {
-    return this.members.filter((item: BlockedMemberListItem) => item.resolved).length
+  private hasIdsForCurrentTab(): boolean {
+    if (this.selectedTab === 0) {
+      return this.snapshot.blockedMemberIds.length > 0
+    }
+    return this.snapshot.ignoredTopicIds.length > 0
   }
 
-  private shouldSeedMemberFallbacks(memberIds: number[]): boolean {
-    if (this.members.length === 0) {
-      return true
+  private hasAnyRenderableForCurrentTab(): boolean {
+    if (this.selectedTab === 0) {
+      return this.renderableMembers().length > 0
     }
-    if (!this.memberIdsMatch(this.members, memberIds)) {
-      return true
+    return this.topics.length > 0
+  }
+
+  private isRefreshPendingForCurrentTab(): boolean {
+    if (this.selectedTab === 0) {
+      return this.syncInFlight || this.loadingMembers
     }
-    return !this.hasResolvedMembers()
+    return this.syncInFlight || this.loadingTopics
+  }
+
+  private renderableMembers(): BlockedMemberListItem[] {
+    if (this.members.length > 0) {
+      return this.members
+    }
+    return this.uniqueIds(this.snapshot.blockedMemberIds).slice(0, 80)
+      .map((id: number): BlockedMemberListItem => this.fallbackMember(id))
+  }
+
+  private resolvedMemberCount(): number {
+    return this.members.filter((item: BlockedMemberListItem) => item.resolved).length
   }
 
   private memberIdsMatch(items: BlockedMemberListItem[], ids: number[]): boolean {
@@ -341,6 +349,20 @@ export struct BlockedListsPage {
     ]).then(() => {})
   }
 
+  private onBlockedListStorageChanged(): void {
+    const signature = `${this.ignoredTopicIdsJson}|${this.blockedMemberIdsJson}|${this.updatedAt}`
+    if (signature === this.lastStorageSignature) {
+      return
+    }
+    this.lastStorageSignature = signature
+    this.applyRuntimeSnapshot('storage_change')
+  }
+
+  private applyRuntimeSnapshot(trigger: string): void {
+    const snapshot = BlockedListSettings.runtimeSnapshot()
+    this.applySnapshot(snapshot, trigger)
+  }
+
   private syncBlockedListsOnPageOpen(cookie: string, trigger: string): Promise<void> {
     if (!cookie) {
       return Promise.resolve()
@@ -376,9 +398,6 @@ export struct BlockedListsPage {
       this.topics = []
       return Promise.resolve()
     }
-    if (this.topics.length > 0 && !this.topicIdsMatch(this.topics, topicIds)) {
-      this.topics = []
-    }
     this.loadingTopics = true
     return this.api.getTopicsByIds(topicIds)
       .then((topics: V2exTopic[]) => {
@@ -386,7 +405,9 @@ export struct BlockedListsPage {
       })
       .catch((error: Error) => {
         DiagnosticLogger.exception('network', 'blocked_lists_resolve_topics_failed', error, { count: topicIds.length })
-        this.topics = []
+        if (this.topics.length === 0) {
+          this.topics = []
+        }
       })
       .finally(() => {
         this.loadingTopics = false
@@ -399,9 +420,7 @@ export struct BlockedListsPage {
       this.members = []
       return Promise.resolve()
     }
-    if (this.shouldSeedMemberFallbacks(memberIds)) {
-      this.members = memberIds.map((id: number): BlockedMemberListItem => this.fallbackMember(id))
-    }
+    this.members = this.preserveMembersForIds(memberIds)
     this.loadingMembers = true
     return Promise.all(memberIds.map((id: number): Promise<BlockedMemberListItem> => {
       return this.api.getMemberById(id)
@@ -446,6 +465,17 @@ export struct BlockedListsPage {
 
   private fallbackMember(id: number): BlockedMemberListItem {
     return { id: id, username: '', tagline: '', avatar: '', created: 0, resolved: false }
+  }
+
+  private preserveMembersForIds(memberIds: number[]): BlockedMemberListItem[] {
+    const byId: Map<number, BlockedMemberListItem> = new Map()
+    for (const item of this.members) {
+      byId.set(item.id, item)
+    }
+    return memberIds.map((id: number): BlockedMemberListItem => {
+      const existing = byId.get(id)
+      return existing ? existing : this.fallbackMember(id)
+    })
   }
 
   private memberMeta(item: BlockedMemberListItem): string {

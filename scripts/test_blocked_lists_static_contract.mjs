@@ -17,6 +17,30 @@ function assertIncludes(file, text, needle) {
   }
 }
 
+function methodBody(text, methodName) {
+  const marker = methodName.includes('(') ? methodName : `${methodName}(`
+  const start = text.indexOf(marker)
+  if (start < 0) {
+    fail(`missing method marker: ${marker}`)
+  }
+  const braceStart = text.indexOf('{', start)
+  if (braceStart < 0) {
+    fail(`missing method body for: ${marker}`)
+  }
+  let depth = 0
+  for (let i = braceStart; i < text.length; i++) {
+    const ch = text[i]
+    if (ch === '{') depth += 1
+    if (ch === '}') {
+      depth -= 1
+      if (depth === 0) {
+        return text.slice(braceStart + 1, i)
+      }
+    }
+  }
+  fail(`unterminated method body for: ${marker}`)
+}
+
 const parserPath = 'shared/src/main/ets/parser/V2exTabParser.ets'
 const settingsPath = 'shared/src/main/ets/settings/BlockedListSettings.ets'
 const apiPath = 'shared/src/main/ets/network/ApiService.ets'
@@ -128,8 +152,17 @@ assertIncludes(pagePath, page, 'LocalTopicCard({')
 assertIncludes(pagePath, page, 'BlockedListContent()')
 assertIncludes('shared/src/main/ets/components/LocalTopicCard.ets', source('shared/src/main/ets/components/LocalTopicCard.ets'), 'last_touched: this.metaTimestamp > 0 ? this.metaTimestamp : this.created')
 assertIncludes(pagePath, page, 'this.syncInFlight = !!cookie')
-assertIncludes(pagePath, page, 'this.syncInFlight || this.loadingTopics')
-assertIncludes(pagePath, page, 'this.syncInFlight || this.loadingMembers')
+assertIncludes(pagePath, page, '@Watch(\'onBlockedListStorageChanged\')')
+assertIncludes(pagePath, page, 'private onBlockedListStorageChanged()')
+assertIncludes(pagePath, page, 'private applyRuntimeSnapshot')
+assertIncludes(pagePath, page, 'private hasAnyRenderableForCurrentTab(): boolean')
+const pageLoadingBody = methodBody(page, 'private shouldShowPageLoading')
+if (pageLoadingBody.includes('this.syncInFlight || this.loadingTopics')) {
+  fail('BlockedListsPage must not use sync/loading as fullscreen loading for ignored topics')
+}
+if (pageLoadingBody.includes('this.syncInFlight || this.loadingMembers')) {
+  fail('BlockedListsPage must not use sync/loading as fullscreen loading for cached blocked members')
+}
 assertIncludes(pagePath, page, "`${trigger}_cache`")
 assertIncludes(pagePath, page, "`${trigger}_network`")
 assertIncludes(pagePath, page, 'blocked_list_render_snapshot')
@@ -159,9 +192,9 @@ assertIncludes(pagePath, page, 'private shouldShowPageLoading(): boolean')
 assertIncludes(pagePath, page, 'private pageStateMessage(): string')
 assertIncludes(pagePath, page, 'private topContentInset(): number')
 assertIncludes(pagePath, page, 'private bottomContentInset(): number')
-assertIncludes(pagePath, page, 'private shouldSeedMemberFallbacks')
+assertIncludes(pagePath, page, 'private preserveMembersForIds')
 assertIncludes(pagePath, page, 'pageState: this.pageStateName()')
-assertIncludes(pagePath, page, 'if (this.shouldSeedMemberFallbacks(memberIds))')
+assertIncludes(pagePath, page, 'this.members = this.preserveMembersForIds(memberIds)')
 if (page.includes("Text('›')") || page.includes('Text("›")')) {
   fail('BlockedListsPage must not use text arrows as icons')
 }
