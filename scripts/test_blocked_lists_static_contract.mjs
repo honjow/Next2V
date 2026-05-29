@@ -115,7 +115,6 @@ assertIncludes(pagePath, page, 'export struct BlockedListsPage')
 assertIncludes(pagePath, page, 'StorageKeys.BLOCKED_LIST_SELECTED_TAB')
 assertIncludes(pagePath, page, 'BlockedListSettings.loadActive')
 assertIncludes(pagePath, page, 'AppStrings.R_LOGIN_TO_VIEW_BLOCKED')
-assertIncludes(pagePath, page, 'AppStrings.R_COMMON_LOADING')
 assertIncludes(pagePath, page, 'AppStrings.R_COMMON_LOAD_FAILED')
 assertIncludes(pagePath, page, 'DiagnosticLogger.exception')
 assertIncludes(pagePath, page, 'this.api.getTopicsByIds(topicIds)')
@@ -126,7 +125,7 @@ assertIncludes(pagePath, page, 'BlockedListSettings.runtimeSnapshot()')
 assertIncludes(pagePath, page, 'topPadding: this.BOTTOM_BUILDER_HEIGHT')
 assertIncludes(pagePath, page, 'BlockedMemberCard(item)')
 assertIncludes(pagePath, page, 'LocalTopicCard({')
-assertIncludes(pagePath, page, 'BlockedEmptyState(')
+assertIncludes(pagePath, page, 'BlockedListContent()')
 assertIncludes('shared/src/main/ets/components/LocalTopicCard.ets', source('shared/src/main/ets/components/LocalTopicCard.ets'), 'last_touched: this.metaTimestamp > 0 ? this.metaTimestamp : this.created')
 assertIncludes(pagePath, page, 'this.syncInFlight = !!cookie')
 assertIncludes(pagePath, page, 'this.syncInFlight || this.loadingTopics')
@@ -142,9 +141,27 @@ if (page.includes('.padding({ top: 168 })')) {
 if (page.includes('TabHeaderItem()') || page.includes('SegmentButton({')) {
   fail('BlockedListsPage must not render the segment control as a list item')
 }
-if (page.includes('stateHeight: 220')) {
-  fail('BlockedListsPage empty states must not scatter magic 220 heights')
+if (page.includes('EMPTY_STATE_HEIGHT')) {
+  fail('BlockedListsPage must not use a fixed EMPTY_STATE_HEIGHT')
 }
+if (/stateHeight\s*:/.test(page)) {
+  fail('BlockedListsPage must not pass fixed stateHeight values')
+}
+if (page.includes('BlockedEmptyState(')) {
+  fail('BlockedListsPage must not collapse loading/empty/error into one list-item empty-state builder')
+}
+if (page.includes('applySnapshot(BlockedListSettings.runtimeSnapshot()')) {
+  fail('BlockedListsPage aboutToAppear must not re-resolve the runtime snapshot before refreshAll')
+}
+assertIncludes(pagePath, page, 'PageLoadingState()')
+assertIncludes(pagePath, page, 'CardEmptyState({')
+assertIncludes(pagePath, page, 'private shouldShowPageLoading(): boolean')
+assertIncludes(pagePath, page, 'private pageStateMessage(): string')
+assertIncludes(pagePath, page, 'private topContentInset(): number')
+assertIncludes(pagePath, page, 'private bottomContentInset(): number')
+assertIncludes(pagePath, page, 'private shouldSeedMemberFallbacks')
+assertIncludes(pagePath, page, 'pageState: this.pageStateName()')
+assertIncludes(pagePath, page, 'if (this.shouldSeedMemberFallbacks(memberIds))')
 if (page.includes("Text('›')") || page.includes('Text("›")')) {
   fail('BlockedListsPage must not use text arrows as icons')
 }
