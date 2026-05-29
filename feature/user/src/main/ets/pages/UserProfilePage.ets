@@ -14,6 +14,8 @@ import {
   CookieJarSettings,
   V2exRoute,
   V2exUrlRouter,
+  BlockedListSettings,
+  DiagnosticLogger,
 } from 'shared'
 import type { TopicReadState } from 'shared'
 import { promptAction, SegmentButton, SegmentButtonOptions } from '@kit.ArkUI'
@@ -392,6 +394,7 @@ export struct UserProfilePage {
     this.vm
       .toggleBlock()
       .then(() => {
+        this.applyBlockedMemberDeltaAfterSuccess(nextBlocked)
         this.syncActionState()
         this.showActionToast(AppStrings.text(nextBlocked ? $r('app.string.blocked') : $r('app.string.unblocked'), nextBlocked ? 'Blocked' : 'Unblocked'))
         this.refreshActionStateLater()
@@ -412,6 +415,30 @@ export struct UserProfilePage {
     this.following = this.vm.actions.following
     this.blocked = this.vm.actions.blocked
     this.publishActionMenuState()
+  }
+
+  private applyBlockedMemberDeltaAfterSuccess(blocked: boolean): void {
+    const memberId = Math.floor(this.vm.profile?.id || 0)
+    if (memberId <= 0) {
+      DiagnosticLogger.info('storage', 'blocked_list_member_delta_skip_missing_id', {
+        hasUsername: !!(this.username || this.vm.profile?.username),
+        blocked: blocked,
+      })
+      return
+    }
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    BlockedListSettings.applyBlockedMemberDelta(memberId, blocked, context, {
+      endpoint: this.vm.actions?.blockPath || '',
+      source: 'user_profile_mutation',
+      trigger: 'member_block_success',
+      hasCookie: !!CookieJarSettings.getCurrentCookie(),
+      hasUsername: !!(this.username || this.vm.profile?.username),
+    }).catch((error: Error) => {
+      DiagnosticLogger.exception('storage', 'blocked_list_member_delta_exception', error, {
+        memberId: memberId,
+        blocked: blocked,
+      })
+    })
   }
 
   private isCurrentSessionUser(): boolean {

@@ -70,6 +70,18 @@ interface BlockedListMissingVariablesLogContext extends BlockedListSourceLogCont
   missingBlockedMembers: boolean
 }
 
+interface BlockedListDeltaLogContext extends BlockedListSourceSnapshotLogContext {
+  deltaType: string
+  targetId: number
+  deltaValue: boolean
+}
+
+interface BlockedListDeltaOwnerLogContext extends BlockedListSourceOwnerLogContext {
+  deltaType: string
+  targetId: number
+  deltaValue: boolean
+}
+
 export class BlockedListSettings {
   private static context: common.UIAbilityContext | null = null
 
@@ -183,11 +195,105 @@ export class BlockedListSettings {
     return true
   }
 
+  static async applyIgnoredTopicDelta(topicId: number, ignored: boolean, context?: common.UIAbilityContext, source: BlockedListCaptureSource = {}): Promise<void> {
+    await BlockedListSettings.applyIdDelta('ignored_topic', topicId, ignored, context, source)
+  }
+
+  static async applyBlockedMemberDelta(memberId: number, blocked: boolean, context?: common.UIAbilityContext, source: BlockedListCaptureSource = {}): Promise<void> {
+    await BlockedListSettings.applyIdDelta('blocked_member', memberId, blocked, context, source)
+  }
+
   static apply(snapshot: BlockedListSnapshot): void {
     setAppStorageValue<string>(StorageKeys.BLOCKED_LIST_OWNER_KEY, snapshot.ownerKey)
     setAppStorageValue<string>(StorageKeys.BLOCKED_LIST_IGNORED_TOPIC_IDS, JSON.stringify(snapshot.ignoredTopicIds))
     setAppStorageValue<string>(StorageKeys.BLOCKED_LIST_BLOCKED_MEMBER_IDS, JSON.stringify(snapshot.blockedMemberIds))
     setAppStorageValue<number>(StorageKeys.BLOCKED_LIST_UPDATED_AT, snapshot.updatedAt)
+  }
+
+  private static async applyIdDelta(
+    deltaType: string,
+    targetId: number,
+    deltaValue: boolean,
+    context?: common.UIAbilityContext,
+    source: BlockedListCaptureSource = {},
+  ): Promise<void> {
+    const normalizedId = Math.floor(targetId)
+    const ownerKey = BlockedListSettings.activeOwnerKey()
+    if (!ownerKey) {
+      DiagnosticLogger.info('storage', 'blocked_list_delta_skip_no_owner', BlockedListSettings.deltaOwnerLogContext(source, ownerKey, deltaType, normalizedId, deltaValue))
+      return
+    }
+    if (normalizedId <= 0) {
+      DiagnosticLogger.warn('storage', 'blocked_list_delta_skip_invalid_id', BlockedListSettings.deltaOwnerLogContext(source, ownerKey, deltaType, normalizedId, deltaValue))
+      return
+    }
+
+    const ctx = context || BlockedListSettings.context
+    const base = await BlockedListSettings.snapshotForDelta(ctx, ownerKey)
+    const normalized = BlockedListSettings.normalize(BlockedListSettings.nextDeltaSnapshot(base, deltaType, normalizedId, deltaValue, ownerKey), ownerKey)
+    DiagnosticLogger.info('storage', 'blocked_list_delta_start', BlockedListSettings.deltaSnapshotLogContext(source, normalized, deltaType, normalizedId, deltaValue))
+    BlockedListSettings.apply(normalized)
+    if (!ctx) {
+      DiagnosticLogger.warn('storage', 'blocked_list_delta_no_context_runtime_only', BlockedListSettings.deltaSnapshotLogContext(source, normalized, deltaType, normalizedId, deltaValue))
+      return
+    }
+    try {
+      const store = await preferences.getPreferences(ctx, STORE_NAME_SETTINGS)
+      store.putSync(KEY_PREFIX + ownerKey, JSON.stringify(normalized))
+      store.flushSync()
+      DiagnosticLogger.info('storage', 'blocked_list_delta_success', BlockedListSettings.deltaSnapshotLogContext(source, normalized, deltaType, normalizedId, deltaValue))
+    } catch (error) {
+      DiagnosticLogger.exception('storage', 'blocked_list_delta_save_exception', error as Error, BlockedListSettings.deltaSnapshotLogContext(source, normalized, deltaType, normalizedId, deltaValue))
+    }
+  }
+
+  private static async snapshotForDelta(ctx: common.UIAbilityContext | null, ownerKey: string): Promise<BlockedListSnapshot> {
+    const runtime = BlockedListSettings.runtimeSnapshot()
+    if (!ctx) {
+      return runtime.ownerKey === ownerKey ? runtime : BlockedListSettings.empty(ownerKey)
+    }
+    const cached = await BlockedListSettings.loadActive(ctx)
+    if (runtime.ownerKey === ownerKey && runtime.updatedAt >= cached.updatedAt) {
+      return runtime
+    }
+    return cached
+  }
+
+  private static nextDeltaSnapshot(
+    base: BlockedListSnapshot,
+    deltaType: string,
+    targetId: number,
+    deltaValue: boolean,
+    ownerKey: string,
+  ): BlockedListSnapshot {
+    const ignoredTopicIds = BlockedListSettings.normalizeIds(base.ignoredTopicIds)
+    const blockedMemberIds = BlockedListSettings.normalizeIds(base.blockedMemberIds)
+    if (deltaType === 'ignored_topic') {
+      return {
+        ignoredTopicIds: BlockedListSettings.nextIds(ignoredTopicIds, targetId, deltaValue),
+        blockedMemberIds: blockedMemberIds,
+        ownerKey: ownerKey,
+        updatedAt: Date.now(),
+      }
+    }
+    return {
+      ignoredTopicIds: ignoredTopicIds,
+      blockedMemberIds: BlockedListSettings.nextIds(blockedMemberIds, targetId, deltaValue),
+      ownerKey: ownerKey,
+      updatedAt: Date.now(),
+    }
+  }
+
+  private static nextIds(values: number[], targetId: number, shouldInclude: boolean): number[] {
+    const normalized = BlockedListSettings.normalizeIds(values)
+    const exists = normalized.indexOf(targetId) >= 0
+    if (shouldInclude) {
+      return exists ? normalized : normalized.concat([targetId])
+    }
+    if (!exists) {
+      return normalized
+    }
+    return normalized.filter((value: number) => value !== targetId)
   }
 
   private static sourceLogContext(source: BlockedListCaptureSource): BlockedListSourceLogContext {
@@ -264,6 +370,59 @@ export class BlockedListSettings {
       ignored_count: snapshotContext.ignored_count,
       blocked_count: snapshotContext.blocked_count,
       updatedAt: snapshotContext.updatedAt,
+    }
+  }
+
+  private static deltaOwnerLogContext(
+    source: BlockedListCaptureSource,
+    ownerKey: string,
+    deltaType: string,
+    targetId: number,
+    deltaValue: boolean,
+  ): BlockedListDeltaOwnerLogContext {
+    const sourceContext = BlockedListSettings.sourceOwnerLogContext(source, ownerKey)
+    return {
+      endpoint: sourceContext.endpoint,
+      source: sourceContext.source,
+      trigger: sourceContext.trigger,
+      statusCode: sourceContext.statusCode,
+      locationType: sourceContext.locationType,
+      bodyLength: sourceContext.bodyLength,
+      hasCookie: sourceContext.hasCookie,
+      hasUsername: sourceContext.hasUsername,
+      ownerKeyPresent: sourceContext.ownerKeyPresent,
+      ownerKeyHash: sourceContext.ownerKeyHash,
+      deltaType: deltaType,
+      targetId: targetId,
+      deltaValue: deltaValue,
+    }
+  }
+
+  private static deltaSnapshotLogContext(
+    source: BlockedListCaptureSource,
+    snapshot: BlockedListSnapshot,
+    deltaType: string,
+    targetId: number,
+    deltaValue: boolean,
+  ): BlockedListDeltaLogContext {
+    const sourceContext = BlockedListSettings.sourceSnapshotLogContext(source, snapshot)
+    return {
+      endpoint: sourceContext.endpoint,
+      source: sourceContext.source,
+      trigger: sourceContext.trigger,
+      statusCode: sourceContext.statusCode,
+      locationType: sourceContext.locationType,
+      bodyLength: sourceContext.bodyLength,
+      hasCookie: sourceContext.hasCookie,
+      hasUsername: sourceContext.hasUsername,
+      ownerKeyPresent: sourceContext.ownerKeyPresent,
+      ownerKeyHash: sourceContext.ownerKeyHash,
+      ignored_count: sourceContext.ignored_count,
+      blocked_count: sourceContext.blocked_count,
+      updatedAt: sourceContext.updatedAt,
+      deltaType: deltaType,
+      targetId: targetId,
+      deltaValue: deltaValue,
     }
   }
 

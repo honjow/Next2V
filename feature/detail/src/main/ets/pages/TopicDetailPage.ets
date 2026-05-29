@@ -70,6 +70,8 @@ import {
   CacheOwnerResolver,
   TopicDetailActionOverlaySettings,
   TopicDetailReplyActionSettings,
+  BlockedListSettings,
+  DiagnosticLogger,
 } from 'shared'
 import type { V2exTopicThankAction, CacheScope, TopicDetailActionOverlay } from 'shared'
 import type { V2exReplyModerationAction, V2exTopicModerationAction } from 'shared'
@@ -1841,6 +1843,7 @@ export struct TopicDetailPage {
     this.isModerationActionLoading = true
     executeAction(cookie, action)
       .then(() => {
+        this.applyTopicIgnoreDeltaAfterSuccess(action)
         promptAction.openToast({ message: AppStrings.format(AppStrings.text($r('app.string.action_done_format'), '{0} done'), [verb]) }).catch((_error: Error) => {})
         this.v.load()
       })
@@ -1852,6 +1855,40 @@ export struct TopicDetailPage {
       .finally(() => {
         this.isModerationActionLoading = false
       })
+  }
+
+  private applyTopicIgnoreDeltaAfterSuccess(action: V2exTopicModerationAction): void {
+    const ignored = this.topicIgnoreDeltaValue(action)
+    if (ignored === null) {
+      DiagnosticLogger.info('storage', 'blocked_list_topic_delta_skip_unknown_action', {
+        endpoint: action?.actionPath || '',
+        topicId: action?.topicId || this.topicId,
+      })
+      return
+    }
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    BlockedListSettings.applyIgnoredTopicDelta(action.topicId || this.topicId, ignored, context, {
+      endpoint: action.actionPath || '',
+      source: 'topic_detail_mutation',
+      trigger: 'topic_ignore_success',
+      hasCookie: !!CookieJarSettings.getCurrentCookie(),
+    }).catch((error: Error) => {
+      DiagnosticLogger.exception('storage', 'blocked_list_topic_delta_exception', error, {
+        endpoint: action.actionPath || '',
+        topicId: action.topicId || this.topicId,
+      })
+    })
+  }
+
+  private topicIgnoreDeltaValue(action: V2exTopicModerationAction): boolean | null {
+    const actionPath = (action?.actionPath || '').toLowerCase()
+    if (actionPath.indexOf('/unignore/') >= 0 || actionPath.indexOf('unignore') >= 0) {
+      return false
+    }
+    if (actionPath.indexOf('/ignore/') >= 0 || actionPath.indexOf('ignore') >= 0) {
+      return true
+    }
+    return null
   }
 
   private prepareReplyModeration(
