@@ -9,9 +9,19 @@ import { STORE_NAME_SETTINGS, setAppStorageValue } from './SettingsStorage'
 
 const KEY_PREFIX: string = 'blockedListState:'
 
+export interface BlockedMemberMeta {
+  id: number
+  username: string
+  tagline: string
+  avatar: string
+  created: number
+  updatedAt: number
+}
+
 export interface BlockedListSnapshot {
   ignoredTopicIds: number[]
   blockedMemberIds: number[]
+  blockedMemberMetas: BlockedMemberMeta[]
   ownerKey: string
   updatedAt: number
 }
@@ -35,6 +45,7 @@ interface BlockedListOwnerLogContext {
 interface BlockedListSnapshotLogContext extends BlockedListOwnerLogContext {
   ignored_count: number
   blocked_count: number
+  blocked_member_meta_count: number
   updatedAt: number
 }
 
@@ -82,15 +93,30 @@ interface BlockedListDeltaOwnerLogContext extends BlockedListSourceOwnerLogConte
   deltaValue: boolean
 }
 
+interface BlockedMemberMetaLogContext extends BlockedListOwnerLogContext {
+  memberId: number
+  blocked_member_meta_count: number
+  usernamePresent: boolean
+  avatarPresent: boolean
+  taglinePresent: boolean
+}
+
 export class BlockedListSettings {
   private static context: common.UIAbilityContext | null = null
+  private static snapshotWriteQueue: Promise<void> = Promise.resolve()
 
   static setContext(context: common.UIAbilityContext): void {
     BlockedListSettings.context = context
   }
 
+  private static enqueueSnapshotWrite(action: () => Promise<void>): Promise<void> {
+    const task = BlockedListSettings.snapshotWriteQueue.then(action)
+    BlockedListSettings.snapshotWriteQueue = task.catch((_error: Error) => {})
+    return task
+  }
+
   static empty(ownerKey: string = ''): BlockedListSnapshot {
-    return { ignoredTopicIds: [], blockedMemberIds: [], ownerKey: ownerKey, updatedAt: 0 }
+    return { ignoredTopicIds: [], blockedMemberIds: [], blockedMemberMetas: [], ownerKey: ownerKey, updatedAt: 0 }
   }
 
   static runtimeSnapshot(): BlockedListSnapshot {
@@ -101,6 +127,7 @@ export class BlockedListSettings {
     return BlockedListSettings.normalize({
       ignoredTopicIds: BlockedListSettings.parseRuntimeIds(StorageKeys.BLOCKED_LIST_IGNORED_TOPIC_IDS),
       blockedMemberIds: BlockedListSettings.parseRuntimeIds(StorageKeys.BLOCKED_LIST_BLOCKED_MEMBER_IDS),
+      blockedMemberMetas: BlockedListSettings.parseRuntimeMemberMetas(),
       ownerKey: ownerKey,
       updatedAt: AppStorage.get<number>(StorageKeys.BLOCKED_LIST_UPDATED_AT) || 0,
     }, ownerKey)
@@ -158,22 +185,40 @@ export class BlockedListSettings {
       DiagnosticLogger.info('storage', 'blocked_list_skip_save_no_owner', BlockedListSettings.sourceOwnerLogContext(source, ownerKey))
       return
     }
-    const normalized = BlockedListSettings.normalize({
+    const ctx = context || BlockedListSettings.context
+    const runtime = BlockedListSettings.runtimeSnapshot()
+    const runtimeMetas = runtime.ownerKey === ownerKey ? runtime.blockedMemberMetas : []
+    const immediate = BlockedListSettings.normalize({
       ignoredTopicIds: snapshot.ignoredTopicIds,
       blockedMemberIds: snapshot.blockedMemberIds,
+      blockedMemberMetas: runtimeMetas,
       ownerKey: ownerKey,
       updatedAt: Date.now(),
     }, ownerKey)
-    DiagnosticLogger.info('storage', 'blocked_list_save_start', BlockedListSettings.sourceSnapshotLogContext(source, normalized))
-    BlockedListSettings.apply(normalized)
-    const ctx = context || BlockedListSettings.context
+    DiagnosticLogger.info('storage', 'blocked_list_save_start', BlockedListSettings.sourceSnapshotLogContext(source, immediate))
+    BlockedListSettings.apply(immediate)
+    return BlockedListSettings.enqueueSnapshotWrite(() => BlockedListSettings.persistSavedSnapshot(immediate, ctx, source))
+  }
+
+  private static async persistSavedSnapshot(immediate: BlockedListSnapshot, ctx: common.UIAbilityContext | null, source: BlockedListCaptureSource): Promise<void> {
+    const cached = ctx ? await BlockedListSettings.loadSnapshotForOwner(ctx, immediate.ownerKey) : BlockedListSettings.empty(immediate.ownerKey)
+    const normalized = BlockedListSettings.normalize({
+      ignoredTopicIds: immediate.ignoredTopicIds,
+      blockedMemberIds: immediate.blockedMemberIds,
+      blockedMemberMetas: cached.blockedMemberMetas.concat(immediate.blockedMemberMetas),
+      ownerKey: immediate.ownerKey,
+      updatedAt: immediate.updatedAt,
+    }, immediate.ownerKey)
+    if (BlockedListSettings.activeOwnerKey() === immediate.ownerKey) {
+      BlockedListSettings.apply(normalized)
+    }
     if (!ctx) {
       DiagnosticLogger.warn('storage', 'blocked_list_no_context_runtime_only', BlockedListSettings.sourceSnapshotLogContext(source, normalized))
       return
     }
     try {
       const store = await preferences.getPreferences(ctx, STORE_NAME_SETTINGS)
-      store.putSync(KEY_PREFIX + ownerKey, JSON.stringify(normalized))
+      store.putSync(KEY_PREFIX + immediate.ownerKey, JSON.stringify(normalized))
       store.flushSync()
       DiagnosticLogger.info('storage', 'blocked_list_save_success', BlockedListSettings.sourceSnapshotLogContext(source, normalized))
     } catch (error) {
@@ -203,10 +248,56 @@ export class BlockedListSettings {
     await BlockedListSettings.applyIdDelta('blocked_member', memberId, blocked, context, source)
   }
 
+  static async upsertBlockedMemberMeta(meta: BlockedMemberMeta, context?: common.UIAbilityContext, source: BlockedListCaptureSource = {}): Promise<void> {
+    const ownerKey = BlockedListSettings.activeOwnerKey()
+    if (!ownerKey) {
+      DiagnosticLogger.info('storage', 'blocked_member_meta_skip_no_owner', BlockedListSettings.memberMetaLogContext(ownerKey, meta, 0))
+      return
+    }
+    const normalizedMeta = BlockedListSettings.normalizeMemberMeta(meta)
+    if (normalizedMeta.id <= 0) {
+      DiagnosticLogger.warn('storage', 'blocked_member_meta_skip_invalid_id', BlockedListSettings.memberMetaLogContext(ownerKey, normalizedMeta, 0))
+      return
+    }
+    return BlockedListSettings.enqueueSnapshotWrite(() => BlockedListSettings.upsertBlockedMemberMetaLocked(ownerKey, normalizedMeta, context, source))
+  }
+
+  private static async upsertBlockedMemberMetaLocked(ownerKey: string, normalizedMeta: BlockedMemberMeta, context?: common.UIAbilityContext, source: BlockedListCaptureSource = {}): Promise<void> {
+    const ctx = context || BlockedListSettings.context
+    const base = await BlockedListSettings.snapshotForOwnerWrite(ctx, ownerKey)
+    if (base.blockedMemberIds.indexOf(normalizedMeta.id) < 0) {
+      DiagnosticLogger.info('storage', 'blocked_member_meta_skip_not_blocked', BlockedListSettings.memberMetaLogContext(ownerKey, normalizedMeta, base.blockedMemberMetas.length))
+      return
+    }
+    const normalized = BlockedListSettings.normalize({
+      ignoredTopicIds: base.ignoredTopicIds,
+      blockedMemberIds: base.blockedMemberIds,
+      blockedMemberMetas: BlockedListSettings.upsertMemberMeta(base.blockedMemberMetas, normalizedMeta),
+      ownerKey: ownerKey,
+      updatedAt: base.updatedAt,
+    }, ownerKey)
+    if (BlockedListSettings.activeOwnerKey() === ownerKey) {
+      setAppStorageValue<string>(StorageKeys.BLOCKED_LIST_BLOCKED_MEMBER_METAS, JSON.stringify(normalized.blockedMemberMetas))
+    }
+    if (!ctx) {
+      DiagnosticLogger.warn('storage', 'blocked_member_meta_no_context_runtime_only', BlockedListSettings.memberMetaLogContext(ownerKey, normalizedMeta, normalized.blockedMemberMetas.length))
+      return
+    }
+    try {
+      const store = await preferences.getPreferences(ctx, STORE_NAME_SETTINGS)
+      store.putSync(KEY_PREFIX + ownerKey, JSON.stringify(normalized))
+      store.flushSync()
+      DiagnosticLogger.info('storage', 'blocked_member_meta_upsert_success', BlockedListSettings.memberMetaLogContext(ownerKey, normalizedMeta, normalized.blockedMemberMetas.length))
+    } catch (error) {
+      DiagnosticLogger.exception('storage', 'blocked_member_meta_upsert_exception', error as Error, BlockedListSettings.memberMetaLogContext(ownerKey, normalizedMeta, normalized.blockedMemberMetas.length))
+    }
+  }
+
   static apply(snapshot: BlockedListSnapshot): void {
     setAppStorageValue<string>(StorageKeys.BLOCKED_LIST_OWNER_KEY, snapshot.ownerKey)
     setAppStorageValue<string>(StorageKeys.BLOCKED_LIST_IGNORED_TOPIC_IDS, JSON.stringify(snapshot.ignoredTopicIds))
     setAppStorageValue<string>(StorageKeys.BLOCKED_LIST_BLOCKED_MEMBER_IDS, JSON.stringify(snapshot.blockedMemberIds))
+    setAppStorageValue<string>(StorageKeys.BLOCKED_LIST_BLOCKED_MEMBER_METAS, JSON.stringify(snapshot.blockedMemberMetas))
     setAppStorageValue<number>(StorageKeys.BLOCKED_LIST_UPDATED_AT, snapshot.updatedAt)
   }
 
@@ -229,17 +320,40 @@ export class BlockedListSettings {
     }
 
     const ctx = context || BlockedListSettings.context
-    const base = await BlockedListSettings.snapshotForDelta(ctx, ownerKey)
-    const normalized = BlockedListSettings.normalize(BlockedListSettings.nextDeltaSnapshot(base, deltaType, normalizedId, deltaValue, ownerKey), ownerKey)
-    DiagnosticLogger.info('storage', 'blocked_list_delta_start', BlockedListSettings.deltaSnapshotLogContext(source, normalized, deltaType, normalizedId, deltaValue))
-    BlockedListSettings.apply(normalized)
+    const runtime = BlockedListSettings.runtimeSnapshot()
+    const base = runtime.ownerKey === ownerKey ? runtime : BlockedListSettings.empty(ownerKey)
+    const immediate = BlockedListSettings.normalize(BlockedListSettings.nextDeltaSnapshot(base, deltaType, normalizedId, deltaValue, ownerKey), ownerKey)
+    DiagnosticLogger.info('storage', 'blocked_list_delta_start', BlockedListSettings.deltaSnapshotLogContext(source, immediate, deltaType, normalizedId, deltaValue))
+    BlockedListSettings.apply(immediate)
+    return BlockedListSettings.enqueueSnapshotWrite(() => BlockedListSettings.applyIdDeltaLocked(immediate, ctx, source, deltaType, normalizedId, deltaValue))
+  }
+
+  private static async applyIdDeltaLocked(
+    immediate: BlockedListSnapshot,
+    ctx: common.UIAbilityContext | null,
+    source: BlockedListCaptureSource,
+    deltaType: string,
+    normalizedId: number,
+    deltaValue: boolean,
+  ): Promise<void> {
+    const cached = ctx ? await BlockedListSettings.loadSnapshotForOwner(ctx, immediate.ownerKey) : BlockedListSettings.empty(immediate.ownerKey)
+    const normalized = BlockedListSettings.normalize({
+      ignoredTopicIds: immediate.ignoredTopicIds,
+      blockedMemberIds: immediate.blockedMemberIds,
+      blockedMemberMetas: cached.blockedMemberMetas.concat(immediate.blockedMemberMetas),
+      ownerKey: immediate.ownerKey,
+      updatedAt: immediate.updatedAt,
+    }, immediate.ownerKey)
+    if (BlockedListSettings.activeOwnerKey() === immediate.ownerKey) {
+      BlockedListSettings.apply(normalized)
+    }
     if (!ctx) {
       DiagnosticLogger.warn('storage', 'blocked_list_delta_no_context_runtime_only', BlockedListSettings.deltaSnapshotLogContext(source, normalized, deltaType, normalizedId, deltaValue))
       return
     }
     try {
       const store = await preferences.getPreferences(ctx, STORE_NAME_SETTINGS)
-      store.putSync(KEY_PREFIX + ownerKey, JSON.stringify(normalized))
+      store.putSync(KEY_PREFIX + immediate.ownerKey, JSON.stringify(normalized))
       store.flushSync()
       DiagnosticLogger.info('storage', 'blocked_list_delta_success', BlockedListSettings.deltaSnapshotLogContext(source, normalized, deltaType, normalizedId, deltaValue))
     } catch (error) {
@@ -247,12 +361,29 @@ export class BlockedListSettings {
     }
   }
 
-  private static async snapshotForDelta(ctx: common.UIAbilityContext | null, ownerKey: string): Promise<BlockedListSnapshot> {
+  private static async loadSnapshotForOwner(ctx: common.UIAbilityContext, ownerKey: string): Promise<BlockedListSnapshot> {
+    if (!ownerKey) {
+      return BlockedListSettings.empty('')
+    }
+    try {
+      const store = await preferences.getPreferences(ctx, STORE_NAME_SETTINGS)
+      const raw = store.getSync(KEY_PREFIX + ownerKey, '') as string
+      if (!raw) {
+        return BlockedListSettings.empty(ownerKey)
+      }
+      return BlockedListSettings.normalize(JSON.parse(raw) as BlockedListSnapshot, ownerKey)
+    } catch (error) {
+      DiagnosticLogger.exception('storage', 'blocked_list_load_owner_exception', error as Error, BlockedListSettings.ownerLogContext(ownerKey))
+      return BlockedListSettings.empty(ownerKey)
+    }
+  }
+
+  private static async snapshotForOwnerWrite(ctx: common.UIAbilityContext | null, ownerKey: string): Promise<BlockedListSnapshot> {
     const runtime = BlockedListSettings.runtimeSnapshot()
     if (!ctx) {
       return runtime.ownerKey === ownerKey ? runtime : BlockedListSettings.empty(ownerKey)
     }
-    const cached = await BlockedListSettings.loadActive(ctx)
+    const cached = await BlockedListSettings.loadSnapshotForOwner(ctx, ownerKey)
     if (runtime.ownerKey === ownerKey && runtime.updatedAt >= cached.updatedAt) {
       return runtime
     }
@@ -272,6 +403,7 @@ export class BlockedListSettings {
       return {
         ignoredTopicIds: BlockedListSettings.nextIds(ignoredTopicIds, targetId, deltaValue),
         blockedMemberIds: blockedMemberIds,
+        blockedMemberMetas: BlockedListSettings.normalizeMemberMetas(base.blockedMemberMetas, blockedMemberIds),
         ownerKey: ownerKey,
         updatedAt: Date.now(),
       }
@@ -279,6 +411,7 @@ export class BlockedListSettings {
     return {
       ignoredTopicIds: ignoredTopicIds,
       blockedMemberIds: BlockedListSettings.nextIds(blockedMemberIds, targetId, deltaValue),
+      blockedMemberMetas: BlockedListSettings.normalizeMemberMetas(base.blockedMemberMetas, BlockedListSettings.nextIds(blockedMemberIds, targetId, deltaValue)),
       ownerKey: ownerKey,
       updatedAt: Date.now(),
     }
@@ -322,6 +455,7 @@ export class BlockedListSettings {
       ownerKeyHash: snapshot.ownerKey ? DiagnosticLogger.ownerHash(snapshot.ownerKey) : '',
       ignored_count: snapshot.ignoredTopicIds.length,
       blocked_count: snapshot.blockedMemberIds.length,
+      blocked_member_meta_count: snapshot.blockedMemberMetas.length,
       updatedAt: snapshot.updatedAt || 0,
     }
   }
@@ -332,6 +466,7 @@ export class BlockedListSettings {
       ownerKeyHash: snapshot.ownerKey ? DiagnosticLogger.ownerHash(snapshot.ownerKey) : '',
       ignored_count: snapshot.ignoredTopicIds.length,
       blocked_count: snapshot.blockedMemberIds.length,
+      blocked_member_meta_count: snapshot.blockedMemberMetas.length,
       updatedAt: snapshot.updatedAt || 0,
       cacheHit: cacheHit,
     }
@@ -369,6 +504,7 @@ export class BlockedListSettings {
       ownerKeyHash: snapshotContext.ownerKeyHash,
       ignored_count: snapshotContext.ignored_count,
       blocked_count: snapshotContext.blocked_count,
+      blocked_member_meta_count: snapshotContext.blocked_member_meta_count,
       updatedAt: snapshotContext.updatedAt,
     }
   }
@@ -419,6 +555,7 @@ export class BlockedListSettings {
       ownerKeyHash: sourceContext.ownerKeyHash,
       ignored_count: sourceContext.ignored_count,
       blocked_count: sourceContext.blocked_count,
+      blocked_member_meta_count: sourceContext.blocked_member_meta_count,
       updatedAt: sourceContext.updatedAt,
       deltaType: deltaType,
       targetId: targetId,
@@ -463,11 +600,76 @@ export class BlockedListSettings {
   }
 
   private static normalize(value: BlockedListSnapshot, ownerKey: string): BlockedListSnapshot {
+    const blockedMemberIds = BlockedListSettings.normalizeIds(value.blockedMemberIds || [])
     return {
-      ignoredTopicIds: BlockedListSettings.normalizeIds(value.ignoredTopicIds),
-      blockedMemberIds: BlockedListSettings.normalizeIds(value.blockedMemberIds),
+      ignoredTopicIds: BlockedListSettings.normalizeIds(value.ignoredTopicIds || []),
+      blockedMemberIds: blockedMemberIds,
+      blockedMemberMetas: BlockedListSettings.normalizeMemberMetas(value.blockedMemberMetas || [], blockedMemberIds),
       ownerKey: ownerKey,
-      updatedAt: Number.isFinite(value.updatedAt) ? value.updatedAt : 0,
+      updatedAt: Number.isFinite(value.updatedAt) ? (value.updatedAt || 0) : 0,
+    }
+  }
+
+  private static normalizeMemberMetas(values: BlockedMemberMeta[], blockedMemberIds: number[]): BlockedMemberMeta[] {
+    const allowedIds: Set<number> = new Set(blockedMemberIds)
+    const byId: Map<number, BlockedMemberMeta> = new Map()
+    const source = Array.isArray(values) ? values : []
+    for (const value of source) {
+      const meta = BlockedListSettings.normalizeMemberMeta(value)
+      if (meta.id > 0 && allowedIds.has(meta.id) && BlockedListSettings.hasVisibleMemberMeta(meta)) {
+        byId.set(meta.id, meta)
+      }
+    }
+    const result: BlockedMemberMeta[] = []
+    for (const id of blockedMemberIds) {
+      const meta = byId.get(id)
+      if (meta) {
+        result.push(meta)
+      }
+    }
+    return result
+  }
+
+  private static normalizeMemberMeta(value: BlockedMemberMeta): BlockedMemberMeta {
+    const updatedAt = Number.isFinite(value.updatedAt) ? value.updatedAt : Date.now()
+    const created = Number.isFinite(value.created) ? value.created : 0
+    return {
+      id: Math.floor(value.id || 0),
+      username: (value.username || '').trim(),
+      tagline: (value.tagline || '').trim(),
+      avatar: (value.avatar || '').trim(),
+      created: created || 0,
+      updatedAt: updatedAt || Date.now(),
+    }
+  }
+
+  private static hasVisibleMemberMeta(meta: BlockedMemberMeta): boolean {
+    return meta.username.length > 0 || meta.avatar.length > 0 || meta.tagline.length > 0 || meta.created > 0
+  }
+
+  private static upsertMemberMeta(values: BlockedMemberMeta[], meta: BlockedMemberMeta): BlockedMemberMeta[] {
+    const byId: Map<number, BlockedMemberMeta> = new Map()
+    const source = Array.isArray(values) ? values : []
+    for (const value of source) {
+      const normalized = BlockedListSettings.normalizeMemberMeta(value)
+      if (normalized.id > 0 && BlockedListSettings.hasVisibleMemberMeta(normalized)) {
+        byId.set(normalized.id, normalized)
+      }
+    }
+    byId.set(meta.id, meta)
+    return Array.from(byId.values())
+  }
+
+  private static memberMetaLogContext(ownerKey: string, meta: BlockedMemberMeta, metaCount: number): BlockedMemberMetaLogContext {
+    const normalized = BlockedListSettings.normalizeMemberMeta(meta)
+    return {
+      ownerKeyPresent: !!ownerKey,
+      ownerKeyHash: ownerKey ? DiagnosticLogger.ownerHash(ownerKey) : '',
+      memberId: normalized.id,
+      blocked_member_meta_count: metaCount,
+      usernamePresent: normalized.username.length > 0,
+      avatarPresent: normalized.avatar.length > 0,
+      taglinePresent: normalized.tagline.length > 0,
     }
   }
 
@@ -488,6 +690,15 @@ export class BlockedListSettings {
   private static parseRuntimeIds(key: string): number[] {
     try {
       const values = JSON.parse(AppStorage.get<string>(key) || '[]') as number[]
+      return Array.isArray(values) ? values : []
+    } catch (_error) {
+      return []
+    }
+  }
+
+  private static parseRuntimeMemberMetas(): BlockedMemberMeta[] {
+    try {
+      const values = JSON.parse(AppStorage.get<string>(StorageKeys.BLOCKED_LIST_BLOCKED_MEMBER_METAS) || '[]') as BlockedMemberMeta[]
       return Array.isArray(values) ? values : []
     } catch (_error) {
       return []

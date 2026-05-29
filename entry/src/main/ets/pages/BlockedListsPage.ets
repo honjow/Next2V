@@ -13,6 +13,7 @@ import {
   StorageKeys,
   ThemeConstants,
   type BlockedListSnapshot,
+  type BlockedMemberMeta,
   type TopicDetailParams,
   type UserProfileParams,
   type V2exMemberProfile,
@@ -38,6 +39,28 @@ class BlockedMemberListItem {
     this.avatar = profile.avatar_large || profile.avatar_normal || profile.avatar_mini || ''
     this.created = profile.created || 0
     this.resolved = true
+  }
+
+  applyMeta(meta: BlockedMemberMeta): void {
+    if (meta.id !== this.id) {
+      return
+    }
+    this.username = meta.username || ''
+    this.tagline = meta.tagline || ''
+    this.avatar = meta.avatar || ''
+    this.created = meta.created || 0
+    this.resolved = this.username.length > 0 || this.avatar.length > 0 || this.tagline.length > 0 || this.created > 0
+  }
+
+  toMeta(): BlockedMemberMeta {
+    return {
+      id: this.id,
+      username: this.username,
+      tagline: this.tagline,
+      avatar: this.avatar,
+      created: this.created,
+      updatedAt: Date.now(),
+    }
   }
 }
 
@@ -377,6 +400,7 @@ export struct BlockedListsPage {
       this.memberRowsById.clear()
     }
     this.members = this.ensureMemberRowsForIds(this.uniqueIds(snapshot.blockedMemberIds).slice(0, 80))
+    this.applyMemberMetaCache(snapshot.blockedMemberMetas)
     BlockedListSettings.apply(snapshot)
     this.logRenderSnapshot(snapshot, trigger)
     return Promise.all([
@@ -416,6 +440,7 @@ export struct BlockedListsPage {
       selectedTab: this.selectedTab,
       ignored_count: snapshot.ignoredTopicIds.length,
       blocked_count: snapshot.blockedMemberIds.length,
+      blocked_member_meta_count: snapshot.blockedMemberMetas.length,
       topics_visible_count: this.topics.length,
       members_visible_count: this.members.length,
       members_resolved_count: this.resolvedMemberCount(),
@@ -459,6 +484,7 @@ export struct BlockedListsPage {
     }
     this.members = this.ensureMemberRowsForIds(memberIds)
     this.loadingMembers = true
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     return Promise.all(memberIds.map((id: number): Promise<void> => {
       return this.api.getMemberById(id)
         .then((profile: V2exMemberProfile) => {
@@ -468,6 +494,16 @@ export struct BlockedListsPage {
           }
           row.applyProfile(profile)
           this.logMemberRowResolved(row)
+          BlockedListSettings.upsertBlockedMemberMeta(row.toMeta(), context, {
+            source: 'blocked_lists_page',
+            trigger: 'member_resolve_success',
+          }).catch((error: Error) => {
+            DiagnosticLogger.exception('storage', 'blocked_member_meta_upsert_failed', error, {
+              memberId: row.id,
+              usernamePresent: row.username.length > 0,
+              avatarPresent: row.avatar.length > 0,
+            })
+          })
         })
         .catch((error: Error) => {
           DiagnosticLogger.exception('network', 'blocked_member_row_resolve_failed', error, {
@@ -510,6 +546,26 @@ export struct BlockedListsPage {
       }
     }
     return memberIds.map((id: number): BlockedMemberListItem => this.memberRowForId(id))
+  }
+
+  private applyMemberMetaCache(metas: BlockedMemberMeta[]): void {
+    let hydratedCount = 0
+    const source = Array.isArray(metas) ? metas : []
+    for (const meta of source) {
+      const row = this.memberRowsById.get(meta.id)
+      if (!row) {
+        continue
+      }
+      row.applyMeta(meta)
+      if (row.resolved) {
+        hydratedCount++
+      }
+    }
+    DiagnosticLogger.info('ui_lifecycle', 'blocked_member_meta_cache_hydrated', {
+      meta_count: source.length,
+      hydrated_count: hydratedCount,
+      members_visible_count: this.members.length,
+    })
   }
 
   private memberRowForId(id: number): BlockedMemberListItem {

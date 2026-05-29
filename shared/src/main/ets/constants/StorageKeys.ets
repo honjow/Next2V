@@ -48,6 +48,7 @@ export class StorageKeys {
   static readonly BLOCKED_LIST_OWNER_KEY: string = 'blockedListOwnerKey'
   static readonly BLOCKED_LIST_IGNORED_TOPIC_IDS: string = 'blockedListIgnoredTopicIds'
   static readonly BLOCKED_LIST_BLOCKED_MEMBER_IDS: string = 'blockedListBlockedMemberIds'
+  static readonly BLOCKED_LIST_BLOCKED_MEMBER_METAS: string = 'blockedListBlockedMemberMetas'
   static readonly BLOCKED_LIST_UPDATED_AT: string = 'blockedListUpdatedAt'
   static readonly BLOCKED_LIST_SELECTED_TAB: string = 'blockedListSelectedTab'
   static readonly TWO_FACTOR_VISIBLE: string = 'twoFactorVisible'
