@@ -4,6 +4,7 @@ import { AuthSessionSettings, AuthSessionSnapshot } from './AuthSessionSettings'
 import { CookieJarSettings } from './CookieJarSettings'
 import { HttpClient } from '../network/HttpClient'
 import { AppStrings } from '../i18n/AppStrings'
+import { BlockedListSettings } from './BlockedListSettings'
 
 /**
  * Central coordinator for multi-account session management.
@@ -69,6 +70,7 @@ export class AccountSessionCoordinator {
     }
 
     await AccountStore.setActiveId(context, record.id)
+    await AccountSessionCoordinator.restoreBlockedListSnapshot(context)
     return record
   }
 
@@ -104,6 +106,7 @@ export class AccountSessionCoordinator {
 
     // 4. Set active account ID
     await AccountStore.setActiveId(context, record.id)
+    await AccountSessionCoordinator.restoreBlockedListSnapshot(context)
 
     console.info('AccountSessionCoordinator: switchToAccount complete id=' + record.id)
   }
@@ -145,6 +148,7 @@ export class AccountSessionCoordinator {
       await AccountStore.setActiveId(context, '')
       await CookieJarSettings.clear(context)
       await AuthSessionSettings.clear(context)
+      BlockedListSettings.apply(BlockedListSettings.empty(''))
     }
   }
 
@@ -183,6 +187,7 @@ export class AccountSessionCoordinator {
     await AccountStore.setActiveId(context, '')
     await CookieJarSettings.clear(context)
     await AuthSessionSettings.clear(context)
+    BlockedListSettings.apply(BlockedListSettings.empty(''))
   }
 
   /**
@@ -240,8 +245,16 @@ export class AccountSessionCoordinator {
     await AuthSessionSettings.save(context, sessionSnapshot)
 
     await CookieJarSettings.restoreCurrentToWebCookieManager()
+    await AccountSessionCoordinator.restoreBlockedListSnapshot(context)
 
     return record
+  }
+
+  private static async restoreBlockedListSnapshot(context: common.UIAbilityContext): Promise<void> {
+    const snapshot = await BlockedListSettings.loadActive(context).catch((_error: Error) => {
+      return BlockedListSettings.empty(BlockedListSettings.activeOwnerKey())
+    })
+    BlockedListSettings.apply(snapshot)
   }
 
   private static restoreBaseUrlForRecord(record: AccountRecord): string {

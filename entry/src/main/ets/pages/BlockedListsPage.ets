@@ -209,7 +209,7 @@ export struct BlockedListsPage {
     if (!cookie) {
       return Promise.resolve()
     }
-    return this.api.syncBlockedListsFromCookieRecent(cookie, trigger)
+    return this.api.syncBlockedListsFromCookieHtmlSources(cookie, trigger)
       .catch((error: Error) => {
         this.syncError = true
         DiagnosticLogger.exception('network', 'blocked_lists_page_sync_failed', error, { trigger: trigger, hasCookie: !!cookie })

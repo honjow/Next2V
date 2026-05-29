@@ -156,17 +156,18 @@ export class BlockedListSettings {
     }
   }
 
-  static updateFromTopicListHtml(html: string, source: BlockedListCaptureSource = {}): void {
+  static updateFromTopicListHtml(html: string, source: BlockedListCaptureSource = {}): boolean {
     const lists = V2exTabParser.extractBlockedIdLists(html || '')
     const sourceContext = BlockedListSettings.sourceLogContext(source)
     DiagnosticLogger.info('network', 'blocked_list_extract_result', BlockedListSettings.extractLogContext(source, lists))
     if (!lists.ignoredTopicsPresent || !lists.blockedMembersPresent) {
       DiagnosticLogger.info('network', 'blocked_list_skip_missing_variables', BlockedListSettings.missingVariablesLogContext(source, lists))
-      return
+      return false
     }
     BlockedListSettings.saveActive(lists, undefined, sourceContext).catch((error: Error) => {
       DiagnosticLogger.exception('storage', 'blocked_list_save_from_html_exception', error, BlockedListSettings.sourceLogContext(source))
     })
+    return true
   }
 
   static apply(snapshot: BlockedListSnapshot): void {

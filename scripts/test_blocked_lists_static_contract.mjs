@@ -28,6 +28,7 @@ const indexPath = 'entry/src/main/ets/pages/Index.ets'
 const titleBarComponentsPath = 'entry/src/main/ets/components/IndexTitleBarComponents.ets'
 const storageKeysPath = 'shared/src/main/ets/constants/StorageKeys.ets'
 const appStringsPath = 'shared/src/main/ets/i18n/AppStrings.ets'
+const accountSessionCoordinatorPath = 'shared/src/main/ets/settings/AccountSessionCoordinator.ets'
 
 const parser = source(parserPath)
 const settings = source(settingsPath)
@@ -40,6 +41,7 @@ const index = source(indexPath)
 const titleBarComponents = source(titleBarComponentsPath)
 const storageKeys = source(storageKeysPath)
 const appStrings = source(appStringsPath)
+const accountSessionCoordinator = source(accountSessionCoordinatorPath)
 
 assertIncludes(parserPath, parser, 'export interface V2exBlockedIdLists')
 assertIncludes(parserPath, parser, 'static extractBlockedIdLists(html: string): V2exBlockedIdLists')
@@ -56,7 +58,7 @@ assertIncludes(settingsPath, settings, 'const KEY_PREFIX: string = \'blockedList
 assertIncludes(settingsPath, settings, 'static activeOwnerKey(): string')
 assertIncludes(settingsPath, settings, 'StorageKeys.ACTIVE_ACCOUNT_ID')
 assertIncludes(settingsPath, settings, 'export interface BlockedListCaptureSource')
-assertIncludes(settingsPath, settings, 'static updateFromTopicListHtml(html: string, source: BlockedListCaptureSource = {}): void')
+assertIncludes(settingsPath, settings, 'static updateFromTopicListHtml(html: string, source: BlockedListCaptureSource = {}): boolean')
 assertIncludes(settingsPath, settings, 'blocked_list_extract_result')
 assertIncludes(settingsPath, settings, 'blocked_list_skip_missing_variables')
 assertIncludes(settingsPath, settings, 'blocked_list_save_start')
@@ -74,9 +76,37 @@ assertIncludes(apiPath, api, 'captureBlockedListsFromHtml(html,')
 assertIncludes(apiPath, api, 'blocked_list_sync_start')
 assertIncludes(apiPath, api, 'blocked_list_html_received')
 assertIncludes(apiPath, api, 'locationType')
-assertIncludes(apiPath, api, 'syncBlockedListsFromCookieRecent')
+assertIncludes(apiPath, api, 'BLOCKED_LIST_SYNC_ENDPOINTS')
+assertIncludes(apiPath, api, "'/?tab=all'")
+assertIncludes(apiPath, api, 'syncBlockedListsFromCookieHtmlSources')
+assertIncludes(apiPath, api, 'for (const endpoint of ApiService.BLOCKED_LIST_SYNC_ENDPOINTS)')
+assertIncludes(apiPath, api, 'if (captured)')
+assertIncludes(apiPath, api, 'return')
 assertIncludes(apiPath, api, 'async getMemberById(memberId: number)')
 assertIncludes(apiPath, api, 'ApiConstants.API_MEMBER_SHOW')
+assertIncludes(apiPath, api, 'normalizeVisibleTopics')
+assertIncludes(apiPath, api, 'applyActiveBlockedTopicFilter')
+assertIncludes(apiPath, api, 'StorageKeys.BLOCKED_LIST_OWNER_KEY')
+assertIncludes(apiPath, api, 'StorageKeys.BLOCKED_LIST_IGNORED_TOPIC_IDS')
+assertIncludes(apiPath, api, 'StorageKeys.BLOCKED_LIST_BLOCKED_MEMBER_IDS')
+assertIncludes(apiPath, api, 'ownerKey !== BlockedListSettings.activeOwnerKey()')
+const syncAllIndex = api.indexOf("'/?tab=all'")
+const syncRecentIndex = api.indexOf("'/recent?p=1'")
+if (syncAllIndex < 0) {
+  fail('blocked list sync source must use /?tab=all')
+}
+if (syncRecentIndex >= 0) {
+  fail('blocked list refresh sync must not use /recent?p=1')
+}
+const syncMethodStart = api.indexOf('async syncBlockedListsFromCookieHtmlSources')
+const nextMethodStart = api.indexOf('\n  private async getCookieHtml', syncMethodStart)
+const syncMethod = syncMethodStart >= 0 && nextMethodStart > syncMethodStart ? api.slice(syncMethodStart, nextMethodStart) : ''
+if (syncMethod.includes('/settings/reset/') || syncMethod.includes('once=')) {
+  fail('blocked list sync source method must not include destructive reset/action endpoints')
+}
+if (api.includes('syncBlockedListsFromCookieRecent')) {
+  fail('blocked list sync API name must not be recent-specific')
+}
 
 assertIncludes(pagePath, page, 'export struct BlockedListsPage')
 assertIncludes(pagePath, page, 'StorageKeys.BLOCKED_LIST_SELECTED_TAB')
@@ -87,7 +117,7 @@ assertIncludes(pagePath, page, 'AppStrings.R_COMMON_LOAD_FAILED')
 assertIncludes(pagePath, page, 'DiagnosticLogger.exception')
 assertIncludes(pagePath, page, 'this.api.getTopicsByIds(topicIds)')
 assertIncludes(pagePath, page, 'this.api.getMemberById(id)')
-assertIncludes(pagePath, page, 'this.api.syncBlockedListsFromCookieRecent')
+assertIncludes(pagePath, page, 'this.api.syncBlockedListsFromCookieHtmlSources')
 assertIncludes(pagePath, page, "refreshAll('page_open')")
 assertIncludes(pagePath, page, 'blocked_list_render_snapshot')
 assertIncludes(pagePath, page, "this.stack.pushPathByName('TopicDetail'")
@@ -107,6 +137,9 @@ assertIncludes(titleBarComponentsPath, titleBarComponents, 'SegmentButtonOptions
 assertIncludes(titleBarComponentsPath, titleBarComponents, 'StorageKeys.BLOCKED_LIST_SELECTED_TAB')
 assertIncludes(titleBarComponentsPath, titleBarComponents, '.constraintSize({ maxWidth: 448 })')
 assertIncludes(titleBarComponentsPath, titleBarComponents, '.padding(ThemeConstants.SPACE_SM)')
+if (/R_BLOCKED_USERS[^\n]+\$\{|R_IGNORED_TOPICS[^\n]+\$\{|\(\$\{this\.idCount/.test(titleBarComponents)) {
+  fail('BlockedLists bottomBuilder segment labels must not append count suffixes')
+}
 const blockedLabelIndex = titleBarComponents.indexOf("AppStrings.R_BLOCKED_USERS")
 const topicLabelIndex = titleBarComponents.indexOf("AppStrings.R_IGNORED_TOPICS")
 if (blockedLabelIndex < 0 || topicLabelIndex < 0 || blockedLabelIndex > topicLabelIndex) {
@@ -128,6 +161,11 @@ if (settingsPage.includes("pushPathByName('BlockedLists'")) {
 assertIncludes(accountPagePath, accountPage, "this.ns.pushPathByName('BlockedLists', null)")
 assertIncludes(accountPagePath, accountPage, 'AppStrings.R_NAV_BLOCKED_LISTS')
 assertIncludes(appStringsPath, appStrings, 'R_NAV_BLOCKED_LISTS')
+assertIncludes(accountSessionCoordinatorPath, accountSessionCoordinator, "import { BlockedListSettings } from './BlockedListSettings'")
+assertIncludes(accountSessionCoordinatorPath, accountSessionCoordinator, 'restoreBlockedListSnapshot')
+assertIncludes(accountSessionCoordinatorPath, accountSessionCoordinator, 'BlockedListSettings.loadActive')
+assertIncludes(accountSessionCoordinatorPath, accountSessionCoordinator, 'BlockedListSettings.apply(snapshot)')
+assertIncludes(accountSessionCoordinatorPath, accountSessionCoordinator, "BlockedListSettings.apply(BlockedListSettings.empty(''))")
 
 function extractWithPresence(sample, variableName) {
   const pattern = new RegExp('(?:^|[^0-9A-Za-z_])' + variableName + '\\s*=\\s*\\[([^\\]]*)\\]', 'm')
@@ -229,6 +267,29 @@ if (missingIgnored.present || missingIgnored.rawLength !== 0 || missingIgnored.i
 })
 if (`${settings}\n${api}\n${page}`.includes('rawHtml') || `${settings}\n${api}\n${page}`.includes('rawHTML')) {
   fail('blocked list diagnostics must not log raw HTML')
+}
+
+function sourceHasBlockedVariables(html) {
+  const ignoredPresence = extractWithPresence(html, 'ignored_topics')
+  const blockedPresence = extractWithPresence(html, 'blocked')
+  return ignoredPresence.present && blockedPresence.present
+}
+
+const sourceFixtures = {
+  '/?tab=all': '<script>ignored_topics = [201, 202]; blocked = [301, 302];</script>',
+}
+const selectedEndpoint = ['/?tab=all'].find((endpoint) => sourceHasBlockedVariables(sourceFixtures[endpoint]))
+if (selectedEndpoint !== '/?tab=all') {
+  fail(`blocked list source fixture should save from deterministic /?tab=all source, got ${selectedEndpoint}`)
+}
+if (extractFrom(sourceFixtures[selectedEndpoint], 'ignored_topics').length === 0 || extractFrom(sourceFixtures[selectedEndpoint], 'blocked').length === 0) {
+  fail('blocked list source fixture selected source must save nonzero arrays from the good source')
+}
+const missingAllSelectedEndpoint = ['/?tab=all'].find((endpoint) => sourceHasBlockedVariables({
+  '/?tab=all': '<script>const allMissing = true;</script>',
+}[endpoint]))
+if (missingAllSelectedEndpoint !== undefined) {
+  fail(`blocked list source must not fall back to recent/other pages when /?tab=all variables are missing, got ${missingAllSelectedEndpoint}`)
 }
 
 console.log('PASS: blocked lists static contract')

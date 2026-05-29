@@ -13,8 +13,6 @@ import {
 @Component
 struct BlockedListsTabs {
   @StorageLink(StorageKeys.BLOCKED_LIST_SELECTED_TAB) @Watch('onSelectedTabChanged') selectedTab: number = 0
-  @StorageLink(StorageKeys.BLOCKED_LIST_BLOCKED_MEMBER_IDS) @Watch('onBlockedListsChanged') blockedMemberIdsJson: string = '[]'
-  @StorageLink(StorageKeys.BLOCKED_LIST_IGNORED_TOPIC_IDS) @Watch('onBlockedListsChanged') ignoredTopicIdsJson: string = '[]'
   @State private selectedIndexes: number[] = [0]
   @State private tabOptions: SegmentButtonOptions = SegmentButtonOptions.tab({
     buttons: [
@@ -52,13 +50,9 @@ struct BlockedListsTabs {
     this.syncSelectedIndexes()
   }
 
-  private onBlockedListsChanged(_propName: string): void {
-    this.updateTabOptions()
-  }
-
   private updateTabOptions(): void {
-    this.tabOptions.buttons[0].text = `${AppStrings.text(AppStrings.R_BLOCKED_USERS, 'Blocked users')} (${this.idCount(this.blockedMemberIdsJson)})`
-    this.tabOptions.buttons[1].text = `${AppStrings.text(AppStrings.R_IGNORED_TOPICS, 'Blocked topics')} (${this.idCount(this.ignoredTopicIdsJson)})`
+    this.tabOptions.buttons[0].text = AppStrings.text(AppStrings.R_BLOCKED_USERS, 'Blocked users')
+    this.tabOptions.buttons[1].text = AppStrings.text(AppStrings.R_IGNORED_TOPICS, 'Blocked topics')
   }
 
   private syncSelectedIndexes(): void {
@@ -67,15 +61,6 @@ struct BlockedListsTabs {
 
   private clampTab(index: number): number {
     return index === 1 ? 1 : 0
-  }
-
-  private idCount(idsJson: string): number {
-    try {
-      const values = JSON.parse(idsJson || '[]') as number[]
-      return values.length
-    } catch (_error) {
-      return 0
-    }
   }
 }
 

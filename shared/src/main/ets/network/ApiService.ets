@@ -3,6 +3,7 @@ import { HttpClient } from './HttpClient'
 import { NetworkProxyRequest } from './NetworkProxyRequest'
 import { FeedTabSettings } from '../settings/FeedTabSettings'
 import { ApiConstants } from '../constants/ApiConstants'
+import { StorageKeys } from '../constants/StorageKeys'
 import { V2exTabParser } from '../parser/V2exTabParser'
 import { V2exNotificationParser } from '../parser/V2exNotificationParser'
 import { V2exAccountParser } from '../parser/V2exAccountParser'
@@ -98,6 +99,8 @@ export interface V2exReplyModerationAction {
  * V1 public API (no auth) + V2 authenticated API placeholder
  */
 export class ApiService {
+  private static readonly BLOCKED_LIST_SYNC_ENDPOINTS: string[] = ['/?tab=all']
+
   private http: HttpClient = HttpClient.getInstance()
   private readonly CONNECT_TIMEOUT_MS: number = 10000
   private readonly READ_TIMEOUT_MS: number = 15000
@@ -122,7 +125,7 @@ export class ApiService {
     if (topics.length === 0) {
       throw ApiErrors.hotTopicsEmpty()
     }
-    return ApiService.normalizeTopics(topics)
+    return ApiService.normalizeVisibleTopics(topics)
   }
 
   async getNodeNavigationSections(): Promise<V2exNodeNavigationSection[]> {
@@ -143,7 +146,7 @@ export class ApiService {
     if (topics.length === 0) {
       throw ApiErrors.recentTopicsEmpty()
     }
-    return ApiService.normalizeTopics(topics)
+    return ApiService.normalizeVisibleTopics(topics)
   }
 
   /** Get a single topic by ID */
@@ -199,7 +202,7 @@ export class ApiService {
       return { topics: [], hasMore: false }
     }
     return {
-      topics: ApiService.normalizeNodeTopics(topics, clean, clean),
+      topics: ApiService.applyActiveBlockedTopicFilter(ApiService.normalizeNodeTopics(topics, clean, clean)),
       hasMore: snapshot.hasMore,
     }
   }
@@ -1100,41 +1103,27 @@ export class ApiService {
     return 0
   }
 
-  async syncBlockedListsFromCookieRecent(cookie: string, trigger: string = 'manualSync'): Promise<void> {
-    const endpoint = '/recent?p=1'
-    DiagnosticLogger.info('network', 'blocked_list_sync_start', {
-      endpoint: endpoint,
-      source: 'cookieHtml',
-      trigger: trigger,
-      hasCookie: !!cookie,
-      ownerKeyPresent: !!BlockedListSettings.activeOwnerKey(),
-      ownerKeyHash: DiagnosticLogger.ownerHash(BlockedListSettings.activeOwnerKey()),
-    })
+  async syncBlockedListsFromCookieHtmlSources(cookie: string, trigger: string = 'manualSync'): Promise<void> {
     if (!cookie) {
       return
     }
-    const res = await this.requestHtmlWithCookieAllowRedirect(endpoint, cookie, '/', http.RequestMethod.GET)
-    const locationType = ApiService.locationType(res.location)
-    DiagnosticLogger.info('network', 'blocked_list_html_received', {
-      endpoint: endpoint,
-      source: 'cookieHtml',
-      trigger: trigger,
-      statusCode: res.statusCode,
-      locationType: locationType,
-      bodyLength: res.text.length,
-      hasCookie: true,
-      hasUsername: !!V2exSessionParser.extractUsername(res.text),
-    })
-    this.captureBlockedListsFromHtml(res.text, {
-      endpoint: endpoint,
-      source: 'cookieHtml',
-      trigger: trigger,
-      statusCode: res.statusCode,
-      locationType: locationType,
-      bodyLength: res.text.length,
-      hasCookie: true,
-      hasUsername: !!V2exSessionParser.extractUsername(res.text),
-    })
+    for (const endpoint of ApiService.BLOCKED_LIST_SYNC_ENDPOINTS) {
+      const res = await this.requestHtmlWithCookieAllowRedirect(endpoint, cookie, '/', http.RequestMethod.GET)
+      const locationType = ApiService.locationType(res.location)
+      const captured = this.captureBlockedListsFromHtml(res.text, {
+        endpoint: endpoint,
+        source: 'cookieHtml',
+        trigger: trigger,
+        statusCode: res.statusCode,
+        locationType: locationType,
+        bodyLength: res.text.length,
+        hasCookie: true,
+        hasUsername: !!V2exSessionParser.extractUsername(res.text),
+      })
+      if (captured) {
+        return
+      }
+    }
   }
 
   private async getCookieHtml(path: string, cookie: string): Promise<string> {
@@ -1661,7 +1650,7 @@ export class ApiService {
       if (parsedTopics.length === 0) {
         throw ApiErrors.tabTopicsEmpty(tab)
       }
-      topics = ApiService.normalizeTopics(parsedTopics)
+      topics = ApiService.normalizeVisibleTopics(parsedTopics)
     }
     return topics
   }
@@ -1689,7 +1678,7 @@ export class ApiService {
     return ApiService.normalizeTopics(results)
   }
 
-  private captureBlockedListsFromHtml(html: string, source: BlockedListCaptureSource = {}): void {
+  private captureBlockedListsFromHtml(html: string, source: BlockedListCaptureSource = {}): boolean {
     const enriched: BlockedListCaptureSource = {
       endpoint: source.endpoint || '',
       source: source.source || 'publicHtml',
@@ -1718,7 +1707,7 @@ export class ApiService {
       hasCookie: enriched.hasCookie,
       hasUsername: enriched.hasUsername,
     })
-    BlockedListSettings.updateFromTopicListHtml(html || '', enriched)
+    return BlockedListSettings.updateFromTopicListHtml(html || '', enriched)
   }
 
   private static locationType(location: string): string {
@@ -1808,6 +1797,53 @@ export class ApiService {
 
   private static normalizeTopics(topics: V2exTopic[]): V2exTopic[] {
     return (topics || []).map((topic: V2exTopic) => ApiService.normalizeTopic(topic))
+  }
+
+  private static normalizeVisibleTopics(topics: V2exTopic[]): V2exTopic[] {
+    return ApiService.applyActiveBlockedTopicFilter(ApiService.normalizeTopics(topics))
+  }
+
+  private static applyActiveBlockedTopicFilter(topics: V2exTopic[]): V2exTopic[] {
+    const ownerKey = AppStorage.get<string>(StorageKeys.BLOCKED_LIST_OWNER_KEY) || ''
+    if (!ownerKey || ownerKey !== BlockedListSettings.activeOwnerKey()) {
+      return topics || []
+    }
+    const ignoredTopicIds = ApiService.appStorageIdSet(StorageKeys.BLOCKED_LIST_IGNORED_TOPIC_IDS)
+    const blockedMemberIds = ApiService.appStorageIdSet(StorageKeys.BLOCKED_LIST_BLOCKED_MEMBER_IDS)
+    if (ignoredTopicIds.size === 0 && blockedMemberIds.size === 0) {
+      return topics || []
+    }
+    const visible: V2exTopic[] = []
+    for (const topic of topics || []) {
+      if (!topic) {
+        continue
+      }
+      if (ignoredTopicIds.has(topic.id)) {
+        continue
+      }
+      const memberId = topic.member ? topic.member.id : 0
+      if (memberId > 0 && blockedMemberIds.has(memberId)) {
+        continue
+      }
+      visible.push(topic)
+    }
+    return visible
+  }
+
+  private static appStorageIdSet(key: string): Set<number> {
+    const result: Set<number> = new Set()
+    try {
+      const raw = AppStorage.get<string>(key) || '[]'
+      const values = JSON.parse(raw) as number[]
+      for (const value of Array.isArray(values) ? values : []) {
+        const id = Math.floor(value)
+        if (id > 0) {
+          result.add(id)
+        }
+      }
+    } catch (_error) {
+    }
+    return result
   }
 
   private static normalizeNodeTopics(topics: V2exTopic[], nodeName: string, nodeTitle: string): V2exTopic[] {
