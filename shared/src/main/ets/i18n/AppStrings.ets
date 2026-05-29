@@ -212,6 +212,7 @@ export class AppStrings {
   static readonly R_DAILY_CHECKED_IN: Resource = $r('app.string.daily_checked_in')
   static readonly R_ABOUT_NEXT2V: Resource = $r('app.string.about_next2v')
   static readonly R_LOGIN_TO_VIEW_BLOCKED: Resource = $r('app.string.login_to_view_blocked')
+  static readonly R_NAV_BLOCKED_LISTS: Resource = $r('app.string.nav_blocked_lists')
   static readonly R_BLOCKED_USERS: Resource = $r('app.string.blocked_users')
   static readonly R_NO_BLOCKED_USERS: Resource = $r('app.string.no_blocked_users')
   static readonly R_IGNORED_TOPICS: Resource = $r('app.string.ignored_topics')

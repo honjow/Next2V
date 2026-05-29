@@ -322,7 +322,11 @@
     },
     {
       "name": "login_to_view_blocked",
-      "value": "차단 및 무시 항목을 보려면 로그인하세요"
+      "value": "차단 목록을 보려면 로그인하세요"
+    },
+    {
+      "name": "nav_blocked_lists",
+      "value": "차단 목록"
     },
     {
       "name": "blocked_users",
@@ -334,11 +338,11 @@
     },
     {
       "name": "ignored_topics",
-      "value": "무시한 토픽"
+      "value": "차단한 토픽"
     },
     {
       "name": "no_ignored_topics",
-      "value": "무시한 토픽이 없습니다"
+      "value": "차단한 토픽이 없습니다"
     },
     {
       "name": "login_to_view_following",

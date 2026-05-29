@@ -322,7 +322,11 @@
     },
     {
       "name": "login_to_view_blocked",
-      "value": "ブロック・無視した項目を表示するにはログインしてください"
+      "value": "ブロックリストを表示するにはログインしてください"
+    },
+    {
+      "name": "nav_blocked_lists",
+      "value": "ブロックリスト"
     },
     {
       "name": "blocked_users",
@@ -334,11 +338,11 @@
     },
     {
       "name": "ignored_topics",
-      "value": "無視したトピック"
+      "value": "ブロックしたトピック"
     },
     {
       "name": "no_ignored_topics",
-      "value": "無視したトピックはありません"
+      "value": "ブロックしたトピックはありません"
     },
     {
       "name": "login_to_view_following",

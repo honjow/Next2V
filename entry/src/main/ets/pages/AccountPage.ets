@@ -263,6 +263,10 @@ export struct AccountDashboardPage {
       this.AuthActionRow(AccountPageCoordinator.ACCOUNT_FOLLOWING_TITLE, '', () => {
         this.ns.pushPathByName('AccountFollowing', null)
       })
+      this.SettingsDivider()
+      this.AuthActionRow(AppStrings.R_NAV_BLOCKED_LISTS, '', () => {
+        this.ns.pushPathByName('BlockedLists', null)
+      })
     }
   }
 

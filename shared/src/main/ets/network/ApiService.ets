@@ -45,6 +45,7 @@ import type {
   V2exNodeTopicsPageResult,
 } from './NetworkTypes'
 import { ApiError, ApiErrors, ApiErrorCode, isApiError } from './ApiError'
+import { BlockedListSettings } from '../settings/BlockedListSettings'
 
 interface CookieHtmlResponse {
   statusCode: number
@@ -116,6 +117,7 @@ export class ApiService {
   /** Get site hot tab trending topics */
   async getHotTabTopics(): Promise<V2exTopic[]> {
     const html = await this.http.getText('/?tab=hot')
+    this.captureBlockedListsFromHtml(html)
     const topics = V2exTabParser.parseTopicList(html)
     if (topics.length === 0) {
       throw ApiErrors.hotTopicsEmpty()
@@ -136,6 +138,7 @@ export class ApiService {
   async getRecentTopics(page: number = 1): Promise<V2exTopic[]> {
     const safePage = Math.max(1, Math.floor(page))
     const html = await this.http.getText(`/recent?p=${safePage}`)
+    this.captureBlockedListsFromHtml(html)
     const topics = V2exTabParser.parseTopicList(html)
     if (topics.length === 0) {
       throw ApiErrors.recentTopicsEmpty()
@@ -188,6 +191,7 @@ export class ApiService {
     }
     const safePage = Math.max(1, Math.floor(page))
     const html = await this.http.getText(`/go/${encodeURIComponent(clean)}?p=${safePage}`)
+    this.captureBlockedListsFromHtml(html)
     const snapshot: V2exNodeTopicsPageSnapshot = V2exNodeParser.parseNodeTopicsPage(html)
     const topics = V2exTabParser.parseTopicList(html)
     if (topics.length === 0) {
@@ -289,6 +293,16 @@ export class ApiService {
     }
   }
 
+  /** Get user info by numeric member id. */
+  async getMemberById(memberId: number): Promise<V2exMemberProfile> {
+    if (memberId <= 0) {
+      throw ApiErrors.invalidUsername()
+    }
+    return this.http.get<V2exMemberProfile>(
+      `${ApiConstants.API_MEMBER_SHOW}?id=${memberId}`,
+    )
+  }
+
   /** Get topics, replies, and available actions from member page. Topic list respects user's web hide settings. */
   async getMemberPageSnapshot(
     username: string,
@@ -300,6 +314,7 @@ export class ApiService {
     }
     const path = `/member/${encodeURIComponent(clean)}`
     const html = cookie ? await this.getCookieHtml(path, cookie) : await this.http.getText(path)
+    this.captureBlockedListsFromHtml(html)
     return V2exMemberPageParser.parse(html, clean)
   }
 
@@ -315,6 +330,7 @@ export class ApiService {
     const safePage = Math.max(1, Math.floor(page))
     const path = `/member/${encodeURIComponent(clean)}/topics?p=${safePage}`
     const html = cookie ? await this.getCookieHtml(path, cookie) : await this.http.getText(path)
+    this.captureBlockedListsFromHtml(html)
     return V2exMemberPageParser.parseTopicsPage(html)
   }
 
@@ -1631,6 +1647,10 @@ export class ApiService {
       results.push(...batchResults.map((r) => r[0]).filter((t) => t !== undefined))
     }
     return ApiService.normalizeTopics(results)
+  }
+
+  private captureBlockedListsFromHtml(html: string): void {
+    BlockedListSettings.updateFromTopicListHtml(html || '')
   }
 
   private static topicFromHtml(topicId: number, html: string): V2exTopic {

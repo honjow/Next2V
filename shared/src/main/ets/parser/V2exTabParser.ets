@@ -3,6 +3,11 @@ import { HtmlEntityUtils } from '../utils/HtmlEntityUtils'
 import { V2exUrlRouter } from '../utils/V2exUrlRouter'
 import { HttpClient } from '../network/HttpClient'
 
+export interface V2exBlockedIdLists {
+  ignoredTopicIds: number[]
+  blockedMemberIds: number[]
+}
+
 /**
  * V2EX 首页 HTML 解析器
  * 从 /?tab=xxx 的 HTML 页面中提取主题列表 / ID 列表。
@@ -23,6 +28,14 @@ export class V2exTabParser {
       return topics
     }
     return V2exTabParser.extractTopicIds(html).map((id: number): V2exTopic => V2exTabParser.placeholderTopic(id))
+  }
+
+  /** Extract login-state ignored topic IDs and blocked member IDs from V2EX topic-list scripts. */
+  static extractBlockedIdLists(html: string): V2exBlockedIdLists {
+    return {
+      ignoredTopicIds: V2exTabParser.extractJsNumberArray(html || '', 'ignored_topics'),
+      blockedMemberIds: V2exTabParser.extractJsNumberArray(html || '', 'blocked'),
+    }
   }
 
   /**
@@ -53,6 +66,30 @@ export class V2exTabParser {
    */
   static isValid(ids: number[]): boolean {
     return ids.length > 0 && ids.length <= 100
+  }
+
+  private static extractJsNumberArray(html: string, variableName: string): number[] {
+    if (!html || !variableName) {
+      return []
+    }
+    const pattern = new RegExp('(?:^|[^0-9A-Za-z_])' + variableName + '\\s*=\\s*\\[([^\\]]*)\\]', 'm')
+    const match = html.match(pattern)
+    if (!match || match.length < 2) {
+      return []
+    }
+    const ids: number[] = []
+    const seen: Set<number> = new Set()
+    const valueRegex = /(?:^|[^\d-])(\d+)/g
+    let valueMatch: RegExpExecArray | null
+    const raw = match[1] || ''
+    while ((valueMatch = valueRegex.exec(raw)) !== null) {
+      const id = parseInt(valueMatch[1], 10)
+      if (id > 0 && !seen.has(id)) {
+        ids.push(id)
+        seen.add(id)
+      }
+    }
+    return ids
   }
 
   private static extractTopicCells(html: string): string[] {

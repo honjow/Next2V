@@ -63,6 +63,7 @@ const routeNames = [
   'MyNodes',
   'AccountFollowing',
   'Settings',
+  'BlockedLists',
   'Storage',
   'DiagnosticsLog',
   'NetworkProxySettings',

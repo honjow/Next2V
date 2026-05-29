@@ -78,6 +78,8 @@ export { AccountStore } from './settings/AccountStore'
 export type { AccountRecord, AccountRecordInput } from './settings/AccountStore'
 export { AccountSessionCoordinator } from './settings/AccountSessionCoordinator'
 export { AccountMetaSettings } from './settings/AccountMetaSettings'
+export { BlockedListSettings } from './settings/BlockedListSettings'
+export type { BlockedListSnapshot } from './settings/BlockedListSettings'
 export type { AccountMetaSnapshot } from './settings/AccountMetaSettings'
 export { MediaSettings } from './settings/MediaSettings'
 export type { MediaSettingsSnapshot } from './settings/MediaSettings'
@@ -189,6 +191,7 @@ export type {
 
 // Parsers
 export { V2exTabParser } from './parser/V2exTabParser'
+export type { V2exBlockedIdLists } from './parser/V2exTabParser'
 export { V2exAccountParser } from './parser/V2exAccountParser'
 export { V2exNotificationParser } from './parser/V2exNotificationParser'
 export { V2exSessionParser } from './parser/V2exSessionParser'

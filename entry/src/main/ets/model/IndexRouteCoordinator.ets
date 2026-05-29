@@ -25,6 +25,7 @@ export type IndexDestinationFamily =
   'myNodes' |
   'accountFollowing' |
   'settings' |
+  'blockedLists' |
   'storage' |
   'diagnosticsLog' |
   'homeNodeSettings' |
@@ -67,6 +68,7 @@ export class IndexRouteCoordinator {
     'MyNodes': 'myNodes',
     'AccountFollowing': 'accountFollowing',
     'Settings': 'settings',
+    'BlockedLists': 'blockedLists',
     'Storage': 'storage',
     'DiagnosticsLog': 'diagnosticsLog',
     'HomeNodeSettings': 'homeNodeSettings',
@@ -99,6 +101,7 @@ export class IndexRouteCoordinator {
       'myNodes': AppStrings.R_NAV_SAVED_NODES,
       'accountFollowing': AppStrings.R_NAV_FOLLOWING,
       'settings': AppStrings.R_NAV_SETTINGS,
+      'blockedLists': AppStrings.R_NAV_BLOCKED_LISTS,
       'storage': AppStrings.R_NAV_STORAGE,
       'diagnosticsLog': AppStrings.R_NAV_DIAGNOSTICS,
       'homeNodeSettings': AppStrings.R_NAV_HOME_NODES,
@@ -127,6 +130,7 @@ export class IndexRouteCoordinator {
     'myNodes': true,
     'accountFollowing': true,
     'settings': true,
+    'blockedLists': true,
     'storage': true,
     'diagnosticsLog': true,
     'homeNodeSettings': true,

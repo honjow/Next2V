@@ -235,7 +235,7 @@
         "topic_action_ignore_topic"
       ],
       "classification": "KEEP_SEMANTIC",
-      "rationale": "ignored_topics = 'Ignored topics' page title, topic_action_ignore_topic = 'Ignore topic' action. Different semantics. Different values in base/en_US."
+      "rationale": "ignored_topics = 'Blocked topics' blocked-list tab label, topic_action_ignore_topic = 'Ignore topic' action. Different semantics. Different values in base/en_US."
     },
     {
       "keys": [

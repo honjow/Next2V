@@ -20,9 +20,11 @@ import { ReplyDisplaySettings } from './ReplyDisplaySettings'
 import { STORE_NAME_SETTINGS, SettingsPreferencesStore } from './SettingsStorage'
 import { ThemeSettings } from './ThemeSettings'
 import { AutoDailyCheckinService } from '../services/AutoDailyCheckinService'
+import { BlockedListSettings } from './BlockedListSettings'
 
 export class SettingsBootstrap {
   static async loadAll(context: common.UIAbilityContext): Promise<void> {
+    BlockedListSettings.setContext(context)
     let settingsStore: SettingsPreferencesStore | undefined = undefined
     try {
       settingsStore = await preferences.getPreferences(context, STORE_NAME_SETTINGS)
@@ -44,6 +46,7 @@ export class SettingsBootstrap {
     await SettingsBootstrap.restoreFeedTabs(context)
     await SettingsBootstrap.restoreCookieJar(context)
     await SettingsBootstrap.restoreMultiAccount(context)
+    await SettingsBootstrap.restoreBlockedLists(context)
     await SettingsBootstrap.restoreAutoDailyCheckin(context, settingsStore)
     SettingsBootstrap.triggerStartupCheckin(context)
     await SettingsBootstrap.restoreReplyCardStyle(context, settingsStore)
@@ -184,6 +187,14 @@ export class SettingsBootstrap {
     // Restore active account's cookie/session from AccountStore into runtime
     await AccountSessionCoordinator.restoreActiveAccount(context).catch((error: Error) => {
       console.error('restore active account failed: ' + error.message)
+    })
+  }
+
+  private static async restoreBlockedLists(context: common.UIAbilityContext): Promise<void> {
+    await BlockedListSettings.loadActive(context).then((snapshot) => {
+      BlockedListSettings.apply(snapshot)
+    }).catch((error: Error) => {
+      console.error('restore blocked lists failed: ' + error.message)
     })
   }
 

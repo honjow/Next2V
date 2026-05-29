@@ -322,7 +322,11 @@
     },
     {
       "name": "login_to_view_blocked",
-      "value": "登入後可查看屏蔽與忽略"
+      "value": "登入後可查看屏蔽列表"
+    },
+    {
+      "name": "nav_blocked_lists",
+      "value": "屏蔽列表"
     },
     {
       "name": "blocked_users",
@@ -334,11 +338,11 @@
     },
     {
       "name": "ignored_topics",
-      "value": "忽略主題"
+      "value": "屏蔽主題"
     },
     {
       "name": "no_ignored_topics",
-      "value": "暫無忽略主題"
+      "value": "暫無屏蔽主題"
     },
     {
       "name": "login_to_view_following",

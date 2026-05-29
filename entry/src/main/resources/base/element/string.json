@@ -322,7 +322,11 @@
     },
     {
       "name": "login_to_view_blocked",
-      "value": "Log in to view blocked and ignored items"
+      "value": "Log in to view blocked lists"
+    },
+    {
+      "name": "nav_blocked_lists",
+      "value": "Blocked lists"
     },
     {
       "name": "blocked_users",
@@ -334,11 +338,11 @@
     },
     {
       "name": "ignored_topics",
-      "value": "Ignored topics"
+      "value": "Blocked topics"
     },
     {
       "name": "no_ignored_topics",
-      "value": "No ignored topics"
+      "value": "No blocked topics"
     },
     {
       "name": "login_to_view_following",

@@ -62,10 +62,12 @@ import { AccountManagementPage } from './AccountManagementPage'
 import { AccountWebViewPage } from './AccountWebViewPage'
 import { SavedTopicsPage } from './SavedTopicsPage'
 import { ViewedTopicsPage } from './ViewedTopicsPage'
+import { BlockedListsPage } from './BlockedListsPage'
 import { SavedNodesPage } from './SavedNodesPage'
 import { NotificationPage } from './NotificationPage'
 import { AboutPage } from './AboutPage'
 import {
+  BlockedListsTabsCCBuilder,
   DiscoverSearchCCBuilder,
   PillCCBuilder,
   TopicDetailAppbarIdentityParams,
@@ -365,6 +367,9 @@ struct Index {
     if (descriptor.family === 'settings') {
       SettingsPage()
     }
+    if (descriptor.family === 'blockedLists') {
+      BlockedListsPage()
+    }
     if (descriptor.family === 'storage') {
       StorageSettingsPage()
     }
@@ -557,6 +562,15 @@ struct Index {
   private destinationTitleBarOpts(descriptor: IndexDestinationDescriptor): Record<string, Object> {
     if (descriptor.family === 'account') {
       return this.navDestTitleBarOpts(descriptor.title, this.accountManagementTitleMenu())
+    }
+    if (descriptor.family === 'blockedLists') {
+      let cc = new ComponentContent(this.getUIContext(), wrapBuilder(BlockedListsTabsCCBuilder))
+      let bb: Record<string, Object> = {
+        'builderComponent': cc,
+        'height': 56,
+        'showType': BottomBuilderShowType.DIRECTLY_SHOW,
+      }
+      return this.navDestTitleBarOpts(AppStrings.R_NAV_BLOCKED_LISTS, undefined, undefined, bb)
     }
     if (IndexRouteCoordinator.usesStandardTitleBar(descriptor.family)) {
       return this.navDestTitleBarOpts(descriptor.title)

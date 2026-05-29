@@ -1,5 +1,7 @@
+import { SegmentButton, SegmentButtonOptions } from '@kit.ArkUI'
 import {
   ApiConstants,
+  AppStrings,
   AppSearchField,
   Avatar,
   FeedTabSettings,
@@ -7,6 +9,80 @@ import {
   TabItem,
   ThemeConstants,
 } from 'shared'
+
+@Component
+struct BlockedListsTabs {
+  @StorageLink(StorageKeys.BLOCKED_LIST_SELECTED_TAB) @Watch('onSelectedTabChanged') selectedTab: number = 0
+  @StorageLink(StorageKeys.BLOCKED_LIST_BLOCKED_MEMBER_IDS) @Watch('onBlockedListsChanged') blockedMemberIdsJson: string = '[]'
+  @StorageLink(StorageKeys.BLOCKED_LIST_IGNORED_TOPIC_IDS) @Watch('onBlockedListsChanged') ignoredTopicIdsJson: string = '[]'
+  @State private selectedIndexes: number[] = [0]
+  @State private tabOptions: SegmentButtonOptions = SegmentButtonOptions.tab({
+    buttons: [
+      { text: AppStrings.text(AppStrings.R_BLOCKED_USERS, 'Blocked users') },
+      { text: AppStrings.text(AppStrings.R_IGNORED_TOPICS, 'Blocked topics') },
+    ],
+    buttonPadding: { top: 10, bottom: 10, left: 8, right: 8 },
+  })
+
+  aboutToAppear(): void {
+    this.syncSelectedIndexes()
+    this.updateTabOptions()
+  }
+
+  build() {
+    Row() {
+      SegmentButton({
+        options: this.tabOptions,
+        selectedIndexes: $selectedIndexes,
+        onItemClicked: (index: number) => {
+          this.selectedTab = this.clampTab(index)
+          this.syncSelectedIndexes()
+        },
+      })
+        .constraintSize({ maxWidth: 448 })
+    }
+    .width('100%')
+    .height('100%')
+    .justifyContent(FlexAlign.Center)
+    .alignItems(VerticalAlign.Center)
+    .padding(ThemeConstants.SPACE_SM)
+  }
+
+  private onSelectedTabChanged(_propName: string): void {
+    this.syncSelectedIndexes()
+  }
+
+  private onBlockedListsChanged(_propName: string): void {
+    this.updateTabOptions()
+  }
+
+  private updateTabOptions(): void {
+    this.tabOptions.buttons[0].text = `${AppStrings.text(AppStrings.R_BLOCKED_USERS, 'Blocked users')} (${this.idCount(this.blockedMemberIdsJson)})`
+    this.tabOptions.buttons[1].text = `${AppStrings.text(AppStrings.R_IGNORED_TOPICS, 'Blocked topics')} (${this.idCount(this.ignoredTopicIdsJson)})`
+  }
+
+  private syncSelectedIndexes(): void {
+    this.selectedIndexes = [this.clampTab(this.selectedTab)]
+  }
+
+  private clampTab(index: number): number {
+    return index === 1 ? 1 : 0
+  }
+
+  private idCount(idsJson: string): number {
+    try {
+      const values = JSON.parse(idsJson || '[]') as number[]
+      return values.length
+    } catch (_error) {
+      return 0
+    }
+  }
+}
+
+@Builder
+export function BlockedListsTabsCCBuilder() {
+  BlockedListsTabs()
+}
 
 @Component
 struct FeedPills {
