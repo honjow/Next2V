@@ -18,10 +18,24 @@ export interface BlockedMemberMeta {
   updatedAt: number
 }
 
+export interface IgnoredTopicMeta {
+  id: number
+  title: string
+  nodeName: string
+  nodeTitle: string
+  username: string
+  avatar: string
+  memberPro: number
+  created: number
+  replies: number
+  updatedAt: number
+}
+
 export interface BlockedListSnapshot {
   ignoredTopicIds: number[]
   blockedMemberIds: number[]
   blockedMemberMetas: BlockedMemberMeta[]
+  ignoredTopicMetas: IgnoredTopicMeta[]
   ownerKey: string
   updatedAt: number
 }
@@ -46,6 +60,7 @@ interface BlockedListSnapshotLogContext extends BlockedListOwnerLogContext {
   ignored_count: number
   blocked_count: number
   blocked_member_meta_count: number
+  ignored_topic_meta_count: number
   updatedAt: number
 }
 
@@ -101,6 +116,12 @@ interface BlockedMemberMetaLogContext extends BlockedListOwnerLogContext {
   taglinePresent: boolean
 }
 
+interface IgnoredTopicMetaBatchLogContext extends BlockedListOwnerLogContext {
+  requested_count: number
+  applied_count: number
+  ignored_topic_meta_count: number
+}
+
 export class BlockedListSettings {
   private static context: common.UIAbilityContext | null = null
   private static snapshotWriteQueue: Promise<void> = Promise.resolve()
@@ -116,7 +137,7 @@ export class BlockedListSettings {
   }
 
   static empty(ownerKey: string = ''): BlockedListSnapshot {
-    return { ignoredTopicIds: [], blockedMemberIds: [], blockedMemberMetas: [], ownerKey: ownerKey, updatedAt: 0 }
+    return { ignoredTopicIds: [], blockedMemberIds: [], blockedMemberMetas: [], ignoredTopicMetas: [], ownerKey: ownerKey, updatedAt: 0 }
   }
 
   static runtimeSnapshot(): BlockedListSnapshot {
@@ -128,6 +149,7 @@ export class BlockedListSettings {
       ignoredTopicIds: BlockedListSettings.parseRuntimeIds(StorageKeys.BLOCKED_LIST_IGNORED_TOPIC_IDS),
       blockedMemberIds: BlockedListSettings.parseRuntimeIds(StorageKeys.BLOCKED_LIST_BLOCKED_MEMBER_IDS),
       blockedMemberMetas: BlockedListSettings.parseRuntimeMemberMetas(),
+      ignoredTopicMetas: BlockedListSettings.parseRuntimeIgnoredTopicMetas(),
       ownerKey: ownerKey,
       updatedAt: AppStorage.get<number>(StorageKeys.BLOCKED_LIST_UPDATED_AT) || 0,
     }, ownerKey)
@@ -188,10 +210,12 @@ export class BlockedListSettings {
     const ctx = context || BlockedListSettings.context
     const runtime = BlockedListSettings.runtimeSnapshot()
     const runtimeMetas = runtime.ownerKey === ownerKey ? runtime.blockedMemberMetas : []
+    const runtimeTopicMetas = runtime.ownerKey === ownerKey ? runtime.ignoredTopicMetas : []
     const immediate = BlockedListSettings.normalize({
       ignoredTopicIds: snapshot.ignoredTopicIds,
       blockedMemberIds: snapshot.blockedMemberIds,
       blockedMemberMetas: runtimeMetas,
+      ignoredTopicMetas: runtimeTopicMetas,
       ownerKey: ownerKey,
       updatedAt: Date.now(),
     }, ownerKey)
@@ -206,6 +230,7 @@ export class BlockedListSettings {
       ignoredTopicIds: immediate.ignoredTopicIds,
       blockedMemberIds: immediate.blockedMemberIds,
       blockedMemberMetas: cached.blockedMemberMetas.concat(immediate.blockedMemberMetas),
+      ignoredTopicMetas: cached.ignoredTopicMetas.concat(immediate.ignoredTopicMetas),
       ownerKey: immediate.ownerKey,
       updatedAt: immediate.updatedAt,
     }, immediate.ownerKey)
@@ -273,6 +298,7 @@ export class BlockedListSettings {
       ignoredTopicIds: base.ignoredTopicIds,
       blockedMemberIds: base.blockedMemberIds,
       blockedMemberMetas: BlockedListSettings.upsertMemberMeta(base.blockedMemberMetas, normalizedMeta),
+      ignoredTopicMetas: base.ignoredTopicMetas,
       ownerKey: ownerKey,
       updatedAt: base.updatedAt,
     }, ownerKey)
@@ -298,7 +324,62 @@ export class BlockedListSettings {
     setAppStorageValue<string>(StorageKeys.BLOCKED_LIST_IGNORED_TOPIC_IDS, JSON.stringify(snapshot.ignoredTopicIds))
     setAppStorageValue<string>(StorageKeys.BLOCKED_LIST_BLOCKED_MEMBER_IDS, JSON.stringify(snapshot.blockedMemberIds))
     setAppStorageValue<string>(StorageKeys.BLOCKED_LIST_BLOCKED_MEMBER_METAS, JSON.stringify(snapshot.blockedMemberMetas))
+    setAppStorageValue<string>(StorageKeys.BLOCKED_LIST_IGNORED_TOPIC_METAS, JSON.stringify(snapshot.ignoredTopicMetas))
     setAppStorageValue<number>(StorageKeys.BLOCKED_LIST_UPDATED_AT, snapshot.updatedAt)
+  }
+
+  static async upsertIgnoredTopicMetas(metas: IgnoredTopicMeta[], context?: common.UIAbilityContext, source: BlockedListCaptureSource = {}): Promise<void> {
+    const ownerKey = BlockedListSettings.activeOwnerKey()
+    if (!ownerKey) {
+      DiagnosticLogger.info('storage', 'ignored_topic_meta_skip_no_owner', BlockedListSettings.topicMetaBatchLogContext(ownerKey, 0, 0, 0))
+      return
+    }
+    const normalizedMetas = (Array.isArray(metas) ? metas : [])
+      .map((meta: IgnoredTopicMeta): IgnoredTopicMeta => BlockedListSettings.normalizeIgnoredTopicMeta(meta))
+      .filter((meta: IgnoredTopicMeta): boolean => meta.id > 0 && BlockedListSettings.hasVisibleIgnoredTopicMeta(meta))
+    if (normalizedMetas.length === 0) {
+      DiagnosticLogger.info('storage', 'ignored_topic_meta_skip_empty', BlockedListSettings.topicMetaBatchLogContext(ownerKey, 0, 0, 0))
+      return
+    }
+    return BlockedListSettings.enqueueSnapshotWrite(() => BlockedListSettings.upsertIgnoredTopicMetasLocked(ownerKey, normalizedMetas, context, source))
+  }
+
+  private static async upsertIgnoredTopicMetasLocked(ownerKey: string, normalizedMetas: IgnoredTopicMeta[], context?: common.UIAbilityContext, source: BlockedListCaptureSource = {}): Promise<void> {
+    const ctx = context || BlockedListSettings.context
+    const base = await BlockedListSettings.snapshotForOwnerWrite(ctx, ownerKey)
+    const allowedIds: Set<number> = new Set(base.ignoredTopicIds)
+    const applicable = normalizedMetas.filter((meta: IgnoredTopicMeta): boolean => allowedIds.has(meta.id))
+    if (applicable.length === 0) {
+      DiagnosticLogger.info('storage', 'ignored_topic_meta_skip_not_ignored', BlockedListSettings.topicMetaBatchLogContext(ownerKey, normalizedMetas.length, 0, base.ignoredTopicMetas.length))
+      return
+    }
+    let mergedMetas = base.ignoredTopicMetas
+    for (const meta of applicable) {
+      mergedMetas = BlockedListSettings.mergeIgnoredTopicMeta(mergedMetas, meta)
+    }
+    const normalized = BlockedListSettings.normalize({
+      ignoredTopicIds: base.ignoredTopicIds,
+      blockedMemberIds: base.blockedMemberIds,
+      blockedMemberMetas: base.blockedMemberMetas,
+      ignoredTopicMetas: mergedMetas,
+      ownerKey: ownerKey,
+      updatedAt: base.updatedAt,
+    }, ownerKey)
+    if (BlockedListSettings.activeOwnerKey() === ownerKey) {
+      setAppStorageValue<string>(StorageKeys.BLOCKED_LIST_IGNORED_TOPIC_METAS, JSON.stringify(normalized.ignoredTopicMetas))
+    }
+    if (!ctx) {
+      DiagnosticLogger.warn('storage', 'ignored_topic_meta_no_context_runtime_only', BlockedListSettings.topicMetaBatchLogContext(ownerKey, normalizedMetas.length, applicable.length, normalized.ignoredTopicMetas.length))
+      return
+    }
+    try {
+      const store = await preferences.getPreferences(ctx, STORE_NAME_SETTINGS)
+      store.putSync(KEY_PREFIX + ownerKey, JSON.stringify(normalized))
+      store.flushSync()
+      DiagnosticLogger.info('storage', 'ignored_topic_meta_upsert_success', BlockedListSettings.topicMetaBatchLogContext(ownerKey, normalizedMetas.length, applicable.length, normalized.ignoredTopicMetas.length))
+    } catch (error) {
+      DiagnosticLogger.exception('storage', 'ignored_topic_meta_upsert_exception', error as Error, BlockedListSettings.topicMetaBatchLogContext(ownerKey, normalizedMetas.length, applicable.length, normalized.ignoredTopicMetas.length))
+    }
   }
 
   private static async applyIdDelta(
@@ -341,6 +422,7 @@ export class BlockedListSettings {
       ignoredTopicIds: immediate.ignoredTopicIds,
       blockedMemberIds: immediate.blockedMemberIds,
       blockedMemberMetas: cached.blockedMemberMetas.concat(immediate.blockedMemberMetas),
+      ignoredTopicMetas: cached.ignoredTopicMetas.concat(immediate.ignoredTopicMetas),
       ownerKey: immediate.ownerKey,
       updatedAt: immediate.updatedAt,
     }, immediate.ownerKey)
@@ -404,6 +486,7 @@ export class BlockedListSettings {
         ignoredTopicIds: BlockedListSettings.nextIds(ignoredTopicIds, targetId, deltaValue),
         blockedMemberIds: blockedMemberIds,
         blockedMemberMetas: BlockedListSettings.normalizeMemberMetas(base.blockedMemberMetas, blockedMemberIds),
+        ignoredTopicMetas: BlockedListSettings.normalizeIgnoredTopicMetas(base.ignoredTopicMetas, BlockedListSettings.nextIds(ignoredTopicIds, targetId, deltaValue)),
         ownerKey: ownerKey,
         updatedAt: Date.now(),
       }
@@ -412,6 +495,7 @@ export class BlockedListSettings {
       ignoredTopicIds: ignoredTopicIds,
       blockedMemberIds: BlockedListSettings.nextIds(blockedMemberIds, targetId, deltaValue),
       blockedMemberMetas: BlockedListSettings.normalizeMemberMetas(base.blockedMemberMetas, BlockedListSettings.nextIds(blockedMemberIds, targetId, deltaValue)),
+      ignoredTopicMetas: BlockedListSettings.normalizeIgnoredTopicMetas(base.ignoredTopicMetas, ignoredTopicIds),
       ownerKey: ownerKey,
       updatedAt: Date.now(),
     }
@@ -456,6 +540,7 @@ export class BlockedListSettings {
       ignored_count: snapshot.ignoredTopicIds.length,
       blocked_count: snapshot.blockedMemberIds.length,
       blocked_member_meta_count: snapshot.blockedMemberMetas.length,
+      ignored_topic_meta_count: snapshot.ignoredTopicMetas.length,
       updatedAt: snapshot.updatedAt || 0,
     }
   }
@@ -467,6 +552,7 @@ export class BlockedListSettings {
       ignored_count: snapshot.ignoredTopicIds.length,
       blocked_count: snapshot.blockedMemberIds.length,
       blocked_member_meta_count: snapshot.blockedMemberMetas.length,
+      ignored_topic_meta_count: snapshot.ignoredTopicMetas.length,
       updatedAt: snapshot.updatedAt || 0,
       cacheHit: cacheHit,
     }
@@ -505,6 +591,7 @@ export class BlockedListSettings {
       ignored_count: snapshotContext.ignored_count,
       blocked_count: snapshotContext.blocked_count,
       blocked_member_meta_count: snapshotContext.blocked_member_meta_count,
+      ignored_topic_meta_count: snapshotContext.ignored_topic_meta_count,
       updatedAt: snapshotContext.updatedAt,
     }
   }
@@ -556,6 +643,7 @@ export class BlockedListSettings {
       ignored_count: sourceContext.ignored_count,
       blocked_count: sourceContext.blocked_count,
       blocked_member_meta_count: sourceContext.blocked_member_meta_count,
+      ignored_topic_meta_count: sourceContext.ignored_topic_meta_count,
       updatedAt: sourceContext.updatedAt,
       deltaType: deltaType,
       targetId: targetId,
@@ -600,11 +688,13 @@ export class BlockedListSettings {
   }
 
   private static normalize(value: BlockedListSnapshot, ownerKey: string): BlockedListSnapshot {
+    const ignoredTopicIds = BlockedListSettings.normalizeIds(value.ignoredTopicIds || [])
     const blockedMemberIds = BlockedListSettings.normalizeIds(value.blockedMemberIds || [])
     return {
-      ignoredTopicIds: BlockedListSettings.normalizeIds(value.ignoredTopicIds || []),
+      ignoredTopicIds: ignoredTopicIds,
       blockedMemberIds: blockedMemberIds,
       blockedMemberMetas: BlockedListSettings.normalizeMemberMetas(value.blockedMemberMetas || [], blockedMemberIds),
+      ignoredTopicMetas: BlockedListSettings.normalizeIgnoredTopicMetas(value.ignoredTopicMetas || [], ignoredTopicIds),
       ownerKey: ownerKey,
       updatedAt: Number.isFinite(value.updatedAt) ? (value.updatedAt || 0) : 0,
     }
@@ -673,6 +763,72 @@ export class BlockedListSettings {
     }
   }
 
+  private static normalizeIgnoredTopicMetas(values: IgnoredTopicMeta[], ignoredTopicIds: number[]): IgnoredTopicMeta[] {
+    const allowedIds: Set<number> = new Set(ignoredTopicIds)
+    const byId: Map<number, IgnoredTopicMeta> = new Map()
+    const source = Array.isArray(values) ? values : []
+    for (const value of source) {
+      const meta = BlockedListSettings.normalizeIgnoredTopicMeta(value)
+      if (meta.id > 0 && allowedIds.has(meta.id) && BlockedListSettings.hasVisibleIgnoredTopicMeta(meta)) {
+        byId.set(meta.id, meta)
+      }
+    }
+    const result: IgnoredTopicMeta[] = []
+    for (const id of ignoredTopicIds) {
+      const meta = byId.get(id)
+      if (meta) {
+        result.push(meta)
+      }
+    }
+    return result
+  }
+
+  private static normalizeIgnoredTopicMeta(value: IgnoredTopicMeta): IgnoredTopicMeta {
+    const updatedAt = Number.isFinite(value.updatedAt) ? value.updatedAt : Date.now()
+    const created = Number.isFinite(value.created) ? value.created : 0
+    const replies = Number.isFinite(value.replies) ? value.replies : 0
+    const memberPro = Number.isFinite(value.memberPro) ? value.memberPro : 0
+    return {
+      id: Math.floor(value.id || 0),
+      title: (value.title || '').trim(),
+      nodeName: (value.nodeName || '').trim(),
+      nodeTitle: (value.nodeTitle || '').trim(),
+      username: (value.username || '').trim(),
+      avatar: (value.avatar || '').trim(),
+      memberPro: Math.floor(memberPro || 0),
+      created: created || 0,
+      replies: Math.floor(replies || 0),
+      updatedAt: updatedAt || Date.now(),
+    }
+  }
+
+  private static hasVisibleIgnoredTopicMeta(meta: IgnoredTopicMeta): boolean {
+    return meta.title.length > 0 || meta.username.length > 0 || meta.nodeName.length > 0 || meta.nodeTitle.length > 0 || meta.avatar.length > 0
+  }
+
+  private static mergeIgnoredTopicMeta(values: IgnoredTopicMeta[], meta: IgnoredTopicMeta): IgnoredTopicMeta[] {
+    const byId: Map<number, IgnoredTopicMeta> = new Map()
+    const source = Array.isArray(values) ? values : []
+    for (const value of source) {
+      const normalized = BlockedListSettings.normalizeIgnoredTopicMeta(value)
+      if (normalized.id > 0 && BlockedListSettings.hasVisibleIgnoredTopicMeta(normalized)) {
+        byId.set(normalized.id, normalized)
+      }
+    }
+    byId.set(meta.id, meta)
+    return Array.from(byId.values())
+  }
+
+  private static topicMetaBatchLogContext(ownerKey: string, requestedCount: number, appliedCount: number, metaCount: number): IgnoredTopicMetaBatchLogContext {
+    return {
+      ownerKeyPresent: !!ownerKey,
+      ownerKeyHash: ownerKey ? DiagnosticLogger.ownerHash(ownerKey) : '',
+      requested_count: requestedCount,
+      applied_count: appliedCount,
+      ignored_topic_meta_count: metaCount,
+    }
+  }
+
   private static normalizeIds(values: number[]): number[] {
     const result: number[] = []
     const seen: Set<number> = new Set()
@@ -699,6 +855,15 @@ export class BlockedListSettings {
   private static parseRuntimeMemberMetas(): BlockedMemberMeta[] {
     try {
       const values = JSON.parse(AppStorage.get<string>(StorageKeys.BLOCKED_LIST_BLOCKED_MEMBER_METAS) || '[]') as BlockedMemberMeta[]
+      return Array.isArray(values) ? values : []
+    } catch (_error) {
+      return []
+    }
+  }
+
+  private static parseRuntimeIgnoredTopicMetas(): IgnoredTopicMeta[] {
+    try {
+      const values = JSON.parse(AppStorage.get<string>(StorageKeys.BLOCKED_LIST_IGNORED_TOPIC_METAS) || '[]') as IgnoredTopicMeta[]
       return Array.isArray(values) ? values : []
     } catch (_error) {
       return []

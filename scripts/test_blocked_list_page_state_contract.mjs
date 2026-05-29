@@ -65,7 +65,17 @@ assertNotIncludes(
   'this.syncInFlight || this.loadingTopics',
   'shouldShowPageLoading must not use sync/loading as fullscreen loading for ignored topics',
 )
+assertNotIncludes(
+  loadingBody,
+  'hasIdsForCurrentTab()',
+  'shouldShowPageLoading must not suppress loading based on snapshot ids (ids exist but topic/member details may still be resolving)',
+)
 assertIncludes(loadingBody, 'hasAnyRenderableForCurrentTab()', 'shouldShowPageLoading must gate fullscreen loading on renderable content')
+assertIncludes(
+  loadingBody,
+  'isRefreshPendingForCurrentTab()',
+  'shouldShowPageLoading must keep showing loading while a refresh/detail resolve is pending',
+)
 
 assertIncludes(page, '@Watch(\'onBlockedListStorageChanged\')', 'BlockedListsPage must watch blocked-list AppStorage changes')
 assertIncludes(page, 'private onBlockedListStorageChanged()', 'BlockedListsPage must have a storage-change handler')

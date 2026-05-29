@@ -14,6 +14,7 @@ import {
   ThemeConstants,
   type BlockedListSnapshot,
   type BlockedMemberMeta,
+  type IgnoredTopicMeta,
   type TopicDetailParams,
   type UserProfileParams,
   type V2exMemberProfile,
@@ -259,7 +260,7 @@ export struct BlockedListsPage {
     if (!this.snapshot.ownerKey) {
       return false
     }
-    if (this.hasAnyRenderableForCurrentTab() || this.hasIdsForCurrentTab()) {
+    if (this.hasAnyRenderableForCurrentTab()) {
       return false
     }
     return this.isRefreshPendingForCurrentTab()
@@ -311,13 +312,6 @@ export struct BlockedListsPage {
 
   private hasResolvedMembers(): boolean {
     return this.resolvedMemberCount() > 0
-  }
-
-  private hasIdsForCurrentTab(): boolean {
-    if (this.selectedTab === 0) {
-      return this.snapshot.blockedMemberIds.length > 0
-    }
-    return this.snapshot.ignoredTopicIds.length > 0
   }
 
   private hasAnyRenderableForCurrentTab(): boolean {
@@ -401,6 +395,7 @@ export struct BlockedListsPage {
     }
     this.members = this.ensureMemberRowsForIds(this.uniqueIds(snapshot.blockedMemberIds).slice(0, 80))
     this.applyMemberMetaCache(snapshot.blockedMemberMetas)
+    this.applyIgnoredTopicMetaCache(snapshot.ignoredTopicIds, snapshot.ignoredTopicMetas)
     BlockedListSettings.apply(snapshot)
     this.logRenderSnapshot(snapshot, trigger)
     return Promise.all([
@@ -441,6 +436,7 @@ export struct BlockedListsPage {
       ignored_count: snapshot.ignoredTopicIds.length,
       blocked_count: snapshot.blockedMemberIds.length,
       blocked_member_meta_count: snapshot.blockedMemberMetas.length,
+      ignored_topic_meta_count: snapshot.ignoredTopicMetas.length,
       topics_visible_count: this.topics.length,
       members_visible_count: this.members.length,
       members_resolved_count: this.resolvedMemberCount(),
@@ -463,6 +459,7 @@ export struct BlockedListsPage {
     return this.api.getTopicsByIds(topicIds)
       .then((topics: V2exTopic[]) => {
         this.topics = topics
+        this.persistIgnoredTopicMetas(topics)
       })
       .catch((error: Error) => {
         DiagnosticLogger.exception('network', 'blocked_lists_resolve_topics_failed', error, { count: topicIds.length })
@@ -566,6 +563,104 @@ export struct BlockedListsPage {
       hydrated_count: hydratedCount,
       members_visible_count: this.members.length,
     })
+  }
+
+  private applyIgnoredTopicMetaCache(ids: number[], metas: IgnoredTopicMeta[]): void {
+    const orderedIds = this.uniqueIds(ids).slice(0, 80)
+    const metaById: Map<number, IgnoredTopicMeta> = new Map()
+    const metaSource = Array.isArray(metas) ? metas : []
+    for (const meta of metaSource) {
+      if (meta && meta.id > 0) {
+        metaById.set(meta.id, meta)
+      }
+    }
+    const existingById: Map<number, V2exTopic> = new Map()
+    for (const topic of this.topics) {
+      existingById.set(topic.id, topic)
+    }
+    const hydrated: V2exTopic[] = []
+    let hydratedCount = 0
+    for (const id of orderedIds) {
+      const existing = existingById.get(id)
+      if (existing) {
+        hydrated.push(existing)
+        continue
+      }
+      const meta = metaById.get(id)
+      if (meta) {
+        hydrated.push(this.topicFromMeta(meta))
+        hydratedCount++
+      }
+    }
+    this.topics = hydrated
+    DiagnosticLogger.info('ui_lifecycle', 'ignored_topic_meta_cache_hydrated', {
+      meta_count: metaSource.length,
+      hydrated_count: hydratedCount,
+      topics_visible_count: this.topics.length,
+    })
+  }
+
+  private persistIgnoredTopicMetas(topics: V2exTopic[]): void {
+    if (!Array.isArray(topics) || topics.length === 0) {
+      return
+    }
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    const metas = topics.map((topic: V2exTopic): IgnoredTopicMeta => this.toIgnoredTopicMeta(topic))
+    BlockedListSettings.upsertIgnoredTopicMetas(metas, context, {
+      source: 'blocked_lists_page',
+      trigger: 'topic_resolve_success',
+    }).catch((error: Error) => {
+      DiagnosticLogger.exception('storage', 'ignored_topic_meta_upsert_failed', error, { count: metas.length })
+    })
+  }
+
+  private topicFromMeta(meta: IgnoredTopicMeta): V2exTopic {
+    return {
+      id: meta.id,
+      title: meta.title,
+      url: '',
+      content: '',
+      content_rendered: '',
+      replies: meta.replies,
+      member: {
+        id: 0,
+        username: meta.username,
+        tagline: '',
+        pro: meta.memberPro,
+        avatar_mini: meta.avatar,
+        avatar_normal: meta.avatar,
+        avatar_large: meta.avatar,
+      },
+      node: {
+        id: 0,
+        name: meta.nodeName,
+        title: meta.nodeTitle,
+        title_alternative: '',
+        url: '',
+        topics: 0,
+        avatar_mini: '',
+        avatar_normal: '',
+        avatar_large: '',
+      },
+      created: meta.created,
+      last_modified: 0,
+      last_touched: meta.updatedAt > 0 ? meta.updatedAt : meta.created,
+    }
+  }
+
+  private toIgnoredTopicMeta(topic: V2exTopic): IgnoredTopicMeta {
+    return {
+      id: topic.id,
+      title: topic.title || '',
+      nodeName: topic.node.name || '',
+      nodeTitle: topic.node.title || '',
+      username: topic.member.username || '',
+      avatar: topic.member.avatar_normal || topic.member.avatar_large || topic.member.avatar_mini || '',
+      memberPro: topic.member.pro || 0,
+      created: topic.created || 0,
+      replies: topic.replies || 0,
+      updatedAt: Date.now(),
+    }
   }
 
   private memberRowForId(id: number): BlockedMemberListItem {
