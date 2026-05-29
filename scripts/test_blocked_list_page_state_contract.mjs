@@ -81,11 +81,11 @@ assertIncludes(applyRuntimeBody, 'BlockedListSettings.runtimeSnapshot()', 'apply
 assertIncludes(applyRuntimeBody, 'this.applySnapshot(', 'applyRuntimeSnapshot must reuse page snapshot application')
 
 const memberBody = methodBody(page, 'private resolveMembers')
-assertIncludes(memberBody, 'preserveMembersForIds', 'resolveMembers must preserve resolved rows that remain in the id set')
+assertIncludes(memberBody, 'ensureMemberRowsForIds', 'resolveMembers must preserve stable V2 row objects that remain in the id set')
 assertNotIncludes(memberBody, 'this.members = memberIds.map((id: number): BlockedMemberListItem => this.fallbackMember(id))', 'resolveMembers must not replace the whole member list with fallback rows on every id-set change')
-assertIncludes(page, 'private preserveMembersForIds', 'BlockedListsPage must expose member preserve/diff helper')
-const preserveMembersBody = methodBody(page, 'private preserveMembersForIds')
-assertIncludes(preserveMembersBody, 'Map<number, BlockedMemberListItem>', 'preserveMembersForIds must use id-keyed diff state')
+assertIncludes(page, 'private ensureMemberRowsForIds', 'BlockedListsPage must expose member row diff helper')
+const preserveMembersBody = methodBody(page, 'private ensureMemberRowsForIds')
+assertIncludes(preserveMembersBody, 'Map<number, BlockedMemberListItem>', 'ensureMemberRowsForIds must use id-keyed stable V2 row state')
 
 const topicsBody = methodBody(page, 'private resolveTopics')
 assertNotIncludes(topicsBody, 'if (this.topics.length > 0 && !this.topicIdsMatch(this.topics, topicIds)) {\n      this.topics = []\n    }', 'resolveTopics must not clear visible topics before resolving changed ids')

@@ -147,7 +147,7 @@ assertIncludes(pagePath, page, 'this.api.syncBlockedListsFromCookieHtmlSources')
 assertIncludes(pagePath, page, "refreshAll('page_open')")
 assertIncludes(pagePath, page, 'BlockedListSettings.runtimeSnapshot()')
 assertIncludes(pagePath, page, 'topPadding: this.BOTTOM_BUILDER_HEIGHT')
-assertIncludes(pagePath, page, 'BlockedMemberCard(item)')
+assertIncludes(pagePath, page, 'BlockedMemberCardView({')
 assertIncludes(pagePath, page, 'LocalTopicCard({')
 assertIncludes(pagePath, page, 'BlockedListContent()')
 assertIncludes('shared/src/main/ets/components/LocalTopicCard.ets', source('shared/src/main/ets/components/LocalTopicCard.ets'), 'last_touched: this.metaTimestamp > 0 ? this.metaTimestamp : this.created')
@@ -192,9 +192,25 @@ assertIncludes(pagePath, page, 'private shouldShowPageLoading(): boolean')
 assertIncludes(pagePath, page, 'private pageStateMessage(): string')
 assertIncludes(pagePath, page, 'private topContentInset(): number')
 assertIncludes(pagePath, page, 'private bottomContentInset(): number')
-assertIncludes(pagePath, page, 'private preserveMembersForIds')
+assertIncludes(pagePath, page, '@ObservedV2')
+assertIncludes(pagePath, page, '@Trace username: string')
+assertIncludes(pagePath, page, '@Trace avatar: string')
+assertIncludes(pagePath, page, '@ComponentV2')
+assertIncludes(pagePath, page, '@Param item: BlockedMemberListItem')
+assertIncludes(pagePath, page, 'private memberRowsById: Map<number, BlockedMemberListItem>')
+assertIncludes(pagePath, page, 'private ensureMemberRowsForIds')
+assertIncludes(pagePath, page, 'private memberRowForId')
 assertIncludes(pagePath, page, 'pageState: this.pageStateName()')
-assertIncludes(pagePath, page, 'this.members = this.preserveMembersForIds(memberIds)')
+assertIncludes(pagePath, page, 'this.members = this.ensureMemberRowsForIds(memberIds)')
+if (page.includes('interface BlockedMemberListItem')) {
+  fail('BlockedMemberListItem must be an @ObservedV2 class, not an interface')
+}
+if (page.includes('private renderableMembers()')) {
+  fail('BlockedListsPage must not render transient fallback member arrays')
+}
+if (page.includes('this.members = items')) {
+  fail('BlockedListsPage must not replace resolved member rows with same-key new objects')
+}
 if (page.includes("Text('›')") || page.includes('Text("›")')) {
   fail('BlockedListsPage must not use text arrows as icons')
 }

@@ -19,13 +19,84 @@ import {
   type V2exTopic,
 } from 'shared'
 
-interface BlockedMemberListItem {
-  id: number
-  username: string
-  tagline: string
-  avatar: string
-  created: number
-  resolved: boolean
+@ObservedV2
+class BlockedMemberListItem {
+  id: number = 0
+  @Trace username: string = ''
+  @Trace tagline: string = ''
+  @Trace avatar: string = ''
+  @Trace created: number = 0
+  @Trace resolved: boolean = false
+
+  constructor(id: number) {
+    this.id = id
+  }
+
+  applyProfile(profile: V2exMemberProfile): void {
+    this.username = profile.username || ''
+    this.tagline = profile.tagline || ''
+    this.avatar = profile.avatar_large || profile.avatar_normal || profile.avatar_mini || ''
+    this.created = profile.created || 0
+    this.resolved = true
+  }
+}
+
+@ComponentV2
+struct BlockedMemberCardView {
+  @Param item: BlockedMemberListItem = new BlockedMemberListItem(0)
+  @Param avatarSize: number = ThemeConstants.AVATAR_SIZE_TOPIC
+  @Param rowMinHeight: number = ThemeConstants.AVATAR_SIZE_TOPIC + ThemeConstants.SPACE_MD * 2
+
+  build() {
+    Row({ space: ThemeConstants.SPACE_MD }) {
+      Avatar({ url: this.item.avatar, avatarSize: this.avatarSize })
+      Column({ space: ThemeConstants.SPACE_XS }) {
+        Text(this.memberTitle())
+          .fontSize(ThemeConstants.FONT_SIZE_BODY)
+          .fontWeight(FontWeight.Medium)
+          .fontColor($r('sys.color.font_primary'))
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+        if (this.memberMeta()) {
+          Text(this.memberMeta())
+            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+            .fontColor($r('sys.color.font_secondary'))
+            .maxLines(1)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
+        }
+      }
+      .layoutWeight(1)
+      .alignItems(HorizontalAlign.Start)
+    }
+    .width('100%')
+    .height(this.rowMinHeight)
+    .padding({
+      left: ThemeConstants.SPACE_LG,
+      right: ThemeConstants.SPACE_LG,
+      top: ThemeConstants.SPACE_MD,
+      bottom: ThemeConstants.SPACE_MD,
+    })
+    .borderRadius(ThemeConstants.RADIUS_CARD)
+    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+  }
+
+  private memberMeta(): string {
+    const parts: string[] = []
+    if (this.item.tagline) {
+      parts.push(this.item.tagline)
+    }
+    if (this.item.resolved && this.item.username) {
+      parts.push(`#${this.item.id}`)
+    }
+    return parts.join(' · ')
+  }
+
+  private memberTitle(): string {
+    if (this.item.username) {
+      return this.item.username
+    }
+    return `#${this.item.id}`
+  }
 }
 
 @Component
@@ -48,6 +119,7 @@ export struct BlockedListsPage {
   private readonly MEMBER_AVATAR_SIZE: number = ThemeConstants.AVATAR_SIZE_TOPIC
   private readonly MEMBER_ROW_MIN_HEIGHT: number = 64
   private api: ApiService = new ApiService()
+  private memberRowsById: Map<number, BlockedMemberListItem> = new Map()
   private lastStorageSignature: string = ''
 
   aboutToAppear(): void {
@@ -124,9 +196,13 @@ export struct BlockedListsPage {
 
   @Builder
   BlockedMembersList() {
-    ForEach(this.renderableMembers(), (item: BlockedMemberListItem) => {
+    ForEach(this.members, (item: BlockedMemberListItem) => {
       ListItem() {
-        this.BlockedMemberCard(item)
+        BlockedMemberCardView({
+          item: item,
+          avatarSize: this.MEMBER_AVATAR_SIZE,
+          rowMinHeight: this.MEMBER_ROW_MIN_HEIGHT,
+        })
       }
       .onClick(() => { this.openMember(item) })
     }, (item: BlockedMemberListItem) => `blocked-member-${item.id}`)
@@ -156,40 +232,6 @@ export struct BlockedListsPage {
     .height('100%')
   }
 
-  @Builder
-  BlockedMemberCard(item: BlockedMemberListItem) {
-    Row({ space: ThemeConstants.SPACE_MD }) {
-      Avatar({ url: item.avatar, avatarSize: this.MEMBER_AVATAR_SIZE })
-      Column({ space: ThemeConstants.SPACE_XS }) {
-        Text(this.memberTitle(item))
-          .fontSize(ThemeConstants.FONT_SIZE_BODY)
-          .fontWeight(FontWeight.Medium)
-          .fontColor($r('sys.color.font_primary'))
-          .maxLines(1)
-          .textOverflow({ overflow: TextOverflow.Ellipsis })
-        if (this.memberMeta(item)) {
-          Text(this.memberMeta(item))
-            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-            .fontColor($r('sys.color.font_secondary'))
-            .maxLines(1)
-            .textOverflow({ overflow: TextOverflow.Ellipsis })
-        }
-      }
-      .layoutWeight(1)
-      .alignItems(HorizontalAlign.Start)
-    }
-    .width('100%')
-    .height(this.MEMBER_ROW_MIN_HEIGHT)
-    .padding({
-      left: ThemeConstants.SPACE_LG,
-      right: ThemeConstants.SPACE_LG,
-      top: ThemeConstants.SPACE_MD,
-      bottom: ThemeConstants.SPACE_MD,
-    })
-    .borderRadius(ThemeConstants.RADIUS_CARD)
-    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
-  }
-
   private shouldShowPageLoading(): boolean {
     if (!this.snapshot.ownerKey) {
       return false
@@ -212,7 +254,7 @@ export struct BlockedListsPage {
       if (this.snapshot.blockedMemberIds.length === 0) {
         return AppStrings.text(AppStrings.R_NO_BLOCKED_USERS, 'No blocked users')
       }
-      if (this.renderableMembers().length === 0) {
+      if (this.members.length === 0) {
         return AppStrings.text(AppStrings.R_COMMON_LOAD_FAILED, 'Load failed')
       }
       return ''
@@ -257,7 +299,7 @@ export struct BlockedListsPage {
 
   private hasAnyRenderableForCurrentTab(): boolean {
     if (this.selectedTab === 0) {
-      return this.renderableMembers().length > 0
+      return this.members.length > 0
     }
     return this.topics.length > 0
   }
@@ -267,14 +309,6 @@ export struct BlockedListsPage {
       return this.syncInFlight || this.loadingMembers
     }
     return this.syncInFlight || this.loadingTopics
-  }
-
-  private renderableMembers(): BlockedMemberListItem[] {
-    if (this.members.length > 0) {
-      return this.members
-    }
-    return this.uniqueIds(this.snapshot.blockedMemberIds).slice(0, 80)
-      .map((id: number): BlockedMemberListItem => this.fallbackMember(id))
   }
 
   private resolvedMemberCount(): number {
@@ -340,7 +374,9 @@ export struct BlockedListsPage {
     if (ownerChanged) {
       this.topics = []
       this.members = []
+      this.memberRowsById.clear()
     }
+    this.members = this.ensureMemberRowsForIds(this.uniqueIds(snapshot.blockedMemberIds).slice(0, 80))
     BlockedListSettings.apply(snapshot)
     this.logRenderSnapshot(snapshot, trigger)
     return Promise.all([
@@ -418,17 +454,30 @@ export struct BlockedListsPage {
     const memberIds = this.uniqueIds(ids).slice(0, 80)
     if (memberIds.length === 0) {
       this.members = []
+      this.memberRowsById.clear()
       return Promise.resolve()
     }
-    this.members = this.preserveMembersForIds(memberIds)
+    this.members = this.ensureMemberRowsForIds(memberIds)
     this.loadingMembers = true
-    return Promise.all(memberIds.map((id: number): Promise<BlockedMemberListItem> => {
+    return Promise.all(memberIds.map((id: number): Promise<void> => {
       return this.api.getMemberById(id)
-        .then((profile: V2exMemberProfile) => this.memberFromProfile(id, profile))
-        .catch((_error: Error) => this.fallbackMember(id))
+        .then((profile: V2exMemberProfile) => {
+          const row = this.memberRowsById.get(id)
+          if (!row) {
+            return
+          }
+          row.applyProfile(profile)
+          this.logMemberRowResolved(row)
+        })
+        .catch((error: Error) => {
+          DiagnosticLogger.exception('network', 'blocked_member_row_resolve_failed', error, {
+            memberId: id,
+            rowStillPresent: this.memberRowsById.has(id),
+          })
+        })
     }))
-      .then((items: BlockedMemberListItem[]) => {
-        this.members = items
+      .then(() => {
+        this.members = this.ensureMemberRowsForIds(memberIds)
       })
       .finally(() => {
         this.loadingMembers = false
@@ -452,48 +501,35 @@ export struct BlockedListsPage {
     this.stack.pushPathByName('UserProfile', p as Object)
   }
 
-  private memberFromProfile(id: number, profile: V2exMemberProfile): BlockedMemberListItem {
-    return {
-      id: profile.id && profile.id > 0 ? profile.id : id,
-      username: profile.username || '',
-      tagline: profile.tagline || '',
-      avatar: profile.avatar_large || profile.avatar_normal || profile.avatar_mini || '',
-      created: profile.created || 0,
-      resolved: true,
+  private ensureMemberRowsForIds(memberIds: number[]): BlockedMemberListItem[] {
+    const validIds: Set<number> = new Set(memberIds)
+    const byId: Map<number, BlockedMemberListItem> = this.memberRowsById
+    for (const existingId of Array.from(byId.keys())) {
+      if (!validIds.has(existingId)) {
+        byId.delete(existingId)
+      }
     }
+    return memberIds.map((id: number): BlockedMemberListItem => this.memberRowForId(id))
   }
 
-  private fallbackMember(id: number): BlockedMemberListItem {
-    return { id: id, username: '', tagline: '', avatar: '', created: 0, resolved: false }
+  private memberRowForId(id: number): BlockedMemberListItem {
+    const existing = this.memberRowsById.get(id)
+    if (existing) {
+      return existing
+    }
+    const row = new BlockedMemberListItem(id)
+    this.memberRowsById.set(id, row)
+    return row
   }
 
-  private preserveMembersForIds(memberIds: number[]): BlockedMemberListItem[] {
-    const byId: Map<number, BlockedMemberListItem> = new Map()
-    for (const item of this.members) {
-      byId.set(item.id, item)
-    }
-    return memberIds.map((id: number): BlockedMemberListItem => {
-      const existing = byId.get(id)
-      return existing ? existing : this.fallbackMember(id)
+  private logMemberRowResolved(item: BlockedMemberListItem): void {
+    DiagnosticLogger.info('ui_lifecycle', 'blocked_member_row_resolved', {
+      memberId: item.id,
+      usernamePresent: item.username.length > 0,
+      avatarPresent: item.avatar.length > 0,
+      taglinePresent: item.tagline.length > 0,
+      resolved: item.resolved,
     })
-  }
-
-  private memberMeta(item: BlockedMemberListItem): string {
-    const parts: string[] = []
-    if (item.tagline) {
-      parts.push(item.tagline)
-    }
-    if (item.resolved && item.username) {
-      parts.push(`#${item.id}`)
-    }
-    return parts.join(' · ')
-  }
-
-  private memberTitle(item: BlockedMemberListItem): string {
-    if (item.username) {
-      return item.username
-    }
-    return `#${item.id}`
   }
 
 
