@@ -35,7 +35,7 @@ export struct BlockedListsPage {
   @StorageLink(StorageKeys.BLOCKED_LIST_BLOCKED_MEMBER_IDS) blockedMemberIdsJson: string = '[]'
   @StorageLink(StorageKeys.BLOCKED_LIST_UPDATED_AT) updatedAt: number = 0
   @StorageLink(StorageKeys.BLOCKED_LIST_SELECTED_TAB) selectedTab: number = 0
-  @State private snapshot: BlockedListSnapshot = BlockedListSettings.empty('')
+  @State private snapshot: BlockedListSnapshot = BlockedListSettings.runtimeSnapshot()
   @State private topics: V2exTopic[] = []
   @State private members: BlockedMemberListItem[] = []
   @State private loadingTopics: boolean = false
@@ -45,12 +45,13 @@ export struct BlockedListsPage {
   private api: ApiService = new ApiService()
 
   aboutToAppear(): void {
+    this.applySnapshot(BlockedListSettings.runtimeSnapshot(), 'page_open_runtime')
     this.refreshAll('page_open')
   }
 
   build() {
     Column() {
-      PullRefreshListScaffold({ onRefresh: () => this.refreshAll('manual_refresh') }) {
+      PullRefreshListScaffold({ onRefresh: () => this.refreshAll('manual_refresh'), topPadding: 68 }) {
         if (this.selectedTab === 0) {
           this.BlockedMembersContent()
         } else {
@@ -73,17 +74,17 @@ export struct BlockedListsPage {
           stateHeight: 220,
         })
       }
+    } else if ((this.syncInFlight || this.loadingTopics) && this.snapshot.ignoredTopicIds.length === 0 && this.topics.length === 0) {
+      ListItem() {
+        EmptyState({
+          message: AppStrings.text(AppStrings.R_COMMON_LOADING, 'Loading…'),
+          stateHeight: 220,
+        })
+      }
     } else if (this.snapshot.ignoredTopicIds.length === 0) {
       ListItem() {
         EmptyState({
           message: AppStrings.text(AppStrings.R_NO_IGNORED_TOPICS, 'No blocked topics'),
-          stateHeight: 220,
-        })
-      }
-    } else if (this.loadingTopics && this.topics.length === 0) {
-      ListItem() {
-        EmptyState({
-          message: AppStrings.text(AppStrings.R_COMMON_LOADING, 'Loading…'),
           stateHeight: 220,
         })
       }
@@ -129,17 +130,17 @@ export struct BlockedListsPage {
           stateHeight: 220,
         })
       }
+    } else if ((this.syncInFlight || this.loadingMembers) && this.snapshot.blockedMemberIds.length === 0 && this.members.length === 0) {
+      ListItem() {
+        EmptyState({
+          message: AppStrings.text(AppStrings.R_COMMON_LOADING, 'Loading…'),
+          stateHeight: 220,
+        })
+      }
     } else if (this.snapshot.blockedMemberIds.length === 0) {
       ListItem() {
         EmptyState({
           message: AppStrings.text(AppStrings.R_NO_BLOCKED_USERS, 'No blocked users'),
-          stateHeight: 220,
-        })
-      }
-    } else if (this.loadingMembers && this.members.length === 0) {
-      ListItem() {
-        EmptyState({
-          message: AppStrings.text(AppStrings.R_COMMON_LOADING, 'Loading…'),
           stateHeight: 220,
         })
       }
@@ -183,16 +184,18 @@ export struct BlockedListsPage {
     const cookie = CookieJarSettings.getCurrentCookie()
     this.syncError = false
     this.syncInFlight = !!cookie
-    return this.syncBlockedListsOnPageOpen(cookie, trigger)
-      .then(() => BlockedListSettings.loadActive(context))
+    return BlockedListSettings.loadActive(context)
       .then((snapshot: BlockedListSnapshot) => {
-        this.snapshot = snapshot
-        BlockedListSettings.apply(snapshot)
-        this.logRenderSnapshot(snapshot)
-        return Promise.all([
-          this.resolveTopics(snapshot.ignoredTopicIds),
-          this.resolveMembers(snapshot.blockedMemberIds),
-        ])
+        return this.applySnapshot(snapshot, `${trigger}_cache`)
+      })
+      .then(() => {
+        if (!cookie) {
+          return Promise.resolve()
+        }
+        this.syncInFlight = true
+        return this.syncBlockedListsOnPageOpen(cookie, trigger)
+          .then(() => BlockedListSettings.loadActive(context))
+          .then((snapshot: BlockedListSnapshot) => this.applySnapshot(snapshot, `${trigger}_network`))
       })
       .then(() => {})
       .catch((error: Error) => {
@@ -203,6 +206,16 @@ export struct BlockedListsPage {
         this.syncInFlight = false
         this.logRenderSnapshot(this.snapshot)
       })
+  }
+
+  private applySnapshot(snapshot: BlockedListSnapshot, trigger: string): Promise<void> {
+    this.snapshot = snapshot
+    BlockedListSettings.apply(snapshot)
+    this.logRenderSnapshot(snapshot, trigger)
+    return Promise.all([
+      this.resolveTopics(snapshot.ignoredTopicIds),
+      this.resolveMembers(snapshot.blockedMemberIds),
+    ]).then(() => {})
   }
 
   private syncBlockedListsOnPageOpen(cookie: string, trigger: string): Promise<void> {
@@ -216,8 +229,9 @@ export struct BlockedListsPage {
       })
   }
 
-  private logRenderSnapshot(snapshot: BlockedListSnapshot): void {
+  private logRenderSnapshot(snapshot: BlockedListSnapshot, trigger: string = ''): void {
     DiagnosticLogger.info('ui_lifecycle', 'blocked_list_render_snapshot', {
+      trigger: trigger,
       selectedTab: this.selectedTab,
       ignored_count: snapshot.ignoredTopicIds.length,
       blocked_count: snapshot.blockedMemberIds.length,

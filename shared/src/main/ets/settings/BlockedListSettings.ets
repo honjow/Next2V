@@ -81,6 +81,19 @@ export class BlockedListSettings {
     return { ignoredTopicIds: [], blockedMemberIds: [], ownerKey: ownerKey, updatedAt: 0 }
   }
 
+  static runtimeSnapshot(): BlockedListSnapshot {
+    const ownerKey = AppStorage.get<string>(StorageKeys.BLOCKED_LIST_OWNER_KEY) || ''
+    if (!ownerKey || ownerKey !== BlockedListSettings.activeOwnerKey()) {
+      return BlockedListSettings.empty(BlockedListSettings.activeOwnerKey())
+    }
+    return BlockedListSettings.normalize({
+      ignoredTopicIds: BlockedListSettings.parseRuntimeIds(StorageKeys.BLOCKED_LIST_IGNORED_TOPIC_IDS),
+      blockedMemberIds: BlockedListSettings.parseRuntimeIds(StorageKeys.BLOCKED_LIST_BLOCKED_MEMBER_IDS),
+      ownerKey: ownerKey,
+      updatedAt: AppStorage.get<number>(StorageKeys.BLOCKED_LIST_UPDATED_AT) || 0,
+    }, ownerKey)
+  }
+
   static activeOwnerKey(): string {
     const activeId = (AppStorage.get<string>(StorageKeys.ACTIVE_ACCOUNT_ID) || AccountStore.getActiveId() || '').trim()
     const username = (AppStorage.get<string>(StorageKeys.AUTH_SESSION_USERNAME) || '').trim()
@@ -311,5 +324,14 @@ export class BlockedListSettings {
       }
     }
     return result
+  }
+
+  private static parseRuntimeIds(key: string): number[] {
+    try {
+      const values = JSON.parse(AppStorage.get<string>(key) || '[]') as number[]
+      return Array.isArray(values) ? values : []
+    } catch (_error) {
+      return []
+    }
   }
 }
