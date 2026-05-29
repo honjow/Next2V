@@ -6,6 +6,16 @@ import { HttpClient } from '../network/HttpClient'
 export interface V2exBlockedIdLists {
   ignoredTopicIds: number[]
   blockedMemberIds: number[]
+  ignoredTopicsPresent: boolean
+  blockedMembersPresent: boolean
+  ignoredRawLength: number
+  blockedRawLength: number
+}
+
+interface V2exJsNumberArrayExtraction {
+  ids: number[]
+  present: boolean
+  rawLength: number
 }
 
 /**
@@ -32,9 +42,15 @@ export class V2exTabParser {
 
   /** Extract login-state ignored topic IDs and blocked member IDs from V2EX topic-list scripts. */
   static extractBlockedIdLists(html: string): V2exBlockedIdLists {
+    const ignoredTopics = V2exTabParser.extractJsNumberArray(html || '', 'ignored_topics')
+    const blockedMembers = V2exTabParser.extractJsNumberArray(html || '', 'blocked')
     return {
-      ignoredTopicIds: V2exTabParser.extractJsNumberArray(html || '', 'ignored_topics'),
-      blockedMemberIds: V2exTabParser.extractJsNumberArray(html || '', 'blocked'),
+      ignoredTopicIds: ignoredTopics.ids,
+      blockedMemberIds: blockedMembers.ids,
+      ignoredTopicsPresent: ignoredTopics.present,
+      blockedMembersPresent: blockedMembers.present,
+      ignoredRawLength: ignoredTopics.rawLength,
+      blockedRawLength: blockedMembers.rawLength,
     }
   }
 
@@ -68,14 +84,14 @@ export class V2exTabParser {
     return ids.length > 0 && ids.length <= 100
   }
 
-  private static extractJsNumberArray(html: string, variableName: string): number[] {
+  private static extractJsNumberArray(html: string, variableName: string): V2exJsNumberArrayExtraction {
     if (!html || !variableName) {
-      return []
+      return { ids: [], present: false, rawLength: 0 }
     }
     const pattern = new RegExp('(?:^|[^0-9A-Za-z_])' + variableName + '\\s*=\\s*\\[([^\\]]*)\\]', 'm')
     const match = html.match(pattern)
     if (!match || match.length < 2) {
-      return []
+      return { ids: [], present: false, rawLength: 0 }
     }
     const ids: number[] = []
     const seen: Set<number> = new Set()
@@ -89,7 +105,7 @@ export class V2exTabParser {
         seen.add(id)
       }
     }
-    return ids
+    return { ids: ids, present: true, rawLength: raw.length }
   }
 
   private static extractTopicCells(html: string): string[] {

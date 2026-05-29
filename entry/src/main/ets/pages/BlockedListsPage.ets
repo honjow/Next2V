@@ -4,6 +4,7 @@ import {
   AppStrings,
   Avatar,
   BlockedListSettings,
+  CookieJarSettings,
   DateUtils,
   DiagnosticLogger,
   EmptyState,
@@ -39,15 +40,17 @@ export struct BlockedListsPage {
   @State private members: BlockedMemberListItem[] = []
   @State private loadingTopics: boolean = false
   @State private loadingMembers: boolean = false
+  @State private syncInFlight: boolean = false
+  @State private syncError: boolean = false
   private api: ApiService = new ApiService()
 
   aboutToAppear(): void {
-    this.refreshAll()
+    this.refreshAll('page_open')
   }
 
   build() {
     Column() {
-      PullRefreshListScaffold({ onRefresh: () => this.refreshAll() }) {
+      PullRefreshListScaffold({ onRefresh: () => this.refreshAll('manual_refresh') }) {
         if (this.selectedTab === 0) {
           this.BlockedMembersContent()
         } else {
@@ -175,12 +178,17 @@ export struct BlockedListsPage {
     .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }
 
-  private refreshAll(): Promise<void> {
+  private refreshAll(trigger: string = 'manual_refresh'): Promise<void> {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    return BlockedListSettings.loadActive(context)
+    const cookie = CookieJarSettings.getCurrentCookie()
+    this.syncError = false
+    this.syncInFlight = !!cookie
+    return this.syncBlockedListsOnPageOpen(cookie, trigger)
+      .then(() => BlockedListSettings.loadActive(context))
       .then((snapshot: BlockedListSnapshot) => {
         this.snapshot = snapshot
         BlockedListSettings.apply(snapshot)
+        this.logRenderSnapshot(snapshot)
         return Promise.all([
           this.resolveTopics(snapshot.ignoredTopicIds),
           this.resolveMembers(snapshot.blockedMemberIds),
@@ -188,8 +196,37 @@ export struct BlockedListsPage {
       })
       .then(() => {})
       .catch((error: Error) => {
+        this.syncError = true
         DiagnosticLogger.exception('ui_lifecycle', 'blocked_lists_page_load_failed', error, {})
       })
+      .finally(() => {
+        this.syncInFlight = false
+        this.logRenderSnapshot(this.snapshot)
+      })
+  }
+
+  private syncBlockedListsOnPageOpen(cookie: string, trigger: string): Promise<void> {
+    if (!cookie) {
+      return Promise.resolve()
+    }
+    return this.api.syncBlockedListsFromCookieRecent(cookie, trigger)
+      .catch((error: Error) => {
+        this.syncError = true
+        DiagnosticLogger.exception('network', 'blocked_lists_page_sync_failed', error, { trigger: trigger, hasCookie: !!cookie })
+      })
+  }
+
+  private logRenderSnapshot(snapshot: BlockedListSnapshot): void {
+    DiagnosticLogger.info('ui_lifecycle', 'blocked_list_render_snapshot', {
+      selectedTab: this.selectedTab,
+      ignored_count: snapshot.ignoredTopicIds.length,
+      blocked_count: snapshot.blockedMemberIds.length,
+      updatedAt: snapshot.updatedAt || 0,
+      syncInFlight: this.syncInFlight,
+      syncError: this.syncError,
+      ownerKeyPresent: !!snapshot.ownerKey,
+      ownerKeyHash: DiagnosticLogger.ownerHash(snapshot.ownerKey),
+    })
   }
 
   private resolveTopics(ids: number[]): Promise<void> {

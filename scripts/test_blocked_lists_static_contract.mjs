@@ -43,6 +43,10 @@ const appStrings = source(appStringsPath)
 
 assertIncludes(parserPath, parser, 'export interface V2exBlockedIdLists')
 assertIncludes(parserPath, parser, 'static extractBlockedIdLists(html: string): V2exBlockedIdLists')
+assertIncludes(parserPath, parser, 'ignoredTopicsPresent: boolean')
+assertIncludes(parserPath, parser, 'blockedMembersPresent: boolean')
+assertIncludes(parserPath, parser, 'ignoredRawLength: number')
+assertIncludes(parserPath, parser, 'blockedRawLength: number')
 assertIncludes(parserPath, parser, "extractJsNumberArray(html || '', 'ignored_topics')")
 assertIncludes(parserPath, parser, "extractJsNumberArray(html || '', 'blocked')")
 assertIncludes(parserPath, parser, 'const pattern = new RegExp')
@@ -51,11 +55,26 @@ assertIncludes(parserPath, parser, 'seen: Set<number>')
 assertIncludes(settingsPath, settings, 'const KEY_PREFIX: string = \'blockedListState:\'')
 assertIncludes(settingsPath, settings, 'static activeOwnerKey(): string')
 assertIncludes(settingsPath, settings, 'StorageKeys.ACTIVE_ACCOUNT_ID')
-assertIncludes(settingsPath, settings, 'static updateFromTopicListHtml(html: string): void')
-assertIncludes(settingsPath, settings, 'BlockedListSettings.saveActive(lists)')
+assertIncludes(settingsPath, settings, 'export interface BlockedListCaptureSource')
+assertIncludes(settingsPath, settings, 'static updateFromTopicListHtml(html: string, source: BlockedListCaptureSource = {}): void')
+assertIncludes(settingsPath, settings, 'blocked_list_extract_result')
+assertIncludes(settingsPath, settings, 'blocked_list_skip_missing_variables')
+assertIncludes(settingsPath, settings, 'blocked_list_save_start')
+assertIncludes(settingsPath, settings, 'blocked_list_save_success')
+assertIncludes(settingsPath, settings, 'blocked_list_load_cache_result')
+assertIncludes(settingsPath, settings, 'ownerKeyPresent')
+assertIncludes(settingsPath, settings, 'ownerKeyHash')
+assertIncludes(settingsPath, settings, 'BlockedListSettings.saveActive(lists, undefined, sourceContext)')
 assertIncludes(settingsPath, settings, "DiagnosticLogger.exception('storage'")
+if (/DiagnosticLogger\.[^(]+\([^\n]+ownerKey:\s*ownerKey/.test(settings)) {
+  fail('blocked list diagnostics must not log raw ownerKey')
+}
 
-assertIncludes(apiPath, api, 'captureBlockedListsFromHtml(html)')
+assertIncludes(apiPath, api, 'captureBlockedListsFromHtml(html,')
+assertIncludes(apiPath, api, 'blocked_list_sync_start')
+assertIncludes(apiPath, api, 'blocked_list_html_received')
+assertIncludes(apiPath, api, 'locationType')
+assertIncludes(apiPath, api, 'syncBlockedListsFromCookieRecent')
 assertIncludes(apiPath, api, 'async getMemberById(memberId: number)')
 assertIncludes(apiPath, api, 'ApiConstants.API_MEMBER_SHOW')
 
@@ -68,6 +87,9 @@ assertIncludes(pagePath, page, 'AppStrings.R_COMMON_LOAD_FAILED')
 assertIncludes(pagePath, page, 'DiagnosticLogger.exception')
 assertIncludes(pagePath, page, 'this.api.getTopicsByIds(topicIds)')
 assertIncludes(pagePath, page, 'this.api.getMemberById(id)')
+assertIncludes(pagePath, page, 'this.api.syncBlockedListsFromCookieRecent')
+assertIncludes(pagePath, page, "refreshAll('page_open')")
+assertIncludes(pagePath, page, 'blocked_list_render_snapshot')
 assertIncludes(pagePath, page, "this.stack.pushPathByName('TopicDetail'")
 assertIncludes(pagePath, page, "this.stack.pushPathByName('UserProfile'")
 if (page.includes('.padding({ top: 168 })')) {
@@ -106,6 +128,16 @@ if (settingsPage.includes("pushPathByName('BlockedLists'")) {
 assertIncludes(accountPagePath, accountPage, "this.ns.pushPathByName('BlockedLists', null)")
 assertIncludes(accountPagePath, accountPage, 'AppStrings.R_NAV_BLOCKED_LISTS')
 assertIncludes(appStringsPath, appStrings, 'R_NAV_BLOCKED_LISTS')
+
+function extractWithPresence(sample, variableName) {
+  const pattern = new RegExp('(?:^|[^0-9A-Za-z_])' + variableName + '\\s*=\\s*\\[([^\\]]*)\\]', 'm')
+  const match = sample.match(pattern)
+  return {
+    present: !!(match && match.length >= 2),
+    rawLength: match && match.length >= 2 ? (match[1] || '').length : 0,
+    ids: extractFrom(sample, variableName),
+  }
+}
 
 function extractFrom(sample, variableName) {
   const pattern = new RegExp('(?:^|[^0-9A-Za-z_])' + variableName + '\\s*=\\s*\\[([^\\]]*)\\]', 'm')
@@ -153,6 +185,10 @@ if (extractFrom(whitespace, 'blocked').join(',') !== '4,5') {
 if (extractFrom('<script>ignored_topics = []; blocked = [];</script>', 'ignored_topics').length !== 0) {
   fail('parser regex parity failed empty arrays sample')
 }
+const presentEmpty = extractWithPresence('<script>ignored_topics = []; blocked = [];</script>', 'ignored_topics')
+if (!presentEmpty.present || presentEmpty.rawLength !== 0 || presentEmpty.ids.length !== 0) {
+  fail('parser presence parity failed present-empty [] sample')
+}
 if (extractFrom('<div class="from_123">not a blocked list</div>', 'blocked').length !== 0) {
   fail('parser regex parity must not treat from_{memberId} CSS classes as blocked list source')
 }
@@ -162,6 +198,37 @@ if (extractFrom(noGreedy, 'ignored_topics').join(',') !== '7') {
 }
 if (extractFrom('<script>const other = [1];</script>', 'ignored_topics').length !== 0) {
   fail('parser regex parity failed missing variable sample')
+}
+const missingIgnored = extractWithPresence('<script>const other = [1];</script>', 'ignored_topics')
+if (missingIgnored.present || missingIgnored.rawLength !== 0 || missingIgnored.ids.length !== 0) {
+  fail('parser presence parity failed missing variable sample')
+}
+;[
+  'endpoint',
+  'source',
+  'trigger',
+  'ignored_topics_present',
+  'blocked_present',
+  'ignored_count',
+  'blocked_count',
+].forEach((key) => assertIncludes(settingsPath, settings, key))
+;[
+  'blocked_list_sync_start',
+  'blocked_list_html_received',
+  'blocked_list_extract_result',
+  'blocked_list_skip_missing_variables',
+  'blocked_list_save_start',
+  'blocked_list_save_success',
+  'blocked_list_save_exception',
+  'blocked_list_load_cache_result',
+  'blocked_list_render_snapshot',
+].forEach((eventName) => {
+  if (!`${settings}\n${api}\n${page}`.includes(eventName)) {
+    fail(`missing blocked list diagnostic event: ${eventName}`)
+  }
+})
+if (`${settings}\n${api}\n${page}`.includes('rawHtml') || `${settings}\n${api}\n${page}`.includes('rawHTML')) {
+  fail('blocked list diagnostics must not log raw HTML')
 }
 
 console.log('PASS: blocked lists static contract')

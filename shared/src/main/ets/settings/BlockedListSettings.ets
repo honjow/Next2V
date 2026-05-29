@@ -16,6 +16,60 @@ export interface BlockedListSnapshot {
   updatedAt: number
 }
 
+export interface BlockedListCaptureSource {
+  endpoint?: string
+  source?: string
+  trigger?: string
+  statusCode?: number
+  locationType?: string
+  bodyLength?: number
+  hasCookie?: boolean
+  hasUsername?: boolean
+}
+
+interface BlockedListOwnerLogContext {
+  ownerKeyPresent: boolean
+  ownerKeyHash: string
+}
+
+interface BlockedListSnapshotLogContext extends BlockedListOwnerLogContext {
+  ignored_count: number
+  blocked_count: number
+  updatedAt: number
+}
+
+interface BlockedListCacheLogContext extends BlockedListSnapshotLogContext {
+  cacheHit: boolean
+}
+
+interface BlockedListSourceLogContext extends BlockedListCaptureSource {
+  endpoint: string
+  source: string
+  trigger: string
+  statusCode: number
+  locationType: string
+  bodyLength: number
+  hasCookie: boolean
+  hasUsername: boolean
+}
+
+interface BlockedListSourceOwnerLogContext extends BlockedListSourceLogContext, BlockedListOwnerLogContext {}
+interface BlockedListSourceSnapshotLogContext extends BlockedListSourceLogContext, BlockedListSnapshotLogContext {}
+
+interface BlockedListExtractLogContext extends BlockedListSourceLogContext {
+  ignored_topics_present: boolean
+  blocked_present: boolean
+  ignored_count: number
+  blocked_count: number
+  ignoredRawLength: number
+  blockedRawLength: number
+}
+
+interface BlockedListMissingVariablesLogContext extends BlockedListSourceLogContext {
+  missingIgnoredTopics: boolean
+  missingBlockedMembers: boolean
+}
+
 export class BlockedListSettings {
   private static context: common.UIAbilityContext | null = null
 
@@ -43,30 +97,40 @@ export class BlockedListSettings {
   static async loadActive(context?: common.UIAbilityContext): Promise<BlockedListSnapshot> {
     const ownerKey = BlockedListSettings.activeOwnerKey()
     if (!ownerKey) {
-      return BlockedListSettings.empty('')
+      const empty = BlockedListSettings.empty('')
+      DiagnosticLogger.info('storage', 'blocked_list_load_cache_result', BlockedListSettings.cacheLogContext(empty, false))
+      return empty
     }
     const ctx = context || BlockedListSettings.context
     if (!ctx) {
-      return BlockedListSettings.empty(ownerKey)
+      const empty = BlockedListSettings.empty(ownerKey)
+      DiagnosticLogger.info('storage', 'blocked_list_load_cache_result', BlockedListSettings.cacheLogContext(empty, false))
+      return empty
     }
     try {
       const store = await preferences.getPreferences(ctx, STORE_NAME_SETTINGS)
       const raw = store.getSync(KEY_PREFIX + ownerKey, '') as string
       if (!raw) {
-        return BlockedListSettings.empty(ownerKey)
+        const empty = BlockedListSettings.empty(ownerKey)
+        DiagnosticLogger.info('storage', 'blocked_list_load_cache_result', BlockedListSettings.cacheLogContext(empty, false))
+        return empty
       }
       const parsed = JSON.parse(raw) as BlockedListSnapshot
-      return BlockedListSettings.normalize(parsed, ownerKey)
+      const normalized = BlockedListSettings.normalize(parsed, ownerKey)
+      DiagnosticLogger.info('storage', 'blocked_list_load_cache_result', BlockedListSettings.cacheLogContext(normalized, true))
+      return normalized
     } catch (error) {
-      DiagnosticLogger.exception('storage', 'blocked_list_load_exception', error as Error, { ownerKey: ownerKey })
-      return BlockedListSettings.empty(ownerKey)
+      const empty = BlockedListSettings.empty(ownerKey)
+      DiagnosticLogger.exception('storage', 'blocked_list_load_exception', error as Error, BlockedListSettings.ownerLogContext(ownerKey))
+      DiagnosticLogger.info('storage', 'blocked_list_load_cache_result', BlockedListSettings.cacheLogContext(empty, false))
+      return empty
     }
   }
 
-  static async saveActive(snapshot: V2exBlockedIdLists, context?: common.UIAbilityContext): Promise<void> {
+  static async saveActive(snapshot: V2exBlockedIdLists, context?: common.UIAbilityContext, source: BlockedListCaptureSource = {}): Promise<void> {
     const ownerKey = BlockedListSettings.activeOwnerKey()
     if (!ownerKey) {
-      DiagnosticLogger.info('storage', 'blocked_list_skip_save_no_owner', {})
+      DiagnosticLogger.info('storage', 'blocked_list_skip_save_no_owner', BlockedListSettings.sourceOwnerLogContext(source, ownerKey))
       return
     }
     const normalized = BlockedListSettings.normalize({
@@ -75,33 +139,33 @@ export class BlockedListSettings {
       ownerKey: ownerKey,
       updatedAt: Date.now(),
     }, ownerKey)
+    DiagnosticLogger.info('storage', 'blocked_list_save_start', BlockedListSettings.sourceSnapshotLogContext(source, normalized))
     BlockedListSettings.apply(normalized)
     const ctx = context || BlockedListSettings.context
     if (!ctx) {
-      DiagnosticLogger.warn('storage', 'blocked_list_no_context_runtime_only', { ownerKey: ownerKey })
+      DiagnosticLogger.warn('storage', 'blocked_list_no_context_runtime_only', BlockedListSettings.sourceSnapshotLogContext(source, normalized))
       return
     }
     try {
       const store = await preferences.getPreferences(ctx, STORE_NAME_SETTINGS)
       store.putSync(KEY_PREFIX + ownerKey, JSON.stringify(normalized))
       store.flushSync()
+      DiagnosticLogger.info('storage', 'blocked_list_save_success', BlockedListSettings.sourceSnapshotLogContext(source, normalized))
     } catch (error) {
-      DiagnosticLogger.exception('storage', 'blocked_list_save_exception', error as Error, { ownerKey: ownerKey })
+      DiagnosticLogger.exception('storage', 'blocked_list_save_exception', error as Error, BlockedListSettings.sourceSnapshotLogContext(source, normalized))
     }
   }
 
-  static updateFromTopicListHtml(html: string): void {
+  static updateFromTopicListHtml(html: string, source: BlockedListCaptureSource = {}): void {
     const lists = V2exTabParser.extractBlockedIdLists(html || '')
-    if (lists.ignoredTopicIds.length === 0 && lists.blockedMemberIds.length === 0) {
-      DiagnosticLogger.info('network', 'blocked_list_extract_empty_or_missing', {})
+    const sourceContext = BlockedListSettings.sourceLogContext(source)
+    DiagnosticLogger.info('network', 'blocked_list_extract_result', BlockedListSettings.extractLogContext(source, lists))
+    if (!lists.ignoredTopicsPresent || !lists.blockedMembersPresent) {
+      DiagnosticLogger.info('network', 'blocked_list_skip_missing_variables', BlockedListSettings.missingVariablesLogContext(source, lists))
       return
     }
-    DiagnosticLogger.info('network', 'blocked_list_extract_success', {
-      ignoredTopics: lists.ignoredTopicIds.length,
-      blockedMembers: lists.blockedMemberIds.length,
-    })
-    BlockedListSettings.saveActive(lists).catch((error: Error) => {
-      DiagnosticLogger.exception('storage', 'blocked_list_save_from_html_exception', error, {})
+    BlockedListSettings.saveActive(lists, undefined, sourceContext).catch((error: Error) => {
+      DiagnosticLogger.exception('storage', 'blocked_list_save_from_html_exception', error, BlockedListSettings.sourceLogContext(source))
     })
   }
 
@@ -110,6 +174,119 @@ export class BlockedListSettings {
     setAppStorageValue<string>(StorageKeys.BLOCKED_LIST_IGNORED_TOPIC_IDS, JSON.stringify(snapshot.ignoredTopicIds))
     setAppStorageValue<string>(StorageKeys.BLOCKED_LIST_BLOCKED_MEMBER_IDS, JSON.stringify(snapshot.blockedMemberIds))
     setAppStorageValue<number>(StorageKeys.BLOCKED_LIST_UPDATED_AT, snapshot.updatedAt)
+  }
+
+  private static sourceLogContext(source: BlockedListCaptureSource): BlockedListSourceLogContext {
+    return {
+      endpoint: source.endpoint || '',
+      source: source.source || '',
+      trigger: source.trigger || '',
+      statusCode: source.statusCode || 0,
+      locationType: source.locationType || '',
+      bodyLength: source.bodyLength || 0,
+      hasCookie: !!source.hasCookie,
+      hasUsername: !!source.hasUsername,
+    }
+  }
+
+  private static ownerLogContext(ownerKey: string): BlockedListOwnerLogContext {
+    return {
+      ownerKeyPresent: !!ownerKey,
+      ownerKeyHash: ownerKey ? DiagnosticLogger.ownerHash(ownerKey) : '',
+    }
+  }
+
+  private static snapshotLogContext(snapshot: BlockedListSnapshot): BlockedListSnapshotLogContext {
+    return {
+      ownerKeyPresent: !!snapshot.ownerKey,
+      ownerKeyHash: snapshot.ownerKey ? DiagnosticLogger.ownerHash(snapshot.ownerKey) : '',
+      ignored_count: snapshot.ignoredTopicIds.length,
+      blocked_count: snapshot.blockedMemberIds.length,
+      updatedAt: snapshot.updatedAt || 0,
+    }
+  }
+
+  private static cacheLogContext(snapshot: BlockedListSnapshot, cacheHit: boolean): BlockedListCacheLogContext {
+    return {
+      ownerKeyPresent: !!snapshot.ownerKey,
+      ownerKeyHash: snapshot.ownerKey ? DiagnosticLogger.ownerHash(snapshot.ownerKey) : '',
+      ignored_count: snapshot.ignoredTopicIds.length,
+      blocked_count: snapshot.blockedMemberIds.length,
+      updatedAt: snapshot.updatedAt || 0,
+      cacheHit: cacheHit,
+    }
+  }
+
+  private static sourceOwnerLogContext(source: BlockedListCaptureSource, ownerKey: string): BlockedListSourceOwnerLogContext {
+    const sourceContext = BlockedListSettings.sourceLogContext(source)
+    return {
+      endpoint: sourceContext.endpoint,
+      source: sourceContext.source,
+      trigger: sourceContext.trigger,
+      statusCode: sourceContext.statusCode,
+      locationType: sourceContext.locationType,
+      bodyLength: sourceContext.bodyLength,
+      hasCookie: sourceContext.hasCookie,
+      hasUsername: sourceContext.hasUsername,
+      ownerKeyPresent: !!ownerKey,
+      ownerKeyHash: ownerKey ? DiagnosticLogger.ownerHash(ownerKey) : '',
+    }
+  }
+
+  private static sourceSnapshotLogContext(source: BlockedListCaptureSource, snapshot: BlockedListSnapshot): BlockedListSourceSnapshotLogContext {
+    const sourceContext = BlockedListSettings.sourceLogContext(source)
+    const snapshotContext = BlockedListSettings.snapshotLogContext(snapshot)
+    return {
+      endpoint: sourceContext.endpoint,
+      source: sourceContext.source,
+      trigger: sourceContext.trigger,
+      statusCode: sourceContext.statusCode,
+      locationType: sourceContext.locationType,
+      bodyLength: sourceContext.bodyLength,
+      hasCookie: sourceContext.hasCookie,
+      hasUsername: sourceContext.hasUsername,
+      ownerKeyPresent: snapshotContext.ownerKeyPresent,
+      ownerKeyHash: snapshotContext.ownerKeyHash,
+      ignored_count: snapshotContext.ignored_count,
+      blocked_count: snapshotContext.blocked_count,
+      updatedAt: snapshotContext.updatedAt,
+    }
+  }
+
+  private static extractLogContext(source: BlockedListCaptureSource, lists: V2exBlockedIdLists): BlockedListExtractLogContext {
+    const sourceContext = BlockedListSettings.sourceLogContext(source)
+    return {
+      endpoint: sourceContext.endpoint,
+      source: sourceContext.source,
+      trigger: sourceContext.trigger,
+      statusCode: sourceContext.statusCode,
+      locationType: sourceContext.locationType,
+      bodyLength: sourceContext.bodyLength,
+      hasCookie: sourceContext.hasCookie,
+      hasUsername: sourceContext.hasUsername,
+      ignored_topics_present: lists.ignoredTopicsPresent,
+      blocked_present: lists.blockedMembersPresent,
+      ignored_count: lists.ignoredTopicIds.length,
+      blocked_count: lists.blockedMemberIds.length,
+      ignoredRawLength: lists.ignoredRawLength,
+      blockedRawLength: lists.blockedRawLength,
+    }
+  }
+
+  private static missingVariablesLogContext(source: BlockedListCaptureSource, lists: V2exBlockedIdLists): BlockedListMissingVariablesLogContext {
+    const sourceContext = BlockedListSettings.sourceLogContext(source)
+    return {
+      endpoint: sourceContext.endpoint,
+      source: sourceContext.source,
+      trigger: sourceContext.trigger,
+      statusCode: sourceContext.statusCode,
+      locationType: sourceContext.locationType,
+      bodyLength: sourceContext.bodyLength,
+      hasCookie: sourceContext.hasCookie,
+      hasUsername: sourceContext.hasUsername,
+      missingIgnoredTopics: !lists.ignoredTopicsPresent,
+      missingBlockedMembers: !lists.blockedMembersPresent,
+    }
   }
 
   private static normalize(value: BlockedListSnapshot, ownerKey: string): BlockedListSnapshot {

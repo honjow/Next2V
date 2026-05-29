@@ -45,7 +45,7 @@ import type {
   V2exNodeTopicsPageResult,
 } from './NetworkTypes'
 import { ApiError, ApiErrors, ApiErrorCode, isApiError } from './ApiError'
-import { BlockedListSettings } from '../settings/BlockedListSettings'
+import { BlockedListSettings, type BlockedListCaptureSource } from '../settings/BlockedListSettings'
 
 interface CookieHtmlResponse {
   statusCode: number
@@ -117,7 +117,7 @@ export class ApiService {
   /** Get site hot tab trending topics */
   async getHotTabTopics(): Promise<V2exTopic[]> {
     const html = await this.http.getText('/?tab=hot')
-    this.captureBlockedListsFromHtml(html)
+    this.captureBlockedListsFromHtml(html, { endpoint: '/?tab=hot', source: 'publicHtml', trigger: 'feed_capture' })
     const topics = V2exTabParser.parseTopicList(html)
     if (topics.length === 0) {
       throw ApiErrors.hotTopicsEmpty()
@@ -138,7 +138,7 @@ export class ApiService {
   async getRecentTopics(page: number = 1): Promise<V2exTopic[]> {
     const safePage = Math.max(1, Math.floor(page))
     const html = await this.http.getText(`/recent?p=${safePage}`)
-    this.captureBlockedListsFromHtml(html)
+    this.captureBlockedListsFromHtml(html, { endpoint: `/recent?p=${safePage}`, source: 'publicHtml', trigger: 'feed_capture' })
     const topics = V2exTabParser.parseTopicList(html)
     if (topics.length === 0) {
       throw ApiErrors.recentTopicsEmpty()
@@ -190,8 +190,9 @@ export class ApiService {
       throw ApiErrors.nodeNameRequired()
     }
     const safePage = Math.max(1, Math.floor(page))
-    const html = await this.http.getText(`/go/${encodeURIComponent(clean)}?p=${safePage}`)
-    this.captureBlockedListsFromHtml(html)
+    const endpoint = `/go/${encodeURIComponent(clean)}?p=${safePage}`
+    const html = await this.http.getText(endpoint)
+    this.captureBlockedListsFromHtml(html, { endpoint: endpoint, source: 'publicHtml', trigger: 'feed_capture' })
     const snapshot: V2exNodeTopicsPageSnapshot = V2exNodeParser.parseNodeTopicsPage(html)
     const topics = V2exTabParser.parseTopicList(html)
     if (topics.length === 0) {
@@ -314,7 +315,7 @@ export class ApiService {
     }
     const path = `/member/${encodeURIComponent(clean)}`
     const html = cookie ? await this.getCookieHtml(path, cookie) : await this.http.getText(path)
-    this.captureBlockedListsFromHtml(html)
+    this.captureBlockedListsFromHtml(html, { endpoint: path, source: cookie ? 'cookieHtml' : 'publicHtml', trigger: 'feed_capture', hasCookie: !!cookie })
     return V2exMemberPageParser.parse(html, clean)
   }
 
@@ -330,7 +331,7 @@ export class ApiService {
     const safePage = Math.max(1, Math.floor(page))
     const path = `/member/${encodeURIComponent(clean)}/topics?p=${safePage}`
     const html = cookie ? await this.getCookieHtml(path, cookie) : await this.http.getText(path)
-    this.captureBlockedListsFromHtml(html)
+    this.captureBlockedListsFromHtml(html, { endpoint: path, source: cookie ? 'cookieHtml' : 'publicHtml', trigger: 'feed_capture', hasCookie: !!cookie })
     return V2exMemberPageParser.parseTopicsPage(html)
   }
 
@@ -1099,6 +1100,43 @@ export class ApiService {
     return 0
   }
 
+  async syncBlockedListsFromCookieRecent(cookie: string, trigger: string = 'manualSync'): Promise<void> {
+    const endpoint = '/recent?p=1'
+    DiagnosticLogger.info('network', 'blocked_list_sync_start', {
+      endpoint: endpoint,
+      source: 'cookieHtml',
+      trigger: trigger,
+      hasCookie: !!cookie,
+      ownerKeyPresent: !!BlockedListSettings.activeOwnerKey(),
+      ownerKeyHash: DiagnosticLogger.ownerHash(BlockedListSettings.activeOwnerKey()),
+    })
+    if (!cookie) {
+      return
+    }
+    const res = await this.requestHtmlWithCookieAllowRedirect(endpoint, cookie, '/', http.RequestMethod.GET)
+    const locationType = ApiService.locationType(res.location)
+    DiagnosticLogger.info('network', 'blocked_list_html_received', {
+      endpoint: endpoint,
+      source: 'cookieHtml',
+      trigger: trigger,
+      statusCode: res.statusCode,
+      locationType: locationType,
+      bodyLength: res.text.length,
+      hasCookie: true,
+      hasUsername: !!V2exSessionParser.extractUsername(res.text),
+    })
+    this.captureBlockedListsFromHtml(res.text, {
+      endpoint: endpoint,
+      source: 'cookieHtml',
+      trigger: trigger,
+      statusCode: res.statusCode,
+      locationType: locationType,
+      bodyLength: res.text.length,
+      hasCookie: true,
+      hasUsername: !!V2exSessionParser.extractUsername(res.text),
+    })
+  }
+
   private async getCookieHtml(path: string, cookie: string): Promise<string> {
     const endpoint = this.cookieEndpoint(path)
     const res = await this.http.getTextResponseWithHeaders(endpoint, { 'Cookie': cookie })
@@ -1616,7 +1654,9 @@ export class ApiService {
     } else if (tab === 'hot') {
       topics = await this.getHotTabTopics()
     } else {
-      const html = await this.http.getText(ApiConstants.TAB_URLS[tab])
+      const endpoint = ApiConstants.TAB_URLS[tab]
+      const html = await this.http.getText(endpoint)
+      this.captureBlockedListsFromHtml(html, { endpoint: endpoint, source: 'publicHtml', trigger: 'feed_capture' })
       const parsedTopics = V2exTabParser.parseTopicList(html)
       if (parsedTopics.length === 0) {
         throw ApiErrors.tabTopicsEmpty(tab)
@@ -1649,8 +1689,46 @@ export class ApiService {
     return ApiService.normalizeTopics(results)
   }
 
-  private captureBlockedListsFromHtml(html: string): void {
-    BlockedListSettings.updateFromTopicListHtml(html || '')
+  private captureBlockedListsFromHtml(html: string, source: BlockedListCaptureSource = {}): void {
+    const enriched: BlockedListCaptureSource = {
+      endpoint: source.endpoint || '',
+      source: source.source || 'publicHtml',
+      trigger: source.trigger || 'feed_capture',
+      statusCode: source.statusCode || 0,
+      locationType: source.locationType || '',
+      bodyLength: source.bodyLength || (html || '').length,
+      hasCookie: !!source.hasCookie,
+      hasUsername: !!source.hasUsername,
+    }
+    DiagnosticLogger.info('network', 'blocked_list_sync_start', {
+      endpoint: enriched.endpoint,
+      source: enriched.source,
+      trigger: enriched.trigger,
+      hasCookie: enriched.hasCookie,
+      ownerKeyPresent: !!BlockedListSettings.activeOwnerKey(),
+      ownerKeyHash: DiagnosticLogger.ownerHash(BlockedListSettings.activeOwnerKey()),
+    })
+    DiagnosticLogger.info('network', 'blocked_list_html_received', {
+      endpoint: enriched.endpoint,
+      source: enriched.source,
+      trigger: enriched.trigger,
+      statusCode: enriched.statusCode,
+      locationType: enriched.locationType || 'normal',
+      bodyLength: enriched.bodyLength,
+      hasCookie: enriched.hasCookie,
+      hasUsername: enriched.hasUsername,
+    })
+    BlockedListSettings.updateFromTopicListHtml(html || '', enriched)
+  }
+
+  private static locationType(location: string): string {
+    if (ApiService.isLocationPath(location, '/signin')) {
+      return 'signin'
+    }
+    if (ApiService.isLocationPath(location, '/2fa')) {
+      return '2fa'
+    }
+    return 'normal'
   }
 
   private static topicFromHtml(topicId: number, html: string): V2exTopic {
