@@ -567,7 +567,7 @@ struct Index {
       let cc = new ComponentContent(this.getUIContext(), wrapBuilder(BlockedListsTabsCCBuilder))
       let bb: Record<string, Object> = {
         'builderComponent': cc,
-        'height': 56,
+        'height': ThemeConstants.TITLE_BAR_HEIGHT,
         'showType': BottomBuilderShowType.DIRECTLY_SHOW,
       }
       return this.navDestTitleBarOpts(AppStrings.R_NAV_BLOCKED_LISTS, undefined, undefined, bb)

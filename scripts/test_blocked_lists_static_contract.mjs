@@ -123,7 +123,11 @@ assertIncludes(pagePath, page, 'this.api.getMemberById(id)')
 assertIncludes(pagePath, page, 'this.api.syncBlockedListsFromCookieHtmlSources')
 assertIncludes(pagePath, page, "refreshAll('page_open')")
 assertIncludes(pagePath, page, 'BlockedListSettings.runtimeSnapshot()')
-assertIncludes(pagePath, page, 'topPadding: 68')
+assertIncludes(pagePath, page, 'topPadding: this.BOTTOM_BUILDER_HEIGHT')
+assertIncludes(pagePath, page, 'BlockedMemberCard(item)')
+assertIncludes(pagePath, page, 'LocalTopicCard({')
+assertIncludes(pagePath, page, 'BlockedEmptyState(')
+assertIncludes('shared/src/main/ets/components/LocalTopicCard.ets', source('shared/src/main/ets/components/LocalTopicCard.ets'), 'last_touched: this.metaTimestamp > 0 ? this.metaTimestamp : this.created')
 assertIncludes(pagePath, page, 'this.syncInFlight = !!cookie')
 assertIncludes(pagePath, page, 'this.syncInFlight || this.loadingTopics')
 assertIncludes(pagePath, page, 'this.syncInFlight || this.loadingMembers')
@@ -135,32 +139,34 @@ assertIncludes(pagePath, page, "this.stack.pushPathByName('UserProfile'")
 if (page.includes('.padding({ top: 168 })')) {
   fail('BlockedListsPage must not use magic root top padding')
 }
-if (page.includes('SegmentButton') || page.includes('SegmentButtonOptions.tab') || page.includes('TabsHeader')) {
-  fail('BlockedListsPage must not render the segmented control in the page body')
+if (page.includes('TabHeaderItem()') || page.includes('SegmentButton({')) {
+  fail('BlockedListsPage must not render the segment control as a list item')
+}
+if (page.includes('stateHeight: 220')) {
+  fail('BlockedListsPage empty states must not scatter magic 220 heights')
+}
+if (page.includes("Text('›')") || page.includes('Text("›")')) {
+  fail('BlockedListsPage must not use text arrows as icons')
 }
 if (page.includes("message: 'Loading...'") || page.includes("message: 'Load failed'")) {
   fail('BlockedListsPage loading/error states must use localized strings')
 }
+
 assertIncludes(storageKeysPath, storageKeys, 'BLOCKED_LIST_SELECTED_TAB')
-assertIncludes(titleBarComponentsPath, titleBarComponents, 'export function BlockedListsTabsCCBuilder()')
-assertIncludes(titleBarComponentsPath, titleBarComponents, 'SegmentButtonOptions.tab')
-assertIncludes(titleBarComponentsPath, titleBarComponents, 'StorageKeys.BLOCKED_LIST_SELECTED_TAB')
-assertIncludes(titleBarComponentsPath, titleBarComponents, '.constraintSize({ maxWidth: 448 })')
-assertIncludes(titleBarComponentsPath, titleBarComponents, '.padding(ThemeConstants.SPACE_SM)')
-if (/R_BLOCKED_USERS[^\n]+\$\{|R_IGNORED_TOPICS[^\n]+\$\{|\(\$\{this\.idCount/.test(titleBarComponents)) {
-  fail('BlockedLists bottomBuilder segment labels must not append count suffixes')
+assertIncludes(indexPath, index, 'wrapBuilder(BlockedListsTabsCCBuilder)')
+assertIncludes(indexPath, index, "'height': ThemeConstants.TITLE_BAR_HEIGHT")
+if (/R_BLOCKED_USERS[^\n]+\$\{|R_IGNORED_TOPICS[^\n]+\$\{|\(\$\{this\.idCount/.test(page)) {
+  fail('BlockedLists segment labels must not append count suffixes')
 }
 const blockedLabelIndex = titleBarComponents.indexOf("AppStrings.R_BLOCKED_USERS")
 const topicLabelIndex = titleBarComponents.indexOf("AppStrings.R_IGNORED_TOPICS")
 if (blockedLabelIndex < 0 || topicLabelIndex < 0 || blockedLabelIndex > topicLabelIndex) {
-  fail('BlockedLists bottomBuilder segment default/order must be blocked users before blocked topics')
+  fail('BlockedLists tab header must keep blocked users before ignored topics')
 }
 assertIncludes(indexPath, index, "descriptor.family === 'blockedLists'")
-assertIncludes(indexPath, index, 'wrapBuilder(BlockedListsTabsCCBuilder)')
-assertIncludes(indexPath, index, "'showType': BottomBuilderShowType.DIRECTLY_SHOW")
-assertIncludes(indexPath, index, "return this.navDestTitleBarOpts(AppStrings.R_NAV_BLOCKED_LISTS, undefined, undefined, bb)")
+assertIncludes(indexPath, index, 'return this.navDestTitleBarOpts(AppStrings.R_NAV_BLOCKED_LISTS, undefined, undefined, bb)')
 if (index.indexOf("descriptor.family === 'blockedLists'") > index.indexOf('IndexRouteCoordinator.usesStandardTitleBar')) {
-  fail('BlockedLists bottomBuilder branch must run before generic standard title bar branch')
+  fail('BlockedLists title bar branch must run before generic standard title bar branch')
 }
 
 assertIncludes(routePath, route, "'BlockedLists': 'blockedLists'")

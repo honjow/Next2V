@@ -68,8 +68,8 @@ export struct LocalTopicCard {
       member: member,
       node: node,
       created: this.created > 0 ? this.created : this.metaTimestamp,
-      last_modified: this.metaTimestamp,
-      last_touched: this.metaTimestamp
+      last_modified: this.metaTimestamp > 0 ? this.metaTimestamp : this.created,
+      last_touched: this.metaTimestamp > 0 ? this.metaTimestamp : this.created
     }
   }
 }

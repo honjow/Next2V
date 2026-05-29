@@ -5,7 +5,6 @@ import {
   Avatar,
   BlockedListSettings,
   CookieJarSettings,
-  DateUtils,
   DiagnosticLogger,
   EmptyState,
   LocalTopicCard,
@@ -42,6 +41,10 @@ export struct BlockedListsPage {
   @State private loadingMembers: boolean = false
   @State private syncInFlight: boolean = false
   @State private syncError: boolean = false
+  private readonly BOTTOM_BUILDER_HEIGHT: number = ThemeConstants.TITLE_BAR_HEIGHT
+  private readonly EMPTY_STATE_HEIGHT: number = 360
+  private readonly MEMBER_AVATAR_SIZE: number = ThemeConstants.AVATAR_SIZE_TOPIC
+  private readonly MEMBER_ROW_MIN_HEIGHT: number = 64
   private api: ApiService = new ApiService()
 
   aboutToAppear(): void {
@@ -51,7 +54,12 @@ export struct BlockedListsPage {
 
   build() {
     Column() {
-      PullRefreshListScaffold({ onRefresh: () => this.refreshAll('manual_refresh'), topPadding: 68 }) {
+      PullRefreshListScaffold({
+        onRefresh: () => this.refreshAll('manual_refresh'),
+        topPadding: this.BOTTOM_BUILDER_HEIGHT,
+        indicatorTop: ThemeConstants.TITLE_BAR_HEIGHT + this.BOTTOM_BUILDER_HEIGHT,
+      }) {
+        this.SyncStatusItem()
         if (this.selectedTab === 0) {
           this.BlockedMembersContent()
         } else {
@@ -64,37 +72,29 @@ export struct BlockedListsPage {
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
   }
 
+  @Builder
+  SyncStatusItem() {
+    if (this.syncError && (this.members.length > 0 || this.topics.length > 0)) {
+      ListItem() {
+        Text(AppStrings.text(AppStrings.R_COMMON_LOAD_FAILED, 'Load failed'))
+          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+          .fontColor($r('sys.color.font_secondary'))
+          .width('100%')
+          .padding({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM, bottom: ThemeConstants.SPACE_XS })
+      }
+    }
+  }
 
   @Builder
   IgnoredTopicsContent() {
     if (!this.snapshot.ownerKey) {
-      ListItem() {
-        EmptyState({
-          message: AppStrings.text(AppStrings.R_LOGIN_TO_VIEW_BLOCKED, 'Log in to view blocked lists'),
-          stateHeight: 220,
-        })
-      }
+      this.BlockedEmptyState(AppStrings.text(AppStrings.R_LOGIN_TO_VIEW_BLOCKED, 'Log in to view blocked lists'))
     } else if ((this.syncInFlight || this.loadingTopics) && this.snapshot.ignoredTopicIds.length === 0 && this.topics.length === 0) {
-      ListItem() {
-        EmptyState({
-          message: AppStrings.text(AppStrings.R_COMMON_LOADING, 'Loading…'),
-          stateHeight: 220,
-        })
-      }
+      this.BlockedEmptyState(AppStrings.text(AppStrings.R_COMMON_LOADING, 'Loading…'))
     } else if (this.snapshot.ignoredTopicIds.length === 0) {
-      ListItem() {
-        EmptyState({
-          message: AppStrings.text(AppStrings.R_NO_IGNORED_TOPICS, 'No blocked topics'),
-          stateHeight: 220,
-        })
-      }
+      this.BlockedEmptyState(AppStrings.text(AppStrings.R_NO_IGNORED_TOPICS, 'No blocked topics'))
     } else if (this.topics.length === 0) {
-      ListItem() {
-        EmptyState({
-          message: AppStrings.text(AppStrings.R_COMMON_LOAD_FAILED, 'Load failed'),
-          stateHeight: 220,
-        })
-      }
+      this.BlockedEmptyState(AppStrings.text(AppStrings.R_COMMON_LOAD_FAILED, 'Load failed'))
     } else {
       ForEach(this.topics, (item: V2exTopic) => {
         ListItem() {
@@ -109,8 +109,6 @@ export struct BlockedListsPage {
             created: item.created,
             replyCount: item.replies,
             hasReplyCount: true,
-            metaLabel: AppStrings.text(AppStrings.R_IGNORED_TOPICS, 'Blocked topics'),
-            metaTimestamp: this.snapshot.updatedAt,
             onUserClick: () => { this.openTopic(item.id) },
             onNodeClick: () => { this.openTopic(item.id) },
           })
@@ -124,30 +122,17 @@ export struct BlockedListsPage {
   @Builder
   BlockedMembersContent() {
     if (!this.snapshot.ownerKey) {
-      ListItem() {
-        EmptyState({
-          message: AppStrings.text(AppStrings.R_LOGIN_TO_VIEW_BLOCKED, 'Log in to view blocked lists'),
-          stateHeight: 220,
-        })
-      }
+      this.BlockedEmptyState(AppStrings.text(AppStrings.R_LOGIN_TO_VIEW_BLOCKED, 'Log in to view blocked lists'))
     } else if ((this.syncInFlight || this.loadingMembers) && this.snapshot.blockedMemberIds.length === 0 && this.members.length === 0) {
-      ListItem() {
-        EmptyState({
-          message: AppStrings.text(AppStrings.R_COMMON_LOADING, 'Loading…'),
-          stateHeight: 220,
-        })
-      }
+      this.BlockedEmptyState(AppStrings.text(AppStrings.R_COMMON_LOADING, 'Loading…'))
     } else if (this.snapshot.blockedMemberIds.length === 0) {
-      ListItem() {
-        EmptyState({
-          message: AppStrings.text(AppStrings.R_NO_BLOCKED_USERS, 'No blocked users'),
-          stateHeight: 220,
-        })
-      }
+      this.BlockedEmptyState(AppStrings.text(AppStrings.R_NO_BLOCKED_USERS, 'No blocked users'))
+    } else if (this.loadingMembers && this.members.every((item: BlockedMemberListItem) => !item.resolved)) {
+      this.BlockedEmptyState(AppStrings.text(AppStrings.R_COMMON_LOADING, 'Loading…'))
     } else {
       ForEach(this.members, (item: BlockedMemberListItem) => {
         ListItem() {
-          this.MemberRow(item)
+          this.BlockedMemberCard(item)
         }
         .onClick(() => { this.openMember(item) })
       }, (item: BlockedMemberListItem) => `blocked-member-${item.id}`)
@@ -155,29 +140,52 @@ export struct BlockedListsPage {
   }
 
   @Builder
-  MemberRow(item: BlockedMemberListItem) {
+  BlockedEmptyState(message: string) {
+    ListItem() {
+      EmptyState({
+        message: message,
+        stateHeight: this.EMPTY_STATE_HEIGHT,
+      })
+        .width('100%')
+        .borderRadius(ThemeConstants.RADIUS_CARD)
+        .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+    }
+  }
+
+  @Builder
+  BlockedMemberCard(item: BlockedMemberListItem) {
     Row({ space: ThemeConstants.SPACE_MD }) {
-      Avatar({ url: item.avatar, avatarSize: 44 })
+      Avatar({ url: item.avatar, avatarSize: this.MEMBER_AVATAR_SIZE })
       Column({ space: ThemeConstants.SPACE_XS }) {
-        Text(item.username || AppStrings.format('#{0}', [String(item.id)]))
+        Text(this.memberTitle(item))
           .fontSize(ThemeConstants.FONT_SIZE_BODY)
           .fontWeight(FontWeight.Medium)
           .fontColor($r('sys.color.font_primary'))
           .maxLines(1)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
-        Text(this.memberMeta(item))
-          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-          .fontColor($r('sys.color.font_secondary'))
-          .maxLines(1)
-          .textOverflow({ overflow: TextOverflow.Ellipsis })
+        if (this.memberMeta(item)) {
+          Text(this.memberMeta(item))
+            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+            .fontColor($r('sys.color.font_secondary'))
+            .maxLines(1)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
+        }
       }
       .layoutWeight(1)
       .alignItems(HorizontalAlign.Start)
     }
     .width('100%')
-    .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG, top: ThemeConstants.SPACE_MD, bottom: ThemeConstants.SPACE_MD })
+    .height(this.MEMBER_ROW_MIN_HEIGHT)
+    .padding({
+      left: ThemeConstants.SPACE_LG,
+      right: ThemeConstants.SPACE_LG,
+      top: ThemeConstants.SPACE_MD,
+      bottom: ThemeConstants.SPACE_MD,
+    })
+    .borderRadius(ThemeConstants.RADIUS_CARD)
     .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }
+
 
   private refreshAll(trigger: string = 'manual_refresh'): Promise<void> {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
@@ -316,15 +324,23 @@ export struct BlockedListsPage {
   }
 
   private memberMeta(item: BlockedMemberListItem): string {
-    const parts: string[] = [AppStrings.format('ID {0}', [String(item.id)])]
-    if (item.created > 0) {
-      parts.push(DateUtils.toDateString(item.created))
-    }
+    const parts: string[] = []
     if (item.tagline) {
       parts.push(item.tagline)
     }
+    if (item.resolved && item.username) {
+      parts.push(`#${item.id}`)
+    }
     return parts.join(' · ')
   }
+
+  private memberTitle(item: BlockedMemberListItem): string {
+    if (item.username) {
+      return item.username
+    }
+    return `#${item.id}`
+  }
+
 
   private uniqueIds(ids: number[]): number[] {
     const result: number[] = []
@@ -339,4 +355,5 @@ export struct BlockedListsPage {
     }
     return result
   }
+
 }
