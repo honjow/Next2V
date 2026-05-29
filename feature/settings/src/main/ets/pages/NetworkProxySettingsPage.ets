@@ -22,6 +22,101 @@ import {
 } from 'shared'
 import { SettingsSectionHeader } from '../components/SettingsPageComponents'
 
+// State Management V2 row model for a network proxy profile. Identity is the
+// profile `id`; `name` and the normalized `snapshot` are @Trace so editing a
+// same-id profile refreshes its row in place. This is what lets the ForEach key
+// stay a pure identity key instead of churning on `updatedAt`.
+@ObservedV2
+class NetworkProxyProfileRow {
+  id: string = ''
+  @Trace name: string = ''
+  @Trace snapshot: NetworkProxySettingsSnapshot = NetworkProxySettings.defaultSnapshot()
+
+  constructor(id: string) {
+    this.id = id
+  }
+
+  applyProfile(profile: NetworkProxyProfile): void {
+    this.name = profile.name || ''
+    // normalize() returns a fresh normalized snapshot (new object + new
+    // exclusionList array), so assigning it is a @Trace reference change.
+    this.snapshot = NetworkProxySettings.normalize(profile.snapshot)
+  }
+}
+
+// V2 row view. Selection/enabled are page-level state passed down as @Param
+// (they are cross-row/global, not row state); select/edit/apply are @Event
+// callbacks. Reading the @Trace fields here is what subscribes the row to
+// in-place profile edits.
+@ComponentV2
+struct NetworkProxyProfileRowView {
+  @Param row: NetworkProxyProfileRow = new NetworkProxyProfileRow('')
+  @Param selected: boolean = false
+  // Named `rowEnabled` (not `enabled`) because `enabled` collides with the
+  // built-in CustomComponent `.enabled()` universal attribute.
+  @Param rowEnabled: boolean = true
+  @Event onSelect: () => void = () => {}
+  @Event onEdit: () => void = () => {}
+  @Event onApply: () => void = () => {}
+
+  build() {
+    ConciseListRow({
+      title: this.rowTitle(),
+      subtitle: this.rowSubtitle(),
+      showChevron: false,
+      isEnabled: this.rowEnabled,
+      prefixBuilderParam: (): void => this.SelectionRadio(),
+      suffixBuilderParam: (): void => this.EditButton(),
+      action: () => { this.onApply() },
+    })
+  }
+
+  @Builder
+  SelectionRadio() {
+    // Shares the 'networkProxyProfiles' radio group with the system-proxy radio
+    // rendered by the page. Kept fully state-controlled via `selected` so group
+    // exclusivity follows page state across the V1/V2 boundary.
+    Radio({ value: this.row.id, group: 'networkProxyProfiles' })
+      .checked(this.selected)
+      .onChange((checked: boolean) => {
+        if (!checked) {
+          return
+        }
+        this.onSelect()
+      })
+  }
+
+  @Builder
+  EditButton() {
+    Button() {
+      SymbolGlyph($r('sys.symbol.gearshape'))
+        .fontSize(ThemeConstants.FONT_SIZE_TITLE)
+        .fontColor([$r('sys.color.font_secondary')])
+    }
+    .width(40)
+    .height(40)
+    .borderRadius(ThemeConstants.RADIUS_ROUND)
+    .backgroundColor(Color.Transparent)
+    .onClick(() => { this.onEdit() })
+  }
+
+  private rowTitle(): ResourceStr {
+    const name = (this.row.name || '').trim()
+    if (name) {
+      return name
+    }
+    const snapshot = NetworkProxySettings.normalize(this.row.snapshot)
+    if (snapshot.host && snapshot.port > 0) {
+      return `${snapshot.host}:${snapshot.port}`
+    }
+    return AppStrings.R_PROXY_CONFIG_TITLE
+  }
+
+  private rowSubtitle(): ResourceStr {
+    return NetworkProxySettings.summary(this.row.snapshot)
+  }
+}
+
 @Component
 export struct NetworkProxySettingsPage {
   @StorageLink(StorageKeys.NETWORK_PROXY_MODE) mode: string = NetworkProxySettings.MODE_OFF
@@ -35,7 +130,10 @@ export struct NetworkProxySettingsPage {
   @State private portText: string = ''
   @State private testStatus: string = ''
   @State private testing: boolean = false
-  @State private profiles: NetworkProxyProfile[] = []
+  @State private profiles: NetworkProxyProfileRow[] = []
+  // One stable observed row object per profile id, reused across reloads and
+  // edits so same-id rows update in place (no ForEach key churn).
+  private profileRowsById: Map<string, NetworkProxyProfileRow> = new Map()
   @State private activeProfileId: string = ''
   @State private profileEditorVisible: boolean = false
   @State private editingProfileId: string = ''
@@ -99,12 +197,19 @@ export struct NetworkProxySettingsPage {
       ConciseListRow({
         title: AppStrings.R_SYSTEM_PROXY,
         showChevron: false,
-        prefixBuilderParam: (): void => this.ProxySelectionRadio(NetworkProxySettings.MODE_SYSTEM),
+        prefixBuilderParam: (): void => this.SystemProxyRadio(),
         action: () => { this.selectSystemProxy() },
       })
-      ForEach(this.profiles, (profile: NetworkProxyProfile) => {
-        this.ManualProfileRow(profile)
-      }, (profile: NetworkProxyProfile) => `${profile.id}-${profile.updatedAt}`)
+      ForEach(this.profiles, (row: NetworkProxyProfileRow) => {
+        NetworkProxyProfileRowView({
+          row: row,
+          selected: this.isProfileSelected(row.id),
+          rowEnabled: true,
+          onSelect: () => { this.selectProfileById(row.id) },
+          onEdit: () => { this.openProfileEditor(row) },
+          onApply: () => { this.applyProfile(row) },
+        })
+      }, (row: NetworkProxyProfileRow) => `proxy-profile-${row.id}`)
       ConciseListRow({
         title: AppStrings.R_ADD_PROXY,
         showChevron: true,
@@ -126,53 +231,15 @@ export struct NetworkProxySettingsPage {
   }
 
   @Builder
-  ManualProfileRow(profile: NetworkProxyProfile) {
-    ConciseListRow({
-      title: this.profileDisplayTitle(profile),
-      subtitle: this.profileSubtitle(profile),
-      showChevron: false,
-      prefixBuilderParam: (): void => this.ProxySelectionRadio(profile.id),
-      suffixBuilderParam: (): void => this.EditProfileButton(profile.id),
-      action: () => { this.applyProfile(profile) },
-    })
-  }
-
-  @Builder
-  ProxySelectionRadio(profileId: string) {
-    Radio({ value: profileId, group: 'networkProxyProfiles' })
-      .checked(this.proxyEnabled() && this.selectedProfileId() === profileId)
+  SystemProxyRadio() {
+    Radio({ value: NetworkProxySettings.MODE_SYSTEM, group: 'networkProxyProfiles' })
+      .checked(this.proxyEnabled() && this.selectedProfileId() === NetworkProxySettings.MODE_SYSTEM)
       .onChange((checked: boolean) => {
         if (!checked) {
           return
         }
-        if (profileId === NetworkProxySettings.MODE_SYSTEM) {
-          this.selectSystemProxy()
-          return
-        }
-        const profile = this.findProfile(profileId)
-        if (profile) {
-          this.applyProfile(profile)
-        }
+        this.selectSystemProxy()
       })
-  }
-
-  @Builder
-  EditProfileButton(profileId: string) {
-    Button() {
-      SymbolGlyph($r('sys.symbol.gearshape'))
-        .fontSize(ThemeConstants.FONT_SIZE_TITLE)
-        .fontColor([$r('sys.color.font_secondary')])
-    }
-    .width(40)
-    .height(40)
-    .borderRadius(ThemeConstants.RADIUS_ROUND)
-    .backgroundColor(Color.Transparent)
-    .onClick(() => {
-      const profile = this.findProfile(profileId)
-      if (profile) {
-        this.openProfileEditor(profile)
-      }
-    })
   }
 
   @Builder
@@ -440,19 +507,7 @@ export struct NetworkProxySettingsPage {
     return NetworkProxySettings.summary(this.snapshot())
   }
 
-  private profileDisplayTitle(profile: NetworkProxyProfile): ResourceStr {
-    const name = (profile.name || '').trim()
-    if (name) {
-      return name
-    }
-    const snapshot = NetworkProxySettings.normalize(profile.snapshot)
-    if (snapshot.host && snapshot.port > 0) {
-      return `${snapshot.host}:${snapshot.port}`
-    }
-    return AppStrings.R_PROXY_CONFIG_TITLE
-  }
-
-  private profileTitle(profile: NetworkProxyProfile): string {
+  private profileTitle(profile: NetworkProxyProfileRow): string {
     const name = (profile.name || '').trim()
     if (name) {
       return name
@@ -462,10 +517,6 @@ export struct NetworkProxySettingsPage {
       return `${snapshot.host}:${snapshot.port}`
     }
     return AppStrings.text(AppStrings.R_PROXY_CONFIG_TITLE, 'Proxy configuration')
-  }
-
-  private profileSubtitle(profile: NetworkProxyProfile): ResourceStr {
-    return NetworkProxySettings.summary(profile.snapshot)
   }
 
   private snapshot(): NetworkProxySettingsSnapshot {
@@ -622,7 +673,7 @@ export struct NetworkProxySettingsPage {
       })
   }
 
-  private applyProfile(profile: NetworkProxyProfile): void {
+  private applyProfile(profile: NetworkProxyProfileRow): void {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     NetworkProxyProfileSettings.setActiveProfile(context, profile.id)
       .then((state) => {
@@ -651,7 +702,7 @@ export struct NetworkProxySettingsPage {
     }))
   }
 
-  private openProfileEditor(profile: NetworkProxyProfile): void {
+  private openProfileEditor(profile: NetworkProxyProfileRow): void {
     this.openEditor(profile.id, profile.name, profile.snapshot)
   }
 
@@ -713,7 +764,7 @@ export struct NetworkProxySettingsPage {
     })
   }
 
-  private deleteProfile(profile: NetworkProxyProfile): void {
+  private deleteProfile(profile: NetworkProxyProfileRow): void {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     NetworkProxyProfileSettings.deleteProfile(context, profile.id)
       .then((state) => {
@@ -734,8 +785,53 @@ export struct NetworkProxySettingsPage {
   }
 
   private applyProfilesState(state: NetworkProxyProfilesState): void {
-    this.profiles = this.cloneProfiles(state.profiles)
+    this.applyProfiles(state.profiles)
     this.activeProfileId = state.activeProfileId
+  }
+
+  // Reuse/prune stable row objects by id, then apply latest name + normalized
+  // snapshot in place. Reassigning this.profiles only re-keys membership/order;
+  // unchanged-id rows keep their identity and refresh via @Trace.
+  private applyProfiles(profiles: NetworkProxyProfile[]): void {
+    const rows = this.ensureProfileRowsForIds(profiles.map((profile: NetworkProxyProfile) => profile.id))
+    for (let index = 0; index < profiles.length; index++) {
+      rows[index].applyProfile(profiles[index])
+    }
+    this.profiles = rows
+  }
+
+  private ensureProfileRowsForIds(ids: string[]): NetworkProxyProfileRow[] {
+    const validIds: Set<string> = new Set(ids)
+    const byId: Map<string, NetworkProxyProfileRow> = this.profileRowsById
+    for (const existingId of Array.from(byId.keys())) {
+      if (!validIds.has(existingId)) {
+        byId.delete(existingId)
+      }
+    }
+    return ids.map((id: string): NetworkProxyProfileRow => this.profileRowForId(id))
+  }
+
+  private profileRowForId(id: string): NetworkProxyProfileRow {
+    const existing = this.profileRowsById.get(id)
+    if (existing) {
+      return existing
+    }
+    const row = new NetworkProxyProfileRow(id)
+    this.profileRowsById.set(id, row)
+    return row
+  }
+
+  // Selection/mode/active are page state, not row state; computed here and
+  // passed to the V2 row as @Param so radio exclusivity tracks page state.
+  private isProfileSelected(id: string): boolean {
+    return this.proxyEnabled() && this.selectedProfileId() === id
+  }
+
+  private selectProfileById(id: string): void {
+    const profile = this.findProfile(id)
+    if (profile) {
+      this.applyProfile(profile)
+    }
   }
 
   private profileSwitchErrorMessage(error: Error): string {
@@ -752,27 +848,7 @@ export struct NetworkProxySettingsPage {
     return error.message || AppStrings.text(AppStrings.R_COMMON_SAVE_FAILED, 'Save failed')
   }
 
-  private cloneProfiles(profiles: NetworkProxyProfile[]): NetworkProxyProfile[] {
-    return profiles.map((profile: NetworkProxyProfile): NetworkProxyProfile => {
-      const snapshot = NetworkProxySettings.normalize(profile.snapshot)
-      return {
-        id: profile.id,
-        name: profile.name,
-        snapshot: {
-          mode: snapshot.mode,
-          host: snapshot.host,
-          port: snapshot.port,
-          proxyScheme: snapshot.proxyScheme,
-          username: snapshot.username,
-          password: snapshot.password,
-          exclusionList: [...snapshot.exclusionList],
-        },
-        updatedAt: profile.updatedAt,
-      }
-    })
-  }
-
-  private findProfile(id: string): NetworkProxyProfile | undefined {
+  private findProfile(id: string): NetworkProxyProfileRow | undefined {
     for (const profile of this.profiles) {
       if (profile.id === id) {
         return profile
