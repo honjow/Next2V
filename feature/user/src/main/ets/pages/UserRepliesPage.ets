@@ -1,17 +1,19 @@
 import { UserRepliesViewModel } from '../viewmodel/UserViewModel'
 import {
-  AppStrings, CardEmptyState, NodeTopicListParams, PageErrorState, PageLoadingState,
-  SecondaryListScaffold, StorageKeys, TopicDetailParams, UserProfileParams, ImagePreviewParams, V2exRoute,
+  AppStrings, CardEmptyState, connectNavStack, NodeTopicListParams, PageErrorState, PageLoadingState,
+  SearchQueryBus, SecondaryListScaffold, TopicDetailParams, UserProfileParams, ImagePreviewParams, V2exRoute,
   V2exUrlRouter, V2exUserReply
 } from 'shared'
 import { common, Want } from '@kit.AbilityKit'
 import { UserRepliesCard } from '../components/UserRepliesComponents'
 
-@Component
+@ComponentV2
 export struct UserRepliesPage {
-  @Prop username: string = ''
-  @Consume('ns') stack: NavPathStack
-  @State vm: UserRepliesViewModel = new UserRepliesViewModel(this.username)
+  @Param username: string = ''
+  // Same NavPathStack instance HdsNavigation is bound to (see NavStackHolder).
+  // Used purely as a method target (pushPathByName), so no V2 reactivity is needed.
+  private stack: NavPathStack = connectNavStack().stack
+  @Local vm: UserRepliesViewModel = new UserRepliesViewModel(this.username)
 
   aboutToAppear(): void { this.vm.load() }
 
@@ -128,7 +130,7 @@ export struct UserRepliesPage {
       return
     }
     if (route.kind === 'search' && route.query) {
-      AppStorage.setOrCreate<string>(StorageKeys.PENDING_SEARCH_QUERY, `${Date.now()}:${route.query}`)
+      SearchQueryBus.publishPending(route.query)
       this.stack.pushPathByName('Search', null)
     }
   }

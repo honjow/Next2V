@@ -221,6 +221,7 @@ export { NodeSearchUtils } from './utils/NodeSearchUtils'
 export type { NodeSearchMatch } from './utils/NodeSearchUtils'
 export { V2exUrlRouter } from './utils/V2exUrlRouter'
 export type { V2exRoute, V2exRouteKind } from './utils/V2exUrlRouter'
+export { SearchQueryBus } from './utils/SearchQueryBus'
 
 // Adaptive utilities
 export { BreakpointSystem } from './utils/BreakpointSystem'

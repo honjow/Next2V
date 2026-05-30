@@ -224,15 +224,19 @@ export class UserTopicsViewModel {
   }
 }
 
-@Observed
+// @ObservedV2 (not V1 @Observed) so the V2 @ComponentV2 UserRepliesPage observes
+// the build()-read scalars below via @Trace. Page-exclusive VM — converting it does
+// not affect the still-V1 UserViewModel / UserTopicsViewModel in this file.
+// replyDataSource is a plain IDataSource observed by LazyForEach, so it needs no @Trace.
+@ObservedV2
 export class UserRepliesViewModel {
   replyDataSource: ReplyDataSource = new ReplyDataSource()
   username: string = ''
   page: number = 1
   hasMore: boolean = true
-  isLoading: boolean = false
-  isLoadingMore: boolean = false
-  errorMessage: string = ''
+  @Trace isLoading: boolean = false
+  @Trace isLoadingMore: boolean = false
+  @Trace errorMessage: string = ''
 
   private api: ApiService = new ApiService()
 
