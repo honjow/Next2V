@@ -18,14 +18,14 @@ function defaultReply(): V2exUserReply {
   }
 }
 
-@Component
+@ComponentV2
 export struct UserRepliesCard {
-  @Prop reply: V2exUserReply = defaultReply()
-  @Prop fallbackUsername: string = ''
-  openTopic?: () => void
-  openLink?: (url: string) => void
-  openImage?: (url: string) => void
-  openMention?: (username: string) => void
+  @Param reply: V2exUserReply = defaultReply()
+  @Param fallbackUsername: string = ''
+  @Event openTopic?: () => void
+  @Event openLink?: (url: string) => void
+  @Event openImage?: (url: string) => void
+  @Event openMention?: (username: string) => void
   private inlineActionInFlight: boolean = false
   private primaryActionInFlight: boolean = false
 

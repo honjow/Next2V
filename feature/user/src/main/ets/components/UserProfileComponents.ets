@@ -29,7 +29,7 @@ function defaultProfile(): V2exMemberProfile {
   }
 }
 
-@Component
+@ComponentV2
 export struct UserProfileLoadingState {
   build() {
     Column() {
@@ -42,10 +42,10 @@ export struct UserProfileLoadingState {
   }
 }
 
-@Component
+@ComponentV2
 export struct UserProfileErrorState {
-  @Prop message: string = ''
-  retryAction?: () => void
+  @Param message: string = ''
+  @Event retryAction?: () => void
 
   build() {
     Column() {
@@ -67,11 +67,11 @@ export struct UserProfileErrorState {
   }
 }
 
-@Component
+@ComponentV2
 export struct UserProfileCard {
-  @Prop profile: V2exMemberProfile = defaultProfile()
-  @Prop displayUsername: string = ''
-  onUsernameAreaChange?: (bottom: number) => void
+  @Param profile: V2exMemberProfile = defaultProfile()
+  @Param displayUsername: string = ''
+  @Event onUsernameAreaChange?: (bottom: number) => void
 
   build() {
     Column({ space: ThemeConstants.SPACE_MD }) {
@@ -185,10 +185,10 @@ export struct UserProfileCard {
   }
 }
 
-@Component
+@ComponentV2
 export struct UserProfileAllActivityButton {
-  @Prop label: string = ''
-  openAction?: () => void
+  @Param label: string = ''
+  @Event openAction?: () => void
 
   build() {
     Button(this.label)
@@ -206,9 +206,9 @@ export struct UserProfileAllActivityButton {
   }
 }
 
-@Component
+@ComponentV2
 export struct UserProfileEmptyCard {
-  @Prop message: string = ''
+  @Param message: string = ''
 
   build() {
     Text(this.message)
@@ -222,9 +222,9 @@ export struct UserProfileEmptyCard {
   }
 }
 
-@Component
+@ComponentV2
 export struct UserProfileReplyCard {
-  @Prop reply: V2exUserReply = {
+  @Param reply: V2exUserReply = {
     topic_id: 0,
     topic_title: '',
     target_floor: 0,
@@ -234,11 +234,11 @@ export struct UserProfileReplyCard {
     content: '',
     created: 0
   }
-  @Prop fallbackUsername: string = ''
-  openTopic?: () => void
-  openLink?: (url: string) => void
-  openImage?: (url: string) => void
-  openMention?: (username: string) => void
+  @Param fallbackUsername: string = ''
+  @Event openTopic?: () => void
+  @Event openLink?: (url: string) => void
+  @Event openImage?: (url: string) => void
+  @Event openMention?: (username: string) => void
   private inlineActionInFlight: boolean = false
   private primaryActionInFlight: boolean = false
 

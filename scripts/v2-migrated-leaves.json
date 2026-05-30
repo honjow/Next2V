@@ -10,6 +10,8 @@
     "feature/node/src/main/ets/components/NodePickerComponents.ets",
     "feature/settings/src/main/ets/components/SettingsPageComponents.ets",
     "feature/settings/src/main/ets/pages/StorageSettingsPage.ets",
+    "feature/user/src/main/ets/components/UserProfileComponents.ets",
+    "feature/user/src/main/ets/components/UserRepliesComponents.ets",
     "shared/src/main/ets/components/AccountMemberRow.ets",
     "shared/src/main/ets/components/AppActionButton.ets",
     "shared/src/main/ets/components/ConciseListRow.ets",
