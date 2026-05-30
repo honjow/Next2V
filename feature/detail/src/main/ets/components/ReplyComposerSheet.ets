@@ -12,35 +12,38 @@ import {
 import {
   ApiService,
   AppStrings,
+  connectLayoutSafeArea,
   CookieJarSettings,
   DateUtils,
+  LayoutSafeAreaState,
   MarkdownContent,
   MarkdownToolbar,
   AppModalScaffold,
-  StorageKeys,
   ThemeConstants,
   translateApiError
 } from 'shared'
 
-@Component
+@ComponentV2
 export struct ReplyComposerSheet {
-  @Prop topicId: number = 0
-  @Prop topicTitle: string = ''
-  @Prop @Watch('onInitialContentChanged') initialContent: string = ''
-  @StorageProp(StorageKeys.KEYBOARD_HEIGHT) keyboardH: number = 0
+  @Param topicId: number = 0
+  @Param topicTitle: string = ''
+  @Param initialContent: string = ''
+  // Keyboard height mirrored into AppStorageV2 by EntryAbility's dual-write bridge
+  // (was @StorageProp(StorageKeys.KEYBOARD_HEIGHT)); drives composerBodyHeight().
+  layout: LayoutSafeAreaState = connectLayoutSafeArea()
 
-  closeAction?: () => void
-  submittedAction?: () => void
+  @Event closeAction?: () => void
+  @Event submittedAction?: () => void
 
-  @State private content: string = ''
-  @State private isPreview: boolean = false
-  @State private errorMessage: string = ''
-  @State private savedAt: number = 0
-  @State private isSubmitting: boolean = false
-  @State private isSubmitDialogShown: boolean = false
-  @State private contentSelectionStart: number = 0
-  @State private contentSelectionEnd: number = 0
-  @State private submitContentSnapshot: string = ''
+  @Local private content: string = ''
+  @Local private isPreview: boolean = false
+  @Local private errorMessage: string = ''
+  @Local private savedAt: number = 0
+  @Local private isSubmitting: boolean = false
+  @Local private isSubmitDialogShown: boolean = false
+  @Local private contentSelectionStart: number = 0
+  @Local private contentSelectionEnd: number = 0
+  @Local private submitContentSnapshot: string = ''
 
   private contentController: TextAreaController = new TextAreaController()
   private api: ApiService = new ApiService()
@@ -58,7 +61,8 @@ export struct ReplyComposerSheet {
     }
   }
 
-  onInitialContentChanged(_propName: string): void {
+  @Monitor('initialContent')
+  onInitialContentChanged(): void {
     const seed = ReplyComposerCoordinator.normalizeInitialContent(this.initialContent)
     if (!seed) {
       return
@@ -275,7 +279,7 @@ export struct ReplyComposerSheet {
   }
 
   private composerBodyHeight(): number {
-    return ReplyComposerCoordinator.composerBodyHeight(this.keyboardH)
+    return ReplyComposerCoordinator.composerBodyHeight(this.layout.keyboardHeight)
   }
 
   private savedAtText(): string {
