@@ -133,9 +133,10 @@ export struct RemoteSearchFilterSheetContent {
 
       Row({ space: ThemeConstants.SPACE_XS }) {
         AppTextField({
-          text: $remoteUsername,
+          text: this.remoteUsername,
           placeholder: $r('app.string.common_author'),
-          onTextChange: (_value: string) => {
+          onTextChange: (value: string) => {
+            this.remoteUsername = value
             if (this.remoteTextChange) {
               this.remoteTextChange()
             }
@@ -143,9 +144,10 @@ export struct RemoteSearchFilterSheetContent {
         })
           .layoutWeight(1)
         AppTextField({
-          text: $remoteNode,
+          text: this.remoteNode,
           placeholder: $r('app.string.common_node'),
-          onTextChange: (_value: string) => {
+          onTextChange: (value: string) => {
+            this.remoteNode = value
             if (this.remoteTextChange) {
               this.remoteTextChange()
             }
@@ -233,9 +235,10 @@ export struct SearchPanelHeader {
   build() {
     Column({ space: ThemeConstants.SPACE_SM }) {
       AppSearchField({
-        text: $keyword,
+        text: this.keyword,
         placeholder: $r('app.string.search_topics_nodes_users_placeholder'),
         onTextChange: (value: string) => {
+          this.keyword = value
           if (this.onTextChange) {
             this.onTextChange(value)
           }

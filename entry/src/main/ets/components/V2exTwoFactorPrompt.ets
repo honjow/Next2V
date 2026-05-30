@@ -47,7 +47,7 @@ export struct V2exTwoFactorPrompt {
             .width('100%')
 
           AppTextField({
-            text: $code,
+            text: this.code,
             placeholder: AppStrings.text(AppStrings.R_TWO_FACTOR_CODE_PLACEHOLDER, 'Enter 6-digit code'),
             inputType: InputType.Number,
             onTextChange: (value: string) => { this.code = value }

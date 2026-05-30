@@ -16,6 +16,8 @@
     "feature/user/src/main/ets/components/UserRepliesComponents.ets",
     "shared/src/main/ets/components/AccountMemberRow.ets",
     "shared/src/main/ets/components/AppActionButton.ets",
+    "shared/src/main/ets/components/AppSearchField.ets",
+    "shared/src/main/ets/components/AppTextField.ets",
     "shared/src/main/ets/components/ConciseListRow.ets",
     "shared/src/main/ets/components/EmptyState.ets",
     "shared/src/main/ets/components/FilterChip.ets",

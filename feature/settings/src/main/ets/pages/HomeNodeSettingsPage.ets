@@ -118,7 +118,7 @@ export struct HomeNodeSettingsPage {
 
       Column({ space: ThemeConstants.SPACE_SM }) {
         AppTextField({
-          text: $nodeTabName,
+          text: this.nodeTabName,
           placeholder: AppStrings.R_NODE_NAME_PLACEHOLDER,
           onTextChange: (value: string) => {
             this.nodeTabName = value

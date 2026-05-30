@@ -121,14 +121,14 @@ export struct V2exNativeLoginPage {
   @Builder LoginForm() {
     Column({ space: ThemeConstants.SPACE_SM }) {
       AppTextField({
-        text: $username,
+        text: this.username,
         placeholder: $r('app.string.username_or_email_placeholder'),
         onTextChange: (value: string) => {
           this.username = value
         },
       }).width('100%')
       AppTextField({
-        text: $password,
+        text: this.password,
         placeholder: AppStrings.text(AppStrings.R_LOGIN_PASSWORD_PLACEHOLDER, 'Password'),
         inputType: InputType.Password,
         onTextChange: (value: string) => {
@@ -140,7 +140,7 @@ export struct V2exNativeLoginPage {
         Column({ space: ThemeConstants.SPACE_SM }) {
           this.CaptchaImageSlot()
           AppTextField({
-            text: $captchaCode,
+            text: this.captchaCode,
             placeholder: AppStrings.text(AppStrings.R_LOGIN_CAPTCHA_PLACEHOLDER, 'Captcha'),
             onTextChange: (value: string) => {
               this.captchaCode = value

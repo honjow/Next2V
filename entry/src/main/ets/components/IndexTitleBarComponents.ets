@@ -290,8 +290,11 @@ struct DiscoverSearchComponent {
   build() {
     Row() {
       AppSearchField({
-        text: $keyword,
+        text: this.keyword,
         placeholder: $r('app.string.search_discover_nodes_placeholder'),
+        onTextChange: (value: string) => {
+          this.keyword = value
+        },
       })
     }
     .width('100%')

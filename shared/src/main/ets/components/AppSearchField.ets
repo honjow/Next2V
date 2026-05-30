@@ -1,19 +1,32 @@
 import { ThemeConstants } from '../theme/ThemeConstants'
 
-@Component
+@ComponentV2
 export struct AppSearchField {
-  @Link text: string
-  @Prop placeholder: ResourceStr = ''
-  onTextChange?: (value: string) => void
-  onSubmit?: (value: string) => void
+  // V2 two-way replacement for the former @Link text (see AppTextField for the pattern).
+  @Param text: string = ''
+  @Local fieldText: string = ''
+  @Param placeholder: ResourceStr = ''
+  @Event onTextChange?: (value: string) => void
+  @Event onSubmit?: (value: string) => void
+
+  aboutToAppear(): void {
+    this.fieldText = this.text
+  }
+
+  @Monitor('text')
+  onExternalTextChange(): void {
+    if (this.text !== this.fieldText) {
+      this.fieldText = this.text
+    }
+  }
 
   build() {
-    Search({ value: this.text, placeholder: this.placeholder })
+    Search({ value: this.fieldText, placeholder: this.placeholder })
       .height(40)
       .width('100%')
       .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
       .onChange((value: string) => {
-        this.text = value
+        this.fieldText = value
         if (this.onTextChange) {
           this.onTextChange(value)
         }

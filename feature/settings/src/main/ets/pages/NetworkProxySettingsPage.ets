@@ -382,7 +382,7 @@ export struct NetworkProxySettingsPage {
     Column({ space: ThemeConstants.SPACE_XS }) {
       this.FieldLabel(AppStrings.R_PROXY_NAME_PLACEHOLDER)
       AppTextField({
-        text: $editorName,
+        text: this.editorName,
         placeholder: AppStrings.R_DEFAULT_SERVER_PORT,
         onTextChange: (value: string) => { this.editorName = value }
       })
@@ -396,7 +396,7 @@ export struct NetworkProxySettingsPage {
     Column({ space: ThemeConstants.SPACE_XS }) {
       this.FieldLabel(AppStrings.R_SERVER)
       AppTextField({
-        text: $editorHost,
+        text: this.editorHost,
         placeholder: '127.0.0.1',
         onTextChange: (value: string) => { this.editorHost = value }
       })
@@ -410,7 +410,7 @@ export struct NetworkProxySettingsPage {
     Column({ space: ThemeConstants.SPACE_XS }) {
       this.FieldLabel(AppStrings.R_PORT)
       AppTextField({
-        text: $editorPortText,
+        text: this.editorPortText,
         placeholder: '7890',
         onTextChange: (value: string) => {
           this.editorPortText = value
@@ -427,7 +427,7 @@ export struct NetworkProxySettingsPage {
     Column({ space: ThemeConstants.SPACE_XS }) {
       this.FieldLabel(AppStrings.R_USERNAME_OPTIONAL)
       AppTextField({
-        text: $editorUsername,
+        text: this.editorUsername,
         placeholder: '',
         onTextChange: (value: string) => { this.editorUsername = value }
       })
@@ -441,7 +441,7 @@ export struct NetworkProxySettingsPage {
     Column({ space: ThemeConstants.SPACE_XS }) {
       this.FieldLabel(AppStrings.R_PASSWORD_OPTIONAL)
       AppTextField({
-        text: $editorPassword,
+        text: this.editorPassword,
         placeholder: '',
         inputType: InputType.Password,
         onTextChange: (value: string) => { this.editorPassword = value }

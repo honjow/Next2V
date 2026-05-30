@@ -84,7 +84,7 @@ export struct DomainSettingsPage {
     GroupedListSection({ inset: ThemeConstants.SPACE_XL, radius: ThemeConstants.RADIUS_CARD }) {
       Column({ space: ThemeConstants.SPACE_MD }) {
         AppTextField({
-          text: $customText,
+          text: this.customText,
           placeholder: 'https://edge.v2ex.com',
           onTextChange: (value: string) => {
             this.customText = value
