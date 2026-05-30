@@ -4,10 +4,10 @@ import { webview } from '@kit.ArkWeb'
  * HTML content rendering component
  * Renders V2EX content_rendered (HTML) via Web component
  */
-@Component
+@ComponentV2
 export struct HtmlContent {
-  @Prop html: string = ''
-  @Prop maxHeight: number = -1
+  @Param html: string = ''
+  @Param maxHeight: number = -1
   controller: webview.WebviewController = new webview.WebviewController()
 
   build() {

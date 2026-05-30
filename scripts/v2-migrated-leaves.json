@@ -4,13 +4,18 @@
     "shared/src/main/ets/components/AppActionButton.ets",
     "shared/src/main/ets/components/EmptyState.ets",
     "shared/src/main/ets/components/FilterChip.ets",
+    "shared/src/main/ets/components/GroupedListSection.ets",
+    "shared/src/main/ets/components/HtmlContent.ets",
     "shared/src/main/ets/components/ListDivider.ets",
     "shared/src/main/ets/components/LoadingFooter.ets",
     "shared/src/main/ets/components/MarkdownToolbar.ets",
     "shared/src/main/ets/components/NodeTag.ets",
     "shared/src/main/ets/components/PageState.ets",
+    "shared/src/main/ets/components/PagedListScaffold.ets",
     "shared/src/main/ets/components/SectionHeader.ets",
     "shared/src/main/ets/components/TimeAgo.ets",
-    "shared/src/main/ets/components/UserName.ets"
+    "shared/src/main/ets/components/UserName.ets",
+    "shared/src/main/ets/components/V2exWebView.ets",
+    "shared/src/main/ets/components/V2exWebViewScaffold.ets"
   ]
 }

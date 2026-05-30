@@ -1,13 +1,13 @@
 import { webview } from '@kit.ArkWeb'
 
-@Component
+@ComponentV2
 export struct V2exWebView {
-  controller: webview.WebviewController = new webview.WebviewController()
-  onControllerAttached?: () => void
-  onPageBegin?: (event?: OnPageBeginEvent) => void
-  onPageEnd?: (event?: OnPageEndEvent) => void
-  onLoadFinished?: (event?: OnLoadFinishedEvent) => void
-  onErrorReceive?: (event: OnErrorReceiveEvent) => void
+  @Param controller: webview.WebviewController = new webview.WebviewController()
+  @Event onControllerAttached?: () => void
+  @Event onPageBegin?: (event?: OnPageBeginEvent) => void
+  @Event onPageEnd?: (event?: OnPageEndEvent) => void
+  @Event onLoadFinished?: (event?: OnLoadFinishedEvent) => void
+  @Event onErrorReceive?: (event: OnErrorReceiveEvent) => void
 
   build() {
     ListItem() {

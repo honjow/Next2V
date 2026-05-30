@@ -4,32 +4,32 @@ import { LoadingFooter } from './LoadingFooter'
 import { PullRefreshListScaffold } from './PullRefreshListScaffold'
 import { AppStrings } from '../i18n/AppStrings'
 
-@Component
+@ComponentV2
 export struct PagedListScaffold {
   @BuilderParam content: () => void
   scroller: Scroller = new Scroller()
-  @Prop isInitialLoading: boolean = false
-  @Prop isEmpty: boolean = false
-  @Prop errorMessage: string = ''
-  @Prop emptyMessage: string = ''
-  @Prop isLoadingMore: boolean = false
-  @Prop hasMore: boolean = true
-  @Prop loadMoreErrorMessage: string = ''
-  @Prop loadMoreRetryLabel: string = ''
-  @Prop showFooter: boolean = true
-  @Prop listSpace: number = ThemeConstants.SPACE_SM - 2
-  @Prop horizontalPadding: number = ThemeConstants.SPACE_MD
-  @Prop topPadding: number = 0
-  @Prop bottomPadding: number = ThemeConstants.SPACE_XL
-  @Prop indicatorTop: number = -1
-  @Prop refreshThreshold: number = 120
-  @Prop scrollEnabled: boolean = true
-  retryAction?: () => void
-  secondaryLabel?: string
-  secondaryAction?: () => void
-  onRefresh?: () => Promise<void>
-  onReachEnd?: () => void
-  onLoadMoreRetry?: () => void
+  @Param isInitialLoading: boolean = false
+  @Param isEmpty: boolean = false
+  @Param errorMessage: string = ''
+  @Param emptyMessage: string = ''
+  @Param isLoadingMore: boolean = false
+  @Param hasMore: boolean = true
+  @Param loadMoreErrorMessage: string = ''
+  @Param loadMoreRetryLabel: string = ''
+  @Param showFooter: boolean = true
+  @Param listSpace: number = ThemeConstants.SPACE_SM - 2
+  @Param horizontalPadding: number = ThemeConstants.SPACE_MD
+  @Param topPadding: number = 0
+  @Param bottomPadding: number = ThemeConstants.SPACE_XL
+  @Param indicatorTop: number = -1
+  @Param refreshThreshold: number = 120
+  @Param scrollEnabled: boolean = true
+  @Event retryAction?: () => void
+  @Param secondaryLabel: string = ''
+  @Event secondaryAction?: () => void
+  @Event onRefresh?: () => Promise<void>
+  @Event onReachEnd?: () => void
+  @Event onLoadMoreRetry?: () => void
 
   build() {
     if (this.isInitialLoading) {

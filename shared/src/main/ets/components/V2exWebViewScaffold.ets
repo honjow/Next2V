@@ -1,13 +1,13 @@
 import { ThemeConstants } from '../theme/ThemeConstants'
 import { SecondaryListScaffold } from './SecondaryListScaffold'
 
-@Component
+@ComponentV2
 export struct V2exWebViewScaffold {
   @BuilderParam content: () => void
-  @Prop isStatusVisible: boolean = false
-  @Prop isStatusError: boolean = false
-  @Prop statusText: string = ''
-  @Prop statusMaxLines: number = 1
+  @Param isStatusVisible: boolean = false
+  @Param isStatusError: boolean = false
+  @Param statusText: string = ''
+  @Param statusMaxLines: number = 1
 
   build() {
     Column() {

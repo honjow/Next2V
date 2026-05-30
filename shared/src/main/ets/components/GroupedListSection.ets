@@ -1,10 +1,10 @@
 import { ThemeConstants } from '../theme/ThemeConstants'
 
-@Component
+@ComponentV2
 export struct GroupedListSection {
   @BuilderParam content: () => void
-  @Prop inset: number = ThemeConstants.LIST_SECTION_INSET
-  @Prop radius: number = ThemeConstants.RADIUS_CARD
+  @Param inset: number = ThemeConstants.LIST_SECTION_INSET
+  @Param radius: number = ThemeConstants.RADIUS_CARD
 
   build() {
     Column() {
