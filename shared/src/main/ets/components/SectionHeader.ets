@@ -1,8 +1,8 @@
 import { ThemeConstants } from '../theme/ThemeConstants'
 
-@Component
+@ComponentV2
 export struct SectionHeader {
-  @Prop title: ResourceStr = ''
+  @Param title: ResourceStr = ''
 
   build() {
     Text(this.title)

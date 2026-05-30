@@ -4,14 +4,14 @@ import { ThemeConstants } from '../theme/ThemeConstants'
 /**
  * List footer loading state indicator.
  */
-@Component
+@ComponentV2
 export struct LoadingFooter {
-  @Prop isLoading: boolean = false
-  @Prop hasMore: boolean = true
-  @Prop isError: boolean = false
-  @Prop errorMessage: string = AppStrings.text(AppStrings.R_COMMON_LOAD_FAILED, 'Load failed, tap to retry')
-  @Prop retryLabel: string = ''
-  onRetry?: () => void
+  @Param isLoading: boolean = false
+  @Param hasMore: boolean = true
+  @Param isError: boolean = false
+  @Param errorMessage: string = AppStrings.text(AppStrings.R_COMMON_LOAD_FAILED, 'Load failed, tap to retry')
+  @Param retryLabel: string = ''
+  @Event onRetry?: () => void
 
   build() {
     Row() {

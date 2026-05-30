@@ -1,8 +1,8 @@
 import { ThemeConstants } from '../theme/ThemeConstants'
 
-@Component
+@ComponentV2
 export struct ListDivider {
-  @Prop inset: number = ThemeConstants.SPACE_LG
+  @Param inset: number = ThemeConstants.SPACE_LG
 
   build() {
     Divider()

@@ -1,9 +1,9 @@
 import { ThemeConstants } from '../theme/ThemeConstants'
 
-@Component
+@ComponentV2
 export struct EmptyState {
-  @Prop message: string = ''
-  @Prop stateHeight: number = 240
+  @Param message: string = ''
+  @Param stateHeight: number = 240
 
   build() {
     Column() {

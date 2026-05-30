@@ -1,0 +1,11 @@
+{
+  "_comment": "Files migrated from State Management V1 @Component to V2 @ComponentV2 by the full-state-v2 lane. Each listed file is asserted by test_v2_leaf_migration_contract.mjs to contain @ComponentV2 and to retain zero V1 component-state decorators. Append per slice.",
+  "files": [
+    "shared/src/main/ets/components/EmptyState.ets",
+    "shared/src/main/ets/components/FilterChip.ets",
+    "shared/src/main/ets/components/ListDivider.ets",
+    "shared/src/main/ets/components/LoadingFooter.ets",
+    "shared/src/main/ets/components/SectionHeader.ets",
+    "shared/src/main/ets/components/TimeAgo.ets"
+  ]
+}

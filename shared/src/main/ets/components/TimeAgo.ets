@@ -1,9 +1,9 @@
 import { DateUtils } from '../utils/DateUtils'
 import { ThemeConstants } from '../theme/ThemeConstants'
 
-@Component
+@ComponentV2
 export struct TimeAgo {
-  @Prop timestamp: number = 0
+  @Param timestamp: number = 0
 
   build() {
     Text(DateUtils.toRelativeTime(this.timestamp))

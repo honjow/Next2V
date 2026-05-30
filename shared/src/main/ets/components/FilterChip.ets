@@ -1,12 +1,12 @@
 import { Chip, ChipSize } from '@kit.ArkUI'
 import { ThemeConstants } from '../theme/ThemeConstants'
 
-@Component
+@ComponentV2
 export struct FilterChip {
-  @Prop label: string = ''
-  @Prop selected: boolean = false
-  @Prop fill: boolean = false
-  action?: () => void
+  @Param label: string = ''
+  @Param selected: boolean = false
+  @Param fill: boolean = false
+  @Event action?: () => void
 
   build() {
     Row() {
