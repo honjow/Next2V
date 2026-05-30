@@ -1,9 +1,10 @@
-import { SegmentButton, SegmentButtonOptions } from '@kit.ArkUI'
 import {
   ApiConstants,
   AppStrings,
   AppSearchField,
   Avatar,
+  BlockedListSelectedTabState,
+  connectBlockedListSelectedTab,
   connectDiscoverKeyword,
   DiscoverKeywordState,
   FeedTabSettings,
@@ -11,54 +12,27 @@ import {
   TabItem,
   ThemeConstants,
 } from 'shared'
+import { BlockedListsTabsSegment } from './BlockedListsTabsSegment'
 
-@Component
+@ComponentV2
 struct BlockedListsTabs {
-  @StorageLink(StorageKeys.BLOCKED_LIST_SELECTED_TAB) @Watch('onSelectedTabChanged') selectedTab: number = 0
-  @State private selectedIndexes: number[] = [0]
-  @State private tabOptions: SegmentButtonOptions = SegmentButtonOptions.tab({
-    buttons: [
-      { text: AppStrings.text(AppStrings.R_BLOCKED_USERS, 'Blocked users') },
-      { text: AppStrings.text(AppStrings.R_IGNORED_TOPICS, 'Blocked topics') },
-    ],
-    buttonPadding: { top: 10, bottom: 10, left: 8, right: 8 },
-  })
-
-  aboutToAppear(): void {
-    this.syncSelectedIndexes()
-    this.updateTabOptions()
-  }
+  // V2 mirror of BLOCKED_LIST_SELECTED_TAB; this title-bar control is the sole writer, BlockedListsPage
+  // the sole reader (see BlockedListSelectedTabState). The SegmentButton itself lives in the V1
+  // BlockedListsTabsSegment adapter (a @ComponentV2 cannot bind SegmentButton's @Link selectedIndexes).
+  @Local private tabState: BlockedListSelectedTabState = connectBlockedListSelectedTab()
+  // One-way labels rebuilt into the adapter's SegmentButton options; @Local so a locale refresh re-renders.
+  @Local private blockedUsersLabel: string = AppStrings.text(AppStrings.R_BLOCKED_USERS, 'Blocked users')
+  @Local private blockedTopicsLabel: string = AppStrings.text(AppStrings.R_IGNORED_TOPICS, 'Blocked topics')
 
   build() {
-    Row() {
-      SegmentButton({
-        options: this.tabOptions,
-        selectedIndexes: $selectedIndexes,
-        onItemClicked: (index: number) => {
-          this.selectedTab = this.clampTab(index)
-          this.syncSelectedIndexes()
-        },
-      })
-        .constraintSize({ maxWidth: 448 })
-    }
-    .width('100%')
-    .height('100%')
-    .justifyContent(FlexAlign.Center)
-    .alignItems(VerticalAlign.Center)
-    .padding(ThemeConstants.SPACE_SM)
-  }
-
-  private onSelectedTabChanged(_propName: string): void {
-    this.syncSelectedIndexes()
-  }
-
-  private updateTabOptions(): void {
-    this.tabOptions.buttons[0].text = AppStrings.text(AppStrings.R_BLOCKED_USERS, 'Blocked users')
-    this.tabOptions.buttons[1].text = AppStrings.text(AppStrings.R_IGNORED_TOPICS, 'Blocked topics')
-  }
-
-  private syncSelectedIndexes(): void {
-    this.selectedIndexes = [this.clampTab(this.selectedTab)]
+    BlockedListsTabsSegment({
+      firstLabel: this.blockedUsersLabel,
+      secondLabel: this.blockedTopicsLabel,
+      selectedIndex: this.clampTab(this.tabState.selectedTab),
+      onTabClicked: (index: number) => {
+        this.tabState.selectedTab = this.clampTab(index)
+      },
+    })
   }
 
   private clampTab(index: number): number {

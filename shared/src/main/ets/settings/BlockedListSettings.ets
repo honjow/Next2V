@@ -6,6 +6,7 @@ import { StorageKeys } from '../constants/StorageKeys'
 import { V2exTabParser, type V2exBlockedIdLists } from '../parser/V2exTabParser'
 import { AccountStore } from './AccountStore'
 import { STORE_NAME_SETTINGS, setAppStorageValue } from './SettingsStorage'
+import { connectBlockedListStorage } from '../state/BlockedListState'
 
 const KEY_PREFIX: string = 'blockedListState:'
 
@@ -320,12 +321,22 @@ export class BlockedListSettings {
   }
 
   static apply(snapshot: BlockedListSnapshot): void {
+    const ignoredTopicIdsJson = JSON.stringify(snapshot.ignoredTopicIds)
+    const blockedMemberIdsJson = JSON.stringify(snapshot.blockedMemberIds)
     setAppStorageValue<string>(StorageKeys.BLOCKED_LIST_OWNER_KEY, snapshot.ownerKey)
-    setAppStorageValue<string>(StorageKeys.BLOCKED_LIST_IGNORED_TOPIC_IDS, JSON.stringify(snapshot.ignoredTopicIds))
-    setAppStorageValue<string>(StorageKeys.BLOCKED_LIST_BLOCKED_MEMBER_IDS, JSON.stringify(snapshot.blockedMemberIds))
+    setAppStorageValue<string>(StorageKeys.BLOCKED_LIST_IGNORED_TOPIC_IDS, ignoredTopicIdsJson)
+    setAppStorageValue<string>(StorageKeys.BLOCKED_LIST_BLOCKED_MEMBER_IDS, blockedMemberIdsJson)
     setAppStorageValue<string>(StorageKeys.BLOCKED_LIST_BLOCKED_MEMBER_METAS, JSON.stringify(snapshot.blockedMemberMetas))
     setAppStorageValue<string>(StorageKeys.BLOCKED_LIST_IGNORED_TOPIC_METAS, JSON.stringify(snapshot.ignoredTopicMetas))
     setAppStorageValue<number>(StorageKeys.BLOCKED_LIST_UPDATED_AT, snapshot.updatedAt)
+    // Dual-write the V2 mirror BlockedListsPage observes (@Monitor), keeping it in lockstep with the V1
+    // AppStorage keys still read imperatively by ApiService / runtimeSnapshot. Single dual-write point,
+    // mirroring LocalDataPublisher -> TopicReadStatesState. Member-metas keys are read imperatively only,
+    // so they are intentionally NOT mirrored.
+    const storage = connectBlockedListStorage()
+    storage.ignoredTopicIdsJson = ignoredTopicIdsJson
+    storage.blockedMemberIdsJson = blockedMemberIdsJson
+    storage.updatedAt = snapshot.updatedAt
   }
 
   static async upsertIgnoredTopicMetas(metas: IgnoredTopicMeta[], context?: common.UIAbilityContext, source: BlockedListCaptureSource = {}): Promise<void> {

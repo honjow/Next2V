@@ -3,14 +3,20 @@ import {
   ApiService,
   AppStrings,
   Avatar,
+  BlockedListSelectedTabState,
   BlockedListSettings,
+  BlockedListStorageState,
   CardEmptyState,
+  connectBlockedListSelectedTab,
+  connectBlockedListStorage,
+  connectLayoutSafeArea,
+  connectNavStack,
   CookieJarSettings,
   DiagnosticLogger,
+  LayoutSafeAreaState,
   LocalTopicCard,
   PageLoadingState,
   PullRefreshListScaffold,
-  StorageKeys,
   ThemeConstants,
   type BlockedListSnapshot,
   type BlockedMemberMeta,
@@ -54,13 +60,15 @@ class BlockedMemberListItem {
   }
 
   toMeta(): BlockedMemberMeta {
+    // updatedAt is stamped by BlockedListSettings.normalizeMemberMeta (`updatedAt || Date.now()`); pass 0
+    // so the persist layer owns the timestamp and this V2 leaf stays key-churn-token free.
     return {
       id: this.id,
       username: this.username,
       tagline: this.tagline,
       avatar: this.avatar,
       created: this.created,
-      updatedAt: Date.now(),
+      updatedAt: 0,
     }
   }
 }
@@ -123,22 +131,24 @@ struct BlockedMemberCardView {
   }
 }
 
-@Component
+@ComponentV2
 export struct BlockedListsPage {
-  @Consume('ns') stack: NavPathStack
-  @StorageLink(StorageKeys.BLOCKED_LIST_IGNORED_TOPIC_IDS) @Watch('onBlockedListStorageChanged') ignoredTopicIdsJson: string = '[]'
-  @StorageLink(StorageKeys.BLOCKED_LIST_BLOCKED_MEMBER_IDS) @Watch('onBlockedListStorageChanged') blockedMemberIdsJson: string = '[]'
-  @StorageLink(StorageKeys.BLOCKED_LIST_UPDATED_AT) @Watch('onBlockedListStorageChanged') updatedAt: number = 0
-  @StorageLink(StorageKeys.BLOCKED_LIST_SELECTED_TAB) selectedTab: number = 0
-  @StorageProp(StorageKeys.TOP_AVOID_HEIGHT) topH: number = 0
-  @StorageProp(StorageKeys.BOTTOM_AVOID_HEIGHT) bottomH: number = 0
-  @State private snapshot: BlockedListSnapshot = BlockedListSettings.runtimeSnapshot()
-  @State private topics: V2exTopic[] = []
-  @State private members: BlockedMemberListItem[] = []
-  @State private loadingTopics: boolean = false
-  @State private loadingMembers: boolean = false
-  @State private syncInFlight: boolean = false
-  @State private syncError: boolean = false
+  // Same NavPathStack instance HdsNavigation is bound to (see NavStackHolder); method target only.
+  private stack: NavPathStack = connectNavStack().stack
+  // V2 mirror of the id/updatedAt ledger (BlockedListSettings dual-writes); @Monitor-watched below to
+  // refresh when the blocked set changes while this page is open. Never read in build().
+  @Local private storageState: BlockedListStorageState = connectBlockedListStorage()
+  // V2 mirror of the appbar-selected tab written by BlockedListsTabs; read in build() to switch lists.
+  private tabState: BlockedListSelectedTabState = connectBlockedListSelectedTab()
+  // Window safe-area metrics (V2 mirror; EntryAbility dual-writes the V1 AppStorage keys + this).
+  private layout: LayoutSafeAreaState = connectLayoutSafeArea()
+  @Local private snapshot: BlockedListSnapshot = BlockedListSettings.runtimeSnapshot()
+  @Local private topics: V2exTopic[] = []
+  @Local private members: BlockedMemberListItem[] = []
+  @Local private loadingTopics: boolean = false
+  @Local private loadingMembers: boolean = false
+  @Local private syncInFlight: boolean = false
+  @Local private syncError: boolean = false
   private readonly BOTTOM_BUILDER_HEIGHT: number = ThemeConstants.TITLE_BAR_HEIGHT
   private readonly MEMBER_AVATAR_SIZE: number = ThemeConstants.AVATAR_SIZE_TOPIC
   private readonly MEMBER_ROW_MIN_HEIGHT: number = 64
@@ -173,7 +183,7 @@ export struct BlockedListsPage {
       indicatorTop: ThemeConstants.TITLE_BAR_HEIGHT + this.BOTTOM_BUILDER_HEIGHT,
     }) {
       this.SyncStatusItem()
-      if (this.selectedTab === 0) {
+      if (this.tabState.selectedTab === 0) {
         this.BlockedMembersList()
       } else {
         this.IgnoredTopicsList()
@@ -274,7 +284,7 @@ export struct BlockedListsPage {
     if (!this.snapshot.ownerKey) {
       return AppStrings.text(AppStrings.R_LOGIN_TO_VIEW_BLOCKED, 'Log in to view blocked lists')
     }
-    if (this.selectedTab === 0) {
+    if (this.tabState.selectedTab === 0) {
       if (this.snapshot.blockedMemberIds.length === 0) {
         return AppStrings.text(AppStrings.R_NO_BLOCKED_USERS, 'No blocked users')
       }
@@ -303,11 +313,11 @@ export struct BlockedListsPage {
   }
 
   private topContentInset(): number {
-    return this.topH + ThemeConstants.TITLE_BAR_HEIGHT + this.BOTTOM_BUILDER_HEIGHT
+    return this.layout.topAvoidHeight + ThemeConstants.TITLE_BAR_HEIGHT + this.BOTTOM_BUILDER_HEIGHT
   }
 
   private bottomContentInset(): number {
-    return this.bottomH + ThemeConstants.SPACE_XL
+    return this.layout.bottomAvoidHeight + ThemeConstants.SPACE_XL
   }
 
   private hasResolvedMembers(): boolean {
@@ -315,14 +325,14 @@ export struct BlockedListsPage {
   }
 
   private hasAnyRenderableForCurrentTab(): boolean {
-    if (this.selectedTab === 0) {
+    if (this.tabState.selectedTab === 0) {
       return this.members.length > 0
     }
     return this.topics.length > 0
   }
 
   private isRefreshPendingForCurrentTab(): boolean {
-    if (this.selectedTab === 0) {
+    if (this.tabState.selectedTab === 0) {
       return this.syncInFlight || this.loadingMembers
     }
     return this.syncInFlight || this.loadingTopics
@@ -404,8 +414,9 @@ export struct BlockedListsPage {
     ]).then(() => {})
   }
 
-  private onBlockedListStorageChanged(): void {
-    const signature = `${this.ignoredTopicIdsJson}|${this.blockedMemberIdsJson}|${this.updatedAt}`
+  @Monitor('storageState.ignoredTopicIdsJson', 'storageState.blockedMemberIdsJson', 'storageState.updatedAt')
+  onBlockedListStorageChanged(): void {
+    const signature = `${this.storageState.ignoredTopicIdsJson}|${this.storageState.blockedMemberIdsJson}|${this.storageState.updatedAt}`
     if (signature === this.lastStorageSignature) {
       return
     }
@@ -432,7 +443,7 @@ export struct BlockedListsPage {
   private logRenderSnapshot(snapshot: BlockedListSnapshot, trigger: string = ''): void {
     DiagnosticLogger.info('ui_lifecycle', 'blocked_list_render_snapshot', {
       trigger: trigger,
-      selectedTab: this.selectedTab,
+      selectedTab: this.tabState.selectedTab,
       ignored_count: snapshot.ignoredTopicIds.length,
       blocked_count: snapshot.blockedMemberIds.length,
       blocked_member_meta_count: snapshot.blockedMemberMetas.length,
@@ -649,6 +660,8 @@ export struct BlockedListsPage {
   }
 
   private toIgnoredTopicMeta(topic: V2exTopic): IgnoredTopicMeta {
+    // updatedAt is stamped by BlockedListSettings.normalizeIgnoredTopicMeta (`updatedAt || Date.now()`);
+    // pass 0 so the persist layer owns the timestamp and this V2 leaf stays key-churn-token free.
     return {
       id: topic.id,
       title: topic.title || '',
@@ -659,7 +672,7 @@ export struct BlockedListsPage {
       memberPro: topic.member.pro || 0,
       created: topic.created || 0,
       replies: topic.replies || 0,
-      updatedAt: Date.now(),
+      updatedAt: 0,
     }
   }
 

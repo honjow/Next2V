@@ -59,6 +59,12 @@ export { AuthSessionSignalState, connectAuthSessionSignal } from './state/AuthSe
 export { ImagePreviewActionState, connectImagePreviewAction } from './state/ImagePreviewActionState'
 export { NodeTopicActionState, connectNodeTopicAction } from './state/NodeTopicActionState'
 export { UserProfileActionState, connectUserProfileAction } from './state/UserProfileActionState'
+export {
+  BlockedListSelectedTabState,
+  connectBlockedListSelectedTab,
+  BlockedListStorageState,
+  connectBlockedListStorage,
+} from './state/BlockedListState'
 export { STORE_NAME_SETTINGS, setAppStorageValue } from './settings/SettingsStorage'
 export { SettingsBootstrap } from './settings/SettingsBootstrap'
 export { AppStrings } from './i18n/AppStrings'
