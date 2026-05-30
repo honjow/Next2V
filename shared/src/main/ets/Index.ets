@@ -58,6 +58,7 @@ export { TopicReadStatesState, connectTopicReadStates } from './state/TopicReadS
 export { AuthSessionSignalState, connectAuthSessionSignal } from './state/AuthSessionSignalState'
 export { ImagePreviewActionState, connectImagePreviewAction } from './state/ImagePreviewActionState'
 export { NodeTopicActionState, connectNodeTopicAction } from './state/NodeTopicActionState'
+export { UserProfileActionState, connectUserProfileAction } from './state/UserProfileActionState'
 export { STORE_NAME_SETTINGS, setAppStorageValue } from './settings/SettingsStorage'
 export { SettingsBootstrap } from './settings/SettingsBootstrap'
 export { AppStrings } from './i18n/AppStrings'

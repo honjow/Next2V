@@ -88,19 +88,27 @@ export class ReplyDataSource implements IDataSource {
 
 /**
  * User profile ViewModel
+ *
+ * @ObservedV2 (not V1 @Observed) so the @ComponentV2 UserProfilePage observes the build()-read
+ * fields below via @Trace. Page-exclusive VM — converting it does not affect the already-@ObservedV2
+ * UserTopicsViewModel / UserRepliesViewModel in this file. The @Trace set is exactly the fields read
+ * in UserProfilePage.build() (or its @Builders): profile, topicsHidden, recentTopicCount,
+ * recentReplyCount, isLoading, errorMessage. topicDataSource / replyDataSource are plain IDataSources
+ * observed by LazyForEach (no @Trace). actions / isActionLoading / username are read only in logic
+ * paths (never in build), so they stay untraced — matching their V1 non-reactive behavior.
  */
-@Observed
+@ObservedV2
 export class UserViewModel {
-  profile: V2exMemberProfile | null = null
+  @Trace profile: V2exMemberProfile | null = null
   topicDataSource: TopicDataSource = new TopicDataSource()
   replyDataSource: ReplyDataSource = new ReplyDataSource()
   actions: V2exMemberActionState | null = null
-  topicsHidden: boolean = false
-  recentTopicCount: number = 0
-  recentReplyCount: number = 0
-  isLoading: boolean = false
+  @Trace topicsHidden: boolean = false
+  @Trace recentTopicCount: number = 0
+  @Trace recentReplyCount: number = 0
+  @Trace isLoading: boolean = false
   isActionLoading: boolean = false
-  errorMessage: string = ''
+  @Trace errorMessage: string = ''
   username: string = ''
 
   private api: ApiService = new ApiService()

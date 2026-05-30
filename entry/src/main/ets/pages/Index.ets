@@ -24,6 +24,7 @@ import {
   connectImagePreviewAction,
   connectNavStack,
   connectNodeTopicAction,
+  connectUserProfileAction,
   CookieJarSettings,
   FoldScreenUtil,
   HttpClient,
@@ -901,17 +902,19 @@ struct Index {
   }
 
   private sendUserProfileAction(action: string): void {
-    AppStorage.setOrCreate<string>(
-      StorageKeys.USER_PROFILE_ACTION,
-      IndexRouteCoordinator.simpleCommand(action, Date.now()),
-    )
+    // Dual-write the V1 AppStorage command AND the V2 mirror (read by @ComponentV2
+    // UserProfilePage via @Monitor) from this single writer so the two stores stay in lockstep.
+    const command = IndexRouteCoordinator.simpleCommand(action, Date.now())
+    AppStorage.setOrCreate<string>(StorageKeys.USER_PROFILE_ACTION, command)
+    connectUserProfileAction().command = command
   }
 
   private notifyUserProfileShown(username: string): void {
-    AppStorage.setOrCreate<string>(
-      StorageKeys.USER_PROFILE_SHOWN,
-      IndexRouteCoordinator.userProfileShownCommand(username, Date.now()),
-    )
+    // Dual-write the V1 AppStorage command AND the V2 mirror (read by @ComponentV2
+    // UserProfilePage via @Monitor) from this single writer so the two stores stay in lockstep.
+    const command = IndexRouteCoordinator.userProfileShownCommand(username, Date.now())
+    AppStorage.setOrCreate<string>(StorageKeys.USER_PROFILE_SHOWN, command)
+    connectUserProfileAction().shown = command
   }
 
   private notifyNativeLoginShown(): void {

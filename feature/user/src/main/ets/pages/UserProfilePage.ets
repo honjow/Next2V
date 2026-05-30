@@ -16,9 +16,17 @@ import {
   V2exUrlRouter,
   BlockedListSettings,
   DiagnosticLogger,
+  SearchQueryBus,
+  connectLayoutSafeArea,
+  connectNavStack,
+  connectTopicReadStates,
+  connectUserProfileAction,
+  LayoutSafeAreaState,
+  TopicReadStatesState,
+  UserProfileActionState,
 } from 'shared'
 import type { TopicReadState } from 'shared'
-import { promptAction, SegmentButton, SegmentButtonOptions } from '@kit.ArkUI'
+import { promptAction } from '@kit.ArkUI'
 import { common, Want } from '@kit.AbilityKit'
 import {
   UserProfileAllActivityButton,
@@ -29,51 +37,32 @@ import {
   UserProfileReplyCard
 } from '../components/UserProfileComponents'
 import { UserProfilePageCoordinator } from '../model/UserProfilePageCoordinator'
-@Component
+import { UserProfileActivityTabs } from '../components/UserProfileActivityTabs'
+@ComponentV2
 export struct UserProfilePage {
-  @Prop username: string = '';
-  @Consume('ns') stack: NavPathStack;
-  @State vm: UserViewModel = new UserViewModel(this.username);
-  @State private activityTab: number = 0;
-  @State private tabSelectedIndexes: number[] = [0];
-  @State private tabOptions: SegmentButtonOptions = SegmentButtonOptions.tab({
-    buttons: [
-      { text: AppStrings.text(AppStrings.R_USER_TAB_TOPICS_LABEL, 'Topics') },
-      { text: AppStrings.text(AppStrings.R_USER_TAB_REPLIES_LABEL, 'Replies') }
-    ],
-    buttonPadding: { top: 10, bottom: 10, left: 8, right: 8 },
-  });
-  @State private following: boolean = false;
-  @State private blocked: boolean = false;
-  @StorageLink(StorageKeys.TOPIC_READ_STATES) topicReadStates: string = '[]';
-  @StorageLink(StorageKeys.AUTH_SESSION_USERNAME) sessionUsername: string = '';
-  @StorageLink(StorageKeys.USER_PROFILE_ACTION)
-  @Watch('onUserProfileActionCommand')
-  userProfileActionCommand: string = '';
-  @StorageLink(StorageKeys.USER_PROFILE_ACTIONS_USERNAME) userProfileActionsUsername: string = '';
-  @StorageLink(StorageKeys.USER_PROFILE_ACTIONS_AVAILABLE) userProfileActionsAvailable: boolean =
-    false;
-  @StorageLink(StorageKeys.USER_PROFILE_FOLLOW_LABEL) userProfileFollowLabel: string = '';
-  @StorageLink(StorageKeys.USER_PROFILE_BLOCK_LABEL) userProfileBlockLabel: string = '';
-  @StorageLink(StorageKeys.USER_PROFILE_FOLLOWING) userProfileFollowing: boolean = false;
-  @StorageLink(StorageKeys.USER_PROFILE_BLOCKED) userProfileBlocked: boolean = false;
-  @StorageLink(StorageKeys.USER_PROFILE_APPBAR_TITLE_USERNAME)
-  userProfileAppbarTitleUsername: string = '';
-  @StorageLink(StorageKeys.USER_PROFILE_APPBAR_TITLE_AVATAR_URL)
-  userProfileAppbarTitleAvatarUrl: string = '';
-  @StorageLink(StorageKeys.USER_PROFILE_APPBAR_TITLE_ROUTE_USERNAME)
-  userProfileAppbarTitleRouteUsername: string = '';
-  @StorageLink(StorageKeys.USER_PROFILE_APPBAR_TITLE_STATES) userProfileAppbarTitleStates: string =
-    '{}';
-  @StorageLink(StorageKeys.USER_PROFILE_APPBAR_AVATAR_STATES)
-  userProfileAppbarAvatarStates: string = '{}';
-  @StorageLink(StorageKeys.USER_PROFILE_SHOWN)
-  @Watch('onUserProfileShown')
-  userProfileShown: string = '';
-  @StorageProp(StorageKeys.TOP_AVOID_HEIGHT) topH: number = 0;
-  @State private usernameContentBottom: number = 0;
-  @State private currentScrollOffset: number = 0;
-  @State private isUsernameCoveredByAppbar: boolean = false;
+  @Param username: string = '';
+  // Same NavPathStack instance HdsNavigation is bound to (see NavStackHolder); method target only.
+  private stack: NavPathStack = connectNavStack().stack;
+  @Local vm: UserViewModel = new UserViewModel(this.username);
+  @Local private activityTab: number = 0;
+  // Count-bearing tab labels (e.g. "Topics 12" / "Replies 3") passed one-way to the V1 SegmentButton
+  // adapter (UserProfileActivityTabs); refreshed after vm.load() via updateTabLabels().
+  @Local private topicTabLabel: string = AppStrings.text(AppStrings.R_USER_TAB_TOPICS_LABEL, 'Topics');
+  @Local private replyTabLabel: string = AppStrings.text(AppStrings.R_USER_TAB_REPLIES_LABEL, 'Replies');
+  @Local private following: boolean = false;
+  @Local private blocked: boolean = false;
+  // Per-topic read-state ledger (V2 mirror; LocalDataPublisher dual-writes). Read in build() via
+  // isTopicUnread -> subscribes this page to unread-dot refreshes.
+  private readStates: TopicReadStatesState = connectTopicReadStates();
+  // Window safe-area metrics (V2 mirror; EntryAbility dual-writes the V1 AppStorage keys + this).
+  // Only read in logic (evaluateAppbarTitleVisibility), never in build().
+  private layout: LayoutSafeAreaState = connectLayoutSafeArea();
+  // V2 mirror of the one-directional USER_PROFILE_ACTION + USER_PROFILE_SHOWN appbar buses
+  // (Index dual-writes). Reacted to via @Monitor below; never read in build().
+  @Local private actionState: UserProfileActionState = connectUserProfileAction();
+  @Local private usernameContentBottom: number = 0;
+  @Local private currentScrollOffset: number = 0;
+  @Local private isUsernameCoveredByAppbar: boolean = false;
 
   private readonly titleVisibilityHysteresis: number = 4;
 
@@ -224,25 +213,20 @@ export struct UserProfilePage {
 
   private updateTabLabels(): void {
     const labels = UserProfilePageCoordinator.tabLabels(this.vm.recentTopicCount, this.vm.recentReplyCount)
-    this.tabOptions.buttons[0].text = labels.topicLabel
-    this.tabOptions.buttons[1].text = labels.replyLabel
+    // Assigning these @Local strings re-renders the page and pushes the new one-way @Prop labels into
+    // the V1 SegmentButton adapter, which rebuilds its options — the V2-safe way to update the labels.
+    this.topicTabLabel = labels.topicLabel
+    this.replyTabLabel = labels.replyLabel
   }
 
   @Builder ActivityTabs() {
-    Row() {
-      SegmentButton({
-        options: this.tabOptions,
-        selectedIndexes: $tabSelectedIndexes,
-        onItemClicked: (index: number) => {
-          this.activityTab = index
-        },
-      })
-        .constraintSize({ maxWidth: 448 })
-    }
-    .width('100%')
-    .justifyContent(FlexAlign.Center)
-    .alignItems(VerticalAlign.Center)
-    .padding(ThemeConstants.SPACE_SM)
+    UserProfileActivityTabs({
+      topicLabel: this.topicTabLabel,
+      replyLabel: this.replyTabLabel,
+      onTabClicked: (index: number) => {
+        this.activityTab = index
+      },
+    })
   }
 
   @Builder AllActivityEntry(label: string) {
@@ -342,10 +326,9 @@ export struct UserProfilePage {
       return
     }
     if (route.kind === 'search' && route.query) {
-      AppStorage.setOrCreate<string>(
-        StorageKeys.PENDING_SEARCH_QUERY,
-        `${Date.now()}:${route.query}`,
-      )
+      // Centralised action-bus publisher keeps the Date.now() command token out of this @ComponentV2
+      // leaf (forbidden by the V2 migration contract); identical `<timestamp>:<query>` semantics.
+      SearchQueryBus.publishPending(route.query)
       this.stack.pushPathByName('Search', null)
     }
   }
@@ -442,7 +425,9 @@ export struct UserProfilePage {
   }
 
   private isCurrentSessionUser(): boolean {
-    const current = (this.sessionUsername || '').trim().toLowerCase()
+    // AUTH_SESSION_USERNAME is read-only here (logic guard, never in build) — imperative read avoids
+    // pulling the multi-writer auth-key bucket into this @ComponentV2 page.
+    const current = (AppStorage.get<string>(StorageKeys.AUTH_SESSION_USERNAME) ?? '').trim().toLowerCase()
     const target = (this.username || this.vm.profile?.username || '').trim().toLowerCase()
     return !!current && !!target && current === target
   }
@@ -457,7 +442,7 @@ export struct UserProfilePage {
       displayUsername,
       this.usernameContentBottom,
       this.currentScrollOffset,
-      this.topH,
+      this.layout.topAvoidHeight,
       ThemeConstants.TITLE_BAR_HEIGHT,
       this.isUsernameCoveredByAppbar,
       this.titleVisibilityHysteresis
@@ -477,14 +462,17 @@ export struct UserProfilePage {
       this.profileAvatarUrl()
     )
     this.publishAppbarIdentityState(next.titleUsername, next.avatarUrl)
-    if (this.userProfileAppbarTitleRouteUsername !== next.routeUsername) {
-      this.userProfileAppbarTitleRouteUsername = next.routeUsername
+    // These keys are OUTPUT-only from this page (Index reads them V1-style to build the appbar); the
+    // page is their sole writer, so imperative setOrCreate is faithful. The change guards preserve the
+    // original behavior of only writing when the value actually changed.
+    if ((AppStorage.get<string>(StorageKeys.USER_PROFILE_APPBAR_TITLE_ROUTE_USERNAME) ?? '') !== next.routeUsername) {
+      AppStorage.setOrCreate<string>(StorageKeys.USER_PROFILE_APPBAR_TITLE_ROUTE_USERNAME, next.routeUsername)
     }
-    if (this.userProfileAppbarTitleUsername !== next.titleUsername) {
-      this.userProfileAppbarTitleUsername = next.titleUsername
+    if ((AppStorage.get<string>(StorageKeys.USER_PROFILE_APPBAR_TITLE_USERNAME) ?? '') !== next.titleUsername) {
+      AppStorage.setOrCreate<string>(StorageKeys.USER_PROFILE_APPBAR_TITLE_USERNAME, next.titleUsername)
     }
-    if (this.userProfileAppbarTitleAvatarUrl !== next.avatarUrl) {
-      this.userProfileAppbarTitleAvatarUrl = next.avatarUrl
+    if ((AppStorage.get<string>(StorageKeys.USER_PROFILE_APPBAR_TITLE_AVATAR_URL) ?? '') !== next.avatarUrl) {
+      AppStorage.setOrCreate<string>(StorageKeys.USER_PROFILE_APPBAR_TITLE_AVATAR_URL, next.avatarUrl)
     }
   }
 
@@ -493,10 +481,19 @@ export struct UserProfilePage {
     if (!routeUsername) {
       return
     }
-    this.userProfileAppbarTitleStates =
-      UserProfilePageCoordinator.nextStringState(this.userProfileAppbarTitleStates, routeUsername, titleUsername)
-    this.userProfileAppbarAvatarStates =
-      UserProfilePageCoordinator.nextStringState(this.userProfileAppbarAvatarStates, routeUsername, avatarUrl)
+    // Read-modify-write of the shared per-route STATES ledgers, keyed by routeUsername so stacked
+    // UserProfile pages each own their entry. Reading fresh at write time keeps this faithful to the
+    // prior @StorageLink behavior; the page is the sole writer of these OUTPUT keys.
+    const titleStates = AppStorage.get<string>(StorageKeys.USER_PROFILE_APPBAR_TITLE_STATES) ?? '{}'
+    AppStorage.setOrCreate<string>(
+      StorageKeys.USER_PROFILE_APPBAR_TITLE_STATES,
+      UserProfilePageCoordinator.nextStringState(titleStates, routeUsername, titleUsername),
+    )
+    const avatarStates = AppStorage.get<string>(StorageKeys.USER_PROFILE_APPBAR_AVATAR_STATES) ?? '{}'
+    AppStorage.setOrCreate<string>(
+      StorageKeys.USER_PROFILE_APPBAR_AVATAR_STATES,
+      UserProfilePageCoordinator.nextStringState(avatarStates, routeUsername, avatarUrl),
+    )
   }
 
   private profileAvatarUrl(): string {
@@ -533,12 +530,14 @@ export struct UserProfilePage {
       this.following,
       this.blocked
     )
-    this.userProfileActionsUsername = state.username
-    this.userProfileActionsAvailable = state.available
-    this.userProfileFollowLabel = state.followLabel
-    this.userProfileBlockLabel = state.blockLabel
-    this.userProfileFollowing = state.following
-    this.userProfileBlocked = state.blocked
+    // OUTPUT-only action-menu state (Index reads these V1-style to build the follow/block menu); the
+    // page is their sole writer, so imperative setOrCreate is faithful.
+    AppStorage.setOrCreate<string>(StorageKeys.USER_PROFILE_ACTIONS_USERNAME, state.username)
+    AppStorage.setOrCreate<boolean>(StorageKeys.USER_PROFILE_ACTIONS_AVAILABLE, state.available)
+    AppStorage.setOrCreate<string>(StorageKeys.USER_PROFILE_FOLLOW_LABEL, state.followLabel)
+    AppStorage.setOrCreate<string>(StorageKeys.USER_PROFILE_BLOCK_LABEL, state.blockLabel)
+    AppStorage.setOrCreate<boolean>(StorageKeys.USER_PROFILE_FOLLOWING, state.following)
+    AppStorage.setOrCreate<boolean>(StorageKeys.USER_PROFILE_BLOCKED, state.blocked)
   }
 
   private showActionToast(message: string): void {
@@ -599,7 +598,7 @@ export struct UserProfilePage {
 
   private findReadState(topicId: number): TopicReadState | null {
     try {
-      const parsed = JSON.parse(this.topicReadStates || '[]') as TopicReadState[]
+      const parsed = JSON.parse(this.readStates.statesJson || '[]') as TopicReadState[]
       if (!Array.isArray(parsed)) {
         return null
       }
@@ -614,12 +613,15 @@ export struct UserProfilePage {
     }
   }
 
-  onUserProfileActionCommand(_propName: string): void {
-    const raw = (this.userProfileActionCommand || '').trim()
+  @Monitor('actionState.command')
+  onUserProfileActionCommand(): void {
+    const raw = (this.actionState.command || '').trim()
+    const actionsAvailable = AppStorage.get<boolean>(StorageKeys.USER_PROFILE_ACTIONS_AVAILABLE) ?? false
+    const actionsUsername = AppStorage.get<string>(StorageKeys.USER_PROFILE_ACTIONS_USERNAME) ?? ''
     if (
       !raw ||
-      !this.userProfileActionsAvailable ||
-      this.userProfileActionsUsername !== this.username ||
+      !actionsAvailable ||
+      actionsUsername !== this.username ||
       this.vm.isActionLoading
     ) {
       return
@@ -634,8 +636,9 @@ export struct UserProfilePage {
     }
   }
 
-  onUserProfileShown(_propName: string): void {
-    const raw = (this.userProfileShown || '').trim()
+  @Monitor('actionState.shown')
+  onUserProfileShown(): void {
+    const raw = (this.actionState.shown || '').trim()
     const shownUsername = raw.split(':').pop() || ''
     if (this.sameUsername(shownUsername, this.username)) {
       this.republishVisibleState()
