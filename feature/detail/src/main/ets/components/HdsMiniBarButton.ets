@@ -7,19 +7,19 @@ import { hdsMaterial, HdsTabs, HdsTabsController, HdsTabsFloatingStyle } from '@
  * non-clipping HdsTabs activity box because the upstream hds_button package
  * constrains the material surface inside its Row.size/padding composition.
  */
-@Component
+@ComponentV2
 export struct HdsMiniBarButton {
-  @Prop barWidth: number = 50
-  @Prop barHeight: number = 50
-  @Prop activityPadding: number = 16
-  controller: HdsTabsController = new HdsTabsController()
-  @Prop maskColor: ResourceColor = Color.Transparent
-  @Prop barBottomMargin: number = 8
-  @Prop materialType: hdsMaterial.MaterialType = hdsMaterial.MaterialType.IMMERSIVE
-  @Prop materialLevel: hdsMaterial.MaterialLevel = hdsMaterial.MaterialLevel.ADAPTIVE
-  @Prop barPosition: BarPosition = BarPosition.End
-  @Prop barOverlap: boolean = true
-  onButtonClick?: () => void
+  @Param barWidth: number = 50
+  @Param barHeight: number = 50
+  @Param activityPadding: number = 16
+  @Param controller: HdsTabsController = new HdsTabsController()
+  @Param maskColor: ResourceColor = Color.Transparent
+  @Param barBottomMargin: number = 8
+  @Param materialType: hdsMaterial.MaterialType = hdsMaterial.MaterialType.IMMERSIVE
+  @Param materialLevel: hdsMaterial.MaterialLevel = hdsMaterial.MaterialLevel.ADAPTIVE
+  @Param barPosition: BarPosition = BarPosition.End
+  @Param barOverlap: boolean = true
+  @Event onButtonClick?: () => void
 
   @BuilderParam buttonContent: () => void = this.defaultButtonBuilder
 
