@@ -1,18 +1,20 @@
-import { StorageKeys } from '../constants/StorageKeys'
 import { ThemeConstants } from '../theme/ThemeConstants'
+import { connectLayoutSafeArea, LayoutSafeAreaState } from '../state/LayoutSafeAreaState'
 import { HdsNavigation, HdsNavigationTitleMode, IconStyleMode } from '@kit.UIDesignKit'
 
-@Component
+@ComponentV2
 export struct AppModalScaffold {
   @BuilderParam content: () => void
-  @Prop title: ResourceStr = ''
-  @StorageProp(StorageKeys.BOTTOM_AVOID_HEIGHT) bottomH: number = 0
-  @StorageProp(StorageKeys.KEYBOARD_HEIGHT) keyboardH: number = 0
-  @Prop compact: boolean = false
-  @Prop includeKeyboardPadding: boolean = false
-  @Prop enableComponentSafeArea: boolean = true
-  @Prop contentBackgroundColor: ResourceColor = $r('sys.color.ohos_id_color_card_bg')
-  closeAction?: () => void
+  @Param title: ResourceStr = ''
+  // Safe-area / keyboard metrics mirrored into AppStorageV2 by EntryAbility's
+  // dual-write bridge. Reading these @Trace fields keeps padding reactive exactly
+  // like the former @StorageProp(StorageKeys.*) reads did.
+  layout: LayoutSafeAreaState = connectLayoutSafeArea()
+  @Param compact: boolean = false
+  @Param includeKeyboardPadding: boolean = false
+  @Param enableComponentSafeArea: boolean = true
+  @Param contentBackgroundColor: ResourceColor = $r('sys.color.ohos_id_color_card_bg')
+  @Event closeAction?: () => void
   scroller: Scroller = new Scroller();
 
   build() {
@@ -22,7 +24,7 @@ export struct AppModalScaffold {
 
         ListItem() {
           Column() {
-            Blank().height(this.bottomH + ThemeConstants.SPACE_MD + this.keyboardPadding())
+            Blank().height(this.layout.bottomAvoidHeight + ThemeConstants.SPACE_MD + this.keyboardPadding())
           }
           .width('100%')
         }
@@ -66,6 +68,6 @@ export struct AppModalScaffold {
     if (!this.includeKeyboardPadding) {
       return 0
     }
-    return Math.max(0, this.keyboardH)
+    return Math.max(0, this.layout.keyboardHeight)
   }
 }

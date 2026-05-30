@@ -48,6 +48,7 @@ export type {
 export { ApiConstants } from './constants/ApiConstants'
 export type { ApiDomainOption, TabItem } from './constants/ApiConstants'
 export { StorageKeys } from './constants/StorageKeys'
+export { LayoutSafeAreaState, connectLayoutSafeArea, LayoutSafeAreaBridge } from './state/LayoutSafeAreaState'
 export { STORE_NAME_SETTINGS, setAppStorageValue } from './settings/SettingsStorage'
 export { SettingsBootstrap } from './settings/SettingsBootstrap'
 export { AppStrings } from './i18n/AppStrings'

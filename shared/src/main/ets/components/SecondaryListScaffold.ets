@@ -1,25 +1,27 @@
-import { StorageKeys } from '../constants/StorageKeys'
 import { ThemeConstants } from '../theme/ThemeConstants'
+import { connectLayoutSafeArea, LayoutSafeAreaState } from '../state/LayoutSafeAreaState'
 
-@Component
+@ComponentV2
 export struct SecondaryListScaffold {
   @BuilderParam content: () => void
-  @StorageProp(StorageKeys.TOP_AVOID_HEIGHT) topH: number = 0
-  @StorageProp(StorageKeys.BOTTOM_AVOID_HEIGHT) bottomH: number = 0
-  @StorageProp(StorageKeys.KEYBOARD_HEIGHT) keyboardH: number = 0
-  scroller: Scroller = new Scroller()
-  @Prop listSpace: number = ThemeConstants.SPACE_SM - 2
-  @Prop horizontalPadding: number = ThemeConstants.SPACE_MD
-  @Prop bottomPadding: number = ThemeConstants.SPACE_XL
-  @Prop includeKeyboardPadding: boolean = false
-  onReachEnd?: () => void
-  onDidScroll?: (offset: number, state: ScrollState) => void
+  // Safe-area / keyboard metrics mirrored into AppStorageV2 by EntryAbility's
+  // dual-write bridge. Reading these @Trace fields keeps padding reactive exactly
+  // like the former @StorageProp(StorageKeys.*) reads did.
+  layout: LayoutSafeAreaState = connectLayoutSafeArea()
+  // @Param (not a plain member) because parents pass their own Scroller in by reference.
+  @Param scroller: Scroller = new Scroller()
+  @Param listSpace: number = ThemeConstants.SPACE_SM - 2
+  @Param horizontalPadding: number = ThemeConstants.SPACE_MD
+  @Param bottomPadding: number = ThemeConstants.SPACE_XL
+  @Param includeKeyboardPadding: boolean = false
+  @Event onReachEnd?: () => void
+  @Event onDidScroll?: (offset: number, state: ScrollState) => void
 
   build() {
     List({ space: this.listSpace, scroller: this.scroller }) {
       ListItem() {
         Column() {
-          Blank().height(this.topH + ThemeConstants.TITLE_BAR_HEIGHT)
+          Blank().height(this.layout.topAvoidHeight + ThemeConstants.TITLE_BAR_HEIGHT)
         }
         .width('100%')
       }
@@ -29,7 +31,7 @@ export struct SecondaryListScaffold {
 
       ListItem() {
         Column() {
-          Blank().height(this.bottomH + this.bottomPadding + this.keyboardPadding())
+          Blank().height(this.layout.bottomAvoidHeight + this.bottomPadding + this.keyboardPadding())
         }
         .width('100%')
       }
@@ -61,6 +63,6 @@ export struct SecondaryListScaffold {
     if (!this.includeKeyboardPadding) {
       return 0
     }
-    return Math.max(0, this.keyboardH)
+    return Math.max(0, this.layout.keyboardHeight)
   }
 }

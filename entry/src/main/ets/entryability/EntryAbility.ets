@@ -7,6 +7,7 @@ import {
   DiagnosticLogger,
   FoldScreenUtil,
   LanguageSettings,
+  LayoutSafeAreaBridge,
   SettingsBootstrap,
   StorageKeys,
   ThemeSettings,
@@ -106,20 +107,17 @@ export default class EntryAbility extends UIAbility {
         let systemArea = win.getWindowAvoidArea(window.AvoidAreaType.TYPE_SYSTEM)
         let navArea = win.getWindowAvoidArea(window.AvoidAreaType.TYPE_NAVIGATION_INDICATOR)
         let uiCtx = windowStage.getMainWindowSync().getUIContext()
-        AppStorage.setOrCreate<number>(
-          StorageKeys.TOP_AVOID_HEIGHT,
+        // Dual-write to V1 AppStorage (read by @StorageProp consumers) and the V2
+        // AppStorageV2 mirror (read by @ComponentV2 consumers) during the backbone migration.
+        LayoutSafeAreaBridge.publishInsets(
           uiCtx.px2vp(systemArea.topRect.height),
-        )
-        AppStorage.setOrCreate<number>(
-          StorageKeys.BOTTOM_AVOID_HEIGHT,
           uiCtx.px2vp(navArea.bottomRect.height),
         )
-        AppStorage.setOrCreate<number>(StorageKeys.KEYBOARD_HEIGHT, 0)
+        LayoutSafeAreaBridge.publishKeyboardHeight(0)
         this.watchKeyboardHeight(win, uiCtx)
       } catch (e) {
-        AppStorage.setOrCreate<number>(StorageKeys.TOP_AVOID_HEIGHT, FALLBACK_TOP_AVOID)
-        AppStorage.setOrCreate<number>(StorageKeys.BOTTOM_AVOID_HEIGHT, FALLBACK_BOTTOM_AVOID)
-        AppStorage.setOrCreate<number>(StorageKeys.KEYBOARD_HEIGHT, 0)
+        LayoutSafeAreaBridge.publishInsets(FALLBACK_TOP_AVOID, FALLBACK_BOTTOM_AVOID)
+        LayoutSafeAreaBridge.publishKeyboardHeight(0)
       }
     })
   }
@@ -157,7 +155,7 @@ export default class EntryAbility extends UIAbility {
       }
     }
     this.keyboardHeightCallback = (height: number) => {
-      AppStorage.setOrCreate<number>(StorageKeys.KEYBOARD_HEIGHT, uiCtx.px2vp(Math.max(0, height)))
+      LayoutSafeAreaBridge.publishKeyboardHeight(uiCtx.px2vp(Math.max(0, height)))
     }
     try {
       win.on('keyboardHeightChange', this.keyboardHeightCallback)

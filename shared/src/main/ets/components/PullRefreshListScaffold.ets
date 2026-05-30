@@ -1,36 +1,39 @@
-import { StorageKeys } from '../constants/StorageKeys'
 import { ThemeConstants } from '../theme/ThemeConstants'
 import { PullRefresh } from './PullRefresh'
+import { connectLayoutSafeArea, LayoutSafeAreaState } from '../state/LayoutSafeAreaState'
 
 const DEFAULT_REFRESH_THRESHOLD: number = 120
 
-@Component
+@ComponentV2
 export struct PullRefreshListScaffold {
   @BuilderParam content: () => void
-  @StorageProp(StorageKeys.TOP_AVOID_HEIGHT) topH: number = 0
-  @StorageProp(StorageKeys.BOTTOM_AVOID_HEIGHT) bottomH: number = 0
-  scroller: Scroller = new Scroller()
-  @Prop listSpace: number = ThemeConstants.SPACE_SM - 2
-  @Prop horizontalPadding: number = ThemeConstants.SPACE_MD
-  @Prop topPadding: number = 0
-  @Prop bottomPadding: number = ThemeConstants.SPACE_XL
-  @Prop indicatorTop: number = -1
-  @Prop refreshThreshold: number = DEFAULT_REFRESH_THRESHOLD
-  @Prop scrollEnabled: boolean = true
-  onRefresh?: () => Promise<void>
-  onBottomRefresh?: () => Promise<void>
-  canStartBottomRefresh?: () => boolean
-  onReachEnd?: () => void
-  onScrollIndex?: (start: number, end: number, center: number) => void
-  onDidScroll?: (offset: number, state: ScrollState) => void
-  onScrollEnableChange?: (enabled: boolean) => void
+  // Safe-area metrics mirrored into AppStorageV2 by EntryAbility's dual-write bridge.
+  // Reading these @Trace fields keeps padding reactive exactly like the former
+  // @StorageProp(StorageKeys.*) reads did.
+  layout: LayoutSafeAreaState = connectLayoutSafeArea()
+  // @Param (not a plain member) because parents pass their own Scroller in by reference.
+  @Param scroller: Scroller = new Scroller()
+  @Param listSpace: number = ThemeConstants.SPACE_SM - 2
+  @Param horizontalPadding: number = ThemeConstants.SPACE_MD
+  @Param topPadding: number = 0
+  @Param bottomPadding: number = ThemeConstants.SPACE_XL
+  @Param indicatorTop: number = -1
+  @Param refreshThreshold: number = DEFAULT_REFRESH_THRESHOLD
+  @Param scrollEnabled: boolean = true
+  @Event onRefresh?: () => Promise<void>
+  @Event onBottomRefresh?: () => Promise<void>
+  @Event canStartBottomRefresh?: () => boolean
+  @Event onReachEnd?: () => void
+  @Event onScrollIndex?: (start: number, end: number, center: number) => void
+  @Event onDidScroll?: (offset: number, state: ScrollState) => void
+  @Event onScrollEnableChange?: (enabled: boolean) => void
 
   build() {
     PullRefresh({
       scroller: this.scroller,
       indicatorTop: this.resolvedIndicatorTop(),
       threshold: this.refreshThreshold,
-      bottomIndicatorBottom: this.bottomH + this.bottomPadding,
+      bottomIndicatorBottom: this.layout.bottomAvoidHeight + this.bottomPadding,
       onRefresh: async () => {
         if (this.onRefresh) {
           await this.onRefresh()
@@ -56,7 +59,7 @@ export struct PullRefreshListScaffold {
       List({ space: this.listSpace, scroller: this.scroller }) {
         ListItem() {
           Column() {
-            Blank().height(this.topH + ThemeConstants.TITLE_BAR_HEIGHT + this.topPadding)
+            Blank().height(this.layout.topAvoidHeight + ThemeConstants.TITLE_BAR_HEIGHT + this.topPadding)
           }
           .width('100%')
         }
@@ -66,7 +69,7 @@ export struct PullRefreshListScaffold {
 
         ListItem() {
           Column() {
-            Blank().height(this.bottomH + this.bottomPadding)
+            Blank().height(this.layout.bottomAvoidHeight + this.bottomPadding)
           }
           .width('100%')
         }
@@ -103,6 +106,6 @@ export struct PullRefreshListScaffold {
     if (this.indicatorTop >= 0) {
       return this.indicatorTop
     }
-    return this.topH + ThemeConstants.TITLE_BAR_HEIGHT / 2 + this.topPadding
+    return this.layout.topAvoidHeight + ThemeConstants.TITLE_BAR_HEIGHT / 2 + this.topPadding
   }
 }
