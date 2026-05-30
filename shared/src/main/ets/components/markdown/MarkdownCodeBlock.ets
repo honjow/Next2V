@@ -1,7 +1,7 @@
 import { pasteboard } from "@kit.BasicServicesKit";
 import { promptAction } from "@kit.ArkUI";
-import { StorageKeys } from "../../constants/StorageKeys";
 import { ReadingSettings } from "../../settings/ReadingSettings";
+import { connectReadingSettings, ReadingSettingsState } from "../../state/ReadingSettingsState";
 import { ThemeConstants } from "../../theme/ThemeConstants";
 import { MarkdownOptions, Tokens } from "../MarkdownContent";
 import { AppStrings } from "../../i18n/AppStrings";
@@ -20,13 +20,14 @@ import {
   normalizeCodeLanguage,
 } from "./MarkdownCodeInternals";
 
-@Component
+@ComponentV2
 export struct MarkdownCodeBlock {
-  @Prop codeToken: Tokens.Code;
-  @Prop options: MarkdownOptions;
-  @StorageLink(StorageKeys.READING_TEXT_SCALE) readingTextScale: number = ReadingSettings.TEXT_SCALE_DEFAULT;
-  @StorageLink(StorageKeys.READING_LINE_HEIGHT) readingLineHeight: number = ThemeConstants.LINE_HEIGHT_BODY;
-  @State private wrapLines: boolean = false;
+  @Require @Param codeToken: Tokens.Code;
+  @Require @Param options: MarkdownOptions;
+  // Reading typography mirrored into AppStorageV2 by ReadingSettings.apply()
+  // (was @StorageLink READING_TEXT_SCALE / READING_LINE_HEIGHT).
+  private reading: ReadingSettingsState = connectReadingSettings();
+  @Local private wrapLines: boolean = false;
 
   private codeText(): string {
     return this.codeToken.text || "";
@@ -55,11 +56,11 @@ export struct MarkdownCodeBlock {
   }
 
   private codeFontSize(): number {
-    return ReadingSettings.scaleTypographyToken(RENDER_CODE_FONT_SIZE, this.readingTextScale);
+    return ReadingSettings.scaleTypographyToken(RENDER_CODE_FONT_SIZE, this.reading.textScale);
   }
 
   private codeLineHeight(): number {
-    return ReadingSettings.scaleTypographyToken(RENDER_CODE_LINE_HEIGHT, this.readingTextScale);
+    return ReadingSettings.scaleTypographyToken(RENDER_CODE_LINE_HEIGHT, this.reading.textScale);
   }
 
   private isDarkMode(): boolean {

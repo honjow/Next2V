@@ -3,6 +3,7 @@ import { preferences } from '@kit.ArkData'
 import { StorageKeys } from '../constants/StorageKeys'
 import { ThemeConstants } from '../theme/ThemeConstants'
 import { STORE_NAME_SETTINGS, SettingsPreferencesStore, setAppStorageValue } from './SettingsStorage'
+import { connectReadingSettings } from '../state/ReadingSettingsState'
 
 const STORE_NAME: string = STORE_NAME_SETTINGS
 const KEY_TEXT_SCALE: string = StorageKeys.READING_TEXT_SCALE
@@ -43,6 +44,11 @@ export class ReadingSettings {
     const normalizedLineHeight = ReadingSettings.normalizeLineHeight(lineHeight, normalizedTextScale)
     setAppStorageValue<number>(StorageKeys.READING_TEXT_SCALE, normalizedTextScale)
     setAppStorageValue<number>(StorageKeys.READING_LINE_HEIGHT, normalizedLineHeight)
+    // V2 mirror dual-write: keeps @ComponentV2 readers (e.g. MarkdownCodeBlock) in sync
+    // with the V1 AppStorage keys read by @StorageLink/@StorageProp consumers.
+    const readingState = connectReadingSettings()
+    readingState.textScale = normalizedTextScale
+    readingState.lineHeight = normalizedLineHeight
     setAppStorageValue<string>(StorageKeys.READING_DENSITY, ReadingSettings.normalizeDensity(density))
     setAppStorageValue<boolean>(StorageKeys.READING_RESTORE_POSITION, restorePosition)
     setAppStorageValue<string>(StorageKeys.READING_BASE64_DECODE_MODE,

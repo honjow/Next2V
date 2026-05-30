@@ -29,6 +29,7 @@
     "shared/src/main/ets/components/ListDivider.ets",
     "shared/src/main/ets/components/LoadingFooter.ets",
     "shared/src/main/ets/components/LocalTopicCard.ets",
+    "shared/src/main/ets/components/markdown/MarkdownCodeBlock.ets",
     "shared/src/main/ets/components/MarkdownToolbar.ets",
     "shared/src/main/ets/components/NodeTag.ets",
     "shared/src/main/ets/components/PageState.ets",
