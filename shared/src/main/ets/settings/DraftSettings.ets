@@ -35,19 +35,24 @@ export class DraftSettings {
     }
   }
 
-  static async saveTopicDraft(context: common.UIAbilityContext, nodeName: string, title: string, content: string): Promise<void> {
+  // Returns the unix-seconds timestamp persisted on the draft (0 when the draft
+  // was empty and therefore cleared). Callers that need to display the saved time
+  // should use this return value rather than recomputing the clock, so the shown
+  // time always matches what was written.
+  static async saveTopicDraft(context: common.UIAbilityContext, nodeName: string, title: string, content: string): Promise<number> {
     const cleanNode = (nodeName ?? '').trim()
     const cleanTitle = (title ?? '').trim()
     const cleanContent = content ?? ''
     if (!cleanNode && !cleanTitle && cleanContent.trim().length === 0) {
       await DraftSettings.clearTopicDraft(context)
-      return
+      return 0
     }
+    const updatedAt = Math.floor(Date.now() / 1000)
     const draft: TopicDraft = {
       nodeName: cleanNode,
       title: cleanTitle,
       content: cleanContent,
-      updatedAt: Math.floor(Date.now() / 1000)
+      updatedAt: updatedAt
     }
     try {
       await withPreferencesStore<void>(context, STORE_NAME, (store) => {
@@ -58,6 +63,7 @@ export class DraftSettings {
       const e = error as Error
       throw new Error(e.message || 'Failed to save draft')
     }
+    return updatedAt
   }
 
   static async clearTopicDraft(context: common.UIAbilityContext): Promise<void> {

@@ -1,23 +1,25 @@
 import { common } from '@kit.AbilityKit'
 import { promptAction } from '@kit.ArkUI'
 import {
-  ApiService, AppStrings, CookieJarSettings, DateUtils, DraftSettings, MarkdownContent, MarkdownToolbar, SecondaryFormScaffold,
+  ApiService, AppStrings, connectNavStack, CookieJarSettings, DateUtils, DraftSettings, MarkdownContent, MarkdownToolbar, SecondaryFormScaffold,
   ThemeConstants, translateApiError
 } from 'shared'
 
-@Component
+@ComponentV2
 export struct TopicEditorPage {
-  @Consume('ns') stack: NavPathStack
+  // Same NavPathStack instance HdsNavigation is bound to (see NavStackHolder);
+  // used purely as a method target (pushPathByName/pop), so no V2 reactivity is needed.
+  private stack: NavPathStack = connectNavStack().stack
 
-  @State private nodeName: string = ''
-  @State private title: string = ''
-  @State private content: string = ''
-  @State private isPreview: boolean = false
-  @State private errorMessage: string = ''
-  @State private savedAt: number = 0
-  @State private isSubmitting: boolean = false
-  @State private contentSelectionStart: number = 0
-  @State private contentSelectionEnd: number = 0
+  @Local private nodeName: string = ''
+  @Local private title: string = ''
+  @Local private content: string = ''
+  @Local private isPreview: boolean = false
+  @Local private errorMessage: string = ''
+  @Local private savedAt: number = 0
+  @Local private isSubmitting: boolean = false
+  @Local private contentSelectionStart: number = 0
+  @Local private contentSelectionEnd: number = 0
 
   private contentController: TextAreaController = new TextAreaController()
   private saveTimerId: number = 0
@@ -237,9 +239,8 @@ export struct TopicEditorPage {
     this.isSaving = true
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     DraftSettings.saveTopicDraft(context, this.nodeName, this.title, this.content)
-      .then(() => {
-        const now = Math.floor(Date.now() / 1000)
-        this.savedAt = now
+      .then((savedAt: number) => {
+        this.savedAt = savedAt
       })
       .catch((error: Error) => {
         this.errorMessage = translateApiError(error)
