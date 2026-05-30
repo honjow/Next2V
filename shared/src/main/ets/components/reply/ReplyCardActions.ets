@@ -3,25 +3,25 @@ import { ThemeConstants } from '../../theme/ThemeConstants'
 import { SymbolGlyphModifier } from '@kit.ArkUI'
 import { AppStrings } from '../../i18n/AppStrings'
 
-@Component
+@ComponentV2
 export struct ReplyCardActions {
-  @Prop reply: V2exReply;
-  @Prop isThanked: boolean = false;
-  @Prop isThankPending: boolean = false;
-  onActionsClick?: (reply: V2exReply) => void;
-  onContextClick?: (reply: V2exReply) => void;
-  onReplyClick?: (reply: V2exReply) => void;
-  onThankClick?: (reply: V2exReply) => void;
-  onIgnoreClick?: (reply: V2exReply) => void;
-  onReportClick?: (reply: V2exReply) => void;
-  onCopyUserClick?: (reply: V2exReply) => void;
-  onCopyContentClick?: (reply: V2exReply) => void;
-  @State private actionsMenuShown: boolean = false;
-  @State contextIcon: SymbolGlyphModifier = new SymbolGlyphModifier($r('sys.symbol.ellipsis_bubble'));
-  @State copyUserIcon: SymbolGlyphModifier = new SymbolGlyphModifier($r('sys.symbol.person'));
-  @State copyContentIcon: SymbolGlyphModifier = new SymbolGlyphModifier($r('sys.symbol.doc_plaintext'));
-  @State ignoreIcon: SymbolGlyphModifier = new SymbolGlyphModifier($r('sys.symbol.xmark'));
-  @State reportIcon: SymbolGlyphModifier = new SymbolGlyphModifier($r('sys.symbol.exclamationmark_triangle'));
+  @Require @Param reply: V2exReply;
+  @Param isThanked: boolean = false;
+  @Param isThankPending: boolean = false;
+  @Event onActionsClick?: (reply: V2exReply) => void;
+  @Event onContextClick?: (reply: V2exReply) => void;
+  @Event onReplyClick?: (reply: V2exReply) => void;
+  @Event onThankClick?: (reply: V2exReply) => void;
+  @Event onIgnoreClick?: (reply: V2exReply) => void;
+  @Event onReportClick?: (reply: V2exReply) => void;
+  @Event onCopyUserClick?: (reply: V2exReply) => void;
+  @Event onCopyContentClick?: (reply: V2exReply) => void;
+  @Local private actionsMenuShown: boolean = false;
+  @Local contextIcon: SymbolGlyphModifier = new SymbolGlyphModifier($r('sys.symbol.ellipsis_bubble'));
+  @Local copyUserIcon: SymbolGlyphModifier = new SymbolGlyphModifier($r('sys.symbol.person'));
+  @Local copyContentIcon: SymbolGlyphModifier = new SymbolGlyphModifier($r('sys.symbol.doc_plaintext'));
+  @Local ignoreIcon: SymbolGlyphModifier = new SymbolGlyphModifier($r('sys.symbol.xmark'));
+  @Local reportIcon: SymbolGlyphModifier = new SymbolGlyphModifier($r('sys.symbol.exclamationmark_triangle'));
 
   private hasContextMenuActions(): boolean {
     return !!(

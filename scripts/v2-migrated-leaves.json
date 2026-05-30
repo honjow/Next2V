@@ -32,6 +32,8 @@
     "shared/src/main/ets/components/TopicCard.ets",
     "shared/src/main/ets/components/UserName.ets",
     "shared/src/main/ets/components/V2exWebView.ets",
-    "shared/src/main/ets/components/V2exWebViewScaffold.ets"
+    "shared/src/main/ets/components/V2exWebViewScaffold.ets",
+    "shared/src/main/ets/components/reply/ReplyCardActions.ets",
+    "shared/src/main/ets/components/reply/ReplyCardHeader.ets"
   ]
 }

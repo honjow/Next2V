@@ -5,24 +5,24 @@ import { Avatar } from '../Avatar'
 import { TimeAgo } from '../TimeAgo'
 import { ReplyCardActions } from './ReplyCardActions'
 
-@Component
+@ComponentV2
 export struct ReplyCardHeader {
-  @Prop reply: V2exReply;
-  @Prop floor: number = 1;
-  @Prop isOp: boolean = false;
-  @Prop isDuplicateThreadItem: boolean = false;
-  @Prop isCompact: boolean = false;
-  @Prop isThanked: boolean = false;
-  @Prop isThankPending: boolean = false;
-  onUserClick?: (reply: V2exReply) => void;
-  onActionsClick?: (reply: V2exReply) => void;
-  onContextClick?: (reply: V2exReply) => void;
-  onReplyClick?: (reply: V2exReply) => void;
-  onThankClick?: (reply: V2exReply) => void;
-  onIgnoreClick?: (reply: V2exReply) => void;
-  onReportClick?: (reply: V2exReply) => void;
-  onCopyUserClick?: (reply: V2exReply) => void;
-  onCopyContentClick?: (reply: V2exReply) => void;
+  @Require @Param reply: V2exReply;
+  @Param floor: number = 1;
+  @Param isOp: boolean = false;
+  @Param isDuplicateThreadItem: boolean = false;
+  @Param isCompact: boolean = false;
+  @Param isThanked: boolean = false;
+  @Param isThankPending: boolean = false;
+  @Event onUserClick?: (reply: V2exReply) => void;
+  @Event onActionsClick?: (reply: V2exReply) => void;
+  @Event onContextClick?: (reply: V2exReply) => void;
+  @Event onReplyClick?: (reply: V2exReply) => void;
+  @Event onThankClick?: (reply: V2exReply) => void;
+  @Event onIgnoreClick?: (reply: V2exReply) => void;
+  @Event onReportClick?: (reply: V2exReply) => void;
+  @Event onCopyUserClick?: (reply: V2exReply) => void;
+  @Event onCopyContentClick?: (reply: V2exReply) => void;
 
   build() {
     Row({ space: ThemeConstants.SPACE_SM }) {
