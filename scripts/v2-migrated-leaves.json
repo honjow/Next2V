@@ -53,6 +53,8 @@
     "entry/src/main/ets/pages/SavedTopicsPage.ets",
     "entry/src/main/ets/pages/ViewedTopicsPage.ets",
     "entry/src/main/ets/pages/SavedNodesPage.ets",
-    "entry/src/main/ets/pages/MyNodesPage.ets"
+    "entry/src/main/ets/pages/MyNodesPage.ets",
+    "entry/src/main/ets/pages/AccountFollowingPage.ets",
+    "entry/src/main/ets/pages/AccountManagementPage.ets"
   ]
 }

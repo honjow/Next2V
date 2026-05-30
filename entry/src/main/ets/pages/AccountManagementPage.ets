@@ -4,6 +4,7 @@ import {
   AccountStore,
   AppStrings,
   ConciseListRow,
+  connectNavStack,
   GroupedListSection,
   ListDivider as SharedListDivider,
   SecondaryListScaffold,
@@ -13,12 +14,14 @@ import {
 import type { AccountRecord } from 'shared'
 import { AccountPageCoordinator } from '../model/AccountPageCoordinator'
 
-@Component
+@ComponentV2
 export struct AccountManagementPage {
-  @Consume('ns') ns: NavPathStack
-  @State private accounts: AccountRecord[] = []
-  @State private activeAccountId: string = ''
-  @State private isLoaded: boolean = false
+  // Same NavPathStack instance HdsNavigation is bound to (see NavStackHolder);
+  // used purely as a method target (pushPathByName), so no V2 reactivity is needed.
+  private ns: NavPathStack = connectNavStack().stack
+  @Local private accounts: AccountRecord[] = []
+  @Local private activeAccountId: string = ''
+  @Local private isLoaded: boolean = false
 
   aboutToAppear(): void {
     this.loadAccounts()

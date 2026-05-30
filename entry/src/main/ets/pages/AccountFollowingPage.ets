@@ -4,6 +4,7 @@ import {
   AccountMemberRow,
   ApiService,
   CardEmptyState,
+  connectNavStack,
   CookieJarSettings,
   PageErrorState,
   PageLoadingState,
@@ -14,14 +15,16 @@ import {
   type V2exAccountMemberListItem
 } from 'shared'
 
-@Component
+@ComponentV2
 export struct AccountFollowingPage {
-  @Consume('ns') stack: NavPathStack
+  // Same NavPathStack instance HdsNavigation is bound to (see NavStackHolder);
+  // used purely as a method target (pushPathByName), so no V2 reactivity is needed.
+  private stack: NavPathStack = connectNavStack().stack
 
-  @State private members: V2exAccountMemberListItem[] = []
-  @State private errorMessage: string = ''
-  @State private isLoading: boolean = false
-  @State private scrollEnabled: boolean = true
+  @Local private members: V2exAccountMemberListItem[] = []
+  @Local private errorMessage: string = ''
+  @Local private isLoading: boolean = false
+  @Local private scrollEnabled: boolean = true
 
   private api: ApiService = new ApiService()
 
