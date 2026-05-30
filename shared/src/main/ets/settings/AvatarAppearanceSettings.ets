@@ -4,6 +4,7 @@ import { StorageKeys } from '../constants/StorageKeys'
 import { AppStrings } from '../i18n/AppStrings'
 import { SettingDescriptor, applyDescriptorValue, readDescriptorValue } from './SettingsDescriptor'
 import { STORE_NAME_SETTINGS, SettingsPreferencesStore } from './SettingsStorage'
+import { connectAvatarAppearance } from '../state/AvatarAppearanceState'
 
 const STORE_NAME: string = STORE_NAME_SETTINGS
 const KEY_AVATAR_APPEARANCE: string = StorageKeys.AVATAR_APPEARANCE
@@ -34,8 +35,13 @@ export class AvatarAppearanceSettings {
   static readonly APPEARANCE_CIRCLE: string = APPEARANCE_CIRCLE
   static readonly APPEARANCE_SOFT: string = APPEARANCE_SOFT
 
-  static apply(appearance: string): void {
-    applyDescriptorValue<string>(AVATAR_APPEARANCE_DESCRIPTOR, appearance)
+  // Single dual-write point: writes the legacy V1 AppStorage key (applyDescriptorValue
+  // -> setAppStorageValue) AND the V2 mirror, so @StorageProp and @ComponentV2 readers
+  // stay in lockstep during the migration. Returns the normalized value.
+  static apply(appearance: string): string {
+    const normalized = applyDescriptorValue<string>(AVATAR_APPEARANCE_DESCRIPTOR, appearance)
+    connectAvatarAppearance().appearance = normalized
+    return normalized
   }
 
   static async load(context: common.UIAbilityContext): Promise<string> {
@@ -55,7 +61,8 @@ export class AvatarAppearanceSettings {
   }
 
   static async save(context: common.UIAbilityContext, appearance: string): Promise<void> {
-    const normalized = applyDescriptorValue<string>(AVATAR_APPEARANCE_DESCRIPTOR, appearance)
+    // Route through apply() so the AppStorage write AND the V2 mirror stay in sync.
+    const normalized = AvatarAppearanceSettings.apply(appearance)
     try {
       const store = await preferences.getPreferences(context, STORE_NAME)
       store.putSync(KEY_AVATAR_APPEARANCE, normalized)

@@ -1,13 +1,16 @@
-import { StorageKeys } from '../constants/StorageKeys'
 import { AvatarAppearanceSettings } from '../settings/AvatarAppearanceSettings'
+import { connectAvatarAppearance, AvatarAppearanceState } from '../state/AvatarAppearanceState'
 import { ImageUtils } from '../utils/ImageUtils'
 
-@Component
+@ComponentV2
 export struct Avatar {
-  @Prop url: string = ''
-  @Prop avatarSize: number = 48
-  @Prop placeholder: string = ''
-  @StorageProp(StorageKeys.AVATAR_APPEARANCE) private avatarAppearance: string = AvatarAppearanceSettings.APPEARANCE_CIRCLE
+  @Param url: string = ''
+  @Param avatarSize: number = 48
+  @Param placeholder: string = ''
+  // Avatar appearance mirrored into AppStorageV2 by AvatarAppearanceSettings.apply()
+  // (was @StorageProp(StorageKeys.AVATAR_APPEARANCE)); reading the @Trace field keeps
+  // the shape reactive to the settings dropdown.
+  private appearanceState: AvatarAppearanceState = connectAvatarAppearance()
 
   build() {
     Stack({ alignContent: Alignment.Center }) {
@@ -31,7 +34,7 @@ export struct Avatar {
   }
 
   private avatarRadius(): number {
-    return AvatarAppearanceSettings.radiusForSize(this.avatarSize, this.avatarAppearance)
+    return AvatarAppearanceSettings.radiusForSize(this.avatarSize, this.appearanceState.appearance)
   }
 
   private placeholderInitial(): string {
