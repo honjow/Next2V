@@ -3,6 +3,7 @@
   "files": [
     "shared/src/main/ets/components/AccountMemberRow.ets",
     "shared/src/main/ets/components/AppActionButton.ets",
+    "shared/src/main/ets/components/ConciseListRow.ets",
     "shared/src/main/ets/components/EmptyState.ets",
     "shared/src/main/ets/components/FilterChip.ets",
     "shared/src/main/ets/components/GroupedListSection.ets",

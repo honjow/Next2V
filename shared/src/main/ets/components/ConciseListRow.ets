@@ -10,31 +10,31 @@ import { ImageModifier, TextModifier } from '@kit.ArkUI'
 import { ThemeConstants } from '../theme/ThemeConstants'
 import { ImageUtils } from '../utils/ImageUtils'
 
-@Component
+@ComponentV2
 export struct ConciseListRow {
-  @Prop title: ResourceStr = ''
-  @Prop subtitle: ResourceStr = ''
-  @Prop trailingText: ResourceStr = ''
-  @Prop leadingImageUrl: string = ''
-  @Prop count: number = -1
-  @Prop destructive: boolean = false
-  @Prop showChevron: boolean = true
-  @Prop trailingDropdown: boolean = false
-  @Prop hasSwitch: boolean = false
-  @Prop hasCounter: boolean = false
-  @Prop counterValue: string = ''
-  @Prop counterDecreaseEnabled: boolean = true
-  @Prop counterIncreaseEnabled: boolean = true
-  @Prop checked: boolean = false
-  @Prop isEnabled: boolean = true
-  primaryColor?: Color
-  secondaryColor?: Color
-  action?: () => void
+  @Param title: ResourceStr = ''
+  @Param subtitle: ResourceStr = ''
+  @Param trailingText: ResourceStr = ''
+  @Param leadingImageUrl: string = ''
+  @Param count: number = -1
+  @Param destructive: boolean = false
+  @Param showChevron: boolean = true
+  @Param trailingDropdown: boolean = false
+  @Param hasSwitch: boolean = false
+  @Param hasCounter: boolean = false
+  @Param counterValue: string = ''
+  @Param counterDecreaseEnabled: boolean = true
+  @Param counterIncreaseEnabled: boolean = true
+  @Param checked: boolean = false
+  @Param isEnabled: boolean = true
+  @Param primaryColor: Color | undefined = undefined
+  @Param secondaryColor: Color | undefined = undefined
+  @Event action?: () => void
   @BuilderParam suffixBuilderParam?: () => void
   @BuilderParam prefixBuilderParam?: () => void
-  switchAction?: (value: boolean) => void
-  counterDecreaseAction?: () => void
-  counterIncreaseAction?: () => void
+  @Event switchAction?: (value: boolean) => void
+  @Event counterDecreaseAction?: () => void
+  @Event counterIncreaseAction?: () => void
 
   private primaryTextModifier(): TextModifier {
     return new TextModifier()
