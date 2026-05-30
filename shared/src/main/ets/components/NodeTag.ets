@@ -1,9 +1,9 @@
 import { ThemeConstants } from '../theme/ThemeConstants'
 
-@Component
+@ComponentV2
 export struct NodeTag {
-  @Prop nodeName: string = ''
-  @Prop nodeTitle: string = ''
+  @Param nodeName: string = ''
+  @Param nodeTitle: string = ''
 
   build() {
     Text(this.nodeTitle || this.nodeName)

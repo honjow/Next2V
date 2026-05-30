@@ -1,11 +1,11 @@
 import { ThemeConstants } from '../theme/ThemeConstants'
 
-@Component
+@ComponentV2
 export struct UserName {
-  @Prop username: string = ''
-  @Prop fontSize: number = 14
-  @Prop isPro: boolean = false
-  onUserClick?: () => void
+  @Param username: string = ''
+  @Param fontSize: number = 14
+  @Param isPro: boolean = false
+  @Event onUserClick?: () => void
 
   build() {
     Row({ space: ThemeConstants.SPACE_XS }) {

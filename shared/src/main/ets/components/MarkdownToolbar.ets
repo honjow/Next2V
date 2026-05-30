@@ -1,20 +1,20 @@
 import { ThemeConstants } from '../theme/ThemeConstants'
 import { AppStrings } from '../i18n/AppStrings'
 
-@Component
+@ComponentV2
 export struct MarkdownToolbar {
-  @Prop previewActive: boolean = false
+  @Param previewActive: boolean = false
 
-  onEdit?: () => void
-  onPreview?: () => void
-  onBold?: () => void
-  onItalic?: () => void
-  onCode?: () => void
-  onQuote?: () => void
-  onList?: () => void
-  onLink?: () => void
-  onImage?: () => void
-  onClear?: () => void
+  @Event onEdit?: () => void
+  @Event onPreview?: () => void
+  @Event onBold?: () => void
+  @Event onItalic?: () => void
+  @Event onCode?: () => void
+  @Event onQuote?: () => void
+  @Event onList?: () => void
+  @Event onLink?: () => void
+  @Event onImage?: () => void
+  @Event onClear?: () => void
 
   build() {
     Scroll() {

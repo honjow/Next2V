@@ -1,10 +1,10 @@
 import { AppStrings } from '../i18n/AppStrings'
 import { ThemeConstants } from '../theme/ThemeConstants'
 
-@Component
+@ComponentV2
 export struct PageLoadingState {
-  @Prop stateHeight: number = 0
-  @Prop expand: boolean = true
+  @Param stateHeight: number = 0
+  @Param expand: boolean = true
 
   build() {
     Column() {
@@ -19,14 +19,14 @@ export struct PageLoadingState {
   }
 }
 
-@Component
+@ComponentV2
 export struct PageErrorState {
-  @Prop message: ResourceStr = AppStrings.R_COMMON_LOAD_FAILED
-  @Prop retryLabel: ResourceStr = AppStrings.R_COMMON_RETRY
-  @Prop secondaryLabel: ResourceStr = ''
-  @Prop expand: boolean = true
-  retryAction?: () => void
-  secondaryAction?: () => void
+  @Param message: ResourceStr = AppStrings.R_COMMON_LOAD_FAILED
+  @Param retryLabel: ResourceStr = AppStrings.R_COMMON_RETRY
+  @Param secondaryLabel: ResourceStr = ''
+  @Param expand: boolean = true
+  @Event retryAction?: () => void
+  @Event secondaryAction?: () => void
 
   build() {
     Column({ space: ThemeConstants.SPACE_SM }) {
@@ -62,12 +62,12 @@ export struct PageErrorState {
   }
 }
 
-@Component
+@ComponentV2
 export struct PageLoginRequiredState {
-  @Prop message: ResourceStr = AppStrings.R_LOGIN_REQUIRED_CONTINUE
-  @Prop actionLabel: ResourceStr = AppStrings.R_LOGIN_ACTION
-  @Prop expand: boolean = true
-  action?: () => void
+  @Param message: ResourceStr = AppStrings.R_LOGIN_REQUIRED_CONTINUE
+  @Param actionLabel: ResourceStr = AppStrings.R_LOGIN_ACTION
+  @Param expand: boolean = true
+  @Event action?: () => void
 
   build() {
     Column({ space: ThemeConstants.SPACE_SM }) {
@@ -90,10 +90,10 @@ export struct PageLoginRequiredState {
   }
 }
 
-@Component
+@ComponentV2
 export struct CardEmptyState {
-  @Prop message: ResourceStr = ''
-  @Prop expand: boolean = true
+  @Param message: ResourceStr = ''
+  @Param expand: boolean = true
 
   build() {
     Column() {

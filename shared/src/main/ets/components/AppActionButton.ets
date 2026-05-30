@@ -1,11 +1,11 @@
 import { ThemeConstants } from '../theme/ThemeConstants'
 
-@Component
+@ComponentV2
 export struct AppActionButton {
-  @Prop label: ResourceStr = ''
-  @Prop primary: boolean = false
-  @Prop isEnabled: boolean = true
-  action?: () => void
+  @Param label: ResourceStr = ''
+  @Param primary: boolean = false
+  @Param isEnabled: boolean = true
+  @Event action?: () => void
 
   build() {
     Button(this.label, { type: ButtonType.Capsule })
