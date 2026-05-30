@@ -8,28 +8,38 @@ import {
   V2exWebView,
   V2exWebViewScaffold,
   V2exUrlRouter,
+  connectNavStack,
+  connectAccountWebViewAction,
+  AccountWebViewActionState,
 } from 'shared'
 
 interface PageEndEvent {
   url: string
 }
 
-@Component
+@ComponentV2
 export struct AccountWebViewPage {
-  @Consume('ns') ns: NavPathStack
-  @StorageLink(StorageKeys.ACCOUNT_WEB_VIEW_URL) targetUrl: string = ''
-  @StorageLink(StorageKeys.ACCOUNT_WEB_VIEW_ACTION) @Watch('onAccountWebViewAction') accountWebViewAction: string = ''
+  // Same NavPathStack instance HdsNavigation is bound to (see NavStackHolder); method target only.
+  private ns: NavPathStack = connectNavStack().stack
+  // The target URL is an input param the V1 opener (AccountDetailPage) writes into AppStorage before
+  // navigating; it is logic-only (never read in build()) and Index still reads the V1 key, so it is
+  // read imperatively on appear and the normalised value is written back to AppStorage (no mirror).
+  private targetUrl: string = ''
+  // V2 mirror of the one-directional ACCOUNT_WEB_VIEW_ACTION reload bus (Index dual-writes).
+  // Reacted to via @Monitor below; never read in build().
+  @Local private actionState: AccountWebViewActionState = connectAccountWebViewAction()
 
   private controller: webview.WebviewController = new webview.WebviewController()
   private http: HttpClient = HttpClient.getInstance()
 
-  @State private isLoading: boolean = true
-  @State private errorMessage: string = ''
-  @State private pageMessage: string = AppStrings.text(AppStrings.R_COMMON_LOADING, 'Loading…')
-  @State private hasInjectedCookie: boolean = false
-  @State private hasLoadRequested: boolean = false
+  @Local private isLoading: boolean = true
+  @Local private errorMessage: string = ''
+  @Local private pageMessage: string = AppStrings.text(AppStrings.R_COMMON_LOADING, 'Loading…')
+  @Local private hasInjectedCookie: boolean = false
+  @Local private hasLoadRequested: boolean = false
 
   aboutToAppear(): void {
+    this.targetUrl = AppStorage.get<string>(StorageKeys.ACCOUNT_WEB_VIEW_URL) ?? ''
     if (!this.targetUrl) {
       this.errorMessage = AppStrings.text(AppStrings.R_COMMON_LOAD_FAILED, 'No page URL provided')
       this.pageMessage = ''
@@ -91,8 +101,9 @@ export struct AccountWebViewPage {
     return this.pageMessage
   }
 
-  onAccountWebViewAction(_propName: string): void {
-    const action = this.accountWebViewAction.split(':').pop() || ''
+  @Monitor('actionState.command')
+  onAccountWebViewAction(): void {
+    const action = (this.actionState.command || '').split(':').pop() || ''
     if (action === 'reload') {
       this.reloadPage()
     }
@@ -142,6 +153,9 @@ export struct AccountWebViewPage {
     }
 
     this.targetUrl = normalizedTargetUrl
+    // Write back the normalised URL to the V1 AppStorage key (still read by Index) — previously
+    // done implicitly by the @StorageLink two-way binding.
+    AppStorage.setOrCreate<string>(StorageKeys.ACCOUNT_WEB_VIEW_URL, normalizedTargetUrl)
     this.pageMessage = AppStrings.format(AppStrings.text(AppStrings.R_WEB_LOGIN_OPENING_URL, 'Opening {0}'), [normalizedTargetUrl])
     this.injectCookie(cookie, this.webBaseUrl())
       .then(() => {

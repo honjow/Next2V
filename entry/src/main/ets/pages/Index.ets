@@ -21,6 +21,7 @@ import {
   ApiConstants,
   ApiService,
   AuthSettings,
+  connectAccountWebViewAction,
   connectImagePreviewAction,
   connectNavStack,
   connectNodeTopicAction,
@@ -1193,10 +1194,11 @@ struct Index {
   }
 
   private sendAccountWebViewAction(action: string): void {
-    AppStorage.setOrCreate<string>(
-      StorageKeys.ACCOUNT_WEB_VIEW_ACTION,
-      IndexRouteCoordinator.simpleCommand(action, Date.now()),
-    )
+    // Dual-write the V1 AppStorage command AND the V2 mirror (read by @ComponentV2
+    // AccountWebViewPage) from this single writer so the two stores stay in lockstep.
+    const command = IndexRouteCoordinator.simpleCommand(action, Date.now())
+    AppStorage.setOrCreate<string>(StorageKeys.ACCOUNT_WEB_VIEW_ACTION, command)
+    connectAccountWebViewAction().command = command
   }
 
   private startAddAccount(): void {

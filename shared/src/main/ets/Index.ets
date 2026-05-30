@@ -60,6 +60,7 @@ export { ImagePreviewActionState, connectImagePreviewAction } from './state/Imag
 export { NodeTopicActionState, connectNodeTopicAction } from './state/NodeTopicActionState'
 export { UserProfileActionState, connectUserProfileAction } from './state/UserProfileActionState'
 export { SearchActionState, connectSearchAction } from './state/SearchActionState'
+export { AccountWebViewActionState, connectAccountWebViewAction } from './state/AccountWebViewActionState'
 export {
   BlockedListSelectedTabState,
   connectBlockedListSelectedTab,
