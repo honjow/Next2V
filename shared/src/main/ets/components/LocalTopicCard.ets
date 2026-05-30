@@ -1,22 +1,22 @@
 import { V2exMember, V2exNode, V2exTopic } from '../network/NetworkTypes'
 import { TopicCard } from './TopicCard'
 
-@Component
+@ComponentV2
 export struct LocalTopicCard {
-  @Prop topicId: number
-  @Prop title: string
-  @Prop nodeName: string = ''
-  @Prop nodeTitle: string = ''
-  @Prop username: string = ''
-  @Prop avatar: string = ''
-  @Prop memberPro: number = 0
-  @Prop created: number = 0
-  @Prop replyCount: number = 0
-  @Prop hasReplyCount: boolean = false
-  @Prop metaLabel: string = ''
-  @Prop metaTimestamp: number = 0
-  onUserClick?: () => void
-  onNodeClick?: () => void
+  @Param topicId: number = 0
+  @Param title: string = ''
+  @Param nodeName: string = ''
+  @Param nodeTitle: string = ''
+  @Param username: string = ''
+  @Param avatar: string = ''
+  @Param memberPro: number = 0
+  @Param created: number = 0
+  @Param replyCount: number = 0
+  @Param hasReplyCount: boolean = false
+  @Param metaLabel: string = ''
+  @Param metaTimestamp: number = 0
+  @Event onUserClick?: () => void
+  @Event onNodeClick?: () => void
 
   build() {
     TopicCard({

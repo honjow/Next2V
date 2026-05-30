@@ -2,14 +2,14 @@ import type { V2exAccountMemberListItem } from '../parser/V2exAccountListParser'
 import { ThemeConstants } from '../theme/ThemeConstants'
 import { Avatar } from './Avatar'
 
-@Component
+@ComponentV2
 export struct AccountMemberRow {
-  item: V2exAccountMemberListItem = {
+  @Param item: V2exAccountMemberListItem = {
     username: '',
     avatar: '',
     subtitle: ''
   }
-  @Prop avatarPlaceholder: string = ''
+  @Param avatarPlaceholder: string = ''
 
   build() {
     Row({ space: ThemeConstants.SPACE_MD }) {

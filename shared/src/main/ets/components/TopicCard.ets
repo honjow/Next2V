@@ -7,16 +7,16 @@ import { NodeTag } from './NodeTag'
 import { ImageUtils } from '../utils/ImageUtils'
 import { AppStrings } from '../i18n/AppStrings'
 
-@Component
+@ComponentV2
 export struct TopicCard {
-  @Prop item: V2exTopic
-  @Prop isUnread: boolean = false
-  @Prop metaLabel: string = AppStrings.text(AppStrings.R_TOPIC_LAST_REPLY, 'Last reply')
-  @Prop metaTimestamp: number = 0
-  @Prop showReplyCount: boolean = true
-  @Prop showNodeTag: boolean = true
-  onUserClick?: () => void
-  onNodeClick?: () => void
+  @Require @Param item: V2exTopic
+  @Param isUnread: boolean = false
+  @Param metaLabel: string = AppStrings.text(AppStrings.R_TOPIC_LAST_REPLY, 'Last reply')
+  @Param metaTimestamp: number = 0
+  @Param showReplyCount: boolean = true
+  @Param showNodeTag: boolean = true
+  @Event onUserClick?: () => void
+  @Event onNodeClick?: () => void
 
   build() {
     Column({ space: ThemeConstants.SPACE_XS }) {
