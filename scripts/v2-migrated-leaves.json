@@ -8,6 +8,8 @@
     "entry/src/main/ets/pages/AboutPage.ets",
     "feature/node/src/main/ets/components/DiscoverPageComponents.ets",
     "feature/node/src/main/ets/components/NodePickerComponents.ets",
+    "feature/settings/src/main/ets/components/SettingsPageComponents.ets",
+    "feature/settings/src/main/ets/pages/StorageSettingsPage.ets",
     "shared/src/main/ets/components/AccountMemberRow.ets",
     "shared/src/main/ets/components/AppActionButton.ets",
     "shared/src/main/ets/components/ConciseListRow.ets",

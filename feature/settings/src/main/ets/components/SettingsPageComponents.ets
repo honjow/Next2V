@@ -11,9 +11,9 @@ import { SymbolGlyphModifier } from '@kit.ArkUI'
 
 const READING_PREVIEW_FIXED_HEIGHT: number = 220
 
-@Component
+@ComponentV2
 export struct SettingsSectionHeader {
-  @Prop title: ResourceStr = ''
+  @Param title: ResourceStr = ''
 
   build() {
     SharedSectionHeader({ title: this.title })
@@ -21,19 +21,19 @@ export struct SettingsSectionHeader {
   }
 }
 
-@Component
+@ComponentV2
 export struct SettingsDivider {
   build() {
     SharedListDivider()
   }
 }
 
-@Component
+@ComponentV2
 export struct SettingsToggleRow {
-  @Prop title: ResourceStr = ''
-  @Prop checked: boolean = false
-  @Prop isEnabled: boolean = true
-  changeAction?: (value: boolean) => void
+  @Param title: ResourceStr = ''
+  @Param checked: boolean = false
+  @Param isEnabled: boolean = true
+  @Event changeAction?: (value: boolean) => void
 
   build() {
     ConciseListRow({
@@ -51,12 +51,12 @@ export struct SettingsToggleRow {
   }
 }
 
-@Component
+@ComponentV2
 export struct SettingsDropdownRow {
-  @Prop title: ResourceStr = ''
-  @Prop subtitle: ResourceStr = ''
-  @Prop trailingText: ResourceStr = ''
-  openAction?: () => void
+  @Param title: ResourceStr = ''
+  @Param subtitle: ResourceStr = ''
+  @Param trailingText: ResourceStr = ''
+  @Event openAction?: () => void
 
   build() {
     ConciseListRow({
@@ -74,11 +74,11 @@ export struct SettingsDropdownRow {
   }
 }
 
-@Component
+@ComponentV2
 export struct SettingsCheckedMenuItem {
-  @Prop label: ResourceStr = ''
-  @Prop selected: boolean = false
-  selectAction?: () => void
+  @Param label: ResourceStr = ''
+  @Param selected: boolean = false
+  @Event selectAction?: () => void
 
   build() {
     MenuItem({
@@ -92,9 +92,9 @@ export struct SettingsCheckedMenuItem {
   }
 }
 
-@Component
+@ComponentV2
 export struct ReadingPreviewPanel {
-  @Prop textScale: number = ReadingSettings.TEXT_SCALE_DEFAULT
+  @Param textScale: number = ReadingSettings.TEXT_SCALE_DEFAULT
 
   build() {
     Column() {
@@ -165,11 +165,11 @@ export struct ReadingPreviewPanel {
   }
 }
 
-@Component
+@ComponentV2
 export struct ReadingScaleControlSection {
-  @Prop textScale: number = ReadingSettings.TEXT_SCALE_DEFAULT
-  changeAction?: (value: number) => void
-  resetAction?: () => void
+  @Param textScale: number = ReadingSettings.TEXT_SCALE_DEFAULT
+  @Event changeAction?: (value: number) => void
+  @Event resetAction?: () => void
 
   build() {
     GroupedListSection({ radius: ThemeConstants.RADIUS_CARD }) {
@@ -226,11 +226,11 @@ export struct ReadingScaleControlSection {
   }
 }
 
-@Component
+@ComponentV2
 export struct HomeNodeVisibilityButton {
-  @Prop label: ResourceStr = ''
-  @Prop isEnabled: boolean = true
-  clickAction?: () => void
+  @Param label: ResourceStr = ''
+  @Param isEnabled: boolean = true
+  @Event clickAction?: () => void
 
   build() {
     Button(this.label)

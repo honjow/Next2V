@@ -22,15 +22,15 @@ import {
 } from '../model/StorageSettingsCoordinator'
 import { BackupFilePickerCoordinator } from '../model/BackupFilePickerCoordinator'
 
-@Component
+@ComponentV2
 export struct StorageSettingsPage {
-  @State private cacheStats: CacheStats = { topicListCount: 0, topicDetailCount: 0, updatedAt: 0 }
-  @State private cacheMessage: string = ''
-  @State private seedMessage: string = ''
-  @State private localDataMessage: string = ''
-  @State private backupMessage: string = ''
-  @State private pendingBackupEnvelope: BackupEnvelopeV1 | null = null
-  @State private accountSeedMessage: string = ''
+  @Local private cacheStats: CacheStats = { topicListCount: 0, topicDetailCount: 0, updatedAt: 0 }
+  @Local private cacheMessage: string = ''
+  @Local private seedMessage: string = ''
+  @Local private localDataMessage: string = ''
+  @Local private backupMessage: string = ''
+  @Local private pendingBackupEnvelope: BackupEnvelopeV1 | null = null
+  @Local private accountSeedMessage: string = ''
 
   aboutToAppear(): void {
     this.loadCacheStats()
