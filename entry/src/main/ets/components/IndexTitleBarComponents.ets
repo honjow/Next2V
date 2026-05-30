@@ -4,6 +4,8 @@ import {
   AppStrings,
   AppSearchField,
   Avatar,
+  connectDiscoverKeyword,
+  DiscoverKeywordState,
   FeedTabSettings,
   StorageKeys,
   TabItem,
@@ -283,17 +285,18 @@ export function PillCCBuilder() {
   FeedPills()
 }
 
-@Component
+@ComponentV2
 struct DiscoverSearchComponent {
-  @StorageLink(StorageKeys.DISCOVER_NODE_KEYWORD) keyword: string = '';
+  // Shared with DiscoverPage via AppStorageV2 (replaces the V1 DISCOVER_NODE_KEYWORD bus).
+  @Local kwState: DiscoverKeywordState = connectDiscoverKeyword()
 
   build() {
     Row() {
       AppSearchField({
-        text: this.keyword,
+        text: this.kwState.keyword,
         placeholder: $r('app.string.search_discover_nodes_placeholder'),
         onTextChange: (value: string) => {
-          this.keyword = value
+          this.kwState.keyword = value
         },
       })
     }

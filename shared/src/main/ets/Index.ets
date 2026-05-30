@@ -53,6 +53,7 @@ export { ReadingSettingsState, connectReadingSettings } from './state/ReadingSet
 export { ApiDomainState, connectApiDomain } from './state/ApiDomainState'
 export { DiagnosticsState, connectDiagnostics } from './state/DiagnosticsState'
 export { NavStackHolder, connectNavStack } from './state/NavStackHolder'
+export { DiscoverKeywordState, connectDiscoverKeyword } from './state/DiscoverKeywordState'
 export { STORE_NAME_SETTINGS, setAppStorageValue } from './settings/SettingsStorage'
 export { SettingsBootstrap } from './settings/SettingsBootstrap'
 export { AppStrings } from './i18n/AppStrings'

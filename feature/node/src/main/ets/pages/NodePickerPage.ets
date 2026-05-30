@@ -1,7 +1,7 @@
 import { common } from '@kit.AbilityKit'
 import { promptAction } from '@kit.ArkUI'
-import { NodeViewModel } from '../viewmodel/NodeViewModel'
-import { AppStrings, DraftSettings, V2exNode, SecondaryListScaffold, translateApiError } from 'shared'
+import { NodeIndexViewModel } from '../viewmodel/NodeIndexViewModel'
+import { AppStrings, connectNavStack, DraftSettings, V2exNode, SecondaryListScaffold, translateApiError } from 'shared'
 import {
   NodePickerEmptyState,
   NodePickerErrorState,
@@ -10,15 +10,17 @@ import {
   NodePickerRow
 } from '../components/NodePickerComponents'
 
-@Component
+@ComponentV2
 export struct NodePickerPage {
-  @Consume('ns') stack: NavPathStack
+  // Same NavPathStack instance HdsNavigation is bound to (see NavStackHolder); used purely
+  // as a method target (pushPathByName / pop), so no V2 reactivity is needed on it.
+  private stack: NavPathStack = connectNavStack().stack
 
-  @State vm: NodeViewModel = new NodeViewModel()
+  @Local vm: NodeIndexViewModel = new NodeIndexViewModel()
 
-  @State private selectedNodeName: string = ''
-  @State private isSaving: boolean = false
-  @State private errorMessage: string = ''
+  @Local private selectedNodeName: string = ''
+  @Local private isSaving: boolean = false
+  @Local private errorMessage: string = ''
 
   aboutToAppear(): void {
     this.loadSelectedNode()

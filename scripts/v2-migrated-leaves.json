@@ -56,6 +56,8 @@
     "entry/src/main/ets/pages/MyNodesPage.ets",
     "entry/src/main/ets/pages/AccountFollowingPage.ets",
     "entry/src/main/ets/pages/AccountManagementPage.ets",
-    "entry/src/main/ets/pages/TopicEditorPage.ets"
+    "entry/src/main/ets/pages/TopicEditorPage.ets",
+    "feature/node/src/main/ets/pages/NodePickerPage.ets",
+    "feature/node/src/main/ets/pages/DiscoverPage.ets"
   ]
 }

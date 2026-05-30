@@ -1,6 +1,7 @@
-import { NodeViewModel } from '../viewmodel/NodeViewModel'
+import { NodeIndexViewModel } from '../viewmodel/NodeIndexViewModel'
 import {
-  ApiService, AppStrings, DiagnosticLogger, PullRefresh, StorageKeys, V2exNode, V2exTopic, NodeTopicListParams, TopicDetailParams,
+  ApiService, AppStrings, connectDiscoverKeyword, connectLayoutSafeArea, connectNavStack, DiagnosticLogger,
+  DiscoverKeywordState, LayoutSafeAreaState, PullRefresh, V2exNode, V2exTopic, NodeTopicListParams, TopicDetailParams,
   ThemeConstants, CollectionSettings, translateApiError
 } from 'shared'
 import type { SavedNode, V2exNodeNavigationSection } from 'shared'
@@ -18,47 +19,51 @@ import {
 } from '../components/DiscoverPageComponents'
 import { DiscoverPageCoordinator, DiscoverTopicBuckets } from '../model/DiscoverPageCoordinator'
 
-@Component
+@ComponentV2
 export struct DiscoverPage {
-  @Consume('ns') ns: NavPathStack
-  @State vm: NodeViewModel = new NodeViewModel()
-  @State private topicMode: DiscoverTopicMode = 'hot'
-  @State private hotTopics: V2exTopic[] = []
-  @State private latestTopics: V2exTopic[] = []
-  @State private recentTopics: V2exTopic[] = []
-  @State private hotError: string = ''
-  @State private isHotLoading: boolean = false
-  @State private scrollEnabled: boolean = true
-  @State private nodeNavigationSections: V2exNodeNavigationSection[] = []
-  @StorageLink(StorageKeys.DISCOVER_NODE_KEYWORD) @Watch('onKeywordChanged') nodeKeyword: string = ''
-  @State private savedNodes: SavedNode[] = []
-  @State private recentNodes: SavedNode[] = []
-  @StorageProp(StorageKeys.TOP_AVOID_HEIGHT) topH: number = 0
-  @StorageProp(StorageKeys.BOTTOM_AVOID_HEIGHT) bottomH: number = 0
+  // Same NavPathStack instance HdsNavigation is bound to (see NavStackHolder); method target only.
+  private ns: NavPathStack = connectNavStack().stack
+  @Local vm: NodeIndexViewModel = new NodeIndexViewModel()
+  @Local private topicMode: DiscoverTopicMode = 'hot'
+  @Local private hotTopics: V2exTopic[] = []
+  @Local private latestTopics: V2exTopic[] = []
+  @Local private recentTopics: V2exTopic[] = []
+  @Local private hotError: string = ''
+  @Local private isHotLoading: boolean = false
+  @Local private scrollEnabled: boolean = true
+  @Local private nodeNavigationSections: V2exNodeNavigationSection[] = []
+  // Discover node-search keyword, shared with the title-bar search field via AppStorageV2.
+  @Local private kwState: DiscoverKeywordState = connectDiscoverKeyword()
+  @Local private savedNodes: SavedNode[] = []
+  @Local private recentNodes: SavedNode[] = []
+  // Window safe-area metrics (V2 mirror; EntryAbility dual-writes the V1 AppStorage keys + this).
+  private layout: LayoutSafeAreaState = connectLayoutSafeArea()
   private readonly TBH: number = ThemeConstants.TITLE_BAR_HEIGHT
   private readonly FLOAT_H: number = ThemeConstants.FLOAT_BAR_HEIGHT
   private readonly BBH: number = 48
   private readonly GAP: number = ThemeConstants.SPACE_MD
   private readonly PULL_REFRESH_THRESHOLD: number = 84
-  scroller: Scroller = new Scroller()
-  onDidScroll?: (offset: number, state: ScrollState) => void
+  @Param scroller: Scroller = new Scroller()
+  @Event onDidScroll?: (offset: number, state: ScrollState) => void
   private api: ApiService = new ApiService()
   private hasStartedInitialLoad: boolean = false
-  @Prop @Watch('onCurrentTabChanged') currentTab: number = 0
+  @Param currentTab: number = 0
 
+  @Monitor('kwState.keyword')
   private onKeywordChanged(): void {
-    this.vm.setNodeFilter(this.nodeKeyword)
+    this.vm.setNodeFilter(this.kwState.keyword)
     if (this.hasNodeSearchQuery() && this.vm.nodeIndexPhase !== 'loading' && this.vm.nodeIndexPhase !== 'loaded') {
       this.vm.loadAllNodes({ publishDefaultNodes: true })
     }
   }
 
-  private onCurrentTabChanged(_propName: string): void {
+  @Monitor('currentTab')
+  private onCurrentTabChanged(): void {
     this.requestInitialLoad('currentTabChanged')
   }
 
   aboutToAppear(): void {
-    AppStorage.setOrCreate(StorageKeys.DISCOVER_NODE_KEYWORD, this.vm.keyword)
+    this.kwState.keyword = this.vm.keyword
     this.requestInitialLoad('aboutToAppear')
   }
 
@@ -106,7 +111,7 @@ export struct DiscoverPage {
       } else if (this.vm.errorMessage && this.vm.nodeDataSource.totalCount() === 0) {
         DiscoverErrorState({
           message: this.vm.errorMessage,
-          topPadding: this.topH + this.TBH + this.BBH,
+          topPadding: this.layout.topAvoidHeight + this.TBH + this.BBH,
           bottomPadding: this.discoverBottomPadding(),
           retryAction: () => { this.vm.loadAllNodes({ forceRefresh: true, publishDefaultNodes: true }) }
         })
@@ -114,7 +119,7 @@ export struct DiscoverPage {
         Column() {
           PullRefresh({
             scroller: this.scroller,
-            indicatorTop: this.topH + this.TBH + this.BBH,
+            indicatorTop: this.layout.topAvoidHeight + this.TBH + this.BBH,
             threshold: this.PULL_REFRESH_THRESHOLD,
             onRefresh: async () => { await this.refreshDiscover() },
             onScrollEnableChange: (enabled: boolean) => { this.scrollEnabled = enabled }
@@ -286,15 +291,15 @@ export struct DiscoverPage {
   }
 
   private discoverBottomPadding(): number {
-    return this.bottomH + this.FLOAT_H + ThemeConstants.SPACE_XL
+    return this.layout.bottomAvoidHeight + this.FLOAT_H + ThemeConstants.SPACE_XL
   }
 
   private discoverTopPadding(): number {
-    return this.topH + this.TBH + this.BBH
+    return this.layout.topAvoidHeight + this.TBH + this.BBH
   }
 
   private hasNodeSearchQuery(): boolean {
-    return DiscoverPageCoordinator.hasNodeSearchQuery(this.nodeKeyword)
+    return DiscoverPageCoordinator.hasNodeSearchQuery(this.kwState.keyword)
   }
 
   private topicSurfaceItems(): V2exTopic[] {

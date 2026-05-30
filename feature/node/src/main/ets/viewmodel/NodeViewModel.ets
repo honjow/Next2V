@@ -1,11 +1,4 @@
-import { V2exNode, V2exTopic, ApiService, ApiV2Service, DiagnosticLogger, NodeIndexRepository, NodeSearchUtils, translateApiError } from 'shared'
-
-export type NodeIndexLoadPhase = 'idle' | 'loading' | 'loaded' | 'error'
-
-export interface NodeIndexLoadOptions {
-  forceRefresh?: boolean
-  publishDefaultNodes?: boolean
-}
+import { V2exNode, V2exTopic, ApiService, ApiV2Service, DiagnosticLogger, translateApiError } from 'shared'
 
 export type NodeTopicPageOneSource = 'api_v2' | 'web'
 
@@ -16,45 +9,16 @@ export interface NodeTopicPageOneLoadOptions {
 }
 
 /**
- * Node data source — for LazyForEach
- */
-export class NodeDataSource implements IDataSource {
-  private dataArray: V2exNode[] = []
-  private listeners: DataChangeListener[] = []
-
-  totalCount(): number {
-    return this.dataArray.length
-  }
-
-  getData(index: number): V2exNode {
-    return this.dataArray[index]
-  }
-
-  registerDataChangeListener(listener: DataChangeListener): void {
-    if (this.listeners.indexOf(listener) < 0) {
-      this.listeners.push(listener)
-    }
-  }
-
-  unregisterDataChangeListener(listener: DataChangeListener): void {
-    const pos = this.listeners.indexOf(listener)
-    if (pos >= 0) {
-      this.listeners.splice(pos, 1)
-    }
-  }
-
-  setData(data: V2exNode[]): void {
-    this.dataArray = data
-    this.listeners.forEach(listener => listener.onDataReloaded())
-  }
-}
-
-/**
- * Node page ViewModel
+ * Single-node topic-feed ViewModel (the node-topics half of the former monolithic
+ * NodeViewModel). Stays V1 `@Observed`: its only consumer, `NodeTopicPage`, remains a V1
+ * `@Component` because that page is coupled to the V1 `Index.ets` appbar through the
+ * bidirectional `NODE_TOPIC_*` action-bus + destructive save/favorite paths.
+ *
+ * The node directory/search half lives separately in `NodeIndexViewModel` (`@ObservedV2`),
+ * consumed by the migrated `NodePickerPage` / `DiscoverPage`.
  */
 @Observed
 export class NodeViewModel {
-  nodeDataSource: NodeDataSource = new NodeDataSource()
   nodeTopics: V2exTopic[] = []
   nodeDetail: V2exNode | null = null
   nodeDetailError: string = ''
@@ -64,12 +28,7 @@ export class NodeViewModel {
   isNodeTopicsLoadingMore: boolean = false
   nodeTopicsLoadMoreError: string = ''
   isLoading: boolean = false
-  nodeIndexPhase: NodeIndexLoadPhase = 'idle'
-  keyword: string = ''
   errorMessage: string = ''
-
-  private allNodes: V2exNode[] = []
-  private publishDefaultNodes: boolean = true
 
   private api: ApiService = new ApiService()
   private apiV2: ApiV2Service = new ApiV2Service()
@@ -79,62 +38,6 @@ export class NodeViewModel {
   private activeNodeTopicsSource: string = ''
   private nodeTopicsPageOneSettled: boolean = false
   private nodeTopicsPageOnePublished: boolean = false
-
-  /** Load all nodes */
-  async loadAllNodes(options?: NodeIndexLoadOptions): Promise<void> {
-    const loadOptions: NodeIndexLoadOptions = options || {}
-    const publishDefaultNodes = loadOptions.publishDefaultNodes !== false
-    this.publishDefaultNodes = publishDefaultNodes
-    this.isLoading = true
-    this.nodeIndexPhase = 'loading'
-    this.errorMessage = ''
-    const startedAt = Date.now()
-    try {
-      const result = await NodeIndexRepository.getNodes(this.api, loadOptions.forceRefresh === true)
-      this.allNodes = result.nodes
-      this.nodeIndexPhase = 'loaded'
-      this.applyNodeFilter(publishDefaultNodes)
-      DiagnosticLogger.info('ui_lifecycle', 'node_index_viewmodel_load_done', {
-        count: this.allNodes.length,
-        fromCache: result.fromCache,
-        publishDefaultNodes: publishDefaultNodes,
-        totalMs: Date.now() - startedAt
-      })
-    } catch (error) {
-      this.nodeIndexPhase = 'error'
-      this.errorMessage = translateApiError(error)
-      console.error('Failed to load nodes:', error.message)
-    } finally {
-      this.isLoading = false
-    }
-  }
-
-  setNodeFilter(keyword: string): void {
-    this.keyword = keyword
-    this.applyNodeFilter()
-  }
-
-  hasNodeIndexSettled(): boolean {
-    return this.nodeIndexPhase === 'loaded' || this.nodeIndexPhase === 'error'
-  }
-
-  defaultNodePreview(): V2exNode[] {
-    return this.allNodes
-  }
-
-  private applyNodeFilter(publishDefaultNodes: boolean = this.publishDefaultNodes): void {
-    const startedAt = Date.now()
-    const hasKeyword = (this.keyword || '').trim().length > 0
-    const data = (!hasKeyword && !publishDefaultNodes) ? [] : NodeSearchUtils.filter(this.allNodes, this.keyword)
-    this.nodeDataSource.setData(data)
-    DiagnosticLogger.info('ui_lifecycle', 'node_index_publish_done', {
-      keywordLength: (this.keyword || '').trim().length,
-      allCount: this.allNodes.length,
-      publishedCount: data.length,
-      publishDefaultNodes: publishDefaultNodes,
-      totalMs: Date.now() - startedAt
-    })
-  }
 
   beginNodeTopicsPageOneLoad(nodeName: string, source: NodeTopicPageOneSource, requestId: number): void {
     this.activeNodeTopicsRequestId = requestId
