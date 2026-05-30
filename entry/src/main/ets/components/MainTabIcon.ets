@@ -7,12 +7,12 @@ import { ThemeConstants } from 'shared'
 // (3vp * 3px/vp = 9px).
 const MAIN_TAB_SYMBOL_GLYPH_LAYOUT_OFFSET_VP = 3
 
-@Component
+@ComponentV2
 export struct MainTabIcon {
-  @Prop title: ResourceStr = '';
-  @Prop idx: number = 0;
-  @Prop currentIndex: number = 0;
-  @Prop badgeCount: number = 0;
+  @Param title: ResourceStr = '';
+  @Param idx: number = 0;
+  @Param currentIndex: number = 0;
+  @Param badgeCount: number = 0;
 
   build() {
     Column() {

@@ -12,10 +12,10 @@ import {
   KIND_FOLLOW, KIND_SYSTEM, KIND_NOTIFICATION
 } from '../viewmodel/NotificationCenterViewModel'
 
-@Component
+@ComponentV2
 export struct NotificationAuthRequiredState {
-  @Prop message: string = ''
-  onLoginClick?: () => void
+  @Param message: string = ''
+  @Event onLoginClick?: () => void
 
   build() {
     Column() {
@@ -37,10 +37,10 @@ export struct NotificationAuthRequiredState {
   }
 }
 
-@Component
+@ComponentV2
 export struct NotificationErrorState {
-  @Prop message: string = ''
-  onRetryClick?: () => void
+  @Param message: string = ''
+  @Event onRetryClick?: () => void
 
   build() {
     Column() {
@@ -62,17 +62,17 @@ export struct NotificationErrorState {
   }
 }
 
-@Component
+@ComponentV2
 export struct NotificationCard {
-  @Prop item: V2exNotification = { id: 0 }
-  @Prop kindTag: string = ''
-  @Prop readTag: string = ''
-  @Prop titleText: string = ''
-  @Prop bodyText: string = ''
-  @Prop replyContent: string = ''
-  @Prop replyRenderedContent: string = ''
-  @Prop memberName: string = ''
-  @Prop avatarUrl: string = ''
+  @Param item: V2exNotification = { id: 0 }
+  @Param kindTag: string = ''
+  @Param readTag: string = ''
+  @Param titleText: string = ''
+  @Param bodyText: string = ''
+  @Param replyContent: string = ''
+  @Param replyRenderedContent: string = ''
+  @Param memberName: string = ''
+  @Param avatarUrl: string = ''
 
   build() {
     Row({ space: ThemeConstants.SPACE_MD }) {
@@ -200,10 +200,10 @@ export struct NotificationCard {
   }
 }
 
-@Component
+@ComponentV2
 export struct NotificationDeleteSwipeAction {
-  @Prop item: V2exNotification = { id: 0 }
-  onDeleteClick?: (item: V2exNotification) => void
+  @Param item: V2exNotification = { id: 0 }
+  @Event onDeleteClick?: (item: V2exNotification) => void
 
   build() {
     Row() {

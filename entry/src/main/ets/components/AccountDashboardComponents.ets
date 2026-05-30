@@ -7,10 +7,10 @@ import {
   V2exBalance
 } from 'shared'
 
-@Component
+@ComponentV2
 export struct AccountCoinBalance {
-  @Prop balance: V2exBalance | null = null
-  @Prop fallbackText: ResourceStr = ''
+  @Param balance: V2exBalance | null = null
+  @Param fallbackText: ResourceStr = ''
 
   build() {
     if (this.balance) {
@@ -59,15 +59,15 @@ export struct AccountCoinBalance {
   }
 }
 
-@Component
+@ComponentV2
 export struct AccountDetailHeaderCard {
-  @Prop avatarUrl: string = ''
-  @Prop username: string = ''
-  @Prop balance: V2exBalance | null = null
-  @Prop fallbackText: ResourceStr = ''
-  @Prop sessionError: string = ''
-  @Prop accountMetaError: string = ''
-  @Prop dailyMissionMessage: ResourceStr = ''
+  @Param avatarUrl: string = ''
+  @Param username: string = ''
+  @Param balance: V2exBalance | null = null
+  @Param fallbackText: ResourceStr = ''
+  @Param sessionError: string = ''
+  @Param accountMetaError: string = ''
+  @Param dailyMissionMessage: ResourceStr = ''
 
   build() {
     Column({ space: ThemeConstants.SPACE_MD }) {
@@ -113,16 +113,16 @@ export struct AccountDetailHeaderCard {
   }
 }
 
-@Component
+@ComponentV2
 export struct AccountSignedInCard {
-  @Prop avatarUrl: string = ''
-  @Prop username: string = ''
-  @Prop balance: V2exBalance | null = null
-  @Prop fallbackText: ResourceStr = ''
-  @Prop dailyMissionText: ResourceStr = ''
-  @Prop dailyMissionEnabled: boolean = false
-  redeemDailyMission?: () => void
-  openDetail?: () => void
+  @Param avatarUrl: string = ''
+  @Param username: string = ''
+  @Param balance: V2exBalance | null = null
+  @Param fallbackText: ResourceStr = ''
+  @Param dailyMissionText: ResourceStr = ''
+  @Param dailyMissionEnabled: boolean = false
+  @Event redeemDailyMission?: () => void
+  @Event openDetail?: () => void
 
   build() {
     Row({ space: ThemeConstants.SPACE_MD }) {
@@ -171,11 +171,11 @@ export struct AccountSignedInCard {
   }
 }
 
-@Component
+@ComponentV2
 export struct AccountTokenSummary {
-  @Prop scope: string = ''
-  @Prop expiration: number = 0
-  @Prop lastUsed: number = 0
+  @Param scope: string = ''
+  @Param expiration: number = 0
+  @Param lastUsed: number = 0
 
   build() {
     Column({ space: ThemeConstants.SPACE_XS }) {
@@ -201,12 +201,12 @@ export struct AccountTokenSummary {
   }
 }
 
-@Component
+@ComponentV2
 export struct AccountRateLimitSummary {
-  @Prop limit: number = 0
-  @Prop remaining: number = 0
-  @Prop resetAt: number = 0
-  @Prop updatedAt: number = 0
+  @Param limit: number = 0
+  @Param remaining: number = 0
+  @Param resetAt: number = 0
+  @Param updatedAt: number = 0
 
   build() {
     Column({ space: ThemeConstants.SPACE_XS }) {

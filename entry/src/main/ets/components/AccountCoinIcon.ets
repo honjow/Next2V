@@ -1,8 +1,8 @@
-@Component
+@ComponentV2
 export struct AccountCoinIcon {
-  @Prop rimColor: string
-  @Prop faceColor: string
-  @Prop edgeColor: string
+  @Param rimColor: string = ''
+  @Param faceColor: string = ''
+  @Param edgeColor: string = ''
   private settings: RenderingContextSettings = new RenderingContextSettings(true)
   private context: CanvasRenderingContext2D = new CanvasRenderingContext2D(this.settings)
 

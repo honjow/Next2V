@@ -17,10 +17,10 @@ interface AboutInfoRow {
   value: string
 }
 
-@Component
+@ComponentV2
 export struct AboutPage {
   private readonly appName: string = 'Next2V'
-  @State private appVersion: string = ''
+  @Local private appVersion: string = ''
   private readonly projectUrl: string = 'https://github.com/honjow/Next2V'
   private readonly licenseUrl: string = 'https://github.com/honjow/Next2V'
   private readonly v2nextUrl: string = 'https://github.com/zyronon/V2Next'
