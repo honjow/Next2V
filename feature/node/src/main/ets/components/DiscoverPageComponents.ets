@@ -3,9 +3,9 @@ import type { SavedNode } from 'shared'
 
 export type DiscoverTopicMode = 'hot' | 'latest' | 'recent'
 
-@Component
+@ComponentV2
 export struct DiscoverSectionTitle {
-  @Prop title: string = ''
+  @Param title: string = ''
 
   build() {
     Text(this.title)
@@ -17,11 +17,11 @@ export struct DiscoverSectionTitle {
   }
 }
 
-@Component
+@ComponentV2
 export struct DiscoverTopicModeButton {
-  @Prop label: string = ''
-  @Prop selected: boolean = false
-  action?: () => void
+  @Param label: string = ''
+  @Param selected: boolean = false
+  @Event action?: () => void
 
   build() {
     FilterChip({
@@ -36,9 +36,9 @@ export struct DiscoverTopicModeButton {
   }
 }
 
-@Component
+@ComponentV2
 export struct DiscoverHotTopicRow {
-  @Prop topic: V2exTopic = {
+  @Param topic: V2exTopic = {
     id: 0,
     title: '',
     url: '',
@@ -68,7 +68,7 @@ export struct DiscoverHotTopicRow {
     last_modified: 0,
     last_touched: 0
   }
-  openAction?: () => void
+  @Event openAction?: () => void
 
   build() {
     Row({ space: ThemeConstants.SPACE_SM }) {
@@ -117,9 +117,9 @@ export struct DiscoverHotTopicRow {
   }
 }
 
-@Component
+@ComponentV2
 export struct DiscoverNodeCard {
-  @Prop node: V2exNode = {
+  @Param node: V2exNode = {
     id: 0,
     name: '',
     title: '',
@@ -130,7 +130,7 @@ export struct DiscoverNodeCard {
     avatar_normal: '',
     avatar_large: ''
   }
-  openAction?: () => void
+  @Event openAction?: () => void
 
   build() {
     Column() {
@@ -160,10 +160,10 @@ export struct DiscoverNodeCard {
   }
 }
 
-@Component
+@ComponentV2
 export struct DiscoverNodeChip {
-  @Prop node: SavedNode = { name: '', title: '', topics: 0, savedAt: 0 }
-  openAction?: () => void
+  @Param node: SavedNode = { name: '', title: '', topics: 0, savedAt: 0 }
+  @Event openAction?: () => void
 
   build() {
     Row({ space: ThemeConstants.SPACE_XS }) {
@@ -191,9 +191,9 @@ export struct DiscoverNodeChip {
   }
 }
 
-@Component
+@ComponentV2
 export struct DiscoverEmptyState {
-  @Prop message: ResourceStr = $r('app.string.search_no_nodes')
+  @Param message: ResourceStr = $r('app.string.search_no_nodes')
 
   build() {
     Column() {
@@ -207,12 +207,12 @@ export struct DiscoverEmptyState {
   }
 }
 
-@Component
+@ComponentV2
 export struct DiscoverErrorState {
-  @Prop message: string = ''
-  @Prop topPadding: number = 0
-  @Prop bottomPadding: number = 0
-  retryAction?: () => void
+  @Param message: string = ''
+  @Param topPadding: number = 0
+  @Param bottomPadding: number = 0
+  @Event retryAction?: () => void
 
   build() {
     Column() {

@@ -14,14 +14,14 @@ function defaultNode(): V2exNode {
   }
 }
 
-@Component
+@ComponentV2
 export struct NodePickerHeader {
-  @Prop selectedNodeName: string = ''
-  @Prop isSaving: boolean = false
-  @Prop errorMessage: string = ''
-  @Prop keyword: string = ''
-  clearAction?: () => void
-  keywordChangeAction?: (value: string) => void
+  @Param selectedNodeName: string = ''
+  @Param isSaving: boolean = false
+  @Param errorMessage: string = ''
+  @Param keyword: string = ''
+  @Event clearAction?: () => void
+  @Event keywordChangeAction?: (value: string) => void
 
   build() {
     Column({ space: ThemeConstants.SPACE_SM }) {
@@ -77,7 +77,7 @@ export struct NodePickerHeader {
   }
 }
 
-@Component
+@ComponentV2
 export struct NodePickerLoadingState {
   build() {
     Column() {
@@ -95,10 +95,10 @@ export struct NodePickerLoadingState {
   }
 }
 
-@Component
+@ComponentV2
 export struct NodePickerErrorState {
-  @Prop message: string = ''
-  retryAction?: () => void
+  @Param message: string = ''
+  @Event retryAction?: () => void
 
   build() {
     Column() {
@@ -120,7 +120,7 @@ export struct NodePickerErrorState {
   }
 }
 
-@Component
+@ComponentV2
 export struct NodePickerEmptyState {
   build() {
     Column() {
@@ -134,11 +134,11 @@ export struct NodePickerEmptyState {
   }
 }
 
-@Component
+@ComponentV2
 export struct NodePickerRow {
-  @Prop node: V2exNode = defaultNode()
-  @Prop selectedNodeName: string = ''
-  selectAction?: () => void
+  @Param node: V2exNode = defaultNode()
+  @Param selectedNodeName: string = ''
+  @Event selectAction?: () => void
 
   build() {
     Row({ space: ThemeConstants.SPACE_SM }) {
