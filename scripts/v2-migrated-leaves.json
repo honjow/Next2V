@@ -61,6 +61,7 @@
     "feature/node/src/main/ets/pages/DiscoverPage.ets",
     "feature/user/src/main/ets/pages/UserTopicsPage.ets",
     "entry/src/main/ets/pages/MyTopicsPage.ets",
-    "feature/detail/src/main/ets/pages/ReplyEditorPage.ets"
+    "feature/detail/src/main/ets/pages/ReplyEditorPage.ets",
+    "feature/node/src/main/ets/pages/NodeTopicPage.ets"
   ]
 }

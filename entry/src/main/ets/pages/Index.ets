@@ -23,6 +23,7 @@ import {
   AuthSettings,
   connectImagePreviewAction,
   connectNavStack,
+  connectNodeTopicAction,
   CookieJarSettings,
   FoldScreenUtil,
   HttpClient,
@@ -892,10 +893,11 @@ struct Index {
   }
 
   private sendNodeTopicAction(nodeName: string, action: string): void {
-    AppStorage.setOrCreate<string>(
-      StorageKeys.NODE_TOPIC_ACTION,
-      IndexRouteCoordinator.nodeTopicActionCommand(nodeName, action, Date.now()),
-    )
+    // Dual-write the V1 AppStorage command AND the V2 mirror (read by @ComponentV2
+    // NodeTopicPage via @Monitor) from this single writer so the two stores stay in lockstep.
+    const command = IndexRouteCoordinator.nodeTopicActionCommand(nodeName, action, Date.now())
+    AppStorage.setOrCreate<string>(StorageKeys.NODE_TOPIC_ACTION, command)
+    connectNodeTopicAction().command = command
   }
 
   private sendUserProfileAction(action: string): void {

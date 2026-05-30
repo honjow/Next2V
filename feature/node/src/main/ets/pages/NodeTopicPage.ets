@@ -1,32 +1,34 @@
 import { NodeViewModel } from '../viewmodel/NodeViewModel'
 import {
   AuthSettings, CardEmptyState, CollectionSettings, SavedNode, ApiService, CookieJarSettings,
-  PagedListScaffold, PageErrorState, PageLoadingState, StorageKeys, ThemeConstants, TopicCard,
+  connectLayoutSafeArea, connectNavStack, connectNodeTopicAction, connectTopicReadStates,
+  LayoutSafeAreaState, NodeTopicActionState, PagedListScaffold, PageErrorState, PageLoadingState,
+  StorageKeys, ThemeConstants, TopicCard, TopicReadStatesState,
   TopicDetailParams, UserProfileParams, V2exToggleAction, V2exTopic, AppStrings, DiagnosticLogger, translateApiError
 } from 'shared'
 import type { TopicReadState } from 'shared'
 import { common } from '@kit.AbilityKit'
 import { promptAction } from '@kit.ArkUI'
 
-@Component
+@ComponentV2
 export struct NodeTopicPage {
-  @Prop nodeName: string = ''
-  @Prop nodeTitle: string = ''
-  @Consume('ns') stack: NavPathStack
-  @StorageProp(StorageKeys.TOP_AVOID_HEIGHT) topH: number = 0
-  @StorageProp(StorageKeys.BOTTOM_AVOID_HEIGHT) bottomH: number = 0
-  @State vm: NodeViewModel = new NodeViewModel()
-  @StorageLink(StorageKeys.TOPIC_READ_STATES) topicReadStates: string = '[]'
-  @StorageLink(StorageKeys.NODE_TOPIC_ACTION) @Watch('onNodeTopicActionCommand') nodeTopicActionCommand: string = ''
-  @StorageLink(StorageKeys.NODE_TOPIC_SAVED) nodeTopicSaved: boolean = false
-  @StorageLink(StorageKeys.NODE_TOPIC_SITE_FAVORITED) nodeTopicSiteFavorited: boolean = false
-  @StorageLink(StorageKeys.NODE_TOPIC_TITLE) nodeTopicTitle: string = ''
-  @StorageLink(StorageKeys.NODE_TOPIC_SUBTITLE) nodeTopicSubtitle: string = ''
-  @State private isNodeSaved: boolean = false
-  @State private isSavedNodeLoading: boolean = false
-  @State private isSiteNodeFavorited: boolean = false
-  @State private isSiteNodeFavoriteLoading: boolean = false
-  @State private token: string = ''
+  @Param nodeName: string = ''
+  @Param nodeTitle: string = ''
+  // Same NavPathStack instance HdsNavigation is bound to (see NavStackHolder); method target only.
+  private stack: NavPathStack = connectNavStack().stack
+  // Window safe-area metrics (V2 mirror; EntryAbility dual-writes the V1 AppStorage keys + this).
+  private layout: LayoutSafeAreaState = connectLayoutSafeArea()
+  @Local vm: NodeViewModel = new NodeViewModel()
+  // Per-topic read-state ledger (V2 mirror; LocalDataPublisher dual-writes). Read in build() via
+  // isTopicUnread → subscribes this page to unread-dot refreshes.
+  private readStates: TopicReadStatesState = connectTopicReadStates()
+  // V2 mirror of the one-directional NODE_TOPIC_ACTION appbar command (Index dual-writes).
+  @Local private nodeAction: NodeTopicActionState = connectNodeTopicAction()
+  @Local private isNodeSaved: boolean = false
+  @Local private isSavedNodeLoading: boolean = false
+  @Local private isSiteNodeFavorited: boolean = false
+  @Local private isSiteNodeFavoriteLoading: boolean = false
+  @Local private token: string = ''
   private api: ApiService = new ApiService()
   private nodeTopicsRequestId: number = 0
 
@@ -93,7 +95,7 @@ export struct NodeTopicPage {
     .justifyContent(FlexAlign.Center)
     .width('100%')
     .height('100%')
-    .padding({ top: this.topH + ThemeConstants.TITLE_BAR_HEIGHT, bottom: this.bottomH })
+    .padding({ top: this.layout.topAvoidHeight + ThemeConstants.TITLE_BAR_HEIGHT, bottom: this.layout.bottomAvoidHeight })
     .hitTestBehavior(HitTestMode.None)
   }
 
@@ -121,7 +123,7 @@ export struct NodeTopicPage {
     CollectionSettings.isNodeSaved(context, nodeName)
       .then((saved: boolean) => {
         this.isNodeSaved = saved
-        this.nodeTopicSaved = saved
+        AppStorage.setOrCreate<boolean>(StorageKeys.NODE_TOPIC_SAVED, saved)
       })
       .catch((error: Error) => {
         console.error('load saved node state failed: ' + error.message)
@@ -135,14 +137,14 @@ export struct NodeTopicPage {
     const cookie = CookieJarSettings.getCurrentCookie()
     if (!cookie || !this.nodeName) {
       this.isSiteNodeFavorited = false
-      this.nodeTopicSiteFavorited = false
+      AppStorage.setOrCreate<boolean>(StorageKeys.NODE_TOPIC_SITE_FAVORITED, false)
       return
     }
     this.isSiteNodeFavoriteLoading = true
     this.api.getNodeFavoriteToggleActionWithCookie(cookie, this.nodeName)
       .then((toggle: V2exToggleAction) => {
         this.isSiteNodeFavorited = toggle.currentlyOn
-        this.nodeTopicSiteFavorited = toggle.currentlyOn
+        AppStorage.setOrCreate<boolean>(StorageKeys.NODE_TOPIC_SITE_FAVORITED, toggle.currentlyOn)
       })
       .catch((error: Error) => {
         console.error('load site node favorite state failed: ' + error.message)
@@ -170,7 +172,7 @@ export struct NodeTopicPage {
     this.api.getNodeFavoriteToggleActionWithCookie(cookie, cleanName)
       .then((toggle: V2exToggleAction) => {
         this.isSiteNodeFavorited = toggle.currentlyOn
-        this.nodeTopicSiteFavorited = toggle.currentlyOn
+        AppStorage.setOrCreate<boolean>(StorageKeys.NODE_TOPIC_SITE_FAVORITED, toggle.currentlyOn)
         this.confirmSiteNodeFavoriteToggle(cookie, cleanName, toggle)
       })
       .catch((error: Error) => {
@@ -210,7 +212,7 @@ export struct NodeTopicPage {
     this.api.executeNodeFavoriteToggleWithCookie(cookie, nodeName, toggle)
       .then((favorited: boolean) => {
         this.isSiteNodeFavorited = favorited
-        this.nodeTopicSiteFavorited = favorited
+        AppStorage.setOrCreate<boolean>(StorageKeys.NODE_TOPIC_SITE_FAVORITED, favorited)
         promptAction.openToast({ message: favorited ? $r('app.string.favorited') : $r('app.string.unfavorited') }).catch((_error: Error) => { })
       })
       .catch((error: Error) => {
@@ -329,7 +331,10 @@ export struct NodeTopicPage {
       avatarMini: this.vm.nodeDetail?.avatar_mini,
       avatarNormal: this.vm.nodeDetail?.avatar_normal,
       avatarLarge: this.vm.nodeDetail?.avatar_large,
-      savedAt: Math.floor(Date.now() / 1000)
+      // CollectionSettings.saveNode always re-stamps savedAt with its own server-time-aligned
+      // value (see upsertSavedNode), so the caller's value is ignored — pass 0 rather than a
+      // wall-clock timestamp the migrated leaf would otherwise carry (forbidden by the contract).
+      savedAt: 0
     }
     this.isSavedNodeLoading = true
     const request = this.isNodeSaved
@@ -338,7 +343,7 @@ export struct NodeTopicPage {
     request
       .then((nodes: SavedNode[]) => {
         this.isNodeSaved = nodes.some((item: SavedNode) => item.name === nodeName)
-        this.nodeTopicSaved = this.isNodeSaved
+        AppStorage.setOrCreate<boolean>(StorageKeys.NODE_TOPIC_SAVED, this.isNodeSaved)
       })
       .catch((error: Error) => {
         console.error('toggle saved node failed: ' + error.message)
@@ -362,7 +367,7 @@ export struct NodeTopicPage {
 
   private findReadState(topicId: number): TopicReadState | null {
     try {
-      const parsed = JSON.parse(this.topicReadStates || '[]') as TopicReadState[]
+      const parsed = JSON.parse(this.readStates.statesJson || '[]') as TopicReadState[]
       if (!Array.isArray(parsed)) {
         return null
       }
@@ -377,8 +382,9 @@ export struct NodeTopicPage {
     }
   }
 
-  onNodeTopicActionCommand(_propName: string): void {
-    const raw = (this.nodeTopicActionCommand || '').trim()
+  @Monitor('nodeAction.command')
+  onNodeTopicActionCommand(): void {
+    const raw = (this.nodeAction.command || '').trim()
     if (!raw) {
       return
     }
@@ -402,15 +408,16 @@ export struct NodeTopicPage {
   private syncNodeTitleState(saved: boolean, siteFavorited: boolean): void {
     this.isNodeSaved = saved
     this.isSiteNodeFavorited = siteFavorited
-    this.nodeTopicSaved = saved
-    this.nodeTopicSiteFavorited = siteFavorited
+    AppStorage.setOrCreate<boolean>(StorageKeys.NODE_TOPIC_SAVED, saved)
+    AppStorage.setOrCreate<boolean>(StorageKeys.NODE_TOPIC_SITE_FAVORITED, siteFavorited)
   }
 
   private syncAppbarIdentity(): void {
-    this.nodeTopicTitle = CollectionSettings.cleanNodeTitle(this.vm.nodeDetail?.title || this.nodeTitle || this.nodeName, this.vm.nodeDetail?.topics || 0)
+    const title = CollectionSettings.cleanNodeTitle(this.vm.nodeDetail?.title || this.nodeTitle || this.nodeName, this.vm.nodeDetail?.topics || 0)
+    AppStorage.setOrCreate<string>(StorageKeys.NODE_TOPIC_TITLE, title)
     const identityName = (this.nodeName || '').trim()
     const subtitleParts: string[] = []
-    if (this.nodeTopicTitle && identityName && this.nodeTopicTitle !== identityName) {
+    if (title && identityName && title !== identityName) {
       subtitleParts.push(identityName)
     }
     const topicCount = this.vm.nodeDetail?.topics || 0
@@ -420,6 +427,6 @@ export struct NodeTopicPage {
         [String(topicCount)]
       ))
     }
-    this.nodeTopicSubtitle = subtitleParts.join(' · ')
+    AppStorage.setOrCreate<string>(StorageKeys.NODE_TOPIC_SUBTITLE, subtitleParts.join(' · '))
   }
 }

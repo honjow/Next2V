@@ -10,25 +10,28 @@ export interface NodeTopicPageOneLoadOptions {
 
 /**
  * Single-node topic-feed ViewModel (the node-topics half of the former monolithic
- * NodeViewModel). Stays V1 `@Observed`: its only consumer, `NodeTopicPage`, remains a V1
- * `@Component` because that page is coupled to the V1 `Index.ets` appbar through the
- * bidirectional `NODE_TOPIC_*` action-bus + destructive save/favorite paths.
+ * NodeViewModel). `@ObservedV2`: its only consumer, `NodeTopicPage`, is now a `@ComponentV2`
+ * that holds it via `@Local`. The `@Trace` fields are exactly those read inside the page's
+ * `build()` / `@Builder`s — marking them is the subscription point (a non-`@Trace` field would
+ * leave the list stuck on its initial render after async load → loading-stuck regression).
+ * The remaining fields (`nodeDetail*`, pagination cursors) are read only in event handlers, so
+ * they stay plain.
  *
  * The node directory/search half lives separately in `NodeIndexViewModel` (`@ObservedV2`),
  * consumed by the migrated `NodePickerPage` / `DiscoverPage`.
  */
-@Observed
+@ObservedV2
 export class NodeViewModel {
-  nodeTopics: V2exTopic[] = []
+  @Trace nodeTopics: V2exTopic[] = []
   nodeDetail: V2exNode | null = null
   nodeDetailError: string = ''
   nodeTopicsUseV2: boolean = false
   nodeTopicsPage: number = 1
-  nodeTopicsHasMore: boolean = true
-  isNodeTopicsLoadingMore: boolean = false
-  nodeTopicsLoadMoreError: string = ''
-  isLoading: boolean = false
-  errorMessage: string = ''
+  @Trace nodeTopicsHasMore: boolean = true
+  @Trace isNodeTopicsLoadingMore: boolean = false
+  @Trace nodeTopicsLoadMoreError: string = ''
+  @Trace isLoading: boolean = false
+  @Trace errorMessage: string = ''
 
   private api: ApiService = new ApiService()
   private apiV2: ApiV2Service = new ApiV2Service()
