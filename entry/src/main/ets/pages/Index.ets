@@ -21,6 +21,7 @@ import {
   ApiConstants,
   ApiService,
   AuthSettings,
+  connectImagePreviewAction,
   connectNavStack,
   CookieJarSettings,
   FoldScreenUtil,
@@ -933,10 +934,11 @@ struct Index {
   }
 
   private sendImagePreviewAction(action: string): void {
-    AppStorage.setOrCreate<string>(
-      StorageKeys.IMAGE_PREVIEW_ACTION,
-      IndexRouteCoordinator.simpleCommand(action, Date.now()),
-    )
+    // Dual-write the V1 AppStorage command AND the V2 mirror (read by @ComponentV2
+    // ImagePreviewPage) from this single writer so the two stores stay in lockstep.
+    const command = IndexRouteCoordinator.simpleCommand(action, Date.now())
+    AppStorage.setOrCreate<string>(StorageKeys.IMAGE_PREVIEW_ACTION, command)
+    connectImagePreviewAction().command = command
   }
 
   private openV2exPathInSystemBrowser(path: string): void {

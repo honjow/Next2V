@@ -3,7 +3,10 @@ import { promptAction } from '@kit.ArkUI'
 import { fileIo } from '@kit.CoreFileKit'
 import { photoAccessHelper } from '@kit.MediaLibraryKit'
 import { http } from '@kit.NetworkKit'
-import { AppStrings, MediaUrlUtils, NetworkProxyRequest, StorageKeys, ThemeConstants } from 'shared'
+import {
+  AppStrings, connectImagePreviewAction, connectLayoutSafeArea, connectNavStack, ImagePreviewActionState,
+  LayoutSafeAreaState, MediaUrlUtils, NetworkProxyRequest, ThemeConstants
+} from 'shared'
 import { ImagePreviewCoordinator } from '../model/ImagePreviewCoordinator'
 
 const CONNECT_TIMEOUT_MS: number = 10000
@@ -14,18 +17,21 @@ interface ImageDownloadResult {
   contentType: string
 }
 
-@Component
+@ComponentV2
 export struct ImagePreviewPage {
-  @Consume('ns') stack: NavPathStack
-  @Prop url: string = ''
+  // Same NavPathStack instance HdsNavigation is bound to (see NavStackHolder); method target only.
+  private stack: NavPathStack = connectNavStack().stack
+  @Param url: string = ''
 
-  @State private viewportWidth: number = 0
-  @State private scaleValue: number = 1
-  @State private pinchValue: number = 1
-  @State private isSaving: boolean = false
-  @State private saveMessage: string = ''
-  @StorageLink(StorageKeys.IMAGE_PREVIEW_ACTION) @Watch('onImagePreviewActionCommand') imagePreviewActionCommand: string = ''
-  @StorageProp('topAvoidHeight') topH: number = 0
+  @Local private viewportWidth: number = 0
+  @Local private scaleValue: number = 1
+  @Local private pinchValue: number = 1
+  @Local private isSaving: boolean = false
+  @Local private saveMessage: string = ''
+  // V2 mirror of the one-directional IMAGE_PREVIEW_ACTION appbar command (Index dual-writes).
+  @Local private imgAction: ImagePreviewActionState = connectImagePreviewAction()
+  // Window safe-area metrics (V2 mirror; EntryAbility dual-writes the V1 AppStorage keys + this).
+  private layout: LayoutSafeAreaState = connectLayoutSafeArea()
 
   private clampScale(value: number): number {
     return ImagePreviewCoordinator.clampScale(value)
@@ -39,8 +45,9 @@ export struct ImagePreviewPage {
     return MediaUrlUtils.normalizeUrl(this.url)
   }
 
-  private onImagePreviewActionCommand(_propName: string): void {
-    if (ImagePreviewCoordinator.actionFromCommand(this.imagePreviewActionCommand) === 'save') {
+  @Monitor('imgAction.command')
+  private onImagePreviewActionCommand(): void {
+    if (ImagePreviewCoordinator.actionFromCommand(this.imgAction.command) === 'save') {
       this.saveImage()
     }
   }
@@ -232,7 +239,7 @@ export struct ImagePreviewPage {
         }
         .alignItems(HorizontalAlign.End)
         .padding({
-          top: this.topH + ThemeConstants.TITLE_BAR_HEIGHT + ThemeConstants.SPACE_MD,
+          top: this.layout.topAvoidHeight + ThemeConstants.TITLE_BAR_HEIGHT + ThemeConstants.SPACE_MD,
           right: ThemeConstants.SPACE_MD,
           left: ThemeConstants.SPACE_MD
         })
