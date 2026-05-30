@@ -2,11 +2,12 @@ import { common } from '@kit.AbilityKit'
 import { promptAction } from '@kit.ArkUI'
 import {
   ApiDomainSettings,
+  ApiDomainState,
   AppTextField,
+  connectApiDomain,
   ConciseListRow,
   GroupedListSection,
   SecondaryListScaffold,
-  StorageKeys,
   ThemeConstants,
   type ApiDomainOption,
   type DomainValidationResult,
@@ -14,17 +15,16 @@ import {
 import { SettingsSectionHeader } from '../components/SettingsPageComponents'
 import { DomainSettingsCoordinator } from '../model/DomainSettingsCoordinator'
 
-@Component
+@ComponentV2
 export struct DomainSettingsPage {
-  @StorageLink(StorageKeys.SELECTED_BASE_URL) selectedBaseUrl: string = 'https://www.v2ex.com'
-  @State private customText: string = ''
-  @State private validationMessage: string = ''
-  @State private validating: boolean = false
-  @State private validatedCustomBaseUrl: string = ''
-
-  aboutToAppear(): void {
-    this.selectedBaseUrl = ApiDomainSettings.normalizeBaseUrl(this.selectedBaseUrl)
-  }
+  // Selected base URL mirrored into AppStorageV2 by ApiDomainSettings.apply()
+  // (was @StorageLink(SELECTED_BASE_URL)); hydration already normalizes it, so the former
+  // aboutToAppear re-normalization is redundant and dropped.
+  private domain: ApiDomainState = connectApiDomain()
+  @Local private customText: string = ''
+  @Local private validationMessage: string = ''
+  @Local private validating: boolean = false
+  @Local private validatedCustomBaseUrl: string = ''
 
   build() {
     Column() {
@@ -71,7 +71,7 @@ export struct DomainSettingsPage {
   @Builder
   DomainRadio(baseUrl: string) {
     Radio({ value: baseUrl, group: 'v2exDomainSelection' })
-      .checked(this.selectedBaseUrl === baseUrl)
+      .checked(this.domain.selectedBaseUrl === baseUrl)
       .onChange((checked: boolean) => {
         if (checked) {
           this.selectBaseUrl(baseUrl)
@@ -142,8 +142,9 @@ export struct DomainSettingsPage {
   }
 
   private selectBaseUrl(baseUrl: string): void {
+    // applySelectedBaseUrl/save -> ApiDomainSettings.apply() synchronously writes both
+    // AppStorage and the V2 mirror, so the radios (this.domain.selectedBaseUrl) re-render.
     const normalized = ApiDomainSettings.normalizeBaseUrl(baseUrl)
-    this.selectedBaseUrl = normalized
     DomainSettingsCoordinator.applySelectedBaseUrl(normalized)
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     ApiDomainSettings.save(context, normalized)

@@ -5,13 +5,14 @@ import { promptAction } from '@kit.ArkUI'
 import { systemShare } from '@kit.ShareKit'
 import {
   AppStrings,
+  connectDiagnostics,
   ConciseListRow,
   DiagnosticLogger,
   DiagnosticsLogFileSink,
   DiagnosticsSettings,
+  DiagnosticsState,
   GroupedListSection,
   SecondaryListScaffold,
-  StorageKeys,
 } from 'shared'
 import type { DiagnosticsLogFileInfo } from 'shared'
 import {
@@ -21,11 +22,13 @@ import {
 } from '../components/SettingsPageComponents'
 import { SettingsSaveCoordinator } from '../model/SettingsSaveCoordinator'
 
-@Component
+@ComponentV2
 export struct DiagnosticsLogPage {
-  @StorageLink(StorageKeys.DIAGNOSTICS_ENABLED) diagnosticsEnabled: boolean = true
-  @State private logCount: number = 0
-  @State private logFiles: DiagnosticsLogFileInfo[] = []
+  // Diagnostics-enabled mirrored into AppStorageV2 by DiagnosticsSettings.apply()
+  // (was @StorageLink(DIAGNOSTICS_ENABLED)); the toggle reroutes through saveDiagnostics().
+  private diagnostics: DiagnosticsState = connectDiagnostics()
+  @Local private logCount: number = 0
+  @Local private logFiles: DiagnosticsLogFileInfo[] = []
   private diagnosticsShareController?: systemShare.ShareController
 
   aboutToAppear(): void {
@@ -70,7 +73,7 @@ export struct DiagnosticsLogPage {
     GroupedListSection() {
       SettingsToggleRow({
         title: AppStrings.R_NAV_DIAGNOSTICS,
-        checked: this.diagnosticsEnabled,
+        checked: this.diagnostics.enabled,
         changeAction: (value: boolean) => {
           this.updateDiagnosticsEnabled(value)
         },
@@ -143,7 +146,8 @@ export struct DiagnosticsLogPage {
   }
 
   private updateDiagnosticsEnabled(enabled: boolean): void {
-    this.diagnosticsEnabled = enabled
+    // saveDiagnostics -> DiagnosticsSettings.apply() synchronously writes both AppStorage
+    // and the V2 mirror, so the toggle (this.diagnostics.enabled) re-renders.
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     SettingsSaveCoordinator.saveDiagnostics(context, enabled)
   }

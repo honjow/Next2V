@@ -3,6 +3,7 @@ import { preferences } from '@kit.ArkData'
 import { StorageKeys } from '../constants/StorageKeys'
 import { DiagnosticLogger } from '../diagnostics/DiagnosticLogger'
 import { STORE_NAME_SETTINGS, SettingsPreferencesStore, setAppStorageValue } from './SettingsStorage'
+import { connectDiagnostics } from '../state/DiagnosticsState'
 
 export interface DiagnosticsSettingsSnapshot {
   enabled: boolean
@@ -20,6 +21,8 @@ export class DiagnosticsSettings {
   static apply(enabled: boolean, minLevel: string = DiagnosticsSettings.DEFAULT_MIN_LEVEL): void {
     const safeLevel = DiagnosticsSettings.normalizeLevel(minLevel)
     setAppStorageValue<boolean>(StorageKeys.DIAGNOSTICS_ENABLED, enabled)
+    // V2 mirror dual-write for @ComponentV2 readers (DiagnosticsLogPage).
+    connectDiagnostics().enabled = enabled
     setAppStorageValue<string>(StorageKeys.DIAGNOSTICS_MIN_LEVEL, safeLevel)
     DiagnosticLogger.configure(enabled, safeLevel)
   }

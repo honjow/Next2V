@@ -4,6 +4,7 @@ import { ApiConstants } from '../constants/ApiConstants'
 import { StorageKeys } from '../constants/StorageKeys'
 import { HttpClient } from '../network/HttpClient'
 import { STORE_NAME_SETTINGS, SettingsPreferencesStore, setAppStorageValue } from './SettingsStorage'
+import { connectApiDomain } from '../state/ApiDomainState'
 
 const STORE_NAME: string = STORE_NAME_SETTINGS
 const KEY_SELECTED_BASE_URL: string = StorageKeys.SELECTED_BASE_URL
@@ -51,6 +52,8 @@ export class ApiDomainSettings {
     const normalized = ApiDomainSettings.normalizeBaseUrl(baseUrl)
     HttpClient.getInstance().setBaseUrl(normalized)
     setAppStorageValue<string>(StorageKeys.SELECTED_BASE_URL, normalized)
+    // V2 mirror dual-write for @ComponentV2 readers (DomainSettingsPage).
+    connectApiDomain().selectedBaseUrl = normalized
     setAppStorageValue<boolean>(StorageKeys.USE_CO_DOMAIN, false)
   }
 

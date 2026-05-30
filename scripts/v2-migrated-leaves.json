@@ -12,6 +12,8 @@
     "feature/node/src/main/ets/components/DiscoverPageComponents.ets",
     "feature/node/src/main/ets/components/NodePickerComponents.ets",
     "feature/settings/src/main/ets/components/SettingsPageComponents.ets",
+    "feature/settings/src/main/ets/pages/DiagnosticsLogPage.ets",
+    "feature/settings/src/main/ets/pages/DomainSettingsPage.ets",
     "feature/settings/src/main/ets/pages/ReadingSettingsPage.ets",
     "feature/settings/src/main/ets/pages/StorageSettingsPage.ets",
     "feature/user/src/main/ets/components/UserProfileComponents.ets",
