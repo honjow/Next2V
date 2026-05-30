@@ -7,6 +7,7 @@ import {
   connectBlockedListSelectedTab,
   connectDiscoverKeyword,
   DiscoverKeywordState,
+  FeedTabBridge,
   FeedTabSettings,
   StorageKeys,
   TabItem,
@@ -45,6 +46,14 @@ export function BlockedListsTabsCCBuilder() {
   BlockedListsTabs()
 }
 
+// FeedPills stays an intentional V1 @Component: its tab-bar layout machinery
+// (centerTab -> scrollToIndex -> onAreaChange -> updateTabLayout -> re-render) re-fires a V2 @Monitor on
+// every settle frame (device-verified ~37x for a single feedTab change vs ~1x for HomePage's @Monitor), so
+// hosting the recenter handler under V2 over-fires. V1 @StorageLink + @Watch is well-behaved here. It still
+// participates in the V2 feed-tab migration: its tab-tap write routes through FeedTabBridge.publishSelectedKey
+// (AppStorage + the V2 FeedTabState mirror the @ComponentV2 HomePage reads), and it reads the
+// bridge-dual-written AppStorage keys via @StorageLink. Migrating FeedPills itself to V2 is a deferred,
+// separately-scoped follow-up (needs a non-@Monitor recenter trigger).
 @Component
 struct FeedPills {
   @StorageLink(StorageKeys.FEED_TAB) @Watch('onFeedTabChanged') feedTab: string = 'tech';
@@ -93,7 +102,9 @@ struct FeedPills {
             .alignItems(HorizontalAlign.Center)
             .padding({ bottom: 0 })
             .onClick(() => {
-              this.feedTab = tab.key
+              // Route through the bridge (AppStorage + V2 mirror) so the @ComponentV2 HomePage reacts; the
+              // local @StorageLink feedTab updates from the AppStorage half and fires @Watch for centering.
+              FeedTabBridge.publishSelectedKey(tab.key)
             })
             .onAreaChange((_oldValue: Area, newValue: Area) => {
               this.updateTabLayout(index, newValue)

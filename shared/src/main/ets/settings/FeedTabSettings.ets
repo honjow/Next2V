@@ -2,7 +2,7 @@ import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
 import { ApiConstants, TabItem } from '../constants/ApiConstants'
 import { StorageKeys } from '../constants/StorageKeys'
-import { setAppStorageValue } from './SettingsStorage'
+import { FeedTabBridge } from '../state/FeedTabState'
 import { STORE_NAME_FEED_TABS } from './SettingsStores'
 
 const STORE_NAME: string = STORE_NAME_FEED_TABS
@@ -162,11 +162,13 @@ export class FeedTabSettings {
   }
 
   static apply(keysJson: string): void {
-    setAppStorageValue<string>(StorageKeys.FEED_TAB_KEYS, keysJson || FeedTabSettings.defaultKeysJson())
+    // Dual-writes the V1 AppStorage key (still read imperatively + by HomeNodeSettingsPage @StorageLink)
+    // AND the V2 FeedTabState mirror, so bootstrap restore and settings reorder both seed/update the mirror.
+    FeedTabBridge.publishKeys(keysJson || FeedTabSettings.defaultKeysJson())
   }
 
   static applySelectedKey(key: string): void {
-    setAppStorageValue<string>(StorageKeys.FEED_TAB, key || FeedTabSettings.defaultKeys()[0])
+    FeedTabBridge.publishSelectedKey(key || FeedTabSettings.defaultKeys()[0])
   }
 
   private static selectedKeyOrFallback(keysJson: string, key: string): string {

@@ -4,9 +4,9 @@
 // BlockedListsPage.ets is a whole-file leaf and is covered by test_v2_leaf_migration_contract.mjs.
 // This check covers the parts of the slice that the whole-file contract can NOT:
 //
-//   1. BlockedListsTabs (in IndexTitleBarComponents.ets) is now @ComponentV2 with NO V1 component-state
+//   1. BlockedListsTabs (in IndexTitleBarComponents.ets) is @ComponentV2 with NO V1 component-state
 //      decorator and no refresh-by-key-churn token. The whole-file contract can't assert this struct
-//      because the same file still hosts the V1 FeedPills struct (FEED_TAB group, a later cut).
+//      because the same file still hosts the intentionally-V1 FeedPills struct (see feed-tab-v2 cut).
 //   2. BlockedListsTabsSegment.ets stays an INTENTIONAL V1 @Component adapter — a @ComponentV2 parent
 //      cannot bind SegmentButton's @Link selectedIndexes, so this boundary is deliberate and must NOT be
 //      "fixed" to V2. We assert it is @Component (not @ComponentV2) and still hosts the SegmentButton.

@@ -1,20 +1,21 @@
 import { FeedViewModel } from '../viewmodel/FeedViewModel'
 import {
   V2exTopic, TopicCard, LoadingFooter, TopicDetailParams, ThemeConstants,
-  StorageKeys, PullRefreshListScaffold, ApiConstants, TabItem, ApiService, NodeTopicListParams,
-  UserProfileParams, CacheSettings, FeedTabSettings, CollectionSettings
+  PullRefreshListScaffold, ApiConstants, TabItem, ApiService, NodeTopicListParams,
+  UserProfileParams, CacheSettings, FeedTabSettings, CollectionSettings,
+  connectNavStack, connectFeedTab, FeedTabBridge, connectListScroll, connectTopicReadStates,
+  FeedTabState, ListScrollState, TopicReadStatesState
 } from 'shared'
 import type { TopicReadState } from 'shared'
 import { common } from '@kit.AbilityKit'
 
-@Component
+@ComponentV2
 export struct HomePage {
-  @Consume('ns') ns: NavPathStack
-  @StorageLink(StorageKeys.FEED_TAB) @Watch('onFeedTabChanged') feedTab: string = 'tech'
-  @StorageLink(StorageKeys.FEED_TAB_KEYS) @Watch('onFeedTabKeysChanged') feedTabKeys: string = FeedTabSettings.defaultKeysJson()
-  @StorageLink(StorageKeys.FEED_TAB_VISUAL_INDEX) feedTabVisualIndex: number = 0
-  @State private currentTabIndex: number = 0
-  @State private swiperWidth: number = 0
+  // V2 mirror of the feed-tab group (FeedTabBridge dual-writes feedTab/feedTabKeys; HomePage owns
+  // feedTabVisualIndex). @Monitor-watched below for tab/keys changes; read in build() to drive the swiper.
+  @Local private feedTabState: FeedTabState = connectFeedTab()
+  @Local private currentTabIndex: number = 0
+  @Local private swiperWidth: number = 0
   private swiperController: SwiperController = new SwiperController()
   private horizontalPan: PanGestureOptions = new PanGestureOptions({
     direction: PanDirection.Horizontal,
@@ -22,13 +23,15 @@ export struct HomePage {
   })
   private isHorizontalSwiping: boolean = false
   private feedScrollers: Map<string, Scroller> = new Map<string, Scroller>()
-  onScrollerReady?: (scroller: Scroller) => void
-  onDidScroll?: (offset: number, state: ScrollState) => void
+  // Pure-V2 list-scroll lock; the inner FeedListPage reads .enabled. Write-only from HomePage.
+  private listScroll: ListScrollState = connectListScroll()
+  @Event onScrollerReady?: (scroller: Scroller) => void
+  @Event onDidScroll?: (offset: number, state: ScrollState) => void
 
   aboutToAppear(): void {
-    AppStorage.setOrCreate('listScrollEnabled', true)
+    this.listScroll.enabled = true
     this.correctFeedTabIfNeeded()
-    const nextIndex = this.tabKeyToIndex(this.feedTab)
+    const nextIndex = this.tabKeyToIndex(this.feedTabState.feedTab)
     if (nextIndex < 0) {
       return
     }
@@ -51,7 +54,7 @@ export struct HomePage {
     if (!this.onScrollerReady) {
       return
     }
-    const scroller = this.feedScrollers.get(this.feedTab)
+    const scroller = this.feedScrollers.get(this.feedTabState.feedTab)
     if (scroller) {
       this.onScrollerReady(scroller)
     }
@@ -59,20 +62,20 @@ export struct HomePage {
 
   private onFeedScrollerReady(tabKey: string, scroller: Scroller): void {
     this.feedScrollers.set(tabKey, scroller)
-    if (tabKey === this.feedTab) {
+    if (tabKey === this.feedTabState.feedTab) {
       this.notifyMainScrollerReady()
     }
   }
 
   private onFeedDidScroll(tabKey: string, offset: number, state: ScrollState): void {
-    if (tabKey !== this.feedTab || !this.onDidScroll) {
+    if (tabKey !== this.feedTabState.feedTab || !this.onDidScroll) {
       return
     }
     this.onDidScroll(offset, state)
   }
 
   private setListScrollEnabled(enabled: boolean): void {
-    AppStorage.setOrCreate('listScrollEnabled', enabled)
+    this.listScroll.enabled = enabled
   }
 
   private lockListScrollIfHorizontal(event: GestureEvent): void {
@@ -97,26 +100,27 @@ export struct HomePage {
   }
 
   private feedTabIndexOrFallback(): number {
-    const index = this.tabKeyToIndex(this.feedTab)
+    const index = this.tabKeyToIndex(this.feedTabState.feedTab)
     return index < 0 ? 0 : index
   }
 
   private correctFeedTabIfNeeded(): boolean {
     const tabs = this.visibleTabs()
-    if (tabs.length <= 0 || this.tabKeyToIndex(this.feedTab) >= 0) {
+    if (tabs.length <= 0 || this.tabKeyToIndex(this.feedTabState.feedTab) >= 0) {
       return false
     }
-    this.feedTab = tabs[0].key
+    FeedTabBridge.publishSelectedKey(tabs[0].key)
     this.persistSelectedTab(tabs[0].key)
     return true
   }
 
-  private onFeedTabChanged(_propName: string): void {
-    const nextIndex = this.tabKeyToIndex(this.feedTab)
+  @Monitor('feedTabState.feedTab')
+  onFeedTabChanged(): void {
+    const nextIndex = this.tabKeyToIndex(this.feedTabState.feedTab)
     if (nextIndex < 0) {
       return
     }
-    this.persistSelectedTab(this.feedTab)
+    this.persistSelectedTab(this.feedTabState.feedTab)
     if (nextIndex === this.currentTabIndex) {
       return
     }
@@ -133,11 +137,12 @@ export struct HomePage {
     })
   }
 
-  private onFeedTabKeysChanged(_propName: string): void {
+  @Monitor('feedTabState.feedTabKeys')
+  onFeedTabKeysChanged(): void {
     if (this.correctFeedTabIfNeeded()) {
       return
     }
-    const nextIndex = this.tabKeyToIndex(this.feedTab)
+    const nextIndex = this.tabKeyToIndex(this.feedTabState.feedTab)
     if (nextIndex < 0) {
       return
     }
@@ -148,7 +153,7 @@ export struct HomePage {
   }
 
   private visibleTabs(): TabItem[] {
-    return FeedTabSettings.tabsFromKeysJson(this.feedTabKeys)
+    return FeedTabSettings.tabsFromKeysJson(this.feedTabState.feedTabKeys)
   }
 
   private clampVisualIndex(index: number): number {
@@ -160,7 +165,7 @@ export struct HomePage {
   }
 
   private setVisualTabIndex(index: number): void {
-    this.feedTabVisualIndex = this.clampVisualIndex(index)
+    FeedTabBridge.publishVisualIndex(this.clampVisualIndex(index))
   }
 
   private animateVisualTabIndex(index: number): void {
@@ -226,8 +231,8 @@ export struct HomePage {
         const key = tab.key
         this.currentTabIndex = i
         this.setVisualTabIndex(i)
-        if (key !== this.feedTab) {
-          this.feedTab = key
+        if (key !== this.feedTabState.feedTab) {
+          FeedTabBridge.publishSelectedKey(key)
         }
         this.notifyMainScrollerReady()
         this.persistSelectedTab(key)
@@ -258,21 +263,24 @@ export struct HomePage {
   }
 }
 
-@Component
+@ComponentV2
 struct FeedListPage {
-  @Consume('ns') ns: NavPathStack
-  @StorageLink('listScrollEnabled') listScrollEnabled: boolean = true
-  @StorageLink(StorageKeys.TOPIC_READ_STATES) topicReadStates: string = '[]'
-  @Prop tabKey: string = 'tech'
-  @State vm: FeedViewModel = new FeedViewModel()
+  // Same NavPathStack instance HdsNavigation is bound to (see NavStackHolder); method target only.
+  private ns: NavPathStack = connectNavStack().stack
+  // Pure-V2 list-scroll lock written by HomePage; read in build() for the scaffold's scrollEnabled.
+  private listScroll: ListScrollState = connectListScroll()
+  // Per-topic read-state ledger (V2 mirror; LocalDataPublisher dual-writes). Read in build() (unread dot).
+  private readStates: TopicReadStatesState = connectTopicReadStates()
+  @Param tabKey: string = 'tech'
+  @Local vm: FeedViewModel = new FeedViewModel()
   private readonly FLOAT_H: number = ThemeConstants.FLOAT_BAR_HEIGHT
   private readonly GAP: number = ThemeConstants.SPACE_SM - 2
   private readonly PULL_THRESHOLD: number = 60
   private readonly TBH: number = ThemeConstants.TITLE_BAR_HEIGHT
   private readonly BB_H: number = ApiConstants.TAB_BAR_HEIGHT
-  scroller: Scroller = new Scroller()
-  onScrollerReady?: (tabKey: string, scroller: Scroller) => void
-  onDidScroll?: (tabKey: string, offset: number, state: ScrollState) => void
+  @Param scroller: Scroller = new Scroller()
+  @Event onScrollerReady?: (tabKey: string, scroller: Scroller) => void
+  @Event onDidScroll?: (tabKey: string, offset: number, state: ScrollState) => void
   private api: ApiService = new ApiService()
 
   aboutToAppear(): void {
@@ -299,7 +307,7 @@ struct FeedListPage {
 
   build() {
     Column() {
-      if (this.vm.dataSource.totalCount() > 0) {
+      if (this.vm.itemCount > 0) {
         Column() {
           PullRefreshListScaffold({
             scroller: this.scroller,
@@ -308,7 +316,7 @@ struct FeedListPage {
             bottomPadding: this.FLOAT_H,
             indicatorTop: this.TBH + this.BB_H,
             refreshThreshold: this.PULL_THRESHOLD,
-            scrollEnabled: this.listScrollEnabled,
+            scrollEnabled: this.listScroll.enabled,
             onRefresh: async () => { await this.vm.refresh() },
             onBottomRefresh: async () => { await this.vm.loadMore() },
             canStartBottomRefresh: () => this.vm.canLoadMore(),
@@ -381,7 +389,7 @@ struct FeedListPage {
 
   private findReadState(topicId: number): TopicReadState | null {
     try {
-      const parsed = JSON.parse(this.topicReadStates || '[]') as TopicReadState[]
+      const parsed = JSON.parse(this.readStates.statesJson || '[]') as TopicReadState[]
       if (!Array.isArray(parsed)) {
         return null
       }

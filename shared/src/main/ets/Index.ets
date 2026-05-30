@@ -65,6 +65,13 @@ export {
   BlockedListStorageState,
   connectBlockedListStorage,
 } from './state/BlockedListState'
+export {
+  FeedTabState,
+  connectFeedTab,
+  FeedTabBridge,
+  ListScrollState,
+  connectListScroll,
+} from './state/FeedTabState'
 export { STORE_NAME_SETTINGS, setAppStorageValue } from './settings/SettingsStorage'
 export { SettingsBootstrap } from './settings/SettingsBootstrap'
 export { AppStrings } from './i18n/AppStrings'

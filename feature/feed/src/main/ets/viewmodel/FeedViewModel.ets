@@ -7,14 +7,18 @@ import { vibrator } from '@kit.SensorServiceKit'
  * Feed page ViewModel
  * MVVM: ViewModel holds state and business logic, View is pure rendering
  */
-@Observed
+@ObservedV2
 export class FeedViewModel {
+  // Stable ref; LazyForEach subscribes to its IDataSource listeners directly, so it is not @Trace.
   dataSource: FeedDataSource = new FeedDataSource()
-  isLoading: boolean = false
-  isRefreshing: boolean = false
-  isLoadingMore: boolean = false
-  hasMore: boolean = true
-  errorMessage: string = ''
+  @Trace isLoading: boolean = false
+  @Trace isRefreshing: boolean = false
+  @Trace isLoadingMore: boolean = false
+  @Trace hasMore: boolean = true
+  @Trace errorMessage: string = ''
+  // @Trace mirror of dataSource.totalCount(); read in FeedListPage build() so the loading->list branch
+  // re-evaluates under V2 (a non-@Trace dataSource mutation alone would not re-run build()).
+  @Trace itemCount: number = 0
   activeTab: string = 'tech'
   page: number = 0
 
@@ -55,6 +59,7 @@ export class FeedViewModel {
       const data = await this.cacheLoader()
       if (data.length > 0) {
         this.dataSource.setData(await this.mergeTopicListWithReadStates(data))
+        this.itemCount = this.dataSource.totalCount()
         this.hasMore = this.pagedLoader !== null ? true : data.length >= 20
       }
     } catch (error) {
@@ -83,6 +88,7 @@ export class FeedViewModel {
       const data = await this.loadPage(1)
       const merged = await this.mergeTopicListWithReadStates(data)
       this.dataSource.setData(merged)
+      this.itemCount = this.dataSource.totalCount()
       this.page = 1
       this.hasMore = this.resolveHasMore(data.length, data.length)
       await this.saveCache(data)
@@ -105,6 +111,7 @@ export class FeedViewModel {
       const data = await this.loadPage(1)
       const merged = await this.mergeTopicListWithReadStates(data)
       this.dataSource.setData(merged)
+      this.itemCount = this.dataSource.totalCount()
       this.page = 1
       this.hasMore = this.resolveHasMore(data.length, data.length)
       await this.saveCache(data)
@@ -127,6 +134,7 @@ export class FeedViewModel {
       const data = await this.loadPage(1)
       const merged = await this.mergeTopicListWithReadStates(data)
       this.dataSource.setData(merged)
+      this.itemCount = this.dataSource.totalCount()
       this.page = 1
       this.hasMore = this.resolveHasMore(data.length, data.length)
       await this.saveCache(data)
@@ -153,6 +161,7 @@ export class FeedViewModel {
       this.page = nextPage
       this.hasMore = this.resolveHasMore(data.length, unique.length)
       this.dataSource.appendData(mergedUnique)
+      this.itemCount = this.dataSource.totalCount()
       await this.saveCache(this.dataSource.getAllData())
     } catch (error) {
       this.errorMessage = translateApiError(error)

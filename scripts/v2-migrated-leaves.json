@@ -64,6 +64,7 @@
     "feature/detail/src/main/ets/pages/ReplyEditorPage.ets",
     "feature/node/src/main/ets/pages/NodeTopicPage.ets",
     "feature/user/src/main/ets/pages/UserProfilePage.ets",
-    "entry/src/main/ets/pages/BlockedListsPage.ets"
+    "entry/src/main/ets/pages/BlockedListsPage.ets",
+    "feature/feed/src/main/ets/pages/HomePage.ets"
   ]
 }
