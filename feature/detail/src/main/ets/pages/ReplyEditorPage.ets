@@ -10,26 +10,27 @@ import {
   type ReplyComposerDraftState,
 } from '../model/ReplyComposerDraftCoordinator'
 import {
-  ApiService, AppStrings, CookieJarSettings, DateUtils, MarkdownContent, MarkdownToolbar, SecondaryFormScaffold,
-  ThemeConstants, translateApiError
+  ApiService, AppStrings, connectNavStack, CookieJarSettings, DateUtils, MarkdownContent, MarkdownToolbar,
+  SecondaryFormScaffold, ThemeConstants, translateApiError
 } from 'shared'
 
-@Component
+@ComponentV2
 export struct ReplyEditorPage {
-  @Prop topicId: number = 0
-  @Prop topicTitle: string = ''
-  @Prop initialContent: string = ''
-  @Consume('ns') stack: NavPathStack
+  @Param topicId: number = 0
+  @Param topicTitle: string = ''
+  @Param initialContent: string = ''
+  // Same NavPathStack instance HdsNavigation is bound to (see NavStackHolder); method target only.
+  private stack: NavPathStack = connectNavStack().stack
 
-  @State private content: string = ''
-  @State private isPreview: boolean = false
-  @State private errorMessage: string = ''
-  @State private savedAt: number = 0
-  @State private isSubmitting: boolean = false
-  @State private isSubmitDialogShown: boolean = false
-  @State private contentSelectionStart: number = 0
-  @State private contentSelectionEnd: number = 0
-  @State private submitContentSnapshot: string = ''
+  @Local private content: string = ''
+  @Local private isPreview: boolean = false
+  @Local private errorMessage: string = ''
+  @Local private savedAt: number = 0
+  @Local private isSubmitting: boolean = false
+  @Local private isSubmitDialogShown: boolean = false
+  @Local private contentSelectionStart: number = 0
+  @Local private contentSelectionEnd: number = 0
+  @Local private submitContentSnapshot: string = ''
 
   private contentController: TextAreaController = new TextAreaController()
   private saveTimerId: number = 0
