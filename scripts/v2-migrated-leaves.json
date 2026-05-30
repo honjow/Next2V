@@ -49,6 +49,10 @@
     "shared/src/main/ets/components/V2exWebViewScaffold.ets",
     "shared/src/main/ets/components/reply/ReplyCardActions.ets",
     "shared/src/main/ets/components/reply/ReplyCardHeader.ets",
-    "feature/user/src/main/ets/pages/UserRepliesPage.ets"
+    "feature/user/src/main/ets/pages/UserRepliesPage.ets",
+    "entry/src/main/ets/pages/SavedTopicsPage.ets",
+    "entry/src/main/ets/pages/ViewedTopicsPage.ets",
+    "entry/src/main/ets/pages/SavedNodesPage.ets",
+    "entry/src/main/ets/pages/MyNodesPage.ets"
   ]
 }

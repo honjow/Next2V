@@ -4,6 +4,7 @@ import {
   ApiService,
   CollectionSettings,
   ConciseListRow,
+  connectNavStack,
   DateUtils,
   EmptyState,
   GroupedListSection,
@@ -71,10 +72,12 @@ struct SavedNodeRowView {
   }
 }
 
-@Component
+@ComponentV2
 export struct SavedNodesPage {
-  @Consume('ns') stack: NavPathStack
-  @State private nodes: SavedNodeRow[] = []
+  // Same NavPathStack instance HdsNavigation is bound to (see NavStackHolder);
+  // used purely as a method target (pushPathByName), so no V2 reactivity is needed.
+  private stack: NavPathStack = connectNavStack().stack
+  @Local private nodes: SavedNodeRow[] = []
   private api: ApiService = new ApiService()
   // Exactly one observed row object per node name, reused across reloads and
   // async enrichment so same-name rows mutate in place instead of relying on

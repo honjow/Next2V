@@ -2,6 +2,7 @@ import { common } from '@kit.AbilityKit'
 import {
   CollectionSettings,
   AppStrings,
+  connectNavStack,
   EmptyState,
   LocalTopicCard,
   PullRefreshListScaffold,
@@ -9,10 +10,12 @@ import {
   type TopicDetailParams
 } from 'shared'
 
-@Component
+@ComponentV2
 export struct SavedTopicsPage {
-  @Consume('ns') stack: NavPathStack
-  @State private topics: SavedTopic[] = []
+  // Same NavPathStack instance HdsNavigation is bound to (see NavStackHolder);
+  // used purely as a method target (pushPathByName), so no V2 reactivity is needed.
+  private stack: NavPathStack = connectNavStack().stack
+  @Local private topics: SavedTopic[] = []
 
   aboutToAppear(): void {
     this.loadTopics()

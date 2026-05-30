@@ -5,6 +5,7 @@ import {
   CollectionSettings,
   CardEmptyState,
   ConciseListRow,
+  connectNavStack,
   CookieJarSettings,
   GroupedListSection,
   ImageUtils,
@@ -19,12 +20,14 @@ import {
   type V2exNode
 } from 'shared'
 
-@Component
+@ComponentV2
 export struct MyNodesPage {
-  @Consume('ns') stack: NavPathStack
-  @State private nodes: V2exFavoriteNode[] = []
-  @State private errorMessage: string = ''
-  @State private isLoading: boolean = false
+  // Same NavPathStack instance HdsNavigation is bound to (see NavStackHolder);
+  // used purely as a method target (pushPathByName), so no V2 reactivity is needed.
+  private stack: NavPathStack = connectNavStack().stack
+  @Local private nodes: V2exFavoriteNode[] = []
+  @Local private errorMessage: string = ''
+  @Local private isLoading: boolean = false
   private api: ApiService = new ApiService()
 
   aboutToAppear(): void {
