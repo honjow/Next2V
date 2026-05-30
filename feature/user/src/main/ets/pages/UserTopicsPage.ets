@@ -1,16 +1,18 @@
 import { UserTopicsViewModel } from '../viewmodel/UserViewModel'
 import {
-  AppStrings, CardEmptyState, NodeTopicListParams, PageErrorState, PageLoadingState, SecondaryListScaffold,
-  StorageKeys, TopicCard, TopicDetailParams, V2exTopic
+  AppStrings, CardEmptyState, connectNavStack, connectTopicReadStates, NodeTopicListParams, PageErrorState,
+  PageLoadingState, SecondaryListScaffold, TopicCard, TopicDetailParams, TopicReadStatesState, V2exTopic
 } from 'shared'
 import type { TopicReadState } from 'shared'
 
-@Component
+@ComponentV2
 export struct UserTopicsPage {
-  @Prop username: string = ''
-  @Consume('ns') stack: NavPathStack
-  @State vm: UserTopicsViewModel = new UserTopicsViewModel(this.username)
-  @StorageLink(StorageKeys.TOPIC_READ_STATES) topicReadStates: string = '[]'
+  @Param username: string = ''
+  // Same NavPathStack instance HdsNavigation is bound to (see NavStackHolder); method target only.
+  private stack: NavPathStack = connectNavStack().stack
+  @Local vm: UserTopicsViewModel = new UserTopicsViewModel(this.username)
+  // V2 mirror of TOPIC_READ_STATES (LocalDataPublisher dual-writes V1 AppStorage + this).
+  private readStates: TopicReadStatesState = connectTopicReadStates()
 
   aboutToAppear(): void { this.vm.load() }
 
@@ -79,7 +81,7 @@ export struct UserTopicsPage {
 
   private findReadState(topicId: number): TopicReadState | null {
     try {
-      const parsed = JSON.parse(this.topicReadStates || '[]') as TopicReadState[]
+      const parsed = JSON.parse(this.readStates.statesJson || '[]') as TopicReadState[]
       if (!Array.isArray(parsed)) {
         return null
       }

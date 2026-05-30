@@ -1,6 +1,7 @@
 import { StorageKeys } from '../constants/StorageKeys'
 import type { LocalContentStats, TopicReadState } from './CollectionTypes'
 import { setAppStorageValue } from './SettingsStorage'
+import { connectTopicReadStates } from '../state/TopicReadStatesState'
 
 export class LocalDataPublisher {
   static touchLocalData(): void {
@@ -27,11 +28,16 @@ export class LocalDataPublisher {
   }
 
   static publishTopicReadStates(states: TopicReadState[]): void {
-    setAppStorageValue<string>(StorageKeys.TOPIC_READ_STATES, JSON.stringify(states))
+    // Dual-write the V1 AppStorage key (V1 @StorageLink readers) AND the V2 mirror
+    // (@ComponentV2 readers); single-writer chokepoint keeps the two stores in lockstep.
+    const json = JSON.stringify(states)
+    setAppStorageValue<string>(StorageKeys.TOPIC_READ_STATES, json)
+    connectTopicReadStates().statesJson = json
   }
 
   static clearTopicReadStates(): void {
     setAppStorageValue<string>(StorageKeys.TOPIC_READ_STATES, '[]')
+    connectTopicReadStates().statesJson = '[]'
   }
 
   private static publishLocalContentCount(key: string, count: number): void {
