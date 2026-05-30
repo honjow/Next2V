@@ -8,17 +8,17 @@ const OPACITY_THRESHOLD_FACTOR: number = 0.5
 const HAPTIC_HD_INTENSITY: number = 60
 const HAPTIC_FALLBACK_DURATION: number = 30
 
-@Component
+@ComponentV2
 export struct PullRefresh {
   @BuilderParam content: () => void
-  scroller: Scroller = new Scroller()
-  onRefresh: () => Promise<void> = async () => {}
-  onScrollEnableChange: (enabled: boolean) => void = (_) => {}
-  @Prop indicatorTop: number = 0
-  @Prop threshold: number = DEFAULT_PULL_REFRESH_THRESHOLD
+  @Param scroller: Scroller = new Scroller()
+  @Event onRefresh: () => Promise<void> = async () => {}
+  @Event onScrollEnableChange: (enabled: boolean) => void = (_) => {}
+  @Param indicatorTop: number = 0
+  @Param threshold: number = DEFAULT_PULL_REFRESH_THRESHOLD
 
-  @State pullOffset: number = 0
-  @State refreshState: number = 0 // 0:idle 1:canRls 2:refreshing 3:done
+  @Local pullOffset: number = 0
+  @Local refreshState: number = 0 // 0:idle 1:canRls 2:refreshing 3:done
   private hapticFired: boolean = false
   private touchStartY: number = 0
   private touchStartPullOffset: number = 0

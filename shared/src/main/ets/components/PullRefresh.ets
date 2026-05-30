@@ -8,23 +8,23 @@ const OPACITY_THRESHOLD_FACTOR: number = 0.5
 const HAPTIC_HD_INTENSITY: number = 80
 const HAPTIC_FALLBACK_DURATION: number = 30
 const DIRECTION_LOCK_VP: number = 6
-@Component
+@ComponentV2
 export struct PullRefresh {
   @BuilderParam content: () => void;
-  scroller: Scroller = new Scroller();
-  onRefresh: () => Promise<void> = async () => {};
-  onBottomRefresh: () => Promise<void> = async () => {};
-  canStartBottomRefresh: () => boolean = () => false;
-  onScrollEnableChange: (enabled: boolean) => void = (_) => {};
-  @Prop indicatorTop: number = 0;
-  @Prop threshold: number = DEFAULT_PULL_REFRESH_THRESHOLD;
-  @Prop bottomIndicatorBottom: number = ThemeConstants.SPACE_XL;
+  @Param scroller: Scroller = new Scroller();
+  @Event onRefresh: () => Promise<void> = async () => {};
+  @Event onBottomRefresh: () => Promise<void> = async () => {};
+  @Param canStartBottomRefresh: () => boolean = () => false;
+  @Event onScrollEnableChange: (enabled: boolean) => void = (_) => {};
+  @Param indicatorTop: number = 0;
+  @Param threshold: number = DEFAULT_PULL_REFRESH_THRESHOLD;
+  @Param bottomIndicatorBottom: number = ThemeConstants.SPACE_XL;
 
-  @State pullOffset: number = 0;
-  @State bottomPullOffset: number = 0;
-  @State refreshState: number = 0;
-  @State bottomRefreshState: number = 0;
-  @State containerHeight: number = 0;
+  @Local pullOffset: number = 0;
+  @Local bottomPullOffset: number = 0;
+  @Local refreshState: number = 0;
+  @Local bottomRefreshState: number = 0;
+  @Local containerHeight: number = 0;
   private hapticFired: boolean = false;
   private touchStartX: number = 0;
   private touchStartY: number = 0;
