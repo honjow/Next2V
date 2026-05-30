@@ -52,6 +52,7 @@ export { LayoutSafeAreaState, connectLayoutSafeArea, LayoutSafeAreaBridge } from
 export { ReadingSettingsState, connectReadingSettings } from './state/ReadingSettingsState'
 export { ApiDomainState, connectApiDomain } from './state/ApiDomainState'
 export { DiagnosticsState, connectDiagnostics } from './state/DiagnosticsState'
+export { NavStackHolder, connectNavStack } from './state/NavStackHolder'
 export { STORE_NAME_SETTINGS, setAppStorageValue } from './settings/SettingsStorage'
 export { SettingsBootstrap } from './settings/SettingsBootstrap'
 export { AppStrings } from './i18n/AppStrings'

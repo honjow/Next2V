@@ -21,6 +21,7 @@ import {
   ApiConstants,
   ApiService,
   AuthSettings,
+  connectNavStack,
   CookieJarSettings,
   FoldScreenUtil,
   HttpClient,
@@ -95,7 +96,11 @@ import { IndexRouteCoordinator } from '../model/IndexRouteCoordinator'
 @Entry
 @Component
 struct Index {
-  @Provide('ns') ns: NavPathStack = new NavPathStack();
+  // Sourced from the app-wide NavStackHolder (AppStorageV2) so V2 `@ComponentV2`
+  // consumers can read the identical NavPathStack via connectNavStack().stack and
+  // migrate off `@Consume('ns')` one at a time. Index stays V1: V1 consumers keep
+  // using `@Consume('ns')` and receive the same instance via this `@Provide`.
+  @Provide('ns') ns: NavPathStack = connectNavStack().stack;
   private readonly HOME_TAB_SCROLL_DELTA_PX: number = 6
   private readonly HOME_TAB_ANIMATION_GUARD_MS: number = 180
   private tc: HdsTabsController = new HdsTabsController();
