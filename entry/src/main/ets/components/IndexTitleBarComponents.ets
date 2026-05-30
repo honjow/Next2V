@@ -366,13 +366,13 @@ export interface UserProfileAppbarIdentityParams {
   menuItemCount: number
 }
 
-@Component
+@ComponentV2
 struct UserProfileAppbarIdentity {
-  @Prop titleUsername: string = '';
-  @Prop avatarUrl: string = '';
-  @Prop menuMaxCount: number = 0;
-  @Prop menuItemCount: number = 0;
-  @State private titleBarWidth: number = 0;
+  @Param titleUsername: string = '';
+  @Param avatarUrl: string = '';
+  @Param menuMaxCount: number = 0;
+  @Param menuItemCount: number = 0;
+  @Local private titleBarWidth: number = 0;
 
   build() {
     Row({ space: ThemeConstants.SPACE_XS }) {
@@ -423,14 +423,14 @@ export interface TopicDetailAppbarIdentityParams {
   menuItemCount: number
 }
 
-@Component
+@ComponentV2
 struct TopicDetailAppbarIdentity {
-  @Prop title: string = '';
-  @Prop avatarUrl: string = '';
-  @Prop username: string = '';
-  @Prop menuMaxCount: number = 0;
-  @Prop menuItemCount: number = 0;
-  @State private titleBarWidth: number = 0;
+  @Param title: string = '';
+  @Param avatarUrl: string = '';
+  @Param username: string = '';
+  @Param menuMaxCount: number = 0;
+  @Param menuItemCount: number = 0;
+  @Local private titleBarWidth: number = 0;
 
   build() {
     Row({ space: ThemeConstants.SPACE_XS }) {
