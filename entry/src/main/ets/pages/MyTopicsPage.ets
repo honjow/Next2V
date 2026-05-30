@@ -1,10 +1,12 @@
 import { promptAction } from '@kit.ArkUI'
 import {
   ApiService, AppStrings,
+  AuthSessionSignalState,
+  connectAuthSessionSignal,
+  connectNavStack,
   CookieJarSettings,
   PageLoginRequiredState,
   PagedListScaffold,
-  StorageKeys,
   TopicCard,
   TwoFactorChallengeService,
   translateApiError,
@@ -13,18 +15,18 @@ import {
   V2exCookieTwoFactorRequiredError
 } from 'shared'
 
-@Component
+@ComponentV2
 export struct MyTopicsPage {
-  @Consume('ns') stack: NavPathStack
-  @StorageLink(StorageKeys.AUTH_SESSION_UPDATED_AT)
-  @Watch('onAuthSessionUpdated')
-  authSessionUpdatedAt: number = 0
-  @State private topics: V2exTopic[] = []
-  @State private errorMessage: string = ''
-  @State private isLoading: boolean = true
-  @State private isLoadingMore: boolean = false
-  @State private page: number = 1
-  @State private hasMore: boolean = true
+  // Same NavPathStack instance HdsNavigation is bound to (see NavStackHolder); method target only.
+  private stack: NavPathStack = connectNavStack().stack
+  // V2 mirror of AUTH_SESSION_UPDATED_AT (AuthSessionSettings.apply dual-writes AppStorage + this).
+  @Local private authSignal: AuthSessionSignalState = connectAuthSessionSignal()
+  @Local private topics: V2exTopic[] = []
+  @Local private errorMessage: string = ''
+  @Local private isLoading: boolean = true
+  @Local private isLoadingMore: boolean = false
+  @Local private page: number = 1
+  @Local private hasMore: boolean = true
   private api: ApiService = new ApiService()
   private readonly PAGE_SIZE: number = 20
   private refreshGuard: boolean = false
@@ -33,7 +35,8 @@ export struct MyTopicsPage {
     this.refresh()
   }
 
-  onAuthSessionUpdated(_propName: string): void {
+  @Monitor('authSignal.updatedAt')
+  onAuthSessionUpdated(): void {
     this.refresh(true)
   }
 

@@ -3,6 +3,7 @@ import { preferences } from '@kit.ArkData'
 import { StorageKeys } from '../constants/StorageKeys'
 import { setAppStorageValue } from './SettingsStorage'
 import { STORE_NAME_AUTH_SESSION } from './SettingsStores'
+import { connectAuthSessionSignal } from '../state/AuthSessionSignalState'
 
 const STORE_NAME: string = STORE_NAME_AUTH_SESSION
 const KEY_LOGIN_MODE: string = 'loginMode'
@@ -83,6 +84,10 @@ export class AuthSessionSettings {
     setAppStorageValue<string>(StorageKeys.AUTH_SESSION_USERNAME, snapshot.username || '')
     setAppStorageValue<string>(StorageKeys.AUTH_SESSION_AVATAR, snapshot.avatar || '')
     setAppStorageValue<number>(StorageKeys.AUTH_SESSION_VALIDATED_AT, snapshot.validatedAt || 0)
-    setAppStorageValue<number>(StorageKeys.AUTH_SESSION_UPDATED_AT, Date.now())
+    // Dual-write the V1 AppStorage signal (V1 @StorageLink readers) AND the V2 mirror
+    // (@ComponentV2 readers) from this single chokepoint so the two stores stay in lockstep.
+    const updatedAt = Date.now()
+    setAppStorageValue<number>(StorageKeys.AUTH_SESSION_UPDATED_AT, updatedAt)
+    connectAuthSessionSignal().updatedAt = updatedAt
   }
 }
