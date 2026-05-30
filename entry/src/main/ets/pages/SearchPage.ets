@@ -11,7 +11,6 @@ import {
   ListDivider as SharedListDivider,
   EmptyState,
   PullRefresh,
-  StorageKeys,
   Sov2exService,
   AppActionButton,
   AppModalScaffold,
@@ -23,6 +22,12 @@ import {
   type ViewedTopic,
   defaultSheetOptions,
   translateApiError,
+  connectNavStack,
+  connectLayoutSafeArea,
+  LayoutSafeAreaState,
+  connectSearchAction,
+  SearchActionState,
+  SearchQueryBus,
 } from 'shared'
 import { SearchLocalResultBuilder } from '../model/SearchLocalResultBuilder'
 import {
@@ -60,45 +65,49 @@ import {
   SearchTopicRow,
 } from '../components/SearchPageComponents'
 
-@Component
+@ComponentV2
 export struct SearchPage {
-  @Consume('ns') stack: NavPathStack
+  // Same NavPathStack instance HdsNavigation is bound to (see NavStackHolder); method target only.
+  private stack: NavPathStack = connectNavStack().stack
 
-  @State private keyword: string = ''
-  @State private errorMessage: string = ''
+  @Local private keyword: string = ''
+  @Local private errorMessage: string = ''
 
-  @State private savedTopics: SavedTopic[] = []
-  @State private viewedTopics: ViewedTopic[] = []
-  @State private savedNodes: SavedNode[] = []
-  @State private allNodes: V2exNode[] = []
-  @State private isNodeIndexLoading: boolean = false
+  @Local private savedTopics: SavedTopic[] = []
+  @Local private viewedTopics: ViewedTopic[] = []
+  @Local private savedNodes: SavedNode[] = []
+  @Local private allNodes: V2exNode[] = []
+  @Local private isNodeIndexLoading: boolean = false
 
-  @State private cacheTopicLists: SearchTopicItem[] = []
-  @State private cacheTopicDetails: SearchTopicItem[] = []
-  @State private isCacheLoading: boolean = false
+  @Local private cacheTopicLists: SearchTopicItem[] = []
+  @Local private cacheTopicDetails: SearchTopicItem[] = []
+  @Local private isCacheLoading: boolean = false
 
-  @State private history: string[] = []
-  @State private sourceMode: SearchSourceMode = 'localWithNodes'
-  @State private resultFilter: SearchResultFilter = 'all'
+  @Local private history: string[] = []
+  @Local private sourceMode: SearchSourceMode = 'localWithNodes'
+  @Local private resultFilter: SearchResultFilter = 'all'
 
-  @State private topicResults: SearchTopicItem[] = []
-  @State private nodeResults: SearchNodeItem[] = []
-  @State private remoteResults: RemoteTopicItem[] = []
-  @State private remoteTotal: number = 0
-  @State private remoteFrom: number = 0
-  @State private remoteLoading: boolean = false
-  @State private remoteError: string = ''
-  @State private remoteSort: Sov2exSortMode = 'created'
-  @State private remoteOrder: Sov2exOrderMode = '0'
-  @State private remoteUsername: string = ''
-  @State private remoteNode: string = ''
-  @State private remoteDateRange: RemoteDateRange = 'all'
-  @State private filterSheetVisible: boolean = false
-  @State private listScrollEnabled: boolean = true
-  @StorageLink(StorageKeys.SEARCH_ACTION) @Watch('onSearchActionCommand') searchActionCommand: string = ''
-  @StorageLink(StorageKeys.PENDING_SEARCH_QUERY) @Watch('onPendingSearchQueryChanged') pendingSearchQuery: string = ''
-  @StorageProp(StorageKeys.TOP_AVOID_HEIGHT) topH: number = 0
-  @StorageProp(StorageKeys.BOTTOM_AVOID_HEIGHT) bottomH: number = 0
+  @Local private topicResults: SearchTopicItem[] = []
+  @Local private nodeResults: SearchNodeItem[] = []
+  @Local private remoteResults: RemoteTopicItem[] = []
+  @Local private remoteTotal: number = 0
+  @Local private remoteFrom: number = 0
+  @Local private remoteLoading: boolean = false
+  @Local private remoteError: string = ''
+  @Local private remoteSort: Sov2exSortMode = 'created'
+  @Local private remoteOrder: Sov2exOrderMode = '0'
+  @Local private remoteUsername: string = ''
+  @Local private remoteNode: string = ''
+  @Local private remoteDateRange: RemoteDateRange = 'all'
+  @Local private filterSheetVisible: boolean = false
+  @Local private listScrollEnabled: boolean = true
+  // V2 mirror of the one-directional SEARCH_ACTION + PENDING_SEARCH_QUERY appbar / cross-page
+  // input buses (Index dual-writes SEARCH_ACTION; SearchQueryBus dual-writes PENDING_SEARCH_QUERY).
+  // Reacted to via @Monitor below; never read in build().
+  @Local private actionState: SearchActionState = connectSearchAction()
+  // Window safe-area metrics (V2 mirror; EntryAbility dual-writes the V1 AppStorage keys + this).
+  // Read in build() (top padding / pull-refresh indicator), so this subscribes to layout changes.
+  private layout: LayoutSafeAreaState = connectLayoutSafeArea()
 
   private api: ApiService = new ApiService()
   private sov2ex: Sov2exService = new Sov2exService()
@@ -126,7 +135,7 @@ export struct SearchPage {
         Column() {
           PullRefresh({
             scroller: this.scroller,
-            indicatorTop: this.topH + ThemeConstants.TITLE_BAR_HEIGHT,
+            indicatorTop: this.layout.topAvoidHeight + ThemeConstants.TITLE_BAR_HEIGHT,
             threshold: this.PULL_REFRESH_THRESHOLD,
             onRefresh: async () => {
               await this.refreshSearchSurface()
@@ -143,7 +152,7 @@ export struct SearchPage {
       .padding({
         left: ThemeConstants.SPACE_MD,
         right: ThemeConstants.SPACE_MD,
-        top: this.topH + ThemeConstants.TITLE_BAR_HEIGHT + ThemeConstants.SPACE_MD
+        top: this.layout.topAvoidHeight + ThemeConstants.TITLE_BAR_HEIGHT + ThemeConstants.SPACE_MD
       })
       .width('100%')
       .height('100%')
@@ -152,7 +161,7 @@ export struct SearchPage {
     .width('100%')
     .height('100%')
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
-    .bindSheet($$this.filterSheetVisible, this.SearchFilterSheet(), defaultSheetOptions(SheetSize.MEDIUM, () => { this.filterSheetVisible = false }))
+    .bindSheet(this.filterSheetVisible!!, this.SearchFilterSheet(), defaultSheetOptions(SheetSize.MEDIUM, () => { this.filterSheetVisible = false }))
   }
 
   @Builder SearchResultSurface() {
@@ -169,7 +178,7 @@ export struct SearchPage {
 
   @Builder SearchPanel() {
     SearchPanelHeader({
-      keyword: $keyword,
+      keyword: this.keyword,
       loadingText: this.isCacheLoading || this.isNodeIndexLoading ? this.loadingSummary() : '',
       errorMessage: this.errorMessage,
       sourceMode: this.sourceMode,
@@ -253,7 +262,7 @@ export struct SearchPage {
 
       ListItem() {
         Column() {
-          Blank().height(this.bottomH + ThemeConstants.SPACE_XL)
+          Blank().height(this.layout.bottomAvoidHeight + ThemeConstants.SPACE_XL)
         }
       }
     }
@@ -320,7 +329,7 @@ export struct SearchPage {
 
       ListItem() {
         Column() {
-          Blank().height(this.bottomH + ThemeConstants.SPACE_XL)
+          Blank().height(this.layout.bottomAvoidHeight + ThemeConstants.SPACE_XL)
         }
       }
     }
@@ -367,8 +376,8 @@ export struct SearchPage {
 
   @Builder RemoteFilterSheetContent() {
     RemoteSearchFilterSheetContent({
-      remoteUsername: $remoteUsername,
-      remoteNode: $remoteNode,
+      remoteUsername: this.remoteUsername,
+      remoteNode: this.remoteNode,
       keyword: this.keyword,
       remoteSort: this.remoteSort,
       remoteOrder: this.remoteOrder,
@@ -381,7 +390,12 @@ export struct SearchPage {
       toggleOrder: () => {
         this.toggleRemoteOrder()
       },
-      remoteTextChange: () => {
+      onUsernameChange: (value: string) => {
+        this.remoteUsername = value
+        this.applyRemoteFilterEffect(SearchFilterCoordinator.remoteTextChanged())
+      },
+      onNodeChange: (value: string) => {
+        this.remoteNode = value
         this.applyRemoteFilterEffect(SearchFilterCoordinator.remoteTextChanged())
       },
       selectDateRange: (range: RemoteDateRange) => {
@@ -395,8 +409,9 @@ export struct SearchPage {
     })
   }
 
-  private onSearchActionCommand(_propName: string): void {
-    const action = SearchPageStateCoordinator.parseActionCommand(this.searchActionCommand)
+  @Monitor('actionState.command')
+  onSearchActionCommand(): void {
+    const action = SearchPageStateCoordinator.parseActionCommand(this.actionState.command)
     if (action === 'filter') {
       this.filterSheetVisible = true
       return
@@ -413,17 +428,18 @@ export struct SearchPage {
     }
   }
 
-  private onPendingSearchQueryChanged(_propName: string): void {
+  @Monitor('actionState.pendingQuery')
+  onPendingSearchQueryChanged(): void {
     this.consumePendingSearchQuery()
   }
 
   private consumePendingSearchQuery(): void {
-    const query = SearchPageStateCoordinator.parsePendingQuery(this.pendingSearchQuery)
+    const query = SearchPageStateCoordinator.parsePendingQuery(this.actionState.pendingQuery)
     if (!query) {
       return
     }
     this.applyHistory(query)
-    AppStorage.setOrCreate<string>(StorageKeys.PENDING_SEARCH_QUERY, '')
+    SearchQueryBus.clearPending()
   }
 
   private async refreshSearchSurface(): Promise<void> {

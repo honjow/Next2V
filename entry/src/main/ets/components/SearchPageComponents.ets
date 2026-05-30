@@ -91,8 +91,11 @@ export struct LocalSearchFilterSheetContent {
 
 @Component
 export struct RemoteSearchFilterSheetContent {
-  @Link remoteUsername: string
-  @Link remoteNode: string
+  // One-way @Prop (not @Link) so a @ComponentV2 parent can host this V1 component: the author /
+  // node text flow down here and back up through onUsernameChange / onNodeChange (which carry the
+  // value, since the parent owns the @Local state).
+  @Prop remoteUsername: string = ''
+  @Prop remoteNode: string = ''
   @Prop keyword: string = ''
   @Prop remoteSort: Sov2exSortMode = 'created'
   @Prop remoteOrder: Sov2exOrderMode = '0'
@@ -101,7 +104,8 @@ export struct RemoteSearchFilterSheetContent {
   @Prop hasRemoteFilters: boolean = false
   selectSort?: (sort: Sov2exSortMode) => void
   toggleOrder?: () => void
-  remoteTextChange?: () => void
+  onUsernameChange?: (value: string) => void
+  onNodeChange?: (value: string) => void
   selectDateRange?: (range: RemoteDateRange) => void
   clearFilters?: () => void
   applySearch?: () => void
@@ -137,8 +141,8 @@ export struct RemoteSearchFilterSheetContent {
           placeholder: $r('app.string.common_author'),
           onTextChange: (value: string) => {
             this.remoteUsername = value
-            if (this.remoteTextChange) {
-              this.remoteTextChange()
+            if (this.onUsernameChange) {
+              this.onUsernameChange(value)
             }
           }
         })
@@ -148,8 +152,8 @@ export struct RemoteSearchFilterSheetContent {
           placeholder: $r('app.string.common_node'),
           onTextChange: (value: string) => {
             this.remoteNode = value
-            if (this.remoteTextChange) {
-              this.remoteTextChange()
+            if (this.onNodeChange) {
+              this.onNodeChange(value)
             }
           }
         })
@@ -224,7 +228,9 @@ export struct RemoteSearchFilterSheetContent {
 
 @Component
 export struct SearchPanelHeader {
-  @Link keyword: string
+  // One-way @Prop (not @Link) so a @ComponentV2 parent can host this V1 component: the keyword
+  // flows down here and back up through onTextChange (the parent sanitises + re-sets it).
+  @Prop keyword: string = ''
   @Prop loadingText: string = ''
   @Prop errorMessage: string = ''
   @Prop sourceMode: SearchSourceMode = 'localWithNodes'

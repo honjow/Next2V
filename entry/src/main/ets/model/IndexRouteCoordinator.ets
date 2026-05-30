@@ -250,10 +250,6 @@ export class IndexRouteCoordinator {
     return `${now}:${(username || '').trim()}`
   }
 
-  static pendingSearchQueryCommand(query: string, now: number): string {
-    return `${now}:${(query || '').trim()}`
-  }
-
   static topicParams(route: V2exRoute): TopicDetailParams | null {
     if (route.kind !== 'topic' || !route.topicId || route.topicId <= 0) {
       return null

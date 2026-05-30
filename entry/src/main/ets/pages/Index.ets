@@ -24,8 +24,10 @@ import {
   connectImagePreviewAction,
   connectNavStack,
   connectNodeTopicAction,
+  connectSearchAction,
   connectUserProfileAction,
   CookieJarSettings,
+  SearchQueryBus,
   FoldScreenUtil,
   HttpClient,
   HomeTabSettings,
@@ -932,10 +934,11 @@ struct Index {
   }
 
   private sendSearchAction(action: string): void {
-    AppStorage.setOrCreate<string>(
-      StorageKeys.SEARCH_ACTION,
-      IndexRouteCoordinator.simpleCommand(action, Date.now()),
-    )
+    // Dual-write the V1 AppStorage command AND the V2 mirror (read by @ComponentV2
+    // SearchPage) from this single writer so the two stores stay in lockstep.
+    const command = IndexRouteCoordinator.simpleCommand(action, Date.now())
+    AppStorage.setOrCreate<string>(StorageKeys.SEARCH_ACTION, command)
+    connectSearchAction().command = command
   }
 
   private sendImagePreviewAction(action: string): void {
@@ -1005,10 +1008,8 @@ struct Index {
     }
     const searchQuery = IndexRouteCoordinator.searchQuery(route)
     if (searchQuery) {
-      AppStorage.setOrCreate<string>(
-        StorageKeys.PENDING_SEARCH_QUERY,
-        IndexRouteCoordinator.pendingSearchQueryCommand(searchQuery, Date.now()),
-      )
+      // Single dual-write point for the pending-query bus (AppStorage + V2 mirror).
+      SearchQueryBus.publishPending(searchQuery)
       this.ns.pushPathByName('Search', null)
     }
   }

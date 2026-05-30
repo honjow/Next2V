@@ -59,6 +59,7 @@ export { AuthSessionSignalState, connectAuthSessionSignal } from './state/AuthSe
 export { ImagePreviewActionState, connectImagePreviewAction } from './state/ImagePreviewActionState'
 export { NodeTopicActionState, connectNodeTopicAction } from './state/NodeTopicActionState'
 export { UserProfileActionState, connectUserProfileAction } from './state/UserProfileActionState'
+export { SearchActionState, connectSearchAction } from './state/SearchActionState'
 export {
   BlockedListSelectedTabState,
   connectBlockedListSelectedTab,

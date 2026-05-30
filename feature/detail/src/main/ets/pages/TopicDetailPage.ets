@@ -72,6 +72,7 @@ import {
   TopicDetailReplyActionSettings,
   BlockedListSettings,
   DiagnosticLogger,
+  SearchQueryBus,
 } from 'shared'
 import type { V2exTopicThankAction, CacheScope, TopicDetailActionOverlay } from 'shared'
 import type { V2exReplyModerationAction, V2exTopicModerationAction } from 'shared'
@@ -348,10 +349,8 @@ export struct TopicDetailPage {
       return
     }
     if (route.kind === 'search' && route.query) {
-      AppStorage.setOrCreate<string>(
-        StorageKeys.PENDING_SEARCH_QUERY,
-        `${Date.now()}:${route.query}`,
-      )
+      // Single dual-write point for the pending-query bus (AppStorage + V2 mirror).
+      SearchQueryBus.publishPending(route.query)
       this.stack.pushPathByName('Search', null)
     }
   }
