@@ -109,6 +109,8 @@ export {
   FeedTabState,
   connectFeedTab,
   FeedTabBridge,
+  FeedVisualIndexState,
+  connectFeedVisualIndex,
   ListScrollState,
   connectListScroll,
 } from './state/FeedTabState'

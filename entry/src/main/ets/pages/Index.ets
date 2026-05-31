@@ -165,6 +165,12 @@ struct Index {
   private pendingUrl: PendingV2exUrlState = connectPendingV2exUrl();
   // Two-way @Local for bindSheet; kept in sync with the TwoFactorState mirror via @Monitor below.
   @Local twoFactorVisible: boolean = false;
+  // The home feed-pill bar (FeedPills) is hosted via a ComponentContent created ONCE and cached here, never
+  // re-`new`-ed inside build(). FeedPills is a @ComponentV2 that reactively reads the per-frame feed-tab
+  // visual index; re-creating its ComponentContent every Index.build() ties this build scope to that
+  // per-frame signal, which device-verifiably re-creates FeedPills ~400x/s during a swipe and storms its
+  // recenter scrollToIndex. Caching keeps the per-frame re-render contained inside FeedPills.
+  private pillBarContent: ComponentContent<Object> | undefined = undefined;
   @Local private notificationRefreshKey: number = 0;
   @Local private accountRefreshKey: number = 0;
   @Local private isFoldedAndUseOuterScreen: boolean = false;
@@ -179,6 +185,12 @@ struct Index {
 
   aboutToAppear(): void {
     MotionHandStateService.start()
+    // Create the home feed-pill ComponentContent ONCE here (outside build()), so startup/feed-load
+    // re-renders cannot recreate it and re-mount the @ComponentV2 FeedPills (which would churn its recenter).
+    if (!this.pillBarContent) {
+      this.pillBarContent = new ComponentContent<Object>(
+        this.getUIContext(), wrapBuilder<[Object]>(PillCCBuilder), new Object())
+    }
     this.consumePendingV2exUrl()
     this.refreshNotificationBadge()
 
@@ -1046,7 +1058,11 @@ struct Index {
     let titleInfo: Record<string, Object> = { 'mainTitle': this.tabTitles[this.ct] }
     let content: Record<string, Object>
     if (this.ct === 0) {
-      let cc = new ComponentContent(this.getUIContext(), wrapBuilder(PillCCBuilder))
+      if (!this.pillBarContent) {
+        this.pillBarContent = new ComponentContent<Object>(
+          this.getUIContext(), wrapBuilder<[Object]>(PillCCBuilder), new Object())
+      }
+      let cc = this.pillBarContent
       let bb: Record<string, Object> = {
         'builderComponent': cc,
         'height': ApiConstants.TAB_BAR_HEIGHT,

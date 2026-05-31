@@ -3,10 +3,14 @@
 //
 // Comment-stripped scan of every .ets under entry/ feature/ shared/ (excluding build output) for LIVE V1
 // component-state decorators (@Component bare / @State / @Prop / @Link / @Watch / @StorageLink /
-// @StorageProp / @Provide / @Consume / @ObjectLink / @Observed bare / @LocalStorage*). After the full
-// migration the ONLY files allowed to still carry any are the explicitly-documented intentional V1
-// adapters. Any other file with a live V1 decorator — or an allowlisted adapter that has unexpectedly
-// disappeared — fails the gate. This proves "V1 decorators are zero except documented unavoidable adapters".
+// @StorageProp / @Provide / @Consume / @ObjectLink / @Observed bare / @LocalStorage*). The State Management
+// V2 migration is COMPLETE: the ALLOWED adapter allowlist is now EMPTY, so ANY file carrying a live V1
+// decorator fails the gate. This proves "V1 decorators are zero" with no documented-adapter exceptions.
+//
+// History: the last intentional adapter was FeedPills (IndexTitleBarComponents.ets). The adapter-zero lane
+// device-proved a naive V2 @Monitor recenter over-fires (~32x/change vs V1 @Watch 1x, storming scrollToIndex
+// to ~244 calls); the state-v2-feedpills-final lane retired it by migrating FeedPills to @ComponentV2 with a
+// request-time `centeredTarget` coalescing guard that collapses the burst to one effective recenter.
 //
 // Run: node scripts/test_v1_decorator_inventory_contract.mjs
 import { readFileSync, readdirSync, statSync } from 'node:fs';
@@ -16,20 +20,11 @@ import { dirname, join, relative } from 'node:path';
 const here = dirname(fileURLToPath(import.meta.url));
 const repo = join(here, '..');
 
-// Documented intentional V1 adapters that may still carry V1 decorators, each with a still-valid reason.
-// (Pinned in detail by their own contracts: blocked-lists-v2 / index-titlebar-feedpills-adapter / the
-// SegmentButton adapter contract.)
-// The adapter-zero lane retired the two SegmentButton adapters by replacing them with the V2-native
-// TabSegmentButtonV2 (@ComponentV2, one-way @Param selectedIndex, no @Link), so a @ComponentV2 hosts the
-// segmented control directly. FeedPills remains the ONE documented intentional V1 adapter: a V2 @Monitor
-// recenter trigger is DEVICE-PROVEN to over-fire (~32x/change vs V1 @Watch's exactly 1x, with the recenter
-// machinery storming to ~244 scrollToIndex calls on multi-tab configs) — see the adapter-zero lane's
-// blocker.md. Migrating it needs a recenter/indicator redesign that would change the centering interaction,
-// which the UI-preservation rule forbids here.
-const ALLOWED = {
-  'entry/src/main/ets/components/IndexTitleBarComponents.ets':
-    'FeedPills: a V2 @Monitor recenter over-fires ~32x/change (vs V1 @Watch 1x); device-proven, see blocker.md.',
-};
+// Documented intentional V1 adapters that may still carry V1 decorators. The migration is COMPLETE, so this
+// allowlist is intentionally EMPTY: every .ets under entry/feature/shared must be free of live V1
+// component-state decorators. Re-adding an entry here would re-open a V1 exception and must be justified by
+// a fresh device-proven blocker — do not add one to "simplify" a migration.
+const ALLOWED = {};
 
 const FORBIDDEN = [
   /@Component\b(?!V2)/, /@State\b/, /@Prop\b/, /@Link\b/, /@Watch\b/, /@StorageLink\b/, /@StorageProp\b/,
@@ -78,5 +73,6 @@ for (const rel of Object.keys(ALLOWED)) {
   }
 }
 
-console.log(`\nV1 decorator inventory: ${found.size} file(s) with live V1 decorators, all documented adapters; ${failures} failure(s)`);
+console.log(`\nV1 decorator inventory: ${found.size} file(s) with live V1 decorators (allowlist is empty — target 0); ${failures} failure(s)`);
 if (failures > 0) process.exit(1);
+if (found.size === 0) console.log('V1 decorators are ZERO across entry/feature/shared — migration complete.');

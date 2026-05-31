@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 // Alternate (per-struct) static contract for the appbar-identity V2 slice.
 //
-// IndexTitleBarComponents.ets cannot join scripts/v2-migrated-leaves.json yet because it still hosts one
-// intentionally-V1 struct: FeedPills (its tab-bar layout machinery over-fires a V2 @Monitor on every
-// recenter frame, so it stays V1 @StorageLink/@Watch and feeds the V2 FeedTabState mirror via the bridge;
-// migrating it to V2 is a deferred follow-up). BlockedListsTabs was migrated in blocked-lists-v2 and is
-// asserted by test_blocked_lists_v2_contract.mjs. The whole-file contract is therefore not applicable here.
+// IndexTitleBarComponents.ets is now fully V2 and IS listed in scripts/v2-migrated-leaves.json (the
+// state-v2-feedpills-final lane migrated the last struct, FeedPills, to @ComponentV2 with a request-time
+// coalescing recenter guard — see test_index_titlebar_feedpills_adapter_contract.mjs). This per-struct
+// contract is retained as defense-in-depth for the two appbar identity leaves it originally covered;
+// BlockedListsTabs is additionally asserted by test_blocked_lists_v2_contract.mjs.
 //
 // This check fails closed on the two zero-coupling appbar identity leaves migrated in this slice:
 //   UserProfileAppbarIdentity, TopicDetailAppbarIdentity

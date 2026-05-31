@@ -6,10 +6,13 @@ import {
   BlockedListSelectedTabState,
   connectBlockedListSelectedTab,
   connectDiscoverKeyword,
+  connectFeedTab,
   DiscoverKeywordState,
   FeedTabBridge,
   FeedTabSettings,
-  StorageKeys,
+  FeedTabState,
+  connectFeedVisualIndex,
+  FeedVisualIndexState,
   TabItem,
   ThemeConstants,
 } from 'shared'
@@ -46,29 +49,47 @@ export function BlockedListsTabsCCBuilder() {
   BlockedListsTabs()
 }
 
-// FeedPills stays an intentional V1 @Component: its tab-bar layout machinery
-// (centerTab -> scrollToIndex -> onAreaChange -> updateTabLayout -> re-render) re-fires a V2 @Monitor on
-// every settle frame (device-verified ~37x for a single feedTab change vs ~1x for HomePage's @Monitor), so
-// hosting the recenter handler under V2 over-fires. V1 @StorageLink + @Watch is well-behaved here. It still
-// participates in the V2 feed-tab migration: its tab-tap write routes through FeedTabBridge.publishSelectedKey
-// (AppStorage + the V2 FeedTabState mirror the @ComponentV2 HomePage reads), and it reads the
-// bridge-dual-written AppStorage keys via @StorageLink. Migrating FeedPills itself to V2 is a deferred,
-// separately-scoped follow-up (needs a non-@Monitor recenter trigger).
-@Component
+// FeedPills is @ComponentV2: it reads the V2 FeedTabState mirror (feedTab / feedTabKeys) plus the dedicated
+// FeedVisualIndexState holder (per-frame indicator/highlight), and recenters its horizontal pill bar from
+// @Monitor('feedState.feedTab'). Three things make the recenter device-verifiably bounded to ~1 scrollToIndex
+// per discrete tab change (V1-equivalent), instead of the ~244x storm a naive V2 port produced:
+//   1. Its host ComponentContent is created ONCE and cached in Index (Index.pillBarContent), never re-`new`-ed
+//      in build(). Re-creating it every Index.build() re-mounts this @ComponentV2 and, because it reads the
+//      per-frame visual index, ties Index.build to that signal -> ~400 re-mounts/s during a swipe, each
+//      re-centering. Caching keeps the per-frame re-render inside FeedPills.
+//   2. The per-frame visual index lives in its OWN @ObservedV2 holder (FeedVisualIndexState), isolated from
+//      the @Monitor-ed FeedTabState so its high-frequency churn cannot perturb the feedTab observers.
+//   3. The `centeredTarget` REQUEST-TIME coalescing guard (below): a new target arms it and drives one
+//      centerTab; repeat fires for the same target short-circuit even while an off-screen center is deferred,
+//      so the over-fire/deferred-retry can never storm. centerTab/updateTabLayout stay byte-identical to V1
+//      (pendingCenterIndex cleared before scrolling) so a deferred center completes exactly once.
+// The per-frame visualIndex re-render (highlight + sliding indicator) is preserved unchanged. Tab taps still
+// route through FeedTabBridge.publishSelectedKey (AppStorage + the V2 mirror HomePage reads).
+@ComponentV2
 struct FeedPills {
-  @StorageLink(StorageKeys.FEED_TAB) @Watch('onFeedTabChanged') feedTab: string = 'tech';
-  @StorageLink(StorageKeys.FEED_TAB_KEYS) @Watch('onFeedTabKeysChanged') feedTabKeys: string =
-    FeedTabSettings.defaultKeysJson();
-  @StorageLink(StorageKeys.FEED_TAB_VISUAL_INDEX) feedTabVisualIndex: number = 0;
-  @State private tabLefts: number[] = [];
-  @State private tabWidths: number[] = [];
-  @State private containerGlobalLeft: number = 0;
+  @Local private feedState: FeedTabState = connectFeedTab();
+  @Local private visualIndexState: FeedVisualIndexState = connectFeedVisualIndex();
+  @Local private tabLefts: number[] = [];
+  @Local private tabWidths: number[] = [];
+  @Local private containerGlobalLeft: number = 0;
   private pendingCenterIndex: number = -1;
   private pendingCenterSmooth: boolean = true;
+  // Request-time recenter coalescing: the tab index we are currently driving a recenter toward. Armed the
+  // instant a NEW target is observed (before any deferral), so the ~32x monitor burst collapses to one
+  // effective recenter and the off-screen deferred-retry cannot storm. Reset on a keys change (reorder).
+  private centeredTarget: number = -1;
   private scroller: Scroller = new Scroller();
 
   aboutToAppear(): void {
     const index = this.selectedTabIndex()
+    // Idempotent vs re-attach: the host ComponentContent can re-attach this same instance many times during
+    // a swipe; only (re)center when the selected target actually differs from what we last centered toward,
+    // so a re-attach with an unchanged selection does not re-issue scrollToIndex. Real changes are driven by
+    // @Monitor('feedState.feedTab') below; this only seeds/repairs the initial + post-reorder centering.
+    if (index === this.centeredTarget) {
+      return
+    }
+    this.centeredTarget = index
     if (index > 0) {
       this.centerTab(index, false)
     }
@@ -103,7 +124,7 @@ struct FeedPills {
             .padding({ bottom: 0 })
             .onClick(() => {
               // Route through the bridge (AppStorage + V2 mirror) so the @ComponentV2 HomePage reacts; the
-              // local @StorageLink feedTab updates from the AppStorage half and fires @Watch for centering.
+              // shared feedState.feedTab @Trace updates from the mirror half and fires our @Monitor for centering.
               FeedTabBridge.publishSelectedKey(tab.key)
             })
             .onAreaChange((_oldValue: Area, newValue: Area) => {
@@ -132,26 +153,38 @@ struct FeedPills {
     })
   }
 
-  private onFeedTabChanged(_propName: string): void {
+  @Monitor('feedState.feedTab')
+  onFeedTabChanged(): void {
     const index = this.selectedTabIndex()
     if (index < 0) {
       return
     }
+    // Coalesce the ~32x monitor burst for ONE discrete change: only a genuinely new target drives a
+    // recenter; repeated fires for the same target are no-ops. Arm at request time so an off-screen
+    // (deferred) target still short-circuits the rest of the burst.
+    if (index === this.centeredTarget) {
+      return
+    }
+    this.centeredTarget = index
     this.centerTab(index, true)
   }
 
-  private onFeedTabKeysChanged(_propName: string): void {
+  @Monitor('feedState.feedTabKeys')
+  onFeedTabKeysChanged(): void {
     this.tabLefts = []
     this.tabWidths = []
     this.pendingCenterIndex = -1
+    // Layout/order changed: drop the recenter guard so the next feedTab change recenters against the new
+    // layout (e.g. HomePage.correctFeedTabIfNeeded re-selecting tab 0 after a reorder).
+    this.centeredTarget = -1
   }
 
   private visibleTabs(): TabItem[] {
-    return FeedTabSettings.tabsFromKeysJson(this.feedTabKeys)
+    return FeedTabSettings.tabsFromKeysJson(this.feedState.feedTabKeys)
   }
 
   private selectedTabIndex(): number {
-    const index = this.visibleTabs().findIndex((tab: TabItem) => tab.key === this.feedTab)
+    const index = this.visibleTabs().findIndex((tab: TabItem) => tab.key === this.feedState.feedTab)
     return index
   }
 
@@ -160,7 +193,7 @@ struct FeedPills {
     if (count <= 0) {
       return 0
     }
-    return Math.max(0, Math.min(count - 1, Math.round(this.feedTabVisualIndex)))
+    return Math.max(0, Math.min(count - 1, Math.round(this.visualIndexState.value)))
   }
 
   private updateTabLayout(index: number, area: Area): void {
@@ -189,7 +222,7 @@ struct FeedPills {
     if (count <= 0) {
       return ThemeConstants.SPACE_SM
     }
-    const visualIndex = Math.max(0, Math.min(count - 1, this.feedTabVisualIndex))
+    const visualIndex = Math.max(0, Math.min(count - 1, this.visualIndexState.value))
     const fromIndex = Math.floor(visualIndex)
     const toIndex = Math.min(count - 1, fromIndex + 1)
     const fraction = visualIndex - fromIndex
@@ -266,7 +299,7 @@ struct FeedPills {
 }
 
 @Builder
-export function PillCCBuilder() {
+export function PillCCBuilder(_params: Object) {
   FeedPills()
 }
 

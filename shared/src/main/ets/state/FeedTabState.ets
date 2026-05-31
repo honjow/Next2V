@@ -14,17 +14,14 @@ import { setAppStorageValue } from '../settings/SettingsStorage'
  * - `feedTabKeys` is written by `FeedTabSettings.apply` (incl. bootstrap restore) AND HomeNodeSettingsPage
  *   (settings reorder, **stays V1** and also routes through `FeedTabSettings.save` -> `apply`). Read by
  *   HomePage / FeedPills (+ HomeNodeSettingsPage's own V1 `@StorageLink`).
- * - `feedTabVisualIndex` is written by HomePage only (incl. FLOAT values mid-swipe) and read by FeedPills
- *   for the sliding indicator.
+ * The per-frame indicator interpolation index (`feedTabVisualIndex`) lives in a SEPARATE `@ObservedV2`
+ * holder (`FeedVisualIndexState`, below), NOT on this class — see its own doc for why.
  *
  * Bridge stance during the V1->V2 migration:
- * - `feedTab` / `feedTabKeys` have remaining V1 consumers — HomeNodeSettingsPage `@StorageLink`-reads
- *   FEED_TAB_KEYS, and `FeedTabSettings` imperatively `AppStorage.get`s both — so `FeedTabBridge`
- *   DUAL-WRITES the V1 AppStorage key AND the `@Trace` field (à la `LayoutSafeAreaBridge`).
- * - `feedTabVisualIndex` stays a plain V1 AppStorage key (NOT mirrored): the only reader is the V1 FeedPills
- *   indicator (`@StorageLink`), and the only writer is the `@ComponentV2` HomePage, which writes it via
- *   `FeedTabBridge.publishVisualIndex` (AppStorage only). It updates every frame mid-swipe; keeping it out
- *   of any `@ObservedV2` object avoids per-frame V2 observer churn.
+ * - `feedTab` / `feedTabKeys` have remaining V1 consumers — `FeedTabSettings` imperatively `AppStorage.get`s
+ *   both — so `FeedTabBridge` DUAL-WRITES the V1 AppStorage key AND the `@Trace` field (à la
+ *   `LayoutSafeAreaBridge`). (Both `@ComponentV2` HomePage and `@ComponentV2` HomeNodeSettingsPage read the
+ *   mirror.)
  *
  * The factory seeds `feedTab`/`feedTabKeys` from AppStorage so a `@ComponentV2` connecting before the
  * `SettingsBootstrap.restoreFeedTabs()` bridge write still gets the persisted values — matching the old
@@ -72,10 +69,29 @@ export class FeedTabBridge {
   }
 
   static publishVisualIndex(index: number): void {
-    // V1 AppStorage only: the sole reader is the V1 FeedPills indicator (@StorageLink). High-frequency
-    // (per-frame mid-swipe), intentionally not mirrored into an @ObservedV2 object.
-    setAppStorageValue<number>(StorageKeys.FEED_TAB_VISUAL_INDEX, index)
+    // Pure-V2: write the dedicated FeedVisualIndexState holder (separate from FeedTabState). The sole reader
+    // is the @ComponentV2 FeedPills indicator. High-frequency (per-frame mid-swipe); isolated so it cannot
+    // churn the feedTab/feedTabKeys observers.
+    connectFeedVisualIndex().value = index
   }
+}
+
+const FEED_VISUAL_INDEX_V2_KEY: string = 'v2FeedVisualIndex'
+
+/**
+ * Per-frame feed-tab indicator interpolation index. Kept in its OWN @ObservedV2 holder (NOT on FeedTabState)
+ * so its high-frequency mid-swipe writes never churn the feedTab/feedTabKeys observers, and crucially so the
+ * @ComponentV2 FeedPills (hosted in a per-build ComponentContent) can read it reactively for the sliding
+ * indicator without the host re-create loop a @Trace field on the @Monitor-ed FeedTabState triggered.
+ */
+@ObservedV2
+export class FeedVisualIndexState {
+  @Trace value: number = 0
+}
+
+/** Returns the app-wide FeedVisualIndexState singleton from AppStorageV2. */
+export function connectFeedVisualIndex(): FeedVisualIndexState {
+  return AppStorageV2.connect(FeedVisualIndexState, FEED_VISUAL_INDEX_V2_KEY, () => new FeedVisualIndexState())!
 }
 
 /**

@@ -2,13 +2,16 @@
 // Static contract for the feed-tab V1->V2 storage bridge (feed-tab-v2 + homenodesettings-v2 slices).
 //
 // FEED_TAB / FEED_TAB_KEYS are multi-writer keys with mixed V1/V2 consumers during the migration:
-//   - V2 readers: @ComponentV2 HomePage and @ComponentV2 HomeNodeSettingsPage read the FeedTabState mirror.
-//   - V1 readers: FeedPills / IndexTitleBarComponents @StorageLink the AppStorage keys; FeedTabSettings
-//     reads them imperatively (AppStorage.get).
+//   - V2 readers: @ComponentV2 HomePage, @ComponentV2 HomeNodeSettingsPage and @ComponentV2 FeedPills read
+//     the FeedTabState mirror.
+//   - V1 reader: FeedTabSettings reads them imperatively (AppStorage.get).
 // The ONLY safe write path therefore dual-writes BOTH stores. This contract fails closed if a future edit
 // reintroduces a single-store write (raw AppStorage.set or @StorageLink reassignment) on the writer page,
 // or breaks the FeedTabBridge dual-write, which would silently desync the V1 AppStorage key and the V2
 // mirror (stale feed pills / stale settings list).
+// feedTabVisualIndex is now a PURE-V2 @Trace field on its OWN holder (FeedVisualIndexState), isolated from
+// the @Monitor-ed FeedTabState so its per-frame churn cannot perturb the feedTab observers. FeedPills is its
+// only reader, HomePage its only writer; publishVisualIndex writes only that holder, asserted below.
 //
 // Run: node scripts/test_feed_tab_bridge_v2_contract.mjs
 import { readFileSync } from 'node:fs';
@@ -37,6 +40,7 @@ const bridgeChecks = [
   { name: 'publishKeys -> V2 mirror feedTabKeys', re: /connectFeedTab\(\)\.feedTabKeys\s*=/ },
   { name: 'publishSelectedKey -> AppStorage FEED_TAB', re: /setAppStorageValue<string>\(\s*StorageKeys\.FEED_TAB\b/ },
   { name: 'publishSelectedKey -> V2 mirror feedTab', re: /connectFeedTab\(\)\.feedTab\s*=/ },
+  { name: 'publishVisualIndex -> V2 FeedVisualIndexState holder (pure-V2, isolated from FeedTabState)', re: /connectFeedVisualIndex\(\)\.value\s*=/ },
 ];
 for (const c of bridgeChecks) {
   if (c.re.test(bridge)) ok(`FeedTabState: ${c.name}`);
