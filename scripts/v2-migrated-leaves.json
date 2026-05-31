@@ -69,6 +69,7 @@
     "entry/src/main/ets/pages/SearchPage.ets",
     "entry/src/main/ets/pages/AccountWebViewPage.ets",
     "entry/src/main/ets/components/SearchPageComponents.ets",
-    "feature/detail/src/main/ets/components/TopicDetailComponents.ets"
+    "feature/detail/src/main/ets/components/TopicDetailComponents.ets",
+    "shared/src/main/ets/components/ReplyCard.ets"
   ]
 }

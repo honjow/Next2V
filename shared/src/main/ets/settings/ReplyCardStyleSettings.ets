@@ -4,6 +4,7 @@ import { StorageKeys } from '../constants/StorageKeys'
 import { AppStrings } from '../i18n/AppStrings'
 import { SettingDescriptor, applyDescriptorValue, readDescriptorValue } from './SettingsDescriptor'
 import { STORE_NAME_SETTINGS, SettingsPreferencesStore } from './SettingsStorage'
+import { connectReplyCardStyle } from '../state/ReplyCardStyleState'
 
 const STORE_NAME: string = STORE_NAME_SETTINGS
 const KEY_REPLY_CARD_STYLE: string = StorageKeys.REPLY_CARD_STYLE
@@ -34,8 +35,13 @@ export class ReplyCardStyleSettings {
   static readonly STYLE_STANDARD: string = STYLE_STANDARD
   static readonly STYLE_COMPACT: string = STYLE_COMPACT
 
-  static apply(style: string): void {
-    applyDescriptorValue<string>(REPLY_CARD_STYLE_DESCRIPTOR, style)
+  static apply(style: string): string {
+    const normalized = applyDescriptorValue<string>(REPLY_CARD_STYLE_DESCRIPTOR, style)
+    // V2 mirror dual-write: keeps the migrated @ComponentV2 ReplyCard in sync with the legacy
+    // AppStorage key still read by the V1 SettingsPage @StorageLink. apply() is the single
+    // AppStorage writer for REPLY_CARD_STYLE — both load and save route through it.
+    connectReplyCardStyle().replyCardStyle = normalized
+    return normalized
   }
 
   static async load(context: common.UIAbilityContext): Promise<string> {
@@ -55,7 +61,7 @@ export class ReplyCardStyleSettings {
   }
 
   static async save(context: common.UIAbilityContext, style: string): Promise<void> {
-    const normalized = applyDescriptorValue<string>(REPLY_CARD_STYLE_DESCRIPTOR, style)
+    const normalized = ReplyCardStyleSettings.apply(style)
     try {
       const store = await preferences.getPreferences(context, STORE_NAME)
       store.putSync(KEY_REPLY_CARD_STYLE, normalized)

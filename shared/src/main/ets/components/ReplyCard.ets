@@ -1,48 +1,50 @@
 import { V2exReply } from '../network/NetworkTypes'
-import { StorageKeys } from '../constants/StorageKeys'
+import { ReplyCardStyleState, connectReplyCardStyle } from '../state/ReplyCardStyleState'
 import { ThemeConstants } from '../theme/ThemeConstants'
 import { TimeAgo } from './TimeAgo'
 import { MarkdownContent } from './MarkdownContent'
 import { ReplyCardActions } from './reply/ReplyCardActions'
 import { ReplyCardHeader } from './reply/ReplyCardHeader'
 import { ReplyCardLayoutPolicy } from './reply/ReplyCardLayoutPolicy'
-@Component
+@ComponentV2
 export struct ReplyCard {
-  @Prop reply: V2exReply;
-  @Prop floor: number = 1;
-  @Prop isOp: boolean = false;
-  @Prop isThanked: boolean = false;
-  @Prop isThankPending: boolean = false;
-  @Prop threadLevel: number = 0;
-  @Prop relationLabel: string = '';
-  @Prop displayContent: string = '';
-  @Prop isWrongReference: boolean = false;
-  @Prop isDuplicateThreadItem: boolean = false;
-  @Prop childReplies: V2exReply[] = [];
-  @Prop embedded: boolean = false;
-  @Prop opMemberId: number = 0;
-  @Prop hideLeadingMention: boolean = false;
-  @State private cardWidth: number = 0;
-  @State private threadGuideHeights: Record<string, number> = {};
-  onUserClick?: (reply: V2exReply) => void;
-  onActionsClick?: (reply: V2exReply) => void;
-  onContextClick?: (reply: V2exReply) => void;
-  onMentionClick?: (reply: V2exReply) => void;
-  onReplyClick?: (reply: V2exReply) => void;
-  onThankClick?: (reply: V2exReply) => void;
-  onIgnoreClick?: (reply: V2exReply) => void;
-  onReportClick?: (reply: V2exReply) => void;
-  onCopyUserClick?: (reply: V2exReply) => void;
-  onCopyContentClick?: (reply: V2exReply) => void;
-  isReplyThanked?: (reply: V2exReply) => boolean;
-  isReplyThankPending?: (reply: V2exReply) => boolean;
-  onImageClick?: (url: string) => void;
-  onLinkClick?: (url: string) => void;
-  onMentionUserClick?: (username: string) => void;
-  @StorageProp(StorageKeys.REPLY_CARD_STYLE) private replyCardStyle: string = 'standard';
+  @Require @Param reply: V2exReply;
+  @Param floor: number = 1;
+  @Param isOp: boolean = false;
+  @Param isThanked: boolean = false;
+  @Param isThankPending: boolean = false;
+  @Param threadLevel: number = 0;
+  @Param relationLabel: string = '';
+  @Param displayContent: string = '';
+  @Param isWrongReference: boolean = false;
+  @Param isDuplicateThreadItem: boolean = false;
+  @Param childReplies: V2exReply[] = [];
+  @Param embedded: boolean = false;
+  @Param opMemberId: number = 0;
+  @Param hideLeadingMention: boolean = false;
+  @Local private cardWidth: number = 0;
+  @Local private threadGuideHeights: Record<string, number> = {};
+  @Event onUserClick?: (reply: V2exReply) => void;
+  @Event onActionsClick?: (reply: V2exReply) => void;
+  @Event onContextClick?: (reply: V2exReply) => void;
+  @Event onMentionClick?: (reply: V2exReply) => void;
+  @Event onReplyClick?: (reply: V2exReply) => void;
+  @Event onThankClick?: (reply: V2exReply) => void;
+  @Event onIgnoreClick?: (reply: V2exReply) => void;
+  @Event onReportClick?: (reply: V2exReply) => void;
+  @Event onCopyUserClick?: (reply: V2exReply) => void;
+  @Event onCopyContentClick?: (reply: V2exReply) => void;
+  @Event isReplyThanked?: (reply: V2exReply) => boolean;
+  @Event isReplyThankPending?: (reply: V2exReply) => boolean;
+  @Event onImageClick?: (url: string) => void;
+  @Event onLinkClick?: (url: string) => void;
+  @Event onMentionUserClick?: (username: string) => void;
+  // V2 mirror of REPLY_CARD_STYLE; ReplyCardStyleSettings.apply() dual-writes this @Trace
+  // field alongside the legacy AppStorage key still read by the V1 SettingsPage.
+  private replyStyleState: ReplyCardStyleState = connectReplyCardStyle();
 
   private isCompact(): boolean {
-    return this.replyCardStyle === 'compact'
+    return this.replyStyleState.replyCardStyle === 'compact'
   }
 
   private threadIndent(): number {
@@ -165,8 +167,17 @@ export struct ReplyCard {
     if (Number.isNaN(height) || Math.abs(height - this.childMeasuredHeight(reply)) < 0.5) {
       return
     }
-    this.threadGuideHeights[this.childKey(reply)] = height
-    this.threadGuideHeights = this.threadGuideHeights
+    // V2 @Local triggers on reference change, not in-place key mutation, so rebuild the record
+    // to re-render the thread-guide Divider height (the V1 @State self-assign relied on
+    // every-assignment refresh, which @Local does not provide for an unchanged reference).
+    // ArkTS forbids object spread (arkts-no-spread), so copy the existing keys explicitly.
+    const next: Record<string, number> = {}
+    const existingKeys: string[] = Object.keys(this.threadGuideHeights)
+    for (const existingKey of existingKeys) {
+      next[existingKey] = this.threadGuideHeights[existingKey]
+    }
+    next[this.childKey(reply)] = height
+    this.threadGuideHeights = next
   }
 
   private cardBackground(): ResourceColor | Color {
