@@ -69,81 +69,71 @@ import {
   translateApiError,
   CacheOwnerResolver,
   TopicDetailActionOverlaySettings,
-  TopicDetailReplyActionSettings,
   BlockedListSettings,
   DiagnosticLogger,
   SearchQueryBus,
+  connectNavStack,
+  connectLayoutSafeArea,
+  connectReadingSettings,
+  connectAuthCookie,
+  connectMotionHandEdge,
+  connectTopicDetailReplyButton,
+  LayoutSafeAreaState,
+  ReadingSettingsState,
+  AuthCookieState,
+  MotionHandEdgeState,
+  TopicDetailReplyButtonState,
 } from 'shared'
 import type { V2exTopicThankAction, CacheScope, TopicDetailActionOverlay } from 'shared'
 import type { V2exReplyModerationAction, V2exTopicModerationAction } from 'shared'
+import { TopicDetailActionListener } from '../components/TopicDetailActionListener'
 
-@Component
+@ComponentV2
 export struct TopicDetailPage {
-  @Prop topicId: number = 0;
-  @Prop targetFloor: number = 0;
-  @Prop hideTitle: boolean = false;
-  @State v: DetailViewModel = new DetailViewModel(0);
-  @Consume('ns') stack: NavPathStack;
-  @StorageLink(StorageKeys.TOPIC_DETAIL_ACTION)
-  @Watch('onTopicActionCommand')
-  topicActionCommand: string = '';
-  @StorageLink(StorageKeys.TOPIC_DETAIL_SAVED_LATER) topicDetailSavedLater: boolean = false;
-  @StorageLink(StorageKeys.TOPIC_DETAIL_SITE_FAVORITED) topicDetailSiteFavorited: boolean = false;
-  @StorageLink(StorageKeys.TOPIC_DETAIL_THANKED) topicDetailThanked: boolean = false;
-  @StorageLink(StorageKeys.TOPIC_DETAIL_APPBAR_TITLE) topicDetailAppbarTitle: string = '';
-  @StorageLink(StorageKeys.TOPIC_DETAIL_APPBAR_AVATAR_URL) topicDetailAppbarAvatarUrl: string = '';
-  @StorageLink(StorageKeys.TOPIC_DETAIL_APPBAR_USERNAME) topicDetailAppbarUsername: string = '';
-  @StorageLink(StorageKeys.TOPIC_DETAIL_APPBAR_ROUTE_TOPIC_ID)
-  topicDetailAppbarRouteTopicId: string = '';
-  @StorageLink(StorageKeys.TOPIC_DETAIL_APPBAR_TITLE_STATES) topicDetailAppbarTitleStates: string =
-    '{}';
-  @StorageLink(StorageKeys.TOPIC_DETAIL_APPBAR_AVATAR_STATES)
-  topicDetailAppbarAvatarStates: string = '{}';
-  @StorageLink(StorageKeys.TOPIC_DETAIL_APPBAR_USERNAME_STATES)
-  topicDetailAppbarUsernameStates: string = '{}';
-  @StorageLink(StorageKeys.AUTH_COOKIE_CONFIGURED) authCookieConfigured: boolean = false;
-  @StorageLink(StorageKeys.MOTION_HAND_EDGE)
-  @Watch('onMotionHandEdgeChanged')
-  motionHandEdge: string = 'right';
-  @StorageLink(StorageKeys.READING_TEXT_SCALE) readingTextScale: number =
-    ReadingSettings.TEXT_SCALE_DEFAULT;
-  @StorageLink(StorageKeys.READING_LINE_HEIGHT) readingLineHeight: number =
-    ThemeConstants.LINE_HEIGHT_BODY;
-  @StorageLink(StorageKeys.READING_DENSITY) readingDensity: string =
-    ReadingSettings.DENSITY_STANDARD;
-  @StorageLink(StorageKeys.READING_RESTORE_POSITION) readingRestorePosition: boolean = false;
-  @StorageLink(StorageKeys.TOPIC_DETAIL_REPLY_BUTTON_AUTO_HIDE)
-  @Watch('onTopicDetailReplyButtonAutoHideChanged')
-  topicDetailReplyButtonAutoHide: boolean = TopicDetailReplyActionSettings.DEFAULT_AUTO_HIDE;
-  @StorageProp(StorageKeys.TOP_AVOID_HEIGHT) topH: number = 0;
-  @StorageProp(StorageKeys.BOTTOM_AVOID_HEIGHT) bottomH: number = 0;
+  @Param topicId: number = 0;
+  @Param targetFloor: number = 0;
+  @Param hideTitle: boolean = false;
+  @Local v: DetailViewModel = new DetailViewModel(0);
+  // Same NavPathStack instance HdsNavigation is bound to (see NavStackHolder); method target only.
+  private stack: NavPathStack = connectNavStack().stack;
+  // V2 mirrors (each dual-written by its single writer). layout (safe-area) + reading typography are
+  // read reactively in build(); authState.configured drives the reply-button lock glyph.
+  private layout: LayoutSafeAreaState = connectLayoutSafeArea();
+  private reading: ReadingSettingsState = connectReadingSettings();
+  private authState: AuthCookieState = connectAuthCookie();
+  // @Monitor sources for the motion-hand edge + reply-button auto-hide preferences (see @Monitor below).
+  @Local private motion: MotionHandEdgeState = connectMotionHandEdge();
+  @Local private replyButton: TopicDetailReplyButtonState = connectTopicDetailReplyButton();
+  // Write-side appbar/identity keys (TOPIC_DETAIL_SAVED_LATER / SITE_FAVORITED / THANKED / APPBAR_*)
+  // are pushed straight to V1 AppStorage where Index's V1 @StorageLink readers consume them; there is
+  // no V2 reader, so the page writes those keys via AppStorage.setOrCreate at their write sites rather
+  // than holding component state. The TOPIC_DETAIL_ACTION command bus is owned by the V1
+  // TopicDetailActionListener child (Index writes it; a @ComponentV2 cannot observe a V1 key).
   private scroller: Scroller = new Scroller();
-  @State listScrollEnabled: boolean = true;
-  @State private isReplyListAtEnd: boolean = false;
-  @State isSavedLater: boolean = false;
-  @State private isSiteFavorited: boolean = false;
-  @State private isTopicThanked: boolean = false;
-  @State private isSiteFavoriteLoading: boolean = false;
-  @State private isTopicThankLoading: boolean = false;
-  @State private isReplyThankLoading: boolean = false;
-  @State private pendingReplyThankId: number = 0;
-  @State private isModerationActionLoading: boolean = false;
-  @State private jumpFloorText: string = '';
-  @State private contextReply: V2exReply | null = null;
-  @State private contextItems: ReplyContextItem[] = [];
-  @State private contextSheetVisible: boolean = false;
-  @StorageLink(StorageKeys.REPLY_DISPLAY_MODE) replyDisplayMode: string =
-    ReplyDisplaySettings.MODE_THREAD;
-  @State private replyDisplayMenuShown: boolean = false;
-  @State private replyComposerVisible: boolean = false;
-  @State private visualMotionHandEdge: string = 'right';
-  @State private detailRootWidth: number = 0;
-  @State private detailRootHeight: number = 0;
-  @State private replyComposerInitialContent: string = '';
-  @State private thankedReplyIdsJson: string = '[]';
-  @State private titleContentBottom: number = 0;
-  @State private currentScrollOffset: number = 0;
-  @State private isTitleCoveredByAppbar: boolean = false;
+  @Local listScrollEnabled: boolean = true;
+  @Local private isReplyListAtEnd: boolean = false;
+  @Local isSavedLater: boolean = false;
+  @Local private isSiteFavorited: boolean = false;
+  @Local private isTopicThanked: boolean = false;
+  @Local private isSiteFavoriteLoading: boolean = false;
+  @Local private isTopicThankLoading: boolean = false;
+  @Local private isReplyThankLoading: boolean = false;
+  @Local private pendingReplyThankId: number = 0;
+  @Local private isModerationActionLoading: boolean = false;
+  @Local private jumpFloorText: string = '';
+  @Local private contextReply: V2exReply | null = null;
+  @Local private contextItems: ReplyContextItem[] = [];
+  @Local private contextSheetVisible: boolean = false;
+  @Local private replyDisplayMenuShown: boolean = false;
+  @Local private replyComposerVisible: boolean = false;
+  @Local private visualMotionHandEdge: string = 'right';
+  @Local private detailRootWidth: number = 0;
+  @Local private detailRootHeight: number = 0;
+  @Local private replyComposerInitialContent: string = '';
+  @Local private thankedReplyIdsJson: string = '[]';
+  @Local private titleContentBottom: number = 0;
+  @Local private currentScrollOffset: number = 0;
+  @Local private isTitleCoveredByAppbar: boolean = false;
   private readonly HDS_ACTION_BAR_CLEARANCE: number = 72;
   private readonly TOPIC_DETAIL_REPLY_BUTTON_SIZE: number = 56;
   private readonly TOPIC_DETAIL_REPLY_BUTTON_ACTIVITY_PADDING: number = ThemeConstants.SPACE_LG;
@@ -157,19 +147,9 @@ export struct TopicDetailPage {
   private topicActionOverlay: TopicDetailActionOverlay | null = null;
   private topicThankLocked: boolean = false;
   private replyThankLockedId: number = 0;
-  private jumpFloorDialogController: CustomDialogController | null = new CustomDialogController({
-    builder: JumpToFloorDialog({
-      floorText: $jumpFloorText,
-      cancel: () => {},
-      confirm: (value: string) => {
-        this.handleJumpToFloor(value)
-      },
-    }),
-    autoCancel: true,
-    alignment: DialogAlignment.Center,
-    customStyle: false,
-    cornerRadius: ThemeConstants.RADIUS_MD,
-  });
+  // Jump-to-floor dialog is opened via UIContext PromptAction.openCustomDialog (V2-compatible);
+  // -1 means no dialog is currently open.
+  private jumpFloorDialogId: number = -1;
   private lastReadFloor: number = 0;
   private hasRestoredReadPosition: boolean = false;
   private hasJumpedToTargetFloor: boolean = false;
@@ -182,7 +162,7 @@ export struct TopicDetailPage {
 
   aboutToAppear(): void {
     this.v = new DetailViewModel(this.topicId)
-    this.v.setReplyDisplayMode(this.replyDisplayMode)
+    this.v.setReplyDisplayMode(this.currentReplyDisplayMode())
     this.lastReadFloor = 0
     this.hasRestoredReadPosition = false
     this.hasJumpedToTargetFloor = false
@@ -194,7 +174,7 @@ export struct TopicDetailPage {
     this.applyReplyButtonAutoHideBinding()
     this.titleContentBottom = 0
     this.followTouchState = TopicDetailFloatingActionCoordinator.initialTouchState()
-    this.visualMotionHandEdge = this.motionHandEdge
+    this.visualMotionHandEdge = this.motion.edge
     this.isTitleCoveredByAppbar = false
     this.syncTopicDetailTitleState(false, false, false)
     this.publishAppbarIdentity(false)
@@ -260,11 +240,11 @@ export struct TopicDetailPage {
     }
     if (overlay.favoriteKnown) {
       this.isSiteFavorited = overlay.favoriteValue
-      this.topicDetailSiteFavorited = overlay.favoriteValue
+      AppStorage.setOrCreate<boolean>(StorageKeys.TOPIC_DETAIL_SITE_FAVORITED, overlay.favoriteValue)
     }
     if (overlay.topicThankKnown && overlay.topicThankValue) {
       this.isTopicThanked = true
-      this.topicDetailThanked = true
+      AppStorage.setOrCreate<boolean>(StorageKeys.TOPIC_DETAIL_THANKED, true)
     }
     if (overlay.replyThankedIds.length > 0) {
       this.thankedReplyIdsJson = JSON.stringify(overlay.replyThankedIds)
@@ -356,7 +336,7 @@ export struct TopicDetailPage {
   }
 
   private openReplyEditor(initialContent: string = ''): void {
-    if (!this.authCookieConfigured || !CookieJarSettings.getCurrentCookie()) {
+    if (!this.authState.configured || !CookieJarSettings.getCurrentCookie()) {
       this.stack.pushPathByName('V2exNativeLogin', null)
       return
     }
@@ -365,18 +345,18 @@ export struct TopicDetailPage {
   }
 
   private bodyFontSize(): number {
-    return ReadingSettings.scaleTypographyToken(ThemeConstants.FONT_SIZE_BODY, this.readingTextScale)
+    return ReadingSettings.scaleTypographyToken(ThemeConstants.FONT_SIZE_BODY, this.reading.textScale)
   }
 
   private bodyLineHeight(): number {
-    return ReadingSettings.normalizeLineHeight(this.readingLineHeight, this.readingTextScale)
+    return ReadingSettings.normalizeLineHeight(this.reading.lineHeight, this.reading.textScale)
   }
 
   private topicCardPadding(): number {
-    if (this.readingDensity === ReadingSettings.DENSITY_COMPACT) {
+    if (this.reading.density === ReadingSettings.DENSITY_COMPACT) {
       return ThemeConstants.SPACE_MD
     }
-    if (this.readingDensity === ReadingSettings.DENSITY_COMFORTABLE) {
+    if (this.reading.density === ReadingSettings.DENSITY_COMFORTABLE) {
       return ThemeConstants.SPACE_XL
     }
     return ThemeConstants.SPACE_LG
@@ -406,6 +386,15 @@ export struct TopicDetailPage {
 
       this.ReplyComposerSheetHost()
       this.ReplyContextSheetHost()
+
+      // V1 adapter owning the TOPIC_DETAIL_ACTION appbar command bus (a @ComponentV2 cannot observe
+      // a V1 AppStorage key written by Index); zero-size, reports up via onCommand. See the adapter.
+      TopicDetailActionListener({
+        topicId: this.topicId,
+        onCommand: (action: string) => {
+          this.handleTopicAction(action)
+        },
+      })
     }
     .width('100%')
     .height('100%')
@@ -432,7 +421,7 @@ export struct TopicDetailPage {
           this.openReplyEditor()
         },
       }) {
-        SymbolGlyph(this.authCookieConfigured
+        SymbolGlyph(this.authState.configured
           ? $r('sys.symbol.pencil_line_1')
           : $r('sys.symbol.lock'))
           .fontSize(28)
@@ -451,7 +440,7 @@ export struct TopicDetailPage {
   private topicDetailReplyActionBarTop(): number {
     return TopicDetailFloatingActionCoordinator.actionBarTop(
       this.detailRootHeight,
-      this.bottomH,
+      this.layout.bottomAvoidHeight,
       this.TOPIC_DETAIL_REPLY_BUTTON_SIZE,
     )
   }
@@ -469,7 +458,7 @@ export struct TopicDetailPage {
   }
 
   private applyReplyButtonAutoHideBinding(): void {
-    if (this.topicDetailReplyButtonAutoHide) {
+    if (this.replyButton.autoHide) {
       this.replyButtonController.bindScroller(0, this.scroller)
       this.restoreReplyButtonIfHidden()
       return
@@ -495,7 +484,7 @@ export struct TopicDetailPage {
 
   private applyReplyButtonScrollAnimation(visible: boolean): void {
     if (
-      !this.topicDetailReplyButtonAutoHide ||
+      !this.replyButton.autoHide ||
       this.replyButtonAnimationGuardTimerId !== -1 ||
       this.replyButtonVisibleByScroll === visible
     ) {
@@ -510,12 +499,13 @@ export struct TopicDetailPage {
     this.startReplyButtonAnimationGuardTimer()
   }
 
-  private onTopicDetailReplyButtonAutoHideChanged(_propName: string): void {
+  @Monitor('replyButton.autoHide')
+  private onTopicDetailReplyButtonAutoHideChanged(): void {
     this.applyReplyButtonAutoHideBinding()
   }
 
   private applyReplyButtonAutoHideByScroll(offset: number, state: ScrollState): void {
-    if (!this.topicDetailReplyButtonAutoHide) {
+    if (!this.replyButton.autoHide) {
       this.replyButtonLastScrollOffset = offset
       this.restoreReplyButtonIfHidden()
       return
@@ -566,11 +556,12 @@ export struct TopicDetailPage {
     }
   }
 
-  private onMotionHandEdgeChanged(_propName: string): void {
+  @Monitor('motion.edge')
+  private onMotionHandEdgeChanged(): void {
     this.getUIContext().animateTo(
       { duration: ThemeConstants.ANIM_DURATION, curve: Curve.EaseOut },
       () => {
-        this.visualMotionHandEdge = this.motionHandEdge
+        this.visualMotionHandEdge = this.motion.edge
       },
     )
   }
@@ -802,7 +793,7 @@ export struct TopicDetailPage {
       hasTopic: !!this.v.topic,
       titleContentBottom: this.titleContentBottom,
       currentScrollOffset: this.currentScrollOffset,
-      appbarBottom: this.topH + ThemeConstants.TITLE_BAR_HEIGHT,
+      appbarBottom: this.layout.topAvoidHeight + ThemeConstants.TITLE_BAR_HEIGHT,
       hysteresis: this.titleVisibilityHysteresis,
       currentlyVisible: this.isTitleCoveredByAppbar,
     })
@@ -824,29 +815,31 @@ export struct TopicDetailPage {
       return
     }
     const identity = TopicDetailAppbarCoordinator.identity(this.v.topic, visible)
-    this.topicDetailAppbarTitleStates = this.nextStringState(
-      this.topicDetailAppbarTitleStates,
-      routeKey,
-      identity.title,
+    // Write-side keys are consumed by Index's V1 @StorageLink appbar; the page pushes V1 AppStorage
+    // directly (no V2 reader). The per-route *_STATES maps are read-modify-written against the live
+    // store so a new TopicDetailPage instance never clobbers sibling nav-stack entries' identities.
+    AppStorage.setOrCreate<string>(
+      StorageKeys.TOPIC_DETAIL_APPBAR_TITLE_STATES,
+      this.nextStringState(StorageKeys.TOPIC_DETAIL_APPBAR_TITLE_STATES, routeKey, identity.title),
     )
-    this.topicDetailAppbarAvatarStates = this.nextStringState(
-      this.topicDetailAppbarAvatarStates,
-      routeKey,
-      identity.avatarUrl,
+    AppStorage.setOrCreate<string>(
+      StorageKeys.TOPIC_DETAIL_APPBAR_AVATAR_STATES,
+      this.nextStringState(StorageKeys.TOPIC_DETAIL_APPBAR_AVATAR_STATES, routeKey, identity.avatarUrl),
     )
-    this.topicDetailAppbarUsernameStates = this.nextStringState(
-      this.topicDetailAppbarUsernameStates,
-      routeKey,
-      identity.username,
+    AppStorage.setOrCreate<string>(
+      StorageKeys.TOPIC_DETAIL_APPBAR_USERNAME_STATES,
+      this.nextStringState(StorageKeys.TOPIC_DETAIL_APPBAR_USERNAME_STATES, routeKey, identity.username),
     )
-    this.topicDetailAppbarRouteTopicId = visible ? routeKey : ''
-    this.topicDetailAppbarTitle = identity.title
-    this.topicDetailAppbarAvatarUrl = identity.avatarUrl
-    this.topicDetailAppbarUsername = identity.username
+    AppStorage.setOrCreate<string>(StorageKeys.TOPIC_DETAIL_APPBAR_ROUTE_TOPIC_ID, visible ? routeKey : '')
+    AppStorage.setOrCreate<string>(StorageKeys.TOPIC_DETAIL_APPBAR_TITLE, identity.title)
+    AppStorage.setOrCreate<string>(StorageKeys.TOPIC_DETAIL_APPBAR_AVATAR_URL, identity.avatarUrl)
+    AppStorage.setOrCreate<string>(StorageKeys.TOPIC_DETAIL_APPBAR_USERNAME, identity.username)
   }
 
-  private nextStringState(statesJson: string, key: string, value: string): string {
-    return TopicDetailAppbarCoordinator.nextStringState(statesJson, key, value)
+  // Reads the current per-route states map from AppStorage and merges in routeKey -> value.
+  private nextStringState(storageKey: string, key: string, value: string): string {
+    const current = AppStorage.get<string>(storageKey) ?? '{}'
+    return TopicDetailAppbarCoordinator.nextStringState(current, key, value)
   }
 
   private topicRouteKey(): string {
@@ -1148,9 +1141,15 @@ export struct TopicDetailPage {
     )
   }
 
+  private currentReplyDisplayMode(): string {
+    // Persisted reply-display mode is seeded non-reactively (the page renders off v.replyDisplayMode).
+    return ReplyDisplaySettings.normalizeMode(
+      AppStorage.get<string>(StorageKeys.REPLY_DISPLAY_MODE) ?? ReplyDisplaySettings.MODE_THREAD,
+    )
+  }
+
   private updateReplyDisplayMode(mode: string): void {
     const normalizedMode = ReplyDisplaySettings.normalizeMode(mode)
-    this.replyDisplayMode = normalizedMode
     if (
       TopicDetailReplyDisplayCoordinator.shouldPreloadForMode(
         normalizedMode,
@@ -1208,7 +1207,71 @@ export struct TopicDetailPage {
       return
     }
     this.jumpFloorText = ''
-    this.jumpFloorDialogController?.open()
+    this.getUIContext()
+      .getPromptAction()
+      .openCustomDialog({
+        builder: () => {
+          this.JumpToFloorDialogContent()
+        },
+        alignment: DialogAlignment.Center,
+        autoCancel: true,
+        cornerRadius: ThemeConstants.RADIUS_MD,
+        backgroundColor: $r('sys.color.ohos_id_color_card_bg'),
+      })
+      .then((dialogId: number) => {
+        this.jumpFloorDialogId = dialogId
+      })
+      .catch((_error: Error) => {})
+  }
+
+  private closeJumpToFloorDialog(): void {
+    if (this.jumpFloorDialogId < 0) {
+      return
+    }
+    const dialogId = this.jumpFloorDialogId
+    this.jumpFloorDialogId = -1
+    this.getUIContext().getPromptAction().closeCustomDialog(dialogId)
+  }
+
+  @Builder
+  JumpToFloorDialogContent() {
+    Column({ space: ThemeConstants.SPACE_MD }) {
+      Text(AppStrings.text(AppStrings.R_JUMP_TO_FLOOR_TITLE, 'Jump to floor'))
+        .fontSize(ThemeConstants.FONT_SIZE_BODY)
+        .fontWeight(FontWeight.Medium)
+        .fontColor($r('sys.color.font_primary'))
+      TextInput({
+        placeholder: AppStrings.text(AppStrings.R_JUMP_TO_FLOOR_PLACEHOLDER, 'Enter floor number'),
+        text: this.jumpFloorText,
+      })
+        .type(InputType.Number)
+        .fontSize(ThemeConstants.FONT_SIZE_BODY)
+        .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
+        .borderRadius(ThemeConstants.RADIUS_MD)
+        .onChange((value: string) => {
+          this.jumpFloorText = value
+        })
+      Row({ space: ThemeConstants.SPACE_SM }) {
+        Button(AppStrings.text($r('app.string.common_cancel'), 'Cancel'))
+          .layoutWeight(1)
+          .height(40)
+          .onClick(() => {
+            this.closeJumpToFloorDialog()
+          })
+        Button(AppStrings.text(AppStrings.R_JUMP_TO_FLOOR_BUTTON, 'Jump'))
+          .layoutWeight(1)
+          .height(40)
+          .onClick(() => {
+            const value = this.jumpFloorText
+            this.closeJumpToFloorDialog()
+            this.handleJumpToFloor(value)
+          })
+      }
+    }
+    .padding(ThemeConstants.SPACE_LG)
+    .borderRadius(ThemeConstants.RADIUS_MD)
+    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+    .width('100%')
   }
 
   private handleJumpToFloor(value: string): void {
@@ -1302,7 +1365,7 @@ export struct TopicDetailPage {
       this.jumpToTargetFloor(target)
       return
     }
-    if (!this.readingRestorePosition) {
+    if (!(AppStorage.get<boolean>(StorageKeys.READING_RESTORE_POSITION) ?? false)) {
       return
     }
     this.restoreReadPosition()
@@ -1346,7 +1409,7 @@ export struct TopicDetailPage {
     CollectionSettings.isTopicSaved(context, this.topicId)
       .then((saved: boolean) => {
         this.isSavedLater = saved
-        this.topicDetailSavedLater = saved
+        AppStorage.setOrCreate<boolean>(StorageKeys.TOPIC_DETAIL_SAVED_LATER, saved)
       })
       .catch((error: Error) => {
         console.error('load saved topic state failed: ' + error.message)
@@ -1364,7 +1427,7 @@ export struct TopicDetailPage {
     request
       .then(() => {
         this.isSavedLater = !this.isSavedLater
-        this.topicDetailSavedLater = this.isSavedLater
+        AppStorage.setOrCreate<boolean>(StorageKeys.TOPIC_DETAIL_SAVED_LATER, this.isSavedLater)
       })
       .catch((error: Error) => {
         console.error('toggle saved topic failed: ' + error.message)
@@ -1391,14 +1454,6 @@ export struct TopicDetailPage {
         console.error('mark topic read failed: ' + error.message)
       },
     )
-  }
-
-  onTopicActionCommand(_propName: string): void {
-    const command = TopicDetailActionCoordinator.parseCommand(this.topicActionCommand)
-    if (!command || command.topicId !== this.topicId) {
-      return
-    }
-    this.handleTopicAction(command.action)
   }
 
   private handleTopicAction(action: string): void {
@@ -1451,23 +1506,22 @@ export struct TopicDetailPage {
       return
     }
     const previousIsSiteFavorited = this.isSiteFavorited
-    const previousTopicDetailSiteFavorited = this.topicDetailSiteFavorited
     const targetFavorited = !this.isSiteFavorited
     this.isSiteFavoriteLoading = true
     this.isSiteFavorited = targetFavorited
-    this.topicDetailSiteFavorited = targetFavorited
+    AppStorage.setOrCreate<boolean>(StorageKeys.TOPIC_DETAIL_SITE_FAVORITED, targetFavorited)
     this.api
       .toggleTopicFavoriteWithCookie(cookie, this.topicId)
       .then((favorited: boolean) => {
         this.isSiteFavorited = favorited
-        this.topicDetailSiteFavorited = favorited
+        AppStorage.setOrCreate<boolean>(StorageKeys.TOPIC_DETAIL_SITE_FAVORITED, favorited)
         this.persistTopicFavoriteOverlay(favorited)
       })
       .catch((error: Error) => {
         // Rollback failed optimistic action and leave durable overlay unchanged so stale private
         // account state never overwrites the server-confirmed cache with a failed mutation.
         this.isSiteFavorited = previousIsSiteFavorited
-        this.topicDetailSiteFavorited = previousTopicDetailSiteFavorited
+        AppStorage.setOrCreate<boolean>(StorageKeys.TOPIC_DETAIL_SITE_FAVORITED, previousIsSiteFavorited)
         promptAction
           .openToast({ message: translateApiError(error) })
           .catch((_error: Error) => {})
@@ -1484,21 +1538,21 @@ export struct TopicDetailPage {
         return
       }
       this.isSiteFavorited = false
-      this.topicDetailSiteFavorited = false
+      AppStorage.setOrCreate<boolean>(StorageKeys.TOPIC_DETAIL_SITE_FAVORITED, false)
       return
     }
     this.api
       .getTopicFavoriteToggleActionWithCookie(cookie, this.topicId)
       .then((toggle: V2exToggleAction) => {
         this.isSiteFavorited = toggle.currentlyOn
-        this.topicDetailSiteFavorited = toggle.currentlyOn
+        AppStorage.setOrCreate<boolean>(StorageKeys.TOPIC_DETAIL_SITE_FAVORITED, toggle.currentlyOn)
       })
       .catch((_error: Error) => {
         if (this.topicActionOverlay?.favoriteKnown) {
           return
         }
         this.isSiteFavorited = false
-        this.topicDetailSiteFavorited = false
+        AppStorage.setOrCreate<boolean>(StorageKeys.TOPIC_DETAIL_SITE_FAVORITED, false)
       })
   }
 
@@ -1509,7 +1563,7 @@ export struct TopicDetailPage {
         return
       }
       this.isTopicThanked = false
-      this.topicDetailThanked = false
+      AppStorage.setOrCreate<boolean>(StorageKeys.TOPIC_DETAIL_THANKED, false)
       return
     }
     this.api
@@ -1519,7 +1573,7 @@ export struct TopicDetailPage {
           return
         }
         this.isTopicThanked = false
-        this.topicDetailThanked = false
+        AppStorage.setOrCreate<boolean>(StorageKeys.TOPIC_DETAIL_THANKED, false)
       })
       .catch((error: Error) => {
         const thanked = TopicDetailActionCoordinator.thankedFromTopicThankLoadError(error)
@@ -1527,7 +1581,7 @@ export struct TopicDetailPage {
           return
         }
         this.isTopicThanked = thanked
-        this.topicDetailThanked = thanked
+        AppStorage.setOrCreate<boolean>(StorageKeys.TOPIC_DETAIL_THANKED, thanked)
       })
   }
 
@@ -1557,7 +1611,7 @@ export struct TopicDetailPage {
       locked: this.topicThankLocked,
       loading: this.isTopicThankLoading,
       thanked: this.isTopicThanked,
-      storageThanked: this.topicDetailThanked,
+      storageThanked: AppStorage.get<boolean>(StorageKeys.TOPIC_DETAIL_THANKED) ?? false,
       cookie,
     })
     if (!guard.allowed) {
@@ -1595,20 +1649,19 @@ export struct TopicDetailPage {
       return
     }
     const previousIsTopicThanked = this.isTopicThanked
-    const previousTopicDetailThanked = this.topicDetailThanked
     this.isTopicThankLoading = true
     this.isTopicThanked = true
-    this.topicDetailThanked = true
+    AppStorage.setOrCreate<boolean>(StorageKeys.TOPIC_DETAIL_THANKED, true)
     TopicDetailActionCoordinator
       .executeTopicThank(this.api, cookie, this.topicId)
       .then(() => {
         this.isTopicThanked = true
-        this.topicDetailThanked = true
+        AppStorage.setOrCreate<boolean>(StorageKeys.TOPIC_DETAIL_THANKED, true)
         this.persistTopicThankOverlay()
       })
       .catch((error: Error) => {
         this.isTopicThanked = previousIsTopicThanked
-        this.topicDetailThanked = previousTopicDetailThanked
+        AppStorage.setOrCreate<boolean>(StorageKeys.TOPIC_DETAIL_THANKED, previousIsTopicThanked)
         promptAction
           .openToast({ message: translateApiError(error) })
           .catch((_error: Error) => {})
@@ -1627,9 +1680,9 @@ export struct TopicDetailPage {
     this.isSavedLater = savedLater
     this.isSiteFavorited = siteFavorited
     this.isTopicThanked = thanked
-    this.topicDetailSavedLater = savedLater
-    this.topicDetailSiteFavorited = siteFavorited
-    this.topicDetailThanked = thanked
+    AppStorage.setOrCreate<boolean>(StorageKeys.TOPIC_DETAIL_SAVED_LATER, savedLater)
+    AppStorage.setOrCreate<boolean>(StorageKeys.TOPIC_DETAIL_SITE_FAVORITED, siteFavorited)
+    AppStorage.setOrCreate<boolean>(StorageKeys.TOPIC_DETAIL_THANKED, thanked)
   }
 
   private prepareReplyThank(reply: V2exReply): void {
@@ -2044,55 +2097,5 @@ export struct TopicDetailPage {
       }
     }
     return `${baseUrl}/t/${this.topicId}`
-  }
-}
-
-@CustomDialog
-struct JumpToFloorDialog {
-  controller?: CustomDialogController;
-  @Link floorText: string;
-  cancel: () => void = () => {};
-  confirm: (value: string) => void = (_value: string) => {};
-
-  build() {
-    Column({ space: ThemeConstants.SPACE_MD }) {
-      Text(AppStrings.text(AppStrings.R_JUMP_TO_FLOOR_TITLE, 'Jump to floor'))
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .fontWeight(FontWeight.Medium)
-        .fontColor($r('sys.color.font_primary'))
-      TextInput({ placeholder: AppStrings.text(AppStrings.R_JUMP_TO_FLOOR_PLACEHOLDER, 'Enter floor number'), text: this.floorText })
-        .type(InputType.Number)
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
-        .borderRadius(ThemeConstants.RADIUS_MD)
-        .onChange((value: string) => {
-          this.floorText = value
-        })
-      Row({ space: ThemeConstants.SPACE_SM }) {
-        Button(AppStrings.text($r('app.string.common_cancel'), 'Cancel'))
-          .layoutWeight(1)
-          .height(40)
-          .onClick(() => {
-            if (this.controller != undefined) {
-              this.controller.close()
-            }
-            this.cancel()
-          })
-        Button(AppStrings.text(AppStrings.R_JUMP_TO_FLOOR_BUTTON, 'Jump'))
-          .layoutWeight(1)
-          .height(40)
-          .onClick(() => {
-            const value = this.floorText
-            if (this.controller != undefined) {
-              this.controller.close()
-            }
-            this.confirm(value)
-          })
-      }
-    }
-    .padding(ThemeConstants.SPACE_LG)
-    .borderRadius(ThemeConstants.RADIUS_MD)
-    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
-    .width('100%')
   }
 }
