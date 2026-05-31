@@ -23,10 +23,12 @@ import {
   AuthSettings,
   connectAccountWebViewAction,
   connectImagePreviewAction,
+  connectNativeLoginShown,
   connectNavStack,
   connectNodeTopicAction,
   connectSearchAction,
   connectUserProfileAction,
+  connectWebLoginAction,
   CookieJarSettings,
   SearchQueryBus,
   FoldScreenUtil,
@@ -546,7 +548,13 @@ struct Index {
   @Builder
   private GlobalTwoFactorSheet() {
     V2exTwoFactorPrompt({
-      visible: $twoFactorVisible,
+      // V2exTwoFactorPrompt is @ComponentV2: pass the value one-way and let it report close via the
+      // event (replaces the former two-way `$twoFactorVisible` @Link). bindSheet still owns the sheet
+      // visibility through `$$this.twoFactorVisible`.
+      visible: this.twoFactorVisible,
+      onVisibleChange: (value: boolean) => {
+        this.twoFactorVisible = value
+      },
       cookie: this.twoFactorCookie,
       onSuccess: () => {
         const source = this.twoFactorSource
@@ -921,10 +929,11 @@ struct Index {
   }
 
   private notifyNativeLoginShown(): void {
-    AppStorage.setOrCreate<string>(
-      StorageKeys.NATIVE_LOGIN_SHOWN,
-      IndexRouteCoordinator.simpleCommand('resume', Date.now()),
-    )
+    // Dual-write the V1 AppStorage command AND the V2 mirror (read by @ComponentV2
+    // V2exNativeLoginPage) from this single writer so the two stores stay in lockstep.
+    const command = IndexRouteCoordinator.simpleCommand('resume', Date.now())
+    AppStorage.setOrCreate<string>(StorageKeys.NATIVE_LOGIN_SHOWN, command)
+    connectNativeLoginShown().command = command
   }
 
   private sendNotificationAction(action: string): void {
@@ -1187,10 +1196,11 @@ struct Index {
   }
 
   private sendWebLoginAction(action: string): void {
-    AppStorage.setOrCreate<string>(
-      StorageKeys.WEB_LOGIN_ACTION,
-      IndexRouteCoordinator.simpleCommand(action, Date.now()),
-    )
+    // Dual-write the V1 AppStorage command AND the V2 mirror (read by @ComponentV2
+    // V2exWebLoginPage) from this single writer so the two stores stay in lockstep.
+    const command = IndexRouteCoordinator.simpleCommand(action, Date.now())
+    AppStorage.setOrCreate<string>(StorageKeys.WEB_LOGIN_ACTION, command)
+    connectWebLoginAction().command = command
   }
 
   private sendAccountWebViewAction(action: string): void {

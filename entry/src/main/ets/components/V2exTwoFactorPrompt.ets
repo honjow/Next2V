@@ -18,17 +18,20 @@ import {
 } from 'shared'
 import type { NativeLoginSnapshot } from 'shared'
 
-@Component
+@ComponentV2
 export struct V2exTwoFactorPrompt {
-  @Link visible: boolean
-  @Prop cookie: string = ''
-  @Prop title: string = AppStrings.text(AppStrings.R_TWO_FACTOR_TITLE, 'Two-Factor Verification')
-  onSuccess?: () => void
-  onCancel?: () => void
+  // `visible` is a one-way @Param mirroring the host's two-way sheet binding; the prompt closes itself
+  // by reporting `onVisibleChange(false)` (the V2 replacement for the former two-way `@Link visible`).
+  @Param visible: boolean = false
+  @Event onVisibleChange?: (value: boolean) => void
+  @Param cookie: string = ''
+  @Param title: string = AppStrings.text(AppStrings.R_TWO_FACTOR_TITLE, 'Two-Factor Verification')
+  @Event onSuccess?: () => void
+  @Event onCancel?: () => void
 
-  @State private code: string = ''
-  @State private errorMessage: string = ''
-  @State private isSubmitting: boolean = false
+  @Local private code: string = ''
+  @Local private errorMessage: string = ''
+  @Local private isSubmitting: boolean = false
 
   private auth: V2exNativeAuthService = new V2exNativeAuthService()
   private api: ApiService = new ApiService()
@@ -105,7 +108,7 @@ export struct V2exTwoFactorPrompt {
       .then(() => {
         this.code = ''
         this.errorMessage = ''
-        this.visible = false
+        this.onVisibleChange?.(false)
         promptAction.openToast({ message: $r('app.string.two_factor_completed') }).catch((_error: Error) => { })
         if (this.onSuccess) {
           this.onSuccess()
@@ -155,7 +158,7 @@ export struct V2exTwoFactorPrompt {
     }
     this.code = ''
     this.errorMessage = ''
-    this.visible = false
+    this.onVisibleChange?.(false)
     if (this.onCancel) {
       this.onCancel()
     }

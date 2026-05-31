@@ -8,13 +8,15 @@ import {
   AuthSessionSettings,
   AccountSessionCoordinator,
   AutoDailyCheckinService,
+  connectNavStack,
+  connectWebLoginAction,
   CookieJarSettings,
   DiagnosticLogger,
   HttpClient,
-  StorageKeys,
   V2exWebView,
   V2exWebViewScaffold,
   V2exSessionParser,
+  WebLoginActionState,
   translateApiError
 } from 'shared'
 
@@ -27,26 +29,29 @@ interface ValidatedCookie {
   username: string
 }
 
-@Component
+@ComponentV2
 export struct V2exWebLoginPage {
-  @Consume('ns') stack: NavPathStack
+  // `ns` is the app-wide NavPathStack from NavStackHolder (same instance Index's HdsNavigation binds),
+  // read directly instead of the former V1 @Consume('ns').
+  private stack: NavPathStack = connectNavStack().stack
 
   private controller: webview.WebviewController = new webview.WebviewController()
   private http: HttpClient = HttpClient.getInstance()
   private api: ApiService = new ApiService()
 
-  @State private errorMessage: string = ''
-  @State private pageMessage: string = AppStrings.text(AppStrings.R_WEB_LOGIN_OPENING, 'Opening web login...')
-  @State private isSaving: boolean = false
-  @State private isSaved: boolean = false
-  @State private lastUrl: string = ''
+  @Local private errorMessage: string = ''
+  @Local private pageMessage: string = AppStrings.text(AppStrings.R_WEB_LOGIN_OPENING, 'Opening web login...')
+  @Local private isSaving: boolean = false
+  @Local private isSaved: boolean = false
+  @Local private lastUrl: string = ''
   private autoSaveTimerId: number = 0
   private autoSaveAttempt: number = 0
   private isAutoSaving: boolean = false
   private isPageActive: boolean = false
   private saveRequestId: number = 0
   private loginStartCookie: string = ''
-  @StorageLink(StorageKeys.WEB_LOGIN_ACTION) @Watch('onWebLoginAction') webLoginAction: string = ''
+  // V2 mirror of WEB_LOGIN_ACTION (was @StorageLink+@Watch); reacts via @Monitor below.
+  private webLoginActionState: WebLoginActionState = connectWebLoginAction()
 
   private get baseUrl(): string {
     return this.http.getBaseUrl()
@@ -136,8 +141,9 @@ export struct V2exWebLoginPage {
     return this.pageMessage
   }
 
-  onWebLoginAction(_propName: string): void {
-    const action = this.webLoginAction.split(':').pop() || ''
+  @Monitor('webLoginActionState.command')
+  onWebLoginAction(): void {
+    const action = this.webLoginActionState.command.split(':').pop() || ''
     if (action === 'save') {
       this.saveLogin(false)
     } else if (action === 'reload') {

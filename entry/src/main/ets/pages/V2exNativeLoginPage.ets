@@ -9,12 +9,14 @@ import {
   AutoDailyCheckinService,
   AppActionButton,
   ConciseListRow,
+  connectNativeLoginShown,
+  connectNavStack,
   CookieJarSettings,
   GroupedListSection,
   HttpClient,
+  NativeLoginShownState,
   NativeTwoFactorRequiredError,
   SecondaryListScaffold,
-  StorageKeys,
   ThemeConstants,
   TwoFactorChallengeService,
   V2exNativeAuthService,
@@ -22,21 +24,22 @@ import {
 } from 'shared'
 import type { NativeLoginChallenge, NativeLoginSnapshot } from 'shared'
 import { IndexRouteCoordinator } from '../model/IndexRouteCoordinator'
-@Component
+@ComponentV2
 export struct V2exNativeLoginPage {
-  @Consume('ns') stack: NavPathStack;
+  // `ns` is the app-wide NavPathStack from NavStackHolder (same instance Index's HdsNavigation binds),
+  // read directly instead of the former V1 @Consume('ns').
+  private stack: NavPathStack = connectNavStack().stack;
 
-  @State private username: string = '';
-  @State private password: string = '';
-  @State private captchaCode: string = '';
-  @State private captchaField: string = '';
-  @State private captchaUrl: string = '';
-  @State private errorMessage: string = '';
-  @State private isLoading: boolean = false;
-  @State private isChallengeLoading: boolean = false;
-  @StorageLink(StorageKeys.NATIVE_LOGIN_SHOWN)
-  @Watch('onNativeLoginShown')
-  private nativeLoginShown: string = '';
+  @Local private username: string = '';
+  @Local private password: string = '';
+  @Local private captchaCode: string = '';
+  @Local private captchaField: string = '';
+  @Local private captchaUrl: string = '';
+  @Local private errorMessage: string = '';
+  @Local private isLoading: boolean = false;
+  @Local private isChallengeLoading: boolean = false;
+  // V2 mirror of NATIVE_LOGIN_SHOWN (was @StorageLink+@Watch); reacts via @Monitor below.
+  private nativeLoginShownState: NativeLoginShownState = connectNativeLoginShown();
 
   private challenge: NativeLoginChallenge | null = null;
   private auth: V2exNativeAuthService = new V2exNativeAuthService();
@@ -56,8 +59,9 @@ export struct V2exNativeLoginPage {
     this.pausePage()
   }
 
-  onNativeLoginShown(_propName: string): void {
-    if (IndexRouteCoordinator.commandPayload(this.nativeLoginShown) !== 'resume') {
+  @Monitor('nativeLoginShownState.command')
+  onNativeLoginShown(): void {
+    if (IndexRouteCoordinator.commandPayload(this.nativeLoginShownState.command) !== 'resume') {
       return
     }
     if (this.isPageActive) {
