@@ -3,6 +3,7 @@ import { BusinessError } from '@ohos.base'
 import { StorageKeys } from '../constants/StorageKeys'
 import { ReplyActionAlignmentSettings } from '../settings/ReplyActionAlignmentSettings'
 import type { ReplyActionAlignmentMode } from '../settings/ReplyActionAlignmentSettings'
+import { connectMotionHandEdge } from '../state/MotionHandEdgeState'
 
 export type MotionHandEdge = 'left' | 'right'
 
@@ -196,7 +197,10 @@ export class MotionHandStateService {
   }
 
   private static setEdge(edge: MotionHandEdge): void {
+    // Single dual-write chokepoint: V1 AppStorage (legacy @StorageLink readers) + V2 mirror
+    // (read by @ComponentV2 TopicDetailPage via @Monitor). Keeps the two stores in lockstep.
     AppStorage.setOrCreate<MotionHandEdge>(StorageKeys.MOTION_HAND_EDGE, edge)
+    connectMotionHandEdge().edge = edge
   }
 
   private static logError(action: string, error: Error): void {

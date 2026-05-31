@@ -8,6 +8,7 @@ import { HttpClient } from '../network/HttpClient'
 import { ApiDomainSettings } from './ApiDomainSettings'
 import { setAppStorageValue } from './SettingsStorage'
 import { STORE_NAME_COOKIEJAR } from './SettingsStores'
+import { connectAuthCookie } from '../state/AuthCookieState'
 
 const STORE_NAME: string = STORE_NAME_COOKIEJAR
 const KEY_COOKIE_COM: string = 'cookieCom'
@@ -202,7 +203,11 @@ export class CookieJarSettings {
 
   static refreshConfiguredState(): void {
     const current = CookieJarSettings.getCurrentCookie()
-    setAppStorageValue<boolean>(StorageKeys.AUTH_COOKIE_CONFIGURED, current.length > 0)
+    const configured = current.length > 0
+    // Single dual-write chokepoint: V1 AppStorage (legacy @StorageLink readers: AccountPage /
+    // AccountDetailPage / NotificationPage) + V2 mirror (read by @ComponentV2 TopicDetailPage).
+    setAppStorageValue<boolean>(StorageKeys.AUTH_COOKIE_CONFIGURED, configured)
+    connectAuthCookie().configured = configured
   }
 
   static async restoreCurrentToWebCookieManager(): Promise<void> {

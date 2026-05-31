@@ -2,6 +2,7 @@ import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
 import { StorageKeys } from '../constants/StorageKeys'
 import { STORE_NAME_SETTINGS, SettingsPreferencesStore, setAppStorageValue } from './SettingsStorage'
+import { connectTopicDetailReplyButton } from '../state/TopicDetailReplyButtonState'
 
 const STORE_NAME: string = STORE_NAME_SETTINGS
 const KEY_AUTO_HIDE: string = StorageKeys.TOPIC_DETAIL_REPLY_BUTTON_AUTO_HIDE
@@ -14,7 +15,10 @@ export class TopicDetailReplyActionSettings {
   static readonly DEFAULT_AUTO_HIDE: boolean = true
 
   static apply(autoHide: boolean): void {
+    // Single dual-write chokepoint: V1 AppStorage (legacy @StorageLink readers, e.g. SettingsPage)
+    // + V2 mirror (read by @ComponentV2 TopicDetailPage via @Monitor). Keeps both stores in lockstep.
     setAppStorageValue<boolean>(StorageKeys.TOPIC_DETAIL_REPLY_BUTTON_AUTO_HIDE, autoHide)
+    connectTopicDetailReplyButton().autoHide = autoHide
   }
 
   static isAutoHideEnabled(): boolean {

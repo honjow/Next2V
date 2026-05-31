@@ -61,6 +61,9 @@ export { NodeTopicActionState, connectNodeTopicAction } from './state/NodeTopicA
 export { UserProfileActionState, connectUserProfileAction } from './state/UserProfileActionState'
 export { SearchActionState, connectSearchAction } from './state/SearchActionState'
 export { AccountWebViewActionState, connectAccountWebViewAction } from './state/AccountWebViewActionState'
+export { AuthCookieState, connectAuthCookie } from './state/AuthCookieState'
+export { MotionHandEdgeState, connectMotionHandEdge } from './state/MotionHandEdgeState'
+export { TopicDetailReplyButtonState, connectTopicDetailReplyButton } from './state/TopicDetailReplyButtonState'
 export {
   BlockedListSelectedTabState,
   connectBlockedListSelectedTab,
