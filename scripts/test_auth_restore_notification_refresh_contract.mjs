@@ -42,16 +42,22 @@ assert(
   'AccountPage must centralize restored active account guard'
 )
 const restoredGuard = methodBody(accountPage, 'private hasRestoredActiveAccountIdentity')
+// State Management V2 migration renamed the durable identity reads to AppStorageV2 mirrors:
+//   this.sessionUsername  -> this.session.username        (connectAuthSessionSignal())
+//   this.activeAccountId  -> this.activeAccount.id        (connectActiveAccount())
+// The guard invariant is unchanged; accept either the legacy @StorageLink token or the V2 mirror token.
+const guardSessionUsername = restoredGuard.includes('this.sessionUsername') || restoredGuard.includes('this.session.username')
+const guardActiveAccountId = restoredGuard.includes('this.activeAccountId') || restoredGuard.includes('this.activeAccount.id')
 assert(
-  restoredGuard.includes('this.activeAccountUsername') && restoredGuard.includes('this.sessionUsername'),
+  restoredGuard.includes('this.activeAccountUsername') && guardSessionUsername,
   'restored account guard must accept active account record username or restored AuthSession username'
 )
 assert(
-  restoredGuard.includes('this.activeAccountId') && restoredGuard.includes('this.hasCookieAccount()'),
+  guardActiveAccountId && restoredGuard.includes('this.hasCookieAccount()'),
   'restored account guard must still require active account id and configured cookie session'
 )
 assert(
-  !/return\s+!!this\.activeAccountId\s*&&\s*!!this\.activeAccountUsername\s*&&\s*this\.hasCookieAccount\(\)/.test(canOpen),
+  !/return\s+!!this\.(activeAccountId|activeAccount\.id)\s*&&\s*!!this\.activeAccountUsername\s*&&\s*this\.hasCookieAccount\(\)/.test(canOpen),
   'AccountPage account-detail guard must not require transient activeAccountUsername alone after restart'
 )
 assert(
@@ -61,9 +67,18 @@ assert(
 
 const accountStore = read('shared/src/main/ets/settings/AccountStore.ets')
 const restoreActiveId = methodBody(accountStore, 'static async restoreActiveId')
+// V2 migration routes the active-id republish through the single AccountStore.applyActiveAccountId
+// chokepoint (which republishes to AppStorage AND dual-writes the ActiveAccountState mirror); accept
+// either the legacy inline AppStorage write or the helper call.
+const applyActiveId = methodBody(accountStore, 'private static applyActiveAccountId')
 assert(
-  restoreActiveId.includes('setAppStorageValue<string>(StorageKeys.ACTIVE_ACCOUNT_ID, persisted)'),
+  restoreActiveId.includes('AccountStore.applyActiveAccountId(persisted)') ||
+    restoreActiveId.includes('setAppStorageValue<string>(StorageKeys.ACTIVE_ACCOUNT_ID, persisted)'),
   'AccountStore.restoreActiveId must republish persisted active id to AppStorage so Me page guards are live after relaunch'
+)
+assert(
+  applyActiveId.includes('setAppStorageValue<string>(StorageKeys.ACTIVE_ACCOUNT_ID'),
+  'AccountStore.applyActiveAccountId chokepoint must republish the active id to AppStorage'
 )
 
 const index = read('entry/src/main/ets/pages/Index.ets')

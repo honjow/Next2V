@@ -80,14 +80,22 @@ export class AuthSessionSettings {
   }
 
   static apply(snapshot: AuthSessionSnapshot): void {
+    const username = snapshot.username || ''
+    const avatar = snapshot.avatar || ''
+    const validatedAt = snapshot.validatedAt || 0
     setAppStorageValue<string>(StorageKeys.AUTH_LOGIN_MODE, snapshot.loginMode || 'none')
-    setAppStorageValue<string>(StorageKeys.AUTH_SESSION_USERNAME, snapshot.username || '')
-    setAppStorageValue<string>(StorageKeys.AUTH_SESSION_AVATAR, snapshot.avatar || '')
-    setAppStorageValue<number>(StorageKeys.AUTH_SESSION_VALIDATED_AT, snapshot.validatedAt || 0)
-    // Dual-write the V1 AppStorage signal (V1 @StorageLink readers) AND the V2 mirror
-    // (@ComponentV2 readers) from this single chokepoint so the two stores stay in lockstep.
+    setAppStorageValue<string>(StorageKeys.AUTH_SESSION_USERNAME, username)
+    setAppStorageValue<string>(StorageKeys.AUTH_SESSION_AVATAR, avatar)
+    setAppStorageValue<number>(StorageKeys.AUTH_SESSION_VALIDATED_AT, validatedAt)
+    // Dual-write the V1 AppStorage signal + identity (V1 @StorageLink readers) AND the V2 mirror
+    // (@ComponentV2 AccountPage/AccountDetailPage readers) from this single chokepoint so the two
+    // stores stay in lockstep.
     const updatedAt = Date.now()
     setAppStorageValue<number>(StorageKeys.AUTH_SESSION_UPDATED_AT, updatedAt)
-    connectAuthSessionSignal().updatedAt = updatedAt
+    const session = connectAuthSessionSignal()
+    session.username = username
+    session.avatar = avatar
+    session.validatedAt = validatedAt
+    session.updatedAt = updatedAt
   }
 }

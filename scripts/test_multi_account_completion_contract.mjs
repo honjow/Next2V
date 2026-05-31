@@ -105,8 +105,10 @@ const forbiddenMeTokens = [
 for (const token of forbiddenMeTokens) {
   assert(!accountPage.includes(token), `AccountPage.ets must not contain Me-tab management token: ${token}`)
 }
+// State Management V2 migration: @State -> @Local for the durable identity fallback fields.
 assert(
-  accountPage.includes('@State private activeAccountUsername') && accountPage.includes('@State private activeAccountAvatar'),
+  (accountPage.includes('@State private activeAccountUsername') || accountPage.includes('@Local private activeAccountUsername')) &&
+  (accountPage.includes('@State private activeAccountAvatar') || accountPage.includes('@Local private activeAccountAvatar')),
   'AccountPage must keep active AccountStore identity fallback state'
 )
 assert(
@@ -117,7 +119,9 @@ assert(
   accountPage.includes('this.activeAccountUsername') && accountPage.includes('this.activeAccountAvatar'),
   'AccountPage current identity must pass active AccountStore username/avatar fallback'
 )
-const refreshKeyHandlerMatch = accountPage.match(/onRefreshKeyChanged\(_propName: string\): void \{([\s\S]*?)\n  \}/)
+// State Management V2 migration: @Watch('onRefreshKeyChanged') -> @Monitor('refreshKey'); the V2 handler
+// signature dropped the (_propName) arg. Accept either form.
+const refreshKeyHandlerMatch = accountPage.match(/onRefreshKeyChanged\((?:_propName: string)?\): void \{([\s\S]*?)\n  \}/)
 assert(refreshKeyHandlerMatch, 'AccountPage must define onRefreshKeyChanged handler')
 assert(
   refreshKeyHandlerMatch[1].includes('this.loadAccounts()'),

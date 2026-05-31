@@ -1,12 +1,15 @@
 import { StorageKeys } from '../constants/StorageKeys'
 import type { LocalContentStats, TopicReadState } from './CollectionTypes'
 import { setAppStorageValue } from './SettingsStorage'
+import { connectLocalDataSignal } from '../state/LocalDataSignalState'
 import { connectTopicReadStates } from '../state/TopicReadStatesState'
 
 export class LocalDataPublisher {
   static touchLocalData(): void {
     const updatedAt = Date.now()
     setAppStorageValue<number>(StorageKeys.LOCAL_DATA_UPDATED_AT, updatedAt)
+    // Dual-write the V2 local-data-changed signal (read via @Monitor by @ComponentV2 AccountPage).
+    connectLocalDataSignal().updatedAt = updatedAt
   }
 
   static publishLocalContentStats(stats: LocalContentStats): void {

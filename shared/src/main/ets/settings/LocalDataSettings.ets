@@ -7,6 +7,7 @@ import { DraftSettings } from './DraftSettings'
 import { NotificationSettings } from './NotificationSettings'
 import { SearchSettings } from './SearchSettings'
 import { setAppStorageValue } from './SettingsStorage'
+import { connectLocalDataSignal } from '../state/LocalDataSignalState'
 
 export class LocalDataSettings {
   static async clearAll(context: common.UIAbilityContext): Promise<void> {
@@ -18,6 +19,9 @@ export class LocalDataSettings {
       TopicDetailActionOverlaySettings.clearAll(context),
       NotificationSettings.clearCache(context)
     ])
-    setAppStorageValue<number>(StorageKeys.LOCAL_DATA_UPDATED_AT, Math.floor(Date.now() / 1000))
+    const updatedAt = Math.floor(Date.now() / 1000)
+    setAppStorageValue<number>(StorageKeys.LOCAL_DATA_UPDATED_AT, updatedAt)
+    // Dual-write the V2 local-data-changed signal (read via @Monitor by @ComponentV2 AccountPage).
+    connectLocalDataSignal().updatedAt = updatedAt
   }
 }

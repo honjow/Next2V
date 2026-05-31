@@ -4,6 +4,7 @@ import { HttpRetryPolicy, HttpStatusError } from './HttpRetryPolicy'
 import { NetworkProxyRequest } from './NetworkProxyRequest'
 import { ApiConstants } from '../constants/ApiConstants'
 import { StorageKeys } from '../constants/StorageKeys'
+import { connectApiRateLimit } from '../state/ApiRateLimitState'
 import { HtmlEntityUtils } from '../utils/HtmlEntityUtils'
 import { V2exUrlRouter } from '../utils/V2exUrlRouter'
 import type { V2exNode, V2exReply, V2exTopic } from './NetworkTypes'
@@ -333,10 +334,18 @@ export class ApiV2Service {
       return
     }
     try {
+      const updatedAt = Math.floor(Date.now() / 1000)
       AppStorage.setOrCreate<number>(StorageKeys.API_RATE_LIMIT_LIMIT, rateLimit.limit)
       AppStorage.setOrCreate<number>(StorageKeys.API_RATE_LIMIT_REMAINING, rateLimit.remaining)
       AppStorage.setOrCreate<number>(StorageKeys.API_RATE_LIMIT_RESET, rateLimit.reset)
-      AppStorage.setOrCreate<number>(StorageKeys.API_RATE_LIMIT_UPDATED_AT, Math.floor(Date.now() / 1000))
+      AppStorage.setOrCreate<number>(StorageKeys.API_RATE_LIMIT_UPDATED_AT, updatedAt)
+      // Dual-write the V2 mirror (read by @ComponentV2 AccountPage rate-limit summary) from this
+      // single chokepoint so the two stores stay in lockstep.
+      const snapshot = connectApiRateLimit()
+      snapshot.limit = rateLimit.limit
+      snapshot.remaining = rateLimit.remaining
+      snapshot.reset = rateLimit.reset
+      snapshot.updatedAt = updatedAt
     } catch (e) {
       // ignore
     }

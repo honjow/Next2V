@@ -7,10 +7,19 @@ import {
   AccountStore,
   AccountMetaSettings,
   AccountSessionCoordinator,
+  ActiveAccountState,
   ApiService,
   AppStrings,
+  AuthCookieState,
+  AuthIdentityState,
+  AuthSessionSignalState,
   AuthSettings,
   AuthSessionSettings,
+  connectActiveAccount,
+  connectAuthCookie,
+  connectAuthIdentity,
+  connectAuthSessionSignal,
+  connectNavStack,
   CookieJarSettings,
   ConciseListRow,
   DiagnosticLogger,
@@ -31,47 +40,54 @@ import {
 import type { AccountRecord } from 'shared'
 import { AccountPageCoordinator } from '../model/AccountPageCoordinator'
 
-@Component
+@ComponentV2
 export struct AccountDetailPage {
-  @Consume('ns') ns: NavPathStack
-  @StorageLink(StorageKeys.AUTH_COOKIE_CONFIGURED) authCookieConfigured: boolean = false
-  @StorageLink(StorageKeys.AUTH_TOKEN_CONFIGURED) authTokenConfigured: boolean = false
-  @StorageLink(StorageKeys.AUTH_USERNAME) storedUsername: string = ''
-  @StorageLink(StorageKeys.AUTH_SESSION_USERNAME) sessionUsername: string = ''
-  @StorageLink(StorageKeys.AUTH_SESSION_AVATAR) sessionAvatar: string = ''
-  @StorageLink(StorageKeys.AUTH_SESSION_UPDATED_AT) @Watch('onAuthSessionUpdated') authSessionUpdatedAt: number = 0
-  @StorageLink(StorageKeys.ACTIVE_ACCOUNT_ID) @Watch('onActiveAccountChanged') activeAccountId: string = ''
+  // ns from NavStackHolder (was @Consume('ns')).
+  private ns: NavPathStack = connectNavStack().stack
+  // Auth/session/active-account read from their V2 mirrors (dual-written at the auth service
+  // chokepoints) — replaces the AUTH_* / ACTIVE_ACCOUNT_ID @StorageLink. The page never mutates these;
+  // the account state machine does, and the mirrors reflect it.
+  private authCookie: AuthCookieState = connectAuthCookie()
+  private authIdentity: AuthIdentityState = connectAuthIdentity()
+  private session: AuthSessionSignalState = connectAuthSessionSignal()
+  private activeAccount: ActiveAccountState = connectActiveAccount()
 
-  @State private authToken: string = ''
-  @State private authProfile: V2exAuthenticatedMember | null = null
-  @State private authError: string = ''
-  @State private accountBalance: V2exBalance | null = null
-  @State private dailyMission: V2exDailyMission | null = null
-  @State private accountMetaError: string = ''
-  @State private isAccountMetaLoading: boolean = false
-  @State private isDailyRedeeming: boolean = false
-  @State private isLoggingOut: boolean = false
-  @State private activeAccountUsername: string = ''
-  @State private activeAccountAvatar: string = ''
+  // storedUsername is the API-token fallback identity, page-managed (loaded from AuthSettings; cleared
+  // on logout) — not a mirror because the page is its own authority for this display value.
+  @Local private storedUsername: string = ''
+  @Local private authToken: string = ''
+  @Local private authProfile: V2exAuthenticatedMember | null = null
+  @Local private authError: string = ''
+  @Local private accountBalance: V2exBalance | null = null
+  @Local private dailyMission: V2exDailyMission | null = null
+  @Local private accountMetaError: string = ''
+  @Local private isAccountMetaLoading: boolean = false
+  @Local private isDailyRedeeming: boolean = false
+  @Local private isLoggingOut: boolean = false
+  @Local private activeAccountUsername: string = ''
+  @Local private activeAccountAvatar: string = ''
 
   private http: HttpClient = HttpClient.getInstance()
   private api: ApiService = new ApiService()
   private accountMetaRequestId: number = 0
 
   aboutToAppear(): void {
+    this.storedUsername = this.authIdentity.username
     this.loadAuthSnapshot()
     this.loadSessionSnapshot()
     this.loadAccounts()
   }
 
-  onAuthSessionUpdated(_propName: string): void {
+  @Monitor('session.updatedAt')
+  onAuthSessionUpdated(): void {
     this.resetAccountMeta()
     this.loadAccounts()
     this.loadAccountMetaCache()
     this.loadAccountMeta(true)
   }
 
-  onActiveAccountChanged(_propName: string): void {
+  @Monitor('activeAccount.id')
+  onActiveAccountChanged(): void {
     this.resetAccountMeta()
     this.loadAccounts()
     this.loadAccountMetaCache()
@@ -168,12 +184,12 @@ export struct AccountDetailPage {
   }
 
   private currentUsername(): string {
-    if (this.activeAccountId && this.activeAccountUsername) {
+    if (this.activeAccount.id && this.activeAccountUsername) {
       return this.activeAccountUsername
     }
     return AccountPageCoordinator.identity(
-      this.sessionUsername,
-      this.sessionAvatar,
+      this.session.username,
+      this.session.avatar,
       this.authProfile,
       this.storedUsername,
       this.activeAccountUsername,
@@ -182,12 +198,12 @@ export struct AccountDetailPage {
   }
 
   private currentAvatar(): string {
-    if (this.activeAccountId && this.activeAccountAvatar) {
+    if (this.activeAccount.id && this.activeAccountAvatar) {
       return this.activeAccountAvatar
     }
     return AccountPageCoordinator.identity(
-      this.sessionUsername,
-      this.sessionAvatar,
+      this.session.username,
+      this.session.avatar,
       this.authProfile,
       this.storedUsername,
       this.activeAccountUsername,
@@ -196,13 +212,13 @@ export struct AccountDetailPage {
   }
 
   private hasCookieAccount(): boolean {
-    return AccountPageCoordinator.hasCookieAccount(this.authCookieConfigured)
+    return AccountPageCoordinator.hasCookieAccount(this.authCookie.configured)
   }
 
   private accountMetaText(): ResourceStr {
     return AccountPageCoordinator.accountMetaText(
       this.hasCookieAccount(),
-      this.authTokenConfigured,
+      this.authIdentity.tokenConfigured,
       this.accountBalance,
       this.isAccountMetaLoading,
       this.accountMetaError
@@ -319,7 +335,7 @@ export struct AccountDetailPage {
   }
 
   private accountMetaSource(): string {
-    return this.activeAccountId ? 'cookie:' + this.activeAccountId : 'cookie'
+    return this.activeAccount.id ? 'cookie:' + this.activeAccount.id : 'cookie'
   }
 
   private resetAccountMeta(): void {
@@ -457,11 +473,11 @@ export struct AccountDetailPage {
     this.isLoggingOut = true
     AccountSessionCoordinator.removeActiveAccount(context)
       .then(() => {
+        // Session identity (username/avatar) is mirror-read now; removeActiveAccount applies the new
+        // session/logged-out state at the service, so no optimistic local clear is needed before pop.
         this.authToken = ''
         this.authProfile = null
         this.storedUsername = ''
-        this.sessionUsername = ''
-        this.sessionAvatar = ''
         this.accountBalance = null
         this.dailyMission = null
         this.accountMetaError = ''

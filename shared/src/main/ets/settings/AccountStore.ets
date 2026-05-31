@@ -2,6 +2,7 @@ import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
 import { HttpClient } from '../network/HttpClient'
 import { StorageKeys } from '../constants/StorageKeys'
+import { connectActiveAccount } from '../state/ActiveAccountState'
 import { setAppStorageValue } from './SettingsStorage'
 import { STORE_NAME_ACCOUNTS } from './SettingsStores'
 import { AuthSessionSettings } from './AuthSessionSettings'
@@ -120,7 +121,7 @@ export class AccountStore {
     if (AccountStore.activeAccountId === id) {
       AccountStore.activeAccountId = ''
       store.deleteSync(KEY_ACTIVE_ACCOUNT_ID)
-      setAppStorageValue<string>(StorageKeys.ACTIVE_ACCOUNT_ID, '')
+      AccountStore.applyActiveAccountId('')
     }
     store.flushSync()
   }
@@ -135,11 +136,20 @@ export class AccountStore {
       const e = error as Error
       throw new Error(e.message || AppStrings.text(AppStrings.R_ACCOUNT_ACTIVE_ID_SAVE_FAILED, 'Failed to save active account ID'))
     }
-    setAppStorageValue<string>(StorageKeys.ACTIVE_ACCOUNT_ID, id)
+    AccountStore.applyActiveAccountId(id)
   }
 
   static getActiveId(): string {
     return AccountStore.activeAccountId
+  }
+
+  // Single chokepoint for the active-account-id AppStorage write: dual-write the V1 key (V1
+  // @StorageLink readers) AND the V2 mirror (read/@Monitor by @ComponentV2 AccountPage /
+  // AccountDetailPage) so they never diverge. This only reflects WHICH account is active; the
+  // switch/remove/restore state machine above still owns the actual transition.
+  private static applyActiveAccountId(id: string): void {
+    setAppStorageValue<string>(StorageKeys.ACTIVE_ACCOUNT_ID, id)
+    connectActiveAccount().id = id
   }
 
   /**
@@ -152,7 +162,7 @@ export class AccountStore {
       const persisted = store.getSync(KEY_ACTIVE_ACCOUNT_ID, '') as string
       if (persisted) {
         AccountStore.activeAccountId = persisted
-        setAppStorageValue<string>(StorageKeys.ACTIVE_ACCOUNT_ID, persisted)
+        AccountStore.applyActiveAccountId(persisted)
       }
     } catch {
       // Retain current transient value on read failure
@@ -168,7 +178,7 @@ export class AccountStore {
       store.deleteSync(KEY_ACTIVE_ACCOUNT_ID)
       store.flushSync()
       AccountStore.activeAccountId = ''
-      setAppStorageValue<string>(StorageKeys.ACTIVE_ACCOUNT_ID, '')
+      AccountStore.applyActiveAccountId('')
     } catch (error) {
       const e = error as Error
       throw new Error(e.message || AppStrings.text(AppStrings.R_ACCOUNT_CLEAR_DATA_FAILED, 'Failed to clear account data'))

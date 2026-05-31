@@ -1,6 +1,7 @@
 import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
 import { StorageKeys } from '../constants/StorageKeys'
+import { connectAuthIdentity } from '../state/AuthIdentityState'
 import { setAppStorageValue } from './SettingsStorage'
 import { STORE_NAME_AUTH } from './SettingsStores'
 
@@ -57,7 +58,13 @@ export class AuthSettings {
   }
 
   static apply(token: string, username: string): void {
-    setAppStorageValue<boolean>(StorageKeys.AUTH_TOKEN_CONFIGURED, token.trim().length > 0)
+    const tokenConfigured = token.trim().length > 0
+    setAppStorageValue<boolean>(StorageKeys.AUTH_TOKEN_CONFIGURED, tokenConfigured)
     setAppStorageValue<string>(StorageKeys.AUTH_USERNAME, username)
+    // Dual-write the V2 mirror (read by @ComponentV2 AccountPage) from this single chokepoint
+    // (load / saveToken / clear all route through apply) so the two stores stay in lockstep.
+    const identity = connectAuthIdentity()
+    identity.tokenConfigured = tokenConfigured
+    identity.username = username
   }
 }

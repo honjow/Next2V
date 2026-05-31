@@ -23,16 +23,30 @@ import {
 } from 'shared'
 import type { AccountRecord } from 'shared'
 import {
+  ActiveAccountState,
   ApiService,
+  ApiRateLimitState,
   AccountMetaSettings,
+  AuthCookieState,
+  AuthIdentityState,
+  AuthSessionSignalState,
   AuthSessionSettings,
   AuthSettings,
+  connectActiveAccount,
+  connectApiRateLimit,
+  connectAuthCookie,
+  connectAuthIdentity,
+  connectAuthSessionSignal,
+  connectLocalDataSignal,
+  connectNavStack,
   ConciseListRow,
   CookieJarSettings,
   DiagnosticLogger,
   GroupedListSection,
   HttpClient,
   ListDivider as SharedListDivider,
+  LocalDataPublisher,
+  LocalDataSignalState,
   NotificationSettings,
   SecondaryListScaffold,
   SectionHeader as SharedSectionHeader,
@@ -47,38 +61,38 @@ import {
 import { AccountLocalContentCoordinator } from '../model/AccountLocalContentCoordinator'
 import { AccountPageCoordinator } from '../model/AccountPageCoordinator'
 
-@Component
+@ComponentV2
 export struct AccountDashboardPage {
-  @Consume('ns') ns: NavPathStack
-  @StorageLink(StorageKeys.AUTH_TOKEN_CONFIGURED) authTokenConfigured: boolean = false
-  @StorageLink(StorageKeys.AUTH_COOKIE_CONFIGURED) authCookieConfigured: boolean = false
-  @StorageLink(StorageKeys.AUTH_USERNAME) storedUsername: string = ''
-  @StorageLink(StorageKeys.AUTH_SESSION_USERNAME) sessionUsername: string = ''
-  @StorageLink(StorageKeys.AUTH_SESSION_AVATAR) sessionAvatar: string = ''
-  @StorageLink(StorageKeys.AUTH_SESSION_VALIDATED_AT) sessionValidatedAt: number = 0
-  @StorageLink(StorageKeys.AUTH_SESSION_UPDATED_AT) @Watch('onAuthSessionUpdated') authSessionUpdatedAt: number = 0
-  @StorageLink(StorageKeys.ACTIVE_ACCOUNT_ID) @Watch('onActiveAccountChanged') activeAccountId: string = ''
-  @StorageLink(StorageKeys.API_RATE_LIMIT_LIMIT) apiRateLimitLimit: number = 0
-  @StorageLink(StorageKeys.API_RATE_LIMIT_REMAINING) apiRateLimitRemaining: number = 0
-  @StorageLink(StorageKeys.API_RATE_LIMIT_RESET) apiRateLimitReset: number = 0
-  @StorageLink(StorageKeys.API_RATE_LIMIT_UPDATED_AT) apiRateLimitUpdatedAt: number = 0
-  @StorageLink(StorageKeys.LOCAL_DATA_UPDATED_AT) @Watch('onLocalDataUpdated') localDataUpdatedAt: number = 0
-  @StorageLink(StorageKeys.LOCAL_SAVED_TOPIC_COUNT) savedTopicCount: number = 0
-  @StorageLink(StorageKeys.LOCAL_SAVED_NODE_COUNT) savedNodeCount: number = 0
-  @StorageLink(StorageKeys.LOCAL_VIEWED_TOPIC_COUNT) viewedTopicCount: number = 0
-  @State private authToken: string = ''
-  @State private authProfile: V2exAuthenticatedMember | null = null
-  @State private tokenInfo: V2exTokenInfo | null = null
-  @State private tokenInfoError: string = ''
-  @State private authError: string = ''
-  @State private sessionError: string = ''
-  @State private isSessionValidating: boolean = false
-  @State private isAuthLoading: boolean = false
-  @State private accountBalance: V2exBalance | null = null
-  @State private dailyMission: V2exDailyMission | null = null
-  @State private accountMetaError: string = ''
-  @State private isAccountMetaLoading: boolean = false
-  @State private isDailyRedeeming: boolean = false
+  // ns from NavStackHolder (was @Consume('ns')).
+  private ns: NavPathStack = connectNavStack().stack
+  // Auth/session/active-account/rate-limit/local-data read from their V2 mirrors (each dual-written at
+  // its service chokepoint) — replaces the AUTH_* / ACTIVE_ACCOUNT_ID / API_RATE_LIMIT_* / LOCAL_DATA_*
+  // @StorageLink. The @Monitor methods below replace the former @Watch reactions.
+  private authIdentity: AuthIdentityState = connectAuthIdentity()
+  private authCookie: AuthCookieState = connectAuthCookie()
+  private session: AuthSessionSignalState = connectAuthSessionSignal()
+  private activeAccount: ActiveAccountState = connectActiveAccount()
+  private rateLimit: ApiRateLimitState = connectApiRateLimit()
+  private localData: LocalDataSignalState = connectLocalDataSignal()
+  // storedUsername is the API-token fallback identity, page-managed; the local counts are page-computed
+  // and re-published to AppStorage (LocalDataPublisher) so other readers / a cold open still see them.
+  @Local private storedUsername: string = ''
+  @Local private savedTopicCount: number = 0
+  @Local private savedNodeCount: number = 0
+  @Local private viewedTopicCount: number = 0
+  @Local private authToken: string = ''
+  @Local private authProfile: V2exAuthenticatedMember | null = null
+  @Local private tokenInfo: V2exTokenInfo | null = null
+  @Local private tokenInfoError: string = ''
+  @Local private authError: string = ''
+  @Local private sessionError: string = ''
+  @Local private isSessionValidating: boolean = false
+  @Local private isAuthLoading: boolean = false
+  @Local private accountBalance: V2exBalance | null = null
+  @Local private dailyMission: V2exDailyMission | null = null
+  @Local private accountMetaError: string = ''
+  @Local private isAccountMetaLoading: boolean = false
+  @Local private isDailyRedeeming: boolean = false
   private http: HttpClient = HttpClient.getInstance()
   private api: ApiService = new ApiService()
   private localStatsRequestId: number = 0
@@ -86,15 +100,17 @@ export struct AccountDashboardPage {
   private accountListInFlight: boolean = false
   private dashboardRefreshTimerId: number = -1
   private accountMetaRequestId: number = 0
-  @State private accountsCount: number = 0
-  @State private isAccountsLoaded: boolean = false
-  @State private activeAccountUsername: string = ''
-  @State private activeAccountAvatar: string = ''
-  @Prop @Watch('onRefreshKeyChanged') refreshKey: number = 0
-  scroller: Scroller = new Scroller()
-  onDidScroll?: (offset: number, state: ScrollState) => void
+  @Local private accountsCount: number = 0
+  @Local private isAccountsLoaded: boolean = false
+  @Local private activeAccountUsername: string = ''
+  @Local private activeAccountAvatar: string = ''
+  @Param refreshKey: number = 0
+  @Param scroller: Scroller = new Scroller()
+  @Event onDidScroll?: (offset: number, state: ScrollState) => void
 
   aboutToAppear(): void {
+    this.hydrateLocalCounts()
+    this.storedUsername = this.authIdentity.username
     this.loadAuthSnapshot()
     this.loadSessionSnapshot()
     this.requestDashboardRefresh('appear')
@@ -104,15 +120,26 @@ export struct AccountDashboardPage {
     this.clearDashboardRefreshTimer()
   }
 
-  onLocalDataUpdated(_propName: string): void {
+  // Hydrate the page-computed local counts from their AppStorage cache (kept fresh by
+  // LocalDataPublisher) so they render immediately before the async refresh completes.
+  private hydrateLocalCounts(): void {
+    this.savedTopicCount = AppStorage.get<number>(StorageKeys.LOCAL_SAVED_TOPIC_COUNT) ?? 0
+    this.savedNodeCount = AppStorage.get<number>(StorageKeys.LOCAL_SAVED_NODE_COUNT) ?? 0
+    this.viewedTopicCount = AppStorage.get<number>(StorageKeys.LOCAL_VIEWED_TOPIC_COUNT) ?? 0
+  }
+
+  @Monitor('localData.updatedAt')
+  onLocalDataUpdated(): void {
     this.requestDashboardRefresh('local_data_updated')
   }
 
-  onRefreshKeyChanged(_propName: string): void {
+  @Monitor('refreshKey')
+  onRefreshKeyChanged(): void {
     this.requestDashboardRefresh('refresh_key')
   }
 
-  onAuthSessionUpdated(_propName: string): void {
+  @Monitor('session.updatedAt')
+  onAuthSessionUpdated(): void {
     const cookie = CookieJarSettings.getCurrentCookie()
     this.loadAccounts()
     if (!cookie) {
@@ -126,7 +153,8 @@ export struct AccountDashboardPage {
     this.loadAccountMeta(true)
   }
 
-  onActiveAccountChanged(_propName: string): void {
+  @Monitor('activeAccount.id')
+  onActiveAccountChanged(): void {
     this.loadAccounts()
     this.resetAccountMeta()
     this.loadAccountMetaCache()
@@ -312,10 +340,10 @@ export struct AccountDashboardPage {
       if (this.hasApiRateLimitSnapshot()) {
         this.SettingsDivider()
         AccountRateLimitSummary({
-          limit: this.apiRateLimitLimit,
-          remaining: this.apiRateLimitRemaining,
-          resetAt: this.apiRateLimitReset,
-          updatedAt: this.apiRateLimitUpdatedAt
+          limit: this.rateLimit.limit,
+          remaining: this.rateLimit.remaining,
+          resetAt: this.rateLimit.reset,
+          updatedAt: this.rateLimit.updatedAt
         })
       }
 
@@ -407,15 +435,15 @@ export struct AccountDashboardPage {
   }
 
   private hasCookieAccount(): boolean {
-    return AccountPageCoordinator.hasCookieAccount(this.authCookieConfigured)
+    return AccountPageCoordinator.hasCookieAccount(this.authCookie.configured)
   }
 
   private hasAnyAccount(): boolean {
     return AccountPageCoordinator.hasAnyAccount(
-      this.authCookieConfigured,
-      this.authTokenConfigured,
+      this.authCookie.configured,
+      this.authIdentity.tokenConfigured,
       this.accountsCount,
-      this.sessionUsername
+      this.session.username
     )
   }
 
@@ -428,9 +456,9 @@ export struct AccountDashboardPage {
   }
 
   private hasRestoredActiveAccountIdentity(): boolean {
-    return !!this.activeAccountId &&
+    return !!this.activeAccount.id &&
       this.hasCookieAccount() &&
-      !!(this.activeAccountUsername || this.sessionUsername)
+      !!(this.activeAccountUsername || this.session.username)
   }
 
   private loadAccounts(): void {
@@ -495,12 +523,12 @@ export struct AccountDashboardPage {
   }
 
   private currentUsername(): string {
-    if (this.activeAccountId && this.activeAccountUsername) {
+    if (this.activeAccount.id && this.activeAccountUsername) {
       return this.activeAccountUsername
     }
     return AccountPageCoordinator.identity(
-      this.sessionUsername,
-      this.sessionAvatar,
+      this.session.username,
+      this.session.avatar,
       this.authProfile,
       this.storedUsername,
       this.activeAccountUsername,
@@ -509,12 +537,12 @@ export struct AccountDashboardPage {
   }
 
   private currentAvatar(): string {
-    if (this.activeAccountId && this.activeAccountAvatar) {
+    if (this.activeAccount.id && this.activeAccountAvatar) {
       return this.activeAccountAvatar
     }
     return AccountPageCoordinator.identity(
-      this.sessionUsername,
-      this.sessionAvatar,
+      this.session.username,
+      this.session.avatar,
       this.authProfile,
       this.storedUsername,
       this.activeAccountUsername,
@@ -525,7 +553,7 @@ export struct AccountDashboardPage {
   private accountMetaText(): ResourceStr {
     return AccountPageCoordinator.accountMetaText(
       this.hasCookieAccount(),
-      this.authTokenConfigured,
+      this.authIdentity.tokenConfigured,
       this.accountBalance,
       this.isAccountMetaLoading,
       this.accountMetaError
@@ -571,9 +599,9 @@ export struct AccountDashboardPage {
 
   private hasApiRateLimitSnapshot(): boolean {
     return AccountPageCoordinator.hasApiRateLimitSnapshot(
-      this.apiRateLimitLimit,
-      this.apiRateLimitUpdatedAt,
-      this.apiRateLimitReset
+      this.rateLimit.limit,
+      this.rateLimit.updatedAt,
+      this.rateLimit.reset
     )
   }
 
@@ -626,7 +654,7 @@ export struct AccountDashboardPage {
       return
     }
     const now = Date.now()
-    if (!force && this.sessionValidatedAt > 0 && now - this.sessionValidatedAt < 10 * 60 * 1000) {
+    if (!force && this.session.validatedAt > 0 && now - this.session.validatedAt < 10 * 60 * 1000) {
       DiagnosticLogger.info('account', 'account_session_validate_skip', { reason: 'recent', force: force })
       return
     }
@@ -741,7 +769,7 @@ export struct AccountDashboardPage {
   }
 
   private confirmClearAuth(): void {
-    if (!this.authTokenConfigured || this.isAuthLoading) {
+    if (!this.authIdentity.tokenConfigured || this.isAuthLoading) {
       return
     }
     this.getUIContext().showAlertDialog({
@@ -793,7 +821,7 @@ export struct AccountDashboardPage {
   }
 
   private accountMetaSource(): string {
-    return this.activeAccountId ? 'cookie:' + this.activeAccountId : 'cookie'
+    return this.activeAccount.id ? 'cookie:' + this.activeAccount.id : 'cookie'
   }
 
   private resetAccountMeta(): void {
@@ -988,6 +1016,9 @@ export struct AccountDashboardPage {
         this.savedTopicCount = stats.savedTopicCount
         this.savedNodeCount = stats.savedNodeCount
         this.viewedTopicCount = stats.viewedTopicCount
+        // Re-publish to AppStorage (was the @StorageLink write-back) so other readers / a cold open
+        // see the freshly computed counts.
+        LocalDataPublisher.publishLocalContentStats(stats)
       })
       .catch((error: Error) => {
         console.error('load local content stats failed: ' + error.message)

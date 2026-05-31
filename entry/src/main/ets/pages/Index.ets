@@ -23,6 +23,7 @@ import {
   AuthSettings,
   connectAccountWebViewAction,
   connectImagePreviewAction,
+  connectLocalDataSignal,
   connectNativeLoginShown,
   connectNavStack,
   connectNodeTopicAction,
@@ -902,6 +903,8 @@ struct Index {
     if (!AppStorage.set<number>(StorageKeys.LOCAL_DATA_UPDATED_AT, updatedAt)) {
       AppStorage.setOrCreate<number>(StorageKeys.LOCAL_DATA_UPDATED_AT, updatedAt)
     }
+    // Dual-write the V2 local-data-changed signal (read via @Monitor by @ComponentV2 AccountPage).
+    connectLocalDataSignal().updatedAt = updatedAt
   }
 
   private sendNodeTopicAction(nodeName: string, action: string): void {
