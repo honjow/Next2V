@@ -42,17 +42,22 @@ export class ReadingSettings {
   static apply(textScaleSource: number, lineHeight: number, density: string, restorePosition: boolean = false): void {
     const normalizedTextScale = ReadingSettings.normalizeTextScale(textScaleSource)
     const normalizedLineHeight = ReadingSettings.normalizeLineHeight(lineHeight, normalizedTextScale)
+    const normalizedDensity = ReadingSettings.normalizeDensity(density)
+    // apply() does not take base64-mode; preserve (re-normalize) the current AppStorage value.
+    const normalizedBase64 = ReadingSettings.normalizeBase64DecodeMode(
+      AppStorage.get<string>(StorageKeys.READING_BASE64_DECODE_MODE) ?? BASE64_MODE_BADGE)
     setAppStorageValue<number>(StorageKeys.READING_TEXT_SCALE, normalizedTextScale)
     setAppStorageValue<number>(StorageKeys.READING_LINE_HEIGHT, normalizedLineHeight)
-    // V2 mirror dual-write: keeps @ComponentV2 readers (e.g. MarkdownCodeBlock) in sync
-    // with the V1 AppStorage keys read by @StorageLink/@StorageProp consumers.
+    setAppStorageValue<string>(StorageKeys.READING_DENSITY, normalizedDensity)
+    setAppStorageValue<boolean>(StorageKeys.READING_RESTORE_POSITION, restorePosition)
+    setAppStorageValue<string>(StorageKeys.READING_BASE64_DECODE_MODE, normalizedBase64)
+    // V2 mirror dual-write: keeps @ComponentV2 readers (e.g. MarkdownCodeBlock, MarkdownContent)
+    // in sync with the V1 AppStorage keys read by @StorageLink/@StorageProp consumers.
     const readingState = connectReadingSettings()
     readingState.textScale = normalizedTextScale
     readingState.lineHeight = normalizedLineHeight
-    setAppStorageValue<string>(StorageKeys.READING_DENSITY, ReadingSettings.normalizeDensity(density))
-    setAppStorageValue<boolean>(StorageKeys.READING_RESTORE_POSITION, restorePosition)
-    setAppStorageValue<string>(StorageKeys.READING_BASE64_DECODE_MODE,
-      ReadingSettings.normalizeBase64DecodeMode(AppStorage.get<string>(StorageKeys.READING_BASE64_DECODE_MODE) ?? BASE64_MODE_BADGE))
+    readingState.density = normalizedDensity
+    readingState.base64DecodeMode = normalizedBase64
   }
 
   static async load(context: common.UIAbilityContext): Promise<ReadingSettingsSnapshot> {
@@ -72,7 +77,10 @@ export class ReadingSettings {
     const restorePosition = store.getSync(KEY_RESTORE_POSITION, false) as boolean
     const base64DecodeMode = ReadingSettings.normalizeBase64DecodeMode(store.getSync(KEY_BASE64_DECODE_MODE, BASE64_MODE_BADGE) as string)
     ReadingSettings.apply(textScale, lineHeight, density, restorePosition)
+    // apply() preserves the prior base64 value; here the store value is authoritative, so
+    // write it (and its V2 mirror) after apply.
     setAppStorageValue<string>(StorageKeys.READING_BASE64_DECODE_MODE, base64DecodeMode)
+    connectReadingSettings().base64DecodeMode = base64DecodeMode
     return {
       textScale: textScale,
       lineHeight: lineHeight,
@@ -133,6 +141,7 @@ export class ReadingSettings {
   static async saveBase64DecodeMode(context: common.UIAbilityContext, mode: string): Promise<void> {
     const normalized = ReadingSettings.normalizeBase64DecodeMode(mode)
     setAppStorageValue<string>(StorageKeys.READING_BASE64_DECODE_MODE, normalized)
+    connectReadingSettings().base64DecodeMode = normalized
     try {
       const store = await preferences.getPreferences(context, STORE_NAME)
       store.putSync(KEY_BASE64_DECODE_MODE, normalized)

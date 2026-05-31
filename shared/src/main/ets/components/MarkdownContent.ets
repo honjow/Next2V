@@ -2,9 +2,11 @@ import { common, Want } from "@kit.AbilityKit";
 import { pasteboard } from "@kit.BasicServicesKit";
 import { connection } from "@kit.NetworkKit";
 import { promptAction } from "@kit.ArkUI";
-import { StorageKeys } from "../constants/StorageKeys";
 import { AppStrings } from "../i18n/AppStrings";
 import { ReadingSettings } from "../settings/ReadingSettings";
+import { connectReadingSettings, ReadingSettingsState } from "../state/ReadingSettingsState";
+import { connectThemeDisplay, ThemeDisplayState } from "../state/ThemeDisplayState";
+import { connectMediaSettings, MediaSettingsState } from "../state/MediaSettingsState";
 import { ThemeConstants } from "../theme/ThemeConstants";
 import { MediaUrlUtils } from "../utils/MediaUrlUtils";
 import { DiagnosticLogger } from "../diagnostics/DiagnosticLogger";
@@ -530,13 +532,13 @@ function _tokensContainBase64Decode(tokens: Token[]): boolean {
   return false;
 }
 
-@Component
+@ComponentV2
 struct Base64PopupBadge {
-  @Prop token: Base64DecodeToken;
-  @Prop tokenIndex: number = 0;
-  @Prop fontSize: number = RENDER_BODY_FONT_SIZE;
-  @Prop base64PopupScope: string = "inline";
-  @State private isPopupVisible: boolean = false;
+  @Require @Param token: Base64DecodeToken;
+  @Param tokenIndex: number = 0;
+  @Param fontSize: number = RENDER_BODY_FONT_SIZE;
+  @Param base64PopupScope: string = "inline";
+  @Local private isPopupVisible: boolean = false;
 
   @Builder
   Base64PopupContent() {
@@ -783,28 +785,28 @@ function SelectableInlineTokenSpans(
   }, (t: Token, tokenIndex: number) => _inlineTokenKey(t, tokenIndex));
 }
 
-@Component
+@ComponentV2
 struct SelectableInlineTokenFlow {
-  @Prop tokens: Token[] = [];
-  @Prop fontSize: number = RENDER_BODY_FONT_SIZE;
-  @Prop fontColor: ResourceColor = ThemeConstants.TEXT_PRIMARY;
-  @Prop fontWeight: FontWeight = FontWeight.Regular;
-  @Prop lineHeight: number = RENDER_BODY_LINE_HEIGHT;
-  @Prop textAlign: TextAlign = TextAlign.Start;
-  @Prop wordBreak: WordBreak = WordBreak.BREAK_WORD;
-  @Prop copyOption: CopyOptions = CopyOptions.LocalDevice;
-  @Prop textSelectable: TextSelectableMode = TextSelectableMode.SELECTABLE_FOCUSABLE;
-  @Prop contentSelectable: boolean = true;
-  @Prop options: MarkdownOptions;
-  @Prop inlineImageSizeRecords: InlineImageSizeRecord[] = [];
-  reportImageComplete?: InlineImageCompleteReporter;
-  reportImageError?: InlineImageErrorReporter;
-  @Prop availableWidth: number = 0;
-  @Prop base64DecodeMode: string = ReadingSettings.BASE64_MODE_BADGE;
-  @Prop activeBase64PopupKey: string = "";
-  showBase64Popup?: (key: string) => void;
-  hideBase64Popup?: (key: string) => void;
-  @Prop base64PopupScope: string = "inline";
+  @Param tokens: Token[] = [];
+  @Param fontSize: number = RENDER_BODY_FONT_SIZE;
+  @Param fontColor: ResourceColor = ThemeConstants.TEXT_PRIMARY;
+  @Param fontWeight: FontWeight = FontWeight.Regular;
+  @Param lineHeight: number = RENDER_BODY_LINE_HEIGHT;
+  @Param textAlign: TextAlign = TextAlign.Start;
+  @Param wordBreak: WordBreak = WordBreak.BREAK_WORD;
+  @Param copyOption: CopyOptions = CopyOptions.LocalDevice;
+  @Param textSelectable: TextSelectableMode = TextSelectableMode.SELECTABLE_FOCUSABLE;
+  @Param contentSelectable: boolean = true;
+  @Require @Param options: MarkdownOptions;
+  @Param inlineImageSizeRecords: InlineImageSizeRecord[] = [];
+  @Event reportImageComplete?: InlineImageCompleteReporter;
+  @Event reportImageError?: InlineImageErrorReporter;
+  @Param availableWidth: number = 0;
+  @Param base64DecodeMode: string = ReadingSettings.BASE64_MODE_BADGE;
+  @Param activeBase64PopupKey: string = "";
+  @Event showBase64Popup?: (key: string) => void;
+  @Event hideBase64Popup?: (key: string) => void;
+  @Param base64PopupScope: string = "inline";
 
   build() {
     Flex({ wrap: FlexWrap.Wrap }) {
@@ -880,29 +882,29 @@ struct SelectableInlineTokenFlow {
   }
 }
 
-@Component
+@ComponentV2
 struct MarkdownInlineText {
-  @Prop tokens: Token[] = [];
-  @Prop fontSize: number = RENDER_BODY_FONT_SIZE;
-  @Prop fontColor: ResourceColor = ThemeConstants.TEXT_PRIMARY;
-  @Prop fontWeight: FontWeight = FontWeight.Regular;
-  @Prop lineHeight: number = RENDER_BODY_LINE_HEIGHT;
-  @Prop textAlign: TextAlign = TextAlign.Start;
-  @Prop wordBreak: WordBreak = WordBreak.BREAK_WORD;
-  @Prop copyOption: CopyOptions = CopyOptions.LocalDevice;
-  @Prop textSelectable: TextSelectableMode = TextSelectableMode.SELECTABLE_FOCUSABLE;
-  @Prop contentSelectable: boolean = true;
-  @Prop options: MarkdownOptions;
-  @Prop inlineImageSizeRecords: InlineImageSizeRecord[] = [];
-  reportImageComplete?: InlineImageCompleteReporter;
-  reportImageError?: InlineImageErrorReporter;
-  @Prop availableWidth: number = 0;
-  @Prop base64DecodeMode: string = ReadingSettings.BASE64_MODE_BADGE;
-  @Prop activeBase64PopupKey: string = "";
-  showBase64Popup?: (key: string) => void;
-  hideBase64Popup?: (key: string) => void;
-  @Prop base64PopupScope: string = "inline";
-  onMeasured?: (area: Area) => void;
+  @Param tokens: Token[] = [];
+  @Param fontSize: number = RENDER_BODY_FONT_SIZE;
+  @Param fontColor: ResourceColor = ThemeConstants.TEXT_PRIMARY;
+  @Param fontWeight: FontWeight = FontWeight.Regular;
+  @Param lineHeight: number = RENDER_BODY_LINE_HEIGHT;
+  @Param textAlign: TextAlign = TextAlign.Start;
+  @Param wordBreak: WordBreak = WordBreak.BREAK_WORD;
+  @Param copyOption: CopyOptions = CopyOptions.LocalDevice;
+  @Param textSelectable: TextSelectableMode = TextSelectableMode.SELECTABLE_FOCUSABLE;
+  @Param contentSelectable: boolean = true;
+  @Require @Param options: MarkdownOptions;
+  @Param inlineImageSizeRecords: InlineImageSizeRecord[] = [];
+  @Event reportImageComplete?: InlineImageCompleteReporter;
+  @Event reportImageError?: InlineImageErrorReporter;
+  @Param availableWidth: number = 0;
+  @Param base64DecodeMode: string = ReadingSettings.BASE64_MODE_BADGE;
+  @Param activeBase64PopupKey: string = "";
+  @Event showBase64Popup?: (key: string) => void;
+  @Event hideBase64Popup?: (key: string) => void;
+  @Param base64PopupScope: string = "inline";
+  @Event onMeasured?: (area: Area) => void;
 
   @Builder
   InlineSpans() {
@@ -965,19 +967,20 @@ struct MarkdownInlineText {
   }
 }
 
-@Component
+@ComponentV2
 struct MarkdownParagraph {
-  @Prop paragraphToken: Tokens.Paragraph;
-  @Prop options: MarkdownOptions;
-  @Prop inlineImageSizeRecords: InlineImageSizeRecord[] = [];
-  @Prop contentAvailableWidth: number = 0;
-  reportImageComplete?: InlineImageCompleteReporter;
-  reportImageError?: InlineImageErrorReporter;
-  @StorageLink(StorageKeys.READING_TEXT_SCALE) readingTextScale: number = ReadingSettings.TEXT_SCALE_DEFAULT;
-  @StorageLink(StorageKeys.READING_LINE_HEIGHT) readingLineHeight: number = ThemeConstants.LINE_HEIGHT_BODY;
-  @StorageLink(StorageKeys.READING_BASE64_DECODE_MODE) base64DecodeMode: string = ReadingSettings.BASE64_MODE_BADGE;
-  @State private paragraphAvailableWidth: number = 0;
-  @State private activeBase64PopupKey: string = "";
+  @Require @Param paragraphToken: Tokens.Paragraph;
+  @Require @Param options: MarkdownOptions;
+  @Param inlineImageSizeRecords: InlineImageSizeRecord[] = [];
+  @Param contentAvailableWidth: number = 0;
+  @Event reportImageComplete?: InlineImageCompleteReporter;
+  @Event reportImageError?: InlineImageErrorReporter;
+  // Reading text-scale + base64 mode mirrored into AppStorageV2 by ReadingSettings
+  // (was @StorageLink READING_TEXT_SCALE / READING_BASE64_DECODE_MODE; READING_LINE_HEIGHT
+  // was bound but unused — typography scales off text-scale, not the stored line height).
+  private reading: ReadingSettingsState = connectReadingSettings();
+  @Local private paragraphAvailableWidth: number = 0;
+  @Local private activeBase64PopupKey: string = "";
 
   private showBase64Popup(key: string): void {
     this.activeBase64PopupKey = "";
@@ -1004,11 +1007,11 @@ struct MarkdownParagraph {
   }
 
   private bodyFontSize(): number {
-    return ReadingSettings.scaleTypographyToken(RENDER_BODY_FONT_SIZE, this.readingTextScale);
+    return ReadingSettings.scaleTypographyToken(RENDER_BODY_FONT_SIZE, this.reading.textScale);
   }
 
   private bodyLineHeight(): number {
-    return ReadingSettings.scaleTypographyToken(RENDER_BODY_LINE_HEIGHT, this.readingTextScale);
+    return ReadingSettings.scaleTypographyToken(RENDER_BODY_LINE_HEIGHT, this.reading.textScale);
   }
 
   private inlineTokens(): Token[] {
@@ -1052,7 +1055,7 @@ struct MarkdownParagraph {
               options: this.options,
             });
           } else if (token && token.type !== "br" && String((token as TokenRecord).text ?? (token as TokenRecord).raw ?? "").trim().length > 0) {
-            if (this.base64DecodeMode === ReadingSettings.BASE64_MODE_BADGE && _tokensContainBase64Decode([token])) {
+            if (this.reading.base64DecodeMode === ReadingSettings.BASE64_MODE_BADGE && _tokensContainBase64Decode([token])) {
               SelectableInlineTokenFlow({
                 tokens: [token],
                 fontSize: this.bodyFontSize(),
@@ -1069,7 +1072,7 @@ struct MarkdownParagraph {
                 reportImageComplete: this.reportImageComplete,
                 reportImageError: this.reportImageError,
                 availableWidth: this.inlineContentMaxWidth(),
-                base64DecodeMode: this.base64DecodeMode,
+                base64DecodeMode: this.reading.base64DecodeMode,
                 activeBase64PopupKey: this.activeBase64PopupKey,
                 showBase64Popup: (key: string) => { this.showBase64Popup(key); },
                 hideBase64Popup: (key: string) => { this.hideBase64Popup(key); },
@@ -1095,7 +1098,7 @@ struct MarkdownParagraph {
                 reportImageComplete: this.reportImageComplete,
                 reportImageError: this.reportImageError,
                 availableWidth: this.inlineContentMaxWidth(),
-                base64DecodeMode: this.base64DecodeMode,
+                base64DecodeMode: this.reading.base64DecodeMode,
                 activeBase64PopupKey: this.activeBase64PopupKey,
                 showBase64Popup: (key: string) => { this.showBase64Popup(key); },
                 hideBase64Popup: (key: string) => { this.hideBase64Popup(key); },
@@ -1109,7 +1112,7 @@ struct MarkdownParagraph {
       .width("100%")
       .alignItems(HorizontalAlign.Start)
     } else if (this.hasInlineImage()) {
-      if (this.base64DecodeMode === ReadingSettings.BASE64_MODE_BADGE && _tokensContainBase64Decode(this.inlineTokens())) {
+      if (this.reading.base64DecodeMode === ReadingSettings.BASE64_MODE_BADGE && _tokensContainBase64Decode(this.inlineTokens())) {
         SelectableInlineTokenFlow({
           tokens: this.inlineTokens(),
           fontSize: this.bodyFontSize(),
@@ -1126,7 +1129,7 @@ struct MarkdownParagraph {
           reportImageComplete: this.reportImageComplete,
           reportImageError: this.reportImageError,
           availableWidth: this.inlineContentMaxWidth(),
-          base64DecodeMode: this.base64DecodeMode,
+          base64DecodeMode: this.reading.base64DecodeMode,
           activeBase64PopupKey: this.activeBase64PopupKey,
           showBase64Popup: (key: string) => { this.showBase64Popup(key); },
           hideBase64Popup: (key: string) => { this.hideBase64Popup(key); },
@@ -1152,7 +1155,7 @@ struct MarkdownParagraph {
           reportImageComplete: this.reportImageComplete,
           reportImageError: this.reportImageError,
           availableWidth: this.inlineContentMaxWidth(),
-          base64DecodeMode: this.base64DecodeMode,
+          base64DecodeMode: this.reading.base64DecodeMode,
           activeBase64PopupKey: this.activeBase64PopupKey,
           showBase64Popup: (key: string) => { this.showBase64Popup(key); },
           hideBase64Popup: (key: string) => { this.hideBase64Popup(key); },
@@ -1161,7 +1164,7 @@ struct MarkdownParagraph {
         })
       }
     } else {
-      if (this.base64DecodeMode === ReadingSettings.BASE64_MODE_BADGE && _tokensContainBase64Decode(this.inlineTokens())) {
+      if (this.reading.base64DecodeMode === ReadingSettings.BASE64_MODE_BADGE && _tokensContainBase64Decode(this.inlineTokens())) {
         SelectableInlineTokenFlow({
           tokens: this.inlineTokens(),
           fontSize: this.bodyFontSize(),
@@ -1178,7 +1181,7 @@ struct MarkdownParagraph {
           reportImageComplete: this.reportImageComplete,
           reportImageError: this.reportImageError,
           availableWidth: this.inlineContentMaxWidth(),
-          base64DecodeMode: this.base64DecodeMode,
+          base64DecodeMode: this.reading.base64DecodeMode,
           activeBase64PopupKey: this.activeBase64PopupKey,
           showBase64Popup: (key: string) => { this.showBase64Popup(key); },
           hideBase64Popup: (key: string) => { this.hideBase64Popup(key); },
@@ -1204,7 +1207,7 @@ struct MarkdownParagraph {
           reportImageComplete: this.reportImageComplete,
           reportImageError: this.reportImageError,
           availableWidth: this.inlineContentMaxWidth(),
-          base64DecodeMode: this.base64DecodeMode,
+          base64DecodeMode: this.reading.base64DecodeMode,
           activeBase64PopupKey: this.activeBase64PopupKey,
           showBase64Popup: (key: string) => { this.showBase64Popup(key); },
           hideBase64Popup: (key: string) => { this.hideBase64Popup(key); },
@@ -1216,23 +1219,24 @@ struct MarkdownParagraph {
   }
 }
 
-@Component
+@ComponentV2
 struct MarkdownBlockquote {
-  @Prop quoteToken: Token;
-  @Prop options: MarkdownOptions;
-  @Prop inlineImageSizeRecords: InlineImageSizeRecord[] = [];
-  @Prop contentAvailableWidth: number = 0;
-  reportImageComplete?: InlineImageCompleteReporter;
-  reportImageError?: InlineImageErrorReporter;
-  @StorageLink(StorageKeys.READING_TEXT_SCALE) readingTextScale: number = ReadingSettings.TEXT_SCALE_DEFAULT;
-  @StorageLink(StorageKeys.READING_LINE_HEIGHT) readingLineHeight: number = ThemeConstants.LINE_HEIGHT_BODY;
+  @Require @Param quoteToken: Token;
+  @Require @Param options: MarkdownOptions;
+  @Param inlineImageSizeRecords: InlineImageSizeRecord[] = [];
+  @Param contentAvailableWidth: number = 0;
+  @Event reportImageComplete?: InlineImageCompleteReporter;
+  @Event reportImageError?: InlineImageErrorReporter;
+  // Reading text-scale mirrored into AppStorageV2 by ReadingSettings (was @StorageLink
+  // READING_TEXT_SCALE; READING_LINE_HEIGHT was bound but unused).
+  private reading: ReadingSettingsState = connectReadingSettings();
 
   private bodyFontSize(): number {
-    return ReadingSettings.scaleTypographyToken(RENDER_BODY_FONT_SIZE, this.readingTextScale);
+    return ReadingSettings.scaleTypographyToken(RENDER_BODY_FONT_SIZE, this.reading.textScale);
   }
 
   private bodyLineHeight(): number {
-    return ReadingSettings.scaleTypographyToken(RENDER_BODY_LINE_HEIGHT, this.readingTextScale);
+    return ReadingSettings.scaleTypographyToken(RENDER_BODY_LINE_HEIGHT, this.reading.textScale);
   }
 
   private quoteRailHeight(): number {
@@ -1392,17 +1396,18 @@ function buildPlainTextTokenForRender(text: string): Token {
   } as Token;
 }
 
-@Component
+@ComponentV2
 struct MarkdownTable {
-  @Prop tableToken: RenderTableToken;
-  @Prop options: MarkdownOptions;
-  @Prop inlineImageSizeRecords: InlineImageSizeRecord[] = [];
-  reportImageComplete?: InlineImageCompleteReporter;
-  reportImageError?: InlineImageErrorReporter;
-  @StorageLink(StorageKeys.READING_TEXT_SCALE) readingTextScale: number = ReadingSettings.TEXT_SCALE_DEFAULT;
-  @StorageLink(StorageKeys.READING_BASE64_DECODE_MODE) base64DecodeMode: string = ReadingSettings.BASE64_MODE_BADGE;
-  @State private tableAvailableWidth: number = 0;
-  @State private activeBase64PopupKey: string = "";
+  @Require @Param tableToken: RenderTableToken;
+  @Require @Param options: MarkdownOptions;
+  @Param inlineImageSizeRecords: InlineImageSizeRecord[] = [];
+  @Event reportImageComplete?: InlineImageCompleteReporter;
+  @Event reportImageError?: InlineImageErrorReporter;
+  // Reading text-scale + base64 mode mirrored into AppStorageV2 by ReadingSettings
+  // (was @StorageLink READING_TEXT_SCALE / READING_BASE64_DECODE_MODE).
+  private reading: ReadingSettingsState = connectReadingSettings();
+  @Local private tableAvailableWidth: number = 0;
+  @Local private activeBase64PopupKey: string = "";
 
   private showBase64Popup(key: string): void {
     this.activeBase64PopupKey = "";
@@ -1422,11 +1427,11 @@ struct MarkdownTable {
   }
 
   private bodyFontSize(): number {
-    return ReadingSettings.scaleTypographyToken(RENDER_BODY_FONT_SIZE, this.readingTextScale);
+    return ReadingSettings.scaleTypographyToken(RENDER_BODY_FONT_SIZE, this.reading.textScale);
   }
 
   private bodyLineHeight(): number {
-    return ReadingSettings.scaleTypographyToken(RENDER_BODY_LINE_HEIGHT, this.readingTextScale);
+    return ReadingSettings.scaleTypographyToken(RENDER_BODY_LINE_HEIGHT, this.reading.textScale);
   }
 
   private columnCount(): number {
@@ -1804,7 +1809,7 @@ struct MarkdownTable {
 
   @Builder TableCell(cell: RenderTableCell, header: boolean, columnIndex: number, rowIndex: number) {
     Column() {
-      if (this.base64DecodeMode === ReadingSettings.BASE64_MODE_BADGE && _tokensContainBase64Decode(this.cellTokens(cell))) {
+      if (this.reading.base64DecodeMode === ReadingSettings.BASE64_MODE_BADGE && _tokensContainBase64Decode(this.cellTokens(cell))) {
         SelectableInlineTokenFlow({
           tokens: this.cellTokens(cell),
           fontSize: this.bodyFontSize(),
@@ -1821,7 +1826,7 @@ struct MarkdownTable {
           reportImageComplete: this.reportImageComplete,
           reportImageError: this.reportImageError,
           availableWidth: 0,
-          base64DecodeMode: this.base64DecodeMode,
+          base64DecodeMode: this.reading.base64DecodeMode,
           activeBase64PopupKey: this.activeBase64PopupKey,
           showBase64Popup: (key: string) => { this.showBase64Popup(key); },
           hideBase64Popup: (key: string) => { this.hideBase64Popup(key); },
@@ -1852,7 +1857,7 @@ struct MarkdownTable {
           reportImageComplete: this.reportImageComplete,
           reportImageError: this.reportImageError,
           availableWidth: 0,
-          base64DecodeMode: this.base64DecodeMode,
+          base64DecodeMode: this.reading.base64DecodeMode,
           activeBase64PopupKey: this.activeBase64PopupKey,
           showBase64Popup: (key: string) => { this.showBase64Popup(key); },
           hideBase64Popup: (key: string) => { this.hideBase64Popup(key); },
@@ -1909,12 +1914,12 @@ struct MarkdownTable {
   }
 }
 
-@Component
+@ComponentV2
 struct MarkdownImageTable {
-  @Prop tableToken: ImageTableToken;
-  @Prop options: MarkdownOptions;
-  reportImageComplete?: InlineImageCompleteReporter;
-  reportImageError?: InlineImageErrorReporter;
+  @Require @Param tableToken: ImageTableToken;
+  @Require @Param options: MarkdownOptions;
+  @Event reportImageComplete?: InlineImageCompleteReporter;
+  @Event reportImageError?: InlineImageErrorReporter;
 
   private imageUrls(): string[] {
     return (this.tableToken.imageUrls ?? []).filter((url: string) => MediaUrlUtils.imageUrlForRender(url).length > 0);
@@ -1967,12 +1972,12 @@ struct MarkdownImageTable {
   }
 }
 
-@Component
+@ComponentV2
 struct MarkdownVideoPlayer {
-  @Prop url: string = "";
-  @Prop options: MarkdownOptions;
-  @State private loadState: number = 0 // 0: idle, 1: prepared, 2: error
-  @State private videoAvailableWidth: number = 0;
+  @Param url: string = "";
+  @Require @Param options: MarkdownOptions;
+  @Local private loadState: number = 0 // 0: idle, 1: prepared, 2: error
+  @Local private videoAvailableWidth: number = 0;
   private controller: VideoController = new VideoController()
 
   aboutToAppear(): void {
@@ -2103,34 +2108,38 @@ struct MarkdownVideoPlayer {
   }
 }
 
-@Component
+@ComponentV2
 struct MarkdownAutoImage {
-  @Prop url: string = "";
-  @Prop options: MarkdownOptions;
-  reportImageComplete?: InlineImageCompleteReporter;
-  reportImageError?: InlineImageErrorReporter;
-  @StorageLink(StorageKeys.MEDIA_AUTO_LOAD_IMAGES) @Watch('onImageLoadPolicyChanged') autoLoadImages: boolean = true
-  @StorageLink(StorageKeys.MEDIA_ONLY_LOAD_IMAGES_ON_WIFI) @Watch('onImageLoadPolicyChanged') onlyLoadImagesOnWifi: boolean = false
-  @State private loadState: number = 0 // 0: idle, 1: loading, 2: loaded, 3: error
-  @State private reloadNonce: number = 0
-  @State private networkChecked: boolean = false
-  @State private isWifiNetwork: boolean = false
-  @State private sourceWidth: number = 0
-  @State private sourceHeight: number = 0
-  @State private availableWidth: number = 0
+  @Param url: string = "";
+  @Require @Param options: MarkdownOptions;
+  @Event reportImageComplete?: InlineImageCompleteReporter;
+  @Event reportImageError?: InlineImageErrorReporter;
+  // Media image-load policy mirrored into AppStorageV2 by MediaSettings.apply()
+  // (was @StorageLink MEDIA_AUTO_LOAD_IMAGES / MEDIA_ONLY_LOAD_IMAGES_ON_WIFI + @Watch).
+  private media: MediaSettingsState = connectMediaSettings();
+  @Local private loadState: number = 0 // 0: idle, 1: loading, 2: loaded, 3: error
+  @Local private reloadNonce: number = 0
+  @Local private networkChecked: boolean = false
+  @Local private isWifiNetwork: boolean = false
+  @Local private sourceWidth: number = 0
+  @Local private sourceHeight: number = 0
+  @Local private availableWidth: number = 0
 
   aboutToAppear() {
     this.refreshNetworkState();
     this.syncLoadState();
   }
 
-  onImageLoadPolicyChanged(_propName: string): void {
+  // Re-evaluate the load policy when either media setting changes (was V1
+  // @Watch('onImageLoadPolicyChanged') on the two @StorageLink bindings).
+  @Monitor('media.autoLoadImages', 'media.onlyLoadImagesOnWifi')
+  onImageLoadPolicyChanged(): void {
     this.refreshNetworkState();
     this.syncLoadState();
   }
 
   private refreshNetworkState(): void {
-    if (!this.autoLoadImages || !this.onlyLoadImagesOnWifi) {
+    if (!this.media.autoLoadImages || !this.media.onlyLoadImagesOnWifi) {
       this.networkChecked = true;
       this.isWifiNetwork = false;
       return;
@@ -2152,20 +2161,20 @@ struct MarkdownAutoImage {
   }
 
   private imageLoadingAllowed(): boolean {
-    if (!this.autoLoadImages) {
+    if (!this.media.autoLoadImages) {
       return false;
     }
-    if (!this.onlyLoadImagesOnWifi) {
+    if (!this.media.onlyLoadImagesOnWifi) {
       return true;
     }
     return this.networkChecked && this.isWifiNetwork;
   }
 
   private imagePlaceholderText(): string {
-    if (!this.autoLoadImages) {
+    if (!this.media.autoLoadImages) {
       return AppStrings.text($r('app.string.common_image_auto_load_off'), 'Image auto-load is off');
     }
-    if (this.onlyLoadImagesOnWifi && !this.networkChecked) {
+    if (this.media.onlyLoadImagesOnWifi && !this.networkChecked) {
       return AppStrings.text(AppStrings.R_COMMON_CHECKING_NETWORK, 'Checking network');
     }
     return AppStrings.text(AppStrings.R_COMMON_WIFI_ONLY_IMAGE_HINT, 'Wi-Fi only image hint');
@@ -2319,31 +2328,31 @@ struct MarkdownAutoImage {
 // Replaces the library's built-in MList which has broken bullet centering.
 // Uses Text('•') as the bullet so it shares the same line metrics as the content,
 // guaranteeing vertical alignment regardless of fontSize changes.
-@Component
+@ComponentV2
 struct CustomList {
-  @Prop listToken: Tokens.List;
-  @Prop options: MarkdownOptions;
-  @Prop inlineImageSizeRecords: InlineImageSizeRecord[] = [];
-  @Prop contentAvailableWidth: number = 0;
-  reportImageComplete?: InlineImageCompleteReporter;
-  reportImageError?: InlineImageErrorReporter;
-  @StorageLink(StorageKeys.READING_TEXT_SCALE) readingTextScale: number = ReadingSettings.TEXT_SCALE_DEFAULT;
-  @StorageLink(StorageKeys.READING_LINE_HEIGHT) readingLineHeight: number = ThemeConstants.LINE_HEIGHT_BODY;
-  @StorageLink(StorageKeys.READING_DENSITY) readingDensity: string = ReadingSettings.DENSITY_STANDARD;
+  @Require @Param listToken: Tokens.List;
+  @Require @Param options: MarkdownOptions;
+  @Param inlineImageSizeRecords: InlineImageSizeRecord[] = [];
+  @Param contentAvailableWidth: number = 0;
+  @Event reportImageComplete?: InlineImageCompleteReporter;
+  @Event reportImageError?: InlineImageErrorReporter;
+  // Reading text-scale + density mirrored into AppStorageV2 by ReadingSettings (was
+  // @StorageLink READING_TEXT_SCALE / READING_DENSITY; READING_LINE_HEIGHT was bound but unused).
+  private reading: ReadingSettingsState = connectReadingSettings();
 
   private bodyFontSize(): number {
-    return ReadingSettings.scaleTypographyToken(RENDER_BODY_FONT_SIZE, this.readingTextScale);
+    return ReadingSettings.scaleTypographyToken(RENDER_BODY_FONT_SIZE, this.reading.textScale);
   }
 
   private bodyLineHeight(): number {
-    return ReadingSettings.scaleTypographyToken(RENDER_BODY_LINE_HEIGHT, this.readingTextScale);
+    return ReadingSettings.scaleTypographyToken(RENDER_BODY_LINE_HEIGHT, this.reading.textScale);
   }
 
   private blockSpace(): number {
-    if (this.readingDensity === ReadingSettings.DENSITY_COMPACT) {
+    if (this.reading.density === ReadingSettings.DENSITY_COMPACT) {
       return ThemeConstants.SPACE_XS;
     }
-    if (this.readingDensity === ReadingSettings.DENSITY_COMFORTABLE) {
+    if (this.reading.density === ReadingSettings.DENSITY_COMFORTABLE) {
       return ThemeConstants.SPACE_MD;
     }
     return ThemeConstants.SPACE_SM;
@@ -2448,24 +2457,24 @@ function CodeSpanBuilder(tokenItem: Token, params: CustomInlineParams): void {
     );
   }
 }
-@Component
+@ComponentV2
 export struct MarkdownContent {
-  @Prop @Watch('onSourceChanged') source: string = "";
-  @Prop topMargin: number = ThemeConstants.SPACE_LG;
-  @Prop contentSelectable: boolean = true;
-  onContentClick?: () => void
-  onImageClick?: (url: string) => void
-  onLinkClick?: (url: string) => void
-  onMentionClick?: (username: string) => void
-  @StorageLink(StorageKeys.READING_TEXT_SCALE) readingTextScale: number = ReadingSettings.TEXT_SCALE_DEFAULT;
-  @StorageLink(StorageKeys.READING_LINE_HEIGHT) readingLineHeight: number = ThemeConstants.LINE_HEIGHT_BODY;
-  @StorageLink(StorageKeys.READING_DENSITY) readingDensity: string = ReadingSettings.DENSITY_STANDARD;
-  @StorageLink(StorageKeys.READING_BASE64_DECODE_MODE) base64DecodeMode: string = ReadingSettings.BASE64_MODE_BADGE;
-  @StorageLink(StorageKeys.THEME_EFFECTIVE_DARK) themeEffectiveDark: boolean = false;
-  @State private tokens: Token[] = [];
-  @State private inlineImageSizeRecords: InlineImageSizeRecord[] = [];
-  @State private contentAvailableWidth: number = 0;
-  @State private activeBase64PopupKey: string = "";
+  @Param source: string = "";
+  @Param topMargin: number = ThemeConstants.SPACE_LG;
+  @Param contentSelectable: boolean = true;
+  @Event onContentClick?: () => void
+  @Event onImageClick?: (url: string) => void
+  @Event onLinkClick?: (url: string) => void
+  @Event onMentionClick?: (username: string) => void
+  // Reading settings + effective dark mirrored into AppStorageV2 by ReadingSettings /
+  // ThemeSettings (was @StorageLink READING_TEXT_SCALE / READING_DENSITY /
+  // READING_BASE64_DECODE_MODE / THEME_EFFECTIVE_DARK; READING_LINE_HEIGHT was bound but unused).
+  private reading: ReadingSettingsState = connectReadingSettings();
+  private themeDisplay: ThemeDisplayState = connectThemeDisplay();
+  @Local private tokens: Token[] = [];
+  @Local private inlineImageSizeRecords: InlineImageSizeRecord[] = [];
+  @Local private contentAvailableWidth: number = 0;
+  @Local private activeBase64PopupKey: string = "";
 
   private showBase64Popup(key: string): void {
     this.activeBase64PopupKey = "";
@@ -2484,7 +2493,8 @@ export struct MarkdownContent {
     this.refreshTokens();
   }
 
-  onSourceChanged(_propName: string): void {
+  @Monitor('source')
+  onSourceChanged(): void {
     this.inlineImageSizeRecords = [];
     this.refreshTokens();
   }
@@ -2545,19 +2555,19 @@ export struct MarkdownContent {
   }
 
   private bodyFontSize(): number {
-    return ReadingSettings.scaleTypographyToken(RENDER_BODY_FONT_SIZE, this.readingTextScale);
+    return ReadingSettings.scaleTypographyToken(RENDER_BODY_FONT_SIZE, this.reading.textScale);
   }
 
   private bodyLineHeight(): number {
-    return ReadingSettings.scaleTypographyToken(RENDER_BODY_LINE_HEIGHT, this.readingTextScale);
+    return ReadingSettings.scaleTypographyToken(RENDER_BODY_LINE_HEIGHT, this.reading.textScale);
   }
 
 
   private blockSpace(): number {
-    if (this.readingDensity === ReadingSettings.DENSITY_COMPACT) {
+    if (this.reading.density === ReadingSettings.DENSITY_COMPACT) {
       return ThemeConstants.SPACE_XS;
     }
-    if (this.readingDensity === ReadingSettings.DENSITY_COMFORTABLE) {
+    if (this.reading.density === ReadingSettings.DENSITY_COMFORTABLE) {
       return ThemeConstants.SPACE_MD;
     }
     return ThemeConstants.SPACE_SM;
@@ -2567,10 +2577,10 @@ export struct MarkdownContent {
     if (this.topMargin <= 0) {
       return 0;
     }
-    if (this.readingDensity === ReadingSettings.DENSITY_COMPACT) {
+    if (this.reading.density === ReadingSettings.DENSITY_COMPACT) {
       return this.topMargin > ThemeConstants.SPACE_XS ? this.topMargin - ThemeConstants.SPACE_XS : this.topMargin;
     }
-    if (this.readingDensity === ReadingSettings.DENSITY_COMFORTABLE) {
+    if (this.reading.density === ReadingSettings.DENSITY_COMFORTABLE) {
       return this.topMargin + ThemeConstants.SPACE_XS;
     }
     return this.topMargin;
@@ -4800,9 +4810,9 @@ export struct MarkdownContent {
     /* Static mirror contract for fixed code-block typography:
         code: {
           fontColor: ThemeConstants.CODE_TEXT,
-          backgroundColor: _codeBackground(this.themeEffectiveDark),
+          backgroundColor: _codeBackground(this.themeDisplay.effectiveDark),
           borderRadius: ThemeConstants.RADIUS_SM,
-          codeSpanBackgroundColor: this.themeEffectiveDark ? '#30363D' : '#EFF1F3',
+          codeSpanBackgroundColor: this.themeDisplay.effectiveDark ? '#30363D' : '#EFF1F3',
           codeSpanBorderRadius: ThemeConstants.RADIUS_SM,
         },
         codeSpan:
@@ -4813,13 +4823,13 @@ export struct MarkdownContent {
     };
     const codeTheme: MarkdownCodeTheme = {
       fontColor: ThemeConstants.CODE_TEXT,
-      backgroundColor: _codeBackground(this.themeEffectiveDark),
+      backgroundColor: _codeBackground(this.themeDisplay.effectiveDark),
       borderRadius: ThemeConstants.RADIUS_SM,
-      codeSpanBackgroundColor: this.themeEffectiveDark ? '#30363D' : '#EFF1F3',
+      codeSpanBackgroundColor: this.themeDisplay.effectiveDark ? '#30363D' : '#EFF1F3',
       codeSpanBorderRadius: ThemeConstants.RADIUS_SM,
     };
     const codeSpanTheme: MarkdownCodeTheme = {
-      backgroundColor: this.themeEffectiveDark ? '#30363D' : '#EFF1F3',
+      backgroundColor: this.themeDisplay.effectiveDark ? '#30363D' : '#EFF1F3',
       borderRadius: ThemeConstants.RADIUS_SM,
     };
     const theme: MarkdownTheme = {
@@ -4830,7 +4840,7 @@ export struct MarkdownContent {
       codeSpan: codeSpanTheme,
     };
     const options: MarkdownOptions = {
-      darkMode: this.themeEffectiveDark,
+      darkMode: this.themeDisplay.effectiveDark,
       theme: theme,
       imageClick: (url?: string) => {
         const normalized = MediaUrlUtils.normalizeUrl(url ?? "");
@@ -4913,11 +4923,11 @@ export struct MarkdownContent {
   }
 
   private headingSize(token: Token): number {
-    return ReadingSettings.scaleTypographyToken(this.headingBaseFontSize(token), this.readingTextScale);
+    return ReadingSettings.scaleTypographyToken(this.headingBaseFontSize(token), this.reading.textScale);
   }
 
   private headingLineHeight(token: Token): number {
-    return ReadingSettings.scaleTypographyToken(this.headingBaseLineHeight(token), this.readingTextScale);
+    return ReadingSettings.scaleTypographyToken(this.headingBaseLineHeight(token), this.reading.textScale);
   }
 
   private headingWeight(token: Token): FontWeight {
@@ -4996,7 +5006,7 @@ export struct MarkdownContent {
         reportImageError: (url: string, event?: MarkdownImageErrorEvent) => { this.reportInlineImageError(url, event); },
       });
     } else if (token.type === "heading") {
-      if (this.base64DecodeMode === ReadingSettings.BASE64_MODE_BADGE && _tokensContainBase64Decode(this.headingInlineTokens(token))) {
+      if (this.reading.base64DecodeMode === ReadingSettings.BASE64_MODE_BADGE && _tokensContainBase64Decode(this.headingInlineTokens(token))) {
         SelectableInlineTokenFlow({
           tokens: this.headingInlineTokens(token),
           fontSize: this.headingSize(token),
@@ -5013,7 +5023,7 @@ export struct MarkdownContent {
           reportImageComplete: (url: string, event?: MarkdownImageCompleteEvent) => { this.reportInlineImageComplete(url, event); },
           reportImageError: (url: string, event?: MarkdownImageErrorEvent) => { this.reportInlineImageError(url, event); },
           availableWidth: this.contentAvailableWidth,
-          base64DecodeMode: this.base64DecodeMode,
+          base64DecodeMode: this.reading.base64DecodeMode,
           activeBase64PopupKey: this.activeBase64PopupKey,
           showBase64Popup: (key: string) => { this.showBase64Popup(key); },
           hideBase64Popup: (key: string) => { this.hideBase64Popup(key); },
@@ -5036,7 +5046,7 @@ export struct MarkdownContent {
           reportImageComplete: (url: string, event?: MarkdownImageCompleteEvent) => { this.reportInlineImageComplete(url, event); },
           reportImageError: (url: string, event?: MarkdownImageErrorEvent) => { this.reportInlineImageError(url, event); },
           availableWidth: this.contentAvailableWidth,
-          base64DecodeMode: this.base64DecodeMode,
+          base64DecodeMode: this.reading.base64DecodeMode,
           activeBase64PopupKey: this.activeBase64PopupKey,
           showBase64Popup: (key: string) => { this.showBase64Popup(key); },
           hideBase64Popup: (key: string) => { this.hideBase64Popup(key); },

@@ -3,6 +3,7 @@ import { preferences } from '@kit.ArkData'
 import { StorageKeys } from '../constants/StorageKeys'
 import { AppStrings } from '../i18n/AppStrings'
 import { STORE_NAME_SETTINGS, SettingsPreferencesStore, setAppStorageValue } from './SettingsStorage'
+import { connectThemeDisplay } from '../state/ThemeDisplayState'
 
 const STORE_NAME: string = STORE_NAME_SETTINGS
 const KEY_THEME_MODE: string = StorageKeys.THEME_MODE
@@ -24,7 +25,7 @@ export class ThemeSettings {
     const normalizedMode = ThemeSettings.normalizeMode(mode)
     const effectiveDark = ThemeSettings.effectiveDarkForMode(context, normalizedMode)
     setAppStorageValue<string>(StorageKeys.THEME_MODE, normalizedMode)
-    setAppStorageValue<boolean>(StorageKeys.THEME_EFFECTIVE_DARK, effectiveDark)
+    ThemeSettings.publishEffectiveDark(effectiveDark)
     ThemeSettings.applySystemColorMode(context, normalizedMode)
     return { mode: normalizedMode, effectiveDark: effectiveDark }
   }
@@ -59,7 +60,14 @@ export class ThemeSettings {
 
   static refreshEffectiveDark(context: common.UIAbilityContext, colorMode?: ConfigurationConstant.ColorMode): void {
     const mode = ThemeSettings.normalizeMode(AppStorage.get<string>(StorageKeys.THEME_MODE) || THEME_MODE_AUTO)
-    setAppStorageValue<boolean>(StorageKeys.THEME_EFFECTIVE_DARK, ThemeSettings.effectiveDarkForMode(context, mode, colorMode))
+    ThemeSettings.publishEffectiveDark(ThemeSettings.effectiveDarkForMode(context, mode, colorMode))
+  }
+
+  // Single sink for THEME_EFFECTIVE_DARK: dual-writes the legacy AppStorage key (read by any
+  // remaining V1 @StorageLink) and the V2 ThemeDisplayState mirror (read by @ComponentV2).
+  private static publishEffectiveDark(effectiveDark: boolean): void {
+    setAppStorageValue<boolean>(StorageKeys.THEME_EFFECTIVE_DARK, effectiveDark)
+    connectThemeDisplay().effectiveDark = effectiveDark
   }
 
   static normalizeMode(value: string): string {
@@ -177,10 +185,10 @@ export class ThemeSettings {
     const sysMode = newColorMode ?? ThemeSettings.getSystemColorMode(context)
     if (sysMode === ConfigurationConstant.ColorMode.COLOR_MODE_DARK) {
       ThemeSettings.setColorModeIfChanged(context, ConfigurationConstant.ColorMode.COLOR_MODE_DARK)
-      setAppStorageValue<boolean>(StorageKeys.THEME_EFFECTIVE_DARK, true)
+      ThemeSettings.publishEffectiveDark(true)
     } else if (sysMode === ConfigurationConstant.ColorMode.COLOR_MODE_LIGHT) {
       ThemeSettings.setColorModeIfChanged(context, ConfigurationConstant.ColorMode.COLOR_MODE_LIGHT)
-      setAppStorageValue<boolean>(StorageKeys.THEME_EFFECTIVE_DARK, false)
+      ThemeSettings.publishEffectiveDark(false)
     }
   }
 }
