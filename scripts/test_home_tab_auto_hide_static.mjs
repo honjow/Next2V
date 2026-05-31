@@ -19,10 +19,17 @@ function mustContain(text, needle, label = needle) {
   assert.notEqual(text.indexOf(needle), -1, `${label} not found`)
 }
 
+function mustNotContain(text, needle, label = needle) {
+  assert.equal(text.indexOf(needle), -1, `${label} must be absent after State V2 migration`)
+}
+
 mustContain(storageKeys, "HOME_TAB_AUTO_HIDE: string = 'homeTabAutoHide'", 'home tab storage key')
 mustContain(homeTabSettings, 'static readonly DEFAULT_AUTO_HIDE: boolean = true', 'default auto-hide enabled')
 mustContain(homeTabSettings, 'store.getSync(KEY_AUTO_HIDE, HomeTabSettings.DEFAULT_AUTO_HIDE)', 'missing preference fallback')
+// HomeTabSettings.apply is the single chokepoint and dual-writes BOTH the V1 AppStorage key AND the
+// V2 HomeTabAutoHideState mirror that the migrated @ComponentV2 Index consumes.
 mustContain(homeTabSettings, 'setAppStorageValue<boolean>(StorageKeys.HOME_TAB_AUTO_HIDE, autoHide)', 'AppStorage apply')
+mustContain(homeTabSettings, 'connectHomeTabAutoHide().autoHide = autoHide', 'HomeTabSettings V2 mirror dual-write')
 mustContain(sharedIndex, "export { HomeTabSettings } from './settings/HomeTabSettings'", 'shared HomeTabSettings export')
 mustContain(sharedIndex, "export type { HomeTabSettingsSnapshot } from './settings/HomeTabSettings'", 'shared HomeTabSettingsSnapshot export')
 mustContain(bootstrap, 'restoreHomeTabs(context, settingsStore)', 'bootstrap restore call')
@@ -30,12 +37,22 @@ mustContain(bootstrap, 'HomeTabSettings.loadFromStore(settingsStore)', 'bootstra
 mustContain(saveCoordinator, 'static saveHomeTabAutoHide(context: common.UIAbilityContext, enabled: boolean): void', 'settings save coordinator method')
 
 mustContain(appStrings, "R_HOME_TAB_AUTO_HIDE: Resource = $r('app.string.home_tab_auto_hide')", 'home tab label resource')
-mustContain(settingsPage, '@StorageLink(StorageKeys.HOME_TAB_AUTO_HIDE) homeTabAutoHide: boolean = HomeTabSettings.DEFAULT_AUTO_HIDE', 'settings StorageLink')
+// State Management V2 migration: SettingsPage is @ComponentV2 — the home-tab auto-hide preference is a
+// self-toggled @Local hydrated from AppStorage (no live @StorageLink), still persisted/applied through
+// SettingsSaveCoordinator.saveHomeTabAutoHide. Product intent (hydrate / persist / apply) is preserved.
+mustContain(settingsPage, '@ComponentV2', 'settings page is @ComponentV2')
+mustNotContain(settingsPage, '@StorageLink(StorageKeys.HOME_TAB_AUTO_HIDE)', 'settings legacy @StorageLink(HOME_TAB_AUTO_HIDE)')
+mustContain(settingsPage, '@Local private homeTabAutoHide: boolean = HomeTabSettings.DEFAULT_AUTO_HIDE', 'settings @Local home-tab field')
+mustContain(settingsPage, 'this.homeTabAutoHide = AppStorage.get<boolean>(StorageKeys.HOME_TAB_AUTO_HIDE) ?? HomeTabSettings.DEFAULT_AUTO_HIDE', 'settings V2-safe hydration')
 mustContain(settingsPage, 'this.TogglePreferenceRow(AppStrings.R_HOME_TAB_AUTO_HIDE, this.homeTabAutoHide', 'settings toggle row')
 mustContain(settingsPage, 'SettingsSaveCoordinator.saveHomeTabAutoHide(context, enabled)', 'settings save call')
 
-mustContain(indexPage, '@StorageLink(StorageKeys.HOME_TAB_AUTO_HIDE)', 'Index StorageLink')
-mustContain(indexPage, "@Watch('onHomeTabAutoHideChanged')", 'Index watch')
+// State Management V2 migration: Index is @ComponentV2 — it consumes the preference through the V2
+// HomeTabAutoHideState mirror (connect + @Monitor), not a V1 @StorageLink/@Watch.
+mustContain(indexPage, 'connectHomeTabAutoHide()', 'Index reads HomeTabAutoHideState mirror')
+mustContain(indexPage, "@Monitor('homeTab.autoHide')", 'Index monitors the home-tab mirror')
+mustNotContain(indexPage, '@StorageLink(StorageKeys.HOME_TAB_AUTO_HIDE)', 'Index legacy @StorageLink(HOME_TAB_AUTO_HIDE)')
+mustNotContain(indexPage, "@Watch('onHomeTabAutoHideChanged')", 'Index legacy @Watch(onHomeTabAutoHideChanged)')
 mustContain(indexPage, 'private homeTabScrollers: Scroller[]', 'Index owned tab scroller refs')
 mustContain(indexPage, 'this.tc.bindScroller(index, this.homeTabScrollers[index])', 'HDS tab scroller binding')
 mustContain(indexPage, 'this.tc.unbindScroller(this.homeTabScrollers[index])', 'disabled state unbinds HDS scrollers')
