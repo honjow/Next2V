@@ -77,6 +77,8 @@
     "feature/settings/src/main/ets/pages/SettingsPage.ets",
     "feature/settings/src/main/ets/pages/NetworkProxySettingsPage.ets",
     "entry/src/main/ets/pages/AccountDetailPage.ets",
-    "entry/src/main/ets/pages/NotificationPage.ets"
+    "entry/src/main/ets/pages/NotificationPage.ets",
+    "entry/src/main/ets/components/BlockedListsTabsSegment.ets",
+    "feature/user/src/main/ets/components/UserProfileActivityTabs.ets"
   ]
 }

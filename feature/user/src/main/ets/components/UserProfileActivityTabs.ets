@@ -1,45 +1,53 @@
-import { SegmentButton, SegmentButtonOptions } from '@kit.ArkUI'
+import { TabSegmentButtonV2, SegmentButtonV2Items, LengthMetrics } from '@kit.ArkUI'
 import { ThemeConstants } from 'shared'
 
 /**
- * V1 @Component adapter that hosts the framework `SegmentButton` for UserProfilePage's
- * topic / reply activity tabs.
+ * `@ComponentV2` segmented control for UserProfilePage's topic / reply activity tabs, hosting the
+ * V2-native `TabSegmentButtonV2` (the tab-style successor of the V1 `SegmentButton`). It exposes a
+ * one-way `@Param` label pair + the externally-selected index, plus an `@Event` click callback.
  *
- * Why this stays V1 while its parent (`UserProfilePage`) is `@ComponentV2`: `SegmentButton` declares
- * `@Link selectedIndexes: number[]`, and ArkUI forbids a `@ComponentV2` parent from binding any V1
- * `@Link` member — the compiler rejects it with "A V2 component cannot be used with any member property
- * decorated by '@Link' in a V1 component". So the mandatory two-way `selectedIndexes` binding must live
- * entirely inside a V1 component. This adapter owns that binding internally and exposes only a one-way
- * `@Prop` label pair + a plain click callback (both legal across the V2-parent -> V1-child boundary),
- * preserving the exact SegmentButton look and behaviour without swapping to a different component.
- *
- * The selected tab is page-state in the parent (driven off `onTabClicked`); this adapter keeps its own
- * `selectedIndexes` purely for the SegmentButton highlight, exactly as the page did before migration.
+ * Why V2-native and not the old V1 `SegmentButton` adapter: V1 `SegmentButton` declares
+ * `@Link selectedIndexes`, which a `@ComponentV2` parent cannot bind. `TabSegmentButtonV2` takes a
+ * one-way `@Param selectedIndex` and emits `onItemClicked`, so it is a controlled component needing no
+ * V1 decorators on the boundary. The selected tab is page-state in `UserProfilePage` (driven off
+ * `onTabClicked`) and flows back in here as `selectedIndex` to drive the highlight — preserving the
+ * exact look and behaviour without swapping the visual to a different component.
  */
-@Component
+@ComponentV2
 export struct UserProfileActivityTabs {
-  @Prop @Watch('onLabelsChanged') topicLabel: string = '';
-  @Prop @Watch('onLabelsChanged') replyLabel: string = '';
-  onTabClicked?: (index: number) => void;
-  @State private selectedIndexes: number[] = [0];
-  @State private tabOptions: SegmentButtonOptions = SegmentButtonOptions.tab({
-    buttons: [{ text: '' }, { text: '' }],
-    buttonPadding: { top: 10, bottom: 10, left: 8, right: 8 },
-  });
+  @Param topicLabel: string = '';
+  @Param replyLabel: string = '';
+  @Param selectedIndex: number = 0;
+  @Event onTabClicked?: (index: number) => void;
+  // @ObservedV2 items whose @Trace text is updated in place on a label/count change (replaces the old
+  // @Watch('onLabelsChanged') rebuild). Held @Local so the SegmentButtonV2Items identity stays stable.
+  @Local private tabItems: SegmentButtonV2Items = new SegmentButtonV2Items([{ text: '' }, { text: '' }]);
 
   aboutToAppear(): void {
-    this.rebuildOptions()
+    this.syncLabels()
+  }
+
+  @Monitor('topicLabel', 'replyLabel')
+  onLabelsChanged(): void {
+    this.syncLabels()
   }
 
   build() {
     Row() {
-      SegmentButton({
-        options: this.tabOptions,
-        selectedIndexes: $selectedIndexes,
+      TabSegmentButtonV2({
+        items: this.tabItems,
+        selectedIndex: this.selectedIndex,
         onItemClicked: (index: number) => {
           if (this.onTabClicked) {
             this.onTabClicked(index)
           }
+        },
+        // Preserve the V1 adapter's per-button padding {top:10,bottom:10,left:8,right:8}.
+        itemPadding: {
+          top: LengthMetrics.vp(10),
+          bottom: LengthMetrics.vp(10),
+          start: LengthMetrics.vp(8),
+          end: LengthMetrics.vp(8),
         },
       })
         .constraintSize({ maxWidth: 448 })
@@ -50,17 +58,8 @@ export struct UserProfileActivityTabs {
     .padding(ThemeConstants.SPACE_SM)
   }
 
-  private onLabelsChanged(_propName: string): void {
-    this.rebuildOptions()
-  }
-
-  private rebuildOptions(): void {
-    this.tabOptions = SegmentButtonOptions.tab({
-      buttons: [
-        { text: this.topicLabel },
-        { text: this.replyLabel }
-      ],
-      buttonPadding: { top: 10, bottom: 10, left: 8, right: 8 },
-    })
+  private syncLabels(): void {
+    this.tabItems[0].text = this.topicLabel
+    this.tabItems[1].text = this.replyLabel
   }
 }

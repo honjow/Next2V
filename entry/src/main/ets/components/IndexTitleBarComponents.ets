@@ -18,10 +18,10 @@ import { BlockedListsTabsSegment } from './BlockedListsTabsSegment'
 @ComponentV2
 struct BlockedListsTabs {
   // V2 mirror of BLOCKED_LIST_SELECTED_TAB; this title-bar control is the sole writer, BlockedListsPage
-  // the sole reader (see BlockedListSelectedTabState). The SegmentButton itself lives in the V1
-  // BlockedListsTabsSegment adapter (a @ComponentV2 cannot bind SegmentButton's @Link selectedIndexes).
+  // the sole reader (see BlockedListSelectedTabState). The segmented control lives in the @ComponentV2
+  // BlockedListsTabsSegment, which hosts the V2-native TabSegmentButtonV2 (controlled selectedIndex).
   @Local private tabState: BlockedListSelectedTabState = connectBlockedListSelectedTab()
-  // One-way labels rebuilt into the adapter's SegmentButton options; @Local so a locale refresh re-renders.
+  // One-way labels pushed into the segmented control's @Trace items; @Local so a locale refresh re-renders.
   @Local private blockedUsersLabel: string = AppStrings.text(AppStrings.R_BLOCKED_USERS, 'Blocked users')
   @Local private blockedTopicsLabel: string = AppStrings.text(AppStrings.R_IGNORED_TOPICS, 'Blocked topics')
 

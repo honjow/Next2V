@@ -1,48 +1,58 @@
-import { SegmentButton, SegmentButtonOptions } from '@kit.ArkUI'
+import { TabSegmentButtonV2, SegmentButtonV2Items, LengthMetrics } from '@kit.ArkUI'
 import { ThemeConstants } from 'shared'
 
 /**
- * V1 @Component adapter that hosts the framework `SegmentButton` for the BlockedLists appbar tabs.
+ * `@ComponentV2` segmented control for the BlockedLists appbar tabs, hosting the V2-native
+ * `TabSegmentButtonV2` (the tab-style successor of the V1 `SegmentButton`). It exposes only one-way
+ * `@Param` inputs (the two tab labels + the externally-selected index) plus an `@Event` click callback.
  *
- * Why this stays V1 while its parent (`BlockedListsTabs`) is `@ComponentV2`: `SegmentButton` declares
- * `@Link selectedIndexes: number[]`, and ArkUI forbids a `@ComponentV2` parent from binding any V1
- * `@Link` member ("A V2 component cannot be used with any member property decorated by '@Link' in a V1
- * component"). So the mandatory two-way `selectedIndexes` binding must live entirely inside a V1
- * component. This adapter owns that binding internally and exposes only one-way `@Prop` inputs (the two
- * tab labels + the externally-selected index) plus a plain click callback — all legal across the
- * V2-parent -> V1-child boundary — preserving the exact SegmentButton look/behaviour without swapping to
- * a different component. Same boundary pattern as `UserProfileActivityTabs`.
+ * Why V2-native and not the old V1 `SegmentButton` adapter: V1 `SegmentButton` declares
+ * `@Link selectedIndexes`, which a `@ComponentV2` parent cannot bind. `TabSegmentButtonV2` instead takes
+ * a one-way `@Param selectedIndex` and emits `onItemClicked`, so it is a controlled component that needs
+ * no V1 decorators anywhere on the boundary. Same pattern as `UserProfileActivityTabs`.
  *
- * Unlike that sibling, this adapter also syncs its highlight from `selectedIndex`: the BlockedLists tab
- * is recreated when its navigation destination re-appears while the persisted tab is 1, so the highlight
- * must be restored from the parent state rather than always starting at 0.
+ * Controlled-selection contract: the highlight is driven entirely by the incoming `selectedIndex`; a tap
+ * routes out through `onTabClicked`, the parent updates its persisted selected tab, and the new value
+ * flows back in as `selectedIndex`. This also restores the highlight from parent state when the
+ * BlockedLists tab is recreated (its navigation destination re-appears while the persisted tab is 1) —
+ * the old adapter needed an explicit `syncSelectedIndexes()` for this; here it falls out of the one-way
+ * binding for free.
  */
-@Component
+@ComponentV2
 export struct BlockedListsTabsSegment {
-  @Prop @Watch('onLabelsChanged') firstLabel: string = '';
-  @Prop @Watch('onLabelsChanged') secondLabel: string = '';
-  @Prop @Watch('onSelectedIndexChanged') selectedIndex: number = 0;
-  onTabClicked?: (index: number) => void;
-  @State private selectedIndexes: number[] = [0];
-  @State private tabOptions: SegmentButtonOptions = SegmentButtonOptions.tab({
-    buttons: [{ text: '' }, { text: '' }],
-    buttonPadding: { top: 10, bottom: 10, left: 8, right: 8 },
-  });
+  @Param firstLabel: string = '';
+  @Param secondLabel: string = '';
+  @Param selectedIndex: number = 0;
+  @Event onTabClicked?: (index: number) => void;
+  // @ObservedV2 items whose @Trace text is updated in place on a label/locale change (replaces the old
+  // @Watch('onLabelsChanged') rebuild). Held @Local so the SegmentButtonV2Items identity stays stable.
+  @Local private tabItems: SegmentButtonV2Items = new SegmentButtonV2Items([{ text: '' }, { text: '' }]);
 
   aboutToAppear(): void {
-    this.rebuildOptions()
-    this.syncSelectedIndexes()
+    this.syncLabels()
+  }
+
+  @Monitor('firstLabel', 'secondLabel')
+  onLabelsChanged(): void {
+    this.syncLabels()
   }
 
   build() {
     Row() {
-      SegmentButton({
-        options: this.tabOptions,
-        selectedIndexes: $selectedIndexes,
+      TabSegmentButtonV2({
+        items: this.tabItems,
+        selectedIndex: this.clampIndex(this.selectedIndex),
         onItemClicked: (index: number) => {
           if (this.onTabClicked) {
             this.onTabClicked(index)
           }
+        },
+        // Preserve the V1 adapter's per-button padding {top:10,bottom:10,left:8,right:8}.
+        itemPadding: {
+          top: LengthMetrics.vp(10),
+          bottom: LengthMetrics.vp(10),
+          start: LengthMetrics.vp(8),
+          end: LengthMetrics.vp(8),
         },
       })
         .constraintSize({ maxWidth: 448 })
@@ -54,25 +64,12 @@ export struct BlockedListsTabsSegment {
     .padding(ThemeConstants.SPACE_SM)
   }
 
-  private onLabelsChanged(_propName: string): void {
-    this.rebuildOptions()
+  private clampIndex(index: number): number {
+    return index === 1 ? 1 : 0
   }
 
-  private onSelectedIndexChanged(_propName: string): void {
-    this.syncSelectedIndexes()
-  }
-
-  private rebuildOptions(): void {
-    this.tabOptions = SegmentButtonOptions.tab({
-      buttons: [
-        { text: this.firstLabel },
-        { text: this.secondLabel },
-      ],
-      buttonPadding: { top: 10, bottom: 10, left: 8, right: 8 },
-    })
-  }
-
-  private syncSelectedIndexes(): void {
-    this.selectedIndexes = [this.selectedIndex === 1 ? 1 : 0]
+  private syncLabels(): void {
+    this.tabItems[0].text = this.firstLabel
+    this.tabItems[1].text = this.secondLabel
   }
 }

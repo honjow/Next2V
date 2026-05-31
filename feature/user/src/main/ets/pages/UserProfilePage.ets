@@ -50,8 +50,8 @@ export struct UserProfilePage {
   private stack: NavPathStack = connectNavStack().stack;
   @Local vm: UserViewModel = new UserViewModel(this.username);
   @Local private activityTab: number = 0;
-  // Count-bearing tab labels (e.g. "Topics 12" / "Replies 3") passed one-way to the V1 SegmentButton
-  // adapter (UserProfileActivityTabs); refreshed after vm.load() via updateTabLabels().
+  // Count-bearing tab labels (e.g. "Topics 12" / "Replies 3") passed one-way to the @ComponentV2
+  // segmented control (UserProfileActivityTabs); refreshed after vm.load() via updateTabLabels().
   @Local private topicTabLabel: string = AppStrings.text(AppStrings.R_USER_TAB_TOPICS_LABEL, 'Topics');
   @Local private replyTabLabel: string = AppStrings.text(AppStrings.R_USER_TAB_REPLIES_LABEL, 'Replies');
   @Local private following: boolean = false;
@@ -218,8 +218,8 @@ export struct UserProfilePage {
 
   private updateTabLabels(): void {
     const labels = UserProfilePageCoordinator.tabLabels(this.vm.recentTopicCount, this.vm.recentReplyCount)
-    // Assigning these @Local strings re-renders the page and pushes the new one-way @Prop labels into
-    // the V1 SegmentButton adapter, which rebuilds its options — the V2-safe way to update the labels.
+    // Assigning these @Local strings re-renders the page and pushes the new one-way @Param labels into
+    // the segmented control, which updates its @Trace item text — the V2-safe way to update the labels.
     this.topicTabLabel = labels.topicLabel
     this.replyTabLabel = labels.replyLabel
   }
@@ -228,6 +228,7 @@ export struct UserProfilePage {
     UserProfileActivityTabs({
       topicLabel: this.topicTabLabel,
       replyLabel: this.replyTabLabel,
+      selectedIndex: this.activityTab,
       onTabClicked: (index: number) => {
         this.activityTab = index
       },

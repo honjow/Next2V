@@ -19,13 +19,16 @@ const repo = join(here, '..');
 // Documented intentional V1 adapters that may still carry V1 decorators, each with a still-valid reason.
 // (Pinned in detail by their own contracts: blocked-lists-v2 / index-titlebar-feedpills-adapter / the
 // SegmentButton adapter contract.)
+// The adapter-zero lane retired the two SegmentButton adapters by replacing them with the V2-native
+// TabSegmentButtonV2 (@ComponentV2, one-way @Param selectedIndex, no @Link), so a @ComponentV2 hosts the
+// segmented control directly. FeedPills remains the ONE documented intentional V1 adapter: a V2 @Monitor
+// recenter trigger is DEVICE-PROVEN to over-fire (~32x/change vs V1 @Watch's exactly 1x, with the recenter
+// machinery storming to ~244 scrollToIndex calls on multi-tab configs) — see the adapter-zero lane's
+// blocker.md. Migrating it needs a recenter/indicator redesign that would change the centering interaction,
+// which the UI-preservation rule forbids here.
 const ALLOWED = {
-  'entry/src/main/ets/components/BlockedListsTabsSegment.ets':
-    'HDS SegmentButton two-way selectedIndexes is a V1 @Link-only API a @ComponentV2 cannot bind.',
   'entry/src/main/ets/components/IndexTitleBarComponents.ets':
-    'FeedPills: its recenter machinery device-verifiably over-fires a V2 @Monitor (~37x/change).',
-  'feature/user/src/main/ets/components/UserProfileActivityTabs.ets':
-    'HDS SegmentButton two-way selectedIndexes is a V1 @Link-only API a @ComponentV2 cannot bind.',
+    'FeedPills: a V2 @Monitor recenter over-fires ~32x/change (vs V1 @Watch 1x); device-proven, see blocker.md.',
 };
 
 const FORBIDDEN = [

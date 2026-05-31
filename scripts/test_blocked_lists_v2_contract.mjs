@@ -7,9 +7,11 @@
 //   1. BlockedListsTabs (in IndexTitleBarComponents.ets) is @ComponentV2 with NO V1 component-state
 //      decorator and no refresh-by-key-churn token. The whole-file contract can't assert this struct
 //      because the same file still hosts the intentionally-V1 FeedPills struct (see feed-tab-v2 cut).
-//   2. BlockedListsTabsSegment.ets stays an INTENTIONAL V1 @Component adapter — a @ComponentV2 parent
-//      cannot bind SegmentButton's @Link selectedIndexes, so this boundary is deliberate and must NOT be
-//      "fixed" to V2. We assert it is @Component (not @ComponentV2) and still hosts the SegmentButton.
+//   2. BlockedListsTabsSegment.ets is a clean @ComponentV2 segmented control hosting the V2-native
+//      TabSegmentButtonV2 (the tab-style successor of the V1 SegmentButton, taking a one-way
+//      @Param selectedIndex with no @Link). We assert it carries no V1 decorator, hosts
+//      TabSegmentButtonV2, keeps the controlled one-way selectedIndex (NOT V1 $selectedIndexes two-way),
+//      and preserves the two label inputs + the click route.
 //   3. The BlockedListState.ets mirror declares @ObservedV2 classes with @Trace fields + connect helpers.
 //
 // Run: node scripts/test_blocked_lists_v2_contract.mjs
@@ -81,20 +83,29 @@ const ok = (msg) => console.log(`ok   ${msg}`);
   }
 }
 
-// 2. BlockedListsTabsSegment stays an intentional V1 @Component adapter hosting SegmentButton.
+// 2. BlockedListsTabsSegment is a clean @ComponentV2 hosting V2-native TabSegmentButtonV2.
 {
-  const raw = read('entry/src/main/ets/components/BlockedListsTabsSegment.ets');
-  const src = stripComments(raw);
+  const before = failures;
+  const src = stripComments(read('entry/src/main/ets/components/BlockedListsTabsSegment.ets'));
   const found = extractStruct(src, 'BlockedListsTabsSegment');
   if (!found) {
     fail('BlockedListsTabsSegment: struct not found');
   } else {
-    if (found.decorator !== '@Component') {
-      fail(`BlockedListsTabsSegment: expected intentional V1 @Component, found ${found.decorator || 'none'}`);
+    if (found.decorator !== '@ComponentV2') {
+      fail(`BlockedListsTabsSegment: expected @ComponentV2, found ${found.decorator || 'none'}`);
     }
-    if (!/SegmentButton\s*\(/.test(src)) fail('BlockedListsTabsSegment: expected to host SegmentButton(...)');
-    if (!/selectedIndexes\s*:\s*\$selectedIndexes/.test(src)) fail('BlockedListsTabsSegment: expected two-way $selectedIndexes binding');
-    if (failures === 0) ok('BlockedListsTabsSegment (intentional V1 @Component SegmentButton adapter)');
+    for (const d of V1_STATE_DECORATORS) if (d.re.test(found.body)) fail(`BlockedListsTabsSegment: forbidden V1 decorator ${d.name}`);
+    if (!/TabSegmentButtonV2\s*\(/.test(src)) fail('BlockedListsTabsSegment: expected to host TabSegmentButtonV2(...)');
+    if (/\bSegmentButton\s*\(/.test(src)) fail('BlockedListsTabsSegment: must not host the V1 SegmentButton(...)');
+    // Controlled one-way selectedIndex (NOT the V1 two-way $selectedIndexes @Link binding).
+    if (!/selectedIndex\s*:/.test(src)) fail('BlockedListsTabsSegment: expected one-way selectedIndex binding');
+    if (/\$selectedIndexes\b/.test(src)) fail('BlockedListsTabsSegment: must not use V1 two-way $selectedIndexes');
+    // Two label inputs + click route preserved.
+    if (!/@Param\s+firstLabel\b/.test(found.body) || !/@Param\s+secondLabel\b/.test(found.body)) {
+      fail('BlockedListsTabsSegment: expected @Param firstLabel + secondLabel inputs');
+    }
+    if (!/onItemClicked\s*:/.test(src) || !/onTabClicked\b/.test(src)) fail('BlockedListsTabsSegment: expected onItemClicked -> onTabClicked route');
+    if (failures === before) ok('BlockedListsTabsSegment (@ComponentV2 hosting TabSegmentButtonV2, controlled selectedIndex, labels + click preserved)');
   }
 }
 
