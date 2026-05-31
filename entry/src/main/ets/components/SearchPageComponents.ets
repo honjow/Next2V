@@ -42,12 +42,12 @@ export interface RemoteTopicItem {
   nodeId: number
 }
 
-@Component
+@ComponentV2
 export struct LocalSearchFilterSheetContent {
-  @Prop keyword: string = ''
-  @Prop resultFilter: SearchResultFilter = 'all'
-  updateResultFilter?: (filter: SearchResultFilter) => void
-  applyAction?: () => void
+  @Param keyword: string = ''
+  @Param resultFilter: SearchResultFilter = 'all'
+  @Event updateResultFilter?: (filter: SearchResultFilter) => void
+  @Event applyAction?: () => void
 
   build() {
     Column({ space: ThemeConstants.SPACE_SM }) {
@@ -89,26 +89,26 @@ export struct LocalSearchFilterSheetContent {
   }
 }
 
-@Component
+@ComponentV2
 export struct RemoteSearchFilterSheetContent {
-  // One-way @Prop (not @Link) so a @ComponentV2 parent can host this V1 component: the author /
-  // node text flow down here and back up through onUsernameChange / onNodeChange (which carry the
-  // value, since the parent owns the @Local state).
-  @Prop remoteUsername: string = ''
-  @Prop remoteNode: string = ''
-  @Prop keyword: string = ''
-  @Prop remoteSort: Sov2exSortMode = 'created'
-  @Prop remoteOrder: Sov2exOrderMode = '0'
-  @Prop remoteDateRange: RemoteDateRange = 'all'
-  @Prop remoteLoading: boolean = false
-  @Prop hasRemoteFilters: boolean = false
-  selectSort?: (sort: Sov2exSortMode) => void
-  toggleOrder?: () => void
-  onUsernameChange?: (value: string) => void
-  onNodeChange?: (value: string) => void
-  selectDateRange?: (range: RemoteDateRange) => void
-  clearFilters?: () => void
-  applySearch?: () => void
+  // Author / node text flow down as @Param and back up through onUsernameChange / onNodeChange
+  // (which carry the value, since the parent owns the @Local state). No local working copy is
+  // kept here: the inner AppTextField owns its own edit buffer, so this struct only forwards.
+  @Param remoteUsername: string = ''
+  @Param remoteNode: string = ''
+  @Param keyword: string = ''
+  @Param remoteSort: Sov2exSortMode = 'created'
+  @Param remoteOrder: Sov2exOrderMode = '0'
+  @Param remoteDateRange: RemoteDateRange = 'all'
+  @Param remoteLoading: boolean = false
+  @Param hasRemoteFilters: boolean = false
+  @Event selectSort?: (sort: Sov2exSortMode) => void
+  @Event toggleOrder?: () => void
+  @Event onUsernameChange?: (value: string) => void
+  @Event onNodeChange?: (value: string) => void
+  @Event selectDateRange?: (range: RemoteDateRange) => void
+  @Event clearFilters?: () => void
+  @Event applySearch?: () => void
 
   build() {
     Column({ space: ThemeConstants.SPACE_SM }) {
@@ -140,7 +140,6 @@ export struct RemoteSearchFilterSheetContent {
           text: this.remoteUsername,
           placeholder: $r('app.string.common_author'),
           onTextChange: (value: string) => {
-            this.remoteUsername = value
             if (this.onUsernameChange) {
               this.onUsernameChange(value)
             }
@@ -151,7 +150,6 @@ export struct RemoteSearchFilterSheetContent {
           text: this.remoteNode,
           placeholder: $r('app.string.common_node'),
           onTextChange: (value: string) => {
-            this.remoteNode = value
             if (this.onNodeChange) {
               this.onNodeChange(value)
             }
@@ -226,17 +224,18 @@ export struct RemoteSearchFilterSheetContent {
   }
 }
 
-@Component
+@ComponentV2
 export struct SearchPanelHeader {
-  // One-way @Prop (not @Link) so a @ComponentV2 parent can host this V1 component: the keyword
-  // flows down here and back up through onTextChange (the parent sanitises + re-sets it).
-  @Prop keyword: string = ''
-  @Prop loadingText: string = ''
-  @Prop errorMessage: string = ''
-  @Prop sourceMode: SearchSourceMode = 'localWithNodes'
-  onTextChange?: (value: string) => void
-  onSubmit?: (value: string) => void
-  updateSourceMode?: (mode: SearchSourceMode) => void
+  // The keyword flows down as @Param and back up through onTextChange (the parent sanitises +
+  // re-sets it). No local working copy is kept here: the inner AppSearchField owns its own edit
+  // buffer, so this struct only forwards edits upward.
+  @Param keyword: string = ''
+  @Param loadingText: string = ''
+  @Param errorMessage: string = ''
+  @Param sourceMode: SearchSourceMode = 'localWithNodes'
+  @Event onTextChange?: (value: string) => void
+  @Event onSubmit?: (value: string) => void
+  @Event updateSourceMode?: (mode: SearchSourceMode) => void
 
   build() {
     Column({ space: ThemeConstants.SPACE_SM }) {
@@ -244,7 +243,6 @@ export struct SearchPanelHeader {
         text: this.keyword,
         placeholder: $r('app.string.search_topics_nodes_users_placeholder'),
         onTextChange: (value: string) => {
-          this.keyword = value
           if (this.onTextChange) {
             this.onTextChange(value)
           }
@@ -301,10 +299,10 @@ export struct SearchPanelHeader {
   }
 }
 
-@Component
+@ComponentV2
 export struct ExternalWebSearchCard {
-  @Prop keyword: string = ''
-  openAction?: () => void
+  @Param keyword: string = ''
+  @Event openAction?: () => void
 
   build() {
     Column({ space: ThemeConstants.SPACE_SM }) {
@@ -330,11 +328,11 @@ export struct ExternalWebSearchCard {
   }
 }
 
-@Component
+@ComponentV2
 export struct SearchHistoryStrip {
-  @Prop history: string[] = []
-  clearAction?: () => void
-  selectAction?: (query: string) => void
+  @Param history: string[] = []
+  @Event clearAction?: () => void
+  @Event selectAction?: (query: string) => void
 
   build() {
     Column({ space: ThemeConstants.SPACE_XS }) {
@@ -381,9 +379,9 @@ export struct SearchHistoryStrip {
   }
 }
 
-@Component
+@ComponentV2
 export struct SearchTopicRow {
-  item: SearchTopicItem = {
+  @Param item: SearchTopicItem = {
     id: 0,
     title: '',
     nodeName: '',
@@ -421,9 +419,9 @@ export struct SearchTopicRow {
   }
 }
 
-@Component
+@ComponentV2
 export struct SearchNodeRow {
-  item: SearchNodeItem = {
+  @Param item: SearchNodeItem = {
     name: '',
     title: '',
     topics: 0,
@@ -463,9 +461,9 @@ export struct SearchNodeRow {
   }
 }
 
-@Component
+@ComponentV2
 export struct RemoteTopicRow {
-  item: RemoteTopicItem = {
+  @Param item: RemoteTopicItem = {
     id: 0,
     title: '',
     username: '',
@@ -474,7 +472,7 @@ export struct RemoteTopicRow {
     replies: 0,
     nodeId: 0
   }
-  openUserAction?: (username: string) => void
+  @Event openUserAction?: (username: string) => void
 
   build() {
     Column({ space: ThemeConstants.SPACE_XS }) {
