@@ -26,27 +26,32 @@ export interface ReplyThankSnapshot {
 /**
  * Topic detail page ViewModel
  */
-@Observed
+// @ObservedV2: its only consumer, TopicDetailPage, is now a @ComponentV2 holding it via @Local.
+// @Trace marks exactly the fields read inside the page's build() / @Builders — that read is the
+// V2 subscription point (a non-@Trace mutation would leave the page stale, e.g. the topic body /
+// loading spinner never appearing). replyDataSource is intentionally NOT @Trace: LazyForEach
+// subscribes to it through its own DataChangeListener, independent of @ObservedV2.
+@ObservedV2
 export class DetailViewModel {
-  topic: V2exTopic | null = null
+  @Trace topic: V2exTopic | null = null
   replyDataSource: ReplyDataSource = new ReplyDataSource()
-  isLoading: boolean = false
+  @Trace isLoading: boolean = false
   onlyOp: boolean = false
-  replyDisplayMode: string = ReplyDisplaySettings.normalizeMode(
+  @Trace replyDisplayMode: string = ReplyDisplaySettings.normalizeMode(
     AppStorage.get<string>(StorageKeys.REPLY_DISPLAY_MODE) ?? ReplyDisplaySettings.MODE_THREAD,
   )
   repliesUseV2: boolean = false
   repliesPage: number = 1
-  repliesHasMore: boolean = false
-  isRepliesLoadingMore: boolean = false
-  repliesLoaded: number = 0
-  repliesLoadMoreState: string = 'endReached'
+  @Trace repliesHasMore: boolean = false
+  @Trace isRepliesLoadingMore: boolean = false
+  @Trace repliesLoaded: number = 0
+  @Trace repliesLoadMoreState: string = 'endReached'
   loadMoreErrorMessage: string = ''
   isBottomRefreshing: boolean = false
-  errorMessage: string = ''
+  @Trace errorMessage: string = ''
   topicId: number = 0
-  isPreloadingAll: boolean = false
-  preloadProgress: string = ''
+  @Trace isPreloadingAll: boolean = false
+  @Trace preloadProgress: string = ''
   needsPreloadConfirm: boolean = false
   private preloadFallbackToFlat: boolean = false
 
