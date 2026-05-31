@@ -1,6 +1,7 @@
 import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
 import { StorageKeys } from '../constants/StorageKeys'
+import { connectHomeTabAutoHide } from '../state/HomeTabAutoHideState'
 import { STORE_NAME_SETTINGS, SettingsPreferencesStore, setAppStorageValue } from './SettingsStorage'
 
 const STORE_NAME: string = STORE_NAME_SETTINGS
@@ -15,6 +16,8 @@ export class HomeTabSettings {
 
   static apply(autoHide: boolean): void {
     setAppStorageValue<boolean>(StorageKeys.HOME_TAB_AUTO_HIDE, autoHide)
+    // Dual-write the V2 mirror (read/@Monitor by the @ComponentV2 Index) from this single chokepoint.
+    connectHomeTabAutoHide().autoHide = autoHide
   }
 
   static isAutoHideEnabled(): boolean {

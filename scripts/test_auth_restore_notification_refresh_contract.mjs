@@ -81,15 +81,20 @@ assert(
   'AccountStore.applyActiveAccountId chokepoint must republish the active id to AppStorage'
 )
 
+// State Management V2 migration: Index reacts to the auth-session change via the AuthSessionSignalState
+// mirror (@Monitor) instead of @StorageLink(AUTH_SESSION_UPDATED_AT)+@Watch. Same invariant — accept either.
 const index = read('entry/src/main/ets/pages/Index.ets')
 assert(
-  index.includes('@StorageLink(StorageKeys.AUTH_SESSION_UPDATED_AT)') && index.includes("@Watch('onAuthSessionUpdated')"),
+  (index.includes('@StorageLink(StorageKeys.AUTH_SESSION_UPDATED_AT)') && index.includes("@Watch('onAuthSessionUpdated')")) ||
+  (index.includes('connectAuthSessionSignal()') && index.includes("@Monitor('authSession.updatedAt')")),
   'Index must watch AUTH_SESSION_UPDATED_AT so login success can refresh visible tab children'
 )
-const indexAuthHandler = methodBody(index, 'onAuthSessionUpdated(_propName: string): void')
+// State Management V2: signature dropped (_propName); the refresh-key churn (= Date.now()) became a
+// monotonic counter (++) — children only react to a CHANGE, so it is semantics-equivalent. Accept either.
+const indexAuthHandler = methodBody(index, 'onAuthSessionUpdated(): void')
 assert(
-  indexAuthHandler.includes('this.notificationRefreshKey = Date.now()') &&
-    indexAuthHandler.includes('this.accountRefreshKey = Date.now()'),
+  (indexAuthHandler.includes('this.notificationRefreshKey++') || indexAuthHandler.includes('this.notificationRefreshKey = Date.now()')) &&
+    (indexAuthHandler.includes('this.accountRefreshKey++') || indexAuthHandler.includes('this.accountRefreshKey = Date.now()')),
   'Index auth-session watcher must refresh notification/account child props after normal login success'
 )
 assert(

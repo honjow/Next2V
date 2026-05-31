@@ -10,26 +10,37 @@ const assert = (condition, message) => {
   }
 }
 
+// State Management V2 migration: the service routes the TWO_FACTOR_* AppStorage writes through the
+// TwoFactorState write-through helpers (publish*), which keep the V1 keys AND the V2 mirror in lockstep.
 const service = read('shared/src/main/ets/services/TwoFactorChallengeService.ets')
 for (const token of [
   'export class TwoFactorChallengeService',
   'static request(cookie: string',
-  'StorageKeys.TWO_FACTOR_COOKIE',
-  'StorageKeys.TWO_FACTOR_SOURCE',
-  'StorageKeys.TWO_FACTOR_VISIBLE',
+  'publishTwoFactorCookie',
+  'publishTwoFactorSource',
+  'publishTwoFactorVisible',
   'static complete()',
   'StorageKeys.TWO_FACTOR_COMPLETED_AT',
 ]) {
   assert(service.includes(token), `TwoFactorChallengeService contract missing ${token}`)
 }
+// The write-through helpers must still write the V1 AppStorage keys so any V1 reader stays in sync.
+const twoFactorState = read('shared/src/main/ets/state/TwoFactorState.ets')
+for (const key of ['TWO_FACTOR_COOKIE', 'TWO_FACTOR_SOURCE', 'TWO_FACTOR_VISIBLE']) {
+  assert(twoFactorState.includes(`StorageKeys.${key}`), `TwoFactorState write-through must still write StorageKeys.${key}`)
+}
 
+// Index reads the global 2FA state from the V2 TwoFactorState mirror (was StorageKeys.TWO_FACTOR_*):
+//   StorageKeys.TWO_FACTOR_VISIBLE -> @Local twoFactorVisible synced via @Monitor('twoFactor.visible')
+//   StorageKeys.TWO_FACTOR_COOKIE  -> this.twoFactor.cookie
+//   StorageKeys.TWO_FACTOR_SOURCE  -> this.twoFactor.source
 const index = read('entry/src/main/ets/pages/Index.ets')
 for (const token of [
   'GlobalTwoFactorSheet',
   'V2exTwoFactorPrompt({',
-  'StorageKeys.TWO_FACTOR_VISIBLE',
-  'StorageKeys.TWO_FACTOR_COOKIE',
-  'StorageKeys.TWO_FACTOR_SOURCE',
+  'connectTwoFactor()',
+  'this.twoFactor.cookie',
+  'this.twoFactor.source',
   'TwoFactorChallengeService.complete()',
   "source === 'nativeLogin'",
 ]) {

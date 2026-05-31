@@ -22,8 +22,8 @@ import {
   LoadingFooter,
   LocalDataSignalState,
   NotificationActionState,
+  publishNotificationUnreadCount,
   PullRefreshListScaffold,
-  setAppStorageValue,
   StorageKeys,
   ThemeConstants,
   TwoFactorChallengeService,
@@ -828,9 +828,9 @@ export struct NotificationPage {
   }
 
   private publishUnreadCount(): void {
-    // Clear the cross-surface unread badge AppStorage value (read by Index's tab badge). Imperative —
-    // never read reactively in build(), so no V2 mirror is needed.
-    setAppStorageValue<number>(StorageKeys.NOTIFICATION_UNREAD_COUNT, 0)
+    // Clear the cross-surface unread badge (V1 AppStorage + the V2 NotificationUnreadState mirror the
+    // @ComponentV2 Index tab badge reads) via the write-through helper.
+    publishNotificationUnreadCount(0)
   }
 
   private captureNotificationEntryUnreadCount(): number {

@@ -50,8 +50,10 @@ const PAGE = 'entry/src/main/ets/pages/NotificationPage.ets';
   must(/@Monitor\([^)]*authIdentity\.tokenConfigured[^)]*\)/.test(c), `${PAGE}: multi-path @Monitor for onAuthChanged`);
   must(/@Monitor\(\s*['"]notificationAction\.command['"]\s*\)/.test(c), `${PAGE}: @Monitor('notificationAction.command')`);
   must(/@Monitor\(\s*['"]localData\.updatedAt['"]\s*\)/.test(c), `${PAGE}: @Monitor('localData.updatedAt')`);
-  // NOTIFICATION_UNREAD_COUNT stays imperative (badge sync), not a reactive decorator
-  must(/setAppStorageValue<number>\(\s*StorageKeys\.NOTIFICATION_UNREAD_COUNT/.test(c), `${PAGE}: clears NOTIFICATION_UNREAD_COUNT imperatively`);
+  // NOTIFICATION_UNREAD_COUNT stays imperative (badge sync), not a reactive decorator: the clear routes
+  // through the publishNotificationUnreadCount write-through helper (V1 key + V2 NotificationUnreadState
+  // mirror the Index tab badge reads); the read stays a plain AppStorage.get.
+  must(/publishNotificationUnreadCount\(/.test(c), `${PAGE}: clears NOTIFICATION_UNREAD_COUNT via the write-through helper`);
   must(/AppStorage\.get<number>\(\s*StorageKeys\.NOTIFICATION_UNREAD_COUNT/.test(c), `${PAGE}: reads NOTIFICATION_UNREAD_COUNT imperatively`);
 }
 

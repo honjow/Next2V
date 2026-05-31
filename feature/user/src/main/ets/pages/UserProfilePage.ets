@@ -6,6 +6,11 @@ import {
   TopicCard,
   ThemeConstants,
   TopicDetailParams,
+  publishUserProfileActionsAvailable, publishUserProfileActionsUsername, publishUserProfileFollowLabel,
+  publishUserProfileBlockLabel, publishUserProfileFollowing, publishUserProfileBlocked,
+  publishUserProfileAppbarTitleUsername, publishUserProfileAppbarTitleAvatarUrl,
+  publishUserProfileAppbarTitleRouteUsername, publishUserProfileAppbarTitleStates,
+  publishUserProfileAppbarAvatarStates,
   StorageKeys,
   NodeTopicListParams,
   ImagePreviewParams,
@@ -466,13 +471,13 @@ export struct UserProfilePage {
     // page is their sole writer, so imperative setOrCreate is faithful. The change guards preserve the
     // original behavior of only writing when the value actually changed.
     if ((AppStorage.get<string>(StorageKeys.USER_PROFILE_APPBAR_TITLE_ROUTE_USERNAME) ?? '') !== next.routeUsername) {
-      AppStorage.setOrCreate<string>(StorageKeys.USER_PROFILE_APPBAR_TITLE_ROUTE_USERNAME, next.routeUsername)
+      publishUserProfileAppbarTitleRouteUsername(next.routeUsername)
     }
     if ((AppStorage.get<string>(StorageKeys.USER_PROFILE_APPBAR_TITLE_USERNAME) ?? '') !== next.titleUsername) {
-      AppStorage.setOrCreate<string>(StorageKeys.USER_PROFILE_APPBAR_TITLE_USERNAME, next.titleUsername)
+      publishUserProfileAppbarTitleUsername(next.titleUsername)
     }
     if ((AppStorage.get<string>(StorageKeys.USER_PROFILE_APPBAR_TITLE_AVATAR_URL) ?? '') !== next.avatarUrl) {
-      AppStorage.setOrCreate<string>(StorageKeys.USER_PROFILE_APPBAR_TITLE_AVATAR_URL, next.avatarUrl)
+      publishUserProfileAppbarTitleAvatarUrl(next.avatarUrl)
     }
   }
 
@@ -485,13 +490,11 @@ export struct UserProfilePage {
     // UserProfile pages each own their entry. Reading fresh at write time keeps this faithful to the
     // prior @StorageLink behavior; the page is the sole writer of these OUTPUT keys.
     const titleStates = AppStorage.get<string>(StorageKeys.USER_PROFILE_APPBAR_TITLE_STATES) ?? '{}'
-    AppStorage.setOrCreate<string>(
-      StorageKeys.USER_PROFILE_APPBAR_TITLE_STATES,
+    publishUserProfileAppbarTitleStates(
       UserProfilePageCoordinator.nextStringState(titleStates, routeUsername, titleUsername),
     )
     const avatarStates = AppStorage.get<string>(StorageKeys.USER_PROFILE_APPBAR_AVATAR_STATES) ?? '{}'
-    AppStorage.setOrCreate<string>(
-      StorageKeys.USER_PROFILE_APPBAR_AVATAR_STATES,
+    publishUserProfileAppbarAvatarStates(
       UserProfilePageCoordinator.nextStringState(avatarStates, routeUsername, avatarUrl),
     )
   }
@@ -532,12 +535,12 @@ export struct UserProfilePage {
     )
     // OUTPUT-only action-menu state (Index reads these V1-style to build the follow/block menu); the
     // page is their sole writer, so imperative setOrCreate is faithful.
-    AppStorage.setOrCreate<string>(StorageKeys.USER_PROFILE_ACTIONS_USERNAME, state.username)
-    AppStorage.setOrCreate<boolean>(StorageKeys.USER_PROFILE_ACTIONS_AVAILABLE, state.available)
-    AppStorage.setOrCreate<string>(StorageKeys.USER_PROFILE_FOLLOW_LABEL, state.followLabel)
-    AppStorage.setOrCreate<string>(StorageKeys.USER_PROFILE_BLOCK_LABEL, state.blockLabel)
-    AppStorage.setOrCreate<boolean>(StorageKeys.USER_PROFILE_FOLLOWING, state.following)
-    AppStorage.setOrCreate<boolean>(StorageKeys.USER_PROFILE_BLOCKED, state.blocked)
+    publishUserProfileActionsUsername(state.username)
+    publishUserProfileActionsAvailable(state.available)
+    publishUserProfileFollowLabel(state.followLabel)
+    publishUserProfileBlockLabel(state.blockLabel)
+    publishUserProfileFollowing(state.following)
+    publishUserProfileBlocked(state.blocked)
   }
 
   private showActionToast(message: string): void {

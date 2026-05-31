@@ -28,8 +28,7 @@ import {
   ListDivider as SharedListDivider,
   SecondaryListScaffold,
   SectionHeader as SharedSectionHeader,
-  setAppStorageValue,
-  StorageKeys,
+  publishAccountWebViewUrl,
   ThemeConstants,
   UserProfileParams,
   V2exBalance,
@@ -131,13 +130,13 @@ export struct AccountDetailPage {
             this.SettingsDivider()
             this.AccountRow(AccountPageCoordinator.BALANCE_DETAIL_TITLE, () => {
               const url = this.webBaseUrl() + '/balance'
-              setAppStorageValue<string>(StorageKeys.ACCOUNT_WEB_VIEW_URL, url)
+              publishAccountWebViewUrl(url)
               this.ns.pushPathByName('AccountWebView', null)
             })
             this.SettingsDivider()
             this.AccountRow(AccountPageCoordinator.WEB_ACCOUNT_SETTINGS_TITLE, () => {
               const url = this.webBaseUrl() + '/settings'
-              setAppStorageValue<string>(StorageKeys.ACCOUNT_WEB_VIEW_URL, url)
+              publishAccountWebViewUrl(url)
               this.ns.pushPathByName('AccountWebView', null)
             })
           }

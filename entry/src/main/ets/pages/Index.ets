@@ -22,15 +22,35 @@ import {
   ApiService,
   AuthSettings,
   connectAccountWebViewAction,
+  connectAccountWebViewUrl,
+  connectAuthSessionSignal,
+  connectHomeTabAutoHide,
   connectImagePreviewAction,
   connectLocalDataSignal,
   connectNativeLoginShown,
   connectNavStack,
   connectNodeTopicAction,
+  connectNodeTopicAppbar,
   connectNotificationAction,
+  connectNotificationUnread,
+  connectPendingV2exUrl,
   connectSearchAction,
+  connectTopicDetailAppbar,
+  connectTwoFactor,
   connectUserProfileAction,
+  connectUserProfileAppbar,
   connectWebLoginAction,
+  publishNotificationUnreadCount,
+  publishPendingV2exUrl,
+  AccountWebViewUrlState,
+  AuthSessionSignalState,
+  HomeTabAutoHideState,
+  NodeTopicAppbarState,
+  NotificationUnreadState,
+  PendingV2exUrlState,
+  TopicDetailAppbarState,
+  TwoFactorState,
+  UserProfileAppbarState,
   CookieJarSettings,
   SearchQueryBus,
   FoldScreenUtil,
@@ -104,13 +124,12 @@ import type { IndexDestinationDescriptor } from '../model/IndexRouteCoordinator'
 import { IndexRouteCoordinator } from '../model/IndexRouteCoordinator'
 
 @Entry
-@Component
+@ComponentV2
 struct Index {
-  // Sourced from the app-wide NavStackHolder (AppStorageV2) so V2 `@ComponentV2`
-  // consumers can read the identical NavPathStack via connectNavStack().stack and
-  // migrate off `@Consume('ns')` one at a time. Index stays V1: V1 consumers keep
-  // using `@Consume('ns')` and receive the same instance via this `@Provide`.
-  @Provide('ns') ns: NavPathStack = connectNavStack().stack;
+  // ns from the app-wide NavStackHolder (AppStorageV2); HdsNavigation binds this instance and the
+  // migrated @ComponentV2 routed pages read the identical stack via connectNavStack().stack. With every
+  // @Consume('ns') consumer migrated, Index no longer needs to @Provide it.
+  private ns: NavPathStack = connectNavStack().stack;
   private readonly HOME_TAB_SCROLL_DELTA_PX: number = 6
   private readonly HOME_TAB_ANIMATION_GUARD_MS: number = 180
   private tc: HdsTabsController = new HdsTabsController();
@@ -129,59 +148,25 @@ struct Index {
   private homeTabLastScrollOffsets: number[] = [0, 0, 0, 0]
   private homeTabVisibleByScroll: boolean = true
   private homeTabAnimationGuardTimerId: number = -1
-  @State ct: number = 0;
-  @StorageLink(StorageKeys.PENDING_V2EX_URL)
-  @Watch('onPendingV2exUrlChanged')
-  pendingV2exUrl: string = '';
-  @StorageLink(StorageKeys.TOPIC_DETAIL_SAVED_LATER) topicDetailSavedLater: boolean = false;
-  @StorageLink(StorageKeys.TOPIC_DETAIL_SITE_FAVORITED) topicDetailSiteFavorited: boolean = false;
-  @StorageLink(StorageKeys.TOPIC_DETAIL_THANKED) topicDetailThanked: boolean = false;
-  @StorageLink(StorageKeys.TOPIC_DETAIL_APPBAR_TITLE) topicDetailAppbarTitle: string = '';
-  @StorageLink(StorageKeys.TOPIC_DETAIL_APPBAR_AVATAR_URL) topicDetailAppbarAvatarUrl: string = '';
-  @StorageLink(StorageKeys.TOPIC_DETAIL_APPBAR_USERNAME) topicDetailAppbarUsername: string = '';
-  @StorageLink(StorageKeys.TOPIC_DETAIL_APPBAR_ROUTE_TOPIC_ID)
-  topicDetailAppbarRouteTopicId: string = '';
-  @StorageLink(StorageKeys.TOPIC_DETAIL_APPBAR_TITLE_STATES) topicDetailAppbarTitleStates: string =
-    '{}';
-  @StorageLink(StorageKeys.TOPIC_DETAIL_APPBAR_AVATAR_STATES)
-  topicDetailAppbarAvatarStates: string = '{}';
-  @StorageLink(StorageKeys.TOPIC_DETAIL_APPBAR_USERNAME_STATES)
-  topicDetailAppbarUsernameStates: string = '{}';
-  @StorageLink(StorageKeys.NODE_TOPIC_SAVED) nodeTopicSaved: boolean = false;
-  @StorageLink(StorageKeys.NODE_TOPIC_SITE_FAVORITED) nodeTopicSiteFavorited: boolean = false;
-  @StorageLink(StorageKeys.NODE_TOPIC_TITLE) nodeTopicTitle: string = '';
-  @StorageLink(StorageKeys.NODE_TOPIC_SUBTITLE) nodeTopicSubtitle: string = '';
-  @StorageLink(StorageKeys.USER_PROFILE_ACTIONS_AVAILABLE) userProfileActionsAvailable: boolean =
-    false;
-  @StorageLink(StorageKeys.USER_PROFILE_ACTIONS_USERNAME) userProfileActionsUsername: string = '';
-  @StorageLink(StorageKeys.USER_PROFILE_FOLLOW_LABEL) userProfileFollowLabel: string = '';
-  @StorageLink(StorageKeys.USER_PROFILE_BLOCK_LABEL) userProfileBlockLabel: string = '';
-  @StorageLink(StorageKeys.USER_PROFILE_FOLLOWING) userProfileFollowing: boolean = false;
-  @StorageLink(StorageKeys.USER_PROFILE_BLOCKED) userProfileBlocked: boolean = false;
-  @StorageLink(StorageKeys.USER_PROFILE_APPBAR_TITLE_USERNAME)
-  userProfileAppbarTitleUsername: string = '';
-  @StorageLink(StorageKeys.USER_PROFILE_APPBAR_TITLE_AVATAR_URL)
-  userProfileAppbarTitleAvatarUrl: string = '';
-  @StorageLink(StorageKeys.USER_PROFILE_APPBAR_TITLE_ROUTE_USERNAME)
-  userProfileAppbarTitleRouteUsername: string = '';
-  @StorageLink(StorageKeys.USER_PROFILE_APPBAR_TITLE_STATES) userProfileAppbarTitleStates: string =
-    '{}';
-  @StorageLink(StorageKeys.USER_PROFILE_APPBAR_AVATAR_STATES)
-  userProfileAppbarAvatarStates: string = '{}';
-  @StorageLink(StorageKeys.NOTIFICATION_UNREAD_COUNT) notificationUnreadCount: number = 0;
-  @StorageLink(StorageKeys.HOME_TAB_AUTO_HIDE)
-  @Watch('onHomeTabAutoHideChanged')
-  homeTabAutoHide: boolean = HomeTabSettings.DEFAULT_AUTO_HIDE;
-  @StorageLink(StorageKeys.AUTH_SESSION_UPDATED_AT)
-  @Watch('onAuthSessionUpdated')
-  authSessionUpdatedAt: number = 0;
-  @StorageLink(StorageKeys.TWO_FACTOR_VISIBLE) twoFactorVisible: boolean = false;
-  @StorageLink(StorageKeys.TWO_FACTOR_COOKIE) twoFactorCookie: string = '';
-  @StorageLink(StorageKeys.TWO_FACTOR_SOURCE) twoFactorSource: string = '';
-  @StorageLink(StorageKeys.ACCOUNT_WEB_VIEW_URL) accountWebViewUrl: string = '';
-  @State private notificationRefreshKey: number = 0;
-  @State private accountRefreshKey: number = 0;
-  @State private isFoldedAndUseOuterScreen: boolean = false;
+  @Local ct: number = 0;
+  // Appbar identity + command/flag state the migrated producer pages (TopicDetailPage / NodeTopicPage /
+  // UserProfilePage) report UP, read reactively in the title-bar builders via these @ObservedV2 mirrors,
+  // each dual-written at its producer's write-through helper. Home-tab/auth-session/notification-unread/
+  // account-webview/pending-url are likewise mirror-backed (dual-written at their service chokepoints).
+  private topicDetailAppbar: TopicDetailAppbarState = connectTopicDetailAppbar();
+  private nodeTopicAppbar: NodeTopicAppbarState = connectNodeTopicAppbar();
+  private userProfileAppbar: UserProfileAppbarState = connectUserProfileAppbar();
+  private notificationUnread: NotificationUnreadState = connectNotificationUnread();
+  private homeTab: HomeTabAutoHideState = connectHomeTabAutoHide();
+  private authSession: AuthSessionSignalState = connectAuthSessionSignal();
+  private twoFactor: TwoFactorState = connectTwoFactor();
+  private accountWebView: AccountWebViewUrlState = connectAccountWebViewUrl();
+  private pendingUrl: PendingV2exUrlState = connectPendingV2exUrl();
+  // Two-way @Local for bindSheet; kept in sync with the TwoFactorState mirror via @Monitor below.
+  @Local twoFactorVisible: boolean = false;
+  @Local private notificationRefreshKey: number = 0;
+  @Local private accountRefreshKey: number = 0;
+  @Local private isFoldedAndUseOuterScreen: boolean = false;
   private http: HttpClient = HttpClient.getInstance();
   private notificationVm: NotificationCenterViewModel = new NotificationCenterViewModel(
     new ApiService(),
@@ -208,18 +193,26 @@ struct Index {
     this.clearHomeTabAnimationGuardTimer()
   }
 
-  onPendingV2exUrlChanged(_propName: string): void {
+  @Monitor('pendingUrl.command')
+  onPendingV2exUrlChanged(): void {
     this.consumePendingV2exUrl()
   }
 
-  onHomeTabAutoHideChanged(_propName: string): void {
+  @Monitor('homeTab.autoHide')
+  onHomeTabAutoHideChanged(): void {
     this.applyHomeTabAutoHide()
+  }
+
+  @Monitor('twoFactor.visible')
+  onTwoFactorVisibleChanged(): void {
+    // Drive the bindSheet @Local from the service-owned TwoFactorState mirror.
+    this.twoFactorVisible = this.twoFactor.visible
   }
 
   private setHomeTabScroller(index: number, scroller: Scroller): void {
     const oldScroller = this.homeTabScrollers[index]
     if (oldScroller === scroller) {
-      if (this.homeTabAutoHide) {
+      if (this.homeTab.autoHide) {
         this.tc.bindScroller(index, scroller)
       }
       return
@@ -228,14 +221,14 @@ struct Index {
       this.tc.unbindScroller(oldScroller)
     }
     this.homeTabScrollers[index] = scroller
-    if (this.homeTabAutoHide) {
+    if (this.homeTab.autoHide) {
       this.tc.bindScroller(index, scroller)
       this.restoreHomeTabIfHidden()
     }
   }
 
   private applyHomeTabAutoHide(): void {
-    if (this.homeTabAutoHide) {
+    if (this.homeTab.autoHide) {
       for (let index = 0; index < this.homeTabScrollers.length; index++) {
         this.tc.bindScroller(index, this.homeTabScrollers[index])
       }
@@ -272,7 +265,7 @@ struct Index {
   }
 
   private applyHomeTabScrollAnimation(visible: boolean): void {
-    if (!this.homeTabAutoHide || this.homeTabAnimationGuardTimerId !== -1 || this.homeTabVisibleByScroll === visible) {
+    if (!this.homeTab.autoHide || this.homeTabAnimationGuardTimerId !== -1 || this.homeTabVisibleByScroll === visible) {
       return
     }
     this.homeTabVisibleByScroll = visible
@@ -285,7 +278,7 @@ struct Index {
   }
 
   private onHomeTabDidScroll(index: number, offset: number, state: ScrollState): void {
-    if (index !== this.ct || !this.homeTabAutoHide) {
+    if (index !== this.ct || !this.homeTab.autoHide) {
       this.homeTabLastScrollOffsets[index] = offset
       return
     }
@@ -312,12 +305,15 @@ struct Index {
     }
   }
 
-  onAuthSessionUpdated(_propName: string): void {
-    if (this.authSessionUpdatedAt <= 0) {
+  @Monitor('authSession.updatedAt')
+  onAuthSessionUpdated(): void {
+    if (this.authSession.updatedAt <= 0) {
       return
     }
-    this.notificationRefreshKey = Date.now()
-    this.accountRefreshKey = Date.now()
+    // Monotonic refresh-signal counters (replace the former Date.now() churn): the child pages only
+    // react to a CHANGE, so ++ is semantics-equivalent and avoids a randomized refresh-key token.
+    this.notificationRefreshKey++
+    this.accountRefreshKey++
     this.refreshNotificationBadge()
   }
 
@@ -506,15 +502,15 @@ struct Index {
         this.ct = i
         if (i === 2) {
           this.notificationBadgeRequestId++
-          this.notificationRefreshKey = Date.now()
+          this.notificationRefreshKey++
         }
         if (i !== 2) {
           this.refreshNotificationBadge()
         }
         if (i === 3) {
-          this.accountRefreshKey = Date.now()
+          this.accountRefreshKey++
         }
-        if (this.homeTabAutoHide) {
+        if (this.homeTab.autoHide) {
           this.restoreHomeTabIfHidden()
         }
       })
@@ -557,9 +553,9 @@ struct Index {
       onVisibleChange: (value: boolean) => {
         this.twoFactorVisible = value
       },
-      cookie: this.twoFactorCookie,
+      cookie: this.twoFactor.cookie,
       onSuccess: () => {
-        const source = this.twoFactorSource
+        const source = this.twoFactor.source
         TwoFactorChallengeService.complete()
         if (source === 'nativeLogin') {
           try {
@@ -569,8 +565,8 @@ struct Index {
             console.error('pop native login after global 2fa failed: ' + caught.message)
           }
         }
-        this.notificationRefreshKey = Date.now()
-        this.accountRefreshKey = Date.now()
+        this.notificationRefreshKey++
+        this.accountRefreshKey++
         this.refreshNotificationBadge()
         this.refreshLocalData()
       },
@@ -726,13 +722,13 @@ struct Index {
     }
     const identity = TopicDetailTitleBarCoordinator.identity(
       routeKey,
-      this.topicDetailAppbarRouteTopicId,
-      this.topicDetailAppbarTitle,
-      this.topicDetailAppbarAvatarUrl,
-      this.topicDetailAppbarUsername,
-      this.topicDetailAppbarTitleStates,
-      this.topicDetailAppbarAvatarStates,
-      this.topicDetailAppbarUsernameStates,
+      this.topicDetailAppbar.routeTopicId,
+      this.topicDetailAppbar.title,
+      this.topicDetailAppbar.avatarUrl,
+      this.topicDetailAppbar.username,
+      this.topicDetailAppbar.titleStates,
+      this.topicDetailAppbar.avatarStates,
+      this.topicDetailAppbar.usernameStates,
     )
     if (identity.title.trim()) {
       let cc = new ComponentContent<TopicDetailAppbarIdentityParams>(
@@ -753,9 +749,9 @@ struct Index {
 
   private topicDetailTitleActionIcon(action: TopicDetailTitleAction): Resource {
     const active = TopicDetailTitleBarCoordinator.activeForState(action, {
-      savedLater: this.topicDetailSavedLater,
-      siteFavorited: this.topicDetailSiteFavorited,
-      thanked: this.topicDetailThanked,
+      savedLater: this.topicDetailAppbar.savedLater,
+      siteFavorited: this.topicDetailAppbar.siteFavorited,
+      thanked: this.topicDetailAppbar.thanked,
     })
     if (action === 'thankTopic') {
       return active ? $r('sys.symbol.heart_fill') : $r('sys.symbol.heart')
@@ -788,14 +784,14 @@ struct Index {
     let items: Record<string, Object>[] = [
       this.topicActionItem(
         $r('app.string.topic_action_site_favorite'),
-        this.nodeTopicSiteFavorited ? $r('sys.symbol.star_fill') : $r('sys.symbol.star'),
+        this.nodeTopicAppbar.siteFavorited ? $r('sys.symbol.star_fill') : $r('sys.symbol.star'),
         () => {
           this.sendNodeTopicAction(nodeName, 'siteFavorite')
         },
       ),
       this.topicActionItem(
         $r('app.string.topic_action_follow_node'),
-        this.nodeTopicSaved ? $r('sys.symbol.bookmark_fill') : $r('sys.symbol.bookmark'),
+        this.nodeTopicAppbar.saved ? $r('sys.symbol.bookmark_fill') : $r('sys.symbol.bookmark'),
         () => {
           this.sendNodeTopicAction(nodeName, 'saveNode')
         },
@@ -805,8 +801,8 @@ struct Index {
     const text = IndexTitleBarCoordinator.nodeTopicText(
       nodeName,
       nodeTitle,
-      this.nodeTopicTitle,
-      this.nodeTopicSubtitle,
+      this.nodeTopicAppbar.title,
+      this.nodeTopicAppbar.subtitle,
     )
     return this.navDestTitleBarOpts(text.title, menu, text.subtitle)
   }
@@ -814,11 +810,11 @@ struct Index {
   private userProfileTitleBarOpts(username: string): Record<string, Object> {
     const identity = IndexTitleBarCoordinator.userProfileIdentity(
       username,
-      this.userProfileAppbarTitleRouteUsername,
-      this.userProfileAppbarTitleUsername,
-      this.userProfileAppbarTitleAvatarUrl,
-      this.userProfileAppbarTitleStates,
-      this.userProfileAppbarAvatarStates,
+      this.userProfileAppbar.titleRouteUsername,
+      this.userProfileAppbar.titleUsername,
+      this.userProfileAppbar.titleAvatarUrl,
+      this.userProfileAppbar.titleStates,
+      this.userProfileAppbar.avatarStates,
     )
     const profileMenu = this.userProfileTitleMenu(username)
     if (identity.title.trim()) {
@@ -842,20 +838,20 @@ struct Index {
     if (
       !IndexTitleBarCoordinator.userProfileActionsAvailable(
         username,
-        this.userProfileActionsUsername,
-        this.userProfileActionsAvailable,
+        this.userProfileAppbar.actionsUsername,
+        this.userProfileAppbar.actionsAvailable,
       )
     ) {
       return IndexTitleBarCoordinator.emptyMenu()
     }
     let items: Record<string, Object>[] = []
-    if (this.userProfileFollowLabel) {
+    if (this.userProfileAppbar.followLabel) {
       items.push(
         this.topicActionItem(
-          this.userProfileFollowing
+          this.userProfileAppbar.following
             ? AppStrings.R_USER_ACTION_UNFOLLOW
             : AppStrings.R_USER_ACTION_FOLLOW,
-          this.userProfileFollowing
+          this.userProfileAppbar.following
             ? $r('sys.symbol.person_xmark')
             : $r('sys.symbol.person_badge_plus'),
           () => {
@@ -864,10 +860,10 @@ struct Index {
         ),
       )
     }
-    if (this.userProfileBlockLabel) {
+    if (this.userProfileAppbar.blockLabel) {
       items.push(
         this.topicActionItem(
-          this.userProfileBlocked
+          this.userProfileAppbar.blocked
             ? AppStrings.R_USER_ACTION_UNBLOCK
             : AppStrings.R_USER_ACTION_BLOCK,
           this.userProfileBlockIcon(),
@@ -882,7 +878,7 @@ struct Index {
 
   private userProfileBlockIcon(): SymbolGlyphModifier {
     return new SymbolGlyphModifier(
-      this.userProfileBlocked ? $r('sys.symbol.eye_slash') : $r('sys.symbol.nosign'),
+      this.userProfileAppbar.blocked ? $r('sys.symbol.eye_slash') : $r('sys.symbol.nosign'),
     ).fontColor([Color.Red])
   }
 
@@ -987,12 +983,12 @@ struct Index {
   }
 
   private consumePendingV2exUrl(): void {
-    const url = IndexRouteCoordinator.commandPayload(this.pendingV2exUrl)
+    const url = IndexRouteCoordinator.commandPayload(this.pendingUrl.command)
     if (!url) {
       return
     }
     if (this.openV2exRoute(url)) {
-      AppStorage.setOrCreate<string>(StorageKeys.PENDING_V2EX_URL, '')
+      publishPendingV2exUrl('')
     }
   }
 
@@ -1158,7 +1154,7 @@ struct Index {
   }
 
   private accountWebViewTitle(): ResourceStr {
-    const path = (this.accountWebViewUrl || '').trim().toLowerCase()
+    const path = (this.accountWebView.url || '').trim().toLowerCase()
     if (path.indexOf('/balance') >= 0) {
       return AppStrings.R_BALANCE_DETAILS
     }
@@ -1245,14 +1241,14 @@ struct Index {
             .unreadCountFromCookie(cookie)
             .then((count: number) => {
               if (this.canApplyNotificationBadgeRequest(requestId)) {
-                this.notificationUnreadCount = count
+                publishNotificationUnreadCount(count)
               }
             })
             .catch((_error: Error) => {})
           return
         }
         if (this.canApplyNotificationBadgeRequest(requestId) && !snapshot.token) {
-          this.notificationUnreadCount = 0
+          publishNotificationUnreadCount(0)
         }
       })
       .catch((_error: Error) => {})
@@ -1268,7 +1264,7 @@ struct Index {
       title: title,
       idx: idx,
       currentIndex: this.ct,
-      badgeCount: idx === 2 ? this.notificationUnreadCount : 0,
+      badgeCount: idx === 2 ? this.notificationUnread.count : 0,
     })
   }
 }

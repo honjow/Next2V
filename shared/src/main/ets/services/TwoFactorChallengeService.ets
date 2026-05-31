@@ -1,12 +1,15 @@
 import { StorageKeys } from '../constants/StorageKeys'
+import { publishTwoFactorVisible, publishTwoFactorCookie, publishTwoFactorSource } from '../state/TwoFactorState'
 
 export class TwoFactorChallengeService {
+  // Write-through helpers keep the V1 TWO_FACTOR_* AppStorage keys and the V2 TwoFactorState mirror
+  // (read/@Monitor by the @ComponentV2 Index bindSheet) in lockstep from this single service.
   static request(cookie: string, source: string = ''): number {
     const requestedAt = Date.now()
-    AppStorage.setOrCreate<string>(StorageKeys.TWO_FACTOR_COOKIE, cookie)
-    AppStorage.setOrCreate<string>(StorageKeys.TWO_FACTOR_SOURCE, source)
+    publishTwoFactorCookie(cookie)
+    publishTwoFactorSource(source)
     AppStorage.setOrCreate<number>(StorageKeys.TWO_FACTOR_REQUESTED_AT, requestedAt)
-    AppStorage.setOrCreate<boolean>(StorageKeys.TWO_FACTOR_VISIBLE, true)
+    publishTwoFactorVisible(true)
     return requestedAt
   }
 
@@ -20,8 +23,8 @@ export class TwoFactorChallengeService {
   }
 
   private static clear(): void {
-    AppStorage.setOrCreate<boolean>(StorageKeys.TWO_FACTOR_VISIBLE, false)
-    AppStorage.setOrCreate<string>(StorageKeys.TWO_FACTOR_COOKIE, '')
-    AppStorage.setOrCreate<string>(StorageKeys.TWO_FACTOR_SOURCE, '')
+    publishTwoFactorVisible(false)
+    publishTwoFactorCookie('')
+    publishTwoFactorSource('')
   }
 }

@@ -3,6 +3,7 @@ import {
   AuthSettings, CardEmptyState, CollectionSettings, SavedNode, ApiService, CookieJarSettings,
   connectLayoutSafeArea, connectNavStack, connectNodeTopicAction, connectTopicReadStates,
   LayoutSafeAreaState, NodeTopicActionState, PagedListScaffold, PageErrorState, PageLoadingState,
+  publishNodeTopicSaved, publishNodeTopicSiteFavorited, publishNodeTopicTitle, publishNodeTopicSubtitle,
   StorageKeys, ThemeConstants, TopicCard, TopicReadStatesState,
   TopicDetailParams, UserProfileParams, V2exToggleAction, V2exTopic, AppStrings, DiagnosticLogger, translateApiError
 } from 'shared'
@@ -123,7 +124,7 @@ export struct NodeTopicPage {
     CollectionSettings.isNodeSaved(context, nodeName)
       .then((saved: boolean) => {
         this.isNodeSaved = saved
-        AppStorage.setOrCreate<boolean>(StorageKeys.NODE_TOPIC_SAVED, saved)
+        publishNodeTopicSaved(saved)
       })
       .catch((error: Error) => {
         console.error('load saved node state failed: ' + error.message)
@@ -137,14 +138,14 @@ export struct NodeTopicPage {
     const cookie = CookieJarSettings.getCurrentCookie()
     if (!cookie || !this.nodeName) {
       this.isSiteNodeFavorited = false
-      AppStorage.setOrCreate<boolean>(StorageKeys.NODE_TOPIC_SITE_FAVORITED, false)
+      publishNodeTopicSiteFavorited(false)
       return
     }
     this.isSiteNodeFavoriteLoading = true
     this.api.getNodeFavoriteToggleActionWithCookie(cookie, this.nodeName)
       .then((toggle: V2exToggleAction) => {
         this.isSiteNodeFavorited = toggle.currentlyOn
-        AppStorage.setOrCreate<boolean>(StorageKeys.NODE_TOPIC_SITE_FAVORITED, toggle.currentlyOn)
+        publishNodeTopicSiteFavorited(toggle.currentlyOn)
       })
       .catch((error: Error) => {
         console.error('load site node favorite state failed: ' + error.message)
@@ -172,7 +173,7 @@ export struct NodeTopicPage {
     this.api.getNodeFavoriteToggleActionWithCookie(cookie, cleanName)
       .then((toggle: V2exToggleAction) => {
         this.isSiteNodeFavorited = toggle.currentlyOn
-        AppStorage.setOrCreate<boolean>(StorageKeys.NODE_TOPIC_SITE_FAVORITED, toggle.currentlyOn)
+        publishNodeTopicSiteFavorited(toggle.currentlyOn)
         this.confirmSiteNodeFavoriteToggle(cookie, cleanName, toggle)
       })
       .catch((error: Error) => {
@@ -212,7 +213,7 @@ export struct NodeTopicPage {
     this.api.executeNodeFavoriteToggleWithCookie(cookie, nodeName, toggle)
       .then((favorited: boolean) => {
         this.isSiteNodeFavorited = favorited
-        AppStorage.setOrCreate<boolean>(StorageKeys.NODE_TOPIC_SITE_FAVORITED, favorited)
+        publishNodeTopicSiteFavorited(favorited)
         promptAction.openToast({ message: favorited ? $r('app.string.favorited') : $r('app.string.unfavorited') }).catch((_error: Error) => { })
       })
       .catch((error: Error) => {
@@ -343,7 +344,7 @@ export struct NodeTopicPage {
     request
       .then((nodes: SavedNode[]) => {
         this.isNodeSaved = nodes.some((item: SavedNode) => item.name === nodeName)
-        AppStorage.setOrCreate<boolean>(StorageKeys.NODE_TOPIC_SAVED, this.isNodeSaved)
+        publishNodeTopicSaved(this.isNodeSaved)
       })
       .catch((error: Error) => {
         console.error('toggle saved node failed: ' + error.message)
@@ -408,13 +409,13 @@ export struct NodeTopicPage {
   private syncNodeTitleState(saved: boolean, siteFavorited: boolean): void {
     this.isNodeSaved = saved
     this.isSiteNodeFavorited = siteFavorited
-    AppStorage.setOrCreate<boolean>(StorageKeys.NODE_TOPIC_SAVED, saved)
-    AppStorage.setOrCreate<boolean>(StorageKeys.NODE_TOPIC_SITE_FAVORITED, siteFavorited)
+    publishNodeTopicSaved(saved)
+    publishNodeTopicSiteFavorited(siteFavorited)
   }
 
   private syncAppbarIdentity(): void {
     const title = CollectionSettings.cleanNodeTitle(this.vm.nodeDetail?.title || this.nodeTitle || this.nodeName, this.vm.nodeDetail?.topics || 0)
-    AppStorage.setOrCreate<string>(StorageKeys.NODE_TOPIC_TITLE, title)
+    publishNodeTopicTitle(title)
     const identityName = (this.nodeName || '').trim()
     const subtitleParts: string[] = []
     if (title && identityName && title !== identityName) {
@@ -427,6 +428,6 @@ export struct NodeTopicPage {
         [String(topicCount)]
       ))
     }
-    AppStorage.setOrCreate<string>(StorageKeys.NODE_TOPIC_SUBTITLE, subtitleParts.join(' · '))
+    publishNodeTopicSubtitle(subtitleParts.join(' · '))
   }
 }

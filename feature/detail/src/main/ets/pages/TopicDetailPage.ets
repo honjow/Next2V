@@ -1,5 +1,17 @@
 import { AppStrings } from 'shared'
 import {
+  publishTopicDetailSavedLater,
+  publishTopicDetailSiteFavorited,
+  publishTopicDetailThanked,
+  publishTopicDetailAppbarTitle,
+  publishTopicDetailAppbarAvatarUrl,
+  publishTopicDetailAppbarUsername,
+  publishTopicDetailAppbarRouteTopicId,
+  publishTopicDetailAppbarTitleStates,
+  publishTopicDetailAppbarAvatarStates,
+  publishTopicDetailAppbarUsernameStates,
+} from 'shared'
+import {
   DetailViewModel,
   type ReplyThankSnapshot,
 } from '../viewmodel/DetailViewModel'
@@ -240,11 +252,11 @@ export struct TopicDetailPage {
     }
     if (overlay.favoriteKnown) {
       this.isSiteFavorited = overlay.favoriteValue
-      AppStorage.setOrCreate<boolean>(StorageKeys.TOPIC_DETAIL_SITE_FAVORITED, overlay.favoriteValue)
+      publishTopicDetailSiteFavorited(overlay.favoriteValue)
     }
     if (overlay.topicThankKnown && overlay.topicThankValue) {
       this.isTopicThanked = true
-      AppStorage.setOrCreate<boolean>(StorageKeys.TOPIC_DETAIL_THANKED, true)
+      publishTopicDetailThanked(true)
     }
     if (overlay.replyThankedIds.length > 0) {
       this.thankedReplyIdsJson = JSON.stringify(overlay.replyThankedIds)
@@ -815,25 +827,22 @@ export struct TopicDetailPage {
       return
     }
     const identity = TopicDetailAppbarCoordinator.identity(this.v.topic, visible)
-    // Write-side keys are consumed by Index's V1 @StorageLink appbar; the page pushes V1 AppStorage
-    // directly (no V2 reader). The per-route *_STATES maps are read-modify-written against the live
-    // store so a new TopicDetailPage instance never clobbers sibling nav-stack entries' identities.
-    AppStorage.setOrCreate<string>(
-      StorageKeys.TOPIC_DETAIL_APPBAR_TITLE_STATES,
+    // Write-through (V1 AppStorage + the V2 TopicDetailAppbarState mirror the @ComponentV2 Index appbar
+    // reads). The per-route *_STATES maps are read-modify-written against the live store so a new
+    // TopicDetailPage instance never clobbers sibling nav-stack entries' identities.
+    publishTopicDetailAppbarTitleStates(
       this.nextStringState(StorageKeys.TOPIC_DETAIL_APPBAR_TITLE_STATES, routeKey, identity.title),
     )
-    AppStorage.setOrCreate<string>(
-      StorageKeys.TOPIC_DETAIL_APPBAR_AVATAR_STATES,
+    publishTopicDetailAppbarAvatarStates(
       this.nextStringState(StorageKeys.TOPIC_DETAIL_APPBAR_AVATAR_STATES, routeKey, identity.avatarUrl),
     )
-    AppStorage.setOrCreate<string>(
-      StorageKeys.TOPIC_DETAIL_APPBAR_USERNAME_STATES,
+    publishTopicDetailAppbarUsernameStates(
       this.nextStringState(StorageKeys.TOPIC_DETAIL_APPBAR_USERNAME_STATES, routeKey, identity.username),
     )
-    AppStorage.setOrCreate<string>(StorageKeys.TOPIC_DETAIL_APPBAR_ROUTE_TOPIC_ID, visible ? routeKey : '')
-    AppStorage.setOrCreate<string>(StorageKeys.TOPIC_DETAIL_APPBAR_TITLE, identity.title)
-    AppStorage.setOrCreate<string>(StorageKeys.TOPIC_DETAIL_APPBAR_AVATAR_URL, identity.avatarUrl)
-    AppStorage.setOrCreate<string>(StorageKeys.TOPIC_DETAIL_APPBAR_USERNAME, identity.username)
+    publishTopicDetailAppbarRouteTopicId(visible ? routeKey : '')
+    publishTopicDetailAppbarTitle(identity.title)
+    publishTopicDetailAppbarAvatarUrl(identity.avatarUrl)
+    publishTopicDetailAppbarUsername(identity.username)
   }
 
   // Reads the current per-route states map from AppStorage and merges in routeKey -> value.
@@ -1409,7 +1418,7 @@ export struct TopicDetailPage {
     CollectionSettings.isTopicSaved(context, this.topicId)
       .then((saved: boolean) => {
         this.isSavedLater = saved
-        AppStorage.setOrCreate<boolean>(StorageKeys.TOPIC_DETAIL_SAVED_LATER, saved)
+        publishTopicDetailSavedLater(saved)
       })
       .catch((error: Error) => {
         console.error('load saved topic state failed: ' + error.message)
@@ -1427,7 +1436,7 @@ export struct TopicDetailPage {
     request
       .then(() => {
         this.isSavedLater = !this.isSavedLater
-        AppStorage.setOrCreate<boolean>(StorageKeys.TOPIC_DETAIL_SAVED_LATER, this.isSavedLater)
+        publishTopicDetailSavedLater(this.isSavedLater)
       })
       .catch((error: Error) => {
         console.error('toggle saved topic failed: ' + error.message)
@@ -1509,19 +1518,19 @@ export struct TopicDetailPage {
     const targetFavorited = !this.isSiteFavorited
     this.isSiteFavoriteLoading = true
     this.isSiteFavorited = targetFavorited
-    AppStorage.setOrCreate<boolean>(StorageKeys.TOPIC_DETAIL_SITE_FAVORITED, targetFavorited)
+    publishTopicDetailSiteFavorited(targetFavorited)
     this.api
       .toggleTopicFavoriteWithCookie(cookie, this.topicId)
       .then((favorited: boolean) => {
         this.isSiteFavorited = favorited
-        AppStorage.setOrCreate<boolean>(StorageKeys.TOPIC_DETAIL_SITE_FAVORITED, favorited)
+        publishTopicDetailSiteFavorited(favorited)
         this.persistTopicFavoriteOverlay(favorited)
       })
       .catch((error: Error) => {
         // Rollback failed optimistic action and leave durable overlay unchanged so stale private
         // account state never overwrites the server-confirmed cache with a failed mutation.
         this.isSiteFavorited = previousIsSiteFavorited
-        AppStorage.setOrCreate<boolean>(StorageKeys.TOPIC_DETAIL_SITE_FAVORITED, previousIsSiteFavorited)
+        publishTopicDetailSiteFavorited(previousIsSiteFavorited)
         promptAction
           .openToast({ message: translateApiError(error) })
           .catch((_error: Error) => {})
@@ -1538,21 +1547,21 @@ export struct TopicDetailPage {
         return
       }
       this.isSiteFavorited = false
-      AppStorage.setOrCreate<boolean>(StorageKeys.TOPIC_DETAIL_SITE_FAVORITED, false)
+      publishTopicDetailSiteFavorited(false)
       return
     }
     this.api
       .getTopicFavoriteToggleActionWithCookie(cookie, this.topicId)
       .then((toggle: V2exToggleAction) => {
         this.isSiteFavorited = toggle.currentlyOn
-        AppStorage.setOrCreate<boolean>(StorageKeys.TOPIC_DETAIL_SITE_FAVORITED, toggle.currentlyOn)
+        publishTopicDetailSiteFavorited(toggle.currentlyOn)
       })
       .catch((_error: Error) => {
         if (this.topicActionOverlay?.favoriteKnown) {
           return
         }
         this.isSiteFavorited = false
-        AppStorage.setOrCreate<boolean>(StorageKeys.TOPIC_DETAIL_SITE_FAVORITED, false)
+        publishTopicDetailSiteFavorited(false)
       })
   }
 
@@ -1563,7 +1572,7 @@ export struct TopicDetailPage {
         return
       }
       this.isTopicThanked = false
-      AppStorage.setOrCreate<boolean>(StorageKeys.TOPIC_DETAIL_THANKED, false)
+      publishTopicDetailThanked(false)
       return
     }
     this.api
@@ -1573,7 +1582,7 @@ export struct TopicDetailPage {
           return
         }
         this.isTopicThanked = false
-        AppStorage.setOrCreate<boolean>(StorageKeys.TOPIC_DETAIL_THANKED, false)
+        publishTopicDetailThanked(false)
       })
       .catch((error: Error) => {
         const thanked = TopicDetailActionCoordinator.thankedFromTopicThankLoadError(error)
@@ -1581,7 +1590,7 @@ export struct TopicDetailPage {
           return
         }
         this.isTopicThanked = thanked
-        AppStorage.setOrCreate<boolean>(StorageKeys.TOPIC_DETAIL_THANKED, thanked)
+        publishTopicDetailThanked(thanked)
       })
   }
 
@@ -1651,17 +1660,17 @@ export struct TopicDetailPage {
     const previousIsTopicThanked = this.isTopicThanked
     this.isTopicThankLoading = true
     this.isTopicThanked = true
-    AppStorage.setOrCreate<boolean>(StorageKeys.TOPIC_DETAIL_THANKED, true)
+    publishTopicDetailThanked(true)
     TopicDetailActionCoordinator
       .executeTopicThank(this.api, cookie, this.topicId)
       .then(() => {
         this.isTopicThanked = true
-        AppStorage.setOrCreate<boolean>(StorageKeys.TOPIC_DETAIL_THANKED, true)
+        publishTopicDetailThanked(true)
         this.persistTopicThankOverlay()
       })
       .catch((error: Error) => {
         this.isTopicThanked = previousIsTopicThanked
-        AppStorage.setOrCreate<boolean>(StorageKeys.TOPIC_DETAIL_THANKED, previousIsTopicThanked)
+        publishTopicDetailThanked(previousIsTopicThanked)
         promptAction
           .openToast({ message: translateApiError(error) })
           .catch((_error: Error) => {})
@@ -1680,9 +1689,9 @@ export struct TopicDetailPage {
     this.isSavedLater = savedLater
     this.isSiteFavorited = siteFavorited
     this.isTopicThanked = thanked
-    AppStorage.setOrCreate<boolean>(StorageKeys.TOPIC_DETAIL_SAVED_LATER, savedLater)
-    AppStorage.setOrCreate<boolean>(StorageKeys.TOPIC_DETAIL_SITE_FAVORITED, siteFavorited)
-    AppStorage.setOrCreate<boolean>(StorageKeys.TOPIC_DETAIL_THANKED, thanked)
+    publishTopicDetailSavedLater(savedLater)
+    publishTopicDetailSiteFavorited(siteFavorited)
+    publishTopicDetailThanked(thanked)
   }
 
   private prepareReplyThank(reply: V2exReply): void {

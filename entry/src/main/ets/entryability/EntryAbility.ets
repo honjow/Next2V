@@ -8,6 +8,7 @@ import {
   FoldScreenUtil,
   LanguageSettings,
   LayoutSafeAreaBridge,
+  publishPendingV2exUrl,
   SettingsBootstrap,
   StorageKeys,
   ThemeSettings,
@@ -127,7 +128,7 @@ export default class EntryAbility extends UIAbility {
     if (!uri || !V2exUrlRouter.parse(uri)) {
       return
     }
-    AppStorage.setOrCreate<string>(StorageKeys.PENDING_V2EX_URL, `${Date.now()}:${uri}`)
+    publishPendingV2exUrl(`${Date.now()}:${uri}`)
   }
 
   private async configureWideGamut(win: window.Window): Promise<void> {

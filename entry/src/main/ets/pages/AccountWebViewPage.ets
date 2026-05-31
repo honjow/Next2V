@@ -10,6 +10,7 @@ import {
   V2exUrlRouter,
   connectNavStack,
   connectAccountWebViewAction,
+  publishAccountWebViewUrl,
   AccountWebViewActionState,
 } from 'shared'
 
@@ -155,7 +156,7 @@ export struct AccountWebViewPage {
     this.targetUrl = normalizedTargetUrl
     // Write back the normalised URL to the V1 AppStorage key (still read by Index) — previously
     // done implicitly by the @StorageLink two-way binding.
-    AppStorage.setOrCreate<string>(StorageKeys.ACCOUNT_WEB_VIEW_URL, normalizedTargetUrl)
+    publishAccountWebViewUrl(normalizedTargetUrl)
     this.pageMessage = AppStrings.format(AppStrings.text(AppStrings.R_WEB_LOGIN_OPENING_URL, 'Opening {0}'), [normalizedTargetUrl])
     this.injectCookie(cookie, this.webBaseUrl())
       .then(() => {

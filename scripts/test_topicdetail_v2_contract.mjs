@@ -50,7 +50,9 @@ const INDEX = 'entry/src/main/ets/pages/Index.ets';
   must(/TopicDetailActionListener\s*\(/.test(code), `${PAGE}: hosts TopicDetailActionListener adapter`);
   // appbar identity behavior preserved (same coordinator + route-id key publishing)
   must(/TopicDetailAppbarCoordinator/.test(code), `${PAGE}: still uses TopicDetailAppbarCoordinator`);
-  must(/StorageKeys\.TOPIC_DETAIL_APPBAR_ROUTE_TOPIC_ID/.test(code), `${PAGE}: publishes appbar route-id key`);
+  // State Management V2 migration: the route-id (and the rest of the appbar identity) is now published
+  // via the TopicDetailAppbarState write-through helpers (V1 key + V2 mirror the @ComponentV2 Index reads).
+  must(/publishTopicDetailAppbarRouteTopicId\(/.test(code) || /StorageKeys\.TOPIC_DETAIL_APPBAR_ROUTE_TOPIC_ID/.test(code), `${PAGE}: publishes appbar route-id key`);
   // no V1 component-state decorators survive (defense-in-depth vs leaf contract)
   for (const d of ['@State', '@Prop', '@Link', '@Watch', '@StorageLink', '@StorageProp', '@Consume', '@Provide', '@ObjectLink', '@CustomDialog']) {
     must(!new RegExp(`${d}\\b`).test(code), `${PAGE}: no surviving ${d}`);
