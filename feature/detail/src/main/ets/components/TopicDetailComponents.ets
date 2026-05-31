@@ -14,12 +14,12 @@ import {
 } from '../model/TopicDetailReplyDisplayCoordinator'
 import { SymbolGlyphModifier } from '@kit.ArkUI'
 
-@Component
+@ComponentV2
 export struct TopicDetailHeader {
-  @Prop topic: V2exTopic
-  onUserClick?: () => void
-  onNodeClick?: () => void
-  onTitleAreaChange?: (oldValue: Area, newValue: Area) => void
+  @Require @Param topic: V2exTopic
+  @Event onUserClick?: () => void
+  @Event onNodeClick?: () => void
+  @Event onTitleAreaChange?: (oldValue: Area, newValue: Area) => void
 
   build() {
     Column() {
@@ -83,9 +83,9 @@ export struct TopicDetailHeader {
   }
 }
 
-@Component
+@ComponentV2
 export struct TopicRepliesPreloadIndicator {
-  @Prop text: string = ''
+  @Param text: string = ''
 
   build() {
     Row({ space: ThemeConstants.SPACE_SM }) {
@@ -102,16 +102,20 @@ export struct TopicRepliesPreloadIndicator {
   }
 }
 
-@Component
+@ComponentV2
 export struct TopicDetailReplyDivider {
-  @Link replyDisplayMenuShown: boolean
-  @Prop replyCountText: string = ''
-  @Prop replyDisplayMode: string = 'origin'
-  @Prop replyDisplayModeText: string = AppStrings.text(AppStrings.R_REPLY_DISPLAY_MODE_ORIGIN, 'Original')
-  onJumpToFloor?: () => void
-  onLatest?: () => void
-  onShowDisplayMenu?: () => void
-  onDisplayModeChange?: (mode: string) => void
+  // Two-way menu-visibility lives in the V1 parent (TopicDetailPage). Under V2 the value
+  // flows down as @Param and the child writes the dismissal back up through @Event
+  // (the V2 replacement for the former @Link).
+  @Param replyDisplayMenuShown: boolean = false
+  @Event onReplyDisplayMenuShownChange?: (value: boolean) => void
+  @Param replyCountText: string = ''
+  @Param replyDisplayMode: string = 'origin'
+  @Param replyDisplayModeText: string = AppStrings.text(AppStrings.R_REPLY_DISPLAY_MODE_ORIGIN, 'Original')
+  @Event onJumpToFloor?: () => void
+  @Event onLatest?: () => void
+  @Event onShowDisplayMenu?: () => void
+  @Event onDisplayModeChange?: (mode: string) => void
 
   build() {
     Row({ space: ThemeConstants.SPACE_SM }) {
@@ -178,7 +182,9 @@ export struct TopicDetailReplyDivider {
       .bindMenu(this.replyDisplayMenuShown, this.DisplayModeMenu, {
         placement: Placement.BottomRight,
         aboutToDisappear: () => {
-          this.replyDisplayMenuShown = false
+          if (this.onReplyDisplayMenuShownChange) {
+            this.onReplyDisplayMenuShownChange(false)
+          }
         },
       })
   }
@@ -210,11 +216,11 @@ export struct TopicDetailReplyDivider {
   }
 }
 
-@Component
+@ComponentV2
 export struct ReplyContextSheetContent {
   @BuilderParam content: () => void
-  @Prop title: string = AppStrings.text(AppStrings.R_REPLY_CONTEXT_TITLE, 'Reply context')
-  closeAction?: () => void
+  @Param title: string = AppStrings.text(AppStrings.R_REPLY_CONTEXT_TITLE, 'Reply context')
+  @Event closeAction?: () => void
 
   build() {
     AppModalScaffold({
@@ -230,16 +236,16 @@ export struct ReplyContextSheetContent {
   }
 }
 
-@Component
+@ComponentV2
 export struct ReplyContextListItem {
-  @Prop reply: V2exReply
-  @Prop floor: number = 0
-  @Prop label: string = ''
-  @Prop selected: boolean = false
-  @Prop snippet: string = ''
-  @Prop bodyFontSize: number = ThemeConstants.FONT_SIZE_BODY
-  @Prop bodyLineHeight: number = ThemeConstants.LINE_HEIGHT_BODY
-  onSelect?: () => void
+  @Require @Param reply: V2exReply
+  @Param floor: number = 0
+  @Param label: string = ''
+  @Param selected: boolean = false
+  @Param snippet: string = ''
+  @Param bodyFontSize: number = ThemeConstants.FONT_SIZE_BODY
+  @Param bodyLineHeight: number = ThemeConstants.LINE_HEIGHT_BODY
+  @Event onSelect?: () => void
 
   build() {
     Column({ space: ThemeConstants.SPACE_SM }) {

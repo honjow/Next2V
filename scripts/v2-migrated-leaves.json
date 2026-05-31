@@ -68,6 +68,7 @@
     "feature/feed/src/main/ets/pages/HomePage.ets",
     "entry/src/main/ets/pages/SearchPage.ets",
     "entry/src/main/ets/pages/AccountWebViewPage.ets",
-    "entry/src/main/ets/components/SearchPageComponents.ets"
+    "entry/src/main/ets/components/SearchPageComponents.ets",
+    "feature/detail/src/main/ets/components/TopicDetailComponents.ets"
   ]
 }

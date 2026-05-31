@@ -962,6 +962,9 @@ export struct TopicDetailPage {
   @Builder ReplyDivider() {
     TopicDetailReplyDivider({
       replyDisplayMenuShown: this.replyDisplayMenuShown,
+      onReplyDisplayMenuShownChange: (value: boolean) => {
+        this.replyDisplayMenuShown = value
+      },
       replyCountText: this.replyCountText(),
       replyDisplayMode: this.v.replyDisplayMode,
       replyDisplayModeText: this.replyDisplayModeText(),
