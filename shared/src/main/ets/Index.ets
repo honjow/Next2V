@@ -51,6 +51,7 @@ export { StorageKeys } from './constants/StorageKeys'
 export { LayoutSafeAreaState, connectLayoutSafeArea, LayoutSafeAreaBridge } from './state/LayoutSafeAreaState'
 export { ReadingSettingsState, connectReadingSettings } from './state/ReadingSettingsState'
 export { ApiDomainState, connectApiDomain } from './state/ApiDomainState'
+export { NetworkProxyState, connectNetworkProxy } from './state/NetworkProxyState'
 export { DiagnosticsState, connectDiagnostics } from './state/DiagnosticsState'
 export { NavStackHolder, connectNavStack } from './state/NavStackHolder'
 export { DiscoverKeywordState, connectDiscoverKeyword } from './state/DiscoverKeywordState'
@@ -66,6 +67,8 @@ export { NativeLoginShownState, connectNativeLoginShown } from './state/NativeLo
 export { AuthCookieState, connectAuthCookie } from './state/AuthCookieState'
 export { MotionHandEdgeState, connectMotionHandEdge } from './state/MotionHandEdgeState'
 export { TopicDetailReplyButtonState, connectTopicDetailReplyButton } from './state/TopicDetailReplyButtonState'
+export { AvatarAppearanceState, connectAvatarAppearance } from './state/AvatarAppearanceState'
+export { ReplyCardStyleState, connectReplyCardStyle } from './state/ReplyCardStyleState'
 export {
   BlockedListSelectedTabState,
   connectBlockedListSelectedTab,

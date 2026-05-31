@@ -3,6 +3,7 @@ import { preferences } from '@kit.ArkData'
 import { connection } from '@kit.NetworkKit'
 import { StorageKeys } from '../constants/StorageKeys'
 import { AppStrings } from '../i18n/AppStrings'
+import { connectNetworkProxy } from '../state/NetworkProxyState'
 import { STORE_NAME_SETTINGS, SettingsPreferencesStore, readJsonArray, readJsonObject, setAppStorageValue, writeJsonValue } from './SettingsStorage'
 
 export type NetworkProxyMode = 'off' | 'system' | 'http' | 'socks5'
@@ -53,13 +54,24 @@ export class NetworkProxySettings {
 
   static apply(snapshot: NetworkProxySettingsSnapshot): void {
     const normalized = NetworkProxySettings.normalize(snapshot)
+    const exclusionListText = normalized.exclusionList.join('\n')
     setAppStorageValue<string>(StorageKeys.NETWORK_PROXY_MODE, normalized.mode)
     setAppStorageValue<string>(StorageKeys.NETWORK_PROXY_HOST, normalized.host)
     setAppStorageValue<number>(StorageKeys.NETWORK_PROXY_PORT, normalized.port)
     setAppStorageValue<string>(StorageKeys.NETWORK_PROXY_SCHEME, normalized.proxyScheme || 'http')
     setAppStorageValue<string>(StorageKeys.NETWORK_PROXY_USERNAME, normalized.username)
     setAppStorageValue<string>(StorageKeys.NETWORK_PROXY_PASSWORD, normalized.password)
-    setAppStorageValue<string>(StorageKeys.NETWORK_PROXY_EXCLUSION_LIST, normalized.exclusionList.join('\n'))
+    setAppStorageValue<string>(StorageKeys.NETWORK_PROXY_EXCLUSION_LIST, exclusionListText)
+    // Dual-write the V2 mirror (read by @ComponentV2 NetworkProxySettingsPage / SettingsPage) from
+    // this single AppStorage writer so the two stores stay in lockstep.
+    const proxy = connectNetworkProxy()
+    proxy.mode = normalized.mode
+    proxy.host = normalized.host
+    proxy.port = normalized.port
+    proxy.proxyScheme = normalized.proxyScheme || 'http'
+    proxy.username = normalized.username
+    proxy.password = normalized.password
+    proxy.exclusionListText = exclusionListText
   }
 
   static async load(context: common.UIAbilityContext): Promise<NetworkProxySettingsSnapshot> {

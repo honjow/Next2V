@@ -4,6 +4,7 @@ import {
   AppStrings,
   AppModalScaffold,
   AppTextField,
+  connectNetworkProxy,
   ConciseListRow,
   defaultSheetOptions,
   GroupedListSection,
@@ -11,8 +12,8 @@ import {
   NetworkProxyProfileSettings,
   NetworkProxyRequest,
   NetworkProxySettings,
+  NetworkProxyState,
   SecondaryListScaffold,
-  StorageKeys,
   ThemeConstants,
   type NetworkProxyMode,
   type NetworkProxyProfile,
@@ -117,38 +118,35 @@ struct NetworkProxyProfileRowView {
   }
 }
 
-@Component
+@ComponentV2
 export struct NetworkProxySettingsPage {
-  @StorageLink(StorageKeys.NETWORK_PROXY_MODE) mode: string = NetworkProxySettings.MODE_OFF
-  @StorageLink(StorageKeys.NETWORK_PROXY_HOST) host: string = ''
-  @StorageLink(StorageKeys.NETWORK_PROXY_PORT) port: number = 0
-  @StorageLink(StorageKeys.NETWORK_PROXY_SCHEME) proxyScheme: string = NetworkProxySettings.MODE_HTTP_PROXY
-  @StorageLink(StorageKeys.NETWORK_PROXY_USERNAME) username: string = ''
-  @StorageLink(StorageKeys.NETWORK_PROXY_PASSWORD) password: string = ''
-  @StorageLink(StorageKeys.NETWORK_PROXY_EXCLUSION_LIST) exclusionListText: string = ''
-  @StorageProp(StorageKeys.KEYBOARD_HEIGHT) keyboardH: number = 0
-  @State private portText: string = ''
-  @State private testStatus: string = ''
-  @State private testing: boolean = false
-  @State private profiles: NetworkProxyProfileRow[] = []
+  // Live proxy config mirrored into AppStorageV2 by NetworkProxySettings.apply() (replaces the
+  // NETWORK_PROXY_* @StorageLink set). The page reads these @Trace fields and routes every write
+  // through NetworkProxySettings.apply()/save() so AppStorage and the mirror stay in lockstep.
+  // (The former unused @StorageProp(KEYBOARD_HEIGHT) keyboardH was dead and is dropped.)
+  private proxy: NetworkProxyState = connectNetworkProxy()
+  @Local private portText: string = ''
+  @Local private testStatus: string = ''
+  @Local private testing: boolean = false
+  @Local private profiles: NetworkProxyProfileRow[] = []
   // One stable observed row object per profile id, reused across reloads and
   // edits so same-id rows update in place (no ForEach key churn).
   private profileRowsById: Map<string, NetworkProxyProfileRow> = new Map()
-  @State private activeProfileId: string = ''
-  @State private profileEditorVisible: boolean = false
-  @State private editingProfileId: string = ''
-  @State private editorName: string = ''
-  @State private editorMode: string = NetworkProxySettings.MODE_HTTP
-  @State private editorProxyScheme: string = NetworkProxySettings.MODE_HTTP_PROXY
-  @State private editorHost: string = ''
-  @State private editorPort: number = 0
-  @State private editorPortText: string = ''
-  @State private editorUsername: string = ''
-  @State private editorPassword: string = ''
-  @State private editorExclusionListText: string = ''
+  @Local private activeProfileId: string = ''
+  @Local private profileEditorVisible: boolean = false
+  @Local private editingProfileId: string = ''
+  @Local private editorName: string = ''
+  @Local private editorMode: string = NetworkProxySettings.MODE_HTTP
+  @Local private editorProxyScheme: string = NetworkProxySettings.MODE_HTTP_PROXY
+  @Local private editorHost: string = ''
+  @Local private editorPort: number = 0
+  @Local private editorPortText: string = ''
+  @Local private editorUsername: string = ''
+  @Local private editorPassword: string = ''
+  @Local private editorExclusionListText: string = ''
 
   aboutToAppear(): void {
-    this.portText = this.port > 0 ? `${this.port}` : ''
+    this.portText = this.proxy.port > 0 ? `${this.proxy.port}` : ''
     this.loadProfiles()
   }
 
@@ -486,7 +484,7 @@ export struct NetworkProxySettingsPage {
   }
 
   private currentMode(): NetworkProxyMode {
-    return NetworkProxySettings.normalizeMode(this.mode)
+    return NetworkProxySettings.normalizeMode(this.proxy.mode)
   }
 
   private proxyEnabled(): boolean {
@@ -522,12 +520,12 @@ export struct NetworkProxySettingsPage {
   private snapshot(): NetworkProxySettingsSnapshot {
     return NetworkProxySettings.normalize({
       mode: this.currentMode(),
-      host: this.host,
-      port: this.port,
-      proxyScheme: this.currentMode() === NetworkProxySettings.MODE_HTTP ? NetworkProxySettings.normalizeProxyScheme(this.proxyScheme) : NetworkProxySettings.MODE_HTTP_PROXY,
-      username: this.currentMode() === NetworkProxySettings.MODE_HTTP || this.currentMode() === NetworkProxySettings.MODE_SOCKS5 ? this.username : '',
-      password: this.currentMode() === NetworkProxySettings.MODE_HTTP || this.currentMode() === NetworkProxySettings.MODE_SOCKS5 ? this.password : '',
-      exclusionList: NetworkProxySettings.parseExclusionList(this.exclusionListText),
+      host: this.proxy.host,
+      port: this.proxy.port,
+      proxyScheme: this.currentMode() === NetworkProxySettings.MODE_HTTP ? NetworkProxySettings.normalizeProxyScheme(this.proxy.proxyScheme) : NetworkProxySettings.MODE_HTTP_PROXY,
+      username: this.currentMode() === NetworkProxySettings.MODE_HTTP || this.currentMode() === NetworkProxySettings.MODE_SOCKS5 ? this.proxy.username : '',
+      password: this.currentMode() === NetworkProxySettings.MODE_HTTP || this.currentMode() === NetworkProxySettings.MODE_SOCKS5 ? this.proxy.password : '',
+      exclusionList: NetworkProxySettings.parseExclusionList(this.proxy.exclusionListText),
     })
   }
 
@@ -560,7 +558,9 @@ export struct NetworkProxySettingsPage {
 
   private setEnabled(value: boolean): void {
     if (!value) {
-      this.mode = NetworkProxySettings.MODE_OFF
+      // Optimistic mirror write so the toggle reflects immediately; saveCurrent() -> apply()
+      // synchronously persists to AppStorage and re-writes the mirror.
+      this.proxy.mode = NetworkProxySettings.MODE_OFF
       this.saveCurrent(true)
       return
     }
@@ -573,7 +573,7 @@ export struct NetworkProxySettingsPage {
   }
 
   private selectSystemProxy(): void {
-    this.mode = NetworkProxySettings.MODE_SYSTEM
+    this.proxy.mode = NetworkProxySettings.MODE_SYSTEM
     this.testStatus = ''
     this.saveCurrent(true)
   }
@@ -775,7 +775,7 @@ export struct NetworkProxySettingsPage {
             this.applySnapshotToPage(active.snapshot)
           }
         } else {
-          this.mode = NetworkProxySettings.MODE_OFF
+          this.proxy.mode = NetworkProxySettings.MODE_OFF
           this.saveCurrent(false)
         }
         this.closeEditor()
@@ -859,14 +859,10 @@ export struct NetworkProxySettingsPage {
 
   private applySnapshotToPage(snapshot: NetworkProxySettingsSnapshot): void {
     const normalized = NetworkProxySettings.normalize(snapshot)
-    this.mode = normalized.mode
-    this.proxyScheme = normalized.proxyScheme || NetworkProxySettings.MODE_HTTP_PROXY
-    this.host = normalized.host
-    this.port = normalized.port
+    // Was a set of direct NETWORK_PROXY_* @StorageLink writes; apply() writes the same AppStorage
+    // keys AND dual-writes the V2 mirror the page now reads, so the page reflects the active config.
+    NetworkProxySettings.apply(normalized)
     this.portText = normalized.port > 0 ? `${normalized.port}` : ''
-    this.username = normalized.username
-    this.password = normalized.password
-    this.exclusionListText = NetworkProxySettings.exclusionListText(normalized)
   }
 
   private editorProfileName(snapshot: NetworkProxySettingsSnapshot): string {

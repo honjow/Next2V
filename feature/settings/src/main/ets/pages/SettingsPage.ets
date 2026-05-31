@@ -1,24 +1,35 @@
 import { common } from '@kit.AbilityKit'
 import { promptAction } from '@kit.ArkUI'
 import {
-  ApiDomainSettings,
+  ApiDomainState,
   AppStrings,
   AvatarAppearanceSettings,
+  AvatarAppearanceState,
   CacheSettings,
+  connectApiDomain,
+  connectAvatarAppearance,
+  connectNavStack,
+  connectNetworkProxy,
+  connectReadingSettings,
+  connectReplyCardStyle,
+  connectTopicDetailReplyButton,
   ConciseListRow,
   GroupedListSection,
   HomeTabSettings,
   HttpClient,
   NetworkProxySettings,
+  NetworkProxyState,
   LanguageSettings,
   ReadingSettings,
+  ReadingSettingsState,
   SecondaryListScaffold,
   StorageKeys,
   ThemeSettings,
   ReplyActionAlignmentSettings,
   ReplyDisplaySettings,
   ReplyCardStyleSettings,
-  TopicDetailReplyActionSettings,
+  ReplyCardStyleState,
+  TopicDetailReplyButtonState,
   type CacheStats,
 } from 'shared'
 import {
@@ -34,45 +45,63 @@ import {
 } from '../model/SettingsPageCoordinator'
 import { SettingsSaveCoordinator } from '../model/SettingsSaveCoordinator'
 import { StorageSettingsCoordinator } from '../model/StorageSettingsCoordinator'
-@Component
+@ComponentV2
 export struct SettingsPage {
-  @Consume('ns') stack: NavPathStack;
-  @StorageLink(StorageKeys.SELECTED_BASE_URL) selectedBaseUrl: string = ApiDomainSettings.normalizeBaseUrl('');
-  @StorageLink(StorageKeys.AUTO_DAILY_CHECKIN_ENABLED) autoDailyCheckinEnabled: boolean = true;
-  @StorageLink(StorageKeys.MEDIA_AUTO_LOAD_IMAGES) autoLoadImages: boolean = true;
-  @StorageLink(StorageKeys.MEDIA_ONLY_LOAD_IMAGES_ON_WIFI) onlyLoadImagesOnWifi: boolean = false;
-  @StorageLink(StorageKeys.THEME_MODE) themeMode: string = ThemeSettings.MODE_AUTO;
-  @StorageLink(StorageKeys.LANGUAGE_MODE) languageMode: string = LanguageSettings.MODE_SYSTEM;
-  @StorageLink(StorageKeys.REPLY_DISPLAY_MODE) replyDisplayMode: string =
-    ReplyDisplaySettings.MODE_THREAD;
-  @StorageLink(StorageKeys.REPLY_CARD_STYLE) replyCardStyle: string =
-    ReplyCardStyleSettings.STYLE_STANDARD;
-  @StorageLink(StorageKeys.AVATAR_APPEARANCE) avatarAppearance: string =
-    AvatarAppearanceSettings.APPEARANCE_CIRCLE;
-  @StorageLink(StorageKeys.REPLY_ACTION_ALIGNMENT_MODE) replyActionAlignmentMode: string =
-    ReplyActionAlignmentSettings.MODE_UNSET;
-  @StorageLink(StorageKeys.HOME_TAB_AUTO_HIDE) homeTabAutoHide: boolean = HomeTabSettings.DEFAULT_AUTO_HIDE;
-  @StorageLink(StorageKeys.TOPIC_DETAIL_REPLY_BUTTON_AUTO_HIDE)
-  topicDetailReplyButtonAutoHide: boolean = TopicDetailReplyActionSettings.DEFAULT_AUTO_HIDE;
-  @StorageLink(StorageKeys.MOTION_HOLDING_HAND_SUPPORTED) motionHoldingHandSupported: boolean = false;
-  @StorageLink(StorageKeys.READING_RESTORE_POSITION) readingRestorePosition: boolean = false;
-  @StorageLink(StorageKeys.READING_BASE64_DECODE_MODE) base64DecodeMode: string = ReadingSettings.BASE64_MODE_BADGE;
-  @StorageLink(StorageKeys.NETWORK_PROXY_MODE) networkProxyMode: string = NetworkProxySettings.MODE_OFF;
-  @StorageLink(StorageKeys.NETWORK_PROXY_HOST) networkProxyHost: string = '';
-  @StorageLink(StorageKeys.NETWORK_PROXY_PORT) networkProxyPort: number = 0;
-  @StorageLink(StorageKeys.NETWORK_PROXY_SCHEME) networkProxyScheme: string = NetworkProxySettings.MODE_HTTP_PROXY;
-  @State private cacheStats: CacheStats = { topicListCount: 0, topicDetailCount: 0, updatedAt: 0 };
-  @State private themeMenuShown: boolean = false;
-  @State private languageMenuShown: boolean = false;
-  @State private avatarAppearanceMenuShown: boolean = false;
-  @State private replyDisplayMenuShown: boolean = false;
-  @State private replyCardStyleMenuShown: boolean = false;
-  @State private replyActionAlignmentMenuShown: boolean = false;
-  @State private base64ModeMenuShown: boolean = false;
+  // `ns` is the app-wide NavPathStack from NavStackHolder (was @Consume('ns')).
+  private stack: NavPathStack = connectNavStack().stack;
+  // Settings that a pushed sub-page (or another surface) can change while this page instance is alive
+  // are read from their V2 mirrors so the page stays reactive across the V1/V2 boundary; each mirror
+  // is dual-written synchronously at its settings apply()/save() chokepoint:
+  //   - domain (DomainSettings), proxy (NetworkProxySettings) change via sub-pages;
+  //   - avatar / replyCardStyle / reading-base64 / topic-reply-button are toggled here, but their
+  //     existing mirrors already give a free reactive + synchronous source so we read them too.
+  private domain: ApiDomainState = connectApiDomain();
+  private avatar: AvatarAppearanceState = connectAvatarAppearance();
+  private replyCardStyleState: ReplyCardStyleState = connectReplyCardStyle();
+  private topicReplyButton: TopicDetailReplyButtonState = connectTopicDetailReplyButton();
+  private reading: ReadingSettingsState = connectReadingSettings();
+  private proxy: NetworkProxyState = connectNetworkProxy();
+  // Settings toggled only on this page (single writer while visible) are @Local: hydrated from
+  // AppStorage in aboutToAppear and updated optimistically by the toggle handlers below.
+  @Local private autoDailyCheckinEnabled: boolean = true;
+  @Local private autoLoadImages: boolean = true;
+  @Local private onlyLoadImagesOnWifi: boolean = false;
+  @Local private themeMode: string = ThemeSettings.MODE_AUTO;
+  @Local private languageMode: string = LanguageSettings.MODE_SYSTEM;
+  @Local private replyDisplayMode: string = ReplyDisplaySettings.MODE_THREAD;
+  @Local private replyActionAlignmentMode: string = ReplyActionAlignmentSettings.MODE_UNSET;
+  @Local private homeTabAutoHide: boolean = HomeTabSettings.DEFAULT_AUTO_HIDE;
+  @Local private motionHoldingHandSupported: boolean = false;
+  @Local private readingRestorePosition: boolean = false;
+  @Local private cacheStats: CacheStats = { topicListCount: 0, topicDetailCount: 0, updatedAt: 0 };
+  @Local private themeMenuShown: boolean = false;
+  @Local private languageMenuShown: boolean = false;
+  @Local private avatarAppearanceMenuShown: boolean = false;
+  @Local private replyDisplayMenuShown: boolean = false;
+  @Local private replyCardStyleMenuShown: boolean = false;
+  @Local private replyActionAlignmentMenuShown: boolean = false;
+  @Local private base64ModeMenuShown: boolean = false;
   private http: HttpClient = HttpClient.getInstance();
 
   aboutToAppear(): void {
+    this.hydratePreferences()
     this.loadCacheStats()
+  }
+
+  // Hydrate the @Local self-toggled preferences from AppStorage (populated by SettingsBootstrap at
+  // startup). The mirror-backed settings (domain/avatar/replyCardStyle/reading/proxy/topicReplyButton)
+  // need no hydration — their connect* singletons already hold the live value.
+  private hydratePreferences(): void {
+    this.autoDailyCheckinEnabled = AppStorage.get<boolean>(StorageKeys.AUTO_DAILY_CHECKIN_ENABLED) ?? true
+    this.autoLoadImages = AppStorage.get<boolean>(StorageKeys.MEDIA_AUTO_LOAD_IMAGES) ?? true
+    this.onlyLoadImagesOnWifi = AppStorage.get<boolean>(StorageKeys.MEDIA_ONLY_LOAD_IMAGES_ON_WIFI) ?? false
+    this.themeMode = AppStorage.get<string>(StorageKeys.THEME_MODE) ?? ThemeSettings.MODE_AUTO
+    this.languageMode = AppStorage.get<string>(StorageKeys.LANGUAGE_MODE) ?? LanguageSettings.MODE_SYSTEM
+    this.replyDisplayMode = AppStorage.get<string>(StorageKeys.REPLY_DISPLAY_MODE) ?? ReplyDisplaySettings.MODE_THREAD
+    this.replyActionAlignmentMode = AppStorage.get<string>(StorageKeys.REPLY_ACTION_ALIGNMENT_MODE) ?? ReplyActionAlignmentSettings.MODE_UNSET
+    this.homeTabAutoHide = AppStorage.get<boolean>(StorageKeys.HOME_TAB_AUTO_HIDE) ?? HomeTabSettings.DEFAULT_AUTO_HIDE
+    this.motionHoldingHandSupported = AppStorage.get<boolean>(StorageKeys.MOTION_HOLDING_HAND_SUPPORTED) ?? false
+    this.readingRestorePosition = AppStorage.get<boolean>(StorageKeys.READING_RESTORE_POSITION) ?? false
   }
 
   build() {
@@ -112,7 +141,7 @@ export struct SettingsPage {
               this.updateHomeTabAutoHide(value)
             })
             this.SettingsDivider()
-            this.TogglePreferenceRow(AppStrings.R_TOPIC_DETAIL_REPLY_BUTTON_AUTO_HIDE, this.topicDetailReplyButtonAutoHide, (value: boolean) => {
+            this.TogglePreferenceRow(AppStrings.R_TOPIC_DETAIL_REPLY_BUTTON_AUTO_HIDE, this.topicReplyButton.autoHide, (value: boolean) => {
               this.updateTopicDetailReplyButtonAutoHide(value)
             })
           }
@@ -229,7 +258,7 @@ export struct SettingsPage {
     GroupedListSection() {
       ConciseListRow({
         title: AppStrings.R_API_DOMAIN,
-        trailingText: SettingsPageCoordinator.apiDomainLabel(this.selectedBaseUrl),
+        trailingText: SettingsPageCoordinator.apiDomainLabel(this.domain.selectedBaseUrl),
         action: () => {
           this.stack.pushPathByName('DomainSettings', null)
         },
@@ -244,10 +273,10 @@ export struct SettingsPage {
       ConciseListRow({
         title: AppStrings.R_NAV_NETWORK_PROXY,
         trailingText: NetworkProxySettings.summary({
-          mode: NetworkProxySettings.normalizeMode(this.networkProxyMode),
-          host: this.networkProxyHost,
-          port: this.networkProxyPort,
-          proxyScheme: NetworkProxySettings.normalizeProxyScheme(this.networkProxyScheme),
+          mode: NetworkProxySettings.normalizeMode(this.proxy.mode),
+          host: this.proxy.host,
+          port: this.proxy.port,
+          proxyScheme: NetworkProxySettings.normalizeProxyScheme(this.proxy.proxyScheme),
           username: '',
           password: '',
           exclusionList: [],
@@ -304,7 +333,7 @@ export struct SettingsPage {
       this.SettingsDivider()
       SettingsDropdownRow({
         title: AppStrings.R_AVATAR_APPEARANCE,
-        trailingText: SettingsPageCoordinator.avatarAppearanceLabel(this.avatarAppearance),
+        trailingText: SettingsPageCoordinator.avatarAppearanceLabel(this.avatar.appearance),
         openAction: () => {
           this.showAvatarAppearanceMenu()
         },
@@ -353,7 +382,7 @@ export struct SettingsPage {
       this.SettingsDivider()
       SettingsDropdownRow({
         title: AppStrings.R_REPLY_STYLE,
-        trailingText: SettingsPageCoordinator.replyCardStyleLabel(this.replyCardStyle),
+        trailingText: SettingsPageCoordinator.replyCardStyleLabel(this.replyCardStyleState.replyCardStyle),
         openAction: () => {
           this.showReplyCardStyleMenu()
         },
@@ -486,7 +515,7 @@ export struct SettingsPage {
   AvatarAppearanceMenuItem(option: SettingsOption) {
     SettingsCheckedMenuItem({
       label: option.label,
-      selected: AvatarAppearanceSettings.normalize(this.avatarAppearance) === option.value,
+      selected: AvatarAppearanceSettings.normalize(this.avatar.appearance) === option.value,
       selectAction: () => {
         this.updateAvatarAppearance(option.value)
       }
@@ -497,7 +526,7 @@ export struct SettingsPage {
   Base64ModeMenuItem(option: SettingsOption) {
     SettingsCheckedMenuItem({
       label: option.label,
-      selected: this.base64DecodeMode === option.value,
+      selected: this.reading.base64DecodeMode === option.value,
       selectAction: () => {
         this.updateBase64DecodeMode(option.value)
       }
@@ -508,7 +537,7 @@ export struct SettingsPage {
   ReplyCardStyleMenuItem(option: SettingsOption) {
     SettingsCheckedMenuItem({
       label: option.label,
-      selected: this.replyCardStyle === option.value,
+      selected: this.replyCardStyleState.replyCardStyle === option.value,
       selectAction: () => {
         this.updateReplyCardStyle(option.value)
       }
@@ -647,7 +676,8 @@ export struct SettingsPage {
   }
 
   private updateTopicDetailReplyButtonAutoHide(enabled: boolean): void {
-    this.topicDetailReplyButtonAutoHide = enabled
+    // save() -> TopicDetailReplyActionSettings.apply() synchronously dual-writes the mirror the
+    // toggle reads (this.topicReplyButton.autoHide), so no optimistic local set is needed.
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     SettingsSaveCoordinator.saveTopicDetailReplyButtonAutoHide(context, enabled)
   }
@@ -681,7 +711,8 @@ export struct SettingsPage {
 
   private updateAvatarAppearance(appearance: string): void {
     const normalized = AvatarAppearanceSettings.normalize(appearance)
-    this.avatarAppearance = normalized
+    // saveAvatarAppearance -> apply() synchronously dual-writes this.avatar.appearance (the mirror
+    // the menu reads), so no optimistic local set is needed.
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     SettingsSaveCoordinator.saveAvatarAppearance(context, normalized)
   }
@@ -702,7 +733,8 @@ export struct SettingsPage {
 
   private updateReplyCardStyle(style: string): void {
     const normalized = ReplyCardStyleSettings.normalize(style)
-    this.replyCardStyle = normalized
+    // saveReplyCardStyle -> apply() synchronously dual-writes this.replyCardStyleState.replyCardStyle
+    // (the mirror the menu reads), so no optimistic local set is needed.
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     SettingsSaveCoordinator.saveReplyCardStyle(context, normalized)
   }
@@ -720,12 +752,13 @@ export struct SettingsPage {
   }
 
   private base64DecodeModeLabel(): ResourceStr {
-    return SettingsPageCoordinator.base64DecodeModeLabel(this.base64DecodeMode)
+    return SettingsPageCoordinator.base64DecodeModeLabel(this.reading.base64DecodeMode)
   }
 
   private updateBase64DecodeMode(mode: string): void {
     const normalized = ReadingSettings.normalizeBase64DecodeMode(mode)
-    this.base64DecodeMode = normalized
+    // saveBase64DecodeMode synchronously dual-writes this.reading.base64DecodeMode (the mirror the
+    // menu reads), so no optimistic local set is needed.
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     SettingsSaveCoordinator.saveBase64DecodeMode(context, normalized)
   }
