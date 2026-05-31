@@ -4,11 +4,13 @@ import {
   AppStrings,
   ApiConstants,
   AppTextField,
+  connectFeedTab,
   ConciseListRow,
+  FeedTabBridge,
   FeedTabSettings,
+  FeedTabState,
   GroupedListSection,
   SecondaryListScaffold,
-  StorageKeys,
   ThemeConstants
 } from 'shared'
 import { promptAction } from '@kit.ArkUI'
@@ -18,10 +20,14 @@ import {
   SettingsSectionHeader
 } from '../components/SettingsPageComponents'
 
-@Component
+@ComponentV2
 export struct HomeNodeSettingsPage {
-  @StorageLink(StorageKeys.FEED_TAB_KEYS) feedTabKeys: string = FeedTabSettings.defaultKeysJson()
-  @State private nodeTabName: string = ''
+  // This page is the settings *writer* of FEED_TAB_KEYS. Read the V2 FeedTabState mirror so reorders/
+  // toggles re-render here, and route every write through FeedTabBridge.publishKeys so the V1 AppStorage
+  // key (still read via @StorageLink by HomePage/FeedPills/IndexTitleBarComponents and imperatively by
+  // FeedTabSettings) and the V2 mirror stay in lockstep.
+  @Local private feedTabState: FeedTabState = connectFeedTab()
+  @Local private nodeTabName: string = ''
 
   build() {
     Column() {
@@ -142,16 +148,16 @@ export struct HomeNodeSettingsPage {
   }
 
   private visibleTabs(): TabItem[] {
-    return FeedTabSettings.tabsFromKeysJson(this.feedTabKeys)
+    return FeedTabSettings.tabsFromKeysJson(this.feedTabState.feedTabKeys)
   }
 
   private hiddenBuiltInTabs(): TabItem[] {
-    return ApiConstants.TAB_ITEMS.filter((tab: TabItem) => !FeedTabSettings.isVisible(this.feedTabKeys, tab.key))
+    return ApiConstants.TAB_ITEMS.filter((tab: TabItem) => !FeedTabSettings.isVisible(this.feedTabState.feedTabKeys, tab.key))
   }
 
   private updateFeedTabVisibility(key: string): void {
-    const nextKeys = FeedTabSettings.toggleKey(this.feedTabKeys, key)
-    if (nextKeys === this.feedTabKeys) {
+    const nextKeys = FeedTabSettings.toggleKey(this.feedTabState.feedTabKeys, key)
+    if (nextKeys === this.feedTabState.feedTabKeys) {
       return
     }
     this.saveFeedTabs(nextKeys)
@@ -175,8 +181,8 @@ export struct HomeNodeSettingsPage {
       })
       return
     }
-    const nextKeys = FeedTabSettings.addNode(this.feedTabKeys, cleanName)
-    if (nextKeys === this.feedTabKeys) {
+    const nextKeys = FeedTabSettings.addNode(this.feedTabState.feedTabKeys, cleanName)
+    if (nextKeys === this.feedTabState.feedTabKeys) {
       promptAction.openToast({ message: AppStrings.text(AppStrings.R_NODE_COLUMN_EXISTS, 'Node column already exists') }).catch((_error: Error) => {
       })
       return
@@ -186,14 +192,17 @@ export struct HomeNodeSettingsPage {
   }
 
   private resetFeedTabs(): void {
-    if (FeedTabSettings.isDefault(this.feedTabKeys)) {
+    if (FeedTabSettings.isDefault(this.feedTabState.feedTabKeys)) {
       return
     }
     this.saveFeedTabs(FeedTabSettings.defaultKeysJson())
   }
 
   private saveFeedTabs(keysJson: string): void {
-    this.feedTabKeys = keysJson
+    // Optimistic dual-write (V1 AppStorage + V2 FeedTabState mirror) so this page and HomePage/FeedPills
+    // react immediately; FeedTabSettings.save then persists to preferences and re-publishes the normalized
+    // value through the same bridge.
+    FeedTabBridge.publishKeys(keysJson)
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     FeedTabSettings.save(context, keysJson).catch((error: Error) => {
       console.error('save feed tab settings failed: ' + error.message)

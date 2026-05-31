@@ -70,6 +70,7 @@
     "entry/src/main/ets/pages/AccountWebViewPage.ets",
     "entry/src/main/ets/components/SearchPageComponents.ets",
     "feature/detail/src/main/ets/components/TopicDetailComponents.ets",
-    "shared/src/main/ets/components/ReplyCard.ets"
+    "shared/src/main/ets/components/ReplyCard.ets",
+    "feature/settings/src/main/ets/pages/HomeNodeSettingsPage.ets"
   ]
 }
