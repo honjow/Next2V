@@ -4,14 +4,26 @@ import {
   ApiService,
   ApiV2Service,
   AppStrings,
+  AuthCookieState,
+  AuthIdentityState,
+  AuthSessionSignalState,
   AuthSessionSettings,
   AuthSettings,
+  connectAuthCookie,
+  connectAuthIdentity,
+  connectAuthSessionSignal,
+  connectLocalDataSignal,
+  connectNavStack,
+  connectNotificationAction,
   CookieJarSettings,
   DiagnosticLogger,
   EmptyState,
   HttpClient,
   LoadingFooter,
+  LocalDataSignalState,
+  NotificationActionState,
   PullRefreshListScaffold,
+  setAppStorageValue,
   StorageKeys,
   ThemeConstants,
   TwoFactorChallengeService,
@@ -35,33 +47,36 @@ import {
   NotificationErrorState
 } from '../components/NotificationPageComponents'
 
-@Component
+@ComponentV2
 export struct NotificationPage {
-  @Consume('ns') ns: NavPathStack
-  @StorageLink(StorageKeys.AUTH_TOKEN_CONFIGURED) @Watch('onAuthChanged') authTokenConfigured: boolean = false
-  @StorageLink(StorageKeys.AUTH_COOKIE_CONFIGURED) @Watch('onAuthChanged') authCookieConfigured: boolean = false
-  @StorageLink(StorageKeys.AUTH_USERNAME) @Watch('onAuthChanged') storedUsername: string = ''
-  @StorageLink(StorageKeys.AUTH_SESSION_USERNAME) @Watch('onAuthChanged') sessionUsername: string = ''
-  @StorageLink(StorageKeys.AUTH_SESSION_UPDATED_AT) @Watch('onAuthChanged') authSessionUpdatedAt: number = 0
-  @StorageLink(StorageKeys.LOCAL_DATA_UPDATED_AT) @Watch('onLocalDataUpdated') localDataUpdatedAt: number = 0
-  @StorageLink(StorageKeys.NOTIFICATION_ACTION) @Watch('onNotificationAction') notificationActionCommand: string = ''
-  @StorageLink(StorageKeys.NOTIFICATION_UNREAD_COUNT) notificationUnreadCount: number = 0
-  @State private authToken: string = ''
-  @State private notifications: V2exNotification[] = []
-  @State private notificationError: string = ''
-  @State private isNotificationLoading: boolean = false
-  @State private notificationPage: number = 1
-  @State private notificationHasMore: boolean = true
-  @State private isNotificationLoadingMore: boolean = false
-  @State private notificationCacheUpdatedAt: number = 0
-  @State private notificationLoadedFromCache: boolean = false
-  @State private notificationSourceLabel: string = ''
-  @State private notificationInitialSettled: boolean = false
-  @State private isNotificationAuthLoading: boolean = false
-  @State private scrollEnabled: boolean = true
-  @State private viewedUnreadNotificationKeys: string[] = []
-  scroller: Scroller = new Scroller()
-  onDidScroll?: (offset: number, state: ScrollState) => void
+  // ns from NavStackHolder (was @Consume('ns')).
+  private ns: NavPathStack = connectNavStack().stack
+  // Auth/session/local-data/notification-action read from their V2 mirrors (dual-written at the
+  // service chokepoints); replaces the AUTH_* / LOCAL_DATA_UPDATED_AT / NOTIFICATION_ACTION
+  // @StorageLink + @Watch. The shared onAuthChanged reaction is driven by a multi-path @Monitor below.
+  // NOTIFICATION_UNREAD_COUNT is used imperatively (never in build), so it stays a plain AppStorage
+  // read/write that keeps Index's tab badge in sync.
+  private authIdentity: AuthIdentityState = connectAuthIdentity()
+  private authCookie: AuthCookieState = connectAuthCookie()
+  private session: AuthSessionSignalState = connectAuthSessionSignal()
+  private localData: LocalDataSignalState = connectLocalDataSignal()
+  private notificationAction: NotificationActionState = connectNotificationAction()
+  @Local private authToken: string = ''
+  @Local private notifications: V2exNotification[] = []
+  @Local private notificationError: string = ''
+  @Local private isNotificationLoading: boolean = false
+  @Local private notificationPage: number = 1
+  @Local private notificationHasMore: boolean = true
+  @Local private isNotificationLoadingMore: boolean = false
+  @Local private notificationCacheUpdatedAt: number = 0
+  @Local private notificationLoadedFromCache: boolean = false
+  @Local private notificationSourceLabel: string = ''
+  @Local private notificationInitialSettled: boolean = false
+  @Local private isNotificationAuthLoading: boolean = false
+  @Local private scrollEnabled: boolean = true
+  @Local private viewedUnreadNotificationKeys: string[] = []
+  @Param scroller: Scroller = new Scroller()
+  @Event onDidScroll?: (offset: number, state: ScrollState) => void
   private api: ApiService = new ApiService()
   private apiV2: ApiV2Service = new ApiV2Service()
   private notificationVm: NotificationCenterViewModel = new NotificationCenterViewModel(this.api)
@@ -73,18 +88,20 @@ export struct NotificationPage {
   private notificationIdentityKey: string = ''
   private notificationEntryUnreadCount: number = 0
   private pendingNotificationDeletes: Set<number> = new Set<number>()
-  @Prop @Watch('onRefreshKeyChanged') refreshKey: number = 0
-  @Prop currentTab: number = 0
+  @Param refreshKey: number = 0
+  @Param currentTab: number = 0
 
   aboutToAppear(): void {
     this.loadAuthSnapshot(false)
   }
 
-  onRefreshKeyChanged(_propName: string): void {
+  @Monitor('refreshKey')
+  onRefreshKeyChanged(): void {
     this.loadAuthSnapshot(true)
   }
 
-  onAuthChanged(_propName: string): void {
+  @Monitor('authIdentity.tokenConfigured', 'authCookie.configured', 'authIdentity.username', 'session.username', 'session.updatedAt')
+  onAuthChanged(): void {
     if (this.deferNotificationRefreshUntilVisible()) {
       return
     }
@@ -100,12 +117,14 @@ export struct NotificationPage {
     this.loadAuthSnapshot(true)
   }
 
-  onLocalDataUpdated(_propName: string): void {
+  @Monitor('localData.updatedAt')
+  onLocalDataUpdated(): void {
     this.notificationError = ''
   }
 
-  onNotificationAction(_propName: string): void {
-    const raw = (this.notificationActionCommand || '').trim()
+  @Monitor('notificationAction.command')
+  onNotificationAction(): void {
+    const raw = (this.notificationAction.command || '').trim()
     if (!raw) {
       return
     }
@@ -241,7 +260,7 @@ export struct NotificationPage {
           return
         }
         this.authToken = snapshot.token
-        const nextIdentity = this.currentNotificationIdentityKey(snapshot.username || this.sessionUsername)
+        const nextIdentity = this.currentNotificationIdentityKey(snapshot.username || this.session.username)
         if (this.notificationIdentityKey && nextIdentity !== this.notificationIdentityKey) {
           DiagnosticLogger.info('notification', 'notification_identity_changed', {
             oldOwnerHash: DiagnosticLogger.ownerHash(this.notificationIdentityKey),
@@ -249,7 +268,7 @@ export struct NotificationPage {
           })
           this.resetNotificationState()
         }
-        this.loadNotificationCache(snapshot.username || this.sessionUsername)
+        this.loadNotificationCache(snapshot.username || this.session.username)
         this.notificationIdentityKey = nextIdentity
         if (this.shouldLoadNotificationListForCurrentTab(forceNotifications)) {
           this.loadNotifications(forceNotifications)
@@ -307,7 +326,7 @@ export struct NotificationPage {
   private refreshVisibleNotificationsIfNeeded(): void {
     if (NotificationPageCoordinator.shouldRefreshVisible(
       this.hasNotificationAuth(),
-      this.authCookieConfigured || this.authTokenConfigured,
+      this.authCookie.configured || this.authIdentity.tokenConfigured,
       this.isNotificationLoading,
       this.isNotificationLoadingMore,
       this.notifications.length,
@@ -329,9 +348,9 @@ export struct NotificationPage {
     const cookie = CookieJarSettings.getCurrentCookie()
     const token = (this.authToken || '').trim()
     return {
-      tokenConfigured: this.authTokenConfigured || token.length > 0,
+      tokenConfigured: this.authIdentity.tokenConfigured || token.length > 0,
       token: token,
-      cookieConfigured: this.authCookieConfigured || cookie.length > 0,
+      cookieConfigured: this.authCookie.configured || cookie.length > 0,
       cookie: cookie
     }
   }
@@ -388,7 +407,7 @@ export struct NotificationPage {
       this.deleteNotificationWithCookie(item)
       return
     }
-    if (this.authTokenConfigured && this.authToken) {
+    if (this.authIdentity.tokenConfigured && this.authToken) {
       this.deleteNotification(item)
       return
     }
@@ -397,7 +416,7 @@ export struct NotificationPage {
 
   private deleteNotification(item: V2exNotification): void {
     const notificationId = item.id || 0
-    if (!this.authTokenConfigured || !this.authToken || notificationId <= 0) {
+    if (!this.authIdentity.tokenConfigured || !this.authToken || notificationId <= 0) {
       promptAction.openToast({ message: AppStrings.text(AppStrings.R_NOTIFICATION_DELETE_REQUIRES_API_AUTH, 'Delete notification requires V2 API authorization') }).catch((_error: Error) => {
       })
       return
@@ -700,7 +719,7 @@ export struct NotificationPage {
     const requestId = ++this.notificationCacheRequestId
     DiagnosticLogger.info('notification', 'notification_cache_load_start', {
       requestId: requestId,
-      ownerHash: DiagnosticLogger.ownerHash(username || this.storedUsername || this.sessionUsername),
+      ownerHash: DiagnosticLogger.ownerHash(username || this.authIdentity.username || this.session.username),
       source: this.notificationVm.sourceKeyFor(authContext),
       currentCount: this.notifications.length
     })
@@ -708,8 +727,8 @@ export struct NotificationPage {
     NotificationCacheCoordinator.load(
       context,
       username,
-      this.storedUsername,
-      this.sessionUsername,
+      this.authIdentity.username,
+      this.session.username,
       this.notificationVm.sourceKeyFor(authContext),
       this.notifications.length,
       this.notificationLoadedFromCache
@@ -751,7 +770,7 @@ export struct NotificationPage {
         this.notificationSourceLabel = this.notificationVm.sourceLabelFor(authContext)
         this.notificationInitialSettled = true
         DiagnosticLogger.info('notification', 'notification_cache_apply', {
-          ownerHash: DiagnosticLogger.ownerHash(username || this.storedUsername || this.sessionUsername),
+          ownerHash: DiagnosticLogger.ownerHash(username || this.authIdentity.username || this.session.username),
           source: this.notificationVm.sourceKeyFor(authContext),
           count: result.items.length,
           updatedAt: result.updatedAt
@@ -782,8 +801,8 @@ export struct NotificationPage {
     NotificationCacheCoordinator.save(
       context,
       '',
-      this.storedUsername,
-      this.sessionUsername,
+      this.authIdentity.username,
+      this.session.username,
       this.notificationVm.sourceKeyFor(authContext),
       this.notifications,
       this.notificationPage,
@@ -793,7 +812,7 @@ export struct NotificationPage {
         if (result.updatedAt > 0) {
           this.notificationCacheUpdatedAt = result.updatedAt
           DiagnosticLogger.info('notification', 'notification_cache_save_success', {
-            ownerHash: DiagnosticLogger.ownerHash(this.storedUsername || this.sessionUsername),
+            ownerHash: DiagnosticLogger.ownerHash(this.authIdentity.username || this.session.username),
             source: this.notificationVm.sourceKeyFor(authContext),
             count: this.notifications.length
           })
@@ -801,7 +820,7 @@ export struct NotificationPage {
       })
       .catch((error: Error) => {
         DiagnosticLogger.warn('notification', 'notification_cache_save_error', {
-          ownerHash: DiagnosticLogger.ownerHash(this.storedUsername || this.sessionUsername),
+          ownerHash: DiagnosticLogger.ownerHash(this.authIdentity.username || this.session.username),
           source: this.notificationVm.sourceKeyFor(authContext),
           count: this.notifications.length
         }, error)
@@ -809,11 +828,13 @@ export struct NotificationPage {
   }
 
   private publishUnreadCount(): void {
-    this.notificationUnreadCount = 0
+    // Clear the cross-surface unread badge AppStorage value (read by Index's tab badge). Imperative —
+    // never read reactively in build(), so no V2 mirror is needed.
+    setAppStorageValue<number>(StorageKeys.NOTIFICATION_UNREAD_COUNT, 0)
   }
 
   private captureNotificationEntryUnreadCount(): number {
-    const count = Math.max(0, this.notificationUnreadCount)
+    const count = Math.max(0, AppStorage.get<number>(StorageKeys.NOTIFICATION_UNREAD_COUNT) ?? 0)
     if (count > this.notificationEntryUnreadCount) {
       this.notificationEntryUnreadCount = count
     }
@@ -833,8 +854,8 @@ export struct NotificationPage {
     const authContext = this.notificationAuthContext()
     return NotificationPageCoordinator.ownerKey(
       username,
-      this.storedUsername,
-      this.sessionUsername,
+      this.authIdentity.username,
+      this.session.username,
       this.notificationVm.sourceKeyFor(authContext)
     )
   }

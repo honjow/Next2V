@@ -136,9 +136,13 @@ assert(
 
 const notificationPage = read('entry/src/main/ets/pages/NotificationPage.ets')
 const notificationAuthContext = methodBody(notificationPage, 'private notificationAuthContext')
+// State Management V2 migration: this.authCookieConfigured (@StorageLink) -> this.authCookie.configured
+// (connectAuthCookie() mirror, dual-written at CookieJarSettings.refreshConfiguredState). Same reactive
+// invariant — accept either the legacy @StorageLink token or the V2 mirror token.
 assert(
-  notificationAuthContext.includes('cookieConfigured: this.authCookieConfigured || cookie.length > 0'),
-  'NotificationPage auth context must include the reactive authCookieConfigured StorageLink so login-required UI leaves logged-out state after login'
+  notificationAuthContext.includes('cookieConfigured: this.authCookieConfigured || cookie.length > 0') ||
+    notificationAuthContext.includes('cookieConfigured: this.authCookie.configured || cookie.length > 0'),
+  'NotificationPage auth context must include the reactive authCookieConfigured source so login-required UI leaves logged-out state after login'
 )
 assert(
   !notificationPage.includes('NotificationSummaryCard({'),

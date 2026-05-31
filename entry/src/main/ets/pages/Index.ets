@@ -27,6 +27,7 @@ import {
   connectNativeLoginShown,
   connectNavStack,
   connectNodeTopicAction,
+  connectNotificationAction,
   connectSearchAction,
   connectUserProfileAction,
   connectWebLoginAction,
@@ -940,10 +941,11 @@ struct Index {
   }
 
   private sendNotificationAction(action: string): void {
-    AppStorage.setOrCreate<string>(
-      StorageKeys.NOTIFICATION_ACTION,
-      IndexRouteCoordinator.simpleCommand(action, Date.now()),
-    )
+    // Dual-write the V1 AppStorage command AND the V2 mirror (read by @ComponentV2
+    // NotificationPage via @Monitor) from this single writer so the two stores stay in lockstep.
+    const command = IndexRouteCoordinator.simpleCommand(action, Date.now())
+    AppStorage.setOrCreate<string>(StorageKeys.NOTIFICATION_ACTION, command)
+    connectNotificationAction().command = command
   }
 
   private sendSearchAction(action: string): void {

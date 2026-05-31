@@ -68,6 +68,7 @@ export { SearchActionState, connectSearchAction } from './state/SearchActionStat
 export { AccountWebViewActionState, connectAccountWebViewAction } from './state/AccountWebViewActionState'
 export { WebLoginActionState, connectWebLoginAction } from './state/WebLoginActionState'
 export { NativeLoginShownState, connectNativeLoginShown } from './state/NativeLoginShownState'
+export { NotificationActionState, connectNotificationAction } from './state/NotificationActionState'
 export { AuthCookieState, connectAuthCookie } from './state/AuthCookieState'
 export { MotionHandEdgeState, connectMotionHandEdge } from './state/MotionHandEdgeState'
 export { TopicDetailReplyButtonState, connectTopicDetailReplyButton } from './state/TopicDetailReplyButtonState'

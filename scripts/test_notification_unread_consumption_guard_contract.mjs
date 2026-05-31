@@ -53,7 +53,9 @@ assert(
   'Index must pass active tab state into NotificationPage so hidden mounted pages cannot list-refresh off-tab'
 )
 
-const authChanged = methodBody(notificationPage, 'onAuthChanged(_propName: string): void')
+// State Management V2 migration: @Watch('onAuthChanged') -> multi-path @Monitor; the V2 handler
+// signature dropped the (_propName) arg.
+const authChanged = methodBody(notificationPage, 'onAuthChanged(): void')
 assert(
   authChanged.includes('this.deferNotificationRefreshUntilVisible()'),
   'NotificationPage.onAuthChanged must defer auth-triggered notification list refresh while the tab is inactive'
