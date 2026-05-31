@@ -1,5 +1,7 @@
 import { AppStrings } from 'shared'
 import {
+  connectTopicDetailAction,
+  TopicDetailActionState,
   publishTopicDetailSavedLater,
   publishTopicDetailSiteFavorited,
   publishTopicDetailThanked,
@@ -98,7 +100,6 @@ import {
 } from 'shared'
 import type { V2exTopicThankAction, CacheScope, TopicDetailActionOverlay } from 'shared'
 import type { V2exReplyModerationAction, V2exTopicModerationAction } from 'shared'
-import { TopicDetailActionListener } from '../components/TopicDetailActionListener'
 
 @ComponentV2
 export struct TopicDetailPage {
@@ -116,11 +117,13 @@ export struct TopicDetailPage {
   // @Monitor sources for the motion-hand edge + reply-button auto-hide preferences (see @Monitor below).
   @Local private motion: MotionHandEdgeState = connectMotionHandEdge();
   @Local private replyButton: TopicDetailReplyButtonState = connectTopicDetailReplyButton();
-  // Write-side appbar/identity keys (TOPIC_DETAIL_SAVED_LATER / SITE_FAVORITED / THANKED / APPBAR_*)
-  // are pushed straight to V1 AppStorage where Index's V1 @StorageLink readers consume them; there is
-  // no V2 reader, so the page writes those keys via AppStorage.setOrCreate at their write sites rather
-  // than holding component state. The TOPIC_DETAIL_ACTION command bus is owned by the V1
-  // TopicDetailActionListener child (Index writes it; a @ComponentV2 cannot observe a V1 key).
+  // TOPIC_DETAIL_ACTION command bus: Index (now @ComponentV2) dual-writes this mirror at sendTopicAction;
+  // this page observes it via @Monitor below, filtering by its own topicId so stacked pages don't
+  // double-fire. Replaces the former V1 TopicDetailActionListener zero-size child adapter.
+  private topicAction: TopicDetailActionState = connectTopicDetailAction();
+  // The appbar identity / action-flag OUTPUT keys are pushed through the TopicDetailAppbarState
+  // write-through helpers (publish*) at their write sites; the @ComponentV2 Index reads them via the
+  // mirror. The page holds no component state for them.
   private scroller: Scroller = new Scroller();
   @Local listScrollEnabled: boolean = true;
   @Local private isReplyListAtEnd: boolean = false;
@@ -399,14 +402,6 @@ export struct TopicDetailPage {
       this.ReplyComposerSheetHost()
       this.ReplyContextSheetHost()
 
-      // V1 adapter owning the TOPIC_DETAIL_ACTION appbar command bus (a @ComponentV2 cannot observe
-      // a V1 AppStorage key written by Index); zero-size, reports up via onCommand. See the adapter.
-      TopicDetailActionListener({
-        topicId: this.topicId,
-        onCommand: (action: string) => {
-          this.handleTopicAction(action)
-        },
-      })
     }
     .width('100%')
     .height('100%')
@@ -514,6 +509,17 @@ export struct TopicDetailPage {
   @Monitor('replyButton.autoHide')
   private onTopicDetailReplyButtonAutoHideChanged(): void {
     this.applyReplyButtonAutoHideBinding()
+  }
+
+  // TOPIC_DETAIL_ACTION command bus (was the V1 TopicDetailActionListener child). Filter by topicId so a
+  // command targeting another stacked page is ignored — preventing duplicate dialogs on underneath pages.
+  @Monitor('topicAction.command')
+  private onTopicActionCommand(): void {
+    const command = TopicDetailActionCoordinator.parseCommand(this.topicAction.command)
+    if (!command || command.topicId !== this.topicId) {
+      return
+    }
+    this.handleTopicAction(command.action)
   }
 
   private applyReplyButtonAutoHideByScroll(offset: number, state: ScrollState): void {

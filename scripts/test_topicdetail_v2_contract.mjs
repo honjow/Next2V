@@ -32,7 +32,7 @@ const fail = (m) => { console.error(`FAIL ${m}`); failures++; };
 const must = (cond, m) => (cond ? ok(m) : fail(m));
 
 const PAGE = 'feature/detail/src/main/ets/pages/TopicDetailPage.ets';
-const LISTENER = 'feature/detail/src/main/ets/components/TopicDetailActionListener.ets';
+const ACTION_MIRROR = 'shared/src/main/ets/state/TopicDetailActionState.ets';
 const INDEX = 'entry/src/main/ets/pages/Index.ets';
 
 // 1) TopicDetailPage V2 backbone wiring -------------------------------------------------------
@@ -46,8 +46,12 @@ const INDEX = 'entry/src/main/ets/pages/Index.ets';
   must(/connectTopicDetailReplyButton\(\)/.test(code), `${PAGE}: reads connectTopicDetailReplyButton() mirror`);
   must(/@Monitor\(\s*['"]motion\.edge['"]\s*\)/.test(code), `${PAGE}: @Monitor('motion.edge')`);
   must(/@Monitor\(\s*['"]replyButton\.autoHide['"]\s*\)/.test(code), `${PAGE}: @Monitor('replyButton.autoHide')`);
-  // command bus is delegated to the V1 adapter, not observed in the page
-  must(/TopicDetailActionListener\s*\(/.test(code), `${PAGE}: hosts TopicDetailActionListener adapter`);
+  // command bus is observed directly via the V2 TopicDetailActionState mirror (the former V1
+  // TopicDetailActionListener child adapter was retired once Index migrated to @ComponentV2).
+  must(/connectTopicDetailAction\(\)/.test(code) && /@Monitor\(\s*['"]topicAction\.command['"]\s*\)/.test(code),
+    `${PAGE}: observes TOPIC_DETAIL_ACTION via the mirror @Monitor (no V1 listener child)`);
+  must(!/TopicDetailActionListener/.test(code), `${PAGE}: no longer hosts the retired TopicDetailActionListener`);
+  must(/command\.topicId !== this\.topicId/.test(code), `${PAGE}: filters the command bus by its own topicId (no stacked-page double-fire)`);
   // appbar identity behavior preserved (same coordinator + route-id key publishing)
   must(/TopicDetailAppbarCoordinator/.test(code), `${PAGE}: still uses TopicDetailAppbarCoordinator`);
   // State Management V2 migration: the route-id (and the rest of the appbar identity) is now published
@@ -59,13 +63,12 @@ const INDEX = 'entry/src/main/ets/pages/Index.ets';
   }
 }
 
-// 2) TopicDetailActionListener is the intentional V1 command-bus adapter -----------------------
+// 2) TopicDetailActionState is the V2 command-bus mirror (replaced the V1 listener adapter) ----------
 {
-  const code = strip(read(LISTENER));
-  must(/@Component\b(?!V2)/.test(code), `${LISTENER}: intentionally V1 @Component adapter`);
-  must(/@StorageLink\(\s*StorageKeys\.TOPIC_DETAIL_ACTION\s*\)/.test(code), `${LISTENER}: owns @StorageLink(TOPIC_DETAIL_ACTION)`);
-  must(/@Watch\(/.test(code), `${LISTENER}: reacts via @Watch`);
-  must(/onCommand\b/.test(code), `${LISTENER}: reports up via onCommand callback`);
+  const code = strip(read(ACTION_MIRROR));
+  must(/@ObservedV2\b/.test(code), `${ACTION_MIRROR}: @ObservedV2`);
+  must(/@Trace\s+command\b/.test(code), `${ACTION_MIRROR}: @Trace command`);
+  must(/export function connectTopicDetailAction\(/.test(code), `${ACTION_MIRROR}: exports connectTopicDetailAction()`);
 }
 
 // 3) Mirror dual-write chokepoints ------------------------------------------------------------
@@ -76,13 +79,18 @@ must(/connectMotionHandEdge\(\)\.edge\s*=/.test(strip(read('shared/src/main/ets/
 must(/connectTopicDetailReplyButton\(\)\.autoHide\s*=/.test(strip(read('shared/src/main/ets/settings/TopicDetailReplyActionSettings.ets'))),
   'TopicDetailReplyActionSettings.apply: dual-writes connectTopicDetailReplyButton().autoHide');
 
-// 4) Index.ets boundary preserved (page migrated without touching Index) -----------------------
+// 4) Index command-bus writer: dual-writes the V1 key AND the V2 mirror -------------------------
+// (Index is now @ComponentV2 too; the former "Index-free" boundary is obsolete. The page-private
+// reactive reading state — auth-cookie / motion-edge / reply-button — is still NOT imported by Index;
+// only the cross-page command/appbar mirrors are.)
 {
   const code = strip(read(INDEX));
   must(!/connectAuthCookie|connectMotionHandEdge|connectTopicDetailReplyButton/.test(code),
-    `${INDEX}: does not import the topic-detail mirrors (Index-free migration)`);
+    `${INDEX}: does not import TopicDetailPage's private reactive-reading mirrors`);
   must(/AppStorage\.setOrCreate<string>\(\s*StorageKeys\.TOPIC_DETAIL_ACTION/.test(code),
-    `${INDEX}: still the V1-only writer of TOPIC_DETAIL_ACTION (command bus unchanged)`);
+    `${INDEX}.sendTopicAction: still writes the V1 TOPIC_DETAIL_ACTION key`);
+  must(/connectTopicDetailAction\(\)\.command\s*=/.test(code),
+    `${INDEX}.sendTopicAction: dual-writes the V2 TopicDetailActionState mirror`);
 }
 
 console.log(`\ntopicdetail-v2 contract: ${failures} failure(s)`);

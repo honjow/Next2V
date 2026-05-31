@@ -35,6 +35,7 @@ import {
   connectNotificationUnread,
   connectPendingV2exUrl,
   connectSearchAction,
+  connectTopicDetailAction,
   connectTopicDetailAppbar,
   connectTwoFactor,
   connectUserProfileAction,
@@ -889,10 +890,12 @@ struct Index {
     // in the nav stack — both top and underneath — causing duplicate
     // dialogs (e.g. opening detail B from a link in detail A and tapping
     // Favorite fired the toggle on both topics).
-    AppStorage.setOrCreate<string>(
-      StorageKeys.TOPIC_DETAIL_ACTION,
-      IndexRouteCoordinator.topicActionCommand(topicId, action, Date.now()),
-    )
+    // Dual-write the V1 AppStorage command AND the V2 mirror (read by @ComponentV2 TopicDetailPage
+    // via @Monitor, replacing the former V1 TopicDetailActionListener child adapter). The timestamp
+    // keeps each command unique so a repeated identical action still re-fires the @Monitor.
+    const command = IndexRouteCoordinator.topicActionCommand(topicId, action, Date.now())
+    AppStorage.setOrCreate<string>(StorageKeys.TOPIC_DETAIL_ACTION, command)
+    connectTopicDetailAction().command = command
   }
 
   private refreshLocalData(): void {
