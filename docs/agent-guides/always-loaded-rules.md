@@ -80,6 +80,8 @@ V2EX account-state write actions are non-idempotent and treated as destructive: 
 
 Default validation for these flows is non-destructive: open the dialog, capture layout/screenshot evidence, then cancel. Combine with static review of the wiring code as evidence.
 
+When a real reply/post submit is explicitly authorized, target the V2EX sandbox node `/go/sandbox` — never arbitrary live nodes/topics. Sandbox posts are the only acceptable destination for end-to-end write validation.
+
 ## UI Investigation Order
 
 Before changing UI to fix a bug, verify the chain end-to-end: source data → parser/model → UI. QA evidence must be real-device user-visible state, not just code-contract assertions.

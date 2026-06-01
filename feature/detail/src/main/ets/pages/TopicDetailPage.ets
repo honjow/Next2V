@@ -19,6 +19,7 @@ import {
   type ReplyThankSnapshot,
 } from '../viewmodel/DetailViewModel'
 import { ReplyComposerSheet } from '../components/ReplyComposerSheet'
+import { ReplyComposerDraftCoordinator } from '../model/ReplyComposerDraftCoordinator'
 import {
   ReplyContextListItem,
   ReplyContextSheetContent,
@@ -142,6 +143,10 @@ export struct TopicDetailPage {
   @Local private contextSheetVisible: boolean = false;
   @Local private replyDisplayMenuShown: boolean = false;
   @Local private replyComposerVisible: boolean = false;
+  // Page-level pending-submit flag. The reply composer sheet emits a clean content snapshot, this
+  // page closes the sheet and owns the network submit, gating a blocking LoadingDialog overlay on
+  // this flag for the duration of the request.
+  @Local private isReplySubmitting: boolean = false;
   @Local private visualMotionHandEdge: string = 'right';
   @Local private detailRootWidth: number = 0;
   @Local private detailRootHeight: number = 0;
@@ -151,6 +156,9 @@ export struct TopicDetailPage {
   @Local private currentScrollOffset: number = 0;
   @Local private isTitleCoveredByAppbar: boolean = false;
   private readonly HDS_ACTION_BAR_CLEARANCE: number = 72;
+  // Dim scrim behind the reply-submit LoadingDialog (≈32% black ARGB), matching the project's
+  // convention of literal overlay colors (see ThemeConstants.PRESSED_OVERLAY); no system mask token.
+  private readonly REPLY_SUBMIT_SCRIM: ResourceColor = '#52000000';
   private readonly TOPIC_DETAIL_REPLY_BUTTON_SIZE: number = 56;
   private readonly TOPIC_DETAIL_REPLY_BUTTON_ACTIVITY_PADDING: number = ThemeConstants.SPACE_LG;
   private readonly TOPIC_DETAIL_REPLY_BUTTON_SCROLL_DELTA_PX: number = 6;
@@ -402,6 +410,12 @@ export struct TopicDetailPage {
 
       this.ReplyComposerSheetHost()
       this.ReplyContextSheetHost()
+
+      // Page-level blocking LoadingDialog shown only while a reply submit is pending. Rendered last
+      // so it sits above the content/action bar; the composer sheet is already closed by this point.
+      if (this.isReplySubmitting) {
+        this.ReplySubmitLoadingOverlay()
+      }
 
     }
     .width('100%')
@@ -789,10 +803,88 @@ export struct TopicDetailPage {
       closeAction: () => {
         this.replyComposerVisible = false
       },
-      submittedAction: () => {
-        this.v.load()
+      submitAction: (content: string) => {
+        this.submitReplyFromComposer(content)
       },
     })
+  }
+
+  @Builder ReplySubmitLoadingOverlay() {
+    Column() {
+      Column() {
+        LoadingProgress()
+          .width(ThemeConstants.LOADING_SIZE_LARGE)
+          .height(ThemeConstants.LOADING_SIZE_LARGE)
+          .color($r('sys.color.ohos_id_color_activated'))
+        Text(AppStrings.text($r('app.string.reply_submitting'), 'Submitting'))
+          .fontSize(ThemeConstants.FONT_SIZE_BODY)
+          .fontColor($r('sys.color.font_secondary'))
+          .margin({ top: ThemeConstants.SPACE_MD })
+      }
+      .padding(ThemeConstants.SPACE_XL)
+      .borderRadius(ThemeConstants.RADIUS_MD)
+      .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+      .justifyContent(FlexAlign.Center)
+      .alignItems(HorizontalAlign.Center)
+    }
+    .width('100%')
+    .height('100%')
+    .justifyContent(FlexAlign.Center)
+    .alignItems(HorizontalAlign.Center)
+    .backgroundColor(this.REPLY_SUBMIT_SCRIM)
+    // Block taps to the content/action bar underneath so no second submit can fire mid-request.
+    .hitTestBehavior(HitTestMode.Block)
+  }
+
+  // Owns the reply network submit. The composer sheet has already emitted a clean snapshot and is
+  // closed by this method BEFORE the request starts, so the TextArea can't re-grab focus or re-open
+  // the soft keyboard while the request is pending. The draft was persisted by the sheet, so a
+  // failure keeps the user's text; success clears it. Auth/2FA/session errors are surfaced via the
+  // translated toast — never swallowed or converted into a confirmation bypass.
+  private submitReplyFromComposer(content: string): void {
+    if (this.isReplySubmitting) {
+      return
+    }
+    const cleanContent = (content || '').trim()
+    if (cleanContent.length === 0 || this.topicId <= 0) {
+      return
+    }
+    const cookie = CookieJarSettings.getCurrentCookie()
+    if (!cookie) {
+      promptAction
+        .openToast({ message: AppStrings.text($r('app.string.reply_login_required'), 'Log in first') })
+        .catch((_error: Error) => {})
+      return
+    }
+    // Close the composer first (focus/keyboard fix), then start the request behind the LoadingDialog.
+    this.replyComposerVisible = false
+    this.replyComposerInitialContent = ''
+    this.isReplySubmitting = true
+    this.api
+      .submitReplyWithCookie(cookie, this.topicId, cleanContent)
+      .then(() => {
+        this.clearReplyDraftAfterSuccess()
+        promptAction.openToast({ message: $r('app.string.reply_submitted') }).catch((_error: Error) => {})
+        // Preserve the existing refresh semantics (was submittedAction: () => this.v.load()).
+        this.v.load()
+      })
+      .catch((error: Error) => {
+        // Keep the draft and surface the (translated) error. Do NOT auto-reopen the composer:
+        // the sheet's TextArea auto-focuses on open and would re-trigger the keyboard the user
+        // was trying to avoid; they can tap reply manually to resume from the saved draft.
+        promptAction.openToast({ message: translateApiError(error) }).catch((_error: Error) => {})
+      })
+      .finally(() => {
+        this.isReplySubmitting = false
+      })
+  }
+
+  private clearReplyDraftAfterSuccess(): void {
+    if (this.topicId <= 0) {
+      return
+    }
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    ReplyComposerDraftCoordinator.clearDraft(context, this.topicId).catch((_error: Error) => {})
   }
 
   private topicDetailBottomPadding(): number {
