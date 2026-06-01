@@ -839,7 +839,6 @@ export struct TopicDetailPage {
       .submitReplyWithCookie(cookie, this.topicId, cleanContent)
       .then(() => {
         this.clearReplyDraftAfterSuccess()
-        promptAction.openToast({ message: $r('app.string.reply_submitted') }).catch((_error: Error) => {})
         // Preserve the existing refresh semantics (was submittedAction: () => this.v.load()).
         this.v.load()
       })

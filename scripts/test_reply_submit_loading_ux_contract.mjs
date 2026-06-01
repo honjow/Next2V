@@ -173,10 +173,15 @@ assert.match(
   'submit handler must surface a login-required message when no cookie',
 )
 
-// (7) Success: clears the draft AND refreshes reply page state.
+// (7) Success: clears the draft + refreshes reply page state, but does NOT toast.
 const success = blockAfter(submit, '.then(() =>')
 assert.match(success, /this\.clearReplyDraftAfterSuccess\(\)/, 'success must clear the saved draft')
 assert.match(success, /this\.v\.load\(\)/, 'success must refresh the reply list (v.load)')
+assert.doesNotMatch(
+  success,
+  /openToast|reply_submitted/,
+  'reply submit success must be silent (no success toast)',
+)
 const clearDraft = methodBody(page, 'clearReplyDraftAfterSuccess')
 assert.match(
   clearDraft,
@@ -187,6 +192,7 @@ assert.match(
 // (8) Failure: preserve draft (no clear, no lost-draft) and DO NOT auto-reopen the composer.
 const failure = blockAfter(submit, '.catch((error: Error) =>')
 assert.match(failure, /translateApiError\(error\)/, 'failure must surface the translated API error')
+assert.match(failure, /openToast/, 'failure must show a toast with the translated API error')
 assert.doesNotMatch(
   failure,
   /clearReplyDraftAfterSuccess|clearDraft/,
