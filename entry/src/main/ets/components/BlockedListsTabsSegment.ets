@@ -55,7 +55,11 @@ export struct BlockedListsTabsSegment {
           end: LengthMetrics.vp(8),
         },
       })
-        .constraintSize({ maxWidth: 448 })
+        .width(ThemeConstants.COMPACT_SEGMENT_BUTTON_WIDTH)
+        .constraintSize({
+          minWidth: ThemeConstants.COMPACT_SEGMENT_BUTTON_WIDTH,
+          maxWidth: ThemeConstants.COMPACT_SEGMENT_BUTTON_WIDTH,
+        })
     }
     .width('100%')
     .height('100%')

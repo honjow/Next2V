@@ -50,7 +50,11 @@ export struct UserProfileActivityTabs {
           end: LengthMetrics.vp(8),
         },
       })
-        .constraintSize({ maxWidth: 448 })
+        .width(ThemeConstants.COMPACT_SEGMENT_BUTTON_WIDTH)
+        .constraintSize({
+          minWidth: ThemeConstants.COMPACT_SEGMENT_BUTTON_WIDTH,
+          maxWidth: ThemeConstants.COMPACT_SEGMENT_BUTTON_WIDTH,
+        })
     }
     .width('100%')
     .justifyContent(FlexAlign.Center)

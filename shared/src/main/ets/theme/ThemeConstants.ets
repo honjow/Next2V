@@ -60,6 +60,9 @@ export class ThemeConstants {
   static readonly LINE_HEIGHT_TITLE: number = 22;
   static readonly LINE_HEIGHT_BODY: number = 20;
   static readonly LINE_HEIGHT_CODE: number = 18;
+  // Compact width for two-item segmented controls that should keep the old
+  // SegmentButton intrinsic-size look after moving to TabSegmentButtonV2.
+  static readonly COMPACT_SEGMENT_BUTTON_WIDTH: number = 216;
 
   // Icons and touch targets
   static readonly ICON_SIZE_SM: number = 16;
