@@ -50,6 +50,11 @@ const V1_DECORATORS = ['@State', '@Prop', '@Link', '@Watch', '@StorageLink', '@S
   }
   // V1 AppStorage halves still present (bridge reversible)
   must(/setAppStorageValue<string>\(\s*StorageKeys\.NETWORK_PROXY_MODE/.test(code), `${PROXY_SETTINGS}: still writes NETWORK_PROXY_MODE AppStorage key`);
+  // current() reads the live snapshot from the V2 mirror (was 7 direct AppStorage.get reads); normalize()
+  // still owns scheme/credential/exclusion-list defaulting so the snapshot is identical.
+  must(/static current\(\): NetworkProxySettingsSnapshot/.test(code), `${PROXY_SETTINGS}: keeps current() snapshot accessor`);
+  must(/const proxy = connectNetworkProxy\(\)/.test(code) && /proxy\.exclusionListText/.test(code), `${PROXY_SETTINGS}.current: reads connectNetworkProxy() mirror`);
+  must(!/AppStorage\s*\./.test(code), `${PROXY_SETTINGS}: no direct AppStorage access (current() reads the mirror)`);
 }
 
 // 3) NetworkProxySettingsPage V2 ---------------------------------------------------------------

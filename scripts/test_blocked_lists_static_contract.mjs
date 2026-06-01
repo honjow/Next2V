@@ -80,10 +80,21 @@ assertIncludes(parserPath, parser, 'seen: Set<number>')
 
 assertIncludes(settingsPath, settings, 'const KEY_PREFIX: string = \'blockedListState:\'')
 assertIncludes(settingsPath, settings, 'static activeOwnerKey(): string')
-assertIncludes(settingsPath, settings, 'StorageKeys.ACTIVE_ACCOUNT_ID')
+// activeOwnerKey derives owner identity from the active account id (precedence) then the auth-session
+// username (fallback), now read from the V2 holders (AccountStore.getActiveId() the transient authority
+// the legacy ACTIVE_ACCOUNT_ID key mirrored, and connectAuthSessionSignal().username) instead of direct
+// AppStorage.get reads. The owner key still embeds the base URL and the account/user scope, so logged-out
+// (no id, no username) yields an empty owner key.
+assertIncludes(settingsPath, settings, 'AccountStore.getActiveId()')
+assertIncludes(settingsPath, settings, 'connectAuthSessionSignal().username')
+assertIncludes(settingsPath, settings, '`${baseUrl}#account:${activeId}`')
+assertIncludes(settingsPath, settings, '`${baseUrl}#user:${username}`')
 assertIncludes(settingsPath, settings, 'export interface BlockedListCaptureSource')
 assertIncludes(settingsPath, settings, 'static updateFromTopicListHtml(html: string, source: BlockedListCaptureSource = {}): boolean')
 assertIncludes(settingsPath, settings, 'static runtimeSnapshot(): BlockedListSnapshot')
+// runtimeSnapshot reads the account-scoped runtime ledger from the V2 BlockedListStorageState mirror
+// (kept in lockstep by apply() + the meta-only writers), not direct AppStorage.get.
+assertIncludes(settingsPath, settings, 'connectBlockedListStorage()')
 assertIncludes(settingsPath, settings, 'StorageKeys.BLOCKED_LIST_OWNER_KEY')
 assertIncludes(settingsPath, settings, 'parseRuntimeIds')
 assertIncludes(settingsPath, settings, 'blocked_list_extract_result')
@@ -113,9 +124,13 @@ assertIncludes(apiPath, api, 'async getMemberById(memberId: number)')
 assertIncludes(apiPath, api, 'ApiConstants.API_MEMBER_SHOW')
 assertIncludes(apiPath, api, 'normalizeVisibleTopics')
 assertIncludes(apiPath, api, 'applyActiveBlockedTopicFilter')
-assertIncludes(apiPath, api, 'StorageKeys.BLOCKED_LIST_OWNER_KEY')
-assertIncludes(apiPath, api, 'StorageKeys.BLOCKED_LIST_IGNORED_TOPIC_IDS')
-assertIncludes(apiPath, api, 'StorageKeys.BLOCKED_LIST_BLOCKED_MEMBER_IDS')
+// ApiService filters account-bound via the V2 BlockedListStorageState mirror (was direct AppStorage.get
+// reads of the BLOCKED_LIST_* keys). The owner-binding guard is preserved: an empty or non-active owner
+// key returns all topics, so blocked state never leaks across accounts/domains.
+assertIncludes(apiPath, api, 'connectBlockedListStorage()')
+assertIncludes(apiPath, api, 'storage.ownerKey')
+assertIncludes(apiPath, api, 'storage.ignoredTopicIdsJson')
+assertIncludes(apiPath, api, 'storage.blockedMemberIdsJson')
 assertIncludes(apiPath, api, 'ownerKey !== BlockedListSettings.activeOwnerKey()')
 const syncAllIndex = api.indexOf("'/?tab=all'")
 const syncRecentIndex = api.indexOf("'/recent?p=1'")

@@ -3,7 +3,6 @@ import { HttpClient } from './HttpClient'
 import { NetworkProxyRequest } from './NetworkProxyRequest'
 import { FeedTabSettings } from '../settings/FeedTabSettings'
 import { ApiConstants } from '../constants/ApiConstants'
-import { StorageKeys } from '../constants/StorageKeys'
 import { V2exTabParser } from '../parser/V2exTabParser'
 import { V2exNotificationParser } from '../parser/V2exNotificationParser'
 import { V2exAccountParser } from '../parser/V2exAccountParser'
@@ -47,6 +46,7 @@ import type {
 } from './NetworkTypes'
 import { ApiError, ApiErrors, ApiErrorCode, isApiError } from './ApiError'
 import { BlockedListSettings, type BlockedListCaptureSource } from '../settings/BlockedListSettings'
+import { connectBlockedListStorage } from '../state/BlockedListState'
 
 interface CookieHtmlResponse {
   statusCode: number
@@ -1804,12 +1804,16 @@ export class ApiService {
   }
 
   private static applyActiveBlockedTopicFilter(topics: V2exTopic[]): V2exTopic[] {
-    const ownerKey = AppStorage.get<string>(StorageKeys.BLOCKED_LIST_OWNER_KEY) || ''
+    // Account-bound filtering via the V2 BlockedListStorageState mirror (kept in lockstep with the
+    // persisted ledger by BlockedListSettings.apply) instead of direct AppStorage.get reads. If the
+    // holder owner key is empty or not the active owner (logged-out / cross-account), return all topics.
+    const storage = connectBlockedListStorage()
+    const ownerKey = storage.ownerKey || ''
     if (!ownerKey || ownerKey !== BlockedListSettings.activeOwnerKey()) {
       return topics || []
     }
-    const ignoredTopicIds = ApiService.appStorageIdSet(StorageKeys.BLOCKED_LIST_IGNORED_TOPIC_IDS)
-    const blockedMemberIds = ApiService.appStorageIdSet(StorageKeys.BLOCKED_LIST_BLOCKED_MEMBER_IDS)
+    const ignoredTopicIds = ApiService.parseIdSet(storage.ignoredTopicIdsJson)
+    const blockedMemberIds = ApiService.parseIdSet(storage.blockedMemberIdsJson)
     if (ignoredTopicIds.size === 0 && blockedMemberIds.size === 0) {
       return topics || []
     }
@@ -1830,10 +1834,10 @@ export class ApiService {
     return visible
   }
 
-  private static appStorageIdSet(key: string): Set<number> {
+  private static parseIdSet(json: string): Set<number> {
     const result: Set<number> = new Set()
     try {
-      const raw = AppStorage.get<string>(key) || '[]'
+      const raw = json || '[]'
       const values = JSON.parse(raw) as number[]
       for (const value of Array.isArray(values) ? values : []) {
         const id = Math.floor(value)
