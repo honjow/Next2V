@@ -10,7 +10,6 @@ import {
   type ReplyComposerDraftState,
 } from '../model/ReplyComposerDraftCoordinator'
 import {
-  ApiService,
   AppStrings,
   connectLayoutSafeArea,
   CookieJarSettings,
@@ -33,7 +32,10 @@ export struct ReplyComposerSheet {
   layout: LayoutSafeAreaState = connectLayoutSafeArea()
 
   @Event closeAction?: () => void
-  @Event submittedAction?: () => void
+  // Emits a clean (trimmed) content snapshot to the parent page. The parent owns the network
+  // submit: it closes this sheet first (so the TextArea can't re-grab focus / re-open the
+  // keyboard during the pending request) and runs the request behind a page-level LoadingDialog.
+  @Event submitAction?: (content: string) => void
 
   @Local private content: string = ''
   @Local private isPreview: boolean = false
@@ -43,10 +45,8 @@ export struct ReplyComposerSheet {
   @Local private isSubmitDialogShown: boolean = false
   @Local private contentSelectionStart: number = 0
   @Local private contentSelectionEnd: number = 0
-  @Local private submitContentSnapshot: string = ''
 
   private contentController: TextAreaController = new TextAreaController()
-  private api: ApiService = new ApiService()
   private saveTimerId: number = 0
   private hasSubmitted: boolean = false
 
@@ -182,7 +182,6 @@ export struct ReplyComposerSheet {
     this.isPreview = false
     this.isSubmitting = false
     this.isSubmitDialogShown = false
-    this.submitContentSnapshot = ''
     this.hasSubmitted = false
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     ReplyComposerDraftCoordinator.loadDraft(context, this.topicId, this.initialContent)
@@ -309,44 +308,17 @@ export struct ReplyComposerSheet {
       this.errorMessage = check.message
       return
     }
-    this.submitContentSnapshot = check.content
-    this.isSubmitDialogShown = true
-    this.persistDraft()
-    this.getUIContext().showAlertDialog({
-      title: AppStrings.text(AppStrings.R_REPLY_CONFIRM_SUBMIT_TITLE, 'Submit reply'),
-      message: ReplyComposerCoordinator.sheetSubmitConfirmMessage(),
-      primaryButton: { value: AppStrings.text($r('app.string.common_cancel'), 'Cancel'), action: () => { this.isSubmitDialogShown = false } },
-      secondaryButton: { value: AppStrings.text($r('app.string.reply_submit'), 'Submit'), action: () => { this.submitReply() } }
-    })
-  }
-
-  private submitReply(): void {
-    const cookie = CookieJarSettings.getCurrentCookie()
-    if (!cookie || this.isSubmitting) {
-      this.isSubmitDialogShown = false
-      return
-    }
-    this.isSubmitting = true
+    // Ordinary reply submit deliberately SKIPS the "Submit this reply?" confirmation dialog.
+    // Persist the draft (so a failed parent submit keeps the user's text), then emit the clean
+    // snapshot to the parent. The parent closes this sheet immediately and runs the network
+    // submit behind a page-level LoadingDialog — closing first stops the TextArea from
+    // re-grabbing focus and re-opening the soft keyboard mid-request. Auth/2FA/session errors
+    // are surfaced by the parent's failure handler, never converted into a confirmation bypass.
     this.errorMessage = ''
-    const cleanContent = this.submitContentSnapshot || this.content.trim()
-    this.api.submitReplyWithCookie(cookie, this.topicId, cleanContent)
-      .then(() => {
-        this.hasSubmitted = true
-        const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-        ReplyComposerDraftCoordinator.clearDraft(context, this.topicId).catch((_error: Error) => { })
-        promptAction.openToast({ message: $r('app.string.reply_submitted') }).catch((_error: Error) => { })
-        if (this.submittedAction) {
-          this.submittedAction()
-        }
-        this.close()
-      })
-      .catch((error: Error) => {
-        this.errorMessage = translateApiError(error)
-      })
-      .finally(() => {
-        this.isSubmitting = false
-        this.isSubmitDialogShown = false
-      })
+    this.persistDraft()
+    if (this.submitAction) {
+      this.submitAction(check.content)
+    }
   }
 
   private close(): void {
