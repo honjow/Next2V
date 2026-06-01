@@ -3,9 +3,10 @@
 //
 // Proves the half-modal reply composer no longer self-submits behind a confirmation dialog, and
 // that TopicDetailPage owns the network submit: it closes the sheet BEFORE the request (so the
-// TextArea can't re-grab focus / re-open the keyboard while pending), shows a page-level
-// LoadingDialog overlay, refreshes replies + clears the draft on success, and preserves the draft
-// (without auto-reopening / lost-draft) plus surfaces the translated error on failure.
+// TextArea can't re-grab focus / re-open the keyboard while pending), opens the system
+// LoadingDialog via CustomDialogController, refreshes replies + clears the draft on success, and
+// preserves the draft (without auto-reopening / lost-draft) plus surfaces the translated error on
+// failure.
 //
 // Run: node scripts/test_reply_submit_loading_ux_contract.mjs
 import assert from 'node:assert/strict'
@@ -110,10 +111,16 @@ assert.doesNotMatch(
 )
 
 // ---------------------------------------------------------------------------
-// TopicDetailPage: owns pending state, LoadingDialog overlay, and the network submit.
+// TopicDetailPage: owns pending state, the system LoadingDialog, and the network submit.
 // ---------------------------------------------------------------------------
 
-// (4) Page-level pending flag + blocking LoadingDialog overlay gated on it.
+// (4) Page-level pending flag + system LoadingDialog controller. This is an implementation
+// boundary: do not replace LoadingDialog with a hand-written LoadingProgress/card/scrim overlay.
+assert.match(
+  page,
+  /import \{[^}]*LoadingDialog[^}]*promptAction[^}]*\} from '@kit\.ArkUI'|import \{[^}]*promptAction[^}]*LoadingDialog[^}]*\} from '@kit\.ArkUI'/s,
+  'TopicDetailPage must import the system LoadingDialog from @kit.ArkUI',
+)
 assert.match(
   page,
   /@Local\s+private\s+isReplySubmitting:\s*boolean\s*=\s*false/,
@@ -121,15 +128,13 @@ assert.match(
 )
 assert.match(
   page,
-  /if \(this\.isReplySubmitting\)\s*\{\s*this\.ReplySubmitLoadingOverlay\(\)/,
-  'build() must render ReplySubmitLoadingOverlay() while submitting',
+  /private\s+replySubmitLoadingDialogController:\s*CustomDialogController\s*=\s*new\s+CustomDialogController\(\s*\{[\s\S]*builder:\s*LoadingDialog\(\s*\{[\s\S]*content:\s*\$r\('app\.string\.reply_submitting'\)/,
+  'TopicDetailPage must back reply submit waiting UI with system LoadingDialog + CustomDialogController',
 )
-const overlay = blockAfter(page, '@Builder ReplySubmitLoadingOverlay()')
-assert.match(overlay, /LoadingProgress\(\)/, 'LoadingDialog overlay must show a LoadingProgress spinner')
-assert.match(
-  overlay,
-  /hitTestBehavior\(HitTestMode\.Block\)/,
-  'LoadingDialog overlay must block taps underneath while submitting',
+assert.doesNotMatch(
+  page,
+  /@Builder\s+ReplySubmitLoadingOverlay|REPLY_SUBMIT_SCRIM|ReplySubmitLoadingOverlay\(/,
+  'reply submit must not use a hand-written overlay/scrim builder',
 )
 
 // (5) The composer builder wires submitAction -> page submit handler.
@@ -154,7 +159,12 @@ assert.ok(
 )
 assert.ok(
   pendingIndex >= 0 && pendingIndex < requestIndex,
-  'submit handler must raise isReplySubmitting BEFORE the request (drives the LoadingDialog)',
+  'submit handler must raise isReplySubmitting BEFORE the request (guards duplicate submit)',
+)
+const openDialogIndex = submit.indexOf('this.replySubmitLoadingDialogController.open()')
+assert.ok(
+  openDialogIndex >= 0 && pendingIndex >= 0 && pendingIndex < openDialogIndex && openDialogIndex < requestIndex,
+  'submit handler must open the system LoadingDialog after setting pending and before the request',
 )
 // Cookie/auth pre-check toasts (never silently bypasses login).
 assert.match(
@@ -188,8 +198,9 @@ assert.doesNotMatch(
   'failure must NOT auto-reopen the composer (avoids TextArea auto-focus / keyboard)',
 )
 
-// (9) finally clears the pending flag (hides the LoadingDialog regardless of outcome).
+// (9) finally clears the pending flag and closes the system LoadingDialog regardless of outcome.
 const fin = blockAfter(submit, '.finally(() =>')
+assert.match(fin, /this\.replySubmitLoadingDialogController\.close\(\)/, 'finally must close the system LoadingDialog')
 assert.match(fin, /this\.isReplySubmitting = false/, 'finally must lower isReplySubmitting')
 
 // ---------------------------------------------------------------------------

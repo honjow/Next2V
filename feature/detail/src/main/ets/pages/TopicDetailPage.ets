@@ -50,7 +50,7 @@ import {
 } from '../model/TopicDetailReplyDisplayCoordinator'
 import { TopicDetailScrollCoordinator } from '../model/TopicDetailScrollCoordinator'
 import { common, Want } from '@kit.AbilityKit'
-import { promptAction } from '@kit.ArkUI'
+import { LoadingDialog, promptAction } from '@kit.ArkUI'
 import { HdsAnimationMode, HdsTabsController } from '@kit.UIDesignKit'
 import { HdsMiniBarButton } from '../components/HdsMiniBarButton'
 import { uniformTypeDescriptor as utd } from '@kit.ArkData'
@@ -144,8 +144,8 @@ export struct TopicDetailPage {
   @Local private replyDisplayMenuShown: boolean = false;
   @Local private replyComposerVisible: boolean = false;
   // Page-level pending-submit flag. The reply composer sheet emits a clean content snapshot, this
-  // page closes the sheet and owns the network submit, gating a blocking LoadingDialog overlay on
-  // this flag for the duration of the request.
+  // page closes the sheet and owns the network submit, then opens the system LoadingDialog for
+  // the duration of the request.
   @Local private isReplySubmitting: boolean = false;
   @Local private visualMotionHandEdge: string = 'right';
   @Local private detailRootWidth: number = 0;
@@ -156,9 +156,6 @@ export struct TopicDetailPage {
   @Local private currentScrollOffset: number = 0;
   @Local private isTitleCoveredByAppbar: boolean = false;
   private readonly HDS_ACTION_BAR_CLEARANCE: number = 72;
-  // Dim scrim behind the reply-submit LoadingDialog (≈32% black ARGB), matching the project's
-  // convention of literal overlay colors (see ThemeConstants.PRESSED_OVERLAY); no system mask token.
-  private readonly REPLY_SUBMIT_SCRIM: ResourceColor = '#52000000';
   private readonly TOPIC_DETAIL_REPLY_BUTTON_SIZE: number = 56;
   private readonly TOPIC_DETAIL_REPLY_BUTTON_ACTIVITY_PADDING: number = ThemeConstants.SPACE_LG;
   private readonly TOPIC_DETAIL_REPLY_BUTTON_SCROLL_DELTA_PX: number = 6;
@@ -171,6 +168,14 @@ export struct TopicDetailPage {
   private topicActionOverlay: TopicDetailActionOverlay | null = null;
   private topicThankLocked: boolean = false;
   private replyThankLockedId: number = 0;
+  private replySubmitLoadingDialogController: CustomDialogController = new CustomDialogController({
+    builder: LoadingDialog({
+      content: $r('app.string.reply_submitting'),
+    }),
+    autoCancel: false,
+    alignment: DialogAlignment.Center,
+    customStyle: false,
+  });
   // Jump-to-floor dialog is opened via UIContext PromptAction.openCustomDialog (V2-compatible);
   // -1 means no dialog is currently open.
   private jumpFloorDialogId: number = -1;
@@ -214,6 +219,7 @@ export struct TopicDetailPage {
 
   aboutToDisappear(): void {
     this.persistReadPosition()
+    this.replySubmitLoadingDialogController.close()
     this.replyButtonController.unbindScroller(this.scroller)
     this.clearReplyButtonAnimationGuardTimer()
   }
@@ -410,12 +416,6 @@ export struct TopicDetailPage {
 
       this.ReplyComposerSheetHost()
       this.ReplyContextSheetHost()
-
-      // Page-level blocking LoadingDialog shown only while a reply submit is pending. Rendered last
-      // so it sits above the content/action bar; the composer sheet is already closed by this point.
-      if (this.isReplySubmitting) {
-        this.ReplySubmitLoadingOverlay()
-      }
 
     }
     .width('100%')
@@ -809,33 +809,6 @@ export struct TopicDetailPage {
     })
   }
 
-  @Builder ReplySubmitLoadingOverlay() {
-    Column() {
-      Column() {
-        LoadingProgress()
-          .width(ThemeConstants.LOADING_SIZE_LARGE)
-          .height(ThemeConstants.LOADING_SIZE_LARGE)
-          .color($r('sys.color.ohos_id_color_activated'))
-        Text(AppStrings.text($r('app.string.reply_submitting'), 'Submitting'))
-          .fontSize(ThemeConstants.FONT_SIZE_BODY)
-          .fontColor($r('sys.color.font_secondary'))
-          .margin({ top: ThemeConstants.SPACE_MD })
-      }
-      .padding(ThemeConstants.SPACE_XL)
-      .borderRadius(ThemeConstants.RADIUS_MD)
-      .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
-      .justifyContent(FlexAlign.Center)
-      .alignItems(HorizontalAlign.Center)
-    }
-    .width('100%')
-    .height('100%')
-    .justifyContent(FlexAlign.Center)
-    .alignItems(HorizontalAlign.Center)
-    .backgroundColor(this.REPLY_SUBMIT_SCRIM)
-    // Block taps to the content/action bar underneath so no second submit can fire mid-request.
-    .hitTestBehavior(HitTestMode.Block)
-  }
-
   // Owns the reply network submit. The composer sheet has already emitted a clean snapshot and is
   // closed by this method BEFORE the request starts, so the TextArea can't re-grab focus or re-open
   // the soft keyboard while the request is pending. The draft was persisted by the sheet, so a
@@ -856,10 +829,12 @@ export struct TopicDetailPage {
         .catch((_error: Error) => {})
       return
     }
-    // Close the composer first (focus/keyboard fix), then start the request behind the LoadingDialog.
+    // Close the composer first (focus/keyboard fix), then open the system LoadingDialog before
+    // starting the network request.
     this.replyComposerVisible = false
     this.replyComposerInitialContent = ''
     this.isReplySubmitting = true
+    this.replySubmitLoadingDialogController.open()
     this.api
       .submitReplyWithCookie(cookie, this.topicId, cleanContent)
       .then(() => {
@@ -875,6 +850,7 @@ export struct TopicDetailPage {
         promptAction.openToast({ message: translateApiError(error) }).catch((_error: Error) => {})
       })
       .finally(() => {
+        this.replySubmitLoadingDialogController.close()
         this.isReplySubmitting = false
       })
   }

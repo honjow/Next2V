@@ -34,7 +34,7 @@ export struct ReplyComposerSheet {
   @Event closeAction?: () => void
   // Emits a clean (trimmed) content snapshot to the parent page. The parent owns the network
   // submit: it closes this sheet first (so the TextArea can't re-grab focus / re-open the
-  // keyboard during the pending request) and runs the request behind a page-level LoadingDialog.
+  // keyboard during the pending request) and opens the system LoadingDialog.
   @Event submitAction?: (content: string) => void
 
   @Local private content: string = ''
@@ -310,8 +310,8 @@ export struct ReplyComposerSheet {
     }
     // Ordinary reply submit deliberately SKIPS the "Submit this reply?" confirmation dialog.
     // Persist the draft (so a failed parent submit keeps the user's text), then emit the clean
-    // snapshot to the parent. The parent closes this sheet immediately and runs the network
-    // submit behind a page-level LoadingDialog — closing first stops the TextArea from
+    // snapshot to the parent. The parent closes this sheet immediately, opens the system
+    // LoadingDialog, then runs the network submit — closing first stops the TextArea from
     // re-grabbing focus and re-opening the soft keyboard mid-request. Auth/2FA/session errors
     // are surfaced by the parent's failure handler, never converted into a confirmation bypass.
     this.errorMessage = ''
