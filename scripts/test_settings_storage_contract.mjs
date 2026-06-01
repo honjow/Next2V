@@ -95,9 +95,6 @@ while ((match = storageKeyRegex.exec(storageKeysText)) !== null) {
 }
 
 const expectedStorageKeys = [
-  ['TOP_AVOID_HEIGHT', 'topAvoidHeight'],
-  ['BOTTOM_AVOID_HEIGHT', 'bottomAvoidHeight'],
-  ['KEYBOARD_HEIGHT', 'keyboardHeight'],
   ['USE_CO_DOMAIN', 'useCoDomain'],
   ['SELECTED_BASE_URL', 'selectedBaseUrl'],
   ['MEDIA_AUTO_LOAD_IMAGES', 'mediaAutoLoadImages'],
@@ -225,8 +222,8 @@ for (const heading of [
 
 // Layout/safe-area metrics are V2-only: EntryAbility publishes window insets + keyboard height
 // exclusively into the AppStorageV2 'v2:layoutSafeArea' mirror (LayoutSafeAreaState.ets). The
-// legacy V1 AppStorage dual-write (StorageKeys.TOP_AVOID_HEIGHT/BOTTOM_AVOID_HEIGHT/KEYBOARD_HEIGHT)
-// was retired; guard against re-introducing the V1 half.
+// legacy V1 AppStorage layout keys (topAvoidHeight/bottomAvoidHeight/keyboardHeight) and their
+// dual-write were retired and the StorageKeys constants removed; guard against re-introducing the V1 half.
 const layoutSafeAreaText = read('shared/src/main/ets/state/LayoutSafeAreaState.ets')
 assert(layoutSafeAreaText.includes('AppStorageV2.connect'), 'LayoutSafeAreaState must connect the layout mirror via AppStorageV2')
 assert(layoutSafeAreaText.includes("'v2:layoutSafeArea'"), "LayoutSafeAreaState must own the 'v2:layoutSafeArea' mirror key")

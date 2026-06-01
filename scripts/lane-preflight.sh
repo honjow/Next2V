@@ -24,11 +24,43 @@ if [ -z "$LANE_ART" ]; then
   echo "lane-preflight: missing ART argument" >&2
   return 1 2>/dev/null || exit 1
 fi
+mkdir -p "$LANE_ART"
+LANE_ART="$(cd "$LANE_ART" && pwd)"
 
 V2NEXT_REPO=/home/gamer/git/V2Next
+LANE_ROOT="$(pwd)"
 
 # 1) PATH
-export PATH="/home/gamer/devtool/ohos/command-line-tools/bin:/home/gamer/devtool/ohos/command-line-tools/sdk/default/openharmony/toolchains:/home/gamer/OpenHarmony/20/toolchains:$PATH"
+export PATH="/home/gamer/devtool/ohos/command-line-tools/bin:/home/gamer/devtool/ohos/command-line-tools/ohpm/bin:/home/gamer/devtool/ohos/command-line-tools/sdk/default/openharmony/toolchains:/home/gamer/OpenHarmony/20/toolchains:$PATH"
+
+# 1a) Restore ohpm dependencies for fresh git worktrees.
+# Git worktrees do not carry untracked oh_modules. Without those HAR links,
+# :entry:default@CompileArkTS can misreport imported @ComponentV2 components as
+# "does not meet UI component syntax". Keep this in preflight so controller/worker
+# build gates use the same dependency restore path as dev.sh instead of producing
+# false environmental blockers.
+if ! command -v ohpm >/dev/null 2>&1; then
+  cat > "$LANE_ART/result.json" <<JSON
+{"verdict":"BLOCKED","blocked_reason":"missing_ohpm","artifact_dir":"$LANE_ART","hint":"OpenHarmony command-line-tools/bin or ohpm/bin is not on PATH"}
+JSON
+  echo "lane-preflight: ohpm not found → BLOCKED" >&2
+  exit 1
+fi
+
+for module_dir in . shared feature/feed feature/detail feature/node feature/settings feature/user entry; do
+  if [ -f "$LANE_ROOT/$module_dir/oh-package.json5" ]; then
+    echo "lane-preflight: ohpm install $module_dir at $(date -Iseconds)" >> "$LANE_ART/preflight.log"
+    (cd "$LANE_ROOT/$module_dir" && ohpm install >> "$LANE_ART/preflight.log" 2>&1)
+    code=$?
+    if [ "$code" -ne 0 ]; then
+      cat > "$LANE_ART/result.json" <<JSON
+{"verdict":"BLOCKED","blocked_reason":"ohpm_install_failed","artifact_dir":"$LANE_ART","module":"$module_dir","exit_code":$code,"hint":"check $LANE_ART/preflight.log"}
+JSON
+      echo "lane-preflight: ohpm install failed for $module_dir → BLOCKED" >&2
+      exit 1
+    fi
+  fi
+done
 
 # 2) source dev.env（HARMONY_DEBUG_* 等）
 if [ -f "$V2NEXT_REPO/scripts/dev.env" ]; then

@@ -29,7 +29,7 @@ export struct ReplyComposerSheet {
   @Param topicTitle: string = ''
   @Param initialContent: string = ''
   // Keyboard height is published into AppStorageV2 by EntryAbility
-  // (was @StorageProp(StorageKeys.KEYBOARD_HEIGHT)); drives composerBodyHeight().
+  // (formerly a V1 @StorageProp); drives composerBodyHeight().
   layout: LayoutSafeAreaState = connectLayoutSafeArea()
 
   @Event closeAction?: () => void

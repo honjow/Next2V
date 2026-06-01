@@ -121,7 +121,7 @@ def main() -> int:
         # The editor inputs live in the AppModalScaffold tall sheet, which handles
         # keyboard avoidance natively via includeKeyboardPadding: true. The outer
         # list opts out (includeKeyboardPadding: false). No manual collapse-on-focus
-        # hack and no live StorageKeys.KEYBOARD_HEIGHT reads (retired by the layout lane).
+        # hack and no live StorageKeys.KEYBOARD_HEIGHT reads (the constant was removed by the layout lane).
         'shouldCollapseTopForKeyboard' not in proxy_page
         and 'bypassEditorFocused' not in proxy_page
         and 'includeKeyboardPadding: true' in proxy_page

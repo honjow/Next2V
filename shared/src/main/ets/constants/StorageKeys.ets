@@ -1,15 +1,11 @@
 /** AppStorage key constants to avoid cross-module hard-coded strings */
 export class StorageKeys {
   // Runtime window/layout state
-  // NOTE: TOP_AVOID_HEIGHT / BOTTOM_AVOID_HEIGHT / KEYBOARD_HEIGHT are runtime-DEAD after the
-  // safe-area V2 migration. Every reader now reads the AppStorageV2 'v2:layoutSafeArea' mirror
-  // (LayoutSafeAreaState.ets) and EntryAbility no longer dual-writes them into V1 AppStorage.
-  // Retained only because the storage-registry contract pins them and static_network_proxy_contracts.py
-  // still names StorageKeys.KEYBOARD_HEIGHT; drop all three together once that (network-proxy lane)
-  // contract reference is updated.
-  static readonly TOP_AVOID_HEIGHT: string = 'topAvoidHeight'
-  static readonly BOTTOM_AVOID_HEIGHT: string = 'bottomAvoidHeight'
-  static readonly KEYBOARD_HEIGHT: string = 'keyboardHeight'
+  // NOTE: the former TOP_AVOID_HEIGHT / BOTTOM_AVOID_HEIGHT / KEYBOARD_HEIGHT
+  // ('topAvoidHeight' / 'bottomAvoidHeight' / 'keyboardHeight') legacy AppStorage keys were removed —
+  // they had zero runtime consumers after the safe-area V2 migration. Window insets + keyboard height
+  // now live in the AppStorageV2 'v2:layoutSafeArea' mirror (LayoutSafeAreaState.ets); EntryAbility is
+  // the sole publisher and no longer dual-writes them into V1 AppStorage. Do not reintroduce these keys.
   // NOTE: the former NAV_PATH_STACK ('ns') legacy AppStorage key was removed — it had zero runtime
   // consumers. The nav stack now lives in the AppStorageV2 'v2:navStack' holder (NavStackHolder.ets);
   // do not reintroduce a legacy 'ns' AppStorage key.

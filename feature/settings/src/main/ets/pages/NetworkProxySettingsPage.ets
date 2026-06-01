@@ -123,7 +123,7 @@ export struct NetworkProxySettingsPage {
   // Live proxy config mirrored into AppStorageV2 by NetworkProxySettings.apply() (replaces the
   // NETWORK_PROXY_* @StorageLink set). The page reads these @Trace fields and routes every write
   // through NetworkProxySettings.apply()/save() so AppStorage and the mirror stay in lockstep.
-  // (The former unused @StorageProp(KEYBOARD_HEIGHT) keyboardH was dead and is dropped.)
+  // (A former unused keyboard-height @StorageProp was dead and has been dropped.)
   private proxy: NetworkProxyState = connectNetworkProxy()
   @Local private portText: string = ''
   @Local private testStatus: string = ''
