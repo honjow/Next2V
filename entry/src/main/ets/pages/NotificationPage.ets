@@ -88,7 +88,6 @@ export struct NotificationPage {
   private notificationCacheRequestId: number = 0
   private pendingNotificationForceRefresh: boolean = false
   private notificationIdentityKey: string = ''
-  private notificationEntryUnreadCount: number = 0
   private pendingNotificationDeletes: Set<number> = new Set<number>()
   @Param refreshKey: number = 0
   @Param currentTab: number = 0
@@ -358,12 +357,26 @@ export struct NotificationPage {
   }
 
   private openNotification(item: V2exNotification): void {
+    // Opening a row consumes its unread state locally: drop the one-shot marker key immediately so
+    // the 未读 dot clears on tap. This is purely the runtime visual projection; cache content and
+    // the already-consumed (/notifications fetch) server unread state are left untouched.
+    this.clearViewedUnreadKey(item)
     const meta = this.notificationMeta(item)
     const p = NotificationPageCoordinator.routeParams(meta)
     if (!p) {
       return
     }
     this.ns.pushPathByName('TopicDetail', p as Object)
+  }
+
+  private clearViewedUnreadKey(item: V2exNotification): void {
+    const key = this.notificationItemKey(item)
+    if (!key || this.viewedUnreadNotificationKeys.indexOf(key) < 0) {
+      return
+    }
+    // Reassign (not in-place mutate) so the @Local-tracked array re-renders the affected row marker.
+    this.viewedUnreadNotificationKeys = this.viewedUnreadNotificationKeys
+      .filter((current: string) => current !== key)
   }
 
   private notificationMeta(item: V2exNotification): NotificationMetadata {
@@ -585,7 +598,10 @@ export struct NotificationPage {
     }
     const requestId = ++this.notificationRefreshRequestId
     this.notificationCacheRequestId++
-    const entryUnreadCount = this.captureNotificationEntryUnreadCount()
+    // Snapshot the entry badge once, before the consume-on-read /notifications fetch. This is a
+    // one-shot hint applied only to this active fresh page-1 result; after the fetch consumes server
+    // unread the badge is 0, so repeated pull-to-refresh captures 0 and never reprojects.
+    const entryUnreadHint = this.captureNotificationEntryUnreadHint()
     DiagnosticLogger.info('notification', 'notification_refresh_start', {
       force: force,
       requestId: requestId,
@@ -603,10 +619,11 @@ export struct NotificationPage {
         DiagnosticLogger.info('notification', 'notification_refresh_stale_drop', { requestId: requestId })
         return
       }
-      this.viewedUnreadNotificationKeys = this.viewedUnreadKeysForLoadedItems(
+      // The entry-badge hint is a Web-session (cookie) homepage projection; the v2 API (pat) carries
+      // its own item-level unread flags, so only cookie page-1 results may use the count hint.
+      this.viewedUnreadNotificationKeys = this.reconcileFreshViewedUnreadKeys(
         result.items,
-        result.source === 'cookie',
-        entryUnreadCount
+        result.source === 'cookie' ? entryUnreadHint : 0
       )
       this.notifications = this.notificationsWithoutReadState(result.items)
       this.publishUnreadCount()
@@ -621,7 +638,7 @@ export struct NotificationPage {
         count: result.items.length,
         page: result.page,
         hasMore: result.hasMore,
-        unreadCountFallback: entryUnreadCount
+        unreadCountFallback: entryUnreadHint
       })
       this.saveNotificationCache()
     } catch (error) {
@@ -758,12 +775,9 @@ export struct NotificationPage {
           return
         }
         const authContext = this.notificationAuthContext()
-        const entryUnreadCount = this.captureNotificationEntryUnreadCount()
-        this.viewedUnreadNotificationKeys = this.viewedUnreadKeysForLoadedItems(
-          result.items,
-          this.isCookieNotificationSource(authContext),
-          entryUnreadCount
-        )
+        // Cached rows are content only: never project the entry badge count onto cached ordering.
+        // /notifications is consume-on-read, so unread truth comes from a fresh fetch, not the cache.
+        this.viewedUnreadNotificationKeys = this.cachedViewedUnreadKeys(result.items)
         this.notifications = this.notificationsWithoutReadState(result.items)
         this.publishUnreadCount()
         this.notificationPage = result.page
@@ -835,21 +849,15 @@ export struct NotificationPage {
     publishNotificationUnreadCount(0)
   }
 
-  private captureNotificationEntryUnreadCount(): number {
-    const count = Math.max(0, this.notificationUnread.count)
-    if (count > this.notificationEntryUnreadCount) {
-      this.notificationEntryUnreadCount = count
-    }
-    return this.notificationEntryUnreadCount
+  private captureNotificationEntryUnreadHint(): number {
+    // Read the current cross-surface badge as a one-shot snapshot (no running max): once the
+    // consume-on-read /notifications fetch clears server unread, the badge is 0 and later captures
+    // return 0, so the top-N projection cannot replay on repeated refreshes.
+    return Math.max(0, this.notificationUnread.count)
   }
 
   private resetViewedUnreadState(): void {
     this.viewedUnreadNotificationKeys = []
-    this.notificationEntryUnreadCount = 0
-  }
-
-  private isCookieNotificationSource(context: NotificationAuthContext): boolean {
-    return this.notificationVm.sourceKeyFor(context) === 'cookie'
   }
 
   private currentNotificationIdentityKey(username: string = ''): string {
@@ -862,23 +870,33 @@ export struct NotificationPage {
     )
   }
 
-  private viewedUnreadKeysForLoadedItems(
-    items: V2exNotification[],
-    useCountFallback: boolean,
-    unreadCount: number
-  ): string[] {
+  private reconcileFreshViewedUnreadKeys(items: V2exNotification[], entryUnreadHint: number): string[] {
     if (!Array.isArray(items) || items.length === 0) {
       return []
     }
+    // 1. Item-level unread flags (Web rows still carrying the unread class) are the source of truth.
     if (this.notificationVm.unreadCount(items) > 0) {
       return this.unreadKeysFromItems(items)
     }
-    if (!useCountFallback || unreadCount <= 0) {
-      return this.retainViewedUnreadKeys(items)
+    // 2. One-shot entry hint: project the captured badge onto the freshly loaded page-1 rows. Valid
+    //    only here (active fresh page-1) and only once, since the fetch already consumed server unread.
+    if (entryUnreadHint > 0) {
+      return items.slice(0, Math.min(entryUnreadHint, items.length))
+        .map((item: V2exNotification) => this.notificationItemKey(item))
+        .filter((key: string) => !!key)
     }
-    return items.slice(0, Math.min(unreadCount, items.length))
-      .map((item: V2exNotification) => this.notificationItemKey(item))
-      .filter((key: string) => !!key)
+    // 3. No unread truth and no hint: a successful fresh refresh proves nothing is unread, so stale
+    //    local fallback keys are cleared (never retained).
+    return []
+  }
+
+  private cachedViewedUnreadKeys(items: V2exNotification[]): string[] {
+    if (!Array.isArray(items) || items.length === 0) {
+      return []
+    }
+    // Cache carries content only (read-state flags are stripped before caching) and must never use
+    // the badge-count fallback; retain just the in-session markers that still match a cached row.
+    return this.retainViewedUnreadKeys(items)
   }
 
   private unreadKeysFromItems(items: V2exNotification[]): string[] {
