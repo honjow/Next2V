@@ -4,6 +4,7 @@ import { StorageKeys } from '../constants/StorageKeys'
 import { AppStrings } from '../i18n/AppStrings'
 import { SettingDescriptor, applyDescriptorValue, readDescriptorValue } from './SettingsDescriptor'
 import { STORE_NAME_SETTINGS, SettingsPreferencesStore } from './SettingsStorage'
+import { connectReplyDisplay } from '../state/ReplyDisplayState'
 
 const STORE_NAME: string = STORE_NAME_SETTINGS
 const KEY_REPLY_DISPLAY_MODE: string = StorageKeys.REPLY_DISPLAY_MODE
@@ -41,7 +42,10 @@ export class ReplyDisplaySettings {
   static readonly MODE_ORIGIN: string = MODE_ORIGIN
 
   static apply(mode: string): void {
-    applyDescriptorValue<string>(REPLY_DISPLAY_MODE_DESCRIPTOR, mode)
+    // Descriptor still projects the legacy AppStorage key; additionally seed the V2 mirror that
+    // SettingsPage / DetailViewModel / TopicDetailPage now read instead of AppStorage.get.
+    const normalized = applyDescriptorValue<string>(REPLY_DISPLAY_MODE_DESCRIPTOR, mode)
+    connectReplyDisplay().mode = normalized
   }
 
   static async load(context: common.UIAbilityContext): Promise<string> {

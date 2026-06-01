@@ -1,6 +1,6 @@
 import { common } from '@kit.AbilityKit'
 import { STRING_MAP, RESOURCE_BY_NAME } from './StringMap'
-import { StorageKeys } from '../constants/StorageKeys'
+import { connectLanguageState } from '../state/LanguageState'
 
 export type AppLanguageMode = 'default' | 'zh-Hans' | 'zh-Hant-HK' | 'zh-Hant-TW' | 'en-US' | 'ja-JP' | 'ko-KR'
 
@@ -106,16 +106,16 @@ export class AppStrings {
 
   /**
    * Return the current app language mode.
-   * Reads from AppStorage (set by LanguageSettings.apply).
+   * Reads the durable V2 LanguageState mirror (seeded by LanguageSettings.apply).
    */
   private static currentLanguageMode(): AppLanguageMode {
     try {
-      const mode = AppStorage.get<string>(StorageKeys.LANGUAGE_MODE)
+      const mode = connectLanguageState().mode
       if (mode) {
         return mode as AppLanguageMode
       }
     } catch (_error) {
-      // AppStorage may not be available during early init
+      // mirror may not be available during early init
     }
     return AppStrings.DEFAULT_LANGUAGE_MODE
   }

@@ -5,7 +5,7 @@ import {
   ApiV2Service,
   TopicDetailCache,
   HtmlEntityUtils,
-  StorageKeys,
+  connectReplyDisplay,
   ReplyDisplaySettings,
   CookieJarSettings,
   AppStrings,
@@ -37,9 +37,7 @@ export class DetailViewModel {
   replyDataSource: ReplyDataSource = new ReplyDataSource()
   @Trace isLoading: boolean = false
   onlyOp: boolean = false
-  @Trace replyDisplayMode: string = ReplyDisplaySettings.normalizeMode(
-    AppStorage.get<string>(StorageKeys.REPLY_DISPLAY_MODE) ?? ReplyDisplaySettings.MODE_THREAD,
-  )
+  @Trace replyDisplayMode: string = ReplyDisplaySettings.normalizeMode(connectReplyDisplay().mode)
   repliesUseV2: boolean = false
   repliesPage: number = 1
   @Trace repliesHasMore: boolean = false

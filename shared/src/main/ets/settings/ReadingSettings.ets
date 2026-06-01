@@ -58,6 +58,7 @@ export class ReadingSettings {
     readingState.lineHeight = normalizedLineHeight
     readingState.density = normalizedDensity
     readingState.base64DecodeMode = normalizedBase64
+    readingState.restorePosition = restorePosition
   }
 
   static async load(context: common.UIAbilityContext): Promise<ReadingSettingsSnapshot> {
@@ -94,7 +95,7 @@ export class ReadingSettings {
     const normalizedTextScale = ReadingSettings.normalizeTextScale(textScaleSource)
     const normalizedLineHeight = ReadingSettings.normalizeLineHeight(lineHeight, normalizedTextScale)
     const normalizedDensity = ReadingSettings.normalizeDensity(density)
-    const currentRestorePosition = AppStorage.get<boolean>(StorageKeys.READING_RESTORE_POSITION) ?? false
+    const currentRestorePosition = connectReadingSettings().restorePosition
     ReadingSettings.apply(normalizedTextScale, normalizedLineHeight, normalizedDensity, currentRestorePosition)
     try {
       const store = await preferences.getPreferences(context, STORE_NAME)
@@ -112,7 +113,7 @@ export class ReadingSettings {
     const normalizedTextScale = ReadingSettings.normalizeTextScale(textScaleSource)
     const normalizedLineHeight = ReadingSettings.normalizeLineHeight(lineHeight, normalizedTextScale)
     const currentDensity = ReadingSettings.normalizeDensity(connectReadingSettings().density)
-    const currentRestorePosition = AppStorage.get<boolean>(StorageKeys.READING_RESTORE_POSITION) ?? false
+    const currentRestorePosition = connectReadingSettings().restorePosition
     ReadingSettings.apply(normalizedTextScale, normalizedLineHeight, currentDensity, currentRestorePosition)
     try {
       const store = await preferences.getPreferences(context, STORE_NAME)
@@ -127,6 +128,7 @@ export class ReadingSettings {
 
   static async saveRestorePosition(context: common.UIAbilityContext, restorePosition: boolean): Promise<void> {
     setAppStorageValue<boolean>(StorageKeys.READING_RESTORE_POSITION, restorePosition)
+    connectReadingSettings().restorePosition = restorePosition
     try {
       const store = await preferences.getPreferences(context, STORE_NAME)
       store.putSync(KEY_RESTORE_POSITION, restorePosition)

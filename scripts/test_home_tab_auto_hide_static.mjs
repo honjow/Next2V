@@ -38,12 +38,14 @@ mustContain(saveCoordinator, 'static saveHomeTabAutoHide(context: common.UIAbili
 
 mustContain(appStrings, "R_HOME_TAB_AUTO_HIDE: Resource = $r('app.string.home_tab_auto_hide')", 'home tab label resource')
 // State Management V2 migration: SettingsPage is @ComponentV2 — the home-tab auto-hide preference is a
-// self-toggled @Local hydrated from AppStorage (no live @StorageLink), still persisted/applied through
-// SettingsSaveCoordinator.saveHomeTabAutoHide. Product intent (hydrate / persist / apply) is preserved.
+// self-toggled @Local hydrated from the durable V2 HomeTabAutoHideState mirror (no AppStorage.get, no
+// live @StorageLink), still persisted/applied through SettingsSaveCoordinator.saveHomeTabAutoHide.
+// Product intent (hydrate / persist / apply) is preserved.
 mustContain(settingsPage, '@ComponentV2', 'settings page is @ComponentV2')
 mustNotContain(settingsPage, '@StorageLink(StorageKeys.HOME_TAB_AUTO_HIDE)', 'settings legacy @StorageLink(HOME_TAB_AUTO_HIDE)')
+mustNotContain(settingsPage, 'AppStorage.get<boolean>(StorageKeys.HOME_TAB_AUTO_HIDE)', 'settings legacy AppStorage.get(HOME_TAB_AUTO_HIDE) hydration')
 mustContain(settingsPage, '@Local private homeTabAutoHide: boolean = HomeTabSettings.DEFAULT_AUTO_HIDE', 'settings @Local home-tab field')
-mustContain(settingsPage, 'this.homeTabAutoHide = AppStorage.get<boolean>(StorageKeys.HOME_TAB_AUTO_HIDE) ?? HomeTabSettings.DEFAULT_AUTO_HIDE', 'settings V2-safe hydration')
+mustContain(settingsPage, 'this.homeTabAutoHide = connectHomeTabAutoHide().autoHide', 'settings V2 holder hydration')
 mustContain(settingsPage, 'this.TogglePreferenceRow(AppStrings.R_HOME_TAB_AUTO_HIDE, this.homeTabAutoHide', 'settings toggle row')
 mustContain(settingsPage, 'SettingsSaveCoordinator.saveHomeTabAutoHide(context, enabled)', 'settings save call')
 

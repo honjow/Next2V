@@ -25,6 +25,9 @@ export class ThemeSettings {
     const normalizedMode = ThemeSettings.normalizeMode(mode)
     const effectiveDark = ThemeSettings.effectiveDarkForMode(context, normalizedMode)
     setAppStorageValue<string>(StorageKeys.THEME_MODE, normalizedMode)
+    // V2 mirror dual-write: SettingsPage hydration + refreshEffectiveDark / reapplyForFollowSystem read
+    // this instead of AppStorage.get(THEME_MODE).
+    connectThemeDisplay().mode = normalizedMode
     ThemeSettings.publishEffectiveDark(effectiveDark)
     ThemeSettings.applySystemColorMode(context, normalizedMode)
     return { mode: normalizedMode, effectiveDark: effectiveDark }
@@ -59,7 +62,7 @@ export class ThemeSettings {
   }
 
   static refreshEffectiveDark(context: common.UIAbilityContext, colorMode?: ConfigurationConstant.ColorMode): void {
-    const mode = ThemeSettings.normalizeMode(AppStorage.get<string>(StorageKeys.THEME_MODE) || THEME_MODE_AUTO)
+    const mode = ThemeSettings.normalizeMode(connectThemeDisplay().mode || THEME_MODE_AUTO)
     ThemeSettings.publishEffectiveDark(ThemeSettings.effectiveDarkForMode(context, mode, colorMode))
   }
 
@@ -146,10 +149,11 @@ export class ThemeSettings {
   // The EnvironmentCallback later updates this cache with new colorMode values.
   static seedSystemColorMode(context: common.UIAbilityContext): void {
     setAppStorageValue<number>(StorageKeys.SYSTEM_COLOR_MODE, context.config.colorMode as number)
+    connectThemeDisplay().systemColorMode = context.config.colorMode as number
   }
 
   private static getSystemColorMode(context: common.UIAbilityContext): ConfigurationConstant.ColorMode {
-    const stored = AppStorage.get<number>(StorageKeys.SYSTEM_COLOR_MODE)
+    const stored = connectThemeDisplay().systemColorMode
     if (stored === ConfigurationConstant.ColorMode.COLOR_MODE_DARK as number) {
       return ConfigurationConstant.ColorMode.COLOR_MODE_DARK
     }
@@ -177,8 +181,9 @@ export class ThemeSettings {
     // First, update the cached real system colorMode.
     if (newColorMode !== undefined) {
       setAppStorageValue<number>(StorageKeys.SYSTEM_COLOR_MODE, newColorMode as number)
+      connectThemeDisplay().systemColorMode = newColorMode as number
     }
-    const mode = ThemeSettings.normalizeMode(AppStorage.get<string>(StorageKeys.THEME_MODE) || THEME_MODE_AUTO)
+    const mode = ThemeSettings.normalizeMode(connectThemeDisplay().mode || THEME_MODE_AUTO)
     if (mode !== THEME_MODE_AUTO) {
       return
     }

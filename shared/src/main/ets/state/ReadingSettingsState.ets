@@ -13,16 +13,20 @@ import { ThemeConstants } from '../theme/ThemeConstants'
  * these `@Trace` fields (read by `@ComponentV2`, e.g. `MarkdownCodeBlock` / `MarkdownContent`).
  * Transitional — drop the `AppStorage` half once every reading-settings reader is V2.
  *
- * Restore-position is not mirrored here; it gains a field when its V2 reader is migrated.
+ * `restorePosition` mirrors `StorageKeys.READING_RESTORE_POSITION`; `ReadingSettings.apply()` (which
+ * takes the restore flag) and `saveRestorePosition()` seed it, and its V2 readers (SettingsPage
+ * hydration, ReadingSettings.save/saveTypography current-value reads, TopicDetailPage restore) consume
+ * this field instead of `AppStorage.get`. The `setAppStorageValue` projection of the key is kept.
  */
 @ObservedV2
 export class ReadingSettingsState {
   // Defaults mirror ReadingSettings.TEXT_SCALE_DEFAULT (1.0) / DENSITY_STANDARD ('standard') /
-  // BASE64_MODE_BADGE ('badge'); real values published by ReadingSettings on load/save.
+  // BASE64_MODE_BADGE ('badge') / restore-position off; real values published by ReadingSettings.
   @Trace textScale: number = 1.0
   @Trace lineHeight: number = ThemeConstants.LINE_HEIGHT_BODY
   @Trace density: string = 'standard'
   @Trace base64DecodeMode: string = 'badge'
+  @Trace restorePosition: boolean = false
 }
 
 const READING_SETTINGS_V2_KEY: string = 'v2:readingSettings'

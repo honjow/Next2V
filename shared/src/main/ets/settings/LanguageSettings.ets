@@ -4,6 +4,7 @@ import i18n from '@ohos.i18n'
 import { StorageKeys } from '../constants/StorageKeys'
 import { AppStrings } from '../i18n/AppStrings'
 import { STORE_NAME_SETTINGS, SettingsPreferencesStore, setAppStorageValue } from './SettingsStorage'
+import { connectLanguageState } from '../state/LanguageState'
 
 export type AppLanguageMode = 'default' | 'zh-Hans' | 'zh-Hant-HK' | 'zh-Hant-TW' | 'en-US' | 'ja-JP' | 'ko-KR'
 
@@ -46,6 +47,9 @@ export class LanguageSettings {
       LanguageSettings.lastAppliedFollowSystemLanguage = normalized
     }
     setAppStorageValue<AppLanguageMode>(StorageKeys.LANGUAGE_MODE, mode)
+    // V2 mirror dual-write: SettingsPage hydration, reapplyForFollowSystem, and
+    // AppStrings.currentLanguageMode read this instead of AppStorage.get(LANGUAGE_MODE).
+    connectLanguageState().mode = mode
     return { mode }
   }
 
@@ -68,7 +72,7 @@ export class LanguageSettings {
   // Called by ApplicationContext EnvironmentCallback (application-level async event,
   // outside the Configuration rebuild call chain, so setAppPreferredLanguage is safe).
   static reapplyForFollowSystem(): void {
-    const mode = (AppStorage.get<string>(StorageKeys.LANGUAGE_MODE) || LanguageSettings.MODE_SYSTEM) as string
+    const mode = (connectLanguageState().mode || LanguageSettings.MODE_SYSTEM) as string
     if (LanguageSettings.normalizeMode(mode) !== LanguageSettings.MODE_SYSTEM) {
       return
     }

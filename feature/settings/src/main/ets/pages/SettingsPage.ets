@@ -7,11 +7,18 @@ import {
   AvatarAppearanceState,
   CacheSettings,
   connectApiDomain,
+  connectAutoDailyCheckin,
   connectAvatarAppearance,
+  connectHomeTabAutoHide,
+  connectLanguageState,
+  connectMediaSettings,
+  connectMotionReplyAlignment,
   connectNavStack,
   connectNetworkProxy,
   connectReadingSettings,
   connectReplyCardStyle,
+  connectReplyDisplay,
+  connectThemeDisplay,
   connectTopicDetailReplyButton,
   ConciseListRow,
   GroupedListSection,
@@ -23,7 +30,6 @@ import {
   ReadingSettings,
   ReadingSettingsState,
   SecondaryListScaffold,
-  StorageKeys,
   ThemeSettings,
   ReplyActionAlignmentSettings,
   ReplyDisplaySettings,
@@ -88,20 +94,26 @@ export struct SettingsPage {
     this.loadCacheStats()
   }
 
-  // Hydrate the @Local self-toggled preferences from AppStorage (populated by SettingsBootstrap at
-  // startup). The mirror-backed settings (domain/avatar/replyCardStyle/reading/proxy/topicReplyButton)
-  // need no hydration — their connect* singletons already hold the live value.
+  // Hydrate the @Local self-toggled preferences from their durable V2 holders (seeded by each setting's
+  // apply()/save() chokepoint and by SettingsBootstrap at startup), replacing the former direct
+  // AppStorage.get reads. The mirror-backed settings (domain/avatar/replyCardStyle/reading-base64/
+  // proxy/topicReplyButton) need no hydration — their connect* singletons already hold the live value.
+  // Holder defaults match the prior `?? <default>` fallbacks (auto checkin on, auto-load images on,
+  // wifi-only off, theme 'auto', language 'default', reply display 'thread', alignment unset, home-tab
+  // auto-hide default, holding-hand unsupported, restore-position off).
   private hydratePreferences(): void {
-    this.autoDailyCheckinEnabled = AppStorage.get<boolean>(StorageKeys.AUTO_DAILY_CHECKIN_ENABLED) ?? true
-    this.autoLoadImages = AppStorage.get<boolean>(StorageKeys.MEDIA_AUTO_LOAD_IMAGES) ?? true
-    this.onlyLoadImagesOnWifi = AppStorage.get<boolean>(StorageKeys.MEDIA_ONLY_LOAD_IMAGES_ON_WIFI) ?? false
-    this.themeMode = AppStorage.get<string>(StorageKeys.THEME_MODE) ?? ThemeSettings.MODE_AUTO
-    this.languageMode = AppStorage.get<string>(StorageKeys.LANGUAGE_MODE) ?? LanguageSettings.MODE_SYSTEM
-    this.replyDisplayMode = AppStorage.get<string>(StorageKeys.REPLY_DISPLAY_MODE) ?? ReplyDisplaySettings.MODE_THREAD
-    this.replyActionAlignmentMode = AppStorage.get<string>(StorageKeys.REPLY_ACTION_ALIGNMENT_MODE) ?? ReplyActionAlignmentSettings.MODE_UNSET
-    this.homeTabAutoHide = AppStorage.get<boolean>(StorageKeys.HOME_TAB_AUTO_HIDE) ?? HomeTabSettings.DEFAULT_AUTO_HIDE
-    this.motionHoldingHandSupported = AppStorage.get<boolean>(StorageKeys.MOTION_HOLDING_HAND_SUPPORTED) ?? false
-    this.readingRestorePosition = AppStorage.get<boolean>(StorageKeys.READING_RESTORE_POSITION) ?? false
+    this.autoDailyCheckinEnabled = connectAutoDailyCheckin().enabled
+    const media = connectMediaSettings()
+    this.autoLoadImages = media.autoLoadImages
+    this.onlyLoadImagesOnWifi = media.onlyLoadImagesOnWifi
+    this.themeMode = connectThemeDisplay().mode
+    this.languageMode = connectLanguageState().mode
+    this.replyDisplayMode = connectReplyDisplay().mode
+    const alignment = connectMotionReplyAlignment()
+    this.replyActionAlignmentMode = alignment.alignmentMode
+    this.homeTabAutoHide = connectHomeTabAutoHide().autoHide
+    this.motionHoldingHandSupported = alignment.holdingHandSupported
+    this.readingRestorePosition = this.reading.restorePosition
   }
 
   build() {

@@ -1,9 +1,9 @@
 import { motion } from '@kit.MultimodalAwarenessKit'
 import { BusinessError } from '@ohos.base'
-import { StorageKeys } from '../constants/StorageKeys'
 import { ReplyActionAlignmentSettings } from '../settings/ReplyActionAlignmentSettings'
 import type { ReplyActionAlignmentMode } from '../settings/ReplyActionAlignmentSettings'
 import { connectMotionHandEdge } from '../state/MotionHandEdgeState'
+import { connectMotionReplyAlignment } from '../state/MotionReplyAlignmentState'
 
 export type MotionHandEdge = 'left' | 'right'
 
@@ -57,20 +57,17 @@ export class MotionHandStateService {
   }
 
   static applyAlignmentMode(mode?: string): void {
+    // Runtime carrier is the V2 MotionReplyAlignmentState mirror (was the REPLY_ACTION_ALIGNMENT_MODE
+    // AppStorage key): seeded by ReplyActionAlignmentSettings.apply, with a resolved default written
+    // here when unset (runtime-only, not persisted) — same as the prior AppStorage write-back.
+    const alignment = connectMotionReplyAlignment()
     if (mode !== undefined) {
-      AppStorage.setOrCreate<ReplyActionAlignmentMode>(
-        StorageKeys.REPLY_ACTION_ALIGNMENT_MODE,
-        ReplyActionAlignmentSettings.normalizeMode(mode),
-      )
+      alignment.alignmentMode = ReplyActionAlignmentSettings.normalizeMode(mode)
     }
     MotionHandStateService.ensureDefaultEdge()
-    const rawMode = AppStorage.get<string>(StorageKeys.REPLY_ACTION_ALIGNMENT_MODE) ??
-      ReplyActionAlignmentSettings.MODE_UNSET
+    const rawMode = alignment.alignmentMode
     if (ReplyActionAlignmentSettings.normalizeMode(rawMode) === ReplyActionAlignmentSettings.MODE_UNSET) {
-      AppStorage.setOrCreate<ReplyActionAlignmentMode>(
-        StorageKeys.REPLY_ACTION_ALIGNMENT_MODE,
-        ReplyActionAlignmentSettings.defaultMode(MotionHandStateService.isHoldingHandSupported()),
-      )
+      alignment.alignmentMode = ReplyActionAlignmentSettings.defaultMode(MotionHandStateService.isHoldingHandSupported())
     }
     const effectiveMode = MotionHandStateService.effectiveAlignmentMode()
     if (effectiveMode === ReplyActionAlignmentSettings.MODE_FIXED_LEFT) {
@@ -127,17 +124,16 @@ export class MotionHandStateService {
   }
 
   private static effectiveAlignmentMode(): ReplyActionAlignmentMode {
-    const rawMode = AppStorage.get<string>(StorageKeys.REPLY_ACTION_ALIGNMENT_MODE) ??
-      ReplyActionAlignmentSettings.MODE_UNSET
+    const rawMode = connectMotionReplyAlignment().alignmentMode
     return ReplyActionAlignmentSettings.effectiveMode(rawMode, MotionHandStateService.isHoldingHandSupported())
   }
 
   private static isHoldingHandSupported(): boolean {
-    return AppStorage.get<boolean>(StorageKeys.MOTION_HOLDING_HAND_SUPPORTED) ?? false
+    return connectMotionReplyAlignment().holdingHandSupported
   }
 
   private static setHoldingHandSupported(supported: boolean): void {
-    AppStorage.setOrCreate<boolean>(StorageKeys.MOTION_HOLDING_HAND_SUPPORTED, supported)
+    connectMotionReplyAlignment().holdingHandSupported = supported
   }
 
   private static ensureDefaultEdge(): void {

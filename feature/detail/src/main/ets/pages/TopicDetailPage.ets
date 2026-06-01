@@ -70,7 +70,6 @@ import {
   AuthSettings,
   LoadingFooter,
   HttpClient,
-  StorageKeys,
   ApiService,
   CookieJarSettings,
   V2exToggleAction,
@@ -90,6 +89,7 @@ import {
   connectNavStack,
   connectLayoutSafeArea,
   connectReadingSettings,
+  connectReplyDisplay,
   connectAuthCookie,
   connectMotionHandEdge,
   connectTopicDetailReplyButton,
@@ -1154,10 +1154,9 @@ export struct TopicDetailPage {
   }
 
   private currentReplyDisplayMode(): string {
-    // Persisted reply-display mode is seeded non-reactively (the page renders off v.replyDisplayMode).
-    return ReplyDisplaySettings.normalizeMode(
-      AppStorage.get<string>(StorageKeys.REPLY_DISPLAY_MODE) ?? ReplyDisplaySettings.MODE_THREAD,
-    )
+    // Persisted reply-display mode is seeded non-reactively (the page renders off v.replyDisplayMode);
+    // read the durable V2 ReplyDisplayState mirror instead of AppStorage.
+    return ReplyDisplaySettings.normalizeMode(connectReplyDisplay().mode)
   }
 
   private updateReplyDisplayMode(mode: string): void {
@@ -1377,7 +1376,7 @@ export struct TopicDetailPage {
       this.jumpToTargetFloor(target)
       return
     }
-    if (!(AppStorage.get<boolean>(StorageKeys.READING_RESTORE_POSITION) ?? false)) {
+    if (!this.reading.restorePosition) {
       return
     }
     this.restoreReadPosition()

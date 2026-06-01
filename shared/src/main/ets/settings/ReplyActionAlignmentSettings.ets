@@ -4,6 +4,7 @@ import { StorageKeys } from '../constants/StorageKeys'
 import { AppStrings } from '../i18n/AppStrings'
 import { SettingDescriptor, applyDescriptorValue, readDescriptorValue } from './SettingsDescriptor'
 import { STORE_NAME_SETTINGS, SettingsPreferencesStore } from './SettingsStorage'
+import { connectMotionReplyAlignment } from '../state/MotionReplyAlignmentState'
 
 const STORE_NAME: string = STORE_NAME_SETTINGS
 const KEY_REPLY_ACTION_ALIGNMENT_MODE: string = StorageKeys.REPLY_ACTION_ALIGNMENT_MODE
@@ -48,7 +49,10 @@ export class ReplyActionAlignmentSettings {
   static readonly MODE_FIXED_RIGHT: ReplyActionAlignmentMode = 'fixedRight'
 
   static apply(mode: string): void {
-    applyDescriptorValue<string>(REPLY_ACTION_ALIGNMENT_MODE_DESCRIPTOR, mode)
+    // Descriptor still projects the legacy AppStorage key; additionally seed the V2 mirror that
+    // SettingsPage hydration and MotionHandStateService read instead of AppStorage.get.
+    const normalized = applyDescriptorValue<string>(REPLY_ACTION_ALIGNMENT_MODE_DESCRIPTOR, mode)
+    connectMotionReplyAlignment().alignmentMode = normalized
   }
 
   static async load(context: common.UIAbilityContext): Promise<ReplyActionAlignmentMode> {

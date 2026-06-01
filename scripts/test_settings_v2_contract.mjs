@@ -70,7 +70,12 @@ const V1_DECORATORS = ['@State', '@Prop', '@Link', '@Watch', '@StorageLink', '@S
   for (const c of ['connectApiDomain', 'connectAvatarAppearance', 'connectReplyCardStyle', 'connectTopicDetailReplyButton', 'connectReadingSettings', 'connectNetworkProxy']) {
     must(new RegExp(`${c}\\(`).test(code), `${SETTINGS_PAGE}: reads ${c}() mirror`);
   }
-  must(/hydratePreferences\(/.test(code), `${SETTINGS_PAGE}: hydrates @Local prefs from AppStorage`);
+  must(/hydratePreferences\(/.test(code), `${SETTINGS_PAGE}: keeps hydratePreferences() chokepoint`);
+  // Durable V2 hydration: the @Local self-toggled prefs are now hydrated from V2 holders, NOT AppStorage.
+  must(!/AppStorage\s*\./.test(code), `${SETTINGS_PAGE}: hydration reads V2 holders, no direct AppStorage`);
+  for (const c of ['connectAutoDailyCheckin', 'connectMediaSettings', 'connectThemeDisplay', 'connectLanguageState', 'connectReplyDisplay', 'connectMotionReplyAlignment', 'connectHomeTabAutoHide']) {
+    must(new RegExp(`${c}\\(`).test(code), `${SETTINGS_PAGE}: hydrates ${c}() mirror`);
+  }
 }
 
 console.log(`\nsettings-v2 contract: ${failures} failure(s)`);
