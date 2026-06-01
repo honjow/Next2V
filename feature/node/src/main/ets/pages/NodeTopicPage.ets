@@ -59,7 +59,10 @@ export struct NodeTopicPage {
         } else if (this.vm.errorMessage && this.vm.nodeTopics.length === 0) {
           ListItem() { this.ErrorView() }
         } else if (this.vm.nodeTopics.length === 0) {
-          ListItem() { this.EmptyView() }
+          // True-empty placeholder keeps the refreshable list mounted; the centered EmptyView is
+          // rendered as a full-height Stack overlay below (mirrors LoadingView) so 暂无主题 sits in
+          // the middle of the content area rather than top-aligned in a bare list item.
+          ListItem() { Column() {}.height(0) }
         } else {
           ForEach(this.vm.nodeTopics, (topic: V2exTopic) => {
             ListItem() {
@@ -83,6 +86,9 @@ export struct NodeTopicPage {
 
       if (this.vm.isLoading && this.vm.nodeTopics.length === 0) {
         this.LoadingView()
+      } else if (!this.vm.errorMessage && this.vm.nodeTopics.length === 0) {
+        // Distinct from loading (above) and error (kept in the list): true-empty only.
+        this.EmptyView()
       }
     }
       .width('100%').height('100%')
@@ -101,7 +107,19 @@ export struct NodeTopicPage {
   }
 
   @Builder EmptyView() {
-    CardEmptyState({ message: AppStrings.text(AppStrings.R_NODE_NO_TOPICS, 'No topics'), expand: false })
+    // Center 暂无主题 within the content area (between the overlaid title bar and the bottom safe
+    // area), mirroring LoadingView. HitTestMode.None lets pull-to-refresh reach the empty list
+    // underneath. Layout is expressed via the shared safe-area state + TITLE_BAR_HEIGHT constant
+    // (semantic insets for the overlaid HdsNavigation title bar + window safe areas), not a magic
+    // fixed height.
+    Column() {
+      CardEmptyState({ message: AppStrings.text(AppStrings.R_NODE_NO_TOPICS, 'No topics'), expand: false })
+    }
+    .justifyContent(FlexAlign.Center)
+    .width('100%')
+    .height('100%')
+    .padding({ top: this.layout.topAvoidHeight + ThemeConstants.TITLE_BAR_HEIGHT, bottom: this.layout.bottomAvoidHeight })
+    .hitTestBehavior(HitTestMode.None)
   }
 
   @Builder ErrorView() {
@@ -235,6 +253,10 @@ export struct NodeTopicPage {
     const nodeName = this.currentNodeName() || this.nodeName
     const requestId = ++this.nodeTopicsRequestId
     let source = 'web'
+    // Carry the authenticated cookie (if any) into web node-topic loads so login-gated nodes
+    // (e.g. /go/sandbox) are fetched as the signed-in session instead of anonymous public HTML.
+    // Used by the non-token web path AND the API-v2→web fallback, plus page 2+ load-more.
+    this.vm.setNodeTopicsWebCookie(CookieJarSettings.getCurrentCookie())
     try {
       const snapshot = await AuthSettings.load(context)
       this.token = snapshot.token || ''
