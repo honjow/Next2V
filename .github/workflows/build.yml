@@ -24,7 +24,7 @@ jobs:
     name: Build unsigned HAP
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/honjow/harmonyos-build-env:6.1-api23
+      image: ghcr.io/honjow/harmonyos-build-env:6.1-api24
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}

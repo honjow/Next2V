@@ -10,10 +10,10 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/*
 
 LABEL org.opencontainers.image.source="https://github.com/honjow/Next2V" \
-      org.opencontainers.image.description="HarmonyOS 6.1 / API 23 CI image for Next2V"
+      org.opencontainers.image.description="HarmonyOS 6.1.1 / API 24 CI image for Next2V"
 
 # Build context must contain command-line-tools/ from DevEco Studio Command Line Tools
-# 6.1.0.830 (HarmonyOS SDK 6.1.0 / API 23). The SDK is intentionally not
+# 6.1.1.280 (HarmonyOS SDK 6.1.1 / API 24). The SDK is intentionally not
 # committed to this repository.
 COPY command-line-tools /opt/harmonyos/command-line-tools
 

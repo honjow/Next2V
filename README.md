@@ -60,7 +60,7 @@ Next2V 是一个面向 HarmonyOS 的原生 V2EX 第三方客户端。
 
 ## 开发环境
 
-建议使用 DevEco Studio 6.1 或兼容的 HarmonyOS SDK。根目录 `oh-package.json5` 当前声明的 `modelVersion` 为 `6.1.0`。
+建议使用 DevEco Studio 6.1.1 或兼容的 HarmonyOS SDK。根目录 `oh-package.json5` 当前声明的 `modelVersion` 为 `6.1.1`。
 
 构建前请确认：
 

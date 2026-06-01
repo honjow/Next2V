@@ -1,12 +1,14 @@
-# HarmonyOS 6.1 CI image
+# HarmonyOS 6.1.1 CI image
 
-This directory records the Dockerfile used for the project CI image:
+This directory records the legacy project-local Dockerfile shape. The active CI
+image is published from `honjow/harmonyos-oci-images`:
 
-- `ghcr.io/honjow/next2v-harmonyos-ci:6.1.0.830`
-- Command Line Tools: `6.1.0.830`
-- HarmonyOS SDK: `6.1.0 Release`, API 23
-- ohpm: `6.1.1.830`
-- hvigor: `6.23.5`
+- `ghcr.io/honjow/harmonyos-build-env:6.1.1.280`
+- `ghcr.io/honjow/harmonyos-build-env:6.1-api24`
+- Command Line Tools: `6.1.1.280`
+- HarmonyOS SDK: `6.1.1 Release`, API 24
+- ohpm: `6.1.2.268`
+- hvigor: `6.24.2`
 - bundled Node.js: `v18.20.1`
 
 The Huawei/DevEco command-line tools and SDK payload are not committed to this repository. Build from a local DevEco installation whose build context contains a `command-line-tools/` directory:
@@ -14,10 +16,10 @@ The Huawei/DevEco command-line tools and SDK payload are not committed to this r
 ```bash
 podman build --format docker \
   -f .github/images/harmonyos-6.1/Dockerfile \
-  -t ghcr.io/honjow/next2v-harmonyos-ci:6.1.0.830 \
+  -t ghcr.io/honjow/harmonyos-build-env:6.1.1.280 \
   /home/gamer/devtool/ohos
 
-podman push ghcr.io/honjow/next2v-harmonyos-ci:6.1.0.830
+podman push ghcr.io/honjow/harmonyos-build-env:6.1.1.280
 ```
 
 Local validation command used before publishing:
@@ -26,7 +28,7 @@ Local validation command used before publishing:
 podman run --rm \
   -v /tmp/next2v-ci-verify:/workspace:Z \
   -w /workspace \
-  ghcr.io/honjow/next2v-harmonyos-ci:6.1.0.830 \
+  ghcr.io/honjow/harmonyos-build-env:6.1.1.280 \
   bash -lc 'ohpm install --all && hvigorw assembleHap --mode module -p product=default -p buildMode=debug --no-daemon'
 ```
 
