@@ -1,6 +1,7 @@
 import { AppStrings } from 'shared'
 import {
   connectTopicDetailAction,
+  connectTopicDetailAppbar,
   TopicDetailActionState,
   publishTopicDetailSavedLater,
   publishTopicDetailSiteFavorited,
@@ -833,28 +834,24 @@ export struct TopicDetailPage {
       return
     }
     const identity = TopicDetailAppbarCoordinator.identity(this.v.topic, visible)
-    // Write-through (V1 AppStorage + the V2 TopicDetailAppbarState mirror the @ComponentV2 Index appbar
-    // reads). The per-route *_STATES maps are read-modify-written against the live store so a new
-    // TopicDetailPage instance never clobbers sibling nav-stack entries' identities.
+    // The per-route *_STATES maps are read-modify-written against the live V2 TopicDetailAppbarState
+    // mirror (the write-through publish* helpers keep it current) so a new TopicDetailPage instance
+    // never clobbers sibling nav-stack entries' identities; the @ComponentV2 Index appbar reads the
+    // same mirror.
+    const appbar = connectTopicDetailAppbar()
     publishTopicDetailAppbarTitleStates(
-      this.nextStringState(StorageKeys.TOPIC_DETAIL_APPBAR_TITLE_STATES, routeKey, identity.title),
+      TopicDetailAppbarCoordinator.nextStringState(appbar.titleStates, routeKey, identity.title),
     )
     publishTopicDetailAppbarAvatarStates(
-      this.nextStringState(StorageKeys.TOPIC_DETAIL_APPBAR_AVATAR_STATES, routeKey, identity.avatarUrl),
+      TopicDetailAppbarCoordinator.nextStringState(appbar.avatarStates, routeKey, identity.avatarUrl),
     )
     publishTopicDetailAppbarUsernameStates(
-      this.nextStringState(StorageKeys.TOPIC_DETAIL_APPBAR_USERNAME_STATES, routeKey, identity.username),
+      TopicDetailAppbarCoordinator.nextStringState(appbar.usernameStates, routeKey, identity.username),
     )
     publishTopicDetailAppbarRouteTopicId(visible ? routeKey : '')
     publishTopicDetailAppbarTitle(identity.title)
     publishTopicDetailAppbarAvatarUrl(identity.avatarUrl)
     publishTopicDetailAppbarUsername(identity.username)
-  }
-
-  // Reads the current per-route states map from AppStorage and merges in routeKey -> value.
-  private nextStringState(storageKey: string, key: string, value: string): string {
-    const current = AppStorage.get<string>(storageKey) ?? '{}'
-    return TopicDetailAppbarCoordinator.nextStringState(current, key, value)
   }
 
   private topicRouteKey(): string {
@@ -1626,7 +1623,7 @@ export struct TopicDetailPage {
       locked: this.topicThankLocked,
       loading: this.isTopicThankLoading,
       thanked: this.isTopicThanked,
-      storageThanked: AppStorage.get<boolean>(StorageKeys.TOPIC_DETAIL_THANKED) ?? false,
+      storageThanked: connectTopicDetailAppbar().thanked,
       cookie,
     })
     if (!guard.allowed) {

@@ -11,6 +11,7 @@ import {
   publishUserProfileAppbarTitleUsername, publishUserProfileAppbarTitleAvatarUrl,
   publishUserProfileAppbarTitleRouteUsername, publishUserProfileAppbarTitleStates,
   publishUserProfileAppbarAvatarStates,
+  connectUserProfileAppbar,
   StorageKeys,
   NodeTopicListParams,
   ImagePreviewParams,
@@ -468,16 +469,17 @@ export struct UserProfilePage {
       this.profileAvatarUrl()
     )
     this.publishAppbarIdentityState(next.titleUsername, next.avatarUrl)
-    // These keys are OUTPUT-only from this page (Index reads them V1-style to build the appbar); the
-    // page is their sole writer, so imperative setOrCreate is faithful. The change guards preserve the
-    // original behavior of only writing when the value actually changed.
-    if ((AppStorage.get<string>(StorageKeys.USER_PROFILE_APPBAR_TITLE_ROUTE_USERNAME) ?? '') !== next.routeUsername) {
+    // These fields are OUTPUT-only from this page (the @ComponentV2 Index reads the V2
+    // UserProfileAppbarState mirror to build the appbar); the page is their sole writer. The change
+    // guards read the live mirror so the original behavior of only writing on an actual change holds.
+    const appbar = connectUserProfileAppbar()
+    if (appbar.titleRouteUsername !== next.routeUsername) {
       publishUserProfileAppbarTitleRouteUsername(next.routeUsername)
     }
-    if ((AppStorage.get<string>(StorageKeys.USER_PROFILE_APPBAR_TITLE_USERNAME) ?? '') !== next.titleUsername) {
+    if (appbar.titleUsername !== next.titleUsername) {
       publishUserProfileAppbarTitleUsername(next.titleUsername)
     }
-    if ((AppStorage.get<string>(StorageKeys.USER_PROFILE_APPBAR_TITLE_AVATAR_URL) ?? '') !== next.avatarUrl) {
+    if (appbar.titleAvatarUrl !== next.avatarUrl) {
       publishUserProfileAppbarTitleAvatarUrl(next.avatarUrl)
     }
   }
@@ -488,15 +490,14 @@ export struct UserProfilePage {
       return
     }
     // Read-modify-write of the shared per-route STATES ledgers, keyed by routeUsername so stacked
-    // UserProfile pages each own their entry. Reading fresh at write time keeps this faithful to the
-    // prior @StorageLink behavior; the page is the sole writer of these OUTPUT keys.
-    const titleStates = AppStorage.get<string>(StorageKeys.USER_PROFILE_APPBAR_TITLE_STATES) ?? '{}'
+    // UserProfile pages each own their entry. Reading fresh from the live V2 mirror at write time keeps
+    // this faithful; the page is the sole writer of these OUTPUT fields.
+    const appbar = connectUserProfileAppbar()
     publishUserProfileAppbarTitleStates(
-      UserProfilePageCoordinator.nextStringState(titleStates, routeUsername, titleUsername),
+      UserProfilePageCoordinator.nextStringState(appbar.titleStates, routeUsername, titleUsername),
     )
-    const avatarStates = AppStorage.get<string>(StorageKeys.USER_PROFILE_APPBAR_AVATAR_STATES) ?? '{}'
     publishUserProfileAppbarAvatarStates(
-      UserProfilePageCoordinator.nextStringState(avatarStates, routeUsername, avatarUrl),
+      UserProfilePageCoordinator.nextStringState(appbar.avatarStates, routeUsername, avatarUrl),
     )
   }
 
@@ -620,8 +621,9 @@ export struct UserProfilePage {
   @Monitor('actionState.command')
   onUserProfileActionCommand(): void {
     const raw = (this.actionState.command || '').trim()
-    const actionsAvailable = AppStorage.get<boolean>(StorageKeys.USER_PROFILE_ACTIONS_AVAILABLE) ?? false
-    const actionsUsername = AppStorage.get<string>(StorageKeys.USER_PROFILE_ACTIONS_USERNAME) ?? ''
+    const appbar = connectUserProfileAppbar()
+    const actionsAvailable = appbar.actionsAvailable
+    const actionsUsername = appbar.actionsUsername
     if (
       !raw ||
       !actionsAvailable ||

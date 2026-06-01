@@ -100,12 +100,12 @@ export class MotionHandStateService {
     if (
       MotionHandStateService.lastFollowUpdateAt > 0 &&
       now - MotionHandStateService.lastFollowUpdateAt < MotionHandStateService.FOLLOW_OPERATION_THROTTLE_MS &&
-      AppStorage.get<MotionHandEdge>(StorageKeys.MOTION_HAND_EDGE) !== nextEdge
+      connectMotionHandEdge().edge !== nextEdge
     ) {
       return
     }
     MotionHandStateService.lastFollowUpdateAt = now
-    if (AppStorage.get<MotionHandEdge>(StorageKeys.MOTION_HAND_EDGE) !== nextEdge) {
+    if (connectMotionHandEdge().edge !== nextEdge) {
       MotionHandStateService.setEdge(nextEdge)
     }
   }
@@ -141,7 +141,7 @@ export class MotionHandStateService {
   }
 
   private static ensureDefaultEdge(): void {
-    const current = AppStorage.get<MotionHandEdge>(StorageKeys.MOTION_HAND_EDGE)
+    const current = connectMotionHandEdge().edge
     if (current !== 'left' && current !== 'right') {
       MotionHandStateService.setEdge('right')
     }
@@ -182,7 +182,7 @@ export class MotionHandStateService {
     if (
       nextEdge !== null &&
       MotionHandStateService.effectiveAlignmentMode() === ReplyActionAlignmentSettings.MODE_SMART_GRIP &&
-      AppStorage.get<MotionHandEdge>(StorageKeys.MOTION_HAND_EDGE) !== nextEdge
+      connectMotionHandEdge().edge !== nextEdge
     ) {
       MotionHandStateService.setEdge(nextEdge)
     }
@@ -197,9 +197,9 @@ export class MotionHandStateService {
   }
 
   private static setEdge(edge: MotionHandEdge): void {
-    // Single dual-write chokepoint: V1 AppStorage (legacy @StorageLink readers) + V2 mirror
-    // (read by @ComponentV2 TopicDetailPage via @Monitor). Keeps the two stores in lockstep.
-    AppStorage.setOrCreate<MotionHandEdge>(StorageKeys.MOTION_HAND_EDGE, edge)
+    // Single writer of the floating reply-button hand edge. The V2 MotionHandEdgeState mirror is the
+    // sole store: this service reads it back internally and @ComponentV2 TopicDetailPage observes it via
+    // @Monitor('motion.edge').
     connectMotionHandEdge().edge = edge
   }
 

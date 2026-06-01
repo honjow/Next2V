@@ -10,8 +10,9 @@ const assert = (condition, message) => {
   }
 }
 
-// State Management V2 migration: the service routes the TWO_FACTOR_* AppStorage writes through the
-// TwoFactorState write-through helpers (publish*), which keep the V1 keys AND the V2 mirror in lockstep.
+// State Management V2 migration: the service routes the 2FA sheet state through the TwoFactorState
+// publish* helpers, which write the V2 mirror Index reads/@Monitors. The two request/complete timestamp
+// breadcrumbs remain plain AppStorage writes (write-only; no mirror, no reader to migrate).
 const service = read('shared/src/main/ets/services/TwoFactorChallengeService.ets')
 for (const token of [
   'export class TwoFactorChallengeService',
@@ -24,10 +25,18 @@ for (const token of [
 ]) {
   assert(service.includes(token), `TwoFactorChallengeService contract missing ${token}`)
 }
-// The write-through helpers must still write the V1 AppStorage keys so any V1 reader stays in sync.
+// V2-only: the publish* helpers write the @Trace mirror only. The legacy TWO_FACTOR_VISIBLE/COOKIE/SOURCE
+// AppStorage halves were retired once Index (the sole reader) read the mirror instead; guard against
+// reintroduction and require each publish* helper to still drive its mirror field.
 const twoFactorState = read('shared/src/main/ets/state/TwoFactorState.ets')
 for (const key of ['TWO_FACTOR_COOKIE', 'TWO_FACTOR_SOURCE', 'TWO_FACTOR_VISIBLE']) {
-  assert(twoFactorState.includes(`StorageKeys.${key}`), `TwoFactorState write-through must still write StorageKeys.${key}`)
+  assert(
+    !new RegExp(`AppStorage\\.(set|setOrCreate)<[^>]*>\\(\\s*StorageKeys\\.${key}`).test(twoFactorState),
+    `TwoFactorState must not reintroduce the legacy StorageKeys.${key} dual-write (V2-only)`,
+  )
+}
+for (const field of ['connectTwoFactor().visible', 'connectTwoFactor().cookie', 'connectTwoFactor().source']) {
+  assert(twoFactorState.includes(field), `TwoFactorState publish* must drive the V2 mirror field ${field}`)
 }
 
 // Index reads the global 2FA state from the V2 TwoFactorState mirror (was StorageKeys.TWO_FACTOR_*):

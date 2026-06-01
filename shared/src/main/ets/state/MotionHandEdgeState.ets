@@ -1,20 +1,17 @@
 import { AppStorageV2 } from '@kit.ArkUI'
 
 /**
- * V2 mirror of the floating reply-button hand edge (`StorageKeys.MOTION_HAND_EDGE`, 'left' | 'right').
+ * V2 store of the floating reply-button hand edge ('left' | 'right').
  *
- * `MotionHandStateService.setEdge` is the single AppStorage writer (smart-grip holding-hand
- * detection, fixed-left/right alignment, and follow-operation all funnel through it). During the
- * State Management V1->V2 backbone migration it dual-writes: the legacy `AppStorage` key (read by
- * any remaining V1 `@StorageLink`) AND this `@Trace` field (read by `@ComponentV2`
- * `TopicDetailPage`), so the two stores never diverge.
- *
- * A `@ComponentV2` consumer animates its visual edge via `@Monitor('<member>.edge')` when the
- * grip changes. Transitional — drop the `AppStorage` half once every reader is V2.
+ * `MotionHandStateService.setEdge` is the single writer (smart-grip holding-hand detection,
+ * fixed-left/right alignment, and follow-operation all funnel through it) and the service reads this
+ * `@Trace` field back internally. A `@ComponentV2` consumer (`TopicDetailPage`) animates its visual
+ * edge via `@Monitor('<member>.edge')` when the grip changes. V2-only: the legacy `AppStorage` half
+ * was retired once every reader moved here.
  */
 @ObservedV2
 export class MotionHandEdgeState {
-  // Default mirrors MotionHandStateService.ensureDefaultEdge ('right').
+  // Default matches MotionHandStateService.ensureDefaultEdge ('right').
   @Trace edge: string = 'right'
 }
 

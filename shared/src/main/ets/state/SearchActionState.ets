@@ -10,12 +10,11 @@ import { AppStorageV2 } from '@kit.ArkUI'
  *   (`Index.sendSearchAction`, the single writer); the page reacts to run the matching
  *   filter / refresh. V2-only — the legacy `AppStorage` (`searchAction`) key + its
  *   dual-write were retired once no reader read the V1 half.
- * - `pendingQuery` still mirrors `StorageKeys.PENDING_SEARCH_QUERY`: a cross-page
- *   "search for X" request written as `<token>:<query>` by `SearchQueryBus.publishPending`
- *   (the single dual-write point — Index's URL-route handler and TopicDetailPage's link
- *   handler both route through it); the page reacts to seed and run that query, then clears
- *   the bus via `SearchQueryBus.clearPending`. This half still dual-writes the V1 key
- *   (retiring it is out of this lane's scope; the writer lives in `utils/SearchQueryBus`).
+ * - `pendingQuery`: a cross-page "search for X" request written as `<token>:<query>` by
+ *   `SearchQueryBus.publishPending` (the single writer — Index's URL-route handler and
+ *   TopicDetailPage's link handler both route through it); the page reacts to seed and run that
+ *   query, then clears the bus via `SearchQueryBus.clearPending`. V2-only — the legacy `AppStorage`
+ *   (`pendingSearchQuery`) key + its dual-write were retired once no reader read the V1 half.
  *
  * The leading `<token>` (a timestamp) only guarantees the string changes so the bus
  * refires for a repeated action / query — it is the pre-existing command-bus encoding,

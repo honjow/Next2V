@@ -1,18 +1,16 @@
 import { AppStorageV2 } from '@kit.ArkUI'
-import { StorageKeys } from '../constants/StorageKeys'
 
 /**
  * V2 mirror of the topic-detail appbar state that `TopicDetailPage` reports UP to the `Index` title bar
- * (the `TOPIC_DETAIL_SAVED_LATER` / `SITE_FAVORITED` / `THANKED` action-icon flags plus the
- * `TOPIC_DETAIL_APPBAR_*` identity strings).
+ * (the `savedLater` / `siteFavorited` / `thanked` action-icon flags plus the appbar identity strings).
  *
- * These keys are written by `TopicDetailPage` in many scattered action/rollback sites. To keep the V1
- * `AppStorage` keys and this `@Trace` mirror from drifting, every writer routes through the
- * `publish*` helpers below (write-through: AppStorage + mirror in one call). The migrated `@ComponentV2`
- * `Index` reads the `@Trace` fields in its title-bar builders so the appbar re-renders reactively as the
- * topic loads / the user toggles thank/favorite/save.
+ * These fields are written by `TopicDetailPage` in many scattered action/rollback sites; every writer
+ * routes through the `publish*` helpers below so the single `@Trace` mirror stays authoritative. The
+ * migrated `@ComponentV2` `Index` reads the `@Trace` fields in its title-bar builders so the appbar
+ * re-renders reactively as the topic loads / the user toggles thank/favorite/save. `TopicDetailPage`
+ * reads back the per-route `*States` ledgers and the `thanked` flag from this same mirror.
  *
- * Transitional: drop the `AppStorage` half once no V1 `@StorageLink` reads these keys.
+ * V2-only: the legacy `AppStorage` half was retired once every reader moved to this mirror.
  */
 @ObservedV2
 export class TopicDetailAppbarState {
@@ -35,44 +33,35 @@ export function connectTopicDetailAppbar(): TopicDetailAppbarState {
   return AppStorageV2.connect(TopicDetailAppbarState, TOPIC_DETAIL_APPBAR_V2_KEY, () => new TopicDetailAppbarState())!
 }
 
-// Write-through helpers: dual-write the V1 AppStorage key AND the V2 mirror so the two never drift.
+// Single-writer helpers: every TopicDetailPage write funnels through these so the @Trace mirror the
+// @ComponentV2 Index appbar reads stays authoritative.
 export function publishTopicDetailSavedLater(value: boolean): void {
-  AppStorage.setOrCreate<boolean>(StorageKeys.TOPIC_DETAIL_SAVED_LATER, value)
   connectTopicDetailAppbar().savedLater = value
 }
 export function publishTopicDetailSiteFavorited(value: boolean): void {
-  AppStorage.setOrCreate<boolean>(StorageKeys.TOPIC_DETAIL_SITE_FAVORITED, value)
   connectTopicDetailAppbar().siteFavorited = value
 }
 export function publishTopicDetailThanked(value: boolean): void {
-  AppStorage.setOrCreate<boolean>(StorageKeys.TOPIC_DETAIL_THANKED, value)
   connectTopicDetailAppbar().thanked = value
 }
 export function publishTopicDetailAppbarTitle(value: string): void {
-  AppStorage.setOrCreate<string>(StorageKeys.TOPIC_DETAIL_APPBAR_TITLE, value)
   connectTopicDetailAppbar().title = value
 }
 export function publishTopicDetailAppbarAvatarUrl(value: string): void {
-  AppStorage.setOrCreate<string>(StorageKeys.TOPIC_DETAIL_APPBAR_AVATAR_URL, value)
   connectTopicDetailAppbar().avatarUrl = value
 }
 export function publishTopicDetailAppbarUsername(value: string): void {
-  AppStorage.setOrCreate<string>(StorageKeys.TOPIC_DETAIL_APPBAR_USERNAME, value)
   connectTopicDetailAppbar().username = value
 }
 export function publishTopicDetailAppbarRouteTopicId(value: string): void {
-  AppStorage.setOrCreate<string>(StorageKeys.TOPIC_DETAIL_APPBAR_ROUTE_TOPIC_ID, value)
   connectTopicDetailAppbar().routeTopicId = value
 }
 export function publishTopicDetailAppbarTitleStates(value: string): void {
-  AppStorage.setOrCreate<string>(StorageKeys.TOPIC_DETAIL_APPBAR_TITLE_STATES, value)
   connectTopicDetailAppbar().titleStates = value
 }
 export function publishTopicDetailAppbarAvatarStates(value: string): void {
-  AppStorage.setOrCreate<string>(StorageKeys.TOPIC_DETAIL_APPBAR_AVATAR_STATES, value)
   connectTopicDetailAppbar().avatarStates = value
 }
 export function publishTopicDetailAppbarUsernameStates(value: string): void {
-  AppStorage.setOrCreate<string>(StorageKeys.TOPIC_DETAIL_APPBAR_USERNAME_STATES, value)
   connectTopicDetailAppbar().usernameStates = value
 }

@@ -1,13 +1,12 @@
 import { AppStorageV2 } from '@kit.ArkUI'
-import { StorageKeys } from '../constants/StorageKeys'
 
 /**
- * V2 mirror of the pending account-webview target URL (`StorageKeys.ACCOUNT_WEB_VIEW_URL`).
+ * V2 store of the pending account-webview target URL.
  *
- * Written by `AccountDetailPage` / `AccountWebViewPage` before pushing the web view; the migrated
- * `@ComponentV2` `Index` reads this `@Trace` field to title the account-webview NavDestination. Writers
- * route through `publishAccountWebViewUrl` (write-through: AppStorage + mirror). Transitional: drop the
- * AppStorage half once no V1 `@StorageLink` reads the key.
+ * Written by `AccountDetailPage` / `AccountWebViewPage` before pushing the web view (and read back by
+ * `AccountWebViewPage` on appear); the `@ComponentV2` `Index` reads this `@Trace` field to title the
+ * account-webview NavDestination. Writers route through `publishAccountWebViewUrl`. V2-only: the legacy
+ * `AppStorage` half was retired once every reader moved to this mirror.
  */
 @ObservedV2
 export class AccountWebViewUrlState {
@@ -22,6 +21,5 @@ export function connectAccountWebViewUrl(): AccountWebViewUrlState {
 }
 
 export function publishAccountWebViewUrl(value: string): void {
-  AppStorage.setOrCreate<string>(StorageKeys.ACCOUNT_WEB_VIEW_URL, value)
   connectAccountWebViewUrl().url = value
 }

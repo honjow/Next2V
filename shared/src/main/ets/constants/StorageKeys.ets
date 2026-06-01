@@ -56,9 +56,11 @@ export class StorageKeys {
   static readonly BLOCKED_LIST_IGNORED_TOPIC_METAS: string = 'blockedListIgnoredTopicMetas'
   static readonly BLOCKED_LIST_UPDATED_AT: string = 'blockedListUpdatedAt'
   static readonly BLOCKED_LIST_SELECTED_TAB: string = 'blockedListSelectedTab'
-  static readonly TWO_FACTOR_VISIBLE: string = 'twoFactorVisible'
-  static readonly TWO_FACTOR_COOKIE: string = 'twoFactorCookie'
-  static readonly TWO_FACTOR_SOURCE: string = 'twoFactorSource'
+  // NOTE: twoFactorVisible/Cookie/Source were removed — the global 2FA challenge sheet state lives only
+  // in its AppStorageV2 'v2:twoFactor' holder (TwoFactorState). TwoFactorChallengeService is the single
+  // writer (via the publish* helpers) and @ComponentV2 Index is the sole reader (@Monitor('twoFactor.visible')
+  // + this.twoFactor.cookie/source). Do not reintroduce the legacy V1 keys. The two request/complete
+  // timestamp breadcrumbs below are still written by TwoFactorChallengeService.
   static readonly TWO_FACTOR_REQUESTED_AT: string = 'twoFactorRequestedAt'
   static readonly TWO_FACTOR_COMPLETED_AT: string = 'twoFactorCompletedAt'
 
@@ -86,41 +88,22 @@ export class StorageKeys {
   static readonly FEED_TAB_VISUAL_INDEX: string = 'feedTabVisualIndex'
   static readonly HOME_TAB_AUTO_HIDE: string = 'homeTabAutoHide'
   static readonly TOPIC_DETAIL_REPLY_BUTTON_AUTO_HIDE: string = 'topicDetailReplyButtonAutoHide'
-  static readonly MOTION_HAND_EDGE: string = 'motionHandEdge'
+  // NOTE: motionHandEdge was removed — the floating reply-button hand edge lives only in its
+  // AppStorageV2 'v2:motionHandEdge' holder (MotionHandEdgeState). MotionHandStateService is its single
+  // writer and reads it back there; @ComponentV2 TopicDetailPage @Monitors it. Do not reintroduce it.
   static readonly MOTION_HOLDING_HAND_SUPPORTED: string = 'motionHoldingHandSupported'
 
   // Navigation/action bus and page appbar state
   // NOTE: the transient action-bus + pending-deep-link AppStorage keys (topicDetailAction,
   // nodeTopicAction, userProfileAction, userProfileShown, notificationAction, searchAction,
   // webLoginAction, nativeLoginShown, imagePreviewAction, accountWebViewAction, pendingV2exUrl) and the
-  // node-topic appbar OUTPUT keys (nodeTopicTitle/Subtitle/Saved/SiteFavorited) were removed — they had
-  // zero runtime readers after the action/appbar V2 slice; each now lives only in its AppStorageV2
-  // 'v2:*' holder. Do not reintroduce the legacy V1 keys. The TOPIC_DETAIL_APPBAR_* / USER_PROFILE_*
-  // appbar identity keys below remain (their pages still read them back imperatively).
-  static readonly TOPIC_DETAIL_SAVED_LATER: string = 'topicDetailSavedLater'
-  static readonly TOPIC_DETAIL_SITE_FAVORITED: string = 'topicDetailSiteFavorited'
-  static readonly TOPIC_DETAIL_THANKED: string = 'topicDetailThanked'
-  static readonly TOPIC_DETAIL_APPBAR_TITLE: string = 'topicDetailAppbarTitle'
-  static readonly TOPIC_DETAIL_APPBAR_AVATAR_URL: string = 'topicDetailAppbarAvatarUrl'
-  static readonly TOPIC_DETAIL_APPBAR_USERNAME: string = 'topicDetailAppbarUsername'
-  static readonly TOPIC_DETAIL_APPBAR_ROUTE_TOPIC_ID: string = 'topicDetailAppbarRouteTopicId'
-  static readonly TOPIC_DETAIL_APPBAR_TITLE_STATES: string = 'topicDetailAppbarTitleStates'
-  static readonly TOPIC_DETAIL_APPBAR_AVATAR_STATES: string = 'topicDetailAppbarAvatarStates'
-  static readonly TOPIC_DETAIL_APPBAR_USERNAME_STATES: string = 'topicDetailAppbarUsernameStates'
-  static readonly USER_PROFILE_ACTIONS_USERNAME: string = 'userProfileActionsUsername'
-  static readonly USER_PROFILE_ACTIONS_AVAILABLE: string = 'userProfileActionsAvailable'
-  static readonly USER_PROFILE_FOLLOW_LABEL: string = 'userProfileFollowLabel'
-  static readonly USER_PROFILE_BLOCK_LABEL: string = 'userProfileBlockLabel'
-  static readonly USER_PROFILE_FOLLOWING: string = 'userProfileFollowing'
-  static readonly USER_PROFILE_BLOCKED: string = 'userProfileBlocked'
-  static readonly USER_PROFILE_APPBAR_TITLE_USERNAME: string = 'userProfileAppbarTitleUsername'
-  static readonly USER_PROFILE_APPBAR_TITLE_AVATAR_URL: string = 'userProfileAppbarTitleAvatarUrl'
-  static readonly USER_PROFILE_APPBAR_TITLE_ROUTE_USERNAME: string =
-    'userProfileAppbarTitleRouteUsername'
-  static readonly USER_PROFILE_APPBAR_TITLE_STATES: string = 'userProfileAppbarTitleStates'
-  static readonly USER_PROFILE_APPBAR_AVATAR_STATES: string = 'userProfileAppbarAvatarStates'
+  // node-topic appbar OUTPUT keys (nodeTopicTitle/Subtitle/Saved/SiteFavorited) were removed earlier.
+  // This lane additionally removed the topic-detail + user-profile appbar identity keys
+  // (topicDetailSavedLater/SiteFavorited/Thanked, topicDetailAppbar*, userProfileActions*/FollowLabel/
+  // BlockLabel/Following/Blocked, userProfileAppbar*), the pending-search bus (pendingSearchQuery) and
+  // the account-webview target (accountWebViewUrl): each had zero runtime readers once its pages moved
+  // to the matching AppStorageV2 'v2:*' holder (TopicDetailAppbarState / UserProfileAppbarState /
+  // SearchActionState.pendingQuery / AccountWebViewUrlState). Do not reintroduce the legacy V1 keys.
   static readonly NOTIFICATION_UNREAD_COUNT: string = 'notificationUnreadCount'
-  static readonly PENDING_SEARCH_QUERY: string = 'pendingSearchQuery'
   static readonly DISCOVER_NODE_KEYWORD: string = 'discoverNodeKeyword'
-  static readonly ACCOUNT_WEB_VIEW_URL: string = 'accountWebViewUrl'
 }

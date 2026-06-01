@@ -4,12 +4,12 @@ import {
   CookieJarSettings,
   DiagnosticLogger,
   HttpClient,
-  StorageKeys,
   V2exWebView,
   V2exWebViewScaffold,
   V2exUrlRouter,
   connectNavStack,
   connectAccountWebViewAction,
+  connectAccountWebViewUrl,
   publishAccountWebViewUrl,
   AccountWebViewActionState,
 } from 'shared'
@@ -22,9 +22,9 @@ interface PageEndEvent {
 export struct AccountWebViewPage {
   // Same NavPathStack instance HdsNavigation is bound to (see NavStackHolder); method target only.
   private ns: NavPathStack = connectNavStack().stack
-  // The target URL is an input param the V1 opener (AccountDetailPage) writes into AppStorage before
-  // navigating; it is logic-only (never read in build()) and Index still reads the V1 key, so it is
-  // read imperatively on appear and the normalised value is written back to AppStorage (no mirror).
+  // The target URL is an input the opener (AccountDetailPage) publishes into the AccountWebViewUrlState
+  // mirror before navigating; it is logic-only (never read in build()), so it is read imperatively on
+  // appear from the mirror and the normalised value is re-published through publishAccountWebViewUrl.
   private targetUrl: string = ''
   // V2 mirror of the one-directional ACCOUNT_WEB_VIEW_ACTION reload bus (Index dual-writes).
   // Reacted to via @Monitor below; never read in build().
@@ -40,7 +40,7 @@ export struct AccountWebViewPage {
   @Local private hasLoadRequested: boolean = false
 
   aboutToAppear(): void {
-    this.targetUrl = AppStorage.get<string>(StorageKeys.ACCOUNT_WEB_VIEW_URL) ?? ''
+    this.targetUrl = connectAccountWebViewUrl().url
     if (!this.targetUrl) {
       this.errorMessage = AppStrings.text(AppStrings.R_COMMON_LOAD_FAILED, 'No page URL provided')
       this.pageMessage = ''
