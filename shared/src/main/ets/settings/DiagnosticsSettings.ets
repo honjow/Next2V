@@ -21,18 +21,22 @@ export class DiagnosticsSettings {
   static apply(enabled: boolean, minLevel: string = DiagnosticsSettings.DEFAULT_MIN_LEVEL): void {
     const safeLevel = DiagnosticsSettings.normalizeLevel(minLevel)
     setAppStorageValue<boolean>(StorageKeys.DIAGNOSTICS_ENABLED, enabled)
-    // V2 mirror dual-write for @ComponentV2 readers (DiagnosticsLogPage).
-    connectDiagnostics().enabled = enabled
     setAppStorageValue<string>(StorageKeys.DIAGNOSTICS_MIN_LEVEL, safeLevel)
+    // V2 mirror dual-write for @ComponentV2 readers (DiagnosticsLogPage) and the getters below.
+    const state = connectDiagnostics()
+    state.enabled = enabled
+    state.minLevel = safeLevel
     DiagnosticLogger.configure(enabled, safeLevel)
   }
 
   static isEnabled(): boolean {
-    return AppStorage.get<boolean>(StorageKeys.DIAGNOSTICS_ENABLED) ?? DiagnosticsSettings.DEFAULT_ENABLED
+    // Read the V2 mirror kept in lockstep by apply() (the single chokepoint). Default DEFAULT_ENABLED.
+    return connectDiagnostics().enabled
   }
 
   static minLevel(): string {
-    return AppStorage.get<string>(StorageKeys.DIAGNOSTICS_MIN_LEVEL) ?? DiagnosticsSettings.DEFAULT_MIN_LEVEL
+    // Read the V2 mirror kept in lockstep by apply() (the single chokepoint). Default DEFAULT_MIN_LEVEL.
+    return connectDiagnostics().minLevel
   }
 
   static async load(context: common.UIAbilityContext): Promise<DiagnosticsSettingsSnapshot> {

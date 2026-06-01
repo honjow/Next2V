@@ -21,7 +21,9 @@ export class HomeTabSettings {
   }
 
   static isAutoHideEnabled(): boolean {
-    return AppStorage.get<boolean>(StorageKeys.HOME_TAB_AUTO_HIDE) ?? HomeTabSettings.DEFAULT_AUTO_HIDE
+    // Read the V2 mirror kept in lockstep by apply() (the single chokepoint that also writes the
+    // preferences-backed AppStorage key). Default matches DEFAULT_AUTO_HIDE.
+    return connectHomeTabAutoHide().autoHide
   }
 
   static async load(context: common.UIAbilityContext): Promise<HomeTabSettingsSnapshot> {

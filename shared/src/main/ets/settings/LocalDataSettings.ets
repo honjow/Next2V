@@ -1,12 +1,10 @@
 import { common } from '@kit.AbilityKit'
-import { StorageKeys } from '../constants/StorageKeys'
 import { CacheSettings } from './CacheSettings'
 import { TopicDetailActionOverlaySettings } from '../cache/TopicDetailActionOverlaySettings'
 import { CollectionSettings } from './CollectionSettings'
 import { DraftSettings } from './DraftSettings'
 import { NotificationSettings } from './NotificationSettings'
 import { SearchSettings } from './SearchSettings'
-import { setAppStorageValue } from './SettingsStorage'
 import { connectLocalDataSignal } from '../state/LocalDataSignalState'
 
 export class LocalDataSettings {
@@ -19,9 +17,7 @@ export class LocalDataSettings {
       TopicDetailActionOverlaySettings.clearAll(context),
       NotificationSettings.clearCache(context)
     ])
-    const updatedAt = Math.floor(Date.now() / 1000)
-    setAppStorageValue<number>(StorageKeys.LOCAL_DATA_UPDATED_AT, updatedAt)
-    // Dual-write the V2 local-data-changed signal (read via @Monitor by @ComponentV2 AccountPage).
-    connectLocalDataSignal().updatedAt = updatedAt
+    // Pure-V2: bump the local-data-changed signal mirror (read via @Monitor by @ComponentV2 AccountPage).
+    connectLocalDataSignal().updatedAt = Math.floor(Date.now() / 1000)
   }
 }

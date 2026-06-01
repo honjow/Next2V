@@ -43,9 +43,9 @@ export class ReadingSettings {
     const normalizedTextScale = ReadingSettings.normalizeTextScale(textScaleSource)
     const normalizedLineHeight = ReadingSettings.normalizeLineHeight(lineHeight, normalizedTextScale)
     const normalizedDensity = ReadingSettings.normalizeDensity(density)
-    // apply() does not take base64-mode; preserve (re-normalize) the current AppStorage value.
-    const normalizedBase64 = ReadingSettings.normalizeBase64DecodeMode(
-      AppStorage.get<string>(StorageKeys.READING_BASE64_DECODE_MODE) ?? BASE64_MODE_BADGE)
+    // apply() does not take base64-mode; preserve (re-normalize) the current value from the V2 mirror
+    // (kept in lockstep with the AppStorage key by apply/loadFromStore/setBase64DecodeMode).
+    const normalizedBase64 = ReadingSettings.normalizeBase64DecodeMode(connectReadingSettings().base64DecodeMode)
     setAppStorageValue<number>(StorageKeys.READING_TEXT_SCALE, normalizedTextScale)
     setAppStorageValue<number>(StorageKeys.READING_LINE_HEIGHT, normalizedLineHeight)
     setAppStorageValue<string>(StorageKeys.READING_DENSITY, normalizedDensity)
@@ -111,8 +111,7 @@ export class ReadingSettings {
   static async saveTypography(context: common.UIAbilityContext, textScaleSource: number, lineHeight: number): Promise<void> {
     const normalizedTextScale = ReadingSettings.normalizeTextScale(textScaleSource)
     const normalizedLineHeight = ReadingSettings.normalizeLineHeight(lineHeight, normalizedTextScale)
-    const currentDensity = ReadingSettings.normalizeDensity(
-      AppStorage.get<string>(StorageKeys.READING_DENSITY) ?? DENSITY_STANDARD)
+    const currentDensity = ReadingSettings.normalizeDensity(connectReadingSettings().density)
     const currentRestorePosition = AppStorage.get<boolean>(StorageKeys.READING_RESTORE_POSITION) ?? false
     ReadingSettings.apply(normalizedTextScale, normalizedLineHeight, currentDensity, currentRestorePosition)
     try {

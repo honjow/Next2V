@@ -1,6 +1,5 @@
 import { common } from '@kit.AbilityKit'
-import { StorageKeys } from '../constants/StorageKeys'
-import { deleteKeysAndFlush, readJsonArray, readJsonObject, setAppStorageValue, withPreferencesStore, writeJsonValue } from './SettingsStorage'
+import { deleteKeysAndFlush, readJsonArray, readJsonObject, withPreferencesStore, writeJsonValue } from './SettingsStorage'
 import { connectLocalDataSignal } from '../state/LocalDataSignalState'
 import { STORE_NAME_DRAFTS } from './SettingsStores'
 import { AppStrings } from '../i18n/AppStrings'
@@ -174,10 +173,8 @@ export class DraftSettings {
   }
 
   private static touchLocalData(): void {
-    const updatedAt = Date.now()
-    setAppStorageValue<number>(StorageKeys.LOCAL_DATA_UPDATED_AT, updatedAt)
-    // Dual-write the V2 local-data-changed signal (read via @Monitor by @ComponentV2 AccountPage).
-    connectLocalDataSignal().updatedAt = updatedAt
+    // Pure-V2: bump the local-data-changed signal mirror (read via @Monitor by @ComponentV2 AccountPage).
+    connectLocalDataSignal().updatedAt = Date.now()
   }
 
   private static parseReplyDrafts(parsed: ReplyDraft[]): ReplyDraft[] {

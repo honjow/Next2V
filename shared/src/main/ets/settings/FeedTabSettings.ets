@@ -1,8 +1,7 @@
 import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
 import { ApiConstants, TabItem } from '../constants/ApiConstants'
-import { StorageKeys } from '../constants/StorageKeys'
-import { FeedTabBridge } from '../state/FeedTabState'
+import { FeedTabBridge, connectFeedTab } from '../state/FeedTabState'
 import { STORE_NAME_FEED_TABS } from './SettingsStores'
 
 const STORE_NAME: string = STORE_NAME_FEED_TABS
@@ -134,7 +133,7 @@ export class FeedTabSettings {
       store.putSync(KEY_VISIBLE_KEYS, normalized)
       const selectedKey = FeedTabSettings.selectedKeyOrFallback(
         normalized,
-        AppStorage.get<string>(StorageKeys.FEED_TAB) || '')
+        connectFeedTab().feedTab || '')
       store.putSync(KEY_LAST_SELECTED_KEY, selectedKey)
       store.flushSync()
       FeedTabSettings.apply(normalized)
@@ -148,7 +147,7 @@ export class FeedTabSettings {
 
   static async saveSelectedKey(context: common.UIAbilityContext, key: string): Promise<string> {
     try {
-      const keysJson = AppStorage.get<string>(StorageKeys.FEED_TAB_KEYS) || FeedTabSettings.defaultKeysJson()
+      const keysJson = connectFeedTab().feedTabKeys || FeedTabSettings.defaultKeysJson()
       const selectedKey = FeedTabSettings.selectedKeyOrFallback(keysJson, key)
       const store = await preferences.getPreferences(context, STORE_NAME)
       store.putSync(KEY_LAST_SELECTED_KEY, selectedKey)
@@ -162,8 +161,8 @@ export class FeedTabSettings {
   }
 
   static apply(keysJson: string): void {
-    // Dual-writes the AppStorage key (still read imperatively by FeedTabSettings.ets bootstrap reads)
-    // AND the V2 FeedTabState mirror, so bootstrap restore and settings reorder both seed/update the mirror.
+    // Pure-V2: publish into the FeedTabState mirror so bootstrap restore and settings reorder both
+    // seed/update it. The imperative reads in save/saveSelectedKey now read the same V2 mirror.
     FeedTabBridge.publishKeys(keysJson || FeedTabSettings.defaultKeysJson())
   }
 

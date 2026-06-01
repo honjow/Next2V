@@ -22,8 +22,9 @@ export class TopicDetailReplyActionSettings {
   }
 
   static isAutoHideEnabled(): boolean {
-    return AppStorage.get<boolean>(StorageKeys.TOPIC_DETAIL_REPLY_BUTTON_AUTO_HIDE) ??
-      TopicDetailReplyActionSettings.DEFAULT_AUTO_HIDE
+    // Read the V2 mirror kept in lockstep by apply() (the single chokepoint that also writes the
+    // preferences-backed AppStorage key). Default matches DEFAULT_AUTO_HIDE.
+    return connectTopicDetailReplyButton().autoHide
   }
 
   static async load(context: common.UIAbilityContext): Promise<TopicDetailReplyActionSettingsSnapshot> {

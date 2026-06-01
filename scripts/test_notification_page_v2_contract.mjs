@@ -6,8 +6,8 @@
 //      (the legacy AppStorage NOTIFICATION_ACTION half was retired once no reader read the V1 key).
 //   3. NotificationPage is @ComponentV2, V1-decorator-free, navigates via connectNavStack().stack, reads
 //      the auth/session/local-data/notification-action mirrors, drives onAuthChanged via a multi-path
-//      @Monitor, and keeps NOTIFICATION_UNREAD_COUNT as an imperative AppStorage read/write (never in
-//      build) so Index's tab badge stays in sync.
+//      @Monitor, and reads/clears the unread badge count off the V2 NotificationUnreadState mirror
+//      (imperative, never in build) so Index's tab badge stays in sync.
 //
 // Run: node scripts/test_notification_page_v2_contract.mjs
 import { readFileSync } from 'node:fs';
@@ -51,11 +51,15 @@ const PAGE = 'entry/src/main/ets/pages/NotificationPage.ets';
   must(/@Monitor\([^)]*authIdentity\.tokenConfigured[^)]*\)/.test(c), `${PAGE}: multi-path @Monitor for onAuthChanged`);
   must(/@Monitor\(\s*['"]notificationAction\.command['"]\s*\)/.test(c), `${PAGE}: @Monitor('notificationAction.command')`);
   must(/@Monitor\(\s*['"]localData\.updatedAt['"]\s*\)/.test(c), `${PAGE}: @Monitor('localData.updatedAt')`);
-  // NOTIFICATION_UNREAD_COUNT stays imperative (badge sync), not a reactive decorator: the clear routes
-  // through the publishNotificationUnreadCount write-through helper (V1 key + V2 NotificationUnreadState
-  // mirror the Index tab badge reads); the read stays a plain AppStorage.get.
-  must(/publishNotificationUnreadCount\(/.test(c), `${PAGE}: clears NOTIFICATION_UNREAD_COUNT via the write-through helper`);
-  must(/AppStorage\.get<number>\(\s*StorageKeys\.NOTIFICATION_UNREAD_COUNT/.test(c), `${PAGE}: reads NOTIFICATION_UNREAD_COUNT imperatively`);
+  // The unread badge count stays imperative (badge sync), not a reactive decorator: the clear routes
+  // through the publishNotificationUnreadCount write-through helper and the read goes through the V2
+  // NotificationUnreadState mirror the Index tab badge reads. Pure-V2: no AppStorage half remains.
+  must(/publishNotificationUnreadCount\(/.test(c), `${PAGE}: clears the unread count via the write-through helper`);
+  must(/connectNotificationUnread\(\)/.test(c), `${PAGE}: reads the unread count off the V2 NotificationUnreadState mirror`);
+  must(!/AppStorage\.get<[^>]*>\(\s*StorageKeys\.NOTIFICATION_UNREAD_COUNT/.test(c), `${PAGE}: no legacy NOTIFICATION_UNREAD_COUNT AppStorage.get (V2-only)`);
+  const mirror = strip(read('shared/src/main/ets/state/NotificationUnreadState.ets'));
+  must(/connectNotificationUnread\(\)\.count\s*=/.test(mirror), `NotificationUnreadState: publishNotificationUnreadCount writes the V2 mirror`);
+  must(!/AppStorage\.(set|setOrCreate)<[^>]*>\(\s*StorageKeys\.NOTIFICATION_UNREAD_COUNT/.test(mirror), `NotificationUnreadState: no legacy NOTIFICATION_UNREAD_COUNT AppStorage dual-write (V2-only)`);
 }
 
 console.log(`\nnotification-page-v2 contract: ${failures} failure(s)`);

@@ -60,7 +60,7 @@ export { AuthSessionSignalState, connectAuthSessionSignal } from './state/AuthSe
 export { AuthIdentityState, connectAuthIdentity } from './state/AuthIdentityState'
 export { ActiveAccountState, connectActiveAccount } from './state/ActiveAccountState'
 export { ApiRateLimitState, connectApiRateLimit } from './state/ApiRateLimitState'
-export { LocalDataSignalState, connectLocalDataSignal } from './state/LocalDataSignalState'
+export { LocalDataSignalState, connectLocalDataSignal, LocalContentStatsState, connectLocalContentStats } from './state/LocalDataSignalState'
 export { ImagePreviewActionState, connectImagePreviewAction } from './state/ImagePreviewActionState'
 export { NodeTopicActionState, connectNodeTopicAction } from './state/NodeTopicActionState'
 export { TopicDetailActionState, connectTopicDetailAction } from './state/TopicDetailActionState'

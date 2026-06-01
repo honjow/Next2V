@@ -220,17 +220,23 @@ assert(clearAllBody.indexOf('deleteLegacyCollectionKeysBestEffort') > clearAllBo
 
 const publisherText = read(publisherRel)
 const storageKeyRefs = [...publisherText.matchAll(/StorageKeys\.(\w+)/g)].map((match) => match[1])
+// Pure-V2: the local-content counts and the local-data-changed signal now live exclusively in the
+// AppStorageV2 mirrors (LocalContentStatsState + LocalDataSignalState). The only AppStorage projection
+// LocalDataPublisher still owns is the TOPIC_READ_STATES dual-write (its V1 readers have not migrated).
 const allowedPublisherKeys = new Set([
-  'LOCAL_SAVED_TOPIC_COUNT',
-  'LOCAL_SAVED_NODE_COUNT',
-  'LOCAL_VIEWED_TOPIC_COUNT',
-  'LOCAL_DATA_UPDATED_AT',
   'TOPIC_READ_STATES',
 ])
 for (const key of storageKeyRefs) {
-  assert(allowedPublisherKeys.has(key), `LocalDataPublisher must not publish StorageKeys.${key}`)
+  assert(allowedPublisherKeys.has(key), `LocalDataPublisher must not publish StorageKeys.${key} (counts + signal are V2-only)`)
 }
-assert(storageKeyRefs.length >= allowedPublisherKeys.size, 'LocalDataPublisher must own local projection keys')
+assert(storageKeyRefs.length >= 1, 'LocalDataPublisher must keep owning the TOPIC_READ_STATES projection')
+// The retired local-content projection must not creep back: no AppStorage write of the count / signal keys.
+assert(
+  !/setAppStorageValue<[^>]*>\(\s*StorageKeys\.LOCAL_(SAVED_TOPIC_COUNT|SAVED_NODE_COUNT|VIEWED_TOPIC_COUNT|DATA_UPDATED_AT)/.test(publisherText),
+  'LocalDataPublisher must not dual-write the retired LOCAL_* AppStorage keys (counts + signal are V2-only)',
+)
+assert(publisherText.includes('connectLocalContentStats()'), 'LocalDataPublisher must publish local-content counts into the V2 LocalContentStatsState mirror')
+assert(publisherText.includes('connectLocalDataSignal()'), 'LocalDataPublisher must publish the local-data-changed signal into the V2 LocalDataSignalState mirror')
 assert(!publisherText.includes('preferences.getPreferences'), 'LocalDataPublisher must not own Preferences access')
 assert(!publisherText.includes('UIAbilityContext'), 'LocalDataPublisher must not own UIAbilityContext side effects')
 

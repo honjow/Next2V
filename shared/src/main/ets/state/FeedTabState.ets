@@ -1,32 +1,26 @@
 import { AppStorageV2 } from '@kit.ArkUI'
-import { StorageKeys } from '../constants/StorageKeys'
 import { ApiConstants, TabItem } from '../constants/ApiConstants'
-import { setAppStorageValue } from '../settings/SettingsStorage'
 
 /**
- * V2 mirror of the feed-tab group: which feed tab is selected (`StorageKeys.FEED_TAB`), the visible-tab
- * key list (`StorageKeys.FEED_TAB_KEYS`), and the indicator interpolation index
- * (`StorageKeys.FEED_TAB_VISUAL_INDEX`).
+ * V2 mirror of the feed-tab group: which feed tab is selected, the visible-tab key list, and the
+ * indicator interpolation index.
  *
  * This is the **bidirectional, multi-writer** feed-tab bus:
  * - `feedTab` is written by HomePage (swipe -> onChange) AND FeedPills (tab tap) AND the persistence layer
  *   (`FeedTabSettings.applySelectedKey`). Read by both to drive the swiper / highlight.
  * - `feedTabKeys` is written by `FeedTabSettings.apply` (incl. bootstrap restore) AND HomeNodeSettingsPage
- *   (settings reorder, **stays V1** and also routes through `FeedTabSettings.save` -> `apply`). Read by
- *   HomePage / FeedPills (+ HomeNodeSettingsPage's own V1 `@StorageLink`).
+ *   (settings reorder, which routes through `FeedTabSettings.save` -> `apply`). Read by HomePage /
+ *   FeedPills / HomeNodeSettingsPage.
  * The per-frame indicator interpolation index (`feedTabVisualIndex`) lives in a SEPARATE `@ObservedV2`
  * holder (`FeedVisualIndexState`, below), NOT on this class — see its own doc for why.
  *
- * Bridge stance during the V1->V2 migration:
- * - `feedTab` / `feedTabKeys` have remaining V1 consumers — `FeedTabSettings` imperatively `AppStorage.get`s
- *   both — so `FeedTabBridge` DUAL-WRITES the V1 AppStorage key AND the `@Trace` field (à la
- *   `LayoutSafeAreaBridge`). (Both `@ComponentV2` HomePage and `@ComponentV2` HomeNodeSettingsPage read the
- *   mirror.)
+ * Pure-V2: every consumer reads this mirror — including `FeedTabSettings`, which now reads `feedTab` /
+ * `feedTabKeys` imperatively off the holder in save/saveSelectedKey — so `FeedTabBridge` writes only the
+ * `@Trace` field; the legacy `FEED_TAB` / `FEED_TAB_KEYS` AppStorage half was retired once no reader read it.
  *
- * The factory seeds `feedTab`/`feedTabKeys` from AppStorage so a `@ComponentV2` connecting before the
- * `SettingsBootstrap.restoreFeedTabs()` bridge write still gets the persisted values — matching the old
- * `@StorageLink` initial-read semantics (default keys = `ApiConstants.TAB_ITEMS`, identical to
- * `FeedTabSettings.defaultKeys()`).
+ * The factory seeds `feedTabKeys` to the default tab list (`ApiConstants.TAB_ITEMS`, identical to
+ * `FeedTabSettings.defaultKeys()`) so a `@ComponentV2` connecting before the
+ * `SettingsBootstrap.restoreFeedTabs()` bridge write sees the same defaults the persistence layer applies.
  */
 @ObservedV2
 export class FeedTabState {
@@ -40,31 +34,27 @@ function defaultFeedTabKeysJson(): string {
   return JSON.stringify(ApiConstants.TAB_ITEMS.map((tab: TabItem) => tab.key))
 }
 
-/** Returns the app-wide FeedTabState singleton from AppStorageV2, seeded from the V1 AppStorage keys. */
+/** Returns the app-wide FeedTabState singleton from AppStorageV2, defaulted to the built-in tab list. */
 export function connectFeedTab(): FeedTabState {
   return AppStorageV2.connect(FeedTabState, FEED_TAB_V2_KEY, () => {
     const state = new FeedTabState()
-    state.feedTab = AppStorage.get<string>(StorageKeys.FEED_TAB) ?? 'tech'
-    state.feedTabKeys = AppStorage.get<string>(StorageKeys.FEED_TAB_KEYS) ?? defaultFeedTabKeysJson()
+    state.feedTabKeys = defaultFeedTabKeysJson()
     return state
   })!
 }
 
 /**
- * Single dual-write point for the feed-tab group. `publishSelectedKey` / `publishKeys` write BOTH the V1
- * AppStorage key (still read imperatively by `FeedTabSettings` and via `@StorageLink` by
- * HomeNodeSettingsPage) AND the V2 mirror, keeping the stores in lockstep. `publishVisualIndex` writes the
- * mirror only (no remaining V1 reader). Callers pass already-defaulted values (defaults live in
+ * Single write point for the feed-tab group. `publishSelectedKey` / `publishKeys` write the V2 mirror that
+ * every consumer (HomePage, FeedPills, HomeNodeSettingsPage, FeedTabSettings) reads. `publishVisualIndex`
+ * writes the dedicated FeedVisualIndexState holder. Callers pass already-defaulted values (defaults live in
  * `FeedTabSettings`), so the bridge does no fallback logic of its own.
  */
 export class FeedTabBridge {
   static publishSelectedKey(key: string): void {
-    setAppStorageValue<string>(StorageKeys.FEED_TAB, key)
     connectFeedTab().feedTab = key
   }
 
   static publishKeys(keysJson: string): void {
-    setAppStorageValue<string>(StorageKeys.FEED_TAB_KEYS, keysJson)
     connectFeedTab().feedTabKeys = keysJson
   }
 

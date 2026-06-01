@@ -3,6 +3,7 @@ import { preferences } from '@kit.ArkData'
 import { StorageKeys } from '../constants/StorageKeys'
 import { DiagnosticLogger } from '../diagnostics/DiagnosticLogger'
 import { STORE_NAME_SETTINGS, SettingsPreferencesStore, setAppStorageValue } from './SettingsStorage'
+import { connectAutoDailyCheckin } from '../state/AutoDailyCheckinState'
 
 const STORE_NAME: string = STORE_NAME_SETTINGS
 const KEY_ENABLED: string = StorageKeys.AUTO_DAILY_CHECKIN_ENABLED
@@ -28,22 +29,29 @@ export class AutoDailyCheckinSettings {
     setAppStorageValue<string>(StorageKeys.AUTO_DAILY_CHECKIN_LAST_ATTEMPT_DATE, lastAttemptDate || '')
     setAppStorageValue<string>(StorageKeys.AUTO_DAILY_CHECKIN_LAST_ATTEMPT_IDENTITY, lastAttemptIdentity || '')
     setAppStorageValue<string>(StorageKeys.AUTO_DAILY_CHECKIN_LAST_SUCCESS_DATE, lastSuccessDate || '')
+    // V2 mirror dual-write from this single chokepoint; the getters below read the mirror.
+    const state = connectAutoDailyCheckin()
+    state.enabled = enabled
+    state.lastAttemptDate = lastAttemptDate || ''
+    state.lastAttemptIdentity = lastAttemptIdentity || ''
+    state.lastSuccessDate = lastSuccessDate || ''
   }
 
   static isEnabled(): boolean {
-    return AppStorage.get<boolean>(StorageKeys.AUTO_DAILY_CHECKIN_ENABLED) ?? true
+    // Read the V2 mirror kept in lockstep by apply() (the single chokepoint). Default true.
+    return connectAutoDailyCheckin().enabled
   }
 
   static getLastAttemptDate(): string {
-    return AppStorage.get<string>(StorageKeys.AUTO_DAILY_CHECKIN_LAST_ATTEMPT_DATE) ?? ''
+    return connectAutoDailyCheckin().lastAttemptDate
   }
 
   static getLastAttemptIdentity(): string {
-    return AppStorage.get<string>(StorageKeys.AUTO_DAILY_CHECKIN_LAST_ATTEMPT_IDENTITY) ?? ''
+    return connectAutoDailyCheckin().lastAttemptIdentity
   }
 
   static getLastSuccessDate(): string {
-    return AppStorage.get<string>(StorageKeys.AUTO_DAILY_CHECKIN_LAST_SUCCESS_DATE) ?? ''
+    return connectAutoDailyCheckin().lastSuccessDate
   }
 
   static async load(context: common.UIAbilityContext): Promise<AutoDailyCheckinSettingsSnapshot> {

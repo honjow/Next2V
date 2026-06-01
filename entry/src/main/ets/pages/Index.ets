@@ -58,7 +58,6 @@ import {
   HttpClient,
   HomeTabSettings,
   MotionHandStateService,
-  StorageKeys,
   ThemeConstants,
   towFASheetOptions,
   TwoFactorChallengeService,
@@ -910,12 +909,8 @@ struct Index {
   }
 
   private refreshLocalData(): void {
-    const updatedAt = Date.now()
-    if (!AppStorage.set<number>(StorageKeys.LOCAL_DATA_UPDATED_AT, updatedAt)) {
-      AppStorage.setOrCreate<number>(StorageKeys.LOCAL_DATA_UPDATED_AT, updatedAt)
-    }
-    // Dual-write the V2 local-data-changed signal (read via @Monitor by @ComponentV2 AccountPage).
-    connectLocalDataSignal().updatedAt = updatedAt
+    // Pure-V2: bump the local-data-changed signal mirror (read via @Monitor by @ComponentV2 AccountPage).
+    connectLocalDataSignal().updatedAt = Date.now()
   }
 
   private sendNodeTopicAction(nodeName: string, action: string): void {

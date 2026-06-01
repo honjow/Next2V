@@ -15,6 +15,7 @@ import {
   connectLocalDataSignal,
   connectNavStack,
   connectNotificationAction,
+  connectNotificationUnread,
   CookieJarSettings,
   DiagnosticLogger,
   EmptyState,
@@ -22,9 +23,9 @@ import {
   LoadingFooter,
   LocalDataSignalState,
   NotificationActionState,
+  NotificationUnreadState,
   publishNotificationUnreadCount,
   PullRefreshListScaffold,
-  StorageKeys,
   ThemeConstants,
   TwoFactorChallengeService,
   V2exCookieTwoFactorRequiredError,
@@ -54,13 +55,14 @@ export struct NotificationPage {
   // Auth/session/local-data/notification-action read from their V2 mirrors (dual-written at the
   // service chokepoints); replaces the AUTH_* / LOCAL_DATA_UPDATED_AT / NOTIFICATION_ACTION
   // @StorageLink + @Watch. The shared onAuthChanged reaction is driven by a multi-path @Monitor below.
-  // NOTIFICATION_UNREAD_COUNT is used imperatively (never in build), so it stays a plain AppStorage
-  // read/write that keeps Index's tab badge in sync.
+  // The unread badge count is read imperatively (never in build) off the V2 NotificationUnreadState
+  // mirror and cleared through publishNotificationUnreadCount, keeping Index's tab badge in sync.
   private authIdentity: AuthIdentityState = connectAuthIdentity()
   private authCookie: AuthCookieState = connectAuthCookie()
   private session: AuthSessionSignalState = connectAuthSessionSignal()
   private localData: LocalDataSignalState = connectLocalDataSignal()
   private notificationAction: NotificationActionState = connectNotificationAction()
+  private notificationUnread: NotificationUnreadState = connectNotificationUnread()
   @Local private authToken: string = ''
   @Local private notifications: V2exNotification[] = []
   @Local private notificationError: string = ''
@@ -828,13 +830,13 @@ export struct NotificationPage {
   }
 
   private publishUnreadCount(): void {
-    // Clear the cross-surface unread badge (V1 AppStorage + the V2 NotificationUnreadState mirror the
-    // @ComponentV2 Index tab badge reads) via the write-through helper.
+    // Clear the cross-surface unread badge (the V2 NotificationUnreadState mirror the @ComponentV2 Index
+    // tab badge reads) via the write-through helper.
     publishNotificationUnreadCount(0)
   }
 
   private captureNotificationEntryUnreadCount(): number {
-    const count = Math.max(0, AppStorage.get<number>(StorageKeys.NOTIFICATION_UNREAD_COUNT) ?? 0)
+    const count = Math.max(0, this.notificationUnread.count)
     if (count > this.notificationEntryUnreadCount) {
       this.notificationEntryUnreadCount = count
     }

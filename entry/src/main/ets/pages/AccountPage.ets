@@ -37,6 +37,7 @@ import {
   connectAuthCookie,
   connectAuthIdentity,
   connectAuthSessionSignal,
+  connectLocalContentStats,
   connectLocalDataSignal,
   connectNavStack,
   ConciseListRow,
@@ -45,12 +46,12 @@ import {
   GroupedListSection,
   HttpClient,
   ListDivider as SharedListDivider,
+  LocalContentStatsState,
   LocalDataPublisher,
   LocalDataSignalState,
   NotificationSettings,
   SecondaryListScaffold,
   SectionHeader as SharedSectionHeader,
-  StorageKeys,
   ThemeConstants,
   TwoFactorChallengeService,
   UserProfileParams,
@@ -74,8 +75,10 @@ export struct AccountDashboardPage {
   private activeAccount: ActiveAccountState = connectActiveAccount()
   private rateLimit: ApiRateLimitState = connectApiRateLimit()
   private localData: LocalDataSignalState = connectLocalDataSignal()
+  private localContentStats: LocalContentStatsState = connectLocalContentStats()
   // storedUsername is the API-token fallback identity, page-managed; the local counts are page-computed
-  // and re-published to AppStorage (LocalDataPublisher) so other readers / a cold open still see them.
+  // and re-published through LocalDataPublisher into the V2 LocalContentStatsState mirror so a later
+  // page mount / cold open still sees them.
   @Local private storedUsername: string = ''
   @Local private savedTopicCount: number = 0
   @Local private savedNodeCount: number = 0
@@ -120,12 +123,12 @@ export struct AccountDashboardPage {
     this.clearDashboardRefreshTimer()
   }
 
-  // Hydrate the page-computed local counts from their AppStorage cache (kept fresh by
+  // Hydrate the page-computed local counts from the V2 LocalContentStatsState mirror (kept fresh by
   // LocalDataPublisher) so they render immediately before the async refresh completes.
   private hydrateLocalCounts(): void {
-    this.savedTopicCount = AppStorage.get<number>(StorageKeys.LOCAL_SAVED_TOPIC_COUNT) ?? 0
-    this.savedNodeCount = AppStorage.get<number>(StorageKeys.LOCAL_SAVED_NODE_COUNT) ?? 0
-    this.viewedTopicCount = AppStorage.get<number>(StorageKeys.LOCAL_VIEWED_TOPIC_COUNT) ?? 0
+    this.savedTopicCount = this.localContentStats.savedTopicCount
+    this.savedNodeCount = this.localContentStats.savedNodeCount
+    this.viewedTopicCount = this.localContentStats.viewedTopicCount
   }
 
   @Monitor('localData.updatedAt')
@@ -1016,8 +1019,8 @@ export struct AccountDashboardPage {
         this.savedTopicCount = stats.savedTopicCount
         this.savedNodeCount = stats.savedNodeCount
         this.viewedTopicCount = stats.viewedTopicCount
-        // Re-publish to AppStorage (was the @StorageLink write-back) so other readers / a cold open
-        // see the freshly computed counts.
+        // Re-publish into the V2 LocalContentStatsState mirror so a later page mount / cold open sees
+        // the freshly computed counts.
         LocalDataPublisher.publishLocalContentStats(stats)
       })
       .catch((error: Error) => {
