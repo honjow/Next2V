@@ -98,14 +98,18 @@ export class NetworkProxySettings {
   }
 
   static current(): NetworkProxySettingsSnapshot {
+    // Read the live config from the V2 mirror that apply() keeps in lockstep with the persisted
+    // NETWORK_PROXY_* keys, instead of the retired direct AppStorage.get reads. normalize() still
+    // owns scheme/credential/exclusion-list defaulting, so the snapshot is identical.
+    const proxy = connectNetworkProxy()
     return NetworkProxySettings.normalize({
-      mode: (AppStorage.get<string>(StorageKeys.NETWORK_PROXY_MODE) || 'off') as NetworkProxyMode,
-      host: AppStorage.get<string>(StorageKeys.NETWORK_PROXY_HOST) || '',
-      port: AppStorage.get<number>(StorageKeys.NETWORK_PROXY_PORT) || 0,
-      proxyScheme: NetworkProxySettings.normalizeProxyScheme(AppStorage.get<string>(StorageKeys.NETWORK_PROXY_SCHEME) || 'http'),
-      username: AppStorage.get<string>(StorageKeys.NETWORK_PROXY_USERNAME) || '',
-      password: AppStorage.get<string>(StorageKeys.NETWORK_PROXY_PASSWORD) || '',
-      exclusionList: NetworkProxySettings.parseExclusionList(AppStorage.get<string>(StorageKeys.NETWORK_PROXY_EXCLUSION_LIST) || ''),
+      mode: (proxy.mode || 'off') as NetworkProxyMode,
+      host: proxy.host || '',
+      port: proxy.port || 0,
+      proxyScheme: NetworkProxySettings.normalizeProxyScheme(proxy.proxyScheme || 'http'),
+      username: proxy.username || '',
+      password: proxy.password || '',
+      exclusionList: NetworkProxySettings.parseExclusionList(proxy.exclusionListText || ''),
     })
   }
 

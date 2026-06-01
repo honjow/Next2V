@@ -12,7 +12,7 @@ import {
   publishUserProfileAppbarTitleRouteUsername, publishUserProfileAppbarTitleStates,
   publishUserProfileAppbarAvatarStates,
   connectUserProfileAppbar,
-  StorageKeys,
+  connectAuthSessionSignal,
   NodeTopicListParams,
   ImagePreviewParams,
   SecondaryListScaffold,
@@ -432,9 +432,11 @@ export struct UserProfilePage {
   }
 
   private isCurrentSessionUser(): boolean {
-    // AUTH_SESSION_USERNAME is read-only here (logic guard, never in build) — imperative read avoids
-    // pulling the multi-writer auth-key bucket into this @ComponentV2 page.
-    const current = (AppStorage.get<string>(StorageKeys.AUTH_SESSION_USERNAME) ?? '').trim().toLowerCase()
+    // Compare against the live session username from the V2 AuthSessionSignalState mirror (kept in
+    // lockstep by the AuthSessionSettings.apply chokepoint) instead of the retired direct
+    // AppStorage.get read. Comparison semantics are unchanged: trim + lowercase, empty on either side
+    // returns false.
+    const current = (connectAuthSessionSignal().username ?? '').trim().toLowerCase()
     const target = (this.username || this.vm.profile?.username || '').trim().toLowerCase()
     return !!current && !!target && current === target
   }

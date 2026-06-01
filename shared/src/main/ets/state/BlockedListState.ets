@@ -31,29 +31,35 @@ export function connectBlockedListSelectedTab(): BlockedListSelectedTabState {
 }
 
 /**
- * V2 mirror of the blocked-lists id/updatedAt ledger that `BlockedListsPage` observes to refresh when
- * the blocked set changes while the page is open
- * (`StorageKeys.BLOCKED_LIST_IGNORED_TOPIC_IDS` / `BLOCKED_LIST_BLOCKED_MEMBER_IDS` /
- * `BLOCKED_LIST_UPDATED_AT`).
+ * V2 mirror of the blocked-lists runtime ledger that `BlockedListsPage` observes to refresh when the
+ * blocked set changes while the page is open, AND that the imperative readers (`ApiService`,
+ * `BlockedListSettings.runtimeSnapshot`) read account-scoped state from
+ * (`StorageKeys.BLOCKED_LIST_OWNER_KEY` / `BLOCKED_LIST_IGNORED_TOPIC_IDS` /
+ * `BLOCKED_LIST_BLOCKED_MEMBER_IDS` / `BLOCKED_LIST_BLOCKED_MEMBER_METAS` /
+ * `BLOCKED_LIST_IGNORED_TOPIC_METAS` / `BLOCKED_LIST_UPDATED_AT`).
  *
- * These keys are written ONLY by `BlockedListSettings.apply()` (the single persist point) and were
- * observed by exactly one reactive consumer — `BlockedListsPage`'s `@StorageLink ... @Watch`. Other
- * readers (`ApiService`, `BlockedListSettings.runtimeSnapshot`) read the same `AppStorage` keys
- * imperatively, so during the State Management V1->V2 migration the ledger must live in BOTH stores at
- * once: `BlockedListSettings.apply()` dual-writes the V1 `AppStorage` keys AND these `@Trace` fields, so
- * the two stores never diverge — mirroring the `LocalDataPublisher` -> `TopicReadStatesState` precedent.
+ * These keys are written ONLY by `BlockedListSettings.apply()` (the single persist point) plus the two
+ * active-owner meta-only runtime writers (`upsertBlockedMemberMetaLocked` /
+ * `upsertIgnoredTopicMetasLocked`). `BlockedListsPage`'s reactive consumer `@Monitor`s the ids/updatedAt
+ * fields; the imperative readers read owner key + ids + metas + updatedAt. During the State Management
+ * V1->V2 migration the ledger lives in BOTH stores at once: the writers above dual-write the V1
+ * `AppStorage` keys AND these `@Trace` fields, so the two stores never diverge — mirroring the
+ * `LocalDataPublisher` -> `TopicReadStatesState` precedent. `ownerKey` scopes the ledger to the active
+ * account/session; an empty or mismatched owner means logged-out / cross-account and the readers return
+ * empty rather than stale data.
  *
  * A `@ComponentV2` consumer holds the singleton as `@Local` and reacts via
  * `@Monitor('<member>.ignoredTopicIdsJson', '<member>.blockedMemberIdsJson', '<member>.updatedAt')`.
- * The member metas keys are NOT mirrored here — they are read imperatively via
- * `BlockedListSettings.runtimeSnapshot()`, never via a reactive decorator.
  *
  * Transitional: drop the `AppStorage` half once every imperative reader has moved to V2.
  */
 @ObservedV2
 export class BlockedListStorageState {
+  @Trace ownerKey: string = ''
   @Trace ignoredTopicIdsJson: string = '[]'
   @Trace blockedMemberIdsJson: string = '[]'
+  @Trace blockedMemberMetasJson: string = '[]'
+  @Trace ignoredTopicMetasJson: string = '[]'
   @Trace updatedAt: number = 0
 }
 

@@ -7,6 +7,7 @@ import { V2exTabParser, type V2exBlockedIdLists } from '../parser/V2exTabParser'
 import { AccountStore } from './AccountStore'
 import { STORE_NAME_SETTINGS, setAppStorageValue } from './SettingsStorage'
 import { connectBlockedListStorage } from '../state/BlockedListState'
+import { connectAuthSessionSignal } from '../state/AuthSessionSignalState'
 
 const KEY_PREFIX: string = 'blockedListState:'
 
@@ -142,23 +143,31 @@ export class BlockedListSettings {
   }
 
   static runtimeSnapshot(): BlockedListSnapshot {
-    const ownerKey = AppStorage.get<string>(StorageKeys.BLOCKED_LIST_OWNER_KEY) || ''
+    // Read the runtime ledger from the V2 BlockedListStorageState mirror that apply()/the meta upsert
+    // writers keep in lockstep with the persisted AppStorage projections, instead of direct
+    // AppStorage.get reads. ownerKey scoping is unchanged: empty / not-the-active-owner returns empty.
+    const storage = connectBlockedListStorage()
+    const ownerKey = storage.ownerKey || ''
     if (!ownerKey || ownerKey !== BlockedListSettings.activeOwnerKey()) {
       return BlockedListSettings.empty(BlockedListSettings.activeOwnerKey())
     }
     return BlockedListSettings.normalize({
-      ignoredTopicIds: BlockedListSettings.parseRuntimeIds(StorageKeys.BLOCKED_LIST_IGNORED_TOPIC_IDS),
-      blockedMemberIds: BlockedListSettings.parseRuntimeIds(StorageKeys.BLOCKED_LIST_BLOCKED_MEMBER_IDS),
+      ignoredTopicIds: BlockedListSettings.parseRuntimeIds(storage.ignoredTopicIdsJson),
+      blockedMemberIds: BlockedListSettings.parseRuntimeIds(storage.blockedMemberIdsJson),
       blockedMemberMetas: BlockedListSettings.parseRuntimeMemberMetas(),
       ignoredTopicMetas: BlockedListSettings.parseRuntimeIgnoredTopicMetas(),
       ownerKey: ownerKey,
-      updatedAt: AppStorage.get<number>(StorageKeys.BLOCKED_LIST_UPDATED_AT) || 0,
+      updatedAt: storage.updatedAt || 0,
     }, ownerKey)
   }
 
   static activeOwnerKey(): string {
-    const activeId = (AppStorage.get<string>(StorageKeys.ACTIVE_ACCOUNT_ID) || AccountStore.getActiveId() || '').trim()
-    const username = (AppStorage.get<string>(StorageKeys.AUTH_SESSION_USERNAME) || '').trim()
+    // Active-account id (precedence) then auth-session username (fallback) now come from the V2
+    // holders that AccountStore.applyActiveAccountId / AuthSessionSettings.apply keep in lockstep,
+    // instead of direct AppStorage.get reads. AccountStore.getActiveId() is the transient authority the
+    // legacy ACTIVE_ACCOUNT_ID key only mirrored; identity precedence and owner-key shape are unchanged.
+    const activeId = (AccountStore.getActiveId() || '').trim()
+    const username = (connectAuthSessionSignal().username || '').trim()
     const baseUrl = HttpClient.getInstance().getBaseUrl()
     if (activeId) {
       return `${baseUrl}#account:${activeId}`
@@ -304,7 +313,11 @@ export class BlockedListSettings {
       updatedAt: base.updatedAt,
     }, ownerKey)
     if (BlockedListSettings.activeOwnerKey() === ownerKey) {
-      setAppStorageValue<string>(StorageKeys.BLOCKED_LIST_BLOCKED_MEMBER_METAS, JSON.stringify(normalized.blockedMemberMetas))
+      // Active-owner runtime write: mirror only the member-metas field (ids/ownerKey/updatedAt stay
+      // as-is) into both the AppStorage projection and the V2 holder runtimeSnapshot now reads.
+      const blockedMemberMetasJson = JSON.stringify(normalized.blockedMemberMetas)
+      setAppStorageValue<string>(StorageKeys.BLOCKED_LIST_BLOCKED_MEMBER_METAS, blockedMemberMetasJson)
+      connectBlockedListStorage().blockedMemberMetasJson = blockedMemberMetasJson
     }
     if (!ctx) {
       DiagnosticLogger.warn('storage', 'blocked_member_meta_no_context_runtime_only', BlockedListSettings.memberMetaLogContext(ownerKey, normalizedMeta, normalized.blockedMemberMetas.length))
@@ -323,19 +336,25 @@ export class BlockedListSettings {
   static apply(snapshot: BlockedListSnapshot): void {
     const ignoredTopicIdsJson = JSON.stringify(snapshot.ignoredTopicIds)
     const blockedMemberIdsJson = JSON.stringify(snapshot.blockedMemberIds)
+    const blockedMemberMetasJson = JSON.stringify(snapshot.blockedMemberMetas)
+    const ignoredTopicMetasJson = JSON.stringify(snapshot.ignoredTopicMetas)
     setAppStorageValue<string>(StorageKeys.BLOCKED_LIST_OWNER_KEY, snapshot.ownerKey)
     setAppStorageValue<string>(StorageKeys.BLOCKED_LIST_IGNORED_TOPIC_IDS, ignoredTopicIdsJson)
     setAppStorageValue<string>(StorageKeys.BLOCKED_LIST_BLOCKED_MEMBER_IDS, blockedMemberIdsJson)
-    setAppStorageValue<string>(StorageKeys.BLOCKED_LIST_BLOCKED_MEMBER_METAS, JSON.stringify(snapshot.blockedMemberMetas))
-    setAppStorageValue<string>(StorageKeys.BLOCKED_LIST_IGNORED_TOPIC_METAS, JSON.stringify(snapshot.ignoredTopicMetas))
+    setAppStorageValue<string>(StorageKeys.BLOCKED_LIST_BLOCKED_MEMBER_METAS, blockedMemberMetasJson)
+    setAppStorageValue<string>(StorageKeys.BLOCKED_LIST_IGNORED_TOPIC_METAS, ignoredTopicMetasJson)
     setAppStorageValue<number>(StorageKeys.BLOCKED_LIST_UPDATED_AT, snapshot.updatedAt)
-    // Dual-write the V2 mirror BlockedListsPage observes (@Monitor), keeping it in lockstep with the V1
-    // AppStorage keys still read imperatively by ApiService / runtimeSnapshot. Single dual-write point,
-    // mirroring LocalDataPublisher -> TopicReadStatesState. Member-metas keys are read imperatively only,
-    // so they are intentionally NOT mirrored.
+    // Dual-write the V2 mirror that BlockedListsPage observes (@Monitor) AND the imperative readers
+    // (ApiService.applyActiveBlockedTopicFilter / runtimeSnapshot) now read, keeping it in lockstep with
+    // the V1 AppStorage projections above. Single dual-write point, mirroring LocalDataPublisher ->
+    // TopicReadStatesState. Owner key + member/topic metas are mirrored too so every imperative reader
+    // can leave AppStorage.
     const storage = connectBlockedListStorage()
+    storage.ownerKey = snapshot.ownerKey
     storage.ignoredTopicIdsJson = ignoredTopicIdsJson
     storage.blockedMemberIdsJson = blockedMemberIdsJson
+    storage.blockedMemberMetasJson = blockedMemberMetasJson
+    storage.ignoredTopicMetasJson = ignoredTopicMetasJson
     storage.updatedAt = snapshot.updatedAt
   }
 
@@ -377,7 +396,11 @@ export class BlockedListSettings {
       updatedAt: base.updatedAt,
     }, ownerKey)
     if (BlockedListSettings.activeOwnerKey() === ownerKey) {
-      setAppStorageValue<string>(StorageKeys.BLOCKED_LIST_IGNORED_TOPIC_METAS, JSON.stringify(normalized.ignoredTopicMetas))
+      // Active-owner runtime write: mirror only the ignored-topic-metas field (ids/ownerKey/updatedAt
+      // stay as-is) into both the AppStorage projection and the V2 holder runtimeSnapshot now reads.
+      const ignoredTopicMetasJson = JSON.stringify(normalized.ignoredTopicMetas)
+      setAppStorageValue<string>(StorageKeys.BLOCKED_LIST_IGNORED_TOPIC_METAS, ignoredTopicMetasJson)
+      connectBlockedListStorage().ignoredTopicMetasJson = ignoredTopicMetasJson
     }
     if (!ctx) {
       DiagnosticLogger.warn('storage', 'ignored_topic_meta_no_context_runtime_only', BlockedListSettings.topicMetaBatchLogContext(ownerKey, normalizedMetas.length, applicable.length, normalized.ignoredTopicMetas.length))
@@ -854,9 +877,9 @@ export class BlockedListSettings {
     return result
   }
 
-  private static parseRuntimeIds(key: string): number[] {
+  private static parseRuntimeIds(json: string): number[] {
     try {
-      const values = JSON.parse(AppStorage.get<string>(key) || '[]') as number[]
+      const values = JSON.parse(json || '[]') as number[]
       return Array.isArray(values) ? values : []
     } catch (_error) {
       return []
@@ -865,7 +888,7 @@ export class BlockedListSettings {
 
   private static parseRuntimeMemberMetas(): BlockedMemberMeta[] {
     try {
-      const values = JSON.parse(AppStorage.get<string>(StorageKeys.BLOCKED_LIST_BLOCKED_MEMBER_METAS) || '[]') as BlockedMemberMeta[]
+      const values = JSON.parse(connectBlockedListStorage().blockedMemberMetasJson || '[]') as BlockedMemberMeta[]
       return Array.isArray(values) ? values : []
     } catch (_error) {
       return []
@@ -874,7 +897,7 @@ export class BlockedListSettings {
 
   private static parseRuntimeIgnoredTopicMetas(): IgnoredTopicMeta[] {
     try {
-      const values = JSON.parse(AppStorage.get<string>(StorageKeys.BLOCKED_LIST_IGNORED_TOPIC_METAS) || '[]') as IgnoredTopicMeta[]
+      const values = JSON.parse(connectBlockedListStorage().ignoredTopicMetasJson || '[]') as IgnoredTopicMeta[]
       return Array.isArray(values) ? values : []
     } catch (_error) {
       return []
