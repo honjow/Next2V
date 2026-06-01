@@ -28,6 +28,12 @@ node scripts/test_v1_decorator_inventory_contract.mjs
 
 The gate must report `0 file(s)` with live V1 decorators before merge/push.
 
+## HarmonyOS/ArkTS Default Constraints
+
+`docs/agent-guides/harmonyos-default.md` is a project constraint for all HarmonyOS, ArkTS/ETS, ArkUI, resource, permission, dependency, and animation work. Before editing `.ets`, `module.json5`, `oh-package.json5`, resources, or UI animation code, read and comply with that file.
+
+If a requested implementation appears to require an unsupported ArkTS construct, undocumented HarmonyOS API usage, missing permission/dependency, literal UI text that should be a resource, incomplete i18n/theme coverage, or layout-property animation that violates the constraint file, stop and return `BLOCKED` with source/build/official-doc evidence instead of guessing.
+
 ## Worker/Result Gates
 
 Implementation, read-only review, independent device QA, integrate, and follow-up spec stages must be explicit. Each worker stage must produce a result JSON with `verdict: PASS|FAIL|BLOCKED|REQUEST_CHANGES`, `summary`, `artifact_dir`, `commands`, `changed_files`, `evidence`, and `commit` when applicable. A live process, heartbeat, or implementer self-report is not proof. Do not rerun already-PASS upstream stages after a later blocker; resume from the failed or missing stage.
