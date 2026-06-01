@@ -13,16 +13,16 @@ const APPEARANCE_SOFT: string = 'soft'
 
 function normalizeAvatarAppearance(appearance: string): string {
   const value = (appearance || '').trim()
-  if (value === APPEARANCE_SOFT) {
+  if (value === APPEARANCE_CIRCLE) {
     return value
   }
-  return APPEARANCE_CIRCLE
+  return APPEARANCE_SOFT
 }
 
 class AvatarAppearanceDescriptor implements SettingDescriptor<string> {
   readonly storageKey: string = StorageKeys.AVATAR_APPEARANCE
   readonly preferenceKey: string = KEY_AVATAR_APPEARANCE
-  readonly defaultValue: string = APPEARANCE_CIRCLE
+  readonly defaultValue: string = APPEARANCE_SOFT
 
   normalize(appearance: string): string {
     return normalizeAvatarAppearance(appearance)

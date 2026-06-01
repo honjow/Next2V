@@ -98,7 +98,7 @@ export class SettingsBootstrap {
       : AvatarAppearanceSettings.load(context)
     ).catch((error: Error) => {
       console.error('restore avatar appearance failed: ' + error.message)
-      AvatarAppearanceSettings.apply(AvatarAppearanceSettings.APPEARANCE_CIRCLE)
+      AvatarAppearanceSettings.apply(AvatarAppearanceSettings.APPEARANCE_SOFT)
     })
   }
 

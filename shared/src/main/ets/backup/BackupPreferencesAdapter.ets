@@ -56,7 +56,7 @@ export class BackupPreferencesAdapter {
       await ThemeSettings.save(context, section.theme.mode)
     }
     if (section.appearance) {
-      await AvatarAppearanceSettings.save(context, section.appearance.avatarAppearance || AvatarAppearanceSettings.APPEARANCE_CIRCLE)
+      await AvatarAppearanceSettings.save(context, section.appearance.avatarAppearance || AvatarAppearanceSettings.APPEARANCE_SOFT)
     }
     if (section.media) {
       await MediaSettings.save(context, section.media.autoLoadImages === true, section.media.onlyLoadImagesOnWifi === true)

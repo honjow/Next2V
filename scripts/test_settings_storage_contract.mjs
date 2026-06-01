@@ -569,7 +569,7 @@ const helperContracts = [
       'AvatarAppearanceSettings.load(context)',
       ').catch',
       'restore avatar appearance failed: ',
-      'AvatarAppearanceSettings.apply(AvatarAppearanceSettings.APPEARANCE_CIRCLE)',
+      'AvatarAppearanceSettings.apply(AvatarAppearanceSettings.APPEARANCE_SOFT)',
     ],
   },
   {

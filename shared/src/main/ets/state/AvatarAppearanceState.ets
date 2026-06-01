@@ -12,9 +12,9 @@ import { AppStorageV2 } from '@kit.ArkUI'
  */
 @ObservedV2
 export class AvatarAppearanceState {
-  // Default mirrors AvatarAppearanceSettings.APPEARANCE_CIRCLE ('circle'); the real
+  // Default mirrors AvatarAppearanceSettings.APPEARANCE_SOFT ('soft'); the real
   // value is published by AvatarAppearanceSettings.apply() at hydration.
-  @Trace appearance: string = 'circle'
+  @Trace appearance: string = 'soft'
 }
 
 const AVATAR_APPEARANCE_V2_KEY: string = 'v2:avatarAppearance'
