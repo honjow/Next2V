@@ -41,6 +41,17 @@ export class NodeViewModel {
   private activeNodeTopicsSource: string = ''
   private nodeTopicsPageOneSettled: boolean = false
   private nodeTopicsPageOnePublished: boolean = false
+  // Cookie carried into web (`/go/{node}?p=N`) topic loads when the page has an authenticated
+  // session but no usable API token. Page 2+ (loadMoreNodeTopics) reuses this same value so a
+  // login-gated node never silently degrades to an anonymous public read mid-pagination. Empty
+  // string == anonymous public HTML. Set by NodeTopicPage before each web load; not @Trace
+  // because it is read only inside async load methods, never in build().
+  private nodeTopicsWebCookie: string = ''
+
+  /** Carry the current authenticated cookie into subsequent web node-topic loads (page 1 + load-more). */
+  setNodeTopicsWebCookie(cookie: string): void {
+    this.nodeTopicsWebCookie = (cookie || '').trim()
+  }
 
   beginNodeTopicsPageOneLoad(nodeName: string, source: NodeTopicPageOneSource, requestId: number): void {
     this.activeNodeTopicsRequestId = requestId
@@ -177,7 +188,7 @@ export class NodeViewModel {
     this.nodeTopicsHasMore = true
     this.nodeTopicsLoadMoreError = ''
     try {
-      const snapshot = await this.api.getNodeTopicsPage(nodeName, 1)
+      const snapshot = await this.api.getNodeTopicsPage(nodeName, 1, this.nodeTopicsWebCookie)
       if (!this.shouldPublishNodeTopicsPageOne(nodeName, source, requestId, 1, snapshot.topics.length, loadOptions.fallback === true)) {
         return false
       }
@@ -283,7 +294,8 @@ export class NodeViewModel {
     this.isNodeTopicsLoadingMore = true
     this.nodeTopicsLoadMoreError = ''
     try {
-      const snapshot = await this.api.getNodeTopicsPage(nodeName, nextPage)
+      // Reuse the page-1 cookie so login-gated nodes keep their authenticated source on page 2+.
+      const snapshot = await this.api.getNodeTopicsPage(nodeName, nextPage, this.nodeTopicsWebCookie)
       const merged = this.nodeTopics.slice()
       merged.push(...snapshot.topics)
       this.nodeTopics = merged

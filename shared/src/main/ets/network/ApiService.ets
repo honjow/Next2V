@@ -186,18 +186,60 @@ export class ApiService {
     return result.topics
   }
 
-  /** Get topics from node page, supports /go/{node}?p=N pagination. */
-  async getNodeTopicsPage(nodeName: string, page: number = 1): Promise<V2exNodeTopicsPageResult> {
+  /**
+   * Get topics from node page, supports /go/{node}?p=N pagination.
+   *
+   * When `cookie` is supplied the page is fetched as the authenticated session
+   * (login-gated nodes like /go/sandbox return signin HTML for anonymous reads,
+   * which the public parser would otherwise turn into a misleading empty list).
+   * For cookie-backed loads we therefore reject signin / session-expired bodies
+   * (no top-bar member link) and 2FA challenges (handled inside getCookieHtml)
+   * as auth errors instead of `{ topics: [] }`. Anonymous public reads keep the
+   * original public-HTML semantics.
+   */
+  async getNodeTopicsPage(nodeName: string, page: number = 1, cookie: string = ''): Promise<V2exNodeTopicsPageResult> {
     const clean = (nodeName || '').trim()
     if (!clean) {
       throw ApiErrors.nodeNameRequired()
     }
     const safePage = Math.max(1, Math.floor(page))
     const endpoint = `/go/${encodeURIComponent(clean)}?p=${safePage}`
-    const html = await this.http.getText(endpoint)
-    this.captureBlockedListsFromHtml(html, { endpoint: endpoint, source: 'publicHtml', trigger: 'feed_capture' })
+    const useCookie = (cookie || '').trim().length > 0
+    const sourceLabel = useCookie ? 'cookieHtml' : 'publicHtml'
+    // getCookieHtml throws V2exCookieTwoFactorRequiredError when the cookie page is a 2FA challenge.
+    const html = useCookie ? await this.getCookieHtml(endpoint, cookie) : await this.http.getText(endpoint)
+    const hasUsername = useCookie ? !!V2exSessionParser.extractUsername(html) : false
+    if (useCookie && !hasUsername) {
+      DiagnosticLogger.warn('network', 'node_topic_session_rejected', {
+        endpoint: endpoint,
+        source: sourceLabel,
+        page: safePage,
+        hasCookie: true,
+        hasUsername: false,
+        count: 0,
+        classification: 'signin_or_session_expired',
+      })
+      throw ApiErrors.webSessionExpired()
+    }
+    this.captureBlockedListsFromHtml(html, {
+      endpoint: endpoint,
+      source: sourceLabel,
+      trigger: 'feed_capture',
+      hasCookie: useCookie,
+      hasUsername: hasUsername,
+    })
     const snapshot: V2exNodeTopicsPageSnapshot = V2exNodeParser.parseNodeTopicsPage(html)
     const topics = V2exTabParser.parseTopicList(html)
+    DiagnosticLogger.info('network', 'node_topic_html_received', {
+      endpoint: endpoint,
+      source: sourceLabel,
+      page: safePage,
+      hasCookie: useCookie,
+      hasUsername: hasUsername,
+      count: topics.length,
+      hasMore: snapshot.hasMore,
+      classification: 'topics',
+    })
     if (topics.length === 0) {
       return { topics: [], hasMore: false }
     }
