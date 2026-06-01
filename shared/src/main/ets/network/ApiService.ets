@@ -46,6 +46,7 @@ import type {
 } from './NetworkTypes'
 import { ApiError, ApiErrors, ApiErrorCode, isApiError } from './ApiError'
 import { BlockedListSettings, type BlockedListCaptureSource } from '../settings/BlockedListSettings'
+import { CookieJarSettings } from '../settings/CookieJarSettings'
 import { connectBlockedListStorage } from '../state/BlockedListState'
 
 interface CookieHtmlResponse {
@@ -119,8 +120,7 @@ export class ApiService {
 
   /** Get site hot tab trending topics */
   async getHotTabTopics(): Promise<V2exTopic[]> {
-    const html = await this.http.getText('/?tab=hot')
-    this.captureBlockedListsFromHtml(html, { endpoint: '/?tab=hot', source: 'publicHtml', trigger: 'feed_capture' })
+    const html = await this.fetchFeedTopicListHtml('/?tab=hot')
     const topics = V2exTabParser.parseTopicList(html)
     if (topics.length === 0) {
       throw ApiErrors.hotTopicsEmpty()
@@ -140,8 +140,7 @@ export class ApiService {
   /** Get all-site recently updated topics */
   async getRecentTopics(page: number = 1): Promise<V2exTopic[]> {
     const safePage = Math.max(1, Math.floor(page))
-    const html = await this.http.getText(`/recent?p=${safePage}`)
-    this.captureBlockedListsFromHtml(html, { endpoint: `/recent?p=${safePage}`, source: 'publicHtml', trigger: 'feed_capture' })
+    const html = await this.fetchFeedTopicListHtml(`/recent?p=${safePage}`)
     const topics = V2exTabParser.parseTopicList(html)
     if (topics.length === 0) {
       throw ApiErrors.recentTopicsEmpty()
@@ -1686,8 +1685,7 @@ export class ApiService {
       topics = await this.getHotTabTopics()
     } else {
       const endpoint = ApiConstants.TAB_URLS[tab]
-      const html = await this.http.getText(endpoint)
-      this.captureBlockedListsFromHtml(html, { endpoint: endpoint, source: 'publicHtml', trigger: 'feed_capture' })
+      const html = await this.fetchFeedTopicListHtml(endpoint)
       const parsedTopics = V2exTabParser.parseTopicList(html)
       if (parsedTopics.length === 0) {
         throw ApiErrors.tabTopicsEmpty(tab)
@@ -1718,6 +1716,64 @@ export class ApiService {
       results.push(...batchResults.map((r) => r[0]).filter((t) => t !== undefined))
     }
     return ApiService.normalizeTopics(results)
+  }
+
+  /**
+   * Fetch home/feed topic-list HTML, cookie-aware.
+   *
+   * Root product expectation: the home/feed must NOT be anonymous when the account is logged in. When a
+   * current account cookie exists the request is cookie-backed (getCookieHtml — uncached, carries the
+   * Cookie header), so the authenticated page includes the per-account `ignored_topics` / `blocked`
+   * arrays. That lets the FIRST feed load after login initialize the active-owner blocked-list snapshot
+   * through an authenticated capture (source: 'cookieHtml'), instead of relying solely on the later
+   * blocked-list page-open sync. With no cookie — or if the cookie request fails / does not prove an
+   * authenticated page — it falls back to the anonymous public-HTML request and capture, so stale cookies
+   * never break feed rendering. Missing-variable handling (cache preserved) lives in BlockedListSettings.
+   */
+  private async fetchFeedTopicListHtml(endpoint: string, trigger: string = 'feed_capture'): Promise<string> {
+    const cookie = (CookieJarSettings.getCurrentCookie() || '').trim()
+    if (cookie) {
+      try {
+        const html = await this.getCookieHtml(endpoint, cookie)
+        const hasUsername = !!V2exSessionParser.extractUsername(html)
+        if (hasUsername) {
+          this.captureBlockedListsFromHtml(html, {
+            endpoint: endpoint,
+            source: 'cookieHtml',
+            trigger: trigger,
+            bodyLength: html.length,
+            hasCookie: true,
+            hasUsername: true,
+          })
+          return html
+        }
+        DiagnosticLogger.warn('network', 'feed_cookie_html_fallback_to_public_unauthenticated', {
+          endpoint: endpoint,
+          source: 'cookieHtml',
+          trigger: trigger,
+          bodyLength: html.length,
+          hasCookie: true,
+          hasUsername: false,
+        })
+      } catch (error) {
+        // Never let a cookie/2FA/transient failure break the feed: fall back to the anonymous path.
+        DiagnosticLogger.exception('network', 'feed_cookie_html_fallback_to_public_exception', error as Error, {
+          endpoint: endpoint,
+          source: 'cookieHtml',
+          trigger: trigger,
+          hasCookie: true,
+        })
+      }
+    }
+    const html = await this.http.getText(endpoint)
+    this.captureBlockedListsFromHtml(html, {
+      endpoint: endpoint,
+      source: 'publicHtml',
+      trigger: trigger,
+      bodyLength: html.length,
+      hasCookie: false,
+    })
+    return html
   }
 
   private captureBlockedListsFromHtml(html: string, source: BlockedListCaptureSource = {}): boolean {

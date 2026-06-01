@@ -10,7 +10,10 @@ const parserSource = fs.readFileSync(path.join(repo, 'shared/src/main/ets/parser
 const fixtureHtml = fs.readFileSync(path.join(repo, 'scripts/fixtures/hot_tab_main_list_sample.html'), 'utf8')
 
 assert.match(apiSource, /async\s+getHotTopics\(\):\s+Promise<V2exTopic\[\]>\s*{[\s\S]*this\.getHotTabTopics\(\)[\s\S]*?}/, 'getHotTopics() must use HTML hot tab instead of legacy API')
-assert.match(apiSource, /async\s+getHotTabTopics\(\):\s+Promise<V2exTopic\[\]>\s*{[\s\S]*getText\('\/\?tab=hot'\)[\s\S]*V2exTabParser\.parseTopicList\(html\)[\s\S]*?}/, 'getHotTabTopics() must fetch and parse /?tab=hot HTML')
+// feed-auth-blocked-sync: home/feed topic-list HTML is now fetched cookie-aware (fetchFeedTopicListHtml)
+// so a logged-in load carries the account cookie. Product intent preserved: getHotTabTopics is still
+// sourced from the /?tab=hot HTML endpoint and parsed via the web parser (NOT the legacy JSON hot API).
+assert.match(apiSource, /async\s+getHotTabTopics\(\):\s+Promise<V2exTopic\[\]>\s*{[\s\S]*'\/\?tab=hot'[\s\S]*V2exTabParser\.parseTopicList\(html\)[\s\S]*?}/, 'getHotTabTopics() must fetch and parse /?tab=hot HTML')
 assert.match(constantsSource, /'hot':\s*'\/\?tab=hot'/, 'TAB_URLS.hot must continue to point at /?tab=hot')
 
 const getTabStart = apiSource.indexOf('async getTabTopics(tab: string)')

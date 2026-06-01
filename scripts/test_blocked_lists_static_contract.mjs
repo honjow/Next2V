@@ -151,7 +151,10 @@ if (api.includes('syncBlockedListsFromCookieRecent')) {
 }
 
 assertIncludes(pagePath, page, 'export struct BlockedListsPage')
-assertIncludes(pagePath, page, 'StorageKeys.BLOCKED_LIST_SELECTED_TAB')
+// V2 migration: the page reads the selected appbar tab from the BlockedListSelectedTabState mirror
+// (connectBlockedListSelectedTab) instead of the V1 StorageKeys.BLOCKED_LIST_SELECTED_TAB AppStorage key.
+// Product intent preserved: the page still reads the selected tab to switch blocked-users vs ignored-topics.
+assertIncludes(pagePath, page, 'connectBlockedListSelectedTab()')
 assertIncludes(pagePath, page, 'BlockedListSettings.loadActive')
 assertIncludes(pagePath, page, 'AppStrings.R_LOGIN_TO_VIEW_BLOCKED')
 assertIncludes(pagePath, page, 'AppStrings.R_COMMON_LOAD_FAILED')
@@ -167,8 +170,11 @@ assertIncludes(pagePath, page, 'LocalTopicCard({')
 assertIncludes(pagePath, page, 'BlockedListContent()')
 assertIncludes('shared/src/main/ets/components/LocalTopicCard.ets', source('shared/src/main/ets/components/LocalTopicCard.ets'), 'last_touched: this.metaTimestamp > 0 ? this.metaTimestamp : this.created')
 assertIncludes(pagePath, page, 'this.syncInFlight = !!cookie')
-assertIncludes(pagePath, page, '@Watch(\'onBlockedListStorageChanged\')')
-assertIncludes(pagePath, page, 'private onBlockedListStorageChanged()')
+// V2 migration: the page reacts to blocked-list changes via @Monitor on the BlockedListStorageState
+// mirror (not the V1 @Watch on an @StorageProp). Product intent preserved: an external blocked/ignored
+// mutation while this page is open still re-applies the runtime snapshot.
+assertIncludes(pagePath, page, '@Monitor(\'storageState.ignoredTopicIdsJson\'')
+assertIncludes(pagePath, page, 'onBlockedListStorageChanged(): void')
 assertIncludes(pagePath, page, 'private applyRuntimeSnapshot')
 assertIncludes(pagePath, page, 'private hasAnyRenderableForCurrentTab(): boolean')
 const pageLoadingBody = methodBody(page, 'private shouldShowPageLoading')

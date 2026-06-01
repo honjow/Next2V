@@ -37,6 +37,10 @@ export struct UserProfileActivityTabs {
       TabSegmentButtonV2({
         items: this.tabItems,
         selectedIndex: this.selectedIndex,
+        // Re-enable the sliding selection-highlight animation. `enableStateAnimation` is a
+        // TabSegmentButtonV2 @Param @since 24; the SDK/API 24 upgrade exposes it (API 23 rejected
+        // it at compile time), restoring the animated tab switch the old V1 SegmentButton had.
+        enableStateAnimation: true,
         onItemClicked: (index: number) => {
           if (this.onTabClicked) {
             this.onTabClicked(index)

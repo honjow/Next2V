@@ -284,9 +284,17 @@ export struct BlockedListsPage {
     if (!this.snapshot.ownerKey) {
       return AppStrings.text(AppStrings.R_LOGIN_TO_VIEW_BLOCKED, 'Log in to view blocked lists')
     }
+    // A logged-in owner whose snapshot was never confirmed (no cache + a failed or missing-variable
+    // authenticated sync leaves updatedAt === 0) has an UNKNOWN list, not an empty one. Only a confirmed
+    // snapshot (present + [] from an accepted source stamps updatedAt > 0) may show a true "no blocked X"
+    // empty state; otherwise surface load-failed so a transient/auth sync failure stays distinguishable
+    // and a retry (page reopen / pull-to-refresh) is the obvious next step.
+    const confirmed = this.snapshot.updatedAt > 0
     if (this.tabState.selectedTab === 0) {
       if (this.snapshot.blockedMemberIds.length === 0) {
-        return AppStrings.text(AppStrings.R_NO_BLOCKED_USERS, 'No blocked users')
+        return confirmed
+          ? AppStrings.text(AppStrings.R_NO_BLOCKED_USERS, 'No blocked users')
+          : AppStrings.text(AppStrings.R_COMMON_LOAD_FAILED, 'Load failed')
       }
       if (this.members.length === 0) {
         return AppStrings.text(AppStrings.R_COMMON_LOAD_FAILED, 'Load failed')
@@ -294,7 +302,9 @@ export struct BlockedListsPage {
       return ''
     }
     if (this.snapshot.ignoredTopicIds.length === 0) {
-      return AppStrings.text(AppStrings.R_NO_IGNORED_TOPICS, 'No blocked topics')
+      return confirmed
+        ? AppStrings.text(AppStrings.R_NO_IGNORED_TOPICS, 'No blocked topics')
+        : AppStrings.text(AppStrings.R_COMMON_LOAD_FAILED, 'Load failed')
     }
     if (this.topics.length === 0) {
       return AppStrings.text(AppStrings.R_COMMON_LOAD_FAILED, 'Load failed')

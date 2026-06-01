@@ -77,13 +77,16 @@ assertIncludes(
   'shouldShowPageLoading must keep showing loading while a refresh/detail resolve is pending',
 )
 
-assertIncludes(page, '@Watch(\'onBlockedListStorageChanged\')', 'BlockedListsPage must watch blocked-list AppStorage changes')
-assertIncludes(page, 'private onBlockedListStorageChanged()', 'BlockedListsPage must have a storage-change handler')
+// V2 migration: storage-change reactivity is an @Monitor on the BlockedListStorageState mirror
+// (replacing the V1 @Watch on an @StorageProp). Product intent preserved: the page must still react to
+// external blocked/ignored mutations while open and re-apply the runtime snapshot.
+assertIncludes(page, '@Monitor(\'storageState.ignoredTopicIdsJson\'', 'BlockedListsPage must @Monitor the blocked-list storage mirror')
+assertIncludes(page, 'onBlockedListStorageChanged(): void', 'BlockedListsPage must have a storage-change handler')
 assertIncludes(page, 'private applyRuntimeSnapshot', 'BlockedListsPage must have a runtime snapshot application entrypoint')
-const storageHandlerBody = methodBody(page, 'private onBlockedListStorageChanged')
-assertIncludes(storageHandlerBody, 'this.ignoredTopicIdsJson', 'storage-change handler must consume ignoredTopicIdsJson')
-assertIncludes(storageHandlerBody, 'this.blockedMemberIdsJson', 'storage-change handler must consume blockedMemberIdsJson')
-assertIncludes(storageHandlerBody, 'this.updatedAt', 'storage-change handler must consume updatedAt')
+const storageHandlerBody = methodBody(page, 'onBlockedListStorageChanged')
+assertIncludes(storageHandlerBody, 'this.storageState.ignoredTopicIdsJson', 'storage-change handler must consume the ignoredTopicIdsJson mirror field')
+assertIncludes(storageHandlerBody, 'this.storageState.blockedMemberIdsJson', 'storage-change handler must consume the blockedMemberIdsJson mirror field')
+assertIncludes(storageHandlerBody, 'this.storageState.updatedAt', 'storage-change handler must consume the updatedAt mirror field')
 assertIncludes(storageHandlerBody, 'applyRuntimeSnapshot', 'storage-change handler must apply runtime snapshot')
 
 const applyRuntimeBody = methodBody(page, 'private applyRuntimeSnapshot')
