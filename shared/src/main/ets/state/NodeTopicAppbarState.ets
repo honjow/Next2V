@@ -1,14 +1,13 @@
 import { AppStorageV2 } from '@kit.ArkUI'
-import { StorageKeys } from '../constants/StorageKeys'
 
 /**
  * V2 mirror of the node-topic appbar state `NodeTopicPage` reports UP to the `Index` title bar
- * (`NODE_TOPIC_SAVED` / `SITE_FAVORITED` action-icon flags + `NODE_TOPIC_TITLE` / `SUBTITLE`).
+ * (`saved` / `siteFavorited` action-icon flags + `title` / `subtitle`).
  *
- * Writers route through the `publish*` helpers (write-through: AppStorage + mirror) so the V1 keys and
- * this `@Trace` mirror never drift; the migrated `@ComponentV2` `Index` reads the `@Trace` fields in its
- * node-topic title-bar builder. Transitional: drop the AppStorage half once no V1 `@StorageLink` reads
- * these keys.
+ * Writers route through the `publish*` helpers (pure V2: they set the `@Trace` field only); the migrated
+ * `@ComponentV2` `Index` reads the `@Trace` fields in its node-topic title-bar builder. The legacy V1
+ * `AppStorage` half (`NODE_TOPIC_{SAVED,SITE_FAVORITED,TITLE,SUBTITLE}`) was retired once NodeTopicPage no
+ * longer read any of those keys back — Index is the only consumer and it reads this mirror.
  */
 @ObservedV2
 export class NodeTopicAppbarState {
@@ -26,18 +25,14 @@ export function connectNodeTopicAppbar(): NodeTopicAppbarState {
 }
 
 export function publishNodeTopicSaved(value: boolean): void {
-  AppStorage.setOrCreate<boolean>(StorageKeys.NODE_TOPIC_SAVED, value)
   connectNodeTopicAppbar().saved = value
 }
 export function publishNodeTopicSiteFavorited(value: boolean): void {
-  AppStorage.setOrCreate<boolean>(StorageKeys.NODE_TOPIC_SITE_FAVORITED, value)
   connectNodeTopicAppbar().siteFavorited = value
 }
 export function publishNodeTopicTitle(value: string): void {
-  AppStorage.setOrCreate<string>(StorageKeys.NODE_TOPIC_TITLE, value)
   connectNodeTopicAppbar().title = value
 }
 export function publishNodeTopicSubtitle(value: string): void {
-  AppStorage.setOrCreate<string>(StorageKeys.NODE_TOPIC_SUBTITLE, value)
   connectNodeTopicAppbar().subtitle = value
 }

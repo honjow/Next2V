@@ -1,13 +1,12 @@
 import { AppStorageV2 } from '@kit.ArkUI'
-import { StorageKeys } from '../constants/StorageKeys'
 
 /**
- * V2 mirror of the pending deep-link command (`StorageKeys.PENDING_V2EX_URL`).
+ * V2 mirror of the pending deep-link command.
  *
- * Written by `EntryAbility` on a cold/warm deep link and cleared by `Index` after consuming it; the
- * migrated `@ComponentV2` `Index` reads this `@Trace` field and `@Monitor`s it to route the pending URL.
- * Writers route through `publishPendingV2exUrl` (write-through: AppStorage + mirror). Transitional: drop
- * the AppStorage half once no V1 `@StorageLink` reads the key.
+ * Written by `EntryAbility` on a cold/warm deep link (as a `<ts>:<uri>` string) and cleared by `Index`
+ * after consuming it; the migrated `@ComponentV2` `Index` reads this `@Trace` field and `@Monitor`s it to
+ * route the pending URL. Writers route through `publishPendingV2exUrl`. The legacy V1 `AppStorage`
+ * (`pendingV2exUrl`) half was retired once Index — the only consumer — read this mirror instead of the key.
  */
 @ObservedV2
 export class PendingV2exUrlState {
@@ -22,6 +21,5 @@ export function connectPendingV2exUrl(): PendingV2exUrlState {
 }
 
 export function publishPendingV2exUrl(value: string): void {
-  AppStorage.setOrCreate<string>(StorageKeys.PENDING_V2EX_URL, value)
   connectPendingV2exUrl().command = value
 }

@@ -1,18 +1,15 @@
 import { AppStorageV2 } from '@kit.ArkUI'
 
 /**
- * V2 mirror of the web-login appbar command (`StorageKeys.WEB_LOGIN_ACTION`).
+ * V2 command bus for the web-login appbar (`'v2:webLoginAction'`).
  *
- * One-directional bus: the V1 `Index.ets` web-login title-bar menu writes a `<token>:<action>`
+ * One-directional bus: the `@ComponentV2` `Index.ets` web-login title-bar menu writes a `<token>:<action>`
  * string (`Index.sendWebLoginAction`, the single writer) for the save / reload menu items, and the
  * `@ComponentV2` `V2exWebLoginPage` reacts via `@Monitor('<member>.command')` to save or reload.
- * There is no writeback on this key.
+ * There is no writeback on this command.
  *
- * During the State Management V1->V2 migration the command lives in BOTH stores at once: the writer
- * dual-writes the V1 `AppStorage` key AND this `@Trace` field so the bridge stays uniform and
- * reversible, mirroring the `NodeTopicActionState` precedent.
- *
- * Transitional: drop the `AppStorage` half once the writer no longer needs it.
+ * The legacy V1 `AppStorage` (`webLoginAction`) key + its dual-write were retired once no reader
+ * read the V1 half.
  */
 @ObservedV2
 export class WebLoginActionState {

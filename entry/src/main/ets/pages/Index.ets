@@ -898,15 +898,14 @@ struct Index {
   private sendTopicAction(topicId: number, action: string): void {
     // Payload format: `${ts}:${topicId}:${action}` so each TopicDetailPage
     // instance can filter by its own topicId. Without this, the global
-    // AppStorage @Watch broadcasts the action to every live TopicDetailPage
+    // command broadcasts the action to every live TopicDetailPage
     // in the nav stack — both top and underneath — causing duplicate
     // dialogs (e.g. opening detail B from a link in detail A and tapping
     // Favorite fired the toggle on both topics).
-    // Dual-write the V1 AppStorage command AND the V2 mirror (read by @ComponentV2 TopicDetailPage
-    // via @Monitor, replacing the former V1 TopicDetailActionListener child adapter). The timestamp
-    // keeps each command unique so a repeated identical action still re-fires the @Monitor.
+    // Publish the V2 command mirror (read by @ComponentV2 TopicDetailPage via @Monitor, replacing the
+    // former V1 TopicDetailActionListener child adapter). The timestamp keeps each command unique so a
+    // repeated identical action still re-fires the @Monitor.
     const command = IndexRouteCoordinator.topicActionCommand(topicId, action, Date.now())
-    AppStorage.setOrCreate<string>(StorageKeys.TOPIC_DETAIL_ACTION, command)
     connectTopicDetailAction().command = command
   }
 
@@ -920,58 +919,51 @@ struct Index {
   }
 
   private sendNodeTopicAction(nodeName: string, action: string): void {
-    // Dual-write the V1 AppStorage command AND the V2 mirror (read by @ComponentV2
-    // NodeTopicPage via @Monitor) from this single writer so the two stores stay in lockstep.
+    // Publish the V2 command mirror (read by @ComponentV2 NodeTopicPage via @Monitor) from this single
+    // writer; the legacy AppStorage half was retired once NodeTopicPage stopped reading the V1 key.
     const command = IndexRouteCoordinator.nodeTopicActionCommand(nodeName, action, Date.now())
-    AppStorage.setOrCreate<string>(StorageKeys.NODE_TOPIC_ACTION, command)
     connectNodeTopicAction().command = command
   }
 
   private sendUserProfileAction(action: string): void {
-    // Dual-write the V1 AppStorage command AND the V2 mirror (read by @ComponentV2
-    // UserProfilePage via @Monitor) from this single writer so the two stores stay in lockstep.
+    // Publish the V2 command mirror (read by @ComponentV2 UserProfilePage via @Monitor) from this single
+    // writer; the legacy AppStorage half was retired once no reader read the V1 key.
     const command = IndexRouteCoordinator.simpleCommand(action, Date.now())
-    AppStorage.setOrCreate<string>(StorageKeys.USER_PROFILE_ACTION, command)
     connectUserProfileAction().command = command
   }
 
   private notifyUserProfileShown(username: string): void {
-    // Dual-write the V1 AppStorage command AND the V2 mirror (read by @ComponentV2
-    // UserProfilePage via @Monitor) from this single writer so the two stores stay in lockstep.
+    // Publish the V2 shown mirror (read by @ComponentV2 UserProfilePage via @Monitor) from this single
+    // writer; the legacy AppStorage half was retired once no reader read the V1 key.
     const command = IndexRouteCoordinator.userProfileShownCommand(username, Date.now())
-    AppStorage.setOrCreate<string>(StorageKeys.USER_PROFILE_SHOWN, command)
     connectUserProfileAction().shown = command
   }
 
   private notifyNativeLoginShown(): void {
-    // Dual-write the V1 AppStorage command AND the V2 mirror (read by @ComponentV2
-    // V2exNativeLoginPage) from this single writer so the two stores stay in lockstep.
+    // Publish the V2 resume mirror (read by @ComponentV2 V2exNativeLoginPage) from this single writer;
+    // the legacy AppStorage half was retired once no reader read the V1 key.
     const command = IndexRouteCoordinator.simpleCommand('resume', Date.now())
-    AppStorage.setOrCreate<string>(StorageKeys.NATIVE_LOGIN_SHOWN, command)
     connectNativeLoginShown().command = command
   }
 
   private sendNotificationAction(action: string): void {
-    // Dual-write the V1 AppStorage command AND the V2 mirror (read by @ComponentV2
-    // NotificationPage via @Monitor) from this single writer so the two stores stay in lockstep.
+    // Publish the V2 command mirror (read by @ComponentV2 NotificationPage via @Monitor) from this single
+    // writer; the legacy AppStorage half was retired once no reader read the V1 key.
     const command = IndexRouteCoordinator.simpleCommand(action, Date.now())
-    AppStorage.setOrCreate<string>(StorageKeys.NOTIFICATION_ACTION, command)
     connectNotificationAction().command = command
   }
 
   private sendSearchAction(action: string): void {
-    // Dual-write the V1 AppStorage command AND the V2 mirror (read by @ComponentV2
-    // SearchPage) from this single writer so the two stores stay in lockstep.
+    // Publish the V2 command mirror (read by @ComponentV2 SearchPage) from this single writer; the legacy
+    // AppStorage half was retired once no reader read the V1 key.
     const command = IndexRouteCoordinator.simpleCommand(action, Date.now())
-    AppStorage.setOrCreate<string>(StorageKeys.SEARCH_ACTION, command)
     connectSearchAction().command = command
   }
 
   private sendImagePreviewAction(action: string): void {
-    // Dual-write the V1 AppStorage command AND the V2 mirror (read by @ComponentV2
-    // ImagePreviewPage) from this single writer so the two stores stay in lockstep.
+    // Publish the V2 command mirror (read by @ComponentV2 ImagePreviewPage) from this single writer; the
+    // legacy AppStorage half was retired once no reader read the V1 key.
     const command = IndexRouteCoordinator.simpleCommand(action, Date.now())
-    AppStorage.setOrCreate<string>(StorageKeys.IMAGE_PREVIEW_ACTION, command)
     connectImagePreviewAction().command = command
   }
 
@@ -1216,18 +1208,16 @@ struct Index {
   }
 
   private sendWebLoginAction(action: string): void {
-    // Dual-write the V1 AppStorage command AND the V2 mirror (read by @ComponentV2
-    // V2exWebLoginPage) from this single writer so the two stores stay in lockstep.
+    // Publish the V2 command mirror (read by @ComponentV2 V2exWebLoginPage) from this single writer; the
+    // legacy AppStorage half was retired once no reader read the V1 key.
     const command = IndexRouteCoordinator.simpleCommand(action, Date.now())
-    AppStorage.setOrCreate<string>(StorageKeys.WEB_LOGIN_ACTION, command)
     connectWebLoginAction().command = command
   }
 
   private sendAccountWebViewAction(action: string): void {
-    // Dual-write the V1 AppStorage command AND the V2 mirror (read by @ComponentV2
-    // AccountWebViewPage) from this single writer so the two stores stay in lockstep.
+    // Publish the V2 command mirror (read by @ComponentV2 AccountWebViewPage) from this single writer; the
+    // legacy AppStorage half was retired once no reader read the V1 key.
     const command = IndexRouteCoordinator.simpleCommand(action, Date.now())
-    AppStorage.setOrCreate<string>(StorageKeys.ACCOUNT_WEB_VIEW_ACTION, command)
     connectAccountWebViewAction().command = command
   }
 

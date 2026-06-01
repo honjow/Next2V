@@ -80,7 +80,7 @@ must(/connectMotionHandEdge\(\)\.edge\s*=/.test(strip(read('shared/src/main/ets/
 must(/connectTopicDetailReplyButton\(\)\.autoHide\s*=/.test(strip(read('shared/src/main/ets/settings/TopicDetailReplyActionSettings.ets'))),
   'TopicDetailReplyActionSettings.apply: dual-writes connectTopicDetailReplyButton().autoHide');
 
-// 4) Index command-bus writer: dual-writes the V1 key AND the V2 mirror -------------------------
+// 4) Index command-bus writer: writes the V2 mirror only (legacy AppStorage half retired) ---------
 // (Index is now @ComponentV2 too; the former "Index-free" boundary is obsolete. The page-private
 // reactive reading state — auth-cookie / motion-edge / reply-button — is still NOT imported by Index;
 // only the cross-page command/appbar mirrors are.)
@@ -88,10 +88,10 @@ must(/connectTopicDetailReplyButton\(\)\.autoHide\s*=/.test(strip(read('shared/s
   const code = strip(read(INDEX));
   must(!/connectAuthCookie|connectMotionHandEdge|connectTopicDetailReplyButton/.test(code),
     `${INDEX}: does not import TopicDetailPage's private reactive-reading mirrors`);
-  must(/AppStorage\.setOrCreate<string>\(\s*StorageKeys\.TOPIC_DETAIL_ACTION/.test(code),
-    `${INDEX}.sendTopicAction: still dual-writes AppStorage TOPIC_DETAIL_ACTION key`);
+  must(!/AppStorage\.(set|setOrCreate)<[^>]*>\(\s*StorageKeys\.TOPIC_DETAIL_ACTION/.test(code),
+    `${INDEX}.sendTopicAction: no legacy AppStorage TOPIC_DETAIL_ACTION dual-write (V2-only)`);
   must(/connectTopicDetailAction\(\)\.command\s*=/.test(code),
-    `${INDEX}.sendTopicAction: dual-writes the V2 TopicDetailActionState mirror`);
+    `${INDEX}.sendTopicAction: writes the V2 TopicDetailActionState mirror`);
 }
 
 console.log(`\ntopicdetail-v2 contract: ${failures} failure(s)`);

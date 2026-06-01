@@ -2,7 +2,8 @@
 // Static contract for the NotificationPage State Management V1 -> V2 slice (bulk-remaining lane).
 //
 //   1. NotificationActionState mirror exists (command + connectNotificationAction).
-//   2. Index dual-writes connectNotificationAction().command at its single writer sendNotificationAction.
+//   2. Index writes connectNotificationAction().command (V2-only) at its single writer sendNotificationAction
+//      (the legacy AppStorage NOTIFICATION_ACTION half was retired once no reader read the V1 key).
 //   3. NotificationPage is @ComponentV2, V1-decorator-free, navigates via connectNavStack().stack, reads
 //      the auth/session/local-data/notification-action mirrors, drives onAuthChanged via a multi-path
 //      @Monitor, and keeps NOTIFICATION_UNREAD_COUNT as an imperative AppStorage read/write (never in
@@ -35,8 +36,8 @@ const PAGE = 'entry/src/main/ets/pages/NotificationPage.ets';
 }
 {
   const c = strip(read(INDEX));
-  must(/connectNotificationAction\(\)\.command\s*=/.test(c), `${INDEX}.sendNotificationAction: dual-writes the mirror`);
-  must(/StorageKeys\.NOTIFICATION_ACTION/.test(c), `${INDEX}: still dual-writes AppStorage NOTIFICATION_ACTION key`);
+  must(/connectNotificationAction\(\)\.command\s*=/.test(c), `${INDEX}.sendNotificationAction: writes the mirror`);
+  must(!/AppStorage\.(set|setOrCreate)<[^>]*>\(\s*StorageKeys\.NOTIFICATION_ACTION/.test(c), `${INDEX}: no legacy AppStorage NOTIFICATION_ACTION dual-write (V2-only)`);
 }
 {
   const c = strip(read(PAGE));

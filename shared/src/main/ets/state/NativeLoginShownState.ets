@@ -1,18 +1,15 @@
 import { AppStorageV2 } from '@kit.ArkUI'
 
 /**
- * V2 mirror of the native-login resume signal (`StorageKeys.NATIVE_LOGIN_SHOWN`).
+ * V2 bus for the native-login resume signal (`'v2:nativeLoginShown'`).
  *
- * One-directional bus: the V1 `Index.ets` writes a `<token>:resume` string
+ * One-directional bus: the `@ComponentV2` `Index.ets` writes a `<token>:resume` string
  * (`Index.notifyNativeLoginShown`, the single writer) each time the native-login NavDestination is
  * re-shown, and the `@ComponentV2` `V2exNativeLoginPage` reacts via `@Monitor('<member>.command')`
- * to re-prepare the login challenge if it had been paused. There is no writeback on this key.
+ * to re-prepare the login challenge if it had been paused. There is no writeback on this signal.
  *
- * During the State Management V1->V2 migration the signal lives in BOTH stores at once: the writer
- * dual-writes the V1 `AppStorage` key AND this `@Trace` field so the bridge stays uniform and
- * reversible, mirroring the `NodeTopicActionState` precedent.
- *
- * Transitional: drop the `AppStorage` half once the writer no longer needs it.
+ * The legacy V1 `AppStorage` (`nativeLoginShown`) key + its dual-write were retired once no reader
+ * read the V1 half.
  */
 @ObservedV2
 export class NativeLoginShownState {

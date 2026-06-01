@@ -12,8 +12,8 @@
 //      @Param + @Event onVisibleChange).
 //   3. The two login pages read the V2 nav holder (connectNavStack().stack, no @Consume) and their
 //      command-bus mirror via @Monitor (connectNativeLoginShown / connectWebLoginAction).
-//   4. Index.ets dual-writes both command mirrors at its single writers (notifyNativeLoginShown /
-//      sendWebLoginAction), keeping the AppStorage key and the V2 mirror in lockstep.
+//   4. Index.ets writes both command mirrors (V2-only) at its single writers (notifyNativeLoginShown /
+//      sendWebLoginAction); the legacy AppStorage halves were retired once no reader read the V1 keys.
 //
 // Run: node scripts/test_login_2fa_v2_contract.mjs
 import { readFileSync } from 'node:fs';
@@ -69,14 +69,14 @@ for (const rel of [PROMPT, NATIVE, WEB]) {
   must(/@Monitor\(\s*['"]webLoginActionState\.command['"]\s*\)/.test(code), `${WEB}: @Monitor on the web-login command`);
 }
 
-// 4) Index dual-writes both mirrors at its single writers --------------------------------------
+// 4) Index writes both mirrors (V2-only) at its single writers ---------------------------------
 {
   const code = strip(read(INDEX));
-  must(/connectNativeLoginShown\(\)\.command\s*=/.test(code), `${INDEX}.notifyNativeLoginShown: dual-writes connectNativeLoginShown().command`);
-  must(/connectWebLoginAction\(\)\.command\s*=/.test(code), `${INDEX}.sendWebLoginAction: dual-writes connectWebLoginAction().command`);
-  // AppStorage halves still present for imperative readers; dual-write kept alongside V2 mirrors.
-  must(/StorageKeys\.NATIVE_LOGIN_SHOWN/.test(code), `${INDEX}: still dual-writes AppStorage NATIVE_LOGIN_SHOWN key`);
-  must(/StorageKeys\.WEB_LOGIN_ACTION/.test(code), `${INDEX}: still dual-writes AppStorage WEB_LOGIN_ACTION key`);
+  must(/connectNativeLoginShown\(\)\.command\s*=/.test(code), `${INDEX}.notifyNativeLoginShown: writes connectNativeLoginShown().command`);
+  must(/connectWebLoginAction\(\)\.command\s*=/.test(code), `${INDEX}.sendWebLoginAction: writes connectWebLoginAction().command`);
+  // Legacy AppStorage halves retired (no imperative reader remained); guard against reintroduction.
+  must(!/AppStorage\.(set|setOrCreate)<[^>]*>\(\s*StorageKeys\.NATIVE_LOGIN_SHOWN/.test(code), `${INDEX}: no legacy AppStorage NATIVE_LOGIN_SHOWN dual-write (V2-only)`);
+  must(!/AppStorage\.(set|setOrCreate)<[^>]*>\(\s*StorageKeys\.WEB_LOGIN_ACTION/.test(code), `${INDEX}: no legacy AppStorage WEB_LOGIN_ACTION dual-write (V2-only)`);
 }
 
 console.log(`\nlogin-2fa-v2 contract: ${failures} failure(s)`);

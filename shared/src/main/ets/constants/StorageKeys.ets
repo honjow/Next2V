@@ -90,7 +90,13 @@ export class StorageKeys {
   static readonly MOTION_HOLDING_HAND_SUPPORTED: string = 'motionHoldingHandSupported'
 
   // Navigation/action bus and page appbar state
-  static readonly TOPIC_DETAIL_ACTION: string = 'topicDetailAction'
+  // NOTE: the transient action-bus + pending-deep-link AppStorage keys (topicDetailAction,
+  // nodeTopicAction, userProfileAction, userProfileShown, notificationAction, searchAction,
+  // webLoginAction, nativeLoginShown, imagePreviewAction, accountWebViewAction, pendingV2exUrl) and the
+  // node-topic appbar OUTPUT keys (nodeTopicTitle/Subtitle/Saved/SiteFavorited) were removed — they had
+  // zero runtime readers after the action/appbar V2 slice; each now lives only in its AppStorageV2
+  // 'v2:*' holder. Do not reintroduce the legacy V1 keys. The TOPIC_DETAIL_APPBAR_* / USER_PROFILE_*
+  // appbar identity keys below remain (their pages still read them back imperatively).
   static readonly TOPIC_DETAIL_SAVED_LATER: string = 'topicDetailSavedLater'
   static readonly TOPIC_DETAIL_SITE_FAVORITED: string = 'topicDetailSiteFavorited'
   static readonly TOPIC_DETAIL_THANKED: string = 'topicDetailThanked'
@@ -101,12 +107,6 @@ export class StorageKeys {
   static readonly TOPIC_DETAIL_APPBAR_TITLE_STATES: string = 'topicDetailAppbarTitleStates'
   static readonly TOPIC_DETAIL_APPBAR_AVATAR_STATES: string = 'topicDetailAppbarAvatarStates'
   static readonly TOPIC_DETAIL_APPBAR_USERNAME_STATES: string = 'topicDetailAppbarUsernameStates'
-  static readonly NODE_TOPIC_ACTION: string = 'nodeTopicAction'
-  static readonly NODE_TOPIC_TITLE: string = 'nodeTopicTitle'
-  static readonly NODE_TOPIC_SUBTITLE: string = 'nodeTopicSubtitle'
-  static readonly NODE_TOPIC_SAVED: string = 'nodeTopicSaved'
-  static readonly NODE_TOPIC_SITE_FAVORITED: string = 'nodeTopicSiteFavorited'
-  static readonly USER_PROFILE_ACTION: string = 'userProfileAction'
   static readonly USER_PROFILE_ACTIONS_USERNAME: string = 'userProfileActionsUsername'
   static readonly USER_PROFILE_ACTIONS_AVAILABLE: string = 'userProfileActionsAvailable'
   static readonly USER_PROFILE_FOLLOW_LABEL: string = 'userProfileFollowLabel'
@@ -119,16 +119,8 @@ export class StorageKeys {
     'userProfileAppbarTitleRouteUsername'
   static readonly USER_PROFILE_APPBAR_TITLE_STATES: string = 'userProfileAppbarTitleStates'
   static readonly USER_PROFILE_APPBAR_AVATAR_STATES: string = 'userProfileAppbarAvatarStates'
-  static readonly USER_PROFILE_SHOWN: string = 'userProfileShown'
-  static readonly NOTIFICATION_ACTION: string = 'notificationAction'
   static readonly NOTIFICATION_UNREAD_COUNT: string = 'notificationUnreadCount'
-  static readonly SEARCH_ACTION: string = 'searchAction'
-  static readonly WEB_LOGIN_ACTION: string = 'webLoginAction'
-  static readonly NATIVE_LOGIN_SHOWN: string = 'nativeLoginShown'
-  static readonly IMAGE_PREVIEW_ACTION: string = 'imagePreviewAction'
-  static readonly PENDING_V2EX_URL: string = 'pendingV2exUrl'
   static readonly PENDING_SEARCH_QUERY: string = 'pendingSearchQuery'
   static readonly DISCOVER_NODE_KEYWORD: string = 'discoverNodeKeyword'
   static readonly ACCOUNT_WEB_VIEW_URL: string = 'accountWebViewUrl'
-  static readonly ACCOUNT_WEB_VIEW_ACTION: string = 'accountWebViewAction'
 }

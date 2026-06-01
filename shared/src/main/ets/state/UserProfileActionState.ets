@@ -1,10 +1,10 @@
 import { AppStorageV2 } from '@kit.ArkUI'
 
 /**
- * V2 mirror of the two one-directional UserProfile appbar input buses
- * (`StorageKeys.USER_PROFILE_ACTION` + `StorageKeys.USER_PROFILE_SHOWN`).
+ * V2 command buses for the two one-directional UserProfile appbar inputs
+ * (`'v2:userProfileAction'`: the `command` + `shown` fields).
  *
- * Both are one-directional command buses written ONLY by the V1 `Index.ets` title bar:
+ * Both are one-directional command buses written ONLY by the `@ComponentV2` `Index.ets` title bar:
  * - `command` mirrors `USER_PROFILE_ACTION`: the follow / block menu items write a
  *   `<token>:<action>` string (`Index.sendUserProfileAction`, the single writer); the
  *   `@ComponentV2` `UserProfilePage` reacts to run the matching toggle.
@@ -14,17 +14,13 @@ import { AppStorageV2 } from '@kit.ArkUI'
  *
  * The leading `<token>` (a timestamp) only guarantees the string changes so the bus refires for a
  * repeated action/username — it is Index's pre-existing command-bus encoding, NOT a key-churn UI
- * workaround. The page reports its appbar/action state back to Index through the other
- * USER_PROFILE_* keys, which Index still reads V1-style; there is no writeback on these two keys.
- *
- * During the State Management V1->V2 migration each command lives in BOTH stores at once: the writer
- * dual-writes the V1 `AppStorage` key AND the matching `@Trace` field so the bridge stays uniform and
- * reversible, mirroring the `NodeTopicActionState` / `ImagePreviewActionState` precedents.
+ * workaround. The page reports its appbar/action state back to Index through the separate
+ * `UserProfileAppbarState` keys; there is no writeback on these two command fields.
  *
  * A `@ComponentV2` consumer holds the singleton and runs each reaction via
- * `@Monitor('<member>.command')` / `@Monitor('<member>.shown')` when the field changes.
- *
- * Transitional: drop the `AppStorage` half once the writer no longer needs it.
+ * `@Monitor('<member>.command')` / `@Monitor('<member>.shown')` when the field changes. The legacy V1
+ * `AppStorage` (`userProfileAction` / `userProfileShown`) keys + their dual-write were retired once no
+ * reader read the V1 half.
  */
 @ObservedV2
 export class UserProfileActionState {
