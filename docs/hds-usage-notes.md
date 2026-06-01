@@ -20,7 +20,7 @@ and screenshot validation.
 
 ## Safe Area And Title Bar
 
-- Shared safe-area values come from `StorageKeys.TOP_AVOID_HEIGHT` and `StorageKeys.BOTTOM_AVOID_HEIGHT`.
+- Shared safe-area values come from the AppStorageV2 `v2:layoutSafeArea` mirror (`connectLayoutSafeArea()`), not legacy `StorageKeys.*` AppStorage keys.
 - Main tab pages account for the root HDS title bar with `topH + ThemeConstants.TITLE_BAR_HEIGHT`.
 - Home additionally accounts for the feed pill bottom builder with `ApiConstants.TAB_BAR_HEIGHT`.
 - Stack destination content should add top padding for `topH + ThemeConstants.TITLE_BAR_HEIGHT`, plus normal content spacing when needed.

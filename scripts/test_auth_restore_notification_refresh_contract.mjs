@@ -42,12 +42,11 @@ assert(
   'AccountPage must centralize restored active account guard'
 )
 const restoredGuard = methodBody(accountPage, 'private hasRestoredActiveAccountIdentity')
-// State Management V2 migration renamed the durable identity reads to AppStorageV2 mirrors:
-//   this.sessionUsername  -> this.session.username        (connectAuthSessionSignal())
-//   this.activeAccountId  -> this.activeAccount.id        (connectActiveAccount())
-// The guard invariant is unchanged; accept either the legacy @StorageLink token or the V2 mirror token.
-const guardSessionUsername = restoredGuard.includes('this.sessionUsername') || restoredGuard.includes('this.session.username')
-const guardActiveAccountId = restoredGuard.includes('this.activeAccountId') || restoredGuard.includes('this.activeAccount.id')
+// Migration complete: guard uses V2 mirror tokens only.
+//   this.session.username  (connectAuthSessionSignal())
+//   this.activeAccount.id  (connectActiveAccount())
+const guardSessionUsername = restoredGuard.includes('this.session.username')
+const guardActiveAccountId = restoredGuard.includes('this.activeAccount.id')
 assert(
   restoredGuard.includes('this.activeAccountUsername') && guardSessionUsername,
   'restored account guard must accept active account record username or restored AuthSession username'
@@ -67,34 +66,29 @@ assert(
 
 const accountStore = read('shared/src/main/ets/settings/AccountStore.ets')
 const restoreActiveId = methodBody(accountStore, 'static async restoreActiveId')
-// V2 migration routes the active-id republish through the single AccountStore.applyActiveAccountId
-// chokepoint (which republishes to AppStorage AND dual-writes the ActiveAccountState mirror); accept
-// either the legacy inline AppStorage write or the helper call.
+// Migration complete: restoreActiveId routes through the single AccountStore.applyActiveAccountId
+// chokepoint (republishes to AppStorage AND dual-writes the ActiveAccountState mirror).
 const applyActiveId = methodBody(accountStore, 'private static applyActiveAccountId')
 assert(
-  restoreActiveId.includes('AccountStore.applyActiveAccountId(persisted)') ||
-    restoreActiveId.includes('setAppStorageValue<string>(StorageKeys.ACTIVE_ACCOUNT_ID, persisted)'),
-  'AccountStore.restoreActiveId must republish persisted active id to AppStorage so Me page guards are live after relaunch'
+  restoreActiveId.includes('AccountStore.applyActiveAccountId(persisted)'),
+  'AccountStore.restoreActiveId must republish persisted active id via applyActiveAccountId so Me page guards are live after relaunch'
 )
 assert(
   applyActiveId.includes('setAppStorageValue<string>(StorageKeys.ACTIVE_ACCOUNT_ID'),
   'AccountStore.applyActiveAccountId chokepoint must republish the active id to AppStorage'
 )
 
-// State Management V2 migration: Index reacts to the auth-session change via the AuthSessionSignalState
-// mirror (@Monitor) instead of @StorageLink(AUTH_SESSION_UPDATED_AT)+@Watch. Same invariant — accept either.
+// Migration complete: Index is @ComponentV2 and uses the AuthSessionSignalState mirror path.
 const index = read('entry/src/main/ets/pages/Index.ets')
 assert(
-  (index.includes('@StorageLink(StorageKeys.AUTH_SESSION_UPDATED_AT)') && index.includes("@Watch('onAuthSessionUpdated')")) ||
-  (index.includes('connectAuthSessionSignal()') && index.includes("@Monitor('authSession.updatedAt')")),
-  'Index must watch AUTH_SESSION_UPDATED_AT so login success can refresh visible tab children'
+  index.includes('connectAuthSessionSignal()') && index.includes("@Monitor('authSession.updatedAt')"),
+  'Index must watch authSession.updatedAt via @Monitor so login success can refresh visible tab children'
 )
-// State Management V2: signature dropped (_propName); the refresh-key churn (= Date.now()) became a
-// monotonic counter (++) — children only react to a CHANGE, so it is semantics-equivalent. Accept either.
+// Migration complete: refresh keys use monotonic counter (++), not Date.now() key-churn.
 const indexAuthHandler = methodBody(index, 'onAuthSessionUpdated(): void')
 assert(
-  (indexAuthHandler.includes('this.notificationRefreshKey++') || indexAuthHandler.includes('this.notificationRefreshKey = Date.now()')) &&
-    (indexAuthHandler.includes('this.accountRefreshKey++') || indexAuthHandler.includes('this.accountRefreshKey = Date.now()')),
+  indexAuthHandler.includes('this.notificationRefreshKey++') &&
+    indexAuthHandler.includes('this.accountRefreshKey++'),
   'Index auth-session watcher must refresh notification/account child props after normal login success'
 )
 assert(
@@ -141,13 +135,11 @@ assert(
 
 const notificationPage = read('entry/src/main/ets/pages/NotificationPage.ets')
 const notificationAuthContext = methodBody(notificationPage, 'private notificationAuthContext')
-// State Management V2 migration: this.authCookieConfigured (@StorageLink) -> this.authCookie.configured
-// (connectAuthCookie() mirror, dual-written at CookieJarSettings.refreshConfiguredState). Same reactive
-// invariant — accept either the legacy @StorageLink token or the V2 mirror token.
+// Migration complete: NotificationPage uses the V2 authCookie mirror (connectAuthCookie(),
+// dual-written at CookieJarSettings.refreshConfiguredState).
 assert(
-  notificationAuthContext.includes('cookieConfigured: this.authCookieConfigured || cookie.length > 0') ||
-    notificationAuthContext.includes('cookieConfigured: this.authCookie.configured || cookie.length > 0'),
-  'NotificationPage auth context must include the reactive authCookieConfigured source so login-required UI leaves logged-out state after login'
+  notificationAuthContext.includes('cookieConfigured: this.authCookie.configured || cookie.length > 0'),
+  'NotificationPage auth context must include the reactive authCookie.configured source so login-required UI leaves logged-out state after login'
 )
 assert(
   !notificationPage.includes('NotificationSummaryCard({'),

@@ -1,19 +1,17 @@
 import { AppStorageV2 } from '@kit.ArkUI'
-import { StorageKeys } from '../constants/StorageKeys'
 
 /**
- * V2 mirror of the window safe-area / keyboard layout metrics.
+ * App-wide window safe-area / keyboard layout metrics, owned by `AppStorageV2`.
  *
- * EntryAbility historically wrote these into V1 `AppStorage`
- * (`StorageKeys.TOP_AVOID_HEIGHT` / `BOTTOM_AVOID_HEIGHT` / `KEYBOARD_HEIGHT`) and
- * `@StorageProp` consumers read them. During the State Management V1->V2 backbone
- * migration the metrics live in BOTH stores at once: V1 `@StorageProp` readers keep
- * reading `AppStorage`, while `@ComponentV2` readers read these `@Trace` fields.
- * `EntryAbility` is the single writer and publishes through `LayoutSafeAreaBridge`,
- * so the two stores never diverge.
+ * `EntryAbility` is the single writer: it observes the window avoid areas and the
+ * soft-keyboard height and publishes them through `LayoutSafeAreaBridge`. `@ComponentV2`
+ * consumers read these `@Trace` fields via `connectLayoutSafeArea()`, so any change
+ * re-renders the subscribed components.
  *
- * Transitional: drop the `AppStorage` half (and this whole bridge) once every layout
- * reader has moved to V2.
+ * History: these metrics used to be dual-written into the legacy V1 `AppStorage`
+ * (`topAvoidHeight` / `bottomAvoidHeight` / `keyboardHeight`) for `@StorageProp` readers.
+ * Every reader has since moved to V2, so the V1 `AppStorage` half was retired and this
+ * object is now the sole source of truth. Do not reintroduce the `AppStorage` writes.
  */
 @ObservedV2
 export class LayoutSafeAreaState {
@@ -39,22 +37,19 @@ export function connectLayoutSafeArea(): LayoutSafeAreaState {
 }
 
 /**
- * The single dual-write point for layout metrics. Writes both the legacy V1
- * `AppStorage` keys (still read by `@StorageProp` consumers) and the V2 mirror
- * (read by `@ComponentV2` consumers), keeping the two stores in lockstep until the
- * V1 readers are gone.
+ * The single publish point for layout metrics. `EntryAbility` calls these to push the
+ * latest window insets / keyboard height into the shared `LayoutSafeAreaState`, which
+ * fans the change out to every `@ComponentV2` consumer. (Formerly a V1->V2 dual-write
+ * bridge; the V1 `AppStorage` half was retired, so it now publishes to V2 only.)
  */
 export class LayoutSafeAreaBridge {
   static publishInsets(topAvoidHeight: number, bottomAvoidHeight: number): void {
-    AppStorage.setOrCreate<number>(StorageKeys.TOP_AVOID_HEIGHT, topAvoidHeight)
-    AppStorage.setOrCreate<number>(StorageKeys.BOTTOM_AVOID_HEIGHT, bottomAvoidHeight)
     const state = connectLayoutSafeArea()
     state.topAvoidHeight = topAvoidHeight
     state.bottomAvoidHeight = bottomAvoidHeight
   }
 
   static publishKeyboardHeight(keyboardHeight: number): void {
-    AppStorage.setOrCreate<number>(StorageKeys.KEYBOARD_HEIGHT, keyboardHeight)
     connectLayoutSafeArea().keyboardHeight = keyboardHeight
   }
 }

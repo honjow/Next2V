@@ -36,7 +36,7 @@ const PAGE = 'entry/src/main/ets/pages/NotificationPage.ets';
 {
   const c = strip(read(INDEX));
   must(/connectNotificationAction\(\)\.command\s*=/.test(c), `${INDEX}.sendNotificationAction: dual-writes the mirror`);
-  must(/StorageKeys\.NOTIFICATION_ACTION/.test(c), `${INDEX}: still writes the V1 NOTIFICATION_ACTION key`);
+  must(/StorageKeys\.NOTIFICATION_ACTION/.test(c), `${INDEX}: still dual-writes AppStorage NOTIFICATION_ACTION key`);
 }
 {
   const c = strip(read(PAGE));

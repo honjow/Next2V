@@ -3,19 +3,17 @@ import { AppStorageV2 } from '@kit.ArkUI'
 /**
  * V2-safe holder for the app's single `NavPathStack`.
  *
- * Background: navigation is provided V1-style by `Index` via `@Provide('ns')` and
- * consumed by ~27 routed pages via `@Consume('ns')`. `ns` is never observed as
- * reactive state — every consumer uses it purely as a method target
- * (`pushPathByName` / `pop`), and `NavPathStack` self-manages the stack observation
- * that `HdsNavigation(stack)` binds to. So a `@ComponentV2` consumer does not need
- * V1->V2 reactive interop on the stack; it only needs the *same* `NavPathStack`
- * instance that `HdsNavigation` is bound to.
+ * Historical background: navigation used to be provided by `Index` via `@Provide('ns')`
+ * and consumed by routed pages via `@Consume('ns')`. The State Management V2 migration
+ * retired those live decorators. `ns` is never observed as reactive state — every consumer
+ * uses it purely as a method target (`pushPathByName` / `pop`), and `NavPathStack`
+ * self-manages the stack observation that `HdsNavigation(stack)` binds to. A
+ * `@ComponentV2` consumer only needs the *same* `NavPathStack` instance that
+ * `HdsNavigation` is bound to.
  *
  * This holder is that single instance, shared app-wide through `AppStorageV2`.
- * `Index` (still V1) sources its `@Provide('ns')` from `connectNavStack().stack`,
- * so V1 `@Consume('ns')` readers and V2 `connectNavStack().stack` readers reference
- * the identical object. This lets the `@Consume('ns')` tail migrate to V2 one
- * consumer at a time instead of flipping all 27 atomically.
+ * `Index` and routed pages now use `connectNavStack().stack`, so every consumer
+ * references the identical object without a V1 adapter tail.
  *
  * `@Trace` is harmless here (the reference is never reassigned, so no reactivity
  * fires) and keeps the class shape consistent with the other AppStorageV2 mirrors.

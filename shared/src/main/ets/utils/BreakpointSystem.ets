@@ -37,10 +37,13 @@ export class BreakpointSystem {
     this.lgListener?.off('change')
   }
 
+  // Tracks the active breakpoint purely for the change-guard below. The former AppStorage dual-write
+  // of a 'currentBreakpoint' key was removed: the State Management V2 migration retired its
+  // @StorageProp('currentBreakpoint') consumers, leaving the key with no reader anywhere in the repo,
+  // so the publish was dead. Layout consumers derive breakpoints from UIContext media queries directly.
   private update(bp: Breakpoint): void {
     if (this.currentBreakpoint !== bp) {
       this.currentBreakpoint = bp
-      AppStorage.setOrCreate<string>('currentBreakpoint', bp)
     }
   }
 }

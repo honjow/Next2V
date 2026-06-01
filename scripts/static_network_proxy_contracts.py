@@ -60,7 +60,18 @@ def main() -> int:
     require('bootstrap restore', 'restoreNetworkProxy' in bootstrap and 'NetworkProxySettings.load' in bootstrap)
     require('networkkit options helper', 'networkKitProxyOption' in adapter and 'usingProxy = proxy' in adapter)
     require('networkkit off/system/http semantics', 'return false' in adapter and 'return true' in adapter and 'buildHttpProxy' in adapter)
-    require('rcp socks5 and https selected', "settings.mode === 'socks5' || settings.proxyScheme === 'https'" in adapter and 'requestViaRcp' in adapter)
+    require(
+        'socks5 via dedicated socket, https proxy via rcp',
+        "settings.mode === 'socks5'" in adapter
+        and 'requestViaSocks5Socket' in adapter
+        and 'Socks5HttpClient.request(' in adapter
+        and "settings.proxyScheme === 'https'" in adapter
+        and 'requestViaRcp' in adapter
+        # The device SDK's SOCKS5 user/pass auth is broken, so SOCKS5 must use the
+        # hand-rolled socket client (Socks5HttpClient), not the combined RCP path
+        # that earlier migrations routed it through. Guard against that regression.
+        and "settings.mode === 'socks5' || settings.proxyScheme === 'https'" not in adapter,
+    )
     require('rcp web proxy tunnel always', 'createTunnel: \'always\'' in adapter and 'buildSocks5Url' in adapter and 'buildHttpUrl' in adapter)
     require('socks5 auth not rejected', 'SOCKS5 代理暂不支持用户名/密码认证' not in adapter and 'SOCKS5 暂不支持用户名/密码认证' not in proxy_page and 'R_SOCKS5_AUTH_UNSUPPORTED' not in proxy_page and 'R_AUTH_NOT_SUPPORTED' not in proxy_page)
     require('no remoteValidation skip in product path', FORBIDDEN_REMOTE_VALIDATION_SKIP not in adapter and FORBIDDEN_REMOTE_VALIDATION_SKIP not in settings and FORBIDDEN_REMOTE_VALIDATION_SKIP not in proxy_page)
@@ -88,7 +99,7 @@ def main() -> int:
     ]
     require('settings has no fake modal chrome', not any(copy in proxy_page for copy in forbidden_fake_modal_ui))
     require('profile editor uses native tall sheet scaffold', 'bindSheet($$this.profileEditorVisible' in proxy_page and 'defaultSheetOptions(SheetSize.LARGE' in proxy_page and '[SheetSize.LARGE]' in proxy_page and 'AppModalScaffold({' in proxy_page)
-    require('profile list uses hds rows with real active control', 'ProxyConnectionSection' in proxy_page and 'ConciseListRow({' in proxy_page and "Radio({ value: profileId, group: 'networkProxyProfiles' })" in proxy_page)
+    require('profile list uses hds rows with real active control', 'ProxyConnectionSection' in proxy_page and 'ConciseListRow({' in proxy_page and "Radio({ value: this.row.id, group: 'networkProxyProfiles' })" in proxy_page)
     require('profile editor avoids fake route branch', 'if (this.editorOpen)' not in proxy_page and 'fake full-page route' not in proxy_page)
     require('profile editor protocol uses semantic radio rows', "Radio({ value: protocol, group: 'networkProxyEditorProtocol' })" in proxy_page and 'suffixBuilderParam: (): void => this.ProtocolRadio' in proxy_page and 'ProtocolChoice' not in proxy_page)
     forbidden_protocol_buttons = ["Button('HTTP 代理')", "Button('HTTPS 代理入口')", "Button('SOCKS5 代理')", 'this.ProtocolChoice(']
@@ -97,7 +108,7 @@ def main() -> int:
     save_section = save_section_match.group('body') if save_section_match else ''
     require(
         'profile editor save action is normal arkui button',
-        ("Button('保存')" in save_section or 'Button(AppStrings.t(AppStrings.R_COMMON_SAVE' in save_section) and '.type(ButtonType.Normal)' in save_section and "title: '保存'" not in save_section,
+        ("Button('保存')" in save_section or 'Button(AppStrings.R_COMMON_SAVE' in save_section) and '.type(ButtonType.Normal)' in save_section and "title: '保存'" not in save_section,
     )
     require('shared component guard names', 'AppModalScaffold.ets' not in ''.join(sys.argv[1:]))
     require('settings test action', ('R_TEST_CONNECTION' in proxy_page or "'测试连接'" in proxy_page) and 'NetworkProxyRequest.testConnection' in proxy_page)
@@ -107,7 +118,15 @@ def main() -> int:
     )
     require(
         'settings bypass editor does not collapse sheet content on focus',
-        'shouldCollapseTopForKeyboard' not in proxy_page and 'bypassEditorFocused' not in proxy_page and 'StorageKeys.KEYBOARD_HEIGHT' in proxy_page,
+        # The editor inputs live in the AppModalScaffold tall sheet, which handles
+        # keyboard avoidance natively via includeKeyboardPadding: true. The outer
+        # list opts out (includeKeyboardPadding: false). No manual collapse-on-focus
+        # hack and no live StorageKeys.KEYBOARD_HEIGHT reads (retired by the layout lane).
+        'shouldCollapseTopForKeyboard' not in proxy_page
+        and 'bypassEditorFocused' not in proxy_page
+        and 'includeKeyboardPadding: true' in proxy_page
+        and 'includeKeyboardPadding: false' in proxy_page
+        and 'StorageKeys.KEYBOARD_HEIGHT' not in proxy_page,
     )
 
     create_http = []

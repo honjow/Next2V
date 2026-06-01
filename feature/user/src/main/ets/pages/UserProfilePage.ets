@@ -59,7 +59,7 @@ export struct UserProfilePage {
   // Per-topic read-state ledger (V2 mirror; LocalDataPublisher dual-writes). Read in build() via
   // isTopicUnread -> subscribes this page to unread-dot refreshes.
   private readStates: TopicReadStatesState = connectTopicReadStates();
-  // Window safe-area metrics (V2 mirror; EntryAbility dual-writes the V1 AppStorage keys + this).
+  // Window safe-area metrics (AppStorageV2 mirror; EntryAbility publishes V2-only).
   // Only read in logic (evaluateAppbarTitleVisibility), never in build().
   private layout: LayoutSafeAreaState = connectLayoutSafeArea();
   // V2 mirror of the one-directional USER_PROFILE_ACTION + USER_PROFILE_SHOWN appbar buses

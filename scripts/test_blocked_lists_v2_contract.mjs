@@ -6,7 +6,7 @@
 //
 //   1. BlockedListsTabs (in IndexTitleBarComponents.ets) is @ComponentV2 with NO V1 component-state
 //      decorator and no refresh-by-key-churn token. The whole-file contract can't assert this struct
-//      because the same file still hosts the intentionally-V1 FeedPills struct (see feed-tab-v2 cut).
+//      because the same file also hosts FeedPills (migrated to @ComponentV2 in the feedpills-v2 slice).
 //   2. BlockedListsTabsSegment.ets is a clean @ComponentV2 segmented control hosting the V2-native
 //      TabSegmentButtonV2 (the tab-style successor of the V1 SegmentButton, taking a one-way
 //      @Param selectedIndex with no @Link). We assert it carries no V1 decorator, hosts

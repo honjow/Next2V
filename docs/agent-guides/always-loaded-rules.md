@@ -10,6 +10,24 @@ Hermes translates user wording into a controller spec, defines product and prese
 
 Direct worker controller mode is allowed when the project workflow calls for it: Hermes remains controller, launches independent workers directly, records artifacts and process state, and advances only on machine-readable `verdict=PASS` result JSON.
 
+## State Management V2 Only
+
+State Management V1 is retired. No future V2Next development may introduce, restore, or preserve live V1 component/state decorators in `entry/`, `feature/`, or `shared/` source.
+
+Forbidden V1 patterns: `@Component`, `@State`, `@Prop`, `@Link`, `@Watch`, `@StorageLink`, `@StorageProp`, `@Provide`, `@Consume`, `@ObjectLink`, `@Observed`, `@Track`, `@LocalStorageLink`, and `@LocalStorageProp`.
+
+Allowed direction: use State Management V2 primitives (`@ComponentV2`, `@ObservedV2`, `@Trace`, `@Local`, `@Param`, `@Monitor`) and existing project V2 state holders/bridges. Do not use key churn (`Date.now`, random values, render counters, version bumps) to force refresh instead of correct V2 state flow.
+
+Do not add V1 adapters, V1 allowlist entries, temporary V1 bridges, or compatibility exceptions. If a platform/API issue appears to require V1, stop and return `BLOCKED` with exact source evidence, compile/build result, and the safest V2-only alternative. A regression workaround that reintroduces V1 is not mergeable.
+
+Every ArkTS/UI/state change must include the V1 inventory gate:
+
+```bash
+node scripts/test_v1_decorator_inventory_contract.mjs
+```
+
+The gate must report `0 file(s)` with live V1 decorators before merge/push.
+
 ## Worker/Result Gates
 
 Implementation, read-only review, independent device QA, integrate, and follow-up spec stages must be explicit. Each worker stage must produce a result JSON with `verdict: PASS|FAIL|BLOCKED|REQUEST_CHANGES`, `summary`, `artifact_dir`, `commands`, `changed_files`, `evidence`, and `commit` when applicable. A live process, heartbeat, or implementer self-report is not proof. Do not rerun already-PASS upstream stages after a later blocker; resume from the failed or missing stage.

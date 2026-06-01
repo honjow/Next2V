@@ -140,7 +140,7 @@ export struct BlockedListsPage {
   @Local private storageState: BlockedListStorageState = connectBlockedListStorage()
   // V2 mirror of the appbar-selected tab written by BlockedListsTabs; read in build() to switch lists.
   private tabState: BlockedListSelectedTabState = connectBlockedListSelectedTab()
-  // Window safe-area metrics (V2 mirror; EntryAbility dual-writes the V1 AppStorage keys + this).
+  // Window safe-area metrics (AppStorageV2 mirror; EntryAbility publishes V2-only).
   private layout: LayoutSafeAreaState = connectLayoutSafeArea()
   @Local private snapshot: BlockedListSnapshot = BlockedListSettings.runtimeSnapshot()
   @Local private topics: V2exTopic[] = []

@@ -162,7 +162,7 @@ export class FeedTabSettings {
   }
 
   static apply(keysJson: string): void {
-    // Dual-writes the V1 AppStorage key (still read imperatively + by HomeNodeSettingsPage @StorageLink)
+    // Dual-writes the AppStorage key (still read imperatively by FeedTabSettings.ets bootstrap reads)
     // AND the V2 FeedTabState mirror, so bootstrap restore and settings reorder both seed/update the mirror.
     FeedTabBridge.publishKeys(keysJson || FeedTabSettings.defaultKeysJson())
   }

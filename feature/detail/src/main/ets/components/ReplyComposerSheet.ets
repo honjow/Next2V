@@ -28,7 +28,7 @@ export struct ReplyComposerSheet {
   @Param topicId: number = 0
   @Param topicTitle: string = ''
   @Param initialContent: string = ''
-  // Keyboard height mirrored into AppStorageV2 by EntryAbility's dual-write bridge
+  // Keyboard height is published into AppStorageV2 by EntryAbility
   // (was @StorageProp(StorageKeys.KEYBOARD_HEIGHT)); drives composerBodyHeight().
   layout: LayoutSafeAreaState = connectLayoutSafeArea()
 

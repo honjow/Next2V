@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 // Static contract for the feed-tab V1->V2 storage bridge (feed-tab-v2 + homenodesettings-v2 slices).
 //
-// FEED_TAB / FEED_TAB_KEYS are multi-writer keys with mixed V1/V2 consumers during the migration:
-//   - V2 readers: @ComponentV2 HomePage, @ComponentV2 HomeNodeSettingsPage and @ComponentV2 FeedPills read
-//     the FeedTabState mirror.
-//   - V1 reader: FeedTabSettings reads them imperatively (AppStorage.get).
+// FEED_TAB / FEED_TAB_KEYS are written through FeedTabBridge, which dual-writes both stores so all
+// consumers stay consistent:
+//   - @ComponentV2 consumers (HomePage, HomeNodeSettingsPage, FeedPills) read the FeedTabState mirror.
+//   - FeedTabSettings reads them imperatively (AppStorage.get) — a service class, not a component.
 // The ONLY safe write path therefore dual-writes BOTH stores. This contract fails closed if a future edit
-// reintroduces a single-store write (raw AppStorage.set or @StorageLink reassignment) on the writer page,
-// or breaks the FeedTabBridge dual-write, which would silently desync the V1 AppStorage key and the V2
-// mirror (stale feed pills / stale settings list).
+// reintroduces a single-store write (raw AppStorage.set) on the writer page, or breaks the FeedTabBridge
+// dual-write, which would silently desync the AppStorage key and the V2 mirror (stale feed pills /
+// stale settings list).
 // feedTabVisualIndex is now a PURE-V2 @Trace field on its OWN holder (FeedVisualIndexState), isolated from
 // the @Monitor-ed FeedTabState so its per-frame churn cannot perturb the feedTab observers. FeedPills is its
 // only reader, HomePage its only writer; publishVisualIndex writes only that holder, asserted below.

@@ -47,8 +47,8 @@ export class NodeDataSource implements IDataSource {
  * @ObservedV2 (not V1 @Observed) so the @ComponentV2 node-index pages (NodePickerPage,
  * DiscoverPage) observe the build()-read scalars below via @Trace. Split out of the
  * former monolithic NodeViewModel: it holds only the node directory + search half, which
- * is disjoint from the single-node topic-feed half (still V1 NodeViewModel, used by the
- * still-V1 NodeTopicPage). nodeDataSource is a plain IDataSource observed by LazyForEach,
+ * is disjoint from the single-node topic-feed half (`NodeViewModel`, used by the migrated
+ * `@ComponentV2` NodeTopicPage). nodeDataSource is a plain IDataSource observed by LazyForEach,
  * so it needs no @Trace.
  */
 @ObservedV2

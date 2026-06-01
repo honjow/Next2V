@@ -30,7 +30,7 @@ export struct ImagePreviewPage {
   @Local private saveMessage: string = ''
   // V2 mirror of the one-directional IMAGE_PREVIEW_ACTION appbar command (Index dual-writes).
   @Local private imgAction: ImagePreviewActionState = connectImagePreviewAction()
-  // Window safe-area metrics (V2 mirror; EntryAbility dual-writes the V1 AppStorage keys + this).
+  // Window safe-area metrics (AppStorageV2 mirror; EntryAbility publishes V2-only).
   private layout: LayoutSafeAreaState = connectLayoutSafeArea()
 
   private clampScale(value: number): number {

@@ -13,7 +13,7 @@
 //   3. The two login pages read the V2 nav holder (connectNavStack().stack, no @Consume) and their
 //      command-bus mirror via @Monitor (connectNativeLoginShown / connectWebLoginAction).
 //   4. Index.ets dual-writes both command mirrors at its single writers (notifyNativeLoginShown /
-//      sendWebLoginAction), keeping the V1 AppStorage key and the V2 mirror in lockstep.
+//      sendWebLoginAction), keeping the AppStorage key and the V2 mirror in lockstep.
 //
 // Run: node scripts/test_login_2fa_v2_contract.mjs
 import { readFileSync } from 'node:fs';
@@ -74,9 +74,9 @@ for (const rel of [PROMPT, NATIVE, WEB]) {
   const code = strip(read(INDEX));
   must(/connectNativeLoginShown\(\)\.command\s*=/.test(code), `${INDEX}.notifyNativeLoginShown: dual-writes connectNativeLoginShown().command`);
   must(/connectWebLoginAction\(\)\.command\s*=/.test(code), `${INDEX}.sendWebLoginAction: dual-writes connectWebLoginAction().command`);
-  // V1 AppStorage halves still present (bridge stays reversible while Index is V1)
-  must(/StorageKeys\.NATIVE_LOGIN_SHOWN/.test(code), `${INDEX}: still writes the V1 NATIVE_LOGIN_SHOWN key`);
-  must(/StorageKeys\.WEB_LOGIN_ACTION/.test(code), `${INDEX}: still writes the V1 WEB_LOGIN_ACTION key`);
+  // AppStorage halves still present for imperative readers; dual-write kept alongside V2 mirrors.
+  must(/StorageKeys\.NATIVE_LOGIN_SHOWN/.test(code), `${INDEX}: still dual-writes AppStorage NATIVE_LOGIN_SHOWN key`);
+  must(/StorageKeys\.WEB_LOGIN_ACTION/.test(code), `${INDEX}: still dual-writes AppStorage WEB_LOGIN_ACTION key`);
 }
 
 console.log(`\nlogin-2fa-v2 contract: ${failures} failure(s)`);

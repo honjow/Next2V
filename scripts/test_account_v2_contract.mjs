@@ -4,8 +4,10 @@
 // Pins the auth/session/account/rate-limit/local-data mirrors, their single-writer dual-write
 // chokepoints, and the V2 migration of AccountDashboardPage + AccountDetailPage:
 //   1. The mirrors declare the expected @Trace fields and connect* helpers.
-//   2. Each mirror is dual-written at its service chokepoint (AuthSettings.apply / AuthSessionSettings.apply
+//   2. Each mirror is written at its service chokepoint (AuthSettings.apply / AuthSessionSettings.apply
 //      / AccountStore.applyActiveAccountId / ApiV2Service.saveRateLimitSnapshot / the LOCAL_DATA writers).
+//      The rate-limit snapshot is V2-only (its legacy AppStorage dual-write was retired); the others
+//      still dual-write their legacy AppStorage keys.
 //   3. AccountDashboardPage + AccountDetailPage are @ComponentV2, V1-decorator-free, navigate via
 //      connectNavStack().stack, read the mirrors, and @Monitor the auth-session / active-account
 //      (+ local-data on the dashboard) signals.
@@ -63,7 +65,12 @@ for (const [rel, connect, fields] of mirrors) {
 {
   const c = strip(read('shared/src/main/ets/network/ApiV2Service.ets'));
   must(/snapshot\.limit\s*=/.test(c) && /snapshot\.updatedAt\s*=/.test(c) && /connectApiRateLimit\(\)/.test(c),
-    'ApiV2Service.saveRateLimitSnapshot: dual-writes ApiRateLimitState');
+    'ApiV2Service.saveRateLimitSnapshot: writes ApiRateLimitState (V2 sole store)');
+  // V2 ApiRateLimitState is now the SOLE store for the rate-limit snapshot: the legacy AppStorage
+  // dual-write (StorageKeys.API_RATE_LIMIT_*) was retired once every reader moved to V2. Guard
+  // against reintroducing a legacy AppStorage write of any API_RATE_LIMIT key.
+  must(!/AppStorage\s*\.\s*\w+\s*(<[^>]*>)?\s*\(\s*StorageKeys\s*\.\s*API_RATE_LIMIT/.test(c),
+    'ApiV2Service.saveRateLimitSnapshot: no legacy AppStorage API_RATE_LIMIT write');
 }
 for (const rel of ['shared/src/main/ets/settings/LocalDataPublisher.ets', 'shared/src/main/ets/settings/LocalDataSettings.ets', 'shared/src/main/ets/settings/DraftSettings.ets', 'entry/src/main/ets/pages/Index.ets']) {
   must(/connectLocalDataSignal\(\)\.updatedAt\s*=/.test(strip(read(rel))), `${rel}: dual-writes LocalDataSignalState`);

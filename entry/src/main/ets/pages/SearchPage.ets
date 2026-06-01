@@ -105,7 +105,7 @@ export struct SearchPage {
   // input buses (Index dual-writes SEARCH_ACTION; SearchQueryBus dual-writes PENDING_SEARCH_QUERY).
   // Reacted to via @Monitor below; never read in build().
   @Local private actionState: SearchActionState = connectSearchAction()
-  // Window safe-area metrics (V2 mirror; EntryAbility dual-writes the V1 AppStorage keys + this).
+  // Window safe-area metrics (AppStorageV2 mirror; EntryAbility publishes V2-only).
   // Read in build() (top padding / pull-refresh indicator), so this subscribes to layout changes.
   private layout: LayoutSafeAreaState = connectLayoutSafeArea()
 

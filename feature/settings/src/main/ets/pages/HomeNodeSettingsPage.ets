@@ -23,9 +23,8 @@ import {
 @ComponentV2
 export struct HomeNodeSettingsPage {
   // This page is the settings *writer* of FEED_TAB_KEYS. Read the V2 FeedTabState mirror so reorders/
-  // toggles re-render here, and route every write through FeedTabBridge.publishKeys so the V1 AppStorage
-  // key (still read via @StorageLink by HomePage/FeedPills/IndexTitleBarComponents and imperatively by
-  // FeedTabSettings) and the V2 mirror stay in lockstep.
+  // toggles re-render here, and route every write through FeedTabBridge.publishKeys so the AppStorage
+  // key (still read imperatively by FeedTabSettings) and the V2 FeedTabState mirror stay in lockstep.
   @Local private feedTabState: FeedTabState = connectFeedTab()
   @Local private nodeTabName: string = ''
 

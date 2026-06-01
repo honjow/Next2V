@@ -4,9 +4,9 @@ import { connectLayoutSafeArea, LayoutSafeAreaState } from '../state/LayoutSafeA
 @ComponentV2
 export struct SecondaryFormScaffold {
   @BuilderParam content: () => void
-  // Safe-area / keyboard metrics mirrored into AppStorageV2 by EntryAbility's
-  // dual-write bridge. Reading these @Trace fields keeps padding reactive exactly
-  // like the former @StorageProp(StorageKeys.*) reads did.
+  // Safe-area / keyboard metrics are published into AppStorageV2 by EntryAbility.
+  // Reading these @Trace fields keeps padding reactive exactly like the former
+  // @StorageProp(StorageKeys.*) reads did.
   layout: LayoutSafeAreaState = connectLayoutSafeArea()
   @Param horizontalPadding: number = ThemeConstants.SPACE_MD
   @Param bottomPadding: number = ThemeConstants.SPACE_XL

@@ -36,7 +36,7 @@ export struct DiscoverPage {
   @Local private kwState: DiscoverKeywordState = connectDiscoverKeyword()
   @Local private savedNodes: SavedNode[] = []
   @Local private recentNodes: SavedNode[] = []
-  // Window safe-area metrics (V2 mirror; EntryAbility dual-writes the V1 AppStorage keys + this).
+  // Window safe-area metrics (AppStorageV2 mirror; EntryAbility publishes V2-only).
   private layout: LayoutSafeAreaState = connectLayoutSafeArea()
   private readonly TBH: number = ThemeConstants.TITLE_BAR_HEIGHT
   private readonly FLOAT_H: number = ThemeConstants.FLOAT_BAR_HEIGHT

@@ -1,15 +1,14 @@
 import { AppStorageV2 } from '@kit.ArkUI'
 
 /**
- * V2 mirror of the API rate-limit snapshot (`StorageKeys.API_RATE_LIMIT_LIMIT` / `_REMAINING` /
- * `_RESET` / `_UPDATED_AT`).
+ * V2 store of the API rate-limit snapshot (limit / remaining / reset / updatedAt).
  *
- * `ApiV2Service.saveRateLimitSnapshot()` is the ONE chokepoint that writes those keys after each
- * authenticated API response; it dual-writes the V1 `AppStorage` keys (still read by V1
- * `@StorageLink`) AND these `@Trace` fields, read by the migrated `@ComponentV2` AccountPage's
- * rate-limit summary so it updates live as requests are made.
+ * `ApiV2Service.saveRateLimitSnapshot()` is the ONE chokepoint that writes this snapshot after each
+ * authenticated API response, updating these `@Trace` fields read by the migrated `@ComponentV2`
+ * AccountPage's rate-limit summary so it updates live as requests are made.
  *
- * Transitional: drop the `AppStorage` half once every reader has moved to V2.
+ * This is the sole store: the legacy `AppStorage` (`StorageKeys.API_RATE_LIMIT_*`) dual-write was
+ * retired once every reader moved to V2. Do not reintroduce a legacy `AppStorage` half.
  */
 @ObservedV2
 export class ApiRateLimitState {

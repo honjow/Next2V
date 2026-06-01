@@ -4,9 +4,9 @@ import { connectLayoutSafeArea, LayoutSafeAreaState } from '../state/LayoutSafeA
 @ComponentV2
 export struct SecondaryListScaffold {
   @BuilderParam content: () => void
-  // Safe-area / keyboard metrics mirrored into AppStorageV2 by EntryAbility's
-  // dual-write bridge. Reading these @Trace fields keeps padding reactive exactly
-  // like the former @StorageProp(StorageKeys.*) reads did.
+  // Safe-area / keyboard metrics are published into AppStorageV2 by EntryAbility.
+  // Reading these @Trace fields keeps padding reactive exactly like the former
+  // @StorageProp(StorageKeys.*) reads did.
   layout: LayoutSafeAreaState = connectLayoutSafeArea()
   // @Param (not a plain member) because parents pass their own Scroller in by reference.
   @Param scroller: Scroller = new Scroller()

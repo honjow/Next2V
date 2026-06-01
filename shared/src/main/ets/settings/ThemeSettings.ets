@@ -63,8 +63,8 @@ export class ThemeSettings {
     ThemeSettings.publishEffectiveDark(ThemeSettings.effectiveDarkForMode(context, mode, colorMode))
   }
 
-  // Single sink for THEME_EFFECTIVE_DARK: dual-writes the legacy AppStorage key (read by any
-  // remaining V1 @StorageLink) and the V2 ThemeDisplayState mirror (read by @ComponentV2).
+  // Single sink for THEME_EFFECTIVE_DARK: keeps the AppStorage theme key and the
+  // V2 ThemeDisplayState mirror (read by @ComponentV2) in lockstep.
   private static publishEffectiveDark(effectiveDark: boolean): void {
     setAppStorageValue<boolean>(StorageKeys.THEME_EFFECTIVE_DARK, effectiveDark)
     connectThemeDisplay().effectiveDark = effectiveDark

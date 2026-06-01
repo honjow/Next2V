@@ -9,11 +9,12 @@
 //   1. TopicDetailPage consumes the V2 backbone correctly: connectNavStack().stack (no @Consume),
 //      the three reactive mirrors (auth-cookie / motion-edge / reply-button), and @Monitor for the
 //      motion-edge + reply-button preferences.
-//   2. The TOPIC_DETAIL_ACTION command bus stays Index-free: it is owned by the V1 @Component
-//      adapter TopicDetailActionListener (intentionally V1 @StorageLink+@Watch), hosted by the page.
+//   2. TOPIC_DETAIL_ACTION is observed directly by TopicDetailPage via the V2 TopicDetailActionState
+//      mirror (@Monitor); the former V1 TopicDetailActionListener child adapter was retired when
+//      Index migrated to @ComponentV2.
 //   3. The three mirror dual-write chokepoints exist at their single writers.
-//   4. Index.ets is NOT crossed: it neither imports the topic-detail mirrors nor stops writing the
-//      V1 TOPIC_DETAIL_ACTION key — i.e. the page migrated without touching Index.
+//   4. Index.ets does not import TopicDetailPage's private reactive-reading mirrors; only the
+//      cross-page command/appbar mirrors (TOPIC_DETAIL_ACTION, appbar identity) are shared.
 //
 // Run: node scripts/test_topicdetail_v2_contract.mjs
 import { readFileSync } from 'node:fs';
@@ -88,7 +89,7 @@ must(/connectTopicDetailReplyButton\(\)\.autoHide\s*=/.test(strip(read('shared/s
   must(!/connectAuthCookie|connectMotionHandEdge|connectTopicDetailReplyButton/.test(code),
     `${INDEX}: does not import TopicDetailPage's private reactive-reading mirrors`);
   must(/AppStorage\.setOrCreate<string>\(\s*StorageKeys\.TOPIC_DETAIL_ACTION/.test(code),
-    `${INDEX}.sendTopicAction: still writes the V1 TOPIC_DETAIL_ACTION key`);
+    `${INDEX}.sendTopicAction: still dual-writes AppStorage TOPIC_DETAIL_ACTION key`);
   must(/connectTopicDetailAction\(\)\.command\s*=/.test(code),
     `${INDEX}.sendTopicAction: dual-writes the V2 TopicDetailActionState mirror`);
 }

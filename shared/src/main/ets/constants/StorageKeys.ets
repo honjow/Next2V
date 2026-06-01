@@ -1,10 +1,18 @@
 /** AppStorage key constants to avoid cross-module hard-coded strings */
 export class StorageKeys {
   // Runtime window/layout state
+  // NOTE: TOP_AVOID_HEIGHT / BOTTOM_AVOID_HEIGHT / KEYBOARD_HEIGHT are runtime-DEAD after the
+  // safe-area V2 migration. Every reader now reads the AppStorageV2 'v2:layoutSafeArea' mirror
+  // (LayoutSafeAreaState.ets) and EntryAbility no longer dual-writes them into V1 AppStorage.
+  // Retained only because the storage-registry contract pins them and static_network_proxy_contracts.py
+  // still names StorageKeys.KEYBOARD_HEIGHT; drop all three together once that (network-proxy lane)
+  // contract reference is updated.
   static readonly TOP_AVOID_HEIGHT: string = 'topAvoidHeight'
   static readonly BOTTOM_AVOID_HEIGHT: string = 'bottomAvoidHeight'
   static readonly KEYBOARD_HEIGHT: string = 'keyboardHeight'
-  static readonly NAV_PATH_STACK: string = 'ns'
+  // NOTE: the former NAV_PATH_STACK ('ns') legacy AppStorage key was removed — it had zero runtime
+  // consumers. The nav stack now lives in the AppStorageV2 'v2:navStack' holder (NavStackHolder.ets);
+  // do not reintroduce a legacy 'ns' AppStorage key.
 
   // Persistent user settings / preferences-backed AppStorage
   static readonly USE_CO_DOMAIN: string = 'useCoDomain'
@@ -65,11 +73,12 @@ export class StorageKeys {
     'autoDailyCheckinLastAttemptIdentity'
   static readonly AUTO_DAILY_CHECKIN_LAST_SUCCESS_DATE: string = 'autoDailyCheckinLastSuccessDate'
 
-  // API/local data/cache metadata
-  static readonly API_RATE_LIMIT_LIMIT: string = 'apiRateLimitLimit'
-  static readonly API_RATE_LIMIT_REMAINING: string = 'apiRateLimitRemaining'
-  static readonly API_RATE_LIMIT_RESET: string = 'apiRateLimitReset'
-  static readonly API_RATE_LIMIT_UPDATED_AT: string = 'apiRateLimitUpdatedAt'
+  // NOTE: the former API_RATE_LIMIT_* ('apiRateLimit*') legacy AppStorage keys were removed — they
+  // had zero runtime consumers after the api-rate-limit V2 slice. The rate-limit snapshot now lives
+  // in the AppStorageV2 'v2:apiRateLimit' store (ApiRateLimitState.ets); do not reintroduce legacy
+  // API_RATE_LIMIT AppStorage keys.
+
+  // Local data/cache metadata
   static readonly LOCAL_DATA_UPDATED_AT: string = 'localDataUpdatedAt'
   static readonly LOCAL_SAVED_TOPIC_COUNT: string = 'localSavedTopicCount'
   static readonly LOCAL_SAVED_NODE_COUNT: string = 'localSavedNodeCount'

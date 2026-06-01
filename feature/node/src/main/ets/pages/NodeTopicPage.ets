@@ -17,7 +17,7 @@ export struct NodeTopicPage {
   @Param nodeTitle: string = ''
   // Same NavPathStack instance HdsNavigation is bound to (see NavStackHolder); method target only.
   private stack: NavPathStack = connectNavStack().stack
-  // Window safe-area metrics (V2 mirror; EntryAbility dual-writes the V1 AppStorage keys + this).
+  // Window safe-area metrics (AppStorageV2 mirror; EntryAbility publishes V2-only).
   private layout: LayoutSafeAreaState = connectLayoutSafeArea()
   @Local vm: NodeViewModel = new NodeViewModel()
   // Per-topic read-state ledger (V2 mirror; LocalDataPublisher dual-writes). Read in build() via

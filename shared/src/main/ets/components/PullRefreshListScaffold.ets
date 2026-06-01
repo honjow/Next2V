@@ -7,7 +7,7 @@ const DEFAULT_REFRESH_THRESHOLD: number = 120
 @ComponentV2
 export struct PullRefreshListScaffold {
   @BuilderParam content: () => void
-  // Safe-area metrics mirrored into AppStorageV2 by EntryAbility's dual-write bridge.
+  // Safe-area metrics are published into AppStorageV2 by EntryAbility.
   // Reading these @Trace fields keeps padding reactive exactly like the former
   // @StorageProp(StorageKeys.*) reads did.
   layout: LayoutSafeAreaState = connectLayoutSafeArea()

@@ -132,7 +132,7 @@ private topicDetailTitleBarOpts(topicId: number): Record<string, Object>
 
 新增本页局部状态：
 
-- `@StorageProp(StorageKeys.TOP_AVOID_HEIGHT) topH: number = 0`
+- `private layout: LayoutSafeAreaState = connectLayoutSafeArea()`；top safe-area 从 AppStorageV2 `v2:layoutSafeArea` mirror 读取。
 - `@StorageLink(...)` 对应上述 topic detail appbar keys。
 - `@State private titleContentBottom: number = 0`
 - `@State private currentScrollOffset: number = 0`

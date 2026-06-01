@@ -108,8 +108,8 @@ export default class EntryAbility extends UIAbility {
         let systemArea = win.getWindowAvoidArea(window.AvoidAreaType.TYPE_SYSTEM)
         let navArea = win.getWindowAvoidArea(window.AvoidAreaType.TYPE_NAVIGATION_INDICATOR)
         let uiCtx = windowStage.getMainWindowSync().getUIContext()
-        // Dual-write to V1 AppStorage (read by @StorageProp consumers) and the V2
-        // AppStorageV2 mirror (read by @ComponentV2 consumers) during the backbone migration.
+        // Publish window insets into the AppStorageV2 'v2:layoutSafeArea' mirror, read by
+        // every @ComponentV2 layout consumer. The legacy V1 AppStorage half was retired.
         LayoutSafeAreaBridge.publishInsets(
           uiCtx.px2vp(systemArea.topRect.height),
           uiCtx.px2vp(navArea.bottomRect.height),

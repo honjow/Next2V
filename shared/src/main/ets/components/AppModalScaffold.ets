@@ -6,9 +6,9 @@ import { HdsNavigation, HdsNavigationTitleMode, IconStyleMode } from '@kit.UIDes
 export struct AppModalScaffold {
   @BuilderParam content: () => void
   @Param title: ResourceStr = ''
-  // Safe-area / keyboard metrics mirrored into AppStorageV2 by EntryAbility's
-  // dual-write bridge. Reading these @Trace fields keeps padding reactive exactly
-  // like the former @StorageProp(StorageKeys.*) reads did.
+  // Safe-area / keyboard metrics are published into AppStorageV2 by EntryAbility.
+  // Reading these @Trace fields keeps padding reactive exactly like the former
+  // @StorageProp(StorageKeys.*) reads did.
   layout: LayoutSafeAreaState = connectLayoutSafeArea()
   @Param compact: boolean = false
   @Param includeKeyboardPadding: boolean = false

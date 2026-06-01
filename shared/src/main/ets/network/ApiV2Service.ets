@@ -3,7 +3,6 @@ import { HttpClient } from './HttpClient'
 import { HttpRetryPolicy, HttpStatusError } from './HttpRetryPolicy'
 import { NetworkProxyRequest } from './NetworkProxyRequest'
 import { ApiConstants } from '../constants/ApiConstants'
-import { StorageKeys } from '../constants/StorageKeys'
 import { connectApiRateLimit } from '../state/ApiRateLimitState'
 import { HtmlEntityUtils } from '../utils/HtmlEntityUtils'
 import { V2exUrlRouter } from '../utils/V2exUrlRouter'
@@ -335,12 +334,9 @@ export class ApiV2Service {
     }
     try {
       const updatedAt = Math.floor(Date.now() / 1000)
-      AppStorage.setOrCreate<number>(StorageKeys.API_RATE_LIMIT_LIMIT, rateLimit.limit)
-      AppStorage.setOrCreate<number>(StorageKeys.API_RATE_LIMIT_REMAINING, rateLimit.remaining)
-      AppStorage.setOrCreate<number>(StorageKeys.API_RATE_LIMIT_RESET, rateLimit.reset)
-      AppStorage.setOrCreate<number>(StorageKeys.API_RATE_LIMIT_UPDATED_AT, updatedAt)
-      // Dual-write the V2 mirror (read by @ComponentV2 AccountPage rate-limit summary) from this
-      // single chokepoint so the two stores stay in lockstep.
+      // Write the V2 ApiRateLimitState mirror (read by the @ComponentV2 AccountPage rate-limit
+      // summary) from this single chokepoint. The legacy AppStorage half (StorageKeys.API_RATE_LIMIT_*)
+      // was retired once every reader moved to V2 — do not reintroduce it.
       const snapshot = connectApiRateLimit()
       snapshot.limit = rateLimit.limit
       snapshot.remaining = rateLimit.remaining

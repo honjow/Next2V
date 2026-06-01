@@ -105,10 +105,10 @@ const forbiddenMeTokens = [
 for (const token of forbiddenMeTokens) {
   assert(!accountPage.includes(token), `AccountPage.ets must not contain Me-tab management token: ${token}`)
 }
-// State Management V2 migration: @State -> @Local for the durable identity fallback fields.
+// Migration complete: durable identity fallback fields use @Local (V2).
 assert(
-  (accountPage.includes('@State private activeAccountUsername') || accountPage.includes('@Local private activeAccountUsername')) &&
-  (accountPage.includes('@State private activeAccountAvatar') || accountPage.includes('@Local private activeAccountAvatar')),
+  accountPage.includes('@Local private activeAccountUsername') &&
+  accountPage.includes('@Local private activeAccountAvatar'),
   'AccountPage must keep active AccountStore identity fallback state'
 )
 assert(
@@ -119,19 +119,30 @@ assert(
   accountPage.includes('this.activeAccountUsername') && accountPage.includes('this.activeAccountAvatar'),
   'AccountPage current identity must pass active AccountStore username/avatar fallback'
 )
-// State Management V2 migration: @Watch('onRefreshKeyChanged') -> @Monitor('refreshKey'); the V2 handler
-// signature dropped the (_propName) arg. Accept either form.
-const refreshKeyHandlerMatch = accountPage.match(/onRefreshKeyChanged\((?:_propName: string)?\): void \{([\s\S]*?)\n  \}/)
+// Migration complete: handler uses @Monitor('refreshKey') with no _propName arg (V2 form).
+const refreshKeyHandlerMatch = accountPage.match(/onRefreshKeyChanged\(\): void \{([\s\S]*?)\n  \}/)
 assert(refreshKeyHandlerMatch, 'AccountPage must define onRefreshKeyChanged handler')
 assert(
-  refreshKeyHandlerMatch[1].includes('this.loadAccounts()'),
-  'AccountPage.onRefreshKeyChanged must refresh AccountStore state for mounted Me tab'
+  refreshKeyHandlerMatch[1].includes('this.requestDashboardRefresh('),
+  'AccountPage.onRefreshKeyChanged must trigger a dashboard refresh (which calls loadAccounts)'
 )
 const visibleAreaHandlerMatch = accountPage.match(/\.onVisibleAreaChange\(\[0\.0, 1\.0\],\s*\(isVisible: boolean, _currentRatio: number\) => \{([\s\S]*?)\n\s*\}\)/)
 assert(visibleAreaHandlerMatch, 'AccountPage must define visible-area refresh handler')
 assert(
-  /if\s*\(isVisible\)\s*\{[\s\S]*?this\.loadAccounts\(\)/.test(visibleAreaHandlerMatch[1]),
-  'AccountPage visible refresh path must call loadAccounts() when Me becomes visible'
+  /if\s*\(isVisible\)\s*\{[\s\S]*?this\.requestDashboardRefresh\('visible'\)/.test(visibleAreaHandlerMatch[1]),
+  'AccountPage visible refresh path must trigger dashboard refresh when Me becomes visible'
+)
+const requestDashboardRefreshMatch = accountPage.match(/requestDashboardRefresh\(reason: string\): void \{([\s\S]*?)\n  \}/)
+assert(requestDashboardRefreshMatch, 'AccountPage must define requestDashboardRefresh coalescing helper')
+assert(
+  requestDashboardRefreshMatch[1].includes('this.refreshDashboardSnapshot(reason)'),
+  'AccountPage.requestDashboardRefresh must call refreshDashboardSnapshot'
+)
+const refreshDashboardSnapshotMatch = accountPage.match(/refreshDashboardSnapshot\(reason: string\): void \{([\s\S]*?)\n  \}/)
+assert(refreshDashboardSnapshotMatch, 'AccountPage must define refreshDashboardSnapshot')
+assert(
+  refreshDashboardSnapshotMatch[1].includes('this.loadAccounts()'),
+  'AccountPage.refreshDashboardSnapshot must load AccountStore state'
 )
 
 const managementPageRel = 'entry/src/main/ets/pages/AccountManagementPage.ets'

@@ -98,7 +98,6 @@ const expectedStorageKeys = [
   ['TOP_AVOID_HEIGHT', 'topAvoidHeight'],
   ['BOTTOM_AVOID_HEIGHT', 'bottomAvoidHeight'],
   ['KEYBOARD_HEIGHT', 'keyboardHeight'],
-  ['NAV_PATH_STACK', 'ns'],
   ['USE_CO_DOMAIN', 'useCoDomain'],
   ['SELECTED_BASE_URL', 'selectedBaseUrl'],
   ['MEDIA_AUTO_LOAD_IMAGES', 'mediaAutoLoadImages'],
@@ -135,6 +134,13 @@ const expectedStorageKeys = [
   ['AUTH_SESSION_VALIDATED_AT', 'authSessionValidatedAt'],
   ['AUTH_SESSION_UPDATED_AT', 'authSessionUpdatedAt'],
   ['ACTIVE_ACCOUNT_ID', 'activeAccountId'],
+  ['BLOCKED_LIST_OWNER_KEY', 'blockedListOwnerKey'],
+  ['BLOCKED_LIST_IGNORED_TOPIC_IDS', 'blockedListIgnoredTopicIds'],
+  ['BLOCKED_LIST_BLOCKED_MEMBER_IDS', 'blockedListBlockedMemberIds'],
+  ['BLOCKED_LIST_BLOCKED_MEMBER_METAS', 'blockedListBlockedMemberMetas'],
+  ['BLOCKED_LIST_IGNORED_TOPIC_METAS', 'blockedListIgnoredTopicMetas'],
+  ['BLOCKED_LIST_UPDATED_AT', 'blockedListUpdatedAt'],
+  ['BLOCKED_LIST_SELECTED_TAB', 'blockedListSelectedTab'],
   ['TWO_FACTOR_VISIBLE', 'twoFactorVisible'],
   ['TWO_FACTOR_COOKIE', 'twoFactorCookie'],
   ['TWO_FACTOR_SOURCE', 'twoFactorSource'],
@@ -144,10 +150,6 @@ const expectedStorageKeys = [
   ['AUTO_DAILY_CHECKIN_LAST_ATTEMPT_DATE', 'autoDailyCheckinLastAttemptDate'],
   ['AUTO_DAILY_CHECKIN_LAST_ATTEMPT_IDENTITY', 'autoDailyCheckinLastAttemptIdentity'],
   ['AUTO_DAILY_CHECKIN_LAST_SUCCESS_DATE', 'autoDailyCheckinLastSuccessDate'],
-  ['API_RATE_LIMIT_LIMIT', 'apiRateLimitLimit'],
-  ['API_RATE_LIMIT_REMAINING', 'apiRateLimitRemaining'],
-  ['API_RATE_LIMIT_RESET', 'apiRateLimitReset'],
-  ['API_RATE_LIMIT_UPDATED_AT', 'apiRateLimitUpdatedAt'],
   ['LOCAL_DATA_UPDATED_AT', 'localDataUpdatedAt'],
   ['LOCAL_SAVED_TOPIC_COUNT', 'localSavedTopicCount'],
   ['LOCAL_SAVED_NODE_COUNT', 'localSavedNodeCount'],
@@ -156,6 +158,7 @@ const expectedStorageKeys = [
   ['FEED_TAB_KEYS', 'feedTabKeys'],
   ['FEED_TAB_VISUAL_INDEX', 'feedTabVisualIndex'],
   ['HOME_TAB_AUTO_HIDE', 'homeTabAutoHide'],
+  ['TOPIC_DETAIL_REPLY_BUTTON_AUTO_HIDE', 'topicDetailReplyButtonAutoHide'],
   ['MOTION_HAND_EDGE', 'motionHandEdge'],
   ['MOTION_HOLDING_HAND_SUPPORTED', 'motionHoldingHandSupported'],
   ['TOPIC_DETAIL_ACTION', 'topicDetailAction'],
@@ -219,6 +222,16 @@ for (const heading of [
 ]) {
   assert(storageKeysText.includes(heading), `StorageKeys missing section comment: ${heading}`)
 }
+
+// Layout/safe-area metrics are V2-only: EntryAbility publishes window insets + keyboard height
+// exclusively into the AppStorageV2 'v2:layoutSafeArea' mirror (LayoutSafeAreaState.ets). The
+// legacy V1 AppStorage dual-write (StorageKeys.TOP_AVOID_HEIGHT/BOTTOM_AVOID_HEIGHT/KEYBOARD_HEIGHT)
+// was retired; guard against re-introducing the V1 half.
+const layoutSafeAreaText = read('shared/src/main/ets/state/LayoutSafeAreaState.ets')
+assert(layoutSafeAreaText.includes('AppStorageV2.connect'), 'LayoutSafeAreaState must connect the layout mirror via AppStorageV2')
+assert(layoutSafeAreaText.includes("'v2:layoutSafeArea'"), "LayoutSafeAreaState must own the 'v2:layoutSafeArea' mirror key")
+assert(!layoutSafeAreaText.includes('AppStorage.setOrCreate'), 'LayoutSafeAreaState must not dual-write layout metrics into legacy V1 AppStorage')
+assert(!/import\s*\{[^}]*\bStorageKeys\b[^}]*\}/.test(layoutSafeAreaText), 'LayoutSafeAreaState must not import StorageKeys after retiring the V1 dual-write')
 
 const values = new Set(storageKeys.values())
 const settingsDir = path.join(repo, 'shared/src/main/ets/settings')
