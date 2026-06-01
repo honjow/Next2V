@@ -1,20 +1,19 @@
-import { StorageKeys } from '../constants/StorageKeys'
 import { publishTwoFactorVisible, publishTwoFactorCookie, publishTwoFactorSource } from '../state/TwoFactorState'
 
 export class TwoFactorChallengeService {
-  // Write-through helpers keep the V1 TWO_FACTOR_* AppStorage keys and the V2 TwoFactorState mirror
-  // (read/@Monitor by the @ComponentV2 Index bindSheet) in lockstep from this single service.
+  // V2-only: the global 2FA challenge sheet state lives solely in the AppStorageV2 'v2:twoFactor' holder
+  // (TwoFactorState). This service is its single writer (via the publish* helpers); the @ComponentV2 Index
+  // @Monitors visible and reads cookie/source. No legacy V1 AppStorage timestamp breadcrumbs remain — the
+  // former write-only TWO_FACTOR_REQUESTED_AT/COMPLETED_AT keys had zero runtime readers and were retired.
   static request(cookie: string, source: string = ''): number {
     const requestedAt = Date.now()
     publishTwoFactorCookie(cookie)
     publishTwoFactorSource(source)
-    AppStorage.setOrCreate<number>(StorageKeys.TWO_FACTOR_REQUESTED_AT, requestedAt)
     publishTwoFactorVisible(true)
     return requestedAt
   }
 
   static complete(): void {
-    AppStorage.setOrCreate<number>(StorageKeys.TWO_FACTOR_COMPLETED_AT, Date.now())
     TwoFactorChallengeService.clear()
   }
 

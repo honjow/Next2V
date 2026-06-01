@@ -11,8 +11,9 @@ const assert = (condition, message) => {
 }
 
 // State Management V2 migration: the service routes the 2FA sheet state through the TwoFactorState
-// publish* helpers, which write the V2 mirror Index reads/@Monitors. The two request/complete timestamp
-// breadcrumbs remain plain AppStorage writes (write-only; no mirror, no reader to migrate).
+// publish* helpers, which write the V2 mirror Index reads/@Monitors. V2-only — the service makes NO direct
+// AppStorage writes: the former write-only TWO_FACTOR_REQUESTED_AT/COMPLETED_AT timestamp breadcrumbs were
+// retired (zero runtime readers), so request()/complete()/cancel() drive the V2 mirror exclusively.
 const service = read('shared/src/main/ets/services/TwoFactorChallengeService.ets')
 for (const token of [
   'export class TwoFactorChallengeService',
@@ -21,9 +22,21 @@ for (const token of [
   'publishTwoFactorSource',
   'publishTwoFactorVisible',
   'static complete()',
-  'StorageKeys.TWO_FACTOR_COMPLETED_AT',
+  'static cancel()',
+  'static clear()',
 ]) {
   assert(service.includes(token), `TwoFactorChallengeService contract missing ${token}`)
+}
+// V2-only: the service must make NO direct AppStorage writes and must not reference any legacy TwoFactor
+// AppStorage key. Strip comments first so a documentary NOTE can't satisfy the guard.
+const serviceCode = service.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '')
+assert(!/\bAppStorage\s*\./.test(serviceCode), 'TwoFactorChallengeService must make no direct AppStorage writes (V2-only)')
+for (const key of ['TWO_FACTOR_REQUESTED_AT', 'TWO_FACTOR_COMPLETED_AT', 'TWO_FACTOR_VISIBLE', 'TWO_FACTOR_COOKIE', 'TWO_FACTOR_SOURCE']) {
+  assert(!serviceCode.includes(key), `TwoFactorChallengeService must not reference the retired StorageKeys.${key}`)
+}
+// complete()/cancel() both clear the V2 mirror through clear(), which routes through the publish* helpers.
+for (const token of ['publishTwoFactorVisible(false)', "publishTwoFactorCookie('')", "publishTwoFactorSource('')"]) {
+  assert(service.includes(token), `TwoFactorChallengeService.clear must reset the V2 mirror via ${token}`)
 }
 // V2-only: the publish* helpers write the @Trace mirror only. The legacy TWO_FACTOR_VISIBLE/COOKIE/SOURCE
 // AppStorage halves were retired once Index (the sole reader) read the mirror instead; guard against

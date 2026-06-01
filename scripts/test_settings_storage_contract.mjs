@@ -138,11 +138,9 @@ const expectedStorageKeys = [
   ['BLOCKED_LIST_IGNORED_TOPIC_METAS', 'blockedListIgnoredTopicMetas'],
   ['BLOCKED_LIST_UPDATED_AT', 'blockedListUpdatedAt'],
   ['BLOCKED_LIST_SELECTED_TAB', 'blockedListSelectedTab'],
-  // Retired this lane (now V2-only in the AppStorageV2 'v2:twoFactor' holder, zero runtime readers —
-  // Index reads the mirror): twoFactorVisible/Cookie/Source. The request/complete timestamp
-  // breadcrumbs below remain plain write-only AppStorage keys.
-  ['TWO_FACTOR_REQUESTED_AT', 'twoFactorRequestedAt'],
-  ['TWO_FACTOR_COMPLETED_AT', 'twoFactorCompletedAt'],
+  // Retired (now V2-only in the AppStorageV2 'v2:twoFactor' holder, zero runtime readers — Index reads the
+  // mirror): the twoFactorVisible/Cookie/Source keys AND the write-only twoFactorRequestedAt/
+  // twoFactorCompletedAt timestamp breadcrumbs. All five are asserted absent below.
   ['AUTO_DAILY_CHECKIN_ENABLED', 'autoDailyCheckinEnabled'],
   ['AUTO_DAILY_CHECKIN_LAST_ATTEMPT_DATE', 'autoDailyCheckinLastAttemptDate'],
   ['AUTO_DAILY_CHECKIN_LAST_ATTEMPT_IDENTITY', 'autoDailyCheckinLastAttemptIdentity'],
@@ -175,6 +173,21 @@ for (let i = 0; i < expectedStorageKeys.length; i += 1) {
     actualName === expectedName && actualValue === expectedValue,
     `StorageKeys declaration #${i + 1} changed: expected ${expectedName}='${expectedValue}', got ${actualName}='${actualValue}'`,
   )
+}
+
+// Retired two-factor AppStorage keys must not be reintroduced — the 2FA challenge state is V2-only in the
+// AppStorageV2 'v2:twoFactor' holder (TwoFactorState). Guard both the constant names and their string values.
+const retiredTwoFactorKeys = [
+  ['TWO_FACTOR_REQUESTED_AT', 'twoFactorRequestedAt'],
+  ['TWO_FACTOR_COMPLETED_AT', 'twoFactorCompletedAt'],
+  ['TWO_FACTOR_VISIBLE', 'twoFactorVisible'],
+  ['TWO_FACTOR_COOKIE', 'twoFactorCookie'],
+  ['TWO_FACTOR_SOURCE', 'twoFactorSource'],
+]
+const storageValues = new Set(storageKeys.values())
+for (const [retiredName, retiredValue] of retiredTwoFactorKeys) {
+  assert(!storageKeys.has(retiredName), `StorageKeys must not reintroduce retired two-factor key ${retiredName} (V2-only)`)
+  assert(!storageValues.has(retiredValue), `StorageKeys must not reintroduce retired two-factor value '${retiredValue}' (V2-only)`)
 }
 
 for (const heading of [

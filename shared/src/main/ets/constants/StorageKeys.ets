@@ -56,13 +56,12 @@ export class StorageKeys {
   static readonly BLOCKED_LIST_IGNORED_TOPIC_METAS: string = 'blockedListIgnoredTopicMetas'
   static readonly BLOCKED_LIST_UPDATED_AT: string = 'blockedListUpdatedAt'
   static readonly BLOCKED_LIST_SELECTED_TAB: string = 'blockedListSelectedTab'
-  // NOTE: twoFactorVisible/Cookie/Source were removed — the global 2FA challenge sheet state lives only
-  // in its AppStorageV2 'v2:twoFactor' holder (TwoFactorState). TwoFactorChallengeService is the single
-  // writer (via the publish* helpers) and @ComponentV2 Index is the sole reader (@Monitor('twoFactor.visible')
-  // + this.twoFactor.cookie/source). Do not reintroduce the legacy V1 keys. The two request/complete
-  // timestamp breadcrumbs below are still written by TwoFactorChallengeService.
-  static readonly TWO_FACTOR_REQUESTED_AT: string = 'twoFactorRequestedAt'
-  static readonly TWO_FACTOR_COMPLETED_AT: string = 'twoFactorCompletedAt'
+  // NOTE: the global 2FA challenge sheet state is V2-only — it lives in its AppStorageV2 'v2:twoFactor'
+  // holder (TwoFactorState). TwoFactorChallengeService is the single writer (via the publish* helpers) and
+  // @ComponentV2 Index is the sole reader (@Monitor('twoFactor.visible') + this.twoFactor.cookie/source).
+  // The former twoFactorVisible/Cookie/Source keys AND the write-only twoFactorRequestedAt/
+  // twoFactorCompletedAt timestamp breadcrumbs were removed — all had zero runtime readers. No legacy V1
+  // two-factor AppStorage keys remain; do not reintroduce any.
 
   // Auto daily check-in state
   static readonly AUTO_DAILY_CHECKIN_ENABLED: string = 'autoDailyCheckinEnabled'
