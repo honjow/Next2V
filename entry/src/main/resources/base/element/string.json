@@ -2353,6 +2353,10 @@
       "value": "Topic is still loading"
     },
     {
+      "name": "topic_action_resume_reading",
+      "value": "Resume reading"
+    },
+    {
       "name": "topic_many_replies_title",
       "value": "Many replies"
     },

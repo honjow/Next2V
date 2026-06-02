@@ -55,6 +55,9 @@ export class ThemeConstants {
   static readonly AVATAR_SIZE_TOPIC: number = 40;
   static readonly AVATAR_SIZE_REPLY: number = 32;
   static readonly AVATAR_SIZE_DEFAULT: number = 48;
+  // Topic-detail "resume reading" floating button: smaller than the 56pt reply
+  // FAB so it reads as a secondary action stacked above it on the same side.
+  static readonly TOPIC_DETAIL_RESUME_BUTTON_SIZE: number = 44;
   static readonly MARGIN_LOADING_TOP: number = 100;
   static readonly FOOTER_HEIGHT: number = 48;
   static readonly LINE_HEIGHT_TITLE: number = 22;

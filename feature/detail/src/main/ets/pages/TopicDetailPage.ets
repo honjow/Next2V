@@ -161,10 +161,19 @@ export struct TopicDetailPage {
   @Local private titleContentBottom: number = 0;
   @Local private currentScrollOffset: number = 0;
   @Local private isTitleCoveredByAppbar: boolean = false;
+  // IT-Home-style "resume reading" affordance: on entry we no longer auto-scroll to the saved
+  // floor; instead this flag surfaces a small floating button (above the reply FAB) that the user
+  // taps to jump. It is consumed (set false) on tap, or auto-dismissed once the user scrolls the
+  // saved floor into view on their own.
+  @Local private showResumeButton: boolean = false;
   private readonly HDS_ACTION_BAR_CLEARANCE: number = 72;
   private readonly TOPIC_DETAIL_REPLY_BUTTON_SIZE: number = 56;
+  private readonly TOPIC_DETAIL_RESUME_BUTTON_SIZE: number = ThemeConstants.TOPIC_DETAIL_RESUME_BUTTON_SIZE;
   private readonly TOPIC_DETAIL_REPLY_BUTTON_ACTIVITY_PADDING: number = ThemeConstants.SPACE_LG;
   private readonly TOPIC_DETAIL_REPLY_BUTTON_SCROLL_DELTA_PX: number = 6;
+  // Treat the saved floor as "reached" once the viewport center is within this many floors of it,
+  // so the resume button dismisses a touch early rather than requiring an exact landing.
+  private readonly RESUME_BUTTON_FLOOR_PROXIMITY: number = 1;
   private readonly TOPIC_DETAIL_REPLY_BUTTON_ANIMATION_GUARD_MS: number = 180;
   private readonly FOLLOW_OPERATION_VERTICAL_SCROLL_THRESHOLD: number = 24;
   private readonly FOLLOW_OPERATION_VERTICAL_DOMINANCE_RATIO: number = 1.2;
@@ -188,6 +197,11 @@ export struct TopicDetailPage {
   private lastReadFloor: number = 0;
   private hasRestoredReadPosition: boolean = false;
   private hasJumpedToTargetFloor: boolean = false;
+  // The clamped, already-loaded floor the resume button jumps to when tapped. The saved floor it
+  // derives from is used to auto-dismiss the button when the user scrolls there manually.
+  private resumeTargetFloor: number = 0;
+  private resumeSavedFloor: number = 0;
+  private resumeButtonController: HdsTabsController = new HdsTabsController();
   private replyButtonController: HdsTabsController = new HdsTabsController();
   private replyButtonVisibleByScroll: boolean = true;
   private replyButtonAnimationGuardTimerId: number = -1;
@@ -201,6 +215,9 @@ export struct TopicDetailPage {
     this.lastReadFloor = 0
     this.hasRestoredReadPosition = false
     this.hasJumpedToTargetFloor = false
+    this.showResumeButton = false
+    this.resumeTargetFloor = 0
+    this.resumeSavedFloor = 0
     this.jumpFloorText = ''
     this.currentScrollOffset = 0
     this.replyButtonLastScrollOffset = 0
@@ -417,6 +434,10 @@ export struct TopicDetailPage {
         this.trackReplyActionFollowOperation(event)
       })
 
+      if (this.detailRootHeight > 0 && this.showResumeButton) {
+        this.TopicDetailResumeButton()
+      }
+
       if (this.detailRootHeight > 0) {
         this.TopicDetailReplyActionBar()
       }
@@ -476,6 +497,42 @@ export struct TopicDetailPage {
 
   private topicDetailReplyActionBarAlign(): FlexAlign {
     return TopicDetailFloatingActionCoordinator.actionBarAlign(this.visualMotionHandEdge)
+  }
+
+  // Smaller secondary FAB stacked directly above the reply button on the same (smart-edge) side.
+  @Builder TopicDetailResumeButton() {
+    Row() {
+      HdsMiniBarButton({
+        controller: this.resumeButtonController,
+        barWidth: this.TOPIC_DETAIL_RESUME_BUTTON_SIZE,
+        barHeight: this.TOPIC_DETAIL_RESUME_BUTTON_SIZE,
+        activityPadding: this.TOPIC_DETAIL_REPLY_BUTTON_ACTIVITY_PADDING,
+        onButtonClick: () => {
+          this.resumeToSavedFloor()
+        },
+      }) {
+        SymbolGlyph($r('sys.symbol.chevron_down_2_circle'))
+          .fontSize(24)
+          .fontColor([$r('sys.color.ohos_id_color_text_primary')])
+          .accessibilityText(AppStrings.text(AppStrings.R_TOPIC_ACTION_RESUME_READING, 'Resume reading'))
+      }
+    }
+    .width('100%')
+    .height(this.TOPIC_DETAIL_RESUME_BUTTON_SIZE + this.TOPIC_DETAIL_REPLY_BUTTON_ACTIVITY_PADDING * 2)
+    .justifyContent(this.topicDetailReplyActionBarAlign())
+    .alignItems(VerticalAlign.Center)
+    .position({ x: 0, y: this.topicDetailResumeButtonTop() - this.TOPIC_DETAIL_REPLY_BUTTON_ACTIVITY_PADDING })
+    .hitTestBehavior(HitTestMode.Transparent)
+  }
+
+  // Sit the resume button directly above the reply FAB, separated by one spacing unit, both centered
+  // on the same side so they read as a vertical action stack.
+  private topicDetailResumeButtonTop(): number {
+    return (
+      this.topicDetailReplyActionBarTop() -
+      this.TOPIC_DETAIL_RESUME_BUTTON_SIZE -
+      ThemeConstants.SPACE_MD
+    )
   }
 
   private clearReplyButtonAnimationGuardTimer(): void {
@@ -1419,9 +1476,21 @@ export struct TopicDetailPage {
       const floor = this.v.getReplyFloor(reply.id)
       if (floor > 0) {
         this.lastReadFloor = floor
+        this.maybeDismissResumeButton(floor)
       }
     } catch (_e) {
       // ignore
+    }
+  }
+
+  // Auto-dismiss the resume affordance once the user scrolls the saved floor into view on their own,
+  // so it doesn't linger after it has effectively been satisfied.
+  private maybeDismissResumeButton(centerFloor: number): void {
+    if (!this.showResumeButton || this.resumeSavedFloor <= 0) {
+      return
+    }
+    if (centerFloor >= this.resumeSavedFloor - this.RESUME_BUTTON_FLOOR_PROXIMITY) {
+      this.showResumeButton = false
     }
   }
 
@@ -1437,6 +1506,9 @@ export struct TopicDetailPage {
     )
   }
 
+  // IT-Home-style restore: do NOT auto-scroll to the saved floor on entry. Instead pre-load the
+  // replies up to that floor (so the later tap can land precisely) and surface the resume button.
+  // The user is left at the top; tapping the button performs the actual jump.
   private restoreReadPosition(): void {
     if (this.hasRestoredReadPosition || this.topicId <= 0) {
       return
@@ -1454,18 +1526,35 @@ export struct TopicDetailPage {
         if (targetFloor <= 0) {
           return
         }
-        const listIndex = TopicDetailScrollCoordinator.listIndexForFloor(targetFloor)
-        setTimeout(() => {
-          try {
-            this.scrollToListIndex(listIndex, true)
-          } catch (_e) {
-            // ignore
-          }
-        }, 0)
+        this.resumeSavedFloor = floor
+        this.resumeTargetFloor = targetFloor
+        // Only offer the resume button while the user is still at the top. If they already scrolled
+        // past the saved floor (or anywhere meaningful) by the time replies finished loading, the
+        // affordance would be noise.
+        if (this.currentScrollOffset <= this.TOPIC_DETAIL_REPLY_BUTTON_SCROLL_DELTA_PX) {
+          this.showResumeButton = true
+        }
       })
       .catch((_error: Error) => {
         // ignore
       })
+  }
+
+  // Resume button tap: jump to the saved floor and consume the affordance.
+  private resumeToSavedFloor(): void {
+    this.showResumeButton = false
+    const targetFloor = this.resumeTargetFloor
+    if (targetFloor <= 0) {
+      return
+    }
+    const listIndex = TopicDetailScrollCoordinator.listIndexForFloor(targetFloor)
+    setTimeout(() => {
+      try {
+        this.scrollToListIndex(listIndex, true)
+      } catch (_e) {
+        // ignore
+      }
+    }, 0)
   }
 
   private restoreInitialPosition(): void {

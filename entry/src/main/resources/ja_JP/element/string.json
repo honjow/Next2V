@@ -2353,6 +2353,10 @@
       "value": "トピックはまだ読み込み中です"
     },
     {
+      "name": "topic_action_resume_reading",
+      "value": "前回の続きから読む"
+    },
+    {
       "name": "topic_many_replies_title",
       "value": "返信が多い"
     },

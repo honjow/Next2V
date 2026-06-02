@@ -2353,6 +2353,10 @@
       "value": "토픽이 아직 로드 중입니다"
     },
     {
+      "name": "topic_action_resume_reading",
+      "value": "마지막 읽은 위치로"
+    },
+    {
       "name": "topic_many_replies_title",
       "value": "답글이 많음"
     },
