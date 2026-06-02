@@ -9,18 +9,19 @@ import { hdsMaterial, HdsTabs, HdsTabsController, HdsTabsFloatingStyle } from '@
  */
 @ComponentV2
 export struct HdsMiniBarButton {
-  @Param barWidth: number = 50
-  @Param barHeight: number = 50
-  @Param activityPadding: number = 16
-  @Param controller: HdsTabsController = new HdsTabsController()
-  @Param maskColor: ResourceColor = Color.Transparent
-  @Param materialType: hdsMaterial.MaterialType = hdsMaterial.MaterialType.IMMERSIVE
-  @Param materialLevel: hdsMaterial.MaterialLevel = hdsMaterial.MaterialLevel.ADAPTIVE
-  @Param barPosition: BarPosition = BarPosition.End
-  @Param barOverlap: boolean = true
-  @Event onButtonClick?: () => void
+  @Param barWidth: number = 50;
+  @Param barHeight: number = 50;
+  @Param activityPadding: number = 16;
+  @Param controller: HdsTabsController = new HdsTabsController();
+  @Param maskColor: ResourceColor = Color.Transparent;
+  @Param barBottomMargin: number = 8;
+  @Param materialType: hdsMaterial.MaterialType = hdsMaterial.MaterialType.IMMERSIVE;
+  @Param materialLevel: hdsMaterial.MaterialLevel = hdsMaterial.MaterialLevel.ADAPTIVE;
+  @Param barPosition: BarPosition = BarPosition.End;
+  @Param barOverlap: boolean = true;
+  @Event onButtonClick?: () => void;
 
-  @BuilderParam buttonContent: () => void = this.defaultButtonBuilder
+  @BuilderParam buttonContent: () => void = this.defaultButtonBuilder;
 
   @Builder defaultButtonBuilder() {
     SymbolGlyph($r('sys.symbol.plus'))
@@ -39,8 +40,7 @@ export struct HdsMiniBarButton {
   build() {
     Stack() {
       HdsTabs({ controller: this.controller }) {
-        TabContent()
-          .tabBar(this.buttonContent())
+        TabContent().tabBar(this.buttonContent())
       }
       .barWidth(this.barWidth)
       .barHeight(this.barHeight)
@@ -50,10 +50,7 @@ export struct HdsMiniBarButton {
         gradientMask: {
           maskColor: this.maskColor,
         },
-        // Center the material button vertically inside the non-clipping activity box.
-        // The box is barHeight + activityPadding*2 tall, so equal top/bottom margins
-        // (== activityPadding) center it. Callers only size the button; centering is the default.
-        barBottomMargin: this.activityPadding,
+        barBottomMargin: this.barBottomMargin,
         systemMaterialEffect: {
           materialType: this.materialType,
           materialLevel: this.materialLevel,

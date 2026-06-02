@@ -444,7 +444,6 @@ export struct TopicDetailPage {
 
       this.ReplyComposerSheetHost()
       this.ReplyContextSheetHost()
-
     }
     .width('100%')
     .height('100%')
