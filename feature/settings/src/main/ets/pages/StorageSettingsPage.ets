@@ -136,11 +136,11 @@ export struct StorageSettingsPage {
         $$this.importSheetVisible,
         this.ImportPasswordSheet(),
         defaultSheetOptions(
-          SheetSize.MEDIUM,
+          SheetSize.LARGE,
           () => {
             this.closeImportSheet()
           },
-          [SheetSize.MEDIUM, SheetSize.LARGE],
+          [SheetSize.LARGE],
         ),
       )
   }
