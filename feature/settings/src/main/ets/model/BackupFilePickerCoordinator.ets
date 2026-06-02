@@ -1,5 +1,6 @@
 import { common } from '@kit.AbilityKit'
 import { fileIo, picker } from '@kit.CoreFileKit'
+import { util } from '@kit.ArkTS'
 import {
   BackupService,
   type BackupAppMetadata,
@@ -16,7 +17,11 @@ export interface BackupImportSelection {
 }
 
 export class BackupFilePickerCoordinator {
-  static async exportBackup(context: common.UIAbilityContext, metadata: BackupAppMetadata, exportOptions?: BackupExportOptions): Promise<string> {
+  static async exportBackup(
+    context: common.UIAbilityContext,
+    metadata: BackupAppMetadata,
+    exportOptions?: BackupExportOptions,
+  ): Promise<string> {
     const raw = await BackupService.serializeBackup(context, metadata, exportOptions)
     const pickerInstance = new picker.DocumentViewPicker(context)
     const options = new picker.DocumentSaveOptions()
@@ -51,7 +56,10 @@ export class BackupFilePickerCoordinator {
     return await BackupService.decryptAndPreview(raw, password)
   }
 
-  static async restoreSelected(context: common.UIAbilityContext, envelope: BackupEnvelopeV1): Promise<void> {
+  static async restoreSelected(
+    context: common.UIAbilityContext,
+    envelope: BackupEnvelopeV1,
+  ): Promise<void> {
     const result = await BackupService.restoreBackup(context, envelope)
     if (!result.ok) {
       throw new Error(result.message)
@@ -66,7 +74,10 @@ export class BackupFilePickerCoordinator {
   private static writeText(uri: string, raw: string): void {
     let file: fileIo.File | null = null
     try {
-      file = fileIo.openSync(uri, fileIo.OpenMode.WRITE_ONLY | fileIo.OpenMode.CREATE | fileIo.OpenMode.TRUNC)
+      file = fileIo.openSync(
+        uri,
+        fileIo.OpenMode.WRITE_ONLY | fileIo.OpenMode.CREATE | fileIo.OpenMode.TRUNC,
+      )
       fileIo.writeSync(file.fd, raw)
     } finally {
       if (file) {
@@ -75,11 +86,19 @@ export class BackupFilePickerCoordinator {
     }
   }
 
+  // The picker returns a file:// uri, not a sandbox path: readTextSync(path) fails on it with
+  // "No such file or directory" (which surfaced as import doing nothing — never reaching the
+  // encrypted-detection/password prompt). Open the uri to a fd and read bytes via readSync (the
+  // mirror of writeText's writeSync(fd)), then decode like the rest of the codebase.
   private static readText(uri: string): string {
     let file: fileIo.File | null = null
     try {
       file = fileIo.openSync(uri, fileIo.OpenMode.READ_ONLY)
-      return fileIo.readTextSync(uri)
+      const size = fileIo.statSync(file.fd).size
+      const buffer = new ArrayBuffer(size)
+      const bytesRead = fileIo.readSync(file.fd, buffer)
+      const decoder = util.TextDecoder.create('utf-8')
+      return decoder.decodeToString(new Uint8Array(buffer, 0, bytesRead))
     } finally {
       if (file) {
         fileIo.closeSync(file)
