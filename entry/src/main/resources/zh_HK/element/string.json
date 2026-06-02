@@ -2710,7 +2710,7 @@
     },
     {
       "name": "backup_export_subtitle",
-      "value": "備份設定和本機資料；不包含登入/工作階段資料。"
+      "value": "備份設定與本機資料；可選擇包含帳號與登入憑證（將用密碼加密整個備份）。"
     },
     {
       "name": "backup_import_subtitle",

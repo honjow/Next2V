@@ -97,32 +97,52 @@ export struct StorageSettingsPage {
           this.LocalDataSection()
         }
       }
+      // Each sheet must bind to its OWN element. Chaining two .bindSheet() on one container makes
+      // the second (import) shadow the first (export), so the export sheet never opened. Hosting each
+      // on its own 1x1 Blank (the TopicDetailPage reply-sheet pattern) keeps both independently
+      // presentable.
+      this.ExportSheetHost()
+      this.ImportSheetHost()
     }
     .width('100%')
     .height('100%')
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
-    .bindSheet(
-      $$this.exportSheetVisible,
-      this.ExportBackupSheet(),
-      defaultSheetOptions(
-        SheetSize.LARGE,
-        () => {
-          this.closeExportSheet()
-        },
-        [SheetSize.LARGE],
-      ),
-    )
-    .bindSheet(
-      $$this.importSheetVisible,
-      this.ImportPasswordSheet(),
-      defaultSheetOptions(
-        SheetSize.MEDIUM,
-        () => {
-          this.closeImportSheet()
-        },
-        [SheetSize.MEDIUM, SheetSize.LARGE],
-      ),
-    )
+  }
+
+  @Builder
+  ExportSheetHost() {
+    Blank()
+      .width(1)
+      .height(1)
+      .bindSheet(
+        $$this.exportSheetVisible,
+        this.ExportBackupSheet(),
+        defaultSheetOptions(
+          SheetSize.LARGE,
+          () => {
+            this.closeExportSheet()
+          },
+          [SheetSize.LARGE],
+        ),
+      )
+  }
+
+  @Builder
+  ImportSheetHost() {
+    Blank()
+      .width(1)
+      .height(1)
+      .bindSheet(
+        $$this.importSheetVisible,
+        this.ImportPasswordSheet(),
+        defaultSheetOptions(
+          SheetSize.MEDIUM,
+          () => {
+            this.closeImportSheet()
+          },
+          [SheetSize.MEDIUM, SheetSize.LARGE],
+        ),
+      )
   }
 
   @Builder

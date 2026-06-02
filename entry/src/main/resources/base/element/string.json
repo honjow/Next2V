@@ -2710,7 +2710,7 @@
     },
     {
       "name": "backup_export_subtitle",
-      "value": "Back up settings and local data; login/session data is excluded."
+      "value": "Back up settings and local data; optionally include accounts and login credentials (the whole backup is then password-encrypted)."
     },
     {
       "name": "backup_import_subtitle",

@@ -2710,7 +2710,7 @@
     },
     {
       "name": "backup_export_subtitle",
-      "value": "备份设置和本地数据；不包含登录/会话数据。"
+      "value": "备份设置与本地数据；可选包含账号与登录凭据（将用密码加密整个备份）。"
     },
     {
       "name": "backup_import_subtitle",
