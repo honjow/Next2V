@@ -1,6 +1,6 @@
 import { NodeViewModel } from '../viewmodel/NodeViewModel'
 import {
-  AuthSettings, CardEmptyState, CollectionSettings, SavedNode, ApiService, CookieJarSettings,
+  AuthSettings, CacheSettings, CardEmptyState, CollectionSettings, SavedNode, ApiService, CookieJarSettings,
   connectLayoutSafeArea, connectNavStack, connectNodeTopicAction, connectNodeTopicAppbar,
   connectTopicReadStates,
   LayoutSafeAreaState, NodeTopicActionState, NodeTopicAppbarState, PagedListScaffold, PageErrorState,
@@ -10,7 +10,7 @@ import {
   publishNodeTopicAppbarTitleRouteNodeName, publishNodeTopicAppbarTitleNameStates,
   publishNodeTopicAppbarTitleAvatarStates,
   StorageKeys, ThemeConstants, TopicCard, TopicReadStatesState,
-  TopicDetailParams, UserProfileParams, V2exToggleAction, V2exTopic, AppStrings, DiagnosticLogger, translateApiError
+  TopicDetailParams, UserProfileParams, V2exNode, V2exToggleAction, V2exTopic, AppStrings, DiagnosticLogger, translateApiError
 } from 'shared'
 import type { TopicReadState } from 'shared'
 import { common } from '@kit.AbilityKit'
@@ -55,9 +55,56 @@ export struct NodeTopicPage {
     this.syncAppbarIdentity()
     this.publishAppbarReveal(false)
     this.vm.isLoading = true
+    this.setupNodeCache()
+    this.primeFromCache()
     this.loadData()
     this.loadSavedState()
     this.loadSiteNodeFavoriteState()
+  }
+
+  private nodeCacheKey(): string {
+    return 'node:' + (this.currentNodeName() || this.nodeName || '').trim().toLowerCase()
+  }
+
+  // Register cache write-back: each successful network load refreshes this node's cached detail +
+  // first page for the next entry (NodeViewModel invokes these savers on success).
+  private setupNodeCache(): void {
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    const nodeName = (this.currentNodeName() || this.nodeName || '').trim()
+    if (!nodeName) {
+      return
+    }
+    const cacheKey = this.nodeCacheKey()
+    this.vm.setCacheSavers(
+      (node: V2exNode | null) => {
+        CacheSettings.saveNodeDetail(context, nodeName, node).catch((_error: Error) => {})
+      },
+      (topics: V2exTopic[]) => {
+        CacheSettings.saveTopicList(context, cacheKey, topics).catch((_error: Error) => {})
+      }
+    )
+  }
+
+  // Cache-first: paint the last-known node header + first page immediately (no spinner) while the
+  // concurrent loadData() network call revalidates. prefillFromCache only fills empty fields, so if
+  // the network wins the race the cache application is a harmless no-op.
+  private primeFromCache(): void {
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    const nodeName = (this.currentNodeName() || this.nodeName || '').trim()
+    if (!nodeName) {
+      return
+    }
+    const cacheKey = this.nodeCacheKey()
+    CacheSettings.loadNodeDetail(context, nodeName)
+      .then((node: V2exNode | null) => {
+        CacheSettings.loadTopicList(context, cacheKey)
+          .then((topics: V2exTopic[]) => {
+            this.vm.prefillFromCache(node, topics)
+            this.syncAppbarIdentity()
+          })
+          .catch((_error: Error) => {})
+      })
+      .catch((_error: Error) => {})
   }
 
   build() {

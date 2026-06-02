@@ -1,6 +1,6 @@
 import { common } from '@kit.AbilityKit'
 import { relationalStore } from '@kit.ArkData'
-import { V2exReply, V2exTopic } from '../network/NetworkTypes'
+import { V2exNode, V2exReply, V2exTopic } from '../network/NetworkTypes'
 import { LocalDataStore } from '../storage/LocalDataStore'
 import {
   cleanupPreparedPayloadFile,
@@ -14,14 +14,17 @@ import {
   unlinkPayloadFileBestEffort,
 } from './CachePayloadFiles'
 import {
+  CACHE_KIND_NODE_DETAIL,
   CACHE_KIND_TOPIC_DETAIL,
   CACHE_KIND_TOPIC_LIST,
   CACHE_KINDS_SQL,
   KEY_CACHE_INDEX,
+  KEY_PREFIX_NODE_DETAIL,
   KEY_PREFIX_TOPIC_DETAIL,
   KEY_PREFIX_TOPIC_LIST,
   MAX_CACHE_PAYLOAD_SIZE,
   MAX_TOPIC_LIST_ITEMS,
+  NODE_DETAIL_TTL_SECONDS,
   TOPIC_DETAIL_TTL_SECONDS,
   TOPIC_LIST_TTL_SECONDS,
 } from './CachePolicy'
@@ -46,6 +49,8 @@ const SQL_SELECT_PRUNE_TOPIC_LIST_PAYLOAD_PATHS: string = 'SELECT payload_path F
 const SQL_PRUNE_TOPIC_LIST_ROWS: string = 'DELETE FROM cache_entries WHERE kind = \'topic_list\' AND cache_key NOT IN (SELECT cache_key FROM cache_entries WHERE kind = \'topic_list\' ORDER BY accessed_at DESC, cached_at DESC, cache_key ASC LIMIT 32)'
 const SQL_SELECT_PRUNE_TOPIC_DETAIL_PAYLOAD_PATHS: string = 'SELECT payload_path FROM cache_entries WHERE kind = \'topic_detail\' AND cache_key NOT IN (SELECT cache_key FROM cache_entries WHERE kind = \'topic_detail\' ORDER BY accessed_at DESC, cached_at DESC, cache_key ASC LIMIT 200)'
 const SQL_PRUNE_TOPIC_DETAIL_ROWS: string = 'DELETE FROM cache_entries WHERE kind = \'topic_detail\' AND cache_key NOT IN (SELECT cache_key FROM cache_entries WHERE kind = \'topic_detail\' ORDER BY accessed_at DESC, cached_at DESC, cache_key ASC LIMIT 200)'
+const SQL_SELECT_PRUNE_NODE_DETAIL_PAYLOAD_PATHS: string = 'SELECT payload_path FROM cache_entries WHERE kind = \'node_detail\' AND cache_key NOT IN (SELECT cache_key FROM cache_entries WHERE kind = \'node_detail\' ORDER BY accessed_at DESC, cached_at DESC, cache_key ASC LIMIT 200)'
+const SQL_PRUNE_NODE_DETAIL_ROWS: string = 'DELETE FROM cache_entries WHERE kind = \'node_detail\' AND cache_key NOT IN (SELECT cache_key FROM cache_entries WHERE kind = \'node_detail\' ORDER BY accessed_at DESC, cached_at DESC, cache_key ASC LIMIT 200)'
 const SQL_SELECT_CACHE_PAYLOAD_SIZE: string = `SELECT COALESCE(SUM(size), 0) AS total_size FROM cache_entries WHERE kind IN (${CACHE_KINDS_SQL})`
 const SQL_SELECT_PRUNE_CACHE_PAYLOAD_PATHS: string = `SELECT payload_path FROM cache_entries WHERE cache_key IN (SELECT cache_key FROM cache_entries WHERE kind IN (${CACHE_KINDS_SQL}) ORDER BY accessed_at ASC, cached_at ASC, cache_key ASC LIMIT ?)`
 const SQL_PRUNE_CACHE_PAYLOAD_SIZE: string = `DELETE FROM cache_entries WHERE cache_key IN (SELECT cache_key FROM cache_entries WHERE kind IN (${CACHE_KINDS_SQL}) ORDER BY accessed_at ASC, cached_at ASC, cache_key ASC LIMIT ?)`
@@ -54,6 +59,11 @@ const SQL_SELECT_ACTIVE_CACHE_PAYLOAD_PATHS: string = `SELECT payload_path FROM 
 export interface TopicDetailCache {
   topic: V2exTopic | null
   replies: V2exReply[]
+  cachedAt: number
+}
+
+export interface NodeDetailCache {
+  node: V2exNode | null
   cachedAt: number
 }
 
@@ -187,6 +197,55 @@ export class CacheSettings {
     } catch (error) {
       const e = error as Error
       throw new Error(e.message || 'Failed to save detail cache')
+    }
+  }
+
+  // Node header detail (avatar/title/header/topics). A V2exNode is tiny so it always inlines into
+  // payload_text (never the 256KB file path) — the topicDetail file name is reused only to satisfy
+  // saveCacheEntry's signature and is not actually written.
+  static async loadNodeDetail(context: common.UIAbilityContext, nodeName: string): Promise<V2exNode | null> {
+    try {
+      const rowKey = CacheSettings.nodeDetailRowKey(nodeName)
+      const store = await LocalDataStore.open(context)
+      const row = await CacheSettings.loadCacheEntry(context, store, rowKey, CACHE_KIND_NODE_DETAIL)
+      if (!row) {
+        return null
+      }
+      const parsed = CacheSettings.parseNodeDetail(row.payloadText)
+      if (!parsed || !parsed.node) {
+        await CacheSettings.deleteCacheEntry(context, store, rowKey, CACHE_KIND_NODE_DETAIL)
+        return null
+      }
+      await CacheSettings.touchCacheEntry(store, rowKey, CACHE_KIND_NODE_DETAIL)
+      return parsed.node
+    } catch (error) {
+      return null
+    }
+  }
+
+  static async saveNodeDetail(context: common.UIAbilityContext, nodeName: string, node: V2exNode | null): Promise<void> {
+    if (!node) {
+      return
+    }
+    try {
+      const now = CacheSettings.nowSeconds()
+      const payload: NodeDetailCache = { node: node, cachedAt: now }
+      const rowKey = CacheSettings.nodeDetailRowKey(nodeName)
+      const store = await LocalDataStore.open(context)
+      await CacheSettings.saveCacheEntry(
+        context,
+        store,
+        rowKey,
+        CACHE_KIND_NODE_DETAIL,
+        topicDetailPayloadFileName(rowKey),
+        JSON.stringify(payload),
+        now,
+        now + NODE_DETAIL_TTL_SECONDS
+      )
+      await CacheSettings.pruneCache(context, store, now)
+    } catch (error) {
+      const e = error as Error
+      throw new Error(e.message || 'Failed to save node detail cache')
     }
   }
 
@@ -348,6 +407,7 @@ export class CacheSettings {
     await CacheSettings.deleteExpiredRows(context, store, now)
     await CacheSettings.deleteRowsWithPayloadFiles(context, store, SQL_SELECT_PRUNE_TOPIC_LIST_PAYLOAD_PATHS, [], SQL_PRUNE_TOPIC_LIST_ROWS, [])
     await CacheSettings.deleteRowsWithPayloadFiles(context, store, SQL_SELECT_PRUNE_TOPIC_DETAIL_PAYLOAD_PATHS, [], SQL_PRUNE_TOPIC_DETAIL_ROWS, [])
+    await CacheSettings.deleteRowsWithPayloadFiles(context, store, SQL_SELECT_PRUNE_NODE_DETAIL_PAYLOAD_PATHS, [], SQL_PRUNE_NODE_DETAIL_ROWS, [])
     await CacheSettings.pruneCachePayloadSize(context, store)
     await CacheSettings.deleteOrphanPayloadFiles(context, store)
   }
@@ -545,6 +605,18 @@ export class CacheSettings {
     }
   }
 
+  private static parseNodeDetail(raw: string): NodeDetailCache | null {
+    try {
+      const parsed = JSON.parse(raw) as NodeDetailCache
+      if (!parsed || !parsed.node) {
+        return null
+      }
+      return parsed
+    } catch (error) {
+      return null
+    }
+  }
+
   private static deleteLegacyCacheBestEffort(context: common.UIAbilityContext): void {
     withPreferencesStore<void>(context, STORE_NAME, (store: SettingsPreferencesStore) => {
       const index = CacheSettings.readLegacyIndex(store)
@@ -579,6 +651,11 @@ export class CacheSettings {
 
   private static topicDetailRowKey(topicId: number): string {
     return KEY_PREFIX_TOPIC_DETAIL + topicId.toString()
+  }
+
+  // Node names are case-insensitive on V2EX; normalize so 'Go'/'go' share one cache row.
+  private static nodeDetailRowKey(nodeName: string): string {
+    return KEY_PREFIX_NODE_DETAIL + (nodeName || '').trim().toLowerCase()
   }
 
   private static nowSeconds(): number {

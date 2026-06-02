@@ -49,10 +49,33 @@ export class NodeViewModel {
   // string == anonymous public HTML. Set by NodeTopicPage before each web load; not @Trace
   // because it is read only inside async load methods, never in build().
   private nodeTopicsWebCookie: string = ''
+  // Cache write-back hooks injected by NodeTopicPage (which owns the UIAbilityContext). Fire-and-
+  // forget: a network success rewrites the node-detail / node-topics cache for the next entry.
+  private nodeDetailCacheSaver: ((node: V2exNode | null) => void) | null = null
+  private nodeTopicsCacheSaver: ((topics: V2exTopic[]) => void) | null = null
 
   /** Carry the current authenticated cookie into subsequent web node-topic loads (page 1 + load-more). */
   setNodeTopicsWebCookie(cookie: string): void {
     this.nodeTopicsWebCookie = (cookie || '').trim()
+  }
+
+  setCacheSavers(
+    detailSaver: (node: V2exNode | null) => void,
+    listSaver: (topics: V2exTopic[]) => void
+  ): void {
+    this.nodeDetailCacheSaver = detailSaver
+    this.nodeTopicsCacheSaver = listSaver
+  }
+
+  // Cache-first prefill. Fill only empty fields so a network publish that already landed (or lands
+  // first) is never clobbered by stale cache — the request-id/source arbitration stays authoritative.
+  prefillFromCache(node: V2exNode | null, topics: V2exTopic[]): void {
+    if (node && !this.nodeDetail) {
+      this.nodeDetail = node
+    }
+    if (topics.length > 0 && this.nodeTopics.length === 0) {
+      this.nodeTopics = topics
+    }
   }
 
   beginNodeTopicsPageOneLoad(nodeName: string, source: NodeTopicPageOneSource, requestId: number): void {
@@ -118,6 +141,9 @@ export class NodeViewModel {
     this.nodeTopicsHasMore = hasMore
     this.nodeTopicsPageOnePublished = true
     this.nodeTopicsPageOneSettled = true
+    if (this.nodeTopicsCacheSaver) {
+      this.nodeTopicsCacheSaver(topics)
+    }
     DiagnosticLogger.info('ui_lifecycle', 'node_topic_source_success', {
       nodeName: (nodeName || '').trim(),
       source: source,
@@ -212,6 +238,9 @@ export class NodeViewModel {
     this.nodeDetailError = ''
     try {
       this.nodeDetail = await this.api.getNodeByName(nodeName)
+      if (this.nodeDetailCacheSaver) {
+        this.nodeDetailCacheSaver(this.nodeDetail)
+      }
     } catch (error) {
       this.nodeDetail = null
       this.nodeDetailError = translateApiError(error)
@@ -230,6 +259,9 @@ export class NodeViewModel {
     try {
       const res = await this.apiV2.getNode(cleanToken, nodeName)
       this.nodeDetail = res.data
+      if (this.nodeDetailCacheSaver) {
+        this.nodeDetailCacheSaver(this.nodeDetail)
+      }
     } catch (error) {
       this.nodeDetail = null
       this.nodeDetailError = translateApiError(error)
