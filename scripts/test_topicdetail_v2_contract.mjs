@@ -64,6 +64,26 @@ const INDEX = 'entry/src/main/ets/pages/Index.ets';
   }
 }
 
+// 1b) Resume-reading affordance: entry no longer auto-scrolls to the saved floor; instead it
+//     surfaces a button that performs the jump on tap and is consumed (hidden) afterwards. -----------
+{
+  const code = strip(read(PAGE));
+  must(/@Local\s+private\s+showResumeButton\s*:\s*boolean/.test(code),
+    `${PAGE}: declares @Local showResumeButton flag`);
+  // restoreReadPosition surfaces the button instead of scrolling on entry
+  must(/this\.showResumeButton\s*=\s*true/.test(code),
+    `${PAGE}: restoreReadPosition shows the resume button (no auto-scroll on entry)`);
+  // the tap handler jumps to the floor and consumes the affordance
+  must(/resumeToSavedFloor\(\)/.test(code) && /this\.showResumeButton\s*=\s*false/.test(code),
+    `${PAGE}: tap jumps to the saved floor and consumes (hides) the resume button`);
+  // scrolling the saved floor into view auto-dismisses the button
+  must(/maybeDismissResumeButton\(/.test(code),
+    `${PAGE}: scroll-into-view auto-dismisses the resume button`);
+  // accessibility text for the button is an i18n resource (not a hardcoded string)
+  must(/R_TOPIC_ACTION_RESUME_READING/.test(code),
+    `${PAGE}: resume button uses the i18n accessibility resource`);
+}
+
 // 2) TopicDetailActionState is the V2 command-bus mirror (replaced the V1 listener adapter) ----------
 {
   const code = strip(read(ACTION_MIRROR));

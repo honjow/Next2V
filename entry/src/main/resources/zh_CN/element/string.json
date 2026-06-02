@@ -2353,6 +2353,10 @@
       "value": "主题仍在加载"
     },
     {
+      "name": "topic_action_resume_reading",
+      "value": "回到上次阅读"
+    },
+    {
       "name": "topic_many_replies_title",
       "value": "回复数量较多"
     },
