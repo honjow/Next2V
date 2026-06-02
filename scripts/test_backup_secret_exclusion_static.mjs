@@ -62,4 +62,18 @@ assert.ok(sectionNamesMatch, 'BACKUP_SECTION_NAMES must be defined');
 assert.ok(!sectionNamesMatch[1].includes('userInfo'), 'userInfo must not be a plaintext-eligible section');
 assert.ok(types.includes('BACKUP_ENCRYPTED_ONLY_SECTION_NAMES'), 'userInfo must be an encryption-only section');
 
+// 4. The plaintext preferences adapter now dumps the WHOLE next2v_settings store (which also holds
+//    the network-proxy profiles embedding the proxy password). The ONLY thing keeping that password
+//    out of the plaintext envelope is the denylist, so verify the guard is wired and complete.
+const denylist = fs.readFileSync(path.join(dir, 'BackupSecretDenylist.ets'), 'utf8');
+for (const marker of ['proxy', 'password', 'token', 'cookie', 'secret']) {
+  assert.ok(denylist.includes(`'${marker}'`), `BackupSecretDenylist must exclude keys containing '${marker}'`);
+}
+assert.ok(/isExcluded\s*\(/.test(denylist), 'BackupSecretDenylist must expose isExcluded(key)');
+const prefAdapter = fs.readFileSync(path.join(dir, 'BackupPreferencesAdapter.ets'), 'utf8');
+assert.ok(prefAdapter.includes('BackupSecretDenylist.isExcluded'), 'BackupPreferencesAdapter must filter the whole-store dump through BackupSecretDenylist.isExcluded');
+// Both the export (dump) and the import (write-back) sides must consult the denylist, so a tampered
+// backup can never smuggle a credential key back into the store either.
+assert.ok((prefAdapter.match(/BackupSecretDenylist\.isExcluded/g) || []).length >= 2, 'BackupPreferencesAdapter must apply the denylist on both export and restore');
+
 console.log('PASS backup secret exclusion static');

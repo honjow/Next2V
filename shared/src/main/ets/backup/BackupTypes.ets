@@ -103,6 +103,17 @@ export interface BackupDataV1 {
 }
 
 export interface BackupPreferencesSection {
+  // Whole `next2v_settings` store dump (minus the secret/runtime denylist). This is the source of
+  // truth for backups created by this build onward: every setting persisted to the unified store is
+  // captured automatically, so new settings back up without a per-field allowlist. Values are the
+  // raw preference scalars (booleans/numbers, or JSON strings for composite settings).
+  settings?: Record<string, string | number | boolean>
+  // feedTabs lives in its own preferences store (next2v_feed_tabs), NOT next2v_settings, so the
+  // whole-store dump above cannot reach it; it stays a typed field carried alongside `settings`.
+  feedTabs?: BackupFeedTabsPreferences
+  // ── Legacy typed fields (read-only on import) ──
+  // Backups created before the whole-store dump carried these per-setting fields instead of
+  // `settings`. They are retained so older backups still restore; new exports no longer write them.
   apiDomain?: BackupApiDomainPreferences
   language?: BackupLanguagePreferences
   theme?: BackupThemePreferences
@@ -110,7 +121,6 @@ export interface BackupPreferencesSection {
   media?: BackupMediaPreferences
   reading?: BackupReadingPreferences
   reply?: BackupReplyPreferences
-  feedTabs?: BackupFeedTabsPreferences
   autoDailyCheckin?: BackupAutoDailyCheckinPreferences
   homeTab?: BackupHomeTabPreferences
   topicDetailReplyAction?: BackupTopicDetailReplyActionPreferences

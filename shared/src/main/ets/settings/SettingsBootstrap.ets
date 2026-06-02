@@ -53,6 +53,38 @@ export class SettingsBootstrap {
     await SettingsBootstrap.restoreReplyActionAlignment(context, settingsStore)
   }
 
+  /**
+   * Re-apply the store-backed settings into AppStorage / live state holders after a backup import
+   * has written them directly into the unified store. Mirrors loadAll's settings restores, but
+   * deliberately skips cookie jar, multi-account, the startup check-in trigger, and the network
+   * proxy: those are runtime/credential surfaces that the import either must not touch (plaintext)
+   * or restores through the encrypted account path (userInfo).
+   */
+  static async reapplyFromStore(context: common.UIAbilityContext): Promise<void> {
+    BlockedListSettings.setContext(context)
+    let settingsStore: SettingsPreferencesStore | undefined = undefined
+    try {
+      settingsStore = await preferences.getPreferences(context, STORE_NAME_SETTINGS)
+    } catch (_error) {
+      // fall back to per-setting load(context) below
+    }
+    await SettingsBootstrap.restoreDiagnostics(context, settingsStore)
+    await SettingsBootstrap.restoreApiDomain(context, settingsStore)
+    await SettingsBootstrap.restoreLanguage(context, settingsStore)
+    await SettingsBootstrap.restoreTheme(context, settingsStore)
+    await SettingsBootstrap.restoreAvatarAppearance(context, settingsStore)
+    await SettingsBootstrap.restoreMedia(context, settingsStore)
+    await SettingsBootstrap.restoreReplyDisplay(context, settingsStore)
+    await SettingsBootstrap.restoreReading(context, settingsStore)
+    await SettingsBootstrap.restoreHomeTabs(context, settingsStore)
+    await SettingsBootstrap.restoreTopicDetailReplyAction(context, settingsStore)
+    await SettingsBootstrap.restoreFeedTabs(context)
+    await SettingsBootstrap.restoreBlockedLists(context)
+    await SettingsBootstrap.restoreAutoDailyCheckin(context, settingsStore)
+    await SettingsBootstrap.restoreReplyCardStyle(context, settingsStore)
+    await SettingsBootstrap.restoreReplyActionAlignment(context, settingsStore)
+  }
+
   private static async restoreApiDomain(context: common.UIAbilityContext, settingsStore?: SettingsPreferencesStore): Promise<void> {
     await (settingsStore
       ? ApiDomainSettings.loadFromStore(settingsStore)
