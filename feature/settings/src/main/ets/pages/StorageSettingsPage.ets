@@ -1,4 +1,5 @@
 import { common } from '@kit.AbilityKit'
+import { promptAction } from '@kit.ArkUI'
 import type {
   BackupEnvelopeV1,
   BackupExportOptions,
@@ -669,15 +670,17 @@ export struct StorageSettingsPage {
           return
         }
         if (!selection.parseResult.ok || !selection.parseResult.envelope) {
-          this.backupMessage = StorageSettingsCoordinator.backupErrorMessage(
-            selection.parseResult.code || selection.parseResult.message,
+          this.showBackupToast(
+            StorageSettingsCoordinator.backupErrorMessage(
+              selection.parseResult.code || selection.parseResult.message,
+            ),
           )
           return
         }
         this.showImportPreview(selection.parseResult.envelope)
       })
       .catch((error: Error) => {
-        this.backupMessage = StorageSettingsCoordinator.backupErrorMessage(error.message)
+        this.showBackupToast(StorageSettingsCoordinator.backupErrorMessage(error.message))
       })
   }
 
@@ -764,13 +767,19 @@ export struct StorageSettingsPage {
     }
     BackupFilePickerCoordinator.restoreSelected(this.hostContext(), envelope)
       .then(() => {
-        this.backupMessage = StorageSettingsCoordinator.backupSuccessMessage(false)
+        this.showBackupToast(StorageSettingsCoordinator.backupSuccessMessage(false))
         this.pendingBackupEnvelope = null
         this.loadCacheStats()
       })
       .catch((error: Error) => {
-        this.backupMessage = StorageSettingsCoordinator.backupErrorMessage(error.message)
+        this.showBackupToast(StorageSettingsCoordinator.backupErrorMessage(error.message))
       })
+  }
+
+  // Import outcomes are shown as a toast, not the export-row subtitle: the user tapped 导入备份, so
+  // the result shouldn't land under the unrelated 导出备份 row (export still uses backupMessage there).
+  private showBackupToast(message: string): void {
+    promptAction.openToast({ message: message }).catch((_error: Error) => {})
   }
 
   private hostContext(): common.UIAbilityContext {
