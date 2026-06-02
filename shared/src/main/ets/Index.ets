@@ -209,8 +209,8 @@ export type {
   BackupParseResult,
   BackupRestoreResult,
   BackupCipherMeta,
-  BackupSealResult,
 } from './backup/BackupTypes'
+export type { BackupSealResult } from './backup/BackupCrypto'
 export { LocalDataStore, LOCAL_DATA_DB_NAME, LOCAL_DATA_SCHEMA_VERSION } from './storage/LocalDataStore'
 export { MotionHandStateService } from './services/MotionHandStateService'
 export type { MotionHandEdge } from './services/MotionHandStateService'

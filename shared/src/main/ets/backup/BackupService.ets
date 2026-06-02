@@ -2,6 +2,7 @@ import { common } from '@kit.AbilityKit'
 import { BackupAccountAdapter } from './BackupAccountAdapter'
 import { BackupChecksum } from './BackupChecksum'
 import { BackupCrypto } from './BackupCrypto'
+import type { BackupSealResult } from './BackupCrypto'
 import { BackupLocalDataAdapter } from './BackupLocalDataAdapter'
 import { BackupPreferencesAdapter } from './BackupPreferencesAdapter'
 import { BackupValidator } from './BackupValidator'
@@ -13,7 +14,6 @@ import type {
   BackupParseResult,
   BackupPreview,
   BackupRestoreResult,
-  BackupSealResult,
   BackupSectionName,
 } from './BackupTypes'
 import {
