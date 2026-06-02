@@ -23,7 +23,9 @@ export interface NodeTopicPageOneLoadOptions {
 @ObservedV2
 export class NodeViewModel {
   @Trace nodeTopics: V2exTopic[] = []
-  nodeDetail: V2exNode | null = null
+  // @Trace so the node-info card (a @Builder in NodeTopicPage's build()) re-renders when the detail
+  // resolves async — without it the card would stick on its initial null/empty render.
+  @Trace nodeDetail: V2exNode | null = null
   nodeDetailError: string = ''
   nodeTopicsUseV2: boolean = false
   nodeTopicsPage: number = 1

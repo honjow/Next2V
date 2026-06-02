@@ -87,6 +87,9 @@ export {
 export {
   NodeTopicAppbarState, connectNodeTopicAppbar,
   publishNodeTopicSaved, publishNodeTopicSiteFavorited, publishNodeTopicTitle, publishNodeTopicSubtitle,
+  publishNodeTopicAppbarTitleNodeName, publishNodeTopicAppbarTitleNodeAvatarUrl,
+  publishNodeTopicAppbarTitleRouteNodeName, publishNodeTopicAppbarTitleNameStates,
+  publishNodeTopicAppbarTitleAvatarStates,
 } from './state/NodeTopicAppbarState'
 export {
   UserProfileAppbarState, connectUserProfileAppbar,

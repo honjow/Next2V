@@ -30,6 +30,7 @@ export struct PagedListScaffold {
   @Event onRefresh?: () => Promise<void>
   @Event onReachEnd?: () => void
   @Event onLoadMoreRetry?: () => void
+  @Event onDidScroll?: (offset: number, state: ScrollState) => void
 
   build() {
     if (this.isInitialLoading) {
@@ -60,7 +61,8 @@ export struct PagedListScaffold {
         refreshThreshold: this.refreshThreshold,
         scrollEnabled: this.scrollEnabled,
         onRefresh: this.onRefresh,
-        onReachEnd: this.onReachEnd
+        onReachEnd: this.onReachEnd,
+        onDidScroll: this.onDidScroll
       }) {
         this.content()
 
