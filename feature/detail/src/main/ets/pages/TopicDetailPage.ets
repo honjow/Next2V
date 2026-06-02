@@ -462,26 +462,29 @@ export struct TopicDetailPage {
 
   @Builder TopicDetailReplyActionBar() {
     Row() {
-      HdsMiniBarButton({
-        controller: this.replyButtonController,
-        barWidth: this.TOPIC_DETAIL_REPLY_BUTTON_SIZE,
-        barHeight: this.TOPIC_DETAIL_REPLY_BUTTON_SIZE,
-        activityPadding: this.TOPIC_DETAIL_REPLY_BUTTON_ACTIVITY_PADDING,
-        onButtonClick: () => {
-          this.openReplyEditor()
-        },
-      }) {
-        SymbolGlyph(this.authState.configured
-          ? $r('sys.symbol.pencil_line_1')
-          : $r('sys.symbol.lock'))
-          .fontSize(28)
-          .fontColor([$r('sys.color.ohos_id_color_text_primary')])
-          .fontWeight(FontWeight.Bold)
+      Row() {
+        HdsMiniBarButton({
+          controller: this.replyButtonController,
+          barWidth: this.TOPIC_DETAIL_REPLY_BUTTON_SIZE,
+          barHeight: this.TOPIC_DETAIL_REPLY_BUTTON_SIZE,
+          activityPadding: this.TOPIC_DETAIL_REPLY_BUTTON_ACTIVITY_PADDING,
+          onButtonClick: () => {
+            this.openReplyEditor()
+          },
+        }) {
+          SymbolGlyph(this.authState.configured
+            ? $r('sys.symbol.pencil_line_1')
+            : $r('sys.symbol.lock'))
+            .fontSize(28)
+            .fontColor([$r('sys.color.ohos_id_color_text_primary')])
+            .fontWeight(FontWeight.Bold)
+        }
       }
+      .translate({ x: this.replyButtonEdgeX() })
     }
     .width('100%')
     .height(this.TOPIC_DETAIL_REPLY_BUTTON_SIZE + this.TOPIC_DETAIL_REPLY_BUTTON_ACTIVITY_PADDING * 2)
-    .justifyContent(this.topicDetailReplyActionBarAlign())
+    .justifyContent(FlexAlign.Start)
     .alignItems(VerticalAlign.Center)
     .position({ x: 0, y: this.topicDetailReplyActionBarTop() - this.TOPIC_DETAIL_REPLY_BUTTON_ACTIVITY_PADDING })
     .hitTestBehavior(HitTestMode.Transparent)
@@ -495,31 +498,50 @@ export struct TopicDetailPage {
     )
   }
 
-  private topicDetailReplyActionBarAlign(): FlexAlign {
-    return TopicDetailFloatingActionCoordinator.actionBarAlign(this.visualMotionHandEdge)
+  // Smart-edge horizontal position as a CONTINUOUS value so the @Monitor('motion.edge')
+  // animateTo can interpolate it smoothly. justifyContent's FlexAlign is discrete and cannot
+  // be tweened — that was the cause of the hard left/right jump (lost in the V1->V2 migration).
+  // left edge => 0; right edge => rootWidth - the button's activity-box width.
+  private replyButtonEdgeX(): number {
+    if (this.visualMotionHandEdge === 'left') {
+      return 0
+    }
+    const activityWidth = this.TOPIC_DETAIL_REPLY_BUTTON_SIZE + this.TOPIC_DETAIL_REPLY_BUTTON_ACTIVITY_PADDING * 2
+    return Math.max(0, this.detailRootWidth - activityWidth)
+  }
+
+  private resumeButtonEdgeX(): number {
+    if (this.visualMotionHandEdge === 'left') {
+      return 0
+    }
+    const activityWidth = this.TOPIC_DETAIL_RESUME_BUTTON_SIZE + this.TOPIC_DETAIL_REPLY_BUTTON_ACTIVITY_PADDING * 2
+    return Math.max(0, this.detailRootWidth - activityWidth)
   }
 
   // Smaller secondary FAB stacked directly above the reply button on the same (smart-edge) side.
   @Builder TopicDetailResumeButton() {
     Row() {
-      HdsMiniBarButton({
-        controller: this.resumeButtonController,
-        barWidth: this.TOPIC_DETAIL_RESUME_BUTTON_SIZE,
-        barHeight: this.TOPIC_DETAIL_RESUME_BUTTON_SIZE,
-        activityPadding: this.TOPIC_DETAIL_REPLY_BUTTON_ACTIVITY_PADDING,
-        onButtonClick: () => {
-          this.resumeToSavedFloor()
-        },
-      }) {
-        SymbolGlyph($r('sys.symbol.chevron_down_2_circle'))
-          .fontSize(24)
-          .fontColor([$r('sys.color.ohos_id_color_text_primary')])
-          .accessibilityText(AppStrings.text(AppStrings.R_TOPIC_ACTION_RESUME_READING, 'Resume reading'))
+      Row() {
+        HdsMiniBarButton({
+          controller: this.resumeButtonController,
+          barWidth: this.TOPIC_DETAIL_RESUME_BUTTON_SIZE,
+          barHeight: this.TOPIC_DETAIL_RESUME_BUTTON_SIZE,
+          activityPadding: this.TOPIC_DETAIL_REPLY_BUTTON_ACTIVITY_PADDING,
+          onButtonClick: () => {
+            this.resumeToSavedFloor()
+          },
+        }) {
+          SymbolGlyph($r('sys.symbol.chevron_down_2_circle'))
+            .fontSize(24)
+            .fontColor([$r('sys.color.ohos_id_color_text_primary')])
+            .accessibilityText(AppStrings.text(AppStrings.R_TOPIC_ACTION_RESUME_READING, 'Resume reading'))
+        }
       }
+      .translate({ x: this.resumeButtonEdgeX() })
     }
     .width('100%')
     .height(this.TOPIC_DETAIL_RESUME_BUTTON_SIZE + this.TOPIC_DETAIL_REPLY_BUTTON_ACTIVITY_PADDING * 2)
-    .justifyContent(this.topicDetailReplyActionBarAlign())
+    .justifyContent(FlexAlign.Start)
     .alignItems(VerticalAlign.Center)
     .position({ x: 0, y: this.topicDetailResumeButtonTop() - this.TOPIC_DETAIL_REPLY_BUTTON_ACTIVITY_PADDING })
     .hitTestBehavior(HitTestMode.Transparent)
@@ -531,7 +553,7 @@ export struct TopicDetailPage {
     return (
       this.topicDetailReplyActionBarTop() -
       this.TOPIC_DETAIL_RESUME_BUTTON_SIZE -
-      ThemeConstants.SPACE_MD
+      ThemeConstants.SPACE_XL
     )
   }
 
