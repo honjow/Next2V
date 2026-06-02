@@ -15,6 +15,15 @@ export class NodeTopicAppbarState {
   @Trace siteFavorited: boolean = false
   @Trace title: string = ''
   @Trace subtitle: string = ''
+  // Scroll-reveal appbar identity (mirrors the user-profile pattern): once the node-info card's name
+  // scrolls under the overlaid title bar, NodeTopicPage publishes the node name + icon here so Index
+  // renders an icon+name title (via a ComponentContent), and clears them when the card is back in view.
+  // Keyed by routeNodeName so stacked NodeTopic pages each own their entry.
+  @Trace titleNodeName: string = ''
+  @Trace titleNodeAvatarUrl: string = ''
+  @Trace titleRouteNodeName: string = ''
+  @Trace titleNameStates: string = '{}'
+  @Trace titleAvatarStates: string = '{}'
 }
 
 const NODE_TOPIC_APPBAR_V2_KEY: string = 'v2:nodeTopicAppbar'
@@ -35,4 +44,19 @@ export function publishNodeTopicTitle(value: string): void {
 }
 export function publishNodeTopicSubtitle(value: string): void {
   connectNodeTopicAppbar().subtitle = value
+}
+export function publishNodeTopicAppbarTitleNodeName(value: string): void {
+  connectNodeTopicAppbar().titleNodeName = value
+}
+export function publishNodeTopicAppbarTitleNodeAvatarUrl(value: string): void {
+  connectNodeTopicAppbar().titleNodeAvatarUrl = value
+}
+export function publishNodeTopicAppbarTitleRouteNodeName(value: string): void {
+  connectNodeTopicAppbar().titleRouteNodeName = value
+}
+export function publishNodeTopicAppbarTitleNameStates(value: string): void {
+  connectNodeTopicAppbar().titleNameStates = value
+}
+export function publishNodeTopicAppbarTitleAvatarStates(value: string): void {
+  connectNodeTopicAppbar().titleAvatarStates = value
 }

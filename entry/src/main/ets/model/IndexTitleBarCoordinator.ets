@@ -16,6 +16,12 @@ export interface NodeTopicTitleBarText {
   subtitle: string
 }
 
+export interface NodeTopicTitleBarIdentity {
+  routeNodeName: string
+  title: string
+  avatarUrl: string
+}
+
 export interface IndexTitleMenuDescriptor {
   label: ResourceStr
   action: string
@@ -123,5 +129,24 @@ export class IndexTitleBarCoordinator {
       title: (liveTitle || '').trim() || baseTitle,
       subtitle: (liveSubtitle || '').trim()
     }
+  }
+
+  // Scroll-reveal node title identity (mirrors userProfileIdentity): empty title until the node-info
+  // card's name scrolls under the app bar, then the per-route reveal ledger supplies icon + name.
+  static nodeTopicIdentity(
+    nodeName: string,
+    titleRouteNodeName: string,
+    currentTitleNodeName: string,
+    currentAvatarUrl: string,
+    titleNameStatesJson: string,
+    titleAvatarStatesJson: string
+  ): NodeTopicTitleBarIdentity {
+    const routeNodeName = (nodeName || '').trim()
+    const nameFromState = IndexTitleBarCoordinator.stringForUsernameState(titleNameStatesJson, routeNodeName)
+    const avatarFromState = IndexTitleBarCoordinator.stringForUsernameState(titleAvatarStatesJson, routeNodeName)
+    const routeMatches = IndexTitleBarCoordinator.sameUsername(titleRouteNodeName, routeNodeName)
+    const title = nameFromState || (currentTitleNodeName && routeMatches ? currentTitleNodeName : '')
+    const avatarUrl = avatarFromState || (routeMatches ? (currentAvatarUrl || '').trim() : '')
+    return { routeNodeName, title, avatarUrl }
   }
 }

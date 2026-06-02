@@ -1,15 +1,22 @@
 import { NodeViewModel } from '../viewmodel/NodeViewModel'
 import {
   AuthSettings, CardEmptyState, CollectionSettings, SavedNode, ApiService, CookieJarSettings,
-  connectLayoutSafeArea, connectNavStack, connectNodeTopicAction, connectTopicReadStates,
-  LayoutSafeAreaState, NodeTopicActionState, PagedListScaffold, PageErrorState, PageLoadingState,
+  connectLayoutSafeArea, connectNavStack, connectNodeTopicAction, connectNodeTopicAppbar,
+  connectTopicReadStates,
+  LayoutSafeAreaState, NodeTopicActionState, NodeTopicAppbarState, PagedListScaffold, PageErrorState,
+  PageLoadingState,
   publishNodeTopicSaved, publishNodeTopicSiteFavorited, publishNodeTopicTitle, publishNodeTopicSubtitle,
+  publishNodeTopicAppbarTitleNodeName, publishNodeTopicAppbarTitleNodeAvatarUrl,
+  publishNodeTopicAppbarTitleRouteNodeName, publishNodeTopicAppbarTitleNameStates,
+  publishNodeTopicAppbarTitleAvatarStates,
   StorageKeys, ThemeConstants, TopicCard, TopicReadStatesState,
   TopicDetailParams, UserProfileParams, V2exToggleAction, V2exTopic, AppStrings, DiagnosticLogger, translateApiError
 } from 'shared'
 import type { TopicReadState } from 'shared'
 import { common } from '@kit.AbilityKit'
 import { promptAction } from '@kit.ArkUI'
+import { NodeInfoCard } from '../components/NodeInfoCard'
+import { NodeTopicPageCoordinator } from '../model/NodeTopicPageCoordinator'
 
 @ComponentV2
 export struct NodeTopicPage {
@@ -32,10 +39,21 @@ export struct NodeTopicPage {
   @Local private token: string = ''
   private api: ApiService = new ApiService()
   private nodeTopicsRequestId: number = 0
+  // Scroll-reveal app bar identity mirror (Index reads it to render the icon+name title). This page is
+  // the sole writer; the *States ledgers are keyed by routeNodeName so stacked node pages don't clash.
+  private nodeAppbar: NodeTopicAppbarState = connectNodeTopicAppbar()
+  @Local private nodeNameContentBottom: number = 0
+  @Local private currentScrollOffset: number = 0
+  @Local private isNodeNameCoveredByAppbar: boolean = false
+  private readonly titleVisibilityHysteresis: number = 4
 
   aboutToAppear(): void {
+    this.currentScrollOffset = 0
+    this.nodeNameContentBottom = 0
+    this.isNodeNameCoveredByAppbar = false
     this.syncNodeTitleState(false, false)
     this.syncAppbarIdentity()
+    this.publishAppbarReveal(false)
     this.vm.isLoading = true
     this.loadData()
     this.loadSavedState()
@@ -52,8 +70,13 @@ export struct NodeTopicPage {
         showFooter: this.vm.nodeTopics.length > 0,
         onRefresh: async () => { await this.refreshData() },
         onReachEnd: () => { this.loadMore() },
-        onLoadMoreRetry: () => { this.loadMore() }
+        onLoadMoreRetry: () => { this.loadMore() },
+        onDidScroll: (offset: number, _state: ScrollState) => {
+          this.currentScrollOffset = Math.max(0, offset)
+          this.evaluateAppbarReveal()
+        }
       }) {
+        ListItem() { this.NodeHeaderCard() }
         if (this.vm.isLoading && this.vm.nodeTopics.length === 0) {
           ListItem() { Column() {}.height(0) }
         } else if (this.vm.errorMessage && this.vm.nodeTopics.length === 0) {
@@ -93,6 +116,27 @@ export struct NodeTopicPage {
     }
       .width('100%').height('100%')
       .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
+      .onVisibleAreaChange([0.0, 1.0], (isVisible: boolean, _currentRatio: number) => {
+        // Re-publish the reveal identity when this node page returns to the top of the stack so the
+        // shared singleton mirror reflects THIS route again (a stacked page may have overwritten it).
+        if (isVisible) {
+          this.publishAppbarReveal(this.isNodeNameCoveredByAppbar)
+        }
+      })
+  }
+
+  @Builder NodeHeaderCard() {
+    NodeInfoCard({
+      detail: this.vm.nodeDetail,
+      fallbackName: this.nodeName,
+      fallbackTitle: this.nodeTitle,
+      onNodeNameAreaChange: (bottom: number) => {
+        // Convert the name's viewport-relative bottom into a content-space offset so the reveal
+        // threshold is stable while the list scrolls (same approach as UserProfilePage).
+        this.nodeNameContentBottom = bottom + this.currentScrollOffset
+        this.evaluateAppbarReveal()
+      }
+    })
   }
 
   @Builder LoadingView() {
@@ -451,5 +495,69 @@ export struct NodeTopicPage {
       ))
     }
     publishNodeTopicSubtitle(subtitleParts.join(' · '))
+    // Re-evaluate the scroll reveal: a freshly-resolved detail can change the display name / avatar
+    // shown in the revealed title even if the scroll geometry is unchanged.
+    this.evaluateAppbarReveal()
+    this.publishAppbarReveal(this.isNodeNameCoveredByAppbar)
+  }
+
+  private displayNodeName(): string {
+    return NodeTopicPageCoordinator.displayName(
+      this.vm.nodeDetail?.title || '',
+      this.nodeTitle,
+      this.vm.nodeDetail?.name || this.nodeName
+    )
+  }
+
+  private nodeAvatarUrl(): string {
+    return (this.vm.nodeDetail?.avatar_large || this.vm.nodeDetail?.avatar_normal || '').trim()
+  }
+
+  private evaluateAppbarReveal(): void {
+    const shouldReveal = NodeTopicPageCoordinator.shouldShowAppbarTitle(
+      this.displayNodeName(),
+      this.nodeNameContentBottom,
+      this.currentScrollOffset,
+      this.layout.topAvoidHeight,
+      ThemeConstants.TITLE_BAR_HEIGHT,
+      this.isNodeNameCoveredByAppbar,
+      this.titleVisibilityHysteresis
+    )
+    if (shouldReveal === this.isNodeNameCoveredByAppbar) {
+      return
+    }
+    this.isNodeNameCoveredByAppbar = shouldReveal
+    this.publishAppbarReveal(shouldReveal)
+  }
+
+  private publishAppbarReveal(visible: boolean): void {
+    const routeNodeName = (this.nodeName || '').trim()
+    if (!routeNodeName) {
+      return
+    }
+    const identity = NodeTopicPageCoordinator.appbarIdentity(
+      visible,
+      routeNodeName,
+      this.displayNodeName(),
+      this.nodeAvatarUrl()
+    )
+    // OUTPUT-only fields: this page is the sole writer of the node appbar reveal mirror; Index reads it
+    // to build the icon+name title. Change-guard against the live mirror so we only write on real changes.
+    if (this.nodeAppbar.titleRouteNodeName !== identity.routeNodeName) {
+      publishNodeTopicAppbarTitleRouteNodeName(identity.routeNodeName)
+    }
+    if (this.nodeAppbar.titleNodeName !== identity.titleNodeName) {
+      publishNodeTopicAppbarTitleNodeName(identity.titleNodeName)
+    }
+    if (this.nodeAppbar.titleNodeAvatarUrl !== identity.avatarUrl) {
+      publishNodeTopicAppbarTitleNodeAvatarUrl(identity.avatarUrl)
+    }
+    // Per-route ledgers keyed by routeNodeName so a stacked node page reads back its own reveal state.
+    publishNodeTopicAppbarTitleNameStates(
+      NodeTopicPageCoordinator.nextStringState(this.nodeAppbar.titleNameStates, routeNodeName, identity.titleNodeName),
+    )
+    publishNodeTopicAppbarTitleAvatarStates(
+      NodeTopicPageCoordinator.nextStringState(this.nodeAppbar.titleAvatarStates, routeNodeName, identity.avatarUrl),
+    )
   }
 }

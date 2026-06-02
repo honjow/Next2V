@@ -433,6 +433,62 @@ export function UserProfileIdentityCCBuilder(params: UserProfileAppbarIdentityPa
   })
 }
 
+export interface NodeTopicAppbarIdentityParams {
+  titleNodeName: string
+  avatarUrl: string
+  menuMaxCount: number
+  menuItemCount: number
+}
+
+@ComponentV2
+struct NodeTopicAppbarIdentity {
+  @Param titleNodeName: string = '';
+  @Param avatarUrl: string = '';
+  @Param menuMaxCount: number = 0;
+  @Param menuItemCount: number = 0;
+  @Local private titleBarWidth: number = 0;
+
+  build() {
+    Row({ space: ThemeConstants.SPACE_XS }) {
+      if ((this.titleNodeName || '').trim()) {
+        Avatar({
+          url: this.avatarUrl,
+          avatarSize: 24,
+          placeholder: (this.titleNodeName || '').trim(),
+        })
+        Text((this.titleNodeName || '').trim())
+          .fontSize(ThemeConstants.FONT_SIZE_TITLE)
+          .fontWeight(FontWeight.Medium)
+          .fontColor($r('sys.color.font_primary'))
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+          .layoutWeight(1)
+      }
+    }
+    .width('100%')
+    .height(ThemeConstants.TITLE_BAR_HEIGHT)
+    .alignItems(VerticalAlign.Center)
+    .padding({
+      left: titleBarLeadingReserve(this.titleBarWidth),
+      right: titleBarTrailingReserve(this.menuMaxCount, this.menuItemCount),
+    })
+    .hitTestBehavior(HitTestMode.None)
+    .onAreaChange((_oldValue: Area, newValue: Area) => {
+      this.titleBarWidth = titleBarLengthToNumber(newValue?.width)
+    })
+  }
+}
+
+@Builder
+export function NodeTopicIdentityCCBuilder(params: NodeTopicAppbarIdentityParams) {
+  NodeTopicAppbarIdentity({
+    titleNodeName: params.titleNodeName,
+    avatarUrl: params.avatarUrl,
+    menuMaxCount: params.menuMaxCount,
+    menuItemCount: params.menuItemCount,
+  })
+}
+
 export interface TopicDetailAppbarIdentityParams {
   title: string
   avatarUrl: string

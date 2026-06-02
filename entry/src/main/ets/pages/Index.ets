@@ -100,6 +100,8 @@ import { AboutPage } from './AboutPage'
 import {
   BlockedListsTabsCCBuilder,
   DiscoverSearchCCBuilder,
+  NodeTopicAppbarIdentityParams,
+  NodeTopicIdentityCCBuilder,
   PillCCBuilder,
   TopicDetailAppbarIdentityParams,
   TopicDetailIdentityCCBuilder,
@@ -824,13 +826,32 @@ struct Index {
       ),
     ]
     let menu: Record<string, Object> = { 'value': items, 'maxCount': 2 }
-    const text = IndexTitleBarCoordinator.nodeTopicText(
+    // Scroll-reveal title: empty (back button + actions only) until the node-info card's name scrolls
+    // under the app bar, then an icon+name ComponentContent (mirrors the user-profile title bar). The
+    // favorite/follow actions above are preserved in both states.
+    const identity = IndexTitleBarCoordinator.nodeTopicIdentity(
       nodeName,
-      nodeTitle,
-      this.nodeTopicAppbar.title,
-      this.nodeTopicAppbar.subtitle,
+      this.nodeTopicAppbar.titleRouteNodeName,
+      this.nodeTopicAppbar.titleNodeName,
+      this.nodeTopicAppbar.titleNodeAvatarUrl,
+      this.nodeTopicAppbar.titleNameStates,
+      this.nodeTopicAppbar.titleAvatarStates,
     )
-    return this.navDestTitleBarOpts(text.title, menu, text.subtitle)
+    if (identity.title.trim()) {
+      const stats = IndexTitleBarCoordinator.menuStats(menu)
+      let cc = new ComponentContent<NodeTopicAppbarIdentityParams>(
+        this.getUIContext(),
+        wrapBuilder(NodeTopicIdentityCCBuilder),
+        {
+          titleNodeName: identity.title,
+          avatarUrl: identity.avatarUrl,
+          menuMaxCount: stats.maxCount,
+          menuItemCount: stats.itemCount,
+        },
+      )
+      return this.navDestTitleBarOpts(' ', menu, undefined, undefined, cc, identity.title)
+    }
+    return this.navDestTitleBarOpts(undefined, menu)
   }
 
   private userProfileTitleBarOpts(username: string): Record<string, Object> {
