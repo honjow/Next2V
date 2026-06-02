@@ -8,6 +8,14 @@
   "approved_duplicate_groups": [
     {
       "keys": [
+        "backup_password_label",
+        "login_password_placeholder"
+      ],
+      "classification": "KEEP_SEMANTIC",
+      "rationale": "backup_password_label = field label in the encrypted-backup set/enter-password sheets; login_password_placeholder = TextInput placeholder in the native login form. Different UI roles; both naturally render as 'Password' / '密码'."
+    },
+    {
+      "keys": [
         "action_unignore",
         "topic_action_unignore_topic"
       ],

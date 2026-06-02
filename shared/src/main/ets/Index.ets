@@ -191,9 +191,10 @@ export type { NotificationCacheSnapshot } from './settings/NotificationSettings'
 export { LocalDataSettings } from './settings/LocalDataSettings'
 export { LocalDataPublisher } from './settings/LocalDataPublisher'
 export { BackupService } from './backup/BackupService'
-export type { BackupAppMetadata } from './backup/BackupService'
+export type { BackupAppMetadata, BackupExportOptions } from './backup/BackupService'
 export { BackupValidator } from './backup/BackupValidator'
 export { BackupChecksum } from './backup/BackupChecksum'
+export { BackupCrypto } from './backup/BackupCrypto'
 export {
   BACKUP_MAGIC,
   BACKUP_APP_ID,
@@ -207,6 +208,8 @@ export type {
   BackupPreview,
   BackupParseResult,
   BackupRestoreResult,
+  BackupCipherMeta,
+  BackupSealResult,
 } from './backup/BackupTypes'
 export { LocalDataStore, LOCAL_DATA_DB_NAME, LOCAL_DATA_SCHEMA_VERSION } from './storage/LocalDataStore'
 export { MotionHandStateService } from './services/MotionHandStateService'

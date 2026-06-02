@@ -2755,6 +2755,54 @@
     {
       "name": "backup_error_too_large",
       "value": "バックアップファイルが大きすぎます。"
+    },
+    {
+      "name": "backup_error_bad_password",
+      "value": "パスワードが正しくないか、バックアップが破損しています。"
+    },
+    {
+      "name": "backup_include_user_info",
+      "value": "アカウントとログイン情報を含める"
+    },
+    {
+      "name": "backup_include_user_info_hint",
+      "value": "アカウント一覧とログイン資格情報を含み、バックアップ全体をパスワードで暗号化します。"
+    },
+    {
+      "name": "backup_set_password",
+      "value": "バックアップのパスワードを設定"
+    },
+    {
+      "name": "backup_enter_password",
+      "value": "バックアップのパスワードを入力"
+    },
+    {
+      "name": "backup_password_label",
+      "value": "パスワード"
+    },
+    {
+      "name": "backup_password_confirm_label",
+      "value": "パスワードの確認"
+    },
+    {
+      "name": "backup_password_too_short",
+      "value": "8文字以上で入力してください。"
+    },
+    {
+      "name": "backup_password_mismatch",
+      "value": "パスワードが一致しません。"
+    },
+    {
+      "name": "backup_password_required",
+      "value": "バックアップのパスワードを入力してください。"
+    },
+    {
+      "name": "backup_unlock",
+      "value": "ロック解除してインポート"
+    },
+    {
+      "name": "backup_import_restores_accounts",
+      "value": "このバックアップにはアカウントとログイン情報が含まれ、現在のアカウントを置き換えます。"
     }
   ]
 }

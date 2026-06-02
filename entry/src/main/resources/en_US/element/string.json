@@ -2755,6 +2755,54 @@
     {
       "name": "backup_error_too_large",
       "value": "Backup file is too large."
+    },
+    {
+      "name": "backup_error_bad_password",
+      "value": "Incorrect password or the backup is damaged."
+    },
+    {
+      "name": "backup_include_user_info",
+      "value": "Include accounts and login info"
+    },
+    {
+      "name": "backup_include_user_info_hint",
+      "value": "Includes accounts and login credentials. The whole backup is encrypted with a password."
+    },
+    {
+      "name": "backup_set_password",
+      "value": "Set a backup password"
+    },
+    {
+      "name": "backup_enter_password",
+      "value": "Enter the backup password"
+    },
+    {
+      "name": "backup_password_label",
+      "value": "Password"
+    },
+    {
+      "name": "backup_password_confirm_label",
+      "value": "Confirm password"
+    },
+    {
+      "name": "backup_password_too_short",
+      "value": "Use at least 8 characters."
+    },
+    {
+      "name": "backup_password_mismatch",
+      "value": "The two passwords do not match."
+    },
+    {
+      "name": "backup_password_required",
+      "value": "Enter the backup password."
+    },
+    {
+      "name": "backup_unlock",
+      "value": "Unlock and import"
+    },
+    {
+      "name": "backup_import_restores_accounts",
+      "value": "This backup includes accounts and login info, which will replace the current accounts."
     }
   ]
 }
