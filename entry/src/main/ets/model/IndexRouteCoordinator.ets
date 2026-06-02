@@ -7,15 +7,8 @@ import type {
   V2exRoute,
 } from 'shared'
 
-export interface ReplyEditorRouteParams {
-  topicId: number
-  topicTitle: string
-  initialContent: string
-}
-
 export type IndexDestinationFamily =
   'topicDetail' |
-  'replyEditor' |
   'webLogin' |
   'nativeLogin' |
   'nodePicker' |
@@ -48,7 +41,6 @@ export type IndexDestinationFamily =
 export interface IndexDestinationDescriptor {
   family: IndexDestinationFamily
   topicDetailParams: TopicDetailParams
-  replyEditorParams: ReplyEditorRouteParams
   imagePreviewParams: ImagePreviewParams
   nodeTopicParams: NodeTopicListParams
   userProfileParams: UserProfileParams
@@ -58,7 +50,6 @@ export interface IndexDestinationDescriptor {
 export class IndexRouteCoordinator {
   private static readonly DESTINATION_FAMILIES: Record<string, IndexDestinationFamily> = {
     'TopicDetail': 'topicDetail',
-    'ReplyEditor': 'replyEditor',
     'V2exWebLogin': 'webLogin',
     'V2exNativeLogin': 'nativeLogin',
     'NodePicker': 'nodePicker',
@@ -91,7 +82,6 @@ export class IndexRouteCoordinator {
 
   static destinationTitle(family: IndexDestinationFamily): ResourceStr {
     const titles: Record<string, ResourceStr> = {
-      'replyEditor': AppStrings.R_NAV_REPLY,
       'webLogin': AppStrings.R_NAV_WEB_LOGIN,
       'nativeLogin': AppStrings.R_NAV_NATIVE_LOGIN,
       'nodePicker': AppStrings.R_NAV_NODE_PICKER,
@@ -122,7 +112,6 @@ export class IndexRouteCoordinator {
   }
 
   private static readonly STANDARD_TITLE_BAR_FAMILIES: Record<string, boolean> = {
-    'replyEditor': true,
     'nativeLogin': true,
     'nodePicker': true,
     'topicEditor': true,
@@ -175,14 +164,6 @@ export class IndexRouteCoordinator {
     return { topicId }
   }
 
-  static replyEditorRouteParams(param: Object): ReplyEditorRouteParams {
-    return {
-      topicId: IndexRouteCoordinator.numberParam(param, 'topicId'),
-      topicTitle: IndexRouteCoordinator.stringParam(param, 'topicTitle'),
-      initialContent: IndexRouteCoordinator.stringParam(param, 'initialContent'),
-    }
-  }
-
   static imagePreviewRouteParams(param: Object): ImagePreviewParams {
     return { url: IndexRouteCoordinator.stringParam(param, 'url') }
   }
@@ -204,7 +185,6 @@ export class IndexRouteCoordinator {
     return {
       family: family,
       topicDetailParams: IndexRouteCoordinator.topicDetailRouteParams(param),
-      replyEditorParams: IndexRouteCoordinator.replyEditorRouteParams(param),
       imagePreviewParams: IndexRouteCoordinator.imagePreviewRouteParams(param),
       nodeTopicParams: IndexRouteCoordinator.nodeTopicRouteParams(param),
       userProfileParams: IndexRouteCoordinator.userProfileRouteParams(param),

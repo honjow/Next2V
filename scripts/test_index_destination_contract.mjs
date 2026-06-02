@@ -53,7 +53,6 @@ if (/private\s+[a-zA-Z0-9_]+Destination\s*\(\s*descriptor: IndexDestinationDescr
 
 const routeNames = [
   'TopicDetail',
-  'ReplyEditor',
   'V2exWebLogin',
   'V2exNativeLogin',
   'NodePicker',

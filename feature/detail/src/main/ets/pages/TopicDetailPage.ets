@@ -19,7 +19,7 @@ import {
   DetailViewModel,
   type ReplyThankSnapshot,
 } from '../viewmodel/DetailViewModel'
-import { ReplyComposerSheet } from '../components/ReplyComposerSheet'
+import { ReplyComposerBar } from '../components/ReplyComposerBar'
 import { ReplyComposerDraftCoordinator } from '../model/ReplyComposerDraftCoordinator'
 import {
   ReplyContextListItem,
@@ -51,7 +51,7 @@ import {
 } from '../model/TopicDetailReplyDisplayCoordinator'
 import { TopicDetailScrollCoordinator } from '../model/TopicDetailScrollCoordinator'
 import { common, Want } from '@kit.AbilityKit'
-import { LoadingDialog, promptAction } from '@kit.ArkUI'
+import { KeyboardAvoidMode, LoadingDialog, promptAction } from '@kit.ArkUI'
 import { HdsAnimationMode, HdsTabsController } from '@kit.UIDesignKit'
 import { HdsMiniBarButton } from '../components/HdsMiniBarButton'
 import { uniformTypeDescriptor as utd } from '@kit.ArkData'
@@ -246,6 +246,11 @@ export struct TopicDetailPage {
     this.replySubmitLoadingDialogController.close()
     this.replyButtonController.unbindScroller(this.scroller)
     this.clearReplyButtonAnimationGuardTimer()
+    // Safety net: if the page is left while the composer is open, restore the keyboard-avoid mode so
+    // the NONE we set on open never leaks to other pages.
+    if (this.replyComposerVisible) {
+      this.getUIContext().setKeyboardAvoidMode(KeyboardAvoidMode.OFFSET)
+    }
   }
 
   private initializeCachedThenNetworkLoad(context: common.UIAbilityContext): void {
@@ -396,6 +401,18 @@ export struct TopicDetailPage {
     }
     this.replyComposerInitialContent = initialContent
     this.replyComposerVisible = true
+    // The inline bar is page content, so the page's keyboard-avoid mode (default OFFSET) and
+    // Navigation's own avoidance would both move it unpredictably across devices. Switch the page to
+    // NONE while composing and lift the bar ourselves (expandSafeArea + manual keyboard padding), so
+    // the bar reliably rests directly on top of the keyboard everywhere. Restored on dismiss.
+    this.getUIContext().setKeyboardAvoidMode(KeyboardAvoidMode.NONE)
+  }
+
+  // Single close path for the composer bar: restore the page keyboard-avoid mode and clear state.
+  private dismissReplyComposer(): void {
+    this.getUIContext().setKeyboardAvoidMode(KeyboardAvoidMode.OFFSET)
+    this.replyComposerVisible = false
+    this.replyComposerInitialContent = ''
   }
 
   private bodyFontSize(): number {
@@ -434,15 +451,17 @@ export struct TopicDetailPage {
         this.trackReplyActionFollowOperation(event)
       })
 
-      if (this.detailRootHeight > 0 && this.showResumeButton) {
+      if (this.detailRootHeight > 0 && this.showResumeButton && !this.replyComposerVisible) {
         this.TopicDetailResumeButton()
       }
 
-      if (this.detailRootHeight > 0) {
+      // The reply FAB is the entry point; once the inline composer bar is open it hides so the two
+      // never overlap (the bar replaces the FAB until the user sends or taps outside to dismiss).
+      if (this.detailRootHeight > 0 && !this.replyComposerVisible) {
         this.TopicDetailReplyActionBar()
       }
 
-      this.ReplyComposerSheetHost()
+      this.ReplyComposerBarHost()
       this.ReplyContextSheetHost()
     }
     .width('100%')
@@ -709,20 +728,34 @@ export struct TopicDetailPage {
     this.visualMotionHandEdge = this.motion.edge
   }
 
-  @Builder ReplyComposerSheetHost() {
-    Blank()
-      .width(1)
-      .height(1)
-      .bindSheet(
-        $$this.replyComposerVisible,
-        this.ReplyComposerSheetBuilder(),
-        defaultSheetOptions(SheetSize.LARGE, () => {
-          this.replyComposerVisible = false
-          this.replyComposerInitialContent = ''
-        },
-          [SheetSize.LARGE, SheetSize.MEDIUM]
-        ),
-      )
+  @Builder ReplyComposerBarHost() {
+    if (this.replyComposerVisible) {
+      Stack({ alignContent: Alignment.Bottom }) {
+        // Tap-outside catcher: dismiss the bar without submitting (the bar auto-saves its draft).
+        Column()
+          .width('100%')
+          .height('100%')
+          .onClick(() => {
+            this.dismissReplyComposer()
+          })
+        this.ReplyComposerBarBuilder()
+      }
+      .width('100%')
+      .height('100%')
+      // Own ALL bottom insets ourselves: opt out of the framework's system/keyboard avoidance for
+      // this overlay (paired with keyboard-avoid NONE set on open) so nothing moves the bar except
+      // composerLift() below. This keeps the bar pinned directly above the keyboard on every device.
+      .expandSafeArea([SafeAreaType.SYSTEM, SafeAreaType.KEYBOARD], [SafeAreaEdge.BOTTOM])
+      .padding({ bottom: this.composerLift() })
+    }
+  }
+
+  private composerLift(): number {
+    // Sole source of the bar's bottom lift (framework avoidance is disabled while composing): rest it
+    // exactly on top of the keyboard when up. When the keyboard is down, lift is 0 so the bar drops to
+    // the screen bottom and its own background covers the bottom safe area (ReplyComposerBar owns that
+    // inset), instead of floating above the safe area and exposing the page content below.
+    return this.layout.keyboardHeight > 0 ? this.layout.keyboardHeight : 0
   }
 
   @Builder ReplyContextSheetHost() {
@@ -905,18 +938,18 @@ export struct TopicDetailPage {
     }
   }
 
-  @Builder ReplyComposerSheetBuilder() {
-    ReplyComposerSheet({
+  @Builder ReplyComposerBarBuilder() {
+    ReplyComposerBar({
       topicId: this.topicId,
-      topicTitle: (this.v.topic?.title || '').trim(),
       initialContent: this.replyComposerInitialContent,
       closeAction: () => {
-        this.replyComposerVisible = false
+        this.dismissReplyComposer()
       },
       submitAction: (content: string) => {
         this.submitReplyFromComposer(content)
       },
     })
+      .width('100%')
   }
 
   // Owns the reply network submit. The composer sheet has already emitted a clean snapshot and is
@@ -943,6 +976,8 @@ export struct TopicDetailPage {
     // starting the network request.
     this.replyComposerVisible = false
     this.replyComposerInitialContent = ''
+    // Restore the page keyboard-avoid mode we switched off while the bar was open.
+    this.getUIContext().setKeyboardAvoidMode(KeyboardAvoidMode.OFFSET)
     this.isReplySubmitting = true
     this.replySubmitLoadingDialogController.open()
     this.api

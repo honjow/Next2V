@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // Reply submit UX contract (topic-detail reply composer).
 //
-// Proves the half-modal reply composer no longer self-submits behind a confirmation dialog, and
-// that TopicDetailPage owns the network submit: it closes the sheet BEFORE the request (so the
+// Proves the inline reply composer bar no longer self-submits behind a confirmation dialog, and
+// that TopicDetailPage owns the network submit: it closes the bar BEFORE the request (so the
 // TextArea can't re-grab focus / re-open the keyboard while pending), opens the system
 // LoadingDialog via CustomDialogController, refreshes replies + clears the draft on success, and
 // preserves the draft (without auto-reopening / lost-draft) plus surfaces the translated error on
@@ -12,7 +12,7 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 
-const sheetPath = 'feature/detail/src/main/ets/components/ReplyComposerSheet.ets'
+const sheetPath = 'feature/detail/src/main/ets/components/ReplyComposerBar.ets'
 const pagePath = 'feature/detail/src/main/ets/pages/TopicDetailPage.ets'
 const sheet = readFileSync(sheetPath, 'utf8')
 const page = readFileSync(pagePath, 'utf8')
@@ -63,7 +63,7 @@ const FORBIDDEN_V1 = [
 const strip = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '')
 
 // ---------------------------------------------------------------------------
-// ReplyComposerSheet: editor-only, no normal-submit confirmation dialog, emits snapshot.
+// ReplyComposerBar: editor-only, no normal-submit confirmation dialog, emits snapshot.
 // ---------------------------------------------------------------------------
 const confirmSubmit = methodBody(sheet, 'confirmSubmit')
 
@@ -93,21 +93,21 @@ assert.ok(
   'confirmSubmit() must keep the loginRequired guard before emitting',
 )
 
-// (3) The sheet declares the snapshot-carrying event and no longer owns the network submit.
+// (3) The bar declares the snapshot-carrying event and no longer owns the network submit.
 assert.match(
   sheet,
   /@Event\s+submitAction\?:\s*\(content:\s*string\)\s*=>\s*void/,
-  'ReplyComposerSheet must declare @Event submitAction?: (content: string) => void',
+  'ReplyComposerBar must declare @Event submitAction?: (content: string) => void',
 )
 assert.doesNotMatch(
   sheet,
   /submitReplyWithCookie/,
-  'ReplyComposerSheet must not call submitReplyWithCookie (network submit moved to the page)',
+  'ReplyComposerBar must not call submitReplyWithCookie (network submit moved to the page)',
 )
 assert.doesNotMatch(
   sheet,
   /@Event\s+submittedAction/,
-  'ReplyComposerSheet must drop the old submittedAction event',
+  'ReplyComposerBar must drop the old submittedAction event',
 )
 
 // ---------------------------------------------------------------------------
@@ -138,11 +138,11 @@ assert.doesNotMatch(
 )
 
 // (5) The composer builder wires submitAction -> page submit handler.
-const composerBuilder = blockAfter(page, '@Builder ReplyComposerSheetBuilder()')
+const composerBuilder = blockAfter(page, '@Builder ReplyComposerBarBuilder()')
 assert.match(
   composerBuilder,
   /submitAction:\s*\(content:\s*string\)\s*=>\s*\{\s*this\.submitReplyFromComposer\(content\)/,
-  'ReplyComposerSheetBuilder must route submitAction to submitReplyFromComposer',
+  'ReplyComposerBarBuilder must route submitAction to submitReplyFromComposer',
 )
 
 // (6) Submit handler closes the sheet BEFORE the network request and raises the pending flag.

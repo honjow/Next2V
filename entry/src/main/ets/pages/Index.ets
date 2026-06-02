@@ -66,7 +66,7 @@ import {
   translateApiError,
 } from 'shared'
 import { HomePage } from 'feed'
-import { ReplyEditorPage, TopicDetailPage } from 'detail'
+import { TopicDetailPage } from 'detail'
 import { DiscoverPage, NodePickerPage, NodeTopicPage } from 'node'
 import { UserProfilePage, UserRepliesPage, UserTopicsPage } from 'user'
 import {
@@ -356,13 +356,6 @@ struct Index {
       TopicDetailPage({
         topicId: descriptor.topicDetailParams.topicId,
         targetFloor: descriptor.topicDetailParams.targetFloor || 0,
-      })
-    }
-    if (descriptor.family === 'replyEditor') {
-      ReplyEditorPage({
-        topicId: descriptor.replyEditorParams.topicId,
-        topicTitle: descriptor.replyEditorParams.topicTitle,
-        initialContent: descriptor.replyEditorParams.initialContent,
       })
     }
     if (descriptor.family === 'webLogin') {
