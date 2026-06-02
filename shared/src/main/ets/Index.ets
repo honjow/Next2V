@@ -82,6 +82,7 @@ export {
   publishTopicDetailAppbarTitle, publishTopicDetailAppbarAvatarUrl, publishTopicDetailAppbarUsername,
   publishTopicDetailAppbarRouteTopicId, publishTopicDetailAppbarTitleStates,
   publishTopicDetailAppbarAvatarStates, publishTopicDetailAppbarUsernameStates,
+  publishTopicDetailTopicIgnored,
 } from './state/TopicDetailAppbarState'
 export {
   NodeTopicAppbarState, connectNodeTopicAppbar,

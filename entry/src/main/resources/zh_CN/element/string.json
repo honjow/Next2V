@@ -2209,6 +2209,14 @@
       "value": "忽略主题"
     },
     {
+      "name": "topic_action_unignore_topic",
+      "value": "解除忽略"
+    },
+    {
+      "name": "action_unignore",
+      "value": "解除忽略"
+    },
+    {
       "name": "topic_action_report_topic",
       "value": "举报主题"
     },

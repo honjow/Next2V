@@ -2209,6 +2209,14 @@
       "value": "トピックを無視"
     },
     {
+      "name": "topic_action_unignore_topic",
+      "value": "無視を解除"
+    },
+    {
+      "name": "action_unignore",
+      "value": "解除"
+    },
+    {
       "name": "topic_action_report_topic",
       "value": "トピックを通報"
     },

@@ -8,6 +8,14 @@
   "approved_duplicate_groups": [
     {
       "keys": [
+        "action_unignore",
+        "topic_action_unignore_topic"
+      ],
+      "classification": "KEEP_SEMANTIC",
+      "rationale": "action_unignore = confirm-dialog verb (mirrors action_ignore); topic_action_unignore_topic = title-bar menu item. Different UI roles; zh/zh_HK/zh_TW happen to render both as '解除忽略'."
+    },
+    {
+      "keys": [
         "EntryAbility_label",
         "app_name"
       ],

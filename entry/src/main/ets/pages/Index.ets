@@ -717,8 +717,8 @@ struct Index {
     let items: Record<string, Object>[] = TopicDetailTitleBarCoordinator.actions().map(
       (descriptor: TopicDetailTitleActionDescriptor) =>
         this.topicActionItem(
-          descriptor.label,
-          this.topicDetailTitleActionIcon(descriptor.action),
+          this.topicDetailTitleActionLabel(descriptor, topicId),
+          this.topicDetailTitleActionIcon(descriptor.action, topicId),
           () => {
             this.sendTopicAction(topicId, descriptor.action)
           },
@@ -759,7 +759,21 @@ struct Index {
     return this.navDestTitleBarOpts(undefined, menu)
   }
 
-  private topicDetailTitleActionIcon(action: TopicDetailTitleAction): Resource {
+  private isTopicIgnoredForRoute(topicId: number): boolean {
+    // Route-id guard so a stacked detail page can't show a stale ignore state for a topic
+    // it isn't drawing (the appbar mirror is a shared singleton across the detail stack).
+    const routeId = topicId > 0 ? topicId.toString() : ''
+    return this.topicDetailAppbar.topicIgnored && this.topicDetailAppbar.topicIgnoredRouteId === routeId
+  }
+
+  private topicDetailTitleActionLabel(descriptor: TopicDetailTitleActionDescriptor, topicId: number): ResourceStr {
+    if (descriptor.action === 'ignoreTopic' && this.isTopicIgnoredForRoute(topicId)) {
+      return AppStrings.R_TOPIC_ACTION_UNIGNORE_TOPIC
+    }
+    return descriptor.label
+  }
+
+  private topicDetailTitleActionIcon(action: TopicDetailTitleAction, topicId: number): Resource {
     const active = TopicDetailTitleBarCoordinator.activeForState(action, {
       savedLater: this.topicDetailAppbar.savedLater,
       siteFavorited: this.topicDetailAppbar.siteFavorited,
@@ -775,7 +789,7 @@ struct Index {
       return active ? $r('sys.symbol.bookmark_fill') : $r('sys.symbol.bookmark')
     }
     if (action === 'ignoreTopic') {
-      return $r('sys.symbol.xmark')
+      return this.isTopicIgnoredForRoute(topicId) ? $r('sys.symbol.eye') : $r('sys.symbol.xmark')
     }
     if (action === 'reportTopic') {
       return $r('sys.symbol.exclamationmark_triangle')

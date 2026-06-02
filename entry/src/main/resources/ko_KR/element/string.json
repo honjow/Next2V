@@ -2209,6 +2209,14 @@
       "value": "토픽 무시"
     },
     {
+      "name": "topic_action_unignore_topic",
+      "value": "무시 해제"
+    },
+    {
+      "name": "action_unignore",
+      "value": "해제"
+    },
+    {
       "name": "topic_action_report_topic",
       "value": "토픽 신고"
     },

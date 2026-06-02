@@ -83,13 +83,19 @@ assertIncludes(settingsPath, settings, 'store.putSync(KEY_PREFIX + ownerKey, JSO
 assertIncludes(settingsPath, settings, 'ignoredTopicIds')
 assertIncludes(settingsPath, settings, 'blockedMemberIds')
 
+// V2EX web-bug guard: the feed scrape must NOT wipe the ignore cache when the topic-list page
+// renders ignored_topics as present-but-empty; it preserves the cached ignore set in that case so
+// the in-app unignore/cache-driven toggle keeps working. The blocked side still syncs normally.
+assertIncludes(settingsPath, settings, 'blocked_list_preserve_ignored_on_empty_feed')
+assertIncludes(settingsPath, settings, 'lists.ignoredTopicIds = runtime.ignoredTopicIds')
+
 assertIncludes(topicPagePath, topicPage, 'BlockedListSettings')
 assertIncludes(topicPagePath, topicPage, 'DiagnosticLogger')
 assertIncludes(topicPagePath, topicPage, 'private topicIgnoreDeltaValue(action: V2exTopicModerationAction): boolean | null')
 assertIncludes(topicPagePath, topicPage, 'this.topicIgnoreDeltaValue(action)')
 assertIncludes(topicPagePath, topicPage, 'BlockedListSettings.applyIgnoredTopicDelta(')
 assertIncludes(topicPagePath, topicPage, "source: 'topic_detail_mutation'")
-assertIncludes(topicPagePath, topicPage, "trigger: 'topic_ignore_success'")
+assertIncludes(topicPagePath, topicPage, "trigger: ignored ? 'topic_ignore_success' : 'topic_unignore_success'")
 assertIncludes(topicPagePath, topicPage, "blocked_list_topic_delta_skip_unknown_action")
 assertCallAfterThenBeforeCatch(topicPagePath, methodBody(topicPage, 'executeTopicModeration'), 'this.applyTopicIgnoreDeltaAfterSuccess(action)')
 
@@ -114,8 +120,16 @@ assertNotIncludes(userVmPath, userVm, 'BlockedListSettings.applyBlockedMemberDel
 assertNotIncludes(userVmPath, userVm, 'usernameHash')
 assertNotIncludes(userVmPath, userVm, 'hashCode')
 
-assertNotIncludes(blockedListsPagePath, blockedListsPage, 'applyIgnoredTopicDelta')
-assertNotIncludes(blockedListsPagePath, blockedListsPage, 'applyBlockedMemberDelta')
+// BlockedListsPage now performs single-row unblock/unignore via optimistic left-swipe
+// actions. The cache delta MUST be applied only on network success (inside the success
+// .then, before .catch) — never optimistically. A failed network call rolls the row back
+// locally and must NOT desync the persisted blocked-list cache. It must use its own swipe
+// source, not the detail/user-page mutation triggers.
+assertIncludes(blockedListsPagePath, blockedListsPage, 'BlockedListSettings.applyIgnoredTopicDelta(')
+assertIncludes(blockedListsPagePath, blockedListsPage, 'BlockedListSettings.applyBlockedMemberDelta(')
+assertIncludes(blockedListsPagePath, blockedListsPage, "source: 'blocked_list_swipe'")
+assertCallAfterThenBeforeCatch(blockedListsPagePath, methodBody(blockedListsPage, 'private onUnignoreTopic'), 'BlockedListSettings.applyIgnoredTopicDelta(')
+assertCallAfterThenBeforeCatch(blockedListsPagePath, methodBody(blockedListsPage, 'private onUnblockMember'), 'BlockedListSettings.applyBlockedMemberDelta(')
 assertNotIncludes(blockedListsPagePath, blockedListsPage, "topic_ignore_success")
 assertNotIncludes(blockedListsPagePath, blockedListsPage, "member_block_success")
 

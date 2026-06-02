@@ -24,6 +24,12 @@ export class TopicDetailAppbarState {
   @Trace titleStates: string = '{}'
   @Trace avatarStates: string = '{}'
   @Trace usernameStates: string = '{}'
+  // Whether the currently-open topic is ignored, derived by TopicDetailPage from the
+  // blocked-list cache (the V2EX page can no longer be trusted to render the unignore
+  // link). `topicIgnoredRouteId` guards stacked detail pages sharing this singleton:
+  // Index only trusts `topicIgnored` when the route id matches the topic it is drawing.
+  @Trace topicIgnored: boolean = false
+  @Trace topicIgnoredRouteId: string = ''
 }
 
 const TOPIC_DETAIL_APPBAR_V2_KEY: string = 'v2:topicDetailAppbar'
@@ -64,4 +70,11 @@ export function publishTopicDetailAppbarAvatarStates(value: string): void {
 }
 export function publishTopicDetailAppbarUsernameStates(value: string): void {
   connectTopicDetailAppbar().usernameStates = value
+}
+// Single writer for the ignore flag + its owning route id, so a stacked detail page can
+// never leave a stale `topicIgnored` attributed to a different topic.
+export function publishTopicDetailTopicIgnored(value: boolean, topicId: number): void {
+  const holder = connectTopicDetailAppbar()
+  holder.topicIgnored = value
+  holder.topicIgnoredRouteId = topicId > 0 ? topicId.toString() : ''
 }

@@ -13,6 +13,7 @@ import {
   publishTopicDetailAppbarTitleStates,
   publishTopicDetailAppbarAvatarStates,
   publishTopicDetailAppbarUsernameStates,
+  publishTopicDetailTopicIgnored,
 } from 'shared'
 import {
   DetailViewModel,
@@ -85,6 +86,8 @@ import {
   CacheOwnerResolver,
   TopicDetailActionOverlaySettings,
   BlockedListSettings,
+  connectBlockedListStorage,
+  BlockedListStorageState,
   DiagnosticLogger,
   SearchQueryBus,
   connectNavStack,
@@ -119,6 +122,9 @@ export struct TopicDetailPage {
   // @Monitor sources for the motion-hand edge + reply-button auto-hide preferences (see @Monitor below).
   @Local private motion: MotionHandEdgeState = connectMotionHandEdge();
   @Local private replyButton: TopicDetailReplyButtonState = connectTopicDetailReplyButton();
+  // Blocked-list cache mirror: the topic page can no longer be trusted to report ignore
+  // state (V2EX web bug), so the ignore/unignore menu toggle is driven by this cache.
+  @Local private blockedStorage: BlockedListStorageState = connectBlockedListStorage();
   // TOPIC_DETAIL_ACTION command bus: Index (now @ComponentV2) dual-writes this mirror at sendTopicAction;
   // this page observes it via @Monitor below, filtering by its own topicId so stacked pages don't
   // double-fire. Replaces the former V1 TopicDetailActionListener zero-size child adapter.
@@ -207,6 +213,7 @@ export struct TopicDetailPage {
     this.isTitleCoveredByAppbar = false
     this.syncTopicDetailTitleState(false, false, false)
     this.publishAppbarIdentity(false)
+    this.publishTopicIgnoredState()
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     this.v.setCacheHandlers(
       () => CacheSettings.loadTopicDetail(context, this.topicId),
@@ -519,6 +526,30 @@ export struct TopicDetailPage {
       this.replyButtonController.applyHideAnimation(HdsAnimationMode.SCROLL_ANIMATION)
     }
     this.startReplyButtonAnimationGuardTimer()
+  }
+
+  // Cache-driven ignore state: re-publish to the Index title bar whenever the ignored-topic
+  // ledger changes (e.g. the user (un)ignores this topic, or another surface does).
+  @Monitor('blockedStorage.ignoredTopicIdsJson')
+  private onIgnoredListChanged(): void {
+    this.publishTopicIgnoredState()
+  }
+
+  private isCurrentTopicIgnored(): boolean {
+    if (this.topicId <= 0) {
+      return false
+    }
+    try {
+      const ids = JSON.parse(this.blockedStorage.ignoredTopicIdsJson || '[]') as number[]
+      return ids.indexOf(this.topicId) >= 0
+    } catch (_e) {
+      return false
+    }
+  }
+
+  // Single point that mirrors the cache-derived ignore state up to the Index title bar.
+  private publishTopicIgnoredState(): void {
+    publishTopicDetailTopicIgnored(this.isCurrentTopicIgnored(), this.topicId)
   }
 
   @Monitor('replyButton.autoHide')
@@ -1548,7 +1579,12 @@ export struct TopicDetailPage {
       return
     }
     if (action === 'ignoreTopic') {
-      this.prepareTopicIgnore()
+      // The page can't tell us ignore state (web bug); the cache can. Toggle accordingly.
+      if (this.isCurrentTopicIgnored()) {
+        this.prepareTopicUnignore()
+      } else {
+        this.prepareTopicIgnore()
+      }
       return
     }
     if (action === 'reportTopic') {
@@ -1873,6 +1909,16 @@ export struct TopicDetailPage {
     )
   }
 
+  private prepareTopicUnignore(): void {
+    this.prepareTopicModeration(
+      AppStrings.text($r('app.string.topic_action_unignore_topic'), 'Unignore topic'),
+      AppStrings.text(AppStrings.R_ACTION_UNIGNORE, 'Unignore'),
+      (cookie: string) => this.api.getTopicUnignoreActionWithCookie(cookie, this.topicId),
+      (cookie: string, action: V2exTopicModerationAction) =>
+        this.api.executeTopicUnignoreWithCookie(cookie, action),
+    )
+  }
+
   private prepareTopicReport(): void {
     this.prepareTopicModeration(
       AppStrings.text($r('app.string.topic_action_report_topic'), 'Report topic'),
@@ -2003,7 +2049,7 @@ export struct TopicDetailPage {
     BlockedListSettings.applyIgnoredTopicDelta(action.topicId || this.topicId, ignored, context, {
       endpoint: action.actionPath || '',
       source: 'topic_detail_mutation',
-      trigger: 'topic_ignore_success',
+      trigger: ignored ? 'topic_ignore_success' : 'topic_unignore_success',
       hasCookie: !!CookieJarSettings.getCurrentCookie(),
     }).catch((error: Error) => {
       DiagnosticLogger.exception('storage', 'blocked_list_topic_delta_exception', error, {

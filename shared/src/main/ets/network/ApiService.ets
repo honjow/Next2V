@@ -39,6 +39,7 @@ import type {
   V2exBalance,
   V2exDailyMission,
   V2exMemberPageSnapshot,
+  V2exMemberActionState,
   V2exMemberRepliesPageSnapshot,
   V2exMemberTopicsPageSnapshot,
   V2exNodeTopicsPageSnapshot,
@@ -788,6 +789,67 @@ export class ApiService {
   }
 
   /**
+   * Unblock a single member (requires Cookie session). Used by the blocked-list page
+   * where only memberId/username are known and the full member snapshot is not needed.
+   * The member page is the once-token source: `actions.blockPath` is toggle-shaped —
+   * when the member is currently blocked it already IS the `/unblock/...` link; when the
+   * page wrongly reports "not blocked" it is the `/block/...` link. Either way it carries
+   * the session once-token, so we derive the unblock path from it (mirrors the topic
+   * unignore web-bug workaround).
+   */
+  async unblockMemberWithCookie(
+    cookie: string,
+    memberId: number,
+    username: string,
+  ): Promise<void> {
+    if (!cookie) {
+      throw ApiErrors.authRequired()
+    }
+    const cleanName = (username || '').trim()
+    if (memberId <= 0 && !cleanName) {
+      throw ApiErrors.missingUserAction()
+    }
+    const snapshot = await this.getMemberPageSnapshot(cleanName, cookie)
+    const unblockPath = ApiService.resolveUnblockPath(snapshot.actions, memberId)
+    if (!unblockPath) {
+      throw ApiErrors.missingUserAction()
+    }
+    await this.executeCookieActionWithCookie(
+      cookie,
+      unblockPath,
+      `/member/${encodeURIComponent(cleanName)}`,
+      'Unblock failed',
+    )
+  }
+
+  private static resolveUnblockPath(actions: V2exMemberActionState | null, memberId: number): string {
+    if (!actions) {
+      return ''
+    }
+    const blockPath = (actions.blockPath || '').trim()
+    if (blockPath.indexOf('/unblock/') >= 0) {
+      return blockPath
+    }
+    if (blockPath.indexOf('/block/') >= 0) {
+      return blockPath.replace('/block/', '/unblock/')
+    }
+    // Extreme fallback: the page rendered no block/unblock link at all. Reuse the follow
+    // link's once-token (same session) to construct the unblock path by member id.
+    if (memberId > 0) {
+      const once = ApiService.extractOnceToken(actions.followPath || '')
+      if (once) {
+        return `/unblock/${memberId}?once=${once}`
+      }
+    }
+    return ''
+  }
+
+  private static extractOnceToken(path: string): string {
+    const m = (path || '').match(/[?&]once=(\d+)/)
+    return m && m[1] ? m[1] : ''
+  }
+
+  /**
    * Submit topic reply (requires Cookie session)
    */
   async submitReplyWithCookie(cookie: string, topicId: number, content: string): Promise<void> {
@@ -976,6 +1038,61 @@ export class ApiService {
       action.actionPath,
       `/t/${action.topicId}`,
       'Ignore failed',
+    )
+  }
+
+  async getTopicUnignoreActionWithCookie(
+    cookie: string,
+    topicId: number,
+  ): Promise<V2exTopicModerationAction> {
+    if (!cookie) {
+      throw ApiErrors.authRequired()
+    }
+    if (topicId <= 0) {
+      throw ApiErrors.invalidOperationTarget()
+    }
+    const html = await this.getCookieHtml(`/t/${topicId}`, cookie)
+    if (!V2exSessionParser.extractUsername(html)) {
+      throw ApiErrors.webSessionExpired()
+    }
+    // Resolve the unignore once-token defensively. Once a topic is ALREADY ignored, V2EX drops the
+    // `/ignore/topic/` link from the page (it would render the reverse action), and the current web
+    // bug means the `/unignore/` link often does not render either. So try, in order: an explicit
+    // unignore link, the ignore link (when the bug makes the page think the topic isn't ignored —
+    // derive by replace; the `/ignore/topic/` regex never matches `/unignore/`), then ANY once token
+    // on the page (favorite/thank/reply links all carry the same per-session once). once is
+    // session-scoped, so any of these works for the unignore GET.
+    let actionPath = ApiService.extractCookieActionPath(html, 'unignore', 'topic', topicId)
+    if (!actionPath) {
+      const ignorePath = ApiService.extractCookieActionPath(html, 'ignore', 'topic', topicId)
+      if (ignorePath) {
+        actionPath = ignorePath.replace('/ignore/', '/unignore/')
+      }
+    }
+    if (!actionPath) {
+      const once = ApiService.extractOnceToken(html)
+      if (once) {
+        actionPath = `/unignore/topic/${topicId}?once=${once}`
+      }
+    }
+    if (!actionPath) {
+      throw new Error('Topic unignore once-token not found')
+    }
+    return { topicId, actionPath }
+  }
+
+  async executeTopicUnignoreWithCookie(
+    cookie: string,
+    action: V2exTopicModerationAction,
+  ): Promise<void> {
+    if (!action || action.topicId <= 0 || !action.actionPath) {
+      throw ApiErrors.missingIgnoreAction()
+    }
+    await this.executeCookieActionWithCookie(
+      cookie,
+      action.actionPath,
+      `/t/${action.topicId}`,
+      'Unignore failed',
     )
   }
 

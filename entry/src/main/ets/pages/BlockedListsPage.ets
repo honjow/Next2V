@@ -1,4 +1,5 @@
 import { common } from '@kit.AbilityKit'
+import { promptAction } from '@kit.ArkUI'
 import {
   ApiService,
   AppStrings,
@@ -18,6 +19,7 @@ import {
   PageLoadingState,
   PullRefreshListScaffold,
   ThemeConstants,
+  translateApiError,
   type BlockedListSnapshot,
   type BlockedMemberMeta,
   type IgnoredTopicMeta,
@@ -25,7 +27,9 @@ import {
   type UserProfileParams,
   type V2exMemberProfile,
   type V2exTopic,
+  type V2exTopicModerationAction,
 } from 'shared'
+import { UnblockMemberSwipeAction, UnignoreTopicSwipeAction } from '../components/BlockedListSwipeActions'
 
 @ObservedV2
 class BlockedMemberListItem {
@@ -155,6 +159,9 @@ export struct BlockedListsPage {
   private api: ApiService = new ApiService()
   private memberRowsById: Map<number, BlockedMemberListItem> = new Map()
   private lastStorageSignature: string = ''
+  // Re-entrancy guards: a row already mid-unblock/unignore ignores repeat swipes.
+  private pendingUnblock: Set<number> = new Set()
+  private pendingUnignore: Set<number> = new Set()
 
   aboutToAppear(): void {
     this.refreshAll('page_open')
@@ -225,6 +232,7 @@ export struct BlockedListsPage {
           .onClick(() => { this.openTopic(item.id) })
       }
       .onClick(() => { this.openTopic(item.id) })
+      .swipeAction({ end: this.TopicUnignoreSwipeEnd(item.id) })
     }, (item: V2exTopic) => `ignored-topic-${item.id}`)
   }
 
@@ -239,6 +247,7 @@ export struct BlockedListsPage {
         })
       }
       .onClick(() => { this.openMember(item) })
+      .swipeAction({ end: this.MemberUnblockSwipeEnd(item.id) })
     }, (item: BlockedMemberListItem) => `blocked-member-${item.id}`)
   }
 
@@ -553,6 +562,122 @@ export struct BlockedListsPage {
     }
     let p: UserProfileParams = { username: username }
     this.stack.pushPathByName('UserProfile', p as Object)
+  }
+
+  @Builder
+  TopicUnignoreSwipeEnd(topicId: number) {
+    UnignoreTopicSwipeAction({
+      topicId: topicId,
+      onUnignore: (id: number) => {
+        this.onUnignoreTopic(id)
+      },
+    })
+  }
+
+  @Builder
+  MemberUnblockSwipeEnd(memberId: number) {
+    UnblockMemberSwipeAction({
+      memberId: memberId,
+      onUnblock: (id: number) => {
+        this.onUnblockMember(id)
+      },
+    })
+  }
+
+  // Optimistic single-topic unignore: remove the row first (no cache write yet, so the
+  // @Monitor storage observer stays quiet), call the network, commit to the cache only on
+  // success (then @Monitor rebuilds authoritatively — the rebuilt list already lacks this
+  // id so there is no flicker), or splice the row back at its original index on failure.
+  private onUnignoreTopic(topicId: number): void {
+    if (topicId <= 0 || this.pendingUnignore.has(topicId)) {
+      return
+    }
+    const cookie = CookieJarSettings.getCurrentCookie()
+    if (!cookie) {
+      promptAction
+        .openToast({ message: AppStrings.text(AppStrings.R_LOGIN_REQUIRED_CONTINUE, 'Login required') })
+        .catch((_e: Error) => {})
+      return
+    }
+    const index = this.topics.findIndex((t: V2exTopic) => t.id === topicId)
+    if (index < 0) {
+      return
+    }
+    const removed = this.topics[index]
+    this.pendingUnignore.add(topicId)
+    this.topics = this.topics.filter((t: V2exTopic) => t.id !== topicId)
+    this.api
+      .getTopicUnignoreActionWithCookie(cookie, topicId)
+      .then((action: V2exTopicModerationAction) => this.api.executeTopicUnignoreWithCookie(cookie, action))
+      .then(() => {
+        const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+        return BlockedListSettings.applyIgnoredTopicDelta(topicId, false, context, {
+          source: 'blocked_list_swipe',
+          trigger: 'unignore_success',
+          hasCookie: true,
+        })
+      })
+      .catch((error: Error) => {
+        this.restoreTopicAt(index, removed)
+        promptAction.openToast({ message: translateApiError(error) }).catch((_e: Error) => {})
+      })
+      .finally(() => {
+        this.pendingUnignore.delete(topicId)
+      })
+  }
+
+  private onUnblockMember(memberId: number): void {
+    if (memberId <= 0 || this.pendingUnblock.has(memberId)) {
+      return
+    }
+    const cookie = CookieJarSettings.getCurrentCookie()
+    if (!cookie) {
+      promptAction
+        .openToast({ message: AppStrings.text(AppStrings.R_LOGIN_REQUIRED_CONTINUE, 'Login required') })
+        .catch((_e: Error) => {})
+      return
+    }
+    const index = this.members.findIndex((m: BlockedMemberListItem) => m.id === memberId)
+    if (index < 0) {
+      return
+    }
+    const removed = this.members[index]
+    const username = removed.username || ''
+    this.pendingUnblock.add(memberId)
+    this.members = this.members.filter((m: BlockedMemberListItem) => m.id !== memberId)
+    this.api
+      .unblockMemberWithCookie(cookie, memberId, username)
+      .then(() => {
+        const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+        return BlockedListSettings.applyBlockedMemberDelta(memberId, false, context, {
+          source: 'blocked_list_swipe',
+          trigger: 'unblock_success',
+          hasCookie: true,
+        })
+      })
+      .catch((error: Error) => {
+        this.restoreMemberAt(index, removed)
+        promptAction.openToast({ message: translateApiError(error) }).catch((_e: Error) => {})
+      })
+      .finally(() => {
+        this.pendingUnblock.delete(memberId)
+      })
+  }
+
+  private restoreTopicAt(index: number, item: V2exTopic): void {
+    if (this.topics.some((t: V2exTopic) => t.id === item.id)) {
+      return
+    }
+    const safe = Math.max(0, Math.min(index, this.topics.length))
+    this.topics = this.topics.slice(0, safe).concat([item]).concat(this.topics.slice(safe))
+  }
+
+  private restoreMemberAt(index: number, item: BlockedMemberListItem): void {
+    if (this.members.some((m: BlockedMemberListItem) => m.id === item.id)) {
+      return
+    }
+    const safe = Math.max(0, Math.min(index, this.members.length))
+    this.members = this.members.slice(0, safe).concat([item]).concat(this.members.slice(safe))
   }
 
   private ensureMemberRowsForIds(memberIds: number[]): BlockedMemberListItem[] {

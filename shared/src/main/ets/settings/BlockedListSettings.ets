@@ -269,6 +269,20 @@ export class BlockedListSettings {
       DiagnosticLogger.info('network', 'blocked_list_skip_missing_variables', BlockedListSettings.missingVariablesLogContext(source, lists))
       return false
     }
+    // V2EX web bug: the topic-list page can render the `ignored_topics` JS var as PRESENT but
+    // EMPTY even when the account still has ignored topics. Trusting that empty value wipes the
+    // local ignore cache, after which the user can no longer (un)ignore-manage from the app and
+    // the settings count drops to 0. When the feed reports zero ignored topics but the cache holds
+    // some, keep the cached set — the authoritative ways to clear an ignore are the in-app unignore
+    // / reset flows, not a feed scrape. The blocked-members list is unaffected by this bug and
+    // still syncs normally, so only the ignored side is preserved here.
+    if (lists.ignoredTopicIds.length === 0) {
+      const runtime = BlockedListSettings.runtimeSnapshot()
+      if (runtime.ignoredTopicIds.length > 0) {
+        lists.ignoredTopicIds = runtime.ignoredTopicIds
+        DiagnosticLogger.info('storage', 'blocked_list_preserve_ignored_on_empty_feed', sourceContext)
+      }
+    }
     BlockedListSettings.saveActive(lists, undefined, sourceContext).catch((error: Error) => {
       DiagnosticLogger.exception('storage', 'blocked_list_save_from_html_exception', error, BlockedListSettings.sourceLogContext(source))
     })
