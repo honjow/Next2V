@@ -480,6 +480,7 @@ export struct TopicDetailPage {
         }
       }
       .translate({ x: this.replyButtonEdgeX() })
+      .animation({ duration: ThemeConstants.ANIM_DURATION, curve: Curve.EaseOut })
     }
     .width('100%')
     .height(this.TOPIC_DETAIL_REPLY_BUTTON_SIZE + this.TOPIC_DETAIL_REPLY_BUTTON_ACTIVITY_PADDING * 2)
@@ -537,6 +538,7 @@ export struct TopicDetailPage {
         }
       }
       .translate({ x: this.resumeButtonEdgeX() })
+      .animation({ duration: ThemeConstants.ANIM_DURATION, curve: Curve.EaseOut })
     }
     .width('100%')
     .height(this.TOPIC_DETAIL_RESUME_BUTTON_SIZE + this.TOPIC_DETAIL_REPLY_BUTTON_ACTIVITY_PADDING * 2)
@@ -700,12 +702,11 @@ export struct TopicDetailPage {
 
   @Monitor('motion.edge')
   private onMotionHandEdgeChanged(): void {
-    this.getUIContext().animateTo(
-      { duration: ThemeConstants.ANIM_DURATION, curve: Curve.EaseOut },
-      () => {
-        this.visualMotionHandEdge = this.motion.edge
-      },
-    )
+    // The reply/resume FAB Rows carry `.animation()` on their translate, so simply updating the
+    // visual edge here lets the declarative property animation interpolate the slide. animateTo
+    // invoked from inside a @Monitor callback does NOT capture the translate change (it hard-jumped
+    // — the V1->V2 animation regression), so we drive the slide via .animation() instead.
+    this.visualMotionHandEdge = this.motion.edge
   }
 
   @Builder ReplyComposerSheetHost() {
