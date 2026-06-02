@@ -1,7 +1,16 @@
 import { common } from '@kit.AbilityKit'
-import type { BackupAccountRecord, BackupUserInfoSection } from './BackupTypes'
+import type {
+  BackupAccountRecord,
+  BackupNetworkProxyProfile,
+  BackupUserInfoSection,
+} from './BackupTypes'
 import { AccountStore, type AccountRecord } from '../settings/AccountStore'
 import { AccountSessionCoordinator } from '../settings/AccountSessionCoordinator'
+import { NetworkProxyProfileSettings, NetworkProxySettings } from '../settings/NetworkProxySettings'
+import type {
+  NetworkProxyProfile,
+  NetworkProxySettingsSnapshot,
+} from '../settings/NetworkProxySettings'
 
 /**
  * Account/credentials adapter for the encrypted backup path ONLY.
@@ -31,7 +40,28 @@ export class BackupAccountAdapter {
         }
       },
     )
-    return { activeAccountId: AccountStore.getActiveId(), accounts: accounts }
+    const proxyState = await NetworkProxyProfileSettings.load(context)
+    const proxyProfiles: BackupNetworkProxyProfile[] = proxyState.profiles.map(
+      (p: NetworkProxyProfile): BackupNetworkProxyProfile => {
+        return {
+          id: p.id,
+          name: p.name,
+          mode: p.snapshot.mode,
+          proxyScheme: p.snapshot.proxyScheme || 'http',
+          host: p.snapshot.host,
+          port: p.snapshot.port,
+          username: p.snapshot.username,
+          password: p.snapshot.password,
+          exclusionList: p.snapshot.exclusionList || [],
+          updatedAt: p.updatedAt,
+        }
+      },
+    )
+    return {
+      activeAccountId: AccountStore.getActiveId(),
+      accounts: accounts,
+      networkProxy: { activeProfileId: proxyState.activeProfileId, profiles: proxyProfiles },
+    }
   }
 
   static count(section: BackupUserInfoSection): number {
@@ -47,6 +77,7 @@ export class BackupAccountAdapter {
     context: common.UIAbilityContext,
     section: BackupUserInfoSection,
   ): Promise<void> {
+    await BackupAccountAdapter.restoreNetworkProxy(context, section)
     const accounts = section.accounts || []
     await AccountStore.replaceAllFromBackup(context, BackupAccountAdapter.toRecords(accounts))
 
@@ -58,6 +89,43 @@ export class BackupAccountAdapter {
     const active = all.find((record: AccountRecord): boolean => record.id === targetId) ?? null
     if (active) {
       await AccountSessionCoordinator.switchToAccount(context, active)
+    }
+  }
+
+  // Restore network-proxy profiles (incl. credentials) — independent of accounts, so it runs even
+  // when the backup carries no accounts. Mirrors the proxy settings page's upsert + activate flow.
+  private static async restoreNetworkProxy(
+    context: common.UIAbilityContext,
+    section: BackupUserInfoSection,
+  ): Promise<void> {
+    const proxy = section.networkProxy
+    if (!proxy || !Array.isArray(proxy.profiles)) {
+      return
+    }
+    for (const p of proxy.profiles) {
+      const snapshot: NetworkProxySettingsSnapshot = {
+        mode: NetworkProxySettings.normalizeMode(p.mode || 'off'),
+        host: p.host || '',
+        port: p.port || 0,
+        proxyScheme: NetworkProxySettings.normalizeProxyScheme(p.proxyScheme || 'http'),
+        username: p.username || '',
+        password: p.password || '',
+        exclusionList: Array.isArray(p.exclusionList) ? p.exclusionList : [],
+      }
+      const profile: NetworkProxyProfile = {
+        id: p.id,
+        name: p.name,
+        snapshot: snapshot,
+        updatedAt: p.updatedAt > 0 ? p.updatedAt : Date.now(),
+      }
+      await NetworkProxyProfileSettings.upsertProfile(context, profile)
+    }
+    if (proxy.activeProfileId) {
+      try {
+        await NetworkProxyProfileSettings.setActiveProfile(context, proxy.activeProfileId)
+      } catch (_error) {
+        // active profile id may not resolve; leave proxy inactive rather than failing the import
+      }
     }
   }
 

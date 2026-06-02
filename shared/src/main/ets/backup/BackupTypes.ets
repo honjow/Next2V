@@ -112,6 +112,9 @@ export interface BackupPreferencesSection {
   reply?: BackupReplyPreferences
   feedTabs?: BackupFeedTabsPreferences
   autoDailyCheckin?: BackupAutoDailyCheckinPreferences
+  homeTab?: BackupHomeTabPreferences
+  topicDetailReplyAction?: BackupTopicDetailReplyActionPreferences
+  diagnostics?: BackupDiagnosticsPreferences
 }
 
 export interface BackupApiDomainPreferences {
@@ -158,6 +161,19 @@ export interface BackupAutoDailyCheckinPreferences {
   enabled: boolean
 }
 
+export interface BackupHomeTabPreferences {
+  autoHide: boolean
+}
+
+export interface BackupTopicDetailReplyActionPreferences {
+  autoHide: boolean
+}
+
+export interface BackupDiagnosticsPreferences {
+  enabled: boolean
+  minLevel: string
+}
+
 export interface BackupDraftsSection {
   replyDrafts: Object[]
   topicDraft?: Object | null
@@ -191,6 +207,27 @@ export interface BackupNotificationsSection {
 export interface BackupUserInfoSection {
   activeAccountId: string
   accounts: BackupAccountRecord[]
+  // Network-proxy profiles incl. credentials — valid only inside the encrypted container (same rule
+  // as account cookie/token snapshots), never in a plaintext envelope.
+  networkProxy?: BackupNetworkProxySettings
+}
+
+export interface BackupNetworkProxySettings {
+  activeProfileId: string
+  profiles: BackupNetworkProxyProfile[]
+}
+
+export interface BackupNetworkProxyProfile {
+  id: string
+  name: string
+  mode: string
+  proxyScheme: string
+  host: string
+  port: number
+  username: string
+  password: string
+  exclusionList: string[]
+  updatedAt: number
 }
 
 export interface BackupAccountRecord {
