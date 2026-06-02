@@ -1,7 +1,7 @@
 import { common } from '@kit.AbilityKit'
 import { promptAction } from '@kit.ArkUI'
 import { NodeIndexViewModel } from '../viewmodel/NodeIndexViewModel'
-import { AppStrings, connectNavStack, DraftSettings, V2exNode, SecondaryListScaffold, translateApiError } from 'shared'
+import { AppStrings, connectNavStack, connectNodePickAction, DraftSettings, V2exNode, SecondaryListScaffold, translateApiError } from 'shared'
 import {
   NodePickerEmptyState,
   NodePickerErrorState,
@@ -75,7 +75,7 @@ export struct NodePickerPage {
       node: node,
       selectedNodeName: this.selectedNodeName,
       selectAction: () => {
-        this.selectNode(node.name)
+        this.selectNode(node.name, node.title)
       }
     })
   }
@@ -91,7 +91,7 @@ export struct NodePickerPage {
       })
   }
 
-  private selectNode(nodeName: string): void {
+  private selectNode(nodeName: string, nodeTitle: string): void {
     const clean = nodeName.trim()
     if (!clean || this.isSaving) {
       return
@@ -100,10 +100,17 @@ export struct NodePickerPage {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     DraftSettings.loadTopicDraft(context)
       .then((draft) => {
-        return DraftSettings.saveTopicDraft(context, clean, draft?.title || '', draft?.content || '')
+        return DraftSettings.saveTopicDraft(context, clean, draft?.title || '', draft?.content || '', (nodeTitle || '').trim())
       })
       .then(() => {
         this.selectedNodeName = clean
+        // Publish to the node-pick command bus so the already-mounted TopicEditorPage fills its node
+        // field immediately on pop (it can't re-read the draft from aboutToAppear). title is for
+        // display only; name is the submit value.
+        const bus = connectNodePickAction()
+        bus.name = clean
+        bus.title = (nodeTitle || '').trim()
+        bus.command = `${Date.now()}`
         promptAction.openToast({ message: AppStrings.format(AppStrings.text($r('app.string.node_selected_format'), 'Selected node: {0}'), [clean]) }).catch((_error: Error) => { })
         this.stack.pop()
       })

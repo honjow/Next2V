@@ -1,8 +1,8 @@
 import { common } from '@kit.AbilityKit'
 import { promptAction } from '@kit.ArkUI'
 import {
-  ApiService, AppStrings, connectNavStack, CookieJarSettings, DateUtils, DraftSettings, MarkdownContent, MarkdownToolbar, SecondaryFormScaffold,
-  ThemeConstants, translateApiError
+  ApiService, AppStrings, connectNavStack, connectNodePickAction, CookieJarSettings, DateUtils, DraftSettings, MarkdownContent, MarkdownToolbar,
+  NodePickActionState, SecondaryFormScaffold, ThemeConstants, TopicDetailParams, translateApiError
 } from 'shared'
 
 @ComponentV2
@@ -12,6 +12,9 @@ export struct TopicEditorPage {
   private stack: NavPathStack = connectNavStack().stack
 
   @Local private nodeName: string = ''
+  // Display-only label for the picked node (the submit value is nodeName). Empty until a node is
+  // picked this session; on a draft reload we only have the name, so the field falls back to it.
+  @Local private nodeTitle: string = ''
   @Local private title: string = ''
   @Local private content: string = ''
   @Local private isPreview: boolean = false
@@ -26,9 +29,24 @@ export struct TopicEditorPage {
   private isSaving: boolean = false
   private hasSubmitted: boolean = false
   private api: ApiService = new ApiService()
+  // Node-pick command bus: NodePickerPage publishes the chosen node here; we react below.
+  private nodePick: NodePickActionState = connectNodePickAction()
+
+  // Fill the node field the moment the picker pops back (aboutToAppear does not re-run on pop).
+  @Monitor('nodePick.command')
+  onNodePicked(): void {
+    const picked = (this.nodePick.name || '').trim()
+    if (!picked) {
+      return
+    }
+    this.nodeName = picked
+    this.nodeTitle = (this.nodePick.title || '').trim()
+    this.scheduleSaveDraft()
+  }
 
   aboutToAppear(): void {
     this.nodeName = ''
+    this.nodeTitle = ''
     this.title = ''
     this.content = ''
     this.isPreview = false
@@ -44,6 +62,7 @@ export struct TopicEditorPage {
       .then((draft) => {
         if (draft) {
           this.nodeName = draft.nodeName || ''
+          this.nodeTitle = draft.nodeTitle || ''
           this.title = draft.title || ''
           this.content = draft.content || ''
           this.savedAt = draft.updatedAt || 0
@@ -67,31 +86,35 @@ export struct TopicEditorPage {
     Column() {
       SecondaryFormScaffold({ includeKeyboardPadding: true }) {
       Column({ space: ThemeConstants.SPACE_SM }) {
+        // Node is chosen from the node list only (no free text): tapping opens NodePickerPage, and
+        // the pick comes back via the node-pick command bus (see onNodePicked).
         Row({ space: ThemeConstants.SPACE_SM }) {
-          TextInput({ placeholder: AppStrings.text(AppStrings.R_TOPIC_EDITOR_NODE_PLACEHOLDER, 'Node (e.g. create)'), text: this.nodeName })
-            .height(44)
+          Text(this.nodeFieldLabel())
             .fontSize(ThemeConstants.FONT_SIZE_BODY)
-            .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
-            .borderRadius(ThemeConstants.RADIUS_MD)
+            .fontColor(this.nodeName.trim().length > 0
+              ? $r('sys.color.font_primary')
+              : $r('sys.color.font_secondary'))
             .layoutWeight(1)
-            .onChange((value: string) => {
-              this.nodeName = value
-              this.scheduleSaveDraft()
-            })
-          Button(AppStrings.text(AppStrings.R_TOPIC_EDITOR_SELECT_NODE, 'Select'))
-            .fontSize(ThemeConstants.FONT_SIZE_TAG)
-            .height(44)
-            .type(ButtonType.Normal)
-            .borderRadius(ThemeConstants.RADIUS_MD)
-            .enabled(!this.isSubmitting)
-            .onClick(() => { this.openNodePicker() })
+            .maxLines(1)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
+          SymbolGlyph($r('sys.symbol.chevron_right'))
+            .fontSize(16)
+            .fontColor([$r('sys.color.font_secondary')])
         }
         .width('100%')
+        .height(44)
+        .padding({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
+        // Distinguish fields from the page by background-color contrast (card surface on the page's
+        // sub-background), not border lines — matches the app's overall flat/card style.
+        .backgroundColor($r('sys.color.ohos_id_color_background'))
+        .borderRadius(ThemeConstants.RADIUS_MD)
+        .enabled(!this.isSubmitting)
+        .onClick(() => { this.openNodePicker() })
 
         TextInput({ placeholder: AppStrings.text(AppStrings.R_TOPIC_EDITOR_TITLE_PLACEHOLDER, 'Title'), text: this.title })
           .height(44)
           .fontSize(ThemeConstants.FONT_SIZE_BODY)
-          .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
+          .backgroundColor($r('sys.color.ohos_id_color_background'))
           .borderRadius(ThemeConstants.RADIUS_MD)
           .onChange((value: string) => {
             this.title = value
@@ -125,8 +148,8 @@ export struct TopicEditorPage {
           TextArea({ placeholder: AppStrings.text(AppStrings.R_EDITOR_BODY_PLACEHOLDER, 'Body (Markdown)'), text: this.content, controller: this.contentController })
             .fontSize(ThemeConstants.FONT_SIZE_BODY)
             .height(320)
+            .backgroundColor($r('sys.color.ohos_id_color_background'))
             .borderRadius(ThemeConstants.RADIUS_MD)
-            .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
             .onChange((value: string) => {
               this.content = value
               this.scheduleSaveDraft()
@@ -136,18 +159,32 @@ export struct TopicEditorPage {
               this.contentSelectionEnd = selectionEnd
             })
         } else {
-          if (this.content.trim().length === 0) {
-            Text(AppStrings.text(AppStrings.R_EDITOR_EMPTY_PREVIEW, 'No content yet'))
-              .fontSize(ThemeConstants.FONT_SIZE_BODY)
-              .fontColor($r('sys.color.font_secondary'))
-              .padding({ top: ThemeConstants.SPACE_MD, bottom: ThemeConstants.SPACE_MD })
-          } else {
-            Scroll() {
-              MarkdownContent({ source: this.content, topMargin: 0 })
+          // One fixed-height (= the edit TextArea's 320) top-left container for BOTH the empty hint
+          // and the rendered content, so switching edit<->preview never shifts the layout below,
+          // regardless of how little content there is.
+          Scroll() {
+            Column() {
+              if (this.content.trim().length === 0) {
+                Text(AppStrings.text(AppStrings.R_EDITOR_EMPTY_PREVIEW, 'No content yet'))
+                  .fontSize(ThemeConstants.FONT_SIZE_BODY)
+                  .fontColor($r('sys.color.font_secondary'))
+                  .width('100%')
+              } else {
+                MarkdownContent({ source: this.content, topMargin: 0 })
+              }
             }
-            .scrollBar(BarState.Off)
-            .height(320)
+            .width('100%')
+            .alignItems(HorizontalAlign.Start)
+            .padding({
+              top: ThemeConstants.SPACE_SM,
+              left: ThemeConstants.SPACE_MD,
+              right: ThemeConstants.SPACE_MD,
+            })
           }
+          .align(Alignment.TopStart)
+          .scrollBar(BarState.Off)
+          .width('100%')
+          .height(320)
         }
 
         if (this.savedAt > 0) {
@@ -166,6 +203,7 @@ export struct TopicEditorPage {
           .onClick(() => { this.confirmSubmit() })
       }
       .width('100%')
+      .alignItems(HorizontalAlign.Start)
       }
     }
     .width('100%')
@@ -218,6 +256,20 @@ export struct TopicEditorPage {
     this.stack.pushPathByName('NodePicker', null)
   }
 
+  // Node field text. Bilingual when the display title differs from the (English) node name, e.g.
+  // "沙盒 · sandbox"; just the name when there is no distinct title; the prompt when nothing is picked.
+  private nodeFieldLabel(): string {
+    const name = this.nodeName.trim()
+    if (name.length === 0) {
+      return AppStrings.text(AppStrings.R_TOPIC_EDITOR_NODE_PLACEHOLDER, 'Node (e.g. create)')
+    }
+    const title = this.nodeTitle.trim()
+    if (title.length === 0 || title.toLowerCase() === name.toLowerCase()) {
+      return name
+    }
+    return `${title} · ${name}`
+  }
+
   private scheduleSaveDraft(): void {
     this.clearSaveTimer()
     this.saveTimerId = setTimeout(() => {
@@ -238,7 +290,7 @@ export struct TopicEditorPage {
     }
     this.isSaving = true
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    DraftSettings.saveTopicDraft(context, this.nodeName, this.title, this.content)
+    DraftSettings.saveTopicDraft(context, this.nodeName, this.title, this.content, this.nodeTitle)
       .then((savedAt: number) => {
         this.savedAt = savedAt
       })
@@ -272,6 +324,7 @@ export struct TopicEditorPage {
 
   private clearDraft(): void {
     this.nodeName = ''
+    this.nodeTitle = ''
     this.title = ''
     this.content = ''
     this.contentSelectionStart = 0
@@ -347,7 +400,15 @@ export struct TopicEditorPage {
         const context = this.getUIContext().getHostContext() as common.UIAbilityContext
         DraftSettings.clearTopicDraft(context).catch((_error: Error) => { })
         promptAction.openToast({ message: topicId > 0 ? AppStrings.format(AppStrings.text($r('app.string.posted_topic_format'), 'Posted: {0}'), [`${topicId}`]) : $r('app.string.posted_topic') }).catch((_error: Error) => { })
-        this.stack.pop()
+        if (topicId > 0) {
+          // Auto-open the freshly posted topic (replace the editor in the stack) instead of just
+          // popping back to where compose started — going straight to your new topic is less
+          // surprising than landing back on the previous page.
+          const p: TopicDetailParams = { topicId: topicId }
+          this.stack.replacePathByName('TopicDetail', p as Object)
+        } else {
+          this.stack.pop()
+        }
       })
       .catch((error: Error) => {
         this.errorMessage = translateApiError(error)

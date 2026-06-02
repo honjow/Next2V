@@ -1232,6 +1232,11 @@ export class ApiService {
     }
     fields[form.titleField] = cleanTitle
     fields[form.contentField] = cleanContent
+    // V2EX topic bodies support two syntaxes (native auto-link vs Markdown) and the server otherwise
+    // reuses the account's last-used choice. This client's composer is Markdown-based, so always
+    // declare Markdown explicitly; the field is `syntax` with the literal value 'markdown' (vs
+    // 'default'), matching V2EX's web form. Without this, a Markdown body may render as plain text.
+    fields['syntax'] = 'markdown'
     const body = ApiService.encodeFormFields(fields)
 
     const res = await this.requestHtmlWithCookieAllowRedirect(
@@ -1240,6 +1245,10 @@ export class ApiService {
       composePath,
       http.RequestMethod.POST,
       body,
+      {},
+      // A successful new-topic POST redirects to /t/<id>(/review) but may surface a non-2xx final
+      // status; tolerate it so the Location (the created topic) is recovered below rather than thrown.
+      true,
     )
     if (res.location.indexOf('/signin') >= 0) {
       throw ApiErrors.webSessionExpired()
@@ -1410,6 +1419,11 @@ export class ApiService {
     method: http.RequestMethod,
     extraData: string = '',
     extraHeaders: Record<string, string> = {},
+    // Some V2EX write actions answer a successful POST with a redirect to the created resource but a
+    // non-2xx final status (e.g. a new topic 302s to /t/<id>/review and the HTTP layer's redirect
+    // re-POST onto that GET-only page yields 405). When true, a >=400 response that still carries a
+    // Location is returned (not thrown) so the caller can recover success from the Location.
+    allowErrorWithLocation: boolean = false,
   ): Promise<CookieHtmlResponse> {
     const clean = (pathOrUrl || '').trim()
     if (!clean) {
@@ -1473,6 +1487,11 @@ export class ApiService {
       })
       this.assertNoTwoFactorChallenge(clean, text, location)
       if (statusCode < 200 || statusCode >= 400) {
+        // A redirect-driven success (see allowErrorWithLocation): hand the Location back so the
+        // caller can extract the created resource instead of mistaking the post for a failure.
+        if (allowErrorWithLocation && location) {
+          return { statusCode, text, location }
+        }
         throw new Error(`HTTP ${statusCode}: ${url}`)
       }
       return { statusCode, text, location }

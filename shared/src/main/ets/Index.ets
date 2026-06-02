@@ -69,6 +69,7 @@ export { ApiRateLimitState, connectApiRateLimit } from './state/ApiRateLimitStat
 export { LocalDataSignalState, connectLocalDataSignal, LocalContentStatsState, connectLocalContentStats } from './state/LocalDataSignalState'
 export { ImagePreviewActionState, connectImagePreviewAction } from './state/ImagePreviewActionState'
 export { NodeTopicActionState, connectNodeTopicAction } from './state/NodeTopicActionState'
+export { NodePickActionState, connectNodePickAction } from './state/NodePickActionState'
 export { TopicDetailActionState, connectTopicDetailAction } from './state/TopicDetailActionState'
 export { UserProfileActionState, connectUserProfileAction } from './state/UserProfileActionState'
 export { SearchActionState, connectSearchAction } from './state/SearchActionState'

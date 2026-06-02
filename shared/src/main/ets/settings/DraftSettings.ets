@@ -17,6 +17,9 @@ export interface ReplyDraft {
 
 export interface TopicDraft {
   nodeName: string
+  // Display title of the chosen node (e.g. "沙盒" for nodeName "sandbox"). Persisted so reopening the
+  // draft can show the node bilingually instead of only its English name. Optional for older drafts.
+  nodeTitle?: string
   title: string
   content: string
   updatedAt: number
@@ -39,7 +42,7 @@ export class DraftSettings {
   // was empty and therefore cleared). Callers that need to display the saved time
   // should use this return value rather than recomputing the clock, so the shown
   // time always matches what was written.
-  static async saveTopicDraft(context: common.UIAbilityContext, nodeName: string, title: string, content: string): Promise<number> {
+  static async saveTopicDraft(context: common.UIAbilityContext, nodeName: string, title: string, content: string, nodeTitle: string = ''): Promise<number> {
     const cleanNode = (nodeName ?? '').trim()
     const cleanTitle = (title ?? '').trim()
     const cleanContent = content ?? ''
@@ -50,6 +53,7 @@ export class DraftSettings {
     const updatedAt = Math.floor(Date.now() / 1000)
     const draft: TopicDraft = {
       nodeName: cleanNode,
+      nodeTitle: (nodeTitle ?? '').trim(),
       title: cleanTitle,
       content: cleanContent,
       updatedAt: updatedAt
@@ -192,6 +196,7 @@ export class DraftSettings {
     }
     const draft: TopicDraft = {
       nodeName: (parsed.nodeName ?? '').trim(),
+      nodeTitle: (parsed.nodeTitle ?? '').trim(),
       title: (parsed.title ?? '').trim(),
       content: parsed.content ?? '',
       updatedAt: parsed.updatedAt || 0
