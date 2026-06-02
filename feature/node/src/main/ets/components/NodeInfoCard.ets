@@ -1,4 +1,14 @@
-import { AppStrings, Avatar, CollectionSettings, ThemeConstants, V2exNode } from 'shared'
+import { common, Want } from '@kit.AbilityKit'
+import {
+  AppStrings,
+  Avatar,
+  CollectionSettings,
+  MediaUrlUtils,
+  NodeHeaderHtml,
+  NodeHeaderRun,
+  ThemeConstants,
+  V2exNode,
+} from 'shared'
 
 /**
  * Node header card shown as the first list item on NodeTopicPage. Mirrors the user-profile card
@@ -14,6 +24,8 @@ export struct NodeInfoCard {
   @Param fallbackName: string = '';
   @Param fallbackTitle: string = '';
   @Event onNodeNameAreaChange?: (bottom: number) => void;
+  // Optional override for header link taps; when unset the URL opens externally via the system.
+  @Event onHeaderLinkClick?: (url: string) => void;
 
   build() {
     Column({ space: ThemeConstants.SPACE_MD }) {
@@ -55,12 +67,38 @@ export struct NodeInfoCard {
       .width('100%')
       .alignItems(VerticalAlign.Center)
 
-      if (this.headerText()) {
-        Text(this.headerText())
-          .fontSize(ThemeConstants.FONT_SIZE_BODY)
-          .fontColor($r('sys.color.font_primary'))
-          .lineHeight(ThemeConstants.LINE_HEIGHT_BODY + 2)
-          .width('100%')
+      if (this.headerRuns().length > 0) {
+        Text() {
+          ForEach(
+            this.headerRuns(),
+            (run: NodeHeaderRun, index: number) => {
+              Span(run.text)
+                .fontSize(ThemeConstants.FONT_SIZE_BODY)
+                .fontWeight(run.bold ? FontWeight.Bold : FontWeight.Normal)
+                .fontStyle(run.italic ? FontStyle.Italic : FontStyle.Normal)
+                .fontFamily(run.mono ? 'Noto Sans Mono' : 'HarmonyOS Sans')
+                .fontColor(
+                  run.href.length > 0 ? ThemeConstants.TEXT_LINK : $r('sys.color.font_primary'),
+                )
+                .decoration(
+                  run.href.length > 0
+                    ? { type: TextDecorationType.Underline, color: ThemeConstants.TEXT_LINK }
+                    : { type: TextDecorationType.None },
+                )
+                .textBackgroundStyle(
+                  run.mono
+                    ? { color: ThemeConstants.BG_SUB, radius: ThemeConstants.RADIUS_SM }
+                    : { color: Color.Transparent, radius: 0 },
+                )
+                .onClick(() => {
+                  this.openHeaderLink(run.href)
+                })
+            },
+            (run: NodeHeaderRun, index: number) => `${index}-${run.href}-${run.text}`,
+          )
+        }
+        .lineHeight(ThemeConstants.LINE_HEIGHT_BODY + 2)
+        .width('100%')
       }
     }
     .padding(ThemeConstants.SPACE_LG)
@@ -84,8 +122,32 @@ export struct NodeInfoCard {
     return this.detail?.topics || 0
   }
 
-  private headerText(): string {
-    return (this.detail?.header || '').trim()
+  private headerRuns(): NodeHeaderRun[] {
+    return NodeHeaderHtml.parse(this.detail?.header || '')
+  }
+
+  private openHeaderLink(href: string): void {
+    const url = (href || '').trim()
+    if (url.length === 0) {
+      return
+    }
+    const normalized = MediaUrlUtils.normalizeUrl(url)
+    if (!normalized) {
+      return
+    }
+    if (this.onHeaderLinkClick) {
+      this.onHeaderLinkClick(normalized)
+      return
+    }
+    // Default: hand the link to the system (browser / matching app), mirroring how reply content
+    // links open when no in-app handler is provided.
+    try {
+      const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+      const want: Want = { action: 'ohos.want.action.viewData', uri: normalized }
+      context.startAbility(want).catch((_error: Error) => {})
+    } catch (_error) {
+      // Opening an external link is best-effort; ignore failures.
+    }
   }
 
   private areaY(value: Length | undefined): number {
