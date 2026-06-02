@@ -89,9 +89,15 @@ export class StorageSettingsCoordinator {
 
   static backupImportPreviewCopy(preview: BackupPreview): StorageConfirmDialogCopy {
     const sections = preview.sections.join(', ')
+    let message = AppStrings.format(AppStrings.text(AppStrings.R_BACKUP_IMPORT_PREVIEW_MESSAGE, 'Backup from {0}, app {1} ({2}). Sections: {3}. Login state, cookies, and tokens will not be changed.'), [preview.createdAt, preview.appVersion, `${preview.appVersionCode}`, sections])
+    // An encrypted backup that carries the userInfo section DOES restore accounts and login
+    // credentials, so the preview must say so instead of the credential-free notice above.
+    if (preview.sections.indexOf('userInfo') >= 0) {
+      message = message + '\n' + AppStrings.text(AppStrings.R_BACKUP_IMPORT_RESTORES_ACCOUNTS, 'This backup includes accounts and login info, which will replace the current accounts.')
+    }
     return {
       title: AppStrings.text(AppStrings.R_IMPORT_BACKUP, 'Import backup'),
-      message: AppStrings.format(AppStrings.text(AppStrings.R_BACKUP_IMPORT_PREVIEW_MESSAGE, 'Backup from {0}, app {1} ({2}). Sections: {3}. Login state, cookies, and tokens will not be changed.'), [preview.createdAt, preview.appVersion, `${preview.appVersionCode}`, sections]),
+      message: message,
       cancelValue: AppStrings.text(AppStrings.R_COMMON_CANCEL, 'Cancel'),
       confirmValue: AppStrings.text(AppStrings.R_COMMON_RESTORE, 'Restore'),
     }
@@ -123,9 +129,24 @@ export class StorageSettingsCoordinator {
     if (errorCode === 'bad_checksum') {
       return AppStrings.text(AppStrings.R_BACKUP_ERROR_CHECKSUM, 'Backup is damaged or failed checksum validation.')
     }
+    if (errorCode === 'bad_password') {
+      return AppStrings.text(AppStrings.R_BACKUP_ERROR_BAD_PASSWORD, 'Incorrect password or the backup is damaged.')
+    }
     if (errorCode === 'too_large') {
       return AppStrings.text(AppStrings.R_BACKUP_ERROR_TOO_LARGE, 'Backup file is too large.')
     }
     return errorCode || AppStrings.text(AppStrings.R_BACKUP_ERROR_INVALID, 'This file is not a V2Next backup.')
+  }
+
+  // Validate the two password fields entered when exporting an encrypted (account-bearing)
+  // backup. Returns an error message resource string, or '' when the password is acceptable.
+  static validateExportPassword(password: string, confirm: string): string {
+    if (password.length < 8) {
+      return AppStrings.text(AppStrings.R_BACKUP_PASSWORD_TOO_SHORT, 'Use at least 8 characters.')
+    }
+    if (password !== confirm) {
+      return AppStrings.text(AppStrings.R_BACKUP_PASSWORD_MISMATCH, 'The two passwords do not match.')
+    }
+    return ''
   }
 }

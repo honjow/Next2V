@@ -248,6 +248,23 @@ export class AccountStore {
     }
   }
 
+  /**
+   * Replace the entire account list from a restored (decrypted) backup. Overwrites all
+   * existing records and stamps the current schema version so a later migration is a no-op.
+   * Does not touch the active-account id; the backup restore flow sets it via switchToAccount.
+   */
+  static async replaceAllFromBackup(context: common.UIAbilityContext, records: AccountRecord[]): Promise<void> {
+    try {
+      const store = await preferences.getPreferences(context, STORE_NAME)
+      store.putSync(KEY_RECORDS, JSON.stringify(records))
+      store.putSync(KEY_SCHEMA_VERSION, CURRENT_SCHEMA_VERSION)
+      store.flushSync()
+    } catch (error) {
+      const e = error as Error
+      throw new Error(e.message || AppStrings.text(AppStrings.R_ACCOUNT_CLEAR_DATA_FAILED, 'Failed to clear account data'))
+    }
+  }
+
   private static async saveAllAndFlush(context: common.UIAbilityContext, records: AccountRecord[]): Promise<void> {
     const store = await preferences.getPreferences(context, STORE_NAME)
     store.putSync(KEY_RECORDS, JSON.stringify(records))

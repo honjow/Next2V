@@ -2751,6 +2751,54 @@
     {
       "name": "backup_error_too_large",
       "value": "백업 파일이 너무 큽니다."
+    },
+    {
+      "name": "backup_error_bad_password",
+      "value": "비밀번호가 올바르지 않거나 백업이 손상되었습니다."
+    },
+    {
+      "name": "backup_include_user_info",
+      "value": "계정 및 로그인 정보 포함"
+    },
+    {
+      "name": "backup_include_user_info_hint",
+      "value": "계정 목록과 로그인 자격 증명을 포함하며 전체 백업이 비밀번호로 암호화됩니다."
+    },
+    {
+      "name": "backup_set_password",
+      "value": "백업 비밀번호 설정"
+    },
+    {
+      "name": "backup_enter_password",
+      "value": "백업 비밀번호 입력"
+    },
+    {
+      "name": "backup_password_label",
+      "value": "비밀번호"
+    },
+    {
+      "name": "backup_password_confirm_label",
+      "value": "비밀번호 확인"
+    },
+    {
+      "name": "backup_password_too_short",
+      "value": "8자 이상 입력하세요."
+    },
+    {
+      "name": "backup_password_mismatch",
+      "value": "두 비밀번호가 일치하지 않습니다."
+    },
+    {
+      "name": "backup_password_required",
+      "value": "백업 비밀번호를 입력하세요."
+    },
+    {
+      "name": "backup_unlock",
+      "value": "잠금 해제 후 가져오기"
+    },
+    {
+      "name": "backup_import_restores_accounts",
+      "value": "이 백업에는 계정과 로그인 정보가 포함되어 현재 계정을 대체합니다."
     }
   ]
 }

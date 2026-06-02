@@ -2751,6 +2751,54 @@
     {
       "name": "backup_error_too_large",
       "value": "备份文件过大。"
+    },
+    {
+      "name": "backup_error_bad_password",
+      "value": "密码错误或备份已损坏。"
+    },
+    {
+      "name": "backup_include_user_info",
+      "value": "包含账号与登录信息"
+    },
+    {
+      "name": "backup_include_user_info_hint",
+      "value": "包含账号列表与登录凭据，整个备份将使用密码加密。"
+    },
+    {
+      "name": "backup_set_password",
+      "value": "设置备份密码"
+    },
+    {
+      "name": "backup_enter_password",
+      "value": "输入备份密码"
+    },
+    {
+      "name": "backup_password_label",
+      "value": "密码"
+    },
+    {
+      "name": "backup_password_confirm_label",
+      "value": "确认密码"
+    },
+    {
+      "name": "backup_password_too_short",
+      "value": "密码至少需要 8 个字符。"
+    },
+    {
+      "name": "backup_password_mismatch",
+      "value": "两次输入的密码不一致。"
+    },
+    {
+      "name": "backup_password_required",
+      "value": "请输入备份密码。"
+    },
+    {
+      "name": "backup_unlock",
+      "value": "解锁并导入"
+    },
+    {
+      "name": "backup_import_restores_accounts",
+      "value": "此备份包含账号与登录信息，导入将替换当前账号。"
     }
   ]
 }

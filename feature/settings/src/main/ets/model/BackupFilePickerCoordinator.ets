@@ -4,6 +4,7 @@ import {
   BackupService,
   type BackupAppMetadata,
   type BackupEnvelopeV1,
+  type BackupExportOptions,
   type BackupParseResult,
   BACKUP_FILE_SUFFIX,
   MAX_BACKUP_BYTES,
@@ -15,8 +16,8 @@ export interface BackupImportSelection {
 }
 
 export class BackupFilePickerCoordinator {
-  static async exportBackup(context: common.UIAbilityContext, metadata: BackupAppMetadata): Promise<string> {
-    const raw = await BackupService.serializeBackup(context, metadata)
+  static async exportBackup(context: common.UIAbilityContext, metadata: BackupAppMetadata, exportOptions?: BackupExportOptions): Promise<string> {
+    const raw = await BackupService.serializeBackup(context, metadata, exportOptions)
     const pickerInstance = new picker.DocumentViewPicker(context)
     const options = new picker.DocumentSaveOptions()
     options.newFileNames = [BackupFilePickerCoordinator.defaultFilename()]
@@ -42,6 +43,12 @@ export class BackupFilePickerCoordinator {
       throw new Error('Backup file is too large.')
     }
     return { raw: raw, parseResult: await BackupService.parseAndPreview(raw) }
+  }
+
+  // Decrypt a previously-selected encrypted backup with the user's password. The raw bytes were
+  // already read by selectImport(); the password is passed straight through and never retained.
+  static async decryptSelected(raw: string, password: string): Promise<BackupParseResult> {
+    return await BackupService.decryptAndPreview(raw, password)
   }
 
   static async restoreSelected(context: common.UIAbilityContext, envelope: BackupEnvelopeV1): Promise<void> {

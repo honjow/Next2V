@@ -2751,6 +2751,54 @@
     {
       "name": "backup_error_too_large",
       "value": "備份檔過大。"
+    },
+    {
+      "name": "backup_error_bad_password",
+      "value": "密碼錯誤或備份已損毀。"
+    },
+    {
+      "name": "backup_include_user_info",
+      "value": "包含帳號與登入資訊"
+    },
+    {
+      "name": "backup_include_user_info_hint",
+      "value": "包含帳號清單與登入憑證，整個備份將以密碼加密。"
+    },
+    {
+      "name": "backup_set_password",
+      "value": "設定備份密碼"
+    },
+    {
+      "name": "backup_enter_password",
+      "value": "輸入備份密碼"
+    },
+    {
+      "name": "backup_password_label",
+      "value": "密碼"
+    },
+    {
+      "name": "backup_password_confirm_label",
+      "value": "確認密碼"
+    },
+    {
+      "name": "backup_password_too_short",
+      "value": "密碼至少需要 8 個字元。"
+    },
+    {
+      "name": "backup_password_mismatch",
+      "value": "兩次輸入的密碼不一致。"
+    },
+    {
+      "name": "backup_password_required",
+      "value": "請輸入備份密碼。"
+    },
+    {
+      "name": "backup_unlock",
+      "value": "解鎖並匯入"
+    },
+    {
+      "name": "backup_import_restores_accounts",
+      "value": "此備份包含帳號與登入資訊，匯入將取代目前的帳號。"
     }
   ]
 }
