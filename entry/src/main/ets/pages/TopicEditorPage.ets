@@ -1,9 +1,12 @@
 import { common } from '@kit.AbilityKit'
 import { promptAction } from '@kit.ArkUI'
 import {
-  ApiService, AppStrings, connectNavStack, connectNodePickAction, CookieJarSettings, DateUtils, DraftSettings, MarkdownContent, MarkdownToolbar,
-  NodePickActionState, SecondaryFormScaffold, ThemeConstants, TopicDetailParams, translateApiError
+  ApiService, AppStrings, connectLayoutSafeArea, connectNavStack, connectNodePickAction, CookieJarSettings, DateUtils, DraftSettings, LayoutSafeAreaState, MarkdownContent, MarkdownToolbar,
+  NodePickActionState, ThemeConstants, TopicDetailParams, translateApiError
 } from 'shared'
+
+// Body TextArea id, used to move focus into it after a toolbar insert.
+const BODY_INPUT_ID: string = 'topicEditorBodyInput'
 
 @ComponentV2
 export struct TopicEditorPage {
@@ -25,6 +28,9 @@ export struct TopicEditorPage {
   @Local private contentSelectionEnd: number = 0
 
   private contentController: TextAreaController = new TextAreaController()
+  // Safe-area / keyboard metrics published by EntryAbility; drives the manual keyboard avoidance
+  // now that the editor is a fixed-height column (no scroll scaffold).
+  layout: LayoutSafeAreaState = connectLayoutSafeArea()
   private saveTimerId: number = 0
   private isSaving: boolean = false
   private hasSubmitted: boolean = false
@@ -84,7 +90,10 @@ export struct TopicEditorPage {
 
   build() {
     Column() {
-      SecondaryFormScaffold({ includeKeyboardPadding: true }) {
+      // The HdsNavDestination title bar overlays content, so offset below it (top safe area + bar
+      // height) the way SecondaryFormScaffold's top Blank did. The editor is a fixed-height column
+      // (not a scroll) so the body can fill the pane instead of being a fixed 320 box.
+      Blank().height(this.layout.topAvoidHeight + ThemeConstants.TITLE_BAR_HEIGHT)
       Column({ space: ThemeConstants.SPACE_SM }) {
         // Node is chosen from the node list only (no free text): tapping opens NodePickerPage, and
         // the pick comes back via the node-pick command bus (see onNodePicked).
@@ -116,6 +125,8 @@ export struct TopicEditorPage {
           .fontSize(ThemeConstants.FONT_SIZE_BODY)
           .backgroundColor($r('sys.color.ohos_id_color_background'))
           .borderRadius(ThemeConstants.RADIUS_MD)
+          // Native clear ✕ on the right, shown only while the field is non-empty (INPUT style).
+          .cancelButton({ style: CancelButtonStyle.INPUT })
           .onChange((value: string) => {
             this.title = value
             this.scheduleSaveDraft()
@@ -144,23 +155,38 @@ export struct TopicEditorPage {
         }
 
         if (!this.isPreview) {
-          TextArea({ placeholder: AppStrings.text(AppStrings.R_EDITOR_BODY_PLACEHOLDER, 'Body (Markdown)'), text: this.content, controller: this.contentController })
-            .fontSize(ThemeConstants.FONT_SIZE_BODY)
-            .height(320)
-            .backgroundColor($r('sys.color.ohos_id_color_background'))
-            .borderRadius(ThemeConstants.RADIUS_MD)
-            .onChange((value: string) => {
-              this.content = value
-              this.scheduleSaveDraft()
-            })
-            .onTextSelectionChange((selectionStart: number, selectionEnd: number) => {
-              this.contentSelectionStart = selectionStart
-              this.contentSelectionEnd = selectionEnd
-            })
+          // Body fills the remaining pane height (layoutWeight) instead of a fixed 320 box, so the
+          // editor uses the whole screen on large/tablet layouts. A clear ✕ overlays the top-right
+          // corner only while the body is non-empty.
+          Stack({ alignContent: Alignment.TopEnd }) {
+            TextArea({ placeholder: AppStrings.text(AppStrings.R_EDITOR_BODY_PLACEHOLDER, 'Body (Markdown)'), text: this.content, controller: this.contentController })
+              .id(BODY_INPUT_ID)
+              .fontSize(ThemeConstants.FONT_SIZE_BODY)
+              .width('100%')
+              .height('100%')
+              .backgroundColor($r('sys.color.ohos_id_color_background'))
+              .borderRadius(ThemeConstants.RADIUS_MD)
+              .onChange((value: string) => {
+                this.content = value
+                this.scheduleSaveDraft()
+              })
+              .onTextSelectionChange((selectionStart: number, selectionEnd: number) => {
+                this.contentSelectionStart = selectionStart
+                this.contentSelectionEnd = selectionEnd
+              })
+            if (this.content.length > 0) {
+              SymbolGlyph($r('sys.symbol.xmark'))
+                .fontSize(18)
+                .fontColor([$r('sys.color.font_secondary')])
+                .padding(ThemeConstants.SPACE_SM)
+                .onClick(() => { this.clearBody() })
+            }
+          }
+          .layoutWeight(1)
+          .width('100%')
         } else {
-          // One fixed-height (= the edit TextArea's 320) top-left container for BOTH the empty hint
-          // and the rendered content, so switching edit<->preview never shifts the layout below,
-          // regardless of how little content there is.
+          // Same top-left container as the edit box, also filling the pane height, so switching
+          // edit<->preview never shifts the layout below.
           Scroll() {
             Column() {
               if (this.content.trim().length === 0) {
@@ -183,7 +209,7 @@ export struct TopicEditorPage {
           .align(Alignment.TopStart)
           .scrollBar(BarState.Off)
           .width('100%')
-          .height(320)
+          .layoutWeight(1)
         }
 
         if (this.savedAt > 0) {
@@ -201,9 +227,13 @@ export struct TopicEditorPage {
           .enabled(this.canSubmit())
           .onClick(() => { this.confirmSubmit() })
       }
+      .layoutWeight(1)
       .width('100%')
       .alignItems(HorizontalAlign.Start)
-      }
+      .padding({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
+      // Bottom safe area + a resting bottom gap, growing by the keyboard height when it is up
+      // (manual avoidance, matching the SecondaryFormScaffold the editor used to use).
+      Blank().height(this.layout.bottomAvoidHeight + ThemeConstants.SPACE_XL + Math.max(0, this.layout.keyboardHeight))
     }
     .width('100%')
     .height('100%')
@@ -221,17 +251,42 @@ export struct TopicEditorPage {
     const rawEnd = Math.min(Math.max(this.contentSelectionEnd, 0), contentLength)
     const end = rawEnd >= start ? rawEnd : start
     const selected = this.content.substring(start, end)
+    // When the user had no selection we filled in the placeholder; select it back so the next
+    // keystroke overwrites it (e.g. Bold on empty input -> "**Text**" with "Text" highlighted).
+    const usedPlaceholder = selected.length === 0 && caretOffset < 0
     const middle = selected || placeholder
     const insertion = `${prefix}${middle}${suffix}`
     this.content = `${this.content.substring(0, start)}${insertion}${this.content.substring(end)}`
+    const placeholderStart = start + prefix.length
+    const placeholderEnd = placeholderStart + middle.length
     const caret = start + (caretOffset >= 0 ? caretOffset : prefix.length + middle.length + suffix.length)
-    this.contentSelectionStart = caret
-    this.contentSelectionEnd = caret
+    this.contentSelectionStart = usedPlaceholder ? placeholderStart : caret
+    this.contentSelectionEnd = usedPlaceholder ? placeholderEnd : caret
     this.isPreview = false
     this.scheduleSaveDraft()
+    // setTextSelection only highlights while the field is focused, so request focus first.
     setTimeout(() => {
-      this.contentController.caretPosition(caret)
+      this.focusBody()
+      if (usedPlaceholder) {
+        this.contentController.setTextSelection(placeholderStart, placeholderEnd)
+      } else {
+        this.contentController.caretPosition(caret)
+      }
     }, 0)
+  }
+
+  private focusBody(): void {
+    try {
+      this.getUIContext().getFocusController().requestFocus(BODY_INPUT_ID)
+    } catch (_error) {
+    }
+  }
+
+  private clearBody(): void {
+    this.content = ''
+    this.contentSelectionStart = 0
+    this.contentSelectionEnd = 0
+    this.scheduleSaveDraft()
   }
 
   private insertLinePrefix(prefix: string): void {
@@ -245,6 +300,7 @@ export struct TopicEditorPage {
     this.isPreview = false
     this.scheduleSaveDraft()
     setTimeout(() => {
+      this.focusBody()
       this.contentController.caretPosition(caret)
     }, 0)
   }
