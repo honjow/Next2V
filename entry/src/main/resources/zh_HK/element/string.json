@@ -2301,18 +2301,6 @@
       "value": "發佈"
     },
     {
-      "name": "editor_clear_draft_title",
-      "value": "清空草稿"
-    },
-    {
-      "name": "editor_clear_draft_message",
-      "value": "確定清空當前發帖草稿嗎？"
-    },
-    {
-      "name": "editor_clear_draft_failed",
-      "value": "清空失敗"
-    },
-    {
       "name": "editor_confirm_post_format",
       "value": "確定在節點「{0}」發佈主題《{1}》嗎？\n\nV2EX 發帖通常至少消耗 20 銅幣，提交後會修改你的賬號狀態。"
     },
@@ -2579,10 +2567,6 @@
     {
       "name": "markdown_toolbar_image",
       "value": "圖"
-    },
-    {
-      "name": "markdown_toolbar_clear",
-      "value": "清"
     },
     {
       "name": "topic_last_reply",

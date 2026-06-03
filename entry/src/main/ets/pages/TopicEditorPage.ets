@@ -134,8 +134,7 @@ export struct TopicEditorPage {
             const textHolder = AppStrings.text(AppStrings.R_MARKDOWN_PLACEHOLDER_TEXT, 'Text')
             this.insertInlineMarkdown('[', '](https://)', textHolder, 1 + textHolder.length + '](https://'.length)
           },
-          onImage: () => { this.insertImageLinkTemplate() },
-          onClear: () => { this.confirmClearDraft() }
+          onImage: () => { this.insertImageLinkTemplate() }
         })
 
         if (this.errorMessage) {
@@ -299,46 +298,6 @@ export struct TopicEditorPage {
       })
       .finally(() => {
         this.isSaving = false
-      })
-  }
-
-  private confirmClearDraft(): void {
-    if (this.isSaving) {
-      return
-    }
-    if (!this.nodeName.trim() && !this.title.trim() && this.content.trim().length === 0) {
-      this.clearDraft()
-      return
-    }
-    this.getUIContext().showAlertDialog({
-      title: AppStrings.text(AppStrings.R_EDITOR_CLEAR_DRAFT_TITLE, 'Clear draft'),
-      message: AppStrings.text(AppStrings.R_EDITOR_CLEAR_DRAFT_MESSAGE, 'Clear this topic draft?'),
-      primaryButton: { value: AppStrings.text($r('app.string.common_cancel'), 'Cancel'), action: () => { } },
-      secondaryButton: {
-        value: AppStrings.text($r('app.string.common_clear'), 'Clear'),
-        fontColor: Color.Red,
-        action: () => { this.clearDraft() }
-      }
-    })
-  }
-
-  private clearDraft(): void {
-    this.nodeName = ''
-    this.nodeTitle = ''
-    this.title = ''
-    this.content = ''
-    this.contentSelectionStart = 0
-    this.contentSelectionEnd = 0
-    this.savedAt = 0
-    this.errorMessage = ''
-    this.clearSaveTimer()
-    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    DraftSettings.clearTopicDraft(context)
-      .then(() => {
-        promptAction.openToast({ message: $r('app.string.common_cleared') }).catch((_error: Error) => { })
-      })
-      .catch((_error: Error) => {
-        promptAction.openToast({ message: AppStrings.text(AppStrings.R_EDITOR_CLEAR_DRAFT_FAILED, 'Clear failed') }).catch((_error2: Error) => { })
       })
   }
 

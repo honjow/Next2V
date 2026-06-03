@@ -2301,18 +2301,6 @@
       "value": "公開"
     },
     {
-      "name": "editor_clear_draft_title",
-      "value": "下書きをクリア"
-    },
-    {
-      "name": "editor_clear_draft_message",
-      "value": "このトピック下書きをクリアしますか？"
-    },
-    {
-      "name": "editor_clear_draft_failed",
-      "value": "クリアに失敗しました"
-    },
-    {
       "name": "editor_confirm_post_format",
       "value": "《{1}》をノード「{0}」に投稿しますか？\n\nV2EX の投稿には通常少なくとも 20 copper coins が必要で、アカウント状態が変更されます。"
     },
@@ -2579,10 +2567,6 @@
     {
       "name": "markdown_toolbar_image",
       "value": "画像"
-    },
-    {
-      "name": "markdown_toolbar_clear",
-      "value": "クリア"
     },
     {
       "name": "topic_last_reply",

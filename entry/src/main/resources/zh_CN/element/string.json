@@ -2301,18 +2301,6 @@
       "value": "发布"
     },
     {
-      "name": "editor_clear_draft_title",
-      "value": "清空草稿"
-    },
-    {
-      "name": "editor_clear_draft_message",
-      "value": "确定清空当前发帖草稿吗？"
-    },
-    {
-      "name": "editor_clear_draft_failed",
-      "value": "清空失败"
-    },
-    {
       "name": "editor_confirm_post_format",
       "value": "确定在节点「{0}」发布主题《{1}》吗？\n\nV2EX 发帖通常至少消耗 20 铜币，提交后会修改你的账号状态。"
     },
@@ -2579,10 +2567,6 @@
     {
       "name": "markdown_toolbar_image",
       "value": "图"
-    },
-    {
-      "name": "markdown_toolbar_clear",
-      "value": "清"
     },
     {
       "name": "topic_last_reply",

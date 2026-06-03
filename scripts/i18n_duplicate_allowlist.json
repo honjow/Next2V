@@ -100,19 +100,10 @@
     {
       "keys": [
         "clear_failed",
-        "editor_clear_draft_failed",
         "reply_clear_failed"
       ],
       "classification": "KEEP_SEMANTIC",
-      "rationale": "clear_failed = generic cleanup failure, editor/reply_clear_failed = draft clear failures. Different values in zh_CN (清理失败 vs 清空失败). Different error contexts."
-    },
-    {
-      "keys": [
-        "common_clear",
-        "markdown_toolbar_clear"
-      ],
-      "classification": "KEEP_SEMANTIC",
-      "rationale": "common_clear = generic 'Clear' used broadly (search, editors), markdown_toolbar_clear = markdown toolbar 'Clear' button. Different values in zh_CN (清除 vs 清). Different UI contexts."
+      "rationale": "clear_failed = generic cleanup failure (清理失败); reply_clear_failed = reply-composer draft clear failure (清空失败). Same English 'Clear failed' so they collide in base/en_US/ja_JP/ko_KR, but diverge in zh. Different error contexts."
     },
     {
       "keys": [
@@ -212,22 +203,6 @@
       ],
       "classification": "KEEP_SEMANTIC",
       "rationale": "discover_section_saved_nodes = 'Followed nodes' section title, topic_action_follow_node = 'Follow node' action. Different semantics. Different values in base/en_US."
-    },
-    {
-      "keys": [
-        "editor_clear_draft_failed",
-        "reply_clear_failed"
-      ],
-      "classification": "NEEDS_REVIEW",
-      "rationale": "Both = 'Clear draft failed' (清空失败) in all locales (full parity). Editor vs reply composer — different UI entry points but same action semantics. Could merge to single key like clear_draft_failed. However, editor/reply have separate async workflows and could diverge later."
-    },
-    {
-      "keys": [
-        "editor_clear_draft_title",
-        "reply_clear_draft_title"
-      ],
-      "classification": "KEEP_SEMANTIC",
-      "rationale": "editor_clear_draft_title = topic editor clear draft, reply_clear_draft_title = reply editor clear draft. Different UI domains."
     },
     {
       "keys": [

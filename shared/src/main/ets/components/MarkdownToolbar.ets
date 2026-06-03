@@ -14,7 +14,6 @@ export struct MarkdownToolbar {
   @Event onList?: () => void
   @Event onLink?: () => void
   @Event onImage?: () => void
-  @Event onClear?: () => void
 
   build() {
     // Two visually distinct groups so the mode switch is never confused with a format action:
@@ -30,7 +29,6 @@ export struct MarkdownToolbar {
           this.ToolButton('-', false, () => { this.fire(this.onList) })
           this.ToolButton('[]', false, () => { this.fire(this.onLink) })
           this.ToolButton(AppStrings.text(AppStrings.R_MARKDOWN_TOOLBAR_IMAGE, 'Image'), false, () => { this.fire(this.onImage) })
-          this.ToolButton(AppStrings.text(AppStrings.R_MARKDOWN_TOOLBAR_CLEAR, 'Clear'), false, () => { this.fire(this.onClear) })
         }
         .height(32)
         .alignItems(VerticalAlign.Center)

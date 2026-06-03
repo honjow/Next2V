@@ -2301,18 +2301,6 @@
       "value": "Publish"
     },
     {
-      "name": "editor_clear_draft_title",
-      "value": "Clear draft"
-    },
-    {
-      "name": "editor_clear_draft_message",
-      "value": "Clear this topic draft?"
-    },
-    {
-      "name": "editor_clear_draft_failed",
-      "value": "Clear failed"
-    },
-    {
       "name": "editor_confirm_post_format",
       "value": "Post《{1}》in node「{0}」?\n\nV2EX posting usually costs at least 20 copper coins and will change your account state."
     },
@@ -2579,10 +2567,6 @@
     {
       "name": "markdown_toolbar_image",
       "value": "Image"
-    },
-    {
-      "name": "markdown_toolbar_clear",
-      "value": "Clear"
     },
     {
       "name": "topic_last_reply",
