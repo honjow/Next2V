@@ -2787,6 +2787,106 @@
     {
       "name": "backup_import_restores_accounts",
       "value": "This backup includes accounts and login info, which will replace the current accounts."
+    },
+    {
+      "name": "image_upload_sheet_title",
+      "value": "Insert image"
+    },
+    {
+      "name": "image_upload_action_new",
+      "value": "Upload a new image"
+    },
+    {
+      "name": "image_upload_action_from_v2ex",
+      "value": "Choose from V2EX gallery"
+    },
+    {
+      "name": "image_upload_action_link",
+      "value": "Insert image link"
+    },
+    {
+      "name": "image_upload_v2ex_coming_soon",
+      "value": "V2EX gallery upload is coming soon"
+    },
+    {
+      "name": "image_upload_uploading",
+      "value": "Uploading"
+    },
+    {
+      "name": "image_upload_no_clientid",
+      "value": "Set your Imgur Client ID in settings first"
+    },
+    {
+      "name": "image_upload_go_config",
+      "value": "Configure"
+    },
+    {
+      "name": "image_upload_error_too_large",
+      "value": "Image is too large; pick a smaller one"
+    },
+    {
+      "name": "image_upload_error_rate_limit",
+      "value": "Imgur upload limit reached; try again later"
+    },
+    {
+      "name": "image_upload_error_forbidden",
+      "value": "Imgur rejected the upload; check your Client ID or region"
+    },
+    {
+      "name": "image_upload_error_server",
+      "value": "Image host error; try again later"
+    },
+    {
+      "name": "image_upload_error_network",
+      "value": "Network error; upload failed"
+    },
+    {
+      "name": "image_upload_error_bad_image",
+      "value": "Unsupported image format"
+    },
+    {
+      "name": "image_upload_error_unsupported",
+      "value": "This image host is not supported yet"
+    },
+    {
+      "name": "image_upload_error_generic",
+      "value": "Image upload failed"
+    },
+    {
+      "name": "image_upload_settings_title",
+      "value": "Image upload"
+    },
+    {
+      "name": "image_upload_summary_configured",
+      "value": "Imgur configured"
+    },
+    {
+      "name": "image_upload_imgur_section",
+      "value": "Imgur"
+    },
+    {
+      "name": "image_upload_imgur_clientid_label",
+      "value": "Imgur Client ID"
+    },
+    {
+      "name": "image_upload_imgur_clientid_placeholder",
+      "value": "Enter your Imgur Client ID"
+    },
+    {
+      "name": "image_upload_imgur_hint",
+      "value": "Uploading to Imgur needs your own Client ID. Register and create an application below to get one."
+    },
+    {
+      "name": "image_upload_register_imgur",
+      "value": "Register an Imgur account"
+    },
+    {
+      "name": "image_upload_create_app",
+      "value": "Create an Imgur application"
+    },
+    {
+      "name": "image_upload_wait",
+      "value": "Wait for the image to finish uploading"
     }
   ]
 }

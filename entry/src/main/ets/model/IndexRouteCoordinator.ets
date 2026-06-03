@@ -24,6 +24,7 @@ export type IndexDestinationFamily =
   'homeNodeSettings' |
   'readingSettings' |
   'networkProxySettings' |
+  'imageUploadSettings' |
   'domainSettings' |
   'account' |
   'accountDetail' |
@@ -65,6 +66,7 @@ export class IndexRouteCoordinator {
     'HomeNodeSettings': 'homeNodeSettings',
     'ReadingSettings': 'readingSettings',
     'NetworkProxySettings': 'networkProxySettings',
+    'ImageUploadSettings': 'imageUploadSettings',
     'DomainSettings': 'domainSettings',
     'Account': 'account',
     'AccountDetail': 'accountDetail',
@@ -97,6 +99,7 @@ export class IndexRouteCoordinator {
       'homeNodeSettings': AppStrings.R_NAV_HOME_NODES,
       'readingSettings': AppStrings.R_NAV_READING,
       'networkProxySettings': AppStrings.R_NAV_NETWORK_PROXY,
+      'imageUploadSettings': AppStrings.R_IMAGE_UPLOAD_SETTINGS_TITLE,
       'domainSettings': AppStrings.R_API_DOMAIN,
       'account': AppStrings.R_ACCOUNT_MANAGEMENT,
       'accountDetail': AppStrings.R_NAV_ACCOUNT,
@@ -125,6 +128,7 @@ export class IndexRouteCoordinator {
     'homeNodeSettings': true,
     'readingSettings': true,
     'networkProxySettings': true,
+    'imageUploadSettings': true,
     'domainSettings': true,
     'account': true,
     'accountDetail': true,

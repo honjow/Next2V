@@ -10,6 +10,7 @@ import {
   connectAutoDailyCheckin,
   connectAvatarAppearance,
   connectHomeTabAutoHide,
+  connectImageUpload,
   connectLanguageState,
   connectMediaSettings,
   connectMotionReplyAlignment,
@@ -24,6 +25,7 @@ import {
   GroupedListSection,
   HomeTabSettings,
   HttpClient,
+  ImageUploadState,
   NetworkProxySettings,
   NetworkProxyState,
   LanguageSettings,
@@ -67,6 +69,7 @@ export struct SettingsPage {
   private topicReplyButton: TopicDetailReplyButtonState = connectTopicDetailReplyButton();
   private reading: ReadingSettingsState = connectReadingSettings();
   private proxy: NetworkProxyState = connectNetworkProxy();
+  private image: ImageUploadState = connectImageUpload();
   // Settings toggled only on this page (single writer while visible) are @Local: hydrated from
   // AppStorage in aboutToAppear and updated optimistically by the toggle handlers below.
   @Local private autoDailyCheckinEnabled: boolean = true;
@@ -250,6 +253,16 @@ export struct SettingsPage {
       } else {
         this.DisabledWifiImagePreferenceRow()
       }
+
+      this.SettingsDivider()
+
+      ConciseListRow({
+        title: AppStrings.R_IMAGE_UPLOAD_SETTINGS_TITLE,
+        trailingText: this.image.imgurClientId ? AppStrings.R_IMAGE_UPLOAD_SUMMARY_CONFIGURED : $r('app.string.proxy_not_configured'),
+        action: () => {
+          this.stack.pushPathByName('ImageUploadSettings', null)
+        },
+      })
     }
   }
 

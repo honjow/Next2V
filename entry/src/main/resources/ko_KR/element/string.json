@@ -2787,6 +2787,106 @@
     {
       "name": "backup_import_restores_accounts",
       "value": "이 백업에는 계정과 로그인 정보가 포함되어 현재 계정을 대체합니다."
+    },
+    {
+      "name": "image_upload_sheet_title",
+      "value": "이미지 삽입"
+    },
+    {
+      "name": "image_upload_action_new",
+      "value": "새 이미지 업로드"
+    },
+    {
+      "name": "image_upload_action_from_v2ex",
+      "value": "V2EX 갤러리에서 선택"
+    },
+    {
+      "name": "image_upload_action_link",
+      "value": "이미지 링크 삽입"
+    },
+    {
+      "name": "image_upload_v2ex_coming_soon",
+      "value": "V2EX 갤러리는 곧 지원될 예정입니다"
+    },
+    {
+      "name": "image_upload_uploading",
+      "value": "업로드 중"
+    },
+    {
+      "name": "image_upload_no_clientid",
+      "value": "먼저 설정에서 Imgur Client ID를 입력하세요"
+    },
+    {
+      "name": "image_upload_go_config",
+      "value": "설정하기"
+    },
+    {
+      "name": "image_upload_error_too_large",
+      "value": "이미지가 너무 큽니다. 더 작은 이미지를 선택하세요"
+    },
+    {
+      "name": "image_upload_error_rate_limit",
+      "value": "Imgur 업로드 한도에 도달했습니다. 잠시 후 다시 시도하세요"
+    },
+    {
+      "name": "image_upload_error_forbidden",
+      "value": "Imgur가 업로드를 거부했습니다. Client ID 또는 지역을 확인하세요"
+    },
+    {
+      "name": "image_upload_error_server",
+      "value": "이미지 호스트 오류입니다. 잠시 후 다시 시도하세요"
+    },
+    {
+      "name": "image_upload_error_network",
+      "value": "네트워크 오류로 업로드에 실패했습니다"
+    },
+    {
+      "name": "image_upload_error_bad_image",
+      "value": "지원하지 않는 이미지 형식입니다"
+    },
+    {
+      "name": "image_upload_error_unsupported",
+      "value": "이 이미지 호스트는 아직 지원되지 않습니다"
+    },
+    {
+      "name": "image_upload_error_generic",
+      "value": "이미지 업로드에 실패했습니다"
+    },
+    {
+      "name": "image_upload_settings_title",
+      "value": "이미지 업로드"
+    },
+    {
+      "name": "image_upload_summary_configured",
+      "value": "Imgur 설정됨"
+    },
+    {
+      "name": "image_upload_imgur_section",
+      "value": "Imgur"
+    },
+    {
+      "name": "image_upload_imgur_clientid_label",
+      "value": "Imgur Client ID"
+    },
+    {
+      "name": "image_upload_imgur_clientid_placeholder",
+      "value": "Imgur Client ID 입력"
+    },
+    {
+      "name": "image_upload_imgur_hint",
+      "value": "Imgur에 이미지를 업로드하려면 본인의 Client ID가 필요합니다. 아래에서 가입하고 애플리케이션을 만들어 발급받으세요."
+    },
+    {
+      "name": "image_upload_register_imgur",
+      "value": "Imgur 계정 등록"
+    },
+    {
+      "name": "image_upload_create_app",
+      "value": "Imgur 애플리케이션을 만들어 Client ID 발급"
+    },
+    {
+      "name": "image_upload_wait",
+      "value": "이미지 업로드가 끝날 때까지 기다려 주세요"
     }
   ]
 }

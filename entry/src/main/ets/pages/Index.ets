@@ -79,6 +79,7 @@ import {
   ReadingSettingsPage,
   HomeNodeSettingsPage,
   NetworkProxySettingsPage,
+  ImageUploadSettingsPage,
   DomainSettingsPage,
 } from 'settings'
 import { ComponentContent, promptAction, SymbolGlyphModifier } from '@kit.ArkUI'
@@ -406,6 +407,9 @@ struct Index {
     }
     if (descriptor.family === 'networkProxySettings') {
       NetworkProxySettingsPage()
+    }
+    if (descriptor.family === 'imageUploadSettings') {
+      ImageUploadSettingsPage()
     }
     if (descriptor.family === 'domainSettings') {
       DomainSettingsPage()

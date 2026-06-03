@@ -2787,6 +2787,106 @@
     {
       "name": "backup_import_restores_accounts",
       "value": "此備份包含帳號與登入資訊，匯入將取代目前的帳號。"
+    },
+    {
+      "name": "image_upload_sheet_title",
+      "value": "插入圖片"
+    },
+    {
+      "name": "image_upload_action_new",
+      "value": "上傳新圖片"
+    },
+    {
+      "name": "image_upload_action_from_v2ex",
+      "value": "從 V2EX 圖床選擇"
+    },
+    {
+      "name": "image_upload_action_link",
+      "value": "插入圖片連結"
+    },
+    {
+      "name": "image_upload_v2ex_coming_soon",
+      "value": "V2EX 圖床即將支援"
+    },
+    {
+      "name": "image_upload_uploading",
+      "value": "上傳中"
+    },
+    {
+      "name": "image_upload_no_clientid",
+      "value": "請先在設定中設定 Imgur Client ID"
+    },
+    {
+      "name": "image_upload_go_config",
+      "value": "去設定"
+    },
+    {
+      "name": "image_upload_error_too_large",
+      "value": "圖片太大，請選擇較小的圖片"
+    },
+    {
+      "name": "image_upload_error_rate_limit",
+      "value": "Imgur 上傳次數已達上限，請稍後再試"
+    },
+    {
+      "name": "image_upload_error_forbidden",
+      "value": "Imgur 拒絕了上傳，請檢查 Client ID 或所在地區是否可用"
+    },
+    {
+      "name": "image_upload_error_server",
+      "value": "圖床服務異常，請稍後再試"
+    },
+    {
+      "name": "image_upload_error_network",
+      "value": "網路錯誤，上傳失敗"
+    },
+    {
+      "name": "image_upload_error_bad_image",
+      "value": "圖片格式不受支援"
+    },
+    {
+      "name": "image_upload_error_unsupported",
+      "value": "此圖床暫不支援"
+    },
+    {
+      "name": "image_upload_error_generic",
+      "value": "圖片上傳失敗"
+    },
+    {
+      "name": "image_upload_settings_title",
+      "value": "圖片上傳"
+    },
+    {
+      "name": "image_upload_summary_configured",
+      "value": "已設定 Imgur"
+    },
+    {
+      "name": "image_upload_imgur_section",
+      "value": "Imgur 圖床"
+    },
+    {
+      "name": "image_upload_imgur_clientid_label",
+      "value": "Imgur Client ID"
+    },
+    {
+      "name": "image_upload_imgur_clientid_placeholder",
+      "value": "輸入你的 Imgur Client ID"
+    },
+    {
+      "name": "image_upload_imgur_hint",
+      "value": "上傳圖片到 Imgur 需要你自己的 Client ID。點擊下方註冊並建立應用程式即可取得。"
+    },
+    {
+      "name": "image_upload_register_imgur",
+      "value": "註冊 Imgur 帳號"
+    },
+    {
+      "name": "image_upload_create_app",
+      "value": "建立 Imgur 應用程式取得 Client ID"
+    },
+    {
+      "name": "image_upload_wait",
+      "value": "請等待圖片上傳完成"
     }
   ]
 }

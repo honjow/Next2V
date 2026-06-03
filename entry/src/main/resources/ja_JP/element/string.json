@@ -2787,6 +2787,106 @@
     {
       "name": "backup_import_restores_accounts",
       "value": "このバックアップにはアカウントとログイン情報が含まれ、現在のアカウントを置き換えます。"
+    },
+    {
+      "name": "image_upload_sheet_title",
+      "value": "画像を挿入"
+    },
+    {
+      "name": "image_upload_action_new",
+      "value": "新しい画像をアップロード"
+    },
+    {
+      "name": "image_upload_action_from_v2ex",
+      "value": "V2EX ギャラリーから選択"
+    },
+    {
+      "name": "image_upload_action_link",
+      "value": "画像リンクを挿入"
+    },
+    {
+      "name": "image_upload_v2ex_coming_soon",
+      "value": "V2EX ギャラリーは近日対応予定です"
+    },
+    {
+      "name": "image_upload_uploading",
+      "value": "アップロード中"
+    },
+    {
+      "name": "image_upload_no_clientid",
+      "value": "先に設定で Imgur Client ID を設定してください"
+    },
+    {
+      "name": "image_upload_go_config",
+      "value": "設定する"
+    },
+    {
+      "name": "image_upload_error_too_large",
+      "value": "画像が大きすぎます。小さい画像を選んでください"
+    },
+    {
+      "name": "image_upload_error_rate_limit",
+      "value": "Imgur のアップロード上限に達しました。しばらくしてから再試行してください"
+    },
+    {
+      "name": "image_upload_error_forbidden",
+      "value": "Imgur がアップロードを拒否しました。Client ID または地域を確認してください"
+    },
+    {
+      "name": "image_upload_error_server",
+      "value": "画像ホストでエラーが発生しました。しばらくしてから再試行してください"
+    },
+    {
+      "name": "image_upload_error_network",
+      "value": "ネットワークエラーでアップロードに失敗しました"
+    },
+    {
+      "name": "image_upload_error_bad_image",
+      "value": "対応していない画像形式です"
+    },
+    {
+      "name": "image_upload_error_unsupported",
+      "value": "この画像ホストはまだ対応していません"
+    },
+    {
+      "name": "image_upload_error_generic",
+      "value": "画像のアップロードに失敗しました"
+    },
+    {
+      "name": "image_upload_settings_title",
+      "value": "画像アップロード"
+    },
+    {
+      "name": "image_upload_summary_configured",
+      "value": "Imgur 設定済み"
+    },
+    {
+      "name": "image_upload_imgur_section",
+      "value": "Imgur"
+    },
+    {
+      "name": "image_upload_imgur_clientid_label",
+      "value": "Imgur Client ID"
+    },
+    {
+      "name": "image_upload_imgur_clientid_placeholder",
+      "value": "Imgur Client ID を入力"
+    },
+    {
+      "name": "image_upload_imgur_hint",
+      "value": "Imgur への画像アップロードには自分の Client ID が必要です。下のリンクから登録してアプリを作成すると取得できます。"
+    },
+    {
+      "name": "image_upload_register_imgur",
+      "value": "Imgur アカウントを登録"
+    },
+    {
+      "name": "image_upload_create_app",
+      "value": "Imgur アプリを作成して Client ID を取得"
+    },
+    {
+      "name": "image_upload_wait",
+      "value": "画像のアップロードが完了するまでお待ちください"
     }
   ]
 }

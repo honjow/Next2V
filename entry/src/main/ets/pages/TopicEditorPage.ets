@@ -1,8 +1,9 @@
 import { common } from '@kit.AbilityKit'
+import { photoAccessHelper } from '@kit.MediaLibraryKit'
 import { KeyboardAvoidMode, promptAction, SymbolGlyphModifier } from '@kit.ArkUI'
 import {
-  ApiService, AppStrings, connectLayoutSafeArea, connectNavStack, connectNodePickAction, connectTopicEditorAction, CookieJarSettings, DateUtils, DraftSettings, LayoutSafeAreaState, MarkdownContent, MarkdownToolbar,
-  NodePickActionState, publishTopicEditorSubmitEnabled, ThemeConstants, TopicDetailParams, TopicEditorActionState, translateApiError
+  ApiService, AppStrings, connectLayoutSafeArea, connectNavStack, connectNodePickAction, connectTopicEditorAction, CookieJarSettings, DateUtils, DraftSettings, ImageBytesUtils, ImageUploadErrorCode, ImageUploadService, ImageUploadSettings, LayoutSafeAreaState, MarkdownContent, MarkdownToolbar,
+  NodePickActionState, publishTopicEditorSubmitEnabled, ThemeConstants, TopicDetailParams, TopicEditorActionState, translateApiError, type ImageBytes
 } from 'shared'
 
 // Body TextArea id, used to move focus into it after a toolbar insert.
@@ -45,6 +46,9 @@ export struct TopicEditorPage {
   private nodePick: NodePickActionState = connectNodePickAction()
   // Submit lives in the Index title bar (icon menu). This command bus carries its taps back here.
   private editorAction: TopicEditorActionState = connectTopicEditorAction()
+  // Set true in aboutToDisappear so an image upload that finishes after the editor is popped drops its
+  // result instead of writing to a torn-down component.
+  private disposed: boolean = false
 
   // Fill the node field the moment the picker pops back (aboutToAppear does not re-run on pop).
   @Monitor('nodePick.command')
@@ -77,6 +81,7 @@ export struct TopicEditorPage {
     // The editor does its own keyboard avoidance (fixed-height column + manual bottomPad); turn off
     // the inherited system OFFSET so the two don't stack and crush the body. Restored on disappear.
     this.getUIContext().setKeyboardAvoidMode(KeyboardAvoidMode.NONE)
+    this.disposed = false
     this.nodeName = ''
     this.nodeTitle = ''
     this.title = ''
@@ -98,7 +103,7 @@ export struct TopicEditorPage {
           this.nodeName = draft.nodeName || ''
           this.nodeTitle = draft.nodeTitle || ''
           this.title = draft.title || ''
-          this.content = draft.content || ''
+          this.content = this.stripUploadingPlaceholders(draft.content || '')
           this.savedAt = draft.updatedAt || 0
           this.contentSelectionStart = this.content.length
           this.contentSelectionEnd = this.content.length
@@ -110,6 +115,7 @@ export struct TopicEditorPage {
   }
 
   aboutToDisappear(): void {
+    this.disposed = true
     this.getUIContext().setKeyboardAvoidMode(KeyboardAvoidMode.OFFSET)
     // Leave the title-bar Submit icon disabled once we're gone (the next destination owns its own bar).
     publishTopicEditorSubmitEnabled(false)
@@ -177,7 +183,7 @@ export struct TopicEditorPage {
           onQuote: () => { this.insertLinePrefix('> ') },
           onList: () => { this.insertLinePrefix('- ') },
           onLink: () => { this.insertInlineMarkdown('[', '](https://)') },
-          onImage: () => { this.insertInlineMarkdown('![', '](https://)') }
+          onImage: () => { this.showImageActionSheet() }
         })
 
         if (this.errorMessage) {
@@ -333,6 +339,169 @@ export struct TopicEditorPage {
     this.scheduleSaveDraft()
   }
 
+  // Image button → choose: upload a new image (Imgur), pick from the V2EX gallery (coming soon), or
+  // insert a bare image-link skeleton (the former behavior).
+  private showImageActionSheet(): void {
+    ActionSheet.show({
+      title: AppStrings.R_IMAGE_UPLOAD_SHEET_TITLE,
+      message: '',
+      sheets: [
+        { title: AppStrings.R_IMAGE_UPLOAD_ACTION_NEW, action: () => { this.pickAndUploadImage() } },
+        { title: AppStrings.R_IMAGE_UPLOAD_ACTION_FROM_V2EX, action: () => { this.showToast(AppStrings.text(AppStrings.R_IMAGE_UPLOAD_V2EX_COMING_SOON, 'Coming soon')) } },
+        { title: AppStrings.R_IMAGE_UPLOAD_ACTION_LINK, action: () => { this.insertInlineMarkdown('![', '](https://)') } },
+      ],
+    })
+  }
+
+  private async pickAndUploadImage(): Promise<void> {
+    // Imgur needs the user's own Client-ID; gate before opening the picker so the user isn't asked to
+    // pick an image only to fail.
+    const config = ImageUploadSettings.current()
+    if (config.provider === 'imgur' && !config.imgurClientId) {
+      this.promptConfigureClientId()
+      return
+    }
+    let uri: string = ''
+    try {
+      const photoPicker = new photoAccessHelper.PhotoViewPicker()
+      const options = new photoAccessHelper.PhotoSelectOptions()
+      options.MIMEType = photoAccessHelper.PhotoViewMIMETypes.IMAGE_TYPE
+      options.maxSelectNumber = 1
+      // Prefer a compressed copy over the full-resolution original.
+      options.isOriginalSupported = false
+      const result = await photoPicker.select(options)
+      uri = result.photoUris.length > 0 ? result.photoUris[0] : ''
+    } catch (_error) {
+      // User cancelled or the picker failed — stay silent.
+      return
+    }
+    if (uri) {
+      this.uploadPickedImage(uri)
+    }
+  }
+
+  private uploadPickedImage(uri: string): void {
+    let image: ImageBytes = { bytes: new Uint8Array(0), mimeType: '', byteLength: 0 }
+    try {
+      image = ImageBytesUtils.readImageBytes(uri)
+    } catch (error) {
+      // readImageBytes throws the TOO_LARGE code for an oversized pick (gated before allocation); any
+      // other read failure maps to the generic message.
+      const e = error as Error
+      this.showToast(this.uploadErrorMessage(e.message || ''))
+      return
+    }
+    // Insert a uniquely-tagged "uploading" placeholder at the caret, then swap it for the final URL (or
+    // remove it on failure). Matching the exact captured placeholder string avoids index drift if the
+    // user keeps typing during the upload. The `uploading://` scheme renders nothing (not allowlisted),
+    // and a stale one is stripped from the draft on next open.
+    const uploadingLabel = AppStrings.text(AppStrings.R_IMAGE_UPLOAD_UPLOADING, 'Uploading')
+    const placeholder = `![${uploadingLabel}](uploading://${Date.now()})`
+    this.insertTextAtCaret(placeholder)
+    const fileName = `image.${ImageBytesUtils.extensionFor(image.mimeType)}`
+    ImageUploadService.uploadImage(image.bytes, image.mimeType, fileName)
+      .then((uploaded) => {
+        if (this.disposed) {
+          return
+        }
+        this.replacePlaceholder(placeholder, `![](${uploaded.url})`)
+      })
+      .catch((error: Error) => {
+        if (this.disposed) {
+          return
+        }
+        this.replacePlaceholder(placeholder, '')
+        this.handleUploadError(error)
+      })
+  }
+
+  // Insert a fully-formed string at the caret (mirrors insertInlineMarkdown but for a complete token).
+  private insertTextAtCaret(text: string): void {
+    const contentLength = this.content.length
+    const start = Math.min(Math.max(this.contentSelectionStart, 0), contentLength)
+    const rawEnd = Math.min(Math.max(this.contentSelectionEnd, 0), contentLength)
+    const end = rawEnd >= start ? rawEnd : start
+    this.content = `${this.content.substring(0, start)}${text}${this.content.substring(end)}`
+    const caret = start + text.length
+    this.contentSelectionStart = caret
+    this.contentSelectionEnd = caret
+    this.isPreview = false
+    this.scheduleSaveDraft()
+    this.moveCaret(caret)
+  }
+
+  // Replace the exact placeholder substring with finalText (empty removes it). Bails if the user already
+  // deleted the placeholder.
+  private replacePlaceholder(placeholder: string, finalText: string): void {
+    const index = this.content.indexOf(placeholder)
+    if (index < 0) {
+      return
+    }
+    this.content = `${this.content.substring(0, index)}${finalText}${this.content.substring(index + placeholder.length)}`
+    // Update internal selection bookkeeping but do NOT re-focus / re-assert the caret here: this runs
+    // from the async upload completion, when the user may have moved to the title field or preview —
+    // stealing focus or popping the keyboard then would be a surprising jump. The controlled-text update
+    // applies on its own.
+    const caret = index + finalText.length
+    this.contentSelectionStart = caret
+    this.contentSelectionEnd = caret
+    this.scheduleSaveDraft()
+  }
+
+  private stripUploadingPlaceholders(text: string): string {
+    // Drop any orphaned "uploading…" placeholders a prior session left when the editor closed mid-upload.
+    return text.replace(/!\[[^\]]*\]\(uploading:\/\/[0-9]+\)/g, '')
+  }
+
+  private handleUploadError(error: Error): void {
+    const code = error.message || ''
+    if (code === ImageUploadErrorCode.NO_CLIENT_ID) {
+      this.promptConfigureClientId()
+      return
+    }
+    this.showToast(this.uploadErrorMessage(code))
+  }
+
+  private uploadErrorMessage(code: string): string {
+    if (code === ImageUploadErrorCode.TOO_LARGE) {
+      return AppStrings.text(AppStrings.R_IMAGE_UPLOAD_ERROR_TOO_LARGE, 'Image is too large')
+    }
+    if (code === ImageUploadErrorCode.RATE_LIMIT) {
+      return AppStrings.text(AppStrings.R_IMAGE_UPLOAD_ERROR_RATE_LIMIT, 'Rate limited')
+    }
+    if (code === ImageUploadErrorCode.FORBIDDEN) {
+      return AppStrings.text(AppStrings.R_IMAGE_UPLOAD_ERROR_FORBIDDEN, 'Upload rejected')
+    }
+    if (code === ImageUploadErrorCode.SERVER) {
+      return AppStrings.text(AppStrings.R_IMAGE_UPLOAD_ERROR_SERVER, 'Server error')
+    }
+    if (code === ImageUploadErrorCode.NETWORK) {
+      return AppStrings.text(AppStrings.R_IMAGE_UPLOAD_ERROR_NETWORK, 'Network error')
+    }
+    if (code === ImageUploadErrorCode.BAD_IMAGE) {
+      return AppStrings.text(AppStrings.R_IMAGE_UPLOAD_ERROR_BAD_IMAGE, 'Unsupported image')
+    }
+    if (code === ImageUploadErrorCode.UNSUPPORTED_PROVIDER) {
+      return AppStrings.text(AppStrings.R_IMAGE_UPLOAD_ERROR_UNSUPPORTED, 'Unsupported host')
+    }
+    return AppStrings.text(AppStrings.R_IMAGE_UPLOAD_ERROR_GENERIC, 'Image upload failed')
+  }
+
+  private promptConfigureClientId(): void {
+    this.getUIContext().showAlertDialog({
+      message: AppStrings.text(AppStrings.R_IMAGE_UPLOAD_NO_CLIENTID, 'Set your Imgur Client ID first'),
+      primaryButton: { value: AppStrings.text($r('app.string.common_cancel'), 'Cancel'), action: () => { } },
+      secondaryButton: {
+        value: AppStrings.text(AppStrings.R_IMAGE_UPLOAD_GO_CONFIG, 'Configure'),
+        action: () => { this.stack.pushPathByName('ImageUploadSettings', null) },
+      },
+    })
+  }
+
+  private showToast(message: string): void {
+    promptAction.openToast({ message }).catch((_error: Error) => { })
+  }
+
   private insertLinePrefix(prefix: string): void {
     const contentLength = this.content.length
     const start = Math.min(Math.max(this.contentSelectionStart, 0), contentLength)
@@ -402,14 +571,27 @@ export struct TopicEditorPage {
     if (this.isSubmitting) {
       return false
     }
+    if (this.hasUploadInFlight()) {
+      return false
+    }
     if (!this.nodeName.trim() || !this.title.trim() || this.content.trim().length === 0) {
       return false
     }
     return !!CookieJarSettings.getCurrentCookie()
   }
 
+  // True while an "uploading…" placeholder is still in the body. Blocks Submit so a half-uploaded image's
+  // placeholder can never land in the (paid, irreversible) published topic.
+  private hasUploadInFlight(): boolean {
+    return this.content.indexOf('uploading://') >= 0
+  }
+
   private confirmSubmit(): void {
     if (this.isSubmitting) {
+      return
+    }
+    if (this.hasUploadInFlight()) {
+      promptAction.openToast({ message: AppStrings.text(AppStrings.R_IMAGE_UPLOAD_WAIT, 'Wait for the image to finish uploading') }).catch((_error: Error) => { })
       return
     }
     if (!this.nodeName.trim()) {

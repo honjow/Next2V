@@ -12,6 +12,7 @@ import { HomeTabSettings } from './HomeTabSettings'
 import { TopicDetailReplyActionSettings } from './TopicDetailReplyActionSettings'
 import { LanguageSettings } from './LanguageSettings'
 import { MediaSettings } from './MediaSettings'
+import { ImageUploadSettings } from './ImageUploadSettings'
 import { NetworkProxySettings } from './NetworkProxySettings'
 import { ReadingSettings } from './ReadingSettings'
 import { ReplyActionAlignmentSettings } from './ReplyActionAlignmentSettings'
@@ -38,6 +39,7 @@ export class SettingsBootstrap {
     await SettingsBootstrap.restoreTheme(context, settingsStore)
     await SettingsBootstrap.restoreAvatarAppearance(context, settingsStore)
     await SettingsBootstrap.restoreMedia(context, settingsStore)
+    await SettingsBootstrap.restoreImageUpload(context, settingsStore)
     await SettingsBootstrap.restoreNetworkProxy(context, settingsStore)
     await SettingsBootstrap.restoreReplyDisplay(context, settingsStore)
     await SettingsBootstrap.restoreReading(context, settingsStore)
@@ -74,6 +76,7 @@ export class SettingsBootstrap {
     await SettingsBootstrap.restoreTheme(context, settingsStore)
     await SettingsBootstrap.restoreAvatarAppearance(context, settingsStore)
     await SettingsBootstrap.restoreMedia(context, settingsStore)
+    await SettingsBootstrap.restoreImageUpload(context, settingsStore)
     await SettingsBootstrap.restoreReplyDisplay(context, settingsStore)
     await SettingsBootstrap.restoreReading(context, settingsStore)
     await SettingsBootstrap.restoreHomeTabs(context, settingsStore)
@@ -141,6 +144,16 @@ export class SettingsBootstrap {
     ).catch((error: Error) => {
       console.error('restore media settings failed: ' + error.message)
       MediaSettings.apply(true, false)
+    })
+  }
+
+  private static async restoreImageUpload(context: common.UIAbilityContext, settingsStore?: SettingsPreferencesStore): Promise<void> {
+    await (settingsStore
+      ? ImageUploadSettings.loadFromStore(settingsStore)
+      : ImageUploadSettings.load(context)
+    ).catch((error: Error) => {
+      console.error('restore image upload settings failed: ' + error.message)
+      ImageUploadSettings.apply(ImageUploadSettings.defaultSnapshot())
     })
   }
 
