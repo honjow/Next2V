@@ -44,9 +44,9 @@ for (const token of [
   'prepareAddAccount',
   'switchToAccount',
   'performRemoveAccount',
-  '@State private accounts: AccountRecord[]',
-  '@State private activeAccountId: string',
-  '@State private isLoaded: boolean',
+  '@Local private accounts: AccountRecord[]',
+  '@Local private activeAccountId: string',
+  '@Local private isLoaded: boolean',
 ]) {
   assert(managementPage.includes(token), `AccountManagementPage.ets missing expected token: ${token}`)
 }
@@ -165,12 +165,12 @@ assert(
   'AccountPage.hasAnyAccount must pass account count from AccountStore'
 )
 assert(
-  /hasAnyAccount\([\s\S]*?this\.sessionUsername/.test(accountPage),
-  'AccountPage.hasAnyAccount must pass this.sessionUsername'
+  /hasAnyAccount\([\s\S]*?this\.session\.username/.test(accountPage),
+  'AccountPage.hasAnyAccount must pass the session username'
 )
 assert(
-  accountPage.includes('@State private activeAccountUsername') &&
-    accountPage.includes('@State private activeAccountAvatar') &&
+  accountPage.includes('@Local private activeAccountUsername') &&
+    accountPage.includes('@Local private activeAccountAvatar') &&
     accountPage.includes('AccountStore.getById(context, activeId)'),
   'AccountPage must load active AccountStore identity fallback for Me signed-in card'
 )
@@ -178,25 +178,35 @@ assert(
   /identity\([\s\S]*?this\.activeAccountUsername[\s\S]*?this\.activeAccountAvatar/.test(accountPage),
   'AccountPage current identity must pass active AccountStore username/avatar fallback'
 )
-const refreshKeyHandlerMatch = accountPage.match(/onRefreshKeyChanged\(_propName: string\): void \{([\s\S]*?)\n  \}/)
+// V2 @Monitor handler (no _propName param); the refresh now coalesces through requestDashboardRefresh,
+// which in turn reloads AccountStore state (loadAccounts) via refreshDashboardSnapshot.
+const refreshKeyHandlerMatch = accountPage.match(/onRefreshKeyChanged\(\): void \{([\s\S]*?)\n  \}/)
 assert(refreshKeyHandlerMatch, 'AccountPage must define onRefreshKeyChanged handler')
 assert(
-  refreshKeyHandlerMatch[1].includes('this.loadAccounts()'),
-  'AccountPage.onRefreshKeyChanged must refresh AccountStore state for mounted Me tab'
+  refreshKeyHandlerMatch[1].includes('this.requestDashboardRefresh('),
+  'AccountPage.onRefreshKeyChanged must refresh the dashboard (AccountStore state) for mounted Me tab'
 )
 const visibleAreaHandlerMatch = accountPage.match(/\.onVisibleAreaChange\(\[0\.0, 1\.0\],\s*\(isVisible: boolean, _currentRatio: number\) => \{([\s\S]*?)\n\s*\}\)/)
 assert(visibleAreaHandlerMatch, 'AccountPage must define visible-area refresh handler')
 assert(
-  /if\s*\(isVisible\)\s*\{[\s\S]*?this\.loadAccounts\(\)/.test(visibleAreaHandlerMatch[1]),
-  'AccountPage visible refresh path must call loadAccounts() when Me becomes visible'
+  /if\s*\(isVisible\)\s*\{[\s\S]*?this\.requestDashboardRefresh\(/.test(visibleAreaHandlerMatch[1]),
+  'AccountPage visible refresh path must refresh the dashboard when Me becomes visible'
+)
+// The coalesced refresh must actually reload AccountStore state.
+const refreshSnapshotMatch = accountPage.match(/private refreshDashboardSnapshot\([\s\S]*?\n  \}/)
+assert(
+  refreshSnapshotMatch && refreshSnapshotMatch[0].includes('this.loadAccounts()'),
+  'AccountPage.refreshDashboardSnapshot must reload AccountStore state (loadAccounts)'
 )
 assert(
   accountPage.includes('!this.hasAnyAccount()'),
   'AccountPage must have logged-out branch for !hasAnyAccount()'
 )
+// Honest logged-out state: the account list is gated on actually having accounts, so nothing renders
+// when logged out (no fake/generic signed-in detail), rather than a fabricated card.
 assert(
-  managementPage.includes('LoggedOutSection') && managementPage.includes('this.accounts.length === 0'),
-  'AccountManagementPage must render an honest logged-out management state'
+  managementPage.includes('this.isLoaded && this.accounts.length > 0'),
+  'AccountManagementPage must gate the account list on having accounts (renders nothing when logged out)'
 )
 assert(
   !managementPage.includes('AccountDetailHeaderCard') && !managementPage.includes('R_ACCOUNT_V2EX_USER'),

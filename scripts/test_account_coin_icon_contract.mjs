@@ -5,13 +5,15 @@ import { existsSync, readFileSync } from 'node:fs'
 
 const read = (path) => readFileSync(path, 'utf8')
 
-const accountPagePath = 'entry/src/main/ets/pages/AccountPage.ets'
+// The coin balance row (AccountCoinBalance + its AccountCoinIcon) lives in the shared dashboard
+// components, used by both the Me card and the account detail header — not in AccountPage directly.
+const componentsPath = 'entry/src/main/ets/components/AccountDashboardComponents.ets'
 const coinIconPath = 'entry/src/main/ets/components/AccountCoinIcon.ets'
-const accountPage = read(accountPagePath)
+const dashboardComponents = read(componentsPath)
 
-assert.doesNotMatch(accountPage, /struct\s+AccountCoinIconCanvas\b/)
-assert.match(accountPage, /import\s+\{\s*AccountCoinIcon\s*\}\s+from\s+'..\/components\/AccountCoinIcon'/)
-assert.match(accountPage, /AccountCoinIcon\(\{\s*rimColor,\s*faceColor,\s*edgeColor\s*\}\)/)
+assert.doesNotMatch(dashboardComponents, /struct\s+AccountCoinIconCanvas\b/)
+assert.match(dashboardComponents, /import\s+\{\s*AccountCoinIcon\s*\}\s+from\s+'\.\/AccountCoinIcon'/)
+assert.match(dashboardComponents, /AccountCoinIcon\(\{\s*rimColor,\s*faceColor,\s*edgeColor\s*\}\)/)
 
 assert.ok(existsSync(coinIconPath), 'AccountCoinIcon component file must exist')
 const coinIcon = read(coinIconPath)

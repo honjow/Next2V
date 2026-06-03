@@ -5,7 +5,9 @@ import { readFileSync } from 'node:fs'
 const indexPage = readFileSync('entry/src/main/ets/pages/Index.ets', 'utf8')
 const discoverPage = readFileSync('feature/node/src/main/ets/pages/DiscoverPage.ets', 'utf8')
 const discoverCoordinator = readFileSync('feature/node/src/main/ets/model/DiscoverPageCoordinator.ets', 'utf8')
-const nodeVm = readFileSync('feature/node/src/main/ets/viewmodel/NodeViewModel.ets', 'utf8')
+// The node-index concern was split out of NodeViewModel (topics) into its own NodeIndexViewModel, which
+// owns the load phase, the repository-backed fetch, and the publish policy that this contract pins.
+const nodeVm = readFileSync('feature/node/src/main/ets/viewmodel/NodeIndexViewModel.ets', 'utf8')
 const searchUtils = readFileSync('shared/src/main/ets/utils/NodeSearchUtils.ets', 'utf8')
 const sharedIndex = readFileSync('shared/src/main/ets/Index.ets', 'utf8')
 const repo = readFileSync('shared/src/main/ets/cache/NodeIndexRepository.ets', 'utf8')
@@ -70,7 +72,9 @@ mustContain(discoverPage, "AppStrings.text($r('app.string.discover_node_navigati
 mustContain(discoverPage, 'this.api.getNodeNavigationSections()', 'Discover loads webpage node navigation')
 mustContain(apiService, 'getNodeNavigationSections(): Promise<V2exNodeNavigationSection[]>', 'ApiService exposes node navigation')
 mustContain(apiService, "this.http.getText('/?tab=nodes')", 'ApiService loads V2EX node navigation tab')
-mustContain(apiService, "section.titleKey === 'discover_node_navigation_hottest' || section.titleKey === 'discover_node_navigation_recently_created'", 'home navigation must only contribute first two sections by i18n key, not localized text')
+// Whitespace-flattened: the formatter wraps the .filter predicate across lines.
+const apiServiceFlat = apiService.replace(/\s+/g, ' ')
+mustContain(apiServiceFlat, "section.titleKey === 'discover_node_navigation_hottest' || section.titleKey === 'discover_node_navigation_recently_created'", 'home navigation must only contribute first two sections by i18n key, not localized text')
 assert.equal(apiService.includes("section.title !== '节点导航' && section.title !== 'V2EX / Curated Nodes'"), false, 'structured navigation must not filter by wrapper display strings')
 mustContain(nodeParser, 'extractNodeNavigationSections', 'node parser extracts webpage node navigation')
 mustContain(nodeParser, 'extractStructuredNodeNavigationSections', 'node parser extracts grouped node navigation rows')
