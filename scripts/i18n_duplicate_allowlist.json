@@ -8,6 +8,14 @@
   "approved_duplicate_groups": [
     {
       "keys": [
+        "backup_error_foreign",
+        "backup_error_invalid"
+      ],
+      "classification": "KEEP_SEMANTIC",
+      "rationale": "Two distinct branches of backupErrorMessage(): backup_error_foreign = the 'foreign_backup' code (file is a backup but from another app), backup_error_invalid = the catch-all fallback for an unparseable file. Both currently render 'This file is not a V2Next backup.' from the user's point of view, but they are separate error origins that can diverge later (e.g. foreign → 'This backup is from another app.')."
+    },
+    {
+      "keys": [
         "backup_password_label",
         "login_password_placeholder"
       ],
