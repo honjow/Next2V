@@ -14,17 +14,59 @@ export class V2exAccountParser {
     return V2exAccountParser.createBalance(gold, silver, bronze)
   }
 
+  /**
+   * STRICT balance read from the top-right `balance_area` widget V2EX renders on every signed-in page
+   * (feed, topic, notifications…). Unlike extractBalance(), this NEVER falls back to scanning the whole
+   * page for "N 铜币" text — so a topic/feed body mentioning 铜币 cannot fabricate a balance. Returns null
+   * when the widget is absent (e.g. a logged-out page or a /api/v2 JSON response). Used to keep the
+   * AccountMetaState holder live on every navigation. The widget is an <a> (top nav) or <div> (/balance
+   * page); match either, then read only that element's own content.
+   */
+  static extractNavBalance(html: string): V2exBalance | null {
+    const tagRe = /<(a|div)[^>]*class=['"][^'"]*\bbalance_area\b[^'"]*['"][^>]*>/i
+    const m = html.match(tagRe)
+    if (!m || m.index === undefined || !m[1]) {
+      return null
+    }
+    const start = m.index + m[0].length
+    const closeTag = '</' + m[1].toLowerCase() + '>'
+    const closeIdx = html.toLowerCase().indexOf(closeTag, start)
+    const inner =
+      closeIdx >= 0 ? html.substring(start, closeIdx) : html.substring(start, start + 400)
+    const text = V2exAccountParser.compactText(inner)
+    if (text.indexOf('金币') >= 0 || text.indexOf('银币') >= 0 || text.indexOf('铜币') >= 0) {
+      return V2exAccountParser.createBalance(
+        V2exAccountParser.extractCoin(text, '金币'),
+        V2exAccountParser.extractCoin(text, '银币'),
+        V2exAccountParser.extractCoin(text, '铜币'),
+      )
+    }
+    // Compact form: the top-nav widget shows the coin counts as bare numbers beside the coin images.
+    const nums = V2exAccountParser.extractNumbers(text)
+    if (nums.length >= 3) {
+      return V2exAccountParser.createBalance(nums[0], nums[1], nums[2])
+    }
+    if (nums.length === 2) {
+      return V2exAccountParser.createBalance(0, nums[0], nums[1])
+    }
+    if (nums.length === 1) {
+      return V2exAccountParser.createBalance(0, 0, nums[0])
+    }
+    return null
+  }
+
   static extractDailyMission(html: string): V2exDailyMission {
     const redeemPath = V2exAccountParser.extractRedeemPath(html)
     if (redeemPath) {
       return { canRedeem: true, redeemPath, message: 'daily_checkin_available' }
     }
     const text = V2exAccountParser.compactText(html)
-    const done = text.indexOf('已领取') >= 0 || text.indexOf('已完成') >= 0 || text.indexOf('明天') >= 0
+    const done =
+      text.indexOf('已领取') >= 0 || text.indexOf('已完成') >= 0 || text.indexOf('明天') >= 0
     return {
       canRedeem: false,
       redeemPath: '',
-      message: done ? 'already_checked_in_today' : 'daily_checkin_unavailable'
+      message: done ? 'already_checked_in_today' : 'daily_checkin_unavailable',
     }
   }
 
@@ -81,7 +123,8 @@ export class V2exAccountParser {
   }
 
   private static extractBalanceArea(html: string): V2exBalance | null {
-    const areaRe = /<div[^>]*class=['"][^'"]*\bbalance_area\b[^'"]*\bbigger\b[^'"]*['"][^>]*>([\s\S]*?)<\/div>/i
+    const areaRe =
+      /<div[^>]*class=['"][^'"]*\bbalance_area\b[^'"]*\bbigger\b[^'"]*['"][^>]*>([\s\S]*?)<\/div>/i
     const m = html.match(areaRe)
     if (!m || !m[1]) {
       return null
@@ -91,7 +134,7 @@ export class V2exAccountParser {
       return V2exAccountParser.createBalance(
         V2exAccountParser.extractCoin(text, '金币'),
         V2exAccountParser.extractCoin(text, '银币'),
-        V2exAccountParser.extractCoin(text, '铜币')
+        V2exAccountParser.extractCoin(text, '铜币'),
       )
     }
     const compactBalance = V2exAccountParser.extractCompactBalance(text)
@@ -117,7 +160,7 @@ export class V2exAccountParser {
       return V2exAccountParser.createBalance(
         Number.parseInt(withGold[1]),
         Number.parseInt(withGold[2]),
-        Number.parseFloat(`0.${withGold[3]}`)
+        Number.parseFloat(`0.${withGold[3]}`),
       )
     }
     const withoutGold = text.match(/^(\d+)\s+0\.(\d+)$/)
@@ -125,7 +168,7 @@ export class V2exAccountParser {
       return V2exAccountParser.createBalance(
         0,
         Number.parseInt(withoutGold[1]),
-        Number.parseFloat(`0.${withoutGold[2]}`)
+        Number.parseFloat(`0.${withoutGold[2]}`),
       )
     }
     return null
@@ -145,12 +188,18 @@ export class V2exAccountParser {
   private static createBalance(gold: number, silver: number, bronze: number): V2exBalance {
     const parts: string[] = []
     if (gold > 0) {
-      parts.push(`${V2exAccountParser.formatCoinAmount(gold)} ${AppStrings.text(AppStrings.R_ACCOUNT_BALANCE_GOLD, 'Gold')}`)
+      parts.push(
+        `${V2exAccountParser.formatCoinAmount(gold)} ${AppStrings.text(AppStrings.R_ACCOUNT_BALANCE_GOLD, 'Gold')}`,
+      )
     }
     if (silver > 0) {
-      parts.push(`${V2exAccountParser.formatCoinAmount(silver)} ${AppStrings.text(AppStrings.R_ACCOUNT_BALANCE_SILVER, 'Silver')}`)
+      parts.push(
+        `${V2exAccountParser.formatCoinAmount(silver)} ${AppStrings.text(AppStrings.R_ACCOUNT_BALANCE_SILVER, 'Silver')}`,
+      )
     }
-    parts.push(`${V2exAccountParser.formatCoinAmount(bronze)} ${AppStrings.text(AppStrings.R_ACCOUNT_BALANCE_BRONZE, 'Bronze')}`)
+    parts.push(
+      `${V2exAccountParser.formatCoinAmount(bronze)} ${AppStrings.text(AppStrings.R_ACCOUNT_BALANCE_BRONZE, 'Bronze')}`,
+    )
     return { gold, silver, bronze, summary: parts.join(' · ') }
   }
 
@@ -162,9 +211,12 @@ export class V2exAccountParser {
   }
 
   private static compactText(html: string): string {
-    return V2exAccountParser.decodeHtml(html.replace(/<script[\s\S]*?<\/script>/gi, ' ')
-      .replace(/<style[\s\S]*?<\/style>/gi, ' ')
-      .replace(/<[^>]+>/g, ' '))
+    return V2exAccountParser.decodeHtml(
+      html
+        .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+        .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+        .replace(/<[^>]+>/g, ' '),
+    )
       .replace(/\s+/g, ' ')
       .trim()
   }

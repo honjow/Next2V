@@ -2,12 +2,17 @@ import { http } from '@kit.NetworkKit'
 import { HttpClient } from './HttpClient'
 import { NetworkProxyRequest } from './NetworkProxyRequest'
 import { FeedTabSettings } from '../settings/FeedTabSettings'
+import { AccountMetaPublisher } from '../settings/AccountMetaPublisher'
 import { ApiConstants } from '../constants/ApiConstants'
 import { V2exTabParser } from '../parser/V2exTabParser'
 import { V2exNotificationParser } from '../parser/V2exNotificationParser'
 import { V2exAccountParser } from '../parser/V2exAccountParser'
 import { V2exSessionParser } from '../parser/V2exSessionParser'
-import { V2exNodeParser, type V2exFavoriteNode, type V2exNodeNavigationSection } from '../parser/V2exNodeParser'
+import {
+  V2exNodeParser,
+  type V2exFavoriteNode,
+  type V2exNodeNavigationSection,
+} from '../parser/V2exNodeParser'
 import {
   V2exCollectionActionParser,
   type V2exToggleAction,
@@ -133,9 +138,13 @@ export class ApiService {
   async getNodeNavigationSections(): Promise<V2exNodeNavigationSection[]> {
     const homeHtml = await this.http.getText('/')
     const navigationHtml = await this.http.getText('/?tab=nodes')
-    const homeSections = V2exNodeParser.extractNodeNavigationSections(homeHtml)
-      .filter((section: V2exNodeNavigationSection) => section.titleKey === 'discover_node_navigation_hottest' || section.titleKey === 'discover_node_navigation_recently_created')
-    const structuredSections = V2exNodeParser.extractStructuredNodeNavigationSections(navigationHtml)
+    const homeSections = V2exNodeParser.extractNodeNavigationSections(homeHtml).filter(
+      (section: V2exNodeNavigationSection) =>
+        section.titleKey === 'discover_node_navigation_hottest' ||
+        section.titleKey === 'discover_node_navigation_recently_created',
+    )
+    const structuredSections =
+      V2exNodeParser.extractStructuredNodeNavigationSections(navigationHtml)
     return homeSections.concat(structuredSections)
   }
 
@@ -168,7 +177,12 @@ export class ApiService {
           : await this.http.get<V2exTopic[]>(endpoint)
       return ApiService.normalizeTopics(topics)
     } catch (error) {
-      DiagnosticLogger.exception('network', 'topic_json_fallback_to_html_exception', error as Error, { topicId: topicId })
+      DiagnosticLogger.exception(
+        'network',
+        'topic_json_fallback_to_html_exception',
+        error as Error,
+        { topicId: topicId },
+      )
       const path = cacheBuster > 0 ? `/t/${topicId}?_=${cacheBuster}` : `/t/${topicId}`
       const html = await this.http.getText(path)
       return [ApiService.topicFromHtml(topicId, html)]
@@ -198,7 +212,11 @@ export class ApiService {
    * as auth errors instead of `{ topics: [] }`. Anonymous public reads keep the
    * original public-HTML semantics.
    */
-  async getNodeTopicsPage(nodeName: string, page: number = 1, cookie: string = ''): Promise<V2exNodeTopicsPageResult> {
+  async getNodeTopicsPage(
+    nodeName: string,
+    page: number = 1,
+    cookie: string = '',
+  ): Promise<V2exNodeTopicsPageResult> {
     const clean = (nodeName || '').trim()
     if (!clean) {
       throw ApiErrors.nodeNameRequired()
@@ -208,7 +226,9 @@ export class ApiService {
     const useCookie = (cookie || '').trim().length > 0
     const sourceLabel = useCookie ? 'cookieHtml' : 'publicHtml'
     // getCookieHtml throws V2exCookieTwoFactorRequiredError when the cookie page is a 2FA challenge.
-    const html = useCookie ? await this.getCookieHtml(endpoint, cookie) : await this.http.getText(endpoint)
+    const html = useCookie
+      ? await this.getCookieHtml(endpoint, cookie)
+      : await this.http.getText(endpoint)
     const hasUsername = useCookie ? !!V2exSessionParser.extractUsername(html) : false
     if (useCookie && !hasUsername) {
       DiagnosticLogger.warn('network', 'node_topic_session_rejected', {
@@ -245,7 +265,9 @@ export class ApiService {
       return { topics: [], hasMore: false }
     }
     return {
-      topics: ApiService.applyActiveBlockedTopicFilter(ApiService.normalizeNodeTopics(topics, clean, clean)),
+      topics: ApiService.applyActiveBlockedTopicFilter(
+        ApiService.normalizeNodeTopics(topics, clean, clean),
+      ),
       hasMore: snapshot.hasMore,
     }
   }
@@ -277,7 +299,9 @@ export class ApiService {
         }
       } catch (error) {
         const e = error as Error
-        DiagnosticLogger.exception('network', 'topic_web_replies_fallback_exception', e, { topicId: topicId })
+        DiagnosticLogger.exception('network', 'topic_web_replies_fallback_exception', e, {
+          topicId: topicId,
+        })
         console.error('topic web replies fallback failed:', e.message)
       }
     }
@@ -333,7 +357,12 @@ export class ApiService {
       const html = await this.http.getText(`/member/${encodeURIComponent(clean)}`)
       return ApiService.memberProfileFromHtml(clean, html)
     } catch (error) {
-      DiagnosticLogger.exception('network', 'member_profile_html_fallback_exception', error as Error, { username: clean })
+      DiagnosticLogger.exception(
+        'network',
+        'member_profile_html_fallback_exception',
+        error as Error,
+        { username: clean },
+      )
       return this.http.get<V2exMemberProfile>(
         `${ApiConstants.API_MEMBER_SHOW}?${ApiService.queryParam('username', clean)}`,
       )
@@ -345,9 +374,7 @@ export class ApiService {
     if (memberId <= 0) {
       throw ApiErrors.invalidUsername()
     }
-    return this.http.get<V2exMemberProfile>(
-      `${ApiConstants.API_MEMBER_SHOW}?id=${memberId}`,
-    )
+    return this.http.get<V2exMemberProfile>(`${ApiConstants.API_MEMBER_SHOW}?id=${memberId}`)
   }
 
   /** Get topics, replies, and available actions from member page. Topic list respects user's web hide settings. */
@@ -361,7 +388,12 @@ export class ApiService {
     }
     const path = `/member/${encodeURIComponent(clean)}`
     const html = cookie ? await this.getCookieHtml(path, cookie) : await this.http.getText(path)
-    this.captureBlockedListsFromHtml(html, { endpoint: path, source: cookie ? 'cookieHtml' : 'publicHtml', trigger: 'feed_capture', hasCookie: !!cookie })
+    this.captureBlockedListsFromHtml(html, {
+      endpoint: path,
+      source: cookie ? 'cookieHtml' : 'publicHtml',
+      trigger: 'feed_capture',
+      hasCookie: !!cookie,
+    })
     return V2exMemberPageParser.parse(html, clean)
   }
 
@@ -377,7 +409,12 @@ export class ApiService {
     const safePage = Math.max(1, Math.floor(page))
     const path = `/member/${encodeURIComponent(clean)}/topics?p=${safePage}`
     const html = cookie ? await this.getCookieHtml(path, cookie) : await this.http.getText(path)
-    this.captureBlockedListsFromHtml(html, { endpoint: path, source: cookie ? 'cookieHtml' : 'publicHtml', trigger: 'feed_capture', hasCookie: !!cookie })
+    this.captureBlockedListsFromHtml(html, {
+      endpoint: path,
+      source: cookie ? 'cookieHtml' : 'publicHtml',
+      trigger: 'feed_capture',
+      hasCookie: !!cookie,
+    })
     return V2exMemberPageParser.parseTopicsPage(html)
   }
 
@@ -450,7 +487,7 @@ export class ApiService {
     cookie: string,
     notificationId: number,
     once: string,
-    verifyPage: number = 1
+    verifyPage: number = 1,
   ): Promise<void> {
     if (!cookie) {
       throw ApiErrors.authRequired()
@@ -462,14 +499,20 @@ export class ApiService {
     console.info(`[NotificationDelete] cookie start id=${notificationId} page=${safeVerifyPage}`)
     const action = await this.latestNotificationDeleteAction(cookie, notificationId, safeVerifyPage)
     if (action.id <= 0) {
-      console.info(`[NotificationDelete] cookie already_deleted id=${notificationId} page=${safeVerifyPage}`)
+      console.info(
+        `[NotificationDelete] cookie already_deleted id=${notificationId} page=${safeVerifyPage}`,
+      )
       return
     }
     if (action.id !== notificationId || action.once !== once) {
-      console.info(`[NotificationDelete] cookie refreshed_action id=${notificationId} fresh=${action.id} page=${safeVerifyPage}`)
+      console.info(
+        `[NotificationDelete] cookie refreshed_action id=${notificationId} fresh=${action.id} page=${safeVerifyPage}`,
+      )
     }
     const res = await this.deleteNotificationWithCookieRequest(cookie, action.id, action.once)
-    console.info(`[NotificationDelete] cookie request_done id=${action.id} status=${res.statusCode} signin=${res.location.indexOf('/signin') >= 0}`)
+    console.info(
+      `[NotificationDelete] cookie request_done id=${action.id} status=${res.statusCode} signin=${res.location.indexOf('/signin') >= 0}`,
+    )
     if (res.location.indexOf('/signin') >= 0) {
       throw ApiErrors.webSessionExpired()
     }
@@ -477,14 +520,16 @@ export class ApiService {
       console.info(`[NotificationDelete] cookie verified id=${action.id} page=${safeVerifyPage}`)
       return
     }
-    console.error(`[NotificationDelete] cookie verify_failed id=${action.id} page=${safeVerifyPage}`)
+    console.error(
+      `[NotificationDelete] cookie verify_failed id=${action.id} page=${safeVerifyPage}`,
+    )
     throw ApiErrors.notificationDeleteNotApplied()
   }
 
   private async deleteNotificationWithCookieRequest(
     cookie: string,
     notificationId: number,
-    once: string
+    once: string,
   ): Promise<CookieHtmlResponse> {
     try {
       return await this.requestHtmlWithCookieAllowRedirect(
@@ -495,13 +540,17 @@ export class ApiService {
         '',
         {
           'Accept': '*/*',
-          'X-Requested-With': 'XMLHttpRequest'
-        }
+          'X-Requested-With': 'XMLHttpRequest',
+        },
       )
     } catch (error) {
       const e = error as Error
-      DiagnosticLogger.exception('network', 'notification_delete_cookie_request_exception', e, { notificationId: notificationId })
-      console.error(`[NotificationDelete] cookie request_failed id=${notificationId} message=${ApiService.safeOperationErrorMessage(e)}`)
+      DiagnosticLogger.exception('network', 'notification_delete_cookie_request_exception', e, {
+        notificationId: notificationId,
+      })
+      console.error(
+        `[NotificationDelete] cookie request_failed id=${notificationId} message=${ApiService.safeOperationErrorMessage(e)}`,
+      )
       throw new Error(ApiService.safeOperationErrorMessage(e))
     }
   }
@@ -509,7 +558,7 @@ export class ApiService {
   private async latestNotificationDeleteAction(
     cookie: string,
     notificationId: number,
-    page: number
+    page: number,
   ): Promise<NotificationDeleteAction> {
     const latest = await this.getNotificationsWithCookie(cookie, page)
     const item = latest.find((current: V2exNotification) => {
@@ -526,7 +575,11 @@ export class ApiService {
     return { id, once }
   }
 
-  private async isNotificationDeletedFromCookiePage(cookie: string, notificationId: number, page: number): Promise<boolean> {
+  private async isNotificationDeletedFromCookiePage(
+    cookie: string,
+    notificationId: number,
+    page: number,
+  ): Promise<boolean> {
     const latest = await this.getNotificationsWithCookie(cookie, page)
     return !latest.some((item: V2exNotification) => {
       return item.id === notificationId || item.delete_id === notificationId
@@ -821,11 +874,7 @@ export class ApiService {
    * the session once-token, so we derive the unblock path from it (mirrors the topic
    * unignore web-bug workaround).
    */
-  async unblockMemberWithCookie(
-    cookie: string,
-    memberId: number,
-    username: string,
-  ): Promise<void> {
+  async unblockMemberWithCookie(cookie: string, memberId: number, username: string): Promise<void> {
     if (!cookie) {
       throw ApiErrors.authRequired()
     }
@@ -846,7 +895,10 @@ export class ApiService {
     )
   }
 
-  private static resolveUnblockPath(actions: V2exMemberActionState | null, memberId: number): string {
+  private static resolveUnblockPath(
+    actions: V2exMemberActionState | null,
+    memberId: number,
+  ): string {
     if (!actions) {
       return ''
     }
@@ -1144,7 +1196,12 @@ export class ApiService {
     if (!action || action.replyId <= 0 || !action.actionPath) {
       throw ApiErrors.missingIgnoreAction()
     }
-    await this.executeCookieActionWithCookie(cookie, action.actionPath, `/t/${topicId}`, 'Ignore failed')
+    await this.executeCookieActionWithCookie(
+      cookie,
+      action.actionPath,
+      `/t/${topicId}`,
+      'Ignore failed',
+    )
   }
 
   async getTopicReportActionWithCookie(
@@ -1201,7 +1258,12 @@ export class ApiService {
     if (!action || action.replyId <= 0 || !action.actionPath) {
       throw ApiErrors.missingReportAction()
     }
-    await this.executeCookieActionWithCookie(cookie, action.actionPath, `/t/${topicId}`, 'Report failed')
+    await this.executeCookieActionWithCookie(
+      cookie,
+      action.actionPath,
+      `/t/${topicId}`,
+      'Report failed',
+    )
   }
 
   /**
@@ -1306,12 +1368,20 @@ export class ApiService {
     return 0
   }
 
-  async syncBlockedListsFromCookieHtmlSources(cookie: string, trigger: string = 'manualSync'): Promise<void> {
+  async syncBlockedListsFromCookieHtmlSources(
+    cookie: string,
+    trigger: string = 'manualSync',
+  ): Promise<void> {
     if (!cookie) {
       return
     }
     for (const endpoint of ApiService.BLOCKED_LIST_SYNC_ENDPOINTS) {
-      const res = await this.requestHtmlWithCookieAllowRedirect(endpoint, cookie, '/', http.RequestMethod.GET)
+      const res = await this.requestHtmlWithCookieAllowRedirect(
+        endpoint,
+        cookie,
+        '/',
+        http.RequestMethod.GET,
+      )
       const locationType = ApiService.locationType(res.location)
       const captured = this.captureBlockedListsFromHtml(res.text, {
         endpoint: endpoint,
@@ -1333,13 +1403,20 @@ export class ApiService {
     const endpoint = this.cookieEndpoint(path)
     const res = await this.http.getTextResponseWithHeaders(endpoint, { 'Cookie': cookie })
     this.assertNoTwoFactorChallenge(endpoint, res.text, res.location)
+    // Real-time balance sync: every signed-in V2EX page carries the top-right #money / balance_area widget,
+    // so harvest it here (the one chokepoint for authed HTML) — a feed refresh / opening a topic keeps the
+    // account surfaces fresh without a dedicated /balance fetch. Guarded + strict inside the publisher.
+    AccountMetaPublisher.harvestFromHtml(res.text, cookie)
     return res.text
   }
 
   private topicWebRepliesClient(): V2exTopicWebRepliesClient {
-    return new V2exTopicWebRepliesClient(this.http, (path: string, cookie: string): Promise<string> => {
-      return this.getCookieHtml(path, cookie)
-    })
+    return new V2exTopicWebRepliesClient(
+      this.http,
+      (path: string, cookie: string): Promise<string> => {
+        return this.getCookieHtml(path, cookie)
+      },
+    )
   }
 
   private cookieEndpoint(pathOrUrl: string): string {
@@ -1433,7 +1510,7 @@ export class ApiService {
         url: url,
         statusCode: statusCode,
         location: location,
-        hasCookie: true
+        hasCookie: true,
       })
       if (ApiService.isLocationPath(location, '/2fa')) {
         throw new V2exCookieTwoFactorRequiredError(clean)
@@ -1443,7 +1520,10 @@ export class ApiService {
       }
     } catch (error) {
       const e = error as Error
-      DiagnosticLogger.exception('network', 'cookie_private_request_exception', e, { pathOrUrl: clean, url: url })
+      DiagnosticLogger.exception('network', 'cookie_private_request_exception', e, {
+        pathOrUrl: clean,
+        url: url,
+      })
       throw e
     }
   }
@@ -1507,7 +1587,9 @@ export class ApiService {
         usingCache: false,
         expectDataType: http.HttpDataType.STRING,
         extraData: method === http.RequestMethod.POST ? extraData : '',
-        onHeadersReceive: (headers: Object) => { headerBag = headers },
+        onHeadersReceive: (headers: Object) => {
+          headerBag = headers
+        },
       })
       const statusCode = response.responseCode as number
       const text = (response.result as string) || ''
@@ -1519,7 +1601,7 @@ export class ApiService {
         statusCode: statusCode,
         location: location,
         hasCookie: true,
-        bodyLength: text.length
+        bodyLength: text.length,
       })
       this.assertNoTwoFactorChallenge(clean, text, location)
       if (statusCode < 200 || statusCode >= 400) {
@@ -1533,7 +1615,11 @@ export class ApiService {
       return { statusCode, text, location }
     } catch (error) {
       const e = error as Error
-      DiagnosticLogger.exception('network', 'cookie_html_request_exception', e, { pathOrUrl: clean, url: url, refererUrl: refererUrl })
+      DiagnosticLogger.exception('network', 'cookie_html_request_exception', e, {
+        pathOrUrl: clean,
+        url: url,
+        refererUrl: refererUrl,
+      })
       throw e
     }
   }
@@ -1560,10 +1646,16 @@ export class ApiService {
     }
   }
 
-  private static resolveCookieRequestUrls(baseUrl: string, pathOrUrl: string, refererPath: string): SameOriginRequestUrls {
+  private static resolveCookieRequestUrls(
+    baseUrl: string,
+    pathOrUrl: string,
+    refererPath: string,
+  ): SameOriginRequestUrls {
     const url = ApiService.resolveSameOriginUrl(baseUrl, pathOrUrl, 'action path')
     const refererClean = (refererPath || '').trim()
-    const refererUrl = refererClean ? ApiService.resolveSameOriginUrl(baseUrl, refererClean, 'referer path') : ''
+    const refererUrl = refererClean
+      ? ApiService.resolveSameOriginUrl(baseUrl, refererClean, 'referer path')
+      : ''
     return { url, refererUrl }
   }
 
@@ -1811,7 +1903,9 @@ export class ApiService {
       })
     } catch (error) {
       const e = error as Error
-      DiagnosticLogger.exception('network', 'verify_submitted_reply_exception', e, { topicId: topicId })
+      DiagnosticLogger.exception('network', 'verify_submitted_reply_exception', e, {
+        topicId: topicId,
+      })
       console.error('verify submitted reply failed: ' + e.message)
       return false
     }
@@ -1902,7 +1996,10 @@ export class ApiService {
    * authenticated page — it falls back to the anonymous public-HTML request and capture, so stale cookies
    * never break feed rendering. Missing-variable handling (cache preserved) lives in BlockedListSettings.
    */
-  private async fetchFeedTopicListHtml(endpoint: string, trigger: string = 'feed_capture'): Promise<string> {
+  private async fetchFeedTopicListHtml(
+    endpoint: string,
+    trigger: string = 'feed_capture',
+  ): Promise<string> {
     const cookie = (CookieJarSettings.getCurrentCookie() || '').trim()
     if (cookie) {
       try {
@@ -1929,12 +2026,17 @@ export class ApiService {
         })
       } catch (error) {
         // Never let a cookie/2FA/transient failure break the feed: fall back to the anonymous path.
-        DiagnosticLogger.exception('network', 'feed_cookie_html_fallback_to_public_exception', error as Error, {
-          endpoint: endpoint,
-          source: 'cookieHtml',
-          trigger: trigger,
-          hasCookie: true,
-        })
+        DiagnosticLogger.exception(
+          'network',
+          'feed_cookie_html_fallback_to_public_exception',
+          error as Error,
+          {
+            endpoint: endpoint,
+            source: 'cookieHtml',
+            trigger: trigger,
+            hasCookie: true,
+          },
+        )
       }
     }
     const html = await this.http.getText(endpoint)
@@ -1948,7 +2050,10 @@ export class ApiService {
     return html
   }
 
-  private captureBlockedListsFromHtml(html: string, source: BlockedListCaptureSource = {}): boolean {
+  private captureBlockedListsFromHtml(
+    html: string,
+    source: BlockedListCaptureSource = {},
+  ): boolean {
     const enriched: BlockedListCaptureSource = {
       endpoint: source.endpoint || '',
       source: source.source || 'publicHtml',
@@ -1991,23 +2096,38 @@ export class ApiService {
   }
 
   private static topicFromHtml(topicId: number, html: string): V2exTopic {
-    const headerMatch = (html || '').match(/<div[^>]*class=["']header["'][^>]*>([\s\S]*?)<\/div>\s*<div[^>]*class=["']cell["']/i)
+    const headerMatch = (html || '').match(
+      /<div[^>]*class=["']header["'][^>]*>([\s\S]*?)<\/div>\s*<div[^>]*class=["']cell["']/i,
+    )
     const header = headerMatch ? headerMatch[1] : html
     const title = ApiService.extractFirst(header, /<h1[^>]*>([\s\S]*?)<\/h1>/i)
     const author = ApiService.extractFirst(header, /<a[^>]*href=["']\/member\/([^"']+)["'][^>]*>/i)
     const nodeName = ApiService.extractFirst(header, /<a[^>]*href=["']\/go\/([^"']+)["'][^>]*>/i)
-    const nodeTitle = ApiService.extractFirst(header, /<a[^>]*href=["']\/go\/[^"']+["'][^>]*>([\s\S]*?)<\/a>/i)
+    const nodeTitle = ApiService.extractFirst(
+      header,
+      /<a[^>]*href=["']\/go\/[^"']+["'][^>]*>([\s\S]*?)<\/a>/i,
+    )
     const avatarTagMatch = header.match(/<img[^>]*class=["']avatar["'][^>]*>/i)
     const avatarTag = avatarTagMatch ? avatarTagMatch[0] : ''
     const avatar = ApiService.extractAttr(avatarTag, 'src')
     const memberId = ApiService.parseNumber(ApiService.extractAttr(avatarTag, 'data-uid'))
-    const created = ApiService.parseTimeSeconds(ApiService.extractFirst(header, /<span[^>]*title=["']([^"']+\+08:00)["'][^>]*>/i))
-    const contentRendered = ApiService.extractFirst(html, /<div[^>]*class=["'][^"']*\btopic_content\b[^"']*["'][^>]*>([\s\S]*?)<\/div>\s*<\/div>/i)
-    const replies = ApiService.parseNumber(ApiService.extractFirst(html, /<span[^>]*class=["']gray["'][^>]*>(\d+)\s+repl(?:y|ies)/i))
+    const created = ApiService.parseTimeSeconds(
+      ApiService.extractFirst(header, /<span[^>]*title=["']([^"']+\+08:00)["'][^>]*>/i),
+    )
+    const contentRendered = ApiService.extractFirst(
+      html,
+      /<div[^>]*class=["'][^"']*\btopic_content\b[^"']*["'][^>]*>([\s\S]*?)<\/div>\s*<\/div>/i,
+    )
+    const replies = ApiService.parseNumber(
+      ApiService.extractFirst(html, /<span[^>]*class=["']gray["'][^>]*>(\d+)\s+repl(?:y|ies)/i),
+    )
     return {
       id: topicId,
       title: title,
-      url: V2exUrlRouter.withSelectedBaseUrl(`/t/${topicId}`, HttpClient.getInstance().getBaseUrl()),
+      url: V2exUrlRouter.withSelectedBaseUrl(
+        `/t/${topicId}`,
+        HttpClient.getInstance().getBaseUrl(),
+      ),
       content: ApiService.decodePlain(contentRendered),
       content_rendered: contentRendered,
       replies: replies,
@@ -2017,38 +2137,52 @@ export class ApiService {
         tagline: '',
         avatar_mini: avatar,
         avatar_normal: avatar,
-        avatar_large: avatar
+        avatar_large: avatar,
       },
       node: {
         id: 0,
         name: nodeName,
         title: nodeTitle || nodeName,
         title_alternative: '',
-        url: nodeName ? V2exUrlRouter.withSelectedBaseUrl(`/go/${nodeName}`, HttpClient.getInstance().getBaseUrl()) : '',
+        url: nodeName
+          ? V2exUrlRouter.withSelectedBaseUrl(
+              `/go/${nodeName}`,
+              HttpClient.getInstance().getBaseUrl(),
+            )
+          : '',
         topics: 0,
         avatar_mini: '',
         avatar_normal: '',
-        avatar_large: ''
+        avatar_large: '',
       },
       created: created,
       last_modified: created,
-      last_touched: created
+      last_touched: created,
     }
   }
 
   private static memberProfileFromHtml(username: string, html: string): V2exMemberProfile {
     const clean = (username || '').trim()
-    const avatarTagMatch = (html || '').match(/<img[^>]*class=["']avatar["'][^>]*alt=["'][^"']*["'][^>]*>/i) ||
+    const avatarTagMatch =
+      (html || '').match(/<img[^>]*class=["']avatar["'][^>]*alt=["'][^"']*["'][^>]*>/i) ||
       (html || '').match(/<img[^>]*alt=["'][^"']*["'][^>]*class=["']avatar["'][^>]*>/i)
     const avatarTag = avatarTagMatch ? avatarTagMatch[0] : ''
     const pageUsername = ApiService.extractFirst(html, /<h1[^>]*>([\s\S]*?)<\/h1>/i) || clean
-    const memberId = ApiService.parseNumber(ApiService.extractFirst(html, /V2EX member #(\d+)/i) || ApiService.extractAttr(avatarTag, 'data-uid'))
+    const memberId = ApiService.parseNumber(
+      ApiService.extractFirst(html, /V2EX member #(\d+)/i) ||
+        ApiService.extractAttr(avatarTag, 'data-uid'),
+    )
     const avatar = ApiService.extractAttr(avatarTag, 'src')
-    const created = ApiService.parseTimeSeconds(ApiService.extractFirst(html, /joined on ([^<]+?\+08:00)/i))
+    const created = ApiService.parseTimeSeconds(
+      ApiService.extractFirst(html, /joined on ([^<]+?\+08:00)/i),
+    )
     return {
       status: pageUsername ? 'found' : 'unknown',
       id: memberId,
-      url: V2exUrlRouter.withSelectedBaseUrl(`/member/${encodeURIComponent(clean)}`, HttpClient.getInstance().getBaseUrl()),
+      url: V2exUrlRouter.withSelectedBaseUrl(
+        `/member/${encodeURIComponent(clean)}`,
+        HttpClient.getInstance().getBaseUrl(),
+      ),
       username: ApiService.decodePlain(pageUsername || clean),
       website: '',
       twitter: '',
@@ -2061,7 +2195,7 @@ export class ApiService {
       avatar_mini: avatar,
       avatar_normal: avatar,
       avatar_large: avatar,
-      created: created
+      created: created,
     }
   }
 
@@ -2115,12 +2249,15 @@ export class ApiService {
           result.add(id)
         }
       }
-    } catch (_error) {
-    }
+    } catch (_error) {}
     return result
   }
 
-  private static normalizeNodeTopics(topics: V2exTopic[], nodeName: string, nodeTitle: string): V2exTopic[] {
+  private static normalizeNodeTopics(
+    topics: V2exTopic[],
+    nodeName: string,
+    nodeTitle: string,
+  ): V2exTopic[] {
     const cleanName = (nodeName || '').trim()
     const cleanTitle = (nodeTitle || cleanName).trim()
     return ApiService.normalizeTopics(topics).map((topic: V2exTopic): V2exTopic => {
@@ -2133,11 +2270,14 @@ export class ApiService {
           name: cleanName,
           title: cleanTitle,
           title_alternative: '',
-          url: V2exUrlRouter.withSelectedBaseUrl(`/go/${cleanName}`, HttpClient.getInstance().getBaseUrl()),
+          url: V2exUrlRouter.withSelectedBaseUrl(
+            `/go/${cleanName}`,
+            HttpClient.getInstance().getBaseUrl(),
+          ),
           topics: 0,
           avatar_mini: '',
           avatar_normal: '',
-          avatar_large: ''
+          avatar_large: '',
         }
         return topic
       }
@@ -2148,7 +2288,10 @@ export class ApiService {
         topic.node.title = cleanTitle
       }
       if (!topic.node.url) {
-        topic.node.url = V2exUrlRouter.withSelectedBaseUrl(`/go/${cleanName}`, HttpClient.getInstance().getBaseUrl())
+        topic.node.url = V2exUrlRouter.withSelectedBaseUrl(
+          `/go/${cleanName}`,
+          HttpClient.getInstance().getBaseUrl(),
+        )
       }
       return topic
     })
@@ -2165,7 +2308,10 @@ export class ApiService {
     topic.content = HtmlEntityUtils.decode(topic.content)
     topic.content_rendered = HtmlEntityUtils.decode(topic.content_rendered)
     if (topic.node) {
-      topic.node.url = V2exUrlRouter.withSelectedBaseUrl(topic.node.url, HttpClient.getInstance().getBaseUrl())
+      topic.node.url = V2exUrlRouter.withSelectedBaseUrl(
+        topic.node.url,
+        HttpClient.getInstance().getBaseUrl(),
+      )
       topic.node.title = HtmlEntityUtils.decode(topic.node.title)
       topic.node.title_alternative = HtmlEntityUtils.decode(topic.node.title_alternative)
       topic.node.header = HtmlEntityUtils.decode(topic.node.header || '')

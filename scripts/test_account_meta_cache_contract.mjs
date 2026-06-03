@@ -16,6 +16,8 @@ const settings = read(settingsPath)
 const stores = read('shared/src/main/ets/settings/SettingsStores.ets')
 const sharedIndex = read('shared/src/main/ets/Index.ets')
 const accountPage = read('entry/src/main/ets/pages/AccountPage.ets')
+// Whitespace-flattened view so token checks survive the formatter wrapping call args across lines.
+const accountPageFlat = accountPage.replace(/\s+/g, ' ')
 const coordinator = read('entry/src/main/ets/model/AccountPageCoordinator.ets')
 
 assert(stores.includes("STORE_NAME_ACCOUNT_META: string = 'next2v_account_meta'"), 'SettingsStores must declare a dedicated account meta store')
@@ -67,35 +69,47 @@ assert(
   'AccountPage must load matching cached account meta before network loadAccountMeta'
 )
 
+// Persistence + the live balance now flow through the shared AccountMetaState holder + the single-writer
+// AccountMetaPublisher (which calls AccountMetaSettings.saveCache internally) instead of a per-page
+// saveAccountMetaCache. The account-meta SOURCE is per-account (multi-account): 'cookie' or 'cookie:<id>'.
 for (const token of [
   'AccountMetaSettings',
   'private accountMetaOwnerKey(): string',
-  "AccountMetaSettings.ownerKey(this.currentUsername(), 'cookie')",
+  'AccountMetaSettings.ownerKey(this.currentUsername(), this.accountMetaSource())',
+  'private accountMetaSource(): string',
   'private loadAccountMetaCache(): void',
   'AccountMetaSettings.loadCache(context, ownerKey)',
   'snapshot.ownerKey !== this.accountMetaOwnerKey()',
   'this.accountBalance = snapshot.balance',
   'this.dailyMission = snapshot.dailyMission',
-  'private saveAccountMetaCache(): void',
-  'AccountMetaSettings.saveCache(context, ownerKey, this.accountBalance, this.dailyMission, \'cookie\')',
+  'private publishAccountMeta(cookie: string, ownerKey: string): void',
   'private clearAccountMetaCache(): void',
   'AccountMetaSettings.clearCache(context)',
 ]) {
   assert(accountPage.includes(token), `AccountPage account meta cache contract missing ${token}`)
 }
+// Calls the formatter may wrap across lines — match against the whitespace-flattened source.
+for (const flatToken of [
+  'AccountMetaPublisher.publishCached( snapshot.ownerKey, snapshot.balance, snapshot.dailyMission, )',
+  'AccountMetaPublisher.publishFetched( context, ownerKey, this.accountBalance, this.dailyMission, this.accountMetaSource(), cookie, )',
+]) {
+  assert(accountPageFlat.includes(flatToken), `AccountPage account meta cache contract missing (flattened) ${flatToken}`)
+}
+// The per-page private cache writer is gone — persistence is the publisher's job (single writer).
+assert(!accountPage.includes('private saveAccountMetaCache'), 'AccountPage must not keep a private cache writer; persistence belongs to AccountMetaPublisher')
 
 const loadMetaStart = accountPage.indexOf('private loadAccountMeta(force: boolean = false): void {')
 const redeemStart = accountPage.indexOf('private redeemDailyMission', loadMetaStart)
 assert(loadMetaStart >= 0 && redeemStart > loadMetaStart, 'AccountPage loadAccountMeta boundaries missing')
 const loadMetaBody = accountPage.slice(loadMetaStart, redeemStart)
-assert(loadMetaBody.includes('this.saveAccountMetaCache()'), 'AccountPage must save account meta cache on successful network load')
+assert(loadMetaBody.includes('this.publishAccountMeta(cookie, ownerKey)'), 'AccountPage must publish account meta (holder + cache) on successful network load')
 assert(loadMetaBody.includes('if (!force && this.accountBalance && this.dailyMission)'), 'AccountPage should keep current/cached account meta and avoid unnecessary first load')
 assert(accountPage.includes('this.loadAccountMeta(true)'), 'AccountPage daily mission/session success should still refresh account meta')
 assert(accountPage.includes('this.clearAccountMetaCache()'), 'AccountPage must clear account meta cache on logout/session expiry or owner loss')
-const saveCacheCallIndex = accountPage.indexOf('AccountMetaSettings.saveCache(context, ownerKey, this.accountBalance, this.dailyMission, \'cookie\')')
-const nextMethodAfterSave = accountPage.indexOf('private clearAccountMetaCache', saveCacheCallIndex)
-const saveCacheSection = accountPage.slice(saveCacheCallIndex, nextMethodAfterSave)
-assert(!saveCacheSection.includes('LOCAL_DATA_UPDATED_AT'), 'Account meta cache writes must not publish LOCAL_DATA_UPDATED_AT')
+const publishMetaIndex = accountPage.indexOf('private publishAccountMeta(cookie: string, ownerKey: string): void')
+const nextMethodAfterPublish = accountPage.indexOf('private clearAccountMetaCache', publishMetaIndex)
+const publishMetaSection = accountPage.slice(publishMetaIndex, nextMethodAfterPublish)
+assert(!publishMetaSection.includes('LOCAL_DATA_UPDATED_AT'), 'Account meta publish must not broadcast LOCAL_DATA_UPDATED_AT')
 
 assert(
   coordinator.includes('if (accountBalance)') &&

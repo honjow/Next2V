@@ -133,4 +133,20 @@ assert.deepEqual(Array.from(homeSections[0].nodes.map((node) => node.name)), ['q
 assert.deepEqual(Array.from(homeSections[1].nodes.map((node) => node.name)), ['claude'])
 assert.equal(englishSections.some((section) => section.title === '最热节点'), false, 'structured row titles must not use the home-title localization path')
 
+// Regression lock: V2EX serves the "recently added" sidebar box with a CHINESE heading (最近新增节点) even
+// while "Hottest Nodes" stays English. The parser must map the Chinese heading to a title key, else the
+// title&&titleKey guard drops the whole group (the bug the user reported: missing 最近新增节点 group).
+const chineseHomeBoxFixture = `
+<div class="box">
+  <div class="cell"><span class="fade">Hottest Nodes</span></div>
+  <div class="cell"><a href="/go/qna" class="item_node">问与答</a></div>
+</div><div class="sep20"></div>
+<div class="box">
+  <div class="cell"><span class="fade">最近新增节点</span></div>
+  <div class="cell"><a href="/go/claude" class="item_node">Claude</a><a href="/go/codex" class="item_node">Codex</a></div>
+</div><div class="sep20"></div>`
+const chineseHomeSections = V2exNodeParser.extractNodeNavigationSections(chineseHomeBoxFixture)
+assert.deepEqual(Array.from(chineseHomeSections.map((section) => section.titleKey)), ['discover_node_navigation_hottest', 'discover_node_navigation_recently_created'], 'Chinese 最近新增节点 heading must still resolve a title key (not be dropped)')
+assert.deepEqual(Array.from(chineseHomeSections[1].nodes.map((node) => node.name)), ['claude', 'codex'], 'recently-added box nodes survive')
+
 console.log('test_discover_node_navigation_parser_contract: PASS')

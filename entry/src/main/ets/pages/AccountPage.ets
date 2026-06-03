@@ -23,6 +23,8 @@ import { AccountStore } from 'shared'
 import type { AccountRecord } from 'shared'
 import {
   ActiveAccountState,
+  AccountMetaState,
+  AccountMetaPublisher,
   ApiService,
   ApiRateLimitState,
   AccountMetaSettings,
@@ -31,6 +33,7 @@ import {
   AuthSessionSignalState,
   AuthSessionSettings,
   AuthSettings,
+  connectAccountMeta,
   connectActiveAccount,
   connectApiRateLimit,
   connectAuthCookie,
@@ -72,6 +75,8 @@ export struct AccountDashboardPage {
   private authCookie: AuthCookieState = connectAuthCookie();
   private session: AuthSessionSignalState = connectAuthSessionSignal();
   private activeAccount: ActiveAccountState = connectActiveAccount();
+  // The shared balance/daily-mission holder both account surfaces mirror (single source of truth).
+  private accountMeta: AccountMetaState = connectAccountMeta();
   private rateLimit: ApiRateLimitState = connectApiRateLimit();
   private localData: LocalDataSignalState = connectLocalDataSignal();
   private localContentStats: LocalContentStatsState = connectLocalContentStats();
@@ -846,6 +851,26 @@ export struct AccountDashboardPage {
       })
   }
 
+  // Mirror the shared holder into the local render fields whenever a peer fetch / browse-harvest updates
+  // it (the OTHER account surface, or any authenticated page load, publishing the latest balance). The
+  // ownerKey gate keeps a different account's value from bleeding in.
+  @Monitor('accountMeta.updatedAt')
+  onAccountMetaUpdated(): void {
+    this.mirrorAccountMetaFromHolder()
+  }
+
+  private mirrorAccountMetaFromHolder(): boolean {
+    const ownerKey = this.accountMetaOwnerKey()
+    if (!ownerKey || this.accountMeta.ownerKey !== ownerKey || !this.accountMeta.balance) {
+      return false
+    }
+    this.accountBalance = this.accountMeta.balance
+    if (this.accountMeta.dailyMission) {
+      this.dailyMission = this.accountMeta.dailyMission
+    }
+    return true
+  }
+
   private accountMetaOwnerKey(): string {
     return AccountMetaSettings.ownerKey(this.currentUsername(), this.accountMetaSource())
   }
@@ -871,6 +896,11 @@ export struct AccountDashboardPage {
       })
       return
     }
+    // Prefer the live shared holder (kept fresh by peer fetches + page-browse harvest); only fall back to
+    // the persisted cache when the holder has nothing for this account yet (cold start).
+    if (this.mirrorAccountMetaFromHolder()) {
+      return
+    }
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     AccountMetaSettings.loadCache(context, ownerKey)
       .then((snapshot) => {
@@ -889,6 +919,13 @@ export struct AccountDashboardPage {
         if (snapshot.dailyMission) {
           this.dailyMission = snapshot.dailyMission
         }
+        // Hydrate the holder so a peer surface mirrors the cached value (publishCached won't downgrade a
+        // holder that already carries a fresher live value).
+        AccountMetaPublisher.publishCached(
+          snapshot.ownerKey,
+          snapshot.balance,
+          snapshot.dailyMission,
+        )
       })
       .catch((error: Error) => {
         DiagnosticLogger.warn(
@@ -900,33 +937,21 @@ export struct AccountDashboardPage {
       })
   }
 
-  private saveAccountMetaCache(): void {
-    const cookie = CookieJarSettings.getCurrentCookie()
-    const ownerKey = this.accountMetaOwnerKey()
+  // Authoritative fetch result → the single shared holder (which mirrors back to this page and the detail
+  // page) + persisted cache, via the one-writer publisher.
+  private publishAccountMeta(cookie: string, ownerKey: string): void {
     if (!cookie || !ownerKey || !this.accountBalance) {
       return
     }
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    AccountMetaSettings.saveCache(
+    AccountMetaPublisher.publishFetched(
       context,
       ownerKey,
       this.accountBalance,
       this.dailyMission,
       this.accountMetaSource(),
+      cookie,
     )
-      .then(() => {
-        DiagnosticLogger.info('account', 'account_meta_cache_save_success', {
-          ownerHash: DiagnosticLogger.ownerHash(ownerKey),
-        })
-      })
-      .catch((error: Error) => {
-        DiagnosticLogger.warn(
-          'account',
-          'account_meta_cache_save_error',
-          { ownerHash: DiagnosticLogger.ownerHash(ownerKey) },
-          error,
-        )
-      })
   }
 
   private clearAccountMetaCache(): void {
@@ -980,7 +1005,7 @@ export struct AccountDashboardPage {
           hasBalance: !!this.accountBalance,
           canRedeem: this.dailyMission ? this.dailyMission.canRedeem === true : false,
         })
-        this.saveAccountMetaCache()
+        this.publishAccountMeta(cookie, ownerKey)
       })
       .catch((error: Error) => {
         if (

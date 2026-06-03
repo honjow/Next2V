@@ -83,6 +83,7 @@ export { TopicReadStatesState, connectTopicReadStates } from './state/TopicReadS
 export { AuthSessionSignalState, connectAuthSessionSignal } from './state/AuthSessionSignalState'
 export { AuthIdentityState, connectAuthIdentity } from './state/AuthIdentityState'
 export { ActiveAccountState, connectActiveAccount } from './state/ActiveAccountState'
+export { AccountMetaState, connectAccountMeta } from './state/AccountMetaState'
 export { ApiRateLimitState, connectApiRateLimit } from './state/ApiRateLimitState'
 export {
   LocalDataSignalState,
@@ -230,6 +231,7 @@ export { AccountStore } from './settings/AccountStore'
 export type { AccountRecord, AccountRecordInput } from './settings/AccountStore'
 export { AccountSessionCoordinator } from './settings/AccountSessionCoordinator'
 export { AccountMetaSettings } from './settings/AccountMetaSettings'
+export { AccountMetaPublisher } from './settings/AccountMetaPublisher'
 export { BlockedListSettings } from './settings/BlockedListSettings'
 export type {
   BlockedListSnapshot,

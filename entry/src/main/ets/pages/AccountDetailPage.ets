@@ -1,15 +1,16 @@
 import { common } from '@kit.AbilityKit'
 import { promptAction } from '@kit.ArkUI'
-import {
-  AccountDetailHeaderCard,
-} from '../components/AccountDashboardComponents'
+import { AccountDetailHeaderCard } from '../components/AccountDashboardComponents'
 import {
   AccountStore,
   AccountMetaSettings,
+  AccountMetaState,
+  AccountMetaPublisher,
   AccountSessionCoordinator,
   ActiveAccountState,
   ApiService,
   AppStrings,
+  connectAccountMeta,
   AuthCookieState,
   AuthIdentityState,
   AuthSessionSignalState,
@@ -39,37 +40,38 @@ import {
 } from 'shared'
 import type { AccountRecord } from 'shared'
 import { AccountPageCoordinator } from '../model/AccountPageCoordinator'
-
 @ComponentV2
 export struct AccountDetailPage {
   // ns from NavStackHolder (was @Consume('ns')).
-  private ns: NavPathStack = connectNavStack().stack
+  private ns: NavPathStack = connectNavStack().stack;
   // Auth/session/active-account read from their V2 mirrors (dual-written at the auth service
   // chokepoints) — replaces the AUTH_* / ACTIVE_ACCOUNT_ID @StorageLink. The page never mutates these;
   // the account state machine does, and the mirrors reflect it.
-  private authCookie: AuthCookieState = connectAuthCookie()
-  private authIdentity: AuthIdentityState = connectAuthIdentity()
-  private session: AuthSessionSignalState = connectAuthSessionSignal()
-  private activeAccount: ActiveAccountState = connectActiveAccount()
+  private authCookie: AuthCookieState = connectAuthCookie();
+  private authIdentity: AuthIdentityState = connectAuthIdentity();
+  private session: AuthSessionSignalState = connectAuthSessionSignal();
+  private activeAccount: ActiveAccountState = connectActiveAccount();
+  // Shared balance/daily-mission holder mirrored by both account surfaces (single source of truth).
+  private accountMeta: AccountMetaState = connectAccountMeta();
 
   // storedUsername is the API-token fallback identity, page-managed (loaded from AuthSettings; cleared
   // on logout) — not a mirror because the page is its own authority for this display value.
-  @Local private storedUsername: string = ''
-  @Local private authToken: string = ''
-  @Local private authProfile: V2exAuthenticatedMember | null = null
-  @Local private authError: string = ''
-  @Local private accountBalance: V2exBalance | null = null
-  @Local private dailyMission: V2exDailyMission | null = null
-  @Local private accountMetaError: string = ''
-  @Local private isAccountMetaLoading: boolean = false
-  @Local private isDailyRedeeming: boolean = false
-  @Local private isLoggingOut: boolean = false
-  @Local private activeAccountUsername: string = ''
-  @Local private activeAccountAvatar: string = ''
+  @Local private storedUsername: string = '';
+  @Local private authToken: string = '';
+  @Local private authProfile: V2exAuthenticatedMember | null = null;
+  @Local private authError: string = '';
+  @Local private accountBalance: V2exBalance | null = null;
+  @Local private dailyMission: V2exDailyMission | null = null;
+  @Local private accountMetaError: string = '';
+  @Local private isAccountMetaLoading: boolean = false;
+  @Local private isDailyRedeeming: boolean = false;
+  @Local private isLoggingOut: boolean = false;
+  @Local private activeAccountUsername: string = '';
+  @Local private activeAccountAvatar: string = '';
 
-  private http: HttpClient = HttpClient.getInstance()
-  private api: ApiService = new ApiService()
-  private accountMetaRequestId: number = 0
+  private http: HttpClient = HttpClient.getInstance();
+  private api: ApiService = new ApiService();
+  private accountMetaRequestId: number = 0;
 
   aboutToAppear(): void {
     this.storedUsername = this.authIdentity.username
@@ -109,16 +111,14 @@ export struct AccountDetailPage {
               fallbackText: this.accountMetaFallbackText(),
               sessionError: this.authError,
               accountMetaError: this.accountMetaError,
-              dailyMissionMessage: this.dailyMissionStatusText()
+              dailyMissionMessage: this.dailyMissionStatusText(),
             })
           }
         }
-
         ListItem() {
           this.SectionHeader(AccountPageCoordinator.SECTION_ACCOUNT_CONTENT)
         }
         .margin({ top: ThemeConstants.SPACE_MD })
-
         ListItem() {
           GroupedListSection() {
             this.AccountRow(AccountPageCoordinator.PROFILE_TITLE, () => {
@@ -142,7 +142,6 @@ export struct AccountDetailPage {
             })
           }
         }
-
         ListItem() {
           GroupedListSection() {
             this.LogoutRow()
@@ -179,7 +178,7 @@ export struct AccountDetailPage {
       primaryColor: Color.Red,
       action: () => {
         this.confirmLogout()
-      }
+      },
     })
   }
 
@@ -193,7 +192,7 @@ export struct AccountDetailPage {
       this.authProfile,
       this.storedUsername,
       this.activeAccountUsername,
-      this.activeAccountAvatar
+      this.activeAccountAvatar,
     ).username
   }
 
@@ -207,7 +206,7 @@ export struct AccountDetailPage {
       this.authProfile,
       this.storedUsername,
       this.activeAccountUsername,
-      this.activeAccountAvatar
+      this.activeAccountAvatar,
     ).avatarUrl
   }
 
@@ -221,7 +220,7 @@ export struct AccountDetailPage {
       this.authIdentity.tokenConfigured,
       this.accountBalance,
       this.isAccountMetaLoading,
-      this.accountMetaError
+      this.accountMetaError,
     )
   }
 
@@ -245,7 +244,7 @@ export struct AccountDetailPage {
       this.hasCookieAccount(),
       this.isAccountMetaLoading,
       this.isDailyRedeeming,
-      this.dailyMission
+      this.dailyMission,
     )
   }
 
@@ -275,10 +274,9 @@ export struct AccountDetailPage {
       .catch((error: Error) => {
         console.error('AccountDetailPage cookie restore failed: ' + error.message)
       })
-    AuthSessionSettings.load(context)
-      .catch((error: Error) => {
-        console.error('AccountDetailPage auth session restore failed: ' + error.message)
-      })
+    AuthSessionSettings.load(context).catch((error: Error) => {
+      console.error('AccountDetailPage auth session restore failed: ' + error.message)
+    })
   }
 
   private loadAccounts(): void {
@@ -296,14 +294,18 @@ export struct AccountDetailPage {
       })
   }
 
-  private loadActiveAccountIdentity(context: common.UIAbilityContext, records: AccountRecord[]): void {
+  private loadActiveAccountIdentity(
+    context: common.UIAbilityContext,
+    records: AccountRecord[],
+  ): void {
     if (records.length === 0) {
       this.activeAccountUsername = ''
       this.activeAccountAvatar = ''
       return
     }
     const activeId = AccountStore.getActiveId()
-    const fallbackRecord = records.find((record: AccountRecord) => record.id === activeId) ?? records[0]
+    const fallbackRecord =
+      records.find((record: AccountRecord) => record.id === activeId) ?? records[0]
     if (!activeId) {
       this.applyActiveAccountIdentity(fallbackRecord)
       return
@@ -320,7 +322,8 @@ export struct AccountDetailPage {
   private applyActiveAccountIdentity(record: AccountRecord | null): void {
     const nextUsername = record?.username || ''
     const nextAvatar = record?.avatar || ''
-    const changed = nextUsername !== this.activeAccountUsername || nextAvatar !== this.activeAccountAvatar
+    const changed =
+      nextUsername !== this.activeAccountUsername || nextAvatar !== this.activeAccountAvatar
     this.activeAccountUsername = nextUsername
     this.activeAccountAvatar = nextAvatar
     if (changed) {
@@ -328,6 +331,25 @@ export struct AccountDetailPage {
       this.loadAccountMetaCache()
       this.loadAccountMeta(true)
     }
+  }
+
+  // Mirror the shared holder into local render fields when a peer fetch / browse-harvest updates it. The
+  // ownerKey gate keeps a different account's value from bleeding in across a switch.
+  @Monitor('accountMeta.updatedAt')
+  onAccountMetaUpdated(): void {
+    this.mirrorAccountMetaFromHolder()
+  }
+
+  private mirrorAccountMetaFromHolder(): boolean {
+    const ownerKey = this.accountMetaOwnerKey()
+    if (!ownerKey || this.accountMeta.ownerKey !== ownerKey || !this.accountMeta.balance) {
+      return false
+    }
+    this.accountBalance = this.accountMeta.balance
+    if (this.accountMeta.dailyMission) {
+      this.dailyMission = this.accountMeta.dailyMission
+    }
+    return true
   }
 
   private accountMetaOwnerKey(): string {
@@ -352,6 +374,10 @@ export struct AccountDetailPage {
     if (!cookie || !ownerKey) {
       return
     }
+    // Prefer the live shared holder; fall back to the persisted cache only on a cold start.
+    if (this.mirrorAccountMetaFromHolder()) {
+      return
+    }
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     AccountMetaSettings.loadCache(context, ownerKey)
       .then((snapshot) => {
@@ -364,9 +390,13 @@ export struct AccountDetailPage {
         if (snapshot.dailyMission) {
           this.dailyMission = snapshot.dailyMission
         }
+        AccountMetaPublisher.publishCached(
+          snapshot.ownerKey,
+          snapshot.balance,
+          snapshot.dailyMission,
+        )
       })
-      .catch((_error: Error) => {
-      })
+      .catch((_error: Error) => {})
   }
 
   private loadAccountMeta(force: boolean = false): void {
@@ -381,20 +411,25 @@ export struct AccountDetailPage {
     this.accountMetaError = ''
     const requestId = ++this.accountMetaRequestId
     const ownerKey = this.accountMetaOwnerKey()
-    Promise.all([
-      this.api.getBalanceWithCookie(cookie),
-      this.api.getDailyMissionWithCookie(cookie)
-    ])
+    Promise.all([this.api.getBalanceWithCookie(cookie), this.api.getDailyMissionWithCookie(cookie)])
       .then((results) => {
-        if (requestId !== this.accountMetaRequestId || cookie !== CookieJarSettings.getCurrentCookie() || ownerKey !== this.accountMetaOwnerKey()) {
+        if (
+          requestId !== this.accountMetaRequestId ||
+          cookie !== CookieJarSettings.getCurrentCookie() ||
+          ownerKey !== this.accountMetaOwnerKey()
+        ) {
           return
         }
         this.accountBalance = results[0]
         this.dailyMission = results[1]
-        this.saveAccountMetaCache()
+        this.publishAccountMeta(cookie, ownerKey)
       })
       .catch((error: Error) => {
-        if (requestId !== this.accountMetaRequestId || cookie !== CookieJarSettings.getCurrentCookie() || ownerKey !== this.accountMetaOwnerKey()) {
+        if (
+          requestId !== this.accountMetaRequestId ||
+          cookie !== CookieJarSettings.getCurrentCookie() ||
+          ownerKey !== this.accountMetaOwnerKey()
+        ) {
           return
         }
         const message = translateApiError(error)
@@ -405,16 +440,20 @@ export struct AccountDetailPage {
       })
   }
 
-  private saveAccountMetaCache(): void {
-    const cookie = CookieJarSettings.getCurrentCookie()
-    const ownerKey = this.accountMetaOwnerKey()
+  // Authoritative fetch result → shared holder (mirrors to this page + the dashboard card) + cache.
+  private publishAccountMeta(cookie: string, ownerKey: string): void {
     if (!cookie || !ownerKey || !this.accountBalance) {
       return
     }
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    AccountMetaSettings.saveCache(context, ownerKey, this.accountBalance, this.dailyMission, this.accountMetaSource())
-      .catch((_error: Error) => {
-      })
+    AccountMetaPublisher.publishFetched(
+      context,
+      ownerKey,
+      this.accountBalance,
+      this.dailyMission,
+      this.accountMetaSource(),
+      cookie,
+    )
   }
 
   private redeemDailyMission(): void {
@@ -423,18 +462,29 @@ export struct AccountDetailPage {
       return
     }
     if (!this.dailyMission || !this.dailyMission.canRedeem || !this.dailyMission.redeemPath) {
-      promptAction.openToast({ message: AppStrings.text(AppStrings.R_ALREADY_CHECKED_IN_TODAY, 'Already checked in today') })
+      promptAction
+        .openToast({
+          message: AppStrings.text(
+            AppStrings.R_ALREADY_CHECKED_IN_TODAY,
+            'Already checked in today',
+          ),
+        })
         .catch((_error: Error) => {})
       return
     }
     this.isDailyRedeeming = true
     this.accountMetaError = ''
-    this.api.redeemDailyMissionWithCookie(cookie)
+    this.api
+      .redeemDailyMissionWithCookie(cookie)
       .then((redeemed: V2exDailyRedeemResult) => {
         this.dailyMission = redeemed.mission
-        const toastMessage = redeemed.rewardCoins > 0
-          ? AppStrings.format(AppStrings.text(AppStrings.R_DAILY_CHECKIN_REWARD_TOAST, 'Checked in: +{0} bronze'), [`${redeemed.rewardCoins}`])
-          : AppStrings.text(AppStrings.R_CHECKIN_COMPLETED, 'Check-in completed')
+        const toastMessage =
+          redeemed.rewardCoins > 0
+            ? AppStrings.format(
+                AppStrings.text(AppStrings.R_DAILY_CHECKIN_REWARD_TOAST, 'Checked in: +{0} bronze'),
+                [`${redeemed.rewardCoins}`],
+              )
+            : AppStrings.text(AppStrings.R_CHECKIN_COMPLETED, 'Check-in completed')
         promptAction.openToast({ message: toastMessage }).catch((_error: Error) => {})
         this.loadAccountMeta()
       })
@@ -455,19 +505,24 @@ export struct AccountDetailPage {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     this.getUIContext().showAlertDialog({
       title: AccountPageCoordinator.LOGOUT_TITLE,
-      message: AppStrings.text(AppStrings.R_ACCOUNT_REMOVE_MESSAGE_ARG, 'Sign out of this account?')
-        .replace('{0}', this.currentUsername() || AppStrings.text(AppStrings.R_ACCOUNT_V2EX_USER, 'V2EX user')),
+      message: AppStrings.text(
+        AppStrings.R_ACCOUNT_REMOVE_MESSAGE_ARG,
+        'Sign out of this account?',
+      ).replace(
+        '{0}',
+        this.currentUsername() || AppStrings.text(AppStrings.R_ACCOUNT_V2EX_USER, 'V2EX user'),
+      ),
       primaryButton: {
         value: AppStrings.text(AppStrings.R_COMMON_CANCEL, 'Cancel'),
-        action: () => {}
+        action: () => {},
       },
       secondaryButton: {
         value: AccountPageCoordinator.LOGOUT_TITLE,
         fontColor: Color.Red,
         action: () => {
           this.performLogout(context)
-        }
-      }
+        },
+      },
     })
   }
 

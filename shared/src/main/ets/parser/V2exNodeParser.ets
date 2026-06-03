@@ -219,11 +219,17 @@ export class V2exNodeParser {
 
   private static homeNavigationSectionTitleKey(title: string): string {
     const clean = (title || '').trim()
+    // V2EX serves the sidebar boxes with MIXED-language headings on the same page: "Hottest Nodes" is
+    // English, but "最近新增节点" is Chinese. Mapping only the English forms silently dropped the
+    // recently-added box (its titleKey came back '' and the title&&titleKey guard discarded it). Match
+    // both languages; the Chinese 最热节点 case is defensive in case V2EX ever localizes that box too.
     switch (clean) {
       case 'Hottest Nodes':
+      case '最热节点':
         return 'discover_node_navigation_hottest'
       case 'Recently Created':
       case 'Recently Created Nodes':
+      case '最近新增节点':
         return 'discover_node_navigation_recently_created'
       default:
         return ''
