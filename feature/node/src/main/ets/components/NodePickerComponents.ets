@@ -25,11 +25,6 @@ export struct NodePickerHeader {
 
   build() {
     Column({ space: ThemeConstants.SPACE_SM }) {
-      Text($r('app.string.node_picker_helper'))
-        .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-        .fontColor($r('sys.color.font_secondary'))
-        .width('100%')
-
       if (this.selectedNodeName) {
         Row({ space: ThemeConstants.SPACE_SM }) {
           Text(AppStrings.format(

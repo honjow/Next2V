@@ -218,19 +218,25 @@ export struct TopicEditorPage {
           .layoutWeight(1)
           .constraintSize({ minHeight: BODY_MIN_HEIGHT })
           .width('100%')
+        } else if (this.content.trim().length === 0) {
+          // Empty preview: a centered glyph instead of a text line. Fills the same pane (layoutWeight +
+          // minHeight) as the edit box / rendered preview so edit<->preview<->empty never shifts the
+          // layout below.
+          Column() {
+            SymbolGlyph($r('sys.symbol.square_slash'))
+              .fontSize(ThemeConstants.ICON_SIZE_PLACEHOLDER)
+              .fontColor([$r('sys.color.font_secondary')])
+          }
+          .width('100%')
+          .layoutWeight(1)
+          .constraintSize({ minHeight: BODY_MIN_HEIGHT })
+          .justifyContent(FlexAlign.Center)
         } else {
           // Same top-left container as the edit box, also filling the pane height, so switching
           // edit<->preview never shifts the layout below.
           Scroll() {
             Column() {
-              if (this.content.trim().length === 0) {
-                Text(AppStrings.text(AppStrings.R_EDITOR_EMPTY_PREVIEW, 'No content yet'))
-                  .fontSize(ThemeConstants.FONT_SIZE_BODY)
-                  .fontColor($r('sys.color.font_secondary'))
-                  .width('100%')
-              } else {
-                MarkdownContent({ source: this.content, topMargin: 0 })
-              }
+              MarkdownContent({ source: this.content, topMargin: 0 })
             }
             .width('100%')
             .alignItems(HorizontalAlign.Start)

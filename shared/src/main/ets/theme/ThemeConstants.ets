@@ -72,6 +72,8 @@ export class ThemeConstants {
 
   // Icons and touch targets
   static readonly ICON_SIZE_SM: number = 16
+  // Decorative placeholder glyph centered in an empty pane (e.g. the editor's empty preview).
+  static readonly ICON_SIZE_PLACEHOLDER: number = 48
   static readonly TOUCH_TARGET_SM: number = 36
 
   // Code block colors (not system tokens, must be custom defined)

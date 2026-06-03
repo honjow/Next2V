@@ -720,7 +720,7 @@ struct Index {
     // (read here so the bar re-renders as the form fills); the tap goes back over the action bus.
     let content: Record<string, Object> = {
       'label': AppStrings.R_EDITOR_SUBMIT,
-      'icon': this.mainTitleMenuIcon('submit'),
+      'icon': this.submitTitleBarIcon(),
       'isEnabled': this.topicEditorAppbar.submitEnabled,
       'action': () => {
         sendTopicEditorSubmit()
@@ -732,6 +732,14 @@ struct Index {
       'maxCount': IndexTitleBarCoordinator.SINGLE_ITEM_MENU_MAX_COUNT,
     }
     return this.navDestTitleBarOpts(title, menu)
+  }
+
+  // paperplane_right_fill's visual mass sits left of its box center, so in the title-bar menu slot it
+  // reads as shoved left. Nudge it right a couple vp to optically center it — same trick the reply
+  // composer's send button uses (ReplyComposerBar). A SymbolGlyphModifier carries the offset because
+  // it extends SymbolGlyphAttribute (HdsNavigation's IconType accepts a SymbolGlyphModifier).
+  private submitTitleBarIcon(): SymbolGlyphModifier {
+    return new SymbolGlyphModifier($r('sys.symbol.paperplane_right_fill')).offset({ x: 2 })
   }
 
   private topicDetailTitleBarOpts(topicId: number): Record<string, Object> {
