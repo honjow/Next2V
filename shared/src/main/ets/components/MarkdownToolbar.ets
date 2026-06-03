@@ -39,30 +39,18 @@ export struct MarkdownToolbar {
       .scrollBar(BarState.Off)
       .layoutWeight(1)
 
-      // Inlined (NOT a @Builder): a @Builder called with a primitive `active` argument is by-value
-      // and does not re-render when the value changes, which froze the highlight. Reading
-      // this.previewActive directly here makes both segments reactively reflect the current mode.
+      // Edit/preview segmented toggle. Gate the pair on `if (this.previewActive)` so the WHOLE pair
+      // rebuilds when the mode flips: with two inline siblings each binding `.backgroundColor` to
+      // this.previewActive, only the first re-evaluated reliably, so the active highlight could stick
+      // (looked static). The if/else tears down and recreates both segments on every change.
       Row() {
-        Text(AppStrings.text(AppStrings.R_MARKDOWN_TOOLBAR_EDIT, 'Edit'))
-          .fontSize(ThemeConstants.FONT_SIZE_TAG)
-          .textAlign(TextAlign.Center)
-          .height(28)
-          .constraintSize({ minWidth: 40 })
-          .padding({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM })
-          .borderRadius(ThemeConstants.RADIUS_ROUND)
-          .fontColor(this.previewActive ? $r('sys.color.font_secondary') : Color.White)
-          .backgroundColor(this.previewActive ? Color.Transparent : ThemeConstants.BRAND_PRIMARY)
-          .onClick(() => { this.fire(this.onEdit) })
-        Text(AppStrings.text(AppStrings.R_MARKDOWN_TOOLBAR_PREVIEW, 'Preview'))
-          .fontSize(ThemeConstants.FONT_SIZE_TAG)
-          .textAlign(TextAlign.Center)
-          .height(28)
-          .constraintSize({ minWidth: 40 })
-          .padding({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM })
-          .borderRadius(ThemeConstants.RADIUS_ROUND)
-          .fontColor(this.previewActive ? Color.White : $r('sys.color.font_secondary'))
-          .backgroundColor(this.previewActive ? ThemeConstants.BRAND_PRIMARY : Color.Transparent)
-          .onClick(() => { this.fire(this.onPreview) })
+        if (this.previewActive) {
+          this.SegToggle(AppStrings.text(AppStrings.R_MARKDOWN_TOOLBAR_EDIT, 'Edit'), false, () => { this.fire(this.onEdit) })
+          this.SegToggle(AppStrings.text(AppStrings.R_MARKDOWN_TOOLBAR_PREVIEW, 'Preview'), true, () => { this.fire(this.onPreview) })
+        } else {
+          this.SegToggle(AppStrings.text(AppStrings.R_MARKDOWN_TOOLBAR_EDIT, 'Edit'), true, () => { this.fire(this.onEdit) })
+          this.SegToggle(AppStrings.text(AppStrings.R_MARKDOWN_TOOLBAR_PREVIEW, 'Preview'), false, () => { this.fire(this.onPreview) })
+        }
       }
       .padding(2)
       .borderRadius(ThemeConstants.RADIUS_ROUND)
@@ -71,6 +59,22 @@ export struct MarkdownToolbar {
     .width('100%')
     .height(32)
     .alignItems(VerticalAlign.Center)
+  }
+
+  // One segment of the edit/preview toggle. `active` is static within each if/else branch above, so
+  // by-value passing is fine here — the branch swap (keyed on previewActive) recreates the segments.
+  @Builder
+  private SegToggle(label: string, active: boolean, action: () => void) {
+    Text(label)
+      .fontSize(ThemeConstants.FONT_SIZE_TAG)
+      .textAlign(TextAlign.Center)
+      .height(28)
+      .constraintSize({ minWidth: 40 })
+      .padding({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM })
+      .borderRadius(ThemeConstants.RADIUS_ROUND)
+      .fontColor(active ? Color.White : $r('sys.color.font_secondary'))
+      .backgroundColor(active ? ThemeConstants.BRAND_PRIMARY : Color.Transparent)
+      .onClick(action)
   }
 
   @Builder
