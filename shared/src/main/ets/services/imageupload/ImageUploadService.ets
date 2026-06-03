@@ -1,26 +1,40 @@
 import { ImageUploadProvider, ImageUploadResult, ImageUploadErrorCode } from './ImageUploadProvider'
+import { ImgbbImageProvider } from './ImgbbImageProvider'
+import { SmmsImageProvider } from './SmmsImageProvider'
 import { ImgurImageProvider } from './ImgurImageProvider'
-import { ImageUploadSettings } from '../../settings/ImageUploadSettings'
+import { ImageUploadSettings, ImageUploadProviderId } from '../../settings/ImageUploadSettings'
 import { ImageBytesUtils } from '../../utils/ImageBytesUtils'
 
+// sm.ms hard-caps a single file at 5 MB; ImgBB/Imgur are higher, so the global 7 MB picker cap applies.
+const SMMS_MAX_BYTES: number = 5 * 1024 * 1024
+
 /**
- * Single entry point the editor calls. Selects the provider from settings, enforces the size cap, and
- * returns the hosted image URL. (Content-hash dedup and the V2EX provider are deferred.)
+ * Single entry point the editor calls. Selects the provider from settings, enforces the per-provider size
+ * cap, and returns the hosted image URL.
  */
 export class ImageUploadService {
   static async uploadImage(bytes: Uint8Array, mimeType: string, fileName: string): Promise<ImageUploadResult> {
-    if (bytes.length > ImageBytesUtils.MAX_IMAGE_BYTES) {
+    const provider = ImageUploadSettings.current().provider
+    if (bytes.length > ImageUploadService.maxBytesFor(provider)) {
       throw new Error(ImageUploadErrorCode.TOO_LARGE)
     }
-    const provider = ImageUploadService.providerFor(ImageUploadSettings.current().provider)
-    return provider.uploadImage(bytes, mimeType, fileName)
+    return ImageUploadService.providerFor(provider).uploadImage(bytes, mimeType, fileName)
   }
 
-  private static providerFor(providerId: string): ImageUploadProvider {
-    if (providerId === 'imgur') {
+  static maxBytesFor(provider: ImageUploadProviderId): number {
+    if (provider === 'smms') {
+      return SMMS_MAX_BYTES
+    }
+    return ImageBytesUtils.MAX_IMAGE_BYTES
+  }
+
+  private static providerFor(provider: ImageUploadProviderId): ImageUploadProvider {
+    if (provider === 'smms') {
+      return new SmmsImageProvider()
+    }
+    if (provider === 'imgur') {
       return new ImgurImageProvider()
     }
-    // The V2EX provider is not built yet (deferred behind live endpoint verification + cost confirmation).
-    throw new Error(ImageUploadErrorCode.UNSUPPORTED_PROVIDER)
+    return new ImgbbImageProvider()
   }
 }

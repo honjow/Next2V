@@ -99,6 +99,37 @@ check(/parsed\.data\.link/.test(imgur), 'imgur: parses data.link')
 check(/responseCode === 413/.test(imgur), 'imgur: maps HTTP 413 → too large')
 check(/JSON\.parse/.test(imgur) && /catch/.test(imgur), 'imgur: guards non-JSON responses')
 
+// ── ImgBB provider contract ───────────────────────────────────────────────────
+const imgbb = read('shared/src/main/ets/services/imageupload/ImgbbImageProvider.ets')
+check(/https:\/\/api\.imgbb\.com\/1\/upload/.test(imgbb), 'imgbb: posts to /1/upload')
+check(/\?key=\$\{encodeURIComponent\(apiKey\)\}/.test(imgbb), 'imgbb: API key in the query string')
+check(/encodeToStringSync/.test(imgbb) && /'image': base64/.test(imgbb), 'imgbb: sends raw base64 in the image form field')
+check(/parsed\.data\.url/.test(imgbb), 'imgbb: parses data.url')
+check(/postForm/.test(imgbb), 'imgbb: reuses the urlencoded postForm path')
+
+// ── sm.ms provider contract ───────────────────────────────────────────────────
+const smms = read('shared/src/main/ets/services/imageupload/SmmsImageProvider.ets')
+check(/https:\/\/sm\.ms\/api\/v2\/upload/.test(smms), 'smms: posts to /api/v2/upload')
+check(/postMultipart\([^)]*'smfile'/.test(smms), 'smms: multipart smfile part')
+check(/'Authorization': token/.test(smms), 'smms: raw token Authorization header')
+check(/parsed\.images/.test(smms), 'smms: treats image_repeated (existing url in images) as success')
+check(/parsed\.data\.url/.test(smms), 'smms: parses data.url')
+
+// ── Multipart plumbing + service wiring ───────────────────────────────────────
+const uploadClient = read('shared/src/main/ets/network/ImageUploadClient.ets')
+check(/static async postMultipart\(/.test(uploadClient), 'client: postMultipart exists')
+check(/multipart\/form-data; boundary=/.test(uploadClient), 'client: sets multipart Content-Type with boundary')
+const proxyReq = read('shared/src/main/ets/network/NetworkProxyRequest.ets')
+check(/extraData\?:\s*string\s*\|\s*ArrayBuffer/.test(proxyReq), 'proxy: extraData widened to string | ArrayBuffer (binary body)')
+const service = read('shared/src/main/ets/services/imageupload/ImageUploadService.ets')
+check(/new SmmsImageProvider\(\)/.test(service) && /new ImgbbImageProvider\(\)/.test(service) && /new ImgurImageProvider\(\)/.test(service), 'service: providerFor wires imgbb + smms + imgur')
+check(/SMMS_MAX_BYTES/.test(service) && /5 \* 1024 \* 1024/.test(service), 'service: sm.ms 5MB per-provider cap')
+const settings = read('shared/src/main/ets/settings/ImageUploadSettings.ets')
+check(/imgbbApiKey/.test(settings) && /smmsToken/.test(settings) && /imgurClientId/.test(settings), 'settings: three per-provider credentials')
+check(/static isConfigured\(/.test(settings), 'settings: isConfigured() gate exists')
+// the editor gates on the generic isConfigured, not an imgur-specific field
+check(/ImageUploadSettings\.isConfigured\(config\)/.test(editor), 'editor: gates upload on isConfigured (provider-agnostic)')
+
 // ── report ────────────────────────────────────────────────────────────────────
 for (const f of failures) {
   console.error(`FAIL  ${f}`)

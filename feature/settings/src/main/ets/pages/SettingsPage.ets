@@ -258,12 +258,24 @@ export struct SettingsPage {
 
       ConciseListRow({
         title: AppStrings.R_IMAGE_UPLOAD_SETTINGS_TITLE,
-        trailingText: this.image.imgurClientId ? AppStrings.R_IMAGE_UPLOAD_SUMMARY_CONFIGURED : $r('app.string.proxy_not_configured'),
+        trailingText: this.isImageUploadConfigured() ? AppStrings.R_IMAGE_UPLOAD_SUMMARY_CONFIGURED : $r('app.string.proxy_not_configured'),
         action: () => {
           this.stack.pushPathByName('ImageUploadSettings', null)
         },
       })
     }
+  }
+
+  // Whether the active image host (mirror's provider) has its credential set. Reads the @Trace fields
+  // directly so the row's "configured" state refreshes after a save.
+  private isImageUploadConfigured(): boolean {
+    if (this.image.provider === 'smms') {
+      return this.image.smmsToken.length > 0
+    }
+    if (this.image.provider === 'imgur') {
+      return this.image.imgurClientId.length > 0
+    }
+    return this.image.imgbbApiKey.length > 0
   }
 
   @Builder

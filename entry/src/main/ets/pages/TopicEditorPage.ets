@@ -341,10 +341,10 @@ export struct TopicEditorPage {
   }
 
   private async pickAndUploadImage(): Promise<void> {
-    // Imgur needs the user's own Client-ID; gate before opening the picker so the user isn't asked to
-    // pick an image only to fail.
+    // The active host needs its credential (ImgBB key / sm.ms token / Imgur Client-ID); gate before
+    // opening the picker so the user isn't asked to choose an image only to fail.
     const config = ImageUploadSettings.current()
-    if (config.provider === 'imgur' && !config.imgurClientId) {
+    if (!ImageUploadSettings.isConfigured(config)) {
       this.promptConfigureClientId()
       return
     }
@@ -442,7 +442,7 @@ export struct TopicEditorPage {
 
   private handleUploadError(error: Error): void {
     const code = error.message || ''
-    if (code === ImageUploadErrorCode.NO_CLIENT_ID) {
+    if (code === ImageUploadErrorCode.NO_CREDENTIAL) {
       this.promptConfigureClientId()
       return
     }
@@ -476,7 +476,7 @@ export struct TopicEditorPage {
 
   private promptConfigureClientId(): void {
     this.getUIContext().showAlertDialog({
-      message: AppStrings.text(AppStrings.R_IMAGE_UPLOAD_NO_CLIENTID, 'Set your Imgur Client ID first'),
+      message: AppStrings.text(AppStrings.R_IMAGE_UPLOAD_NO_CLIENTID, 'Configure an image host first'),
       primaryButton: { value: AppStrings.text($r('app.string.common_cancel'), 'Cancel'), action: () => { } },
       secondaryButton: {
         value: AppStrings.text(AppStrings.R_IMAGE_UPLOAD_GO_CONFIG, 'Configure'),

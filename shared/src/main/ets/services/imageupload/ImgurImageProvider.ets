@@ -26,7 +26,7 @@ export class ImgurImageProvider implements ImageUploadProvider {
   async uploadImage(bytes: Uint8Array, mimeType: string, fileName: string): Promise<ImageUploadResult> {
     const clientId = ImageUploadSettings.current().imgurClientId
     if (!clientId) {
-      throw new Error(ImageUploadErrorCode.NO_CLIENT_ID)
+      throw new Error(ImageUploadErrorCode.NO_CREDENTIAL)
     }
     const base64 = new util.Base64Helper().encodeToStringSync(bytes)
     const headers: Record<string, string> = {

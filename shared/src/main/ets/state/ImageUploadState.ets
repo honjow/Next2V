@@ -11,7 +11,11 @@ import { AppStorageV2 } from '@kit.ArkUI'
  */
 @ObservedV2
 export class ImageUploadState {
-  @Trace provider: string = 'imgur'
+  // Active provider: 'imgbb' | 'smms' | 'imgur'. Each provider keeps its own credential so switching the
+  // active one doesn't lose the others.
+  @Trace provider: string = 'imgbb'
+  @Trace imgbbApiKey: string = ''
+  @Trace smmsToken: string = ''
   @Trace imgurClientId: string = ''
 }
 

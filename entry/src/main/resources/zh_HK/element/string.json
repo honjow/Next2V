@@ -2810,7 +2810,7 @@
     },
     {
       "name": "image_upload_no_clientid",
-      "value": "請先在設定中配置 Imgur Client ID"
+      "value": "請先在設定中配置圖床服務"
     },
     {
       "name": "image_upload_go_config",
@@ -2822,11 +2822,11 @@
     },
     {
       "name": "image_upload_error_rate_limit",
-      "value": "Imgur 上傳次數已達上限，請稍後再試"
+      "value": "上載頻率超限，請稍後再試"
     },
     {
       "name": "image_upload_error_forbidden",
-      "value": "Imgur 拒絕了上傳，請檢查 Client ID 或所在地區是否可用"
+      "value": "上載被拒絕，請檢查憑證或所在地區"
     },
     {
       "name": "image_upload_error_server",
@@ -2854,7 +2854,7 @@
     },
     {
       "name": "image_upload_summary_configured",
-      "value": "已配置 Imgur"
+      "value": "已配置"
     },
     {
       "name": "image_upload_imgur_section",
@@ -2870,19 +2870,55 @@
     },
     {
       "name": "image_upload_imgur_hint",
-      "value": "上傳圖片到 Imgur 需要你自己的 Client ID。點擊下方註冊並建立應用程式即可取得。"
-    },
-    {
-      "name": "image_upload_register_imgur",
-      "value": "註冊 Imgur 帳號"
-    },
-    {
-      "name": "image_upload_create_app",
-      "value": "建立 Imgur 應用程式取得 Client ID"
+      "value": "Imgur 已停止新應用註冊，僅當你已有 Client ID 時可用。"
     },
     {
       "name": "image_upload_wait",
       "value": "請等待圖片上傳完成"
+    },
+    {
+      "name": "image_upload_provider_section",
+      "value": "圖床服務"
+    },
+    {
+      "name": "image_upload_provider_imgbb",
+      "value": "ImgBB"
+    },
+    {
+      "name": "image_upload_provider_smms",
+      "value": "sm.ms"
+    },
+    {
+      "name": "image_upload_imgbb_hint",
+      "value": "上載到 ImgBB 需要你自己的免費 API Key，在下方註冊並取得。"
+    },
+    {
+      "name": "image_upload_imgbb_apikey_label",
+      "value": "API Key"
+    },
+    {
+      "name": "image_upload_imgbb_apikey_placeholder",
+      "value": "輸入你的 ImgBB API Key"
+    },
+    {
+      "name": "image_upload_imgbb_get_key",
+      "value": "取得 ImgBB API Key"
+    },
+    {
+      "name": "image_upload_smms_hint",
+      "value": "上載到 sm.ms 需要你自己的免費 API Token，在下方註冊並取得。中國大陸可能需要透過 App 代理。"
+    },
+    {
+      "name": "image_upload_smms_token_label",
+      "value": "API Token"
+    },
+    {
+      "name": "image_upload_smms_token_placeholder",
+      "value": "輸入你的 sm.ms API Token"
+    },
+    {
+      "name": "image_upload_smms_get_token",
+      "value": "取得 sm.ms API Token"
     }
   ]
 }

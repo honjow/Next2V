@@ -7,7 +7,10 @@ import { Socks5HttpClient } from './Socks5HttpClient'
 export interface NetworkProxyRequestOptions {
   method: http.RequestMethod
   header?: Record<string, string>
-  extraData?: string
+  // string for form/urlencoded bodies; ArrayBuffer for binary multipart (image upload). All three
+  // transports handle both: NetworkKit/rcp accept ArrayBuffer natively, and Socks5HttpClient already
+  // branches on the ArrayBuffer case in buildRequestBytes().
+  extraData?: string | ArrayBuffer
   connectTimeout?: number
   readTimeout?: number
   usingCache?: boolean

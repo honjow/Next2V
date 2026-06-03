@@ -2810,7 +2810,7 @@
     },
     {
       "name": "image_upload_no_clientid",
-      "value": "먼저 설정에서 Imgur Client ID를 입력하세요"
+      "value": "먼저 설정에서 이미지 호스트를 구성하세요"
     },
     {
       "name": "image_upload_go_config",
@@ -2822,11 +2822,11 @@
     },
     {
       "name": "image_upload_error_rate_limit",
-      "value": "Imgur 업로드 한도에 도달했습니다. 잠시 후 다시 시도하세요"
+      "value": "업로드 한도에 도달했습니다. 나중에 다시 시도하세요"
     },
     {
       "name": "image_upload_error_forbidden",
-      "value": "Imgur가 업로드를 거부했습니다. Client ID 또는 지역을 확인하세요"
+      "value": "업로드가 거부되었습니다. 자격 증명 또는 지역을 확인하세요"
     },
     {
       "name": "image_upload_error_server",
@@ -2854,7 +2854,7 @@
     },
     {
       "name": "image_upload_summary_configured",
-      "value": "Imgur 설정됨"
+      "value": "구성됨"
     },
     {
       "name": "image_upload_imgur_section",
@@ -2870,19 +2870,55 @@
     },
     {
       "name": "image_upload_imgur_hint",
-      "value": "Imgur에 이미지를 업로드하려면 본인의 Client ID가 필요합니다. 아래에서 가입하고 애플리케이션을 만들어 발급받으세요."
-    },
-    {
-      "name": "image_upload_register_imgur",
-      "value": "Imgur 계정 등록"
-    },
-    {
-      "name": "image_upload_create_app",
-      "value": "Imgur 애플리케이션을 만들어 Client ID 발급"
+      "value": "Imgur는 신규 앱 등록을 중단했습니다. 기존 Client ID가 있는 경우에만 사용할 수 있습니다."
     },
     {
       "name": "image_upload_wait",
       "value": "이미지 업로드가 끝날 때까지 기다려 주세요"
+    },
+    {
+      "name": "image_upload_provider_section",
+      "value": "이미지 호스트"
+    },
+    {
+      "name": "image_upload_provider_imgbb",
+      "value": "ImgBB"
+    },
+    {
+      "name": "image_upload_provider_smms",
+      "value": "sm.ms"
+    },
+    {
+      "name": "image_upload_imgbb_hint",
+      "value": "ImgBB 업로드에는 본인의 무료 API 키가 필요합니다. 아래에서 가입하고 발급받으세요."
+    },
+    {
+      "name": "image_upload_imgbb_apikey_label",
+      "value": "API 키"
+    },
+    {
+      "name": "image_upload_imgbb_apikey_placeholder",
+      "value": "ImgBB API 키 입력"
+    },
+    {
+      "name": "image_upload_imgbb_get_key",
+      "value": "ImgBB API 키 발급"
+    },
+    {
+      "name": "image_upload_smms_hint",
+      "value": "sm.ms 업로드에는 본인의 무료 API 토큰이 필요합니다. 아래에서 가입하고 발급받으세요."
+    },
+    {
+      "name": "image_upload_smms_token_label",
+      "value": "API 토큰"
+    },
+    {
+      "name": "image_upload_smms_token_placeholder",
+      "value": "sm.ms API 토큰 입력"
+    },
+    {
+      "name": "image_upload_smms_get_token",
+      "value": "sm.ms API 토큰 발급"
     }
   ]
 }

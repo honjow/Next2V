@@ -10,36 +10,50 @@ import {
   ImageUploadState,
   SecondaryListScaffold,
   ThemeConstants,
+  type ImageUploadProviderId,
+  type ImageUploadSettingsSnapshot,
 } from 'shared'
 import { SettingsSectionHeader } from '../components/SettingsPageComponents'
 
 /**
- * Image-upload configuration. MVP: a single Imgur Client-ID field plus onboarding links. The user's own
- * Client-ID is required — a bundled shared one would get rate-limited (429) across the whole userbase.
- * (The V2EX gallery provider is deferred behind a live endpoint capture.)
+ * Image-upload configuration: pick the active host (ImgBB / sm.ms / Imgur) and set its credential. Each
+ * host keeps its own credential; switching the radio persists the active choice immediately (so the editor
+ * uses it), while the credential field is saved by the Save button. Imgur is kept only for users who hold a
+ * Client-ID from before Imgur closed new app registration.
  */
 @ComponentV2
 export struct ImageUploadSettingsPage {
-  // Live config mirror; the field seeds clientIdText from it on each push. This page is the sole writer,
-  // so no live reactivity to external mirror changes is needed (it is not read in build()).
+  // Live config mirror. Read in build() (the "configured" subtitles + the active provider) so the page
+  // reflects saves; this page is the sole writer.
   private image: ImageUploadState = connectImageUpload()
-  @Local private clientIdText: string = ''
+  @Local private selectedProvider: string = 'imgbb'
+  // The credential field for the currently selected provider; reseeded whenever the provider changes.
+  @Local private credentialText: string = ''
 
   aboutToAppear(): void {
-    this.clientIdText = this.image.imgurClientId
+    this.selectedProvider = ImageUploadSettings.normalizeProvider(this.image.provider)
+    this.credentialText = this.storedCredential(this.selectedProvider)
   }
 
   build() {
     Column() {
       SecondaryListScaffold({ includeKeyboardPadding: true }) {
         ListItem() {
-          SettingsSectionHeader({ title: AppStrings.R_IMAGE_UPLOAD_IMGUR_SECTION })
+          SettingsSectionHeader({ title: AppStrings.R_IMAGE_UPLOAD_PROVIDER_SECTION })
+        }
+        ListItem() {
+          this.ProviderPickerSection()
+        }
+        ListItem() {
+          SettingsSectionHeader({ title: this.providerLabel(this.selectedProvider) })
         }
         ListItem() {
           this.ConfigSection()
         }
-        ListItem() {
-          this.LinksSection()
+        if (this.selectedProvider !== ImageUploadSettings.PROVIDER_IMGUR) {
+          ListItem() {
+            this.LinksSection()
+          }
         }
       }
     }
@@ -49,25 +63,54 @@ export struct ImageUploadSettingsPage {
   }
 
   @Builder
+  ProviderPickerSection() {
+    GroupedListSection() {
+      this.ProviderRow(ImageUploadSettings.PROVIDER_IMGBB, AppStrings.R_IMAGE_UPLOAD_PROVIDER_IMGBB)
+      this.ProviderRow(ImageUploadSettings.PROVIDER_SMMS, AppStrings.R_IMAGE_UPLOAD_PROVIDER_SMMS)
+      this.ProviderRow(ImageUploadSettings.PROVIDER_IMGUR, AppStrings.R_IMAGE_UPLOAD_IMGUR_SECTION)
+    }
+  }
+
+  @Builder
+  ProviderRow(id: string, label: ResourceStr) {
+    ConciseListRow({
+      title: label,
+      subtitle: this.configuredSubtitle(id),
+      showChevron: false,
+      prefixBuilderParam: (): void => this.ProviderRadio(id),
+      action: () => { this.selectProvider(id) },
+    })
+  }
+
+  @Builder
+  ProviderRadio(id: string) {
+    Radio({ value: id, group: 'imageUploadProvider' })
+      .checked(this.selectedProvider === id)
+      .onChange((checked: boolean) => {
+        if (checked) {
+          this.selectProvider(id)
+        }
+      })
+  }
+
+  @Builder
   ConfigSection() {
-    // Form card. Inset SPACE_MD (12) so the field/button content lands on the SAME left edge as the
-    // ConciseListRow links below it (their text sits at section-inset 4 + text-indent 8 = 12 from the card
-    // edge); SPACE_XL (24) double-inset the content and read as too much side padding.
+    // Inset SPACE_MD so the field/button align with the list rows above (see DomainSettingsPage).
     GroupedListSection({ inset: ThemeConstants.SPACE_MD, radius: ThemeConstants.RADIUS_CARD }) {
       Column({ space: ThemeConstants.SPACE_MD }) {
-        Text(AppStrings.R_IMAGE_UPLOAD_IMGUR_HINT)
+        Text(this.providerHint())
           .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
           .fontColor($r('sys.color.font_secondary'))
           .width('100%')
         Column({ space: ThemeConstants.SPACE_XS }) {
-          Text(AppStrings.R_IMAGE_UPLOAD_IMGUR_CLIENTID_LABEL)
+          Text(this.credentialLabel())
             .fontSize(ThemeConstants.FONT_SIZE_TAG)
             .fontColor($r('sys.color.font_secondary'))
             .width('100%')
           AppTextField({
-            text: this.clientIdText,
-            placeholder: AppStrings.R_IMAGE_UPLOAD_IMGUR_CLIENTID_PLACEHOLDER,
-            onTextChange: (value: string) => { this.clientIdText = value },
+            text: this.credentialText,
+            placeholder: this.credentialPlaceholder(),
+            onTextChange: (value: string) => { this.credentialText = value },
           })
             .width('100%')
         }
@@ -89,25 +132,112 @@ export struct ImageUploadSettingsPage {
   @Builder
   LinksSection() {
     GroupedListSection() {
-      ConciseListRow({
-        title: AppStrings.R_IMAGE_UPLOAD_REGISTER_IMGUR,
-        showChevron: true,
-        action: () => { this.openUrl('https://imgur.com/register') },
-      })
-      ConciseListRow({
-        title: AppStrings.R_IMAGE_UPLOAD_CREATE_APP,
-        showChevron: true,
-        action: () => { this.openUrl('https://api.imgur.com/oauth2/addclient') },
-      })
+      if (this.selectedProvider === ImageUploadSettings.PROVIDER_IMGBB) {
+        ConciseListRow({
+          title: AppStrings.R_IMAGE_UPLOAD_IMGBB_GET_KEY,
+          showChevron: true,
+          action: () => { this.openUrl('https://api.imgbb.com/') },
+        })
+      } else if (this.selectedProvider === ImageUploadSettings.PROVIDER_SMMS) {
+        ConciseListRow({
+          title: AppStrings.R_IMAGE_UPLOAD_SMMS_GET_TOKEN,
+          showChevron: true,
+          action: () => { this.openUrl('https://sm.ms/home/apitoken') },
+        })
+      }
     }
   }
 
+  private providerLabel(id: string): ResourceStr {
+    if (id === ImageUploadSettings.PROVIDER_SMMS) {
+      return AppStrings.R_IMAGE_UPLOAD_PROVIDER_SMMS
+    }
+    if (id === ImageUploadSettings.PROVIDER_IMGUR) {
+      return AppStrings.R_IMAGE_UPLOAD_IMGUR_SECTION
+    }
+    return AppStrings.R_IMAGE_UPLOAD_PROVIDER_IMGBB
+  }
+
+  private providerHint(): ResourceStr {
+    if (this.selectedProvider === ImageUploadSettings.PROVIDER_SMMS) {
+      return AppStrings.R_IMAGE_UPLOAD_SMMS_HINT
+    }
+    if (this.selectedProvider === ImageUploadSettings.PROVIDER_IMGUR) {
+      return AppStrings.R_IMAGE_UPLOAD_IMGUR_HINT
+    }
+    return AppStrings.R_IMAGE_UPLOAD_IMGBB_HINT
+  }
+
+  private credentialLabel(): ResourceStr {
+    if (this.selectedProvider === ImageUploadSettings.PROVIDER_SMMS) {
+      return AppStrings.R_IMAGE_UPLOAD_SMMS_TOKEN_LABEL
+    }
+    if (this.selectedProvider === ImageUploadSettings.PROVIDER_IMGUR) {
+      return AppStrings.R_IMAGE_UPLOAD_IMGUR_CLIENTID_LABEL
+    }
+    return AppStrings.R_IMAGE_UPLOAD_IMGBB_APIKEY_LABEL
+  }
+
+  private credentialPlaceholder(): ResourceStr {
+    if (this.selectedProvider === ImageUploadSettings.PROVIDER_SMMS) {
+      return AppStrings.R_IMAGE_UPLOAD_SMMS_TOKEN_PLACEHOLDER
+    }
+    if (this.selectedProvider === ImageUploadSettings.PROVIDER_IMGUR) {
+      return AppStrings.R_IMAGE_UPLOAD_IMGUR_CLIENTID_PLACEHOLDER
+    }
+    return AppStrings.R_IMAGE_UPLOAD_IMGBB_APIKEY_PLACEHOLDER
+  }
+
+  private configuredSubtitle(id: string): ResourceStr {
+    return this.storedCredential(id) ? AppStrings.R_IMAGE_UPLOAD_SUMMARY_CONFIGURED : $r('app.string.proxy_not_configured')
+  }
+
+  private storedCredential(id: string): string {
+    if (id === ImageUploadSettings.PROVIDER_SMMS) {
+      return this.image.smmsToken
+    }
+    if (id === ImageUploadSettings.PROVIDER_IMGUR) {
+      return this.image.imgurClientId
+    }
+    return this.image.imgbbApiKey
+  }
+
+  // Switch the active provider: reseed the field from that provider's stored credential and persist the
+  // choice immediately (unsaved text in the previous provider's field is discarded, as on any tab switch).
+  private selectProvider(id: string): void {
+    if (this.selectedProvider === id) {
+      return
+    }
+    this.selectedProvider = id
+    this.credentialText = this.storedCredential(id)
+    // Persist the active-provider choice immediately so the editor follows it; no toast for a mere switch.
+    this.persist(this.storedCredential(id), false)
+  }
+
   private save(): void {
-    const clientId = this.clientIdText.trim()
+    this.persist(this.credentialText.trim(), true)
+  }
+
+  private persist(activeCredential: string, notify: boolean): void {
+    const provider = ImageUploadSettings.normalizeProvider(this.selectedProvider)
+    const snapshot: ImageUploadSettingsSnapshot = {
+      provider: provider,
+      imgbbApiKey: provider === ImageUploadSettings.PROVIDER_IMGBB ? activeCredential : this.image.imgbbApiKey,
+      smmsToken: provider === ImageUploadSettings.PROVIDER_SMMS ? activeCredential : this.image.smmsToken,
+      imgurClientId: provider === ImageUploadSettings.PROVIDER_IMGUR ? activeCredential : this.image.imgurClientId,
+    }
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    ImageUploadSettings.save(context, { provider: 'imgur', imgurClientId: clientId })
-      .then(() => { this.showToast(AppStrings.text(AppStrings.R_COMMON_SAVED, 'Saved')) })
-      .catch((error: Error) => { this.showToast(error.message || AppStrings.text(AppStrings.R_COMMON_SAVE_FAILED, 'Save failed')) })
+    ImageUploadSettings.save(context, snapshot)
+      .then(() => {
+        if (notify) {
+          this.showToast(AppStrings.text(AppStrings.R_COMMON_SAVED, 'Saved'))
+        }
+      })
+      .catch((error: Error) => {
+        if (notify) {
+          this.showToast(error.message || AppStrings.text(AppStrings.R_COMMON_SAVE_FAILED, 'Save failed'))
+        }
+      })
   }
 
   private openUrl(url: string): void {

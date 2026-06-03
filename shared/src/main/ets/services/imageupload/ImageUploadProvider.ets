@@ -1,6 +1,7 @@
 /**
- * Pluggable image-upload backend. The MVP ships `ImgurImageProvider`; a `V2exImageProvider` is planned
- * once the (paid, currently undocumented) V2EX `/i` upload endpoint is verified with a live capture.
+ * Pluggable image-upload backend. Implementations: `ImgbbImageProvider` (base64 form), `SmmsImageProvider`
+ * (binary multipart), `ImgurImageProvider` (legacy anonymous Client-ID, kept for users who registered one
+ * before Imgur closed new app registration). Selected by `ImageUploadSettings.provider`.
  */
 export interface ImageUploadProvider {
   uploadImage(bytes: Uint8Array, mimeType: string, fileName: string): Promise<ImageUploadResult>
@@ -17,7 +18,8 @@ export class ImageUploadResult {
  * i18n and lets the UI own the wording.
  */
 export class ImageUploadErrorCode {
-  static readonly NO_CLIENT_ID: string = 'IMG_ERR_NO_CLIENT_ID'
+  // Active provider has no credential configured (Imgur Client-ID / ImgBB API key / sm.ms token).
+  static readonly NO_CREDENTIAL: string = 'IMG_ERR_NO_CREDENTIAL'
   static readonly TOO_LARGE: string = 'IMG_ERR_TOO_LARGE'
   static readonly BAD_IMAGE: string = 'IMG_ERR_BAD_IMAGE'
   static readonly FORBIDDEN: string = 'IMG_ERR_FORBIDDEN'

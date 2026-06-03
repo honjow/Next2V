@@ -2810,7 +2810,7 @@
     },
     {
       "name": "image_upload_no_clientid",
-      "value": "先に設定で Imgur Client ID を設定してください"
+      "value": "先に設定で画像ホストを構成してください"
     },
     {
       "name": "image_upload_go_config",
@@ -2822,11 +2822,11 @@
     },
     {
       "name": "image_upload_error_rate_limit",
-      "value": "Imgur のアップロード上限に達しました。しばらくしてから再試行してください"
+      "value": "アップロード制限に達しました。後で再試行してください"
     },
     {
       "name": "image_upload_error_forbidden",
-      "value": "Imgur がアップロードを拒否しました。Client ID または地域を確認してください"
+      "value": "アップロードが拒否されました。認証情報または地域を確認してください"
     },
     {
       "name": "image_upload_error_server",
@@ -2854,7 +2854,7 @@
     },
     {
       "name": "image_upload_summary_configured",
-      "value": "Imgur 設定済み"
+      "value": "設定済み"
     },
     {
       "name": "image_upload_imgur_section",
@@ -2870,19 +2870,55 @@
     },
     {
       "name": "image_upload_imgur_hint",
-      "value": "Imgur への画像アップロードには自分の Client ID が必要です。下のリンクから登録してアプリを作成すると取得できます。"
-    },
-    {
-      "name": "image_upload_register_imgur",
-      "value": "Imgur アカウントを登録"
-    },
-    {
-      "name": "image_upload_create_app",
-      "value": "Imgur アプリを作成して Client ID を取得"
+      "value": "Imgur は新規アプリ登録を停止しました。既存の Client ID がある場合のみ利用できます。"
     },
     {
       "name": "image_upload_wait",
       "value": "画像のアップロードが完了するまでお待ちください"
+    },
+    {
+      "name": "image_upload_provider_section",
+      "value": "画像ホスト"
+    },
+    {
+      "name": "image_upload_provider_imgbb",
+      "value": "ImgBB"
+    },
+    {
+      "name": "image_upload_provider_smms",
+      "value": "sm.ms"
+    },
+    {
+      "name": "image_upload_imgbb_hint",
+      "value": "ImgBB へのアップロードには自分の無料 API キーが必要です。下から登録して取得してください。"
+    },
+    {
+      "name": "image_upload_imgbb_apikey_label",
+      "value": "API キー"
+    },
+    {
+      "name": "image_upload_imgbb_apikey_placeholder",
+      "value": "ImgBB の API キーを入力"
+    },
+    {
+      "name": "image_upload_imgbb_get_key",
+      "value": "ImgBB の API キーを取得"
+    },
+    {
+      "name": "image_upload_smms_hint",
+      "value": "sm.ms へのアップロードには自分の無料 API トークンが必要です。下から登録して取得してください。"
+    },
+    {
+      "name": "image_upload_smms_token_label",
+      "value": "API トークン"
+    },
+    {
+      "name": "image_upload_smms_token_placeholder",
+      "value": "sm.ms の API トークンを入力"
+    },
+    {
+      "name": "image_upload_smms_get_token",
+      "value": "sm.ms の API トークンを取得"
     }
   ]
 }
