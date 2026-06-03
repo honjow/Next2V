@@ -1,5 +1,5 @@
 import { common } from '@kit.AbilityKit'
-import { promptAction } from '@kit.ArkUI'
+import { KeyboardAvoidMode, promptAction, SymbolGlyphModifier } from '@kit.ArkUI'
 import {
   ApiService, AppStrings, connectLayoutSafeArea, connectNavStack, connectNodePickAction, CookieJarSettings, DateUtils, DraftSettings, LayoutSafeAreaState, MarkdownContent, MarkdownToolbar,
   NodePickActionState, ThemeConstants, TopicDetailParams, translateApiError
@@ -7,6 +7,9 @@ import {
 
 // Body TextArea id, used to move focus into it after a toolbar insert.
 const BODY_INPUT_ID: string = 'topicEditorBodyInput'
+// Minimum editing area so the body never collapses to nothing when the keyboard shrinks the pane;
+// below this the whole form scrolls instead.
+const BODY_MIN_HEIGHT: number = 200
 
 @ComponentV2
 export struct TopicEditorPage {
@@ -31,6 +34,9 @@ export struct TopicEditorPage {
   // Safe-area / keyboard metrics published by EntryAbility; drives the manual keyboard avoidance
   // now that the editor is a fixed-height column (no scroll scaffold).
   layout: LayoutSafeAreaState = connectLayoutSafeArea()
+  // xmark-in-circle icon for the title's native clear button, matching the body overlay ✕.
+  private titleClearIcon: SymbolGlyphModifier = new SymbolGlyphModifier($r('sys.symbol.xmark_circle_fill'))
+    .fontColor([$r('sys.color.font_secondary')])
   private saveTimerId: number = 0
   private isSaving: boolean = false
   private hasSubmitted: boolean = false
@@ -51,6 +57,9 @@ export struct TopicEditorPage {
   }
 
   aboutToAppear(): void {
+    // The editor does its own keyboard avoidance (fixed-height column + manual bottomPad); turn off
+    // the inherited system OFFSET so the two don't stack and crush the body. Restored on disappear.
+    this.getUIContext().setKeyboardAvoidMode(KeyboardAvoidMode.NONE)
     this.nodeName = ''
     this.nodeTitle = ''
     this.title = ''
@@ -82,6 +91,7 @@ export struct TopicEditorPage {
   }
 
   aboutToDisappear(): void {
+    this.getUIContext().setKeyboardAvoidMode(KeyboardAvoidMode.OFFSET)
     this.clearSaveTimer()
     if (!this.hasSubmitted) {
       this.persistDraft()
@@ -90,10 +100,12 @@ export struct TopicEditorPage {
 
   build() {
     Column() {
-      // The HdsNavDestination title bar overlays content, so offset below it (top safe area + bar
-      // height) the way SecondaryFormScaffold's top Blank did. The editor is a fixed-height column
-      // (not a scroll) so the body can fill the pane instead of being a fixed 320 box.
+      // Offset below the overlaying HdsNavDestination title bar (top safe area + bar height).
       Blank().height(this.layout.topAvoidHeight + ThemeConstants.TITLE_BAR_HEIGHT)
+      // Scrollable so a short screen with the keyboard up scrolls instead of crushing the body; the
+      // content is at least one viewport tall (minHeight 100%) so on a tall/tablet screen the
+      // layoutWeight body fills the pane rather than sitting in a fixed 320 box.
+      Scroll() {
       Column({ space: ThemeConstants.SPACE_SM }) {
         // Node is chosen from the node list only (no free text): tapping opens NodePickerPage, and
         // the pick comes back via the node-pick command bus (see onNodePicked).
@@ -126,7 +138,7 @@ export struct TopicEditorPage {
           .backgroundColor($r('sys.color.ohos_id_color_background'))
           .borderRadius(ThemeConstants.RADIUS_MD)
           // Native clear ✕ on the right, shown only while the field is non-empty (INPUT style).
-          .cancelButton({ style: CancelButtonStyle.INPUT })
+          .cancelButton({ style: CancelButtonStyle.INPUT, icon: this.titleClearIcon })
           .onChange((value: string) => {
             this.title = value
             this.scheduleSaveDraft()
@@ -155,9 +167,9 @@ export struct TopicEditorPage {
         }
 
         if (!this.isPreview) {
-          // Body fills the remaining pane height (layoutWeight) instead of a fixed 320 box, so the
-          // editor uses the whole screen on large/tablet layouts. A clear ✕ overlays the top-right
-          // corner only while the body is non-empty.
+          // Body fills the pane (layoutWeight) but never below BODY_MIN_HEIGHT, so it grows on
+          // tall/tablet screens yet stays usable (and scrolls) when the keyboard is up. A clear ✕
+          // overlays the top-right corner only while the body is non-empty.
           Stack({ alignContent: Alignment.TopEnd }) {
             TextArea({ placeholder: AppStrings.text(AppStrings.R_EDITOR_BODY_PLACEHOLDER, 'Body (Markdown)'), text: this.content, controller: this.contentController })
               .id(BODY_INPUT_ID)
@@ -175,14 +187,15 @@ export struct TopicEditorPage {
                 this.contentSelectionEnd = selectionEnd
               })
             if (this.content.length > 0) {
-              SymbolGlyph($r('sys.symbol.xmark'))
-                .fontSize(18)
+              SymbolGlyph($r('sys.symbol.xmark_circle_fill'))
+                .fontSize(20)
                 .fontColor([$r('sys.color.font_secondary')])
                 .padding(ThemeConstants.SPACE_SM)
                 .onClick(() => { this.clearBody() })
             }
           }
           .layoutWeight(1)
+          .constraintSize({ minHeight: BODY_MIN_HEIGHT })
           .width('100%')
         } else {
           // Same top-left container as the edit box, also filling the pane height, so switching
@@ -210,6 +223,7 @@ export struct TopicEditorPage {
           .scrollBar(BarState.Off)
           .width('100%')
           .layoutWeight(1)
+          .constraintSize({ minHeight: BODY_MIN_HEIGHT })
         }
 
         if (this.savedAt > 0) {
@@ -227,17 +241,33 @@ export struct TopicEditorPage {
           .enabled(this.canSubmit())
           .onClick(() => { this.confirmSubmit() })
       }
-      .layoutWeight(1)
       .width('100%')
       .alignItems(HorizontalAlign.Start)
+      // At least one viewport tall so the layoutWeight body fills the pane; taller content (or a
+      // shrunk pane when the keyboard is up) overflows and the Scroll takes over.
+      .constraintSize({ minHeight: '100%' })
       .padding({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
-      // Bottom safe area + a resting bottom gap, growing by the keyboard height when it is up
-      // (manual avoidance, matching the SecondaryFormScaffold the editor used to use).
-      Blank().height(this.layout.bottomAvoidHeight + ThemeConstants.SPACE_XL + Math.max(0, this.layout.keyboardHeight))
+      }
+      .layoutWeight(1)
+      .width('100%')
+      .align(Alignment.TopStart)
+      .scrollBar(BarState.Off)
+      .edgeEffect(EdgeEffect.None)
+      Blank().height(this.bottomPad())
     }
     .width('100%')
     .height('100%')
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
+  }
+
+  // Bottom inset under the form. When the keyboard is up it already spans the bottom safe area, so
+  // pad by just its height (plus a small gap) — adding bottomAvoidHeight too would double-count the
+  // nav-bar inset and lift the content further than needed.
+  private bottomPad(): number {
+    if (this.layout.keyboardHeight > 0) {
+      return this.layout.keyboardHeight + ThemeConstants.SPACE_SM
+    }
+    return this.layout.bottomAvoidHeight + ThemeConstants.SPACE_XL
   }
 
   private insertImageLinkTemplate(): void {
@@ -264,11 +294,16 @@ export struct TopicEditorPage {
     this.contentSelectionEnd = usedPlaceholder ? placeholderEnd : caret
     this.isPreview = false
     this.scheduleSaveDraft()
-    // setTextSelection only highlights while the field is focused, so request focus first.
     setTimeout(() => {
       this.focusBody()
       if (usedPlaceholder) {
-        this.contentController.setTextSelection(placeholderStart, placeholderEnd)
+        // Place a real caret first (works without focus), then select the placeholder one tick later
+        // — setTextSelection only highlights once requestFocus has actually landed, so deferring it
+        // avoids the caret sticking at index 0.
+        this.contentController.caretPosition(placeholderEnd)
+        setTimeout(() => {
+          this.contentController.setTextSelection(placeholderStart, placeholderEnd)
+        }, 0)
       } else {
         this.contentController.caretPosition(caret)
       }
