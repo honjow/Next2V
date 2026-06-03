@@ -9,6 +9,9 @@ export interface V2exTopicWriteForm {
   titleField: string
   contentField: string
   hiddenFields: Record<string, string>
+  // Value of the syntax <select> option labelled "Markdown" (the option VALUE differs from its visible
+  // text — it may be "markdown" or a numeric "1"). Empty when the compose form has no syntax select.
+  markdownSyntaxValue: string
 }
 
 interface V2exInputTag {
@@ -61,11 +64,40 @@ export class V2exWriteFormParser {
     const hiddenFields = V2exWriteFormParser.extractHiddenFields(formHtml)
     const titleField = V2exWriteFormParser.findTitleField(formHtml) || 'title'
     const contentField = V2exWriteFormParser.findTextareaName(formHtml, 'topic_content') || 'content'
+    const markdownSyntaxValue = V2exWriteFormParser.extractSyntaxMarkdownValue(formHtml)
 
     if (!actionPath || !titleField || !contentField) {
       return null
     }
-    return { actionPath, titleField, contentField, hiddenFields }
+    return { actionPath, titleField, contentField, hiddenFields, markdownSyntaxValue }
+  }
+
+  /**
+   * The compose form's syntax control is a `<select name="syntax" id="select_syntax">` whose Markdown
+   * option's VALUE (not its visible "Markdown" text) is what the server expects. Return that value, or ''
+   * if the form has no syntax select (then Markdown is only honoured via the /write endpoint).
+   */
+  static extractSyntaxMarkdownValue(formHtml: string): string {
+    const select = V2exWriteFormParser.extractSyntaxSelect(formHtml)
+    if (!select) {
+      return ''
+    }
+    const re = /<option\b([^>]*)>([\s\S]*?)<\/option>/gi
+    let m: RegExpExecArray | null = re.exec(select)
+    while (m) {
+      const optionText = m[2].replace(/<[^>]*>/g, '').trim()
+      if (/markdown/i.test(optionText)) {
+        return V2exWriteFormParser.extractAttr(`<option ${m[1]}>`, 'value')
+      }
+      m = re.exec(select)
+    }
+    return ''
+  }
+
+  private static extractSyntaxSelect(formHtml: string): string {
+    const re = /<select\b[^>]*(?:name=['"]syntax['"]|id=['"]select_syntax['"])[^>]*>[\s\S]*?<\/select>/i
+    const m = formHtml.match(re)
+    return m ? m[0] : ''
   }
 
   private static extractFormHtml(html: string, markers: RegExp[]): string {

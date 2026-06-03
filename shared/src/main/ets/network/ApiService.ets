@@ -1232,15 +1232,27 @@ export class ApiService {
     }
     fields[form.titleField] = cleanTitle
     fields[form.contentField] = cleanContent
-    // V2EX topic bodies support two syntaxes (native auto-link vs Markdown) and the server otherwise
-    // reuses the account's last-used choice. This client's composer is Markdown-based, so always
-    // declare Markdown explicitly; the field is `syntax` with the literal value 'markdown' (vs
-    // 'default'), matching V2EX's web form. Without this, a Markdown body may render as plain text.
-    fields['syntax'] = 'markdown'
+    // This client's composer is Markdown, so the topic must be posted with the Markdown syntax — otherwise
+    // V2EX renders the body in its default (native) syntax and Markdown (images, bold, links…) shows as
+    // plain text. The syntax control's option VALUE differs from its "Markdown" label (it may be a numeric
+    // "1"), so use the value parsed from the live form. When the /new/<node> form exposes no syntax select,
+    // Markdown is only honoured by the general /write endpoint (with an explicit node_name).
+    let actionPath = form.actionPath
+    if (form.markdownSyntaxValue) {
+      // The /new/<node> form's Markdown <option> value is numeric "1" (its visible label is "Markdown");
+      // sending the label string is silently ignored and the body renders as default syntax.
+      fields['syntax'] = form.markdownSyntaxValue
+    } else {
+      // Defensive: a compose form with no syntax select — Markdown is only honoured by /write (node_name
+      // becomes an explicit field there).
+      actionPath = '/write'
+      fields['node_name'] = cleanNode
+      fields['syntax'] = 'markdown'
+    }
     const body = ApiService.encodeFormFields(fields)
 
     const res = await this.requestHtmlWithCookieAllowRedirect(
-      form.actionPath,
+      actionPath,
       cookie,
       composePath,
       http.RequestMethod.POST,
