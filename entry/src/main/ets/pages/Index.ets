@@ -1095,7 +1095,9 @@ struct Index {
     } else {
       content = { 'title': titleInfo }
     }
-    if (this.ct === 2) {
+    if (this.ct === 0) {
+      content['menu'] = this.homeTitleMenu()
+    } else if (this.ct === 2) {
       content['menu'] = this.notificationTitleMenu()
     } else if (this.ct === 3) {
       content['menu'] = this.meTitleMenu()
@@ -1121,6 +1123,18 @@ struct Index {
       'content': content,
       'style': style,
     }
+  }
+
+  private homeTitleMenu(): Record<string, Object> {
+    let items: Record<string, Object>[] = IndexTitleBarCoordinator.homeMenuItems().map(
+      (descriptor: IndexTitleMenuDescriptor) =>
+        this.topicActionItem(descriptor.label, this.mainTitleMenuIcon(descriptor.icon), () => {
+          if (descriptor.action === 'createTopic') {
+            this.ns.pushPathByName('TopicEditor', null)
+          }
+        }),
+    )
+    return { 'value': items, 'maxCount': IndexTitleBarCoordinator.SINGLE_ITEM_MENU_MAX_COUNT }
   }
 
   private meTitleMenu(): Record<string, Object> {
@@ -1211,6 +1225,9 @@ struct Index {
   private mainTitleMenuIcon(icon: string): Resource {
     if (icon === 'settings') {
       return $r('sys.symbol.gearshape')
+    }
+    if (icon === 'compose') {
+      return $r('sys.symbol.square_and_pencil')
     }
     if (icon === 'add') {
       return $r('sys.symbol.plus')

@@ -46,7 +46,6 @@ export class AccountPageCoordinator {
   static get CLEAR_API_AUTH_MESSAGE(): string { return AppStrings.text(AppStrings.R_CLEAR_API_AUTH_MESSAGE, 'Only clears the locally saved Personal Access Token. Web login stays signed in.') }
 
   static get LOCAL_SEARCH_TITLE(): ResourceStr { return AppStrings.R_NAV_SEARCH }
-  static get LOCAL_TOPIC_DRAFT_TITLE(): ResourceStr { return AppStrings.R_NAV_TOPIC_DRAFT }
   static get LOCAL_READ_LATER_TITLE(): ResourceStr { return AppStrings.R_NAV_READ_LATER }
   static get LOCAL_VIEWED_TOPICS_TITLE(): ResourceStr { return AppStrings.R_NAV_RECENTLY_VIEWED }
   static get LOCAL_SAVED_NODES_TITLE(): ResourceStr { return AppStrings.R_NAV_LOCAL_NODES }

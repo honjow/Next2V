@@ -379,8 +379,6 @@ export struct AccountDashboardPage {
     GroupedListSection() {
       this.SearchEntryRow()
       this.SettingsDivider()
-      this.TopicDraftEntryRow()
-      this.SettingsDivider()
       ConciseListRow({
         title: AccountPageCoordinator.LOCAL_READ_LATER_TITLE,
         count: this.savedTopicCount,
@@ -412,15 +410,6 @@ export struct AccountDashboardPage {
     ConciseListRow({
       title: AccountPageCoordinator.LOCAL_SEARCH_TITLE, action: () => {
         this.ns.pushPathByName('Search', null)
-      }
-    })
-  }
-
-  @Builder
-  TopicDraftEntryRow() {
-    ConciseListRow({
-      title: AccountPageCoordinator.LOCAL_TOPIC_DRAFT_TITLE, action: () => {
-        this.ns.pushPathByName('TopicEditor', null)
       }
     })
   }

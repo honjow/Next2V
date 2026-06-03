@@ -36,6 +36,10 @@ export class IndexTitleBarCoordinator {
     return { 'value': [], 'maxCount': 0 }
   }
 
+  static homeMenuItems(): IndexTitleMenuDescriptor[] {
+    return [{ label: AppStrings.R_NAV_TOPIC_DRAFT, action: 'createTopic', icon: 'compose' }]
+  }
+
   static meMenuItems(): IndexTitleMenuDescriptor[] {
     return [{ label: AppStrings.R_NAV_SETTINGS, action: 'settings', icon: 'settings' }]
   }
