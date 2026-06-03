@@ -1,15 +1,16 @@
 import { AppStrings } from 'shared/src/main/ets/i18n/AppStrings'
 
 export type TopicDetailTitleAction =
-  'thankTopic' |
-  'siteFavorite' |
-  'saveLater' |
-  'ignoreTopic' |
-  'reportTopic' |
-  'copyTitle' |
-  'copyLink' |
-  'share' |
-  'openBrowser'
+  | 'thankTopic'
+  | 'siteFavorite'
+  | 'saveLater'
+  | 'ignoreTopic'
+  | 'reportTopic'
+  | 'copyTitle'
+  | 'copyLink'
+  | 'share'
+  | 'openInApp'
+  | 'openBrowser'
 
 export interface TopicDetailTitleActionDescriptor {
   label: ResourceStr
@@ -35,13 +36,18 @@ export class TopicDetailTitleBarCoordinator {
   static actions(): TopicDetailTitleActionDescriptor[] {
     return [
       { label: AppStrings.R_TOPIC_ACTION_THANK_TOPIC, action: 'thankTopic', stateKey: 'thanked' },
-      { label: AppStrings.R_TOPIC_ACTION_SITE_FAVORITE, action: 'siteFavorite', stateKey: 'siteFavorited' },
+      {
+        label: AppStrings.R_TOPIC_ACTION_SITE_FAVORITE,
+        action: 'siteFavorite',
+        stateKey: 'siteFavorited',
+      },
       { label: AppStrings.R_TOPIC_ACTION_SAVE_LATER, action: 'saveLater', stateKey: 'savedLater' },
       { label: AppStrings.R_TOPIC_ACTION_IGNORE_TOPIC, action: 'ignoreTopic', stateKey: '' },
       { label: AppStrings.R_TOPIC_ACTION_REPORT_TOPIC, action: 'reportTopic', stateKey: '' },
       { label: AppStrings.R_TOPIC_ACTION_COPY_TITLE, action: 'copyTitle', stateKey: '' },
       { label: AppStrings.R_TOPIC_ACTION_COPY_LINK, action: 'copyLink', stateKey: '' },
       { label: AppStrings.R_TOPIC_ACTION_SHARE_LINK, action: 'share', stateKey: '' },
+      { label: AppStrings.R_TOPIC_ACTION_OPEN_IN_APP, action: 'openInApp', stateKey: '' },
       { label: AppStrings.R_TOPIC_ACTION_OPEN_BROWSER, action: 'openBrowser', stateKey: '' },
     ]
   }

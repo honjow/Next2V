@@ -2237,6 +2237,10 @@
       "value": "ブラウザーで開く"
     },
     {
+      "name": "topic_action_open_in_app",
+      "value": "アプリ内で開く"
+    },
+    {
       "name": "image_preview_invalid_url",
       "value": "無効な画像 URL"
     },

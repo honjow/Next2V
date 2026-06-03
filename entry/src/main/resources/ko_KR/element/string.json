@@ -2237,6 +2237,10 @@
       "value": "브라우저에서 열기"
     },
     {
+      "name": "topic_action_open_in_app",
+      "value": "앱에서 열기"
+    },
+    {
       "name": "image_preview_invalid_url",
       "value": "잘못된 이미지 URL"
     },

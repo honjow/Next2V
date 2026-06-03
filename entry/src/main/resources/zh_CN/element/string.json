@@ -2237,6 +2237,10 @@
       "value": "浏览器打开"
     },
     {
+      "name": "topic_action_open_in_app",
+      "value": "应用内打开"
+    },
+    {
       "name": "image_preview_invalid_url",
       "value": "图片地址无效"
     },

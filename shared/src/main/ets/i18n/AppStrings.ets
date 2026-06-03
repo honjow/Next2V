@@ -560,6 +560,7 @@ export class AppStrings {
   static readonly R_TOPIC_ACTION_COPY_LINK: Resource = $r('app.string.topic_action_copy_link')
   static readonly R_TOPIC_ACTION_SHARE_LINK: Resource = $r('app.string.topic_action_share_link')
   static readonly R_TOPIC_ACTION_OPEN_BROWSER: Resource = $r('app.string.topic_action_open_browser')
+  static readonly R_TOPIC_ACTION_OPEN_IN_APP: Resource = $r('app.string.topic_action_open_in_app')
   static readonly R_TOPIC_ACTION_RESUME_READING: Resource = $r('app.string.topic_action_resume_reading')
   static readonly R_IMAGE_PREVIEW_INVALID_URL: Resource = $r('app.string.image_preview_invalid_url')
   static readonly R_IMAGE_PREVIEW_DOWNLOADING: Resource = $r('app.string.image_preview_downloading')

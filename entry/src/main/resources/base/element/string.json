@@ -2237,6 +2237,10 @@
       "value": "Open in browser"
     },
     {
+      "name": "topic_action_open_in_app",
+      "value": "Open in app"
+    },
+    {
       "name": "image_preview_invalid_url",
       "value": "Invalid image URL"
     },

@@ -15,10 +15,7 @@ import {
   publishTopicDetailAppbarUsernameStates,
   publishTopicDetailTopicIgnored,
 } from 'shared'
-import {
-  DetailViewModel,
-  type ReplyThankSnapshot,
-} from '../viewmodel/DetailViewModel'
+import { DetailViewModel, type ReplyThankSnapshot } from '../viewmodel/DetailViewModel'
 import { ReplyComposerBar } from '../components/ReplyComposerBar'
 import { ReplyComposerDraftCoordinator } from '../model/ReplyComposerDraftCoordinator'
 import {
@@ -28,10 +25,7 @@ import {
   TopicDetailReplyDivider,
   TopicRepliesPreloadIndicator,
 } from '../components/TopicDetailComponents'
-import {
-  ReplyContextCoordinator,
-  type ReplyContextItem,
-} from '../model/ReplyContextCoordinator'
+import { ReplyContextCoordinator, type ReplyContextItem } from '../model/ReplyContextCoordinator'
 import {
   TopicDetailContentCoordinator,
   type TopicSupplementBlock,
@@ -95,6 +89,7 @@ import {
   connectReadingSettings,
   connectReplyDisplay,
   connectAuthCookie,
+  publishAccountWebViewUrl,
   connectMotionHandEdge,
   connectTopicDetailReplyButton,
   LayoutSafeAreaState,
@@ -105,7 +100,6 @@ import {
 } from 'shared'
 import type { V2exTopicThankAction, CacheScope, TopicDetailActionOverlay } from 'shared'
 import type { V2exReplyModerationAction, V2exTopicModerationAction } from 'shared'
-
 @ComponentV2
 export struct TopicDetailPage {
   @Param topicId: number = 0;
@@ -168,7 +162,8 @@ export struct TopicDetailPage {
   @Local private showResumeButton: boolean = false;
   private readonly HDS_ACTION_BAR_CLEARANCE: number = 72;
   private readonly TOPIC_DETAIL_REPLY_BUTTON_SIZE: number = 56;
-  private readonly TOPIC_DETAIL_RESUME_BUTTON_SIZE: number = ThemeConstants.TOPIC_DETAIL_RESUME_BUTTON_SIZE;
+  private readonly TOPIC_DETAIL_RESUME_BUTTON_SIZE: number =
+    ThemeConstants.TOPIC_DETAIL_RESUME_BUTTON_SIZE;
   private readonly TOPIC_DETAIL_REPLY_BUTTON_ACTIVITY_PADDING: number = ThemeConstants.SPACE_LG;
   private readonly TOPIC_DETAIL_REPLY_BUTTON_SCROLL_DELTA_PX: number = 6;
   // Treat the saved floor as "reached" once the viewport center is within this many floors of it,
@@ -315,7 +310,12 @@ export struct TopicDetailPage {
       return
     }
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    TopicDetailActionOverlaySettings.commitTopicFavorite(context, this.cacheScope, this.topicId, value)
+    TopicDetailActionOverlaySettings.commitTopicFavorite(
+      context,
+      this.cacheScope,
+      this.topicId,
+      value,
+    )
       .then(() => this.loadTopicActionOverlay(context))
       .catch((_error: Error) => {})
   }
@@ -334,9 +334,17 @@ export struct TopicDetailPage {
     if (!this.cacheScope || this.topicId <= 0 || replyId <= 0) {
       return
     }
-    const countAfterSuccess = this.v.getLoadedRepliesSnapshot().find((item: V2exReply) => item.id === replyId)?.thanks
+    const countAfterSuccess = this.v
+      .getLoadedRepliesSnapshot()
+      .find((item: V2exReply) => item.id === replyId)?.thanks
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    TopicDetailActionOverlaySettings.commitReplyThank(context, this.cacheScope, this.topicId, replyId, countAfterSuccess)
+    TopicDetailActionOverlaySettings.commitReplyThank(
+      context,
+      this.cacheScope,
+      this.topicId,
+      replyId,
+      countAfterSuccess,
+    )
       .then(() => this.loadTopicActionOverlay(context))
       .catch((_error: Error) => {})
   }
@@ -416,7 +424,10 @@ export struct TopicDetailPage {
   }
 
   private bodyFontSize(): number {
-    return ReadingSettings.scaleTypographyToken(ThemeConstants.FONT_SIZE_BODY, this.reading.textScale)
+    return ReadingSettings.scaleTypographyToken(
+      ThemeConstants.FONT_SIZE_BODY,
+      this.reading.textScale,
+    )
   }
 
   private bodyLineHeight(): number {
@@ -490,9 +501,9 @@ export struct TopicDetailPage {
             this.openReplyEditor()
           },
         }) {
-          SymbolGlyph(this.authState.configured
-            ? $r('sys.symbol.pencil_line_1')
-            : $r('sys.symbol.lock'))
+          SymbolGlyph(
+            this.authState.configured ? $r('sys.symbol.pencil_line_1') : $r('sys.symbol.lock'),
+          )
             .fontSize(28)
             .fontColor([$r('sys.color.ohos_id_color_text_primary')])
             .fontWeight(FontWeight.Bold)
@@ -502,10 +513,15 @@ export struct TopicDetailPage {
       .animation({ duration: ThemeConstants.ANIM_DURATION, curve: Curve.EaseOut })
     }
     .width('100%')
-    .height(this.TOPIC_DETAIL_REPLY_BUTTON_SIZE + this.TOPIC_DETAIL_REPLY_BUTTON_ACTIVITY_PADDING * 2)
+    .height(
+      this.TOPIC_DETAIL_REPLY_BUTTON_SIZE + this.TOPIC_DETAIL_REPLY_BUTTON_ACTIVITY_PADDING * 2,
+    )
     .justifyContent(FlexAlign.Start)
     .alignItems(VerticalAlign.Center)
-    .position({ x: 0, y: this.topicDetailReplyActionBarTop() - this.TOPIC_DETAIL_REPLY_BUTTON_ACTIVITY_PADDING })
+    .position({
+      x: 0,
+      y: this.topicDetailReplyActionBarTop() - this.TOPIC_DETAIL_REPLY_BUTTON_ACTIVITY_PADDING,
+    })
     .hitTestBehavior(HitTestMode.Transparent)
   }
 
@@ -525,7 +541,8 @@ export struct TopicDetailPage {
     if (this.visualMotionHandEdge === 'left') {
       return 0
     }
-    const activityWidth = this.TOPIC_DETAIL_REPLY_BUTTON_SIZE + this.TOPIC_DETAIL_REPLY_BUTTON_ACTIVITY_PADDING * 2
+    const activityWidth =
+      this.TOPIC_DETAIL_REPLY_BUTTON_SIZE + this.TOPIC_DETAIL_REPLY_BUTTON_ACTIVITY_PADDING * 2
     return Math.max(0, this.detailRootWidth - activityWidth)
   }
 
@@ -533,7 +550,8 @@ export struct TopicDetailPage {
     if (this.visualMotionHandEdge === 'left') {
       return 0
     }
-    const activityWidth = this.TOPIC_DETAIL_RESUME_BUTTON_SIZE + this.TOPIC_DETAIL_REPLY_BUTTON_ACTIVITY_PADDING * 2
+    const activityWidth =
+      this.TOPIC_DETAIL_RESUME_BUTTON_SIZE + this.TOPIC_DETAIL_REPLY_BUTTON_ACTIVITY_PADDING * 2
     return Math.max(0, this.detailRootWidth - activityWidth)
   }
 
@@ -553,17 +571,24 @@ export struct TopicDetailPage {
           SymbolGlyph($r('sys.symbol.chevron_down_2_circle'))
             .fontSize(24)
             .fontColor([$r('sys.color.ohos_id_color_text_primary')])
-            .accessibilityText(AppStrings.text(AppStrings.R_TOPIC_ACTION_RESUME_READING, 'Resume reading'))
+            .accessibilityText(
+              AppStrings.text(AppStrings.R_TOPIC_ACTION_RESUME_READING, 'Resume reading'),
+            )
         }
       }
       .translate({ x: this.resumeButtonEdgeX() })
       .animation({ duration: ThemeConstants.ANIM_DURATION, curve: Curve.EaseOut })
     }
     .width('100%')
-    .height(this.TOPIC_DETAIL_RESUME_BUTTON_SIZE + this.TOPIC_DETAIL_REPLY_BUTTON_ACTIVITY_PADDING * 2)
+    .height(
+      this.TOPIC_DETAIL_RESUME_BUTTON_SIZE + this.TOPIC_DETAIL_REPLY_BUTTON_ACTIVITY_PADDING * 2,
+    )
     .justifyContent(FlexAlign.Start)
     .alignItems(VerticalAlign.Center)
-    .position({ x: 0, y: this.topicDetailResumeButtonTop() - this.TOPIC_DETAIL_REPLY_BUTTON_ACTIVITY_PADDING })
+    .position({
+      x: 0,
+      y: this.topicDetailResumeButtonTop() - this.TOPIC_DETAIL_REPLY_BUTTON_ACTIVITY_PADDING,
+    })
     .hitTestBehavior(HitTestMode.Transparent)
   }
 
@@ -794,7 +819,9 @@ export struct TopicDetailPage {
       SymbolGlyph($r('sys.symbol.exclamationmark_triangle'))
         .fontSize(48)
         .fontColor([$r('sys.color.font_secondary')])
-      Text(this.v.errorMessage || AppStrings.text($r('app.string.common_load_failed'), 'Load failed'))
+      Text(
+        this.v.errorMessage || AppStrings.text($r('app.string.common_load_failed'), 'Load failed'),
+      )
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
         .fontColor($r('sys.color.font_secondary'))
         .margin({ top: ThemeConstants.SPACE_MD })
@@ -948,8 +975,7 @@ export struct TopicDetailPage {
       submitAction: (content: string) => {
         this.submitReplyFromComposer(content)
       },
-    })
-      .width('100%')
+    }).width('100%')
   }
 
   // Owns the reply network submit. The composer sheet has already emitted a clean snapshot and is
@@ -968,7 +994,9 @@ export struct TopicDetailPage {
     const cookie = CookieJarSettings.getCurrentCookie()
     if (!cookie) {
       promptAction
-        .openToast({ message: AppStrings.text($r('app.string.reply_login_required'), 'Log in first') })
+        .openToast({
+          message: AppStrings.text($r('app.string.reply_login_required'), 'Log in first'),
+        })
         .catch((_error: Error) => {})
       return
     }
@@ -1055,10 +1083,18 @@ export struct TopicDetailPage {
       TopicDetailAppbarCoordinator.nextStringState(appbar.titleStates, routeKey, identity.title),
     )
     publishTopicDetailAppbarAvatarStates(
-      TopicDetailAppbarCoordinator.nextStringState(appbar.avatarStates, routeKey, identity.avatarUrl),
+      TopicDetailAppbarCoordinator.nextStringState(
+        appbar.avatarStates,
+        routeKey,
+        identity.avatarUrl,
+      ),
     )
     publishTopicDetailAppbarUsernameStates(
-      TopicDetailAppbarCoordinator.nextStringState(appbar.usernameStates, routeKey, identity.username),
+      TopicDetailAppbarCoordinator.nextStringState(
+        appbar.usernameStates,
+        routeKey,
+        identity.username,
+      ),
     )
     publishTopicDetailAppbarRouteTopicId(visible ? routeKey : '')
     publishTopicDetailAppbarTitle(identity.title)
@@ -1249,9 +1285,8 @@ export struct TopicDetailPage {
   }
 
   private replyContextTitle(): string {
-    return ReplyContextCoordinator.title(
-      this.contextReply,
-      (replyId: number) => this.v.getReplyFloor(replyId),
+    return ReplyContextCoordinator.title(this.contextReply, (replyId: number) =>
+      this.v.getReplyFloor(replyId),
     )
   }
 
@@ -1401,10 +1436,7 @@ export struct TopicDetailPage {
     return TopicDetailReplyDisplayCoordinator.modeText(this.v.replyDisplayMode)
   }
 
-  private replyCardDisplayState(
-    reply: V2exReply,
-    index: number,
-  ): TopicDetailReplyCardDisplayState {
+  private replyCardDisplayState(reply: V2exReply, index: number): TopicDetailReplyCardDisplayState {
     return TopicDetailReplyDisplayCoordinator.replyCardDisplayState(
       reply,
       this.v.topic,
@@ -1713,7 +1745,11 @@ export struct TopicDetailPage {
 
   private handleTopicAction(action: string): void {
     if (this.v.topic === null) {
-      promptAction.openToast({ message: AppStrings.text(AppStrings.R_TOPIC_STILL_LOADING, 'Topic is still loading') }).catch((_error: Error) => {})
+      promptAction
+        .openToast({
+          message: AppStrings.text(AppStrings.R_TOPIC_STILL_LOADING, 'Topic is still loading'),
+        })
+        .catch((_error: Error) => {})
       return
     }
     if (action === 'siteFavorite') {
@@ -1749,6 +1785,8 @@ export struct TopicDetailPage {
       this.copyToClipboard(this.getTopicUrl())
     } else if (action === 'share') {
       this.shareTopic()
+    } else if (action === 'openInApp') {
+      this.openInAppWebView(this.getTopicUrl())
     } else if (action === 'openBrowser') {
       this.openInSystemBrowser(this.getTopicUrl())
     } else if (action === 'copyContent') {
@@ -1762,7 +1800,11 @@ export struct TopicDetailPage {
     }
     const cookie = CookieJarSettings.getCurrentCookie()
     if (!cookie) {
-      promptAction.openToast({ message: AppStrings.text($r('app.string.api_error_auth_required'), 'Please sign in') }).catch((_error: Error) => {})
+      promptAction
+        .openToast({
+          message: AppStrings.text($r('app.string.api_error_auth_required'), 'Please sign in'),
+        })
+        .catch((_error: Error) => {})
       return
     }
     const previousIsSiteFavorited = this.isSiteFavorited
@@ -1782,9 +1824,7 @@ export struct TopicDetailPage {
         // account state never overwrites the server-confirmed cache with a failed mutation.
         this.isSiteFavorited = previousIsSiteFavorited
         publishTopicDetailSiteFavorited(previousIsSiteFavorited)
-        promptAction
-          .openToast({ message: translateApiError(error) })
-          .catch((_error: Error) => {})
+        promptAction.openToast({ message: translateApiError(error) }).catch((_error: Error) => {})
       })
       .finally(() => {
         this.isSiteFavoriteLoading = false
@@ -1849,7 +1889,13 @@ export struct TopicDetailPage {
     const total = this.v.topic?.replies || 0
     this.getUIContext().showAlertDialog({
       title: AppStrings.text(AppStrings.R_TOPIC_MANY_REPLIES_TITLE, 'Many replies'),
-      message: AppStrings.format(AppStrings.text($r('app.string.load_all_replies_warning_format'), 'This topic has {0} replies. Loading all replies may take some time.\n\nContinue loading to enable the full threaded view?'), [`${total}`]),
+      message: AppStrings.format(
+        AppStrings.text(
+          $r('app.string.load_all_replies_warning_format'),
+          'This topic has {0} replies. Loading all replies may take some time.\n\nContinue loading to enable the full threaded view?',
+        ),
+        [`${total}`],
+      ),
       primaryButton: {
         value: AppStrings.text(AppStrings.R_TOPIC_FLAT_VIEW, 'Flat view'),
         action: () => {
@@ -1912,8 +1958,7 @@ export struct TopicDetailPage {
     this.isTopicThankLoading = true
     this.isTopicThanked = true
     publishTopicDetailThanked(true)
-    TopicDetailActionCoordinator
-      .executeTopicThank(this.api, cookie, this.topicId)
+    TopicDetailActionCoordinator.executeTopicThank(this.api, cookie, this.topicId)
       .then(() => {
         this.isTopicThanked = true
         publishTopicDetailThanked(true)
@@ -1922,9 +1967,7 @@ export struct TopicDetailPage {
       .catch((error: Error) => {
         this.isTopicThanked = previousIsTopicThanked
         publishTopicDetailThanked(previousIsTopicThanked)
-        promptAction
-          .openToast({ message: translateApiError(error) })
-          .catch((_error: Error) => {})
+        promptAction.openToast({ message: translateApiError(error) }).catch((_error: Error) => {})
       })
       .finally(() => {
         this.isTopicThankLoading = false
@@ -1995,24 +2038,21 @@ export struct TopicDetailPage {
       return
     }
     this.isReplyThankLoading = true
-    const replyThankSnapshot: ReplyThankSnapshot | null =
-      this.v.optimisticallyMarkReplyThanked(reply.id)
+    const replyThankSnapshot: ReplyThankSnapshot | null = this.v.optimisticallyMarkReplyThanked(
+      reply.id,
+    )
     const thankedIdsSnapshot: ReplyThankedIdsSnapshot = this.markReplyThanked(reply.id)
-    TopicDetailActionCoordinator
-      .executeReplyThank(this.api, cookie, this.topicId, reply.id)
+    TopicDetailActionCoordinator.executeReplyThank(this.api, cookie, this.topicId, reply.id)
       .then(() => {
         this.persistReplyThankOverlay(reply.id)
       })
       .catch((error: Error) => {
         this.v.rollbackReplyThank(replyThankSnapshot)
-        this.thankedReplyIdsJson =
-          TopicDetailActionCoordinator.rollbackReplyThankedIds(
-            thankedIdsSnapshot,
-            this.thankedReplyIdsJson,
-          )
-        promptAction
-          .openToast({ message: translateApiError(error) })
-          .catch((_error: Error) => {})
+        this.thankedReplyIdsJson = TopicDetailActionCoordinator.rollbackReplyThankedIds(
+          thankedIdsSnapshot,
+          this.thankedReplyIdsJson,
+        )
+        promptAction.openToast({ message: translateApiError(error) }).catch((_error: Error) => {})
       })
       .finally(() => {
         this.isReplyThankLoading = false
@@ -2039,8 +2079,10 @@ export struct TopicDetailPage {
   }
 
   private markReplyThanked(replyId: number): ReplyThankedIdsSnapshot {
-    const snapshot =
-      TopicDetailActionCoordinator.markReplyThankedWithSnapshot(replyId, this.thankedReplyIdsJson)
+    const snapshot = TopicDetailActionCoordinator.markReplyThankedWithSnapshot(
+      replyId,
+      this.thankedReplyIdsJson,
+    )
     this.thankedReplyIdsJson = snapshot.nextJson
     return snapshot
   }
@@ -2169,13 +2211,18 @@ export struct TopicDetailPage {
     executeAction(cookie, action)
       .then(() => {
         this.applyTopicIgnoreDeltaAfterSuccess(action)
-        promptAction.openToast({ message: AppStrings.format(AppStrings.text($r('app.string.action_done_format'), '{0} done'), [verb]) }).catch((_error: Error) => {})
+        promptAction
+          .openToast({
+            message: AppStrings.format(
+              AppStrings.text($r('app.string.action_done_format'), '{0} done'),
+              [verb],
+            ),
+          })
+          .catch((_error: Error) => {})
         this.v.load()
       })
       .catch((error: Error) => {
-        promptAction
-          .openToast({ message: translateApiError(error) })
-          .catch((_error: Error) => {})
+        promptAction.openToast({ message: translateApiError(error) }).catch((_error: Error) => {})
       })
       .finally(() => {
         this.isModerationActionLoading = false
@@ -2286,13 +2333,18 @@ export struct TopicDetailPage {
     this.isModerationActionLoading = true
     executeAction(cookie, action)
       .then(() => {
-        promptAction.openToast({ message: AppStrings.format(AppStrings.text($r('app.string.action_done_format'), '{0} done'), [verb]) }).catch((_error: Error) => {})
+        promptAction
+          .openToast({
+            message: AppStrings.format(
+              AppStrings.text($r('app.string.action_done_format'), '{0} done'),
+              [verb],
+            ),
+          })
+          .catch((_error: Error) => {})
         this.v.load()
       })
       .catch((error: Error) => {
-        promptAction
-          .openToast({ message: translateApiError(error) })
-          .catch((_error: Error) => {})
+        promptAction.openToast({ message: translateApiError(error) }).catch((_error: Error) => {})
       })
       .finally(() => {
         this.isModerationActionLoading = false
@@ -2307,11 +2359,11 @@ export struct TopicDetailPage {
     try {
       let data = pasteboard.createData(pasteboard.MIMETYPE_TEXT_PLAIN, content)
       pasteboard.getSystemPasteboard().setDataSync(data)
-      promptAction.openToast({ message: $r('app.string.common_copied') }).catch((_error: Error) => {})
-    } catch (error) {
       promptAction
-        .openToast({ message: translateApiError(error) })
+        .openToast({ message: $r('app.string.common_copied') })
         .catch((_error: Error) => {})
+    } catch (error) {
+      promptAction.openToast({ message: translateApiError(error) }).catch((_error: Error) => {})
     }
   }
 
@@ -2331,11 +2383,24 @@ export struct TopicDetailPage {
     })
   }
 
+  // Open the topic in the built-in cookie-injected WebView (logged-in view) instead of an external browser,
+  // so the user can compare/read the topic as the site renders it while signed in.
+  private openInAppWebView(url: string): void {
+    const target = (url || '').trim()
+    if (!target) {
+      return
+    }
+    publishAccountWebViewUrl(target)
+    this.stack.pushPathByName('AccountWebView', null)
+  }
+
   private shareTopic(): void {
     if (this.v.topic === null) {
       return
     }
-    const title = (this.v.topic.title || AppStrings.text(AppStrings.R_TOPIC_SHARE_FALLBACK_TITLE, 'V2EX topic')).trim()
+    const title = (
+      this.v.topic.title || AppStrings.text(AppStrings.R_TOPIC_SHARE_FALLBACK_TITLE, 'V2EX topic')
+    ).trim()
     const url = this.getTopicUrl()
     const data = new systemShare.SharedData({
       utd: utd.UniformDataType.HYPERLINK,
@@ -2351,9 +2416,7 @@ export struct TopicDetailPage {
         previewMode: systemShare.SharePreviewMode.DEFAULT,
       })
       .catch((error: Error) => {
-        promptAction
-          .openToast({ message: translateApiError(error) })
-          .catch((_error: Error) => {})
+        promptAction.openToast({ message: translateApiError(error) }).catch((_error: Error) => {})
       })
   }
 

@@ -1,51 +1,79 @@
 import { NodeViewModel } from '../viewmodel/NodeViewModel'
 import {
-  AuthSettings, CacheSettings, CardEmptyState, CollectionSettings, SavedNode, ApiService, CookieJarSettings,
-  connectLayoutSafeArea, connectNavStack, connectNodeTopicAction, connectNodeTopicAppbar,
+  AuthSettings,
+  CacheSettings,
+  CardEmptyState,
+  CollectionSettings,
+  SavedNode,
+  ApiService,
+  CookieJarSettings,
+  connectLayoutSafeArea,
+  connectNavStack,
+  connectNodeTopicAction,
+  connectNodeTopicAppbar,
   connectTopicReadStates,
-  LayoutSafeAreaState, NodeTopicActionState, NodeTopicAppbarState, PagedListScaffold, PageErrorState,
+  LayoutSafeAreaState,
+  NodeTopicActionState,
+  NodeTopicAppbarState,
+  PagedListScaffold,
+  PageErrorState,
   PageLoadingState,
-  publishNodeTopicSaved, publishNodeTopicSiteFavorited, publishNodeTopicTitle, publishNodeTopicSubtitle,
-  publishNodeTopicAppbarTitleNodeName, publishNodeTopicAppbarTitleNodeAvatarUrl,
-  publishNodeTopicAppbarTitleRouteNodeName, publishNodeTopicAppbarTitleNameStates,
+  publishNodeTopicSaved,
+  publishNodeTopicSiteFavorited,
+  publishNodeTopicTitle,
+  publishNodeTopicSubtitle,
+  publishNodeTopicAppbarTitleNodeName,
+  publishNodeTopicAppbarTitleNodeAvatarUrl,
+  publishNodeTopicAppbarTitleRouteNodeName,
+  publishNodeTopicAppbarTitleNameStates,
   publishNodeTopicAppbarTitleAvatarStates,
-  StorageKeys, ThemeConstants, TopicCard, TopicReadStatesState,
-  TopicDetailParams, UserProfileParams, V2exNode, V2exToggleAction, V2exTopic, AppStrings, DiagnosticLogger, translateApiError
+  StorageKeys,
+  ThemeConstants,
+  TopicCard,
+  TopicReadStatesState,
+  TopicDetailParams,
+  UserProfileParams,
+  V2exNode,
+  V2exToggleAction,
+  V2exTopic,
+  AppStrings,
+  DiagnosticLogger,
+  translateApiError,
+  publishAccountWebViewUrl,
 } from 'shared'
 import type { TopicReadState } from 'shared'
-import { common } from '@kit.AbilityKit'
+import { common, Want } from '@kit.AbilityKit'
 import { promptAction } from '@kit.ArkUI'
 import { NodeInfoCard } from '../components/NodeInfoCard'
 import { NodeTopicPageCoordinator } from '../model/NodeTopicPageCoordinator'
-
 @ComponentV2
 export struct NodeTopicPage {
-  @Param nodeName: string = ''
-  @Param nodeTitle: string = ''
+  @Param nodeName: string = '';
+  @Param nodeTitle: string = '';
   // Same NavPathStack instance HdsNavigation is bound to (see NavStackHolder); method target only.
-  private stack: NavPathStack = connectNavStack().stack
+  private stack: NavPathStack = connectNavStack().stack;
   // Window safe-area metrics (AppStorageV2 mirror; EntryAbility publishes V2-only).
-  private layout: LayoutSafeAreaState = connectLayoutSafeArea()
-  @Local vm: NodeViewModel = new NodeViewModel()
+  private layout: LayoutSafeAreaState = connectLayoutSafeArea();
+  @Local vm: NodeViewModel = new NodeViewModel();
   // Per-topic read-state ledger (V2 mirror; LocalDataPublisher dual-writes). Read in build() via
   // isTopicUnread → subscribes this page to unread-dot refreshes.
-  private readStates: TopicReadStatesState = connectTopicReadStates()
+  private readStates: TopicReadStatesState = connectTopicReadStates();
   // V2 mirror of the one-directional NODE_TOPIC_ACTION appbar command (Index dual-writes).
-  @Local private nodeAction: NodeTopicActionState = connectNodeTopicAction()
-  @Local private isNodeSaved: boolean = false
-  @Local private isSavedNodeLoading: boolean = false
-  @Local private isSiteNodeFavorited: boolean = false
-  @Local private isSiteNodeFavoriteLoading: boolean = false
-  @Local private token: string = ''
-  private api: ApiService = new ApiService()
-  private nodeTopicsRequestId: number = 0
+  @Local private nodeAction: NodeTopicActionState = connectNodeTopicAction();
+  @Local private isNodeSaved: boolean = false;
+  @Local private isSavedNodeLoading: boolean = false;
+  @Local private isSiteNodeFavorited: boolean = false;
+  @Local private isSiteNodeFavoriteLoading: boolean = false;
+  @Local private token: string = '';
+  private api: ApiService = new ApiService();
+  private nodeTopicsRequestId: number = 0;
   // Scroll-reveal app bar identity mirror (Index reads it to render the icon+name title). This page is
   // the sole writer; the *States ledgers are keyed by routeNodeName so stacked node pages don't clash.
-  private nodeAppbar: NodeTopicAppbarState = connectNodeTopicAppbar()
-  @Local private nodeNameContentBottom: number = 0
-  @Local private currentScrollOffset: number = 0
-  @Local private isNodeNameCoveredByAppbar: boolean = false
-  private readonly titleVisibilityHysteresis: number = 4
+  private nodeAppbar: NodeTopicAppbarState = connectNodeTopicAppbar();
+  @Local private nodeNameContentBottom: number = 0;
+  @Local private currentScrollOffset: number = 0;
+  @Local private isNodeNameCoveredByAppbar: boolean = false;
+  private readonly titleVisibilityHysteresis: number = 4;
 
   aboutToAppear(): void {
     this.currentScrollOffset = 0
@@ -81,7 +109,7 @@ export struct NodeTopicPage {
       },
       (topics: V2exTopic[]) => {
         CacheSettings.saveTopicList(context, cacheKey, topics).catch((_error: Error) => {})
-      }
+      },
     )
   }
 
@@ -115,24 +143,38 @@ export struct NodeTopicPage {
         loadMoreErrorMessage: this.vm.nodeTopicsLoadMoreError,
         loadMoreRetryLabel: AppStrings.text(AppStrings.R_COMMON_RETRY, 'Retry'),
         showFooter: this.vm.nodeTopics.length > 0,
-        onRefresh: async () => { await this.refreshData() },
-        onReachEnd: () => { this.loadMore() },
-        onLoadMoreRetry: () => { this.loadMore() },
+        onRefresh: async () => {
+          await this.refreshData()
+        },
+        onReachEnd: () => {
+          this.loadMore()
+        },
+        onLoadMoreRetry: () => {
+          this.loadMore()
+        },
         onDidScroll: (offset: number, _state: ScrollState) => {
           this.currentScrollOffset = Math.max(0, offset)
           this.evaluateAppbarReveal()
-        }
+        },
       }) {
-        ListItem() { this.NodeHeaderCard() }
+        ListItem() {
+          this.NodeHeaderCard()
+        }
         if (this.vm.isLoading && this.vm.nodeTopics.length === 0) {
-          ListItem() { Column() {}.height(0) }
+          ListItem() {
+            Column().height(0)
+          }
         } else if (this.vm.errorMessage && this.vm.nodeTopics.length === 0) {
-          ListItem() { this.ErrorView() }
+          ListItem() {
+            this.ErrorView()
+          }
         } else if (this.vm.nodeTopics.length === 0) {
           // True-empty placeholder keeps the refreshable list mounted; the centered EmptyView is
           // rendered as a full-height Stack overlay below (mirrors LoadingView) so 暂无主题 sits in
           // the middle of the content area rather than top-aligned in a bare list item.
-          ListItem() { Column() {}.height(0) }
+          ListItem() {
+            Column().height(0)
+          }
         } else {
           ForEach(this.vm.nodeTopics, (topic: V2exTopic) => {
             ListItem() {
@@ -143,13 +185,13 @@ export struct NodeTopicPage {
                 onUserClick: () => {
                   let p: UserProfileParams = { username: topic.member.username }
                   this.stack.pushPathByName('UserProfile', p as Object)
-                }
+                },
               })
             }
-              .onClick(() => {
-                let p: TopicDetailParams = { topicId: topic.id }
-                this.stack.pushPathByName('TopicDetail', p as Object)
-              })
+            .onClick(() => {
+              let p: TopicDetailParams = { topicId: topic.id }
+              this.stack.pushPathByName('TopicDetail', p as Object)
+            })
           })
         }
       }
@@ -161,15 +203,16 @@ export struct NodeTopicPage {
         this.EmptyView()
       }
     }
-      .width('100%').height('100%')
-      .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
-      .onVisibleAreaChange([0.0, 1.0], (isVisible: boolean, _currentRatio: number) => {
-        // Re-publish the reveal identity when this node page returns to the top of the stack so the
-        // shared singleton mirror reflects THIS route again (a stacked page may have overwritten it).
-        if (isVisible) {
-          this.publishAppbarReveal(this.isNodeNameCoveredByAppbar)
-        }
-      })
+    .width('100%')
+    .height('100%')
+    .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
+    .onVisibleAreaChange([0.0, 1.0], (isVisible: boolean, _currentRatio: number) => {
+      // Re-publish the reveal identity when this node page returns to the top of the stack so the
+      // shared singleton mirror reflects THIS route again (a stacked page may have overwritten it).
+      if (isVisible) {
+        this.publishAppbarReveal(this.isNodeNameCoveredByAppbar)
+      }
+    })
   }
 
   @Builder NodeHeaderCard() {
@@ -182,8 +225,37 @@ export struct NodeTopicPage {
         // threshold is stable while the list scrolls (same approach as UserProfilePage).
         this.nodeNameContentBottom = bottom + this.currentScrollOffset
         this.evaluateAppbarReveal()
-      }
+      },
+      onHeaderLinkClick: (url: string) => {
+        this.openHeaderLink(url)
+      },
     })
+  }
+
+  // Node-description links did nothing when handed to the system (relative/first-party V2EX URLs no
+  // external app handles them). Route first-party V2EX links into the in-app cookie WebView (logged-in
+  // view); only genuinely external links go to the system browser.
+  private openHeaderLink(url: string): void {
+    const target = (url || '').trim()
+    if (!target) {
+      return
+    }
+    // Node-description links did nothing before (relative paths like the dict node's "/d/" — its
+    // "V2EX 英汉词典" link — have no external handler). Route any http(s) link or relative V2EX path into
+    // the in-app WebView (cookie-injected for the V2EX origin, plain for external). Only non-http schemes
+    // (mailto:, tel:, …) fall through to the system.
+    if (target.startsWith('/') || target.startsWith('http://') || target.startsWith('https://')) {
+      publishAccountWebViewUrl(target)
+      this.stack.pushPathByName('AccountWebView', null)
+      return
+    }
+    try {
+      const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+      const want: Want = { action: 'ohos.want.action.viewData', uri: target }
+      context.startAbility(want).catch((_error: Error) => {})
+    } catch (_error) {
+      // best-effort external open
+    }
   }
 
   @Builder LoadingView() {
@@ -193,7 +265,10 @@ export struct NodeTopicPage {
     .justifyContent(FlexAlign.Center)
     .width('100%')
     .height('100%')
-    .padding({ top: this.layout.topAvoidHeight + ThemeConstants.TITLE_BAR_HEIGHT, bottom: this.layout.bottomAvoidHeight })
+    .padding({
+      top: this.layout.topAvoidHeight + ThemeConstants.TITLE_BAR_HEIGHT,
+      bottom: this.layout.bottomAvoidHeight,
+    })
     .hitTestBehavior(HitTestMode.None)
   }
 
@@ -204,22 +279,30 @@ export struct NodeTopicPage {
     // (semantic insets for the overlaid HdsNavigation title bar + window safe areas), not a magic
     // fixed height.
     Column() {
-      CardEmptyState({ message: AppStrings.text(AppStrings.R_NODE_NO_TOPICS, 'No topics'), expand: false })
+      CardEmptyState({
+        message: AppStrings.text(AppStrings.R_NODE_NO_TOPICS, 'No topics'),
+        expand: false,
+      })
     }
     .justifyContent(FlexAlign.Center)
     .width('100%')
     .height('100%')
-    .padding({ top: this.layout.topAvoidHeight + ThemeConstants.TITLE_BAR_HEIGHT, bottom: this.layout.bottomAvoidHeight })
+    .padding({
+      top: this.layout.topAvoidHeight + ThemeConstants.TITLE_BAR_HEIGHT,
+      bottom: this.layout.bottomAvoidHeight,
+    })
     .hitTestBehavior(HitTestMode.None)
   }
 
   @Builder ErrorView() {
     PageErrorState({
-      message: this.vm.errorMessage || AppStrings.text(AppStrings.R_NODE_LOAD_FAILED, 'Failed to load node topics'),
+      message:
+        this.vm.errorMessage ||
+        AppStrings.text(AppStrings.R_NODE_LOAD_FAILED, 'Failed to load node topics'),
       expand: false,
       retryAction: () => {
         this.loadData()
-      }
+      },
     })
   }
 
@@ -251,7 +334,8 @@ export struct NodeTopicPage {
       return
     }
     this.isSiteNodeFavoriteLoading = true
-    this.api.getNodeFavoriteToggleActionWithCookie(cookie, this.nodeName)
+    this.api
+      .getNodeFavoriteToggleActionWithCookie(cookie, this.nodeName)
       .then((toggle: V2exToggleAction) => {
         this.isSiteNodeFavorited = toggle.currentlyOn
         publishNodeTopicSiteFavorited(toggle.currentlyOn)
@@ -270,30 +354,43 @@ export struct NodeTopicPage {
     }
     const cookie = CookieJarSettings.getCurrentCookie()
     if (!cookie) {
-      promptAction.openToast({ message: AppStrings.text($r('app.string.api_error_auth_required'), 'Please sign in') }).catch((_error: Error) => { })
+      promptAction
+        .openToast({
+          message: AppStrings.text($r('app.string.api_error_auth_required'), 'Please sign in'),
+        })
+        .catch((_error: Error) => {})
       return
     }
     const cleanName = (this.nodeName || '').trim()
     if (!cleanName) {
-      promptAction.openToast({ message: AppStrings.text(AppStrings.R_NODE_INFO_MISSING, 'Node info missing') }).catch((_error: Error) => { })
+      promptAction
+        .openToast({
+          message: AppStrings.text(AppStrings.R_NODE_INFO_MISSING, 'Node info missing'),
+        })
+        .catch((_error: Error) => {})
       return
     }
     this.isSiteNodeFavoriteLoading = true
-    this.api.getNodeFavoriteToggleActionWithCookie(cookie, cleanName)
+    this.api
+      .getNodeFavoriteToggleActionWithCookie(cookie, cleanName)
       .then((toggle: V2exToggleAction) => {
         this.isSiteNodeFavorited = toggle.currentlyOn
         publishNodeTopicSiteFavorited(toggle.currentlyOn)
         this.confirmSiteNodeFavoriteToggle(cookie, cleanName, toggle)
       })
       .catch((error: Error) => {
-        promptAction.openToast({ message: translateApiError(error) }).catch((_error: Error) => { })
+        promptAction.openToast({ message: translateApiError(error) }).catch((_error: Error) => {})
       })
       .finally(() => {
         this.isSiteNodeFavoriteLoading = false
       })
   }
 
-  private confirmSiteNodeFavoriteToggle(cookie: string, nodeName: string, toggle: V2exToggleAction): void {
+  private confirmSiteNodeFavoriteToggle(
+    cookie: string,
+    nodeName: string,
+    toggle: V2exToggleAction,
+  ): void {
     const title = (this.nodeTitle || this.nodeName || '').trim()
     const verb = this.isSiteNodeFavorited
       ? AppStrings.text(AppStrings.R_SITE_FAVORITE_ACTION_UNFAVORITE, 'Unfavorite')
@@ -303,30 +400,44 @@ export struct NodeTopicPage {
       message: title
         ? AppStrings.format(
             AppStrings.text(AppStrings.R_SITE_FAVORITE_CONFIRM, 'Confirm {0} node "{1}"?'),
-            [verb, title]
+            [verb, title],
           )
         : `${verb} this node?`,
       primaryButton: {
         value: AppStrings.text(AppStrings.R_COMMON_CANCEL, 'Cancel'),
-        action: () => { }
+        action: () => {},
       },
-      secondaryButton: { value: verb, action: () => { this.executeSiteNodeFavoriteToggle(cookie, nodeName, toggle) } }
+      secondaryButton: {
+        value: verb,
+        action: () => {
+          this.executeSiteNodeFavoriteToggle(cookie, nodeName, toggle)
+        },
+      },
     })
   }
 
-  private executeSiteNodeFavoriteToggle(cookie: string, nodeName: string, toggle: V2exToggleAction): void {
+  private executeSiteNodeFavoriteToggle(
+    cookie: string,
+    nodeName: string,
+    toggle: V2exToggleAction,
+  ): void {
     if (this.isSiteNodeFavoriteLoading) {
       return
     }
     this.isSiteNodeFavoriteLoading = true
-    this.api.executeNodeFavoriteToggleWithCookie(cookie, nodeName, toggle)
+    this.api
+      .executeNodeFavoriteToggleWithCookie(cookie, nodeName, toggle)
       .then((favorited: boolean) => {
         this.isSiteNodeFavorited = favorited
         publishNodeTopicSiteFavorited(favorited)
-        promptAction.openToast({ message: favorited ? $r('app.string.favorited') : $r('app.string.unfavorited') }).catch((_error: Error) => { })
+        promptAction
+          .openToast({
+            message: favorited ? $r('app.string.favorited') : $r('app.string.unfavorited'),
+          })
+          .catch((_error: Error) => {})
       })
       .catch((error: Error) => {
-        promptAction.openToast({ message: translateApiError(error) }).catch((_error: Error) => { })
+        promptAction.openToast({ message: translateApiError(error) }).catch((_error: Error) => {})
       })
       .finally(() => {
         this.isSiteNodeFavoriteLoading = false
@@ -356,7 +467,10 @@ export struct NodeTopicPage {
         this.vm.beginNodeTopicsPageOneLoad(nodeName, 'api_v2', requestId)
         this.logNodeTopicLoadStart(nodeName, source, requestId)
         await this.vm.loadNodeDetailV2(nodeName, this.token)
-        const topicsLoaded = await this.vm.loadNodeTopicsV2(nodeName, this.token, { requestId: requestId, source: 'api_v2' })
+        const topicsLoaded = await this.vm.loadNodeTopicsV2(nodeName, this.token, {
+          requestId: requestId,
+          source: 'api_v2',
+        })
         if (!topicsLoaded) {
           await this.loadNodeTopicsWebFallback(nodeName, requestId)
         }
@@ -374,17 +488,26 @@ export struct NodeTopicPage {
       this.vm.nodeDetailError = translateApiError(error)
       this.vm.beginNodeTopicsPageOneLoad(nodeName, 'web', requestId)
       this.logNodeTopicLoadStart(nodeName, 'web', requestId)
-      DiagnosticLogger.warn('ui_lifecycle', 'node_topic_source_fail', {
-        nodeName: nodeName,
-        source: source,
-        page: 1,
-        requestId: requestId,
-        count: 0,
-        firstIds: [],
-        errorKind: e.name || 'Error'
-      }, e)
+      DiagnosticLogger.warn(
+        'ui_lifecycle',
+        'node_topic_source_fail',
+        {
+          nodeName: nodeName,
+          source: source,
+          page: 1,
+          requestId: requestId,
+          count: 0,
+          firstIds: [],
+          errorKind: e.name || 'Error',
+        },
+        e,
+      )
       await this.vm.loadNodeDetail(nodeName)
-      await this.vm.loadNodeTopics(nodeName, { requestId: requestId, source: 'web', fallback: true })
+      await this.vm.loadNodeTopics(nodeName, {
+        requestId: requestId,
+        source: 'web',
+        fallback: true,
+      })
       this.syncAppbarIdentity()
     }
   }
@@ -396,7 +519,7 @@ export struct NodeTopicPage {
       page: 1,
       requestId: requestId,
       count: 0,
-      firstIds: []
+      firstIds: [],
     })
     if (!this.vm.switchNodeTopicsPageOneSource(nodeName, 'web', requestId)) {
       return
@@ -411,7 +534,7 @@ export struct NodeTopicPage {
       page: 1,
       requestId: requestId,
       count: 0,
-      firstIds: []
+      firstIds: [],
     })
   }
 
@@ -420,12 +543,14 @@ export struct NodeTopicPage {
       return
     }
     if (this.vm.nodeTopicsUseV2 && this.token) {
-      this.vm.loadMoreNodeTopicsV2(this.nodeName, this.token)
-        .finally(() => { this.syncAppbarIdentity() })
+      this.vm.loadMoreNodeTopicsV2(this.nodeName, this.token).finally(() => {
+        this.syncAppbarIdentity()
+      })
       return
     }
-    this.vm.loadMoreNodeTopics(this.nodeName)
-      .finally(() => { this.syncAppbarIdentity() })
+    this.vm.loadMoreNodeTopics(this.nodeName).finally(() => {
+      this.syncAppbarIdentity()
+    })
   }
 
   private toggleSavedNode(): void {
@@ -435,12 +560,19 @@ export struct NodeTopicPage {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     const nodeName = this.currentNodeName()
     if (!nodeName) {
-      promptAction.openToast({ message: AppStrings.text(AppStrings.R_NODE_INFO_MISSING, 'Node info missing') }).catch((_error: Error) => { })
+      promptAction
+        .openToast({
+          message: AppStrings.text(AppStrings.R_NODE_INFO_MISSING, 'Node info missing'),
+        })
+        .catch((_error: Error) => {})
       return
     }
     const node: SavedNode = {
       name: nodeName,
-      title: CollectionSettings.cleanNodeTitle(this.vm.nodeDetail?.title || this.nodeTitle || nodeName, this.vm.nodeDetail?.topics || 0),
+      title: CollectionSettings.cleanNodeTitle(
+        this.vm.nodeDetail?.title || this.nodeTitle || nodeName,
+        this.vm.nodeDetail?.topics || 0,
+      ),
       topics: this.vm.nodeDetail?.topics || 0,
       avatarMini: this.vm.nodeDetail?.avatar_mini,
       avatarNormal: this.vm.nodeDetail?.avatar_normal,
@@ -448,7 +580,7 @@ export struct NodeTopicPage {
       // CollectionSettings.saveNode always re-stamps savedAt with its own server-time-aligned
       // value (see upsertSavedNode), so the caller's value is ignored — pass 0 rather than a
       // wall-clock timestamp the migrated leaf would otherwise carry (forbidden by the contract).
-      savedAt: 0
+      savedAt: 0,
     }
     this.isSavedNodeLoading = true
     const request = this.isNodeSaved
@@ -527,7 +659,10 @@ export struct NodeTopicPage {
   }
 
   private syncAppbarIdentity(): void {
-    const title = CollectionSettings.cleanNodeTitle(this.vm.nodeDetail?.title || this.nodeTitle || this.nodeName, this.vm.nodeDetail?.topics || 0)
+    const title = CollectionSettings.cleanNodeTitle(
+      this.vm.nodeDetail?.title || this.nodeTitle || this.nodeName,
+      this.vm.nodeDetail?.topics || 0,
+    )
     publishNodeTopicTitle(title)
     const identityName = (this.nodeName || '').trim()
     const subtitleParts: string[] = []
@@ -536,10 +671,11 @@ export struct NodeTopicPage {
     }
     const topicCount = this.vm.nodeDetail?.topics || 0
     if (topicCount > 0) {
-      subtitleParts.push(AppStrings.format(
-        AppStrings.text(AppStrings.R_NODE_TOPICS_COUNT, '{0} topics'),
-        [String(topicCount)]
-      ))
+      subtitleParts.push(
+        AppStrings.format(AppStrings.text(AppStrings.R_NODE_TOPICS_COUNT, '{0} topics'), [
+          String(topicCount),
+        ]),
+      )
     }
     publishNodeTopicSubtitle(subtitleParts.join(' · '))
     // Re-evaluate the scroll reveal: a freshly-resolved detail can change the display name / avatar
@@ -552,7 +688,7 @@ export struct NodeTopicPage {
     return NodeTopicPageCoordinator.displayName(
       this.vm.nodeDetail?.title || '',
       this.nodeTitle,
-      this.vm.nodeDetail?.name || this.nodeName
+      this.vm.nodeDetail?.name || this.nodeName,
     )
   }
 
@@ -568,7 +704,7 @@ export struct NodeTopicPage {
       this.layout.topAvoidHeight,
       ThemeConstants.TITLE_BAR_HEIGHT,
       this.isNodeNameCoveredByAppbar,
-      this.titleVisibilityHysteresis
+      this.titleVisibilityHysteresis,
     )
     if (shouldReveal === this.isNodeNameCoveredByAppbar) {
       return
@@ -586,7 +722,7 @@ export struct NodeTopicPage {
       visible,
       routeNodeName,
       this.displayNodeName(),
-      this.nodeAvatarUrl()
+      this.nodeAvatarUrl(),
     )
     // OUTPUT-only fields: this page is the sole writer of the node appbar reveal mirror; Index reads it
     // to build the icon+name title. Change-guard against the live mirror so we only write on real changes.
@@ -601,10 +737,18 @@ export struct NodeTopicPage {
     }
     // Per-route ledgers keyed by routeNodeName so a stacked node page reads back its own reveal state.
     publishNodeTopicAppbarTitleNameStates(
-      NodeTopicPageCoordinator.nextStringState(this.nodeAppbar.titleNameStates, routeNodeName, identity.titleNodeName),
+      NodeTopicPageCoordinator.nextStringState(
+        this.nodeAppbar.titleNameStates,
+        routeNodeName,
+        identity.titleNodeName,
+      ),
     )
     publishNodeTopicAppbarTitleAvatarStates(
-      NodeTopicPageCoordinator.nextStringState(this.nodeAppbar.titleAvatarStates, routeNodeName, identity.avatarUrl),
+      NodeTopicPageCoordinator.nextStringState(
+        this.nodeAppbar.titleAvatarStates,
+        routeNodeName,
+        identity.avatarUrl,
+      ),
     )
   }
 }

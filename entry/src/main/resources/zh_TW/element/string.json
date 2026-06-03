@@ -2237,6 +2237,10 @@
       "value": "瀏覽器開啟"
     },
     {
+      "name": "topic_action_open_in_app",
+      "value": "應用內開啟"
+    },
+    {
       "name": "image_preview_invalid_url",
       "value": "圖片地址無效"
     },
