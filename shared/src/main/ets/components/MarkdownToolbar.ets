@@ -1,5 +1,4 @@
 import { ThemeConstants } from '../theme/ThemeConstants'
-import { AppStrings } from '../i18n/AppStrings'
 import { LengthMetrics, SegmentButtonV2Items, TabSegmentButtonV2 } from '@kit.ArkUI'
 
 @ComponentV2
@@ -16,12 +15,19 @@ export struct MarkdownToolbar {
   @Event onLink?: () => void
   @Event onImage?: () => void
 
-  // Edit/Preview options for the system segmented toggle (animated, more compact than the old
-  // hand-rolled pair). selectedIndex is driven one-way from previewActive; clicks fire the events.
+  // Edit (pencil) / Preview (eye) icons for the system segmented toggle.
   private segItems: SegmentButtonV2Items = new SegmentButtonV2Items([
-    { text: AppStrings.text(AppStrings.R_MARKDOWN_TOOLBAR_EDIT, 'Edit') },
-    { text: AppStrings.text(AppStrings.R_MARKDOWN_TOOLBAR_PREVIEW, 'Preview') },
+    { symbol: $r('sys.symbol.square_and_pencil') },
+    { symbol: $r('sys.symbol.eye') },
   ])
+  // Two-way binding to TabSegmentButtonV2 so the component owns (and animates) the switch; kept in
+  // sync with the parent's previewActive both ways.
+  @Local private segIndex: number = 0
+
+  @Monitor('previewActive')
+  onPreviewActiveChange(): void {
+    this.segIndex = this.previewActive ? 1 : 0
+  }
 
   build() {
     Row({ space: ThemeConstants.SPACE_SM }) {
@@ -48,7 +54,7 @@ export struct MarkdownToolbar {
       Row() {
         TabSegmentButtonV2({
           items: this.segItems,
-          selectedIndex: this.previewActive ? 1 : 0,
+          selectedIndex: this.segIndex!!,
           onItemClicked: (index: number) => {
             if (index === 0) {
               this.fire(this.onEdit)
@@ -56,8 +62,7 @@ export struct MarkdownToolbar {
               this.fire(this.onPreview)
             }
           },
-          itemFontSize: LengthMetrics.fp(ThemeConstants.FONT_SIZE_TAG),
-          itemSelectedFontSize: LengthMetrics.fp(ThemeConstants.FONT_SIZE_TAG),
+          itemSymbolFontSize: LengthMetrics.fp(ThemeConstants.FONT_SIZE_TITLE),
           itemMinHeight: LengthMetrics.vp(22),
           buttonMinHeight: LengthMetrics.vp(28),
         })
