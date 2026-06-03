@@ -135,6 +135,8 @@ export struct TopicEditorPage {
         TextInput({ placeholder: AppStrings.text(AppStrings.R_TOPIC_EDITOR_TITLE_PLACEHOLDER, 'Title'), text: this.title })
           .height(44)
           .fontSize(ThemeConstants.FONT_SIZE_BODY)
+          // Match the placeholder to the input/node font; otherwise it falls back to a larger default.
+          .placeholderFont({ size: ThemeConstants.FONT_SIZE_BODY })
           .backgroundColor($r('sys.color.ohos_id_color_background'))
           .borderRadius(ThemeConstants.RADIUS_MD)
           // Native clear ✕ on the right, shown only while the field is non-empty (INPUT style).
@@ -148,16 +150,13 @@ export struct TopicEditorPage {
           previewActive: this.isPreview,
           onEdit: () => { this.isPreview = false },
           onPreview: () => { this.isPreview = true },
-          onBold: () => { this.insertInlineMarkdown('**', '**', AppStrings.text(AppStrings.R_MARKDOWN_PLACEHOLDER_TEXT, 'Text')) },
-          onItalic: () => { this.insertInlineMarkdown('*', '*', AppStrings.text(AppStrings.R_MARKDOWN_PLACEHOLDER_TEXT, 'Text')) },
-          onCode: () => { this.insertInlineMarkdown('`', '`', AppStrings.text(AppStrings.R_MARKDOWN_PLACEHOLDER_CODE, 'Code')) },
+          onBold: () => { this.insertInlineMarkdown('**', '**') },
+          onItalic: () => { this.insertInlineMarkdown('*', '*') },
+          onCode: () => { this.insertInlineMarkdown('`', '`') },
           onQuote: () => { this.insertLinePrefix('> ') },
           onList: () => { this.insertLinePrefix('- ') },
-          onLink: () => {
-            const textHolder = AppStrings.text(AppStrings.R_MARKDOWN_PLACEHOLDER_TEXT, 'Text')
-            this.insertInlineMarkdown('[', '](https://)', textHolder, 1 + textHolder.length + '](https://'.length)
-          },
-          onImage: () => { this.insertImageLinkTemplate() }
+          onLink: () => { this.insertInlineMarkdown('[', '](https://)') },
+          onImage: () => { this.insertInlineMarkdown('![', '](https://)') }
         })
 
         if (this.errorMessage) {
@@ -174,6 +173,7 @@ export struct TopicEditorPage {
             TextArea({ placeholder: AppStrings.text(AppStrings.R_EDITOR_BODY_PLACEHOLDER, 'Body (Markdown)'), text: this.content, controller: this.contentController })
               .id(BODY_INPUT_ID)
               .fontSize(ThemeConstants.FONT_SIZE_BODY)
+              .placeholderFont({ size: ThemeConstants.FONT_SIZE_BODY })
               .width('100%')
               .height('100%')
               .backgroundColor($r('sys.color.ohos_id_color_background'))
@@ -270,44 +270,33 @@ export struct TopicEditorPage {
     return this.layout.bottomAvoidHeight + ThemeConstants.SPACE_XL
   }
 
-  private insertImageLinkTemplate(): void {
-    const imgHolder = AppStrings.text(AppStrings.R_MARKDOWN_PLACEHOLDER_IMAGE, 'Image')
-    this.insertInlineMarkdown('![', '](https://)', imgHolder, 2 + imgHolder.length + '](https://'.length)
-  }
-
-  private insertInlineMarkdown(prefix: string, suffix: string, placeholder: string, caretOffset: number = -1): void {
+  private insertInlineMarkdown(prefix: string, suffix: string): void {
     const contentLength = this.content.length
     const start = Math.min(Math.max(this.contentSelectionStart, 0), contentLength)
     const rawEnd = Math.min(Math.max(this.contentSelectionEnd, 0), contentLength)
     const end = rawEnd >= start ? rawEnd : start
     const selected = this.content.substring(start, end)
-    // When the user had no selection we filled in the placeholder; select it back so the next
-    // keystroke overwrites it (e.g. Bold on empty input -> "**Text**" with "Text" highlighted).
-    const usedPlaceholder = selected.length === 0 && caretOffset < 0
-    const middle = selected || placeholder
-    const insertion = `${prefix}${middle}${suffix}`
+    const insertion = `${prefix}${selected}${suffix}`
     this.content = `${this.content.substring(0, start)}${insertion}${this.content.substring(end)}`
-    const placeholderStart = start + prefix.length
-    const placeholderEnd = placeholderStart + middle.length
-    const caret = start + (caretOffset >= 0 ? caretOffset : prefix.length + middle.length + suffix.length)
-    this.contentSelectionStart = usedPlaceholder ? placeholderStart : caret
-    this.contentSelectionEnd = usedPlaceholder ? placeholderEnd : caret
+    // No placeholder text: with nothing selected the caret lands between the markers so the user just
+    // types; when wrapping a selection it lands after the closing marker.
+    const caret = selected.length === 0 ? start + prefix.length : start + insertion.length
+    this.contentSelectionStart = caret
+    this.contentSelectionEnd = caret
     this.isPreview = false
     this.scheduleSaveDraft()
-    setTimeout(() => {
-      this.focusBody()
-      if (usedPlaceholder) {
-        // Place a real caret first (works without focus), then select the placeholder one tick later
-        // — setTextSelection only highlights once requestFocus has actually landed, so deferring it
-        // avoids the caret sticking at index 0.
-        this.contentController.caretPosition(placeholderEnd)
-        setTimeout(() => {
-          this.contentController.setTextSelection(placeholderStart, placeholderEnd)
-        }, 0)
-      } else {
-        this.contentController.caretPosition(caret)
-      }
-    }, 0)
+    this.moveCaret(caret)
+  }
+
+  // Setting this.content (a controlled `text:` binding) re-renders the TextArea and resets its caret
+  // to the end. That render can land a frame or two later, so focus the body (toolbar buttons keep
+  // focus via focusOnTouch) and re-assert the caret across a few ticks to reliably win that race —
+  // a single deferred call lands inconsistently, leaving the caret stuck at the end.
+  private moveCaret(caret: number): void {
+    this.focusBody()
+    const apply = () => { this.contentController.caretPosition(caret) }
+    setTimeout(apply, 0)
+    setTimeout(apply, 50)
   }
 
   private focusBody(): void {
@@ -334,10 +323,7 @@ export struct TopicEditorPage {
     this.contentSelectionEnd = caret
     this.isPreview = false
     this.scheduleSaveDraft()
-    setTimeout(() => {
-      this.focusBody()
-      this.contentController.caretPosition(caret)
-    }, 0)
+    this.moveCaret(caret)
   }
 
   private openNodePicker(): void {

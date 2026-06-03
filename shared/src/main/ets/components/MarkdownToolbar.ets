@@ -94,6 +94,9 @@ export struct MarkdownToolbar {
       .padding({ left: ThemeConstants.SPACE_XS, right: ThemeConstants.SPACE_XS })
       .borderRadius(ThemeConstants.RADIUS_ROUND)
       .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+      // Don't grab focus when tapped: the editor TextArea must keep focus (and its caret) so an
+      // insert lands at the cursor and the soft keyboard stays up.
+      .focusOnTouch(false)
       .onClick(action)
   }
 
