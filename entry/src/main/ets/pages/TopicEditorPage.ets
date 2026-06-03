@@ -1,8 +1,8 @@
 import { common } from '@kit.AbilityKit'
 import { KeyboardAvoidMode, promptAction, SymbolGlyphModifier } from '@kit.ArkUI'
 import {
-  ApiService, AppStrings, connectLayoutSafeArea, connectNavStack, connectNodePickAction, CookieJarSettings, DateUtils, DraftSettings, LayoutSafeAreaState, MarkdownContent, MarkdownToolbar,
-  NodePickActionState, ThemeConstants, TopicDetailParams, translateApiError
+  ApiService, AppStrings, connectLayoutSafeArea, connectNavStack, connectNodePickAction, connectTopicEditorAction, CookieJarSettings, DateUtils, DraftSettings, LayoutSafeAreaState, MarkdownContent, MarkdownToolbar,
+  NodePickActionState, publishTopicEditorSubmitEnabled, ThemeConstants, TopicDetailParams, TopicEditorActionState, translateApiError
 } from 'shared'
 
 // Body TextArea id, used to move focus into it after a toolbar insert.
@@ -43,6 +43,8 @@ export struct TopicEditorPage {
   private api: ApiService = new ApiService()
   // Node-pick command bus: NodePickerPage publishes the chosen node here; we react below.
   private nodePick: NodePickActionState = connectNodePickAction()
+  // Submit lives in the Index title bar (icon menu). This command bus carries its taps back here.
+  private editorAction: TopicEditorActionState = connectTopicEditorAction()
 
   // Fill the node field the moment the picker pops back (aboutToAppear does not re-run on pop).
   @Monitor('nodePick.command')
@@ -54,6 +56,21 @@ export struct TopicEditorPage {
     this.nodeName = picked
     this.nodeTitle = (this.nodePick.title || '').trim()
     this.scheduleSaveDraft()
+  }
+
+  // Keep the title-bar Submit icon's enabled state in sync with the form (canSubmit() already factors
+  // in isSubmitting and the login cookie).
+  @Monitor('nodeName', 'title', 'content', 'isSubmitting')
+  onSubmittabilityChange(): void {
+    publishTopicEditorSubmitEnabled(this.canSubmit())
+  }
+
+  // The title-bar Submit icon was tapped (timestamp-tagged command, so a repeat still fires).
+  @Monitor('editorAction.command')
+  onSubmitCommand(): void {
+    if (this.editorAction.command) {
+      this.confirmSubmit()
+    }
   }
 
   aboutToAppear(): void {
@@ -71,6 +88,8 @@ export struct TopicEditorPage {
     this.contentSelectionStart = 0
     this.contentSelectionEnd = 0
     this.hasSubmitted = false
+    // Seed the title-bar Submit icon disabled; the @Monitor republishes as the form / draft fills in.
+    publishTopicEditorSubmitEnabled(this.canSubmit())
 
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     DraftSettings.loadTopicDraft(context)
@@ -92,6 +111,8 @@ export struct TopicEditorPage {
 
   aboutToDisappear(): void {
     this.getUIContext().setKeyboardAvoidMode(KeyboardAvoidMode.OFFSET)
+    // Leave the title-bar Submit icon disabled once we're gone (the next destination owns its own bar).
+    publishTopicEditorSubmitEnabled(false)
     this.clearSaveTimer()
     if (!this.hasSubmitted) {
       this.persistDraft()
@@ -226,20 +247,13 @@ export struct TopicEditorPage {
           .constraintSize({ minHeight: BODY_MIN_HEIGHT })
         }
 
+        // Submit moved to the title-bar icon (see Index.topicEditorTitleBarOpts); only the
+        // last-saved hint remains at the bottom.
         if (this.savedAt > 0) {
           Text(AppStrings.format(AppStrings.text($r('app.string.draft_saved_on_format'), 'Saved on {0}'), [DateUtils.toDateString(this.savedAt)]))
             .fontSize(ThemeConstants.FONT_SIZE_TINY)
             .fontColor($r('sys.color.font_secondary'))
         }
-
-        Button(this.isSubmitting ? AppStrings.text(AppStrings.R_EDITOR_SUBMITTING, 'Submitting...') : AppStrings.text(AppStrings.R_EDITOR_SUBMIT, 'Submit'))
-          .fontSize(ThemeConstants.FONT_SIZE_TAG)
-          .height(40)
-          .width('100%')
-          .type(ButtonType.Normal)
-          .borderRadius(ThemeConstants.RADIUS_MD)
-          .enabled(this.canSubmit())
-          .onClick(() => { this.confirmSubmit() })
       }
       .width('100%')
       .alignItems(HorizontalAlign.Start)

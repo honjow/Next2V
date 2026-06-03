@@ -37,6 +37,7 @@ import {
   connectSearchAction,
   connectTopicDetailAction,
   connectTopicDetailAppbar,
+  connectTopicEditorAppbar,
   connectTwoFactor,
   connectUserProfileAction,
   connectUserProfileAppbar,
@@ -50,6 +51,8 @@ import {
   NotificationUnreadState,
   PendingV2exUrlState,
   TopicDetailAppbarState,
+  TopicEditorAppbarState,
+  sendTopicEditorSubmit,
   TwoFactorState,
   UserProfileAppbarState,
   CookieJarSettings,
@@ -156,6 +159,7 @@ struct Index {
   // each dual-written at its producer's write-through helper. Home-tab/auth-session/notification-unread/
   // account-webview/pending-url are likewise mirror-backed (dual-written at their service chokepoints).
   private topicDetailAppbar: TopicDetailAppbarState = connectTopicDetailAppbar();
+  private topicEditorAppbar: TopicEditorAppbarState = connectTopicEditorAppbar();
   private nodeTopicAppbar: NodeTopicAppbarState = connectNodeTopicAppbar();
   private userProfileAppbar: UserProfileAppbarState = connectUserProfileAppbar();
   private notificationUnread: NotificationUnreadState = connectNotificationUnread();
@@ -596,6 +600,9 @@ struct Index {
       }
       return this.navDestTitleBarOpts(AppStrings.R_NAV_BLOCKED_LISTS, undefined, undefined, bb)
     }
+    if (descriptor.family === 'topicEditor') {
+      return this.topicEditorTitleBarOpts(descriptor.title)
+    }
     if (IndexRouteCoordinator.usesStandardTitleBar(descriptor.family)) {
       return this.navDestTitleBarOpts(descriptor.title)
     }
@@ -706,6 +713,25 @@ struct Index {
       'blurStrategy': BlurStrategy.ENABLE,
       'style': style,
     }
+  }
+
+  private topicEditorTitleBarOpts(title: ResourceStr): Record<string, Object> {
+    // Submit is a title-bar icon. isEnabled mirrors the editor's canSubmit() via the appbar @Trace
+    // (read here so the bar re-renders as the form fills); the tap goes back over the action bus.
+    let content: Record<string, Object> = {
+      'label': AppStrings.R_EDITOR_SUBMIT,
+      'icon': this.mainTitleMenuIcon('submit'),
+      'isEnabled': this.topicEditorAppbar.submitEnabled,
+      'action': () => {
+        sendTopicEditorSubmit()
+      },
+    }
+    let items: Record<string, Object>[] = [{ 'content': content }]
+    let menu: Record<string, Object> = {
+      'value': items,
+      'maxCount': IndexTitleBarCoordinator.SINGLE_ITEM_MENU_MAX_COUNT,
+    }
+    return this.navDestTitleBarOpts(title, menu)
   }
 
   private topicDetailTitleBarOpts(topicId: number): Record<string, Object> {
@@ -1228,6 +1254,9 @@ struct Index {
     }
     if (icon === 'compose') {
       return $r('sys.symbol.square_and_pencil')
+    }
+    if (icon === 'submit') {
+      return $r('sys.symbol.paperplane_right_fill')
     }
     if (icon === 'add') {
       return $r('sys.symbol.plus')
