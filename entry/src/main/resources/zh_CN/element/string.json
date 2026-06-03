@@ -2789,10 +2789,6 @@
       "value": "此备份包含账号与登录信息，导入将替换当前账号。"
     },
     {
-      "name": "image_upload_sheet_title",
-      "value": "插入图片"
-    },
-    {
       "name": "image_upload_action_new",
       "value": "上传新图片"
     },

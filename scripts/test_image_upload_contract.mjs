@@ -43,6 +43,16 @@ check(/uploading:\/\/\$\{Date\.now\(\)\}/.test(editor), 'placeholder uses a uniq
 // stale placeholders are stripped from a restored draft
 check(/stripUploadingPlaceholders/.test(editor) && /uploading:\\\/\\\//.test(editor), 'editor strips orphaned uploading:// placeholders on draft load')
 
+// ── Image source picker: a button-anchored menu (not an ActionSheet) ──────────
+const toolbar = read('shared/src/main/ets/components/MarkdownToolbar.ets')
+check(/\.bindMenu\(this\.imageMenuShown,\s*this\.ImageMenu/.test(toolbar), 'toolbar hangs the image menu (bindMenu) on the picture button')
+check(/MenuItem\(/.test(toolbar) && /R_IMAGE_UPLOAD_ACTION_NEW/.test(toolbar) && /R_IMAGE_UPLOAD_ACTION_LINK/.test(toolbar), 'toolbar image menu offers upload + insert-link items')
+check(/R_IMAGE_UPLOAD_ACTION_FROM_V2EX/.test(toolbar) && /\.enabled\(false\)/.test(toolbar), 'toolbar keeps the V2EX gallery item visible-but-disabled')
+// the editor no longer pops a global ActionSheet; it wires the two real menu actions
+check(!/ActionSheet\.show/.test(editor), 'editor no longer uses a global ActionSheet for image source')
+check(/onImageUpload:\s*\(\)\s*=>\s*\{\s*this\.pickAndUploadImage\(\)/.test(editor), 'editor wires onImageUpload → pickAndUploadImage')
+check(/onInsertImageLink:\s*\(\)\s*=>\s*\{\s*this\.insertInlineMarkdown/.test(editor), 'editor wires onInsertImageLink → insertInlineMarkdown')
+
 // ── Route registration (all sites) ───────────────────────────────────────────
 const coordinator = read('entry/src/main/ets/model/IndexRouteCoordinator.ets')
 check(/'imageUploadSettings'\s*\|/.test(coordinator), 'route: family in the union type')
@@ -64,7 +74,7 @@ for (const loc of LOCALES) {
 const appStrings = read('shared/src/main/ets/i18n/AppStrings.ets')
 const referenced = new Set()
 const reAll = /R_IMAGE_UPLOAD_[A-Z0-9_]+/g
-for (const src of [editor, indexPage, coordinator, read('feature/settings/src/main/ets/pages/ImageUploadSettingsPage.ets'), read('feature/settings/src/main/ets/pages/SettingsPage.ets')]) {
+for (const src of [editor, toolbar, indexPage, coordinator, read('feature/settings/src/main/ets/pages/ImageUploadSettingsPage.ets'), read('feature/settings/src/main/ets/pages/SettingsPage.ets')]) {
   let m
   while ((m = reAll.exec(src)) !== null) {
     referenced.add(m[0])

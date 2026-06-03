@@ -2789,10 +2789,6 @@
       "value": "此備份包含帳號與登入資訊，匯入將取代目前的帳號。"
     },
     {
-      "name": "image_upload_sheet_title",
-      "value": "插入圖片"
-    },
-    {
       "name": "image_upload_action_new",
       "value": "上傳新圖片"
     },

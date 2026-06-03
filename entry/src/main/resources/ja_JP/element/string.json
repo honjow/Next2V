@@ -2789,10 +2789,6 @@
       "value": "このバックアップにはアカウントとログイン情報が含まれ、現在のアカウントを置き換えます。"
     },
     {
-      "name": "image_upload_sheet_title",
-      "value": "画像を挿入"
-    },
-    {
       "name": "image_upload_action_new",
       "value": "新しい画像をアップロード"
     },

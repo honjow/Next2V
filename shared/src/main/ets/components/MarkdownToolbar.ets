@@ -1,5 +1,6 @@
 import { ThemeConstants } from '../theme/ThemeConstants'
-import { LengthMetrics, SegmentButtonV2Items, TabSegmentButtonV2 } from '@kit.ArkUI'
+import { AppStrings } from '../i18n/AppStrings'
+import { LengthMetrics, SegmentButtonV2Items, SymbolGlyphModifier, TabSegmentButtonV2 } from '@kit.ArkUI'
 
 @ComponentV2
 export struct MarkdownToolbar {
@@ -13,7 +14,10 @@ export struct MarkdownToolbar {
   @Event onQuote?: () => void
   @Event onList?: () => void
   @Event onLink?: () => void
-  @Event onImage?: () => void
+  // The image button opens a menu (anchored on the button itself) instead of one flat action: upload a
+  // new image, pick from the V2EX gallery (pending), or insert a bare image-link skeleton.
+  @Event onImageUpload?: () => void
+  @Event onInsertImageLink?: () => void
 
   // Edit (pencil) / Preview (eye) icons for the system segmented toggle.
   private segItems: SegmentButtonV2Items = new SegmentButtonV2Items([
@@ -23,6 +27,13 @@ export struct MarkdownToolbar {
   // Two-way binding to TabSegmentButtonV2 so the component owns (and animates) the switch; kept in
   // sync with the parent's previewActive both ways.
   @Local private segIndex: number = 0
+
+  // Image-source menu (anchored on the picture button). Controlled visibility + reusable glyph
+  // modifiers mirror the project's bindMenu convention (see ReplyCardActions / SettingsPage dropdowns).
+  @Local private imageMenuShown: boolean = false
+  @Local private uploadImageIcon: SymbolGlyphModifier = new SymbolGlyphModifier($r('sys.symbol.cloud_and_arrow_up'))
+  @Local private v2exGalleryIcon: SymbolGlyphModifier = new SymbolGlyphModifier($r('sys.symbol.rectangle_stack'))
+  @Local private insertLinkIcon: SymbolGlyphModifier = new SymbolGlyphModifier($r('sys.symbol.link'))
 
   // Mirror the parent's previewActive back into segIndex ONLY when they actually differ. On a tap the
   // component already moves segIndex via the two-way binding (and starts the slide animation); the
@@ -47,7 +58,7 @@ export struct MarkdownToolbar {
           this.IconButton($r('sys.symbol.quote'), () => { this.fire(this.onQuote) })
           this.IconButton($r('sys.symbol.list_bullet'), () => { this.fire(this.onList) })
           this.IconButton($r('sys.symbol.link'), () => { this.fire(this.onLink) })
-          this.IconButton($r('sys.symbol.picture'), () => { this.fire(this.onImage) })
+          this.ImageButton()
         }
         .height(32)
         .alignItems(VerticalAlign.Center)
@@ -102,6 +113,61 @@ export struct MarkdownToolbar {
     // lands at the cursor and the soft keyboard stays up.
     .focusOnTouch(false)
     .onClick(action)
+  }
+
+  // Same chrome as IconButton, but the tap opens a menu hung directly on the button (so it pops from the
+  // image icon) rather than firing a single action.
+  @Builder
+  private ImageButton() {
+    Button() {
+      SymbolGlyph($r('sys.symbol.picture'))
+        .fontSize(ThemeConstants.FONT_SIZE_TITLE)
+        .fontColor([$r('sys.color.font_secondary')])
+    }
+    .type(ButtonType.Normal)
+    .height(30)
+    .constraintSize({ minWidth: 36 })
+    .padding({ left: ThemeConstants.SPACE_XS, right: ThemeConstants.SPACE_XS })
+    .borderRadius(ThemeConstants.RADIUS_ROUND)
+    .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+    .focusOnTouch(false)
+    .onClick(() => { this.showImageMenu() })
+    .bindMenu(this.imageMenuShown, this.ImageMenu, {
+      placement: Placement.BottomLeft,
+      aboutToDisappear: () => { this.imageMenuShown = false },
+    })
+  }
+
+  @Builder
+  ImageMenu() {
+    Menu() {
+      MenuItem({ content: AppStrings.R_IMAGE_UPLOAD_ACTION_NEW, symbolStartIcon: this.uploadImageIcon })
+        .onClick(() => { this.runImageAction(this.onImageUpload) })
+      // V2EX gallery upload is not built yet (deferred behind a live endpoint capture); keep the row
+      // visible-but-disabled so the menu communicates the roadmap.
+      MenuItem({
+        content: AppStrings.R_IMAGE_UPLOAD_ACTION_FROM_V2EX,
+        symbolStartIcon: this.v2exGalleryIcon,
+        labelInfo: AppStrings.R_IMAGE_UPLOAD_V2EX_COMING_SOON,
+      })
+        .enabled(false)
+      MenuItem({ content: AppStrings.R_IMAGE_UPLOAD_ACTION_LINK, symbolStartIcon: this.insertLinkIcon })
+        .onClick(() => { this.runImageAction(this.onInsertImageLink) })
+    }
+  }
+
+  // Reset-then-open so the controlled menu re-opens reliably on every tap (matches the project's
+  // show*Menu() convention); run the chosen action after the menu has dismissed.
+  private showImageMenu(): void {
+    this.imageMenuShown = false
+    setTimeout(() => { this.imageMenuShown = true }, 20)
+  }
+
+  private runImageAction(action?: () => void): void {
+    this.imageMenuShown = false
+    if (action) {
+      setTimeout(() => { action() }, 80)
+    }
   }
 
   private fire(action?: () => void): void {

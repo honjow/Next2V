@@ -50,8 +50,11 @@ export struct ImageUploadSettingsPage {
 
   @Builder
   ConfigSection() {
-    GroupedListSection() {
-      Column({ space: ThemeConstants.SPACE_LG }) {
+    // Inset form card (inset SPACE_XL / RADIUS_CARD), matching the editable-field sections in
+    // NetworkProxy/Domain settings — the plain GroupedListSection default inset (4) crams the field and
+    // button against the card edges.
+    GroupedListSection({ inset: ThemeConstants.SPACE_XL, radius: ThemeConstants.RADIUS_CARD }) {
+      Column({ space: ThemeConstants.SPACE_MD }) {
         Text(AppStrings.R_IMAGE_UPLOAD_IMGUR_HINT)
           .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
           .fontColor($r('sys.color.font_secondary'))

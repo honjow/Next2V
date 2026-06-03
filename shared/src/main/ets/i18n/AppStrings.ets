@@ -670,7 +670,6 @@ export class AppStrings {
   static readonly R_ACCOUNT_BALANCE_GOLD: Resource = $r('app.string.account_balance_gold')
   static readonly R_ACCOUNT_BALANCE_SILVER: Resource = $r('app.string.account_balance_silver')
   static readonly R_ACCOUNT_BALANCE_BRONZE: Resource = $r('app.string.account_balance_bronze')
-  static readonly R_IMAGE_UPLOAD_SHEET_TITLE: Resource = $r('app.string.image_upload_sheet_title')
   static readonly R_IMAGE_UPLOAD_ACTION_NEW: Resource = $r('app.string.image_upload_action_new')
   static readonly R_IMAGE_UPLOAD_ACTION_FROM_V2EX: Resource = $r('app.string.image_upload_action_from_v2ex')
   static readonly R_IMAGE_UPLOAD_ACTION_LINK: Resource = $r('app.string.image_upload_action_link')

@@ -2789,10 +2789,6 @@
       "value": "이 백업에는 계정과 로그인 정보가 포함되어 현재 계정을 대체합니다."
     },
     {
-      "name": "image_upload_sheet_title",
-      "value": "이미지 삽입"
-    },
-    {
       "name": "image_upload_action_new",
       "value": "새 이미지 업로드"
     },

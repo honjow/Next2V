@@ -2789,10 +2789,6 @@
       "value": "This backup includes accounts and login info, which will replace the current accounts."
     },
     {
-      "name": "image_upload_sheet_title",
-      "value": "Insert image"
-    },
-    {
       "name": "image_upload_action_new",
       "value": "Upload a new image"
     },

@@ -183,7 +183,8 @@ export struct TopicEditorPage {
           onQuote: () => { this.insertLinePrefix('> ') },
           onList: () => { this.insertLinePrefix('- ') },
           onLink: () => { this.insertInlineMarkdown('[', '](https://)') },
-          onImage: () => { this.showImageActionSheet() }
+          onImageUpload: () => { this.pickAndUploadImage() },
+          onInsertImageLink: () => { this.insertInlineMarkdown('![', '](https://)') }
         })
 
         if (this.errorMessage) {
@@ -337,20 +338,6 @@ export struct TopicEditorPage {
     this.contentSelectionStart = 0
     this.contentSelectionEnd = 0
     this.scheduleSaveDraft()
-  }
-
-  // Image button → choose: upload a new image (Imgur), pick from the V2EX gallery (coming soon), or
-  // insert a bare image-link skeleton (the former behavior).
-  private showImageActionSheet(): void {
-    ActionSheet.show({
-      title: AppStrings.R_IMAGE_UPLOAD_SHEET_TITLE,
-      message: '',
-      sheets: [
-        { title: AppStrings.R_IMAGE_UPLOAD_ACTION_NEW, action: () => { this.pickAndUploadImage() } },
-        { title: AppStrings.R_IMAGE_UPLOAD_ACTION_FROM_V2EX, action: () => { this.showToast(AppStrings.text(AppStrings.R_IMAGE_UPLOAD_V2EX_COMING_SOON, 'Coming soon')) } },
-        { title: AppStrings.R_IMAGE_UPLOAD_ACTION_LINK, action: () => { this.insertInlineMarkdown('![', '](https://)') } },
-      ],
-    })
   }
 
   private async pickAndUploadImage(): Promise<void> {
