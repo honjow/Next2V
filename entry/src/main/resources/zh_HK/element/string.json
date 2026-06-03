@@ -2919,6 +2919,10 @@
     {
       "name": "image_upload_smms_get_token",
       "value": "取得 sm.ms API Token"
+    },
+    {
+      "name": "daily_checkin_reward_toast",
+      "value": "簽到成功，獲得 {0} 銅幣"
     }
   ]
 }

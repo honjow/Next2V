@@ -155,6 +155,13 @@ export interface V2exDailyMission {
   message: string
 }
 
+export interface V2exDailyRedeemResult {
+  // The re-fetched mission state after redeeming (canRedeem now false).
+  mission: V2exDailyMission
+  // 铜币 reward parsed from /balance (0 when it couldn't be read; the toast then omits the amount).
+  rewardCoins: number
+}
+
 export interface V2exUserReply {
   reply_key?: string
   topic_id: number

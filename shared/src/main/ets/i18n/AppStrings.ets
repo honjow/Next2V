@@ -414,6 +414,7 @@ export class AppStrings {
   static readonly R_READ_ACCOUNT_FAILED: Resource = $r('app.string.read_account_failed')
   static readonly R_ALREADY_CHECKED_IN_TODAY: Resource = $r('app.string.already_checked_in_today')
   static readonly R_CHECKIN_COMPLETED: Resource = $r('app.string.checkin_completed')
+  static readonly R_DAILY_CHECKIN_REWARD_TOAST: Resource = $r('app.string.daily_checkin_reward_toast')
   static readonly R_CHECKIN_FAILED: Resource = $r('app.string.checkin_failed')
   static readonly R_API_ERROR_AUTH_REQUIRED: Resource = $r('app.string.api_error_auth_required')
   static readonly R_API_ERROR_WEB_SESSION_EXPIRED: Resource = $r('app.string.api_error_web_session_expired')

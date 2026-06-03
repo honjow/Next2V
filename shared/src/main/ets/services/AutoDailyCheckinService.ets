@@ -1,7 +1,9 @@
 import { common } from '@kit.AbilityKit'
+import { promptAction } from '@kit.ArkUI'
 import { AutoDailyCheckinSettings } from '../settings/AutoDailyCheckinSettings'
 import { DiagnosticLogger } from '../diagnostics/DiagnosticLogger'
 import { ApiService } from '../network/ApiService'
+import { AppStrings } from '../i18n/AppStrings'
 import type { V2exDailyMission } from '../network/NetworkTypes'
 
 export interface AutoDailyCheckinResult {
@@ -9,6 +11,7 @@ export interface AutoDailyCheckinResult {
   redeemed: boolean
   reason: string
   message: string
+  rewardCoins: number
 }
 
 export class AutoDailyCheckinService {
@@ -72,16 +75,18 @@ export class AutoDailyCheckinService {
         return AutoDailyCheckinService.result(true, false, 'not-redeemable', mission.message)
       }
       DiagnosticLogger.info('auto_daily_checkin', 'auto_daily_checkin_redeem_start', { source: source })
-      const redeemedMission = await AutoDailyCheckinService.api.redeemDailyMissionWithCookie(
+      const redeemed = await AutoDailyCheckinService.api.redeemDailyMissionWithCookie(
         cleanCookie,
         mission.redeemPath,
       )
       await AutoDailyCheckinSettings.saveLastSuccessDate(context, today)
+      AutoDailyCheckinService.showRewardToast(redeemed.rewardCoins)
       DiagnosticLogger.info('auto_daily_checkin', 'auto_daily_checkin_redeem_success', {
         source: source,
-        messageCode: AutoDailyCheckinService.messageCode(redeemedMission.message)
+        messageCode: AutoDailyCheckinService.messageCode(redeemed.mission.message),
+        rewardCoins: redeemed.rewardCoins
       })
-      return AutoDailyCheckinService.result(true, true, 'redeemed', redeemedMission.message)
+      return AutoDailyCheckinService.result(true, true, 'redeemed', redeemed.mission.message, redeemed.rewardCoins)
     } catch (error) {
       const e = error as Error
       DiagnosticLogger.warn('auto_daily_checkin', 'auto_daily_checkin_error', { source: source, errorKind: e.name || 'Error' }, e)
@@ -125,8 +130,18 @@ export class AutoDailyCheckinService {
     redeemed: boolean,
     reason: string,
     message: string,
+    rewardCoins: number = 0,
   ): AutoDailyCheckinResult {
-    return { attempted: attempted, redeemed: redeemed, reason: reason, message: message }
+    return { attempted: attempted, redeemed: redeemed, reason: reason, message: message, rewardCoins: rewardCoins }
+  }
+
+  // User-facing feedback for a successful AUTO check-in (it runs post-login with no UI caller that would
+  // otherwise surface it). Shows the 铜币 reward when known, else a plain success.
+  private static showRewardToast(rewardCoins: number): void {
+    const message = rewardCoins > 0
+      ? AppStrings.format(AppStrings.text(AppStrings.R_DAILY_CHECKIN_REWARD_TOAST, 'Checked in: +{0} bronze'), [`${rewardCoins}`])
+      : AppStrings.text(AppStrings.R_CHECKIN_COMPLETED, 'Check-in completed')
+    promptAction.openToast({ message: message }).catch((_error: Error) => {})
   }
 
   private static cookieAttemptIdentity(cookie: string): string {

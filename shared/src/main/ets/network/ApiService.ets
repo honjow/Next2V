@@ -38,6 +38,7 @@ import type {
   V2exTokenInfo,
   V2exBalance,
   V2exDailyMission,
+  V2exDailyRedeemResult,
   V2exMemberPageSnapshot,
   V2exMemberActionState,
   V2exMemberRepliesPageSnapshot,
@@ -557,12 +558,22 @@ export class ApiService {
   async redeemDailyMissionWithCookie(
     cookie: string,
     redeemPath: string,
-  ): Promise<V2exDailyMission> {
+  ): Promise<V2exDailyRedeemResult> {
     if (!redeemPath) {
       throw ApiErrors.checkinNotAvailable()
     }
     await this.getCookieHtml(redeemPath, cookie)
-    return this.getDailyMissionWithCookie(cookie)
+    // Read the reward amount from /balance (the redeem response itself doesn't carry it reliably).
+    // Best-effort: a parse miss just drops the amount from the toast, never fails the check-in.
+    let rewardCoins = 0
+    try {
+      const balanceHtml = await this.getCookieHtml('/balance', cookie)
+      rewardCoins = V2exAccountParser.extractLatestDailyReward(balanceHtml)
+    } catch (_error) {
+      rewardCoins = 0
+    }
+    const mission = await this.getDailyMissionWithCookie(cookie)
+    return { mission: mission, rewardCoins: rewardCoins }
   }
 
   async getMyTopicsWithCookie(cookie: string, page: number = 1): Promise<V2exTopic[]> {

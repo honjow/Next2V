@@ -2919,6 +2919,10 @@
     {
       "name": "image_upload_smms_get_token",
       "value": "sm.ms の API トークンを取得"
+    },
+    {
+      "name": "daily_checkin_reward_toast",
+      "value": "チェックイン完了、銅貨 +{0}"
     }
   ]
 }

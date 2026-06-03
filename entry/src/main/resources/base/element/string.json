@@ -2919,6 +2919,10 @@
     {
       "name": "image_upload_smms_get_token",
       "value": "Get a sm.ms API token"
+    },
+    {
+      "name": "daily_checkin_reward_toast",
+      "value": "Checked in! +{0} bronze"
     }
   ]
 }

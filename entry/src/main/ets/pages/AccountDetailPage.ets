@@ -33,6 +33,7 @@ import {
   UserProfileParams,
   V2exBalance,
   V2exDailyMission,
+  V2exDailyRedeemResult,
   V2exAuthenticatedMember,
   translateApiError,
 } from 'shared'
@@ -429,10 +430,12 @@ export struct AccountDetailPage {
     this.isDailyRedeeming = true
     this.accountMetaError = ''
     this.api.redeemDailyMissionWithCookie(cookie, this.dailyMission.redeemPath)
-      .then((mission: V2exDailyMission) => {
-        this.dailyMission = mission
-        promptAction.openToast({ message: AppStrings.text(AppStrings.R_CHECKIN_COMPLETED, 'Check-in completed') })
-          .catch((_error: Error) => {})
+      .then((redeemed: V2exDailyRedeemResult) => {
+        this.dailyMission = redeemed.mission
+        const toastMessage = redeemed.rewardCoins > 0
+          ? AppStrings.format(AppStrings.text(AppStrings.R_DAILY_CHECKIN_REWARD_TOAST, 'Checked in: +{0} bronze'), [`${redeemed.rewardCoins}`])
+          : AppStrings.text(AppStrings.R_CHECKIN_COMPLETED, 'Check-in completed')
+        promptAction.openToast({ message: toastMessage }).catch((_error: Error) => {})
         this.loadAccountMeta()
       })
       .catch((error: Error) => {

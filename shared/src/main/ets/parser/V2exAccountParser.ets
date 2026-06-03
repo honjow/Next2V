@@ -38,9 +38,46 @@ export class V2exAccountParser {
   }
 
   private static extractRedeemPath(html: string): string {
-    const re = /href=['"]([^'"]*\/mission\/daily\/redeem\?once=\d+[^'"]*)['"]/i
+    // V2EX's /mission/daily renders the claim button as <input value="领取 N 铜币"
+    // onclick="location.href = '/mission/daily/redeem?once=NNN'"> — the redeem URL lives in the ONCLICK,
+    // not an href attribute. Matching only `href=` (the old regex) missed it entirely, so canRedeem was
+    // always false → the account showed 已签到 even when claimable, and auto-checkin found nothing to
+    // redeem. Match the URL anywhere instead (mirrors liaoliao666/v2ex). When already checked in the page
+    // shows "查看我的账户余额" and carries no redeem?once= URL, so an anywhere-match stays correct.
+    const re = /\/mission\/daily\/redeem\?once=\d+/i
     const m = html.match(re)
-    return m && m[1] ? V2exAccountParser.decodeHtml(m[1]) : ''
+    return m ? V2exAccountParser.decodeHtml(m[0]) : ''
+  }
+
+  /**
+   * Reward amount (铜币) of the most recent "每日登录" entry on the /balance table, used for the post
+   * check-in toast. V2EX's balance table row is [time, 每日登录…, delta, balance]; the delta cell right
+   * after the description is the reward. Returns 0 when not found (toast falls back to a plain success).
+   */
+  static extractLatestDailyReward(html: string): number {
+    const rowRe = /<tr[^>]*>([\s\S]*?)<\/tr>/gi
+    let row: RegExpExecArray | null = rowRe.exec(html)
+    while (row) {
+      if (row[1].indexOf('每日登录') >= 0) {
+        const cells: string[] = []
+        const cellRe = /<td[^>]*>([\s\S]*?)<\/td>/gi
+        let cell: RegExpExecArray | null = cellRe.exec(row[1])
+        while (cell) {
+          cells.push(V2exAccountParser.compactText(cell[1]))
+          cell = cellRe.exec(row[1])
+        }
+        for (let i = 0; i < cells.length; i++) {
+          if (cells[i].indexOf('每日登录') >= 0 && i + 1 < cells.length) {
+            const amount = Number.parseFloat(cells[i + 1].replace(/[^0-9.]/g, ''))
+            if (Number.isFinite(amount) && amount > 0) {
+              return amount
+            }
+          }
+        }
+      }
+      row = rowRe.exec(html)
+    }
+    return 0
   }
 
   private static extractBalanceArea(html: string): V2exBalance | null {

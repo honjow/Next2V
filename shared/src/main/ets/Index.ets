@@ -266,6 +266,7 @@ export type {
   V2exTokenInfo,
   V2exBalance,
   V2exDailyMission,
+  V2exDailyRedeemResult,
   V2exUserReply,
   V2exMemberActionState,
   V2exMemberPageSnapshot,

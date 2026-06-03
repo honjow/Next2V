@@ -11,6 +11,7 @@ import {
   V2exAuthenticatedMember,
   V2exBalance,
   V2exDailyMission,
+  V2exDailyRedeemResult,
   V2exTokenInfo,
   translateApiError,
   ApiError,
@@ -943,10 +944,13 @@ export struct AccountDashboardPage {
     this.accountMetaError = ''
     DiagnosticLogger.info('account', 'account_daily_redeem_start', { canRedeem: true })
     this.api.redeemDailyMissionWithCookie(cookie, this.dailyMission.redeemPath)
-      .then((mission: V2exDailyMission) => {
-        this.dailyMission = mission
-        DiagnosticLogger.info('account', 'account_daily_redeem_success', { canRedeem: mission.canRedeem === true, messageCode: mission.message ? 'message_present' : '' })
-        promptAction.openToast({ message: AccountPageCoordinator.dailyMissionMessage(mission.message) || AppStrings.text(AppStrings.R_CHECKIN_COMPLETED, 'Check-in completed') }).catch((_error: Error) => {
+      .then((redeemed: V2exDailyRedeemResult) => {
+        this.dailyMission = redeemed.mission
+        DiagnosticLogger.info('account', 'account_daily_redeem_success', { canRedeem: redeemed.mission.canRedeem === true, messageCode: redeemed.mission.message ? 'message_present' : '', rewardCoins: redeemed.rewardCoins })
+        const toastMessage = redeemed.rewardCoins > 0
+          ? AppStrings.format(AppStrings.text(AppStrings.R_DAILY_CHECKIN_REWARD_TOAST, 'Checked in: +{0} bronze'), [`${redeemed.rewardCoins}`])
+          : (AccountPageCoordinator.dailyMissionMessage(redeemed.mission.message) || AppStrings.text(AppStrings.R_CHECKIN_COMPLETED, 'Check-in completed'))
+        promptAction.openToast({ message: toastMessage }).catch((_error: Error) => {
         })
         this.loadAccountMeta(true)
       })
