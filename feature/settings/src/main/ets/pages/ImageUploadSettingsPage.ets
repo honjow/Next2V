@@ -50,10 +50,10 @@ export struct ImageUploadSettingsPage {
 
   @Builder
   ConfigSection() {
-    // Inset form card (inset SPACE_XL / RADIUS_CARD), matching the editable-field sections in
-    // NetworkProxy/Domain settings — the plain GroupedListSection default inset (4) crams the field and
-    // button against the card edges.
-    GroupedListSection({ inset: ThemeConstants.SPACE_XL, radius: ThemeConstants.RADIUS_CARD }) {
+    // Form card. Inset SPACE_MD (12) so the field/button content lands on the SAME left edge as the
+    // ConciseListRow links below it (their text sits at section-inset 4 + text-indent 8 = 12 from the card
+    // edge); SPACE_XL (24) double-inset the content and read as too much side padding.
+    GroupedListSection({ inset: ThemeConstants.SPACE_MD, radius: ThemeConstants.RADIUS_CARD }) {
       Column({ space: ThemeConstants.SPACE_MD }) {
         Text(AppStrings.R_IMAGE_UPLOAD_IMGUR_HINT)
           .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
