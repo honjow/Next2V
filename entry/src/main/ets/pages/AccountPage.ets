@@ -3,7 +3,7 @@ import { promptAction } from '@kit.ArkUI'
 import {
   AccountRateLimitSummary,
   AccountSignedInCard,
-  AccountTokenSummary
+  AccountTokenSummary,
 } from '../components/AccountDashboardComponents'
 import {
   AppStrings,
@@ -17,11 +17,9 @@ import {
   ApiError,
   ApiErrorCode,
   ApiErrors,
-  isApiError
+  isApiError,
 } from 'shared'
-import {
-  AccountStore,
-} from 'shared'
+import { AccountStore } from 'shared'
 import type { AccountRecord } from 'shared'
 import {
   ActiveAccountState,
@@ -58,59 +56,61 @@ import {
   UserProfileParams,
   V2exCookieTwoFactorRequiredError,
   V2exSessionParser,
-  V2exSigninParser
+  V2exSigninParser,
 } from 'shared'
 import { AccountLocalContentCoordinator } from '../model/AccountLocalContentCoordinator'
 import { AccountPageCoordinator } from '../model/AccountPageCoordinator'
-
+import { DailyCheckinWebRunner } from '../components/DailyCheckinWebRunner'
 @ComponentV2
 export struct AccountDashboardPage {
   // ns from NavStackHolder (was @Consume('ns')).
-  private ns: NavPathStack = connectNavStack().stack
+  private ns: NavPathStack = connectNavStack().stack;
   // Auth/session/active-account/rate-limit/local-data read from their V2 mirrors (each dual-written at
   // its service chokepoint) — replaces the AUTH_* / ACTIVE_ACCOUNT_ID / API_RATE_LIMIT_* / LOCAL_DATA_*
   // @StorageLink. The @Monitor methods below replace the former @Watch reactions.
-  private authIdentity: AuthIdentityState = connectAuthIdentity()
-  private authCookie: AuthCookieState = connectAuthCookie()
-  private session: AuthSessionSignalState = connectAuthSessionSignal()
-  private activeAccount: ActiveAccountState = connectActiveAccount()
-  private rateLimit: ApiRateLimitState = connectApiRateLimit()
-  private localData: LocalDataSignalState = connectLocalDataSignal()
-  private localContentStats: LocalContentStatsState = connectLocalContentStats()
+  private authIdentity: AuthIdentityState = connectAuthIdentity();
+  private authCookie: AuthCookieState = connectAuthCookie();
+  private session: AuthSessionSignalState = connectAuthSessionSignal();
+  private activeAccount: ActiveAccountState = connectActiveAccount();
+  private rateLimit: ApiRateLimitState = connectApiRateLimit();
+  private localData: LocalDataSignalState = connectLocalDataSignal();
+  private localContentStats: LocalContentStatsState = connectLocalContentStats();
   // storedUsername is the API-token fallback identity, page-managed; the local counts are page-computed
   // and re-published through LocalDataPublisher into the V2 LocalContentStatsState mirror so a later
   // page mount / cold open still sees them.
-  @Local private storedUsername: string = ''
-  @Local private savedTopicCount: number = 0
-  @Local private savedNodeCount: number = 0
-  @Local private viewedTopicCount: number = 0
-  @Local private authToken: string = ''
-  @Local private authProfile: V2exAuthenticatedMember | null = null
-  @Local private tokenInfo: V2exTokenInfo | null = null
-  @Local private tokenInfoError: string = ''
-  @Local private authError: string = ''
-  @Local private sessionError: string = ''
-  @Local private isSessionValidating: boolean = false
-  @Local private isAuthLoading: boolean = false
-  @Local private accountBalance: V2exBalance | null = null
-  @Local private dailyMission: V2exDailyMission | null = null
-  @Local private accountMetaError: string = ''
-  @Local private isAccountMetaLoading: boolean = false
-  @Local private isDailyRedeeming: boolean = false
-  private http: HttpClient = HttpClient.getInstance()
-  private api: ApiService = new ApiService()
-  private localStatsRequestId: number = 0
-  private localStatsInFlight: boolean = false
-  private accountListInFlight: boolean = false
-  private dashboardRefreshTimerId: number = -1
-  private accountMetaRequestId: number = 0
-  @Local private accountsCount: number = 0
-  @Local private isAccountsLoaded: boolean = false
-  @Local private activeAccountUsername: string = ''
-  @Local private activeAccountAvatar: string = ''
-  @Param refreshKey: number = 0
-  @Param scroller: Scroller = new Scroller()
-  @Event onDidScroll?: (offset: number, state: ScrollState) => void
+  @Local private storedUsername: string = '';
+  @Local private savedTopicCount: number = 0;
+  @Local private savedNodeCount: number = 0;
+  @Local private viewedTopicCount: number = 0;
+  @Local private authToken: string = '';
+  @Local private authProfile: V2exAuthenticatedMember | null = null;
+  @Local private tokenInfo: V2exTokenInfo | null = null;
+  @Local private tokenInfoError: string = '';
+  @Local private authError: string = '';
+  @Local private sessionError: string = '';
+  @Local private isSessionValidating: boolean = false;
+  @Local private isAuthLoading: boolean = false;
+  @Local private accountBalance: V2exBalance | null = null;
+  @Local private dailyMission: V2exDailyMission | null = null;
+  @Local private accountMetaError: string = '';
+  @Local private isAccountMetaLoading: boolean = false;
+  @Local private isDailyRedeeming: boolean = false;
+  // Bumped to run the hidden-WebView daily check-in (HTTP redeem is blocked by V2EX's anti-bot).
+  @Local private checkinTrigger: number = 0;
+  private http: HttpClient = HttpClient.getInstance();
+  private api: ApiService = new ApiService();
+  private localStatsRequestId: number = 0;
+  private localStatsInFlight: boolean = false;
+  private accountListInFlight: boolean = false;
+  private dashboardRefreshTimerId: number = -1;
+  private accountMetaRequestId: number = 0;
+  @Local private accountsCount: number = 0;
+  @Local private isAccountsLoaded: boolean = false;
+  @Local private activeAccountUsername: string = '';
+  @Local private activeAccountAvatar: string = '';
+  @Param refreshKey: number = 0;
+  @Param scroller: Scroller = new Scroller();
+  @Event onDidScroll?: (offset: number, state: ScrollState) => void;
 
   aboutToAppear(): void {
     this.hydrateLocalCounts()
@@ -174,12 +174,20 @@ export struct AccountDashboardPage {
           if (this.onDidScroll) {
             this.onDidScroll(offset, state)
           }
-        }
+        },
       }) {
+        ListItem() {
+          DailyCheckinWebRunner({
+            trigger: this.checkinTrigger,
+            baseUrl: this.http.getBaseUrl(),
+            onRunResult: (status: string, rewardCoins: number) => {
+              this.onCheckinResult(status, rewardCoins)
+            },
+          })
+        }
         ListItem() {
           this.SectionHeader(AccountPageCoordinator.SECTION_ACCOUNT)
         }
-
         ListItem() {
           this.AuthSection()
         }
@@ -194,21 +202,17 @@ export struct AccountDashboardPage {
             this.AccountContentSection()
           }
         }
-
         ListItem() {
           this.SectionHeader(AccountPageCoordinator.SECTION_LOCAL_CONTENT)
         }
         .margin({ top: ThemeConstants.SPACE_MD })
-
         ListItem() {
           this.LocalContentSection()
         }
-
         ListItem() {
           this.SectionHeader(AccountPageCoordinator.SECTION_MORE)
         }
         .margin({ top: ThemeConstants.SPACE_MD })
-
         ListItem() {
           this.StorageSection()
         }
@@ -248,7 +252,7 @@ export struct AccountDashboardPage {
           subtitle: AccountPageCoordinator.LOGIN_SUBTITLE,
           action: () => {
             this.ns.pushPathByName('V2exNativeLogin', null)
-          }
+          },
         })
       }
     } else {
@@ -267,7 +271,7 @@ export struct AccountDashboardPage {
             if (this.canOpenActiveAccountDetail()) {
               this.ns.pushPathByName('AccountDetail', null)
             }
-          }
+          },
         })
       }
     }
@@ -278,7 +282,11 @@ export struct AccountDashboardPage {
     Text(message)
       .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
       .fontColor(isError ? Color.Red : $r('sys.color.font_secondary'))
-      .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG, bottom: ThemeConstants.SPACE_SM })
+      .padding({
+        left: ThemeConstants.SPACE_LG,
+        right: ThemeConstants.SPACE_LG,
+        bottom: ThemeConstants.SPACE_SM,
+      })
   }
 
   @Builder
@@ -323,21 +331,25 @@ export struct AccountDashboardPage {
         left: ThemeConstants.SPACE_LG,
         right: ThemeConstants.SPACE_LG,
         top: ThemeConstants.SPACE_MD,
-        bottom: ThemeConstants.SPACE_SM
+        bottom: ThemeConstants.SPACE_SM,
       })
 
       if (this.tokenInfoError) {
         Text(this.tokenInfoError)
           .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
           .fontColor(Color.Red)
-          .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG, bottom: ThemeConstants.SPACE_SM })
+          .padding({
+            left: ThemeConstants.SPACE_LG,
+            right: ThemeConstants.SPACE_LG,
+            bottom: ThemeConstants.SPACE_SM,
+          })
       }
 
       if (this.tokenInfo) {
         AccountTokenSummary({
           scope: this.tokenScope(),
           expiration: this.tokenExpiration(),
-          lastUsed: this.tokenLastUsed()
+          lastUsed: this.tokenLastUsed(),
         })
       }
 
@@ -347,7 +359,7 @@ export struct AccountDashboardPage {
           limit: this.rateLimit.limit,
           remaining: this.rateLimit.remaining,
           resetAt: this.rateLimit.reset,
-          updatedAt: this.rateLimit.updatedAt
+          updatedAt: this.rateLimit.updatedAt,
         })
       }
 
@@ -385,7 +397,7 @@ export struct AccountDashboardPage {
         count: this.savedTopicCount,
         action: () => {
           this.ns.pushPathByName('SavedTopics', null)
-        }
+        },
       })
       this.SettingsDivider()
       ConciseListRow({
@@ -393,7 +405,7 @@ export struct AccountDashboardPage {
         count: this.viewedTopicCount,
         action: () => {
           this.ns.pushPathByName('ViewedTopics', null)
-        }
+        },
       })
       this.SettingsDivider()
       ConciseListRow({
@@ -401,7 +413,7 @@ export struct AccountDashboardPage {
         count: this.savedNodeCount,
         action: () => {
           this.ns.pushPathByName('SavedNodes', null)
-        }
+        },
       })
     }
   }
@@ -409,9 +421,10 @@ export struct AccountDashboardPage {
   @Builder
   SearchEntryRow() {
     ConciseListRow({
-      title: AccountPageCoordinator.LOCAL_SEARCH_TITLE, action: () => {
+      title: AccountPageCoordinator.LOCAL_SEARCH_TITLE,
+      action: () => {
         this.ns.pushPathByName('Search', null)
-      }
+      },
     })
   }
 
@@ -422,7 +435,7 @@ export struct AccountDashboardPage {
         title: AccountPageCoordinator.ABOUT_TITLE,
         action: () => {
           this.ns.pushPathByName('About', null)
-        }
+        },
       })
     }
   }
@@ -436,7 +449,7 @@ export struct AccountDashboardPage {
       this.authCookie.configured,
       this.authIdentity.tokenConfigured,
       this.accountsCount,
-      this.session.username
+      this.session.username,
     )
   }
 
@@ -449,9 +462,11 @@ export struct AccountDashboardPage {
   }
 
   private hasRestoredActiveAccountIdentity(): boolean {
-    return !!this.activeAccount.id &&
+    return (
+      !!this.activeAccount.id &&
       this.hasCookieAccount() &&
       !!(this.activeAccountUsername || this.session.username)
+    )
   }
 
   private loadAccounts(): void {
@@ -481,14 +496,18 @@ export struct AccountDashboardPage {
       })
   }
 
-  private loadActiveAccountIdentity(context: common.UIAbilityContext, records: AccountRecord[]): void {
+  private loadActiveAccountIdentity(
+    context: common.UIAbilityContext,
+    records: AccountRecord[],
+  ): void {
     if (records.length === 0) {
       this.activeAccountUsername = ''
       this.activeAccountAvatar = ''
       return
     }
     const activeId = AccountStore.getActiveId()
-    const fallbackRecord = records.find((record: AccountRecord) => record.id === activeId) ?? records[0]
+    const fallbackRecord =
+      records.find((record: AccountRecord) => record.id === activeId) ?? records[0]
     if (!activeId) {
       this.applyActiveAccountIdentity(fallbackRecord)
       return
@@ -505,7 +524,8 @@ export struct AccountDashboardPage {
   private applyActiveAccountIdentity(record: AccountRecord | null): void {
     const nextUsername = record?.username || ''
     const nextAvatar = record?.avatar || ''
-    const changed = nextUsername !== this.activeAccountUsername || nextAvatar !== this.activeAccountAvatar
+    const changed =
+      nextUsername !== this.activeAccountUsername || nextAvatar !== this.activeAccountAvatar
     this.activeAccountUsername = nextUsername
     this.activeAccountAvatar = nextAvatar
     if (changed) {
@@ -525,7 +545,7 @@ export struct AccountDashboardPage {
       this.authProfile,
       this.storedUsername,
       this.activeAccountUsername,
-      this.activeAccountAvatar
+      this.activeAccountAvatar,
     ).username
   }
 
@@ -539,7 +559,7 @@ export struct AccountDashboardPage {
       this.authProfile,
       this.storedUsername,
       this.activeAccountUsername,
-      this.activeAccountAvatar
+      this.activeAccountAvatar,
     ).avatarUrl
   }
 
@@ -549,7 +569,7 @@ export struct AccountDashboardPage {
       this.authIdentity.tokenConfigured,
       this.accountBalance,
       this.isAccountMetaLoading,
-      this.accountMetaError
+      this.accountMetaError,
     )
   }
 
@@ -562,7 +582,7 @@ export struct AccountDashboardPage {
       this.hasCookieAccount(),
       this.isAccountMetaLoading,
       this.isDailyRedeeming,
-      this.dailyMission
+      this.dailyMission,
     )
   }
 
@@ -594,7 +614,7 @@ export struct AccountDashboardPage {
     return AccountPageCoordinator.hasApiRateLimitSnapshot(
       this.rateLimit.limit,
       this.rateLimit.updatedAt,
-      this.rateLimit.reset
+      this.rateLimit.reset,
     )
   }
 
@@ -606,7 +626,7 @@ export struct AccountDashboardPage {
         this.storedUsername = snapshot.username
         DiagnosticLogger.info('account', 'account_auth_snapshot_loaded', {
           hasToken: !!snapshot.token,
-          usernameHash: DiagnosticLogger.ownerHash(snapshot.username)
+          usernameHash: DiagnosticLogger.ownerHash(snapshot.username),
         })
         if (snapshot.token) {
           this.refreshAuthProfile(snapshot.token)
@@ -630,10 +650,9 @@ export struct AccountDashboardPage {
       .catch((error: Error) => {
         DiagnosticLogger.warn('account', 'account_cookie_restore_error', {}, error)
       })
-    AuthSessionSettings.load(context)
-      .catch((error: Error) => {
-        console.error('restore auth session failed: ' + error.message)
-      })
+    AuthSessionSettings.load(context).catch((error: Error) => {
+      console.error('restore auth session failed: ' + error.message)
+    })
   }
 
   private validateCookieSession(force: boolean = false): void {
@@ -648,7 +667,10 @@ export struct AccountDashboardPage {
     }
     const now = Date.now()
     if (!force && this.session.validatedAt > 0 && now - this.session.validatedAt < 10 * 60 * 1000) {
-      DiagnosticLogger.info('account', 'account_session_validate_skip', { reason: 'recent', force: force })
+      DiagnosticLogger.info('account', 'account_session_validate_skip', {
+        reason: 'recent',
+        force: force,
+      })
       return
     }
     const startedAt = Date.now()
@@ -656,10 +678,11 @@ export struct AccountDashboardPage {
     this.sessionError = ''
     DiagnosticLogger.info('account', 'account_session_validate_start', {
       force: force,
-      usernameHash: DiagnosticLogger.ownerHash(this.currentUsername())
+      usernameHash: DiagnosticLogger.ownerHash(this.currentUsername()),
     })
     const headers: Record<string, string> = { 'Cookie': cookie }
-    this.http.getTextResponseWithHeaders('/settings', headers)
+    this.http
+      .getTextResponseWithHeaders('/settings', headers)
       .then((res) => {
         if (res.location.indexOf('/2fa') >= 0 || V2exSigninParser.extractTwoFactorForm(res.text)) {
           throw new V2exCookieTwoFactorRequiredError('/settings')
@@ -668,31 +691,34 @@ export struct AccountDashboardPage {
         if (!username) {
           throw ApiErrors.webSessionExpired()
         }
-        return this.api.getMember(username)
-          .then((profile) => {
-            const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-            return AuthSessionSettings.save(context, {
-              loginMode: 'cookie',
-              username: username,
-              avatar: profile.avatar_normal || '',
-              validatedAt: Date.now()
+        return this.api.getMember(username).then((profile) => {
+          const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+          return AuthSessionSettings.save(context, {
+            loginMode: 'cookie',
+            username: username,
+            avatar: profile.avatar_normal || '',
+            validatedAt: Date.now(),
+          }).then(() => {
+            DiagnosticLogger.info('account', 'account_session_validate_success', {
+              force: force,
+              usernameHash: DiagnosticLogger.ownerHash(username),
+              durationMs: Date.now() - startedAt,
             })
-              .then(() => {
-                DiagnosticLogger.info('account', 'account_session_validate_success', {
-                  force: force,
-                  usernameHash: DiagnosticLogger.ownerHash(username),
-                  durationMs: Date.now() - startedAt
-                })
-                this.loadAccountMeta(true)
-              })
+            this.loadAccountMeta(true)
           })
+        })
       })
       .catch((error: Error) => {
         if (error instanceof V2exCookieTwoFactorRequiredError) {
           this.openTwoFactorFromCookie()
           return
         }
-        DiagnosticLogger.warn('account', 'account_session_validate_error', { force: force, durationMs: Date.now() - startedAt }, error)
+        DiagnosticLogger.warn(
+          'account',
+          'account_session_validate_error',
+          { force: force, durationMs: Date.now() - startedAt },
+          error,
+        )
         const message = translateApiError(error)
         this.sessionError = message
         this.handleExpiredCookieSession(error, message)
@@ -711,8 +737,7 @@ export struct AccountDashboardPage {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     CookieJarSettings.clearForBaseUrl(context, HttpClient.getInstance().getBaseUrl())
       .then(() => AuthSessionSettings.clear(context))
-      .catch((_error: Error) => {
-      })
+      .catch((_error: Error) => {})
       .finally(() => {
         this.accountBalance = null
         this.dailyMission = null
@@ -724,16 +749,26 @@ export struct AccountDashboardPage {
     const cookie = CookieJarSettings.getCurrentCookie()
     DiagnosticLogger.warn('account', 'account_session_two_factor_required', {})
     if (!cookie) {
-      this.sessionError = AppStrings.text(AppStrings.R_TWO_FACTOR_RELOGIN_REQUIRED, 'V2EX requires two-factor verification. Please sign in again')
+      this.sessionError = AppStrings.text(
+        AppStrings.R_TWO_FACTOR_RELOGIN_REQUIRED,
+        'V2EX requires two-factor verification. Please sign in again',
+      )
       return
     }
-    this.sessionError = AppStrings.text(AppStrings.R_TWO_FACTOR_REQUIRED, 'V2EX requires two-factor verification')
-    this.accountMetaError = AppStrings.text(AppStrings.R_TWO_FACTOR_REQUIRED, 'V2EX requires two-factor verification')
+    this.sessionError = AppStrings.text(
+      AppStrings.R_TWO_FACTOR_REQUIRED,
+      'V2EX requires two-factor verification',
+    )
+    this.accountMetaError = AppStrings.text(
+      AppStrings.R_TWO_FACTOR_REQUIRED,
+      'V2EX requires two-factor verification',
+    )
     TwoFactorChallengeService.request(cookie, 'account')
   }
 
   private refreshAuthProfile(token: string): void {
-    this.api.getAuthenticatedMember(token)
+    this.api
+      .getAuthenticatedMember(token)
       .then((profile: V2exAuthenticatedMember) => {
         this.authProfile = profile
         this.storedUsername = profile.username || this.storedUsername
@@ -745,11 +780,14 @@ export struct AccountDashboardPage {
 
   private refreshTokenInfo(token: string): void {
     this.tokenInfoError = ''
-    this.api.getTokenInfo(token)
+    this.api
+      .getTokenInfo(token)
       .then((info: V2exTokenInfo) => {
         if (info && info.success === false) {
           this.tokenInfo = null
-          this.tokenInfoError = info.message || AppStrings.text(AppStrings.R_TOKEN_INFO_FAILED, 'Failed to fetch token info')
+          this.tokenInfoError =
+            info.message ||
+            AppStrings.text(AppStrings.R_TOKEN_INFO_FAILED, 'Failed to fetch token info')
           return
         }
         this.tokenInfo = info
@@ -769,16 +807,16 @@ export struct AccountDashboardPage {
       title: AccountPageCoordinator.CLEAR_API_AUTH_TITLE,
       message: AccountPageCoordinator.CLEAR_API_AUTH_MESSAGE,
       primaryButton: {
-        value: AppStrings.text(AppStrings.R_COMMON_CANCEL, 'Cancel'), action: () => {
-        }
+        value: AppStrings.text(AppStrings.R_COMMON_CANCEL, 'Cancel'),
+        action: () => {},
       },
       secondaryButton: {
         value: AppStrings.text(AppStrings.R_COMMON_CLEAR, 'Clear'),
         fontColor: Color.Red,
         action: () => {
           this.clearAuth()
-        }
-      }
+        },
+      },
     })
   }
 
@@ -786,8 +824,7 @@ export struct AccountDashboardPage {
     const keepCookieAccount = this.hasCookieAccount()
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     AuthSettings.clear(context)
-      .then(() => NotificationSettings.clearCache(context).catch((_error: Error) => {
-      }))
+      .then(() => NotificationSettings.clearCache(context).catch((_error: Error) => {}))
       .then(() => {
         this.authToken = ''
         this.authProfile = null
@@ -829,17 +866,23 @@ export struct AccountDashboardPage {
     const cookie = CookieJarSettings.getCurrentCookie()
     const ownerKey = this.accountMetaOwnerKey()
     if (!cookie || !ownerKey) {
-      DiagnosticLogger.info('account', 'account_meta_cache_load_miss', { ownerHash: DiagnosticLogger.ownerHash(ownerKey) })
+      DiagnosticLogger.info('account', 'account_meta_cache_load_miss', {
+        ownerHash: DiagnosticLogger.ownerHash(ownerKey),
+      })
       return
     }
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     AccountMetaSettings.loadCache(context, ownerKey)
       .then((snapshot) => {
         if (!snapshot || snapshot.ownerKey !== this.accountMetaOwnerKey()) {
-          DiagnosticLogger.info('account', 'account_meta_cache_load_miss', { ownerHash: DiagnosticLogger.ownerHash(ownerKey) })
+          DiagnosticLogger.info('account', 'account_meta_cache_load_miss', {
+            ownerHash: DiagnosticLogger.ownerHash(ownerKey),
+          })
           return
         }
-        DiagnosticLogger.info('account', 'account_meta_cache_load_hit', { ownerHash: DiagnosticLogger.ownerHash(ownerKey) })
+        DiagnosticLogger.info('account', 'account_meta_cache_load_hit', {
+          ownerHash: DiagnosticLogger.ownerHash(ownerKey),
+        })
         if (snapshot.balance) {
           this.accountBalance = snapshot.balance
         }
@@ -848,7 +891,12 @@ export struct AccountDashboardPage {
         }
       })
       .catch((error: Error) => {
-        DiagnosticLogger.warn('account', 'account_meta_cache_load_error', { ownerHash: DiagnosticLogger.ownerHash(ownerKey) }, error)
+        DiagnosticLogger.warn(
+          'account',
+          'account_meta_cache_load_error',
+          { ownerHash: DiagnosticLogger.ownerHash(ownerKey) },
+          error,
+        )
       })
   }
 
@@ -859,12 +907,25 @@ export struct AccountDashboardPage {
       return
     }
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    AccountMetaSettings.saveCache(context, ownerKey, this.accountBalance, this.dailyMission, this.accountMetaSource())
+    AccountMetaSettings.saveCache(
+      context,
+      ownerKey,
+      this.accountBalance,
+      this.dailyMission,
+      this.accountMetaSource(),
+    )
       .then(() => {
-        DiagnosticLogger.info('account', 'account_meta_cache_save_success', { ownerHash: DiagnosticLogger.ownerHash(ownerKey) })
+        DiagnosticLogger.info('account', 'account_meta_cache_save_success', {
+          ownerHash: DiagnosticLogger.ownerHash(ownerKey),
+        })
       })
       .catch((error: Error) => {
-        DiagnosticLogger.warn('account', 'account_meta_cache_save_error', { ownerHash: DiagnosticLogger.ownerHash(ownerKey) }, error)
+        DiagnosticLogger.warn(
+          'account',
+          'account_meta_cache_save_error',
+          { ownerHash: DiagnosticLogger.ownerHash(ownerKey) },
+          error,
+        )
       })
   }
 
@@ -879,25 +940,37 @@ export struct AccountDashboardPage {
   private loadAccountMeta(force: boolean = false): void {
     const cookie = CookieJarSettings.getCurrentCookie()
     if (!cookie || this.isAccountMetaLoading) {
-      DiagnosticLogger.info('account', 'account_meta_fetch_skip', { reason: cookie ? 'in_flight' : 'no_cookie' })
+      DiagnosticLogger.info('account', 'account_meta_fetch_skip', {
+        reason: cookie ? 'in_flight' : 'no_cookie',
+      })
       return
     }
     if (!force && this.accountBalance && this.dailyMission) {
-      DiagnosticLogger.info('account', 'account_meta_fetch_skip', { reason: 'already_loaded', force: force })
+      DiagnosticLogger.info('account', 'account_meta_fetch_skip', {
+        reason: 'already_loaded',
+        force: force,
+      })
       return
     }
     this.isAccountMetaLoading = true
     this.accountMetaError = ''
     const requestId = ++this.accountMetaRequestId
     const ownerKey = this.accountMetaOwnerKey()
-    DiagnosticLogger.info('account', 'account_meta_fetch_start', { force: force, hasBalance: !!this.accountBalance, canRedeem: this.dailyMission ? this.dailyMission.canRedeem === true : false })
-    Promise.all([
-      this.api.getBalanceWithCookie(cookie),
-      this.api.getDailyMissionWithCookie(cookie)
-    ])
+    DiagnosticLogger.info('account', 'account_meta_fetch_start', {
+      force: force,
+      hasBalance: !!this.accountBalance,
+      canRedeem: this.dailyMission ? this.dailyMission.canRedeem === true : false,
+    })
+    Promise.all([this.api.getBalanceWithCookie(cookie), this.api.getDailyMissionWithCookie(cookie)])
       .then((results) => {
-        if (requestId !== this.accountMetaRequestId || cookie !== CookieJarSettings.getCurrentCookie() || ownerKey !== this.accountMetaOwnerKey()) {
-          DiagnosticLogger.info('account', 'account_meta_fetch_stale', { ownerHash: DiagnosticLogger.ownerHash(ownerKey) })
+        if (
+          requestId !== this.accountMetaRequestId ||
+          cookie !== CookieJarSettings.getCurrentCookie() ||
+          ownerKey !== this.accountMetaOwnerKey()
+        ) {
+          DiagnosticLogger.info('account', 'account_meta_fetch_stale', {
+            ownerHash: DiagnosticLogger.ownerHash(ownerKey),
+          })
           return
         }
         this.accountBalance = results[0]
@@ -905,13 +978,19 @@ export struct AccountDashboardPage {
         DiagnosticLogger.info('account', 'account_meta_fetch_success', {
           force: force,
           hasBalance: !!this.accountBalance,
-          canRedeem: this.dailyMission ? this.dailyMission.canRedeem === true : false
+          canRedeem: this.dailyMission ? this.dailyMission.canRedeem === true : false,
         })
         this.saveAccountMetaCache()
       })
       .catch((error: Error) => {
-        if (requestId !== this.accountMetaRequestId || cookie !== CookieJarSettings.getCurrentCookie() || ownerKey !== this.accountMetaOwnerKey()) {
-          DiagnosticLogger.info('account', 'account_meta_fetch_stale_error', { ownerHash: DiagnosticLogger.ownerHash(ownerKey) })
+        if (
+          requestId !== this.accountMetaRequestId ||
+          cookie !== CookieJarSettings.getCurrentCookie() ||
+          ownerKey !== this.accountMetaOwnerKey()
+        ) {
+          DiagnosticLogger.info('account', 'account_meta_fetch_stale_error', {
+            ownerHash: DiagnosticLogger.ownerHash(ownerKey),
+          })
           return
         }
         if (error instanceof V2exCookieTwoFactorRequiredError) {
@@ -931,44 +1010,67 @@ export struct AccountDashboardPage {
   private redeemDailyMission(): void {
     const cookie = CookieJarSettings.getCurrentCookie()
     if (!cookie || this.isDailyRedeeming) {
-      DiagnosticLogger.info('account', 'account_daily_redeem_skip', { reason: cookie ? 'in_flight' : 'no_cookie' })
-      return
-    }
-    if (!this.dailyMission || !this.dailyMission.canRedeem || !this.dailyMission.redeemPath) {
-      DiagnosticLogger.info('account', 'account_daily_redeem_skip', { reason: 'not_redeemable' })
-      promptAction.openToast({ message: AppStrings.text(AppStrings.R_ALREADY_CHECKED_IN_TODAY, 'Already checked in today') }).catch((_error: Error) => {
+      DiagnosticLogger.info('account', 'account_daily_redeem_skip', {
+        reason: cookie ? 'in_flight' : 'no_cookie',
       })
       return
     }
+    if (!this.dailyMission || !this.dailyMission.canRedeem) {
+      DiagnosticLogger.info('account', 'account_daily_redeem_skip', { reason: 'not_redeemable' })
+      promptAction
+        .openToast({
+          message: AppStrings.text(
+            AppStrings.R_ALREADY_CHECKED_IN_TODAY,
+            'Already checked in today',
+          ),
+        })
+        .catch((_error: Error) => {})
+      return
+    }
+    // V2EX's anti-bot blocks an HTTP redeem (verified on device), so run it inside the hidden ArkWeb
+    // runner (a real browser engine). The runner reports back via onCheckinResult.
     this.isDailyRedeeming = true
     this.accountMetaError = ''
     DiagnosticLogger.info('account', 'account_daily_redeem_start', { canRedeem: true })
-    this.api.redeemDailyMissionWithCookie(cookie)
-      .then((redeemed: V2exDailyRedeemResult) => {
-        this.dailyMission = redeemed.mission
-        DiagnosticLogger.info('account', 'account_daily_redeem_success', { canRedeem: redeemed.mission.canRedeem === true, messageCode: redeemed.mission.message ? 'message_present' : '', rewardCoins: redeemed.rewardCoins })
-        const toastMessage = redeemed.rewardCoins > 0
-          ? AppStrings.format(AppStrings.text(AppStrings.R_DAILY_CHECKIN_REWARD_TOAST, 'Checked in: +{0} bronze'), [`${redeemed.rewardCoins}`])
-          : (AccountPageCoordinator.dailyMissionMessage(redeemed.mission.message) || AppStrings.text(AppStrings.R_CHECKIN_COMPLETED, 'Check-in completed'))
-        promptAction.openToast({ message: toastMessage }).catch((_error: Error) => {
+    this.checkinTrigger = this.checkinTrigger + 1
+  }
+
+  private onCheckinResult(status: string, rewardCoins: number): void {
+    this.isDailyRedeeming = false
+    DiagnosticLogger.info('account', 'account_daily_redeem_result', {
+      status: status,
+      rewardCoins: rewardCoins,
+    })
+    if (status === 'success') {
+      const toastMessage =
+        rewardCoins > 0
+          ? AppStrings.format(
+              AppStrings.text(AppStrings.R_DAILY_CHECKIN_REWARD_TOAST, 'Checked in: +{0} bronze'),
+              [`${rewardCoins}`],
+            )
+          : AppStrings.text(AppStrings.R_CHECKIN_COMPLETED, 'Check-in completed')
+      promptAction.openToast({ message: toastMessage }).catch((_error: Error) => {})
+      this.loadAccountMeta(true)
+    } else if (status === 'already') {
+      promptAction
+        .openToast({
+          message: AppStrings.text(
+            AppStrings.R_ALREADY_CHECKED_IN_TODAY,
+            'Already checked in today',
+          ),
         })
-        this.loadAccountMeta(true)
-      })
-      .catch((error: Error) => {
-        if (error instanceof V2exCookieTwoFactorRequiredError) {
-          this.openTwoFactorFromCookie()
-          return
-        }
-        DiagnosticLogger.warn('account', 'account_daily_redeem_error', { canRedeem: this.dailyMission ? this.dailyMission.canRedeem === true : false }, error)
-        const message = translateApiError(error)
-        this.accountMetaError = message
-        this.handleExpiredCookieSession(error, message)
-        promptAction.openToast({ message: message }).catch((_error: Error) => {
+        .catch((_error: Error) => {})
+      this.loadAccountMeta(true)
+    } else {
+      promptAction
+        .openToast({
+          message: AppStrings.text(
+            AppStrings.R_API_ERROR_CHECKIN_NOT_AVAILABLE,
+            'Check-in unavailable',
+          ),
         })
-      })
-      .finally(() => {
-        this.isDailyRedeeming = false
-      })
+        .catch((_error: Error) => {})
+    }
   }
 
   private clearDashboardRefreshTimer(): void {
@@ -1023,5 +1125,4 @@ export struct AccountDashboardPage {
         this.localStatsInFlight = false
       })
   }
-
 }

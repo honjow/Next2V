@@ -3,6 +3,8 @@ import { promptAction } from '@kit.ArkUI'
 import { AutoDailyCheckinSettings } from '../settings/AutoDailyCheckinSettings'
 import { DiagnosticLogger } from '../diagnostics/DiagnosticLogger'
 import { ApiService } from '../network/ApiService'
+import { HttpClient } from '../network/HttpClient'
+import { connectWebCheckinRunner } from '../state/WebCheckinRunnerState'
 import { AppStrings } from '../i18n/AppStrings'
 import type { V2exDailyMission } from '../network/NetworkTypes'
 
@@ -27,23 +29,31 @@ export class AutoDailyCheckinService {
     const today = AutoDailyCheckinService.localDateString()
     const attemptIdentity = AutoDailyCheckinService.cookieAttemptIdentity(cleanCookie)
     if (!AutoDailyCheckinSettings.isEnabled()) {
-      DiagnosticLogger.info('auto_daily_checkin', 'auto_daily_checkin_skip_disabled', { source: source })
+      DiagnosticLogger.info('auto_daily_checkin', 'auto_daily_checkin_skip_disabled', {
+        source: source,
+      })
       return AutoDailyCheckinService.result(false, false, 'disabled', '')
     }
     if (!cleanCookie) {
-      DiagnosticLogger.info('auto_daily_checkin', 'auto_daily_checkin_skip_no_cookie', { source: source })
+      DiagnosticLogger.info('auto_daily_checkin', 'auto_daily_checkin_skip_no_cookie', {
+        source: source,
+      })
       return AutoDailyCheckinService.result(false, false, 'no-cookie', '')
     }
     if (AutoDailyCheckinService.inFlight) {
-      DiagnosticLogger.info('auto_daily_checkin', 'auto_daily_checkin_skip_in_flight', { source: source })
+      DiagnosticLogger.info('auto_daily_checkin', 'auto_daily_checkin_skip_in_flight', {
+        source: source,
+      })
       return AutoDailyCheckinService.result(false, false, 'in-flight', '')
     }
-    if (AutoDailyCheckinSettings.getLastAttemptDate() === today &&
-      AutoDailyCheckinSettings.getLastAttemptIdentity() === attemptIdentity) {
+    if (
+      AutoDailyCheckinSettings.getLastAttemptDate() === today &&
+      AutoDailyCheckinSettings.getLastAttemptIdentity() === attemptIdentity
+    ) {
       DiagnosticLogger.info('auto_daily_checkin', 'auto_daily_checkin_skip_already_attempted', {
         source: source,
         date: today,
-        identityFingerprint: attemptIdentity
+        identityFingerprint: attemptIdentity,
       })
       return AutoDailyCheckinService.result(false, false, 'already-attempted', '')
     }
@@ -52,17 +62,20 @@ export class AutoDailyCheckinService {
     DiagnosticLogger.info('auto_daily_checkin', 'auto_daily_checkin_attempt_start', {
       source: source,
       date: today,
-      identityFingerprint: attemptIdentity
+      identityFingerprint: attemptIdentity,
     })
     try {
       await AutoDailyCheckinSettings.saveLastAttemptDate(context, today, attemptIdentity)
-      DiagnosticLogger.info('auto_daily_checkin', 'auto_daily_checkin_attempt_saved', { source: source, date: today })
+      DiagnosticLogger.info('auto_daily_checkin', 'auto_daily_checkin_attempt_saved', {
+        source: source,
+        date: today,
+      })
       const mission = await AutoDailyCheckinService.api.getDailyMissionWithCookie(cleanCookie)
       DiagnosticLogger.info('auto_daily_checkin', 'auto_daily_checkin_mission_loaded', {
         source: source,
         canRedeem: mission.canRedeem === true,
         canAttemptRedeem: !!mission.redeemPath,
-        messageCode: AutoDailyCheckinService.messageCode(mission.message)
+        messageCode: AutoDailyCheckinService.messageCode(mission.message),
       })
       if (!mission.canRedeem || !mission.redeemPath) {
         const alreadyDone = AutoDailyCheckinService.isAlreadyDoneMessage(mission.message)
@@ -70,26 +83,71 @@ export class AutoDailyCheckinService {
         DiagnosticLogger.info('auto_daily_checkin', 'auto_daily_checkin_not_redeemable', {
           source: source,
           alreadyDone: alreadyDone,
-          messageCode: AutoDailyCheckinService.messageCode(mission.message)
+          messageCode: AutoDailyCheckinService.messageCode(mission.message),
         })
         return AutoDailyCheckinService.result(true, false, 'not-redeemable', mission.message)
       }
-      DiagnosticLogger.info('auto_daily_checkin', 'auto_daily_checkin_redeem_start', { source: source })
-      const redeemed = await AutoDailyCheckinService.api.redeemDailyMissionWithCookie(cleanCookie)
-      await AutoDailyCheckinSettings.saveLastSuccessDate(context, today)
-      AutoDailyCheckinService.showRewardToast(redeemed.rewardCoins)
-      DiagnosticLogger.info('auto_daily_checkin', 'auto_daily_checkin_redeem_success', {
+      DiagnosticLogger.info('auto_daily_checkin', 'auto_daily_checkin_redeem_request', {
         source: source,
-        messageCode: AutoDailyCheckinService.messageCode(redeemed.mission.message),
-        rewardCoins: redeemed.rewardCoins
       })
-      return AutoDailyCheckinService.result(true, true, 'redeemed', redeemed.mission.message, redeemed.rewardCoins)
+      // The redeem itself can't go over HTTP (V2EX's anti-bot rejects a headless request), so hand off to
+      // the globally-mounted hidden ArkWeb runner — a real browser engine that passes the check. It reports
+      // back through handleWebResult(), where the last-success breadcrumb + reward toast are written once
+      // the navigation has actually claimed.
+      AutoDailyCheckinService.requestWebRedeem()
+      return AutoDailyCheckinService.result(true, false, 'redeem-requested', mission.message)
     } catch (error) {
       const e = error as Error
-      DiagnosticLogger.warn('auto_daily_checkin', 'auto_daily_checkin_error', { source: source, errorKind: e.name || 'Error' }, e)
+      DiagnosticLogger.warn(
+        'auto_daily_checkin',
+        'auto_daily_checkin_error',
+        { source: source, errorKind: e.name || 'Error' },
+        e,
+      )
       return AutoDailyCheckinService.result(true, false, 'error', e.message || '')
     } finally {
       AutoDailyCheckinService.inFlight = false
+    }
+  }
+
+  // Ask the nav-shell hidden Web runner to perform the redeem for the current account (whose cookie the
+  // runner restores into the Web cookie jar). Fire-and-forget — the result returns via handleWebResult().
+  private static requestWebRedeem(): void {
+    const runner = connectWebCheckinRunner()
+    runner.baseUrl = HttpClient.getInstance().getBaseUrl()
+    runner.requestId = runner.requestId + 1
+  }
+
+  // Called by the nav-shell runner when the hidden Web check-in finishes. Persists the success breadcrumb
+  // and surfaces the reward toast (auto check-in has no visible caller that would otherwise show it).
+  static async handleWebResult(
+    context: common.UIAbilityContext,
+    status: string,
+    rewardCoins: number,
+  ): Promise<void> {
+    DiagnosticLogger.info('auto_daily_checkin', 'auto_daily_checkin_web_result', {
+      status: status,
+      rewardCoins: rewardCoins,
+    })
+    if (status !== 'success' && status !== 'already') {
+      return
+    }
+    try {
+      await AutoDailyCheckinSettings.saveLastSuccessDate(
+        context,
+        AutoDailyCheckinService.localDateString(),
+      )
+    } catch (error) {
+      const e = error as Error
+      DiagnosticLogger.warn(
+        'auto_daily_checkin',
+        'auto_daily_checkin_web_persist_error',
+        { errorKind: e.name || 'Error' },
+        e,
+      )
+    }
+    if (status === 'success') {
+      AutoDailyCheckinService.showRewardToast(rewardCoins)
     }
   }
 
@@ -105,7 +163,12 @@ export class AutoDailyCheckinService {
   }
 
   private static isAlreadyDoneMessage(message: string): boolean {
-    return (message || '') === 'already_checked_in_today' || (message || '').indexOf('已签到') >= 0 || (message || '').indexOf('已领取') >= 0 || (message || '').indexOf('已完成') >= 0
+    return (
+      (message || '') === 'already_checked_in_today' ||
+      (message || '').indexOf('已签到') >= 0 ||
+      (message || '').indexOf('已领取') >= 0 ||
+      (message || '').indexOf('已完成') >= 0
+    )
   }
 
   private static messageCode(message: string): string {
@@ -129,15 +192,25 @@ export class AutoDailyCheckinService {
     message: string,
     rewardCoins: number = 0,
   ): AutoDailyCheckinResult {
-    return { attempted: attempted, redeemed: redeemed, reason: reason, message: message, rewardCoins: rewardCoins }
+    return {
+      attempted: attempted,
+      redeemed: redeemed,
+      reason: reason,
+      message: message,
+      rewardCoins: rewardCoins,
+    }
   }
 
   // User-facing feedback for a successful AUTO check-in (it runs post-login with no UI caller that would
   // otherwise surface it). Shows the 铜币 reward when known, else a plain success.
   private static showRewardToast(rewardCoins: number): void {
-    const message = rewardCoins > 0
-      ? AppStrings.format(AppStrings.text(AppStrings.R_DAILY_CHECKIN_REWARD_TOAST, 'Checked in: +{0} bronze'), [`${rewardCoins}`])
-      : AppStrings.text(AppStrings.R_CHECKIN_COMPLETED, 'Check-in completed')
+    const message =
+      rewardCoins > 0
+        ? AppStrings.format(
+            AppStrings.text(AppStrings.R_DAILY_CHECKIN_REWARD_TOAST, 'Checked in: +{0} bronze'),
+            [`${rewardCoins}`],
+          )
+        : AppStrings.text(AppStrings.R_CHECKIN_COMPLETED, 'Check-in completed')
     promptAction.openToast({ message: message }).catch((_error: Error) => {})
   }
 

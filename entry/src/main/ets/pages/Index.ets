@@ -21,6 +21,7 @@ import {
   ApiConstants,
   ApiService,
   AuthSettings,
+  AutoDailyCheckinService,
   connectAccountWebViewAction,
   connectAccountWebViewUrl,
   connectAuthSessionSignal,
@@ -41,6 +42,7 @@ import {
   connectTwoFactor,
   connectUserProfileAction,
   connectUserProfileAppbar,
+  connectWebCheckinRunner,
   connectWebLoginAction,
   publishNotificationUnreadCount,
   publishPendingV2exUrl,
@@ -55,6 +57,7 @@ import {
   sendTopicEditorSubmit,
   TwoFactorState,
   UserProfileAppbarState,
+  WebCheckinRunnerState,
   CookieJarSettings,
   SearchQueryBus,
   FoldScreenUtil,
@@ -113,6 +116,7 @@ import {
   UserProfileIdentityCCBuilder,
 } from '../components/IndexTitleBarComponents'
 import { MainTabIcon } from '../components/MainTabIcon'
+import { DailyCheckinWebRunner } from '../components/DailyCheckinWebRunner'
 import { V2exTwoFactorPrompt } from '../components/V2exTwoFactorPrompt'
 import {
   TopicDetailTitleAction,
@@ -123,9 +127,7 @@ import {
   IndexTitleBarCoordinator,
   IndexTitleMenuDescriptor,
 } from '../model/IndexTitleBarCoordinator'
-import {
-  NotificationCenterViewModel,
-} from '../viewmodel/NotificationCenterViewModel'
+import { NotificationCenterViewModel } from '../viewmodel/NotificationCenterViewModel'
 import type { IndexDestinationDescriptor } from '../model/IndexRouteCoordinator'
 import { IndexRouteCoordinator } from '../model/IndexRouteCoordinator'
 
@@ -136,8 +138,8 @@ struct Index {
   // migrated @ComponentV2 routed pages read the identical stack via connectNavStack().stack. With every
   // @Consume('ns') consumer migrated, Index no longer needs to @Provide it.
   private ns: NavPathStack = connectNavStack().stack;
-  private readonly HOME_TAB_SCROLL_DELTA_PX: number = 6
-  private readonly HOME_TAB_ANIMATION_GUARD_MS: number = 180
+  private readonly HOME_TAB_SCROLL_DELTA_PX: number = 6;
+  private readonly HOME_TAB_ANIMATION_GUARD_MS: number = 180;
   private tc: HdsTabsController = new HdsTabsController();
   private homeTabScrollers: Scroller[] = [
     new Scroller(),
@@ -151,9 +153,9 @@ struct Index {
     AppStrings.R_TAB_NOTIFICATIONS,
     AppStrings.R_TAB_ME,
   ];
-  private homeTabLastScrollOffsets: number[] = [0, 0, 0, 0]
-  private homeTabVisibleByScroll: boolean = true
-  private homeTabAnimationGuardTimerId: number = -1
+  private homeTabLastScrollOffsets: number[] = [0, 0, 0, 0];
+  private homeTabVisibleByScroll: boolean = true;
+  private homeTabAnimationGuardTimerId: number = -1;
   @Local ct: number = 0;
   // Appbar identity + command/flag state the migrated producer pages (TopicDetailPage / NodeTopicPage /
   // UserProfilePage) report UP, read reactively in the title-bar builders via these @ObservedV2 mirrors,
@@ -180,6 +182,8 @@ struct Index {
   @Local private notificationRefreshKey: number = 0;
   @Local private accountRefreshKey: number = 0;
   @Local private isFoldedAndUseOuterScreen: boolean = false;
+  // Drives the nav-shell hidden ArkWeb daily check-in runner (auto check-in handoff; see WebCheckinRunnerState).
+  @Local private webCheckin: WebCheckinRunnerState = connectWebCheckinRunner();
   private http: HttpClient = HttpClient.getInstance();
   private notificationVm: NotificationCenterViewModel = new NotificationCenterViewModel(
     new ApiService(),
@@ -195,7 +199,10 @@ struct Index {
     // re-renders cannot recreate it and re-mount the @ComponentV2 FeedPills (which would churn its recenter).
     if (!this.pillBarContent) {
       this.pillBarContent = new ComponentContent<Object>(
-        this.getUIContext(), wrapBuilder<[Object]>(PillCCBuilder), new Object())
+        this.getUIContext(),
+        wrapBuilder<[Object]>(PillCCBuilder),
+        new Object(),
+      )
     }
     this.consumePendingV2exUrl()
     this.refreshNotificationBadge()
@@ -284,7 +291,11 @@ struct Index {
   }
 
   private applyHomeTabScrollAnimation(visible: boolean): void {
-    if (!this.homeTab.autoHide || this.homeTabAnimationGuardTimerId !== -1 || this.homeTabVisibleByScroll === visible) {
+    if (
+      !this.homeTab.autoHide ||
+      this.homeTabAnimationGuardTimerId !== -1 ||
+      this.homeTabVisibleByScroll === visible
+    ) {
       return
     }
     this.homeTabVisibleByScroll = visible
@@ -456,106 +467,131 @@ struct Index {
   }
 
   build() {
-    HdsNavigation(this.ns) {
-      HdsTabs({ controller: this.tc, index: this.ct }) {
-        TabContent() {
-          HomePage({
-            onScrollerReady: (scroller: Scroller) => {
-              this.setHomeTabScroller(0, scroller)
-            },
-            onDidScroll: (offset: number, state: ScrollState) => {
-              this.onHomeTabDidScroll(0, offset, state)
-            },
-          })
-        }.tabBar(this.TabIcon(AppStrings.R_SETTINGS_HOME, 0))
-        TabContent() {
-          DiscoverPage({
-            currentTab: this.ct,
-            scroller: this.homeTabScrollers[1],
-            onDidScroll: (offset: number, state: ScrollState) => {
-              this.onHomeTabDidScroll(1, offset, state)
-            },
-          })
-        }.tabBar(this.TabIcon(AppStrings.R_TAB_DISCOVER, 1))
-        TabContent() {
-          NotificationPage({
-            refreshKey: this.notificationRefreshKey,
-            currentTab: this.ct,
-            scroller: this.homeTabScrollers[2],
-            onDidScroll: (offset: number, state: ScrollState) => {
-              this.onHomeTabDidScroll(2, offset, state)
-            },
-          })
-        }.tabBar(this.TabIcon(AppStrings.R_TAB_NOTIFICATIONS, 2))
-        TabContent() {
-          AccountDashboardPage({
-            refreshKey: this.accountRefreshKey,
-            scroller: this.homeTabScrollers[3],
-            onDidScroll: (offset: number, state: ScrollState) => {
-              this.onHomeTabDidScroll(3, offset, state)
-            },
-          })
-        }.tabBar(this.TabIcon(AppStrings.R_TAB_ME, 3))
+    Stack() {
+      HdsNavigation(this.ns) {
+        HdsTabs({ controller: this.tc, index: this.ct }) {
+          TabContent() {
+            HomePage({
+              onScrollerReady: (scroller: Scroller) => {
+                this.setHomeTabScroller(0, scroller)
+              },
+              onDidScroll: (offset: number, state: ScrollState) => {
+                this.onHomeTabDidScroll(0, offset, state)
+              },
+            })
+          }.tabBar(this.TabIcon(AppStrings.R_SETTINGS_HOME, 0))
+          TabContent() {
+            DiscoverPage({
+              currentTab: this.ct,
+              scroller: this.homeTabScrollers[1],
+              onDidScroll: (offset: number, state: ScrollState) => {
+                this.onHomeTabDidScroll(1, offset, state)
+              },
+            })
+          }.tabBar(this.TabIcon(AppStrings.R_TAB_DISCOVER, 1))
+          TabContent() {
+            NotificationPage({
+              refreshKey: this.notificationRefreshKey,
+              currentTab: this.ct,
+              scroller: this.homeTabScrollers[2],
+              onDidScroll: (offset: number, state: ScrollState) => {
+                this.onHomeTabDidScroll(2, offset, state)
+              },
+            })
+          }.tabBar(this.TabIcon(AppStrings.R_TAB_NOTIFICATIONS, 2))
+          TabContent() {
+            AccountDashboardPage({
+              refreshKey: this.accountRefreshKey,
+              scroller: this.homeTabScrollers[3],
+              onDidScroll: (offset: number, state: ScrollState) => {
+                this.onHomeTabDidScroll(3, offset, state)
+              },
+            })
+          }.tabBar(this.TabIcon(AppStrings.R_TAB_ME, 3))
+        }
+        .barOverlap(true)
+        .barPosition(BarPosition.End)
+        .barMode(BarMode.Fixed)
+        .scrollable(false)
+        .animationDuration(0)
+        .barFloatingStyle({
+          barBottomMargin: ThemeConstants.SPACE_XL,
+          adaptToHandedness: true,
+          systemMaterialEffect: {
+            materialType: hdsMaterial.MaterialType.ADAPTIVE,
+            materialLevel: hdsMaterial.MaterialLevel.ADAPTIVE,
+          },
+        } as HdsTabsFloatingStyle)
+        .onAppear(() => {
+          this.applyHomeTabAutoHide()
+        })
+        .onChange((i: number) => {
+          this.ct = i
+          if (i === 2) {
+            this.notificationBadgeRequestId++
+            this.notificationRefreshKey++
+          }
+          if (i !== 2) {
+            this.refreshNotificationBadge()
+          }
+          if (i === 3) {
+            this.accountRefreshKey++
+          }
+          if (this.homeTab.autoHide) {
+            this.restoreHomeTabIfHidden()
+          }
+        })
       }
-      .barOverlap(true)
-      .barPosition(BarPosition.End)
-      .barMode(BarMode.Fixed)
-      .scrollable(false)
-      .animationDuration(0)
-      .barFloatingStyle({
-        barBottomMargin: ThemeConstants.SPACE_XL,
-        adaptToHandedness: true,
-        systemMaterialEffect: {
-          materialType: hdsMaterial.MaterialType.ADAPTIVE,
-          materialLevel: hdsMaterial.MaterialLevel.ADAPTIVE,
-        },
-      } as HdsTabsFloatingStyle)
-      .onAppear(() => {
-        this.applyHomeTabAutoHide()
+      .titleBar(this.titleBarOptions())
+      .titleMode(HdsNavigationTitleMode.MINI)
+      .hideBackButton(true)
+      .dynamicHideTitleBar({
+        hideTitleArea: this.ct === 1 || this.ct === 2,
+        hideBottomBuilder: this.ct === 1,
+        hideStatusBar: false,
+        mode: HideMode.SCROLL_UP,
       })
-      .onChange((i: number) => {
-        this.ct = i
-        if (i === 2) {
-          this.notificationBadgeRequestId++
-          this.notificationRefreshKey++
-        }
-        if (i !== 2) {
-          this.refreshNotificationBadge()
-        }
-        if (i === 3) {
-          this.accountRefreshKey++
-        }
-        if (this.homeTab.autoHide) {
-          this.restoreHomeTabIfHidden()
-        }
+      .ignoreLayoutSafeArea(
+        [LayoutSafeAreaType.SYSTEM],
+        [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM],
+      )
+      .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
+      .navDestination(this.pm)
+      .mode(NavigationMode.Stack)
+      .width('100%')
+      .height('100%')
+      .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
+      .bindSheet(
+        $$this.twoFactorVisible,
+        this.GlobalTwoFactorSheet(),
+        towFASheetOptions(SheetSize.MEDIUM, () => {
+          TwoFactorChallengeService.cancel()
+        }),
+      )
+      // Hidden 1×1 ArkWeb runner for AUTO daily check-in (V2EX's anti-bot blocks a headless redeem). Always
+      // mounted so check-in can run at login / startup even before the Me tab is first created. Manual
+      // check-in uses its own runner inside AccountPage.
+      DailyCheckinWebRunner({
+        trigger: this.webCheckin.requestId,
+        baseUrl: this.webCheckin.baseUrl,
+        onRunResult: (status: string, rewardCoins: number) => {
+          this.onAutoCheckinWebResult(status, rewardCoins)
+        },
       })
     }
-    .titleBar(this.titleBarOptions())
-    .titleMode(HdsNavigationTitleMode.MINI)
-    .hideBackButton(true)
-    .dynamicHideTitleBar({
-      hideTitleArea: this.ct === 1 || this.ct === 2,
-      hideBottomBuilder: this.ct === 1,
-      hideStatusBar: false,
-      mode: HideMode.SCROLL_UP,
-    })
-    .ignoreLayoutSafeArea(
-      [LayoutSafeAreaType.SYSTEM],
-      [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM],
-    )
-    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
-    .navDestination(this.pm)
-    .mode(NavigationMode.Stack)
     .width('100%')
     .height('100%')
-    .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
-    .bindSheet(
-      $$this.twoFactorVisible,
-      this.GlobalTwoFactorSheet(),
-      towFASheetOptions(SheetSize.MEDIUM, () => {
-        TwoFactorChallengeService.cancel()
-      }),
+  }
+
+  private onAutoCheckinWebResult(status: string, rewardCoins: number): void {
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    AutoDailyCheckinService.handleWebResult(context, status, rewardCoins).catch(
+      (_error: Error) => {},
     )
+    if (status === 'success' || status === 'already') {
+      // Refresh the account card so the freshly-claimed balance / 已签到 state shows.
+      this.accountRefreshKey++
+    }
   }
 
   @Builder
@@ -796,10 +832,15 @@ struct Index {
     // Route-id guard so a stacked detail page can't show a stale ignore state for a topic
     // it isn't drawing (the appbar mirror is a shared singleton across the detail stack).
     const routeId = topicId > 0 ? topicId.toString() : ''
-    return this.topicDetailAppbar.topicIgnored && this.topicDetailAppbar.topicIgnoredRouteId === routeId
+    return (
+      this.topicDetailAppbar.topicIgnored && this.topicDetailAppbar.topicIgnoredRouteId === routeId
+    )
   }
 
-  private topicDetailTitleActionLabel(descriptor: TopicDetailTitleActionDescriptor, topicId: number): ResourceStr {
+  private topicDetailTitleActionLabel(
+    descriptor: TopicDetailTitleActionDescriptor,
+    topicId: number,
+  ): ResourceStr {
     if (descriptor.action === 'ignoreTopic' && this.isTopicIgnoredForRoute(topicId)) {
       return AppStrings.R_TOPIC_ACTION_UNIGNORE_TOPIC
     }
@@ -1113,7 +1154,10 @@ struct Index {
     if (this.ct === 0) {
       if (!this.pillBarContent) {
         this.pillBarContent = new ComponentContent<Object>(
-          this.getUIContext(), wrapBuilder<[Object]>(PillCCBuilder), new Object())
+          this.getUIContext(),
+          wrapBuilder<[Object]>(PillCCBuilder),
+          new Object(),
+        )
       }
       let cc = this.pillBarContent
       let bb: Record<string, Object> = {
