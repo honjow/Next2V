@@ -24,8 +24,13 @@ interface V2exJsNumberArrayExtraction {
  */
 export class V2exTabParser {
   static parseTopicList(html: string): V2exTopic[] {
+    // Strip <script>/<style>/comments FIRST. V2EX's lscache topic-read tracker embeds an example link in a
+    // JS comment — `// href is something like "/t/1234#reply567"` — and the placeholder fallback below used
+    // to match that `/t/1234`, producing a bogus empty-title topic that navigated to an unrelated topic
+    // (seen on nodes whose real rows didn't parse, e.g. ServerCC). Stripping non-content removes the trap.
+    const clean = V2exTabParser.stripNonContent(html || '')
     const topics: V2exTopic[] = []
-    const cells = V2exTabParser.extractTopicCells(html || '')
+    const cells = V2exTabParser.extractTopicCells(clean)
     const seen: Set<number> = new Set()
     for (const cell of cells) {
       const topic = V2exTabParser.parseTopicCell(cell)
@@ -37,7 +42,16 @@ export class V2exTabParser {
     if (topics.length > 0) {
       return topics
     }
-    return V2exTabParser.extractTopicIds(html).map((id: number): V2exTopic => V2exTabParser.placeholderTopic(id))
+    return V2exTabParser.extractTopicIds(clean).map((id: number): V2exTopic => V2exTabParser.placeholderTopic(id))
+  }
+
+  // Remove scripts, styles, and HTML comments so topic-id extraction never picks up `/t/NNN` references
+  // that live in tracking JS or comments rather than the real topic list.
+  private static stripNonContent(html: string): string {
+    return (html || '')
+      .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, ' ')
+      .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, ' ')
+      .replace(/<!--[\s\S]*?-->/g, ' ')
   }
 
   /** Extract login-state ignored topic IDs and blocked member IDs from V2EX topic-list scripts. */
@@ -59,10 +73,12 @@ export class V2exTabParser {
    * 优先匹配主列表里的 topic-link，避免右栏热门主题污染不同 tab 的结果。
    */
   static extractTopicIds(html: string): number[] {
+    // Strip non-content so the `/t/NNN` fallback never matches tracking-JS / comment links.
+    const clean = V2exTabParser.stripNonContent(html)
     const ids: Set<number> = new Set()
     const topicLinkRegex = /id=["']topic-link-(\d+)["']/g
     let match: RegExpExecArray | null
-    while ((match = topicLinkRegex.exec(html)) !== null) {
+    while ((match = topicLinkRegex.exec(clean)) !== null) {
       ids.add(parseInt(match[1], 10))
     }
     if (ids.size > 0) {
@@ -70,7 +86,7 @@ export class V2exTabParser {
     }
 
     const regex = /\/t\/(\d+)/g
-    while ((match = regex.exec(html)) !== null) {
+    while ((match = regex.exec(clean)) !== null) {
       ids.add(parseInt(match[1], 10))
     }
     return Array.from(ids)

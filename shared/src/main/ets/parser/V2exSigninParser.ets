@@ -255,7 +255,12 @@ export class V2exSigninParser {
         placeholder.indexOf('动态') >= 0 ||
         placeholder.indexOf('安全码') >= 0
     })
-    return preferred ? preferred.name : (candidates.length === 1 ? candidates[0].name : '')
+    // Only a field that POSITIVELY identifies as a 2FA code field counts. The former
+    // "any single text input" fallback misclassified a node page's create-topic form (whose lone `title`
+    // input became a fake code field) as a 2FA challenge, so logged-in users saw a spurious 2FA error
+    // on nodes whose topics mention 2fa/两步/totp (e.g. Codex, 站点状态). Every real V2EX 2FA form names
+    // its field `code`/`otp`, which the preferred check above already catches.
+    return preferred ? preferred.name : ''
   }
 
   private static extractCaptchaUrl(html: string): string {

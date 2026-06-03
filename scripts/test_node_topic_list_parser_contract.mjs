@@ -41,7 +41,15 @@ function productionTopicCellRegex() {
   return Function(`return ${match[1]}`)()
 }
 
-function extractTopicIdsLikeProduction(html) {
+function stripNonContent(html) {
+  return String(html || '')
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<!--[\s\S]*?-->/g, ' ')
+}
+
+function extractTopicIdsLikeProduction(rawHtml) {
+  const html = stripNonContent(rawHtml)
   const ids = new Set()
   const topicLinkRegex = /id=["']topic-link-(\d+)["']/g
   let match
@@ -71,7 +79,8 @@ function parseTopicCellLikeProduction(cell) {
   return { id, title: decode(title), member: { username, avatar }, replies }
 }
 
-function parseTopicListLikeProduction(html) {
+function parseTopicListLikeProduction(rawHtml) {
+  const html = stripNonContent(rawHtml)
   const regex = productionTopicCellRegex()
   const cells = []
   let match
@@ -99,5 +108,33 @@ assert.equal(topics[0].replies, 3, 'node page topic must parse non-zero reply co
 assert.match(apiSource, /normalizeNodeTopics\s*\(/, 'getNodeTopicsPage must normalize node identity onto node-page topics before TopicCard renders')
 assert.match(apiSource, /name:\s*nodeName|name:\s*clean/, 'node topic normalization must populate node.name from the current /go/{node} route')
 assert.match(apiSource, /title:\s*nodeTitle|title:\s*clean/, 'node topic normalization must populate node.title so NodeTag is not blank')
+
+// Regression: an EMPTY node (no real topic rows) must NOT invent a phantom topic. V2EX's lscache
+// topic-read tracker embeds `// href is something like "/t/1234#reply567"` in a <script>; the old
+// `/t/NNN` fallback matched it, producing an empty-title card that navigated to an unrelated topic
+// (the ServerCC symptom). Stripping non-content before extraction kills the phantom.
+const emptyNodeWithLscacheScript = `
+<div class="box">
+  <div class="cell"><table><tr><td><a href="/member/honjow"><img class="avatar" alt="honjow" /></a></td></tr></table></div>
+</div>
+<script type="text/javascript">
+(function(){ var aLink = document.querySelector('a.topic-link');
+  // href is something like "/t/1234#reply567"
+  if (aLink) { var href = aLink.getAttribute('href'); var key = 'tp' + href.split('/')[2]; }
+})();
+</script>`
+assert.equal(
+  parseTopicListLikeProduction(emptyNodeWithLscacheScript).length,
+  0,
+  'empty node must not fabricate a phantom topic from the lscache script comment /t/1234',
+)
+assert.equal(
+  extractTopicIdsLikeProduction(emptyNodeWithLscacheScript).length,
+  0,
+  'topic-id extraction must ignore /t/NNN inside <script> blocks',
+)
+// Source must strip non-content before topic extraction.
+assert.match(parserSource, /private static stripNonContent\(/, 'V2exTabParser must define stripNonContent')
+assert.match(parserSource, /stripNonContent\(html\)/, 'extractTopicIds must strip non-content')
 
 console.log('node topic list parser contract passed')

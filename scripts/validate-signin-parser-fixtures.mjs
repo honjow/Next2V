@@ -198,7 +198,9 @@ function findTwoFactorCodeField(inputs) {
       placeholder.includes('2fa') || placeholder.includes('otp') || placeholder.includes('code') ||
       placeholder.includes('验证码') || placeholder.includes('动态') || placeholder.includes('安全码')
   })
-  return preferred ? preferred.name : (candidates.length === 1 ? candidates[0].name : '')
+  // Mirrors V2exSigninParser: only a positively-identified 2FA code field counts (no single-input
+  // fallback, which misclassified a node create-topic form's `title` field as a 2FA challenge).
+  return preferred ? preferred.name : ''
 }
 
 function extractTwoFactorForm(html) {
