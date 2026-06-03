@@ -141,7 +141,8 @@ export struct AccountSignedInCard {
 
       Button(this.dailyMissionText)
         .fontSize(ThemeConstants.FONT_SIZE_TAG)
-        .height(ThemeConstants.TOUCH_TARGET_SM)
+        .height(30)
+        .padding({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
         .type(ButtonType.Normal)
         .borderRadius(ThemeConstants.RADIUS_MD)
         .fontColor(this.dailyMissionEnabled ? Color.White : $r('sys.color.font_secondary'))

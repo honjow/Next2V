@@ -555,16 +555,30 @@ export class ApiService {
     return V2exAccountParser.extractDailyMission(html)
   }
 
-  async redeemDailyMissionWithCookie(
-    cookie: string,
-    redeemPath: string,
-  ): Promise<V2exDailyRedeemResult> {
-    if (!redeemPath) {
+  async redeemDailyMissionWithCookie(cookie: string): Promise<V2exDailyRedeemResult> {
+    if (!cookie) {
+      throw ApiErrors.authRequired()
+    }
+    // Re-fetch /mission/daily and redeem with THAT page's current once, atomically. Then VALIDATE: V2EX
+    // guards the daily check-in with a browser-fingerprint anti-bot ("请用一个干净安装的浏览器重试") that
+    // silently refuses an automated GET and just re-serves the claim page — the old code trusted the
+    // request blindly and reported success even though nothing was claimed. If the page is still claimable
+    // after the attempt, surface a failure instead of a false success.
+    const freshHtml = await this.getCookieHtml('/mission/daily', cookie)
+    if (!V2exSessionParser.extractUsername(freshHtml)) {
+      throw ApiErrors.webSessionExpired()
+    }
+    const fresh = V2exAccountParser.extractDailyMission(freshHtml)
+    if (!fresh.canRedeem || !fresh.redeemPath) {
+      // Nothing to claim (already checked in / unavailable) — return the current state, not an error.
+      return { mission: fresh, rewardCoins: 0 }
+    }
+    const redeemHtml = await this.getCookieHtml(fresh.redeemPath, cookie)
+    const after = V2exAccountParser.extractDailyMission(redeemHtml)
+    if (after.canRedeem) {
       throw ApiErrors.checkinNotAvailable()
     }
-    await this.getCookieHtml(redeemPath, cookie)
-    // Read the reward amount from /balance (the redeem response itself doesn't carry it reliably).
-    // Best-effort: a parse miss just drops the amount from the toast, never fails the check-in.
+    // Best-effort reward amount from /balance ("每日登录" row); a parse miss just drops it from the toast.
     let rewardCoins = 0
     try {
       const balanceHtml = await this.getCookieHtml('/balance', cookie)
@@ -572,8 +586,7 @@ export class ApiService {
     } catch (_error) {
       rewardCoins = 0
     }
-    const mission = await this.getDailyMissionWithCookie(cookie)
-    return { mission: mission, rewardCoins: rewardCoins }
+    return { mission: after, rewardCoins: rewardCoins }
   }
 
   async getMyTopicsWithCookie(cookie: string, page: number = 1): Promise<V2exTopic[]> {

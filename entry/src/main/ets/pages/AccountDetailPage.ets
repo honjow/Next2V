@@ -429,7 +429,7 @@ export struct AccountDetailPage {
     }
     this.isDailyRedeeming = true
     this.accountMetaError = ''
-    this.api.redeemDailyMissionWithCookie(cookie, this.dailyMission.redeemPath)
+    this.api.redeemDailyMissionWithCookie(cookie)
       .then((redeemed: V2exDailyRedeemResult) => {
         this.dailyMission = redeemed.mission
         const toastMessage = redeemed.rewardCoins > 0

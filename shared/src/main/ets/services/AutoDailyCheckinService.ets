@@ -75,10 +75,7 @@ export class AutoDailyCheckinService {
         return AutoDailyCheckinService.result(true, false, 'not-redeemable', mission.message)
       }
       DiagnosticLogger.info('auto_daily_checkin', 'auto_daily_checkin_redeem_start', { source: source })
-      const redeemed = await AutoDailyCheckinService.api.redeemDailyMissionWithCookie(
-        cleanCookie,
-        mission.redeemPath,
-      )
+      const redeemed = await AutoDailyCheckinService.api.redeemDailyMissionWithCookie(cleanCookie)
       await AutoDailyCheckinSettings.saveLastSuccessDate(context, today)
       AutoDailyCheckinService.showRewardToast(redeemed.rewardCoins)
       DiagnosticLogger.info('auto_daily_checkin', 'auto_daily_checkin_redeem_success', {

@@ -943,7 +943,7 @@ export struct AccountDashboardPage {
     this.isDailyRedeeming = true
     this.accountMetaError = ''
     DiagnosticLogger.info('account', 'account_daily_redeem_start', { canRedeem: true })
-    this.api.redeemDailyMissionWithCookie(cookie, this.dailyMission.redeemPath)
+    this.api.redeemDailyMissionWithCookie(cookie)
       .then((redeemed: V2exDailyRedeemResult) => {
         this.dailyMission = redeemed.mission
         DiagnosticLogger.info('account', 'account_daily_redeem_success', { canRedeem: redeemed.mission.canRedeem === true, messageCode: redeemed.mission.message ? 'message_present' : '', rewardCoins: redeemed.rewardCoins })
