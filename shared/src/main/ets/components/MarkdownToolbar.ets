@@ -1,5 +1,6 @@
 import { ThemeConstants } from '../theme/ThemeConstants'
 import { AppStrings } from '../i18n/AppStrings'
+import { LengthMetrics, SegmentButtonV2Items, TabSegmentButtonV2 } from '@kit.ArkUI'
 
 @ComponentV2
 export struct MarkdownToolbar {
@@ -15,20 +16,24 @@ export struct MarkdownToolbar {
   @Event onLink?: () => void
   @Event onImage?: () => void
 
+  // Edit/Preview options for the system segmented toggle (animated, more compact than the old
+  // hand-rolled pair). selectedIndex is driven one-way from previewActive; clicks fire the events.
+  private segItems: SegmentButtonV2Items = new SegmentButtonV2Items([
+    { text: AppStrings.text(AppStrings.R_MARKDOWN_TOOLBAR_EDIT, 'Edit') },
+    { text: AppStrings.text(AppStrings.R_MARKDOWN_TOOLBAR_PREVIEW, 'Preview') },
+  ])
+
   build() {
-    // Two visually distinct groups so the mode switch is never confused with a format action:
-    // the left is the scrollable set of formatting buttons; the right is a segmented edit/preview
-    // toggle (a single grouped control with a highlighted active segment).
     Row({ space: ThemeConstants.SPACE_SM }) {
       Scroll() {
         Row({ space: ThemeConstants.SPACE_XS }) {
-          this.ToolButton('B', false, () => { this.fire(this.onBold) }, FontWeight.Bold)
-          this.ToolButton('I', false, () => { this.fire(this.onItalic) }, FontWeight.Medium, FontStyle.Italic)
-          this.ToolButton('`', false, () => { this.fire(this.onCode) })
-          this.ToolButton('>', false, () => { this.fire(this.onQuote) })
-          this.ToolButton('-', false, () => { this.fire(this.onList) })
-          this.ToolButton('[]', false, () => { this.fire(this.onLink) })
-          this.ToolButton(AppStrings.text(AppStrings.R_MARKDOWN_TOOLBAR_IMAGE, 'Image'), false, () => { this.fire(this.onImage) })
+          this.IconButton($r('sys.symbol.bold'), () => { this.fire(this.onBold) })
+          this.IconButton($r('sys.symbol.italic'), () => { this.fire(this.onItalic) })
+          this.IconButton($r('sys.symbol.doc_plaintext'), () => { this.fire(this.onCode) })
+          this.IconButton($r('sys.symbol.quote'), () => { this.fire(this.onQuote) })
+          this.IconButton($r('sys.symbol.list_bullet'), () => { this.fire(this.onList) })
+          this.IconButton($r('sys.symbol.link'), () => { this.fire(this.onLink) })
+          this.IconButton($r('sys.symbol.picture'), () => { this.fire(this.onImage) })
         }
         .height(32)
         .alignItems(VerticalAlign.Center)
@@ -37,67 +42,50 @@ export struct MarkdownToolbar {
       .scrollBar(BarState.Off)
       .layoutWeight(1)
 
-      // Edit/preview segmented toggle. Gate the pair on `if (this.previewActive)` so the WHOLE pair
-      // rebuilds when the mode flips: with two inline siblings each binding `.backgroundColor` to
-      // this.previewActive, only the first re-evaluated reliably, so the active highlight could stick
-      // (looked static). The if/else tears down and recreates both segments on every change.
+      // TabSegmentButtonV2 is tab-style (fills its parent) and rejects universal attributes like
+      // .width(), so bound it with a fixed-width wrapper — otherwise it eats the whole row and the
+      // format icons get squeezed to zero.
       Row() {
-        if (this.previewActive) {
-          this.SegToggle(AppStrings.text(AppStrings.R_MARKDOWN_TOOLBAR_EDIT, 'Edit'), false, () => { this.fire(this.onEdit) })
-          this.SegToggle(AppStrings.text(AppStrings.R_MARKDOWN_TOOLBAR_PREVIEW, 'Preview'), true, () => { this.fire(this.onPreview) })
-        } else {
-          this.SegToggle(AppStrings.text(AppStrings.R_MARKDOWN_TOOLBAR_EDIT, 'Edit'), true, () => { this.fire(this.onEdit) })
-          this.SegToggle(AppStrings.text(AppStrings.R_MARKDOWN_TOOLBAR_PREVIEW, 'Preview'), false, () => { this.fire(this.onPreview) })
-        }
+        TabSegmentButtonV2({
+          items: this.segItems,
+          selectedIndex: this.previewActive ? 1 : 0,
+          onItemClicked: (index: number) => {
+            if (index === 0) {
+              this.fire(this.onEdit)
+            } else {
+              this.fire(this.onPreview)
+            }
+          },
+          itemFontSize: LengthMetrics.fp(ThemeConstants.FONT_SIZE_TAG),
+          itemSelectedFontSize: LengthMetrics.fp(ThemeConstants.FONT_SIZE_TAG),
+          itemMinHeight: LengthMetrics.vp(22),
+          buttonMinHeight: LengthMetrics.vp(28),
+        })
       }
-      .padding(2)
-      .borderRadius(ThemeConstants.RADIUS_ROUND)
-      .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+      .width(104)
     }
     .width('100%')
     .height(32)
     .alignItems(VerticalAlign.Center)
   }
 
-  // One segment of the edit/preview toggle. `active` is static within each if/else branch above, so
-  // by-value passing is fine here — the branch swap (keyed on previewActive) recreates the segments.
   @Builder
-  private SegToggle(label: string, active: boolean, action: () => void) {
-    Text(label)
-      .fontSize(ThemeConstants.FONT_SIZE_TAG)
-      .textAlign(TextAlign.Center)
-      .height(28)
-      .constraintSize({ minWidth: 40 })
-      .padding({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM })
-      .borderRadius(ThemeConstants.RADIUS_ROUND)
-      .fontColor(active ? Color.White : $r('sys.color.font_secondary'))
-      .backgroundColor(active ? ThemeConstants.BRAND_PRIMARY : Color.Transparent)
-      .onClick(action)
-  }
-
-  @Builder
-  private ToolButton(
-    label: string,
-    active: boolean,
-    action: () => void,
-    weight: FontWeight = FontWeight.Normal,
-    style: FontStyle = FontStyle.Normal
-  ) {
-    Button(label)
-      .type(ButtonType.Normal)
-      .fontSize(ThemeConstants.FONT_SIZE_TAG)
-      .fontWeight(weight)
-      .fontStyle(style)
-      .fontColor(active ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.font_secondary'))
-      .height(30)
-      .constraintSize({ minWidth: 30 })
-      .padding({ left: ThemeConstants.SPACE_XS, right: ThemeConstants.SPACE_XS })
-      .borderRadius(ThemeConstants.RADIUS_ROUND)
-      .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
-      // Don't grab focus when tapped: the editor TextArea must keep focus (and its caret) so an
-      // insert lands at the cursor and the soft keyboard stays up.
-      .focusOnTouch(false)
-      .onClick(action)
+  private IconButton(icon: Resource, action: () => void) {
+    Button() {
+      SymbolGlyph(icon)
+        .fontSize(ThemeConstants.FONT_SIZE_TITLE)
+        .fontColor([$r('sys.color.font_secondary')])
+    }
+    .type(ButtonType.Normal)
+    .height(30)
+    .constraintSize({ minWidth: 36 })
+    .padding({ left: ThemeConstants.SPACE_XS, right: ThemeConstants.SPACE_XS })
+    .borderRadius(ThemeConstants.RADIUS_ROUND)
+    .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+    // Don't grab focus when tapped: the editor TextArea must keep focus (and its caret) so an insert
+    // lands at the cursor and the soft keyboard stays up.
+    .focusOnTouch(false)
+    .onClick(action)
   }
 
   private fire(action?: () => void): void {
