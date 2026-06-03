@@ -24,9 +24,17 @@ export struct MarkdownToolbar {
   // sync with the parent's previewActive both ways.
   @Local private segIndex: number = 0
 
+  // Mirror the parent's previewActive back into segIndex ONLY when they actually differ. On a tap the
+  // component already moves segIndex via the two-way binding (and starts the slide animation); the
+  // subsequent previewActive change would otherwise re-assign the same value here and reset the running
+  // animation to its end state. The guard keeps this purely for external resets (e.g. aboutToAppear
+  // forcing edit mode), where segIndex still needs to follow.
   @Monitor('previewActive')
   onPreviewActiveChange(): void {
-    this.segIndex = this.previewActive ? 1 : 0
+    const target: number = this.previewActive ? 1 : 0
+    if (this.segIndex !== target) {
+      this.segIndex = target
+    }
   }
 
   build() {
@@ -55,6 +63,9 @@ export struct MarkdownToolbar {
         TabSegmentButtonV2({
           items: this.segItems,
           selectedIndex: this.segIndex!!,
+          // The sliding selection animation is opt-in via enableStateAnimation (API 24+); without it the
+          // pill jumps. Two-way selectedIndex alone only keeps the selection in sync, it doesn't animate.
+          enableStateAnimation: true,
           onItemClicked: (index: number) => {
             if (index === 0) {
               this.fire(this.onEdit)
