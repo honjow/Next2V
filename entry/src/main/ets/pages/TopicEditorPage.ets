@@ -78,9 +78,11 @@ export struct TopicEditorPage {
   }
 
   aboutToAppear(): void {
-    // The editor does its own keyboard avoidance (fixed-height column + manual bottomPad); turn off
-    // the inherited system OFFSET so the two don't stack and crush the body. Restored on disappear.
-    this.getUIContext().setKeyboardAvoidMode(KeyboardAvoidMode.NONE)
+    // Use RESIZE so the whole page compresses to fit above the keyboard: the percentage/weight-sized body
+    // TextArea shrinks with it and its built-in caret tracking keeps the cursor visible (the toolbar stays
+    // put). The former NONE mode + manual bottom-pad only let the user scroll — it never brought the caret
+    // into view when the keyboard re-appeared (e.g. after a preview↔edit switch). Restored on disappear.
+    this.getUIContext().setKeyboardAvoidMode(KeyboardAvoidMode.RESIZE)
     this.disposed = false
     this.nodeName = ''
     this.nodeTitle = ''
@@ -287,12 +289,12 @@ export struct TopicEditorPage {
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
   }
 
-  // Bottom inset under the form. When the keyboard is up it already spans the bottom safe area, so
-  // pad by just its height (plus a small gap) — adding bottomAvoidHeight too would double-count the
-  // nav-bar inset and lift the content further than needed.
+  // Bottom inset under the form. With RESIZE the page is already compressed to sit above the keyboard, so
+  // when it's up we only need a small gap (adding keyboardHeight here would push the body up off the
+  // keyboard, wasting a keyboard-sized strip). Keyboard down: the nav-bar inset plus normal spacing.
   private bottomPad(): number {
     if (this.layout.keyboardHeight > 0) {
-      return this.layout.keyboardHeight + ThemeConstants.SPACE_SM
+      return ThemeConstants.SPACE_SM
     }
     return this.layout.bottomAvoidHeight + ThemeConstants.SPACE_XL
   }
