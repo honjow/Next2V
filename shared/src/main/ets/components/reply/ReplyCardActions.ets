@@ -8,6 +8,9 @@ export struct ReplyCardActions {
   @Require @Param reply: V2exReply;
   @Param isThanked: boolean = false;
   @Param isThankPending: boolean = false;
+  // When the header is too narrow, the three inline buttons (thank / reply / more) collapse into a
+  // single overflow menu; thank and reply are then prepended as menu items so nothing is lost.
+  @Param collapsed: boolean = false;
   @Event onActionsClick?: (reply: V2exReply) => void;
   @Event onContextClick?: (reply: V2exReply) => void;
   @Event onReplyClick?: (reply: V2exReply) => void;
@@ -17,6 +20,9 @@ export struct ReplyCardActions {
   @Event onCopyUserClick?: (reply: V2exReply) => void;
   @Event onCopyContentClick?: (reply: V2exReply) => void;
   @Local private actionsMenuShown: boolean = false;
+  @Local thankIcon: SymbolGlyphModifier = new SymbolGlyphModifier($r('sys.symbol.heart'));
+  @Local thankFilledIcon: SymbolGlyphModifier = new SymbolGlyphModifier($r('sys.symbol.heart_fill'));
+  @Local replyIcon: SymbolGlyphModifier = new SymbolGlyphModifier($r('sys.symbol.arrowshape_turn_up_left'));
   @Local contextIcon: SymbolGlyphModifier = new SymbolGlyphModifier($r('sys.symbol.ellipsis_bubble'));
   @Local copyUserIcon: SymbolGlyphModifier = new SymbolGlyphModifier($r('sys.symbol.person'));
   @Local copyContentIcon: SymbolGlyphModifier = new SymbolGlyphModifier($r('sys.symbol.doc_plaintext'));
@@ -31,6 +37,13 @@ export struct ReplyCardActions {
       this.onIgnoreClick ||
       this.onReportClick
     )
+  }
+
+  private menuHasItems(): boolean {
+    if (this.collapsed && (!!this.onThankClick || !!this.onReplyClick)) {
+      return true
+    }
+    return this.hasContextMenuActions()
   }
 
   private runContextAction(action?: (reply: V2exReply) => void): void {
@@ -52,6 +65,28 @@ export struct ReplyCardActions {
   @Builder
   ReplyActionMenu() {
     Menu() {
+      if (this.collapsed && this.onThankClick) {
+        MenuItem({
+          content: AppStrings.text(AppStrings.R_REPLY_THANK_TITLE, 'Thank reply'),
+          symbolStartIcon: this.isThanked || this.reply.thanks > 0 ? this.thankFilledIcon : this.thankIcon,
+        }).onClick(() => {
+          this.runContextAction((reply: V2exReply) => {
+            if (this.onThankClick && !this.isThankPending) {
+              this.onThankClick(reply)
+            }
+          })
+        })
+      }
+
+      if (this.collapsed && this.onReplyClick) {
+        MenuItem({
+          content: AppStrings.text(AppStrings.R_REPLY_ACTION_REPLY, 'Reply'),
+          symbolStartIcon: this.replyIcon,
+        }).onClick(() => {
+          this.runContextAction(this.onReplyClick)
+        })
+      }
+
       if (this.onContextClick) {
         MenuItem({
           content: AppStrings.text(AppStrings.R_REPLY_VIEW_CONTEXT, 'View context'),
@@ -154,7 +189,7 @@ export struct ReplyCardActions {
 
   @Builder
   MoreButton() {
-    if (this.hasContextMenuActions()) {
+    if (this.menuHasItems()) {
       Button() {
         SymbolGlyph($r('sys.symbol.dot_grid_2x2'))
           .fontSize(ThemeConstants.FONT_SIZE_TITLE)
@@ -195,9 +230,13 @@ export struct ReplyCardActions {
 
   build() {
     Row() {
-      this.ThankButton()
-      this.ReplyButton()
-      this.MoreButton()
+      if (this.collapsed) {
+        this.MoreButton()
+      } else {
+        this.ThankButton()
+        this.ReplyButton()
+        this.MoreButton()
+      }
     }
     .alignItems(VerticalAlign.Center)
   }

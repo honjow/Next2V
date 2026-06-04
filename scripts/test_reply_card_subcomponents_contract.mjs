@@ -75,8 +75,8 @@ for (const literal of [
   'PADDING_BOTTOM: number = 12',
   'PADDING_LEFT: number = 16',
   'PADDING_RIGHT: number = 16',
-  'PADDING_LEFT_EMBEDDED: number = 12',
-  'PADDING_LEFT_DEEP: number = 16',
+  'PADDING_LEFT_EMBEDDED: number = 8',
+  'PADDING_LEFT_DEEP: number = 8',
   'CONTENT_GAP: number = 8',
   'ACTIONS_GAP: number = 0',
   'CHILD_DIVIDER_MARGIN: number = 8',
@@ -93,7 +93,14 @@ assert.match(replyCard, /ReplyCardLayoutPolicy\.COMPACT_CHILD_REPLY_GAP/)
 assert.match(replyCard, /Blank\(\)[\s\S]*\.height\(this\.childReplyBottomGap\(index\)\)/)
 assert.match(replyCard, /\.margin\(\{ top: this\.childReplyListTopGap\(\) \}\)/)
 
-for (const label of ['查看上下文', '复制用户名', '复制回复内容', '忽略回复', '举报回复']) {
+// Menu labels are i18n resources (AppStrings.text fallbacks / $r keys), not hardcoded Chinese.
+for (const label of [
+  'View context',
+  'app.string.common_copy_username',
+  'Copy reply content',
+  'Ignore reply',
+  'Report reply',
+]) {
   assert.ok(actions.includes(label), `context menu label missing: ${label}`)
 }
 for (const symbol of [
@@ -112,8 +119,33 @@ for (const symbol of [
 assert.match(actions, /setTimeout\(\(\) => \{[\s\S]*action\(this\.reply\)[\s\S]*\},\s*80\)/)
 assert.doesNotMatch(actions, /\.(?:enabled|opacity)\([^)]*isThankPending[^)]*\)/)
 assert.match(actions, /this\.onThankClick && !this\.isThankPending/)
-assert.match(actions, /if \(this\.hasContextMenuActions\(\)\)/)
+assert.match(actions, /if \(this\.menuHasItems\(\)\)/)
 assert.match(actions, /else if \(this\.onActionsClick\)/)
+
+// Responsive compact header: once the measured card width is narrow (phones, deeply-threaded
+// 楼中楼 replies) the header stacks the timestamp under the username and collapses the three inline
+// action buttons into a single overflow menu (thank + reply prepended so nothing is lost).
+assert.match(layout, /COMPACT_HEADER_STACK_WIDTH: number = \d+/, 'layout must define COMPACT_HEADER_STACK_WIDTH')
+assert.match(
+  layout,
+  /static compactHeaderStacked\(cardWidth: number\): boolean/,
+  'layout must expose compactHeaderStacked()',
+)
+assert.match(replyCard, /private isHeaderNarrow\(\): boolean/, 'ReplyCard must compute isHeaderNarrow()')
+assert.match(
+  replyCard,
+  /ReplyCardLayoutPolicy\.compactHeaderStacked\(this\.cardWidth\)/,
+  'isHeaderNarrow must threshold the measured card width',
+)
+assert.match(replyCard, /isNarrow:\s*this\.isHeaderNarrow\(\)/, 'ReplyCard must pass isNarrow into the header')
+assert.match(header, /@Param isNarrow: boolean/, 'header must accept isNarrow')
+assert.match(header, /if \(this\.isCompact && this\.isNarrow\)/, 'narrow compact header must stack')
+assert.match(header, /collapsed:\s*this\.isNarrow/, 'header must collapse actions when narrow')
+assert.match(actions, /@Param collapsed: boolean/, 'actions must accept collapsed')
+assert.match(actions, /private menuHasItems\(\): boolean/, 'actions must define menuHasItems()')
+assert.match(actions, /if \(this\.collapsed\)/, 'collapsed actions render only the overflow menu')
+assert.match(actions, /this\.collapsed && this\.onThankClick/, 'collapsed menu must include thank')
+assert.match(actions, /this\.collapsed && this\.onReplyClick/, 'collapsed menu must include reply')
 
 const changed = execFileSync('git', ['diff', '--name-only'], { encoding: 'utf8' })
   .split('\n')

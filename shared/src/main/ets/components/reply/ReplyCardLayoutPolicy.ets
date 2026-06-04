@@ -17,6 +17,17 @@ export class ReplyCardLayoutPolicy {
   static readonly THREAD_GUIDE_CONTENT_GAP: number = 6;
   static readonly THREAD_GUIDE_END_INSET: number = 8;
 
+  // Below this measured card width the compact reply header can no longer fit avatar + username +
+  // timestamp + the three action buttons + floor on one line (a long username gets squeezed,
+  // worst inside deeply-threaded 楼中楼 replies). At/under it the header stacks the timestamp under
+  // the username and collapses the actions into a single overflow menu. ~480vp cleanly separates
+  // phones (which stack) from tablets / wide foldables (which keep the roomy inline header).
+  static readonly COMPACT_HEADER_STACK_WIDTH: number = 480;
+
+  static compactHeaderStacked(cardWidth: number): boolean {
+    return cardWidth > 0 && cardWidth < ReplyCardLayoutPolicy.COMPACT_HEADER_STACK_WIDTH
+  }
+
   static leftPadding(embedded: boolean, threadLevel: number): number {
     if (!embedded) {
       return ReplyCardLayoutPolicy.PADDING_LEFT

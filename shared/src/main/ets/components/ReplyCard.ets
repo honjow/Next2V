@@ -47,6 +47,13 @@ export struct ReplyCard {
     return this.replyStyleState.replyCardStyle === 'compact'
   }
 
+  // Compact mode packs the timestamp + action buttons into the header row; once the measured card
+  // width drops below the policy threshold (narrow phones, deeply-threaded 楼中楼 replies) that row
+  // overflows, so the header stacks the timestamp under the username and folds the buttons into a menu.
+  private isHeaderNarrow(): boolean {
+    return this.isCompact() && ReplyCardLayoutPolicy.compactHeaderStacked(this.cardWidth)
+  }
+
   private threadIndent(): number {
     return ReplyCardLayoutPolicy.threadIndent(this.threadLevel, this.cardWidth)
   }
@@ -196,6 +203,7 @@ export struct ReplyCard {
           isOp: this.isOp,
           isDuplicateThreadItem: this.isDuplicateThreadItem,
           isCompact: this.isCompact(),
+          isNarrow: this.isHeaderNarrow(),
           isThanked: this.isThanked,
           isThankPending: this.isThankPending,
           onUserClick: this.onUserClick,
