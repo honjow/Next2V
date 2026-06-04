@@ -10,6 +10,7 @@ import {
   connectAccountWebViewAction,
   connectAccountWebViewUrl,
   publishAccountWebViewUrl,
+  publishAccountWebViewTitle,
   AccountWebViewActionState,
 } from 'shared'
 
@@ -88,6 +89,18 @@ export struct AccountWebViewPage {
               errorInfo: this.errorMessage,
               hasCookie: this.hasInjectedCookie,
             })
+          }
+        },
+        onTitleReceive: (event?: OnTitleReceiveEvent) => {
+          // Title the nav bar with the page's real <title>. ArkWeb also fires this with a URL-derived
+          // title (isRealTitle=false) when the page has none — skip those so the bar keeps its neutral
+          // fallback instead of showing a raw URL.
+          if (!event || event.isRealTitle !== true) {
+            return
+          }
+          const title = (event.title || '').trim()
+          if (title.length > 0) {
+            publishAccountWebViewTitle(title)
           }
         },
       })

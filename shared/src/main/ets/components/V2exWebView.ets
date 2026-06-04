@@ -1,13 +1,13 @@
 import { webview } from '@kit.ArkWeb'
-
 @ComponentV2
 export struct V2exWebView {
-  @Param controller: webview.WebviewController = new webview.WebviewController()
-  @Event onControllerAttached?: () => void
-  @Event onPageBegin?: (event?: OnPageBeginEvent) => void
-  @Event onPageEnd?: (event?: OnPageEndEvent) => void
-  @Event onLoadFinished?: (event?: OnLoadFinishedEvent) => void
-  @Event onErrorReceive?: (event: OnErrorReceiveEvent) => void
+  @Param controller: webview.WebviewController = new webview.WebviewController();
+  @Event onControllerAttached?: () => void;
+  @Event onPageBegin?: (event?: OnPageBeginEvent) => void;
+  @Event onPageEnd?: (event?: OnPageEndEvent) => void;
+  @Event onLoadFinished?: (event?: OnLoadFinishedEvent) => void;
+  @Event onErrorReceive?: (event: OnErrorReceiveEvent) => void;
+  @Event onTitleReceive?: (event?: OnTitleReceiveEvent) => void;
 
   build() {
     ListItem() {
@@ -47,6 +47,11 @@ export struct V2exWebView {
         .onErrorReceive((event: OnErrorReceiveEvent) => {
           if (this.onErrorReceive) {
             this.onErrorReceive(event)
+          }
+        })
+        .onTitleReceive((event: OnTitleReceiveEvent) => {
+          if (this.onTitleReceive) {
+            this.onTitleReceive(event)
           }
         })
     }

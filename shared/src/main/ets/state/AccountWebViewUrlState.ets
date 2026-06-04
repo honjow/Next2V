@@ -11,15 +11,31 @@ import { AppStorageV2 } from '@kit.ArkUI'
 @ObservedV2
 export class AccountWebViewUrlState {
   @Trace url: string = ''
+  // The live document <title> of the loaded page, published by AccountWebViewPage's onTitleReceive and
+  // read by Index to title the NavDestination. Reset to '' on every new target so a previous page's title
+  // never lingers; the title bar falls back to a neutral label until a real <title> arrives.
+  @Trace title: string = ''
 }
 
 const ACCOUNT_WEB_VIEW_URL_V2_KEY: string = 'v2:accountWebViewUrl'
 
 /** Returns the app-wide AccountWebViewUrlState singleton from AppStorageV2. */
 export function connectAccountWebViewUrl(): AccountWebViewUrlState {
-  return AppStorageV2.connect(AccountWebViewUrlState, ACCOUNT_WEB_VIEW_URL_V2_KEY, () => new AccountWebViewUrlState())!
+  return AppStorageV2.connect(
+    AccountWebViewUrlState,
+    ACCOUNT_WEB_VIEW_URL_V2_KEY,
+    () => new AccountWebViewUrlState(),
+  )!
 }
 
 export function publishAccountWebViewUrl(value: string): void {
-  connectAccountWebViewUrl().url = value
+  const holder = connectAccountWebViewUrl()
+  holder.url = value
+  // New target → clear the previous page's title so the bar shows the neutral fallback until this page's
+  // real <title> arrives via onTitleReceive.
+  holder.title = ''
+}
+
+export function publishAccountWebViewTitle(value: string): void {
+  connectAccountWebViewUrl().title = value
 }

@@ -1285,13 +1285,17 @@ struct Index {
 
   private accountWebViewTitle(): ResourceStr {
     const path = (this.accountWebView.url || '').trim().toLowerCase()
+    // First-party account surfaces keep their clean localized titles.
     if (path.indexOf('/balance') >= 0) {
       return AppStrings.R_BALANCE_DETAILS
     }
     if (path.indexOf('/settings') >= 0) {
       return AppStrings.R_WEB_ACCOUNT_SETTINGS
     }
-    return AppStrings.R_NAV_WEB_LOGIN
+    // This is now a general in-app web view (dict / node-description links, "open topic in app", …), not
+    // the login page — show the live page <title> (published by onTitleReceive); leave it empty until the
+    // title arrives rather than showing a placeholder. (Login has its own 'webLogin' destination.)
+    return (this.accountWebView.title || '').trim()
   }
 
   private imagePreviewTitleMenu(): Record<string, Object> {

@@ -165,6 +165,7 @@ export {
   AccountWebViewUrlState,
   connectAccountWebViewUrl,
   publishAccountWebViewUrl,
+  publishAccountWebViewTitle,
 } from './state/AccountWebViewUrlState'
 export {
   PendingV2exUrlState,
