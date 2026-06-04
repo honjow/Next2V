@@ -2,8 +2,8 @@
   "app": {
     "bundleName": "com.honjow.next2v",
     "vendor": "next2v",
-    "versionCode": 13,
-    "versionName": "1.0.0",
+    "versionCode": 14,
+    "versionName": "1.0.1",
     "icon": "$media:app_icon_layered",
     "label": "$string:app_name",
     "targetAPIVersion": 24,
