@@ -1,4 +1,5 @@
 import { common } from '@kit.AbilityKit'
+import { photoAccessHelper } from '@kit.MediaLibraryKit'
 import { promptAction } from '@kit.ArkUI'
 import { ReplyComposerCoordinator } from '../model/ReplyComposerCoordinator'
 import {
@@ -8,10 +9,16 @@ import {
 import {
   AppStrings,
   connectLayoutSafeArea,
+  connectNavStack,
   CookieJarSettings,
+  ImageBytesUtils,
+  ImageUploadErrorCode,
+  ImageUploadService,
+  ImageUploadSettings,
   LayoutSafeAreaState,
   ThemeConstants,
   translateApiError,
+  type ImageBytes,
 } from 'shared'
 
 /**
@@ -49,10 +56,19 @@ export struct ReplyComposerBar {
   private contentController: TextAreaController = new TextAreaController();
   private saveTimerId: number = 0;
   private hasSubmitted: boolean = false;
+  // Nav stack (method target only) so a missing image-host credential can route to its settings page.
+  private stack: NavPathStack = connectNavStack().stack;
+  // Last caret/selection in the field, so an uploaded image's URL is inserted where the user was typing.
+  // Tracked via onTextSelectionChange and seeded to the content end on load/seed (insert-at-end default).
+  private selStart: number = 0;
+  private selEnd: number = 0;
+  // Set in aboutToDisappear so an upload that finishes after the bar closes drops its result instead of
+  // writing to a torn-down component.
+  private disposed: boolean = false;
 
-  private static readonly INPUT_ID: string = 'replyComposerBarInput'
+  private static readonly INPUT_ID: string = 'replyComposerBarInput';
   // Shared height for the input field (single line) and the send button so the row lines up flush.
-  private static readonly REPLY_BAR_CONTROL_SIZE: number = 40
+  private static readonly REPLY_BAR_CONTROL_SIZE: number = 40;
 
   aboutToAppear(): void {
     this.loadDraft()
@@ -64,6 +80,7 @@ export struct ReplyComposerBar {
   }
 
   aboutToDisappear(): void {
+    this.disposed = true
     this.clearSaveTimer()
     if (!this.hasSubmitted) {
       this.persistDraft()
@@ -81,6 +98,8 @@ export struct ReplyComposerBar {
       return
     }
     this.content = nextContent
+    this.selStart = this.content.length
+    this.selEnd = this.content.length
     this.scheduleSaveDraft()
     setTimeout(() => {
       this.contentController.caretPosition(this.content.length)
@@ -128,6 +147,31 @@ export struct ReplyComposerBar {
             this.content = value
             this.scheduleSaveDraft()
           })
+          // Track the caret so an uploaded image's URL lands where the user is typing (the picker blurs
+          // the field, so we rely on the last recorded position, not live focus).
+          .onTextSelectionChange((start: number, end: number) => {
+            this.selStart = start
+            this.selEnd = end
+          })
+        // Secondary (tonal) image button, just left of the emphasized send key: tap → pick an image →
+        // upload to the configured image host → insert the bare URL at the caret. focusOnTouch(false)
+        // keeps the TextArea's caret so the insert lands where the user was typing.
+        Button({ type: ButtonType.Circle }) {
+          SymbolGlyph($r('sys.symbol.picture'))
+            .fontSize(20)
+            .fontColor([$r('sys.color.font_secondary')])
+        }
+        .width(ReplyComposerBar.REPLY_BAR_CONTROL_SIZE)
+        .height(ReplyComposerBar.REPLY_BAR_CONTROL_SIZE)
+        .enabled(!this.isSubmitting)
+        .buttonStyle(ButtonStyleMode.NORMAL)
+        .focusOnTouch(false)
+        .accessibilityText(
+          AppStrings.text(AppStrings.R_IMAGE_UPLOAD_ACTION_NEW, 'Upload a new image'),
+        )
+        .onClick(() => {
+          this.pickAndUploadImage()
+        })
         Button({ type: ButtonType.Circle }) {
           SymbolGlyph($r('sys.symbol.paperplane_right_fill'))
             .fontSize(20)
@@ -136,14 +180,14 @@ export struct ReplyComposerBar {
             // center it in the circular button.
             .offset({ x: 2 })
         }
-          .width(ReplyComposerBar.REPLY_BAR_CONTROL_SIZE)
-          .height(ReplyComposerBar.REPLY_BAR_CONTROL_SIZE)
-          .enabled(this.canSubmit())
-          .buttonStyle(ButtonStyleMode.EMPHASIZED)
-          .accessibilityText(ReplyComposerCoordinator.submitButtonLabel(this.isSubmitting))
-          .onClick(() => {
-            this.confirmSubmit()
-          })
+        .width(ReplyComposerBar.REPLY_BAR_CONTROL_SIZE)
+        .height(ReplyComposerBar.REPLY_BAR_CONTROL_SIZE)
+        .enabled(this.canSubmit())
+        .buttonStyle(ButtonStyleMode.EMPHASIZED)
+        .accessibilityText(ReplyComposerCoordinator.submitButtonLabel(this.isSubmitting))
+        .onClick(() => {
+          this.confirmSubmit()
+        })
       }
       .width('100%')
       .alignItems(VerticalAlign.Top)
@@ -211,8 +255,176 @@ export struct ReplyComposerBar {
   }
 
   private applyDraftState(state: ReplyComposerDraftState): void {
-    this.content = state.content
+    // Drop any orphaned "uploading…" placeholder a prior session left when the bar closed mid-upload.
+    this.content = this.stripUploadingPlaceholders(state.content)
     this.errorMessage = state.errorMessage
+    this.selStart = this.content.length
+    this.selEnd = this.content.length
+  }
+
+  private async pickAndUploadImage(): Promise<void> {
+    // The active host needs its credential (ImgBB key / sm.ms token / Imgur Client-ID); gate before
+    // opening the picker so the user isn't asked to choose an image only to fail.
+    const config = ImageUploadSettings.current()
+    if (!ImageUploadSettings.isConfigured(config)) {
+      this.promptConfigureHost()
+      return
+    }
+    let uri: string = ''
+    try {
+      const photoPicker = new photoAccessHelper.PhotoViewPicker()
+      const options = new photoAccessHelper.PhotoSelectOptions()
+      options.MIMEType = photoAccessHelper.PhotoViewMIMETypes.IMAGE_TYPE
+      options.maxSelectNumber = 1
+      // Prefer a compressed copy over the full-resolution original.
+      options.isOriginalSupported = false
+      const result = await photoPicker.select(options)
+      uri = result.photoUris.length > 0 ? result.photoUris[0] : ''
+    } catch (_error) {
+      // User cancelled or the picker failed — stay silent.
+      return
+    }
+    if (uri) {
+      this.uploadPickedImage(uri)
+    }
+  }
+
+  private uploadPickedImage(uri: string): void {
+    let image: ImageBytes = { bytes: new Uint8Array(0), mimeType: '', byteLength: 0 }
+    try {
+      image = ImageBytesUtils.readImageBytes(uri)
+    } catch (error) {
+      // readImageBytes throws the TOO_LARGE code for an oversized pick (gated before allocation); any
+      // other read failure maps to the generic message.
+      const e = error as Error
+      this.showToast(this.uploadErrorMessage(e.message || ''))
+      return
+    }
+    // Insert a uniquely-tagged "uploading" placeholder at the caret, then swap it for the final bare URL
+    // (or remove it on failure). Matching the exact captured placeholder avoids index drift if the user
+    // keeps typing during the upload; a stale one is stripped from the draft on next open.
+    const uploadingLabel = AppStrings.text(AppStrings.R_IMAGE_UPLOAD_UPLOADING, 'Uploading')
+    const placeholder = `![${uploadingLabel}](uploading://${Date.now()})`
+    this.insertTextAtCaret(placeholder)
+    const fileName = `image.${ImageBytesUtils.extensionFor(image.mimeType)}`
+    ImageUploadService.uploadImage(image.bytes, image.mimeType, fileName)
+      .then((uploaded) => {
+        if (this.disposed) {
+          return
+        }
+        // Replies are not Markdown (V2EX auto-embeds a bare image URL), so insert the bare URL — not the
+        // `![](url)` wrapper the Markdown topic editor uses.
+        this.replacePlaceholder(placeholder, uploaded.url)
+      })
+      .catch((error: Error) => {
+        if (this.disposed) {
+          return
+        }
+        this.replacePlaceholder(placeholder, '')
+        this.handleUploadError(error)
+      })
+  }
+
+  // Insert text at the last recorded caret/selection, then move the caret past it.
+  private insertTextAtCaret(text: string): void {
+    const contentLength = this.content.length
+    const start = Math.min(Math.max(this.selStart, 0), contentLength)
+    const rawEnd = Math.min(Math.max(this.selEnd, 0), contentLength)
+    const end = rawEnd >= start ? rawEnd : start
+    this.content = `${this.content.substring(0, start)}${text}${this.content.substring(end)}`
+    const caret = start + text.length
+    this.selStart = caret
+    this.selEnd = caret
+    this.scheduleSaveDraft()
+    this.moveCaret(caret)
+  }
+
+  // Replace the exact placeholder substring with finalText (empty removes it). Bails if the user already
+  // deleted it. Unlike the synchronous insert, this runs from async upload completion — it updates the
+  // text/bookkeeping only and does NOT steal focus or re-pop the keyboard, which would be a surprising
+  // jump if the user has moved on.
+  private replacePlaceholder(placeholder: string, finalText: string): void {
+    const index = this.content.indexOf(placeholder)
+    if (index < 0) {
+      return
+    }
+    this.content = `${this.content.substring(0, index)}${finalText}${this.content.substring(index + placeholder.length)}`
+    const caret = index + finalText.length
+    this.selStart = caret
+    this.selEnd = caret
+    this.scheduleSaveDraft()
+  }
+
+  private stripUploadingPlaceholders(text: string): string {
+    return text.replace(/!\[[^\]]*\]\(uploading:\/\/[0-9]+\)/g, '')
+  }
+
+  private moveCaret(caret: number): void {
+    this.getUIContext().getFocusController().requestFocus(ReplyComposerBar.INPUT_ID)
+    // The controlled-text update can land a frame or two later; re-assert across a couple of ticks so the
+    // caret reliably wins the race and the soft keyboard comes back up at the right spot.
+    const apply = () => {
+      this.contentController.caretPosition(caret)
+    }
+    setTimeout(apply, 0)
+    setTimeout(apply, 50)
+  }
+
+  private showToast(message: string): void {
+    promptAction.openToast({ message }).catch((_error: Error) => {})
+  }
+
+  private handleUploadError(error: Error): void {
+    const code = error.message || ''
+    if (code === ImageUploadErrorCode.NO_CREDENTIAL) {
+      this.promptConfigureHost()
+      return
+    }
+    this.showToast(this.uploadErrorMessage(code))
+  }
+
+  private uploadErrorMessage(code: string): string {
+    if (code === ImageUploadErrorCode.TOO_LARGE) {
+      return AppStrings.text(AppStrings.R_IMAGE_UPLOAD_ERROR_TOO_LARGE, 'Image is too large')
+    }
+    if (code === ImageUploadErrorCode.RATE_LIMIT) {
+      return AppStrings.text(AppStrings.R_IMAGE_UPLOAD_ERROR_RATE_LIMIT, 'Rate limited')
+    }
+    if (code === ImageUploadErrorCode.FORBIDDEN) {
+      return AppStrings.text(AppStrings.R_IMAGE_UPLOAD_ERROR_FORBIDDEN, 'Upload rejected')
+    }
+    if (code === ImageUploadErrorCode.SERVER) {
+      return AppStrings.text(AppStrings.R_IMAGE_UPLOAD_ERROR_SERVER, 'Server error')
+    }
+    if (code === ImageUploadErrorCode.NETWORK) {
+      return AppStrings.text(AppStrings.R_IMAGE_UPLOAD_ERROR_NETWORK, 'Network error')
+    }
+    if (code === ImageUploadErrorCode.BAD_IMAGE) {
+      return AppStrings.text(AppStrings.R_IMAGE_UPLOAD_ERROR_BAD_IMAGE, 'Unsupported image')
+    }
+    if (code === ImageUploadErrorCode.UNSUPPORTED_PROVIDER) {
+      return AppStrings.text(AppStrings.R_IMAGE_UPLOAD_ERROR_UNSUPPORTED, 'Unsupported host')
+    }
+    return AppStrings.text(AppStrings.R_IMAGE_UPLOAD_ERROR_GENERIC, 'Image upload failed')
+  }
+
+  private promptConfigureHost(): void {
+    this.getUIContext().showAlertDialog({
+      message: AppStrings.text(
+        AppStrings.R_IMAGE_UPLOAD_NO_CLIENTID,
+        'Configure an image host first',
+      ),
+      primaryButton: {
+        value: AppStrings.text($r('app.string.common_cancel'), 'Cancel'),
+        action: () => {},
+      },
+      secondaryButton: {
+        value: AppStrings.text(AppStrings.R_IMAGE_UPLOAD_GO_CONFIG, 'Configure'),
+        action: () => {
+          this.stack.pushPathByName('ImageUploadSettings', null)
+        },
+      },
+    })
   }
 
   private canSubmit(): boolean {
