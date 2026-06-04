@@ -183,9 +183,6 @@ export struct DiscoverNodeChip {
     .padding({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
     .borderRadius(ThemeConstants.RADIUS_ROUND)
     .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
-    // The chip is only 34vp tall — below the ~44vp comfortable touch target — so extend its
-    // touch-responsive area vertically to make a slightly-off finger tap easier to land.
-    .responseRegion({ x: '0%', y: '-15%', width: '100%', height: '130%' })
     .onClick(() => {
       if (this.openAction) {
         this.openAction()
