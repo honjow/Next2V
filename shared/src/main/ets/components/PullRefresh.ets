@@ -2,6 +2,12 @@ import { vibrator } from '@kit.SensorServiceKit'
 import { ThemeConstants } from '../theme/ThemeConstants'
 
 const PULL_START_DRAG_VP: number = 4
+// A pull only ARMS (and disables the inner Scroll) after a deliberate, vertical-dominant drag past this
+// many vp — far enough that a tap's small finger jitter can never arm it. Arming disables the Scroll
+// (onScrollEnableChange(false)), which otherwise swallows the tapped child's onClick (the "tap does
+// nothing, multi-tap works" bug on the Discover node chips). The pull OFFSET still anchors at the smaller
+// PULL_START_DRAG_VP so the indicator starts from where the finger first crossed.
+const PULL_ARM_VP: number = 10
 const PULL_RESISTANCE_FACTOR: number = 0.8
 const DEFAULT_PULL_REFRESH_THRESHOLD: number = 120
 const OPACITY_THRESHOLD_FACTOR: number = 0.5
@@ -217,13 +223,18 @@ export struct PullRefresh {
               this.isHorizontalGesture = true
               return
             }
-            if (deltaY > PULL_START_DRAG_VP && this.isListAtTop()) {
+            // Only arm a pull on a deliberate, vertical-dominant drag past PULL_ARM_VP. A tap's small
+            // (often slightly diagonal) finger jitter must not arm it, because arming disables the inner
+            // Scroll (onScrollEnableChange(false)) and that swallows the tapped child's onClick.
+            const verticalDominant = Math.abs(deltaY) > Math.abs(deltaX) * 1.5
+            if (verticalDominant && deltaY > PULL_ARM_VP && this.isListAtTop()) {
               this.isTracking = true
               this.topEdgeDragStartY = event.touches[0].y - PULL_START_DRAG_VP
               this.touchStartPullOffset = 0
               this.onScrollEnableChange(false)
             } else if (
-              deltaY < -PULL_START_DRAG_VP &&
+              verticalDominant &&
+              deltaY < -PULL_ARM_VP &&
               this.isListAtBottom() &&
               this.canStartBottomRefresh()
             ) {
@@ -263,19 +274,15 @@ export struct PullRefresh {
         }
 
         if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
-          if (this.isTracking) {
-            if (this.pullOffset > 0) {
-              this.onPullEnd()
-            } else {
-              this.onScrollEnableChange(true)
-            }
-          } else if (this.isBottomTracking) {
-            if (this.bottomPullOffset > 0) {
-              this.onBottomPullEnd()
-            } else {
-              this.onScrollEnableChange(true)
-            }
+          if (this.isTracking && this.pullOffset > 0) {
+            this.onPullEnd()
+          } else if (this.isBottomTracking && this.bottomPullOffset > 0) {
+            this.onBottomPullEnd()
           }
+          // Always re-enable the inner Scroll on touch end so a momentarily-disabled scroll can never
+          // stick into the next tap and swallow its onClick. onPullEnd/onBottomPullEnd already re-enable
+          // it when they start a refresh; this is the catch-all for every other release path.
+          this.onScrollEnableChange(true)
           this.resetTouchState()
         }
       })
@@ -302,7 +309,6 @@ export struct PullRefresh {
       }
       .position({ y: this.indicatorTop + this.pullOffset / 2 })
       .hitTestBehavior(HitTestMode.None)
-
       Row({ space: ThemeConstants.SPACE_SM }) {
         LoadingProgress()
           .width(ThemeConstants.LOADING_SIZE_SMALL)
@@ -316,10 +322,7 @@ export struct PullRefresh {
         this.bottomRefreshState >= 2
           ? 1
           : this.bottomPullOffset > 0
-            ? Math.min(
-                Math.max(this.bottomPullOffset / this.threshold, 0.2),
-                1,
-              )
+            ? Math.min(Math.max(this.bottomPullOffset / this.threshold, 0.2), 1)
             : 0,
       )
       .position({ y: this.bottomIndicatorY() })
