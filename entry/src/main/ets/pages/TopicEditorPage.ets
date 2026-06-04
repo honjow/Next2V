@@ -186,7 +186,8 @@ export struct TopicEditorPage {
           onList: () => { this.insertLinePrefix('- ') },
           onLink: () => { this.insertInlineMarkdown('[', '](https://)') },
           onImageUpload: () => { this.pickAndUploadImage() },
-          onInsertImageLink: () => { this.insertInlineMarkdown('![', '](https://)') }
+          // Land the caret in the URL (after `https://`), not the `![]` alt — the alt is usually left empty.
+          onInsertImageLink: () => { this.insertInlineMarkdown('![', '](https://)', '![](https://'.length) }
         })
 
         if (this.errorMessage) {
@@ -299,7 +300,10 @@ export struct TopicEditorPage {
     return this.layout.bottomAvoidHeight + ThemeConstants.SPACE_XL
   }
 
-  private insertInlineMarkdown(prefix: string, suffix: string): void {
+  // emptyCaretOffset (from `start`) overrides where the caret lands when nothing is selected — used by the
+  // image insert to drop the caret inside the URL parens (the `![]` alt is usually left empty) instead of
+  // between the `![ ]` markers. Default (-1) keeps the original "caret between the markers" behavior.
+  private insertInlineMarkdown(prefix: string, suffix: string, emptyCaretOffset: number = -1): void {
     const contentLength = this.content.length
     const start = Math.min(Math.max(this.contentSelectionStart, 0), contentLength)
     const rawEnd = Math.min(Math.max(this.contentSelectionEnd, 0), contentLength)
@@ -307,9 +311,14 @@ export struct TopicEditorPage {
     const selected = this.content.substring(start, end)
     const insertion = `${prefix}${selected}${suffix}`
     this.content = `${this.content.substring(0, start)}${insertion}${this.content.substring(end)}`
-    // No placeholder text: with nothing selected the caret lands between the markers so the user just
-    // types; when wrapping a selection it lands after the closing marker.
-    const caret = selected.length === 0 ? start + prefix.length : start + insertion.length
+    // No placeholder text: with nothing selected the caret lands between the markers (or at emptyCaretOffset
+    // when given) so the user just types; when wrapping a selection it lands after the closing marker.
+    let caret: number
+    if (selected.length === 0) {
+      caret = start + (emptyCaretOffset >= 0 ? emptyCaretOffset : prefix.length)
+    } else {
+      caret = start + insertion.length
+    }
     this.contentSelectionStart = caret
     this.contentSelectionEnd = caret
     this.isPreview = false
