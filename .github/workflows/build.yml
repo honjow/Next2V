@@ -33,6 +33,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Verify version consistency
+        shell: bash
+        run: |
+          node scripts/test_version_consistency_contract.mjs
+
       - name: Get app version
         shell: bash
         run: |
