@@ -1,6 +1,6 @@
 import { common } from '@kit.AbilityKit'
 import { photoAccessHelper } from '@kit.MediaLibraryKit'
-import { KeyboardAvoidMode, promptAction, SymbolGlyphModifier } from '@kit.ArkUI'
+import { KeyboardAvoidMode, LoadingDialog, promptAction, SymbolGlyphModifier } from '@kit.ArkUI'
 import {
   ApiService, AppStrings, connectLayoutSafeArea, connectNavStack, connectNodePickAction, connectTopicEditorAction, CookieJarSettings, DateUtils, DraftSettings, ImageBytesUtils, ImageUploadErrorCode, ImageUploadService, ImageUploadSettings, LayoutSafeAreaState, MarkdownContent, MarkdownToolbar,
   NodePickActionState, publishTopicEditorSubmitEnabled, ThemeConstants, TopicDetailParams, TopicEditorActionState, translateApiError, type ImageBytes
@@ -49,6 +49,16 @@ export struct TopicEditorPage {
   // Set true in aboutToDisappear so an image upload that finishes after the editor is popped drops its
   // result instead of writing to a torn-down component.
   private disposed: boolean = false
+  // Modal loading overlay held open while the post request is in flight. autoCancel:false makes it block
+  // touches, so the still-mounted body TextArea can't re-grab focus / re-pop the keyboard mid-submit and
+  // the user can't mis-tap the form. Mirrors the reply composer's submit guard (close-before-request →
+  // LoadingDialog); content reuses R_EDITOR_SUBMITTING ("提交中…").
+  private submitLoadingDialogController: CustomDialogController = new CustomDialogController({
+    builder: LoadingDialog({ content: AppStrings.R_EDITOR_SUBMITTING }),
+    autoCancel: false,
+    alignment: DialogAlignment.Center,
+    customStyle: false
+  })
 
   // Fill the node field the moment the picker pops back (aboutToAppear does not re-run on pop).
   @Monitor('nodePick.command')
@@ -118,6 +128,9 @@ export struct TopicEditorPage {
 
   aboutToDisappear(): void {
     this.disposed = true
+    // Safety net: a successful post navigates away (replace/pop) before submit()'s .finally() runs, so
+    // close the loading overlay here too rather than leaking it onto the next page.
+    this.submitLoadingDialogController.close()
     this.getUIContext().setKeyboardAvoidMode(KeyboardAvoidMode.OFFSET)
     // Leave the title-bar Submit icon disabled once we're gone (the next destination owns its own bar).
     publishTopicEditorSubmitEnabled(false)
@@ -630,6 +643,10 @@ export struct TopicEditorPage {
     }
     this.isSubmitting = true
     this.errorMessage = ''
+    // Drop focus (dismisses the keyboard) and raise the modal loading overlay before the request, so the
+    // body field can't re-grab focus or be mis-tapped while the post is in flight.
+    this.getUIContext().getFocusController().clearFocus()
+    this.submitLoadingDialogController.open()
     this.api.createTopicWithCookie(cookie, this.nodeName, this.title, this.content)
       .then((topicId: number) => {
         this.hasSubmitted = true
@@ -651,6 +668,7 @@ export struct TopicEditorPage {
         promptAction.openToast({ message: this.errorMessage }).catch((_error2: Error) => { })
       })
       .finally(() => {
+        this.submitLoadingDialogController.close()
         this.isSubmitting = false
       })
   }

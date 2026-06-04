@@ -15,7 +15,8 @@ import { readFileSync } from 'node:fs'
 const page = readFileSync('entry/src/main/ets/pages/TopicEditorPage.ets', 'utf8')
 
 // Source: insertInlineMarkdown accepts an emptyCaretOffset and the image insert passes the URL offset.
-assert.match(page, /insertInlineMarkdown\(prefix: string, suffix: string, emptyCaretOffset: number = -1\)/, 'insertInlineMarkdown must accept an emptyCaretOffset override')
+// (Tolerate the formatter wrapping the signature params across lines.)
+assert.match(page, /insertInlineMarkdown\(\s*prefix: string,\s*suffix: string,\s*emptyCaretOffset: number = -1,?\s*\)/, 'insertInlineMarkdown must accept an emptyCaretOffset override')
 assert.match(page, /this\.insertInlineMarkdown\('!\[', '\]\(https:\/\/\)', '!\[\]\(https:\/\/'\.length\)/, 'onInsertImageLink must drop the caret into the URL (offset = "![](https://".length)')
 
 // Logic replica of insertInlineMarkdown's caret math.
