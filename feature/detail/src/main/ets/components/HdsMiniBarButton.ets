@@ -1,4 +1,4 @@
-import { HdsTabs, HdsTabsController, HdsTabsFloatingStyle } from '@kit.UIDesignKit'
+import { hdsMaterial, HdsTabs, HdsTabsController, HdsTabsFloatingStyle } from '@kit.UIDesignKit'
 
 /**
  * Project-owned HDS Tabs mini button wrapper.
@@ -15,6 +15,8 @@ export struct HdsMiniBarButton {
   @Param controller: HdsTabsController = new HdsTabsController();
   @Param maskColor: ResourceColor = Color.Transparent;
   @Param barBottomMargin: number = 8;
+  @Param materialType: hdsMaterial.MaterialType = hdsMaterial.MaterialType.IMMERSIVE;
+  @Param materialLevel: hdsMaterial.MaterialLevel = hdsMaterial.MaterialLevel.ADAPTIVE;
   @Param barPosition: BarPosition = BarPosition.End;
   @Param barOverlap: boolean = true;
   @Event onButtonClick?: () => void;
@@ -49,6 +51,10 @@ export struct HdsMiniBarButton {
           maskColor: this.maskColor,
         },
         barBottomMargin: this.barBottomMargin,
+        systemMaterialEffect: {
+          materialType: this.materialType,
+          materialLevel: this.materialLevel,
+        },
       } as HdsTabsFloatingStyle)
       .onTabBarClick(() => {
         if (this.onButtonClick) {

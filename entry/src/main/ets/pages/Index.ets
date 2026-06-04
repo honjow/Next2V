@@ -2,6 +2,7 @@ import {
   BlurStrategy,
   BottomBuilderShowType,
   DynamicHideParams,
+  hdsMaterial,
   HdsNavDestination,
   HdsNavigation,
   HdsNavigationTitleMode,
@@ -514,6 +515,10 @@ struct Index {
         .barFloatingStyle({
           barBottomMargin: ThemeConstants.SPACE_XL,
           adaptToHandedness: true,
+          systemMaterialEffect: {
+            materialType: hdsMaterial.MaterialType.ADAPTIVE,
+            materialLevel: hdsMaterial.MaterialLevel.ADAPTIVE,
+          },
         } as HdsTabsFloatingStyle)
         .onAppear(() => {
           this.applyHomeTabAutoHide()
@@ -692,11 +697,16 @@ struct Index {
     stackBuilderComponent?: ComponentContent<T>,
     titleAccessibilityText?: string,
   ): Record<string, Object> {
+    let mat: Record<string, Object> = {
+      'materialType': hdsMaterial.MaterialType.ADAPTIVE,
+      'materialLevel': hdsMaterial.MaterialLevel.ADAPTIVE,
+    }
     let scrollOpts: Record<string, Object> = {
       'enableScrollEffect': true,
       'scrollEffectType': ScrollEffectType.GRADIENT_BLUR,
     }
     let style: Record<string, Object> = {
+      'systemMaterialEffect': mat,
       'scrollEffectOpts': scrollOpts,
     }
     if (title || menu) {
@@ -1147,11 +1157,16 @@ struct Index {
     } else {
       content['menu'] = IndexTitleBarCoordinator.emptyMenu()
     }
+    let mat: Record<string, Object> = {
+      'materialType': hdsMaterial.MaterialType.ADAPTIVE,
+      'materialLevel': hdsMaterial.MaterialLevel.ADAPTIVE,
+    }
     let scrollOpts: Record<string, Object> = {
       'enableScrollEffect': true,
       'scrollEffectType': ScrollEffectType.GRADIENT_BLUR,
     }
     let style: Record<string, Object> = {
+      'systemMaterialEffect': mat,
       'scrollEffectOpts': scrollOpts,
     }
     return {
