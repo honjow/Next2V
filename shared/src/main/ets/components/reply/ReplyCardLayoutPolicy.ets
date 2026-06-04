@@ -6,8 +6,8 @@ export class ReplyCardLayoutPolicy {
   static readonly PADDING_RIGHT: number = 16;
 
   // Embedded reply cards only keep left padding for thread indentation.
-  static readonly PADDING_LEFT_EMBEDDED: number = 12;
-  static readonly PADDING_LEFT_DEEP: number = 16;
+  static readonly PADDING_LEFT_EMBEDDED: number = 8;
+  static readonly PADDING_LEFT_DEEP: number = 8;
 
   static readonly CONTENT_GAP: number = 8;
   static readonly ACTIONS_GAP: number = 0;
