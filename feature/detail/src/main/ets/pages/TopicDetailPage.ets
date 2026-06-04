@@ -1285,13 +1285,35 @@ export struct TopicDetailPage {
     if (this.v.onlyOp) {
       this.v.setOnlyOp(false)
     }
+    // Defer a tick so an onlyOp toggle re-publishes the data source before we resolve the floor's row.
     setTimeout(() => {
-      try {
-        this.scrollToListIndex(2 + floor, true)
-      } catch (_e) {
-        // ignore
-      }
+      this.jumpToFloorIndex(floor)
     }, 0)
+  }
+
+  // Resolve a floor to its ACTUAL displayed row and scroll there. Under 楼中楼 reordering a nested reply
+  // has no top-level row of its own, so it resolves to the row that contains it (its ancestor) instead of
+  // a chronological 2+floor guess that lands near the end. Falls back to the list end when the floor isn't
+  // in the loaded data.
+  private jumpToFloorIndex(floor: number): void {
+    if (floor <= 0) {
+      return
+    }
+    const source = this.v.replyDataSource
+    const listIndex = TopicDetailScrollCoordinator.listIndexForFloor(
+      floor,
+      source.totalCount(),
+      (index: number) => source.getData(index),
+    )
+    const target = listIndex >= 0 ? listIndex : this.lastReplyListIndex()
+    if (target <= 0) {
+      return
+    }
+    try {
+      this.scrollToListIndex(target, true)
+    } catch (_e) {
+      // ignore
+    }
   }
 
   private scrollToTop(): void {
@@ -1513,17 +1535,7 @@ export struct TopicDetailPage {
     }
     this.ensureRepliesLoaded(result.floor)
       .then(() => {
-        const loaded = this.v.replyDataSource.totalCount()
-        const safeFloor = TopicDetailScrollCoordinator.loadedFloor(result.floor, loaded)
-        if (safeFloor <= 0) {
-          return
-        }
-        const listIndex = TopicDetailScrollCoordinator.listIndexForFloor(safeFloor)
-        try {
-          this.scrollToListIndex(listIndex, true)
-        } catch (_e) {
-          // ignore
-        }
+        this.jumpToFloorIndex(result.floor)
       })
       .catch((_error: Error) => {
         // ignore
@@ -1585,13 +1597,8 @@ export struct TopicDetailPage {
           return
         }
         await this.ensureRepliesLoaded(floor)
-        const loaded = this.v.replyDataSource.totalCount()
-        const targetFloor = TopicDetailScrollCoordinator.loadedFloor(floor, loaded)
-        if (targetFloor <= 0) {
-          return
-        }
         this.resumeSavedFloor = floor
-        this.resumeTargetFloor = targetFloor
+        this.resumeTargetFloor = floor
         // Only offer the resume button while the user is still at the top. If they already scrolled
         // past the saved floor (or anywhere meaningful) by the time replies finished loading, the
         // affordance would be noise.
@@ -1611,13 +1618,8 @@ export struct TopicDetailPage {
     if (targetFloor <= 0) {
       return
     }
-    const listIndex = TopicDetailScrollCoordinator.listIndexForFloor(targetFloor)
     setTimeout(() => {
-      try {
-        this.scrollToListIndex(listIndex, true)
-      } catch (_e) {
-        // ignore
-      }
+      this.jumpToFloorIndex(targetFloor)
     }, 0)
   }
 
@@ -1640,12 +1642,7 @@ export struct TopicDetailPage {
     this.hasJumpedToTargetFloor = true
     this.ensureRepliesLoaded(floor)
       .then(() => {
-        const loaded = this.v.replyDataSource.totalCount()
-        const safeFloor = TopicDetailScrollCoordinator.loadedFloor(floor, loaded)
-        if (safeFloor <= 0) {
-          return
-        }
-        this.jumpToLoadedReplyFloor(safeFloor)
+        this.jumpToLoadedReplyFloor(floor)
       })
       .catch((_error: Error) => {
         // ignore

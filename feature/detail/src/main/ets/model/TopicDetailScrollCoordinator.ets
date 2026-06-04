@@ -1,4 +1,4 @@
-import { AppStrings } from 'shared'
+import { AppStrings, V2exReply } from 'shared'
 export interface JumpFloorResult {
   valid: boolean
   floor: number
@@ -6,11 +6,14 @@ export interface JumpFloorResult {
 }
 
 export class TopicDetailScrollCoordinator {
+  // The reply list is: index 0 = TopicCard, index 1 = ReplyDivider, index 2+i = replyDataSource[i].
+  private static readonly REPLY_LIST_OFFSET: number = 2
+
   static lastReplyListIndex(replyCount: number): number {
     if (replyCount <= 0) {
       return 0
     }
-    return 2 + replyCount
+    return TopicDetailScrollCoordinator.REPLY_LIST_OFFSET + replyCount
   }
 
   static parseJumpFloor(value: string, maxFloor: number): JumpFloorResult {
@@ -20,7 +23,10 @@ export class TopicDetailScrollCoordinator {
       return {
         valid: false,
         floor: 0,
-        message: AppStrings.text($r('app.string.common_invalid_floor'), 'Enter a valid floor number'),
+        message: AppStrings.text(
+          $r('app.string.common_invalid_floor'),
+          'Enter a valid floor number',
+        ),
       }
     }
     return {
@@ -30,19 +36,63 @@ export class TopicDetailScrollCoordinator {
     }
   }
 
+  // The displayed-row index whose reply IS this list (center) index — used to remember the read floor.
   static replyIndexFromCenterListIndex(centerIndex: number): number {
-    return centerIndex - 3
+    return centerIndex - TopicDetailScrollCoordinator.REPLY_LIST_OFFSET
   }
 
-  static loadedFloor(requestedFloor: number, loadedCount: number): number {
-    if (loadedCount <= 0) {
-      return 0
+  // Floor -> list index, resolved against the ACTUAL displayed data (which may be reordered/threaded), so
+  // a nested reply jumps to the row that actually contains it (its top-level ancestor) rather than to a
+  // chronological 2+floor guess that, under 楼中楼 reordering, lands near the end. Returns -1 when the
+  // floor is not present in the loaded/visible data, so the caller can fall back (e.g. scroll to the end).
+  static listIndexForFloor(
+    floor: number,
+    count: number,
+    getData: (index: number) => V2exReply,
+  ): number {
+    const dataIndex = TopicDetailScrollCoordinator.dataIndexForFloor(floor, count, getData)
+    if (dataIndex < 0) {
+      return -1
     }
-    return requestedFloor <= loadedCount ? requestedFloor : loadedCount
+    return TopicDetailScrollCoordinator.REPLY_LIST_OFFSET + dataIndex
   }
 
-  static listIndexForFloor(floor: number): number {
-    return 2 + floor
+  // Index of the displayed row whose subtree (the row reply + its nested threadChildren, recursively)
+  // contains `floor`. First match wins, so a 楼中楼-redundant duplicate tail clone never shadows the
+  // reply's real threaded position. Returns -1 when no displayed row covers the floor.
+  static dataIndexForFloor(
+    floor: number,
+    count: number,
+    getData: (index: number) => V2exReply,
+  ): number {
+    if (floor <= 0 || count <= 0) {
+      return -1
+    }
+    for (let i = 0; i < count; i++) {
+      let row: V2exReply | null = null
+      try {
+        row = getData(i)
+      } catch (_e) {
+        row = null
+      }
+      if (row && TopicDetailScrollCoordinator.subtreeContainsFloor(row, floor)) {
+        return i
+      }
+    }
+    return -1
+  }
+
+  private static subtreeContainsFloor(reply: V2exReply, floor: number): boolean {
+    if ((reply.floor || 0) === floor) {
+      return true
+    }
+    const children = reply.threadChildren || []
+    for (let i = 0; i < children.length; i++) {
+      if (TopicDetailScrollCoordinator.subtreeContainsFloor(children[i], floor)) {
+        return true
+      }
+    }
+    return false
   }
 
   static async ensureRepliesLoaded(
