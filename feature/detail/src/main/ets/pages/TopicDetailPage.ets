@@ -71,8 +71,8 @@ import {
   V2exToggleAction,
   ReadingSettings,
   ReplyDisplaySettings,
-  V2exRoute,
   V2exUrlRouter,
+  V2exRouteNavigator,
   TopicDetailParams,
   MotionHandStateService,
   defaultSheetOptions,
@@ -83,7 +83,6 @@ import {
   connectBlockedListStorage,
   BlockedListStorageState,
   DiagnosticLogger,
-  SearchQueryBus,
   connectNavStack,
   connectLayoutSafeArea,
   connectReadingSettings,
@@ -369,37 +368,13 @@ export struct TopicDetailPage {
 
   private openContentLink(url: string): void {
     const clean = (url || '').trim()
-    const route = V2exUrlRouter.parse(clean)
-    if (route) {
-      this.openV2exRoute(route)
+    // Native-first: a V2EX URL with a built-in page (topic / node / member / search) opens natively;
+    // everything else (external sites, dict /d/, …) goes to the system browser. Shared with the
+    // node-description links via V2exRouteNavigator so all in-content links route identically.
+    if (V2exRouteNavigator.openInApp(this.stack, clean)) {
       return
     }
     this.openInSystemBrowser(clean)
-  }
-
-  private openV2exRoute(route: V2exRoute): void {
-    if (route.kind === 'topic' && route.topicId && route.topicId > 0) {
-      const p: TopicDetailParams =
-        route.targetFloor && route.targetFloor > 0
-          ? { topicId: route.topicId, targetFloor: route.targetFloor }
-          : { topicId: route.topicId }
-      this.stack.pushPathByName('TopicDetail', p as Object)
-      return
-    }
-    if (route.kind === 'member' && route.username) {
-      this.openUserProfile(route.username)
-      return
-    }
-    if (route.kind === 'node' && route.nodeName) {
-      const p: NodeTopicListParams = { nodeName: route.nodeName, nodeTitle: route.nodeName }
-      this.stack.pushPathByName('NodeTopicList', p as Object)
-      return
-    }
-    if (route.kind === 'search' && route.query) {
-      // Single dual-write point for the pending-query bus (AppStorage + V2 mirror).
-      SearchQueryBus.publishPending(route.query)
-      this.stack.pushPathByName('Search', null)
-    }
   }
 
   private openReplyEditor(initialContent: string = ''): void {

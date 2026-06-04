@@ -1,21 +1,11 @@
-// Route parameter types
-export interface TopicDetailParams {
-  topicId: number
-  targetFloor?: number
-}
-
-export interface NodeTopicListParams {
-  nodeName: string
-  nodeTitle: string
-}
-
-export interface UserProfileParams {
-  username: string
-}
-
-export interface ImagePreviewParams {
-  url: string
-}
+// Route parameter types (defined in ./model/RouteParams so shared-internal code can import them without
+// cycling through this barrel; re-exported here so consumers keep importing them from 'shared').
+export {
+  TopicDetailParams,
+  NodeTopicListParams,
+  UserProfileParams,
+  ImagePreviewParams,
+} from './model/RouteParams'
 
 // Network layer
 export { HttpClient } from './network/HttpClient'
@@ -400,6 +390,7 @@ export { NodeSearchUtils } from './utils/NodeSearchUtils'
 export type { NodeSearchMatch } from './utils/NodeSearchUtils'
 export { V2exUrlRouter } from './utils/V2exUrlRouter'
 export type { V2exRoute, V2exRouteKind } from './utils/V2exUrlRouter'
+export { V2exRouteNavigator } from './utils/V2exRouteNavigator'
 export { SearchQueryBus } from './utils/SearchQueryBus'
 
 // Adaptive utilities

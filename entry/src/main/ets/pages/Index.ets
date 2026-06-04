@@ -59,7 +59,6 @@ import {
   UserProfileAppbarState,
   WebCheckinRunnerState,
   CookieJarSettings,
-  SearchQueryBus,
   FoldScreenUtil,
   HttpClient,
   HomeTabSettings,
@@ -67,8 +66,7 @@ import {
   ThemeConstants,
   towFASheetOptions,
   TwoFactorChallengeService,
-  V2exRoute,
-  V2exUrlRouter,
+  V2exRouteNavigator,
   translateApiError,
 } from 'shared'
 import { HomePage } from 'feed'
@@ -1102,36 +1100,9 @@ struct Index {
   }
 
   private openV2exRoute(url: string): boolean {
-    const route = V2exUrlRouter.parse(url)
-    if (!route) {
-      return false
-    }
-    this.pushV2exRoute(route)
-    return true
-  }
-
-  private pushV2exRoute(route: V2exRoute): void {
-    const topicParams = IndexRouteCoordinator.topicParams(route)
-    if (topicParams) {
-      this.ns.pushPathByName('TopicDetail', topicParams as Object)
-      return
-    }
-    const userProfileParams = IndexRouteCoordinator.userProfileParams(route)
-    if (userProfileParams) {
-      this.ns.pushPathByName('UserProfile', userProfileParams as Object)
-      return
-    }
-    const nodeTopicParams = IndexRouteCoordinator.nodeTopicParams(route)
-    if (nodeTopicParams) {
-      this.ns.pushPathByName('NodeTopicList', nodeTopicParams as Object)
-      return
-    }
-    const searchQuery = IndexRouteCoordinator.searchQuery(route)
-    if (searchQuery) {
-      // Single dual-write point for the pending-query bus (AppStorage + V2 mirror).
-      SearchQueryBus.publishPending(searchQuery)
-      this.ns.pushPathByName('Search', null)
-    }
+    // Native-first deep-link routing, shared with in-content / node-description links via the same
+    // V2exRouteNavigator policy (topic / node / member / search → native page).
+    return V2exRouteNavigator.openInApp(this.ns, url)
   }
 
   private topicActionItem(
