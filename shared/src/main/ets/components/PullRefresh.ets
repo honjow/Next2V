@@ -286,47 +286,56 @@ export struct PullRefresh {
           this.resetTouchState()
         }
       })
-      Column() {
-        Row() {
+      // Render the indicators ONLY while actually pulling/refreshing. At rest they were invisible
+      // (opacity 0) but still mounted, and HitTestMode.None exempts only this node — the inner Row still
+      // hit-tested. Positioned at indicatorTop (== the content's top padding), the top indicator overlaid
+      // the first content row and swallowed taps on its upper half (the Discover node-chip "dead top
+      // half" bug). Not mounting it at rest removes the overlay entirely.
+      if (this.pullOffset > 0 || this.refreshState >= 2) {
+        Column() {
+          Row() {
+            LoadingProgress()
+              .width(ThemeConstants.INDICATOR_SIZE)
+              .height(ThemeConstants.INDICATOR_SIZE)
+          }
+          .width('100%')
+          .height(ThemeConstants.TITLE_BAR_HEIGHT)
+          .justifyContent(FlexAlign.Center)
+          .opacity(
+            this.refreshState >= 2
+              ? 1
+              : this.pullOffset >= this.threshold * OPACITY_THRESHOLD_FACTOR
+                ? Math.min(
+                    (this.pullOffset - this.threshold * OPACITY_THRESHOLD_FACTOR) /
+                      (this.threshold * OPACITY_THRESHOLD_FACTOR),
+                    1,
+                  )
+                : 0,
+          )
+        }
+        .position({ y: this.indicatorTop + this.pullOffset / 2 })
+        .hitTestBehavior(HitTestMode.None)
+      }
+      if (this.bottomPullOffset > 0 || this.bottomRefreshState >= 2) {
+        Row({ space: ThemeConstants.SPACE_SM }) {
           LoadingProgress()
-            .width(ThemeConstants.INDICATOR_SIZE)
-            .height(ThemeConstants.INDICATOR_SIZE)
+            .width(ThemeConstants.LOADING_SIZE_SMALL)
+            .height(ThemeConstants.LOADING_SIZE_SMALL)
+            .color($r('sys.color.font_secondary'))
         }
         .width('100%')
         .height(ThemeConstants.TITLE_BAR_HEIGHT)
         .justifyContent(FlexAlign.Center)
         .opacity(
-          this.refreshState >= 2
+          this.bottomRefreshState >= 2
             ? 1
-            : this.pullOffset >= this.threshold * OPACITY_THRESHOLD_FACTOR
-              ? Math.min(
-                  (this.pullOffset - this.threshold * OPACITY_THRESHOLD_FACTOR) /
-                    (this.threshold * OPACITY_THRESHOLD_FACTOR),
-                  1,
-                )
+            : this.bottomPullOffset > 0
+              ? Math.min(Math.max(this.bottomPullOffset / this.threshold, 0.2), 1)
               : 0,
         )
+        .position({ y: this.bottomIndicatorY() })
+        .hitTestBehavior(HitTestMode.None)
       }
-      .position({ y: this.indicatorTop + this.pullOffset / 2 })
-      .hitTestBehavior(HitTestMode.None)
-      Row({ space: ThemeConstants.SPACE_SM }) {
-        LoadingProgress()
-          .width(ThemeConstants.LOADING_SIZE_SMALL)
-          .height(ThemeConstants.LOADING_SIZE_SMALL)
-          .color($r('sys.color.font_secondary'))
-      }
-      .width('100%')
-      .height(ThemeConstants.TITLE_BAR_HEIGHT)
-      .justifyContent(FlexAlign.Center)
-      .opacity(
-        this.bottomRefreshState >= 2
-          ? 1
-          : this.bottomPullOffset > 0
-            ? Math.min(Math.max(this.bottomPullOffset / this.threshold, 0.2), 1)
-            : 0,
-      )
-      .position({ y: this.bottomIndicatorY() })
-      .hitTestBehavior(HitTestMode.None)
     }
     .width('100%')
     .height('100%')
