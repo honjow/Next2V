@@ -2797,16 +2797,8 @@
       "value": "새 이미지 업로드"
     },
     {
-      "name": "image_upload_action_from_v2ex",
-      "value": "V2EX 갤러리에서 선택"
-    },
-    {
       "name": "image_upload_action_link",
       "value": "이미지 링크 삽입"
-    },
-    {
-      "name": "image_upload_v2ex_coming_soon",
-      "value": "V2EX 갤러리는 곧 지원될 예정입니다"
     },
     {
       "name": "image_upload_uploading",

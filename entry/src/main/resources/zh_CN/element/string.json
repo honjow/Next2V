@@ -2797,16 +2797,8 @@
       "value": "上传新图片"
     },
     {
-      "name": "image_upload_action_from_v2ex",
-      "value": "从 V2EX 图床选择"
-    },
-    {
       "name": "image_upload_action_link",
       "value": "插入图片链接"
-    },
-    {
-      "name": "image_upload_v2ex_coming_soon",
-      "value": "V2EX 图床即将支持"
     },
     {
       "name": "image_upload_uploading",

@@ -15,7 +15,7 @@ export struct MarkdownToolbar {
   @Event onList?: () => void
   @Event onLink?: () => void
   // The image button opens a menu (anchored on the button itself) instead of one flat action: upload a
-  // new image, pick from the V2EX gallery (pending), or insert a bare image-link skeleton.
+  // new image to the configured image host, or insert a bare image-link skeleton.
   @Event onImageUpload?: () => void
   @Event onInsertImageLink?: () => void
 
@@ -32,7 +32,6 @@ export struct MarkdownToolbar {
   // modifiers mirror the project's bindMenu convention (see ReplyCardActions / SettingsPage dropdowns).
   @Local private imageMenuShown: boolean = false
   @Local private uploadImageIcon: SymbolGlyphModifier = new SymbolGlyphModifier($r('sys.symbol.cloud_and_arrow_up'))
-  @Local private v2exGalleryIcon: SymbolGlyphModifier = new SymbolGlyphModifier($r('sys.symbol.rectangle_stack'))
   @Local private insertLinkIcon: SymbolGlyphModifier = new SymbolGlyphModifier($r('sys.symbol.link'))
 
   // Mirror the parent's previewActive back into segIndex ONLY when they actually differ. On a tap the
@@ -143,14 +142,6 @@ export struct MarkdownToolbar {
     Menu() {
       MenuItem({ content: AppStrings.R_IMAGE_UPLOAD_ACTION_NEW, symbolStartIcon: this.uploadImageIcon })
         .onClick(() => { this.runImageAction(this.onImageUpload) })
-      // V2EX gallery upload is not built yet (deferred behind a live endpoint capture); keep the row
-      // visible-but-disabled so the menu communicates the roadmap.
-      MenuItem({
-        content: AppStrings.R_IMAGE_UPLOAD_ACTION_FROM_V2EX,
-        symbolStartIcon: this.v2exGalleryIcon,
-        labelInfo: AppStrings.R_IMAGE_UPLOAD_V2EX_COMING_SOON,
-      })
-        .enabled(false)
       MenuItem({ content: AppStrings.R_IMAGE_UPLOAD_ACTION_LINK, symbolStartIcon: this.insertLinkIcon })
         .onClick(() => { this.runImageAction(this.onInsertImageLink) })
     }

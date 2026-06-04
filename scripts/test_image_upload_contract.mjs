@@ -47,7 +47,9 @@ check(/stripUploadingPlaceholders/.test(editor) && /uploading:\\\/\\\//.test(edi
 const toolbar = read('shared/src/main/ets/components/MarkdownToolbar.ets')
 check(/\.bindMenu\(this\.imageMenuShown,\s*this\.ImageMenu/.test(toolbar), 'toolbar hangs the image menu (bindMenu) on the picture button')
 check(/MenuItem\(/.test(toolbar) && /R_IMAGE_UPLOAD_ACTION_NEW/.test(toolbar) && /R_IMAGE_UPLOAD_ACTION_LINK/.test(toolbar), 'toolbar image menu offers upload + insert-link items')
-check(/R_IMAGE_UPLOAD_ACTION_FROM_V2EX/.test(toolbar) && /\.enabled\(false\)/.test(toolbar), 'toolbar keeps the V2EX gallery item visible-but-disabled')
+// The V2EX-native gallery option was dropped (paid ~20 coins/image + undocumented endpoint — see the
+// image-upload plan); the menu must no longer reference it.
+check(!/R_IMAGE_UPLOAD_ACTION_FROM_V2EX/.test(toolbar) && !/R_IMAGE_UPLOAD_V2EX_COMING_SOON/.test(toolbar), 'toolbar must NOT offer the V2EX gallery item (feature dropped)')
 // the editor no longer pops a global ActionSheet; it wires the two real menu actions
 check(!/ActionSheet\.show/.test(editor), 'editor no longer uses a global ActionSheet for image source')
 check(/onImageUpload:\s*\(\)\s*=>\s*\{\s*this\.pickAndUploadImage\(\)/.test(editor), 'editor wires onImageUpload → pickAndUploadImage')

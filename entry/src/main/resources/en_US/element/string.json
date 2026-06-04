@@ -2797,16 +2797,8 @@
       "value": "Upload a new image"
     },
     {
-      "name": "image_upload_action_from_v2ex",
-      "value": "Choose from V2EX gallery"
-    },
-    {
       "name": "image_upload_action_link",
       "value": "Insert image link"
-    },
-    {
-      "name": "image_upload_v2ex_coming_soon",
-      "value": "V2EX gallery upload is coming soon"
     },
     {
       "name": "image_upload_uploading",
