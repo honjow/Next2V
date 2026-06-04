@@ -32,10 +32,14 @@ import {
   TopicCard,
   TopicReadStatesState,
   TopicDetailParams,
+  NodeTopicListParams,
   UserProfileParams,
   V2exNode,
   V2exToggleAction,
   V2exTopic,
+  V2exRoute,
+  V2exUrlRouter,
+  SearchQueryBus,
   AppStrings,
   DiagnosticLogger,
   translateApiError,
@@ -240,15 +244,18 @@ export struct NodeTopicPage {
     if (!target) {
       return
     }
-    // Node-description links did nothing before (relative paths like the dict node's "/d/" — its
-    // "V2EX 英汉词典" link — have no external handler). Route any http(s) link or relative V2EX path into
-    // the in-app WebView (cookie-injected for the V2EX origin, plain for external). Only non-http schemes
-    // (mailto:, tel:, …) fall through to the system.
+    // Native-first: a link that maps to a built-in destination (topic /t/, node /go/, member /member/,
+    // search) opens the native page — better than the web view. Only links without a native page (dict
+    // /d/, /i, /settings sub-pages, external sites, …) fall back to the cookie-injected in-app WebView.
+    if (this.openNativeRoute(target)) {
+      return
+    }
     if (target.startsWith('/') || target.startsWith('http://') || target.startsWith('https://')) {
       publishAccountWebViewUrl(target)
       this.stack.pushPathByName('AccountWebView', null)
       return
     }
+    // Non-http schemes (mailto:, tel:, …) fall through to the system.
     try {
       const context = this.getUIContext().getHostContext() as common.UIAbilityContext
       const want: Want = { action: 'ohos.want.action.viewData', uri: target }
@@ -256,6 +263,40 @@ export struct NodeTopicPage {
     } catch (_error) {
       // best-effort external open
     }
+  }
+
+  // Push the native page for a V2EX URL that has one (topic / node / member / search). Returns false when
+  // there is no native destination, so the caller can fall back to the in-app WebView. Mirrors
+  // TopicDetailPage.openV2exRoute so in-content and node-description links route consistently.
+  private openNativeRoute(url: string): boolean {
+    const route: V2exRoute | null = V2exUrlRouter.parse(url)
+    if (!route) {
+      return false
+    }
+    if (route.kind === 'topic' && route.topicId && route.topicId > 0) {
+      const p: TopicDetailParams =
+        route.targetFloor && route.targetFloor > 0
+          ? { topicId: route.topicId, targetFloor: route.targetFloor }
+          : { topicId: route.topicId }
+      this.stack.pushPathByName('TopicDetail', p as Object)
+      return true
+    }
+    if (route.kind === 'member' && route.username) {
+      const p: UserProfileParams = { username: route.username }
+      this.stack.pushPathByName('UserProfile', p as Object)
+      return true
+    }
+    if (route.kind === 'node' && route.nodeName) {
+      const p: NodeTopicListParams = { nodeName: route.nodeName, nodeTitle: route.nodeName }
+      this.stack.pushPathByName('NodeTopicList', p as Object)
+      return true
+    }
+    if (route.kind === 'search' && route.query) {
+      SearchQueryBus.publishPending(route.query)
+      this.stack.pushPathByName('Search', null)
+      return true
+    }
+    return false
   }
 
   @Builder LoadingView() {
