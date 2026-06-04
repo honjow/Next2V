@@ -211,6 +211,13 @@ export interface V2exNodeTopicsPageResult {
   hasMore: boolean
 }
 
+// A page of topics plus whether a next page exists (read from the V2EX pagination footer, not a
+// per-page item count). Used by the web-paginated account lists, e.g. favorites (/my/topics).
+export interface V2exPagedTopicsResult {
+  topics: V2exTopic[]
+  hasMore: boolean
+}
+
 export type Sov2exSortMode = 'sumup' | 'created'
 export type Sov2exOrderMode = '0' | '1'
 

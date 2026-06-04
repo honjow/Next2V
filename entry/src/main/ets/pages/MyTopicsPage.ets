@@ -12,6 +12,7 @@ import {
   translateApiError,
   type TopicDetailParams,
   type V2exTopic,
+  type V2exPagedTopicsResult,
   V2exCookieTwoFactorRequiredError
 } from 'shared'
 
@@ -28,7 +29,6 @@ export struct MyTopicsPage {
   @Local private page: number = 1
   @Local private hasMore: boolean = true
   private api: ApiService = new ApiService()
-  private readonly PAGE_SIZE: number = 20
   private refreshGuard: boolean = false
 
   aboutToAppear(): void {
@@ -115,9 +115,9 @@ export struct MyTopicsPage {
     this.hasMore = true
 
     return this.api.getMyTopicsWithCookie(cookie, 1)
-      .then((topics) => {
-        this.topics = topics
-        this.hasMore = topics.length >= this.PAGE_SIZE
+      .then((result: V2exPagedTopicsResult) => {
+        this.topics = result.topics
+        this.hasMore = result.hasMore
       })
       .catch((error: Error) => {
         if (error instanceof V2exCookieTwoFactorRequiredError) {
@@ -160,12 +160,12 @@ export struct MyTopicsPage {
     this.isLoadingMore = true
     const nextPage = this.page + 1
     this.api.getMyTopicsWithCookie(cookie, nextPage)
-      .then((topics) => {
+      .then((result: V2exPagedTopicsResult) => {
         const existing = new Set(this.topics.map(item => item.id))
-        const appended = topics.filter(item => !existing.has(item.id))
+        const appended = result.topics.filter(item => !existing.has(item.id))
         this.topics = this.topics.concat(appended)
         this.page = nextPage
-        this.hasMore = topics.length >= this.PAGE_SIZE
+        this.hasMore = result.hasMore
       })
       .catch((error: Error) => {
         this.hasMore = false

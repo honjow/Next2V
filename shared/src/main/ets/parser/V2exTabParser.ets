@@ -100,6 +100,30 @@ export class V2exTabParser {
     return ids.length > 0 && ids.length <= 100
   }
 
+  // Whether the list page has a page AFTER the current one — read from the pagination footer
+  // (page_current + the highest ?p=N), NOT from a per-page item count. The favorites page
+  // (/my/topics) returns fewer items per page than a tab feed's 20, so a `count >= 20` heuristic
+  // wrongly stops after page 1. Mirrors V2exNodeParser.extractHasMore.
+  static hasNextPage(html: string): boolean {
+    const clean = V2exTabParser.stripNonContent(html || '')
+    const currentMatch = clean.match(/<a[^>]*class=['"][^'"]*page_current[^'"]*['"][^>]*>(\d+)<\/a>/i)
+    if (currentMatch && currentMatch[1]) {
+      const current = parseInt(currentMatch[1], 10)
+      const pageRe = /[?&]p=(\d+)/gi
+      let max = current
+      let m: RegExpExecArray | null = pageRe.exec(clean)
+      while (m !== null) {
+        const page = parseInt(m[1] || '0', 10)
+        if (page > max) {
+          max = page
+        }
+        m = pageRe.exec(clean)
+      }
+      return max > current
+    }
+    return /[?&]p=2/i.test(clean)
+  }
+
   private static extractJsNumberArray(html: string, variableName: string): V2exJsNumberArrayExtraction {
     if (!html || !variableName) {
       return { ids: [], present: false, rawLength: 0 }

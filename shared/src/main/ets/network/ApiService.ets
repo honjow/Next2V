@@ -50,6 +50,7 @@ import type {
   V2exMemberTopicsPageSnapshot,
   V2exNodeTopicsPageSnapshot,
   V2exNodeTopicsPageResult,
+  V2exPagedTopicsResult,
 } from './NetworkTypes'
 import { ApiError, ApiErrors, ApiErrorCode, isApiError } from './ApiError'
 import { BlockedListSettings, type BlockedListCaptureSource } from '../settings/BlockedListSettings'
@@ -642,7 +643,7 @@ export class ApiService {
     return { mission: after, rewardCoins: rewardCoins }
   }
 
-  async getMyTopicsWithCookie(cookie: string, page: number = 1): Promise<V2exTopic[]> {
+  async getMyTopicsWithCookie(cookie: string, page: number = 1): Promise<V2exPagedTopicsResult> {
     if (!cookie) {
       throw ApiErrors.authRequired()
     }
@@ -651,11 +652,15 @@ export class ApiService {
     if (!V2exSessionParser.extractUsername(html)) {
       throw ApiErrors.webSessionExpired()
     }
+    // hasMore comes from the pagination footer, not a per-page item count: the favorites page returns
+    // fewer than a tab feed's 20 per page, so the old `topics.length >= 20` check stopped after page 1.
+    const hasMore = V2exTabParser.hasNextPage(html)
     const ids = V2exTabParser.extractTopicIds(html)
     if (ids.length === 0) {
-      return []
+      return { topics: [], hasMore: false }
     }
-    return this.getTopicsByIds(ids)
+    const topics = await this.getTopicsByIds(ids)
+    return { topics: topics, hasMore: hasMore }
   }
 
   async getMyRepliesWithCookie(cookie: string, page: number = 1): Promise<V2exTopic[]> {

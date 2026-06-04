@@ -352,6 +352,7 @@ export type {
   V2exMemberTopicsPageSnapshot,
   V2exNodeTopicsPageSnapshot,
   V2exNodeTopicsPageResult,
+  V2exPagedTopicsResult,
   Sov2exSortMode,
   Sov2exOrderMode,
   Sov2exSearchOptions,
