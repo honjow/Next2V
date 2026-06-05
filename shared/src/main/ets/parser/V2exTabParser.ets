@@ -240,15 +240,24 @@ export class V2exTabParser {
       return false
     }
     const escapedUsername = cleanUsername.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-    const memberLink = new RegExp(`<a\\b[^>]*href=["']\\/member\\/${escapedUsername}["'][^>]*>[\\s\\S]*?<\\/a>`, 'i')
-    const match = memberLink.exec(html || '')
-    if (!match) {
-      return false
+    const memberLink = new RegExp(`<a\\b[^>]*href=["'][^"']*\\/member\\/${escapedUsername}(?:[?#][^"']*)?["'][^>]*>[\\s\\S]*?<\\/a>`, 'gi')
+    const escapedRole = cleanRole.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const rolePattern = new RegExp(`(?:^|\\s)${escapedRole}(?:\\s|$)`, 'i')
+    const roleClassPattern = new RegExp(`class=["'][^"']*(?:\\bbadge\\b[^"']*\\b${escapedRole}\\b|\\b${escapedRole}\\b[^"']*\\bbadge\\b)[^"']*["']`, 'i')
+    let match: RegExpExecArray | null = memberLink.exec(html || '')
+    while (match !== null) {
+      const linkHtml = match[0] || ''
+      if (!/<img\b/i.test(linkHtml)) {
+        const start = match.index + linkHtml.length
+        const nearby = (html || '').slice(start, Math.min((html || '').length, start + 220))
+        const text = HtmlEntityUtils.decode(nearby.replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ')
+        if (roleClassPattern.test(nearby) || rolePattern.test(text)) {
+          return true
+        }
+      }
+      match = memberLink.exec(html || '')
     }
-    const nearby = (html || '').slice(match.index, Math.min((html || '').length, match.index + 260))
-    const text = HtmlEntityUtils.decode(nearby.replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ')
-    const rolePattern = new RegExp(`(?:^|\\s)${cleanRole}(?:\\s|$)`, 'i')
-    return rolePattern.test(text)
+    return false
   }
 
   private static placeholderTopic(id: number): V2exTopic {
