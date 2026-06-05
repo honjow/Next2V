@@ -17,15 +17,46 @@ export class ReplyCardLayoutPolicy {
   static readonly THREAD_GUIDE_CONTENT_GAP: number = 6;
   static readonly THREAD_GUIDE_END_INSET: number = 8;
 
-  // Below this measured card width the compact reply header can no longer fit avatar + username +
-  // timestamp + the three action buttons + floor on one line (a long username gets squeezed,
-  // worst inside deeply-threaded 楼中楼 replies). At/under it the header stacks the timestamp under
-  // the username and collapses the actions into a single overflow menu. ~480vp cleanly separates
-  // phones (which stack) from tablets / wide foldables (which keep the roomy inline header).
-  static readonly COMPACT_HEADER_STACK_WIDTH: number = 480;
+  // Inline-compact-header fit budget. The header stacks the timestamp under the username + folds the
+  // actions into a menu ONLY when its single row would not actually fit — decided from THIS reply's
+  // content, not a fixed width threshold (a fixed cut is really a phone/tablet switch: every phone
+  // card is "narrow", every tablet card is "wide", which is not adaptive). The dominant variable is
+  // the username length, so estimate the row's required width from it and compare to the measured
+  // space; a short-name reply stays inline even on a phone, a long-name / genuinely-narrow card folds.
+  static readonly HEADER_INLINE_FIXED_VP: number = 280; // avatar + timestamp + 3 buttons + floor + gaps
+  static readonly HEADER_OP_BADGE_VP: number = 28;
+  static readonly HEADER_DUP_BADGE_VP: number = 34;
+  static readonly HEADER_THANKS_EXTRA_VP: number = 18;
+  static readonly HEADER_USERNAME_FONT_VP: number = 13; // mirrors ThemeConstants.FONT_SIZE_META
 
-  static compactHeaderStacked(cardWidth: number): boolean {
-    return cardWidth > 0 && cardWidth < ReplyCardLayoutPolicy.COMPACT_HEADER_STACK_WIDTH
+  // Rough rendered width of a string: CJK / full-width glyphs ~= the font size, Latin/ASCII ~= 0.56x.
+  // Approximate by design — it only needs to decide a layout fit, and the username's
+  // flexShrink + ellipsis is the safety net when a borderline row is kept inline.
+  static estTextWidth(text: string, fontSizeVp: number): number {
+    let width = 0
+    for (let i = 0; i < text.length; i++) {
+      width += text.charCodeAt(i) > 0x2e7f ? fontSizeVp : fontSizeVp * 0.56
+    }
+    return width
+  }
+
+  static compactHeaderStacked(
+    availableWidth: number,
+    username: string,
+    isOp: boolean,
+    isDuplicate: boolean,
+    hasThanks: boolean,
+  ): boolean {
+    if (availableWidth <= 0) {
+      return false
+    }
+    const required =
+      ReplyCardLayoutPolicy.HEADER_INLINE_FIXED_VP +
+      ReplyCardLayoutPolicy.estTextWidth(username, ReplyCardLayoutPolicy.HEADER_USERNAME_FONT_VP) +
+      (isOp ? ReplyCardLayoutPolicy.HEADER_OP_BADGE_VP : 0) +
+      (isDuplicate ? ReplyCardLayoutPolicy.HEADER_DUP_BADGE_VP : 0) +
+      (hasThanks ? ReplyCardLayoutPolicy.HEADER_THANKS_EXTRA_VP : 0)
+    return required > availableWidth
   }
 
   static leftPadding(embedded: boolean, threadLevel: number): number {

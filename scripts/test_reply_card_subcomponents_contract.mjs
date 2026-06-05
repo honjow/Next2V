@@ -122,20 +122,21 @@ assert.match(actions, /this\.onThankClick && !this\.isThankPending/)
 assert.match(actions, /if \(this\.menuHasItems\(\)\)/)
 assert.match(actions, /else if \(this\.onActionsClick\)/)
 
-// Responsive compact header: once the measured card width is narrow (phones, deeply-threaded
-// 楼中楼 replies) the header stacks the timestamp under the username and collapses the three inline
-// action buttons into a single overflow menu (thank + reply prepended so nothing is lost).
-assert.match(layout, /COMPACT_HEADER_STACK_WIDTH: number = \d+/, 'layout must define COMPACT_HEADER_STACK_WIDTH')
-assert.match(
-  layout,
-  /static compactHeaderStacked\(cardWidth: number\): boolean/,
-  'layout must expose compactHeaderStacked()',
-)
+// Adaptive compact header: the header stacks the timestamp under the username and collapses the three
+// inline action buttons into a single overflow menu (thank + reply prepended so nothing is lost) ONLY
+// when the inline row would not fit THIS reply's content — decided from the username width vs the
+// measured space, NOT a fixed width threshold (a fixed cut is just a phone/tablet switch).
+assert.doesNotMatch(layout, /COMPACT_HEADER_STACK_WIDTH/, 'must NOT use a fixed screen-width threshold')
+assert.match(layout, /static estTextWidth\(text: string, fontSizeVp: number\): number/, 'layout must estimate text width for the fit check')
+assert.match(layout, /static compactHeaderStacked\(/, 'layout must expose compactHeaderStacked()')
+assert.match(layout, /availableWidth: number,/, 'fit check takes the available width')
+assert.match(layout, /username: string,/, 'fit check is content-aware (takes the username)')
 assert.match(replyCard, /private isHeaderNarrow\(\): boolean/, 'ReplyCard must compute isHeaderNarrow()')
+assert.match(replyCard, /private headerAvailableWidth\(\): number/, 'ReplyCard must compute the header available width')
 assert.match(
   replyCard,
-  /ReplyCardLayoutPolicy\.compactHeaderStacked\(this\.cardWidth\)/,
-  'isHeaderNarrow must threshold the measured card width',
+  /compactHeaderStacked\(\s*this\.headerAvailableWidth\(\),\s*this\.reply\.member\.username,/,
+  'isHeaderNarrow must pass the available width + username into the content-aware fit check',
 )
 assert.match(replyCard, /isNarrow:\s*this\.isHeaderNarrow\(\)/, 'ReplyCard must pass isNarrow into the header')
 assert.match(header, /@Param isNarrow: boolean/, 'header must accept isNarrow')
