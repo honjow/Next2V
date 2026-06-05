@@ -10,7 +10,8 @@
 //
 // This check fails closed if (a) FeedPills regresses to a V1 @Component / @StorageLink / @Watch / @State
 // form, (b) it loses the @Monitor recenter signal, the `centeredTarget` coalescing guard, the FeedTabBridge
-// tap routing, or the connectFeedTab() mirror read, or (c) any non-V2 @Component struct appears in the file.
+// tap routing, the connectFeedTab() mirror read, or the cached-content theme repaint dependency, or (c) any
+// non-V2 @Component struct appears in the file.
 // (The whole-file zero-V1 guard also lives in test_v2_leaf_migration_contract.mjs, which now lists this
 // file; this contract pins the FeedPills-specific coalescing invariants that the leaf contract cannot.)
 //
@@ -83,6 +84,11 @@ must(/FeedTabBridge\.publishSelectedKey/.test(feedPills),
 // from the @Monitor-ed FeedTabState so its high-frequency churn cannot perturb the feedTab observers.
 must(/connectFeedVisualIndex\(\)/.test(feedPills) && /visualIndexState\.value/.test(feedPills),
   `${FILE}: FeedPills reads the per-frame index from the isolated FeedVisualIndexState holder`);
+
+// FeedPills is hosted in a cached ComponentContent, so it must subscribe to the V2 theme mirror itself;
+// otherwise system color-mode changes repaint only after a later feed-tab/visual-index update.
+must(/connectThemeDisplay\(\)/.test(feedPills) && /themeDisplay\.effectiveDark/.test(feedPills),
+  `${FILE}: FeedPills reads ThemeDisplayState.effectiveDark for immediate dark/light repaint`);
 
 // No refresh-by-key-churn token snuck in to mask state bugs.
 for (const [re, name] of [[/Date\.now\s*\(/, 'Date.now()'], [/Math\.random\s*\(/, 'Math.random()']]) {

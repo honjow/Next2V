@@ -7,6 +7,7 @@ import {
   connectBlockedListSelectedTab,
   connectDiscoverKeyword,
   connectFeedTab,
+  connectThemeDisplay,
   DiscoverKeywordState,
   FeedTabBridge,
   FeedTabSettings,
@@ -15,6 +16,7 @@ import {
   FeedVisualIndexState,
   TabItem,
   ThemeConstants,
+  ThemeDisplayState,
 } from 'shared'
 import { BlockedListsTabsSegment } from './BlockedListsTabsSegment'
 
@@ -69,6 +71,7 @@ export function BlockedListsTabsCCBuilder() {
 struct FeedPills {
   @Local private feedState: FeedTabState = connectFeedTab();
   @Local private visualIndexState: FeedVisualIndexState = connectFeedVisualIndex();
+  @Local private themeDisplay: ThemeDisplayState = connectThemeDisplay();
   @Local private tabLefts: number[] = [];
   @Local private tabWidths: number[] = [];
   @Local private containerGlobalLeft: number = 0;
@@ -103,11 +106,7 @@ struct FeedPills {
             Column({ space: 1 }) {
               Text(tab.label)
                 .fontSize(ThemeConstants.FONT_SIZE_BODY)
-                .fontColor(
-                  this.visualSelectedIndex() === index
-                    ? ThemeConstants.BRAND_PRIMARY
-                    : ThemeConstants.TEXT_SECONDARY,
-                )
+                .fontColor(this.tabTextColor(index))
                 .fontWeight(
                   this.visualSelectedIndex() === index ? FontWeight.Medium : FontWeight.Regular,
                 )
@@ -194,6 +193,22 @@ struct FeedPills {
       return 0
     }
     return Math.max(0, Math.min(count - 1, Math.round(this.visualIndexState.value)))
+  }
+
+  private tabTextColor(index: number): ResourceColor {
+    const color = this.visualSelectedIndex() === index
+      ? ThemeConstants.BRAND_PRIMARY
+      : ThemeConstants.TEXT_SECONDARY
+    return this.themeTrackedColor(color)
+  }
+
+  private themeTrackedColor(color: ResourceColor): ResourceColor {
+    // FeedPills is hosted in a cached ComponentContent, so it must read the V2 theme signal itself;
+    // the color token stays semantic/system-owned, while this dependency triggers immediate repaint.
+    if (this.themeDisplay.effectiveDark) {
+      return color
+    }
+    return color
   }
 
   private updateTabLayout(index: number, area: Area): void {
