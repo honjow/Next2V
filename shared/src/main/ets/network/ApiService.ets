@@ -602,11 +602,39 @@ export class ApiService {
     if (!cookie) {
       throw ApiErrors.authRequired()
     }
-    const html = await this.getCookieHtml('/mission/daily', cookie)
-    if (!V2exSessionParser.extractUsername(html)) {
-      throw ApiErrors.webSessionExpired()
+    // A logged-in, not-yet-redeemed /mission/daily page carries a redeem URL. When it instead parses as
+    // 'daily_checkin_unavailable' (logged-in, but neither a redeem URL nor a 已领取/已完成/明天 marker) it
+    // is almost always a transient/degraded response — the cause of manual check-in intermittently
+    // reporting "今天不可签到" and of auto check-in silently giving up. Retry a couple times with a short
+    // backoff before concluding. canRedeem and already-done are definitive and returned on the first hit.
+    const backoffsMs: number[] = [0, 400, 800]
+    let mission: V2exDailyMission = {
+      canRedeem: false,
+      redeemPath: '',
+      message: 'daily_checkin_unavailable',
     }
-    return V2exAccountParser.extractDailyMission(html)
+    for (let attempt = 0; attempt < backoffsMs.length; attempt++) {
+      if (backoffsMs[attempt] > 0) {
+        await this.delay(backoffsMs[attempt])
+      }
+      const html = await this.getCookieHtml('/mission/daily', cookie)
+      if (!V2exSessionParser.extractUsername(html)) {
+        throw ApiErrors.webSessionExpired()
+      }
+      mission = V2exAccountParser.extractDailyMission(html)
+      if (mission.message !== 'daily_checkin_unavailable') {
+        return mission
+      }
+    }
+    return mission
+  }
+
+  private delay(ms: number): Promise<void> {
+    return new Promise<void>((resolve: () => void) => {
+      setTimeout(() => {
+        resolve()
+      }, ms)
+    })
   }
 
   async redeemDailyMissionWithCookie(cookie: string): Promise<V2exDailyRedeemResult> {

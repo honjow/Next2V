@@ -65,11 +65,9 @@ export class AutoDailyCheckinService {
       identityFingerprint: attemptIdentity,
     })
     try {
-      await AutoDailyCheckinSettings.saveLastAttemptDate(context, today, attemptIdentity)
-      DiagnosticLogger.info('auto_daily_checkin', 'auto_daily_checkin_attempt_saved', {
-        source: source,
-        date: today,
-      })
+      // Do NOT write the day breadcrumb up front: a transient mission failure must not burn the whole day.
+      // It is persisted below only on a definitive outcome (already-done, or a redeem we actually
+      // requested), so a degraded 'daily_checkin_unavailable' / error self-heals on the next app open.
       const mission = await AutoDailyCheckinService.api.getDailyMissionWithCookie(cleanCookie)
       DiagnosticLogger.info('auto_daily_checkin', 'auto_daily_checkin_mission_loaded', {
         source: source,
@@ -79,6 +77,8 @@ export class AutoDailyCheckinService {
       })
       if (!mission.canRedeem || !mission.redeemPath) {
         const alreadyDone = AutoDailyCheckinService.isAlreadyDoneMessage(mission.message)
+        // Only a definitive already-done persists the breadcrumb (saveSuccessIfAlreadyDone). A transient
+        // 'daily_checkin_unavailable' persists nothing → the next app open retries.
         await AutoDailyCheckinService.saveSuccessIfAlreadyDone(context, today, mission)
         DiagnosticLogger.info('auto_daily_checkin', 'auto_daily_checkin_not_redeemable', {
           source: source,
@@ -87,6 +87,9 @@ export class AutoDailyCheckinService {
         })
         return AutoDailyCheckinService.result(true, false, 'not-redeemable', mission.message)
       }
+      // Redeemable → mark the day attempted now (so a reopen before handleWebResult persists success does
+      // not re-trigger the web redeem).
+      await AutoDailyCheckinSettings.saveLastAttemptDate(context, today, attemptIdentity)
       DiagnosticLogger.info('auto_daily_checkin', 'auto_daily_checkin_redeem_request', {
         source: source,
       })
