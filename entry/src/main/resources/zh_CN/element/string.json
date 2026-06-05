@@ -2979,6 +2979,34 @@
     {
       "name": "perm_distributed_datasync_reason",
       "value": "在你的多台设备间同步收藏与阅读记录"
+    },
+    {
+      "name": "cloud_sync",
+      "value": "云同步"
+    },
+    {
+      "name": "cloud_sync_hint",
+      "value": "登录华为账号后,在你的多台设备间同步搜索历史等数据"
+    },
+    {
+      "name": "cloud_sync_now",
+      "value": "立即同步"
+    },
+    {
+      "name": "cloud_sync_syncing",
+      "value": "正在同步…"
+    },
+    {
+      "name": "cloud_sync_ok",
+      "value": "同步成功"
+    },
+    {
+      "name": "cloud_sync_failed",
+      "value": "同步失败,请稍后重试"
+    },
+    {
+      "name": "cloud_sync_enable",
+      "value": "启用云同步"
     }
   ]
 }

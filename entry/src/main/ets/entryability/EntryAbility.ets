@@ -4,6 +4,7 @@ import { window } from '@kit.ArkUI'
 import { webview } from '@kit.ArkWeb'
 import {
   AppStrings,
+  CloudSyncSettings,
   DiagnosticLogger,
   FoldScreenUtil,
   LanguageSettings,
@@ -122,9 +123,12 @@ export default class EntryAbility extends UIAbility {
         LayoutSafeAreaBridge.publishInsets(FALLBACK_TOP_AVOID, FALLBACK_BOTTOM_AVOID)
         LayoutSafeAreaBridge.publishKeyboardHeight(0)
       }
-      // Phase 1 device-cloud sync validation: best-effort, after content is loaded (required for the
-      // DISTRIBUTED_DATASYNC user-grant dialog). Fire-and-forget; never affects launch.
-      LocalDataCloudSync.tryEnableAndSync(this.context).catch((_error: Error) => {})
+      // Device-cloud sync is opt-in: only enable + sync at startup when the user turned it on (the
+      // setting is restored by SettingsBootstrap.loadAll, which has run before this callback). Best-effort,
+      // after content loads (required for the DISTRIBUTED_DATASYNC user-grant dialog); never affects launch.
+      if (CloudSyncSettings.isEnabled()) {
+        LocalDataCloudSync.tryEnableAndSync(this.context).catch((_error: Error) => {})
+      }
     })
   }
 

@@ -23,6 +23,7 @@ import { ThemeSettings } from './ThemeSettings'
 import { AutoDailyCheckinService } from '../services/AutoDailyCheckinService'
 import { BlockedListSettings } from './BlockedListSettings'
 import { UserMarkSettings } from './UserMarkSettings'
+import { CloudSyncSettings } from './CloudSyncSettings'
 
 export class SettingsBootstrap {
   static async loadAll(context: common.UIAbilityContext): Promise<void> {
@@ -55,6 +56,7 @@ export class SettingsBootstrap {
     SettingsBootstrap.triggerStartupCheckin(context)
     await SettingsBootstrap.restoreReplyCardStyle(context, settingsStore)
     await SettingsBootstrap.restoreReplyActionAlignment(context, settingsStore)
+    await SettingsBootstrap.restoreCloudSync(context, settingsStore)
   }
 
   /**
@@ -89,6 +91,7 @@ export class SettingsBootstrap {
     await SettingsBootstrap.restoreAutoDailyCheckin(context, settingsStore)
     await SettingsBootstrap.restoreReplyCardStyle(context, settingsStore)
     await SettingsBootstrap.restoreReplyActionAlignment(context, settingsStore)
+    await SettingsBootstrap.restoreCloudSync(context, settingsStore)
   }
 
   private static async restoreApiDomain(context: common.UIAbilityContext, settingsStore?: SettingsPreferencesStore): Promise<void> {
@@ -259,6 +262,19 @@ export class SettingsBootstrap {
     ).catch((error: Error) => {
       console.error('restore auto daily check-in setting failed: ' + error.message)
       AutoDailyCheckinSettings.apply(true)
+    })
+  }
+
+  private static async restoreCloudSync(
+    context: common.UIAbilityContext,
+    settingsStore?: SettingsPreferencesStore,
+  ): Promise<void> {
+    await (settingsStore
+      ? CloudSyncSettings.loadFromStore(settingsStore)
+      : CloudSyncSettings.load(context)
+    ).catch((error: Error) => {
+      console.error('restore cloud sync setting failed: ' + error.message)
+      CloudSyncSettings.apply(false)
     })
   }
 

@@ -70,6 +70,9 @@ export class StorageKeys {
     'autoDailyCheckinLastAttemptIdentity'
   static readonly AUTO_DAILY_CHECKIN_LAST_SUCCESS_DATE: string = 'autoDailyCheckinLastSuccessDate'
 
+  // Device-cloud sync (端云协同) user toggle. Default OFF (opt-in).
+  static readonly CLOUD_SYNC_ENABLED: string = 'cloudSyncEnabled'
+
   // NOTE: the former API_RATE_LIMIT_* ('apiRateLimit*') legacy AppStorage keys were removed — they
   // had zero runtime consumers after the api-rate-limit V2 slice. The rate-limit snapshot now lives
   // in the AppStorageV2 'v2:apiRateLimit' store (ApiRateLimitState.ets); do not reintroduce legacy

@@ -2,6 +2,7 @@ import { abilityAccessCtrl, common, Permissions } from '@kit.AbilityKit'
 import { relationalStore } from '@kit.ArkData'
 import { LocalDataStore } from './LocalDataStore'
 import { DiagnosticLogger } from '../diagnostics/DiagnosticLogger'
+import { connectCloudSync } from '../state/CloudSyncState'
 
 // Device-cloud sync (端云协同) for the local RDB. A table is synced only when (a) its primary key is stable
 // across devices so a last-write-wins merge on *_at columns is safe, AND (b) its cloud data type exists in
@@ -102,30 +103,71 @@ export class LocalDataCloudSync {
     return false
   }
 
-  // Trigger a manual cloud-first sync of the marked tables and log the progress code. A `code` of
-  // RDB_CLOUD_DISABLED (3) means the user has not enabled cloud sync for the app at the system level —
-  // expected and harmless; the app keeps working locally.
-  static async cloudSyncNow(context: common.UIAbilityContext): Promise<void> {
+  // Trigger a manual cloud-first sync of the marked tables; resolve with whether it reached progressCode 0
+  // and record the outcome in CloudSyncState (surfaced by the Settings "立即同步" row). A `code` of
+  // RDB_CLOUD_DISABLED (3) means cloud sync is not enabled at the system level — harmless; app keeps
+  // working locally.
+  static async cloudSyncNow(context: common.UIAbilityContext): Promise<boolean> {
+    const state = connectCloudSync()
+    state.syncing = true
     try {
       const store = await LocalDataStore.open(context)
-      await store.cloudSync(
-        relationalStore.SyncMode.SYNC_MODE_CLOUD_FIRST,
-        (progress: relationalStore.ProgressDetails) => {
-          DiagnosticLogger.info('cloud_sync', 'cloud_sync_progress', {
-            schedule: progress.schedule,
-            progressCode: progress.code,
+      // store.cloudSync's promise resolves once the sync is ACCEPTED, not finished — the real outcome
+      // arrives later via the progress callback's SYNC_FINISH event. Resolve on that (with a safety
+      // timeout so a never-finishing sync still settles), reading progress.code at finish.
+      const ok: boolean = await new Promise<boolean>((resolve: (value: boolean) => void) => {
+        let settled: boolean = false
+        const finish = (result: boolean): void => {
+          if (!settled) {
+            settled = true
+            resolve(result)
+          }
+        }
+        const timer = setTimeout(() => {
+          finish(false)
+        }, 30000)
+        store
+          .cloudSync(
+            relationalStore.SyncMode.SYNC_MODE_CLOUD_FIRST,
+            (progress: relationalStore.ProgressDetails) => {
+              DiagnosticLogger.info('cloud_sync', 'cloud_sync_progress', {
+                schedule: progress.schedule,
+                progressCode: progress.code,
+              })
+              if (progress.schedule === relationalStore.Progress.SYNC_FINISH) {
+                clearTimeout(timer)
+                finish(progress.code === 0)
+              }
+            },
+          )
+          .catch((error: Error) => {
+            clearTimeout(timer)
+            DiagnosticLogger.warn(
+              'cloud_sync',
+              'cloud_sync_error',
+              { errorKind: error.name || 'Error', message: error.message || '' },
+              error,
+            )
+            finish(false)
           })
-        },
-      )
-      DiagnosticLogger.info('cloud_sync', 'cloud_sync_done', {})
+      })
+      state.lastSyncAt = Date.now()
+      state.lastSyncOk = ok
+      state.syncing = false
+      DiagnosticLogger.info('cloud_sync', 'cloud_sync_done', { ok: ok })
+      return ok
     } catch (error) {
       const e = error as Error
+      state.lastSyncAt = Date.now()
+      state.lastSyncOk = false
+      state.syncing = false
       DiagnosticLogger.warn(
         'cloud_sync',
         'cloud_sync_error',
         { errorKind: e.name || 'Error', message: e.message || '' },
         e,
       )
+      return false
     }
   }
 

@@ -2979,6 +2979,34 @@
     {
       "name": "perm_distributed_datasync_reason",
       "value": "기기 간에 북마크와 읽기 기록을 동기화합니다"
+    },
+    {
+      "name": "cloud_sync",
+      "value": "클라우드 동기화"
+    },
+    {
+      "name": "cloud_sync_hint",
+      "value": "화웨이 계정으로 로그인하면 검색 기록 등의 데이터가 여러 기기에서 동기화됩니다."
+    },
+    {
+      "name": "cloud_sync_now",
+      "value": "지금 동기화"
+    },
+    {
+      "name": "cloud_sync_syncing",
+      "value": "동기화 중…"
+    },
+    {
+      "name": "cloud_sync_ok",
+      "value": "동기화됨"
+    },
+    {
+      "name": "cloud_sync_failed",
+      "value": "동기화 실패, 잠시 후 다시 시도하세요"
+    },
+    {
+      "name": "cloud_sync_enable",
+      "value": "클라우드 동기화 사용"
     }
   ]
 }

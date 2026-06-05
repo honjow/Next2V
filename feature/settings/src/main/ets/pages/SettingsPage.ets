@@ -6,6 +6,7 @@ import {
   AvatarAppearanceSettings,
   AvatarAppearanceState,
   CacheSettings,
+  CloudSyncSettings,
   connectApiDomain,
   connectAutoDailyCheckin,
   connectAvatarAppearance,
@@ -29,6 +30,7 @@ import {
   NetworkProxySettings,
   NetworkProxyState,
   LanguageSettings,
+  LocalDataCloudSync,
   ReadingSettings,
   ReadingSettingsState,
   SecondaryListScaffold,
@@ -73,6 +75,8 @@ export struct SettingsPage {
   // Settings toggled only on this page (single writer while visible) are @Local: hydrated from
   // AppStorage in aboutToAppear and updated optimistically by the toggle handlers below.
   @Local private autoDailyCheckinEnabled: boolean = true;
+  @Local private cloudSyncEnabled: boolean = false;
+  @Local private cloudSyncMessage: string = '';
   @Local private autoLoadImages: boolean = true;
   @Local private onlyLoadImagesOnWifi: boolean = false;
   @Local private themeMode: string = ThemeSettings.MODE_AUTO;
@@ -106,6 +110,7 @@ export struct SettingsPage {
   // auto-hide default, holding-hand unsupported, restore-position off).
   private hydratePreferences(): void {
     this.autoDailyCheckinEnabled = connectAutoDailyCheckin().enabled
+    this.cloudSyncEnabled = CloudSyncSettings.isEnabled()
     const media = connectMediaSettings()
     this.autoLoadImages = media.autoLoadImages
     this.onlyLoadImagesOnWifi = media.onlyLoadImagesOnWifi
@@ -127,6 +132,12 @@ export struct SettingsPage {
         }
         ListItem() {
           this.AccountSection()
+        }
+        ListItem() {
+          this.SectionHeader(AppStrings.R_CLOUD_SYNC)
+        }
+        ListItem() {
+          this.CloudSyncSection()
         }
         ListItem() {
           this.SectionHeader(AppStrings.R_SETTINGS_APPEARANCE)
@@ -216,6 +227,26 @@ export struct SettingsPage {
       this.TogglePreferenceRow(AppStrings.R_AUTO_CHECKIN, this.autoDailyCheckinEnabled, (value: boolean) => {
         this.updateAutoDailyCheckin(value)
       })
+    }
+  }
+
+  @Builder
+  CloudSyncSection() {
+    GroupedListSection() {
+      this.TogglePreferenceRow(AppStrings.R_CLOUD_SYNC_ENABLE, this.cloudSyncEnabled, (value: boolean) => {
+        this.updateCloudSync(value)
+      })
+      if (this.cloudSyncEnabled) {
+        this.SettingsDivider()
+        ConciseListRow({
+          title: AppStrings.R_CLOUD_SYNC_NOW,
+          subtitle: this.cloudSyncMessage,
+          showChevron: false,
+          action: () => {
+            this.runCloudSyncNow()
+          },
+        })
+      }
     }
   }
 
@@ -704,6 +735,39 @@ export struct SettingsPage {
     this.autoDailyCheckinEnabled = enabled
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     SettingsSaveCoordinator.saveAutoDailyCheckin(context, enabled)
+  }
+
+  private updateCloudSync(enabled: boolean): void {
+    this.cloudSyncEnabled = enabled
+    this.cloudSyncMessage = ''
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    CloudSyncSettings.save(context, enabled)
+      .then(() => {
+        // Enabling: request the permission, mark the distributed tables, and run a first sync now.
+        if (enabled) {
+          LocalDataCloudSync.tryEnableAndSync(context).catch((_error: Error) => {})
+        }
+      })
+      .catch((error: Error) => {
+        console.error('save cloud sync setting failed: ' + error.message)
+      })
+  }
+
+  private runCloudSyncNow(): void {
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    this.cloudSyncMessage = AppStrings.text(AppStrings.R_CLOUD_SYNC_SYNCING, 'Syncing…')
+    LocalDataCloudSync.cloudSyncNow(context)
+      .then((ok: boolean) => {
+        this.cloudSyncMessage = ok
+          ? AppStrings.text(AppStrings.R_CLOUD_SYNC_OK, 'Synced')
+          : AppStrings.text(AppStrings.R_CLOUD_SYNC_FAILED, 'Sync failed, please try again later')
+      })
+      .catch((_error: Error) => {
+        this.cloudSyncMessage = AppStrings.text(
+          AppStrings.R_CLOUD_SYNC_FAILED,
+          'Sync failed, please try again later',
+        )
+      })
   }
 
   private updateHomeTabAutoHide(enabled: boolean): void {

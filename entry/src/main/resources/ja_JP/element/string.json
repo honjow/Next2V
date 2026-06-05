@@ -2979,6 +2979,34 @@
     {
       "name": "perm_distributed_datasync_reason",
       "value": "お使いの複数の端末間でブックマークと閲覧履歴を同期します"
+    },
+    {
+      "name": "cloud_sync",
+      "value": "クラウド同期"
+    },
+    {
+      "name": "cloud_sync_hint",
+      "value": "ファーウェイアカウントでログインすると、検索履歴などのデータが複数の端末間で同期されます。"
+    },
+    {
+      "name": "cloud_sync_now",
+      "value": "今すぐ同期"
+    },
+    {
+      "name": "cloud_sync_syncing",
+      "value": "同期中…"
+    },
+    {
+      "name": "cloud_sync_ok",
+      "value": "同期しました"
+    },
+    {
+      "name": "cloud_sync_failed",
+      "value": "同期に失敗しました。後でもう一度お試しください"
+    },
+    {
+      "name": "cloud_sync_enable",
+      "value": "クラウド同期を有効にする"
     }
   ]
 }

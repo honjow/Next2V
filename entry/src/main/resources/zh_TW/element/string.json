@@ -2979,6 +2979,34 @@
     {
       "name": "perm_distributed_datasync_reason",
       "value": "在你的多台裝置間同步收藏與閱讀記錄"
+    },
+    {
+      "name": "cloud_sync",
+      "value": "雲同步"
+    },
+    {
+      "name": "cloud_sync_hint",
+      "value": "登入華為帳號後,在你的多部裝置間同步搜尋記錄等資料"
+    },
+    {
+      "name": "cloud_sync_now",
+      "value": "立即同步"
+    },
+    {
+      "name": "cloud_sync_syncing",
+      "value": "正在同步…"
+    },
+    {
+      "name": "cloud_sync_ok",
+      "value": "同步成功"
+    },
+    {
+      "name": "cloud_sync_failed",
+      "value": "同步失敗,請稍後再試"
+    },
+    {
+      "name": "cloud_sync_enable",
+      "value": "啟用雲同步"
     }
   ]
 }

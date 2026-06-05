@@ -2979,6 +2979,34 @@
     {
       "name": "perm_distributed_datasync_reason",
       "value": "Sync your bookmarks and reading history across your devices"
+    },
+    {
+      "name": "cloud_sync",
+      "value": "Cloud Sync"
+    },
+    {
+      "name": "cloud_sync_hint",
+      "value": "Sign in with your Huawei account to sync data like search history across your devices."
+    },
+    {
+      "name": "cloud_sync_now",
+      "value": "Sync Now"
+    },
+    {
+      "name": "cloud_sync_syncing",
+      "value": "Syncing…"
+    },
+    {
+      "name": "cloud_sync_ok",
+      "value": "Synced"
+    },
+    {
+      "name": "cloud_sync_failed",
+      "value": "Sync failed, please try again later"
+    },
+    {
+      "name": "cloud_sync_enable",
+      "value": "Enable Cloud Sync"
     }
   ]
 }
