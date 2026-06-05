@@ -63,6 +63,17 @@ for (const field of ['title', 'topics', 'icon', 'savedAt']) {
 assertIncludes(page, '@ComponentV2', 'saved node row view must use a V2 component boundary')
 assertIncludes(page, '@Param row: SavedNodeRow', 'V2 row view must receive the observed row model via @Param')
 assertIncludes(page, '@Event onOpen', 'V2 row view must surface open action via @Event, not a parent-state read')
+assertNotIncludes(page, 'trailingText: this.rowSavedDate()', 'saved node row must not show saved date as trailing text')
+assertNotIncludes(page, 'private rowSavedDate()', 'saved node row must not carry a saved-date formatter')
+assertNotIncludes(page, 'DateUtils', 'saved node row must not import date formatting just to show saved time')
+
+const rowSubtitleBody = methodBody(page, 'private rowSubtitle')
+assertNotIncludes(
+  rowSubtitleBody,
+  'saved_locally_on_format',
+  'saved node subtitle must not include the long "saved locally on" label'
+)
+assertNotIncludes(rowSubtitleBody, 'DateUtils.toDateString', 'saved node subtitle must not include the full timestamp')
 
 // Stable row identity store, mirroring the blocked-member row pattern.
 assertIncludes(page, 'private nodeRowsByName: Map<string, SavedNodeRow>', 'page must keep stable row objects by node name')

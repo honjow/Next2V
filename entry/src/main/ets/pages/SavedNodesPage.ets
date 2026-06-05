@@ -5,7 +5,6 @@ import {
   CollectionSettings,
   ConciseListRow,
   connectNavStack,
-  DateUtils,
   EmptyState,
   GroupedListSection,
   NodeIndexRepository,
@@ -67,7 +66,6 @@ struct SavedNodeRowView {
     if (this.row.topics > 0) {
       parts.push(AppStrings.format(AppStrings.text(AppStrings.R_NODE_TOPICS_COUNT, '{0} topics'), [String(this.row.topics)]))
     }
-    parts.push(AppStrings.format(AppStrings.text($r('app.string.saved_locally_on_format'), 'Saved locally on {0}'), [DateUtils.toDateString(this.row.savedAt)]))
     return parts.join(' · ')
   }
 }
