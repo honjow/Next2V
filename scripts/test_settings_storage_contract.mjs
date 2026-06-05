@@ -496,6 +496,7 @@ assert(entry.includes("win.on('windowSizeChange'"), 'EntryAbility must refresh s
 assert(entry.includes("win.off('avoidAreaChange'"), 'EntryAbility must unregister avoidAreaChange listener')
 assert(entry.includes("win.off('windowSizeChange'"), 'EntryAbility must unregister windowSizeChange listener')
 assert(entry.includes('TYPE_SYSTEM') && entry.includes('TYPE_NAVIGATION_INDICATOR'), 'EntryAbility safe-area refresh must re-read system and navigation avoid areas')
+assert(entry.includes('TYPE_SYSTEM_GESTURE') && entry.includes('TYPE_CUTOUT'), 'EntryAbility bottom safe-area refresh must include gesture and cutout avoid areas')
 assert(entry.includes('_settled'), 'EntryAbility must schedule a settled safe-area refresh after window geometry changes')
 const loadAllIndex = entry.indexOf('SettingsBootstrap.loadAll(this.context)')
 const finallyIndex = entry.indexOf('.finally', loadAllIndex)

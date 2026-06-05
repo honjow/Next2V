@@ -164,6 +164,7 @@ export struct TopicDetailPage {
   private readonly TOPIC_DETAIL_RESUME_BUTTON_SIZE: number =
     ThemeConstants.TOPIC_DETAIL_RESUME_BUTTON_SIZE;
   private readonly TOPIC_DETAIL_REPLY_BUTTON_ACTIVITY_PADDING: number = ThemeConstants.SPACE_LG;
+  private readonly TOPIC_DETAIL_REPLY_BUTTON_BOTTOM_CLEARANCE: number = ThemeConstants.SPACE_LG;
   private readonly TOPIC_DETAIL_REPLY_BUTTON_SCROLL_DELTA_PX: number = 6;
   // Treat the saved floor as "reached" once the viewport center is within this many floors of it,
   // so the resume button dismisses a touch early rather than requiring an exact landing.
@@ -472,6 +473,7 @@ export struct TopicDetailPage {
           barWidth: this.TOPIC_DETAIL_REPLY_BUTTON_SIZE,
           barHeight: this.TOPIC_DETAIL_REPLY_BUTTON_SIZE,
           activityPadding: this.TOPIC_DETAIL_REPLY_BUTTON_ACTIVITY_PADDING,
+          barBottomMargin: this.TOPIC_DETAIL_REPLY_BUTTON_ACTIVITY_PADDING,
           onButtonClick: () => {
             this.openReplyEditor()
           },
@@ -505,6 +507,7 @@ export struct TopicDetailPage {
       this.detailRootHeight,
       this.layout.bottomAvoidHeight,
       this.TOPIC_DETAIL_REPLY_BUTTON_SIZE,
+      this.TOPIC_DETAIL_REPLY_BUTTON_BOTTOM_CLEARANCE,
     )
   }
 
@@ -539,6 +542,7 @@ export struct TopicDetailPage {
           barWidth: this.TOPIC_DETAIL_RESUME_BUTTON_SIZE,
           barHeight: this.TOPIC_DETAIL_RESUME_BUTTON_SIZE,
           activityPadding: this.TOPIC_DETAIL_REPLY_BUTTON_ACTIVITY_PADDING,
+          barBottomMargin: this.TOPIC_DETAIL_REPLY_BUTTON_ACTIVITY_PADDING,
           onButtonClick: () => {
             this.resumeToSavedFloor()
           },

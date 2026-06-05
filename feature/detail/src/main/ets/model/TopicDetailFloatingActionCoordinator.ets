@@ -14,11 +14,17 @@ export interface TopicDetailFollowTouchUpdate {
 }
 
 export class TopicDetailFloatingActionCoordinator {
-  static actionBarTop(rootHeight: number, bottomAvoidHeight: number, buttonSize: number): number {
+  static actionBarTop(
+    rootHeight: number,
+    bottomAvoidHeight: number,
+    buttonSize: number,
+    bottomClearance: number = 0,
+  ): number {
     if (rootHeight <= 0) {
       return 0
     }
-    return Math.max(0, rootHeight - bottomAvoidHeight - buttonSize)
+    const bottomInset = Math.max(0, bottomAvoidHeight) + Math.max(0, bottomClearance)
+    return Math.max(0, rootHeight - bottomInset - buttonSize)
   }
 
   static actionBarAlign(edge: string): FlexAlign {

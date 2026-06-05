@@ -145,19 +145,40 @@ export default class EntryAbility extends UIAbility {
 
   private refreshSafeAreaInsets(win: window.Window, uiCtx: UIContext, source: string): void {
     try {
-      const systemArea = win.getWindowAvoidArea(window.AvoidAreaType.TYPE_SYSTEM)
-      const navArea = win.getWindowAvoidArea(window.AvoidAreaType.TYPE_NAVIGATION_INDICATOR)
-      // Re-read avoid areas from the live window instead of trusting event payloads. Some events only
-      // carry one avoid-area type; querying both keeps the shared insets complete after fold/display changes.
-      LayoutSafeAreaBridge.publishInsets(
-        uiCtx.px2vp(systemArea.topRect.height),
-        uiCtx.px2vp(navArea.bottomRect.height),
+      // Re-read avoid areas from the live window instead of trusting event payloads. Some foldable
+      // outer screens report bottom protection as gesture/cutout rather than navigation indicator.
+      const topAvoidHeight = Math.max(
+        this.safeAreaTopHeight(win, uiCtx, window.AvoidAreaType.TYPE_SYSTEM),
+        this.safeAreaTopHeight(win, uiCtx, window.AvoidAreaType.TYPE_CUTOUT),
       )
+      const bottomAvoidHeight = Math.max(
+        this.safeAreaBottomHeight(win, uiCtx, window.AvoidAreaType.TYPE_SYSTEM),
+        this.safeAreaBottomHeight(win, uiCtx, window.AvoidAreaType.TYPE_NAVIGATION_INDICATOR),
+        this.safeAreaBottomHeight(win, uiCtx, window.AvoidAreaType.TYPE_SYSTEM_GESTURE),
+        this.safeAreaBottomHeight(win, uiCtx, window.AvoidAreaType.TYPE_CUTOUT),
+      )
+      LayoutSafeAreaBridge.publishInsets(topAvoidHeight, bottomAvoidHeight)
     } catch (error) {
       const e = error as Error
       console.error('refresh safe area insets failed: ' + e.message)
       DiagnosticLogger.exception('app', 'safe_area_insets_refresh_failed', e, { source: source })
       LayoutSafeAreaBridge.publishInsets(FALLBACK_TOP_AVOID, FALLBACK_BOTTOM_AVOID)
+    }
+  }
+
+  private safeAreaTopHeight(win: window.Window, uiCtx: UIContext, type: window.AvoidAreaType): number {
+    try {
+      return uiCtx.px2vp(win.getWindowAvoidArea(type).topRect.height)
+    } catch (_error) {
+      return 0
+    }
+  }
+
+  private safeAreaBottomHeight(win: window.Window, uiCtx: UIContext, type: window.AvoidAreaType): number {
+    try {
+      return uiCtx.px2vp(win.getWindowAvoidArea(type).bottomRect.height)
+    } catch (_error) {
+      return 0
     }
   }
 

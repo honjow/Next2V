@@ -84,6 +84,26 @@ const INDEX = 'entry/src/main/ets/pages/Index.ets';
     `${PAGE}: resume button uses the i18n accessibility resource`);
 }
 
+// 1c) Floating reply/resume buttons must stay above foldable outer-screen bottom protection.
+//     Some devices report little/no navigation-indicator inset on the outer screen; the FAB still
+//     needs its own visual clearance and the HDS internal bottom margin must match the activity box.
+{
+  const raw = read(PAGE);
+  const code = strip(raw);
+  const coordinator = strip(read('feature/detail/src/main/ets/model/TopicDetailFloatingActionCoordinator.ets'));
+  const barBottomMarginMatches = code.match(/barBottomMargin:\s*this\.TOPIC_DETAIL_REPLY_BUTTON_ACTIVITY_PADDING/g) || [];
+  must(/TOPIC_DETAIL_REPLY_BUTTON_BOTTOM_CLEARANCE\s*:\s*number\s*=\s*ThemeConstants\.SPACE_LG/.test(code),
+    `${PAGE}: declares a minimum bottom clearance for floating reply actions`);
+  must(/TopicDetailFloatingActionCoordinator\.actionBarTop\([\s\S]*this\.layout\.bottomAvoidHeight[\s\S]*this\.TOPIC_DETAIL_REPLY_BUTTON_SIZE[\s\S]*this\.TOPIC_DETAIL_REPLY_BUTTON_BOTTOM_CLEARANCE/.test(code),
+    `${PAGE}: applies bottom safe area plus minimum clearance to the reply FAB`);
+  must(barBottomMarginMatches.length >= 2,
+    `${PAGE}: reply and resume FABs align HDS barBottomMargin with activity padding`);
+  must(/bottomClearance:\s*number\s*=\s*0/.test(coordinator),
+    'TopicDetailFloatingActionCoordinator.actionBarTop keeps default bottomClearance compatibility');
+  must(/Math\.max\(0,\s*bottomAvoidHeight\)\s*\+\s*Math\.max\(0,\s*bottomClearance\)/.test(coordinator),
+    'TopicDetailFloatingActionCoordinator.actionBarTop combines safe area and explicit clearance');
+}
+
 // 2) TopicDetailActionState is the V2 command-bus mirror (replaced the V1 listener adapter) ----------
 {
   const code = strip(read(ACTION_MIRROR));
