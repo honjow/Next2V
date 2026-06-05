@@ -1,4 +1,4 @@
-import { V2exTopic, ApiService, translateApiError, CacheMergeCoordinator, RefreshFeedback } from 'shared'
+import { V2exTopic, ApiService, translateApiError, CacheMergeCoordinator } from 'shared'
 import type { TopicReadState } from 'shared'
 import { FeedDataSource } from '../model/FeedModels'
 import { vibrator } from '@kit.SensorServiceKit'
@@ -117,9 +117,10 @@ export class FeedViewModel {
       await this.saveCache(data)
     } catch (error) {
       this.errorMessage = translateApiError(error)
-      // A pull-to-refresh failure is otherwise silent once a list is on screen (the error view only
-      // shows when empty), so a 403 looks like a no-op — surface it as a toast.
-      RefreshFeedback.notifyRefreshError(this.itemCount > 0)
+      // Re-throw so the shared PullRefresh surfaces a single "refresh failed" toast. errorMessage is
+      // still set for the empty-state view; loadData() (initial load) keeps swallowing, so an empty
+      // first-load failure shows the inline error and never toasts.
+      throw error as Error
     } finally {
       this.isRefreshing = false
     }
@@ -143,7 +144,7 @@ export class FeedViewModel {
       await this.saveCache(data)
     } catch (error) {
       this.errorMessage = translateApiError(error)
-      RefreshFeedback.notifyRefreshError(this.itemCount > 0)
+      throw error as Error
     } finally {
       this.isRefreshing = false
     }

@@ -1,5 +1,6 @@
 import { vibrator } from '@kit.SensorServiceKit'
 import { ThemeConstants } from '../theme/ThemeConstants'
+import { RefreshFeedback } from '../utils/RefreshFeedback'
 
 const PULL_START_DRAG_VP: number = 4
 // A pull only ARMS (and disables the inner Scroll) after a deliberate, vertical-dominant drag past this
@@ -124,7 +125,14 @@ export struct PullRefresh {
   }
 
   private async doRefresh(): Promise<void> {
-    await this.onRefresh()
+    // Centralized pull-to-refresh failure feedback: a rejecting onRefresh means the user's pull failed
+    // (initial/programmatic loads never reach here), so surface one toast — and still finish the
+    // indicator animation either way, so a failed refresh can't leave the spinner stuck.
+    try {
+      await this.onRefresh()
+    } catch (_error) {
+      RefreshFeedback.notifyRefreshFailed()
+    }
     this.refreshState = 3
     setTimeout(() => this.bounceBack(0), ThemeConstants.ANIM_DONE_DELAY_MS)
   }

@@ -2,18 +2,16 @@ import { promptAction } from '@kit.ArkUI'
 import { AppStrings } from '../i18n/AppStrings'
 
 /**
- * Feedback for a failed pull-to-refresh.
+ * Centralized feedback for a failed pull-to-refresh.
  *
- * When a refresh fails while content is already on screen, the error is invisible: the page only
- * renders its error/empty state when the list is empty, so with content present the failure looks
- * like a no-op (e.g. a 403 from a banned exit IP shows nothing until the user opens a topic). Surface
- * it as a toast in exactly that case — initial loads (no content yet) keep their inline error view.
+ * The shared `PullRefresh` component calls this when its refresh callback REJECTS — and that path runs
+ * only for a user-initiated pull. Initial / programmatic loads (e.g. a ViewModel's `loadData`) never go
+ * through `PullRefresh`, so an empty-list first-load failure keeps its inline error/empty view and is
+ * never double-reported here. The only thing each feed must do is let its refresh reject on failure
+ * (instead of swallowing the error) — the toast itself lives here, written once.
  */
 export class RefreshFeedback {
-  static notifyRefreshError(hasContent: boolean): void {
-    if (!hasContent) {
-      return
-    }
+  static notifyRefreshFailed(): void {
     promptAction
       .openToast({ message: AppStrings.text(AppStrings.R_COMMON_REFRESH_FAILED, 'Refresh failed') })
       .catch((_error: Error) => {})
