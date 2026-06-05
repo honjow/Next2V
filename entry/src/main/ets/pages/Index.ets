@@ -997,6 +997,17 @@ struct Index {
         ),
       )
     }
+    if (this.userProfileAppbar.markLabel) {
+      items.push(
+        this.topicActionItem(
+          AppStrings.R_USER_ACTION_MARK,
+          $r('sys.symbol.bookmark'),
+          () => {
+            this.sendUserProfileAction('mark')
+          },
+        ),
+      )
+    }
     if (this.userProfileAppbar.blockLabel) {
       items.push(
         this.topicActionItem(

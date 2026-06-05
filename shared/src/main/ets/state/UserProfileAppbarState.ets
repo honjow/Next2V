@@ -2,7 +2,7 @@ import { AppStorageV2 } from '@kit.ArkUI'
 
 /**
  * V2 mirror of the user-profile appbar state `UserProfilePage` reports UP to the `Index` title bar
- * (the action menu availability/labels/toggle flags + the title identity strings).
+ * (the local mark + follow/block action menu availability/labels/toggle flags + the title identity strings).
  *
  * Writers route through the `publish*` helpers so this single `@Trace` mirror stays authoritative; the
  * migrated `@ComponentV2` `Index` reads the `@Trace` fields in its user-profile title-bar builder +
@@ -15,6 +15,7 @@ import { AppStorageV2 } from '@kit.ArkUI'
 export class UserProfileAppbarState {
   @Trace actionsAvailable: boolean = false
   @Trace actionsUsername: string = ''
+  @Trace markLabel: string = ''
   @Trace followLabel: string = ''
   @Trace blockLabel: string = ''
   @Trace following: boolean = false
@@ -38,6 +39,9 @@ export function publishUserProfileActionsAvailable(value: boolean): void {
 }
 export function publishUserProfileActionsUsername(value: string): void {
   connectUserProfileAppbar().actionsUsername = value
+}
+export function publishUserProfileMarkLabel(value: string): void {
+  connectUserProfileAppbar().markLabel = value
 }
 export function publishUserProfileFollowLabel(value: string): void {
   connectUserProfileAppbar().followLabel = value

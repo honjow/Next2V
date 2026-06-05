@@ -1825,6 +1825,50 @@
       "value": "차단 해제"
     },
     {
+      "name": "user_action_mark",
+      "value": "마크"
+    },
+    {
+      "name": "user_mark_sheet_title",
+      "value": "사용자 마크"
+    },
+    {
+      "name": "user_mark_create_section",
+      "value": "새 마크"
+    },
+    {
+      "name": "user_mark_existing_section",
+      "value": "마크"
+    },
+    {
+      "name": "user_mark_display_section",
+      "value": "표시"
+    },
+    {
+      "name": "user_mark_name_placeholder",
+      "value": "마크 이름"
+    },
+    {
+      "name": "user_mark_add",
+      "value": "마크 추가"
+    },
+    {
+      "name": "user_mark_empty",
+      "value": "마크 없음"
+    },
+    {
+      "name": "user_mark_name_required",
+      "value": "마크 이름을 입력하세요"
+    },
+    {
+      "name": "user_mark_display_limit",
+      "value": "표시할 마크"
+    },
+    {
+      "name": "user_mark_display_limit_hint",
+      "value": "사용자 이름 옆에 표시할 개수"
+    },
+    {
       "name": "node_no_topics",
       "value": "토픽 없음"
     },

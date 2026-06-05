@@ -17,7 +17,7 @@ const cachePayloadFiles = read('shared/src/main/ets/settings/CachePayloadFiles.e
 const cacheDeviceQaSeed = read('shared/src/main/ets/settings/CacheDeviceQaSeed.ets')
 
 for (const snippet of [
-  'export const LOCAL_DATA_SCHEMA_VERSION: number = 4',
+  'export const LOCAL_DATA_SCHEMA_VERSION: number = 6',
   'CREATE TABLE IF NOT EXISTS cache_entries',
   'cache_key TEXT PRIMARY KEY NOT NULL',
   'kind TEXT NOT NULL',
@@ -69,14 +69,18 @@ assert(!cacheSettings.includes('preferences.getPreferences'), 'CacheSettings mus
 for (const snippet of [
   "export const KEY_PREFIX_TOPIC_LIST: string = 'topicList:'",
   "export const KEY_PREFIX_TOPIC_DETAIL: string = 'topicDetail:'",
+  "export const KEY_PREFIX_NODE_DETAIL: string = 'nodeDetail:'",
   "export const KEY_CACHE_INDEX: string = 'cacheIndex'",
   "export const CACHE_KIND_TOPIC_LIST: string = 'topic_list'",
   "export const CACHE_KIND_TOPIC_DETAIL: string = 'topic_detail'",
-  "export const CACHE_KINDS_SQL: string = `'${CACHE_KIND_TOPIC_LIST}', '${CACHE_KIND_TOPIC_DETAIL}'`",
+  "export const CACHE_KIND_NODE_DETAIL: string = 'node_detail'",
+  "export const CACHE_KINDS_SQL: string = `'${CACHE_KIND_TOPIC_LIST}', '${CACHE_KIND_TOPIC_DETAIL}', '${CACHE_KIND_NODE_DETAIL}'`",
   'export const TOPIC_LIST_TTL_SECONDS: number = 7 * 24 * 60 * 60',
   'export const TOPIC_DETAIL_TTL_SECONDS: number = 30 * 24 * 60 * 60',
+  'export const NODE_DETAIL_TTL_SECONDS: number = 30 * 24 * 60 * 60',
   'export const MAX_TOPIC_LIST_ROWS: number = 32',
   'export const MAX_TOPIC_DETAIL_ROWS: number = 200',
+  'export const MAX_NODE_DETAIL_ROWS: number = 200',
   'export const MAX_TOPIC_LIST_ITEMS: number = 50',
   'export const FILE_PAYLOAD_THRESHOLD_BYTES: number = 256 * 1024',
   'export const MAX_CACHE_PAYLOAD_SIZE: number = 20 * 1024 * 1024',
@@ -129,7 +133,7 @@ for (const policyContract of [
   {
     name: 'expired cache rows are removed after writes before file-aware LRU pruning',
     source: cacheSettings,
-    pattern: /private\s+static\s+async\s+pruneCache[\s\S]*await CacheSettings\.deleteExpiredRows\(context,\s*store,\s*now\)[\s\S]*SQL_SELECT_PRUNE_TOPIC_LIST_PAYLOAD_PATHS[\s\S]*SQL_PRUNE_TOPIC_LIST_ROWS[\s\S]*SQL_SELECT_PRUNE_TOPIC_DETAIL_PAYLOAD_PATHS[\s\S]*SQL_PRUNE_TOPIC_DETAIL_ROWS[\s\S]*pruneCachePayloadSize/,
+    pattern: /private\s+static\s+async\s+pruneCache[\s\S]*await CacheSettings\.deleteExpiredRows\(context,\s*store,\s*now\)[\s\S]*SQL_SELECT_PRUNE_TOPIC_LIST_PAYLOAD_PATHS[\s\S]*SQL_PRUNE_TOPIC_LIST_ROWS[\s\S]*SQL_SELECT_PRUNE_TOPIC_DETAIL_PAYLOAD_PATHS[\s\S]*SQL_PRUNE_TOPIC_DETAIL_ROWS[\s\S]*SQL_SELECT_PRUNE_NODE_DETAIL_PAYLOAD_PATHS[\s\S]*SQL_PRUNE_NODE_DETAIL_ROWS[\s\S]*pruneCachePayloadSize/,
   },
   {
     name: 'topic list rows are trimmed before persistence',
@@ -169,7 +173,7 @@ for (const policyContract of [
   {
     name: 'save promotes staged payload before DB commit point and cleans new file on failure',
     source: cacheSettings,
-    pattern: /private\s+static\s+async\s+saveCacheEntry[\s\S]*const payloadPlan = preparePayloadStorage[\s\S]*try\s*{[\s\S]*commitStagedPayloadFile\(context,\s*payloadPlan\)[\s\S]*await store\.executeSql\(SQL_UPSERT_CACHE_ENTRY,\s*args\)[\s\S]*previousPayloadPath[\s\S]*catch\s*\(error\)\s*{[\s\S]*cleanupPreparedPayloadFile\(context,\s*payloadPlan\)[\s\S]*throw new Error\(e\.message \|\| '保存缓存失败'\)/,
+    pattern: /private\s+static\s+async\s+saveCacheEntry[\s\S]*const payloadPlan = preparePayloadStorage[\s\S]*try\s*{[\s\S]*commitStagedPayloadFile\(context,\s*payloadPlan\)[\s\S]*await store\.executeSql\(SQL_UPSERT_CACHE_ENTRY,\s*args\)[\s\S]*previousPayloadPath[\s\S]*catch\s*\(error\)\s*{[\s\S]*cleanupPreparedPayloadFile\(context,\s*payloadPlan\)[\s\S]*throw new Error\(e\.message \|\| 'Failed to save cache'\)/,
   },
   {
     name: 'staged payload promotion uses rename and DB never stores staged path',
@@ -179,7 +183,7 @@ for (const policyContract of [
   {
     name: 'committed payload filenames are unique before staging',
     source: cachePayloadFiles,
-    pattern: /function\s+committedPayloadFileName[\s\S]*for\s*\(let attempt = 0; attempt < 8; attempt\+\+\)[\s\S]*payloadFileExistsBestEffort\(context,\s*candidate\)[\s\S]*return candidate[\s\S]*throw new Error\('缓存文件名冲突'\)/,
+    pattern: /function\s+committedPayloadFileName[\s\S]*for\s*\(let attempt = 0; attempt < 8; attempt\+\+\)[\s\S]*payloadFileExistsBestEffort\(context,\s*candidate\)[\s\S]*return candidate[\s\S]*throw new Error\(AppStrings\.text\(AppStrings\.R_CACHE_FILENAME_CONFLICT,\s*'Cache filename conflict'\)\)/,
   },
   {
     name: 'load prefers committed cache payload files and falls back to inline payload text',
@@ -220,6 +224,7 @@ for (const rawDelete of [
   'await store.executeSql(SQL_DELETE_EXPIRED_CACHE_ENTRIES',
   'await store.executeSql(SQL_PRUNE_TOPIC_LIST_ROWS',
   'await store.executeSql(SQL_PRUNE_TOPIC_DETAIL_ROWS',
+  'await store.executeSql(SQL_PRUNE_NODE_DETAIL_ROWS',
   'await store.executeSql(SQL_PRUNE_CACHE_PAYLOAD_SIZE',
   'await store.executeSql(SQL_CLEAR_CACHE_ENTRIES',
 ]) {
@@ -228,6 +233,7 @@ for (const rawDelete of [
 
 for (const signature of [
   /export\s+interface\s+TopicDetailCache\s*{[\s\S]*topic\s*:\s*V2exTopic\s*\|\s*null[\s\S]*replies\s*:\s*V2exReply\[\][\s\S]*cachedAt\s*:\s*number[\s\S]*}/,
+  /export\s+interface\s+NodeDetailCache\s*{[\s\S]*node\s*:\s*V2exNode\s*\|\s*null[\s\S]*cachedAt\s*:\s*number[\s\S]*}/,
   /export\s+interface\s+CacheStats\s*{[\s\S]*topicListCount\s*:\s*number[\s\S]*topicDetailCount\s*:\s*number[\s\S]*updatedAt\s*:\s*number[\s\S]*}/,
   /export\s+interface\s+CacheKeyIndex\s*{[\s\S]*topicLists\s*:\s*string\[\][\s\S]*topicDetails\s*:\s*number\[\][\s\S]*updatedAt\s*:\s*number[\s\S]*}/,
   /static\s+async\s+loadKeyIndex\s*\(\s*context\s*:\s*common\.UIAbilityContext\s*\)\s*:\s*Promise<\s*CacheKeyIndex\s*>/,
@@ -235,6 +241,8 @@ for (const signature of [
   /static\s+async\s+saveTopicList\s*\(\s*context\s*:\s*common\.UIAbilityContext\s*,\s*cacheKey\s*:\s*string\s*,\s*topics\s*:\s*V2exTopic\[\]\s*\)\s*:\s*Promise<\s*void\s*>/,
   /static\s+async\s+loadTopicDetail\s*\(\s*context\s*:\s*common\.UIAbilityContext\s*,\s*topicId\s*:\s*number\s*\)\s*:\s*Promise<\s*TopicDetailCache\s*\|\s*null\s*>/,
   /static\s+async\s+saveTopicDetail\s*\([\s\S]*context\s*:\s*common\.UIAbilityContext[\s\S]*topicId\s*:\s*number[\s\S]*topic\s*:\s*V2exTopic\s*\|\s*null[\s\S]*replies\s*:\s*V2exReply\[\][\s\S]*\)\s*:\s*Promise<\s*void\s*>/,
+  /static\s+async\s+loadNodeDetail\s*\(\s*context\s*:\s*common\.UIAbilityContext\s*,\s*nodeName\s*:\s*string\s*\)\s*:\s*Promise<\s*V2exNode\s*\|\s*null\s*>/,
+  /static\s+async\s+saveNodeDetail\s*\(\s*context\s*:\s*common\.UIAbilityContext\s*,\s*nodeName\s*:\s*string\s*,\s*node\s*:\s*V2exNode\s*\|\s*null\s*\)\s*:\s*Promise<\s*void\s*>/,
   /static\s+async\s+loadStats\s*\(\s*context\s*:\s*common\.UIAbilityContext\s*\)\s*:\s*Promise<\s*CacheStats\s*>/,
   /static\s+async\s+clear\s*\(\s*context\s*:\s*common\.UIAbilityContext\s*\)\s*:\s*Promise<\s*void\s*>/,
 ]) {
@@ -256,6 +264,8 @@ const allowedRelationalStoreUsers = new Set([
   'shared/src/main/ets/settings/CacheSettings.ets',
   'shared/src/main/ets/settings/CacheDeviceQaSeed.ets',
   'shared/src/main/ets/settings/CollectionSettings.ets',
+  'shared/src/main/ets/settings/UserMarkSettings.ets',
+  'shared/src/main/ets/cache/TopicDetailActionOverlaySettings.ets',
 ])
 const walkTextFiles = (dir) => {
   const results = []

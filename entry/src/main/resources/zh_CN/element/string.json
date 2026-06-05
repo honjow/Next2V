@@ -1825,6 +1825,50 @@
       "value": "取消屏蔽"
     },
     {
+      "name": "user_action_mark",
+      "value": "标记"
+    },
+    {
+      "name": "user_mark_sheet_title",
+      "value": "用户标记"
+    },
+    {
+      "name": "user_mark_create_section",
+      "value": "新建标记"
+    },
+    {
+      "name": "user_mark_existing_section",
+      "value": "已有标记"
+    },
+    {
+      "name": "user_mark_display_section",
+      "value": "显示"
+    },
+    {
+      "name": "user_mark_name_placeholder",
+      "value": "标记名称"
+    },
+    {
+      "name": "user_mark_add",
+      "value": "添加标记"
+    },
+    {
+      "name": "user_mark_empty",
+      "value": "暂无标记"
+    },
+    {
+      "name": "user_mark_name_required",
+      "value": "请输入标记名称"
+    },
+    {
+      "name": "user_mark_display_limit",
+      "value": "显示数量"
+    },
+    {
+      "name": "user_mark_display_limit_hint",
+      "value": "用户名旁显示的标记数量"
+    },
+    {
       "name": "node_no_topics",
       "value": "暂无主题"
     },

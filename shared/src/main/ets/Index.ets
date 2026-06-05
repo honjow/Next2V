@@ -94,6 +94,7 @@ export {
   sendTopicEditorSubmit,
 } from './state/TopicEditorAppbarState'
 export { UserProfileActionState, connectUserProfileAction } from './state/UserProfileActionState'
+export { UserMarkState, connectUserMarks } from './state/UserMarkState'
 export { SearchActionState, connectSearchAction } from './state/SearchActionState'
 export {
   AccountWebViewActionState,
@@ -135,6 +136,7 @@ export {
   connectUserProfileAppbar,
   publishUserProfileActionsAvailable,
   publishUserProfileActionsUsername,
+  publishUserProfileMarkLabel,
   publishUserProfileFollowLabel,
   publishUserProfileBlockLabel,
   publishUserProfileFollowing,
@@ -271,6 +273,12 @@ export type {
   TopicReadState,
   LocalContentStats,
 } from './settings/CollectionSettings'
+export { UserMarkSettings } from './settings/UserMarkSettings'
+export type {
+  UserMarkAssignment,
+  UserMarkLabel,
+  UserMarkSnapshot,
+} from './settings/UserMarkSettings'
 export { DraftSettings } from './settings/DraftSettings'
 export type { ReplyDraft, TopicDraft } from './settings/DraftSettings'
 export { SearchSettings } from './settings/SearchSettings'
@@ -407,6 +415,7 @@ export { ThemeConstants } from './theme/ThemeConstants'
 // Shared components
 export { Avatar } from './components/Avatar'
 export { UserName } from './components/UserName'
+export { UserMarkBadgeRow } from './components/UserMarkBadges'
 export { TimeAgo } from './components/TimeAgo'
 export { NodeTag } from './components/NodeTag'
 export { TopicCard } from './components/TopicCard'

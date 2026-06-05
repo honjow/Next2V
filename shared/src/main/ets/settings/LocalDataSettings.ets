@@ -5,6 +5,7 @@ import { CollectionSettings } from './CollectionSettings'
 import { DraftSettings } from './DraftSettings'
 import { NotificationSettings } from './NotificationSettings'
 import { SearchSettings } from './SearchSettings'
+import { UserMarkSettings } from './UserMarkSettings'
 import { connectLocalDataSignal } from '../state/LocalDataSignalState'
 
 export class LocalDataSettings {
@@ -13,6 +14,7 @@ export class LocalDataSettings {
       CollectionSettings.clearAll(context),
       DraftSettings.clearAll(context),
       SearchSettings.clearHistory(context),
+      UserMarkSettings.clearAll(context),
       CacheSettings.clear(context),
       TopicDetailActionOverlaySettings.clearAll(context),
       NotificationSettings.clearCache(context)

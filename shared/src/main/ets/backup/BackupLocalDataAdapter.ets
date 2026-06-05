@@ -2,6 +2,7 @@ import { common } from '@kit.AbilityKit'
 import type { BackupCollectionsSection, BackupDraftsSection, BackupNotificationsSection, BackupSearchSection } from './BackupTypes'
 import { DraftSettings, type ReplyDraft, type TopicDraft } from '../settings/DraftSettings'
 import { CollectionSettings } from '../settings/CollectionSettings'
+import { UserMarkSettings } from '../settings/UserMarkSettings'
 import { SearchSettings } from '../settings/SearchSettings'
 import { NotificationSettings, type NotificationCacheSnapshot } from '../settings/NotificationSettings'
 import type { V2exNotification } from '../network/NetworkTypes'
@@ -23,12 +24,16 @@ export class BackupLocalDataAdapter {
       savedNodes: await CollectionSettings.loadSavedNodes(context),
       viewedTopics: await CollectionSettings.loadViewedTopics(context),
       readPositions: await CollectionSettings.loadTopicReadPositions(context),
-      readStates: await CollectionSettings.loadTopicReadStates(context)
+      readStates: await CollectionSettings.loadTopicReadStates(context),
+      userMarkLabels: await UserMarkSettings.loadLabels(context),
+      userMarkAssignments: await UserMarkSettings.loadAssignments(context),
+      userMarkDisplayLimit: (await UserMarkSettings.load(context)).displayLimit
     }
   }
 
   static async restoreCollections(context: common.UIAbilityContext, section: BackupCollectionsSection): Promise<void> {
     await CollectionSettings.restoreBackup(context, section)
+    await UserMarkSettings.restoreBackup(context, section)
   }
 
   static async exportSearch(context: common.UIAbilityContext): Promise<BackupSearchSection> {

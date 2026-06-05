@@ -1,9 +1,11 @@
 import { ThemeConstants } from '../theme/ThemeConstants'
+import { UserMarkBadgeRow } from './UserMarkBadges'
 
 @ComponentV2
 export struct UserName {
   @Param username: string = ''
   @Param fontSize: number = 14
+  @Param fontWeight: FontWeight = FontWeight.Regular
   @Param isPro: boolean = false
   @Event onUserClick?: () => void
 
@@ -11,9 +13,11 @@ export struct UserName {
     Row({ space: ThemeConstants.SPACE_XS }) {
       Text(this.username)
         .fontSize(this.fontSize)
+        .fontWeight(this.fontWeight)
         .fontColor($r('sys.color.font_primary'))
         .maxLines(1)
         .textOverflow({ overflow: TextOverflow.Ellipsis })
+        .flexShrink(1)
         .onClick(() => {
           if (this.onUserClick) { this.onUserClick() }
         })
@@ -32,6 +36,7 @@ export struct UserName {
           .border({ width: 1, color: '#1484CD', radius: 3 })
           .backgroundColor('#323A45')
       }
+      UserMarkBadgeRow({ username: this.username })
     }
     .alignItems(VerticalAlign.Center)
   }

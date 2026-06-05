@@ -1825,6 +1825,50 @@
       "value": "取消封鎖"
     },
     {
+      "name": "user_action_mark",
+      "value": "標記"
+    },
+    {
+      "name": "user_mark_sheet_title",
+      "value": "使用者標記"
+    },
+    {
+      "name": "user_mark_create_section",
+      "value": "新增標記"
+    },
+    {
+      "name": "user_mark_existing_section",
+      "value": "已有標記"
+    },
+    {
+      "name": "user_mark_display_section",
+      "value": "顯示"
+    },
+    {
+      "name": "user_mark_name_placeholder",
+      "value": "標記名稱"
+    },
+    {
+      "name": "user_mark_add",
+      "value": "加入標記"
+    },
+    {
+      "name": "user_mark_empty",
+      "value": "暫無標記"
+    },
+    {
+      "name": "user_mark_name_required",
+      "value": "請輸入標記名稱"
+    },
+    {
+      "name": "user_mark_display_limit",
+      "value": "顯示數量"
+    },
+    {
+      "name": "user_mark_display_limit_hint",
+      "value": "使用者名稱旁顯示的標記數量"
+    },
+    {
       "name": "node_no_topics",
       "value": "暫無主題"
     },

@@ -1,0 +1,172 @@
+#!/usr/bin/env node
+import fs from 'node:fs'
+import path from 'node:path'
+
+const repo = process.cwd()
+const read = (rel) => fs.readFileSync(path.join(repo, rel), 'utf8')
+const exists = (rel) => fs.existsSync(path.join(repo, rel))
+const assert = (condition, message) => {
+  if (!condition) {
+    throw new Error(message)
+  }
+}
+
+const localData = read('shared/src/main/ets/storage/LocalDataStore.ets')
+const stateRel = 'shared/src/main/ets/state/UserMarkState.ets'
+const settingsRel = 'shared/src/main/ets/settings/UserMarkSettings.ets'
+const badgesRel = 'shared/src/main/ets/components/UserMarkBadges.ets'
+assert(exists(stateRel), 'UserMarkState must exist')
+assert(exists(settingsRel), 'UserMarkSettings must exist')
+assert(exists(badgesRel), 'UserMarkBadges must exist')
+
+const state = read(stateRel)
+const settings = read(settingsRel)
+const badges = read(badgesRel)
+const userName = read('shared/src/main/ets/components/UserName.ets')
+const replyHeader = read('shared/src/main/ets/components/reply/ReplyCardHeader.ets')
+const profileComponents = read('feature/user/src/main/ets/components/UserProfileComponents.ets')
+const profilePage = read('feature/user/src/main/ets/pages/UserProfilePage.ets')
+const appbar = read('shared/src/main/ets/state/UserProfileAppbarState.ets')
+const index = read('entry/src/main/ets/pages/Index.ets')
+const sharedIndex = read('shared/src/main/ets/Index.ets')
+const backupTypes = read('shared/src/main/ets/backup/BackupTypes.ets')
+const backupAdapter = read('shared/src/main/ets/backup/BackupLocalDataAdapter.ets')
+const bootstrap = read('shared/src/main/ets/settings/SettingsBootstrap.ets')
+const localDataSettings = read('shared/src/main/ets/settings/LocalDataSettings.ets')
+const appStrings = read('shared/src/main/ets/i18n/AppStrings.ets')
+
+for (const snippet of [
+  'export const LOCAL_DATA_SCHEMA_VERSION: number = 6',
+  'CREATE TABLE IF NOT EXISTS user_mark_labels',
+  'label_id TEXT PRIMARY KEY NOT NULL',
+  'CREATE INDEX IF NOT EXISTS idx_user_mark_labels_sort',
+  'CREATE TABLE IF NOT EXISTS user_mark_assignments',
+  'PRIMARY KEY(username_key, label_id)',
+  'CREATE INDEX IF NOT EXISTS idx_user_mark_assignments_username',
+  'CREATE INDEX IF NOT EXISTS idx_user_mark_assignments_label',
+  'await store.execute(SQL_CREATE_USER_MARK_LABELS_TABLE)',
+  'await store.execute(SQL_CREATE_USER_MARK_ASSIGNMENTS_TABLE)',
+]) {
+  assert(localData.includes(snippet), `LocalDataStore missing user mark schema contract: ${snippet}`)
+}
+
+for (const snippet of [
+  '@ObservedV2',
+  '@Trace labelsJson: string =',
+  '@Trace assignmentsJson: string =',
+  '@Trace displayLimit: number = 2',
+  'connectUserMarks()',
+  'AppStorageV2.connect(UserMarkState',
+]) {
+  assert(state.includes(snippet), `UserMarkState missing V2 contract: ${snippet}`)
+}
+
+for (const snippet of [
+  "import { LocalDataStore } from '../storage/LocalDataStore'",
+  'export interface UserMarkLabel',
+  'export interface UserMarkAssignment',
+  'static async createLabelAndAssign',
+  'static async assignLabel',
+  'static async unassignLabel',
+  'static async saveDisplayLimit',
+  'static async restoreBackup',
+  'static async clearAll',
+  'static visibleLabelsForUsername',
+  'static overflowCountForUsername',
+  'connectUserMarks()',
+  'LocalDataPublisher.touchLocalData()',
+]) {
+  assert(settings.includes(snippet), `UserMarkSettings missing contract: ${snippet}`)
+}
+
+for (const snippet of [
+  'UserMarkBadgeRow',
+  'connectUserMarks',
+  'defaultSheetOptions(SheetSize.MEDIUM',
+  'UserMarkSettings.visibleLabelsForUsername',
+  'UserMarkSettings.allLabelsForUsername',
+]) {
+  assert(badges.includes(snippet), `UserMarkBadges missing display contract: ${snippet}`)
+}
+
+assert(userName.includes('UserMarkBadgeRow({ username: this.username })'), 'UserName must display mark badges beside usernames')
+assert(replyHeader.includes("import { UserName } from '../UserName'"), 'ReplyCardHeader must reuse UserName for mark-aware reply authors')
+assert(profileComponents.includes('UserMarkBadgeRow'), 'UserProfileCard must display marks beside the profile username')
+
+for (const snippet of [
+  '@Local private userMarkSheetVisible',
+  '@Local private userMarks: UserMarkState = connectUserMarks()',
+  'bindSheet(',
+  '$$this.userMarkSheetVisible',
+  'AppModalScaffold({',
+  'UserMarkSettings.createLabelAndAssign',
+  'UserMarkSettings.assignLabel',
+  'UserMarkSettings.unassignLabel',
+  'UserMarkSettings.saveDisplayLimit',
+  "if (action === 'mark')",
+]) {
+  assert(profilePage.includes(snippet), `UserProfilePage missing sheet/action contract: ${snippet}`)
+}
+
+for (const snippet of [
+  '@Trace markLabel: string =',
+  'publishUserProfileMarkLabel',
+]) {
+  assert(appbar.includes(snippet), `UserProfileAppbarState missing mark appbar contract: ${snippet}`)
+}
+assert(profilePage.includes('publishUserProfileMarkLabel(state.markLabel)'), 'UserProfilePage must publish mark label')
+assert(index.includes('this.userProfileAppbar.markLabel'), 'Index menu must read mark label')
+assert(index.includes('AppStrings.R_USER_ACTION_MARK'), 'Index menu must use localized mark label')
+assert(index.includes("this.sendUserProfileAction('mark')"), 'Index menu must send mark command')
+
+for (const snippet of [
+  'userMarkLabels?: Object[]',
+  'userMarkAssignments?: Object[]',
+  'userMarkDisplayLimit?: number',
+]) {
+  assert(backupTypes.includes(snippet), `BackupCollectionsSection missing mark field: ${snippet}`)
+}
+for (const snippet of [
+  'UserMarkSettings.loadLabels(context)',
+  'UserMarkSettings.loadAssignments(context)',
+  'UserMarkSettings.restoreBackup(context, section)',
+]) {
+  assert(backupAdapter.includes(snippet), `BackupLocalDataAdapter missing mark backup contract: ${snippet}`)
+}
+assert(bootstrap.includes('restoreUserMarks(context)'), 'SettingsBootstrap must restore user mark state on startup/reapply')
+assert(localDataSettings.includes('UserMarkSettings.clearAll(context)'), 'LocalDataSettings.clearAll must clear local user marks')
+
+for (const snippet of [
+  'R_USER_ACTION_MARK',
+  'R_USER_MARK_SHEET_TITLE',
+  'R_USER_MARK_CREATE_SECTION',
+  'R_USER_MARK_EXISTING_SECTION',
+  'R_USER_MARK_DISPLAY_LIMIT',
+]) {
+  assert(appStrings.includes(snippet), `AppStrings missing user mark resource: ${snippet}`)
+}
+assert(sharedIndex.includes("export { UserMarkState, connectUserMarks } from './state/UserMarkState'"), 'shared Index must export UserMarkState')
+assert(sharedIndex.includes("export { UserMarkSettings } from './settings/UserMarkSettings'"), 'shared Index must export UserMarkSettings')
+assert(sharedIndex.includes("export { UserMarkBadgeRow } from './components/UserMarkBadges'"), 'shared Index must export UserMarkBadgeRow')
+
+for (const locale of ['base', 'en_US', 'zh_CN', 'zh_HK', 'zh_TW', 'ja_JP', 'ko_KR']) {
+  const json = JSON.parse(read(`entry/src/main/resources/${locale}/element/string.json`))
+  const names = new Set(json.string.map((item) => item.name))
+  for (const name of [
+    'user_action_mark',
+    'user_mark_sheet_title',
+    'user_mark_create_section',
+    'user_mark_existing_section',
+    'user_mark_display_section',
+    'user_mark_name_placeholder',
+    'user_mark_add',
+    'user_mark_empty',
+    'user_mark_name_required',
+    'user_mark_display_limit',
+    'user_mark_display_limit_hint',
+  ]) {
+    assert(names.has(name), `${locale} missing string ${name}`)
+  }
+}
+
+console.log('user marks contract OK')

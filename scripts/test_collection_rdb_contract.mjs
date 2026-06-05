@@ -51,8 +51,8 @@ const tableContracts = [
   },
 ]
 
-assert(localData.includes('export const LOCAL_DATA_SCHEMA_VERSION: number = 4'), 'LocalDataStore schema version must be 4')
-assert(localData.includes("VALUES (\\'schema_version\\', \\'4\\')"), 'schema_meta must store version 4')
+assert(localData.includes('export const LOCAL_DATA_SCHEMA_VERSION: number = 6'), 'LocalDataStore schema version must be 6')
+assert(localData.includes("VALUES (\\'schema_version\\', \\'6\\')"), 'schema_meta must store version 6')
 
 for (const contract of tableContracts) {
   assert(localData.includes(`CREATE TABLE IF NOT EXISTS ${contract.table}`), `${contract.table} table must be created by LocalDataStore`)

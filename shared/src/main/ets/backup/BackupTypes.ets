@@ -195,6 +195,9 @@ export interface BackupCollectionsSection {
   viewedTopics: Object[]
   readPositions: Object[]
   readStates: Object[]
+  userMarkLabels?: Object[]
+  userMarkAssignments?: Object[]
+  userMarkDisplayLimit?: number
 }
 
 export interface BackupSearchSection {

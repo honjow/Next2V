@@ -9,6 +9,7 @@ export interface UserProfileTabLabels {
 export interface UserProfileActionMenuState {
   username: string
   available: boolean
+  markLabel: string
   followLabel: string
   blockLabel: string
   following: boolean
@@ -112,11 +113,13 @@ export class UserProfilePageCoordinator {
     blocked: boolean
   ): UserProfileActionMenuState {
     const canShowActions = actions !== null && !isCurrentSessionUser && hasCookie
+    const hasMarkAction = !!(username || '').trim()
     const hasFollowAction = canShowActions && !!actions?.followPath
     const hasBlockAction = canShowActions && !!actions?.blockPath
     return {
       username: username,
-      available: hasFollowAction || hasBlockAction,
+      available: hasMarkAction || hasFollowAction || hasBlockAction,
+      markLabel: hasMarkAction ? 'available' : '',
       followLabel: hasFollowAction ? 'available' : '',
       blockLabel: hasBlockAction ? 'available' : '',
       following: hasFollowAction && following,

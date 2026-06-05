@@ -1,13 +1,18 @@
 import { UserViewModel } from '../viewmodel/UserViewModel'
 import {
   AppStrings,
+  AppActionButton,
+  AppModalScaffold,
+  AppTextField,
+  ConciseListRow,
   V2exTopic,
   V2exUserReply,
+  GroupedListSection,
   TopicCard,
   ThemeConstants,
   TopicDetailParams,
   publishUserProfileActionsAvailable, publishUserProfileActionsUsername, publishUserProfileFollowLabel,
-  publishUserProfileBlockLabel, publishUserProfileFollowing, publishUserProfileBlocked,
+  publishUserProfileBlockLabel, publishUserProfileFollowing, publishUserProfileBlocked, publishUserProfileMarkLabel,
   publishUserProfileAppbarTitleUsername, publishUserProfileAppbarTitleAvatarUrl,
   publishUserProfileAppbarTitleRouteUsername, publishUserProfileAppbarTitleStates,
   publishUserProfileAppbarAvatarStates,
@@ -27,11 +32,15 @@ import {
   connectNavStack,
   connectTopicReadStates,
   connectUserProfileAction,
+  connectUserMarks,
+  defaultSheetOptions,
   LayoutSafeAreaState,
   TopicReadStatesState,
   UserProfileActionState,
+  UserMarkSettings,
+  UserMarkState,
 } from 'shared'
-import type { TopicReadState } from 'shared'
+import type { TopicReadState, UserMarkLabel } from 'shared'
 import { promptAction } from '@kit.ArkUI'
 import { common, Want } from '@kit.AbilityKit'
 import {
@@ -69,6 +78,11 @@ export struct UserProfilePage {
   @Local private usernameContentBottom: number = 0;
   @Local private currentScrollOffset: number = 0;
   @Local private isUsernameCoveredByAppbar: boolean = false;
+  @Local private userMarkSheetVisible: boolean = false;
+  @Local private userMarkInput: string = '';
+  @Local private selectedUserMarkColor: string = UserMarkSettings.DEFAULT_COLOR;
+  @Local private userMarkSaving: boolean = false;
+  @Local private userMarks: UserMarkState = connectUserMarks();
 
   private readonly titleVisibilityHysteresis: number = 4;
 
@@ -78,6 +92,7 @@ export struct UserProfilePage {
     this.isUsernameCoveredByAppbar = false
     this.publishActionMenuState()
     this.publishAppbarTitle(false)
+    this.restoreUserMarks()
     this.vm
       .load()
       .then(() => {
@@ -195,6 +210,7 @@ export struct UserProfilePage {
         .width('100%')
         .layoutWeight(1)
       }
+      this.UserMarkSheetHost()
     }
     .width('100%')
     .height('100%')
@@ -249,6 +265,185 @@ export struct UserProfilePage {
     })
   }
 
+  @Builder UserMarkSheetHost() {
+    Blank()
+      .width(1)
+      .height(1)
+      .bindSheet(
+        $$this.userMarkSheetVisible,
+        this.UserMarkSheet(),
+        defaultSheetOptions(
+          SheetSize.LARGE,
+          () => {
+            this.closeUserMarkSheet()
+          },
+          [SheetSize.LARGE],
+        ),
+      )
+  }
+
+  @Builder UserMarkSheet() {
+    AppModalScaffold({
+      title: AppStrings.R_USER_MARK_SHEET_TITLE,
+      includeKeyboardPadding: true,
+      contentBackgroundColor: $r('sys.color.ohos_id_color_sub_background'),
+      closeAction: () => {
+        this.closeUserMarkSheet()
+      },
+    }) {
+      ListItem() {
+        this.UserMarkCreateSection()
+      }
+      ListItem() {
+        this.UserMarkExistingSection()
+      }
+      ListItem() {
+        this.UserMarkDisplayLimitSection()
+      }
+    }
+  }
+
+  @Builder UserMarkCreateSection() {
+    Column({ space: ThemeConstants.SPACE_XS }) {
+      this.UserMarkSectionLabel(AppStrings.R_USER_MARK_CREATE_SECTION)
+      GroupedListSection({ inset: ThemeConstants.SPACE_XL, radius: ThemeConstants.RADIUS_CARD }) {
+        Column({ space: ThemeConstants.SPACE_MD }) {
+          AppTextField({
+            text: this.userMarkInput,
+            placeholder: AppStrings.R_USER_MARK_NAME_PLACEHOLDER,
+            onTextChange: (value: string) => {
+              this.userMarkInput = value
+            }
+          })
+            .width('100%')
+          this.UserMarkColorPalette()
+          AppActionButton({
+            label: AppStrings.R_USER_MARK_ADD,
+            primary: true,
+            isEnabled: this.canCreateUserMark(),
+            action: () => {
+              this.createUserMark()
+            }
+          })
+        }
+        .width('100%')
+      }
+    }
+    .width('100%')
+  }
+
+  @Builder UserMarkExistingSection() {
+    Column({ space: ThemeConstants.SPACE_XS }) {
+      this.UserMarkSectionLabel(AppStrings.R_USER_MARK_EXISTING_SECTION)
+      GroupedListSection() {
+        if (this.allUserMarkLabels().length === 0) {
+          Text(AppStrings.R_USER_MARK_EMPTY)
+            .fontSize(ThemeConstants.FONT_SIZE_BODY)
+            .fontColor($r('sys.color.font_secondary'))
+            .width('100%')
+            .textAlign(TextAlign.Center)
+            .padding(ThemeConstants.SPACE_LG)
+        } else {
+          ForEach(
+            this.allUserMarkLabels(),
+            (label: UserMarkLabel) => {
+              ConciseListRow({
+                title: label.name,
+                showChevron: false,
+                hasSwitch: true,
+                checked: this.isUserMarkAssigned(label.id),
+                isEnabled: !this.userMarkSaving,
+                prefixBuilderParam: (): void => this.UserMarkColorDot(label.color),
+                switchAction: (value: boolean) => {
+                  this.setUserMarkAssignment(label, value)
+                }
+              })
+            },
+            (label: UserMarkLabel) => label.id,
+          )
+        }
+      }
+    }
+    .width('100%')
+  }
+
+  @Builder UserMarkDisplayLimitSection() {
+    Column({ space: ThemeConstants.SPACE_XS }) {
+      this.UserMarkSectionLabel(AppStrings.R_USER_MARK_DISPLAY_SECTION)
+      GroupedListSection() {
+        ConciseListRow({
+          title: AppStrings.R_USER_MARK_DISPLAY_LIMIT,
+          subtitle: AppStrings.R_USER_MARK_DISPLAY_LIMIT_HINT,
+          showChevron: false,
+          hasCounter: true,
+          counterValue: `${this.userMarks.displayLimit}`,
+          counterDecreaseEnabled: this.userMarks.displayLimit > UserMarkSettings.MIN_DISPLAY_LIMIT,
+          counterIncreaseEnabled: this.userMarks.displayLimit < UserMarkSettings.MAX_DISPLAY_LIMIT,
+          counterDecreaseAction: () => {
+            this.updateUserMarkDisplayLimit(this.userMarks.displayLimit - 1)
+          },
+          counterIncreaseAction: () => {
+            this.updateUserMarkDisplayLimit(this.userMarks.displayLimit + 1)
+          }
+        })
+      }
+    }
+    .width('100%')
+  }
+
+  @Builder UserMarkColorPalette() {
+    Row({ space: ThemeConstants.SPACE_SM }) {
+      ForEach(
+        UserMarkSettings.defaultColors(),
+        (color: string) => {
+          this.UserMarkColorOption(color)
+        },
+        (color: string) => color,
+      )
+    }
+    .width('100%')
+    .alignItems(VerticalAlign.Center)
+  }
+
+  @Builder UserMarkColorOption(color: string) {
+    Stack() {
+      if (this.selectedUserMarkColor === color) {
+        SymbolGlyph($r('sys.symbol.checkmark'))
+          .fontSize(ThemeConstants.FONT_SIZE_TITLE)
+          .fontColor([UserMarkSettings.textColorForBackground(color)])
+      }
+    }
+    .width(32)
+    .height(32)
+    .borderRadius(16)
+    .backgroundColor(color)
+    .border({
+      width: this.selectedUserMarkColor === color ? 3 : 1,
+      color: this.selectedUserMarkColor === color
+        ? ThemeConstants.BRAND_PRIMARY
+        : $r('sys.color.ohos_id_color_button_normal')
+    })
+    .onClick(() => {
+      this.selectedUserMarkColor = color
+    })
+  }
+
+  @Builder UserMarkColorDot(color: string) {
+    Text('')
+      .width(18)
+      .height(18)
+      .borderRadius(9)
+      .backgroundColor(color)
+  }
+
+  @Builder UserMarkSectionLabel(label: ResourceStr) {
+    Text(label)
+      .fontSize(ThemeConstants.FONT_SIZE_SECTION_TITLE)
+      .fontColor($r('sys.color.font_secondary'))
+      .width('100%')
+      .padding({ left: ThemeConstants.SPACE_LG, right: ThemeConstants.SPACE_LG })
+  }
+
   @Builder ReplyItem(reply: V2exUserReply) {
     UserProfileReplyCard({
       reply,
@@ -265,6 +460,101 @@ export struct UserProfilePage {
       openMention: (username: string) => {
         this.openUserProfile(username)
       }
+    })
+  }
+
+  private openUserMarkSheet(): void {
+    if (!this.targetUserMarkUsername()) {
+      return
+    }
+    this.restoreUserMarks()
+    this.userMarkSheetVisible = true
+  }
+
+  private closeUserMarkSheet(): void {
+    this.userMarkSheetVisible = false
+    this.userMarkSaving = false
+    this.userMarkInput = ''
+  }
+
+  private restoreUserMarks(): void {
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    UserMarkSettings.load(context).catch((error: Error) => {
+      console.error('load user marks failed: ' + error.message)
+    })
+  }
+
+  private targetUserMarkUsername(): string {
+    return (this.displayProfileUsername() || this.username || '').trim()
+  }
+
+  private allUserMarkLabels(): UserMarkLabel[] {
+    return UserMarkSettings.parseLabels(this.userMarks.labelsJson)
+  }
+
+  private isUserMarkAssigned(labelId: string): boolean {
+    return UserMarkSettings.isLabelAssignedToUsername(
+      this.targetUserMarkUsername(),
+      labelId,
+      this.userMarks.assignmentsJson,
+    )
+  }
+
+  private canCreateUserMark(): boolean {
+    return !this.userMarkSaving && !!this.targetUserMarkUsername() && !!(this.userMarkInput || '').trim()
+  }
+
+  private createUserMark(): void {
+    const name = (this.userMarkInput || '').trim()
+    if (!name) {
+      this.showActionToast(AppStrings.text(AppStrings.R_USER_MARK_NAME_REQUIRED, 'Enter a mark name'))
+      return
+    }
+    const target = this.targetUserMarkUsername()
+    if (!target || this.userMarkSaving) {
+      return
+    }
+    this.userMarkSaving = true
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    UserMarkSettings.createLabelAndAssign(context, target, name, this.selectedUserMarkColor)
+      .then(() => {
+        this.userMarkInput = ''
+        this.userMarkSaving = false
+        this.showActionToast(AppStrings.text(AppStrings.R_COMMON_SAVED, 'Saved'))
+      })
+      .catch((error: Error) => {
+        this.userMarkSaving = false
+        this.showActionToast(error.message || AppStrings.text(AppStrings.R_COMMON_SAVE_FAILED, 'Save failed'))
+      })
+  }
+
+  private setUserMarkAssignment(label: UserMarkLabel, assigned: boolean): void {
+    if (this.userMarkSaving) {
+      return
+    }
+    const target = this.targetUserMarkUsername()
+    if (!target || !label.id) {
+      return
+    }
+    this.userMarkSaving = true
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    const task = assigned
+      ? UserMarkSettings.assignLabel(context, target, label.id)
+      : UserMarkSettings.unassignLabel(context, target, label.id)
+    task
+      .then(() => {
+        this.userMarkSaving = false
+      })
+      .catch((error: Error) => {
+        this.userMarkSaving = false
+        this.showActionToast(error.message || AppStrings.text(AppStrings.R_COMMON_SAVE_FAILED, 'Save failed'))
+      })
+  }
+
+  private updateUserMarkDisplayLimit(value: number): void {
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    UserMarkSettings.saveDisplayLimit(context, value).catch((error: Error) => {
+      this.showActionToast(error.message || AppStrings.text(AppStrings.R_COMMON_SAVE_FAILED, 'Save failed'))
     })
   }
 
@@ -541,6 +831,7 @@ export struct UserProfilePage {
     // page is their sole writer, so imperative setOrCreate is faithful.
     publishUserProfileActionsUsername(state.username)
     publishUserProfileActionsAvailable(state.available)
+    publishUserProfileMarkLabel(state.markLabel)
     publishUserProfileFollowLabel(state.followLabel)
     publishUserProfileBlockLabel(state.blockLabel)
     publishUserProfileFollowing(state.following)
@@ -628,13 +919,18 @@ export struct UserProfilePage {
     const actionsUsername = appbar.actionsUsername
     if (
       !raw ||
-      !actionsAvailable ||
-      actionsUsername !== this.username ||
-      this.vm.isActionLoading
+      actionsUsername !== this.username
     ) {
       return
     }
     const action = raw.split(':').pop() || ''
+    if (action === 'mark') {
+      this.openUserMarkSheet()
+      return
+    }
+    if (!actionsAvailable || this.vm.isActionLoading) {
+      return
+    }
     if (action === 'follow' && this.vm.actions?.followPath) {
       this.toggleFollow()
       return

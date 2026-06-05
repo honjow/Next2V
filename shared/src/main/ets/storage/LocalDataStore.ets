@@ -2,7 +2,7 @@ import { common } from '@kit.AbilityKit'
 import { relationalStore } from '@kit.ArkData'
 
 export const LOCAL_DATA_DB_NAME: string = 'V2Next.db'
-export const LOCAL_DATA_SCHEMA_VERSION: number = 5
+export const LOCAL_DATA_SCHEMA_VERSION: number = 6
 export const LOCAL_DATA_SCHEMA_META_TABLE: string = 'schema_meta'
 
 export const SQL_CREATE_SCHEMA_META_TABLE: string = 'CREATE TABLE IF NOT EXISTS schema_meta (key TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL)'
@@ -25,7 +25,12 @@ export const SQL_CREATE_COLLECTION_TOPIC_READ_STATES_INDEX: string = 'CREATE IND
 export const SQL_CREATE_TOPIC_ACTION_OVERLAYS_TABLE: string = 'CREATE TABLE IF NOT EXISTS topic_action_overlays (owner_key TEXT NOT NULL, base_url TEXT NOT NULL, account_id TEXT NOT NULL, login_mode TEXT NOT NULL, topic_id INTEGER NOT NULL, favorite_known INTEGER NOT NULL DEFAULT 0, favorite_value INTEGER NOT NULL DEFAULT 0, topic_thank_known INTEGER NOT NULL DEFAULT 0, topic_thank_value INTEGER NOT NULL DEFAULT 0, reply_thanked_ids_json TEXT NOT NULL DEFAULT \'[]\', reply_thank_counts_json TEXT NOT NULL DEFAULT \'{}\', source TEXT NOT NULL, updated_at INTEGER NOT NULL, expires_at INTEGER NOT NULL, PRIMARY KEY(owner_key, topic_id))'
 export const SQL_CREATE_TOPIC_ACTION_OVERLAYS_EXPIRES_AT_INDEX: string = 'CREATE INDEX IF NOT EXISTS idx_topic_action_overlays_expires_at ON topic_action_overlays (expires_at)'
 export const SQL_CREATE_TOPIC_ACTION_OVERLAYS_ACCOUNT_INDEX: string = 'CREATE INDEX IF NOT EXISTS idx_topic_action_overlays_account ON topic_action_overlays (base_url, account_id)'
-export const SQL_UPSERT_SCHEMA_VERSION: string = 'INSERT OR REPLACE INTO schema_meta (key, value) VALUES (\'schema_version\', \'5\')'
+export const SQL_CREATE_USER_MARK_LABELS_TABLE: string = 'CREATE TABLE IF NOT EXISTS user_mark_labels (label_id TEXT PRIMARY KEY NOT NULL, name TEXT NOT NULL, color TEXT NOT NULL, sort_order INTEGER NOT NULL, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL)'
+export const SQL_CREATE_USER_MARK_LABELS_SORT_INDEX: string = 'CREATE INDEX IF NOT EXISTS idx_user_mark_labels_sort ON user_mark_labels (sort_order ASC, updated_at DESC)'
+export const SQL_CREATE_USER_MARK_ASSIGNMENTS_TABLE: string = 'CREATE TABLE IF NOT EXISTS user_mark_assignments (username_key TEXT NOT NULL, username TEXT NOT NULL, label_id TEXT NOT NULL, assigned_at INTEGER NOT NULL, updated_at INTEGER NOT NULL, PRIMARY KEY(username_key, label_id))'
+export const SQL_CREATE_USER_MARK_ASSIGNMENTS_USERNAME_INDEX: string = 'CREATE INDEX IF NOT EXISTS idx_user_mark_assignments_username ON user_mark_assignments (username_key, assigned_at ASC)'
+export const SQL_CREATE_USER_MARK_ASSIGNMENTS_LABEL_INDEX: string = 'CREATE INDEX IF NOT EXISTS idx_user_mark_assignments_label ON user_mark_assignments (label_id)'
+export const SQL_UPSERT_SCHEMA_VERSION: string = 'INSERT OR REPLACE INTO schema_meta (key, value) VALUES (\'schema_version\', \'6\')'
 
 const LOCAL_DATA_STORE_CONFIG: relationalStore.StoreConfig = {
   name: LOCAL_DATA_DB_NAME,
@@ -55,6 +60,11 @@ export class LocalDataStore {
     await store.execute(SQL_CREATE_TOPIC_ACTION_OVERLAYS_TABLE)
     await store.execute(SQL_CREATE_TOPIC_ACTION_OVERLAYS_EXPIRES_AT_INDEX)
     await store.execute(SQL_CREATE_TOPIC_ACTION_OVERLAYS_ACCOUNT_INDEX)
+    await store.execute(SQL_CREATE_USER_MARK_LABELS_TABLE)
+    await store.execute(SQL_CREATE_USER_MARK_LABELS_SORT_INDEX)
+    await store.execute(SQL_CREATE_USER_MARK_ASSIGNMENTS_TABLE)
+    await store.execute(SQL_CREATE_USER_MARK_ASSIGNMENTS_USERNAME_INDEX)
+    await store.execute(SQL_CREATE_USER_MARK_ASSIGNMENTS_LABEL_INDEX)
     await store.execute(SQL_UPSERT_SCHEMA_VERSION)
     if (store.version !== LOCAL_DATA_SCHEMA_VERSION) {
       store.version = LOCAL_DATA_SCHEMA_VERSION

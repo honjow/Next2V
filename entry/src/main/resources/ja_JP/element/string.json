@@ -1825,6 +1825,50 @@
       "value": "ブロック解除"
     },
     {
+      "name": "user_action_mark",
+      "value": "マーク"
+    },
+    {
+      "name": "user_mark_sheet_title",
+      "value": "ユーザーマーク"
+    },
+    {
+      "name": "user_mark_create_section",
+      "value": "新しいマーク"
+    },
+    {
+      "name": "user_mark_existing_section",
+      "value": "既存のマーク"
+    },
+    {
+      "name": "user_mark_display_section",
+      "value": "表示"
+    },
+    {
+      "name": "user_mark_name_placeholder",
+      "value": "マーク名"
+    },
+    {
+      "name": "user_mark_add",
+      "value": "マークを追加"
+    },
+    {
+      "name": "user_mark_empty",
+      "value": "マークはありません"
+    },
+    {
+      "name": "user_mark_name_required",
+      "value": "マーク名を入力してください"
+    },
+    {
+      "name": "user_mark_display_limit",
+      "value": "表示数"
+    },
+    {
+      "name": "user_mark_display_limit_hint",
+      "value": "ユーザー名の横に表示する数"
+    },
+    {
       "name": "node_no_topics",
       "value": "トピックはありません"
     },

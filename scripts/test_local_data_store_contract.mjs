@@ -19,7 +19,7 @@ const requiredSnippets = [
   "import { common } from '@kit.AbilityKit'",
   "import { relationalStore } from '@kit.ArkData'",
   "export const LOCAL_DATA_DB_NAME: string = 'V2Next.db'",
-  'export const LOCAL_DATA_SCHEMA_VERSION: number = 4',
+  'export const LOCAL_DATA_SCHEMA_VERSION: number = 6',
   "export const LOCAL_DATA_SCHEMA_META_TABLE: string = 'schema_meta'",
   "export const SQL_CREATE_SCHEMA_META_TABLE: string = 'CREATE TABLE IF NOT EXISTS schema_meta (key TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL)'",
   "export const SQL_CREATE_SEARCH_HISTORY_TABLE: string = 'CREATE TABLE IF NOT EXISTS search_history (query TEXT PRIMARY KEY NOT NULL, searched_at INTEGER NOT NULL)'",
@@ -38,7 +38,12 @@ const requiredSnippets = [
   "export const SQL_CREATE_COLLECTION_TOPIC_READ_POSITIONS_INDEX: string = 'CREATE INDEX IF NOT EXISTS idx_collection_topic_read_positions_updated_at ON collection_topic_read_positions (updated_at DESC, topic_id DESC)'",
   "export const SQL_CREATE_COLLECTION_TOPIC_READ_STATES_TABLE: string = 'CREATE TABLE IF NOT EXISTS collection_topic_read_states (topic_id INTEGER PRIMARY KEY NOT NULL, touched_at INTEGER NOT NULL, updated_at INTEGER NOT NULL)'",
   "export const SQL_CREATE_COLLECTION_TOPIC_READ_STATES_INDEX: string = 'CREATE INDEX IF NOT EXISTS idx_collection_topic_read_states_updated_at ON collection_topic_read_states (updated_at DESC, topic_id DESC)'",
-  "export const SQL_UPSERT_SCHEMA_VERSION: string = 'INSERT OR REPLACE INTO schema_meta (key, value) VALUES (\\'schema_version\\', \\'4\\')'",
+  "export const SQL_CREATE_USER_MARK_LABELS_TABLE: string = 'CREATE TABLE IF NOT EXISTS user_mark_labels (label_id TEXT PRIMARY KEY NOT NULL, name TEXT NOT NULL, color TEXT NOT NULL, sort_order INTEGER NOT NULL, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL)'",
+  "export const SQL_CREATE_USER_MARK_LABELS_SORT_INDEX: string = 'CREATE INDEX IF NOT EXISTS idx_user_mark_labels_sort ON user_mark_labels (sort_order ASC, updated_at DESC)'",
+  "export const SQL_CREATE_USER_MARK_ASSIGNMENTS_TABLE: string = 'CREATE TABLE IF NOT EXISTS user_mark_assignments (username_key TEXT NOT NULL, username TEXT NOT NULL, label_id TEXT NOT NULL, assigned_at INTEGER NOT NULL, updated_at INTEGER NOT NULL, PRIMARY KEY(username_key, label_id))'",
+  "export const SQL_CREATE_USER_MARK_ASSIGNMENTS_USERNAME_INDEX: string = 'CREATE INDEX IF NOT EXISTS idx_user_mark_assignments_username ON user_mark_assignments (username_key, assigned_at ASC)'",
+  "export const SQL_CREATE_USER_MARK_ASSIGNMENTS_LABEL_INDEX: string = 'CREATE INDEX IF NOT EXISTS idx_user_mark_assignments_label ON user_mark_assignments (label_id)'",
+  "export const SQL_UPSERT_SCHEMA_VERSION: string = 'INSERT OR REPLACE INTO schema_meta (key, value) VALUES (\\'schema_version\\', \\'6\\')'",
   'securityLevel: relationalStore.SecurityLevel.S3',
   'relationalStore.getRdbStore(context, LOCAL_DATA_STORE_CONFIG)',
   'await store.execute(SQL_CREATE_SCHEMA_META_TABLE)',
@@ -58,6 +63,11 @@ const requiredSnippets = [
   'await store.execute(SQL_CREATE_COLLECTION_TOPIC_READ_POSITIONS_INDEX)',
   'await store.execute(SQL_CREATE_COLLECTION_TOPIC_READ_STATES_TABLE)',
   'await store.execute(SQL_CREATE_COLLECTION_TOPIC_READ_STATES_INDEX)',
+  'await store.execute(SQL_CREATE_USER_MARK_LABELS_TABLE)',
+  'await store.execute(SQL_CREATE_USER_MARK_LABELS_SORT_INDEX)',
+  'await store.execute(SQL_CREATE_USER_MARK_ASSIGNMENTS_TABLE)',
+  'await store.execute(SQL_CREATE_USER_MARK_ASSIGNMENTS_USERNAME_INDEX)',
+  'await store.execute(SQL_CREATE_USER_MARK_ASSIGNMENTS_LABEL_INDEX)',
   'await store.execute(SQL_UPSERT_SCHEMA_VERSION)',
   'store.version = LOCAL_DATA_SCHEMA_VERSION',
   'return store',
@@ -73,7 +83,7 @@ assert(!localDataText.includes('SearchSettings'), 'LocalDataStore must not know 
 assert(!localDataText.includes('CacheSettings'), 'LocalDataStore must not know CacheSettings')
 
 const indexText = read('shared/src/main/ets/Index.ets')
-assert(indexText.includes("export { LocalDataStore, LOCAL_DATA_DB_NAME, LOCAL_DATA_SCHEMA_VERSION } from './storage/LocalDataStore'"), 'shared Index must only export LocalDataStore public constants/class')
+assert(/export\s+\{\s*LocalDataStore,\s*LOCAL_DATA_DB_NAME,\s*LOCAL_DATA_SCHEMA_VERSION,\s*\}\s+from\s+'\.\/storage\/LocalDataStore'/.test(indexText), 'shared Index must only export LocalDataStore public constants/class')
 
 const forbiddenBusinessFiles = [
   'entry/src/main/ets/entryability/EntryAbility.ets',
@@ -125,8 +135,10 @@ for (const root of sourceRoots) {
       rel === 'shared/src/main/ets/Index.ets' ||
       rel === 'shared/src/main/ets/settings/SearchSettings.ets' ||
       rel === 'shared/src/main/ets/settings/CollectionSettings.ets' ||
+      rel === 'shared/src/main/ets/settings/UserMarkSettings.ets' ||
       rel === 'shared/src/main/ets/settings/CacheSettings.ets' ||
-      rel === 'shared/src/main/ets/settings/CacheDeviceQaSeed.ets'
+      rel === 'shared/src/main/ets/settings/CacheDeviceQaSeed.ets' ||
+      rel === 'shared/src/main/ets/cache/TopicDetailActionOverlaySettings.ets'
     ) continue
     assert(!text.includes("@ohos.data.relationalStore") && !text.includes("'@kit.ArkData'") || !text.includes('relationalStore'), `${rel} must not add relationalStore usage outside LocalDataStore/SearchSettings Lane 4 boundary`)
   }

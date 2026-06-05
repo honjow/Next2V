@@ -4,6 +4,7 @@ import {
   DateUtils,
   MarkdownContent,
   ThemeConstants,
+  UserMarkBadgeRow,
   V2exMemberProfile,
   V2exUserReply
 } from 'shared'
@@ -81,19 +82,28 @@ export struct UserProfileCard {
           avatarSize: 72,
         })
         Column({ space: ThemeConstants.SPACE_XS }) {
-          Text(this.displayUsername || this.profile.username)
-            .fontSize(22)
-            .fontWeight(FontWeight.Bold)
-            .fontColor($r('sys.color.font_primary'))
-            .maxLines(1)
-            .textOverflow({ overflow: TextOverflow.Ellipsis })
-            .onAreaChange((_oldValue: Area, newValue: Area) => {
-              if (this.onUsernameAreaChange) {
-                this.onUsernameAreaChange(
-                  this.areaY(newValue?.globalPosition?.y) + this.areaLength(newValue?.height)
-                )
-              }
+          Row({ space: ThemeConstants.SPACE_XS }) {
+            Text(this.displayUsername || this.profile.username)
+              .fontSize(22)
+              .fontWeight(FontWeight.Bold)
+              .fontColor($r('sys.color.font_primary'))
+              .maxLines(1)
+              .textOverflow({ overflow: TextOverflow.Ellipsis })
+              .flexShrink(1)
+            UserMarkBadgeRow({
+              username: this.displayUsername || this.profile.username,
+              fontSize: ThemeConstants.FONT_SIZE_TAG
             })
+          }
+          .width('100%')
+          .alignItems(VerticalAlign.Center)
+          .onAreaChange((_oldValue: Area, newValue: Area) => {
+            if (this.onUsernameAreaChange) {
+              this.onUsernameAreaChange(
+                this.areaY(newValue?.globalPosition?.y) + this.areaLength(newValue?.height)
+              )
+            }
+          })
           if (this.profile.tagline) {
             Text(this.profile.tagline)
               .fontSize(ThemeConstants.FONT_SIZE_BODY)

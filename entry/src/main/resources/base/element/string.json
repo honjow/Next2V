@@ -1825,6 +1825,50 @@
       "value": "Unblock"
     },
     {
+      "name": "user_action_mark",
+      "value": "Mark"
+    },
+    {
+      "name": "user_mark_sheet_title",
+      "value": "User marks"
+    },
+    {
+      "name": "user_mark_create_section",
+      "value": "New mark"
+    },
+    {
+      "name": "user_mark_existing_section",
+      "value": "Marks"
+    },
+    {
+      "name": "user_mark_display_section",
+      "value": "Display"
+    },
+    {
+      "name": "user_mark_name_placeholder",
+      "value": "Mark name"
+    },
+    {
+      "name": "user_mark_add",
+      "value": "Add mark"
+    },
+    {
+      "name": "user_mark_empty",
+      "value": "No marks"
+    },
+    {
+      "name": "user_mark_name_required",
+      "value": "Enter a mark name"
+    },
+    {
+      "name": "user_mark_display_limit",
+      "value": "Visible marks"
+    },
+    {
+      "name": "user_mark_display_limit_hint",
+      "value": "Shown next to usernames"
+    },
+    {
       "name": "node_no_topics",
       "value": "No topics"
     },

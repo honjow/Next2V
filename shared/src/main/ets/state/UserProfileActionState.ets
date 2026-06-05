@@ -5,7 +5,7 @@ import { AppStorageV2 } from '@kit.ArkUI'
  * (`'v2:userProfileAction'`: the `command` + `shown` fields).
  *
  * Both are one-directional command buses written ONLY by the `@ComponentV2` `Index.ets` title bar:
- * - `command` mirrors `USER_PROFILE_ACTION`: the follow / block menu items write a
+ * - `command` mirrors `USER_PROFILE_ACTION`: the mark / follow / block menu items write a
  *   `<token>:<action>` string (`Index.sendUserProfileAction`, the single writer); the
  *   `@ComponentV2` `UserProfilePage` reacts to run the matching toggle.
  * - `shown` mirrors `USER_PROFILE_SHOWN`: when a UserProfile destination appears Index writes a

@@ -22,6 +22,7 @@ import { STORE_NAME_SETTINGS, SettingsPreferencesStore } from './SettingsStorage
 import { ThemeSettings } from './ThemeSettings'
 import { AutoDailyCheckinService } from '../services/AutoDailyCheckinService'
 import { BlockedListSettings } from './BlockedListSettings'
+import { UserMarkSettings } from './UserMarkSettings'
 
 export class SettingsBootstrap {
   static async loadAll(context: common.UIAbilityContext): Promise<void> {
@@ -49,6 +50,7 @@ export class SettingsBootstrap {
     await SettingsBootstrap.restoreCookieJar(context)
     await SettingsBootstrap.restoreMultiAccount(context)
     await SettingsBootstrap.restoreBlockedLists(context)
+    await SettingsBootstrap.restoreUserMarks(context)
     await SettingsBootstrap.restoreAutoDailyCheckin(context, settingsStore)
     SettingsBootstrap.triggerStartupCheckin(context)
     await SettingsBootstrap.restoreReplyCardStyle(context, settingsStore)
@@ -83,6 +85,7 @@ export class SettingsBootstrap {
     await SettingsBootstrap.restoreTopicDetailReplyAction(context, settingsStore)
     await SettingsBootstrap.restoreFeedTabs(context)
     await SettingsBootstrap.restoreBlockedLists(context)
+    await SettingsBootstrap.restoreUserMarks(context)
     await SettingsBootstrap.restoreAutoDailyCheckin(context, settingsStore)
     await SettingsBootstrap.restoreReplyCardStyle(context, settingsStore)
     await SettingsBootstrap.restoreReplyActionAlignment(context, settingsStore)
@@ -104,6 +107,12 @@ export class SettingsBootstrap {
       : DiagnosticsSettings.load(context)
     ).catch((_error: Error) => {
       DiagnosticsSettings.apply(DiagnosticsSettings.DEFAULT_ENABLED, DiagnosticsSettings.DEFAULT_MIN_LEVEL)
+    })
+  }
+
+  private static async restoreUserMarks(context: common.UIAbilityContext): Promise<void> {
+    await UserMarkSettings.load(context).catch((error: Error) => {
+      console.error('restore user marks failed: ' + error.message)
     })
   }
 

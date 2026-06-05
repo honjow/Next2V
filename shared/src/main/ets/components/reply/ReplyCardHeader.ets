@@ -3,6 +3,7 @@ import { ThemeConstants } from '../../theme/ThemeConstants'
 import { ImageUtils } from '../../utils/ImageUtils'
 import { Avatar } from '../Avatar'
 import { TimeAgo } from '../TimeAgo'
+import { UserName } from '../UserName'
 import { ReplyCardActions } from './ReplyCardActions'
 
 @ComponentV2
@@ -32,18 +33,18 @@ export struct ReplyCardHeader {
   Username() {
     // flexShrink so a long username ellipsizes instead of pushing the timestamp / actions / floor
     // off the row (the source of the compact-header overflow), rather than wrapping to a new line.
-    Text(this.reply.member.username)
-      .fontSize(ThemeConstants.FONT_SIZE_META)
-      .fontWeight(FontWeight.Medium)
-      .fontColor($r('sys.color.font_primary'))
-      .maxLines(1)
-      .textOverflow({ overflow: TextOverflow.Ellipsis })
-      .flexShrink(1)
-      .onClick(() => {
+    UserName({
+      username: this.reply.member.username,
+      fontSize: ThemeConstants.FONT_SIZE_META,
+      fontWeight: FontWeight.Medium,
+      isPro: (this.reply.member.pro || 0) > 0,
+      onUserClick: () => {
         if (this.onUserClick) {
           this.onUserClick(this.reply)
         }
-      })
+      }
+    })
+      .flexShrink(1)
   }
 
   @Builder
