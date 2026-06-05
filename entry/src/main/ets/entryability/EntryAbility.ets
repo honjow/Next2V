@@ -8,6 +8,7 @@ import {
   FoldScreenUtil,
   LanguageSettings,
   LayoutSafeAreaBridge,
+  LocalDataCloudSync,
   publishPendingV2exUrl,
   SettingsBootstrap,
   StorageKeys,
@@ -89,9 +90,13 @@ export default class EntryAbility extends UIAbility {
       const e = error as Error
       console.error('configure window failed: ' + e.message)
     }
-    SettingsBootstrap.loadAll(this.context).finally(() => {
-      this.loadContent(windowStage, win)
-    })
+    // Run the one-time legacy local-store rename migration FIRST, before SettingsBootstrap or any page
+    // opens the RDB, so its attach step never races a live ResultSet. It never rejects.
+    LocalDataCloudSync.runStartupMigration(this.context)
+      .then(() => SettingsBootstrap.loadAll(this.context))
+      .finally(() => {
+        this.loadContent(windowStage, win)
+      })
   }
 
   onConfigurationUpdate(newConfig: Configuration): void {
@@ -117,6 +122,9 @@ export default class EntryAbility extends UIAbility {
         LayoutSafeAreaBridge.publishInsets(FALLBACK_TOP_AVOID, FALLBACK_BOTTOM_AVOID)
         LayoutSafeAreaBridge.publishKeyboardHeight(0)
       }
+      // Phase 1 device-cloud sync validation: best-effort, after content is loaded (required for the
+      // DISTRIBUTED_DATASYNC user-grant dialog). Fire-and-forget; never affects launch.
+      LocalDataCloudSync.tryEnableAndSync(this.context).catch((_error: Error) => {})
     })
   }
 

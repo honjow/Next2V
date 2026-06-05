@@ -2975,6 +2975,10 @@
     {
       "name": "common_refresh_failed",
       "value": "刷新失敗"
+    },
+    {
+      "name": "perm_distributed_datasync_reason",
+      "value": "在你的多台裝置間同步收藏與閱讀記錄"
     }
   ]
 }

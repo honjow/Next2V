@@ -18,11 +18,11 @@ const localDataText = read(localDataRel)
 const requiredSnippets = [
   "import { common } from '@kit.AbilityKit'",
   "import { relationalStore } from '@kit.ArkData'",
-  "export const LOCAL_DATA_DB_NAME: string = 'V2Next.db'",
+  "export const LOCAL_DATA_DB_NAME: string = 'Next2V.db'",
   'export const LOCAL_DATA_SCHEMA_VERSION: number = 6',
   "export const LOCAL_DATA_SCHEMA_META_TABLE: string = 'schema_meta'",
   "export const SQL_CREATE_SCHEMA_META_TABLE: string = 'CREATE TABLE IF NOT EXISTS schema_meta (key TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL)'",
-  "export const SQL_CREATE_SEARCH_HISTORY_TABLE: string = 'CREATE TABLE IF NOT EXISTS search_history (query TEXT PRIMARY KEY NOT NULL, searched_at INTEGER NOT NULL)'",
+  "export const SQL_CREATE_SEARCH_HISTORY_TABLE: string = 'CREATE TABLE IF NOT EXISTS search_history (query TEXT PRIMARY KEY, searched_at INTEGER)'",
   "export const SQL_CREATE_SEARCH_HISTORY_INDEX: string = 'CREATE INDEX IF NOT EXISTS idx_search_history_searched_at ON search_history (searched_at DESC)'",
   "export const SQL_CREATE_CACHE_ENTRIES_TABLE: string = 'CREATE TABLE IF NOT EXISTS cache_entries (cache_key TEXT PRIMARY KEY NOT NULL, kind TEXT NOT NULL, payload_text TEXT, payload_path TEXT, cached_at INTEGER NOT NULL, accessed_at INTEGER NOT NULL, expires_at INTEGER NOT NULL, size INTEGER NOT NULL, etag TEXT, payload_hash TEXT)'",
   "export const SQL_CREATE_CACHE_ENTRIES_KIND_INDEX: string = 'CREATE INDEX IF NOT EXISTS idx_cache_entries_kind ON cache_entries (kind)'",
@@ -138,7 +138,8 @@ for (const root of sourceRoots) {
       rel === 'shared/src/main/ets/settings/UserMarkSettings.ets' ||
       rel === 'shared/src/main/ets/settings/CacheSettings.ets' ||
       rel === 'shared/src/main/ets/settings/CacheDeviceQaSeed.ets' ||
-      rel === 'shared/src/main/ets/cache/TopicDetailActionOverlaySettings.ets'
+      rel === 'shared/src/main/ets/cache/TopicDetailActionOverlaySettings.ets' ||
+      rel === 'shared/src/main/ets/storage/LocalDataCloudSync.ets'
     ) continue
     assert(!text.includes("@ohos.data.relationalStore") && !text.includes("'@kit.ArkData'") || !text.includes('relationalStore'), `${rel} must not add relationalStore usage outside LocalDataStore/SearchSettings Lane 4 boundary`)
   }

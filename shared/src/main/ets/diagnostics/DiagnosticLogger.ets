@@ -4,7 +4,7 @@ import { DiagnosticsLogFileSink } from './DiagnosticsLogFileSink'
 import { DiagnosticsStore } from './DiagnosticsStore'
 
 export type DiagnosticLogLevel = 'debug' | 'info' | 'warn' | 'error'
-export type DiagnosticLogCategory = 'app' | 'auth' | 'two_factor' | 'auto_daily_checkin' | 'notification' | 'account' | 'cache' | 'storage' | 'ui_lifecycle' | 'diagnostics' | 'network' | 'webview'
+export type DiagnosticLogCategory = 'app' | 'auth' | 'two_factor' | 'auto_daily_checkin' | 'notification' | 'account' | 'cache' | 'storage' | 'ui_lifecycle' | 'diagnostics' | 'network' | 'webview' | 'cloud_sync'
 
 export class DiagnosticLogger {
   private static enabled: boolean = true

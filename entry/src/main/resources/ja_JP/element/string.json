@@ -2975,6 +2975,10 @@
     {
       "name": "common_refresh_failed",
       "value": "更新に失敗しました"
+    },
+    {
+      "name": "perm_distributed_datasync_reason",
+      "value": "お使いの複数の端末間でブックマークと閲覧履歴を同期します"
     }
   ]
 }

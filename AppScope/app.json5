@@ -8,6 +8,7 @@
     "label": "$string:app_name",
     "targetAPIVersion": 24,
     "minAPIVersion": 12,
-    "apiReleaseType": "Release24"
+    "apiReleaseType": "Release24",
+    "cloudStructuredDataSyncEnabled": true
   }
 }

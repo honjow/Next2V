@@ -313,6 +313,7 @@ export {
   LOCAL_DATA_DB_NAME,
   LOCAL_DATA_SCHEMA_VERSION,
 } from './storage/LocalDataStore'
+export { LocalDataCloudSync } from './storage/LocalDataCloudSync'
 export { MotionHandStateService } from './services/MotionHandStateService'
 export type { MotionHandEdge } from './services/MotionHandStateService'
 export { TwoFactorChallengeService } from './services/TwoFactorChallengeService'

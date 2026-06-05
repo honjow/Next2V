@@ -1,0 +1,25 @@
+{
+  "metaVersion": 65537,
+  "version": 1,
+  "bundleName": "com.honjow.next2v",
+  "e2eeEnable": false,
+  "databases": [
+    {
+      "name": "Next2V",
+      "alias": "Next2V",
+      "bundleName": "com.honjow.next2v",
+      "version": 1,
+      "autoSyncType": 0,
+      "tables": [
+        {
+          "name": "search_history",
+          "alias": "searchHistory",
+          "fields": [
+            { "colName": "query", "alias": "query", "type": 3, "primary": true, "nullable": true, "dupCheckCol": true },
+            { "colName": "searched_at", "alias": "searched_at", "type": 1, "primary": false, "nullable": true, "dupCheckCol": false }
+          ]
+        }
+      ]
+    }
+  ]
+}

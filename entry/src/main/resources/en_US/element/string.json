@@ -2975,6 +2975,10 @@
     {
       "name": "common_refresh_failed",
       "value": "Refresh failed"
+    },
+    {
+      "name": "perm_distributed_datasync_reason",
+      "value": "Sync your bookmarks and reading history across your devices"
     }
   ]
 }

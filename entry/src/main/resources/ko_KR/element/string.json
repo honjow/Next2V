@@ -2975,6 +2975,10 @@
     {
       "name": "common_refresh_failed",
       "value": "새로고침 실패"
+    },
+    {
+      "name": "perm_distributed_datasync_reason",
+      "value": "기기 간에 북마크와 읽기 기록을 동기화합니다"
     }
   ]
 }
