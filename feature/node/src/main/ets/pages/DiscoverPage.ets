@@ -322,6 +322,13 @@ export struct DiscoverPage {
     this.loadLocalNodeSections()
     this.loadNodeNavigationSections()
     await this.loadTopicSurface(true)
+    // Re-throw so the shared PullRefresh shows a single "刷新失败" toast. loadTopicSurface() swallows the
+    // fetch error into this.hotError (cleared at each load start; still shown inline when the list is
+    // empty) and resolves normally. Initial load / tab switch call it un-awaited and keep swallowing, so
+    // an empty first load shows the inline error and never toasts.
+    if (this.hotError) {
+      throw new Error(this.hotError)
+    }
   }
 
   private navigationSectionTitle(section: V2exNodeNavigationSection): string {

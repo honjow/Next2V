@@ -452,6 +452,13 @@ export struct NodeTopicPage {
     await this.loadData()
     this.loadSavedState()
     this.loadSiteNodeFavoriteState()
+    // Re-throw so the shared PullRefresh shows a single "刷新失败" toast. loadData() swallows the fetch
+    // error into vm.errorMessage (cleared at each load start, set only when every source incl. the
+    // api_v2→web fallback failed). The bare initial-load / error-retry callers use loadData() directly
+    // and keep swallowing, so an empty first load shows the inline error and never toasts.
+    if (this.vm.errorMessage) {
+      throw new Error(this.vm.errorMessage)
+    }
   }
 
   private async loadData(): Promise<void> {
