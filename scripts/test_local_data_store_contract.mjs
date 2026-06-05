@@ -139,7 +139,8 @@ for (const root of sourceRoots) {
       rel === 'shared/src/main/ets/settings/CacheSettings.ets' ||
       rel === 'shared/src/main/ets/settings/CacheDeviceQaSeed.ets' ||
       rel === 'shared/src/main/ets/cache/TopicDetailActionOverlaySettings.ets' ||
-      rel === 'shared/src/main/ets/storage/LocalDataCloudSync.ets'
+      rel === 'shared/src/main/ets/storage/LocalDataCloudSync.ets' ||
+      rel === 'shared/src/main/ets/storage/SyncedKv.ets'
     ) continue
     assert(!text.includes("@ohos.data.relationalStore") && !text.includes("'@kit.ArkData'") || !text.includes('relationalStore'), `${rel} must not add relationalStore usage outside LocalDataStore/SearchSettings Lane 4 boundary`)
   }

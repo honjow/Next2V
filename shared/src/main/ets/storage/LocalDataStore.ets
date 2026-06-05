@@ -40,6 +40,10 @@ export const SQL_CREATE_USER_MARK_LABELS_SORT_INDEX: string = 'CREATE INDEX IF N
 export const SQL_CREATE_USER_MARK_ASSIGNMENTS_TABLE: string = 'CREATE TABLE IF NOT EXISTS user_mark_assignments (username_key TEXT NOT NULL, username TEXT NOT NULL, label_id TEXT NOT NULL, assigned_at INTEGER NOT NULL, updated_at INTEGER NOT NULL, PRIMARY KEY(username_key, label_id))'
 export const SQL_CREATE_USER_MARK_ASSIGNMENTS_USERNAME_INDEX: string = 'CREATE INDEX IF NOT EXISTS idx_user_mark_assignments_username ON user_mark_assignments (username_key, assigned_at ASC)'
 export const SQL_CREATE_USER_MARK_ASSIGNMENTS_LABEL_INDEX: string = 'CREATE INDEX IF NOT EXISTS idx_user_mark_assignments_label ON user_mark_assignments (label_id)'
+// Generic cloud-syncable key-value "catch-all" for scattered small data (feature flags / small config),
+// so new misc data needs ZERO new local table + ZERO new AGC data type — just write a row. kv_key is
+// "<namespace>:<key>"; value is a JSON string; no NOT NULL (端云协同 forbids it on synced columns).
+export const SQL_CREATE_SYNCED_KV_TABLE: string = 'CREATE TABLE IF NOT EXISTS synced_kv (kv_key TEXT PRIMARY KEY, value TEXT, updated_at INTEGER)'
 export const SQL_UPSERT_SCHEMA_VERSION: string = 'INSERT OR REPLACE INTO schema_meta (key, value) VALUES (\'schema_version\', \'6\')'
 
 // One-time legacy-store (V2Next.db -> Next2V.db) migration metadata. The breadcrumb is a schema_meta row
@@ -59,6 +63,7 @@ const LEGACY_MIGRATION_TABLES: string[] = [
   'topic_action_overlays',
   'user_mark_labels',
   'user_mark_assignments',
+  'synced_kv',
   'cache_entries',
 ]
 
@@ -95,6 +100,7 @@ export class LocalDataStore {
     await store.execute(SQL_CREATE_USER_MARK_ASSIGNMENTS_TABLE)
     await store.execute(SQL_CREATE_USER_MARK_ASSIGNMENTS_USERNAME_INDEX)
     await store.execute(SQL_CREATE_USER_MARK_ASSIGNMENTS_LABEL_INDEX)
+    await store.execute(SQL_CREATE_SYNCED_KV_TABLE)
     await store.execute(SQL_UPSERT_SCHEMA_VERSION)
     if (store.version !== LOCAL_DATA_SCHEMA_VERSION) {
       store.version = LOCAL_DATA_SCHEMA_VERSION

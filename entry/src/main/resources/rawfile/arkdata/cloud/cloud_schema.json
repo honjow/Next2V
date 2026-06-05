@@ -18,6 +18,15 @@
             { "colName": "query", "alias": "query", "type": 3, "primary": true, "nullable": true, "dupCheckCol": true },
             { "colName": "searched_at", "alias": "searched_at", "type": 1, "primary": false, "nullable": true, "dupCheckCol": false }
           ]
+        },
+        {
+          "name": "synced_kv",
+          "alias": "syncedKv",
+          "fields": [
+            { "colName": "kv_key", "alias": "kv_key", "type": 3, "primary": true, "nullable": true, "dupCheckCol": true },
+            { "colName": "value", "alias": "value", "type": 3, "primary": false, "nullable": true, "dupCheckCol": false },
+            { "colName": "updated_at", "alias": "updated_at", "type": 1, "primary": false, "nullable": true, "dupCheckCol": false }
+          ]
         }
       ]
     }

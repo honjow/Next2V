@@ -3,21 +3,15 @@ import { relationalStore } from '@kit.ArkData'
 import { LocalDataStore } from './LocalDataStore'
 import { DiagnosticLogger } from '../diagnostics/DiagnosticLogger'
 
-// Phase 1 device-cloud sync (端云协同) for the local RDB. Only tables whose primary keys are already
-// stable across devices are synced — collection_* keyed by the server-authoritative topic_id / node_name
-// and search_history keyed by the user-typed query — so a last-write-wins merge on their *_at columns is
-// safe. Deliberately NOT synced: cache_entries (device-local file payloads, re-fetchable) and
-// topic_action_overlays (its owner_key is not yet deterministic per account — Phase 2).
-// Phase 1 pipeline de-risk: sync ONLY search_history (2 fields) first, to validate the cloud handshake
-// end-to-end against a single published cloud object type. Restore the full list below once the cloud
-// schema for every table is created + published in AGC.
+// Device-cloud sync (端云协同) for the local RDB. A table is synced only when (a) its primary key is stable
+// across devices so a last-write-wins merge on *_at columns is safe, AND (b) its cloud data type exists in
+// AGC + is declared in arkdata/cloud/cloud_schema.json. synced_kv is the generic catch-all (see SyncedKv).
+// Deliberately NOT synced: cache_entries (device-local file payloads, re-fetchable) and topic_action_overlays
+// (its owner_key is not yet deterministic per account). collection_* / user_mark_* are candidates for a later
+// phase — each needs its NOT NULL dropped, an AGC data type, and a cloud_schema.json entry before listing here.
 const CLOUD_SYNCED_TABLES: string[] = [
   'search_history',
-  // 'collection_saved_topics',
-  // 'collection_saved_nodes',
-  // 'collection_viewed_topics',
-  // 'collection_topic_read_positions',
-  // 'collection_topic_read_states',
+  'synced_kv',
 ]
 
 const SYNC_PERMISSION: Permissions = 'ohos.permission.DISTRIBUTED_DATASYNC'

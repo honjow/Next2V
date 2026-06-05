@@ -314,6 +314,8 @@ export {
   LOCAL_DATA_SCHEMA_VERSION,
 } from './storage/LocalDataStore'
 export { LocalDataCloudSync } from './storage/LocalDataCloudSync'
+export { SyncedKv } from './storage/SyncedKv'
+export type { SyncedKvEntry } from './storage/SyncedKv'
 export { MotionHandStateService } from './services/MotionHandStateService'
 export type { MotionHandEdge } from './services/MotionHandStateService'
 export { TwoFactorChallengeService } from './services/TwoFactorChallengeService'
