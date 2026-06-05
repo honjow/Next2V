@@ -23,7 +23,7 @@ export class TopicDetailFloatingActionCoordinator {
     if (rootHeight <= 0) {
       return 0
     }
-    const bottomInset = Math.max(0, bottomAvoidHeight) + Math.max(0, bottomClearance)
+    const bottomInset = Math.max(Math.max(0, bottomAvoidHeight), Math.max(0, bottomClearance))
     return Math.max(0, rootHeight - bottomInset - buttonSize)
   }
 

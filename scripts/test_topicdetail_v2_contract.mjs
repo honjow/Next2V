@@ -85,8 +85,9 @@ const INDEX = 'entry/src/main/ets/pages/Index.ets';
 }
 
 // 1c) Floating reply/resume buttons must stay above foldable outer-screen bottom protection.
-//     Some devices report little/no navigation-indicator inset on the outer screen; the FAB still
-//     needs its own visual clearance and the HDS internal bottom margin must match the activity box.
+//     Some devices report little/no navigation-indicator inset on the outer screen, so the FAB needs
+//     a minimum clearance. When the safe area already reports a larger bottom inset, do not add the
+//     clearance again; otherwise inner screens get lifted too far.
 {
   const raw = read(PAGE);
   const code = strip(raw);
@@ -100,8 +101,10 @@ const INDEX = 'entry/src/main/ets/pages/Index.ets';
     `${PAGE}: reply and resume FABs align HDS barBottomMargin with activity padding`);
   must(/bottomClearance:\s*number\s*=\s*0/.test(coordinator),
     'TopicDetailFloatingActionCoordinator.actionBarTop keeps default bottomClearance compatibility');
-  must(/Math\.max\(0,\s*bottomAvoidHeight\)\s*\+\s*Math\.max\(0,\s*bottomClearance\)/.test(coordinator),
-    'TopicDetailFloatingActionCoordinator.actionBarTop combines safe area and explicit clearance');
+  must(/Math\.max\(\s*Math\.max\(0,\s*bottomAvoidHeight\),\s*Math\.max\(0,\s*bottomClearance\)\s*\)/.test(coordinator),
+    'TopicDetailFloatingActionCoordinator.actionBarTop uses the larger of safe area and minimum clearance');
+  must(!/Math\.max\(0,\s*bottomAvoidHeight\)\s*\+\s*Math\.max\(0,\s*bottomClearance\)/.test(coordinator),
+    'TopicDetailFloatingActionCoordinator.actionBarTop does not stack clearance on top of the safe area');
 }
 
 // 1d) Jump-to-floor uses the system CustomContentDialog chrome. The input can be custom, but the
