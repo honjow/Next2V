@@ -155,6 +155,11 @@ struct Index {
   private homeTabVisibleByScroll: boolean = true;
   private homeTabAnimationGuardTimerId: number = -1;
   @Local ct: number = 0;
+  // The single scroller the shared HdsNavigation title binds to for scroll-driven hide/show. Always the
+  // ACTIVE sub-tab's live scroller: updated on tab switch (onChange) and when HomePage hands up its real
+  // per-category scroller (setHomeTabScroller). Binding only one scroller keeps a single source driving
+  // the title and sidesteps the multi-scroller "any container at top immediately shows the title" thrash.
+  @Local titleScroller: Scroller = this.homeTabScrollers[0];
   // Appbar identity + command/flag state the migrated producer pages (TopicDetailPage / NodeTopicPage /
   // UserProfilePage) report UP, read reactively in the title-bar builders via these @ObservedV2 mirrors,
   // each dual-written at its producer's write-through helper. Home-tab/auth-session/notification-unread/
@@ -245,6 +250,12 @@ struct Index {
       this.tc.unbindScroller(oldScroller)
     }
     this.homeTabScrollers[index] = scroller
+    // Repoint the title binding when the swapped scroller belongs to the active tab — tab 0's real
+    // per-category scroller arrives only after first build, so without this the title would stay bound
+    // to the detached placeholder and never hide on a cold start.
+    if (index === this.ct) {
+      this.titleScroller = scroller
+    }
     if (this.homeTab.autoHide) {
       this.tc.bindScroller(index, scroller)
       this.restoreHomeTabIfHidden()
@@ -525,6 +536,9 @@ struct Index {
         })
         .onChange((i: number) => {
           this.ct = i
+          // Rebind the shared title to the newly-active tab's scroller (tabs 1-3 use the stable
+          // Index-owned scrollers; tab 0 uses whatever HomePage last handed up).
+          this.titleScroller = this.homeTabScrollers[i]
           if (i === 2) {
             this.notificationBadgeRequestId++
             this.notificationRefreshKey++
@@ -544,11 +558,17 @@ struct Index {
       .titleMode(HdsNavigationTitleMode.MINI)
       .hideBackButton(true)
       .dynamicHideTitleBar({
-        hideTitleArea: this.ct === 1 || this.ct === 2,
+        // Auto-hide the title on every home sub-tab (incl. the feed). bindToScrollable below binds only
+        // the active tab's scroller, so the shared title is driven by one source: switching to a tab
+        // already at its top immediately re-shows the title (no leftover avoidance gap), and a status-bar
+        // tap that scrolls a list to its top likewise re-shows it. hideBottomBuilder hides the Discover
+        // search field but keeps the feed pill bar pinned on the home tab.
+        hideTitleArea: true,
         hideBottomBuilder: this.ct === 1,
         hideStatusBar: false,
         mode: HideMode.SCROLL_UP,
       })
+      .bindToScrollable([this.titleScroller])
       .ignoreLayoutSafeArea(
         [LayoutSafeAreaType.SYSTEM],
         [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM],
