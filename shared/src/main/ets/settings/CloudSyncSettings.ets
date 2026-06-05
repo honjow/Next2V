@@ -38,21 +38,31 @@ export class CloudSyncSettings {
     const state: CloudSyncState = connectCloudSync()
     state.lastSyncAt = store.getSync(StorageKeys.CLOUD_SYNC_LAST_AT, 0) as number
     state.lastSyncOk = store.getSync(StorageKeys.CLOUD_SYNC_LAST_OK, false) as boolean
+    state.lastSyncCloudDisabled = store.getSync(
+      StorageKeys.CLOUD_SYNC_LAST_CLOUD_DISABLED,
+      false,
+    ) as boolean
     return enabled
   }
 
   // Record the outcome of a sync attempt: update the in-memory holder AND persist it, so Settings can show
   // the "上次同步:…" line immediately on next open (and after a restart). Best-effort persistence — the
   // holder is updated first so the live UI reacts even if the write fails.
-  static async recordLastSync(context: common.UIAbilityContext, ok: boolean): Promise<void> {
+  static async recordLastSync(
+    context: common.UIAbilityContext,
+    ok: boolean,
+    cloudDisabled: boolean,
+  ): Promise<void> {
     const at: number = Date.now()
     const state: CloudSyncState = connectCloudSync()
     state.lastSyncAt = at
     state.lastSyncOk = ok
+    state.lastSyncCloudDisabled = cloudDisabled
     try {
       const store = await preferences.getPreferences(context, STORE_NAME)
       store.putSync(StorageKeys.CLOUD_SYNC_LAST_AT, at)
       store.putSync(StorageKeys.CLOUD_SYNC_LAST_OK, ok)
+      store.putSync(StorageKeys.CLOUD_SYNC_LAST_CLOUD_DISABLED, cloudDisabled)
       store.flushSync()
     } catch (error) {
       const e = error as Error

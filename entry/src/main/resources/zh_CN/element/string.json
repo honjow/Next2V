@@ -161,6 +161,10 @@
       "value": "关闭"
     },
     {
+      "name": "common_open",
+      "value": "开启"
+    },
+    {
       "name": "common_auto",
       "value": "自动"
     },
@@ -3031,6 +3035,14 @@
     {
       "name": "cloud_sync_last_failed",
       "value": "上次同步失败 · {0}"
+    },
+    {
+      "name": "cloud_sync_cloud_disabled",
+      "value": "云空间同步未开启,请在系统设置的「云空间」中开启本应用的数据同步"
+    },
+    {
+      "name": "cloud_sync_open_cloud_space",
+      "value": "打开华为云空间"
     }
   ]
 }

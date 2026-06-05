@@ -161,6 +161,10 @@
       "value": "關閉"
     },
     {
+      "name": "common_open",
+      "value": "開啟"
+    },
+    {
       "name": "common_auto",
       "value": "自動"
     },
@@ -3031,6 +3035,14 @@
     {
       "name": "cloud_sync_last_failed",
       "value": "上次同步失敗 · {0}"
+    },
+    {
+      "name": "cloud_sync_cloud_disabled",
+      "value": "雲空間同步未開啟,請在系統設定的「雲空間」中開啟本應用的資料同步"
+    },
+    {
+      "name": "cloud_sync_open_cloud_space",
+      "value": "開啟華為雲空間"
     }
   ]
 }

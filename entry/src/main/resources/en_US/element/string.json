@@ -161,6 +161,10 @@
       "value": "Off"
     },
     {
+      "name": "common_open",
+      "value": "On"
+    },
+    {
       "name": "common_auto",
       "value": "Automatic"
     },
@@ -3031,6 +3035,14 @@
     {
       "name": "cloud_sync_last_failed",
       "value": "Last sync failed · {0}"
+    },
+    {
+      "name": "cloud_sync_cloud_disabled",
+      "value": "Cloud sync is off for this app. Turn on data sync for this app under System Settings → Cloud."
+    },
+    {
+      "name": "cloud_sync_open_cloud_space",
+      "value": "Open Huawei Cloud"
     }
   ]
 }

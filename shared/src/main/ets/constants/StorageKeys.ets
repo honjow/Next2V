@@ -82,6 +82,9 @@ export class StorageKeys {
   // in-memory CloudSyncState resets to 0 on restart). LAST_AT is a millisecond epoch; LAST_OK its result.
   static readonly CLOUD_SYNC_LAST_AT: string = 'cloudSyncLastAt'
   static readonly CLOUD_SYNC_LAST_OK: string = 'cloudSyncLastOk'
+  // True when the last sync finished with RDB_CLOUD_DISABLED (the system 云空间 sync is off for this app).
+  // Persisted so Settings can show the "enable cloud sync in system settings" hint after a restart.
+  static readonly CLOUD_SYNC_LAST_CLOUD_DISABLED: string = 'cloudSyncLastCloudDisabled'
 
   // NOTE: the former API_RATE_LIMIT_* ('apiRateLimit*') legacy AppStorage keys were removed — they
   // had zero runtime consumers after the api-rate-limit V2 slice. The rate-limit snapshot now lives

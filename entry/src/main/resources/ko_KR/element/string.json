@@ -161,6 +161,10 @@
       "value": "꺼짐"
     },
     {
+      "name": "common_open",
+      "value": "켜짐"
+    },
+    {
       "name": "common_auto",
       "value": "자동"
     },
@@ -3031,6 +3035,14 @@
     {
       "name": "cloud_sync_last_failed",
       "value": "마지막 동기화 실패 · {0}"
+    },
+    {
+      "name": "cloud_sync_cloud_disabled",
+      "value": "클라우드 동기화가 꺼져 있습니다. 시스템 설정의 클라우드에서 이 앱의 데이터 동기화를 켜세요"
+    },
+    {
+      "name": "cloud_sync_open_cloud_space",
+      "value": "Huawei 클라우드 열기"
     }
   ]
 }

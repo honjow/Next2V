@@ -10,6 +10,11 @@ export class CloudSyncState {
   @Trace syncing: boolean = false
   @Trace lastSyncAt: number = 0
   @Trace lastSyncOk: boolean = false
+  // True when the last sync finished with RDB_CLOUD_DISABLED (progress code 3): the system Huawei 云空间
+  // data sync is OFF for this app. The app cannot toggle that switch, so Settings surfaces a distinct
+  // "enable it in system settings" hint instead of the generic "sync failed". Cleared by any later
+  // success/other-failure outcome.
+  @Trace lastSyncCloudDisabled: boolean = false
   // Per-feature toggles (sub-switches under the master `enabled`). Default ON: enabling cloud sync syncs
   // everything unless the user opts a feature out. CloudSyncSettings is the single writer (it maps each
   // CloudSyncFeature key to the matching field); the Settings page reads them back.

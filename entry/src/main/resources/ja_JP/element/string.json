@@ -161,6 +161,10 @@
       "value": "オフ"
     },
     {
+      "name": "common_open",
+      "value": "オン"
+    },
+    {
       "name": "common_auto",
       "value": "自動"
     },
@@ -3031,6 +3035,14 @@
     {
       "name": "cloud_sync_last_failed",
       "value": "前回の同期に失敗 · {0}"
+    },
+    {
+      "name": "cloud_sync_cloud_disabled",
+      "value": "クラウド同期がオフです。システム設定のクラウドで本アプリのデータ同期をオンにしてください"
+    },
+    {
+      "name": "cloud_sync_open_cloud_space",
+      "value": "Huawei クラウドを開く"
     }
   ]
 }

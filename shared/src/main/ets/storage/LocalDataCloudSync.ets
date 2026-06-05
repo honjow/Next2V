@@ -113,8 +113,9 @@ export class LocalDataCloudSync {
 
   // Trigger a manual cloud-first sync of the marked tables; resolve with whether it reached progressCode 0
   // and record the outcome in CloudSyncState (surfaced by the Settings "立即同步" row). A `code` of
-  // RDB_CLOUD_DISABLED (3) means cloud sync is not enabled at the system level — harmless; app keeps
-  // working locally.
+  // RDB_CLOUD_DISABLED (3) means the system Huawei 云空间 data sync is OFF for this app: the app cannot
+  // toggle that switch, so we flag it (cloudDisabled) and Settings shows a "enable it in system settings"
+  // hint instead of the generic "sync failed". Local data is unaffected either way.
   static async cloudSyncNow(context: common.UIAbilityContext): Promise<boolean> {
     const state = connectCloudSync()
     state.syncing = true
@@ -122,17 +123,18 @@ export class LocalDataCloudSync {
       const store = await LocalDataStore.open(context)
       // store.cloudSync's promise resolves once the sync is ACCEPTED, not finished — the real outcome
       // arrives later via the progress callback's SYNC_FINISH event. Resolve on that (with a safety
-      // timeout so a never-finishing sync still settles), reading progress.code at finish.
-      const ok: boolean = await new Promise<boolean>((resolve: (value: boolean) => void) => {
+      // timeout so a never-finishing sync still settles), capturing progress.code at finish. -1 is our
+      // sentinel for a timeout / rejected call.
+      const code: number = await new Promise<number>((resolve: (value: number) => void) => {
         let settled: boolean = false
-        const finish = (result: boolean): void => {
+        const finish = (result: number): void => {
           if (!settled) {
             settled = true
             resolve(result)
           }
         }
         const timer = setTimeout(() => {
-          finish(false)
+          finish(-1)
         }, 30000)
         store
           .cloudSync(
@@ -144,7 +146,7 @@ export class LocalDataCloudSync {
               })
               if (progress.schedule === relationalStore.Progress.SYNC_FINISH) {
                 clearTimeout(timer)
-                finish(progress.code === 0)
+                finish(progress.code)
               }
             },
           )
@@ -156,16 +158,18 @@ export class LocalDataCloudSync {
               { errorKind: error.name || 'Error', message: error.message || '' },
               error,
             )
-            finish(false)
+            finish(-1)
           })
       })
-      await CloudSyncSettings.recordLastSync(context, ok)
+      const ok: boolean = code === 0
+      const cloudDisabled: boolean = code === 3
+      await CloudSyncSettings.recordLastSync(context, ok, cloudDisabled)
       state.syncing = false
-      DiagnosticLogger.info('cloud_sync', 'cloud_sync_done', { ok: ok })
+      DiagnosticLogger.info('cloud_sync', 'cloud_sync_done', { ok: ok, progressCode: code })
       return ok
     } catch (error) {
       const e = error as Error
-      await CloudSyncSettings.recordLastSync(context, false)
+      await CloudSyncSettings.recordLastSync(context, false, false)
       state.syncing = false
       DiagnosticLogger.warn(
         'cloud_sync',
