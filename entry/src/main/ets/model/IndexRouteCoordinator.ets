@@ -25,6 +25,7 @@ export type IndexDestinationFamily =
   'networkProxySettings' |
   'imageUploadSettings' |
   'domainSettings' |
+  'cloudSyncSettings' |
   'account' |
   'accountDetail' |
   'accountWebView' |
@@ -67,6 +68,7 @@ export class IndexRouteCoordinator {
     'NetworkProxySettings': 'networkProxySettings',
     'ImageUploadSettings': 'imageUploadSettings',
     'DomainSettings': 'domainSettings',
+    'CloudSyncSettings': 'cloudSyncSettings',
     'Account': 'account',
     'AccountDetail': 'accountDetail',
     'AccountWebView': 'accountWebView',
@@ -100,6 +102,7 @@ export class IndexRouteCoordinator {
       'networkProxySettings': AppStrings.R_NAV_NETWORK_PROXY,
       'imageUploadSettings': AppStrings.R_IMAGE_UPLOAD_SETTINGS_TITLE,
       'domainSettings': AppStrings.R_API_DOMAIN,
+      'cloudSyncSettings': AppStrings.R_CLOUD_SYNC,
       'account': AppStrings.R_ACCOUNT_MANAGEMENT,
       'accountDetail': AppStrings.R_NAV_ACCOUNT,
       'accountWebView': '',
@@ -129,6 +132,7 @@ export class IndexRouteCoordinator {
     'networkProxySettings': true,
     'imageUploadSettings': true,
     'domainSettings': true,
+    'cloudSyncSettings': true,
     'account': true,
     'accountDetail': true,
     'accountWebView': false,

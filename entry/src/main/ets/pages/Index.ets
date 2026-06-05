@@ -82,6 +82,7 @@ import {
   NetworkProxySettingsPage,
   ImageUploadSettingsPage,
   DomainSettingsPage,
+  CloudSyncSettingsPage,
 } from 'settings'
 import { ComponentContent, promptAction, SymbolGlyphModifier } from '@kit.ArkUI'
 import { V2exWebLoginPage } from './V2exWebLoginPage'
@@ -433,6 +434,9 @@ struct Index {
     }
     if (descriptor.family === 'domainSettings') {
       DomainSettingsPage()
+    }
+    if (descriptor.family === 'cloudSyncSettings') {
+      CloudSyncSettingsPage()
     }
     if (descriptor.family === 'account') {
       AccountManagementPage()

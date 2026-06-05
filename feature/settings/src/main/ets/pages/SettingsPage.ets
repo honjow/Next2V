@@ -6,10 +6,7 @@ import {
   AvatarAppearanceSettings,
   AvatarAppearanceState,
   CacheSettings,
-  CloudSyncFeature,
-  CloudSyncSettings,
   CloudSyncState,
-  DateUtils,
   connectApiDomain,
   connectAutoDailyCheckin,
   connectCloudSync,
@@ -34,7 +31,6 @@ import {
   NetworkProxySettings,
   NetworkProxyState,
   LanguageSettings,
-  LocalDataCloudSync,
   ReadingSettings,
   ReadingSettingsState,
   SecondaryListScaffold,
@@ -51,12 +47,9 @@ import {
   SettingsDivider,
   SettingsDropdownRow,
   SettingsSectionHeader,
-  SettingsToggleRow
+  SettingsToggleRow,
 } from '../components/SettingsPageComponents'
-import {
-  SettingsPageCoordinator,
-  type SettingsOption,
-} from '../model/SettingsPageCoordinator'
+import { SettingsPageCoordinator, type SettingsOption } from '../model/SettingsPageCoordinator'
 import { SettingsSaveCoordinator } from '../model/SettingsSaveCoordinator'
 import { StorageSettingsCoordinator } from '../model/StorageSettingsCoordinator'
 @ComponentV2
@@ -76,18 +69,12 @@ export struct SettingsPage {
   private reading: ReadingSettingsState = connectReadingSettings();
   private proxy: NetworkProxyState = connectNetworkProxy();
   private image: ImageUploadState = connectImageUpload();
+  // Cloud-sync master-enabled state, read only to show the on/off status on the "云同步" entry row. The
+  // full cloud-sync UI lives in the pushed CloudSyncSettingsPage; this is just a reactive @Trace read.
+  private cloudSync: CloudSyncState = connectCloudSync();
   // Settings toggled only on this page (single writer while visible) are @Local: hydrated from
   // AppStorage in aboutToAppear and updated optimistically by the toggle handlers below.
   @Local private autoDailyCheckinEnabled: boolean = true;
-  @Local private cloudSyncEnabled: boolean = false;
-  // Live cloud-sync status holder (syncing / lastSyncAt / lastSyncOk). Read in the "立即同步" subtitle so
-  // it reflects every sync path — startup, feature toggle, and manual — not just a manual tap.
-  private cloudSync: CloudSyncState = connectCloudSync();
-  @Local private cloudSyncFeatSearchHistory: boolean = true;
-  @Local private cloudSyncFeatCollections: boolean = true;
-  @Local private cloudSyncFeatRecentViews: boolean = true;
-  @Local private cloudSyncFeatReadProgress: boolean = true;
-  @Local private cloudSyncFeatMarks: boolean = true;
   @Local private autoLoadImages: boolean = true;
   @Local private onlyLoadImagesOnWifi: boolean = false;
   @Local private themeMode: string = ThemeSettings.MODE_AUTO;
@@ -121,12 +108,6 @@ export struct SettingsPage {
   // auto-hide default, holding-hand unsupported, restore-position off).
   private hydratePreferences(): void {
     this.autoDailyCheckinEnabled = connectAutoDailyCheckin().enabled
-    this.cloudSyncEnabled = CloudSyncSettings.isEnabled()
-    this.cloudSyncFeatSearchHistory = CloudSyncSettings.isFeatureEnabled(CloudSyncFeature.SEARCH_HISTORY)
-    this.cloudSyncFeatCollections = CloudSyncSettings.isFeatureEnabled(CloudSyncFeature.COLLECTIONS)
-    this.cloudSyncFeatRecentViews = CloudSyncSettings.isFeatureEnabled(CloudSyncFeature.RECENT_VIEWS)
-    this.cloudSyncFeatReadProgress = CloudSyncSettings.isFeatureEnabled(CloudSyncFeature.READ_PROGRESS)
-    this.cloudSyncFeatMarks = CloudSyncSettings.isFeatureEnabled(CloudSyncFeature.MARKS)
     const media = connectMediaSettings()
     this.autoLoadImages = media.autoLoadImages
     this.onlyLoadImagesOnWifi = media.onlyLoadImagesOnWifi
@@ -148,20 +129,6 @@ export struct SettingsPage {
         }
         ListItem() {
           this.AccountSection()
-        }
-        ListItem() {
-          this.SectionHeader(AppStrings.R_CLOUD_SYNC)
-        }
-        ListItem() {
-          this.CloudSyncSection()
-        }
-        if (this.cloudSyncEnabled) {
-          ListItem() {
-            this.SectionHeader(AppStrings.R_CLOUD_SYNC_CONTENT)
-          }
-          ListItem() {
-            this.CloudSyncContentSection()
-          }
         }
         ListItem() {
           this.SectionHeader(AppStrings.R_SETTINGS_APPEARANCE)
@@ -187,13 +154,21 @@ export struct SettingsPage {
               },
             })
             this.SettingsDivider()
-            this.TogglePreferenceRow(AppStrings.R_HOME_TAB_AUTO_HIDE, this.homeTabAutoHide, (value: boolean) => {
-              this.updateHomeTabAutoHide(value)
-            })
+            this.TogglePreferenceRow(
+              AppStrings.R_HOME_TAB_AUTO_HIDE,
+              this.homeTabAutoHide,
+              (value: boolean) => {
+                this.updateHomeTabAutoHide(value)
+              },
+            )
             this.SettingsDivider()
-            this.TogglePreferenceRow(AppStrings.R_TOPIC_DETAIL_REPLY_BUTTON_AUTO_HIDE, this.topicReplyButton.autoHide, (value: boolean) => {
-              this.updateTopicDetailReplyButtonAutoHide(value)
-            })
+            this.TogglePreferenceRow(
+              AppStrings.R_TOPIC_DETAIL_REPLY_BUTTON_AUTO_HIDE,
+              this.topicReplyButton.autoHide,
+              (value: boolean) => {
+                this.updateTopicDetailReplyButtonAutoHide(value)
+              },
+            )
           }
         }
         ListItem() {
@@ -237,7 +212,6 @@ export struct SettingsPage {
     SettingsDivider()
   }
 
-
   @Builder
   AccountSection() {
     GroupedListSection() {
@@ -248,53 +222,21 @@ export struct SettingsPage {
         },
       })
       this.SettingsDivider()
-      this.TogglePreferenceRow(AppStrings.R_AUTO_CHECKIN, this.autoDailyCheckinEnabled, (value: boolean) => {
-        this.updateAutoDailyCheckin(value)
-      })
-    }
-  }
-
-  @Builder
-  CloudSyncSection() {
-    GroupedListSection() {
-      this.TogglePreferenceRow(AppStrings.R_CLOUD_SYNC_ENABLE, this.cloudSyncEnabled, (value: boolean) => {
-        this.updateCloudSync(value)
-      })
-    }
-  }
-
-  // The per-feature "同步内容" card (shown only when the master toggle is on). Rendered as its own
-  // ListItem in build() — a ListItem holds a single component, so the master card, the sub-header, and
-  // this card must each be a separate scaffold item.
-  @Builder
-  CloudSyncContentSection() {
-    GroupedListSection() {
-      this.TogglePreferenceRow(AppStrings.R_SEARCH_HISTORY, this.cloudSyncFeatSearchHistory, (value: boolean) => {
-        this.updateCloudSyncFeature(CloudSyncFeature.SEARCH_HISTORY, value)
-      })
-      this.SettingsDivider()
-      this.TogglePreferenceRow(AppStrings.R_CLOUD_SYNC_FEAT_COLLECTIONS, this.cloudSyncFeatCollections, (value: boolean) => {
-        this.updateCloudSyncFeature(CloudSyncFeature.COLLECTIONS, value)
-      })
-      this.SettingsDivider()
-      this.TogglePreferenceRow(AppStrings.R_NAV_RECENTLY_VIEWED, this.cloudSyncFeatRecentViews, (value: boolean) => {
-        this.updateCloudSyncFeature(CloudSyncFeature.RECENT_VIEWS, value)
-      })
-      this.SettingsDivider()
-      this.TogglePreferenceRow(AppStrings.R_CLOUD_SYNC_FEAT_READ_PROGRESS, this.cloudSyncFeatReadProgress, (value: boolean) => {
-        this.updateCloudSyncFeature(CloudSyncFeature.READ_PROGRESS, value)
-      })
-      this.SettingsDivider()
-      this.TogglePreferenceRow(AppStrings.R_CLOUD_SYNC_FEAT_MARKS, this.cloudSyncFeatMarks, (value: boolean) => {
-        this.updateCloudSyncFeature(CloudSyncFeature.MARKS, value)
-      })
+      this.TogglePreferenceRow(
+        AppStrings.R_AUTO_CHECKIN,
+        this.autoDailyCheckinEnabled,
+        (value: boolean) => {
+          this.updateAutoDailyCheckin(value)
+        },
+      )
       this.SettingsDivider()
       ConciseListRow({
-        title: AppStrings.R_CLOUD_SYNC_NOW,
-        subtitle: this.cloudSyncStatusText(),
-        showChevron: false,
+        title: AppStrings.R_CLOUD_SYNC,
+        trailingText: this.cloudSync.enabled
+          ? AppStrings.R_COMMON_OPEN
+          : AppStrings.R_COMMON_CLOSED,
         action: () => {
-          this.runCloudSyncNow()
+          this.stack.pushPathByName('CloudSyncSettings', null)
         },
       })
     }
@@ -317,9 +259,13 @@ export struct SettingsPage {
   @Builder
   MediaSection() {
     GroupedListSection() {
-      this.TogglePreferenceRow(AppStrings.R_IMAGE_AUTO_LOAD, this.autoLoadImages, (value: boolean) => {
-        this.updateAutoLoadImages(value)
-      })
+      this.TogglePreferenceRow(
+        AppStrings.R_IMAGE_AUTO_LOAD,
+        this.autoLoadImages,
+        (value: boolean) => {
+          this.updateAutoLoadImages(value)
+        },
+      )
 
       this.SettingsDivider()
 
@@ -336,10 +282,11 @@ export struct SettingsPage {
       }
 
       this.SettingsDivider()
-
       ConciseListRow({
         title: AppStrings.R_IMAGE_UPLOAD_SETTINGS_TITLE,
-        trailingText: this.isImageUploadConfigured() ? AppStrings.R_IMAGE_UPLOAD_SUMMARY_CONFIGURED : $r('app.string.proxy_not_configured'),
+        trailingText: this.isImageUploadConfigured()
+          ? AppStrings.R_IMAGE_UPLOAD_SUMMARY_CONFIGURED
+          : $r('app.string.proxy_not_configured'),
         action: () => {
           this.stack.pushPathByName('ImageUploadSettings', null)
         },
@@ -384,7 +331,6 @@ export struct SettingsPage {
     }
   }
 
-
   @Builder
   NetworkAdvancedSection() {
     GroupedListSection() {
@@ -417,7 +363,7 @@ export struct SettingsPage {
       title,
       checked,
       isEnabled,
-      changeAction
+      changeAction,
     })
   }
 
@@ -500,7 +446,9 @@ export struct SettingsPage {
       this.SettingsDivider()
       SettingsDropdownRow({
         title: AppStrings.R_REPLY_STYLE,
-        trailingText: SettingsPageCoordinator.replyCardStyleLabel(this.replyCardStyleState.replyCardStyle),
+        trailingText: SettingsPageCoordinator.replyCardStyleLabel(
+          this.replyCardStyleState.replyCardStyle,
+        ),
         openAction: () => {
           this.showReplyCardStyleMenu()
         },
@@ -532,9 +480,13 @@ export struct SettingsPage {
 
       this.SettingsDivider()
 
-      this.TogglePreferenceRow(AppStrings.R_REMEMBER_READ_POSITION, this.readingRestorePosition, (value: boolean) => {
-        this.updateRestorePosition(value)
-      })
+      this.TogglePreferenceRow(
+        AppStrings.R_REMEMBER_READ_POSITION,
+        this.readingRestorePosition,
+        (value: boolean) => {
+          this.updateRestorePosition(value)
+        },
+      )
 
       this.SettingsDivider()
       SettingsDropdownRow({
@@ -565,45 +517,65 @@ export struct SettingsPage {
   @Builder
   LanguageModeMenu() {
     Menu() {
-      ForEach(SettingsPageCoordinator.languageModeOptions(), (option: SettingsOption) => {
-        this.LanguageModeMenuItem(option)
-      }, (option: SettingsOption) => option.value)
+      ForEach(
+        SettingsPageCoordinator.languageModeOptions(),
+        (option: SettingsOption) => {
+          this.LanguageModeMenuItem(option)
+        },
+        (option: SettingsOption) => option.value,
+      )
     }
   }
 
   @Builder
   ThemeModeMenu() {
     Menu() {
-      ForEach(SettingsPageCoordinator.themeModeOptions(), (option: SettingsOption) => {
-        this.ThemeModeMenuItem(option)
-      }, (option: SettingsOption) => option.value)
+      ForEach(
+        SettingsPageCoordinator.themeModeOptions(),
+        (option: SettingsOption) => {
+          this.ThemeModeMenuItem(option)
+        },
+        (option: SettingsOption) => option.value,
+      )
     }
   }
 
   @Builder
   AvatarAppearanceMenu() {
     Menu() {
-      ForEach(SettingsPageCoordinator.avatarAppearanceOptions(), (option: SettingsOption) => {
-        this.AvatarAppearanceMenuItem(option)
-      }, (option: SettingsOption) => option.value)
+      ForEach(
+        SettingsPageCoordinator.avatarAppearanceOptions(),
+        (option: SettingsOption) => {
+          this.AvatarAppearanceMenuItem(option)
+        },
+        (option: SettingsOption) => option.value,
+      )
     }
   }
 
   @Builder
   ReplyDisplayModeMenu() {
     Menu() {
-      ForEach(SettingsPageCoordinator.replyDisplayModeOptions(), (option: SettingsOption) => {
-        this.ReplyDisplayModeMenuItem(option)
-      }, (option: SettingsOption) => option.value)
+      ForEach(
+        SettingsPageCoordinator.replyDisplayModeOptions(),
+        (option: SettingsOption) => {
+          this.ReplyDisplayModeMenuItem(option)
+        },
+        (option: SettingsOption) => option.value,
+      )
     }
   }
 
   @Builder
   ReplyCardStyleMenu() {
     Menu() {
-      ForEach(SettingsPageCoordinator.replyCardStyleOptions(), (option: SettingsOption) => {
-        this.ReplyCardStyleMenuItem(option)
-      }, (option: SettingsOption) => option.value)
+      ForEach(
+        SettingsPageCoordinator.replyCardStyleOptions(),
+        (option: SettingsOption) => {
+          this.ReplyCardStyleMenuItem(option)
+        },
+        (option: SettingsOption) => option.value,
+      )
     }
   }
 
@@ -623,9 +595,13 @@ export struct SettingsPage {
   @Builder
   Base64ModeMenu() {
     Menu() {
-      ForEach(SettingsPageCoordinator.base64DecodeModeOptions(), (option: SettingsOption) => {
-        this.Base64ModeMenuItem(option)
-      }, (option: SettingsOption) => option.value)
+      ForEach(
+        SettingsPageCoordinator.base64DecodeModeOptions(),
+        (option: SettingsOption) => {
+          this.Base64ModeMenuItem(option)
+        },
+        (option: SettingsOption) => option.value,
+      )
     }
   }
 
@@ -636,7 +612,7 @@ export struct SettingsPage {
       selected: AvatarAppearanceSettings.normalize(this.avatar.appearance) === option.value,
       selectAction: () => {
         this.updateAvatarAppearance(option.value)
-      }
+      },
     })
   }
 
@@ -647,7 +623,7 @@ export struct SettingsPage {
       selected: this.reading.base64DecodeMode === option.value,
       selectAction: () => {
         this.updateBase64DecodeMode(option.value)
-      }
+      },
     })
   }
 
@@ -658,7 +634,7 @@ export struct SettingsPage {
       selected: this.replyCardStyleState.replyCardStyle === option.value,
       selectAction: () => {
         this.updateReplyCardStyle(option.value)
-      }
+      },
     })
   }
 
@@ -666,16 +642,16 @@ export struct SettingsPage {
   ReplyActionAlignmentMenuItem(option: SettingsOption) {
     SettingsCheckedMenuItem({
       label: option.label,
-      selected: ReplyActionAlignmentSettings.effectiveMode(
-        this.replyActionAlignmentMode,
-        this.motionHoldingHandSupported,
-      ) === option.value,
+      selected:
+        ReplyActionAlignmentSettings.effectiveMode(
+          this.replyActionAlignmentMode,
+          this.motionHoldingHandSupported,
+        ) === option.value,
       selectAction: () => {
         this.updateReplyActionAlignmentMode(option.value)
-      }
+      },
     })
   }
-
 
   @Builder
   LanguageModeMenuItem(option: SettingsOption) {
@@ -684,7 +660,7 @@ export struct SettingsPage {
       selected: LanguageSettings.normalizeMode(this.languageMode) === option.value,
       selectAction: () => {
         this.updateLanguageMode(option.value)
-      }
+      },
     })
   }
 
@@ -695,7 +671,7 @@ export struct SettingsPage {
       selected: this.themeMode === option.value,
       selectAction: () => {
         this.updateThemeMode(option.value)
-      }
+      },
     })
   }
 
@@ -706,7 +682,7 @@ export struct SettingsPage {
       selected: this.replyDisplayMode === option.value,
       selectAction: () => {
         this.updateReplyDisplayMode(option.value)
-      }
+      },
     })
   }
 
@@ -759,7 +735,6 @@ export struct SettingsPage {
     }, SettingsPageCoordinator.MENU_OPEN_DELAY_MS)
   }
 
-
   @Builder
   CacheSection() {
     GroupedListSection() {
@@ -774,7 +749,6 @@ export struct SettingsPage {
     }
   }
 
-
   private updateAutoLoadImages(autoLoadImages: boolean): void {
     this.autoLoadImages = autoLoadImages
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
@@ -785,69 +759,6 @@ export struct SettingsPage {
     this.autoDailyCheckinEnabled = enabled
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     SettingsSaveCoordinator.saveAutoDailyCheckin(context, enabled)
-  }
-
-  private updateCloudSync(enabled: boolean): void {
-    this.cloudSyncEnabled = enabled
-    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    CloudSyncSettings.save(context, enabled)
-      .then(() => {
-        // Enabling: request the permission, mark the distributed tables, and run a first sync now.
-        if (enabled) {
-          LocalDataCloudSync.tryEnableAndSync(context).catch((_error: Error) => {})
-        }
-      })
-      .catch((error: Error) => {
-        console.error('save cloud sync setting failed: ' + error.message)
-      })
-  }
-
-  private updateCloudSyncFeature(key: string, enabled: boolean): void {
-    // Mirror into the matching @Local so the toggle reflects immediately, persist the choice, then
-    // re-mark the distributed-table set to the new selection and sync. Only reachable while the master
-    // switch is on, so permission is already granted.
-    if (key === CloudSyncFeature.SEARCH_HISTORY) {
-      this.cloudSyncFeatSearchHistory = enabled
-    } else if (key === CloudSyncFeature.COLLECTIONS) {
-      this.cloudSyncFeatCollections = enabled
-    } else if (key === CloudSyncFeature.RECENT_VIEWS) {
-      this.cloudSyncFeatRecentViews = enabled
-    } else if (key === CloudSyncFeature.READ_PROGRESS) {
-      this.cloudSyncFeatReadProgress = enabled
-    } else if (key === CloudSyncFeature.MARKS) {
-      this.cloudSyncFeatMarks = enabled
-    }
-    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    CloudSyncSettings.saveFeature(context, key, enabled)
-      .then(() => {
-        LocalDataCloudSync.applyFeatureSelection(context).catch((_error: Error) => {})
-      })
-      .catch((error: Error) => {
-        console.error('save cloud sync feature failed: ' + error.message)
-      })
-  }
-
-  private runCloudSyncNow(): void {
-    // Status is driven by CloudSyncState (syncing -> lastSyncAt/lastSyncOk) and surfaced via
-    // cloudSyncStatusText(); just trigger the sync here.
-    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    LocalDataCloudSync.cloudSyncNow(context).catch((_error: Error) => {})
-  }
-
-  // Subtitle of the "立即同步" row: "正在同步…" while a sync runs, otherwise the localized last-sync time
-  // ("上次同步:刚刚"), or empty before the first sync ever. Reads @Trace fields so it updates reactively.
-  private cloudSyncStatusText(): string {
-    if (this.cloudSync.syncing) {
-      return AppStrings.text(AppStrings.R_CLOUD_SYNC_SYNCING, 'Syncing…')
-    }
-    if (this.cloudSync.lastSyncAt <= 0) {
-      return ''
-    }
-    const when: string = DateUtils.toRelativeTime(Math.floor(this.cloudSync.lastSyncAt / 1000))
-    const template: string = this.cloudSync.lastSyncOk
-      ? AppStrings.text(AppStrings.R_CLOUD_SYNC_LAST, 'Last synced: {0}')
-      : AppStrings.text(AppStrings.R_CLOUD_SYNC_LAST_FAILED, 'Last sync failed · {0}')
-    return AppStrings.format(template, [when])
   }
 
   private updateHomeTabAutoHide(enabled: boolean): void {
@@ -862,7 +773,6 @@ export struct SettingsPage {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     SettingsSaveCoordinator.saveTopicDetailReplyButtonAutoHide(context, enabled)
   }
-
 
   private updateOnlyLoadImagesOnWifi(onlyLoadImagesOnWifi: boolean): void {
     if (!this.autoLoadImages) {
@@ -884,9 +794,11 @@ export struct SettingsPage {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     LanguageSettings.applyLanguage(context, normalizedMode).catch((error: Error) => {
       console.error('switch app language failed: ' + error.message)
-      promptAction.openToast({
-        message: AppStrings.R_COMMON_SAVE_FAILED,
-      }).catch((_toastError: Error) => {})
+      promptAction
+        .openToast({
+          message: AppStrings.R_COMMON_SAVE_FAILED,
+        })
+        .catch((_toastError: Error) => {})
     })
   }
 
