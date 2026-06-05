@@ -45,7 +45,7 @@ import {
 } from '../model/TopicDetailReplyDisplayCoordinator'
 import { TopicDetailScrollCoordinator } from '../model/TopicDetailScrollCoordinator'
 import { common, Want } from '@kit.AbilityKit'
-import { KeyboardAvoidMode, LoadingDialog, promptAction } from '@kit.ArkUI'
+import { CustomContentDialog, KeyboardAvoidMode, LoadingDialog, promptAction } from '@kit.ArkUI'
 import { HdsAnimationMode, HdsTabsController } from '@kit.UIDesignKit'
 import { HdsMiniBarButton } from '../components/HdsMiniBarButton'
 import { uniformTypeDescriptor as utd } from '@kit.ArkData'
@@ -186,9 +186,35 @@ export struct TopicDetailPage {
     alignment: DialogAlignment.Center,
     customStyle: false,
   });
-  // Jump-to-floor dialog is opened via UIContext PromptAction.openCustomDialog (V2-compatible);
-  // -1 means no dialog is currently open.
-  private jumpFloorDialogId: number = -1;
+  private jumpFloorDialogController: CustomDialogController = new CustomDialogController({
+    builder: CustomContentDialog({
+      primaryTitle: AppStrings.R_JUMP_TO_FLOOR_TITLE,
+      contentBuilder: () => {
+        this.JumpToFloorDialogContent()
+      },
+      buttons: [
+        {
+          value: AppStrings.R_COMMON_CANCEL,
+          buttonStyle: ButtonStyleMode.TEXTUAL,
+          action: () => {
+            this.closeJumpToFloorDialog()
+          },
+        },
+        {
+          value: AppStrings.R_JUMP_TO_FLOOR_BUTTON,
+          buttonStyle: ButtonStyleMode.TEXTUAL,
+          action: () => {
+            const value = this.jumpFloorText
+            this.closeJumpToFloorDialog()
+            this.handleJumpToFloor(value)
+          },
+        },
+      ],
+    }),
+    autoCancel: true,
+    alignment: DialogAlignment.Center,
+    customStyle: false,
+  });
   private lastReadFloor: number = 0;
   private hasRestoredReadPosition: boolean = false;
   private hasJumpedToTargetFloor: boolean = false;
@@ -1463,71 +1489,34 @@ export struct TopicDetailPage {
       return
     }
     this.jumpFloorText = ''
-    this.getUIContext()
-      .getPromptAction()
-      .openCustomDialog({
-        builder: () => {
-          this.JumpToFloorDialogContent()
-        },
-        alignment: DialogAlignment.Center,
-        autoCancel: true,
-        cornerRadius: ThemeConstants.RADIUS_MD,
-        backgroundColor: $r('sys.color.ohos_id_color_card_bg'),
-      })
-      .then((dialogId: number) => {
-        this.jumpFloorDialogId = dialogId
-      })
-      .catch((_error: Error) => {})
+    this.jumpFloorDialogController.open()
   }
 
   private closeJumpToFloorDialog(): void {
-    if (this.jumpFloorDialogId < 0) {
-      return
+    try {
+      this.jumpFloorDialogController.close()
+    } catch (_error) {
+      // Dialog may already be dismissed by tapping outside.
     }
-    const dialogId = this.jumpFloorDialogId
-    this.jumpFloorDialogId = -1
-    this.getUIContext().getPromptAction().closeCustomDialog(dialogId)
+  }
+
+  private normalizeJumpFloorInput(value: string): string {
+    return (value || '').replace(/[^0-9]/g, '')
   }
 
   @Builder
   JumpToFloorDialogContent() {
-    Column({ space: ThemeConstants.SPACE_MD }) {
-      Text(AppStrings.text(AppStrings.R_JUMP_TO_FLOOR_TITLE, 'Jump to floor'))
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .fontWeight(FontWeight.Medium)
-        .fontColor($r('sys.color.font_primary'))
-      TextInput({
-        placeholder: AppStrings.text(AppStrings.R_JUMP_TO_FLOOR_PLACEHOLDER, 'Enter floor number'),
-        text: this.jumpFloorText,
+    TextInput({
+      placeholder: AppStrings.R_JUMP_TO_FLOOR_PLACEHOLDER,
+      text: this.jumpFloorText,
+    })
+      .type(InputType.Number)
+      .inputFilter('^[0-9]*$')
+      .defaultFocus(true)
+      .width('100%')
+      .onChange((value: string) => {
+        this.jumpFloorText = this.normalizeJumpFloorInput(value)
       })
-        .type(InputType.Number)
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
-        .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
-        .borderRadius(ThemeConstants.RADIUS_MD)
-        .onChange((value: string) => {
-          this.jumpFloorText = value
-        })
-      Row({ space: ThemeConstants.SPACE_SM }) {
-        Button(AppStrings.text($r('app.string.common_cancel'), 'Cancel'))
-          .layoutWeight(1)
-          .height(40)
-          .onClick(() => {
-            this.closeJumpToFloorDialog()
-          })
-        Button(AppStrings.text(AppStrings.R_JUMP_TO_FLOOR_BUTTON, 'Jump'))
-          .layoutWeight(1)
-          .height(40)
-          .onClick(() => {
-            const value = this.jumpFloorText
-            this.closeJumpToFloorDialog()
-            this.handleJumpToFloor(value)
-          })
-      }
-    }
-    .padding(ThemeConstants.SPACE_LG)
-    .borderRadius(ThemeConstants.RADIUS_MD)
-    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
-    .width('100%')
   }
 
   private handleJumpToFloor(value: string): void {
