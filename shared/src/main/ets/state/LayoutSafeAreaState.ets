@@ -45,11 +45,18 @@ export function connectLayoutSafeArea(): LayoutSafeAreaState {
 export class LayoutSafeAreaBridge {
   static publishInsets(topAvoidHeight: number, bottomAvoidHeight: number): void {
     const state = connectLayoutSafeArea()
-    state.topAvoidHeight = topAvoidHeight
-    state.bottomAvoidHeight = bottomAvoidHeight
+    if (state.topAvoidHeight !== topAvoidHeight) {
+      state.topAvoidHeight = topAvoidHeight
+    }
+    if (state.bottomAvoidHeight !== bottomAvoidHeight) {
+      state.bottomAvoidHeight = bottomAvoidHeight
+    }
   }
 
   static publishKeyboardHeight(keyboardHeight: number): void {
-    connectLayoutSafeArea().keyboardHeight = keyboardHeight
+    const state = connectLayoutSafeArea()
+    if (state.keyboardHeight !== keyboardHeight) {
+      state.keyboardHeight = keyboardHeight
+    }
   }
 }

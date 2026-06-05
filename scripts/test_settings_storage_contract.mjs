@@ -207,6 +207,9 @@ assert(layoutSafeAreaText.includes('AppStorageV2.connect'), 'LayoutSafeAreaState
 assert(layoutSafeAreaText.includes("'v2:layoutSafeArea'"), "LayoutSafeAreaState must own the 'v2:layoutSafeArea' mirror key")
 assert(!layoutSafeAreaText.includes('AppStorage.setOrCreate'), 'LayoutSafeAreaState must not dual-write layout metrics into legacy V1 AppStorage')
 assert(!/import\s*\{[^}]*\bStorageKeys\b[^}]*\}/.test(layoutSafeAreaText), 'LayoutSafeAreaState must not import StorageKeys after retiring the V1 dual-write')
+assert(layoutSafeAreaText.includes('state.topAvoidHeight !== topAvoidHeight'), 'LayoutSafeAreaBridge.publishInsets must avoid unchanged top inset writes')
+assert(layoutSafeAreaText.includes('state.bottomAvoidHeight !== bottomAvoidHeight'), 'LayoutSafeAreaBridge.publishInsets must avoid unchanged bottom inset writes')
+assert(layoutSafeAreaText.includes('state.keyboardHeight !== keyboardHeight'), 'LayoutSafeAreaBridge.publishKeyboardHeight must avoid unchanged keyboard writes')
 
 const values = new Set(storageKeys.values())
 const settingsDir = path.join(repo, 'shared/src/main/ets/settings')
@@ -482,10 +485,18 @@ assert(/class\s+SettingsBootstrap/.test(bootstrap), 'SettingsBootstrap class mis
 assert(/static\s+async\s+loadAll\s*\(\s*context\s*:\s*common\.UIAbilityContext\s*\)\s*:\s*Promise<void>/.test(bootstrap), 'SettingsBootstrap.loadAll signature missing')
 assert(bootstrap.includes('STORE_NAME_SETTINGS'), 'SettingsBootstrap must import/use STORE_NAME_SETTINGS')
 assert(bootstrap.includes('SettingsPreferencesStore'), 'SettingsBootstrap must use SettingsPreferencesStore')
-const settingsStorePrefetches = bootstrap.match(/preferences\.getPreferences\(context, STORE_NAME_SETTINGS\)/g) || []
+const loadAllBody = extractMethodBody(bootstrap, 'loadAll')
+const settingsStorePrefetches = loadAllBody.match(/preferences\.getPreferences\(context, STORE_NAME_SETTINGS\)/g) || []
 assert(settingsStorePrefetches.length === 1, `SettingsBootstrap must prefetch STORE_NAME_SETTINGS exactly once, got ${settingsStorePrefetches.length}`)
 assert(!bootstrap.includes('settingsStore = undefined'), 'SettingsBootstrap must not abort or clear settingsStore after prefetch failure')
 assert(entry.includes('SettingsBootstrap.loadAll(this.context)'), 'EntryAbility must call SettingsBootstrap.loadAll(this.context)')
+assert(entry.includes('refreshSafeAreaInsets(win, uiCtx'), 'EntryAbility must centralize live safe-area refreshes')
+assert(entry.includes("win.on('avoidAreaChange'"), 'EntryAbility must refresh safe-area insets on avoidAreaChange')
+assert(entry.includes("win.on('windowSizeChange'"), 'EntryAbility must refresh safe-area insets on windowSizeChange')
+assert(entry.includes("win.off('avoidAreaChange'"), 'EntryAbility must unregister avoidAreaChange listener')
+assert(entry.includes("win.off('windowSizeChange'"), 'EntryAbility must unregister windowSizeChange listener')
+assert(entry.includes('TYPE_SYSTEM') && entry.includes('TYPE_NAVIGATION_INDICATOR'), 'EntryAbility safe-area refresh must re-read system and navigation avoid areas')
+assert(entry.includes('_settled'), 'EntryAbility must schedule a settled safe-area refresh after window geometry changes')
 const loadAllIndex = entry.indexOf('SettingsBootstrap.loadAll(this.context)')
 const finallyIndex = entry.indexOf('.finally', loadAllIndex)
 const loadContentIndex = entry.indexOf('this.loadContent(windowStage, win)', loadAllIndex)
@@ -493,7 +504,6 @@ assert(finallyIndex !== -1, 'EntryAbility SettingsBootstrap.loadAll must use fin
 assert(loadContentIndex !== -1, 'EntryAbility must load content after SettingsBootstrap.loadAll')
 assert(finallyIndex > loadAllIndex && loadContentIndex > finallyIndex, 'EntryAbility loadContent must be in or after SettingsBootstrap.loadAll finally')
 
-const loadAllBody = extractMethodBody(bootstrap, 'loadAll')
 const loadAllHelperSequence = [
   'restoreApiDomain',
   'restoreTheme',

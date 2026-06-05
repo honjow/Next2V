@@ -23,6 +23,9 @@ const FALLBACK_BOTTOM_AVOID: number = 0
 export default class EntryAbility extends UIAbility {
   private mainWindow: window.Window | null = null
   private keyboardHeightCallback: ((height: number) => void) | null = null
+  private avoidAreaChangeCallback: ((data: window.AvoidAreaOptions) => void) | null = null
+  private windowSizeChangeCallback: ((size: window.Size) => void) | null = null
+  private safeAreaRefreshTimerId: number = 0
   private environmentCallbackId: number = -1
 
   onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
@@ -105,16 +108,10 @@ export default class EntryAbility extends UIAbility {
           win = windowStage.getMainWindowSync()
           this.mainWindow = win
         }
-        let systemArea = win.getWindowAvoidArea(window.AvoidAreaType.TYPE_SYSTEM)
-        let navArea = win.getWindowAvoidArea(window.AvoidAreaType.TYPE_NAVIGATION_INDICATOR)
         let uiCtx = windowStage.getMainWindowSync().getUIContext()
-        // Publish window insets into the AppStorageV2 'v2:layoutSafeArea' mirror, read by
-        // every @ComponentV2 layout consumer. The legacy V1 AppStorage half was retired.
-        LayoutSafeAreaBridge.publishInsets(
-          uiCtx.px2vp(systemArea.topRect.height),
-          uiCtx.px2vp(navArea.bottomRect.height),
-        )
+        this.refreshSafeAreaInsets(win, uiCtx, 'loadContent')
         LayoutSafeAreaBridge.publishKeyboardHeight(0)
+        this.watchSafeAreaInsets(win, uiCtx)
         this.watchKeyboardHeight(win, uiCtx)
       } catch (e) {
         LayoutSafeAreaBridge.publishInsets(FALLBACK_TOP_AVOID, FALLBACK_BOTTOM_AVOID)
@@ -143,6 +140,85 @@ export default class EntryAbility extends UIAbility {
     } catch (error) {
       const e = error as Error
       console.error('configure wide gamut failed: ' + e.message)
+    }
+  }
+
+  private refreshSafeAreaInsets(win: window.Window, uiCtx: UIContext, source: string): void {
+    try {
+      const systemArea = win.getWindowAvoidArea(window.AvoidAreaType.TYPE_SYSTEM)
+      const navArea = win.getWindowAvoidArea(window.AvoidAreaType.TYPE_NAVIGATION_INDICATOR)
+      // Re-read avoid areas from the live window instead of trusting event payloads. Some events only
+      // carry one avoid-area type; querying both keeps the shared insets complete after fold/display changes.
+      LayoutSafeAreaBridge.publishInsets(
+        uiCtx.px2vp(systemArea.topRect.height),
+        uiCtx.px2vp(navArea.bottomRect.height),
+      )
+    } catch (error) {
+      const e = error as Error
+      console.error('refresh safe area insets failed: ' + e.message)
+      DiagnosticLogger.exception('app', 'safe_area_insets_refresh_failed', e, { source: source })
+      LayoutSafeAreaBridge.publishInsets(FALLBACK_TOP_AVOID, FALLBACK_BOTTOM_AVOID)
+    }
+  }
+
+  private scheduleSafeAreaRefresh(win: window.Window, uiCtx: UIContext, source: string): void {
+    this.refreshSafeAreaInsets(win, uiCtx, source)
+    if (this.safeAreaRefreshTimerId > 0) {
+      clearTimeout(this.safeAreaRefreshTimerId)
+      this.safeAreaRefreshTimerId = 0
+    }
+    // Fold/display-mode changes can arrive before the window reports its final avoid area. A short
+    // follow-up read catches the settled status/nav-bar geometry without adding page-level workarounds.
+    this.safeAreaRefreshTimerId = setTimeout((): void => {
+      this.safeAreaRefreshTimerId = 0
+      this.refreshSafeAreaInsets(win, uiCtx, source + '_settled')
+    }, 80)
+  }
+
+  private watchSafeAreaInsets(win: window.Window, uiCtx: UIContext): void {
+    this.unwatchSafeAreaInsets(win)
+    this.avoidAreaChangeCallback = (_data: window.AvoidAreaOptions) => {
+      this.scheduleSafeAreaRefresh(win, uiCtx, 'avoidAreaChange')
+    }
+    this.windowSizeChangeCallback = (_size: window.Size) => {
+      this.scheduleSafeAreaRefresh(win, uiCtx, 'windowSizeChange')
+    }
+    try {
+      win.on('avoidAreaChange', this.avoidAreaChangeCallback)
+    } catch (error) {
+      const e = error as Error
+      console.error('watch safe area avoid change failed: ' + e.message)
+    }
+    try {
+      win.on('windowSizeChange', this.windowSizeChangeCallback)
+    } catch (error) {
+      const e = error as Error
+      console.error('watch window size change failed: ' + e.message)
+    }
+  }
+
+  private unwatchSafeAreaInsets(win: window.Window): void {
+    if (this.avoidAreaChangeCallback) {
+      try {
+        win.off('avoidAreaChange', this.avoidAreaChangeCallback)
+      } catch (error) {
+        const e = error as Error
+        console.error('remove safe area avoid change listener failed: ' + e.message)
+      }
+      this.avoidAreaChangeCallback = null
+    }
+    if (this.windowSizeChangeCallback) {
+      try {
+        win.off('windowSizeChange', this.windowSizeChangeCallback)
+      } catch (error) {
+        const e = error as Error
+        console.error('remove window size change listener failed: ' + e.message)
+      }
+      this.windowSizeChangeCallback = null
+    }
+    if (this.safeAreaRefreshTimerId > 0) {
+      clearTimeout(this.safeAreaRefreshTimerId)
+      this.safeAreaRefreshTimerId = 0
     }
   }
 
@@ -184,6 +260,9 @@ export default class EntryAbility extends UIAbility {
         const e = error as Error
         console.error('remove keyboard height listener failed: ' + e.message)
       }
+    }
+    if (this.mainWindow) {
+      this.unwatchSafeAreaInsets(this.mainWindow)
     }
     DiagnosticLogger.closePersistentSink()
   }
