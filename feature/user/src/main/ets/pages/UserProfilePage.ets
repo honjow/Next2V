@@ -409,8 +409,8 @@ export struct UserProfilePage {
           showChevron: false,
           hasCounter: true,
           counterValue: `${this.userMarks.displayLimit}`,
-          counterDecreaseEnabled: !this.userMarkBusy() && this.userMarks.displayLimit > UserMarkSettings.MIN_DISPLAY_LIMIT,
-          counterIncreaseEnabled: !this.userMarkBusy() && this.userMarks.displayLimit < UserMarkSettings.MAX_DISPLAY_LIMIT,
+          counterDecreaseEnabled: this.userMarks.displayLimit > UserMarkSettings.MIN_DISPLAY_LIMIT,
+          counterIncreaseEnabled: this.userMarks.displayLimit < UserMarkSettings.MAX_DISPLAY_LIMIT,
           counterDecreaseAction: () => {
             this.updateUserMarkDisplayLimit(this.userMarks.displayLimit - 1)
           },
@@ -424,7 +424,6 @@ export struct UserProfilePage {
           showChevron: false,
           hasSwitch: true,
           checked: this.userMarks.combinedBadge,
-          isEnabled: !this.userMarkBusy(),
           switchAction: (value: boolean) => {
             this.updateUserMarkCombinedBadge(value)
           }
@@ -645,9 +644,6 @@ export struct UserProfilePage {
   }
 
   private updateUserMarkDisplayLimit(value: number): void {
-    if (this.userMarkBusy()) {
-      return
-    }
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     UserMarkSettings.saveDisplayLimit(context, value).catch((error: Error) => {
       this.showActionToast(error.message || AppStrings.text(AppStrings.R_COMMON_SAVE_FAILED, 'Save failed'))
@@ -655,9 +651,6 @@ export struct UserProfilePage {
   }
 
   private updateUserMarkCombinedBadge(value: boolean): void {
-    if (this.userMarkBusy()) {
-      return
-    }
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     UserMarkSettings.saveCombinedBadge(context, value).catch((error: Error) => {
       this.showActionToast(error.message || AppStrings.text(AppStrings.R_COMMON_SAVE_FAILED, 'Save failed'))

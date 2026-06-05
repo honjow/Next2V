@@ -174,13 +174,19 @@ export struct ConciseListRow {
     }
     .alignItems(VerticalAlign.Center)
     .opacity(this.isEnabled ? 1.0 : 0.45)
+    .padding({ right: ThemeConstants.SPACE_MD })
   }
 
   @Builder
   private CounterButton(label: string, enabled: boolean, action: () => void) {
-    Button(label)
-      .fontSize(ThemeConstants.FONT_SIZE_BODY)
-      .fontColor(enabled ? $r('sys.color.font_primary') : $r('sys.color.font_tertiary'))
+    Button() {
+      Text(label)
+        .fontSize(ThemeConstants.FONT_SIZE_BODY)
+        .fontWeight(FontWeight.Medium)
+        .fontColor(enabled ? $r('sys.color.font_primary') : $r('sys.color.font_tertiary'))
+        .textAlign(TextAlign.Center)
+        .width('100%')
+    }
       .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
       .borderRadius(ThemeConstants.RADIUS_ROUND)
       .width(32)

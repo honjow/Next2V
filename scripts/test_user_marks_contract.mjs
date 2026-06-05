@@ -23,6 +23,7 @@ const state = read(stateRel)
 const settings = read(settingsRel)
 const badges = read(badgesRel)
 const userName = read('shared/src/main/ets/components/UserName.ets')
+const conciseListRow = read('shared/src/main/ets/components/ConciseListRow.ets')
 const replyHeader = read('shared/src/main/ets/components/reply/ReplyCardHeader.ets')
 const replyCard = read('shared/src/main/ets/components/ReplyCard.ets')
 const replyLayoutPolicy = read('shared/src/main/ets/components/reply/ReplyCardLayoutPolicy.ets')
@@ -116,6 +117,12 @@ assert(!replyCard.includes('this.isHeaderNarrow() || (this.embedded && this.isCo
 assert(topicDetailComponents.includes('UserName({'), 'TopicDetailHeader must display mark-aware topic authors')
 assert(profileComponents.includes('UserMarkBadgeRow'), 'UserProfileCard must display marks beside the profile username')
 assert(settings.includes('relativeColorChannel'), 'UserMarkSettings must use relative luminance for badge text color')
+assert(settings.includes('if (state.displayLimit !== displayLimit)'), 'UserMarkSettings.apply must not rewrite unchanged display limit trace state')
+assert(settings.includes('if (state.combinedBadge !== combinedBadge)'), 'UserMarkSettings.apply must not rewrite unchanged combined badge trace state')
+assert(!settings.includes('state.displayLimit = next'), 'saveDisplayLimit must publish through one apply pass only')
+assert(!settings.includes('state.combinedBadge = value'), 'saveCombinedBadge must publish through one apply pass only')
+assert(conciseListRow.includes('Text(label)'), 'Counter buttons must render visible content instead of relying on Button label styling')
+assert(conciseListRow.includes('.padding({ right: ThemeConstants.SPACE_MD })'), 'Counter suffix must reserve right-side spacing')
 
 for (const snippet of [
   '@Local private userMarkSheetVisible',
@@ -143,6 +150,9 @@ for (const snippet of [
   assert(appbar.includes(snippet), `UserProfileAppbarState missing mark appbar contract: ${snippet}`)
 }
 assert(profilePage.includes('publishUserProfileMarkLabel(state.markLabel)'), 'UserProfilePage must publish mark label')
+assert(!profilePage.includes('counterDecreaseEnabled: !this.userMarkBusy()'), 'Display limit controls must not flash disabled while assigning a label')
+assert(!profilePage.includes('counterIncreaseEnabled: !this.userMarkBusy()'), 'Display limit controls must not flash disabled while assigning a label')
+assert(!profilePage.includes('isEnabled: !this.userMarkBusy(),'), 'Combined badge switch must not flash disabled while assigning a label')
 assert(index.includes('this.userProfileAppbar.markLabel'), 'Index menu must read mark label')
 assert(index.includes('AppStrings.R_USER_ACTION_MARK'), 'Index menu must use localized mark label')
 assert(index.includes("this.sendUserProfileAction('mark')"), 'Index menu must send mark command')

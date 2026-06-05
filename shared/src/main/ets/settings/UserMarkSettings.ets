@@ -179,9 +179,6 @@ export class UserMarkSettings {
       store.putSync(KEY_DISPLAY_LIMIT, next)
       store.flushSync()
     })
-    const state = connectUserMarks()
-    state.displayLimit = next
-    state.updatedAt = UserMarkSettings.nextUpdatedAt(state.updatedAt)
     LocalDataPublisher.touchLocalData()
     return await UserMarkSettings.load(context)
   }
@@ -191,9 +188,6 @@ export class UserMarkSettings {
       store.putSync(KEY_COMBINED_BADGE, value)
       store.flushSync()
     })
-    const state = connectUserMarks()
-    state.combinedBadge = value
-    state.updatedAt = UserMarkSettings.nextUpdatedAt(state.updatedAt)
     LocalDataPublisher.touchLocalData()
     return await UserMarkSettings.load(context)
   }
@@ -244,11 +238,26 @@ export class UserMarkSettings {
 
   static apply(snapshot: UserMarkSnapshot): void {
     const state = connectUserMarks()
-    state.labelsJson = JSON.stringify(snapshot.labels)
-    state.assignmentsJson = JSON.stringify(snapshot.assignments)
-    state.displayLimit = UserMarkSettings.clampDisplayLimit(snapshot.displayLimit)
-    state.combinedBadge = snapshot.combinedBadge === true
-    state.updatedAt = UserMarkSettings.nextUpdatedAt(Math.max(state.updatedAt, snapshot.updatedAt))
+    const labelsJson = JSON.stringify(snapshot.labels)
+    const assignmentsJson = JSON.stringify(snapshot.assignments)
+    const displayLimit = UserMarkSettings.clampDisplayLimit(snapshot.displayLimit)
+    const combinedBadge = snapshot.combinedBadge === true
+    const updatedAt = UserMarkSettings.nextUpdatedAt(Math.max(state.updatedAt, snapshot.updatedAt))
+    if (state.labelsJson !== labelsJson) {
+      state.labelsJson = labelsJson
+    }
+    if (state.assignmentsJson !== assignmentsJson) {
+      state.assignmentsJson = assignmentsJson
+    }
+    if (state.displayLimit !== displayLimit) {
+      state.displayLimit = displayLimit
+    }
+    if (state.combinedBadge !== combinedBadge) {
+      state.combinedBadge = combinedBadge
+    }
+    if (state.updatedAt !== updatedAt) {
+      state.updatedAt = updatedAt
+    }
   }
 
   static normalizeUsernameKey(username: string): string {

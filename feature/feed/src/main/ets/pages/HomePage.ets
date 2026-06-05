@@ -346,7 +346,7 @@ struct FeedListPage {
                     let p: TopicDetailParams = { topicId: item.id }
                     this.ns.pushPathByName('TopicDetail', p as Object)
                   })
-              }, (item: V2exTopic) => item.id.toString())
+              }, (item: V2exTopic) => this.topicCardRenderKey(item))
 
               if (this.tabKey === 'latest') {
                 ListItem() {
@@ -402,5 +402,11 @@ struct FeedListPage {
     } catch (_e) {
       return null
     }
+  }
+
+  private topicCardRenderKey(topic: V2exTopic): string {
+    const pro = (topic.member.pro || 0) > 0 ? 'pro' : 'plain'
+    const mod = (topic.member.mod || 0) > 0 ? 'mod' : 'member'
+    return `${topic.id}-${pro}-${mod}`
   }
 }
