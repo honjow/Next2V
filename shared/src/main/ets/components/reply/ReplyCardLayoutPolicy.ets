@@ -28,6 +28,12 @@ export class ReplyCardLayoutPolicy {
   static readonly HEADER_DUP_BADGE_VP: number = 34;
   static readonly HEADER_THANKS_EXTRA_VP: number = 18;
   static readonly HEADER_USERNAME_FONT_VP: number = 13; // mirrors ThemeConstants.FONT_SIZE_META
+  static readonly HEADER_MARK_FONT_VP: number = 10;
+  static readonly HEADER_MARK_BADGE_PADDING_VP: number = 12;
+  static readonly HEADER_MARK_BADGE_MAX_VP: number = 76;
+  static readonly HEADER_MARK_OVERFLOW_MAX_VP: number = 34;
+  static readonly HEADER_MARK_ROW_GAP_VP: number = 4;
+  static readonly HEADER_USERNAME_MARK_GAP_VP: number = 4;
 
   // Rough rendered width of a string: CJK / full-width glyphs ~= the font size, Latin/ASCII ~= 0.56x.
   // Approximate by design — it only needs to decide a layout fit, and the username's
@@ -46,6 +52,7 @@ export class ReplyCardLayoutPolicy {
     isOp: boolean,
     isDuplicate: boolean,
     hasThanks: boolean,
+    markWidth: number,
   ): boolean {
     if (availableWidth <= 0) {
       return false
@@ -53,10 +60,40 @@ export class ReplyCardLayoutPolicy {
     const required =
       ReplyCardLayoutPolicy.HEADER_INLINE_FIXED_VP +
       ReplyCardLayoutPolicy.estTextWidth(username, ReplyCardLayoutPolicy.HEADER_USERNAME_FONT_VP) +
+      markWidth +
       (isOp ? ReplyCardLayoutPolicy.HEADER_OP_BADGE_VP : 0) +
       (isDuplicate ? ReplyCardLayoutPolicy.HEADER_DUP_BADGE_VP : 0) +
       (hasThanks ? ReplyCardLayoutPolicy.HEADER_THANKS_EXTRA_VP : 0)
     return required > availableWidth
+  }
+
+  static compactHeaderMarkWidth(labelName: string, totalCount: number, showOverflow: boolean): number {
+    if (totalCount <= 0 || !(labelName || '').trim()) {
+      return 0
+    }
+    let width =
+      ReplyCardLayoutPolicy.HEADER_USERNAME_MARK_GAP_VP +
+      ReplyCardLayoutPolicy.markBadgeWidth(
+        labelName,
+        ReplyCardLayoutPolicy.HEADER_MARK_BADGE_MAX_VP,
+      )
+    if (showOverflow && totalCount > 1) {
+      width +=
+        ReplyCardLayoutPolicy.HEADER_MARK_ROW_GAP_VP +
+        ReplyCardLayoutPolicy.markBadgeWidth(
+          `+${totalCount - 1}`,
+          ReplyCardLayoutPolicy.HEADER_MARK_OVERFLOW_MAX_VP,
+        )
+    }
+    return width
+  }
+
+  private static markBadgeWidth(text: string, maxWidth: number): number {
+    return Math.min(
+      maxWidth,
+      ReplyCardLayoutPolicy.estTextWidth(text, ReplyCardLayoutPolicy.HEADER_MARK_FONT_VP) +
+        ReplyCardLayoutPolicy.HEADER_MARK_BADGE_PADDING_VP,
+    )
   }
 
   static leftPadding(embedded: boolean, threadLevel: number): number {

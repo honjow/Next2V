@@ -17,6 +17,7 @@ export struct ReplyCardHeader {
   // buttons on one line, stack the timestamp under the username and collapse the actions into a
   // single overflow menu. The parent ReplyCard computes this from the measured card width.
   @Param isNarrow: boolean = false;
+  @Param showCompactMarkOverflow: boolean = true;
   @Param isThanked: boolean = false;
   @Param isThankPending: boolean = false;
   @Event onUserClick?: (reply: V2exReply) => void;
@@ -39,8 +40,8 @@ export struct ReplyCardHeader {
       fontWeight: FontWeight.Medium,
       isPro: (this.reply.member.pro || 0) > 0,
       markVisibleLimit: this.isCompact ? 1 : 0,
-      markShowOverflow: !this.isCompact,
-      markMaxWidth: this.isCompact ? 70 : 92,
+      markShowOverflow: !this.isCompact || (!this.isNarrow && this.showCompactMarkOverflow),
+      markMaxWidth: this.isCompact ? (this.isNarrow ? 70 : 76) : 92,
       onUserClick: () => {
         if (this.onUserClick) {
           this.onUserClick(this.reply)
