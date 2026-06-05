@@ -3007,6 +3007,30 @@
     {
       "name": "cloud_sync_enable",
       "value": "クラウド同期を有効にする"
+    },
+    {
+      "name": "cloud_sync_content",
+      "value": "同期する項目"
+    },
+    {
+      "name": "cloud_sync_feat_read_progress",
+      "value": "閲覧の進捗"
+    },
+    {
+      "name": "cloud_sync_feat_marks",
+      "value": "ローカルマーク"
+    },
+    {
+      "name": "cloud_sync_feat_collections",
+      "value": "ローカルお気に入り"
+    },
+    {
+      "name": "cloud_sync_last",
+      "value": "前回の同期:{0}"
+    },
+    {
+      "name": "cloud_sync_last_failed",
+      "value": "前回の同期に失敗 · {0}"
     }
   ]
 }

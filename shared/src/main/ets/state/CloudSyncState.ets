@@ -10,6 +10,14 @@ export class CloudSyncState {
   @Trace syncing: boolean = false
   @Trace lastSyncAt: number = 0
   @Trace lastSyncOk: boolean = false
+  // Per-feature toggles (sub-switches under the master `enabled`). Default ON: enabling cloud sync syncs
+  // everything unless the user opts a feature out. CloudSyncSettings is the single writer (it maps each
+  // CloudSyncFeature key to the matching field); the Settings page reads them back.
+  @Trace featSearchHistory: boolean = true
+  @Trace featCollections: boolean = true
+  @Trace featRecentViews: boolean = true
+  @Trace featReadProgress: boolean = true
+  @Trace featMarks: boolean = true
 }
 
 const CLOUD_SYNC_V2_KEY: string = 'v2:cloudSync'

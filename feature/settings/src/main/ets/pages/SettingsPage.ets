@@ -6,9 +6,13 @@ import {
   AvatarAppearanceSettings,
   AvatarAppearanceState,
   CacheSettings,
+  CloudSyncFeature,
   CloudSyncSettings,
+  CloudSyncState,
+  DateUtils,
   connectApiDomain,
   connectAutoDailyCheckin,
+  connectCloudSync,
   connectAvatarAppearance,
   connectHomeTabAutoHide,
   connectImageUpload,
@@ -76,7 +80,14 @@ export struct SettingsPage {
   // AppStorage in aboutToAppear and updated optimistically by the toggle handlers below.
   @Local private autoDailyCheckinEnabled: boolean = true;
   @Local private cloudSyncEnabled: boolean = false;
-  @Local private cloudSyncMessage: string = '';
+  // Live cloud-sync status holder (syncing / lastSyncAt / lastSyncOk). Read in the "立即同步" subtitle so
+  // it reflects every sync path — startup, feature toggle, and manual — not just a manual tap.
+  private cloudSync: CloudSyncState = connectCloudSync();
+  @Local private cloudSyncFeatSearchHistory: boolean = true;
+  @Local private cloudSyncFeatCollections: boolean = true;
+  @Local private cloudSyncFeatRecentViews: boolean = true;
+  @Local private cloudSyncFeatReadProgress: boolean = true;
+  @Local private cloudSyncFeatMarks: boolean = true;
   @Local private autoLoadImages: boolean = true;
   @Local private onlyLoadImagesOnWifi: boolean = false;
   @Local private themeMode: string = ThemeSettings.MODE_AUTO;
@@ -111,6 +122,11 @@ export struct SettingsPage {
   private hydratePreferences(): void {
     this.autoDailyCheckinEnabled = connectAutoDailyCheckin().enabled
     this.cloudSyncEnabled = CloudSyncSettings.isEnabled()
+    this.cloudSyncFeatSearchHistory = CloudSyncSettings.isFeatureEnabled(CloudSyncFeature.SEARCH_HISTORY)
+    this.cloudSyncFeatCollections = CloudSyncSettings.isFeatureEnabled(CloudSyncFeature.COLLECTIONS)
+    this.cloudSyncFeatRecentViews = CloudSyncSettings.isFeatureEnabled(CloudSyncFeature.RECENT_VIEWS)
+    this.cloudSyncFeatReadProgress = CloudSyncSettings.isFeatureEnabled(CloudSyncFeature.READ_PROGRESS)
+    this.cloudSyncFeatMarks = CloudSyncSettings.isFeatureEnabled(CloudSyncFeature.MARKS)
     const media = connectMediaSettings()
     this.autoLoadImages = media.autoLoadImages
     this.onlyLoadImagesOnWifi = media.onlyLoadImagesOnWifi
@@ -138,6 +154,14 @@ export struct SettingsPage {
         }
         ListItem() {
           this.CloudSyncSection()
+        }
+        if (this.cloudSyncEnabled) {
+          ListItem() {
+            this.SectionHeader(AppStrings.R_CLOUD_SYNC_CONTENT)
+          }
+          ListItem() {
+            this.CloudSyncContentSection()
+          }
         }
         ListItem() {
           this.SectionHeader(AppStrings.R_SETTINGS_APPEARANCE)
@@ -236,17 +260,43 @@ export struct SettingsPage {
       this.TogglePreferenceRow(AppStrings.R_CLOUD_SYNC_ENABLE, this.cloudSyncEnabled, (value: boolean) => {
         this.updateCloudSync(value)
       })
-      if (this.cloudSyncEnabled) {
-        this.SettingsDivider()
-        ConciseListRow({
-          title: AppStrings.R_CLOUD_SYNC_NOW,
-          subtitle: this.cloudSyncMessage,
-          showChevron: false,
-          action: () => {
-            this.runCloudSyncNow()
-          },
-        })
-      }
+    }
+  }
+
+  // The per-feature "同步内容" card (shown only when the master toggle is on). Rendered as its own
+  // ListItem in build() — a ListItem holds a single component, so the master card, the sub-header, and
+  // this card must each be a separate scaffold item.
+  @Builder
+  CloudSyncContentSection() {
+    GroupedListSection() {
+      this.TogglePreferenceRow(AppStrings.R_SEARCH_HISTORY, this.cloudSyncFeatSearchHistory, (value: boolean) => {
+        this.updateCloudSyncFeature(CloudSyncFeature.SEARCH_HISTORY, value)
+      })
+      this.SettingsDivider()
+      this.TogglePreferenceRow(AppStrings.R_CLOUD_SYNC_FEAT_COLLECTIONS, this.cloudSyncFeatCollections, (value: boolean) => {
+        this.updateCloudSyncFeature(CloudSyncFeature.COLLECTIONS, value)
+      })
+      this.SettingsDivider()
+      this.TogglePreferenceRow(AppStrings.R_NAV_RECENTLY_VIEWED, this.cloudSyncFeatRecentViews, (value: boolean) => {
+        this.updateCloudSyncFeature(CloudSyncFeature.RECENT_VIEWS, value)
+      })
+      this.SettingsDivider()
+      this.TogglePreferenceRow(AppStrings.R_CLOUD_SYNC_FEAT_READ_PROGRESS, this.cloudSyncFeatReadProgress, (value: boolean) => {
+        this.updateCloudSyncFeature(CloudSyncFeature.READ_PROGRESS, value)
+      })
+      this.SettingsDivider()
+      this.TogglePreferenceRow(AppStrings.R_CLOUD_SYNC_FEAT_MARKS, this.cloudSyncFeatMarks, (value: boolean) => {
+        this.updateCloudSyncFeature(CloudSyncFeature.MARKS, value)
+      })
+      this.SettingsDivider()
+      ConciseListRow({
+        title: AppStrings.R_CLOUD_SYNC_NOW,
+        subtitle: this.cloudSyncStatusText(),
+        showChevron: false,
+        action: () => {
+          this.runCloudSyncNow()
+        },
+      })
     }
   }
 
@@ -739,7 +789,6 @@ export struct SettingsPage {
 
   private updateCloudSync(enabled: boolean): void {
     this.cloudSyncEnabled = enabled
-    this.cloudSyncMessage = ''
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     CloudSyncSettings.save(context, enabled)
       .then(() => {
@@ -753,21 +802,52 @@ export struct SettingsPage {
       })
   }
 
-  private runCloudSyncNow(): void {
+  private updateCloudSyncFeature(key: string, enabled: boolean): void {
+    // Mirror into the matching @Local so the toggle reflects immediately, persist the choice, then
+    // re-mark the distributed-table set to the new selection and sync. Only reachable while the master
+    // switch is on, so permission is already granted.
+    if (key === CloudSyncFeature.SEARCH_HISTORY) {
+      this.cloudSyncFeatSearchHistory = enabled
+    } else if (key === CloudSyncFeature.COLLECTIONS) {
+      this.cloudSyncFeatCollections = enabled
+    } else if (key === CloudSyncFeature.RECENT_VIEWS) {
+      this.cloudSyncFeatRecentViews = enabled
+    } else if (key === CloudSyncFeature.READ_PROGRESS) {
+      this.cloudSyncFeatReadProgress = enabled
+    } else if (key === CloudSyncFeature.MARKS) {
+      this.cloudSyncFeatMarks = enabled
+    }
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    this.cloudSyncMessage = AppStrings.text(AppStrings.R_CLOUD_SYNC_SYNCING, 'Syncing…')
-    LocalDataCloudSync.cloudSyncNow(context)
-      .then((ok: boolean) => {
-        this.cloudSyncMessage = ok
-          ? AppStrings.text(AppStrings.R_CLOUD_SYNC_OK, 'Synced')
-          : AppStrings.text(AppStrings.R_CLOUD_SYNC_FAILED, 'Sync failed, please try again later')
+    CloudSyncSettings.saveFeature(context, key, enabled)
+      .then(() => {
+        LocalDataCloudSync.applyFeatureSelection(context).catch((_error: Error) => {})
       })
-      .catch((_error: Error) => {
-        this.cloudSyncMessage = AppStrings.text(
-          AppStrings.R_CLOUD_SYNC_FAILED,
-          'Sync failed, please try again later',
-        )
+      .catch((error: Error) => {
+        console.error('save cloud sync feature failed: ' + error.message)
       })
+  }
+
+  private runCloudSyncNow(): void {
+    // Status is driven by CloudSyncState (syncing -> lastSyncAt/lastSyncOk) and surfaced via
+    // cloudSyncStatusText(); just trigger the sync here.
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    LocalDataCloudSync.cloudSyncNow(context).catch((_error: Error) => {})
+  }
+
+  // Subtitle of the "立即同步" row: "正在同步…" while a sync runs, otherwise the localized last-sync time
+  // ("上次同步:刚刚"), or empty before the first sync ever. Reads @Trace fields so it updates reactively.
+  private cloudSyncStatusText(): string {
+    if (this.cloudSync.syncing) {
+      return AppStrings.text(AppStrings.R_CLOUD_SYNC_SYNCING, 'Syncing…')
+    }
+    if (this.cloudSync.lastSyncAt <= 0) {
+      return ''
+    }
+    const when: string = DateUtils.toRelativeTime(Math.floor(this.cloudSync.lastSyncAt / 1000))
+    const template: string = this.cloudSync.lastSyncOk
+      ? AppStrings.text(AppStrings.R_CLOUD_SYNC_LAST, 'Last synced: {0}')
+      : AppStrings.text(AppStrings.R_CLOUD_SYNC_LAST_FAILED, 'Last sync failed · {0}')
+    return AppStrings.format(template, [when])
   }
 
   private updateHomeTabAutoHide(enabled: boolean): void {

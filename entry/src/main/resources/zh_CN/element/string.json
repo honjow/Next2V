@@ -3007,6 +3007,30 @@
     {
       "name": "cloud_sync_enable",
       "value": "启用云同步"
+    },
+    {
+      "name": "cloud_sync_content",
+      "value": "同步内容"
+    },
+    {
+      "name": "cloud_sync_feat_read_progress",
+      "value": "阅读进度"
+    },
+    {
+      "name": "cloud_sync_feat_marks",
+      "value": "本地标记"
+    },
+    {
+      "name": "cloud_sync_feat_collections",
+      "value": "本地收藏"
+    },
+    {
+      "name": "cloud_sync_last",
+      "value": "上次同步:{0}"
+    },
+    {
+      "name": "cloud_sync_last_failed",
+      "value": "上次同步失败 · {0}"
     }
   ]
 }

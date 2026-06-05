@@ -3,29 +3,24 @@ import { relationalStore } from '@kit.ArkData'
 import { LocalDataStore } from './LocalDataStore'
 import { DiagnosticLogger } from '../diagnostics/DiagnosticLogger'
 import { connectCloudSync } from '../state/CloudSyncState'
+import { CloudSyncSettings } from '../settings/CloudSyncSettings'
 
 // Device-cloud sync (端云协同) for the local RDB. A table is synced only when (a) its primary key is stable
 // across devices so a last-write-wins merge on *_at columns is safe, AND (b) its cloud data type exists in
-// AGC + is declared in arkdata/cloud/cloud_schema.json (all columns no-NOT-NULL). synced_kv is the generic
-// catch-all (see SyncedKv); user_mark_assignments uses a composite dedup key (username_key + label_id).
-// Deliberately NOT synced: cache_entries (device-local file payloads, re-fetchable) and topic_action_overlays
-// (its owner_key is not yet deterministic per account).
-const CLOUD_SYNCED_TABLES: string[] = [
-  'search_history',
-  'synced_kv',
-  'collection_saved_topics',
-  'collection_saved_nodes',
-  'collection_viewed_topics',
-  'collection_topic_read_positions',
-  'collection_topic_read_states',
-  'user_mark_labels',
-  'user_mark_assignments',
-]
+// AGC + is declared in arkdata/cloud/cloud_schema.json (all columns no-NOT-NULL). The synced set is no
+// longer a fixed list here: it is computed from the user's per-feature toggles (see CloudSyncFeatures /
+// CloudSyncSettings.enabledTables). synced_kv is the always-on generic catch-all (see SyncedKv);
+// user_mark_assignments uses a composite dedup key (username_key + label_id). Deliberately NOT synced:
+// cache_entries (device-local file payloads, re-fetchable) and topic_action_overlays (owner_key not yet
+// deterministic per account).
 
 const SYNC_PERMISSION: Permissions = 'ohos.permission.DISTRIBUTED_DATASYNC'
 
 export class LocalDataCloudSync {
-  private static distributedMarked: boolean = false
+  // Signature (joined table list) of the last setDistributedTables call: re-marking is skipped when the
+  // selection is unchanged but re-runs when the user flips a feature toggle. Empty = never marked this run.
+  private static lastMarkedSignature: string = ''
+  private static autoSyncListenerBound: boolean = false
 
   // Startup bootstrap: migrate the legacy 'V2Next.db' store into the renamed 'Next2V.db' store exactly
   // once, before any page or cloud-sync consumer touches the DB. Routed through this class (already a
@@ -59,7 +54,10 @@ export class LocalDataCloudSync {
   // Mark the syncable tables as cloud-distributed with autoSync on. Idempotent per process; the cloud
   // backend identity is the system Huawei account (no in-app login). Requires the permission granted.
   static async markDistributedTables(context: common.UIAbilityContext): Promise<boolean> {
-    if (LocalDataCloudSync.distributedMarked) {
+    // The synced set follows the user's per-feature toggles; the always-on synced_kv keeps it non-empty.
+    const activeTables: string[] = CloudSyncSettings.enabledTables()
+    const signature: string = activeTables.join(',')
+    if (LocalDataCloudSync.lastMarkedSignature === signature) {
       return true
     }
     // Retry: at first launch after the V2Next.db -> Next2V.db rename, this runs right after the legacy
@@ -73,21 +71,24 @@ export class LocalDataCloudSync {
         const store = await LocalDataStore.open(context)
         const config: relationalStore.DistributedConfig = { autoSync: true }
         await store.setDistributedTables(
-          CLOUD_SYNCED_TABLES,
+          activeTables,
           relationalStore.DistributedType.DISTRIBUTED_CLOUD,
           config,
         )
-        LocalDataCloudSync.distributedMarked = true
-        // Observe system-driven auto sync (the real sync path when autoSync:true) so we can see whether
-        // background sync succeeds even if a manual cloudSync fired too early returns CLOUD_DISABLED.
-        store.on('autoSyncProgress', (progress: relationalStore.ProgressDetails) => {
-          DiagnosticLogger.info('cloud_sync', 'cloud_sync_auto_progress', {
-            schedule: progress.schedule,
-            progressCode: progress.code,
+        LocalDataCloudSync.lastMarkedSignature = signature
+        // Observe system-driven auto sync (the real sync path when autoSync:true). Bind the listener once
+        // per process — re-marking after a feature toggle must not stack duplicate listeners.
+        if (!LocalDataCloudSync.autoSyncListenerBound) {
+          LocalDataCloudSync.autoSyncListenerBound = true
+          store.on('autoSyncProgress', (progress: relationalStore.ProgressDetails) => {
+            DiagnosticLogger.info('cloud_sync', 'cloud_sync_auto_progress', {
+              schedule: progress.schedule,
+              progressCode: progress.code,
+            })
           })
-        })
+        }
         DiagnosticLogger.info('cloud_sync', 'cloud_sync_tables_marked', {
-          tableCount: CLOUD_SYNCED_TABLES.length,
+          tableCount: activeTables.length,
           attempt: attempt,
         })
         return true
@@ -158,15 +159,13 @@ export class LocalDataCloudSync {
             finish(false)
           })
       })
-      state.lastSyncAt = Date.now()
-      state.lastSyncOk = ok
+      await CloudSyncSettings.recordLastSync(context, ok)
       state.syncing = false
       DiagnosticLogger.info('cloud_sync', 'cloud_sync_done', { ok: ok })
       return ok
     } catch (error) {
       const e = error as Error
-      state.lastSyncAt = Date.now()
-      state.lastSyncOk = false
+      await CloudSyncSettings.recordLastSync(context, false)
       state.syncing = false
       DiagnosticLogger.warn(
         'cloud_sync',
@@ -176,6 +175,17 @@ export class LocalDataCloudSync {
       )
       return false
     }
+  }
+
+  // Re-mark the distributed-table set to match the current per-feature toggles, then run a sync. Called
+  // when the user flips a feature toggle while cloud sync is already on (master enabled + permission
+  // granted), so it skips the permission prompt. Never throws.
+  static async applyFeatureSelection(context: common.UIAbilityContext): Promise<void> {
+    const marked = await LocalDataCloudSync.markDistributedTables(context)
+    if (!marked) {
+      return
+    }
+    await LocalDataCloudSync.cloudSyncNow(context)
   }
 
   // One-shot best-effort enable + sync, safe to call at startup. Never throws. (Phase 1 wires this at

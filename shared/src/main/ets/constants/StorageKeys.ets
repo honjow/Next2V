@@ -73,6 +73,16 @@ export class StorageKeys {
   // Device-cloud sync (端云协同) user toggle. Default OFF (opt-in).
   static readonly CLOUD_SYNC_ENABLED: string = 'cloudSyncEnabled'
 
+  // Per-feature cloud-sync toggles. The full preference key is this prefix + a CloudSyncFeature key
+  // (e.g. 'cloudSyncFeat_collections'). Each defaults ON, so enabling cloud sync syncs everything
+  // unless the user opts a feature out.
+  static readonly CLOUD_SYNC_FEATURE_PREFIX: string = 'cloudSyncFeat_'
+
+  // Last cloud-sync outcome, persisted so Settings can show "上次同步:…" immediately on open (the
+  // in-memory CloudSyncState resets to 0 on restart). LAST_AT is a millisecond epoch; LAST_OK its result.
+  static readonly CLOUD_SYNC_LAST_AT: string = 'cloudSyncLastAt'
+  static readonly CLOUD_SYNC_LAST_OK: string = 'cloudSyncLastOk'
+
   // NOTE: the former API_RATE_LIMIT_* ('apiRateLimit*') legacy AppStorage keys were removed — they
   // had zero runtime consumers after the api-rate-limit V2 slice. The rate-limit snapshot now lives
   // in the AppStorageV2 'v2:apiRateLimit' store (ApiRateLimitState.ets); do not reintroduce legacy

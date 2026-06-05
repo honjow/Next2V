@@ -3007,6 +3007,30 @@
     {
       "name": "cloud_sync_enable",
       "value": "Enable Cloud Sync"
+    },
+    {
+      "name": "cloud_sync_content",
+      "value": "Synced Content"
+    },
+    {
+      "name": "cloud_sync_feat_read_progress",
+      "value": "Reading Progress"
+    },
+    {
+      "name": "cloud_sync_feat_marks",
+      "value": "Local Marks"
+    },
+    {
+      "name": "cloud_sync_feat_collections",
+      "value": "Local Favorites"
+    },
+    {
+      "name": "cloud_sync_last",
+      "value": "Last synced: {0}"
+    },
+    {
+      "name": "cloud_sync_last_failed",
+      "value": "Last sync failed · {0}"
     }
   ]
 }

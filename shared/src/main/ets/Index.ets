@@ -316,6 +316,8 @@ export {
   LOCAL_DATA_SCHEMA_VERSION,
 } from './storage/LocalDataStore'
 export { LocalDataCloudSync } from './storage/LocalDataCloudSync'
+export { CloudSyncFeature, CLOUD_SYNC_FEATURES } from './storage/CloudSyncFeatures'
+export type { CloudSyncFeatureDef } from './storage/CloudSyncFeatures'
 export { SyncedKv } from './storage/SyncedKv'
 export type { SyncedKvEntry } from './storage/SyncedKv'
 export { MotionHandStateService } from './services/MotionHandStateService'

@@ -3007,6 +3007,30 @@
     {
       "name": "cloud_sync_enable",
       "value": "클라우드 동기화 사용"
+    },
+    {
+      "name": "cloud_sync_content",
+      "value": "동기화 항목"
+    },
+    {
+      "name": "cloud_sync_feat_read_progress",
+      "value": "읽기 진행률"
+    },
+    {
+      "name": "cloud_sync_feat_marks",
+      "value": "로컬 마크"
+    },
+    {
+      "name": "cloud_sync_feat_collections",
+      "value": "로컬 즐겨찾기"
+    },
+    {
+      "name": "cloud_sync_last",
+      "value": "마지막 동기화: {0}"
+    },
+    {
+      "name": "cloud_sync_last_failed",
+      "value": "마지막 동기화 실패 · {0}"
     }
   ]
 }
