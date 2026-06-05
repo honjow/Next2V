@@ -85,6 +85,10 @@ export class StorageKeys {
   // True when the last sync finished with RDB_CLOUD_DISABLED (the system 云空间 sync is off for this app).
   // Persisted so Settings can show the "enable cloud sync in system settings" hint after a restart.
   static readonly CLOUD_SYNC_LAST_CLOUD_DISABLED: string = 'cloudSyncLastCloudDisabled'
+  // One-time guard: rows written by the old `INSERT OR REPLACE` upsert were never flagged for cloud
+  // upload. After the ON-CONFLICT fix, a one-shot re-touch re-marks existing local rows dirty so they
+  // finally upload. Set once that flush has run on this device.
+  static readonly CLOUD_SYNC_REUPLOAD_FLUSH_DONE: string = 'cloudSyncReuploadFlushDone'
 
   // NOTE: the former API_RATE_LIMIT_* ('apiRateLimit*') legacy AppStorage keys were removed — they
   // had zero runtime consumers after the api-rate-limit V2 slice. The rate-limit snapshot now lives

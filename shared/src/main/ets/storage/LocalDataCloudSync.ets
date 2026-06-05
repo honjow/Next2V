@@ -4,6 +4,8 @@ import { LocalDataStore } from './LocalDataStore'
 import { DiagnosticLogger } from '../diagnostics/DiagnosticLogger'
 import { connectCloudSync } from '../state/CloudSyncState'
 import { CloudSyncSettings } from '../settings/CloudSyncSettings'
+import { CollectionSettings } from '../settings/CollectionSettings'
+import { LocalDataPublisher } from '../settings/LocalDataPublisher'
 
 // Device-cloud sync (端云协同) for the local RDB. A table is synced only when (a) its primary key is stable
 // across devices so a last-write-wins merge on *_at columns is safe, AND (b) its cloud data type exists in
@@ -85,6 +87,10 @@ export class LocalDataCloudSync {
               schedule: progress.schedule,
               progressCode: progress.code,
             })
+            if (progress.schedule === relationalStore.Progress.SYNC_FINISH) {
+              LocalDataCloudSync.logTableDetails('cloud_sync_auto_table_detail', progress)
+              LocalDataCloudSync.refreshAfterDownload(context, progress)
+            }
           })
         }
         DiagnosticLogger.info('cloud_sync', 'cloud_sync_tables_marked', {
@@ -105,7 +111,10 @@ export class LocalDataCloudSync {
     DiagnosticLogger.warn(
       'cloud_sync',
       'cloud_sync_mark_error',
-      { errorKind: lastError !== null ? lastError.name || 'Error' : 'Error', message: lastError !== null ? lastError.message || '' : '' },
+      {
+        errorKind: lastError !== null ? lastError.name || 'Error' : 'Error',
+        message: lastError !== null ? lastError.message || '' : '',
+      },
       lastError !== null ? lastError : undefined,
     )
     return false
@@ -138,7 +147,7 @@ export class LocalDataCloudSync {
         }, 30000)
         store
           .cloudSync(
-            relationalStore.SyncMode.SYNC_MODE_CLOUD_FIRST,
+            relationalStore.SyncMode.SYNC_MODE_TIME_FIRST,
             (progress: relationalStore.ProgressDetails) => {
               DiagnosticLogger.info('cloud_sync', 'cloud_sync_progress', {
                 schedule: progress.schedule,
@@ -146,6 +155,8 @@ export class LocalDataCloudSync {
               })
               if (progress.schedule === relationalStore.Progress.SYNC_FINISH) {
                 clearTimeout(timer)
+                LocalDataCloudSync.logTableDetails('cloud_sync_table_detail', progress)
+                LocalDataCloudSync.refreshAfterDownload(context, progress)
                 finish(progress.code)
               }
             },
@@ -181,6 +192,140 @@ export class LocalDataCloudSync {
     }
   }
 
+  // Per-table cloud-sync stats from progress.details (keyed by LOCAL table name), logged at SYNC_FINISH.
+  // The round's progressCode does NOT reflect per-table outcomes: a table can silently fail to upload
+  // (upFail>0, e.g. its AGC cloud data type is missing/mismapped) or never be processed (present:false,
+  // e.g. not in the marked set) while the round still returns code 0. This makes that per-table truth
+  // visible — grep `cloud_sync_table_detail` for `"table":"collection_saved_nodes"`.
+  private static logTableDetails(event: string, progress: relationalStore.ProgressDetails): void {
+    const details: Record<string, relationalStore.TableDetails> = progress.details
+    if (!details) {
+      return
+    }
+    const tables: string[] = CloudSyncSettings.enabledTables()
+    tables.forEach((table: string) => {
+      const td: relationalStore.TableDetails | undefined = details[table]
+      if (td === undefined || td === null) {
+        DiagnosticLogger.info('cloud_sync', event, { table: table, present: false })
+        return
+      }
+      DiagnosticLogger.info('cloud_sync', event, {
+        table: table,
+        present: true,
+        upTotal: td.upload.total,
+        upOk: td.upload.successful,
+        upFail: td.upload.failed,
+        downTotal: td.download.total,
+        downOk: td.download.successful,
+        downFail: td.download.failed,
+      })
+    })
+  }
+
+  // After a sync round downloads cloud rows STRAIGHT into the RDB (the cloud-sync engine bypasses the
+  // app's own write methods that publish counts — saveNode → publishSavedNodeCount etc.), the in-memory
+  // LocalContentStats holder is stale, so Me-page counts don't move until the user re-enters a page and it
+  // re-queries. Recompute + republish the stats (and bump the local-data signal) so the UI reacts live.
+  // Only when something actually downloaded; best-effort, never throws.
+  private static refreshAfterDownload(
+    context: common.UIAbilityContext,
+    progress: relationalStore.ProgressDetails,
+  ): void {
+    if (!LocalDataCloudSync.hasDownloads(progress)) {
+      return
+    }
+    CollectionSettings.loadLocalContentStats(context).catch((_error: Error) => {})
+    LocalDataPublisher.touchLocalData()
+  }
+
+  // Sum download.total across the marked tables for this round; >0 means cloud data landed locally.
+  private static hasDownloads(progress: relationalStore.ProgressDetails): boolean {
+    const details: Record<string, relationalStore.TableDetails> = progress.details
+    if (!details) {
+      return false
+    }
+    const tables: string[] = CloudSyncSettings.enabledTables()
+    let total: number = 0
+    tables.forEach((table: string) => {
+      const td: relationalStore.TableDetails | undefined = details[table]
+      if (td !== undefined && td !== null) {
+        total = total + td.download.total
+      }
+    })
+    return total > 0
+  }
+
+  // Touch SQL (no-op self-assignment of a non-PK column) for a synced table. Running it re-fires the
+  // AFTER-UPDATE cloud-sync trigger, re-flagging every existing row dirty for upload. '' = skip.
+  // Deliberately limited to the small, user-curated "set once" tables (saved nodes/topics, marks, search,
+  // KV). The large auto-history tables (viewed topics, read positions/states) are EXCLUDED: they hold
+  // hundreds of rows (a one-shot re-upload of all of them would overrun the sync timeout) and they
+  // self-heal anyway — every new view/read writes a fresh row that uploads via the ON-CONFLICT fix.
+  private static reuploadTouchSql(table: string): string {
+    if (table === 'search_history') {
+      return 'UPDATE search_history SET searched_at = searched_at'
+    }
+    if (table === 'synced_kv') {
+      return 'UPDATE synced_kv SET updated_at = updated_at'
+    }
+    if (table === 'collection_saved_topics') {
+      return 'UPDATE collection_saved_topics SET saved_at = saved_at'
+    }
+    if (table === 'collection_saved_nodes') {
+      return 'UPDATE collection_saved_nodes SET saved_at = saved_at'
+    }
+    if (table === 'user_mark_labels') {
+      return 'UPDATE user_mark_labels SET updated_at = updated_at'
+    }
+    if (table === 'user_mark_assignments') {
+      return 'UPDATE user_mark_assignments SET updated_at = updated_at'
+    }
+    return ''
+  }
+
+  // One-shot recovery for the `INSERT OR REPLACE` bug: rows written before the ON-CONFLICT fix were never
+  // flagged for cloud upload. Re-touch existing rows of the currently-synced tables so they get re-marked
+  // dirty and finally upload. Runs once per device, AFTER markDistributedTables (the triggers must exist)
+  // and before the sync. Best-effort; never throws.
+  static async flushStuckRowsOnce(context: common.UIAbilityContext): Promise<void> {
+    try {
+      if (await CloudSyncSettings.isReuploadFlushDone(context)) {
+        return
+      }
+      const store = await LocalDataStore.open(context)
+      const tables: string[] = CloudSyncSettings.enabledTables()
+      let touched: number = 0
+      for (const table of tables) {
+        const sql: string = LocalDataCloudSync.reuploadTouchSql(table)
+        if (!sql) {
+          continue
+        }
+        try {
+          await store.executeSql(sql)
+          touched = touched + 1
+        } catch (error) {
+          const e = error as Error
+          DiagnosticLogger.warn(
+            'cloud_sync',
+            'cloud_sync_reupload_touch_error',
+            { table: table, message: e.message || '' },
+            e,
+          )
+        }
+      }
+      await CloudSyncSettings.markReuploadFlushDone(context)
+      DiagnosticLogger.info('cloud_sync', 'cloud_sync_reupload_flush_done', { touched: touched })
+    } catch (error) {
+      const e = error as Error
+      DiagnosticLogger.warn(
+        'cloud_sync',
+        'cloud_sync_reupload_flush_error',
+        { message: e.message || '' },
+        e,
+      )
+    }
+  }
+
   // Re-mark the distributed-table set to match the current per-feature toggles, then run a sync. Called
   // when the user flips a feature toggle while cloud sync is already on (master enabled + permission
   // granted), so it skips the permission prompt. Never throws.
@@ -189,6 +334,7 @@ export class LocalDataCloudSync {
     if (!marked) {
       return
     }
+    await LocalDataCloudSync.flushStuckRowsOnce(context)
     await LocalDataCloudSync.cloudSyncNow(context)
   }
 
@@ -204,6 +350,9 @@ export class LocalDataCloudSync {
     if (!marked) {
       return
     }
+    // One-time recovery of rows stuck by the old INSERT OR REPLACE upsert (must run after the tables are
+    // marked distributed so the cloud-sync triggers exist).
+    await LocalDataCloudSync.flushStuckRowsOnce(context)
     // Calling cloudSync immediately after setDistributedTables returns CLOUD_DISABLED (cloud session not
     // ready yet). Give the cloud sync session time to establish, then trigger a manual sync (Phase-1
     // diagnostic — production should rely on autoSync + an explicit "立即同步" user action).

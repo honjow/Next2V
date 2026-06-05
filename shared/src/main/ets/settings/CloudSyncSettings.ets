@@ -66,7 +66,46 @@ export class CloudSyncSettings {
       store.flushSync()
     } catch (error) {
       const e = error as Error
-      DiagnosticLogger.warn('cloud_sync', 'cloud_sync_setting_error', { operation: 'recordLastSync' }, e)
+      DiagnosticLogger.warn(
+        'cloud_sync',
+        'cloud_sync_setting_error',
+        { operation: 'recordLastSync' },
+        e,
+      )
+    }
+  }
+
+  // One-time re-upload flush guard (see StorageKeys.CLOUD_SYNC_REUPLOAD_FLUSH_DONE). Best-effort: on a
+  // read error we report "not done" so the flush is attempted rather than skipped.
+  static async isReuploadFlushDone(context: common.UIAbilityContext): Promise<boolean> {
+    try {
+      const store = await preferences.getPreferences(context, STORE_NAME)
+      return store.getSync(StorageKeys.CLOUD_SYNC_REUPLOAD_FLUSH_DONE, false) as boolean
+    } catch (error) {
+      const e = error as Error
+      DiagnosticLogger.warn(
+        'cloud_sync',
+        'cloud_sync_setting_error',
+        { operation: 'isFlushDone' },
+        e,
+      )
+      return false
+    }
+  }
+
+  static async markReuploadFlushDone(context: common.UIAbilityContext): Promise<void> {
+    try {
+      const store = await preferences.getPreferences(context, STORE_NAME)
+      store.putSync(StorageKeys.CLOUD_SYNC_REUPLOAD_FLUSH_DONE, true)
+      store.flushSync()
+    } catch (error) {
+      const e = error as Error
+      DiagnosticLogger.warn(
+        'cloud_sync',
+        'cloud_sync_setting_error',
+        { operation: 'markFlushDone' },
+        e,
+      )
     }
   }
 
@@ -132,10 +171,18 @@ export class CloudSyncSettings {
       const store = await preferences.getPreferences(context, STORE_NAME)
       store.putSync(StorageKeys.CLOUD_SYNC_FEATURE_PREFIX + key, enabled)
       store.flushSync()
-      DiagnosticLogger.info('cloud_sync', 'cloud_sync_feature_saved', { feature: key, enabled: enabled })
+      DiagnosticLogger.info('cloud_sync', 'cloud_sync_feature_saved', {
+        feature: key,
+        enabled: enabled,
+      })
     } catch (error) {
       const e = error as Error
-      DiagnosticLogger.warn('cloud_sync', 'cloud_sync_setting_error', { operation: 'saveFeature' }, e)
+      DiagnosticLogger.warn(
+        'cloud_sync',
+        'cloud_sync_setting_error',
+        { operation: 'saveFeature' },
+        e,
+      )
       throw new Error(e.message || 'Failed to save cloud sync feature setting')
     }
   }
