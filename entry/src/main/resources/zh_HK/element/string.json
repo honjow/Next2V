@@ -1869,6 +1869,14 @@
       "value": "使用者名稱旁顯示的標記數量"
     },
     {
+      "name": "user_mark_combined_badge",
+      "value": "合併標記"
+    },
+    {
+      "name": "user_mark_combined_badge_hint",
+      "value": "將多個標記合併為一個分段徽標"
+    },
+    {
       "name": "node_no_topics",
       "value": "暫無主題"
     },

@@ -18,6 +18,25 @@ export struct UserMarkBadgeRow {
   private marks: UserMarkState = connectUserMarks()
 
   build() {
+    Row() {
+      if (this.marks.combinedBadge && this.visibleLabels().length > 0) {
+        this.CombinedBadge()
+      } else {
+        this.SeparateBadges()
+      }
+    }
+    .alignItems(VerticalAlign.Center)
+    .bindSheet(
+      $$this.sheetVisible,
+      this.AllMarksSheet(),
+      defaultSheetOptions(SheetSize.MEDIUM, () => {
+        this.sheetVisible = false
+      }),
+    )
+  }
+
+  @Builder
+  private SeparateBadges() {
     Row({ space: ThemeConstants.SPACE_XS }) {
       ForEach(
         this.visibleLabels(),
@@ -31,13 +50,27 @@ export struct UserMarkBadgeRow {
       }
     }
     .alignItems(VerticalAlign.Center)
-    .bindSheet(
-      $$this.sheetVisible,
-      this.AllMarksSheet(),
-      defaultSheetOptions(SheetSize.MEDIUM, () => {
-        this.sheetVisible = false
-      }),
-    )
+  }
+
+  @Builder
+  private CombinedBadge() {
+    Row({ space: 0 }) {
+      ForEach(
+        this.visibleLabels(),
+        (label: UserMarkLabel) => {
+          this.CombinedBadgeSegment(label)
+        },
+        (label: UserMarkLabel) => label.id,
+      )
+      if (this.overflowCount() > 0) {
+        this.CombinedMoreSegment()
+      }
+    }
+    .clip(true)
+    .borderRadius(ThemeConstants.RADIUS_SM)
+    .onClick(() => {
+      this.openSheet()
+    })
   }
 
   @Builder
@@ -61,6 +94,41 @@ export struct UserMarkBadgeRow {
       .onClick(() => {
         this.openSheet()
       })
+  }
+
+  @Builder
+  private CombinedBadgeSegment(label: UserMarkLabel) {
+    Text(label.name)
+      .fontSize(this.fontSize)
+      .fontWeight(FontWeight.Medium)
+      .fontColor(UserMarkSettings.textColorForBackground(label.color))
+      .lineHeight(this.fontSize + 3)
+      .maxLines(1)
+      .textOverflow({ overflow: TextOverflow.Ellipsis })
+      .constraintSize({ maxWidth: this.maxBadgeWidth })
+      .padding({
+        left: ThemeConstants.SPACE_XS + 2,
+        right: ThemeConstants.SPACE_XS + 2,
+        top: 1,
+        bottom: 1
+      })
+      .backgroundColor(label.color)
+  }
+
+  @Builder
+  private CombinedMoreSegment() {
+    Text(`+${this.overflowCount()}`)
+      .fontSize(this.fontSize)
+      .fontWeight(FontWeight.Medium)
+      .fontColor($r('sys.color.font_secondary'))
+      .lineHeight(this.fontSize + 3)
+      .padding({
+        left: ThemeConstants.SPACE_XS + 2,
+        right: ThemeConstants.SPACE_XS + 2,
+        top: 1,
+        bottom: 1
+      })
+      .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
   }
 
   @Builder

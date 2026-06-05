@@ -12,6 +12,7 @@ export class UserMarkState {
   @Trace labelsJson: string = '[]'
   @Trace assignmentsJson: string = '[]'
   @Trace displayLimit: number = 2
+  @Trace combinedBadge: boolean = false
   @Trace updatedAt: number = 0
 }
 

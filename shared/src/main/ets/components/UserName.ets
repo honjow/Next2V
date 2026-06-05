@@ -7,6 +7,7 @@ export struct UserName {
   @Param fontSize: number = 14
   @Param fontWeight: FontWeight = FontWeight.Regular
   @Param isPro: boolean = false
+  @Param isMod: boolean = false
   @Param showUserMarks: boolean = true
   @Param markFontSize: number = ThemeConstants.FONT_SIZE_TINY
   @Param markVisibleLimit: number = 0
@@ -40,6 +41,21 @@ export struct UserName {
           })
           .border({ width: 1, color: '#1484CD', radius: 3 })
           .backgroundColor('#323A45')
+      }
+      if (this.isMod) {
+        Text('MOD')
+          .fontSize(9)
+          .fontWeight(FontWeight.Medium)
+          .fontColor('#FFFFFF')
+          .lineHeight(10)
+          .padding({
+            left: 3,
+            right: 3,
+            top: 1,
+            bottom: 1
+          })
+          .border({ width: 1, color: '#D73A49', radius: 3 })
+          .backgroundColor('#D73A49')
       }
       if (this.showUserMarks) {
         UserMarkBadgeRow({

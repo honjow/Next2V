@@ -1,7 +1,5 @@
 import { V2exReply } from '../network/NetworkTypes'
-import { UserMarkSettings, type UserMarkLabel } from '../settings/UserMarkSettings'
 import { ReplyCardStyleState, connectReplyCardStyle } from '../state/ReplyCardStyleState'
-import { UserMarkState, connectUserMarks } from '../state/UserMarkState'
 import { ThemeConstants } from '../theme/ThemeConstants'
 import { TimeAgo } from './TimeAgo'
 import { MarkdownContent } from './MarkdownContent'
@@ -44,7 +42,6 @@ export struct ReplyCard {
   // V2 mirror of REPLY_CARD_STYLE; ReplyCardStyleSettings.apply() dual-writes this @Trace
   // field alongside the legacy AppStorage key still read by the V1 SettingsPage.
   private replyStyleState: ReplyCardStyleState = connectReplyCardStyle();
-  private userMarks: UserMarkState = connectUserMarks();
 
   private isCompact(): boolean {
     return this.replyStyleState.replyCardStyle === 'compact'
@@ -72,35 +69,7 @@ export struct ReplyCard {
       this.isOp,
       this.isDuplicateThreadItem,
       this.reply.thanks > 0,
-      this.compactMarkWidth(false),
     )
-  }
-
-  private showCompactMarkOverflow(): boolean {
-    if (!this.isCompact() || this.cardWidth <= 0) {
-      return true
-    }
-    return !ReplyCardLayoutPolicy.compactHeaderStacked(
-      this.headerAvailableWidth(),
-      this.reply.member.username,
-      this.isOp,
-      this.isDuplicateThreadItem,
-      this.reply.thanks > 0,
-      this.compactMarkWidth(true),
-    )
-  }
-
-  private compactMarkWidth(showOverflow: boolean): number {
-    const labels = UserMarkSettings.allLabelsForUsername(
-      this.reply.member.username,
-      this.userMarks.labelsJson,
-      this.userMarks.assignmentsJson,
-    )
-    if (labels.length === 0) {
-      return 0
-    }
-    const first: UserMarkLabel = labels[0]
-    return ReplyCardLayoutPolicy.compactHeaderMarkWidth(first.name, labels.length, showOverflow)
   }
 
   private threadIndent(): number {
@@ -253,7 +222,6 @@ export struct ReplyCard {
           isDuplicateThreadItem: this.isDuplicateThreadItem,
           isCompact: this.isCompact(),
           isNarrow: this.isHeaderNarrow(),
-          showCompactMarkOverflow: this.showCompactMarkOverflow(),
           isThanked: this.isThanked,
           isThankPending: this.isThankPending,
           onUserClick: this.onUserClick,

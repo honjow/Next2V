@@ -1869,6 +1869,14 @@
       "value": "사용자 이름 옆에 표시할 개수"
     },
     {
+      "name": "user_mark_combined_badge",
+      "value": "마크 합치기"
+    },
+    {
+      "name": "user_mark_combined_badge_hint",
+      "value": "여러 마크를 하나의 분할 배지로 표시"
+    },
+    {
       "name": "node_no_topics",
       "value": "토픽 없음"
     },

@@ -39,6 +39,7 @@ export struct TopicDetailHeader {
           fontSize: ThemeConstants.FONT_SIZE_META,
           fontWeight: FontWeight.Medium,
           isPro: (this.topic.member.pro || 0) > 0,
+          isMod: (this.topic.member.mod || 0) > 0,
           markMaxWidth: 76,
           onUserClick: () => {
             if (this.onUserClick) {

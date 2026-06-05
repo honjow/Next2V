@@ -1869,6 +1869,14 @@
       "value": "ユーザー名の横に表示する数"
     },
     {
+      "name": "user_mark_combined_badge",
+      "value": "マークを結合"
+    },
+    {
+      "name": "user_mark_combined_badge_hint",
+      "value": "複数のマークを1つの分割バッジにまとめます"
+    },
+    {
       "name": "node_no_topics",
       "value": "トピックはありません"
     },

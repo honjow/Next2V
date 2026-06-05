@@ -198,6 +198,7 @@ export interface BackupCollectionsSection {
   userMarkLabels?: Object[]
   userMarkAssignments?: Object[]
   userMarkDisplayLimit?: number
+  userMarkCombinedBadge?: boolean
 }
 
 export interface BackupSearchSection {

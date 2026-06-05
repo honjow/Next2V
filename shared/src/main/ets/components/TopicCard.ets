@@ -34,6 +34,7 @@ export struct TopicCard {
             username: this.item.member.username,
             fontSize: ThemeConstants.FONT_SIZE_META,
             isPro: this.isMemberPro(),
+            isMod: this.isMemberMod(),
             onUserClick: () => {
               if (this.onUserClick) { this.onUserClick() }
             }
@@ -110,5 +111,9 @@ export struct TopicCard {
 
   private isMemberPro(): boolean {
     return (this.item.member.pro || 0) > 0
+  }
+
+  private isMemberMod(): boolean {
+    return (this.item.member.mod || 0) > 0
   }
 }

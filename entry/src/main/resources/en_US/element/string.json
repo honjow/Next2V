@@ -1869,6 +1869,14 @@
       "value": "Shown next to usernames"
     },
     {
+      "name": "user_mark_combined_badge",
+      "value": "Merged badge"
+    },
+    {
+      "name": "user_mark_combined_badge_hint",
+      "value": "Combine marks into one segmented badge"
+    },
+    {
       "name": "node_no_topics",
       "value": "No topics"
     },

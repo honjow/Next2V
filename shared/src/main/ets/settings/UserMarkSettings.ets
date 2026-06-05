@@ -28,11 +28,13 @@ export interface UserMarkSnapshot {
   labels: UserMarkLabel[]
   assignments: UserMarkAssignment[]
   displayLimit: number
+  combinedBadge: boolean
   updatedAt: number
 }
 
 const STORE_NAME: string = STORE_NAME_COLLECTIONS
 const KEY_DISPLAY_LIMIT: string = 'userMarkDisplayLimit'
+const KEY_COMBINED_BADGE: string = 'userMarkCombinedBadge'
 
 const SQL_SELECT_LABELS: string = 'SELECT label_id, name, color, sort_order, created_at, updated_at FROM user_mark_labels ORDER BY sort_order ASC, updated_at DESC'
 const SQL_SELECT_ASSIGNMENTS: string = 'SELECT username_key, username, label_id, assigned_at, updated_at FROM user_mark_assignments ORDER BY username_key ASC, assigned_at ASC, label_id ASC'
@@ -40,6 +42,8 @@ const SQL_SELECT_MAX_SORT_ORDER: string = 'SELECT MAX(sort_order) AS max_sort_or
 const SQL_UPSERT_LABEL: string = 'INSERT OR REPLACE INTO user_mark_labels (label_id, name, color, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)'
 const SQL_UPSERT_ASSIGNMENT: string = 'INSERT OR REPLACE INTO user_mark_assignments (username_key, username, label_id, assigned_at, updated_at) VALUES (?, ?, ?, ?, ?)'
 const SQL_DELETE_ASSIGNMENT: string = 'DELETE FROM user_mark_assignments WHERE username_key = ? AND label_id = ?'
+const SQL_DELETE_LABEL: string = 'DELETE FROM user_mark_labels WHERE label_id = ?'
+const SQL_DELETE_ASSIGNMENTS_BY_LABEL: string = 'DELETE FROM user_mark_assignments WHERE label_id = ?'
 const SQL_CLEAR_LABELS: string = 'DELETE FROM user_mark_labels'
 const SQL_CLEAR_ASSIGNMENTS: string = 'DELETE FROM user_mark_assignments'
 
@@ -54,10 +58,12 @@ export class UserMarkSettings {
     const labels = UserMarkSettings.readLabelsResult(await store.querySql(SQL_SELECT_LABELS))
     const assignments = UserMarkSettings.readAssignmentsResult(await store.querySql(SQL_SELECT_ASSIGNMENTS))
     const displayLimit = await UserMarkSettings.loadDisplayLimit(context)
+    const combinedBadge = await UserMarkSettings.loadCombinedBadge(context)
     const snapshot: UserMarkSnapshot = {
       labels: labels,
       assignments: assignments,
       displayLimit: displayLimit,
+      combinedBadge: combinedBadge,
       updatedAt: UserMarkSettings.snapshotUpdatedAt(labels, assignments)
     }
     UserMarkSettings.apply(snapshot)
@@ -154,6 +160,19 @@ export class UserMarkSettings {
     return await UserMarkSettings.load(context)
   }
 
+  static async deleteLabel(context: common.UIAbilityContext, labelId: string): Promise<UserMarkSnapshot> {
+    const cleanLabelId = (labelId || '').trim()
+    if (!cleanLabelId) {
+      return await UserMarkSettings.load(context)
+    }
+    const store = await LocalDataStore.open(context)
+    const args: relationalStore.ValueType[] = [cleanLabelId]
+    await store.executeSql(SQL_DELETE_ASSIGNMENTS_BY_LABEL, args)
+    await store.executeSql(SQL_DELETE_LABEL, args)
+    LocalDataPublisher.touchLocalData()
+    return await UserMarkSettings.load(context)
+  }
+
   static async saveDisplayLimit(context: common.UIAbilityContext, value: number): Promise<UserMarkSnapshot> {
     const next = UserMarkSettings.clampDisplayLimit(value)
     await withPreferencesStore<void>(context, STORE_NAME, (store) => {
@@ -162,6 +181,18 @@ export class UserMarkSettings {
     })
     const state = connectUserMarks()
     state.displayLimit = next
+    state.updatedAt = UserMarkSettings.nextUpdatedAt(state.updatedAt)
+    LocalDataPublisher.touchLocalData()
+    return await UserMarkSettings.load(context)
+  }
+
+  static async saveCombinedBadge(context: common.UIAbilityContext, value: boolean): Promise<UserMarkSnapshot> {
+    await withPreferencesStore<void>(context, STORE_NAME, (store) => {
+      store.putSync(KEY_COMBINED_BADGE, value)
+      store.flushSync()
+    })
+    const state = connectUserMarks()
+    state.combinedBadge = value
     state.updatedAt = UserMarkSettings.nextUpdatedAt(state.updatedAt)
     LocalDataPublisher.touchLocalData()
     return await UserMarkSettings.load(context)
@@ -184,6 +215,7 @@ export class UserMarkSettings {
     }
     await withPreferencesStore<void>(context, STORE_NAME, (prefs) => {
       prefs.putSync(KEY_DISPLAY_LIMIT, UserMarkSettings.clampDisplayLimit(section.userMarkDisplayLimit || UserMarkSettings.DEFAULT_DISPLAY_LIMIT))
+      prefs.putSync(KEY_COMBINED_BADGE, section.userMarkCombinedBadge === true)
       prefs.flushSync()
     })
     LocalDataPublisher.touchLocalData()
@@ -196,12 +228,14 @@ export class UserMarkSettings {
     await store.executeSql(SQL_CLEAR_LABELS)
     await withPreferencesStore<void>(context, STORE_NAME, (prefs) => {
       prefs.deleteSync(KEY_DISPLAY_LIMIT)
+      prefs.deleteSync(KEY_COMBINED_BADGE)
       prefs.flushSync()
     })
     const snapshot: UserMarkSnapshot = {
       labels: [],
       assignments: [],
       displayLimit: UserMarkSettings.DEFAULT_DISPLAY_LIMIT,
+      combinedBadge: false,
       updatedAt: Date.now()
     }
     UserMarkSettings.apply(snapshot)
@@ -213,6 +247,7 @@ export class UserMarkSettings {
     state.labelsJson = JSON.stringify(snapshot.labels)
     state.assignmentsJson = JSON.stringify(snapshot.assignments)
     state.displayLimit = UserMarkSettings.clampDisplayLimit(snapshot.displayLimit)
+    state.combinedBadge = snapshot.combinedBadge === true
     state.updatedAt = UserMarkSettings.nextUpdatedAt(Math.max(state.updatedAt, snapshot.updatedAt))
   }
 
@@ -328,7 +363,7 @@ export class UserMarkSettings {
       0.2126 * UserMarkSettings.relativeColorChannel(red) +
       0.7152 * UserMarkSettings.relativeColorChannel(green) +
       0.0722 * UserMarkSettings.relativeColorChannel(blue)
-    return luminance > 0.62 ? '#1F2328' : '#FFFFFF'
+    return luminance > 0.72 ? '#1F2328' : '#FFFFFF'
   }
 
   private static async loadDisplayLimit(context: common.UIAbilityContext): Promise<number> {
@@ -342,6 +377,22 @@ export class UserMarkSettings {
         return UserMarkSettings.clampDisplayLimit(Number.isNaN(parsed) ? UserMarkSettings.DEFAULT_DISPLAY_LIMIT : parsed)
       }
       return UserMarkSettings.DEFAULT_DISPLAY_LIMIT
+    })
+  }
+
+  private static async loadCombinedBadge(context: common.UIAbilityContext): Promise<boolean> {
+    return await withPreferencesStore<boolean>(context, STORE_NAME, (store) => {
+      const raw = store.getSync(KEY_COMBINED_BADGE, false)
+      if (typeof raw === 'boolean') {
+        return raw
+      }
+      if (typeof raw === 'number') {
+        return raw > 0
+      }
+      if (typeof raw === 'string') {
+        return raw === 'true' || raw === '1'
+      }
+      return false
     })
   }
 

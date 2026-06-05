@@ -498,6 +498,8 @@ export class AppStrings {
   static readonly R_USER_MARK_NAME_REQUIRED: Resource = $r('app.string.user_mark_name_required')
   static readonly R_USER_MARK_DISPLAY_LIMIT: Resource = $r('app.string.user_mark_display_limit')
   static readonly R_USER_MARK_DISPLAY_LIMIT_HINT: Resource = $r('app.string.user_mark_display_limit_hint')
+  static readonly R_USER_MARK_COMBINED_BADGE: Resource = $r('app.string.user_mark_combined_badge')
+  static readonly R_USER_MARK_COMBINED_BADGE_HINT: Resource = $r('app.string.user_mark_combined_badge_hint')
   static readonly R_NODE_NO_TOPICS: Resource = $r('app.string.node_no_topics')
   static readonly R_NODE_LOAD_FAILED: Resource = $r('app.string.node_load_failed')
   static readonly R_NODE_INFO_MISSING: Resource = $r('app.string.node_info_missing')

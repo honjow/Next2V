@@ -58,6 +58,7 @@ for (const snippet of [
   '@Trace labelsJson: string =',
   '@Trace assignmentsJson: string =',
   '@Trace displayLimit: number = 2',
+  '@Trace combinedBadge: boolean = false',
   'connectUserMarks()',
   'AppStorageV2.connect(UserMarkState',
 ]) {
@@ -71,9 +72,12 @@ for (const snippet of [
   'static async createLabelAndAssign',
   'static async assignLabel',
   'static async unassignLabel',
+  'static async deleteLabel',
   'static async saveDisplayLimit',
+  'static async saveCombinedBadge',
   'static async restoreBackup',
   'static async clearAll',
+  'KEY_COMBINED_BADGE',
   'static visibleLabelsForUsername',
   'static overflowCountForUsername',
   'connectUserMarks()',
@@ -91,6 +95,8 @@ for (const snippet of [
   'visibleLimit: number = 0',
   'showOverflow: boolean = true',
   'maxBadgeWidth: number = 92',
+  'private CombinedBadge()',
+  'this.marks.combinedBadge',
   'private SheetBadge(label: UserMarkLabel)',
 ]) {
   assert(badges.includes(snippet), `UserMarkBadges missing display contract: ${snippet}`)
@@ -100,12 +106,12 @@ assert(userName.includes('UserMarkBadgeRow({'), 'UserName must display mark badg
 assert(userName.includes('markVisibleLimit: number = 0'), 'UserName must pass compact mark limit settings')
 assert(replyHeader.includes("import { UserName } from '../UserName'"), 'ReplyCardHeader must reuse UserName for mark-aware reply authors')
 assert(replyHeader.includes('markVisibleLimit: this.isCompact ? 1 : 0'), 'ReplyCardHeader must compact user marks in compact replies')
-assert(replyHeader.includes('showCompactMarkOverflow'), 'ReplyCardHeader must support dynamic compact mark overflow display')
-assert(replyHeader.includes('!this.isNarrow && this.showCompactMarkOverflow'), 'ReplyCardHeader must hide compact mark overflow only when width needs it')
-assert(replyCard.includes('compactMarkWidth(false)'), 'ReplyCard must include compact mark width in narrow layout detection')
-assert(replyCard.includes('compactMarkWidth(true)'), 'ReplyCard must separately test whether compact overflow marks fit')
-assert(replyCard.includes('UserMarkSettings.allLabelsForUsername'), 'ReplyCard must base compact mark width on actual assigned marks')
-assert(replyLayoutPolicy.includes('compactHeaderMarkWidth'), 'ReplyCardLayoutPolicy must estimate compact mark width')
+assert(replyHeader.includes('FlexWrap.Wrap'), 'ReplyCardHeader must use natural wrap for compact author marks')
+assert(replyHeader.includes('LengthMetrics.vp(ThemeConstants.SPACE_SM)'), 'ReplyCardHeader compact wrap must use project spacing metrics')
+assert(!replyHeader.includes('showCompactMarkOverflow'), 'ReplyCardHeader must not gate mark overflow through width tiers')
+assert(!replyCard.includes('compactMarkWidth'), 'ReplyCard must not estimate compact mark width')
+assert(!replyCard.includes('UserMarkSettings.allLabelsForUsername'), 'ReplyCard layout must not read mark assignments')
+assert(!replyLayoutPolicy.includes('compactHeaderMarkWidth'), 'ReplyCardLayoutPolicy must not estimate compact mark width')
 assert(!replyCard.includes('this.isHeaderNarrow() || (this.embedded && this.isCompact())'), 'Embedded compact replies must not force narrow layout')
 assert(topicDetailComponents.includes('UserName({'), 'TopicDetailHeader must display mark-aware topic authors')
 assert(profileComponents.includes('UserMarkBadgeRow'), 'UserProfileCard must display marks beside the profile username')
@@ -120,7 +126,11 @@ for (const snippet of [
   'UserMarkSettings.createLabelAndAssign',
   'UserMarkSettings.assignLabel',
   'UserMarkSettings.unassignLabel',
+  'UserMarkSettings.deleteLabel',
   'UserMarkSettings.saveDisplayLimit',
+  'UserMarkSettings.saveCombinedBadge',
+  '@Local private pendingUserMarkLabelId',
+  '.swipeAction({ end: this.UserMarkDeleteSwipeEnd(label) })',
   "if (action === 'mark')",
 ]) {
   assert(profilePage.includes(snippet), `UserProfilePage missing sheet/action contract: ${snippet}`)
@@ -141,12 +151,14 @@ for (const snippet of [
   'userMarkLabels?: Object[]',
   'userMarkAssignments?: Object[]',
   'userMarkDisplayLimit?: number',
+  'userMarkCombinedBadge?: boolean',
 ]) {
   assert(backupTypes.includes(snippet), `BackupCollectionsSection missing mark field: ${snippet}`)
 }
 for (const snippet of [
-  'UserMarkSettings.loadLabels(context)',
-  'UserMarkSettings.loadAssignments(context)',
+  'userMarkLabels: userMarks.labels',
+  'userMarkAssignments: userMarks.assignments',
+  'userMarkCombinedBadge: userMarks.combinedBadge',
   'UserMarkSettings.restoreBackup(context, section)',
 ]) {
   assert(backupAdapter.includes(snippet), `BackupLocalDataAdapter missing mark backup contract: ${snippet}`)
@@ -160,6 +172,7 @@ for (const snippet of [
   'R_USER_MARK_CREATE_SECTION',
   'R_USER_MARK_EXISTING_SECTION',
   'R_USER_MARK_DISPLAY_LIMIT',
+  'R_USER_MARK_COMBINED_BADGE',
 ]) {
   assert(appStrings.includes(snippet), `AppStrings missing user mark resource: ${snippet}`)
 }
@@ -182,6 +195,8 @@ for (const locale of ['base', 'en_US', 'zh_CN', 'zh_HK', 'zh_TW', 'ja_JP', 'ko_K
     'user_mark_name_required',
     'user_mark_display_limit',
     'user_mark_display_limit_hint',
+    'user_mark_combined_badge',
+    'user_mark_combined_badge_hint',
   ]) {
     assert(names.has(name), `${locale} missing string ${name}`)
   }

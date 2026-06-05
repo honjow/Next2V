@@ -188,6 +188,7 @@ export class V2exTabParser {
     const username = V2exTabParser.extractAttr(avatarTag, 'alt') || V2exTabParser.extractFirst(cell, /\/member\/([^"'\s<>]+)/i)
     const uid = V2exTabParser.parseNumber(V2exTabParser.extractAttr(avatarTag, 'data-uid'))
     const avatar = V2exUrlRouter.withSelectedBaseUrl(V2exTabParser.extractAttr(avatarTag, 'src'), HttpClient.getInstance().getBaseUrl())
+    const cleanUsername = V2exTabParser.decode(username)
     const nodeName = V2exTabParser.extractFirst(cell, /<a[^>]*class=["']node["'][^>]*href=["']\/go\/([^"']+)["'][^>]*>/i)
     const nodeTitle = V2exTabParser.extractFirst(cell, /<a[^>]*class=["']node["'][^>]*>[\s\S]*?([^<>]+)<\/a>/i)
     const replies = V2exTabParser.parseNumber(V2exTabParser.extractFirst(cell, /<a[^>]*class=["']count_[^"']*["'][^>]*>(\d+)<\/a>/i))
@@ -197,8 +198,10 @@ export class V2exTabParser {
 
     const member: V2exMember = {
       id: uid,
-      username: V2exTabParser.decode(username),
+      username: cleanUsername,
       tagline: '',
+      pro: V2exTabParser.hasMemberRole(cell, cleanUsername, 'PRO') ? 1 : 0,
+      mod: V2exTabParser.hasMemberRole(cell, cleanUsername, 'MOD') ? 1 : 0,
       avatar_mini: avatar,
       avatar_normal: avatar,
       avatar_large: avatar
@@ -228,6 +231,24 @@ export class V2exTabParser {
       last_touched: created,
       last_reply_by: V2exTabParser.decode(lastReplyBy)
     }
+  }
+
+  private static hasMemberRole(html: string, username: string, role: string): boolean {
+    const cleanUsername = (username || '').trim()
+    const cleanRole = (role || '').trim()
+    if (!cleanUsername || !cleanRole) {
+      return false
+    }
+    const escapedUsername = cleanUsername.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const memberLink = new RegExp(`<a\\b[^>]*href=["']\\/member\\/${escapedUsername}["'][^>]*>[\\s\\S]*?<\\/a>`, 'i')
+    const match = memberLink.exec(html || '')
+    if (!match) {
+      return false
+    }
+    const nearby = (html || '').slice(match.index, Math.min((html || '').length, match.index + 260))
+    const text = HtmlEntityUtils.decode(nearby.replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ')
+    const rolePattern = new RegExp(`(?:^|\\s)${cleanRole}(?:\\s|$)`, 'i')
+    return rolePattern.test(text)
   }
 
   private static placeholderTopic(id: number): V2exTopic {

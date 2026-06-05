@@ -2168,6 +2168,8 @@ export class ApiService {
         id: memberId,
         username: author,
         tagline: '',
+        pro: ApiService.hasMemberRole(header, author, 'PRO') ? 1 : 0,
+        mod: ApiService.hasMemberRole(header, author, 'MOD') ? 1 : 0,
         avatar_mini: avatar,
         avatar_normal: avatar,
         avatar_large: avatar,
@@ -2386,6 +2388,24 @@ export class ApiService {
     const escaped = attr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
     const match = (tag || '').match(new RegExp(`${escaped}=["']([^"']*)["']`, 'i'))
     return match && match[1] ? ApiService.decodePlain(match[1]) : ''
+  }
+
+  private static hasMemberRole(html: string, username: string, role: string): boolean {
+    const cleanUsername = (username || '').trim()
+    const cleanRole = (role || '').trim()
+    if (!cleanUsername || !cleanRole) {
+      return false
+    }
+    const escapedUsername = cleanUsername.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const memberLink = new RegExp(`<a\\b[^>]*href=["']\\/member\\/${escapedUsername}["'][^>]*>[\\s\\S]*?<\\/a>`, 'i')
+    const match = memberLink.exec(html || '')
+    if (!match) {
+      return false
+    }
+    const nearby = (html || '').slice(match.index, Math.min((html || '').length, match.index + 260))
+    const text = ApiService.decodePlain(nearby.replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ')
+    const rolePattern = new RegExp(`(?:^|\\s)${cleanRole}(?:\\s|$)`, 'i')
+    return rolePattern.test(text)
   }
 
   private static extractFirst(text: string, pattern: RegExp): string {

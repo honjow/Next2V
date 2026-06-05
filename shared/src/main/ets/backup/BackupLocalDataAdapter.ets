@@ -19,15 +19,17 @@ export class BackupLocalDataAdapter {
   }
 
   static async exportCollections(context: common.UIAbilityContext): Promise<BackupCollectionsSection> {
+    const userMarks = await UserMarkSettings.load(context)
     return {
       savedTopics: await CollectionSettings.loadSavedTopics(context),
       savedNodes: await CollectionSettings.loadSavedNodes(context),
       viewedTopics: await CollectionSettings.loadViewedTopics(context),
       readPositions: await CollectionSettings.loadTopicReadPositions(context),
       readStates: await CollectionSettings.loadTopicReadStates(context),
-      userMarkLabels: await UserMarkSettings.loadLabels(context),
-      userMarkAssignments: await UserMarkSettings.loadAssignments(context),
-      userMarkDisplayLimit: (await UserMarkSettings.load(context)).displayLimit
+      userMarkLabels: userMarks.labels,
+      userMarkAssignments: userMarks.assignments,
+      userMarkDisplayLimit: userMarks.displayLimit,
+      userMarkCombinedBadge: userMarks.combinedBadge
     }
   }
 

@@ -82,6 +82,7 @@ export struct UserProfilePage {
   @Local private userMarkInput: string = '';
   @Local private selectedUserMarkColor: string = UserMarkSettings.DEFAULT_COLOR;
   @Local private userMarkSaving: boolean = false;
+  @Local private pendingUserMarkLabelId: string = '';
   @Local private userMarks: UserMarkState = connectUserMarks();
 
   private readonly titleVisibilityHysteresis: number = 4;
@@ -294,9 +295,7 @@ export struct UserProfilePage {
       ListItem() {
         this.UserMarkCreateSection()
       }
-      ListItem() {
-        this.UserMarkExistingSection()
-      }
+      this.UserMarkExistingItems()
       ListItem() {
         this.UserMarkDisplayLimitSection()
       }
@@ -332,39 +331,72 @@ export struct UserProfilePage {
     .width('100%')
   }
 
-  @Builder UserMarkExistingSection() {
-    Column({ space: ThemeConstants.SPACE_XS }) {
-      this.UserMarkSectionLabel(AppStrings.R_USER_MARK_EXISTING_SECTION)
-      GroupedListSection() {
-        if (this.allUserMarkLabels().length === 0) {
-          Text(AppStrings.R_USER_MARK_EMPTY)
-            .fontSize(ThemeConstants.FONT_SIZE_BODY)
-            .fontColor($r('sys.color.font_secondary'))
-            .width('100%')
-            .textAlign(TextAlign.Center)
-            .padding(ThemeConstants.SPACE_LG)
-        } else {
-          ForEach(
-            this.allUserMarkLabels(),
-            (label: UserMarkLabel) => {
-              ConciseListRow({
-                title: label.name,
-                showChevron: false,
-                hasSwitch: true,
-                checked: this.isUserMarkAssigned(label.id),
-                isEnabled: !this.userMarkSaving,
-                prefixBuilderParam: (): void => this.UserMarkColorDot(label.color),
-                switchAction: (value: boolean) => {
-                  this.setUserMarkAssignment(label, value)
-                }
-              })
-            },
-            (label: UserMarkLabel) => label.id,
-          )
+  @Builder UserMarkExistingItems() {
+    if (this.allUserMarkLabels().length === 0) {
+      ListItem() {
+        Column({ space: ThemeConstants.SPACE_XS }) {
+          this.UserMarkSectionLabel(AppStrings.R_USER_MARK_EXISTING_SECTION)
+          GroupedListSection() {
+            Text(AppStrings.R_USER_MARK_EMPTY)
+              .fontSize(ThemeConstants.FONT_SIZE_BODY)
+              .fontColor($r('sys.color.font_secondary'))
+              .width('100%')
+              .textAlign(TextAlign.Center)
+              .padding(ThemeConstants.SPACE_LG)
+          }
         }
+        .width('100%')
       }
+    } else {
+      ListItem() {
+        this.UserMarkSectionLabel(AppStrings.R_USER_MARK_EXISTING_SECTION)
+      }
+      ForEach(
+        this.allUserMarkLabels(),
+        (label: UserMarkLabel) => {
+          ListItem() {
+            GroupedListSection() {
+              this.UserMarkExistingRow(label)
+            }
+          }
+          .swipeAction({ end: this.UserMarkDeleteSwipeEnd(label) })
+        },
+        (label: UserMarkLabel) => label.id,
+      )
     }
-    .width('100%')
+  }
+
+  @Builder UserMarkExistingRow(label: UserMarkLabel) {
+    ConciseListRow({
+      title: label.name,
+      showChevron: false,
+      hasSwitch: true,
+      checked: this.isUserMarkAssigned(label.id),
+      isEnabled: !this.isUserMarkRowPending(label.id),
+      prefixBuilderParam: (): void => this.UserMarkColorDot(label.color),
+      switchAction: (value: boolean) => {
+        this.setUserMarkAssignment(label, value)
+      }
+    })
+  }
+
+  @Builder UserMarkDeleteSwipeEnd(label: UserMarkLabel) {
+    Row() {
+      Button() {
+        SymbolGlyph($r('sys.symbol.trash'))
+          .fontSize(ThemeConstants.ICON_SIZE_SM)
+          .fontColor([Color.White])
+      }
+      .width(48)
+      .height(40)
+      .backgroundColor(Color.Red)
+      .onClick(() => {
+        this.confirmDeleteUserMark(label)
+      })
+    }
+    .height('100%')
+    .padding({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
+    .justifyContent(FlexAlign.Center)
   }
 
   @Builder UserMarkDisplayLimitSection() {
@@ -377,13 +409,24 @@ export struct UserProfilePage {
           showChevron: false,
           hasCounter: true,
           counterValue: `${this.userMarks.displayLimit}`,
-          counterDecreaseEnabled: this.userMarks.displayLimit > UserMarkSettings.MIN_DISPLAY_LIMIT,
-          counterIncreaseEnabled: this.userMarks.displayLimit < UserMarkSettings.MAX_DISPLAY_LIMIT,
+          counterDecreaseEnabled: !this.userMarkBusy() && this.userMarks.displayLimit > UserMarkSettings.MIN_DISPLAY_LIMIT,
+          counterIncreaseEnabled: !this.userMarkBusy() && this.userMarks.displayLimit < UserMarkSettings.MAX_DISPLAY_LIMIT,
           counterDecreaseAction: () => {
             this.updateUserMarkDisplayLimit(this.userMarks.displayLimit - 1)
           },
           counterIncreaseAction: () => {
             this.updateUserMarkDisplayLimit(this.userMarks.displayLimit + 1)
+          }
+        })
+        ConciseListRow({
+          title: AppStrings.R_USER_MARK_COMBINED_BADGE,
+          subtitle: AppStrings.R_USER_MARK_COMBINED_BADGE_HINT,
+          showChevron: false,
+          hasSwitch: true,
+          checked: this.userMarks.combinedBadge,
+          isEnabled: !this.userMarkBusy(),
+          switchAction: (value: boolean) => {
+            this.updateUserMarkCombinedBadge(value)
           }
         })
       }
@@ -474,6 +517,7 @@ export struct UserProfilePage {
   private closeUserMarkSheet(): void {
     this.userMarkSheetVisible = false
     this.userMarkSaving = false
+    this.pendingUserMarkLabelId = ''
     this.userMarkInput = ''
   }
 
@@ -501,7 +545,15 @@ export struct UserProfilePage {
   }
 
   private canCreateUserMark(): boolean {
-    return !this.userMarkSaving && !!this.targetUserMarkUsername() && !!(this.userMarkInput || '').trim()
+    return !this.userMarkBusy() && !!this.targetUserMarkUsername() && !!(this.userMarkInput || '').trim()
+  }
+
+  private userMarkBusy(): boolean {
+    return this.userMarkSaving || !!this.pendingUserMarkLabelId
+  }
+
+  private isUserMarkRowPending(labelId: string): boolean {
+    return !!labelId && this.pendingUserMarkLabelId === labelId
   }
 
   private createUserMark(): void {
@@ -511,7 +563,7 @@ export struct UserProfilePage {
       return
     }
     const target = this.targetUserMarkUsername()
-    if (!target || this.userMarkSaving) {
+    if (!target || this.userMarkBusy()) {
       return
     }
     this.userMarkSaving = true
@@ -529,31 +581,85 @@ export struct UserProfilePage {
   }
 
   private setUserMarkAssignment(label: UserMarkLabel, assigned: boolean): void {
-    if (this.userMarkSaving) {
+    if (this.userMarkBusy()) {
       return
     }
     const target = this.targetUserMarkUsername()
     if (!target || !label.id) {
       return
     }
-    this.userMarkSaving = true
+    this.pendingUserMarkLabelId = label.id
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     const task = assigned
       ? UserMarkSettings.assignLabel(context, target, label.id)
       : UserMarkSettings.unassignLabel(context, target, label.id)
     task
       .then(() => {
-        this.userMarkSaving = false
+        this.pendingUserMarkLabelId = ''
       })
       .catch((error: Error) => {
-        this.userMarkSaving = false
+        this.pendingUserMarkLabelId = ''
         this.showActionToast(error.message || AppStrings.text(AppStrings.R_COMMON_SAVE_FAILED, 'Save failed'))
       })
   }
 
+  private confirmDeleteUserMark(label: UserMarkLabel): void {
+    if (!label.id || this.userMarkBusy()) {
+      return
+    }
+    this.getUIContext().showAlertDialog({
+      title: AppStrings.text(AppStrings.R_COMMON_DELETE, 'Delete'),
+      message: AppStrings.format(
+        AppStrings.text(AppStrings.R_CONFIRM_DELETE_PROXY_MESSAGE, 'Delete "{0}"?'),
+        [label.name],
+      ),
+      primaryButton: {
+        value: AppStrings.R_COMMON_CANCEL,
+        action: () => {
+        }
+      },
+      secondaryButton: {
+        value: AppStrings.R_COMMON_DELETE,
+        action: () => {
+          this.deleteUserMark(label)
+        }
+      }
+    })
+  }
+
+  private deleteUserMark(label: UserMarkLabel): void {
+    if (!label.id || this.userMarkBusy()) {
+      return
+    }
+    this.pendingUserMarkLabelId = label.id
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    UserMarkSettings.deleteLabel(context, label.id)
+      .then(() => {
+        this.pendingUserMarkLabelId = ''
+        this.showActionToast(AppStrings.text(AppStrings.R_COMMON_DELETED, 'Deleted'))
+      })
+      .catch((error: Error) => {
+        this.pendingUserMarkLabelId = ''
+        this.showActionToast(error.message || AppStrings.text(AppStrings.R_COMMON_DELETE_FAILED, 'Delete failed'))
+      })
+  }
+
   private updateUserMarkDisplayLimit(value: number): void {
+    if (this.userMarkBusy()) {
+      return
+    }
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     UserMarkSettings.saveDisplayLimit(context, value).catch((error: Error) => {
+      this.showActionToast(error.message || AppStrings.text(AppStrings.R_COMMON_SAVE_FAILED, 'Save failed'))
+    })
+  }
+
+  private updateUserMarkCombinedBadge(value: boolean): void {
+    if (this.userMarkBusy()) {
+      return
+    }
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    UserMarkSettings.saveCombinedBadge(context, value).catch((error: Error) => {
       this.showActionToast(error.message || AppStrings.text(AppStrings.R_COMMON_SAVE_FAILED, 'Save failed'))
     })
   }

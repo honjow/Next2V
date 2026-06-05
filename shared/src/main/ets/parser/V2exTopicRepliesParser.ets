@@ -5,6 +5,8 @@ interface ParsedMemberMeta {
   id: number
   username: string
   avatar: string
+  pro: number
+  mod: number
 }
 
 /** Parses public /t/{topicId} HTML replies when legacy /api/replies/show.json is stale. */
@@ -75,7 +77,9 @@ export class V2exTopicRepliesParser {
     return {
       id: uid,
       username,
-      avatar
+      avatar,
+      pro: V2exTopicRepliesParser.hasMemberRole(clean, username, 'PRO') ? 1 : 0,
+      mod: V2exTopicRepliesParser.hasMemberRole(clean, username, 'MOD') ? 1 : 0
     }
   }
 
@@ -85,6 +89,8 @@ export class V2exTopicRepliesParser {
       id: meta.id,
       username: meta.username,
       tagline: '',
+      pro: meta.pro,
+      mod: meta.mod,
       avatar_mini: avatar,
       avatar_normal: avatar,
       avatar_large: avatar
@@ -228,6 +234,24 @@ export class V2exTopicRepliesParser {
 
   private static stripTags(html: string): string {
     return (html || '').replace(/<[^>]+>/g, '')
+  }
+
+  private static hasMemberRole(html: string, username: string, role: string): boolean {
+    const cleanUsername = (username || '').trim()
+    const cleanRole = (role || '').trim()
+    if (!cleanUsername || !cleanRole) {
+      return false
+    }
+    const escapedUsername = cleanUsername.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const memberLink = new RegExp(`<a\\b[^>]*href=['"]\\/member\\/${escapedUsername}['"][^>]*>[\\s\\S]*?<\\/a>`, 'i')
+    const match = memberLink.exec(html || '')
+    if (!match) {
+      return false
+    }
+    const nearby = (html || '').slice(match.index, Math.min((html || '').length, match.index + 260))
+    const text = V2exTopicRepliesParser.decodeHtml(nearby.replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ')
+    const rolePattern = new RegExp(`(?:^|\\s)${cleanRole}(?:\\s|$)`, 'i')
+    return rolePattern.test(text)
   }
 
   private static decodeHtml(value: string): string {
