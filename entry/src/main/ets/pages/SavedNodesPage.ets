@@ -89,23 +89,28 @@ export struct SavedNodesPage {
   }
 
   build() {
-    SecondaryListScaffold() {
-      if (this.nodes.length === 0) {
-        ListItem() {
-          EmptyState({ message: AppStrings.text($r('app.string.empty_no_local_followed_nodes'), 'No local followed nodes yet'), stateHeight: 220 })
-        }
-      } else {
-        ForEach(this.nodes, (item: SavedNodeRow) => {
+    Column() {
+      SecondaryListScaffold() {
+        if (this.nodes.length === 0) {
           ListItem() {
-            SavedNodeRowView({
-              row: item,
-              onOpen: () => { this.openNode(item) }
-            })
+            EmptyState({ message: AppStrings.text($r('app.string.empty_no_local_followed_nodes'), 'No local followed nodes yet'), stateHeight: 220 })
           }
-          .onClick(() => { this.openNode(item) })
-        }, (item: SavedNodeRow) => `saved-node-${item.name}`)
+        } else {
+          ForEach(this.nodes, (item: SavedNodeRow) => {
+            ListItem() {
+              SavedNodeRowView({
+                row: item,
+                onOpen: () => { this.openNode(item) }
+              })
+            }
+            .onClick(() => { this.openNode(item) })
+          }, (item: SavedNodeRow) => `saved-node-${item.name}`)
+        }
       }
     }
+    .width('100%')
+    .height('100%')
+    .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
   }
 
   private loadNodes(): void {

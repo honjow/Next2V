@@ -78,6 +78,12 @@ if (pageStructStart < 0) {
 }
 const pageStruct = page.slice(pageStructStart)
 const buildBody = methodBody(pageStruct, '  build')
+assertIncludes(buildBody, 'Column() {', 'SavedNodesPage must own a full-page container like MyNodesPage')
+assertIncludes(
+  buildBody,
+  ".backgroundColor($r('sys.color.ohos_id_color_sub_background'))",
+  'SavedNodesPage must use the sub-background so saved-node cards remain visually distinct'
+)
 assertIncludes(buildBody, 'ForEach(this.nodes, (item: SavedNodeRow)', 'SavedNodesPage must render the canonical row store')
 assertIncludes(buildBody, '`saved-node-${item.name}`', 'saved node row key must stay stable by node name')
 
