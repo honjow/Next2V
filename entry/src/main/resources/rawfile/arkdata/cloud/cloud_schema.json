@@ -1,6 +1,6 @@
 {
   "metaVersion": 65537,
-  "version": 1,
+  "version": 2,
   "bundleName": "com.honjow.next2v",
   "e2eeEnable": false,
   "databases": [
@@ -8,7 +8,7 @@
       "name": "Next2V",
       "alias": "Next2V",
       "bundleName": "com.honjow.next2v",
-      "version": 1,
+      "version": 2,
       "autoSyncType": 0,
       "tables": [
         {
@@ -25,6 +25,91 @@
           "fields": [
             { "colName": "kv_key", "alias": "kv_key", "type": 3, "primary": true, "nullable": true, "dupCheckCol": true },
             { "colName": "value", "alias": "value", "type": 3, "primary": false, "nullable": true, "dupCheckCol": false },
+            { "colName": "updated_at", "alias": "updated_at", "type": 1, "primary": false, "nullable": true, "dupCheckCol": false }
+          ]
+        },
+        {
+          "name": "collection_saved_topics",
+          "alias": "collectionSavedTopics",
+          "fields": [
+            { "colName": "topic_id", "alias": "topic_id", "type": 1, "primary": true, "nullable": true, "dupCheckCol": true },
+            { "colName": "title", "alias": "title", "type": 3, "primary": false, "nullable": true, "dupCheckCol": false },
+            { "colName": "node_name", "alias": "node_name", "type": 3, "primary": false, "nullable": true, "dupCheckCol": false },
+            { "colName": "node_title", "alias": "node_title", "type": 3, "primary": false, "nullable": true, "dupCheckCol": false },
+            { "colName": "username", "alias": "username", "type": 3, "primary": false, "nullable": true, "dupCheckCol": false },
+            { "colName": "avatar", "alias": "avatar", "type": 3, "primary": false, "nullable": true, "dupCheckCol": false },
+            { "colName": "member_pro", "alias": "member_pro", "type": 1, "primary": false, "nullable": true, "dupCheckCol": false },
+            { "colName": "created", "alias": "created", "type": 1, "primary": false, "nullable": true, "dupCheckCol": false },
+            { "colName": "replies", "alias": "replies", "type": 1, "primary": false, "nullable": true, "dupCheckCol": false },
+            { "colName": "saved_at", "alias": "saved_at", "type": 1, "primary": false, "nullable": true, "dupCheckCol": false }
+          ]
+        },
+        {
+          "name": "collection_saved_nodes",
+          "alias": "collectionSavedNodes",
+          "fields": [
+            { "colName": "node_name", "alias": "node_name", "type": 3, "primary": true, "nullable": true, "dupCheckCol": true },
+            { "colName": "title", "alias": "title", "type": 3, "primary": false, "nullable": true, "dupCheckCol": false },
+            { "colName": "topics", "alias": "topics", "type": 1, "primary": false, "nullable": true, "dupCheckCol": false },
+            { "colName": "avatar_mini", "alias": "avatar_mini", "type": 3, "primary": false, "nullable": true, "dupCheckCol": false },
+            { "colName": "avatar_normal", "alias": "avatar_normal", "type": 3, "primary": false, "nullable": true, "dupCheckCol": false },
+            { "colName": "avatar_large", "alias": "avatar_large", "type": 3, "primary": false, "nullable": true, "dupCheckCol": false },
+            { "colName": "saved_at", "alias": "saved_at", "type": 1, "primary": false, "nullable": true, "dupCheckCol": false }
+          ]
+        },
+        {
+          "name": "collection_viewed_topics",
+          "alias": "collectionViewedTopics",
+          "fields": [
+            { "colName": "topic_id", "alias": "topic_id", "type": 1, "primary": true, "nullable": true, "dupCheckCol": true },
+            { "colName": "title", "alias": "title", "type": 3, "primary": false, "nullable": true, "dupCheckCol": false },
+            { "colName": "node_name", "alias": "node_name", "type": 3, "primary": false, "nullable": true, "dupCheckCol": false },
+            { "colName": "node_title", "alias": "node_title", "type": 3, "primary": false, "nullable": true, "dupCheckCol": false },
+            { "colName": "username", "alias": "username", "type": 3, "primary": false, "nullable": true, "dupCheckCol": false },
+            { "colName": "avatar", "alias": "avatar", "type": 3, "primary": false, "nullable": true, "dupCheckCol": false },
+            { "colName": "member_pro", "alias": "member_pro", "type": 1, "primary": false, "nullable": true, "dupCheckCol": false },
+            { "colName": "replies", "alias": "replies", "type": 1, "primary": false, "nullable": true, "dupCheckCol": false },
+            { "colName": "viewed_at", "alias": "viewed_at", "type": 1, "primary": false, "nullable": true, "dupCheckCol": false }
+          ]
+        },
+        {
+          "name": "collection_topic_read_positions",
+          "alias": "collectionTopicReadPositions",
+          "fields": [
+            { "colName": "topic_id", "alias": "topic_id", "type": 1, "primary": true, "nullable": true, "dupCheckCol": true },
+            { "colName": "floor", "alias": "floor", "type": 1, "primary": false, "nullable": true, "dupCheckCol": false },
+            { "colName": "updated_at", "alias": "updated_at", "type": 1, "primary": false, "nullable": true, "dupCheckCol": false }
+          ]
+        },
+        {
+          "name": "collection_topic_read_states",
+          "alias": "collectionTopicReadStates",
+          "fields": [
+            { "colName": "topic_id", "alias": "topic_id", "type": 1, "primary": true, "nullable": true, "dupCheckCol": true },
+            { "colName": "touched_at", "alias": "touched_at", "type": 1, "primary": false, "nullable": true, "dupCheckCol": false },
+            { "colName": "updated_at", "alias": "updated_at", "type": 1, "primary": false, "nullable": true, "dupCheckCol": false }
+          ]
+        },
+        {
+          "name": "user_mark_labels",
+          "alias": "userMarkLabels",
+          "fields": [
+            { "colName": "label_id", "alias": "label_id", "type": 3, "primary": true, "nullable": true, "dupCheckCol": true },
+            { "colName": "name", "alias": "name", "type": 3, "primary": false, "nullable": true, "dupCheckCol": false },
+            { "colName": "color", "alias": "color", "type": 3, "primary": false, "nullable": true, "dupCheckCol": false },
+            { "colName": "sort_order", "alias": "sort_order", "type": 1, "primary": false, "nullable": true, "dupCheckCol": false },
+            { "colName": "created_at", "alias": "created_at", "type": 1, "primary": false, "nullable": true, "dupCheckCol": false },
+            { "colName": "updated_at", "alias": "updated_at", "type": 1, "primary": false, "nullable": true, "dupCheckCol": false }
+          ]
+        },
+        {
+          "name": "user_mark_assignments",
+          "alias": "userMarkAssignments",
+          "fields": [
+            { "colName": "username_key", "alias": "username_key", "type": 3, "primary": true, "nullable": true, "dupCheckCol": true },
+            { "colName": "label_id", "alias": "label_id", "type": 3, "primary": true, "nullable": true, "dupCheckCol": true },
+            { "colName": "username", "alias": "username", "type": 3, "primary": false, "nullable": true, "dupCheckCol": false },
+            { "colName": "assigned_at", "alias": "assigned_at", "type": 1, "primary": false, "nullable": true, "dupCheckCol": false },
             { "colName": "updated_at", "alias": "updated_at", "type": 1, "primary": false, "nullable": true, "dupCheckCol": false }
           ]
         }

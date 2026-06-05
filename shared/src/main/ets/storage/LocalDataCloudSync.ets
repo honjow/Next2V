@@ -6,13 +6,20 @@ import { connectCloudSync } from '../state/CloudSyncState'
 
 // Device-cloud sync (端云协同) for the local RDB. A table is synced only when (a) its primary key is stable
 // across devices so a last-write-wins merge on *_at columns is safe, AND (b) its cloud data type exists in
-// AGC + is declared in arkdata/cloud/cloud_schema.json. synced_kv is the generic catch-all (see SyncedKv).
+// AGC + is declared in arkdata/cloud/cloud_schema.json (all columns no-NOT-NULL). synced_kv is the generic
+// catch-all (see SyncedKv); user_mark_assignments uses a composite dedup key (username_key + label_id).
 // Deliberately NOT synced: cache_entries (device-local file payloads, re-fetchable) and topic_action_overlays
-// (its owner_key is not yet deterministic per account). collection_* / user_mark_* are candidates for a later
-// phase — each needs its NOT NULL dropped, an AGC data type, and a cloud_schema.json entry before listing here.
+// (its owner_key is not yet deterministic per account).
 const CLOUD_SYNCED_TABLES: string[] = [
   'search_history',
   'synced_kv',
+  'collection_saved_topics',
+  'collection_saved_nodes',
+  'collection_viewed_topics',
+  'collection_topic_read_positions',
+  'collection_topic_read_states',
+  'user_mark_labels',
+  'user_mark_assignments',
 ]
 
 const SYNC_PERMISSION: Permissions = 'ohos.permission.DISTRIBUTED_DATASYNC'
