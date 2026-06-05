@@ -28,9 +28,11 @@ for (const snippet of requiredLocalDataSnippets) {
 const requiredSearchSnippets = [
   "import { relationalStore } from '@kit.ArkData'",
   "import { LocalDataStore } from '../storage/LocalDataStore'",
-  "const SQL_SELECT_HISTORY: string = 'SELECT query FROM search_history ORDER BY searched_at DESC LIMIT 20'",
-  "const SQL_UPSERT_HISTORY: string = 'INSERT OR REPLACE INTO search_history (query, searched_at) VALUES (?, ?)'",
-  "const SQL_PRUNE_HISTORY: string = 'DELETE FROM search_history WHERE query NOT IN (SELECT query FROM search_history ORDER BY searched_at DESC LIMIT 20)'",
+  // Assert on the SQL string literal only (not the `const X: string =` prefix): oxk wraps long
+  // declarations onto a second line, but the quoted literal stays intact on one line.
+  "'SELECT query FROM search_history ORDER BY searched_at DESC LIMIT 20'",
+  "'INSERT INTO search_history (query, searched_at) VALUES (?, ?) ON CONFLICT(query) DO UPDATE SET searched_at = excluded.searched_at'",
+  "'DELETE FROM search_history WHERE query NOT IN (SELECT query FROM search_history ORDER BY searched_at DESC LIMIT 20)'",
   "const SQL_CLEAR_HISTORY: string = 'DELETE FROM search_history'",
   'LocalDataStore.open(context)',
   'await store.querySql(SQL_SELECT_HISTORY)',

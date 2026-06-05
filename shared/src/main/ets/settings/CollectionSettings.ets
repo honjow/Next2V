@@ -41,32 +41,54 @@ const KEY_TOPIC_READ_POSITIONS: string = 'topicReadPositions'
 // Legacy/compatibility Preferences key that mirrors StorageKeys.TOPIC_READ_STATES.
 const KEY_TOPIC_READ_STATES: string = 'topicReadStates'
 
-const SQL_SELECT_SAVED_TOPICS: string = 'SELECT topic_id, title, node_name, node_title, username, avatar, member_pro, created, replies, saved_at FROM collection_saved_topics ORDER BY saved_at DESC, topic_id DESC LIMIT 100'
-const SQL_UPSERT_SAVED_TOPIC: string = 'INSERT OR REPLACE INTO collection_saved_topics (topic_id, title, node_name, node_title, username, avatar, member_pro, created, replies, saved_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+const SQL_SELECT_SAVED_TOPICS: string =
+  'SELECT topic_id, title, node_name, node_title, username, avatar, member_pro, created, replies, saved_at FROM collection_saved_topics ORDER BY saved_at DESC, topic_id DESC LIMIT 100'
+const SQL_UPSERT_SAVED_TOPIC: string =
+  'INSERT INTO collection_saved_topics (topic_id, title, node_name, node_title, username, avatar, member_pro, created, replies, saved_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(topic_id) DO UPDATE SET title = excluded.title, node_name = excluded.node_name, node_title = excluded.node_title, username = excluded.username, avatar = excluded.avatar, member_pro = excluded.member_pro, created = excluded.created, replies = excluded.replies, saved_at = excluded.saved_at'
 const SQL_DELETE_SAVED_TOPIC: string = 'DELETE FROM collection_saved_topics WHERE topic_id = ?'
-const SQL_PRUNE_SAVED_TOPICS: string = 'DELETE FROM collection_saved_topics WHERE topic_id NOT IN (SELECT topic_id FROM collection_saved_topics ORDER BY saved_at DESC, topic_id DESC LIMIT 100)'
+const SQL_PRUNE_SAVED_TOPICS: string =
+  'DELETE FROM collection_saved_topics WHERE topic_id NOT IN (SELECT topic_id FROM collection_saved_topics ORDER BY saved_at DESC, topic_id DESC LIMIT 100)'
 const SQL_COUNT_SAVED_TOPICS: string = 'SELECT COUNT(*) AS count_value FROM collection_saved_topics'
 
-const SQL_SELECT_SAVED_NODES: string = 'SELECT node_name, title, topics, avatar_mini, avatar_normal, avatar_large, saved_at FROM collection_saved_nodes ORDER BY saved_at DESC, node_name ASC LIMIT 80'
-const SQL_UPSERT_SAVED_NODE: string = 'INSERT OR REPLACE INTO collection_saved_nodes (node_name, title, topics, avatar_mini, avatar_normal, avatar_large, saved_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
+const SQL_SELECT_SAVED_NODES: string =
+  'SELECT node_name, title, topics, avatar_mini, avatar_normal, avatar_large, saved_at FROM collection_saved_nodes ORDER BY saved_at DESC, node_name ASC LIMIT 80'
+// Real UPSERT (INSERT ... ON CONFLICT DO UPDATE), NOT `INSERT OR REPLACE`: REPLACE is delete+insert,
+// which corrupts the device-cloud change log (the deleted row's upload state is lost), so re-saved /
+// followed nodes never upload. ON CONFLICT DO UPDATE is a plain INSERT (new) or UPDATE (existing) — both
+// tracked correctly for cloud upload. See LocalDataCloudSync.
+const SQL_UPSERT_SAVED_NODE: string =
+  'INSERT INTO collection_saved_nodes (node_name, title, topics, avatar_mini, avatar_normal, avatar_large, saved_at) VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT(node_name) DO UPDATE SET title = excluded.title, topics = excluded.topics, avatar_mini = excluded.avatar_mini, avatar_normal = excluded.avatar_normal, avatar_large = excluded.avatar_large, saved_at = excluded.saved_at'
 const SQL_DELETE_SAVED_NODE: string = 'DELETE FROM collection_saved_nodes WHERE node_name = ?'
-const SQL_PRUNE_SAVED_NODES: string = 'DELETE FROM collection_saved_nodes WHERE node_name NOT IN (SELECT node_name FROM collection_saved_nodes ORDER BY saved_at DESC, node_name ASC LIMIT 80)'
+const SQL_PRUNE_SAVED_NODES: string =
+  'DELETE FROM collection_saved_nodes WHERE node_name NOT IN (SELECT node_name FROM collection_saved_nodes ORDER BY saved_at DESC, node_name ASC LIMIT 80)'
 const SQL_COUNT_SAVED_NODES: string = 'SELECT COUNT(*) AS count_value FROM collection_saved_nodes'
 
-const SQL_SELECT_VIEWED_TOPICS: string = 'SELECT topic_id, title, node_name, node_title, username, avatar, member_pro, replies, viewed_at FROM collection_viewed_topics ORDER BY viewed_at DESC, topic_id DESC LIMIT 100'
-const SQL_UPSERT_VIEWED_TOPIC: string = 'INSERT OR REPLACE INTO collection_viewed_topics (topic_id, title, node_name, node_title, username, avatar, member_pro, replies, viewed_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
-const SQL_PRUNE_VIEWED_TOPICS: string = 'DELETE FROM collection_viewed_topics WHERE topic_id NOT IN (SELECT topic_id FROM collection_viewed_topics ORDER BY viewed_at DESC, topic_id DESC LIMIT 100)'
-const SQL_COUNT_VIEWED_TOPICS: string = 'SELECT COUNT(*) AS count_value FROM collection_viewed_topics'
+const SQL_SELECT_VIEWED_TOPICS: string =
+  'SELECT topic_id, title, node_name, node_title, username, avatar, member_pro, replies, viewed_at FROM collection_viewed_topics ORDER BY viewed_at DESC, topic_id DESC LIMIT 100'
+const SQL_UPSERT_VIEWED_TOPIC: string =
+  'INSERT INTO collection_viewed_topics (topic_id, title, node_name, node_title, username, avatar, member_pro, replies, viewed_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(topic_id) DO UPDATE SET title = excluded.title, node_name = excluded.node_name, node_title = excluded.node_title, username = excluded.username, avatar = excluded.avatar, member_pro = excluded.member_pro, replies = excluded.replies, viewed_at = excluded.viewed_at'
+const SQL_PRUNE_VIEWED_TOPICS: string =
+  'DELETE FROM collection_viewed_topics WHERE topic_id NOT IN (SELECT topic_id FROM collection_viewed_topics ORDER BY viewed_at DESC, topic_id DESC LIMIT 100)'
+const SQL_COUNT_VIEWED_TOPICS: string =
+  'SELECT COUNT(*) AS count_value FROM collection_viewed_topics'
 
-const SQL_SELECT_TOPIC_READ_POSITIONS: string = 'SELECT topic_id, floor, updated_at FROM collection_topic_read_positions ORDER BY updated_at DESC, topic_id DESC LIMIT 200'
-const SQL_SELECT_TOPIC_READ_FLOOR: string = 'SELECT floor FROM collection_topic_read_positions WHERE topic_id = ? LIMIT 1'
-const SQL_UPSERT_TOPIC_READ_POSITION: string = 'INSERT OR REPLACE INTO collection_topic_read_positions (topic_id, floor, updated_at) VALUES (?, ?, ?)'
-const SQL_DELETE_TOPIC_READ_POSITION: string = 'DELETE FROM collection_topic_read_positions WHERE topic_id = ?'
-const SQL_PRUNE_TOPIC_READ_POSITIONS: string = 'DELETE FROM collection_topic_read_positions WHERE topic_id NOT IN (SELECT topic_id FROM collection_topic_read_positions ORDER BY updated_at DESC, topic_id DESC LIMIT 200)'
+const SQL_SELECT_TOPIC_READ_POSITIONS: string =
+  'SELECT topic_id, floor, updated_at FROM collection_topic_read_positions ORDER BY updated_at DESC, topic_id DESC LIMIT 200'
+const SQL_SELECT_TOPIC_READ_FLOOR: string =
+  'SELECT floor FROM collection_topic_read_positions WHERE topic_id = ? LIMIT 1'
+const SQL_UPSERT_TOPIC_READ_POSITION: string =
+  'INSERT INTO collection_topic_read_positions (topic_id, floor, updated_at) VALUES (?, ?, ?) ON CONFLICT(topic_id) DO UPDATE SET floor = excluded.floor, updated_at = excluded.updated_at'
+const SQL_DELETE_TOPIC_READ_POSITION: string =
+  'DELETE FROM collection_topic_read_positions WHERE topic_id = ?'
+const SQL_PRUNE_TOPIC_READ_POSITIONS: string =
+  'DELETE FROM collection_topic_read_positions WHERE topic_id NOT IN (SELECT topic_id FROM collection_topic_read_positions ORDER BY updated_at DESC, topic_id DESC LIMIT 200)'
 
-const SQL_SELECT_TOPIC_READ_STATES: string = 'SELECT topic_id, touched_at, updated_at FROM collection_topic_read_states ORDER BY updated_at DESC, topic_id DESC LIMIT 500'
-const SQL_UPSERT_TOPIC_READ_STATE: string = 'INSERT OR REPLACE INTO collection_topic_read_states (topic_id, touched_at, updated_at) VALUES (?, ?, ?)'
-const SQL_PRUNE_TOPIC_READ_STATES: string = 'DELETE FROM collection_topic_read_states WHERE topic_id NOT IN (SELECT topic_id FROM collection_topic_read_states ORDER BY updated_at DESC, topic_id DESC LIMIT 500)'
+const SQL_SELECT_TOPIC_READ_STATES: string =
+  'SELECT topic_id, touched_at, updated_at FROM collection_topic_read_states ORDER BY updated_at DESC, topic_id DESC LIMIT 500'
+const SQL_UPSERT_TOPIC_READ_STATE: string =
+  'INSERT INTO collection_topic_read_states (topic_id, touched_at, updated_at) VALUES (?, ?, ?) ON CONFLICT(topic_id) DO UPDATE SET touched_at = excluded.touched_at, updated_at = excluded.updated_at'
+const SQL_PRUNE_TOPIC_READ_STATES: string =
+  'DELETE FROM collection_topic_read_states WHERE topic_id NOT IN (SELECT topic_id FROM collection_topic_read_states ORDER BY updated_at DESC, topic_id DESC LIMIT 500)'
 
 const SQL_CLEAR_SAVED_TOPICS: string = 'DELETE FROM collection_saved_topics'
 const SQL_CLEAR_SAVED_NODES: string = 'DELETE FROM collection_saved_nodes'
@@ -88,7 +110,10 @@ export class CollectionSettings {
     }
   }
 
-  static async saveTopic(context: common.UIAbilityContext, topic: V2exTopic): Promise<SavedTopic[]> {
+  static async saveTopic(
+    context: common.UIAbilityContext,
+    topic: V2exTopic,
+  ): Promise<SavedTopic[]> {
     const saved: SavedTopic = {
       id: topic.id,
       title: topic.title,
@@ -99,7 +124,7 @@ export class CollectionSettings {
       memberPro: topic.member.pro,
       created: topic.created,
       replies: topic.replies,
-      savedAt: Math.floor(Date.now() / 1000)
+      savedAt: Math.floor(Date.now() / 1000),
     }
     try {
       const store = await LocalDataStore.open(context)
@@ -115,7 +140,10 @@ export class CollectionSettings {
     }
   }
 
-  static async removeTopic(context: common.UIAbilityContext, topicId: number): Promise<SavedTopic[]> {
+  static async removeTopic(
+    context: common.UIAbilityContext,
+    topicId: number,
+  ): Promise<SavedTopic[]> {
     try {
       const store = await LocalDataStore.open(context)
       const args: relationalStore.ValueType[] = [topicId]
@@ -160,7 +188,7 @@ export class CollectionSettings {
       avatarMini: node.avatarMini,
       avatarNormal: node.avatarNormal,
       avatarLarge: node.avatarLarge,
-      savedAt: Math.floor(Date.now() / 1000)
+      savedAt: Math.floor(Date.now() / 1000),
     }
     if (!saved.title) {
       return await CollectionSettings.loadSavedNodes(context)
@@ -179,7 +207,10 @@ export class CollectionSettings {
     }
   }
 
-  static async removeNode(context: common.UIAbilityContext, nodeName: string): Promise<SavedNode[]> {
+  static async removeNode(
+    context: common.UIAbilityContext,
+    nodeName: string,
+  ): Promise<SavedNode[]> {
     try {
       const store = await LocalDataStore.open(context)
       const args: relationalStore.ValueType[] = [(nodeName || '').trim()]
@@ -194,7 +225,10 @@ export class CollectionSettings {
     }
   }
 
-  static async updateSavedNodeMetadata(context: common.UIAbilityContext, node: SavedNode): Promise<SavedNode[]> {
+  static async updateSavedNodeMetadata(
+    context: common.UIAbilityContext,
+    node: SavedNode,
+  ): Promise<SavedNode[]> {
     const nodes = await CollectionSettings.loadSavedNodes(context)
     let changed = false
     const next = nodes.map((item: SavedNode) => {
@@ -209,7 +243,7 @@ export class CollectionSettings {
         avatarMini: node.avatarMini || item.avatarMini,
         avatarNormal: node.avatarNormal || item.avatarNormal,
         avatarLarge: node.avatarLarge || item.avatarLarge,
-        savedAt: item.savedAt
+        savedAt: item.savedAt,
       }
     })
     if (changed) {
@@ -218,7 +252,10 @@ export class CollectionSettings {
     return next
   }
 
-  static async updateSavedNodesMetadata(context: common.UIAbilityContext, updates: SavedNode[]): Promise<SavedNode[]> {
+  static async updateSavedNodesMetadata(
+    context: common.UIAbilityContext,
+    updates: SavedNode[],
+  ): Promise<SavedNode[]> {
     const nodes = await CollectionSettings.loadSavedNodes(context)
     const updateByName: Record<string, SavedNode> = {}
     updates.forEach((node: SavedNode) => {
@@ -237,9 +274,10 @@ export class CollectionSettings {
         avatarMini: update.avatarMini || item.avatarMini,
         avatarNormal: update.avatarNormal || item.avatarNormal,
         avatarLarge: update.avatarLarge || item.avatarLarge,
-        savedAt: item.savedAt
+        savedAt: item.savedAt,
       }
-      changed = changed ||
+      changed =
+        changed ||
         nextNode.title !== item.title ||
         nextNode.topics !== item.topics ||
         nextNode.avatarMini !== item.avatarMini ||
@@ -277,7 +315,7 @@ export class CollectionSettings {
       const stats: LocalContentStats = {
         savedTopicCount: await CollectionSettings.countRows(store, SQL_COUNT_SAVED_TOPICS),
         savedNodeCount: await CollectionSettings.countRows(store, SQL_COUNT_SAVED_NODES),
-        viewedTopicCount: await CollectionSettings.countRows(store, SQL_COUNT_VIEWED_TOPICS)
+        viewedTopicCount: await CollectionSettings.countRows(store, SQL_COUNT_VIEWED_TOPICS),
       }
       LocalDataPublisher.publishLocalContentStats(stats)
       return stats
@@ -287,7 +325,10 @@ export class CollectionSettings {
     }
   }
 
-  static async recordViewedTopic(context: common.UIAbilityContext, topic: V2exTopic): Promise<ViewedTopic[]> {
+  static async recordViewedTopic(
+    context: common.UIAbilityContext,
+    topic: V2exTopic,
+  ): Promise<ViewedTopic[]> {
     const viewed: ViewedTopic = {
       id: topic.id,
       title: topic.title,
@@ -297,7 +338,7 @@ export class CollectionSettings {
       avatar: topic.member.avatar_normal || topic.member.avatar_large || topic.member.avatar_mini,
       memberPro: topic.member.pro,
       replies: topic.replies,
-      viewedAt: Math.floor(Date.now() / 1000)
+      viewedAt: Math.floor(Date.now() / 1000),
     }
     try {
       const store = await LocalDataStore.open(context)
@@ -310,7 +351,7 @@ export class CollectionSettings {
         viewed.avatar || '',
         viewed.memberPro || 0,
         viewed.replies || 0,
-        viewed.viewedAt
+        viewed.viewedAt,
       ]
       await store.executeSql(SQL_UPSERT_VIEWED_TOPIC, args)
       await store.executeSql(SQL_PRUNE_VIEWED_TOPICS)
@@ -324,7 +365,10 @@ export class CollectionSettings {
     }
   }
 
-  static async getTopicReadFloor(context: common.UIAbilityContext, topicId: number): Promise<number> {
+  static async getTopicReadFloor(
+    context: common.UIAbilityContext,
+    topicId: number,
+  ): Promise<number> {
     if (topicId <= 0) {
       return 0
     }
@@ -346,7 +390,11 @@ export class CollectionSettings {
     }
   }
 
-  static async saveTopicReadFloor(context: common.UIAbilityContext, topicId: number, floor: number): Promise<TopicReadPosition[]> {
+  static async saveTopicReadFloor(
+    context: common.UIAbilityContext,
+    topicId: number,
+    floor: number,
+  ): Promise<TopicReadPosition[]> {
     if (topicId <= 0) {
       return []
     }
@@ -369,7 +417,9 @@ export class CollectionSettings {
     }
   }
 
-  static async loadTopicReadPositions(context: common.UIAbilityContext): Promise<TopicReadPosition[]> {
+  static async loadTopicReadPositions(
+    context: common.UIAbilityContext,
+  ): Promise<TopicReadPosition[]> {
     try {
       const store = await LocalDataStore.open(context)
       const resultSet = await store.querySql(SQL_SELECT_TOPIC_READ_POSITIONS)
@@ -391,7 +441,11 @@ export class CollectionSettings {
     }
   }
 
-  static async markTopicRead(context: common.UIAbilityContext, topicId: number, touchedAt: number): Promise<TopicReadState[]> {
+  static async markTopicRead(
+    context: common.UIAbilityContext,
+    topicId: number,
+    touchedAt: number,
+  ): Promise<TopicReadState[]> {
     if (topicId <= 0) {
       return []
     }
@@ -401,7 +455,7 @@ export class CollectionSettings {
       const state: TopicReadState = {
         id: topicId,
         touchedAt: normalizedTouchedAt,
-        updatedAt: Math.floor(Date.now() / 1000)
+        updatedAt: Math.floor(Date.now() / 1000),
       }
       const args: relationalStore.ValueType[] = [state.id, state.touchedAt, state.updatedAt]
       await store.executeSql(SQL_UPSERT_TOPIC_READ_STATE, args)
@@ -436,22 +490,35 @@ export class CollectionSettings {
       await store.executeSql(SQL_CLEAR_TOPIC_READ_POSITIONS)
       await store.executeSql(SQL_CLEAR_TOPIC_READ_STATES)
       LocalDataPublisher.clearTopicReadStates()
-      LocalDataPublisher.publishLocalContentStats({ savedTopicCount: 0, savedNodeCount: 0, viewedTopicCount: 0 })
+      LocalDataPublisher.publishLocalContentStats({
+        savedTopicCount: 0,
+        savedNodeCount: 0,
+        viewedTopicCount: 0,
+      })
       LocalDataPublisher.touchLocalData()
       CollectionSettings.deleteLegacyCollectionKeysBestEffort(context, [
         KEY_SAVED_TOPICS,
         KEY_SAVED_NODES,
         KEY_VIEWED_TOPICS,
         KEY_TOPIC_READ_POSITIONS,
-        KEY_TOPIC_READ_STATES
+        KEY_TOPIC_READ_STATES,
       ])
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || AppStrings.text(AppStrings.R_COLLECTION_CLEAR_ALL_FAILED, 'Failed to clear local collection and reading records'))
+      throw new Error(
+        e.message ||
+          AppStrings.text(
+            AppStrings.R_COLLECTION_CLEAR_ALL_FAILED,
+            'Failed to clear local collection and reading records',
+          ),
+      )
     }
   }
 
-  static async restoreBackup(context: common.UIAbilityContext, section: BackupCollectionsSection): Promise<void> {
+  static async restoreBackup(
+    context: common.UIAbilityContext,
+    section: BackupCollectionsSection,
+  ): Promise<void> {
     try {
       const store = await LocalDataStore.open(context)
       await store.executeSql(SQL_CLEAR_SAVED_TOPICS)
@@ -490,7 +557,7 @@ export class CollectionSettings {
         KEY_SAVED_NODES,
         KEY_VIEWED_TOPICS,
         KEY_TOPIC_READ_POSITIONS,
-        KEY_TOPIC_READ_STATES
+        KEY_TOPIC_READ_STATES,
       ])
     } catch (error) {
       const e = error as Error
@@ -498,7 +565,10 @@ export class CollectionSettings {
     }
   }
 
-  private static async writeSavedNodes(context: common.UIAbilityContext, nodes: SavedNode[]): Promise<void> {
+  private static async writeSavedNodes(
+    context: common.UIAbilityContext,
+    nodes: SavedNode[],
+  ): Promise<void> {
     try {
       const store = await LocalDataStore.open(context)
       await store.executeSql(SQL_CLEAR_SAVED_NODES)
@@ -516,7 +586,10 @@ export class CollectionSettings {
     }
   }
 
-  private static async upsertSavedTopic(store: relationalStore.RdbStore, topic: SavedTopic): Promise<void> {
+  private static async upsertSavedTopic(
+    store: relationalStore.RdbStore,
+    topic: SavedTopic,
+  ): Promise<void> {
     const args: relationalStore.ValueType[] = [
       topic.id,
       topic.title,
@@ -527,12 +600,15 @@ export class CollectionSettings {
       topic.memberPro || 0,
       topic.created,
       topic.replies || 0,
-      topic.savedAt
+      topic.savedAt,
     ]
     await store.executeSql(SQL_UPSERT_SAVED_TOPIC, args)
   }
 
-  private static async upsertSavedNode(store: relationalStore.RdbStore, node: SavedNode): Promise<void> {
+  private static async upsertSavedNode(
+    store: relationalStore.RdbStore,
+    node: SavedNode,
+  ): Promise<void> {
     const name = (node.name || '').trim()
     const title = cleanNodeTitle(node.title || name, node.topics)
     if (!name || !title) {
@@ -545,12 +621,15 @@ export class CollectionSettings {
       node.avatarMini || '',
       node.avatarNormal || '',
       node.avatarLarge || '',
-      node.savedAt || Math.floor(Date.now() / 1000)
+      node.savedAt || Math.floor(Date.now() / 1000),
     ]
     await store.executeSql(SQL_UPSERT_SAVED_NODE, args)
   }
 
-  private static async upsertViewedTopic(store: relationalStore.RdbStore, topic: ViewedTopic): Promise<void> {
+  private static async upsertViewedTopic(
+    store: relationalStore.RdbStore,
+    topic: ViewedTopic,
+  ): Promise<void> {
     const args: relationalStore.ValueType[] = [
       topic.id,
       topic.title,
@@ -560,12 +639,15 @@ export class CollectionSettings {
       topic.avatar || '',
       topic.memberPro || 0,
       topic.replies || 0,
-      topic.viewedAt
+      topic.viewedAt,
     ]
     await store.executeSql(SQL_UPSERT_VIEWED_TOPIC, args)
   }
 
-  private static async upsertTopicReadPosition(store: relationalStore.RdbStore, position: TopicReadPosition): Promise<void> {
+  private static async upsertTopicReadPosition(
+    store: relationalStore.RdbStore,
+    position: TopicReadPosition,
+  ): Promise<void> {
     if (position.id <= 0 || position.floor <= 0) {
       return
     }
@@ -573,7 +655,10 @@ export class CollectionSettings {
     await store.executeSql(SQL_UPSERT_TOPIC_READ_POSITION, args)
   }
 
-  private static async upsertTopicReadState(store: relationalStore.RdbStore, state: TopicReadState): Promise<void> {
+  private static async upsertTopicReadState(
+    store: relationalStore.RdbStore,
+    state: TopicReadState,
+  ): Promise<void> {
     if (state.id <= 0 || state.touchedAt <= 0) {
       return
     }
@@ -605,7 +690,7 @@ export class CollectionSettings {
           memberPro: resultSet.getLong(memberProIndex),
           created: resultSet.getLong(createdIndex),
           replies: resultSet.getLong(repliesIndex),
-          savedAt: resultSet.getLong(savedAtIndex)
+          savedAt: resultSet.getLong(savedAtIndex),
         }
         if (topic.id > 0 && topic.title.length > 0) {
           topics.push(topic)
@@ -641,7 +726,7 @@ export class CollectionSettings {
           avatarMini: CollectionSettings.readOptionalString(resultSet, avatarMiniIndex),
           avatarNormal: CollectionSettings.readOptionalString(resultSet, avatarNormalIndex),
           avatarLarge: CollectionSettings.readOptionalString(resultSet, avatarLargeIndex),
-          savedAt: resultSet.getLong(savedAtIndex)
+          savedAt: resultSet.getLong(savedAtIndex),
         })
       }
     } finally {
@@ -672,7 +757,7 @@ export class CollectionSettings {
           avatar: CollectionSettings.readOptionalString(resultSet, avatarIndex),
           memberPro: resultSet.getLong(memberProIndex),
           replies: resultSet.getLong(repliesIndex),
-          viewedAt: resultSet.getLong(viewedAtIndex)
+          viewedAt: resultSet.getLong(viewedAtIndex),
         }
         if (topic.id > 0 && topic.title.length > 0) {
           topics.push(topic)
@@ -684,7 +769,9 @@ export class CollectionSettings {
     return topics
   }
 
-  private static readTopicReadPositionsResult(resultSet: relationalStore.ResultSet): TopicReadPosition[] {
+  private static readTopicReadPositionsResult(
+    resultSet: relationalStore.ResultSet,
+  ): TopicReadPosition[] {
     const positions: TopicReadPosition[] = []
     try {
       const idIndex = resultSet.getColumnIndex('topic_id')
@@ -694,7 +781,7 @@ export class CollectionSettings {
         const position: TopicReadPosition = {
           id: resultSet.getLong(idIndex),
           floor: resultSet.getLong(floorIndex),
-          updatedAt: resultSet.getLong(updatedAtIndex)
+          updatedAt: resultSet.getLong(updatedAtIndex),
         }
         if (position.id > 0 && position.floor > 0) {
           positions.push(position)
@@ -716,7 +803,7 @@ export class CollectionSettings {
         const state: TopicReadState = {
           id: resultSet.getLong(idIndex),
           touchedAt: resultSet.getLong(touchedAtIndex),
-          updatedAt: resultSet.getLong(updatedAtIndex)
+          updatedAt: resultSet.getLong(updatedAtIndex),
         }
         if (state.id > 0 && state.touchedAt > 0) {
           states.push(state)
@@ -729,15 +816,21 @@ export class CollectionSettings {
   }
 
   private static async publishSavedTopicCount(store: relationalStore.RdbStore): Promise<void> {
-    LocalDataPublisher.publishSavedTopicCount(await CollectionSettings.countRows(store, SQL_COUNT_SAVED_TOPICS))
+    LocalDataPublisher.publishSavedTopicCount(
+      await CollectionSettings.countRows(store, SQL_COUNT_SAVED_TOPICS),
+    )
   }
 
   private static async publishSavedNodeCount(store: relationalStore.RdbStore): Promise<void> {
-    LocalDataPublisher.publishSavedNodeCount(await CollectionSettings.countRows(store, SQL_COUNT_SAVED_NODES))
+    LocalDataPublisher.publishSavedNodeCount(
+      await CollectionSettings.countRows(store, SQL_COUNT_SAVED_NODES),
+    )
   }
 
   private static async publishViewedTopicCount(store: relationalStore.RdbStore): Promise<void> {
-    LocalDataPublisher.publishViewedTopicCount(await CollectionSettings.countRows(store, SQL_COUNT_VIEWED_TOPICS))
+    LocalDataPublisher.publishViewedTopicCount(
+      await CollectionSettings.countRows(store, SQL_COUNT_VIEWED_TOPICS),
+    )
   }
 
   private static async countRows(store: relationalStore.RdbStore, sql: string): Promise<number> {
@@ -752,7 +845,10 @@ export class CollectionSettings {
     }
   }
 
-  private static readOptionalString(resultSet: relationalStore.ResultSet, columnIndex: number): string | undefined {
+  private static readOptionalString(
+    resultSet: relationalStore.ResultSet,
+    columnIndex: number,
+  ): string | undefined {
     try {
       const value = resultSet.getString(columnIndex)
       return value && value.length > 0 ? value : undefined
@@ -761,7 +857,10 @@ export class CollectionSettings {
     }
   }
 
-  private static deleteLegacyCollectionKeysBestEffort(context: common.UIAbilityContext, keys: string[]): void {
+  private static deleteLegacyCollectionKeysBestEffort(
+    context: common.UIAbilityContext,
+    keys: string[],
+  ): void {
     withPreferencesStore<void>(context, STORE_NAME, (store) => {
       deleteKeysAndFlush(store, keys)
     }).catch(() => {})

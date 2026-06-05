@@ -11,9 +11,11 @@ import { LocalDataStore } from './LocalDataStore'
 // not contain ':'; keys may. Values are caller-encoded strings (typically JSON). Cross-device conflicts
 // resolve last-write-wins on updated_at.
 const SQL_GET: string = 'SELECT value FROM synced_kv WHERE kv_key = ?'
-const SQL_PUT: string = 'INSERT OR REPLACE INTO synced_kv (kv_key, value, updated_at) VALUES (?, ?, ?)'
+const SQL_PUT: string =
+  'INSERT INTO synced_kv (kv_key, value, updated_at) VALUES (?, ?, ?) ON CONFLICT(kv_key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at'
 const SQL_DELETE: string = 'DELETE FROM synced_kv WHERE kv_key = ?'
-const SQL_LIST_NAMESPACE: string = 'SELECT kv_key, value FROM synced_kv WHERE kv_key >= ? AND kv_key < ? ORDER BY kv_key ASC'
+const SQL_LIST_NAMESPACE: string =
+  'SELECT kv_key, value FROM synced_kv WHERE kv_key >= ? AND kv_key < ? ORDER BY kv_key ASC'
 
 export interface SyncedKvEntry {
   key: string
@@ -33,7 +35,11 @@ export class SyncedKv {
     value: string,
   ): Promise<void> {
     const store = await LocalDataStore.open(context)
-    const args: relationalStore.ValueType[] = [SyncedKv.composeKey(namespace, key), value, Date.now()]
+    const args: relationalStore.ValueType[] = [
+      SyncedKv.composeKey(namespace, key),
+      value,
+      Date.now(),
+    ]
     await store.executeSql(SQL_PUT, args)
   }
 
@@ -77,7 +83,10 @@ export class SyncedKv {
         const valueIndex = resultSet.getColumnIndex('value')
         while (resultSet.goToNextRow()) {
           const fullKey = resultSet.getString(keyIndex)
-          const entry: SyncedKvEntry = { key: fullKey.substring(prefix.length), value: resultSet.getString(valueIndex) }
+          const entry: SyncedKvEntry = {
+            key: fullKey.substring(prefix.length),
+            value: resultSet.getString(valueIndex),
+          }
           entries.push(entry)
         }
       } finally {

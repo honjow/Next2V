@@ -8,9 +8,12 @@ const STORE_NAME: string = STORE_NAME_SEARCH
 const KEY_HISTORY: string = 'searchHistory'
 const KEY_SOURCE_MODE: string = 'sourceMode'
 const MAX_HISTORY: number = 20
-const SQL_SELECT_HISTORY: string = 'SELECT query FROM search_history ORDER BY searched_at DESC LIMIT 20'
-const SQL_UPSERT_HISTORY: string = 'INSERT OR REPLACE INTO search_history (query, searched_at) VALUES (?, ?)'
-const SQL_PRUNE_HISTORY: string = 'DELETE FROM search_history WHERE query NOT IN (SELECT query FROM search_history ORDER BY searched_at DESC LIMIT 20)'
+const SQL_SELECT_HISTORY: string =
+  'SELECT query FROM search_history ORDER BY searched_at DESC LIMIT 20'
+const SQL_UPSERT_HISTORY: string =
+  'INSERT INTO search_history (query, searched_at) VALUES (?, ?) ON CONFLICT(query) DO UPDATE SET searched_at = excluded.searched_at'
+const SQL_PRUNE_HISTORY: string =
+  'DELETE FROM search_history WHERE query NOT IN (SELECT query FROM search_history ORDER BY searched_at DESC LIMIT 20)'
 const SQL_CLEAR_HISTORY: string = 'DELETE FROM search_history'
 
 export type SearchSourceMode = 'local' | 'localWithNodes' | 'remote' | 'externalWeb'
@@ -68,7 +71,10 @@ export class SearchSettings {
     }
   }
 
-  static async saveSourceMode(context: common.UIAbilityContext, mode: SearchSourceMode): Promise<SearchSourceMode> {
+  static async saveSourceMode(
+    context: common.UIAbilityContext,
+    mode: SearchSourceMode,
+  ): Promise<SearchSourceMode> {
     const next = SearchSettings.parseSourceMode(mode)
     try {
       return await withPreferencesStore<SearchSourceMode>(context, STORE_NAME, (store) => {

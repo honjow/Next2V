@@ -65,16 +65,36 @@ for (const contract of tableContracts) {
 }
 
 for (const snippet of [
-  'INSERT OR REPLACE INTO collection_saved_topics',
-  'INSERT OR REPLACE INTO collection_saved_nodes',
-  'INSERT OR REPLACE INTO collection_viewed_topics',
-  'INSERT OR REPLACE INTO collection_topic_read_positions',
-  'INSERT OR REPLACE INTO collection_topic_read_states',
+  'INSERT INTO collection_saved_topics',
+  'INSERT INTO collection_saved_nodes',
+  'INSERT INTO collection_viewed_topics',
+  'INSERT INTO collection_topic_read_positions',
+  'INSERT INTO collection_topic_read_states',
   'SELECT COUNT(*) AS count_value FROM collection_saved_topics',
   'SELECT COUNT(*) AS count_value FROM collection_saved_nodes',
   'SELECT COUNT(*) AS count_value FROM collection_viewed_topics',
 ]) {
   assert(collection.includes(snippet), `CollectionSettings missing SQL operation: ${snippet}`)
+}
+
+// These tables are device-cloud synced: `INSERT OR REPLACE` (= delete+insert) corrupts the cloud
+// change-log so rows never upload. They MUST upsert via `INSERT ... ON CONFLICT DO UPDATE`.
+for (const table of [
+  'collection_saved_topics',
+  'collection_saved_nodes',
+  'collection_viewed_topics',
+  'collection_topic_read_positions',
+  'collection_topic_read_states',
+]) {
+  assert(
+    !collection.includes(`INSERT OR REPLACE INTO ${table}`),
+    `${table} is cloud-synced: INSERT OR REPLACE breaks upload tracking — use INSERT ... ON CONFLICT DO UPDATE`,
+  )
+  assert(
+    collection.includes(`INSERT INTO ${table}`) &&
+      new RegExp(`INSERT INTO ${table}[\\s\\S]*?ON CONFLICT`).test(collection),
+    `${table} must upsert via INSERT ... ON CONFLICT DO UPDATE`,
+  )
 }
 
 for (const forbidden of [

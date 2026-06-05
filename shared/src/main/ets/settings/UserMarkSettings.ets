@@ -36,14 +36,21 @@ const STORE_NAME: string = STORE_NAME_COLLECTIONS
 const KEY_DISPLAY_LIMIT: string = 'userMarkDisplayLimit'
 const KEY_COMBINED_BADGE: string = 'userMarkCombinedBadge'
 
-const SQL_SELECT_LABELS: string = 'SELECT label_id, name, color, sort_order, created_at, updated_at FROM user_mark_labels ORDER BY sort_order ASC, updated_at DESC'
-const SQL_SELECT_ASSIGNMENTS: string = 'SELECT username_key, username, label_id, assigned_at, updated_at FROM user_mark_assignments ORDER BY username_key ASC, assigned_at ASC, label_id ASC'
-const SQL_SELECT_MAX_SORT_ORDER: string = 'SELECT MAX(sort_order) AS max_sort_order FROM user_mark_labels'
-const SQL_UPSERT_LABEL: string = 'INSERT OR REPLACE INTO user_mark_labels (label_id, name, color, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)'
-const SQL_UPSERT_ASSIGNMENT: string = 'INSERT OR REPLACE INTO user_mark_assignments (username_key, username, label_id, assigned_at, updated_at) VALUES (?, ?, ?, ?, ?)'
-const SQL_DELETE_ASSIGNMENT: string = 'DELETE FROM user_mark_assignments WHERE username_key = ? AND label_id = ?'
+const SQL_SELECT_LABELS: string =
+  'SELECT label_id, name, color, sort_order, created_at, updated_at FROM user_mark_labels ORDER BY sort_order ASC, updated_at DESC'
+const SQL_SELECT_ASSIGNMENTS: string =
+  'SELECT username_key, username, label_id, assigned_at, updated_at FROM user_mark_assignments ORDER BY username_key ASC, assigned_at ASC, label_id ASC'
+const SQL_SELECT_MAX_SORT_ORDER: string =
+  'SELECT MAX(sort_order) AS max_sort_order FROM user_mark_labels'
+const SQL_UPSERT_LABEL: string =
+  'INSERT INTO user_mark_labels (label_id, name, color, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(label_id) DO UPDATE SET name = excluded.name, color = excluded.color, sort_order = excluded.sort_order, created_at = excluded.created_at, updated_at = excluded.updated_at'
+const SQL_UPSERT_ASSIGNMENT: string =
+  'INSERT INTO user_mark_assignments (username_key, username, label_id, assigned_at, updated_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT(username_key, label_id) DO UPDATE SET username = excluded.username, assigned_at = excluded.assigned_at, updated_at = excluded.updated_at'
+const SQL_DELETE_ASSIGNMENT: string =
+  'DELETE FROM user_mark_assignments WHERE username_key = ? AND label_id = ?'
 const SQL_DELETE_LABEL: string = 'DELETE FROM user_mark_labels WHERE label_id = ?'
-const SQL_DELETE_ASSIGNMENTS_BY_LABEL: string = 'DELETE FROM user_mark_assignments WHERE label_id = ?'
+const SQL_DELETE_ASSIGNMENTS_BY_LABEL: string =
+  'DELETE FROM user_mark_assignments WHERE label_id = ?'
 const SQL_CLEAR_LABELS: string = 'DELETE FROM user_mark_labels'
 const SQL_CLEAR_ASSIGNMENTS: string = 'DELETE FROM user_mark_assignments'
 
@@ -56,7 +63,9 @@ export class UserMarkSettings {
   static async load(context: common.UIAbilityContext): Promise<UserMarkSnapshot> {
     const store = await LocalDataStore.open(context)
     const labels = UserMarkSettings.readLabelsResult(await store.querySql(SQL_SELECT_LABELS))
-    const assignments = UserMarkSettings.readAssignmentsResult(await store.querySql(SQL_SELECT_ASSIGNMENTS))
+    const assignments = UserMarkSettings.readAssignmentsResult(
+      await store.querySql(SQL_SELECT_ASSIGNMENTS),
+    )
     const displayLimit = await UserMarkSettings.loadDisplayLimit(context)
     const combinedBadge = await UserMarkSettings.loadCombinedBadge(context)
     const snapshot: UserMarkSnapshot = {
@@ -64,7 +73,7 @@ export class UserMarkSettings {
       assignments: assignments,
       displayLimit: displayLimit,
       combinedBadge: combinedBadge,
-      updatedAt: UserMarkSettings.snapshotUpdatedAt(labels, assignments)
+      updatedAt: UserMarkSettings.snapshotUpdatedAt(labels, assignments),
     }
     UserMarkSettings.apply(snapshot)
     return snapshot
@@ -84,7 +93,7 @@ export class UserMarkSettings {
     context: common.UIAbilityContext,
     username: string,
     name: string,
-    color: string
+    color: string,
   ): Promise<UserMarkSnapshot> {
     const cleanUsername = (username || '').trim()
     const usernameKey = UserMarkSettings.normalizeUsernameKey(cleanUsername)
@@ -104,7 +113,7 @@ export class UserMarkSettings {
         color: UserMarkSettings.normalizeColor(color),
         sortOrder: sortOrder,
         createdAt: now,
-        updatedAt: now
+        updatedAt: now,
       }
       await UserMarkSettings.upsertLabel(store, label)
     }
@@ -113,7 +122,7 @@ export class UserMarkSettings {
       username: cleanUsername,
       labelId: label.id,
       assignedAt: now,
-      updatedAt: now
+      updatedAt: now,
     })
     LocalDataPublisher.touchLocalData()
     return await UserMarkSettings.load(context)
@@ -122,7 +131,7 @@ export class UserMarkSettings {
   static async assignLabel(
     context: common.UIAbilityContext,
     username: string,
-    labelId: string
+    labelId: string,
   ): Promise<UserMarkSnapshot> {
     const cleanUsername = (username || '').trim()
     const usernameKey = UserMarkSettings.normalizeUsernameKey(cleanUsername)
@@ -137,7 +146,7 @@ export class UserMarkSettings {
       username: cleanUsername,
       labelId: cleanLabelId,
       assignedAt: now,
-      updatedAt: now
+      updatedAt: now,
     })
     LocalDataPublisher.touchLocalData()
     return await UserMarkSettings.load(context)
@@ -146,7 +155,7 @@ export class UserMarkSettings {
   static async unassignLabel(
     context: common.UIAbilityContext,
     username: string,
-    labelId: string
+    labelId: string,
   ): Promise<UserMarkSnapshot> {
     const usernameKey = UserMarkSettings.normalizeUsernameKey(username)
     const cleanLabelId = (labelId || '').trim()
@@ -160,7 +169,10 @@ export class UserMarkSettings {
     return await UserMarkSettings.load(context)
   }
 
-  static async deleteLabel(context: common.UIAbilityContext, labelId: string): Promise<UserMarkSnapshot> {
+  static async deleteLabel(
+    context: common.UIAbilityContext,
+    labelId: string,
+  ): Promise<UserMarkSnapshot> {
     const cleanLabelId = (labelId || '').trim()
     if (!cleanLabelId) {
       return await UserMarkSettings.load(context)
@@ -173,7 +185,10 @@ export class UserMarkSettings {
     return await UserMarkSettings.load(context)
   }
 
-  static async saveDisplayLimit(context: common.UIAbilityContext, value: number): Promise<UserMarkSnapshot> {
+  static async saveDisplayLimit(
+    context: common.UIAbilityContext,
+    value: number,
+  ): Promise<UserMarkSnapshot> {
     const next = UserMarkSettings.clampDisplayLimit(value)
     await withPreferencesStore<void>(context, STORE_NAME, (store) => {
       store.putSync(KEY_DISPLAY_LIMIT, next)
@@ -183,7 +198,10 @@ export class UserMarkSettings {
     return await UserMarkSettings.load(context)
   }
 
-  static async saveCombinedBadge(context: common.UIAbilityContext, value: boolean): Promise<UserMarkSnapshot> {
+  static async saveCombinedBadge(
+    context: common.UIAbilityContext,
+    value: boolean,
+  ): Promise<UserMarkSnapshot> {
     await withPreferencesStore<void>(context, STORE_NAME, (store) => {
       store.putSync(KEY_COMBINED_BADGE, value)
       store.flushSync()
@@ -192,7 +210,10 @@ export class UserMarkSettings {
     return await UserMarkSettings.load(context)
   }
 
-  static async restoreBackup(context: common.UIAbilityContext, section: BackupCollectionsSection): Promise<void> {
+  static async restoreBackup(
+    context: common.UIAbilityContext,
+    section: BackupCollectionsSection,
+  ): Promise<void> {
     const store = await LocalDataStore.open(context)
     await store.executeSql(SQL_CLEAR_ASSIGNMENTS)
     await store.executeSql(SQL_CLEAR_LABELS)
@@ -208,7 +229,12 @@ export class UserMarkSettings {
       }
     }
     await withPreferencesStore<void>(context, STORE_NAME, (prefs) => {
-      prefs.putSync(KEY_DISPLAY_LIMIT, UserMarkSettings.clampDisplayLimit(section.userMarkDisplayLimit || UserMarkSettings.DEFAULT_DISPLAY_LIMIT))
+      prefs.putSync(
+        KEY_DISPLAY_LIMIT,
+        UserMarkSettings.clampDisplayLimit(
+          section.userMarkDisplayLimit || UserMarkSettings.DEFAULT_DISPLAY_LIMIT,
+        ),
+      )
       prefs.putSync(KEY_COMBINED_BADGE, section.userMarkCombinedBadge === true)
       prefs.flushSync()
     })
@@ -230,7 +256,7 @@ export class UserMarkSettings {
       assignments: [],
       displayLimit: UserMarkSettings.DEFAULT_DISPLAY_LIMIT,
       combinedBadge: false,
-      updatedAt: Date.now()
+      updatedAt: Date.now(),
     }
     UserMarkSettings.apply(snapshot)
     LocalDataPublisher.touchLocalData()
@@ -306,7 +332,11 @@ export class UserMarkSettings {
     }
   }
 
-  static allLabelsForUsername(username: string, labelsJson: string, assignmentsJson: string): UserMarkLabel[] {
+  static allLabelsForUsername(
+    username: string,
+    labelsJson: string,
+    assignmentsJson: string,
+  ): UserMarkLabel[] {
     const usernameKey = UserMarkSettings.normalizeUsernameKey(username)
     if (!usernameKey) {
       return []
@@ -331,7 +361,7 @@ export class UserMarkSettings {
     username: string,
     labelsJson: string,
     assignmentsJson: string,
-    displayLimit: number
+    displayLimit: number,
   ): UserMarkLabel[] {
     const all = UserMarkSettings.allLabelsForUsername(username, labelsJson, assignmentsJson)
     const limit = UserMarkSettings.clampDisplayLimit(displayLimit)
@@ -342,13 +372,17 @@ export class UserMarkSettings {
     username: string,
     labelsJson: string,
     assignmentsJson: string,
-    displayLimit: number
+    displayLimit: number,
   ): number {
     const all = UserMarkSettings.allLabelsForUsername(username, labelsJson, assignmentsJson)
     return Math.max(0, all.length - UserMarkSettings.clampDisplayLimit(displayLimit))
   }
 
-  static isLabelAssignedToUsername(username: string, labelId: string, assignmentsJson: string): boolean {
+  static isLabelAssignedToUsername(
+    username: string,
+    labelId: string,
+    assignmentsJson: string,
+  ): boolean {
     const usernameKey = UserMarkSettings.normalizeUsernameKey(username)
     const cleanLabelId = (labelId || '').trim()
     if (!usernameKey || !cleanLabelId) {
@@ -383,7 +417,9 @@ export class UserMarkSettings {
       }
       if (typeof raw === 'string') {
         const parsed = Number.parseInt(raw, 10)
-        return UserMarkSettings.clampDisplayLimit(Number.isNaN(parsed) ? UserMarkSettings.DEFAULT_DISPLAY_LIMIT : parsed)
+        return UserMarkSettings.clampDisplayLimit(
+          Number.isNaN(parsed) ? UserMarkSettings.DEFAULT_DISPLAY_LIMIT : parsed,
+        )
       }
       return UserMarkSettings.DEFAULT_DISPLAY_LIMIT
     })
@@ -410,7 +446,10 @@ export class UserMarkSettings {
     if (Number.isNaN(next)) {
       return UserMarkSettings.DEFAULT_DISPLAY_LIMIT
     }
-    return Math.min(UserMarkSettings.MAX_DISPLAY_LIMIT, Math.max(UserMarkSettings.MIN_DISPLAY_LIMIT, next))
+    return Math.min(
+      UserMarkSettings.MAX_DISPLAY_LIMIT,
+      Math.max(UserMarkSettings.MIN_DISPLAY_LIMIT, next),
+    )
   }
 
   private static normalizeLabelName(name: string): string {
@@ -437,20 +476,22 @@ export class UserMarkSettings {
       color: UserMarkSettings.normalizeColor(label?.color || ''),
       sortOrder: Math.max(0, Math.floor(label?.sortOrder || 0)),
       createdAt: Math.max(0, Math.floor(label?.createdAt || now)),
-      updatedAt: Math.max(0, Math.floor(label?.updatedAt || now))
+      updatedAt: Math.max(0, Math.floor(label?.updatedAt || now)),
     }
   }
 
   private static normalizeBackupAssignment(assignment: UserMarkAssignment): UserMarkAssignment {
     const cleanUsername = (assignment?.username || '').trim()
-    const usernameKey = UserMarkSettings.normalizeUsernameKey(assignment?.usernameKey || cleanUsername)
+    const usernameKey = UserMarkSettings.normalizeUsernameKey(
+      assignment?.usernameKey || cleanUsername,
+    )
     const now = Date.now()
     return {
       usernameKey: usernameKey,
       username: cleanUsername || usernameKey,
       labelId: (assignment?.labelId || '').trim(),
       assignedAt: Math.max(0, Math.floor(assignment?.assignedAt || now)),
-      updatedAt: Math.max(0, Math.floor(assignment?.updatedAt || now))
+      updatedAt: Math.max(0, Math.floor(assignment?.updatedAt || now)),
     }
   }
 
@@ -470,7 +511,7 @@ export class UserMarkSettings {
           color: resultSet.getString(colorIndex),
           sortOrder: resultSet.getLong(sortIndex),
           createdAt: resultSet.getLong(createdIndex),
-          updatedAt: resultSet.getLong(updatedIndex)
+          updatedAt: resultSet.getLong(updatedIndex),
         }
         if (label.id && label.name) {
           labels.push(label)
@@ -496,7 +537,7 @@ export class UserMarkSettings {
           username: resultSet.getString(usernameIndex),
           labelId: resultSet.getString(labelIdIndex),
           assignedAt: resultSet.getLong(assignedAtIndex),
-          updatedAt: resultSet.getLong(updatedAtIndex)
+          updatedAt: resultSet.getLong(updatedAtIndex),
         }
         if (assignment.usernameKey && assignment.labelId) {
           assignments.push(assignment)
@@ -508,7 +549,10 @@ export class UserMarkSettings {
     return assignments
   }
 
-  private static async upsertLabel(store: relationalStore.RdbStore, label: UserMarkLabel): Promise<void> {
+  private static async upsertLabel(
+    store: relationalStore.RdbStore,
+    label: UserMarkLabel,
+  ): Promise<void> {
     const clean = UserMarkSettings.normalizeBackupLabel(label)
     if (!clean.id || !clean.name) {
       return
@@ -519,12 +563,15 @@ export class UserMarkSettings {
       clean.color,
       clean.sortOrder,
       clean.createdAt,
-      clean.updatedAt
+      clean.updatedAt,
     ]
     await store.executeSql(SQL_UPSERT_LABEL, args)
   }
 
-  private static async upsertAssignment(store: relationalStore.RdbStore, assignment: UserMarkAssignment): Promise<void> {
+  private static async upsertAssignment(
+    store: relationalStore.RdbStore,
+    assignment: UserMarkAssignment,
+  ): Promise<void> {
     const clean = UserMarkSettings.normalizeBackupAssignment(assignment)
     if (!clean.usernameKey || !clean.labelId) {
       return
@@ -534,7 +581,7 @@ export class UserMarkSettings {
       clean.username,
       clean.labelId,
       clean.assignedAt,
-      clean.updatedAt
+      clean.updatedAt,
     ]
     await store.executeSql(SQL_UPSERT_ASSIGNMENT, args)
   }
@@ -542,7 +589,10 @@ export class UserMarkSettings {
   private static async nextSortOrder(store: relationalStore.RdbStore): Promise<number> {
     const resultSet = await store.querySql(SQL_SELECT_MAX_SORT_ORDER)
     try {
-      if (!resultSet.goToNextRow() || resultSet.isColumnNull(resultSet.getColumnIndex('max_sort_order'))) {
+      if (
+        !resultSet.goToNextRow() ||
+        resultSet.isColumnNull(resultSet.getColumnIndex('max_sort_order'))
+      ) {
         return 1
       }
       return Math.max(1, resultSet.getLong(resultSet.getColumnIndex('max_sort_order')) + 1)
@@ -575,7 +625,10 @@ export class UserMarkSettings {
     return `user_mark_${now}_${sortOrder}`
   }
 
-  private static snapshotUpdatedAt(labels: UserMarkLabel[], assignments: UserMarkAssignment[]): number {
+  private static snapshotUpdatedAt(
+    labels: UserMarkLabel[],
+    assignments: UserMarkAssignment[],
+  ): number {
     let updatedAt = 0
     for (let i = 0; i < labels.length; i++) {
       updatedAt = Math.max(updatedAt, labels[i].updatedAt)
