@@ -17,7 +17,7 @@ const cachePayloadFiles = read('shared/src/main/ets/settings/CachePayloadFiles.e
 const cacheDeviceQaSeed = read('shared/src/main/ets/settings/CacheDeviceQaSeed.ets')
 
 for (const snippet of [
-  'export const LOCAL_DATA_SCHEMA_VERSION: number = 6',
+  'export const LOCAL_DATA_SCHEMA_VERSION: number = 7',
   'CREATE TABLE IF NOT EXISTS cache_entries',
   'cache_key TEXT PRIMARY KEY NOT NULL',
   'kind TEXT NOT NULL',
@@ -266,6 +266,8 @@ const allowedRelationalStoreUsers = new Set([
   'shared/src/main/ets/settings/CollectionSettings.ets',
   'shared/src/main/ets/settings/UserMarkSettings.ets',
   'shared/src/main/ets/cache/TopicDetailActionOverlaySettings.ets',
+  'shared/src/main/ets/storage/LocalDataCloudSync.ets',
+  'shared/src/main/ets/storage/SyncedKv.ets',
 ])
 const walkTextFiles = (dir) => {
   const results = []

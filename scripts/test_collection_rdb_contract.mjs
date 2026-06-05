@@ -16,43 +16,43 @@ const collection = read('shared/src/main/ets/settings/CollectionSettings.ets')
 const tableContracts = [
   {
     table: 'collection_saved_topics',
-    primary: 'topic_id INTEGER PRIMARY KEY NOT NULL',
+    primary: 'topic_id INTEGER PRIMARY KEY',
     index: 'CREATE INDEX IF NOT EXISTS idx_collection_saved_topics_saved_at ON collection_saved_topics (saved_at DESC, topic_id DESC)',
     order: 'ORDER BY saved_at DESC, topic_id DESC LIMIT 100',
     prune: 'DELETE FROM collection_saved_topics WHERE topic_id NOT IN (SELECT topic_id FROM collection_saved_topics ORDER BY saved_at DESC, topic_id DESC LIMIT 100)',
   },
   {
     table: 'collection_saved_nodes',
-    primary: 'node_name TEXT PRIMARY KEY NOT NULL',
+    primary: 'node_name TEXT PRIMARY KEY',
     index: 'CREATE INDEX IF NOT EXISTS idx_collection_saved_nodes_saved_at ON collection_saved_nodes (saved_at DESC, node_name ASC)',
     order: 'ORDER BY saved_at DESC, node_name ASC LIMIT 80',
     prune: 'DELETE FROM collection_saved_nodes WHERE node_name NOT IN (SELECT node_name FROM collection_saved_nodes ORDER BY saved_at DESC, node_name ASC LIMIT 80)',
   },
   {
     table: 'collection_viewed_topics',
-    primary: 'topic_id INTEGER PRIMARY KEY NOT NULL',
+    primary: 'topic_id INTEGER PRIMARY KEY',
     index: 'CREATE INDEX IF NOT EXISTS idx_collection_viewed_topics_viewed_at ON collection_viewed_topics (viewed_at DESC, topic_id DESC)',
     order: 'ORDER BY viewed_at DESC, topic_id DESC LIMIT 100',
     prune: 'DELETE FROM collection_viewed_topics WHERE topic_id NOT IN (SELECT topic_id FROM collection_viewed_topics ORDER BY viewed_at DESC, topic_id DESC LIMIT 100)',
   },
   {
     table: 'collection_topic_read_positions',
-    primary: 'topic_id INTEGER PRIMARY KEY NOT NULL',
+    primary: 'topic_id INTEGER PRIMARY KEY',
     index: 'CREATE INDEX IF NOT EXISTS idx_collection_topic_read_positions_updated_at ON collection_topic_read_positions (updated_at DESC, topic_id DESC)',
     order: 'ORDER BY updated_at DESC, topic_id DESC LIMIT 200',
     prune: 'DELETE FROM collection_topic_read_positions WHERE topic_id NOT IN (SELECT topic_id FROM collection_topic_read_positions ORDER BY updated_at DESC, topic_id DESC LIMIT 200)',
   },
   {
     table: 'collection_topic_read_states',
-    primary: 'topic_id INTEGER PRIMARY KEY NOT NULL',
+    primary: 'topic_id INTEGER PRIMARY KEY',
     index: 'CREATE INDEX IF NOT EXISTS idx_collection_topic_read_states_updated_at ON collection_topic_read_states (updated_at DESC, topic_id DESC)',
     order: 'ORDER BY updated_at DESC, topic_id DESC LIMIT 500',
     prune: 'DELETE FROM collection_topic_read_states WHERE topic_id NOT IN (SELECT topic_id FROM collection_topic_read_states ORDER BY updated_at DESC, topic_id DESC LIMIT 500)',
   },
 ]
 
-assert(localData.includes('export const LOCAL_DATA_SCHEMA_VERSION: number = 6'), 'LocalDataStore schema version must be 6')
-assert(localData.includes("VALUES (\\'schema_version\\', \\'6\\')"), 'schema_meta must store version 6')
+assert(localData.includes('export const LOCAL_DATA_SCHEMA_VERSION: number = 7'), 'LocalDataStore schema version must be 6')
+assert(localData.includes("VALUES (\\'schema_version\\', \\'7\\')"), 'schema_meta must store version 6')
 
 for (const contract of tableContracts) {
   assert(localData.includes(`CREATE TABLE IF NOT EXISTS ${contract.table}`), `${contract.table} table must be created by LocalDataStore`)

@@ -40,9 +40,9 @@ const localDataSettings = read('shared/src/main/ets/settings/LocalDataSettings.e
 const appStrings = read('shared/src/main/ets/i18n/AppStrings.ets')
 
 for (const snippet of [
-  'export const LOCAL_DATA_SCHEMA_VERSION: number = 6',
+  'export const LOCAL_DATA_SCHEMA_VERSION: number = 7',
   'CREATE TABLE IF NOT EXISTS user_mark_labels',
-  'label_id TEXT PRIMARY KEY NOT NULL',
+  'label_id TEXT PRIMARY KEY',
   'CREATE INDEX IF NOT EXISTS idx_user_mark_labels_sort',
   'CREATE TABLE IF NOT EXISTS user_mark_assignments',
   'PRIMARY KEY(username_key, label_id)',

@@ -9,7 +9,7 @@ export const LOCAL_DATA_DB_NAME: string = 'Next2V.db'
 // with the AGC 端云协同 container name 'Next2V'. Existing installs still hold a 'V2Next.db' file whose rows
 // must move into the new store once on startup — see LocalDataStore.runLegacyDbMigration.
 const LEGACY_LOCAL_DATA_DB_NAME: string = 'V2Next.db'
-export const LOCAL_DATA_SCHEMA_VERSION: number = 6
+export const LOCAL_DATA_SCHEMA_VERSION: number = 7
 export const LOCAL_DATA_SCHEMA_META_TABLE: string = 'schema_meta'
 
 export const SQL_CREATE_SCHEMA_META_TABLE: string = 'CREATE TABLE IF NOT EXISTS schema_meta (key TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL)'
@@ -22,29 +22,32 @@ export const SQL_CREATE_CACHE_ENTRIES_TABLE: string = 'CREATE TABLE IF NOT EXIST
 export const SQL_CREATE_CACHE_ENTRIES_KIND_INDEX: string = 'CREATE INDEX IF NOT EXISTS idx_cache_entries_kind ON cache_entries (kind)'
 export const SQL_CREATE_CACHE_ENTRIES_EXPIRES_AT_INDEX: string = 'CREATE INDEX IF NOT EXISTS idx_cache_entries_expires_at ON cache_entries (expires_at)'
 export const SQL_CREATE_CACHE_ENTRIES_ACCESSED_AT_INDEX: string = 'CREATE INDEX IF NOT EXISTS idx_cache_entries_accessed_at ON cache_entries (accessed_at)'
-export const SQL_CREATE_COLLECTION_SAVED_TOPICS_TABLE: string = 'CREATE TABLE IF NOT EXISTS collection_saved_topics (topic_id INTEGER PRIMARY KEY NOT NULL, title TEXT NOT NULL, node_name TEXT NOT NULL, node_title TEXT NOT NULL, username TEXT NOT NULL, avatar TEXT, member_pro INTEGER, created INTEGER NOT NULL, replies INTEGER, saved_at INTEGER NOT NULL)'
+// NOTE: collection_* columns omit NOT NULL — they are Phase-2 cloud-synced (端云协同) tables and the cloud
+// forbids NOT NULL on synced columns. Existing v6 stores still hold the old NOT NULL tables; the v6->v7
+// migration in open() rebuilds them. PRIMARY KEY is kept (it is the 端侧去重主键 / cloud dedup key).
+export const SQL_CREATE_COLLECTION_SAVED_TOPICS_TABLE: string = 'CREATE TABLE IF NOT EXISTS collection_saved_topics (topic_id INTEGER PRIMARY KEY, title TEXT, node_name TEXT, node_title TEXT, username TEXT, avatar TEXT, member_pro INTEGER, created INTEGER, replies INTEGER, saved_at INTEGER)'
 export const SQL_CREATE_COLLECTION_SAVED_TOPICS_INDEX: string = 'CREATE INDEX IF NOT EXISTS idx_collection_saved_topics_saved_at ON collection_saved_topics (saved_at DESC, topic_id DESC)'
-export const SQL_CREATE_COLLECTION_SAVED_NODES_TABLE: string = 'CREATE TABLE IF NOT EXISTS collection_saved_nodes (node_name TEXT PRIMARY KEY NOT NULL, title TEXT NOT NULL, topics INTEGER NOT NULL, avatar_mini TEXT, avatar_normal TEXT, avatar_large TEXT, saved_at INTEGER NOT NULL)'
+export const SQL_CREATE_COLLECTION_SAVED_NODES_TABLE: string = 'CREATE TABLE IF NOT EXISTS collection_saved_nodes (node_name TEXT PRIMARY KEY, title TEXT, topics INTEGER, avatar_mini TEXT, avatar_normal TEXT, avatar_large TEXT, saved_at INTEGER)'
 export const SQL_CREATE_COLLECTION_SAVED_NODES_INDEX: string = 'CREATE INDEX IF NOT EXISTS idx_collection_saved_nodes_saved_at ON collection_saved_nodes (saved_at DESC, node_name ASC)'
-export const SQL_CREATE_COLLECTION_VIEWED_TOPICS_TABLE: string = 'CREATE TABLE IF NOT EXISTS collection_viewed_topics (topic_id INTEGER PRIMARY KEY NOT NULL, title TEXT NOT NULL, node_name TEXT NOT NULL, node_title TEXT NOT NULL, username TEXT NOT NULL, avatar TEXT, member_pro INTEGER, replies INTEGER, viewed_at INTEGER NOT NULL)'
+export const SQL_CREATE_COLLECTION_VIEWED_TOPICS_TABLE: string = 'CREATE TABLE IF NOT EXISTS collection_viewed_topics (topic_id INTEGER PRIMARY KEY, title TEXT, node_name TEXT, node_title TEXT, username TEXT, avatar TEXT, member_pro INTEGER, replies INTEGER, viewed_at INTEGER)'
 export const SQL_CREATE_COLLECTION_VIEWED_TOPICS_INDEX: string = 'CREATE INDEX IF NOT EXISTS idx_collection_viewed_topics_viewed_at ON collection_viewed_topics (viewed_at DESC, topic_id DESC)'
-export const SQL_CREATE_COLLECTION_TOPIC_READ_POSITIONS_TABLE: string = 'CREATE TABLE IF NOT EXISTS collection_topic_read_positions (topic_id INTEGER PRIMARY KEY NOT NULL, floor INTEGER NOT NULL, updated_at INTEGER NOT NULL)'
+export const SQL_CREATE_COLLECTION_TOPIC_READ_POSITIONS_TABLE: string = 'CREATE TABLE IF NOT EXISTS collection_topic_read_positions (topic_id INTEGER PRIMARY KEY, floor INTEGER, updated_at INTEGER)'
 export const SQL_CREATE_COLLECTION_TOPIC_READ_POSITIONS_INDEX: string = 'CREATE INDEX IF NOT EXISTS idx_collection_topic_read_positions_updated_at ON collection_topic_read_positions (updated_at DESC, topic_id DESC)'
-export const SQL_CREATE_COLLECTION_TOPIC_READ_STATES_TABLE: string = 'CREATE TABLE IF NOT EXISTS collection_topic_read_states (topic_id INTEGER PRIMARY KEY NOT NULL, touched_at INTEGER NOT NULL, updated_at INTEGER NOT NULL)'
+export const SQL_CREATE_COLLECTION_TOPIC_READ_STATES_TABLE: string = 'CREATE TABLE IF NOT EXISTS collection_topic_read_states (topic_id INTEGER PRIMARY KEY, touched_at INTEGER, updated_at INTEGER)'
 export const SQL_CREATE_COLLECTION_TOPIC_READ_STATES_INDEX: string = 'CREATE INDEX IF NOT EXISTS idx_collection_topic_read_states_updated_at ON collection_topic_read_states (updated_at DESC, topic_id DESC)'
 export const SQL_CREATE_TOPIC_ACTION_OVERLAYS_TABLE: string = 'CREATE TABLE IF NOT EXISTS topic_action_overlays (owner_key TEXT NOT NULL, base_url TEXT NOT NULL, account_id TEXT NOT NULL, login_mode TEXT NOT NULL, topic_id INTEGER NOT NULL, favorite_known INTEGER NOT NULL DEFAULT 0, favorite_value INTEGER NOT NULL DEFAULT 0, topic_thank_known INTEGER NOT NULL DEFAULT 0, topic_thank_value INTEGER NOT NULL DEFAULT 0, reply_thanked_ids_json TEXT NOT NULL DEFAULT \'[]\', reply_thank_counts_json TEXT NOT NULL DEFAULT \'{}\', source TEXT NOT NULL, updated_at INTEGER NOT NULL, expires_at INTEGER NOT NULL, PRIMARY KEY(owner_key, topic_id))'
 export const SQL_CREATE_TOPIC_ACTION_OVERLAYS_EXPIRES_AT_INDEX: string = 'CREATE INDEX IF NOT EXISTS idx_topic_action_overlays_expires_at ON topic_action_overlays (expires_at)'
 export const SQL_CREATE_TOPIC_ACTION_OVERLAYS_ACCOUNT_INDEX: string = 'CREATE INDEX IF NOT EXISTS idx_topic_action_overlays_account ON topic_action_overlays (base_url, account_id)'
-export const SQL_CREATE_USER_MARK_LABELS_TABLE: string = 'CREATE TABLE IF NOT EXISTS user_mark_labels (label_id TEXT PRIMARY KEY NOT NULL, name TEXT NOT NULL, color TEXT NOT NULL, sort_order INTEGER NOT NULL, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL)'
+export const SQL_CREATE_USER_MARK_LABELS_TABLE: string = 'CREATE TABLE IF NOT EXISTS user_mark_labels (label_id TEXT PRIMARY KEY, name TEXT, color TEXT, sort_order INTEGER, created_at INTEGER, updated_at INTEGER)'
 export const SQL_CREATE_USER_MARK_LABELS_SORT_INDEX: string = 'CREATE INDEX IF NOT EXISTS idx_user_mark_labels_sort ON user_mark_labels (sort_order ASC, updated_at DESC)'
-export const SQL_CREATE_USER_MARK_ASSIGNMENTS_TABLE: string = 'CREATE TABLE IF NOT EXISTS user_mark_assignments (username_key TEXT NOT NULL, username TEXT NOT NULL, label_id TEXT NOT NULL, assigned_at INTEGER NOT NULL, updated_at INTEGER NOT NULL, PRIMARY KEY(username_key, label_id))'
+export const SQL_CREATE_USER_MARK_ASSIGNMENTS_TABLE: string = 'CREATE TABLE IF NOT EXISTS user_mark_assignments (username_key TEXT, username TEXT, label_id TEXT, assigned_at INTEGER, updated_at INTEGER, PRIMARY KEY(username_key, label_id))'
 export const SQL_CREATE_USER_MARK_ASSIGNMENTS_USERNAME_INDEX: string = 'CREATE INDEX IF NOT EXISTS idx_user_mark_assignments_username ON user_mark_assignments (username_key, assigned_at ASC)'
 export const SQL_CREATE_USER_MARK_ASSIGNMENTS_LABEL_INDEX: string = 'CREATE INDEX IF NOT EXISTS idx_user_mark_assignments_label ON user_mark_assignments (label_id)'
 // Generic cloud-syncable key-value "catch-all" for scattered small data (feature flags / small config),
 // so new misc data needs ZERO new local table + ZERO new AGC data type — just write a row. kv_key is
 // "<namespace>:<key>"; value is a JSON string; no NOT NULL (端云协同 forbids it on synced columns).
 export const SQL_CREATE_SYNCED_KV_TABLE: string = 'CREATE TABLE IF NOT EXISTS synced_kv (kv_key TEXT PRIMARY KEY, value TEXT, updated_at INTEGER)'
-export const SQL_UPSERT_SCHEMA_VERSION: string = 'INSERT OR REPLACE INTO schema_meta (key, value) VALUES (\'schema_version\', \'6\')'
+export const SQL_UPSERT_SCHEMA_VERSION: string = 'INSERT OR REPLACE INTO schema_meta (key, value) VALUES (\'schema_version\', \'7\')'
 
 // One-time legacy-store (V2Next.db -> Next2V.db) migration metadata. The breadcrumb is a schema_meta row
 // (not a static flag) because open() is re-entered by ~6 callers; only a persisted row makes the guard
@@ -75,6 +78,9 @@ const LOCAL_DATA_STORE_CONFIG: relationalStore.StoreConfig = {
 export class LocalDataStore {
   static async open(context: common.UIAbilityContext): Promise<relationalStore.RdbStore> {
     const store = await relationalStore.getRdbStore(context, LOCAL_DATA_STORE_CONFIG)
+    // 0 for a brand-new DB; the persisted schema version otherwise. Captured before the CREATE/UPSERT so
+    // the v6->v7 rebuild runs only for existing installs that still hold the old NOT NULL collection_* tables.
+    const previousVersion: number = store.version
     await store.execute(SQL_CREATE_SCHEMA_META_TABLE)
     await store.execute(SQL_CREATE_SEARCH_HISTORY_TABLE)
     await store.execute(SQL_CREATE_SEARCH_HISTORY_INDEX)
@@ -101,6 +107,12 @@ export class LocalDataStore {
     await store.execute(SQL_CREATE_USER_MARK_ASSIGNMENTS_USERNAME_INDEX)
     await store.execute(SQL_CREATE_USER_MARK_ASSIGNMENTS_LABEL_INDEX)
     await store.execute(SQL_CREATE_SYNCED_KV_TABLE)
+    // v6 -> v7: collection_* and user_mark_* dropped NOT NULL so they can be cloud-synced. Fresh installs
+    // get the no-NOT-NULL schema from the CREATEs above; existing v6 installs still hold the old NOT NULL
+    // tables (CREATE IF NOT EXISTS is a no-op on them), so rebuild each, preserving rows. Runs once.
+    if (previousVersion >= 1 && previousVersion < 7) {
+      await LocalDataStore.rebuildSyncableTablesWithoutNotNull(store)
+    }
     await store.execute(SQL_UPSERT_SCHEMA_VERSION)
     if (store.version !== LOCAL_DATA_SCHEMA_VERSION) {
       store.version = LOCAL_DATA_SCHEMA_VERSION
@@ -241,5 +253,49 @@ export class LocalDataStore {
       resultSet.close()
     }
     return names
+  }
+
+  // v6 -> v7: rebuild every cloud-synced collection_* / user_mark_* table without NOT NULL, preserving
+  // rows. Runs inside open() only for existing (<7) installs; serialized because the startup migration
+  // bootstrap is the first open() and bumps the version to 7 before any consumer opens the store.
+  private static async rebuildSyncableTablesWithoutNotNull(store: relationalStore.RdbStore): Promise<void> {
+    // All 7 table rebuilds commit atomically: a crash mid-rebuild rolls back to the original NOT NULL
+    // tables (data intact) and the next launch retries (version stays 6 until the UPSERT after this).
+    store.beginTransaction()
+    try {
+      await LocalDataStore.rebuildWithoutNotNull(store, SQL_CREATE_COLLECTION_SAVED_TOPICS_TABLE, 'collection_saved_topics', [SQL_CREATE_COLLECTION_SAVED_TOPICS_INDEX])
+      await LocalDataStore.rebuildWithoutNotNull(store, SQL_CREATE_COLLECTION_SAVED_NODES_TABLE, 'collection_saved_nodes', [SQL_CREATE_COLLECTION_SAVED_NODES_INDEX])
+      await LocalDataStore.rebuildWithoutNotNull(store, SQL_CREATE_COLLECTION_VIEWED_TOPICS_TABLE, 'collection_viewed_topics', [SQL_CREATE_COLLECTION_VIEWED_TOPICS_INDEX])
+      await LocalDataStore.rebuildWithoutNotNull(store, SQL_CREATE_COLLECTION_TOPIC_READ_POSITIONS_TABLE, 'collection_topic_read_positions', [SQL_CREATE_COLLECTION_TOPIC_READ_POSITIONS_INDEX])
+      await LocalDataStore.rebuildWithoutNotNull(store, SQL_CREATE_COLLECTION_TOPIC_READ_STATES_TABLE, 'collection_topic_read_states', [SQL_CREATE_COLLECTION_TOPIC_READ_STATES_INDEX])
+      await LocalDataStore.rebuildWithoutNotNull(store, SQL_CREATE_USER_MARK_LABELS_TABLE, 'user_mark_labels', [SQL_CREATE_USER_MARK_LABELS_SORT_INDEX])
+      await LocalDataStore.rebuildWithoutNotNull(store, SQL_CREATE_USER_MARK_ASSIGNMENTS_TABLE, 'user_mark_assignments', [
+        SQL_CREATE_USER_MARK_ASSIGNMENTS_USERNAME_INDEX,
+        SQL_CREATE_USER_MARK_ASSIGNMENTS_LABEL_INDEX,
+      ])
+      store.commit()
+    } catch (rebuildError) {
+      store.rollBack()
+      throw rebuildError as Error
+    }
+  }
+
+  // Generic create-new -> copy -> drop-old -> rename rebuild that strips column constraints (here NOT NULL).
+  // The temp table reuses the (no-NOT-NULL) CREATE with the table name suffixed _v7; SELECT * copies by
+  // matching column order (identical columns, only constraints differ). Indexes are recreated after rename.
+  private static async rebuildWithoutNotNull(
+    store: relationalStore.RdbStore,
+    createSql: string,
+    tableName: string,
+    indexSqls: string[],
+  ): Promise<void> {
+    const tmpTable: string = tableName + '_v7'
+    await store.execute(createSql.replace('IF NOT EXISTS ' + tableName, 'IF NOT EXISTS ' + tmpTable))
+    await store.execute('INSERT OR IGNORE INTO ' + tmpTable + ' SELECT * FROM ' + tableName)
+    await store.execute('DROP TABLE ' + tableName)
+    await store.execute('ALTER TABLE ' + tmpTable + ' RENAME TO ' + tableName)
+    for (const indexSql of indexSqls) {
+      await store.execute(indexSql)
+    }
   }
 }

@@ -31,7 +31,7 @@ assert.match(ownerText, /cross-account|v2ex\.com\/v2ex\.co|domain/i, 'owner reso
 assert.doesNotMatch(ownerText, /username\s*\+|\+\s*username/, 'private owner keys must not be username-only or username-concatenated')
 
 const overlayText = read(overlay)
-assert.match(localData, /LOCAL_DATA_SCHEMA_VERSION:\s*number\s*=\s*6/)
+assert.match(localData, /LOCAL_DATA_SCHEMA_VERSION:\s*number\s*=\s*7/)
 assert.match(localData, /topic_action_overlays/)
 assert.match(localData, /PRIMARY KEY\(owner_key, topic_id\)/)
 assert.match(localData, /idx_topic_action_overlays_account/)
