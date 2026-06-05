@@ -11,6 +11,9 @@ import { GroupedListSection } from './GroupedListSection'
 export struct UserMarkBadgeRow {
   @Param username: string = ''
   @Param fontSize: number = ThemeConstants.FONT_SIZE_TINY
+  @Param visibleLimit: number = 0
+  @Param showOverflow: boolean = true
+  @Param maxBadgeWidth: number = 92
   @Local private sheetVisible: boolean = false
   private marks: UserMarkState = connectUserMarks()
 
@@ -46,7 +49,7 @@ export struct UserMarkBadgeRow {
       .lineHeight(this.fontSize + 3)
       .maxLines(1)
       .textOverflow({ overflow: TextOverflow.Ellipsis })
-      .constraintSize({ maxWidth: 92 })
+      .constraintSize({ maxWidth: this.maxBadgeWidth })
       .padding({
         left: ThemeConstants.SPACE_XS + 2,
         right: ThemeConstants.SPACE_XS + 2,
@@ -81,6 +84,26 @@ export struct UserMarkBadgeRow {
   }
 
   @Builder
+  private SheetBadge(label: UserMarkLabel) {
+    Text(label.name)
+      .fontSize(ThemeConstants.FONT_SIZE_BODY)
+      .fontWeight(FontWeight.Medium)
+      .fontColor(UserMarkSettings.textColorForBackground(label.color))
+      .lineHeight(20)
+      .maxLines(1)
+      .textOverflow({ overflow: TextOverflow.Ellipsis })
+      .constraintSize({ maxWidth: 160 })
+      .padding({
+        left: ThemeConstants.SPACE_SM,
+        right: ThemeConstants.SPACE_SM,
+        top: 4,
+        bottom: 4
+      })
+      .borderRadius(ThemeConstants.RADIUS_SM)
+      .backgroundColor(label.color)
+  }
+
+  @Builder
   private AllMarksSheet() {
     AppModalScaffold({
       title: AppStrings.R_USER_MARK_SHEET_TITLE,
@@ -108,7 +131,7 @@ export struct UserMarkBadgeRow {
               ForEach(
                 this.allLabels(),
                 (label: UserMarkLabel) => {
-                  this.Badge(label)
+                  this.SheetBadge(label)
                 },
                 (label: UserMarkLabel) => label.id,
               )
@@ -131,7 +154,7 @@ export struct UserMarkBadgeRow {
       this.username,
       this.marks.labelsJson,
       this.marks.assignmentsJson,
-      this.marks.displayLimit,
+      this.effectiveDisplayLimit(),
     )
   }
 
@@ -140,11 +163,24 @@ export struct UserMarkBadgeRow {
   }
 
   private overflowCount(): number {
+    if (!this.showOverflow) {
+      return 0
+    }
     return UserMarkSettings.overflowCountForUsername(
       this.username,
       this.marks.labelsJson,
       this.marks.assignmentsJson,
-      this.marks.displayLimit,
+      this.effectiveDisplayLimit(),
     )
+  }
+
+  private effectiveDisplayLimit(): number {
+    if (this.visibleLimit > 0) {
+      return Math.max(
+        UserMarkSettings.MIN_DISPLAY_LIMIT,
+        Math.min(UserMarkSettings.MAX_DISPLAY_LIMIT, Math.floor(this.visibleLimit)),
+      )
+    }
+    return this.marks.displayLimit
   }
 }

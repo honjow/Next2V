@@ -221,7 +221,7 @@ export struct ReplyCard {
           isOp: this.isOp,
           isDuplicateThreadItem: this.isDuplicateThreadItem,
           isCompact: this.isCompact(),
-          isNarrow: this.isHeaderNarrow(),
+          isNarrow: this.isHeaderNarrow() || (this.embedded && this.isCompact()),
           isThanked: this.isThanked,
           isThankPending: this.isThankPending,
           onUserClick: this.onUserClick,

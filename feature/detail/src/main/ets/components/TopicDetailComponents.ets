@@ -5,6 +5,7 @@ import {
   ImageUtils,
   ThemeConstants,
   TimeAgo,
+  UserName,
   V2exReply,
   V2exTopic,
 } from 'shared'
@@ -33,15 +34,19 @@ export struct TopicDetailHeader {
               this.onUserClick()
             }
           })
-        Text(this.topic.member.username)
-          .fontSize(ThemeConstants.FONT_SIZE_META)
-          .fontWeight(FontWeight.Medium)
-          .fontColor($r('sys.color.font_primary'))
-          .onClick(() => {
+        UserName({
+          username: this.topic.member.username,
+          fontSize: ThemeConstants.FONT_SIZE_META,
+          fontWeight: FontWeight.Medium,
+          isPro: (this.topic.member.pro || 0) > 0,
+          markMaxWidth: 76,
+          onUserClick: () => {
             if (this.onUserClick) {
               this.onUserClick()
             }
-          })
+          },
+        })
+          .flexShrink(1)
         Text('·')
           .fontSize(ThemeConstants.FONT_SIZE_META)
           .fontColor($r('sys.color.font_secondary'))

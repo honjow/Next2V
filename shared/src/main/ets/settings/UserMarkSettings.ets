@@ -324,8 +324,11 @@ export class UserMarkSettings {
     const red = UserMarkSettings.parseHexByte(clean, 1)
     const green = UserMarkSettings.parseHexByte(clean, 3)
     const blue = UserMarkSettings.parseHexByte(clean, 5)
-    const luminance = red * 0.299 + green * 0.587 + blue * 0.114
-    return luminance > 150 ? '#1F2328' : '#FFFFFF'
+    const luminance =
+      0.2126 * UserMarkSettings.relativeColorChannel(red) +
+      0.7152 * UserMarkSettings.relativeColorChannel(green) +
+      0.0722 * UserMarkSettings.relativeColorChannel(blue)
+    return luminance > 0.62 ? '#1F2328' : '#FFFFFF'
   }
 
   private static async loadDisplayLimit(context: common.UIAbilityContext): Promise<number> {
@@ -530,5 +533,13 @@ export class UserMarkSettings {
   private static parseHexByte(value: string, start: number): number {
     const parsed = Number.parseInt(value.slice(start, start + 2), 16)
     return Number.isNaN(parsed) ? 0 : parsed
+  }
+
+  private static relativeColorChannel(value: number): number {
+    const channel = Math.max(0, Math.min(255, value)) / 255
+    if (channel <= 0.03928) {
+      return channel / 12.92
+    }
+    return Math.pow((channel + 0.055) / 1.055, 2.4)
   }
 }

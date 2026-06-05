@@ -24,6 +24,8 @@ const settings = read(settingsRel)
 const badges = read(badgesRel)
 const userName = read('shared/src/main/ets/components/UserName.ets')
 const replyHeader = read('shared/src/main/ets/components/reply/ReplyCardHeader.ets')
+const replyCard = read('shared/src/main/ets/components/ReplyCard.ets')
+const topicDetailComponents = read('feature/detail/src/main/ets/components/TopicDetailComponents.ets')
 const profileComponents = read('feature/user/src/main/ets/components/UserProfileComponents.ets')
 const profilePage = read('feature/user/src/main/ets/pages/UserProfilePage.ets')
 const appbar = read('shared/src/main/ets/state/UserProfileAppbarState.ets')
@@ -85,13 +87,23 @@ for (const snippet of [
   'defaultSheetOptions(SheetSize.MEDIUM',
   'UserMarkSettings.visibleLabelsForUsername',
   'UserMarkSettings.allLabelsForUsername',
+  'visibleLimit: number = 0',
+  'showOverflow: boolean = true',
+  'maxBadgeWidth: number = 92',
+  'private SheetBadge(label: UserMarkLabel)',
 ]) {
   assert(badges.includes(snippet), `UserMarkBadges missing display contract: ${snippet}`)
 }
 
-assert(userName.includes('UserMarkBadgeRow({ username: this.username })'), 'UserName must display mark badges beside usernames')
+assert(userName.includes('UserMarkBadgeRow({'), 'UserName must display mark badges beside usernames')
+assert(userName.includes('markVisibleLimit: number = 0'), 'UserName must pass compact mark limit settings')
 assert(replyHeader.includes("import { UserName } from '../UserName'"), 'ReplyCardHeader must reuse UserName for mark-aware reply authors')
+assert(replyHeader.includes('markVisibleLimit: this.isCompact ? 1 : 0'), 'ReplyCardHeader must compact user marks in compact replies')
+assert(replyHeader.includes('markShowOverflow: !this.isCompact'), 'ReplyCardHeader must hide overflow badge in compact replies')
+assert(replyCard.includes('this.isHeaderNarrow() || (this.embedded && this.isCompact())'), 'Embedded compact replies must use narrow header layout')
+assert(topicDetailComponents.includes('UserName({'), 'TopicDetailHeader must display mark-aware topic authors')
 assert(profileComponents.includes('UserMarkBadgeRow'), 'UserProfileCard must display marks beside the profile username')
+assert(settings.includes('relativeColorChannel'), 'UserMarkSettings must use relative luminance for badge text color')
 
 for (const snippet of [
   '@Local private userMarkSheetVisible',

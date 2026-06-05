@@ -7,6 +7,11 @@ export struct UserName {
   @Param fontSize: number = 14
   @Param fontWeight: FontWeight = FontWeight.Regular
   @Param isPro: boolean = false
+  @Param showUserMarks: boolean = true
+  @Param markFontSize: number = ThemeConstants.FONT_SIZE_TINY
+  @Param markVisibleLimit: number = 0
+  @Param markShowOverflow: boolean = true
+  @Param markMaxWidth: number = 92
   @Event onUserClick?: () => void
 
   build() {
@@ -36,7 +41,15 @@ export struct UserName {
           .border({ width: 1, color: '#1484CD', radius: 3 })
           .backgroundColor('#323A45')
       }
-      UserMarkBadgeRow({ username: this.username })
+      if (this.showUserMarks) {
+        UserMarkBadgeRow({
+          username: this.username,
+          fontSize: this.markFontSize,
+          visibleLimit: this.markVisibleLimit,
+          showOverflow: this.markShowOverflow,
+          maxBadgeWidth: this.markMaxWidth,
+        })
+      }
     }
     .alignItems(VerticalAlign.Center)
   }

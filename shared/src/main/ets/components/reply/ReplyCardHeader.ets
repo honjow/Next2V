@@ -38,6 +38,9 @@ export struct ReplyCardHeader {
       fontSize: ThemeConstants.FONT_SIZE_META,
       fontWeight: FontWeight.Medium,
       isPro: (this.reply.member.pro || 0) > 0,
+      markVisibleLimit: this.isCompact ? 1 : 0,
+      markShowOverflow: !this.isCompact,
+      markMaxWidth: this.isCompact ? 70 : 92,
       onUserClick: () => {
         if (this.onUserClick) {
           this.onUserClick(this.reply)
