@@ -2919,6 +2919,10 @@
     {
       "name": "daily_checkin_reward_toast",
       "value": "簽到成功，獲得 {0} 銅幣"
+    },
+    {
+      "name": "common_refresh_failed",
+      "value": "刷新失敗"
     }
   ]
 }

@@ -2919,6 +2919,10 @@
     {
       "name": "daily_checkin_reward_toast",
       "value": "Checked in! +{0} bronze"
+    },
+    {
+      "name": "common_refresh_failed",
+      "value": "Refresh failed"
     }
   ]
 }

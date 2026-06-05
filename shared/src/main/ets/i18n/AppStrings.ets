@@ -157,6 +157,7 @@ export class AppStrings {
   static readonly R_NAV_RELOAD: Resource = $r('app.string.nav_reload')
   static readonly R_NAV_SAVE_IMAGE: Resource = $r('app.string.nav_save_image')
   static readonly R_COMMON_LOAD_FAILED: Resource = $r('app.string.common_load_failed')
+  static readonly R_COMMON_REFRESH_FAILED: Resource = $r('app.string.common_refresh_failed')
   static readonly R_COMMON_RETRY: Resource = $r('app.string.common_retry')
   static readonly R_COMMON_CANCEL: Resource = $r('app.string.common_cancel')
   static readonly R_COMMON_CLEAR: Resource = $r('app.string.common_clear')

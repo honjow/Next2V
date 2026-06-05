@@ -2919,6 +2919,10 @@
     {
       "name": "daily_checkin_reward_toast",
       "value": "チェックイン完了、銅貨 +{0}"
+    },
+    {
+      "name": "common_refresh_failed",
+      "value": "更新に失敗しました"
     }
   ]
 }

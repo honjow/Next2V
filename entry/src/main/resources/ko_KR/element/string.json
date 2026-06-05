@@ -2919,6 +2919,10 @@
     {
       "name": "daily_checkin_reward_toast",
       "value": "출석 완료, 동전 +{0}"
+    },
+    {
+      "name": "common_refresh_failed",
+      "value": "새로고침 실패"
     }
   ]
 }

@@ -1,4 +1,4 @@
-import { V2exTopic, ApiService, translateApiError, CacheMergeCoordinator } from 'shared'
+import { V2exTopic, ApiService, translateApiError, CacheMergeCoordinator, RefreshFeedback } from 'shared'
 import type { TopicReadState } from 'shared'
 import { FeedDataSource } from '../model/FeedModels'
 import { vibrator } from '@kit.SensorServiceKit'
@@ -117,6 +117,9 @@ export class FeedViewModel {
       await this.saveCache(data)
     } catch (error) {
       this.errorMessage = translateApiError(error)
+      // A pull-to-refresh failure is otherwise silent once a list is on screen (the error view only
+      // shows when empty), so a 403 looks like a no-op — surface it as a toast.
+      RefreshFeedback.notifyRefreshError(this.itemCount > 0)
     } finally {
       this.isRefreshing = false
     }
@@ -140,6 +143,7 @@ export class FeedViewModel {
       await this.saveCache(data)
     } catch (error) {
       this.errorMessage = translateApiError(error)
+      RefreshFeedback.notifyRefreshError(this.itemCount > 0)
     } finally {
       this.isRefreshing = false
     }

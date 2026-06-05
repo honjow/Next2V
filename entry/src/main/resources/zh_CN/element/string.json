@@ -2919,6 +2919,10 @@
     {
       "name": "daily_checkin_reward_toast",
       "value": "签到成功，获得 {0} 铜币"
+    },
+    {
+      "name": "common_refresh_failed",
+      "value": "刷新失败"
     }
   ]
 }
