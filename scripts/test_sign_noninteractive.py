@@ -111,7 +111,7 @@ def main() -> int:
         raise AssertionError(
             f"sandbox HOME redirected HARMONY_DEBUG_DIR: {sandbox_env.get('HARMONY_DEBUG_DIR')} != {expected_dir}"
         )
-    expected_profile = f"{expected_dir}/profiles/com.next2v.app.p7b"
+    expected_profile = f"{expected_dir}/profiles/com.honjow.next2v.p7b"
     if sandbox_env.get("HARMONY_DEBUG_PROFILE") != expected_profile:
         raise AssertionError(
             f"sandbox HOME redirected HARMONY_DEBUG_PROFILE: {sandbox_env.get('HARMONY_DEBUG_PROFILE')} != {expected_profile}"

@@ -29,8 +29,8 @@ Raw HAP build (what CI runs, no signing):
 hvigorw assembleHap --mode module -p product=default -p buildMode=debug --no-daemon
 ```
 
-- **Bundle IDs differ by build type**: debug = `com.next2v.app`, release = `com.honjow.next2v`. `dev.sh` rewrites `AppScope/app.json5` per build and restores it on exit. QA/dev work targets the **dev bundle only** — do not install/launch/query the release bundle unless explicitly asked.
-- Signing material lives at `/home/gamer/.config/harmony/debug-signing` (`debug.p12`, debug cert, `profiles/com.next2v.app.p7b`). Never generate a Profile, open a browser, or call Huawei/AGC login to find it; set `NEXT2V_SIGN_NONINTERACTIVE=1` for non-interactive signing. Signing files are never committed.
+- **Single bundle ID `com.honjow.next2v` for both debug and release** (unified 2026-06-05; the old debug split `com.next2v.app` is retired). The debug build wears a distinct **slate icon** (`dev.sh` applies/restores the debug branding) but shares the release bundle name and is signed with the **same account-level debug key** (same private key/CSR as the release cert), so a debug build **installs over (overwrites) the installed release in place — no uninstall, no data loss**. `dev.sh` still swaps/restores the debug branding resources per build. QA installs/launches/queries `com.honjow.next2v`.
+- Signing material lives at `/home/gamer/.config/harmony/debug-signing` (`debug.p12`, debug cert, `profiles/com.honjow.next2v.p7b`). Never generate a Profile, open a browser, or call Huawei/AGC login to find it; set `NEXT2V_SIGN_NONINTERACTIVE=1` for non-interactive signing. Signing files are never committed.
 - `oh-package-lock.json5` and `build-profile.json5` signing config are not committed unless the change is intentional.
 
 ## Tests / Gates

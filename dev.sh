@@ -27,8 +27,8 @@ if [ -f "$PROJ/scripts/dev.env" ]; then
   source "$PROJ/scripts/dev.env"
 fi
 HDC=/home/gamer/devtool/ohos/command-line-tools/sdk/default/openharmony/toolchains/hdc
-BUNDLE=com.next2v.app
-DEBUG_BUNDLE=com.next2v.app
+BUNDLE=com.honjow.next2v
+DEBUG_BUNDLE=com.honjow.next2v
 RELEASE_BUNDLE=com.honjow.next2v
 
 keep_awake() {

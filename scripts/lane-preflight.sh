@@ -78,7 +78,7 @@ fi
 # 固定这些路径，防止 profile/sandbox HOME 改写签名/profile 查找位置。
 export V2NEXT_REAL_HOME="${V2NEXT_REAL_HOME:-/home/gamer}"
 export HARMONY_DEBUG_DIR="${V2NEXT_REAL_HOME}/.config/harmony/debug-signing"
-export HARMONY_DEBUG_PROFILE="${HARMONY_DEBUG_DIR}/profiles/com.next2v.app.p7b"
+export HARMONY_DEBUG_PROFILE="${HARMONY_DEBUG_DIR}/profiles/com.honjow.next2v.p7b"
 echo "lane-preflight: HOME=${HOME}; V2NEXT_REAL_HOME=${V2NEXT_REAL_HOME}; HARMONY_DEBUG_DIR=${HARMONY_DEBUG_DIR}" >> "$LANE_ART/preflight.log"
 
 # 2b) 强制非交互签名模式：本地物料缺失时 sign.py 必须带明确路径快速失败，

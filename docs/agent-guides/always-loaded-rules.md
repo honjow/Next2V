@@ -54,7 +54,7 @@ Avoid decorative comments that paraphrase identifiers or obvious control flow. I
 
 Signing/profile material lookup must be anchored to the real user home, not to a Kanban/profile worker's sandbox `HOME`. For V2Next the stable material root is `/home/gamer/.config/harmony/debug-signing` unless `V2NEXT_REAL_HOME` is explicitly changed for a real account-home migration.
 
-Before any agent or subagent builds, signs, installs, or device-tests a V2Next lane worktree under `/home/gamer/v2next-worktrees/`, run `scripts/lane-preflight.sh` from the main repo. The preflight must set `NEXT2V_SIGN_NONINTERACTIVE=1` and verify that `debug.p12`, the debug certificate, and `profiles/com.next2v.app.p7b` resolve under `/home/gamer/.config/harmony/debug-signing`.
+Before any agent or subagent builds, signs, installs, or device-tests a V2Next lane worktree under `/home/gamer/v2next-worktrees/`, run `scripts/lane-preflight.sh` from the main repo. The preflight must set `NEXT2V_SIGN_NONINTERACTIVE=1` and verify that `debug.p12`, the debug certificate, and `profiles/com.honjow.next2v.p7b` resolve under `/home/gamer/.config/harmony/debug-signing`.
 
 Workers must never generate a Profile, open a browser, call Huawei/AGC login, or rely on `Path.home()`, `${HOME}`, or `~` to find signing materials. If local materials are missing, the worker must fail fast with the exact missing path and mark the gate `BLOCKED`.
 
@@ -68,9 +68,9 @@ UI, interaction, navigation, and settings lanes require separate gates:
 
 Before any install or device control, verify hdc readiness with a real shell probe: `hdc tconn 192.168.50.237:12345`, wait about 2 seconds, then `hdc -t 192.168.50.237:12345 shell echo ok`. `Connect OK` or `list targets` showing `Connected` is not enough. If the probe does not print `ok`, record device QA as `BLOCKED`; do not loop reconnects or run `hdc tmode port ...` unless the user explicitly asks to repair connection mode.
 
-## Dev vs Release Bundle Boundary
+## Bundle
 
-V2Next QA only touches the dev bundle `com.next2v.app`. Do not install, query, launch, or modify the release bundle `com.honjow.next2v` unless the user explicitly authorizes it.
+V2Next debug and release share a single bundle `com.honjow.next2v` (unified 2026-06-05; old debug split `com.next2v.app` retired). The debug build (slate icon, debug-signed) overwrites the installed release in place via the shared account-level debug key, so QA installs/queries `com.honjow.next2v` directly.
 
 QA must verify the foreground bundle before treating any screen as evidence. Install/launch failure produces `BLOCKED`; do not present stale-app screens as PASS evidence.
 

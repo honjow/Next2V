@@ -30,7 +30,7 @@ HDC         = Path("/home/gamer/devtool/ohos/command-line-tools/sdk/default/open
 UNSIGNED_HAP = PROJ / "entry/build/default/outputs/default/entry-default-unsigned.hap"
 SIGNED_HAP  = PROJ / "entry/build/default/outputs/default/entry-default-signed.hap"
 
-BUNDLE_NAME = "com.next2v.app"
+BUNDLE_NAME = "com.honjow.next2v"
 
 
 def _required_env(key: str) -> str:

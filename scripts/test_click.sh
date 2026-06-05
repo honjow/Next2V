@@ -1,7 +1,7 @@
 #!/bin/bash
 # test_click.sh <label> <x> <y>
 # Returns 0 on success, 1 on failure, 2 on crash
-APP="com.next2v.app"
+APP="com.honjow.next2v"
 LABEL="$1"; X="$2"; Y="$3"
 
 PID_BEFORE=$(hdc shell "pidof $APP" 2>&1 | tr -d '\r\n')
