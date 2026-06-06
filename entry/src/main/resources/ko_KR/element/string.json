@@ -634,7 +634,7 @@
     },
     {
       "name": "reading_preview_body",
-      "value": "짧은 글, 링크, 코드도 토픽 상세와 비슷하게 함께 변합니다."
+      "value": "글, 링크, 코드가 토픽 상세처럼 함께 조정됩니다."
     },
     {
       "name": "reading_preview_quote",
@@ -1066,11 +1066,11 @@
     },
     {
       "name": "two_factor_relogin_required",
-      "value": "V2EX에서 2단계 인증이 필요합니다. 다시 로그인하세요"
+      "value": "V2EX 2단계 인증이 필요합니다. 다시 로그인하세요"
     },
     {
       "name": "two_factor_required",
-      "value": "V2EX에서 2단계 인증이 필요합니다"
+      "value": "V2EX 2단계 인증 필요"
     },
     {
       "name": "login_validation_failed",
@@ -1374,11 +1374,11 @@
     },
     {
       "name": "search_nodes_library_empty_hint",
-      "value": "노드 라이브러리와 팔로우 노드가 표시됩니다"
+      "value": "노드 라이브러리와 팔로우 노드를 표시합니다"
     },
     {
       "name": "search_followed_nodes_empty_hint",
-      "value": "팔로우 노드가 표시됩니다"
+      "value": "팔로우 노드를 표시합니다"
     },
     {
       "name": "search_no_nodes",
@@ -1506,7 +1506,7 @@
     },
     {
       "name": "login_form_refetched",
-      "value": "로그인 양식이 새로 고쳐졌습니다. 비밀번호를 다시 입력하세요."
+      "value": "로그인 양식이 새로고침되었습니다. 비밀번호를 다시 입력하세요."
     },
     {
       "name": "login_username_password_required",
@@ -1518,11 +1518,11 @@
     },
     {
       "name": "login_cookie_missing",
-      "value": "로그인 쿠키를 얻지 못했습니다. 로그인이 완료되었는지 확인하세요."
+      "value": "로그인 쿠키가 없습니다. 로그인 완료를 확인하세요."
     },
     {
       "name": "login_cookie_invalid",
-      "value": "쿠키 로그인 상태가 유효하지 않습니다. 로그인이 완료되었는지 확인하세요."
+      "value": "쿠키 로그인 상태가 유효하지 않습니다. 다시 로그인하세요."
     },
     {
       "name": "login_password_placeholder",
@@ -1562,7 +1562,7 @@
     },
     {
       "name": "two_factor_description",
-      "value": "2단계 인증을 마치면 계정에 접근할 수 있습니다."
+      "value": "인증 후 계정에 접근할 수 있습니다."
     },
     {
       "name": "two_factor_code_placeholder",
@@ -1766,11 +1766,11 @@
     },
     {
       "name": "reply_confirm_submit_sheet",
-      "value": "이 답글을 제출할까요?"
+      "value": "이 답글 제출?"
     },
     {
       "name": "reply_confirm_submit_page_format",
-      "value": "{0}에 답글을 남길까요?\n\n보통 copper coins 5개 이상을 쓰며 계정 상태가 바뀝니다."
+      "value": "{0}에 답글 작성?\n\n보통 copper coins 5개 이상을 쓰며 계정 상태가 바뀝니다."
     },
     {
       "name": "reply_current_topic",
@@ -1962,7 +1962,7 @@
     },
     {
       "name": "user_mark_display_limit_hint",
-      "value": "사용자 이름 옆에 표시할 개수"
+      "value": "사용자 이름 옆 표시 개수"
     },
     {
       "name": "user_mark_combined_badge",
@@ -1970,7 +1970,7 @@
     },
     {
       "name": "user_mark_combined_badge_hint",
-      "value": "여러 마크를 하나의 분할 배지로 표시"
+      "value": "여러 마크를 분할 배지로 표시"
     },
     {
       "name": "node_no_topics",
@@ -2106,7 +2106,7 @@
     },
     {
       "name": "api_error_parse_favorite_action_failed",
-      "value": "즐겨찾기 작업 파싱 실패, 다시 시도하세요"
+      "value": "즐겨찾기 작업 파싱 실패. 다시 시도하세요"
     },
     {
       "name": "api_error_parse_follow_action_failed",
@@ -2122,7 +2122,7 @@
     },
     {
       "name": "api_error_parse_reply_form_failed",
-      "value": "답글 양식 파싱 실패, 브라우저를 사용하세요"
+      "value": "답글 양식 파싱 실패. 브라우저를 사용하세요"
     },
     {
       "name": "api_error_submit_failed_detail",
@@ -2170,7 +2170,7 @@
     },
     {
       "name": "api_error_parse_topic_form_failed",
-      "value": "토픽 양식 파싱 실패, 브라우저를 사용하세요"
+      "value": "토픽 양식 파싱 실패. 브라우저를 사용하세요"
     },
     {
       "name": "api_error_missing_action_path",
@@ -2186,15 +2186,15 @@
     },
     {
       "name": "api_error_hot_topics_empty",
-      "value": "반환된 인기 토픽이 없습니다. 다시 시도하세요"
+      "value": "인기 토픽이 없습니다. 다시 시도하세요"
     },
     {
       "name": "api_error_recent_topics_empty",
-      "value": "반환된 최근 토픽이 없습니다. 다시 시도하세요"
+      "value": "최근 토픽이 없습니다. 다시 시도하세요"
     },
     {
       "name": "api_error_tab_topics_empty",
-      "value": "탭 \"{0}\"에서 토픽이 반환되지 않았습니다. 다시 시도하세요"
+      "value": "탭 \"{0}\"에 토픽이 없습니다. 다시 시도하세요"
     },
     {
       "name": "api_error_parse_login_page_failed",
@@ -2210,7 +2210,7 @@
     },
     {
       "name": "api_error_login_captcha_required",
-      "value": "V2EX 로그인에는 Captcha가 필요합니다. Web 로그인을 사용하세요"
+      "value": "V2EX 로그인에는 Captcha가 필요합니다. Web 로그인 사용"
     },
     {
       "name": "api_error_captcha_required",
@@ -2226,7 +2226,7 @@
     },
     {
       "name": "api_error_login_state_unconfirmed",
-      "value": "로그인 실패: 로그인 상태를 확인할 수 없습니다. Web 로그인을 사용하세요"
+      "value": "로그인 실패: 상태를 확인할 수 없습니다. Web 로그인 사용"
     },
     {
       "name": "api_error_login_session_missing",
@@ -2242,7 +2242,7 @@
     },
     {
       "name": "api_error_two_factor_failed",
-      "value": "2단계 인증 실패, 코드를 확인하거나 Web 로그인을 사용하세요"
+      "value": "2단계 인증 실패. 코드 확인 또는 Web 로그인 사용"
     },
     {
       "name": "api_error_token_missing",
@@ -2330,7 +2330,7 @@
     },
     {
       "name": "search_web_filter_hint",
-      "value": "Web 검색은 추가 앱 내 필터 없이 시스템 브라우저에서 열립니다."
+      "value": "Web 검색은 시스템 브라우저에서 열리며 앱 필터는 적용되지 않습니다."
     },
     {
       "name": "search_discover_nodes_placeholder",
@@ -2454,7 +2454,7 @@
     },
     {
       "name": "editor_confirm_post_format",
-      "value": "「{0}」에 《{1}》을(를) 게시할까요?\n\n보통 copper coins 20개 이상을 쓰며 계정 상태가 바뀝니다."
+      "value": "「{0}」에 《{1}》 게시?\n\n보통 copper coins 20개 이상을 쓰며 계정 상태가 바뀝니다."
     },
     {
       "name": "reply_composer_title",
@@ -2470,11 +2470,11 @@
     },
     {
       "name": "reply_clear_draft_message",
-      "value": "이 답글 초안을 지울까요?"
+      "value": "이 답글 초안 지우기?"
     },
     {
       "name": "reply_clear_draft_generic_message",
-      "value": "현재 초안을 지울까요?"
+      "value": "현재 초안 지우기?"
     },
     {
       "name": "reply_clear_failed",
@@ -2618,15 +2618,15 @@
     },
     {
       "name": "confirm_topic_thank_format",
-      "value": "《{0}》에 감사할까요?\n\n10 copper coins가 필요합니다."
+      "value": "《{0}》에 감사?\n\n10 copper coins가 필요합니다."
     },
     {
       "name": "confirm_topic_thank_nameless",
-      "value": "이 토픽에 감사할까요?\n\n10 copper coins가 필요합니다."
+      "value": "이 토픽에 감사?\n\n10 copper coins가 필요합니다."
     },
     {
       "name": "confirm_reply_thank_format",
-      "value": "{0}의 답글에 감사할까요?\n\n10 copper coins가 필요합니다."
+      "value": "{0}의 답글에 감사?\n\n10 copper coins가 필요합니다."
     },
     {
       "name": "parse_action_failed_format",
@@ -2846,7 +2846,7 @@
     },
     {
       "name": "backup_export_subtitle",
-      "value": "설정과 로컬 데이터를 백업합니다. 계정은 암호화해 포함할 수 있습니다."
+      "value": "설정과 로컬 데이터 백업. 계정은 암호화 가능."
     },
     {
       "name": "backup_import_subtitle",
@@ -2862,7 +2862,7 @@
     },
     {
       "name": "backup_import_confirm_message",
-      "value": "지원되는 설정, 초안, 나중에 읽기, 팔로우, 기록, 검색을 덮어씁니다. 로그인은 유지합니다. 계속할까요?"
+      "value": "설정, 초안, 나중에 읽기, 팔로우, 기록, 검색을 덮어씁니다. 로그인은 유지합니다. 계속할까요?"
     },
     {
       "name": "backup_exported",
@@ -2902,7 +2902,7 @@
     },
     {
       "name": "backup_include_user_info_hint",
-      "value": "계정과 로그인 정보를 포함하고 전체 백업을 암호화합니다."
+      "value": "계정과 로그인 정보를 포함하고 백업을 암호화합니다."
     },
     {
       "name": "backup_set_password",
@@ -2970,7 +2970,7 @@
     },
     {
       "name": "image_upload_error_forbidden",
-      "value": "업로드가 거부되었습니다. 자격 증명 또는 지역을 확인하세요"
+      "value": "업로드 거부됨. 자격 증명 또는 지역을 확인하세요"
     },
     {
       "name": "image_upload_error_server",
@@ -3130,7 +3130,7 @@
     },
     {
       "name": "cloud_sync_cloud_disabled",
-      "value": "먼저 시스템 설정의 클라우드에서 이 앱 동기화를 켜세요"
+      "value": "시스템 설정의 클라우드에서 이 앱 동기화를 켜세요"
     },
     {
       "name": "cloud_sync_open_cloud_space",

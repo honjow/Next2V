@@ -634,7 +634,7 @@
     },
     {
       "name": "reading_preview_body",
-      "value": "短文、リンク、コードもトピック詳細に近い比率で変わります。"
+      "value": "短文、リンク、コードも詳細画面に近く拡大縮小します。"
     },
     {
       "name": "reading_preview_quote",
@@ -1066,11 +1066,11 @@
     },
     {
       "name": "two_factor_relogin_required",
-      "value": "V2EX では二要素認証が必要です。再度サインインしてください"
+      "value": "V2EX で二要素認証が必要です。再ログインしてください"
     },
     {
       "name": "two_factor_required",
-      "value": "V2EX では二要素認証が必要です"
+      "value": "V2EX で二要素認証が必要です"
     },
     {
       "name": "login_validation_failed",
@@ -1374,11 +1374,11 @@
     },
     {
       "name": "search_nodes_library_empty_hint",
-      "value": "ノード庫とフォロー中ノードが表示されます"
+      "value": "ノード庫とフォロー中ノードを表示します"
     },
     {
       "name": "search_followed_nodes_empty_hint",
-      "value": "フォロー中ノードが表示されます"
+      "value": "フォロー中ノードを表示します"
     },
     {
       "name": "search_no_nodes",
@@ -1506,7 +1506,7 @@
     },
     {
       "name": "login_form_refetched",
-      "value": "ログインフォームを更新しました。パスワードをもう一度入力してください。"
+      "value": "ログインフォームを更新しました。パスワードを再入力してください。"
     },
     {
       "name": "login_username_password_required",
@@ -1518,11 +1518,11 @@
     },
     {
       "name": "login_cookie_missing",
-      "value": "ログイン Cookie を取得できませんでした。ログインが完了しているか確認してください。"
+      "value": "ログイン Cookie がありません。ログイン完了を確認してください。"
     },
     {
       "name": "login_cookie_invalid",
-      "value": "Cookie のログイン状態が無効です。ログインが完了しているか確認してください。"
+      "value": "Cookie ログインが無効です。再ログインしてください。"
     },
     {
       "name": "login_password_placeholder",
@@ -1546,11 +1546,11 @@
     },
     {
       "name": "login_form_not_loaded",
-      "value": "ログインフォームが読み込まれていません。もう一度お試しください"
+      "value": "ログインフォーム未読込です。再試行してください"
     },
     {
       "name": "login_captcha_form_not_loaded",
-      "value": "Captcha フォームが読み込まれていません。更新してください"
+      "value": "Captcha フォーム未読込です。更新してください"
     },
     {
       "name": "login_success",
@@ -1562,7 +1562,7 @@
     },
     {
       "name": "two_factor_description",
-      "value": "二要素認証を完了するとアカウントにアクセスできます。"
+      "value": "認証後にアカウントへアクセスできます。"
     },
     {
       "name": "two_factor_code_placeholder",
@@ -1766,11 +1766,11 @@
     },
     {
       "name": "reply_confirm_submit_sheet",
-      "value": "この返信を送信しますか？"
+      "value": "この返信を送信？"
     },
     {
       "name": "reply_confirm_submit_page_format",
-      "value": "{0} に返信しますか？\n\n通常 5 copper coins 以上を消費し、アカウント状態が変わります。"
+      "value": "{0} に返信？\n\n通常 5 copper coins 以上を消費し、アカウント状態が変わります。"
     },
     {
       "name": "reply_current_topic",
@@ -1962,7 +1962,7 @@
     },
     {
       "name": "user_mark_display_limit_hint",
-      "value": "ユーザー名の横に表示する数"
+      "value": "ユーザー名横に表示する数"
     },
     {
       "name": "user_mark_combined_badge",
@@ -1970,7 +1970,7 @@
     },
     {
       "name": "user_mark_combined_badge_hint",
-      "value": "複数のマークを1つの分割バッジにまとめます"
+      "value": "複数マークを分割バッジに統合"
     },
     {
       "name": "node_no_topics",
@@ -2106,7 +2106,7 @@
     },
     {
       "name": "api_error_parse_favorite_action_failed",
-      "value": "お気に入り操作の解析に失敗しました。再試行してください"
+      "value": "お気に入り操作を解析できません。再試行してください"
     },
     {
       "name": "api_error_parse_follow_action_failed",
@@ -2122,7 +2122,7 @@
     },
     {
       "name": "api_error_parse_reply_form_failed",
-      "value": "返信フォームの解析に失敗しました。ブラウザーを使用してください"
+      "value": "返信フォームを解析できません。ブラウザーを使用してください"
     },
     {
       "name": "api_error_submit_failed_detail",
@@ -2170,7 +2170,7 @@
     },
     {
       "name": "api_error_parse_topic_form_failed",
-      "value": "トピックフォームの解析に失敗しました。ブラウザーを使用してください"
+      "value": "トピックフォームを解析できません。ブラウザーを使用してください"
     },
     {
       "name": "api_error_missing_action_path",
@@ -2186,15 +2186,15 @@
     },
     {
       "name": "api_error_hot_topics_empty",
-      "value": "ホットトピックが返されませんでした。再試行してください"
+      "value": "ホットトピックは空です。再試行してください"
     },
     {
       "name": "api_error_recent_topics_empty",
-      "value": "最近のトピックが返されませんでした。再試行してください"
+      "value": "最近のトピックは空です。再試行してください"
     },
     {
       "name": "api_error_tab_topics_empty",
-      "value": "タブ「{0}」はトピックを返しませんでした。再試行してください"
+      "value": "タブ「{0}」にトピックがありません。再試行してください"
     },
     {
       "name": "api_error_parse_login_page_failed",
@@ -2210,7 +2210,7 @@
     },
     {
       "name": "api_error_login_captcha_required",
-      "value": "V2EX ログインには captcha が必要です。Web ログインを使用してください"
+      "value": "V2EX ログインに captcha が必要です。Web ログインを使用してください"
     },
     {
       "name": "api_error_captcha_required",
@@ -2226,7 +2226,7 @@
     },
     {
       "name": "api_error_login_state_unconfirmed",
-      "value": "ログインに失敗しました: ログイン状態を確認できません。Web ログインを使用してください"
+      "value": "ログイン失敗: 状態を確認できません。Web ログインを使用してください"
     },
     {
       "name": "api_error_login_session_missing",
@@ -2242,7 +2242,7 @@
     },
     {
       "name": "api_error_two_factor_failed",
-      "value": "二要素認証に失敗しました。コードを確認するか Web ログインを使用してください"
+      "value": "二要素認証失敗。コード確認または Web ログインを使用してください"
     },
     {
       "name": "api_error_token_missing",
@@ -2330,7 +2330,7 @@
     },
     {
       "name": "search_web_filter_hint",
-      "value": "Web 検索は追加のアプリ内フィルターなしでシステムブラウザーで開きます。"
+      "value": "Web 検索はシステムブラウザーで開き、アプリ内フィルターは無効です。"
     },
     {
       "name": "search_discover_nodes_placeholder",
@@ -2454,7 +2454,7 @@
     },
     {
       "name": "editor_confirm_post_format",
-      "value": "「{0}」に《{1}》を投稿しますか？\n\n通常 20 copper coins 以上を消費し、アカウント状態が変わります。"
+      "value": "「{0}」に《{1}》を投稿？\n\n通常 20 copper coins 以上を消費し、アカウント状態が変わります。"
     },
     {
       "name": "reply_composer_title",
@@ -2470,11 +2470,11 @@
     },
     {
       "name": "reply_clear_draft_message",
-      "value": "この返信下書きをクリアしますか？"
+      "value": "この返信下書きをクリア？"
     },
     {
       "name": "reply_clear_draft_generic_message",
-      "value": "現在の下書きをクリアしますか？"
+      "value": "現在の下書きをクリア？"
     },
     {
       "name": "reply_clear_failed",
@@ -2618,15 +2618,15 @@
     },
     {
       "name": "confirm_topic_thank_format",
-      "value": "《{0}》に感謝しますか？\n\nこれには 10 copper coins が必要です。"
+      "value": "《{0}》に感謝？\n\nこれには 10 copper coins が必要です。"
     },
     {
       "name": "confirm_topic_thank_nameless",
-      "value": "このトピックに感謝しますか？\n\nこれには 10 copper coins が必要です。"
+      "value": "このトピックに感謝？\n\nこれには 10 copper coins が必要です。"
     },
     {
       "name": "confirm_reply_thank_format",
-      "value": "{0} の返信に感謝しますか？\n\nこれには 10 copper coins が必要です。"
+      "value": "{0} の返信に感謝？\n\nこれには 10 copper coins が必要です。"
     },
     {
       "name": "parse_action_failed_format",
@@ -2846,7 +2846,7 @@
     },
     {
       "name": "backup_export_subtitle",
-      "value": "設定とローカルデータをバックアップ。アカウントは暗号化して含められます。"
+      "value": "設定とローカルデータをバックアップ。アカウントは暗号化可。"
     },
     {
       "name": "backup_import_subtitle",
@@ -2862,7 +2862,7 @@
     },
     {
       "name": "backup_import_confirm_message",
-      "value": "対応する設定、下書き、あとで読む、フォロー、履歴、検索を上書きします。ログインは残します。続行しますか？"
+      "value": "設定、下書き、あとで読む、フォロー、履歴、検索を上書きします。ログインは残します。続行？"
     },
     {
       "name": "backup_exported",
@@ -2902,7 +2902,7 @@
     },
     {
       "name": "backup_include_user_info_hint",
-      "value": "アカウントとログイン情報を含め、バックアップ全体を暗号化します。"
+      "value": "アカウントとログイン情報を含め、バックアップを暗号化します。"
     },
     {
       "name": "backup_set_password",
@@ -2970,7 +2970,7 @@
     },
     {
       "name": "image_upload_error_forbidden",
-      "value": "アップロードが拒否されました。認証情報または地域を確認してください"
+      "value": "アップロード拒否。認証情報または地域を確認してください"
     },
     {
       "name": "image_upload_error_server",
@@ -3130,7 +3130,7 @@
     },
     {
       "name": "cloud_sync_cloud_disabled",
-      "value": "先にシステム設定のクラウドで本アプリの同期を有効にしてください"
+      "value": "システム設定のクラウドで本アプリの同期を有効にしてください"
     },
     {
       "name": "cloud_sync_open_cloud_space",

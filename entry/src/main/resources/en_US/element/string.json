@@ -634,7 +634,7 @@
     },
     {
       "name": "reading_preview_body",
-      "value": "Short text, links, and code scale together like topic details."
+      "value": "Text, links, and code scale like topic details."
     },
     {
       "name": "reading_preview_quote",
@@ -1066,11 +1066,11 @@
     },
     {
       "name": "two_factor_relogin_required",
-      "value": "V2EX requires two-factor verification. Please sign in again"
+      "value": "V2EX needs two-factor verification. Sign in again"
     },
     {
       "name": "two_factor_required",
-      "value": "V2EX requires two-factor verification"
+      "value": "V2EX needs two-factor verification"
     },
     {
       "name": "login_validation_failed",
@@ -1506,7 +1506,7 @@
     },
     {
       "name": "login_form_refetched",
-      "value": "Login form refreshed. Please enter your password again."
+      "value": "Login form refreshed. Enter your password again."
     },
     {
       "name": "login_username_password_required",
@@ -1518,11 +1518,11 @@
     },
     {
       "name": "login_cookie_missing",
-      "value": "Login cookie was not obtained. Please confirm login is complete."
+      "value": "Login Cookie missing. Confirm sign-in is complete."
     },
     {
       "name": "login_cookie_invalid",
-      "value": "Cookie login state is invalid. Please confirm login is complete."
+      "value": "Cookie session invalid. Sign in again."
     },
     {
       "name": "login_password_placeholder",
@@ -1562,7 +1562,7 @@
     },
     {
       "name": "two_factor_description",
-      "value": "Complete two-factor verification to access account content."
+      "value": "Verify to continue accessing your account."
     },
     {
       "name": "two_factor_code_placeholder",
@@ -1970,7 +1970,7 @@
     },
     {
       "name": "user_mark_combined_badge_hint",
-      "value": "Combine marks into one segmented badge"
+      "value": "Show marks as one segmented badge"
     },
     {
       "name": "node_no_topics",
@@ -2106,7 +2106,7 @@
     },
     {
       "name": "api_error_parse_favorite_action_failed",
-      "value": "Failed to parse favorite action, please retry"
+      "value": "Could not parse favorite action. Retry."
     },
     {
       "name": "api_error_parse_follow_action_failed",
@@ -2122,7 +2122,7 @@
     },
     {
       "name": "api_error_parse_reply_form_failed",
-      "value": "Failed to parse reply form, please use a browser"
+      "value": "Could not parse reply form. Use a browser."
     },
     {
       "name": "api_error_submit_failed_detail",
@@ -2170,7 +2170,7 @@
     },
     {
       "name": "api_error_parse_topic_form_failed",
-      "value": "Failed to parse topic form, please use a browser"
+      "value": "Could not parse topic form. Use a browser."
     },
     {
       "name": "api_error_missing_action_path",
@@ -2186,15 +2186,15 @@
     },
     {
       "name": "api_error_hot_topics_empty",
-      "value": "No hot topics returned, please retry"
+      "value": "No hot topics. Retry later."
     },
     {
       "name": "api_error_recent_topics_empty",
-      "value": "No recent topics returned, please retry"
+      "value": "No recent topics. Retry later."
     },
     {
       "name": "api_error_tab_topics_empty",
-      "value": "Tab \"{0}\" returned no topics, please retry"
+      "value": "Tab \"{0}\" has no topics. Retry later."
     },
     {
       "name": "api_error_parse_login_page_failed",
@@ -2210,7 +2210,7 @@
     },
     {
       "name": "api_error_login_captcha_required",
-      "value": "V2EX login requires a captcha, please use web login"
+      "value": "V2EX login needs captcha. Use web login."
     },
     {
       "name": "api_error_captcha_required",
@@ -2226,7 +2226,7 @@
     },
     {
       "name": "api_error_login_state_unconfirmed",
-      "value": "Login failed: cannot confirm login state, please use web login"
+      "value": "Login failed: cannot confirm state. Use web login."
     },
     {
       "name": "api_error_login_session_missing",
@@ -2242,7 +2242,7 @@
     },
     {
       "name": "api_error_two_factor_failed",
-      "value": "Two-factor verification failed, check code or use web login"
+      "value": "Two-factor failed. Check code or use web login."
     },
     {
       "name": "api_error_token_missing",
@@ -2330,7 +2330,7 @@
     },
     {
       "name": "search_web_filter_hint",
-      "value": "Web search opens in the system browser without additional in-app filtering."
+      "value": "Web search opens in the system browser; app filters do not apply."
     },
     {
       "name": "search_discover_nodes_placeholder",
@@ -2846,7 +2846,7 @@
     },
     {
       "name": "backup_export_subtitle",
-      "value": "Back up settings and local data; optionally encrypt accounts."
+      "value": "Back up settings and local data; encrypt accounts if needed."
     },
     {
       "name": "backup_import_subtitle",
@@ -2862,7 +2862,7 @@
     },
     {
       "name": "backup_import_confirm_message",
-      "value": "Overwrite supported settings, drafts, read-later, follows, history, and search. Login stays. Continue?"
+      "value": "Overwrite settings, drafts, read-later, follows, history, and search. Login stays. Continue?"
     },
     {
       "name": "backup_exported",
@@ -2902,7 +2902,7 @@
     },
     {
       "name": "backup_include_user_info_hint",
-      "value": "Includes accounts and credentials; encrypts the whole backup."
+      "value": "Includes accounts and credentials, then encrypts the backup."
     },
     {
       "name": "backup_set_password",
@@ -3130,7 +3130,7 @@
     },
     {
       "name": "cloud_sync_cloud_disabled",
-      "value": "Enable this app under System Settings → Cloud first."
+      "value": "Enable this app in System Cloud first."
     },
     {
       "name": "cloud_sync_open_cloud_space",

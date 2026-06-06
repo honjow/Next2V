@@ -634,7 +634,7 @@
     },
     {
       "name": "reading_preview_body",
-      "value": "短句、連結與程式碼會一起變化，接近主題詳情效果。"
+      "value": "短句、連結和程式碼同步縮放，接近詳情頁。"
     },
     {
       "name": "reading_preview_quote",
@@ -1066,11 +1066,11 @@
     },
     {
       "name": "two_factor_relogin_required",
-      "value": "V2EX 需要完成兩步驟驗證，請重新登入"
+      "value": "V2EX 需兩步驟驗證，請重新登入"
     },
     {
       "name": "two_factor_required",
-      "value": "V2EX 需要完成兩步驟驗證"
+      "value": "V2EX 需兩步驟驗證"
     },
     {
       "name": "login_validation_failed",
@@ -1374,11 +1374,11 @@
     },
     {
       "name": "search_nodes_library_empty_hint",
-      "value": "節點庫和關注節點會顯示在這裡"
+      "value": "節點庫與關注節點顯示在這裡"
     },
     {
       "name": "search_followed_nodes_empty_hint",
-      "value": "關注節點會顯示在這裡"
+      "value": "關注節點顯示在這裡"
     },
     {
       "name": "search_no_nodes",
@@ -1506,7 +1506,7 @@
     },
     {
       "name": "login_form_refetched",
-      "value": "已重新取得登入表單，請重新輸入密碼"
+      "value": "已刷新登入表單，請重新輸入密碼"
     },
     {
       "name": "login_username_password_required",
@@ -1518,11 +1518,11 @@
     },
     {
       "name": "login_cookie_missing",
-      "value": "未取得登入 Cookie，請確認已完成登入"
+      "value": "未取得登入 Cookie，請確認已登入"
     },
     {
       "name": "login_cookie_invalid",
-      "value": "Cookie 登入狀態無效，請確認已完成登入"
+      "value": "Cookie 登入狀態無效，請重新登入"
     },
     {
       "name": "login_password_placeholder",
@@ -1546,11 +1546,11 @@
     },
     {
       "name": "login_form_not_loaded",
-      "value": "登入表單未載入完成，請稍後重試"
+      "value": "登入表單未載入，請稍後重試"
     },
     {
       "name": "login_captcha_form_not_loaded",
-      "value": "登入驗證碼表單未載入完成，請重新取得驗證碼"
+      "value": "驗證碼表單未載入，請重新取得"
     },
     {
       "name": "login_success",
@@ -1562,7 +1562,7 @@
     },
     {
       "name": "two_factor_description",
-      "value": "完成兩步驟驗證後可繼續存取帳號。"
+      "value": "驗證後可繼續存取帳號。"
     },
     {
       "name": "two_factor_code_placeholder",
@@ -1766,11 +1766,11 @@
     },
     {
       "name": "reply_confirm_submit_sheet",
-      "value": "確定提交這則回覆嗎？"
+      "value": "提交這則回覆？"
     },
     {
       "name": "reply_confirm_submit_page_format",
-      "value": "確定向 {0} 回覆？\n\n通常消耗至少 5 銅幣，並修改帳號狀態。"
+      "value": "向 {0} 回覆？\n\n通常消耗至少 5 銅幣，並修改帳號狀態。"
     },
     {
       "name": "reply_current_topic",
@@ -1962,7 +1962,7 @@
     },
     {
       "name": "user_mark_display_limit_hint",
-      "value": "使用者名稱旁顯示的標記數量"
+      "value": "使用者名稱旁顯示幾個標記"
     },
     {
       "name": "user_mark_combined_badge",
@@ -1970,7 +1970,7 @@
     },
     {
       "name": "user_mark_combined_badge_hint",
-      "value": "將多個標記合併為一個分段徽標"
+      "value": "將多個標記合成分段徽標"
     },
     {
       "name": "node_no_topics",
@@ -2106,7 +2106,7 @@
     },
     {
       "name": "api_error_parse_favorite_action_failed",
-      "value": "解析收藏操作失敗，請稍後重試"
+      "value": "收藏操作解析失敗，請稍後重試"
     },
     {
       "name": "api_error_parse_follow_action_failed",
@@ -2122,7 +2122,7 @@
     },
     {
       "name": "api_error_parse_reply_form_failed",
-      "value": "解析回覆表單失敗，請改用瀏覽器"
+      "value": "回覆表單解析失敗，請用瀏覽器"
     },
     {
       "name": "api_error_submit_failed_detail",
@@ -2170,7 +2170,7 @@
     },
     {
       "name": "api_error_parse_topic_form_failed",
-      "value": "解析發文表單失敗，請改用瀏覽器"
+      "value": "發文表單解析失敗，請用瀏覽器"
     },
     {
       "name": "api_error_missing_action_path",
@@ -2186,15 +2186,15 @@
     },
     {
       "name": "api_error_hot_topics_empty",
-      "value": "熱榜未取得主題，請稍後重試"
+      "value": "熱榜暫無主題，請稍後重試"
     },
     {
       "name": "api_error_recent_topics_empty",
-      "value": "最近更新未取得主題，請稍後重試"
+      "value": "最近更新暫無主題，請稍後重試"
     },
     {
       "name": "api_error_tab_topics_empty",
-      "value": "Tab「{0}」未取得主題，請稍後重試"
+      "value": "Tab「{0}」暫無主題，請稍後重試"
     },
     {
       "name": "api_error_parse_login_page_failed",
@@ -2210,7 +2210,7 @@
     },
     {
       "name": "api_error_login_captcha_required",
-      "value": "目前 V2EX 登入需要驗證碼，請改用網頁登入"
+      "value": "V2EX 登入需驗證碼，請用網頁登入"
     },
     {
       "name": "api_error_captcha_required",
@@ -2226,7 +2226,7 @@
     },
     {
       "name": "api_error_login_state_unconfirmed",
-      "value": "登入失敗：無法確認登入狀態，請改用網頁登入"
+      "value": "登入失敗：無法確認狀態，請用網頁登入"
     },
     {
       "name": "api_error_login_session_missing",
@@ -2242,7 +2242,7 @@
     },
     {
       "name": "api_error_two_factor_failed",
-      "value": "兩步驟驗證失敗，請檢查驗證碼或改用網頁登入"
+      "value": "兩步驟驗證失敗，請檢查驗證碼或用網頁登入"
     },
     {
       "name": "api_error_token_missing",
@@ -2330,7 +2330,7 @@
     },
     {
       "name": "search_web_filter_hint",
-      "value": "網頁搜尋會在系統瀏覽器中打開，不額外提供站內篩選。"
+      "value": "網頁搜尋打開系統瀏覽器，無法站內篩選。"
     },
     {
       "name": "search_discover_nodes_placeholder",
@@ -2454,7 +2454,7 @@
     },
     {
       "name": "editor_confirm_post_format",
-      "value": "確定在「{0}」發布《{1}》？\n\n通常消耗至少 20 銅幣，並修改帳號狀態。"
+      "value": "在「{0}」發布《{1}》？\n\n通常消耗至少 20 銅幣，並修改帳號狀態。"
     },
     {
       "name": "reply_composer_title",
@@ -2470,11 +2470,11 @@
     },
     {
       "name": "reply_clear_draft_message",
-      "value": "確定清空當前回覆草稿嗎？"
+      "value": "清空當前回覆草稿？"
     },
     {
       "name": "reply_clear_draft_generic_message",
-      "value": "確定清空當前草稿嗎？"
+      "value": "清空當前草稿？"
     },
     {
       "name": "reply_clear_failed",
@@ -2618,15 +2618,15 @@
     },
     {
       "name": "confirm_topic_thank_format",
-      "value": "確定感謝《{0}》嗎？\n\n將消耗 10 銅幣。"
+      "value": "感謝《{0}》？\n\n將消耗 10 銅幣。"
     },
     {
       "name": "confirm_topic_thank_nameless",
-      "value": "確定感謝該主題嗎？\n\n將消耗 10 銅幣。"
+      "value": "感謝該主題？\n\n將消耗 10 銅幣。"
     },
     {
       "name": "confirm_reply_thank_format",
-      "value": "確定感謝 {0} 的回覆嗎？\n\n將消耗 10 銅幣。"
+      "value": "感謝 {0} 的回覆？\n\n將消耗 10 銅幣。"
     },
     {
       "name": "parse_action_failed_format",
@@ -2846,7 +2846,7 @@
     },
     {
       "name": "backup_export_subtitle",
-      "value": "備份設定與本機資料；可加密包含帳號。"
+      "value": "備份設定和本機資料；可加密帳號。"
     },
     {
       "name": "backup_import_subtitle",
@@ -2862,7 +2862,7 @@
     },
     {
       "name": "backup_import_confirm_message",
-      "value": "將用備份覆蓋支援的設定、草稿、稍後讀、關注、歷史和搜尋；保留登入。繼續嗎？"
+      "value": "用備份覆蓋設定、草稿、稍後讀、關注、歷史和搜尋；保留登入。繼續嗎？"
     },
     {
       "name": "backup_exported",
@@ -2902,7 +2902,7 @@
     },
     {
       "name": "backup_include_user_info_hint",
-      "value": "包含帳號與登入憑證，並加密整個備份。"
+      "value": "包含帳號和登入憑證，並加密備份。"
     },
     {
       "name": "backup_set_password",
@@ -2970,7 +2970,7 @@
     },
     {
       "name": "image_upload_error_forbidden",
-      "value": "上傳被拒絕，請檢查憑證或所在地區"
+      "value": "上傳被拒，請檢查憑證或地區"
     },
     {
       "name": "image_upload_error_server",
@@ -3130,7 +3130,7 @@
     },
     {
       "name": "cloud_sync_cloud_disabled",
-      "value": "請先在系統雲空間開啟本應用同步"
+      "value": "請在系統雲空間開啟本應用同步"
     },
     {
       "name": "cloud_sync_open_cloud_space",
