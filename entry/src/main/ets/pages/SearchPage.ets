@@ -9,9 +9,8 @@ import {
   SectionHeader as SharedSectionHeader,
   ListDivider as SharedListDivider,
   EmptyState,
-  PullRefresh,
+  PullRefreshListScaffold,
   Sov2exService,
-  AppActionButton,
   type Sov2exOrderMode,
   type Sov2exSortMode,
   ThemeConstants,
@@ -20,8 +19,6 @@ import {
   type ViewedTopic,
   translateApiError,
   connectNavStack,
-  connectLayoutSafeArea,
-  LayoutSafeAreaState,
   connectSearchAction,
   SearchActionState,
   SearchQueryBus,
@@ -62,11 +59,9 @@ export struct SearchPage {
   @Local private viewedTopics: ViewedTopic[] = [];
   @Local private savedNodes: SavedNode[] = [];
   @Local private allNodes: V2exNode[] = [];
-  @Local private isNodeIndexLoading: boolean = false;
 
   @Local private cacheTopicLists: SearchTopicItem[] = [];
   @Local private cacheTopicDetails: SearchTopicItem[] = [];
-  @Local private isCacheLoading: boolean = false;
 
   @Local private history: string[] = [];
 
@@ -96,9 +91,6 @@ export struct SearchPage {
   // Set just before SearchPage writes actionState.keyword itself, so its own keyword monitor does not
   // re-handle the change as if it were a fresh title-bar edit (the monitor clears the flag on the next fire).
   private suppressKeywordMonitor: boolean = false;
-  // Window safe-area metrics (AppStorageV2 mirror; EntryAbility publishes V2-only).
-  // Read in build() (top padding / pull-refresh indicator), so this subscribes to layout changes.
-  private layout: LayoutSafeAreaState = connectLayoutSafeArea();
 
   private api: ApiService = new ApiService();
   private sov2ex: Sov2exService = new Sov2exService();
@@ -123,176 +115,153 @@ export struct SearchPage {
 
   build() {
     Stack({ alignContent: Alignment.Bottom }) {
-      Column({ space: ThemeConstants.SPACE_SM }) {
-        this.StatusLine()
-        Column() {
-          PullRefresh({
-            scroller: this.scroller,
-            indicatorTop: this.layout.topAvoidHeight + ThemeConstants.TITLE_BAR_HEIGHT,
-            threshold: this.PULL_REFRESH_THRESHOLD,
-            onRefresh: async () => {
-              await this.refreshSearchSurface()
-            },
-            onScrollEnableChange: (enabled: boolean) => {
-              this.listScrollEnabled = enabled
-            },
-          }) {
-            this.SearchResultSurface()
-          }
-        }.layoutWeight(1)
+      // Reuse the shared immersive list scaffold: it inserts the top/bottom safe-area spacers INSIDE the
+      // List (so content scrolls under the translucent title bar like every other sub-page) and exposes
+      // onReachEnd for scroll-triggered SOV2EX pagination. No hard top padding here — that would push the
+      // whole page below the bar and kill immersion.
+      PullRefreshListScaffold({
+        scroller: this.scroller,
+        refreshThreshold: this.PULL_REFRESH_THRESHOLD,
+        scrollEnabled: this.listScrollEnabled,
+        onRefresh: async () => {
+          await this.refreshSearchSurface()
+        },
+        onScrollEnableChange: (enabled: boolean) => {
+          this.listScrollEnabled = enabled
+        },
+        onReachEnd: () => {
+          this.executeRemoteSearch(false)
+        },
+      }) {
+        this.SearchContent()
       }
-      .padding({
-        left: ThemeConstants.SPACE_MD,
-        right: ThemeConstants.SPACE_MD,
-        top: this.layout.topAvoidHeight + ThemeConstants.TITLE_BAR_HEIGHT + ThemeConstants.SPACE_MD,
-      })
-      .width('100%')
-      .height('100%')
     }
     .width('100%')
     .height('100%')
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
   }
 
-  // Index-load + local-collection-load status. The query input itself is in the title bar now, so these
-  // transient hints (which used to sit under it) render as a thin line above the results instead.
-  @Builder StatusLine() {
-    if (this.loadingText() || this.errorMessage) {
-      Column({ space: ThemeConstants.SPACE_XS }) {
-        if (this.loadingText()) {
-          Text(this.loadingText())
-            .fontSize(ThemeConstants.FONT_SIZE_TINY)
-            .fontColor(ThemeConstants.BRAND_PRIMARY)
-        }
-        if (this.errorMessage) {
-          Text(this.errorMessage).fontSize(ThemeConstants.FONT_SIZE_CAPTION).fontColor(Color.Red)
-        }
+  // Emits the scaffold List's content rows (the scaffold wraps them between the safe-area spacers, so each
+  // top-level child here must be a ListItem). A local-collection-load error (rare) shows as the first row.
+  @Builder SearchContent() {
+    if (this.errorMessage) {
+      ListItem() {
+        Text(this.errorMessage)
+          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+          .fontColor(Color.Red)
+          .width('100%')
       }
-      .width('100%')
-      .alignItems(HorizontalAlign.Start)
     }
-  }
-
-  @Builder SearchResultSurface() {
     if (!this.keyword.trim()) {
       this.HistorySection()
     } else {
-      this.ResultList()
+      this.ResultSections()
     }
   }
 
   @Builder HistorySection() {
     if (SearchPageStateCoordinator.shouldShowHistory(this.keyword, this.history.length)) {
-      SearchHistoryStrip({
-        history: this.history,
-        clearAction: () => {
-          this.clearHistory()
-        },
-        selectAction: (q: string) => {
-          this.applyHistory(q)
-        },
-      })
+      ListItem() {
+        SearchHistoryStrip({
+          history: this.history,
+          clearAction: () => {
+            this.clearHistory()
+          },
+          selectAction: (q: string) => {
+            this.applyHistory(q)
+          },
+        })
+      }
     }
   }
 
-  @Builder ResultList() {
-    List({ space: ThemeConstants.SPACE_SM, scroller: this.scroller }) {
-      if (this.showTopicResults()) {
-        ListItem() {
-          Column() {
-            SharedSectionHeader({
-              title: `${this.topicSectionTitle()} ${this.topicResults.length}`,
+  @Builder ResultSections() {
+    if (this.showTopicResults()) {
+      ListItem() {
+        Column() {
+          SharedSectionHeader({
+            title: `${this.topicSectionTitle()} ${this.topicResults.length}`,
+          })
+          if (this.topicResults.length === 0) {
+            EmptyState({
+              message: this.keyword.trim()
+                ? this.emptyTopicHint()
+                : AppStrings.text(
+                    $r('app.string.search_enter_keyword_to_start'),
+                    'Enter keywords to start searching',
+                  ),
+              stateHeight: 96,
             })
-            if (this.topicResults.length === 0) {
-              EmptyState({
-                message: this.keyword.trim()
-                  ? this.emptyTopicHint()
-                  : AppStrings.text(
-                      $r('app.string.search_enter_keyword_to_start'),
-                      'Enter keywords to start searching',
-                    ),
-                stateHeight: 96,
-              })
-                .borderRadius(ThemeConstants.RADIUS_MD)
-                .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
-                .margin({ top: ThemeConstants.SPACE_XS })
-            }
-          }.width('100%')
-        }
-
-        ForEach(
-          this.topicResults.slice(0, 80),
-          (item: SearchTopicItem) => {
-            ListItem() {
-              SearchTopicRow({ item: item })
-            }
-            .onClick(() => {
-              let p: TopicDetailParams = { topicId: item.id }
-              this.stack.pushPathByName('TopicDetail', p as Object)
-            })
-          },
-          (item: SearchTopicItem) => `t:${item.id}`,
-        )
+              .borderRadius(ThemeConstants.RADIUS_MD)
+              .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+              .margin({ top: ThemeConstants.SPACE_XS })
+          }
+        }.width('100%')
       }
 
-      if (this.showTopicResults() && this.showNodeResults()) {
-        ListItem() {
-          SharedListDivider({ inset: 0 })
-        }
-      }
+      ForEach(
+        this.topicResults.slice(0, 80),
+        (item: SearchTopicItem) => {
+          ListItem() {
+            SearchTopicRow({ item: item })
+          }
+          .onClick(() => {
+            let p: TopicDetailParams = { topicId: item.id }
+            this.stack.pushPathByName('TopicDetail', p as Object)
+          })
+        },
+        (item: SearchTopicItem) => `t:${item.id}`,
+      )
+    }
 
-      if (this.showNodeResults()) {
-        ListItem() {
-          Column() {
-            SharedSectionHeader({
-              title: AppStrings.format(
-                AppStrings.text($r('app.string.search_node_results'), 'Node results {0}'),
-                [String(this.nodeResults.length)],
-              ),
-            })
-            if (this.nodeResults.length === 0) {
-              EmptyState({
-                message: this.keyword.trim()
-                  ? AppStrings.text($r('app.string.search_no_nodes'), 'No matching nodes')
-                  : this.emptyNodeHint(),
-                stateHeight: 96,
-              })
-                .borderRadius(ThemeConstants.RADIUS_MD)
-                .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
-                .margin({ top: ThemeConstants.SPACE_XS })
-            }
-          }.width('100%')
-        }
-
-        ForEach(
-          this.nodeResults.slice(0, 80),
-          (item: SearchNodeItem) => {
-            ListItem() {
-              SearchNodeRow({ item: item })
-            }
-            .onClick(() => {
-              let p: NodeTopicListParams = { nodeName: item.name, nodeTitle: item.title }
-              this.stack.pushPathByName('NodeTopicList', p as Object)
-            })
-          },
-          (item: SearchNodeItem) => `n:${item.name}`,
-        )
-      }
+    if (this.showTopicResults() && this.showNodeResults()) {
       ListItem() {
         SharedListDivider({ inset: 0 })
       }
+    }
 
-      this.RemoteSection()
+    if (this.showNodeResults()) {
       ListItem() {
         Column() {
-          Blank().height(this.layout.bottomAvoidHeight + ThemeConstants.SPACE_XL)
-        }
+          SharedSectionHeader({
+            title: AppStrings.format(
+              AppStrings.text($r('app.string.search_node_results'), 'Node results {0}'),
+              [String(this.nodeResults.length)],
+            ),
+          })
+          if (this.nodeResults.length === 0) {
+            EmptyState({
+              message: this.keyword.trim()
+                ? AppStrings.text($r('app.string.search_no_nodes'), 'No matching nodes')
+                : this.emptyNodeHint(),
+              stateHeight: 96,
+            })
+              .borderRadius(ThemeConstants.RADIUS_MD)
+              .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+              .margin({ top: ThemeConstants.SPACE_XS })
+          }
+        }.width('100%')
       }
+
+      ForEach(
+        this.nodeResults.slice(0, 80),
+        (item: SearchNodeItem) => {
+          ListItem() {
+            SearchNodeRow({ item: item })
+          }
+          .onClick(() => {
+            let p: NodeTopicListParams = { nodeName: item.name, nodeTitle: item.title }
+            this.stack.pushPathByName('NodeTopicList', p as Object)
+          })
+        },
+        (item: SearchNodeItem) => `n:${item.name}`,
+      )
     }
-    .enableScrollInteraction(this.listScrollEnabled)
-    .scrollBar(BarState.Off)
-    .width('100%')
-    .layoutWeight(1)
+    ListItem() {
+      SharedListDivider({ inset: 0 })
+    }
+
+    this.RemoteSection()
   }
 
   @Builder RemoteSection() {
@@ -330,21 +299,13 @@ export struct SearchPage {
       (item: RemoteTopicItem) => `r:${item.id}`,
     )
 
+    // Pagination is automatic via the scaffold's onReachEnd -> executeRemoteSearch(false); this is just the
+    // in-flight footer. Scrolling to the end fetches the next page — no manual "load more" tap.
     if (this.remoteLoading) {
       ListItem() {
         EmptyState({
           message: AppStrings.text($r('app.string.common_searching'), 'Searching'),
           stateHeight: 88,
-        })
-      }
-    } else if (this.remoteResults.length < this.remoteTotal) {
-      ListItem() {
-        AppActionButton({
-          label: $r('app.string.common_load_more'),
-          primary: false,
-          action: () => {
-            this.executeRemoteSearch(false)
-          },
         })
       }
     } else if (this.remoteResults.length === 0) {
@@ -426,7 +387,6 @@ export struct SearchPage {
 
   private loadCacheCollections(): void {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    this.isCacheLoading = true
     SearchLocalDataCoordinator.loadCacheCollections(context)
       .then((collections) => {
         this.cacheTopicLists = collections.cacheTopicLists
@@ -437,9 +397,6 @@ export struct SearchPage {
         this.cacheTopicLists = []
         this.cacheTopicDetails = []
       })
-      .finally(() => {
-        this.isCacheLoading = false
-      })
   }
 
   private loadNodeIndex(): void {
@@ -447,7 +404,6 @@ export struct SearchPage {
       this.applyFilter()
       return
     }
-    this.isNodeIndexLoading = true
     SearchLocalDataCoordinator.loadNodeIndex(this.api)
       .then((nodes: V2exNode[]) => {
         this.allNodes = nodes
@@ -455,9 +411,6 @@ export struct SearchPage {
       })
       .catch((_error: Error) => {
         this.allNodes = []
-      })
-      .finally(() => {
-        this.isNodeIndexLoading = false
       })
   }
 
@@ -579,13 +532,6 @@ export struct SearchPage {
     return SearchPageStateCoordinator.emptyTopicHint()
   }
 
-  private loadingText(): string {
-    if (!this.isCacheLoading && !this.isNodeIndexLoading) {
-      return ''
-    }
-    return SearchPageStateCoordinator.loadingSummary(this.isCacheLoading, this.isNodeIndexLoading)
-  }
-
   private emptyNodeHint(): string {
     return SearchPageStateCoordinator.emptyNodeHint()
   }
@@ -614,7 +560,13 @@ export struct SearchPage {
 
   private executeRemoteSearch(reset: boolean): void {
     const q = this.keyword.trim()
+    // canExecute already gates on a non-empty query + no in-flight request (remoteLoading), which doubles as
+    // the concurrency lock for the scaffold's onReachEnd. For pagination (reset === false) also stop once the
+    // last page is loaded, so reaching the end of a complete result set does not re-fetch.
     if (!RemoteSearchCoordinator.canExecute(q, this.remoteLoading)) {
+      return
+    }
+    if (!reset && this.remoteResults.length >= this.remoteTotal) {
       return
     }
     if (reset) {

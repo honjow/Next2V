@@ -63,16 +63,6 @@ export class SearchPageStateCoordinator {
     return AppStrings.text($r('app.string.search_no_topics'), 'No matching topics')
   }
 
-  static loadingSummary(isCacheLoading: boolean, isNodeIndexLoading: boolean): string {
-    if (isCacheLoading && isNodeIndexLoading) {
-      return AppStrings.text($r('app.string.search_index_loading'), 'Loading indexes')
-    }
-    if (isCacheLoading) {
-      return AppStrings.text($r('app.string.search_cache_loading'), 'Loading cache')
-    }
-    return AppStrings.text($r('app.string.search_nodes_loading'), 'Loading nodes')
-  }
-
   static emptyNodeHint(): string {
     return AppStrings.text(
       $r('app.string.search_nodes_library_empty_hint'),

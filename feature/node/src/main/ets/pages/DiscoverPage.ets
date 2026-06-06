@@ -43,7 +43,6 @@ export struct DiscoverPage {
   private layout: LayoutSafeAreaState = connectLayoutSafeArea();
   private readonly TBH: number = ThemeConstants.TITLE_BAR_HEIGHT;
   private readonly FLOAT_H: number = ThemeConstants.FLOAT_BAR_HEIGHT;
-  private readonly BBH: number = 48;
   private readonly GAP: number = ThemeConstants.SPACE_MD;
   private readonly PULL_REFRESH_THRESHOLD: number = 84;
   @Param scroller: Scroller = new Scroller();
@@ -97,7 +96,7 @@ export struct DiscoverPage {
       Column() {
         PullRefresh({
           scroller: this.scroller,
-          indicatorTop: this.layout.topAvoidHeight + this.TBH + this.BBH,
+          indicatorTop: this.layout.topAvoidHeight + this.TBH,
           threshold: this.PULL_REFRESH_THRESHOLD,
           onRefresh: async () => {
             await this.refreshDiscover()
@@ -271,7 +270,9 @@ export struct DiscoverPage {
   }
 
   private discoverTopPadding(): number {
-    return this.layout.topAvoidHeight + this.TBH + this.BBH
+    // The in-page search bar that used to sit under the title bar (a bottomBuilder) is gone, so content now
+    // starts right below the title bar — no leftover search-bar-height inset (that caused a blank gap).
+    return this.layout.topAvoidHeight + this.TBH
   }
 
   private topicSurfaceItems(): V2exTopic[] {
