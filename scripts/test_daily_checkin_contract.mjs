@@ -79,29 +79,27 @@ for (const loc of ['base', 'en_US', 'zh_CN', 'zh_HK', 'zh_TW', 'ja_JP', 'ko_KR']
   check(json.string.some((s) => s.name === 'daily_checkin_reward_toast'), `i18n: daily_checkin_reward_toast in ${loc}`)
 }
 
-// ── anti-bot bypass: the actual redeem runs inside a hidden ArkWeb runner ───────
-// V2EX guards /mission/daily/redeem with a TLS/JS fingerprint that a headless HTTP GET cannot pass
-// (verified on-device). The redeem must go through a real browser engine: load /mission/daily →
-// navigate the 领取 button's redeem?once= URL → read the reward off /balance.
-const runner = read('entry/src/main/ets/components/DailyCheckinWebRunner.ets')
-check(runner.includes('/mission/daily'), 'web runner loads /mission/daily')
-check(/redeem/.test(runner) && /once=/.test(runner), 'web runner navigates the redeem ?once= URL (real browser nav)')
-check(runner.includes('/balance'), 'web runner reads /balance for the reward')
-check(runner.includes('每日登录') && /j\s*\+\s*1\s*<\s*ds\.length/.test(runner) && !runner.includes('ds[2]'),
-  'web runner reads the reward as the cell after 每日登录 (position-independent, not a hardcoded ds[2])')
-
-// ── auto check-in hands the redeem off to the web runner (no blocked HTTP redeem) ──
-check(/requestWebRedeem/.test(auto) && /connectWebCheckinRunner/.test(auto),
-  'auto check-in requests the hidden web runner instead of an HTTP redeem')
-check(/handleWebResult/.test(auto), 'auto check-in exposes handleWebResult for the runner callback')
-check(!/redeemDailyMissionWithCookie/.test(auto),
-  'auto check-in no longer calls the anti-bot-blocked HTTP redeem')
-const runnerState = read('shared/src/main/ets/state/WebCheckinRunnerState.ets')
-check(/@Trace\s+requestId/.test(runnerState) && /@Trace\s+baseUrl/.test(runnerState),
-  'WebCheckinRunnerState command bus carries requestId + baseUrl')
+// ── redeem goes over plain HTTP; the hidden ArkWeb runner was removed ────────────
+// The hidden-WebView runner was over-engineering: V2EX's "请用一个干净安装的浏览器重试" gate is an
+// intermittent anti-abuse wall that hits an HTTP GET and a real ArkWeb navigation alike (verified
+// on-device), not a permanent fingerprint block — so all three surfaces redeem over plain HTTP like the
+// rest of the V2EX client ecosystem, and the day breadcrumb is persisted only on a confirmed claim so a
+// walled attempt retries on the next app open instead of burning the whole day.
+check(/redeemDailyMissionWithCookie/.test(auto), 'auto check-in redeems over HTTP (redeemDailyMissionWithCookie)')
+check(/const claimed\s*=\s*!redeemed\.mission\.canRedeem/.test(auto),
+  'auto check-in gates success on a confirmed claim (claimed = !canRedeem)')
+check(/saveLastSuccessDate/.test(auto), 'auto check-in persists the success breadcrumb on a confirmed claim')
+check(!/requestWebRedeem/.test(auto) && !/connectWebCheckinRunner/.test(auto) && !/handleWebResult/.test(auto),
+  'auto check-in no longer uses the hidden web runner')
+check(/redeemDailyMissionWithCookie/.test(acc), 'manual check-in (AccountPage) redeems over HTTP')
+check(/redeemDailyMissionWithCookie/.test(detail), 'manual check-in (AccountDetailPage) redeems over HTTP')
+check(!fs.existsSync(path.join(REPO, 'entry/src/main/ets/components/DailyCheckinWebRunner.ets')),
+  'hidden DailyCheckinWebRunner component removed')
+check(!fs.existsSync(path.join(REPO, 'shared/src/main/ets/state/WebCheckinRunnerState.ets')),
+  'WebCheckinRunnerState command bus removed')
 const index = read('entry/src/main/ets/pages/Index.ets')
-check(/DailyCheckinWebRunner\(/.test(index) && /AutoDailyCheckinService\.handleWebResult/.test(index),
-  'Index mounts the global runner and routes its result to AutoDailyCheckinService.handleWebResult')
+check(!/DailyCheckinWebRunner/.test(index) && !/WebCheckinRunnerState/.test(index),
+  'Index no longer mounts the hidden web runner')
 
 for (const f of failures) console.error(`FAIL  ${f}`)
 console.log(`\ndaily check-in contract: ${ok.length} checks passed, ${failures.length} failure(s)`)
