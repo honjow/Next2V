@@ -90,7 +90,7 @@
     },
     {
       "name": "nav_reading",
-      "value": "Text size"
+      "value": "Reading settings"
     },
     {
       "name": "nav_network_proxy",
@@ -286,7 +286,7 @@
     },
     {
       "name": "api_token_subtitle",
-      "value": "Saved; for V2EX API v2 only"
+      "value": "Saved for V2EX API v2 advanced features only"
     },
     {
       "name": "clear_api_auth",
@@ -422,7 +422,7 @@
     },
     {
       "name": "home_tab_auto_hide",
-      "value": "Auto-hide home tabs"
+      "value": "Auto-hide home tab bar"
     },
     {
       "name": "topic_detail_reply_button_auto_hide",
@@ -562,7 +562,7 @@
     },
     {
       "name": "remember_read_position",
-      "value": "Remember reading progress"
+      "value": "Remember reading position"
     },
     {
       "name": "base64_decode",
@@ -570,7 +570,7 @@
     },
     {
       "name": "base64_subtitle",
-      "value": "Tap to reveal private plaintext."
+      "value": "Tap to reveal; keeps email, WeChat, and similar plaintext hidden."
     },
     {
       "name": "threaded",
@@ -630,7 +630,7 @@
     },
     {
       "name": "reading_preview_intro",
-      "value": "Drag the slider to preview scaling for body, headings, quotes, and code."
+      "value": "Drag the slider to preview scaling for body, headings, lists, quotes, and code."
     },
     {
       "name": "reading_preview_body",
@@ -650,11 +650,11 @@
     },
     {
       "name": "restore_reading_scale_title",
-      "value": "Restore default size"
+      "value": "Restore default reading size"
     },
     {
       "name": "restore_reading_scale_message",
-      "value": "Restore reading size to default?"
+      "value": "Restore reading text size to default?"
     },
     {
       "name": "clear_cache",
@@ -714,7 +714,7 @@
     },
     {
       "name": "no_local_log_files",
-      "value": "No local log files"
+      "value": "No shareable local log files"
     },
     {
       "name": "retained_local_log_files_count",
@@ -750,7 +750,7 @@
     },
     {
       "name": "reopen_keeps_logs",
-      "value": "Recent logs stay after reopening"
+      "value": "Recent startup logs stay after reopening"
     },
     {
       "name": "no_diagnostics_logs",
@@ -778,7 +778,7 @@
     },
     {
       "name": "share_file_unavailable_copied",
-      "value": "Share file unavailable; text copied"
+      "value": "Share file unavailable; text copied for manual pasting"
     },
     {
       "name": "share_failed",
@@ -922,7 +922,7 @@
     },
     {
       "name": "socks5_auth_unsupported",
-      "value": "SOCKS5 authentication is not supported yet"
+      "value": "SOCKS5 username/password authentication is not supported yet"
     },
     {
       "name": "testing",
@@ -1354,15 +1354,15 @@
     },
     {
       "name": "search_external_summary",
-      "value": "Official API has no topic search; opens V2EX search in the browser"
+      "value": "Official API has no topic search; opens V2EX topic search in the browser"
     },
     {
       "name": "search_local_with_nodes_summary",
-      "value": "Search saved items, recent views, followed nodes, cache, and node library"
+      "value": "Search saved items, recent views, followed nodes, offline cache, and node library"
     },
     {
       "name": "search_local_summary",
-      "value": "Search saved items, recent views, followed nodes, and cache"
+      "value": "Search saved items, recent views, followed nodes, and offline cache"
     },
     {
       "name": "search_index_loading",
@@ -1438,7 +1438,7 @@
     },
     {
       "name": "about_copyright",
-      "value": "Source code is MIT licensed; V2EX names, marks, and content belong to their owners."
+      "value": "Source code is MIT licensed; V2EX names, marks, and content belong to their respective owners."
     },
     {
       "name": "about_app_name",
@@ -1550,11 +1550,11 @@
     },
     {
       "name": "login_form_not_loaded",
-      "value": "Login form not loaded, please try again"
+      "value": "Login form is not fully loaded, please try again"
     },
     {
       "name": "login_captcha_form_not_loaded",
-      "value": "Captcha form not loaded, please refresh"
+      "value": "Captcha form not fully loaded; refresh the captcha"
     },
     {
       "name": "login_success",
@@ -1566,7 +1566,7 @@
     },
     {
       "name": "two_factor_description",
-      "value": "Complete two-factor verification to continue accessing your account."
+      "value": "V2EX requires two-factor verification before account access can continue."
     },
     {
       "name": "two_factor_code_placeholder",
@@ -1646,7 +1646,7 @@
     },
     {
       "name": "load_all_replies_warning_format",
-      "value": "This topic has {0} replies and may load slowly.\n\nLoad full threaded view?"
+      "value": "This topic has {0} replies and may take a while to load.\n\nContinue loading to enable full threaded view?"
     },
     {
       "name": "favorited",
@@ -1994,7 +1994,7 @@
     },
     {
       "name": "node_picker_helper",
-      "value": "Tap a node to fill the draft."
+      "value": "Select a node to fill it into the topic draft."
     },
     {
       "name": "node_picker_search_placeholder",
@@ -2126,7 +2126,7 @@
     },
     {
       "name": "api_error_parse_reply_form_failed",
-      "value": "Could not parse reply form. Use a browser."
+      "value": "Could not parse reply form. Use a browser instead."
     },
     {
       "name": "api_error_submit_failed_detail",
@@ -2174,7 +2174,7 @@
     },
     {
       "name": "api_error_parse_topic_form_failed",
-      "value": "Could not parse topic form. Use a browser."
+      "value": "Could not parse topic form. Use a browser instead."
     },
     {
       "name": "api_error_missing_action_path",
@@ -2190,15 +2190,15 @@
     },
     {
       "name": "api_error_hot_topics_empty",
-      "value": "No hot topics. Retry later."
+      "value": "Hot topics were not loaded. Retry later."
     },
     {
       "name": "api_error_recent_topics_empty",
-      "value": "No recent topics. Retry later."
+      "value": "Recent topics were not loaded. Retry later."
     },
     {
       "name": "api_error_tab_topics_empty",
-      "value": "Tab \"{0}\" has no topics. Retry later."
+      "value": "Tab \"{0}\" did not load topics. Retry later."
     },
     {
       "name": "api_error_parse_login_page_failed",
@@ -2846,7 +2846,7 @@
     },
     {
       "name": "backup_export_subtitle",
-      "value": "Back up settings and local data; accounts can be encrypted."
+      "value": "Back up settings and local data; optionally include accounts and credentials with password encryption."
     },
     {
       "name": "backup_import_subtitle",
@@ -2858,11 +2858,11 @@
     },
     {
       "name": "backup_import_preview_message",
-      "value": "Backup {0}, app {1} ({2}). Includes: {3}. Login state, Cookie, and tokens stay."
+      "value": "Backup time {0}, app {1} ({2}). Includes: {3}. Login state, Cookie, and tokens stay unchanged."
     },
     {
       "name": "backup_import_confirm_message",
-      "value": "Overwrite settings, drafts, read-later, followed nodes, history, and search. Login state stays. Continue?"
+      "value": "Use the backup to overwrite supported local settings, drafts, read-later, followed nodes, history, and search; keep login state. Continue?"
     },
     {
       "name": "backup_exported",
@@ -2902,7 +2902,7 @@
     },
     {
       "name": "backup_include_user_info_hint",
-      "value": "Includes accounts and credentials; the whole backup will be encrypted."
+      "value": "Includes accounts and credentials; the whole backup will be encrypted with a password."
     },
     {
       "name": "backup_set_password",
@@ -2970,7 +2970,7 @@
     },
     {
       "name": "image_upload_error_forbidden",
-      "value": "Upload rejected; check credentials or region"
+      "value": "Upload rejected. Check credentials or your region."
     },
     {
       "name": "image_upload_error_server",
@@ -3002,7 +3002,7 @@
     },
     {
       "name": "image_upload_imgur_section",
-      "value": "Imgur"
+      "value": "Imgur image host"
     },
     {
       "name": "image_upload_imgur_clientid_label",
@@ -3014,7 +3014,7 @@
     },
     {
       "name": "image_upload_imgur_hint",
-      "value": "Imgur is closed to new apps; use an existing Client ID."
+      "value": "Imgur no longer accepts new app registrations; use an existing Client ID."
     },
     {
       "name": "image_upload_wait",
@@ -3034,7 +3034,7 @@
     },
     {
       "name": "image_upload_imgbb_hint",
-      "value": "Requires your own ImgBB API key."
+      "value": "Uploading to ImgBB requires your own free API Key; register below to get one."
     },
     {
       "name": "image_upload_imgbb_apikey_label",
@@ -3046,11 +3046,11 @@
     },
     {
       "name": "image_upload_imgbb_get_key",
-      "value": "Get API Key"
+      "value": "Get ImgBB API Key"
     },
     {
       "name": "image_upload_smms_hint",
-      "value": "Requires your own sm.ms API token. Mainland China may need proxy."
+      "value": "Uploading to sm.ms requires your own free API Token; register below to get one. Mainland China may need app proxy."
     },
     {
       "name": "image_upload_smms_token_label",
@@ -3062,7 +3062,7 @@
     },
     {
       "name": "image_upload_smms_get_token",
-      "value": "Get API Token"
+      "value": "Get sm.ms API Token"
     },
     {
       "name": "daily_checkin_reward_toast",
@@ -3130,7 +3130,7 @@
     },
     {
       "name": "cloud_sync_cloud_disabled",
-      "value": "Enable this app's data sync in System Cloud first."
+      "value": "Enable this app's data sync in System Settings > Cloud first."
     },
     {
       "name": "cloud_sync_open_cloud_space",

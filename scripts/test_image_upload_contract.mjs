@@ -69,8 +69,13 @@ check(/pushPathByName\('ImageUploadSettings'/.test(read('feature/settings/src/ma
 // ── i18n: every referenced R_IMAGE_UPLOAD_* exists in all 7 locales ───────────
 const LOCALES = ['base', 'en_US', 'zh_CN', 'zh_HK', 'zh_TW', 'ja_JP', 'ko_KR']
 const localeKeys = {}
+const localeValues = {}
 for (const loc of LOCALES) {
   const json = JSON.parse(read(`entry/src/main/resources/${loc}/element/string.json`))
+  localeValues[loc] = {}
+  for (const item of json.string) {
+    localeValues[loc][item.name] = String(item.value || '')
+  }
   localeKeys[loc] = new Set(json.string.map((s) => s.name))
 }
 const appStrings = read('shared/src/main/ets/i18n/AppStrings.ets')
@@ -91,6 +96,36 @@ for (const constName of referenced) {
       check(localeKeys[loc].has(key), `i18n: '${key}' present in ${loc}`)
     }
   }
+}
+check(/new app registrations/.test(localeValues.base.image_upload_imgur_hint), 'i18n: base Imgur hint says new app registrations')
+check(/new app registrations/.test(localeValues.en_US.image_upload_imgur_hint), 'i18n: en_US Imgur hint says new app registrations')
+check(
+  localeValues.zh_CN.image_upload_imgur_hint.includes('新应用注册') &&
+    !localeValues.zh_CN.image_upload_imgur_hint.includes('停止新注册'),
+  'i18n: zh_CN Imgur hint preserves new-app registration semantics'
+)
+check(
+  localeValues.zh_HK.image_upload_imgur_hint.includes('新應用註冊') &&
+    !localeValues.zh_HK.image_upload_imgur_hint.includes('停止新註冊'),
+  'i18n: zh_HK Imgur hint preserves new-app registration semantics'
+)
+check(
+  localeValues.zh_TW.image_upload_imgur_hint.includes('新應用註冊') &&
+    !localeValues.zh_TW.image_upload_imgur_hint.includes('停止新註冊'),
+  'i18n: zh_TW Imgur hint preserves new-app registration semantics'
+)
+check(
+  localeValues.ja_JP.image_upload_imgur_hint.includes('新規アプリ登録'),
+  'i18n: ja_JP Imgur hint preserves new-app registration semantics'
+)
+check(
+  localeValues.ko_KR.image_upload_imgur_hint.includes('신규 앱 등록') &&
+    !localeValues.ko_KR.image_upload_imgur_hint.includes('신규 등록 중단'),
+  'i18n: ko_KR Imgur hint preserves new-app registration semantics'
+)
+for (const loc of LOCALES) {
+  check(localeValues[loc].image_upload_imgbb_get_key.includes('ImgBB'), `i18n: ${loc} ImgBB key action names the provider`)
+  check(localeValues[loc].image_upload_smms_get_token.includes('sm.ms'), `i18n: ${loc} sm.ms token action names the provider`)
 }
 
 // ── Imgur provider contract ───────────────────────────────────────────────────

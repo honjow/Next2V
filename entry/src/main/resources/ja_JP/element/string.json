@@ -90,7 +90,7 @@
     },
     {
       "name": "nav_reading",
-      "value": "文字サイズ"
+      "value": "閲覧設定"
     },
     {
       "name": "nav_network_proxy",
@@ -286,7 +286,7 @@
     },
     {
       "name": "api_token_subtitle",
-      "value": "保存済み。V2EX API v2 のみに使用します"
+      "value": "保存済み。V2EX API v2 の高度な機能にのみ使用します"
     },
     {
       "name": "clear_api_auth",
@@ -422,7 +422,7 @@
     },
     {
       "name": "home_tab_auto_hide",
-      "value": "ホームタブを自動で隠す"
+      "value": "ホームのタブバーを自動で隠す"
     },
     {
       "name": "topic_detail_reply_button_auto_hide",
@@ -562,7 +562,7 @@
     },
     {
       "name": "remember_read_position",
-      "value": "読書進捗を記憶"
+      "value": "閲覧位置を記憶"
     },
     {
       "name": "base64_decode",
@@ -570,7 +570,7 @@
     },
     {
       "name": "base64_subtitle",
-      "value": "タップして表示し、私的な平文を隠します。"
+      "value": "既定ではタップして表示し、メールや WeChat などの平文を直接露出させません。"
     },
     {
       "name": "threaded",
@@ -630,7 +630,7 @@
     },
     {
       "name": "reading_preview_intro",
-      "value": "スライダーで本文、見出し、引用、コードの倍率を確認します。"
+      "value": "スライダーで本文、見出し、リスト、引用、コードの倍率を確認します。"
     },
     {
       "name": "reading_preview_body",
@@ -650,11 +650,11 @@
     },
     {
       "name": "restore_reading_scale_title",
-      "value": "既定サイズに戻す"
+      "value": "既定の閲覧文字サイズに戻す"
     },
     {
       "name": "restore_reading_scale_message",
-      "value": "読書サイズを既定値に戻しますか？"
+      "value": "閲覧文字サイズを既定値に戻しますか？"
     },
     {
       "name": "clear_cache",
@@ -714,7 +714,7 @@
     },
     {
       "name": "no_local_log_files",
-      "value": "ローカルログファイルはありません"
+      "value": "共有できるローカルログファイルはありません"
     },
     {
       "name": "retained_local_log_files_count",
@@ -750,7 +750,7 @@
     },
     {
       "name": "reopen_keeps_logs",
-      "value": "再起動後も最近のログを保持"
+      "value": "アプリを開き直しても最近の起動ログを保持します"
     },
     {
       "name": "no_diagnostics_logs",
@@ -778,7 +778,7 @@
     },
     {
       "name": "share_file_unavailable_copied",
-      "value": "共有ファイルを利用できないため、テキストをコピーしました"
+      "value": "共有ファイルを利用できないため、手動貼り付け用にテキストをコピーしました"
     },
     {
       "name": "share_failed",
@@ -922,7 +922,7 @@
     },
     {
       "name": "socks5_auth_unsupported",
-      "value": "SOCKS5 認証は未対応です"
+      "value": "SOCKS5 のユーザー名/パスワード認証は未対応です"
     },
     {
       "name": "testing",
@@ -1354,15 +1354,15 @@
     },
     {
       "name": "search_external_summary",
-      "value": "公式 API にトピック検索はありません。ブラウザーで V2EX を検索します"
+      "value": "公式 API にトピック検索はありません。ブラウザーで V2EX トピックを検索します"
     },
     {
       "name": "search_local_with_nodes_summary",
-      "value": "保存項目、最近の閲覧、フォローノード、キャッシュ、ノード庫を検索"
+      "value": "保存項目、最近の閲覧、フォローノード、オフラインキャッシュ、ノード庫を検索"
     },
     {
       "name": "search_local_summary",
-      "value": "保存項目、最近の閲覧、フォローノード、キャッシュを検索"
+      "value": "保存項目、最近の閲覧、フォローノード、オフラインキャッシュを検索"
     },
     {
       "name": "search_index_loading",
@@ -1438,7 +1438,7 @@
     },
     {
       "name": "about_copyright",
-      "value": "ソースコードは MIT License。V2EX の名称、標章、内容は各権利者に帰属します。"
+      "value": "ソースコードは MIT License で公開されています。V2EX の名称、標章、コンテンツはそれぞれの権利者に帰属します。"
     },
     {
       "name": "about_app_name",
@@ -1550,11 +1550,11 @@
     },
     {
       "name": "login_form_not_loaded",
-      "value": "ログインフォーム未読込です。再試行してください"
+      "value": "ログインフォームがまだ読み込まれていません。後でもう一度お試しください"
     },
     {
       "name": "login_captcha_form_not_loaded",
-      "value": "Captcha フォーム未読込です。更新してください"
+      "value": "ログイン Captcha フォームがまだ読み込まれていません。Captcha を再取得してください"
     },
     {
       "name": "login_success",
@@ -1566,7 +1566,7 @@
     },
     {
       "name": "two_factor_description",
-      "value": "二要素認証を完了すると、アカウントへアクセスできます。"
+      "value": "V2EX は、アカウント内容へ進む前に二要素認証の完了が必要です。"
     },
     {
       "name": "two_factor_code_placeholder",
@@ -1646,7 +1646,7 @@
     },
     {
       "name": "load_all_replies_warning_format",
-      "value": "{0} 件の返信があり、読み込みに時間がかかる場合があります。\n\n完全なスレッド表示を読み込みますか？"
+      "value": "{0} 件の返信があり、読み込みに時間がかかる場合があります。\n\n完全なスレッド表示を有効にするため読み込みますか？"
     },
     {
       "name": "favorited",
@@ -1994,7 +1994,7 @@
     },
     {
       "name": "node_picker_helper",
-      "value": "ノードを選んで下書きに入力"
+      "value": "ノードを選ぶと投稿下書きに自動入力されます。"
     },
     {
       "name": "node_picker_search_placeholder",
@@ -2190,15 +2190,15 @@
     },
     {
       "name": "api_error_hot_topics_empty",
-      "value": "ホットトピックは空です。再試行してください"
+      "value": "ホットトピックを取得できませんでした。後でもう一度お試しください"
     },
     {
       "name": "api_error_recent_topics_empty",
-      "value": "最近のトピックは空です。再試行してください"
+      "value": "最近のトピックを取得できませんでした。後でもう一度お試しください"
     },
     {
       "name": "api_error_tab_topics_empty",
-      "value": "タブ「{0}」にトピックがありません。再試行してください"
+      "value": "タブ「{0}」のトピックを取得できませんでした。後でもう一度お試しください"
     },
     {
       "name": "api_error_parse_login_page_failed",
@@ -2846,7 +2846,7 @@
     },
     {
       "name": "backup_export_subtitle",
-      "value": "設定とローカルデータをバックアップ。アカウントは暗号化して保存できます。"
+      "value": "設定とローカルデータをバックアップ。必要に応じてアカウントとログイン情報を含め、パスワードで暗号化します。"
     },
     {
       "name": "backup_import_subtitle",
@@ -2858,11 +2858,11 @@
     },
     {
       "name": "backup_import_preview_message",
-      "value": "{0} のバックアップ、アプリ {1}（{2}）。含む: {3}。ログイン状態、Cookie、トークンは維持されます。"
+      "value": "バックアップ時刻 {0}、アプリ {1}（{2}）。含む: {3}。ログイン状態、Cookie、トークンは維持されます。"
     },
     {
       "name": "backup_import_confirm_message",
-      "value": "設定、下書き、あとで読む、フォローノード、履歴、検索を上書きします。ログイン状態は残します。続行しますか？"
+      "value": "バックアップで対応するローカル設定、下書き、後で読む、フォローノード、履歴、検索を上書きします。ログイン状態は保持します。続行しますか？"
     },
     {
       "name": "backup_exported",
@@ -2902,7 +2902,7 @@
     },
     {
       "name": "backup_include_user_info_hint",
-      "value": "アカウントとログイン情報を含め、バックアップ全体を暗号化します。"
+      "value": "アカウントとログイン情報を含め、バックアップ全体をパスワードで暗号化します。"
     },
     {
       "name": "backup_set_password",
@@ -3002,7 +3002,7 @@
     },
     {
       "name": "image_upload_imgur_section",
-      "value": "Imgur"
+      "value": "Imgur 画像ホスト"
     },
     {
       "name": "image_upload_imgur_clientid_label",
@@ -3014,7 +3014,7 @@
     },
     {
       "name": "image_upload_imgur_hint",
-      "value": "Imgur は新規登録停止中。既存 Client ID のみ使えます。"
+      "value": "Imgur は新規アプリ登録を停止中です。既存の Client ID のみ使用できます。"
     },
     {
       "name": "image_upload_wait",
@@ -3034,7 +3034,7 @@
     },
     {
       "name": "image_upload_imgbb_hint",
-      "value": "自分の ImgBB API Key が必要です。"
+      "value": "ImgBB へのアップロードには自分の無料 API Key が必要です。下から登録して取得できます。"
     },
     {
       "name": "image_upload_imgbb_apikey_label",
@@ -3046,11 +3046,11 @@
     },
     {
       "name": "image_upload_imgbb_get_key",
-      "value": "API Key 取得"
+      "value": "ImgBB API Key 取得"
     },
     {
       "name": "image_upload_smms_hint",
-      "value": "自分の sm.ms API Token が必要です。中国大陸では代理が必要な場合があります。"
+      "value": "sm.ms へのアップロードには自分の無料 API Token が必要です。下から登録して取得できます。中国大陸ではアプリのプロキシが必要な場合があります。"
     },
     {
       "name": "image_upload_smms_token_label",
@@ -3062,7 +3062,7 @@
     },
     {
       "name": "image_upload_smms_get_token",
-      "value": "API Token 取得"
+      "value": "sm.ms API Token 取得"
     },
     {
       "name": "daily_checkin_reward_toast",
@@ -3130,7 +3130,7 @@
     },
     {
       "name": "cloud_sync_cloud_disabled",
-      "value": "システム設定のクラウドで本アプリのデータ同期を有効にしてください"
+      "value": "システム設定の「クラウド」で本アプリのデータ同期を有効にしてください。"
     },
     {
       "name": "cloud_sync_open_cloud_space",

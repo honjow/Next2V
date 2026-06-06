@@ -90,7 +90,7 @@
     },
     {
       "name": "nav_reading",
-      "value": "阅读字号"
+      "value": "阅读设置"
     },
     {
       "name": "nav_network_proxy",
@@ -286,7 +286,7 @@
     },
     {
       "name": "api_token_subtitle",
-      "value": "已保存，仅用于 V2EX API v2"
+      "value": "已保存，仅用于 V2EX API v2 高级能力"
     },
     {
       "name": "clear_api_auth",
@@ -422,7 +422,7 @@
     },
     {
       "name": "home_tab_auto_hide",
-      "value": "自动隐藏首页标签"
+      "value": "自动隐藏首页标签栏"
     },
     {
       "name": "topic_detail_reply_button_auto_hide",
@@ -562,7 +562,7 @@
     },
     {
       "name": "remember_read_position",
-      "value": "记住阅读进度"
+      "value": "记住阅读位置"
     },
     {
       "name": "base64_decode",
@@ -570,7 +570,7 @@
     },
     {
       "name": "base64_subtitle",
-      "value": "点击查看，避免直接露出隐私文本"
+      "value": "默认点击查看，避免直接露出邮箱/微信等明文"
     },
     {
       "name": "threaded",
@@ -630,7 +630,7 @@
     },
     {
       "name": "reading_preview_intro",
-      "value": "拖动滑块预览正文、标题、引用和代码的缩放效果。"
+      "value": "拖动滑块预览正文、标题、列表、引用和代码的缩放效果。"
     },
     {
       "name": "reading_preview_body",
@@ -650,11 +650,11 @@
     },
     {
       "name": "restore_reading_scale_title",
-      "value": "恢复默认字号"
+      "value": "恢复默认阅读字号"
     },
     {
       "name": "restore_reading_scale_message",
-      "value": "将阅读字号恢复为默认值？"
+      "value": "将阅读文字字号恢复为默认值？"
     },
     {
       "name": "clear_cache",
@@ -714,7 +714,7 @@
     },
     {
       "name": "no_local_log_files",
-      "value": "暂无本机日志文件"
+      "value": "暂无可分享的本机日志文件"
     },
     {
       "name": "retained_local_log_files_count",
@@ -750,7 +750,7 @@
     },
     {
       "name": "reopen_keeps_logs",
-      "value": "重开应用仍保留最近日志"
+      "value": "重新打开应用仍保留最近启动日志"
     },
     {
       "name": "no_diagnostics_logs",
@@ -778,7 +778,7 @@
     },
     {
       "name": "share_file_unavailable_copied",
-      "value": "分享文件不可用，已复制文本"
+      "value": "分享文件不可用，已复制文本，可手动粘贴"
     },
     {
       "name": "share_failed",
@@ -922,7 +922,7 @@
     },
     {
       "name": "socks5_auth_unsupported",
-      "value": "暂不支持 SOCKS5 认证"
+      "value": "暂不支持 SOCKS5 用户名/密码认证"
     },
     {
       "name": "testing",
@@ -1354,15 +1354,15 @@
     },
     {
       "name": "search_external_summary",
-      "value": "官方 API 暂无主题搜索，将用系统浏览器搜索 V2EX"
+      "value": "官方 API 暂无主题搜索，将用系统浏览器搜索 V2EX 主题"
     },
     {
       "name": "search_local_with_nodes_summary",
-      "value": "搜索收藏、最近浏览、关注节点、缓存和节点库"
+      "value": "搜索收藏、最近浏览、关注节点、离线缓存和节点库"
     },
     {
       "name": "search_local_summary",
-      "value": "搜索收藏、最近浏览、关注节点和缓存"
+      "value": "搜索收藏、最近浏览、关注节点和离线缓存"
     },
     {
       "name": "search_index_loading",
@@ -1438,7 +1438,7 @@
     },
     {
       "name": "about_copyright",
-      "value": "源码按 MIT License 开源；V2EX 名称、标识和内容归权利人所有。"
+      "value": "源码按 MIT License 开源；V2EX 名称、标识和内容归各自权利人所有。"
     },
     {
       "name": "about_app_name",
@@ -1522,7 +1522,7 @@
     },
     {
       "name": "login_cookie_missing",
-      "value": "未获取登录 Cookie，请确认已登录"
+      "value": "未获取到登录 Cookie，请确认已完成登录"
     },
     {
       "name": "login_cookie_invalid",
@@ -1550,11 +1550,11 @@
     },
     {
       "name": "login_form_not_loaded",
-      "value": "登录表单未加载，请稍后重试"
+      "value": "登录表单未加载完成，请稍后重试"
     },
     {
       "name": "login_captcha_form_not_loaded",
-      "value": "验证码表单未加载，请重新获取"
+      "value": "登录验证码表单未加载完成，请重新获取验证码"
     },
     {
       "name": "login_success",
@@ -1566,7 +1566,7 @@
     },
     {
       "name": "two_factor_description",
-      "value": "完成两步验证后，可继续访问账号。"
+      "value": "V2EX 需要完成两步验证后才能继续访问账号内容。"
     },
     {
       "name": "two_factor_code_placeholder",
@@ -1646,7 +1646,7 @@
     },
     {
       "name": "load_all_replies_warning_format",
-      "value": "该主题有 {0} 条回复，加载可能较慢。\n\n继续加载完整楼中楼？"
+      "value": "该主题有 {0} 条回复，加载可能较慢。\n\n继续加载以启用完整楼中楼？"
     },
     {
       "name": "favorited",
@@ -1994,7 +1994,7 @@
     },
     {
       "name": "node_picker_helper",
-      "value": "点选节点填入草稿"
+      "value": "点选节点后自动填入发帖草稿。"
     },
     {
       "name": "node_picker_search_placeholder",
@@ -2126,7 +2126,7 @@
     },
     {
       "name": "api_error_parse_reply_form_failed",
-      "value": "回复表单解析失败，请用浏览器"
+      "value": "回复表单解析失败，请改用浏览器"
     },
     {
       "name": "api_error_submit_failed_detail",
@@ -2174,7 +2174,7 @@
     },
     {
       "name": "api_error_parse_topic_form_failed",
-      "value": "发帖表单解析失败，请用浏览器"
+      "value": "发帖表单解析失败，请改用浏览器"
     },
     {
       "name": "api_error_missing_action_path",
@@ -2190,15 +2190,15 @@
     },
     {
       "name": "api_error_hot_topics_empty",
-      "value": "热榜暂无主题，请稍后重试"
+      "value": "热榜未获取到主题，请稍后重试"
     },
     {
       "name": "api_error_recent_topics_empty",
-      "value": "最近更新暂无主题，请稍后重试"
+      "value": "最近更新未获取到主题，请稍后重试"
     },
     {
       "name": "api_error_tab_topics_empty",
-      "value": "Tab \"{0}\" 暂无主题，请稍后重试"
+      "value": "Tab \"{0}\" 未获取到主题，请稍后重试"
     },
     {
       "name": "api_error_parse_login_page_failed",
@@ -2846,7 +2846,7 @@
     },
     {
       "name": "backup_export_subtitle",
-      "value": "备份设置与本地数据；账号可加密备份。"
+      "value": "备份设置与本地数据；可选加入账号与登录凭据，并用密码加密备份。"
     },
     {
       "name": "backup_import_subtitle",
@@ -2858,11 +2858,11 @@
     },
     {
       "name": "backup_import_preview_message",
-      "value": "{0} 的备份，应用 {1}（{2}）。包含：{3}。登录状态、Cookie 和令牌不变。"
+      "value": "备份时间 {0}，应用 {1}（{2}）。包含：{3}。登录状态、Cookie 和令牌不变。"
     },
     {
       "name": "backup_import_confirm_message",
-      "value": "用备份覆盖设置、草稿、稍后读、关注节点、历史和搜索；保留登录状态。继续吗？"
+      "value": "用备份覆盖支持的本地设置、草稿、稍后读、关注节点、历史和搜索；保留登录状态。继续吗？"
     },
     {
       "name": "backup_exported",
@@ -2902,7 +2902,7 @@
     },
     {
       "name": "backup_include_user_info_hint",
-      "value": "包含账号与登录凭据，整个备份将加密。"
+      "value": "包含账号与登录凭据，整个备份将用密码加密。"
     },
     {
       "name": "backup_set_password",
@@ -2970,7 +2970,7 @@
     },
     {
       "name": "image_upload_error_forbidden",
-      "value": "上传被拒绝，请检查凭证或地区"
+      "value": "上传被拒绝，请检查凭证或所在地区"
     },
     {
       "name": "image_upload_error_server",
@@ -3002,7 +3002,7 @@
     },
     {
       "name": "image_upload_imgur_section",
-      "value": "Imgur"
+      "value": "Imgur 图床"
     },
     {
       "name": "image_upload_imgur_clientid_label",
@@ -3014,7 +3014,7 @@
     },
     {
       "name": "image_upload_imgur_hint",
-      "value": "Imgur 停止新注册，仅已有 Client ID 可用。"
+      "value": "Imgur 已停止新应用注册，仅已有 Client ID 可用。"
     },
     {
       "name": "image_upload_wait",
@@ -3034,7 +3034,7 @@
     },
     {
       "name": "image_upload_imgbb_hint",
-      "value": "需要自备 ImgBB API Key。"
+      "value": "上传到 ImgBB 需自备免费 API Key，可在下方注册获取。"
     },
     {
       "name": "image_upload_imgbb_apikey_label",
@@ -3046,11 +3046,11 @@
     },
     {
       "name": "image_upload_imgbb_get_key",
-      "value": "获取 API Key"
+      "value": "获取 ImgBB API Key"
     },
     {
       "name": "image_upload_smms_hint",
-      "value": "需要自备 sm.ms API Token，国内可能需代理。"
+      "value": "上传到 sm.ms 需自备免费 API Token，可在下方注册获取；国内可能需 App 代理。"
     },
     {
       "name": "image_upload_smms_token_label",
@@ -3062,7 +3062,7 @@
     },
     {
       "name": "image_upload_smms_get_token",
-      "value": "获取 API Token"
+      "value": "获取 sm.ms API Token"
     },
     {
       "name": "daily_checkin_reward_toast",
@@ -3130,7 +3130,7 @@
     },
     {
       "name": "cloud_sync_cloud_disabled",
-      "value": "请在系统云空间开启本应用数据同步"
+      "value": "请在系统设置「云空间」开启本应用数据同步。"
     },
     {
       "name": "cloud_sync_open_cloud_space",
