@@ -2,6 +2,7 @@ import { http } from '@kit.NetworkKit'
 import {
   ApiConstants,
   ApiDomainSettings,
+  AppStrings,
   CookieJarSettings,
   HttpClient,
   NetworkProxyRequest,
@@ -22,19 +23,19 @@ export class DomainSettingsCoordinator {
   static normalizeCustomBaseUrl(input: string): DomainValidationResult {
     const raw = (input || '').trim()
     if (!raw) {
-      return { ok: false, baseUrl: '', message: '请输入域名' }
+      return { ok: false, baseUrl: '', message: AppStrings.text(AppStrings.R_DOMAIN_REQUIRED, 'Enter a domain') }
     }
     const candidate = raw.indexOf('://') >= 0 ? raw : `https://${raw}`
     const match = candidate.match(/^(https?):\/\/([^\/\s?#]+)(?:[\/?#].*)?$/i)
     if (!match) {
-      return { ok: false, baseUrl: '', message: '请输入有效域名' }
+      return { ok: false, baseUrl: '', message: AppStrings.text(AppStrings.R_DOMAIN_INVALID, 'Enter a valid domain') }
     }
     if (match[1].toLowerCase() !== 'https') {
-      return { ok: false, baseUrl: '', message: '仅支持 HTTPS 域名' }
+      return { ok: false, baseUrl: '', message: AppStrings.text(AppStrings.R_DOMAIN_HTTPS_ONLY, 'HTTPS domains only') }
     }
     const host = (match[2] || '').toLowerCase()
     if (!/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$/.test(host)) {
-      return { ok: false, baseUrl: '', message: '请输入有效域名' }
+      return { ok: false, baseUrl: '', message: AppStrings.text(AppStrings.R_DOMAIN_INVALID, 'Enter a valid domain') }
     }
     return { ok: true, baseUrl: `https://${host}`, message: '' }
   }
@@ -63,20 +64,29 @@ export class DomainSettingsCoordinator {
         usingCache: false,
       })
       if (response.responseCode !== 200) {
-        return { ok: false, baseUrl: normalized.baseUrl, message: `验证失败：HTTP ${response.responseCode}` }
+        return {
+          ok: false,
+          baseUrl: normalized.baseUrl,
+          message: AppStrings.format(AppStrings.text(AppStrings.R_DOMAIN_VALIDATE_HTTP_FORMAT, 'Validation failed: HTTP {0}'), [`${response.responseCode}`])
+        }
       }
       const parsed = JSON.parse(response.result as string) as Record<string, Object>
       const domain = `${parsed['domain'] || ''}`.toLowerCase()
       if (!domain || !(domain === 'v2ex.com' || domain.endsWith('.v2ex.com'))) {
-        return { ok: false, baseUrl: normalized.baseUrl, message: '该域名未返回 V2EX 站点信息' }
+        return { ok: false, baseUrl: normalized.baseUrl, message: AppStrings.text(AppStrings.R_DOMAIN_NOT_V2EX, 'No V2EX site info returned') }
       }
       if (!DomainSettingsCoordinator.isV2exOwnedHost(normalized.baseUrl) && !CookieJarSettings.getCurrentCookie()) {
-        return { ok: false, baseUrl: normalized.baseUrl, message: '非 V2EX 域名需先有已验证会话，避免误配到陌生服务器' }
+        return { ok: false, baseUrl: normalized.baseUrl, message: AppStrings.text(AppStrings.R_DOMAIN_REQUIRES_VERIFIED_SESSION, 'Custom domains require a verified session first') }
       }
-      return { ok: true, baseUrl: normalized.baseUrl, message: '验证通过' }
+      return { ok: true, baseUrl: normalized.baseUrl, message: AppStrings.text(AppStrings.R_DOMAIN_VALIDATED, 'Validated') }
     } catch (error) {
       const e = error as Error
-      return { ok: false, baseUrl: normalized.baseUrl, message: `验证失败：${e.message || '网络错误'}` }
+      const reason = e.message || AppStrings.text(AppStrings.R_DOMAIN_NETWORK_ERROR, 'Network error')
+      return {
+        ok: false,
+        baseUrl: normalized.baseUrl,
+        message: AppStrings.format(AppStrings.text(AppStrings.R_DOMAIN_VALIDATE_FAILED_FORMAT, 'Validation failed: {0}'), [reason])
+      }
     }
   }
 

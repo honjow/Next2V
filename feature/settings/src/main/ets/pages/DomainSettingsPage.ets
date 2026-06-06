@@ -3,6 +3,7 @@ import { promptAction } from '@kit.ArkUI'
 import {
   ApiDomainSettings,
   ApiDomainState,
+  AppStrings,
   AppTextField,
   connectApiDomain,
   ConciseListRow,
@@ -30,13 +31,13 @@ export struct DomainSettingsPage {
     Column() {
       SecondaryListScaffold({ includeKeyboardPadding: true }) {
         ListItem() {
-          SettingsSectionHeader({ title: 'V2EX 站点' })
+          SettingsSectionHeader({ title: AppStrings.R_API_DOMAIN })
         }
         ListItem() {
           this.PresetSection()
         }
         ListItem() {
-          SettingsSectionHeader({ title: '自定义站点域名' })
+          SettingsSectionHeader({ title: AppStrings.R_CUSTOM_DOMAIN })
         }
         ListItem() {
           this.CustomDomainSection()
@@ -99,7 +100,7 @@ export struct DomainSettingsPage {
             .fontColor($r('sys.color.font_secondary'))
             .width('100%')
         }
-        Button(this.validating ? '验证中…' : 'Validate')
+        Button(this.validating ? AppStrings.R_DOMAIN_VALIDATING : AppStrings.R_DOMAIN_VALIDATE)
           .type(ButtonType.Normal)
           .height(ThemeConstants.TOUCH_TARGET_SM)
           .width('100%')
@@ -111,7 +112,7 @@ export struct DomainSettingsPage {
         if (this.validatedCustomBaseUrl) {
           ConciseListRow({
             title: this.validatedCustomBaseUrl,
-            subtitle: 'V2EX 官方镜像共享登录状态；自定义域名使用独立会话。',
+            subtitle: AppStrings.R_DOMAIN_SESSION_HINT,
             showChevron: false,
             prefixBuilderParam: (): void => this.DomainRadio(this.validatedCustomBaseUrl),
             action: () => { this.selectBaseUrl(this.validatedCustomBaseUrl) },
@@ -127,7 +128,7 @@ export struct DomainSettingsPage {
       return
     }
     this.validating = true
-    this.validationMessage = '验证中…'
+    this.validationMessage = AppStrings.text(AppStrings.R_DOMAIN_VALIDATING, 'Validating…')
     DomainSettingsCoordinator.validateCustomDomain(this.customText)
       .then((result: DomainValidationResult) => {
         this.validating = false
@@ -137,7 +138,7 @@ export struct DomainSettingsPage {
       .catch((error: Error) => {
         this.validating = false
         this.validatedCustomBaseUrl = ''
-        this.validationMessage = error.message || '验证失败'
+        this.validationMessage = error.message || AppStrings.text(AppStrings.R_DOMAIN_VALIDATE_FAILED, 'Validation failed')
       })
   }
 
@@ -149,11 +150,11 @@ export struct DomainSettingsPage {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     ApiDomainSettings.save(context, normalized)
       .then(() => {
-        promptAction.openToast({ message: 'V2EX 站点已切换' }).catch((_error: Error) => {})
+        promptAction.openToast({ message: AppStrings.text(AppStrings.R_DOMAIN_SWITCHED, 'V2EX site switched') }).catch((_error: Error) => {})
       })
       .catch((error: Error) => {
         console.error('save V2EX site failed: ' + error.message)
-        promptAction.openToast({ message: '保存失败' }).catch((_toastError: Error) => {})
+        promptAction.openToast({ message: AppStrings.text(AppStrings.R_COMMON_SAVE_FAILED, 'Save failed') }).catch((_toastError: Error) => {})
       })
   }
 }

@@ -86,11 +86,11 @@
     },
     {
       "name": "nav_home_nodes",
-      "value": "Home tab settings"
+      "value": "Home tabs"
     },
     {
       "name": "nav_reading",
-      "value": "Reading font settings"
+      "value": "Text size"
     },
     {
       "name": "nav_network_proxy",
@@ -286,7 +286,7 @@
     },
     {
       "name": "api_token_subtitle",
-      "value": "Saved, used only for V2EX API v2 advanced features"
+      "value": "For V2EX API v2 only"
     },
     {
       "name": "clear_api_auth",
@@ -294,7 +294,7 @@
     },
     {
       "name": "clear_api_auth_message",
-      "value": "Only clears the locally saved Personal Access Token. Web login stays signed in."
+      "value": "Clears only the local API token. Web login stays."
     },
     {
       "name": "api_auth_configured",
@@ -422,11 +422,11 @@
     },
     {
       "name": "home_tab_auto_hide",
-      "value": "Auto-hide home tabs"
+      "value": "Hide home tabs"
     },
     {
       "name": "topic_detail_reply_button_auto_hide",
-      "value": "Auto-hide reply button"
+      "value": "Hide reply button"
     },
     {
       "name": "image_auto_load",
@@ -434,11 +434,103 @@
     },
     {
       "name": "wifi_only_images",
-      "value": "Load images on Wi-Fi only"
+      "value": "Wi-Fi only"
     },
     {
       "name": "api_domain",
-      "value": "V2EX site"
+      "value": "Site domain"
+    },
+    {
+      "name": "custom_domain",
+      "value": "Custom domain"
+    },
+    {
+      "name": "domain_validate",
+      "value": "Validate"
+    },
+    {
+      "name": "domain_validating",
+      "value": "Validating…"
+    },
+    {
+      "name": "domain_session_hint",
+      "value": "Official mirrors share login; custom domains use separate sessions."
+    },
+    {
+      "name": "domain_required",
+      "value": "Enter a domain"
+    },
+    {
+      "name": "domain_invalid",
+      "value": "Enter a valid domain"
+    },
+    {
+      "name": "domain_https_only",
+      "value": "HTTPS domains only"
+    },
+    {
+      "name": "domain_validate_http_format",
+      "value": "Validation failed: HTTP {0}"
+    },
+    {
+      "name": "domain_not_v2ex",
+      "value": "No V2EX site info returned"
+    },
+    {
+      "name": "domain_requires_verified_session",
+      "value": "Custom domains require a verified session first"
+    },
+    {
+      "name": "domain_validated",
+      "value": "Validated"
+    },
+    {
+      "name": "domain_validate_failed",
+      "value": "Validation failed"
+    },
+    {
+      "name": "domain_validate_failed_format",
+      "value": "Validation failed: {0}"
+    },
+    {
+      "name": "domain_network_error",
+      "value": "Network error"
+    },
+    {
+      "name": "domain_switched",
+      "value": "V2EX site switched"
+    },
+    {
+      "name": "domain_hint_default",
+      "value": "Default"
+    },
+    {
+      "name": "domain_hint_edge_cdn",
+      "value": "Edge CDN"
+    },
+    {
+      "name": "domain_hint_global",
+      "value": "Global"
+    },
+    {
+      "name": "domain_hint_fast",
+      "value": "Fast"
+    },
+    {
+      "name": "domain_hint_china",
+      "value": "China"
+    },
+    {
+      "name": "domain_hint_us",
+      "value": "US"
+    },
+    {
+      "name": "domain_hint_japan",
+      "value": "Japan"
+    },
+    {
+      "name": "domain_hint_hong_kong",
+      "value": "Hong Kong"
     },
     {
       "name": "theme",
@@ -446,7 +538,7 @@
     },
     {
       "name": "avatar_appearance",
-      "value": "Avatar Appearance"
+      "value": "Avatar"
     },
     {
       "name": "avatar_appearance_soft",
@@ -466,19 +558,19 @@
     },
     {
       "name": "reply_action_alignment",
-      "value": "Reply button alignment"
+      "value": "Reply button"
     },
     {
       "name": "remember_read_position",
-      "value": "Remember reading position"
+      "value": "Read position"
     },
     {
       "name": "base64_decode",
-      "value": "Base64 decode"
+      "value": "Base64"
     },
     {
       "name": "base64_subtitle",
-      "value": "Default to tap-to-view to avoid directly exposing email, WeChat, or other plaintext."
+      "value": "Tap to reveal private plaintext."
     },
     {
       "name": "threaded",
@@ -538,15 +630,15 @@
     },
     {
       "name": "reading_preview_intro",
-      "value": "This is the live preview area for reading text scaling. Drag the slider below to scale body text, headings, lists, quotes, and code together, approximating the reading feel in actual topic details."
+      "value": "Drag the slider to preview body, headings, quotes, and code."
     },
     {
       "name": "reading_preview_body",
-      "value": "V2EX discussions usually contain short sentences, links, quotes, and code snippets. The preview stays on the page background to avoid extra cards affecting typography judgment."
+      "value": "Short text, links, and code scale together like topic details."
     },
     {
       "name": "reading_preview_quote",
-      "value": "> If a setting lets you finish the paragraph without pausing, it is probably the right one."
+      "value": "> Easy reading means the size is right."
     },
     {
       "name": "text_scale",
@@ -558,11 +650,11 @@
     },
     {
       "name": "restore_reading_scale_title",
-      "value": "Restore default reading text scale"
+      "value": "Restore default size"
     },
     {
       "name": "restore_reading_scale_message",
-      "value": "Restore text scale to the default value. Continue?"
+      "value": "Restore the reading size?"
     },
     {
       "name": "clear_cache",
@@ -570,15 +662,15 @@
     },
     {
       "name": "clear_cache_message",
-      "value": "Only offline cache will be cleared. Login state and preferences will be kept. Continue?"
+      "value": "Clears offline cache only. Login and preferences stay."
     },
     {
       "name": "clear_local_data",
-      "value": "Clear local data"
+      "value": "Clear data"
     },
     {
       "name": "clear_local_data_message",
-      "value": "This clears locally saved read later items, followed nodes, recently viewed items, read state, drafts, search history, notification cache, and offline cache. Login state and preferences are kept. Continue?"
+      "value": "Clears read later, followed nodes, history, read state, drafts, search, notifications, and cache. Login and preferences stay."
     },
     {
       "name": "read_cache_status_failed",
@@ -606,7 +698,7 @@
     },
     {
       "name": "refresh_cache_status",
-      "value": "Refresh cache status"
+      "value": "Refresh status"
     },
     {
       "name": "diagnostics",
@@ -622,7 +714,7 @@
     },
     {
       "name": "no_local_log_files",
-      "value": "No local log files to share"
+      "value": "No local logs"
     },
     {
       "name": "retained_local_log_files_count",
@@ -658,7 +750,7 @@
     },
     {
       "name": "reopen_keeps_logs",
-      "value": "Recent launch logs are kept after reopening the app"
+      "value": "Recent logs stay after reopening"
     },
     {
       "name": "no_diagnostics_logs",
@@ -686,7 +778,7 @@
     },
     {
       "name": "share_file_unavailable_copied",
-      "value": "Share file unavailable; copied for manual paste"
+      "value": "Sharing unavailable; text copied"
     },
     {
       "name": "share_failed",
@@ -738,7 +830,7 @@
     },
     {
       "name": "https_proxy_entry_subtitle",
-      "value": "Proxy server uses TLS, not the HTTPS target site"
+      "value": "TLS on the proxy endpoint"
     },
     {
       "name": "socks5_auth_optional",
@@ -830,7 +922,7 @@
     },
     {
       "name": "socks5_auth_unsupported",
-      "value": "SOCKS5 does not support username/password authentication yet"
+      "value": "SOCKS5 authentication is not supported yet"
     },
     {
       "name": "testing",
@@ -942,7 +1034,7 @@
     },
     {
       "name": "visible_home_nodes_reorder_hint",
-      "value": "Shown columns · long-press to reorder"
+      "value": "Shown · long-press to reorder"
     },
     {
       "name": "add_home_column",
@@ -1258,15 +1350,15 @@
     },
     {
       "name": "search_external_summary",
-      "value": "The official API has no topic search; use the system browser to search V2EX topics"
+      "value": "Search V2EX topics in the browser"
     },
     {
       "name": "search_local_with_nodes_summary",
-      "value": "Search favorites, recently viewed, followed nodes, offline cache, and node library"
+      "value": "Search favorites, history, follows, cache, and node library"
     },
     {
       "name": "search_local_summary",
-      "value": "Search favorites, recently viewed, followed nodes, and offline cache"
+      "value": "Search favorites, history, follows, and cache"
     },
     {
       "name": "search_index_loading",
@@ -1282,11 +1374,11 @@
     },
     {
       "name": "search_nodes_library_empty_hint",
-      "value": "The node library and your followed nodes will appear here"
+      "value": "Node library and followed nodes appear here"
     },
     {
       "name": "search_followed_nodes_empty_hint",
-      "value": "Your followed nodes will appear here"
+      "value": "Followed nodes appear here"
     },
     {
       "name": "search_no_nodes",
@@ -1294,7 +1386,7 @@
     },
     {
       "name": "search_filter_hint",
-      "value": "Enter keywords and tap Search; filter is in the top right"
+      "value": "Enter keywords, then filter"
     },
     {
       "name": "about_app_info",
@@ -1330,7 +1422,7 @@
     },
     {
       "name": "about_v2next_ack",
-      "value": "Thanks to the V2Next project for exploring the V2EX client experience."
+      "value": "Thanks to V2Next for exploring V2EX client UX."
     },
     {
       "name": "about_source_license",
@@ -1338,11 +1430,11 @@
     },
     {
       "name": "about_third_party_client",
-      "value": "Next2V is a third-party client for V2EX."
+      "value": "Next2V is a third-party V2EX client."
     },
     {
       "name": "about_copyright",
-      "value": "The app source code is open source under the MIT License; the V2EX name, marks, and content belong to their respective rights holders."
+      "value": "Source code is MIT licensed; V2EX names, marks, and content belong to their owners."
     },
     {
       "name": "about_app_name",
@@ -1470,7 +1562,7 @@
     },
     {
       "name": "two_factor_description",
-      "value": "V2EX requires two-factor verification to continue accessing account content."
+      "value": "Complete two-factor verification to access account content."
     },
     {
       "name": "two_factor_code_placeholder",
@@ -1550,7 +1642,7 @@
     },
     {
       "name": "load_all_replies_warning_format",
-      "value": "This topic has {0} replies. Loading all replies may take some time.\n\nContinue loading to enable the full threaded view?"
+      "value": "This topic has {0} replies and may load slowly.\n\nLoad full threaded view?"
     },
     {
       "name": "favorited",
@@ -1678,7 +1770,7 @@
     },
     {
       "name": "reply_confirm_submit_page_format",
-      "value": "Submit a reply to {0}?\n\nV2EX replies usually cost at least 5 copper coins and will change your account state."
+      "value": "Reply to {0}?\n\nUsually costs at least 5 copper coins and changes your account state."
     },
     {
       "name": "reply_current_topic",
@@ -1898,7 +1990,7 @@
     },
     {
       "name": "node_picker_helper",
-      "value": "Click a node to auto-fill into the topic draft."
+      "value": "Tap a node to fill the draft."
     },
     {
       "name": "node_picker_search_placeholder",
@@ -2362,7 +2454,7 @@
     },
     {
       "name": "editor_confirm_post_format",
-      "value": "Post《{1}》in node「{0}」?\n\nV2EX posting usually costs at least 20 copper coins and will change your account state."
+      "value": "Post《{1}》in「{0}」?\n\nUsually costs at least 20 copper coins and changes your account state."
     },
     {
       "name": "reply_composer_title",
@@ -2754,23 +2846,23 @@
     },
     {
       "name": "backup_export_subtitle",
-      "value": "Back up settings and local data; optionally include accounts and login credentials (the whole backup is then password-encrypted)."
+      "value": "Back up settings and local data; optionally encrypt accounts."
     },
     {
       "name": "backup_import_subtitle",
-      "value": "Preview backup contents before replacing local data."
+      "value": "Preview before replacing local data."
     },
     {
       "name": "backup_export_message",
-      "value": "Export settings and local data to a V2Next backup file. Login state, cookies, tokens, and offline cache are excluded. Continue?"
+      "value": "Export settings and local data; excludes login, Cookie, tokens, and offline cache. Continue?"
     },
     {
       "name": "backup_import_preview_message",
-      "value": "Backup from {0}, app {1} ({2}). Sections: {3}. Login state, cookies, and tokens will not be changed."
+      "value": "Backup {0}, app {1} ({2}). Includes: {3}. Login, Cookie, and tokens stay."
     },
     {
       "name": "backup_import_confirm_message",
-      "value": "This will overwrite supported local settings, drafts, read-later/follow/history/search data from the backup. Login state is kept. Continue?"
+      "value": "Overwrite supported settings, drafts, read-later, follows, history, and search. Login stays. Continue?"
     },
     {
       "name": "backup_exported",
@@ -2810,7 +2902,7 @@
     },
     {
       "name": "backup_include_user_info_hint",
-      "value": "Includes accounts and login credentials. The whole backup is encrypted with a password."
+      "value": "Includes accounts and credentials; encrypts the whole backup."
     },
     {
       "name": "backup_set_password",
@@ -2846,7 +2938,7 @@
     },
     {
       "name": "backup_import_restores_accounts",
-      "value": "This backup includes accounts and login info, which will replace the current accounts."
+      "value": "Backup includes accounts and will replace current accounts."
     },
     {
       "name": "image_upload_action_new",
@@ -2922,7 +3014,7 @@
     },
     {
       "name": "image_upload_imgur_hint",
-      "value": "Imgur stopped accepting new app registrations; this works only if you already have a Client ID."
+      "value": "Imgur is closed to new apps; use an existing Client ID."
     },
     {
       "name": "image_upload_wait",
@@ -2942,7 +3034,7 @@
     },
     {
       "name": "image_upload_imgbb_hint",
-      "value": "Uploading to ImgBB needs your own free API key. Register and get one below."
+      "value": "Requires your own ImgBB API key."
     },
     {
       "name": "image_upload_imgbb_apikey_label",
@@ -2954,11 +3046,11 @@
     },
     {
       "name": "image_upload_imgbb_get_key",
-      "value": "Get an ImgBB API key"
+      "value": "Get Key"
     },
     {
       "name": "image_upload_smms_hint",
-      "value": "Uploading to sm.ms needs your own free API token. Register and get one below. Mainland China may need the app proxy."
+      "value": "Requires your own sm.ms API token. Mainland China may need proxy."
     },
     {
       "name": "image_upload_smms_token_label",
@@ -2970,7 +3062,7 @@
     },
     {
       "name": "image_upload_smms_get_token",
-      "value": "Get a sm.ms API token"
+      "value": "Get Token"
     },
     {
       "name": "daily_checkin_reward_toast",
@@ -2982,7 +3074,7 @@
     },
     {
       "name": "perm_distributed_datasync_reason",
-      "value": "Sync your bookmarks and reading history across your devices"
+      "value": "Sync bookmarks and reading records across devices"
     },
     {
       "name": "cloud_sync",
@@ -2990,7 +3082,7 @@
     },
     {
       "name": "cloud_sync_hint",
-      "value": "Sign in with your Huawei account to sync data like search history across your devices."
+      "value": "Sync search, collections, reading, and local data."
     },
     {
       "name": "cloud_sync_now",
@@ -3010,7 +3102,7 @@
     },
     {
       "name": "cloud_sync_enable",
-      "value": "Enable Cloud Sync"
+      "value": "Enable sync"
     },
     {
       "name": "cloud_sync_content",
@@ -3038,7 +3130,7 @@
     },
     {
       "name": "cloud_sync_cloud_disabled",
-      "value": "Cloud sync is off for this app. Turn on data sync for this app under System Settings → Cloud."
+      "value": "Enable this app under System Settings → Cloud first."
     },
     {
       "name": "cloud_sync_open_cloud_space",

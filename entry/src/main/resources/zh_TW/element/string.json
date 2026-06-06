@@ -86,11 +86,11 @@
     },
     {
       "name": "nav_home_nodes",
-      "value": "首頁欄位設定"
+      "value": "首頁欄位"
     },
     {
       "name": "nav_reading",
-      "value": "閱讀字體設定"
+      "value": "閱讀字號"
     },
     {
       "name": "nav_network_proxy",
@@ -286,7 +286,7 @@
     },
     {
       "name": "api_token_subtitle",
-      "value": "已儲存，僅用於 V2EX API v2 進階能力"
+      "value": "僅用於 V2EX API v2"
     },
     {
       "name": "clear_api_auth",
@@ -294,7 +294,7 @@
     },
     {
       "name": "clear_api_auth_message",
-      "value": "只會清除本機儲存的 Personal Access Token，不會登出網頁登入。"
+      "value": "僅清除本機 API Token，不影響網頁登入。"
     },
     {
       "name": "api_auth_configured",
@@ -422,11 +422,11 @@
     },
     {
       "name": "home_tab_auto_hide",
-      "value": "自動隱藏首頁標籤列"
+      "value": "隱藏首頁標籤"
     },
     {
       "name": "topic_detail_reply_button_auto_hide",
-      "value": "自動隱藏回覆按鈕"
+      "value": "隱藏回覆按鈕"
     },
     {
       "name": "image_auto_load",
@@ -434,11 +434,103 @@
     },
     {
       "name": "wifi_only_images",
-      "value": "僅 Wi-Fi 載入圖片"
+      "value": "Wi-Fi 載入"
     },
     {
       "name": "api_domain",
-      "value": "V2EX 站點"
+      "value": "站點網域"
+    },
+    {
+      "name": "custom_domain",
+      "value": "自訂網域"
+    },
+    {
+      "name": "domain_validate",
+      "value": "驗證網域"
+    },
+    {
+      "name": "domain_validating",
+      "value": "網域驗證中…"
+    },
+    {
+      "name": "domain_session_hint",
+      "value": "官方鏡像共用登入；自訂網域獨立工作階段。"
+    },
+    {
+      "name": "domain_required",
+      "value": "請輸入網域"
+    },
+    {
+      "name": "domain_invalid",
+      "value": "網域無效"
+    },
+    {
+      "name": "domain_https_only",
+      "value": "僅支援 HTTPS"
+    },
+    {
+      "name": "domain_validate_http_format",
+      "value": "驗證失敗：HTTP {0}"
+    },
+    {
+      "name": "domain_not_v2ex",
+      "value": "未返回 V2EX 站點資訊"
+    },
+    {
+      "name": "domain_requires_verified_session",
+      "value": "自訂網域需先有已驗證工作階段"
+    },
+    {
+      "name": "domain_validated",
+      "value": "驗證通過"
+    },
+    {
+      "name": "domain_validate_failed",
+      "value": "驗證失敗"
+    },
+    {
+      "name": "domain_validate_failed_format",
+      "value": "驗證失敗：{0}"
+    },
+    {
+      "name": "domain_network_error",
+      "value": "網路錯誤"
+    },
+    {
+      "name": "domain_switched",
+      "value": "V2EX 站點已切換"
+    },
+    {
+      "name": "domain_hint_default",
+      "value": "預設"
+    },
+    {
+      "name": "domain_hint_edge_cdn",
+      "value": "Edge CDN"
+    },
+    {
+      "name": "domain_hint_global",
+      "value": "全球"
+    },
+    {
+      "name": "domain_hint_fast",
+      "value": "快速"
+    },
+    {
+      "name": "domain_hint_china",
+      "value": "中國大陸"
+    },
+    {
+      "name": "domain_hint_us",
+      "value": "美國"
+    },
+    {
+      "name": "domain_hint_japan",
+      "value": "日本"
+    },
+    {
+      "name": "domain_hint_hong_kong",
+      "value": "香港"
     },
     {
       "name": "theme",
@@ -446,7 +538,7 @@
     },
     {
       "name": "avatar_appearance",
-      "value": "頭像外觀"
+      "value": "頭像"
     },
     {
       "name": "avatar_appearance_soft",
@@ -466,19 +558,19 @@
     },
     {
       "name": "reply_action_alignment",
-      "value": "回覆按鈕對齊方式"
+      "value": "回覆按鈕"
     },
     {
       "name": "remember_read_position",
-      "value": "記住閱讀位置"
+      "value": "閱讀位置"
     },
     {
       "name": "base64_decode",
-      "value": "Base64 解碼"
+      "value": "Base64"
     },
     {
       "name": "base64_subtitle",
-      "value": "預設點選查看，避免直接暴露信箱、微信等明文"
+      "value": "點選查看，避免直接露出隱私文字"
     },
     {
       "name": "threaded",
@@ -538,15 +630,15 @@
     },
     {
       "name": "reading_preview_intro",
-      "value": "這是閱讀文字縮放設定的即時預覽區域。拖曳下方滑桿後，本文、標題、列表、引用和程式碼會依同一比例縮放，用來接近實際主題詳情中的閱讀感受。"
+      "value": "拖曳滑桿預覽本文、標題、引用和程式碼縮放。"
     },
     {
       "name": "reading_preview_body",
-      "value": "V2EX 的討論通常包含短句、連結、引用和程式碼片段。預覽維持在頁面背景上，避免額外卡片影響對文字排版的判斷。"
+      "value": "短句、連結與程式碼會一起變化，接近主題詳情效果。"
     },
     {
       "name": "reading_preview_quote",
-      "value": "> 如果一種設定能讓你不用停頓就讀完整段內容，它大概就是合適的。"
+      "value": "> 順著讀完，就是合適的字號。"
     },
     {
       "name": "text_scale",
@@ -558,11 +650,11 @@
     },
     {
       "name": "restore_reading_scale_title",
-      "value": "恢復預設閱讀文字縮放設定"
+      "value": "恢復預設字號"
     },
     {
       "name": "restore_reading_scale_message",
-      "value": "將文字縮放恢復為預設值。確定繼續嗎？"
+      "value": "將閱讀字號恢復預設？"
     },
     {
       "name": "clear_cache",
@@ -570,15 +662,15 @@
     },
     {
       "name": "clear_cache_message",
-      "value": "只會清理離線快取，不會清理登入狀態或偏好設定。確定繼續嗎？"
+      "value": "僅清理離線快取，保留登入和偏好。繼續嗎？"
     },
     {
       "name": "clear_local_data",
-      "value": "清理本機資料"
+      "value": "清理資料"
     },
     {
       "name": "clear_local_data_message",
-      "value": "將清理本機儲存的稍後讀、關注節點、最近瀏覽、已讀狀態、草稿、搜尋歷史、通知快取和離線快取。登入狀態與偏好設定會保留。確定繼續嗎？"
+      "value": "清理稍後讀、關注節點、瀏覽、已讀、草稿、搜尋、通知和快取；保留登入與偏好。繼續嗎？"
     },
     {
       "name": "read_cache_status_failed",
@@ -606,7 +698,7 @@
     },
     {
       "name": "refresh_cache_status",
-      "value": "重新整理快取狀態"
+      "value": "更新狀態"
     },
     {
       "name": "diagnostics",
@@ -622,7 +714,7 @@
     },
     {
       "name": "no_local_log_files",
-      "value": "暫無可分享的本機記錄檔"
+      "value": "暫無本機記錄"
     },
     {
       "name": "retained_local_log_files_count",
@@ -658,7 +750,7 @@
     },
     {
       "name": "reopen_keeps_logs",
-      "value": "重新開啟應用後會保留最近啟動記錄"
+      "value": "重開應用仍保留最近記錄"
     },
     {
       "name": "no_diagnostics_logs",
@@ -686,7 +778,7 @@
     },
     {
       "name": "share_file_unavailable_copied",
-      "value": "分享檔案不可用，已複製，可手動貼上"
+      "value": "分享不可用，已複製文字"
     },
     {
       "name": "share_failed",
@@ -738,7 +830,7 @@
     },
     {
       "name": "https_proxy_entry_subtitle",
-      "value": "代理伺服器使用 TLS，不是存取 HTTPS 目標站"
+      "value": "代理端 TLS 加密"
     },
     {
       "name": "socks5_auth_optional",
@@ -830,7 +922,7 @@
     },
     {
       "name": "socks5_auth_unsupported",
-      "value": "SOCKS5 暫不支援使用者名稱/密碼驗證"
+      "value": "暫不支援 SOCKS5 驗證"
     },
     {
       "name": "testing",
@@ -942,7 +1034,7 @@
     },
     {
       "name": "visible_home_nodes_reorder_hint",
-      "value": "已顯示欄位  長按欄位可拖曳排序"
+      "value": "已顯示 · 長按排序"
     },
     {
       "name": "add_home_column",
@@ -1258,15 +1350,15 @@
     },
     {
       "name": "search_external_summary",
-      "value": "官方 API 暫無主題搜尋，使用系統瀏覽器搜尋 V2EX 主題"
+      "value": "用系統瀏覽器搜尋 V2EX 主題"
     },
     {
       "name": "search_local_with_nodes_summary",
-      "value": "在收藏 / 最近瀏覽 / 關注節點 / 離線快取 / 節點庫中搜尋"
+      "value": "搜收藏、瀏覽、關注、快取和節點庫"
     },
     {
       "name": "search_local_summary",
-      "value": "在收藏 / 最近瀏覽 / 關注節點 / 離線快取中搜尋"
+      "value": "搜收藏、瀏覽、關注和快取"
     },
     {
       "name": "search_index_loading",
@@ -1282,11 +1374,11 @@
     },
     {
       "name": "search_nodes_library_empty_hint",
-      "value": "節點庫和你關注的節點會顯示在這裡"
+      "value": "節點庫和關注節點會顯示在這裡"
     },
     {
       "name": "search_followed_nodes_empty_hint",
-      "value": "你關注的節點會顯示在這裡"
+      "value": "關注節點會顯示在這裡"
     },
     {
       "name": "search_no_nodes",
@@ -1294,7 +1386,7 @@
     },
     {
       "name": "search_filter_hint",
-      "value": "輸入關鍵字後點擊搜尋，篩選在右上角"
+      "value": "輸入關鍵字後可篩選"
     },
     {
       "name": "about_app_info",
@@ -1330,7 +1422,7 @@
     },
     {
       "name": "about_v2next_ack",
-      "value": "感謝 V2Next 專案在 V2EX 客戶端體驗上的探索。"
+      "value": "感謝 V2Next 對 V2EX 客戶端體驗的探索。"
     },
     {
       "name": "about_source_license",
@@ -1338,11 +1430,11 @@
     },
     {
       "name": "about_third_party_client",
-      "value": "Next2V 是面向 V2EX 的第三方客戶端。"
+      "value": "Next2V 是 V2EX 第三方客戶端。"
     },
     {
       "name": "about_copyright",
-      "value": "應用原始碼按 MIT License 開源；V2EX 名稱、標誌和內容歸其各自權利人所有。"
+      "value": "原始碼按 MIT License 開源；V2EX 名稱、標誌和內容歸權利人所有。"
     },
     {
       "name": "about_app_name",
@@ -1470,7 +1562,7 @@
     },
     {
       "name": "two_factor_description",
-      "value": "V2EX 需要完成兩步驟驗證後才能繼續存取帳號內容。"
+      "value": "完成兩步驟驗證後可繼續存取帳號。"
     },
     {
       "name": "two_factor_code_placeholder",
@@ -1550,7 +1642,7 @@
     },
     {
       "name": "load_all_replies_warning_format",
-      "value": "該主題有 {0} 則回覆，載入全部回覆可能需要較長時間。\n\n是否繼續載入以啟用完整的樓中樓檢視？"
+      "value": "該主題有 {0} 則回覆，載入可能較慢。\n\n繼續載入完整樓中樓？"
     },
     {
       "name": "favorited",
@@ -1678,7 +1770,7 @@
     },
     {
       "name": "reply_confirm_submit_page_format",
-      "value": "確定向{0}提交回覆嗎？\n\nV2EX 回覆通常至少消耗 5 銅幣，提交後會修改你的帳號狀態。"
+      "value": "確定向 {0} 回覆？\n\n通常消耗至少 5 銅幣，並修改帳號狀態。"
     },
     {
       "name": "reply_current_topic",
@@ -1898,7 +1990,7 @@
     },
     {
       "name": "node_picker_helper",
-      "value": "點擊節點後會自動填入發帖草稿。"
+      "value": "點選節點填入草稿"
     },
     {
       "name": "node_picker_search_placeholder",
@@ -2362,7 +2454,7 @@
     },
     {
       "name": "editor_confirm_post_format",
-      "value": "確定在節點「{0}」發佈主題《{1}》嗎？\n\nV2EX 發帖通常至少消耗 20 銅幣，提交後會修改你的帳號狀態。"
+      "value": "確定在「{0}」發布《{1}》？\n\n通常消耗至少 20 銅幣，並修改帳號狀態。"
     },
     {
       "name": "reply_composer_title",
@@ -2754,23 +2846,23 @@
     },
     {
       "name": "backup_export_subtitle",
-      "value": "備份設定與本機資料；可選擇包含帳號與登入憑證（將用密碼加密整個備份）。"
+      "value": "備份設定與本機資料；可加密包含帳號。"
     },
     {
       "name": "backup_import_subtitle",
-      "value": "先預覽備份內容，再取代本機資料。"
+      "value": "先預覽，再覆蓋本機資料。"
     },
     {
       "name": "backup_export_message",
-      "value": "將設定和本機資料匯出為 V2Next 備份檔。不會包含登入狀態、Cookie、權杖和離線快取。繼續嗎？"
+      "value": "匯出設定與本機資料，不含登入、Cookie、權杖和離線快取。繼續嗎？"
     },
     {
       "name": "backup_import_preview_message",
-      "value": "備份時間 {0}，應用程式 {1}（{2}）。包含：{3}。登入狀態、Cookie 和權杖不會被更改。"
+      "value": "{0} 的備份，應用 {1}（{2}）。包含：{3}。登入、Cookie 和權杖不變。"
     },
     {
       "name": "backup_import_confirm_message",
-      "value": "這會用備份覆寫支援的本機設定、草稿、稍後讀/關注/歷史/搜尋資料。登入狀態會保留。繼續嗎？"
+      "value": "將用備份覆蓋支援的設定、草稿、稍後讀、關注、歷史和搜尋；保留登入。繼續嗎？"
     },
     {
       "name": "backup_exported",
@@ -2810,7 +2902,7 @@
     },
     {
       "name": "backup_include_user_info_hint",
-      "value": "包含帳號清單與登入憑證，整個備份將以密碼加密。"
+      "value": "包含帳號與登入憑證，並加密整個備份。"
     },
     {
       "name": "backup_set_password",
@@ -2846,7 +2938,7 @@
     },
     {
       "name": "backup_import_restores_accounts",
-      "value": "此備份包含帳號與登入資訊，匯入將取代目前的帳號。"
+      "value": "備份含帳號資訊，將取代目前帳號。"
     },
     {
       "name": "image_upload_action_new",
@@ -2910,7 +3002,7 @@
     },
     {
       "name": "image_upload_imgur_section",
-      "value": "Imgur 圖床"
+      "value": "Imgur"
     },
     {
       "name": "image_upload_imgur_clientid_label",
@@ -2922,7 +3014,7 @@
     },
     {
       "name": "image_upload_imgur_hint",
-      "value": "Imgur 已停止新應用註冊，僅當你已有 Client ID 時可用。"
+      "value": "Imgur 停止新註冊，僅已有 Client ID 可用。"
     },
     {
       "name": "image_upload_wait",
@@ -2942,7 +3034,7 @@
     },
     {
       "name": "image_upload_imgbb_hint",
-      "value": "上傳到 ImgBB 需要你自己的免費 API Key，在下方註冊並取得。"
+      "value": "需要自備 ImgBB API Key。"
     },
     {
       "name": "image_upload_imgbb_apikey_label",
@@ -2954,11 +3046,11 @@
     },
     {
       "name": "image_upload_imgbb_get_key",
-      "value": "取得 ImgBB API Key"
+      "value": "取得 Key"
     },
     {
       "name": "image_upload_smms_hint",
-      "value": "上傳到 sm.ms 需要你自己的免費 API Token，在下方註冊並取得。中國大陸可能需要透過 App 代理。"
+      "value": "需要自備 sm.ms API Token，中國大陸可能需代理。"
     },
     {
       "name": "image_upload_smms_token_label",
@@ -2970,7 +3062,7 @@
     },
     {
       "name": "image_upload_smms_get_token",
-      "value": "取得 sm.ms API Token"
+      "value": "取得 Token"
     },
     {
       "name": "daily_checkin_reward_toast",
@@ -2982,7 +3074,7 @@
     },
     {
       "name": "perm_distributed_datasync_reason",
-      "value": "在你的多台裝置間同步收藏與閱讀記錄"
+      "value": "同步收藏與閱讀記錄"
     },
     {
       "name": "cloud_sync",
@@ -2990,7 +3082,7 @@
     },
     {
       "name": "cloud_sync_hint",
-      "value": "登入華為帳號後,在你的多部裝置間同步搜尋記錄等資料"
+      "value": "同步搜尋、收藏、閱讀等本機資料"
     },
     {
       "name": "cloud_sync_now",
@@ -3010,7 +3102,7 @@
     },
     {
       "name": "cloud_sync_enable",
-      "value": "啟用雲同步"
+      "value": "啟用同步"
     },
     {
       "name": "cloud_sync_content",
@@ -3038,7 +3130,7 @@
     },
     {
       "name": "cloud_sync_cloud_disabled",
-      "value": "雲空間同步未開啟,請在系統設定的「雲空間」中開啟本應用程式的資料同步"
+      "value": "請先在系統雲空間開啟本應用同步"
     },
     {
       "name": "cloud_sync_open_cloud_space",
