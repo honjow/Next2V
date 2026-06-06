@@ -113,6 +113,14 @@ export class ApiService {
   private http: HttpClient = HttpClient.getInstance()
   private readonly CONNECT_TIMEOUT_MS: number = 10000
   private readonly READ_TIMEOUT_MS: number = 15000
+  // V2EX's daily-redeem anti-abuse check is sensitive to request fidelity. Every other V2EX client (V2er,
+  // V2EX+, v2compose, dengzii, ...) redeems over plain HTTP but sends a real browser User-Agent plus the
+  // Referer of the mission page; V2Next's default HTTP UA carries 'OpenHarmony / ArkWeb', an obvious
+  // automation tell. Send a real desktop Chrome UA + the proper Referer on the check-in requests to match
+  // the ecosystem. (The wall is intermittent rate-limiting, so this is fidelity/parity, not a guaranteed
+  // bypass — see redeemDailyMissionWithCookie.)
+  private static readonly CHECKIN_USER_AGENT: string =
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
 
   // ==================== V1 Public API (V1) ====================
 
@@ -646,7 +654,16 @@ export class ApiService {
     // silently refuses an automated GET and just re-serves the claim page — the old code trusted the
     // request blindly and reported success even though nothing was claimed. If the page is still claimable
     // after the attempt, surface a failure instead of a false success.
-    const freshHtml = await this.getCookieHtml('/mission/daily', cookie)
+    // Send the redeem flow with a real browser UA + the mission-page Referer so the requests look like a
+    // normal navigation (home -> /mission/daily -> redeem -> /balance), matching every other V2EX client.
+    const base = this.http.getBaseUrl().replace(/\/+$/, '')
+    const missionReferer = `${base}/mission/daily`
+    const homeReferer = `${base}/`
+    const freshHtml = await this.getCookieHtml(
+      '/mission/daily',
+      cookie,
+      this.checkinHeaders(homeReferer),
+    )
     if (!V2exSessionParser.extractUsername(freshHtml)) {
       throw ApiErrors.webSessionExpired()
     }
@@ -655,7 +672,11 @@ export class ApiService {
       // Nothing to claim (already checked in / unavailable) — return the current state, not an error.
       return { mission: fresh, rewardCoins: 0 }
     }
-    const redeemHtml = await this.getCookieHtml(fresh.redeemPath, cookie)
+    const redeemHtml = await this.getCookieHtml(
+      fresh.redeemPath,
+      cookie,
+      this.checkinHeaders(missionReferer),
+    )
     const after = V2exAccountParser.extractDailyMission(redeemHtml)
     if (after.canRedeem) {
       throw ApiErrors.checkinNotAvailable()
@@ -663,12 +684,22 @@ export class ApiService {
     // Best-effort reward amount from /balance ("每日登录" row); a parse miss just drops it from the toast.
     let rewardCoins = 0
     try {
-      const balanceHtml = await this.getCookieHtml('/balance', cookie)
+      const balanceHtml = await this.getCookieHtml(
+        '/balance',
+        cookie,
+        this.checkinHeaders(missionReferer),
+      )
       rewardCoins = V2exAccountParser.extractLatestDailyReward(balanceHtml)
     } catch (_error) {
       rewardCoins = 0
     }
     return { mission: after, rewardCoins: rewardCoins }
+  }
+
+  // Real-browser fidelity headers for the daily check-in requests (see CHECKIN_USER_AGENT). Referer varies
+  // per step so the redeem looks like it was navigated to from the mission page.
+  private checkinHeaders(referer: string): Record<string, string> {
+    return { 'User-Agent': ApiService.CHECKIN_USER_AGENT, 'Referer': referer }
   }
 
   async getMyTopicsWithCookie(cookie: string, page: number = 1): Promise<V2exPagedTopicsResult> {
@@ -1432,9 +1463,19 @@ export class ApiService {
     }
   }
 
-  private async getCookieHtml(path: string, cookie: string): Promise<string> {
+  private async getCookieHtml(
+    path: string,
+    cookie: string,
+    extraHeaders?: Record<string, string>,
+  ): Promise<string> {
     const endpoint = this.cookieEndpoint(path)
-    const res = await this.http.getTextResponseWithHeaders(endpoint, { 'Cookie': cookie })
+    const requestHeaders: Record<string, string> = { 'Cookie': cookie }
+    if (extraHeaders) {
+      Object.keys(extraHeaders).forEach((key: string) => {
+        requestHeaders[key] = extraHeaders[key]
+      })
+    }
+    const res = await this.http.getTextResponseWithHeaders(endpoint, requestHeaders)
     this.assertNoTwoFactorChallenge(endpoint, res.text, res.location)
     // Real-time balance sync: every signed-in V2EX page carries the top-right #money / balance_area widget,
     // so harvest it here (the one chokepoint for authed HTML) — a feed refresh / opening a topic keeps the
@@ -2397,10 +2438,16 @@ export class ApiService {
       return false
     }
     const escapedUsername = cleanUsername.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-    const memberLink = new RegExp(`<a\\b[^>]*href=["'][^"']*\\/member\\/${escapedUsername}(?:[?#][^"']*)?["'][^>]*>[\\s\\S]*?<\\/a>`, 'gi')
+    const memberLink = new RegExp(
+      `<a\\b[^>]*href=["'][^"']*\\/member\\/${escapedUsername}(?:[?#][^"']*)?["'][^>]*>[\\s\\S]*?<\\/a>`,
+      'gi',
+    )
     const escapedRole = cleanRole.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
     const rolePattern = new RegExp(`(?:^|\\s)${escapedRole}(?:\\s|$)`, 'i')
-    const roleClassPattern = new RegExp(`class=["'][^"']*(?:\\bbadge\\b[^"']*\\b${escapedRole}\\b|\\b${escapedRole}\\b[^"']*\\bbadge\\b)[^"']*["']`, 'i')
+    const roleClassPattern = new RegExp(
+      `class=["'][^"']*(?:\\bbadge\\b[^"']*\\b${escapedRole}\\b|\\b${escapedRole}\\b[^"']*\\bbadge\\b)[^"']*["']`,
+      'i',
+    )
     let match: RegExpExecArray | null = memberLink.exec(html || '')
     while (match !== null) {
       const linkHtml = match[0] || ''
