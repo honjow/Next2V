@@ -286,7 +286,7 @@
     },
     {
       "name": "api_token_subtitle",
-      "value": "For V2EX API v2 only"
+      "value": "Saved; for V2EX API v2 only"
     },
     {
       "name": "clear_api_auth",
@@ -294,7 +294,7 @@
     },
     {
       "name": "clear_api_auth_message",
-      "value": "Clears only the local API token. Web login stays."
+      "value": "Only clears the local Personal Access Token. Web login stays signed in."
     },
     {
       "name": "api_auth_configured",
@@ -422,11 +422,11 @@
     },
     {
       "name": "home_tab_auto_hide",
-      "value": "Hide home tabs"
+      "value": "Auto-hide home tabs"
     },
     {
       "name": "topic_detail_reply_button_auto_hide",
-      "value": "Hide reply button"
+      "value": "Auto-hide reply button"
     },
     {
       "name": "image_auto_load",
@@ -434,7 +434,7 @@
     },
     {
       "name": "wifi_only_images",
-      "value": "Wi-Fi only"
+      "value": "Images on Wi-Fi only"
     },
     {
       "name": "api_domain",
@@ -538,7 +538,7 @@
     },
     {
       "name": "avatar_appearance",
-      "value": "Avatar"
+      "value": "Avatar appearance"
     },
     {
       "name": "avatar_appearance_soft",
@@ -558,15 +558,15 @@
     },
     {
       "name": "reply_action_alignment",
-      "value": "Reply button"
+      "value": "Reply button alignment"
     },
     {
       "name": "remember_read_position",
-      "value": "Read position"
+      "value": "Remember reading progress"
     },
     {
       "name": "base64_decode",
-      "value": "Base64"
+      "value": "Base64 decode"
     },
     {
       "name": "base64_subtitle",
@@ -630,15 +630,15 @@
     },
     {
       "name": "reading_preview_intro",
-      "value": "Drag the slider to preview body, headings, quotes, and code."
+      "value": "Drag the slider to preview scaling for body, headings, quotes, and code."
     },
     {
       "name": "reading_preview_body",
-      "value": "Text, links, and code scale like topic details."
+      "value": "Text, links, quotes, and code scale together, close to topic details."
     },
     {
       "name": "reading_preview_quote",
-      "value": "> Easy reading means the size is right."
+      "value": "> If you can read a full paragraph smoothly, the size is right."
     },
     {
       "name": "text_scale",
@@ -654,7 +654,7 @@
     },
     {
       "name": "restore_reading_scale_message",
-      "value": "Restore the reading size?"
+      "value": "Restore reading size to default?"
     },
     {
       "name": "clear_cache",
@@ -666,11 +666,11 @@
     },
     {
       "name": "clear_local_data",
-      "value": "Clear data"
+      "value": "Clear local data"
     },
     {
       "name": "clear_local_data_message",
-      "value": "Clears read later, followed nodes, history, read state, drafts, search, notifications, and cache. Login and preferences stay."
+      "value": "Clears local read later, followed nodes, recent views, read state, drafts, search history, notification cache, and offline cache. Login and preferences stay."
     },
     {
       "name": "read_cache_status_failed",
@@ -698,7 +698,7 @@
     },
     {
       "name": "refresh_cache_status",
-      "value": "Refresh status"
+      "value": "Refresh cache status"
     },
     {
       "name": "diagnostics",
@@ -714,7 +714,7 @@
     },
     {
       "name": "no_local_log_files",
-      "value": "No local logs"
+      "value": "No local log files"
     },
     {
       "name": "retained_local_log_files_count",
@@ -778,7 +778,7 @@
     },
     {
       "name": "share_file_unavailable_copied",
-      "value": "Sharing unavailable; text copied"
+      "value": "Share file unavailable; text copied"
     },
     {
       "name": "share_failed",
@@ -830,7 +830,7 @@
     },
     {
       "name": "https_proxy_entry_subtitle",
-      "value": "TLS on the proxy endpoint"
+      "value": "TLS to the proxy server, not the target site HTTPS"
     },
     {
       "name": "socks5_auth_optional",
@@ -1034,7 +1034,7 @@
     },
     {
       "name": "visible_home_nodes_reorder_hint",
-      "value": "Shown · long-press to reorder"
+      "value": "Shown columns · long-press to reorder"
     },
     {
       "name": "add_home_column",
@@ -1066,11 +1066,11 @@
     },
     {
       "name": "two_factor_relogin_required",
-      "value": "V2EX needs two-factor verification. Sign in again"
+      "value": "V2EX requires two-factor verification. Sign in again"
     },
     {
       "name": "two_factor_required",
-      "value": "V2EX needs two-factor verification"
+      "value": "V2EX requires two-factor verification"
     },
     {
       "name": "login_validation_failed",
@@ -1350,15 +1350,15 @@
     },
     {
       "name": "search_external_summary",
-      "value": "Search V2EX topics in the browser"
+      "value": "Official API has no topic search; opens V2EX search in the browser"
     },
     {
       "name": "search_local_with_nodes_summary",
-      "value": "Search favorites, history, follows, cache, and node library"
+      "value": "Search saved items, recent views, followed nodes, cache, and node library"
     },
     {
       "name": "search_local_summary",
-      "value": "Search favorites, history, follows, and cache"
+      "value": "Search saved items, recent views, followed nodes, and cache"
     },
     {
       "name": "search_index_loading",
@@ -1386,7 +1386,7 @@
     },
     {
       "name": "search_filter_hint",
-      "value": "Enter keywords, then filter"
+      "value": "Search keywords, then use top-right filters"
     },
     {
       "name": "about_app_info",
@@ -1562,7 +1562,7 @@
     },
     {
       "name": "two_factor_description",
-      "value": "Verify to continue accessing your account."
+      "value": "Complete two-factor verification to continue accessing your account."
     },
     {
       "name": "two_factor_code_placeholder",
@@ -2226,7 +2226,7 @@
     },
     {
       "name": "api_error_login_state_unconfirmed",
-      "value": "Login failed: cannot confirm state. Use web login."
+      "value": "Login failed: cannot confirm login state. Use web login."
     },
     {
       "name": "api_error_login_session_missing",
@@ -2846,7 +2846,7 @@
     },
     {
       "name": "backup_export_subtitle",
-      "value": "Back up settings and local data; encrypt accounts if needed."
+      "value": "Back up settings and local data; accounts can be encrypted."
     },
     {
       "name": "backup_import_subtitle",
@@ -2854,15 +2854,15 @@
     },
     {
       "name": "backup_export_message",
-      "value": "Export settings and local data; excludes login, Cookie, tokens, and offline cache. Continue?"
+      "value": "Export settings and local data; excludes login state, Cookie, tokens, and offline cache. Continue?"
     },
     {
       "name": "backup_import_preview_message",
-      "value": "Backup {0}, app {1} ({2}). Includes: {3}. Login, Cookie, and tokens stay."
+      "value": "Backup {0}, app {1} ({2}). Includes: {3}. Login state, Cookie, and tokens stay."
     },
     {
       "name": "backup_import_confirm_message",
-      "value": "Overwrite settings, drafts, read-later, follows, history, and search. Login stays. Continue?"
+      "value": "Overwrite settings, drafts, read-later, followed nodes, history, and search. Login state stays. Continue?"
     },
     {
       "name": "backup_exported",
@@ -2902,7 +2902,7 @@
     },
     {
       "name": "backup_include_user_info_hint",
-      "value": "Includes accounts and credentials, then encrypts the backup."
+      "value": "Includes accounts and credentials; the whole backup will be encrypted."
     },
     {
       "name": "backup_set_password",
@@ -2938,7 +2938,7 @@
     },
     {
       "name": "backup_import_restores_accounts",
-      "value": "Backup includes accounts and will replace current accounts."
+      "value": "Backup includes accounts and login info, and will replace current accounts."
     },
     {
       "name": "image_upload_action_new",
@@ -2970,7 +2970,7 @@
     },
     {
       "name": "image_upload_error_forbidden",
-      "value": "Upload rejected; check your credential or region"
+      "value": "Upload rejected; check credentials or region"
     },
     {
       "name": "image_upload_error_server",
@@ -3046,7 +3046,7 @@
     },
     {
       "name": "image_upload_imgbb_get_key",
-      "value": "Get Key"
+      "value": "Get API Key"
     },
     {
       "name": "image_upload_smms_hint",
@@ -3062,7 +3062,7 @@
     },
     {
       "name": "image_upload_smms_get_token",
-      "value": "Get Token"
+      "value": "Get API Token"
     },
     {
       "name": "daily_checkin_reward_toast",
@@ -3082,7 +3082,7 @@
     },
     {
       "name": "cloud_sync_hint",
-      "value": "Sync search, collections, reading, and local data."
+      "value": "Sign in to a Huawei account to sync search, collections, reading, and other local data."
     },
     {
       "name": "cloud_sync_now",
@@ -3102,7 +3102,7 @@
     },
     {
       "name": "cloud_sync_enable",
-      "value": "Enable sync"
+      "value": "Enable cloud sync"
     },
     {
       "name": "cloud_sync_content",
@@ -3130,7 +3130,7 @@
     },
     {
       "name": "cloud_sync_cloud_disabled",
-      "value": "Enable this app in System Cloud first."
+      "value": "Enable this app's data sync in System Cloud first."
     },
     {
       "name": "cloud_sync_open_cloud_space",

@@ -286,7 +286,7 @@
     },
     {
       "name": "api_token_subtitle",
-      "value": "V2EX API v2 のみに使用"
+      "value": "保存済み。V2EX API v2 のみに使用します"
     },
     {
       "name": "clear_api_auth",
@@ -294,7 +294,7 @@
     },
     {
       "name": "clear_api_auth_message",
-      "value": "ローカル API Token のみ削除します。Web ログインは維持されます。"
+      "value": "ローカルの Personal Access Token のみ削除します。Web ログインは維持されます。"
     },
     {
       "name": "api_auth_configured",
@@ -422,11 +422,11 @@
     },
     {
       "name": "home_tab_auto_hide",
-      "value": "ホームタブを隠す"
+      "value": "ホームタブを自動で隠す"
     },
     {
       "name": "topic_detail_reply_button_auto_hide",
-      "value": "返信ボタンを隠す"
+      "value": "返信ボタンを自動で隠す"
     },
     {
       "name": "image_auto_load",
@@ -434,7 +434,7 @@
     },
     {
       "name": "wifi_only_images",
-      "value": "Wi-Fi のみ"
+      "value": "画像は Wi-Fi のみで読み込み"
     },
     {
       "name": "api_domain",
@@ -538,7 +538,7 @@
     },
     {
       "name": "avatar_appearance",
-      "value": "アバター"
+      "value": "アバター表示"
     },
     {
       "name": "avatar_appearance_soft",
@@ -558,15 +558,15 @@
     },
     {
       "name": "reply_action_alignment",
-      "value": "返信ボタン"
+      "value": "返信ボタン配置"
     },
     {
       "name": "remember_read_position",
-      "value": "読書位置"
+      "value": "読書進捗を記憶"
     },
     {
       "name": "base64_decode",
-      "value": "Base64"
+      "value": "Base64 デコード"
     },
     {
       "name": "base64_subtitle",
@@ -634,11 +634,11 @@
     },
     {
       "name": "reading_preview_body",
-      "value": "短文、リンク、コードも詳細画面に近く拡大縮小します。"
+      "value": "短文、リンク、引用、コードが同じ倍率で拡大縮小し、詳細画面に近づきます。"
     },
     {
       "name": "reading_preview_quote",
-      "value": "> 無理なく読めるなら、ちょうどよい文字サイズです。"
+      "value": "> 段落を無理なく読み切れるなら、ちょうどよい文字サイズです。"
     },
     {
       "name": "text_scale",
@@ -654,7 +654,7 @@
     },
     {
       "name": "restore_reading_scale_message",
-      "value": "読書サイズを既定に戻しますか？"
+      "value": "読書サイズを既定値に戻しますか？"
     },
     {
       "name": "clear_cache",
@@ -666,11 +666,11 @@
     },
     {
       "name": "clear_local_data",
-      "value": "データ削除"
+      "value": "ローカルデータを削除"
     },
     {
       "name": "clear_local_data_message",
-      "value": "あとで読む、フォローノード、履歴、既読、下書き、検索、通知、キャッシュを削除します。ログインと設定は残します。続行しますか？"
+      "value": "ローカルのあとで読む、フォローノード、最近の閲覧、既読状態、下書き、検索履歴、通知キャッシュ、オフラインキャッシュを削除します。ログインと設定は残します。続行しますか？"
     },
     {
       "name": "read_cache_status_failed",
@@ -698,7 +698,7 @@
     },
     {
       "name": "refresh_cache_status",
-      "value": "状態更新"
+      "value": "キャッシュ状態を更新"
     },
     {
       "name": "diagnostics",
@@ -714,7 +714,7 @@
     },
     {
       "name": "no_local_log_files",
-      "value": "ローカルログはありません"
+      "value": "ローカルログファイルはありません"
     },
     {
       "name": "retained_local_log_files_count",
@@ -778,7 +778,7 @@
     },
     {
       "name": "share_file_unavailable_copied",
-      "value": "共有できないため、テキストをコピーしました"
+      "value": "共有ファイルを利用できないため、テキストをコピーしました"
     },
     {
       "name": "share_failed",
@@ -830,7 +830,7 @@
     },
     {
       "name": "https_proxy_entry_subtitle",
-      "value": "プロキシ側で TLS を使用"
+      "value": "プロキシサーバーに TLS を使用します。対象サイトの HTTPS ではありません"
     },
     {
       "name": "socks5_auth_optional",
@@ -1034,7 +1034,7 @@
     },
     {
       "name": "visible_home_nodes_reorder_hint",
-      "value": "表示中 · 長押しで並べ替え"
+      "value": "表示中のカラム · 長押しで並べ替え"
     },
     {
       "name": "add_home_column",
@@ -1066,11 +1066,11 @@
     },
     {
       "name": "two_factor_relogin_required",
-      "value": "V2EX で二要素認証が必要です。再ログインしてください"
+      "value": "V2EX で二要素認証の完了が必要です。再ログインしてください"
     },
     {
       "name": "two_factor_required",
-      "value": "V2EX で二要素認証が必要です"
+      "value": "V2EX で二要素認証の完了が必要です"
     },
     {
       "name": "login_validation_failed",
@@ -1350,15 +1350,15 @@
     },
     {
       "name": "search_external_summary",
-      "value": "ブラウザーで V2EX トピックを検索"
+      "value": "公式 API にトピック検索はありません。ブラウザーで V2EX を検索します"
     },
     {
       "name": "search_local_with_nodes_summary",
-      "value": "お気に入り、履歴、フォロー、キャッシュ、ノード庫を検索"
+      "value": "保存項目、最近の閲覧、フォローノード、キャッシュ、ノード庫を検索"
     },
     {
       "name": "search_local_summary",
-      "value": "お気に入り、履歴、フォロー、キャッシュを検索"
+      "value": "保存項目、最近の閲覧、フォローノード、キャッシュを検索"
     },
     {
       "name": "search_index_loading",
@@ -1386,7 +1386,7 @@
     },
     {
       "name": "search_filter_hint",
-      "value": "キーワード入力後に絞り込み"
+      "value": "キーワードで検索後、右上で絞り込みます"
     },
     {
       "name": "about_app_info",
@@ -1562,7 +1562,7 @@
     },
     {
       "name": "two_factor_description",
-      "value": "認証後にアカウントへアクセスできます。"
+      "value": "二要素認証を完了すると、アカウントへアクセスできます。"
     },
     {
       "name": "two_factor_code_placeholder",
@@ -2226,7 +2226,7 @@
     },
     {
       "name": "api_error_login_state_unconfirmed",
-      "value": "ログイン失敗: 状態を確認できません。Web ログインを使用してください"
+      "value": "ログイン失敗: ログイン状態を確認できません。Web ログインを使用してください"
     },
     {
       "name": "api_error_login_session_missing",
@@ -2846,7 +2846,7 @@
     },
     {
       "name": "backup_export_subtitle",
-      "value": "設定とローカルデータをバックアップ。アカウントは暗号化可。"
+      "value": "設定とローカルデータをバックアップ。アカウントは暗号化して保存できます。"
     },
     {
       "name": "backup_import_subtitle",
@@ -2854,15 +2854,15 @@
     },
     {
       "name": "backup_export_message",
-      "value": "設定とローカルデータを書き出します。ログイン、Cookie、トークン、オフラインキャッシュは含めません。続行しますか？"
+      "value": "設定とローカルデータを書き出します。ログイン状態、Cookie、トークン、オフラインキャッシュは含めません。続行しますか？"
     },
     {
       "name": "backup_import_preview_message",
-      "value": "{0} のバックアップ、アプリ {1}（{2}）。含む: {3}。ログイン、Cookie、トークンは維持されます。"
+      "value": "{0} のバックアップ、アプリ {1}（{2}）。含む: {3}。ログイン状態、Cookie、トークンは維持されます。"
     },
     {
       "name": "backup_import_confirm_message",
-      "value": "設定、下書き、あとで読む、フォロー、履歴、検索を上書きします。ログインは残します。続行？"
+      "value": "設定、下書き、あとで読む、フォローノード、履歴、検索を上書きします。ログイン状態は残します。続行しますか？"
     },
     {
       "name": "backup_exported",
@@ -2902,7 +2902,7 @@
     },
     {
       "name": "backup_include_user_info_hint",
-      "value": "アカウントとログイン情報を含め、バックアップを暗号化します。"
+      "value": "アカウントとログイン情報を含め、バックアップ全体を暗号化します。"
     },
     {
       "name": "backup_set_password",
@@ -2938,7 +2938,7 @@
     },
     {
       "name": "backup_import_restores_accounts",
-      "value": "アカウント情報を含むため、現在のアカウントを置き換えます。"
+      "value": "アカウントとログイン情報を含むため、現在のアカウントを置き換えます。"
     },
     {
       "name": "image_upload_action_new",
@@ -2970,7 +2970,7 @@
     },
     {
       "name": "image_upload_error_forbidden",
-      "value": "アップロード拒否。認証情報または地域を確認してください"
+      "value": "アップロードが拒否されました。認証情報または地域を確認してください"
     },
     {
       "name": "image_upload_error_server",
@@ -3046,7 +3046,7 @@
     },
     {
       "name": "image_upload_imgbb_get_key",
-      "value": "Key 取得"
+      "value": "API Key 取得"
     },
     {
       "name": "image_upload_smms_hint",
@@ -3062,7 +3062,7 @@
     },
     {
       "name": "image_upload_smms_get_token",
-      "value": "Token 取得"
+      "value": "API Token 取得"
     },
     {
       "name": "daily_checkin_reward_toast",
@@ -3074,7 +3074,7 @@
     },
     {
       "name": "perm_distributed_datasync_reason",
-      "value": "お気に入りと読書記録を同期します"
+      "value": "複数デバイス間でお気に入りと読書記録を同期します"
     },
     {
       "name": "cloud_sync",
@@ -3082,7 +3082,7 @@
     },
     {
       "name": "cloud_sync_hint",
-      "value": "検索、お気に入り、読書などのローカルデータを同期します。"
+      "value": "Huawei アカウントでログインすると、検索、お気に入り、読書などのローカルデータを同期できます。"
     },
     {
       "name": "cloud_sync_now",
@@ -3102,7 +3102,7 @@
     },
     {
       "name": "cloud_sync_enable",
-      "value": "同期を有効化"
+      "value": "クラウド同期を有効化"
     },
     {
       "name": "cloud_sync_content",
@@ -3130,7 +3130,7 @@
     },
     {
       "name": "cloud_sync_cloud_disabled",
-      "value": "システム設定のクラウドで本アプリの同期を有効にしてください"
+      "value": "システム設定のクラウドで本アプリのデータ同期を有効にしてください"
     },
     {
       "name": "cloud_sync_open_cloud_space",

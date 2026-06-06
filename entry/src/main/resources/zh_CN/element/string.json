@@ -286,7 +286,7 @@
     },
     {
       "name": "api_token_subtitle",
-      "value": "仅用于 V2EX API v2"
+      "value": "已保存，仅用于 V2EX API v2"
     },
     {
       "name": "clear_api_auth",
@@ -294,7 +294,7 @@
     },
     {
       "name": "clear_api_auth_message",
-      "value": "仅清除本地 API Token，不影响网页登录。"
+      "value": "仅清除本地 Personal Access Token，不影响网页登录。"
     },
     {
       "name": "api_auth_configured",
@@ -422,11 +422,11 @@
     },
     {
       "name": "home_tab_auto_hide",
-      "value": "隐藏首页标签"
+      "value": "自动隐藏首页标签"
     },
     {
       "name": "topic_detail_reply_button_auto_hide",
-      "value": "隐藏回复按钮"
+      "value": "自动隐藏回复按钮"
     },
     {
       "name": "image_auto_load",
@@ -434,7 +434,7 @@
     },
     {
       "name": "wifi_only_images",
-      "value": "Wi-Fi 加载"
+      "value": "仅 Wi-Fi 加载图片"
     },
     {
       "name": "api_domain",
@@ -538,7 +538,7 @@
     },
     {
       "name": "avatar_appearance",
-      "value": "头像"
+      "value": "头像外观"
     },
     {
       "name": "avatar_appearance_soft",
@@ -558,15 +558,15 @@
     },
     {
       "name": "reply_action_alignment",
-      "value": "回复按钮"
+      "value": "回复按钮对齐"
     },
     {
       "name": "remember_read_position",
-      "value": "阅读位置"
+      "value": "记住阅读进度"
     },
     {
       "name": "base64_decode",
-      "value": "Base64"
+      "value": "Base64 解码"
     },
     {
       "name": "base64_subtitle",
@@ -630,15 +630,15 @@
     },
     {
       "name": "reading_preview_intro",
-      "value": "拖动滑块预览正文、标题、引用和代码缩放。"
+      "value": "拖动滑块预览正文、标题、引用和代码的缩放效果。"
     },
     {
       "name": "reading_preview_body",
-      "value": "短句、链接和代码同步缩放，接近详情页。"
+      "value": "短句、链接、引用和代码会按同一比例缩放，接近主题详情页。"
     },
     {
       "name": "reading_preview_quote",
-      "value": "> 顺着读完，就是合适的字号。"
+      "value": "> 能顺着读完整段，就是合适的字号。"
     },
     {
       "name": "text_scale",
@@ -654,7 +654,7 @@
     },
     {
       "name": "restore_reading_scale_message",
-      "value": "将阅读字号恢复默认？"
+      "value": "将阅读字号恢复为默认值？"
     },
     {
       "name": "clear_cache",
@@ -666,11 +666,11 @@
     },
     {
       "name": "clear_local_data",
-      "value": "清理数据"
+      "value": "清理本地数据"
     },
     {
       "name": "clear_local_data_message",
-      "value": "清理稍后读、关注节点、浏览、已读、草稿、搜索、通知和缓存；保留登录与偏好。继续吗？"
+      "value": "清理本机稍后读、关注节点、最近浏览、已读状态、草稿、搜索历史、通知缓存和离线缓存；保留登录与偏好。继续吗？"
     },
     {
       "name": "read_cache_status_failed",
@@ -698,7 +698,7 @@
     },
     {
       "name": "refresh_cache_status",
-      "value": "刷新状态"
+      "value": "刷新缓存状态"
     },
     {
       "name": "diagnostics",
@@ -714,7 +714,7 @@
     },
     {
       "name": "no_local_log_files",
-      "value": "暂无本机日志"
+      "value": "暂无本机日志文件"
     },
     {
       "name": "retained_local_log_files_count",
@@ -778,7 +778,7 @@
     },
     {
       "name": "share_file_unavailable_copied",
-      "value": "分享不可用，已复制文本"
+      "value": "分享文件不可用，已复制文本"
     },
     {
       "name": "share_failed",
@@ -830,7 +830,7 @@
     },
     {
       "name": "https_proxy_entry_subtitle",
-      "value": "代理端 TLS 加密"
+      "value": "代理服务器使用 TLS，不代表目标站 HTTPS"
     },
     {
       "name": "socks5_auth_optional",
@@ -1034,7 +1034,7 @@
     },
     {
       "name": "visible_home_nodes_reorder_hint",
-      "value": "已显示 · 长按排序"
+      "value": "已显示栏目 · 长按排序"
     },
     {
       "name": "add_home_column",
@@ -1066,11 +1066,11 @@
     },
     {
       "name": "two_factor_relogin_required",
-      "value": "V2EX 需两步验证，请重新登录"
+      "value": "V2EX 需完成两步验证，请重新登录"
     },
     {
       "name": "two_factor_required",
-      "value": "V2EX 需两步验证"
+      "value": "V2EX 需完成两步验证"
     },
     {
       "name": "login_validation_failed",
@@ -1350,15 +1350,15 @@
     },
     {
       "name": "search_external_summary",
-      "value": "用系统浏览器搜索 V2EX 主题"
+      "value": "官方 API 暂无主题搜索，将用系统浏览器搜索 V2EX"
     },
     {
       "name": "search_local_with_nodes_summary",
-      "value": "搜收藏、浏览、关注、缓存和节点库"
+      "value": "搜索收藏、最近浏览、关注节点、缓存和节点库"
     },
     {
       "name": "search_local_summary",
-      "value": "搜收藏、浏览、关注和缓存"
+      "value": "搜索收藏、最近浏览、关注节点和缓存"
     },
     {
       "name": "search_index_loading",
@@ -1386,7 +1386,7 @@
     },
     {
       "name": "search_filter_hint",
-      "value": "输入关键词后可筛选"
+      "value": "输入关键词后搜索，可在右上角筛选"
     },
     {
       "name": "about_app_info",
@@ -1562,7 +1562,7 @@
     },
     {
       "name": "two_factor_description",
-      "value": "验证后可继续访问账号。"
+      "value": "完成两步验证后，可继续访问账号。"
     },
     {
       "name": "two_factor_code_placeholder",
@@ -2226,7 +2226,7 @@
     },
     {
       "name": "api_error_login_state_unconfirmed",
-      "value": "登录失败：无法确认状态，请用网页登录"
+      "value": "登录失败：无法确认登录状态，请用网页登录"
     },
     {
       "name": "api_error_login_session_missing",
@@ -2846,7 +2846,7 @@
     },
     {
       "name": "backup_export_subtitle",
-      "value": "备份设置和本地数据；可加密账号。"
+      "value": "备份设置与本地数据；账号可加密备份。"
     },
     {
       "name": "backup_import_subtitle",
@@ -2854,15 +2854,15 @@
     },
     {
       "name": "backup_export_message",
-      "value": "导出设置与本地数据，不含登录、Cookie、令牌和离线缓存。继续吗？"
+      "value": "导出设置与本地数据，不含登录状态、Cookie、令牌和离线缓存。继续吗？"
     },
     {
       "name": "backup_import_preview_message",
-      "value": "{0} 的备份，应用 {1}（{2}）。包含：{3}。登录、Cookie 和令牌不变。"
+      "value": "{0} 的备份，应用 {1}（{2}）。包含：{3}。登录状态、Cookie 和令牌不变。"
     },
     {
       "name": "backup_import_confirm_message",
-      "value": "用备份覆盖设置、草稿、稍后读、关注、历史和搜索；保留登录。继续吗？"
+      "value": "用备份覆盖设置、草稿、稍后读、关注节点、历史和搜索；保留登录状态。继续吗？"
     },
     {
       "name": "backup_exported",
@@ -2902,7 +2902,7 @@
     },
     {
       "name": "backup_include_user_info_hint",
-      "value": "包含账号和登录凭据，并加密备份。"
+      "value": "包含账号与登录凭据，整个备份将加密。"
     },
     {
       "name": "backup_set_password",
@@ -2938,7 +2938,7 @@
     },
     {
       "name": "backup_import_restores_accounts",
-      "value": "备份含账号信息，将替换当前账号。"
+      "value": "备份含账号与登录信息，将替换当前账号。"
     },
     {
       "name": "image_upload_action_new",
@@ -2970,7 +2970,7 @@
     },
     {
       "name": "image_upload_error_forbidden",
-      "value": "上传被拒，请检查凭证或地区"
+      "value": "上传被拒绝，请检查凭证或地区"
     },
     {
       "name": "image_upload_error_server",
@@ -3046,7 +3046,7 @@
     },
     {
       "name": "image_upload_imgbb_get_key",
-      "value": "获取 Key"
+      "value": "获取 API Key"
     },
     {
       "name": "image_upload_smms_hint",
@@ -3062,7 +3062,7 @@
     },
     {
       "name": "image_upload_smms_get_token",
-      "value": "获取 Token"
+      "value": "获取 API Token"
     },
     {
       "name": "daily_checkin_reward_toast",
@@ -3074,7 +3074,7 @@
     },
     {
       "name": "perm_distributed_datasync_reason",
-      "value": "同步收藏与阅读记录"
+      "value": "在多设备间同步收藏与阅读记录"
     },
     {
       "name": "cloud_sync",
@@ -3082,7 +3082,7 @@
     },
     {
       "name": "cloud_sync_hint",
-      "value": "同步搜索、收藏、阅读等本地数据"
+      "value": "登录华为账号后，同步搜索、收藏、阅读等本地数据"
     },
     {
       "name": "cloud_sync_now",
@@ -3102,7 +3102,7 @@
     },
     {
       "name": "cloud_sync_enable",
-      "value": "启用同步"
+      "value": "启用云同步"
     },
     {
       "name": "cloud_sync_content",
@@ -3130,7 +3130,7 @@
     },
     {
       "name": "cloud_sync_cloud_disabled",
-      "value": "请在系统云空间开启本应用同步"
+      "value": "请在系统云空间开启本应用数据同步"
     },
     {
       "name": "cloud_sync_open_cloud_space",

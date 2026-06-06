@@ -142,7 +142,7 @@ const SERVER_PARSE_CJK = [
     file: /^shared\/src\/main\/ets\/parser\//,
     tokens: [
       '金币', '银币', '铜币', '已领取', '已完成', '明天',
-      '主题列表被隐藏', '最近回复', '号会员',
+      '主题列表被隐藏', '最近回复', '最热节点', '最近新增节点', '号会员',
       '刚刚', '半小时前', '秒前', '分钟前', '小时前', '天前', '个月前', '年前',
       '小时', '分钟', '秒', '天', '个月', '年', '昨天', '前天', '月', '日',
       '登录受限', '受限的 IP 地址', '两步', '二步', '动态验证码', '安全码', '验证码', '动态',
@@ -152,6 +152,10 @@ const SERVER_PARSE_CJK = [
   {
     file: /^shared\/src\/main\/ets\/services\/AutoDailyCheckinService\.ets$/,
     tokens: ['已签到', '已领取', '已完成', '成功', '领取'],
+  },
+  {
+    file: /^entry\/src\/main\/ets\/components\/DailyCheckinWebRunner\.ets$/,
+    tokens: ['领取', '已领取', '每日登录'],
   },
   {
     file: /^shared\/src\/main\/ets\/settings\/CollectionParsers\.ets$/,

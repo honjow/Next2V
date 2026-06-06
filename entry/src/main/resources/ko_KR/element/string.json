@@ -286,7 +286,7 @@
     },
     {
       "name": "api_token_subtitle",
-      "value": "V2EX API v2에만 사용"
+      "value": "저장됨. V2EX API v2에만 사용"
     },
     {
       "name": "clear_api_auth",
@@ -294,7 +294,7 @@
     },
     {
       "name": "clear_api_auth_message",
-      "value": "로컬 API Token만 삭제합니다. Web 로그인은 유지됩니다."
+      "value": "로컬 Personal Access Token만 삭제합니다. Web 로그인은 유지됩니다."
     },
     {
       "name": "api_auth_configured",
@@ -422,11 +422,11 @@
     },
     {
       "name": "home_tab_auto_hide",
-      "value": "홈 탭 숨김"
+      "value": "홈 탭 자동 숨김"
     },
     {
       "name": "topic_detail_reply_button_auto_hide",
-      "value": "답글 버튼 숨김"
+      "value": "답글 버튼 자동 숨김"
     },
     {
       "name": "image_auto_load",
@@ -434,7 +434,7 @@
     },
     {
       "name": "wifi_only_images",
-      "value": "Wi-Fi만 로드"
+      "value": "이미지는 Wi-Fi에서만 로드"
     },
     {
       "name": "api_domain",
@@ -538,7 +538,7 @@
     },
     {
       "name": "avatar_appearance",
-      "value": "아바타"
+      "value": "아바타 표시"
     },
     {
       "name": "avatar_appearance_soft",
@@ -558,15 +558,15 @@
     },
     {
       "name": "reply_action_alignment",
-      "value": "답글 버튼"
+      "value": "답글 버튼 정렬"
     },
     {
       "name": "remember_read_position",
-      "value": "읽기 위치"
+      "value": "읽기 진행률 기억"
     },
     {
       "name": "base64_decode",
-      "value": "Base64"
+      "value": "Base64 디코딩"
     },
     {
       "name": "base64_subtitle",
@@ -634,11 +634,11 @@
     },
     {
       "name": "reading_preview_body",
-      "value": "글, 링크, 코드가 토픽 상세처럼 함께 조정됩니다."
+      "value": "글, 링크, 인용문, 코드가 같은 비율로 조정되어 토픽 상세 화면과 가깝게 보입니다."
     },
     {
       "name": "reading_preview_quote",
-      "value": "> 편하게 읽히면 알맞은 글자 크기입니다."
+      "value": "> 한 문단을 자연스럽게 읽을 수 있으면 알맞은 글자 크기입니다."
     },
     {
       "name": "text_scale",
@@ -666,11 +666,11 @@
     },
     {
       "name": "clear_local_data",
-      "value": "데이터 삭제"
+      "value": "로컬 데이터 삭제"
     },
     {
       "name": "clear_local_data_message",
-      "value": "나중에 읽기, 팔로우 노드, 기록, 읽음 상태, 초안, 검색, 알림, 캐시를 삭제합니다. 로그인과 설정은 유지합니다. 계속할까요?"
+      "value": "로컬 나중에 읽기, 팔로우 노드, 최근 본 항목, 읽음 상태, 초안, 검색 기록, 알림 캐시, 오프라인 캐시를 삭제합니다. 로그인과 설정은 유지합니다. 계속할까요?"
     },
     {
       "name": "read_cache_status_failed",
@@ -698,7 +698,7 @@
     },
     {
       "name": "refresh_cache_status",
-      "value": "상태 새로고침"
+      "value": "캐시 상태 새로고침"
     },
     {
       "name": "diagnostics",
@@ -714,7 +714,7 @@
     },
     {
       "name": "no_local_log_files",
-      "value": "로컬 로그 없음"
+      "value": "로컬 로그 파일 없음"
     },
     {
       "name": "retained_local_log_files_count",
@@ -778,7 +778,7 @@
     },
     {
       "name": "share_file_unavailable_copied",
-      "value": "공유할 수 없어 텍스트를 복사했습니다"
+      "value": "공유 파일을 사용할 수 없어 텍스트를 복사했습니다"
     },
     {
       "name": "share_failed",
@@ -830,7 +830,7 @@
     },
     {
       "name": "https_proxy_entry_subtitle",
-      "value": "프록시 쪽 TLS 사용"
+      "value": "프록시 서버에 TLS를 사용합니다. 대상 사이트 HTTPS가 아닙니다"
     },
     {
       "name": "socks5_auth_optional",
@@ -1034,7 +1034,7 @@
     },
     {
       "name": "visible_home_nodes_reorder_hint",
-      "value": "표시됨 · 길게 눌러 정렬"
+      "value": "표시된 컬럼 · 길게 눌러 정렬"
     },
     {
       "name": "add_home_column",
@@ -1066,11 +1066,11 @@
     },
     {
       "name": "two_factor_relogin_required",
-      "value": "V2EX 2단계 인증이 필요합니다. 다시 로그인하세요"
+      "value": "V2EX 2단계 인증 완료가 필요합니다. 다시 로그인하세요"
     },
     {
       "name": "two_factor_required",
-      "value": "V2EX 2단계 인증 필요"
+      "value": "V2EX 2단계 인증 완료 필요"
     },
     {
       "name": "login_validation_failed",
@@ -1350,15 +1350,15 @@
     },
     {
       "name": "search_external_summary",
-      "value": "브라우저에서 V2EX 토픽 검색"
+      "value": "공식 API에는 토픽 검색이 없어 브라우저에서 V2EX를 검색합니다"
     },
     {
       "name": "search_local_with_nodes_summary",
-      "value": "즐겨찾기, 기록, 팔로우, 캐시, 노드 라이브러리 검색"
+      "value": "저장 항목, 최근 본 항목, 팔로우 노드, 캐시, 노드 라이브러리 검색"
     },
     {
       "name": "search_local_summary",
-      "value": "즐겨찾기, 기록, 팔로우, 캐시 검색"
+      "value": "저장 항목, 최근 본 항목, 팔로우 노드, 캐시 검색"
     },
     {
       "name": "search_index_loading",
@@ -1386,7 +1386,7 @@
     },
     {
       "name": "search_filter_hint",
-      "value": "키워드 입력 후 필터링"
+      "value": "키워드로 검색한 뒤 오른쪽 위에서 필터링"
     },
     {
       "name": "about_app_info",
@@ -1562,7 +1562,7 @@
     },
     {
       "name": "two_factor_description",
-      "value": "인증 후 계정에 접근할 수 있습니다."
+      "value": "2단계 인증을 완료하면 계정에 접근할 수 있습니다."
     },
     {
       "name": "two_factor_code_placeholder",
@@ -2226,7 +2226,7 @@
     },
     {
       "name": "api_error_login_state_unconfirmed",
-      "value": "로그인 실패: 상태를 확인할 수 없습니다. Web 로그인 사용"
+      "value": "로그인 실패: 로그인 상태를 확인할 수 없습니다. Web 로그인 사용"
     },
     {
       "name": "api_error_login_session_missing",
@@ -2846,7 +2846,7 @@
     },
     {
       "name": "backup_export_subtitle",
-      "value": "설정과 로컬 데이터 백업. 계정은 암호화 가능."
+      "value": "설정과 로컬 데이터를 백업합니다. 계정은 암호화해 백업할 수 있습니다."
     },
     {
       "name": "backup_import_subtitle",
@@ -2854,15 +2854,15 @@
     },
     {
       "name": "backup_export_message",
-      "value": "설정과 로컬 데이터를 내보냅니다. 로그인, Cookie, 토큰, 오프라인 캐시는 제외됩니다. 계속할까요?"
+      "value": "설정과 로컬 데이터를 내보냅니다. 로그인 상태, Cookie, 토큰, 오프라인 캐시는 제외됩니다. 계속할까요?"
     },
     {
       "name": "backup_import_preview_message",
-      "value": "{0} 백업, 앱 {1}({2}). 포함: {3}. 로그인, Cookie, 토큰은 유지됩니다."
+      "value": "{0} 백업, 앱 {1}({2}). 포함: {3}. 로그인 상태, Cookie, 토큰은 유지됩니다."
     },
     {
       "name": "backup_import_confirm_message",
-      "value": "설정, 초안, 나중에 읽기, 팔로우, 기록, 검색을 덮어씁니다. 로그인은 유지합니다. 계속할까요?"
+      "value": "설정, 초안, 나중에 읽기, 팔로우 노드, 기록, 검색을 덮어씁니다. 로그인 상태는 유지합니다. 계속할까요?"
     },
     {
       "name": "backup_exported",
@@ -2902,7 +2902,7 @@
     },
     {
       "name": "backup_include_user_info_hint",
-      "value": "계정과 로그인 정보를 포함하고 백업을 암호화합니다."
+      "value": "계정과 로그인 정보를 포함하고 전체 백업을 암호화합니다."
     },
     {
       "name": "backup_set_password",
@@ -2938,7 +2938,7 @@
     },
     {
       "name": "backup_import_restores_accounts",
-      "value": "계정 정보가 포함되어 현재 계정을 대체합니다."
+      "value": "계정과 로그인 정보가 포함되어 현재 계정을 대체합니다."
     },
     {
       "name": "image_upload_action_new",
@@ -2970,7 +2970,7 @@
     },
     {
       "name": "image_upload_error_forbidden",
-      "value": "업로드 거부됨. 자격 증명 또는 지역을 확인하세요"
+      "value": "업로드가 거부되었습니다. 인증 정보 또는 지역을 확인하세요"
     },
     {
       "name": "image_upload_error_server",
@@ -3046,7 +3046,7 @@
     },
     {
       "name": "image_upload_imgbb_get_key",
-      "value": "Key 받기"
+      "value": "API Key 받기"
     },
     {
       "name": "image_upload_smms_hint",
@@ -3062,7 +3062,7 @@
     },
     {
       "name": "image_upload_smms_get_token",
-      "value": "Token 받기"
+      "value": "API Token 받기"
     },
     {
       "name": "daily_checkin_reward_toast",
@@ -3074,7 +3074,7 @@
     },
     {
       "name": "perm_distributed_datasync_reason",
-      "value": "즐겨찾기와 읽기 기록 동기화"
+      "value": "여러 기기에서 즐겨찾기와 읽기 기록 동기화"
     },
     {
       "name": "cloud_sync",
@@ -3082,7 +3082,7 @@
     },
     {
       "name": "cloud_sync_hint",
-      "value": "검색, 컬렉션, 읽기 등 로컬 데이터를 동기화합니다."
+      "value": "Huawei 계정으로 로그인하면 검색, 컬렉션, 읽기 등 로컬 데이터를 동기화합니다."
     },
     {
       "name": "cloud_sync_now",
@@ -3102,7 +3102,7 @@
     },
     {
       "name": "cloud_sync_enable",
-      "value": "동기화 켜기"
+      "value": "클라우드 동기화 켜기"
     },
     {
       "name": "cloud_sync_content",
@@ -3130,7 +3130,7 @@
     },
     {
       "name": "cloud_sync_cloud_disabled",
-      "value": "시스템 설정의 클라우드에서 이 앱 동기화를 켜세요"
+      "value": "시스템 설정의 클라우드에서 이 앱 데이터 동기화를 켜세요"
     },
     {
       "name": "cloud_sync_open_cloud_space",
