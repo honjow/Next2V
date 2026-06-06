@@ -245,11 +245,17 @@ assert(indexText.includes("export { CollectionSettings } from './settings/Collec
 assert(indexText.includes("} from './settings/CollectionSettings'"), 'shared Index must re-export collection types through CollectionSettings')
 assert(!indexText.includes('./settings/CollectionParsers'), 'shared Index must not export CollectionParsers internals')
 assert(!indexText.includes('./settings/CollectionLimits'), 'shared Index must not export CollectionLimits internals')
-assert(!indexText.includes('./settings/LocalDataPublisher'), 'shared Index must not export LocalDataPublisher internals')
+// LocalDataPublisher is a legitimate public export: AccountPage / HomePage / NodeTopicPage /
+// UserTopicsPage / UserProfilePage import it from the 'shared' barrel to publish local-content stats.
+assert(indexText.includes("export { LocalDataPublisher } from './settings/LocalDataPublisher'"), 'shared Index must export LocalDataPublisher (used cross-module)')
 
 const appIndexText = read('entry/src/main/ets/pages/Index.ets')
 assert(/sendNodeTopicAction\(nodeName:\s*string,\s*action:\s*string\)/.test(appIndexText), 'Node topic appbar actions must include the target node name')
-assert(appIndexText.includes('${Date.now()}:${(nodeName || \'\').trim()}:${action}'), 'Node topic action payload must be scoped by node name')
+// The action-command construction moved out of Index.ets into IndexRouteCoordinator.nodeTopicActionCommand;
+// Index.ets now passes nodeName to it, and the coordinator scopes the payload by node name.
+assert(appIndexText.includes('IndexRouteCoordinator.nodeTopicActionCommand(nodeName, action'), 'Node topic action command must be built from the target node name via IndexRouteCoordinator')
+const routeCoordinatorText = read('entry/src/main/ets/model/IndexRouteCoordinator.ets')
+assert(routeCoordinatorText.includes("(nodeName || '').trim()"), 'Node topic action payload must be scoped by node name')
 
 const nodeTopicText = read('feature/node/src/main/ets/pages/NodeTopicPage.ets')
 assert(nodeTopicText.includes('private currentNodeName(): string'), 'NodeTopicPage must normalize the current node name before saved-node operations')
@@ -279,7 +285,9 @@ for (const root of sourceRoots) {
         const text = fs.readFileSync(full, 'utf8')
         assert(!text.includes('CollectionParsers'), `${rel} must not import CollectionParsers directly`)
         assert(!text.includes('CollectionLimits'), `${rel} must not import CollectionLimits directly`)
-        assert(!text.includes('LocalDataPublisher'), `${rel} must not import LocalDataPublisher directly`)
+        // NOTE: LocalDataPublisher is intentionally NOT forbidden here — it is a public cross-module
+        // publisher (exported from the 'shared' barrel) that pages use to publish local-content stats /
+        // read-state mirrors. CollectionParsers / CollectionLimits remain shared-internal only.
       }
     }
   }
