@@ -1,19 +1,19 @@
 import {
   ApiConstants,
-  AppStrings,
   AppSearchField,
+  AppStrings,
   Avatar,
   BlockedListSelectedTabState,
   connectBlockedListSelectedTab,
-  connectDiscoverKeyword,
   connectFeedTab,
+  connectSearchAction,
   connectThemeDisplay,
-  DiscoverKeywordState,
   FeedTabBridge,
   FeedTabSettings,
   FeedTabState,
   connectFeedVisualIndex,
   FeedVisualIndexState,
+  SearchActionState,
   TabItem,
   ThemeConstants,
   ThemeDisplayState,
@@ -25,10 +25,16 @@ struct BlockedListsTabs {
   // V2 mirror of BLOCKED_LIST_SELECTED_TAB; this title-bar control is the sole writer, BlockedListsPage
   // the sole reader (see BlockedListSelectedTabState). The segmented control lives in the @ComponentV2
   // BlockedListsTabsSegment, which hosts the V2-native TabSegmentButtonV2 (controlled selectedIndex).
-  @Local private tabState: BlockedListSelectedTabState = connectBlockedListSelectedTab()
+  @Local private tabState: BlockedListSelectedTabState = connectBlockedListSelectedTab();
   // One-way labels pushed into the segmented control's @Trace items; @Local so a locale refresh re-renders.
-  @Local private blockedUsersLabel: string = AppStrings.text(AppStrings.R_BLOCKED_USERS, 'Blocked users')
-  @Local private blockedTopicsLabel: string = AppStrings.text(AppStrings.R_IGNORED_TOPICS, 'Blocked topics')
+  @Local private blockedUsersLabel: string = AppStrings.text(
+    AppStrings.R_BLOCKED_USERS,
+    'Blocked users',
+  );
+  @Local private blockedTopicsLabel: string = AppStrings.text(
+    AppStrings.R_IGNORED_TOPICS,
+    'Blocked topics',
+  );
 
   build() {
     BlockedListsTabsSegment({
@@ -45,7 +51,6 @@ struct BlockedListsTabs {
     return index === 1 ? 1 : 0
   }
 }
-
 @Builder
 export function BlockedListsTabsCCBuilder() {
   BlockedListsTabs()
@@ -196,9 +201,10 @@ struct FeedPills {
   }
 
   private tabTextColor(index: number): ResourceColor {
-    const color = this.visualSelectedIndex() === index
-      ? ThemeConstants.BRAND_PRIMARY
-      : ThemeConstants.TEXT_SECONDARY
+    const color =
+      this.visualSelectedIndex() === index
+        ? ThemeConstants.BRAND_PRIMARY
+        : ThemeConstants.TEXT_SECONDARY
     return this.themeTrackedColor(color)
   }
 
@@ -312,40 +318,9 @@ struct FeedPills {
     this.scroller.scrollToIndex(index, smooth, ScrollAlign.CENTER)
   }
 }
-
 @Builder
 export function PillCCBuilder(_params: Object) {
   FeedPills()
-}
-
-@ComponentV2
-struct DiscoverSearchComponent {
-  // Shared with DiscoverPage via AppStorageV2 (replaces the V1 DISCOVER_NODE_KEYWORD bus).
-  @Local kwState: DiscoverKeywordState = connectDiscoverKeyword()
-
-  build() {
-    Row() {
-      AppSearchField({
-        text: this.kwState.keyword,
-        placeholder: $r('app.string.search_discover_nodes_placeholder'),
-        onTextChange: (value: string) => {
-          this.kwState.keyword = value
-        },
-      })
-    }
-    .width('100%')
-    .padding({
-      left: ThemeConstants.SPACE_MD,
-      right: ThemeConstants.SPACE_MD,
-      top: 4,
-      bottom: 4,
-    })
-  }
-}
-
-@Builder
-export function DiscoverSearchCCBuilder() {
-  DiscoverSearchComponent()
 }
 
 const TITLE_BAR_COMPACT_WIDTH: number = 600
@@ -390,6 +365,50 @@ function titleBarWidthAwareEdgeReserve(titleBarWidth: number): number {
 
 function titleBarLeadingReserve(titleBarWidth: number): number {
   return TITLE_BAR_BACK_BUTTON_SLOT_WIDTH + titleBarWidthAwareEdgeReserve(titleBarWidth)
+}
+
+// The standalone Search page hosts its input directly in the HdsNavDestination title bar (so there is no
+// separate search row in the page body). It writes the shared SearchActionState bus that SearchPage reads:
+// keyword on every keystroke, submitSeq on Enter. SearchPage also writes keyword back here (history chip /
+// pending query); reading actionState.keyword in build() keeps the field text in sync with that.
+@ComponentV2
+struct SearchTitleField {
+  private actionState: SearchActionState = connectSearchAction();
+  @Local private titleBarWidth: number = 0;
+
+  build() {
+    Row() {
+      AppSearchField({
+        text: this.actionState.keyword,
+        placeholder: $r('app.string.search_topics_nodes_users_placeholder'),
+        autoFocus: true,
+        onTextChange: (value: string) => {
+          this.actionState.keyword = value
+        },
+        onSubmit: (_value: string) => {
+          this.actionState.submitSeq = this.actionState.submitSeq + 1
+        },
+      }).layoutWeight(1)
+    }
+    .width('100%')
+    .height(ThemeConstants.TITLE_BAR_HEIGHT)
+    .alignItems(VerticalAlign.Center)
+    // Left padding clears the auto back-button slot; right padding keeps an edge gap (no menu on this page).
+    .padding({
+      left: titleBarLeadingReserve(this.titleBarWidth),
+      right: TITLE_BAR_TRAILING_EDGE_RESERVE,
+    })
+    // None on the Row so the empty leading region (the back-button slot) stays tappable; the AppSearchField
+    // child still hit-tests normally (HitTestMode.None is per-node, not subtree).
+    .hitTestBehavior(HitTestMode.None)
+    .onAreaChange((_oldValue: Area, newValue: Area) => {
+      this.titleBarWidth = titleBarLengthToNumber(newValue?.width)
+    })
+  }
+}
+@Builder
+export function SearchTitleFieldCCBuilder(_params: Object) {
+  SearchTitleField()
 }
 
 export interface UserProfileAppbarIdentityParams {
@@ -437,7 +456,6 @@ struct UserProfileAppbarIdentity {
     })
   }
 }
-
 @Builder
 export function UserProfileIdentityCCBuilder(params: UserProfileAppbarIdentityParams) {
   UserProfileAppbarIdentity({
@@ -493,7 +511,6 @@ struct NodeTopicAppbarIdentity {
     })
   }
 }
-
 @Builder
 export function NodeTopicIdentityCCBuilder(params: NodeTopicAppbarIdentityParams) {
   NodeTopicAppbarIdentity({
@@ -551,7 +568,6 @@ struct TopicDetailAppbarIdentity {
     })
   }
 }
-
 @Builder
 export function TopicDetailIdentityCCBuilder(params: TopicDetailAppbarIdentityParams) {
   TopicDetailAppbarIdentity({

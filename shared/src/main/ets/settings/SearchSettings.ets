@@ -6,7 +6,6 @@ import { STORE_NAME_SEARCH } from './SettingsStores'
 
 const STORE_NAME: string = STORE_NAME_SEARCH
 const KEY_HISTORY: string = 'searchHistory'
-const KEY_SOURCE_MODE: string = 'sourceMode'
 const MAX_HISTORY: number = 20
 const SQL_SELECT_HISTORY: string =
   'SELECT query FROM search_history ORDER BY searched_at DESC LIMIT 20'
@@ -15,9 +14,6 @@ const SQL_UPSERT_HISTORY: string =
 const SQL_PRUNE_HISTORY: string =
   'DELETE FROM search_history WHERE query NOT IN (SELECT query FROM search_history ORDER BY searched_at DESC LIMIT 20)'
 const SQL_CLEAR_HISTORY: string = 'DELETE FROM search_history'
-
-export type SearchSourceMode = 'local' | 'localWithNodes' | 'remote' | 'externalWeb'
-const DEFAULT_SOURCE_MODE: SearchSourceMode = 'localWithNodes'
 
 export class SearchSettings {
   static async loadHistory(context: common.UIAbilityContext): Promise<string[]> {
@@ -59,35 +55,6 @@ export class SearchSettings {
     }
   }
 
-  static async loadSourceMode(context: common.UIAbilityContext): Promise<SearchSourceMode> {
-    try {
-      return await withPreferencesStore<SearchSourceMode>(context, STORE_NAME, (store) => {
-        const raw = store.getSync(KEY_SOURCE_MODE, DEFAULT_SOURCE_MODE) as string
-        return SearchSettings.parseSourceMode(raw)
-      })
-    } catch (error) {
-      const e = error as Error
-      throw new Error(e.message || 'Failed to read search sources')
-    }
-  }
-
-  static async saveSourceMode(
-    context: common.UIAbilityContext,
-    mode: SearchSourceMode,
-  ): Promise<SearchSourceMode> {
-    const next = SearchSettings.parseSourceMode(mode)
-    try {
-      return await withPreferencesStore<SearchSourceMode>(context, STORE_NAME, (store) => {
-        store.putSync(KEY_SOURCE_MODE, next)
-        store.flushSync()
-        return next
-      })
-    } catch (error) {
-      const e = error as Error
-      throw new Error(e.message || 'Failed to save search sources')
-    }
-  }
-
   private static readHistoryResult(resultSet: relationalStore.ResultSet): string[] {
     const seen: Record<string, boolean> = {}
     const items: string[] = []
@@ -114,18 +81,5 @@ export class SearchSettings {
     withPreferencesStore<void>(context, STORE_NAME, (store) => {
       deleteKeysAndFlush(store, [KEY_HISTORY])
     }).catch(() => {})
-  }
-
-  private static parseSourceMode(raw: string): SearchSourceMode {
-    if (raw === 'local') {
-      return 'local'
-    }
-    if (raw === 'externalWeb') {
-      return 'externalWeb'
-    }
-    if (raw === 'remote') {
-      return 'remote'
-    }
-    return DEFAULT_SOURCE_MODE
   }
 }

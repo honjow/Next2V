@@ -113,7 +113,7 @@ for (const [re, name] of [[/Date\.now\s*\(/, 'Date.now()'], [/Math\.random\s*\(/
 }
 
 // The sibling migrated structs must stay V2 (defense-in-depth vs the appbar-identity contract).
-for (const name of ['BlockedListsTabs', 'DiscoverSearchComponent', 'UserProfileAppbarIdentity', 'TopicDetailAppbarIdentity']) {
+for (const name of ['BlockedListsTabs', 'UserProfileAppbarIdentity', 'TopicDetailAppbarIdentity']) {
   const s = structs.find((x) => x.name === name);
   must(s && s.v2, `${FILE}: ${name} is @ComponentV2`);
 }

@@ -1310,7 +1310,7 @@
     },
     {
       "name": "search_topics_nodes_users_placeholder",
-      "value": "Search topics, nodes, users"
+      "value": "Search topics, nodes"
     },
     {
       "name": "search_browser_v2ex_topics",
@@ -2331,10 +2331,6 @@
     {
       "name": "search_web_filter_hint",
       "value": "Web search opens in the system browser; app filters do not apply."
-    },
-    {
-      "name": "search_discover_nodes_placeholder",
-      "value": "Search nodes"
     },
     {
       "name": "search_N_topics",

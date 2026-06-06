@@ -1310,7 +1310,7 @@
     },
     {
       "name": "search_topics_nodes_users_placeholder",
-      "value": "搜索主题、节点、用户"
+      "value": "搜索主题、节点"
     },
     {
       "name": "search_browser_v2ex_topics",
@@ -2331,10 +2331,6 @@
     {
       "name": "search_web_filter_hint",
       "value": "网页搜索打开系统浏览器，无法站内筛选。"
-    },
-    {
-      "name": "search_discover_nodes_placeholder",
-      "value": "搜索节点"
     },
     {
       "name": "search_N_topics",

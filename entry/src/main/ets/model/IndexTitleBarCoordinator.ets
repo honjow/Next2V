@@ -44,12 +44,12 @@ export class IndexTitleBarCoordinator {
     return [{ label: AppStrings.R_NAV_SETTINGS, action: 'settings', icon: 'settings' }]
   }
 
-  static notificationMenuItems(): IndexTitleMenuDescriptor[] {
-    return [{ label: AppStrings.R_NAV_REFRESH, action: 'refresh', icon: 'refresh' }]
+  static discoverMenuItems(): IndexTitleMenuDescriptor[] {
+    return [{ label: AppStrings.R_NAV_SEARCH, action: 'openSearch', icon: 'search' }]
   }
 
-  static searchMenuItems(): IndexTitleMenuDescriptor[] {
-    return [{ label: AppStrings.R_NAV_FILTER, action: 'filter', icon: 'filter' }]
+  static notificationMenuItems(): IndexTitleMenuDescriptor[] {
+    return [{ label: AppStrings.R_NAV_REFRESH, action: 'refresh', icon: 'refresh' }]
   }
 
   static accountManagementMenuItems(): IndexTitleMenuDescriptor[] {
@@ -76,7 +76,7 @@ export class IndexTitleBarCoordinator {
     const maxCount = menu['maxCount'] as number
     return {
       itemCount: value ? value.length : 0,
-      maxCount: maxCount === undefined ? 0 : Math.max(0, maxCount)
+      maxCount: maxCount === undefined ? 0 : Math.max(0, maxCount),
     }
   }
 
@@ -103,13 +103,20 @@ export class IndexTitleBarCoordinator {
     currentTitleUsername: string,
     currentAvatarUrl: string,
     titleStatesJson: string,
-    avatarStatesJson: string
+    avatarStatesJson: string,
   ): UserProfileTitleBarIdentity {
     const routeUsername = (username || '').trim()
-    const titleFromState = IndexTitleBarCoordinator.stringForUsernameState(titleStatesJson, routeUsername)
-    const avatarFromState = IndexTitleBarCoordinator.stringForUsernameState(avatarStatesJson, routeUsername)
+    const titleFromState = IndexTitleBarCoordinator.stringForUsernameState(
+      titleStatesJson,
+      routeUsername,
+    )
+    const avatarFromState = IndexTitleBarCoordinator.stringForUsernameState(
+      avatarStatesJson,
+      routeUsername,
+    )
     const routeMatches = IndexTitleBarCoordinator.sameUsername(titleRouteUsername, routeUsername)
-    const title = titleFromState || (currentTitleUsername && routeMatches ? currentTitleUsername : ' ')
+    const title =
+      titleFromState || (currentTitleUsername && routeMatches ? currentTitleUsername : ' ')
     const avatarUrl = avatarFromState || (routeMatches ? (currentAvatarUrl || '').trim() : '')
     return { routeUsername, title, avatarUrl }
   }
@@ -117,7 +124,7 @@ export class IndexTitleBarCoordinator {
   static userProfileActionsAvailable(
     routeUsername: string,
     actionUsername: string,
-    actionsAvailable: boolean
+    actionsAvailable: boolean,
   ): boolean {
     return actionsAvailable && routeUsername === actionUsername
   }
@@ -126,12 +133,12 @@ export class IndexTitleBarCoordinator {
     nodeName: string,
     nodeTitle: string,
     liveTitle: string,
-    liveSubtitle: string
+    liveSubtitle: string,
   ): NodeTopicTitleBarText {
     const baseTitle = (nodeTitle || nodeName || '').trim()
     return {
       title: (liveTitle || '').trim() || baseTitle,
-      subtitle: (liveSubtitle || '').trim()
+      subtitle: (liveSubtitle || '').trim(),
     }
   }
 
@@ -143,13 +150,20 @@ export class IndexTitleBarCoordinator {
     currentTitleNodeName: string,
     currentAvatarUrl: string,
     titleNameStatesJson: string,
-    titleAvatarStatesJson: string
+    titleAvatarStatesJson: string,
   ): NodeTopicTitleBarIdentity {
     const routeNodeName = (nodeName || '').trim()
-    const nameFromState = IndexTitleBarCoordinator.stringForUsernameState(titleNameStatesJson, routeNodeName)
-    const avatarFromState = IndexTitleBarCoordinator.stringForUsernameState(titleAvatarStatesJson, routeNodeName)
+    const nameFromState = IndexTitleBarCoordinator.stringForUsernameState(
+      titleNameStatesJson,
+      routeNodeName,
+    )
+    const avatarFromState = IndexTitleBarCoordinator.stringForUsernameState(
+      titleAvatarStatesJson,
+      routeNodeName,
+    )
     const routeMatches = IndexTitleBarCoordinator.sameUsername(titleRouteNodeName, routeNodeName)
-    const title = nameFromState || (currentTitleNodeName && routeMatches ? currentTitleNodeName : '')
+    const title =
+      nameFromState || (currentTitleNodeName && routeMatches ? currentTitleNodeName : '')
     const avatarUrl = avatarFromState || (routeMatches ? (currentAvatarUrl || '').trim() : '')
     return { routeNodeName, title, avatarUrl }
   }

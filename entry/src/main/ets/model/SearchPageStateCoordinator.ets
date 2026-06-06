@@ -1,8 +1,5 @@
 import { AppStrings } from 'shared'
-import type {
-  SearchSourceMode,
-  Sov2exHit,
-} from 'shared'
+import type { Sov2exHit } from 'shared'
 import type {
   RemoteDateRange,
   RemoteTopicItem,
@@ -42,37 +39,28 @@ export class SearchPageStateCoordinator {
     return query.trim()
   }
 
-  static usesNodeIndex(sourceMode: SearchSourceMode): boolean {
-    return sourceMode === 'localWithNodes'
+  static shouldShowHistory(keyword: string, historyLength: number): boolean {
+    return keyword.trim().length === 0 && historyLength > 0
+  }
+
+  static recordableQuery(query: string): string {
+    return (query ?? '').trim()
   }
 
   static shouldShowTopicResults(filter: SearchResultFilter): boolean {
-    return filter === 'all' || filter === 'topics' || filter === 'users'
+    return filter === 'all' || filter === 'topics'
   }
 
   static shouldShowNodeResults(filter: SearchResultFilter): boolean {
     return filter === 'all' || filter === 'nodes'
   }
 
-  static topicSectionTitle(filter: SearchResultFilter): string {
-    return filter === 'users' ? AppStrings.text($r('app.string.search_user_related_topics'), 'User-related topics') : AppStrings.text($r('app.string.search_topic_results'), 'Topic results')
+  static topicSectionTitle(): string {
+    return AppStrings.text($r('app.string.search_topic_results'), 'Topic results')
   }
 
-  static emptyTopicHint(filter: SearchResultFilter): string {
-    return filter === 'users' ? AppStrings.text($r('app.string.search_no_local_user_topics'), 'No local topics match this user') : AppStrings.text($r('app.string.search_no_topics'), 'No matching topics')
-  }
-
-  static sourceModeSummary(sourceMode: SearchSourceMode): string {
-    if (sourceMode === 'remote') {
-      return AppStrings.text($r('app.string.search_sov2ex'), 'Use SOV2EX site search')
-    }
-    if (sourceMode === 'externalWeb') {
-      return AppStrings.text($r('app.string.search_external_summary'), 'The official API has no topic search; use the system browser to search V2EX topics')
-    }
-    if (SearchPageStateCoordinator.usesNodeIndex(sourceMode)) {
-      return AppStrings.text($r('app.string.search_local_with_nodes_summary'), 'Search favorites, recently viewed, followed nodes, offline cache, and node library')
-    }
-    return AppStrings.text($r('app.string.search_local_summary'), 'Search favorites, recently viewed, followed nodes, and offline cache')
+  static emptyTopicHint(): string {
+    return AppStrings.text($r('app.string.search_no_topics'), 'No matching topics')
   }
 
   static loadingSummary(isCacheLoading: boolean, isNodeIndexLoading: boolean): string {
@@ -85,11 +73,11 @@ export class SearchPageStateCoordinator {
     return AppStrings.text($r('app.string.search_nodes_loading'), 'Loading nodes')
   }
 
-  static emptyNodeHint(sourceMode: SearchSourceMode): string {
-    if (SearchPageStateCoordinator.usesNodeIndex(sourceMode)) {
-      return AppStrings.text($r('app.string.search_nodes_library_empty_hint'), 'The node library and your followed nodes will appear here')
-    }
-    return AppStrings.text($r('app.string.search_followed_nodes_empty_hint'), 'Your followed nodes will appear here')
+  static emptyNodeHint(): string {
+    return AppStrings.text(
+      $r('app.string.search_nodes_library_empty_hint'),
+      'The node library and your followed nodes will appear here',
+    )
   }
 
   static resetRemoteState(): RemoteSearchState {
@@ -105,7 +93,10 @@ export class SearchPageStateCoordinator {
     return username.trim().length > 0 || node.trim().length > 0 || dateRange !== 'all'
   }
 
-  static remoteGte(dateRange: RemoteDateRange, nowSeconds: number = Math.floor(Date.now() / 1000)): number {
+  static remoteGte(
+    dateRange: RemoteDateRange,
+    nowSeconds: number = Math.floor(Date.now() / 1000),
+  ): number {
     if (dateRange === 'all') {
       return 0
     }

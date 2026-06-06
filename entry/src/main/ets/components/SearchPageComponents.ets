@@ -1,16 +1,6 @@
-import {
-  AppActionButton,
-  AppSearchField,
-  AppStrings,
-  AppTextField,
-  FilterChip,
-  type Sov2exOrderMode,
-  type Sov2exSortMode,
-  type SearchSourceMode,
-  ThemeConstants,
-} from 'shared'
+import { AppActionButton, AppStrings, ThemeConstants } from 'shared'
 
-export type SearchResultFilter = 'all' | 'topics' | 'nodes' | 'users'
+export type SearchResultFilter = 'all' | 'topics' | 'nodes'
 export type RemoteDateRange = 'all' | 'day' | 'week' | 'month' | 'year'
 
 export interface SearchTopicItem {
@@ -41,272 +31,18 @@ export interface RemoteTopicItem {
   replies: number
   nodeId: number
 }
-
-@ComponentV2
-export struct LocalSearchFilterSheetContent {
-  @Param keyword: string = ''
-  @Param resultFilter: SearchResultFilter = 'all'
-  @Event updateResultFilter?: (filter: SearchResultFilter) => void
-  @Event applyAction?: () => void
-
-  build() {
-    Column({ space: ThemeConstants.SPACE_SM }) {
-      Text($r('app.string.search_result_type'))
-        .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-        .fontColor($r('sys.color.font_secondary'))
-        .width('100%')
-      Row({ space: ThemeConstants.SPACE_XS }) {
-        this.ResultFilterButton('all', AppStrings.text($r('app.string.common_all'), 'All'))
-        this.ResultFilterButton('topics', AppStrings.text($r('app.string.common_topics'), 'Topics'))
-        this.ResultFilterButton('nodes', AppStrings.text($r('app.string.common_nodes'), 'Nodes'))
-        this.ResultFilterButton('users', AppStrings.text($r('app.string.common_user'), 'User'))
-      }
-      .width('100%')
-      AppActionButton({
-        label: $r('app.string.common_apply'),
-        primary: true,
-        isEnabled: this.keyword.trim().length > 0,
-        action: () => {
-          if (this.applyAction) {
-            this.applyAction()
-          }
-        }
-      })
-    }
-    .width('100%')
-  }
-
-  @Builder private ResultFilterButton(filter: SearchResultFilter, label: string) {
-    FilterChip({
-      label,
-      selected: this.resultFilter === filter,
-      action: () => {
-        if (this.updateResultFilter) {
-          this.updateResultFilter(filter)
-        }
-      }
-    })
-  }
-}
-
-@ComponentV2
-export struct RemoteSearchFilterSheetContent {
-  // Author / node text flow down as @Param and back up through onUsernameChange / onNodeChange
-  // (which carry the value, since the parent owns the @Local state). No local working copy is
-  // kept here: the inner AppTextField owns its own edit buffer, so this struct only forwards.
-  @Param remoteUsername: string = ''
-  @Param remoteNode: string = ''
-  @Param keyword: string = ''
-  @Param remoteSort: Sov2exSortMode = 'created'
-  @Param remoteOrder: Sov2exOrderMode = '0'
-  @Param remoteDateRange: RemoteDateRange = 'all'
-  @Param remoteLoading: boolean = false
-  @Param hasRemoteFilters: boolean = false
-  @Event selectSort?: (sort: Sov2exSortMode) => void
-  @Event toggleOrder?: () => void
-  @Event onUsernameChange?: (value: string) => void
-  @Event onNodeChange?: (value: string) => void
-  @Event selectDateRange?: (range: RemoteDateRange) => void
-  @Event clearFilters?: () => void
-  @Event applySearch?: () => void
-
-  build() {
-    Column({ space: ThemeConstants.SPACE_SM }) {
-      Text($r('app.string.common_sort'))
-        .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-        .fontColor($r('sys.color.font_secondary'))
-        .width('100%')
-      Row({ space: ThemeConstants.SPACE_XS }) {
-        this.RemoteOptionButton(AppStrings.text($r('app.string.common_time'), 'Time'), this.remoteSort === 'created', () => {
-          if (this.selectSort) {
-            this.selectSort('created')
-          }
-        })
-        this.RemoteOptionButton(AppStrings.text($r('app.string.common_relevance'), 'Relevance'), this.remoteSort === 'sumup', () => {
-          if (this.selectSort) {
-            this.selectSort('sumup')
-          }
-        })
-        this.RemoteOptionButton(this.remoteOrder === '0' ? AppStrings.text($r('app.string.common_descending'), 'Descending') : AppStrings.text($r('app.string.common_ascending'), 'Ascending'), true, () => {
-          if (this.toggleOrder) {
-            this.toggleOrder()
-          }
-        })
-      }
-      .width('100%')
-
-      Row({ space: ThemeConstants.SPACE_XS }) {
-        AppTextField({
-          text: this.remoteUsername,
-          placeholder: $r('app.string.common_author'),
-          onTextChange: (value: string) => {
-            if (this.onUsernameChange) {
-              this.onUsernameChange(value)
-            }
-          }
-        })
-          .layoutWeight(1)
-        AppTextField({
-          text: this.remoteNode,
-          placeholder: $r('app.string.common_node'),
-          onTextChange: (value: string) => {
-            if (this.onNodeChange) {
-              this.onNodeChange(value)
-            }
-          }
-        })
-          .layoutWeight(1)
-      }
-      .width('100%')
-
-      Text($r('app.string.common_time_range'))
-        .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-        .fontColor($r('sys.color.font_secondary'))
-        .width('100%')
-      Row({ space: ThemeConstants.SPACE_XS }) {
-        this.RemoteDateButton('all', AppStrings.text($r('app.string.common_unlimited'), 'Any time'))
-        this.RemoteDateButton('day', AppStrings.text($r('app.string.common_one_day'), '1 day'))
-        this.RemoteDateButton('week', AppStrings.text($r('app.string.common_one_week'), '1 week'))
-        this.RemoteDateButton('month', AppStrings.text($r('app.string.common_one_month'), '1 month'))
-        this.RemoteDateButton('year', AppStrings.text($r('app.string.common_one_year'), '1 year'))
-      }
-      .width('100%')
-
-      Row({ space: ThemeConstants.SPACE_XS }) {
-        if (this.hasRemoteFilters) {
-          AppActionButton({
-            label: $r('app.string.common_clear'),
-            primary: false,
-            action: () => {
-              if (this.clearFilters) {
-                this.clearFilters()
-              }
-            }
-          })
-            .layoutWeight(1)
-        }
-        AppActionButton({
-          label: this.remoteLoading ? $r('app.string.common_searching') : $r('app.string.common_apply_search'),
-          primary: true,
-          isEnabled: !this.remoteLoading && this.keyword.trim().length > 0,
-          action: () => {
-            if (this.applySearch) {
-              this.applySearch()
-            }
-          }
-        })
-          .layoutWeight(1)
-      }
-      .width('100%')
-    }
-    .width('100%')
-  }
-
-  @Builder private RemoteOptionButton(label: string, selected: boolean, action: () => void) {
-    FilterChip({
-      label,
-      selected,
-      action
-    })
-  }
-
-  @Builder private RemoteDateButton(range: RemoteDateRange, label: string) {
-    FilterChip({
-      label,
-      selected: this.remoteDateRange === range,
-      fill: true,
-      action: () => {
-        if (this.selectDateRange) {
-          this.selectDateRange(range)
-        }
-      }
-    })
-  }
-}
-
-@ComponentV2
-export struct SearchPanelHeader {
-  // The keyword flows down as @Param and back up through onTextChange (the parent sanitises +
-  // re-sets it). No local working copy is kept here: the inner AppSearchField owns its own edit
-  // buffer, so this struct only forwards edits upward.
-  @Param keyword: string = ''
-  @Param loadingText: string = ''
-  @Param errorMessage: string = ''
-  @Param sourceMode: SearchSourceMode = 'localWithNodes'
-  @Event onTextChange?: (value: string) => void
-  @Event onSubmit?: (value: string) => void
-  @Event updateSourceMode?: (mode: SearchSourceMode) => void
-
-  build() {
-    Column({ space: ThemeConstants.SPACE_SM }) {
-      AppSearchField({
-        text: this.keyword,
-        placeholder: $r('app.string.search_topics_nodes_users_placeholder'),
-        onTextChange: (value: string) => {
-          if (this.onTextChange) {
-            this.onTextChange(value)
-          }
-        },
-        onSubmit: (value: string) => {
-          if (this.onSubmit) {
-            this.onSubmit(value)
-          }
-        }
-      })
-
-      if (this.loadingText) {
-        Text(this.loadingText)
-          .fontSize(ThemeConstants.FONT_SIZE_TINY)
-          .fontColor(ThemeConstants.BRAND_PRIMARY)
-      }
-
-      if (this.errorMessage) {
-        Text(this.errorMessage)
-          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-          .fontColor(Color.Red)
-      }
-
-      this.SourceModeControls()
-    }
-    .padding({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM, top: ThemeConstants.SPACE_SM, bottom: ThemeConstants.SPACE_SM })
-    .width('100%')
-  }
-
-  @Builder private SourceModeControls() {
-    Scroll() {
-      Row({ space: ThemeConstants.SPACE_SM }) {
-        this.SourceModeButton('local', AppStrings.text($r('app.string.common_local'), 'Local'))
-        this.SourceModeButton('localWithNodes', AppStrings.text($r('app.string.search_filter_nodes_library'), 'Node library'))
-        this.SourceModeButton('remote', 'SOV2EX')
-        this.SourceModeButton('externalWeb', AppStrings.text($r('app.string.common_web'), 'Web'))
-      }
-    }
-    .scrollable(ScrollDirection.Horizontal)
-    .scrollBar(BarState.Off)
-    .width('100%')
-  }
-
-  @Builder private SourceModeButton(mode: SearchSourceMode, label: string) {
-    FilterChip({
-      label,
-      selected: this.sourceMode === mode,
-      action: () => {
-        if (this.updateSourceMode) {
-          this.updateSourceMode(mode)
-        }
-      }
-    })
-  }
-}
-
 @ComponentV2
 export struct ExternalWebSearchCard {
-  @Param keyword: string = ''
-  @Event openAction?: () => void
+  @Param keyword: string = '';
+  @Event openAction?: () => void;
 
   build() {
     Column({ space: ThemeConstants.SPACE_SM }) {
-      Text(this.keyword.trim() ? $r('app.string.search_browser_v2ex_topics') : $r('app.string.search_enter_keyword_to_start'))
+      Text(
+        this.keyword.trim()
+          ? $r('app.string.search_browser_v2ex_topics')
+          : $r('app.string.search_enter_keyword_to_start'),
+      )
         .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
         .fontColor($r('sys.color.font_secondary'))
       AppActionButton({
@@ -317,7 +53,7 @@ export struct ExternalWebSearchCard {
           if (this.openAction) {
             this.openAction()
           }
-        }
+        },
       })
     }
     .padding(ThemeConstants.SPACE_MD)
@@ -327,12 +63,11 @@ export struct ExternalWebSearchCard {
     .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }
 }
-
 @ComponentV2
 export struct SearchHistoryStrip {
-  @Param history: string[] = []
-  @Event clearAction?: () => void
-  @Event selectAction?: (query: string) => void
+  @Param history: string[] = [];
+  @Event clearAction?: () => void;
+  @Event selectAction?: (query: string) => void;
 
   build() {
     Column({ space: ThemeConstants.SPACE_XS }) {
@@ -349,26 +84,32 @@ export struct SearchHistoryStrip {
               this.clearAction()
             }
           })
-      }
-      .width('100%')
-
+      }.width('100%')
       Scroll() {
         Row({ space: ThemeConstants.SPACE_XS }) {
-          ForEach(this.history, (q: string) => {
-            Text(q)
-              .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-              .fontColor($r('sys.color.font_primary'))
-              .padding({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM, top: 6, bottom: 6 })
-              .borderRadius(ThemeConstants.RADIUS_ROUND)
-              .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
-              .onClick(() => {
-                if (this.selectAction) {
-                  this.selectAction(q)
-                }
-              })
-          }, (q: string) => q)
-        }
-        .width('100%')
+          ForEach(
+            this.history,
+            (q: string) => {
+              Text(q)
+                .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+                .fontColor($r('sys.color.font_primary'))
+                .padding({
+                  left: ThemeConstants.SPACE_SM,
+                  right: ThemeConstants.SPACE_SM,
+                  top: 6,
+                  bottom: 6,
+                })
+                .borderRadius(ThemeConstants.RADIUS_ROUND)
+                .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+                .onClick(() => {
+                  if (this.selectAction) {
+                    this.selectAction(q)
+                  }
+                })
+            },
+            (q: string) => q,
+          )
+        }.width('100%')
       }
       .scrollable(ScrollDirection.Horizontal)
       .scrollBar(BarState.Off)
@@ -378,7 +119,6 @@ export struct SearchHistoryStrip {
     .width('100%')
   }
 }
-
 @ComponentV2
 export struct SearchTopicRow {
   @Param item: SearchTopicItem = {
@@ -388,8 +128,8 @@ export struct SearchTopicRow {
     nodeTitle: '',
     username: '',
     source: '',
-    updatedAt: 0
-  }
+    updatedAt: 0,
+  };
 
   build() {
     Column({ space: ThemeConstants.SPACE_XS }) {
@@ -418,7 +158,6 @@ export struct SearchTopicRow {
     .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }
 }
-
 @ComponentV2
 export struct SearchNodeRow {
   @Param item: SearchNodeItem = {
@@ -427,8 +166,8 @@ export struct SearchNodeRow {
     topics: 0,
     source: '',
     updatedAt: 0,
-    score: 0
-  }
+    score: 0,
+  };
 
   build() {
     Row({ space: ThemeConstants.SPACE_SM }) {
@@ -448,11 +187,14 @@ export struct SearchNodeRow {
         Text(this.item.source)
           .fontSize(ThemeConstants.FONT_SIZE_TINY)
           .fontColor(ThemeConstants.BRAND_PRIMARY)
-        Text(AppStrings.format(AppStrings.text($r('app.string.search_N_topics'), '{0} topics'), [String(this.item.topics)]))
+        Text(
+          AppStrings.format(AppStrings.text($r('app.string.search_N_topics'), '{0} topics'), [
+            String(this.item.topics),
+          ]),
+        )
           .fontSize(ThemeConstants.FONT_SIZE_TINY)
           .fontColor($r('sys.color.font_secondary'))
-      }
-      .alignItems(HorizontalAlign.End)
+      }.alignItems(HorizontalAlign.End)
     }
     .padding(ThemeConstants.SPACE_MD)
     .width('100%')
@@ -460,7 +202,6 @@ export struct SearchNodeRow {
     .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
   }
 }
-
 @ComponentV2
 export struct RemoteTopicRow {
   @Param item: RemoteTopicItem = {
@@ -470,9 +211,9 @@ export struct RemoteTopicRow {
     content: '',
     created: '',
     replies: 0,
-    nodeId: 0
-  }
-  @Event openUserAction?: (username: string) => void
+    nodeId: 0,
+  };
+  @Event openUserAction?: (username: string) => void;
 
   build() {
     Column({ space: ThemeConstants.SPACE_XS }) {
@@ -501,14 +242,17 @@ export struct RemoteTopicRow {
               this.openUserAction(this.item.username)
             }
           })
-        Text(AppStrings.format(AppStrings.text($r('app.string.search_N_replies'), '{0} replies'), [String(this.item.replies)]))
+        Text(
+          AppStrings.format(AppStrings.text($r('app.string.search_N_replies'), '{0} replies'), [
+            String(this.item.replies),
+          ]),
+        )
           .fontSize(ThemeConstants.FONT_SIZE_TINY)
           .fontColor($r('sys.color.font_secondary'))
         Text(this.item.created)
           .fontSize(ThemeConstants.FONT_SIZE_TINY)
           .fontColor($r('sys.color.font_secondary'))
-      }
-      .width('100%')
+      }.width('100%')
     }
     .padding(ThemeConstants.SPACE_MD)
     .width('100%')

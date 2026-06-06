@@ -6,21 +6,18 @@ import {
   type NodeTopicListParams,
   type SavedNode,
   type SavedTopic,
-  type SearchSourceMode,
   SectionHeader as SharedSectionHeader,
   ListDivider as SharedListDivider,
   EmptyState,
   PullRefresh,
   Sov2exService,
   AppActionButton,
-  AppModalScaffold,
   type Sov2exOrderMode,
   type Sov2exSortMode,
   ThemeConstants,
   type TopicDetailParams,
   type V2exNode,
   type ViewedTopic,
-  defaultSheetOptions,
   translateApiError,
   connectNavStack,
   connectLayoutSafeArea,
@@ -30,96 +27,92 @@ import {
   SearchQueryBus,
 } from 'shared'
 import { SearchLocalResultBuilder } from '../model/SearchLocalResultBuilder'
-import {
-  RemoteSearchCoordinator,
-} from '../model/RemoteSearchCoordinator'
-import {
-  type RemoteFilterEffect,
-  SearchFilterCoordinator,
-} from '../model/SearchFilterCoordinator'
-import {
-  SearchPageStateCoordinator,
-} from '../model/SearchPageStateCoordinator'
-import {
-  SearchLocalDataCoordinator,
-} from '../model/SearchLocalDataCoordinator'
-import {
-  SearchSettingsAdapter,
-} from '../model/SearchSettingsAdapter'
-import {
-  SearchSourceCoordinator,
-} from '../model/SearchSourceCoordinator'
+import { RemoteSearchCoordinator } from '../model/RemoteSearchCoordinator'
+import { SearchPageStateCoordinator } from '../model/SearchPageStateCoordinator'
+import { SearchLocalDataCoordinator } from '../model/SearchLocalDataCoordinator'
+import { SearchSettingsAdapter } from '../model/SearchSettingsAdapter'
 import {
   ExternalWebSearchCard,
-  LocalSearchFilterSheetContent,
   type RemoteDateRange,
   type RemoteTopicItem,
   RemoteTopicRow,
-  RemoteSearchFilterSheetContent,
   type SearchNodeItem,
   SearchNodeRow,
   SearchHistoryStrip,
-  SearchPanelHeader,
   type SearchResultFilter,
   type SearchTopicItem,
   SearchTopicRow,
 } from '../components/SearchPageComponents'
 
+// Method C: search is one unified surface. The query lives in the title-bar input (SearchTitleField,
+// hosted by Index's HdsNavDestination title bar) — there is no separate search row in the page body.
+// Local content (favorites / recently viewed / offline cache / node library) filters as you type; SOV2EX
+// topics fetch on submit (Enter) with the default sort; "search in browser" is the fallback when the
+// SOV2EX section is empty or errors. There are no source-mode chips, no per-user dimension, and no filter
+// sheet — the advanced author/node/date/sort filters were removed in favour of a single simple box.
 @ComponentV2
 export struct SearchPage {
   // Same NavPathStack instance HdsNavigation is bound to (see NavStackHolder); method target only.
-  private stack: NavPathStack = connectNavStack().stack
+  private stack: NavPathStack = connectNavStack().stack;
 
-  @Local private keyword: string = ''
-  @Local private errorMessage: string = ''
+  @Local private keyword: string = '';
+  @Local private errorMessage: string = '';
 
-  @Local private savedTopics: SavedTopic[] = []
-  @Local private viewedTopics: ViewedTopic[] = []
-  @Local private savedNodes: SavedNode[] = []
-  @Local private allNodes: V2exNode[] = []
-  @Local private isNodeIndexLoading: boolean = false
+  @Local private savedTopics: SavedTopic[] = [];
+  @Local private viewedTopics: ViewedTopic[] = [];
+  @Local private savedNodes: SavedNode[] = [];
+  @Local private allNodes: V2exNode[] = [];
+  @Local private isNodeIndexLoading: boolean = false;
 
-  @Local private cacheTopicLists: SearchTopicItem[] = []
-  @Local private cacheTopicDetails: SearchTopicItem[] = []
-  @Local private isCacheLoading: boolean = false
+  @Local private cacheTopicLists: SearchTopicItem[] = [];
+  @Local private cacheTopicDetails: SearchTopicItem[] = [];
+  @Local private isCacheLoading: boolean = false;
 
-  @Local private history: string[] = []
-  @Local private sourceMode: SearchSourceMode = 'localWithNodes'
-  @Local private resultFilter: SearchResultFilter = 'all'
+  @Local private history: string[] = [];
 
-  @Local private topicResults: SearchTopicItem[] = []
-  @Local private nodeResults: SearchNodeItem[] = []
-  @Local private remoteResults: RemoteTopicItem[] = []
-  @Local private remoteTotal: number = 0
-  @Local private remoteFrom: number = 0
-  @Local private remoteLoading: boolean = false
-  @Local private remoteError: string = ''
-  @Local private remoteSort: Sov2exSortMode = 'created'
-  @Local private remoteOrder: Sov2exOrderMode = '0'
-  @Local private remoteUsername: string = ''
-  @Local private remoteNode: string = ''
-  @Local private remoteDateRange: RemoteDateRange = 'all'
-  @Local private filterSheetVisible: boolean = false
-  @Local private listScrollEnabled: boolean = true
-  // V2 mirror of the one-directional SEARCH_ACTION + PENDING_SEARCH_QUERY appbar / cross-page
-  // input buses (Index dual-writes SEARCH_ACTION; SearchQueryBus dual-writes PENDING_SEARCH_QUERY).
-  // Reacted to via @Monitor below; never read in build().
-  @Local private actionState: SearchActionState = connectSearchAction()
+  @Local private topicResults: SearchTopicItem[] = [];
+  @Local private nodeResults: SearchNodeItem[] = [];
+  @Local private remoteResults: RemoteTopicItem[] = [];
+  @Local private remoteTotal: number = 0;
+  @Local private remoteFrom: number = 0;
+  @Local private remoteLoading: boolean = false;
+  @Local private remoteError: string = '';
+  @Local private listScrollEnabled: boolean = true;
+
+  // The filter sheet is gone: result type is always "all" (topics + nodes) and the SOV2EX query uses these
+  // fixed defaults. Kept as named fields so executeRemoteSearch / SearchLocalResultBuilder read intent, not
+  // magic literals; none of them change at runtime anymore.
+  private readonly resultFilter: SearchResultFilter = 'all';
+  private readonly remoteSort: Sov2exSortMode = 'created';
+  private readonly remoteOrder: Sov2exOrderMode = '0';
+  private readonly remoteUsername: string = '';
+  private readonly remoteNode: string = '';
+  private readonly remoteDateRange: RemoteDateRange = 'all';
+
+  // V2 mirror of the title-bar input + cross-page input buses (SearchTitleField writes keyword/submitSeq;
+  // SearchQueryBus writes pendingQuery). Reacted to via @Monitor below; keyword is also written back here so
+  // the title-bar field reflects a seeded query.
+  @Local private actionState: SearchActionState = connectSearchAction();
+  // Set just before SearchPage writes actionState.keyword itself, so its own keyword monitor does not
+  // re-handle the change as if it were a fresh title-bar edit (the monitor clears the flag on the next fire).
+  private suppressKeywordMonitor: boolean = false;
   // Window safe-area metrics (AppStorageV2 mirror; EntryAbility publishes V2-only).
   // Read in build() (top padding / pull-refresh indicator), so this subscribes to layout changes.
-  private layout: LayoutSafeAreaState = connectLayoutSafeArea()
+  private layout: LayoutSafeAreaState = connectLayoutSafeArea();
 
-  private api: ApiService = new ApiService()
-  private sov2ex: Sov2exService = new Sov2exService()
-  private scroller: Scroller = new Scroller()
-  private readonly PULL_REFRESH_THRESHOLD: number = 84
+  private api: ApiService = new ApiService();
+  private sov2ex: Sov2exService = new Sov2exService();
+  private scroller: Scroller = new Scroller();
+  private readonly PULL_REFRESH_THRESHOLD: number = 84;
 
   aboutToAppear(): void {
     this.keyword = ''
     this.errorMessage = ''
+    // Reset the title-bar field for a fresh search each visit (no-op if it is already empty).
+    this.setTitleBarKeyword('')
     this.loadLocalCollections()
     this.loadCacheCollections()
-    this.loadSourceMode()
+    this.loadNodeIndex()
     this.loadHistory()
     this.consumePendingSearchQuery()
   }
@@ -131,7 +124,7 @@ export struct SearchPage {
   build() {
     Stack({ alignContent: Alignment.Bottom }) {
       Column({ space: ThemeConstants.SPACE_SM }) {
-        this.SearchPanel()
+        this.StatusLine()
         Column() {
           PullRefresh({
             scroller: this.scroller,
@@ -142,90 +135,104 @@ export struct SearchPage {
             },
             onScrollEnableChange: (enabled: boolean) => {
               this.listScrollEnabled = enabled
-            }
+            },
           }) {
             this.SearchResultSurface()
           }
-        }
-        .layoutWeight(1)
+        }.layoutWeight(1)
       }
       .padding({
         left: ThemeConstants.SPACE_MD,
         right: ThemeConstants.SPACE_MD,
-        top: this.layout.topAvoidHeight + ThemeConstants.TITLE_BAR_HEIGHT + ThemeConstants.SPACE_MD
+        top: this.layout.topAvoidHeight + ThemeConstants.TITLE_BAR_HEIGHT + ThemeConstants.SPACE_MD,
       })
       .width('100%')
       .height('100%')
-
     }
     .width('100%')
     .height('100%')
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
-    .bindSheet(this.filterSheetVisible!!, this.SearchFilterSheet(), defaultSheetOptions(SheetSize.MEDIUM, () => { this.filterSheetVisible = false }))
+  }
+
+  // Index-load + local-collection-load status. The query input itself is in the title bar now, so these
+  // transient hints (which used to sit under it) render as a thin line above the results instead.
+  @Builder StatusLine() {
+    if (this.loadingText() || this.errorMessage) {
+      Column({ space: ThemeConstants.SPACE_XS }) {
+        if (this.loadingText()) {
+          Text(this.loadingText())
+            .fontSize(ThemeConstants.FONT_SIZE_TINY)
+            .fontColor(ThemeConstants.BRAND_PRIMARY)
+        }
+        if (this.errorMessage) {
+          Text(this.errorMessage).fontSize(ThemeConstants.FONT_SIZE_CAPTION).fontColor(Color.Red)
+        }
+      }
+      .width('100%')
+      .alignItems(HorizontalAlign.Start)
+    }
   }
 
   @Builder SearchResultSurface() {
     if (!this.keyword.trim()) {
       this.HistorySection()
-    } else if (this.sourceMode === 'externalWeb') {
-      this.ExternalWebSearchPanel()
-    } else if (this.sourceMode === 'remote') {
-      this.RemoteSearchResultList()
     } else {
-      this.LocalResultList()
+      this.ResultList()
     }
   }
 
-  @Builder SearchPanel() {
-    SearchPanelHeader({
-      keyword: this.keyword,
-      loadingText: this.isCacheLoading || this.isNodeIndexLoading ? this.loadingSummary() : '',
-      errorMessage: this.errorMessage,
-      sourceMode: this.sourceMode,
-      onTextChange: (value: string) => {
-        this.handleKeywordChange(value)
-      },
-      onSubmit: (_value: string) => { this.runPrimarySearchAction() },
-      updateSourceMode: (mode: SearchSourceMode) => { this.updateSourceMode(mode) }
-    })
-  }
-
   @Builder HistorySection() {
-    if (SearchSourceCoordinator.shouldShowHistory(this.keyword, this.history.length)) {
+    if (SearchPageStateCoordinator.shouldShowHistory(this.keyword, this.history.length)) {
       SearchHistoryStrip({
         history: this.history,
-        clearAction: () => { this.clearHistory() },
-        selectAction: (q: string) => { this.applyHistory(q) }
+        clearAction: () => {
+          this.clearHistory()
+        },
+        selectAction: (q: string) => {
+          this.applyHistory(q)
+        },
       })
     }
   }
 
-  @Builder LocalResultList() {
+  @Builder ResultList() {
     List({ space: ThemeConstants.SPACE_SM, scroller: this.scroller }) {
       if (this.showTopicResults()) {
         ListItem() {
           Column() {
-            SharedSectionHeader({ title: `${this.topicSectionTitle()} ${this.topicResults.length}` })
+            SharedSectionHeader({
+              title: `${this.topicSectionTitle()} ${this.topicResults.length}`,
+            })
             if (this.topicResults.length === 0) {
               EmptyState({
-                message: this.keyword.trim() ? this.emptyTopicHint() : AppStrings.text($r('app.string.search_enter_keyword_to_start'), 'Enter keywords to start searching'),
-                stateHeight: 96
+                message: this.keyword.trim()
+                  ? this.emptyTopicHint()
+                  : AppStrings.text(
+                      $r('app.string.search_enter_keyword_to_start'),
+                      'Enter keywords to start searching',
+                    ),
+                stateHeight: 96,
               })
                 .borderRadius(ThemeConstants.RADIUS_MD)
                 .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
                 .margin({ top: ThemeConstants.SPACE_XS })
             }
-          }
-          .width('100%')
+          }.width('100%')
         }
 
-        ForEach(this.topicResults.slice(0, 80), (item: SearchTopicItem) => {
-          ListItem() { SearchTopicRow({ item: item }) }
+        ForEach(
+          this.topicResults.slice(0, 80),
+          (item: SearchTopicItem) => {
+            ListItem() {
+              SearchTopicRow({ item: item })
+            }
             .onClick(() => {
               let p: TopicDetailParams = { topicId: item.id }
               this.stack.pushPathByName('TopicDetail', p as Object)
             })
-        }, (item: SearchTopicItem) => `t:${item.id}`)
+          },
+          (item: SearchTopicItem) => `t:${item.id}`,
+        )
       }
 
       if (this.showTopicResults() && this.showNodeResults()) {
@@ -237,29 +244,45 @@ export struct SearchPage {
       if (this.showNodeResults()) {
         ListItem() {
           Column() {
-            SharedSectionHeader({ title: AppStrings.format(AppStrings.text($r('app.string.search_node_results'), 'Node results {0}'), [String(this.nodeResults.length)]) })
+            SharedSectionHeader({
+              title: AppStrings.format(
+                AppStrings.text($r('app.string.search_node_results'), 'Node results {0}'),
+                [String(this.nodeResults.length)],
+              ),
+            })
             if (this.nodeResults.length === 0) {
               EmptyState({
-                message: this.keyword.trim() ? AppStrings.text($r('app.string.search_no_nodes'), 'No matching nodes') : this.emptyNodeHint(),
-                stateHeight: 96
+                message: this.keyword.trim()
+                  ? AppStrings.text($r('app.string.search_no_nodes'), 'No matching nodes')
+                  : this.emptyNodeHint(),
+                stateHeight: 96,
               })
                 .borderRadius(ThemeConstants.RADIUS_MD)
                 .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
                 .margin({ top: ThemeConstants.SPACE_XS })
             }
-          }
-          .width('100%')
+          }.width('100%')
         }
 
-        ForEach(this.nodeResults.slice(0, 80), (item: SearchNodeItem) => {
-          ListItem() { SearchNodeRow({ item: item }) }
+        ForEach(
+          this.nodeResults.slice(0, 80),
+          (item: SearchNodeItem) => {
+            ListItem() {
+              SearchNodeRow({ item: item })
+            }
             .onClick(() => {
               let p: NodeTopicListParams = { nodeName: item.name, nodeTitle: item.title }
               this.stack.pushPathByName('NodeTopicList', p as Object)
             })
-        }, (item: SearchNodeItem) => `n:${item.name}`)
+          },
+          (item: SearchNodeItem) => `n:${item.name}`,
+        )
+      }
+      ListItem() {
+        SharedListDivider({ inset: 0 })
       }
 
+      this.RemoteSection()
       ListItem() {
         Column() {
           Blank().height(this.layout.bottomAvoidHeight + ThemeConstants.SPACE_XL)
@@ -272,160 +295,83 @@ export struct SearchPage {
     .layoutWeight(1)
   }
 
-  @Builder ExternalWebSearchPanel() {
-    ExternalWebSearchCard({
-      keyword: this.keyword,
-      openAction: () => { this.openExternalTopicSearch() }
-    })
-  }
-
-  @Builder RemoteSearchResultList() {
-    List({ space: ThemeConstants.SPACE_SM, scroller: this.scroller }) {
-      ListItem() {
-        Column() {
-          SharedSectionHeader({ title: `SOV2EX ${this.remoteTotal}` })
-          if (this.remoteError) {
-            Text(this.remoteError)
-              .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-              .fontColor(Color.Red)
-              .padding(ThemeConstants.SPACE_MD)
-              .width('100%')
-              .borderRadius(ThemeConstants.RADIUS_MD)
-              .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
-          } else if (!this.remoteLoading && this.remoteResults.length === 0) {
-            EmptyState({ message: AppStrings.text($r('app.string.search_filter_hint'), 'Enter keywords and tap Search; filter is in the top right'), stateHeight: 96 })
-              .borderRadius(ThemeConstants.RADIUS_MD)
-              .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
-              .margin({ top: ThemeConstants.SPACE_XS })
-          }
+  @Builder RemoteSection() {
+    ListItem() {
+      Column() {
+        SharedSectionHeader({ title: `SOV2EX ${this.remoteTotal}` })
+        if (this.remoteError) {
+          Text(this.remoteError)
+            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+            .fontColor(Color.Red)
+            .padding(ThemeConstants.SPACE_MD)
+            .width('100%')
+            .borderRadius(ThemeConstants.RADIUS_MD)
+            .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
         }
-        .width('100%')
-      }
+      }.width('100%')
+    }
 
-      ForEach(this.remoteResults, (item: RemoteTopicItem) => {
+    ForEach(
+      this.remoteResults,
+      (item: RemoteTopicItem) => {
         ListItem() {
           RemoteTopicRow({
             item: item,
-            openUserAction: (username: string) => { this.openUserProfile(username) }
+            openUserAction: (username: string) => {
+              this.openUserProfile(username)
+            },
           })
         }
-          .onClick(() => {
-            let p: TopicDetailParams = { topicId: item.id }
-            this.stack.pushPathByName('TopicDetail', p as Object)
-          })
-      }, (item: RemoteTopicItem) => `r:${item.id}`)
+        .onClick(() => {
+          let p: TopicDetailParams = { topicId: item.id }
+          this.stack.pushPathByName('TopicDetail', p as Object)
+        })
+      },
+      (item: RemoteTopicItem) => `r:${item.id}`,
+    )
 
-      if (this.remoteLoading) {
-        ListItem() { EmptyState({ message: AppStrings.text($r('app.string.common_searching'), 'Searching'), stateHeight: 88 }) }
-      } else if (this.remoteResults.length < this.remoteTotal) {
-        ListItem() {
-          AppActionButton({
-            label: $r('app.string.common_load_more'),
-            primary: false,
-            action: () => { this.executeRemoteSearch(false) }
-          })
-        }
-      }
-
+    if (this.remoteLoading) {
       ListItem() {
-        Column() {
-          Blank().height(this.layout.bottomAvoidHeight + ThemeConstants.SPACE_XL)
-        }
+        EmptyState({
+          message: AppStrings.text($r('app.string.common_searching'), 'Searching'),
+          stateHeight: 88,
+        })
       }
-    }
-    .enableScrollInteraction(this.listScrollEnabled)
-    .scrollBar(BarState.Off)
-    .width('100%')
-    .layoutWeight(1)
-  }
-
-  @Builder SearchFilterSheet() {
-    AppModalScaffold({
-      title: $r('app.string.search_filter_title'),
-      closeAction: () => {
-        this.filterSheetVisible = false
+    } else if (this.remoteResults.length < this.remoteTotal) {
+      ListItem() {
+        AppActionButton({
+          label: $r('app.string.common_load_more'),
+          primary: false,
+          action: () => {
+            this.executeRemoteSearch(false)
+          },
+        })
       }
-    }) {
-      if (this.sourceMode === 'remote') {
-        ListItem() { this.RemoteFilterSheetContent() }
-      } else if (this.sourceMode === 'externalWeb') {
-        ListItem() {
-          Text($r('app.string.search_web_filter_hint'))
-            .fontSize(ThemeConstants.FONT_SIZE_BODY)
-            .fontColor($r('sys.color.font_secondary'))
-            .width('100%')
-            .padding({ top: ThemeConstants.SPACE_SM })
-        }
-      } else {
-        ListItem() { this.LocalFilterSheetContent() }
+    } else if (this.remoteResults.length === 0) {
+      // SOV2EX returned nothing (or has not run yet): fall back to a browser search button.
+      ListItem() {
+        ExternalWebSearchCard({
+          keyword: this.keyword,
+          openAction: () => {
+            this.openExternalTopicSearch()
+          },
+        })
       }
     }
   }
 
-  @Builder LocalFilterSheetContent() {
-    LocalSearchFilterSheetContent({
-      keyword: this.keyword,
-      resultFilter: this.resultFilter,
-      updateResultFilter: (filter: SearchResultFilter) => { this.updateResultFilter(filter) },
-      applyAction: () => {
-        this.applyFilter()
-        this.filterSheetVisible = false
-      }
-    })
-  }
-
-  @Builder RemoteFilterSheetContent() {
-    RemoteSearchFilterSheetContent({
-      remoteUsername: this.remoteUsername,
-      remoteNode: this.remoteNode,
-      keyword: this.keyword,
-      remoteSort: this.remoteSort,
-      remoteOrder: this.remoteOrder,
-      remoteDateRange: this.remoteDateRange,
-      remoteLoading: this.remoteLoading,
-      hasRemoteFilters: this.hasRemoteFilters(),
-      selectSort: (sort: Sov2exSortMode) => {
-        this.selectRemoteSort(sort)
-      },
-      toggleOrder: () => {
-        this.toggleRemoteOrder()
-      },
-      onUsernameChange: (value: string) => {
-        this.remoteUsername = value
-        this.applyRemoteFilterEffect(SearchFilterCoordinator.remoteTextChanged())
-      },
-      onNodeChange: (value: string) => {
-        this.remoteNode = value
-        this.applyRemoteFilterEffect(SearchFilterCoordinator.remoteTextChanged())
-      },
-      selectDateRange: (range: RemoteDateRange) => {
-        this.selectRemoteDateRange(range)
-      },
-      clearFilters: () => { this.clearRemoteFilters() },
-      applySearch: () => {
-        this.executeRemoteSearch(true)
-        this.filterSheetVisible = false
-      }
-    })
-  }
-
-  @Monitor('actionState.command')
-  onSearchActionCommand(): void {
-    const action = SearchPageStateCoordinator.parseActionCommand(this.actionState.command)
-    if (action === 'filter') {
-      this.filterSheetVisible = true
+  @Monitor('actionState.keyword')
+  onTitleBarKeywordChanged(): void {
+    if (this.suppressKeywordMonitor) {
+      this.suppressKeywordMonitor = false
       return
     }
-    if (action === 'refresh') {
-      const refreshAction = SearchSourceCoordinator.refreshAction(this.sourceMode, this.keyword)
-      if (refreshAction === 'external') {
-        this.openExternalTopicSearch()
-      } else if (refreshAction === 'remote') {
-        this.executeRemoteSearch(true)
-      } else {
-        this.refreshSearchSurface()
-      }
-    }
+    this.handleKeywordChange(this.actionState.keyword)
+  }
+
+  @Monitor('actionState.submitSeq')
+  onTitleBarSubmit(): void {
+    this.runPrimarySearchAction()
   }
 
   @Monitor('actionState.pendingQuery')
@@ -442,18 +388,26 @@ export struct SearchPage {
     SearchQueryBus.clearPending()
   }
 
-  private async refreshSearchSurface(): Promise<void> {
-    if (this.sourceMode === 'remote') {
-      this.executeRemoteSearch(true)
+  // Write the keyword into the title-bar bus without re-triggering our own keyword monitor (we have already
+  // handled the change locally). Only arm the guard when the value actually differs, otherwise the monitor
+  // would not fire and the guard would leak into the next genuine title-bar edit.
+  private setTitleBarKeyword(value: string): void {
+    if (this.actionState.keyword === value) {
       return
     }
-    if (this.usesNodeIndex()) {
-      this.allNodes = []
-      this.loadNodeIndex()
-    }
+    this.suppressKeywordMonitor = true
+    this.actionState.keyword = value
+  }
+
+  private async refreshSearchSurface(): Promise<void> {
+    this.allNodes = []
+    this.loadNodeIndex()
     this.loadLocalCollections()
     this.loadCacheCollections()
     this.applyFilter()
+    if (this.keyword.trim().length > 0) {
+      this.executeRemoteSearch(true)
+    }
   }
 
   private loadLocalCollections(): void {
@@ -489,9 +443,6 @@ export struct SearchPage {
   }
 
   private loadNodeIndex(): void {
-    if (!this.usesNodeIndex()) {
-      return
-    }
     if (this.allNodes.length > 0) {
       this.applyFilter()
       return
@@ -510,26 +461,6 @@ export struct SearchPage {
       })
   }
 
-  private loadSourceMode(): void {
-    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    SearchSettingsAdapter.loadSourceMode(context)
-      .then((mode: SearchSourceMode) => {
-        this.sourceMode = mode
-        const effect = SearchSourceCoordinator.loadedSourceModeEffect(mode, this.keyword)
-        if (effect.shouldLoadNodeIndex) {
-          this.loadNodeIndex()
-        } else if (effect.shouldExecuteRemote) {
-          this.executeRemoteSearch(true)
-        } else if (effect.shouldApplyLocalFilter) {
-          this.applyFilter()
-        }
-      })
-      .catch((_error: Error) => {
-        this.sourceMode = 'localWithNodes'
-        this.loadNodeIndex()
-      })
-  }
-
   private loadHistory(): void {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     SearchSettingsAdapter.loadHistory(context)
@@ -542,7 +473,7 @@ export struct SearchPage {
   }
 
   private recordHistory(): void {
-    const q = SearchSourceCoordinator.recordableQuery(this.keyword)
+    const q = SearchPageStateCoordinator.recordableQuery(this.keyword)
     if (!q) {
       return
     }
@@ -555,36 +486,29 @@ export struct SearchPage {
       .then(() => {
         this.history = []
       })
-      .catch((_error: Error) => { })
+      .catch((_error: Error) => {})
   }
 
   private applyHistory(q: string): void {
-    const selection = SearchSourceCoordinator.applyHistory(q, this.sourceMode)
-    if (!selection.shouldApply) {
+    const clean = (q ?? '').trim()
+    if (!clean) {
       return
     }
-    this.keyword = selection.query
-    this.applyFilter()
-    this.resetRemoteResults()
-    if (selection.shouldExecuteRemote) {
-      this.executeRemoteSearch(true)
-    }
-    this.recordHistoryQuery(selection.query)
+    // Seed everything synchronously so runPrimarySearchAction sees the right keyword, then mirror into the
+    // title-bar field (monitor suppressed) so the input shows the chosen query.
+    this.handleKeywordChange(clean)
+    this.setTitleBarKeyword(clean)
+    this.runPrimarySearchAction()
   }
 
   private handleKeywordChange(value: string): void {
-    const effect = SearchSourceCoordinator.keywordChanged(value)
-    this.keyword = effect.query
-    if (effect.shouldApplyLocalFilter) {
-      this.applyFilter()
-    }
-    if (effect.shouldResetRemote) {
-      this.resetRemoteResults()
-    }
+    this.keyword = value
+    this.applyFilter()
+    this.resetRemoteResults()
   }
 
   private recordHistoryQuery(query: string): void {
-    const q = SearchSourceCoordinator.recordableQuery(query)
+    const q = SearchPageStateCoordinator.recordableQuery(query)
     if (!q) {
       return
     }
@@ -593,17 +517,12 @@ export struct SearchPage {
       .then((items: string[]) => {
         this.history = items
       })
-      .catch((_error: Error) => { })
+      .catch((_error: Error) => {})
   }
 
   private applyFilter(): void {
     const q = this.keyword.trim().toLowerCase()
     if (!q) {
-      this.topicResults = []
-      this.nodeResults = []
-      return
-    }
-    if (this.sourceMode === 'externalWeb') {
       this.topicResults = []
       this.nodeResults = []
       return
@@ -614,7 +533,7 @@ export struct SearchPage {
       resultFilter: this.resultFilter,
       includeTopics: this.showTopicResults(),
       includeNodes: this.showNodeResults(),
-      usesNodeIndex: this.usesNodeIndex(),
+      usesNodeIndex: true,
       savedTopics: this.savedTopics,
       viewedTopics: this.viewedTopics,
       savedNodes: this.savedNodes,
@@ -624,40 +543,6 @@ export struct SearchPage {
     })
     this.topicResults = results.topicResults
     this.nodeResults = results.nodeResults
-  }
-
-  private updateSourceMode(mode: SearchSourceMode): void {
-    const transition = SearchSourceCoordinator.transitionSourceMode(this.sourceMode, mode, this.keyword)
-    if (!transition.changed) {
-      return
-    }
-    this.sourceMode = transition.mode
-    if (transition.shouldResetRemote) {
-      this.resetRemoteResults()
-    }
-    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    SearchSettingsAdapter.saveSourceMode(context, transition.mode)
-      .catch((error: Error) => {
-        this.errorMessage = translateApiError(error)
-      })
-    if (transition.shouldLoadNodeIndex) {
-      this.loadNodeIndex()
-    } else if (transition.shouldExecuteRemote) {
-      this.executeRemoteSearch(true)
-    } else if (transition.shouldApplyLocalFilter) {
-      this.applyFilter()
-    }
-  }
-
-  private updateResultFilter(filter: SearchResultFilter): void {
-    const effect = SearchFilterCoordinator.updateLocalResultFilter(this.resultFilter, filter)
-    if (!effect.changed) {
-      return
-    }
-    this.resultFilter = effect.filter
-    if (effect.shouldApplyLocalFilter) {
-      this.applyFilter()
-    }
   }
 
   private openUserProfile(username: string): void {
@@ -670,19 +555,12 @@ export struct SearchPage {
   }
 
   private runPrimarySearchAction(): void {
-    const action = SearchSourceCoordinator.primaryAction(this.sourceMode, this.keyword)
-    if (action === 'remote') {
-      this.executeRemoteSearch(true)
+    if (this.keyword.trim().length === 0) {
       return
     }
-    if (action === 'external') {
-      this.openExternalTopicSearch()
-      return
-    }
-    if (action === 'local') {
-      this.applyFilter()
-      this.recordHistory()
-    }
+    this.applyFilter()
+    this.executeRemoteSearch(true)
+    this.recordHistory()
   }
 
   private showTopicResults(): boolean {
@@ -694,27 +572,22 @@ export struct SearchPage {
   }
 
   private topicSectionTitle(): string {
-    return SearchPageStateCoordinator.topicSectionTitle(this.resultFilter)
+    return SearchPageStateCoordinator.topicSectionTitle()
   }
 
   private emptyTopicHint(): string {
-    return SearchPageStateCoordinator.emptyTopicHint(this.resultFilter)
+    return SearchPageStateCoordinator.emptyTopicHint()
   }
 
-  private usesNodeIndex(): boolean {
-    return SearchPageStateCoordinator.usesNodeIndex(this.sourceMode)
-  }
-
-  private sourceModeSummary(): string {
-    return SearchPageStateCoordinator.sourceModeSummary(this.sourceMode)
-  }
-
-  private loadingSummary(): string {
+  private loadingText(): string {
+    if (!this.isCacheLoading && !this.isNodeIndexLoading) {
+      return ''
+    }
     return SearchPageStateCoordinator.loadingSummary(this.isCacheLoading, this.isNodeIndexLoading)
   }
 
   private emptyNodeHint(): string {
-    return SearchPageStateCoordinator.emptyNodeHint(this.sourceMode)
+    return SearchPageStateCoordinator.emptyNodeHint()
   }
 
   private openExternalTopicSearch(): void {
@@ -726,10 +599,9 @@ export struct SearchPage {
     this.recordHistoryQuery(q)
     const url = SearchPageStateCoordinator.buildExternalTopicSearchUrl(q)
     const want: Want = { action: 'ohos.want.action.viewData', uri: url }
-    context.startAbility(want)
-      .catch((error: Error) => {
-        promptAction.openToast({ message: translateApiError(error) }).catch((_error: Error) => { })
-      })
+    context.startAbility(want).catch((error: Error) => {
+      promptAction.openToast({ message: translateApiError(error) }).catch((_error: Error) => {})
+    })
   }
 
   private resetRemoteResults(): void {
@@ -752,15 +624,21 @@ export struct SearchPage {
       this.remoteError = ''
     }
     this.remoteLoading = true
-    this.sov2ex.search(RemoteSearchCoordinator.buildRequest({
-      keyword: q,
-      from: this.remoteFrom,
-      sort: this.remoteSort,
-      order: this.remoteOrder,
-      username: this.remoteUsername,
-      node: this.remoteNode,
-      dateRange: this.remoteDateRange,
-    }, reset))
+    this.sov2ex
+      .search(
+        RemoteSearchCoordinator.buildRequest(
+          {
+            keyword: q,
+            from: this.remoteFrom,
+            sort: this.remoteSort,
+            order: this.remoteOrder,
+            username: this.remoteUsername,
+            node: this.remoteNode,
+            dateRange: this.remoteDateRange,
+          },
+          reset,
+        ),
+      )
       .then((response) => {
         const state = RemoteSearchCoordinator.mergeResponse(this.remoteResults, response, reset)
         this.remoteResults = state.results
@@ -775,54 +653,4 @@ export struct SearchPage {
         this.remoteLoading = false
       })
   }
-
-  private hasRemoteFilters(): boolean {
-    return SearchPageStateCoordinator.hasRemoteFilters(
-      this.remoteUsername,
-      this.remoteNode,
-      this.remoteDateRange,
-    )
-  }
-
-  private clearRemoteFilters(): void {
-    const effect = SearchFilterCoordinator.clearRemoteFilters()
-    this.remoteUsername = effect.username
-    this.remoteNode = effect.node
-    this.remoteDateRange = effect.dateRange
-    this.applyRemoteFilterEffect(effect)
-  }
-
-  private selectRemoteSort(sort: Sov2exSortMode): void {
-    const effect = SearchFilterCoordinator.selectRemoteSort(this.remoteSort, sort)
-    this.remoteSort = effect.sort
-    this.applyRemoteFilterEffect(effect)
-  }
-
-  private toggleRemoteOrder(): void {
-    const effect = SearchFilterCoordinator.toggleRemoteOrder(this.remoteOrder)
-    this.remoteOrder = effect.order
-    this.applyRemoteFilterEffect(effect)
-  }
-
-  private selectRemoteDateRange(range: RemoteDateRange): void {
-    const effect = SearchFilterCoordinator.selectRemoteDateRange(this.remoteDateRange, range)
-    this.remoteDateRange = effect.dateRange
-    this.applyRemoteFilterEffect(effect)
-  }
-
-  private applyRemoteFilterEffect(effect: RemoteFilterEffect): void {
-    if (!effect.changed) {
-      return
-    }
-    if (effect.shouldResetRemote) {
-      this.resetRemoteResults()
-    }
-    if (
-      effect.shouldExecuteRemote &&
-      SearchFilterCoordinator.shouldApplyRemoteFilters(this.keyword, this.remoteLoading)
-    ) {
-      this.executeRemoteSearch(true)
-    }
-  }
-
 }

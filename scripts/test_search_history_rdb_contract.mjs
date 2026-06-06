@@ -47,7 +47,9 @@ for (const snippet of requiredSearchSnippets) {
 assert(!searchSettings.includes('writeJsonValue<string[]>(store, KEY_HISTORY'), 'SearchSettings must not write searchHistory to Preferences')
 assert(searchSettings.includes('deleteLegacyHistoryBestEffort'), 'SearchSettings should keep clean-break legacy Preferences deletion best-effort and non-migrating')
 assert(searchSettings.includes("const KEY_HISTORY: string = 'searchHistory'"), 'SearchSettings must keep legacy searchHistory key constant for contract/clean-break traceability')
-assert(searchSettings.includes("const KEY_SOURCE_MODE: string = 'sourceMode'"), 'SearchSettings must keep sourceMode Preferences key')
-assert(searchSettings.includes('withPreferencesStore<SearchSourceMode>'), 'SearchSettings must keep sourceMode on Preferences for Lane 4')
+// Method C retired the search source-mode entirely (search is one unified surface). Guard against a
+// sourceMode regression: the key constant and the typed Preferences accessor must NOT come back.
+assert(!searchSettings.includes('KEY_SOURCE_MODE'), 'SearchSettings must not reintroduce the retired sourceMode Preferences key')
+assert(!searchSettings.includes('withPreferencesStore<SearchSourceMode>'), 'SearchSettings must not reintroduce the retired sourceMode Preferences accessor')
 
 console.log('search history RDB contract OK')

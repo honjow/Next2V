@@ -364,7 +364,6 @@ for (const [file, storeConst, helpers] of jsonBusinessSettingsContracts) {
 assert(read('shared/src/main/ets/settings/DraftSettings.ets').includes("KEY_REPLY_DRAFTS: string = 'replyDrafts'"), 'DraftSettings replyDrafts key changed')
 assert(read('shared/src/main/ets/settings/DraftSettings.ets').includes("KEY_TOPIC_DRAFT: string = 'topicDraft'"), 'DraftSettings topicDraft key changed')
 assert(read('shared/src/main/ets/settings/SearchSettings.ets').includes("KEY_HISTORY: string = 'searchHistory'"), 'SearchSettings searchHistory key changed')
-assert(read('shared/src/main/ets/settings/SearchSettings.ets').includes("KEY_SOURCE_MODE: string = 'sourceMode'"), 'SearchSettings sourceMode key changed')
 assert(read('shared/src/main/ets/settings/SearchSettings.ets').includes("LocalDataStore.open(context)"), 'SearchSettings searchHistory must use LocalDataStore RDB')
 
 const next2vSettingsFiles = [

@@ -37,8 +37,12 @@ export class SearchLocalResultBuilder {
     if (!q) {
       return { topicResults: [], nodeResults: [] }
     }
-    const topicResults = input.includeTopics ? SearchLocalResultBuilder.buildTopicResults(input, q) : []
-    const nodeResults = input.includeNodes ? SearchLocalResultBuilder.buildNodeResults(input, q) : []
+    const topicResults = input.includeTopics
+      ? SearchLocalResultBuilder.buildTopicResults(input, q)
+      : []
+    const nodeResults = input.includeNodes
+      ? SearchLocalResultBuilder.buildNodeResults(input, q)
+      : []
     return { topicResults, nodeResults }
   }
 
@@ -62,22 +66,27 @@ export class SearchLocalResultBuilder {
 
     for (const item of input.viewedTopics) {
       const existing = bag.get(item.id)
-      const topic: SearchTopicItem = existing ? existing : {
-        id: item.id,
-        title: item.title,
-        nodeName: item.nodeName,
-        nodeTitle: item.nodeTitle,
-        username: item.username,
-        source: AppStrings.text($r('app.string.search_source_recent'), 'Recent'),
-        updatedAt: item.viewedAt || 0,
-      }
+      const topic: SearchTopicItem = existing
+        ? existing
+        : {
+            id: item.id,
+            title: item.title,
+            nodeName: item.nodeName,
+            nodeTitle: item.nodeTitle,
+            username: item.username,
+            source: AppStrings.text($r('app.string.search_source_recent'), 'Recent'),
+            updatedAt: item.viewedAt || 0,
+          }
       if (!SearchLocalResultBuilder.topicMatches(topic, q, input.resultFilter)) {
         continue
       }
       if (!existing) {
         bag.set(topic.id, topic)
       } else {
-        existing.source = SearchLocalResultBuilder.mergeSource(existing.source, AppStrings.text($r('app.string.search_source_recent'), 'Recent'))
+        existing.source = SearchLocalResultBuilder.mergeSource(
+          existing.source,
+          AppStrings.text($r('app.string.search_source_recent'), 'Recent'),
+        )
         existing.updatedAt = Math.max(existing.updatedAt, item.viewedAt || 0)
       }
     }
@@ -85,8 +94,9 @@ export class SearchLocalResultBuilder {
     SearchLocalResultBuilder.mergeCachedTopics(bag, input.cacheTopicDetails, q, input.resultFilter)
     SearchLocalResultBuilder.mergeCachedTopics(bag, input.cacheTopicLists, q, input.resultFilter)
 
-    return Array.from(bag.values())
-      .sort((left: SearchTopicItem, right: SearchTopicItem) => right.updatedAt - left.updatedAt)
+    return Array.from(bag.values()).sort(
+      (left: SearchTopicItem, right: SearchTopicItem) => right.updatedAt - left.updatedAt,
+    )
   }
 
   private static mergeCachedTopics(
@@ -144,28 +154,31 @@ export class SearchLocalResultBuilder {
         } else {
           existing.title = existing.title || node.title
           existing.topics = Math.max(existing.topics, node.topics)
-          existing.source = SearchLocalResultBuilder.mergeSource(existing.source, AppStrings.text($r('app.string.search_source_nodes_library'), 'Node library'))
+          existing.source = SearchLocalResultBuilder.mergeSource(
+            existing.source,
+            AppStrings.text($r('app.string.search_source_nodes_library'), 'Node library'),
+          )
           existing.score = Math.max(existing.score, match.score + 1200)
         }
       }
     }
 
-    return Array.from(nodeBag.values())
-      .sort((left: SearchNodeItem, right: SearchNodeItem) => {
-        if (right.score !== left.score) {
-          return right.score - left.score
-        }
-        if (right.updatedAt !== left.updatedAt) {
-          return right.updatedAt - left.updatedAt
-        }
-        return right.topics - left.topics
-      })
+    return Array.from(nodeBag.values()).sort((left: SearchNodeItem, right: SearchNodeItem) => {
+      if (right.score !== left.score) {
+        return right.score - left.score
+      }
+      if (right.updatedAt !== left.updatedAt) {
+        return right.updatedAt - left.updatedAt
+      }
+      return right.topics - left.topics
+    })
   }
 
-  private static topicMatches(item: SearchTopicItem, q: string, filter: SearchResultFilter): boolean {
-    if (filter === 'users') {
-      return item.username.toLowerCase().includes(q)
-    }
+  private static topicMatches(
+    item: SearchTopicItem,
+    q: string,
+    _filter: SearchResultFilter,
+  ): boolean {
     if (item.id.toString().includes(q)) {
       return true
     }
@@ -182,7 +195,10 @@ export class SearchLocalResultBuilder {
   }
 
   private static mergeSource(existing: string, incoming: string): string {
-    const parts = existing.split(' · ').map((source: string) => source.trim()).filter((source: string) => source.length > 0)
+    const parts = existing
+      .split(' · ')
+      .map((source: string) => source.trim())
+      .filter((source: string) => source.length > 0)
     if (parts.indexOf(incoming) >= 0) {
       return existing
     }

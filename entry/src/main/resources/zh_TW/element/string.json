@@ -1310,7 +1310,7 @@
     },
     {
       "name": "search_topics_nodes_users_placeholder",
-      "value": "搜尋主題、節點、使用者"
+      "value": "搜尋主題、節點"
     },
     {
       "name": "search_browser_v2ex_topics",
@@ -2331,10 +2331,6 @@
     {
       "name": "search_web_filter_hint",
       "value": "網頁搜尋打開系統瀏覽器，無法站內篩選。"
-    },
-    {
-      "name": "search_discover_nodes_placeholder",
-      "value": "搜尋節點"
     },
     {
       "name": "search_N_topics",

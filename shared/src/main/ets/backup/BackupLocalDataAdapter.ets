@@ -1,10 +1,18 @@
 import { common } from '@kit.AbilityKit'
-import type { BackupCollectionsSection, BackupDraftsSection, BackupNotificationsSection, BackupSearchSection } from './BackupTypes'
+import type {
+  BackupCollectionsSection,
+  BackupDraftsSection,
+  BackupNotificationsSection,
+  BackupSearchSection,
+} from './BackupTypes'
 import { DraftSettings, type ReplyDraft, type TopicDraft } from '../settings/DraftSettings'
 import { CollectionSettings } from '../settings/CollectionSettings'
 import { UserMarkSettings } from '../settings/UserMarkSettings'
 import { SearchSettings } from '../settings/SearchSettings'
-import { NotificationSettings, type NotificationCacheSnapshot } from '../settings/NotificationSettings'
+import {
+  NotificationSettings,
+  type NotificationCacheSnapshot,
+} from '../settings/NotificationSettings'
 import type { V2exNotification } from '../network/NetworkTypes'
 
 export class BackupLocalDataAdapter {
@@ -14,11 +22,20 @@ export class BackupLocalDataAdapter {
     return { replyDrafts: replyDrafts, topicDraft: topicDraft }
   }
 
-  static async restoreDrafts(context: common.UIAbilityContext, section: BackupDraftsSection): Promise<void> {
-    await DraftSettings.restoreBackup(context, section.replyDrafts as ReplyDraft[], section.topicDraft as TopicDraft | null)
+  static async restoreDrafts(
+    context: common.UIAbilityContext,
+    section: BackupDraftsSection,
+  ): Promise<void> {
+    await DraftSettings.restoreBackup(
+      context,
+      section.replyDrafts as ReplyDraft[],
+      section.topicDraft as TopicDraft | null,
+    )
   }
 
-  static async exportCollections(context: common.UIAbilityContext): Promise<BackupCollectionsSection> {
+  static async exportCollections(
+    context: common.UIAbilityContext,
+  ): Promise<BackupCollectionsSection> {
     const userMarks = await UserMarkSettings.load(context)
     return {
       savedTopics: await CollectionSettings.loadSavedTopics(context),
@@ -29,46 +46,59 @@ export class BackupLocalDataAdapter {
       userMarkLabels: userMarks.labels,
       userMarkAssignments: userMarks.assignments,
       userMarkDisplayLimit: userMarks.displayLimit,
-      userMarkCombinedBadge: userMarks.combinedBadge
+      userMarkCombinedBadge: userMarks.combinedBadge,
     }
   }
 
-  static async restoreCollections(context: common.UIAbilityContext, section: BackupCollectionsSection): Promise<void> {
+  static async restoreCollections(
+    context: common.UIAbilityContext,
+    section: BackupCollectionsSection,
+  ): Promise<void> {
     await CollectionSettings.restoreBackup(context, section)
     await UserMarkSettings.restoreBackup(context, section)
   }
 
   static async exportSearch(context: common.UIAbilityContext): Promise<BackupSearchSection> {
-    return { history: await SearchSettings.loadHistory(context), sourceMode: await SearchSettings.loadSourceMode(context) }
+    // sourceMode is retired (search collapsed to one unified surface); keep the field for backup-format
+    // compatibility but emit an empty placeholder and ignore it on restore.
+    return { history: await SearchSettings.loadHistory(context), sourceMode: '' }
   }
 
-  static async restoreSearch(context: common.UIAbilityContext, section: BackupSearchSection): Promise<void> {
+  static async restoreSearch(
+    context: common.UIAbilityContext,
+    section: BackupSearchSection,
+  ): Promise<void> {
     await SearchSettings.clearHistory(context)
     const history = section.history || []
     for (let i = history.length - 1; i >= 0; i--) {
       await SearchSettings.recordQuery(context, history[i])
     }
-    await SearchSettings.saveSourceMode(context, section.sourceMode as 'local' | 'localWithNodes' | 'remote' | 'externalWeb')
+    // section.sourceMode is intentionally ignored (retired setting; field kept for format compatibility).
   }
 
-  static async exportNotifications(context: common.UIAbilityContext): Promise<BackupNotificationsSection> {
+  static async exportNotifications(
+    context: common.UIAbilityContext,
+  ): Promise<BackupNotificationsSection> {
     const snapshot = await NotificationSettings.exportCacheForBackup(context)
     return {
       ownerKey: snapshot.ownerKey,
       items: snapshot.items,
       page: snapshot.page,
       hasMore: snapshot.hasMore,
-      updatedAt: snapshot.updatedAt
+      updatedAt: snapshot.updatedAt,
     }
   }
 
-  static async restoreNotifications(context: common.UIAbilityContext, section: BackupNotificationsSection): Promise<void> {
+  static async restoreNotifications(
+    context: common.UIAbilityContext,
+    section: BackupNotificationsSection,
+  ): Promise<void> {
     const snapshot: NotificationCacheSnapshot = {
       ownerKey: section.ownerKey || '',
       items: section.items as V2exNotification[],
       page: section.page > 0 ? section.page : 1,
       hasMore: section.hasMore === true,
-      updatedAt: section.updatedAt > 0 ? section.updatedAt : 0
+      updatedAt: section.updatedAt > 0 ? section.updatedAt : 0,
     }
     await NotificationSettings.restoreCacheFromBackup(context, snapshot)
   }

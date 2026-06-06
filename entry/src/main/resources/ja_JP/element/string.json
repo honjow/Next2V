@@ -1310,7 +1310,7 @@
     },
     {
       "name": "search_topics_nodes_users_placeholder",
-      "value": "トピック、ノード、ユーザーを検索"
+      "value": "トピック、ノードを検索"
     },
     {
       "name": "search_browser_v2ex_topics",
@@ -2331,10 +2331,6 @@
     {
       "name": "search_web_filter_hint",
       "value": "Web 検索はシステムブラウザーで開き、アプリ内フィルターは無効です。"
-    },
-    {
-      "name": "search_discover_nodes_placeholder",
-      "value": "ノードを検索"
     },
     {
       "name": "search_N_topics",

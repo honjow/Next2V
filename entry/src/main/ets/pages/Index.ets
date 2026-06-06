@@ -21,7 +21,6 @@ import {
   ApiConstants,
   ApiService,
   AuthSettings,
-  AutoDailyCheckinService,
   connectAccountWebViewAction,
   connectAccountWebViewUrl,
   connectAuthSessionSignal,
@@ -35,14 +34,12 @@ import {
   connectNotificationAction,
   connectNotificationUnread,
   connectPendingV2exUrl,
-  connectSearchAction,
   connectTopicDetailAction,
   connectTopicDetailAppbar,
   connectTopicEditorAppbar,
   connectTwoFactor,
   connectUserProfileAction,
   connectUserProfileAppbar,
-  connectWebCheckinRunner,
   connectWebLoginAction,
   publishNotificationUnreadCount,
   publishPendingV2exUrl,
@@ -57,7 +54,6 @@ import {
   sendTopicEditorSubmit,
   TwoFactorState,
   UserProfileAppbarState,
-  WebCheckinRunnerState,
   CookieJarSettings,
   FoldScreenUtil,
   HttpClient,
@@ -105,17 +101,16 @@ import { NotificationPage } from './NotificationPage'
 import { AboutPage } from './AboutPage'
 import {
   BlockedListsTabsCCBuilder,
-  DiscoverSearchCCBuilder,
   NodeTopicAppbarIdentityParams,
   NodeTopicIdentityCCBuilder,
   PillCCBuilder,
+  SearchTitleFieldCCBuilder,
   TopicDetailAppbarIdentityParams,
   TopicDetailIdentityCCBuilder,
   UserProfileAppbarIdentityParams,
   UserProfileIdentityCCBuilder,
 } from '../components/IndexTitleBarComponents'
 import { MainTabIcon } from '../components/MainTabIcon'
-import { DailyCheckinWebRunner } from '../components/DailyCheckinWebRunner'
 import { V2exTwoFactorPrompt } from '../components/V2exTwoFactorPrompt'
 import {
   TopicDetailTitleAction,
@@ -186,8 +181,6 @@ struct Index {
   @Local private notificationRefreshKey: number = 0;
   @Local private accountRefreshKey: number = 0;
   @Local private isFoldedAndUseOuterScreen: boolean = false;
-  // Drives the nav-shell hidden ArkWeb daily check-in runner (auto check-in handoff; see WebCheckinRunnerState).
-  @Local private webCheckin: WebCheckinRunnerState = connectWebCheckinRunner();
   private http: HttpClient = HttpClient.getInstance();
   private notificationVm: NotificationCenterViewModel = new NotificationCenterViewModel(
     new ApiService(),
@@ -565,10 +558,10 @@ struct Index {
         // Auto-hide the title on every home sub-tab (incl. the feed). bindToScrollable below binds only
         // the active tab's scroller, so the shared title is driven by one source: switching to a tab
         // already at its top immediately re-shows the title (no leftover avoidance gap), and a status-bar
-        // tap that scrolls a list to its top likewise re-shows it. hideBottomBuilder hides the Discover
-        // search field but keeps the feed pill bar pinned on the home tab.
+        // tap that scrolls a list to its top likewise re-shows it. Only the home tab (ct===0) has a
+        // bottomBuilder now (the feed pill bar), which stays pinned; Discover (ct===1) has no bottomBuilder.
         hideTitleArea: true,
-        hideBottomBuilder: this.ct === 1,
+        hideBottomBuilder: false,
         hideStatusBar: false,
         mode: HideMode.SCROLL_UP,
       })
@@ -590,30 +583,9 @@ struct Index {
           TwoFactorChallengeService.cancel()
         }),
       )
-      // Hidden 1×1 ArkWeb runner for AUTO daily check-in (V2EX's anti-bot blocks a headless redeem). Always
-      // mounted so check-in can run at login / startup even before the Me tab is first created. Manual
-      // check-in uses its own runner inside AccountPage.
-      DailyCheckinWebRunner({
-        trigger: this.webCheckin.requestId,
-        baseUrl: this.webCheckin.baseUrl,
-        onRunResult: (status: string, rewardCoins: number) => {
-          this.onAutoCheckinWebResult(status, rewardCoins)
-        },
-      })
     }
     .width('100%')
     .height('100%')
-  }
-
-  private onAutoCheckinWebResult(status: string, rewardCoins: number): void {
-    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    AutoDailyCheckinService.handleWebResult(context, status, rewardCoins).catch(
-      (_error: Error) => {},
-    )
-    if (status === 'success' || status === 'already') {
-      // Refresh the account card so the freshly-claimed balance / 已签到 state shows.
-      this.accountRefreshKey++
-    }
   }
 
   @Builder
@@ -678,7 +650,22 @@ struct Index {
       return this.navDestTitleBarOpts(this.accountWebViewTitle(), this.accountWebViewTitleMenu())
     }
     if (descriptor.family === 'search') {
-      return this.navDestTitleBarOpts(descriptor.title, this.searchTitleMenu())
+      // The search input lives in the title bar itself (no title text, no menu): host SearchTitleField as
+      // the title-area stack component. Created fresh per push so autoFocus re-fires on each visit; the
+      // search-destination title bar reads no high-frequency state, so it is not re-built mid-typing.
+      let cc = new ComponentContent<Object>(
+        this.getUIContext(),
+        wrapBuilder<[Object]>(SearchTitleFieldCCBuilder),
+        new Object(),
+      )
+      return this.navDestTitleBarOpts(
+        ' ',
+        undefined,
+        undefined,
+        undefined,
+        cc,
+        AppStrings.text(AppStrings.R_NAV_SEARCH, 'Search'),
+      )
     }
     if (descriptor.family === 'imagePreview') {
       return this.navDestTitleBarOpts(undefined, this.imagePreviewTitleMenu())
@@ -1003,13 +990,9 @@ struct Index {
     }
     if (this.userProfileAppbar.markLabel) {
       items.push(
-        this.topicActionItem(
-          AppStrings.R_USER_ACTION_MARK,
-          $r('sys.symbol.bookmark'),
-          () => {
-            this.sendUserProfileAction('mark')
-          },
-        ),
+        this.topicActionItem(AppStrings.R_USER_ACTION_MARK, $r('sys.symbol.bookmark'), () => {
+          this.sendUserProfileAction('mark')
+        }),
       )
     }
     if (this.userProfileAppbar.blockLabel) {
@@ -1086,13 +1069,6 @@ struct Index {
     // writer; the legacy AppStorage half was retired once no reader read the V1 key.
     const command = IndexRouteCoordinator.simpleCommand(action, Date.now())
     connectNotificationAction().command = command
-  }
-
-  private sendSearchAction(action: string): void {
-    // Publish the V2 command mirror (read by @ComponentV2 SearchPage) from this single writer; the legacy
-    // AppStorage half was retired once no reader read the V1 key.
-    const command = IndexRouteCoordinator.simpleCommand(action, Date.now())
-    connectSearchAction().command = command
   }
 
   private sendImagePreviewAction(action: string): void {
@@ -1172,19 +1148,13 @@ struct Index {
         'showType': BottomBuilderShowType.DIRECTLY_SHOW,
       }
       content = { 'title': titleInfo, 'bottomBuilder': bb }
-    } else if (this.ct === 1) {
-      let cc = new ComponentContent(this.getUIContext(), wrapBuilder(DiscoverSearchCCBuilder))
-      let bb: Record<string, Object> = {
-        'builderComponent': cc,
-        'height': 48,
-        'showType': BottomBuilderShowType.DIRECTLY_SHOW,
-      }
-      content = { 'title': titleInfo, 'bottomBuilder': bb }
     } else {
       content = { 'title': titleInfo }
     }
     if (this.ct === 0) {
       content['menu'] = this.homeTitleMenu()
+    } else if (this.ct === 1) {
+      content['menu'] = this.discoverTitleMenu()
     } else if (this.ct === 2) {
       content['menu'] = this.notificationTitleMenu()
     } else if (this.ct === 3) {
@@ -1225,6 +1195,18 @@ struct Index {
     return { 'value': items, 'maxCount': IndexTitleBarCoordinator.SINGLE_ITEM_MENU_MAX_COUNT }
   }
 
+  private discoverTitleMenu(): Record<string, Object> {
+    let items: Record<string, Object>[] = IndexTitleBarCoordinator.discoverMenuItems().map(
+      (descriptor: IndexTitleMenuDescriptor) =>
+        this.topicActionItem(descriptor.label, this.mainTitleMenuIcon(descriptor.icon), () => {
+          if (descriptor.action === 'openSearch') {
+            this.ns.pushPathByName('Search', null)
+          }
+        }),
+    )
+    return { 'value': items, 'maxCount': IndexTitleBarCoordinator.SINGLE_ITEM_MENU_MAX_COUNT }
+  }
+
   private meTitleMenu(): Record<string, Object> {
     let items: Record<string, Object>[] = IndexTitleBarCoordinator.meMenuItems().map(
       (descriptor: IndexTitleMenuDescriptor) =>
@@ -1242,16 +1224,6 @@ struct Index {
       (descriptor: IndexTitleMenuDescriptor) =>
         this.topicActionItem(descriptor.label, this.mainTitleMenuIcon(descriptor.icon), () => {
           this.sendNotificationAction(descriptor.action)
-        }),
-    )
-    return { 'value': items, 'maxCount': IndexTitleBarCoordinator.SINGLE_ITEM_MENU_MAX_COUNT }
-  }
-
-  private searchTitleMenu(): Record<string, Object> {
-    let items: Record<string, Object>[] = IndexTitleBarCoordinator.searchMenuItems().map(
-      (descriptor: IndexTitleMenuDescriptor) =>
-        this.topicActionItem(descriptor.label, this.mainTitleMenuIcon(descriptor.icon), () => {
-          this.sendSearchAction(descriptor.action)
         }),
     )
     return { 'value': items, 'maxCount': IndexTitleBarCoordinator.SINGLE_ITEM_MENU_MAX_COUNT }
@@ -1338,6 +1310,9 @@ struct Index {
     }
     if (icon === 'refresh') {
       return $r('sys.symbol.arrow_clockwise')
+    }
+    if (icon === 'search') {
+      return $r('sys.symbol.magnifyingglass')
     }
     return $r('sys.symbol.search_things')
   }
