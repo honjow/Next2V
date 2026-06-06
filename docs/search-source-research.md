@@ -2,6 +2,8 @@
 
 Date: 2026-05-06
 
+> **Partially superseded (2026-06-06).** Since this was written, `remote` was wired to SOV2EX in-app JSON full-text search (`Sov2exService`) and the Bing external-open action split into a separate `externalWeb` source. The redundancy/duplication of the multi-source-mode UI and the unified-search redesign are tracked in [`search-refactor-plan.zh.md`](./search-refactor-plan.zh.md). The "do not scrape Google/Bing result pages in-app" principle below remains in force.
+
 ## Summary
 
 V2Next should keep in-app topic search local-first for now. The current official V2EX API 2.0 Beta page lists notifications, member, token, node detail, node topics, topic detail, topic replies, and guarded topic actions, but no topic-search endpoint.
