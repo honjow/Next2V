@@ -242,13 +242,8 @@ export struct RemoteTopicRow {
               this.openUserAction(this.item.username)
             }
           })
-        Text(
-          AppStrings.format(AppStrings.text($r('app.string.search_N_replies'), '{0} replies'), [
-            String(this.item.replies),
-          ]),
-        )
-          .fontSize(ThemeConstants.FONT_SIZE_TINY)
-          .fontColor($r('sys.color.font_secondary'))
+        // Reply count dropped from SOV2EX rows: the index's reply number is often stale/inaccurate, so
+        // showing it misleads. (item.replies stays on the model; just not displayed.)
         Text(this.item.created)
           .fontSize(ThemeConstants.FONT_SIZE_TINY)
           .fontColor($r('sys.color.font_secondary'))
