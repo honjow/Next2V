@@ -396,6 +396,9 @@ struct SearchTitleField {
         text: this.fieldText,
         placeholder: $r('app.string.search_topics_nodes_users_placeholder'),
         autoFocus: true,
+        // System-style trailing "搜索" button (Search's own searchButton property) so SOV2EX can be run
+        // without the IME enter key. Tapping it fires onSubmit, same as pressing enter.
+        searchButtonText: AppStrings.text(AppStrings.R_NAV_SEARCH, 'Search'),
         onTextChange: (value: string) => {
           // Write-only — must NOT be read back in build() (see fieldText), or every keystroke re-renders here.
           this.actionState.keyword = value

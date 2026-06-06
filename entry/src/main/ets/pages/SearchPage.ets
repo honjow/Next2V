@@ -72,6 +72,10 @@ export struct SearchPage {
   @Local private remoteFrom: number = 0;
   @Local private remoteLoading: boolean = false;
   @Local private remoteError: string = '';
+  // SOV2EX (full-text remote) runs on submit, not per keystroke. False until a search has been issued for the
+  // current query (reset on every keyword change) so the section shows a "tap Search" prompt instead of a
+  // misleading "SOV2EX 0" before the user submits.
+  @Local private remoteSearched: boolean = false;
   @Local private listScrollEnabled: boolean = true;
 
   // The filter sheet is gone: result type is always "all" (topics + nodes) and the SOV2EX query uses these
@@ -122,6 +126,9 @@ export struct SearchPage {
       PullRefreshListScaffold({
         scroller: this.scroller,
         refreshThreshold: this.PULL_REFRESH_THRESHOLD,
+        // Routed results list (no bottom tab bar / FAB), so give the last row comfortable clearance above the
+        // system gesture bar — the default SPACE_XL was too tight and the last result sat against the edge.
+        bottomPadding: ThemeConstants.FLOAT_BAR_HEIGHT,
         scrollEnabled: this.listScrollEnabled,
         onRefresh: async () => {
           await this.refreshSearchSurface()
@@ -267,7 +274,10 @@ export struct SearchPage {
   @Builder RemoteSection() {
     ListItem() {
       Column() {
-        SharedSectionHeader({ title: `SOV2EX ${this.remoteTotal}` })
+        // No count until a search has actually run, so a not-yet-submitted query never reads as "SOV2EX 0".
+        SharedSectionHeader({
+          title: this.remoteSearched ? `SOV2EX ${this.remoteTotal}` : 'SOV2EX',
+        })
         if (this.remoteError) {
           Text(this.remoteError)
             .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
@@ -280,43 +290,68 @@ export struct SearchPage {
       }.width('100%')
     }
 
-    ForEach(
-      this.remoteResults,
-      (item: RemoteTopicItem) => {
+    if (!this.remoteSearched) {
+      // SOV2EX (full-text remote topic search) runs on submit, not per keystroke — make that explicit and
+      // tappable instead of showing "0 results". Local results above already update live as you type.
+      ListItem() {
+        Row({ space: ThemeConstants.SPACE_SM }) {
+          Text(
+            AppStrings.text($r('app.string.search_sov2ex_run_hint'), 'Tap Search to query SOV2EX'),
+          )
+            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+            .fontColor($r('sys.color.font_secondary'))
+            .layoutWeight(1)
+          Text($r('app.string.nav_search'))
+            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+            .fontColor(ThemeConstants.BRAND_PRIMARY)
+        }
+        .padding(ThemeConstants.SPACE_MD)
+        .width('100%')
+        .borderRadius(ThemeConstants.RADIUS_MD)
+        .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+      }
+      .onClick(() => {
+        this.runPrimarySearchAction()
+      })
+    } else {
+      ForEach(
+        this.remoteResults,
+        (item: RemoteTopicItem) => {
+          ListItem() {
+            RemoteTopicRow({
+              item: item,
+              openUserAction: (username: string) => {
+                this.openUserProfile(username)
+              },
+            })
+          }
+          .onClick(() => {
+            let p: TopicDetailParams = { topicId: item.id }
+            this.stack.pushPathByName('TopicDetail', p as Object)
+          })
+        },
+        (item: RemoteTopicItem) => `r:${item.id}`,
+      )
+
+      // Pagination is automatic via the scaffold's onReachEnd -> executeRemoteSearch(false); this is just the
+      // in-flight footer. Scrolling to the end fetches the next page — no manual "load more" tap.
+      if (this.remoteLoading) {
         ListItem() {
-          RemoteTopicRow({
-            item: item,
-            openUserAction: (username: string) => {
-              this.openUserProfile(username)
+          EmptyState({
+            message: AppStrings.text($r('app.string.common_searching'), 'Searching'),
+            stateHeight: 88,
+          })
+        }
+      } else if (this.remoteResults.length === 0) {
+        // Searched, genuinely nothing found: fall back to a browser search button.
+        ListItem() {
+          ExternalWebSearchCard({
+            keyword: this.keyword,
+            openAction: () => {
+              this.openExternalTopicSearch()
             },
           })
         }
-        .onClick(() => {
-          let p: TopicDetailParams = { topicId: item.id }
-          this.stack.pushPathByName('TopicDetail', p as Object)
-        })
-      },
-      (item: RemoteTopicItem) => `r:${item.id}`,
-    )
-
-    // Pagination is automatic via the scaffold's onReachEnd -> executeRemoteSearch(false); this is just the
-    // in-flight footer. Scrolling to the end fetches the next page — no manual "load more" tap.
-    if (this.remoteLoading) {
-      ListItem() {
-        EmptyState({
-          message: AppStrings.text($r('app.string.common_searching'), 'Searching'),
-          stateHeight: 88,
-        })
-      }
-    } else if (this.remoteResults.length === 0) {
-      // SOV2EX returned nothing (or has not run yet): fall back to a browser search button.
-      ListItem() {
-        ExternalWebSearchCard({
-          keyword: this.keyword,
-          openAction: () => {
-            this.openExternalTopicSearch()
-          },
-        })
       }
     }
   }
@@ -557,6 +592,7 @@ export struct SearchPage {
     this.remoteTotal = state.total
     this.remoteFrom = state.from
     this.remoteError = state.error
+    this.remoteSearched = false
   }
 
   private executeRemoteSearch(reset: boolean): void {
@@ -575,6 +611,8 @@ export struct SearchPage {
       this.remoteTotal = 0
       this.remoteFrom = 0
       this.remoteError = ''
+      // A real submit for this query: switch the section out of the pre-search prompt state.
+      this.remoteSearched = true
     }
     this.remoteLoading = true
     this.sov2ex

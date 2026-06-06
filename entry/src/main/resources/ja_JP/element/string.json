@@ -1325,6 +1325,10 @@
       "value": "Web 検索を開く"
     },
     {
+      "name": "search_sov2ex_run_hint",
+      "value": "「検索」で SOV2EX を全文検索"
+    },
+    {
       "name": "search_history",
       "value": "検索履歴"
     },

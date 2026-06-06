@@ -1325,6 +1325,10 @@
       "value": "打开网页搜索"
     },
     {
+      "name": "search_sov2ex_run_hint",
+      "value": "点「搜索」检索 SOV2EX 主题全文"
+    },
+    {
       "name": "search_history",
       "value": "搜索历史"
     },

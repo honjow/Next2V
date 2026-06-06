@@ -1325,6 +1325,10 @@
       "value": "開啟網頁搜尋"
     },
     {
+      "name": "search_sov2ex_run_hint",
+      "value": "點「搜尋」檢索 SOV2EX 主題全文"
+    },
+    {
       "name": "search_history",
       "value": "搜尋歷史"
     },

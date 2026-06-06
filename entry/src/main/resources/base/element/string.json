@@ -1325,6 +1325,10 @@
       "value": "Open web search"
     },
     {
+      "name": "search_sov2ex_run_hint",
+      "value": "Tap Search to query SOV2EX full-text"
+    },
+    {
       "name": "search_history",
       "value": "Search history"
     },
