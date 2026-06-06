@@ -369,20 +369,35 @@ function titleBarLeadingReserve(titleBarWidth: number): number {
 
 // The standalone Search page hosts its input directly in the HdsNavDestination title bar (so there is no
 // separate search row in the page body). It writes the shared SearchActionState bus that SearchPage reads:
-// keyword on every keystroke, submitSeq on Enter. SearchPage also writes keyword back here (history chip /
-// pending query); reading actionState.keyword in build() keeps the field text in sync with that.
+// keyword on every keystroke, submitSeq on Enter. SearchPage seeds the field back via seedSeq (history chip /
+// pending query / reset) — the field must NOT read keyword in build (see fieldText) or typing flaps the IME.
 @ComponentV2
 struct SearchTitleField {
   private actionState: SearchActionState = connectSearchAction();
   @Local private titleBarWidth: number = 0;
+  // The text pushed INTO the field. It changes only on mount or when SearchPage seeds a query (via seedSeq),
+  // NEVER per keystroke. build() must not read actionState.keyword: typing writes keyword on every character,
+  // and because this component is a title-bar ComponentContent, re-running its build rebuilds the whole
+  // subtree and re-mounts the Search — which closed + reopened the soft keyboard on every keystroke.
+  @Local private fieldText: string = '';
+
+  aboutToAppear(): void {
+    this.fieldText = this.actionState.keyword
+  }
+
+  @Monitor('actionState.seedSeq')
+  onSeed(): void {
+    this.fieldText = this.actionState.keyword
+  }
 
   build() {
     Row() {
       AppSearchField({
-        text: this.actionState.keyword,
+        text: this.fieldText,
         placeholder: $r('app.string.search_topics_nodes_users_placeholder'),
         autoFocus: true,
         onTextChange: (value: string) => {
+          // Write-only — must NOT be read back in build() (see fieldText), or every keystroke re-renders here.
           this.actionState.keyword = value
         },
         onSubmit: (_value: string) => {

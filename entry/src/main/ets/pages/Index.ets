@@ -178,6 +178,12 @@ struct Index {
   // per-frame signal, which device-verifiably re-creates FeedPills ~400x/s during a swipe and storms its
   // recenter scrollToIndex. Caching keeps the per-frame re-render contained inside FeedPills.
   private pillBarContent: ComponentContent<Object> | undefined = undefined;
+  // The standalone Search page's title-bar input (SearchTitleField) is likewise hosted via a ComponentContent
+  // cached ONCE here. The search title bar re-evaluates while typing (the body's live local-search re-render
+  // makes the destination re-issue its titleBar opts), and a freshly-`new`-ed ComponentContent re-mounts the
+  // input on every keystroke — which closed + reopened the soft keyboard per character. Reusing one instance
+  // keeps the field mounted.
+  private searchTitleFieldContent: ComponentContent<Object> | undefined = undefined;
   @Local private notificationRefreshKey: number = 0;
   @Local private accountRefreshKey: number = 0;
   @Local private isFoldedAndUseOuterScreen: boolean = false;
@@ -650,14 +656,18 @@ struct Index {
       return this.navDestTitleBarOpts(this.accountWebViewTitle(), this.accountWebViewTitleMenu())
     }
     if (descriptor.family === 'search') {
-      // The search input lives in the title bar itself (no title text, no menu): host SearchTitleField as
-      // the title-area stack component. Created fresh per push so autoFocus re-fires on each visit; the
-      // search-destination title bar reads no high-frequency state, so it is not re-built mid-typing.
-      let cc = new ComponentContent<Object>(
-        this.getUIContext(),
-        wrapBuilder<[Object]>(SearchTitleFieldCCBuilder),
-        new Object(),
-      )
+      // The search input lives in the title bar itself (no title text, no menu): host SearchTitleField as the
+      // title-area stack component, from a ComponentContent cached ONCE (see searchTitleFieldContent) so that
+      // re-issuing the titleBar opts while typing reuses the same instance instead of re-mounting the input
+      // (which flapped the IME on every keystroke).
+      if (!this.searchTitleFieldContent) {
+        this.searchTitleFieldContent = new ComponentContent<Object>(
+          this.getUIContext(),
+          wrapBuilder<[Object]>(SearchTitleFieldCCBuilder),
+          new Object(),
+        )
+      }
+      let cc = this.searchTitleFieldContent
       return this.navDestTitleBarOpts(
         ' ',
         undefined,

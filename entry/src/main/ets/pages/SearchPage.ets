@@ -349,15 +349,16 @@ export struct SearchPage {
     SearchQueryBus.clearPending()
   }
 
-  // Write the keyword into the title-bar bus without re-triggering our own keyword monitor (we have already
-  // handled the change locally). Only arm the guard when the value actually differs, otherwise the monitor
-  // would not fire and the guard would leak into the next genuine title-bar edit.
+  // Seed the title-bar field's displayed text (history chip / pending query / reset). The field does NOT read
+  // keyword in build (that would flap the IME while typing), so after setting keyword we bump seedSeq to tell
+  // it to pull the new value once. Arm the keyword-monitor guard only when keyword actually changes, otherwise
+  // the monitor would not fire and the guard would leak into the next genuine title-bar edit.
   private setTitleBarKeyword(value: string): void {
-    if (this.actionState.keyword === value) {
-      return
+    if (this.actionState.keyword !== value) {
+      this.suppressKeywordMonitor = true
+      this.actionState.keyword = value
     }
-    this.suppressKeywordMonitor = true
-    this.actionState.keyword = value
+    this.actionState.seedSeq = this.actionState.seedSeq + 1
   }
 
   private async refreshSearchSurface(): Promise<void> {

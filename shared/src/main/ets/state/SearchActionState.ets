@@ -25,6 +25,12 @@ export class SearchActionState {
   @Trace keyword: string = ''
   @Trace submitSeq: number = 0
   @Trace pendingQuery: string = ''
+  // One-shot "refresh your displayed text from keyword" signal for the title-bar field. The field must NOT
+  // read keyword in build() (typing writes keyword every keystroke, which would rebuild the title-bar
+  // ComponentContent subtree and re-mount the Search, closing+reopening the IME on every character). Instead
+  // SearchPage bumps seedSeq when it seeds a query (history chip / pending / reset) and the field reacts via
+  // @Monitor to pull the new keyword once.
+  @Trace seedSeq: number = 0
 }
 
 const SEARCH_ACTION_V2_KEY: string = 'v2:searchAction'
