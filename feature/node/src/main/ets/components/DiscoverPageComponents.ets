@@ -172,11 +172,6 @@ export struct DiscoverNodeChip {
         .fontColor($r('sys.color.font_primary'))
         .maxLines(1)
         .textOverflow({ overflow: TextOverflow.Ellipsis })
-      if (this.node.topics > 0) {
-        Text(`${this.node.topics}`)
-          .fontSize(ThemeConstants.FONT_SIZE_TINY)
-          .fontColor($r('sys.color.font_secondary'))
-      }
     }
     .alignItems(VerticalAlign.Center)
     .height(34)
