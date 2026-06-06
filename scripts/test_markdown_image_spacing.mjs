@@ -110,6 +110,25 @@ function rewriteParagraphInlineImages(paragraph) {
   paragraph.tokens = (paragraph.tokens || []).flatMap(rewriteInlineImageToken)
 }
 
+function demoteLineBreakListItemImages(paragraph, itemHtml) {
+  const inlineTokens = paragraph.tokens || []
+  const source = itemHtml || ''
+  if (!source.includes('\n') && !source.includes('\r')) return
+  const hasText = inlineTokens.some((token) => {
+    if (!token || token.type === 'image' || token.type === 'br') return false
+    return String(token.text || token.raw || '').trim().length > 0
+  })
+  if (!hasText) return
+  for (const token of inlineTokens) {
+    if (!token || token.type !== 'image') continue
+    const raw = String(token.raw || '')
+    const index = raw ? source.indexOf(raw) : -1
+    if (index <= 0) continue
+    const before = source.slice(0, index)
+    if (before.includes('\n') || before.includes('\r')) token[INLINE_IMAGE_PROP] = false
+  }
+}
+
 function splitParagraphByImages(paragraph) {
   const inlineTokens = paragraph.tokens || []
   if (!inlineTokens.some((t) => t.type === 'image' && !isInlineImageToken(t))) return []
@@ -371,6 +390,36 @@ if (renderedImageBeforeTextSplit.length !== 0 || renderedImageBeforeTextParagrap
   process.exit(1)
 }
 
+const repro1218385ListItemHtml = '管理 agent\n<img alt="" class="embedded_image" loading="lazy" referrerpolicy="no-referrer" rel="noreferrer" src="https://i.imgur.com/qGqExIQ.png"/> '
+const repro1218385ListItemParagraph = {
+  type: 'paragraph',
+  tokens: [
+    { type: 'text', raw: '管理 agent ', text: '管理 agent ' },
+    buildImageToken('<img alt="" class="embedded_image" loading="lazy" referrerpolicy="no-referrer" rel="noreferrer" src="https://i.imgur.com/qGqExIQ.png"/>', 'https://i.imgur.com/qGqExIQ.png', '', true)
+  ]
+}
+demoteLineBreakListItemImages(repro1218385ListItemParagraph, repro1218385ListItemHtml)
+if (repro1218385ListItemParagraph.tokens[1][INLINE_IMAGE_PROP] !== false) {
+  console.error('FAIL topic 1218385 list item screenshot image must render as block content below the list text')
+  console.error(JSON.stringify(repro1218385ListItemParagraph, null, 2))
+  process.exit(1)
+}
+
+const sameLineInlineListItemHtml = '状态 <img src="https://example.com/icon.png" class="emoji">'
+const sameLineInlineListItemParagraph = {
+  type: 'paragraph',
+  tokens: [
+    { type: 'text', raw: '状态 ', text: '状态 ' },
+    buildImageToken('<img src="https://example.com/icon.png" class="emoji">', 'https://example.com/icon.png', '', true)
+  ]
+}
+demoteLineBreakListItemImages(sameLineInlineListItemParagraph, sameLineInlineListItemHtml)
+if (sameLineInlineListItemParagraph.tokens[1][INLINE_IMAGE_PROP] !== true) {
+  console.error('FAIL same-line list item images/icons should keep inline source semantics')
+  console.error(JSON.stringify(sameLineInlineListItemParagraph, null, 2))
+  process.exit(1)
+}
+
 const paragraphRun = [
   { type: 'paragraph', raw: '第一段', text: '第一段', tokens: [buildTextToken('第一段')] },
   { type: 'paragraph', raw: '第二段', text: '第二段', tokens: [buildTextToken('第二段')] },
@@ -409,6 +458,10 @@ if (!/MarkdownParagraph\(\{[\s\S]*paragraphToken: child as Tokens\.Paragraph/.te
   console.error('FAIL CustomList must delegate paragraph rendering to MarkdownParagraph to preserve text/image token order')
   process.exit(1)
 }
+if (!/demoteLineBreakListItemImages\(paragraph, match\[1\]\)/.test(source) || !/private static demoteLineBreakListItemImages\(paragraph: Tokens\.Paragraph, itemHtml: string\): void/.test(source)) {
+  console.error('FAIL rendered HTML list item images after a source line break must be demoted from inline spans to block image content')
+  process.exit(1)
+}
 if (/paragraphTextTokens|paragraphImageTokens/.test(customListSource)) {
   console.error('FAIL CustomList must not render all paragraph text before all paragraph images')
   process.exit(1)
@@ -440,7 +493,7 @@ if (/INLINE_IMAGE_CONTENT_MAX_WIDTH\s*=\s*360/.test(source) || !/const INLINE_IM
   console.error('FAIL inline image dimensions should use a visible pending sentinel, then prefer known dimensions before measured width is available')
   process.exit(1)
 }
-if (!/@State private paragraphAvailableWidth: number = 0;/.test(source) || !/@Prop contentAvailableWidth: number = 0;/.test(source) || !/return this\.contentAvailableWidth;/.test(source) || !/\.onAreaChange\(\(_oldValue: Area, newValue: Area\) => \{\n\s*this\.updateParagraphAvailableWidth\(newValue\);/.test(source) || !/SelectableInlineTokenSpans\([\s\S]*this\.inlineContentMaxWidth\(\)/.test(source) || !/contentAvailableWidth: this\.contentAvailableWidth/.test(source)) {
+if (!/@Local private paragraphAvailableWidth: number = 0;/.test(source) || !/@Param contentAvailableWidth: number = 0;/.test(source) || !/return this\.contentAvailableWidth;/.test(source) || !/\.onAreaChange\(\(_oldValue: Area, newValue: Area\) => \{\n\s*this\.updateParagraphAvailableWidth\(newValue\);/.test(source) || !/SelectableInlineTokenSpans\([\s\S]*this\.inlineContentMaxWidth\(\)/.test(source) || !/contentAvailableWidth: this\.contentAvailableWidth/.test(source)) {
   console.error('FAIL MarkdownParagraph must measure paragraph width, fall back to root content width, and pass it into inline image sizing')
   process.exit(1)
 }
@@ -456,7 +509,7 @@ if (/\(event\?\.loadingStatus \?\? 0\) !== 1/.test(source) || !/widthPx <= 0 \|\
   console.error('FAIL inline image completion should record any onComplete event with valid intrinsic dimensions, including loadingStatus 0 data-load callbacks')
   process.exit(1)
 }
-const paragraphMatch = source.match(/struct MarkdownParagraph[\s\S]*?\n}\n\n@Component\nstruct MarkdownBlockquote/)
+const paragraphMatch = source.match(/struct MarkdownParagraph[\s\S]*?\n}\n\n@ComponentV2\nstruct MarkdownBlockquote/)
 if (!paragraphMatch || !/ForEach\(this\.inlineTokens\(\)/.test(paragraphMatch[0])) {
   console.error('FAIL MarkdownParagraph must render mixed block images by iterating the original inline token order')
   process.exit(1)

@@ -3121,6 +3121,9 @@ export struct MarkdownContent {
         ? MarkdownContent.renderedHtmlToTokens(match[1], sizeRecords)
         : [];
       const paragraph = MarkdownContent.inlineHtmlToParagraph(match[1], match[0], sizeRecords);
+      if (paragraph) {
+        MarkdownContent.demoteLineBreakListItemImages(paragraph, match[1]);
+      }
       const itemTokens: Token[] = childBlocks.length > 0 ? childBlocks : (paragraph ? [paragraph as Token] : []);
       items.push({
         type: 'list_item',
@@ -3141,6 +3144,44 @@ export struct MarkdownContent {
       loose: false,
       items: items,
     } as Tokens.List;
+  }
+
+  private static demoteLineBreakListItemImages(paragraph: Tokens.Paragraph, itemHtml: string): void {
+    const inlineTokens = paragraph.tokens as Token[] | undefined;
+    if (!Array.isArray(inlineTokens) || inlineTokens.length === 0) {
+      return;
+    }
+    const source = itemHtml || '';
+    if (source.indexOf('\n') < 0 && source.indexOf('\r') < 0) {
+      return;
+    }
+    let hasText = false;
+    for (const token of inlineTokens) {
+      if (!token || token.type === "image" || token.type === "br") {
+        continue;
+      }
+      if (String((token as TokenRecord).text ?? (token as TokenRecord).raw ?? '').trim().length > 0) {
+        hasText = true;
+        break;
+      }
+    }
+    if (!hasText) {
+      return;
+    }
+    for (const token of inlineTokens) {
+      if (!token || token.type !== "image") {
+        continue;
+      }
+      const raw = String((token as TokenRecord).raw ?? '');
+      const index = raw.length > 0 ? source.indexOf(raw) : -1;
+      if (index <= 0) {
+        continue;
+      }
+      const before = source.slice(0, index);
+      if (before.indexOf('\n') >= 0 || before.indexOf('\r') >= 0) {
+        (token as InlineImageToken).inlineImage = false;
+      }
+    }
   }
 
   private static pushInlineParagraphToken(tokens: Token[], html: string, sizeRecords: InlineImageSizeRecord[] = []): void {
