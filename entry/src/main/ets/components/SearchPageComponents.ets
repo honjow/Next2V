@@ -85,35 +85,37 @@ export struct SearchHistoryStrip {
             }
           })
       }.width('100%')
-      Scroll() {
-        Row({ space: ThemeConstants.SPACE_XS }) {
-          ForEach(
-            this.history,
-            (q: string) => {
-              Text(q)
-                .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-                .fontColor($r('sys.color.font_primary'))
-                .padding({
-                  left: ThemeConstants.SPACE_SM,
-                  right: ThemeConstants.SPACE_SM,
-                  top: 6,
-                  bottom: 6,
-                })
-                .borderRadius(ThemeConstants.RADIUS_ROUND)
-                .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
-                .onClick(() => {
-                  if (this.selectAction) {
-                    this.selectAction(q)
-                  }
-                })
-            },
-            (q: string) => q,
-          )
-        }.width('100%')
-      }
-      .scrollable(ScrollDirection.Horizontal)
-      .scrollBar(BarState.Off)
-      .width('100%')
+      // Wrap chips onto multiple lines instead of a single horizontally-scrolling row, so all history is
+      // visible at once. Per-chip right/bottom margin provides both the inter-chip and inter-row spacing;
+      // each chip is capped at the container width and ellipsizes a very long query rather than ballooning.
+      Flex({ wrap: FlexWrap.Wrap }) {
+        ForEach(
+          this.history,
+          (q: string) => {
+            Text(q)
+              .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+              .fontColor($r('sys.color.font_primary'))
+              .maxLines(1)
+              .textOverflow({ overflow: TextOverflow.Ellipsis })
+              .constraintSize({ maxWidth: '100%' })
+              .padding({
+                left: ThemeConstants.SPACE_SM,
+                right: ThemeConstants.SPACE_SM,
+                top: 6,
+                bottom: 6,
+              })
+              .borderRadius(ThemeConstants.RADIUS_ROUND)
+              .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
+              .margin({ right: ThemeConstants.SPACE_XS, bottom: ThemeConstants.SPACE_XS })
+              .onClick(() => {
+                if (this.selectAction) {
+                  this.selectAction(q)
+                }
+              })
+          },
+          (q: string) => q,
+        )
+      }.width('100%')
     }
     .padding({ left: ThemeConstants.SPACE_XS, right: ThemeConstants.SPACE_XS })
     .width('100%')
