@@ -84,7 +84,7 @@ import {
   DomainSettingsPage,
   CloudSyncSettingsPage,
 } from 'settings'
-import { ComponentContent, promptAction, SymbolGlyphModifier } from '@kit.ArkUI'
+import { ComponentContent, promptAction, SymbolGlyphModifier, window } from '@kit.ArkUI'
 import { V2exWebLoginPage } from './V2exWebLoginPage'
 import { V2exNativeLoginPage } from './V2exNativeLoginPage'
 import { ImagePreviewPage } from './ImagePreviewPage'
@@ -375,9 +375,16 @@ struct Index {
         this.destinationContent(descriptor)
       }
       .titleBar(this.destinationTitleBarOpts(descriptor))
+      // Image preview draws its own white-in-dark-circle back/save buttons over the image, so hide the HDS
+      // title bar ENTIRELY here (hideTitleArea/dynamicHide only hides the title text on scroll and leaves the
+      // back+menu buttons, which would double up with ours). hideTitleBar(true) removes the whole bar.
+      .hideTitleBar(descriptor.family === 'imagePreview')
       .dynamicHideTitleBar(this.destinationHideTitleBarOpts(descriptor))
       .onShown(() => {
         this.onDestinationShown(descriptor)
+      })
+      .onWillHide(() => {
+        this.onDestinationWillHide(descriptor)
       })
       .onBackPressed((): boolean => {
         // When the reply sticker panel is open, back closes the panel (the composer reacts to this flag)
@@ -716,7 +723,7 @@ struct Index {
       )
     }
     if (descriptor.family === 'imagePreview') {
-      return this.imagePreviewTitleBarOpts()
+      return this.navDestTitleBarOpts(undefined, this.imagePreviewTitleMenu())
     }
     if (descriptor.family === 'nodeTopic') {
       return this.nodeTopicTitleBarOpts(
@@ -746,6 +753,37 @@ struct Index {
     if (descriptor.family === 'nativeLogin') {
       this.notifyNativeLoginShown()
     }
+    // Hide the status bar ONLY after the push transition finishes (onShown), so the topic page is already
+    // fully covered by the preview when its avoid-area reflow happens — the reflow is invisible.
+    if (descriptor.family === 'imagePreview') {
+      this.setImagePreviewImmersive(true)
+    }
+  }
+
+  private onDestinationWillHide(descriptor: IndexDestinationDescriptor): void {
+    // Restore the status bar BEFORE the pop transition starts (onWillHide fires ahead of the animation). The
+    // avoid-area reflow then happens while the preview still covers the topic page, so the topic is revealed
+    // already at its final layout — no jump on return. (Restoring in aboutToDisappear was too late: it ran
+    // after the topic page was already visible, which is what produced the visible jump.)
+    if (descriptor.family === 'imagePreview') {
+      this.setImagePreviewImmersive(false)
+    }
+  }
+
+  // Toggle full-screen immersion for the image preview route. immersive=true hides the status bar (keeps the
+  // navigation indicator); false restores both. The app is already setWindowLayoutFullScreen(true), so this
+  // only changes whether the status-bar glyphs draw — content stays edge-to-edge either way.
+  private setImagePreviewImmersive(immersive: boolean): void {
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    const names: Array<'status' | 'navigation'> = immersive
+      ? ['navigation']
+      : ['status', 'navigation']
+    window
+      .getLastWindow(context)
+      .then((win: window.Window) => {
+        win.setWindowSystemBarEnable(names).catch((_error: Error) => {})
+      })
+      .catch((_error: Error) => {})
   }
 
   private navDestTitleBarOpts<T extends Object>(
@@ -810,55 +848,6 @@ struct Index {
       'blurStrategy': BlurStrategy.ENABLE,
       'style': style,
     }
-  }
-
-  // Image-preview title bar: FULLY TRANSPARENT, scoped to this one route. The image fills a full-black
-  // canvas, so the shared navDestTitleBarOpts gradient-blur material would put an ugly scrim/transition over
-  // the top — here we want none. blurStrategy DISABLE removes the blur; systemMaterialEffect is OMITTED
-  // (materialType defaults NONE → no material scrim); the explicit transparent backgroundColor is defensive.
-  // navDestTitleBarOpts (16 callers) is left untouched so every other route keeps its gradient-blur default.
-  private imagePreviewTitleBarOpts(): Record<string, Object> {
-    let bg: Record<string, Object> = { 'backgroundColor': '#00000000' }
-    let contentStyle: Record<string, Object> = { 'backgroundStyle': bg }
-    let scrollOpts: Record<string, Object> = { 'enableScrollEffect': false }
-    let style: Record<string, Object> = {
-      'scrollEffectOpts': scrollOpts,
-      'originalStyle': contentStyle,
-      'scrollEffectStyle': contentStyle,
-    }
-    let content: Record<string, Object> = {
-      'menu': this.imagePreviewTitleMenu(),
-      'backIcon': this.imagePreviewBackIcon(),
-    }
-    return {
-      'avoidLayoutSafeArea': true,
-      'enableComponentSafeArea': false,
-      'blurStrategy': BlurStrategy.DISABLE,
-      'content': content,
-      'style': style,
-    }
-  }
-
-  // White back button for the transparent image-preview bar (the default theme icon would be dark/invisible
-  // on the black canvas). A custom backIcon overrides the framework's default pop, so the action must pop
-  // explicitly — matches the three 'ImagePreview' push sites (TopicDetail / UserReplies / UserProfile).
-  private imagePreviewBackIcon(): Record<string, Object> {
-    let icon: SymbolGlyphModifier = new SymbolGlyphModifier(
-      $r('sys.symbol.chevron_backward'),
-    ).fontColor([Color.White])
-    return {
-      'icon': icon,
-      'isEnabled': true,
-      'action': () => {
-        this.ns.pop()
-      },
-    }
-  }
-
-  // Force the image-preview menu (save) icon white so it reads on the always-black canvas with no scrim.
-  // Reuses the proven SymbolGlyphModifier.fontColor pattern (see userProfileBlockIcon / submitTitleBarIcon).
-  private imagePreviewMenuIcon(icon: string): SymbolGlyphModifier {
-    return new SymbolGlyphModifier(this.mainTitleMenuIcon(icon)).fontColor([Color.White])
   }
 
   private topicEditorTitleBarOpts(title: ResourceStr): Record<string, Object> {
@@ -1376,7 +1365,7 @@ struct Index {
   private imagePreviewTitleMenu(): Record<string, Object> {
     let items: Record<string, Object>[] = IndexTitleBarCoordinator.imagePreviewMenuItems().map(
       (descriptor: IndexTitleMenuDescriptor) =>
-        this.topicActionItem(descriptor.label, this.imagePreviewMenuIcon(descriptor.icon), () => {
+        this.topicActionItem(descriptor.label, this.mainTitleMenuIcon(descriptor.icon), () => {
           this.sendImagePreviewAction(descriptor.action)
         }),
     )
