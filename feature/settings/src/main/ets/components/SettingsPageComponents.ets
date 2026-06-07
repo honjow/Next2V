@@ -75,14 +75,65 @@ export struct SettingsDropdownRow {
 }
 
 @ComponentV2
+export struct SettingsThemeColorDropdownRow {
+  @Param title: ResourceStr = ''
+  @Param trailingText: ResourceStr = ''
+  @Param color: ResourceColor = ThemeConstants.BRAND_PRIMARY
+  @Event openAction?: () => void
+
+  build() {
+    ConciseListRow({
+      title: this.title,
+      showChevron: false,
+      suffixBuilderParam: () => {
+        this.ColorDropdownSuffix()
+      },
+      action: () => {
+        if (this.openAction) {
+          this.openAction()
+        }
+      }
+    })
+  }
+
+  @Builder
+  private ColorDropdownSuffix() {
+    Row({ space: ThemeConstants.SPACE_SM }) {
+      Blank()
+        .width(16)
+        .height(16)
+        .borderRadius(ThemeConstants.RADIUS_ROUND)
+        .backgroundColor(this.color)
+      Text(this.trailingText)
+        .fontSize(ThemeConstants.FONT_SIZE_BODY)
+        .fontColor($r('sys.color.font_secondary'))
+        .maxLines(1)
+        .textOverflow({ overflow: TextOverflow.Ellipsis })
+      SymbolGlyph($r('sys.symbol.arrowtriangle_down_fill'))
+        .fontSize(ThemeConstants.FONT_SIZE_TITLE)
+        .fontColor([$r('sys.color.font_tertiary')])
+        .padding({ left: 4, right: 12 })
+    }
+    .alignItems(VerticalAlign.Center)
+  }
+}
+
+@ComponentV2
 export struct SettingsCheckedMenuItem {
   @Param label: ResourceStr = ''
   @Param selected: boolean = false
+  @Param showColorDot: boolean = false
+  @Param color: ResourceColor = Color.Transparent
   @Event selectAction?: () => void
 
   build() {
     MenuItem({
       content: this.label,
+      symbolStartIcon: this.showColorDot
+        ? new SymbolGlyphModifier($r('sys.symbol.paintpalette_fill'))
+          .fontSize(ThemeConstants.FONT_SIZE_BODY)
+          .fontColor([this.color])
+        : undefined,
       symbolEndIcon: this.selected ? new SymbolGlyphModifier($r('sys.symbol.checkmark')) : undefined
     }).onClick(() => {
       if (this.selectAction) {

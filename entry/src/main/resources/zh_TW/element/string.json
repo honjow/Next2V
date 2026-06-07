@@ -533,8 +533,40 @@
       "value": "香港"
     },
     {
+      "name": "theme_color",
+      "value": "主題色"
+    },
+    {
       "name": "theme",
-      "value": "主題"
+      "value": "深色模式"
+    },
+    {
+      "name": "theme_color_galaxy_blue",
+      "value": "銀河藍"
+    },
+    {
+      "name": "theme_color_orange_yellow",
+      "value": "橘黃黃"
+    },
+    {
+      "name": "theme_color_cat_blue",
+      "value": "貓咪藍"
+    },
+    {
+      "name": "theme_color_huawei_red",
+      "value": "華為紅"
+    },
+    {
+      "name": "theme_color_elegant_purple",
+      "value": "優雅紫"
+    },
+    {
+      "name": "theme_color_bilibili_pink",
+      "value": "嗶哩粉"
+    },
+    {
+      "name": "theme_color_grass_green",
+      "value": "小草綠"
     },
     {
       "name": "avatar_appearance",

@@ -6,6 +6,7 @@
 //   - reading restore-position           -> ReadingSettingsState.restorePosition
 //   - reply-display mode                  -> ReplyDisplayState.mode
 //   - theme mode + cached system color    -> ThemeDisplayState.mode / systemColorMode
+//   - theme color                         -> ThemeColorState.color
 //   - app language mode                   -> LanguageState.mode
 //   - reply-action alignment + holding    -> MotionReplyAlignmentState.alignmentMode / holdingHandSupported
 //
@@ -51,6 +52,10 @@ const hasNoAppStorage = (rel) => must(!/AppStorage\s*\./.test(strip(read(rel))),
   const theme = strip(read('shared/src/main/ets/state/ThemeDisplayState.ets'));
   must(/@Trace\s+mode\b/.test(theme) && /@Trace\s+systemColorMode\b/.test(theme),
     'ThemeDisplayState: @Trace mode + systemColorMode added');
+
+  const themeColor = strip(read('shared/src/main/ets/state/ThemeColorState.ets'));
+  must(/@ObservedV2\b/.test(themeColor) && /@Trace\s+color\b/.test(themeColor) && /export function connectThemeColor\(/.test(themeColor),
+    'ThemeColorState: @ObservedV2 @Trace color + connectThemeColor()');
 }
 
 // 2) settings apply()/save() chokepoints seed the holder (and keep AppStorage projection) -------
@@ -82,11 +87,17 @@ const hasNoAppStorage = (rel) => must(!/AppStorage\s*\./.test(strip(read(rel))),
   must(/connectThemeDisplay\(\)\.systemColorMode\s*=/.test(theme), 'ThemeSettings seeds ThemeDisplayState.systemColorMode (seed + reapply paths)');
   must(/const stored = connectThemeDisplay\(\)\.systemColorMode/.test(theme), 'ThemeSettings.getSystemColorMode reads the mirror (not AppStorage.get)');
   must(/const mode = ThemeSettings\.normalizeMode\(connectThemeDisplay\(\)\.mode/.test(theme), 'ThemeSettings.refreshEffectiveDark/reapply read ThemeDisplayState.mode');
+
+  const themeColor = read('shared/src/main/ets/settings/ThemeColorSettings.ets');
+  must(/setAppStorageValue<string>\(StorageKeys\.THEME_COLOR/.test(themeColor), 'ThemeColorSettings.apply keeps THEME_COLOR AppStorage projection');
+  must(/connectThemeColor\(\)\.color\s*=\s*normalized/.test(themeColor), 'ThemeColorSettings.apply seeds ThemeColorState.color');
+  must(/static readonly DEFAULT_COLOR:\s*string\s*=\s*THEME_COLOR_GALAXY_BLUE/.test(themeColor), 'ThemeColorSettings defaults to galaxy blue');
 }
 
 // 3) migrated readers no longer touch AppStorage ------------------------------------------------
 hasNoAppStorage('shared/src/main/ets/settings/ReadingSettings.ets');
 hasNoAppStorage('shared/src/main/ets/settings/ThemeSettings.ets');
+hasNoAppStorage('shared/src/main/ets/settings/ThemeColorSettings.ets');
 hasNoAppStorage('shared/src/main/ets/settings/LanguageSettings.ets');
 hasNoAppStorage('shared/src/main/ets/i18n/AppStrings.ets');
 hasNoAppStorage('shared/src/main/ets/services/MotionHandStateService.ets');
@@ -124,7 +135,7 @@ for (const rel of [
 // 5) barrel exports the new holders for cross-module (feature) consumers -------------------------
 {
   const barrel = read('shared/src/main/ets/Index.ets');
-  for (const c of ['connectReplyDisplay', 'connectLanguageState', 'connectMotionReplyAlignment', 'connectThemeDisplay', 'connectAutoDailyCheckin', 'connectMediaSettings']) {
+  for (const c of ['connectReplyDisplay', 'connectLanguageState', 'connectMotionReplyAlignment', 'connectThemeDisplay', 'connectThemeColor', 'connectAutoDailyCheckin', 'connectMediaSettings']) {
     must(barrel.includes(c), `shared barrel exports ${c}`);
   }
 }

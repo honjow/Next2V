@@ -34,21 +34,23 @@ assert.doesNotMatch(settingsPage, /restartApp|terminateSelf|LOCALE_REVISION|lang
 assertNoRestartLane('Index', indexPage)
 
 assert.match(settingsCoordinator, /export interface SettingsOption \{\s*label: ResourceStr\s*value: string\s*\}/, 'SettingsOption labels must be ResourceStr')
-for (const method of ['themeModeOptions', 'avatarAppearanceOptions', 'replyDisplayModeOptions', 'replyCardStyleOptions', 'replyActionAlignmentOptions', 'base64DecodeModeOptions']) {
+for (const method of ['themeColorOptions', 'themeModeOptions', 'avatarAppearanceOptions', 'replyDisplayModeOptions', 'replyCardStyleOptions', 'replyActionAlignmentOptions', 'base64DecodeModeOptions']) {
   const start = indexOfOrFail(settingsCoordinator, `static ${method}(`, method)
   const next = settingsCoordinator.indexOf('\n  static ', start + 1)
   const body = settingsCoordinator.slice(start, next === -1 ? undefined : next)
   assert.doesNotMatch(body, /AppStrings\.t\(/, `${method} must return Resource labels, not cached strings`)
-  assert.match(body, /label: AppStrings\.R_/, `${method} must bind option labels to Resource constants`)
+  assert.match(body, /label: AppStrings\.R_|ThemeColorSettings\.options\(\)/, `${method} must bind option labels to Resource constants`)
 }
-for (const method of ['themeModeLabel', 'languageModeLabel', 'avatarAppearanceLabel', 'replyDisplayModeLabel', 'replyCardStyleLabel', 'replyActionAlignmentLabel', 'base64DecodeModeLabel']) {
+for (const method of ['themeColorLabel', 'themeModeLabel', 'languageModeLabel', 'avatarAppearanceLabel', 'replyDisplayModeLabel', 'replyCardStyleLabel', 'replyActionAlignmentLabel', 'base64DecodeModeLabel']) {
   const start = indexOfOrFail(settingsCoordinator, `static ${method}(`, method)
   const next = settingsCoordinator.indexOf('\n  static ', start + 1)
   const body = settingsCoordinator.slice(start, next === -1 ? undefined : next)
   assert.doesNotMatch(body, /AppStrings\.t\(/, `${method} must return ResourceStr labels, not cached strings`)
 }
 
-assert.match(settingsComponents, /@Prop trailingText: ResourceStr = ''/, 'Settings dropdown row trailing text must accept ResourceStr')
+assert.match(settingsComponents, /@Param trailingText: ResourceStr = ''/, 'Settings dropdown row trailing text must accept ResourceStr')
+assert.match(settingsComponents, /export struct SettingsThemeColorDropdownRow/, 'Appearance settings must have a theme-color dropdown row')
+assert.match(settingsComponents, /export struct SettingsThemeColorDropdownRow[\s\S]+@Param color: ResourceColor/, 'Theme color row must expose a swatch color parameter')
 assert.doesNotMatch(settingsComponents, /Text\(AppStrings\.t\(AppStrings\.R_READING_PREVIEW_|title: AppStrings\.t\(AppStrings\.R_RESTORE_DEFAULT|Text\(AppStrings\.t\(AppStrings\.R_TEXT_SCALE/, 'Reading preview, text scale, and restore default must bind Resource constants directly')
 assert.match(settingsComponents, /Text\(AppStrings\.R_READING_PREVIEW_TITLE\)/, 'Reading preview title must use Resource')
 assert.match(settingsComponents, /Text\(AppStrings\.R_TEXT_SCALE\)/, 'Text scale label must use Resource')
@@ -56,7 +58,7 @@ assert.match(settingsComponents, /title: AppStrings\.R_RESTORE_DEFAULT/, 'Restor
 
 assert.match(indexPage, /private tabTitles: ResourceStr\[\] = \[\s*AppStrings\.R_SETTINGS_HOME,\s*AppStrings\.R_TAB_DISCOVER,\s*AppStrings\.R_TAB_NOTIFICATIONS,\s*AppStrings\.R_TAB_ME,?\s*\]/, 'Bottom tab title cache must hold ResourceStr constants')
 assert.doesNotMatch(indexPage, /TabIcon\(AppStrings\.t\(|tabTitles: string\[\]|this\.tabTitles\[this\.ct\] === AppStrings\.t\(/, 'Bottom tabs/title menus must not compare or bind cached localized strings')
-assert.match(mainTabIcon, /@Prop title: ResourceStr = ''/, 'MainTabIcon title must accept ResourceStr')
+assert.match(mainTabIcon, /@Param title: ResourceStr = ''/, 'MainTabIcon title must accept ResourceStr')
 
 for (const getter of ['SECTION_ACCOUNT', 'SECTION_ACCOUNT_CONTENT', 'SECTION_LOCAL_CONTENT', 'SECTION_MORE', 'LOGIN_TITLE', 'LOGIN_SUBTITLE', 'PROFILE_TITLE', 'LOGOUT_TITLE', 'LOCAL_READ_LATER_TITLE', 'ABOUT_TITLE']) {
   assert.match(accountCoordinator, new RegExp(`static get ${getter}\\(\\): ResourceStr \\{ return AppStrings\\.R_`), `${getter} must return a ResourceStr`)
@@ -68,9 +70,18 @@ assert.doesNotMatch(accountCoordinator, /static get (SECTION_|LOGIN_|PROFILE_|LO
 for (const locale of ['base', 'en_US', 'zh_CN', 'zh_HK', 'zh_TW']) {
   const resource = JSON.parse(readFileSync(`entry/src/main/resources/${locale}/element/string.json`, 'utf8'))
   const names = new Set(resource.string.map(item => item.name))
-  for (const key of ['common_auto', 'common_light', 'common_dark', 'avatar_appearance', 'avatar_appearance_soft', 'avatar_appearance_circle', 'language_follow_system', 'language_simplified_chinese', 'language_traditional_chinese_hk', 'language_traditional_chinese_tw', 'language_english', 'reading_preview_title', 'reading_preview_intro', 'reading_preview_body', 'reading_preview_quote', 'text_scale', 'restore_default']) {
+  for (const key of ['theme_color', 'theme_color_galaxy_blue', 'theme_color_orange_yellow', 'theme_color_cat_blue', 'theme_color_huawei_red', 'theme_color_elegant_purple', 'theme_color_bilibili_pink', 'theme_color_grass_green', 'common_auto', 'common_light', 'common_dark', 'avatar_appearance', 'avatar_appearance_soft', 'avatar_appearance_circle', 'language_follow_system', 'language_simplified_chinese', 'language_traditional_chinese_hk', 'language_traditional_chinese_tw', 'language_english', 'reading_preview_title', 'reading_preview_intro', 'reading_preview_body', 'reading_preview_quote', 'text_scale', 'restore_default']) {
     assert.ok(names.has(key), `${locale} missing ${key}`)
   }
 }
+
+const appearanceRowsStart = indexOfOrFail(settingsPage, '@Builder\n  AppearancePreferenceRows()')
+const appearanceRowsEnd = settingsPage.indexOf('ReadingPreferenceRows()', appearanceRowsStart + 1)
+assert.notEqual(appearanceRowsEnd, -1, 'ReadingPreferenceRows after appearance rows not found')
+const appearanceRows = settingsPage.slice(appearanceRowsStart, appearanceRowsEnd)
+const themeColorRow = indexOfOrFail(appearanceRows, 'SettingsThemeColorDropdownRow', 'theme color row')
+const themeModeRow = indexOfOrFail(appearanceRows, 'title: AppStrings.R_THEME,', 'dark-mode row')
+const avatarRow = indexOfOrFail(appearanceRows, 'title: AppStrings.R_AVATAR_APPEARANCE', 'avatar row')
+assert.ok(themeColorRow < themeModeRow && themeModeRow < avatarRow, 'Appearance rows must order theme color before dark mode before avatar')
 
 console.log('test_settings_appearance_language_static: PASS')

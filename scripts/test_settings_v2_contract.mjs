@@ -72,7 +72,7 @@ const V1_DECORATORS = ['@State', '@Prop', '@Link', '@Watch', '@StorageLink', '@S
   must(/@ComponentV2\b/.test(code), `${SETTINGS_PAGE}: is @ComponentV2`);
   for (const d of V1_DECORATORS) must(!new RegExp(`${d}\\b`).test(code), `${SETTINGS_PAGE}: no surviving ${d}`);
   must(/connectNavStack\(\)\.stack/.test(code), `${SETTINGS_PAGE}: navigation via connectNavStack().stack`);
-  for (const c of ['connectApiDomain', 'connectAvatarAppearance', 'connectReplyCardStyle', 'connectTopicDetailReplyButton', 'connectReadingSettings', 'connectNetworkProxy']) {
+  for (const c of ['connectApiDomain', 'connectAvatarAppearance', 'connectReplyCardStyle', 'connectTopicDetailReplyButton', 'connectReadingSettings', 'connectNetworkProxy', 'connectThemeColor']) {
     must(new RegExp(`${c}\\(`).test(code), `${SETTINGS_PAGE}: reads ${c}() mirror`);
   }
   must(/hydratePreferences\(/.test(code), `${SETTINGS_PAGE}: keeps hydratePreferences() chokepoint`);

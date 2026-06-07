@@ -108,6 +108,7 @@ const expectedStorageKeys = [
   ['REPLY_CARD_STYLE', 'replyCardStyle'],
   ['REPLY_ACTION_ALIGNMENT_MODE', 'replyActionAlignmentMode'],
   ['AVATAR_APPEARANCE', 'avatarAppearance'],
+  ['THEME_COLOR', 'themeColor'],
   ['THEME_MODE', 'themeMode'],
   ['THEME_EFFECTIVE_DARK', 'themeEffectiveDark'],
   ['SYSTEM_COLOR_MODE', 'systemColorMode'],
@@ -145,6 +146,12 @@ const expectedStorageKeys = [
   ['AUTO_DAILY_CHECKIN_LAST_ATTEMPT_DATE', 'autoDailyCheckinLastAttemptDate'],
   ['AUTO_DAILY_CHECKIN_LAST_ATTEMPT_IDENTITY', 'autoDailyCheckinLastAttemptIdentity'],
   ['AUTO_DAILY_CHECKIN_LAST_SUCCESS_DATE', 'autoDailyCheckinLastSuccessDate'],
+  ['CLOUD_SYNC_ENABLED', 'cloudSyncEnabled'],
+  ['CLOUD_SYNC_FEATURE_PREFIX', 'cloudSyncFeat_'],
+  ['CLOUD_SYNC_LAST_AT', 'cloudSyncLastAt'],
+  ['CLOUD_SYNC_LAST_OK', 'cloudSyncLastOk'],
+  ['CLOUD_SYNC_LAST_CLOUD_DISABLED', 'cloudSyncLastCloudDisabled'],
+  ['CLOUD_SYNC_REUPLOAD_FLUSH_DONE', 'cloudSyncReuploadFlushDone'],
   ['LOCAL_DATA_UPDATED_AT', 'localDataUpdatedAt'],
   ['LOCAL_SAVED_TOPIC_COUNT', 'localSavedTopicCount'],
   ['LOCAL_SAVED_NODE_COUNT', 'localSavedNodeCount'],
@@ -260,6 +267,7 @@ for (const file of firstDescriptorSettings) {
 
 for (const file of [
   'ThemeSettings.ets',
+  'ThemeColorSettings.ets',
   'ApiDomainSettings.ets',
   'MediaSettings.ets',
   'AutoDailyCheckinSettings.ets',
@@ -372,6 +380,7 @@ const next2vSettingsFiles = [
   'MediaSettings.ets',
   'ReadingSettings.ets',
   'ThemeSettings.ets',
+  'ThemeColorSettings.ets',
   'ReplyDisplaySettings.ets',
   'ReplyCardStyleSettings.ets',
   'ReplyActionAlignmentSettings.ets',
@@ -506,6 +515,7 @@ assert(finallyIndex > loadAllIndex && loadContentIndex > finallyIndex, 'EntryAbi
 
 const loadAllHelperSequence = [
   'restoreApiDomain',
+  'restoreThemeColor',
   'restoreTheme',
   'restoreAvatarAppearance',
   'restoreMedia',
@@ -538,6 +548,16 @@ const helperContracts = [
       ').catch',
       'restore api domain failed: ',
       "ApiDomainSettings.apply('https://www.v2ex.com')",
+    ],
+  },
+  {
+    name: 'restoreThemeColor',
+    required: [
+      'ThemeColorSettings.loadFromStore(settingsStore)',
+      'ThemeColorSettings.load(context)',
+      ').catch',
+      'restore theme color settings failed: ',
+      'ThemeColorSettings.apply(ThemeColorSettings.DEFAULT_COLOR)',
     ],
   },
   {

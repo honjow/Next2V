@@ -81,7 +81,7 @@ export struct ReplyCardHeader {
           bottom: 1,
         })
         .borderRadius(ThemeConstants.RADIUS_SM)
-        .backgroundColor($r('sys.color.ohos_id_color_activated'))
+        .backgroundColor(ThemeConstants.OP_BADGE_BACKGROUND)
     }
   }
 

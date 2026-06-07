@@ -138,6 +138,7 @@ export interface BackupLanguagePreferences {
 
 export interface BackupThemePreferences {
   mode: string
+  color?: string
 }
 
 export interface BackupAppearancePreferences {

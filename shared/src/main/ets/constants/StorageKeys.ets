@@ -24,6 +24,7 @@ export class StorageKeys {
   static readonly REPLY_CARD_STYLE: string = 'replyCardStyle'
   static readonly REPLY_ACTION_ALIGNMENT_MODE: string = 'replyActionAlignmentMode'
   static readonly AVATAR_APPEARANCE: string = 'avatarAppearance'
+  static readonly THEME_COLOR: string = 'themeColor'
   static readonly THEME_MODE: string = 'themeMode'
   static readonly THEME_EFFECTIVE_DARK: string = 'themeEffectiveDark'
   static readonly SYSTEM_COLOR_MODE: string = 'systemColorMode'

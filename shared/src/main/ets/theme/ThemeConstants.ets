@@ -1,16 +1,20 @@
+import { ThemeColorSettings } from '../settings/ThemeColorSettings'
+
 /**
  * Brand and UI theme tokens
  * Prefer system color tokens ($r('sys.color.xxx')), define brand-specific values here
  */
 export class ThemeConstants {
   // Brand colors
-  static readonly BRAND_PRIMARY: ResourceColor = $r('sys.color.ohos_id_color_activated')
+  static get BRAND_PRIMARY(): ResourceColor { return ThemeColorSettings.currentColor() }
   static readonly BRAND_ACCENT: ResourceColor = $r('sys.color.font_secondary')
+  // OP is an identity badge, not an app accent, so keep it stable across theme colors.
+  static readonly OP_BADGE_BACKGROUND: ResourceColor = '#0A59F7'
 
   // Text colors (semantic aliases for system tokens, avoiding repeated $r calls)
   static readonly TEXT_PRIMARY: ResourceColor = $r('sys.color.font_primary')
   static readonly TEXT_SECONDARY: ResourceColor = $r('sys.color.font_secondary')
-  static readonly TEXT_LINK: ResourceColor = $r('sys.color.ohos_id_color_activated')
+  static get TEXT_LINK(): ResourceColor { return ThemeColorSettings.currentColor() }
   static readonly BG_SUB: ResourceColor = $r('sys.color.ohos_id_color_sub_background')
 
   // Spacing

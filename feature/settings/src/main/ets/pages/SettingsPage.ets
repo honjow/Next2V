@@ -21,6 +21,7 @@ import {
   connectReadingSettings,
   connectReplyCardStyle,
   connectReplyDisplay,
+  connectThemeColor,
   connectThemeDisplay,
   connectTopicDetailReplyButton,
   ConciseListRow,
@@ -34,6 +35,8 @@ import {
   ReadingSettings,
   ReadingSettingsState,
   SecondaryListScaffold,
+  ThemeColorSettings,
+  ThemeColorState,
   ThemeSettings,
   ReplyActionAlignmentSettings,
   ReplyDisplaySettings,
@@ -41,12 +44,14 @@ import {
   ReplyCardStyleState,
   TopicDetailReplyButtonState,
   type CacheStats,
+  type ThemeColorOption,
 } from 'shared'
 import {
   SettingsCheckedMenuItem,
   SettingsDivider,
   SettingsDropdownRow,
   SettingsSectionHeader,
+  SettingsThemeColorDropdownRow,
   SettingsToggleRow,
 } from '../components/SettingsPageComponents'
 import { SettingsPageCoordinator, type SettingsOption } from '../model/SettingsPageCoordinator'
@@ -69,6 +74,7 @@ export struct SettingsPage {
   private reading: ReadingSettingsState = connectReadingSettings();
   private proxy: NetworkProxyState = connectNetworkProxy();
   private image: ImageUploadState = connectImageUpload();
+  private themeColor: ThemeColorState = connectThemeColor();
   // Cloud-sync master-enabled state, read only to show the on/off status on the "云同步" entry row. The
   // full cloud-sync UI lives in the pushed CloudSyncSettingsPage; this is just a reactive @Trace read.
   private cloudSync: CloudSyncState = connectCloudSync();
@@ -85,6 +91,7 @@ export struct SettingsPage {
   @Local private motionHoldingHandSupported: boolean = false;
   @Local private readingRestorePosition: boolean = false;
   @Local private cacheStats: CacheStats = { topicListCount: 0, topicDetailCount: 0, updatedAt: 0 };
+  @Local private themeColorMenuShown: boolean = false;
   @Local private themeMenuShown: boolean = false;
   @Local private languageMenuShown: boolean = false;
   @Local private avatarAppearanceMenuShown: boolean = false;
@@ -380,6 +387,22 @@ export struct SettingsPage {
   @Builder
   AppearancePreferenceRows() {
     Column() {
+      SettingsThemeColorDropdownRow({
+        title: AppStrings.R_THEME_COLOR,
+        trailingText: SettingsPageCoordinator.themeColorLabel(this.themeColor.color),
+        color: SettingsPageCoordinator.themeColorValue(this.themeColor.color),
+        openAction: () => {
+          this.showThemeColorMenu()
+        },
+      })
+        .bindMenu(this.themeColorMenuShown, this.ThemeColorMenu, {
+          placement: Placement.BottomRight,
+          aboutToDisappear: () => {
+            this.themeColorMenuShown = false
+          },
+        })
+
+      this.SettingsDivider()
       SettingsDropdownRow({
         title: AppStrings.R_THEME,
         trailingText: SettingsPageCoordinator.themeModeLabel(this.themeMode),
@@ -541,6 +564,19 @@ export struct SettingsPage {
   }
 
   @Builder
+  ThemeColorMenu() {
+    Menu() {
+      ForEach(
+        SettingsPageCoordinator.themeColorOptions(),
+        (option: ThemeColorOption) => {
+          this.ThemeColorMenuItem(option)
+        },
+        (option: ThemeColorOption) => option.value,
+      )
+    }
+  }
+
+  @Builder
   AvatarAppearanceMenu() {
     Menu() {
       ForEach(
@@ -676,6 +712,19 @@ export struct SettingsPage {
   }
 
   @Builder
+  ThemeColorMenuItem(option: ThemeColorOption) {
+    SettingsCheckedMenuItem({
+      label: option.label,
+      selected: ThemeColorSettings.normalizeColor(this.themeColor.color) === option.value,
+      showColorDot: true,
+      color: option.color,
+      selectAction: () => {
+        this.updateThemeColor(option.value)
+      },
+    })
+  }
+
+  @Builder
   ReplyDisplayModeMenuItem(option: SettingsOption) {
     SettingsCheckedMenuItem({
       label: option.label,
@@ -697,6 +746,13 @@ export struct SettingsPage {
     this.themeMenuShown = false
     setTimeout(() => {
       this.themeMenuShown = true
+    }, SettingsPageCoordinator.MENU_OPEN_DELAY_MS)
+  }
+
+  private showThemeColorMenu(): void {
+    this.themeColorMenuShown = false
+    setTimeout(() => {
+      this.themeColorMenuShown = true
     }, SettingsPageCoordinator.MENU_OPEN_DELAY_MS)
   }
 
@@ -815,6 +871,16 @@ export struct SettingsPage {
     this.themeMode = normalizedMode
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     SettingsSaveCoordinator.saveThemeMode(context, normalizedMode)
+  }
+
+  private updateThemeColor(color: string): void {
+    const normalized = ThemeColorSettings.normalizeColor(color)
+    this.themeColorMenuShown = false
+    if (normalized === ThemeColorSettings.normalizeColor(this.themeColor.color)) {
+      return
+    }
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    SettingsSaveCoordinator.saveThemeColor(context, normalized)
   }
 
   private updateReplyDisplayMode(mode: string): void {

@@ -157,11 +157,10 @@
       "keys": [
         "common_topic",
         "common_topics",
-        "theme",
         "user_tab_topics_label"
       ],
       "classification": "KEEP_SEMANTIC",
-      "rationale": "4 distinct keys: common_topic='Topic' (singular), common_topics='Topics' (plural), theme='Theme' (appearance), user_tab_topics_label='Topics' (user profile tab). Different grammatical and semantic roles."
+      "rationale": "3 distinct keys: common_topic='Topic' (singular), common_topics='Topics' (plural), user_tab_topics_label='Topics' (user profile tab). Different grammatical and semantic roles."
     },
     {
       "keys": [

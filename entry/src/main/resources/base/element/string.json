@@ -533,8 +533,40 @@
       "value": "Hong Kong"
     },
     {
+      "name": "theme_color",
+      "value": "Theme color"
+    },
+    {
       "name": "theme",
-      "value": "Theme"
+      "value": "Dark mode"
+    },
+    {
+      "name": "theme_color_galaxy_blue",
+      "value": "Galaxy blue"
+    },
+    {
+      "name": "theme_color_orange_yellow",
+      "value": "Orange yellow"
+    },
+    {
+      "name": "theme_color_cat_blue",
+      "value": "Cat blue"
+    },
+    {
+      "name": "theme_color_huawei_red",
+      "value": "Huawei red"
+    },
+    {
+      "name": "theme_color_elegant_purple",
+      "value": "Elegant purple"
+    },
+    {
+      "name": "theme_color_bilibili_pink",
+      "value": "Bilibili pink"
+    },
+    {
+      "name": "theme_color_grass_green",
+      "value": "Grass green"
     },
     {
       "name": "avatar_appearance",

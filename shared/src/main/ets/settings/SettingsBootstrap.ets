@@ -20,6 +20,7 @@ import { ReplyCardStyleSettings } from './ReplyCardStyleSettings'
 import { ReplyDisplaySettings } from './ReplyDisplaySettings'
 import { STORE_NAME_SETTINGS, SettingsPreferencesStore } from './SettingsStorage'
 import { ThemeSettings } from './ThemeSettings'
+import { ThemeColorSettings } from './ThemeColorSettings'
 import { AutoDailyCheckinService } from '../services/AutoDailyCheckinService'
 import { BlockedListSettings } from './BlockedListSettings'
 import { UserMarkSettings } from './UserMarkSettings'
@@ -38,6 +39,7 @@ export class SettingsBootstrap {
     await SettingsBootstrap.restoreDiagnostics(context, settingsStore)
     await SettingsBootstrap.restoreApiDomain(context, settingsStore)
     await SettingsBootstrap.restoreLanguage(context, settingsStore)
+    await SettingsBootstrap.restoreThemeColor(context, settingsStore)
     await SettingsBootstrap.restoreTheme(context, settingsStore)
     await SettingsBootstrap.restoreAvatarAppearance(context, settingsStore)
     await SettingsBootstrap.restoreMedia(context, settingsStore)
@@ -77,6 +79,7 @@ export class SettingsBootstrap {
     await SettingsBootstrap.restoreDiagnostics(context, settingsStore)
     await SettingsBootstrap.restoreApiDomain(context, settingsStore)
     await SettingsBootstrap.restoreLanguage(context, settingsStore)
+    await SettingsBootstrap.restoreThemeColor(context, settingsStore)
     await SettingsBootstrap.restoreTheme(context, settingsStore)
     await SettingsBootstrap.restoreAvatarAppearance(context, settingsStore)
     await SettingsBootstrap.restoreMedia(context, settingsStore)
@@ -136,6 +139,16 @@ export class SettingsBootstrap {
     ).catch((error: Error) => {
       console.error('restore theme settings failed: ' + error.message)
       ThemeSettings.apply(context, ThemeSettings.MODE_AUTO)
+    })
+  }
+
+  private static async restoreThemeColor(context: common.UIAbilityContext, settingsStore?: SettingsPreferencesStore): Promise<void> {
+    await (settingsStore
+      ? ThemeColorSettings.loadFromStore(settingsStore)
+      : ThemeColorSettings.load(context)
+    ).catch((error: Error) => {
+      console.error('restore theme color settings failed: ' + error.message)
+      ThemeColorSettings.apply(ThemeColorSettings.DEFAULT_COLOR)
     })
   }
 

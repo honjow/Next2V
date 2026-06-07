@@ -816,7 +816,7 @@ export struct TopicDetailPage {
       LoadingProgress()
         .width(ThemeConstants.LOADING_SIZE_LARGE)
         .height(ThemeConstants.LOADING_SIZE_LARGE)
-        .color($r('sys.color.ohos_id_color_activated'))
+        .color(ThemeConstants.BRAND_PRIMARY)
       Text(AppStrings.text(AppStrings.R_TOPIC_DETAIL_LOADING, 'Loading...'))
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
         .fontColor($r('sys.color.font_secondary'))

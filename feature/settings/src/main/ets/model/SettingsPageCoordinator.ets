@@ -6,8 +6,10 @@ import {
   ReplyActionAlignmentSettings,
   ReplyCardStyleSettings,
   ReplyDisplaySettings,
+  ThemeColorSettings,
   ThemeSettings,
   ApiDomainSettings,
+  type ThemeColorOption,
 } from 'shared'
 
 export interface SettingsOption {
@@ -36,6 +38,10 @@ export class SettingsPageCoordinator {
       { label: AppStrings.R_COMMON_LIGHT, value: ThemeSettings.MODE_LIGHT },
       { label: AppStrings.R_COMMON_DARK, value: ThemeSettings.MODE_DARK },
     ]
+  }
+
+  static themeColorOptions(): ThemeColorOption[] {
+    return ThemeColorSettings.options()
   }
 
   static avatarAppearanceOptions(): SettingsOption[] {
@@ -122,6 +128,14 @@ export class SettingsPageCoordinator {
       return AppStrings.R_COMMON_DARK
     }
     return AppStrings.R_COMMON_AUTO
+  }
+
+  static themeColorLabel(color: string): ResourceStr {
+    return ThemeColorSettings.label(color)
+  }
+
+  static themeColorValue(color: string): ResourceColor {
+    return ThemeColorSettings.colorValue(color)
   }
 
   static avatarAppearanceLabel(appearance: string): ResourceStr {

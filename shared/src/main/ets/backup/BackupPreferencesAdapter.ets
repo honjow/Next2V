@@ -17,6 +17,7 @@ import { ReplyCardStyleSettings } from '../settings/ReplyCardStyleSettings'
 import { ReplyDisplaySettings } from '../settings/ReplyDisplaySettings'
 import { SettingsBootstrap } from '../settings/SettingsBootstrap'
 import { STORE_NAME_SETTINGS } from '../settings/SettingsStorage'
+import { ThemeColorSettings } from '../settings/ThemeColorSettings'
 import { ThemeSettings } from '../settings/ThemeSettings'
 
 type SettingsValue = string | number | boolean
@@ -115,8 +116,13 @@ export class BackupPreferencesAdapter {
     if (section.language && section.language.mode) {
       await LanguageSettings.save(context, section.language.mode)
     }
-    if (section.theme && section.theme.mode) {
-      await ThemeSettings.save(context, section.theme.mode)
+    if (section.theme) {
+      if (section.theme.mode) {
+        await ThemeSettings.save(context, section.theme.mode)
+      }
+      if (section.theme.color) {
+        await ThemeColorSettings.save(context, section.theme.color)
+      }
     }
     if (section.appearance) {
       await AvatarAppearanceSettings.save(

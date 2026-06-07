@@ -14,6 +14,7 @@ import {
   ReplyActionAlignmentSettings,
   ReplyCardStyleSettings,
   ReplyDisplaySettings,
+  ThemeColorSettings,
   ThemeSettings,
   TopicDetailReplyActionSettings,
 } from 'shared'
@@ -86,6 +87,12 @@ export class SettingsSaveCoordinator {
   static saveThemeMode(context: common.UIAbilityContext, mode: string): void {
     ThemeSettings.save(context, mode).catch((error: Error) => {
       console.error('save theme settings failed: ' + error.message)
+    })
+  }
+
+  static saveThemeColor(context: common.UIAbilityContext, color: string): void {
+    ThemeColorSettings.save(context, color).catch((error: Error) => {
+      console.error('save theme color setting failed: ' + error.message)
     })
   }
 

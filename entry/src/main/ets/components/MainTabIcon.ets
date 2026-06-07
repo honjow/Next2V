@@ -33,7 +33,7 @@ export struct MainTabIcon {
             .renderingStrategy(SymbolRenderingStrategy.MULTIPLE_OPACITY)
             .fontColor([
               this.currentIndex === this.idx
-                ? $r('sys.color.ohos_id_color_activated')
+                ? ThemeConstants.BRAND_PRIMARY
                 : $r('sys.color.font_secondary'),
             ])
         }
@@ -65,7 +65,7 @@ export struct MainTabIcon {
         .fontSize(ThemeConstants.FONT_SIZE_TINY)
         .fontColor(
           this.currentIndex === this.idx
-            ? $r('sys.color.ohos_id_color_activated')
+            ? ThemeConstants.BRAND_PRIMARY
             : $r('sys.color.font_secondary'),
         )
     }

@@ -533,8 +533,40 @@
       "value": "홍콩"
     },
     {
+      "name": "theme_color",
+      "value": "테마 색상"
+    },
+    {
       "name": "theme",
-      "value": "테마"
+      "value": "다크 모드"
+    },
+    {
+      "name": "theme_color_galaxy_blue",
+      "value": "은하 블루"
+    },
+    {
+      "name": "theme_color_orange_yellow",
+      "value": "오렌지 옐로"
+    },
+    {
+      "name": "theme_color_cat_blue",
+      "value": "캣 블루"
+    },
+    {
+      "name": "theme_color_huawei_red",
+      "value": "화웨이 레드"
+    },
+    {
+      "name": "theme_color_elegant_purple",
+      "value": "엘레강트 퍼플"
+    },
+    {
+      "name": "theme_color_bilibili_pink",
+      "value": "빌리빌리 핑크"
+    },
+    {
+      "name": "theme_color_grass_green",
+      "value": "잔디 그린"
     },
     {
       "name": "avatar_appearance",

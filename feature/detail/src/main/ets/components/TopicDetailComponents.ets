@@ -260,7 +260,7 @@ export struct ReplyContextListItem {
           .fontSize(ThemeConstants.FONT_SIZE_TAG)
           .fontColor(
             this.selected
-              ? $r('sys.color.ohos_id_color_activated')
+              ? ThemeConstants.BRAND_PRIMARY
               : $r('sys.color.font_secondary'),
           )
           .padding({
