@@ -138,131 +138,150 @@ export struct ReplyComposerBar {
   }
 
   build() {
-    Column({ space: ThemeConstants.SPACE_XS }) {
-      if (this.errorMessage) {
-        Text(this.errorMessage)
-          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-          .fontColor(Color.Red)
-          .width('100%')
-      }
-      // Top row: full-width input with an overlaid clear (×) button vertically centered at the right, shown
-      // only when it has content. Symmetric 12+12 vertical padding keeps a single line vertically centered.
-      Stack({ alignContent: Alignment.End }) {
-        TextArea({
-          placeholder: AppStrings.text(
-            AppStrings.R_REPLY_BODY_PLACEHOLDER,
-            'Reply body (auto-saved)',
-          ),
-          text: this.content,
-          controller: this.contentController,
-        })
-          .id(ReplyComposerBar.INPUT_ID)
-          .width('100%')
-          .constraintSize({ maxHeight: 148 })
-          .fontSize(ThemeConstants.FONT_SIZE_BODY)
-          .padding({
-            top: ThemeConstants.SPACE_MD,
-            bottom: ThemeConstants.SPACE_MD,
-            left: ThemeConstants.SPACE_MD + ThemeConstants.SPACE_XS,
-            right: ThemeConstants.SPACE_MD + ThemeConstants.SPACE_XS,
+    Column() {
+      // Input area (horizontally padded). The sticker panel below is a full-width sibling so it can bleed to
+      // the screen edges, instead of being inset by this padding.
+      Column({ space: ThemeConstants.SPACE_XS }) {
+        if (this.errorMessage) {
+          Text(this.errorMessage)
+            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+            .fontColor(Color.Red)
+            .width('100%')
+        }
+        // Top row: full-width input with an overlaid clear (×) button vertically centered at the right, shown
+        // only when it has content. Symmetric 12+12 vertical padding keeps a single line vertically centered.
+        Stack({ alignContent: Alignment.End }) {
+          TextArea({
+            placeholder: AppStrings.text(
+              AppStrings.R_REPLY_BODY_PLACEHOLDER,
+              'Reply body (auto-saved)',
+            ),
+            text: this.content,
+            controller: this.contentController,
           })
-          .placeholderFont({ size: ThemeConstants.FONT_SIZE_BODY, weight: FontWeight.Normal })
-          .borderRadius(ThemeConstants.RADIUS_MD)
-          .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
-          .defaultFocus(true)
-          .onChange((value: string) => {
-            this.content = value
-            this.scheduleSaveDraft()
-          })
-          // Track the caret so an inserted sticker/image URL lands where the user is typing (the picker blurs
-          // the field, so we rely on the last recorded position, not live focus).
-          .onTextSelectionChange((start: number, end: number) => {
-            this.selStart = start
-            this.selEnd = end
-          })
-          // When the IME re-opens (user taps the field), drop the sticker panel so the two don't stack.
-          .onEditChange((isEditing: boolean) => {
-            if (isEditing && this.showStickerPanel) {
-              this.setStickerPanel(false)
-              this.panelBus.open = false
-            }
-          })
-        // Clear button at the input's top-right; only when there's content. focusOnTouch(false) keeps the
-        // TextArea focused (keyboard stays up) so the user can immediately retype.
-        if (this.content.length > 0) {
-          SymbolGlyph($r('sys.symbol.xmark_circle_fill'))
-            .fontSize(18)
-            .fontColor([$r('sys.color.font_secondary')])
-            .padding(ThemeConstants.SPACE_XS)
-            .margin({ right: ThemeConstants.SPACE_XS })
-            .focusOnTouch(false)
-            .onClick(() => {
-              this.clearContent()
+            .id(ReplyComposerBar.INPUT_ID)
+            .width('100%')
+            .constraintSize({ maxHeight: 148 })
+            .fontSize(ThemeConstants.FONT_SIZE_BODY)
+            .padding({
+              top: ThemeConstants.SPACE_MD,
+              bottom: ThemeConstants.SPACE_MD,
+              left: ThemeConstants.SPACE_MD + ThemeConstants.SPACE_XS,
+              right: ThemeConstants.SPACE_MD + ThemeConstants.SPACE_XS,
             })
-        }
-      }.width('100%')
+            .placeholderFont({ size: ThemeConstants.FONT_SIZE_BODY, weight: FontWeight.Normal })
+            .borderRadius(ThemeConstants.RADIUS_MD)
+            .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
+            .defaultFocus(true)
+            .onChange((value: string) => {
+              this.content = value
+              this.scheduleSaveDraft()
+            })
+            // Track the caret so an inserted sticker/image URL lands where the user is typing (the picker blurs
+            // the field, so we rely on the last recorded position, not live focus).
+            .onTextSelectionChange((start: number, end: number) => {
+              this.selStart = start
+              this.selEnd = end
+            })
+            // When the IME re-opens (user taps the field), drop the sticker panel so the two don't stack.
+            .onEditChange((isEditing: boolean) => {
+              if (isEditing && this.showStickerPanel) {
+                this.setStickerPanel(false)
+                this.panelBus.open = false
+              }
+            })
+          // Clear button at the input's top-right; only when there's content. focusOnTouch(false) keeps the
+          // TextArea focused (keyboard stays up) so the user can immediately retype.
+          if (this.content.length > 0) {
+            SymbolGlyph($r('sys.symbol.xmark_circle_fill'))
+              .fontSize(18)
+              .fontColor([$r('sys.color.font_secondary')])
+              .padding(ThemeConstants.SPACE_XS)
+              .margin({ right: ThemeConstants.SPACE_XS })
+              .focusOnTouch(false)
+              .onClick(() => {
+                this.clearContent()
+              })
+          }
+        }.width('100%')
 
-      // Bottom row: action toolbar. Sticker + image on the left, send on the right — keeps the input roomy
-      // and the controls from crowding the field's edge.
-      Row({ space: ThemeConstants.SPACE_SM }) {
-        // Sticker button: toggles the chat-app style panel (dismisses the IME and shows the grid in its
-        // place). focusOnTouch(false) so tapping it doesn't re-grab the TextArea caret/keyboard.
-        Button({ type: ButtonType.Circle }) {
-          SymbolGlyph($r('sys.symbol.face_smiling'))
-            .fontSize(22)
-            .fontColor([$r('sys.color.font_secondary')])
+        // Bottom row: action toolbar. Sticker + image on the left, send on the right — keeps the input roomy
+        // and the controls from crowding the field's edge.
+        Row({ space: ThemeConstants.SPACE_SM }) {
+          // Sticker button: toggles the chat-app style panel (dismisses the IME and shows the grid in its
+          // place). focusOnTouch(false) so tapping it doesn't re-grab the TextArea caret/keyboard.
+          Button({ type: ButtonType.Circle }) {
+            SymbolGlyph($r('sys.symbol.face_smiling'))
+              .fontSize(22)
+              .fontColor([$r('sys.color.font_secondary')])
+          }
+          .width(ReplyComposerBar.REPLY_BAR_CONTROL_SIZE)
+          .height(ReplyComposerBar.REPLY_BAR_CONTROL_SIZE)
+          .enabled(!this.isSubmitting)
+          .buttonStyle(ButtonStyleMode.NORMAL)
+          .focusOnTouch(false)
+          .accessibilityText(
+            AppStrings.text($r('app.string.sticker_insert_action'), 'Insert sticker'),
+          )
+          .onClick(() => {
+            this.toggleStickerPanel()
+          })
+          // Image button: pick → upload to the configured host → insert the bare URL at the caret.
+          Button({ type: ButtonType.Circle }) {
+            SymbolGlyph($r('sys.symbol.picture'))
+              .fontSize(22)
+              .fontColor([$r('sys.color.font_secondary')])
+          }
+          .width(ReplyComposerBar.REPLY_BAR_CONTROL_SIZE)
+          .height(ReplyComposerBar.REPLY_BAR_CONTROL_SIZE)
+          .enabled(!this.isSubmitting)
+          .buttonStyle(ButtonStyleMode.NORMAL)
+          .focusOnTouch(false)
+          .accessibilityText(
+            AppStrings.text(AppStrings.R_IMAGE_UPLOAD_ACTION_NEW, 'Upload a new image'),
+          )
+          .onClick(() => {
+            this.pickAndUploadImage()
+          })
+          Blank().layoutWeight(1)
+          Button({ type: ButtonType.Circle }) {
+            SymbolGlyph($r('sys.symbol.paperplane_right_fill'))
+              .fontSize(20)
+              .fontColor([Color.White])
+              // paperplane_right_fill's visual mass sits left of its box center; nudge right to optically
+              // center it in the circular button.
+              .offset({ x: 2 })
+          }
+          .width(ReplyComposerBar.REPLY_BAR_CONTROL_SIZE)
+          .height(ReplyComposerBar.REPLY_BAR_CONTROL_SIZE)
+          .enabled(this.canSubmit())
+          .buttonStyle(ButtonStyleMode.EMPHASIZED)
+          .accessibilityText(ReplyComposerCoordinator.submitButtonLabel(this.isSubmitting))
+          .onClick(() => {
+            this.confirmSubmit()
+          })
         }
-        .width(ReplyComposerBar.REPLY_BAR_CONTROL_SIZE)
-        .height(ReplyComposerBar.REPLY_BAR_CONTROL_SIZE)
-        .enabled(!this.isSubmitting)
-        .buttonStyle(ButtonStyleMode.NORMAL)
-        .focusOnTouch(false)
-        .accessibilityText(
-          AppStrings.text($r('app.string.sticker_insert_action'), 'Insert sticker'),
-        )
-        .onClick(() => {
-          this.toggleStickerPanel()
-        })
-        // Image button: pick → upload to the configured host → insert the bare URL at the caret.
-        Button({ type: ButtonType.Circle }) {
-          SymbolGlyph($r('sys.symbol.picture'))
-            .fontSize(22)
-            .fontColor([$r('sys.color.font_secondary')])
-        }
-        .width(ReplyComposerBar.REPLY_BAR_CONTROL_SIZE)
-        .height(ReplyComposerBar.REPLY_BAR_CONTROL_SIZE)
-        .enabled(!this.isSubmitting)
-        .buttonStyle(ButtonStyleMode.NORMAL)
-        .focusOnTouch(false)
-        .accessibilityText(
-          AppStrings.text(AppStrings.R_IMAGE_UPLOAD_ACTION_NEW, 'Upload a new image'),
-        )
-        .onClick(() => {
-          this.pickAndUploadImage()
-        })
-        Blank().layoutWeight(1)
-        Button({ type: ButtonType.Circle }) {
-          SymbolGlyph($r('sys.symbol.paperplane_right_fill'))
-            .fontSize(20)
-            .fontColor([Color.White])
-            // paperplane_right_fill's visual mass sits left of its box center; nudge right to optically
-            // center it in the circular button.
-            .offset({ x: 2 })
-        }
-        .width(ReplyComposerBar.REPLY_BAR_CONTROL_SIZE)
-        .height(ReplyComposerBar.REPLY_BAR_CONTROL_SIZE)
-        .enabled(this.canSubmit())
-        .buttonStyle(ButtonStyleMode.EMPHASIZED)
-        .accessibilityText(ReplyComposerCoordinator.submitButtonLabel(this.isSubmitting))
-        .onClick(() => {
-          this.confirmSubmit()
-        })
+        .width('100%')
+        .alignItems(VerticalAlign.Center)
       }
       .width('100%')
-      .alignItems(VerticalAlign.Center)
+      .padding({
+        left: ThemeConstants.SPACE_MD,
+        right: ThemeConstants.SPACE_MD,
+        top: ThemeConstants.SPACE_SM,
+        // Keep the SAME SPACE_SM bottom gap in both states so the bar does NOT jump when swapping
+        // keyboard <-> panel (keyboard-up resolves to SPACE_SM since bottomSafePad()=0 then). Only the
+        // safe-area inset is conditional: when the panel is open IT owns the bottom (bleeds to the edge),
+        // so the input area drops the gesture-bar inset; a keyboard-down bar (no panel) keeps it to cover
+        // the gesture area. Dropping the SPACE_SM too (the old `? 0`) shifted the bar ~8vp = a visible jump.
+        bottom: this.showStickerPanel
+          ? ThemeConstants.SPACE_SM
+          : ThemeConstants.SPACE_SM + this.bottomSafePad(),
+      })
 
-      // Sticker panel sits where the keyboard was (the page drops the bar to the bottom once the IME is
-      // dismissed). Sized to roughly the last keyboard height so the bar doesn't jump.
+      // Sticker panel: full-bleed — full screen width (it's outside the input area's horizontal padding) and
+      // it extends to the bottom edge (its own bottom safe-area inset keeps the last row above the gesture
+      // bar). Shown where the keyboard was, sized to the last keyboard footprint so the bar doesn't jump.
       if (this.showStickerPanel) {
         StickerPickerPanel({
           stickers: BUILTIN_STICKERS,
@@ -274,12 +293,6 @@ export struct ReplyComposerBar {
       }
     }
     .width('100%')
-    .padding({
-      left: ThemeConstants.SPACE_MD,
-      right: ThemeConstants.SPACE_MD,
-      top: ThemeConstants.SPACE_SM,
-      bottom: ThemeConstants.SPACE_SM + this.bottomSafePad(),
-    })
     .backgroundColor($r('sys.color.ohos_id_color_background'))
     .border({ width: { top: 0.5 }, color: $r('sys.color.ohos_id_color_list_separator') })
   }
@@ -449,8 +462,9 @@ export struct ReplyComposerBar {
 
   // Take roughly the keyboard's footprint (so the bar doesn't jump); fall back before any keyboard shows.
   private stickerPanelHeight(): number {
-    const fromKeyboard = this.lastKeyboardHeight - this.layout.bottomAvoidHeight
-    return fromKeyboard > 200 ? fromKeyboard : 300
+    // Full keyboard footprint — the panel now bleeds to the bottom edge and insets its own content past the
+    // gesture bar, so we no longer subtract the bottom safe area here (that subtraction left a gap below).
+    return this.lastKeyboardHeight > 200 ? this.lastKeyboardHeight : 320
   }
 
   private insertSticker(name: string): void {

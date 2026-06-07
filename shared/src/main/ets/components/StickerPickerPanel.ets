@@ -1,4 +1,5 @@
 import { ThemeConstants } from '../theme/ThemeConstants'
+import { connectLayoutSafeArea, LayoutSafeAreaState } from '../state/LayoutSafeAreaState'
 
 /**
  * One selectable sticker = a display name + an image URL. V2EX has no native sticker system, so a
@@ -104,6 +105,14 @@ export const BUILTIN_STICKERS: StickerItem[] = [
 ]
 
 /**
+ * Sticker cell side (vp). Grounded in the body text, not picked arbitrarily: the inner emoji is the cell
+ * minus its SPACE_XS padding on each side (32 - 8 = 24vp), which is ~1.3x the ~18vp body-text line — these
+ * are small 黄豆/微博-style emoji that read alongside text, NOT large stickers. The same physical size renders
+ * on every device because the column COUNT (not the cell size) adapts to the screen width (auto-stretch).
+ */
+const STICKER_CELL_VP: number = 32
+
+/**
  * One sticker cell with its own load state, so each tile can show a skeleton placeholder until its network
  * image arrives. The built-in pack is imgur-hosted; on a cold cache the first open would otherwise render a
  * blank (no thumbnail, no spinner) which reads as "broken". @Trace loaded drives the per-cell skeleton.
@@ -130,6 +139,8 @@ export struct StickerPickerPanel {
   // Per-cell wrappers carrying @Trace loaded; rebuilt on each open (the panel is conditionally mounted, so
   // aboutToAppear runs every time it is shown and the skeletons reset).
   @Local private cells: StickerCell[] = [];
+  // Bottom safe-area inset so the last sticker row clears the gesture bar when the panel fills to the edge.
+  @Local private layout: LayoutSafeAreaState = connectLayoutSafeArea();
 
   aboutToAppear(): void {
     this.cells = this.stickers.map((s: StickerItem) => {
@@ -169,9 +180,8 @@ export struct StickerPickerPanel {
                 })
             }
           }
-          // Inset the image inside its cell so a low-resolution sticker isn't upscaled to the full cell
-          // width (which stretches/blurs it) and gets breathing room from its neighbours.
-          .padding(ThemeConstants.SPACE_SM)
+          // Small inset so the sticker has breathing room inside its fixed-size cell.
+          .padding(ThemeConstants.SPACE_XS)
           .onClick(() => {
             if (this.onPick) {
               this.onPick(cell.name)
@@ -181,11 +191,29 @@ export struct StickerPickerPanel {
         (cell: StickerCell) => cell.url,
       )
     }
-    .columnsTemplate('repeat(8, 1fr)')
-    .columnsGap(ThemeConstants.SPACE_MD)
-    .rowsGap(ThemeConstants.SPACE_MD)
-    .padding(ThemeConstants.SPACE_MD)
+    // Responsive + text-scaled: fixed 32vp cells (the ~24vp emoji inside is ~1.3x the 14vp/~18vp body-text
+    // line — a small emoji, not a big sticker), column count auto-computed for the screen width via
+    // auto-stretch (same physical size on every device; leftover width goes into the gaps), instead of a
+    // fixed 8/row that shrank stickers on narrow/high-density screens and ballooned them on tablets/wide ones.
+    .columnsTemplate(`repeat(auto-stretch, ${STICKER_CELL_VP})`)
+    .columnsGap(ThemeConstants.SPACE_SM)
+    .rowsGap(ThemeConstants.SPACE_SM)
+    // Side gutters (SPACE_LG) keep the grid from crowding the screen edges; the panel BACKGROUND is still
+    // full-bleed (width 100%, set below) — only the cells are inset. The bottom inset = a row gap plus the
+    // gesture-bar height, so the background bleeds under the nav bar (immersive) while the last sticker row
+    // still scrolls to rest above it and stays tappable.
+    .padding({
+      left: ThemeConstants.SPACE_LG,
+      right: ThemeConstants.SPACE_LG,
+      top: ThemeConstants.SPACE_SM,
+      bottom: ThemeConstants.SPACE_SM + this.layout.bottomAvoidHeight,
+    })
     .width('100%')
+    // Fixed height = the keyboard's footprint (panelHeight), NEVER content-fit. This is the invariant that
+    // keeps the keyboard <-> panel swap from jumping: the host drops the bar to the bottom and the panel takes
+    // exactly the space the keyboard vacated, so the bar lands at the same Y. The pack scrolls when it overflows
+    // (narrow phone); when it doesn't fill the height (wide tablet) the leftover panel background is expected —
+    // shrinking to content would reintroduce the jump.
     .height(this.panelHeight)
     .backgroundColor($r('sys.color.ohos_id_color_background'))
     .scrollBar(BarState.Off)
