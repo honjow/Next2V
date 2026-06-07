@@ -48,6 +48,10 @@ assert.match(page, /this\.getUIContext\(\)\.animateTo\(/, 'release animations mu
 assert.match(page, /curves\.springMotion\(\)/, 'snap-back/reset must use a spring curve')
 assert.match(page, /this\.isPinching/, 'pan must stand down while a pinch is in flight (isPinching gate)')
 assert.match(page, /this\.stack\.pop\(false\)/, 'swipe-to-dismiss must pop the nav stack with animated=false, inside animateTo (Hero back morph)')
+// The back morph must start from the RELEASE position, not the centered frame: geometryTransition reads the
+// LAYOUT rect (not the render .translate), so the drag is baked into a layout .offset before the pop.
+assert.match(page, /\.offset\(\{\s*x:\s*0,\s*y:\s*this\.dismissLayoutY\s*\}\)/, 'preview image must expose a layout .offset(dismissLayoutY) so the dismiss morph starts from where the finger let go')
+assert.match(page, /this\.dismissLayoutY = this\.dismissY/, 'dismiss must bake the drag (render translate) into the layout offset before popping (geometryTransition reads layout, not translate)')
 // No regressions: the old width-scaling path and nested Scroll are gone; save flow + black canvas stay.
 assert.doesNotMatch(page, /ImagePreviewCoordinator\.imageWidth|getImageWidth/, 'the dead width-scaling path must be removed from the page')
 assert.doesNotMatch(page, /Scroll\(\)/, 'the nested Scroll pan model must be gone')

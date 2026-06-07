@@ -58,6 +58,11 @@ export struct ImagePreviewPage {
   @Local private intrinsicH: number = 0;
   // Swipe-down-to-dismiss (armed only at fit): extra downward translate + backdrop fade.
   @Local private dismissY: number = 0;
+  // The dragged offset BAKED into a layout-honored .offset() at release time. geometryTransition captures the
+  // LAYOUT rect, NOT the render .translate, so the back Hero morph would otherwise start from the centered
+  // frame; baking the release offset here makes it start from where the finger let go. (Pattern from the
+  // official ShowLargeImageWithGesture sample, which bakes the dragged rect into .position before morphing.)
+  @Local private dismissLayoutY: number = 0;
   @Local private backdropAlpha: number = 1;
   @Local private isSaving: boolean = false;
   // V2 mirror of the one-directional IMAGE_PREVIEW_ACTION appbar command (Index dual-writes).
@@ -192,16 +197,21 @@ export struct ImagePreviewPage {
 
   private endDismissGesture(velocityY: number): void {
     if (this.dismissY > DISMISS_DISTANCE_VP || velocityY > DISMISS_VELOCITY) {
+      // Bake the live drag (a render .translate, which geometryTransition does NOT capture) into the layout
+      // .offset (which it DOES) and zero the render translate — the visual position is unchanged in this same
+      // frame — so the back Hero morph starts from where the finger let go instead of the centered frame.
+      // geometryTransition then OWNS the position/size morph (it overrides the offset during the animateTo),
+      // so dismissLayoutY is set once and not animated. (Pattern from the official ShowLargeImageWithGesture.)
+      this.dismissLayoutY = this.dismissY
+      this.dismissY = 0
       // Close via the shared-element (Hero) morph: pop INSIDE animateTo (animated=false suppresses the HDS
-      // default route animation) so the image frame morphs back to the source thumbnail in this window, while
-      // the drag offset relaxes to 0 and the backdrop fades out together.
+      // default route animation) so the image frame morphs back to the source thumbnail while the backdrop fades.
       this.getUIContext().animateTo(
         {
           duration: 300,
           curve: Curve.Friction,
         },
         () => {
-          this.dismissY = 0
           this.backdropAlpha = 0
           this.stack.pop(false)
         },
@@ -427,6 +437,10 @@ export struct ImagePreviewPage {
             })
             .scale({ x: this.scaleValue, y: this.scaleValue })
             .translate({ x: this.offsetX, y: this.offsetY + this.dismissY })
+            // Layout-honored offset (separate from the render .translate above): 0 during normal viewing and the
+            // live drag; on release-to-dismiss the drag amount is baked here so geometryTransition — which reads
+            // the LAYOUT rect, not the render translate — starts the back morph from where the finger let go.
+            .offset({ x: 0, y: this.dismissLayoutY })
             .renderGroup(true)
             // Shared-element (Hero) IN node: morphs from the tapped thumbnail's rect. The push/pop sites wrap the
             // route swap in animateTo (animated=false suppresses HDS's default route animation), and THAT animateTo
