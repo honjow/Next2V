@@ -19,11 +19,15 @@ import {
   ImageUploadSettings,
   LayoutSafeAreaState,
   connectReplyStickerPanel,
+  connectRecentStickers,
+  RecentStickerSettings,
+  RecentStickerState,
   ReplyStickerPanelState,
   StickerPickerPanel,
   ThemeConstants,
   translateApiError,
   type ImageBytes,
+  type StickerItem,
 } from 'shared'
 
 /**
@@ -66,6 +70,9 @@ export struct ReplyComposerBar {
   // Mirror of showStickerPanel published to the nav shell so a system back press closes the panel (instead
   // of popping the topic page) — Index.onBackPressed flips this to false, and the @Monitor below reacts.
   @Local private panelBus: ReplyStickerPanelState = connectReplyStickerPanel();
+  // Recently-used stickers (most-recent-first); passed to the picker so it can show a "recent" tray on top.
+  // Read live, but the picker snapshots it at open so a pick doesn't reshuffle the grid mid-session.
+  @Local private recentStickers: RecentStickerState = connectRecentStickers();
 
   private contentController: TextAreaController = new TextAreaController();
   private saveTimerId: number = 0;
@@ -286,9 +293,10 @@ export struct ReplyComposerBar {
       if (this.showStickerPanel) {
         StickerPickerPanel({
           groups: BUILTIN_STICKER_GROUPS,
+          recent: this.recentStickers.items,
           panelHeight: this.stickerPanelHeight(),
-          onPick: (name: string) => {
-            this.insertSticker(name)
+          onPick: (item: StickerItem) => {
+            this.insertSticker(item)
           },
         })
       }
@@ -468,11 +476,12 @@ export struct ReplyComposerBar {
     return this.lastKeyboardHeight > 200 ? this.lastKeyboardHeight : 320
   }
 
-  private insertSticker(name: string): void {
+  private insertSticker(item: StickerItem): void {
     // Insert the readable code "[name]" (not the URL) so the field stays editable; codes are expanded to bare
     // whitelisted URLs only at submit (expandStickerCodes). Don't refocus — keep the panel open for rapid
-    // inserts.
-    this.insertTextAtCaret(`[${name}]`, false)
+    // inserts. Record the pick so it surfaces in the picker's "recent" tray on the next open.
+    this.insertTextAtCaret(`[${item.name}]`, false)
+    RecentStickerSettings.record(item)
   }
 
   // Expand sticker codes "[name]" to the bare image URL (+ surrounding spaces so V2EX auto-embeds it) at

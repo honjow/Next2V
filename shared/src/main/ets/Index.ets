@@ -459,9 +459,10 @@ export {
   StickerPickerPanel,
   BUILTIN_STICKERS,
   BUILTIN_STICKER_GROUPS,
-  type StickerItem,
-  type StickerGroup,
 } from './components/StickerPickerPanel'
+export { type StickerItem, type StickerGroup } from './model/StickerTypes'
+export { RecentStickerState, connectRecentStickers } from './state/RecentStickerState'
+export { RecentStickerSettings } from './settings/RecentStickerSettings'
 export { AppTextField } from './components/AppTextField'
 export { AppActionButton } from './components/AppActionButton'
 export { AppModalScaffold } from './components/AppModalScaffold'

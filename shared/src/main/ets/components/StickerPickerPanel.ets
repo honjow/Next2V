@@ -1,26 +1,7 @@
+import { display } from '@kit.ArkUI'
 import { ThemeConstants } from '../theme/ThemeConstants'
 import { connectLayoutSafeArea, LayoutSafeAreaState } from '../state/LayoutSafeAreaState'
-
-/**
- * One selectable sticker = a display name + an image URL. V2EX has no native sticker system, so a
- * "sticker" is just an image: tapping one inserts a readable placeholder code "[name]" while editing, and
- * the composer expands codes to the bare image URL on submit (V2EX auto-embeds whitelisted hosts such as
- * i.imgur.com) — see ReplyComposerBar.insertSticker / expandStickerCodes.
- */
-export interface StickerItem {
-  name: string
-  url: string
-}
-
-/**
- * A visually-separated section of the picker. The panel renders one auto-stretch grid and inserts a
- * full-row separator (see GridLayoutOptions.irregularIndexes below) between groups, so each group after the
- * first starts on a fresh row with a little breathing room — no group titles, just a hairline break.
- */
-export interface StickerGroup {
-  key: string
-  stickers: StickerItem[]
-}
+import { StickerItem, StickerGroup } from '../model/StickerTypes'
 
 /**
  * Built-in packs (URL-referenced imgur images, nothing bundled). Two visually distinct sets:
@@ -184,8 +165,8 @@ const BILI_STICKERS: StickerItem[] = [
 ]
 
 export const BUILTIN_STICKER_GROUPS: StickerGroup[] = [
-  { key: 'classic', stickers: CLASSIC_STICKERS },
   { key: 'bili', stickers: BILI_STICKERS },
+  { key: 'classic', stickers: CLASSIC_STICKERS },
 ]
 
 /**
@@ -243,10 +224,14 @@ class GridEntry {
 @ComponentV2
 export struct StickerPickerPanel {
   @Param groups: StickerGroup[] = [];
+  // Most-recent-first recently-used stickers; the panel prepends a "recent" group capped to two rows (the
+  // count is sliced to the live column count). Snapshotted at aboutToAppear so a pick does not reshuffle the
+  // open grid; the next open reflects it. Empty -> no recent group (and no leading separator).
+  @Param recent: StickerItem[] = [];
   @Param panelHeight: number = 300;
-  // Emits the sticker's NAME (the readable code, e.g. "doge"); the host inserts "[doge]" while editing and
-  // expands codes to the bare image URL only on submit (keeps the text field readable).
-  @Event onPick?: (name: string) => void;
+  // Emits the picked sticker (name + url); the host inserts "[name]" while editing, expands codes to the bare
+  // URL only on submit (keeps the text field readable), and records the pick into the recent list.
+  @Event onPick?: (item: StickerItem) => void;
   // Flattened render list: group-1 cells, a separator, group-2 cells, ... Rebuilt on each open (the panel is
   // conditionally mounted, so aboutToAppear runs every time it is shown and the skeletons reset).
   @Local private entries: GridEntry[] = [];
@@ -258,17 +243,20 @@ export struct StickerPickerPanel {
   // start on a fresh row. Filled in aboutToAppear from the actual group sizes.
   private gridOptions: GridLayoutOptions = { regularSize: [1, 1], irregularIndexes: [] };
 
+  // The recent tray is a SNAPSHOT taken once per open (here), not live: a pick records into the holder but the
+  // open grid does NOT reshuffle under the user's finger — the next open reflects it. (The panel is
+  // conditionally mounted, so aboutToAppear runs on every open and re-reads the latest recent list.)
   aboutToAppear(): void {
     const list: GridEntry[] = []
     const separators: number[] = []
-    this.groups.forEach((group: StickerGroup, groupIndex: number) => {
+    this.effectiveGroups().forEach((group: StickerGroup) => {
       // Separator only BETWEEN two non-empty groups: it needs preceding cells (list.length > 0) and at least
-      // one cell of its own to follow (group.stickers.length > 0). Guarding on groupIndex alone would leave a
-      // dangling/leading hairline when any group is empty.
+      // one cell of its own to follow (group.stickers.length > 0). Guarding alone would leave a dangling /
+      // leading hairline when any group is empty.
       if (list.length > 0 && group.stickers.length > 0) {
         const sep = new GridEntry()
         sep.isSeparator = true
-        sep.key = `sep-${groupIndex}`
+        sep.key = `sep-${group.key}`
         separators.push(list.length)
         list.push(sep)
       }
@@ -276,12 +264,49 @@ export struct StickerPickerPanel {
         const cell = new GridEntry()
         cell.name = sticker.name
         cell.url = sticker.url
-        cell.key = sticker.url
+        // Key is group-scoped (not bare url): a recent sticker also lives in its origin group, so the same
+        // url renders twice in the grid — bare-url keys would collide in ForEach.
+        cell.key = `${group.key}:${sticker.url}`
         list.push(cell)
       })
     })
     this.entries = list
     this.gridOptions = { regularSize: [1, 1], irregularIndexes: separators }
+  }
+
+  // [recent (<=2 rows), ...groups]. The recent group is prepended only when non-empty (otherwise the
+  // separator guard already drops it). Recent is sliced to exactly two rows for the live column count so it
+  // stays a compact tray rather than growing without bound as the user picks more.
+  private effectiveGroups(): StickerGroup[] {
+    const result: StickerGroup[] = []
+    const limit = 2 * this.maxColumns()
+    const recentSlice =
+      this.recent.length > limit ? this.recent.slice(0, limit) : this.recent.slice()
+    if (recentSlice.length > 0) {
+      result.push({ key: 'recent', stickers: recentSlice })
+    }
+    for (const group of this.groups) {
+      result.push(group)
+    }
+    return result
+  }
+
+  // The auto-stretch column count the grid will compute for the full-width panel: floor((W + gap) /
+  // (cell + gap)) where W is the content width (screen width minus the grid's side padding). Mirrors the
+  // framework's repeat(auto-stretch, cell) math so the recent slice lands on exactly two rows. Falls back to
+  // a sane default if the display query fails.
+  private maxColumns(): number {
+    try {
+      const info = display.getDefaultDisplaySync()
+      const widthVp = info.densityPixels > 0 ? info.width / info.densityPixels : 0
+      const content = widthVp - 2 * ThemeConstants.SPACE_LG
+      const cols = Math.floor(
+        (content + ThemeConstants.SPACE_SM) / (STICKER_CELL_VP + ThemeConstants.SPACE_SM),
+      )
+      return cols > 0 ? cols : 8
+    } catch (err) {
+      return 8
+    }
   }
 
   build() {
@@ -332,7 +357,8 @@ export struct StickerPickerPanel {
             .padding(ThemeConstants.SPACE_XS)
             .onClick(() => {
               if (this.onPick) {
-                this.onPick(entry.name)
+                const picked: StickerItem = { name: entry.name, url: entry.url }
+                this.onPick(picked)
               }
             })
           }

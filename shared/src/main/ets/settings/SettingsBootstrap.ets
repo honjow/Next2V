@@ -13,6 +13,7 @@ import { TopicDetailReplyActionSettings } from './TopicDetailReplyActionSettings
 import { LanguageSettings } from './LanguageSettings'
 import { MediaSettings } from './MediaSettings'
 import { ImageUploadSettings } from './ImageUploadSettings'
+import { RecentStickerSettings } from './RecentStickerSettings'
 import { NetworkProxySettings } from './NetworkProxySettings'
 import { ReadingSettings } from './ReadingSettings'
 import { ReplyActionAlignmentSettings } from './ReplyActionAlignmentSettings'
@@ -44,6 +45,7 @@ export class SettingsBootstrap {
     await SettingsBootstrap.restoreAvatarAppearance(context, settingsStore)
     await SettingsBootstrap.restoreMedia(context, settingsStore)
     await SettingsBootstrap.restoreImageUpload(context, settingsStore)
+    await SettingsBootstrap.restoreRecentStickers(context)
     await SettingsBootstrap.restoreNetworkProxy(context, settingsStore)
     await SettingsBootstrap.restoreReplyDisplay(context, settingsStore)
     await SettingsBootstrap.restoreReading(context, settingsStore)
@@ -84,6 +86,7 @@ export class SettingsBootstrap {
     await SettingsBootstrap.restoreAvatarAppearance(context, settingsStore)
     await SettingsBootstrap.restoreMedia(context, settingsStore)
     await SettingsBootstrap.restoreImageUpload(context, settingsStore)
+    await SettingsBootstrap.restoreRecentStickers(context)
     await SettingsBootstrap.restoreReplyDisplay(context, settingsStore)
     await SettingsBootstrap.restoreReading(context, settingsStore)
     await SettingsBootstrap.restoreHomeTabs(context, settingsStore)
@@ -97,22 +100,33 @@ export class SettingsBootstrap {
     await SettingsBootstrap.restoreCloudSync(context, settingsStore)
   }
 
-  private static async restoreApiDomain(context: common.UIAbilityContext, settingsStore?: SettingsPreferencesStore): Promise<void> {
-    await (settingsStore
-      ? ApiDomainSettings.loadFromStore(settingsStore)
-      : ApiDomainSettings.load(context)
+  private static async restoreApiDomain(
+    context: common.UIAbilityContext,
+    settingsStore?: SettingsPreferencesStore,
+  ): Promise<void> {
+    await (
+      settingsStore
+        ? ApiDomainSettings.loadFromStore(settingsStore)
+        : ApiDomainSettings.load(context)
     ).catch((error: Error) => {
       console.error('restore api domain failed: ' + error.message)
       ApiDomainSettings.apply('https://www.v2ex.com')
     })
   }
 
-  private static async restoreDiagnostics(context: common.UIAbilityContext, settingsStore?: SettingsPreferencesStore): Promise<void> {
-    await (settingsStore
-      ? DiagnosticsSettings.loadFromStore(settingsStore)
-      : DiagnosticsSettings.load(context)
+  private static async restoreDiagnostics(
+    context: common.UIAbilityContext,
+    settingsStore?: SettingsPreferencesStore,
+  ): Promise<void> {
+    await (
+      settingsStore
+        ? DiagnosticsSettings.loadFromStore(settingsStore)
+        : DiagnosticsSettings.load(context)
     ).catch((_error: Error) => {
-      DiagnosticsSettings.apply(DiagnosticsSettings.DEFAULT_ENABLED, DiagnosticsSettings.DEFAULT_MIN_LEVEL)
+      DiagnosticsSettings.apply(
+        DiagnosticsSettings.DEFAULT_ENABLED,
+        DiagnosticsSettings.DEFAULT_MIN_LEVEL,
+      )
     })
   }
 
@@ -122,93 +136,133 @@ export class SettingsBootstrap {
     })
   }
 
-  private static async restoreLanguage(context: common.UIAbilityContext, settingsStore?: SettingsPreferencesStore): Promise<void> {
-    await (settingsStore
-      ? LanguageSettings.loadFromStore(settingsStore)
-      : LanguageSettings.load(context)
+  private static async restoreLanguage(
+    context: common.UIAbilityContext,
+    settingsStore?: SettingsPreferencesStore,
+  ): Promise<void> {
+    await (
+      settingsStore ? LanguageSettings.loadFromStore(settingsStore) : LanguageSettings.load(context)
     ).catch((error: Error) => {
       console.error('restore language settings failed: ' + error.message)
       LanguageSettings.apply(LanguageSettings.MODE_SYSTEM)
     })
   }
 
-  private static async restoreTheme(context: common.UIAbilityContext, settingsStore?: SettingsPreferencesStore): Promise<void> {
-    await (settingsStore
-      ? ThemeSettings.loadFromStore(settingsStore, context)
-      : ThemeSettings.load(context)
+  private static async restoreTheme(
+    context: common.UIAbilityContext,
+    settingsStore?: SettingsPreferencesStore,
+  ): Promise<void> {
+    await (
+      settingsStore
+        ? ThemeSettings.loadFromStore(settingsStore, context)
+        : ThemeSettings.load(context)
     ).catch((error: Error) => {
       console.error('restore theme settings failed: ' + error.message)
       ThemeSettings.apply(context, ThemeSettings.MODE_AUTO)
     })
   }
 
-  private static async restoreThemeColor(context: common.UIAbilityContext, settingsStore?: SettingsPreferencesStore): Promise<void> {
-    await (settingsStore
-      ? ThemeColorSettings.loadFromStore(settingsStore)
-      : ThemeColorSettings.load(context)
+  private static async restoreThemeColor(
+    context: common.UIAbilityContext,
+    settingsStore?: SettingsPreferencesStore,
+  ): Promise<void> {
+    await (
+      settingsStore
+        ? ThemeColorSettings.loadFromStore(settingsStore)
+        : ThemeColorSettings.load(context)
     ).catch((error: Error) => {
       console.error('restore theme color settings failed: ' + error.message)
       ThemeColorSettings.apply(ThemeColorSettings.DEFAULT_COLOR)
     })
   }
 
-  private static async restoreAvatarAppearance(context: common.UIAbilityContext, settingsStore?: SettingsPreferencesStore): Promise<void> {
-    await (settingsStore
-      ? AvatarAppearanceSettings.loadFromStore(settingsStore)
-      : AvatarAppearanceSettings.load(context)
+  private static async restoreAvatarAppearance(
+    context: common.UIAbilityContext,
+    settingsStore?: SettingsPreferencesStore,
+  ): Promise<void> {
+    await (
+      settingsStore
+        ? AvatarAppearanceSettings.loadFromStore(settingsStore)
+        : AvatarAppearanceSettings.load(context)
     ).catch((error: Error) => {
       console.error('restore avatar appearance failed: ' + error.message)
       AvatarAppearanceSettings.apply(AvatarAppearanceSettings.APPEARANCE_SOFT)
     })
   }
 
-  private static async restoreMedia(context: common.UIAbilityContext, settingsStore?: SettingsPreferencesStore): Promise<void> {
-    await (settingsStore
-      ? MediaSettings.loadFromStore(settingsStore)
-      : MediaSettings.load(context)
+  private static async restoreMedia(
+    context: common.UIAbilityContext,
+    settingsStore?: SettingsPreferencesStore,
+  ): Promise<void> {
+    await (
+      settingsStore ? MediaSettings.loadFromStore(settingsStore) : MediaSettings.load(context)
     ).catch((error: Error) => {
       console.error('restore media settings failed: ' + error.message)
       MediaSettings.apply(true, false)
     })
   }
 
-  private static async restoreImageUpload(context: common.UIAbilityContext, settingsStore?: SettingsPreferencesStore): Promise<void> {
-    await (settingsStore
-      ? ImageUploadSettings.loadFromStore(settingsStore)
-      : ImageUploadSettings.load(context)
+  private static async restoreImageUpload(
+    context: common.UIAbilityContext,
+    settingsStore?: SettingsPreferencesStore,
+  ): Promise<void> {
+    await (
+      settingsStore
+        ? ImageUploadSettings.loadFromStore(settingsStore)
+        : ImageUploadSettings.load(context)
     ).catch((error: Error) => {
       console.error('restore image upload settings failed: ' + error.message)
       ImageUploadSettings.apply(ImageUploadSettings.defaultSnapshot())
     })
   }
 
-  private static async restoreNetworkProxy(context: common.UIAbilityContext, settingsStore?: SettingsPreferencesStore): Promise<void> {
-    await (settingsStore
-      ? NetworkProxySettings.loadFromStore(settingsStore)
-      : NetworkProxySettings.load(context)
+  private static async restoreRecentStickers(context: common.UIAbilityContext): Promise<void> {
+    await RecentStickerSettings.load(context).catch((error: Error) => {
+      console.error('restore recent stickers failed: ' + error.message)
+    })
+  }
+
+  private static async restoreNetworkProxy(
+    context: common.UIAbilityContext,
+    settingsStore?: SettingsPreferencesStore,
+  ): Promise<void> {
+    await (
+      settingsStore
+        ? NetworkProxySettings.loadFromStore(settingsStore)
+        : NetworkProxySettings.load(context)
     ).catch((error: Error) => {
       console.error('restore network proxy settings failed: ' + error.message)
       NetworkProxySettings.apply(NetworkProxySettings.defaultSnapshot())
     })
   }
 
-  private static async restoreReplyDisplay(context: common.UIAbilityContext, settingsStore?: SettingsPreferencesStore): Promise<void> {
-    await (settingsStore
-      ? ReplyDisplaySettings.loadFromStore(settingsStore)
-      : ReplyDisplaySettings.load(context)
+  private static async restoreReplyDisplay(
+    context: common.UIAbilityContext,
+    settingsStore?: SettingsPreferencesStore,
+  ): Promise<void> {
+    await (
+      settingsStore
+        ? ReplyDisplaySettings.loadFromStore(settingsStore)
+        : ReplyDisplaySettings.load(context)
     ).catch((error: Error) => {
       console.error('restore reply display settings failed: ' + error.message)
       ReplyDisplaySettings.apply(ReplyDisplaySettings.MODE_THREAD)
     })
   }
 
-  private static async restoreReading(context: common.UIAbilityContext, settingsStore?: SettingsPreferencesStore): Promise<void> {
-    await (settingsStore
-      ? ReadingSettings.loadFromStore(settingsStore)
-      : ReadingSettings.load(context)
+  private static async restoreReading(
+    context: common.UIAbilityContext,
+    settingsStore?: SettingsPreferencesStore,
+  ): Promise<void> {
+    await (
+      settingsStore ? ReadingSettings.loadFromStore(settingsStore) : ReadingSettings.load(context)
     ).catch((error: Error) => {
       console.error('restore reading settings failed: ' + error.message)
-      ReadingSettings.apply(ReadingSettings.TEXT_SCALE_DEFAULT, 20, ReadingSettings.DENSITY_STANDARD)
+      ReadingSettings.apply(
+        ReadingSettings.TEXT_SCALE_DEFAULT,
+        20,
+        ReadingSettings.DENSITY_STANDARD,
+      )
     })
   }
 
@@ -219,20 +273,26 @@ export class SettingsBootstrap {
     })
   }
 
-  private static async restoreHomeTabs(context: common.UIAbilityContext, settingsStore?: SettingsPreferencesStore): Promise<void> {
-    await (settingsStore
-      ? HomeTabSettings.loadFromStore(settingsStore)
-      : HomeTabSettings.load(context)
+  private static async restoreHomeTabs(
+    context: common.UIAbilityContext,
+    settingsStore?: SettingsPreferencesStore,
+  ): Promise<void> {
+    await (
+      settingsStore ? HomeTabSettings.loadFromStore(settingsStore) : HomeTabSettings.load(context)
     ).catch((error: Error) => {
       console.error('restore home tab settings failed: ' + error.message)
       HomeTabSettings.apply(HomeTabSettings.DEFAULT_AUTO_HIDE)
     })
   }
 
-  private static async restoreTopicDetailReplyAction(context: common.UIAbilityContext, settingsStore?: SettingsPreferencesStore): Promise<void> {
-    await (settingsStore
-      ? TopicDetailReplyActionSettings.loadFromStore(settingsStore)
-      : TopicDetailReplyActionSettings.load(context)
+  private static async restoreTopicDetailReplyAction(
+    context: common.UIAbilityContext,
+    settingsStore?: SettingsPreferencesStore,
+  ): Promise<void> {
+    await (
+      settingsStore
+        ? TopicDetailReplyActionSettings.loadFromStore(settingsStore)
+        : TopicDetailReplyActionSettings.load(context)
     ).catch((error: Error) => {
       console.error('restore topic detail reply action settings failed: ' + error.message)
       TopicDetailReplyActionSettings.apply(TopicDetailReplyActionSettings.DEFAULT_AUTO_HIDE)
@@ -261,17 +321,23 @@ export class SettingsBootstrap {
   }
 
   private static async restoreBlockedLists(context: common.UIAbilityContext): Promise<void> {
-    await BlockedListSettings.loadActive(context).then((snapshot) => {
-      BlockedListSettings.apply(snapshot)
-    }).catch((error: Error) => {
-      console.error('restore blocked lists failed: ' + error.message)
-    })
+    await BlockedListSettings.loadActive(context)
+      .then((snapshot) => {
+        BlockedListSettings.apply(snapshot)
+      })
+      .catch((error: Error) => {
+        console.error('restore blocked lists failed: ' + error.message)
+      })
   }
 
-  private static async restoreAutoDailyCheckin(context: common.UIAbilityContext, settingsStore?: SettingsPreferencesStore): Promise<void> {
-    await (settingsStore
-      ? AutoDailyCheckinSettings.loadFromStore(settingsStore)
-      : AutoDailyCheckinSettings.load(context)
+  private static async restoreAutoDailyCheckin(
+    context: common.UIAbilityContext,
+    settingsStore?: SettingsPreferencesStore,
+  ): Promise<void> {
+    await (
+      settingsStore
+        ? AutoDailyCheckinSettings.loadFromStore(settingsStore)
+        : AutoDailyCheckinSettings.load(context)
     ).catch((error: Error) => {
       console.error('restore auto daily check-in setting failed: ' + error.message)
       AutoDailyCheckinSettings.apply(true)
@@ -282,9 +348,10 @@ export class SettingsBootstrap {
     context: common.UIAbilityContext,
     settingsStore?: SettingsPreferencesStore,
   ): Promise<void> {
-    await (settingsStore
-      ? CloudSyncSettings.loadFromStore(settingsStore)
-      : CloudSyncSettings.load(context)
+    await (
+      settingsStore
+        ? CloudSyncSettings.loadFromStore(settingsStore)
+        : CloudSyncSettings.load(context)
     ).catch((error: Error) => {
       console.error('restore cloud sync setting failed: ' + error.message)
       CloudSyncSettings.apply(false)
@@ -301,20 +368,28 @@ export class SettingsBootstrap {
     })
   }
 
-  private static async restoreReplyCardStyle(context: common.UIAbilityContext, settingsStore?: SettingsPreferencesStore): Promise<void> {
-    await (settingsStore
-      ? ReplyCardStyleSettings.loadFromStore(settingsStore)
-      : ReplyCardStyleSettings.load(context)
+  private static async restoreReplyCardStyle(
+    context: common.UIAbilityContext,
+    settingsStore?: SettingsPreferencesStore,
+  ): Promise<void> {
+    await (
+      settingsStore
+        ? ReplyCardStyleSettings.loadFromStore(settingsStore)
+        : ReplyCardStyleSettings.load(context)
     ).catch((error: Error) => {
       console.error('restore reply card style failed: ' + error.message)
       ReplyCardStyleSettings.apply(ReplyCardStyleSettings.STYLE_STANDARD)
     })
   }
 
-  private static async restoreReplyActionAlignment(context: common.UIAbilityContext, settingsStore?: SettingsPreferencesStore): Promise<void> {
-    await (settingsStore
-      ? ReplyActionAlignmentSettings.loadFromStore(settingsStore)
-      : ReplyActionAlignmentSettings.load(context)
+  private static async restoreReplyActionAlignment(
+    context: common.UIAbilityContext,
+    settingsStore?: SettingsPreferencesStore,
+  ): Promise<void> {
+    await (
+      settingsStore
+        ? ReplyActionAlignmentSettings.loadFromStore(settingsStore)
+        : ReplyActionAlignmentSettings.load(context)
     ).catch((error: Error) => {
       console.error('restore reply action alignment failed: ' + error.message)
       ReplyActionAlignmentSettings.apply(ReplyActionAlignmentSettings.MODE_UNSET)
