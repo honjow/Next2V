@@ -42,6 +42,7 @@ import {
   connectUserProfileAction,
   connectUserProfileAppbar,
   connectWebLoginAction,
+  connectWebCheckinRunner,
   publishNotificationUnreadCount,
   publishPendingV2exUrl,
   AccountWebViewUrlState,
@@ -55,6 +56,8 @@ import {
   sendTopicEditorSubmit,
   TwoFactorState,
   UserProfileAppbarState,
+  WebCheckinRunnerState,
+  AutoDailyCheckinService,
   CookieJarSettings,
   FoldScreenUtil,
   HttpClient,
@@ -112,6 +115,7 @@ import {
   UserProfileIdentityCCBuilder,
 } from '../components/IndexTitleBarComponents'
 import { MainTabIcon } from '../components/MainTabIcon'
+import { DailyCheckinWebRunner } from '../components/DailyCheckinWebRunner'
 import { V2exTwoFactorPrompt } from '../components/V2exTwoFactorPrompt'
 import {
   TopicDetailTitleAction,
@@ -187,6 +191,8 @@ struct Index {
   private searchTitleFieldContent: ComponentContent<Object> | undefined = undefined;
   @Local private notificationRefreshKey: number = 0;
   @Local private accountRefreshKey: number = 0;
+  // Drives the nav-shell hidden ArkWeb daily check-in runner (auto check-in handoff; see WebCheckinRunnerState).
+  @Local private webCheckin: WebCheckinRunnerState = connectWebCheckinRunner();
   @Local private isFoldedAndUseOuterScreen: boolean = false;
   private http: HttpClient = HttpClient.getInstance();
   private notificationVm: NotificationCenterViewModel = new NotificationCenterViewModel(
@@ -599,9 +605,31 @@ struct Index {
           TwoFactorChallengeService.cancel()
         }),
       )
+      // Hidden 1×1 ArkWeb runner for AUTO daily check-in. V2EX's anti-bot blocks a headless HTTP redeem
+      // (verified on-device + by the user: a real Web engine passes, HTTP does not), so the auto check-in
+      // hands the redeem off to this runner. Always mounted in the nav shell so it can run at login /
+      // startup before the Me tab exists. Manual check-in uses its own runner inside AccountPage.
+      DailyCheckinWebRunner({
+        trigger: this.webCheckin.requestId,
+        baseUrl: this.webCheckin.baseUrl,
+        onRunResult: (status: string, rewardCoins: number) => {
+          this.onAutoCheckinWebResult(status, rewardCoins)
+        },
+      })
     }
     .width('100%')
     .height('100%')
+  }
+
+  private onAutoCheckinWebResult(status: string, rewardCoins: number): void {
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    AutoDailyCheckinService.handleWebResult(context, status, rewardCoins).catch(
+      (_error: Error) => {},
+    )
+    if (status === 'success' || status === 'already') {
+      // Refresh the account card so the freshly-claimed balance / 已签到 state shows.
+      this.accountRefreshKey++
+    }
   }
 
   @Builder

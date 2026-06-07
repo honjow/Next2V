@@ -79,27 +79,26 @@ for (const loc of ['base', 'en_US', 'zh_CN', 'zh_HK', 'zh_TW', 'ja_JP', 'ko_KR']
   check(json.string.some((s) => s.name === 'daily_checkin_reward_toast'), `i18n: daily_checkin_reward_toast in ${loc}`)
 }
 
-// ── redeem goes over plain HTTP; the hidden ArkWeb runner was removed ────────────
-// The hidden-WebView runner was over-engineering: V2EX's "请用一个干净安装的浏览器重试" gate is an
-// intermittent anti-abuse wall that hits an HTTP GET and a real ArkWeb navigation alike (verified
-// on-device), not a permanent fingerprint block — so all three surfaces redeem over plain HTTP like the
-// rest of the V2EX client ecosystem, and the day breadcrumb is persisted only on a confirmed claim so a
-// walled attempt retries on the next app open instead of burning the whole day.
-check(/redeemDailyMissionWithCookie/.test(auto), 'auto check-in redeems over HTTP (redeemDailyMissionWithCookie)')
-check(/const claimed\s*=\s*!redeemed\.mission\.canRedeem/.test(auto),
-  'auto check-in gates success on a confirmed claim (claimed = !canRedeem)')
+// ── redeem goes through a real ArkWeb engine; a headless HTTP redeem cannot pass ──
+// V2EX's "请用一个干净安装的浏览器重试" gate blocks a headless HTTP redeem, but a real ArkWeb engine passes
+// it (verified on-device, and by the user checking in one-shot via the in-app WebView while an HTTP redeem
+// kept failing). So AUTO check-in and the AccountPage manual button redeem through the hidden
+// DailyCheckinWebRunner; AccountDetailPage keeps its long-standing HTTP redeem. The day breadcrumb is
+// persisted only on a confirmed claim (handleWebResult), so a failed run retries on the next app open.
+check(/requestWebRedeem/.test(auto) && /connectWebCheckinRunner/.test(auto),
+  'auto check-in hands the redeem off to the hidden web runner')
+check(/handleWebResult/.test(auto), 'auto check-in persists the result via the runner callback (handleWebResult)')
 check(/saveLastSuccessDate/.test(auto), 'auto check-in persists the success breadcrumb on a confirmed claim')
-check(!/requestWebRedeem/.test(auto) && !/connectWebCheckinRunner/.test(auto) && !/handleWebResult/.test(auto),
-  'auto check-in no longer uses the hidden web runner')
-check(/redeemDailyMissionWithCookie/.test(acc), 'manual check-in (AccountPage) redeems over HTTP')
+check(/checkinTrigger/.test(acc) && /DailyCheckinWebRunner/.test(acc),
+  'manual check-in (AccountPage) drives its own hidden web runner')
 check(/redeemDailyMissionWithCookie/.test(detail), 'manual check-in (AccountDetailPage) redeems over HTTP')
-check(!fs.existsSync(path.join(REPO, 'entry/src/main/ets/components/DailyCheckinWebRunner.ets')),
-  'hidden DailyCheckinWebRunner component removed')
-check(!fs.existsSync(path.join(REPO, 'shared/src/main/ets/state/WebCheckinRunnerState.ets')),
-  'WebCheckinRunnerState command bus removed')
+check(fs.existsSync(path.join(REPO, 'entry/src/main/ets/components/DailyCheckinWebRunner.ets')),
+  'hidden DailyCheckinWebRunner component present')
+check(fs.existsSync(path.join(REPO, 'shared/src/main/ets/state/WebCheckinRunnerState.ets')),
+  'WebCheckinRunnerState command bus present')
 const index = read('entry/src/main/ets/pages/Index.ets')
-check(!/DailyCheckinWebRunner/.test(index) && !/WebCheckinRunnerState/.test(index),
-  'Index no longer mounts the hidden web runner')
+check(/DailyCheckinWebRunner/.test(index) && /connectWebCheckinRunner/.test(index),
+  'Index mounts the hidden web runner for auto check-in')
 
 for (const f of failures) console.error(`FAIL  ${f}`)
 console.log(`\ndaily check-in contract: ${ok.length} checks passed, ${failures.length} failure(s)`)

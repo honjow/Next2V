@@ -63,6 +63,7 @@ import {
 } from 'shared'
 import { AccountLocalContentCoordinator } from '../model/AccountLocalContentCoordinator'
 import { AccountPageCoordinator } from '../model/AccountPageCoordinator'
+import { DailyCheckinWebRunner } from '../components/DailyCheckinWebRunner'
 @ComponentV2
 export struct AccountDashboardPage {
   // ns from NavStackHolder (was @Consume('ns')).
@@ -99,6 +100,8 @@ export struct AccountDashboardPage {
   @Local private accountMetaError: string = '';
   @Local private isAccountMetaLoading: boolean = false;
   @Local private isDailyRedeeming: boolean = false;
+  // Bumped to run the hidden-WebView daily check-in (HTTP redeem is blocked by V2EX's anti-bot).
+  @Local private checkinTrigger: number = 0;
   private http: HttpClient = HttpClient.getInstance();
   private api: ApiService = new ApiService();
   private localStatsRequestId: number = 0;
@@ -169,6 +172,15 @@ export struct AccountDashboardPage {
 
   build() {
     Column() {
+      // Hidden 1×1 ArkWeb runner for the manual 签到 button (HTTP redeem is blocked by V2EX's anti-bot;
+      // a real Web engine passes). Bumped via checkinTrigger; reports back through onCheckinResult.
+      DailyCheckinWebRunner({
+        trigger: this.checkinTrigger,
+        baseUrl: this.http.getBaseUrl(),
+        onRunResult: (status: string, rewardCoins: number) => {
+          this.onCheckinResult(status, rewardCoins)
+        },
+      })
       SecondaryListScaffold({
         scroller: this.scroller,
         bottomPadding: ThemeConstants.FLOAT_BAR_HEIGHT + ThemeConstants.SPACE_MD,
@@ -1028,41 +1040,51 @@ export struct AccountDashboardPage {
         .catch((_error: Error) => {})
       return
     }
-    // Redeem over plain HTTP (same path AccountDetailPage uses). V2EX intermittently serves an anti-abuse
-    // wall on the redeem endpoint, which redeemDailyMissionWithCookie surfaces as a thrown error → toast.
+    // V2EX's anti-bot blocks a headless HTTP redeem (verified on device and by the user: a real Web engine
+    // passes, an HTTP request does not), so run it inside the hidden ArkWeb runner mounted in this page. It
+    // reports back via onCheckinResult.
     this.isDailyRedeeming = true
     this.accountMetaError = ''
     DiagnosticLogger.info('account', 'account_daily_redeem_start', { canRedeem: true })
-    this.api
-      .redeemDailyMissionWithCookie(cookie)
-      .then((redeemed: V2exDailyRedeemResult) => {
-        this.dailyMission = redeemed.mission
-        DiagnosticLogger.info('account', 'account_daily_redeem_result', {
-          status: redeemed.mission.canRedeem ? 'failed' : 'success',
-          rewardCoins: redeemed.rewardCoins,
+    this.checkinTrigger = this.checkinTrigger + 1
+  }
+
+  private onCheckinResult(status: string, rewardCoins: number): void {
+    this.isDailyRedeeming = false
+    DiagnosticLogger.info('account', 'account_daily_redeem_result', {
+      status: status,
+      rewardCoins: rewardCoins,
+    })
+    if (status === 'success') {
+      const toastMessage =
+        rewardCoins > 0
+          ? AppStrings.format(
+              AppStrings.text(AppStrings.R_DAILY_CHECKIN_REWARD_TOAST, 'Checked in: +{0} bronze'),
+              [`${rewardCoins}`],
+            )
+          : AppStrings.text(AppStrings.R_CHECKIN_COMPLETED, 'Check-in completed')
+      promptAction.openToast({ message: toastMessage }).catch((_error: Error) => {})
+      this.loadAccountMeta(true)
+    } else if (status === 'already') {
+      promptAction
+        .openToast({
+          message: AppStrings.text(
+            AppStrings.R_ALREADY_CHECKED_IN_TODAY,
+            'Already checked in today',
+          ),
         })
-        const toastMessage =
-          redeemed.rewardCoins > 0
-            ? AppStrings.format(
-                AppStrings.text(AppStrings.R_DAILY_CHECKIN_REWARD_TOAST, 'Checked in: +{0} bronze'),
-                [`${redeemed.rewardCoins}`],
-              )
-            : AppStrings.text(AppStrings.R_CHECKIN_COMPLETED, 'Check-in completed')
-        promptAction.openToast({ message: toastMessage }).catch((_error: Error) => {})
-        this.loadAccountMeta(true)
-      })
-      .catch((error: Error) => {
-        const message = translateApiError(error)
-        this.accountMetaError = message
-        DiagnosticLogger.info('account', 'account_daily_redeem_result', {
-          status: 'error',
-          rewardCoins: 0,
+        .catch((_error: Error) => {})
+      this.loadAccountMeta(true)
+    } else {
+      promptAction
+        .openToast({
+          message: AppStrings.text(
+            AppStrings.R_API_ERROR_CHECKIN_NOT_AVAILABLE,
+            'Check-in unavailable',
+          ),
         })
-        promptAction.openToast({ message: message }).catch((_error: Error) => {})
-      })
-      .finally(() => {
-        this.isDailyRedeeming = false
-      })
+        .catch((_error: Error) => {})
+    }
   }
 
   private clearDashboardRefreshTimer(): void {

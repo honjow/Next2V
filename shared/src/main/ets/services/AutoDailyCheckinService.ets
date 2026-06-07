@@ -3,6 +3,8 @@ import { promptAction } from '@kit.ArkUI'
 import { AutoDailyCheckinSettings } from '../settings/AutoDailyCheckinSettings'
 import { DiagnosticLogger } from '../diagnostics/DiagnosticLogger'
 import { ApiService } from '../network/ApiService'
+import { HttpClient } from '../network/HttpClient'
+import { connectWebCheckinRunner } from '../state/WebCheckinRunnerState'
 import { AppStrings } from '../i18n/AppStrings'
 import type { V2exDailyMission } from '../network/NetworkTypes'
 
@@ -77,12 +79,7 @@ export class AutoDailyCheckinService {
         const alreadyDone = AutoDailyCheckinService.isAlreadyDoneMessage(mission.message)
         // Only a definitive already-done persists the breadcrumb (saveSuccessIfAlreadyDone). A transient
         // 'daily_checkin_unavailable' persists nothing → the next app open retries.
-        await AutoDailyCheckinService.saveSuccessIfAlreadyDone(
-          context,
-          today,
-          attemptIdentity,
-          mission,
-        )
+        await AutoDailyCheckinService.saveSuccessIfAlreadyDone(context, today, mission)
         DiagnosticLogger.info('auto_daily_checkin', 'auto_daily_checkin_not_redeemable', {
           source: source,
           alreadyDone: alreadyDone,
@@ -90,34 +87,18 @@ export class AutoDailyCheckinService {
         })
         return AutoDailyCheckinService.result(true, false, 'not-redeemable', mission.message)
       }
-      // Redeem over plain HTTP (the same path the manual check-in uses; the hidden-WebView runner is gone).
-      // V2EX intermittently serves an anti-abuse wall on the redeem endpoint ("请用一个干净安装的浏览器重试");
-      // redeemDailyMissionWithCookie surfaces that as a thrown error (the page is still claimable afterwards),
-      // caught below. The day breadcrumb is persisted ONLY on a confirmed claim — a walled / failed redeem
-      // leaves no breadcrumb, so the next app open retries instead of burning the whole day.
+      // Redeemable → mark the day attempted now (so a reopen before handleWebResult persists success does
+      // not re-trigger the web redeem).
+      await AutoDailyCheckinSettings.saveLastAttemptDate(context, today, attemptIdentity)
       DiagnosticLogger.info('auto_daily_checkin', 'auto_daily_checkin_redeem_request', {
         source: source,
       })
-      const redeemed = await AutoDailyCheckinService.api.redeemDailyMissionWithCookie(cleanCookie)
-      const claimed = !redeemed.mission.canRedeem
-      DiagnosticLogger.info('auto_daily_checkin', 'auto_daily_checkin_redeem_result', {
-        source: source,
-        claimed: claimed,
-        reward: redeemed.rewardCoins,
-      })
-      if (claimed) {
-        await AutoDailyCheckinSettings.saveLastSuccessDate(context, today)
-        await AutoDailyCheckinSettings.saveLastAttemptDate(context, today, attemptIdentity)
-        AutoDailyCheckinService.showRewardToast(redeemed.rewardCoins)
-        return AutoDailyCheckinService.result(
-          true,
-          true,
-          'redeemed',
-          redeemed.mission.message,
-          redeemed.rewardCoins,
-        )
-      }
-      return AutoDailyCheckinService.result(true, false, 'redeem-failed', redeemed.mission.message)
+      // The redeem itself can't go over HTTP (V2EX's anti-bot rejects a headless request), so hand off to
+      // the globally-mounted hidden ArkWeb runner — a real browser engine that passes the check. It reports
+      // back through handleWebResult(), where the last-success breadcrumb + reward toast are written once
+      // the navigation has actually claimed.
+      AutoDailyCheckinService.requestWebRedeem()
+      return AutoDailyCheckinService.result(true, false, 'redeem-requested', mission.message)
     } catch (error) {
       const e = error as Error
       DiagnosticLogger.warn(
@@ -132,17 +113,55 @@ export class AutoDailyCheckinService {
     }
   }
 
+  // Ask the nav-shell hidden Web runner to perform the redeem for the current account (whose cookie the
+  // runner restores into the Web cookie jar). Fire-and-forget — the result returns via handleWebResult().
+  private static requestWebRedeem(): void {
+    const runner = connectWebCheckinRunner()
+    runner.baseUrl = HttpClient.getInstance().getBaseUrl()
+    runner.requestId = runner.requestId + 1
+  }
+
+  // Called by the nav-shell runner when the hidden Web check-in finishes. Persists the success breadcrumb
+  // and surfaces the reward toast (auto check-in has no visible caller that would otherwise show it).
+  static async handleWebResult(
+    context: common.UIAbilityContext,
+    status: string,
+    rewardCoins: number,
+  ): Promise<void> {
+    DiagnosticLogger.info('auto_daily_checkin', 'auto_daily_checkin_web_result', {
+      status: status,
+      rewardCoins: rewardCoins,
+    })
+    if (status !== 'success' && status !== 'already') {
+      return
+    }
+    try {
+      await AutoDailyCheckinSettings.saveLastSuccessDate(
+        context,
+        AutoDailyCheckinService.localDateString(),
+      )
+    } catch (error) {
+      const e = error as Error
+      DiagnosticLogger.warn(
+        'auto_daily_checkin',
+        'auto_daily_checkin_web_persist_error',
+        { errorKind: e.name || 'Error' },
+        e,
+      )
+    }
+    if (status === 'success') {
+      AutoDailyCheckinService.showRewardToast(rewardCoins)
+    }
+  }
+
   private static async saveSuccessIfAlreadyDone(
     context: common.UIAbilityContext,
     today: string,
-    attemptIdentity: string,
     mission: V2exDailyMission,
   ): Promise<void> {
     const message = mission.message || ''
     if (AutoDailyCheckinService.isAlreadyDoneMessage(message)) {
       await AutoDailyCheckinSettings.saveLastSuccessDate(context, today)
-      // Also stamp the gate breadcrumb so a reopen skips the redundant mission re-check for the rest of today.
-      await AutoDailyCheckinSettings.saveLastAttemptDate(context, today, attemptIdentity)
     }
   }
 
