@@ -74,7 +74,9 @@ assert.doesNotMatch(
   'confirmSubmit() must not show a confirmation dialog for ordinary reply submit',
 )
 
-// (2) Validates via the existing coordinator and emits a CLEAN snapshot to the parent.
+// (2) Validates via the existing coordinator and emits a CLEAN snapshot to the parent. The snapshot is the
+// validated check.content with sticker codes "[name]" expanded to bare image URLs at submit time (the field
+// stays readable while editing; expansion happens only on submit — see expandStickerCodes).
 assert.match(
   confirmSubmit,
   /ReplyComposerCoordinator\.checkSubmit\(/,
@@ -82,11 +84,11 @@ assert.match(
 )
 assert.match(
   confirmSubmit,
-  /this\.submitAction\(check\.content\)/,
-  'confirmSubmit() must emit the clean content snapshot (check.content) to the parent',
+  /this\.submitAction\(this\.expandStickerCodes\(check\.content\)\)/,
+  'confirmSubmit() must emit the clean check.content snapshot (with sticker codes expanded) to the parent',
 )
 // Login/empty guards still short-circuit BEFORE any emit (auth not bypassed).
-const emitIndex = confirmSubmit.indexOf('this.submitAction(check.content)')
+const emitIndex = confirmSubmit.indexOf('this.submitAction(this.expandStickerCodes(check.content))')
 const loginGuardIndex = confirmSubmit.indexOf("check.reason === 'loginRequired'")
 assert.ok(
   loginGuardIndex >= 0 && loginGuardIndex < emitIndex,
