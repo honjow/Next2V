@@ -3066,7 +3066,7 @@
     },
     {
       "name": "image_upload_provider_smms",
-      "value": "sm.ms"
+      "value": "S.EE"
     },
     {
       "name": "image_upload_imgbb_hint",
@@ -3086,7 +3086,7 @@
     },
     {
       "name": "image_upload_smms_hint",
-      "value": "上載到 sm.ms 需自備免費 API Token，可在下方註冊取得；中國大陸可能需 App 代理。"
+      "value": "上載到 S.EE（原 sm.ms）需自備 API Key，可在下方註冊取得；中國大陸可能需 App 代理。"
     },
     {
       "name": "image_upload_smms_token_label",
@@ -3094,11 +3094,11 @@
     },
     {
       "name": "image_upload_smms_token_placeholder",
-      "value": "輸入你的 sm.ms API Token"
+      "value": "輸入你的 S.EE API Key"
     },
     {
       "name": "image_upload_smms_get_token",
-      "value": "取得 sm.ms API Token"
+      "value": "取得 S.EE API Key"
     },
     {
       "name": "daily_checkin_reward_toast",

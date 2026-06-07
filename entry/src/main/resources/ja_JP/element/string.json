@@ -3066,7 +3066,7 @@
     },
     {
       "name": "image_upload_provider_smms",
-      "value": "sm.ms"
+      "value": "S.EE"
     },
     {
       "name": "image_upload_imgbb_hint",
@@ -3086,7 +3086,7 @@
     },
     {
       "name": "image_upload_smms_hint",
-      "value": "sm.ms へのアップロードには自分の無料 API Token が必要です。下から登録して取得できます。中国大陸ではアプリのプロキシが必要な場合があります。"
+      "value": "S.EE（旧 sm.ms）へのアップロードには自分の API キーが必要です。下から登録して取得できます。中国大陸ではアプリのプロキシが必要な場合があります。"
     },
     {
       "name": "image_upload_smms_token_label",
@@ -3094,11 +3094,11 @@
     },
     {
       "name": "image_upload_smms_token_placeholder",
-      "value": "sm.ms の API トークンを入力"
+      "value": "S.EE の API キーを入力"
     },
     {
       "name": "image_upload_smms_get_token",
-      "value": "sm.ms API Token 取得"
+      "value": "S.EE API キーを取得"
     },
     {
       "name": "daily_checkin_reward_toast",

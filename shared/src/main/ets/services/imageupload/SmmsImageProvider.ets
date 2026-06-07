@@ -3,7 +3,8 @@ import { ImageUploadClient, ImageUploadHttpResult } from '../../network/ImageUpl
 import { ImageUploadSettings } from '../../settings/ImageUploadSettings'
 import { ImageBytesUtils } from '../../utils/ImageBytesUtils'
 
-const SMMS_UPLOAD_URL: string = 'https://sm.ms/api/v2/upload'
+// sm.ms migrated to s.ee (2026-02). The SM.MS-compatible upload endpoint is /api/v1/file/upload on s.ee.
+const SMMS_UPLOAD_URL: string = 'https://s.ee/api/v1/file/upload'
 
 interface SmmsData {
   url?: string
@@ -20,13 +21,20 @@ interface SmmsResponse {
 }
 
 /**
- * sm.ms (v2) upload with the user's own API token. Unlike ImgBB/Imgur, sm.ms only accepts a binary
- * `multipart/form-data` `smfile` part (no base64 field), so it uses the `postMultipart` path. A re-upload
- * of the same bytes is NOT an error — sm.ms returns the existing URL (code `image_repeated`), which we
- * surface as a success. The host (sm.ms / CDN i.loli.net) often needs the app's proxy from mainland China.
+ * S.EE upload (S.EE is the former sm.ms, migrated 2026-02) with the user's own API key. Uses the
+ * SM.MS-compatible endpoint `https://s.ee/api/v1/file/upload`; like sm.ms it accepts a binary
+ * `multipart/form-data` `smfile` part (no base64 field), so it uses the `postMultipart` path, and the JSON
+ * response keeps the same `success` / `data.url` / `data.hash` shape. The `image_repeated` duplicate path
+ * below is legacy sm.ms behavior kept as a harmless fallback (s.ee may not emit it). Users need a NEW s.ee
+ * API key (s.ee/user/developers) — old sm.ms tokens do not carry over. Often needs the app proxy from
+ * mainland China.
  */
 export class SmmsImageProvider implements ImageUploadProvider {
-  async uploadImage(bytes: Uint8Array, mimeType: string, fileName: string): Promise<ImageUploadResult> {
+  async uploadImage(
+    bytes: Uint8Array,
+    mimeType: string,
+    fileName: string,
+  ): Promise<ImageUploadResult> {
     const token = ImageUploadSettings.current().smmsToken
     if (!token) {
       throw new Error(ImageUploadErrorCode.NO_CREDENTIAL)
@@ -39,7 +47,14 @@ export class SmmsImageProvider implements ImageUploadProvider {
     }
     let httpResult: ImageUploadHttpResult = { responseCode: 0, body: '' }
     try {
-      httpResult = await ImageUploadClient.postMultipart(SMMS_UPLOAD_URL, headers, 'smfile', name, mimeType, bytes)
+      httpResult = await ImageUploadClient.postMultipart(
+        SMMS_UPLOAD_URL,
+        headers,
+        'smfile',
+        name,
+        mimeType,
+        bytes,
+      )
     } catch (_error) {
       throw new Error(ImageUploadErrorCode.NETWORK)
     }

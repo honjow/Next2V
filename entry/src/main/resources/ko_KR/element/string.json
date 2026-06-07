@@ -3066,7 +3066,7 @@
     },
     {
       "name": "image_upload_provider_smms",
-      "value": "sm.ms"
+      "value": "S.EE"
     },
     {
       "name": "image_upload_imgbb_hint",
@@ -3086,7 +3086,7 @@
     },
     {
       "name": "image_upload_smms_hint",
-      "value": "sm.ms 업로드에는 본인의 무료 API Token이 필요합니다. 아래에서 등록해 받을 수 있습니다. 중국 본토에서는 앱 프록시가 필요할 수 있습니다."
+      "value": "S.EE(구 sm.ms) 업로드에는 본인의 API 키가 필요합니다. 아래에서 등록해 받을 수 있습니다. 중국 본토에서는 앱 프록시가 필요할 수 있습니다."
     },
     {
       "name": "image_upload_smms_token_label",
@@ -3094,11 +3094,11 @@
     },
     {
       "name": "image_upload_smms_token_placeholder",
-      "value": "sm.ms API 토큰 입력"
+      "value": "S.EE API 키 입력"
     },
     {
       "name": "image_upload_smms_get_token",
-      "value": "sm.ms API Token 받기"
+      "value": "S.EE API 키 받기"
     },
     {
       "name": "daily_checkin_reward_toast",

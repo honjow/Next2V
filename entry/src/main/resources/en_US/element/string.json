@@ -3066,7 +3066,7 @@
     },
     {
       "name": "image_upload_provider_smms",
-      "value": "sm.ms"
+      "value": "S.EE"
     },
     {
       "name": "image_upload_imgbb_hint",
@@ -3086,7 +3086,7 @@
     },
     {
       "name": "image_upload_smms_hint",
-      "value": "Uploading to sm.ms requires your own free API Token; register below to get one. Mainland China may need app proxy."
+      "value": "Uploading to S.EE (formerly sm.ms) needs your own API Key; register below to get one. Mainland China may need an app proxy."
     },
     {
       "name": "image_upload_smms_token_label",
@@ -3094,11 +3094,11 @@
     },
     {
       "name": "image_upload_smms_token_placeholder",
-      "value": "Enter your sm.ms API token"
+      "value": "Enter your S.EE API key"
     },
     {
       "name": "image_upload_smms_get_token",
-      "value": "Get sm.ms API Token"
+      "value": "Get S.EE API Key"
     },
     {
       "name": "daily_checkin_reward_toast",

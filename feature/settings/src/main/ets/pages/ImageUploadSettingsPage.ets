@@ -16,7 +16,7 @@ import {
 import { SettingsSectionHeader } from '../components/SettingsPageComponents'
 
 /**
- * Image-upload configuration: pick the active host (ImgBB / sm.ms / Imgur) and set its credential. Each
+ * Image-upload configuration: pick the active host (ImgBB / S.EE / Imgur) and set its credential. Each
  * host keeps its own credential; switching the radio persists the active choice immediately (so the editor
  * uses it), while the credential field is saved by the Save button. Imgur is kept only for users who hold a
  * Client-ID from before Imgur closed new app registration.
@@ -25,10 +25,10 @@ import { SettingsSectionHeader } from '../components/SettingsPageComponents'
 export struct ImageUploadSettingsPage {
   // Live config mirror. Read in build() (the "configured" subtitles + the active provider) so the page
   // reflects saves; this page is the sole writer.
-  private image: ImageUploadState = connectImageUpload()
-  @Local private selectedProvider: string = 'imgbb'
+  private image: ImageUploadState = connectImageUpload();
+  @Local private selectedProvider: string = 'imgbb';
   // The credential field for the currently selected provider; reseeded whenever the provider changes.
-  @Local private credentialText: string = ''
+  @Local private credentialText: string = '';
 
   aboutToAppear(): void {
     this.selectedProvider = ImageUploadSettings.normalizeProvider(this.image.provider)
@@ -78,7 +78,9 @@ export struct ImageUploadSettingsPage {
       subtitle: this.configuredSubtitle(id),
       showChevron: false,
       prefixBuilderParam: (): void => this.ProviderRadio(id),
-      action: () => { this.selectProvider(id) },
+      action: () => {
+        this.selectProvider(id)
+      },
     })
   }
 
@@ -110,11 +112,11 @@ export struct ImageUploadSettingsPage {
           AppTextField({
             text: this.credentialText,
             placeholder: this.credentialPlaceholder(),
-            onTextChange: (value: string) => { this.credentialText = value },
-          })
-            .width('100%')
-        }
-        .width('100%')
+            onTextChange: (value: string) => {
+              this.credentialText = value
+            },
+          }).width('100%')
+        }.width('100%')
         Button(AppStrings.R_COMMON_SAVE)
           .type(ButtonType.Normal)
           .height(ThemeConstants.TOUCH_TARGET_SM)
@@ -123,9 +125,10 @@ export struct ImageUploadSettingsPage {
           .backgroundColor($r('sys.color.ohos_id_color_button_normal'))
           .fontSize(ThemeConstants.FONT_SIZE_BODY)
           .fontColor(ThemeConstants.BRAND_PRIMARY)
-          .onClick(() => { this.save() })
-      }
-      .width('100%')
+          .onClick(() => {
+            this.save()
+          })
+      }.width('100%')
     }
   }
 
@@ -136,13 +139,17 @@ export struct ImageUploadSettingsPage {
         ConciseListRow({
           title: AppStrings.R_IMAGE_UPLOAD_IMGBB_GET_KEY,
           showChevron: true,
-          action: () => { this.openUrl('https://api.imgbb.com/') },
+          action: () => {
+            this.openUrl('https://api.imgbb.com/')
+          },
         })
       } else if (this.selectedProvider === ImageUploadSettings.PROVIDER_SMMS) {
         ConciseListRow({
           title: AppStrings.R_IMAGE_UPLOAD_SMMS_GET_TOKEN,
           showChevron: true,
-          action: () => { this.openUrl('https://sm.ms/home/apitoken') },
+          action: () => {
+            this.openUrl('https://s.ee/user/developers')
+          },
         })
       }
     }
@@ -189,7 +196,9 @@ export struct ImageUploadSettingsPage {
   }
 
   private configuredSubtitle(id: string): ResourceStr {
-    return this.storedCredential(id) ? AppStrings.R_IMAGE_UPLOAD_SUMMARY_CONFIGURED : $r('app.string.proxy_not_configured')
+    return this.storedCredential(id)
+      ? AppStrings.R_IMAGE_UPLOAD_SUMMARY_CONFIGURED
+      : $r('app.string.proxy_not_configured')
   }
 
   private storedCredential(id: string): string {
@@ -222,9 +231,14 @@ export struct ImageUploadSettingsPage {
     const provider = ImageUploadSettings.normalizeProvider(this.selectedProvider)
     const snapshot: ImageUploadSettingsSnapshot = {
       provider: provider,
-      imgbbApiKey: provider === ImageUploadSettings.PROVIDER_IMGBB ? activeCredential : this.image.imgbbApiKey,
-      smmsToken: provider === ImageUploadSettings.PROVIDER_SMMS ? activeCredential : this.image.smmsToken,
-      imgurClientId: provider === ImageUploadSettings.PROVIDER_IMGUR ? activeCredential : this.image.imgurClientId,
+      imgbbApiKey:
+        provider === ImageUploadSettings.PROVIDER_IMGBB ? activeCredential : this.image.imgbbApiKey,
+      smmsToken:
+        provider === ImageUploadSettings.PROVIDER_SMMS ? activeCredential : this.image.smmsToken,
+      imgurClientId:
+        provider === ImageUploadSettings.PROVIDER_IMGUR
+          ? activeCredential
+          : this.image.imgurClientId,
     }
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     ImageUploadSettings.save(context, snapshot)
@@ -235,7 +249,9 @@ export struct ImageUploadSettingsPage {
       })
       .catch((error: Error) => {
         if (notify) {
-          this.showToast(error.message || AppStrings.text(AppStrings.R_COMMON_SAVE_FAILED, 'Save failed'))
+          this.showToast(
+            error.message || AppStrings.text(AppStrings.R_COMMON_SAVE_FAILED, 'Save failed'),
+          )
         }
       })
   }
