@@ -106,11 +106,11 @@ export const BUILTIN_STICKERS: StickerItem[] = [
 
 /**
  * Sticker cell side (vp). Grounded in the body text, not picked arbitrarily: the inner emoji is the cell
- * minus its SPACE_XS padding on each side (32 - 8 = 24vp), which is ~1.3x the ~18vp body-text line — these
+ * minus its SPACE_XS padding on each side (36 - 8 = 28vp), which is ~1.5x the ~18vp body-text line — these
  * are small 黄豆/微博-style emoji that read alongside text, NOT large stickers. The same physical size renders
  * on every device because the column COUNT (not the cell size) adapts to the screen width (auto-stretch).
  */
-const STICKER_CELL_VP: number = 32
+const STICKER_CELL_VP: number = 36
 
 /**
  * One sticker cell with its own load state, so each tile can show a skeleton placeholder until its network
@@ -191,7 +191,7 @@ export struct StickerPickerPanel {
         (cell: StickerCell) => cell.url,
       )
     }
-    // Responsive + text-scaled: fixed 32vp cells (the ~24vp emoji inside is ~1.3x the 14vp/~18vp body-text
+    // Responsive + text-scaled: fixed 36vp cells (the ~28vp emoji inside is ~1.5x the 14vp/~18vp body-text
     // line — a small emoji, not a big sticker), column count auto-computed for the screen width via
     // auto-stretch (same physical size on every device; leftover width goes into the gaps), instead of a
     // fixed 8/row that shrank stickers on narrow/high-density screens and ballooned them on tablets/wide ones.
