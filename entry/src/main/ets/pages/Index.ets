@@ -26,6 +26,7 @@ import {
   connectAuthSessionSignal,
   connectHomeTabAutoHide,
   connectImageHero,
+  connectThemeDisplay,
   connectImagePreviewAction,
   connectLocalDataSignal,
   connectNativeLoginShown,
@@ -777,20 +778,20 @@ struct Index {
     if (descriptor.family === 'nativeLogin') {
       this.notifyNativeLoginShown()
     }
-    // Hide the status bar ONLY after the push transition finishes (onShown), so the topic page is already
-    // fully covered by the preview when its avoid-area reflow happens — the reflow is invisible.
+    // Make the status-bar ICONS transparent while previewing (only on the dark image canvas). We do NOT remove
+    // the status bar: removing it collapsed the window's top avoid area, which reflowed the page underneath and
+    // caused a visible "bar removed then re-added" jump on return. Changing only the icon color leaves the bar
+    // (and the avoid area) in place, so the layout never moves.
     if (descriptor.family === 'imagePreview') {
-      this.setImagePreviewImmersive(true)
+      this.setImagePreviewStatusIconsHidden(true)
     }
   }
 
   private onDestinationWillHide(descriptor: IndexDestinationDescriptor): void {
-    // Restore the status bar BEFORE the pop transition starts (onWillHide fires ahead of the animation). The
-    // avoid-area reflow then happens while the preview still covers the topic page, so the topic is revealed
-    // already at its final layout — no jump on return. (Restoring in aboutToDisappear was too late: it ran
-    // after the topic page was already visible, which is what produced the visible jump.)
+    // Restore the status-bar icon color before the pop transition starts, so the icons fade back in as the
+    // preview leaves — with no layout movement (the bar was never removed, only its icon color changed).
     if (descriptor.family === 'imagePreview') {
-      this.setImagePreviewImmersive(false)
+      this.setImagePreviewStatusIconsHidden(false)
     }
   }
 
@@ -802,18 +803,22 @@ struct Index {
     }
   }
 
-  // Toggle full-screen immersion for the image preview route. immersive=true hides the status bar (keeps the
-  // navigation indicator); false restores both. The app is already setWindowLayoutFullScreen(true), so this
-  // only changes whether the status-bar glyphs draw — content stays edge-to-edge either way.
-  private setImagePreviewImmersive(immersive: boolean): void {
+  // Make the status-bar icons transparent (hidden=true) while the image preview is open, and restore the
+  // theme-correct icon color (hidden=false) on the way out. Crucially this is a pure visual/color change via
+  // setWindowSystemBarProperties; we never disable or remove the bar, so the window's top avoid area never
+  // changes and no page underneath ever reflows — eliminating the "bar removed then re-added" jump. The app
+  // otherwise relies on system auto-contrast (it never sets the icon color), so
+  // on restore we set it explicitly to match the current theme (dark theme -> light icons, light -> dark).
+  private setImagePreviewStatusIconsHidden(hidden: boolean): void {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    const names: Array<'status' | 'navigation'> = immersive
-      ? ['navigation']
-      : ['status', 'navigation']
+    const restoreColor: string = connectThemeDisplay().effectiveDark ? '#FFFFFFFF' : '#FF000000'
+    const contentColor: string = hidden ? '#00000000' : restoreColor
     window
       .getLastWindow(context)
       .then((win: window.Window) => {
-        win.setWindowSystemBarEnable(names).catch((_error: Error) => {})
+        win
+          .setWindowSystemBarProperties({ statusBarContentColor: contentColor })
+          .catch((_error: Error) => {})
       })
       .catch((_error: Error) => {})
   }

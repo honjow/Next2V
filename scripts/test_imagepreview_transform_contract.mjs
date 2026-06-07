@@ -64,11 +64,15 @@ for (const v1 of [/@State\b/, /@Prop\b/, /@Link\b/, /@Watch\b/, /@Provide\b/, /@
   assert.doesNotMatch(page.replace(/\/\/.*$/gm, ''), v1, `no V1 decorator ${v1} in ImagePreviewPage`)
 }
 
-// ── Immersive status bar without a return jump ──────────────────────────────────────────────────────────────
-// Hidden on enter (onShown, after the push transition, when the topic page is already covered) and restored
-// on onWillHide (BEFORE the pop transition starts), so the avoid-area reflow never shows under the topic page.
-assert.match(index, /setImagePreviewImmersive/, 'Index must toggle status-bar immersion for the preview route')
-assert.match(index, /onWillHide[\s\S]{0,80}onDestinationWillHide/, 'status bar must be restored on onWillHide (ahead of the pop transition)')
+// ── Status-bar icons hidden with ZERO layout movement ───────────────────────────────────────────────────────
+// The preview makes the status-bar ICONS transparent via setWindowSystemBarProperties (a pure color change),
+// and must NEVER remove the bar with setWindowSystemBarEnable — removing it collapses the top avoid area and
+// reflows the page underneath (the "bar removed then re-added" jump). Restored on onWillHide so the icons fade
+// back in with no layout movement.
+assert.match(index, /setImagePreviewStatusIconsHidden/, 'Index must toggle the preview status-bar ICON color')
+assert.match(index, /statusBarContentColor/, 'preview must hide status-bar icons via statusBarContentColor (color only)')
+assert.doesNotMatch(index, /setWindowSystemBarEnable/, 'must NOT remove the status bar (setWindowSystemBarEnable) — that reflows the layout')
+assert.match(index, /onWillHide[\s\S]{0,80}onDestinationWillHide/, 'status-bar icon color must be restored on onWillHide')
 
 // ── Shared-element (Hero) transition: cross-page geometryTransition driven by an animateTo-wrapped route swap ─
 // Mechanism (verified on-device): pushing/popping with animated=false skips HdsNavigation's customNavContentTransition
