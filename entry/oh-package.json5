@@ -1,6 +1,6 @@
 {
   "name": "entry",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Next2V entry module",
   "dependencies": {
     "shared":   "file:../shared",

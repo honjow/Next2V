@@ -1,6 +1,6 @@
 {
   "name": "user",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Next2V user module - user profile",
   "main": "src/main/ets/Index.ets",
   "dependencies": {
