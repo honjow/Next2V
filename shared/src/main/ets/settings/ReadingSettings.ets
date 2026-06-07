@@ -17,6 +17,7 @@ const DENSITY_COMFORTABLE: string = 'comfortable'
 const BASE64_MODE_OFF: string = 'off'
 const BASE64_MODE_BADGE: string = 'badge'
 const BASE64_MODE_INLINE: string = 'inline'
+const RESTORE_POSITION_DEFAULT: boolean = true
 
 export interface ReadingSettingsSnapshot {
   textScale: number
@@ -38,8 +39,9 @@ export class ReadingSettings {
   static readonly BASE64_MODE_OFF: string = BASE64_MODE_OFF
   static readonly BASE64_MODE_BADGE: string = BASE64_MODE_BADGE
   static readonly BASE64_MODE_INLINE: string = BASE64_MODE_INLINE
+  static readonly RESTORE_POSITION_DEFAULT: boolean = RESTORE_POSITION_DEFAULT
 
-  static apply(textScaleSource: number, lineHeight: number, density: string, restorePosition: boolean = false): void {
+  static apply(textScaleSource: number, lineHeight: number, density: string, restorePosition: boolean = RESTORE_POSITION_DEFAULT): void {
     const normalizedTextScale = ReadingSettings.normalizeTextScale(textScaleSource)
     const normalizedLineHeight = ReadingSettings.normalizeLineHeight(lineHeight, normalizedTextScale)
     const normalizedDensity = ReadingSettings.normalizeDensity(density)
@@ -75,7 +77,7 @@ export class ReadingSettings {
     const textScale = ReadingSettings.normalizeTextScale(store.getSync(KEY_TEXT_SCALE, ReadingSettings.TEXT_SCALE_DEFAULT) as number)
     const lineHeight = ReadingSettings.normalizeLineHeight(store.getSync(KEY_LINE_HEIGHT, ThemeConstants.LINE_HEIGHT_BODY) as number, textScale)
     const density = ReadingSettings.normalizeDensity(store.getSync(KEY_DENSITY, DENSITY_STANDARD) as string)
-    const restorePosition = store.getSync(KEY_RESTORE_POSITION, false) as boolean
+    const restorePosition = store.getSync(KEY_RESTORE_POSITION, RESTORE_POSITION_DEFAULT) as boolean
     const base64DecodeMode = ReadingSettings.normalizeBase64DecodeMode(store.getSync(KEY_BASE64_DECODE_MODE, BASE64_MODE_BADGE) as string)
     ReadingSettings.apply(textScale, lineHeight, density, restorePosition)
     // apply() preserves the prior base64 value; here the store value is authoritative, so

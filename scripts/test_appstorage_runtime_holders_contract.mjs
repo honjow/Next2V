@@ -46,6 +46,7 @@ const hasNoAppStorage = (rel) => must(!/AppStorage\s*\./.test(strip(read(rel))),
 
   const reading = strip(read('shared/src/main/ets/state/ReadingSettingsState.ets'));
   must(/@Trace\s+restorePosition\b/.test(reading), 'ReadingSettingsState: @Trace restorePosition added');
+  must(/@Trace\s+restorePosition:\s*boolean\s*=\s*true/.test(reading), 'ReadingSettingsState: restorePosition defaults on');
 
   const theme = strip(read('shared/src/main/ets/state/ThemeDisplayState.ets'));
   must(/@Trace\s+mode\b/.test(theme) && /@Trace\s+systemColorMode\b/.test(theme),
@@ -68,6 +69,8 @@ const hasNoAppStorage = (rel) => must(!/AppStorage\s*\./.test(strip(read(rel))),
   must(/connectMotionReplyAlignment\(\)\.alignmentMode\s*=/.test(align), 'ReplyActionAlignmentSettings.apply seeds MotionReplyAlignmentState.alignmentMode');
 
   const reading = read('shared/src/main/ets/settings/ReadingSettings.ets');
+  must(/RESTORE_POSITION_DEFAULT:\s*boolean\s*=\s*RESTORE_POSITION_DEFAULT/.test(reading), 'ReadingSettings exposes restore-position default');
+  must(/store\.getSync\(KEY_RESTORE_POSITION,\s*RESTORE_POSITION_DEFAULT\)/.test(reading), 'ReadingSettings.loadFromStore defaults missing restore-position to on');
   must(/setAppStorageValue<boolean>\(StorageKeys\.READING_RESTORE_POSITION/.test(reading), 'ReadingSettings keeps READING_RESTORE_POSITION AppStorage projection');
   must(/readingState\.restorePosition\s*=\s*restorePosition/.test(reading), 'ReadingSettings.apply seeds ReadingSettingsState.restorePosition');
   must(/connectReadingSettings\(\)\.restorePosition\s*=\s*restorePosition/.test(reading), 'ReadingSettings.saveRestorePosition seeds the mirror');

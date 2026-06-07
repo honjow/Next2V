@@ -105,7 +105,7 @@ export struct SettingsPage {
   // proxy/topicReplyButton) need no hydration — their connect* singletons already hold the live value.
   // Holder defaults match the prior `?? <default>` fallbacks (auto checkin on, auto-load images on,
   // wifi-only off, theme 'auto', language 'default', reply display 'thread', alignment unset, home-tab
-  // auto-hide default, holding-hand unsupported, restore-position off).
+  // auto-hide default, holding-hand unsupported, restore-position on).
   private hydratePreferences(): void {
     this.autoDailyCheckinEnabled = connectAutoDailyCheckin().enabled
     const media = connectMediaSettings()

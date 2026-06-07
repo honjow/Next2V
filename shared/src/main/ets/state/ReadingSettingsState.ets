@@ -21,12 +21,12 @@ import { ThemeConstants } from '../theme/ThemeConstants'
 @ObservedV2
 export class ReadingSettingsState {
   // Defaults mirror ReadingSettings.TEXT_SCALE_DEFAULT (1.0) / DENSITY_STANDARD ('standard') /
-  // BASE64_MODE_BADGE ('badge') / restore-position off; real values published by ReadingSettings.
+  // BASE64_MODE_BADGE ('badge') / restore-position on; real values published by ReadingSettings.
   @Trace textScale: number = 1.0
   @Trace lineHeight: number = ThemeConstants.LINE_HEIGHT_BODY
   @Trace density: string = 'standard'
   @Trace base64DecodeMode: string = 'badge'
-  @Trace restorePosition: boolean = false
+  @Trace restorePosition: boolean = true
 }
 
 const READING_SETTINGS_V2_KEY: string = 'v2:readingSettings'
