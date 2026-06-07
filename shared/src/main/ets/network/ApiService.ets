@@ -672,13 +672,24 @@ export class ApiService {
       // Nothing to claim (already checked in / unavailable) — return the current state, not an error.
       return { mission: fresh, rewardCoins: 0 }
     }
-    const redeemHtml = await this.getCookieHtml(
-      fresh.redeemPath,
+    // Issue the redeem. The endpoint 302-redirects on BOTH a real claim and the anti-abuse wall, so its
+    // response body is NOT a reliable claim signal: the old code read "canRedeem became false" as success,
+    // but a 302 / empty / wall body also parses as canRedeem=false — a FALSE success that stamped the day's
+    // breadcrumb without ever checking in (observed: lastSuccessDate=today while /mission/daily was still
+    // claimable). Discard the redeem body and CONFIRM with a fresh /mission/daily fetch: a real claim flips
+    // it to a definitive already-done state; a wall leaves it still claimable (or a degraded page with no
+    // done marker). Anything short of already-done is treated as a failure (no breadcrumb -> retry later).
+    await this.getCookieHtml(fresh.redeemPath, cookie, this.checkinHeaders(missionReferer))
+    const verifyHtml = await this.getCookieHtml(
+      '/mission/daily',
       cookie,
-      this.checkinHeaders(missionReferer),
+      this.checkinHeaders(homeReferer),
     )
-    const after = V2exAccountParser.extractDailyMission(redeemHtml)
-    if (after.canRedeem) {
+    if (!V2exSessionParser.extractUsername(verifyHtml)) {
+      throw ApiErrors.webSessionExpired()
+    }
+    const after = V2exAccountParser.extractDailyMission(verifyHtml)
+    if (after.canRedeem || after.message !== 'already_checked_in_today') {
       throw ApiErrors.checkinNotAvailable()
     }
     // Best-effort reward amount from /balance ("每日登录" row); a parse miss just drops it from the toast.

@@ -38,8 +38,11 @@ const accountSectionStart = settingsPage.indexOf('@Builder\n  AccountSection()')
 const readingSectionStart = settingsPage.indexOf('@Builder\n  ReadingSection()', accountSectionStart)
 assert.ok(accountSectionStart >= 0 && readingSectionStart > accountSectionStart, 'SettingsPage account section boundaries must be found')
 const accountSection = settingsPage.slice(accountSectionStart, readingSectionStart)
-assert.match(settingsPage, /@StorageLink\(StorageKeys\.AUTO_DAILY_CHECKIN_ENABLED\)\s+autoDailyCheckinEnabled:\s*boolean\s*=\s*true/, 'SettingsPage must bind switch state to the new AppStorage key')
-assert.match(accountSection, /TogglePreferenceRow\('自动签到',\s*this\.autoDailyCheckinEnabled/, 'account section must show 自动签到 as a switch row')
+// State Management V2: the switch state is a @Local synced from the AutoDailyCheckin V2 holder (the V1
+// @StorageLink decorator is retired). See connectAutoDailyCheckin() / AutoDailyCheckinState.
+assert.match(settingsPage, /@Local\s+private\s+autoDailyCheckinEnabled:\s*boolean\s*=\s*true/, 'SettingsPage must hold the auto check-in switch state in a @Local (V2)')
+assert.match(settingsPage, /this\.autoDailyCheckinEnabled\s*=\s*connectAutoDailyCheckin\(\)\.enabled/, 'SettingsPage must sync the switch from the AutoDailyCheckin V2 holder')
+assert.match(accountSection, /TogglePreferenceRow\(\s*AppStrings\.R_AUTO_CHECKIN,\s*this\.autoDailyCheckinEnabled/, 'account section must show the auto check-in (R_AUTO_CHECKIN) switch row')
 assert.doesNotMatch(accountSection, /Button\('自动签到'|FilterChip\(|Chip\(/, 'auto daily check-in must not be implemented as button/chip')
 assert.match(settingsPage, /SettingsSaveCoordinator\.saveAutoDailyCheckin\(context,\s*enabled\)/, 'switch updates must persist via helper')
 
@@ -48,12 +51,19 @@ assert.match(service, /if\s*\(!cleanCookie\)\s*{[\s\S]*?'no-cookie'/, 'service m
 assert.match(service, /if\s*\(AutoDailyCheckinService\.inFlight\)\s*{[\s\S]*?'in-flight'/, 'service must guard concurrent runs')
 assert.match(service, /const\s+attemptIdentity\s*=\s*AutoDailyCheckinService\.cookieAttemptIdentity\(cleanCookie\)/, 'service must derive a non-cookie identity for the current cookie')
 assert.match(service, /getLastAttemptDate\(\)\s*===\s*today\s*&&\s*\n\s*AutoDailyCheckinSettings\.getLastAttemptIdentity\(\)\s*===\s*attemptIdentity[\s\S]*?'already-attempted'/, 'service must skip same local day only for the same cookie identity')
-assert.match(service, /saveLastAttemptDate\(context,\s*today,\s*attemptIdentity\)[\s\S]*getDailyMissionWithCookie\(cleanCookie\)/, 'service must mark identity attempt before mission fetch to avoid repeated same-cookie failures')
+// Correctness invariant (2026-06-06 fix): the day breadcrumb is NOT stamped up front — only after a
+// confirmed claim (or a definitive already-done) — so a transient/walled failure self-heals next open
+// instead of burning the day. (The old assertion required the opposite, which WAS the day-burning bug.)
+const missionFetchIdx = service.indexOf('getDailyMissionWithCookie(cleanCookie)')
+const firstAttemptStampIdx = service.indexOf('saveLastAttemptDate(context, today, attemptIdentity)')
+assert.ok(missionFetchIdx >= 0 && firstAttemptStampIdx > missionFetchIdx, 'breadcrumb must be stamped only AFTER the mission fetch / confirmed claim (no up-front day-burning)')
+assert.match(service, /if\s*\(claimed\)\s*{[\s\S]*?saveLastSuccessDate\(context,\s*today\)[\s\S]*?saveLastAttemptDate\(context,\s*today,\s*attemptIdentity\)/, 'breadcrumb is stamped inside the confirmed-claim branch')
 assert.match(service, /cookie\.length[\s\S]*hash\.toString\(16\)/, 'cookie identity should be a length+hash fingerprint, not raw cookie storage')
 assert.doesNotMatch(service, /saveLastAttemptDate\(context,\s*today,\s*cleanCookie\)/, 'service must not store the full cookie as the attempt identity')
 assert.match(service, /if\s*\(!mission\.canRedeem\s*\|\|\s*!mission\.redeemPath\)\s*{[\s\S]*?'not-redeemable'/, 'service must not redeem when mission cannot redeem')
-assert.match(service, /redeemDailyMissionWithCookie\([\s\S]*cleanCookie,[\s\S]*mission\.redeemPath[\s\S]*\)/, 'service must redeem when mission can redeem')
-assert.doesNotMatch(service, /promptAction\.openToast|AlertDialog\.show/, 'auto service must stay quiet and not toast/dialog')
+assert.match(service, /redeemDailyMissionWithCookie\(cleanCookie\)/, 'service must redeem when mission can redeem (redeem method re-fetches the once internally)')
+assert.match(service, /promptAction\.openToast/, 'auto service surfaces a non-blocking reward toast on a successful auto check-in')
+assert.doesNotMatch(service, /AlertDialog\.show/, 'auto service must not block with a dialog')
 
 const startupOrder = [
   'restoreCookieJar(context)',
@@ -77,9 +87,11 @@ for (const [name, source, tag] of [
 }
 
 assert.match(api, /async\s+getDailyMissionWithCookie\(cookie:\s*string\):\s*Promise<V2exDailyMission>[\s\S]*getCookieHtml\('\/mission\/daily',\s*cookie\)[\s\S]*V2exAccountParser\.extractDailyMission/, 'mission fetch API must still use /mission/daily parser path')
-assert.match(api, /async\s+redeemDailyMissionWithCookie\([\s\S]*redeemPath:\s*string[\s\S]*getCookieHtml\(redeemPath,\s*cookie\)[\s\S]*return\s+this\.getDailyMissionWithCookie\(cookie\)/, 'mission redeem API must still redeem then refresh mission')
+// Redeem must issue the redeem request then CONFIRM via a fresh /mission/daily fetch requiring a
+// definitive already-done state — the 302 body is not trusted (that false-success was the day-burning bug).
+assert.match(api, /async\s+redeemDailyMissionWithCookie\([\s\S]*?getCookieHtml\(fresh\.redeemPath,\s*cookie[\s\S]*?getCookieHtml\(\s*'\/mission\/daily',[\s\S]*?extractDailyMission\(verifyHtml\)[\s\S]*?after\.message\s*!==\s*'already_checked_in_today'/, 'redeem must confirm the claim via a fresh mission fetch (no false success on the 302)')
 assert.ok(parser.includes('mission\\/daily\\/redeem\\?once=\\d+'), 'parser must still extract daily mission redeem once path')
-assert.match(parser, /canRedeem:\s*true[\s\S]*redeemPath[\s\S]*message:\s*'今日可签到'/, 'parser must still mark redeemable mission')
-assert.match(parser, /message:\s*done\s*\?\s*'今日已签到'\s*:\s*'暂不可签到'/, 'parser must still distinguish already-signed daily mission')
+assert.match(parser, /canRedeem:\s*true,\s*redeemPath,\s*message:\s*'daily_checkin_available'/, 'parser must still mark redeemable mission')
+assert.match(parser, /message:\s*done\s*\?\s*'already_checked_in_today'\s*:\s*'daily_checkin_unavailable'/, 'parser must still distinguish already-signed daily mission')
 
 console.log('auto daily check-in static checks passed')
