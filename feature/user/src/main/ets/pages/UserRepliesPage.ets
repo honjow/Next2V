@@ -2,7 +2,7 @@ import { UserRepliesViewModel } from '../viewmodel/UserViewModel'
 import {
   AppStrings, CardEmptyState, connectNavStack, NodeTopicListParams, PageErrorState, PageLoadingState,
   SearchQueryBus, SecondaryListScaffold, TopicDetailParams, UserProfileParams, ImagePreviewParams, V2exRoute,
-  V2exUrlRouter, V2exUserReply
+  V2exUrlRouter, V2exUserReply, connectImageHero, heroIdForUrl, MediaUrlUtils
 } from 'shared'
 import { common, Want } from '@kit.AbilityKit'
 import { UserRepliesCard } from '../components/UserRepliesComponents'
@@ -100,8 +100,15 @@ export struct UserRepliesPage {
     if (!normalized) {
       return
     }
+    // Arm the shared-element (Hero) binding for the tapped image BEFORE the push, so the source thumbnail's
+    // geometryTransition id matches the preview's; Index clears it in onHidden after the preview closes.
+    connectImageHero().activeId = heroIdForUrl(MediaUrlUtils.normalizeUrl(normalized))
     let p: ImagePreviewParams = { url: normalized }
-    this.stack.pushPathByName('ImagePreview', p as Object)
+    // Push INSIDE animateTo (animated=false suppresses the HDS default route animation) so the route mount
+    // happens in this window — that is what drives the shared-element (Hero) geometryTransition morph.
+    this.getUIContext().animateTo({ duration: 300, curve: Curve.Friction }, () => {
+      this.stack.pushPathByName('ImagePreview', p as Object, false)
+    })
   }
 
   private replyStableKey(reply: V2exUserReply): string {

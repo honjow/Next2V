@@ -57,6 +57,7 @@ export { AutoDailyCheckinState, connectAutoDailyCheckin } from './state/AutoDail
 export { WebCheckinRunnerState, connectWebCheckinRunner } from './state/WebCheckinRunnerState'
 export { CloudSyncState, connectCloudSync } from './state/CloudSyncState'
 export { MediaSettingsState, connectMediaSettings } from './state/MediaSettingsState'
+export { ImageHeroState, connectImageHero, heroIdForUrl } from './state/ImageHeroState'
 export { ThemeDisplayState, connectThemeDisplay } from './state/ThemeDisplayState'
 export { ReplyDisplayState, connectReplyDisplay } from './state/ReplyDisplayState'
 export { LanguageState, connectLanguageState } from './state/LanguageState'

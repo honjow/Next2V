@@ -25,6 +25,7 @@ import {
   connectAccountWebViewUrl,
   connectAuthSessionSignal,
   connectHomeTabAutoHide,
+  connectImageHero,
   connectImagePreviewAction,
   connectLocalDataSignal,
   connectNativeLoginShown,
@@ -380,13 +381,36 @@ struct Index {
       // back+menu buttons, which would double up with ours). hideTitleBar(true) removes the whole bar.
       .hideTitleBar(descriptor.family === 'imagePreview')
       .dynamicHideTitleBar(this.destinationHideTitleBarOpts(descriptor))
+      // Image preview is a TRANSPARENT, dialog-mode overlay so the page underneath stays rendered and visible:
+      // no white flash during the transition (a DIALOG NavDestination is transparent by default), the topic
+      // page shows through while you swipe down to dismiss, and the shared-element (Hero) image morph plays
+      // OVER the still-visible page instead of an opaque route. Every other route stays STANDARD/opaque.
+      .mode(
+        descriptor.family === 'imagePreview'
+          ? NavDestinationMode.DIALOG
+          : NavDestinationMode.STANDARD,
+      )
+      .transition(
+        descriptor.family === 'imagePreview' ? TransitionEffect.OPACITY : TransitionEffect.IDENTITY,
+      )
       .onShown(() => {
         this.onDestinationShown(descriptor)
       })
       .onWillHide(() => {
         this.onDestinationWillHide(descriptor)
       })
+      .onHidden(() => {
+        this.onDestinationHidden(descriptor)
+      })
       .onBackPressed((): boolean => {
+        // System back on the image preview: pop INSIDE an animateTo (with animated=false to suppress the HDS
+        // default route animation) so the shared-element (Hero) image morph plays in that window on the way back.
+        if (descriptor.family === 'imagePreview') {
+          this.getUIContext().animateTo({ duration: 300, curve: Curve.Friction }, () => {
+            this.ns.pop(false)
+          })
+          return true
+        }
         // When the reply sticker panel is open, back closes the panel (the composer reacts to this flag)
         // instead of popping the topic page; otherwise fall through to the default pop.
         if (descriptor.family === 'topicDetail' && connectReplyStickerPanel().open) {
@@ -767,6 +791,14 @@ struct Index {
     // after the topic page was already visible, which is what produced the visible jump.)
     if (descriptor.family === 'imagePreview') {
       this.setImagePreviewImmersive(false)
+    }
+  }
+
+  private onDestinationHidden(descriptor: IndexDestinationDescriptor): void {
+    // Clear the shared-element (Hero) binding only AFTER the preview is fully hidden (onHidden = after the back
+    // morph completes), so the source thumbnail stays bound through the whole close morph, then returns to idle.
+    if (descriptor.family === 'imagePreview') {
+      connectImageHero().activeId = ''
     }
   }
 

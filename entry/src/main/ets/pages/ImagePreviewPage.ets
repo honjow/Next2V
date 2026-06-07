@@ -8,6 +8,7 @@ import {
   connectImagePreviewAction,
   connectLayoutSafeArea,
   connectNavStack,
+  heroIdForUrl,
   ImagePreviewActionState,
   LayoutSafeAreaState,
   MediaUrlUtils,
@@ -59,7 +60,6 @@ export struct ImagePreviewPage {
   @Local private dismissY: number = 0;
   @Local private backdropAlpha: number = 1;
   @Local private isSaving: boolean = false;
-  @Local private saveMessage: string = '';
   // V2 mirror of the one-directional IMAGE_PREVIEW_ACTION appbar command (Index dual-writes).
   @Local private imgAction: ImagePreviewActionState = connectImagePreviewAction();
   // Window safe-area metrics (AppStorageV2 mirror; EntryAbility publishes V2-only).
@@ -129,6 +129,13 @@ export struct ImagePreviewPage {
     return MediaUrlUtils.normalizeUrl(this.url)
   }
 
+  // This preview's geometryTransition id (the IN node); the source thumbnail derives the SAME id from the
+  // same normalized URL via heroIdForUrl, which pairs the two across the route push. Always bound — an open
+  // with no matching source (e.g. a deep link) is a lone node that simply fades in via .transition(OPACITY).
+  private heroGid(): string {
+    return heroIdForUrl(this.normalizedUrl())
+  }
+
   // Black backdrop whose alpha fades while swiping down to dismiss (1 = opaque, lower = revealing).
   private backdropColor(): string {
     const a: number = Math.round(Math.max(0, Math.min(1, this.backdropAlpha)) * 255)
@@ -185,17 +192,18 @@ export struct ImagePreviewPage {
 
   private endDismissGesture(velocityY: number): void {
     if (this.dismissY > DISMISS_DISTANCE_VP || velocityY > DISMISS_VELOCITY) {
+      // Close via the shared-element (Hero) morph: pop INSIDE animateTo (animated=false suppresses the HDS
+      // default route animation) so the image frame morphs back to the source thumbnail in this window, while
+      // the drag offset relaxes to 0 and the backdrop fades out together.
       this.getUIContext().animateTo(
         {
-          duration: 180,
-          curve: Curve.FastOutSlowIn,
-          onFinish: () => {
-            this.stack.pop()
-          },
+          duration: 300,
+          curve: Curve.Friction,
         },
         () => {
-          this.dismissY = this.viewportHeight
+          this.dismissY = 0
           this.backdropAlpha = 0
+          this.stack.pop(false)
         },
       )
     } else {
@@ -224,9 +232,8 @@ export struct ImagePreviewPage {
 
     let tempPath = ''
     this.isSaving = true
-    this.saveMessage = AppStrings.text(
-      $r('app.string.image_preview_downloading'),
-      'Downloading image…',
+    this.showToast(
+      AppStrings.text($r('app.string.image_preview_downloading'), 'Downloading image…'),
     )
     try {
       const result = await this.downloadImage(imageUrl)
@@ -242,9 +249,11 @@ export struct ImagePreviewPage {
       const title = MediaUrlUtils.imageTitleFromUrl(imageUrl)
       tempPath = this.writeTempImage(result.buffer, extension)
 
-      this.saveMessage = AppStrings.text(
-        $r('app.string.image_preview_choose_save_location'),
-        'Please choose a save location',
+      this.showToast(
+        AppStrings.text(
+          $r('app.string.image_preview_choose_save_location'),
+          'Please choose a save location',
+        ),
       )
       await this.copySandboxImageToPhotos(tempPath, title, extension)
       this.showToast(AppStrings.text($r('app.string.image_saved_to_gallery'), 'Saved to Gallery'))
@@ -258,7 +267,6 @@ export struct ImagePreviewPage {
         this.removeTempImage(tempPath)
       }
       this.isSaving = false
-      this.saveMessage = ''
     }
   }
 
@@ -420,6 +428,13 @@ export struct ImagePreviewPage {
             .scale({ x: this.scaleValue, y: this.scaleValue })
             .translate({ x: this.offsetX, y: this.offsetY + this.dismissY })
             .renderGroup(true)
+            // Shared-element (Hero) IN node: morphs from the tapped thumbnail's rect. The push/pop sites wrap the
+            // route swap in animateTo (animated=false suppresses HDS's default route animation), and THAT animateTo
+            // drives this geometryTransition (it has no timing of its own); .transition keeps the node alive across
+            // the morph. scale/translate stay at fit (1,0) on entry, so the frame morph is clean.
+            .clip(true)
+            .geometryTransition(this.heroGid())
+            .transition(TransitionEffect.OPACITY)
         }
       }
       .width('100%')
@@ -516,29 +531,6 @@ export struct ImagePreviewPage {
           }),
         ),
       )
-
-      if (this.normalizedUrl() && this.saveMessage) {
-        Column({ space: ThemeConstants.SPACE_XS }) {
-          Text(this.saveMessage)
-            .fontSize(ThemeConstants.FONT_SIZE_TINY)
-            .fontColor('#D9FFFFFF')
-            .padding({
-              left: ThemeConstants.SPACE_SM,
-              right: ThemeConstants.SPACE_SM,
-              top: ThemeConstants.SPACE_XS,
-              bottom: ThemeConstants.SPACE_XS,
-            })
-            .borderRadius(ThemeConstants.RADIUS_SM)
-            .backgroundColor('#66000000')
-        }
-        .alignItems(HorizontalAlign.End)
-        .padding({
-          top:
-            this.layout.topAvoidHeight + ThemeConstants.TITLE_BAR_HEIGHT + ThemeConstants.SPACE_MD,
-          right: ThemeConstants.SPACE_MD,
-          left: ThemeConstants.SPACE_MD,
-        })
-      }
 
       // Floating save control over the image (the HDS title bar is hidden for this route): a white glyph in a
       // dark translucent circle, legible on ANY image. Absolutely positioned at the bottom-right via position()

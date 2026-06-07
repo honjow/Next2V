@@ -9,6 +9,7 @@ import { connectThemeDisplay, ThemeDisplayState } from "../state/ThemeDisplaySta
 import { connectMediaSettings, MediaSettingsState } from "../state/MediaSettingsState";
 import { ThemeConstants } from "../theme/ThemeConstants";
 import { MediaUrlUtils } from "../utils/MediaUrlUtils";
+import { connectImageHero, heroIdForUrl, ImageHeroState } from "../state/ImageHeroState";
 import { DiagnosticLogger } from "../diagnostics/DiagnosticLogger";
 import { HtmlEntityUtils } from "../utils/HtmlEntityUtils";
 import { Base64DecodeUtils } from "../utils/Base64DecodeUtils";
@@ -2117,6 +2118,8 @@ struct MarkdownAutoImage {
   // Media image-load policy mirrored into AppStorageV2 by MediaSettings.apply()
   // (was @StorageLink MEDIA_AUTO_LOAD_IMAGES / MEDIA_ONLY_LOAD_IMAGES_ON_WIFI + @Watch).
   private media: MediaSettingsState = connectMediaSettings();
+  // Shared-element (Hero) binding: this image is the OUT node of a geometryTransition into the full preview.
+  private hero: ImageHeroState = connectImageHero();
   @Local private loadState: number = 0 // 0: idle, 1: loading, 2: loaded, 3: error
   @Local private reloadNonce: number = 0
   @Local private networkChecked: boolean = false
@@ -2202,6 +2205,14 @@ struct MarkdownAutoImage {
     this.loadState = 1;
   }
 
+  // The geometryTransition id for THIS image, bound ONLY when it is the one being opened (activeId match),
+  // so exactly two nodes (this source + the preview dest) ever share an id. '' = unbound no-op otherwise.
+  // Reads hero.activeId (a @Trace) so the bound image re-renders to bind/unbind when a hero starts/ends.
+  private heroGid(): string {
+    const id = heroIdForUrl(MediaUrlUtils.normalizeUrl(this.url));
+    return this.hero.activeId === id ? id : "";
+  }
+
   private renderedWidth(): Length {
     if (this.sourceWidth > 0 && this.sourceWidth <= 240) {
       return this.sourceWidth;
@@ -2237,6 +2248,12 @@ struct MarkdownAutoImage {
           .height(this.renderedHeight())
           .objectFit(ImageFit.Contain)
           .borderRadius(ThemeConstants.RADIUS_SM)
+          // Shared-element (Hero) OUT node: morphs into the full-screen preview. Bound (to the same id the
+          // preview derives from the URL) only while THIS image is the active hero; follow:true makes the
+          // child track the container frame, .transition keeps the node alive across the route teardown.
+          .clip(true)
+          .geometryTransition(this.heroGid(), { follow: true })
+          .transition(TransitionEffect.OPACITY)
           .onComplete((event?: MarkdownImageCompleteEvent) => {
             if ((event?.loadingStatus ?? 0) === 1) {
               this.sourceWidth = event?.width ?? 0;

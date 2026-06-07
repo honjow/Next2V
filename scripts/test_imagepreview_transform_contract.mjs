@@ -17,16 +17,24 @@ const read = (p) => readFileSync(path.join(repo, p), 'utf8')
 const page = read('entry/src/main/ets/pages/ImagePreviewPage.ets')
 const coord = read('entry/src/main/ets/model/ImagePreviewCoordinator.ets')
 const index = read('entry/src/main/ets/pages/Index.ets')
+const hero = read('shared/src/main/ets/state/ImageHeroState.ets')
+const markdown = read('shared/src/main/ets/components/MarkdownContent.ets')
+const topicDetail = read('feature/detail/src/main/ets/pages/TopicDetailPage.ets')
+const userProfile = read('feature/user/src/main/ets/pages/UserProfilePage.ets')
+const userReplies = read('feature/user/src/main/ets/pages/UserRepliesPage.ets')
 
-// ── Title bar: HIDDEN for image preview; the page draws its own legible-on-any-image overlay controls ──────
+// ── Title bar: HIDDEN for image preview; the page draws its own legible-on-any-image overlay control ────────
 // hideTitleBar(true) removes the WHOLE bar (back+menu); hideTitleArea/dynamicHide only hides the title text on
-// scroll and would leave the HDS back/menu buttons doubling up with our overlay ones.
+// scroll and would leave the HDS back/menu buttons doubling up with our overlay one.
 assert.match(index, /\.hideTitleBar\(descriptor\.family === 'imagePreview'\)/, 'imagePreview must fully hide the HDS title bar via hideTitleBar(true)')
-// The page draws white glyphs in dark translucent circles so back/save read on black, white, or busy images.
-assert.match(page, /ButtonType\.Circle/, 'overlay back/save controls must be circular buttons')
-assert.match(page, /\.backgroundColor\('#[0-9A-Fa-f]{2}000000'\)/, 'overlay buttons need a translucent black backplate for legibility on any image')
-assert.match(page, /sys\.symbol\.chevron_backward[\s\S]{0,120}fontColor\(\[Color\.White\]\)/, 'back glyph must be white')
-assert.match(page, /sys\.symbol\.arrow_down_to_line/, 'save glyph must be present in the overlay')
+// The page draws a single white download glyph in a dark translucent circle, anchored bottom-right via
+// position() edge anchors. There is NO explicit back button — swipe-down-to-dismiss and the system back
+// gesture both pop the page.
+assert.match(page, /ButtonType\.Circle/, 'the overlay save control must be a circular button')
+assert.match(page, /\.backgroundColor\('#[0-9A-Fa-f]{2}000000'\)/, 'overlay save button needs a translucent black backplate for legibility on any image')
+assert.match(page, /sys\.symbol\.arrow_down_to_line/, 'save (download) glyph must be present in the overlay')
+assert.match(page, /\.position\(\{[\s\S]*?bottom:\s*this\.layout\.bottomAvoidHeight/, 'save button must be anchored bottom-right via position() with the bottom safe-area inset')
+assert.doesNotMatch(page, /sys\.symbol\.chevron_backward/, 'the explicit back button was removed (dismiss via swipe-down / system back)')
 
 // ── Source contract: the page uses the transform model, not the old width-scaling + nested Scroll ──────────
 assert.match(page, /\.scale\(\{\s*x:\s*this\.scaleValue,\s*y:\s*this\.scaleValue\s*\}\)/, 'image must be scaled via .scale() (center-pivot transform), not width-scaling')
@@ -39,7 +47,7 @@ assert.match(page, /TapGesture\(\{\s*count:\s*2\s*\}\)/, 'must add double-tap')
 assert.match(page, /this\.getUIContext\(\)\.animateTo\(/, 'release animations must use getUIContext().animateTo (V2-correct)')
 assert.match(page, /curves\.springMotion\(\)/, 'snap-back/reset must use a spring curve')
 assert.match(page, /this\.isPinching/, 'pan must stand down while a pinch is in flight (isPinching gate)')
-assert.match(page, /this\.stack\.pop\(\)/, 'swipe-to-dismiss must pop the nav stack')
+assert.match(page, /this\.stack\.pop\(false\)/, 'swipe-to-dismiss must pop the nav stack with animated=false, inside animateTo (Hero back morph)')
 // No regressions: the old width-scaling path and nested Scroll are gone; save flow + black canvas stay.
 assert.doesNotMatch(page, /ImagePreviewCoordinator\.imageWidth|getImageWidth/, 'the dead width-scaling path must be removed from the page')
 assert.doesNotMatch(page, /Scroll\(\)/, 'the nested Scroll pan model must be gone')
@@ -50,6 +58,40 @@ assert.match(page, /\.onAreaChange\([\s\S]*?this\.viewportWidth[\s\S]*?this\.vie
 // State Management V2 only (no V1 decorators in the rewritten page).
 for (const v1 of [/@State\b/, /@Prop\b/, /@Link\b/, /@Watch\b/, /@Provide\b/, /@Consume\b/, /@ObjectLink\b/, /@StorageLink\b/]) {
   assert.doesNotMatch(page.replace(/\/\/.*$/gm, ''), v1, `no V1 decorator ${v1} in ImagePreviewPage`)
+}
+
+// ── Immersive status bar without a return jump ──────────────────────────────────────────────────────────────
+// Hidden on enter (onShown, after the push transition, when the topic page is already covered) and restored
+// on onWillHide (BEFORE the pop transition starts), so the avoid-area reflow never shows under the topic page.
+assert.match(index, /setImagePreviewImmersive/, 'Index must toggle status-bar immersion for the preview route')
+assert.match(index, /onWillHide[\s\S]{0,80}onDestinationWillHide/, 'status bar must be restored on onWillHide (ahead of the pop transition)')
+
+// ── Shared-element (Hero) transition: cross-page geometryTransition driven by an animateTo-wrapped route swap ─
+// Mechanism (verified on-device): pushing/popping with animated=false skips HdsNavigation's customNavContentTransition
+// delegate ENTIRELY, so the morph is driven by wrapping the push/pop in getUIContext().animateTo() at the call site
+// (the route mount/unmount then happens inside the animateTo window, which is what geometryTransition interpolates).
+// The dead customNavContentTransition delegate must therefore be gone.
+assert.doesNotMatch(index, /customNavContentTransition/, 'customNavContentTransition must be removed — animated=false skips it, so it never fired (no morph)')
+// Holder: a V2-only @ObservedV2/@Trace activeId + a deterministic url->id hash so both ends pair on the same id.
+assert.match(hero, /@ObservedV2[\s\S]*?class ImageHeroState[\s\S]*?@Trace activeId/, 'ImageHeroState must be an @ObservedV2 holder with a @Trace activeId')
+assert.match(hero, /export function heroIdForUrl\(/, 'heroIdForUrl hash must be exported')
+// IN node (preview image) binds its hero id + keeps a .transition so it survives the morph.
+assert.match(page, /\.geometryTransition\(this\.heroGid\(\)\)/, 'preview image (IN node) must bind geometryTransition by its hero id')
+assert.match(page, /\.transition\(TransitionEffect\.OPACITY\)/, 'IN node needs .transition(OPACITY) to survive the morph')
+// OUT node (the tapped MarkdownContent image) binds the SAME id ONLY when it is the active hero (activeId match),
+// with follow:true + a .transition, so exactly two nodes ever share an id.
+assert.match(markdown, /this\.hero\.activeId === id \? id : ""/, 'OUT image must bind its id ONLY on activeId match (keeps exactly two nodes per id)')
+assert.match(markdown, /\.geometryTransition\(this\.heroGid\(\),\s*\{\s*follow:\s*true\s*\}\)/, 'OUT image must bind geometryTransition with follow:true')
+// The binding is cleared only AFTER the preview is fully hidden (onHidden), so the source stays bound through the
+// whole close morph; clearing earlier would unbind the OUT node and kill the back morph.
+assert.match(index, /onHidden\([\s\S]{0,80}onDestinationHidden/, 'imagePreview must clear the hero binding via onHidden (after the back morph)')
+assert.match(index, /connectImageHero\(\)\.activeId = ''/, 'onDestinationHidden must clear the hero activeId')
+// System back also pops INSIDE animateTo (animated=false) so the back morph plays on the hardware/gesture back.
+assert.match(index, /animateTo\([\s\S]{0,120}this\.ns\.pop\(false\)/, 'system back for imagePreview must pop inside animateTo with animated=false')
+// Every tap entry point arms activeId BEFORE the push, then pushes INSIDE animateTo with animated=false.
+for (const [name, src] of [['TopicDetailPage', topicDetail], ['UserProfilePage', userProfile], ['UserRepliesPage', userReplies]]) {
+  assert.match(src, /connectImageHero\(\)\.activeId = heroIdForUrl\(MediaUrlUtils\.normalizeUrl\(normalized\)\)/, `${name}.openImagePreview must arm the hero activeId before pushing`)
+  assert.match(src, /animateTo\([\s\S]{0,160}pushPathByName\('ImagePreview', p as Object, false\)/, `${name}.openImagePreview must push INSIDE animateTo with animated=false (drives the Hero morph)`)
 }
 
 // ── Coordinator helpers exist ─────────────────────────────────────────────────────────────────────────────
