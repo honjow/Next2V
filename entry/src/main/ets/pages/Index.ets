@@ -716,7 +716,7 @@ struct Index {
       )
     }
     if (descriptor.family === 'imagePreview') {
-      return this.navDestTitleBarOpts(undefined, this.imagePreviewTitleMenu())
+      return this.imagePreviewTitleBarOpts()
     }
     if (descriptor.family === 'nodeTopic') {
       return this.nodeTopicTitleBarOpts(
@@ -810,6 +810,55 @@ struct Index {
       'blurStrategy': BlurStrategy.ENABLE,
       'style': style,
     }
+  }
+
+  // Image-preview title bar: FULLY TRANSPARENT, scoped to this one route. The image fills a full-black
+  // canvas, so the shared navDestTitleBarOpts gradient-blur material would put an ugly scrim/transition over
+  // the top — here we want none. blurStrategy DISABLE removes the blur; systemMaterialEffect is OMITTED
+  // (materialType defaults NONE → no material scrim); the explicit transparent backgroundColor is defensive.
+  // navDestTitleBarOpts (16 callers) is left untouched so every other route keeps its gradient-blur default.
+  private imagePreviewTitleBarOpts(): Record<string, Object> {
+    let bg: Record<string, Object> = { 'backgroundColor': '#00000000' }
+    let contentStyle: Record<string, Object> = { 'backgroundStyle': bg }
+    let scrollOpts: Record<string, Object> = { 'enableScrollEffect': false }
+    let style: Record<string, Object> = {
+      'scrollEffectOpts': scrollOpts,
+      'originalStyle': contentStyle,
+      'scrollEffectStyle': contentStyle,
+    }
+    let content: Record<string, Object> = {
+      'menu': this.imagePreviewTitleMenu(),
+      'backIcon': this.imagePreviewBackIcon(),
+    }
+    return {
+      'avoidLayoutSafeArea': true,
+      'enableComponentSafeArea': false,
+      'blurStrategy': BlurStrategy.DISABLE,
+      'content': content,
+      'style': style,
+    }
+  }
+
+  // White back button for the transparent image-preview bar (the default theme icon would be dark/invisible
+  // on the black canvas). A custom backIcon overrides the framework's default pop, so the action must pop
+  // explicitly — matches the three 'ImagePreview' push sites (TopicDetail / UserReplies / UserProfile).
+  private imagePreviewBackIcon(): Record<string, Object> {
+    let icon: SymbolGlyphModifier = new SymbolGlyphModifier(
+      $r('sys.symbol.chevron_backward'),
+    ).fontColor([Color.White])
+    return {
+      'icon': icon,
+      'isEnabled': true,
+      'action': () => {
+        this.ns.pop()
+      },
+    }
+  }
+
+  // Force the image-preview menu (save) icon white so it reads on the always-black canvas with no scrim.
+  // Reuses the proven SymbolGlyphModifier.fontColor pattern (see userProfileBlockIcon / submitTitleBarIcon).
+  private imagePreviewMenuIcon(icon: string): SymbolGlyphModifier {
+    return new SymbolGlyphModifier(this.mainTitleMenuIcon(icon)).fontColor([Color.White])
   }
 
   private topicEditorTitleBarOpts(title: ResourceStr): Record<string, Object> {
@@ -1327,7 +1376,7 @@ struct Index {
   private imagePreviewTitleMenu(): Record<string, Object> {
     let items: Record<string, Object>[] = IndexTitleBarCoordinator.imagePreviewMenuItems().map(
       (descriptor: IndexTitleMenuDescriptor) =>
-        this.topicActionItem(descriptor.label, this.mainTitleMenuIcon(descriptor.icon), () => {
+        this.topicActionItem(descriptor.label, this.imagePreviewMenuIcon(descriptor.icon), () => {
           this.sendImagePreviewAction(descriptor.action)
         }),
     )
