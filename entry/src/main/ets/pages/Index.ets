@@ -34,6 +34,7 @@ import {
   connectNotificationAction,
   connectNotificationUnread,
   connectPendingV2exUrl,
+  connectReplyStickerPanel,
   connectTopicDetailAction,
   connectTopicDetailAppbar,
   connectTopicEditorAppbar,
@@ -371,6 +372,15 @@ struct Index {
       .dynamicHideTitleBar(this.destinationHideTitleBarOpts(descriptor))
       .onShown(() => {
         this.onDestinationShown(descriptor)
+      })
+      .onBackPressed((): boolean => {
+        // When the reply sticker panel is open, back closes the panel (the composer reacts to this flag)
+        // instead of popping the topic page; otherwise fall through to the default pop.
+        if (descriptor.family === 'topicDetail' && connectReplyStickerPanel().open) {
+          connectReplyStickerPanel().open = false
+          return true
+        }
+        return false
       })
     }
   }

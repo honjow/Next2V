@@ -1325,6 +1325,10 @@
       "value": "Open web search"
     },
     {
+      "name": "sticker_insert_action",
+      "value": "Insert sticker"
+    },
+    {
       "name": "search_sov2ex_run_hint",
       "value": "Tap Search to query SOV2EX full-text"
     },

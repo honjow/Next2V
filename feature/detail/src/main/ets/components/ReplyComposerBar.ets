@@ -8,6 +8,7 @@ import {
 } from '../model/ReplyComposerDraftCoordinator'
 import {
   AppStrings,
+  BUILTIN_STICKERS,
   connectLayoutSafeArea,
   connectNavStack,
   CookieJarSettings,
@@ -16,6 +17,9 @@ import {
   ImageUploadService,
   ImageUploadSettings,
   LayoutSafeAreaState,
+  connectReplyStickerPanel,
+  ReplyStickerPanelState,
+  StickerPickerPanel,
   ThemeConstants,
   translateApiError,
   type ImageBytes,
@@ -48,10 +52,19 @@ export struct ReplyComposerBar {
   // Retained for checkSubmit() signature parity with the page-owned submit path; always false here
   // (the inline bar never shows its own confirmation dialog).
   @Local private isSubmitDialogShown: boolean = false;
+  // Chat-app style sticker panel: tapping the sticker button dismisses the IME and shows the sticker grid
+  // in the keyboard's footprint (the page drops the bar to the bottom once keyboardHeight hits 0).
+  @Local private showStickerPanel: boolean = false;
 
   // Keyboard/safe-area metrics (published by EntryAbility). When the keyboard is down, the bar drops
   // to the screen bottom and extends its background over the bottom safe area (see bottomSafePad).
-  private layout: LayoutSafeAreaState = connectLayoutSafeArea();
+  @Local private layout: LayoutSafeAreaState = connectLayoutSafeArea();
+  // Last non-zero keyboard height, so the sticker panel can take roughly the keyboard's footprint and the
+  // bar doesn't jump in height when swapping keyboard -> panel.
+  @Local private lastKeyboardHeight: number = 0;
+  // Mirror of showStickerPanel published to the nav shell so a system back press closes the panel (instead
+  // of popping the topic page) — Index.onBackPressed flips this to false, and the @Monitor below reacts.
+  @Local private panelBus: ReplyStickerPanelState = connectReplyStickerPanel();
 
   private contentController: TextAreaController = new TextAreaController();
   private saveTimerId: number = 0;
@@ -71,6 +84,7 @@ export struct ReplyComposerBar {
   private static readonly REPLY_BAR_CONTROL_SIZE: number = 40;
 
   aboutToAppear(): void {
+    this.panelBus.open = false
     this.loadDraft()
     // Auto-focus the field so the keyboard opens immediately on open (common reply-UI behavior).
     // Deferred a frame so the TextArea is mounted before requesting focus.
@@ -81,9 +95,19 @@ export struct ReplyComposerBar {
 
   aboutToDisappear(): void {
     this.disposed = true
+    this.panelBus.open = false
     this.clearSaveTimer()
     if (!this.hasSubmitted) {
       this.persistDraft()
+    }
+  }
+
+  // Back press (intercepted by Index.onBackPressed) flips panelBus.open to false to close the panel; mirror
+  // that into the local UI state.
+  @Monitor('panelBus.open')
+  onPanelBusChanged(): void {
+    if (!this.panelBus.open && this.showStickerPanel) {
+      this.setStickerPanel(false)
     }
   }
 
@@ -106,6 +130,13 @@ export struct ReplyComposerBar {
     }, 0)
   }
 
+  @Monitor('layout.keyboardHeight')
+  onKeyboardHeightChanged(): void {
+    if (this.layout.keyboardHeight > 0) {
+      this.lastKeyboardHeight = this.layout.keyboardHeight
+    }
+  }
+
   build() {
     Column({ space: ThemeConstants.SPACE_XS }) {
       if (this.errorMessage) {
@@ -114,7 +145,9 @@ export struct ReplyComposerBar {
           .fontColor(Color.Red)
           .width('100%')
       }
-      Row({ space: ThemeConstants.SPACE_SM }) {
+      // Top row: full-width input with an overlaid clear (×) button vertically centered at the right, shown
+      // only when it has content. Symmetric 12+12 vertical padding keeps a single line vertically centered.
+      Stack({ alignContent: Alignment.End }) {
         TextArea({
           placeholder: AppStrings.text(
             AppStrings.R_REPLY_BODY_PLACEHOLDER,
@@ -124,11 +157,7 @@ export struct ReplyComposerBar {
           controller: this.contentController,
         })
           .id(ReplyComposerBar.INPUT_ID)
-          .layoutWeight(1)
-          // Don't use lineHeight/minHeight to force the height: a multi-line TextArea top-aligns its
-          // content, so both push the single-line text low. Instead let the box hug its content and
-          // use SYMMETRIC vertical padding — that guarantees the text/placeholder stay vertically
-          // centered, and 12+12 padding lifts the one-line box to ~40vp to match the send button.
+          .width('100%')
           .constraintSize({ maxHeight: 148 })
           .fontSize(ThemeConstants.FONT_SIZE_BODY)
           .padding({
@@ -137,8 +166,6 @@ export struct ReplyComposerBar {
             left: ThemeConstants.SPACE_MD + ThemeConstants.SPACE_XS,
             right: ThemeConstants.SPACE_MD + ThemeConstants.SPACE_XS,
           })
-          // Match the placeholder font to the input font (placeholder defaults larger), so the field
-          // height and baseline don't jump between the empty and typed states.
           .placeholderFont({ size: ThemeConstants.FONT_SIZE_BODY, weight: FontWeight.Normal })
           .borderRadius(ThemeConstants.RADIUS_MD)
           .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
@@ -147,18 +174,59 @@ export struct ReplyComposerBar {
             this.content = value
             this.scheduleSaveDraft()
           })
-          // Track the caret so an uploaded image's URL lands where the user is typing (the picker blurs
+          // Track the caret so an inserted sticker/image URL lands where the user is typing (the picker blurs
           // the field, so we rely on the last recorded position, not live focus).
           .onTextSelectionChange((start: number, end: number) => {
             this.selStart = start
             this.selEnd = end
           })
-        // Secondary (tonal) image button, just left of the emphasized send key: tap → pick an image →
-        // upload to the configured image host → insert the bare URL at the caret. focusOnTouch(false)
-        // keeps the TextArea's caret so the insert lands where the user was typing.
+          // When the IME re-opens (user taps the field), drop the sticker panel so the two don't stack.
+          .onEditChange((isEditing: boolean) => {
+            if (isEditing && this.showStickerPanel) {
+              this.setStickerPanel(false)
+              this.panelBus.open = false
+            }
+          })
+        // Clear button at the input's top-right; only when there's content. focusOnTouch(false) keeps the
+        // TextArea focused (keyboard stays up) so the user can immediately retype.
+        if (this.content.length > 0) {
+          SymbolGlyph($r('sys.symbol.xmark_circle_fill'))
+            .fontSize(18)
+            .fontColor([$r('sys.color.font_secondary')])
+            .padding(ThemeConstants.SPACE_XS)
+            .margin({ right: ThemeConstants.SPACE_XS })
+            .focusOnTouch(false)
+            .onClick(() => {
+              this.clearContent()
+            })
+        }
+      }.width('100%')
+
+      // Bottom row: action toolbar. Sticker + image on the left, send on the right — keeps the input roomy
+      // and the controls from crowding the field's edge.
+      Row({ space: ThemeConstants.SPACE_SM }) {
+        // Sticker button: toggles the chat-app style panel (dismisses the IME and shows the grid in its
+        // place). focusOnTouch(false) so tapping it doesn't re-grab the TextArea caret/keyboard.
+        Button({ type: ButtonType.Circle }) {
+          SymbolGlyph($r('sys.symbol.face_smiling'))
+            .fontSize(22)
+            .fontColor([$r('sys.color.font_secondary')])
+        }
+        .width(ReplyComposerBar.REPLY_BAR_CONTROL_SIZE)
+        .height(ReplyComposerBar.REPLY_BAR_CONTROL_SIZE)
+        .enabled(!this.isSubmitting)
+        .buttonStyle(ButtonStyleMode.NORMAL)
+        .focusOnTouch(false)
+        .accessibilityText(
+          AppStrings.text($r('app.string.sticker_insert_action'), 'Insert sticker'),
+        )
+        .onClick(() => {
+          this.toggleStickerPanel()
+        })
+        // Image button: pick → upload to the configured host → insert the bare URL at the caret.
         Button({ type: ButtonType.Circle }) {
           SymbolGlyph($r('sys.symbol.picture'))
-            .fontSize(20)
+            .fontSize(22)
             .fontColor([$r('sys.color.font_secondary')])
         }
         .width(ReplyComposerBar.REPLY_BAR_CONTROL_SIZE)
@@ -172,6 +240,7 @@ export struct ReplyComposerBar {
         .onClick(() => {
           this.pickAndUploadImage()
         })
+        Blank().layoutWeight(1)
         Button({ type: ButtonType.Circle }) {
           SymbolGlyph($r('sys.symbol.paperplane_right_fill'))
             .fontSize(20)
@@ -190,7 +259,19 @@ export struct ReplyComposerBar {
         })
       }
       .width('100%')
-      .alignItems(VerticalAlign.Top)
+      .alignItems(VerticalAlign.Center)
+
+      // Sticker panel sits where the keyboard was (the page drops the bar to the bottom once the IME is
+      // dismissed). Sized to roughly the last keyboard height so the bar doesn't jump.
+      if (this.showStickerPanel) {
+        StickerPickerPanel({
+          stickers: BUILTIN_STICKERS,
+          panelHeight: this.stickerPanelHeight(),
+          onPick: (name: string) => {
+            this.insertSticker(name)
+          },
+        })
+      }
     }
     .width('100%')
     .padding({
@@ -325,8 +406,9 @@ export struct ReplyComposerBar {
       })
   }
 
-  // Insert text at the last recorded caret/selection, then move the caret past it.
-  private insertTextAtCaret(text: string): void {
+  // Insert text at the last recorded caret/selection, then move the caret past it. refocus=false skips the
+  // focus/keyboard grab (used by sticker inserts from the panel, which must keep the IME down + panel open).
+  private insertTextAtCaret(text: string, refocus: boolean = true): void {
     const contentLength = this.content.length
     const start = Math.min(Math.max(this.selStart, 0), contentLength)
     const rawEnd = Math.min(Math.max(this.selEnd, 0), contentLength)
@@ -336,7 +418,67 @@ export struct ReplyComposerBar {
     this.selStart = caret
     this.selEnd = caret
     this.scheduleSaveDraft()
-    this.moveCaret(caret)
+    if (refocus) {
+      this.moveCaret(caret)
+    }
+  }
+
+  private toggleStickerPanel(): void {
+    if (this.showStickerPanel) {
+      this.setStickerPanel(false)
+      this.panelBus.open = false
+      // Bring the keyboard back when toggling off.
+      this.getUIContext().getFocusController().requestFocus(ReplyComposerBar.INPUT_ID)
+    } else {
+      // Dismiss the IME first; the page's composerLift drops the bar to the bottom once keyboardHeight is 0,
+      // and the panel takes the freed space.
+      this.contentController.stopEditing()
+      this.setStickerPanel(true)
+      this.panelBus.open = true
+    }
+  }
+
+  // Show/hide the sticker panel. Kept as a plain toggle: the bar's vertical position is driven by the page's
+  // system-keyboard avoidance (composerLift padding on TopicDetailPage), which is outside this component, so
+  // wrapping the panel in animateTo only animated the panel while the bar snapped — a desynced "jump" that
+  // looked worse than an instant swap. A correct slide needs the bottom keyboard/panel region restructured
+  // into one animatable container; deferred.
+  private setStickerPanel(open: boolean): void {
+    this.showStickerPanel = open
+  }
+
+  // Take roughly the keyboard's footprint (so the bar doesn't jump); fall back before any keyboard shows.
+  private stickerPanelHeight(): number {
+    const fromKeyboard = this.lastKeyboardHeight - this.layout.bottomAvoidHeight
+    return fromKeyboard > 200 ? fromKeyboard : 300
+  }
+
+  private insertSticker(name: string): void {
+    // Insert the readable code "[name]" (not the URL) so the field stays editable; codes are expanded to bare
+    // whitelisted URLs only at submit (expandStickerCodes). Don't refocus — keep the panel open for rapid
+    // inserts.
+    this.insertTextAtCaret(`[${name}]`, false)
+  }
+
+  // Expand sticker codes "[name]" to the bare image URL (+ surrounding spaces so V2EX auto-embeds it) at
+  // submit time. Driven by the pack data (always available), so it works even after the composer reopens
+  // from a draft that holds codes. Unknown "[...]" tokens are left untouched.
+  private expandStickerCodes(text: string): string {
+    let result = text
+    for (const sticker of BUILTIN_STICKERS) {
+      const code = `[${sticker.name}]`
+      if (result.indexOf(code) >= 0) {
+        result = result.split(code).join(` ${sticker.url} `)
+      }
+    }
+    return result
+  }
+
+  private clearContent(): void {
+    this.content = ''
+    this.selStart = 0
+    this.selEnd = 0
+    this.scheduleSaveDraft()
   }
 
   // Replace the exact placeholder substring with finalText (empty removes it). Bails if the user already
@@ -456,12 +598,13 @@ export struct ReplyComposerBar {
       this.errorMessage = check.message
       return
     }
-    // Persist the draft (so a failed parent submit keeps the user's text), then emit the clean
-    // snapshot. The parent closes this bar immediately and owns the network submit.
+    // Persist the draft (so a failed parent submit keeps the user's text — with the readable codes intact),
+    // then expand sticker codes to bare image URLs and emit the clean snapshot. The parent closes this bar
+    // immediately and owns the network submit.
     this.errorMessage = ''
     this.persistDraft()
     if (this.submitAction) {
-      this.submitAction(check.content)
+      this.submitAction(this.expandStickerCodes(check.content))
     }
   }
 }

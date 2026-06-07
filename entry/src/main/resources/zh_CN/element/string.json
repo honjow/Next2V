@@ -1325,6 +1325,10 @@
       "value": "打开网页搜索"
     },
     {
+      "name": "sticker_insert_action",
+      "value": "插入表情"
+    },
+    {
       "name": "search_sov2ex_run_hint",
       "value": "点「搜索」检索 SOV2EX 主题全文"
     },

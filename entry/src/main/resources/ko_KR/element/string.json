@@ -1325,6 +1325,10 @@
       "value": "Web 검색 열기"
     },
     {
+      "name": "sticker_insert_action",
+      "value": "스티커 삽입"
+    },
+    {
       "name": "search_sov2ex_run_hint",
       "value": "「검색」으로 SOV2EX 전문 검색"
     },
