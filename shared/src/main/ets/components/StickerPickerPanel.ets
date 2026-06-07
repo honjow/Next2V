@@ -104,9 +104,21 @@ export const BUILTIN_STICKERS: StickerItem[] = [
 ]
 
 /**
+ * One sticker cell with its own load state, so each tile can show a skeleton placeholder until its network
+ * image arrives. The built-in pack is imgur-hosted; on a cold cache the first open would otherwise render a
+ * blank (no thumbnail, no spinner) which reads as "broken". @Trace loaded drives the per-cell skeleton.
+ */
+@ObservedV2
+class StickerCell {
+  name: string = ''
+  url: string = ''
+  @Trace loaded: boolean = false
+}
+
+/**
  * Chat-app style sticker grid, shown in place of the soft keyboard (the host collapses the IME and gives
- * this panel the keyboard's footprint). Tapping a sticker emits its URL; the host inserts it at the caret.
- * Phase 1 = one built-in pack; pack tabs / custom sources come in Phase 2.
+ * this panel the keyboard's footprint). Tapping a sticker emits its name; the host inserts "[name]" at the
+ * caret. Each cell shows a skeleton tile until its image loads. Phase 1 = one built-in pack.
  */
 @ComponentV2
 export struct StickerPickerPanel {
@@ -115,30 +127,58 @@ export struct StickerPickerPanel {
   // Emits the sticker's NAME (the readable code, e.g. "doge"); the host inserts "[doge]" while editing and
   // expands codes to the bare image URL only on submit (keeps the text field readable).
   @Event onPick?: (name: string) => void;
+  // Per-cell wrappers carrying @Trace loaded; rebuilt on each open (the panel is conditionally mounted, so
+  // aboutToAppear runs every time it is shown and the skeletons reset).
+  @Local private cells: StickerCell[] = [];
+
+  aboutToAppear(): void {
+    this.cells = this.stickers.map((s: StickerItem) => {
+      const cell = new StickerCell()
+      cell.name = s.name
+      cell.url = s.url
+      return cell
+    })
+  }
 
   build() {
     Grid() {
       ForEach(
-        this.stickers,
-        (sticker: StickerItem) => {
+        this.cells,
+        (cell: StickerCell) => {
           GridItem() {
-            Image(sticker.url)
-              .width('100%')
-              .aspectRatio(1)
-              .objectFit(ImageFit.Contain)
-              .draggable(false)
-              .borderRadius(ThemeConstants.RADIUS_SM)
+            Stack() {
+              // Skeleton tile shown until the image loads; hidden afterwards so a transparent emoji isn't
+              // left sitting on a grey chip.
+              Column()
+                .width('100%')
+                .aspectRatio(1)
+                .borderRadius(ThemeConstants.RADIUS_SM)
+                .backgroundColor(ThemeConstants.BG_SUB)
+                .visibility(cell.loaded ? Visibility.Hidden : Visibility.Visible)
+              Image(cell.url)
+                .width('100%')
+                .aspectRatio(1)
+                .objectFit(ImageFit.Contain)
+                .draggable(false)
+                .borderRadius(ThemeConstants.RADIUS_SM)
+                .onComplete(() => {
+                  cell.loaded = true
+                })
+                .onError(() => {
+                  cell.loaded = true
+                })
+            }
           }
           // Inset the image inside its cell so a low-resolution sticker isn't upscaled to the full cell
           // width (which stretches/blurs it) and gets breathing room from its neighbours.
           .padding(ThemeConstants.SPACE_SM)
           .onClick(() => {
             if (this.onPick) {
-              this.onPick(sticker.name)
+              this.onPick(cell.name)
             }
           })
         },
-        (sticker: StickerItem) => sticker.url,
+        (cell: StickerCell) => cell.url,
       )
     }
     .columnsTemplate('repeat(8, 1fr)')
