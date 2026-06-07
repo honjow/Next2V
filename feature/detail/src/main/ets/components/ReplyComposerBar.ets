@@ -9,6 +9,7 @@ import {
 import {
   AppStrings,
   BUILTIN_STICKERS,
+  BUILTIN_STICKER_GROUPS,
   connectLayoutSafeArea,
   connectNavStack,
   CookieJarSettings,
@@ -284,7 +285,7 @@ export struct ReplyComposerBar {
       // bar). Shown where the keyboard was, sized to the last keyboard footprint so the bar doesn't jump.
       if (this.showStickerPanel) {
         StickerPickerPanel({
-          stickers: BUILTIN_STICKERS,
+          groups: BUILTIN_STICKER_GROUPS,
           panelHeight: this.stickerPanelHeight(),
           onPick: (name: string) => {
             this.insertSticker(name)

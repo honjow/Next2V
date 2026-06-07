@@ -458,7 +458,9 @@ export { AppSearchField } from './components/AppSearchField'
 export {
   StickerPickerPanel,
   BUILTIN_STICKERS,
+  BUILTIN_STICKER_GROUPS,
   type StickerItem,
+  type StickerGroup,
 } from './components/StickerPickerPanel'
 export { AppTextField } from './components/AppTextField'
 export { AppActionButton } from './components/AppActionButton'
