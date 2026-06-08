@@ -1,5 +1,5 @@
 import { webview } from '@kit.ArkWeb'
-import { CookieJarSettings, V2exWebView } from 'shared'
+import { CookieJarSettings, DiagnosticLogger, V2exWebView } from 'shared'
 
 /**
  * Hidden-WebView daily check-in. V2EX guards /mission/daily/redeem with a TLS/JS-fingerprint anti-bot that
@@ -77,24 +77,34 @@ export struct DailyCheckinWebRunner {
       // Navigate to the 领取 button's redeem URL via a real browser navigation (passes the anti-bot).
       this.step = 'redeem'
       this.run(
-        `(function(){var b=document.querySelector('input[value^="领取"]');if(!b)return 'none';var oc=b.getAttribute('onclick')||'';var m=oc.match(/\\/mission\\/daily\\/redeem\\?once=\\d+/);if(m){location.href=m[0];return 'go';}b.click();return 'go';})()`,
+        `(function(){var b=document.querySelector('input[value^="领取"]');if(b){var oc=b.getAttribute('onclick')||'';var m=oc.match(/\\/mission\\/daily\\/redeem\\?once=\\d+/);if(m){location.href=m[0];return 'GO';}b.click();return 'GO';}var t=(document.body&&document.body.innerText)||'';if(t.indexOf('已领取')>=0||t.indexOf('已完成')>=0)return 'DONE';return 'NOBTN';})()`,
       )
         .then((r: string) => {
-          if (r.indexOf('none') >= 0) {
-            this.finish('already', 0)
+          DiagnosticLogger.info('auto_daily_checkin', 'mission_result', { result: r })
+          if (r.indexOf('GO') >= 0) {
+            // navigation triggers onPageEnd again with step==='redeem'
+            return
           }
-          // 'go' → the navigation triggers onPageEnd again with step==='redeem'.
+          if (r.indexOf('DONE') >= 0) {
+            this.finish('already', 0)
+            return
+          }
+          // 'NOBTN' (button gone but no already-done text) — do NOT treat as success; report failure.
+          this.finish('failed', 0)
         })
         .catch(() => {
           this.finish('failed', 0)
         })
     } else if (this.step === 'redeem') {
-      // Redeem result page: claimed iff the 领取 button is gone (page shows 已领取 / 查看账户余额).
+      // Redeem result page. SUCCESS requires POSITIVE confirmation (已领取/成功领取); the anti-bot wall and any
+      // other page that merely lacks the 领取 button must NOT count as success (that was the false-success bug:
+      // a wall page has no 领取 button, so the old `||!领取button` reported claimed without claiming).
       this.run(
-        `(function(){var t=(document.body&&document.body.innerText)||'';if(t.indexOf('已领取')>=0||!document.querySelector('input[value^="领取"]'))return 'ok';return 'fail';})()`,
+        `(function(){var t=(document.body&&document.body.innerText)||'';if(t.indexOf('奇奇怪怪')>=0||t.indexOf('干净')>=0)return 'RWall';if(t.indexOf('已领取')>=0||t.indexOf('成功领取')>=0||t.indexOf('已成功')>=0)return 'RClaimed';if(document.querySelector('input[value^="领取"]'))return 'RNoClaim';return 'RUnknown:'+t.slice(0,80);})()`,
       )
         .then((r: string) => {
-          if (r.indexOf('ok') >= 0) {
+          DiagnosticLogger.info('auto_daily_checkin', 'redeem_result', { result: r })
+          if (r.indexOf('RClaimed') >= 0) {
             this.step = 'balance'
             this.safeLoad(`${this.baseUrl}/balance`)
           } else {
@@ -161,6 +171,11 @@ export struct DailyCheckinWebRunner {
     if (this.step === 'idle') {
       return
     }
+    DiagnosticLogger.info('auto_daily_checkin', 'finish', {
+      fromStep: this.step,
+      status: status,
+      rewardCoins: rewardCoins,
+    })
     this.step = 'idle'
     this.active = false
     this.clearTimer()
