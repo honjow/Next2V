@@ -38,7 +38,10 @@ import {
   connectPendingV2exUrl,
   connectReplyStickerPanel,
   connectTopicDetailAction,
+  connectTopicComposeTarget,
   connectTopicDetailAppbar,
+  connectTopicDetailOwnership,
+  publishTopicComposeTarget,
   connectTopicEditorAppbar,
   connectTwoFactor,
   connectUserProfileAction,
@@ -54,6 +57,7 @@ import {
   NotificationUnreadState,
   PendingV2exUrlState,
   TopicDetailAppbarState,
+  TopicDetailOwnershipState,
   TopicEditorAppbarState,
   sendTopicEditorSubmit,
   TwoFactorState,
@@ -168,6 +172,7 @@ struct Index {
   // each dual-written at its producer's write-through helper. Home-tab/auth-session/notification-unread/
   // account-webview/pending-url are likewise mirror-backed (dual-written at their service chokepoints).
   private topicDetailAppbar: TopicDetailAppbarState = connectTopicDetailAppbar();
+  private topicDetailOwnership: TopicDetailOwnershipState = connectTopicDetailOwnership();
   private topicEditorAppbar: TopicEditorAppbarState = connectTopicEditorAppbar();
   private nodeTopicAppbar: NodeTopicAppbarState = connectNodeTopicAppbar();
   private userProfileAppbar: UserProfileAppbarState = connectUserProfileAppbar();
@@ -711,7 +716,11 @@ struct Index {
       return this.navDestTitleBarOpts(AppStrings.R_NAV_BLOCKED_LISTS, undefined, undefined, bb)
     }
     if (descriptor.family === 'topicEditor') {
-      return this.topicEditorTitleBarOpts(descriptor.title)
+      // The shared editor is also used for 附言(append); show "增加附言" instead of the create title then.
+      // The compose target is set before this destination is pushed, so a one-time read is current.
+      const editorTitle: ResourceStr =
+        connectTopicComposeTarget().mode === 'append' ? AppStrings.R_TOPIC_ACTION_APPEND : descriptor.title
+      return this.topicEditorTitleBarOpts(editorTitle)
     }
     if (IndexRouteCoordinator.usesStandardTitleBar(descriptor.family)) {
       return this.navDestTitleBarOpts(descriptor.title)
@@ -915,7 +924,11 @@ struct Index {
   }
 
   private topicDetailTitleBarOpts(topicId: number): Record<string, Object> {
-    let items: Record<string, Object>[] = TopicDetailTitleBarCoordinator.actions().map(
+    let items: Record<string, Object>[] = TopicDetailTitleBarCoordinator.actions()
+      .filter((descriptor: TopicDetailTitleActionDescriptor) =>
+        this.isTopicActionVisible(descriptor.action, topicId),
+      )
+      .map(
       (descriptor: TopicDetailTitleActionDescriptor) =>
         this.topicActionItem(
           this.topicDetailTitleActionLabel(descriptor, topicId),
@@ -985,6 +998,16 @@ struct Index {
     return descriptor.label
   }
 
+  // Owner-gated overflow items. appendTopic only shows when the signed-in user is the OP of THIS topic
+  // (routeTopicId guard, since the ownership holder is a shared singleton across stacked detail pages)
+  // and the topic is in the append window (>=1800s). Everything else is always visible.
+  private isTopicActionVisible(action: TopicDetailTitleAction, topicId: number): boolean {
+    if (action === 'appendTopic') {
+      return this.topicDetailOwnership.routeTopicId === topicId && this.topicDetailOwnership.canAppend
+    }
+    return true
+  }
+
   private topicDetailTitleActionIcon(action: TopicDetailTitleAction, topicId: number): Resource {
     const active = TopicDetailTitleBarCoordinator.activeForState(action, {
       savedLater: this.topicDetailAppbar.savedLater,
@@ -999,6 +1022,11 @@ struct Index {
     }
     if (action === 'saveLater') {
       return active ? $r('sys.symbol.bookmark_fill') : $r('sys.symbol.bookmark')
+    }
+    if (action === 'appendTopic') {
+      // Shown only in the text-only overflow popup, so the glyph is not actually rendered; reuse a
+      // known-good symbol to keep the IconType valid.
+      return $r('sys.symbol.doc_plaintext')
     }
     if (action === 'ignoreTopic') {
       return this.isTopicIgnoredForRoute(topicId) ? $r('sys.symbol.eye') : $r('sys.symbol.xmark')
@@ -1317,6 +1345,8 @@ struct Index {
       (descriptor: IndexTitleMenuDescriptor) =>
         this.topicActionItem(descriptor.label, this.mainTitleMenuIcon(descriptor.icon), () => {
           if (descriptor.action === 'createTopic') {
+            // Reset the shared editor target to create so a prior 附言 target can't leak into a new topic.
+            publishTopicComposeTarget('create', 0)
             this.ns.pushPathByName('TopicEditor', null)
           }
         }),

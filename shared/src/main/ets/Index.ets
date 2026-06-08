@@ -122,6 +122,19 @@ export {
   publishTopicDetailTopicIgnored,
 } from './state/TopicDetailAppbarState'
 export {
+  TopicDetailOwnershipState,
+  connectTopicDetailOwnership,
+  publishTopicDetailOwnership,
+  clearTopicDetailOwnership,
+  TOPIC_EDIT_WINDOW_SEC,
+  TOPIC_APPEND_UNLOCK_SEC,
+} from './state/TopicDetailOwnershipState'
+export {
+  TopicComposeTargetState,
+  connectTopicComposeTarget,
+  publishTopicComposeTarget,
+} from './state/TopicComposeTargetState'
+export {
   NodeTopicAppbarState,
   connectNodeTopicAppbar,
   publishNodeTopicSaved,

@@ -2173,6 +2173,22 @@
       "value": "提交失败：未确认回复已发布"
     },
     {
+      "name": "api_error_append_body_required",
+      "value": "附言内容不能为空"
+    },
+    {
+      "name": "api_error_parse_append_form_failed",
+      "value": "暂时无法发布附言（可能未满 30 分钟、已达 3 条上限，或非本人主题）"
+    },
+    {
+      "name": "api_error_not_topic_owner",
+      "value": "只有主题作者可以操作"
+    },
+    {
+      "name": "api_error_append_submit_unconfirmed",
+      "value": "附言提交结果未确认，请刷新查看"
+    },
+    {
       "name": "api_error_reply_thank_not_allowed",
       "value": "当前回复不可感谢或已经感谢过"
     },
@@ -2389,6 +2405,10 @@
       "value": "稍后读"
     },
     {
+      "name": "topic_action_append",
+      "value": "增加附言"
+    },
+    {
       "name": "topic_action_unsave_later",
       "value": "取消稍后读"
     },
@@ -2495,6 +2515,18 @@
     {
       "name": "editor_confirm_post_format",
       "value": "在「{0}」发布《{1}》？\n\n通常消耗至少 20 铜币，并修改账号状态。"
+    },
+    {
+      "name": "editor_confirm_append_title",
+      "value": "确认发布附言"
+    },
+    {
+      "name": "editor_confirm_append_format",
+      "value": "发布附言至少消耗 20 铜币（每千字 20 铜币，按长度增加）。\n\n当前余额：{0}"
+    },
+    {
+      "name": "editor_append_posted",
+      "value": "附言已发布"
     },
     {
       "name": "reply_composer_title",

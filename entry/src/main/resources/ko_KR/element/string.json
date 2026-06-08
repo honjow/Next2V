@@ -2173,6 +2173,22 @@
       "value": "제출 실패: 답글 게시가 확인되지 않았습니다"
     },
     {
+      "name": "api_error_append_body_required",
+      "value": "추가할 내용을 입력하세요"
+    },
+    {
+      "name": "api_error_parse_append_form_failed",
+      "value": "지금은 이 글에 부기를 추가할 수 없습니다（작성 30분 미만, 최대 3개 도달 또는 작성자가 아님）"
+    },
+    {
+      "name": "api_error_not_topic_owner",
+      "value": "글 작성자만 할 수 있습니다"
+    },
+    {
+      "name": "api_error_append_submit_unconfirmed",
+      "value": "부기 등록 결과를 확인하지 못했습니다. 새로고침해 확인하세요"
+    },
+    {
       "name": "api_error_reply_thank_not_allowed",
       "value": "답글에 감사할 수 없거나 이미 감사했습니다"
     },
@@ -2389,6 +2405,10 @@
       "value": "나중에 저장"
     },
     {
+      "name": "topic_action_append",
+      "value": "부기 추가"
+    },
+    {
       "name": "topic_action_unsave_later",
       "value": "나중에 저장 해제"
     },
@@ -2495,6 +2515,18 @@
     {
       "name": "editor_confirm_post_format",
       "value": "「{0}」에 《{1}》 게시?\n\n보통 copper coins 20개 이상을 쓰며 계정 상태가 바뀝니다."
+    },
+    {
+      "name": "editor_confirm_append_title",
+      "value": "부기 등록 확인"
+    },
+    {
+      "name": "editor_confirm_append_format",
+      "value": "부기 등록에는 최소 20 동전이 듭니다(1000자당 20, 길이에 따라 증가).\n\n잔액: {0}"
+    },
+    {
+      "name": "editor_append_posted",
+      "value": "부기를 등록했습니다"
     },
     {
       "name": "reply_composer_title",

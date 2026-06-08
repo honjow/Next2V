@@ -4,6 +4,7 @@ export type TopicDetailTitleAction =
   | 'thankTopic'
   | 'siteFavorite'
   | 'saveLater'
+  | 'appendTopic'
   | 'ignoreTopic'
   | 'reportTopic'
   | 'copyTitle'
@@ -42,6 +43,9 @@ export class TopicDetailTitleBarCoordinator {
         stateKey: 'siteFavorited',
       },
       { label: AppStrings.R_TOPIC_ACTION_SAVE_LATER, action: 'saveLater', stateKey: 'savedLater' },
+      // Owner-only; Index.ets filters this out unless the signed-in user is the OP and the topic is in the
+      // append window (>=1800s). Placed early so it sits near the top of the overflow popup when shown.
+      { label: AppStrings.R_TOPIC_ACTION_APPEND, action: 'appendTopic', stateKey: '' },
       { label: AppStrings.R_TOPIC_ACTION_IGNORE_TOPIC, action: 'ignoreTopic', stateKey: '' },
       { label: AppStrings.R_TOPIC_ACTION_REPORT_TOPIC, action: 'reportTopic', stateKey: '' },
       { label: AppStrings.R_TOPIC_ACTION_COPY_TITLE, action: 'copyTitle', stateKey: '' },

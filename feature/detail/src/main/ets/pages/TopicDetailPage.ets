@@ -15,6 +15,11 @@ import {
   publishTopicDetailAppbarAvatarStates,
   publishTopicDetailAppbarUsernameStates,
   publishTopicDetailTopicIgnored,
+  publishTopicDetailOwnership,
+  clearTopicDetailOwnership,
+  publishTopicComposeTarget,
+  AccountStore,
+  type AccountRecord,
 } from 'shared'
 import { DetailViewModel, type ReplyThankSnapshot } from '../viewmodel/DetailViewModel'
 import { ReplyComposerBar } from '../components/ReplyComposerBar'
@@ -295,12 +300,40 @@ export struct TopicDetailPage {
               this.recordViewedTopic()
               this.markTopicReadState()
               this.restoreInitialPosition()
+              this.publishOwnership(context)
               this.v.triggerThreadPreloadIfNeeded()
               if (this.v.needsPreloadConfirm) {
                 this.showPreloadConfirmDialog()
               }
             })
           })
+      })
+  }
+
+  // Owner + time-phase for the 编辑/附言 menu gates. Computed once the topic is loaded by comparing the
+  // topic author to the active account's username (case-insensitive); the active username comes from the
+  // cookie-session AccountStore record (NOT the API-token identity, which is empty for cookie logins).
+  private publishOwnership(context: common.UIAbilityContext): void {
+    const topic = this.v.topic
+    if (!topic) {
+      clearTopicDetailOwnership()
+      return
+    }
+    const opName = (topic.member.username || '').trim().toLowerCase()
+    const created = topic.created || 0
+    AccountStore.getAll(context)
+      .then((records: AccountRecord[]) => {
+        const activeId = AccountStore.getActiveId()
+        let active: AccountRecord | null = records.find((r: AccountRecord) => r.id === activeId) || null
+        if (!active && records.length > 0) {
+          active = records[0]
+        }
+        const me = (active && active.username ? active.username : '').trim().toLowerCase()
+        const isOp = me.length > 0 && opName.length > 0 && me === opName
+        publishTopicDetailOwnership(this.topicId, isOp, created)
+      })
+      .catch((_error: Error) => {
+        publishTopicDetailOwnership(this.topicId, false, created)
       })
   }
 
@@ -424,6 +457,17 @@ export struct TopicDetailPage {
     // NONE while composing and lift the bar ourselves (expandSafeArea + manual keyboard padding), so
     // the bar reliably rests directly on top of the keyboard everywhere. Restored on dismiss.
     this.getUIContext().setKeyboardAvoidMode(KeyboardAvoidMode.NONE)
+  }
+
+  // Open the shared topic editor in append mode for THIS topic. The menu item is only shown to the OP in
+  // the append window (Index.ets gate), but re-check the cookie here as defence-in-depth.
+  private openAppendEditor(): void {
+    if (!this.authState.configured || !CookieJarSettings.getCurrentCookie()) {
+      this.stack.pushPathByName('V2exNativeLogin', null)
+      return
+    }
+    publishTopicComposeTarget('append', this.topicId)
+    this.stack.pushPathByName('TopicEditor', null)
   }
 
   // Single close path for the composer bar: restore the page keyboard-avoid mode and clear state.
@@ -1748,6 +1792,10 @@ export struct TopicDetailPage {
     }
     if (action === 'reply') {
       this.openReplyEditor()
+      return
+    }
+    if (action === 'appendTopic') {
+      this.openAppendEditor()
       return
     }
     if (action === 'saveLater') {

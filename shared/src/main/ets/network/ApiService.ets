@@ -1443,6 +1443,87 @@ export class ApiService {
     return 0
   }
 
+  // Create a 附言(append) on an existing topic. V2EX serves the append form only to the topic author,
+  // and only once the topic is >=1800s old (and up to 3 appends) — when the form is absent the action
+  // is unavailable. Submit is POST /append/topic/<id> with content + once (+ the parsed Markdown syntax
+  // value so Markdown renders); success is a redirect back to /t/<id>. Costs >=20 铜币 (per 1000 字).
+  async appendTopicWithCookie(cookie: string, topicId: number, content: string): Promise<void> {
+    const cleanContent = (content || '').trim()
+    if (!cookie) {
+      throw ApiErrors.authRequired()
+    }
+    if (topicId <= 0) {
+      throw ApiErrors.invalidTopicId()
+    }
+    if (!cleanContent) {
+      throw ApiErrors.appendBodyRequired()
+    }
+
+    const appendPath = `/append/topic/${topicId}`
+    const topicPath = `/t/${topicId}`
+    const formRes = await this.requestHtmlWithCookieAllowRedirect(
+      appendPath,
+      cookie,
+      topicPath,
+      http.RequestMethod.GET,
+    )
+    if (formRes.location.indexOf('/signin') >= 0) {
+      throw ApiErrors.webSessionExpired()
+    }
+    const html = formRes.text
+    if (!V2exSessionParser.extractUsername(html)) {
+      throw ApiErrors.webSessionExpired()
+    }
+    const form = V2exWriteFormParser.extractAppendForm(html)
+    if (!form) {
+      // No append form served: not the author, the 30-min window not reached, or the 3-append cap hit.
+      if (html.indexOf('不是你创建的主题') >= 0) {
+        throw ApiErrors.notTopicOwner()
+      }
+      throw ApiErrors.parseAppendFormFailed()
+    }
+
+    const fields: Record<string, string> = {}
+    const hiddenKeys = Object.keys(form.hiddenFields)
+    for (const key of hiddenKeys) {
+      fields[key] = form.hiddenFields[key]
+    }
+    fields[form.contentField] = cleanContent
+    fields['content'] = cleanContent
+    // The append composer is Markdown (it reuses the topic editor), so post the parsed Markdown syntax
+    // VALUE; the form's own default option is Default(0), which would render Markdown as plain text.
+    if (form.markdownSyntaxValue) {
+      fields['syntax'] = form.markdownSyntaxValue
+    }
+    const body = ApiService.encodeFormFields(fields)
+
+    const res = await this.requestHtmlWithCookieAllowRedirect(
+      form.actionPath || appendPath,
+      cookie,
+      appendPath,
+      http.RequestMethod.POST,
+      body,
+      {},
+      // A successful append 301/302s back to /t/<id>; tolerate a non-2xx final status so the Location
+      // is recovered rather than thrown.
+      true,
+    )
+    if (res.location.indexOf('/signin') >= 0) {
+      throw ApiErrors.webSessionExpired()
+    }
+    if (ApiService.isTopicLocation(res.location, topicId)) {
+      return
+    }
+    if ((res.text || '').indexOf('不是你创建的主题') >= 0) {
+      throw ApiErrors.notTopicOwner()
+    }
+    const problem = V2exSigninParser.extractProblemMessage(res.text)
+    if (problem) {
+      throw ApiErrors.submitFailedDetail(problem)
+    }
+    throw ApiErrors.appendSubmitUnconfirmed()
+  }
+
   async syncBlockedListsFromCookieHtmlSources(
     cookie: string,
     trigger: string = 'manualSync',

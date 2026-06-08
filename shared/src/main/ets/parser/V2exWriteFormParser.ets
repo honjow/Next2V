@@ -14,6 +14,15 @@ export interface V2exTopicWriteForm {
   markdownSyntaxValue: string
 }
 
+// The 附言(append) form (/append/topic/<id>) is the topic-create form minus the title: a content
+// textarea (id="topic_supplement", name="content"), a syntax <select> (Default=0 / Markdown=1), and once.
+export interface V2exAppendWriteForm {
+  actionPath: string
+  contentField: string
+  hiddenFields: Record<string, string>
+  markdownSyntaxValue: string
+}
+
 interface V2exInputTag {
   type: string
   name: string
@@ -70,6 +79,26 @@ export class V2exWriteFormParser {
       return null
     }
     return { actionPath, titleField, contentField, hiddenFields, markdownSyntaxValue }
+  }
+
+  static extractAppendForm(html: string): V2exAppendWriteForm | null {
+    const formHtml = V2exWriteFormParser.extractFormHtml(html, [
+      /id=['"]topic_supplement['"]/i,
+      /<textarea[^>]*name=['"]content['"][^>]*>/i
+    ])
+    if (!formHtml) {
+      return null
+    }
+
+    const actionPath = V2exWriteFormParser.extractFormAction(formHtml)
+    const hiddenFields = V2exWriteFormParser.extractHiddenFields(formHtml)
+    const contentField = V2exWriteFormParser.findTextareaName(formHtml, 'topic_supplement') || 'content'
+    const markdownSyntaxValue = V2exWriteFormParser.extractSyntaxMarkdownValue(formHtml)
+
+    if (!actionPath || !contentField) {
+      return null
+    }
+    return { actionPath, contentField, hiddenFields, markdownSyntaxValue }
   }
 
   /**

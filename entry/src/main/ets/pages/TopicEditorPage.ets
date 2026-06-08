@@ -2,7 +2,7 @@ import { common } from '@kit.AbilityKit'
 import { photoAccessHelper } from '@kit.MediaLibraryKit'
 import { KeyboardAvoidMode, LoadingDialog, promptAction, SymbolGlyphModifier } from '@kit.ArkUI'
 import {
-  ApiService, AppStrings, connectLayoutSafeArea, connectNavStack, connectNodePickAction, connectTopicEditorAction, CookieJarSettings, DateUtils, DraftSettings, ImageBytesUtils, ImageUploadErrorCode, ImageUploadService, ImageUploadSettings, LayoutSafeAreaState, MarkdownContent, MarkdownToolbar,
+  ApiService, AppStrings, connectAccountMeta, connectLayoutSafeArea, connectNavStack, connectNodePickAction, connectTopicComposeTarget, connectTopicEditorAction, CookieJarSettings, DateUtils, DraftSettings, ImageBytesUtils, ImageUploadErrorCode, ImageUploadService, ImageUploadSettings, LayoutSafeAreaState, MarkdownContent, MarkdownToolbar,
   NodePickActionState, publishTopicEditorSubmitEnabled, ThemeConstants, TopicDetailParams, TopicEditorActionState, translateApiError, type ImageBytes
 } from 'shared'
 
@@ -18,6 +18,11 @@ export struct TopicEditorPage {
   // used purely as a method target (pushPathByName/pop), so no V2 reactivity is needed.
   private stack: NavPathStack = connectNavStack().stack
 
+  // 'create' (new topic) or 'append' (附言 on an existing topic). Set once from the compose-target
+  // holder in aboutToAppear. In append mode the node + title fields are hidden, the cost dialog states
+  // the append rule, and submit posts to /append/topic/<id>.
+  @Local private mode: string = 'create'
+  @Local private appendTopicId: number = 0
   @Local private nodeName: string = ''
   // Display-only label for the picked node (the submit value is nodeName). Empty until a node is
   // picked this session; on a draft reload we only have the name, so the field falls back to it.
@@ -94,6 +99,11 @@ export struct TopicEditorPage {
     // into view when the keyboard re-appeared (e.g. after a preview↔edit switch). Restored on disappear.
     this.getUIContext().setKeyboardAvoidMode(KeyboardAvoidMode.RESIZE)
     this.disposed = false
+    // Resolve what we're composing (create vs append) from the holder the pusher set just before
+    // navigating here; default to create so a missing target never mis-routes a submit.
+    const target = connectTopicComposeTarget()
+    this.mode = target.mode === 'append' && target.topicId > 0 ? 'append' : 'create'
+    this.appendTopicId = this.mode === 'append' ? target.topicId : 0
     this.nodeName = ''
     this.nodeTitle = ''
     this.title = ''
@@ -108,6 +118,11 @@ export struct TopicEditorPage {
     // Seed the title-bar Submit icon disabled; the @Monitor republishes as the form / draft fills in.
     publishTopicEditorSubmitEnabled(this.canSubmit())
 
+    // Append is body-only and ephemeral (no node/title, no draft persistence) — skip the topic-create
+    // draft so an append never inherits a half-written new-topic draft.
+    if (this.mode === 'append') {
+      return
+    }
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     DraftSettings.loadTopicDraft(context)
       .then((draft) => {
@@ -135,7 +150,8 @@ export struct TopicEditorPage {
     // Leave the title-bar Submit icon disabled once we're gone (the next destination owns its own bar).
     publishTopicEditorSubmitEnabled(false)
     this.clearSaveTimer()
-    if (!this.hasSubmitted) {
+    // Append is ephemeral (no draft); only the create flow persists a draft on the way out.
+    if (this.mode === 'create' && !this.hasSubmitted) {
       this.persistDraft()
     }
   }
@@ -149,44 +165,47 @@ export struct TopicEditorPage {
       // layoutWeight body fills the pane rather than sitting in a fixed 320 box.
       Scroll() {
       Column({ space: ThemeConstants.SPACE_SM }) {
-        // Node is chosen from the node list only (no free text): tapping opens NodePickerPage, and
-        // the pick comes back via the node-pick command bus (see onNodePicked).
-        Row({ space: ThemeConstants.SPACE_SM }) {
-          Text(this.nodeFieldLabel())
-            .fontSize(ThemeConstants.FONT_SIZE_BODY)
-            .fontColor(this.nodeName.trim().length > 0
-              ? $r('sys.color.font_primary')
-              : $r('sys.color.font_secondary'))
-            .layoutWeight(1)
-            .maxLines(1)
-            .textOverflow({ overflow: TextOverflow.Ellipsis })
-          SymbolGlyph($r('sys.symbol.chevron_right'))
-            .fontSize(16)
-            .fontColor([$r('sys.color.font_secondary')])
-        }
-        .width('100%')
-        .height(44)
-        .padding({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
-        // Distinguish fields from the page by background-color contrast (card surface on the page's
-        // sub-background), not border lines — matches the app's overall flat/card style.
-        .backgroundColor($r('sys.color.ohos_id_color_background'))
-        .borderRadius(ThemeConstants.RADIUS_MD)
-        .enabled(!this.isSubmitting)
-        .onClick(() => { this.openNodePicker() })
-
-        TextInput({ placeholder: AppStrings.text(AppStrings.R_TOPIC_EDITOR_TITLE_PLACEHOLDER, 'Title'), text: this.title })
+        // Node + title belong to a NEW topic only; an append (附言) is body-only, so hide them.
+        if (this.mode === 'create') {
+          // Node is chosen from the node list only (no free text): tapping opens NodePickerPage, and
+          // the pick comes back via the node-pick command bus (see onNodePicked).
+          Row({ space: ThemeConstants.SPACE_SM }) {
+            Text(this.nodeFieldLabel())
+              .fontSize(ThemeConstants.FONT_SIZE_BODY)
+              .fontColor(this.nodeName.trim().length > 0
+                ? $r('sys.color.font_primary')
+                : $r('sys.color.font_secondary'))
+              .layoutWeight(1)
+              .maxLines(1)
+              .textOverflow({ overflow: TextOverflow.Ellipsis })
+            SymbolGlyph($r('sys.symbol.chevron_right'))
+              .fontSize(16)
+              .fontColor([$r('sys.color.font_secondary')])
+          }
+          .width('100%')
           .height(44)
-          .fontSize(ThemeConstants.FONT_SIZE_BODY)
-          // Match the placeholder to the input/node font; otherwise it falls back to a larger default.
-          .placeholderFont({ size: ThemeConstants.FONT_SIZE_BODY })
+          .padding({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
+          // Distinguish fields from the page by background-color contrast (card surface on the page's
+          // sub-background), not border lines — matches the app's overall flat/card style.
           .backgroundColor($r('sys.color.ohos_id_color_background'))
           .borderRadius(ThemeConstants.RADIUS_MD)
-          // Native clear ✕ on the right, shown only while the field is non-empty (INPUT style).
-          .cancelButton({ style: CancelButtonStyle.INPUT, icon: this.titleClearIcon })
-          .onChange((value: string) => {
-            this.title = value
-            this.scheduleSaveDraft()
-          })
+          .enabled(!this.isSubmitting)
+          .onClick(() => { this.openNodePicker() })
+
+          TextInput({ placeholder: AppStrings.text(AppStrings.R_TOPIC_EDITOR_TITLE_PLACEHOLDER, 'Title'), text: this.title })
+            .height(44)
+            .fontSize(ThemeConstants.FONT_SIZE_BODY)
+            // Match the placeholder to the input/node font; otherwise it falls back to a larger default.
+            .placeholderFont({ size: ThemeConstants.FONT_SIZE_BODY })
+            .backgroundColor($r('sys.color.ohos_id_color_background'))
+            .borderRadius(ThemeConstants.RADIUS_MD)
+            // Native clear ✕ on the right, shown only while the field is non-empty (INPUT style).
+            .cancelButton({ style: CancelButtonStyle.INPUT, icon: this.titleClearIcon })
+            .onChange((value: string) => {
+              this.title = value
+              this.scheduleSaveDraft()
+            })
+        }
 
         MarkdownToolbar({
           previewActive: this.isPreview,
@@ -547,6 +566,11 @@ export struct TopicEditorPage {
   }
 
   private scheduleSaveDraft(): void {
+    // Append is ephemeral — never persist its body as a topic draft, or it would resurface in the
+    // create editor (which DOES load the topic draft). Single choke point for all the onChange callers.
+    if (this.mode === 'append') {
+      return
+    }
     this.clearSaveTimer()
     this.saveTimerId = setTimeout(() => {
       this.persistDraft()
@@ -585,7 +609,11 @@ export struct TopicEditorPage {
     if (this.hasUploadInFlight()) {
       return false
     }
-    if (!this.nodeName.trim() || !this.title.trim() || this.content.trim().length === 0) {
+    if (this.content.trim().length === 0) {
+      return false
+    }
+    // Append is body-only; a new topic also needs a node + title.
+    if (this.mode === 'create' && (!this.nodeName.trim() || !this.title.trim())) {
       return false
     }
     return !!CookieJarSettings.getCurrentCookie()
@@ -597,12 +625,41 @@ export struct TopicEditorPage {
     return this.content.indexOf('uploading://') >= 0
   }
 
+  // Append confirm: body-only, with a cost dialog stating the floor (≥20 铜币, grows with length) and the
+  // current balance — V2EX charges on submit with no preview, so warn before the irreversible post.
+  private confirmAppendSubmit(): void {
+    if (this.content.trim().length === 0) {
+      promptAction.openToast({ message: AppStrings.text($r('app.string.api_error_append_body_required'), 'Append content cannot be empty') }).catch((_error: Error) => { })
+      return
+    }
+    if (!CookieJarSettings.getCurrentCookie()) {
+      promptAction.openToast({ message: AppStrings.text($r('app.string.api_error_auth_required'), 'Please sign in') }).catch((_error: Error) => { })
+      return
+    }
+    const balance = connectAccountMeta().balance
+    const balanceText = balance && balance.summary ? balance.summary : '—'
+    const message = AppStrings.format(
+      AppStrings.text(AppStrings.R_EDITOR_CONFIRM_APPEND_FORMAT, 'Posting a supplement costs at least 20 copper coins (grows with length).\n\nBalance: {0}'),
+      [balanceText],
+    )
+    this.getUIContext().showAlertDialog({
+      title: AppStrings.text(AppStrings.R_EDITOR_CONFIRM_APPEND_TITLE, 'Confirm supplement'),
+      message: message,
+      primaryButton: { value: AppStrings.text($r('app.string.common_cancel'), 'Cancel'), action: () => { } },
+      secondaryButton: { value: AppStrings.text(AppStrings.R_EDITOR_PUBLISH, 'Publish'), action: () => { this.submit() } }
+    })
+  }
+
   private confirmSubmit(): void {
     if (this.isSubmitting) {
       return
     }
     if (this.hasUploadInFlight()) {
       promptAction.openToast({ message: AppStrings.text(AppStrings.R_IMAGE_UPLOAD_WAIT, 'Wait for the image to finish uploading') }).catch((_error: Error) => { })
+      return
+    }
+    if (this.mode === 'append') {
+      this.confirmAppendSubmit()
       return
     }
     if (!this.nodeName.trim()) {
@@ -647,6 +704,10 @@ export struct TopicEditorPage {
     // body field can't re-grab focus or be mis-tapped while the post is in flight.
     this.getUIContext().getFocusController().clearFocus()
     this.submitLoadingDialogController.open()
+    if (this.mode === 'append') {
+      this.submitAppend(cookie)
+      return
+    }
     this.api.createTopicWithCookie(cookie, this.nodeName, this.title, this.content)
       .then((topicId: number) => {
         this.hasSubmitted = true
@@ -662,6 +723,26 @@ export struct TopicEditorPage {
         } else {
           this.stack.pop()
         }
+      })
+      .catch((error: Error) => {
+        this.errorMessage = translateApiError(error)
+        promptAction.openToast({ message: this.errorMessage }).catch((_error2: Error) => { })
+      })
+      .finally(() => {
+        this.submitLoadingDialogController.close()
+        this.isSubmitting = false
+      })
+  }
+
+  // Append submit: POST /append/topic/<id>, then reopen the topic so the new 附言 block shows immediately
+  // (replace the editor in the stack — mirrors the create flow's replace-with-the-posted-topic).
+  private submitAppend(cookie: string): void {
+    this.api.appendTopicWithCookie(cookie, this.appendTopicId, this.content)
+      .then(() => {
+        this.hasSubmitted = true
+        promptAction.openToast({ message: AppStrings.text(AppStrings.R_EDITOR_APPEND_POSTED, 'Supplement posted') }).catch((_error: Error) => { })
+        const p: TopicDetailParams = { topicId: this.appendTopicId }
+        this.stack.replacePathByName('TopicDetail', p as Object)
       })
       .catch((error: Error) => {
         this.errorMessage = translateApiError(error)

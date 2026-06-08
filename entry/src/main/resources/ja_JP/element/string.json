@@ -2173,6 +2173,22 @@
       "value": "送信に失敗しました: 返信の公開を確認できません"
     },
     {
+      "name": "api_error_append_body_required",
+      "value": "追記の内容を入力してください"
+    },
+    {
+      "name": "api_error_parse_append_form_failed",
+      "value": "現在この投稿には追記できません（投稿から30分未満、上限3件、または作成者ではない可能性があります）"
+    },
+    {
+      "name": "api_error_not_topic_owner",
+      "value": "投稿の作成者のみ操作できます"
+    },
+    {
+      "name": "api_error_append_submit_unconfirmed",
+      "value": "追記の結果を確認できませんでした。更新して確認してください"
+    },
+    {
       "name": "api_error_reply_thank_not_allowed",
       "value": "返信に感謝できない、または既に感謝済みです"
     },
@@ -2389,6 +2405,10 @@
       "value": "あとで保存"
     },
     {
+      "name": "topic_action_append",
+      "value": "追記を追加"
+    },
+    {
       "name": "topic_action_unsave_later",
       "value": "あとで保存を解除"
     },
@@ -2495,6 +2515,18 @@
     {
       "name": "editor_confirm_post_format",
       "value": "「{0}」に《{1}》を投稿？\n\n通常 20 copper coins 以上を消費し、アカウント状態が変わります。"
+    },
+    {
+      "name": "editor_confirm_append_title",
+      "value": "追記の投稿を確認"
+    },
+    {
+      "name": "editor_confirm_append_format",
+      "value": "追記の投稿には最低 20 銅貨かかります（1000 字あたり 20、長さに応じて増加）。\n\n残高：{0}"
+    },
+    {
+      "name": "editor_append_posted",
+      "value": "追記を投稿しました"
     },
     {
       "name": "reply_composer_title",

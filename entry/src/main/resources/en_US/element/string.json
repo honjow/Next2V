@@ -2173,6 +2173,22 @@
       "value": "Submit failed: reply publication not confirmed"
     },
     {
+      "name": "api_error_append_body_required",
+      "value": "Append content cannot be empty"
+    },
+    {
+      "name": "api_error_parse_append_form_failed",
+      "value": "Append is not available for this topic right now"
+    },
+    {
+      "name": "api_error_not_topic_owner",
+      "value": "Only the topic author can do this"
+    },
+    {
+      "name": "api_error_append_submit_unconfirmed",
+      "value": "Append result unconfirmed, please refresh to check"
+    },
+    {
       "name": "api_error_reply_thank_not_allowed",
       "value": "Reply cannot be thanked or already thanked"
     },
@@ -2389,6 +2405,10 @@
       "value": "Save later"
     },
     {
+      "name": "topic_action_append",
+      "value": "Add a supplement"
+    },
+    {
       "name": "topic_action_unsave_later",
       "value": "Remove from read later"
     },
@@ -2495,6 +2515,18 @@
     {
       "name": "editor_confirm_post_format",
       "value": "Post《{1}》in「{0}」?\n\nUsually costs at least 20 copper coins and changes your account state."
+    },
+    {
+      "name": "editor_confirm_append_title",
+      "value": "Confirm supplement"
+    },
+    {
+      "name": "editor_confirm_append_format",
+      "value": "Posting a supplement costs at least 20 copper coins (20 per 1000 chars, grows with length).\n\nBalance: {0}"
+    },
+    {
+      "name": "editor_append_posted",
+      "value": "Supplement posted"
     },
     {
       "name": "reply_composer_title",

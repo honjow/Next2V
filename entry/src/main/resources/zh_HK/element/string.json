@@ -2173,6 +2173,22 @@
       "value": "提交失敗：未確認回覆已發布"
     },
     {
+      "name": "api_error_append_body_required",
+      "value": "附言內容不能為空"
+    },
+    {
+      "name": "api_error_parse_append_form_failed",
+      "value": "暫時無法發佈附言（可能未滿 30 分鐘、已達 3 條上限，或非本人主題）"
+    },
+    {
+      "name": "api_error_not_topic_owner",
+      "value": "只有主題作者可以操作"
+    },
+    {
+      "name": "api_error_append_submit_unconfirmed",
+      "value": "附言提交結果未確認，請重新整理查看"
+    },
+    {
       "name": "api_error_reply_thank_not_allowed",
       "value": "目前回覆不可感謝或已感謝過"
     },
@@ -2389,6 +2405,10 @@
       "value": "稍後讀"
     },
     {
+      "name": "topic_action_append",
+      "value": "增加附言"
+    },
+    {
       "name": "topic_action_unsave_later",
       "value": "取消稍後讀"
     },
@@ -2495,6 +2515,18 @@
     {
       "name": "editor_confirm_post_format",
       "value": "在「{0}」發佈《{1}》？\n\n通常消耗至少 20 銅幣，並修改帳號狀態。"
+    },
+    {
+      "name": "editor_confirm_append_title",
+      "value": "確認發佈附言"
+    },
+    {
+      "name": "editor_confirm_append_format",
+      "value": "發佈附言至少消耗 20 銅幣（每千字 20 銅幣，按長度增加）。\n\n目前餘額：{0}"
+    },
+    {
+      "name": "editor_append_posted",
+      "value": "附言已發佈"
     },
     {
       "name": "reply_composer_title",

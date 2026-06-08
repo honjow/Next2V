@@ -39,6 +39,10 @@ export enum ApiErrorCode {
   TITLE_REQUIRED = 'TITLE_REQUIRED',
   BODY_REQUIRED = 'BODY_REQUIRED',
   PARSE_TOPIC_FORM_FAILED = 'PARSE_TOPIC_FORM_FAILED',
+  APPEND_BODY_REQUIRED = 'APPEND_BODY_REQUIRED',
+  PARSE_APPEND_FORM_FAILED = 'PARSE_APPEND_FORM_FAILED',
+  NOT_TOPIC_OWNER = 'NOT_TOPIC_OWNER',
+  APPEND_SUBMIT_UNCONFIRMED = 'APPEND_SUBMIT_UNCONFIRMED',
   MISSING_ACTION_PATH = 'MISSING_ACTION_PATH',
   FIELD_REQUIRED_DETAIL = 'FIELD_REQUIRED_DETAIL',
   FIELD_EXTERNAL_LINK_FORBIDDEN = 'FIELD_EXTERNAL_LINK_FORBIDDEN',
@@ -325,6 +329,34 @@ export class ApiErrors {
       ApiErrorCode.MISSING_REPORT_ACTION,
       AppStrings.R_API_ERROR_MISSING_REPORT_ACTION,
       'Missing report action',
+    )
+  }
+  static appendBodyRequired(): ApiError {
+    return new ApiError(
+      ApiErrorCode.APPEND_BODY_REQUIRED,
+      AppStrings.R_API_ERROR_APPEND_BODY_REQUIRED,
+      'Append body is required',
+    )
+  }
+  static parseAppendFormFailed(): ApiError {
+    return new ApiError(
+      ApiErrorCode.PARSE_APPEND_FORM_FAILED,
+      AppStrings.R_API_ERROR_PARSE_APPEND_FORM_FAILED,
+      'Append is not available for this topic',
+    )
+  }
+  static notTopicOwner(): ApiError {
+    return new ApiError(
+      ApiErrorCode.NOT_TOPIC_OWNER,
+      AppStrings.R_API_ERROR_NOT_TOPIC_OWNER,
+      'Only the topic author can do this',
+    )
+  }
+  static appendSubmitUnconfirmed(): ApiError {
+    return new ApiError(
+      ApiErrorCode.APPEND_SUBMIT_UNCONFIRMED,
+      AppStrings.R_API_ERROR_APPEND_SUBMIT_UNCONFIRMED,
+      'Append submit unconfirmed',
     )
   }
   static nodeRequired(): ApiError {
