@@ -99,7 +99,6 @@ export struct SearchPage {
   private api: ApiService = new ApiService();
   private sov2ex: Sov2exService = new Sov2exService();
   private scroller: Scroller = new Scroller();
-  private readonly PULL_REFRESH_THRESHOLD: number = 84;
 
   aboutToAppear(): void {
     this.keyword = ''
@@ -125,7 +124,6 @@ export struct SearchPage {
       // whole page below the bar and kill immersion.
       PullRefreshListScaffold({
         scroller: this.scroller,
-        refreshThreshold: this.PULL_REFRESH_THRESHOLD,
         // Routed results list (no bottom tab bar / FAB), so give the last row comfortable clearance above the
         // system gesture bar — the default SPACE_XL was too tight and the last result sat against the edge.
         bottomPadding: ThemeConstants.FLOAT_BAR_HEIGHT,

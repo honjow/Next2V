@@ -275,8 +275,6 @@ struct FeedListPage {
   @Local vm: FeedViewModel = new FeedViewModel()
   private readonly FLOAT_H: number = ThemeConstants.FLOAT_BAR_HEIGHT
   private readonly GAP: number = ThemeConstants.SPACE_SM - 2
-  private readonly PULL_THRESHOLD: number = 60
-  private readonly TBH: number = ThemeConstants.TITLE_BAR_HEIGHT
   private readonly BB_H: number = ApiConstants.TAB_BAR_HEIGHT
   @Param scroller: Scroller = new Scroller()
   @Event onScrollerReady?: (tabKey: string, scroller: Scroller) => void
@@ -314,8 +312,6 @@ struct FeedListPage {
             listSpace: this.GAP,
             topPadding: this.BB_H,
             bottomPadding: this.FLOAT_H,
-            indicatorTop: this.TBH + this.BB_H,
-            refreshThreshold: this.PULL_THRESHOLD,
             scrollEnabled: this.listScroll.enabled,
             onRefresh: async () => { await this.vm.refresh() },
             onBottomRefresh: async () => { await this.vm.loadMore() },

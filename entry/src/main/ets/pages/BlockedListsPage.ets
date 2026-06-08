@@ -187,7 +187,6 @@ export struct BlockedListsPage {
     PullRefreshListScaffold({
       onRefresh: () => this.refreshAll('manual_refresh'),
       topPadding: this.BOTTOM_BUILDER_HEIGHT,
-      indicatorTop: ThemeConstants.TITLE_BAR_HEIGHT + this.BOTTOM_BUILDER_HEIGHT,
     }) {
       this.SyncStatusItem()
       if (this.tabState.selectedTab === 0) {
