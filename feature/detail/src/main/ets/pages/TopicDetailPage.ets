@@ -470,6 +470,17 @@ export struct TopicDetailPage {
     this.stack.pushPathByName('TopicEditor', null)
   }
 
+  // Open the shared editor in edit mode for THIS topic (prefilled from the live edit form). The menu item
+  // is only shown to the OP within the 600s edit window (Index.ets gate); re-check the cookie here.
+  private openEditEditor(): void {
+    if (!this.authState.configured || !CookieJarSettings.getCurrentCookie()) {
+      this.stack.pushPathByName('V2exNativeLogin', null)
+      return
+    }
+    publishTopicComposeTarget('edit', this.topicId)
+    this.stack.pushPathByName('TopicEditor', null)
+  }
+
   // Single close path for the composer bar: restore the page keyboard-avoid mode and clear state.
   private dismissReplyComposer(): void {
     this.getUIContext().setKeyboardAvoidMode(KeyboardAvoidMode.OFFSET)
@@ -1796,6 +1807,10 @@ export struct TopicDetailPage {
     }
     if (action === 'appendTopic') {
       this.openAppendEditor()
+      return
+    }
+    if (action === 'editTopic') {
+      this.openEditEditor()
       return
     }
     if (action === 'saveLater') {

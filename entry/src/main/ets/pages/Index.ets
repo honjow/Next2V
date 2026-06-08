@@ -716,10 +716,15 @@ struct Index {
       return this.navDestTitleBarOpts(AppStrings.R_NAV_BLOCKED_LISTS, undefined, undefined, bb)
     }
     if (descriptor.family === 'topicEditor') {
-      // The shared editor is also used for 附言(append); show "增加附言" instead of the create title then.
-      // The compose target is set before this destination is pushed, so a one-time read is current.
-      const editorTitle: ResourceStr =
-        connectTopicComposeTarget().mode === 'append' ? AppStrings.R_TOPIC_ACTION_APPEND : descriptor.title
+      // The shared editor is also used for 附言(append) and 编辑主题(edit); title it accordingly. The
+      // compose target is set before this destination is pushed, so a one-time read is current.
+      const composeMode = connectTopicComposeTarget().mode
+      let editorTitle: ResourceStr = descriptor.title
+      if (composeMode === 'append') {
+        editorTitle = AppStrings.R_TOPIC_ACTION_APPEND
+      } else if (composeMode === 'edit') {
+        editorTitle = AppStrings.R_TOPIC_ACTION_EDIT
+      }
       return this.topicEditorTitleBarOpts(editorTitle)
     }
     if (IndexRouteCoordinator.usesStandardTitleBar(descriptor.family)) {
@@ -1005,6 +1010,9 @@ struct Index {
     if (action === 'appendTopic') {
       return this.topicDetailOwnership.routeTopicId === topicId && this.topicDetailOwnership.canAppend
     }
+    if (action === 'editTopic') {
+      return this.topicDetailOwnership.routeTopicId === topicId && this.topicDetailOwnership.canEdit
+    }
     return true
   }
 
@@ -1023,7 +1031,7 @@ struct Index {
     if (action === 'saveLater') {
       return active ? $r('sys.symbol.bookmark_fill') : $r('sys.symbol.bookmark')
     }
-    if (action === 'appendTopic') {
+    if (action === 'editTopic' || action === 'appendTopic') {
       // Shown only in the text-only overflow popup, so the glyph is not actually rendered; reuse a
       // known-good symbol to keep the IconType valid.
       return $r('sys.symbol.doc_plaintext')

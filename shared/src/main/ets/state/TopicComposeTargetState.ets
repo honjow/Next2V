@@ -1,10 +1,11 @@
 import { AppStorageV2 } from '@kit.ArkUI'
 
 /**
- * Carries what the shared TopicEditorPage should compose when it opens: a brand-new topic ('create')
- * or a 附言(append) on an existing topic ('append', with the target topicId). Every push to the
- * 'TopicEditor' route sets this first (Home compose → create; the detail-page 附言 action → append),
- * so a stale value can't leak between the two entry points. Read once in TopicEditorPage.aboutToAppear.
+ * Carries what the shared TopicEditorPage should compose when it opens: a brand-new topic ('create'),
+ * a 附言(append) on an existing topic ('append'), or an in-place 'edit' of an existing topic — the last
+ * two carry the target topicId. Every push to the 'TopicEditor' route sets this first (Home compose →
+ * create; the detail-page 附言/编辑 actions → append/edit), so a stale value can't leak between the
+ * entry points. Read once in TopicEditorPage.aboutToAppear.
  */
 @ObservedV2
 export class TopicComposeTargetState {
@@ -24,6 +25,6 @@ export function connectTopicComposeTarget(): TopicComposeTargetState {
 
 export function publishTopicComposeTarget(mode: string, topicId: number): void {
   const state = connectTopicComposeTarget()
-  state.mode = mode === 'append' ? 'append' : 'create'
+  state.mode = mode === 'append' || mode === 'edit' ? mode : 'create'
   state.topicId = topicId > 0 ? topicId : 0
 }

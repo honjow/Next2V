@@ -23,6 +23,24 @@ export interface V2exAppendWriteForm {
   markdownSyntaxValue: string
 }
 
+// The edit form (/edit/topic/<id>, served only within the 600s window) mirrors the create form but the
+// title input and content textarea come PRE-FILLED with the topic's current values, and the syntax select
+// has the topic's current option pre-selected. Those prefill fields are what edit adds over create.
+export interface V2exTopicEditForm {
+  actionPath: string
+  titleField: string
+  contentField: string
+  hiddenFields: Record<string, string>
+  markdownSyntaxValue: string
+  prefillTitle: string
+  prefillContent: string
+  currentSyntaxValue: string
+  // The edit form (unlike create/append) carries NO hidden `once` input — V2EX appends once as a query
+  // param on submit (POST /edit/topic/<id>?once=<value>). This is the page-level once (every once on the
+  // page is the same value); empty when not found.
+  pageOnce: string
+}
+
 interface V2exInputTag {
   type: string
   name: string
@@ -79,6 +97,80 @@ export class V2exWriteFormParser {
       return null
     }
     return { actionPath, titleField, contentField, hiddenFields, markdownSyntaxValue }
+  }
+
+  static extractTopicEditForm(html: string): V2exTopicEditForm | null {
+    const formHtml = V2exWriteFormParser.extractFormHtml(html, [
+      /id=['"]topic_content['"]/i,
+      /<textarea[^>]*name=['"]content['"][^>]*>/i
+    ])
+    if (!formHtml) {
+      return null
+    }
+
+    const actionPath = V2exWriteFormParser.extractFormAction(formHtml)
+    const hiddenFields = V2exWriteFormParser.extractHiddenFields(formHtml)
+    // On the EDIT form the title is a <textarea name="title" id="topic_title"> (NOT an <input> like the
+    // create form), so read its name + inner text the same way as the content textarea.
+    const titleField = V2exWriteFormParser.findTextareaName(formHtml, 'topic_title') || 'title'
+    const contentField = V2exWriteFormParser.findTextareaName(formHtml, 'topic_content') || 'content'
+    const markdownSyntaxValue = V2exWriteFormParser.extractSyntaxMarkdownValue(formHtml)
+    const prefillTitle = V2exWriteFormParser.findTextareaInnerText(formHtml, titleField)
+    const prefillContent = V2exWriteFormParser.findTextareaInnerText(formHtml, contentField)
+    const currentSyntaxValue = V2exWriteFormParser.extractSelectedSyntaxValue(formHtml)
+    // once is page-level (not in the form) for edit — read it from the whole page.
+    const pageOnce = V2exWriteFormParser.extractPageOnce(html)
+
+    if (!actionPath || !titleField || !contentField) {
+      return null
+    }
+    return {
+      actionPath,
+      titleField,
+      contentField,
+      hiddenFields,
+      markdownSyntaxValue,
+      prefillTitle,
+      prefillContent,
+      currentSyntaxValue,
+      pageOnce
+    }
+  }
+
+  // The numeric `once` token that appears across an authed V2EX page (theme toggle, sign-out, …). All
+  // occurrences on a page share the same value, so the first numeric `once=<n>` is the page once.
+  static extractPageOnce(html: string): string {
+    const m = (html || '').match(/[?&]once=(\d+)/) || (html || '').match(/once=(\d+)/)
+    return m && m[1] ? m[1] : ''
+  }
+
+  // The title/content textareas' inner text (the edit form pre-fills both between the tags). HTML-decoded.
+  private static findTextareaInnerText(formHtml: string, fieldName: string): string {
+    const re = new RegExp(`<textarea\\b[^>]*name=['"]${fieldName}['"][^>]*>([\\s\\S]*?)</textarea>`, 'i')
+    const m = formHtml.match(re)
+    if (!m) {
+      // Fall back to the first textarea's body when the named match misses (id-only markup).
+      const any = formHtml.match(/<textarea\b[^>]*>([\s\S]*?)<\/textarea>/i)
+      return any ? V2exWriteFormParser.decodeHtml(any[1]) : ''
+    }
+    return V2exWriteFormParser.decodeHtml(m[1])
+  }
+
+  // The syntax <select>'s currently-selected option value (which syntax the topic was posted with).
+  private static extractSelectedSyntaxValue(formHtml: string): string {
+    const select = V2exWriteFormParser.extractSyntaxSelect(formHtml)
+    if (!select) {
+      return ''
+    }
+    const re = /<option\b([^>]*)>([\s\S]*?)<\/option>/gi
+    let m: RegExpExecArray | null = re.exec(select)
+    while (m) {
+      if (/\bselected\b/i.test(m[1])) {
+        return V2exWriteFormParser.extractAttr(`<option ${m[1]}>`, 'value')
+      }
+      m = re.exec(select)
+    }
+    return ''
   }
 
   static extractAppendForm(html: string): V2exAppendWriteForm | null {

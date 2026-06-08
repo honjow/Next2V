@@ -17,7 +17,7 @@ import {
   V2exCollectionActionParser,
   type V2exToggleAction,
 } from '../parser/V2exCollectionActionParser'
-import { V2exWriteFormParser } from '../parser/V2exWriteFormParser'
+import { V2exWriteFormParser, type V2exTopicEditForm } from '../parser/V2exWriteFormParser'
 import { V2exSigninParser } from '../parser/V2exSigninParser'
 import { V2exMemberPageParser } from '../parser/V2exMemberPageParser'
 import {
@@ -1522,6 +1522,107 @@ export class ApiService {
       throw ApiErrors.submitFailedDetail(problem)
     }
     throw ApiErrors.appendSubmitUnconfirmed()
+  }
+
+  // Fetch the edit form to PRE-FILL the editor. V2EX serves /edit/topic/<id> only to the author and only
+  // within the 600s edit window; once it closes the page has no form → EDIT_WINDOW_CLOSED.
+  async fetchTopicEditFormWithCookie(cookie: string, topicId: number): Promise<V2exTopicEditForm> {
+    if (!cookie) {
+      throw ApiErrors.authRequired()
+    }
+    if (topicId <= 0) {
+      throw ApiErrors.invalidTopicId()
+    }
+    const editPath = `/edit/topic/${topicId}`
+    const res = await this.requestHtmlWithCookieAllowRedirect(
+      editPath,
+      cookie,
+      `/t/${topicId}`,
+      http.RequestMethod.GET,
+    )
+    if (res.location.indexOf('/signin') >= 0) {
+      throw ApiErrors.webSessionExpired()
+    }
+    const html = res.text
+    if (!V2exSessionParser.extractUsername(html)) {
+      throw ApiErrors.webSessionExpired()
+    }
+    const form = V2exWriteFormParser.extractTopicEditForm(html)
+    if (!form) {
+      if (html.indexOf('不是你创建的主题') >= 0) {
+        throw ApiErrors.notTopicOwner()
+      }
+      // No editable form served → the 600s window has closed (or it isn't editable).
+      throw ApiErrors.editWindowClosed()
+    }
+    return form
+  }
+
+  // Submit an edit. Re-GET the form for a fresh once, overlay title/content (keeping the topic's current
+  // syntax), POST to /edit/topic/<id>; success = redirect back to /t/<id>. Editing is free (no 铜币).
+  async editTopicWithCookie(
+    cookie: string,
+    topicId: number,
+    title: string,
+    content: string,
+  ): Promise<number> {
+    const cleanTitle = (title || '').trim()
+    const cleanContent = (content || '').trim()
+    if (!cookie) {
+      throw ApiErrors.authRequired()
+    }
+    if (topicId <= 0) {
+      throw ApiErrors.invalidTopicId()
+    }
+    if (!cleanTitle) {
+      throw ApiErrors.titleRequired()
+    }
+    if (!cleanContent) {
+      throw ApiErrors.bodyRequired()
+    }
+    const form = await this.fetchTopicEditFormWithCookie(cookie, topicId)
+
+    const fields: Record<string, string> = {}
+    const hiddenKeys = Object.keys(form.hiddenFields)
+    for (const key of hiddenKeys) {
+      fields[key] = form.hiddenFields[key]
+    }
+    fields[form.titleField] = cleanTitle
+    fields[form.contentField] = cleanContent
+    fields['content'] = cleanContent
+    // Preserve the topic's existing syntax; fall back to the Markdown value (this client composes Markdown).
+    const syntaxValue = form.currentSyntaxValue || form.markdownSyntaxValue
+    if (syntaxValue) {
+      fields['syntax'] = syntaxValue
+    }
+    const body = ApiService.encodeFormFields(fields)
+
+    const editPath = `/edit/topic/${topicId}`
+    // The edit form has NO hidden once; V2EX takes it as a query param. Without ?once the POST 302s back
+    // to the topic but silently DOES NOT apply the edit, so the once query is mandatory.
+    const submitPath = form.pageOnce
+      ? `${form.actionPath || editPath}?once=${encodeURIComponent(form.pageOnce)}`
+      : (form.actionPath || editPath)
+    const res = await this.requestHtmlWithCookieAllowRedirect(
+      submitPath,
+      cookie,
+      editPath,
+      http.RequestMethod.POST,
+      body,
+      {},
+      true,
+    )
+    if (res.location.indexOf('/signin') >= 0) {
+      throw ApiErrors.webSessionExpired()
+    }
+    if (ApiService.isTopicLocation(res.location, topicId)) {
+      return topicId
+    }
+    const problem = V2exSigninParser.extractProblemMessage(res.text)
+    if (problem) {
+      throw ApiErrors.submitFailedDetail(problem)
+    }
+    return topicId
   }
 
   async syncBlockedListsFromCookieHtmlSources(

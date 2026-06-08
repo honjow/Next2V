@@ -2189,6 +2189,10 @@
       "value": "Append result unconfirmed, please refresh to check"
     },
     {
+      "name": "api_error_edit_window_closed",
+      "value": "This topic can no longer be edited (the 10-minute edit window has closed)"
+    },
+    {
       "name": "api_error_reply_thank_not_allowed",
       "value": "Reply cannot be thanked or already thanked"
     },
@@ -2409,6 +2413,10 @@
       "value": "Add a supplement"
     },
     {
+      "name": "topic_action_edit",
+      "value": "Edit topic"
+    },
+    {
       "name": "topic_action_unsave_later",
       "value": "Remove from read later"
     },
@@ -2527,6 +2535,10 @@
     {
       "name": "editor_append_posted",
       "value": "Supplement posted"
+    },
+    {
+      "name": "editor_edit_saved",
+      "value": "Changes saved"
     },
     {
       "name": "reply_composer_title",

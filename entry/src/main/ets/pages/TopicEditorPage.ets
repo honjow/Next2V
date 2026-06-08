@@ -18,11 +18,12 @@ export struct TopicEditorPage {
   // used purely as a method target (pushPathByName/pop), so no V2 reactivity is needed.
   private stack: NavPathStack = connectNavStack().stack
 
-  // 'create' (new topic) or 'append' (附言 on an existing topic). Set once from the compose-target
-  // holder in aboutToAppear. In append mode the node + title fields are hidden, the cost dialog states
-  // the append rule, and submit posts to /append/topic/<id>.
+  // 'create' (new topic), 'append' (附言 on an existing topic), or 'edit' (in-place edit). Set once from
+  // the compose-target holder in aboutToAppear. append hides node+title and posts to /append/topic/<id>
+  // with a cost dialog; edit hides only node, pre-fills title+body from the live form, has no cost dialog
+  // (edit is free), and posts to /edit/topic/<id>. targetTopicId is the append/edit target.
   @Local private mode: string = 'create'
-  @Local private appendTopicId: number = 0
+  @Local private targetTopicId: number = 0
   @Local private nodeName: string = ''
   // Display-only label for the picked node (the submit value is nodeName). Empty until a node is
   // picked this session; on a draft reload we only have the name, so the field falls back to it.
@@ -99,11 +100,12 @@ export struct TopicEditorPage {
     // into view when the keyboard re-appeared (e.g. after a preview↔edit switch). Restored on disappear.
     this.getUIContext().setKeyboardAvoidMode(KeyboardAvoidMode.RESIZE)
     this.disposed = false
-    // Resolve what we're composing (create vs append) from the holder the pusher set just before
+    // Resolve what we're composing (create / append / edit) from the holder the pusher set just before
     // navigating here; default to create so a missing target never mis-routes a submit.
     const target = connectTopicComposeTarget()
-    this.mode = target.mode === 'append' && target.topicId > 0 ? 'append' : 'create'
-    this.appendTopicId = this.mode === 'append' ? target.topicId : 0
+    const wantsTarget = (target.mode === 'append' || target.mode === 'edit') && target.topicId > 0
+    this.mode = wantsTarget ? target.mode : 'create'
+    this.targetTopicId = wantsTarget ? target.topicId : 0
     this.nodeName = ''
     this.nodeTitle = ''
     this.title = ''
@@ -121,6 +123,11 @@ export struct TopicEditorPage {
     // Append is body-only and ephemeral (no node/title, no draft persistence) — skip the topic-create
     // draft so an append never inherits a half-written new-topic draft.
     if (this.mode === 'append') {
+      return
+    }
+    // Edit pre-fills title + body from the live edit form (and never touches the create draft).
+    if (this.mode === 'edit') {
+      this.loadEditForm()
       return
     }
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
@@ -165,10 +172,9 @@ export struct TopicEditorPage {
       // layoutWeight body fills the pane rather than sitting in a fixed 320 box.
       Scroll() {
       Column({ space: ThemeConstants.SPACE_SM }) {
-        // Node + title belong to a NEW topic only; an append (附言) is body-only, so hide them.
+        // Node belongs to a NEW topic only (edit keeps the topic's node — read-only for now; append is
+        // body-only). The node picker comes back via the node-pick command bus (see onNodePicked).
         if (this.mode === 'create') {
-          // Node is chosen from the node list only (no free text): tapping opens NodePickerPage, and
-          // the pick comes back via the node-pick command bus (see onNodePicked).
           Row({ space: ThemeConstants.SPACE_SM }) {
             Text(this.nodeFieldLabel())
               .fontSize(ThemeConstants.FONT_SIZE_BODY)
@@ -191,7 +197,10 @@ export struct TopicEditorPage {
           .borderRadius(ThemeConstants.RADIUS_MD)
           .enabled(!this.isSubmitting)
           .onClick(() => { this.openNodePicker() })
+        }
 
+        // Title: new topic + edit (edit pre-fills it); append is body-only so it has no title.
+        if (this.mode !== 'append') {
           TextInput({ placeholder: AppStrings.text(AppStrings.R_TOPIC_EDITOR_TITLE_PLACEHOLDER, 'Title'), text: this.title })
             .height(44)
             .fontSize(ThemeConstants.FONT_SIZE_BODY)
@@ -612,8 +621,11 @@ export struct TopicEditorPage {
     if (this.content.trim().length === 0) {
       return false
     }
-    // Append is body-only; a new topic also needs a node + title.
+    // Append is body-only; a new topic also needs a node + title; edit needs a title (node is fixed).
     if (this.mode === 'create' && (!this.nodeName.trim() || !this.title.trim())) {
+      return false
+    }
+    if (this.mode === 'edit' && !this.title.trim()) {
       return false
     }
     return !!CookieJarSettings.getCurrentCookie()
@@ -662,6 +674,23 @@ export struct TopicEditorPage {
       this.confirmAppendSubmit()
       return
     }
+    // Edit is free (no 铜币) and body+title only — validate and submit directly, no cost dialog.
+    if (this.mode === 'edit') {
+      if (!this.title.trim()) {
+        promptAction.openToast({ message: AppStrings.text($r('app.string.api_error_title_required'), 'Please enter a title') }).catch((_error: Error) => { })
+        return
+      }
+      if (this.content.trim().length === 0) {
+        promptAction.openToast({ message: AppStrings.text($r('app.string.api_error_body_required'), 'Please enter the body') }).catch((_error: Error) => { })
+        return
+      }
+      if (!CookieJarSettings.getCurrentCookie()) {
+        promptAction.openToast({ message: AppStrings.text($r('app.string.api_error_auth_required'), 'Please sign in') }).catch((_error: Error) => { })
+        return
+      }
+      this.submit()
+      return
+    }
     if (!this.nodeName.trim()) {
       promptAction.openToast({ message: AppStrings.text($r('app.string.api_error_node_required'), 'Please choose a node') }).catch((_error: Error) => { })
       return
@@ -708,6 +737,10 @@ export struct TopicEditorPage {
       this.submitAppend(cookie)
       return
     }
+    if (this.mode === 'edit') {
+      this.submitEdit(cookie)
+      return
+    }
     this.api.createTopicWithCookie(cookie, this.nodeName, this.title, this.content)
       .then((topicId: number) => {
         this.hasSubmitted = true
@@ -737,11 +770,57 @@ export struct TopicEditorPage {
   // Append submit: POST /append/topic/<id>, then reopen the topic so the new 附言 block shows immediately
   // (replace the editor in the stack — mirrors the create flow's replace-with-the-posted-topic).
   private submitAppend(cookie: string): void {
-    this.api.appendTopicWithCookie(cookie, this.appendTopicId, this.content)
+    this.api.appendTopicWithCookie(cookie, this.targetTopicId, this.content)
       .then(() => {
         this.hasSubmitted = true
         promptAction.openToast({ message: AppStrings.text(AppStrings.R_EDITOR_APPEND_POSTED, 'Supplement posted') }).catch((_error: Error) => { })
-        const p: TopicDetailParams = { topicId: this.appendTopicId }
+        const p: TopicDetailParams = { topicId: this.targetTopicId }
+        this.stack.replacePathByName('TopicDetail', p as Object)
+      })
+      .catch((error: Error) => {
+        this.errorMessage = translateApiError(error)
+        promptAction.openToast({ message: this.errorMessage }).catch((_error2: Error) => { })
+      })
+      .finally(() => {
+        this.submitLoadingDialogController.close()
+        this.isSubmitting = false
+      })
+  }
+
+  // Edit prefill: fetch the live /edit/topic/<id> form and populate title + body. The submit icon stays
+  // disabled (canSubmit needs a non-empty title+body) until this resolves. If the window has closed or
+  // we're not the owner, toast and pop back rather than show an empty, unusable editor.
+  private loadEditForm(): void {
+    const cookie = CookieJarSettings.getCurrentCookie()
+    if (!cookie) {
+      this.stack.pop()
+      return
+    }
+    this.api.fetchTopicEditFormWithCookie(cookie, this.targetTopicId)
+      .then((form) => {
+        if (this.disposed) {
+          return
+        }
+        this.title = form.prefillTitle
+        this.content = this.stripUploadingPlaceholders(form.prefillContent)
+        this.contentSelectionStart = this.content.length
+        this.contentSelectionEnd = this.content.length
+        publishTopicEditorSubmitEnabled(this.canSubmit())
+      })
+      .catch((error: Error) => {
+        this.errorMessage = translateApiError(error)
+        promptAction.openToast({ message: this.errorMessage }).catch((_error2: Error) => { })
+        this.stack.pop()
+      })
+  }
+
+  // Edit submit: POST /edit/topic/<id>, then reopen the topic so the edited title/body show immediately.
+  private submitEdit(cookie: string): void {
+    this.api.editTopicWithCookie(cookie, this.targetTopicId, this.title, this.content)
+      .then((topicId: number) => {
+        this.hasSubmitted = true
+        promptAction.openToast({ message: AppStrings.text(AppStrings.R_EDITOR_EDIT_SAVED, 'Changes saved') }).catch((_error: Error) => { })
+        const p: TopicDetailParams = { topicId: topicId > 0 ? topicId : this.targetTopicId }
         this.stack.replacePathByName('TopicDetail', p as Object)
       })
       .catch((error: Error) => {

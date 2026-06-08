@@ -43,6 +43,7 @@ export enum ApiErrorCode {
   PARSE_APPEND_FORM_FAILED = 'PARSE_APPEND_FORM_FAILED',
   NOT_TOPIC_OWNER = 'NOT_TOPIC_OWNER',
   APPEND_SUBMIT_UNCONFIRMED = 'APPEND_SUBMIT_UNCONFIRMED',
+  EDIT_WINDOW_CLOSED = 'EDIT_WINDOW_CLOSED',
   MISSING_ACTION_PATH = 'MISSING_ACTION_PATH',
   FIELD_REQUIRED_DETAIL = 'FIELD_REQUIRED_DETAIL',
   FIELD_EXTERNAL_LINK_FORBIDDEN = 'FIELD_EXTERNAL_LINK_FORBIDDEN',
@@ -357,6 +358,13 @@ export class ApiErrors {
       ApiErrorCode.APPEND_SUBMIT_UNCONFIRMED,
       AppStrings.R_API_ERROR_APPEND_SUBMIT_UNCONFIRMED,
       'Append submit unconfirmed',
+    )
+  }
+  static editWindowClosed(): ApiError {
+    return new ApiError(
+      ApiErrorCode.EDIT_WINDOW_CLOSED,
+      AppStrings.R_API_ERROR_EDIT_WINDOW_CLOSED,
+      'The topic can no longer be edited (the 10-minute edit window has closed)',
     )
   }
   static nodeRequired(): ApiError {

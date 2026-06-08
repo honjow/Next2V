@@ -118,7 +118,7 @@ check(coord.includes("'appendTopic'") && /R_TOPIC_ACTION_APPEND/.test(coord), 'c
 const index = read('entry/src/main/ets/pages/Index.ets')
 const visible = index.slice(index.indexOf('private isTopicActionVisible('), index.indexOf('private topicDetailTitleActionIcon('))
 check(visible.includes("action === 'appendTopic'") && visible.includes('topicDetailOwnership.canAppend') && visible.includes('routeTopicId === topicId'), 'Index gates appendTopic by ownership.canAppend + routeTopicId')
-check(index.includes("connectTopicComposeTarget().mode === 'append'"), 'Index titles the editor 增加附言 in append mode')
+check(/connectTopicComposeTarget\(\)\.mode/.test(index) && index.includes('R_TOPIC_ACTION_APPEND'), 'Index titles the editor 增加附言 in append mode')
 check(index.includes("publishTopicComposeTarget('create', 0)"), 'Home compose resets the compose target to create')
 
 const editor = read('entry/src/main/ets/pages/TopicEditorPage.ets')
