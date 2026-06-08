@@ -1010,7 +1010,8 @@ struct Index {
     if (action === 'appendTopic') {
       return this.topicDetailOwnership.routeTopicId === topicId && this.topicDetailOwnership.canAppend
     }
-    if (action === 'editTopic') {
+    if (action === 'editTopic' || action === 'moveTopic') {
+      // Move shares the edit window (author, <600s) — V2EX allows moving a topic's node for 10 min.
       return this.topicDetailOwnership.routeTopicId === topicId && this.topicDetailOwnership.canEdit
     }
     return true
@@ -1031,7 +1032,7 @@ struct Index {
     if (action === 'saveLater') {
       return active ? $r('sys.symbol.bookmark_fill') : $r('sys.symbol.bookmark')
     }
-    if (action === 'editTopic' || action === 'appendTopic') {
+    if (action === 'editTopic' || action === 'moveTopic' || action === 'appendTopic') {
       // Shown only in the text-only overflow popup, so the glyph is not actually rendered; reuse a
       // known-good symbol to keep the IconType valid.
       return $r('sys.symbol.doc_plaintext')

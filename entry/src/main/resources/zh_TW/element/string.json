@@ -2417,6 +2417,18 @@
       "value": "編輯主題"
     },
     {
+      "name": "topic_action_move",
+      "value": "移動主題"
+    },
+    {
+      "name": "topic_move_confirm_format",
+      "value": "將本主題移動到節點「{0}」？"
+    },
+    {
+      "name": "topic_move_done",
+      "value": "主題已移動"
+    },
+    {
       "name": "topic_action_unsave_later",
       "value": "取消稍後讀"
     },

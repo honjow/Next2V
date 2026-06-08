@@ -2417,6 +2417,18 @@
       "value": "글 수정"
     },
     {
+      "name": "topic_action_move",
+      "value": "다른 노드로 이동"
+    },
+    {
+      "name": "topic_move_confirm_format",
+      "value": "이 글을 노드「{0}」(으)로 이동할까요?"
+    },
+    {
+      "name": "topic_move_done",
+      "value": "글을 이동했습니다"
+    },
+    {
       "name": "topic_action_unsave_later",
       "value": "나중에 저장 해제"
     },

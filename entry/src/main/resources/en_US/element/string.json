@@ -2417,6 +2417,18 @@
       "value": "Edit topic"
     },
     {
+      "name": "topic_action_move",
+      "value": "Move to another node"
+    },
+    {
+      "name": "topic_move_confirm_format",
+      "value": "Move this topic to node「{0}」?"
+    },
+    {
+      "name": "topic_move_done",
+      "value": "Topic moved"
+    },
+    {
       "name": "topic_action_unsave_later",
       "value": "Remove from read later"
     },

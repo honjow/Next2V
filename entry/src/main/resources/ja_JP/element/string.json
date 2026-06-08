@@ -2417,6 +2417,18 @@
       "value": "投稿を編集"
     },
     {
+      "name": "topic_action_move",
+      "value": "別ノードへ移動"
+    },
+    {
+      "name": "topic_move_confirm_format",
+      "value": "この投稿をノード「{0}」へ移動しますか？"
+    },
+    {
+      "name": "topic_move_done",
+      "value": "投稿を移動しました"
+    },
+    {
       "name": "topic_action_unsave_later",
       "value": "あとで保存を解除"
     },

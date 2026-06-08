@@ -5,6 +5,7 @@ export type TopicDetailTitleAction =
   | 'siteFavorite'
   | 'saveLater'
   | 'editTopic'
+  | 'moveTopic'
   | 'appendTopic'
   | 'ignoreTopic'
   | 'reportTopic'
@@ -47,6 +48,7 @@ export class TopicDetailTitleBarCoordinator {
       // Owner-only, mutually time-exclusive: Index.ets filters editTopic to the edit window (<600s) and
       // appendTopic to the append window (>=1800s). Placed early so they sit near the top of the popup.
       { label: AppStrings.R_TOPIC_ACTION_EDIT, action: 'editTopic', stateKey: '' },
+      { label: AppStrings.R_TOPIC_ACTION_MOVE, action: 'moveTopic', stateKey: '' },
       { label: AppStrings.R_TOPIC_ACTION_APPEND, action: 'appendTopic', stateKey: '' },
       { label: AppStrings.R_TOPIC_ACTION_IGNORE_TOPIC, action: 'ignoreTopic', stateKey: '' },
       { label: AppStrings.R_TOPIC_ACTION_REPORT_TOPIC, action: 'reportTopic', stateKey: '' },

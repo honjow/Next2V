@@ -18,6 +18,8 @@ import {
   publishTopicDetailOwnership,
   clearTopicDetailOwnership,
   publishTopicComposeTarget,
+  connectNodePickAction,
+  NodePickActionState,
   AccountStore,
   type AccountRecord,
 } from 'shared'
@@ -180,6 +182,12 @@ export struct TopicDetailPage {
   private readonly FOLLOW_OPERATION_VERTICAL_DOMINANCE_RATIO: number = 1.2;
   private readonly titleVisibilityHysteresis: number = 4;
   private api: ApiService = new ApiService();
+  // Node-move flow: 移动主题 sets movePending then pushes NodePickerPage; the pick comes back on the shared
+  // node-pick command bus. The bus is shared with the create editor, and this detail page outlives the
+  // picker, so the pick is gated by movePending AND confirmed in a dialog before the (destructive) move —
+  // a stray pick can never silently move the topic.
+  private nodePick: NodePickActionState = connectNodePickAction();
+  private movePending: boolean = false;
   private cacheScope: CacheScope | null = null;
   private topicActionOverlay: TopicDetailActionOverlay | null = null;
   private topicThankLocked: boolean = false;
@@ -479,6 +487,55 @@ export struct TopicDetailPage {
     }
     publishTopicComposeTarget('edit', this.topicId)
     this.stack.pushPathByName('TopicEditor', null)
+  }
+
+  // 移动主题: arm the move, then pick the destination node via the shared NodePickerPage.
+  private openMoveNode(): void {
+    if (!this.authState.configured || !CookieJarSettings.getCurrentCookie()) {
+      this.stack.pushPathByName('V2exNativeLogin', null)
+      return
+    }
+    this.movePending = true
+    this.stack.pushPathByName('NodePicker', null)
+  }
+
+  // The destination node came back on the shared node-pick bus. Only act when WE armed a move; then
+  // confirm before the destructive move so a stray pick (the bus is shared) can never silently move it.
+  @Monitor('nodePick.command')
+  onMoveNodePicked(): void {
+    if (!this.movePending) {
+      return
+    }
+    this.movePending = false
+    const node = (this.nodePick.name || '').trim()
+    if (!node) {
+      return
+    }
+    const nodeLabel = (this.nodePick.title || '').trim() || node
+    this.getUIContext().showAlertDialog({
+      title: AppStrings.text(AppStrings.R_TOPIC_ACTION_MOVE, 'Move topic'),
+      message: AppStrings.format(AppStrings.text(AppStrings.R_TOPIC_MOVE_CONFIRM_FORMAT, 'Move this topic to node「{0}」?'), [nodeLabel]),
+      primaryButton: { value: AppStrings.text($r('app.string.common_cancel'), 'Cancel'), action: () => { } },
+      secondaryButton: {
+        value: AppStrings.text(AppStrings.R_TOPIC_ACTION_MOVE, 'Move'),
+        action: () => { this.executeMoveNode(node) },
+      },
+    })
+  }
+
+  private executeMoveNode(node: string): void {
+    const cookie = CookieJarSettings.getCurrentCookie()
+    if (!cookie) {
+      return
+    }
+    this.api.moveTopicNodeWithCookie(cookie, this.topicId, node)
+      .then(() => {
+        promptAction.openToast({ message: AppStrings.text(AppStrings.R_TOPIC_MOVE_DONE, 'Topic moved') }).catch((_e: Error) => { })
+        this.v.load()
+      })
+      .catch((error: Error) => {
+        promptAction.openToast({ message: translateApiError(error) }).catch((_e: Error) => { })
+      })
   }
 
   // Single close path for the composer bar: restore the page keyboard-avoid mode and clear state.
@@ -1811,6 +1868,10 @@ export struct TopicDetailPage {
     }
     if (action === 'editTopic') {
       this.openEditEditor()
+      return
+    }
+    if (action === 'moveTopic') {
+      this.openMoveNode()
       return
     }
     if (action === 'saveLater') {

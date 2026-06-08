@@ -1625,6 +1625,71 @@ export class ApiService {
     return topicId
   }
 
+  // Move a topic to another node. Like edit, this is author-only and available only within the 600s
+  // window; the move form lives under 管理功能 on the topic page (NOT the edit form) and, like edit, takes
+  // its once as a ?once= query param (no hidden once input). GET /move/topic/<id> for the once + to verify
+  // the form is served, then POST destination=<nodeName>. Success = redirect to /t/<id>.
+  async moveTopicNodeWithCookie(cookie: string, topicId: number, destinationNode: string): Promise<number> {
+    const cleanNode = (destinationNode || '').trim()
+    if (!cookie) {
+      throw ApiErrors.authRequired()
+    }
+    if (topicId <= 0) {
+      throw ApiErrors.invalidTopicId()
+    }
+    if (!cleanNode) {
+      throw ApiErrors.nodeRequired()
+    }
+    const movePath = `/move/topic/${topicId}`
+    const formRes = await this.requestHtmlWithCookieAllowRedirect(
+      movePath,
+      cookie,
+      `/t/${topicId}`,
+      http.RequestMethod.GET,
+    )
+    if (formRes.location.indexOf('/signin') >= 0) {
+      throw ApiErrors.webSessionExpired()
+    }
+    const html = formRes.text
+    if (!V2exSessionParser.extractUsername(html)) {
+      throw ApiErrors.webSessionExpired()
+    }
+    // The move form's target is <select name="destination">. Its absence means not the author or the
+    // window has closed (move shares the edit window).
+    if (html.indexOf('name="destination"') < 0) {
+      if (html.indexOf('不是你创建的主题') >= 0) {
+        throw ApiErrors.notTopicOwner()
+      }
+      throw ApiErrors.editWindowClosed()
+    }
+    const pageOnce = V2exWriteFormParser.extractPageOnce(html)
+
+    const fields: Record<string, string> = {}
+    fields['destination'] = cleanNode
+    const body = ApiService.encodeFormFields(fields)
+    const submitPath = pageOnce ? `${movePath}?once=${encodeURIComponent(pageOnce)}` : movePath
+    const res = await this.requestHtmlWithCookieAllowRedirect(
+      submitPath,
+      cookie,
+      movePath,
+      http.RequestMethod.POST,
+      body,
+      {},
+      true,
+    )
+    if (res.location.indexOf('/signin') >= 0) {
+      throw ApiErrors.webSessionExpired()
+    }
+    if (ApiService.isTopicLocation(res.location, topicId)) {
+      return topicId
+    }
+    const problem = V2exSigninParser.extractProblemMessage(res.text)
+    if (problem) {
+      throw ApiErrors.submitFailedDetail(problem)
+    }
+    return topicId
+  }
+
   async syncBlockedListsFromCookieHtmlSources(
     cookie: string,
     trigger: string = 'manualSync',

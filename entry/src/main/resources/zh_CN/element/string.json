@@ -2417,6 +2417,18 @@
       "value": "编辑主题"
     },
     {
+      "name": "topic_action_move",
+      "value": "移动主题"
+    },
+    {
+      "name": "topic_move_confirm_format",
+      "value": "将本主题移动到节点「{0}」？"
+    },
+    {
+      "name": "topic_move_done",
+      "value": "主题已移动"
+    },
+    {
       "name": "topic_action_unsave_later",
       "value": "取消稍后读"
     },
