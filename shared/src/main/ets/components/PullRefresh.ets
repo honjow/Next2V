@@ -11,7 +11,6 @@ const PULL_START_DRAG_VP: number = 4
 const PULL_ARM_VP: number = 10
 const PULL_RESISTANCE_FACTOR: number = 0.8
 const DEFAULT_PULL_REFRESH_THRESHOLD: number = 120
-const OPACITY_THRESHOLD_FACTOR: number = 0.5
 const HAPTIC_HD_INTENSITY: number = 80
 const HAPTIC_FALLBACK_DURATION: number = 30
 const DIRECTION_LOCK_VP: number = 6
@@ -32,6 +31,13 @@ export struct PullRefresh {
   @Local refreshState: number = 0;
   @Local bottomRefreshState: number = 0;
   @Local containerHeight: number = 0;
+  // Indicator MOUNT is intentionally decoupled from pullOffset's instantaneous logical value and from
+  // refreshState (the load lifecycle). It turns true the moment a gap opens and only turns false once the
+  // rebound animation has fully settled, so the indicator's opacity/position (pure functions of the gap)
+  // can fade with the collapsing gap instead of popping out the frame pullOffset logically reaches 0.
+  // At rest both are false, so nothing is mounted over the content top to swallow taps.
+  @Local topIndicatorMounted: boolean = false;
+  @Local bottomIndicatorMounted: boolean = false;
   private hapticFired: boolean = false;
   private touchStartX: number = 0;
   private touchStartY: number = 0;
@@ -69,9 +75,15 @@ export struct PullRefresh {
       },
     )
     if (target === 0) {
+      // Unmount AFTER the rebound finishes (ANIM_STATE_RESET_MS > ANIM_DURATION) so the indicator stays in
+      // the tree for the whole collapse and fades out with the gap. Guard on pullOffset so a fresh pull that
+      // started during the timeout window isn't torn down out from under the user.
       setTimeout(() => {
-        this.refreshState = 0
-        this.hapticFired = false
+        if (this.pullOffset <= 0) {
+          this.refreshState = 0
+          this.hapticFired = false
+          this.topIndicatorMounted = false
+        }
       }, ThemeConstants.ANIM_STATE_RESET_MS)
     }
   }
@@ -86,8 +98,11 @@ export struct PullRefresh {
     )
     if (target === 0) {
       setTimeout(() => {
-        this.bottomRefreshState = 0
-        this.hapticFired = false
+        if (this.bottomPullOffset <= 0) {
+          this.bottomRefreshState = 0
+          this.hapticFired = false
+          this.bottomIndicatorMounted = false
+        }
       }, ThemeConstants.ANIM_STATE_RESET_MS)
     }
   }
@@ -188,6 +203,17 @@ export struct PullRefresh {
     return 0
   }
 
+  // Opacity is a pure function of the GAP so the indicator fades in/out with the blank, never with the load
+  // lifecycle. It stays 0 until the gap exceeds the spinner's own diameter (so a half-shown spinner can never
+  // overlap the adjacent content row) and ramps to 1 at the refresh resting height (TITLE_BAR_HEIGHT).
+  private indicatorOpacity(gap: number, indicatorSize: number): number {
+    const range = ThemeConstants.TITLE_BAR_HEIGHT - indicatorSize
+    if (range <= 0) {
+      return gap >= indicatorSize ? 1 : 0
+    }
+    return Math.min(Math.max((gap - indicatorSize) / range, 0), 1)
+  }
+
   private bottomIndicatorY(): number {
     // Mirror the top refresh indicator: keep the node mounted and derive its
     // absolute position from the current pull offset so drag and rebound share
@@ -260,6 +286,9 @@ export struct PullRefresh {
               0,
               this.touchStartPullOffset + topPullDelta * PULL_RESISTANCE_FACTOR,
             )
+            if (this.pullOffset > 0) {
+              this.topIndicatorMounted = true
+            }
             if (this.pullOffset >= this.threshold) {
               this.refreshState = 1
               this.triggerHaptic()
@@ -272,6 +301,9 @@ export struct PullRefresh {
               0,
               this.touchStartBottomPullOffset + bottomPullDelta * PULL_RESISTANCE_FACTOR,
             )
+            if (this.bottomPullOffset > 0) {
+              this.bottomIndicatorMounted = true
+            }
             if (this.bottomPullOffset >= this.threshold) {
               this.bottomRefreshState = 1
               this.triggerHaptic()
@@ -286,6 +318,12 @@ export struct PullRefresh {
             this.onPullEnd()
           } else if (this.isBottomTracking && this.bottomPullOffset > 0) {
             this.onBottomPullEnd()
+          } else {
+            // Pulled the indicator out then pushed it back to a zero gap (or never opened one): there is no
+            // rebound to ride, so unmount now — otherwise an opacity-0 indicator stays mounted at the content
+            // top and swallows taps on the first row (the Discover node-chip dead-top-half bug).
+            this.topIndicatorMounted = false
+            this.bottomIndicatorMounted = false
           }
           // Always re-enable the inner Scroll on touch end so a momentarily-disabled scroll can never
           // stick into the next tap and swallow its onClick. onPullEnd/onBottomPullEnd already re-enable
@@ -294,12 +332,14 @@ export struct PullRefresh {
           this.resetTouchState()
         }
       })
-      // Render the indicators ONLY while actually pulling/refreshing. At rest they were invisible
-      // (opacity 0) but still mounted, and HitTestMode.None exempts only this node — the inner Row still
-      // hit-tested. Positioned at indicatorTop (== the content's top padding), the top indicator overlaid
-      // the first content row and swallowed taps on its upper half (the Discover node-chip "dead top
-      // half" bug). Not mounting it at rest removes the overlay entirely.
-      if (this.pullOffset > 0 || this.refreshState >= 2) {
+      // Mount/position/opacity are all derived from the GAP (pullOffset), never from refreshState (the load
+      // lifecycle), so the indicator dissolves with the shrinking blank on every release — whether or not a
+      // refresh fired. The spinner (diameter INDICATOR_SIZE) is centered on the gap, so its bottom edge only
+      // clears the content top once pullOffset >= INDICATOR_SIZE; below that it would overlap the first row,
+      // so opacity is pinned to 0 there (see indicatorOpacity). It reaches 1 at the refresh resting height
+      // (TITLE_BAR_HEIGHT). topIndicatorMounted keeps the node alive through the rebound and is cleared only
+      // after it settles (see bounceBack); at rest it is false so nothing overlays the content top.
+      if (this.topIndicatorMounted) {
         Column() {
           Row() {
             LoadingProgress()
@@ -309,22 +349,16 @@ export struct PullRefresh {
           .width('100%')
           .height(ThemeConstants.TITLE_BAR_HEIGHT)
           .justifyContent(FlexAlign.Center)
-          .opacity(
-            this.refreshState >= 2
-              ? 1
-              : this.pullOffset >= this.threshold * OPACITY_THRESHOLD_FACTOR
-                ? Math.min(
-                    (this.pullOffset - this.threshold * OPACITY_THRESHOLD_FACTOR) /
-                      (this.threshold * OPACITY_THRESHOLD_FACTOR),
-                    1,
-                  )
-                : 0,
-          )
+          .opacity(this.indicatorOpacity(this.pullOffset, ThemeConstants.INDICATOR_SIZE))
         }
         .position({ y: this.indicatorTop + this.pullOffset / 2 })
         .hitTestBehavior(HitTestMode.None)
       }
-      if (this.bottomPullOffset > 0 || this.bottomRefreshState >= 2) {
+      // Bottom pull-up indicator mirrors the top one: opacity is a pure function of its gap, pinned to 0 until
+      // the gap clears the spinner's own diameter (LOADING_SIZE_SMALL) so it never overlaps the last row, and
+      // the mount flag rides the rebound — so it fades with the collapsing gap instead of staying pinned by
+      // bottomRefreshState until the list snaps home.
+      if (this.bottomIndicatorMounted) {
         Row({ space: ThemeConstants.SPACE_SM }) {
           LoadingProgress()
             .width(ThemeConstants.LOADING_SIZE_SMALL)
@@ -334,13 +368,7 @@ export struct PullRefresh {
         .width('100%')
         .height(ThemeConstants.TITLE_BAR_HEIGHT)
         .justifyContent(FlexAlign.Center)
-        .opacity(
-          this.bottomRefreshState >= 2
-            ? 1
-            : this.bottomPullOffset > 0
-              ? Math.min(Math.max(this.bottomPullOffset / this.threshold, 0.2), 1)
-              : 0,
-        )
+        .opacity(this.indicatorOpacity(this.bottomPullOffset, ThemeConstants.LOADING_SIZE_SMALL))
         .position({ y: this.bottomIndicatorY() })
         .hitTestBehavior(HitTestMode.None)
       }
