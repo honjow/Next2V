@@ -2389,6 +2389,10 @@
       "value": "あとで保存"
     },
     {
+      "name": "topic_action_unsave_later",
+      "value": "あとで保存を解除"
+    },
+    {
       "name": "topic_action_ignore_topic",
       "value": "トピックを無視"
     },

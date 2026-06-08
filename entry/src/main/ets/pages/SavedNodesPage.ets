@@ -1,5 +1,6 @@
 import { AppStrings } from 'shared'
 import { common } from '@kit.AbilityKit'
+import { promptAction } from '@kit.ArkUI'
 import {
   ApiService,
   CollectionSettings,
@@ -13,6 +14,7 @@ import {
   type SavedNode,
   type V2exNode
 } from 'shared'
+import { LocalRecordDeleteSwipeAction } from '../components/LocalRecordSwipeActions'
 
 // State Management V2 row model. Identity is the node `name`; the display
 // fields are @Trace so that when node icons/titles resolve asynchronously the
@@ -102,6 +104,7 @@ export struct SavedNodesPage {
               })
             }
             .onClick(() => { this.openNode(item) })
+            .swipeAction({ end: this.DeleteSwipeEnd(item.name) })
           }, (item: SavedNodeRow) => `saved-node-${item.name}`)
         }
       }
@@ -109,6 +112,11 @@ export struct SavedNodesPage {
     .width('100%')
     .height('100%')
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
+  }
+
+  @Builder
+  DeleteSwipeEnd(nodeName: string) {
+    LocalRecordDeleteSwipeAction({ onDelete: () => { this.deleteNode(nodeName) } })
   }
 
   private loadNodes(): void {
@@ -120,6 +128,29 @@ export struct SavedNodesPage {
       })
       .catch((error: Error) => {
         console.error('load saved nodes failed: ' + error.message)
+      })
+  }
+
+  // Optimistic single-row remove: drop the row (and its cached row object) immediately, then let
+  // removeNode's authoritative reload re-apply; on failure reload to restore the row and toast.
+  private deleteNode(nodeName: string): void {
+    const trimmed = (nodeName || '').trim()
+    if (!trimmed) {
+      return
+    }
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    this.nodes = this.nodes.filter((n: SavedNodeRow) => n.name !== trimmed)
+    this.nodeRowsByName.delete(trimmed)
+    CollectionSettings.removeNode(context, trimmed)
+      .then((items: SavedNode[]) => {
+        this.applyNodes(items)
+      })
+      .catch((error: Error) => {
+        console.error('remove saved node failed: ' + error.message)
+        this.loadNodes()
+        promptAction
+          .openToast({ message: AppStrings.text(AppStrings.R_COMMON_DELETE_FAILED, 'Delete failed') })
+          .catch((_e: Error) => {})
       })
   }
 

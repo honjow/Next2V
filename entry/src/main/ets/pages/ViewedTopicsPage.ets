@@ -1,4 +1,5 @@
 import { common } from '@kit.AbilityKit'
+import { promptAction } from '@kit.ArkUI'
 import {
   CollectionSettings,
   AppStrings,
@@ -9,6 +10,7 @@ import {
   type TopicDetailParams,
   type ViewedTopic
 } from 'shared'
+import { LocalRecordDeleteSwipeAction } from '../components/LocalRecordSwipeActions'
 
 @ComponentV2
 export struct ViewedTopicsPage {
@@ -49,6 +51,7 @@ export struct ViewedTopicsPage {
                 .onClick(() => { this.openTopic(item.id) })
             }
             .onClick(() => { this.openTopic(item.id) })
+            .swipeAction({ end: this.DeleteSwipeEnd(item.id) })
           }, (item: ViewedTopic) => `viewed-${item.id}`)
         }
       }
@@ -56,6 +59,11 @@ export struct ViewedTopicsPage {
     .width('100%')
     .height('100%')
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
+  }
+
+  @Builder
+  DeleteSwipeEnd(topicId: number) {
+    LocalRecordDeleteSwipeAction({ onDelete: () => { this.deleteTopic(topicId) } })
   }
 
   private loadTopics(): Promise<void> {
@@ -66,6 +74,27 @@ export struct ViewedTopicsPage {
       })
       .catch((error: Error) => {
         console.error('load viewed topics failed: ' + error.message)
+      })
+  }
+
+  // Optimistic single-row remove: drop it immediately for instant feedback, then let
+  // removeViewedTopic's authoritative reload replace the list; on failure reload to restore and toast.
+  private deleteTopic(topicId: number): void {
+    if (topicId <= 0) {
+      return
+    }
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    this.topics = this.topics.filter((t: ViewedTopic) => t.id !== topicId)
+    CollectionSettings.removeViewedTopic(context, topicId)
+      .then((items: ViewedTopic[]) => {
+        this.topics = items
+      })
+      .catch((error: Error) => {
+        console.error('remove viewed topic failed: ' + error.message)
+        this.loadTopics()
+        promptAction
+          .openToast({ message: AppStrings.text(AppStrings.R_COMMON_DELETE_FAILED, 'Delete failed') })
+          .catch((_e: Error) => {})
       })
   }
 

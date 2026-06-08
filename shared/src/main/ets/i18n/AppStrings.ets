@@ -615,6 +615,7 @@ export class AppStrings {
   static readonly R_TOPIC_ACTION_THANK_TOPIC: Resource = $r('app.string.topic_action_thank_topic')
   static readonly R_TOPIC_ACTION_SITE_FAVORITE: Resource = $r('app.string.topic_action_site_favorite')
   static readonly R_TOPIC_ACTION_SAVE_LATER: Resource = $r('app.string.topic_action_save_later')
+  static readonly R_TOPIC_ACTION_UNSAVE_LATER: Resource = $r('app.string.topic_action_unsave_later')
   static readonly R_TOPIC_ACTION_IGNORE_TOPIC: Resource = $r('app.string.topic_action_ignore_topic')
   static readonly R_TOPIC_ACTION_UNIGNORE_TOPIC: Resource = $r('app.string.topic_action_unignore_topic')
   static readonly R_TOPIC_ACTION_REPORT_TOPIC: Resource = $r('app.string.topic_action_report_topic')

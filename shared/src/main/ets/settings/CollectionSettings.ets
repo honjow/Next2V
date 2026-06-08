@@ -67,6 +67,7 @@ const SQL_SELECT_VIEWED_TOPICS: string =
   'SELECT topic_id, title, node_name, node_title, username, avatar, member_pro, replies, viewed_at FROM collection_viewed_topics ORDER BY viewed_at DESC, topic_id DESC LIMIT 100'
 const SQL_UPSERT_VIEWED_TOPIC: string =
   'INSERT INTO collection_viewed_topics (topic_id, title, node_name, node_title, username, avatar, member_pro, replies, viewed_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(topic_id) DO UPDATE SET title = excluded.title, node_name = excluded.node_name, node_title = excluded.node_title, username = excluded.username, avatar = excluded.avatar, member_pro = excluded.member_pro, replies = excluded.replies, viewed_at = excluded.viewed_at'
+const SQL_DELETE_VIEWED_TOPIC: string = 'DELETE FROM collection_viewed_topics WHERE topic_id = ?'
 const SQL_PRUNE_VIEWED_TOPICS: string =
   'DELETE FROM collection_viewed_topics WHERE topic_id NOT IN (SELECT topic_id FROM collection_viewed_topics ORDER BY viewed_at DESC, topic_id DESC LIMIT 100)'
 const SQL_COUNT_VIEWED_TOPICS: string =
@@ -362,6 +363,24 @@ export class CollectionSettings {
     } catch (error) {
       const e = error as Error
       throw new Error(e.message || 'Failed to save recently viewed items')
+    }
+  }
+
+  static async removeViewedTopic(
+    context: common.UIAbilityContext,
+    topicId: number,
+  ): Promise<ViewedTopic[]> {
+    try {
+      const store = await LocalDataStore.open(context)
+      const args: relationalStore.ValueType[] = [topicId]
+      await store.executeSql(SQL_DELETE_VIEWED_TOPIC, args)
+      await CollectionSettings.publishViewedTopicCount(store)
+      LocalDataPublisher.touchLocalData()
+      CollectionSettings.deleteLegacyCollectionKeysBestEffort(context, [KEY_VIEWED_TOPICS])
+      return await CollectionSettings.loadViewedTopics(context)
+    } catch (error) {
+      const e = error as Error
+      throw new Error(e.message || 'Failed to remove recently viewed item')
     }
   }
 

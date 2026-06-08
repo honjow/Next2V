@@ -976,6 +976,12 @@ struct Index {
     if (descriptor.action === 'ignoreTopic' && this.isTopicIgnoredForRoute(topicId)) {
       return AppStrings.R_TOPIC_ACTION_UNIGNORE_TOPIC
     }
+    // saveLater lives in the overflow popup as a text row (no icon), so the only way to tell an
+    // already-saved topic from an unsaved one is the label — flip it to "取消稍后读" when saved,
+    // mirroring the ignoreTopic→取消忽略 toggle. The tap handler already removes when saved.
+    if (descriptor.action === 'saveLater' && this.topicDetailAppbar.savedLater) {
+      return AppStrings.R_TOPIC_ACTION_UNSAVE_LATER
+    }
     return descriptor.label
   }
 

@@ -1,4 +1,5 @@
 import { common } from '@kit.AbilityKit'
+import { promptAction } from '@kit.ArkUI'
 import {
   CollectionSettings,
   AppStrings,
@@ -9,6 +10,7 @@ import {
   type SavedTopic,
   type TopicDetailParams
 } from 'shared'
+import { LocalRecordDeleteSwipeAction } from '../components/LocalRecordSwipeActions'
 
 @ComponentV2
 export struct SavedTopicsPage {
@@ -53,6 +55,7 @@ export struct SavedTopicsPage {
                 .onClick(() => { this.openTopic(item.id) })
             }
             .onClick(() => { this.openTopic(item.id) })
+            .swipeAction({ end: this.DeleteSwipeEnd(item.id) })
           }, (item: SavedTopic) => `saved-${item.id}`)
         }
       }
@@ -60,6 +63,11 @@ export struct SavedTopicsPage {
     .width('100%')
     .height('100%')
     .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
+  }
+
+  @Builder
+  DeleteSwipeEnd(topicId: number) {
+    LocalRecordDeleteSwipeAction({ onDelete: () => { this.deleteTopic(topicId) } })
   }
 
   private loadTopics(): Promise<void> {
@@ -70,6 +78,27 @@ export struct SavedTopicsPage {
       })
       .catch((error: Error) => {
         console.error('load saved topics failed: ' + error.message)
+      })
+  }
+
+  // Optimistic single-row remove: drop it immediately for instant feedback, then let removeTopic's
+  // authoritative reload replace the list; on failure reload to restore the row and toast.
+  private deleteTopic(topicId: number): void {
+    if (topicId <= 0) {
+      return
+    }
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    this.topics = this.topics.filter((t: SavedTopic) => t.id !== topicId)
+    CollectionSettings.removeTopic(context, topicId)
+      .then((items: SavedTopic[]) => {
+        this.topics = items
+      })
+      .catch((error: Error) => {
+        console.error('remove saved topic failed: ' + error.message)
+        this.loadTopics()
+        promptAction
+          .openToast({ message: AppStrings.text(AppStrings.R_COMMON_DELETE_FAILED, 'Delete failed') })
+          .catch((_e: Error) => {})
       })
   }
 

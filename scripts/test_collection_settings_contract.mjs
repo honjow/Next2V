@@ -106,6 +106,7 @@ for (const method of [
   'isNodeSaved',
   'loadViewedTopics',
   'recordViewedTopic',
+  'removeViewedTopic',
   'getTopicReadFloor',
   'saveTopicReadFloor',
   'loadTopicReadPositions',
@@ -197,7 +198,14 @@ for (const snippet of rdbContracts) {
   assert(collectionText.includes(snippet), `CollectionSettings missing RDB contract: ${snippet}`)
 }
 
-for (const method of ['saveTopic', 'removeTopic', 'saveNode', 'removeNode', 'recordViewedTopic']) {
+for (const method of [
+  'saveTopic',
+  'removeTopic',
+  'saveNode',
+  'removeNode',
+  'recordViewedTopic',
+  'removeViewedTopic',
+]) {
   const body = extractMethodBody(collectionText, method)
   assert(body.includes('LocalDataPublisher.touchLocalData()'), `${method} must touch local data after successful persistence`)
 }
