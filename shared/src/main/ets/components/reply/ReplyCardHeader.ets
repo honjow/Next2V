@@ -139,7 +139,9 @@ export struct ReplyCardHeader {
         .layoutWeight(1)
         .alignItems(HorizontalAlign.Start)
       } else {
-        Row({ space: ThemeConstants.SPACE_SM }) {
+        // Badge cluster spacing matches the name→PRO gap inside UserName (SPACE_XS), so PRO→OP→DUP read
+        // as one evenly-spaced group rather than PRO sitting far from OP (SPACE_SM was an uneven, too-wide gap).
+        Row({ space: ThemeConstants.SPACE_XS }) {
           this.Username()
           this.OpBadge()
           this.DupBadge()

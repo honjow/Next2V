@@ -18,21 +18,30 @@ export struct UserMarkBadgeRow {
   private marks: UserMarkState = connectUserMarks()
 
   build() {
-    Row() {
-      if (this.marks.combinedBadge && this.visibleLabels().length > 0) {
-        this.CombinedBadge()
-      } else {
-        this.SeparateBadges()
+    // Render nothing when this user has no visible marks. An empty Row still occupies a child slot in
+    // the parent name Row, and the parent's `space` reserves a phantom gap before it — which pushed any
+    // following badge (e.g. OP) twice as far from PRO as PRO sits from the name.
+    if (this.hasVisibleBadge()) {
+      Row() {
+        if (this.marks.combinedBadge && this.visibleLabels().length > 0) {
+          this.CombinedBadge()
+        } else {
+          this.SeparateBadges()
+        }
       }
+      .alignItems(VerticalAlign.Center)
+      .bindSheet(
+        $$this.sheetVisible,
+        this.AllMarksSheet(),
+        defaultSheetOptions(SheetSize.MEDIUM, () => {
+          this.sheetVisible = false
+        }),
+      )
     }
-    .alignItems(VerticalAlign.Center)
-    .bindSheet(
-      $$this.sheetVisible,
-      this.AllMarksSheet(),
-      defaultSheetOptions(SheetSize.MEDIUM, () => {
-        this.sheetVisible = false
-      }),
-    )
+  }
+
+  private hasVisibleBadge(): boolean {
+    return this.visibleLabels().length > 0 || this.overflowCount() > 0
   }
 
   @Builder
