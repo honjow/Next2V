@@ -125,7 +125,7 @@ const editor = read('entry/src/main/ets/pages/TopicEditorPage.ets')
 check(/@Local private mode: string/.test(editor) && editor.includes("this.mode === 'append'"), 'editor carries a compose mode and branches on append')
 check(editor.includes('this.api.appendTopicWithCookie(') && editor.includes('submitAppend('), 'editor append submit calls appendTopicWithCookie')
 check(editor.includes('confirmAppendSubmit(') && editor.includes('R_EDITOR_CONFIRM_APPEND_FORMAT'), 'editor shows an append cost-confirm dialog')
-check(/if \(this\.mode === 'append'\)\s*\{\s*return\s*\}/.test(editor.slice(editor.indexOf('private scheduleSaveDraft('))), 'append mode never persists a topic draft (scheduleSaveDraft gated)')
+check(/this\.mode === 'append' \|\| this\.mode === 'edit'[\s\S]{0,120}saveComposeDraft\(/.test(editor.slice(editor.indexOf('private persistDraft('))), 'append/edit persist a per-topic compose draft (not the create topic draft)')
 
 const detail = read('feature/detail/src/main/ets/pages/TopicDetailPage.ets')
 check(detail.includes("action === 'appendTopic'") && detail.includes('openAppendEditor('), 'detail dispatches appendTopic to the append editor')

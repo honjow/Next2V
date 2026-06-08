@@ -3,7 +3,7 @@ import { photoAccessHelper } from '@kit.MediaLibraryKit'
 import { KeyboardAvoidMode, LoadingDialog, promptAction, SymbolGlyphModifier } from '@kit.ArkUI'
 import {
   ApiService, AppStrings, connectAccountMeta, connectLayoutSafeArea, connectNavStack, connectNodePickAction, connectTopicComposeTarget, connectTopicEditorAction, CookieJarSettings, DateUtils, DraftSettings, ImageBytesUtils, ImageUploadErrorCode, ImageUploadService, ImageUploadSettings, LayoutSafeAreaState, MarkdownContent, MarkdownToolbar,
-  NodePickActionState, publishTopicEditorSubmitEnabled, ThemeConstants, TopicDetailParams, TopicEditorActionState, translateApiError, type ImageBytes
+  NodePickActionState, publishTopicEditorSubmitEnabled, ThemeConstants, TopicDetailParams, TopicEditorActionState, translateApiError, type ComposeDraft, type ImageBytes
 } from 'shared'
 
 // Body TextArea id, used to move focus into it after a toolbar insert.
@@ -120,12 +120,14 @@ export struct TopicEditorPage {
     // Seed the title-bar Submit icon disabled; the @Monitor republishes as the form / draft fills in.
     publishTopicEditorSubmitEnabled(this.canSubmit())
 
-    // Append is body-only and ephemeral (no node/title, no draft persistence) — skip the topic-create
-    // draft so an append never inherits a half-written new-topic draft.
+    // Append is body-only: restore a per-topic append draft (NOT the create draft) so an interrupted,
+    // possibly-paid composition isn't lost.
     if (this.mode === 'append') {
+      this.loadComposeDraft()
       return
     }
-    // Edit pre-fills title + body from the live edit form (and never touches the create draft).
+    // Edit pre-fills title + body from the live edit form; a saved edit draft (in-progress edits, only
+    // meaningful inside the still-open window) is then overlaid on top — see loadEditForm.
     if (this.mode === 'edit') {
       this.loadEditForm()
       return
@@ -157,8 +159,9 @@ export struct TopicEditorPage {
     // Leave the title-bar Submit icon disabled once we're gone (the next destination owns its own bar).
     publishTopicEditorSubmitEnabled(false)
     this.clearSaveTimer()
-    // Append is ephemeral (no draft); only the create flow persists a draft on the way out.
-    if (this.mode === 'create' && !this.hasSubmitted) {
+    // Persist whatever we were composing (create→topic draft, append/edit→per-topic compose draft) unless
+    // it was just submitted. persistDraft branches by mode; an empty body clears the slot.
+    if (!this.hasSubmitted) {
       this.persistDraft()
     }
   }
@@ -575,11 +578,6 @@ export struct TopicEditorPage {
   }
 
   private scheduleSaveDraft(): void {
-    // Append is ephemeral — never persist its body as a topic draft, or it would resurface in the
-    // create editor (which DOES load the topic draft). Single choke point for all the onChange callers.
-    if (this.mode === 'append') {
-      return
-    }
     this.clearSaveTimer()
     this.saveTimerId = setTimeout(() => {
       this.persistDraft()
@@ -599,7 +597,13 @@ export struct TopicEditorPage {
     }
     this.isSaving = true
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    DraftSettings.saveTopicDraft(context, this.nodeName, this.title, this.content, this.nodeTitle)
+    // append/edit persist a per-topic compose draft (keyed by mode:topicId); create persists the single
+    // topic draft. This keeps an append/edit in progress from polluting — or being polluted by — the
+    // new-topic draft.
+    const saving: Promise<number> = this.mode === 'append' || this.mode === 'edit'
+      ? DraftSettings.saveComposeDraft(context, this.mode, this.targetTopicId, this.title, this.content)
+      : DraftSettings.saveTopicDraft(context, this.nodeName, this.title, this.content, this.nodeTitle)
+    saving
       .then((savedAt: number) => {
         this.savedAt = savedAt
       })
@@ -773,6 +777,7 @@ export struct TopicEditorPage {
     this.api.appendTopicWithCookie(cookie, this.targetTopicId, this.content)
       .then(() => {
         this.hasSubmitted = true
+        this.clearComposeDraft()
         promptAction.openToast({ message: AppStrings.text(AppStrings.R_EDITOR_APPEND_POSTED, 'Supplement posted') }).catch((_error: Error) => { })
         const p: TopicDetailParams = { topicId: this.targetTopicId }
         this.stack.replacePathByName('TopicDetail', p as Object)
@@ -806,6 +811,9 @@ export struct TopicEditorPage {
         this.contentSelectionStart = this.content.length
         this.contentSelectionEnd = this.content.length
         publishTopicEditorSubmitEnabled(this.canSubmit())
+        // Overlay any saved edit draft (in-progress edits) on top of the server prefill — only relevant
+        // inside the still-open window, which is exactly when the edit editor can be reached.
+        this.overlayComposeDraft()
       })
       .catch((error: Error) => {
         this.errorMessage = translateApiError(error)
@@ -814,11 +822,52 @@ export struct TopicEditorPage {
       })
   }
 
+  // Append: restore a saved per-topic append draft (no server prefill for append).
+  private loadComposeDraft(): void {
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    DraftSettings.loadComposeDraft(context, this.mode, this.targetTopicId)
+      .then((draft: ComposeDraft | null) => {
+        if (this.disposed || !draft) {
+          return
+        }
+        this.content = this.stripUploadingPlaceholders(draft.content || '')
+        this.savedAt = draft.updatedAt || 0
+        this.contentSelectionStart = this.content.length
+        this.contentSelectionEnd = this.content.length
+        publishTopicEditorSubmitEnabled(this.canSubmit())
+      })
+      .catch((_error: Error) => { })
+  }
+
+  // Edit: after the server prefill, replace title+body with a saved edit draft if one exists.
+  private overlayComposeDraft(): void {
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    DraftSettings.loadComposeDraft(context, this.mode, this.targetTopicId)
+      .then((draft: ComposeDraft | null) => {
+        if (this.disposed || !draft) {
+          return
+        }
+        this.title = draft.title || ''
+        this.content = this.stripUploadingPlaceholders(draft.content || '')
+        this.savedAt = draft.updatedAt || 0
+        this.contentSelectionStart = this.content.length
+        this.contentSelectionEnd = this.content.length
+        publishTopicEditorSubmitEnabled(this.canSubmit())
+      })
+      .catch((_error: Error) => { })
+  }
+
+  private clearComposeDraft(): void {
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    DraftSettings.clearComposeDraft(context, this.mode, this.targetTopicId).catch((_error: Error) => { })
+  }
+
   // Edit submit: POST /edit/topic/<id>, then reopen the topic so the edited title/body show immediately.
   private submitEdit(cookie: string): void {
     this.api.editTopicWithCookie(cookie, this.targetTopicId, this.title, this.content)
       .then((topicId: number) => {
         this.hasSubmitted = true
+        this.clearComposeDraft()
         promptAction.openToast({ message: AppStrings.text(AppStrings.R_EDITOR_EDIT_SAVED, 'Changes saved') }).catch((_error: Error) => { })
         const p: TopicDetailParams = { topicId: topicId > 0 ? topicId : this.targetTopicId }
         this.stack.replacePathByName('TopicDetail', p as Object)

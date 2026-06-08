@@ -299,7 +299,7 @@ export type {
   UserMarkSnapshot,
 } from './settings/UserMarkSettings'
 export { DraftSettings } from './settings/DraftSettings'
-export type { ReplyDraft, TopicDraft } from './settings/DraftSettings'
+export type { ReplyDraft, TopicDraft, ComposeDraft } from './settings/DraftSettings'
 export { SearchSettings } from './settings/SearchSettings'
 export { NotificationSettings } from './settings/NotificationSettings'
 export type { NotificationCacheSnapshot } from './settings/NotificationSettings'

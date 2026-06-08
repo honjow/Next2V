@@ -7,10 +7,25 @@ import { AppStrings } from '../i18n/AppStrings'
 const STORE_NAME: string = STORE_NAME_DRAFTS
 const KEY_REPLY_DRAFTS: string = 'replyDrafts'
 const KEY_TOPIC_DRAFT: string = 'topicDraft'
+// Per-topic, per-mode drafts for 附言(append) + 编辑(edit) — keyed by `${mode}:${topicId}` so an append
+// draft and an edit draft for the same topic never collide, and neither collides with the create draft.
+const KEY_COMPOSE_DRAFTS: string = 'composeDrafts'
 const MAX_REPLY_DRAFTS: number = 50
+const MAX_COMPOSE_DRAFTS: number = 30
 
 export interface ReplyDraft {
   topicId: number
+  content: string
+  updatedAt: number
+}
+
+export interface ComposeDraft {
+  // Identity = `${mode}:${topicId}` (e.g. "append:123", "edit:123").
+  key: string
+  mode: string
+  topicId: number
+  // Append has no title; edit carries the in-progress title. Empty for append.
+  title: string
   content: string
   updatedAt: number
 }
@@ -82,6 +97,48 @@ export class DraftSettings {
     }
   }
 
+  static composeKey(mode: string, topicId: number): string {
+    return `${mode}:${topicId}`
+  }
+
+  static async loadComposeDraft(context: common.UIAbilityContext, mode: string, topicId: number): Promise<ComposeDraft | null> {
+    if (topicId <= 0) {
+      return null
+    }
+    const all = await DraftSettings.loadAllComposeDrafts(context)
+    const key = DraftSettings.composeKey(mode, topicId)
+    const match = all.find((item: ComposeDraft) => item.key === key)
+    return match ? match : null
+  }
+
+  static async saveComposeDraft(context: common.UIAbilityContext, mode: string, topicId: number, title: string, content: string): Promise<number> {
+    if (topicId <= 0) {
+      return 0
+    }
+    const all = await DraftSettings.loadAllComposeDrafts(context)
+    const key = DraftSettings.composeKey(mode, topicId)
+    const cleanTitle = (title ?? '').trim()
+    const cleanContent = content ?? ''
+    if (cleanTitle.length === 0 && cleanContent.trim().length === 0) {
+      await DraftSettings.writeAllComposeDrafts(context, all.filter((item: ComposeDraft) => item.key !== key))
+      return 0
+    }
+    const updatedAt = Math.floor(Date.now() / 1000)
+    const draft: ComposeDraft = { key: key, mode: mode, topicId: topicId, title: cleanTitle, content: cleanContent, updatedAt: updatedAt }
+    const next = [draft].concat(all.filter((item: ComposeDraft) => item.key !== key)).slice(0, MAX_COMPOSE_DRAFTS)
+    await DraftSettings.writeAllComposeDrafts(context, next)
+    return updatedAt
+  }
+
+  static async clearComposeDraft(context: common.UIAbilityContext, mode: string, topicId: number): Promise<void> {
+    if (topicId <= 0) {
+      return
+    }
+    const all = await DraftSettings.loadAllComposeDrafts(context)
+    const key = DraftSettings.composeKey(mode, topicId)
+    await DraftSettings.writeAllComposeDrafts(context, all.filter((item: ComposeDraft) => item.key !== key))
+  }
+
   static async loadReplyDraft(context: common.UIAbilityContext, topicId: number): Promise<ReplyDraft | null> {
     if (topicId <= 0) {
       return null
@@ -119,7 +176,7 @@ export class DraftSettings {
   static async clearAll(context: common.UIAbilityContext): Promise<void> {
     try {
       await withPreferencesStore<void>(context, STORE_NAME, (store) => {
-        deleteKeysAndFlush(store, [KEY_TOPIC_DRAFT, KEY_REPLY_DRAFTS])
+        deleteKeysAndFlush(store, [KEY_TOPIC_DRAFT, KEY_REPLY_DRAFTS, KEY_COMPOSE_DRAFTS])
       })
       DraftSettings.touchLocalData()
     } catch (error) {
@@ -174,6 +231,39 @@ export class DraftSettings {
       const e = error as Error
       throw new Error(e.message || 'Failed to save draft')
     }
+  }
+
+  private static async loadAllComposeDrafts(context: common.UIAbilityContext): Promise<ComposeDraft[]> {
+    try {
+      return await withPreferencesStore<ComposeDraft[]>(context, STORE_NAME, (store) => {
+        const parsed = readJsonArray<ComposeDraft>(store, KEY_COMPOSE_DRAFTS, [])
+        return DraftSettings.parseComposeDrafts(parsed)
+      })
+    } catch (error) {
+      const e = error as Error
+      throw new Error(e.message || 'Failed to read draft')
+    }
+  }
+
+  private static async writeAllComposeDrafts(context: common.UIAbilityContext, drafts: ComposeDraft[]): Promise<void> {
+    try {
+      await withPreferencesStore<void>(context, STORE_NAME, (store) => {
+        writeJsonValue<ComposeDraft[]>(store, KEY_COMPOSE_DRAFTS, drafts)
+      })
+      DraftSettings.touchLocalData()
+    } catch (error) {
+      const e = error as Error
+      throw new Error(e.message || 'Failed to save draft')
+    }
+  }
+
+  private static parseComposeDrafts(parsed: ComposeDraft[]): ComposeDraft[] {
+    if (!Array.isArray(parsed)) {
+      return []
+    }
+    return parsed
+      .filter((item: ComposeDraft) => item && item.topicId > 0 && !!item.key && item.content !== undefined)
+      .slice(0, MAX_COMPOSE_DRAFTS)
   }
 
   private static touchLocalData(): void {
