@@ -2821,6 +2821,10 @@
       "value": "마지막 답글"
     },
     {
+      "name": "topic_pinned_badge",
+      "value": "고정"
+    },
+    {
       "name": "topic_replies_count",
       "value": "답글 {0}개"
     },

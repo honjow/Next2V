@@ -8,7 +8,7 @@
 // (source: 'publicHtml') is preserved.
 //
 // This guards behavior, not just symbols:
-//   1. ApiService routes home/feed topic-list HTML (getTabTopics ordinary branch, getRecentTopics,
+//   1. ApiService routes home/feed topic-list HTML (getTabTopics ordinary branch, getRecentTopicsPage,
 //      getHotTabTopics) through ONE cookie-aware helper that branches on the current account cookie.
 //   2. The helper's authenticated cookie branch captures with an authenticated source label
 //      (cookieHtml + hasCookie), while stale/invalid cookie HTML that does not prove a logged-in
@@ -124,7 +124,7 @@ if (cookieLabelIdx < 0 || publicLabelIdx < 0 || cookieLabelIdx > publicLabelIdx)
 // All three home/feed topic-list entry points must route through the helper.
 for (const method of [
   'async getTabTopics(',
-  'async getRecentTopics(',
+  'async getRecentTopicsPage(',
   'async getHotTabTopics(',
 ]) {
   const body = methodBody(api, method)
@@ -132,6 +132,8 @@ for (const method of [
     fail(`${method.replace('async ', '').replace('(', '')} must fetch topic-list HTML via fetchFeedTopicListHtml (cookie-aware), not a bare anonymous getText`)
   }
 }
+const recentCompatBody = methodBody(api, 'async getRecentTopics(')
+assertIncludes(apiPath, recentCompatBody, 'this.getRecentTopicsPage(page)')
 
 // Regression guard: the ordinary getTabTopics branch must NOT keep the old inline anonymous
 // getText + publicHtml capture (that was the bug — a logged-in home load never carried the cookie).

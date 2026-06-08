@@ -42,6 +42,9 @@ export struct TopicCard {
         }
         .layoutWeight(1)
         .alignItems(HorizontalAlign.Start)
+        if (this.isPinned()) {
+          this.PinnedBadge()
+        }
         if (this.showNodeTag) {
           NodeTag({ nodeName: this.item.node.name, nodeTitle: this.item.node.title })
             .onClick(() => {
@@ -115,5 +118,25 @@ export struct TopicCard {
 
   private isMemberMod(): boolean {
     return (this.item.member.mod || 0) > 0
+  }
+
+  private isPinned(): boolean {
+    return (this.item.pinned || 0) > 0
+  }
+
+  @Builder
+  private PinnedBadge() {
+    Text(AppStrings.text(AppStrings.R_TOPIC_PINNED_BADGE, 'Pinned'))
+      .fontSize(ThemeConstants.FONT_SIZE_TAG)
+      .fontColor($r('sys.color.font_secondary'))
+      .padding({
+        left: ThemeConstants.SPACE_SM,
+        right: ThemeConstants.SPACE_SM,
+        top: ThemeConstants.SPACE_XS / 2,
+        bottom: ThemeConstants.SPACE_XS / 2
+      })
+      .borderRadius(ThemeConstants.RADIUS_SM)
+      .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
+      .flexShrink(0)
   }
 }

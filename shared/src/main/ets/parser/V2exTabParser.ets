@@ -124,6 +124,11 @@ export class V2exTabParser {
     return /[?&]p=2/i.test(clean)
   }
 
+  static hasMoreRecentTopicsLink(html: string): boolean {
+    const clean = V2exTabParser.stripNonContent(html || '')
+    return /<a\b[^>]*href=["']\/recent(?:[?#][^"']*)?["'][^>]*>[\s\S]*?<\/a>/i.test(clean)
+  }
+
   private static extractJsNumberArray(html: string, variableName: string): V2exJsNumberArrayExtraction {
     if (!html || !variableName) {
       return { ids: [], present: false, rawLength: 0 }
@@ -223,6 +228,7 @@ export class V2exTabParser {
       url: V2exUrlRouter.withSelectedBaseUrl(href.split('#')[0], HttpClient.getInstance().getBaseUrl()),
       content: '',
       content_rendered: '',
+      pinned: V2exTabParser.isPinnedTopicCell(cell) ? 1 : 0,
       replies: replies,
       member: member,
       node: node,
@@ -231,6 +237,10 @@ export class V2exTabParser {
       last_touched: created,
       last_reply_by: V2exTabParser.decode(lastReplyBy)
     }
+  }
+
+  private static isPinnedTopicCell(cell: string): boolean {
+    return /corner_star\.png/i.test(cell || '')
   }
 
   private static hasMemberRole(html: string, username: string, role: string): boolean {

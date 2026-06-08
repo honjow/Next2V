@@ -37,7 +37,7 @@ assert.match(member, /this\.http\.getText\(`\/member\/\$\{encodeURIComponent\(cl
 assert.match(member, /catch \(error\)/, 'member profile may fall back when HTML parsing fails')
 
 assert.match(tabParser, /static parseTopicList\(html: string\): V2exTopic\[\]/, 'V2exTabParser must expose HTML topic parser')
-assert.match(tabParser, /class=\["'\]cell item/, 'HTML parser must target V2EX topic list cells')
+assert.match(tabParser, /class=\["'\]cell(?: item|\(\?:\\s\+item)/, 'HTML parser must target V2EX topic list cells')
 
 const fixture = fs.readFileSync(path.join(repo, 'scripts/fixtures/hot_tab_main_list_sample.html'), 'utf8')
 assert.match(fixture, /topic-link-1001/, 'fixture sanity')

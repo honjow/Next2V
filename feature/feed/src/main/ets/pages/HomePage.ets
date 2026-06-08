@@ -289,7 +289,7 @@ struct FeedListPage {
     }
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     if (this.tabKey === 'latest') {
-      this.vm.setPagedLoader((page: number) => this.api.getRecentTopics(page))
+      this.vm.setPagedResultLoader((page: number) => this.api.getAllTopicsPage(page))
     } else {
       this.vm.setLoader(() => this.api.getTabTopics(this.tabKey))
     }
@@ -407,6 +407,7 @@ struct FeedListPage {
   private topicCardRenderKey(topic: V2exTopic): string {
     const pro = (topic.member.pro || 0) > 0 ? 'pro' : 'plain'
     const mod = (topic.member.mod || 0) > 0 ? 'mod' : 'member'
-    return `${topic.id}-${pro}-${mod}`
+    const pinned = (topic.pinned || 0) > 0 ? 'pinned' : 'normal'
+    return `${topic.id}-${pro}-${mod}-${pinned}`
   }
 }

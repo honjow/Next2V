@@ -2821,6 +2821,10 @@
       "value": "Last reply"
     },
     {
+      "name": "topic_pinned_badge",
+      "value": "Pinned"
+    },
+    {
       "name": "topic_replies_count",
       "value": "{0} replies"
     },

@@ -724,6 +724,7 @@ export class AppStrings {
   static readonly R_MARKDOWN_TOOLBAR_PREVIEW: Resource = $r('app.string.markdown_toolbar_preview')
   static readonly R_MARKDOWN_TOOLBAR_IMAGE: Resource = $r('app.string.markdown_toolbar_image')
   static readonly R_TOPIC_LAST_REPLY: Resource = $r('app.string.topic_last_reply')
+  static readonly R_TOPIC_PINNED_BADGE: Resource = $r('app.string.topic_pinned_badge')
   static readonly R_TOPIC_REPLIES_COUNT: Resource = $r('app.string.topic_replies_count')
   static readonly R_CODE_WRAP_SCROLL: Resource = $r('app.string.code_wrap_scroll')
   static readonly R_CODE_WRAP_WRAP: Resource = $r('app.string.code_wrap_wrap')

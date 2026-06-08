@@ -1,7 +1,12 @@
 import { V2exTopic, ApiService, translateApiError, CacheMergeCoordinator } from 'shared'
-import type { TopicReadState } from 'shared'
+import type { TopicReadState, V2exPagedTopicsResult } from 'shared'
 import { FeedDataSource } from '../model/FeedModels'
 import { vibrator } from '@kit.SensorServiceKit'
+
+interface FeedPageResult {
+  topics: V2exTopic[]
+  hasMore: boolean
+}
 
 /**
  * Feed page ViewModel
@@ -25,6 +30,7 @@ export class FeedViewModel {
   private api: ApiService = new ApiService()
   private loader: () => Promise<V2exTopic[]> = () => this.api.getTabTopics(this.activeTab)
   private pagedLoader: ((page: number) => Promise<V2exTopic[]>) | null = null
+  private pagedResultLoader: ((page: number) => Promise<V2exPagedTopicsResult>) | null = null
   private cacheLoader: (() => Promise<V2exTopic[]>) | null = null
   private cacheSaver: ((topics: V2exTopic[]) => Promise<void>) | null = null
   private readStateLoader: (() => Promise<TopicReadState[]>) | null = null
@@ -32,12 +38,24 @@ export class FeedViewModel {
   setLoader(loader: () => Promise<V2exTopic[]>): void {
     this.loader = loader
     this.pagedLoader = null
+    this.pagedResultLoader = null
     this.page = 0
   }
 
   setPagedLoader(loader: (page: number) => Promise<V2exTopic[]>): void {
     this.pagedLoader = loader
+    this.pagedResultLoader = null
     this.loader = () => loader(1)
+    this.page = 0
+  }
+
+  setPagedResultLoader(loader: (page: number) => Promise<V2exPagedTopicsResult>): void {
+    this.pagedResultLoader = loader
+    this.pagedLoader = null
+    this.loader = async (): Promise<V2exTopic[]> => {
+      const result = await loader(1)
+      return result.topics
+    }
     this.page = 0
   }
 
@@ -60,7 +78,7 @@ export class FeedViewModel {
       if (data.length > 0) {
         this.dataSource.setData(await this.mergeTopicListWithReadStates(data))
         this.itemCount = this.dataSource.totalCount()
-        this.hasMore = this.pagedLoader !== null ? true : data.length >= 20
+        this.hasMore = this.hasPagedLoader() ? true : data.length >= 20
       }
     } catch (error) {
       console.error('load feed cache failed:', (error as Error).message)
@@ -85,12 +103,13 @@ export class FeedViewModel {
     this.page = 0
 
     try {
-      const data = await this.loadPage(1)
+      const result = await this.loadPage(1)
+      const data = result.topics
       const merged = await this.mergeTopicListWithReadStates(data)
       this.dataSource.setData(merged)
       this.itemCount = this.dataSource.totalCount()
       this.page = 1
-      this.hasMore = this.resolveHasMore(data.length, data.length)
+      this.hasMore = this.resolveHasMore(data.length, data.length, result.hasMore)
       await this.saveCache(data)
     } catch (error) {
       this.errorMessage = translateApiError(error)
@@ -108,12 +127,13 @@ export class FeedViewModel {
     this.page = 0
 
     try {
-      const data = await this.loadPage(1)
+      const result = await this.loadPage(1)
+      const data = result.topics
       const merged = await this.mergeTopicListWithReadStates(data)
       this.dataSource.setData(merged)
       this.itemCount = this.dataSource.totalCount()
       this.page = 1
-      this.hasMore = this.resolveHasMore(data.length, data.length)
+      this.hasMore = this.resolveHasMore(data.length, data.length, result.hasMore)
       await this.saveCache(data)
     } catch (error) {
       this.errorMessage = translateApiError(error)
@@ -135,12 +155,13 @@ export class FeedViewModel {
     this.triggerHaptic()
 
     try {
-      const data = await this.loadPage(1)
+      const result = await this.loadPage(1)
+      const data = result.topics
       const merged = await this.mergeTopicListWithReadStates(data)
       this.dataSource.setData(merged)
       this.itemCount = this.dataSource.totalCount()
       this.page = 1
-      this.hasMore = this.resolveHasMore(data.length, data.length)
+      this.hasMore = this.resolveHasMore(data.length, data.length, result.hasMore)
       await this.saveCache(data)
     } catch (error) {
       this.errorMessage = translateApiError(error)
@@ -152,7 +173,7 @@ export class FeedViewModel {
 
 
   async loadMore(): Promise<void> {
-    if (this.isLoading || this.isRefreshing || this.isLoadingMore || !this.hasMore || !this.pagedLoader) {
+    if (this.isLoading || this.isRefreshing || this.isLoadingMore || !this.hasMore || !this.hasPagedLoader()) {
       return
     }
 
@@ -160,12 +181,15 @@ export class FeedViewModel {
     this.errorMessage = ''
     try {
       const nextPage = Math.max(1, this.page + 1)
-      const data = await this.loadPage(nextPage)
+      const result = await this.loadPage(nextPage)
+      const data = result.topics
       const unique = this.filterNewTopics(data)
       const mergedUnique = await this.mergeTopicListWithReadStates(unique)
       this.page = nextPage
-      this.hasMore = this.resolveHasMore(data.length, unique.length)
-      this.dataSource.appendData(mergedUnique)
+      this.hasMore = this.resolveHasMore(data.length, unique.length, result.hasMore)
+      if (mergedUnique.length > 0) {
+        this.dataSource.appendData(mergedUnique)
+      }
       this.itemCount = this.dataSource.totalCount()
       await this.saveCache(this.dataSource.getAllData())
     } catch (error) {
@@ -176,7 +200,7 @@ export class FeedViewModel {
   }
 
   canLoadMore(): boolean {
-    return this.pagedLoader !== null && this.hasMore && !this.isLoading && !this.isRefreshing && !this.isLoadingMore
+    return this.hasPagedLoader() && this.hasMore && !this.isLoading && !this.isRefreshing && !this.isLoadingMore
   }
 
   /** HD haptic feedback */
@@ -215,11 +239,26 @@ export class FeedViewModel {
     }
   }
 
-  private async loadPage(page: number): Promise<V2exTopic[]> {
-    if (this.pagedLoader) {
-      return this.pagedLoader(page)
+  private async loadPage(page: number): Promise<FeedPageResult> {
+    if (this.pagedResultLoader) {
+      const result = await this.pagedResultLoader(page)
+      return {
+        topics: result.topics,
+        hasMore: result.hasMore,
+      }
     }
-    return this.loader()
+    if (this.pagedLoader) {
+      const topics = await this.pagedLoader(page)
+      return {
+        topics: topics,
+        hasMore: topics.length > 0,
+      }
+    }
+    const topics = await this.loader()
+    return {
+      topics: topics,
+      hasMore: topics.length >= 20,
+    }
   }
 
   private async mergeTopicListWithReadStates(data: V2exTopic[]): Promise<V2exTopic[]> {
@@ -234,11 +273,18 @@ export class FeedViewModel {
     }
   }
 
-  private resolveHasMore(fetchedCount: number, uniqueCount: number): boolean {
+  private resolveHasMore(fetchedCount: number, uniqueCount: number, sourceHasMore: boolean): boolean {
+    if (this.pagedResultLoader) {
+      return sourceHasMore
+    }
     if (this.pagedLoader) {
       return fetchedCount > 0 && uniqueCount > 0
     }
     return fetchedCount >= 20
+  }
+
+  private hasPagedLoader(): boolean {
+    return this.pagedLoader !== null || this.pagedResultLoader !== null
   }
 
   private filterNewTopics(data: V2exTopic[]): V2exTopic[] {

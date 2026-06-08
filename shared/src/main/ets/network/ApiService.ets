@@ -159,13 +159,37 @@ export class ApiService {
 
   /** Get all-site recently updated topics */
   async getRecentTopics(page: number = 1): Promise<V2exTopic[]> {
+    const result = await this.getRecentTopicsPage(page)
+    return result.topics
+  }
+
+  async getRecentTopicsPage(page: number = 1): Promise<V2exPagedTopicsResult> {
     const safePage = Math.max(1, Math.floor(page))
     const html = await this.fetchFeedTopicListHtml(`/recent?p=${safePage}`)
     const topics = V2exTabParser.parseTopicList(html)
     if (topics.length === 0) {
       throw ApiErrors.recentTopicsEmpty()
     }
-    return ApiService.normalizeVisibleTopics(topics)
+    return {
+      topics: ApiService.normalizeVisibleTopics(topics),
+      hasMore: V2exTabParser.hasNextPage(html),
+    }
+  }
+
+  async getAllTopicsPage(page: number = 1): Promise<V2exPagedTopicsResult> {
+    const safePage = Math.max(1, Math.floor(page))
+    if (safePage > 1) {
+      return this.getRecentTopicsPage(safePage - 1)
+    }
+    const html = await this.fetchFeedTopicListHtml('/?tab=all')
+    const topics = V2exTabParser.parseTopicList(html)
+    if (topics.length === 0) {
+      throw ApiErrors.tabTopicsEmpty('all')
+    }
+    return {
+      topics: ApiService.normalizeVisibleTopics(topics),
+      hasMore: V2exTabParser.hasMoreRecentTopicsLink(html),
+    }
   }
 
   /** Get a single topic by ID */
@@ -2278,7 +2302,8 @@ export class ApiService {
     if (nodeName) {
       topics = await this.getTopicsByNode(nodeName)
     } else if (tab === 'latest') {
-      topics = await this.getLatestTopics()
+      const result = await this.getAllTopicsPage(1)
+      topics = result.topics
     } else if (tab === 'hot') {
       topics = await this.getHotTabTopics()
     } else {

@@ -2821,6 +2821,10 @@
       "value": "最後回覆"
     },
     {
+      "name": "topic_pinned_badge",
+      "value": "置頂"
+    },
+    {
       "name": "topic_replies_count",
       "value": "{0} 回覆"
     },
