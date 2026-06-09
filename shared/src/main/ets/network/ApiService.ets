@@ -30,6 +30,7 @@ import type {
   V2exTopicWebRepliesAllResult,
   V2exTopicWebRepliesPage,
 } from './V2exTopicWebRepliesClient'
+import { HtmlBlockUtils } from '../utils/HtmlBlockUtils'
 import { HtmlEntityUtils } from '../utils/HtmlEntityUtils'
 import { V2exUrlRouter } from '../utils/V2exUrlRouter'
 import type {
@@ -2538,10 +2539,9 @@ export class ApiService {
     const created = ApiService.parseTimeSeconds(
       ApiService.extractFirst(header, /<span[^>]*title=["']([^"']+\+08:00)["'][^>]*>/i),
     )
-    const contentRendered = ApiService.extractFirst(
-      html,
-      /<div[^>]*class=["'][^"']*\btopic_content\b[^"']*["'][^>]*>([\s\S]*?)<\/div>\s*<\/div>/i,
-    )
+    // Nesting-aware: the lazy </div>\s*</div> form truncated bodies whose last
+    // block is a nested div (e.g. embedded_video_wrapper), dropping the embed.
+    const contentRendered = HtmlBlockUtils.extractDivInnerByClass(html, 'topic_content')
     const replies = ApiService.parseNumber(
       ApiService.extractFirst(html, /<span[^>]*class=["']gray["'][^>]*>(\d+)\s+repl(?:y|ies)/i),
     )

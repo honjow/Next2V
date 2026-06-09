@@ -1,5 +1,8 @@
 import { common, Want } from "@kit.AbilityKit";
-import { pasteboard } from "@kit.BasicServicesKit";
+import { BusinessError, pasteboard } from "@kit.BasicServicesKit";
+import { webview } from "@kit.ArkWeb";
+import { systemShare } from "@kit.ShareKit";
+import { uniformTypeDescriptor as utd } from "@kit.ArkData";
 import { connection } from "@kit.NetworkKit";
 import { promptAction } from "@kit.ArkUI";
 import { AppStrings } from "../i18n/AppStrings";
@@ -8,7 +11,7 @@ import { connectReadingSettings, ReadingSettingsState } from "../state/ReadingSe
 import { connectThemeDisplay, ThemeDisplayState } from "../state/ThemeDisplayState";
 import { connectMediaSettings, MediaSettingsState } from "../state/MediaSettingsState";
 import { ThemeConstants } from "../theme/ThemeConstants";
-import { MediaUrlUtils } from "../utils/MediaUrlUtils";
+import { EmbeddedVideoInfo, MediaUrlUtils } from "../utils/MediaUrlUtils";
 import { connectImageHero, heroIdForUrl, ImageHeroState } from "../state/ImageHeroState";
 import { DiagnosticLogger } from "../diagnostics/DiagnosticLogger";
 import { HtmlEntityUtils } from "../utils/HtmlEntityUtils";
@@ -37,6 +40,8 @@ const LIST_MONO = "customList";
 const PARAGRAPH_MONO = "customParagraph";
 const IMAGE_BLOCK_MONO = "customImageBlock";
 const IMAGE_TABLE_MONO = "customImageTable";
+// Embedded provider video (YouTube/Vimeo) restored from V2EX content_rendered markup.
+const EMBEDDED_VIDEO_TYPE = "embeddedVideo";
 const IMAGE_TABLE_START = "@@V2NEXT_IMAGE_TABLE_START@@";
 const IMAGE_TABLE_END = "@@V2NEXT_IMAGE_TABLE_END@@";
 const RENDER_BODY_FONT_SIZE = 14;
@@ -80,6 +85,12 @@ const MEDIA_VIDEO_MAX_WIDTH = 760;
 const MEDIA_VIDEO_MIN_HEIGHT = 220;
 const MEDIA_VIDEO_MAX_HEIGHT = 420;
 const MEDIA_VIDEO_ASPECT_RATIO = 9 / 16;
+// Embedded-video cover card play affordance: a black scrim stays intentionally
+// theme-independent because it sits over arbitrary cover imagery.
+const EMBEDDED_VIDEO_PLAY_SCRIM = "#66000000";
+const EMBEDDED_VIDEO_PLAY_BADGE_SIZE = 56;
+// Glyph sits visually centered inside the 56 badge; ~46% of the badge diameter.
+const EMBEDDED_VIDEO_PLAY_GLYPH_SIZE = 26;
 
 type TokenValue = Object | string | number | boolean | null | undefined;
 
@@ -130,6 +141,7 @@ export namespace Tokens {
   export interface Del extends Token { text: string; }
   export interface Image extends Token { href: string; title?: string | null; text: string; inlineImage?: boolean; }
   export interface Video extends Token { href: string; title?: string | null; text: string; }
+  export interface EmbeddedVideo extends Token { provider: string; providerLabel: string; videoId: string; watchUrl: string; coverUrl: string; }
   export interface Code extends Token { text: string; lang?: string; }
   export interface ListItem extends Token { task?: boolean; checked?: boolean; loose?: boolean; tokens: Token[]; }
   export interface List extends Token { ordered?: boolean; start?: number; loose?: boolean; items: ListItem[]; }
@@ -236,6 +248,11 @@ interface MarkdownVideoDiagnosticsContext {
   extension: string;
 }
 
+interface MarkdownEmbeddedVideoDiagnosticsContext {
+  provider: string;
+  urlHash: string;
+}
+
 interface InlineImageRenderSize {
   width: number;
   height: number;
@@ -286,6 +303,11 @@ function _videoRenderUrl(token: Token): string {
     return "";
   }
   return MediaUrlUtils.videoUrlForRender((token as Tokens.Video).href);
+}
+
+function _isEmbeddedVideoToken(token: Token): boolean {
+  return token && token.type === EMBEDDED_VIDEO_TYPE &&
+    MediaUrlUtils.normalizeUrl((token as Tokens.EmbeddedVideo).watchUrl).length > 0;
 }
 
 function _inlineImageRenderUrl(token: Token): string {
@@ -457,6 +479,19 @@ function _openInlineVideo(options: MarkdownOptions, url: string): void {
   const context: MarkdownVideoDiagnosticsContext = _videoDiagnosticsContext(normalized);
   DiagnosticLogger.info('network', 'markdown_video_open_external', context);
   _openInlineLink(options, normalized);
+}
+
+function _openEmbeddedVideo(options: MarkdownOptions, token: Tokens.EmbeddedVideo): void {
+  const watchUrl = MediaUrlUtils.normalizeUrl(token.watchUrl);
+  if (!watchUrl) {
+    return;
+  }
+  const context: MarkdownEmbeddedVideoDiagnosticsContext = {
+    provider: token.provider,
+    urlHash: DiagnosticLogger.ownerHash(watchUrl),
+  };
+  DiagnosticLogger.info('network', 'markdown_embedded_video_open_external', context);
+  _openInlineLink(options, watchUrl);
 }
 
 function _videoDiagnosticsContext(url: string): MarkdownVideoDiagnosticsContext {
@@ -1288,6 +1323,11 @@ struct MarkdownBlockquote {
               url: _videoRenderUrl(child),
               options: this.options,
             });
+          } else if (_isEmbeddedVideoToken(child)) {
+            EmbeddedVideoCard({
+              videoToken: child as Tokens.EmbeddedVideo,
+              options: this.options,
+            });
           } else if (child.type !== "space" && String((child as TokenRecord).text ?? (child as TokenRecord).raw ?? "").trim().length > 0) {
             Text(String((child as TokenRecord).text ?? (child as TokenRecord).raw ?? ""))
               .fontSize(this.bodyFontSize())
@@ -2109,6 +2149,328 @@ struct MarkdownVideoPlayer {
   }
 }
 
+// The provider player (YouTube/Vimeo) renders inside a cross-origin iframe, so
+// its own share button calls navigator.share — which ArkWeb does not implement.
+// We replicate the iOS client's approach: register a native share method into
+// every frame (javaScriptProxy reaches all iframes) and inject a document-start
+// navigator.share polyfill (scriptRules ['*'] reaches the provider origin) that
+// forwards to it. The polyfill references the proxy lazily, so its absence at
+// document-start is fine — by tap time the proxy is registered.
+const EMBEDDED_VIDEO_SHARE_PROXY_NAME = "harmonyEmbeddedVideoShare";
+const EMBEDDED_VIDEO_SHARE_POLYFILL: string =
+  "(function(){var n=navigator;if(!n.share){try{Object.defineProperty(n,'share',{configurable:true," +
+  "value:function(d){try{var u=(d&&(d.url||d.text))||location.href;var t=(d&&d.title)||document.title||'';" +
+  "var b=window." + EMBEDDED_VIDEO_SHARE_PROXY_NAME + ";if(b&&b.share){b.share(String(u),String(t));}}" +
+  "catch(e){}return Promise.resolve();}});if(!n.canShare){n.canShare=function(){return true;};}}catch(e){}}})();";
+
+// Bridges the injected navigator.share polyfill to the HarmonyOS system share
+// sheet. Methods listed in javaScriptProxy.methodList are callable from the
+// page JS; share() is invoked from the provider iframe.
+class EmbeddedVideoShareBridge {
+  private uiContext: UIContext | null = null;
+  private defaultTitle: string = "";
+  private fallbackUrl: string = "";
+
+  attach(uiContext: UIContext, title: string, fallbackUrl: string): void {
+    this.uiContext = uiContext;
+    this.defaultTitle = title;
+    this.fallbackUrl = fallbackUrl;
+  }
+
+  share(url: string, title: string): void {
+    const link: string = url && url.length > 0 ? url : this.fallbackUrl;
+    if (!this.uiContext || link.length === 0) {
+      return;
+    }
+    const label: string = title && title.length > 0 ? title : this.defaultTitle;
+    const record: systemShare.SharedRecord = {
+      utd: utd.UniformDataType.HYPERLINK,
+      content: link,
+      title: label,
+    };
+    const data: systemShare.SharedData = new systemShare.SharedData(record);
+    const controller: systemShare.ShareController = new systemShare.ShareController(data);
+    const context: common.UIAbilityContext = this.uiContext.getHostContext() as common.UIAbilityContext;
+    controller
+      .show(context, {
+        selectionMode: systemShare.SelectionMode.SINGLE,
+        previewMode: systemShare.SharePreviewMode.DETAIL,
+      })
+      .catch((error: BusinessError) => {
+        const ctx: MarkdownEmbeddedVideoDiagnosticsContext = {
+          provider: "",
+          urlHash: DiagnosticLogger.ownerHash(link),
+        };
+        DiagnosticLogger.warn('network', 'markdown_embedded_video_share_failed', ctx, error);
+      });
+  }
+}
+
+// Embedded provider video (YouTube/Vimeo) restored from V2EX content_rendered.
+// P1 contract: cover card + provider label; tap opens the restored canonical
+// watch URL externally via options.linkClick. The thumbnail is enhancement-only:
+// it follows the media image-load policy and degrades to a plain placeholder
+// when blocked or unreachable (i.ytimg.com is walled wherever youtube.com is,
+// and Vimeo has no static thumbnail endpoint).
+@ComponentV2
+struct EmbeddedVideoCard {
+  @Require @Param videoToken: Tokens.EmbeddedVideo;
+  @Require @Param options: MarkdownOptions;
+  // Media image-load policy mirrored into AppStorageV2 by MediaSettings.apply().
+  private media: MediaSettingsState = connectMediaSettings();
+  @Local private coverFailed: boolean = false;
+  @Local private networkChecked: boolean = false;
+  @Local private isWifiNetwork: boolean = false;
+  @Local private cardAvailableWidth: number = 0;
+  // In-place playback: the provider's own embed player mounts into the card on
+  // first tap (lazy — a scrolling list must not pre-instantiate WebViews).
+  @Local private playerMounted: boolean = false;
+  private playerController: webview.WebviewController = new webview.WebviewController();
+  // Native share bridge for the in-player share button (see EmbeddedVideoShareBridge).
+  private shareBridge: EmbeddedVideoShareBridge = new EmbeddedVideoShareBridge();
+  private shareScripts: Array<ScriptItem> = [
+    { script: EMBEDDED_VIDEO_SHARE_POLYFILL, scriptRules: ["*"] },
+  ];
+
+  aboutToAppear(): void {
+    this.refreshNetworkState();
+    this.shareBridge.attach(
+      this.getUIContext(),
+      this.providerTitle(),
+      MediaUrlUtils.normalizeUrl(this.videoToken.watchUrl),
+    );
+  }
+
+  aboutToDisappear(): void {
+    // Proxy is only registered once the player Web mounts; deleting an
+    // unregistered name throws, so ignore that case.
+    try {
+      this.playerController.deleteJavaScriptRegister(EMBEDDED_VIDEO_SHARE_PROXY_NAME);
+    } catch (err) {
+    }
+  }
+
+  @Monitor('media.autoLoadImages', 'media.onlyLoadImagesOnWifi')
+  onImageLoadPolicyChanged(): void {
+    this.refreshNetworkState();
+  }
+
+  private refreshNetworkState(): void {
+    if (!this.media.autoLoadImages || !this.media.onlyLoadImagesOnWifi) {
+      this.networkChecked = true;
+      this.isWifiNetwork = false;
+      return;
+    }
+    this.networkChecked = false;
+    connection.getDefaultNet()
+      .then((netHandle: connection.NetHandle) => connection.getNetCapabilities(netHandle))
+      .then((capabilities: connection.NetCapabilities) => {
+        const bearerTypes = capabilities.bearerTypes;
+        this.isWifiNetwork = Array.isArray(bearerTypes) && bearerTypes.indexOf(connection.NetBearType.BEARER_WIFI) >= 0;
+        this.networkChecked = true;
+      })
+      .catch((_error: Error) => {
+        this.isWifiNetwork = false;
+        this.networkChecked = true;
+      });
+  }
+
+  private coverLoadingAllowed(): boolean {
+    if (!this.media.autoLoadImages) {
+      return false;
+    }
+    if (!this.media.onlyLoadImagesOnWifi) {
+      return true;
+    }
+    return this.networkChecked && this.isWifiNetwork;
+  }
+
+  private coverRenderUrl(): string {
+    if (this.coverFailed || !this.coverLoadingAllowed()) {
+      return "";
+    }
+    return MediaUrlUtils.normalizeUrl(this.videoToken.coverUrl);
+  }
+
+  private reportCoverFailed(): void {
+    const context: MarkdownEmbeddedVideoDiagnosticsContext = {
+      provider: this.videoToken.provider,
+      urlHash: DiagnosticLogger.ownerHash(MediaUrlUtils.normalizeUrl(this.videoToken.coverUrl)),
+    };
+    DiagnosticLogger.warn('network', 'markdown_embedded_video_cover_failed', context);
+    this.coverFailed = true;
+  }
+
+  private providerTitle(): string {
+    if (this.videoToken.provider === "youtube") {
+      return AppStrings.text($r('app.string.media_youtube_video'), 'YouTube video');
+    }
+    if (this.videoToken.provider === "vimeo") {
+      return AppStrings.text($r('app.string.media_vimeo_video'), 'Vimeo video');
+    }
+    return AppStrings.text($r('app.string.media_video_link'), 'Video');
+  }
+
+  // Canonical provider embed-player URL; autoplay so the cover tap is the one
+  // and only play gesture (mediaPlayGestureAccess(false) authorizes it).
+  private embedPlayUrl(): string {
+    if (this.videoToken.provider === "youtube") {
+      return `https://www.youtube.com/embed/${this.videoToken.videoId}?autoplay=1&playsinline=1`;
+    }
+    return `https://player.vimeo.com/video/${this.videoToken.videoId}?autoplay=1`;
+  }
+
+  // YouTube rejects referer-less embed loads (player error 153), so the player
+  // goes through a minimal wrapper document whose baseUrl supplies the Referer
+  // — mirroring how v2ex.com itself embeds the iframe.
+  private playerHtml(): string {
+    return '<!DOCTYPE html><html><head>' +
+      '<meta name="viewport" content="width=device-width, initial-scale=1">' +
+      '<style>html,body{margin:0;padding:0;background:#000;height:100%;overflow:hidden}' +
+      'iframe{position:absolute;left:0;top:0;width:100%;height:100%;border:0}</style></head>' +
+      `<body><iframe src="${this.embedPlayUrl()}" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe></body></html>`;
+  }
+
+  private loadPlayerDocument(): void {
+    try {
+      this.playerController.loadData(this.playerHtml(), 'text/html', 'UTF-8', 'https://www.v2ex.com/');
+    } catch (error) {
+      const context: MarkdownEmbeddedVideoDiagnosticsContext = {
+        provider: this.videoToken.provider,
+        urlHash: DiagnosticLogger.ownerHash(this.embedPlayUrl()),
+      };
+      DiagnosticLogger.warn('network', 'markdown_embedded_video_player_load_failed', context, error as Error);
+    }
+  }
+
+  private mountPlayer(): void {
+    if (this.playerMounted) {
+      return;
+    }
+    const context: MarkdownEmbeddedVideoDiagnosticsContext = {
+      provider: this.videoToken.provider,
+      urlHash: DiagnosticLogger.ownerHash(this.embedPlayUrl()),
+    };
+    DiagnosticLogger.info('network', 'markdown_embedded_video_play_inline', context);
+    this.playerMounted = true;
+  }
+
+  private updateCardAvailableWidth(value: Area): void {
+    this.cardAvailableWidth = _areaWidth(value);
+  }
+
+  private cardMeasuredWidth(): number {
+    if (this.cardAvailableWidth <= 0) {
+      return 0;
+    }
+    return Math.min(this.cardAvailableWidth, MEDIA_VIDEO_MAX_WIDTH);
+  }
+
+  private cardFrameWidth(): Length {
+    const width = this.cardMeasuredWidth();
+    return width > 0 ? width : '100%';
+  }
+
+  private cardFrameHeight(): number {
+    const width = this.cardMeasuredWidth();
+    if (width <= 0) {
+      return 240;
+    }
+    return Math.max(MEDIA_VIDEO_MIN_HEIGHT, Math.min(MEDIA_VIDEO_MAX_HEIGHT, width * MEDIA_VIDEO_ASPECT_RATIO));
+  }
+
+  build() {
+    Column({ space: ThemeConstants.SPACE_XS }) {
+      Stack({ alignContent: Alignment.Center }) {
+        if (this.playerMounted) {
+          Web({ src: '', controller: this.playerController })
+            .javaScriptAccess(true)
+            .domStorageAccess(true)
+            .onlineImageAccess(true)
+            .mediaPlayGestureAccess(false)
+            .javaScriptProxy({
+              object: this.shareBridge,
+              name: EMBEDDED_VIDEO_SHARE_PROXY_NAME,
+              methodList: ["share"],
+              controller: this.playerController,
+            })
+            .javaScriptOnDocumentStart(this.shareScripts)
+            .backgroundColor(Color.Black)
+            .width('100%')
+            .height('100%')
+            .onControllerAttached(() => {
+              this.loadPlayerDocument();
+            })
+        } else {
+          if (this.coverRenderUrl().length > 0) {
+            Image(this.coverRenderUrl())
+              .width('100%')
+              .height('100%')
+              .objectFit(ImageFit.Cover)
+              .borderRadius(ThemeConstants.RADIUS_SM)
+              .onError(() => {
+                this.reportCoverFailed();
+              })
+          }
+          Column({ space: ThemeConstants.SPACE_SM }) {
+            Column() {
+              SymbolGlyph($r('sys.symbol.play_fill'))
+                .fontSize(EMBEDDED_VIDEO_PLAY_GLYPH_SIZE)
+                .fontColor([Color.White])
+            }
+            .width(EMBEDDED_VIDEO_PLAY_BADGE_SIZE)
+            .height(EMBEDDED_VIDEO_PLAY_BADGE_SIZE)
+            .borderRadius(EMBEDDED_VIDEO_PLAY_BADGE_SIZE / 2)
+            .backgroundColor(EMBEDDED_VIDEO_PLAY_SCRIM)
+            .justifyContent(FlexAlign.Center)
+            .alignItems(HorizontalAlign.Center)
+
+            if (this.coverRenderUrl().length === 0) {
+              Text(this.providerTitle())
+                .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+                .fontColor(ThemeConstants.TEXT_SECONDARY)
+            }
+          }
+          .justifyContent(FlexAlign.Center)
+          .alignItems(HorizontalAlign.Center)
+          .onClick(() => {
+            this.mountPlayer();
+          })
+        }
+      }
+      .width(this.cardFrameWidth())
+      .height(this.cardFrameHeight())
+      .borderRadius(ThemeConstants.RADIUS_SM)
+      .backgroundColor(ThemeConstants.BG_SUB)
+      .clip(true)
+      .onClick(() => {
+        this.mountPlayer();
+      })
+
+      Row({ space: ThemeConstants.SPACE_SM }) {
+        Text(this.providerTitle())
+          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+          .fontColor(ThemeConstants.TEXT_SECONDARY)
+        Text(MediaUrlUtils.normalizeUrl(this.videoToken.watchUrl))
+          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+          .fontColor(ThemeConstants.TEXT_LINK)
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+          .layoutWeight(1)
+      }
+      .width(this.cardFrameWidth())
+      .onClick(() => {
+        _openEmbeddedVideo(this.options, this.videoToken);
+      })
+    }
+    .width('100%')
+    .alignItems(HorizontalAlign.Center)
+    .onAreaChange((_oldValue: Area, newValue: Area) => {
+      this.updateCardAvailableWidth(newValue);
+    })
+  }
+}
+
 @ComponentV2
 struct MarkdownAutoImage {
   @Param url: string = "";
@@ -2428,6 +2790,11 @@ struct CustomList {
                 MarkdownAutoImage({ url: MediaUrlUtils.imageUrlForRender((child as Tokens.Image).href), options: this.options });
               } else if (_isVideoToken(child)) {
                 MarkdownVideoPlayer({ url: _videoRenderUrl(child), options: this.options });
+              } else if (_isEmbeddedVideoToken(child)) {
+                EmbeddedVideoCard({
+                  videoToken: child as Tokens.EmbeddedVideo,
+                  options: this.options,
+                });
               } else if (child.type === "space") {
                 Blank().height(0);
               }
@@ -2974,7 +3341,8 @@ export struct MarkdownContent {
       .replace(/\r\n/g, '\n')
       .replace(/\r/g, '\n');
     const tokens: Token[] = [];
-    const blockRe = /<(table|h[1-6]|p|ul|ol|blockquote|pre|div)\b[^>]*>([\s\S]*?)<\/\1>/gi;
+    // `object` only exists in pre-2014 content_rendered (frozen Flash-era embed markup).
+    const blockRe = /<(table|h[1-6]|p|ul|ol|blockquote|pre|div|object)\b[^>]*>([\s\S]*?)<\/\1>/gi;
     let last = 0;
     let match: RegExpExecArray | null = blockRe.exec(source);
     while (match) {
@@ -2995,9 +3363,14 @@ export struct MarkdownContent {
   }
 
   private static stripRenderedHtmlWrapper(html: string): string {
-    let source = (html || '').trim();
-    source = source.replace(/^<div\b[^>]*class=(["'])[^"']*markdown_body[^"']*\1[^>]*>/i, '');
-    source = source.replace(/<\/div>\s*$/i, '');
+    const source = (html || '').trim();
+    // Strip the trailing </div> only when it pairs with the markdown_body wrapper
+    // removed above; stripping it unconditionally amputates bodies that
+    // legitimately end with a closed block (e.g. V2EX's embedded_video_wrapper).
+    const unwrapped = source.replace(/^<div\b[^>]*class=(["'])[^"']*markdown_body[^"']*\1[^>]*>/i, '');
+    if (unwrapped.length !== source.length) {
+      return unwrapped.replace(/<\/div>\s*$/i, '');
+    }
     return source;
   }
 
@@ -3039,11 +3412,99 @@ export struct MarkdownContent {
         raw,
       ) as Token];
     }
+    if (tag === 'object') {
+      // Pre-2014 Flash-era embed markup (content_rendered is frozen at post time);
+      // resurface whitelisted providers, strip the rest clean like the web does.
+      return MarkdownContent.embeddedVideoTokensFromLegacyObjectHtml(raw);
+    }
+    if (tag === 'div') {
+      // V2EX embed contract: div.embedded_video_wrapper > iframe.embedded_video.
+      // Attribute order drifts across eras, so match by class only.
+      const embedded = MarkdownContent.embeddedVideoTokensFromIframeHtml(raw, body);
+      if (embedded.length > 0) {
+        return embedded;
+      }
+    }
     if (tag === 'div' && /<(?:table|h[1-6]|p|ul|ol|blockquote|pre)\b/i.test(body)) {
       return MarkdownContent.renderedHtmlToTokens(body, sizeRecords);
     }
     const paragraph = MarkdownContent.inlineHtmlToParagraph(body, raw, sizeRecords);
     return paragraph ? [paragraph as Token] : [];
+  }
+
+  private static embeddedVideoTokensFromIframeHtml(raw: string, body: string): Token[] {
+    const tokens: Token[] = [];
+    const wrapperDiv = MarkdownContent.htmlClassContains(raw, 'embedded_video_wrapper');
+    const iframeRe = /<iframe\b[^>]*>/gi;
+    let match: RegExpExecArray | null = iframeRe.exec(body);
+    while (match) {
+      const iframeTag = match[0];
+      if (wrapperDiv || MarkdownContent.htmlClassContains(iframeTag, 'embedded_video')) {
+        tokens.push(...MarkdownContent.embeddedVideoOrLinkTokens(iframeTag, MarkdownContent.htmlAttr(iframeTag, 'src')));
+      }
+      match = iframeRe.exec(body);
+    }
+    return tokens;
+  }
+
+  private static embeddedVideoTokensFromLegacyObjectHtml(raw: string): Token[] {
+    // <param name="movie" value="http://www.youtube.com/v/<id>?fs=1..."> is the
+    // canonical source; fall back to the sibling <embed src> when absent.
+    let candidate = '';
+    const paramRe = /<param\b[^>]*>/gi;
+    let match: RegExpExecArray | null = paramRe.exec(raw);
+    while (match) {
+      if (MarkdownContent.htmlAttr(match[0], 'name').toLowerCase() === 'movie') {
+        candidate = MarkdownContent.htmlAttr(match[0], 'value');
+        break;
+      }
+      match = paramRe.exec(raw);
+    }
+    if (!candidate) {
+      const embedMatch = /<embed\b[^>]*>/i.exec(raw);
+      candidate = embedMatch ? MarkdownContent.htmlAttr(embedMatch[0], 'src') : '';
+    }
+    const info = MediaUrlUtils.embeddedVideoFromSrc(candidate);
+    return info ? [MarkdownContent.buildEmbeddedVideoToken(raw, info)] : [];
+  }
+
+  private static embeddedVideoOrLinkTokens(raw: string, src: string): Token[] {
+    const info = MediaUrlUtils.embeddedVideoFromSrc(src);
+    if (info) {
+      return [MarkdownContent.buildEmbeddedVideoToken(raw, info)];
+    }
+    // Non-whitelisted embed source: degrade to a plain link so content is never lost.
+    const url = MediaUrlUtils.normalizeUrl(src);
+    if (!MediaUrlUtils.isHttpUrl(url)) {
+      return [];
+    }
+    const link: Tokens.Link = {
+      type: 'link',
+      raw: raw,
+      href: url,
+      title: null,
+      text: url,
+      tokens: [MarkdownContent.buildTextToken(url) as Token],
+    } as Tokens.Link;
+    return [{
+      type: 'paragraph',
+      raw: raw,
+      text: url,
+      tokens: [link as Token],
+    } as Tokens.Paragraph];
+  }
+
+  private static buildEmbeddedVideoToken(raw: string, info: EmbeddedVideoInfo): Token {
+    return {
+      type: EMBEDDED_VIDEO_TYPE,
+      raw: raw,
+      text: info.watchUrl,
+      provider: info.provider,
+      providerLabel: info.providerLabel,
+      videoId: info.videoId,
+      watchUrl: info.watchUrl,
+      coverUrl: info.coverUrl,
+    } as Tokens.EmbeddedVideo;
   }
 
   private static htmlTableToRenderTableToken(raw: string, sizeRecords: InlineImageSizeRecord[] = []): RenderTableToken | null {
@@ -5053,6 +5514,11 @@ export struct MarkdownContent {
         options: this.markdownOptions(),
         reportImageComplete: (url: string, event?: MarkdownImageCompleteEvent) => { this.reportInlineImageComplete(url, event); },
         reportImageError: (url: string, event?: MarkdownImageErrorEvent) => { this.reportInlineImageError(url, event); },
+      });
+    } else if (_isEmbeddedVideoToken(token)) {
+      EmbeddedVideoCard({
+        videoToken: token as Tokens.EmbeddedVideo,
+        options: this.markdownOptions(),
       });
     } else if (token.type === "blockquote") {
       MarkdownBlockquote({

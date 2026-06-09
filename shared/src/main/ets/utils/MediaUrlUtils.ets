@@ -6,6 +6,11 @@ const MEDIA_QUERY_EXT_REGEX: RegExp = /[?&](?:format|fm|ext|type|output)=([a-z0-
 const ILLEGAL_TITLE_CHARS: RegExp = /[\\/:*?"<>|]/g
 const YOUTUBE_ID_REGEX: RegExp = /(?:youtube\.com\/(?:watch\?[^#]*v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{6,})/i
 const VIMEO_ID_REGEX: RegExp = /vimeo\.com\/(?:.*\/)?([0-9]{6,})/i
+// Embedded-player srcs as V2EX emits them inside content_rendered: the current
+// wrapper iframe uses youtube.com/embed/<id> or protocol-relative
+// player.vimeo.com/video/<id>; pre-2014 Flash <object> markup uses /v/<id>.
+const YOUTUBE_EMBED_SRC_REGEX: RegExp = /youtube(?:-nocookie)?\.com\/(?:embed|v)\/([A-Za-z0-9_-]{6,})/i
+const VIMEO_PLAYER_SRC_REGEX: RegExp = /player\.vimeo\.com\/video\/([0-9]+)/i
 const GIST_REGEX: RegExp = /gist\.github\.com\/([^/?#]+)\/([A-Za-z0-9]+)/i
 const IMGUR_SINGLE_IMAGE_PAGE_REGEX: RegExp = /^https?:\/\/(?:www\.)?imgur\.com\/([A-Za-z0-9]{5,12})(?:[?#].*)?$/i
 const IMGUR_COLLECTION_PAGE_REGEX: RegExp = /^https?:\/\/(?:www\.)?imgur\.com\/(?:gallery|a)\//i
@@ -36,6 +41,15 @@ export interface MediaLinkPreview {
   title: string
   subtitle: string
   label: string
+}
+
+export interface EmbeddedVideoInfo {
+  provider: string
+  providerLabel: string
+  videoId: string
+  watchUrl: string
+  // '' when the provider has no static thumbnail endpoint (Vimeo needs an API call)
+  coverUrl: string
 }
 
 export type MediaUrlKind =
@@ -313,6 +327,37 @@ export class MediaUrlUtils {
       subtitle: url,
       label: AppStrings.text($r('app.string.media_link_label'), 'Link')
     }
+  }
+
+  // Maps an embedded-player src restored from V2EX content_rendered back to the
+  // canonical watch URL. Returns null for non-whitelisted sources so callers can
+  // degrade to a plain link instead of dropping content.
+  static embeddedVideoFromSrc(raw: string): EmbeddedVideoInfo | null {
+    const url = MediaUrlUtils.normalizeUrl(raw)
+    if (!url) {
+      return null
+    }
+    const youtubeMatch = url.match(YOUTUBE_EMBED_SRC_REGEX)
+    if (youtubeMatch && youtubeMatch[1]) {
+      return {
+        provider: 'youtube',
+        providerLabel: 'YouTube',
+        videoId: youtubeMatch[1],
+        watchUrl: `https://www.youtube.com/watch?v=${youtubeMatch[1]}`,
+        coverUrl: `https://i.ytimg.com/vi/${youtubeMatch[1]}/hqdefault.jpg`
+      }
+    }
+    const vimeoMatch = url.match(VIMEO_PLAYER_SRC_REGEX)
+    if (vimeoMatch && vimeoMatch[1]) {
+      return {
+        provider: 'vimeo',
+        providerLabel: 'Vimeo',
+        videoId: vimeoMatch[1],
+        watchUrl: `https://vimeo.com/${vimeoMatch[1]}`,
+        coverUrl: ''
+      }
+    }
+    return null
   }
 
   static hostFromUrl(raw: string): string {

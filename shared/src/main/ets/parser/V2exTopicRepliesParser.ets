@@ -1,4 +1,5 @@
 import type { V2exMember, V2exReply } from '../network/NetworkTypes'
+import { HtmlBlockUtils } from '../utils/HtmlBlockUtils'
 import { HtmlEntityUtils } from '../utils/HtmlEntityUtils'
 
 interface ParsedMemberMeta {
@@ -59,8 +60,9 @@ export class V2exTopicRepliesParser {
   }
 
   private static extractReplyContentHtml(block: string): string {
-    const m = (block || '').match(/<div[^>]*class=['"][^'"]*\breply_content\b[^'"]*['"][^>]*>([\s\S]*?)<\/div>/i)
-    return m && m[1] ? m[1].trim() : ''
+    // Nesting-aware: a lazy ([\s\S]*?)</div> truncates replies that nest divs
+    // (e.g. embedded_video_wrapper), dropping the embed.
+    return HtmlBlockUtils.extractDivInnerByClass(block || '', 'reply_content').trim()
   }
 
   private static extractMember(block: string): ParsedMemberMeta {

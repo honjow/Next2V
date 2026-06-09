@@ -12,13 +12,13 @@ if (!/struct MarkdownVideoPlayer/.test(source) || !/Video\(\{/.test(source)) {
   console.error('FAIL video tokens must render through a playback-capable Video component');
   process.exit(1);
 }
-if (!/markdown_video_load_failed/.test(source) || !/R_COMMON_OPEN_EXTERNAL/.test(source) || !/R_COMMON_RETRY/.test(source)) {
+if (!/markdown_video_load_failed/.test(source) || !/app\.string\.common_open_external/.test(source) || !/app\.string\.common_retry/.test(source)) {
   console.error('FAIL video player must diagnose failures and expose retry/open-external fallback');
   process.exit(1);
 }
 
 const videoPlayerStart = source.indexOf('struct MarkdownVideoPlayer');
-const videoPlayerEnd = source.indexOf('@Component\nstruct MarkdownAutoImage', videoPlayerStart);
+const videoPlayerEnd = source.indexOf('@ComponentV2', videoPlayerStart);
 const videoPlayerBody = videoPlayerStart >= 0 && videoPlayerEnd > videoPlayerStart ? source.slice(videoPlayerStart, videoPlayerEnd) : '';
 if (!/MEDIA_VIDEO_MAX_WIDTH\s*=\s*760/.test(source) || !/MEDIA_VIDEO_MIN_HEIGHT\s*=\s*220/.test(source) || !/MEDIA_VIDEO_MAX_HEIGHT\s*=\s*420/.test(source)) {
   console.error('FAIL video player must declare bounded media-card width and height constants');
