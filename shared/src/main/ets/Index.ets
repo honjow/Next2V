@@ -85,7 +85,7 @@ export {
 } from './state/LocalDataSignalState'
 export { ImagePreviewActionState, connectImagePreviewAction } from './state/ImagePreviewActionState'
 export { NodeTopicActionState, connectNodeTopicAction } from './state/NodeTopicActionState'
-export { NodePickActionState, connectNodePickAction } from './state/NodePickActionState'
+export { NodePickActionState, connectNodePickAction, publishNodePick } from './state/NodePickActionState'
 export { TopicDetailActionState, connectTopicDetailAction } from './state/TopicDetailActionState'
 export {
   TopicEditorAppbarState,

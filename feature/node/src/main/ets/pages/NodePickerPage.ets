@@ -1,7 +1,7 @@
 import { common } from '@kit.AbilityKit'
 import { promptAction } from '@kit.ArkUI'
 import { NodeIndexViewModel } from '../viewmodel/NodeIndexViewModel'
-import { AppStrings, connectNavStack, connectNodePickAction, DraftSettings, V2exNode, SecondaryListScaffold, translateApiError } from 'shared'
+import { AppStrings, connectNavStack, publishNodePick, DraftSettings, V2exNode, SecondaryListScaffold, translateApiError } from 'shared'
 import {
   NodePickerEmptyState,
   NodePickerErrorState,
@@ -106,11 +106,9 @@ export struct NodePickerPage {
         this.selectedNodeName = clean
         // Publish to the node-pick command bus so the already-mounted TopicEditorPage fills its node
         // field immediately on pop (it can't re-read the draft from aboutToAppear). title is for
-        // display only; name is the submit value.
-        const bus = connectNodePickAction()
-        bus.name = clean
-        bus.title = (nodeTitle || '').trim()
-        bus.command = `${Date.now()}`
+        // display only; name is the submit value. The timestamp-stamp lives in publishNodePick so
+        // this @ComponentV2 leaf stays free of the Date.now() key-churn token.
+        publishNodePick(clean, nodeTitle)
         promptAction.openToast({ message: AppStrings.format(AppStrings.text($r('app.string.node_selected_format'), 'Selected node: {0}'), [clean]) }).catch((_error: Error) => { })
         this.stack.pop()
       })
