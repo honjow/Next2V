@@ -531,7 +531,7 @@ export struct TopicDetailPage {
     this.api.moveTopicNodeWithCookie(cookie, this.topicId, node)
       .then(() => {
         promptAction.openToast({ message: AppStrings.text($r('app.string.topic_move_done'), 'Topic moved') }).catch((_e: Error) => { })
-        this.v.load()
+        this.reloadTopicWithThreadPreload()
       })
       .catch((error: Error) => {
         promptAction.openToast({ message: translateApiError(error) }).catch((_e: Error) => { })
@@ -954,7 +954,7 @@ export struct TopicDetailPage {
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
         .margin({ top: ThemeConstants.SPACE_LG })
         .onClick(() => {
-          this.v.load()
+          this.reloadTopicWithThreadPreload()
         })
     }
     .justifyContent(FlexAlign.Center)
@@ -1137,18 +1137,9 @@ export struct TopicDetailPage {
       .submitReplyWithCookie(cookie, this.topicId, cleanContent)
       .then(() => {
         this.clearReplyDraftAfterSuccess()
-        // A posted reply lands on the LAST replies page, but load() only refetches page 1 and
-        // replaces (not appends) the in-memory list — so in a multi-page topic the new reply is
-        // absent and, in thread mode, the previously preloaded tail is discarded too. Mirror the
-        // initial-load (aboutToAppear) and pull-refresh paths: after the reload, re-trigger thread
-        // preload so pages 2..N (incl. the new reply) are refetched, showing the >limit confirm
-        // dialog exactly as those paths do.
-        this.v.load().then(() => {
-          this.v.triggerThreadPreloadIfNeeded()
-          if (this.v.needsPreloadConfirm) {
-            this.showPreloadConfirmDialog()
-          }
-        })
+        // The posted reply lands on the LAST replies page; the wrapper re-preloads the thread
+        // tail after the page-1 reload so the new reply is actually fetched and shown.
+        this.reloadTopicWithThreadPreload()
       })
       .catch((error: Error) => {
         // Keep the draft and surface the (translated) error. Do NOT auto-reopen the composer:
@@ -1495,6 +1486,20 @@ export struct TopicDetailPage {
     } catch (_e) {
       // ignore
     }
+  }
+
+  // Full reloads via load() reset the reply list to page 1 and DISCARD any preloaded pages — in
+  // thread mode the tail (e.g. a reply just posted, which lands on the LAST page) would silently
+  // vanish until a manual load-more. Every non-initial reload trigger (reply submit, move node,
+  // moderation actions, error retry) must use this wrapper so thread preload is re-triggered
+  // afterwards, mirroring the initial-load path including its >limit confirm dialog.
+  private reloadTopicWithThreadPreload(): Promise<void> {
+    return this.v.load().then(() => {
+      this.v.triggerThreadPreloadIfNeeded()
+      if (this.v.needsPreloadConfirm) {
+        this.showPreloadConfirmDialog()
+      }
+    })
   }
 
   private loadMoreReplies(): void {
@@ -2326,7 +2331,7 @@ export struct TopicDetailPage {
             ),
           })
           .catch((_error: Error) => {})
-        this.v.load()
+        this.reloadTopicWithThreadPreload()
       })
       .catch((error: Error) => {
         promptAction.openToast({ message: translateApiError(error) }).catch((_error: Error) => {})
@@ -2448,7 +2453,7 @@ export struct TopicDetailPage {
             ),
           })
           .catch((_error: Error) => {})
-        this.v.load()
+        this.reloadTopicWithThreadPreload()
       })
       .catch((error: Error) => {
         promptAction.openToast({ message: translateApiError(error) }).catch((_error: Error) => {})
