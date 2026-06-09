@@ -561,7 +561,7 @@ export struct ImagePreviewPage {
         .height(40)
         .backgroundColor('#66000000')
         .enabled(!this.isSaving)
-        .accessibilityText(AppStrings.text(AppStrings.R_NAV_SAVE_IMAGE, 'Save image'))
+        .accessibilityText(AppStrings.text($r('app.string.nav_save_image'), 'Save image'))
         .position({
           right: ThemeConstants.SPACE_MD,
           bottom: this.layout.bottomAvoidHeight + ThemeConstants.SPACE_MD,

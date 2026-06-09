@@ -1,5 +1,4 @@
 import {
-  AppStrings,
   ConciseListRow,
   GroupedListSection,
   ListDivider as SharedListDivider,
@@ -151,26 +150,26 @@ export struct ReadingPreviewPanel {
     Column() {
       Scroll() {
         Column({ space: ThemeConstants.SPACE_MD }) {
-          Text(AppStrings.R_READING_PREVIEW_TITLE)
+          Text($r('app.string.reading_preview_title'))
             .fontSize(this.scaledToken(18))
             .fontWeight(FontWeight.Medium)
             .fontColor($r('sys.color.font_primary'))
             .lineHeight(this.scaledToken(24))
             .width('100%')
 
-          Text(AppStrings.R_READING_PREVIEW_INTRO)
+          Text($r('app.string.reading_preview_intro'))
             .fontSize(this.bodyFontSize())
             .fontColor($r('sys.color.font_primary'))
             .lineHeight(this.bodyLineHeight())
             .width('100%')
 
-          Text(AppStrings.R_READING_PREVIEW_BODY)
+          Text($r('app.string.reading_preview_body'))
             .fontSize(this.bodyFontSize())
             .fontColor($r('sys.color.font_primary'))
             .lineHeight(this.bodyLineHeight())
             .width('100%')
 
-          Text(AppStrings.R_READING_PREVIEW_QUOTE)
+          Text($r('app.string.reading_preview_quote'))
             .fontSize(this.scaledToken(13))
             .fontColor($r('sys.color.font_secondary'))
             .lineHeight(this.bodyLineHeight())
@@ -227,7 +226,7 @@ export struct ReadingScaleControlSection {
       Column() {
         Column({ space: ThemeConstants.SPACE_SM }) {
           Row() {
-            Text(AppStrings.R_TEXT_SCALE)
+            Text($r('app.string.text_scale'))
               .fontSize(ThemeConstants.FONT_SIZE_LIST_ITEM)
               .fontColor($r('sys.color.font_primary'))
               .maxLines(1)
@@ -262,7 +261,7 @@ export struct ReadingScaleControlSection {
         })
 
         ConciseListRow({
-          title: AppStrings.R_RESTORE_DEFAULT,
+          title: $r('app.string.restore_default'),
           destructive: true,
           showChevron: false,
           action: () => {

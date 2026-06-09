@@ -22,7 +22,7 @@ export struct NotificationAuthRequiredState {
       Text(this.message)
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
         .fontColor($r('sys.color.font_secondary'))
-      Button(AppStrings.text(AppStrings.R_NOTIFICATION_GO_LOGIN, 'Login'))
+      Button(AppStrings.text($r('app.string.notification_go_login'), 'Login'))
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
         .margin({ top: ThemeConstants.SPACE_LG })
         .onClick(() => {
@@ -47,7 +47,7 @@ export struct NotificationErrorState {
       Text(this.message)
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
         .fontColor($r('sys.color.font_secondary'))
-      Button(AppStrings.text(AppStrings.R_COMMON_RETRY, 'Retry'))
+      Button(AppStrings.text($r('app.string.common_retry'), 'Retry'))
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
         .margin({ top: ThemeConstants.SPACE_LG })
         .onClick(() => {
@@ -90,7 +90,7 @@ export struct NotificationCard {
           )
           if (this.readTag) {
             this.NotificationTag(
-              AppStrings.text(AppStrings.R_NOTIFICATION_TAG_UNREAD, 'Unread'),
+              AppStrings.text($r('app.string.notification_tag_unread'), 'Unread'),
               this.readTag === READ_TAG_UNREAD ? ThemeConstants.BRAND_PRIMARY : $r('sys.color.ohos_id_color_sub_background'),
               this.readTag === READ_TAG_UNREAD ? Color.White : $r('sys.color.font_secondary')
             )
@@ -165,19 +165,19 @@ export struct NotificationCard {
   private kindTagDisplay(code: string): string {
     switch (code) {
       case KIND_REPLY:
-        return AppStrings.text(AppStrings.R_NOTIFICATION_KIND_REPLY, 'Reply')
+        return AppStrings.text($r('app.string.notification_kind_reply'), 'Reply')
       case KIND_MENTION:
-        return AppStrings.text(AppStrings.R_NOTIFICATION_KIND_MENTION, 'Mention')
+        return AppStrings.text($r('app.string.notification_kind_mention'), 'Mention')
       case KIND_THANKS:
-        return AppStrings.text(AppStrings.R_NOTIFICATION_KIND_THANKS, 'Thanks')
+        return AppStrings.text($r('app.string.notification_kind_thanks'), 'Thanks')
       case KIND_FAVORITE:
-        return AppStrings.text(AppStrings.R_NOTIFICATION_KIND_FAVORITE, 'Favorite')
+        return AppStrings.text($r('app.string.notification_kind_favorite'), 'Favorite')
       case KIND_FOLLOW:
-        return AppStrings.text(AppStrings.R_NOTIFICATION_KIND_FOLLOW, 'Follow')
+        return AppStrings.text($r('app.string.notification_kind_follow'), 'Follow')
       case KIND_SYSTEM:
-        return AppStrings.text(AppStrings.R_NOTIFICATION_KIND_SYSTEM, 'System')
+        return AppStrings.text($r('app.string.notification_kind_system'), 'System')
       case KIND_NOTIFICATION:
-        return AppStrings.text(AppStrings.R_NOTIFICATION_KIND_NOTIFICATION, 'Notification')
+        return AppStrings.text($r('app.string.notification_kind_notification'), 'Notification')
       default:
         return code
     }

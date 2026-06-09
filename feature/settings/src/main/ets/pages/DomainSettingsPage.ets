@@ -31,13 +31,13 @@ export struct DomainSettingsPage {
     Column() {
       SecondaryListScaffold({ includeKeyboardPadding: true }) {
         ListItem() {
-          SettingsSectionHeader({ title: AppStrings.R_API_DOMAIN })
+          SettingsSectionHeader({ title: $r('app.string.api_domain') })
         }
         ListItem() {
           this.PresetSection()
         }
         ListItem() {
-          SettingsSectionHeader({ title: AppStrings.R_CUSTOM_DOMAIN })
+          SettingsSectionHeader({ title: $r('app.string.custom_domain') })
         }
         ListItem() {
           this.CustomDomainSection()
@@ -100,7 +100,7 @@ export struct DomainSettingsPage {
             .fontColor($r('sys.color.font_secondary'))
             .width('100%')
         }
-        Button(this.validating ? AppStrings.R_DOMAIN_VALIDATING : AppStrings.R_DOMAIN_VALIDATE)
+        Button(this.validating ? $r('app.string.domain_validating') : $r('app.string.domain_validate'))
           .type(ButtonType.Normal)
           .height(ThemeConstants.TOUCH_TARGET_SM)
           .width('100%')
@@ -112,7 +112,7 @@ export struct DomainSettingsPage {
         if (this.validatedCustomBaseUrl) {
           ConciseListRow({
             title: this.validatedCustomBaseUrl,
-            subtitle: AppStrings.R_DOMAIN_SESSION_HINT,
+            subtitle: $r('app.string.domain_session_hint'),
             showChevron: false,
             prefixBuilderParam: (): void => this.DomainRadio(this.validatedCustomBaseUrl),
             action: () => { this.selectBaseUrl(this.validatedCustomBaseUrl) },
@@ -128,7 +128,7 @@ export struct DomainSettingsPage {
       return
     }
     this.validating = true
-    this.validationMessage = AppStrings.text(AppStrings.R_DOMAIN_VALIDATING, 'Validating…')
+    this.validationMessage = AppStrings.text($r('app.string.domain_validating'), 'Validating…')
     DomainSettingsCoordinator.validateCustomDomain(this.customText)
       .then((result: DomainValidationResult) => {
         this.validating = false
@@ -138,7 +138,7 @@ export struct DomainSettingsPage {
       .catch((error: Error) => {
         this.validating = false
         this.validatedCustomBaseUrl = ''
-        this.validationMessage = error.message || AppStrings.text(AppStrings.R_DOMAIN_VALIDATE_FAILED, 'Validation failed')
+        this.validationMessage = error.message || AppStrings.text($r('app.string.domain_validate_failed'), 'Validation failed')
       })
   }
 
@@ -150,11 +150,11 @@ export struct DomainSettingsPage {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     ApiDomainSettings.save(context, normalized)
       .then(() => {
-        promptAction.openToast({ message: AppStrings.text(AppStrings.R_DOMAIN_SWITCHED, 'V2EX site switched') }).catch((_error: Error) => {})
+        promptAction.openToast({ message: AppStrings.text($r('app.string.domain_switched'), 'V2EX site switched') }).catch((_error: Error) => {})
       })
       .catch((error: Error) => {
         console.error('save V2EX site failed: ' + error.message)
-        promptAction.openToast({ message: AppStrings.text(AppStrings.R_COMMON_SAVE_FAILED, 'Save failed') }).catch((_toastError: Error) => {})
+        promptAction.openToast({ message: AppStrings.text($r('app.string.common_save_failed'), 'Save failed') }).catch((_toastError: Error) => {})
       })
   }
 }

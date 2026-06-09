@@ -15,6 +15,14 @@ const locales = ['base', 'en_US', 'zh_CN', 'zh_HK', 'zh_TW', 'ja_JP', 'ko_KR']
 const englishLocales = ['base', 'en_US']
 const resourceRoot = path.join(repo, 'entry/src/main/resources')
 const failures = []
+const languageAutonymKeys = new Set([
+  'language_simplified_chinese',
+  'language_traditional_chinese_hk',
+  'language_traditional_chinese_tw',
+  'language_english',
+  'language_japanese',
+  'language_korean',
+])
 
 function read(rel) {
   return fs.readFileSync(path.join(repo, rel), 'utf8')
@@ -74,6 +82,7 @@ function assertHasCjk(locale, key) {
 for (const locale of englishLocales) {
   const rel = `entry/src/main/resources/${locale}/element/string.json`
   for (const [key, value] of stringsByLocale.get(locale)) {
+    if (languageAutonymKeys.has(key)) continue
     if (CJK_RE.test(value)) {
       fail(`${rel}:${key}`, 'base/en_US app-owned resource contains CJK', value)
     }
@@ -140,21 +149,18 @@ const sourceChecks = [
     rel: 'entry/src/main/ets/model/AccountPageCoordinator.ets',
     forbidden: ['当前', '切换', '移除'],
     required: [
-      'static get ACCOUNT_ACTIVE_LABEL(): ResourceStr { return AppStrings.R_ACCOUNT_ACTIVE_LABEL }',
-      'static get SWITCH_LABEL(): ResourceStr { return AppStrings.R_ACCOUNT_SWITCH_LABEL }',
-      'static get REMOVE_LABEL(): ResourceStr { return AppStrings.R_ACCOUNT_REMOVE_LABEL }',
+      "static get ACCOUNT_ACTIVE_LABEL(): ResourceStr { return $r('app.string.account_active_label') }",
+      "static get SWITCH_LABEL(): ResourceStr { return $r('app.string.account_switch_label') }",
+      "static get REMOVE_LABEL(): ResourceStr { return $r('app.string.account_remove_label') }",
     ],
   },
   {
     rel: 'feature/settings/src/main/ets/model/StorageSettingsCoordinator.ets',
     forbidden: ['列表', '详情', '更新于'],
     required: [
-      "AppStrings.R_CACHE_SUBTITLE_UPDATED",
-      "AppStrings.R_CACHE_SUBTITLE",
+      "$r('app.string.cache_subtitle_updated')",
+      "$r('app.string.cache_subtitle')",
       "AppStrings.format",
-    ],
-    forbiddenPatterns: [
-      /\$r\('app\.string\.cache_subtitle/,
     ],
   },
   {
@@ -162,8 +168,8 @@ const sourceChecks = [
     forbidden: ['关闭'],
     required: [
       'static summary(snapshot: NetworkProxySettingsSnapshot): ResourceStr',
-      'return AppStrings.R_COMMON_CLOSED',
-      'return AppStrings.R_PROXY_SUMMARY_HTTP_NOT_CONFIGURED',
+      "return $r('app.string.common_closed')",
+      "return $r('app.string.proxy_summary_http_not_configured')",
     ],
   },
 ]

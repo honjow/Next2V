@@ -49,7 +49,7 @@ export class ReplyComposerDraftCoordinator {
       return {
         content: '',
         savedAt: 0,
-        errorMessage: e.message || AppStrings.text(AppStrings.R_DRAFT_LOAD_FAILED, 'Failed to load draft'),
+        errorMessage: e.message || AppStrings.text($r('app.string.draft_load_failed'), 'Failed to load draft'),
         selectionStart: 0,
         selectionEnd: 0,
         shouldScheduleSave: false,

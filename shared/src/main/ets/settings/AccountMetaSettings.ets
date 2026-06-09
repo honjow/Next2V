@@ -88,7 +88,7 @@ export class AccountMetaSettings {
       DiagnosticLogger.info('account', 'account_meta_store_clear', {})
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || AppStrings.text(AppStrings.R_CACHE_CLEAR_ACCOUNT_FAILED, 'Failed to clear account cache'))
+      throw new Error(e.message || AppStrings.text($r('app.string.cache_clear_account_failed'), 'Failed to clear account cache'))
     }
   }
 

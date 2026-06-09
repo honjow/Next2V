@@ -41,14 +41,15 @@ export class LanguageSettings {
         console.error('setAppPreferredLanguage failed: ' + e.message)
       }
     }
+    AppStrings.setOverrideLocaleForLanguageMode(mode)
     // Seed the follow-system guard cache so reapplyForFollowSystem
     // does not re-apply the same language on the first Environment callback.
     if (mode === LanguageSettings.MODE_SYSTEM && normalized) {
       LanguageSettings.lastAppliedFollowSystemLanguage = normalized
     }
     setAppStorageValue<AppLanguageMode>(StorageKeys.LANGUAGE_MODE, mode)
-    // V2 mirror dual-write: SettingsPage hydration, reapplyForFollowSystem, and
-    // AppStrings.currentLanguageMode read this instead of AppStorage.get(LANGUAGE_MODE).
+    // V2 mirror dual-write: SettingsPage hydration and reapplyForFollowSystem
+    // read this instead of AppStorage.get(LANGUAGE_MODE).
     connectLanguageState().mode = mode
     return { mode }
   }
@@ -174,24 +175,24 @@ export class LanguageSettings {
   static modeText(mode: string): ResourceStr {
     const normalizedMode = LanguageSettings.normalizeMode(mode)
     if (normalizedMode === LanguageSettings.MODE_ZH_CN) {
-      return AppStrings.R_LANGUAGE_SIMPLIFIED_CHINESE
+      return $r('app.string.language_simplified_chinese')
     }
     if (normalizedMode === LanguageSettings.MODE_ZH_HK) {
-      return AppStrings.R_LANGUAGE_TRADITIONAL_CHINESE_HK
+      return $r('app.string.language_traditional_chinese_hk')
     }
     if (normalizedMode === LanguageSettings.MODE_ZH_TW) {
-      return AppStrings.R_LANGUAGE_TRADITIONAL_CHINESE_TW
+      return $r('app.string.language_traditional_chinese_tw')
     }
     if (normalizedMode === LanguageSettings.MODE_EN) {
-      return AppStrings.R_LANGUAGE_ENGLISH
+      return $r('app.string.language_english')
     }
     if (normalizedMode === LanguageSettings.MODE_JA) {
-      return AppStrings.R_LANGUAGE_JAPANESE
+      return $r('app.string.language_japanese')
     }
     if (normalizedMode === LanguageSettings.MODE_KO) {
-      return AppStrings.R_LANGUAGE_KOREAN
+      return $r('app.string.language_korean')
     }
-    return AppStrings.R_LANGUAGE_FOLLOW_SYSTEM
+    return $r('app.string.language_follow_system')
   }
 
   private static applyFromStore(store: SettingsPreferencesStore): LanguageSettingsSnapshot {

@@ -132,37 +132,37 @@ export struct SettingsPage {
     Column() {
       SecondaryListScaffold() {
         ListItem() {
-          this.SectionHeader(AppStrings.R_ACCOUNT_SECTION)
+          this.SectionHeader($r('app.string.account_section'))
         }
         ListItem() {
           this.AccountSection()
         }
         ListItem() {
-          this.SectionHeader(AppStrings.R_SETTINGS_APPEARANCE)
+          this.SectionHeader($r('app.string.settings_appearance'))
         }
         ListItem() {
           this.AppearanceSection()
         }
         ListItem() {
-          this.SectionHeader(AppStrings.R_SETTINGS_READING)
+          this.SectionHeader($r('app.string.settings_reading'))
         }
         ListItem() {
           this.ReadingSection()
         }
         ListItem() {
-          this.SectionHeader(AppStrings.R_SETTINGS_NAVIGATION_ACTIONS)
+          this.SectionHeader($r('app.string.settings_navigation_actions'))
         }
         ListItem() {
           GroupedListSection() {
             ConciseListRow({
-              title: AppStrings.R_NAV_HOME_NODES,
+              title: $r('app.string.nav_home_nodes'),
               action: () => {
                 this.stack.pushPathByName('HomeNodeSettings', null)
               },
             })
             this.SettingsDivider()
             this.TogglePreferenceRow(
-              AppStrings.R_HOME_TAB_AUTO_HIDE,
+              $r('app.string.home_tab_auto_hide'),
               this.homeTabAutoHide,
               (value: boolean) => {
                 this.updateHomeTabAutoHide(value)
@@ -170,7 +170,7 @@ export struct SettingsPage {
             )
             this.SettingsDivider()
             this.TogglePreferenceRow(
-              AppStrings.R_TOPIC_DETAIL_REPLY_BUTTON_AUTO_HIDE,
+              $r('app.string.topic_detail_reply_button_auto_hide'),
               this.topicReplyButton.autoHide,
               (value: boolean) => {
                 this.updateTopicDetailReplyButtonAutoHide(value)
@@ -179,19 +179,19 @@ export struct SettingsPage {
           }
         }
         ListItem() {
-          this.SectionHeader(AppStrings.R_SETTINGS_CONTENT_MEDIA)
+          this.SectionHeader($r('app.string.settings_content_media'))
         }
         ListItem() {
           this.MediaSection()
         }
         ListItem() {
-          this.SectionHeader(AppStrings.R_NAV_STORAGE)
+          this.SectionHeader($r('app.string.nav_storage'))
         }
         ListItem() {
           this.CacheSection()
         }
         ListItem() {
-          this.SectionHeader(AppStrings.R_SETTINGS_ADVANCED)
+          this.SectionHeader($r('app.string.settings_advanced'))
         }
         ListItem() {
           this.DiagnosticsSection()
@@ -223,14 +223,14 @@ export struct SettingsPage {
   AccountSection() {
     GroupedListSection() {
       ConciseListRow({
-        title: AppStrings.R_ACCOUNT_MANAGEMENT,
+        title: $r('app.string.account_management'),
         action: () => {
           this.stack.pushPathByName('Account', null)
         },
       })
       this.SettingsDivider()
       this.TogglePreferenceRow(
-        AppStrings.R_AUTO_CHECKIN,
+        $r('app.string.auto_checkin'),
         this.autoDailyCheckinEnabled,
         (value: boolean) => {
           this.updateAutoDailyCheckin(value)
@@ -238,10 +238,10 @@ export struct SettingsPage {
       )
       this.SettingsDivider()
       ConciseListRow({
-        title: AppStrings.R_CLOUD_SYNC,
+        title: $r('app.string.cloud_sync'),
         trailingText: this.cloudSync.enabled
-          ? AppStrings.R_COMMON_OPEN
-          : AppStrings.R_COMMON_CLOSED,
+          ? $r('app.string.common_open')
+          : $r('app.string.common_closed'),
         action: () => {
           this.stack.pushPathByName('CloudSyncSettings', null)
         },
@@ -267,7 +267,7 @@ export struct SettingsPage {
   MediaSection() {
     GroupedListSection() {
       this.TogglePreferenceRow(
-        AppStrings.R_IMAGE_AUTO_LOAD,
+        $r('app.string.image_auto_load'),
         this.autoLoadImages,
         (value: boolean) => {
           this.updateAutoLoadImages(value)
@@ -278,7 +278,7 @@ export struct SettingsPage {
 
       if (this.autoLoadImages) {
         this.TogglePreferenceRow(
-          AppStrings.R_WIFI_ONLY_IMAGES,
+          $r('app.string.wifi_only_images'),
           this.onlyLoadImagesOnWifi,
           (value: boolean) => {
             this.updateOnlyLoadImagesOnWifi(value)
@@ -290,9 +290,9 @@ export struct SettingsPage {
 
       this.SettingsDivider()
       ConciseListRow({
-        title: AppStrings.R_IMAGE_UPLOAD_SETTINGS_TITLE,
+        title: $r('app.string.image_upload_settings_title'),
         trailingText: this.isImageUploadConfigured()
-          ? AppStrings.R_IMAGE_UPLOAD_SUMMARY_CONFIGURED
+          ? $r('app.string.image_upload_summary_configured')
           : $r('app.string.proxy_not_configured'),
         action: () => {
           this.stack.pushPathByName('ImageUploadSettings', null)
@@ -317,7 +317,7 @@ export struct SettingsPage {
   DiagnosticsSection() {
     GroupedListSection() {
       ConciseListRow({
-        title: AppStrings.R_NAV_DIAGNOSTICS,
+        title: $r('app.string.nav_diagnostics'),
         action: () => {
           this.stack.pushPathByName('DiagnosticsLog', null)
         },
@@ -329,7 +329,7 @@ export struct SettingsPage {
   ApiDomainAdvancedSection() {
     GroupedListSection() {
       ConciseListRow({
-        title: AppStrings.R_API_DOMAIN,
+        title: $r('app.string.api_domain'),
         trailingText: SettingsPageCoordinator.apiDomainLabel(this.domain.selectedBaseUrl),
         action: () => {
           this.stack.pushPathByName('DomainSettings', null)
@@ -342,7 +342,7 @@ export struct SettingsPage {
   NetworkAdvancedSection() {
     GroupedListSection() {
       ConciseListRow({
-        title: AppStrings.R_NAV_NETWORK_PROXY,
+        title: $r('app.string.nav_network_proxy'),
         trailingText: NetworkProxySettings.summary({
           mode: NetworkProxySettings.normalizeMode(this.proxy.mode),
           host: this.proxy.host,
@@ -377,7 +377,7 @@ export struct SettingsPage {
   @Builder
   DisabledWifiImagePreferenceRow() {
     SettingsToggleRow({
-      title: AppStrings.R_WIFI_ONLY_IMAGES,
+      title: $r('app.string.wifi_only_images'),
       checked: this.onlyLoadImagesOnWifi,
       isEnabled: false,
       changeAction: (_value: boolean) => {},
@@ -388,7 +388,7 @@ export struct SettingsPage {
   AppearancePreferenceRows() {
     Column() {
       SettingsThemeColorDropdownRow({
-        title: AppStrings.R_THEME_COLOR,
+        title: $r('app.string.theme_color'),
         trailingText: SettingsPageCoordinator.themeColorLabel(this.themeColor.color),
         color: SettingsPageCoordinator.themeColorValue(this.themeColor.color),
         openAction: () => {
@@ -404,7 +404,7 @@ export struct SettingsPage {
 
       this.SettingsDivider()
       SettingsDropdownRow({
-        title: AppStrings.R_THEME,
+        title: $r('app.string.theme'),
         trailingText: SettingsPageCoordinator.themeModeLabel(this.themeMode),
         openAction: () => {
           this.showThemeMenu()
@@ -419,7 +419,7 @@ export struct SettingsPage {
 
       this.SettingsDivider()
       SettingsDropdownRow({
-        title: AppStrings.R_AVATAR_APPEARANCE,
+        title: $r('app.string.avatar_appearance'),
         trailingText: SettingsPageCoordinator.avatarAppearanceLabel(this.avatar.appearance),
         openAction: () => {
           this.showAvatarAppearanceMenu()
@@ -434,7 +434,7 @@ export struct SettingsPage {
 
       this.SettingsDivider()
       SettingsDropdownRow({
-        title: AppStrings.R_LANGUAGE,
+        title: $r('app.string.language'),
         trailingText: SettingsPageCoordinator.languageModeLabel(this.languageMode),
         openAction: () => {
           this.showLanguageMenu()
@@ -453,7 +453,7 @@ export struct SettingsPage {
   ReadingPreferenceRows() {
     Column() {
       SettingsDropdownRow({
-        title: AppStrings.R_REPLY_DISPLAY,
+        title: $r('app.string.reply_display'),
         trailingText: SettingsPageCoordinator.replyDisplayModeLabel(this.replyDisplayMode),
         openAction: () => {
           this.showReplyDisplayMenu()
@@ -468,7 +468,7 @@ export struct SettingsPage {
 
       this.SettingsDivider()
       SettingsDropdownRow({
-        title: AppStrings.R_REPLY_STYLE,
+        title: $r('app.string.reply_style'),
         trailingText: SettingsPageCoordinator.replyCardStyleLabel(
           this.replyCardStyleState.replyCardStyle,
         ),
@@ -485,7 +485,7 @@ export struct SettingsPage {
 
       this.SettingsDivider()
       SettingsDropdownRow({
-        title: AppStrings.R_REPLY_ACTION_ALIGNMENT,
+        title: $r('app.string.reply_action_alignment'),
         trailingText: SettingsPageCoordinator.replyActionAlignmentLabel(
           this.replyActionAlignmentMode,
           this.motionHoldingHandSupported,
@@ -504,7 +504,7 @@ export struct SettingsPage {
       this.SettingsDivider()
 
       this.TogglePreferenceRow(
-        AppStrings.R_REMEMBER_READ_POSITION,
+        $r('app.string.remember_read_position'),
         this.readingRestorePosition,
         (value: boolean) => {
           this.updateRestorePosition(value)
@@ -513,8 +513,8 @@ export struct SettingsPage {
 
       this.SettingsDivider()
       SettingsDropdownRow({
-        title: AppStrings.R_BASE64_DECODE,
-        subtitle: AppStrings.R_BASE64_SUBTITLE,
+        title: $r('app.string.base64_decode'),
+        subtitle: $r('app.string.base64_subtitle'),
         trailingText: this.base64DecodeModeLabel(),
         openAction: () => {
           this.showBase64ModeMenu()
@@ -529,7 +529,7 @@ export struct SettingsPage {
 
       this.SettingsDivider()
       ConciseListRow({
-        title: AppStrings.R_NAV_READING,
+        title: $r('app.string.nav_reading'),
         action: () => {
           this.stack.pushPathByName('ReadingSettings', null)
         },
@@ -795,7 +795,7 @@ export struct SettingsPage {
   CacheSection() {
     GroupedListSection() {
       ConciseListRow({
-        title: AppStrings.R_NAV_STORAGE,
+        title: $r('app.string.nav_storage'),
         subtitle: StorageSettingsCoordinator.cacheSubtitle(this.cacheStats),
         count: this.cacheStats.topicListCount + this.cacheStats.topicDetailCount,
         action: () => {
@@ -852,7 +852,7 @@ export struct SettingsPage {
       console.error('switch app language failed: ' + error.message)
       promptAction
         .openToast({
-          message: AppStrings.R_COMMON_SAVE_FAILED,
+          message: AppStrings.text($r('app.string.common_save_failed'), 'Save failed'),
         })
         .catch((_toastError: Error) => {})
     })

@@ -50,10 +50,10 @@ export struct UserProfileErrorState {
 
   build() {
     Column() {
-      Text(this.message || AppStrings.text(AppStrings.R_COMMON_LOAD_FAILED, 'Load failed'))
+      Text(this.message || AppStrings.text($r('app.string.common_load_failed'), 'Load failed'))
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
         .fontColor($r('sys.color.font_secondary'))
-      Button(AppStrings.text(AppStrings.R_COMMON_RETRY, 'Retry'))
+      Button(AppStrings.text($r('app.string.common_retry'), 'Retry'))
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
         .margin({ top: ThemeConstants.SPACE_LG })
         .onClick(() => {
@@ -112,7 +112,7 @@ export struct UserProfileCard {
               .textOverflow({ overflow: TextOverflow.Ellipsis })
           }
           Text(AppStrings.format(
-            AppStrings.text(AppStrings.R_USER_PROFILE_MEMBER_NUMBER, 'Member #{0} · {1}'),
+            AppStrings.text($r('app.string.user_profile_member_number'), 'Member #{0} · {1}'),
             [String(this.profile.id), DateUtils.toDateString(this.profile.created)]
           ))
             .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
@@ -146,10 +146,10 @@ export struct UserProfileCard {
   @Builder private ProfileMeta() {
     Column({ space: ThemeConstants.SPACE_XS }) {
       if (this.profile.location) {
-        this.MetaRow(AppStrings.text(AppStrings.R_USER_PROFILE_LOCATION, 'Location'), this.profile.location)
+        this.MetaRow(AppStrings.text($r('app.string.user_profile_location'), 'Location'), this.profile.location)
       }
       if (this.profile.website) {
-        this.MetaRow(AppStrings.text(AppStrings.R_USER_PROFILE_WEBSITE, 'Website'), this.profile.website)
+        this.MetaRow(AppStrings.text($r('app.string.user_profile_website'), 'Website'), this.profile.website)
       }
       if (this.profile.github) {
         this.MetaRow('GitHub', this.profile.github)

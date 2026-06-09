@@ -84,12 +84,12 @@ export class ThemeSettings {
   static modeText(mode: string): string {
     const normalizedMode = ThemeSettings.normalizeMode(mode)
     if (normalizedMode === THEME_MODE_LIGHT) {
-      return AppStrings.text(AppStrings.R_COMMON_LIGHT, 'Light')
+      return AppStrings.text($r('app.string.common_light'), 'Light')
     }
     if (normalizedMode === THEME_MODE_DARK) {
-      return AppStrings.text(AppStrings.R_COMMON_DARK, 'Dark')
+      return AppStrings.text($r('app.string.common_dark'), 'Dark')
     }
-    return AppStrings.text(AppStrings.R_COMMON_AUTO, 'Automatic')
+    return AppStrings.text($r('app.string.common_auto'), 'Automatic')
   }
 
   private static effectiveDarkForMode(

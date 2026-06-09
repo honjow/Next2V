@@ -161,7 +161,7 @@ export struct ReplyComposerBar {
         Stack({ alignContent: Alignment.End }) {
           TextArea({
             placeholder: AppStrings.text(
-              AppStrings.R_REPLY_BODY_PLACEHOLDER,
+              $r('app.string.reply_body_placeholder'),
               'Reply body (auto-saved)',
             ),
             text: this.content,
@@ -246,7 +246,7 @@ export struct ReplyComposerBar {
           .buttonStyle(ButtonStyleMode.NORMAL)
           .focusOnTouch(false)
           .accessibilityText(
-            AppStrings.text(AppStrings.R_IMAGE_UPLOAD_ACTION_NEW, 'Upload a new image'),
+            AppStrings.text($r('app.string.image_upload_action_new'), 'Upload a new image'),
           )
           .onClick(() => {
             this.pickAndUploadImage()
@@ -406,7 +406,7 @@ export struct ReplyComposerBar {
     // Insert a uniquely-tagged "uploading" placeholder at the caret, then swap it for the final bare URL
     // (or remove it on failure). Matching the exact captured placeholder avoids index drift if the user
     // keeps typing during the upload; a stale one is stripped from the draft on next open.
-    const uploadingLabel = AppStrings.text(AppStrings.R_IMAGE_UPLOAD_UPLOADING, 'Uploading')
+    const uploadingLabel = AppStrings.text($r('app.string.image_upload_uploading'), 'Uploading')
     const placeholder = `![${uploadingLabel}](uploading://${Date.now()})`
     this.insertTextAtCaret(placeholder)
     const fileName = `image.${ImageBytesUtils.extensionFor(image.mimeType)}`
@@ -551,33 +551,33 @@ export struct ReplyComposerBar {
 
   private uploadErrorMessage(code: string): string {
     if (code === ImageUploadErrorCode.TOO_LARGE) {
-      return AppStrings.text(AppStrings.R_IMAGE_UPLOAD_ERROR_TOO_LARGE, 'Image is too large')
+      return AppStrings.text($r('app.string.image_upload_error_too_large'), 'Image is too large')
     }
     if (code === ImageUploadErrorCode.RATE_LIMIT) {
-      return AppStrings.text(AppStrings.R_IMAGE_UPLOAD_ERROR_RATE_LIMIT, 'Rate limited')
+      return AppStrings.text($r('app.string.image_upload_error_rate_limit'), 'Rate limited')
     }
     if (code === ImageUploadErrorCode.FORBIDDEN) {
-      return AppStrings.text(AppStrings.R_IMAGE_UPLOAD_ERROR_FORBIDDEN, 'Upload rejected')
+      return AppStrings.text($r('app.string.image_upload_error_forbidden'), 'Upload rejected')
     }
     if (code === ImageUploadErrorCode.SERVER) {
-      return AppStrings.text(AppStrings.R_IMAGE_UPLOAD_ERROR_SERVER, 'Server error')
+      return AppStrings.text($r('app.string.image_upload_error_server'), 'Server error')
     }
     if (code === ImageUploadErrorCode.NETWORK) {
-      return AppStrings.text(AppStrings.R_IMAGE_UPLOAD_ERROR_NETWORK, 'Network error')
+      return AppStrings.text($r('app.string.image_upload_error_network'), 'Network error')
     }
     if (code === ImageUploadErrorCode.BAD_IMAGE) {
-      return AppStrings.text(AppStrings.R_IMAGE_UPLOAD_ERROR_BAD_IMAGE, 'Unsupported image')
+      return AppStrings.text($r('app.string.image_upload_error_bad_image'), 'Unsupported image')
     }
     if (code === ImageUploadErrorCode.UNSUPPORTED_PROVIDER) {
-      return AppStrings.text(AppStrings.R_IMAGE_UPLOAD_ERROR_UNSUPPORTED, 'Unsupported host')
+      return AppStrings.text($r('app.string.image_upload_error_unsupported'), 'Unsupported host')
     }
-    return AppStrings.text(AppStrings.R_IMAGE_UPLOAD_ERROR_GENERIC, 'Image upload failed')
+    return AppStrings.text($r('app.string.image_upload_error_generic'), 'Image upload failed')
   }
 
   private promptConfigureHost(): void {
     this.getUIContext().showAlertDialog({
       message: AppStrings.text(
-        AppStrings.R_IMAGE_UPLOAD_NO_CLIENTID,
+        $r('app.string.image_upload_no_clientid'),
         'Configure an image host first',
       ),
       primaryButton: {
@@ -585,7 +585,7 @@ export struct ReplyComposerBar {
         action: () => {},
       },
       secondaryButton: {
-        value: AppStrings.text(AppStrings.R_IMAGE_UPLOAD_GO_CONFIG, 'Configure'),
+        value: AppStrings.text($r('app.string.image_upload_go_config'), 'Configure'),
         action: () => {
           this.stack.pushPathByName('ImageUploadSettings', null)
         },

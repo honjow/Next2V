@@ -66,7 +66,7 @@ export class AccountStore {
       return Array.isArray(parsed) ? parsed : []
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || AppStrings.text(AppStrings.R_ACCOUNT_READ_LIST_FAILED, 'Failed to read account list'))
+      throw new Error(e.message || AppStrings.text($r('app.string.account_read_list_failed'), 'Failed to read account list'))
     }
   }
 
@@ -101,7 +101,7 @@ export class AccountStore {
     const all = await AccountStore.getAll(context)
     const index = all.findIndex(r => r.id === record.id)
     if (index < 0) {
-      throw new Error(AppStrings.text(AppStrings.R_ACCOUNT_RECORD_NOT_FOUND, 'Account record not found'))
+      throw new Error(AppStrings.text($r('app.string.account_record_not_found'), 'Account record not found'))
     }
     all[index] = record
     await AccountStore.saveAllAndFlush(context, all)
@@ -134,7 +134,7 @@ export class AccountStore {
       store.flushSync()
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || AppStrings.text(AppStrings.R_ACCOUNT_ACTIVE_ID_SAVE_FAILED, 'Failed to save active account ID'))
+      throw new Error(e.message || AppStrings.text($r('app.string.account_active_id_save_failed'), 'Failed to save active account ID'))
     }
     AccountStore.applyActiveAccountId(id)
   }
@@ -181,7 +181,7 @@ export class AccountStore {
       AccountStore.applyActiveAccountId('')
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || AppStrings.text(AppStrings.R_ACCOUNT_CLEAR_DATA_FAILED, 'Failed to clear account data'))
+      throw new Error(e.message || AppStrings.text($r('app.string.account_clear_data_failed'), 'Failed to clear account data'))
     }
   }
 
@@ -244,7 +244,7 @@ export class AccountStore {
       return record
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || AppStrings.text(AppStrings.R_ACCOUNT_DATA_MIGRATION_FAILED, 'Account data migration failed'))
+      throw new Error(e.message || AppStrings.text($r('app.string.account_data_migration_failed'), 'Account data migration failed'))
     }
   }
 
@@ -261,7 +261,7 @@ export class AccountStore {
       store.flushSync()
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || AppStrings.text(AppStrings.R_ACCOUNT_CLEAR_DATA_FAILED, 'Failed to clear account data'))
+      throw new Error(e.message || AppStrings.text($r('app.string.account_clear_data_failed'), 'Failed to clear account data'))
     }
   }
 

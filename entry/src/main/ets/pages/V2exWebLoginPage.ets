@@ -40,7 +40,7 @@ export struct V2exWebLoginPage {
   private api: ApiService = new ApiService()
 
   @Local private errorMessage: string = ''
-  @Local private pageMessage: string = AppStrings.text(AppStrings.R_WEB_LOGIN_OPENING, 'Opening web login...')
+  @Local private pageMessage: string = AppStrings.text($r('app.string.web_login_opening'), 'Opening web login...')
   @Local private isSaving: boolean = false
   @Local private isSaved: boolean = false
   @Local private lastUrl: string = ''
@@ -92,7 +92,7 @@ export struct V2exWebLoginPage {
           this.loadSigninPage()
         },
         onPageBegin: (event?: PageEndEvent) => {
-          this.pageMessage = event?.url ? AppStrings.format(AppStrings.text(AppStrings.R_WEB_LOGIN_LOADING_URL, 'Loading {0}'), [event.url]) : AppStrings.text(AppStrings.R_WEB_LOGIN_LOADING_PAGE, 'Loading web login...')
+          this.pageMessage = event?.url ? AppStrings.format(AppStrings.text($r('app.string.web_login_loading_url'), 'Loading {0}'), [event.url]) : AppStrings.text($r('app.string.web_login_loading_page'), 'Loading web login...')
           if (event && event.url) {
             this.lastUrl = event.url
           }
@@ -119,7 +119,7 @@ export struct V2exWebLoginPage {
         },
         onErrorReceive: (event) => {
           if (event?.request?.isMainFrame()) {
-            this.pageMessage = event.error.getErrorInfo() || AppStrings.text(AppStrings.R_WEB_LOGIN_LOAD_FAILED, 'Web login failed to load')
+            this.pageMessage = event.error.getErrorInfo() || AppStrings.text($r('app.string.web_login_load_failed'), 'Web login failed to load')
             DiagnosticLogger.warn('webview', 'web_login_load_error', {
               url: this.lastUrl || this.currentSigninUrl(),
               isMainFrame: true,
@@ -133,7 +133,7 @@ export struct V2exWebLoginPage {
 
   private statusText(): string {
     if (this.isSaving) {
-      return AppStrings.text(AppStrings.R_WEB_LOGIN_SAVING, 'Saving login state...')
+      return AppStrings.text($r('app.string.web_login_saving'), 'Saving login state...')
     }
     if (this.errorMessage) {
       return this.errorMessage
@@ -166,7 +166,7 @@ export struct V2exWebLoginPage {
 
   private loadSigninPage(): void {
     const url = this.currentSigninUrl()
-    this.pageMessage = AppStrings.format(AppStrings.text(AppStrings.R_WEB_LOGIN_OPENING_URL, 'Opening {0}'), [url])
+    this.pageMessage = AppStrings.format(AppStrings.text($r('app.string.web_login_opening_url'), 'Opening {0}'), [url])
     this.loginStartCookie = CookieJarSettings.getCurrentCookie()
     CookieJarSettings.clearWebCookiesForBaseUrl(this.baseUrl)
       .then(() => {
@@ -301,10 +301,10 @@ export struct V2exWebLoginPage {
       throw new Error(AppStrings.text($r('app.string.login_cookie_missing'), 'Login cookie was not obtained. Please confirm login is complete.'))
     }
     if (silent && !this.hasLikelyAuthCookie(cleanCookie)) {
-      throw new Error(AppStrings.text(AppStrings.R_WEB_LOGIN_NOT_COMPLETE, 'Web login not yet complete'))
+      throw new Error(AppStrings.text($r('app.string.web_login_not_complete'), 'Web login not yet complete'))
     }
     if (silent && this.sameCookieHeader(cleanCookie, this.loginStartCookie)) {
-      throw new Error(AppStrings.text(AppStrings.R_WEB_LOGIN_NOT_COMPLETE, 'Web login not yet complete'))
+      throw new Error(AppStrings.text($r('app.string.web_login_not_complete'), 'Web login not yet complete'))
     }
     const html = await this.http.getTextWithHeaders('/settings', { 'Cookie': cleanCookie })
     const username = V2exSessionParser.extractUsername(html)

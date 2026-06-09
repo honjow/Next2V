@@ -21,10 +21,10 @@ export interface ReplyContextBuildInput {
 export class ReplyContextCoordinator {
   static title(reply: V2exReply | null, getReplyFloor: (replyId: number) => number): string {
     if (reply === null) {
-      return AppStrings.text(AppStrings.R_REPLY_CONTEXT_TITLE, 'Reply context')
+      return AppStrings.text($r('app.string.reply_context_title'), 'Reply context')
     }
     const floor = getReplyFloor(reply.id)
-    return floor > 0 ? AppStrings.format(AppStrings.text(AppStrings.R_REPLY_CONTEXT_WITH_FLOOR_FORMAT, '#{0} Reply context'), [`${floor}`]) : AppStrings.text(AppStrings.R_REPLY_CONTEXT_TITLE, 'Reply context')
+    return floor > 0 ? AppStrings.format(AppStrings.text($r('app.string.reply_context_with_floor_format'), '#{0} Reply context'), [`${floor}`]) : AppStrings.text($r('app.string.reply_context_title'), 'Reply context')
   }
 
   static snippet(content: string): string {
@@ -33,7 +33,7 @@ export class ReplyContextCoordinator {
       .replace(/\n+/g, ' ')
       .replace(/\s+/g, ' ')
       .trim()
-    return text || AppStrings.text(AppStrings.R_REPLY_CONTEXT_EMPTY_SNIPPET, '(No content)')
+    return text || AppStrings.text($r('app.string.reply_context_empty_snippet'), '(No content)')
   }
 
   static build(input: ReplyContextBuildInput): ReplyContextItem[] {
@@ -55,8 +55,8 @@ export class ReplyContextCoordinator {
       items.push({ reply: reply, floor: floor, label: label, selected: selectedItem })
     }
 
-    ReplyContextCoordinator.addContextReplyByFloor(input.replies, input.selectedFloor - 2, AppStrings.text(AppStrings.R_REPLY_CONTEXT_LABEL_ABOVE, 'Above'), addReply)
-    ReplyContextCoordinator.addContextReplyByFloor(input.replies, input.selectedFloor - 1, AppStrings.text(AppStrings.R_REPLY_CONTEXT_LABEL_ABOVE, 'Above'), addReply)
+    ReplyContextCoordinator.addContextReplyByFloor(input.replies, input.selectedFloor - 2, AppStrings.text($r('app.string.reply_context_label_above'), 'Above'), addReply)
+    ReplyContextCoordinator.addContextReplyByFloor(input.replies, input.selectedFloor - 1, AppStrings.text($r('app.string.reply_context_label_above'), 'Above'), addReply)
     ReplyContextCoordinator.addMentionTargetsBeforeSelection(
       input.replies,
       input.selectedFloor,
@@ -64,15 +64,15 @@ export class ReplyContextCoordinator {
       input.selected.content_rendered,
       addReply,
     )
-    addReply(input.selected, AppStrings.text(AppStrings.R_REPLY_CONTEXT_LABEL_CURRENT, 'Current reply'), true)
+    addReply(input.selected, AppStrings.text($r('app.string.reply_context_label_current'), 'Current reply'), true)
     ReplyContextCoordinator.addRepliesMentioningSelectedAuthor(
       input.replies,
       input.selectedFloor,
       input.selected.member.username,
       addReply,
     )
-    ReplyContextCoordinator.addContextReplyByFloor(input.replies, input.selectedFloor + 1, AppStrings.text(AppStrings.R_REPLY_CONTEXT_LABEL_BELOW, 'Below'), addReply)
-    ReplyContextCoordinator.addContextReplyByFloor(input.replies, input.selectedFloor + 2, AppStrings.text(AppStrings.R_REPLY_CONTEXT_LABEL_BELOW, 'Below'), addReply)
+    ReplyContextCoordinator.addContextReplyByFloor(input.replies, input.selectedFloor + 1, AppStrings.text($r('app.string.reply_context_label_below'), 'Below'), addReply)
+    ReplyContextCoordinator.addContextReplyByFloor(input.replies, input.selectedFloor + 2, AppStrings.text($r('app.string.reply_context_label_below'), 'Below'), addReply)
 
     return items.sort((left: ReplyContextItem, right: ReplyContextItem) => left.floor - right.floor)
   }
@@ -120,7 +120,7 @@ export class ReplyContextCoordinator {
         reply &&
         ReplyContextCoordinator.contentMentionsUsername(reply.content, reply.content_rendered, clean)
       ) {
-        addReply(reply, AppStrings.format(AppStrings.text(AppStrings.R_REPLY_CONTEXT_LABEL_MENTION_FORMAT, 'Mentioned @{0}'), [clean]), false)
+        addReply(reply, AppStrings.format(AppStrings.text($r('app.string.reply_context_label_mention_format'), 'Mentioned @{0}'), [clean]), false)
         added++
       }
     }

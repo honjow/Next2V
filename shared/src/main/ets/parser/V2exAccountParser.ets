@@ -189,16 +189,16 @@ export class V2exAccountParser {
     const parts: string[] = []
     if (gold > 0) {
       parts.push(
-        `${V2exAccountParser.formatCoinAmount(gold)} ${AppStrings.text(AppStrings.R_ACCOUNT_BALANCE_GOLD, 'Gold')}`,
+        `${V2exAccountParser.formatCoinAmount(gold)} ${AppStrings.text($r('app.string.account_balance_gold'), 'Gold')}`,
       )
     }
     if (silver > 0) {
       parts.push(
-        `${V2exAccountParser.formatCoinAmount(silver)} ${AppStrings.text(AppStrings.R_ACCOUNT_BALANCE_SILVER, 'Silver')}`,
+        `${V2exAccountParser.formatCoinAmount(silver)} ${AppStrings.text($r('app.string.account_balance_silver'), 'Silver')}`,
       )
     }
     parts.push(
-      `${V2exAccountParser.formatCoinAmount(bronze)} ${AppStrings.text(AppStrings.R_ACCOUNT_BALANCE_BRONZE, 'Bronze')}`,
+      `${V2exAccountParser.formatCoinAmount(bronze)} ${AppStrings.text($r('app.string.account_balance_bronze'), 'Bronze')}`,
     )
     return { gold, silver, bronze, summary: parts.join(' · ') }
   }

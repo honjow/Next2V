@@ -390,23 +390,23 @@
     },
     {
       "name": "language_simplified_chinese",
-      "value": "簡体字中国語"
+      "value": "简体中文"
     },
     {
       "name": "language_traditional_chinese_hk",
-      "value": "繁体字中国語（香港）"
+      "value": "繁體中文（香港）"
     },
     {
       "name": "language_traditional_chinese_tw",
-      "value": "繁体字中国語（台湾）"
+      "value": "繁體中文（台灣）"
     },
     {
       "name": "language_english",
-      "value": "英語"
+      "value": "English"
     },
     {
       "name": "language_korean",
-      "value": "韓国語"
+      "value": "한국어"
     },
     {
       "name": "language_japanese",

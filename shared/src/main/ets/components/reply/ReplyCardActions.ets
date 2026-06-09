@@ -67,7 +67,7 @@ export struct ReplyCardActions {
     Menu() {
       if (this.collapsed && this.onThankClick) {
         MenuItem({
-          content: AppStrings.text(AppStrings.R_REPLY_THANK_TITLE, 'Thank reply'),
+          content: AppStrings.text($r('app.string.reply_thank_title'), 'Thank reply'),
           symbolStartIcon: this.isThanked || this.reply.thanks > 0 ? this.thankFilledIcon : this.thankIcon,
         }).onClick(() => {
           this.runContextAction((reply: V2exReply) => {
@@ -80,7 +80,7 @@ export struct ReplyCardActions {
 
       if (this.collapsed && this.onReplyClick) {
         MenuItem({
-          content: AppStrings.text(AppStrings.R_REPLY_ACTION_REPLY, 'Reply'),
+          content: AppStrings.text($r('app.string.reply_action_reply'), 'Reply'),
           symbolStartIcon: this.replyIcon,
         }).onClick(() => {
           this.runContextAction(this.onReplyClick)
@@ -89,7 +89,7 @@ export struct ReplyCardActions {
 
       if (this.onContextClick) {
         MenuItem({
-          content: AppStrings.text(AppStrings.R_REPLY_VIEW_CONTEXT, 'View context'),
+          content: AppStrings.text($r('app.string.reply_view_context'), 'View context'),
           symbolStartIcon: this.contextIcon
         }).onClick(
           () => {
@@ -106,7 +106,7 @@ export struct ReplyCardActions {
 
       if (this.onCopyContentClick) {
         MenuItem({
-          content: AppStrings.text(AppStrings.R_REPLY_COPY_CONTENT, 'Copy reply content'),
+          content: AppStrings.text($r('app.string.reply_copy_content'), 'Copy reply content'),
           symbolStartIcon: this.copyContentIcon
         }).onClick(
           () => {
@@ -117,7 +117,7 @@ export struct ReplyCardActions {
 
       if (this.onIgnoreClick) {
         MenuItem({
-          content: AppStrings.text(AppStrings.R_REPLY_IGNORE_REPLY, 'Ignore reply'),
+          content: AppStrings.text($r('app.string.reply_ignore_reply'), 'Ignore reply'),
           symbolStartIcon: this.ignoreIcon
         }).onClick(() => {
           this.runContextAction(this.onIgnoreClick)
@@ -126,7 +126,7 @@ export struct ReplyCardActions {
 
       if (this.onReportClick) {
         MenuItem({
-          content: AppStrings.text(AppStrings.R_REPLY_REPORT_REPLY, 'Report reply'),
+          content: AppStrings.text($r('app.string.reply_report_reply'), 'Report reply'),
           symbolStartIcon: this.reportIcon,
         }).onClick(() => {
           this.runContextAction(this.onReportClick)

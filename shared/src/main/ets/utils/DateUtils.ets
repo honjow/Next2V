@@ -17,34 +17,34 @@ export class DateUtils {
     const diff = now - unixSeconds
 
     if (diff < SECONDS_PER_MINUTE) {
-      return AppStrings.text(AppStrings.R_RELATIVE_JUST_NOW, 'Just now')
+      return AppStrings.text($r('app.string.relative_just_now'), 'Just now')
     }
     if (diff < SECONDS_PER_HOUR) {
       return AppStrings.format(
-        AppStrings.text(AppStrings.R_RELATIVE_MINUTES_AGO, '{0} min ago'),
+        AppStrings.text($r('app.string.relative_minutes_ago'), '{0} min ago'),
         [String(Math.floor(diff / SECONDS_PER_MINUTE))]
       )
     }
     if (diff < SECONDS_PER_DAY) {
       return AppStrings.format(
-        AppStrings.text(AppStrings.R_RELATIVE_HOURS_AGO, '{0} h ago'),
+        AppStrings.text($r('app.string.relative_hours_ago'), '{0} h ago'),
         [String(Math.floor(diff / SECONDS_PER_HOUR))]
       )
     }
     if (diff < SECONDS_PER_MONTH) {
       return AppStrings.format(
-        AppStrings.text(AppStrings.R_RELATIVE_DAYS_AGO, '{0} d ago'),
+        AppStrings.text($r('app.string.relative_days_ago'), '{0} d ago'),
         [String(Math.floor(diff / SECONDS_PER_DAY))]
       )
     }
     if (diff < SECONDS_PER_YEAR) {
       return AppStrings.format(
-        AppStrings.text(AppStrings.R_RELATIVE_MONTHS_AGO, '{0} mo ago'),
+        AppStrings.text($r('app.string.relative_months_ago'), '{0} mo ago'),
         [String(Math.floor(diff / SECONDS_PER_MONTH))]
       )
     }
     return AppStrings.format(
-      AppStrings.text(AppStrings.R_RELATIVE_YEARS_AGO, '{0} y ago'),
+      AppStrings.text($r('app.string.relative_years_ago'), '{0} y ago'),
       [String(Math.floor(diff / SECONDS_PER_YEAR))]
     )
   }

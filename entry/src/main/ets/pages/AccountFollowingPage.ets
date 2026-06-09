@@ -36,7 +36,7 @@ export struct AccountFollowingPage {
     Column() {
       if (!CookieJarSettings.getCurrentCookie()) {
         PageLoginRequiredState({
-          message: AppStrings.R_LOGIN_TO_VIEW_FOLLOWING,
+          message: $r('app.string.login_to_view_following'),
           action: () => {
             this.stack.pushPathByName('V2exNativeLogin', null)
           }
@@ -60,9 +60,9 @@ export struct AccountFollowingPage {
             this.scrollEnabled = enabled
           }
         }) {
-          ListItem() { this.SectionHeader(AppStrings.R_NAV_FOLLOWING) }
+          ListItem() { this.SectionHeader($r('app.string.nav_following')) }
           if (this.members.length === 0) {
-            ListItem() { CardEmptyState({ message: AppStrings.R_NO_FOLLOWING_USERS, expand: false }) }
+            ListItem() { CardEmptyState({ message: $r('app.string.no_following_users'), expand: false }) }
           } else {
             ForEach(this.members, (item: V2exAccountMemberListItem) => {
               ListItem() {
@@ -104,7 +104,7 @@ export struct AccountFollowingPage {
       this.members = result
     } catch (error) {
       const e = error as Error
-      this.errorMessage = e.message || AppStrings.text(AppStrings.R_COMMON_LOAD_FAILED, 'Load failed')
+      this.errorMessage = e.message || AppStrings.text($r('app.string.common_load_failed'), 'Load failed')
       this.members = []
     } finally {
       this.isLoading = false

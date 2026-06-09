@@ -70,7 +70,7 @@ export class NotificationSettings {
       store.flushSync()
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || AppStrings.text(AppStrings.R_NOTIFICATION_CACHE_CLEAR_FAILED, 'Failed to clear notification cache'))
+      throw new Error(e.message || AppStrings.text($r('app.string.notification_cache_clear_failed'), 'Failed to clear notification cache'))
     }
   }
 

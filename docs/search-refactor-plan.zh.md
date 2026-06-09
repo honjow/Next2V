@@ -103,7 +103,7 @@ Status: 已定方向,暂不实施(本文为设计文档,等后续排期)
 | `entry/src/main/ets/model/SearchLocalResultBuilder.ets` / `SearchLocalDataCoordinator.ets` | 节点检索默认纳入,不再受 `usesNodeIndex` 门控;移除 `filter==='users'` 的用户分支 |
 | `shared/src/main/ets/settings/SearchSettings.ets` | **废弃** `sourceMode` 持久化(`KEY_SOURCE_MODE` / `loadSourceMode` / `saveSourceMode`);**保留** `search_history` 全部逻辑 |
 | `feature/node/src/main/ets/pages/DiscoverPage.ets` | 标题栏搜索框改为跳统一搜索页;移除页内平行节点过滤;保留节点发现/浏览分区 |
-| i18n(7 个 locale string.json + StringMap + AppStrings) | 废弃 `search_topics_nodes_users_placeholder` / `search_user_related_topics` 等用户相关键;新增/调整分区头与空态文案 |
+| i18n(7 个 locale string.json + AppStrings ResourceManager) | 废弃 `search_topics_nodes_users_placeholder` / `search_user_related_topics` 等用户相关键;新增/调整分区头与空态文案 |
 
 **对 RDB / 端云同步影响:零 schema 变更。** `search_history` 表与端云契约完全不动;只废弃一个不参与端云的 preferences 键(`sourceMode`)。
 

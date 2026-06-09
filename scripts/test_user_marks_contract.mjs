@@ -37,7 +37,6 @@ const backupTypes = read('shared/src/main/ets/backup/BackupTypes.ets')
 const backupAdapter = read('shared/src/main/ets/backup/BackupLocalDataAdapter.ets')
 const bootstrap = read('shared/src/main/ets/settings/SettingsBootstrap.ets')
 const localDataSettings = read('shared/src/main/ets/settings/LocalDataSettings.ets')
-const appStrings = read('shared/src/main/ets/i18n/AppStrings.ets')
 
 for (const snippet of [
   'export const LOCAL_DATA_SCHEMA_VERSION: number = 7',
@@ -154,7 +153,7 @@ assert(!profilePage.includes('counterDecreaseEnabled: !this.userMarkBusy()'), 'D
 assert(!profilePage.includes('counterIncreaseEnabled: !this.userMarkBusy()'), 'Display limit controls must not flash disabled while assigning a label')
 assert(!profilePage.includes('isEnabled: !this.userMarkBusy(),'), 'Combined badge switch must not flash disabled while assigning a label')
 assert(index.includes('this.userProfileAppbar.markLabel'), 'Index menu must read mark label')
-assert(index.includes('AppStrings.R_USER_ACTION_MARK'), 'Index menu must use localized mark label')
+assert(index.includes("$r('app.string.user_action_mark')"), 'Index menu must use localized mark label')
 assert(index.includes("this.sendUserProfileAction('mark')"), 'Index menu must send mark command')
 
 for (const snippet of [
@@ -176,16 +175,6 @@ for (const snippet of [
 assert(bootstrap.includes('restoreUserMarks(context)'), 'SettingsBootstrap must restore user mark state on startup/reapply')
 assert(localDataSettings.includes('UserMarkSettings.clearAll(context)'), 'LocalDataSettings.clearAll must clear local user marks')
 
-for (const snippet of [
-  'R_USER_ACTION_MARK',
-  'R_USER_MARK_SHEET_TITLE',
-  'R_USER_MARK_CREATE_SECTION',
-  'R_USER_MARK_EXISTING_SECTION',
-  'R_USER_MARK_DISPLAY_LIMIT',
-  'R_USER_MARK_COMBINED_BADGE',
-]) {
-  assert(appStrings.includes(snippet), `AppStrings missing user mark resource: ${snippet}`)
-}
 assert(sharedIndex.includes("export { UserMarkState, connectUserMarks } from './state/UserMarkState'"), 'shared Index must export UserMarkState')
 assert(sharedIndex.includes("export { UserMarkSettings } from './settings/UserMarkSettings'"), 'shared Index must export UserMarkSettings')
 assert(sharedIndex.includes("export { UserMarkBadgeRow } from './components/UserMarkBadges'"), 'shared Index must export UserMarkBadgeRow')

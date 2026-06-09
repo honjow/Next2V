@@ -162,16 +162,16 @@ export class TopicDetailActionCoordinator {
 
   static topicFavoriteMessage(title: string, verb: string): string {
     const cleanTitle = (title || '').trim()
-    return cleanTitle ? AppStrings.format(AppStrings.text(AppStrings.R_CONFIRM_TOPIC_FAVORITE_FORMAT, '{0}《{1}》?'), [verb, cleanTitle]) : AppStrings.format(AppStrings.text(AppStrings.R_CONFIRM_TOPIC_FAVORITE_NAMELESS_FORMAT, '{0} this topic?'), [verb])
+    return cleanTitle ? AppStrings.format(AppStrings.text($r('app.string.confirm_topic_favorite_format'), '{0}《{1}》?'), [verb, cleanTitle]) : AppStrings.format(AppStrings.text($r('app.string.confirm_topic_favorite_nameless_format'), '{0} this topic?'), [verb])
   }
 
   static topicThankMessage(title: string): string {
     const cleanTitle = (title || '').trim()
-    return cleanTitle ? AppStrings.format(AppStrings.text(AppStrings.R_CONFIRM_TOPIC_THANK_FORMAT, 'Thank《{0}》?'), [cleanTitle]) : AppStrings.text(AppStrings.R_CONFIRM_TOPIC_THANK_NAMELESS, 'Thank this topic?')
+    return cleanTitle ? AppStrings.format(AppStrings.text($r('app.string.confirm_topic_thank_format'), 'Thank《{0}》?'), [cleanTitle]) : AppStrings.text($r('app.string.confirm_topic_thank_nameless'), 'Thank this topic?')
   }
 
   static replyThankMessage(username: string): string {
-    return AppStrings.format(AppStrings.text(AppStrings.R_CONFIRM_REPLY_THANK_FORMAT, 'Thank reply by {0}?\n\nThis costs 10 copper coins.'), [username || AppStrings.text($r('app.string.this_user'), 'this user')])
+    return AppStrings.format(AppStrings.text($r('app.string.confirm_reply_thank_format'), 'Thank reply by {0}?\n\nThis costs 10 copper coins.'), [username || AppStrings.text($r('app.string.this_user'), 'this user')])
   }
 
   static replyActionMessage(verb: string, username: string): string {
@@ -179,7 +179,7 @@ export class TopicDetailActionCoordinator {
   }
 
   static parseActionFailureMessage(verb: string): string {
-    return AppStrings.format(AppStrings.text(AppStrings.R_PARSE_ACTION_FAILED_FORMAT, 'Failed to parse {0} action'), [verb])
+    return AppStrings.format(AppStrings.text($r('app.string.parse_action_failed_format'), 'Failed to parse {0} action'), [verb])
   }
 
   static topicThankGuard(options: TopicThankGuardOptions): ActionGuardResult {
@@ -200,7 +200,7 @@ export class TopicDetailActionCoordinator {
       return { allowed: false, message: '' }
     }
     if (!TopicDetailActionCoordinator.hasValidReply(options.reply)) {
-      return { allowed: false, message: AppStrings.text(AppStrings.R_REPLY_INFO_MISSING, 'Reply info missing') }
+      return { allowed: false, message: AppStrings.text($r('app.string.reply_info_missing'), 'Reply info missing') }
     }
     if (options.thanked) {
       return { allowed: false, message: AppStrings.text($r('app.string.already_thanked'), 'Already thanked') }
@@ -219,7 +219,7 @@ export class TopicDetailActionCoordinator {
       return { allowed: false, message: AppStrings.text($r('app.string.api_error_auth_required'), 'Login required') }
     }
     if (options.reply !== undefined && !TopicDetailActionCoordinator.hasValidReply(options.reply)) {
-      return { allowed: false, message: AppStrings.text(AppStrings.R_REPLY_INFO_MISSING, 'Reply info missing') }
+      return { allowed: false, message: AppStrings.text($r('app.string.reply_info_missing'), 'Reply info missing') }
     }
     return { allowed: true, message: '' }
   }

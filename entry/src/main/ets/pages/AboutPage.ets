@@ -92,7 +92,7 @@ export struct AboutPage {
         .fontSize(28)
         .fontWeight(FontWeight.Bold)
         .fontColor($r('sys.color.font_primary'))
-      Text($r('app.string.about_tagline'))
+      Text(AppStrings.text($r('app.string.about_tagline'), 'Native HarmonyOS V2EX client'))
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
         .fontColor($r('sys.color.font_secondary'))
       Text(AppStrings.format(AppStrings.text($r('app.string.about_version_format'), 'Version {0}'), [this.appVersion]))

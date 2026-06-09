@@ -326,7 +326,7 @@ export class V2exNotificationParser {
   }
 
   private static getImagePlaceholder(): string {
-    return AppStrings.text(AppStrings.R_MARKDOWN_PLACEHOLDER_IMAGE, 'Image')
+    return AppStrings.text($r('app.string.markdown_placeholder_image'), 'Image')
   }
 
   private static compactText(html: string): string {

@@ -151,7 +151,7 @@ export struct NotificationPage {
     Column() {
       if (!this.hasNotificationAuth()) {
         NotificationAuthRequiredState({
-          message: AppStrings.text(AppStrings.R_NOTIFICATION_LOGIN_REQUIRED, 'Login to view notifications'),
+          message: AppStrings.text($r('app.string.notification_login_required'), 'Login to view notifications'),
           onLoginClick: () => {
             this.ns.pushPathByName('V2exNativeLogin', null)
           }
@@ -193,7 +193,7 @@ export struct NotificationPage {
           }, (item: V2exNotification) => this.notificationItemKey(item))
           if (this.shouldShowNotificationEmptyState()) {
             ListItem() {
-              EmptyState({ message: AppStrings.text(AppStrings.R_NOTIFICATION_EMPTY, 'No notifications'), stateHeight: 240 })
+              EmptyState({ message: AppStrings.text($r('app.string.notification_empty'), 'No notifications'), stateHeight: 240 })
             }
           }
           if (this.notifications.length > 0) {
@@ -410,8 +410,8 @@ export struct NotificationPage {
       return
     }
     this.getUIContext().showAlertDialog({
-      title: AppStrings.text(AppStrings.R_NOTIFICATION_DELETE_TITLE, 'Delete notification'),
-      message: AppStrings.text(AppStrings.R_NOTIFICATION_DELETE_CONFIRM, 'Delete this notification?'),
+      title: AppStrings.text($r('app.string.notification_delete_title'), 'Delete notification'),
+      message: AppStrings.text($r('app.string.notification_delete_confirm'), 'Delete this notification?'),
       primaryButton: {
         value: $r('app.string.common_cancel'), action: () => {
         }
@@ -445,7 +445,7 @@ export struct NotificationPage {
   private deleteNotification(item: V2exNotification): void {
     const notificationId = item.id || 0
     if (!this.authIdentity.tokenConfigured || !this.authToken || notificationId <= 0) {
-      promptAction.openToast({ message: AppStrings.text(AppStrings.R_NOTIFICATION_DELETE_REQUIRES_API_AUTH, 'Delete notification requires V2 API authorization') }).catch((_error: Error) => {
+      promptAction.openToast({ message: AppStrings.text($r('app.string.notification_delete_requires_api_auth'), 'Delete notification requires V2 API authorization') }).catch((_error: Error) => {
       })
       return
     }
@@ -467,7 +467,7 @@ export struct NotificationPage {
     const once = this.notificationVm.webDeleteOnce(item)
     const verifyPage = this.notificationPageForItem(item)
     if (!cookie || notificationId <= 0 || !once) {
-      promptAction.openToast({ message: AppStrings.text(AppStrings.R_NOTIFICATION_DELETE_REQUIRES_WEB_SESSION, 'Delete notification requires web session') }).catch((_error: Error) => {
+      promptAction.openToast({ message: AppStrings.text($r('app.string.notification_delete_requires_web_session'), 'Delete notification requires web session') }).catch((_error: Error) => {
       })
       return
     }
@@ -661,7 +661,7 @@ export struct NotificationPage {
       }
       const err = error as Error
       DiagnosticLogger.warn('notification', 'notification_refresh_error', { requestId: requestId, source: this.notificationVm.sourceKeyFor(authContext), errorKind: err.name || 'Error' }, err)
-      const message = err.message || AppStrings.text(AppStrings.R_NOTIFICATION_LOAD_FAILED, 'Notifications load failed')
+      const message = err.message || AppStrings.text($r('app.string.notification_load_failed'), 'Notifications load failed')
       this.notificationError = message
       this.notificationHasMore = false
       this.handleTwoFactorChallenge(err)
@@ -967,13 +967,13 @@ export struct NotificationPage {
     if (!cookie) {
       return
     }
-    this.notificationError = AppStrings.text(AppStrings.R_TWO_FACTOR_REQUIRED, 'V2EX requires two-factor verification')
+    this.notificationError = AppStrings.text($r('app.string.two_factor_required'), 'V2EX requires two-factor verification')
     DiagnosticLogger.warn('notification', 'notification_two_factor_required', { source: this.notificationVm.sourceKeyFor(this.notificationAuthContext()) })
     TwoFactorChallengeService.request(cookie, 'notification')
   }
 
   private handleExpiredCookieSession(message: string): void {
-    if (!message || (message.indexOf('Web session expired') < 0 && message.indexOf(AppStrings.text(AppStrings.R_API_ERROR_WEB_SESSION_EXPIRED, 'Web session expired, please log in again')) < 0)) {
+    if (!message || (message.indexOf('Web session expired') < 0 && message.indexOf(AppStrings.text($r('app.string.api_error_web_session_expired'), 'Web session expired, please log in again')) < 0)) {
       return
     }
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext

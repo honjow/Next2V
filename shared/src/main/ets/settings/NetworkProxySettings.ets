@@ -148,14 +148,14 @@ export class NetworkProxySettings {
   static label(mode: NetworkProxyMode): string {
     switch (mode) {
       case 'system':
-        return AppStrings.text(AppStrings.R_SYSTEM_PROXY, 'System proxy')
+        return AppStrings.text($r('app.string.system_proxy'), 'System proxy')
       case 'http':
-        return AppStrings.text(AppStrings.R_HTTP_PROXY, 'HTTP proxy')
+        return AppStrings.text($r('app.string.http_proxy'), 'HTTP proxy')
       case 'socks5':
-        return AppStrings.text(AppStrings.R_SOCKS5_PROXY, 'SOCKS5 proxy')
+        return AppStrings.text($r('app.string.socks5_proxy'), 'SOCKS5 proxy')
       case 'off':
       default:
-        return AppStrings.text(AppStrings.R_COMMON_CLOSED, 'Off')
+        return AppStrings.text($r('app.string.common_closed'), 'Off')
     }
   }
 
@@ -166,30 +166,30 @@ export class NetworkProxySettings {
         const port = `${normalized.port}`
         if (normalized.mode === 'socks5') {
           return AppStrings.format(
-            AppStrings.text(AppStrings.R_PROXY_SUMMARY_SOCKS5,
+            AppStrings.text($r('app.string.proxy_summary_socks5'),
               'SOCKS5 proxy · {0}:{1}'),
             [normalized.host, port])
         }
         if (normalized.proxyScheme === 'https') {
           return AppStrings.format(
-            AppStrings.text(AppStrings.R_PROXY_SUMMARY_HTTPS,
+            AppStrings.text($r('app.string.proxy_summary_https'),
               'HTTPS proxy endpoint · {0}:{1}'),
             [normalized.host, port])
         }
         return AppStrings.format(
-          AppStrings.text(AppStrings.R_PROXY_SUMMARY_HTTP,
+          AppStrings.text($r('app.string.proxy_summary_http'),
             'HTTP proxy · {0}:{1}'),
           [normalized.host, port])
       }
       if (normalized.mode === 'socks5') {
-        return AppStrings.R_PROXY_SUMMARY_SOCKS5_NOT_CONFIGURED
+        return $r('app.string.proxy_summary_socks5_not_configured')
       }
-      return AppStrings.R_PROXY_SUMMARY_HTTP_NOT_CONFIGURED
+      return $r('app.string.proxy_summary_http_not_configured')
     }
     if (normalized.mode === 'system') {
-      return AppStrings.R_SYSTEM_PROXY
+      return $r('app.string.system_proxy')
     }
-    return AppStrings.R_COMMON_CLOSED
+    return $r('app.string.common_closed')
   }
 
   static validate(snapshot: NetworkProxySettingsSnapshot): NetworkProxyValidationResult {
@@ -198,10 +198,10 @@ export class NetworkProxySettings {
       return { ok: true, message: '' }
     }
     if (!NetworkProxySettings.isValidHost(normalized.host)) {
-      return { ok: false, message: AppStrings.text(AppStrings.R_INVALID_PROXY_HOST, 'Enter a valid proxy host') }
+      return { ok: false, message: AppStrings.text($r('app.string.invalid_proxy_host'), 'Enter a valid proxy host') }
     }
     if (!NetworkProxySettings.isValidPort(normalized.port)) {
-      return { ok: false, message: AppStrings.text(AppStrings.R_INVALID_PROXY_PORT, 'Port must be 1-65535') }
+      return { ok: false, message: AppStrings.text($r('app.string.invalid_proxy_port'), 'Port must be 1-65535') }
     }
     return { ok: true, message: '' }
   }
@@ -393,7 +393,7 @@ export class NetworkProxyProfileSettings {
 
   private static normalizeProfile(profile: NetworkProxyProfile): NetworkProxyProfile {
     const id = (profile.id || `proxy-${Date.now()}`).trim()
-    const defaultName = AppStrings.text(AppStrings.R_DEFAULT_PROXY_PROFILE_NAME, 'Proxy configuration')
+    const defaultName = AppStrings.text($r('app.string.default_proxy_profile_name'), 'Proxy configuration')
     const name = (profile.name || defaultName).trim() || defaultName
     return {
       id,

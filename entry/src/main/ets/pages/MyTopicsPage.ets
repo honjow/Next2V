@@ -44,7 +44,7 @@ export struct MyTopicsPage {
     Column() {
       if (!CookieJarSettings.getCurrentCookie()) {
         PageLoginRequiredState({
-          message: AppStrings.text(AppStrings.R_LOGIN_TO_VIEW_TOPICS, 'Sign in to view favorite topics'),
+          message: AppStrings.text($r('app.string.login_to_view_topics'), 'Sign in to view favorite topics'),
           action: () => {
             this.stack.pushPathByName('V2exNativeLogin', null)
           }
@@ -59,7 +59,7 @@ export struct MyTopicsPage {
           retryAction: () => {
             this.refresh(true)
           },
-          secondaryLabel: AppStrings.text(AppStrings.R_LOGIN_ACTION, 'Log in'),
+          secondaryLabel: AppStrings.text($r('app.string.login_action'), 'Log in'),
           secondaryAction: () => {
             this.stack.pushPathByName('V2exNativeLogin', null)
           }
@@ -141,10 +141,10 @@ export struct MyTopicsPage {
   private openTwoFactorFromCookie(): void {
     const cookie = CookieJarSettings.getCurrentCookie()
     if (!cookie) {
-      this.errorMessage = AppStrings.text(AppStrings.R_TWO_FACTOR_RELOGIN_REQUIRED, 'V2EX requires two-factor verification. Please sign in again')
+      this.errorMessage = AppStrings.text($r('app.string.two_factor_relogin_required'), 'V2EX requires two-factor verification. Please sign in again')
       return
     }
-    this.errorMessage = AppStrings.text(AppStrings.R_TWO_FACTOR_REQUIRED, 'V2EX requires two-factor verification')
+    this.errorMessage = AppStrings.text($r('app.string.two_factor_required'), 'V2EX requires two-factor verification')
     TwoFactorChallengeService.request(cookie, 'myTopics')
   }
 

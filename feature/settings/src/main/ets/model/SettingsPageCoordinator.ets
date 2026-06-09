@@ -1,5 +1,4 @@
 import {
-  AppStrings,
   AvatarAppearanceSettings,
   LanguageSettings,
   ReadingSettings,
@@ -22,21 +21,21 @@ export class SettingsPageCoordinator {
 
   static languageModeOptions(): SettingsOption[] {
     return [
-      { label: AppStrings.R_LANGUAGE_FOLLOW_SYSTEM, value: LanguageSettings.MODE_SYSTEM },
-      { label: '简体中文', value: LanguageSettings.MODE_ZH_CN },
-      { label: '繁體中文（香港）', value: LanguageSettings.MODE_ZH_HK },
-      { label: '繁體中文（台灣）', value: LanguageSettings.MODE_ZH_TW },
-      { label: 'English', value: LanguageSettings.MODE_EN },
-      { label: '日本語', value: LanguageSettings.MODE_JA },
-      { label: '한국어', value: LanguageSettings.MODE_KO },
+      { label: $r('app.string.language_follow_system'), value: LanguageSettings.MODE_SYSTEM },
+      { label: $r('app.string.language_simplified_chinese'), value: LanguageSettings.MODE_ZH_CN },
+      { label: $r('app.string.language_traditional_chinese_hk'), value: LanguageSettings.MODE_ZH_HK },
+      { label: $r('app.string.language_traditional_chinese_tw'), value: LanguageSettings.MODE_ZH_TW },
+      { label: $r('app.string.language_english'), value: LanguageSettings.MODE_EN },
+      { label: $r('app.string.language_japanese'), value: LanguageSettings.MODE_JA },
+      { label: $r('app.string.language_korean'), value: LanguageSettings.MODE_KO },
     ]
   }
 
   static themeModeOptions(): SettingsOption[] {
     return [
-      { label: AppStrings.R_COMMON_AUTO, value: ThemeSettings.MODE_AUTO },
-      { label: AppStrings.R_COMMON_LIGHT, value: ThemeSettings.MODE_LIGHT },
-      { label: AppStrings.R_COMMON_DARK, value: ThemeSettings.MODE_DARK },
+      { label: $r('app.string.common_auto'), value: ThemeSettings.MODE_AUTO },
+      { label: $r('app.string.common_light'), value: ThemeSettings.MODE_LIGHT },
+      { label: $r('app.string.common_dark'), value: ThemeSettings.MODE_DARK },
     ]
   }
 
@@ -46,25 +45,25 @@ export class SettingsPageCoordinator {
 
   static avatarAppearanceOptions(): SettingsOption[] {
     return [
-      { label: AppStrings.R_AVATAR_APPEARANCE_SOFT, value: AvatarAppearanceSettings.APPEARANCE_SOFT },
-      { label: AppStrings.R_AVATAR_APPEARANCE_CIRCLE, value: AvatarAppearanceSettings.APPEARANCE_CIRCLE },
+      { label: $r('app.string.avatar_appearance_soft'), value: AvatarAppearanceSettings.APPEARANCE_SOFT },
+      { label: $r('app.string.avatar_appearance_circle'), value: AvatarAppearanceSettings.APPEARANCE_CIRCLE },
     ]
   }
 
   static replyDisplayModeOptions(): SettingsOption[] {
     return [
-      { label: AppStrings.R_THREADED, value: ReplyDisplaySettings.MODE_THREAD },
-      { label: AppStrings.R_THREADED_AT, value: ReplyDisplaySettings.MODE_THREAD_WITH_MENTION },
-      { label: AppStrings.R_THREADED_REDUNDANT, value: ReplyDisplaySettings.MODE_THREAD_REDUNDANT },
-      { label: AppStrings.R_OP_ONLY, value: ReplyDisplaySettings.MODE_OP },
-      { label: AppStrings.R_ORIGINAL, value: ReplyDisplaySettings.MODE_ORIGIN },
+      { label: $r('app.string.threaded'), value: ReplyDisplaySettings.MODE_THREAD },
+      { label: $r('app.string.threaded_at'), value: ReplyDisplaySettings.MODE_THREAD_WITH_MENTION },
+      { label: $r('app.string.threaded_redundant'), value: ReplyDisplaySettings.MODE_THREAD_REDUNDANT },
+      { label: $r('app.string.op_only'), value: ReplyDisplaySettings.MODE_OP },
+      { label: $r('app.string.original'), value: ReplyDisplaySettings.MODE_ORIGIN },
     ]
   }
 
   static replyCardStyleOptions(): SettingsOption[] {
     return [
-      { label: AppStrings.R_DENSITY_STANDARD, value: ReplyCardStyleSettings.STYLE_STANDARD },
-      { label: AppStrings.R_DENSITY_COMPACT, value: ReplyCardStyleSettings.STYLE_COMPACT },
+      { label: $r('app.string.density_standard'), value: ReplyCardStyleSettings.STYLE_STANDARD },
+      { label: $r('app.string.density_compact'), value: ReplyCardStyleSettings.STYLE_COMPACT },
     ]
   }
 
@@ -72,26 +71,26 @@ export class SettingsPageCoordinator {
     const options: SettingsOption[] = []
     if (motionHoldingHandSupported) {
       options.push({
-        label: AppStrings.R_SMART_GRIP,
+        label: $r('app.string.smart_grip'),
         value: ReplyActionAlignmentSettings.MODE_SMART_GRIP,
       })
     }
     options.push(
       {
-        label: AppStrings.R_FOLLOW_OPERATION,
+        label: $r('app.string.follow_operation'),
         value: ReplyActionAlignmentSettings.MODE_FOLLOW_OPERATION,
       },
-      { label: AppStrings.R_FIXED_LEFT, value: ReplyActionAlignmentSettings.MODE_FIXED_LEFT },
-      { label: AppStrings.R_FIXED_RIGHT, value: ReplyActionAlignmentSettings.MODE_FIXED_RIGHT },
+      { label: $r('app.string.fixed_left'), value: ReplyActionAlignmentSettings.MODE_FIXED_LEFT },
+      { label: $r('app.string.fixed_right'), value: ReplyActionAlignmentSettings.MODE_FIXED_RIGHT },
     )
     return options
   }
 
   static base64DecodeModeOptions(): SettingsOption[] {
     return [
-      { label: AppStrings.R_COMMON_CLOSED, value: ReadingSettings.BASE64_MODE_OFF },
-      { label: AppStrings.R_TAP_TO_VIEW, value: ReadingSettings.BASE64_MODE_BADGE },
-      { label: AppStrings.R_INLINE_DISPLAY, value: ReadingSettings.BASE64_MODE_INLINE },
+      { label: $r('app.string.common_closed'), value: ReadingSettings.BASE64_MODE_OFF },
+      { label: $r('app.string.tap_to_view'), value: ReadingSettings.BASE64_MODE_BADGE },
+      { label: $r('app.string.inline_display'), value: ReadingSettings.BASE64_MODE_INLINE },
     ]
   }
 
@@ -99,35 +98,35 @@ export class SettingsPageCoordinator {
   static languageModeLabel(mode: string): ResourceStr {
     const normalizedMode = LanguageSettings.normalizeMode(mode)
     if (normalizedMode === LanguageSettings.MODE_ZH_CN) {
-      return '简体中文'
+      return $r('app.string.language_simplified_chinese')
     }
     if (normalizedMode === LanguageSettings.MODE_ZH_HK) {
-      return '繁體中文（香港）'
+      return $r('app.string.language_traditional_chinese_hk')
     }
     if (normalizedMode === LanguageSettings.MODE_ZH_TW) {
-      return '繁體中文（台灣）'
+      return $r('app.string.language_traditional_chinese_tw')
     }
     if (normalizedMode === LanguageSettings.MODE_EN) {
-      return 'English'
+      return $r('app.string.language_english')
     }
     if (normalizedMode === LanguageSettings.MODE_JA) {
-      return '日本語'
+      return $r('app.string.language_japanese')
     }
     if (normalizedMode === LanguageSettings.MODE_KO) {
-      return '한국어'
+      return $r('app.string.language_korean')
     }
-    return AppStrings.R_LANGUAGE_FOLLOW_SYSTEM
+    return $r('app.string.language_follow_system')
   }
 
   static themeModeLabel(mode: string): ResourceStr {
     const normalizedMode = ThemeSettings.normalizeMode(mode)
     if (normalizedMode === ThemeSettings.MODE_LIGHT) {
-      return AppStrings.R_COMMON_LIGHT
+      return $r('app.string.common_light')
     }
     if (normalizedMode === ThemeSettings.MODE_DARK) {
-      return AppStrings.R_COMMON_DARK
+      return $r('app.string.common_dark')
     }
-    return AppStrings.R_COMMON_AUTO
+    return $r('app.string.common_auto')
   }
 
   static themeColorLabel(color: string): ResourceStr {
@@ -140,58 +139,58 @@ export class SettingsPageCoordinator {
 
   static avatarAppearanceLabel(appearance: string): ResourceStr {
     if (AvatarAppearanceSettings.normalize(appearance) === AvatarAppearanceSettings.APPEARANCE_SOFT) {
-      return AppStrings.R_AVATAR_APPEARANCE_SOFT
+      return $r('app.string.avatar_appearance_soft')
     }
-    return AppStrings.R_AVATAR_APPEARANCE_CIRCLE
+    return $r('app.string.avatar_appearance_circle')
   }
 
   static replyDisplayModeLabel(mode: string): ResourceStr {
     const value = ReplyDisplaySettings.normalizeMode(mode)
     if (value === ReplyDisplaySettings.MODE_THREAD_WITH_MENTION) {
-      return AppStrings.R_THREADED_AT
+      return $r('app.string.threaded_at')
     }
     if (value === ReplyDisplaySettings.MODE_THREAD_REDUNDANT) {
-      return AppStrings.R_THREADED_REDUNDANT
+      return $r('app.string.threaded_redundant')
     }
     if (value === ReplyDisplaySettings.MODE_OP) {
-      return AppStrings.R_OP_ONLY
+      return $r('app.string.op_only')
     }
     if (value === ReplyDisplaySettings.MODE_ORIGIN) {
-      return AppStrings.R_ORIGINAL
+      return $r('app.string.original')
     }
-    return AppStrings.R_THREADED
+    return $r('app.string.threaded')
   }
 
   static replyCardStyleLabel(style: string): ResourceStr {
     if (ReplyCardStyleSettings.normalize(style) === ReplyCardStyleSettings.STYLE_COMPACT) {
-      return AppStrings.R_DENSITY_COMPACT
+      return $r('app.string.density_compact')
     }
-    return AppStrings.R_DENSITY_STANDARD
+    return $r('app.string.density_standard')
   }
 
   static replyActionAlignmentLabel(mode: string, smartGripSupported: boolean): ResourceStr {
     const effective = ReplyActionAlignmentSettings.effectiveMode(mode, smartGripSupported)
     if (effective === ReplyActionAlignmentSettings.MODE_SMART_GRIP) {
-      return AppStrings.R_SMART_GRIP
+      return $r('app.string.smart_grip')
     }
     if (effective === ReplyActionAlignmentSettings.MODE_FIXED_LEFT) {
-      return AppStrings.R_FIXED_LEFT
+      return $r('app.string.fixed_left')
     }
     if (effective === ReplyActionAlignmentSettings.MODE_FIXED_RIGHT) {
-      return AppStrings.R_FIXED_RIGHT
+      return $r('app.string.fixed_right')
     }
-    return AppStrings.R_FOLLOW_OPERATION
+    return $r('app.string.follow_operation')
   }
 
 
   static base64DecodeModeLabel(mode: string): ResourceStr {
     if (mode === ReadingSettings.BASE64_MODE_OFF) {
-      return AppStrings.R_COMMON_CLOSED
+      return $r('app.string.common_closed')
     }
     if (mode === ReadingSettings.BASE64_MODE_INLINE) {
-      return AppStrings.R_INLINE_DISPLAY
+      return $r('app.string.inline_display')
     }
-    return AppStrings.R_TAP_TO_VIEW
+    return $r('app.string.tap_to_view')
   }
 
   static apiDomainLabel(baseUrl: string): string {

@@ -1,5 +1,3 @@
-import { AppStrings } from 'shared'
-
 export interface TitleBarMenuStats {
   itemCount: number
   maxCount: number
@@ -37,38 +35,38 @@ export class IndexTitleBarCoordinator {
   }
 
   static homeMenuItems(): IndexTitleMenuDescriptor[] {
-    return [{ label: AppStrings.R_NAV_TOPIC_DRAFT, action: 'createTopic', icon: 'compose' }]
+    return [{ label: $r('app.string.nav_topic_draft'), action: 'createTopic', icon: 'compose' }]
   }
 
   static meMenuItems(): IndexTitleMenuDescriptor[] {
-    return [{ label: AppStrings.R_NAV_SETTINGS, action: 'settings', icon: 'settings' }]
+    return [{ label: $r('app.string.nav_settings'), action: 'settings', icon: 'settings' }]
   }
 
   static discoverMenuItems(): IndexTitleMenuDescriptor[] {
-    return [{ label: AppStrings.R_NAV_SEARCH, action: 'openSearch', icon: 'search' }]
+    return [{ label: $r('app.string.nav_search'), action: 'openSearch', icon: 'search' }]
   }
 
   static notificationMenuItems(): IndexTitleMenuDescriptor[] {
-    return [{ label: AppStrings.R_NAV_REFRESH, action: 'refresh', icon: 'refresh' }]
+    return [{ label: $r('app.string.nav_refresh'), action: 'refresh', icon: 'refresh' }]
   }
 
   static accountManagementMenuItems(): IndexTitleMenuDescriptor[] {
-    return [{ label: AppStrings.R_ACCOUNT_ADD_ANOTHER, action: 'addAccount', icon: 'add' }]
+    return [{ label: $r('app.string.account_add_another'), action: 'addAccount', icon: 'add' }]
   }
 
   static webLoginMenuItems(): IndexTitleMenuDescriptor[] {
     return [
-      { label: AppStrings.R_NAV_SAVE_LOGIN, action: 'save', icon: 'confirm' },
-      { label: AppStrings.R_NAV_RELOAD, action: 'reload', icon: 'refresh' },
+      { label: $r('app.string.nav_save_login'), action: 'save', icon: 'confirm' },
+      { label: $r('app.string.nav_reload'), action: 'reload', icon: 'refresh' },
     ]
   }
 
   static accountWebViewMenuItems(): IndexTitleMenuDescriptor[] {
-    return [{ label: AppStrings.R_NAV_RELOAD, action: 'reload', icon: 'refresh' }]
+    return [{ label: $r('app.string.nav_reload'), action: 'reload', icon: 'refresh' }]
   }
 
   static imagePreviewMenuItems(): IndexTitleMenuDescriptor[] {
-    return [{ label: AppStrings.R_NAV_SAVE_IMAGE, action: 'save', icon: 'download' }]
+    return [{ label: $r('app.string.nav_save_image'), action: 'save', icon: 'download' }]
   }
 
   static menuStats(menu: Record<string, Object>): TitleBarMenuStats {

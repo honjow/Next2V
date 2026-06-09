@@ -210,10 +210,10 @@ export class AutoDailyCheckinService {
     const message =
       rewardCoins > 0
         ? AppStrings.format(
-            AppStrings.text(AppStrings.R_DAILY_CHECKIN_REWARD_TOAST, 'Checked in: +{0} bronze'),
+            AppStrings.text($r('app.string.daily_checkin_reward_toast'), 'Checked in: +{0} bronze'),
             [`${rewardCoins}`],
           )
-        : AppStrings.text(AppStrings.R_CHECKIN_COMPLETED, 'Check-in completed')
+        : AppStrings.text($r('app.string.checkin_completed'), 'Check-in completed')
     promptAction.openToast({ message: message }).catch((_error: Error) => {})
   }
 

@@ -9,7 +9,7 @@ export struct LoadingFooter {
   @Param isLoading: boolean = false
   @Param hasMore: boolean = true
   @Param isError: boolean = false
-  @Param errorMessage: string = AppStrings.text(AppStrings.R_COMMON_LOAD_FAILED, 'Load failed, tap to retry')
+  @Param errorMessage: string = AppStrings.text($r('app.string.common_load_failed'), 'Load failed, tap to retry')
   @Param retryLabel: string = ''
   @Event onRetry?: () => void
 
@@ -20,7 +20,7 @@ export struct LoadingFooter {
           .width(ThemeConstants.LOADING_SIZE_SMALL)
           .height(ThemeConstants.LOADING_SIZE_SMALL)
           .color($r('sys.color.font_secondary'))
-        Text(AppStrings.text(AppStrings.R_COMMON_LOADING, 'Loading\u2026'))
+        Text(AppStrings.text($r('app.string.common_loading'), 'Loading\u2026'))
           .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
           .fontColor($r('sys.color.font_secondary'))
           .margin({ left: ThemeConstants.SPACE_SM })

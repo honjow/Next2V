@@ -37,7 +37,6 @@ const sharedIndex = read('shared/src/main/ets/Index.ets')
 const settingsIndex = read('feature/settings/src/main/ets/Index.ets')
 const entryIndex = read('entry/src/main/ets/pages/Index.ets')
 const routeCoordinator = read('entry/src/main/ets/model/IndexRouteCoordinator.ets')
-const stringMap = read('shared/src/main/ets/i18n/StringMap.ets')
 const resourceStrings = [
   'entry/src/main/resources/base/element/string.json',
   'entry/src/main/resources/en_US/element/string.json',
@@ -90,10 +89,10 @@ const domainPage = read('feature/settings/src/main/ets/pages/DomainSettingsPage.
 assert(domainCoordinator.includes('validateCustomDomain'), 'DomainSettingsCoordinator must validate custom domains')
 assert(domainCoordinator.includes('/api/site/info.json'), 'Custom validation must probe /api/site/info.json')
 assert(domainCoordinator.includes('https') && domainCoordinator.includes('v2ex.com'), 'Custom validation must require HTTPS and V2EX identity')
-assert(domainPage.includes('Custom site domain') || domainPage.includes('自定义站点域名'), 'DomainSettingsPage must expose custom site domain UI')
+assert(domainPage.includes("$r('app.string.custom_domain')"), 'DomainSettingsPage must expose custom site domain UI')
 assert(domainPage.includes('Radio'), 'DomainSettingsPage must expose radio selection for presets')
 assert(domainPage.includes('validateCustomDomain'), 'DomainSettingsPage must wire validation action')
-assert(domainPage.includes('V2EX 官方镜像共享登录状态；自定义域名使用独立会话。'), 'DomainSettingsPage must explain shared first-party auth and exact custom-host sessions')
+assert(domainPage.includes("$r('app.string.domain_session_hint')") && resourceStrings.includes('domain_session_hint'), 'DomainSettingsPage must explain shared first-party auth and exact custom-host sessions')
 assert(!domainPage.includes('需要重新登录') && !domainPage.includes('按需重新登录'), 'DomainSettingsPage must not warn that V2EX mirror switching requires relogin')
 assert(settingsPage.includes("pushPathByName('DomainSettings'"), 'SettingsPage site domain row must navigate to DomainSettings')
 assert(!settingsPage.includes('apiDomainMenuShown'), 'SettingsPage must remove old boolean site domain dropdown menu')
@@ -102,11 +101,10 @@ assert(sharedIndex.includes('ApiDomainOption') && sharedIndex.includes('DomainVa
 assert(settingsIndex.includes('DomainSettingsPage'), 'settings Index must export DomainSettingsPage')
 assert(entryIndex.includes('DomainSettingsPage'), 'entry Index must import/render DomainSettingsPage')
 assert(routeCoordinator.includes("'DomainSettings': 'domainSettings'"), 'IndexRouteCoordinator must register DomainSettings route')
-assert(routeCoordinator.includes('R_API_DOMAIN'), 'DomainSettings route title must use site domain title resource')
+assert(routeCoordinator.includes("'domainSettings': $r('app.string.api_domain')"), 'DomainSettings route title must use site domain title resource')
 
 for (const [name, content] of [
   ['DomainSettingsPage', domainPage],
-  ['StringMap', stringMap],
   ['resource strings', resourceStrings],
 ]) {
   assert(!/API\s+domain|API\s+域名|API\s+網域/i.test(content), `${name} must not expose API-only domain wording`)

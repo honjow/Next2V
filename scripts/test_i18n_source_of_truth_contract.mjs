@@ -9,7 +9,7 @@
  *   I18N004_RESOURCE_KEY_PARITY    — key set parity across locales
  *   I18N005_RESOURCESTR_BYPASS     — pre-resolved labels with AppStrings.text
  *   I18N006_FORMATTER_MISUSE       — parameterized resource rendering hazards
- *   I18N007_REGRESSION_KEYS        — named regression family coverage
+ *   I18N007_REGRESSION_KEYS        — named regression resource/use-site coverage
  *
  * Run:  node scripts/test_i18n_source_of_truth_contract.mjs
  */
@@ -114,12 +114,19 @@ const BRAND_TOKENS = new Set([
   'YouTube', 'Vimeo', 'Gist', 'Imgur', 'Apple',
 ])
 
+const LANGUAGE_AUTONYM_RESOURCE_KEYS = new Set([
+  'language_simplified_chinese',
+  'language_traditional_chinese_hk',
+  'language_traditional_chinese_tw',
+  'language_english',
+  'language_japanese',
+  'language_korean',
+])
+
 // Paths where CJK is allowed (parser/server/test/comment/generated)
 const CJK_ALLOW_PATH_PATTERNS = [
   /^shared\/src\/main\/ets\/parser\//,
   /^shared\/src\/main\/ets\/settings\/CollectionParsers\.ets/,
-  // Generated locale tables mirror resource JSON; CJK values in non-English locales expected
-  /^shared\/src\/main\/ets\/i18n\/StringMap\.ets$/,
   /__tests__\//,
   /\/test\//,
   /\/tests\//,
@@ -142,7 +149,7 @@ const SERVER_PARSE_CJK = [
     file: /^shared\/src\/main\/ets\/parser\//,
     tokens: [
       '金币', '银币', '铜币', '已领取', '已完成', '明天',
-      '主题列表被隐藏', '最近回复', '最热节点', '最近新增节点', '号会员',
+      '主题列表被隐藏', '最近回复', '最后回复', '最热节点', '最近新增节点', '号会员',
       '刚刚', '半小时前', '秒前', '分钟前', '小时前', '天前', '个月前', '年前',
       '小时', '分钟', '秒', '天', '个月', '年', '昨天', '前天', '月', '日',
       '登录受限', '受限的 IP 地址', '两步', '二步', '动态验证码', '安全码', '验证码', '动态',
@@ -160,6 +167,10 @@ const SERVER_PARSE_CJK = [
   {
     file: /^shared\/src\/main\/ets\/settings\/CollectionParsers\.ets$/,
     tokens: ['个主题'],
+  },
+  {
+    file: /^shared\/src\/main\/ets\/network\/ApiService\.ets$/,
+    tokens: ['不是你创建的主题'],
   },
 ]
 
@@ -217,6 +228,11 @@ function isServerParseCjk(rel, line) {
   return false
 }
 
+function isStickerCodeToken(rel, line) {
+  return rel === 'shared/src/main/ets/components/StickerPickerPanel.ets' &&
+    /\{\s*name:\s*['"][^'"]*[\u3400-\u9FFF\u3040-\u30FF\uAC00-\uD7AF][^'"]*['"],\s*url:\s*['"]https:\/\//.test(line)
+}
+
 // ─── I18N001: CJK in source UI paths ────────────────────────────────
 function checkCjkSourceUi() {
   const checkId = 'I18N001_CJK_SOURCE_UI'
@@ -236,6 +252,7 @@ function checkCjkSourceUi() {
         if (/\/resources\//.test(rel)) continue
 
         if (isServerParseCjk(rel, line)) continue
+        if (isStickerCodeToken(rel, line)) continue
 
         // User-visible CJK
         fail(checkId, rel, `user-visible CJK: "${line.trim().substring(0, 120)}"`, i + 1)
@@ -260,6 +277,7 @@ function checkCjkEnglishResources() {
     if (!data) continue
     for (const item of data.string || []) {
       const value = String(item.value || '')
+      if (LANGUAGE_AUTONYM_RESOURCE_KEYS.has(String(item.name))) continue
       if (CJK_RE.test(value)) {
         fail(checkId, `${rel}:${item.name}`, `English resource contains CJK: "${value.substring(0, 80)}"`)
       }
@@ -583,32 +601,15 @@ function checkRegressionKeys() {
   // 2. Check that regression families covered in locale matrix (parity)
   // Already done in I18N004
 
-  // 3. Check that AppStrings references exist for regression keys
-  const appStringsRel = 'shared/src/main/ets/i18n/AppStrings.ets'
-  if (exists(appStringsRel)) {
-    const content = read(appStringsRel)
-    for (const [family, requiredKeys] of Object.entries(REGRESSION_FAMILIES)) {
-      for (const rk of requiredKeys) {
-        // Convert key to AppStrings constant name
-        if (rk.includes('*')) continue // Skip globs for AppStrings check
-        const constantName = 'R_' + rk.toUpperCase()
-        if (!content.includes(constantName)) {
-          fail(checkId, appStringsRel,
-            `regression key "${rk}" has no AppStrings.${constantName} constant`)
-        }
-      }
-    }
-  }
-
-  // 4. Positive assertion: these specific keys MUST use ResourceStr in related coordinators
+  // 3. Positive assertion: these specific keys MUST use resources in related coordinators/pages.
   const sourceChecks = [
     {
       rel: 'entry/src/main/ets/model/AccountPageCoordinator.ets',
       requiredTokens: [
-        'R_ACCOUNT_ACTIVE_LABEL',
-        'R_ACCOUNT_SWITCH_LABEL',
-        'R_ACCOUNT_REMOVE_LABEL',
-        'R_ACCOUNT_REMOVE_TITLE',
+        "$r('app.string.account_active_label')",
+        "$r('app.string.account_switch_label')",
+        "$r('app.string.account_remove_label')",
+        "$r('app.string.account_remove_title')",
       ],
     },
     {
@@ -623,31 +624,28 @@ function checkRegressionKeys() {
     {
       rel: 'entry/src/main/ets/model/TopicDetailTitleBarCoordinator.ets',
       requiredTokens: [
-        'R_TOPIC_ACTION_THANK_TOPIC',
-        'R_TOPIC_ACTION_SITE_FAVORITE',
-        'R_TOPIC_ACTION_SAVE_LATER',
-        'R_TOPIC_ACTION_IGNORE_TOPIC',
-        'R_TOPIC_ACTION_REPORT_TOPIC',
+        "$r('app.string.topic_action_thank_topic')",
+        "$r('app.string.topic_action_site_favorite')",
+        "$r('app.string.topic_action_save_later')",
+        "$r('app.string.topic_action_ignore_topic')",
+        "$r('app.string.topic_action_report_topic')",
       ],
     },
     {
       rel: 'shared/src/main/ets/settings/NetworkProxySettings.ets',
       requiredTokens: [
-        "return AppStrings.R_COMMON_CLOSED",
-        "return AppStrings.R_PROXY_SUMMARY_HTTP_NOT_CONFIGURED",
-        "return AppStrings.R_PROXY_SUMMARY_SOCKS5_NOT_CONFIGURED",
+        "return $r('app.string.common_closed')",
+        "return $r('app.string.proxy_summary_http_not_configured')",
+        "return $r('app.string.proxy_summary_socks5_not_configured')",
       ],
       forbiddenTokens: ['关闭'],
     },
     {
       rel: 'feature/settings/src/main/ets/model/StorageSettingsCoordinator.ets',
       requiredTokens: [
-        "AppStrings.R_CACHE_SUBTITLE_UPDATED",
-        "AppStrings.R_CACHE_SUBTITLE",
+        "$r('app.string.cache_subtitle_updated')",
+        "$r('app.string.cache_subtitle')",
         "AppStrings.format",
-      ],
-      forbiddenPatterns: [
-        /\$r\('app\.string\.cache_subtitle/,
       ],
     },
   ]

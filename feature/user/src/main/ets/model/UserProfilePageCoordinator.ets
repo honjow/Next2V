@@ -25,18 +25,18 @@ export interface UserProfileAppbarIdentity {
 export class UserProfilePageCoordinator {
   static tabLabels(topicCount: number, replyCount: number): UserProfileTabLabels {
     if (topicCount > 0) {
-      const template = AppStrings.text(AppStrings.R_USER_TAB_TOPICS_COUNT, 'Topics {0}')
+      const template = AppStrings.text($r('app.string.user_tab_topics_count'), 'Topics {0}')
       const topicLabel = AppStrings.format(template, [String(topicCount)])
       const replyLabel = replyCount > 0
-        ? AppStrings.format(AppStrings.text(AppStrings.R_USER_TAB_REPLIES_COUNT, 'Replies {0}'), [String(replyCount)])
-        : AppStrings.text(AppStrings.R_USER_TAB_REPLIES_LABEL, 'Replies')
+        ? AppStrings.format(AppStrings.text($r('app.string.user_tab_replies_count'), 'Replies {0}'), [String(replyCount)])
+        : AppStrings.text($r('app.string.user_tab_replies_label'), 'Replies')
       return { topicLabel, replyLabel }
     }
     return {
-      topicLabel: AppStrings.text(AppStrings.R_USER_TAB_TOPICS_LABEL, 'Topics'),
+      topicLabel: AppStrings.text($r('app.string.user_tab_topics_label'), 'Topics'),
       replyLabel: replyCount > 0
-        ? AppStrings.format(AppStrings.text(AppStrings.R_USER_TAB_REPLIES_COUNT, 'Replies {0}'), [String(replyCount)])
-        : AppStrings.text(AppStrings.R_USER_TAB_REPLIES_LABEL, 'Replies')
+        ? AppStrings.format(AppStrings.text($r('app.string.user_tab_replies_count'), 'Replies {0}'), [String(replyCount)])
+        : AppStrings.text($r('app.string.user_tab_replies_label'), 'Replies')
     }
   }
 

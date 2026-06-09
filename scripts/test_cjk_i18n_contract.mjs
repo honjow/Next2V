@@ -32,10 +32,7 @@ const EXCLUDED_FILE_PATTERNS = [
 ]
 
 // Files/dirs where CJK is explicitly allowed
-const ALLOWED_FILES = new Set([
-  // Generated locale tables mirror resource JSON; CJK values in non-English locales expected
-  'shared/src/main/ets/i18n/StringMap.ets',
-])
+const ALLOWED_FILES = new Set([])
 
 const ALLOWED_PATTERNS = [
   // Test fixtures that replicate V2EX HTML (always in Chinese)
@@ -43,6 +40,15 @@ const ALLOWED_PATTERNS = [
   /^scripts\/validate-signin-parser-fixtures\.mjs$/,
   // Parser test expectations
 ]
+
+const LANGUAGE_AUTONYM_RESOURCE_KEYS = new Set([
+  'language_simplified_chinese',
+  'language_traditional_chinese_hk',
+  'language_traditional_chinese_tw',
+  'language_english',
+  'language_japanese',
+  'language_korean',
+])
 
 // ------------------------------------------------------------
 // Scan
@@ -104,7 +110,7 @@ const SERVER_PARSE_ALLOWLIST = [
     file: /^shared\/src\/main\/ets\/parser\//,
     tokens: [
       '金币', '银币', '铜币', '已领取', '已完成', '明天',
-      '主题列表被隐藏', '最近回复', '最热节点', '最近新增节点', '号会员',
+      '主题列表被隐藏', '最近回复', '最后回复', '最热节点', '最近新增节点', '号会员',
       '刚刚', '半小时前', '秒前', '分钟前', '小时前', '天前', '个月前', '年前',
       '小时', '分钟', '秒', '天', '个月', '年', '昨天', '前天', '月', '日',
       '登录受限', '受限的 IP 地址', '两步', '二步', '动态验证码', '安全码', '验证码', '动态',
@@ -122,8 +128,17 @@ const SERVER_PARSE_ALLOWLIST = [
   {
     file: /^shared\/src\/main\/ets\/settings\/CollectionParsers\.ets$/,
     tokens: ['个主题']
+  },
+  {
+    file: /^shared\/src\/main\/ets\/network\/ApiService\.ets$/,
+    tokens: ['不是你创建的主题']
   }
 ]
+
+function isStickerCodeToken(rel, text) {
+  return rel === 'shared/src/main/ets/components/StickerPickerPanel.ets' &&
+    /\{\s*name:\s*['"][^'"]*[\u3400-\u9FFF\u3040-\u30FF\uAC00-\uD7AF][^'"]*['"],\s*url:\s*['"]https:\/\//.test(text)
+}
 
 function isNativeLanguageLabelOk(rel, text) {
   for (const entry of NATIVE_LANGUAGE_LABEL_ALLOWLIST) {
@@ -158,6 +173,11 @@ function scanDefaultResourceCjk() {
     for (const item of values) {
       const value = String(item.value || '')
       if (CJK_RE.test(value)) {
+        if (LANGUAGE_AUTONYM_RESOURCE_KEYS.has(String(item.name))) {
+          findings.allowed.push(`${rel}:${item.name}: language autonym (${value.substring(0, 80)})`)
+          passed++
+          continue
+        }
         findings.must_fix.push(`${rel}:${item.name}: MUST_FIX — default/en_US resource contains CJK (${value.substring(0, 80)})`)
         failed++
       }
@@ -224,6 +244,12 @@ for (const { full, rel } of walkDir(WORKTREE)) {
 
     if (isNativeLanguageLabelOk(rel, line)) {
       findings.allowed.push(`${key}: native language label (${line.trim().substring(0, 80)})`)
+      passed++
+      continue
+    }
+
+    if (isStickerCodeToken(rel, line)) {
+      findings.allowed.push(`${key}: sticker code token (${line.trim().substring(0, 80)})`)
       passed++
       continue
     }

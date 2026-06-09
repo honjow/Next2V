@@ -201,7 +201,7 @@ export struct BlockedListsPage {
   SyncStatusItem() {
     if (this.syncError && (this.members.length > 0 || this.topics.length > 0)) {
       ListItem() {
-        Text(AppStrings.text(AppStrings.R_COMMON_LOAD_FAILED, 'Load failed'))
+        Text(AppStrings.text($r('app.string.common_load_failed'), 'Load failed'))
           .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
           .fontColor($r('sys.color.font_secondary'))
           .width('100%')
@@ -290,7 +290,7 @@ export struct BlockedListsPage {
 
   private pageStateMessage(): string {
     if (!this.snapshot.ownerKey) {
-      return AppStrings.text(AppStrings.R_LOGIN_TO_VIEW_BLOCKED, 'Log in to view blocked lists')
+      return AppStrings.text($r('app.string.login_to_view_blocked'), 'Log in to view blocked lists')
     }
     // A logged-in owner whose snapshot was never confirmed (no cache + a failed or missing-variable
     // authenticated sync leaves updatedAt === 0) has an UNKNOWN list, not an empty one. Only a confirmed
@@ -301,21 +301,21 @@ export struct BlockedListsPage {
     if (this.tabState.selectedTab === 0) {
       if (this.snapshot.blockedMemberIds.length === 0) {
         return confirmed
-          ? AppStrings.text(AppStrings.R_NO_BLOCKED_USERS, 'No blocked users')
-          : AppStrings.text(AppStrings.R_COMMON_LOAD_FAILED, 'Load failed')
+          ? AppStrings.text($r('app.string.no_blocked_users'), 'No blocked users')
+          : AppStrings.text($r('app.string.common_load_failed'), 'Load failed')
       }
       if (this.members.length === 0) {
-        return AppStrings.text(AppStrings.R_COMMON_LOAD_FAILED, 'Load failed')
+        return AppStrings.text($r('app.string.common_load_failed'), 'Load failed')
       }
       return ''
     }
     if (this.snapshot.ignoredTopicIds.length === 0) {
       return confirmed
-        ? AppStrings.text(AppStrings.R_NO_IGNORED_TOPICS, 'No blocked topics')
-        : AppStrings.text(AppStrings.R_COMMON_LOAD_FAILED, 'Load failed')
+        ? AppStrings.text($r('app.string.no_ignored_topics'), 'No blocked topics')
+        : AppStrings.text($r('app.string.common_load_failed'), 'Load failed')
     }
     if (this.topics.length === 0) {
-      return AppStrings.text(AppStrings.R_COMMON_LOAD_FAILED, 'Load failed')
+      return AppStrings.text($r('app.string.common_load_failed'), 'Load failed')
     }
     return ''
   }
@@ -594,7 +594,7 @@ export struct BlockedListsPage {
     const cookie = CookieJarSettings.getCurrentCookie()
     if (!cookie) {
       promptAction
-        .openToast({ message: AppStrings.text(AppStrings.R_LOGIN_REQUIRED_CONTINUE, 'Login required') })
+        .openToast({ message: AppStrings.text($r('app.string.login_required_continue'), 'Login required') })
         .catch((_e: Error) => {})
       return
     }
@@ -632,7 +632,7 @@ export struct BlockedListsPage {
     const cookie = CookieJarSettings.getCurrentCookie()
     if (!cookie) {
       promptAction
-        .openToast({ message: AppStrings.text(AppStrings.R_LOGIN_REQUIRED_CONTINUE, 'Login required') })
+        .openToast({ message: AppStrings.text($r('app.string.login_required_continue'), 'Login required') })
         .catch((_e: Error) => {})
       return
     }

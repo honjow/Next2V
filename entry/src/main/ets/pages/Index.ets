@@ -153,10 +153,10 @@ struct Index {
     new Scroller(),
   ];
   private tabTitles: ResourceStr[] = [
-    AppStrings.R_SETTINGS_HOME,
-    AppStrings.R_TAB_DISCOVER,
-    AppStrings.R_TAB_NOTIFICATIONS,
-    AppStrings.R_TAB_ME,
+    $r('app.string.settings_home'),
+    $r('app.string.tab_discover'),
+    $r('app.string.tab_notifications'),
+    $r('app.string.tab_me'),
   ];
   private homeTabLastScrollOffsets: number[] = [0, 0, 0, 0];
   private homeTabVisibleByScroll: boolean = true;
@@ -564,7 +564,7 @@ struct Index {
                 this.onHomeTabDidScroll(0, offset, state)
               },
             })
-          }.tabBar(this.TabIcon(AppStrings.R_SETTINGS_HOME, 0))
+          }.tabBar(this.TabIcon($r('app.string.settings_home'), 0))
           TabContent() {
             DiscoverPage({
               currentTab: this.ct,
@@ -576,7 +576,7 @@ struct Index {
                 this.onHomeTabDidScroll(1, offset, state)
               },
             })
-          }.tabBar(this.TabIcon(AppStrings.R_TAB_DISCOVER, 1))
+          }.tabBar(this.TabIcon($r('app.string.tab_discover'), 1))
           TabContent() {
             NotificationPage({
               refreshKey: this.notificationRefreshKey,
@@ -589,7 +589,7 @@ struct Index {
                 this.onHomeTabDidScroll(2, offset, state)
               },
             })
-          }.tabBar(this.TabIcon(AppStrings.R_TAB_NOTIFICATIONS, 2))
+          }.tabBar(this.TabIcon($r('app.string.tab_notifications'), 2))
           TabContent() {
             AccountDashboardPage({
               refreshKey: this.accountRefreshKey,
@@ -598,7 +598,7 @@ struct Index {
                 this.onHomeTabDidScroll(3, offset, state)
               },
             })
-          }.tabBar(this.TabIcon(AppStrings.R_TAB_ME, 3))
+          }.tabBar(this.TabIcon($r('app.string.tab_me'), 3))
         }
         .barOverlap(true)
         .barPosition(BarPosition.End)
@@ -739,7 +739,7 @@ struct Index {
         'height': ThemeConstants.TITLE_BAR_HEIGHT,
         'showType': BottomBuilderShowType.DIRECTLY_SHOW,
       }
-      return this.navDestTitleBarOpts(AppStrings.R_NAV_BLOCKED_LISTS, undefined, undefined, bb)
+      return this.navDestTitleBarOpts($r('app.string.nav_blocked_lists'), undefined, undefined, bb)
     }
     if (descriptor.family === 'topicEditor') {
       // The shared editor is also used for 附言(append) and 编辑主题(edit); title it accordingly. The
@@ -747,9 +747,9 @@ struct Index {
       const composeMode = connectTopicComposeTarget().mode
       let editorTitle: ResourceStr = descriptor.title
       if (composeMode === 'append') {
-        editorTitle = AppStrings.R_TOPIC_ACTION_APPEND
+        editorTitle = $r('app.string.topic_action_append')
       } else if (composeMode === 'edit') {
-        editorTitle = AppStrings.R_TOPIC_ACTION_EDIT
+        editorTitle = $r('app.string.topic_action_edit')
       }
       return this.topicEditorTitleBarOpts(editorTitle)
     }
@@ -784,7 +784,7 @@ struct Index {
         undefined,
         undefined,
         cc,
-        AppStrings.text(AppStrings.R_NAV_SEARCH, 'Search'),
+        AppStrings.text($r('app.string.nav_search'), 'Search'),
       )
     }
     if (descriptor.family === 'imagePreview') {
@@ -931,7 +931,7 @@ struct Index {
     // Submit is a title-bar icon. isEnabled mirrors the editor's canSubmit() via the appbar @Trace
     // (read here so the bar re-renders as the form fills); the tap goes back over the action bus.
     let content: Record<string, Object> = {
-      'label': AppStrings.R_EDITOR_SUBMIT,
+      'label': $r('app.string.editor_submit'),
       'icon': this.submitTitleBarIcon(),
       'isEnabled': this.topicEditorAppbar.submitEnabled,
       'action': () => {
@@ -1018,13 +1018,13 @@ struct Index {
     topicId: number,
   ): ResourceStr {
     if (descriptor.action === 'ignoreTopic' && this.isTopicIgnoredForRoute(topicId)) {
-      return AppStrings.R_TOPIC_ACTION_UNIGNORE_TOPIC
+      return $r('app.string.topic_action_unignore_topic')
     }
     // saveLater lives in the overflow popup as a text row (no icon), so the only way to tell an
     // already-saved topic from an unsaved one is the label — flip it to "取消稍后读" when saved,
     // mirroring the ignoreTopic→取消忽略 toggle. The tap handler already removes when saved.
     if (descriptor.action === 'saveLater' && this.topicDetailAppbar.savedLater) {
-      return AppStrings.R_TOPIC_ACTION_UNSAVE_LATER
+      return $r('app.string.topic_action_unsave_later')
     }
     return descriptor.label
   }
@@ -1182,8 +1182,8 @@ struct Index {
       items.push(
         this.topicActionItem(
           this.userProfileAppbar.following
-            ? AppStrings.R_USER_ACTION_UNFOLLOW
-            : AppStrings.R_USER_ACTION_FOLLOW,
+            ? $r('app.string.user_action_unfollow')
+            : $r('app.string.user_action_follow'),
           this.userProfileAppbar.following
             ? $r('sys.symbol.person_xmark')
             : $r('sys.symbol.person_badge_plus'),
@@ -1195,7 +1195,7 @@ struct Index {
     }
     if (this.userProfileAppbar.markLabel) {
       items.push(
-        this.topicActionItem(AppStrings.R_USER_ACTION_MARK, $r('sys.symbol.bookmark'), () => {
+        this.topicActionItem($r('app.string.user_action_mark'), $r('sys.symbol.bookmark'), () => {
           this.sendUserProfileAction('mark')
         }),
       )
@@ -1204,8 +1204,8 @@ struct Index {
       items.push(
         this.topicActionItem(
           this.userProfileAppbar.blocked
-            ? AppStrings.R_USER_ACTION_UNBLOCK
-            : AppStrings.R_USER_ACTION_BLOCK,
+            ? $r('app.string.user_action_unblock')
+            : $r('app.string.user_action_block'),
           this.userProfileBlockIcon(),
           () => {
             this.sendUserProfileAction('block')
@@ -1472,10 +1472,10 @@ struct Index {
     const path = (this.accountWebView.url || '').trim().toLowerCase()
     // First-party account surfaces keep their clean localized titles.
     if (path.indexOf('/balance') >= 0) {
-      return AppStrings.R_BALANCE_DETAILS
+      return $r('app.string.balance_details')
     }
     if (path.indexOf('/settings') >= 0) {
-      return AppStrings.R_WEB_ACCOUNT_SETTINGS
+      return $r('app.string.web_account_settings')
     }
     // This is now a general in-app web view (dict / node-description links, "open topic in app", …), not
     // the login page — show the live page <title> (published by onTitleReceive); leave it empty until the

@@ -86,8 +86,8 @@ export class AvatarAppearanceSettings {
 
   static appearanceText(appearance: string): string {
     if (AvatarAppearanceSettings.normalize(appearance) === APPEARANCE_SOFT) {
-      return AppStrings.text(AppStrings.R_AVATAR_APPEARANCE_SOFT, 'Soft')
+      return AppStrings.text($r('app.string.avatar_appearance_soft'), 'Soft')
     }
-    return AppStrings.text(AppStrings.R_AVATAR_APPEARANCE_CIRCLE, 'Circle')
+    return AppStrings.text($r('app.string.avatar_appearance_circle'), 'Circle')
   }
 }

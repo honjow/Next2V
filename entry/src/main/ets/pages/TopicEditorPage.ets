@@ -60,7 +60,7 @@ export struct TopicEditorPage {
   // the user can't mis-tap the form. Mirrors the reply composer's submit guard (close-before-request →
   // LoadingDialog); content reuses R_EDITOR_SUBMITTING ("提交中…").
   private submitLoadingDialogController: CustomDialogController = new CustomDialogController({
-    builder: LoadingDialog({ content: AppStrings.R_EDITOR_SUBMITTING }),
+    builder: LoadingDialog({ content: $r('app.string.editor_submitting') }),
     autoCancel: false,
     alignment: DialogAlignment.Center,
     customStyle: false
@@ -204,7 +204,7 @@ export struct TopicEditorPage {
 
         // Title: new topic + edit (edit pre-fills it); append is body-only so it has no title.
         if (this.mode !== 'append') {
-          TextInput({ placeholder: AppStrings.text(AppStrings.R_TOPIC_EDITOR_TITLE_PLACEHOLDER, 'Title'), text: this.title })
+          TextInput({ placeholder: AppStrings.text($r('app.string.topic_editor_title_placeholder'), 'Title'), text: this.title })
             .height(44)
             .fontSize(ThemeConstants.FONT_SIZE_BODY)
             // Match the placeholder to the input/node font; otherwise it falls back to a larger default.
@@ -245,7 +245,7 @@ export struct TopicEditorPage {
           // tall/tablet screens yet stays usable (and scrolls) when the keyboard is up. A clear ✕
           // overlays the top-right corner only while the body is non-empty.
           Stack({ alignContent: Alignment.TopEnd }) {
-            TextArea({ placeholder: AppStrings.text(AppStrings.R_EDITOR_BODY_PLACEHOLDER, 'Body (Markdown)'), text: this.content, controller: this.contentController })
+            TextArea({ placeholder: AppStrings.text($r('app.string.editor_body_placeholder'), 'Body (Markdown)'), text: this.content, controller: this.contentController })
               .id(BODY_INPUT_ID)
               .fontSize(ThemeConstants.FONT_SIZE_BODY)
               .placeholderFont({ size: ThemeConstants.FONT_SIZE_BODY })
@@ -437,7 +437,7 @@ export struct TopicEditorPage {
     // remove it on failure). Matching the exact captured placeholder string avoids index drift if the
     // user keeps typing during the upload. The `uploading://` scheme renders nothing (not allowlisted),
     // and a stale one is stripped from the draft on next open.
-    const uploadingLabel = AppStrings.text(AppStrings.R_IMAGE_UPLOAD_UPLOADING, 'Uploading')
+    const uploadingLabel = AppStrings.text($r('app.string.image_upload_uploading'), 'Uploading')
     const placeholder = `![${uploadingLabel}](uploading://${Date.now()})`
     this.insertTextAtCaret(placeholder)
     const fileName = `image.${ImageBytesUtils.extensionFor(image.mimeType)}`
@@ -506,35 +506,35 @@ export struct TopicEditorPage {
 
   private uploadErrorMessage(code: string): string {
     if (code === ImageUploadErrorCode.TOO_LARGE) {
-      return AppStrings.text(AppStrings.R_IMAGE_UPLOAD_ERROR_TOO_LARGE, 'Image is too large')
+      return AppStrings.text($r('app.string.image_upload_error_too_large'), 'Image is too large')
     }
     if (code === ImageUploadErrorCode.RATE_LIMIT) {
-      return AppStrings.text(AppStrings.R_IMAGE_UPLOAD_ERROR_RATE_LIMIT, 'Rate limited')
+      return AppStrings.text($r('app.string.image_upload_error_rate_limit'), 'Rate limited')
     }
     if (code === ImageUploadErrorCode.FORBIDDEN) {
-      return AppStrings.text(AppStrings.R_IMAGE_UPLOAD_ERROR_FORBIDDEN, 'Upload rejected')
+      return AppStrings.text($r('app.string.image_upload_error_forbidden'), 'Upload rejected')
     }
     if (code === ImageUploadErrorCode.SERVER) {
-      return AppStrings.text(AppStrings.R_IMAGE_UPLOAD_ERROR_SERVER, 'Server error')
+      return AppStrings.text($r('app.string.image_upload_error_server'), 'Server error')
     }
     if (code === ImageUploadErrorCode.NETWORK) {
-      return AppStrings.text(AppStrings.R_IMAGE_UPLOAD_ERROR_NETWORK, 'Network error')
+      return AppStrings.text($r('app.string.image_upload_error_network'), 'Network error')
     }
     if (code === ImageUploadErrorCode.BAD_IMAGE) {
-      return AppStrings.text(AppStrings.R_IMAGE_UPLOAD_ERROR_BAD_IMAGE, 'Unsupported image')
+      return AppStrings.text($r('app.string.image_upload_error_bad_image'), 'Unsupported image')
     }
     if (code === ImageUploadErrorCode.UNSUPPORTED_PROVIDER) {
-      return AppStrings.text(AppStrings.R_IMAGE_UPLOAD_ERROR_UNSUPPORTED, 'Unsupported host')
+      return AppStrings.text($r('app.string.image_upload_error_unsupported'), 'Unsupported host')
     }
-    return AppStrings.text(AppStrings.R_IMAGE_UPLOAD_ERROR_GENERIC, 'Image upload failed')
+    return AppStrings.text($r('app.string.image_upload_error_generic'), 'Image upload failed')
   }
 
   private promptConfigureClientId(): void {
     this.getUIContext().showAlertDialog({
-      message: AppStrings.text(AppStrings.R_IMAGE_UPLOAD_NO_CLIENTID, 'Configure an image host first'),
+      message: AppStrings.text($r('app.string.image_upload_no_clientid'), 'Configure an image host first'),
       primaryButton: { value: AppStrings.text($r('app.string.common_cancel'), 'Cancel'), action: () => { } },
       secondaryButton: {
-        value: AppStrings.text(AppStrings.R_IMAGE_UPLOAD_GO_CONFIG, 'Configure'),
+        value: AppStrings.text($r('app.string.image_upload_go_config'), 'Configure'),
         action: () => { this.stack.pushPathByName('ImageUploadSettings', null) },
       },
     })
@@ -568,7 +568,7 @@ export struct TopicEditorPage {
   private nodeFieldLabel(): string {
     const name = this.nodeName.trim()
     if (name.length === 0) {
-      return AppStrings.text(AppStrings.R_TOPIC_EDITOR_NODE_PLACEHOLDER, 'Node (e.g. create)')
+      return AppStrings.text($r('app.string.topic_editor_node_placeholder'), 'Node (e.g. create)')
     }
     const title = this.nodeTitle.trim()
     if (title.length === 0 || title.toLowerCase() === name.toLowerCase()) {
@@ -655,14 +655,14 @@ export struct TopicEditorPage {
     const balance = connectAccountMeta().balance
     const balanceText = balance && balance.summary ? balance.summary : '—'
     const message = AppStrings.format(
-      AppStrings.text(AppStrings.R_EDITOR_CONFIRM_APPEND_FORMAT, 'Posting a supplement costs at least 20 copper coins (grows with length).\n\nBalance: {0}'),
+      AppStrings.text($r('app.string.editor_confirm_append_format'), 'Posting a supplement costs at least 20 copper coins (grows with length).\n\nBalance: {0}'),
       [balanceText],
     )
     this.getUIContext().showAlertDialog({
-      title: AppStrings.text(AppStrings.R_EDITOR_CONFIRM_APPEND_TITLE, 'Confirm supplement'),
+      title: AppStrings.text($r('app.string.editor_confirm_append_title'), 'Confirm supplement'),
       message: message,
       primaryButton: { value: AppStrings.text($r('app.string.common_cancel'), 'Cancel'), action: () => { } },
-      secondaryButton: { value: AppStrings.text(AppStrings.R_EDITOR_PUBLISH, 'Publish'), action: () => { this.submit() } }
+      secondaryButton: { value: AppStrings.text($r('app.string.editor_publish'), 'Publish'), action: () => { this.submit() } }
     })
   }
 
@@ -671,7 +671,7 @@ export struct TopicEditorPage {
       return
     }
     if (this.hasUploadInFlight()) {
-      promptAction.openToast({ message: AppStrings.text(AppStrings.R_IMAGE_UPLOAD_WAIT, 'Wait for the image to finish uploading') }).catch((_error: Error) => { })
+      promptAction.openToast({ message: AppStrings.text($r('app.string.image_upload_wait'), 'Wait for the image to finish uploading') }).catch((_error: Error) => { })
       return
     }
     if (this.mode === 'append') {
@@ -713,12 +713,12 @@ export struct TopicEditorPage {
     }
     const cleanNode = this.nodeName.trim()
     const cleanTitle = this.title.trim()
-    const message = AppStrings.format(AppStrings.text(AppStrings.R_EDITOR_CONFIRM_POST_FORMAT, 'Post《{1}》in node「{0}」?\n\nV2EX posting usually costs at least 20 copper coins and will change your account state.'), [cleanNode, cleanTitle])
+    const message = AppStrings.format(AppStrings.text($r('app.string.editor_confirm_post_format'), 'Post《{1}》in node「{0}」?\n\nV2EX posting usually costs at least 20 copper coins and will change your account state.'), [cleanNode, cleanTitle])
     this.getUIContext().showAlertDialog({
-      title: AppStrings.text(AppStrings.R_EDITOR_CONFIRM_POST_TITLE, 'Confirm post'),
+      title: AppStrings.text($r('app.string.editor_confirm_post_title'), 'Confirm post'),
       message: message,
       primaryButton: { value: AppStrings.text($r('app.string.common_cancel'), 'Cancel'), action: () => { } },
-      secondaryButton: { value: AppStrings.text(AppStrings.R_EDITOR_PUBLISH, 'Publish'), action: () => { this.submit() } }
+      secondaryButton: { value: AppStrings.text($r('app.string.editor_publish'), 'Publish'), action: () => { this.submit() } }
     })
   }
 
@@ -778,7 +778,7 @@ export struct TopicEditorPage {
       .then(() => {
         this.hasSubmitted = true
         this.clearComposeDraft()
-        promptAction.openToast({ message: AppStrings.text(AppStrings.R_EDITOR_APPEND_POSTED, 'Supplement posted') }).catch((_error: Error) => { })
+        promptAction.openToast({ message: AppStrings.text($r('app.string.editor_append_posted'), 'Supplement posted') }).catch((_error: Error) => { })
         const p: TopicDetailParams = { topicId: this.targetTopicId }
         this.stack.replacePathByName('TopicDetail', p as Object)
       })
@@ -868,7 +868,7 @@ export struct TopicEditorPage {
       .then((topicId: number) => {
         this.hasSubmitted = true
         this.clearComposeDraft()
-        promptAction.openToast({ message: AppStrings.text(AppStrings.R_EDITOR_EDIT_SAVED, 'Changes saved') }).catch((_error: Error) => { })
+        promptAction.openToast({ message: AppStrings.text($r('app.string.editor_edit_saved'), 'Changes saved') }).catch((_error: Error) => { })
         const p: TopicDetailParams = { topicId: topicId > 0 ? topicId : this.targetTopicId }
         this.stack.replacePathByName('TopicDetail', p as Object)
       })

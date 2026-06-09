@@ -7,7 +7,7 @@
  * 2. In every .ets source file, flag:
  *    (a) $r('app.string.<key>', <arg>, <arg>, ...) where <key> is a {N} template —
  *        these go through HarmonyOS native %s formatting and leave {N} literal.
- *    (b) AppStrings.text(AppStrings.R_<KEY>, 'fallback with {N}') where the result
+ *    (b) AppStrings.text($r('app.string.<key>'), 'fallback with {N}') where the result
  *        is NOT followed by AppStrings.format — the caller may forget to format.
  *    (c) Any raw Text/Button/$r() with known parameterized keys directly in the markup.
  * 3. Exit non-zero if violations found.
@@ -36,23 +36,20 @@ for (const root of SOURCE_ROOTS) {
   }
 }
 
-// ─── Step 1: Collect {N} format template keys from StringMap ──────────────
+// ─── Step 1: Collect {N} format template keys from en_US resources ─────────
 function collectFormatKeys() {
-  const stringMapPath = join(REPO, 'shared/src/main/ets/i18n/StringMap.ets')
-  if (!existsSync(stringMapPath)) {
-    console.error('FATAL: StringMap.ets not found')
+  const stringsPath = join(REPO, 'entry/src/main/resources/en_US/element/string.json')
+  if (!existsSync(stringsPath)) {
+    console.error('FATAL: en_US string resources not found')
     process.exit(1)
   }
-  const content = readFileSync(stringMapPath, 'utf-8')
-  const lines = content.split('\n')
+  const resource = JSON.parse(readFileSync(stringsPath, 'utf-8'))
   const keys = new Set()
-  // Capture en_US block only (first locale block, lines ~1-660)
-  // Pattern:   'key_name': 'value with {0}',
-  const re = /^\s*'([a-z_0-9]+)':\s*'.*\{[0-9]\}.*',$/
-  for (const line of lines) {
-    const m = line.match(re)
-    if (m) {
-      keys.add(m[1])
+  for (const item of resource.string || []) {
+    const name = String(item.name || '')
+    const value = String(item.value || '')
+    if (name && /\{[0-9]\}/.test(value)) {
+      keys.add(name)
     }
   }
   return keys
@@ -107,7 +104,7 @@ function checkUnsafeResourceCall(formatKeys) {
           const pos = m.index
           const lineNum = (content.substring(0, pos).match(/\n/g) || []).length + 1
           fail(category, file,
-            `$r('app.string.${key}', ...) uses {N} format template — must use AppStrings.format(AppStrings.text(AppStrings.R_${key.toUpperCase()}, ...), [...])`,
+            `$r('app.string.${key}', ...) uses {N} format template — must use AppStrings.format(AppStrings.text($r('app.string.${key}'), ...), [...])`,
             lineNum)
         }
       }
@@ -132,7 +129,7 @@ function checkTextWithoutFormat(formatKeys) {
 
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i]
-        const re = /AppStrings\.text\(\s*AppStrings\.(R_[A-Z_0-9]+),\s*'([^']*\{[0-9]\}[^']*)'/g
+        const re = /AppStrings\.text\(\s*\$r\('app\.string\.([a-z_0-9]+)'\),\s*'([^']*\{[0-9]\}[^']*)'/g
         let m
         while ((m = re.exec(line)) !== null) {
           // Check nearby lines for AppStrings.format (look both forward and backward)
@@ -144,7 +141,7 @@ function checkTextWithoutFormat(formatKeys) {
           ].join(' ')
           if (!contextLines.includes('AppStrings.format')) {
             fail(category, file,
-              `AppStrings.text(${m[1]}, '${m[2]}') has {N} placeholders but no AppStrings.format() in nearby context (lines ${i + 1}-${i + 3})`,
+              `AppStrings.text($r('app.string.${m[1]}'), '${m[2]}') has {N} placeholders but no AppStrings.format() in nearby context (lines ${i + 1}-${i + 3})`,
               i + 1)
           }
         }
@@ -181,7 +178,7 @@ function checkDirectParamInSink(formatKeys) {
 // ─── Main ────────────────────────────────────────────────────────────────
 console.log('=== Placeholder Contract ===\n')
 const formatKeys = collectFormatKeys()
-console.log(`Collected ${formatKeys.size} {N} format template keys from StringMap.ets\n`)
+console.log(`Collected ${formatKeys.size} {N} format template keys from en_US resources\n`)
 
 checkUnsafeResourceCall(formatKeys)
 checkTextWithoutFormat(formatKeys)

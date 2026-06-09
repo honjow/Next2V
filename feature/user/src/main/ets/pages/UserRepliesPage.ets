@@ -23,13 +23,13 @@ export struct UserRepliesPage {
         PageLoadingState()
       } else if (this.vm.errorMessage && this.vm.replyDataSource.totalCount() === 0) {
         PageErrorState({
-          message: this.vm.errorMessage || AppStrings.text(AppStrings.R_COMMON_LOAD_FAILED, 'Load failed'),
+          message: this.vm.errorMessage || AppStrings.text($r('app.string.common_load_failed'), 'Load failed'),
           retryAction: () => {
             this.vm.load()
           }
         })
       } else if (this.vm.replyDataSource.totalCount() === 0) {
-        CardEmptyState({ message: AppStrings.text(AppStrings.R_USER_PROFILE_NO_REPLIES, 'No replies') })
+        CardEmptyState({ message: AppStrings.text($r('app.string.user_profile_no_replies'), 'No replies') })
       } else {
         SecondaryListScaffold({
           onReachEnd: () => {

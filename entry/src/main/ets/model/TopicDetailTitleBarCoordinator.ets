@@ -1,5 +1,3 @@
-import { AppStrings } from 'shared/src/main/ets/i18n/AppStrings'
-
 export type TopicDetailTitleAction =
   | 'thankTopic'
   | 'siteFavorite'
@@ -38,25 +36,25 @@ export class TopicDetailTitleBarCoordinator {
 
   static actions(): TopicDetailTitleActionDescriptor[] {
     return [
-      { label: AppStrings.R_TOPIC_ACTION_THANK_TOPIC, action: 'thankTopic', stateKey: 'thanked' },
+      { label: $r('app.string.topic_action_thank_topic'), action: 'thankTopic', stateKey: 'thanked' },
       {
-        label: AppStrings.R_TOPIC_ACTION_SITE_FAVORITE,
+        label: $r('app.string.topic_action_site_favorite'),
         action: 'siteFavorite',
         stateKey: 'siteFavorited',
       },
-      { label: AppStrings.R_TOPIC_ACTION_SAVE_LATER, action: 'saveLater', stateKey: 'savedLater' },
+      { label: $r('app.string.topic_action_save_later'), action: 'saveLater', stateKey: 'savedLater' },
       // Owner-only, mutually time-exclusive: Index.ets filters editTopic to the edit window (<600s) and
       // appendTopic to the append window (>=1800s). Placed early so they sit near the top of the popup.
-      { label: AppStrings.R_TOPIC_ACTION_EDIT, action: 'editTopic', stateKey: '' },
-      { label: AppStrings.R_TOPIC_ACTION_MOVE, action: 'moveTopic', stateKey: '' },
-      { label: AppStrings.R_TOPIC_ACTION_APPEND, action: 'appendTopic', stateKey: '' },
-      { label: AppStrings.R_TOPIC_ACTION_IGNORE_TOPIC, action: 'ignoreTopic', stateKey: '' },
-      { label: AppStrings.R_TOPIC_ACTION_REPORT_TOPIC, action: 'reportTopic', stateKey: '' },
-      { label: AppStrings.R_TOPIC_ACTION_COPY_TITLE, action: 'copyTitle', stateKey: '' },
-      { label: AppStrings.R_TOPIC_ACTION_COPY_LINK, action: 'copyLink', stateKey: '' },
-      { label: AppStrings.R_TOPIC_ACTION_SHARE_LINK, action: 'share', stateKey: '' },
-      { label: AppStrings.R_TOPIC_ACTION_OPEN_IN_APP, action: 'openInApp', stateKey: '' },
-      { label: AppStrings.R_TOPIC_ACTION_OPEN_BROWSER, action: 'openBrowser', stateKey: '' },
+      { label: $r('app.string.topic_action_edit'), action: 'editTopic', stateKey: '' },
+      { label: $r('app.string.topic_action_move'), action: 'moveTopic', stateKey: '' },
+      { label: $r('app.string.topic_action_append'), action: 'appendTopic', stateKey: '' },
+      { label: $r('app.string.topic_action_ignore_topic'), action: 'ignoreTopic', stateKey: '' },
+      { label: $r('app.string.topic_action_report_topic'), action: 'reportTopic', stateKey: '' },
+      { label: $r('app.string.topic_action_copy_title'), action: 'copyTitle', stateKey: '' },
+      { label: $r('app.string.topic_action_copy_link'), action: 'copyLink', stateKey: '' },
+      { label: $r('app.string.topic_action_share_link'), action: 'share', stateKey: '' },
+      { label: $r('app.string.topic_action_open_in_app'), action: 'openInApp', stateKey: '' },
+      { label: $r('app.string.topic_action_open_browser'), action: 'openBrowser', stateKey: '' },
     ]
   }
 

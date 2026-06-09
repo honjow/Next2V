@@ -216,9 +216,9 @@ const stateBody = methodBody(page, 'private pageStateMessage(): string')
 // The empty-state decision must be gated on a CONFIRMED snapshot (updatedAt > 0). A never-confirmed
 // logged-in snapshot (updatedAt === 0) is unknown, not empty.
 assertIncludes(pagePath, stateBody, 'this.snapshot.updatedAt > 0')
-assertIncludes(pagePath, stateBody, 'R_NO_BLOCKED_USERS')
-assertIncludes(pagePath, stateBody, 'R_NO_IGNORED_TOPICS')
-assertIncludes(pagePath, stateBody, 'R_COMMON_LOAD_FAILED')
+assertIncludes(pagePath, stateBody, "$r('app.string.no_blocked_users')")
+assertIncludes(pagePath, stateBody, "$r('app.string.no_ignored_topics')")
+assertIncludes(pagePath, stateBody, "$r('app.string.common_load_failed')")
 
 // The "no blocked users" / "no blocked topics" messages must only be reachable on the confirmed side of
 // the updatedAt gate — i.e. the gate token must appear before each empty-message token in source order.
@@ -229,13 +229,13 @@ function gateBeforeMessage(body, messageToken, label) {
     fail(`pageStateMessage must gate ${label} behind the confirmed-snapshot (updatedAt > 0) check`)
   }
 }
-gateBeforeMessage(stateBody, 'R_NO_BLOCKED_USERS', 'the no-blocked-users empty state')
+gateBeforeMessage(stateBody, "$r('app.string.no_blocked_users')", 'the no-blocked-users empty state')
 
 // Regression guard: must NOT return the bare empty messages without the confirmation gate.
 assertNotIncludes(
   pagePath,
   stateBody,
-  'if (this.snapshot.blockedMemberIds.length === 0) {\n      return AppStrings.text(AppStrings.R_NO_BLOCKED_USERS',
+  "if (this.snapshot.blockedMemberIds.length === 0) {\n      return AppStrings.text($r('app.string.no_blocked_users')",
   'blocked-users empty message must not be returned unconditionally (false empty on failed first sync)',
 )
 

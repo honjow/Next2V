@@ -11,7 +11,7 @@ import { AppStrings } from '../i18n/AppStrings'
 export struct TopicCard {
   @Require @Param item: V2exTopic
   @Param isUnread: boolean = false
-  @Param metaLabel: string = AppStrings.text(AppStrings.R_TOPIC_LAST_REPLY, 'Last reply')
+  @Param metaLabel: string = AppStrings.text($r('app.string.topic_last_reply'), 'Last reply')
   @Param metaTimestamp: number = 0
   @Param showReplyCount: boolean = true
   @Param showNodeTag: boolean = true
@@ -90,7 +90,7 @@ export struct TopicCard {
         }
         if (this.showReplyCount) {
           Text(AppStrings.format(
-            AppStrings.text(AppStrings.R_TOPIC_REPLIES_COUNT, '{0} replies'),
+            AppStrings.text($r('app.string.topic_replies_count'), '{0} replies'),
             [`${this.item.replies}`]))
             .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
             .fontColor($r('sys.color.font_secondary'))
@@ -134,7 +134,7 @@ export struct TopicCard {
 
   @Builder
   private PinnedBadge() {
-    Text(AppStrings.text(AppStrings.R_TOPIC_PINNED_BADGE, 'Pinned'))
+    Text(AppStrings.text($r('app.string.topic_pinned_badge'), 'Pinned'))
       .fontSize(ThemeConstants.FONT_SIZE_TAG)
       .fontColor($r('sys.color.font_secondary'))
       .padding({

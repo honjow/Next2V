@@ -202,20 +202,20 @@ export struct TopicDetailPage {
   });
   private jumpFloorDialogController: CustomDialogController = new CustomDialogController({
     builder: CustomContentDialog({
-      primaryTitle: AppStrings.R_JUMP_TO_FLOOR_TITLE,
+      primaryTitle: $r('app.string.jump_to_floor_title'),
       contentBuilder: () => {
         this.JumpToFloorDialogContent()
       },
       buttons: [
         {
-          value: AppStrings.R_COMMON_CANCEL,
+          value: $r('app.string.common_cancel'),
           buttonStyle: ButtonStyleMode.TEXTUAL,
           action: () => {
             this.closeJumpToFloorDialog()
           },
         },
         {
-          value: AppStrings.R_JUMP_TO_FLOOR_BUTTON,
+          value: $r('app.string.jump_to_floor_button'),
           buttonStyle: ButtonStyleMode.TEXTUAL,
           action: () => {
             const value = this.jumpFloorText
@@ -513,11 +513,11 @@ export struct TopicDetailPage {
     }
     const nodeLabel = (this.nodePick.title || '').trim() || node
     this.getUIContext().showAlertDialog({
-      title: AppStrings.text(AppStrings.R_TOPIC_ACTION_MOVE, 'Move topic'),
-      message: AppStrings.format(AppStrings.text(AppStrings.R_TOPIC_MOVE_CONFIRM_FORMAT, 'Move this topic to node「{0}」?'), [nodeLabel]),
+      title: AppStrings.text($r('app.string.topic_action_move'), 'Move topic'),
+      message: AppStrings.format(AppStrings.text($r('app.string.topic_move_confirm_format'), 'Move this topic to node「{0}」?'), [nodeLabel]),
       primaryButton: { value: AppStrings.text($r('app.string.common_cancel'), 'Cancel'), action: () => { } },
       secondaryButton: {
-        value: AppStrings.text(AppStrings.R_TOPIC_ACTION_MOVE, 'Move'),
+        value: AppStrings.text($r('app.string.topic_action_move'), 'Move'),
         action: () => { this.executeMoveNode(node) },
       },
     })
@@ -530,7 +530,7 @@ export struct TopicDetailPage {
     }
     this.api.moveTopicNodeWithCookie(cookie, this.topicId, node)
       .then(() => {
-        promptAction.openToast({ message: AppStrings.text(AppStrings.R_TOPIC_MOVE_DONE, 'Topic moved') }).catch((_e: Error) => { })
+        promptAction.openToast({ message: AppStrings.text($r('app.string.topic_move_done'), 'Topic moved') }).catch((_e: Error) => { })
         this.v.load()
       })
       .catch((error: Error) => {
@@ -697,7 +697,7 @@ export struct TopicDetailPage {
             .fontSize(24)
             .fontColor([$r('sys.color.ohos_id_color_text_primary')])
             .accessibilityText(
-              AppStrings.text(AppStrings.R_TOPIC_ACTION_RESUME_READING, 'Resume reading'),
+              AppStrings.text($r('app.string.topic_action_resume_reading'), 'Resume reading'),
             )
         }
       }
@@ -929,7 +929,7 @@ export struct TopicDetailPage {
         .width(ThemeConstants.LOADING_SIZE_LARGE)
         .height(ThemeConstants.LOADING_SIZE_LARGE)
         .color(ThemeConstants.BRAND_PRIMARY)
-      Text(AppStrings.text(AppStrings.R_TOPIC_DETAIL_LOADING, 'Loading...'))
+      Text(AppStrings.text($r('app.string.topic_detail_loading'), 'Loading...'))
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
         .fontColor($r('sys.color.font_secondary'))
         .margin({ top: ThemeConstants.SPACE_MD })
@@ -1627,7 +1627,7 @@ export struct TopicDetailPage {
   @Builder
   JumpToFloorDialogContent() {
     TextInput({
-      placeholder: AppStrings.R_JUMP_TO_FLOOR_PLACEHOLDER,
+      placeholder: $r('app.string.jump_to_floor_placeholder'),
       text: this.jumpFloorText,
     })
       .type(InputType.Number)
@@ -1832,7 +1832,7 @@ export struct TopicDetailPage {
     if (this.v.topic === null) {
       promptAction
         .openToast({
-          message: AppStrings.text(AppStrings.R_TOPIC_STILL_LOADING, 'Topic is still loading'),
+          message: AppStrings.text($r('app.string.topic_still_loading'), 'Topic is still loading'),
         })
         .catch((_error: Error) => {})
       return
@@ -1985,7 +1985,7 @@ export struct TopicDetailPage {
   private showPreloadConfirmDialog(): void {
     const total = this.v.topic?.replies || 0
     this.getUIContext().showAlertDialog({
-      title: AppStrings.text(AppStrings.R_TOPIC_MANY_REPLIES_TITLE, 'Many replies'),
+      title: AppStrings.text($r('app.string.topic_many_replies_title'), 'Many replies'),
       message: AppStrings.format(
         AppStrings.text(
           $r('app.string.load_all_replies_warning_format'),
@@ -1994,13 +1994,13 @@ export struct TopicDetailPage {
         [`${total}`],
       ),
       primaryButton: {
-        value: AppStrings.text(AppStrings.R_TOPIC_FLAT_VIEW, 'Flat view'),
+        value: AppStrings.text($r('app.string.topic_flat_view'), 'Flat view'),
         action: () => {
           this.v.confirmPreloadFallbackFlat()
         },
       },
       secondaryButton: {
-        value: AppStrings.text(AppStrings.R_TOPIC_CONTINUE_LOADING, 'Continue loading'),
+        value: AppStrings.text($r('app.string.topic_continue_loading'), 'Continue loading'),
         action: () => {
           this.v.confirmPreloadAll()
         },
@@ -2039,7 +2039,7 @@ export struct TopicDetailPage {
         },
       },
       secondaryButton: {
-        value: AppStrings.text(AppStrings.R_ACTION_THANK, 'Thank'),
+        value: AppStrings.text($r('app.string.action_thank'), 'Thank'),
         action: () => {
           this.executeTopicThank(cookie)
         },
@@ -2112,7 +2112,7 @@ export struct TopicDetailPage {
 
   private confirmReplyThank(cookie: string, reply: V2exReply): void {
     this.getUIContext().showAlertDialog({
-      title: AppStrings.text(AppStrings.R_REPLY_THANK_TITLE, 'Thank reply'),
+      title: AppStrings.text($r('app.string.reply_thank_title'), 'Thank reply'),
       message: TopicDetailActionCoordinator.replyThankMessage(reply.member.username),
       autoCancel: false,
       primaryButton: {
@@ -2122,7 +2122,7 @@ export struct TopicDetailPage {
         },
       },
       secondaryButton: {
-        value: AppStrings.text(AppStrings.R_ACTION_THANK, 'Thank'),
+        value: AppStrings.text($r('app.string.action_thank'), 'Thank'),
         action: () => {
           this.executeReplyThank(cookie, reply)
         },
@@ -2187,7 +2187,7 @@ export struct TopicDetailPage {
   private prepareTopicIgnore(): void {
     this.prepareTopicModeration(
       AppStrings.text($r('app.string.topic_action_ignore_topic'), 'Ignore topic'),
-      AppStrings.text(AppStrings.R_ACTION_IGNORE, 'Ignore'),
+      AppStrings.text($r('app.string.action_ignore'), 'Ignore'),
       (cookie: string) => this.api.getTopicIgnoreActionWithCookie(cookie, this.topicId),
       (cookie: string, action: V2exTopicModerationAction) =>
         this.api.executeTopicIgnoreWithCookie(cookie, action),
@@ -2197,7 +2197,7 @@ export struct TopicDetailPage {
   private prepareTopicUnignore(): void {
     this.prepareTopicModeration(
       AppStrings.text($r('app.string.topic_action_unignore_topic'), 'Unignore topic'),
-      AppStrings.text(AppStrings.R_ACTION_UNIGNORE, 'Unignore'),
+      AppStrings.text($r('app.string.action_unignore'), 'Unignore'),
       (cookie: string) => this.api.getTopicUnignoreActionWithCookie(cookie, this.topicId),
       (cookie: string, action: V2exTopicModerationAction) =>
         this.api.executeTopicUnignoreWithCookie(cookie, action),
@@ -2207,7 +2207,7 @@ export struct TopicDetailPage {
   private prepareTopicReport(): void {
     this.prepareTopicModeration(
       AppStrings.text($r('app.string.topic_action_report_topic'), 'Report topic'),
-      AppStrings.text(AppStrings.R_ACTION_REPORT, 'Report'),
+      AppStrings.text($r('app.string.action_report'), 'Report'),
       (cookie: string) => this.api.getTopicReportActionWithCookie(cookie, this.topicId),
       (cookie: string, action: V2exTopicModerationAction) =>
         this.api.executeTopicReportWithCookie(cookie, action),
@@ -2217,8 +2217,8 @@ export struct TopicDetailPage {
   private prepareReplyIgnore(reply: V2exReply): void {
     this.prepareReplyModeration(
       reply,
-      AppStrings.text(AppStrings.R_REPLY_IGNORE_TITLE, 'Ignore reply'),
-      AppStrings.text(AppStrings.R_ACTION_IGNORE, 'Ignore'),
+      AppStrings.text($r('app.string.reply_ignore_title'), 'Ignore reply'),
+      AppStrings.text($r('app.string.action_ignore'), 'Ignore'),
       (cookie: string) => this.api.getReplyIgnoreActionWithCookie(cookie, this.topicId, reply.id),
       (cookie: string, action: V2exReplyModerationAction) =>
         this.api.executeReplyIgnoreWithCookie(cookie, this.topicId, action),
@@ -2228,8 +2228,8 @@ export struct TopicDetailPage {
   private prepareReplyReport(reply: V2exReply): void {
     this.prepareReplyModeration(
       reply,
-      AppStrings.text(AppStrings.R_REPLY_REPORT_TITLE, 'Report reply'),
-      AppStrings.text(AppStrings.R_ACTION_REPORT, 'Report'),
+      AppStrings.text($r('app.string.reply_report_title'), 'Report reply'),
+      AppStrings.text($r('app.string.action_report'), 'Report'),
       (cookie: string) => this.api.getReplyReportActionWithCookie(cookie, this.topicId, reply.id),
       (cookie: string, action: V2exReplyModerationAction) =>
         this.api.executeReplyReportWithCookie(cookie, this.topicId, action),
@@ -2496,7 +2496,7 @@ export struct TopicDetailPage {
       return
     }
     const title = (
-      this.v.topic.title || AppStrings.text(AppStrings.R_TOPIC_SHARE_FALLBACK_TITLE, 'V2EX topic')
+      this.v.topic.title || AppStrings.text($r('app.string.topic_share_fallback_title'), 'V2EX topic')
     ).trim()
     const url = this.getTopicUrl()
     const data = new systemShare.SharedData({

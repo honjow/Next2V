@@ -56,7 +56,7 @@ export function commitStagedPayloadFile(context: common.UIAbilityContext, payloa
   } catch (error) {
     cleanupPreparedPayloadFile(context, payloadPlan)
     const e = error as Error
-    throw new Error(e.message || AppStrings.text(AppStrings.R_CACHE_COMMIT_PAYLOAD_FAILED, 'Failed to commit cache file'))
+    throw new Error(e.message || AppStrings.text($r('app.string.cache_commit_payload_failed'), 'Failed to commit cache file'))
   }
 }
 
@@ -188,7 +188,7 @@ function ensurePayloadDirectory(context: common.UIAbilityContext): void {
 
 function writePayloadFile(context: common.UIAbilityContext, relativeName: string, payloadText: string): void {
   if (!isSafePayloadFileName(relativeName)) {
-    throw new Error(AppStrings.text(AppStrings.R_CACHE_INVALID_FILENAME, 'Invalid cache filename'))
+    throw new Error(AppStrings.text($r('app.string.cache_invalid_filename'), 'Invalid cache filename'))
   }
   let file: fileIo.File | null = null
   try {
@@ -214,7 +214,7 @@ function closeFileBestEffort(file: fileIo.File | null): void {
 
 function committedPayloadFileName(context: common.UIAbilityContext, baseName: string): string {
   if (!isCachePayloadFileName(baseName)) {
-    throw new Error(AppStrings.text(AppStrings.R_CACHE_INVALID_FILENAME, 'Invalid cache filename'))
+    throw new Error(AppStrings.text($r('app.string.cache_invalid_filename'), 'Invalid cache filename'))
   }
   const stem = baseName.substring(0, baseName.length - CACHE_PAYLOAD_FILE_SUFFIX.length)
   for (let attempt = 0; attempt < 8; attempt++) {
@@ -223,12 +223,12 @@ function committedPayloadFileName(context: common.UIAbilityContext, baseName: st
       return candidate
     }
   }
-  throw new Error(AppStrings.text(AppStrings.R_CACHE_FILENAME_CONFLICT, 'Cache filename conflict'))
+  throw new Error(AppStrings.text($r('app.string.cache_filename_conflict'), 'Cache filename conflict'))
 }
 
 function stagedPayloadFileName(committedName: string): string {
   if (!isCachePayloadFileName(committedName)) {
-    throw new Error(AppStrings.text(AppStrings.R_CACHE_INVALID_FILENAME, 'Invalid cache filename'))
+    throw new Error(AppStrings.text($r('app.string.cache_invalid_filename'), 'Invalid cache filename'))
   }
   return committedName + CACHE_PAYLOAD_STAGED_SUFFIX
 }
@@ -267,7 +267,7 @@ function encodePayloadKey(value: string): string {
     }
   }
   if (encoded.length <= 0 || encoded.length > MAX_CACHE_PAYLOAD_FILENAME_STEM_LENGTH) {
-    throw new Error(AppStrings.text(AppStrings.R_CACHE_FILENAME_LENGTH_INVALID, 'Invalid cache filename length'))
+    throw new Error(AppStrings.text($r('app.string.cache_filename_length_invalid'), 'Invalid cache filename length'))
   }
   return encoded
 }

@@ -1,5 +1,4 @@
 import { ThemeConstants } from '../theme/ThemeConstants'
-import { AppStrings } from '../i18n/AppStrings'
 import { LengthMetrics, SegmentButtonV2Items, SymbolGlyphModifier, TabSegmentButtonV2 } from '@kit.ArkUI'
 
 @ComponentV2
@@ -140,9 +139,9 @@ export struct MarkdownToolbar {
   @Builder
   ImageMenu() {
     Menu() {
-      MenuItem({ content: AppStrings.R_IMAGE_UPLOAD_ACTION_NEW, symbolStartIcon: this.uploadImageIcon })
+      MenuItem({ content: $r('app.string.image_upload_action_new'), symbolStartIcon: this.uploadImageIcon })
         .onClick(() => { this.runImageAction(this.onImageUpload) })
-      MenuItem({ content: AppStrings.R_IMAGE_UPLOAD_ACTION_LINK, symbolStartIcon: this.insertLinkIcon })
+      MenuItem({ content: $r('app.string.image_upload_action_link'), symbolStartIcon: this.insertLinkIcon })
         .onClick(() => { this.runImageAction(this.onInsertImageLink) })
     }
   }

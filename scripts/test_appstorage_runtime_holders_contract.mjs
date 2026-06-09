@@ -119,7 +119,9 @@ hasNoAppStorage('feature/detail/src/main/ets/pages/TopicDetailPage.ets');
   must(/connectReplyDisplay\(\)\.mode/.test(topic), 'TopicDetailPage reads ReplyDisplayState.mode');
   must(/this\.reading\.restorePosition/.test(topic), 'TopicDetailPage reads ReadingSettingsState.restorePosition');
   const appStrings = read('shared/src/main/ets/i18n/AppStrings.ets');
-  must(/connectLanguageState\(\)\.mode/.test(appStrings), 'AppStrings.currentLanguageMode reads LanguageState.mode');
+  must(!/connectLanguageState/.test(appStrings), 'AppStrings resolves language through ResourceManager, not LanguageState');
+  const languageSettings = read('shared/src/main/ets/settings/LanguageSettings.ets');
+  must(/connectLanguageState\(\)\.mode/.test(languageSettings), 'LanguageSettings maintains LanguageState.mode for settings/follow-system readers');
 }
 
 // 4) no soft restart / reload / manual-refresh lane in any touched runtime file -----------------

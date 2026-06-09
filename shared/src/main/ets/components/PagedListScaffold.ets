@@ -48,7 +48,7 @@ export struct PagedListScaffold {
       })
     } else if (this.isEmpty) {
       CardEmptyState({
-        message: this.emptyMessage || AppStrings.text(AppStrings.R_COMMON_NO_CONTENT, 'No content')
+        message: this.emptyMessage || AppStrings.text($r('app.string.common_no_content'), 'No content')
       })
     } else {
       PullRefreshListScaffold({
@@ -71,7 +71,7 @@ export struct PagedListScaffold {
               isLoading: this.isLoadingMore,
               hasMore: this.hasMore,
               isError: this.loadMoreErrorMessage.length > 0,
-              errorMessage: this.loadMoreErrorMessage || AppStrings.text(AppStrings.R_COMMON_LOAD_FAILED_TAP_RETRY, 'Load failed, tap to retry'),
+              errorMessage: this.loadMoreErrorMessage || AppStrings.text($r('app.string.common_load_failed_tap_retry'), 'Load failed, tap to retry'),
               retryLabel: this.loadMoreRetryLabel,
               onRetry: () => {
                 if (this.onLoadMoreRetry) {

@@ -7,7 +7,7 @@
  *    half-uploaded image's placeholder can never be published into a (paid, irreversible) V2EX topic.
  *  - The imageUploadSettings route is registered at every required site (coordinator + render + barrels +
  *    settings entry).
- *  - Every AppStrings.R_IMAGE_UPLOAD_* referenced in source exists as a key across all 7 locales.
+ *  - Every image_upload_* resource referenced in source exists across all 7 locales.
  *  - The Imgur provider targets the correct endpoint with the Client-ID header and parses data.link.
  *
  * Run: node scripts/test_image_upload_contract.mjs
@@ -46,7 +46,7 @@ check(/stripUploadingPlaceholders/.test(editor) && /uploading:\\\/\\\//.test(edi
 // ── Image source picker: a button-anchored menu (not an ActionSheet) ──────────
 const toolbar = read('shared/src/main/ets/components/MarkdownToolbar.ets')
 check(/\.bindMenu\(this\.imageMenuShown,\s*this\.ImageMenu/.test(toolbar), 'toolbar hangs the image menu (bindMenu) on the picture button')
-check(/MenuItem\(/.test(toolbar) && /R_IMAGE_UPLOAD_ACTION_NEW/.test(toolbar) && /R_IMAGE_UPLOAD_ACTION_LINK/.test(toolbar), 'toolbar image menu offers upload + insert-link items')
+check(/MenuItem\(/.test(toolbar) && /app\.string\.image_upload_action_new/.test(toolbar) && /app\.string\.image_upload_action_link/.test(toolbar), 'toolbar image menu offers upload + insert-link items')
 // The V2EX-native gallery option was dropped (paid ~20 coins/image + undocumented endpoint — see the
 // image-upload plan); the menu must no longer reference it.
 check(!/R_IMAGE_UPLOAD_ACTION_FROM_V2EX/.test(toolbar) && !/R_IMAGE_UPLOAD_V2EX_COMING_SOON/.test(toolbar), 'toolbar must NOT offer the V2EX gallery item (feature dropped)')
@@ -59,14 +59,14 @@ check(/onInsertImageLink:\s*\(\)\s*=>\s*\{\s*this\.insertInlineMarkdown/.test(ed
 const coordinator = read('entry/src/main/ets/model/IndexRouteCoordinator.ets')
 check(/'imageUploadSettings'\s*\|/.test(coordinator), 'route: family in the union type')
 check(/'ImageUploadSettings':\s*'imageUploadSettings'/.test(coordinator), 'route: name→family mapping')
-check(/'imageUploadSettings':\s*AppStrings\.R_IMAGE_UPLOAD_SETTINGS_TITLE/.test(coordinator), 'route: destination title')
+check(/'imageUploadSettings':\s*\$r\('app\.string\.image_upload_settings_title'\)/.test(coordinator), 'route: destination title')
 check(/'imageUploadSettings':\s*true/.test(coordinator), 'route: standard title bar')
 const indexPage = read('entry/src/main/ets/pages/Index.ets')
 check(/descriptor\.family === 'imageUploadSettings'/.test(indexPage) && /ImageUploadSettingsPage\(\)/.test(indexPage), 'route: Index renders ImageUploadSettingsPage')
 check(/ImageUploadSettingsPage/.test(read('feature/settings/src/main/ets/Index.ets')), 'route: settings module barrel exports the page')
 check(/pushPathByName\('ImageUploadSettings'/.test(read('feature/settings/src/main/ets/pages/SettingsPage.ets')), 'settings entry row pushes the route')
 
-// ── i18n: every referenced R_IMAGE_UPLOAD_* exists in all 7 locales ───────────
+// ── i18n: every referenced image_upload_* key exists in all 7 locales ─────────
 const LOCALES = ['base', 'en_US', 'zh_CN', 'zh_HK', 'zh_TW', 'ja_JP', 'ko_KR']
 const localeKeys = {}
 const localeValues = {}
@@ -78,23 +78,17 @@ for (const loc of LOCALES) {
   }
   localeKeys[loc] = new Set(json.string.map((s) => s.name))
 }
-const appStrings = read('shared/src/main/ets/i18n/AppStrings.ets')
 const referenced = new Set()
-const reAll = /R_IMAGE_UPLOAD_[A-Z0-9_]+/g
+const reAll = /\$r\('app\.string\.(image_upload_[a-z0-9_]+)'\)/g
 for (const src of [editor, toolbar, indexPage, coordinator, read('feature/settings/src/main/ets/pages/ImageUploadSettingsPage.ets'), read('feature/settings/src/main/ets/pages/SettingsPage.ets')]) {
   let m
   while ((m = reAll.exec(src)) !== null) {
-    referenced.add(m[0])
+    referenced.add(m[1])
   }
 }
-for (const constName of referenced) {
-  const keyMatch = appStrings.match(new RegExp(`${constName}: Resource = \\$r\\('app\\.string\\.([a-z0-9_]+)'\\)`))
-  check(!!keyMatch, `AppStrings defines ${constName}`)
-  if (keyMatch) {
-    const key = keyMatch[1]
-    for (const loc of LOCALES) {
-      check(localeKeys[loc].has(key), `i18n: '${key}' present in ${loc}`)
-    }
+for (const key of referenced) {
+  for (const loc of LOCALES) {
+    check(localeKeys[loc].has(key), `i18n: '${key}' present in ${loc}`)
   }
 }
 check(/new app registrations/.test(localeValues.base.image_upload_imgur_hint), 'i18n: base Imgur hint says new app registrations')
@@ -125,7 +119,7 @@ check(
 )
 for (const loc of LOCALES) {
   check(localeValues[loc].image_upload_imgbb_get_key.includes('ImgBB'), `i18n: ${loc} ImgBB key action names the provider`)
-  check(localeValues[loc].image_upload_smms_get_token.includes('sm.ms'), `i18n: ${loc} sm.ms token action names the provider`)
+  check(localeValues[loc].image_upload_smms_get_token.includes('S.EE'), `i18n: ${loc} S.EE token action names the provider`)
 }
 
 // ── Imgur provider contract ───────────────────────────────────────────────────
@@ -146,7 +140,7 @@ check(/postForm/.test(imgbb), 'imgbb: reuses the urlencoded postForm path')
 
 // ── sm.ms provider contract ───────────────────────────────────────────────────
 const smms = read('shared/src/main/ets/services/imageupload/SmmsImageProvider.ets')
-check(/https:\/\/sm\.ms\/api\/v2\/upload/.test(smms), 'smms: posts to /api/v2/upload')
+check(/https:\/\/s\.ee\/api\/v1\/file\/upload/.test(smms), 'smms: posts to S.EE /api/v1/file/upload')
 check(/postMultipart\([^)]*'smfile'/.test(smms), 'smms: multipart smfile part')
 check(/'Authorization': token/.test(smms), 'smms: raw token Authorization header')
 check(/parsed\.images/.test(smms), 'smms: treats image_repeated (existing url in images) as success')

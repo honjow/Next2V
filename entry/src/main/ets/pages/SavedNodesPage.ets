@@ -66,7 +66,7 @@ struct SavedNodeRowView {
   private rowSubtitle(): string {
     const parts: string[] = [this.row.name]
     if (this.row.topics > 0) {
-      parts.push(AppStrings.format(AppStrings.text(AppStrings.R_NODE_TOPICS_COUNT, '{0} topics'), [String(this.row.topics)]))
+      parts.push(AppStrings.format(AppStrings.text($r('app.string.node_topics_count'), '{0} topics'), [String(this.row.topics)]))
     }
     return parts.join(' · ')
   }
@@ -149,7 +149,7 @@ export struct SavedNodesPage {
         console.error('remove saved node failed: ' + error.message)
         this.loadNodes()
         promptAction
-          .openToast({ message: AppStrings.text(AppStrings.R_COMMON_DELETE_FAILED, 'Delete failed') })
+          .openToast({ message: AppStrings.text($r('app.string.common_delete_failed'), 'Delete failed') })
           .catch((_e: Error) => {})
       })
   }

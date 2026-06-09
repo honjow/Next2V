@@ -110,7 +110,7 @@ struct NetworkProxyProfileRowView {
     if (snapshot.host && snapshot.port > 0) {
       return `${snapshot.host}:${snapshot.port}`
     }
-    return AppStrings.R_PROXY_CONFIG_TITLE
+    return $r('app.string.proxy_config_title')
   }
 
   private rowSubtitle(): ResourceStr {
@@ -157,7 +157,7 @@ export struct NetworkProxySettingsPage {
           this.SwitchSection()
         }
         ListItem() {
-          SettingsSectionHeader({ title: AppStrings.R_PROXY_CONNECTION })
+          SettingsSectionHeader({ title: $r('app.string.proxy_connection') })
         }
         ListItem() {
           this.ProxyConnectionSection()
@@ -179,8 +179,8 @@ export struct NetworkProxySettingsPage {
   SwitchSection() {
     GroupedListSection() {
       ConciseListRow({
-        title: AppStrings.R_USE_PROXY,
-        subtitle: this.proxyEnabled() ? this.activeSummary() : AppStrings.R_COMMON_CLOSED,
+        title: $r('app.string.use_proxy'),
+        subtitle: this.proxyEnabled() ? this.activeSummary() : $r('app.string.common_closed'),
         hasSwitch: true,
         checked: this.proxyEnabled(),
         showChevron: false,
@@ -193,7 +193,7 @@ export struct NetworkProxySettingsPage {
   ProxyConnectionSection() {
     GroupedListSection() {
       ConciseListRow({
-        title: AppStrings.R_SYSTEM_PROXY,
+        title: $r('app.string.system_proxy'),
         showChevron: false,
         prefixBuilderParam: (): void => this.SystemProxyRadio(),
         action: () => { this.selectSystemProxy() },
@@ -209,7 +209,7 @@ export struct NetworkProxySettingsPage {
         })
       }, (row: NetworkProxyProfileRow) => `proxy-profile-${row.id}`)
       ConciseListRow({
-        title: AppStrings.R_ADD_PROXY,
+        title: $r('app.string.add_proxy'),
         showChevron: true,
         action: () => { this.openNewProfileEditor() },
       })
@@ -220,7 +220,7 @@ export struct NetworkProxySettingsPage {
   ActionSection() {
     GroupedListSection() {
       ConciseListRow({
-        title: this.testing ? AppStrings.R_TESTING_CONNECTION : AppStrings.R_TEST_CONNECTION,
+        title: this.testing ? $r('app.string.testing_connection') : $r('app.string.test_connection'),
         subtitle: this.testStatus,
         showChevron: false,
         action: () => { this.testConnection() },
@@ -243,7 +243,7 @@ export struct NetworkProxySettingsPage {
   @Builder
   ProfileEditorSheet() {
     AppModalScaffold({
-      title: AppStrings.R_PROXY_INFO,
+      title: $r('app.string.proxy_info'),
       includeKeyboardPadding: true,
       contentBackgroundColor: $r('sys.color.ohos_id_color_sub_background'),
       closeAction: () => { this.closeEditor() },
@@ -263,22 +263,22 @@ export struct NetworkProxySettingsPage {
   @Builder
   ProtocolSection() {
     Column({ space: ThemeConstants.SPACE_XS }) {
-      this.EditorSectionLabel(AppStrings.R_PROXY_TYPE)
+      this.EditorSectionLabel($r('app.string.proxy_type'))
       GroupedListSection() {
         ConciseListRow({
-          title: AppStrings.R_HTTP_PROXY,
+          title: $r('app.string.http_proxy'),
           showChevron: false,
           suffixBuilderParam: (): void => this.ProtocolRadio(NetworkProxySettings.MODE_HTTP_PROXY),
           action: () => { this.updateEditorProtocol(NetworkProxySettings.MODE_HTTP_PROXY) },
         })
         ConciseListRow({
-          title: AppStrings.R_HTTPS_PROXY_ENTRY,
+          title: $r('app.string.https_proxy_entry'),
           showChevron: false,
           suffixBuilderParam: (): void => this.ProtocolRadio(NetworkProxySettings.MODE_HTTPS_PROXY),
           action: () => { this.updateEditorProtocol(NetworkProxySettings.MODE_HTTPS_PROXY) },
         })
         ConciseListRow({
-          title: AppStrings.R_SOCKS5_PROXY,
+          title: $r('app.string.socks5_proxy'),
           showChevron: false,
           suffixBuilderParam: (): void => this.ProtocolRadio(NetworkProxySettings.MODE_SOCKS5),
           action: () => { this.updateEditorProtocol(NetworkProxySettings.MODE_SOCKS5) },
@@ -302,7 +302,7 @@ export struct NetworkProxySettingsPage {
   @Builder
   ProfileEditorFields() {
     Column({ space: ThemeConstants.SPACE_XS }) {
-      this.EditorSectionLabel(AppStrings.R_PROXY_PARAMETERS)
+      this.EditorSectionLabel($r('app.string.proxy_parameters'))
       GroupedListSection({ inset: ThemeConstants.SPACE_XL, radius: ThemeConstants.RADIUS_CARD }) {
         Column({ space: ThemeConstants.SPACE_LG }) {
           this.EditorHostFieldRow()
@@ -323,10 +323,10 @@ export struct NetworkProxySettingsPage {
   @Builder
   EditorActionSection() {
     Column({ space: ThemeConstants.SPACE_XS }) {
-      this.EditorSectionLabel(AppStrings.R_ACTIONS)
+      this.EditorSectionLabel($r('app.string.actions'))
       GroupedListSection({ inset: ThemeConstants.SPACE_XL, radius: ThemeConstants.RADIUS_CARD }) {
         Column({ space: ThemeConstants.SPACE_MD }) {
-          Button(AppStrings.R_COMMON_SAVE)
+          Button($r('app.string.common_save'))
             .type(ButtonType.Normal)
             .height(ThemeConstants.TOUCH_TARGET_SM)
             .width('100%')
@@ -337,7 +337,7 @@ export struct NetworkProxySettingsPage {
             .onClick(() => { this.saveProfileEditor() })
           if (this.editingProfileId) {
             ConciseListRow({
-              title: AppStrings.R_DELETE_PROXY,
+              title: $r('app.string.delete_proxy'),
               destructive: true,
               showChevron: false,
               action: () => { this.confirmDeleteProfile() },
@@ -378,10 +378,10 @@ export struct NetworkProxySettingsPage {
   @Builder
   EditorNameFieldRow() {
     Column({ space: ThemeConstants.SPACE_XS }) {
-      this.FieldLabel(AppStrings.R_PROXY_NAME_PLACEHOLDER)
+      this.FieldLabel($r('app.string.proxy_name_placeholder'))
       AppTextField({
         text: this.editorName,
-        placeholder: AppStrings.R_DEFAULT_SERVER_PORT,
+        placeholder: $r('app.string.default_server_port'),
         onTextChange: (value: string) => { this.editorName = value }
       })
         .width('100%')
@@ -392,7 +392,7 @@ export struct NetworkProxySettingsPage {
   @Builder
   EditorHostFieldRow() {
     Column({ space: ThemeConstants.SPACE_XS }) {
-      this.FieldLabel(AppStrings.R_SERVER)
+      this.FieldLabel($r('app.string.server'))
       AppTextField({
         text: this.editorHost,
         placeholder: '127.0.0.1',
@@ -406,7 +406,7 @@ export struct NetworkProxySettingsPage {
   @Builder
   EditorPortFieldRow() {
     Column({ space: ThemeConstants.SPACE_XS }) {
-      this.FieldLabel(AppStrings.R_PORT)
+      this.FieldLabel($r('app.string.port'))
       AppTextField({
         text: this.editorPortText,
         placeholder: '7890',
@@ -423,7 +423,7 @@ export struct NetworkProxySettingsPage {
   @Builder
   EditorUsernameFieldRow() {
     Column({ space: ThemeConstants.SPACE_XS }) {
-      this.FieldLabel(AppStrings.R_USERNAME_OPTIONAL)
+      this.FieldLabel($r('app.string.username_optional'))
       AppTextField({
         text: this.editorUsername,
         placeholder: '',
@@ -437,7 +437,7 @@ export struct NetworkProxySettingsPage {
   @Builder
   EditorPasswordFieldRow() {
     Column({ space: ThemeConstants.SPACE_XS }) {
-      this.FieldLabel(AppStrings.R_PASSWORD_OPTIONAL)
+      this.FieldLabel($r('app.string.password_optional'))
       AppTextField({
         text: this.editorPassword,
         placeholder: '',
@@ -469,8 +469,8 @@ export struct NetworkProxySettingsPage {
   @Builder
   EditorBypassListRow() {
     Column({ space: ThemeConstants.SPACE_XS }) {
-      this.FieldLabel(AppStrings.R_BYPASS_LIST_OPTIONAL)
-      TextArea({ placeholder: AppStrings.R_ONE_DOMAIN_OR_IP_PER_LINE, text: this.editorExclusionListText })
+      this.FieldLabel($r('app.string.bypass_list_optional'))
+      TextArea({ placeholder: $r('app.string.one_domain_or_ip_per_line'), text: this.editorExclusionListText })
         .height(80)
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
         .fontColor($r('sys.color.font_primary'))
@@ -500,7 +500,7 @@ export struct NetworkProxySettingsPage {
 
   private activeSummary(): ResourceStr {
     if (this.currentMode() === NetworkProxySettings.MODE_SYSTEM) {
-      return AppStrings.R_SYSTEM_PROXY
+      return $r('app.string.system_proxy')
     }
     return NetworkProxySettings.summary(this.snapshot())
   }
@@ -514,7 +514,7 @@ export struct NetworkProxySettingsPage {
     if (snapshot.host && snapshot.port > 0) {
       return `${snapshot.host}:${snapshot.port}`
     }
-    return AppStrings.text(AppStrings.R_PROXY_CONFIG_TITLE, 'Proxy configuration')
+    return AppStrings.text($r('app.string.proxy_config_title'), 'Proxy configuration')
   }
 
   private snapshot(): NetworkProxySettingsSnapshot {
@@ -605,7 +605,7 @@ export struct NetworkProxySettingsPage {
       .then(() => { this.persistActiveProfileSnapshot(context, snapshot) })
       .catch((error: Error) => {
         if (showError) {
-          this.showToast(error.message || AppStrings.text(AppStrings.R_COMMON_SAVE_FAILED, 'Save failed'))
+          this.showToast(error.message || AppStrings.text($r('app.string.common_save_failed'), 'Save failed'))
         }
         console.error('save network proxy settings failed: ' + (error.message || 'unknown'))
       })
@@ -642,16 +642,16 @@ export struct NetworkProxySettingsPage {
     }
 
     this.testing = true
-    this.testStatus = AppStrings.text(AppStrings.R_TESTING, 'Testing…')
+    this.testStatus = AppStrings.text($r('app.string.testing'), 'Testing…')
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     NetworkProxySettings.save(context, snapshot)
       .then(() => NetworkProxyRequest.testConnection(HttpClient.getInstance().getBaseUrl()))
       .then((response) => {
         this.testing = false
         if (response.responseCode >= 200 && response.responseCode < 300) {
-          this.testStatus = AppStrings.format(AppStrings.text(AppStrings.R_CONNECTION_TEST_SUCCESS, 'Connection succeeded (HTTP {0})'), [`${response.responseCode}`])
+          this.testStatus = AppStrings.format(AppStrings.text($r('app.string.connection_test_success'), 'Connection succeeded (HTTP {0})'), [`${response.responseCode}`])
         } else {
-          this.testStatus = AppStrings.format(AppStrings.text(AppStrings.R_CONNECTION_TEST_FAILED, 'Connection failed: HTTP {0}'), [`${response.responseCode}`])
+          this.testStatus = AppStrings.format(AppStrings.text($r('app.string.connection_test_failed'), 'Connection failed: HTTP {0}'), [`${response.responseCode}`])
         }
         this.showToast(this.testStatus)
       })
@@ -680,7 +680,7 @@ export struct NetworkProxySettingsPage {
         this.applyProfilesState(state)
         this.applySnapshotToPage(profile.snapshot)
         this.testStatus = ''
-        this.showToast(AppStrings.text(AppStrings.R_PROFILE_SWITCHED, 'Profile switched'))
+        this.showToast(AppStrings.text($r('app.string.profile_switched'), 'Profile switched'))
       })
       .catch((error: Error) => { this.showToast(this.profileSwitchErrorMessage(error)) })
   }
@@ -743,7 +743,7 @@ export struct NetworkProxySettingsPage {
         this.applyProfilesState(state)
         this.applySnapshotToPage(profile.snapshot)
         this.closeEditor()
-        this.showToast(AppStrings.text(AppStrings.R_COMMON_SAVED, 'Saved'))
+        this.showToast(AppStrings.text($r('app.string.common_saved'), 'Saved'))
       })
       .catch((error: Error) => { this.showToast(this.profileSaveErrorMessage(error)) })
   }
@@ -754,11 +754,11 @@ export struct NetworkProxySettingsPage {
       return
     }
     this.getUIContext().showAlertDialog({
-      title: AppStrings.text(AppStrings.R_DELETE_PROXY, 'Delete proxy'),
-      message: AppStrings.format(AppStrings.text(AppStrings.R_CONFIRM_DELETE_PROXY_MESSAGE, 'Delete “{0}”?'), [this.profileTitle(profile)]),
-      primaryButton: { value: AppStrings.text(AppStrings.R_COMMON_CANCEL, 'Cancel'), action: () => { } },
+      title: AppStrings.text($r('app.string.delete_proxy'), 'Delete proxy'),
+      message: AppStrings.format(AppStrings.text($r('app.string.confirm_delete_proxy_message'), 'Delete “{0}”?'), [this.profileTitle(profile)]),
+      primaryButton: { value: AppStrings.text($r('app.string.common_cancel'), 'Cancel'), action: () => { } },
       secondaryButton: {
-        value: AppStrings.text(AppStrings.R_COMMON_DELETE, 'Delete'),
+        value: AppStrings.text($r('app.string.common_delete'), 'Delete'),
         action: () => { this.deleteProfile(profile) }
       }
     })
@@ -779,9 +779,9 @@ export struct NetworkProxySettingsPage {
           this.saveCurrent(false)
         }
         this.closeEditor()
-        this.showToast(AppStrings.text(AppStrings.R_COMMON_DELETED, 'Deleted'))
+        this.showToast(AppStrings.text($r('app.string.common_deleted'), 'Deleted'))
       })
-      .catch((error: Error) => { this.showToast(error.message || AppStrings.text(AppStrings.R_COMMON_DELETE_FAILED, 'Delete failed')) })
+      .catch((error: Error) => { this.showToast(error.message || AppStrings.text($r('app.string.common_delete_failed'), 'Delete failed')) })
   }
 
   private applyProfilesState(state: NetworkProxyProfilesState): void {
@@ -836,16 +836,16 @@ export struct NetworkProxySettingsPage {
 
   private profileSwitchErrorMessage(error: Error): string {
     if (error.message === 'PROFILE_NOT_FOUND') {
-      return AppStrings.text(AppStrings.R_PROXY_PROFILE_NOT_FOUND, 'Profile does not exist')
+      return AppStrings.text($r('app.string.proxy_profile_not_found'), 'Profile does not exist')
     }
-    return error.message || AppStrings.text(AppStrings.R_SWITCH_FAILED, 'Switch failed')
+    return error.message || AppStrings.text($r('app.string.switch_failed'), 'Switch failed')
   }
 
   private profileSaveErrorMessage(error: Error): string {
     if (error.message === 'PROFILE_NOT_FOUND') {
-      return AppStrings.text(AppStrings.R_PROXY_PROFILE_NOT_FOUND, 'Profile does not exist')
+      return AppStrings.text($r('app.string.proxy_profile_not_found'), 'Profile does not exist')
     }
-    return error.message || AppStrings.text(AppStrings.R_COMMON_SAVE_FAILED, 'Save failed')
+    return error.message || AppStrings.text($r('app.string.common_save_failed'), 'Save failed')
   }
 
   private findProfile(id: string): NetworkProxyProfileRow | undefined {
@@ -874,7 +874,7 @@ export struct NetworkProxySettingsPage {
     if (normalized.host && normalized.port > 0) {
       return `${normalized.host}:${normalized.port}`
     }
-    return AppStrings.text(AppStrings.R_PROXY_CONFIG_TITLE, 'Proxy configuration')
+    return AppStrings.text($r('app.string.proxy_config_title'), 'Proxy configuration')
   }
 
   private parsePort(value: string): number {
@@ -889,7 +889,7 @@ export struct NetworkProxySettingsPage {
   }
 
   private errorSummary(error: Error): string {
-    const rawMessage = (error.message || AppStrings.text(AppStrings.R_TEST_FAILED, 'Test failed')).trim()
+    const rawMessage = (error.message || AppStrings.text($r('app.string.test_failed'), 'Test failed')).trim()
     const message = rawMessage.replace(/(https?|socks5):\/\/[^\s/@:]+(:[^\s/@]*)?@/g, '$1://<credentials>@')
     if (message.length > 80) {
       return message.substring(0, 80)

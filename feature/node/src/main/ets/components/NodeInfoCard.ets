@@ -51,7 +51,7 @@ export struct NodeInfoCard {
             })
           if (this.topicCount() > 0) {
             Text(
-              AppStrings.format(AppStrings.text(AppStrings.R_NODE_TOPICS_COUNT, '{0} topics'), [
+              AppStrings.format(AppStrings.text($r('app.string.node_topics_count'), '{0} topics'), [
                 String(this.topicCount()),
               ]),
             )

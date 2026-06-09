@@ -39,7 +39,7 @@ export struct ImageUploadSettingsPage {
     Column() {
       SecondaryListScaffold({ includeKeyboardPadding: true }) {
         ListItem() {
-          SettingsSectionHeader({ title: AppStrings.R_IMAGE_UPLOAD_PROVIDER_SECTION })
+          SettingsSectionHeader({ title: $r('app.string.image_upload_provider_section') })
         }
         ListItem() {
           this.ProviderPickerSection()
@@ -65,9 +65,9 @@ export struct ImageUploadSettingsPage {
   @Builder
   ProviderPickerSection() {
     GroupedListSection() {
-      this.ProviderRow(ImageUploadSettings.PROVIDER_IMGBB, AppStrings.R_IMAGE_UPLOAD_PROVIDER_IMGBB)
-      this.ProviderRow(ImageUploadSettings.PROVIDER_SMMS, AppStrings.R_IMAGE_UPLOAD_PROVIDER_SMMS)
-      this.ProviderRow(ImageUploadSettings.PROVIDER_IMGUR, AppStrings.R_IMAGE_UPLOAD_IMGUR_SECTION)
+      this.ProviderRow(ImageUploadSettings.PROVIDER_IMGBB, $r('app.string.image_upload_provider_imgbb'))
+      this.ProviderRow(ImageUploadSettings.PROVIDER_SMMS, $r('app.string.image_upload_provider_smms'))
+      this.ProviderRow(ImageUploadSettings.PROVIDER_IMGUR, $r('app.string.image_upload_imgur_section'))
     }
   }
 
@@ -117,7 +117,7 @@ export struct ImageUploadSettingsPage {
             },
           }).width('100%')
         }.width('100%')
-        Button(AppStrings.R_COMMON_SAVE)
+        Button($r('app.string.common_save'))
           .type(ButtonType.Normal)
           .height(ThemeConstants.TOUCH_TARGET_SM)
           .width('100%')
@@ -137,7 +137,7 @@ export struct ImageUploadSettingsPage {
     GroupedListSection() {
       if (this.selectedProvider === ImageUploadSettings.PROVIDER_IMGBB) {
         ConciseListRow({
-          title: AppStrings.R_IMAGE_UPLOAD_IMGBB_GET_KEY,
+          title: $r('app.string.image_upload_imgbb_get_key'),
           showChevron: true,
           action: () => {
             this.openUrl('https://api.imgbb.com/')
@@ -145,7 +145,7 @@ export struct ImageUploadSettingsPage {
         })
       } else if (this.selectedProvider === ImageUploadSettings.PROVIDER_SMMS) {
         ConciseListRow({
-          title: AppStrings.R_IMAGE_UPLOAD_SMMS_GET_TOKEN,
+          title: $r('app.string.image_upload_smms_get_token'),
           showChevron: true,
           action: () => {
             this.openUrl('https://s.ee/user/developers')
@@ -157,47 +157,47 @@ export struct ImageUploadSettingsPage {
 
   private providerLabel(id: string): ResourceStr {
     if (id === ImageUploadSettings.PROVIDER_SMMS) {
-      return AppStrings.R_IMAGE_UPLOAD_PROVIDER_SMMS
+      return $r('app.string.image_upload_provider_smms')
     }
     if (id === ImageUploadSettings.PROVIDER_IMGUR) {
-      return AppStrings.R_IMAGE_UPLOAD_IMGUR_SECTION
+      return $r('app.string.image_upload_imgur_section')
     }
-    return AppStrings.R_IMAGE_UPLOAD_PROVIDER_IMGBB
+    return $r('app.string.image_upload_provider_imgbb')
   }
 
   private providerHint(): ResourceStr {
     if (this.selectedProvider === ImageUploadSettings.PROVIDER_SMMS) {
-      return AppStrings.R_IMAGE_UPLOAD_SMMS_HINT
+      return $r('app.string.image_upload_smms_hint')
     }
     if (this.selectedProvider === ImageUploadSettings.PROVIDER_IMGUR) {
-      return AppStrings.R_IMAGE_UPLOAD_IMGUR_HINT
+      return $r('app.string.image_upload_imgur_hint')
     }
-    return AppStrings.R_IMAGE_UPLOAD_IMGBB_HINT
+    return $r('app.string.image_upload_imgbb_hint')
   }
 
   private credentialLabel(): ResourceStr {
     if (this.selectedProvider === ImageUploadSettings.PROVIDER_SMMS) {
-      return AppStrings.R_IMAGE_UPLOAD_SMMS_TOKEN_LABEL
+      return $r('app.string.image_upload_smms_token_label')
     }
     if (this.selectedProvider === ImageUploadSettings.PROVIDER_IMGUR) {
-      return AppStrings.R_IMAGE_UPLOAD_IMGUR_CLIENTID_LABEL
+      return $r('app.string.image_upload_imgur_clientid_label')
     }
-    return AppStrings.R_IMAGE_UPLOAD_IMGBB_APIKEY_LABEL
+    return $r('app.string.image_upload_imgbb_apikey_label')
   }
 
   private credentialPlaceholder(): ResourceStr {
     if (this.selectedProvider === ImageUploadSettings.PROVIDER_SMMS) {
-      return AppStrings.R_IMAGE_UPLOAD_SMMS_TOKEN_PLACEHOLDER
+      return $r('app.string.image_upload_smms_token_placeholder')
     }
     if (this.selectedProvider === ImageUploadSettings.PROVIDER_IMGUR) {
-      return AppStrings.R_IMAGE_UPLOAD_IMGUR_CLIENTID_PLACEHOLDER
+      return $r('app.string.image_upload_imgur_clientid_placeholder')
     }
-    return AppStrings.R_IMAGE_UPLOAD_IMGBB_APIKEY_PLACEHOLDER
+    return $r('app.string.image_upload_imgbb_apikey_placeholder')
   }
 
   private configuredSubtitle(id: string): ResourceStr {
     return this.storedCredential(id)
-      ? AppStrings.R_IMAGE_UPLOAD_SUMMARY_CONFIGURED
+      ? $r('app.string.image_upload_summary_configured')
       : $r('app.string.proxy_not_configured')
   }
 
@@ -244,13 +244,13 @@ export struct ImageUploadSettingsPage {
     ImageUploadSettings.save(context, snapshot)
       .then(() => {
         if (notify) {
-          this.showToast(AppStrings.text(AppStrings.R_COMMON_SAVED, 'Saved'))
+          this.showToast(AppStrings.text($r('app.string.common_saved'), 'Saved'))
         }
       })
       .catch((error: Error) => {
         if (notify) {
           this.showToast(
-            error.message || AppStrings.text(AppStrings.R_COMMON_SAVE_FAILED, 'Save failed'),
+            error.message || AppStrings.text($r('app.string.common_save_failed'), 'Save failed'),
           )
         }
       })

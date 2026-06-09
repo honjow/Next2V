@@ -465,7 +465,7 @@ export struct AccountDetailPage {
       promptAction
         .openToast({
           message: AppStrings.text(
-            AppStrings.R_ALREADY_CHECKED_IN_TODAY,
+            $r('app.string.already_checked_in_today'),
             'Already checked in today',
           ),
         })
@@ -481,10 +481,10 @@ export struct AccountDetailPage {
         const toastMessage =
           redeemed.rewardCoins > 0
             ? AppStrings.format(
-                AppStrings.text(AppStrings.R_DAILY_CHECKIN_REWARD_TOAST, 'Checked in: +{0} bronze'),
+                AppStrings.text($r('app.string.daily_checkin_reward_toast'), 'Checked in: +{0} bronze'),
                 [`${redeemed.rewardCoins}`],
               )
-            : AppStrings.text(AppStrings.R_CHECKIN_COMPLETED, 'Check-in completed')
+            : AppStrings.text($r('app.string.checkin_completed'), 'Check-in completed')
         promptAction.openToast({ message: toastMessage }).catch((_error: Error) => {})
         this.loadAccountMeta()
       })
@@ -506,14 +506,14 @@ export struct AccountDetailPage {
     this.getUIContext().showAlertDialog({
       title: AccountPageCoordinator.LOGOUT_TITLE,
       message: AppStrings.text(
-        AppStrings.R_ACCOUNT_REMOVE_MESSAGE_ARG,
+        $r('app.string.account_remove_message_arg'),
         'Sign out of this account?',
       ).replace(
         '{0}',
-        this.currentUsername() || AppStrings.text(AppStrings.R_ACCOUNT_V2EX_USER, 'V2EX user'),
+        this.currentUsername() || AppStrings.text($r('app.string.account_v2ex_user'), 'V2EX user'),
       ),
       primaryButton: {
-        value: AppStrings.text(AppStrings.R_COMMON_CANCEL, 'Cancel'),
+        value: AppStrings.text($r('app.string.common_cancel'), 'Cancel'),
         action: () => {},
       },
       secondaryButton: {

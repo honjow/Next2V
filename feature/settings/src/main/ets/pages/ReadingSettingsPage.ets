@@ -73,15 +73,15 @@ export struct ReadingSettingsPage {
 
   private confirmResetReadingSettings(): void {
     this.getUIContext().showAlertDialog({
-      title: AppStrings.text(AppStrings.R_RESTORE_READING_SCALE_TITLE, 'Restore default reading text scale'),
-      message: AppStrings.text(AppStrings.R_RESTORE_READING_SCALE_MESSAGE, 'Restore text scale to the default value. Continue?'),
+      title: AppStrings.text($r('app.string.restore_reading_scale_title'), 'Restore default reading text scale'),
+      message: AppStrings.text($r('app.string.restore_reading_scale_message'), 'Restore text scale to the default value. Continue?'),
       primaryButton: {
-        value: AppStrings.text(AppStrings.R_COMMON_CANCEL, 'Cancel'),
+        value: AppStrings.text($r('app.string.common_cancel'), 'Cancel'),
         action: () => {
         }
       },
       secondaryButton: {
-        value: AppStrings.text(AppStrings.R_COMMON_RESTORE, 'Restore'),
+        value: AppStrings.text($r('app.string.common_restore'), 'Restore'),
         fontColor: Color.Red,
         action: () => {
           this.resetReadingSettings()

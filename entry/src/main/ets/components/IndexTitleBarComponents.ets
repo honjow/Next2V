@@ -28,11 +28,11 @@ struct BlockedListsTabs {
   @Local private tabState: BlockedListSelectedTabState = connectBlockedListSelectedTab();
   // One-way labels pushed into the segmented control's @Trace items; @Local so a locale refresh re-renders.
   @Local private blockedUsersLabel: string = AppStrings.text(
-    AppStrings.R_BLOCKED_USERS,
+    $r('app.string.blocked_users'),
     'Blocked users',
   );
   @Local private blockedTopicsLabel: string = AppStrings.text(
-    AppStrings.R_IGNORED_TOPICS,
+    $r('app.string.ignored_topics'),
     'Blocked topics',
   );
 
@@ -398,7 +398,7 @@ struct SearchTitleField {
         autoFocus: true,
         // System-style trailing "搜索" button (Search's own searchButton property) so SOV2EX can be run
         // without the IME enter key. Tapping it fires onSubmit, same as pressing enter.
-        searchButtonText: AppStrings.text(AppStrings.R_NAV_SEARCH, 'Search'),
+        searchButtonText: AppStrings.text($r('app.string.nav_search'), 'Search'),
         onTextChange: (value: string) => {
           // Write-only — must NOT be read back in build() (see fieldText), or every keystroke re-renders here.
           this.actionState.keyword = value

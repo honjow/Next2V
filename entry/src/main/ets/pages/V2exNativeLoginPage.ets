@@ -90,7 +90,7 @@ export struct V2exNativeLoginPage {
   @Builder WebLoginForm() {
     GroupedListSection() {
       ConciseListRow({
-        title: AppStrings.text(AppStrings.R_NAV_WEB_LOGIN, 'Web Login'),
+        title: AppStrings.text($r('app.string.nav_web_login'), 'Web Login'),
         showChevron: true,
         action: () => {
           this.password = ''
@@ -133,7 +133,7 @@ export struct V2exNativeLoginPage {
       }).width('100%')
       AppTextField({
         text: this.password,
-        placeholder: AppStrings.text(AppStrings.R_LOGIN_PASSWORD_PLACEHOLDER, 'Password'),
+        placeholder: AppStrings.text($r('app.string.login_password_placeholder'), 'Password'),
         inputType: InputType.Password,
         onTextChange: (value: string) => {
           this.password = value
@@ -145,7 +145,7 @@ export struct V2exNativeLoginPage {
           this.CaptchaImageSlot()
           AppTextField({
             text: this.captchaCode,
-            placeholder: AppStrings.text(AppStrings.R_LOGIN_CAPTCHA_PLACEHOLDER, 'Captcha'),
+            placeholder: AppStrings.text($r('app.string.login_captcha_placeholder'), 'Captcha'),
             onTextChange: (value: string) => {
               this.captchaCode = value
             },
@@ -173,12 +173,12 @@ export struct V2exNativeLoginPage {
 
   private loginButtonText(): string {
     if (this.isChallengeLoading) {
-      return AppStrings.text(AppStrings.R_LOGIN_BUTTON_PREPARING, 'Preparing\u2026')
+      return AppStrings.text($r('app.string.login_button_preparing'), 'Preparing\u2026')
     }
     if (this.isLoading) {
-      return AppStrings.text(AppStrings.R_LOGIN_BUTTON_LOGGING_IN, 'Signing in\u2026')
+      return AppStrings.text($r('app.string.login_button_logging_in'), 'Signing in\u2026')
     }
-    return AppStrings.text(AppStrings.R_LOGIN_BUTTON_LABEL, 'Sign in')
+    return AppStrings.text($r('app.string.login_button_label'), 'Sign in')
   }
 
   private loadChallenge(message: string = ''): void {
@@ -267,14 +267,14 @@ export struct V2exNativeLoginPage {
     }
     if (!this.challenge) {
       this.errorMessage = AppStrings.text(
-        AppStrings.R_LOGIN_FORM_NOT_LOADED,
+        $r('app.string.login_form_not_loaded'),
         'Login form not loaded, please try again',
       )
       return
     }
     if (this.captchaUrl && !this.captchaField) {
       this.errorMessage = AppStrings.text(
-        AppStrings.R_LOGIN_CAPTCHA_FORM_NOT_LOADED,
+        $r('app.string.login_captcha_form_not_loaded'),
         'Captcha form not loaded, please refresh',
       )
       return
@@ -304,7 +304,7 @@ export struct V2exNativeLoginPage {
           this.password = ''
           TwoFactorChallengeService.request(error.challenge.cookie, 'nativeLogin')
           this.errorMessage = AppStrings.text(
-            AppStrings.R_TWO_FACTOR_REQUIRED,
+            $r('app.string.two_factor_required'),
             'V2EX requires two-factor verification',
           )
           return Promise.resolve()

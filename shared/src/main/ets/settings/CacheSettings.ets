@@ -276,7 +276,7 @@ export class CacheSettings {
       CacheSettings.deleteLegacyCacheBestEffort(context)
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || AppStrings.text(AppStrings.R_CACHE_CLEAR_FAILED, 'Failed to clear cache'))
+      throw new Error(e.message || AppStrings.text($r('app.string.cache_clear_failed'), 'Failed to clear cache'))
     }
   }
 

@@ -19,9 +19,9 @@ export class DiscoverPageCoordinator {
       return AppStrings.text($r('app.string.discover_today_hot'), 'Today’s hot topics')
     }
     if (mode === 'recent') {
-      return AppStrings.text(AppStrings.R_DISCOVER_RECENT_UPDATES, 'Recently updated')
+      return AppStrings.text($r('app.string.discover_recent_updates'), 'Recently updated')
     }
-    return AppStrings.text(AppStrings.R_DISCOVER_LATEST_TOPICS, 'Latest topics')
+    return AppStrings.text($r('app.string.discover_latest_topics'), 'Latest topics')
   }
 
   static topicItems(mode: DiscoverTopicMode, buckets: DiscoverTopicBuckets): V2exTopic[] {

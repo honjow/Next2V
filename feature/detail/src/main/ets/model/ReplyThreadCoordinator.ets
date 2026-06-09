@@ -288,6 +288,6 @@ export class ReplyThreadCoordinator {
     const mention = users.length > 0 ? users.map((name: string) => `@${name}`).join(' ') : ''
     const floorText = floor > 0 ? `#${floor}` : ''
     const mentionAndFloor = [mention, floorText].filter(s => s).join(' · ')
-    return AppStrings.format(AppStrings.text(AppStrings.R_REPLY_THREAD_RELATION_LABEL_FORMAT, 'Reply {0}'), [mentionAndFloor]).trim()
+    return AppStrings.format(AppStrings.text($r('app.string.reply_thread_relation_label_format'), 'Reply {0}'), [mentionAndFloor]).trim()
   }
 }

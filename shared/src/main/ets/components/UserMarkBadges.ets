@@ -1,5 +1,4 @@
 import { LengthMetrics } from '@kit.ArkUI'
-import { AppStrings } from '../i18n/AppStrings'
 import { UserMarkSettings, type UserMarkLabel } from '../settings/UserMarkSettings'
 import { connectUserMarks, UserMarkState } from '../state/UserMarkState'
 import { ThemeConstants } from '../theme/ThemeConstants'
@@ -183,7 +182,7 @@ export struct UserMarkBadgeRow {
   @Builder
   private AllMarksSheet() {
     AppModalScaffold({
-      title: AppStrings.R_USER_MARK_SHEET_TITLE,
+      title: $r('app.string.user_mark_sheet_title'),
       closeAction: () => {
         this.sheetVisible = false
       },
@@ -191,7 +190,7 @@ export struct UserMarkBadgeRow {
       ListItem() {
         GroupedListSection({ inset: ThemeConstants.SPACE_LG, radius: ThemeConstants.RADIUS_CARD }) {
           if (this.allLabels().length === 0) {
-            Text(AppStrings.R_USER_MARK_EMPTY)
+            Text($r('app.string.user_mark_empty'))
               .fontSize(ThemeConstants.FONT_SIZE_BODY)
               .fontColor($r('sys.color.font_secondary'))
               .width('100%')

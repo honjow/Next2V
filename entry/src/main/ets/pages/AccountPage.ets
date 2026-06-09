@@ -309,7 +309,7 @@ export struct AccountDashboardPage {
         this.ns.pushPathByName('AccountFollowing', null)
       })
       this.SettingsDivider()
-      this.AuthActionRow(AppStrings.R_NAV_BLOCKED_LISTS, '', () => {
+      this.AuthActionRow($r('app.string.nav_blocked_lists'), '', () => {
         this.ns.pushPathByName('BlockedLists', null)
       })
     }
@@ -743,17 +743,17 @@ export struct AccountDashboardPage {
     DiagnosticLogger.warn('account', 'account_session_two_factor_required', {})
     if (!cookie) {
       this.sessionError = AppStrings.text(
-        AppStrings.R_TWO_FACTOR_RELOGIN_REQUIRED,
+        $r('app.string.two_factor_relogin_required'),
         'V2EX requires two-factor verification. Please sign in again',
       )
       return
     }
     this.sessionError = AppStrings.text(
-      AppStrings.R_TWO_FACTOR_REQUIRED,
+      $r('app.string.two_factor_required'),
       'V2EX requires two-factor verification',
     )
     this.accountMetaError = AppStrings.text(
-      AppStrings.R_TWO_FACTOR_REQUIRED,
+      $r('app.string.two_factor_required'),
       'V2EX requires two-factor verification',
     )
     TwoFactorChallengeService.request(cookie, 'account')
@@ -780,7 +780,7 @@ export struct AccountDashboardPage {
           this.tokenInfo = null
           this.tokenInfoError =
             info.message ||
-            AppStrings.text(AppStrings.R_TOKEN_INFO_FAILED, 'Failed to fetch token info')
+            AppStrings.text($r('app.string.token_info_failed'), 'Failed to fetch token info')
           return
         }
         this.tokenInfo = info
@@ -800,11 +800,11 @@ export struct AccountDashboardPage {
       title: AccountPageCoordinator.CLEAR_API_AUTH_TITLE,
       message: AccountPageCoordinator.CLEAR_API_AUTH_MESSAGE,
       primaryButton: {
-        value: AppStrings.text(AppStrings.R_COMMON_CANCEL, 'Cancel'),
+        value: AppStrings.text($r('app.string.common_cancel'), 'Cancel'),
         action: () => {},
       },
       secondaryButton: {
-        value: AppStrings.text(AppStrings.R_COMMON_CLEAR, 'Clear'),
+        value: AppStrings.text($r('app.string.common_clear'), 'Clear'),
         fontColor: Color.Red,
         action: () => {
           this.clearAuth()
@@ -1033,7 +1033,7 @@ export struct AccountDashboardPage {
       promptAction
         .openToast({
           message: AppStrings.text(
-            AppStrings.R_ALREADY_CHECKED_IN_TODAY,
+            $r('app.string.already_checked_in_today'),
             'Already checked in today',
           ),
         })
@@ -1059,17 +1059,17 @@ export struct AccountDashboardPage {
       const toastMessage =
         rewardCoins > 0
           ? AppStrings.format(
-              AppStrings.text(AppStrings.R_DAILY_CHECKIN_REWARD_TOAST, 'Checked in: +{0} bronze'),
+              AppStrings.text($r('app.string.daily_checkin_reward_toast'), 'Checked in: +{0} bronze'),
               [`${rewardCoins}`],
             )
-          : AppStrings.text(AppStrings.R_CHECKIN_COMPLETED, 'Check-in completed')
+          : AppStrings.text($r('app.string.checkin_completed'), 'Check-in completed')
       promptAction.openToast({ message: toastMessage }).catch((_error: Error) => {})
       this.loadAccountMeta(true)
     } else if (status === 'already') {
       promptAction
         .openToast({
           message: AppStrings.text(
-            AppStrings.R_ALREADY_CHECKED_IN_TODAY,
+            $r('app.string.already_checked_in_today'),
             'Already checked in today',
           ),
         })
@@ -1079,7 +1079,7 @@ export struct AccountDashboardPage {
       promptAction
         .openToast({
           message: AppStrings.text(
-            AppStrings.R_API_ERROR_CHECKIN_NOT_AVAILABLE,
+            $r('app.string.api_error_checkin_not_available'),
             'Check-in unavailable',
           ),
         })

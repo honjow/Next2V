@@ -140,7 +140,7 @@ export struct DiscoverNodeCard {
         .maxLines(1)
         .textOverflow({ overflow: TextOverflow.Ellipsis })
       Text(AppStrings.format(
-        AppStrings.text(AppStrings.R_NODE_TOPICS_COUNT, '{0} topics'),
+        AppStrings.text($r('app.string.node_topics_count'), '{0} topics'),
         [String(this.node.topics)]
       ))
         .fontSize(ThemeConstants.FONT_SIZE_TINY)

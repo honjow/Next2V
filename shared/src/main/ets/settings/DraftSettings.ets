@@ -181,7 +181,7 @@ export class DraftSettings {
       DraftSettings.touchLocalData()
     } catch (error) {
       const e = error as Error
-      throw new Error(e.message || AppStrings.text(AppStrings.R_DRAFT_CLEAR_FAILED, 'Failed to clear drafts'))
+      throw new Error(e.message || AppStrings.text($r('app.string.draft_clear_failed'), 'Failed to clear drafts'))
     }
   }
 

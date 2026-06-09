@@ -38,7 +38,7 @@ export struct MyNodesPage {
     Column() {
       if (!CookieJarSettings.getCurrentCookie()) {
         PageLoginRequiredState({
-          message: AppStrings.text(AppStrings.R_LOGIN_TO_VIEW_NODES, 'Sign in to view favorite nodes'),
+          message: AppStrings.text($r('app.string.login_to_view_nodes'), 'Sign in to view favorite nodes'),
           action: () => {
             this.stack.pushPathByName('V2exNativeLogin', null)
           }
@@ -51,7 +51,7 @@ export struct MyNodesPage {
           retryAction: () => {
             this.refresh(true)
           },
-          secondaryLabel: AppStrings.text(AppStrings.R_LOGIN_ACTION, 'Log in'),
+          secondaryLabel: AppStrings.text($r('app.string.login_action'), 'Log in'),
           secondaryAction: () => {
             this.stack.pushPathByName('V2exNativeLogin', null)
           }
@@ -126,7 +126,7 @@ export struct MyNodesPage {
   private nodeSubtitle(item: V2exFavoriteNode): string {
     const parts: string[] = [item.name]
     if ((item.topics || 0) > 0) {
-      parts.push(AppStrings.format(AppStrings.text(AppStrings.R_NODE_TOPICS_COUNT, '{0} topics'), [String(item.topics)]))
+      parts.push(AppStrings.format(AppStrings.text($r('app.string.node_topics_count'), '{0} topics'), [String(item.topics)]))
     }
     return parts.join(' · ')
   }

@@ -50,7 +50,7 @@ export struct MarkdownCodeBlock {
       });
     } catch (error) {
       promptAction.openToast({
-        message: (error as Error).message || AppStrings.text(AppStrings.R_COMMON_COPY_FAILED, 'Copy failed')
+        message: (error as Error).message || AppStrings.text($r('app.string.common_copy_failed'), 'Copy failed')
       }).catch((_error: Error) => { });
     }
   }
@@ -122,8 +122,8 @@ export struct MarkdownCodeBlock {
 
         Button() {
           Text(this.wrapLines ?
-            AppStrings.text(AppStrings.R_CODE_WRAP_SCROLL, 'Scroll') :
-            AppStrings.text(AppStrings.R_CODE_WRAP_WRAP, 'Wrap'))
+            AppStrings.text($r('app.string.code_wrap_scroll'), 'Scroll') :
+            AppStrings.text($r('app.string.code_wrap_wrap'), 'Wrap'))
             .fontSize(ThemeConstants.FONT_SIZE_TAG)
             .fontColor(_codeMetaColor(this.isDarkMode()));
         }

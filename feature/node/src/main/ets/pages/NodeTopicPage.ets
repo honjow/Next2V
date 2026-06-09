@@ -151,7 +151,7 @@ export struct NodeTopicPage {
         isLoadingMore: this.vm.isNodeTopicsLoadingMore,
         hasMore: this.vm.nodeTopicsHasMore,
         loadMoreErrorMessage: this.vm.nodeTopicsLoadMoreError,
-        loadMoreRetryLabel: AppStrings.text(AppStrings.R_COMMON_RETRY, 'Retry'),
+        loadMoreRetryLabel: AppStrings.text($r('app.string.common_retry'), 'Retry'),
         showFooter: this.vm.nodeTopics.length > 0,
         onRefresh: async () => {
           await this.refreshData()
@@ -296,7 +296,7 @@ export struct NodeTopicPage {
     // fixed height.
     Column() {
       CardEmptyState({
-        message: AppStrings.text(AppStrings.R_NODE_NO_TOPICS, 'No topics'),
+        message: AppStrings.text($r('app.string.node_no_topics'), 'No topics'),
         expand: false,
       })
     }
@@ -314,7 +314,7 @@ export struct NodeTopicPage {
     PageErrorState({
       message:
         this.vm.errorMessage ||
-        AppStrings.text(AppStrings.R_NODE_LOAD_FAILED, 'Failed to load node topics'),
+        AppStrings.text($r('app.string.node_load_failed'), 'Failed to load node topics'),
       expand: false,
       retryAction: () => {
         this.loadData()
@@ -381,7 +381,7 @@ export struct NodeTopicPage {
     if (!cleanName) {
       promptAction
         .openToast({
-          message: AppStrings.text(AppStrings.R_NODE_INFO_MISSING, 'Node info missing'),
+          message: AppStrings.text($r('app.string.node_info_missing'), 'Node info missing'),
         })
         .catch((_error: Error) => {})
       return
@@ -409,18 +409,18 @@ export struct NodeTopicPage {
   ): void {
     const title = (this.nodeTitle || this.nodeName || '').trim()
     const verb = this.isSiteNodeFavorited
-      ? AppStrings.text(AppStrings.R_SITE_FAVORITE_ACTION_UNFAVORITE, 'Unfavorite')
-      : AppStrings.text(AppStrings.R_SITE_FAVORITE_ACTION_FAVORITE, 'Favorite')
+      ? AppStrings.text($r('app.string.site_favorite_action_unfavorite'), 'Unfavorite')
+      : AppStrings.text($r('app.string.site_favorite_action_favorite'), 'Favorite')
     this.getUIContext().showAlertDialog({
-      title: AppStrings.text(AppStrings.R_SITE_FAVORITE_TITLE, 'Site Favorite'),
+      title: AppStrings.text($r('app.string.site_favorite_title'), 'Site Favorite'),
       message: title
         ? AppStrings.format(
-            AppStrings.text(AppStrings.R_SITE_FAVORITE_CONFIRM, 'Confirm {0} node "{1}"?'),
+            AppStrings.text($r('app.string.site_favorite_confirm'), 'Confirm {0} node "{1}"?'),
             [verb, title],
           )
         : `${verb} this node?`,
       primaryButton: {
-        value: AppStrings.text(AppStrings.R_COMMON_CANCEL, 'Cancel'),
+        value: AppStrings.text($r('app.string.common_cancel'), 'Cancel'),
         action: () => {},
       },
       secondaryButton: {
@@ -585,7 +585,7 @@ export struct NodeTopicPage {
     if (!nodeName) {
       promptAction
         .openToast({
-          message: AppStrings.text(AppStrings.R_NODE_INFO_MISSING, 'Node info missing'),
+          message: AppStrings.text($r('app.string.node_info_missing'), 'Node info missing'),
         })
         .catch((_error: Error) => {})
       return
@@ -724,7 +724,7 @@ export struct NodeTopicPage {
     if (!nodeName) {
       promptAction
         .openToast({
-          message: AppStrings.text(AppStrings.R_NODE_INFO_MISSING, 'Node info missing'),
+          message: AppStrings.text($r('app.string.node_info_missing'), 'Node info missing'),
         })
         .catch((_error: Error) => {})
       return
@@ -788,7 +788,7 @@ export struct NodeTopicPage {
     const topicCount = this.vm.nodeDetail?.topics || 0
     if (topicCount > 0) {
       subtitleParts.push(
-        AppStrings.format(AppStrings.text(AppStrings.R_NODE_TOPICS_COUNT, '{0} topics'), [
+        AppStrings.format(AppStrings.text($r('app.string.node_topics_count'), '{0} topics'), [
           String(topicCount),
         ]),
       )

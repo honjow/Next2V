@@ -83,17 +83,17 @@ export class ReplyDisplaySettings {
   static modeText(mode: string): string {
     const value = ReplyDisplaySettings.normalizeMode(mode)
     if (value === MODE_THREAD_WITH_MENTION) {
-      return AppStrings.text(AppStrings.R_THREADED_AT, 'Threaded (@)')
+      return AppStrings.text($r('app.string.threaded_at'), 'Threaded (@)')
     }
     if (value === MODE_THREAD_REDUNDANT) {
-      return AppStrings.text(AppStrings.R_THREADED_REDUNDANT, 'Redundant threaded')
+      return AppStrings.text($r('app.string.threaded_redundant'), 'Redundant threaded')
     }
     if (value === MODE_OP) {
-      return AppStrings.text(AppStrings.R_OP_ONLY, 'Original poster only')
+      return AppStrings.text($r('app.string.op_only'), 'Original poster only')
     }
     if (value === MODE_ORIGIN) {
-      return AppStrings.text(AppStrings.R_ORIGINAL, 'Original')
+      return AppStrings.text($r('app.string.original'), 'Original')
     }
-    return AppStrings.text(AppStrings.R_THREADED, 'Threaded')
+    return AppStrings.text($r('app.string.threaded'), 'Threaded')
   }
 }

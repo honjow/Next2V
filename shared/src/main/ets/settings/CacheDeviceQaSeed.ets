@@ -324,7 +324,7 @@ export class CacheDeviceQaSeed {
 
   private static writeSafeSeedPayloadFile(context: common.UIAbilityContext, fileName: string, payloadText: string): void {
     if (!CacheDeviceQaSeed.isSafeSeedPayloadFileName(fileName)) {
-      throw new Error(AppStrings.text(AppStrings.R_CACHE_INVALID_SEED_FILENAME, 'Invalid QA seed cache filename'))
+      throw new Error(AppStrings.text($r('app.string.cache_invalid_seed_filename'), 'Invalid QA seed cache filename'))
     }
     try {
       fileIo.mkdirSync(CacheDeviceQaSeed.payloadBaseDir(context), true)

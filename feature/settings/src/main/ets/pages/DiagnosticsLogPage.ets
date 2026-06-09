@@ -39,7 +39,7 @@ export struct DiagnosticsLogPage {
     Column() {
       SecondaryListScaffold() {
         ListItem() {
-          SettingsSectionHeader({ title: AppStrings.R_DIAGNOSTICS })
+          SettingsSectionHeader({ title: $r('app.string.diagnostics') })
         }
 
         ListItem() {
@@ -47,7 +47,7 @@ export struct DiagnosticsLogPage {
         }
 
         ListItem() {
-          SettingsSectionHeader({ title: AppStrings.R_LOGS })
+          SettingsSectionHeader({ title: $r('app.string.logs') })
         }
 
         ListItem() {
@@ -55,7 +55,7 @@ export struct DiagnosticsLogPage {
         }
 
         ListItem() {
-          SettingsSectionHeader({ title: AppStrings.R_LOG_FILE })
+          SettingsSectionHeader({ title: $r('app.string.log_file') })
         }
 
         ListItem() {
@@ -72,7 +72,7 @@ export struct DiagnosticsLogPage {
   DiagnosticsToggleSection() {
     GroupedListSection() {
       SettingsToggleRow({
-        title: AppStrings.R_NAV_DIAGNOSTICS,
+        title: $r('app.string.nav_diagnostics'),
         checked: this.diagnostics.enabled,
         changeAction: (value: boolean) => {
           this.updateDiagnosticsEnabled(value)
@@ -86,7 +86,7 @@ export struct DiagnosticsLogPage {
     GroupedListSection() {
       ConciseListRow({
         title: AppStrings.format(AppStrings.text($r('app.string.diagnostics_current_launch_recent_count'), 'Recent this launch {0}'), [`${this.logCount}`]),
-        subtitle: this.logFiles.length > 0 ? this.formatRetainedLogFilesCount(this.logFiles.length) : AppStrings.R_NO_LOCAL_LOG_FILES,
+        subtitle: this.logFiles.length > 0 ? this.formatRetainedLogFilesCount(this.logFiles.length) : $r('app.string.no_local_log_files'),
         showChevron: false,
         action: () => {
           this.refreshLogState()
@@ -96,7 +96,7 @@ export struct DiagnosticsLogPage {
       SettingsDivider()
 
       ConciseListRow({
-        title: AppStrings.R_CLEAR_BOOT_RECORDS,
+        title: $r('app.string.clear_boot_records'),
         destructive: true,
         showChevron: false,
         action: () => {
@@ -111,8 +111,8 @@ export struct DiagnosticsLogPage {
     GroupedListSection() {
       if (this.logFiles.length <= 0) {
         ConciseListRow({
-          title: AppStrings.R_NO_LOG_FILES,
-          subtitle: AppStrings.R_REOPEN_KEEPS_LOGS,
+          title: $r('app.string.no_log_files'),
+          subtitle: $r('app.string.reopen_keeps_logs'),
           showChevron: false,
           action: () => {
             this.refreshLogState()
@@ -201,7 +201,7 @@ export struct DiagnosticsLogPage {
             source: 'diagnostics_log_page',
             fileName: file.fileName,
           }, error)
-          this.copyDiagnosticsTextWithToast(AppStrings.text(AppStrings.R_SHARE_FILE_UNAVAILABLE_COPIED, 'Share file unavailable; copied for manual paste'), AppStrings.text(AppStrings.R_SHARE_FAILED, 'Share failed'), DiagnosticsLogFileSink.readLogFileText(file.fileName))
+          this.copyDiagnosticsTextWithToast(AppStrings.text($r('app.string.share_file_unavailable_copied'), 'Share file unavailable; copied for manual paste'), AppStrings.text($r('app.string.share_failed'), 'Share failed'), DiagnosticsLogFileSink.readLogFileText(file.fileName))
         })
     } catch (_error) {
       DiagnosticLogger.warn('diagnostics', 'diagnostics_share_show_error', {
@@ -211,13 +211,13 @@ export struct DiagnosticsLogPage {
         errorName: 'Error',
         errorMessage: 'share_failed',
       })
-      this.copyDiagnosticsTextWithToast(AppStrings.text(AppStrings.R_SHARE_FILE_UNAVAILABLE_COPIED, 'Share file unavailable; copied for manual paste'), AppStrings.text(AppStrings.R_SHARE_FAILED, 'Share failed'), DiagnosticsLogFileSink.readLogFileText(file.fileName))
+      this.copyDiagnosticsTextWithToast(AppStrings.text($r('app.string.share_file_unavailable_copied'), 'Share file unavailable; copied for manual paste'), AppStrings.text($r('app.string.share_failed'), 'Share failed'), DiagnosticsLogFileSink.readLogFileText(file.fileName))
     }
   }
 
   private copyDiagnosticsTextWithToast(successMessage: string, failureMessage: string, textOverride: string = ''): void {
     try {
-      const text = textOverride || DiagnosticsSettings.exportText() || AppStrings.text(AppStrings.R_NO_DIAGNOSTICS_LOGS, 'No diagnostics logs')
+      const text = textOverride || DiagnosticsSettings.exportText() || AppStrings.text($r('app.string.no_diagnostics_logs'), 'No diagnostics logs')
       const data = pasteboard.createData(pasteboard.MIMETYPE_TEXT_PLAIN, text)
       pasteboard.getSystemPasteboard().setDataSync(data)
       DiagnosticLogger.info('diagnostics', 'diagnostics_log_copy_success', { textLength: text.length })
@@ -231,7 +231,7 @@ export struct DiagnosticsLogPage {
   private clearDiagnosticsText(): void {
     DiagnosticsSettings.clearLogs()
     this.refreshLogState()
-    promptAction.openToast({ message: AppStrings.text(AppStrings.R_BOOT_RECORDS_CLEARED, 'This launch record has been cleared') }).catch((_error: Error) => {})
+    promptAction.openToast({ message: AppStrings.text($r('app.string.boot_records_cleared'), 'This launch record has been cleared') }).catch((_error: Error) => {})
   }
 
   private logFileTitle(file: DiagnosticsLogFileInfo): ResourceStr {
@@ -243,7 +243,7 @@ export struct DiagnosticsLogPage {
 
   private formatLogTimestamp(value: number): string {
     if (value <= 0) {
-      return AppStrings.text(AppStrings.R_UNKNOWN_TIME, 'Unknown time')
+      return AppStrings.text($r('app.string.unknown_time'), 'Unknown time')
     }
     const date = new Date(value)
     const year = date.getFullYear().toString().padStart(4, '0')

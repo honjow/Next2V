@@ -527,7 +527,7 @@ export class CollectionSettings {
       throw new Error(
         e.message ||
           AppStrings.text(
-            AppStrings.R_COLLECTION_CLEAR_ALL_FAILED,
+            $r('app.string.collection_clear_all_failed'),
             'Failed to clear local collection and reading records',
           ),
       )

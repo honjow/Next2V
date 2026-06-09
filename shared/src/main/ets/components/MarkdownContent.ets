@@ -505,7 +505,7 @@ function _copyDecodedBase64Text(decoded: string): void {
     promptAction.openToast({ message: $r('app.string.common_copy_decoded_text') }).catch((_error: Error) => { });
   } catch (error) {
     promptAction.openToast({
-      message: (error as Error).message || AppStrings.text(AppStrings.R_COMMON_COPY_FAILED, 'Copy failed')
+      message: (error as Error).message || AppStrings.text($r('app.string.common_copy_failed'), 'Copy failed')
     }).catch((_error: Error) => { });
   }
 }
@@ -726,7 +726,7 @@ function SelectableInlineTokenSpans(
     } else if (t.type === "base64Decode") {
       if (base64DecodeMode === ReadingSettings.BASE64_MODE_INLINE) {
         Span(AppStrings.format(
-          AppStrings.text(AppStrings.R_COMMON_DECODED_FORMAT, 'Decoded: {0}'),
+          AppStrings.text($r('app.string.common_decoded_format'), 'Decoded: {0}'),
           [(t as Base64DecodeToken).decoded]
         ))
           .fontSize(fontSize)
@@ -2053,17 +2053,17 @@ struct MarkdownVideoPlayer {
 
         if (this.loadState === 2) {
           Column({ space: ThemeConstants.SPACE_XS }) {
-            Text(AppStrings.text(AppStrings.R_COMMON_VIDEO_LOAD_FAILED, 'Video load failed'))
+            Text(AppStrings.text($r('app.string.common_video_load_failed'), 'Video load failed'))
               .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
               .fontColor(ThemeConstants.TEXT_SECONDARY)
             Row({ space: ThemeConstants.SPACE_MD }) {
-              Text(AppStrings.text(AppStrings.R_COMMON_RETRY, 'Retry'))
+              Text(AppStrings.text($r('app.string.common_retry'), 'Retry'))
                 .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
                 .fontColor(ThemeConstants.TEXT_LINK)
                 .onClick(() => {
                   this.retryLoad();
                 })
-              Text(AppStrings.text(AppStrings.R_COMMON_OPEN_EXTERNAL, 'Open externally'))
+              Text(AppStrings.text($r('app.string.common_open_external'), 'Open externally'))
                 .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
                 .fontColor(ThemeConstants.TEXT_LINK)
                 .onClick(() => {
@@ -2086,7 +2086,7 @@ struct MarkdownVideoPlayer {
       .backgroundColor(ThemeConstants.BG_SUB)
 
       Row({ space: ThemeConstants.SPACE_SM }) {
-        Text(AppStrings.text(AppStrings.R_MEDIA_VIDEO_LINK, 'Video'))
+        Text(AppStrings.text($r('app.string.media_video_link'), 'Video'))
           .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
           .fontColor(ThemeConstants.TEXT_SECONDARY)
         Text(MediaUrlUtils.normalizeUrl(this.url))
@@ -2178,9 +2178,9 @@ struct MarkdownAutoImage {
       return AppStrings.text($r('app.string.common_image_auto_load_off'), 'Image auto-load is off');
     }
     if (this.media.onlyLoadImagesOnWifi && !this.networkChecked) {
-      return AppStrings.text(AppStrings.R_COMMON_CHECKING_NETWORK, 'Checking network');
+      return AppStrings.text($r('app.string.common_checking_network'), 'Checking network');
     }
-    return AppStrings.text(AppStrings.R_COMMON_WIFI_ONLY_IMAGE_HINT, 'Wi-Fi only image hint');
+    return AppStrings.text($r('app.string.common_wifi_only_image_hint'), 'Wi-Fi only image hint');
   }
 
   private syncLoadState(): void {
@@ -2282,7 +2282,7 @@ struct MarkdownAutoImage {
             LoadingProgress()
               .width(ThemeConstants.LOADING_SIZE_SMALL)
               .height(ThemeConstants.LOADING_SIZE_SMALL)
-            Text(AppStrings.text(AppStrings.R_COMMON_LOADING, 'Loading...'))
+            Text(AppStrings.text($r('app.string.common_loading'), 'Loading...'))
               .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
               .fontColor(ThemeConstants.TEXT_SECONDARY)
           }
@@ -2297,10 +2297,10 @@ struct MarkdownAutoImage {
 
         if (this.loadState === 3) {
           Column({ space: ThemeConstants.SPACE_XS }) {
-            Text(AppStrings.text(AppStrings.R_COMMON_IMAGE_LOAD_FAILED, 'Image load failed'))
+            Text(AppStrings.text($r('app.string.common_image_load_failed'), 'Image load failed'))
               .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
               .fontColor(ThemeConstants.TEXT_SECONDARY)
-            Text(AppStrings.text(AppStrings.R_COMMON_TAP_TO_RETRY, 'Tap to retry'))
+            Text(AppStrings.text($r('app.string.common_tap_to_retry'), 'Tap to retry'))
               .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
               .fontColor(ThemeConstants.TEXT_LINK)
           }
@@ -2619,12 +2619,12 @@ export struct MarkdownContent {
       context.startAbility(want)
         .catch((error: Error) => {
           promptAction.openToast({
-            message: error.message || AppStrings.text(AppStrings.R_COMMON_OPEN_FAILED, 'Open failed')
+            message: error.message || AppStrings.text($r('app.string.common_open_failed'), 'Open failed')
           }).catch((_error: Error) => { });
         });
     } catch (error) {
       promptAction.openToast({
-        message: (error as Error).message || AppStrings.text(AppStrings.R_COMMON_OPEN_FAILED, 'Open failed')
+        message: (error as Error).message || AppStrings.text($r('app.string.common_open_failed'), 'Open failed')
       }).catch((_error: Error) => { });
     }
   }

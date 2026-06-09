@@ -153,11 +153,11 @@ export struct AccountManagementPage {
       title: AccountPageCoordinator.REMOVE_ACCOUNT_TITLE,
       message: AccountPageCoordinator.removeAccountMessage(record.username),
       primaryButton: {
-        value: AppStrings.text(AppStrings.R_COMMON_CANCEL, 'Cancel'), action: () => {
+        value: AppStrings.text($r('app.string.common_cancel'), 'Cancel'), action: () => {
         }
       },
       secondaryButton: {
-        value: AppStrings.text(AppStrings.R_COMMON_REMOVE, 'Remove'),
+        value: AppStrings.text($r('app.string.common_remove'), 'Remove'),
         fontColor: Color.Red,
         action: () => {
           this.performRemoveAccount(record.id)

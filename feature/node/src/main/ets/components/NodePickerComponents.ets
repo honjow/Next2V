@@ -28,7 +28,7 @@ export struct NodePickerHeader {
       if (this.selectedNodeName) {
         Row({ space: ThemeConstants.SPACE_SM }) {
           Text(AppStrings.format(
-            AppStrings.text(AppStrings.R_NODE_PICKER_CURRENT_NODE_FORMAT, 'Current: {0}'),
+            AppStrings.text($r('app.string.node_picker_current_node_format'), 'Current: {0}'),
             [this.selectedNodeName]
           ))
             .fontSize(ThemeConstants.FONT_SIZE_TINY)
@@ -156,7 +156,7 @@ export struct NodePickerRow {
             .fontColor(ThemeConstants.BRAND_PRIMARY)
         }
         Text(AppStrings.format(
-          AppStrings.text(AppStrings.R_NODE_TOPICS_COUNT, '{0} topics'),
+          AppStrings.text($r('app.string.node_topics_count'), '{0} topics'),
           [String(this.node.topics)]
         ))
           .fontSize(ThemeConstants.FONT_SIZE_TINY)

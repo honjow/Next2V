@@ -32,7 +32,7 @@ export struct HomeNodeSettingsPage {
     Column() {
       SecondaryListScaffold() {
         ListItem() {
-          SettingsSectionHeader({ title: AppStrings.R_VISIBLE_HOME_NODES_REORDER_HINT })
+          SettingsSectionHeader({ title: $r('app.string.visible_home_nodes_reorder_hint') })
         }
 
         GroupedListSection() {
@@ -67,7 +67,7 @@ export struct HomeNodeSettingsPage {
         }
 
         ListItem() {
-          SettingsSectionHeader({ title: AppStrings.R_ADD_HOME_COLUMN })
+          SettingsSectionHeader({ title: $r('app.string.add_home_column') })
         }
 
         ListItem() {
@@ -75,13 +75,13 @@ export struct HomeNodeSettingsPage {
         }
 
         ListItem() {
-          SettingsSectionHeader({ title: AppStrings.R_COMMON_RESET })
+          SettingsSectionHeader({ title: $r('app.string.common_reset') })
         }
 
         ListItem() {
           GroupedListSection() {
             ConciseListRow({
-              title: AppStrings.R_RESTORE_DEFAULT,
+              title: $r('app.string.restore_default'),
               showChevron: false,
               action: () => {
                 this.resetFeedTabs()
@@ -99,7 +99,7 @@ export struct HomeNodeSettingsPage {
   @Builder
   ButtonSuffix(key: string, enabled: boolean) {
     HomeNodeVisibilityButton({
-      label: FeedTabSettings.isNodeKey(key) ? AppStrings.R_COMMON_DELETE : AppStrings.R_HIDE,
+      label: FeedTabSettings.isNodeKey(key) ? $r('app.string.common_delete') : $r('app.string.hide'),
       isEnabled: enabled,
       clickAction: () => {
         this.updateFeedTabVisibility(key)
@@ -124,13 +124,13 @@ export struct HomeNodeSettingsPage {
       Column({ space: ThemeConstants.SPACE_SM }) {
         AppTextField({
           text: this.nodeTabName,
-          placeholder: AppStrings.R_NODE_NAME_PLACEHOLDER,
+          placeholder: $r('app.string.node_name_placeholder'),
           onTextChange: (value: string) => {
             this.nodeTabName = value
           }
         })
           .width('100%')
-        Button(AppStrings.R_ADD_NODE_COLUMN)
+        Button($r('app.string.add_node_column'))
           .fontSize(ThemeConstants.FONT_SIZE_TAG)
           .height(ThemeConstants.TOUCH_TARGET_SM)
           .type(ButtonType.Normal)
@@ -176,13 +176,13 @@ export struct HomeNodeSettingsPage {
   private addNodeFeedTab(): void {
     const cleanName = FeedTabSettings.normalizeNodeName(this.nodeTabName)
     if (!cleanName) {
-      promptAction.openToast({ message: AppStrings.text(AppStrings.R_INVALID_NODE_NAME, 'Enter a valid node name') }).catch((_error: Error) => {
+      promptAction.openToast({ message: AppStrings.text($r('app.string.invalid_node_name'), 'Enter a valid node name') }).catch((_error: Error) => {
       })
       return
     }
     const nextKeys = FeedTabSettings.addNode(this.feedTabState.feedTabKeys, cleanName)
     if (nextKeys === this.feedTabState.feedTabKeys) {
-      promptAction.openToast({ message: AppStrings.text(AppStrings.R_NODE_COLUMN_EXISTS, 'Node column already exists') }).catch((_error: Error) => {
+      promptAction.openToast({ message: AppStrings.text($r('app.string.node_column_exists'), 'Node column already exists') }).catch((_error: Error) => {
       })
       return
     }

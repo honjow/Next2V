@@ -65,7 +65,7 @@ export struct CloudSyncSettingsPage {
         .margin({ top: ThemeConstants.SPACE_MD })
         if (this.cloudSyncEnabled) {
           ListItem() {
-            this.SectionHeader(AppStrings.R_CLOUD_SYNC_CONTENT)
+            this.SectionHeader($r('app.string.cloud_sync_content'))
           }
           ListItem() {
             this.ContentSection()
@@ -88,7 +88,7 @@ export struct CloudSyncSettingsPage {
   CloudSpaceLinkSection() {
     GroupedListSection() {
       ConciseListRow({
-        title: AppStrings.R_CLOUD_SYNC_OPEN_CLOUD_SPACE,
+        title: $r('app.string.cloud_sync_open_cloud_space'),
         action: () => {
           this.openCloudSpace()
         },
@@ -133,7 +133,7 @@ export struct CloudSyncSettingsPage {
   MasterSection() {
     GroupedListSection() {
       this.TogglePreferenceRow(
-        AppStrings.R_CLOUD_SYNC_ENABLE,
+        $r('app.string.cloud_sync_enable'),
         this.cloudSyncEnabled,
         (value: boolean) => {
           this.updateCloudSync(value)
@@ -147,7 +147,7 @@ export struct CloudSyncSettingsPage {
   ContentSection() {
     GroupedListSection() {
       this.TogglePreferenceRow(
-        AppStrings.R_SEARCH_HISTORY,
+        $r('app.string.search_history'),
         this.cloudSyncFeatSearchHistory,
         (value: boolean) => {
           this.updateCloudSyncFeature(CloudSyncFeature.SEARCH_HISTORY, value)
@@ -155,7 +155,7 @@ export struct CloudSyncSettingsPage {
       )
       this.SettingsDivider()
       this.TogglePreferenceRow(
-        AppStrings.R_CLOUD_SYNC_FEAT_COLLECTIONS,
+        $r('app.string.cloud_sync_feat_collections'),
         this.cloudSyncFeatCollections,
         (value: boolean) => {
           this.updateCloudSyncFeature(CloudSyncFeature.COLLECTIONS, value)
@@ -163,7 +163,7 @@ export struct CloudSyncSettingsPage {
       )
       this.SettingsDivider()
       this.TogglePreferenceRow(
-        AppStrings.R_NAV_RECENTLY_VIEWED,
+        $r('app.string.nav_recently_viewed'),
         this.cloudSyncFeatRecentViews,
         (value: boolean) => {
           this.updateCloudSyncFeature(CloudSyncFeature.RECENT_VIEWS, value)
@@ -171,7 +171,7 @@ export struct CloudSyncSettingsPage {
       )
       this.SettingsDivider()
       this.TogglePreferenceRow(
-        AppStrings.R_CLOUD_SYNC_FEAT_READ_PROGRESS,
+        $r('app.string.cloud_sync_feat_read_progress'),
         this.cloudSyncFeatReadProgress,
         (value: boolean) => {
           this.updateCloudSyncFeature(CloudSyncFeature.READ_PROGRESS, value)
@@ -179,7 +179,7 @@ export struct CloudSyncSettingsPage {
       )
       this.SettingsDivider()
       this.TogglePreferenceRow(
-        AppStrings.R_CLOUD_SYNC_FEAT_MARKS,
+        $r('app.string.cloud_sync_feat_marks'),
         this.cloudSyncFeatMarks,
         (value: boolean) => {
           this.updateCloudSyncFeature(CloudSyncFeature.MARKS, value)
@@ -187,7 +187,7 @@ export struct CloudSyncSettingsPage {
       )
       this.SettingsDivider()
       ConciseListRow({
-        title: AppStrings.R_CLOUD_SYNC_NOW,
+        title: $r('app.string.cloud_sync_now'),
         subtitle: this.cloudSyncStatusText(),
         showChevron: false,
         action: () => {
@@ -249,13 +249,13 @@ export struct CloudSyncSettingsPage {
   // or empty before the first sync ever. Reads @Trace fields so it updates reactively.
   private cloudSyncStatusText(): string {
     if (this.cloudSync.syncing) {
-      return AppStrings.text(AppStrings.R_CLOUD_SYNC_SYNCING, 'Syncing…')
+      return AppStrings.text($r('app.string.cloud_sync_syncing'), 'Syncing…')
     }
     // Distinct guidance when the system 云空间 sync is off for this app (progress code 3): the app cannot
     // toggle it, so point the user at System Settings instead of showing a generic "sync failed".
     if (this.cloudSync.lastSyncCloudDisabled) {
       return AppStrings.text(
-        AppStrings.R_CLOUD_SYNC_CLOUD_DISABLED,
+        $r('app.string.cloud_sync_cloud_disabled'),
         'Cloud sync is off for this app. Turn on data sync for this app under System Settings → Cloud.',
       )
     }
@@ -264,8 +264,8 @@ export struct CloudSyncSettingsPage {
     }
     const when: string = DateUtils.toRelativeTime(Math.floor(this.cloudSync.lastSyncAt / 1000))
     const template: string = this.cloudSync.lastSyncOk
-      ? AppStrings.text(AppStrings.R_CLOUD_SYNC_LAST, 'Last synced: {0}')
-      : AppStrings.text(AppStrings.R_CLOUD_SYNC_LAST_FAILED, 'Last sync failed · {0}')
+      ? AppStrings.text($r('app.string.cloud_sync_last'), 'Last synced: {0}')
+      : AppStrings.text($r('app.string.cloud_sync_last_failed'), 'Last sync failed · {0}')
     return AppStrings.format(template, [when])
   }
 }

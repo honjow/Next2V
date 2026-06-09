@@ -1,4 +1,3 @@
-import { AppStrings } from '../i18n/AppStrings'
 import { ThemeConstants } from '../theme/ThemeConstants'
 
 @ComponentV2
@@ -21,8 +20,8 @@ export struct PageLoadingState {
 
 @ComponentV2
 export struct PageErrorState {
-  @Param message: ResourceStr = AppStrings.R_COMMON_LOAD_FAILED
-  @Param retryLabel: ResourceStr = AppStrings.R_COMMON_RETRY
+  @Param message: ResourceStr = $r('app.string.common_load_failed')
+  @Param retryLabel: ResourceStr = $r('app.string.common_retry')
   @Param secondaryLabel: ResourceStr = ''
   @Param expand: boolean = true
   @Event retryAction?: () => void
@@ -30,7 +29,7 @@ export struct PageErrorState {
 
   build() {
     Column({ space: ThemeConstants.SPACE_SM }) {
-      Text(this.message || AppStrings.R_COMMON_LOAD_FAILED)
+      Text(this.message || $r('app.string.common_load_failed'))
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
         .fontColor($r('sys.color.font_secondary'))
         .textAlign(TextAlign.Center)
@@ -64,8 +63,8 @@ export struct PageErrorState {
 
 @ComponentV2
 export struct PageLoginRequiredState {
-  @Param message: ResourceStr = AppStrings.R_LOGIN_REQUIRED_CONTINUE
-  @Param actionLabel: ResourceStr = AppStrings.R_LOGIN_ACTION
+  @Param message: ResourceStr = $r('app.string.login_required_continue')
+  @Param actionLabel: ResourceStr = $r('app.string.login_action')
   @Param expand: boolean = true
   @Event action?: () => void
 

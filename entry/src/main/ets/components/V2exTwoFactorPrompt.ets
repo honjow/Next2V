@@ -25,7 +25,7 @@ export struct V2exTwoFactorPrompt {
   @Param visible: boolean = false
   @Event onVisibleChange?: (value: boolean) => void
   @Param cookie: string = ''
-  @Param title: string = AppStrings.text(AppStrings.R_TWO_FACTOR_TITLE, 'Two-Factor Verification')
+  @Param title: string = AppStrings.text($r('app.string.two_factor_title'), 'Two-Factor Verification')
   @Event onSuccess?: () => void
   @Event onCancel?: () => void
 
@@ -44,14 +44,14 @@ export struct V2exTwoFactorPrompt {
     }) {
       ListItem() {
         Column({ space: ThemeConstants.SPACE_MD }) {
-          Text(AppStrings.text(AppStrings.R_TWO_FACTOR_DESCRIPTION, 'V2EX requires two-factor verification to continue accessing account content.'))
+          Text(AppStrings.text($r('app.string.two_factor_description'), 'V2EX requires two-factor verification to continue accessing account content.'))
             .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
             .fontColor($r('sys.color.font_secondary'))
             .width('100%')
 
           AppTextField({
             text: this.code,
-            placeholder: AppStrings.text(AppStrings.R_TWO_FACTOR_CODE_PLACEHOLDER, 'Enter 6-digit code'),
+            placeholder: AppStrings.text($r('app.string.two_factor_code_placeholder'), 'Enter 6-digit code'),
             inputType: InputType.Number,
             onTextChange: (value: string) => { this.code = value }
           })
@@ -65,14 +65,14 @@ export struct V2exTwoFactorPrompt {
           }
 
           AppActionButton({
-            label: this.isSubmitting ? AppStrings.text(AppStrings.R_TWO_FACTOR_VERIFYING, 'Verifying\u2026') : AppStrings.text(AppStrings.R_TWO_FACTOR_VERIFY_BUTTON, 'Verify'),
+            label: this.isSubmitting ? AppStrings.text($r('app.string.two_factor_verifying'), 'Verifying\u2026') : AppStrings.text($r('app.string.two_factor_verify_button'), 'Verify'),
             primary: true,
             isEnabled: !this.isSubmitting,
             action: () => { this.submit() }
           })
 
           AppActionButton({
-            label: AppStrings.text(AppStrings.R_TWO_FACTOR_LATER, 'Later'),
+            label: AppStrings.text($r('app.string.two_factor_later'), 'Later'),
             primary: false,
             isEnabled: !this.isSubmitting,
             action: () => { this.cancel() }

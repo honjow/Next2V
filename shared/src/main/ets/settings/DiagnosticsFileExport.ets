@@ -30,7 +30,7 @@ export class DiagnosticsFileExport {
     let fileName = ''
     let target: DiagnosticsExportTarget | null = null
     try {
-      const text = DiagnosticsSettings.exportText() || AppStrings.text(AppStrings.R_NO_DIAGNOSTICS_LOGS, 'No diagnostics logs')
+      const text = DiagnosticsSettings.exportText() || AppStrings.text($r('app.string.no_diagnostics_logs'), 'No diagnostics logs')
       fileName = DiagnosticsFileExport.safeFileName(new Date())
       phase = 'choose_directory'
       target = DiagnosticsFileExport.exportTarget(context)

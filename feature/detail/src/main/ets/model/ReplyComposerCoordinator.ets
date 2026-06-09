@@ -31,7 +31,7 @@ export class ReplyComposerCoordinator {
   }
 
   static previewEmptyMessage(): string {
-    return AppStrings.text(AppStrings.R_EDITOR_EMPTY_PREVIEW, 'No content yet')
+    return AppStrings.text($r('app.string.editor_empty_preview'), 'No content yet')
   }
 
   static normalizeInitialContent(value: string): string {
@@ -106,13 +106,13 @@ export class ReplyComposerCoordinator {
     selectionEnd: number,
   ): ReplyComposerEditResult {
     if (command === 'bold') {
-      return ReplyComposerCoordinator.insertInlineMarkdown(content, selectionStart, selectionEnd, '**', '**', AppStrings.text(AppStrings.R_MARKDOWN_PLACEHOLDER_TEXT, 'Text'))
+      return ReplyComposerCoordinator.insertInlineMarkdown(content, selectionStart, selectionEnd, '**', '**', AppStrings.text($r('app.string.markdown_placeholder_text'), 'Text'))
     }
     if (command === 'italic') {
-      return ReplyComposerCoordinator.insertInlineMarkdown(content, selectionStart, selectionEnd, '*', '*', AppStrings.text(AppStrings.R_MARKDOWN_PLACEHOLDER_TEXT, 'Text'))
+      return ReplyComposerCoordinator.insertInlineMarkdown(content, selectionStart, selectionEnd, '*', '*', AppStrings.text($r('app.string.markdown_placeholder_text'), 'Text'))
     }
     if (command === 'code') {
-      return ReplyComposerCoordinator.insertInlineMarkdown(content, selectionStart, selectionEnd, '`', '`', AppStrings.text(AppStrings.R_MARKDOWN_PLACEHOLDER_CODE, 'Code'))
+      return ReplyComposerCoordinator.insertInlineMarkdown(content, selectionStart, selectionEnd, '`', '`', AppStrings.text($r('app.string.markdown_placeholder_code'), 'Code'))
     }
     if (command === 'quote') {
       return ReplyComposerCoordinator.insertLinePrefix(content, selectionStart, selectionEnd, '> ')
@@ -121,7 +121,7 @@ export class ReplyComposerCoordinator {
       return ReplyComposerCoordinator.insertLinePrefix(content, selectionStart, selectionEnd, '- ')
     }
     if (command === 'link') {
-      const textHolder = AppStrings.text(AppStrings.R_MARKDOWN_PLACEHOLDER_TEXT, 'Text')
+      const textHolder = AppStrings.text($r('app.string.markdown_placeholder_text'), 'Text')
       return ReplyComposerCoordinator.insertInlineMarkdown(
         content,
         selectionStart,
@@ -132,7 +132,7 @@ export class ReplyComposerCoordinator {
         1 + textHolder.length + '](https://'.length,
       )
     }
-    const imgHolder = AppStrings.text(AppStrings.R_MARKDOWN_PLACEHOLDER_IMAGE, 'Image')
+    const imgHolder = AppStrings.text($r('app.string.markdown_placeholder_image'), 'Image')
     return ReplyComposerCoordinator.insertInlineMarkdown(
       content,
       selectionStart,

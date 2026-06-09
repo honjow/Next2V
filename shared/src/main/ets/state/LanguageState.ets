@@ -5,10 +5,10 @@ import { AppStorageV2 } from '@kit.ArkUI'
  *
  * `LanguageSettings.apply()` is the single chokepoint (load/save and EntryAbility's
  * applyStoredPreferredLanguage all route through it); it still writes the legacy `AppStorage` key via
- * `setAppStorageValue` AND seeds this `@Trace` field. The migrated readers — SettingsPage hydration,
- * `LanguageSettings.reapplyForFollowSystem`, and `AppStrings.currentLanguageMode` — read this mirror
- * instead of `AppStorage.get`. Default mirrors `LanguageSettings.MODE_SYSTEM` ('default'); the
- * follow-system fallback / supported-locale normalization semantics are unchanged.
+ * `setAppStorageValue` AND seeds this `@Trace` field. The migrated readers — SettingsPage hydration
+ * and `LanguageSettings.reapplyForFollowSystem` — read this mirror instead of `AppStorage.get`.
+ * Default mirrors `LanguageSettings.MODE_SYSTEM` ('default'); the follow-system fallback /
+ * supported-locale normalization semantics are unchanged.
  */
 @ObservedV2
 export class LanguageState {

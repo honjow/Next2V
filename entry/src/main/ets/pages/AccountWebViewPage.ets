@@ -34,14 +34,14 @@ export struct AccountWebViewPage {
 
   @Local private isLoading: boolean = true;
   @Local private errorMessage: string = '';
-  @Local private pageMessage: string = AppStrings.text(AppStrings.R_COMMON_LOADING, 'Loading…');
+  @Local private pageMessage: string = AppStrings.text($r('app.string.common_loading'), 'Loading…');
   @Local private hasInjectedCookie: boolean = false;
   @Local private hasLoadRequested: boolean = false;
 
   aboutToAppear(): void {
     this.targetUrl = connectAccountWebViewUrl().url
     if (!this.targetUrl) {
-      this.errorMessage = AppStrings.text(AppStrings.R_COMMON_LOAD_FAILED, 'No page URL provided')
+      this.errorMessage = AppStrings.text($r('app.string.common_load_failed'), 'No page URL provided')
       this.pageMessage = ''
       this.isLoading = false
     }
@@ -62,7 +62,7 @@ export struct AccountWebViewPage {
         onPageBegin: (event?: PageEndEvent) => {
           this.isLoading = true
           this.errorMessage = ''
-          this.pageMessage = AppStrings.text(AppStrings.R_COMMON_LOADING, 'Loading…')
+          this.pageMessage = AppStrings.text($r('app.string.common_loading'), 'Loading…')
           DiagnosticLogger.info('webview', 'account_webview_page_begin', {
             url: event && event.url ? event.url : this.targetUrl,
             hasCookie: this.hasInjectedCookie,
@@ -82,7 +82,7 @@ export struct AccountWebViewPage {
             this.pageMessage = ''
             this.errorMessage =
               event.error.getErrorInfo() ||
-              AppStrings.text(AppStrings.R_COMMON_LOAD_FAILED, 'Failed to load page')
+              AppStrings.text($r('app.string.common_load_failed'), 'Failed to load page')
             DiagnosticLogger.warn('webview', 'account_webview_load_error', {
               url: this.targetUrl,
               isMainFrame: true,
@@ -124,7 +124,7 @@ export struct AccountWebViewPage {
 
   private reloadPage(): void {
     this.errorMessage = ''
-    this.pageMessage = AppStrings.text(AppStrings.R_COMMON_LOADING, 'Loading…')
+    this.pageMessage = AppStrings.text($r('app.string.common_loading'), 'Loading…')
     this.isLoading = true
     if (!this.hasInjectedCookie) {
       this.hasLoadRequested = false
@@ -141,7 +141,7 @@ export struct AccountWebViewPage {
       this.isLoading = false
       this.pageMessage = ''
       this.errorMessage =
-        e.message || AppStrings.text(AppStrings.R_COMMON_LOAD_FAILED, 'Failed to refresh page')
+        e.message || AppStrings.text($r('app.string.common_load_failed'), 'Failed to refresh page')
     }
   }
 
@@ -163,7 +163,7 @@ export struct AccountWebViewPage {
       target = origin + target
     }
     if (!target.startsWith('http://') && !target.startsWith('https://')) {
-      this.errorMessage = AppStrings.text(AppStrings.R_COMMON_LOAD_FAILED, 'Unsupported URL')
+      this.errorMessage = AppStrings.text($r('app.string.common_load_failed'), 'Unsupported URL')
       this.pageMessage = ''
       this.isLoading = false
       return
@@ -172,7 +172,7 @@ export struct AccountWebViewPage {
     this.targetUrl = target
     publishAccountWebViewUrl(target)
     this.pageMessage = AppStrings.format(
-      AppStrings.text(AppStrings.R_WEB_LOGIN_OPENING_URL, 'Opening {0}'),
+      AppStrings.text($r('app.string.web_login_opening_url'), 'Opening {0}'),
       [target],
     )
 
@@ -205,7 +205,7 @@ export struct AccountWebViewPage {
       const e = error as Error
       DiagnosticLogger.exception('webview', 'account_webview_load_url_exception', e, { url: url })
       this.errorMessage =
-        e.message || AppStrings.text(AppStrings.R_COMMON_LOAD_FAILED, 'Failed to load page')
+        e.message || AppStrings.text($r('app.string.common_load_failed'), 'Failed to load page')
       this.pageMessage = ''
       this.isLoading = false
     }

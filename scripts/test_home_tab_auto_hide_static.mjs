@@ -13,7 +13,7 @@ const bootstrap = readFileSync('shared/src/main/ets/settings/SettingsBootstrap.e
 const homeTabSettings = readFileSync('shared/src/main/ets/settings/HomeTabSettings.ets', 'utf8')
 const storageKeys = readFileSync('shared/src/main/ets/constants/StorageKeys.ets', 'utf8')
 const sharedIndex = readFileSync('shared/src/main/ets/Index.ets', 'utf8')
-const appStrings = readFileSync('shared/src/main/ets/i18n/AppStrings.ets', 'utf8')
+const baseStrings = JSON.parse(readFileSync('entry/src/main/resources/base/element/string.json', 'utf8'))
 
 function mustContain(text, needle, label = needle) {
   assert.notEqual(text.indexOf(needle), -1, `${label} not found`)
@@ -36,7 +36,7 @@ mustContain(bootstrap, 'restoreHomeTabs(context, settingsStore)', 'bootstrap res
 mustContain(bootstrap, 'HomeTabSettings.loadFromStore(settingsStore)', 'bootstrap shared store load')
 mustContain(saveCoordinator, 'static saveHomeTabAutoHide(context: common.UIAbilityContext, enabled: boolean): void', 'settings save coordinator method')
 
-mustContain(appStrings, "R_HOME_TAB_AUTO_HIDE: Resource = $r('app.string.home_tab_auto_hide')", 'home tab label resource')
+mustContain(JSON.stringify(baseStrings), '"home_tab_auto_hide"', 'home tab label resource')
 // State Management V2 migration: SettingsPage is @ComponentV2 — the home-tab auto-hide preference is a
 // self-toggled @Local hydrated from the durable V2 HomeTabAutoHideState mirror (no AppStorage.get, no
 // live @StorageLink), still persisted/applied through SettingsSaveCoordinator.saveHomeTabAutoHide.
@@ -46,7 +46,7 @@ mustNotContain(settingsPage, '@StorageLink(StorageKeys.HOME_TAB_AUTO_HIDE)', 'se
 mustNotContain(settingsPage, 'AppStorage.get<boolean>(StorageKeys.HOME_TAB_AUTO_HIDE)', 'settings legacy AppStorage.get(HOME_TAB_AUTO_HIDE) hydration')
 mustContain(settingsPage, '@Local private homeTabAutoHide: boolean = HomeTabSettings.DEFAULT_AUTO_HIDE', 'settings @Local home-tab field')
 mustContain(settingsPage, 'this.homeTabAutoHide = connectHomeTabAutoHide().autoHide', 'settings V2 holder hydration')
-mustContain(settingsPage, 'this.TogglePreferenceRow(AppStrings.R_HOME_TAB_AUTO_HIDE, this.homeTabAutoHide', 'settings toggle row')
+mustContain(settingsPage, "$r('app.string.home_tab_auto_hide')", 'settings toggle row')
 mustContain(settingsPage, 'SettingsSaveCoordinator.saveHomeTabAutoHide(context, enabled)', 'settings save call')
 
 // State Management V2 migration: Index is @ComponentV2 — it consumes the preference through the V2

@@ -21,9 +21,9 @@ function assertNoRestartLane(label, text) {
   assert.doesNotMatch(text, /restartApp|terminateSelf|ApplicationContext\.restartApp|LOCALE_REVISION/, `${label} must not use restart/locale revision refresh lane`)
 }
 
-const accountHeader = indexOfOrFail(settingsPage, 'this.SectionHeader(AppStrings.R_ACCOUNT_SECTION)', 'account section header')
-const appearanceHeader = indexOfOrFail(settingsPage, 'this.SectionHeader(AppStrings.R_SETTINGS_APPEARANCE)', 'appearance section header')
-const readingHeader = indexOfOrFail(settingsPage, 'this.SectionHeader(AppStrings.R_SETTINGS_READING)', 'reading section header')
+const accountHeader = indexOfOrFail(settingsPage, "this.SectionHeader($r('app.string.account_section'))", 'account section header')
+const appearanceHeader = indexOfOrFail(settingsPage, "this.SectionHeader($r('app.string.settings_appearance'))", 'appearance section header')
+const readingHeader = indexOfOrFail(settingsPage, "this.SectionHeader($r('app.string.settings_reading'))", 'reading section header')
 assert.ok(accountHeader < appearanceHeader, 'Appearance group must be after Account group')
 assert.ok(appearanceHeader < readingHeader, 'Appearance group must be before Reading group')
 
@@ -39,7 +39,7 @@ for (const method of ['themeColorOptions', 'themeModeOptions', 'avatarAppearance
   const next = settingsCoordinator.indexOf('\n  static ', start + 1)
   const body = settingsCoordinator.slice(start, next === -1 ? undefined : next)
   assert.doesNotMatch(body, /AppStrings\.t\(/, `${method} must return Resource labels, not cached strings`)
-  assert.match(body, /label: AppStrings\.R_|ThemeColorSettings\.options\(\)/, `${method} must bind option labels to Resource constants`)
+  assert.match(body, /label: \$r\('app\.string\.|ThemeColorSettings\.options\(\)/, `${method} must bind option labels to Resource values`)
 }
 for (const method of ['themeColorLabel', 'themeModeLabel', 'languageModeLabel', 'avatarAppearanceLabel', 'replyDisplayModeLabel', 'replyCardStyleLabel', 'replyActionAlignmentLabel', 'base64DecodeModeLabel']) {
   const start = indexOfOrFail(settingsCoordinator, `static ${method}(`, method)
@@ -52,16 +52,16 @@ assert.match(settingsComponents, /@Param trailingText: ResourceStr = ''/, 'Setti
 assert.match(settingsComponents, /export struct SettingsThemeColorDropdownRow/, 'Appearance settings must have a theme-color dropdown row')
 assert.match(settingsComponents, /export struct SettingsThemeColorDropdownRow[\s\S]+@Param color: ResourceColor/, 'Theme color row must expose a swatch color parameter')
 assert.doesNotMatch(settingsComponents, /Text\(AppStrings\.t\(AppStrings\.R_READING_PREVIEW_|title: AppStrings\.t\(AppStrings\.R_RESTORE_DEFAULT|Text\(AppStrings\.t\(AppStrings\.R_TEXT_SCALE/, 'Reading preview, text scale, and restore default must bind Resource constants directly')
-assert.match(settingsComponents, /Text\(AppStrings\.R_READING_PREVIEW_TITLE\)/, 'Reading preview title must use Resource')
-assert.match(settingsComponents, /Text\(AppStrings\.R_TEXT_SCALE\)/, 'Text scale label must use Resource')
-assert.match(settingsComponents, /title: AppStrings\.R_RESTORE_DEFAULT/, 'Restore default row must use Resource')
+assert.match(settingsComponents, /Text\(\$r\('app\.string\.reading_preview_title'\)\)/, 'Reading preview title must use Resource')
+assert.match(settingsComponents, /Text\(\$r\('app\.string\.text_scale'\)\)/, 'Text scale label must use Resource')
+assert.match(settingsComponents, /title: \$r\('app\.string\.restore_default'\)/, 'Restore default row must use Resource')
 
-assert.match(indexPage, /private tabTitles: ResourceStr\[\] = \[\s*AppStrings\.R_SETTINGS_HOME,\s*AppStrings\.R_TAB_DISCOVER,\s*AppStrings\.R_TAB_NOTIFICATIONS,\s*AppStrings\.R_TAB_ME,?\s*\]/, 'Bottom tab title cache must hold ResourceStr constants')
+assert.match(indexPage, /private tabTitles: ResourceStr\[\] = \[\s*\$r\('app\.string\.settings_home'\),\s*\$r\('app\.string\.tab_discover'\),\s*\$r\('app\.string\.tab_notifications'\),\s*\$r\('app\.string\.tab_me'\),?\s*\]/, 'Bottom tab title cache must hold ResourceStr values')
 assert.doesNotMatch(indexPage, /TabIcon\(AppStrings\.t\(|tabTitles: string\[\]|this\.tabTitles\[this\.ct\] === AppStrings\.t\(/, 'Bottom tabs/title menus must not compare or bind cached localized strings')
 assert.match(mainTabIcon, /@Param title: ResourceStr = ''/, 'MainTabIcon title must accept ResourceStr')
 
 for (const getter of ['SECTION_ACCOUNT', 'SECTION_ACCOUNT_CONTENT', 'SECTION_LOCAL_CONTENT', 'SECTION_MORE', 'LOGIN_TITLE', 'LOGIN_SUBTITLE', 'PROFILE_TITLE', 'LOGOUT_TITLE', 'LOCAL_READ_LATER_TITLE', 'ABOUT_TITLE']) {
-  assert.match(accountCoordinator, new RegExp(`static get ${getter}\\(\\): ResourceStr \\{ return AppStrings\\.R_`), `${getter} must return a ResourceStr`)
+  assert.match(accountCoordinator, new RegExp(`static get ${getter}\\(\\): ResourceStr \\{ return \\$r\\('app\\.string\\.`), `${getter} must return a ResourceStr`)
 }
 assert.match(accountPage, /SectionHeader\(title: ResourceStr\)/, 'Account section headers must accept ResourceStr')
 assert.match(accountPage, /AuthActionRow\(title: ResourceStr, subtitle: ResourceStr/, 'Account action rows must accept ResourceStr labels')
@@ -80,8 +80,8 @@ const appearanceRowsEnd = settingsPage.indexOf('ReadingPreferenceRows()', appear
 assert.notEqual(appearanceRowsEnd, -1, 'ReadingPreferenceRows after appearance rows not found')
 const appearanceRows = settingsPage.slice(appearanceRowsStart, appearanceRowsEnd)
 const themeColorRow = indexOfOrFail(appearanceRows, 'SettingsThemeColorDropdownRow', 'theme color row')
-const themeModeRow = indexOfOrFail(appearanceRows, 'title: AppStrings.R_THEME,', 'dark-mode row')
-const avatarRow = indexOfOrFail(appearanceRows, 'title: AppStrings.R_AVATAR_APPEARANCE', 'avatar row')
+const themeModeRow = indexOfOrFail(appearanceRows, "title: $r('app.string.theme'),", 'dark-mode row')
+const avatarRow = indexOfOrFail(appearanceRows, "title: $r('app.string.avatar_appearance')", 'avatar row')
 assert.ok(themeColorRow < themeModeRow && themeModeRow < avatarRow, 'Appearance rows must order theme color before dark mode before avatar')
 
 console.log('test_settings_appearance_language_static: PASS')

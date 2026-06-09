@@ -60,7 +60,7 @@ export struct StorageSettingsPage {
     Column() {
       SecondaryListScaffold() {
         ListItem() {
-          SettingsSectionHeader({ title: AppStrings.R_OFFLINE_CACHE })
+          SettingsSectionHeader({ title: $r('app.string.offline_cache') })
         }
         ListItem() {
           this.CacheSection()
@@ -68,7 +68,7 @@ export struct StorageSettingsPage {
 
         if (BuildProfile.DEBUG && CacheDeviceQaSeed.isEnabled()) {
           ListItem() {
-            SettingsSectionHeader({ title: AppStrings.R_CACHE_QA_SEED })
+            SettingsSectionHeader({ title: $r('app.string.cache_qa_seed') })
           }
 
           ListItem() {
@@ -78,7 +78,7 @@ export struct StorageSettingsPage {
 
         if (BuildProfile.DEBUG && AccountStoreQaSeed.isEnabled()) {
           ListItem() {
-            SettingsSectionHeader({ title: AppStrings.R_ACCOUNT_QA_SEED })
+            SettingsSectionHeader({ title: $r('app.string.account_qa_seed') })
           }
 
           ListItem() {
@@ -86,13 +86,13 @@ export struct StorageSettingsPage {
           }
         }
         ListItem() {
-          SettingsSectionHeader({ title: AppStrings.R_BACKUP_SECTION })
+          SettingsSectionHeader({ title: $r('app.string.backup_section') })
         }
         ListItem() {
           this.BackupSection()
         }
         ListItem() {
-          SettingsSectionHeader({ title: AppStrings.R_LOCAL_DATA })
+          SettingsSectionHeader({ title: $r('app.string.local_data') })
         }
         ListItem() {
           this.LocalDataSection()
@@ -150,13 +150,13 @@ export struct StorageSettingsPage {
   CacheSection() {
     GroupedListSection() {
       ConciseListRow({
-        title: AppStrings.R_OFFLINE_CACHE,
+        title: $r('app.string.offline_cache'),
         subtitle: StorageSettingsCoordinator.cacheSubtitle(this.cacheStats),
         showChevron: false,
       })
       SettingsDivider()
       ConciseListRow({
-        title: AppStrings.R_REFRESH_CACHE_STATUS,
+        title: $r('app.string.refresh_cache_status'),
         showChevron: false,
         action: () => {
           this.loadCacheStats()
@@ -164,7 +164,7 @@ export struct StorageSettingsPage {
       })
       SettingsDivider()
       ConciseListRow({
-        title: AppStrings.R_CLEAR_CACHE,
+        title: $r('app.string.clear_cache'),
         subtitle: this.cacheMessage,
         destructive: true,
         showChevron: false,
@@ -179,13 +179,10 @@ export struct StorageSettingsPage {
   BackupSection() {
     GroupedListSection() {
       ConciseListRow({
-        title: AppStrings.R_EXPORT_BACKUP,
+        title: $r('app.string.export_backup'),
         subtitle:
           this.backupMessage ||
-          AppStrings.text(
-            AppStrings.R_BACKUP_EXPORT_SUBTITLE,
-            'Back up settings and local data; login/session data is excluded.',
-          ),
+          $r('app.string.backup_export_subtitle'),
         showChevron: false,
         action: () => {
           this.openExportSheet()
@@ -193,11 +190,8 @@ export struct StorageSettingsPage {
       })
       SettingsDivider()
       ConciseListRow({
-        title: AppStrings.R_IMPORT_BACKUP,
-        subtitle: AppStrings.text(
-          AppStrings.R_BACKUP_IMPORT_SUBTITLE,
-          'Preview backup contents before replacing local data.',
-        ),
+        title: $r('app.string.import_backup'),
+        subtitle: $r('app.string.backup_import_subtitle'),
         showChevron: false,
         action: () => {
           this.selectImportBackup()
@@ -210,7 +204,7 @@ export struct StorageSettingsPage {
   LocalDataSection() {
     GroupedListSection() {
       ConciseListRow({
-        title: AppStrings.R_CLEAR_LOCAL_DATA,
+        title: $r('app.string.clear_local_data'),
         subtitle: this.localDataMessage,
         destructive: true,
         showChevron: false,
@@ -224,7 +218,7 @@ export struct StorageSettingsPage {
   @Builder
   ExportBackupSheet() {
     AppModalScaffold({
-      title: AppStrings.R_EXPORT_BACKUP,
+      title: $r('app.string.export_backup'),
       includeKeyboardPadding: true,
       contentBackgroundColor: $r('sys.color.ohos_id_color_sub_background'),
       closeAction: () => {
@@ -249,11 +243,8 @@ export struct StorageSettingsPage {
   ExportUserInfoToggleSection() {
     GroupedListSection() {
       ConciseListRow({
-        title: AppStrings.R_BACKUP_INCLUDE_USER_INFO,
-        subtitle: AppStrings.text(
-          AppStrings.R_BACKUP_INCLUDE_USER_INFO_HINT,
-          'Includes accounts and login credentials. The whole backup is encrypted with a password.',
-        ),
+        title: $r('app.string.backup_include_user_info'),
+        subtitle: $r('app.string.backup_include_user_info_hint'),
         hasSwitch: true,
         checked: this.exportIncludeUserInfo,
         showChevron: false,
@@ -272,11 +263,11 @@ export struct StorageSettingsPage {
   @Builder
   ExportPasswordSection() {
     Column({ space: ThemeConstants.SPACE_XS }) {
-      this.SheetSectionLabel(AppStrings.R_BACKUP_SET_PASSWORD)
+      this.SheetSectionLabel($r('app.string.backup_set_password'))
       GroupedListSection({ inset: ThemeConstants.SPACE_XL, radius: ThemeConstants.RADIUS_CARD }) {
         Column({ space: ThemeConstants.SPACE_LG }) {
           this.SheetPasswordField(
-            AppStrings.R_BACKUP_PASSWORD_LABEL,
+            $r('app.string.backup_password_label'),
             this.exportPassword,
             (value: string) => {
               this.exportPassword = value
@@ -284,7 +275,7 @@ export struct StorageSettingsPage {
             },
           )
           this.SheetPasswordField(
-            AppStrings.R_BACKUP_PASSWORD_CONFIRM_LABEL,
+            $r('app.string.backup_password_confirm_label'),
             this.exportPasswordConfirm,
             (value: string) => {
               this.exportPasswordConfirm = value
@@ -305,7 +296,7 @@ export struct StorageSettingsPage {
   @Builder
   ExportActionSection() {
     GroupedListSection({ inset: ThemeConstants.SPACE_XL, radius: ThemeConstants.RADIUS_CARD }) {
-      Button(AppStrings.R_EXPORT_BACKUP)
+      Button($r('app.string.export_backup'))
         .type(ButtonType.Normal)
         .height(ThemeConstants.TOUCH_TARGET_SM)
         .width('100%')
@@ -322,7 +313,7 @@ export struct StorageSettingsPage {
   @Builder
   ImportPasswordSheet() {
     AppModalScaffold({
-      title: AppStrings.R_IMPORT_BACKUP,
+      title: $r('app.string.import_backup'),
       includeKeyboardPadding: true,
       contentBackgroundColor: $r('sys.color.ohos_id_color_sub_background'),
       closeAction: () => {
@@ -341,11 +332,11 @@ export struct StorageSettingsPage {
   @Builder
   ImportPasswordSection() {
     Column({ space: ThemeConstants.SPACE_XS }) {
-      this.SheetSectionLabel(AppStrings.R_BACKUP_ENTER_PASSWORD)
+      this.SheetSectionLabel($r('app.string.backup_enter_password'))
       GroupedListSection({ inset: ThemeConstants.SPACE_XL, radius: ThemeConstants.RADIUS_CARD }) {
         Column({ space: ThemeConstants.SPACE_LG }) {
           this.SheetPasswordField(
-            AppStrings.R_BACKUP_PASSWORD_LABEL,
+            $r('app.string.backup_password_label'),
             this.importPassword,
             (value: string) => {
               this.importPassword = value
@@ -366,7 +357,7 @@ export struct StorageSettingsPage {
   @Builder
   ImportActionSection() {
     GroupedListSection({ inset: ThemeConstants.SPACE_XL, radius: ThemeConstants.RADIUS_CARD }) {
-      Button(AppStrings.R_BACKUP_UNLOCK)
+      Button($r('app.string.backup_unlock'))
         .type(ButtonType.Normal)
         .height(ThemeConstants.TOUCH_TARGET_SM)
         .width('100%')
@@ -411,7 +402,7 @@ export struct StorageSettingsPage {
   CacheQaSeedSection() {
     GroupedListSection() {
       ConciseListRow({
-        title: AppStrings.R_SEED_ALL_CACHE_SCENARIOS,
+        title: $r('app.string.seed_all_cache_scenarios'),
         subtitle: this.seedMessage,
         showChevron: false,
         action: () => {
@@ -420,7 +411,7 @@ export struct StorageSettingsPage {
       })
       SettingsDivider()
       ConciseListRow({
-        title: AppStrings.R_SEED_LARGE_LIST_FILE_CACHE,
+        title: $r('app.string.seed_large_list_file_cache'),
         showChevron: false,
         action: () => {
           this.runSeedAction('large', () =>
@@ -430,7 +421,7 @@ export struct StorageSettingsPage {
       })
       SettingsDivider()
       ConciseListRow({
-        title: AppStrings.R_SEED_MIXED_ROW_CACHE,
+        title: $r('app.string.seed_mixed_row_cache'),
         showChevron: false,
         action: () => {
           this.runSeedAction('mixed', () =>
@@ -440,7 +431,7 @@ export struct StorageSettingsPage {
       })
       SettingsDivider()
       ConciseListRow({
-        title: AppStrings.R_SEED_INVALID_PATH_ROW,
+        title: $r('app.string.seed_invalid_path_row'),
         showChevron: false,
         action: () => {
           this.runSeedAction('invalid', () =>
@@ -450,7 +441,7 @@ export struct StorageSettingsPage {
       })
       SettingsDivider()
       ConciseListRow({
-        title: AppStrings.R_SEED_ORPHAN_FILE,
+        title: $r('app.string.seed_orphan_file'),
         showChevron: false,
         action: () => {
           this.runSeedAction('orphan', () =>
@@ -460,7 +451,7 @@ export struct StorageSettingsPage {
       })
       SettingsDivider()
       ConciseListRow({
-        title: AppStrings.R_SEED_MISSING_FILE_ROW,
+        title: $r('app.string.seed_missing_file_row'),
         showChevron: false,
         action: () => {
           this.runSeedAction('missing', () =>
@@ -470,7 +461,7 @@ export struct StorageSettingsPage {
       })
       SettingsDivider()
       ConciseListRow({
-        title: AppStrings.R_SEED_HASH_MISMATCH_ROW,
+        title: $r('app.string.seed_hash_mismatch_row'),
         showChevron: false,
         action: () => {
           this.runSeedAction('hash', () =>
@@ -480,7 +471,7 @@ export struct StorageSettingsPage {
       })
       SettingsDivider()
       ConciseListRow({
-        title: AppStrings.R_VERIFY_HASH_REPAIR,
+        title: $r('app.string.verify_hash_repair'),
         showChevron: false,
         action: () => {
           this.runSeedAction('hash-read', () =>
@@ -490,7 +481,7 @@ export struct StorageSettingsPage {
       })
       SettingsDivider()
       ConciseListRow({
-        title: AppStrings.R_SEED_EXPIRED_ROW,
+        title: $r('app.string.seed_expired_row'),
         showChevron: false,
         action: () => {
           this.runSeedAction('expired', () => CacheDeviceQaSeed.seedExpiredRow(this.hostContext()))
@@ -498,7 +489,7 @@ export struct StorageSettingsPage {
       })
       SettingsDivider()
       ConciseListRow({
-        title: AppStrings.R_RESET_SEED_CACHE,
+        title: $r('app.string.reset_seed_cache'),
         destructive: true,
         showChevron: false,
         action: () => {
@@ -512,7 +503,7 @@ export struct StorageSettingsPage {
   AccountQaSeedSection() {
     GroupedListSection() {
       ConciseListRow({
-        title: AppStrings.R_SEED_ACCOUNT_RECORDS,
+        title: $r('app.string.seed_account_records'),
         subtitle: this.accountSeedMessage,
         showChevron: false,
         action: () => {
@@ -521,7 +512,7 @@ export struct StorageSettingsPage {
       })
       SettingsDivider()
       ConciseListRow({
-        title: AppStrings.R_RESET_SEEDED_ACCOUNTS,
+        title: $r('app.string.reset_seeded_accounts'),
         destructive: true,
         showChevron: false,
         action: () => {
@@ -695,7 +686,7 @@ export struct StorageSettingsPage {
   private confirmDecryptImport(): void {
     if (!this.pendingEncryptedRaw || !this.importPassword) {
       this.importPasswordError = AppStrings.text(
-        AppStrings.R_BACKUP_PASSWORD_REQUIRED,
+        $r('app.string.backup_password_required'),
         'Enter the backup password.',
       )
       return

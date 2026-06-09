@@ -144,7 +144,7 @@ export function translateApiError(err: Object | null | undefined): string {
       return msg
     }
   }
-  return AppStrings.text(AppStrings.R_COMMON_LOAD_FAILED, 'Operation failed')
+  return AppStrings.text($r('app.string.common_load_failed'), 'Operation failed')
 }
 
 /**
@@ -156,119 +156,119 @@ export class ApiErrors {
   static authRequired(): ApiError {
     return new ApiError(
       ApiErrorCode.AUTH_REQUIRED,
-      AppStrings.R_API_ERROR_AUTH_REQUIRED,
+      $r('app.string.api_error_auth_required'),
       'Please sign in',
     )
   }
   static webSessionExpired(): ApiError {
     return new ApiError(
       ApiErrorCode.WEB_SESSION_EXPIRED,
-      AppStrings.R_API_ERROR_WEB_SESSION_EXPIRED,
+      $r('app.string.api_error_web_session_expired'),
       'Web session expired',
     )
   }
   static invalidUsername(): ApiError {
     return new ApiError(
       ApiErrorCode.INVALID_USERNAME,
-      AppStrings.R_API_ERROR_INVALID_USERNAME,
+      $r('app.string.api_error_invalid_username'),
       'Invalid username',
     )
   }
   static invalidTopicId(): ApiError {
     return new ApiError(
       ApiErrorCode.INVALID_TOPIC_ID,
-      AppStrings.R_API_ERROR_INVALID_TOPIC_ID,
+      $r('app.string.api_error_invalid_topic_id'),
       'Invalid topic ID',
     )
   }
   static invalidNode(): ApiError {
     return new ApiError(
       ApiErrorCode.INVALID_NODE,
-      AppStrings.R_API_ERROR_INVALID_NODE,
+      $r('app.string.api_error_invalid_node'),
       'Invalid node',
     )
   }
   static invalidReply(): ApiError {
     return new ApiError(
       ApiErrorCode.INVALID_REPLY,
-      AppStrings.R_API_ERROR_INVALID_REPLY,
+      $r('app.string.api_error_invalid_reply'),
       'Invalid reply',
     )
   }
   static invalidNotificationId(): ApiError {
     return new ApiError(
       ApiErrorCode.INVALID_NOTIFICATION_ID,
-      AppStrings.R_API_ERROR_INVALID_NOTIFICATION_ID,
+      $r('app.string.api_error_invalid_notification_id'),
       'Invalid notification ID',
     )
   }
   static invalidOperationTarget(): ApiError {
     return new ApiError(
       ApiErrorCode.INVALID_OPERATION_TARGET,
-      AppStrings.R_API_ERROR_INVALID_OPERATION_TARGET,
+      $r('app.string.api_error_invalid_operation_target'),
       'Invalid operation target',
     )
   }
   static nodeNameRequired(): ApiError {
     return new ApiError(
       ApiErrorCode.NODE_NAME_REQUIRED,
-      AppStrings.R_API_ERROR_NODE_NAME_REQUIRED,
+      $r('app.string.api_error_node_name_required'),
       'Node name is required',
     )
   }
   static missingNotificationParam(): ApiError {
     return new ApiError(
       ApiErrorCode.MISSING_NOTIFICATION_PARAM,
-      AppStrings.R_API_ERROR_MISSING_NOTIFICATION_PARAM,
+      $r('app.string.api_error_missing_notification_param'),
       'Missing notification deletion parameters',
     )
   }
   static notificationDeleteNotApplied(): ApiError {
     return new ApiError(
       ApiErrorCode.NOTIFICATION_DELETE_NOT_APPLIED,
-      AppStrings.R_API_ERROR_NOTIFICATION_DELETE_NOT_APPLIED,
+      $r('app.string.api_error_notification_delete_not_applied'),
       'Notification deletion did not apply',
     )
   }
   static checkinNotAvailable(): ApiError {
     return new ApiError(
       ApiErrorCode.CHECKIN_NOT_AVAILABLE,
-      AppStrings.R_API_ERROR_CHECKIN_NOT_AVAILABLE,
+      $r('app.string.api_error_checkin_not_available'),
       'Check-in unavailable today',
     )
   }
   static parseFavoriteActionFailed(): ApiError {
     return new ApiError(
       ApiErrorCode.PARSE_FAVORITE_ACTION_FAILED,
-      AppStrings.R_API_ERROR_PARSE_FAVORITE_ACTION_FAILED,
+      $r('app.string.api_error_parse_favorite_action_failed'),
       'Failed to parse favorite action',
     )
   }
   static parseFollowActionFailed(): ApiError {
     return new ApiError(
       ApiErrorCode.PARSE_FOLLOW_ACTION_FAILED,
-      AppStrings.R_API_ERROR_PARSE_FOLLOW_ACTION_FAILED,
+      $r('app.string.api_error_parse_follow_action_failed'),
       'Failed to parse follow action',
     )
   }
   static missingUserAction(): ApiError {
     return new ApiError(
       ApiErrorCode.MISSING_USER_ACTION,
-      AppStrings.R_API_ERROR_MISSING_USER_ACTION,
+      $r('app.string.api_error_missing_user_action'),
       'Missing user action',
     )
   }
   static replyBodyRequired(): ApiError {
     return new ApiError(
       ApiErrorCode.REPLY_BODY_REQUIRED,
-      AppStrings.R_API_ERROR_REPLY_BODY_REQUIRED,
+      $r('app.string.api_error_reply_body_required'),
       'Reply body is required',
     )
   }
   static parseReplyFormFailed(): ApiError {
     return new ApiError(
       ApiErrorCode.PARSE_REPLY_FORM_FAILED,
-      AppStrings.R_API_ERROR_PARSE_REPLY_FORM_FAILED,
+      $r('app.string.api_error_parse_reply_form_failed'),
       'Failed to parse reply form',
     )
   }
@@ -276,7 +276,7 @@ export class ApiErrors {
     const context: Record<string, string> = { '0': detail }
     return new ApiError(
       ApiErrorCode.SUBMIT_FAILED_DETAIL,
-      AppStrings.R_API_ERROR_SUBMIT_FAILED_DETAIL,
+      $r('app.string.api_error_submit_failed_detail'),
       `Submit failed: ${detail}`,
       { context },
     )
@@ -284,21 +284,21 @@ export class ApiErrors {
   static replySubmitUnconfirmed(): ApiError {
     return new ApiError(
       ApiErrorCode.REPLY_SUBMIT_UNCONFIRMED,
-      AppStrings.R_API_ERROR_REPLY_SUBMIT_UNCONFIRMED,
+      $r('app.string.api_error_reply_submit_unconfirmed'),
       'Reply submit unconfirmed',
     )
   }
   static replyThankNotAllowed(): ApiError {
     return new ApiError(
       ApiErrorCode.REPLY_THANK_NOT_ALLOWED,
-      AppStrings.R_API_ERROR_REPLY_THANK_NOT_ALLOWED,
+      $r('app.string.api_error_reply_thank_not_allowed'),
       'Reply cannot be thanked',
     )
   }
   static missingThankAction(): ApiError {
     return new ApiError(
       ApiErrorCode.MISSING_THANK_ACTION,
-      AppStrings.R_API_ERROR_MISSING_THANK_ACTION,
+      $r('app.string.api_error_missing_thank_action'),
       'Missing thank action',
     )
   }
@@ -306,7 +306,7 @@ export class ApiErrors {
     const context: Record<string, string> = { '0': detail }
     return new ApiError(
       ApiErrorCode.THANK_FAILED,
-      AppStrings.R_API_ERROR_THANK_FAILED,
+      $r('app.string.api_error_thank_failed'),
       `Thank failed: ${detail}`,
       { context },
     )
@@ -314,91 +314,91 @@ export class ApiErrors {
   static topicThankNotAllowed(): ApiError {
     return new ApiError(
       ApiErrorCode.TOPIC_THANK_NOT_ALLOWED,
-      AppStrings.R_API_ERROR_TOPIC_THANK_NOT_ALLOWED,
+      $r('app.string.api_error_topic_thank_not_allowed'),
       'Topic cannot be thanked',
     )
   }
   static missingIgnoreAction(): ApiError {
     return new ApiError(
       ApiErrorCode.MISSING_IGNORE_ACTION,
-      AppStrings.R_API_ERROR_MISSING_IGNORE_ACTION,
+      $r('app.string.api_error_missing_ignore_action'),
       'Missing ignore action',
     )
   }
   static missingReportAction(): ApiError {
     return new ApiError(
       ApiErrorCode.MISSING_REPORT_ACTION,
-      AppStrings.R_API_ERROR_MISSING_REPORT_ACTION,
+      $r('app.string.api_error_missing_report_action'),
       'Missing report action',
     )
   }
   static appendBodyRequired(): ApiError {
     return new ApiError(
       ApiErrorCode.APPEND_BODY_REQUIRED,
-      AppStrings.R_API_ERROR_APPEND_BODY_REQUIRED,
+      $r('app.string.api_error_append_body_required'),
       'Append body is required',
     )
   }
   static parseAppendFormFailed(): ApiError {
     return new ApiError(
       ApiErrorCode.PARSE_APPEND_FORM_FAILED,
-      AppStrings.R_API_ERROR_PARSE_APPEND_FORM_FAILED,
+      $r('app.string.api_error_parse_append_form_failed'),
       'Append is not available for this topic',
     )
   }
   static notTopicOwner(): ApiError {
     return new ApiError(
       ApiErrorCode.NOT_TOPIC_OWNER,
-      AppStrings.R_API_ERROR_NOT_TOPIC_OWNER,
+      $r('app.string.api_error_not_topic_owner'),
       'Only the topic author can do this',
     )
   }
   static appendSubmitUnconfirmed(): ApiError {
     return new ApiError(
       ApiErrorCode.APPEND_SUBMIT_UNCONFIRMED,
-      AppStrings.R_API_ERROR_APPEND_SUBMIT_UNCONFIRMED,
+      $r('app.string.api_error_append_submit_unconfirmed'),
       'Append submit unconfirmed',
     )
   }
   static editWindowClosed(): ApiError {
     return new ApiError(
       ApiErrorCode.EDIT_WINDOW_CLOSED,
-      AppStrings.R_API_ERROR_EDIT_WINDOW_CLOSED,
+      $r('app.string.api_error_edit_window_closed'),
       'The topic can no longer be edited (the 10-minute edit window has closed)',
     )
   }
   static nodeRequired(): ApiError {
     return new ApiError(
       ApiErrorCode.NODE_REQUIRED,
-      AppStrings.R_API_ERROR_NODE_REQUIRED,
+      $r('app.string.api_error_node_required'),
       'Node is required',
     )
   }
   static titleRequired(): ApiError {
     return new ApiError(
       ApiErrorCode.TITLE_REQUIRED,
-      AppStrings.R_API_ERROR_TITLE_REQUIRED,
+      $r('app.string.api_error_title_required'),
       'Title is required',
     )
   }
   static bodyRequired(): ApiError {
     return new ApiError(
       ApiErrorCode.BODY_REQUIRED,
-      AppStrings.R_API_ERROR_BODY_REQUIRED,
+      $r('app.string.api_error_body_required'),
       'Body is required',
     )
   }
   static parseTopicFormFailed(): ApiError {
     return new ApiError(
       ApiErrorCode.PARSE_TOPIC_FORM_FAILED,
-      AppStrings.R_API_ERROR_PARSE_TOPIC_FORM_FAILED,
+      $r('app.string.api_error_parse_topic_form_failed'),
       'Failed to parse topic form',
     )
   }
   static missingActionPath(): ApiError {
     return new ApiError(
       ApiErrorCode.MISSING_ACTION_PATH,
-      AppStrings.R_API_ERROR_MISSING_ACTION_PATH,
+      $r('app.string.api_error_missing_action_path'),
       'Missing action path',
     )
   }
@@ -406,7 +406,7 @@ export class ApiErrors {
     const context: Record<string, string> = { '0': label }
     return new ApiError(
       ApiErrorCode.FIELD_REQUIRED_DETAIL,
-      AppStrings.R_API_ERROR_FIELD_REQUIRED_DETAIL,
+      $r('app.string.api_error_field_required_detail'),
       `Field is required: ${label}`,
       { context },
     )
@@ -415,7 +415,7 @@ export class ApiErrors {
     const context: Record<string, string> = { '0': label }
     return new ApiError(
       ApiErrorCode.FIELD_EXTERNAL_LINK_FORBIDDEN,
-      AppStrings.R_API_ERROR_FIELD_EXTERNAL_LINK_FORBIDDEN,
+      $r('app.string.api_error_field_external_link_forbidden'),
       `External links not allowed: ${label}`,
       { context },
     )
@@ -423,14 +423,14 @@ export class ApiErrors {
   static hotTopicsEmpty(): ApiError {
     return new ApiError(
       ApiErrorCode.HOT_TOPICS_EMPTY,
-      AppStrings.R_API_ERROR_HOT_TOPICS_EMPTY,
+      $r('app.string.api_error_hot_topics_empty'),
       'No hot topics returned',
     )
   }
   static recentTopicsEmpty(): ApiError {
     return new ApiError(
       ApiErrorCode.RECENT_TOPICS_EMPTY,
-      AppStrings.R_API_ERROR_RECENT_TOPICS_EMPTY,
+      $r('app.string.api_error_recent_topics_empty'),
       'No recent topics returned',
     )
   }
@@ -438,7 +438,7 @@ export class ApiErrors {
     const context: Record<string, string> = { '0': tab }
     return new ApiError(
       ApiErrorCode.TAB_TOPICS_EMPTY,
-      AppStrings.R_API_ERROR_TAB_TOPICS_EMPTY,
+      $r('app.string.api_error_tab_topics_empty'),
       `Tab returned no topics: ${tab}`,
       { context },
     )
@@ -446,7 +446,7 @@ export class ApiErrors {
   static parseLoginPageFailed(): ApiError {
     return new ApiError(
       ApiErrorCode.PARSE_LOGIN_PAGE_FAILED,
-      AppStrings.R_API_ERROR_PARSE_LOGIN_PAGE_FAILED,
+      $r('app.string.api_error_parse_login_page_failed'),
       'Failed to parse login page',
     )
   }
@@ -455,7 +455,7 @@ export class ApiErrors {
     const context: Record<string, string> = { '0': cleanIp }
     return new ApiError(
       ApiErrorCode.LOGIN_RESTRICTED,
-      cleanIp ? AppStrings.R_API_ERROR_LOGIN_RESTRICTED_WITH_IP : AppStrings.R_API_ERROR_LOGIN_RESTRICTED,
+      cleanIp ? $r('app.string.api_error_login_restricted_with_ip') : $r('app.string.api_error_login_restricted'),
       cleanIp ? `Login temporarily restricted for IP ${cleanIp}` : 'Login temporarily restricted',
       { context },
     )
@@ -463,14 +463,14 @@ export class ApiErrors {
   static loginCaptchaRequired(): ApiError {
     return new ApiError(
       ApiErrorCode.LOGIN_CAPTCHA_REQUIRED,
-      AppStrings.R_API_ERROR_LOGIN_CAPTCHA_REQUIRED,
+      $r('app.string.api_error_login_captcha_required'),
       'Login captcha required',
     )
   }
   static captchaRequired(): ApiError {
     return new ApiError(
       ApiErrorCode.CAPTCHA_REQUIRED,
-      AppStrings.R_API_ERROR_CAPTCHA_REQUIRED,
+      $r('app.string.api_error_captcha_required'),
       'Captcha required',
     )
   }
@@ -478,7 +478,7 @@ export class ApiErrors {
     const context: Record<string, string> = { '0': detail }
     return new ApiError(
       ApiErrorCode.LOGIN_FAILED_DETAIL,
-      AppStrings.R_API_ERROR_LOGIN_FAILED_DETAIL,
+      $r('app.string.api_error_login_failed_detail'),
       `Login failed: ${detail}`,
       { context },
     )
@@ -487,7 +487,7 @@ export class ApiErrors {
     const context: Record<string, string> = { '0': location }
     return new ApiError(
       ApiErrorCode.LOGIN_REDIRECT_UNSUPPORTED,
-      AppStrings.R_API_ERROR_LOGIN_REDIRECT_UNSUPPORTED,
+      $r('app.string.api_error_login_redirect_unsupported'),
       `Login redirect unsupported: ${location}`,
       { context },
     )
@@ -495,21 +495,21 @@ export class ApiErrors {
   static loginStateUnconfirmed(): ApiError {
     return new ApiError(
       ApiErrorCode.LOGIN_STATE_UNCONFIRMED,
-      AppStrings.R_API_ERROR_LOGIN_STATE_UNCONFIRMED,
+      $r('app.string.api_error_login_state_unconfirmed'),
       'Login state unconfirmed',
     )
   }
   static loginSessionMissing(): ApiError {
     return new ApiError(
       ApiErrorCode.LOGIN_SESSION_MISSING,
-      AppStrings.R_API_ERROR_LOGIN_SESSION_MISSING,
+      $r('app.string.api_error_login_session_missing'),
       'Login session missing',
     )
   }
   static twoFactorCodeRequired(): ApiError {
     return new ApiError(
       ApiErrorCode.TWO_FACTOR_CODE_REQUIRED,
-      AppStrings.R_API_ERROR_TWO_FACTOR_CODE_REQUIRED,
+      $r('app.string.api_error_two_factor_code_required'),
       'Two-factor code required',
     )
   }
@@ -517,7 +517,7 @@ export class ApiErrors {
     const context: Record<string, string> = { '0': detail }
     return new ApiError(
       ApiErrorCode.TWO_FACTOR_FAILED_DETAIL,
-      AppStrings.R_API_ERROR_TWO_FACTOR_FAILED_DETAIL,
+      $r('app.string.api_error_two_factor_failed_detail'),
       `Two-factor verification failed: ${detail}`,
       { context },
     )
@@ -525,14 +525,14 @@ export class ApiErrors {
   static twoFactorFailed(): ApiError {
     return new ApiError(
       ApiErrorCode.TWO_FACTOR_FAILED,
-      AppStrings.R_API_ERROR_TWO_FACTOR_FAILED,
+      $r('app.string.api_error_two_factor_failed'),
       'Two-factor verification failed',
     )
   }
   static tokenMissing(): ApiError {
     return new ApiError(
       ApiErrorCode.TOKEN_MISSING,
-      AppStrings.R_API_ERROR_TOKEN_MISSING,
+      $r('app.string.api_error_token_missing'),
       'Missing token',
     )
   }

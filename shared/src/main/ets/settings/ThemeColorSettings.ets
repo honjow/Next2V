@@ -1,7 +1,6 @@
 import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
 import { StorageKeys } from '../constants/StorageKeys'
-import { AppStrings } from '../i18n/AppStrings'
 import { connectThemeColor } from '../state/ThemeColorState'
 import { STORE_NAME_SETTINGS, SettingsPreferencesStore, setAppStorageValue } from './SettingsStorage'
 
@@ -38,37 +37,37 @@ export class ThemeColorSettings {
   static options(): ThemeColorOption[] {
     return [
       {
-        label: AppStrings.R_THEME_COLOR_GALAXY_BLUE,
+        label: $r('app.string.theme_color_galaxy_blue'),
         value: THEME_COLOR_GALAXY_BLUE,
         color: '#0958F7',
       },
       {
-        label: AppStrings.R_THEME_COLOR_ORANGE_YELLOW,
+        label: $r('app.string.theme_color_orange_yellow'),
         value: THEME_COLOR_ORANGE_YELLOW,
         color: '#FE9925',
       },
       {
-        label: AppStrings.R_THEME_COLOR_CAT_BLUE,
+        label: $r('app.string.theme_color_cat_blue'),
         value: THEME_COLOR_CAT_BLUE,
         color: '#345483',
       },
       {
-        label: AppStrings.R_THEME_COLOR_HUAWEI_RED,
+        label: $r('app.string.theme_color_huawei_red'),
         value: THEME_COLOR_HUAWEI_RED,
         color: '#D9323B',
       },
       {
-        label: AppStrings.R_THEME_COLOR_ELEGANT_PURPLE,
+        label: $r('app.string.theme_color_elegant_purple'),
         value: THEME_COLOR_ELEGANT_PURPLE,
         color: '#8143D6',
       },
       {
-        label: AppStrings.R_THEME_COLOR_BILIBILI_PINK,
+        label: $r('app.string.theme_color_bilibili_pink'),
         value: THEME_COLOR_BILIBILI_PINK,
         color: '#FB80A5',
       },
       {
-        label: AppStrings.R_THEME_COLOR_GRASS_GREEN,
+        label: $r('app.string.theme_color_grass_green'),
         value: THEME_COLOR_GRASS_GREEN,
         color: '#8ED931',
       },
@@ -130,24 +129,24 @@ export class ThemeColorSettings {
   static label(color: string): ResourceStr {
     const normalized = ThemeColorSettings.normalizeColor(color)
     if (normalized === THEME_COLOR_ORANGE_YELLOW) {
-      return AppStrings.R_THEME_COLOR_ORANGE_YELLOW
+      return $r('app.string.theme_color_orange_yellow')
     }
     if (normalized === THEME_COLOR_CAT_BLUE) {
-      return AppStrings.R_THEME_COLOR_CAT_BLUE
+      return $r('app.string.theme_color_cat_blue')
     }
     if (normalized === THEME_COLOR_HUAWEI_RED) {
-      return AppStrings.R_THEME_COLOR_HUAWEI_RED
+      return $r('app.string.theme_color_huawei_red')
     }
     if (normalized === THEME_COLOR_ELEGANT_PURPLE) {
-      return AppStrings.R_THEME_COLOR_ELEGANT_PURPLE
+      return $r('app.string.theme_color_elegant_purple')
     }
     if (normalized === THEME_COLOR_BILIBILI_PINK) {
-      return AppStrings.R_THEME_COLOR_BILIBILI_PINK
+      return $r('app.string.theme_color_bilibili_pink')
     }
     if (normalized === THEME_COLOR_GRASS_GREEN) {
-      return AppStrings.R_THEME_COLOR_GRASS_GREEN
+      return $r('app.string.theme_color_grass_green')
     }
-    return AppStrings.R_THEME_COLOR_GALAXY_BLUE
+    return $r('app.string.theme_color_galaxy_blue')
   }
 
   static colorValue(color: string): ResourceColor {

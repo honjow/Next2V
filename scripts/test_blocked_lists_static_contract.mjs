@@ -51,7 +51,6 @@ const accountPagePath = 'entry/src/main/ets/pages/AccountPage.ets'
 const indexPath = 'entry/src/main/ets/pages/Index.ets'
 const titleBarComponentsPath = 'entry/src/main/ets/components/IndexTitleBarComponents.ets'
 const storageKeysPath = 'shared/src/main/ets/constants/StorageKeys.ets'
-const appStringsPath = 'shared/src/main/ets/i18n/AppStrings.ets'
 const accountSessionCoordinatorPath = 'shared/src/main/ets/settings/AccountSessionCoordinator.ets'
 
 const parser = source(parserPath)
@@ -64,7 +63,6 @@ const accountPage = source(accountPagePath)
 const index = source(indexPath)
 const titleBarComponents = source(titleBarComponentsPath)
 const storageKeys = source(storageKeysPath)
-const appStrings = source(appStringsPath)
 const accountSessionCoordinator = source(accountSessionCoordinatorPath)
 
 assertIncludes(parserPath, parser, 'export interface V2exBlockedIdLists')
@@ -156,8 +154,8 @@ assertIncludes(pagePath, page, 'export struct BlockedListsPage')
 // Product intent preserved: the page still reads the selected tab to switch blocked-users vs ignored-topics.
 assertIncludes(pagePath, page, 'connectBlockedListSelectedTab()')
 assertIncludes(pagePath, page, 'BlockedListSettings.loadActive')
-assertIncludes(pagePath, page, 'AppStrings.R_LOGIN_TO_VIEW_BLOCKED')
-assertIncludes(pagePath, page, 'AppStrings.R_COMMON_LOAD_FAILED')
+assertIncludes(pagePath, page, "$r('app.string.login_to_view_blocked')")
+assertIncludes(pagePath, page, "$r('app.string.common_load_failed')")
 assertIncludes(pagePath, page, 'DiagnosticLogger.exception')
 assertIncludes(pagePath, page, 'this.api.getTopicsByIds(topicIds)')
 assertIncludes(pagePath, page, 'this.api.getMemberById(id)')
@@ -242,28 +240,27 @@ if (page.includes("message: 'Loading...'") || page.includes("message: 'Load fail
 assertIncludes(storageKeysPath, storageKeys, 'BLOCKED_LIST_SELECTED_TAB')
 assertIncludes(indexPath, index, 'wrapBuilder(BlockedListsTabsCCBuilder)')
 assertIncludes(indexPath, index, "'height': ThemeConstants.TITLE_BAR_HEIGHT")
-if (/R_BLOCKED_USERS[^\n]+\$\{|R_IGNORED_TOPICS[^\n]+\$\{|\(\$\{this\.idCount/.test(page)) {
+if (/blocked_users[^\n]+\$\{|ignored_topics[^\n]+\$\{|\(\$\{this\.idCount/.test(page)) {
   fail('BlockedLists segment labels must not append count suffixes')
 }
-const blockedLabelIndex = titleBarComponents.indexOf("AppStrings.R_BLOCKED_USERS")
-const topicLabelIndex = titleBarComponents.indexOf("AppStrings.R_IGNORED_TOPICS")
+const blockedLabelIndex = titleBarComponents.indexOf("$r('app.string.blocked_users')")
+const topicLabelIndex = titleBarComponents.indexOf("$r('app.string.ignored_topics')")
 if (blockedLabelIndex < 0 || topicLabelIndex < 0 || blockedLabelIndex > topicLabelIndex) {
   fail('BlockedLists tab header must keep blocked users before ignored topics')
 }
 assertIncludes(indexPath, index, "descriptor.family === 'blockedLists'")
-assertIncludes(indexPath, index, 'return this.navDestTitleBarOpts(AppStrings.R_NAV_BLOCKED_LISTS, undefined, undefined, bb)')
+assertIncludes(indexPath, index, "return this.navDestTitleBarOpts($r('app.string.nav_blocked_lists'), undefined, undefined, bb)")
 if (index.indexOf("descriptor.family === 'blockedLists'") > index.indexOf('IndexRouteCoordinator.usesStandardTitleBar')) {
   fail('BlockedLists title bar branch must run before generic standard title bar branch')
 }
 
 assertIncludes(routePath, route, "'BlockedLists': 'blockedLists'")
-assertIncludes(routePath, route, "'blockedLists': AppStrings.R_NAV_BLOCKED_LISTS")
+assertIncludes(routePath, route, "'blockedLists': $r('app.string.nav_blocked_lists')")
 if (settingsPage.includes("pushPathByName('BlockedLists'")) {
   fail('SettingsPage must not expose BlockedLists navigation')
 }
 assertIncludes(accountPagePath, accountPage, "this.ns.pushPathByName('BlockedLists', null)")
-assertIncludes(accountPagePath, accountPage, 'AppStrings.R_NAV_BLOCKED_LISTS')
-assertIncludes(appStringsPath, appStrings, 'R_NAV_BLOCKED_LISTS')
+assertIncludes(accountPagePath, accountPage, "$r('app.string.nav_blocked_lists')")
 assertIncludes(accountSessionCoordinatorPath, accountSessionCoordinator, "import { BlockedListSettings } from './BlockedListSettings'")
 assertIncludes(accountSessionCoordinatorPath, accountSessionCoordinator, 'restoreBlockedListSnapshot')
 assertIncludes(accountSessionCoordinatorPath, accountSessionCoordinator, 'BlockedListSettings.loadActive')

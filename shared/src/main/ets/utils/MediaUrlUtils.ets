@@ -253,7 +253,7 @@ export class MediaUrlUtils {
     if (youtubeId) {
       return {
         url: url,
-        title: titleFromText || AppStrings.text(AppStrings.R_MEDIA_YOUTUBE_VIDEO, 'YouTube video'),
+        title: titleFromText || AppStrings.text($r('app.string.media_youtube_video'), 'YouTube video'),
         subtitle: host || url,
         label: 'YouTube'
       }
@@ -263,7 +263,7 @@ export class MediaUrlUtils {
     if (vimeoId) {
       return {
         url: url,
-        title: titleFromText || AppStrings.text(AppStrings.R_MEDIA_VIMEO_VIDEO, 'Vimeo video'),
+        title: titleFromText || AppStrings.text($r('app.string.media_vimeo_video'), 'Vimeo video'),
         subtitle: host || url,
         label: 'Vimeo'
       }
@@ -275,7 +275,7 @@ export class MediaUrlUtils {
         url: url,
         title: titleFromText || MediaUrlUtils.imageTitleFromUrl(url, 'v2next_video'),
         subtitle: host || url,
-        label: AppStrings.text(AppStrings.R_MEDIA_VIDEO_LINK, 'Video')
+        label: AppStrings.text($r('app.string.media_video_link'), 'Video')
       }
     }
 
@@ -292,7 +292,7 @@ export class MediaUrlUtils {
     if (MediaUrlUtils.isImgurPage(url)) {
       return {
         url: url,
-        title: titleFromText || AppStrings.text(AppStrings.R_MEDIA_IMGUR_PAGE, 'Imgur page'),
+        title: titleFromText || AppStrings.text($r('app.string.media_imgur_page'), 'Imgur page'),
         subtitle: host || url,
         label: 'Imgur'
       }
@@ -301,7 +301,7 @@ export class MediaUrlUtils {
     if (MediaUrlUtils.isHostOrSubdomain(host, 'v2ex.com') || MediaUrlUtils.isHostOrSubdomain(host, 'v2ex.co')) {
       return {
         url: url,
-        title: titleFromText || AppStrings.text(AppStrings.R_MEDIA_V2EX_LINK, 'V2EX link'),
+        title: titleFromText || AppStrings.text($r('app.string.media_v2ex_link'), 'V2EX link'),
         subtitle: host || url,
         label: 'V2EX'
       }
@@ -311,7 +311,7 @@ export class MediaUrlUtils {
       url: url,
       title: titleFromText || host || url,
       subtitle: url,
-      label: AppStrings.text(AppStrings.R_MEDIA_LINK_LABEL, 'Link')
+      label: AppStrings.text($r('app.string.media_link_label'), 'Link')
     }
   }
 

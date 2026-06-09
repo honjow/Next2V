@@ -63,8 +63,8 @@ export struct UserProfilePage {
   @Local private activityTab: number = 0;
   // Count-bearing tab labels (e.g. "Topics 12" / "Replies 3") passed one-way to the @ComponentV2
   // segmented control (UserProfileActivityTabs); refreshed after vm.load() via updateTabLabels().
-  @Local private topicTabLabel: string = AppStrings.text(AppStrings.R_USER_TAB_TOPICS_LABEL, 'Topics');
-  @Local private replyTabLabel: string = AppStrings.text(AppStrings.R_USER_TAB_REPLIES_LABEL, 'Replies');
+  @Local private topicTabLabel: string = AppStrings.text($r('app.string.user_tab_topics_label'), 'Topics');
+  @Local private replyTabLabel: string = AppStrings.text($r('app.string.user_tab_replies_label'), 'Replies');
   @Local private following: boolean = false;
   @Local private blocked: boolean = false;
   // Per-topic read-state ledger (V2 mirror; LocalDataPublisher dual-writes). Read in build() via
@@ -139,7 +139,7 @@ export struct UserProfilePage {
               }
             } else if (this.vm.recentTopicCount === 0) {
               ListItem() {
-                UserProfileEmptyCard({ message: AppStrings.text(AppStrings.R_USER_PROFILE_NO_TOPICS, 'No topics') })
+                UserProfileEmptyCard({ message: AppStrings.text($r('app.string.user_profile_no_topics'), 'No topics') })
               }
             } else {
               LazyForEach(
@@ -167,7 +167,7 @@ export struct UserProfilePage {
               )
               if (this.shouldShowAllActivityButton()) {
                 ListItem() {
-                  this.AllActivityEntry(AppStrings.text(AppStrings.R_USER_PROFILE_VIEW_ALL_TOPICS, 'View all topics'))
+                  this.AllActivityEntry(AppStrings.text($r('app.string.user_profile_view_all_topics'), 'View all topics'))
                 }
               }
             }
@@ -179,7 +179,7 @@ export struct UserProfilePage {
               }
             } else if (this.vm.recentReplyCount === 0) {
               ListItem() {
-                UserProfileEmptyCard({ message: AppStrings.text(AppStrings.R_USER_PROFILE_NO_REPLIES, 'No replies') })
+                UserProfileEmptyCard({ message: AppStrings.text($r('app.string.user_profile_no_replies'), 'No replies') })
               }
             } else {
               LazyForEach(
@@ -193,7 +193,7 @@ export struct UserProfilePage {
               )
               if (this.shouldShowAllActivityButton()) {
                 ListItem() {
-                  this.AllActivityEntry(AppStrings.text(AppStrings.R_USER_PROFILE_VIEW_ALL_REPLIES, 'View all replies'))
+                  this.AllActivityEntry(AppStrings.text($r('app.string.user_profile_view_all_replies'), 'View all replies'))
                 }
               }
             }
@@ -202,7 +202,7 @@ export struct UserProfilePage {
       } else {
         Column() {
           UserProfileErrorState({
-            message: this.vm.errorMessage || AppStrings.text(AppStrings.R_COMMON_LOAD_FAILED, 'Load failed'),
+            message: this.vm.errorMessage || AppStrings.text($r('app.string.common_load_failed'), 'Load failed'),
             retryAction: () => {
               this.vm.load()
             }
@@ -286,7 +286,7 @@ export struct UserProfilePage {
 
   @Builder UserMarkSheet() {
     AppModalScaffold({
-      title: AppStrings.R_USER_MARK_SHEET_TITLE,
+      title: $r('app.string.user_mark_sheet_title'),
       includeKeyboardPadding: true,
       contentBackgroundColor: $r('sys.color.ohos_id_color_sub_background'),
       closeAction: () => {
@@ -305,12 +305,12 @@ export struct UserProfilePage {
 
   @Builder UserMarkCreateSection() {
     Column({ space: ThemeConstants.SPACE_XS }) {
-      this.UserMarkSectionLabel(AppStrings.R_USER_MARK_CREATE_SECTION)
+      this.UserMarkSectionLabel($r('app.string.user_mark_create_section'))
       GroupedListSection({ inset: ThemeConstants.SPACE_XL, radius: ThemeConstants.RADIUS_CARD }) {
         Column({ space: ThemeConstants.SPACE_MD }) {
           AppTextField({
             text: this.userMarkInput,
-            placeholder: AppStrings.R_USER_MARK_NAME_PLACEHOLDER,
+            placeholder: $r('app.string.user_mark_name_placeholder'),
             onTextChange: (value: string) => {
               this.userMarkInput = value
             }
@@ -318,7 +318,7 @@ export struct UserProfilePage {
             .width('100%')
           this.UserMarkColorPalette()
           AppActionButton({
-            label: AppStrings.R_USER_MARK_ADD,
+            label: $r('app.string.user_mark_add'),
             primary: true,
             isEnabled: this.canCreateUserMark(),
             action: () => {
@@ -336,9 +336,9 @@ export struct UserProfilePage {
     if (this.allUserMarkLabels().length === 0) {
       ListItem() {
         Column({ space: ThemeConstants.SPACE_XS }) {
-          this.UserMarkSectionLabel(AppStrings.R_USER_MARK_EXISTING_SECTION)
+          this.UserMarkSectionLabel($r('app.string.user_mark_existing_section'))
           GroupedListSection() {
-            Text(AppStrings.R_USER_MARK_EMPTY)
+            Text($r('app.string.user_mark_empty'))
               .fontSize(ThemeConstants.FONT_SIZE_BODY)
               .fontColor($r('sys.color.font_secondary'))
               .width('100%')
@@ -350,7 +350,7 @@ export struct UserProfilePage {
       }
     } else {
       ListItem() {
-        this.UserMarkSectionLabel(AppStrings.R_USER_MARK_EXISTING_SECTION)
+        this.UserMarkSectionLabel($r('app.string.user_mark_existing_section'))
       }
       ForEach(
         this.allUserMarkLabels(),
@@ -402,11 +402,11 @@ export struct UserProfilePage {
 
   @Builder UserMarkDisplayLimitSection() {
     Column({ space: ThemeConstants.SPACE_XS }) {
-      this.UserMarkSectionLabel(AppStrings.R_USER_MARK_DISPLAY_SECTION)
+      this.UserMarkSectionLabel($r('app.string.user_mark_display_section'))
       GroupedListSection() {
         ConciseListRow({
-          title: AppStrings.R_USER_MARK_DISPLAY_LIMIT,
-          subtitle: AppStrings.R_USER_MARK_DISPLAY_LIMIT_HINT,
+          title: $r('app.string.user_mark_display_limit'),
+          subtitle: $r('app.string.user_mark_display_limit_hint'),
           showChevron: false,
           hasCounter: true,
           counterValue: `${this.userMarks.displayLimit}`,
@@ -420,8 +420,8 @@ export struct UserProfilePage {
           }
         })
         ConciseListRow({
-          title: AppStrings.R_USER_MARK_COMBINED_BADGE,
-          subtitle: AppStrings.R_USER_MARK_COMBINED_BADGE_HINT,
+          title: $r('app.string.user_mark_combined_badge'),
+          subtitle: $r('app.string.user_mark_combined_badge_hint'),
           showChevron: false,
           hasSwitch: true,
           checked: this.userMarks.combinedBadge,
@@ -559,7 +559,7 @@ export struct UserProfilePage {
   private createUserMark(): void {
     const name = (this.userMarkInput || '').trim()
     if (!name) {
-      this.showActionToast(AppStrings.text(AppStrings.R_USER_MARK_NAME_REQUIRED, 'Enter a mark name'))
+      this.showActionToast(AppStrings.text($r('app.string.user_mark_name_required'), 'Enter a mark name'))
       return
     }
     const target = this.targetUserMarkUsername()
@@ -572,11 +572,11 @@ export struct UserProfilePage {
       .then(() => {
         this.userMarkInput = ''
         this.userMarkSaving = false
-        this.showActionToast(AppStrings.text(AppStrings.R_COMMON_SAVED, 'Saved'))
+        this.showActionToast(AppStrings.text($r('app.string.common_saved'), 'Saved'))
       })
       .catch((error: Error) => {
         this.userMarkSaving = false
-        this.showActionToast(error.message || AppStrings.text(AppStrings.R_COMMON_SAVE_FAILED, 'Save failed'))
+        this.showActionToast(error.message || AppStrings.text($r('app.string.common_save_failed'), 'Save failed'))
       })
   }
 
@@ -599,7 +599,7 @@ export struct UserProfilePage {
       })
       .catch((error: Error) => {
         this.pendingUserMarkLabelId = ''
-        this.showActionToast(error.message || AppStrings.text(AppStrings.R_COMMON_SAVE_FAILED, 'Save failed'))
+        this.showActionToast(error.message || AppStrings.text($r('app.string.common_save_failed'), 'Save failed'))
       })
   }
 
@@ -608,18 +608,18 @@ export struct UserProfilePage {
       return
     }
     this.getUIContext().showAlertDialog({
-      title: AppStrings.text(AppStrings.R_COMMON_DELETE, 'Delete'),
+      title: AppStrings.text($r('app.string.common_delete'), 'Delete'),
       message: AppStrings.format(
-        AppStrings.text(AppStrings.R_CONFIRM_DELETE_PROXY_MESSAGE, 'Delete "{0}"?'),
+        AppStrings.text($r('app.string.confirm_delete_proxy_message'), 'Delete "{0}"?'),
         [label.name],
       ),
       primaryButton: {
-        value: AppStrings.R_COMMON_CANCEL,
+        value: $r('app.string.common_cancel'),
         action: () => {
         }
       },
       secondaryButton: {
-        value: AppStrings.R_COMMON_DELETE,
+        value: $r('app.string.common_delete'),
         action: () => {
           this.deleteUserMark(label)
         }
@@ -636,25 +636,25 @@ export struct UserProfilePage {
     UserMarkSettings.deleteLabel(context, label.id)
       .then(() => {
         this.pendingUserMarkLabelId = ''
-        this.showActionToast(AppStrings.text(AppStrings.R_COMMON_DELETED, 'Deleted'))
+        this.showActionToast(AppStrings.text($r('app.string.common_deleted'), 'Deleted'))
       })
       .catch((error: Error) => {
         this.pendingUserMarkLabelId = ''
-        this.showActionToast(error.message || AppStrings.text(AppStrings.R_COMMON_DELETE_FAILED, 'Delete failed'))
+        this.showActionToast(error.message || AppStrings.text($r('app.string.common_delete_failed'), 'Delete failed'))
       })
   }
 
   private updateUserMarkDisplayLimit(value: number): void {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     UserMarkSettings.saveDisplayLimit(context, value).catch((error: Error) => {
-      this.showActionToast(error.message || AppStrings.text(AppStrings.R_COMMON_SAVE_FAILED, 'Save failed'))
+      this.showActionToast(error.message || AppStrings.text($r('app.string.common_save_failed'), 'Save failed'))
     })
   }
 
   private updateUserMarkCombinedBadge(value: boolean): void {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     UserMarkSettings.saveCombinedBadge(context, value).catch((error: Error) => {
-      this.showActionToast(error.message || AppStrings.text(AppStrings.R_COMMON_SAVE_FAILED, 'Save failed'))
+      this.showActionToast(error.message || AppStrings.text($r('app.string.common_save_failed'), 'Save failed'))
     })
   }
 
@@ -952,10 +952,10 @@ export struct UserProfilePage {
   private actionFailureToast(error: Error): string {
     const message = (error?.message || '').trim()
     // Web session expired is reported by the API layer; pass it through.
-    if (message === 'Web session expired' || message === AppStrings.text(AppStrings.R_API_ERROR_WEB_SESSION_EXPIRED, 'Web session expired, please log in again')) {
+    if (message === 'Web session expired' || message === AppStrings.text($r('app.string.api_error_web_session_expired'), 'Web session expired, please log in again')) {
       return message
     }
-    return AppStrings.text(AppStrings.R_USER_PROFILE_ACTION_FAILED, 'Action failed')
+    return AppStrings.text($r('app.string.user_profile_action_failed'), 'Action failed')
   }
 
   private reloadActionStateAfterFailure(): void {

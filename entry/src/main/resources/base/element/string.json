@@ -390,15 +390,15 @@
     },
     {
       "name": "language_simplified_chinese",
-      "value": "Simplified Chinese"
+      "value": "简体中文"
     },
     {
       "name": "language_traditional_chinese_hk",
-      "value": "Traditional Chinese (Hong Kong)"
+      "value": "繁體中文（香港）"
     },
     {
       "name": "language_traditional_chinese_tw",
-      "value": "Traditional Chinese (Taiwan)"
+      "value": "繁體中文（台灣）"
     },
     {
       "name": "language_english",
@@ -406,11 +406,11 @@
     },
     {
       "name": "language_korean",
-      "value": "Korean"
+      "value": "한국어"
     },
     {
       "name": "language_japanese",
-      "value": "Japanese"
+      "value": "日本語"
     },
     {
       "name": "account_management",

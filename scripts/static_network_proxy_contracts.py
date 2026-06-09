@@ -46,8 +46,8 @@ def main() -> int:
     require('profile storage keys', 'networkProxyProfiles' in settings and 'networkProxyActiveProfileId' in settings)
     require('profile api exists', 'NetworkProxyProfileSettings' in settings and 'setActiveProfile' in settings and 'upsertProfile' in settings and 'deleteProfile' in settings)
     require('profile switching preserves runtime snapshot', 'NetworkProxySettings.save(context, profile.snapshot)' in settings and 'NetworkProxySettings.current()' in adapter)
-    require('host validation', 'isValidHost' in settings and 'R_INVALID_PROXY_HOST' in settings)
-    require('port validation', 'isValidPort' in settings and 'R_INVALID_PROXY_PORT' in settings)
+    require('host validation', 'isValidHost' in settings and "app.string.invalid_proxy_host" in settings)
+    require('port validation', 'isValidPort' in settings and "app.string.invalid_proxy_port" in settings)
     require('http proxy construction', 'connection.HttpProxy' in settings and 'username' in settings and 'exclusionList' in settings)
     require('proxy scheme model', 'NetworkProxyScheme' in settings and 'proxyScheme' in settings and "'https'" in settings)
     require('socks5 url construction', "socks5://${userinfo}${normalized.host}:${normalized.port}" in settings)
@@ -86,9 +86,15 @@ def main() -> int:
         and WRONG_TEST_ENDPOINT not in api_constants,
     )
 
-    require('settings main entry', ("title: '网络代理'" in settings_page or 'R_NAV_NETWORK_PROXY' in settings_page) and "pushPathByName('NetworkProxySettings'" in settings_page)
+    require('settings main entry', ("title: '网络代理'" in settings_page or "app.string.nav_network_proxy" in settings_page) and "pushPathByName('NetworkProxySettings'" in settings_page)
     require('settings second page route', 'NetworkProxySettingsPage' in routes and 'networkProxySettings' in routes)
-    require('settings second page modes', 'R_SOCKS5_PROXY' in proxy_page and 'R_HTTP_PROXY' in proxy_page and 'R_HTTPS_PROXY_ENTRY' in proxy_page and 'R_SYSTEM_PROXY' in proxy_page)
+    require(
+        'settings second page modes',
+        "app.string.socks5_proxy" in proxy_page and
+        "app.string.http_proxy" in proxy_page and
+        "app.string.https_proxy_entry" in proxy_page and
+        "app.string.system_proxy" in proxy_page,
+    )
     forbidden_proxy_explainers = [
         '不是系统全局', '本地 DNS', 'VPN', 'WebView', '图片直显',
         '实验性', '不保证', '代理仅用于应用内网络请求'
@@ -108,10 +114,10 @@ def main() -> int:
     save_section = save_section_match.group('body') if save_section_match else ''
     require(
         'profile editor save action is normal arkui button',
-        ("Button('保存')" in save_section or 'Button(AppStrings.R_COMMON_SAVE' in save_section) and '.type(ButtonType.Normal)' in save_section and "title: '保存'" not in save_section,
+        ("Button('保存')" in save_section or "Button($r('app.string.common_save')" in save_section) and '.type(ButtonType.Normal)' in save_section and "title: '保存'" not in save_section,
     )
     require('shared component guard names', 'AppModalScaffold.ets' not in ''.join(sys.argv[1:]))
-    require('settings test action', ('R_TEST_CONNECTION' in proxy_page or "'测试连接'" in proxy_page) and 'NetworkProxyRequest.testConnection' in proxy_page)
+    require('settings test action', ("app.string.test_connection" in proxy_page or "'测试连接'" in proxy_page) and 'NetworkProxyRequest.testConnection' in proxy_page)
     require(
         'settings off hides test action',
         'currentMode() !== NetworkProxySettings.MODE_OFF' in proxy_page and 'this.ActionSection()' in proxy_page,

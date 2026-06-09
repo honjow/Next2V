@@ -117,7 +117,7 @@ export struct TopicDetailReplyDivider {
   @Event onReplyDisplayMenuShownChange?: (value: boolean) => void
   @Param replyCountText: string = ''
   @Param replyDisplayMode: string = 'origin'
-  @Param replyDisplayModeText: string = AppStrings.text(AppStrings.R_REPLY_DISPLAY_MODE_ORIGIN, 'Original')
+  @Param replyDisplayModeText: string = AppStrings.text($r('app.string.reply_display_mode_origin'), 'Original')
   @Event onJumpToFloor?: () => void
   @Event onLatest?: () => void
   @Event onShowDisplayMenu?: () => void
@@ -132,13 +132,13 @@ export struct TopicDetailReplyDivider {
         .textOverflow({ overflow: TextOverflow.Ellipsis })
         .layoutWeight(1)
       Row({ space: ThemeConstants.SPACE_XS }) {
-        this.ToolButton(AppStrings.text(AppStrings.R_TOPIC_DETAIL_TOOL_FLOOR, 'Floor'), false, () => {
+        this.ToolButton(AppStrings.text($r('app.string.topic_detail_tool_floor'), 'Floor'), false, () => {
           if (this.onJumpToFloor) {
             this.onJumpToFloor()
           }
         })
         this.DisplayModeButton()
-        this.ToolButton(AppStrings.text(AppStrings.R_TOPIC_DETAIL_TOOL_LATEST, 'Latest'), false, () => {
+        this.ToolButton(AppStrings.text($r('app.string.topic_detail_tool_latest'), 'Latest'), false, () => {
           if (this.onLatest) {
             this.onLatest()
           }
@@ -225,7 +225,7 @@ export struct TopicDetailReplyDivider {
 @ComponentV2
 export struct ReplyContextSheetContent {
   @BuilderParam content: () => void
-  @Param title: string = AppStrings.text(AppStrings.R_REPLY_CONTEXT_TITLE, 'Reply context')
+  @Param title: string = AppStrings.text($r('app.string.reply_context_title'), 'Reply context')
   @Event closeAction?: () => void
 
   build() {

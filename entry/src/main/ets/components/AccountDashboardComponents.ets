@@ -72,7 +72,7 @@ export struct AccountDetailHeaderCard {
   build() {
     Column({ space: ThemeConstants.SPACE_MD }) {
       Avatar({ url: this.avatarUrl, avatarSize: 72 })
-      Text(this.username || AppStrings.R_ACCOUNT_V2EX_USER)
+      Text(this.username || $r('app.string.account_v2ex_user'))
         .fontSize(ThemeConstants.FONT_SIZE_TITLE)
         .fontWeight(FontWeight.Medium)
         .fontColor($r('sys.color.font_primary'))
@@ -128,7 +128,7 @@ export struct AccountSignedInCard {
     Row({ space: ThemeConstants.SPACE_MD }) {
       Avatar({ url: this.avatarUrl, avatarSize: 54 })
       Column({ space: ThemeConstants.SPACE_XS }) {
-        Text(this.username || AppStrings.R_ACCOUNT_V2EX_USER)
+        Text(this.username || $r('app.string.account_v2ex_user'))
           .fontSize(ThemeConstants.FONT_SIZE_TITLE)
           .fontWeight(FontWeight.Medium)
           .fontColor($r('sys.color.font_primary'))

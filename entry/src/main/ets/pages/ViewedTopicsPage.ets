@@ -93,7 +93,7 @@ export struct ViewedTopicsPage {
         console.error('remove viewed topic failed: ' + error.message)
         this.loadTopics()
         promptAction
-          .openToast({ message: AppStrings.text(AppStrings.R_COMMON_DELETE_FAILED, 'Delete failed') })
+          .openToast({ message: AppStrings.text($r('app.string.common_delete_failed'), 'Delete failed') })
           .catch((_e: Error) => {})
       })
   }
