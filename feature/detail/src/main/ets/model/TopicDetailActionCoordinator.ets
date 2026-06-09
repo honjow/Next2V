@@ -107,6 +107,12 @@ export class TopicDetailActionCoordinator {
       return false
     }
     const safeReply = reply as V2exReply
+    // The tapped object carries the server-known thanked flag. During a held reload the on-screen
+    // row is absent from the page-1 snapshot, so trust the object itself or the guard would let the
+    // user re-thank an already-thanked reply (server rejects → toast).
+    if (safeReply.thanked) {
+      return true
+    }
     return TopicDetailActionCoordinator.isReplyThanked(safeReply.id, replies, thankedReplyIdsJson)
   }
 

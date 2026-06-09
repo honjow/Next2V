@@ -307,12 +307,15 @@ export struct TopicDetailPage {
             this.v.load().then(() => {
               this.recordViewedTopic()
               this.markTopicReadState()
-              this.restoreInitialPosition()
-              this.publishOwnership(context)
+              // Arm the thread preload BEFORE the floor-targeting restore: ensureRepliesLoaded's
+              // loadMore loop must see isPreloadingAll and join the in-flight preload instead of
+              // racing it with a duplicate page fetch whose publish would collapse a held thread.
               this.v.triggerThreadPreloadIfNeeded()
               if (this.v.needsPreloadConfirm) {
                 this.showPreloadConfirmDialog()
               }
+              this.restoreInitialPosition()
+              this.publishOwnership(context)
             })
           })
       })
@@ -1010,7 +1013,7 @@ export struct TopicDetailPage {
               reply: reply,
               floor: this.replyCardDisplayState(reply, index).floor,
               isOp: this.replyCardDisplayState(reply, index).isOp,
-              isThanked: this.isReplyThanked(reply.id),
+              isThanked: this.isReplyThanked(reply),
               isThankPending: this.isReplyThankPending(reply.id),
               threadLevel: this.replyCardDisplayState(reply, index).threadLevel,
               relationLabel: '',
@@ -1019,7 +1022,7 @@ export struct TopicDetailPage {
               opMemberId: this.replyCardDisplayState(reply, index).opMemberId,
               hideLeadingMention: this.replyCardDisplayState(reply, index).hideLeadingMention,
               isReplyThanked: (target: V2exReply) => {
-                return this.isReplyThanked(target.id)
+                return this.isReplyThanked(target)
               },
               isReplyThankPending: (target: V2exReply) => {
                 return this.isReplyThankPending(target.id)
@@ -2182,9 +2185,14 @@ export struct TopicDetailPage {
     this.pendingReplyThankId = lockState.pendingReplyThankId
   }
 
-  private isReplyThanked(replyId: number): boolean {
+  private isReplyThanked(reply: V2exReply): boolean {
+    // Trust the rendered object's own server thanked flag first: during a held reload the page-1
+    // snapshot omits the on-screen row, and this keeps its heart filled until the preload republish.
+    if (reply.thanked) {
+      return true
+    }
     return TopicDetailActionCoordinator.isReplyThanked(
-      replyId,
+      reply.id,
       this.v.getLoadedRepliesSnapshot(),
       this.thankedReplyIdsJson,
     )

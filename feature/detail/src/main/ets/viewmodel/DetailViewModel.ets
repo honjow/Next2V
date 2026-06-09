@@ -67,6 +67,21 @@ export class DetailViewModel {
   private readonly V2_REPLY_PAGE_SIZE: number = 20
   allRepliesLoaded: boolean = false
   private static readonly PRELOAD_REPLY_LIMIT: number = 500
+  // When a full reload runs while a complete thread is already on screen (cache-backed re-entry,
+  // post-reply refetch), publishing the intermediate page-1 state would visibly collapse the
+  // threaded list before preload re-expands it. load() then holds the replies publish (internal
+  // state only) and the follow-up preload performs ONE publish — LazyForEach reuses items whose
+  // renderKey is unchanged, so only new/changed nodes rebuild instead of the whole tree.
+  private heldRepliesPublish: boolean = false
+  // Chronological reply list as last pushed to the data source. While a publish is held, internal
+  // this.replies (fresh page-1) deliberately diverges from the on-screen rows, so UI floor lookups
+  // must resolve here — a floor computed from internal state would be wrong for rows materialized
+  // mid-hold and then frozen into reused LazyForEach nodes by the final publish (renderKey carries
+  // no floor). Outside the held window this is the same array reference as this.replies.
+  private publishedReplies: V2exReply[] = []
+  // In-flight preload-all, exposed so a racing loadMoreReplies/load() can join it instead of
+  // fetching duplicate pages or publishing partial state underneath it.
+  private preloadAllPromise: Promise<void> | null = null
 
   constructor(topicId: number) {
     this.topicId = topicId
@@ -77,13 +92,13 @@ export class DetailViewModel {
     this.replyDisplayMode = enabled
       ? ReplyDisplaySettings.MODE_OP
       : ReplyDisplaySettings.MODE_THREAD
-    this.replyDataSource.setData(this.getVisibleReplies())
+    this.publishVisibleReplies()
   }
 
   setReplyDisplayMode(mode: string): void {
     this.replyDisplayMode = ReplyDisplaySettings.normalizeMode(mode)
     this.onlyOp = this.replyDisplayMode === ReplyDisplaySettings.MODE_OP
-    this.replyDataSource.setData(this.getVisibleReplies())
+    this.publishVisibleReplies()
   }
 
   isThreadMode(): boolean {
@@ -104,11 +119,13 @@ export class DetailViewModel {
    */
   triggerThreadPreloadIfNeeded(): void {
     if (!this.isThreadMode() || !this.repliesHasMore || this.allRepliesLoaded) {
+      this.flushHeldRepliesPublish()
       return
     }
     const estimatedTotal = this.estimateTotalReplies()
     if (estimatedTotal > DetailViewModel.PRELOAD_REPLY_LIMIT) {
       this.needsPreloadConfirm = true
+      this.flushHeldRepliesPublish()
     } else {
       this.preloadRemainingReplies()
     }
@@ -134,15 +151,17 @@ export class DetailViewModel {
   confirmPreloadFallbackFlat(): void {
     this.needsPreloadConfirm = false
     this.preloadFallbackToFlat = true
-    this.replyDataSource.setData(this.getVisibleReplies())
+    this.publishVisibleReplies()
   }
 
   getReplyFloor(replyId: number): number {
     if (replyId <= 0) {
       return 0
     }
-    for (let i = 0; i < this.replies.length; i++) {
-      if (this.replies[i].id === replyId) {
+    // Floors are a pure UI-position concept: resolve against what is on screen (publishedReplies),
+    // never the internal list, or held-window lookups would mislabel visible rows.
+    for (let i = 0; i < this.publishedReplies.length; i++) {
+      if (this.publishedReplies[i].id === replyId) {
         return i + 1
       }
     }
@@ -175,8 +194,12 @@ export class DetailViewModel {
         reply.renderKey = `${reply.renderKey || reply.id.toString()}-thanks-${reply.thanks}-me`
       }
     })
-    if (snapshot !== null) {
-      this.replyDataSource.setData(this.getVisibleReplies())
+    // While a reload holds the publish, the data source still shows the old full thread and
+    // this.replies is the fresh page-1 — pushing it here would collapse the list. Mutate internal
+    // state only; the preload's final publish (which re-merges the action overlay) carries the
+    // thank state out, and the page-level highlight covers the interim frames.
+    if (snapshot !== null && !this.heldRepliesPublish) {
+      this.publishVisibleReplies()
     }
     return snapshot
   }
@@ -194,8 +217,8 @@ export class DetailViewModel {
         changed = true
       }
     })
-    if (changed) {
-      this.replyDataSource.setData(this.getVisibleReplies())
+    if (changed && !this.heldRepliesPublish) {
+      this.publishVisibleReplies()
     }
   }
 
@@ -214,8 +237,8 @@ export class DetailViewModel {
         changed = true
       }
     })
-    if (changed) {
-      this.replyDataSource.setData(this.getVisibleReplies())
+    if (changed && !this.heldRepliesPublish) {
+      this.publishVisibleReplies()
     }
   }
 
@@ -225,7 +248,15 @@ export class DetailViewModel {
 
   setTopicActionOverlay(overlay: TopicDetailActionOverlay | null): void {
     this.actionOverlay = overlay
-    if (this.topic !== null || this.replies.length > 0) {
+    if (this.topic === null && this.replies.length === 0) {
+      return
+    }
+    if (this.heldRepliesPublish) {
+      // Post-thank/favorite overlay refreshes land mid-hold all the time (the chain is async);
+      // re-merge internally and let the preload's final publish carry the overlay out instead of
+      // pushing the page-1 list and collapsing the on-screen thread.
+      this.applyMergedTopicDetail(this.topic, this.replies)
+    } else {
       this.publishMergedTopicDetail(this.topic, this.replies)
     }
   }
@@ -251,7 +282,6 @@ export class DetailViewModel {
         this.normalizeTopicForRender(cached.topic),
         this.normalizeRepliesForRender(cached.replies),
       )
-      this.repliesLoaded = this.replies.length
     } catch (error) {
       console.error('load topic cache failed:', (error as Error).message)
     }
@@ -262,13 +292,22 @@ export class DetailViewModel {
       this.errorMessage = AppStrings.text($r('app.string.api_error_invalid_topic_id'), 'Invalid topic ID')
       return
     }
+    if (this.isPreloadingAll) {
+      // A reload racing the in-flight preload-all either eager-publishes a page-1 collapse that
+      // sticks (the preload's completion flips allRepliesLoaded mid-reload, so the follow-up
+      // trigger skips re-preloading) or gets its fresh tail wholesale-overwritten by the older
+      // preload fetch. Serialize behind the preload so the reload starts from a settled state.
+      const inFlight = this.preloadAllPromise
+      if (inFlight !== null) {
+        await inFlight
+      }
+    }
     this.isLoading = true
     this.errorMessage = ''
     this.loadMoreErrorMessage = ''
     if (forceNetwork && this.topic === null) {
       this.replies = []
-      this.replyDataSource.setData([])
-      this.repliesLoaded = 0
+      this.publishVisibleReplies()
     }
     this.repliesUseV2 = !!this.authToken
     this.repliesSource = this.authToken ? 'v2' : 'publicApi'
@@ -320,11 +359,17 @@ export class DetailViewModel {
         this.repliesUseV2 = false
       }
 
-      this.publishMergedTopicDetail(
+      this.applyMergedTopicDetail(
         this.normalizeTopicForRender(topic),
         this.normalizeRepliesForRender(replies),
       )
-      this.repliesLoaded = this.replies.length
+      if (this.shouldHoldRepliesPublish()) {
+        // Keep the on-screen full thread (and its repliesLoaded count) untouched; the preload
+        // that the page triggers right after load() resolves performs the single real publish.
+        this.heldRepliesPublish = true
+      } else {
+        this.publishVisibleReplies()
+      }
       this.repliesLoadMoreState = this.repliesHasMore ? 'idle' : 'endReached'
       if (!this.repliesHasMore) {
         this.allRepliesLoaded = true
@@ -341,6 +386,18 @@ export class DetailViewModel {
   }
 
   async loadMoreReplies(): Promise<void> {
+    if (this.isPreloadingAll) {
+      // While preload-all is fetching every page, an incremental fetch would duplicate pages and —
+      // during a held publish — push a partial list that collapses the on-screen thread. Join the
+      // in-flight preload instead of silently no-opping: floor-targeting loops
+      // (ensureRepliesLoaded) rely on each loadMoreReplies call making real progress, and the
+      // preload's single publish satisfies them with the full list in one await.
+      const inFlight = this.preloadAllPromise
+      if (inFlight !== null) {
+        await inFlight
+      }
+      return
+    }
     if (
       this.isLoading ||
       this.isRepliesLoadingMore ||
@@ -402,10 +459,18 @@ export class DetailViewModel {
     await this.loadMoreReplies()
   }
 
-  async preloadRemainingReplies(): Promise<void> {
+  preloadRemainingReplies(): Promise<void> {
     if (this.isPreloadingAll || this.allRepliesLoaded || this.isLoading) {
-      return
+      // Already running (or nothing to do): hand back the in-flight run so callers can join it.
+      const inFlight = this.preloadAllPromise
+      return inFlight !== null ? inFlight : Promise.resolve()
     }
+    const run = this.runPreloadRemainingReplies()
+    this.preloadAllPromise = run
+    return run
+  }
+
+  private async runPreloadRemainingReplies(): Promise<void> {
     this.isPreloadingAll = true
     this.preloadProgress = AppStrings.text($r('app.string.preloading_all_replies'), 'Loading all replies…')
     try {
@@ -418,11 +483,13 @@ export class DetailViewModel {
       this.repliesHasMore = false
       this.repliesLoadMoreState = 'endReached'
       this.publishMergedTopicDetail(this.topic, this.replies)
-      this.repliesLoaded = this.replies.length
       this.saveCache(this.topic, this.replies).catch((_e: Error) => {})
     } catch (error) {
       console.error('preload all replies failed:', (error as Error).message)
     } finally {
+      // On success the publish above already cleared the held flag; on failure this pushes the
+      // held page-1 state out so the UI matches this.replies instead of staying on stale data.
+      this.flushHeldRepliesPublish()
       this.isPreloadingAll = false
       this.preloadProgress = ''
     }
@@ -560,7 +627,6 @@ export class DetailViewModel {
       return
     }
     this.publishMergedTopicDetail(this.topic, this.replies.concat(unique))
-    this.repliesLoaded = this.replies.length
   }
 
   private async saveCache(topic: V2exTopic | null, replies: V2exReply[]): Promise<void> {
@@ -574,13 +640,51 @@ export class DetailViewModel {
     }
   }
 
-  private publishMergedTopicDetail(topic: V2exTopic | null, replies: V2exReply[]): void {
-    // Cached and network replacements use one publication point so user-action overlays are applied before
-    // the topic/reply data sources can render a default false/empty first frame.
+  // Cached and network replacements use one application point so user-action overlays are applied
+  // before the topic/reply data sources can render a default false/empty first frame. Does NOT
+  // push to replyDataSource — load() uses it alone when holding the publish for a follow-up preload.
+  private applyMergedTopicDetail(topic: V2exTopic | null, replies: V2exReply[]): void {
     const merged = CacheMergeCoordinator.mergeTopicDetail(topic, replies, this.actionOverlay)
     this.topic = merged.topic
     this.replies = merged.replies
+  }
+
+  private publishMergedTopicDetail(topic: V2exTopic | null, replies: V2exReply[]): void {
+    this.applyMergedTopicDetail(topic, replies)
+    this.publishVisibleReplies()
+  }
+
+  // Single chokepoint for pushing the visible list into the LazyForEach data source: any publish
+  // brings the on-screen list, the floor-lookup snapshot, and the loaded-count text back in sync
+  // with this.replies, so the held flag must clear here.
+  private publishVisibleReplies(): void {
+    this.heldRepliesPublish = false
+    this.publishedReplies = this.replies
     this.replyDataSource.setData(this.getVisibleReplies())
+    this.repliesLoaded = this.replies.length
+  }
+
+  // Safety net: if a held page-1 publish never got superseded by a preload publish (preload
+  // failed, mode flipped, preconditions changed), push the internal state out so the UI never
+  // stays permanently stale relative to this.replies.
+  private flushHeldRepliesPublish(): void {
+    if (!this.heldRepliesPublish) {
+      return
+    }
+    this.publishVisibleReplies()
+  }
+
+  // Mirrors the auto-preload branch of triggerThreadPreloadIfNeeded(): hold the page-1 publish
+  // only when the follow-up preload is guaranteed to run unattended and publish the full list.
+  // Over-limit topics keep the eager publish because preload waits on the user's confirm dialog.
+  private shouldHoldRepliesPublish(): boolean {
+    return (
+      this.replyDataSource.totalCount() > 0 &&
+      this.isThreadMode() &&
+      this.repliesHasMore &&
+      !this.allRepliesLoaded &&
+      this.estimateTotalReplies() <= DetailViewModel.PRELOAD_REPLY_LIMIT
+    )
   }
 
   private mergeTopicSupplements(

@@ -60,13 +60,30 @@ assert.match(optimisticBody, /previousThanks:\s*Math\.max\(0,\s*reply\.thanks \|
 assert.match(optimisticBody, /wasThanked:\s*!!reply\.thanked/)
 assert.match(optimisticBody, /if \(!reply\.thanked\)\s*\{[\s\S]*reply\.thanks = Math\.max\(0,\s*reply\.thanks \|\| 0\) \+ 1[\s\S]*\}/)
 assert.match(optimisticBody, /reply\.thanked = true/)
-assert.match(optimisticBody, /replyDataSource\.setData\(this\.getVisibleReplies\(\)\)/)
+// Optimistic apply publishes through the single chokepoint, and is suppressed while a reload holds
+// the page-1 publish (heldRepliesPublish) so it cannot collapse the on-screen full thread mid-hold.
+assert.match(
+  optimisticBody,
+  /if \(snapshot !== null && !this\.heldRepliesPublish\)\s*\{[\s\S]*this\.publishVisibleReplies\(\)/,
+)
 
 const rollbackBody = methodBody(viewModel, 'rollbackReplyThank')
 assert.match(rollbackBody, /reply\.thanks = snapshot\.previousThanks/)
 assert.match(rollbackBody, /reply\.thanked = snapshot\.wasThanked/)
 assert.match(rollbackBody, /reply\.renderKey = snapshot\.previousRenderKey/)
-assert.match(rollbackBody, /replyDataSource\.setData\(this\.getVisibleReplies\(\)\)/)
+assert.match(
+  rollbackBody,
+  /if \(changed && !this\.heldRepliesPublish\)\s*\{[\s\S]*this\.publishVisibleReplies\(\)/,
+)
+
+// The chokepoint is the only place that pushes the visible list to the data source: it keeps the
+// floor-lookup snapshot (publishedReplies) and the loaded-count in lockstep with the rendered rows.
+// Anchor on the definition signature — publishVisibleReplies is also CALLED above its declaration,
+// so a name-based body scan would grab a call site instead of the method body.
+assert.match(
+  viewModel,
+  /private publishVisibleReplies\(\): void \{[\s\S]*?this\.publishedReplies = this\.replies[\s\S]*?this\.replyDataSource\.setData\(this\.getVisibleReplies\(\)\)[\s\S]*?this\.repliesLoaded = this\.replies\.length/,
+)
 
 assert.match(coordinator, /export interface ReplyThankedIdsSnapshot/)
 assert.match(coordinator, /static markReplyThankedWithSnapshot\(/)
