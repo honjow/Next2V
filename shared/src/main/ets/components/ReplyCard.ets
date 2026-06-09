@@ -209,7 +209,7 @@ export struct ReplyCard {
     if (this.embedded) {
       return Color.Transparent
     }
-    return $r('sys.color.ohos_id_color_card_bg')
+    return $r('app.color.card_background')
   }
 
   build() {

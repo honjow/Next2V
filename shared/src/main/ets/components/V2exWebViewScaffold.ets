@@ -43,7 +43,7 @@ export struct V2exWebViewScaffold {
         top: ThemeConstants.SPACE_XS,
         bottom: ThemeConstants.SPACE_XS
       })
-      .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+      .backgroundColor($r('app.color.card_background'))
     }
   }
 }

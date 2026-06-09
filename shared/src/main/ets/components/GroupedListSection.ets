@@ -15,6 +15,6 @@ export struct GroupedListSection {
     .borderRadius(this.radius)
     .clip(true)
     .padding(this.inset)
-    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+    .backgroundColor($r('app.color.card_background'))
   }
 }

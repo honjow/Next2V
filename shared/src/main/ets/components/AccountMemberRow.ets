@@ -42,6 +42,6 @@ export struct AccountMemberRow {
     .width('100%')
     .padding(ThemeConstants.SPACE_LG)
     .borderRadius(ThemeConstants.RADIUS_MD)
-    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+    .backgroundColor($r('app.color.card_background'))
   }
 }

@@ -389,7 +389,7 @@ export struct AccountDashboardPage {
     .alignItems(HorizontalAlign.Start)
     .borderRadius(ThemeConstants.RADIUS_CARD)
     .clip(true)
-    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+    .backgroundColor($r('app.color.card_background'))
   }
 
   @Builder

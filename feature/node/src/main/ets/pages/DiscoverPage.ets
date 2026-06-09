@@ -173,7 +173,7 @@ export struct DiscoverPage {
           .padding(ThemeConstants.SPACE_MD)
           .width('100%')
           .borderRadius(ThemeConstants.RADIUS_MD)
-          .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+          .backgroundColor($r('app.color.card_background'))
       } else {
         ForEach(
           this.topicSurfaceItems().slice(0, 10),

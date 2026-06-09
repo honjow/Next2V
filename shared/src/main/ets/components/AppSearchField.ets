@@ -41,7 +41,7 @@ export struct AppSearchField {
       .id(this.fieldId)
       .height(40)
       .width('100%')
-      .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+      .backgroundColor($r('app.color.card_background'))
       // Built-in trailing search button (system style: blue label + divider). Empty label renders none.
       .searchButton(this.searchButtonText)
       .onChange((value: string) => {

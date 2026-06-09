@@ -198,7 +198,7 @@ export struct SearchPage {
               stateHeight: 96,
             })
               .borderRadius(ThemeConstants.RADIUS_MD)
-              .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+              .backgroundColor($r('app.color.card_background'))
               .margin({ top: ThemeConstants.SPACE_XS })
           }
         }.width('100%')
@@ -242,7 +242,7 @@ export struct SearchPage {
               stateHeight: 96,
             })
               .borderRadius(ThemeConstants.RADIUS_MD)
-              .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+              .backgroundColor($r('app.color.card_background'))
               .margin({ top: ThemeConstants.SPACE_XS })
           }
         }.width('100%')
@@ -283,7 +283,7 @@ export struct SearchPage {
             .padding(ThemeConstants.SPACE_MD)
             .width('100%')
             .borderRadius(ThemeConstants.RADIUS_MD)
-            .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+            .backgroundColor($r('app.color.card_background'))
         }
       }.width('100%')
     }
@@ -306,7 +306,7 @@ export struct SearchPage {
         .padding(ThemeConstants.SPACE_MD)
         .width('100%')
         .borderRadius(ThemeConstants.RADIUS_MD)
-        .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+        .backgroundColor($r('app.color.card_background'))
       }
       .onClick(() => {
         this.runPrimarySearchAction()

@@ -144,7 +144,7 @@ export struct UserRepliesCard {
     .padding(ThemeConstants.SPACE_MD)
     .width('100%')
     .borderRadius(ThemeConstants.RADIUS_CARD)
-    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+    .backgroundColor($r('app.color.card_background'))
     .alignItems(HorizontalAlign.Start)
     .onClick(() => {
       this.openPrimaryTopic()

@@ -111,7 +111,7 @@ export struct DiscoverHotTopicRow {
     .width('100%')
     .padding(ThemeConstants.SPACE_MD)
     .borderRadius(ThemeConstants.RADIUS_MD)
-    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+    .backgroundColor($r('app.color.card_background'))
     .onClick(() => {
       if (this.openAction) {
         this.openAction()
@@ -154,7 +154,7 @@ export struct DiscoverNodeCard {
     .padding(ThemeConstants.SPACE_MD)
     .width('100%')
     .borderRadius(ThemeConstants.RADIUS_MD)
-    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+    .backgroundColor($r('app.color.card_background'))
     .onClick(() => {
       if (this.openAction) {
         this.openAction()
@@ -180,7 +180,7 @@ export struct DiscoverNodeChip {
     .height(34)
     .padding({ left: ThemeConstants.SPACE_MD, right: ThemeConstants.SPACE_MD })
     .borderRadius(ThemeConstants.RADIUS_ROUND)
-    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+    .backgroundColor($r('app.color.card_background'))
     .onClick(() => {
       if (this.openAction) {
         this.openAction()

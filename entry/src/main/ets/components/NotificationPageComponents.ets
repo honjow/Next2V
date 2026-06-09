@@ -137,7 +137,7 @@ export struct NotificationCard {
     .width('100%')
     .alignItems(VerticalAlign.Top)
     .borderRadius(ThemeConstants.RADIUS_MD)
-    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+    .backgroundColor($r('app.color.card_background'))
   }
 
   @Builder private ReplyPreview() {

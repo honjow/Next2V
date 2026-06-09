@@ -60,7 +60,7 @@ export struct ExternalWebSearchCard {
     .width('100%')
     .layoutWeight(1)
     .borderRadius(ThemeConstants.RADIUS_MD)
-    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+    .backgroundColor($r('app.color.card_background'))
   }
 }
 @ComponentV2
@@ -157,7 +157,7 @@ export struct SearchTopicRow {
     .width('100%')
     .alignItems(HorizontalAlign.Start)
     .borderRadius(ThemeConstants.RADIUS_MD)
-    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+    .backgroundColor($r('app.color.card_background'))
   }
 }
 @ComponentV2
@@ -201,7 +201,7 @@ export struct SearchNodeRow {
     .padding(ThemeConstants.SPACE_MD)
     .width('100%')
     .borderRadius(ThemeConstants.RADIUS_MD)
-    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+    .backgroundColor($r('app.color.card_background'))
   }
 }
 @ComponentV2
@@ -255,6 +255,6 @@ export struct RemoteTopicRow {
     .width('100%')
     .alignItems(HorizontalAlign.Start)
     .borderRadius(ThemeConstants.RADIUS_MD)
-    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+    .backgroundColor($r('app.color.card_background'))
   }
 }

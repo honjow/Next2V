@@ -140,7 +140,7 @@ export struct UserProfileCard {
     .width('100%')
     .alignItems(HorizontalAlign.Start)
     .borderRadius(ThemeConstants.RADIUS_MD)
-    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+    .backgroundColor($r('app.color.card_background'))
   }
 
   @Builder private ProfileMeta() {
@@ -228,7 +228,7 @@ export struct UserProfileEmptyCard {
       .textAlign(TextAlign.Center)
       .padding(ThemeConstants.SPACE_LG)
       .borderRadius(ThemeConstants.RADIUS_CARD)
-      .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+      .backgroundColor($r('app.color.card_background'))
   }
 }
 
@@ -366,7 +366,7 @@ export struct UserProfileReplyCard {
     .padding(ThemeConstants.SPACE_MD)
     .width('100%')
     .borderRadius(ThemeConstants.RADIUS_CARD)
-    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+    .backgroundColor($r('app.color.card_background'))
     .alignItems(HorizontalAlign.Start)
     .onClick(() => {
       this.openPrimaryTopic()

@@ -113,7 +113,7 @@ struct BlockedMemberCardView {
       bottom: ThemeConstants.SPACE_MD,
     })
     .borderRadius(ThemeConstants.RADIUS_CARD)
-    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+    .backgroundColor($r('app.color.card_background'))
   }
 
   private memberMeta(): string {

@@ -1328,7 +1328,7 @@ export struct TopicDetailPage {
     .padding(this.topicCardPadding())
     .width('100%')
     .borderRadius(ThemeConstants.RADIUS_MD)
-    .backgroundColor($r('sys.color.ohos_id_color_card_bg'))
+    .backgroundColor($r('app.color.card_background'))
   }
 
   private topicBodyBlocks(): string[] {

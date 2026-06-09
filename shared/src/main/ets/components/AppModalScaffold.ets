@@ -13,7 +13,7 @@ export struct AppModalScaffold {
   @Param compact: boolean = false
   @Param includeKeyboardPadding: boolean = false
   @Param enableComponentSafeArea: boolean = true
-  @Param contentBackgroundColor: ResourceColor = $r('sys.color.ohos_id_color_card_bg')
+  @Param contentBackgroundColor: ResourceColor = $r('app.color.card_background')
   @Event closeAction?: () => void
   scroller: Scroller = new Scroller();
 

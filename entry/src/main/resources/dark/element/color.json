@@ -4,6 +4,7 @@
     { "name": "color_primary",     "value": "#A0C0D8" },
     { "name": "color_bg",          "value": "#121212" },
     { "name": "color_bg_card",     "value": "#1E1E1E" },
+    { "name": "card_background",    "value": "#191919" },
     { "name": "color_text_primary",   "value": "#EDEDED" },
     { "name": "color_text_secondary", "value": "#999999" },
     { "name": "color_divider",     "value": "#2C2C2C" },
