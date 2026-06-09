@@ -45,7 +45,6 @@ export struct DiscoverPage {
   private readonly TBH: number = ThemeConstants.TITLE_BAR_HEIGHT;
   private readonly FLOAT_H: number = ThemeConstants.FLOAT_BAR_HEIGHT;
   private readonly GAP: number = ThemeConstants.SPACE_MD;
-  private readonly PULL_REFRESH_THRESHOLD: number = 120;
   private rootRefreshController: PullRefreshController = new PullRefreshController();
   @Param scroller: Scroller = new Scroller();
   @Event onRootRefreshReady?: (action: () => void) => void;
@@ -113,7 +112,6 @@ export struct DiscoverPage {
           // to center the spinner in its TBH-tall row, so pass topAvoidHeight + TBH/2 here — matches the
           // PullRefreshListScaffold default the notification/other lists use.
           indicatorTop: this.layout.topAvoidHeight + this.TBH / 2,
-          threshold: this.PULL_REFRESH_THRESHOLD,
           onRefresh: async () => {
             await this.refreshDiscover()
           },

@@ -10,11 +10,12 @@ const PULL_START_DRAG_VP: number = 4
 // PULL_START_DRAG_VP so the indicator starts from where the finger first crossed.
 const PULL_ARM_VP: number = 10
 const PULL_RESISTANCE_FACTOR: number = 0.8
-const DEFAULT_PULL_REFRESH_THRESHOLD: number = 120
+const DEFAULT_PULL_REFRESH_THRESHOLD: number = 80
+const REFRESH_HOLD_OFFSET: number = 56
 const HAPTIC_HD_INTENSITY: number = 80
 const HAPTIC_FALLBACK_DURATION: number = 30
 const DIRECTION_LOCK_VP: number = 6
-const PROGRAMMATIC_PULL_ANIM_DURATION: number = 420
+const PROGRAMMATIC_PULL_ANIM_DURATION: number = 300
 
 export class PullRefreshController {
   private topRefreshAction: () => void = () => {}
@@ -134,7 +135,7 @@ export struct PullRefresh {
       this.getUIContext().animateTo(
         { duration: ThemeConstants.ANIM_DURATION, curve: Curve.EaseOut },
         () => {
-          this.pullOffset = ThemeConstants.TITLE_BAR_HEIGHT
+          this.pullOffset = REFRESH_HOLD_OFFSET
         },
       )
       this.refreshState = 2
@@ -177,7 +178,7 @@ export struct PullRefresh {
       this.getUIContext().animateTo(
         { duration: ThemeConstants.ANIM_DURATION, curve: Curve.EaseOut },
         () => {
-          this.bottomPullOffset = ThemeConstants.TITLE_BAR_HEIGHT
+          this.bottomPullOffset = REFRESH_HOLD_OFFSET
         },
       )
       this.bottomRefreshState = 2
@@ -252,9 +253,9 @@ export struct PullRefresh {
 
   // Opacity is a pure function of the GAP so the indicator fades in/out with the blank, never with the load
   // lifecycle. It stays 0 until the gap exceeds the spinner's own diameter (so a half-shown spinner can never
-  // overlap the adjacent content row) and ramps to 1 at the refresh resting height (TITLE_BAR_HEIGHT).
+  // overlap the adjacent content row) and ramps to 1 at the refresh hold offset.
   private indicatorOpacity(gap: number, indicatorSize: number): number {
-    const range = ThemeConstants.TITLE_BAR_HEIGHT - indicatorSize
+    const range = REFRESH_HOLD_OFFSET - indicatorSize
     if (range <= 0) {
       return gap >= indicatorSize ? 1 : 0
     }
@@ -270,7 +271,7 @@ export struct PullRefresh {
       this.containerHeight -
         this.bottomIndicatorBottom -
         this.bottomPullOffset / 2 -
-        ThemeConstants.TITLE_BAR_HEIGHT / 2 +
+        REFRESH_HOLD_OFFSET / 2 +
         ThemeConstants.SPACE_SM,
     )
   }
@@ -383,8 +384,8 @@ export struct PullRefresh {
       // lifecycle), so the indicator dissolves with the shrinking blank on every release — whether or not a
       // refresh fired. The spinner (diameter INDICATOR_SIZE) is centered on the gap, so its bottom edge only
       // clears the content top once pullOffset >= INDICATOR_SIZE; below that it would overlap the first row,
-      // so opacity is pinned to 0 there (see indicatorOpacity). It reaches 1 at the refresh resting height
-      // (TITLE_BAR_HEIGHT). topIndicatorMounted keeps the node alive through the rebound and is cleared only
+      // so opacity is pinned to 0 there (see indicatorOpacity). It reaches 1 at the refresh hold offset.
+      // topIndicatorMounted keeps the node alive through the rebound and is cleared only
       // after it settles (see bounceBack); at rest it is false so nothing overlays the content top.
       if (this.topIndicatorMounted) {
         Column() {
@@ -394,7 +395,7 @@ export struct PullRefresh {
               .height(ThemeConstants.INDICATOR_SIZE)
           }
           .width('100%')
-          .height(ThemeConstants.TITLE_BAR_HEIGHT)
+          .height(REFRESH_HOLD_OFFSET)
           .justifyContent(FlexAlign.Center)
           .opacity(this.indicatorOpacity(this.pullOffset, ThemeConstants.INDICATOR_SIZE))
         }
@@ -413,7 +414,7 @@ export struct PullRefresh {
             .color($r('sys.color.font_secondary'))
         }
         .width('100%')
-        .height(ThemeConstants.TITLE_BAR_HEIGHT)
+        .height(REFRESH_HOLD_OFFSET)
         .justifyContent(FlexAlign.Center)
         .opacity(this.indicatorOpacity(this.bottomPullOffset, ThemeConstants.LOADING_SIZE_SMALL))
         .position({ y: this.bottomIndicatorY() })

@@ -58,7 +58,6 @@ export struct PagedListScaffold {
         topPadding: this.topPadding,
         bottomPadding: this.bottomPadding,
         indicatorTop: this.indicatorTop,
-        refreshThreshold: this.refreshThreshold,
         scrollEnabled: this.scrollEnabled,
         onRefresh: this.onRefresh,
         onReachEnd: this.onReachEnd,

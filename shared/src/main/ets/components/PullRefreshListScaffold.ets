@@ -2,8 +2,6 @@ import { ThemeConstants } from '../theme/ThemeConstants'
 import { PullRefresh, PullRefreshController } from './PullRefresh'
 import { connectLayoutSafeArea, LayoutSafeAreaState } from '../state/LayoutSafeAreaState'
 
-const DEFAULT_REFRESH_THRESHOLD: number = 120
-
 @ComponentV2
 export struct PullRefreshListScaffold {
   @BuilderParam content: () => void
@@ -18,7 +16,6 @@ export struct PullRefreshListScaffold {
   @Param topPadding: number = 0
   @Param bottomPadding: number = ThemeConstants.SPACE_XL
   @Param indicatorTop: number = -1
-  @Param refreshThreshold: number = DEFAULT_REFRESH_THRESHOLD
   @Param scrollEnabled: boolean = true
   @Param controller: PullRefreshController = new PullRefreshController()
   @Event onRefresh?: () => Promise<void>
@@ -34,7 +31,6 @@ export struct PullRefreshListScaffold {
       scroller: this.scroller,
       controller: this.controller,
       indicatorTop: this.resolvedIndicatorTop(),
-      threshold: this.refreshThreshold,
       bottomIndicatorBottom: this.layout.bottomAvoidHeight + this.bottomPadding,
       onRefresh: async () => {
         if (this.onRefresh) {
