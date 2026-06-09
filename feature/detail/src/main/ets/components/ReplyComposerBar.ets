@@ -156,62 +156,47 @@ export struct ReplyComposerBar {
             .fontColor(Color.Red)
             .width('100%')
         }
-        // Top row: full-width input with an overlaid clear (×) button vertically centered at the right, shown
-        // only when it has content. Symmetric 12+12 vertical padding keeps a single line vertically centered.
-        Stack({ alignContent: Alignment.End }) {
-          TextArea({
-            placeholder: AppStrings.text(
-              $r('app.string.reply_body_placeholder'),
-              'Reply body (auto-saved)',
-            ),
-            text: this.content,
-            controller: this.contentController,
+        // Full-width input. The clear (×) control lives in the bottom toolbar (left of send) instead of
+        // overlaid on the text, so it never covers the right edge of a multi-line reply.
+        TextArea({
+          placeholder: AppStrings.text(
+            $r('app.string.reply_body_placeholder'),
+            'Reply body (auto-saved)',
+          ),
+          text: this.content,
+          controller: this.contentController,
+        })
+          .id(ReplyComposerBar.INPUT_ID)
+          .width('100%')
+          .constraintSize({ maxHeight: 148 })
+          .fontSize(ThemeConstants.FONT_SIZE_BODY)
+          .padding({
+            top: ThemeConstants.SPACE_MD,
+            bottom: ThemeConstants.SPACE_MD,
+            left: ThemeConstants.SPACE_MD + ThemeConstants.SPACE_XS,
+            right: ThemeConstants.SPACE_MD + ThemeConstants.SPACE_XS,
           })
-            .id(ReplyComposerBar.INPUT_ID)
-            .width('100%')
-            .constraintSize({ maxHeight: 148 })
-            .fontSize(ThemeConstants.FONT_SIZE_BODY)
-            .padding({
-              top: ThemeConstants.SPACE_MD,
-              bottom: ThemeConstants.SPACE_MD,
-              left: ThemeConstants.SPACE_MD + ThemeConstants.SPACE_XS,
-              right: ThemeConstants.SPACE_MD + ThemeConstants.SPACE_XS,
-            })
-            .placeholderFont({ size: ThemeConstants.FONT_SIZE_BODY, weight: FontWeight.Normal })
-            .borderRadius(ThemeConstants.RADIUS_MD)
-            .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
-            .defaultFocus(true)
-            .onChange((value: string) => {
-              this.content = value
-              this.scheduleSaveDraft()
-            })
-            // Track the caret so an inserted sticker/image URL lands where the user is typing (the picker blurs
-            // the field, so we rely on the last recorded position, not live focus).
-            .onTextSelectionChange((start: number, end: number) => {
-              this.selStart = start
-              this.selEnd = end
-            })
-            // When the IME re-opens (user taps the field), drop the sticker panel so the two don't stack.
-            .onEditChange((isEditing: boolean) => {
-              if (isEditing && this.showStickerPanel) {
-                this.setStickerPanel(false)
-                this.panelBus.open = false
-              }
-            })
-          // Clear button at the input's top-right; only when there's content. focusOnTouch(false) keeps the
-          // TextArea focused (keyboard stays up) so the user can immediately retype.
-          if (this.content.length > 0) {
-            SymbolGlyph($r('sys.symbol.xmark_circle_fill'))
-              .fontSize(18)
-              .fontColor([$r('sys.color.font_secondary')])
-              .padding(ThemeConstants.SPACE_XS)
-              .margin({ right: ThemeConstants.SPACE_XS })
-              .focusOnTouch(false)
-              .onClick(() => {
-                this.clearContent()
-              })
-          }
-        }.width('100%')
+          .placeholderFont({ size: ThemeConstants.FONT_SIZE_BODY, weight: FontWeight.Normal })
+          .borderRadius(ThemeConstants.RADIUS_MD)
+          .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
+          .defaultFocus(true)
+          .onChange((value: string) => {
+            this.content = value
+            this.scheduleSaveDraft()
+          })
+          // Track the caret so an inserted sticker/image URL lands where the user is typing (the picker blurs
+          // the field, so we rely on the last recorded position, not live focus).
+          .onTextSelectionChange((start: number, end: number) => {
+            this.selStart = start
+            this.selEnd = end
+          })
+          // When the IME re-opens (user taps the field), drop the sticker panel so the two don't stack.
+          .onEditChange((isEditing: boolean) => {
+            if (isEditing && this.showStickerPanel) {
+              this.setStickerPanel(false)
+              this.panelBus.open = false
+            }
+          })
 
         // Bottom row: action toolbar. Sticker + image on the left, send on the right — keeps the input roomy
         // and the controls from crowding the field's edge.
@@ -252,6 +237,25 @@ export struct ReplyComposerBar {
             this.pickAndUploadImage()
           })
           Blank().layoutWeight(1)
+          // Clear (×): right side, just left of send, only when there's content. focusOnTouch(false) keeps
+          // the TextArea focused so the user can keep typing after a mis-clear (same as the other controls).
+          if (this.content.length > 0) {
+            Button({ type: ButtonType.Circle }) {
+              // Line-style glyph to match the outline sticker/image controls (the filled xmark_circle_fill
+              // clashed once it moved into this toolbar). trash = discard the draft / clear the input.
+              SymbolGlyph($r('sys.symbol.trash'))
+                .fontSize(22)
+                .fontColor([$r('sys.color.font_secondary')])
+            }
+            .width(ReplyComposerBar.REPLY_BAR_CONTROL_SIZE)
+            .height(ReplyComposerBar.REPLY_BAR_CONTROL_SIZE)
+            .enabled(!this.isSubmitting)
+            .buttonStyle(ButtonStyleMode.NORMAL)
+            .focusOnTouch(false)
+            .onClick(() => {
+              this.clearContent()
+            })
+          }
           Button({ type: ButtonType.Circle }) {
             SymbolGlyph($r('sys.symbol.paperplane_right_fill'))
               .fontSize(20)
