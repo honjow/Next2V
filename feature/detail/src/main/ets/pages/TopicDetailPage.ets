@@ -1137,8 +1137,18 @@ export struct TopicDetailPage {
       .submitReplyWithCookie(cookie, this.topicId, cleanContent)
       .then(() => {
         this.clearReplyDraftAfterSuccess()
-        // Preserve the existing refresh semantics (was submittedAction: () => this.v.load()).
-        this.v.load()
+        // A posted reply lands on the LAST replies page, but load() only refetches page 1 and
+        // replaces (not appends) the in-memory list — so in a multi-page topic the new reply is
+        // absent and, in thread mode, the previously preloaded tail is discarded too. Mirror the
+        // initial-load (aboutToAppear) and pull-refresh paths: after the reload, re-trigger thread
+        // preload so pages 2..N (incl. the new reply) are refetched, showing the >limit confirm
+        // dialog exactly as those paths do.
+        this.v.load().then(() => {
+          this.v.triggerThreadPreloadIfNeeded()
+          if (this.v.needsPreloadConfirm) {
+            this.showPreloadConfirmDialog()
+          }
+        })
       })
       .catch((error: Error) => {
         // Keep the draft and surface the (translated) error. Do NOT auto-reopen the composer:
