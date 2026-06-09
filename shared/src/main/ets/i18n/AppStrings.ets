@@ -1,5 +1,6 @@
 import { common } from '@kit.AbilityKit'
 import { resourceManager } from '@kit.LocalizationKit'
+import { connectLanguageState } from '../state/LanguageState'
 
 export type AppLanguageMode = 'default' | 'zh-Hans' | 'zh-Hant-HK' | 'zh-Hant-TW' | 'en-US' | 'ja-JP' | 'ko-KR'
 
@@ -29,6 +30,13 @@ export class AppStrings {
    * the default ResourceManager on the UIAbility context.
    */
   static text(resource: Resource, fallback: string): string {
+    // Build-time AppStrings.text() callers must repaint when the app language changes. Reading the
+    // V2 locale signal here centralizes that dependency for computed string labels.
+    const observedLocale = connectLanguageState().effectiveLocale
+    if (observedLocale.length < 0) {
+      return fallback
+    }
+
     // Prefer the override resource manager so explicit language changes can
     // resolve through Harmony resources without waiting for a cold start.
     if (AppStrings.overrideResMgr) {

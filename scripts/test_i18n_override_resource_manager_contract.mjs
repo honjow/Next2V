@@ -25,6 +25,9 @@ const readBusinessEtsFiles = () => [
 const appStrings = read('shared/src/main/ets/i18n/AppStrings.ets')
 const languageSettings = read('shared/src/main/ets/settings/LanguageSettings.ets')
 const aboutPage = read('entry/src/main/ets/pages/AboutPage.ets')
+const discoverPage = read('feature/node/src/main/ets/pages/DiscoverPage.ets')
+const notificationComponents = read('entry/src/main/ets/components/NotificationPageComponents.ets')
+const filterChip = read('shared/src/main/ets/components/FilterChip.ets')
 const settingsPage = read('feature/settings/src/main/ets/pages/SettingsPage.ets')
 const settingsPageCoordinator = read('feature/settings/src/main/ets/model/SettingsPageCoordinator.ets')
 const settingsPageComponents = read('feature/settings/src/main/ets/components/SettingsPageComponents.ets')
@@ -69,7 +72,9 @@ const loadStrings = (locale) => Object.fromEntries(JSON.parse(
 
 const requiredAppStrings = [
   "import { resourceManager } from '@kit.LocalizationKit'",
+  "import { connectLanguageState } from '../state/LanguageState'",
   'private static overrideResMgr: resourceManager.ResourceManager | null = null',
+  'connectLanguageState().effectiveLocale',
   'static setOverrideLocaleForLanguageMode(mode: string, resolvedLanguage: string): string',
   'AppStrings.context.resourceManager.getOverrideConfiguration()',
   'config.locale = locale',
@@ -87,6 +92,15 @@ const requiredAppStrings = [
 for (const needle of requiredAppStrings) {
   assert.ok(appStrings.includes(needle), `AppStrings missing override contract: ${needle}`)
 }
+
+const textMethod = appStrings.slice(
+  appStrings.indexOf('static text(resource: Resource, fallback: string): string'),
+  appStrings.indexOf('static setOverrideLocaleForLanguageMode'),
+)
+assert.ok(
+  textMethod.includes('connectLanguageState().effectiveLocale'),
+  'AppStrings.text must read LanguageState.effectiveLocale so computed string labels hot-refresh',
+)
 
 assert.ok(
   appStrings.indexOf('AppStrings.overrideResMgr.getStringSync(resource.id)') <
@@ -126,6 +140,35 @@ assert.ok(
   aboutPage.includes("AppStrings.text($r('app.string.about_tagline'), 'Native HarmonyOS V2EX client')"),
   'AboutPage tagline should use production AppStrings.text path',
 )
+
+for (const needle of [
+  "this.TopicModeButton('hot', $r('app.string.discover_hot'), 'Hot')",
+  "this.TopicModeButton('latest', $r('app.string.discover_latest'), 'Latest')",
+  "this.TopicModeButton('recent', $r('app.string.discover_recent'), 'Recent')",
+]) {
+  assert.ok(discoverPage.includes(needle), `DiscoverPage topic switch label must pass a Resource and fallback through the chip path: ${needle}`)
+}
+
+for (const needle of [
+  "import { AppStrings } from '../i18n/AppStrings'",
+  "import { connectLanguageState, LanguageState } from '../state/LanguageState'",
+  '@Param label: string',
+  '@Param labelResource: Resource',
+  '@Param hasLabelResource: boolean',
+  'private language: LanguageState = connectLanguageState()',
+  'this.language.effectiveLocale.length >= 0',
+  'AppStrings.text(this.labelResource, this.label)',
+  'text: this.displayLabel()',
+]) {
+  assert.ok(filterChip.includes(needle), `FilterChip must own resource-backed locale refresh: ${needle}`)
+}
+
+for (const needle of [
+  "AppStrings.text($r('app.string.notification_kind_mention'), 'Mention')",
+  "AppStrings.text($r('app.string.notification_kind_thanks'), 'Thanks')",
+]) {
+  assert.ok(notificationComponents.includes(needle), `Notification kind label must route through AppStrings.text: ${needle}`)
+}
 
 assert.ok(!appStrings.includes('overrideProbeText'), 'temporary overrideProbeText probe must be removed')
 

@@ -37,6 +37,9 @@ REPLY_ACTION_ALIGNMENT_SETTINGS = ROOT / "shared" / "src" / "main" / "ets" / "se
 API_ERROR = ROOT / "shared" / "src" / "main" / "ets" / "network" / "ApiError.ets"
 ACCOUNT_PAGE_COORDINATOR = ROOT / "entry" / "src" / "main" / "ets" / "model" / "AccountPageCoordinator.ets"
 ACCOUNT_PAGE = ROOT / "entry" / "src" / "main" / "ets" / "pages" / "AccountPage.ets"
+DISCOVER_PAGE = ROOT / "feature" / "node" / "src" / "main" / "ets" / "pages" / "DiscoverPage.ets"
+NOTIFICATION_COMPONENTS = ROOT / "entry" / "src" / "main" / "ets" / "components" / "NotificationPageComponents.ets"
+FILTER_CHIP = ROOT / "shared" / "src" / "main" / "ets" / "components" / "FilterChip.ets"
 INDEX_ROUTE_COORDINATOR = ROOT / "entry" / "src" / "main" / "ets" / "model" / "IndexRouteCoordinator.ets"
 INDEX_TITLE_BAR_COORDINATOR = ROOT / "entry" / "src" / "main" / "ets" / "model" / "IndexTitleBarCoordinator.ets"
 INDEX_TITLE_BAR_COMPONENTS = ROOT / "entry" / "src" / "main" / "ets" / "components" / "IndexTitleBarComponents.ets"
@@ -199,6 +202,9 @@ def assert_fallback_contract() -> None:
     api_error_text = API_ERROR.read_text(encoding="utf-8")
     account_page_coordinator_text = ACCOUNT_PAGE_COORDINATOR.read_text(encoding="utf-8")
     account_page_text = ACCOUNT_PAGE.read_text(encoding="utf-8")
+    discover_page_text = DISCOVER_PAGE.read_text(encoding="utf-8")
+    notification_components_text = NOTIFICATION_COMPONENTS.read_text(encoding="utf-8")
+    filter_chip_text = FILTER_CHIP.read_text(encoding="utf-8")
     index_route_coordinator_text = INDEX_ROUTE_COORDINATOR.read_text(encoding="utf-8")
     index_title_bar_coordinator_text = INDEX_TITLE_BAR_COORDINATOR.read_text(encoding="utf-8")
     index_title_bar_components_text = INDEX_TITLE_BAR_COMPONENTS.read_text(encoding="utf-8")
@@ -276,7 +282,9 @@ def assert_fallback_contract() -> None:
 
     required_override_contracts = [
         "import { resourceManager } from '@kit.LocalizationKit'",
+        "import { connectLanguageState } from '../state/LanguageState'",
         "private static overrideResMgr: resourceManager.ResourceManager | null = null",
+        "connectLanguageState().effectiveLocale",
         "static setOverrideLocaleForLanguageMode(mode: string, resolvedLanguage: string): string",
         "AppStrings.context.resourceManager.getOverrideConfiguration()",
         "AppStrings.context.resourceManager.updateOverrideConfiguration(config)",
@@ -292,6 +300,43 @@ def assert_fallback_contract() -> None:
     for needle in required_override_contracts:
         if needle not in text:
             raise AssertionError(f"AppStrings override ResourceManager contract missing: {needle}")
+
+    text_method_start = text.find("static text(resource: Resource, fallback: string): string")
+    text_method_end = text.find("static setOverrideLocaleForLanguageMode")
+    if text_method_start < 0 or text_method_end < text_method_start:
+        raise AssertionError("AppStrings.text method boundary missing")
+    text_method = text[text_method_start:text_method_end]
+    if "connectLanguageState().effectiveLocale" not in text_method:
+        raise AssertionError("AppStrings.text must read LanguageState.effectiveLocale for computed string hot-refresh")
+
+    for needle in [
+        "this.TopicModeButton('hot', $r('app.string.discover_hot'), 'Hot')",
+        "this.TopicModeButton('latest', $r('app.string.discover_latest'), 'Latest')",
+        "this.TopicModeButton('recent', $r('app.string.discover_recent'), 'Recent')",
+    ]:
+        if needle not in discover_page_text:
+            raise AssertionError(f"DiscoverPage topic switch label must pass a Resource and fallback through the chip path: {needle}")
+
+    for needle in [
+        "import { AppStrings } from '../i18n/AppStrings'",
+        "import { connectLanguageState, LanguageState } from '../state/LanguageState'",
+        "@Param label: string",
+        "@Param labelResource: Resource",
+        "@Param hasLabelResource: boolean",
+        "private language: LanguageState = connectLanguageState()",
+        "this.language.effectiveLocale.length >= 0",
+        "AppStrings.text(this.labelResource, this.label)",
+        "text: this.displayLabel()",
+    ]:
+        if needle not in filter_chip_text:
+            raise AssertionError(f"FilterChip must own resource-backed locale refresh: {needle}")
+
+    for needle in [
+        "AppStrings.text($r('app.string.notification_kind_mention'), 'Mention')",
+        "AppStrings.text($r('app.string.notification_kind_thanks'), 'Thanks')",
+    ]:
+        if needle not in notification_components_text:
+            raise AssertionError(f"Notification kind label must route through AppStrings.text: {needle}")
 
     if "overrideProbeText" in text:
         raise AssertionError("temporary overrideProbeText device probe must not remain in production AppStrings")

@@ -153,9 +153,9 @@ export struct DiscoverPage {
   @Builder HotTopicsSection() {
     Column({ space: ThemeConstants.SPACE_SM }) {
       Row({ space: ThemeConstants.SPACE_XS }) {
-        this.TopicModeButton('hot', AppStrings.text($r('app.string.discover_hot'), 'Hot'))
-        this.TopicModeButton('latest', AppStrings.text($r('app.string.discover_latest'), 'Latest'))
-        this.TopicModeButton('recent', AppStrings.text($r('app.string.discover_recent'), 'Recent'))
+        this.TopicModeButton('hot', $r('app.string.discover_hot'), 'Hot')
+        this.TopicModeButton('latest', $r('app.string.discover_latest'), 'Latest')
+        this.TopicModeButton('recent', $r('app.string.discover_recent'), 'Recent')
       }
       .width('100%')
       .alignItems(VerticalAlign.Center)
@@ -186,9 +186,10 @@ export struct DiscoverPage {
     }.width('100%')
   }
 
-  @Builder TopicModeButton(mode: DiscoverTopicMode, label: string) {
+  @Builder TopicModeButton(mode: DiscoverTopicMode, labelResource: Resource, labelFallback: string) {
     DiscoverTopicModeButton({
-      label: label,
+      label: labelFallback,
+      labelResource: labelResource,
       selected: this.topicMode === mode,
       action: () => {
         this.setTopicMode(mode)

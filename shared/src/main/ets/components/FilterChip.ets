@@ -1,18 +1,23 @@
 import { Chip, ChipSize } from '@kit.ArkUI'
+import { AppStrings } from '../i18n/AppStrings'
 import { ThemeConstants } from '../theme/ThemeConstants'
+import { connectLanguageState, LanguageState } from '../state/LanguageState'
 
 @ComponentV2
 export struct FilterChip {
   @Param label: string = ''
+  @Param labelResource: Resource = $r('app.string.app_name')
+  @Param hasLabelResource: boolean = false
   @Param selected: boolean = false
   @Param fill: boolean = false
+  private language: LanguageState = connectLanguageState()
   @Event action?: () => void
 
   build() {
     Row() {
       Chip({
         label: {
-          text: this.label,
+          text: this.displayLabel(),
           fontSize: ThemeConstants.FONT_SIZE_TAG,
           fontColor: $r('sys.color.font_primary'),
           activatedFontColor: Color.White
@@ -34,5 +39,12 @@ export struct FilterChip {
         this.action()
       }
     })
+  }
+
+  private displayLabel(): string {
+    if (this.hasLabelResource && this.language.effectiveLocale.length >= 0) {
+      return AppStrings.text(this.labelResource, this.label)
+    }
+    return this.label
   }
 }

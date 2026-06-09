@@ -20,12 +20,15 @@ export struct DiscoverSectionTitle {
 @ComponentV2
 export struct DiscoverTopicModeButton {
   @Param label: string = ''
+  @Param labelResource: Resource = $r('app.string.discover_hot')
   @Param selected: boolean = false
   @Event action?: () => void
 
   build() {
     FilterChip({
       label: this.label,
+      labelResource: this.labelResource,
+      hasLabelResource: true,
       selected: this.selected,
       action: () => {
         if (this.action) {
