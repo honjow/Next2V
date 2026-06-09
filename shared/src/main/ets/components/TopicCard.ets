@@ -71,8 +71,8 @@ export struct TopicCard {
           Text(this.metaLabel)
             .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
             .fontColor($r('sys.color.font_secondary'))
-          if (this.metaTimestamp <= 0) {
-            Text(this.item.last_reply_by || this.item.member.username)
+          if (this.shouldShowLastReplyUser()) {
+            Text(this.lastReplyUsername())
               .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
               .fontColor($r('sys.color.font_secondary'))
               .maxLines(1)
@@ -122,6 +122,14 @@ export struct TopicCard {
 
   private isPinned(): boolean {
     return (this.item.pinned || 0) > 0
+  }
+
+  private lastReplyUsername(): string {
+    return (this.item.last_reply_by || '').trim()
+  }
+
+  private shouldShowLastReplyUser(): boolean {
+    return this.metaTimestamp <= 0 && this.lastReplyUsername().length > 0
   }
 
   @Builder

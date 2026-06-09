@@ -55,6 +55,7 @@ assert(replyHeader.includes('isMod: (this.reply.member.mod || 0) > 0'), 'ReplyCa
 assert(topicDetail.includes('isMod: (this.topic.member.mod || 0) > 0'), 'TopicDetailHeader must pass MOD state')
 assert(homePage.includes('topicCardRenderKey(item)'), 'Home feed LazyForEach key must include role state')
 assert(homePage.includes("topic.member.pro") && homePage.includes("topic.member.mod"), 'Home feed render key must rebuild cards when PRO/MOD arrives after cached data')
+assert(homePage.includes("topic.last_reply_by"), 'Home feed render key must rebuild cards when last_reply_by arrives after cached data')
 
 for (const source of [tabParser, apiService, repliesParser]) {
   assert(source.includes("hasMemberRole"), 'HTML parser must extract member roles near the member link')

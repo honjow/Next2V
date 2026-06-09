@@ -6,6 +6,7 @@ import path from 'node:path'
 const repo = process.cwd()
 const parserSource = fs.readFileSync(path.join(repo, 'shared/src/main/ets/parser/V2exTabParser.ets'), 'utf8')
 const apiSource = fs.readFileSync(path.join(repo, 'shared/src/main/ets/network/ApiService.ets'), 'utf8')
+const topicCardSource = fs.readFileSync(path.join(repo, 'shared/src/main/ets/components/TopicCard.ets'), 'utf8')
 const fixtureHtml = fs.readFileSync(path.join(repo, 'scripts/fixtures/node_programmer_topic_list_sample.html'), 'utf8')
 
 function decode(value) {
@@ -33,6 +34,17 @@ function extractAttr(tag, attr) {
 function parseNumber(value) {
   const n = Number.parseInt(String(value || '').replace(/[^0-9]/g, ''), 10)
   return Number.isFinite(n) ? n : 0
+}
+
+function extractLastReplyByLikeProduction(cell) {
+  const match = String(cell || '').match(/(?:Last(?:ly)?\s+replied\s+by|最后回复(?:来自|由)?)[\s\S]*?<a[^>]*href=["'][^"']*\/member\/([^"'?#\s<>]+)(?:[?#][^"']*)?["'][^>]*>([\s\S]*?)<\/a>/i)
+  if (match && match[2]) {
+    return decode(match[2])
+  }
+  if (match && match[1]) {
+    return decode(match[1])
+  }
+  return ''
 }
 
 function productionTopicCellRegex() {
@@ -76,7 +88,8 @@ function parseTopicCellLikeProduction(cell) {
   const username = extractAttr(avatarTag, 'alt') || extractFirst(cell, /\/member\/([^"'\s<>]+)/i)
   const avatar = extractAttr(avatarTag, 'src')
   const replies = parseNumber(extractFirst(cell, /<a[^>]*class=["']count_[^"']*["'][^>]*>(\d+)<\/a>/i))
-  return { id, title: decode(title), member: { username, avatar }, replies }
+  const lastReplyBy = extractLastReplyByLikeProduction(cell)
+  return { id, title: decode(title), member: { username, avatar }, replies, last_reply_by: lastReplyBy }
 }
 
 function parseTopicListLikeProduction(rawHtml) {
@@ -104,6 +117,7 @@ assert.equal(topics[0].title, '芒果 TV 好像在送免费的 glm 5.1 和 ds v4
 assert.equal(topics[0].member.username, 'rockxsj', 'node page topic must parse member username')
 assert.ok(topics[0].member.avatar.includes('/avatar/001e/1afa/71013_xlarge.png'), 'node page topic must parse member avatar')
 assert.equal(topics[0].replies, 3, 'node page topic must parse non-zero reply count')
+assert.equal(topics[0].last_reply_by, 'lujiaosama', 'node page topic must parse last reply username from the Last/Lastly replied by marker')
 
 assert.match(apiSource, /normalizeNodeTopics\s*\(/, 'getNodeTopicsPage must normalize node identity onto node-page topics before TopicCard renders')
 assert.match(apiSource, /name:\s*nodeName|name:\s*clean/, 'node topic normalization must populate node.name from the current /go/{node} route')
@@ -136,5 +150,16 @@ assert.equal(
 // Source must strip non-content before topic extraction.
 assert.match(parserSource, /private static stripNonContent\(/, 'V2exTabParser must define stripNonContent')
 assert.match(parserSource, /stripNonContent\(html\)/, 'extractTopicIds must strip non-content')
+assert.match(parserSource, /private static extractLastReplyBy\(cell: string\): string/, 'V2exTabParser must parse last reply username through a dedicated helper')
+assert.doesNotMatch(
+  topicCardSource,
+  /last_reply_by\s*\|\|\s*this\.item\.member\.username/,
+  'TopicCard must not fabricate a last-reply username from the topic author when parser/cache data lacks last_reply_by',
+)
+assert.match(
+  topicCardSource,
+  /shouldShowLastReplyUser\(\)/,
+  'TopicCard must only render the last-reply username when real last_reply_by data exists',
+)
 
 console.log('node topic list parser contract passed')

@@ -81,6 +81,9 @@ assert.doesNotMatch(
   'TopicCard title row should remain text-only so pinned topics do not shift title layout',
 )
 assert.match(home, /topic\.pinned/, 'home feed render key must include pinned state')
+assert.match(home, /topic\.last_reply_by/, 'home feed render key must include last_reply_by so cached cards rebuild when HTML data supplies real last-reply users')
+assert.match(home, /topic\.replies/, 'home feed render key must include replies so cached cards rebuild when reply count changes')
+assert.match(home, /last_touched \|\| topic\.last_modified \|\| topic\.created/, 'home feed render key must include the topic meta timestamp')
 
 for (const locale of ['base', 'en_US', 'zh_CN', 'zh_HK', 'zh_TW', 'ja_JP', 'ko_KR']) {
   const strings = read(`entry/src/main/resources/${locale}/element/string.json`)

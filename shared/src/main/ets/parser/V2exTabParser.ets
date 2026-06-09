@@ -197,7 +197,7 @@ export class V2exTabParser {
     const nodeName = V2exTabParser.extractFirst(cell, /<a[^>]*class=["']node["'][^>]*href=["']\/go\/([^"']+)["'][^>]*>/i)
     const nodeTitle = V2exTabParser.extractFirst(cell, /<a[^>]*class=["']node["'][^>]*>[\s\S]*?([^<>]+)<\/a>/i)
     const replies = V2exTabParser.parseNumber(V2exTabParser.extractFirst(cell, /<a[^>]*class=["']count_[^"']*["'][^>]*>(\d+)<\/a>/i))
-    const lastReplyBy = V2exTabParser.extractFirst(cell, /Last(?:ly)? replied by\s*<strong>\s*<a[^>]*\/member\/[^>]+>([^<]+)<\/a>/i)
+    const lastReplyBy = V2exTabParser.extractLastReplyBy(cell)
     const titleTime = V2exTabParser.extractFirst(cell, /<span[^>]*title=["']([^"']+\+08:00)["'][^>]*>/i)
     const created = V2exTabParser.parseTimeSeconds(titleTime)
 
@@ -268,6 +268,17 @@ export class V2exTabParser {
       match = memberLink.exec(html || '')
     }
     return false
+  }
+
+  private static extractLastReplyBy(cell: string): string {
+    const match = (cell || '').match(/(?:Last(?:ly)?\s+replied\s+by|最后回复(?:来自|由)?)[\s\S]*?<a[^>]*href=["'][^"']*\/member\/([^"'?#\s<>]+)(?:[?#][^"']*)?["'][^>]*>([\s\S]*?)<\/a>/i)
+    if (match && match[2]) {
+      return V2exTabParser.decode(match[2])
+    }
+    if (match && match[1]) {
+      return V2exTabParser.decode(match[1])
+    }
+    return ''
   }
 
   private static placeholderTopic(id: number): V2exTopic {

@@ -446,6 +446,8 @@ struct FeedListPage {
     const pro = (topic.member.pro || 0) > 0 ? 'pro' : 'plain'
     const mod = (topic.member.mod || 0) > 0 ? 'mod' : 'member'
     const pinned = (topic.pinned || 0) > 0 ? 'pinned' : 'normal'
-    return `${topic.id}-${pro}-${mod}-${pinned}`
+    const lastReplyBy = (topic.last_reply_by || '').trim()
+    const lastTouched = topic.last_touched || topic.last_modified || topic.created
+    return `${topic.id}-${pro}-${mod}-${pinned}-${topic.replies}-${lastTouched}-${lastReplyBy}`
   }
 }
