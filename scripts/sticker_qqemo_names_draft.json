@@ -1,0 +1,1136 @@
+{
+ "qqemo_001": {
+  "cnName": "微笑",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "经典黄脸,睁眼+上扬嘴角的标准微笑(faceId 14)"
+ },
+ "qqemo_002": {
+  "cnName": "撇嘴",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_003": {
+  "cnName": "色",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "红色爱心眼+大张嘴吐舌流口水,经典色(faceId 2)"
+ },
+ "qqemo_004": {
+  "cnName": "发呆",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_005": {
+  "cnName": "得意",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_006": {
+  "cnName": "害羞",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "闭眼下垂睫毛+浓重脸红+小满足笑,害羞(faceId 6)"
+ },
+ "qqemo_007": {
+  "cnName": "闭嘴",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "睁眼+嘴上贴交叉胶布封口,经典闭嘴(faceId 7)"
+ },
+ "qqemo_008": {
+  "cnName": "睡",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "闭眼+Z字+大鼻涕泡,经典睡(faceId 8)"
+ },
+ "qqemo_009": {
+  "cnName": "大哭",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "紧闭><眼+泪水喷溅+大张嘴哭,大哭(faceId 9)"
+ },
+ "qqemo_010": {
+  "cnName": "流泪",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "闭眼+两道蓝色泪痕静流+抿嘴,流泪(faceId 5)"
+ },
+ "qqemo_011": {
+  "cnName": "尴尬",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_012": {
+  "cnName": "发怒",
+  "confidence": "med",
+  "mirror": "none",
+  "note": "通红脸+头顶火焰+愤怒白眼+张嘴吼+小拳头,暴怒(可能 怄火)"
+ },
+ "qqemo_013": {
+  "cnName": "调皮",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_014": {
+  "cnName": "呲牙",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "咧嘴露全齿大笑+闭眼^^+脸红,经典呲牙(faceId 13)"
+ },
+ "qqemo_015": {
+  "cnName": "惊讶",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_016": {
+  "cnName": "难过",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "普通黄脸+对称下弯嘴的标准伤心,难过(faceId 15)"
+ },
+ "qqemo_017": {
+  "cnName": "酷",
+  "confidence": "med",
+  "mirror": "none",
+  "note": "黑墨镜+皱眉+撮起的小o口哨嘴,酷的变体(非005的镜像)"
+ },
+ "qqemo_018": {
+  "cnName": "冷汗",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_019": {
+  "cnName": "抓狂",
+  "confidence": "med",
+  "mirror": "none",
+  "note": "紧闭><眼+张大红口怒吼+两侧黄拳头,抓狂崩溃(faceId 18)"
+ },
+ "qqemo_020": {
+  "cnName": "吐",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_021": {
+  "cnName": "偷笑",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "闭眼^^+手捂嘴偷笑,经典偷笑(faceId 20)"
+ },
+ "qqemo_022": {
+  "cnName": "可爱",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_023": {
+  "cnName": "白眼",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "挑眉+眼球上翻露眼白+小o嘴,经典白眼(faceId 22)"
+ },
+ "qqemo_024": {
+  "cnName": "傲慢",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_025": {
+  "cnName": "饥饿",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_026": {
+  "cnName": "困",
+  "confidence": "med",
+  "mirror": "none",
+  "note": "沉重半睁困眼+眼袋+平直嘴,犯困,困(faceId 25)"
+ },
+ "qqemo_027": {
+  "cnName": "惊恐",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "通红脸+惊恐圆瞪眼+张口惊慌+冷汗,惊恐(faceId 26)"
+ },
+ "qqemo_028": {
+  "cnName": "流汗",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_029": {
+  "cnName": "大笑",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "张大嘴哈哈大笑+闭眼+脸红,大笑(faceId 193)"
+ },
+ "qqemo_030": {
+  "cnName": "悠闲",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_031": {
+  "cnName": "奋斗",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "头扎红色头带(结在右上)+紧锁坚毅眉,经典奋斗(faceId 30)"
+ },
+ "qqemo_032": {
+  "cnName": "咒骂",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_033": {
+  "cnName": "疑问",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_034": {
+  "cnName": "嘘",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "Finger pressed to lips, shushing gesture. faceId 33 嘘. emoji 🤫."
+ },
+ "qqemo_035": {
+  "cnName": "晕",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "Spiral swirl eyes, dizzy. faceId 34 晕. Part of consecutive run 34-39 (035-040). emoji 😵."
+ },
+ "qqemo_036": {
+  "cnName": "折磨",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "Face screwed up grimacing in agony with hands appearing, tormented. faceId 35 折磨. Sits between 晕(035) and 衰(037). emoji 😖."
+ },
+ "qqemo_037": {
+  "cnName": "衰",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "Dark gray downcast round face with white eyes + cowlick sprout, mouth in dismayed O. classic QQ 衰 faceId 36; directly precedes the skull(038). emoji 🤡 in json is wrong."
+ },
+ "qqemo_038": {
+  "cnName": "骷髅",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "White skull, 2-frame static. faceId 37 骷髅. emoji 💀."
+ },
+ "qqemo_039": {
+  "cnName": "敲打",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "Wooden mallet hits the head, tears spurt. faceId 38 敲打. emoji 🔨."
+ },
+ "qqemo_040": {
+  "cnName": "再见",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "Smiling face waving one hand goodbye. faceId 39 再见. emoji 👋. Completes run 34-39."
+ },
+ "qqemo_041": {
+  "cnName": "擦汗",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "Droopy tired eyes; a big sweat bead appears and the hand wipes it. faceId 97 擦汗 (wiping, not bare cold-sweat). Begins run 97-101. emoji 😓."
+ },
+ "qqemo_042": {
+  "cnName": "抠鼻",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "Eyes shut, finger up to the nose picking/digging nose. faceId 98 抠鼻. emoji 😒 in json is loose."
+ },
+ "qqemo_043": {
+  "cnName": "鼓掌",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "Eyes shut, two hands clapping below the face. faceId 99 鼓掌. emoji 👏."
+ },
+ "qqemo_044": {
+  "cnName": "糗大了",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "Wide eyes, small puckered 3/ε mouth, blush, cold sweat + tear = mortified. faceId 100 糗大了. emoji 😶‍🌫️."
+ },
+ "qqemo_045": {
+  "cnName": "坏笑",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "Big toothy sly grin with rosy cheeks, mischievous. faceId 101 坏笑. Ends run 97-101. emoji 🤓 loose."
+ },
+ "qqemo_046": {
+  "cnName": "左哼哼",
+  "confidence": "user",
+  "mirror": "left",
+  "note": "用户确认"
+ },
+ "qqemo_047": {
+  "cnName": "右哼哼",
+  "confidence": "user",
+  "mirror": "right",
+  "note": "用户确认"
+ },
+ "qqemo_048": {
+  "cnName": "哈欠",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "Wide yawn, hand near mouth, sleepy. faceId 104 哈欠. emoji 🥱."
+ },
+ "qqemo_049": {
+  "cnName": "鄙视",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "Displeased frowning face with a thumbs-DOWN gesture, contempt. faceId 105 鄙视 (immediately after 哈欠 104). emoji 🖕 in json is wrong — it is a thumbs-down."
+ },
+ "qqemo_050": {
+  "cnName": "委屈",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "Sad raised inner brows, small pout, hands clasped before mouth, aggrieved. faceId 106 委屈. Begins run 106-111. emoji 😔."
+ },
+ "qqemo_051": {
+  "cnName": "快哭了",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "Big watery teary eyes, frown, on the verge of crying. faceId 107 快哭了. emoji 🥺."
+ },
+ "qqemo_052": {
+  "cnName": "阴险",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "Narrow-eyed sly sinister smirk. faceId 108 阴险. emoji 😈 loose."
+ },
+ "qqemo_053": {
+  "cnName": "左亲亲",
+  "confidence": "high",
+  "mirror": "left",
+  "note": "ANCHOR (user-verified). Puckered 3-shaped kiss lips leaning left, blush, eyes shut. faceId 109 亲亲 left side. emoji 😙."
+ },
+ "qqemo_054": {
+  "cnName": "右亲亲",
+  "confidence": "high",
+  "mirror": "right",
+  "note": "ANCHOR (user-verified). Mirror of 053, kiss lips puckered to the right (reversed ε). mirror=right."
+ },
+ "qqemo_055": {
+  "cnName": "吓",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "Wide shocked eyes, sweat beads, startled/scared. faceId 110 吓 (after 亲亲 pair 109). emoji 😯."
+ },
+ "qqemo_056": {
+  "cnName": "可怜",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "Huge glittery pleading puppy eyes, hands together, pitiful. faceId 111 可怜. Ends run 106-111. emoji 🥺."
+ },
+ "qqemo_057": {
+  "cnName": "眨眼睛",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_058": {
+  "cnName": "笑哭",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "Laughing hard with streaming tears of joy, mouth wide. faceId 182 笑哭. emoji 😂."
+ },
+ "qqemo_059": {
+  "cnName": "doge",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_060": {
+  "cnName": "泪奔",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_061": {
+  "cnName": "无奈",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_062": {
+  "cnName": "托腮",
+  "confidence": "med",
+  "mirror": "none",
+  "note": "Props chin on one hand, eyes glancing sideways, bored neutral mouth. faceId 212 托腮 (chin-on-hand). Distinct from 061's two-hand cheek-cupping."
+ },
+ "qqemo_063": {
+  "cnName": "卖萌",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_064": {
+  "cnName": "斜眼笑",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "Eyes drift up/sideways with a closed-mouth smug smirk, doge-style. faceId 178 斜眼笑. emoji 😏 confirms."
+ },
+ "qqemo_065": {
+  "cnName": "喷血",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "眼半闭、嘴/鼻喷出红色血液(💦 emoji 实为喷血特效)。对应 faceId 177 喷血。"
+ },
+ "qqemo_066": {
+  "cnName": "小纠结",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_067": {
+  "cnName": "我最美",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "用户锚点 067=我最美;图像为双手捧脸、张嘴、脸红,确为 faceId 183 我最美。"
+ },
+ "qqemo_068": {
+  "cnName": "脑阔疼",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "用户锚点 068=脑阔疼(faceId 262);068-073 为连续 faceId 262-267 run。"
+ },
+ "qqemo_069": {
+  "cnName": "沧桑",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "用户锚点 069=沧桑(faceId 263);图像为手托腮、若有所思的沧桑脸。"
+ },
+ "qqemo_070": {
+  "cnName": "捂脸",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "用户锚点 070=捂脸(faceId 264);图像为单手捂脸、笑/无奈。"
+ },
+ "qqemo_071": {
+  "cnName": "辣眼睛",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "用户锚点 071=辣眼睛(faceId 265);图像为皱眉拿手机的嫌弃脸。"
+ },
+ "qqemo_072": {
+  "cnName": "哦哟",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "用户锚点 072=哦哟(faceId 266);图像为绿色反胃/皱脸。"
+ },
+ "qqemo_073": {
+  "cnName": "头秃",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "用户锚点 073=头秃(faceId 267);图像为双手往下扯头发的崩溃脸。"
+ },
+ "qqemo_074": {
+  "cnName": "问号脸",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "闭眼、手托下巴、头顶冒‘???’问号;紧接 073(267) 的连续 run,对应 faceId 268 问号脸。"
+ },
+ "qqemo_075": {
+  "cnName": "暗中观察",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "从墙/门边探头、露半只眼偷看;run 续接 faceId 269 暗中观察。"
+ },
+ "qqemo_076": {
+  "cnName": "emm",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "扬眉、脸红、平嘴的不置可否脸;run 续接 faceId 270 emm(原判微笑/嫌弃为错,run 修正为 emm)。"
+ },
+ "qqemo_077": {
+  "cnName": "吃瓜",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "抱着西瓜啃(🍉);run 续接 faceId 271 吃瓜。"
+ },
+ "qqemo_078": {
+  "cnName": "呵呵哒",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_079": {
+  "cnName": "汪汪",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "橙色柴犬脸(🐶);对应 faceId 277 汪汪。"
+ },
+ "qqemo_080": {
+  "cnName": "喵喵",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "白猫脸挥爪(🐱);对应 faceId 307 喵喵。"
+ },
+ "qqemo_081": {
+  "cnName": "牛气冲天",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_082": {
+  "cnName": "无眼笑",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_083": {
+  "cnName": "敬礼",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "手抬到额前敬礼、带点坏笑(🫡);对应 faceId 282 敬礼。"
+ },
+ "qqemo_084": {
+  "cnName": "狂笑",
+  "confidence": "med",
+  "mirror": "none",
+  "note": "头后仰、眯眼、大张嘴爆笑;对应 faceId 283 狂笑(经典仰头大笑)。"
+ },
+ "qqemo_085": {
+  "cnName": "面无表情",
+  "confidence": "low",
+  "mirror": "none",
+  "note": "空白脸,中段闪现彩色电视雪花/信号条特效;最接近 faceId 284 面无表情,但可能是不在词表内的‘信号/裂开’特效表情。"
+ },
+ "qqemo_086": {
+  "cnName": "摸鱼",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "双手抱一条蓝鱼(🐟);对应 faceId 285 摸鱼。与 087 同朝向、仅鱼色不同,非镜像。"
+ },
+ "qqemo_087": {
+  "cnName": "摸锦鲤",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_088": {
+  "cnName": "魔鬼笑",
+  "confidence": "med",
+  "mirror": "none",
+  "note": "从小点脸瞬间爆成超大龇牙大眼的夸张坏笑(😈);对应 faceId 286 魔鬼笑。"
+ },
+ "qqemo_089": {
+  "cnName": "哦",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "用户锚点 089=哦;图像为端茶杯、半眯眼的高冷脸(faceId 287 哦)。"
+ },
+ "qqemo_090": {
+  "cnName": "睁眼",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_091": {
+  "cnName": "期待",
+  "confidence": "low",
+  "mirror": "none",
+  "note": "侧倾、大亮眼、双手搓在一起的急切坏笑脸;最贴 faceId 294 期待(也可能是撩一撩/坏笑)。"
+ },
+ "qqemo_092": {
+  "cnName": "拜谢",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_093": {
+  "cnName": "元宝",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_094": {
+  "cnName": "牛啊",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_095": {
+  "cnName": "胖三斤",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_096": {
+  "cnName": "嫌弃",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_097": {
+  "cnName": "举牌牌",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_098": {
+  "cnName": "豹富",
+  "confidence": "med",
+  "mirror": "none",
+  "note": "Orange big-cat face with mane/spots and fierce look; emoji=🐆 (leopard). CNY pun emote 豹富 (faceId 336). Paired thematically with 105 tiger."
+ },
+ "qqemo_099": {
+  "cnName": "拜托",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_100": {
+  "cnName": "耶",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_101": {
+  "cnName": "666",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_102": {
+  "cnName": "尊嘟假嘟",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_103": {
+  "cnName": "咦",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_104": {
+  "cnName": "裂开",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_105": {
+  "cnName": "虎虎生威",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "Tiger face with stripes/mask markings and white snout; emoji=🐯. Year-of-tiger emote 虎虎生威 (faceId 334)."
+ },
+ "qqemo_106": {
+  "cnName": "大展宏兔",
+  "confidence": "med",
+  "mirror": "none",
+  "note": "Fluffy white rabbit-shaped figure with black oval eyes/ears making a gesture; emoji=🐰. Year-of-rabbit CNY emote 大展宏兔 (faceId 347)."
+ },
+ "qqemo_107": {
+  "cnName": "右拜年",
+  "confidence": "user",
+  "mirror": "right",
+  "note": "用户确认"
+ },
+ "qqemo_108": {
+  "cnName": "左拜年",
+  "confidence": "user",
+  "mirror": "left",
+  "note": "用户确认"
+ },
+ "qqemo_109": {
+  "cnName": "拿到红包",
+  "confidence": "med",
+  "mirror": "none",
+  "note": "Animal-eared festive face hugging and nuzzling a red envelope/红包 lovingly with hearts, eyes closed happy. emoji=🧧. 拿到红包(295)."
+ },
+ "qqemo_110": {
+  "cnName": "打call",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_111": {
+  "cnName": "变形",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_112": {
+  "cnName": "仔细分析",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_113": {
+  "cnName": "菜狗",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "Green dog/shiba face with floppy ears; emoji=🥬 (cabbage). Veggie-dog pun emote 菜狗 (faceId 317)."
+ },
+ "qqemo_114": {
+  "cnName": "崇拜",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_115": {
+  "cnName": "比心",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_116": {
+  "cnName": "庆祝",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "Face wearing a party hat, eyes shut, blowing a pink party-horn/noisemaker. Celebrate = 庆祝(320). emoji=🎉."
+ },
+ "qqemo_117": {
+  "cnName": "吃糖",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_118": {
+  "cnName": "惊吓",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_119": {
+  "cnName": "花朵脸",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_120": {
+  "cnName": "祈祷",
+  "confidence": "med",
+  "mirror": "none",
+  "note": "Face holding a pink lotus blossom in cupped hands, blushing. Classic QQ 祈祷(145) is the lotus-prayer face. emoji=🌷. Alt: 送花(205)."
+ },
+ "qqemo_121": {
+  "cnName": "舔屏",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_122": {
+  "cnName": "打招呼",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "Face peeking around a wall/door, waving, with 'Hi' text. Say-hi = 打招呼(341). emoji=👋."
+ },
+ "qqemo_123": {
+  "cnName": "酸Q",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_124": {
+  "cnName": "我方了",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_125": {
+  "cnName": "大怨种",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_126": {
+  "cnName": "红包多多",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_127": {
+  "cnName": "你真棒棒",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_128": {
+  "cnName": "戳脸",
+  "confidence": "low",
+  "mirror": "none",
+  "note": "Deadpan blank face being poked/pointed at by a small hand from the lower-left, face turns slightly. emoji=👉. Poke/point gesture — no clean faceId match in the list; closest concept 戳/点. Could pair as a mirror but only one side seen."
+ },
+ "qqemo_129": {
+  "cnName": "太阳",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "Smiling yellow/orange sun with happy face. emoji 🌞. faceId 74 太阳."
+ },
+ "qqemo_130": {
+  "cnName": "月亮",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "Crescent moon with stars on blue night bg. emoji 🌙. faceId 75 月亮."
+ },
+ "qqemo_131": {
+  "cnName": "敲敲",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_132": {
+  "cnName": "坚强",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_133": {
+  "cnName": "贴贴",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_134": {
+  "cnName": "略略略",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_135": {
+  "cnName": "求放过",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_136": {
+  "cnName": "偷感",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_137": {
+  "cnName": "玩火",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_138": {
+  "cnName": "拥抱",
+  "confidence": "low",
+  "mirror": "none",
+  "note": "Green-shirt yellow figure standing with blank dotted-eyes face, arms held out slightly, gently swaying. emoji 🤗 (open-arms hug). faceId 49 拥抱; alt 激动 (130) if read as trembling."
+ },
+ "qqemo_139": {
+  "cnName": "爱心",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "Red heart pulsing/beating. emoji ❤️. faceId 66 爱心."
+ },
+ "qqemo_140": {
+  "cnName": "玫瑰",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "Upright fresh red rose. emoji 🌹. faceId 63 玫瑰."
+ },
+ "qqemo_141": {
+  "cnName": "凋谢",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "Wilting red rose, stem bent over, flower drooping. emoji 🥀. faceId 64 凋谢."
+ },
+ "qqemo_142": {
+  "cnName": "幽灵",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "White Boo-style ghost with eyes and little arms, bobbing. emoji 👻. faceId 187 幽灵."
+ },
+ "qqemo_143": {
+  "cnName": "爆筋",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "Brown/orange throbbing crossed veins (anger-vein symbol). emoji 💢. faceId 146 爆筋."
+ },
+ "qqemo_144": {
+  "cnName": "示爱",
+  "confidence": "med",
+  "mirror": "none",
+  "note": "Standalone red puckered lips (kiss mark). emoji 💋. faceId 116 示爱 (lips); could be 飞吻 85 but no flying hearts shown."
+ },
+ "qqemo_145": {
+  "cnName": "心碎",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "Red heart cracks and splits in two then reforms. emoji 💔. faceId 67 心碎."
+ },
+ "qqemo_146": {
+  "cnName": "咖啡",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "White cup on saucer with brown liquid and rising steam. emoji ☕️. faceId 60 咖啡."
+ },
+ "qqemo_147": {
+  "cnName": "羊驼",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "White fluffy alpaca/llama. emoji 🦙. faceId 185 羊驼 (草泥马)."
+ },
+ "qqemo_148": {
+  "cnName": "赞",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "Hand thumbs-up (thumb pointing up, slight tilt). emoji 👍. faceId 76 赞. Distinct from 158 (bear thumbs-up); not a mirror pair."
+ },
+ "qqemo_149": {
+  "cnName": "好",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "OK hand: thumb+index form a circle, three fingers up. emoji 👌. faceId 124 好."
+ },
+ "qqemo_150": {
+  "cnName": "抱拳",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "Two hands: palm wrapping over a fist = traditional Chinese fist-and-palm salute (作揖). emoji 🤜. faceId 118 抱拳."
+ },
+ "qqemo_151": {
+  "cnName": "握手",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "Two hands shaking. emoji 🤝. faceId 78 握手."
+ },
+ "qqemo_152": {
+  "cnName": "勾引",
+  "confidence": "med",
+  "mirror": "none",
+  "note": "Hand with curled fingers and extended thumb, beckoning/come-hither motion. emoji ☝️ misleading. faceId 119 勾引."
+ },
+ "qqemo_153": {
+  "cnName": "胜利",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "V / peace / victory sign (two fingers up). emoji ✌️. faceId 79 胜利."
+ },
+ "qqemo_154": {
+  "cnName": "拳头",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "Clenched fist facing forward. emoji ✊. faceId 120 拳头."
+ },
+ "qqemo_155": {
+  "cnName": "差劲",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "Fist with the pinky (little finger) raised up = 'you're lousy/weak'. emoji 🤚 misleading. faceId 121 差劲."
+ },
+ "qqemo_156": {
+  "cnName": "踩",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "Thumbs-down hand. emoji 👎. faceId 77 踩."
+ },
+ "qqemo_157": {
+  "cnName": "NO",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_158": {
+  "cnName": "点赞",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_159": {
+  "cnName": "我酸了",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_160": {
+  "cnName": "猪头",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "Pink pig face/head. emoji 🐷. Matches user anchor 160=猪头 (faceId 46)."
+ },
+ "qqemo_161": {
+  "cnName": "菜刀",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "Wide Chinese kitchen cleaver with wooden handle. Official faceId 112 菜刀. Distinct from 162 (long blade)."
+ },
+ "qqemo_162": {
+  "cnName": "刀",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "Long single-edged saber/dagger with red guard. Official faceId 56 刀."
+ },
+ "qqemo_163": {
+  "cnName": "手枪",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "Grey revolver/pistol. Official faceId 169 手枪."
+ },
+ "qqemo_164": {
+  "cnName": "茶",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "Bowl of green tea in a blue-and-white porcelain bowl. Official faceId 171 茶 (喝茶)."
+ },
+ "qqemo_165": {
+  "cnName": "便便",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "Brown swirl poop with stink/fly marks. Official faceId 59 便便. JSON emoji 💩 matches."
+ },
+ "qqemo_166": {
+  "cnName": "喝彩",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_167": {
+  "cnName": "棒棒糖",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "Rainbow swirl lollipop on a stick. Official faceId 147 棒棒糖. JSON 🍭."
+ },
+ "qqemo_168": {
+  "cnName": "西瓜",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "Red watermelon slice with seeds. Official faceId 89 西瓜. JSON 🍉."
+ },
+ "qqemo_169": {
+  "cnName": "篮球",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "Orange basketball. Official faceId 114 篮球. JSON 🏀."
+ },
+ "qqemo_170": {
+  "cnName": "生气",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_171": {
+  "cnName": "蛋糕",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "Pink layered birthday cake with a lit candle and cherries. Official faceId 53 蛋糕. JSON 🍰."
+ },
+ "qqemo_172": {
+  "cnName": "鞭炮",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "Red firecrackers bundle. Official faceId 137 鞭炮. JSON 🧨."
+ },
+ "qqemo_173": {
+  "cnName": "烟花",
+  "confidence": "high",
+  "mirror": "none",
+  "note": "Orange radial fireworks burst. Official faceId 333 烟花 (or 310 新年烟花). JSON 🎆."
+ },
+ "qqemo_174": {
+  "cnName": "续标识",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_175": {
+  "cnName": "发抖",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_176": {
+  "cnName": "转圈",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_177": {
+  "cnName": "爱情",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_178": {
+  "cnName": "跳跳",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_179": {
+  "cnName": "怄火",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_180": {
+  "cnName": "挥手",
+  "confidence": "med",
+  "mirror": "none",
+  "note": "QQ penguin raises a white handkerchief in its wing and waves it up to its face (waving goodbye / could read as wiping tears). Closest QQ faces 129 挥手 / 39 再见. JSON 👋 supports waving."
+ },
+ "qqemo_181": {
+  "cnName": "飞吻",
+  "confidence": "med",
+  "mirror": "left",
+  "note": "QQ penguin facing LEFT blowing a kiss, a red heart floats to its upper right. Blow-kiss = QQ face 85 飞吻 (献吻). JSON 😘. Body/face turned to the left side; no right counterpart in this batch but facing is clearly leftward."
+ },
+ "qqemo_182": {
+  "cnName": "右指",
+  "confidence": "low",
+  "mirror": "right",
+  "note": "A realistic human hand pointing/extending the index finger toward the RIGHT (skin-tone, not a yellow face). Pointing-right gesture; closest QQ vocab is the 指/戳 pointing gesture (cf 102 right-哼哼 hand style). JSON 👈. Mirror=right by the pointing direction. Uncertain official name."
+ },
+ "qqemo_183": {
+  "cnName": "粽子",
+  "confidence": "low",
+  "mirror": "none",
+  "note": "Yellow QQ face wrapped in a green leaf/cloth like a zongzi, with a red headband — Dragon Boat Festival 粽子 face. Not in the standard faceId list. JSON 🍙. Festival emote, uncertain official name."
+ },
+ "qqemo_184": {
+  "cnName": "莲花座",
+  "confidence": "low",
+  "mirror": "none",
+  "note": "Yellow QQ face sitting/wrapped in a pink lotus flower. Festival/Buddhist-lotus face, not in the standard faceId list. JSON 🍙. Uncertain official name (莲花/福气)."
+ },
+ "qqemo_185": {
+  "cnName": "火车",
+  "confidence": "med",
+  "mirror": "none",
+  "note": "Classic green locomotive train (绿皮火车). Object emote, not in standard faceId list. JSON 🚂."
+ },
+ "qqemo_186": {
+  "cnName": "高铁",
+  "confidence": "med",
+  "mirror": "none",
+  "note": "White/red high-speed bullet train (CRH/动车). Object emote, not in standard faceId list. JSON 🚆."
+ },
+ "qqemo_187": {
+  "cnName": "龙王",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_188": {
+  "cnName": "蛇年快乐",
+  "confidence": "user",
+  "mirror": "none",
+  "note": "用户确认"
+ },
+ "qqemo_189": {
+  "cnName": "蛇",
+  "confidence": "med",
+  "mirror": "none",
+  "note": "Red festive snake/dragon-like creature with decorations — Year-of-the-Snake festival emote. Not in standard faceId list. JSON 🐍. Distinct from 188."
+ }
+}
