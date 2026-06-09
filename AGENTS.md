@@ -16,7 +16,7 @@ For any ArkTS/UI/state change, `node scripts/test_v1_decorator_inventory_contrac
 
 ## Always Read First
 
-- [Always-loaded rules](docs/agent-guides/always-loaded-rules.md) — controller boundary, gates, UI/product preservation, dev/release bundle, destructive writes, login/2FA, commits.
+- [Always-loaded rules](docs/agent-guides/always-loaded-rules.md) — controller boundary, gates, UI/product preservation, encapsulation/task-boundary discipline, dev/release bundle, destructive writes, login/2FA, commits.
 - [HarmonyOS default constraints](docs/agent-guides/harmonyos-default.md) — ArkTS/ETS syntax hard stops, official API/resource/i18n/theme requirements, and ArkUI animation constraints.
 
 ## Task-Specific Guides

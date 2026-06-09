@@ -198,6 +198,9 @@ struct Index {
   private searchTitleFieldContent: ComponentContent<Object> | undefined = undefined;
   @Local private notificationRefreshKey: number = 0;
   @Local private accountRefreshKey: number = 0;
+  private homeRootRefreshAction: () => void = () => {};
+  private discoverRootRefreshAction: () => void = () => {};
+  private notificationRootRefreshAction: () => void = () => {};
   // Drives the nav-shell hidden ArkWeb daily check-in runner (auto check-in handoff; see WebCheckinRunnerState).
   @Local private webCheckin: WebCheckinRunnerState = connectWebCheckinRunner();
   @Local private isFoldedAndUseOuterScreen: boolean = false;
@@ -355,6 +358,20 @@ struct Index {
     }
     if (isForwardScroll) {
       this.applyHomeTabScrollAnimation(false)
+    }
+  }
+
+  private triggerRootRefresh(index: number): void {
+    if (index === 0) {
+      this.homeRootRefreshAction()
+      return
+    }
+    if (index === 1) {
+      this.discoverRootRefreshAction()
+      return
+    }
+    if (index === 2) {
+      this.notificationRootRefreshAction()
     }
   }
 
@@ -537,6 +554,9 @@ struct Index {
         HdsTabs({ controller: this.tc, index: this.ct }) {
           TabContent() {
             HomePage({
+              onRootRefreshReady: (action: () => void) => {
+                this.homeRootRefreshAction = action
+              },
               onScrollerReady: (scroller: Scroller) => {
                 this.setHomeTabScroller(0, scroller)
               },
@@ -549,6 +569,9 @@ struct Index {
             DiscoverPage({
               currentTab: this.ct,
               scroller: this.homeTabScrollers[1],
+              onRootRefreshReady: (action: () => void) => {
+                this.discoverRootRefreshAction = action
+              },
               onDidScroll: (offset: number, state: ScrollState) => {
                 this.onHomeTabDidScroll(1, offset, state)
               },
@@ -559,6 +582,9 @@ struct Index {
               refreshKey: this.notificationRefreshKey,
               currentTab: this.ct,
               scroller: this.homeTabScrollers[2],
+              onRootRefreshReady: (action: () => void) => {
+                this.notificationRootRefreshAction = action
+              },
               onDidScroll: (offset: number, state: ScrollState) => {
                 this.onHomeTabDidScroll(2, offset, state)
               },
@@ -1552,6 +1578,9 @@ struct Index {
       idx: idx,
       currentIndex: this.ct,
       badgeCount: idx === 2 ? this.notificationUnread.count : 0,
+      onSelectedClick: (index: number) => {
+        this.triggerRootRefresh(index)
+      },
     })
   }
 }

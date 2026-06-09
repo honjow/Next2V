@@ -13,6 +13,7 @@ export struct MainTabIcon {
   @Param idx: number = 0;
   @Param currentIndex: number = 0;
   @Param badgeCount: number = 0;
+  @Event onSelectedClick?: (index: number) => void;
 
   build() {
     Column() {
@@ -74,6 +75,11 @@ export struct MainTabIcon {
     .width('100%')
     .height('100%')
     .padding({ top: ThemeConstants.SPACE_SM - 2, bottom: ThemeConstants.SPACE_XS })
+    .onClick(() => {
+      if (this.currentIndex === this.idx && this.onSelectedClick) {
+        this.onSelectedClick(this.idx)
+      }
+    })
   }
 
   private badgeText(): string {

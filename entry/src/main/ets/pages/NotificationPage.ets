@@ -25,6 +25,7 @@ import {
   NotificationActionState,
   NotificationUnreadState,
   publishNotificationUnreadCount,
+  PullRefreshController,
   PullRefreshListScaffold,
   ThemeConstants,
   TwoFactorChallengeService,
@@ -78,6 +79,7 @@ export struct NotificationPage {
   @Local private scrollEnabled: boolean = true
   @Local private viewedUnreadNotificationKeys: string[] = []
   @Param scroller: Scroller = new Scroller()
+  @Event onRootRefreshReady?: (action: () => void) => void
   @Event onDidScroll?: (offset: number, state: ScrollState) => void
   private api: ApiService = new ApiService()
   private apiV2: ApiV2Service = new ApiV2Service()
@@ -91,8 +93,14 @@ export struct NotificationPage {
   private pendingNotificationDeletes: Set<number> = new Set<number>()
   @Param refreshKey: number = 0
   @Param currentTab: number = 0
+  private rootRefreshController: PullRefreshController = new PullRefreshController()
 
   aboutToAppear(): void {
+    if (this.onRootRefreshReady) {
+      this.onRootRefreshReady(() => {
+        this.triggerRootRefresh()
+      })
+    }
     this.loadAuthSnapshot(false)
   }
 
@@ -135,6 +143,10 @@ export struct NotificationPage {
     }
   }
 
+  private triggerRootRefresh(): void {
+    this.rootRefreshController.triggerTopRefresh()
+  }
+
   build() {
     Column() {
       if (!this.hasNotificationAuth()) {
@@ -160,6 +172,7 @@ export struct NotificationPage {
           scroller: this.scroller,
           scrollEnabled: this.scrollEnabled,
           bottomPadding: ThemeConstants.FLOAT_BAR_HEIGHT,
+          controller: this.rootRefreshController,
           onRefresh: async () => {
             await this.refreshNotifications(true)
           },

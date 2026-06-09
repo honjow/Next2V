@@ -14,10 +14,25 @@ const DEFAULT_PULL_REFRESH_THRESHOLD: number = 120
 const HAPTIC_HD_INTENSITY: number = 80
 const HAPTIC_FALLBACK_DURATION: number = 30
 const DIRECTION_LOCK_VP: number = 6
+const PROGRAMMATIC_PULL_ANIM_DURATION: number = 420
+
+export class PullRefreshController {
+  private topRefreshAction: () => void = () => {}
+
+  setTopRefreshAction(action: () => void): void {
+    this.topRefreshAction = action
+  }
+
+  triggerTopRefresh(): void {
+    this.topRefreshAction()
+  }
+}
+
 @ComponentV2
 export struct PullRefresh {
   @BuilderParam content: () => void;
   @Param scroller: Scroller = new Scroller();
+  @Param controller: PullRefreshController = new PullRefreshController();
   @Event onRefresh: () => Promise<void> = async () => {};
   @Event onBottomRefresh: () => Promise<void> = async () => {};
   @Param canStartBottomRefresh: () => boolean = () => false;
@@ -48,6 +63,12 @@ export struct PullRefresh {
   private isTracking: boolean = false;
   private isBottomTracking: boolean = false;
   private isHorizontalGesture: boolean = false;
+
+  aboutToAppear(): void {
+    this.controller.setTopRefreshAction(() => {
+      this.triggerProgrammaticTopRefresh()
+    })
+  }
 
   private isListAtTop(): boolean {
     return this.scroller.currentOffset().yOffset <= 0
@@ -123,6 +144,33 @@ export struct PullRefresh {
     }
   }
 
+  private triggerProgrammaticTopRefresh(): void {
+    if (this.refreshState >= 2 || this.topIndicatorMounted || this.pullOffset > 0 || this.bottomPullOffset > 0) {
+      return
+    }
+    try {
+      if (!this.isListAtTop()) {
+        this.scroller.scrollTo({
+          xOffset: 0,
+          yOffset: 0,
+        })
+      }
+    } catch (_error) {}
+    this.onScrollEnableChange(false)
+    this.topIndicatorMounted = true
+    this.getUIContext().animateTo(
+      { duration: PROGRAMMATIC_PULL_ANIM_DURATION, curve: Curve.EaseOut },
+      () => {
+        this.pullOffset = this.threshold
+      },
+    )
+    setTimeout(() => {
+      this.refreshState = 1
+      this.triggerHaptic()
+      this.onPullEnd()
+    }, PROGRAMMATIC_PULL_ANIM_DURATION)
+  }
+
   private onBottomPullEnd(): void {
     if (this.bottomPullOffset >= this.threshold && this.bottomRefreshState !== 2) {
       this.onScrollEnableChange(true)
@@ -140,9 +188,8 @@ export struct PullRefresh {
   }
 
   private async doRefresh(): Promise<void> {
-    // Centralized pull-to-refresh failure feedback: a rejecting onRefresh means the user's pull failed
-    // (initial/programmatic loads never reach here), so surface one toast — and still finish the
-    // indicator animation either way, so a failed refresh can't leave the spinner stuck.
+    // Centralized pull-to-refresh failure feedback: a rejecting onRefresh means an interactive refresh
+    // failed, so surface one toast — and still finish the indicator animation either way.
     try {
       await this.onRefresh()
     } catch (_error) {

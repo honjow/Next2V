@@ -6,6 +6,7 @@ import {
   DiagnosticLogger,
   LayoutSafeAreaState,
   PullRefresh,
+  PullRefreshController,
   V2exNode,
   V2exTopic,
   NodeTopicListParams,
@@ -45,7 +46,9 @@ export struct DiscoverPage {
   private readonly FLOAT_H: number = ThemeConstants.FLOAT_BAR_HEIGHT;
   private readonly GAP: number = ThemeConstants.SPACE_MD;
   private readonly PULL_REFRESH_THRESHOLD: number = 120;
+  private rootRefreshController: PullRefreshController = new PullRefreshController();
   @Param scroller: Scroller = new Scroller();
+  @Event onRootRefreshReady?: (action: () => void) => void;
   @Event onDidScroll?: (offset: number, state: ScrollState) => void;
   private api: ApiService = new ApiService();
   private hasStartedInitialLoad: boolean = false;
@@ -57,7 +60,16 @@ export struct DiscoverPage {
   }
 
   aboutToAppear(): void {
+    if (this.onRootRefreshReady) {
+      this.onRootRefreshReady(() => {
+        this.triggerRootRefresh()
+      })
+    }
     this.requestInitialLoad('aboutToAppear')
+  }
+
+  private triggerRootRefresh(): void {
+    this.rootRefreshController.triggerTopRefresh()
   }
 
   private requestInitialLoad(reason: string): void {
@@ -96,6 +108,7 @@ export struct DiscoverPage {
       Column() {
         PullRefresh({
           scroller: this.scroller,
+          controller: this.rootRefreshController,
           // Spinner center must land at content top (topAvoidHeight + TBH). PullRefresh adds TBH/2 internally
           // to center the spinner in its TBH-tall row, so pass topAvoidHeight + TBH/2 here — matches the
           // PullRefreshListScaffold default the notification/other lists use.

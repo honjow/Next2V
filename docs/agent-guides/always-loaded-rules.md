@@ -44,6 +44,14 @@ User product decisions are hard constraints, not suggestions. Unless the user ex
 
 When validating a hypothesis, keep test scaffolding isolated and temporary. Fake network requests, artificial delays, mocked services, diagnostic UI, or instrumentation must be removed before final implementation unless the user explicitly asks to keep them. Do not treat evidence gathered under a changed UI/component path as proof for the preserved UI path.
 
+## Encapsulation and Task Boundary Discipline
+
+Task-scoped implementation boundaries are hard constraints. When the user and agent have agreed that a feature should be implemented through a specific external contract or layer, such as page-level scrolling, navigation events, parser output, or existing public APIs, do not reinterpret that boundary during implementation because a lower-level component has convenient internal state.
+
+Treat shared components, state machines, and feature modules like third-party or closed-source components unless the task explicitly asks to change that component itself. Internal state is not an extension point. A higher-level feature must first be composed through the owning page/model/controller and existing public behavior. If the external approach appears insufficient, stop before editing across the boundary and report the failed approach, evidence, and why crossing the boundary is necessary.
+
+Do not turn a task-specific boundary failure into a permanent file ban or a mechanical script. The rule is contextual: ownership, layer, and the agreed implementation contract determine whether a file belongs in the change. Any cross-boundary edit made before that reasoning is recorded is a process failure even if the code compiles.
+
 ## Code Comment Intent
 
 Comments should document why a non-obvious decision exists, not restate what the code mechanically does. Add or preserve concise rationale comments for product constraints, platform quirks, state-machine invariants, rollback/atomicity boundaries, security/privacy exclusions, destructive-write safeguards, and any implementation that looks indirect because it preserves user-visible semantics.

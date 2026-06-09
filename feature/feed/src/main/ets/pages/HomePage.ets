@@ -4,7 +4,7 @@ import {
   PullRefreshListScaffold, ApiConstants, TabItem, ApiService, NodeTopicListParams,
   UserProfileParams, CacheSettings, FeedTabSettings, CollectionSettings,
   connectNavStack, connectFeedTab, FeedTabBridge, connectListScroll, connectTopicReadStates,
-  FeedTabState, ListScrollState, TopicReadStatesState
+  FeedTabState, ListScrollState, PullRefreshController, TopicReadStatesState
 } from 'shared'
 import type { TopicReadState } from 'shared'
 import { common } from '@kit.AbilityKit'
@@ -23,8 +23,10 @@ export struct HomePage {
   })
   private isHorizontalSwiping: boolean = false
   private feedScrollers: Map<string, Scroller> = new Map<string, Scroller>()
+  private feedRootRefreshActions: Map<string, () => void> = new Map<string, () => void>()
   // Pure-V2 list-scroll lock; the inner FeedListPage reads .enabled. Write-only from HomePage.
   private listScroll: ListScrollState = connectListScroll()
+  @Event onRootRefreshReady?: (action: () => void) => void
   @Event onScrollerReady?: (scroller: Scroller) => void
   @Event onDidScroll?: (offset: number, state: ScrollState) => void
 
@@ -38,6 +40,7 @@ export struct HomePage {
     this.currentTabIndex = nextIndex
     this.setVisualTabIndex(nextIndex)
     this.notifyMainScrollerReady()
+    this.notifyRootRefreshReady()
   }
 
   private scrollerForTab(tabKey: string): Scroller {
@@ -64,6 +67,28 @@ export struct HomePage {
     this.feedScrollers.set(tabKey, scroller)
     if (tabKey === this.feedTabState.feedTab) {
       this.notifyMainScrollerReady()
+    }
+  }
+
+  private onFeedRootRefreshReady(tabKey: string, action: () => void): void {
+    this.feedRootRefreshActions.set(tabKey, action)
+    if (tabKey === this.feedTabState.feedTab) {
+      this.notifyRootRefreshReady()
+    }
+  }
+
+  private notifyRootRefreshReady(): void {
+    if (this.onRootRefreshReady) {
+      this.onRootRefreshReady(() => {
+        this.triggerActiveFeedRootRefresh()
+      })
+    }
+  }
+
+  private triggerActiveFeedRootRefresh(): void {
+    const action = this.feedRootRefreshActions.get(this.feedTabState.feedTab)
+    if (action) {
+      action()
     }
   }
 
@@ -127,6 +152,7 @@ export struct HomePage {
     this.currentTabIndex = nextIndex
     this.animateVisualTabIndex(nextIndex)
     this.notifyMainScrollerReady()
+    this.notifyRootRefreshReady()
     this.swiperController.changeIndex(nextIndex, true)
   }
 
@@ -149,6 +175,7 @@ export struct HomePage {
     this.currentTabIndex = nextIndex
     this.setVisualTabIndex(nextIndex)
     this.notifyMainScrollerReady()
+    this.notifyRootRefreshReady()
     this.swiperController.changeIndex(nextIndex, false)
   }
 
@@ -200,6 +227,9 @@ export struct HomePage {
             scroller: this.scrollerForTab(tab.key),
             onScrollerReady: (tabKey: string, scroller: Scroller) => {
               this.onFeedScrollerReady(tabKey, scroller)
+            },
+            onRootRefreshReady: (tabKey: string, action: () => void) => {
+              this.onFeedRootRefreshReady(tabKey, action)
             },
             onDidScroll: (tabKey: string, offset: number, state: ScrollState) => {
               this.onFeedDidScroll(tabKey, offset, state)
@@ -276,14 +306,21 @@ struct FeedListPage {
   private readonly FLOAT_H: number = ThemeConstants.FLOAT_BAR_HEIGHT
   private readonly GAP: number = ThemeConstants.SPACE_SM - 2
   private readonly BB_H: number = ApiConstants.TAB_BAR_HEIGHT
+  private rootRefreshController: PullRefreshController = new PullRefreshController()
   @Param scroller: Scroller = new Scroller()
   @Event onScrollerReady?: (tabKey: string, scroller: Scroller) => void
+  @Event onRootRefreshReady?: (tabKey: string, action: () => void) => void
   @Event onDidScroll?: (tabKey: string, offset: number, state: ScrollState) => void
   private api: ApiService = new ApiService()
 
   aboutToAppear(): void {
     if (this.onScrollerReady) {
       this.onScrollerReady(this.tabKey, this.scroller)
+    }
+    if (this.onRootRefreshReady) {
+      this.onRootRefreshReady(this.tabKey, () => {
+        this.triggerRootRefresh()
+      })
     }
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     if (this.tabKey === 'latest') {
@@ -303,6 +340,10 @@ struct FeedListPage {
     this.vm.loadData()
   }
 
+  private triggerRootRefresh(): void {
+    this.rootRefreshController.triggerTopRefresh()
+  }
+
   build() {
     Column() {
       if (this.vm.itemCount > 0) {
@@ -313,6 +354,7 @@ struct FeedListPage {
             topPadding: this.BB_H,
             bottomPadding: this.FLOAT_H,
             scrollEnabled: this.listScroll.enabled,
+            controller: this.rootRefreshController,
             onRefresh: async () => { await this.vm.refresh() },
             onBottomRefresh: async () => { await this.vm.loadMore() },
             canStartBottomRefresh: () => this.vm.canLoadMore(),
