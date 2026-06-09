@@ -85,12 +85,6 @@ const MEDIA_VIDEO_MAX_WIDTH = 760;
 const MEDIA_VIDEO_MIN_HEIGHT = 220;
 const MEDIA_VIDEO_MAX_HEIGHT = 420;
 const MEDIA_VIDEO_ASPECT_RATIO = 9 / 16;
-// Embedded-video cover card play affordance: a black scrim stays intentionally
-// theme-independent because it sits over arbitrary cover imagery.
-const EMBEDDED_VIDEO_PLAY_SCRIM = "#66000000";
-const EMBEDDED_VIDEO_PLAY_BADGE_SIZE = 56;
-// Glyph sits visually centered inside the 56 badge; ~46% of the badge diameter.
-const EMBEDDED_VIDEO_PLAY_GLYPH_SIZE = 26;
 
 type TokenValue = Object | string | number | boolean | null | undefined;
 
@@ -479,19 +473,6 @@ function _openInlineVideo(options: MarkdownOptions, url: string): void {
   const context: MarkdownVideoDiagnosticsContext = _videoDiagnosticsContext(normalized);
   DiagnosticLogger.info('network', 'markdown_video_open_external', context);
   _openInlineLink(options, normalized);
-}
-
-function _openEmbeddedVideo(options: MarkdownOptions, token: Tokens.EmbeddedVideo): void {
-  const watchUrl = MediaUrlUtils.normalizeUrl(token.watchUrl);
-  if (!watchUrl) {
-    return;
-  }
-  const context: MarkdownEmbeddedVideoDiagnosticsContext = {
-    provider: token.provider,
-    urlHash: DiagnosticLogger.ownerHash(watchUrl),
-  };
-  DiagnosticLogger.info('network', 'markdown_embedded_video_open_external', context);
-  _openInlineLink(options, watchUrl);
 }
 
 function _videoDiagnosticsContext(url: string): MarkdownVideoDiagnosticsContext {
@@ -2216,15 +2197,9 @@ class EmbeddedVideoShareBridge {
 struct EmbeddedVideoCard {
   @Require @Param videoToken: Tokens.EmbeddedVideo;
   @Require @Param options: MarkdownOptions;
-  // Media image-load policy mirrored into AppStorageV2 by MediaSettings.apply().
-  private media: MediaSettingsState = connectMediaSettings();
-  @Local private coverFailed: boolean = false;
-  @Local private networkChecked: boolean = false;
-  @Local private isWifiNetwork: boolean = false;
+  // The provider player loads directly as an ArkWeb Web — no static cover and
+  // no tap-to-mount. providerTitle() still feeds the native share sheet.
   @Local private cardAvailableWidth: number = 0;
-  // In-place playback: the provider's own embed player mounts into the card on
-  // first tap (lazy — a scrolling list must not pre-instantiate WebViews).
-  @Local private playerMounted: boolean = false;
   private playerController: webview.WebviewController = new webview.WebviewController();
   // Native share bridge for the in-player share button (see EmbeddedVideoShareBridge).
   private shareBridge: EmbeddedVideoShareBridge = new EmbeddedVideoShareBridge();
@@ -2233,7 +2208,6 @@ struct EmbeddedVideoCard {
   ];
 
   aboutToAppear(): void {
-    this.refreshNetworkState();
     this.shareBridge.attach(
       this.getUIContext(),
       this.providerTitle(),
@@ -2242,63 +2216,11 @@ struct EmbeddedVideoCard {
   }
 
   aboutToDisappear(): void {
-    // Proxy is only registered once the player Web mounts; deleting an
-    // unregistered name throws, so ignore that case.
+    // deleteJavaScriptRegister throws if the proxy was never registered.
     try {
       this.playerController.deleteJavaScriptRegister(EMBEDDED_VIDEO_SHARE_PROXY_NAME);
     } catch (err) {
     }
-  }
-
-  @Monitor('media.autoLoadImages', 'media.onlyLoadImagesOnWifi')
-  onImageLoadPolicyChanged(): void {
-    this.refreshNetworkState();
-  }
-
-  private refreshNetworkState(): void {
-    if (!this.media.autoLoadImages || !this.media.onlyLoadImagesOnWifi) {
-      this.networkChecked = true;
-      this.isWifiNetwork = false;
-      return;
-    }
-    this.networkChecked = false;
-    connection.getDefaultNet()
-      .then((netHandle: connection.NetHandle) => connection.getNetCapabilities(netHandle))
-      .then((capabilities: connection.NetCapabilities) => {
-        const bearerTypes = capabilities.bearerTypes;
-        this.isWifiNetwork = Array.isArray(bearerTypes) && bearerTypes.indexOf(connection.NetBearType.BEARER_WIFI) >= 0;
-        this.networkChecked = true;
-      })
-      .catch((_error: Error) => {
-        this.isWifiNetwork = false;
-        this.networkChecked = true;
-      });
-  }
-
-  private coverLoadingAllowed(): boolean {
-    if (!this.media.autoLoadImages) {
-      return false;
-    }
-    if (!this.media.onlyLoadImagesOnWifi) {
-      return true;
-    }
-    return this.networkChecked && this.isWifiNetwork;
-  }
-
-  private coverRenderUrl(): string {
-    if (this.coverFailed || !this.coverLoadingAllowed()) {
-      return "";
-    }
-    return MediaUrlUtils.normalizeUrl(this.videoToken.coverUrl);
-  }
-
-  private reportCoverFailed(): void {
-    const context: MarkdownEmbeddedVideoDiagnosticsContext = {
-      provider: this.videoToken.provider,
-      urlHash: DiagnosticLogger.ownerHash(MediaUrlUtils.normalizeUrl(this.videoToken.coverUrl)),
-    };
-    DiagnosticLogger.warn('network', 'markdown_embedded_video_cover_failed', context);
-    this.coverFailed = true;
   }
 
   private providerTitle(): string {
@@ -2311,13 +2233,14 @@ struct EmbeddedVideoCard {
     return AppStrings.text($r('app.string.media_video_link'), 'Video');
   }
 
-  // Canonical provider embed-player URL; autoplay so the cover tap is the one
-  // and only play gesture (mediaPlayGestureAccess(false) authorizes it).
+  // Canonical provider embed-player URL. No autoplay: the player loads showing
+  // the provider's own poster + play button, so opening a topic never blares
+  // audio or streams video until the user taps play.
   private embedPlayUrl(): string {
     if (this.videoToken.provider === "youtube") {
-      return `https://www.youtube.com/embed/${this.videoToken.videoId}?autoplay=1&playsinline=1`;
+      return `https://www.youtube.com/embed/${this.videoToken.videoId}?playsinline=1`;
     }
-    return `https://player.vimeo.com/video/${this.videoToken.videoId}?autoplay=1`;
+    return `https://player.vimeo.com/video/${this.videoToken.videoId}`;
   }
 
   // YouTube rejects referer-less embed loads (player error 153), so the player
@@ -2341,18 +2264,6 @@ struct EmbeddedVideoCard {
       };
       DiagnosticLogger.warn('network', 'markdown_embedded_video_player_load_failed', context, error as Error);
     }
-  }
-
-  private mountPlayer(): void {
-    if (this.playerMounted) {
-      return;
-    }
-    const context: MarkdownEmbeddedVideoDiagnosticsContext = {
-      provider: this.videoToken.provider,
-      urlHash: DiagnosticLogger.ownerHash(this.embedPlayUrl()),
-    };
-    DiagnosticLogger.info('network', 'markdown_embedded_video_play_inline', context);
-    this.playerMounted = true;
   }
 
   private updateCardAvailableWidth(value: Area): void {
@@ -2380,88 +2291,32 @@ struct EmbeddedVideoCard {
   }
 
   build() {
-    Column({ space: ThemeConstants.SPACE_XS }) {
-      Stack({ alignContent: Alignment.Center }) {
-        if (this.playerMounted) {
-          Web({ src: '', controller: this.playerController })
-            .javaScriptAccess(true)
-            .domStorageAccess(true)
-            .onlineImageAccess(true)
-            .mediaPlayGestureAccess(false)
-            .javaScriptProxy({
-              object: this.shareBridge,
-              name: EMBEDDED_VIDEO_SHARE_PROXY_NAME,
-              methodList: ["share"],
-              controller: this.playerController,
-            })
-            .javaScriptOnDocumentStart(this.shareScripts)
-            .backgroundColor(Color.Black)
-            .width('100%')
-            .height('100%')
-            .onControllerAttached(() => {
-              this.loadPlayerDocument();
-            })
-        } else {
-          if (this.coverRenderUrl().length > 0) {
-            Image(this.coverRenderUrl())
-              .width('100%')
-              .height('100%')
-              .objectFit(ImageFit.Cover)
-              .borderRadius(ThemeConstants.RADIUS_SM)
-              .onError(() => {
-                this.reportCoverFailed();
-              })
-          }
-          Column({ space: ThemeConstants.SPACE_SM }) {
-            Column() {
-              SymbolGlyph($r('sys.symbol.play_fill'))
-                .fontSize(EMBEDDED_VIDEO_PLAY_GLYPH_SIZE)
-                .fontColor([Color.White])
-            }
-            .width(EMBEDDED_VIDEO_PLAY_BADGE_SIZE)
-            .height(EMBEDDED_VIDEO_PLAY_BADGE_SIZE)
-            .borderRadius(EMBEDDED_VIDEO_PLAY_BADGE_SIZE / 2)
-            .backgroundColor(EMBEDDED_VIDEO_PLAY_SCRIM)
-            .justifyContent(FlexAlign.Center)
-            .alignItems(HorizontalAlign.Center)
-
-            if (this.coverRenderUrl().length === 0) {
-              Text(this.providerTitle())
-                .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-                .fontColor(ThemeConstants.TEXT_SECONDARY)
-            }
-          }
-          .justifyContent(FlexAlign.Center)
-          .alignItems(HorizontalAlign.Center)
-          .onClick(() => {
-            this.mountPlayer();
+    Column() {
+      Column() {
+        Web({ src: '', controller: this.playerController })
+          .javaScriptAccess(true)
+          .domStorageAccess(true)
+          .onlineImageAccess(true)
+          .mediaPlayGestureAccess(false)
+          .javaScriptProxy({
+            object: this.shareBridge,
+            name: EMBEDDED_VIDEO_SHARE_PROXY_NAME,
+            methodList: ["share"],
+            controller: this.playerController,
           })
-        }
+          .javaScriptOnDocumentStart(this.shareScripts)
+          .backgroundColor(Color.Black)
+          .width('100%')
+          .height('100%')
+          .onControllerAttached(() => {
+            this.loadPlayerDocument();
+          })
       }
       .width(this.cardFrameWidth())
       .height(this.cardFrameHeight())
       .borderRadius(ThemeConstants.RADIUS_SM)
       .backgroundColor(ThemeConstants.BG_SUB)
       .clip(true)
-      .onClick(() => {
-        this.mountPlayer();
-      })
-
-      Row({ space: ThemeConstants.SPACE_SM }) {
-        Text(this.providerTitle())
-          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-          .fontColor(ThemeConstants.TEXT_SECONDARY)
-        Text(MediaUrlUtils.normalizeUrl(this.videoToken.watchUrl))
-          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-          .fontColor(ThemeConstants.TEXT_LINK)
-          .maxLines(1)
-          .textOverflow({ overflow: TextOverflow.Ellipsis })
-          .layoutWeight(1)
-      }
-      .width(this.cardFrameWidth())
-      .onClick(() => {
-        _openEmbeddedVideo(this.options, this.videoToken);
-      })
     }
     .width('100%')
     .alignItems(HorizontalAlign.Center)

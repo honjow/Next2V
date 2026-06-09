@@ -72,22 +72,16 @@ if (!/private cardFrameWidth\(\): Length/.test(cardBody) || !/private cardFrameH
   !/MEDIA_VIDEO_MAX_WIDTH/.test(cardBody) || !/MEDIA_VIDEO_ASPECT_RATIO/.test(cardBody)) {
   fail('EmbeddedVideoCard must reuse the bounded responsive media-card sizing contract');
 }
-if (!/coverFailed/.test(cardBody) || !/markdown_embedded_video_cover_failed/.test(cardBody)) {
-  fail('EmbeddedVideoCard cover must degrade to placeholder on load failure (i.ytimg.com is walled with youtube.com)');
+// The player loads directly into the card as an ArkWeb Web — no static cover,
+// no tap-to-mount, no caption row. embedPlayUrl omits autoplay so opening a
+// topic never auto-plays; the provider's own poster + play button drive it.
+if (!/Web\(\{ src: '', controller: this\.playerController \}\)/.test(cardBody) ||
+  !/mediaPlayGestureAccess\(false\)/.test(cardBody) ||
+  !/\.onControllerAttached\(\(\) => \{[\s\S]{0,80}this\.loadPlayerDocument\(\)/.test(cardBody)) {
+  fail('EmbeddedVideoCard must load the provider embed player directly into the card');
 }
-if (!/coverLoadingAllowed/.test(cardBody) || !/onlyLoadImagesOnWifi/.test(cardBody)) {
-  fail('EmbeddedVideoCard cover must follow the media image-load policy');
-}
-// In-place playback: tapping the cover mounts the provider's own embed player
-// (lazy WebView — never pre-instantiated in a scrolling list) with autoplay
-// authorized so the cover tap is the single play gesture.
-if (!/playerMounted/.test(cardBody) ||
-  !/Web\(\{ src: '', controller: this\.playerController \}\)/.test(cardBody) ||
-  !/mediaPlayGestureAccess\(false\)/.test(cardBody)) {
-  fail('EmbeddedVideoCard must mount the provider embed player in place on tap');
-}
-if (!/autoplay=1/.test(cardBody)) {
-  fail('embedPlayUrl must request autoplay so the cover tap is the single play gesture');
+if (/autoplay=1/.test(cardBody)) {
+  fail('embedPlayUrl must NOT autoplay — the player loads without auto-playing on topic open');
 }
 // YouTube returns player error 153 for referer-less embed loads; the player
 // document must be loaded with a v2ex.com baseUrl so the iframe carries the
@@ -95,11 +89,6 @@ if (!/autoplay=1/.test(cardBody)) {
 if (!/loadData\(this\.playerHtml\(\), 'text\/html', 'UTF-8', 'https:\/\/www\.v2ex\.com\/'\)/.test(cardBody) ||
   !/allow="autoplay; encrypted-media; picture-in-picture"/.test(cardBody)) {
   fail('player must load through the v2ex.com-based wrapper document (YouTube error 153 guard)');
-}
-// ArkWeb bypasses the in-app SOCKS5 proxy; the caption row keeps the
-// external-browser fallback for devices that cannot reach the provider.
-if (!/_openEmbeddedVideo\(this\.options, this\.videoToken\)/.test(cardBody)) {
-  fail('EmbeddedVideoCard caption must keep the external-browser open fallback');
 }
 // In-player share: the provider iframe's share button calls navigator.share,
 // which ArkWeb lacks. A native proxy injected into all frames + a document-start
@@ -116,9 +105,6 @@ if (!/class EmbeddedVideoShareBridge/.test(markdownSource) ||
   !/systemShare\.ShareController/.test(markdownSource) ||
   !/utd\.UniformDataType\.HYPERLINK/.test(markdownSource)) {
   fail('share bridge must polyfill navigator.share and open a HYPERLINK system share via systemShare.ShareController');
-}
-if (!/markdown_embedded_video_open_external/.test(markdownSource)) {
-  fail('embedded video external opens must be diagnosable');
 }
 if (!/_isEmbeddedVideoToken\(token\)[\s\S]{0,200}EmbeddedVideoCard\(/.test(markdownSource)) {
   fail('RenderProcessedToken must dispatch embeddedVideo tokens to EmbeddedVideoCard');
