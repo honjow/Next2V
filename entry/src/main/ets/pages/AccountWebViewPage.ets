@@ -6,12 +6,14 @@ import {
   HttpClient,
   V2exWebView,
   V2exWebViewScaffold,
+  connectLanguageState,
   connectNavStack,
   connectAccountWebViewAction,
   connectAccountWebViewUrl,
   publishAccountWebViewUrl,
   publishAccountWebViewTitle,
   AccountWebViewActionState,
+  LanguageState,
 } from 'shared'
 
 interface PageEndEvent {
@@ -31,17 +33,21 @@ export struct AccountWebViewPage {
 
   private controller: webview.WebviewController = new webview.WebviewController();
   private http: HttpClient = HttpClient.getInstance();
+  private language: LanguageState = connectLanguageState();
 
   @Local private isLoading: boolean = true;
   @Local private errorMessage: string = '';
-  @Local private pageMessage: string = AppStrings.text($r('app.string.common_loading'), 'Loading…');
+  @Local private pageMessage: string = '';
   @Local private hasInjectedCookie: boolean = false;
   @Local private hasLoadRequested: boolean = false;
 
   aboutToAppear(): void {
+    if (!this.pageMessage) {
+      this.pageMessage = this.localeAwareText($r('app.string.common_loading'), 'Loading…')
+    }
     this.targetUrl = connectAccountWebViewUrl().url
     if (!this.targetUrl) {
-      this.errorMessage = AppStrings.text($r('app.string.common_load_failed'), 'No page URL provided')
+      this.errorMessage = this.localeAwareText($r('app.string.common_load_failed'), 'No page URL provided')
       this.pageMessage = ''
       this.isLoading = false
     }
@@ -62,7 +68,7 @@ export struct AccountWebViewPage {
         onPageBegin: (event?: PageEndEvent) => {
           this.isLoading = true
           this.errorMessage = ''
-          this.pageMessage = AppStrings.text($r('app.string.common_loading'), 'Loading…')
+          this.pageMessage = this.localeAwareText($r('app.string.common_loading'), 'Loading…')
           DiagnosticLogger.info('webview', 'account_webview_page_begin', {
             url: event && event.url ? event.url : this.targetUrl,
             hasCookie: this.hasInjectedCookie,
@@ -82,7 +88,7 @@ export struct AccountWebViewPage {
             this.pageMessage = ''
             this.errorMessage =
               event.error.getErrorInfo() ||
-              AppStrings.text($r('app.string.common_load_failed'), 'Failed to load page')
+              this.localeAwareText($r('app.string.common_load_failed'), 'Failed to load page')
             DiagnosticLogger.warn('webview', 'account_webview_load_error', {
               url: this.targetUrl,
               isMainFrame: true,
@@ -114,6 +120,16 @@ export struct AccountWebViewPage {
     return this.pageMessage
   }
 
+  @Monitor('language.effectiveLocale')
+  onLocaleChanged(): void {
+    if (this.errorMessage) {
+      return
+    }
+    if (this.isLoading || this.pageMessage) {
+      this.pageMessage = this.localeAwareText($r('app.string.common_loading'), 'Loading…')
+    }
+  }
+
   @Monitor('actionState.command')
   onAccountWebViewAction(): void {
     const action = (this.actionState.command || '').split(':').pop() || ''
@@ -124,7 +140,7 @@ export struct AccountWebViewPage {
 
   private reloadPage(): void {
     this.errorMessage = ''
-    this.pageMessage = AppStrings.text($r('app.string.common_loading'), 'Loading…')
+    this.pageMessage = this.localeAwareText($r('app.string.common_loading'), 'Loading…')
     this.isLoading = true
     if (!this.hasInjectedCookie) {
       this.hasLoadRequested = false
@@ -141,7 +157,7 @@ export struct AccountWebViewPage {
       this.isLoading = false
       this.pageMessage = ''
       this.errorMessage =
-        e.message || AppStrings.text($r('app.string.common_load_failed'), 'Failed to refresh page')
+        e.message || this.localeAwareText($r('app.string.common_load_failed'), 'Failed to refresh page')
     }
   }
 
@@ -163,7 +179,7 @@ export struct AccountWebViewPage {
       target = origin + target
     }
     if (!target.startsWith('http://') && !target.startsWith('https://')) {
-      this.errorMessage = AppStrings.text($r('app.string.common_load_failed'), 'Unsupported URL')
+      this.errorMessage = this.localeAwareText($r('app.string.common_load_failed'), 'Unsupported URL')
       this.pageMessage = ''
       this.isLoading = false
       return
@@ -172,7 +188,7 @@ export struct AccountWebViewPage {
     this.targetUrl = target
     publishAccountWebViewUrl(target)
     this.pageMessage = AppStrings.format(
-      AppStrings.text($r('app.string.web_login_opening_url'), 'Opening {0}'),
+      this.localeAwareText($r('app.string.web_login_opening_url'), 'Opening {0}'),
       [target],
     )
 
@@ -205,7 +221,7 @@ export struct AccountWebViewPage {
       const e = error as Error
       DiagnosticLogger.exception('webview', 'account_webview_load_url_exception', e, { url: url })
       this.errorMessage =
-        e.message || AppStrings.text($r('app.string.common_load_failed'), 'Failed to load page')
+        e.message || this.localeAwareText($r('app.string.common_load_failed'), 'Failed to load page')
       this.pageMessage = ''
       this.isLoading = false
     }
@@ -245,5 +261,12 @@ export struct AccountWebViewPage {
 
   private webBaseUrl(): string {
     return this.http.getBaseUrl()
+  }
+
+  private localeAwareText(resource: Resource, fallback: string): string {
+    if (this.language.effectiveLocale.length >= 0) {
+      return AppStrings.text(resource, fallback)
+    }
+    return AppStrings.text(resource, fallback)
   }
 }

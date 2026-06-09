@@ -1,11 +1,13 @@
 import { ThemeConstants } from '../theme/ThemeConstants'
+import { connectLanguageState, LanguageState } from '../state/LanguageState'
 
 @ComponentV2
 export struct SectionHeader {
   @Param title: ResourceStr = ''
+  private language: LanguageState = connectLanguageState()
 
   build() {
-    Text(this.title)
+    Text(this.localeAwareTitle())
       .fontSize(ThemeConstants.FONT_SIZE_LIST_ITEM)
       .fontWeight(FontWeight.Medium)
       .fontColor($r('sys.color.font_secondary'))
@@ -16,5 +18,12 @@ export struct SectionHeader {
         bottom: ThemeConstants.SPACE_XS,
       })
       .width('100%')
+  }
+
+  private localeAwareTitle(): ResourceStr {
+    if (this.language.effectiveLocale.length >= 0) {
+      return this.title
+    }
+    return this.title
   }
 }

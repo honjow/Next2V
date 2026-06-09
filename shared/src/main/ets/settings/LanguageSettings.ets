@@ -41,7 +41,7 @@ export class LanguageSettings {
         console.error('setAppPreferredLanguage failed: ' + e.message)
       }
     }
-    AppStrings.setOverrideLocaleForLanguageMode(mode)
+    const effectiveLocale = AppStrings.setOverrideLocaleForLanguageMode(mode, normalized)
     // Seed the follow-system guard cache so reapplyForFollowSystem
     // does not re-apply the same language on the first Environment callback.
     if (mode === LanguageSettings.MODE_SYSTEM && normalized) {
@@ -50,7 +50,9 @@ export class LanguageSettings {
     setAppStorageValue<AppLanguageMode>(StorageKeys.LANGUAGE_MODE, mode)
     // V2 mirror dual-write: SettingsPage hydration and reapplyForFollowSystem
     // read this instead of AppStorage.get(LANGUAGE_MODE).
-    connectLanguageState().mode = mode
+    const languageState = connectLanguageState()
+    languageState.mode = mode
+    languageState.effectiveLocale = effectiveLocale || normalized
     return { mode }
   }
 
@@ -92,6 +94,11 @@ export class LanguageSettings {
     try {
       i18n.System.setAppPreferredLanguage(sys)
       LanguageSettings.lastAppliedFollowSystemLanguage = sys
+      const languageState = connectLanguageState()
+      languageState.effectiveLocale = AppStrings.setOverrideLocaleForLanguageMode(
+        LanguageSettings.MODE_SYSTEM,
+        sys,
+      ) || sys
     } catch (error) {
       const e = error as Error
       console.error('reapplyForFollowSystem failed: ' + e.message)

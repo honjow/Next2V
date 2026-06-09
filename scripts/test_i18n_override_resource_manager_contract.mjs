@@ -70,9 +70,10 @@ const loadStrings = (locale) => Object.fromEntries(JSON.parse(
 const requiredAppStrings = [
   "import { resourceManager } from '@kit.LocalizationKit'",
   'private static overrideResMgr: resourceManager.ResourceManager | null = null',
-  'static setOverrideLocaleForLanguageMode(mode: string): void',
+  'static setOverrideLocaleForLanguageMode(mode: string, resolvedLanguage: string): string',
   'AppStrings.context.resourceManager.getOverrideConfiguration()',
   'config.locale = locale',
+  'AppStrings.context.resourceManager.updateOverrideConfiguration(config)',
   'AppStrings.context.resourceManager.getOverrideResourceManager(config)',
   'AppStrings.overrideResMgr.getStringSync(resource.id)',
   "return 'zh-Hans-CN'",
@@ -107,8 +108,13 @@ for (const token of [
 }
 
 assert.ok(
-  languageSettings.includes('AppStrings.setOverrideLocaleForLanguageMode(mode)'),
+  languageSettings.includes('AppStrings.setOverrideLocaleForLanguageMode(mode, normalized)'),
   'LanguageSettings.apply must hand normalized mode to AppStrings',
+)
+
+assert.ok(
+  languageSettings.includes('languageState.effectiveLocale = effectiveLocale || normalized'),
+  'LanguageSettings.apply must publish effectiveLocale so visible ResourceStr UI hot-refreshes',
 )
 
 assert.ok(

@@ -10,7 +10,9 @@ import {
   AuthSessionSettings,
   AutoDailyCheckinService,
   CookieJarSettings,
+  connectLanguageState,
   HttpClient,
+  LanguageState,
   NativeTwoFactorRequiredError,
   ThemeConstants,
   V2exNativeAuthService,
@@ -25,9 +27,10 @@ export struct V2exTwoFactorPrompt {
   @Param visible: boolean = false
   @Event onVisibleChange?: (value: boolean) => void
   @Param cookie: string = ''
-  @Param title: string = AppStrings.text($r('app.string.two_factor_title'), 'Two-Factor Verification')
+  @Param title: ResourceStr = $r('app.string.two_factor_title')
   @Event onSuccess?: () => void
   @Event onCancel?: () => void
+  private language: LanguageState = connectLanguageState()
 
   @Local private code: string = ''
   @Local private errorMessage: string = ''
@@ -39,19 +42,19 @@ export struct V2exTwoFactorPrompt {
 
   build() {
     AppModalScaffold({
-      title: this.title,
+      title: this.localeAwareResource(this.title),
       closeAction: () => { this.cancel() }
     }) {
       ListItem() {
         Column({ space: ThemeConstants.SPACE_MD }) {
-          Text(AppStrings.text($r('app.string.two_factor_description'), 'V2EX requires two-factor verification to continue accessing account content.'))
+          Text(this.localeAwareText($r('app.string.two_factor_description'), 'V2EX requires two-factor verification to continue accessing account content.'))
             .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
             .fontColor($r('sys.color.font_secondary'))
             .width('100%')
 
           AppTextField({
             text: this.code,
-            placeholder: AppStrings.text($r('app.string.two_factor_code_placeholder'), 'Enter 6-digit code'),
+            placeholder: this.localeAwareText($r('app.string.two_factor_code_placeholder'), 'Enter 6-digit code'),
             inputType: InputType.Number,
             onTextChange: (value: string) => { this.code = value }
           })
@@ -65,14 +68,14 @@ export struct V2exTwoFactorPrompt {
           }
 
           AppActionButton({
-            label: this.isSubmitting ? AppStrings.text($r('app.string.two_factor_verifying'), 'Verifying\u2026') : AppStrings.text($r('app.string.two_factor_verify_button'), 'Verify'),
+            label: this.isSubmitting ? this.localeAwareText($r('app.string.two_factor_verifying'), 'Verifying\u2026') : this.localeAwareText($r('app.string.two_factor_verify_button'), 'Verify'),
             primary: true,
             isEnabled: !this.isSubmitting,
             action: () => { this.submit() }
           })
 
           AppActionButton({
-            label: AppStrings.text($r('app.string.two_factor_later'), 'Later'),
+            label: this.localeAwareText($r('app.string.two_factor_later'), 'Later'),
             primary: false,
             isEnabled: !this.isSubmitting,
             action: () => { this.cancel() }
@@ -81,6 +84,20 @@ export struct V2exTwoFactorPrompt {
         .width('100%')
       }
     }
+  }
+
+  private localeAwareResource(resource: ResourceStr): ResourceStr {
+    if (this.language.effectiveLocale.length >= 0) {
+      return resource
+    }
+    return resource
+  }
+
+  private localeAwareText(resource: Resource, fallback: string): string {
+    if (this.language.effectiveLocale.length >= 0) {
+      return AppStrings.text(resource, fallback)
+    }
+    return AppStrings.text(resource, fallback)
   }
 
   private submit(): void {

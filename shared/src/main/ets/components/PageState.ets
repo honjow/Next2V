@@ -1,4 +1,5 @@
 import { ThemeConstants } from '../theme/ThemeConstants'
+import { connectLanguageState, LanguageState } from '../state/LanguageState'
 
 @ComponentV2
 export struct PageLoadingState {
@@ -26,15 +27,16 @@ export struct PageErrorState {
   @Param expand: boolean = true
   @Event retryAction?: () => void
   @Event secondaryAction?: () => void
+  private language: LanguageState = connectLanguageState()
 
   build() {
     Column({ space: ThemeConstants.SPACE_SM }) {
-      Text(this.message || $r('app.string.common_load_failed'))
+      Text(this.localeAwareResource(this.message || $r('app.string.common_load_failed')))
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
         .fontColor($r('sys.color.font_secondary'))
         .textAlign(TextAlign.Center)
       Row({ space: ThemeConstants.SPACE_SM }) {
-        Button(this.retryLabel)
+        Button(this.localeAwareResource(this.retryLabel))
           .type(ButtonType.Capsule)
           .fontSize(ThemeConstants.FONT_SIZE_BODY)
           .onClick(() => {
@@ -43,7 +45,7 @@ export struct PageErrorState {
             }
           })
         if (this.secondaryLabel) {
-          Button(this.secondaryLabel)
+          Button(this.localeAwareResource(this.secondaryLabel))
             .type(ButtonType.Capsule)
             .fontSize(ThemeConstants.FONT_SIZE_BODY)
             .onClick(() => {
@@ -59,6 +61,13 @@ export struct PageErrorState {
     .width('100%')
     .layoutWeight(this.expand ? 1 : 0)
   }
+
+  private localeAwareResource(resource: ResourceStr): ResourceStr {
+    if (this.language.effectiveLocale.length >= 0) {
+      return resource
+    }
+    return resource
+  }
 }
 
 @ComponentV2
@@ -67,14 +76,15 @@ export struct PageLoginRequiredState {
   @Param actionLabel: ResourceStr = $r('app.string.login_action')
   @Param expand: boolean = true
   @Event action?: () => void
+  private language: LanguageState = connectLanguageState()
 
   build() {
     Column({ space: ThemeConstants.SPACE_SM }) {
-      Text(this.message)
+      Text(this.localeAwareResource(this.message))
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
         .fontColor($r('sys.color.font_secondary'))
         .textAlign(TextAlign.Center)
-      Button(this.actionLabel)
+      Button(this.localeAwareResource(this.actionLabel))
         .type(ButtonType.Capsule)
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
         .onClick(() => {
@@ -87,16 +97,24 @@ export struct PageLoginRequiredState {
     .width('100%')
     .layoutWeight(this.expand ? 1 : 0)
   }
+
+  private localeAwareResource(resource: ResourceStr): ResourceStr {
+    if (this.language.effectiveLocale.length >= 0) {
+      return resource
+    }
+    return resource
+  }
 }
 
 @ComponentV2
 export struct CardEmptyState {
   @Param message: ResourceStr = ''
+  private language: LanguageState = connectLanguageState()
   @Param expand: boolean = true
 
   build() {
     Column() {
-      Text(this.message)
+      Text(this.localeAwareResource(this.message))
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
         .fontColor($r('sys.color.font_secondary'))
         .textAlign(TextAlign.Center)
@@ -106,5 +124,12 @@ export struct CardEmptyState {
     .justifyContent(FlexAlign.Center)
     .width('100%')
     .layoutWeight(this.expand ? 1 : 0)
+  }
+
+  private localeAwareResource(resource: ResourceStr): ResourceStr {
+    if (this.language.effectiveLocale.length >= 0) {
+      return resource
+    }
+    return resource
   }
 }

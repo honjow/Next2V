@@ -269,14 +269,17 @@ def assert_fallback_contract() -> None:
         if needle not in language_text:
             raise AssertionError(f"system language contract missing: {needle}")
 
-    if "AppStrings.setOverrideLocaleForLanguageMode(mode)" not in language_text:
+    if "AppStrings.setOverrideLocaleForLanguageMode(mode, normalized)" not in language_text:
         raise AssertionError("LanguageSettings.apply() must hand explicit language mode to AppStrings")
+    if "languageState.effectiveLocale = effectiveLocale || normalized" not in language_text:
+        raise AssertionError("LanguageSettings.apply() must publish effective locale for hot UI refresh")
 
     required_override_contracts = [
         "import { resourceManager } from '@kit.LocalizationKit'",
         "private static overrideResMgr: resourceManager.ResourceManager | null = null",
-        "static setOverrideLocaleForLanguageMode(mode: string): void",
+        "static setOverrideLocaleForLanguageMode(mode: string, resolvedLanguage: string): string",
         "AppStrings.context.resourceManager.getOverrideConfiguration()",
+        "AppStrings.context.resourceManager.updateOverrideConfiguration(config)",
         "AppStrings.context.resourceManager.getOverrideResourceManager(config)",
         "AppStrings.overrideResMgr.getStringSync(resource.id)",
         "zh-Hans-CN",
@@ -999,6 +1002,7 @@ def assert_resource_manager_contract() -> None:
     for token in [
         "private static overrideResMgr: resourceManager.ResourceManager | null = null",
         "AppStrings.overrideResMgr.getStringSync(resource.id)",
+        "AppStrings.context.resourceManager.updateOverrideConfiguration(config)",
         "AppStrings.context.resourceManager.getOverrideResourceManager(config)",
         "resourceSource.getStringSync(resource)",
     ]:

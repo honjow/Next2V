@@ -1,4 +1,4 @@
-import { ThemeConstants } from 'shared'
+import { connectLanguageState, LanguageState, ThemeConstants } from 'shared'
 
 // Real-device layout dumps bracketed the correction: centered placement was
 // +9px right of the label, while start-only placement was -9px left.
@@ -14,6 +14,7 @@ export struct MainTabIcon {
   @Param currentIndex: number = 0;
   @Param badgeCount: number = 0;
   @Event onSelectedClick?: (index: number) => void;
+  private language: LanguageState = connectLanguageState();
 
   build() {
     Column() {
@@ -62,7 +63,7 @@ export struct MainTabIcon {
       }
       .width(ThemeConstants.INDICATOR_SIZE)
       .height(ThemeConstants.INDICATOR_SIZE - 2)
-      Text(this.title)
+      Text(this.localeAwareTitle())
         .fontSize(ThemeConstants.FONT_SIZE_TINY)
         .fontColor(
           this.currentIndex === this.idx
@@ -84,5 +85,12 @@ export struct MainTabIcon {
 
   private badgeText(): string {
     return this.badgeCount > 99 ? '99+' : `${this.badgeCount}`
+  }
+
+  private localeAwareTitle(): ResourceStr {
+    if (this.language.effectiveLocale.length >= 0) {
+      return this.title
+    }
+    return this.title
   }
 }

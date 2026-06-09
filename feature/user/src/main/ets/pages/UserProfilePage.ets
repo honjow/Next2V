@@ -19,6 +19,7 @@ import {
   publishUserProfileAppbarAvatarStates,
   connectUserProfileAppbar,
   connectAuthSessionSignal,
+  connectLanguageState,
   NodeTopicListParams,
   ImagePreviewParams,
   SecondaryListScaffold,
@@ -36,6 +37,7 @@ import {
   connectUserMarks,
   defaultSheetOptions,
   LayoutSafeAreaState,
+  LanguageState,
   TopicReadStatesState,
   UserProfileActionState,
   UserMarkSettings,
@@ -61,10 +63,11 @@ export struct UserProfilePage {
   private stack: NavPathStack = connectNavStack().stack;
   @Local vm: UserViewModel = new UserViewModel(this.username);
   @Local private activityTab: number = 0;
+  @Local private language: LanguageState = connectLanguageState();
   // Count-bearing tab labels (e.g. "Topics 12" / "Replies 3") passed one-way to the @ComponentV2
   // segmented control (UserProfileActivityTabs); refreshed after vm.load() via updateTabLabels().
-  @Local private topicTabLabel: string = AppStrings.text($r('app.string.user_tab_topics_label'), 'Topics');
-  @Local private replyTabLabel: string = AppStrings.text($r('app.string.user_tab_replies_label'), 'Replies');
+  @Local private topicTabLabel: string = '';
+  @Local private replyTabLabel: string = '';
   @Local private following: boolean = false;
   @Local private blocked: boolean = false;
   // Per-topic read-state ledger (V2 mirror; LocalDataPublisher dual-writes). Read in build() via
@@ -95,6 +98,7 @@ export struct UserProfilePage {
     this.publishActionMenuState()
     this.publishAppbarTitle(false)
     this.restoreUserMarks()
+    this.updateTabLabels()
     this.vm
       .load()
       .then(() => {
@@ -103,6 +107,11 @@ export struct UserProfilePage {
         this.updateTabLabels()
       })
       .catch((_error: Error) => {})
+  }
+
+  @Monitor('language.effectiveLocale')
+  onLocaleChanged(): void {
+    this.updateTabLabels()
   }
 
   build() {

@@ -2,7 +2,9 @@ import {
   AppModalScaffold,
   AppStrings,
   Avatar,
+  connectLanguageState,
   ImageUtils,
+  LanguageState,
   ThemeConstants,
   TimeAgo,
   UserName,
@@ -117,11 +119,12 @@ export struct TopicDetailReplyDivider {
   @Event onReplyDisplayMenuShownChange?: (value: boolean) => void
   @Param replyCountText: string = ''
   @Param replyDisplayMode: string = 'origin'
-  @Param replyDisplayModeText: string = AppStrings.text($r('app.string.reply_display_mode_origin'), 'Original')
+  @Param replyDisplayModeText: string = ''
   @Event onJumpToFloor?: () => void
   @Event onLatest?: () => void
   @Event onShowDisplayMenu?: () => void
   @Event onDisplayModeChange?: (mode: string) => void
+  private language: LanguageState = connectLanguageState()
 
   build() {
     Row({ space: ThemeConstants.SPACE_SM }) {
@@ -132,13 +135,13 @@ export struct TopicDetailReplyDivider {
         .textOverflow({ overflow: TextOverflow.Ellipsis })
         .layoutWeight(1)
       Row({ space: ThemeConstants.SPACE_XS }) {
-        this.ToolButton(AppStrings.text($r('app.string.topic_detail_tool_floor'), 'Floor'), false, () => {
+        this.ToolButton(this.localeAwareText($r('app.string.topic_detail_tool_floor'), 'Floor'), false, () => {
           if (this.onJumpToFloor) {
             this.onJumpToFloor()
           }
         })
         this.DisplayModeButton()
-        this.ToolButton(AppStrings.text($r('app.string.topic_detail_tool_latest'), 'Latest'), false, () => {
+        this.ToolButton(this.localeAwareText($r('app.string.topic_detail_tool_latest'), 'Latest'), false, () => {
           if (this.onLatest) {
             this.onLatest()
           }
@@ -168,7 +171,7 @@ export struct TopicDetailReplyDivider {
   }
 
   @Builder DisplayModeButton() {
-    Text(this.replyDisplayModeText)
+    Text(this.localeAwareModeText())
       .fontSize(ThemeConstants.FONT_SIZE_TINY)
       .fontColor(
         this.replyDisplayMode === 'origin' ? $r('sys.color.font_secondary') : Color.White,
@@ -220,17 +223,32 @@ export struct TopicDetailReplyDivider {
       }
     })
   }
+
+  private localeAwareModeText(): string {
+    if (this.language.effectiveLocale.length >= 0) {
+      return TopicDetailReplyDisplayCoordinator.modeText(this.replyDisplayMode)
+    }
+    return this.replyDisplayModeText
+  }
+
+  private localeAwareText(resource: Resource, fallback: string): string {
+    if (this.language.effectiveLocale.length >= 0) {
+      return AppStrings.text(resource, fallback)
+    }
+    return AppStrings.text(resource, fallback)
+  }
 }
 
 @ComponentV2
 export struct ReplyContextSheetContent {
   @BuilderParam content: () => void
-  @Param title: string = AppStrings.text($r('app.string.reply_context_title'), 'Reply context')
+  @Param title: ResourceStr = $r('app.string.reply_context_title')
   @Event closeAction?: () => void
+  private language: LanguageState = connectLanguageState()
 
   build() {
     AppModalScaffold({
-      title: this.title,
+      title: this.localeAwareResource(this.title),
       closeAction: () => {
         if (this.closeAction) {
           this.closeAction()
@@ -239,6 +257,13 @@ export struct ReplyContextSheetContent {
     }) {
       this.content()
     }
+  }
+
+  private localeAwareResource(resource: ResourceStr): ResourceStr {
+    if (this.language.effectiveLocale.length >= 0) {
+      return resource
+    }
+    return resource
   }
 }
 

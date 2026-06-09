@@ -9,6 +9,7 @@ import {
 import { ImageModifier, TextModifier } from '@kit.ArkUI'
 import { ThemeConstants } from '../theme/ThemeConstants'
 import { ImageUtils } from '../utils/ImageUtils'
+import { connectLanguageState, LanguageState } from '../state/LanguageState'
 
 @ComponentV2
 export struct ConciseListRow {
@@ -35,6 +36,7 @@ export struct ConciseListRow {
   @Event switchAction?: (value: boolean) => void
   @Event counterDecreaseAction?: () => void
   @Event counterIncreaseAction?: () => void
+  private language: LanguageState = connectLanguageState()
 
   private primaryTextModifier(): TextModifier {
     return new TextModifier()
@@ -115,12 +117,12 @@ export struct ConciseListRow {
       }
       if (this.showChevron) {
         return new SuffixTextAndArrow({
-          text: this.trailingText,
+          text: this.localeAwareResource(this.trailingText),
           modifier: this.trailingTextModifier()
         }, { color: Color.Gray })
       }
       return new SuffixText({
-        text: this.trailingText,
+        text: this.localeAwareResource(this.trailingText),
         modifier: this.trailingTextModifier()
       })
     }
@@ -199,7 +201,7 @@ export struct ConciseListRow {
   @Builder
   private DropdownSuffix() {
     Row({ space: ThemeConstants.SPACE_XS }) {
-      Text(this.trailingText)
+      Text(this.localeAwareResource(this.trailingText))
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
         .fontColor(this.secondaryColor ?? $r('sys.color.font_secondary'))
         .maxLines(1)
@@ -235,11 +237,11 @@ export struct ConciseListRow {
     HdsListItemCard({
       textItem: {
         primaryText: {
-          text: this.title,
+          text: this.localeAwareResource(this.title),
           modifier: this.primaryTextModifier()
         },
         secondaryText: this.subtitle ? {
-          text: this.subtitle,
+          text: this.localeAwareResource(this.subtitle),
           modifier: this.secondaryTextModifier()
         } : undefined
       },
@@ -266,5 +268,12 @@ export struct ConciseListRow {
     }
     .width('100%')
     .opacity(this.isEnabled ? 1.0 : 0.4)
+  }
+
+  private localeAwareResource(resource: ResourceStr): ResourceStr {
+    if (this.language.effectiveLocale.length >= 0) {
+      return resource
+    }
+    return resource
   }
 }

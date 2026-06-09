@@ -28,6 +28,7 @@ import {
   connectImageHero,
   connectThemeDisplay,
   connectImagePreviewAction,
+  connectLanguageState,
   connectLocalDataSignal,
   connectNativeLoginShown,
   connectNavStack,
@@ -53,6 +54,7 @@ import {
   AccountWebViewUrlState,
   AuthSessionSignalState,
   HomeTabAutoHideState,
+  LanguageState,
   NodeTopicAppbarState,
   NotificationUnreadState,
   PendingV2exUrlState,
@@ -177,6 +179,7 @@ struct Index {
   private nodeTopicAppbar: NodeTopicAppbarState = connectNodeTopicAppbar();
   private userProfileAppbar: UserProfileAppbarState = connectUserProfileAppbar();
   private notificationUnread: NotificationUnreadState = connectNotificationUnread();
+  private language: LanguageState = connectLanguageState();
   private homeTab: HomeTabAutoHideState = connectHomeTabAutoHide();
   private authSession: AuthSessionSignalState = connectAuthSessionSignal();
   private twoFactor: TwoFactorState = connectTwoFactor();
@@ -1336,7 +1339,7 @@ struct Index {
   }
 
   private titleBarOptions(): Record<string, Object> {
-    let titleInfo: Record<string, Object> = { 'mainTitle': this.tabTitles[this.ct] }
+    let titleInfo: Record<string, Object> = { 'mainTitle': this.localeAwareResource(this.tabTitles[this.ct]) }
     let content: Record<string, Object>
     if (this.ct === 0) {
       if (!this.pillBarContent) {
@@ -1587,7 +1590,7 @@ struct Index {
   @Builder
   TabIcon(title: ResourceStr, idx: number) {
     MainTabIcon({
-      title: title,
+      title: this.localeAwareResource(title),
       idx: idx,
       currentIndex: this.ct,
       badgeCount: idx === 2 ? this.notificationUnread.count : 0,
@@ -1595,5 +1598,12 @@ struct Index {
         this.triggerRootRefresh(index)
       },
     })
+  }
+
+  private localeAwareResource(resource: ResourceStr): ResourceStr {
+    if (this.language.effectiveLocale.length >= 0) {
+      return resource
+    }
+    return resource
   }
 }

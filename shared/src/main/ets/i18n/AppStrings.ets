@@ -52,38 +52,44 @@ export class AppStrings {
     }
   }
 
-  static setOverrideLocaleForLanguageMode(mode: string): void {
-    const locale = AppStrings.overrideLocaleForMode(mode)
+  static setOverrideLocaleForLanguageMode(mode: string, resolvedLanguage: string): string {
+    const locale = AppStrings.overrideLocaleForMode(mode) || AppStrings.overrideLocaleForMode(resolvedLanguage)
     if (!locale || !AppStrings.context) {
       AppStrings.overrideResMgr = null
-      return
+      return locale
     }
     try {
       const config = AppStrings.context.resourceManager.getOverrideConfiguration()
       config.locale = locale
+      AppStrings.context.resourceManager.updateOverrideConfiguration(config)
       AppStrings.overrideResMgr = AppStrings.context.resourceManager.getOverrideResourceManager(config)
     } catch (_error) {
       AppStrings.overrideResMgr = null
     }
+    return locale
   }
 
   private static overrideLocaleForMode(mode: string): string {
-    if (mode === 'zh-Hans') {
+    const normalized = (mode || '').trim()
+    if (normalized === 'zh-Hans' || normalized === 'zh-CN' || normalized === 'zh' ||
+      normalized.indexOf('zh-Hans') === 0) {
       return 'zh-Hans-CN'
     }
-    if (mode === 'zh-Hant-HK') {
+    if (normalized === 'zh-Hant-HK' || normalized === 'zh-HK' ||
+      normalized.indexOf('zh-Hant-HK') === 0) {
       return 'zh-Hant-HK'
     }
-    if (mode === 'zh-Hant-TW') {
+    if (normalized === 'zh-Hant-TW' || normalized === 'zh-TW' ||
+      normalized.indexOf('zh-Hant-TW') === 0) {
       return 'zh-Hant-TW'
     }
-    if (mode === 'en-US') {
+    if (normalized === 'en-US' || normalized === 'en' || normalized.indexOf('en-') === 0) {
       return 'en-US'
     }
-    if (mode === 'ja-JP') {
+    if (normalized === 'ja-JP' || normalized === 'ja' || normalized.indexOf('ja-') === 0) {
       return 'ja-JP'
     }
-    if (mode === 'ko-KR') {
+    if (normalized === 'ko-KR' || normalized === 'ko' || normalized.indexOf('ko-') === 0) {
       return 'ko-KR'
     }
     return ''

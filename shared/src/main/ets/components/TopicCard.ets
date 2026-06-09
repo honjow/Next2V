@@ -6,17 +6,19 @@ import { TimeAgo } from './TimeAgo'
 import { NodeTag } from './NodeTag'
 import { ImageUtils } from '../utils/ImageUtils'
 import { AppStrings } from '../i18n/AppStrings'
+import { connectLanguageState, LanguageState } from '../state/LanguageState'
 
 @ComponentV2
 export struct TopicCard {
   @Require @Param item: V2exTopic
   @Param isUnread: boolean = false
-  @Param metaLabel: string = AppStrings.text($r('app.string.topic_last_reply'), 'Last reply')
+  @Param metaLabel: ResourceStr = $r('app.string.topic_last_reply')
   @Param metaTimestamp: number = 0
   @Param showReplyCount: boolean = true
   @Param showNodeTag: boolean = true
   @Event onUserClick?: () => void
   @Event onNodeClick?: () => void
+  private language: LanguageState = connectLanguageState()
 
   build() {
     Column({ space: ThemeConstants.SPACE_XS }) {
@@ -68,7 +70,7 @@ export struct TopicCard {
 
       Row({ space: ThemeConstants.SPACE_XS }) {
         if (this.item.replies > 0 || this.metaTimestamp > 0) {
-          Text(this.metaLabel)
+          Text(this.localeAwareResource(this.metaLabel))
             .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
             .fontColor($r('sys.color.font_secondary'))
           if (this.shouldShowLastReplyUser()) {
@@ -146,5 +148,12 @@ export struct TopicCard {
       .borderRadius(ThemeConstants.RADIUS_SM)
       .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
       .flexShrink(0)
+  }
+
+  private localeAwareResource(resource: ResourceStr): ResourceStr {
+    if (this.language.effectiveLocale.length >= 0) {
+      return resource
+    }
+    return resource
   }
 }

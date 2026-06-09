@@ -1,5 +1,6 @@
 import { AppStrings } from '../i18n/AppStrings'
 import { ThemeConstants } from '../theme/ThemeConstants'
+import { connectLanguageState, LanguageState } from '../state/LanguageState'
 
 /**
  * List footer loading state indicator.
@@ -9,9 +10,10 @@ export struct LoadingFooter {
   @Param isLoading: boolean = false
   @Param hasMore: boolean = true
   @Param isError: boolean = false
-  @Param errorMessage: string = AppStrings.text($r('app.string.common_load_failed'), 'Load failed, tap to retry')
-  @Param retryLabel: string = ''
+  @Param errorMessage: ResourceStr = $r('app.string.common_load_failed_tap_retry')
+  @Param retryLabel: ResourceStr = ''
   @Event onRetry?: () => void
+  private language: LanguageState = connectLanguageState()
 
   build() {
     Row() {
@@ -20,16 +22,16 @@ export struct LoadingFooter {
           .width(ThemeConstants.LOADING_SIZE_SMALL)
           .height(ThemeConstants.LOADING_SIZE_SMALL)
           .color($r('sys.color.font_secondary'))
-        Text(AppStrings.text($r('app.string.common_loading'), 'Loading\u2026'))
+        Text(this.localeAwareText($r('app.string.common_loading'), 'Loading\u2026'))
           .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
           .fontColor($r('sys.color.font_secondary'))
           .margin({ left: ThemeConstants.SPACE_SM })
       } else if (this.isError) {
-        Text(this.errorMessage)
+        Text(this.localeAwareResource(this.errorMessage))
           .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
           .fontColor($r('sys.color.font_secondary'))
         if (this.retryLabel) {
-          Button(this.retryLabel)
+          Button(this.localeAwareResource(this.retryLabel))
             .fontSize(ThemeConstants.FONT_SIZE_TAG)
             .height(30)
             .margin({ left: ThemeConstants.SPACE_MD })
@@ -53,5 +55,19 @@ export struct LoadingFooter {
         this.onRetry()
       }
     })
+  }
+
+  private localeAwareResource(resource: ResourceStr): ResourceStr {
+    if (this.language.effectiveLocale.length >= 0) {
+      return resource
+    }
+    return resource
+  }
+
+  private localeAwareText(resource: Resource, fallback: string): string {
+    if (this.language.effectiveLocale.length >= 0) {
+      return AppStrings.text(resource, fallback)
+    }
+    return AppStrings.text(resource, fallback)
   }
 }

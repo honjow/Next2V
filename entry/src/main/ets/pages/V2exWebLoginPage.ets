@@ -8,11 +8,13 @@ import {
   AuthSessionSettings,
   AccountSessionCoordinator,
   AutoDailyCheckinService,
+  connectLanguageState,
   connectNavStack,
   connectWebLoginAction,
   CookieJarSettings,
   DiagnosticLogger,
   HttpClient,
+  LanguageState,
   V2exWebView,
   V2exWebViewScaffold,
   V2exSessionParser,
@@ -40,7 +42,7 @@ export struct V2exWebLoginPage {
   private api: ApiService = new ApiService()
 
   @Local private errorMessage: string = ''
-  @Local private pageMessage: string = AppStrings.text($r('app.string.web_login_opening'), 'Opening web login...')
+  @Local private pageMessage: string = ''
   @Local private isSaving: boolean = false
   @Local private isSaved: boolean = false
   @Local private lastUrl: string = ''
@@ -52,6 +54,7 @@ export struct V2exWebLoginPage {
   private loginStartCookie: string = ''
   // V2 mirror of WEB_LOGIN_ACTION (was @StorageLink+@Watch); reacts via @Monitor below.
   private webLoginActionState: WebLoginActionState = connectWebLoginAction()
+  private language: LanguageState = connectLanguageState()
 
   private get baseUrl(): string {
     return this.http.getBaseUrl()
@@ -69,6 +72,9 @@ export struct V2exWebLoginPage {
 
   aboutToAppear(): void {
     this.isPageActive = true
+    if (!this.pageMessage) {
+      this.pageMessage = this.localeAwareText($r('app.string.web_login_opening'), 'Opening web login...')
+    }
   }
 
   aboutToDisappear(): void {
@@ -92,7 +98,7 @@ export struct V2exWebLoginPage {
           this.loadSigninPage()
         },
         onPageBegin: (event?: PageEndEvent) => {
-          this.pageMessage = event?.url ? AppStrings.format(AppStrings.text($r('app.string.web_login_loading_url'), 'Loading {0}'), [event.url]) : AppStrings.text($r('app.string.web_login_loading_page'), 'Loading web login...')
+          this.pageMessage = event?.url ? AppStrings.format(this.localeAwareText($r('app.string.web_login_loading_url'), 'Loading {0}'), [event.url]) : this.localeAwareText($r('app.string.web_login_loading_page'), 'Loading web login...')
           if (event && event.url) {
             this.lastUrl = event.url
           }
@@ -119,7 +125,7 @@ export struct V2exWebLoginPage {
         },
         onErrorReceive: (event) => {
           if (event?.request?.isMainFrame()) {
-            this.pageMessage = event.error.getErrorInfo() || AppStrings.text($r('app.string.web_login_load_failed'), 'Web login failed to load')
+            this.pageMessage = event.error.getErrorInfo() || this.localeAwareText($r('app.string.web_login_load_failed'), 'Web login failed to load')
             DiagnosticLogger.warn('webview', 'web_login_load_error', {
               url: this.lastUrl || this.currentSigninUrl(),
               isMainFrame: true,
@@ -133,12 +139,30 @@ export struct V2exWebLoginPage {
 
   private statusText(): string {
     if (this.isSaving) {
-      return AppStrings.text($r('app.string.web_login_saving'), 'Saving login state...')
+      return this.localeAwareText($r('app.string.web_login_saving'), 'Saving login state...')
     }
     if (this.errorMessage) {
       return this.errorMessage
     }
     return this.pageMessage
+  }
+
+  @Monitor('language.effectiveLocale')
+  onLocaleChanged(): void {
+    if (this.errorMessage || this.isSaving) {
+      return
+    }
+    if (!this.pageMessage) {
+      return
+    }
+    if (this.lastUrl) {
+      this.pageMessage = AppStrings.format(
+        this.localeAwareText($r('app.string.web_login_loading_url'), 'Loading {0}'),
+        [this.lastUrl],
+      )
+      return
+    }
+    this.pageMessage = this.localeAwareText($r('app.string.web_login_opening'), 'Opening web login...')
   }
 
   @Monitor('webLoginActionState.command')
@@ -166,7 +190,7 @@ export struct V2exWebLoginPage {
 
   private loadSigninPage(): void {
     const url = this.currentSigninUrl()
-    this.pageMessage = AppStrings.format(AppStrings.text($r('app.string.web_login_opening_url'), 'Opening {0}'), [url])
+    this.pageMessage = AppStrings.format(this.localeAwareText($r('app.string.web_login_opening_url'), 'Opening {0}'), [url])
     this.loginStartCookie = CookieJarSettings.getCurrentCookie()
     CookieJarSettings.clearWebCookiesForBaseUrl(this.baseUrl)
       .then(() => {
@@ -432,5 +456,12 @@ export struct V2exWebLoginPage {
       pairs.push(`${name}=${value}`)
     }
     return pairs.sort().join(';')
+  }
+
+  private localeAwareText(resource: Resource, fallback: string): string {
+    if (this.language.effectiveLocale.length >= 0) {
+      return AppStrings.text(resource, fallback)
+    }
+    return AppStrings.text(resource, fallback)
   }
 }

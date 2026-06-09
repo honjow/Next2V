@@ -7,12 +7,14 @@ import {
   connectBlockedListSelectedTab,
   connectFeedTab,
   connectSearchAction,
+  connectLanguageState,
   connectThemeDisplay,
   FeedTabBridge,
   FeedTabSettings,
   FeedTabState,
   connectFeedVisualIndex,
   FeedVisualIndexState,
+  LanguageState,
   SearchActionState,
   TabItem,
   ThemeConstants,
@@ -26,15 +28,19 @@ struct BlockedListsTabs {
   // the sole reader (see BlockedListSelectedTabState). The segmented control lives in the @ComponentV2
   // BlockedListsTabsSegment, which hosts the V2-native TabSegmentButtonV2 (controlled selectedIndex).
   @Local private tabState: BlockedListSelectedTabState = connectBlockedListSelectedTab();
+  @Local private language: LanguageState = connectLanguageState();
   // One-way labels pushed into the segmented control's @Trace items; @Local so a locale refresh re-renders.
-  @Local private blockedUsersLabel: string = AppStrings.text(
-    $r('app.string.blocked_users'),
-    'Blocked users',
-  );
-  @Local private blockedTopicsLabel: string = AppStrings.text(
-    $r('app.string.ignored_topics'),
-    'Blocked topics',
-  );
+  @Local private blockedUsersLabel: string = '';
+  @Local private blockedTopicsLabel: string = '';
+
+  aboutToAppear(): void {
+    this.refreshLabels()
+  }
+
+  @Monitor('language.effectiveLocale')
+  onLocaleChanged(): void {
+    this.refreshLabels()
+  }
 
   build() {
     BlockedListsTabsSegment({
@@ -49,6 +55,11 @@ struct BlockedListsTabs {
 
   private clampTab(index: number): number {
     return index === 1 ? 1 : 0
+  }
+
+  private refreshLabels(): void {
+    this.blockedUsersLabel = AppStrings.text($r('app.string.blocked_users'), 'Blocked users')
+    this.blockedTopicsLabel = AppStrings.text($r('app.string.ignored_topics'), 'Blocked topics')
   }
 }
 @Builder
@@ -77,6 +88,7 @@ struct FeedPills {
   @Local private feedState: FeedTabState = connectFeedTab();
   @Local private visualIndexState: FeedVisualIndexState = connectFeedVisualIndex();
   @Local private themeDisplay: ThemeDisplayState = connectThemeDisplay();
+  @Local private language: LanguageState = connectLanguageState();
   @Local private tabLefts: number[] = [];
   @Local private tabWidths: number[] = [];
   @Local private containerGlobalLeft: number = 0;
@@ -184,6 +196,9 @@ struct FeedPills {
   }
 
   private visibleTabs(): TabItem[] {
+    if (this.language.effectiveLocale.length >= 0) {
+      return FeedTabSettings.tabsFromKeysJson(this.feedState.feedTabKeys)
+    }
     return FeedTabSettings.tabsFromKeysJson(this.feedState.feedTabKeys)
   }
 
@@ -374,6 +389,7 @@ function titleBarLeadingReserve(titleBarWidth: number): number {
 @ComponentV2
 struct SearchTitleField {
   private actionState: SearchActionState = connectSearchAction();
+  private language: LanguageState = connectLanguageState();
   @Local private titleBarWidth: number = 0;
   // The text pushed INTO the field. It changes only on mount or when SearchPage seeds a query (via seedSeq),
   // NEVER per keystroke. build() must not read actionState.keyword: typing writes keyword on every character,
@@ -398,7 +414,7 @@ struct SearchTitleField {
         autoFocus: true,
         // System-style trailing "搜索" button (Search's own searchButton property) so SOV2EX can be run
         // without the IME enter key. Tapping it fires onSubmit, same as pressing enter.
-        searchButtonText: AppStrings.text($r('app.string.nav_search'), 'Search'),
+        searchButtonText: this.localeAwareText($r('app.string.nav_search'), 'Search'),
         onTextChange: (value: string) => {
           // Write-only — must NOT be read back in build() (see fieldText), or every keystroke re-renders here.
           this.actionState.keyword = value
@@ -422,6 +438,13 @@ struct SearchTitleField {
     .onAreaChange((_oldValue: Area, newValue: Area) => {
       this.titleBarWidth = titleBarLengthToNumber(newValue?.width)
     })
+  }
+
+  private localeAwareText(resource: Resource, fallback: string): string {
+    if (this.language.effectiveLocale.length >= 0) {
+      return AppStrings.text(resource, fallback)
+    }
+    return AppStrings.text(resource, fallback)
   }
 }
 @Builder
