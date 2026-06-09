@@ -14,6 +14,7 @@ import { LanguageSettings } from './LanguageSettings'
 import { MediaSettings } from './MediaSettings'
 import { ImageUploadSettings } from './ImageUploadSettings'
 import { RecentStickerSettings } from './RecentStickerSettings'
+import { IgnoredNodesSettings } from './IgnoredNodesSettings'
 import { NetworkProxySettings } from './NetworkProxySettings'
 import { ReadingSettings } from './ReadingSettings'
 import { ReplyActionAlignmentSettings } from './ReplyActionAlignmentSettings'
@@ -46,6 +47,7 @@ export class SettingsBootstrap {
     await SettingsBootstrap.restoreMedia(context, settingsStore)
     await SettingsBootstrap.restoreImageUpload(context, settingsStore)
     await SettingsBootstrap.restoreRecentStickers(context)
+    await SettingsBootstrap.restoreIgnoredNodes(context)
     await SettingsBootstrap.restoreNetworkProxy(context, settingsStore)
     await SettingsBootstrap.restoreReplyDisplay(context, settingsStore)
     await SettingsBootstrap.restoreReading(context, settingsStore)
@@ -87,6 +89,7 @@ export class SettingsBootstrap {
     await SettingsBootstrap.restoreMedia(context, settingsStore)
     await SettingsBootstrap.restoreImageUpload(context, settingsStore)
     await SettingsBootstrap.restoreRecentStickers(context)
+    await SettingsBootstrap.restoreIgnoredNodes(context)
     await SettingsBootstrap.restoreReplyDisplay(context, settingsStore)
     await SettingsBootstrap.restoreReading(context, settingsStore)
     await SettingsBootstrap.restoreHomeTabs(context, settingsStore)
@@ -219,6 +222,12 @@ export class SettingsBootstrap {
   private static async restoreRecentStickers(context: common.UIAbilityContext): Promise<void> {
     await RecentStickerSettings.load(context).catch((error: Error) => {
       console.error('restore recent stickers failed: ' + error.message)
+    })
+  }
+
+  private static async restoreIgnoredNodes(context: common.UIAbilityContext): Promise<void> {
+    await IgnoredNodesSettings.load(context).catch((error: Error) => {
+      console.error('restore ignored nodes failed: ' + error.message)
     })
   }
 

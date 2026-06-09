@@ -1193,6 +1193,22 @@
       "value": "노드 팔로우"
     },
     {
+      "name": "topic_action_ignore_node",
+      "value": "노드 무시"
+    },
+    {
+      "name": "topic_action_unignore_node",
+      "value": "무시 해제"
+    },
+    {
+      "name": "node_ignored_toast",
+      "value": "노드를 무시했습니다. 피드에 표시되지 않습니다"
+    },
+    {
+      "name": "node_unignored_toast",
+      "value": "노드 무시를 해제했습니다"
+    },
+    {
       "name": "add_x_format",
       "value": "{0} 추가"
     },

@@ -1193,6 +1193,22 @@
       "value": "关注节点"
     },
     {
+      "name": "topic_action_ignore_node",
+      "value": "忽略此节点"
+    },
+    {
+      "name": "topic_action_unignore_node",
+      "value": "取消忽略此节点"
+    },
+    {
+      "name": "node_ignored_toast",
+      "value": "已忽略该节点，主题将不在首页和列表中显示"
+    },
+    {
+      "name": "node_unignored_toast",
+      "value": "已取消忽略该节点"
+    },
+    {
       "name": "add_x_format",
       "value": "添加 {0}"
     },

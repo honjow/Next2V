@@ -56,6 +56,7 @@ import { ApiError, ApiErrors, ApiErrorCode, isApiError } from './ApiError'
 import { BlockedListSettings, type BlockedListCaptureSource } from '../settings/BlockedListSettings'
 import { CookieJarSettings } from '../settings/CookieJarSettings'
 import { connectBlockedListStorage } from '../state/BlockedListState'
+import { connectIgnoredNodes } from '../state/IgnoredNodesState'
 
 interface CookieHtmlResponse {
   statusCode: number
@@ -300,6 +301,8 @@ export class ApiService {
     return {
       topics: ApiService.applyActiveBlockedTopicFilter(
         ApiService.normalizeNodeTopics(topics, clean, clean),
+        // A node's OWN topic list is never node-filtered: ignoring node X must not empty node X's page.
+        false,
       ),
       hasMore: snapshot.hasMore,
     }
@@ -936,6 +939,70 @@ export class ApiService {
   async toggleNodeFavoriteWithCookie(cookie: string, nodeName: string): Promise<boolean> {
     const toggle = await this.getNodeFavoriteToggleActionWithCookie(cookie, nodeName)
     return this.executeNodeFavoriteToggleWithCookie(cookie, nodeName, toggle)
+  }
+
+  /**
+   * Read the node-ignore toggle state (requires Cookie session). Same two-URL shape as site favorite:
+   * the authed `/go/{node}` page renders `/settings/ignore/node/{id}?once=` when NOT ignored and
+   * `/settings/unignore/node/{id}?once=` when ignored. `currentlyOn` == currently ignored.
+   */
+  async getNodeIgnoreToggleActionWithCookie(
+    cookie: string,
+    nodeName: string,
+  ): Promise<V2exToggleAction> {
+    const cleanName = (nodeName || '').trim()
+    if (!cookie) {
+      throw ApiErrors.authRequired()
+    }
+    if (!cleanName) {
+      throw ApiErrors.invalidNode()
+    }
+    const nodePath = `/go/${cleanName}`
+    const html = await this.getCookieHtml(nodePath, cookie)
+    if (!V2exSessionParser.extractUsername(html)) {
+      throw ApiErrors.webSessionExpired()
+    }
+    const toggle = V2exCollectionActionParser.extractNodeIgnoreToggle(html)
+    if (!toggle) {
+      throw ApiErrors.parseFollowActionFailed()
+    }
+    return toggle
+  }
+
+  /**
+   * Execute the node-ignore toggle (requires Cookie session). Visits the once-link, then re-reads the
+   * node page and returns the resulting ignored state so the caller's UI reflects the server truth.
+   */
+  async executeNodeIgnoreToggleWithCookie(
+    cookie: string,
+    nodeName: string,
+    toggle: V2exToggleAction,
+  ): Promise<boolean> {
+    const cleanName = (nodeName || '').trim()
+    if (!cookie) {
+      throw ApiErrors.authRequired()
+    }
+    if (!cleanName) {
+      throw ApiErrors.invalidNode()
+    }
+    const nodePath = `/go/${cleanName}`
+    await this.requestTextWithCookieAllowRedirect(toggle.actionPath, cookie, nodePath)
+
+    const verifyHtml = await this.getCookieHtml(nodePath, cookie)
+    if (!V2exSessionParser.extractUsername(verifyHtml)) {
+      throw ApiErrors.webSessionExpired()
+    }
+    const after = V2exCollectionActionParser.extractNodeIgnoreToggle(verifyHtml)
+    if (!after) {
+      return !toggle.currentlyOn
+    }
+    return after.currentlyOn
+  }
+
+  /** Ignore/un-ignore a node on V2EX (requires Cookie session). Returns the resulting ignored state. */
+  async toggleNodeIgnoreWithCookie(cookie: string, nodeName: string): Promise<boolean> {
+    const toggle = await this.getNodeIgnoreToggleActionWithCookie(cookie, nodeName)
+    return this.executeNodeIgnoreToggleWithCookie(cookie, nodeName, toggle)
   }
 
   async executeMemberActionWithCookie(
@@ -2566,22 +2633,38 @@ export class ApiService {
     return ApiService.applyActiveBlockedTopicFilter(ApiService.normalizeTopics(topics))
   }
 
-  private static applyActiveBlockedTopicFilter(topics: V2exTopic[]): V2exTopic[] {
-    // Account-bound filtering via the V2 BlockedListStorageState mirror (kept in lockstep with the
-    // persisted ledger by BlockedListSettings.apply) instead of direct AppStorage.get reads. If the
-    // holder owner key is empty or not the active owner (logged-out / cross-account), return all topics.
+  private static applyActiveBlockedTopicFilter(
+    topics: V2exTopic[],
+    filterIgnoredNodes: boolean = true,
+  ): V2exTopic[] {
+    const list = topics || []
+    // Node-ignore is a DEVICE-GLOBAL, login-independent local filter (the app's own preference, NOT the
+    // V2EX account-scoped ignore list). It applies only to AGGREGATE feeds (home tabs / recent / hot),
+    // never to a node's OWN topic list — an ignored node stays readable on its own page, mirroring V2EX —
+    // so the node-topics caller passes filterIgnoredNodes=false. Slugs are stored lowercase already; we
+    // re-normalize defensively against feed-parsed node names.
+    const ignoredNodes: Set<string> = new Set()
+    if (filterIgnoredNodes) {
+      for (const name of connectIgnoredNodes().names) {
+        const v = (name || '').trim().toLowerCase()
+        if (v.length > 0) {
+          ignoredNodes.add(v)
+        }
+      }
+    }
+    // Account-bound id/member filtering via the V2 BlockedListStorageState mirror (kept in lockstep with
+    // the persisted ledger by BlockedListSettings.apply). If the holder owner key is empty or not the
+    // active owner (logged-out / cross-account), skip the id/member filter but still honor node-ignore.
     const storage = connectBlockedListStorage()
     const ownerKey = storage.ownerKey || ''
-    if (!ownerKey || ownerKey !== BlockedListSettings.activeOwnerKey()) {
-      return topics || []
-    }
-    const ignoredTopicIds = ApiService.parseIdSet(storage.ignoredTopicIdsJson)
-    const blockedMemberIds = ApiService.parseIdSet(storage.blockedMemberIdsJson)
-    if (ignoredTopicIds.size === 0 && blockedMemberIds.size === 0) {
-      return topics || []
+    const accountActive = ownerKey.length > 0 && ownerKey === BlockedListSettings.activeOwnerKey()
+    const ignoredTopicIds = accountActive ? ApiService.parseIdSet(storage.ignoredTopicIdsJson) : new Set<number>()
+    const blockedMemberIds = accountActive ? ApiService.parseIdSet(storage.blockedMemberIdsJson) : new Set<number>()
+    if (ignoredNodes.size === 0 && ignoredTopicIds.size === 0 && blockedMemberIds.size === 0) {
+      return list
     }
     const visible: V2exTopic[] = []
-    for (const topic of topics || []) {
+    for (const topic of list) {
       if (!topic) {
         continue
       }
@@ -2591,6 +2674,12 @@ export class ApiService {
       const memberId = topic.member ? topic.member.id : 0
       if (memberId > 0 && blockedMemberIds.has(memberId)) {
         continue
+      }
+      if (ignoredNodes.size > 0 && topic.node) {
+        const nodeName = (topic.node.name || '').trim().toLowerCase()
+        if (nodeName.length > 0 && ignoredNodes.has(nodeName)) {
+          continue
+        }
       }
       visible.push(topic)
     }

@@ -52,6 +52,30 @@ export class V2exCollectionActionParser {
     return null
   }
 
+  /**
+   * Node ignore/un-ignore toggle, same two-URL shape as favorite (verified against live V2EX 2026-06):
+   * not-ignored renders `/settings/ignore/node/{id}?once=` ("忽略这个节点"); ignored renders
+   * `/settings/unignore/node/{id}?once=` ("取消忽略节点"). Check the unignore href FIRST.
+   */
+  static extractNodeIgnoreToggle(html: string): V2exToggleAction | null {
+    if (!html) {
+      return null
+    }
+    const unignoreRe = /href=['"]([^'"]*\/settings\/unignore\/node\/\d+[^'"]*)['"]/i
+    const unignore = html.match(unignoreRe)
+    if (unignore && unignore[1]) {
+      return { currentlyOn: true, actionPath: V2exCollectionActionParser.decodeHtml(unignore[1]) }
+    }
+
+    const ignoreRe = /href=['"]([^'"]*\/settings\/ignore\/node\/\d+[^'"]*)['"]/i
+    const ignore = html.match(ignoreRe)
+    if (ignore && ignore[1]) {
+      return { currentlyOn: false, actionPath: V2exCollectionActionParser.decodeHtml(ignore[1]) }
+    }
+
+    return null
+  }
+
   static extractOnce(html: string): string {
     if (!html) {
       return ''

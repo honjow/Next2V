@@ -1097,8 +1097,21 @@ struct Index {
           this.sendNodeTopicAction(nodeName, 'saveNode')
         },
       ),
+      // Ignore-node action. State-showing glyph like the adjacent favorite star: eye_slash when the node
+      // is ignored (its topics are hidden from the feeds), open eye when not.
+      this.topicActionItem(
+        this.nodeTopicAppbar.ignored
+          ? $r('app.string.topic_action_unignore_node')
+          : $r('app.string.topic_action_ignore_node'),
+        this.nodeTopicAppbar.ignored ? $r('sys.symbol.eye_slash') : $r('sys.symbol.eye'),
+        () => {
+          this.sendNodeTopicAction(nodeName, 'ignoreNode')
+        },
+      ),
     ]
-    let menu: Record<string, Object> = { 'value': items, 'maxCount': 2 }
+    // maxCount 3 keeps all three actions (favorite / follow / ignore) as visible icons; HdsNavigation only
+    // collapses into the … overflow when items EXCEED maxCount, so a future 4th action auto-overflows.
+    let menu: Record<string, Object> = { 'value': items, 'maxCount': 3 }
     // Scroll-reveal title: empty (back button + actions only) until the node-info card's name scrolls
     // under the app bar, then an icon+name ComponentContent (mirrors the user-profile title bar). The
     // favorite/follow actions above are preserved in both states.

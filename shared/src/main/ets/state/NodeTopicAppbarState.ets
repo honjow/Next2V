@@ -13,6 +13,9 @@ import { AppStorageV2 } from '@kit.ArkUI'
 export class NodeTopicAppbarState {
   @Trace saved: boolean = false
   @Trace siteFavorited: boolean = false
+  // Whether this node is in the device-global local ignore set (see [[IgnoredNodesState]]). NodeTopicPage
+  // is the sole writer; Index reads it to label the overflow menu item (忽略 / 取消忽略此节点).
+  @Trace ignored: boolean = false
   @Trace title: string = ''
   @Trace subtitle: string = ''
   // Scroll-reveal appbar identity (mirrors the user-profile pattern): once the node-info card's name
@@ -38,6 +41,9 @@ export function publishNodeTopicSaved(value: boolean): void {
 }
 export function publishNodeTopicSiteFavorited(value: boolean): void {
   connectNodeTopicAppbar().siteFavorited = value
+}
+export function publishNodeTopicIgnored(value: boolean): void {
+  connectNodeTopicAppbar().ignored = value
 }
 export function publishNodeTopicTitle(value: string): void {
   connectNodeTopicAppbar().title = value

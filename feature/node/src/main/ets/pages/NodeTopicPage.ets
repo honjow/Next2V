@@ -7,6 +7,7 @@ import {
   SavedNode,
   ApiService,
   CookieJarSettings,
+  IgnoredNodesSettings,
   connectLayoutSafeArea,
   connectNavStack,
   connectNodeTopicAction,
@@ -20,6 +21,7 @@ import {
   PageLoadingState,
   publishNodeTopicSaved,
   publishNodeTopicSiteFavorited,
+  publishNodeTopicIgnored,
   publishNodeTopicTitle,
   publishNodeTopicSubtitle,
   publishNodeTopicAppbarTitleNodeName,
@@ -65,6 +67,12 @@ export struct NodeTopicPage {
   @Local private isSavedNodeLoading: boolean = false;
   @Local private isSiteNodeFavorited: boolean = false;
   @Local private isSiteNodeFavoriteLoading: boolean = false;
+  // Node-ignore state shown in the title-bar menu. Source of truth is V2EX (the authed /go/{node} page,
+  // same two-URL toggle as site favorite); the device-global IgnoredNodesSettings holder is an optimistic
+  // cache kept in lockstep with the server result for instant feed-hide + logged-out fallback. The node's
+  // OWN page is never node-filtered (an ignored node stays readable) — only the aggregate feeds react.
+  @Local private isNodeIgnored: boolean = false;
+  @Local private isNodeIgnoreLoading: boolean = false;
   @Local private token: string = '';
   private api: ApiService = new ApiService();
   private nodeTopicsRequestId: number = 0;
@@ -89,6 +97,7 @@ export struct NodeTopicPage {
     this.loadData()
     this.loadSavedState()
     this.loadSiteNodeFavoriteState()
+    this.loadNodeIgnoreState()
   }
 
   private nodeCacheKey(): string {
@@ -212,6 +221,9 @@ export struct NodeTopicPage {
       // shared singleton mirror reflects THIS route again (a stacked page may have overwritten it).
       if (isVisible) {
         this.publishAppbarReveal(this.isNodeNameCoveredByAppbar)
+        // Re-assert THIS node's ignore flag: a stacked node page overwrote the shared appbar holder, so the
+        // overflow menu label would otherwise show the other node's state when this page returns to top.
+        publishNodeTopicIgnored(this.isNodeIgnored)
       }
     })
   }
@@ -655,7 +667,100 @@ export struct NodeTopicPage {
       this.prepareSiteNodeFavoriteToggle()
     } else if (action === 'saveNode') {
       this.toggleSavedNode()
+    } else if (action === 'ignoreNode') {
+      this.toggleNodeIgnore()
     }
+  }
+
+  // Load the node-ignore state. Source of truth is V2EX (authed /go/{node} page); the optimistic cache is
+  // synced to the server result. Logged out, fall back to the cache so the menu still reflects local state.
+  private loadNodeIgnoreState(): void {
+    const nodeName = this.currentNodeName()
+    if (!nodeName) {
+      this.isNodeIgnored = false
+      publishNodeTopicIgnored(false)
+      return
+    }
+    const cookie = CookieJarSettings.getCurrentCookie()
+    if (!cookie) {
+      const ignored = IgnoredNodesSettings.isIgnored(nodeName)
+      this.isNodeIgnored = ignored
+      publishNodeTopicIgnored(ignored)
+      return
+    }
+    if (this.isNodeIgnoreLoading) {
+      return
+    }
+    this.isNodeIgnoreLoading = true
+    this.api
+      .getNodeIgnoreToggleActionWithCookie(cookie, nodeName)
+      .then((toggle: V2exToggleAction) => {
+        this.isNodeIgnored = toggle.currentlyOn
+        publishNodeTopicIgnored(toggle.currentlyOn)
+        // Mirror server truth into the optimistic feed-filter cache.
+        IgnoredNodesSettings.setIgnored(nodeName, toggle.currentlyOn)
+      })
+      .catch((error: Error) => {
+        // Passive load: don't toast; show the cached view so the menu is not blank.
+        const ignored = IgnoredNodesSettings.isIgnored(nodeName)
+        this.isNodeIgnored = ignored
+        publishNodeTopicIgnored(ignored)
+        console.error('load node ignore state failed: ' + error.message)
+      })
+      .finally(() => {
+        this.isNodeIgnoreLoading = false
+      })
+  }
+
+  // Toggle node-ignore. Logged in → write to V2EX (so it syncs with the web and the authed home/recent/hot
+  // feeds drop the node server-side), then mirror the confirmed state into the optimistic cache. Logged out
+  // → local-only optimistic toggle (the best achievable without a session). The node's OWN page is never
+  // emptied either way.
+  private toggleNodeIgnore(): void {
+    if (this.isNodeIgnoreLoading) {
+      return
+    }
+    const nodeName = this.currentNodeName()
+    if (!nodeName) {
+      promptAction
+        .openToast({
+          message: AppStrings.text(AppStrings.R_NODE_INFO_MISSING, 'Node info missing'),
+        })
+        .catch((_error: Error) => {})
+      return
+    }
+    const cookie = CookieJarSettings.getCurrentCookie()
+    if (!cookie) {
+      const ignored = IgnoredNodesSettings.toggle(nodeName)
+      this.isNodeIgnored = ignored
+      publishNodeTopicIgnored(ignored)
+      this.toastIgnoreResult(ignored)
+      return
+    }
+    this.isNodeIgnoreLoading = true
+    this.api
+      .toggleNodeIgnoreWithCookie(cookie, nodeName)
+      .then((ignored: boolean) => {
+        this.isNodeIgnored = ignored
+        publishNodeTopicIgnored(ignored)
+        // Keep the optimistic feed-filter cache in lockstep with the server.
+        IgnoredNodesSettings.setIgnored(nodeName, ignored)
+        this.toastIgnoreResult(ignored)
+      })
+      .catch((error: Error) => {
+        promptAction.openToast({ message: translateApiError(error) }).catch((_error: Error) => {})
+      })
+      .finally(() => {
+        this.isNodeIgnoreLoading = false
+      })
+  }
+
+  private toastIgnoreResult(ignored: boolean): void {
+    promptAction
+      .openToast({
+        message: ignored ? $r('app.string.node_ignored_toast') : $r('app.string.node_unignored_toast'),
+      })
+      .catch((_error: Error) => {})
   }
 
   private currentNodeName(): string {

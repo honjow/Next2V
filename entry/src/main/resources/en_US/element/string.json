@@ -1193,6 +1193,22 @@
       "value": "Follow node"
     },
     {
+      "name": "topic_action_ignore_node",
+      "value": "Ignore node"
+    },
+    {
+      "name": "topic_action_unignore_node",
+      "value": "Unignore node"
+    },
+    {
+      "name": "node_ignored_toast",
+      "value": "Node ignored — its topics are hidden from feeds"
+    },
+    {
+      "name": "node_unignored_toast",
+      "value": "Node unignored"
+    },
+    {
       "name": "add_x_format",
       "value": "Add {0}"
     },
