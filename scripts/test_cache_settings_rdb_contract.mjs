@@ -183,7 +183,9 @@ for (const policyContract of [
   {
     name: 'committed payload filenames are unique before staging',
     source: cachePayloadFiles,
-    pattern: /function\s+committedPayloadFileName[\s\S]*for\s*\(let attempt = 0; attempt < 8; attempt\+\+\)[\s\S]*payloadFileExistsBestEffort\(context,\s*candidate\)[\s\S]*return candidate[\s\S]*throw new Error\(AppStrings\.text\(AppStrings\.R_CACHE_FILENAME_CONFLICT,\s*'Cache filename conflict'\)\)/,
+    // i18n migration: the conflict error message routes through AppStrings.text($r('app.string.cache_filename_conflict'), fallback)
+    // instead of a static AppStrings.R_CACHE_FILENAME_CONFLICT constant; unique-filename loop intent unchanged.
+    pattern: /function\s+committedPayloadFileName[\s\S]*for\s*\(let attempt = 0; attempt < 8; attempt\+\+\)[\s\S]*payloadFileExistsBestEffort\(context,\s*candidate\)[\s\S]*return candidate[\s\S]*throw new Error\(AppStrings\.text\(\$r\('app\.string\.cache_filename_conflict'\),\s*'Cache filename conflict'\)\)/,
   },
   {
     name: 'load prefers committed cache payload files and falls back to inline payload text',

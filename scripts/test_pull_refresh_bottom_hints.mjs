@@ -34,15 +34,24 @@ assert.equal(
   false,
   'bottom LoadingProgress must not be limited to the running-only branch',
 )
+// Opacity is now a pure function of the live gap (bottomPullOffset) via the shared indicatorOpacity()
+// helper, intentionally decoupled from bottomRefreshState (commits 20c151f/144325e: indicator
+// opacity/position/mount must be pure fns of the gap). It still fades in during pull and is fully
+// visible at the resting hold offset, but no longer keys off the >=2 running state.
 assert.match(
   bottomIndicator,
-  /\.opacity\s*\([\s\S]*this\.bottomRefreshState\s*>=\s*2[\s\S]*\?\s*1[\s\S]*this\.bottomPullOffset\s*\/\s*this\.threshold[\s\S]*\)/,
-  'bottom spinner should be fully visible while running and fade in during active pull/release-ready states',
+  /\.opacity\(this\.indicatorOpacity\(this\.bottomPullOffset,\s*ThemeConstants\.LOADING_SIZE_SMALL\)\)/,
+  'bottom spinner opacity should be the gap-pure indicatorOpacity(bottomPullOffset, ...) fade, not a refreshState ternary',
 )
+// The historical 0.2 floor was removed on purpose: the gap-pure helper pins opacity to 0 until the gap
+// clears the spinner's own diameter, so a half-shown spinner can never overlap the adjacent content row.
+const indicatorOpacityStart = source.indexOf('private indicatorOpacity(gap: number, indicatorSize: number): number')
+assert.notEqual(indicatorOpacityStart, -1, 'shared indicatorOpacity helper should remain present')
+const indicatorOpacityBody = source.slice(indicatorOpacityStart, source.indexOf('\n  }', indicatorOpacityStart))
 assert.match(
-  bottomIndicator,
-  /Math\.max\s*\(\s*this\.bottomPullOffset\s*\/\s*this\.threshold\s*,\s*0\.2\s*\)/,
-  'active bottom pull should keep a non-zero spinner opacity instead of an empty blank area',
+  indicatorOpacityBody,
+  /Math\.min\(Math\.max\(\(gap - indicatorSize\)\s*\/\s*range,\s*0\),\s*1\)/,
+  'indicatorOpacity must keep opacity 0 until the gap exceeds the spinner diameter (no overlap), ramping to 1 at the hold offset',
 )
 assert.match(
   source,

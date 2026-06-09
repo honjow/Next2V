@@ -3,11 +3,14 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 
 const source = readFileSync('shared/src/main/ets/components/MarkdownContent.ets', 'utf8')
+// Syntax-highlighting helpers were extracted into a dedicated module; the block-token
+// orchestration (normalizeCodeBlockTokens/buildCodeBlockToken/extractPre*) stays in MarkdownContent.
+const internals = readFileSync('shared/src/main/ets/components/markdown/MarkdownCodeInternals.ets', 'utf8')
 
-assert.match(source, /function normalizeCodeLanguage\(lang: string\): string/)
-assert.match(source, /function highlightCodeLine\(code: string, lang: string\): CodeToken\[\]/)
-assert.match(source, /function highlightXmlLine\(code: string\): CodeToken\[\]/)
-assert.match(source, /function highlightJsonLine\(code: string\): CodeToken\[\]/)
+assert.match(internals, /function normalizeCodeLanguage\(lang: string\): string/)
+assert.match(internals, /function highlightCodeLine\(code: string, lang: string\): CodeToken\[\]/)
+assert.match(internals, /function highlightXmlLine\(code: string\): CodeToken\[\]/)
+assert.match(internals, /function highlightJsonLine\(code: string\): CodeToken\[\]/)
 assert.match(source, /private static normalizeCodeBlockTokens\(tokens: Token\[\]\): void/)
 assert.match(source, /MarkdownContent\.normalizeCodeBlockTokens\(tokens\);/)
 assert.match(source, /private static buildCodeBlockToken\(text: string, lang: string, raw: string\): Tokens\.Code/)

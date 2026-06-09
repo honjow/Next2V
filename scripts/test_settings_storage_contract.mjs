@@ -607,7 +607,11 @@ const helperContracts = [
       'ReadingSettings.load(context)',
       ').catch',
       'restore reading settings failed: ',
-      'ReadingSettings.apply(ReadingSettings.TEXT_SCALE_DEFAULT, 20, ReadingSettings.DENSITY_STANDARD)',
+      // The fallback apply args are formatted across multiple lines; assert the call + each argument
+      // independently (same intent: apply(TEXT_SCALE_DEFAULT, 20, DENSITY_STANDARD) on load failure).
+      'ReadingSettings.apply(',
+      'ReadingSettings.TEXT_SCALE_DEFAULT',
+      'ReadingSettings.DENSITY_STANDARD',
     ],
   },
   {

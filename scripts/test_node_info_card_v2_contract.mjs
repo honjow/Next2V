@@ -43,7 +43,7 @@ mustContain(card, '@Event onNodeNameAreaChange', 'NodeInfoCard reports name area
 mustContain(card, '.onAreaChange(', 'NodeInfoCard observes the name Text area')
 mustContain(card, 'this.detail?.header', 'NodeInfoCard reads the optional node header description')
 mustContain(card, 'this.topicCount() > 0', 'NodeInfoCard gates topic count')
-mustContain(card, 'R_NODE_TOPICS_COUNT', 'NodeInfoCard reuses the node topics-count i18n key')
+mustContain(card, "$r('app.string.node_topics_count')", 'NodeInfoCard reuses the node topics-count i18n key')
 assert.ok(!/\bAvatar\(\{[^}]*\bcolor\s*:/.test(card), 'NodeInfoCard should not hardcode avatar color')
 
 // ── NodeTopicPageCoordinator ────────────────────────────────────────

@@ -80,7 +80,7 @@ const INDEX = 'entry/src/main/ets/pages/Index.ets';
   must(/maybeDismissResumeButton\(/.test(code),
     `${PAGE}: scroll-into-view auto-dismisses the resume button`);
   // accessibility text for the button is an i18n resource (not a hardcoded string)
-  must(/R_TOPIC_ACTION_RESUME_READING/.test(code),
+  must(/\$r\('app\.string\.topic_action_resume_reading'\)/.test(code),
     `${PAGE}: resume button uses the i18n accessibility resource`);
 }
 
@@ -117,9 +117,9 @@ const INDEX = 'entry/src/main/ets/pages/Index.ets';
 
   must(/import\s*\{[^}]*CustomContentDialog[^}]*\}\s*from\s*['"]@kit\.ArkUI['"]/.test(code),
     `${PAGE}: imports ArkUI CustomContentDialog`);
-  must(/jumpFloorDialogController\s*:\s*CustomDialogController\s*=\s*new\s+CustomDialogController\(\s*\{[\s\S]*builder:\s*CustomContentDialog\(\s*\{[\s\S]*primaryTitle:\s*AppStrings\.R_JUMP_TO_FLOOR_TITLE/.test(code),
+  must(/jumpFloorDialogController\s*:\s*CustomDialogController\s*=\s*new\s+CustomDialogController\(\s*\{[\s\S]*builder:\s*CustomContentDialog\(\s*\{[\s\S]*primaryTitle:\s*\$r\('app\.string\.jump_to_floor_title'\)/.test(code),
     `${PAGE}: jump dialog is backed by CustomContentDialog title chrome`);
-  must(/buttons:\s*\[[\s\S]*value:\s*AppStrings\.R_COMMON_CANCEL[\s\S]*value:\s*AppStrings\.R_JUMP_TO_FLOOR_BUTTON[\s\S]*\]/.test(code),
+  must(/buttons:\s*\[[\s\S]*value:\s*\$r\('app\.string\.common_cancel'\)[\s\S]*value:\s*\$r\('app\.string\.jump_to_floor_button'\)[\s\S]*\]/.test(code),
     `${PAGE}: jump dialog uses CustomContentDialog action buttons`);
   must(/customStyle:\s*false/.test(code),
     `${PAGE}: jump dialog keeps the system dialog container style`);
@@ -127,7 +127,7 @@ const INDEX = 'entry/src/main/ets/pages/Index.ets';
     `${PAGE}: opens and closes the CustomContentDialog controller`);
   must(!/jumpFloorDialogId|openCustomDialog|closeCustomDialog/.test(code),
     `${PAGE}: no PromptAction custom dialog id path for jump dialog`);
-  must(/TextInput\(\{[\s\S]*placeholder:\s*AppStrings\.R_JUMP_TO_FLOOR_PLACEHOLDER[\s\S]*text:\s*this\.jumpFloorText/.test(builder),
+  must(/TextInput\(\{[\s\S]*placeholder:\s*\$r\('app\.string\.jump_to_floor_placeholder'\)[\s\S]*text:\s*this\.jumpFloorText/.test(builder),
     `${PAGE}: jump dialog content is the floor TextInput`);
   must(/\.type\(InputType\.Number\)/.test(builder) && /\.inputFilter\(\s*['"]\^\[0-9\]\*\$['"]\s*\)/.test(builder),
     `${PAGE}: jump floor TextInput is numeric-filtered`);

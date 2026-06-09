@@ -46,9 +46,9 @@ mustContain(vmSource, /getNodeTopicsPage\(nodeName, nextPage, this\.nodeTopicsWe
 
 // ApiService must preserve public-node behavior while adding an authenticated HTML path for
 // login-gated nodes. Cookie-backed signin/session pages are auth errors, not empty topic lists.
-mustContain(apiSource, /getNodeTopicsPage\(nodeName: string, page: number = 1, cookie: string = ''\)/, 'getNodeTopicsPage must accept an optional cookie')
+mustContain(apiSource, /getNodeTopicsPage\(\s*nodeName: string,\s*page: number = 1,\s*cookie: string = '',?\s*\)/, 'getNodeTopicsPage must accept an optional cookie')
 mustContain(apiSource, /const useCookie = \(cookie \|\| ''\)\.trim\(\)\.length > 0/, 'getNodeTopicsPage must branch on cookie presence')
-mustContain(apiSource, /useCookie \? await this\.getCookieHtml\(endpoint, cookie\) : await this\.http\.getText\(endpoint\)/, 'cookie-backed node-topic loads must use getCookieHtml and public loads must keep http.getText')
+mustContain(apiSource, /useCookie\s*\?\s*await this\.getCookieHtml\(endpoint, cookie\)\s*:\s*await this\.http\.getText\(endpoint\)/, 'cookie-backed node-topic loads must use getCookieHtml and public loads must keep http.getText')
 mustContain(apiSource, /V2exSessionParser\.extractUsername\(html\)/, 'cookie-backed node-topic loads must classify session HTML with V2exSessionParser')
 mustContain(apiSource, /if \(useCookie && !hasUsername\)[\s\S]*node_topic_session_rejected[\s\S]*classification: 'signin_or_session_expired'[\s\S]*throw ApiErrors\.webSessionExpired\(\)/, 'cookie-backed signin/session-expired HTML must be rejected instead of parsed as []')
 mustContain(apiSource, /node_topic_html_received[\s\S]*source: sourceLabel[\s\S]*hasCookie: useCookie[\s\S]*count: topics\.length[\s\S]*classification: 'topics'/, 'node-topic HTML boundary must log source/cookie/count classification without raw cookies or HTML')
@@ -59,9 +59,9 @@ mustContain(sessionParserSource, /class=["']top|hasClass\(className, 'top'\)/, '
 // ListItem. The zero-height ListItem keeps the refreshable list present; the visible EmptyView is
 // outside the list, full-height, safe-area aware, and non-intercepting.
 mustNotContain(pageSource, /ListItem\(\)\s*\{\s*this\.EmptyView\(\)\s*\}/, 'empty state must not be the old top-aligned bare ListItem')
-mustContain(pageSource, /ListItem\(\)\s*\{\s*Column\(\) \{\}\.height\(0\)\s*\}/, 'empty list must keep only a zero-height refresh placeholder inside PagedListScaffold')
+mustContain(pageSource, /ListItem\(\)\s*\{\s*Column\(\)\s*(?:\{\})?\.height\(0\)\s*\}/, 'empty list must keep only a zero-height refresh placeholder inside PagedListScaffold')
 mustContain(pageSource, /else if \(!this\.vm\.errorMessage && this\.vm\.nodeTopics\.length === 0\)[\s\S]*this\.EmptyView\(\)/, 'visible true-empty state must render as a Stack overlay distinct from loading and error')
-mustContain(pageSource, /CardEmptyState\(\{ message: AppStrings\.text\(AppStrings\.R_NODE_NO_TOPICS[\s\S]*expand: false \}\)[\s\S]*\.justifyContent\(FlexAlign\.Center\)[\s\S]*\.height\('100%'\)[\s\S]*this\.layout\.topAvoidHeight \+ ThemeConstants\.TITLE_BAR_HEIGHT[\s\S]*\.hitTestBehavior\(HitTestMode\.None\)/, 'EmptyView must center the message in the safe content area and not block refresh gestures')
+mustContain(pageSource, /CardEmptyState\(\{\s*message: AppStrings\.text\(\$r\('app\.string\.node_no_topics'\)[\s\S]*expand: false,?\s*\}\)[\s\S]*\.justifyContent\(FlexAlign\.Center\)[\s\S]*\.height\('100%'\)[\s\S]*this\.layout\.topAvoidHeight \+ ThemeConstants\.TITLE_BAR_HEIGHT[\s\S]*\.hitTestBehavior\(HitTestMode\.None\)/, 'EmptyView must center the message in the safe content area and not block refresh gestures')
 
 // No State Management V1 decorators in touched files. V2 decorators (@ComponentV2, @ObservedV2,
 // @Trace, @Local, @Param) are allowed.

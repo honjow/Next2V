@@ -128,17 +128,27 @@ function assertFavoriteDetailRenderPathCoverage() {
   const markdownFilePath = 'shared/src/main/ets/components/MarkdownContent.ets'
   const markdownSource = readFileSync(new URL(`../${markdownFilePath}`, import.meta.url), 'utf8')
   const required = [
+    // The direct `this.topic = this.normalizeTopicForRender(...)` assignment was refactored: the normalized
+    // topic is now routed through publishMergedTopicDetail/applyMergedTopicDetail, which merges the action
+    // overlay and assigns `this.topic = merged.topic`. The render-boundary normalization is unchanged — only
+    // the publish chokepoint moved — so these assert the normalize call still feeds the merged-detail publish.
     {
       name: 'favorite TopicDetail cached topic is normalized before render',
       filePath: detailFilePath,
-      source: detailSource,
-      line: 'this.topic = this.normalizeTopicForRender(cached.topic)'
+      source: detailSource.replace(/\s+/g, ' '),
+      line: 'this.publishMergedTopicDetail( this.normalizeTopicForRender(cached.topic),'
     },
     {
       name: 'favorite TopicDetail network topic is normalized before render',
       filePath: detailFilePath,
+      source: detailSource.replace(/\s+/g, ' '),
+      line: 'this.applyMergedTopicDetail( this.normalizeTopicForRender(topic),'
+    },
+    {
+      name: 'merged-detail publish chokepoint assigns the normalized topic into render state',
+      filePath: detailFilePath,
       source: detailSource,
-      line: 'this.topic = this.normalizeTopicForRender(topic)'
+      line: 'this.topic = merged.topic'
     },
     {
       name: 'favorite TopicDetail render boundary decodes Markdown content',

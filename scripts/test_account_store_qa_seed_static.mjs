@@ -81,12 +81,14 @@ for (const locale of locales) {
   }
 }
 
-// ── AppStrings.ets must register new keys ────────────────────────
-const appStringsKeys = ['R_ACCOUNT_QA_SEED', 'R_SEED_ACCOUNT_RECORDS', 'R_RESET_SEEDED_ACCOUNTS']
-for (const key of appStringsKeys) {
+// ── QA-seed UI must consume the new resource keys ────────────────
+// (i18n migration: AppStrings.ets is now a ResourceManager resolver, not a
+// table of string constants. The R_* constants were retired; the seed UI
+// references the keys directly via $r('app.string.KEY') in StorageSettingsPage.)
+for (const key of requiredKeys) {
   assert(
-    appStrings.includes(key),
-    `AppStrings.ets missing key: ${key}`
+    storage.includes(`$r('app.string.${key}')`),
+    `StorageSettingsPage must reference QA-seed resource key via $r('app.string.${key}')`
   )
 }
 

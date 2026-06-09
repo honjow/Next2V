@@ -24,7 +24,7 @@ const bottomIndicatorY = methodBody(
 )
 assert.match(
   bottomIndicatorY,
-  /this\.containerHeight\s*-\s*this\.bottomIndicatorBottom[\s\S]*this\.bottomPullOffset\s*\/\s*2[\s\S]*ThemeConstants\.TITLE_BAR_HEIGHT\s*\/\s*2/,
+  /this\.containerHeight\s*-\s*this\.bottomIndicatorBottom[\s\S]*this\.bottomPullOffset\s*\/\s*2[\s\S]*REFRESH_HOLD_OFFSET\s*\/\s*2/,
   'manual bottom spinner should mirror top indicator positioning by centering in the exposed pull-up area'
 )
 assert.equal(
@@ -40,7 +40,7 @@ assert.match(
 )
 assert.match(
   pullRefresh,
-  /deltaY\s*<\s*-PULL_START_DRAG_VP[\s\S]*this\.isListAtBottom\(\)[\s\S]*this\.canStartBottomRefresh\(\)/,
+  /deltaY\s*<\s*-PULL_ARM_VP[\s\S]*this\.isListAtBottom\(\)[\s\S]*this\.canStartBottomRefresh\(\)/,
   'manual bottom gesture should remain gated by exact bottom position and page business state'
 )
 assert.match(

@@ -23,7 +23,10 @@ const CJK_RE = /[\u3400-\u9FFF\u3040-\u30FF\uAC00-\uD7AF]/
 
 const EXCLUDED_DIRS = new Set([
   '.git', 'oh_modules', 'build', '.hermes-artifacts', '.hvigor',
-  'node_modules', 'AppScope/resources'
+  'node_modules', 'AppScope/resources',
+  // .claude/worktrees holds git-ignored agent worktrees — full repo checkouts on other branches.
+  // They are not this tree's source; scanning them double-counts (and mis-flags) every CJK hit.
+  '.claude'
 ])
 
 const EXCLUDED_FILE_PATTERNS = [

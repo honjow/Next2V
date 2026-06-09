@@ -70,8 +70,13 @@ assertNotIncludes('AccountWebViewPage old local status builder', accountWebView,
 assertNotIncludes('AccountWebViewPage obsolete scaffold import', accountWebView, 'SecondaryListScaffold')
 assertNotIncludes('AccountWebViewPage obsolete theme import', accountWebView, 'ThemeConstants')
 assertIncludes('AccountWebViewPage current cookie required', accountWebView, 'CookieJarSettings.getCurrentCookie()')
-assertIncludes('AccountWebViewPage first-party validation', accountWebView, 'V2exUrlRouter.isFirstPartySiteUrl(url)')
-assertIncludes('AccountWebViewPage normalized target load', accountWebView, 'this.controller.loadUrl(normalizedTargetUrl)')
+// AccountWebViewPage is the generalized in-app WebView (account pages, topic "open in app",
+// node-description links) and intentionally accepts any http(s) URL, first-party OR external.
+// The session-cookie-leak guard is the real first-party invariant: the V2EX cookie is fetched
+// ONLY for the selected V2EX origin and is the empty string for external sites.
+assertIncludes('AccountWebViewPage first-party cookie guard', accountWebView, 'const isV2exOrigin = origin.length > 0 && target.startsWith(origin)')
+assertIncludes('AccountWebViewPage external sites get no cookie', accountWebView, "const cookie = isV2exOrigin ? CookieJarSettings.getCurrentCookie() : ''")
+assertIncludes('AccountWebViewPage resolved target load', accountWebView, 'this.controller.loadUrl(url)')
 assertIncludes('AccountWebViewPage reload action', accountWebView, 'this.controller.refresh()')
 
 console.log('PASS: unified user/account WebView contract')

@@ -59,7 +59,7 @@ assert.match(
 )
 assert.match(parser, /corner_star\\.png/i, 'V2exTabParser must recognize V2EX pinned topic marker')
 assert.match(networkTypes, /pinned\?: number/, 'V2exTopic must carry pinned state')
-assert.match(topicCard, /R_TOPIC_PINNED_BADGE/, 'TopicCard must render a localized pinned badge')
+assert.match(topicCard, /AppStrings\.text\(\$r\('app\.string\.topic_pinned_badge'\), 'Pinned'\)/, 'TopicCard must render a localized pinned badge')
 assert.match(
   topicCard,
   /if \(this\.isPinned\(\)\) \{\s*this\.PinnedBadge\(\)\s*\}\s*if \(this\.showNodeTag\)/,

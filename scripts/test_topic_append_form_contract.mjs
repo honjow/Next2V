@@ -113,18 +113,18 @@ check(/@Trace canAppend/.test(ownership) && /TOPIC_APPEND_UNLOCK_SEC/.test(owner
 check(/ageSec >= TOPIC_APPEND_UNLOCK_SEC/.test(ownership) && /isCurrentUserOp/.test(ownership), 'canAppend requires OP + >= unlock seconds')
 
 const coord = read('entry/src/main/ets/model/TopicDetailTitleBarCoordinator.ets')
-check(coord.includes("'appendTopic'") && /R_TOPIC_ACTION_APPEND/.test(coord), 'coordinator declares the appendTopic action with its label')
+check(coord.includes("'appendTopic'") && /\$r\('app\.string\.topic_action_append'\)/.test(coord), 'coordinator declares the appendTopic action with its label')
 
 const index = read('entry/src/main/ets/pages/Index.ets')
 const visible = index.slice(index.indexOf('private isTopicActionVisible('), index.indexOf('private topicDetailTitleActionIcon('))
 check(visible.includes("action === 'appendTopic'") && visible.includes('topicDetailOwnership.canAppend') && visible.includes('routeTopicId === topicId'), 'Index gates appendTopic by ownership.canAppend + routeTopicId')
-check(/connectTopicComposeTarget\(\)\.mode/.test(index) && index.includes('R_TOPIC_ACTION_APPEND'), 'Index titles the editor 增加附言 in append mode')
+check(/connectTopicComposeTarget\(\)\.mode/.test(index) && /\$r\('app\.string\.topic_action_append'\)/.test(index), 'Index titles the editor 增加附言 in append mode')
 check(index.includes("publishTopicComposeTarget('create', 0)"), 'Home compose resets the compose target to create')
 
 const editor = read('entry/src/main/ets/pages/TopicEditorPage.ets')
 check(/@Local private mode: string/.test(editor) && editor.includes("this.mode === 'append'"), 'editor carries a compose mode and branches on append')
 check(editor.includes('this.api.appendTopicWithCookie(') && editor.includes('submitAppend('), 'editor append submit calls appendTopicWithCookie')
-check(editor.includes('confirmAppendSubmit(') && editor.includes('R_EDITOR_CONFIRM_APPEND_FORMAT'), 'editor shows an append cost-confirm dialog')
+check(editor.includes('confirmAppendSubmit(') && /\$r\('app\.string\.editor_confirm_append_format'\)/.test(editor), 'editor shows an append cost-confirm dialog')
 check(/this\.mode === 'append' \|\| this\.mode === 'edit'[\s\S]{0,120}saveComposeDraft\(/.test(editor.slice(editor.indexOf('private persistDraft('))), 'append/edit persist a per-topic compose draft (not the create topic draft)')
 
 const detail = read('feature/detail/src/main/ets/pages/TopicDetailPage.ets')

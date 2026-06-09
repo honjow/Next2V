@@ -18,7 +18,7 @@ const read = (p) => readFileSync(p, 'utf8')
 // ── topic title-bar: "open in app" menu item ──────────────────────────────────
 const coord = read('entry/src/main/ets/model/TopicDetailTitleBarCoordinator.ets')
 assert.match(coord, /\|\s*'openInApp'/, "TopicDetailTitleAction union must include 'openInApp'")
-assert.match(coord, /R_TOPIC_ACTION_OPEN_IN_APP,\s*action:\s*'openInApp'/, "menu must list the 'openInApp' action with its label")
+assert.match(coord, /\$r\('app\.string\.topic_action_open_in_app'\),\s*action:\s*'openInApp'/, "menu must list the 'openInApp' action with its label")
 assert.ok(coord.indexOf("action: 'openInApp'") < coord.indexOf("action: 'openBrowser'"), 'open-in-app should sit just before open-in-browser')
 
 const detail = read('feature/detail/src/main/ets/pages/TopicDetailPage.ets')
@@ -46,6 +46,9 @@ for (const loc of ['base', 'en_US', 'zh_CN', 'zh_HK', 'zh_TW', 'ja_JP', 'ko_KR']
   const json = JSON.parse(read(`entry/src/main/resources/${loc}/element/string.json`))
   assert.ok(json.string.some((s) => s.name === 'topic_action_open_in_app'), `i18n: topic_action_open_in_app in ${loc}`)
 }
-assert.match(read('shared/src/main/ets/i18n/AppStrings.ets'), /R_TOPIC_ACTION_OPEN_IN_APP/, 'AppStrings must expose R_TOPIC_ACTION_OPEN_IN_APP')
+// The R_TOPIC_ACTION_OPEN_IN_APP constant was retired by the ResourceManager migration; the title-bar
+// coordinator now references the label inline via $r('app.string.topic_action_open_in_app'). The 7-locale
+// resource presence is asserted above; here we pin the menu's use of the resource key.
+assert.match(coord, /\$r\('app\.string\.topic_action_open_in_app'\)/, 'topic title-bar menu must reference the open-in-app label resource')
 
 console.log('in-app webview contract passed')

@@ -194,12 +194,15 @@ const settings = readFileSync('shared/src/main/ets/settings/ReadingSettings.ets'
 const storageKeys = readFileSync('shared/src/main/ets/constants/StorageKeys.ets', 'utf8')
 const readingFontPage = readFileSync('feature/settings/src/main/ets/pages/ReadingSettingsPage.ets', 'utf8')
 const settingsPage = readFileSync('feature/settings/src/main/ets/pages/SettingsPage.ets', 'utf8')
+// i18n migration: the Base64 setting title/subtitle moved to ResourceManager keys on SettingsPage,
+// and the mode-option labels (tap-to-view / inline-display) moved into SettingsPageCoordinator.
+const settingsCoordinator = readFileSync('feature/settings/src/main/ets/model/SettingsPageCoordinator.ets', 'utf8')
 assert.match(source, /enhanceBase64TextTokens\(tokens\)/)
 assert.match(source, /type === 'code' \|\| type === 'codespan' \|\| type === 'link'/)
 assert.match(source, /Span\(" Base64"\)/)
-assert.match(source, /struct Base64PopupBadge[\s\S]*@State private isPopupVisible: boolean = false[\s\S]*Button\(\)[\s\S]*Text\("Base64"\)/, 'default badge uses a component-local stateful Button anchor for device hit testing')
+assert.match(source, /struct Base64PopupBadge[\s\S]*@Local private isPopupVisible: boolean = false[\s\S]*Button\(\)[\s\S]*Text\("Base64"\)/, 'default badge uses a component-local stateful Button anchor for device hit testing')
 assert.match(source, /SelectableInlineTokenFlow[\s\S]*Base64PopupBadge\(\{[\s\S]*token: t as Base64DecodeToken/, 'Base64 badge mode is split out of Text Span flow when popup interaction is needed')
-assert.match(source, /struct SelectableInlineTokenFlow[\s\S]*@Prop fontColor: ResourceColor[\s\S]*@Prop fontWeight: FontWeight[\s\S]*@Prop lineHeight: number[\s\S]*@Prop textAlign: TextAlign[\s\S]*@Prop wordBreak: WordBreak[\s\S]*@Prop copyOption: CopyOptions[\s\S]*@Prop textSelectable: TextSelectableMode/, 'badge flow exposes explicit typography, wrapping, copy, and selection props instead of implicit body defaults')
+assert.match(source, /struct SelectableInlineTokenFlow[\s\S]*@Param fontColor: ResourceColor[\s\S]*@Param fontWeight: FontWeight[\s\S]*@Param lineHeight: number[\s\S]*@Param textAlign: TextAlign[\s\S]*@Param wordBreak: WordBreak[\s\S]*@Param copyOption: CopyOptions[\s\S]*@Param textSelectable: TextSelectableMode/, 'badge flow exposes explicit typography, wrapping, copy, and selection props instead of implicit body defaults')
 assert.match(source, /struct SelectableInlineTokenFlow[\s\S]*\.fontWeight\(this\.fontWeight\)[\s\S]*\.fontColor\(this\.fontColor\)[\s\S]*\.lineHeight\(this\.lineHeight\)[\s\S]*\.textAlign\(this\.textAlign\)[\s\S]*\.wordBreak\(this\.wordBreak\)[\s\S]*\.copyOption\(this\.copyOption\)[\s\S]*\.textSelectable\(this\.textSelectable\)/, 'badge flow applies explicit style/behavior props to text fragments')
 assert.match(source, /SelectableInlineTokenFlow\(\{\s*\n\s*tokens: this\.headingInlineTokens\(token\),[\s\S]{0,900}fontColor: this\.headingColor\(token\),[\s\S]{0,120}fontWeight: this\.headingWeight\(token\),[\s\S]{0,120}lineHeight: this\.headingLineHeight\(token\),[\s\S]{0,240}copyOption: CopyOptions\.LocalDevice,[\s\S]{0,120}textSelectable: TextSelectableMode\.SELECTABLE_FOCUSABLE/, 'badge-containing heading path preserves heading color/weight/lineHeight and copy/selectable semantics')
 assert.match(source, /SelectableInlineTokenFlow\(\{\s*\n\s*tokens: this\.cellTokens\(cell\),[\s\S]{0,900}fontWeight: header \? FontWeight\.Medium : FontWeight\.Regular,[\s\S]{0,160}textAlign: this\.cellTextAlign\(cell\),[\s\S]{0,120}wordBreak: WordBreak\.BREAK_WORD,[\s\S]{0,120}copyOption: CopyOptions\.LocalDevice,[\s\S]{0,120}textSelectable: TextSelectableMode\.SELECTABLE_FOCUSABLE/, 'badge-containing table cell path preserves header/body weight, alignment, word break, and copy/selectable semantics')
@@ -223,9 +226,9 @@ assert.doesNotMatch(source, /console\.(?:log|info|warn|error)\([^\n]*(?:decoded|
 assert.match(settings, /KEY_BASE64_DECODE_MODE: string = StorageKeys\.READING_BASE64_DECODE_MODE/)
 assert.match(storageKeys, /READING_BASE64_DECODE_MODE: string = 'readingBase64DecodeMode'/)
 assert.match(settings, /BASE64_MODE_BADGE: string = 'badge'/)
-assert.match(settingsPage, /Base64 解码/)
-assert.match(settingsPage, /点击查看/)
-assert.match(settingsPage, /文内显示/)
+assert.match(settingsPage, /title: \$r\('app\.string\.base64_decode'\)/) // "Base64 解码"
+assert.match(settingsCoordinator, /label: \$r\('app\.string\.tap_to_view'\), value: ReadingSettings\.BASE64_MODE_BADGE/) // "点击查看"
+assert.match(settingsCoordinator, /label: \$r\('app\.string\.inline_display'\), value: ReadingSettings\.BASE64_MODE_INLINE/) // "文内显示"
 assert.doesNotMatch(readingFontPage, /Base64 解码/)
 assert.doesNotMatch(readingFontPage, /BASE64_MODE/)
 

@@ -32,7 +32,7 @@ function assertCompactSegment(file, structName) {
 const theme = stripComments(read('shared/src/main/ets/theme/ThemeConstants.ets'))
 assert.match(
   theme,
-  /static readonly COMPACT_SEGMENT_BUTTON_WIDTH:\s*number\s*=\s*216;/,
+  /static readonly COMPACT_SEGMENT_BUTTON_WIDTH:\s*number\s*=\s*216;?/,
   'ThemeConstants must define the compact segmented-control width token'
 )
 

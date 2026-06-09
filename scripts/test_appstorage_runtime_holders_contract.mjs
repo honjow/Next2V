@@ -66,7 +66,8 @@ const hasNoAppStorage = (rel) => must(!/AppStorage\s*\./.test(strip(read(rel))),
 
   const lang = read('shared/src/main/ets/settings/LanguageSettings.ets');
   must(/setAppStorageValue<AppLanguageMode>\(StorageKeys\.LANGUAGE_MODE/.test(lang), 'LanguageSettings.apply keeps LANGUAGE_MODE AppStorage projection');
-  must(/connectLanguageState\(\)\.mode\s*=/.test(lang), 'LanguageSettings.apply seeds LanguageState.mode');
+  // apply() seeds the mirror via a local handle (const languageState = connectLanguageState(); languageState.mode = mode)
+  must(/const languageState = connectLanguageState\(\)[\s\S]*?languageState\.mode\s*=/.test(lang), 'LanguageSettings.apply seeds LanguageState.mode');
   must(/\(connectLanguageState\(\)\.mode \|\| LanguageSettings\.MODE_SYSTEM\)/.test(lang), 'LanguageSettings.reapplyForFollowSystem reads LanguageState.mode');
 
   const align = read('shared/src/main/ets/settings/ReplyActionAlignmentSettings.ets');
@@ -119,7 +120,12 @@ hasNoAppStorage('feature/detail/src/main/ets/pages/TopicDetailPage.ets');
   must(/connectReplyDisplay\(\)\.mode/.test(topic), 'TopicDetailPage reads ReplyDisplayState.mode');
   must(/this\.reading\.restorePosition/.test(topic), 'TopicDetailPage reads ReadingSettingsState.restorePosition');
   const appStrings = read('shared/src/main/ets/i18n/AppStrings.ets');
-  must(!/connectLanguageState/.test(appStrings), 'AppStrings resolves language through ResourceManager, not LanguageState');
+  // String resolution still goes through ResourceManager.getStringSync (override + default RM),
+  // never derived from LanguageState. The live-refresh i18n work (commit fda564d) added a single
+  // read of connectLanguageState().effectiveLocale purely as a V2 reactivity dependency so
+  // AppStrings.text() callers repaint on language change — that read must NOT feed resolution.
+  must(/getStringSync\(/.test(appStrings), 'AppStrings resolves language through ResourceManager.getStringSync');
+  must(/connectLanguageState\(\)\.effectiveLocale/.test(appStrings), 'AppStrings reads the locale signal only as a reactivity dependency (live repaint)');
   const languageSettings = read('shared/src/main/ets/settings/LanguageSettings.ets');
   must(/connectLanguageState\(\)\.mode/.test(languageSettings), 'LanguageSettings maintains LanguageState.mode for settings/follow-system readers');
 }

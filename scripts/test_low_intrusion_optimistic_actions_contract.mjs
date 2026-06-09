@@ -67,32 +67,42 @@ assertFailureToastAfterRollback(
   favorite,
   '.catch((error: Error) =>',
   [
+    // The redundant local mirror field (topicDetailSiteFavorited) was removed; the shared
+    // detail-action holder is now driven through the single-writer publish helper. Rollback
+    // must still restore BOTH the local flag and the shared holder before toasting.
     'this.isSiteFavorited = previousIsSiteFavorited',
-    'this.topicDetailSiteFavorited = previousTopicDetailSiteFavorited',
+    'publishTopicDetailSiteFavorited(previousIsSiteFavorited)',
   ],
   'topic favorite/unfavorite',
 )
 
 const topicThank = methodBody(page, 'executeTopicThank')
 assert.match(topicThank, /const previousIsTopicThanked = this\.isTopicThanked/)
-assert.match(topicThank, /const previousTopicDetailThanked = this\.topicDetailThanked/)
 const topicOptimisticIndex = topicThank.indexOf('this.isTopicThanked = true')
 const topicNetworkIndex = topicThank.indexOf('.executeTopicThank(this.api, cookie, this.topicId)')
 assert.ok(topicOptimisticIndex >= 0 && topicOptimisticIndex < topicNetworkIndex, 'topic thank must optimistically update before API call')
-assert.match(topicThank, /this\.topicDetailThanked = true[\s\S]*TopicDetailActionCoordinator/, 'topic thank must optimistically update detail state before API call')
+// The local topicDetailThanked mirror field was removed; the shared detail-action holder is
+// driven through the publishTopicDetailThanked single-writer helper. Optimistic publish must
+// still precede the network call.
+const topicPublishIndex = topicThank.indexOf('publishTopicDetailThanked(true)')
+assert.ok(topicPublishIndex >= 0 && topicPublishIndex < topicNetworkIndex, 'topic thank must optimistically update detail state before API call')
 assertNoSuccessToast(topicThank, '.then(() =>', 'topic thank')
 assertFailureToastAfterRollback(
   topicThank,
   '.catch((error: Error) =>',
   [
     'this.isTopicThanked = previousIsTopicThanked',
-    'this.topicDetailThanked = previousTopicDetailThanked',
+    'publishTopicDetailThanked(previousIsTopicThanked)',
   ],
   'topic thank',
 )
 
 const replyThank = methodBody(page, 'executeReplyThank')
-const replyOptimisticIndex = replyThank.indexOf('this.v.optimisticallyMarkReplyThanked(reply.id)')
+// The optimistic-mark call argument was wrapped onto its own line by the formatter; match
+// whitespace-tolerantly so the ordering invariant (optimistic mark BEFORE the network call)
+// still holds regardless of arg line-wrapping.
+const replyOptimisticMatch = replyThank.match(/this\.v\.optimisticallyMarkReplyThanked\(\s*reply\.id,?\s*\)/)
+const replyOptimisticIndex = replyOptimisticMatch ? replyOptimisticMatch.index : -1
 const replyNetworkIndex = replyThank.indexOf('.executeReplyThank(this.api, cookie, this.topicId, reply.id)')
 assert.ok(replyOptimisticIndex >= 0 && replyOptimisticIndex < replyNetworkIndex, 'reply thank must keep optimistic update before API call')
 assertNoSuccessToast(replyThank, '.then(() =>', 'reply thank')

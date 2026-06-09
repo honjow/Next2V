@@ -302,19 +302,25 @@ assert(
   'AccountSessionCoordinator must not log raw cookie snapshots'
 )
 
-// ── AppStrings must register new keys ────────────────────────────
-const appStrings = read('shared/src/main/ets/i18n/AppStrings.ets')
-const requiredAppStringsKeys = [
-  'R_ACCOUNT_REMOVE_TITLE',
-  'R_ACCOUNT_REMOVE_MESSAGE_ARG',
-  'R_ACCOUNT_SWITCH_LABEL',
-  'R_ACCOUNT_REMOVE_LABEL',
-  'R_COMMON_REMOVE',
+// ── Account-management strings must be wired to localized resources ──
+// The ResourceManager migration retired the AppStrings.R_* string constants; these strings
+// are now $r('app.string.account_*')/common_remove resources, consumed via AccountPageCoordinator
+// getters and AccountManagementPage. Same intent: the management UI must use localized
+// resources (not hardcoded literals). Resource-key existence across all 5 locales is also
+// asserted below.
+const accCoordinatorStrings = read('entry/src/main/ets/model/AccountPageCoordinator.ets')
+const managementPageStrings = read('entry/src/main/ets/pages/AccountManagementPage.ets')
+const requiredResourceWirings = [
+  ["$r('app.string.account_remove_title')", accCoordinatorStrings, 'AccountPageCoordinator.REMOVE_ACCOUNT_TITLE'],
+  ["$r('app.string.account_remove_message_arg')", accCoordinatorStrings, 'AccountPageCoordinator.removeAccountMessage'],
+  ["$r('app.string.account_switch_label')", accCoordinatorStrings, 'AccountPageCoordinator.SWITCH_LABEL'],
+  ["$r('app.string.account_remove_label')", accCoordinatorStrings, 'AccountPageCoordinator.REMOVE_LABEL'],
+  ["$r('app.string.common_remove')", managementPageStrings, 'AccountManagementPage remove confirm'],
 ]
-for (const key of requiredAppStringsKeys) {
+for (const [resourceRef, source, where] of requiredResourceWirings) {
   assert(
-    appStrings.includes(key),
-    `AppStrings.ets missing key: ${key}`
+    source.includes(resourceRef),
+    `${where} must use localized resource ${resourceRef}`
   )
 }
 

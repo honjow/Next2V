@@ -42,7 +42,8 @@ const accountSection = settingsPage.slice(accountSectionStart, readingSectionSta
 // @StorageLink decorator is retired). See connectAutoDailyCheckin() / AutoDailyCheckinState.
 assert.match(settingsPage, /@Local\s+private\s+autoDailyCheckinEnabled:\s*boolean\s*=\s*true/, 'SettingsPage must hold the auto check-in switch state in a @Local (V2)')
 assert.match(settingsPage, /this\.autoDailyCheckinEnabled\s*=\s*connectAutoDailyCheckin\(\)\.enabled/, 'SettingsPage must sync the switch from the AutoDailyCheckin V2 holder')
-assert.match(accountSection, /TogglePreferenceRow\(\s*AppStrings\.R_AUTO_CHECKIN,\s*this\.autoDailyCheckinEnabled/, 'account section must show the auto check-in (R_AUTO_CHECKIN) switch row')
+// i18n migration: the label moved from the retired AppStrings.R_AUTO_CHECKIN constant to $r('app.string.auto_checkin').
+assert.match(accountSection, /TogglePreferenceRow\(\s*\$r\('app\.string\.auto_checkin'\),\s*this\.autoDailyCheckinEnabled/, 'account section must show the auto check-in ($r app.string.auto_checkin) switch row')
 assert.doesNotMatch(accountSection, /Button\('自动签到'|FilterChip\(|Chip\(/, 'auto daily check-in must not be implemented as button/chip')
 assert.match(settingsPage, /SettingsSaveCoordinator\.saveAutoDailyCheckin\(context,\s*enabled\)/, 'switch updates must persist via helper')
 

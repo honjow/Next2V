@@ -31,7 +31,7 @@ check(move.includes('ApiService.isTopicLocation(res.location, topicId)'), 'succe
 
 // ── menu: moveTopic action gated by canEdit (move shares the edit window) ────────
 const coord = read('entry/src/main/ets/model/TopicDetailTitleBarCoordinator.ets')
-check(coord.includes("'moveTopic'") && /R_TOPIC_ACTION_MOVE/.test(coord), 'coordinator declares the moveTopic action')
+check(coord.includes("'moveTopic'") && /\$r\('app\.string\.topic_action_move'\)/.test(coord), 'coordinator declares the moveTopic action')
 const index = read('entry/src/main/ets/pages/Index.ets')
 const visible = index.slice(index.indexOf('private isTopicActionVisible('), index.indexOf('private topicDetailTitleActionIcon('))
 check(visible.includes("action === 'moveTopic'") && visible.includes('topicDetailOwnership.canEdit'), 'Index gates moveTopic by canEdit (the 600s move window)')
@@ -41,7 +41,7 @@ const detail = read('feature/detail/src/main/ets/pages/TopicDetailPage.ets')
 check(detail.includes("action === 'moveTopic'") && detail.includes('openMoveNode('), 'detail dispatches moveTopic → openMoveNode')
 check(detail.includes("this.movePending = true") && detail.includes("pushPathByName('NodePicker'"), 'openMoveNode arms movePending then opens the node picker')
 check(/@Monitor\('nodePick\.command'\)/.test(detail) && /if \(!this\.movePending\)\s*\{\s*return/.test(detail), 'the node-pick handler only acts when a move was armed (movePending gate)')
-check(detail.includes('this.movePending = false') && /showAlertDialog\([\s\S]{0,400}R_TOPIC_MOVE_CONFIRM_FORMAT/.test(detail.slice(detail.indexOf('onMoveNodePicked'))), 'a stray pick clears the flag and a confirm dialog guards the destructive move')
+check(detail.includes('this.movePending = false') && /showAlertDialog\([\s\S]{0,400}\$r\('app\.string\.topic_move_confirm_format'\)/.test(detail.slice(detail.indexOf('onMoveNodePicked'))), 'a stray pick clears the flag and a confirm dialog guards the destructive move')
 check(detail.includes('this.api.moveTopicNodeWithCookie(') && /executeMoveNode/.test(detail), 'confirmed move calls moveTopicNodeWithCookie then reloads')
 
 for (const f of failures) console.error(`FAIL  ${f}`)

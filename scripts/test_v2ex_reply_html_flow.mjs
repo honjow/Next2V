@@ -65,9 +65,13 @@ assert.match(replyCardSource, /this\.reply\.content_rendered/)
 assert.match(replyCardSource, /return this\.reply\.content_rendered/)
 
 const topicDetailSource = readFileSync('feature/detail/src/main/ets/pages/TopicDetailPage.ets', 'utf8')
-assert.match(topicDetailSource, /private topicBodySource\(\)/)
-assert.match(topicDetailSource, /this\.v\.topic\?\.content_rendered/)
-assert.match(topicDetailSource, /return this\.v\.topic\?\.content_rendered \|\| ''/)
+// The topic-body source-preference logic (prefer content_rendered, fall back to content) was
+// extracted from TopicDetailPage into TopicDetailContentCoordinator; the page now renders the
+// coordinator-produced blocks. Same intent, different home.
+const topicContentCoordinatorSource = readFileSync('feature/detail/src/main/ets/model/TopicDetailContentCoordinator.ets', 'utf8')
+assert.match(topicContentCoordinatorSource, /private static topicBodySource\(topic: V2exTopic \| null\): string/)
+assert.match(topicContentCoordinatorSource, /topic\?\.content_rendered/)
+assert.match(topicContentCoordinatorSource, /return topic\?\.content_rendered \|\| ''/)
 assert.match(topicDetailSource, /ForEach\([\s\S]{0,120}this\.topicBodyBlocks\(\)/)
 assert.doesNotMatch(topicDetailSource, /ForEach\(this\.markdownBlocks\(this\.v\.topic!\.content\)/)
 

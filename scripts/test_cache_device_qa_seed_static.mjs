@@ -70,8 +70,10 @@ assert(!seed.includes('ApiService') && !seed.includes('HttpClient') && !seed.inc
 assert(storage.includes("import BuildProfile from '../../../../BuildProfile'"), 'storage seed UI must import feature BuildProfile')
 assert(/if\s*\(\s*BuildProfile\.DEBUG\s*&&\s*CacheDeviceQaSeed\.isEnabled\(\)\s*\)/.test(storage), 'storage seed section must be BuildProfile.DEBUG guarded')
 assert(/!BuildProfile\.DEBUG\s*\|\|\s*!CacheDeviceQaSeed\.isEnabled\(\)/.test(storage), 'storage seed actions must runtime-check debug guard')
-assert(storage.includes('Seed 全部缓存场景') && storage.includes('重置 Seed 缓存'), 'storage seed UI rows missing')
-assert(storage.includes('Seed Hash 不匹配行') && storage.includes('验证 Hash 修复'), 'storage hash mismatch seed/validation UI rows missing')
+// i18n migration: QA seed row labels moved to ResourceManager keys (seed_all_cache_scenarios="Seed 全部缓存场景",
+// reset_seed_cache="重置 Seed 缓存", seed_hash_mismatch_row="Seed Hash 不匹配行", verify_hash_repair="验证 Hash 修复").
+assert(storage.includes("$r('app.string.seed_all_cache_scenarios')") && storage.includes("$r('app.string.reset_seed_cache')"), 'storage seed UI rows missing')
+assert(storage.includes("$r('app.string.seed_hash_mismatch_row')") && storage.includes("$r('app.string.verify_hash_repair')"), 'storage hash mismatch seed/validation UI rows missing')
 assert(storage.includes('CacheDeviceQaSeed.seedHashMismatchRow') && storage.includes('CacheDeviceQaSeed.validateHashMismatchRepair'), 'storage hash mismatch actions missing')
 assert(sharedIndex.includes("export { CacheDeviceQaSeed } from './settings/CacheDeviceQaSeed'"), 'shared index must export CacheDeviceQaSeed')
 

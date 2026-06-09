@@ -41,9 +41,10 @@ const index = read('entry/src/main/ets/pages/Index.ets')
 const fn = index.match(/private accountWebViewTitle\(\): ResourceStr \{([\s\S]*?)\n  \}/)
 assert.ok(fn, 'Index must define accountWebViewTitle')
 const body = fn[1]
-assert.doesNotMatch(body, /R_NAV_WEB_LOGIN/, 'the in-app WebView title must NOT fall back to the "网页登录" login label')
-assert.match(body, /R_BALANCE_DETAILS/, 'balance keeps its first-party title')
-assert.match(body, /R_WEB_ACCOUNT_SETTINGS/, 'settings keeps its first-party title')
+// i18n migration: first-party titles now resolve via $r('app.string.KEY') instead of R_* constants.
+assert.doesNotMatch(body, /R_NAV_WEB_LOGIN|app\.string\.nav_web_login/, 'the in-app WebView title must NOT fall back to the "网页登录" login label')
+assert.match(body, /\$r\('app\.string\.balance_details'\)/, 'balance keeps its first-party title')
+assert.match(body, /\$r\('app\.string\.web_account_settings'\)/, 'settings keeps its first-party title')
 assert.match(body, /return \(this\.accountWebView\.title \|\| ''\)\.trim\(\)/, 'the default returns the live page title (empty until it arrives)')
 
 console.log('account webview title contract passed')

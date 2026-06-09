@@ -90,12 +90,12 @@ const ownership = read('shared/src/main/ets/state/TopicDetailOwnershipState.ets'
 check(/@Trace canEdit/.test(ownership) && /ageSec < TOPIC_EDIT_WINDOW_SEC/.test(ownership), 'canEdit gated on OP + within the edit window')
 
 const coord = read('entry/src/main/ets/model/TopicDetailTitleBarCoordinator.ets')
-check(coord.includes("'editTopic'") && /R_TOPIC_ACTION_EDIT/.test(coord), 'coordinator declares the editTopic action')
+check(coord.includes("'editTopic'") && /\$r\('app\.string\.topic_action_edit'\)/.test(coord), 'coordinator declares the editTopic action')
 
 const index = read('entry/src/main/ets/pages/Index.ets')
 const visible = index.slice(index.indexOf('private isTopicActionVisible('), index.indexOf('private topicDetailTitleActionIcon('))
 check(visible.includes("action === 'editTopic'") && visible.includes('topicDetailOwnership.canEdit'), 'Index gates editTopic by ownership.canEdit')
-check(index.includes("composeMode === 'edit'") && index.includes('R_TOPIC_ACTION_EDIT'), 'Index titles the editor 编辑主题 in edit mode')
+check(index.includes("composeMode === 'edit'") && /\$r\('app\.string\.topic_action_edit'\)/.test(index), 'Index titles the editor 编辑主题 in edit mode')
 
 const editor = read('entry/src/main/ets/pages/TopicEditorPage.ets')
 check(editor.includes("this.mode === 'edit'") && editor.includes('loadEditForm(') && editor.includes('submitEdit('), 'editor has an edit mode (prefill + submit)')

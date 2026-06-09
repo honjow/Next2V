@@ -33,8 +33,8 @@ for (const token of [
   'extractMemberAvatar(cell, username)',
   'deleteNotification\\s*\\(',
   '\\bpayload\\b',
-  ".replace(/<img\\b[^>]*>/gi, ' 图片 ')",
-  "const username = labelUsername && labelUsername !== '图片' ? labelUsername : hrefUsername",
+  '.replace(/<img\\b[^>]*>/gi, ` ${V2exNotificationParser.getImagePlaceholder()} `)',
+  'const username = labelUsername && labelUsername !== V2exNotificationParser.getImagePlaceholder() ? labelUsername : hrefUsername',
 ]) {
   assert(parser.includes(token), `notification parser contract missing ${token}`)
 }
@@ -58,10 +58,10 @@ for (const token of [
   'safeOperationErrorMessage(error: Error): string',
   "once=<redacted>",
   'if (await this.isNotificationDeletedFromCookiePage(cookie, action.id, safeVerifyPage))',
-  'private async isNotificationDeletedFromCookiePage(cookie: string, notificationId: number, page: number): Promise<boolean>',
+  'private async isNotificationDeletedFromCookiePage(',
   'const latest = await this.getNotificationsWithCookie(cookie, page)',
   'item.id === notificationId || item.delete_id === notificationId',
-  "throw new Error('删除通知未生效，请稍后重试')",
+  'throw ApiErrors.notificationDeleteNotApplied()',
   "'/notifications'",
 ]) {
   assert(apiService.includes(token), `ApiService cookie delete contract missing ${token}`)
@@ -83,24 +83,24 @@ for (const token of [
   'async unreadCountFromCookie(cookie: string): Promise<number>',
   'webDeleteId(item: V2exNotification): number',
   'webDeleteOnce(item: V2exNotification): string',
-  'body: this.displayBody(kindTag, body)',
-  'replyContent: this.displayReplyContent(kindTag, item)',
-  'replyRenderedContent: this.displayReplyRenderedContent(kindTag, item)',
-  "if (kindTag === '收藏')",
+  'body: this.displayBody(kindTag, body, compactTopicThanks)',
+  'replyContent: this.displayReplyContent(kindTag, item, compactTopicThanks)',
+  'replyRenderedContent: this.displayReplyRenderedContent(kindTag, item, compactTopicThanks)',
+  'if (kindTag === KIND_FAVORITE || compactTopicThanks)',
   'private replyRenderedContent(item: V2exNotification): string',
   'private firstReadableContent(candidates: (string | undefined)[]): string',
   'private readableNotificationContent(raw: string): string',
-  ".replace(/<img\\b[^>]*>/gi, ' 图片 ')",
-  "tag === '未读'",
-  "return unread ? '未读' : ''",
-  "return read ? '' : '未读'",
+  ".replace(/<img\\b[^>]*>/gi, ' [IMG] ')",
+  'tag === READ_TAG_UNREAD',
+  'return unread ? READ_TAG_UNREAD : ' + "''",
+  'return read ? ' + "''" + ' : READ_TAG_UNREAD',
 ]) {
   assert(vm.includes(token), `NotificationCenterViewModel contract missing ${token}`)
 }
 
 const page = read('entry/src/main/ets/pages/NotificationPage.ets')
 assert(!page.includes('NotificationSummaryCard({'), 'NotificationPage must not render the old summary card as the first list item')
-const refreshKeyHandlerMatch = page.match(/onRefreshKeyChanged\(_propName: string\): void \{([\s\S]*?)\n  \}/)
+const refreshKeyHandlerMatch = page.match(/onRefreshKeyChanged\(\): void \{([\s\S]*?)\n  \}/)
 assert(refreshKeyHandlerMatch, 'NotificationPage missing onRefreshKeyChanged handler')
 assert(
   !refreshKeyHandlerMatch[1].includes('resetNotificationState()'),
@@ -110,14 +110,14 @@ assert(
   refreshKeyHandlerMatch[1].includes('loadAuthSnapshot(true)'),
   'NotificationPage tab re-entry refresh must still request a forced notification refresh'
 )
-const authHandlerMatch = page.match(/onAuthChanged\(_propName: string\): void \{([\s\S]*?)\n  \}/)
+const authHandlerMatch = page.match(/onAuthChanged\(\): void \{([\s\S]*?)\n  \}/)
 assert(authHandlerMatch, 'NotificationPage missing onAuthChanged handler')
 assert(
   authHandlerMatch[1].includes('currentNotificationIdentityKey()') &&
     !authHandlerMatch[1].includes('resetNotificationState()'),
   'NotificationPage auth watcher must compare effective identity and not unconditionally reset on AUTH_SESSION_UPDATED_AT'
 )
-const localDataHandlerMatch = page.match(/onLocalDataUpdated\(_propName: string\): void \{([\s\S]*?)\n  \}/)
+const localDataHandlerMatch = page.match(/onLocalDataUpdated\(\): void \{([\s\S]*?)\n  \}/)
 assert(localDataHandlerMatch, 'NotificationPage missing onLocalDataUpdated handler')
 assert(
   !localDataHandlerMatch[1].includes('resetNotificationState()'),
@@ -129,8 +129,8 @@ assert(
   'NotificationPage must not turn broad LOCAL_DATA_UPDATED_AT into a notification network refresh'
 )
 assert(
-  page.includes('@State private notificationInitialSettled: boolean = false') &&
-    page.includes('@State private isNotificationAuthLoading: boolean = false') &&
+  page.includes('@Local private notificationInitialSettled: boolean = false') &&
+    page.includes('@Local private isNotificationAuthLoading: boolean = false') &&
     page.includes('private shouldShowNotificationInitialLoading(): boolean') &&
     page.includes('private shouldShowNotificationEmptyState(): boolean') &&
     page.includes('this.shouldShowNotificationEmptyState()'),
@@ -153,14 +153,20 @@ const loadAuthSnapshotStart = page.indexOf('private loadAuthSnapshot(forceNotifi
 const refreshVisibleStart = page.indexOf('private refreshVisibleNotificationsIfNeeded(): void {')
 assert(loadAuthSnapshotStart >= 0 && refreshVisibleStart > loadAuthSnapshotStart, 'NotificationPage missing loadAuthSnapshot body')
 const loadAuthSnapshotBody = page.slice(loadAuthSnapshotStart, refreshVisibleStart)
+// Reads of /notifications consume unread state, so the authenticated list refresh must be gated
+// behind the active-tab check (commit ee2a53a: "guard unread list refresh timing"). The cache load
+// still runs first but cannot clobber a fresh refresh — that is enforced by the in-flight / fresh-rows
+// guards asserted further below — so the historical "refresh-before-cache call order" is no longer the
+// mechanism; the gated refresh is.
 assert(
-  loadAuthSnapshotBody.indexOf('this.loadNotifications(forceNotifications)') >= 0 &&
-    loadAuthSnapshotBody.indexOf('this.loadNotifications(forceNotifications)') <
-      loadAuthSnapshotBody.indexOf('this.loadNotificationCache(snapshot.username || this.sessionUsername)'),
-  'NotificationPage must start the authenticated refresh before loading notification cache'
+  loadAuthSnapshotBody.indexOf('this.loadNotificationCache(snapshot.username || this.session.username)') >= 0 &&
+    loadAuthSnapshotBody.indexOf('if (this.shouldLoadNotificationListForCurrentTab(forceNotifications)) {') >= 0 &&
+    loadAuthSnapshotBody.indexOf('this.loadNotifications(forceNotifications)') >
+      loadAuthSnapshotBody.indexOf('if (this.shouldLoadNotificationListForCurrentTab(forceNotifications)) {'),
+  'NotificationPage must gate the authenticated list refresh behind the active-tab check (consume-on-read safety)'
 )
 assert(
-  page.includes('tokenConfigured: this.authTokenConfigured || token.length > 0'),
+  page.includes('tokenConfigured: this.authIdentity.tokenConfigured || token.length > 0'),
   'NotificationPage auth context must treat the freshly loaded token as configured before StorageLink propagation'
 )
 const resetNotificationStateMatch = page.match(/private resetNotificationState\(\): void \{([\s\S]*?)\n  \}/)
@@ -211,12 +217,12 @@ for (const forbidden of [
   assert(!page.includes(forbidden), `NotificationPage must not retain temporary/custom delete confirmation code: ${forbidden}`)
 }
 for (const token of [
-  '@StorageLink(StorageKeys.NOTIFICATION_UNREAD_COUNT) notificationUnreadCount: number = 0',
+  'private notificationUnread: NotificationUnreadState = connectNotificationUnread()',
   'this.notificationVm.canDeleteItem(this.notificationAuthContext(), item)',
   'const verifyPage = this.notificationPageForItem(item)',
   'this.api.deleteNotificationWithCookie(cookie, notificationId, once, verifyPage)',
-  'AlertDialog.show({',
-  "value: '删除'",
+  'this.getUIContext().showAlertDialog({',
+  "value: $r('app.string.common_delete')",
   'private notificationPageForItem(item: V2exNotification): number',
   'private deleteNotificationInBackground(',
   'private retryDeleteNotificationRequest(request: () => Promise<void>, attempt: number): Promise<void>',
@@ -227,14 +233,14 @@ for (const token of [
   'this.restoreNotificationAfterDeleteFailure(item, originalIndex)',
   'private publishUnreadCount(): void',
   'this.publishUnreadCount()',
-  '@State private viewedUnreadNotificationKeys: string[] = []',
-  'private notificationEntryUnreadCount: number = 0',
-  'this.viewedUnreadKeysForLoadedItems(',
+  '@Local private viewedUnreadNotificationKeys: string[] = []',
+  'const entryUnreadHint = this.captureNotificationEntryUnreadHint()',
+  'this.reconcileFreshViewedUnreadKeys(',
   'this.notificationsWithoutReadState(result.items)',
-  'private captureNotificationEntryUnreadCount(): number',
-  'private viewedUnreadKeysForLoadedItems(',
+  'private captureNotificationEntryUnreadHint(): number',
+  'private reconcileFreshViewedUnreadKeys(',
   'private notificationWithoutReadState(item: V2exNotification): V2exNotification',
-  'this.notificationUnreadCount = 0',
+  'publishNotificationUnreadCount(0)',
   'replyContent: display.replyContent',
   'replyRenderedContent: display.replyRenderedContent',
 ]) {
@@ -246,12 +252,12 @@ assert(!components.includes('NotificationSummaryCard'), 'old NotificationSummary
 for (const token of [
   'Avatar({',
   'MarkdownContent({',
-  '@Prop replyContent: string =',
-  '@Prop replyRenderedContent: string =',
+  '@Param replyContent: string =',
+  '@Param replyRenderedContent: string =',
   'source: this.replyPreviewSource()',
   'topMargin: 0',
-  '@Prop memberName: string =',
-  '@Prop avatarUrl: string =',
+  '@Param memberName: string =',
+  '@Param avatarUrl: string =',
   'private replyPreviewSource(): string',
   'SymbolGlyph($r',
 ]) {
@@ -269,7 +275,7 @@ for (const forbidden of [
 const mainTabIcon = read('entry/src/main/ets/components/MainTabIcon.ets')
 const mainTabBaseIconBlock = mainTabIcon.slice(0, mainTabIcon.indexOf('if (this.badgeCount > 0)'))
 for (const token of [
-  '@Prop badgeCount: number = 0',
+  '@Param badgeCount: number = 0',
   'if (this.badgeCount > 0)',
   'private badgeText(): string',
   "'99+'",
@@ -322,13 +328,13 @@ assert(
 
 const index = read('entry/src/main/ets/pages/Index.ets')
 for (const token of [
-  '@StorageLink(StorageKeys.NOTIFICATION_UNREAD_COUNT) notificationUnreadCount: number = 0',
+  'private notificationUnread: NotificationUnreadState = connectNotificationUnread()',
   'private refreshNotificationBadge(): void',
   'private canApplyNotificationBadgeRequest(requestId: number): boolean',
   'this.notificationBadgeRequestId++',
   'this.refreshNotificationBadge()',
-  'this.notificationVm.unreadCountFromCookie(cookie)',
-  'badgeCount: idx === 2 ? this.notificationUnreadCount : 0',
+  '.unreadCountFromCookie(cookie)',
+  'badgeCount: idx === 2 ? this.notificationUnread.count : 0',
 ]) {
   assert(index.includes(token), `Index notification badge contract missing ${token}`)
 }

@@ -34,21 +34,25 @@ const method = methodMatch[0]
 
 assertContains(method, 'if (this.isSiteFavoriteLoading)', 'duplicate request guard missing')
 assertContains(method, 'const previousIsSiteFavorited = this.isSiteFavorited', 'must snapshot previous component favorite state')
-assertContains(method, 'const previousTopicDetailSiteFavorited = this.topicDetailSiteFavorited', 'must snapshot previous appbar/storage favorite state')
+// The appbar/storage favorite state migrated from a directly-assigned `this.topicDetailSiteFavorited`
+// field to the single-writer command bus `publishTopicDetailSiteFavorited(...)`. The optimistic
+// snapshot for BOTH component and appbar is now the one `previousIsSiteFavorited` captured above (they
+// are mutated in lockstep), so the appbar rollback below reuses it — the invariant is unchanged.
+assertContains(method, 'publishTopicDetailSiteFavorited(previousIsSiteFavorited)', 'must roll the appbar/storage favorite state back to the captured snapshot on failure')
 assertContains(method, 'const targetFavorited = !this.isSiteFavorited', 'must compute optimistic target from current UI state')
 assertContains(method, 'this.isSiteFavoriteLoading = true', 'must set loading guard before API call')
 assertContains(method, 'this.isSiteFavorited = targetFavorited', 'must optimistically update component state')
-assertContains(method, 'this.topicDetailSiteFavorited = targetFavorited', 'must optimistically update appbar/storage state')
+assertContains(method, 'publishTopicDetailSiteFavorited(targetFavorited)', 'must optimistically update appbar/storage state')
 assertContains(method, '.toggleTopicFavoriteWithCookie(cookie, this.topicId)', 'must run existing topic favorite API toggle call')
 assertContains(method, 'this.isSiteFavorited = favorited', 'success must apply server returned favorite state to component')
-assertContains(method, 'this.topicDetailSiteFavorited = favorited', 'success must apply server returned favorite state to appbar/storage')
+assertContains(method, 'publishTopicDetailSiteFavorited(favorited)', 'success must apply server returned favorite state to appbar/storage')
 const favoriteSuccessMatch = method.match(/\.then\(\(favorited: boolean\) => \{[\s\S]*?\n      \}\)/)
 if (!favoriteSuccessMatch) {
   fail('favorite success block not found')
 }
 assertNotContains(favoriteSuccessMatch[0], 'openToast', 'favorite/unfavorite success path must not show toast')
 assertContains(method, 'this.isSiteFavorited = previousIsSiteFavorited', 'failure must rollback component state')
-assertContains(method, 'this.topicDetailSiteFavorited = previousTopicDetailSiteFavorited', 'failure must rollback appbar/storage state')
+assertContains(method, 'publishTopicDetailSiteFavorited(previousIsSiteFavorited)', 'failure must rollback appbar/storage state')
 assertContains(method, 'translateApiError(error)', 'failure must show translated API error toast')
 
 console.log('PASS: topic favorite no-dialog optimistic rollback contract')

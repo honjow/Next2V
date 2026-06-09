@@ -132,8 +132,13 @@ assert(topicDetailPage.includes('V2exUrlRouter.withSelectedBaseUrl'), 'TopicDeta
 assert(!/return\s+raw\s*\n/.test(topicDetailPage), 'TopicDetailPage must not return absolute API payload topic.url unchanged')
 assert(webLoginPage.includes('HttpClient.getInstance().getBaseUrl()') || webLoginPage.includes('this.http.getBaseUrl()'), 'V2exWebLoginPage must start from selected baseUrl')
 assert(accountDetailPage.includes("this.webBaseUrl() + '/balance'") && accountDetailPage.includes("this.webBaseUrl() + '/settings'"), 'Account detail first-party web entries must use selected baseUrl')
-assert(accountWebViewPage.includes('normalizeFirstPartyTargetUrl'), 'AccountWebViewPage must normalize stored first-party targets to selected baseUrl')
-assert(accountWebViewPage.includes('V2exUrlRouter.isFirstPartySiteUrl'), 'AccountWebViewPage must allow first-party V2EX URLs via shared resolver, not a hardcoded www-only list')
+// AccountWebViewPage was generalized into the in-app WebView that accepts any http(s) URL
+// (first-party OR external); it resolves a relative first-party path against the selected
+// V2EX origin and only treats the target as V2EX (cookie-bearing) when it sits on that origin.
+// Intent preserved: first-party targets resolve to the SELECTED baseUrl (never a www-only
+// hardcode) and the cookie is scoped to the selected baseUrl, not a stale target URL.
+assert(/const origin = this\.webBaseUrl\(\)\.replace\([\s\S]*?if \(target\.startsWith\('\/'\)\) \{\s*target = origin \+ target/.test(accountWebViewPage), 'AccountWebViewPage must resolve relative first-party targets against the selected baseUrl origin')
+assert(/const isV2exOrigin = origin\.length > 0 && target\.startsWith\(origin\)/.test(accountWebViewPage), 'AccountWebViewPage must decide first-party (cookie-bearing) status from the selected baseUrl origin, not a hardcoded www-only list')
 assert(accountWebViewPage.includes('this.injectCookie(cookie, this.webBaseUrl())'), 'AccountWebViewPage must inject selected-baseUrl cookies, not cookies scoped to stale target URL')
 
 const firstPartySourceRoots = [
@@ -150,10 +155,23 @@ const hardcodedSiteUrlAllowList = new Set([
   'shared/src/main/ets/settings/AccountStoreQaSeed.ets',
   'shared/src/main/ets/settings/SettingsBootstrap.ets',
   'shared/src/main/ets/settings/CookieJarSettings.ets',
+  // The inline video player feeds 'https://www.v2ex.com/' to webview.loadData() purely as the
+  // wrapper document's baseUrl so the YouTube/Vimeo embed iframe carries a Referer (YouTube
+  // rejects referer-less embeds with player error 153). It is not a V2EX site request and must
+  // mirror v2ex.com's own embedding host, not the user-selected mirror — outside domain selection.
+  'shared/src/main/ets/components/MarkdownContent.ets',
   'shared/src/main/ets/utils/MediaUrlUtils.ets',
   'shared/src/main/ets/utils/V2exUrlRouter.ets',
   'entry/src/main/ets/model/SearchPageStateCoordinator.ets',
   'feature/settings/src/main/ets/pages/DomainSettingsPage.ets',
+  // The selected-baseUrl mirror and the WebView check-in runner only use the literal as a
+  // pre-hydration @Trace/@Param field DEFAULT that equals ApiConstants.BASE_URL_COM; the live
+  // value is published from HttpClient.getInstance().getBaseUrl() before any request runs
+  // (ApiDomainSettings.apply / AutoDailyCheckinService sets runner.baseUrl = getBaseUrl()), so
+  // these are constant defaults, not site requests that bypass the selected mirror.
+  'shared/src/main/ets/state/ApiDomainState.ets',
+  'shared/src/main/ets/state/WebCheckinRunnerState.ets',
+  'entry/src/main/ets/components/DailyCheckinWebRunner.ets',
 ])
 const walk = (relDir) => {
   const abs = path.join(repo, relDir)

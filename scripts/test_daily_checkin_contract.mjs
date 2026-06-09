@@ -68,11 +68,11 @@ check(/interface V2exDailyRedeemResult/.test(types) && /rewardCoins:\s*number/.t
 const api = read('shared/src/main/ets/network/ApiService.ets')
 check(/extractLatestDailyReward/.test(api) && /Promise<V2exDailyRedeemResult>/.test(api), 'redeem fetches /balance reward and returns V2exDailyRedeemResult')
 const auto = read('shared/src/main/ets/services/AutoDailyCheckinService.ets')
-check(/showRewardToast/.test(auto) && /R_DAILY_CHECKIN_REWARD_TOAST/.test(auto), 'auto check-in toasts the coin reward on success')
+check(/showRewardToast/.test(auto) && /app\.string\.daily_checkin_reward_toast/.test(auto), 'auto check-in toasts the coin reward on success')
 const acc = read('entry/src/main/ets/pages/AccountPage.ets')
-check(/R_DAILY_CHECKIN_REWARD_TOAST/.test(acc), 'manual check-in (AccountPage) toasts the coin reward')
+check(/app\.string\.daily_checkin_reward_toast/.test(acc), 'manual check-in (AccountPage) toasts the coin reward')
 const detail = read('entry/src/main/ets/pages/AccountDetailPage.ets')
-check(/R_DAILY_CHECKIN_REWARD_TOAST/.test(detail), 'manual check-in (AccountDetailPage) toasts the coin reward')
+check(/app\.string\.daily_checkin_reward_toast/.test(detail), 'manual check-in (AccountDetailPage) toasts the coin reward')
 // i18n key present in all 7 locales
 for (const loc of ['base', 'en_US', 'zh_CN', 'zh_HK', 'zh_TW', 'ja_JP', 'ko_KR']) {
   const json = JSON.parse(read(`entry/src/main/resources/${loc}/element/string.json`))

@@ -178,7 +178,12 @@ assert.match(
 // (7) Success: clears the draft + refreshes reply page state, but does NOT toast.
 const success = blockAfter(submit, '.then(() =>')
 assert.match(success, /this\.clearReplyDraftAfterSuccess\(\)/, 'success must clear the saved draft')
-assert.match(success, /this\.v\.load\(\)/, 'success must refresh the reply list (v.load)')
+// The posted reply lands on the LAST replies page, so success now refreshes via the
+// reloadTopicWithThreadPreload() wrapper (page-1 reload + thread-tail preload) instead of a bare
+// v.load(). The reply-list refresh invariant is preserved: the wrapper itself calls this.v.load().
+assert.match(success, /this\.reloadTopicWithThreadPreload\(\)/, 'success must refresh the reply list via reloadTopicWithThreadPreload')
+const reloadWrapper = methodBody(page, 'reloadTopicWithThreadPreload')
+assert.match(reloadWrapper, /this\.v\.load\(\)/, 'reloadTopicWithThreadPreload must refresh the reply list (v.load)')
 assert.doesNotMatch(
   success,
   /openToast|reply_submitted/,

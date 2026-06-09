@@ -195,12 +195,15 @@ for (const key of requiredResourceKeys) {
     `Missing resource key in en_US string.json: ${key}`
   )
 }
-// Verify AppStrings.ets registers new keys
-const appStringsText = read('shared/src/main/ets/i18n/AppStrings.ets')
+// Verify the multi-account UI actually consumes these resource keys.
+// (i18n migration: AppStrings.ets is now a ResourceManager resolver, not a
+// table of string constants — labels are referenced via $r('app.string.KEY')
+// from the page/coordinator source instead of being declared in AppStrings.ets.)
+const accountCoordinatorText = read('entry/src/main/ets/model/AccountPageCoordinator.ets')
 for (const key of requiredResourceKeys) {
   assert(
-    appStringsText.includes(key),
-    `AppStrings.ets missing resource key: ${key}`
+    accountCoordinatorText.includes(`$r('app.string.${key}')`),
+    `Multi-account UI must reference resource key via $r('app.string.${key}')`
   )
 }
 

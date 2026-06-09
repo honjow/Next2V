@@ -129,7 +129,13 @@ assertIncludes(apiPath, api, 'connectBlockedListStorage()')
 assertIncludes(apiPath, api, 'storage.ownerKey')
 assertIncludes(apiPath, api, 'storage.ignoredTopicIdsJson')
 assertIncludes(apiPath, api, 'storage.blockedMemberIdsJson')
-assertIncludes(apiPath, api, 'ownerKey !== BlockedListSettings.activeOwnerKey()')
+// Owner-binding guard refactored from a negated reject (`ownerKey !== activeOwnerKey()`) to a positive
+// `accountActive` gate. Same invariant: id/member filtering only runs when the holder owner key is
+// non-empty AND equals the active owner key; otherwise both id sets stay empty and all topics pass
+// through, so blocked state never leaks across accounts/domains.
+assertIncludes(apiPath, api, 'const accountActive = ownerKey.length > 0 && ownerKey === BlockedListSettings.activeOwnerKey()')
+assertIncludes(apiPath, api, 'const ignoredTopicIds = accountActive ? ApiService.parseIdSet(storage.ignoredTopicIdsJson) : new Set<number>()')
+assertIncludes(apiPath, api, 'const blockedMemberIds = accountActive ? ApiService.parseIdSet(storage.blockedMemberIdsJson) : new Set<number>()')
 const syncAllIndex = api.indexOf("'/?tab=all'")
 const syncRecentIndex = api.indexOf("'/recent?p=1'")
 if (syncAllIndex < 0) {

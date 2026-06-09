@@ -85,9 +85,13 @@ const markdownSource = readFileSync('shared/src/main/ets/components/MarkdownCont
 assert.match(markdownSource, /function _isValidMentionMatch/)
 assert.match(markdownSource, /_isValidMentionMatch\(raw, m\.index, matchText\)/)
 
-const detailSource = readFileSync('feature/detail/src/main/ets/pages/TopicDetailPage.ets', 'utf8')
+// The mention-extraction logic was extracted out of TopicDetailPage into a dedicated
+// coordinator (ReplyContextCoordinator). Same intent: prefer V2EX /member/ links inside
+// content_rendered, then fall back to boundary-validated @name plain-text matches. The loop
+// cursor variable was renamed m -> match during the move.
+const detailSource = readFileSync('feature/detail/src/main/ets/model/ReplyContextCoordinator.ets', 'utf8')
 assert.match(detailSource, /content_rendered/)
 assert.match(detailSource, /\\\/member\\\//)
-assert.match(detailSource, /isValidMentionMatch\(raw, m\.index, m\[0\]\)/)
+assert.match(detailSource, /isValidMentionMatch\(raw, match\.index, match\[0\]\)/)
 
 console.log('PASS: mention username detection avoids skill/email false positives and uses V2EX member links')

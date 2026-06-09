@@ -38,10 +38,17 @@ mustContain(indexPage, '.animationDuration(0)', 'user-preserved tab animationDur
 
 mustContain(nodeVm, "nodeIndexPhase: NodeIndexLoadPhase = 'idle'", 'explicit node index phase')
 mustContain(nodeVm, 'hasNodeIndexSettled(): boolean', 'settled phase helper')
-mustContain(discoverPage, 'this.vm.hasNodeIndexSettled()', 'Discover empty state is gated by settled phase')
+// The search refactor moved the node-search results surface (and its settle-gated empty state) off the
+// now-pure-browsing Discover page onto the dedicated NodePickerPage. The same "no empty-state flash before
+// the index loads" intent is enforced there by gating the empty state behind load completion: it renders
+// only when NOT loading and there is no error and the result count is 0.
+const nodePickerPage = readFileSync('feature/node/src/main/ets/pages/NodePickerPage.ets', 'utf8')
 const buildBody = methodBody(discoverPage, 'build()')
-const nodeResultsBody = methodBody(discoverPage, '@Builder NodeResultsSection()')
-assert.ok(nodeResultsBody.indexOf('this.vm.hasNodeIndexSettled()') < nodeResultsBody.indexOf('DiscoverEmptyState()'), 'empty state must only render after node index settles')
+const pickerBuildBody = methodBody(nodePickerPage, 'build()')
+const loadingGateIndex = pickerBuildBody.indexOf('this.vm.isLoading && this.vm.nodeDataSource.totalCount() === 0')
+const emptyStateIndex = pickerBuildBody.indexOf('NodePickerEmptyState()')
+assert.ok(loadingGateIndex !== -1, 'node picker must keep a loading-phase branch before the empty state')
+assert.ok(emptyStateIndex !== -1 && loadingGateIndex < emptyStateIndex, 'empty state must only render after node index settles (loading branch precedes it)')
 
 mustContain(repo, 'export class NodeIndexRepository', 'shared node index repository')
 mustContain(repo, 'private static memoryNodes: V2exNode[] | null = null', 'app-level memory cache')
@@ -64,12 +71,17 @@ mustContain(filterBody, 'return nodes', 'empty keyword reuses already-sorted nod
 mustContain(nodeVm, 'publishDefaultNodes?: boolean', 'publish policy option')
 const initialLoadBody = methodBody(discoverPage, 'private requestInitialLoad(reason: string): void')
 assert.equal(initialLoadBody.includes('loadAllNodes'), false, 'Discover default entry must not load the full node index')
-const keywordBody = methodBody(discoverPage, 'private onKeywordChanged(): void')
-mustContain(keywordBody, 'publishDefaultNodes: true', 'node search intent publishes matching node results')
+// Node-search-intent publishing also moved to the picker surface: loadAllNodes() defaults to publishing the
+// default node list (publishDefaultNodes !== false), and setNodeFilter narrows by keyword while keeping that
+// publish policy. The dedicated picker drives both on entry / keyword change.
+mustContain(nodeVm, 'const publishDefaultNodes = loadOptions.publishDefaultNodes !== false', 'loadAllNodes publishes the default node list unless explicitly disabled')
+mustContain(nodeVm, 'setNodeFilter(keyword: string): void', 'node search intent narrows published results by keyword')
+mustContain(nodePickerPage, 'keywordChangeAction: (value: string) => { this.vm.setNodeFilter(value) }', 'node picker wires keyword changes into the publish policy')
 assert.equal(discoverCoordinator.includes('defaultNodePreview'), false, 'Discover should not use capped all-node preview')
 mustContain(buildBody, 'this.NodeNavigationSections()', 'default branch uses node navigation section')
 mustContain(discoverPage, "AppStrings.text($r('app.string.discover_node_navigation')", 'Discover node section title should use i18n resource')
-mustContain(discoverPage, 'this.api.getNodeNavigationSections()', 'Discover loads webpage node navigation')
+// Whitespace-flattened: the formatter wraps the `this.api.getNodeNavigationSections()` chain across lines.
+mustContain(discoverPage.replace(/\s+/g, ' '), 'this.api .getNodeNavigationSections()', 'Discover loads webpage node navigation')
 mustContain(apiService, 'getNodeNavigationSections(): Promise<V2exNodeNavigationSection[]>', 'ApiService exposes node navigation')
 mustContain(apiService, "this.http.getText('/?tab=nodes')", 'ApiService loads V2EX node navigation tab')
 // Whitespace-flattened: the formatter wraps the .filter predicate across lines.

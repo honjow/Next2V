@@ -132,7 +132,7 @@ assert(settings.includes('static count(): number') && settings.includes('Diagnos
 
 const exportFile = read(files.exportFile)
 for (const token of [
-  'DiagnosticsSettings.exportText() || \'暂无诊断日志\'',
+  "DiagnosticsSettings.exportText() || AppStrings.text($r('app.string.no_diagnostics_logs'), 'No diagnostics logs')",
   'next2v-log-export-',
   'YYYYMMDD-HHMMSS',
   '.txt',
@@ -168,10 +168,10 @@ const storageKeys = read(files.storageKeys)
 assert(storageKeys.includes('DIAGNOSTICS_ENABLED') && storageKeys.includes('DIAGNOSTICS_MIN_LEVEL'), 'diagnostics storage keys missing')
 
 const settingsPage = read(files.settingsPage)
-for (const token of ['诊断日志', "pushPathByName('DiagnosticsLog'"]) {
+for (const token of ['app.string.nav_diagnostics', "pushPathByName('DiagnosticsLog'"]) {
   assert(settingsPage.includes(token), `SettingsPage diagnostics UI missing ${token}`)
 }
-const advancedHeaderIndex = settingsPage.indexOf("this.SectionHeader('高级')")
+const advancedHeaderIndex = settingsPage.indexOf("this.SectionHeader($r('app.string.settings_advanced'))")
 const diagnosticsCallIndex = settingsPage.indexOf('this.DiagnosticsSection()', advancedHeaderIndex)
 const apiDomainCallIndex = settingsPage.indexOf('this.ApiDomainAdvancedSection()', diagnosticsCallIndex)
 assert(
@@ -182,23 +182,23 @@ const diagnosticsStart = settingsPage.indexOf('  DiagnosticsSection() {')
 const diagnosticsEnd = settingsPage.indexOf('\n  @Builder', diagnosticsStart + 1)
 assert(diagnosticsStart >= 0 && diagnosticsEnd > diagnosticsStart, 'SettingsPage DiagnosticsSection boundary missing')
 const diagnosticsSection = settingsPage.slice(diagnosticsStart, diagnosticsEnd)
-assert(diagnosticsSection.includes("title: '诊断日志'"), 'DiagnosticsSection must keep a single diagnostics entry row')
+assert(diagnosticsSection.includes("title: $r('app.string.nav_diagnostics')"), 'DiagnosticsSection must keep a single diagnostics entry row')
 assert(diagnosticsSection.includes("this.stack.pushPathByName('DiagnosticsLog', null)"), 'DiagnosticsSection row must open diagnostics log page')
 for (const token of ['分享诊断日志', '复制诊断日志', '清空诊断日志', 'systemShare.SharedData', 'systemShare.ShareController', 'pasteboard.createData', 'DiagnosticsSettings.exportText()', 'DiagnosticsSettings.clearLogs()', 'saveDiagnostics']) {
   assert(!diagnosticsSection.includes(token), `SettingsPage inline DiagnosticsSection must not contain ${token}`)
 }
-assert(!diagnosticsSection.includes('API 域名'), 'DiagnosticsSection must not contain API 域名 row')
+assert(!diagnosticsSection.includes('app.string.api_domain'), 'DiagnosticsSection must not contain API domain row')
 const apiDomainStart = settingsPage.indexOf('  ApiDomainAdvancedSection() {')
 const apiDomainEnd = settingsPage.indexOf('\n  @Builder', apiDomainStart + 1)
 assert(apiDomainStart >= 0 && apiDomainEnd > apiDomainStart, 'SettingsPage ApiDomainAdvancedSection boundary missing')
 const apiDomainSection = settingsPage.slice(apiDomainStart, apiDomainEnd)
-assert(apiDomainSection.includes('API 域名'), 'ApiDomainAdvancedSection must contain API 域名 row')
-for (const token of ['诊断日志', '分享诊断日志', '复制诊断日志', '清空诊断日志']) {
+assert(apiDomainSection.includes('app.string.api_domain'), 'ApiDomainAdvancedSection must contain API domain row')
+for (const token of ['app.string.nav_diagnostics', '分享诊断日志', '复制诊断日志', '清空诊断日志']) {
   assert(!apiDomainSection.includes(token), `ApiDomainAdvancedSection must not contain diagnostics token ${token}`)
 }
 assert(!settingsPage.includes('this.AdvancedSection()'), 'SettingsPage must not use the old combined AdvancedSection entry')
 const diagnosticsPage = read(files.diagnosticsPage)
-for (const token of ['诊断日志', '本次启动最近 ${this.logCount} 条', '日志文件', '清空本次启动记录', 'SettingsToggleRow', 'DiagnosticsSettings.count()', 'DiagnosticsSettings.exportText()', 'DiagnosticsSettings.clearLogs()', 'DiagnosticsLogFileSink.listRetainedLogFiles()', 'DiagnosticsLogFileSink.readLogFileText(file.fileName)', 'saveDiagnostics']) {
+for (const token of ['app.string.nav_diagnostics', 'app.string.diagnostics_current_launch_recent_count', 'app.string.log_file', 'app.string.clear_boot_records', 'SettingsToggleRow', 'DiagnosticsSettings.count()', 'DiagnosticsSettings.exportText()', 'DiagnosticsSettings.clearLogs()', 'DiagnosticsLogFileSink.listRetainedLogFiles()', 'DiagnosticsLogFileSink.readLogFileText(file.fileName)', 'saveDiagnostics']) {
   assert(diagnosticsPage.includes(token), `DiagnosticsLogPage missing ${token}`)
 }
 assert(!diagnosticsPage.includes('复制日志'), 'DiagnosticsLogPage must not expose a visible copy-log row')
@@ -240,7 +240,7 @@ assert(!/[\u4e00-\u9fff]/.test(sharedDataBlock), 'diagnostics share metadata mus
 assert(!shareMethod.includes('content:'), 'shareDiagnosticsLogFile must not pass diagnostics text as primary SharedData.content')
 assert(!shareMethod.includes('DiagnosticsSettings.exportText()'), 'shareDiagnosticsLogFile must not directly pass exported text to primary share data')
 assert(shareMethod.includes('copyDiagnosticsTextWithToast'), 'shareDiagnosticsLogFile may fall back to redacted copy path if file share fails')
-assert(shareMethod.includes('分享文件不可用，已复制，可手动粘贴'), 'shareDiagnosticsLogFile fallback wording must not present text-share as success')
+assert(shareMethod.includes('app.string.share_file_unavailable_copied'), 'shareDiagnosticsLogFile fallback wording must not present text-share as success')
 for (const event of ['diagnostics_share_show_start', 'diagnostics_share_show_success', 'diagnostics_share_show_error']) {
   assert(shareMethod.includes(event), `shareDiagnosticsLogFile must log ${event}`)
 }
@@ -251,7 +251,7 @@ for (const forbidden of ['DiagnosticsStore.exportText', 'DiagnosticLogger.export
 const settingsIndex = read(files.settingsIndex)
 assert(settingsIndex.includes("export { DiagnosticsLogPage } from './pages/DiagnosticsLogPage'"), 'settings feature index must export diagnostics page')
 const routeCoordinator = read(files.routeCoordinator)
-for (const token of ["'diagnosticsLog'", "'DiagnosticsLog': 'diagnosticsLog'", "'diagnosticsLog': '诊断日志'", "'diagnosticsLog': true"]) {
+for (const token of ["'diagnosticsLog'", "'DiagnosticsLog': 'diagnosticsLog'", "'diagnosticsLog': $r('app.string.nav_diagnostics')", "'diagnosticsLog': true"]) {
   assert(routeCoordinator.includes(token), `IndexRouteCoordinator diagnostics route missing ${token}`)
 }
 const entryIndex = read(files.entryIndex)
@@ -262,17 +262,19 @@ for (const token of ['DiagnosticLogger.initializePersistentSink(this.context)', 
 }
 
 const autoDaily = read(files.autoDaily)
+// The redeem moved off HTTP onto the hidden ArkWeb runner: the old _attempt_saved/_redeem_start/_redeem_success
+// events were replaced by _redeem_request (HTTP→web handoff) + _web_result/_web_persist_error (runner callback).
 for (const event of [
   'auto_daily_checkin_skip_disabled',
   'auto_daily_checkin_skip_no_cookie',
   'auto_daily_checkin_skip_in_flight',
   'auto_daily_checkin_skip_already_attempted',
   'auto_daily_checkin_attempt_start',
-  'auto_daily_checkin_attempt_saved',
   'auto_daily_checkin_mission_loaded',
   'auto_daily_checkin_not_redeemable',
-  'auto_daily_checkin_redeem_start',
-  'auto_daily_checkin_redeem_success',
+  'auto_daily_checkin_redeem_request',
+  'auto_daily_checkin_web_result',
+  'auto_daily_checkin_web_persist_error',
   'auto_daily_checkin_error',
 ]) assert(autoDaily.includes(event), `AutoDailyCheckinService missing ${event}`)
 const autoDailyLoggerLines = autoDaily.split('\n').filter((line) => line.includes('DiagnosticLogger.')).join('\n')
@@ -300,12 +302,21 @@ for (const event of ['notification_cache_coordinator_load', 'notification_cache_
   assert(notificationCache.includes(event), `NotificationCacheCoordinator missing ${event}`)
 }
 const accountPage = read(files.accountPage)
+// The cache-save events moved out of the page: balance/daily-meta caching is now the single-writer
+// AccountMetaPublisher → AccountMetaSettings.saveCache() (logs account_meta_store_save), asserted below.
+// The page keeps the cache-load/fetch lifecycle + a store-clear event.
 for (const event of [
   'account_auth_snapshot_loaded', 'account_cookie_restore_success', 'account_cookie_restore_error',
   'account_session_validate_start', 'account_session_validate_success', 'account_session_validate_error', 'account_session_two_factor_required', 'account_session_expired',
-  'account_meta_cache_load_hit', 'account_meta_cache_load_miss', 'account_meta_cache_load_error', 'account_meta_fetch_start', 'account_meta_fetch_success', 'account_meta_fetch_error', 'account_meta_cache_save_success', 'account_meta_cache_save_error',
-  'account_daily_redeem_skip', 'account_daily_redeem_start', 'account_daily_redeem_success', 'account_daily_redeem_error', 'account_logout_all_start', 'account_logout_all_complete'
+  'account_meta_cache_load_hit', 'account_meta_cache_load_miss', 'account_meta_cache_load_error', 'account_meta_fetch_start', 'account_meta_fetch_success', 'account_meta_fetch_error', 'account_meta_fetch_skip', 'account_meta_store_clear',
+  // Daily redeem moved onto the hidden web runner: _success/_error collapsed into a single _result event
+  // carrying the status. Logout moved out of AccountPage entirely into per-account AccountDetailPage
+  // (removeActiveAccount) with the multi-account management feature, so logout_all_* no longer live here.
+  'account_daily_redeem_skip', 'account_daily_redeem_start', 'account_daily_redeem_result'
 ]) assert(accountPage.includes(event), `AccountPage missing ${event}`)
+// Cache save is instrumented at its new single-writer home (AccountMetaSettings.saveCache).
+const accountMetaSettings = read('shared/src/main/ets/settings/AccountMetaSettings.ets')
+assert(accountMetaSettings.includes('account_meta_store_save'), 'AccountMetaSettings.saveCache must log the cache-save event')
 
 for (const [name, rel] of Object.entries({ autoDaily: files.autoDaily, notificationPage: files.notificationPage, notificationVm: files.notificationVm, notificationCache: files.notificationCache, accountPage: files.accountPage })) {
   const src = read(rel)

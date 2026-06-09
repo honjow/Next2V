@@ -27,7 +27,7 @@ const ctrlStart = page.indexOf('submitLoadingDialogController: CustomDialogContr
 assert.ok(ctrlStart >= 0, 'must declare submitLoadingDialogController as a CustomDialogController')
 const ctrl = page.slice(ctrlStart, ctrlStart + 500)
 assert.match(ctrl, /new CustomDialogController\(\{/, 'submitLoadingDialogController must be a new CustomDialogController')
-assert.match(ctrl, /builder:\s*LoadingDialog\(\{[\s\S]*?content:\s*AppStrings\.R_EDITOR_SUBMITTING/, 'loading dialog content must reuse R_EDITOR_SUBMITTING')
+assert.match(ctrl, /builder:\s*LoadingDialog\(\{[\s\S]*?content:\s*\$r\('app\.string\.editor_submitting'\)/, 'loading dialog content must reuse the editor_submitting string resource')
 assert.match(ctrl, /autoCancel:\s*false/, 'autoCancel must be false so the overlay blocks touches (prevents mis-tap)')
 
 // ── submit(): clear focus + open BEFORE the request, close in .finally() ──────

@@ -20,6 +20,21 @@ function assertIncludes(text, needle, message) {
   assert.ok(text.includes(needle), message || `missing ${needle}`)
 }
 
+// Mirror BackupSecretDenylist.isExcluded so we can assert avatarAppearance survives the whole-store
+// dump. Markers are parsed straight from the denylist source to stay faithful if the list changes.
+const denylistSource = read('shared/src/main/ets/backup/BackupSecretDenylist.ets')
+const sensitiveSubstrings = [...denylistSource.matchAll(/'([a-z]+)',/g)]
+  .map((m) => m[1])
+  .filter((s) => ['password', 'secret', 'token', 'cookie', 'proxy', 'credential'].includes(s))
+const transientKeys = [...denylistSource.matchAll(/'(autoDailyCheckin[A-Za-z]+)'/g)].map((m) => m[1])
+function BackupSecretDenylistExcludes(key) {
+  const lower = key.toLowerCase()
+  if (sensitiveSubstrings.some((frag) => lower.includes(frag))) {
+    return true
+  }
+  return transientKeys.includes(key)
+}
+
 function extractMethod(text, name) {
   const start = text.indexOf(`static ${name}(`)
   assert.notEqual(start, -1, `missing static ${name}`)
@@ -73,15 +88,33 @@ assertIncludes(settingsSaveCoordinator, 'static saveAvatarAppearance', 'save coo
 assertIncludes(backupTypes, 'appearance?: BackupAppearancePreferences', 'backup preferences must include comparable appearance preferences')
 assertIncludes(backupTypes, 'export interface BackupAppearancePreferences', 'backup types must define appearance preferences')
 assertIncludes(backupTypes, 'avatarAppearance: string', 'backup appearance section must carry avatarAppearance')
-assertIncludes(backupPreferences, 'AvatarAppearanceSettings.load(context)', 'backup export must include avatar appearance setting')
-assertIncludes(backupPreferences, 'appearance: { avatarAppearance:', 'backup export must write appearance section')
-assertIncludes(backupPreferences, 'AvatarAppearanceSettings.save(context, section.appearance.avatarAppearance ||', 'backup restore must restore avatar appearance')
+// Backup export was refactored from per-setting reads to a whole-store dump of next2v_settings
+// (dumpSettingsStore, minus the secret/transient denylist). avatarAppearance lives in that store, so
+// it is captured automatically; the per-setting AvatarAppearanceSettings.load() export call is retired.
+// The contract intent (avatar appearance IS backed up) now holds iff the dump path exists AND
+// avatarAppearance is not denylisted.
+assertIncludes(backupPreferences, 'dumpSettingsStore', 'backup export must dump the unified settings store (captures avatarAppearance automatically)')
+assert.ok(!BackupSecretDenylistExcludes('avatarAppearance'), 'avatarAppearance must NOT be denylisted, so the whole-store dump backs it up')
+// New backups restore via the whole-store write-back; old (legacy typed) backups restore via the
+// per-setting save path, which must still target avatarAppearance.
+assert.match(backupPreferences, /AvatarAppearanceSettings\.save\(\s*context,/, 'backup restore (legacy typed path) must restore avatar appearance')
+assertIncludes(backupPreferences, 'section.appearance.avatarAppearance ||', 'legacy restore must read avatarAppearance from the appearance section')
 
-for (const constant of ['R_AVATAR_APPEARANCE', 'R_AVATAR_APPEARANCE_SOFT', 'R_AVATAR_APPEARANCE_CIRCLE']) {
-  assertIncludes(appStrings, constant, `AppStrings missing ${constant}`)
+// i18n migration: the AppStrings.R_AVATAR_APPEARANCE* constants were retired; AppStrings.ets is now a
+// ResourceManager resolver. The avatar-appearance labels are consumed directly via $r('app.string.KEY')
+// from the settings page + coordinator (also pinned individually above).
+for (const ref of [
+  "$r('app.string.avatar_appearance')",
+  "$r('app.string.avatar_appearance_soft')",
+  "$r('app.string.avatar_appearance_circle')",
+]) {
+  assert.ok(
+    settingsPage.includes(ref) || settingsCoordinator.includes(ref),
+    `avatar-appearance label must be referenced via ${ref}`,
+  )
 }
 for (const [locale, title, soft, circle] of [
-  ['en_US', 'Avatar Appearance', 'Soft', 'Circle'],
+  ['en_US', 'Avatar appearance', 'Soft', 'Circle'],
   ['zh_CN', '头像外观', '圆角', '圆形'],
   ['zh_HK', '頭像外觀', '圓角', '圓形'],
   ['zh_TW', '頭像外觀', '圓角', '圓形'],

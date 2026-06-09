@@ -32,8 +32,8 @@ mustContain(indexPage, 'DiscoverPage({', 'DiscoverPage construction')
 mustContain(indexPage, 'currentTab: this.ct', 'Index must pass current tab to DiscoverPage')
 assert.equal(indexPage.includes('.animationDuration(0)'), true, 'Index must preserve user-restored HDS tab animationDuration(0)')
 
-mustContain(discoverPage, 'currentTab: number = 0', 'DiscoverPage currentTab prop')
-mustContain(discoverPage, "@Watch('onCurrentTabChanged')", 'DiscoverPage currentTab watcher')
+mustContain(discoverPage, '@Param currentTab: number = 0', 'DiscoverPage currentTab prop')
+mustContain(discoverPage, "@Monitor('currentTab')", 'DiscoverPage currentTab watcher')
 mustContain(discoverPage, 'private hasStartedInitialLoad: boolean = false', 'DiscoverPage initial load once guard')
 mustContain(discoverPage, 'private requestInitialLoad(reason: string): void', 'DiscoverPage guarded initial load helper')
 mustContain(discoverPage, 'this.requestInitialLoad(\'aboutToAppear\')', 'aboutToAppear delegates to guarded initial load')
@@ -67,8 +67,14 @@ assert.ok(startedIndex < loadLocalIndex, 'started guard should be set before loa
 assert.ok(startedIndex < loadNavigationIndex, 'started guard should be set before loadNodeNavigationSections')
 assert.ok(startedIndex < loadTopicIndex, 'started guard should be set before loadTopicSurface')
 
-const keywordBody = methodBody(discoverPage, 'private onKeywordChanged(): void')
-assert.ok(keywordBody.includes('this.vm.loadAllNodes({ publishDefaultNodes: true })'), 'node index should load only after node search intent')
+// The node-search keyword handler was moved off the Discover surface entirely by the search refactor
+// (Discover is now pure browsing; node search lives in NodePickerPage, which owns the loadAllNodes-on-entry
+// node index). DiscoverPage no longer has an onKeywordChanged handler, so the "node index loads only after
+// node-search intent" guard now applies to the picker. The invariant that *Discover entry* never loads the
+// full node index is still enforced here by the aboutToAppear + requestInitialLoad assertions above.
+assert.equal(discoverPage.includes('private onKeywordChanged('), false, 'Discover must not carry node-search keyword handling after the search refactor')
+const nodePickerPage = readFileSync('feature/node/src/main/ets/pages/NodePickerPage.ets', 'utf8')
+assert.ok(nodePickerPage.includes('this.vm.loadAllNodes()'), 'node index loads on the dedicated node picker (node-search surface), not on Discover entry')
 
 const refreshBody = methodBody(discoverPage, 'private async refreshDiscover(): Promise<void>')
 assert.equal(refreshBody.includes('loadAllNodes'), false, 'pull refresh must not force-refresh the full node index')

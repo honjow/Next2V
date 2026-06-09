@@ -190,13 +190,19 @@ assert.doesNotMatch(markdownTableStruct[0], /MarkdownContent\.buildTextToken\(/,
 assert.doesNotMatch(markdownTableStruct[0], /cellWidth\(\): number \{\s*return 116;\s*\}/, 'MarkdownTable must not use the old fixed 116vp cell width strategy')
 assert.doesNotMatch(markdownTableStruct[0], /columnCount\(\)\s*\*\s*this\.cellWidth\(\)/, 'MarkdownTable width must not be columnCount()*cellWidth() fixed strategy')
 assert.doesNotMatch(markdownTableStruct[0], /@State private columnWidths|measuredColumnWidth|updateColumnWidth|onSizeChange/, 'MarkdownTable ordinary layout must not use per-cell runtime natural measurement column widths')
-assert.match(markdownTableStruct[0], /@State private tableAvailableWidth: number = 0;/, 'MarkdownTable records the measured table container available width')
+// State Management V2 migration: @State became @Local. The measured-width invariant is
+// unchanged — only the decorator name moved off the retired V1 layer.
+assert.match(markdownTableStruct[0], /@Local private tableAvailableWidth: number = 0;/, 'MarkdownTable records the measured table container available width')
 assert.match(markdownTableStruct[0], /onAreaChange\(\(_oldValue: Area, newValue: Area\) => \{\s*this\.updateTableAvailableWidth\(newValue\);\s*\}\)/, 'MarkdownTable measures availableWidth dynamically from layout instead of a fixed device width')
 const tableCellBuilder = markdownTableStruct[0].match(/@Builder TableCell\([\s\S]*?\n  }\n\n  build\(\)/)?.[0] || ''
 assert.ok(tableCellBuilder, 'MarkdownTable.TableCell builder is present')
 assert.doesNotMatch(tableCellBuilder, /\.maxLines\(1\)[\s\S]{0,120}\.textOverflow\(\{ overflow: TextOverflow\.Ellipsis \}\)/, 'MarkdownTable.TableCell must not force single-line ellipsis')
 assert.doesNotMatch(tableCellBuilder, /TextOverflow\.Ellipsis/, 'MarkdownTable.TableCell must not ellipsize ordinary table text')
-assert.match(tableCellBuilder, /\.wordBreak\(WordBreak\.BREAK_WORD\)/, 'MarkdownTable.TableCell uses smart word-break wrapping: preserve words at whitespace when possible, still break long unspaced strings')
+// Cells now render through the MarkdownInlineText component, so word-break is passed as a
+// component parameter instead of a chained .wordBreak() on a bare Text(). Same intent:
+// smart word-break wrapping that preserves words at whitespace but still breaks long
+// unspaced strings.
+assert.match(tableCellBuilder, /wordBreak: WordBreak\.BREAK_WORD/, 'MarkdownTable.TableCell uses smart word-break wrapping: preserve words at whitespace when possible, still break long unspaced strings')
 assert.match(source, /const TABLE_READABLE_MIN_CELL_WIDTH = \d+;/, 'MarkdownTable declares a readable lower bound before horizontal scrolling')
 
 assert.doesNotMatch(source, /const TABLE_MAX_CELL_WIDTH = 320;/, 'MarkdownTable must not keep the old fixed 320vp max as the allocation lock')
@@ -209,7 +215,10 @@ assert.match(markdownTableStruct[0], /compressionCap = Math\.floor\(availableWid
 assert.match(markdownTableStruct[0], /columnWidth\(index: number\): number[\s\S]*return this\.allocatedColumnWidths\(\)\[index\]/, 'MarkdownTable columnWidth uses responsive allocated widths')
 assert.match(markdownTableStruct[0], /tableMinWidth\(\): number[\s\S]*const allocated = this\.allocatedColumnWidths\(\)[\s\S]*width \+= allocated\[index\]/, 'MarkdownTable table width sums responsive allocations')
 assert.match(markdownTableStruct[0], /private tableContentWidth\(\): number[\s\S]*return this\.tableMinWidth\(\);/, 'MarkdownTable owns an explicit content width separate from Scroll viewport width')
-assert.match(markdownTableStruct[0], /Text\(\)[\s\S]*\.width\(this\.columnWidth\(columnIndex\)\)[\s\S]*\.constraintSize\(\{ minWidth: this\.columnWidth\(columnIndex\), maxWidth: this\.columnWidth\(columnIndex\) \}\)/, 'MarkdownTable.TableCell fixes each Text to the allocated column width so Row stretch cannot donate viewport slack')
+// Cells migrated from a bare Text() to the MarkdownInlineText component (to render inline
+// markdown tokens), but each cell element is still pinned to the allocated column width via
+// min==max constraintSize so Row stretch cannot donate viewport slack.
+assert.match(markdownTableStruct[0], /MarkdownInlineText\(\{[\s\S]*?\}\)\s*\.width\(this\.columnWidth\(columnIndex\)\)\s*\.constraintSize\(\{ minWidth: this\.columnWidth\(columnIndex\), maxWidth: this\.columnWidth\(columnIndex\) \}\)/, 'MarkdownTable.TableCell fixes each cell element to the allocated column width so Row stretch cannot donate viewport slack')
 assert.match(markdownTableStruct[0], /Flex\(\{ direction: FlexDirection\.Row, alignItems: ItemAlign\.Stretch \}\)[\s\S]*\.width\(this\.tableContentWidth\(\)\)/, 'MarkdownTable rows use explicit content width with stretch alignment so cell containers span the tallest cell')
 assert.match(markdownTableStruct[0], /Column\(\)[\s\S]*\.width\(this\.tableContentWidth\(\)\)[\s\S]*\.constraintSize\(\{ minWidth: this\.tableContentWidth\(\), maxWidth: this\.tableContentWidth\(\) \}\)/, 'MarkdownTable content column uses explicit min/max width to avoid ArkUI viewport stretch')
 assert.doesNotMatch(markdownTableStruct[0], /\.constraintSize\(\{ minWidth: this\.tableMinWidth\(\) \}\)/, 'MarkdownTable must not rely on minWidth-only table layout constraints')

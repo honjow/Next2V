@@ -94,14 +94,21 @@ for (const locale of locales) {
   }
 }
 
-const appStrings = read('shared/src/main/ets/i18n/AppStrings.ets')
-for (const key of ['R_ACCOUNT_LIST_HEADER', 'R_ACCOUNT_ACTIVE_LABEL']) {
-  assert(appStrings.includes(key), `AppStrings.ets missing key: ${key}`)
-}
-
+// The ResourceManager migration retired the AppStrings.R_* string constants; the account
+// list-header/active-label strings are now $r('app.string.account_*') resources surfaced via
+// AccountPageCoordinator getters. Same intent: the multi-account section uses localized
+// resources (resource-key existence across locales is asserted above).
 const coordinator = read('entry/src/main/ets/model/AccountPageCoordinator.ets')
-for (const token of ['ACCOUNT_LIST_HEADER', 'ACCOUNT_ACTIVE_LABEL']) {
+const coordinatorResourceWirings = [
+  ['ACCOUNT_LIST_HEADER', "$r('app.string.account_list_header')"],
+  ['ACCOUNT_ACTIVE_LABEL', "$r('app.string.account_active_label')"],
+]
+for (const [token, resourceRef] of coordinatorResourceWirings) {
   assert(coordinator.includes(token), `AccountPageCoordinator.ets missing token: ${token}`)
+  assert(
+    coordinator.includes(resourceRef),
+    `AccountPageCoordinator.${token} must route through localized resource ${resourceRef}`
+  )
 }
 
 const sharedIndex = read('shared/src/main/ets/Index.ets')

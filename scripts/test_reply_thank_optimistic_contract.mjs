@@ -30,13 +30,17 @@ function methodBody(source, name) {
 }
 
 const executeBody = methodBody(page, 'executeReplyThank')
-const optimisticIndex = executeBody.indexOf('this.v.optimisticallyMarkReplyThanked(reply.id)')
+// Formatter wraps the reply.id argument onto a continuation line; match the call, not a fixed one-liner.
+const optimisticIndex = executeBody.indexOf('this.v.optimisticallyMarkReplyThanked(')
 const localMarkIndex = executeBody.indexOf('this.markReplyThanked(reply.id)')
 const networkIndex = executeBody.indexOf('TopicDetailActionCoordinator')
 assert.ok(optimisticIndex >= 0, 'reply thank must optimistically update viewmodel state')
 assert.ok(localMarkIndex > optimisticIndex, 'local thanked id must be marked after viewmodel optimistic apply')
 assert.ok(networkIndex > localMarkIndex, 'network action must start after optimistic apply and local mark')
-assert.match(executeBody, /\.then\(\(\)\s*=>\s*\{\s*\}\)/, 'reply thank success path must be silent')
+// Success path stays silent (no success toast / no re-render of the list): the exact then body below
+// contains ONLY persistReplyThankOverlay (which persists the thanked overlay locally so the optimistic
+// state survives a cache reload) — nothing else, so there is no success toast.
+assert.match(executeBody, /\.then\(\(\)\s*=>\s*\{\s*this\.persistReplyThankOverlay\(reply\.id\)\s*\}\)/, 'reply thank success path must only persist the overlay (stay silent, no success toast)')
 assert.match(executeBody, /\.catch\(\(error: Error\)\s*=>\s*\{[\s\S]*this\.v\.rollbackReplyThank\(replyThankSnapshot\)[\s\S]*rollbackReplyThankedIds\(\s*thankedIdsSnapshot,\s*this\.thankedReplyIdsJson,\s*\)[\s\S]*translateApiError\(error\)/)
 assert.match(executeBody, /\.finally\(\(\)\s*=>\s*\{[\s\S]*this\.isReplyThankLoading = false[\s\S]*this\.clearReplyThankLock\(\)/)
 assert.doesNotMatch(executeBody, /\.then\(\(\)\s*=>\s*\{[\s\S]*markReplyThanked\(reply\.id\)/)

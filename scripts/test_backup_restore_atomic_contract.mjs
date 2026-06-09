@@ -26,7 +26,9 @@ assert.ok(adapter.includes('await CollectionSettings.restoreBackup(context, sect
 assert.ok(!adapter.includes("'@kit.ArkData'") && !adapter.includes('@ohos.data.relationalStore'), 'BackupLocalDataAdapter must not import relationalStore directly')
 assert.ok(!adapter.includes('LocalDataStore'), 'BackupLocalDataAdapter must not open LocalDataStore directly')
 
-assert.ok(collections.includes('static async restoreBackup(context: common.UIAbilityContext, section: BackupCollectionsSection): Promise<void>'), 'CollectionSettings must own collection backup restore')
+// Signature reformatted to multiline by the formatter; intent unchanged — CollectionSettings owns
+// restoreBackup(context, BackupCollectionsSection): Promise<void>.
+assert.ok(/static async restoreBackup\(\s*context:\s*common\.UIAbilityContext,\s*section:\s*BackupCollectionsSection,?\s*\):\s*Promise<void>/s.test(collections), 'CollectionSettings must own collection backup restore')
 assert.ok(collections.includes('SQL_CLEAR_SAVED_TOPICS') && collections.includes('SQL_CLEAR_TOPIC_READ_STATES'), 'CollectionSettings restore must clear all collection tables through approved boundary')
 assert.ok(collections.includes('LocalDataPublisher.touchLocalData()'), 'CollectionSettings restore must publish local data mutation')
 

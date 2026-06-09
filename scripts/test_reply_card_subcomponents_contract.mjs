@@ -140,7 +140,11 @@ assert.match(
 )
 assert.match(replyCard, /isNarrow:\s*this\.isHeaderNarrow\(\)/, 'ReplyCard must pass isNarrow into the header')
 assert.match(header, /@Param isNarrow: boolean/, 'header must accept isNarrow')
-assert.match(header, /if \(this\.isCompact && this\.isNarrow\)/, 'narrow compact header must stack')
+// The compact header stacks the timestamp under the username by wrapping the meta row (FlexWrap.Wrap
+// in CompactMeta) instead of a fixed isNarrow width-threshold branch; narrowness now only collapses
+// the action cluster (collapsed: this.isNarrow below).
+assert.match(header, /CompactMeta\(\)\s*\{\s*Flex\(\{[\s\S]*wrap: FlexWrap\.Wrap[\s\S]*TimeAgo\(\{ timestamp: this\.reply\.created \}\)/, 'compact header must stack the timestamp via a wrapping meta row')
+assert.match(header, /if \(this\.isCompact\) \{\s*Column\(\)\s*\{\s*this\.CompactMeta\(\)/, 'compact header renders the wrapping CompactMeta')
 assert.match(header, /collapsed:\s*this\.isNarrow/, 'header must collapse actions when narrow')
 assert.match(actions, /@Param collapsed: boolean/, 'actions must accept collapsed')
 assert.match(actions, /private menuHasItems\(\): boolean/, 'actions must define menuHasItems()')

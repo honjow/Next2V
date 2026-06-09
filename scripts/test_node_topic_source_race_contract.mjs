@@ -26,7 +26,7 @@ mustContain(vmSource, /loadMoreNodeTopics[\s\S]*this\.isLoading[\s\S]*!this\.nod
 
 mustContain(pageSource, /nodeTopicsRequestId/, 'NodeTopicPage must create a logical request generation id')
 mustContain(pageSource, /beginNodeTopicsPageOneLoad\(nodeName, 'api_v2'/, 'token path must start an API-v2-owned page-1 request')
-mustContain(pageSource, /loadNodeDetailV2\(nodeName, this\.token\)[\s\S]*loadNodeTopicsV2\(nodeName, this\.token, \{ requestId: requestId, source: 'api_v2' \}\)/, 'API v2 detail and topics calls must be explicit and source-tagged')
+mustContain(pageSource, /loadNodeDetailV2\(nodeName, this\.token\)[\s\S]*loadNodeTopicsV2\(nodeName, this\.token, \{\s*requestId: requestId,\s*source: 'api_v2',?\s*\}\)/, 'API v2 detail and topics calls must be explicit and source-tagged')
 mustContain(pageSource, /if \(!topicsLoaded\)[\s\S]*loadNodeTopicsWebFallback/, 'web fallback must be driven by topic-source failure, not by a broad combined try around detail+topics')
 mustContain(pageSource, /loadNodeTopicsWebFallback[\s\S]*switchNodeTopicsPageOneSource\(nodeName, 'web', requestId\)[\s\S]*loadNodeTopics\(nodeName, \{ requestId: requestId, source: 'web', fallback: true \}\)/, 'fallback must switch ownership before publishing web page-1')
 mustContain(pageSource, /loadMore\(\): void \{[\s\S]*this\.vm\.isLoading[\s\S]*!this\.vm\.hasNodeTopicsPageOneSettled\(\)/, 'NodeTopicPage loadMore must be gated while page-1 is loading/unsettled')

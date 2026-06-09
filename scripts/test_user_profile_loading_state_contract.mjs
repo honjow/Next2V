@@ -46,7 +46,7 @@ const topicHidden = indexOfRequired(activityBlock, 'if (this.vm.topicsHidden)', 
 const topicLoading = indexOfRequired(activityBlock, '} else if (this.vm.recentTopicCount === 0 && this.vm.isLoading) {', 'topic activity branch')
 const topicLoadingComponent = indexOfRequired(activityBlock, 'UserProfileLoadingState()', 'topic activity branch')
 const topicEmptyCheck = indexOfRequired(activityBlock, '} else if (this.vm.recentTopicCount === 0) {', 'topic activity branch')
-const topicEmptyMessage = indexOfRequired(activityBlock, "UserProfileEmptyCard({ message: '暂无主题' })", 'topic activity branch')
+const topicEmptyMessage = indexOfRequired(activityBlock, "UserProfileEmptyCard({ message: AppStrings.text($r('app.string.user_profile_no_topics'), 'No topics') })", 'topic activity branch')
 
 assert(
   topicHidden < topicLoading &&
@@ -59,7 +59,7 @@ assert(
 const replyBranchStart = indexOfRequired(activityBlock, '} else {\n            if (this.vm.recentReplyCount === 0 && this.vm.isLoading) {', 'reply activity branch')
 const replyLoading = indexOfRequired(activityBlock.slice(replyBranchStart), 'UserProfileLoadingState()', 'reply activity branch')
 const replyEmptyCheck = indexOfRequired(activityBlock.slice(replyBranchStart), '} else if (this.vm.recentReplyCount === 0) {', 'reply activity branch')
-const replyEmptyMessage = indexOfRequired(activityBlock.slice(replyBranchStart), "UserProfileEmptyCard({ message: '暂无回复' })", 'reply activity branch')
+const replyEmptyMessage = indexOfRequired(activityBlock.slice(replyBranchStart), "UserProfileEmptyCard({ message: AppStrings.text($r('app.string.user_profile_no_replies'), 'No replies') })", 'reply activity branch')
 
 assert(
   replyLoading < replyEmptyCheck && replyEmptyCheck < replyEmptyMessage,
@@ -68,7 +68,7 @@ assert(
 
 assert.match(
   activityBlock,
-  /if \(this\.vm\.topicsHidden\)[\s\S]*?UserProfileEmptyCard\(\{ message: '主题列表已隐藏' \}\)[\s\S]*?\} else if \(this\.vm\.recentTopicCount === 0 && this\.vm\.isLoading\) \{/,
+  /if \(this\.vm\.topicsHidden\)[\s\S]*?UserProfileEmptyCard\(\{ message: AppStrings\.text\(\$r\('app\.string\.user_topics_hidden'\), 'Topic list is hidden'\) \}\)[\s\S]*?\} else if \(this\.vm\.recentTopicCount === 0 && this\.vm\.isLoading\) \{/,
   'hidden topics state must stay ahead of the topic loading branch'
 )
 
