@@ -631,7 +631,7 @@ export struct TopicDetailPage {
             this.authState.configured ? $r('sys.symbol.pencil_line_1') : $r('sys.symbol.lock'),
           )
             .fontSize(28)
-            .fontColor([$r('sys.color.ohos_id_color_text_primary')])
+            .fontColor([ThemeConstants.BRAND_PRIMARY])
             .fontWeight(FontWeight.Bold)
         }
       }
