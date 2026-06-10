@@ -53,4 +53,45 @@ assert.ok(ids.length > 10, `fixture should extract more than 10 main-list topic 
 assert.deepEqual(ids.slice(0, 3), [1001, 1002, 1003])
 assert.ok(!ids.includes(9001) && !ids.includes(9002), 'sidebar /t/ links must not pollute topic-link main-list extraction')
 
+// ── Regression: an empty hot tab must not ghost the right-sidebar widget ──
+// When the daily hot list is still empty, /?tab=hot has no main-row topic-link
+// ids but the right sidebar ("今日热议主题") still links to /t/NNN. parseTopicList's
+// placeholder fallback must extract ONLY topic-link ids, never the broad /t/ scoop.
+assert.match(
+  parserSource,
+  /extractMainFeedTopicLinkIds\(clean\)\.map\(/,
+  'parseTopicList fallback must use extractMainFeedTopicLinkIds (topic-link only), not extractTopicIds',
+)
+const mainFeedFn = parserSource.match(/private static extractMainFeedTopicLinkIds\(clean: string\): number\[\] \{([\s\S]*?)\n  \}/)
+assert.ok(mainFeedFn, 'extractMainFeedTopicLinkIds must exist')
+assert.ok(!mainFeedFn[1].includes('/t/'), 'extractMainFeedTopicLinkIds must NOT fall back to bare /t/ links')
+
+function extractMainFeedTopicLinkIdsReplica(html) {
+  const ids = new Set()
+  const re = /id=["']topic-link-(\d+)["']/g
+  let m
+  while ((m = re.exec(html)) !== null) ids.add(Number.parseInt(m[1], 10))
+  return Array.from(ids)
+}
+
+const emptyHotHtml = [
+  '<div id="Main"><div class="box"><div class="cell">',
+  '<span class="topic_filter">还没有热门主题</span></div></div></div>',
+  '<div id="Rightbar"><div class="box">',
+  '<div class="cell"><span class="item_hot_topic_title"><a href="/t/9001">sidebar A</a></span></div>',
+  '<div class="cell"><span class="item_hot_topic_title"><a href="/t/9002">sidebar B</a></span></div>',
+  '</div></div>',
+].join('')
+assert.deepEqual(
+  extractMainFeedTopicLinkIdsReplica(emptyHotHtml),
+  [],
+  'empty hot tab (sidebar /t/ links only) must yield zero main-feed ids — no ghost topics',
+)
+// The shared extractTopicIds (member/node) intentionally keeps its /t/ fallback.
+assert.deepEqual(
+  extractTopicIdsLikeV2exTabParser(emptyHotHtml),
+  [9001, 9002],
+  'extractTopicIds keeps its /t/ fallback for member/node parsing (unchanged)',
+)
+
 console.log('hot tab source checks passed')

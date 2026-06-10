@@ -1,4 +1,4 @@
-import { V2exTopic, ApiService, translateApiError, CacheMergeCoordinator } from 'shared'
+import { V2exTopic, ApiService, translateApiError, CacheMergeCoordinator, ApiError, ApiErrorCode, isApiError } from 'shared'
 import type { TopicReadState, V2exPagedTopicsResult } from 'shared'
 import { FeedDataSource } from '../model/FeedModels'
 import { vibrator } from '@kit.SensorServiceKit'
@@ -69,6 +69,35 @@ export class FeedViewModel {
     this.readStateLoader = readStateLoader || null
   }
 
+  // A successful fetch that yielded zero topics (e.g. the daily hot list before
+  // it fills) throws *_TOPICS_EMPTY. That is "empty", not "failed": the feed must
+  // show a clean empty state instead of resurrecting the previous cache, and a
+  // pull-refresh must not toast a failure.
+  private static isEmptyResultError(error: object): boolean {
+    if (!isApiError(error)) {
+      return false
+    }
+    const code: ApiErrorCode = (error as ApiError).code
+    return code === ApiErrorCode.HOT_TOPICS_EMPTY ||
+      code === ApiErrorCode.RECENT_TOPICS_EMPTY ||
+      code === ApiErrorCode.TAB_TOPICS_EMPTY
+  }
+
+  // Show the empty state and drop any stale cache so it never flashes on re-entry.
+  private async applyEmptyResult(error: object): Promise<void> {
+    this.dataSource.setData([])
+    this.itemCount = 0
+    this.hasMore = false
+    this.errorMessage = translateApiError(error)
+    if (this.cacheSaver) {
+      try {
+        await this.cacheSaver([])
+      } catch (cacheError) {
+        console.error('clear feed cache failed:', (cacheError as Error).message)
+      }
+    }
+  }
+
   async loadCachedData(): Promise<void> {
     if (!this.cacheLoader || this.dataSource.totalCount() > 0) {
       return
@@ -112,8 +141,12 @@ export class FeedViewModel {
       this.hasMore = this.resolveHasMore(data.length, data.length, result.hasMore)
       await this.saveCache(data)
     } catch (error) {
-      this.errorMessage = translateApiError(error)
-      await this.loadCachedData()
+      if (FeedViewModel.isEmptyResultError(error)) {
+        await this.applyEmptyResult(error)
+      } else {
+        this.errorMessage = translateApiError(error)
+        await this.loadCachedData()
+      }
     } finally {
       this.isLoading = false
     }
@@ -136,6 +169,11 @@ export class FeedViewModel {
       this.hasMore = this.resolveHasMore(data.length, data.length, result.hasMore)
       await this.saveCache(data)
     } catch (error) {
+      if (FeedViewModel.isEmptyResultError(error)) {
+        // Empty (not failed): clear to the empty state and swallow so no toast fires.
+        await this.applyEmptyResult(error)
+        return
+      }
       this.errorMessage = translateApiError(error)
       // Re-throw so the shared PullRefresh surfaces a single "refresh failed" toast. errorMessage is
       // still set for the empty-state view; loadData() (initial load) keeps swallowing, so an empty
@@ -164,6 +202,10 @@ export class FeedViewModel {
       this.hasMore = this.resolveHasMore(data.length, data.length, result.hasMore)
       await this.saveCache(data)
     } catch (error) {
+      if (FeedViewModel.isEmptyResultError(error)) {
+        await this.applyEmptyResult(error)
+        return
+      }
       this.errorMessage = translateApiError(error)
       throw error as Error
     } finally {

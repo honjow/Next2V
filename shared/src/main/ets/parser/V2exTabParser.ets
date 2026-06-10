@@ -42,7 +42,26 @@ export class V2exTabParser {
     if (topics.length > 0) {
       return topics
     }
-    return V2exTabParser.extractTopicIds(clean).map((id: number): V2exTopic => V2exTabParser.placeholderTopic(id))
+    // Empty main list: fall back ONLY to main-row topic-link ids, never the broad
+    // /t/NNN scoop in extractTopicIds(). On an empty hot tab the main feed has no
+    // topic-link rows, but the page still carries `/t/NNN` links in the right
+    // sidebar ("今日热议主题") — scooping those produced ghost placeholder topics
+    // (no title/author/node) in 最热 when the site's daily hot list was still empty.
+    return V2exTabParser.extractMainFeedTopicLinkIds(clean).map((id: number): V2exTopic => V2exTabParser.placeholderTopic(id))
+  }
+
+  // Main-feed topic ids only (id="topic-link-NNN"); deliberately omits the
+  // /t/NNN fallback so the right-sidebar hot-topic widget can never leak into a
+  // tab feed. extractTopicIds() keeps that fallback for member/node parsing.
+  private static extractMainFeedTopicLinkIds(clean: string): number[] {
+    const ids: Set<number> = new Set()
+    const topicLinkRegex = /id=["']topic-link-(\d+)["']/g
+    let match: RegExpExecArray | null = topicLinkRegex.exec(clean)
+    while (match !== null) {
+      ids.add(parseInt(match[1], 10))
+      match = topicLinkRegex.exec(clean)
+    }
+    return Array.from(ids)
   }
 
   // Remove scripts, styles, and HTML comments so topic-id extraction never picks up `/t/NNN` references
