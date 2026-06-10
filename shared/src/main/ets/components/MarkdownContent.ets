@@ -2864,10 +2864,11 @@ export struct MarkdownContent {
   private static processTokens(md: string, sizeRecords: InlineImageSizeRecord[] = []): Token[] {
     let tokens: Token[];
     let sourceKind: RenderSourceKind;
-    const decodedSource = HtmlEntityUtils.decode(md || '');
+    const raw = md || '';
+    const decodedSource = HtmlEntityUtils.decode(raw);
     if (MarkdownContent.looksLikeRenderedHtml(decodedSource)) {
       sourceKind = "renderedHtml";
-      tokens = MarkdownContent.parseRenderedHtmlToRenderAst(decodedSource, sizeRecords);
+      tokens = MarkdownContent.parseRenderedHtmlToRenderAst(raw, sizeRecords);
     } else {
       sourceKind = "markdown";
       tokens = MarkdownContent.parseMarkdownToRenderAst(decodedSource, sizeRecords);
@@ -3550,7 +3551,7 @@ export struct MarkdownContent {
       last = inlineRe.lastIndex;
       match = inlineRe.exec(source);
     }
-    MarkdownContent.appendHtmlTextToken(tokens, source.slice(last).replace(/<\/?[a-zA-Z][^>]*>/g, ''));
+    MarkdownContent.appendHtmlTextToken(tokens, source.slice(last).replace(/<[^>]+>/g, ''));
     MarkdownContent.trimInlineTextEdges(tokens);
     MarkdownContent.markStandaloneInlineImages(tokens);
     return tokens;
@@ -3889,7 +3890,7 @@ export struct MarkdownContent {
       .replace(/<\/div>/gi, '\n\n')
       .replace(/<br\s*\/?>/gi, '\n')
       .replace(/<img\b[^>]*>/gi, (tag: string): string => MarkdownContent.inlineHtmlToMarkdown(tag))
-      .replace(/<\/?[a-zA-Z][^>]*>/g, '');
+      .replace(/<[^>]+>/g, '');
     return HtmlEntityUtils.decode(md)
       .replace(/^[ \t]+(https?:\/\/[^\s<>()]+)[ \t]*$/gmi, '$1')
       .replace(/[ \t]+\n/g, '\n')
@@ -4279,7 +4280,7 @@ export struct MarkdownContent {
       .replace(/<(em|i)\b[^>]*>([\s\S]*?)<\/\1>/gi, (_all: string, _tag: string, text: string): string => {
         return `*${MarkdownContent.stripHtmlTags(text)}*`;
       })
-      .replace(/<\/?[a-zA-Z][^>]*>/g, '');
+      .replace(/<[^>]+>/g, '');
   }
 
   private static normalizeCodeBlockTokens(tokens: Token[]): void {
@@ -4375,7 +4376,9 @@ export struct MarkdownContent {
   }
 
   private static stripHtmlTags(value: string): string {
-    return HtmlEntityUtils.decode((value || '').replace(/<\/?[a-zA-Z][^>]*>/g, ''))
+    return HtmlEntityUtils.decode(
+      (value || '').replace(/<[^>]+>/g, '')
+    )
       .replace(/[ \t\f\v]+/g, ' ')
       .trim();
   }

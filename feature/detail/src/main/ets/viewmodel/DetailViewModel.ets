@@ -710,7 +710,6 @@ export class DetailViewModel {
     }
     topic.title = HtmlEntityUtils.decode(topic.title)
     topic.content = HtmlEntityUtils.decode(topic.content)
-    topic.content_rendered = HtmlEntityUtils.decode(topic.content_rendered)
     if (topic.node) {
       topic.node.title = HtmlEntityUtils.decode(topic.node.title)
       topic.node.title_alternative = HtmlEntityUtils.decode(topic.node.title_alternative)
@@ -732,7 +731,6 @@ export class DetailViewModel {
       return reply
     }
     reply.content = HtmlEntityUtils.decode(reply.content)
-    reply.content_rendered = HtmlEntityUtils.decode(reply.content_rendered)
     if (reply.member) {
       reply.member.tagline = HtmlEntityUtils.decode(reply.member.tagline)
     }
