@@ -155,7 +155,9 @@ export struct NotificationCard {
       bottom: ThemeConstants.SPACE_SM
     })
     .borderRadius(ThemeConstants.RADIUS_SM)
-    .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
+    // Quoted reply/mention sits one elevation above the #191919 card; the page
+    // scaffold token (near-black) made white markdown text harsh in dark mode.
+    .backgroundColor($r('app.color.quote_background'))
   }
 
   private replyPreviewSource(): string {
