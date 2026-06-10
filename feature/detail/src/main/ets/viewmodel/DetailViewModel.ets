@@ -11,6 +11,7 @@ import {
   AppStrings,
   translateApiError,
   CacheMergeCoordinator,
+  ReplyFingerprint,
 } from 'shared'
 import type { V2exTopicWebRepliesPage, V2exTopicWebRepliesAllResult, TopicDetailActionOverlay } from 'shared'
 import { ReplyDataSource } from '../model/DetailModels'
@@ -457,6 +458,46 @@ export class DetailViewModel {
 
   async loadMoreRepliesV2(): Promise<void> {
     await this.loadMoreReplies()
+  }
+
+  // Notification floor repair needs the *target* reply present before it can match by content, but
+  // V2EX's #reply anchor is unreliable and the reply can sit on any page — including pages the cookie
+  // (web) path never auto-loads up front and that thread-preload only fetches asynchronously, after the
+  // jump has already run. So when a verify text is in play, drive loading until that reply appears
+  // (joining any in-flight preload first to avoid duplicate fetches), stopping as soon as it is found.
+  async loadUntilReplyContent(verifyReplyText: string): Promise<void> {
+    const verify = (verifyReplyText || '').trim()
+    if (!verify) {
+      return
+    }
+    const inFlight = this.preloadAllPromise
+    if (inFlight !== null) {
+      try {
+        await inFlight
+      } catch (_e) {
+        // fall through to incremental loading
+      }
+    }
+    let guard = 0
+    while (
+      !this.loadedRepliesContainContent(verify) &&
+      this.repliesHasMore &&
+      !this.allRepliesLoaded &&
+      guard < 30
+    ) {
+      guard++
+      await this.loadMoreReplies()
+    }
+  }
+
+  private loadedRepliesContainContent(verify: string): boolean {
+    for (let i = 0; i < this.replies.length; i++) {
+      const reply = this.replies[i]
+      if (reply && ReplyFingerprint.matches(reply.content || reply.content_rendered || '', verify)) {
+        return true
+      }
+    }
+    return false
   }
 
   preloadRemainingReplies(): Promise<void> {

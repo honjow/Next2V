@@ -1774,6 +1774,9 @@ export struct TopicDetailPage {
     }
     this.hasJumpedToTargetFloor = true
     this.ensureRepliesLoaded(floor)
+      // The reply a notification points at can sit on a later page than the (unreliable) anchor
+      // would load; pull pages until it is present so the content match below can actually see it.
+      .then(() => this.v.loadUntilReplyContent(this.verifyReplyText))
       .then(() => {
         // V2EX's #reply anchor can be wrong; re-resolve against the notification's reply text.
         const resolved = TopicDetailScrollCoordinator.verifiedFloor(
