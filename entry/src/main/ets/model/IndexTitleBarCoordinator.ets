@@ -46,10 +46,6 @@ export class IndexTitleBarCoordinator {
     return [{ label: $r('app.string.nav_search'), action: 'openSearch', icon: 'search' }]
   }
 
-  static notificationMenuItems(): IndexTitleMenuDescriptor[] {
-    return [{ label: $r('app.string.nav_refresh'), action: 'refresh', icon: 'refresh' }]
-  }
-
   static accountManagementMenuItems(): IndexTitleMenuDescriptor[] {
     return [{ label: $r('app.string.account_add_another'), action: 'addAccount', icon: 'add' }]
   }

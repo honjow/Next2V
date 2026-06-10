@@ -34,7 +34,6 @@ import {
   connectNavStack,
   connectNodeTopicAction,
   connectNodeTopicAppbar,
-  connectNotificationAction,
   connectNotificationUnread,
   connectPendingV2exUrl,
   connectReplyStickerPanel,
@@ -1272,13 +1271,6 @@ struct Index {
     connectNativeLoginShown().command = command
   }
 
-  private sendNotificationAction(action: string): void {
-    // Publish the V2 command mirror (read by @ComponentV2 NotificationPage via @Monitor) from this single
-    // writer; the legacy AppStorage half was retired once no reader read the V1 key.
-    const command = IndexRouteCoordinator.simpleCommand(action, Date.now())
-    connectNotificationAction().command = command
-  }
-
   private sendImagePreviewAction(action: string): void {
     // Publish the V2 command mirror (read by @ComponentV2 ImagePreviewPage) from this single writer; the
     // legacy AppStorage half was retired once no reader read the V1 key.
@@ -1364,7 +1356,8 @@ struct Index {
     } else if (this.ct === 1) {
       content['menu'] = this.discoverTitleMenu()
     } else if (this.ct === 2) {
-      content['menu'] = this.notificationTitleMenu()
+      // Notifications: pull-to-refresh covers reload, so no title-bar action.
+      content['menu'] = IndexTitleBarCoordinator.emptyMenu()
     } else if (this.ct === 3) {
       content['menu'] = this.meTitleMenu()
     } else {
@@ -1424,16 +1417,6 @@ struct Index {
           if (descriptor.action === 'settings') {
             this.ns.pushPathByName('Settings', null)
           }
-        }),
-    )
-    return { 'value': items, 'maxCount': IndexTitleBarCoordinator.SINGLE_ITEM_MENU_MAX_COUNT }
-  }
-
-  private notificationTitleMenu(): Record<string, Object> {
-    let items: Record<string, Object>[] = IndexTitleBarCoordinator.notificationMenuItems().map(
-      (descriptor: IndexTitleMenuDescriptor) =>
-        this.topicActionItem(descriptor.label, this.mainTitleMenuIcon(descriptor.icon), () => {
-          this.sendNotificationAction(descriptor.action)
         }),
     )
     return { 'value': items, 'maxCount': IndexTitleBarCoordinator.SINGLE_ITEM_MENU_MAX_COUNT }

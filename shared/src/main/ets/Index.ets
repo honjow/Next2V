@@ -105,7 +105,6 @@ export {
 } from './state/AccountWebViewActionState'
 export { WebLoginActionState, connectWebLoginAction } from './state/WebLoginActionState'
 export { NativeLoginShownState, connectNativeLoginShown } from './state/NativeLoginShownState'
-export { NotificationActionState, connectNotificationAction } from './state/NotificationActionState'
 export {
   TopicDetailAppbarState,
   connectTopicDetailAppbar,
@@ -220,6 +219,7 @@ export type { ApiDomainSnapshot, DomainValidationResult } from './settings/ApiDo
 export { FeedTabSettings } from './settings/FeedTabSettings'
 export { HomeTabSettings } from './settings/HomeTabSettings'
 export type { HomeTabSettingsSnapshot } from './settings/HomeTabSettings'
+export { NotificationSeenSettings } from './settings/NotificationSeenSettings'
 export { TopicDetailReplyActionSettings } from './settings/TopicDetailReplyActionSettings'
 export type { TopicDetailReplyActionSettingsSnapshot } from './settings/TopicDetailReplyActionSettings'
 export { ThemeSettings } from './settings/ThemeSettings'

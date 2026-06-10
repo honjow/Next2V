@@ -142,13 +142,6 @@ export class NotificationCenterViewModel {
     }
   }
 
-  unreadCount(items: V2exNotification[]): number {
-    if (!Array.isArray(items)) {
-      return 0
-    }
-    return items.filter((item: V2exNotification) => this.isUnread(item)).length
-  }
-
   async unreadCountFromCookie(cookie: string): Promise<number> {
     return this.api.getNotificationUnreadCountWithCookie(cookie)
   }
@@ -416,11 +409,6 @@ export class NotificationCenterViewModel {
       return value > 0
     }
     return null
-  }
-
-  private isUnread(item: V2exNotification): boolean {
-    const tag = this.readTag(item)
-    return tag === READ_TAG_UNREAD
   }
 
   private containsAny(text: string, needles: string[]): boolean {

@@ -125,5 +125,8 @@ export class StorageKeys {
   // to the matching AppStorageV2 'v2:*' holder (TopicDetailAppbarState / UserProfileAppbarState /
   // SearchActionState.pendingQuery / AccountWebViewUrlState). Do not reintroduce the legacy V1 keys.
   static readonly NOTIFICATION_UNREAD_COUNT: string = 'notificationUnreadCount'
+  // Per-account "last time the notification tab was seen" (unix seconds); the
+  // owner username is appended: notificationLastSeen:<username>
+  static readonly NOTIFICATION_LAST_SEEN_PREFIX: string = 'notificationLastSeen:'
   static readonly DISCOVER_NODE_KEYWORD: string = 'discoverNodeKeyword'
 }

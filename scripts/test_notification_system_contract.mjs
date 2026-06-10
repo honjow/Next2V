@@ -79,7 +79,6 @@ assert(
 for (const token of [
   'canDeleteItem(context: NotificationAuthContext, item: V2exNotification)',
   'sourceKeyFor(context: NotificationAuthContext): NotificationSource',
-  'unreadCount(items: V2exNotification[]): number',
   'async unreadCountFromCookie(cookie: string): Promise<number>',
   'webDeleteId(item: V2exNotification): number',
   'webDeleteOnce(item: V2exNotification): string',
@@ -91,7 +90,6 @@ for (const token of [
   'private firstReadableContent(candidates: (string | undefined)[]): string',
   'private readableNotificationContent(raw: string): string',
   ".replace(/<img\\b[^>]*>/gi, ' [IMG] ')",
-  'tag === READ_TAG_UNREAD',
   'return unread ? READ_TAG_UNREAD : ' + "''",
   'return read ? ' + "''" + ' : READ_TAG_UNREAD',
 ]) {
@@ -217,7 +215,6 @@ for (const forbidden of [
   assert(!page.includes(forbidden), `NotificationPage must not retain temporary/custom delete confirmation code: ${forbidden}`)
 }
 for (const token of [
-  'private notificationUnread: NotificationUnreadState = connectNotificationUnread()',
   'this.notificationVm.canDeleteItem(this.notificationAuthContext(), item)',
   'const verifyPage = this.notificationPageForItem(item)',
   'this.api.deleteNotificationWithCookie(cookie, notificationId, once, verifyPage)',
@@ -234,11 +231,12 @@ for (const token of [
   'private publishUnreadCount(): void',
   'this.publishUnreadCount()',
   '@Local private viewedUnreadNotificationKeys: string[] = []',
-  'const entryUnreadHint = this.captureNotificationEntryUnreadHint()',
-  'this.reconcileFreshViewedUnreadKeys(',
+  'NotificationSeenSettings.loadLastSeen(',
+  'this.timeBasedUnreadKeys(result.items, unreadBaseline)',
+  'NotificationSeenSettings.saveLastSeen(',
   'this.notificationsWithoutReadState(result.items)',
-  'private captureNotificationEntryUnreadHint(): number',
-  'private reconcileFreshViewedUnreadKeys(',
+  'private timeBasedUnreadKeys(',
+  'private notificationSeenOwner(): string',
   'private notificationWithoutReadState(item: V2exNotification): V2exNotification',
   'publishNotificationUnreadCount(0)',
   'replyContent: display.replyContent',

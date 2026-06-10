@@ -14,16 +14,13 @@ import {
   connectAuthSessionSignal,
   connectLocalDataSignal,
   connectNavStack,
-  connectNotificationAction,
-  connectNotificationUnread,
   CookieJarSettings,
   DiagnosticLogger,
   EmptyState,
   HttpClient,
   LoadingFooter,
   LocalDataSignalState,
-  NotificationActionState,
-  NotificationUnreadState,
+  NotificationSeenSettings,
   publishNotificationUnreadCount,
   PullRefreshController,
   PullRefreshListScaffold,
@@ -54,16 +51,14 @@ export struct NotificationPage {
   // ns from NavStackHolder (was @Consume('ns')).
   private ns: NavPathStack = connectNavStack().stack
   // Auth/session/local-data/notification-action read from their V2 mirrors (dual-written at the
-  // service chokepoints); replaces the AUTH_* / LOCAL_DATA_UPDATED_AT / NOTIFICATION_ACTION
-  // @StorageLink + @Watch. The shared onAuthChanged reaction is driven by a multi-path @Monitor below.
-  // The unread badge count is read imperatively (never in build) off the V2 NotificationUnreadState
-  // mirror and cleared through publishNotificationUnreadCount, keeping Index's tab badge in sync.
+  // service chokepoints); replaces the AUTH_* / LOCAL_DATA_UPDATED_AT @StorageLink + @Watch. The
+  // shared onAuthChanged reaction is driven by a multi-path @Monitor below. The tab badge is cleared
+  // through publishNotificationUnreadCount; row-level unread comes from the per-account last-seen
+  // baseline (NotificationSeenSettings), not from the badge.
   private authIdentity: AuthIdentityState = connectAuthIdentity()
   private authCookie: AuthCookieState = connectAuthCookie()
   private session: AuthSessionSignalState = connectAuthSessionSignal()
   private localData: LocalDataSignalState = connectLocalDataSignal()
-  private notificationAction: NotificationActionState = connectNotificationAction()
-  private notificationUnread: NotificationUnreadState = connectNotificationUnread()
   @Local private authToken: string = ''
   @Local private notifications: V2exNotification[] = []
   @Local private notificationError: string = ''
@@ -91,6 +86,10 @@ export struct NotificationPage {
   private pendingNotificationForceRefresh: boolean = false
   private notificationIdentityKey: string = ''
   private pendingNotificationDeletes: Set<number> = new Set<number>()
+  // Time-based unread baseline (unix seconds) for the current session: rows with
+  // created > baseline are unread. Loaded from NotificationSeenSettings at each
+  // fresh page-1 refresh; loadMore reuses it for follow-up pages.
+  private notificationUnreadBaselineSeconds: number = NotificationSeenSettings.MISSING_LAST_SEEN
   @Param refreshKey: number = 0
   @Param currentTab: number = 0
   private rootRefreshController: PullRefreshController = new PullRefreshController()
@@ -129,18 +128,6 @@ export struct NotificationPage {
   @Monitor('localData.updatedAt')
   onLocalDataUpdated(): void {
     this.notificationError = ''
-  }
-
-  @Monitor('notificationAction.command')
-  onNotificationAction(): void {
-    const raw = (this.notificationAction.command || '').trim()
-    if (!raw) {
-      return
-    }
-    const action = raw.split(':').pop() || ''
-    if (action === 'refresh') {
-      this.loadNotifications(true)
-    }
   }
 
   private triggerRootRefresh(): void {
@@ -611,10 +598,12 @@ export struct NotificationPage {
     }
     const requestId = ++this.notificationRefreshRequestId
     this.notificationCacheRequestId++
-    // Snapshot the entry badge once, before the consume-on-read /notifications fetch. This is a
-    // one-shot hint applied only to this active fresh page-1 result; after the fetch consumes server
-    // unread the badge is 0, so repeated pull-to-refresh captures 0 and never reprojects.
-    const entryUnreadHint = this.captureNotificationEntryUnreadHint()
+    // Time-based unread: rows newer than the persisted per-account last-seen are unread. Reading the
+    // baseline fresh on every refresh gives "a refresh marks everything seen" semantics — the first
+    // refresh shows markers and persists now; the next refresh computes against that and clears them.
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    const seenOwner = this.notificationSeenOwner()
+    const unreadBaseline = await NotificationSeenSettings.loadLastSeen(context, seenOwner)
     DiagnosticLogger.info('notification', 'notification_refresh_start', {
       force: force,
       requestId: requestId,
@@ -632,12 +621,14 @@ export struct NotificationPage {
         DiagnosticLogger.info('notification', 'notification_refresh_stale_drop', { requestId: requestId })
         return
       }
-      // The entry-badge hint is a Web-session (cookie) homepage projection; the v2 API (pat) carries
-      // its own item-level unread flags, so only cookie page-1 results may use the count hint.
-      this.viewedUnreadNotificationKeys = this.reconcileFreshViewedUnreadKeys(
-        result.items,
-        result.source === 'cookie' ? entryUnreadHint : 0
-      )
+      // created > lastSeen is the only unread truth — identical for cookie and pat sources, immune
+      // to the badge-probe race the old entry-count projection suffered from.
+      this.notificationUnreadBaselineSeconds = unreadBaseline
+      this.viewedUnreadNotificationKeys = this.timeBasedUnreadKeys(result.items, unreadBaseline)
+      NotificationSeenSettings.saveLastSeen(context, seenOwner, Math.floor(Date.now() / 1000))
+        .catch((seenError: Error) => {
+          console.error('persist notification last-seen failed: ' + seenError.message)
+        })
       this.notifications = this.notificationsWithoutReadState(result.items)
       this.publishUnreadCount()
       this.notificationPage = result.page
@@ -651,7 +642,7 @@ export struct NotificationPage {
         count: result.items.length,
         page: result.page,
         hasMore: result.hasMore,
-        unreadCountFallback: entryUnreadHint
+        unreadMarkerCount: this.viewedUnreadNotificationKeys.length
       })
       this.saveNotificationCache()
     } catch (error) {
@@ -701,6 +692,14 @@ export struct NotificationPage {
         if (merged.length === this.notifications.length) {
           this.notificationHasMore = false
           return
+        }
+        // Follow-up pages can still carry rows newer than the session baseline
+        // (more unread than one page); extend the markers with the same truth.
+        const moreUnread = this.timeBasedUnreadKeys(result.items, this.notificationUnreadBaselineSeconds)
+        if (moreUnread.length > 0) {
+          const seen = new Set<string>(this.viewedUnreadNotificationKeys)
+          this.viewedUnreadNotificationKeys = this.viewedUnreadNotificationKeys
+            .concat(moreUnread.filter((key: string) => !seen.has(key)))
         }
         this.notifications = merged
         this.publishUnreadCount()
@@ -862,13 +861,6 @@ export struct NotificationPage {
     publishNotificationUnreadCount(0)
   }
 
-  private captureNotificationEntryUnreadHint(): number {
-    // Read the current cross-surface badge as a one-shot snapshot (no running max): once the
-    // consume-on-read /notifications fetch clears server unread, the badge is 0 and later captures
-    // return 0, so the top-N projection cannot replay on repeated refreshes.
-    return Math.max(0, this.notificationUnread.count)
-  }
-
   private resetViewedUnreadState(): void {
     this.viewedUnreadNotificationKeys = []
   }
@@ -883,24 +875,23 @@ export struct NotificationPage {
     )
   }
 
-  private reconcileFreshViewedUnreadKeys(items: V2exNotification[], entryUnreadHint: number): string[] {
+  // Rows newer than the persisted per-account last-seen are unread. Rows whose
+  // created failed to parse (0) are never marked — same conservative stance as
+  // a missing baseline (MISSING_LAST_SEEN marks nothing).
+  private timeBasedUnreadKeys(items: V2exNotification[], baselineSeconds: number): string[] {
     if (!Array.isArray(items) || items.length === 0) {
       return []
     }
-    // 1. Item-level unread flags (Web rows still carrying the unread class) are the source of truth.
-    if (this.notificationVm.unreadCount(items) > 0) {
-      return this.unreadKeysFromItems(items)
-    }
-    // 2. One-shot entry hint: project the captured badge onto the freshly loaded page-1 rows. Valid
-    //    only here (active fresh page-1) and only once, since the fetch already consumed server unread.
-    if (entryUnreadHint > 0) {
-      return items.slice(0, Math.min(entryUnreadHint, items.length))
-        .map((item: V2exNotification) => this.notificationItemKey(item))
-        .filter((key: string) => !!key)
-    }
-    // 3. No unread truth and no hint: a successful fresh refresh proves nothing is unread, so stale
-    //    local fallback keys are cleared (never retained).
-    return []
+    return items
+      .filter((item: V2exNotification) => (item.created || 0) > 0 && (item.created || 0) > baselineSeconds)
+      .map((item: V2exNotification) => this.notificationItemKey(item))
+      .filter((key: string) => !!key)
+  }
+
+  // Account key for the last-seen store: username only (NOT the source key), so
+  // switching cookie<->pat for the same account keeps one baseline.
+  private notificationSeenOwner(): string {
+    return this.authIdentity.username || this.session.username || ''
   }
 
   private cachedViewedUnreadKeys(items: V2exNotification[]): string[] {
@@ -910,13 +901,6 @@ export struct NotificationPage {
     // Cache carries content only (read-state flags are stripped before caching) and must never use
     // the badge-count fallback; retain just the in-session markers that still match a cached row.
     return this.retainViewedUnreadKeys(items)
-  }
-
-  private unreadKeysFromItems(items: V2exNotification[]): string[] {
-    return items
-      .filter((item: V2exNotification) => this.notificationVm.metadata(item).readTag === READ_TAG_UNREAD)
-      .map((item: V2exNotification) => this.notificationItemKey(item))
-      .filter((key: string) => !!key)
   }
 
   private retainViewedUnreadKeys(items: V2exNotification[]): string[] {
