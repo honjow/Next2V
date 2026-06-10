@@ -2482,7 +2482,7 @@
     },
     {
       "name": "topic_action_open_in_app",
-      "value": "应用内打开"
+      "value": "WebView 打开"
     },
     {
       "name": "image_preview_invalid_url",

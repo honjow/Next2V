@@ -2482,7 +2482,7 @@
     },
     {
       "name": "topic_action_open_in_app",
-      "value": "앱에서 열기"
+      "value": "WebView에서 열기"
     },
     {
       "name": "image_preview_invalid_url",

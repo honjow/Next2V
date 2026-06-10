@@ -2482,7 +2482,7 @@
     },
     {
       "name": "topic_action_open_in_app",
-      "value": "アプリ内で開く"
+      "value": "WebView で開く"
     },
     {
       "name": "image_preview_invalid_url",

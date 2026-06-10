@@ -2482,7 +2482,7 @@
     },
     {
       "name": "topic_action_open_in_app",
-      "value": "Open in app"
+      "value": "Open in WebView"
     },
     {
       "name": "image_preview_invalid_url",
