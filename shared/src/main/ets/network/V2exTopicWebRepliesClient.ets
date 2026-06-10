@@ -136,6 +136,7 @@ export class V2exTopicWebRepliesClient {
   private static htmlToPlainText(html: string): string {
     return HtmlEntityUtils.decode(
       (html || '')
+        .replace(/<img[^>]+src=['"]([^'"]+)['"][^>]*\/?>/gi, '![]($1)')
         .replace(/<br\s*\/?>/gi, '\n')
         .replace(/<\/p>/gi, '\n\n')
         .replace(/<\/div>/gi, '\n')
