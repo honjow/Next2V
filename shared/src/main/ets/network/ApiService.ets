@@ -2754,7 +2754,11 @@ export class ApiService {
     topic.url = V2exUrlRouter.withSelectedBaseUrl(topic.url, HttpClient.getInstance().getBaseUrl())
     topic.title = HtmlEntityUtils.decode(topic.title)
     topic.content = HtmlEntityUtils.decode(topic.content)
-    topic.content_rendered = HtmlEntityUtils.decode(topic.content_rendered)
+    // content_rendered stays raw HTML: its &lt;/&gt;/&amp; entities ARE the markup,
+    // and angle brackets that belong to the displayed text (e.g. anchor labels like
+    // &lt;&lt;title&gt;&gt;) only survive while encoded. Decoding here turns that text
+    // into bytes the tag-stripping regexes mistake for real tags and delete. The
+    // renderers (MarkdownContent / reply-mention strippers) decode at the text leaves.
     if (topic.node) {
       topic.node.url = V2exUrlRouter.withSelectedBaseUrl(
         topic.node.url,
@@ -2780,7 +2784,7 @@ export class ApiService {
       return reply
     }
     reply.content = HtmlEntityUtils.decode(reply.content)
-    reply.content_rendered = HtmlEntityUtils.decode(reply.content_rendered)
+    // Keep content_rendered raw HTML; see normalizeTopic for why decoding it corrupts text.
     if (reply.member) {
       reply.member.tagline = HtmlEntityUtils.decode(reply.member.tagline)
     }

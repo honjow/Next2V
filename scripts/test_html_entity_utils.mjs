@@ -47,139 +47,156 @@ for (const [input, expected] of cases) {
   }
 }
 
-function normalizeTopic(topic) {
-  if (!topic) return topic
-  topic.title = decodeHtmlEntities(topic.title)
-  topic.content = decodeHtmlEntities(topic.content)
-  topic.content_rendered = decodeHtmlEntities(topic.content_rendered)
-  return topic
+// --- Render-path invariant -------------------------------------------------
+// content_rendered is HTML. Its &lt;/&gt;/&amp; entities ARE the markup. Angle
+// brackets that belong to the *displayed text* (anchor labels like
+// &lt;&lt;title&gt;&gt;) only survive while encoded. The renderers must therefore
+// receive raw HTML and decode entities at the text LEAVES — after real tags are
+// stripped — never up-front at the network layer. These cases mirror
+// MarkdownContent.stripHtmlTags / appendHtmlTextToken: strip real `<...>` tags,
+// THEN decode entities.
+function stripHtmlTagsThenDecode(value) {
+  return decodeHtmlEntities((value || '').replace(/<[^>]+>/g, '')).replace(/[ \t\f\v]+/g, ' ').trim()
 }
 
-function normalizeReply(reply) {
-  if (!reply) return reply
-  reply.content = decodeHtmlEntities(reply.content)
-  reply.content_rendered = decodeHtmlEntities(reply.content_rendered)
-  return reply
-}
-
-const normalizeCases = [
+const renderLeafCases = [
   {
-    name: 'topic content_rendered decodes &quot;',
-    actual: normalizeTopic({ title: 't', content: 'c', content_rendered: '<p>&quot;亚洲 AV&quot;</p>' }).content_rendered,
-    expected: '<p>"亚洲 AV"</p>'
+    // Real bytes from V2EX topic 1188918 content_rendered: an anchor whose label
+    // is an entity-encoded title. The title must survive in full, not collapse to '>'.
+    name: 'entity-encoded angle-bracket anchor title survives leaf strip',
+    input: '<a href="https://www.v2ex.com/t/1188728" rel="nofollow">&lt;&lt;一个大胆的预言：语音输入将成为绝对主流&gt;&gt;</a>',
+    expected: '<<一个大胆的预言：语音输入将成为绝对主流>>'
   },
   {
-    name: 'topic content_rendered decodes &amp;quot;',
-    actual: normalizeTopic({ title: 't', content: 'c', content_rendered: '<p>&amp;quot;亚洲 AV&amp;quot;</p>' }).content_rendered,
-    expected: '<p>"亚洲 AV"</p>'
+    name: 'quoted-title anchor survives leaf strip',
+    input: '<a href="x" rel="nofollow">&lt;&lt;"AI 与编程" 几个月来高强度 vibe coding 的一点心得&gt;&gt;</a>',
+    expected: '<<"AI 与编程" 几个月来高强度 vibe coding 的一点心得>>'
   },
   {
-    name: 'reply content_rendered decodes &quot;',
-    actual: normalizeReply({ content: 'c', content_rendered: '<span>&quot;亚洲 AV&quot;</span>' }).content_rendered,
-    expected: '<span>"亚洲 AV"</span>'
+    // The case the old network-layer decode was added to fix — STILL works,
+    // because the leaf decode handles it. Proves keeping raw loses nothing.
+    name: '&quot; in paragraph text still decodes at the leaf',
+    input: '&quot;亚洲 AV&quot;',
+    expected: '"亚洲 AV"'
   },
   {
-    name: 'reply content_rendered decodes &amp;quot;',
-    actual: normalizeReply({ content: 'c', content_rendered: '<span>&amp;quot;亚洲 AV&amp;quot;</span>' }).content_rendered,
-    expected: '<span>"亚洲 AV"</span>'
-  },
-  {
-    name: 'undefined content_rendered remains empty-string compatible',
-    actual: normalizeTopic({ title: '', content: '', content_rendered: undefined }).content_rendered,
-    expected: ''
+    name: 'double-encoded &amp;quot; still decodes at the leaf',
+    input: '&amp;quot;亚洲 AV&amp;quot;',
+    expected: '"亚洲 AV"'
   }
 ]
 
-for (const { name, actual, expected } of normalizeCases) {
+for (const { name, input, expected } of renderLeafCases) {
+  const actual = stripHtmlTagsThenDecode(input)
   if (actual !== expected) {
     console.error(`FAIL: ${name}\n  expected: ${expected}\n  actual:   ${actual}`)
     process.exit(1)
   }
 }
 
-function assertProductionNormalizeCoverage(filePath, serviceName) {
-  const source = readFileSync(new URL(`../${filePath}`, import.meta.url), 'utf8')
-  const topicMethod = source.match(/private static normalizeTopic\([\s\S]*?\n  }/)
-  const replyMethod = source.match(/private static normalizeReply\([\s\S]*?\n  }/)
-  const required = [
-    {
-      name: `${serviceName}.normalizeTopic decodes content_rendered`,
-      method: topicMethod?.[0] || '',
-      line: 'topic.content_rendered = HtmlEntityUtils.decode(topic.content_rendered)'
-    },
-    {
-      name: `${serviceName}.normalizeReply decodes content_rendered`,
-      method: replyMethod?.[0] || '',
-      line: 'reply.content_rendered = HtmlEntityUtils.decode(reply.content_rendered)'
-    }
-  ]
+// Counter-proof: if content_rendered is decoded BEFORE the leaf strip (the retired
+// bug), the same anchor collapses to a bare '>' because <一个大胆…> now looks like a
+// real tag. This documents WHY the network layer must keep content_rendered raw.
+const preDecodedThenStripped = stripHtmlTagsThenDecode(
+  decodeHtmlEntities('<a href="x">&lt;&lt;一个大胆的预言&gt;&gt;</a>')
+)
+if (preDecodedThenStripped !== '>') {
+  console.error(
+    `FAIL: counter-proof drifted — pre-decoding should corrupt the title to '>'\n  actual: ${preDecodedThenStripped}`
+  )
+  process.exit(1)
+}
 
-  for (const { name, method, line } of required) {
-    if (!method.includes(line)) {
-      console.error(`FAIL: production coverage missing: ${name}\n  expected line: ${line}\n  file: ${filePath}`)
+// --- Production coverage ----------------------------------------------------
+// The network normalize layer must decode title/content (plain-text fields) but
+// must NOT decode content_rendered (HTML); the latter stays raw for the renderers.
+function methodBody(source, methodName) {
+  const m = source.match(new RegExp(`private static ${methodName}\\([\\s\\S]*?\\n  }`))
+  return m?.[0] || ''
+}
+
+function assertNetworkKeepsContentRenderedRaw(filePath, serviceName, opts) {
+  const source = readFileSync(new URL(`../${filePath}`, import.meta.url), 'utf8')
+  const checks = []
+  if (opts.topic) {
+    const body = methodBody(source, 'normalizeTopic')
+    checks.push({
+      name: `${serviceName}.normalizeTopic keeps content_rendered raw`,
+      ok: body.length > 0 && !body.includes('content_rendered = HtmlEntityUtils.decode'),
+      detail: 'content_rendered must NOT be decoded at the network layer'
+    })
+    checks.push({
+      name: `${serviceName}.normalizeTopic still decodes plain-text content`,
+      ok: body.includes('topic.content = HtmlEntityUtils.decode(topic.content)'),
+      detail: 'plain-text content must still be decoded'
+    })
+  }
+  if (opts.reply) {
+    const body = methodBody(source, 'normalizeReply')
+    checks.push({
+      name: `${serviceName}.normalizeReply keeps content_rendered raw`,
+      ok: body.length > 0 && !body.includes('content_rendered = HtmlEntityUtils.decode'),
+      detail: 'content_rendered must NOT be decoded at the network layer'
+    })
+    checks.push({
+      name: `${serviceName}.normalizeReply still decodes plain-text content`,
+      ok: body.includes('reply.content = HtmlEntityUtils.decode(reply.content)'),
+      detail: 'plain-text content must still be decoded'
+    })
+  }
+  for (const { name, ok, detail } of checks) {
+    if (!ok) {
+      console.error(`FAIL: production coverage: ${name}\n  ${detail}\n  file: ${filePath}`)
       process.exit(1)
     }
   }
 }
 
-function assertFavoriteDetailRenderPathCoverage() {
+function assertDetailRenderPathCoverage() {
   const detailFilePath = 'feature/detail/src/main/ets/viewmodel/DetailViewModel.ets'
   const detailSource = readFileSync(new URL(`../${detailFilePath}`, import.meta.url), 'utf8')
   const markdownFilePath = 'shared/src/main/ets/components/MarkdownContent.ets'
   const markdownSource = readFileSync(new URL(`../${markdownFilePath}`, import.meta.url), 'utf8')
   const required = [
-    // The direct `this.topic = this.normalizeTopicForRender(...)` assignment was refactored: the normalized
-    // topic is now routed through publishMergedTopicDetail/applyMergedTopicDetail, which merges the action
-    // overlay and assigns `this.topic = merged.topic`. The render-boundary normalization is unchanged — only
-    // the publish chokepoint moved — so these assert the normalize call still feeds the merged-detail publish.
     {
-      name: 'favorite TopicDetail cached topic is normalized before render',
-      filePath: detailFilePath,
-      source: detailSource.replace(/\s+/g, ' '),
-      line: 'this.publishMergedTopicDetail( this.normalizeTopicForRender(cached.topic),'
-    },
-    {
-      name: 'favorite TopicDetail network topic is normalized before render',
-      filePath: detailFilePath,
-      source: detailSource.replace(/\s+/g, ' '),
-      line: 'this.applyMergedTopicDetail( this.normalizeTopicForRender(topic),'
-    },
-    {
-      name: 'merged-detail publish chokepoint assigns the normalized topic into render state',
+      name: 'TopicDetail render boundary decodes plain-text Markdown content',
       filePath: detailFilePath,
       source: detailSource,
-      line: 'this.topic = merged.topic'
+      present: 'topic.content = HtmlEntityUtils.decode(topic.content)'
     },
     {
-      name: 'favorite TopicDetail render boundary decodes Markdown content',
+      // Render boundary must NOT decode content_rendered — that is the retired bug.
+      name: 'TopicDetail render boundary keeps content_rendered raw',
       filePath: detailFilePath,
       source: detailSource,
-      line: 'topic.content = HtmlEntityUtils.decode(topic.content)'
-    },
-    {
-      name: 'favorite TopicDetail render boundary decodes content_rendered cache/API field',
-      filePath: detailFilePath,
-      source: detailSource,
-      line: 'topic.content_rendered = HtmlEntityUtils.decode(topic.content_rendered)'
+      absent: 'topic.content_rendered = HtmlEntityUtils.decode(topic.content_rendered)'
     },
     {
       name: 'Markdown text span boundary decodes lexer-emitted entities before visible Text/Span rendering',
       filePath: markdownFilePath,
       source: markdownSource,
-      line: '_splitMentionText(HtmlEntityUtils.decode(text))'
+      present: '_splitMentionText(HtmlEntityUtils.decode(text))'
     }
   ]
 
-  for (const { name, filePath, source, line } of required) {
-    if (!source.includes(line)) {
-      console.error(`FAIL: favorite detail path coverage missing: ${name}\n  expected line: ${line}\n  file: ${filePath}`)
+  for (const { name, filePath, source, present, absent } of required) {
+    if (present && !source.includes(present)) {
+      console.error(`FAIL: detail render path coverage missing: ${name}\n  expected line: ${present}\n  file: ${filePath}`)
+      process.exit(1)
+    }
+    if (absent && source.includes(absent)) {
+      console.error(`FAIL: detail render path regression: ${name}\n  must NOT contain: ${absent}\n  file: ${filePath}`)
       process.exit(1)
     }
   }
 }
 
-assertProductionNormalizeCoverage('shared/src/main/ets/network/ApiService.ets', 'ApiService')
-assertProductionNormalizeCoverage('shared/src/main/ets/network/ApiV2Service.ets', 'ApiV2Service')
-assertFavoriteDetailRenderPathCoverage()
+assertNetworkKeepsContentRenderedRaw('shared/src/main/ets/network/ApiService.ets', 'ApiService', { topic: true, reply: true })
+assertNetworkKeepsContentRenderedRaw('shared/src/main/ets/network/ApiV2Service.ets', 'ApiV2Service', { topic: true, reply: true })
+assertNetworkKeepsContentRenderedRaw('shared/src/main/ets/network/V2exTopicWebRepliesClient.ets', 'V2exTopicWebRepliesClient', { reply: true })
+assertDetailRenderPathCoverage()
 
-console.log(`PASS: ${cases.length} HTML entity decode cases; ${normalizeCases.length} normalize content_rendered cases; production normalize coverage asserted for V1/V2 and favorite TopicDetail render path`)
+console.log(
+  `PASS: ${cases.length} HTML entity decode cases; ${renderLeafCases.length} render-leaf cases + angle-bracket counter-proof; ` +
+  `content_rendered-stays-raw asserted for ApiService/ApiV2Service/V2exTopicWebRepliesClient and the TopicDetail render path`
+)

@@ -156,7 +156,8 @@ export class V2exTopicWebRepliesClient {
       return reply
     }
     reply.content = HtmlEntityUtils.decode(reply.content)
-    reply.content_rendered = HtmlEntityUtils.decode(reply.content_rendered)
+    // Keep content_rendered raw HTML: decoding its &lt;/&gt; entities corrupts
+    // angle-bracket text the renderers would then strip as fake tags. Leaves decode.
     if (reply.member) {
       reply.member.tagline = HtmlEntityUtils.decode(reply.member.tagline)
     }
