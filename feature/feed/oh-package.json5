@@ -1,6 +1,6 @@
 {
   "name": "feed",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Next2V feed module - latest/hot topics",
   "main": "src/main/ets/Index.ets",
   "dependencies": {
