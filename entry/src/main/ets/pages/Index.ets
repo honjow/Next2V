@@ -453,6 +453,7 @@ struct Index {
       TopicDetailPage({
         topicId: descriptor.topicDetailParams.topicId,
         targetFloor: descriptor.topicDetailParams.targetFloor || 0,
+        verifyReplyText: descriptor.topicDetailParams.verifyReplyText || '',
       })
     }
     if (descriptor.family === 'webLogin') {

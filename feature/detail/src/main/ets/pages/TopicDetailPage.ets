@@ -111,6 +111,8 @@ import type { V2exReplyModerationAction, V2exTopicModerationAction } from 'share
 export struct TopicDetailPage {
   @Param topicId: number = 0;
   @Param targetFloor: number = 0;
+  // Reply text a notification points at; used to verify/repair the targetFloor anchor (see jumpToTargetFloor).
+  @Param verifyReplyText: string = '';
   @Param hideTitle: boolean = false;
   @Local v: DetailViewModel = new DetailViewModel(0);
   // Same NavPathStack instance HdsNavigation is bound to (see NavStackHolder); method target only.
@@ -1773,7 +1775,13 @@ export struct TopicDetailPage {
     this.hasJumpedToTargetFloor = true
     this.ensureRepliesLoaded(floor)
       .then(() => {
-        this.jumpToLoadedReplyFloor(floor)
+        // V2EX's #reply anchor can be wrong; re-resolve against the notification's reply text.
+        const resolved = TopicDetailScrollCoordinator.verifiedFloor(
+          floor,
+          this.verifyReplyText,
+          this.v.getLoadedRepliesSnapshot(),
+        )
+        this.jumpToLoadedReplyFloor(resolved)
       })
       .catch((_error: Error) => {
         // ignore

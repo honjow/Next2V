@@ -31,7 +31,12 @@ export class NotificationPageCoordinator {
       return null
     }
     if (meta.targetFloor && meta.targetFloor > 0) {
-      return { topicId: meta.topicId, targetFloor: meta.targetFloor }
+      // Carry the reply text so the detail page can verify V2EX's #reply anchor and
+      // re-locate by content when the anchor points at the wrong floor (a server-side
+      // quirk on thanks/mention notifications). Rendered HTML is closest to a topic
+      // reply's content_rendered; fall back to the plain reply text.
+      const verify = (meta.replyRenderedContent || meta.replyContent || '').trim()
+      return { topicId: meta.topicId, targetFloor: meta.targetFloor, verifyReplyText: verify }
     }
     return { topicId: meta.topicId }
   }

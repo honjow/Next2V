@@ -5,6 +5,10 @@
 export interface TopicDetailParams {
   topicId: number
   targetFloor?: number
+  // Raw text of the reply a notification points at. V2EX's #reply{N} anchor (-> targetFloor)
+  // is sometimes wrong, so the detail page self-checks the anchored floor against this text
+  // and re-locates by content when they disagree. Empty for non-notification entries.
+  verifyReplyText?: string
 }
 
 export interface NodeTopicListParams {

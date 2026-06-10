@@ -1,4 +1,4 @@
-import { AppStrings, V2exReply } from 'shared'
+import { AppStrings, ReplyFingerprint, V2exReply } from 'shared'
 export interface JumpFloorResult {
   valid: boolean
   floor: number
@@ -93,6 +93,45 @@ export class TopicDetailScrollCoordinator {
       }
     }
     return false
+  }
+
+  // Verify V2EX's notification anchor (targetFloor) against the reply text it claims to point
+  // at, and re-locate by content when they disagree. V2EX occasionally stamps a thanks/mention
+  // notification with the wrong #reply{N} floor (two notifications for the SAME reply can carry
+  // different anchors), so trusting the anchor blindly scrolls to an unrelated floor.
+  //
+  // Conservative by design: when the reply sitting at targetFloor already matches the text, the
+  // anchor is honored untouched (zero change for the common, correct case). Only a mismatch — or
+  // a targetFloor that isn't present in the loaded replies — triggers a content search, and a
+  // failed search falls back to the original targetFloor (never worse than today's behavior).
+  // `replies` is the flat, chronological loaded list (every reply carries its own floor).
+  static verifiedFloor(targetFloor: number, verifyReplyText: string, replies: V2exReply[]): number {
+    const verify = (verifyReplyText || '').trim()
+    if (!verify || !replies || replies.length === 0) {
+      return targetFloor
+    }
+    if (targetFloor > 0) {
+      for (let i = 0; i < replies.length; i++) {
+        const row = replies[i]
+        if (row && (row.floor || 0) === targetFloor) {
+          // Anchor lands on a real, loaded floor: trust it iff the text agrees.
+          if (ReplyFingerprint.matches(row.content || row.content_rendered || '', verify)) {
+            return targetFloor
+          }
+          break
+        }
+      }
+    }
+    for (let i = 0; i < replies.length; i++) {
+      const row = replies[i]
+      if (row && ReplyFingerprint.matches(row.content || row.content_rendered || '', verify)) {
+        const floor = row.floor || 0
+        if (floor > 0) {
+          return floor
+        }
+      }
+    }
+    return targetFloor
   }
 
   static async ensureRepliesLoaded(
