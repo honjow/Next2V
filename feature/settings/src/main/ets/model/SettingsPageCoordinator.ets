@@ -1,5 +1,7 @@
 import {
+  AppStrings,
   AvatarAppearanceSettings,
+  HotReplySettings,
   LanguageSettings,
   ReadingSettings,
   ReplyActionAlignmentSettings,
@@ -84,6 +86,25 @@ export class SettingsPageCoordinator {
       { label: $r('app.string.fixed_right'), value: ReplyActionAlignmentSettings.MODE_FIXED_RIGHT },
     )
     return options
+  }
+
+  static hotReplyMaxCountOptions(): SettingsOption[] {
+    return [
+      { label: SettingsPageCoordinator.hotReplyCountLabel(1), value: '1' },
+      { label: SettingsPageCoordinator.hotReplyCountLabel(3), value: '3' },
+      { label: SettingsPageCoordinator.hotReplyCountLabel(5), value: '5' },
+      { label: SettingsPageCoordinator.hotReplyCountLabel(10), value: '10' },
+    ]
+  }
+
+  static hotReplyMinThanksOptions(): SettingsOption[] {
+    return [
+      { label: SettingsPageCoordinator.hotReplyMinThanksLabel(1), value: '1' },
+      { label: SettingsPageCoordinator.hotReplyMinThanksLabel(3), value: '3' },
+      { label: SettingsPageCoordinator.hotReplyMinThanksLabel(5), value: '5' },
+      { label: SettingsPageCoordinator.hotReplyMinThanksLabel(10), value: '10' },
+      { label: SettingsPageCoordinator.hotReplyMinThanksLabel(20), value: '20' },
+    ]
   }
 
   static base64DecodeModeOptions(): SettingsOption[] {
@@ -180,6 +201,22 @@ export class SettingsPageCoordinator {
       return $r('app.string.fixed_right')
     }
     return $r('app.string.follow_operation')
+  }
+
+  static hotReplyCountLabel(value: number): ResourceStr {
+    const normalized = HotReplySettings.normalizeMaxCount(value)
+    return AppStrings.format(
+      AppStrings.text($r('app.string.hot_replies_count_format'), '{0} replies'),
+      [`${normalized}`],
+    )
+  }
+
+  static hotReplyMinThanksLabel(value: number): ResourceStr {
+    const normalized = HotReplySettings.normalizeMinThanks(value)
+    return AppStrings.format(
+      AppStrings.text($r('app.string.hot_replies_min_thanks_format'), '{0} likes'),
+      [`${normalized}`],
+    )
   }
 
 

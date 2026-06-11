@@ -593,6 +593,38 @@
       "value": "Reply button alignment"
     },
     {
+      "name": "hot_replies",
+      "value": "Top replies"
+    },
+    {
+      "name": "hot_replies_count",
+      "value": "Max shown"
+    },
+    {
+      "name": "hot_replies_min_thanks",
+      "value": "Threshold"
+    },
+    {
+      "name": "hot_replies_count_format",
+      "value": "{0} top replies"
+    },
+    {
+      "name": "hot_replies_min_thanks_format",
+      "value": "{0} likes"
+    },
+    {
+      "name": "hot_replies_header_format",
+      "value": "Top replies · {0}"
+    },
+    {
+      "name": "hot_replies_threshold_format",
+      "value": "≥ {0} likes"
+    },
+    {
+      "name": "hot_replies_jump_format",
+      "value": "Go to #{0}"
+    },
+    {
       "name": "remember_read_position",
       "value": "Remember reading position"
     },

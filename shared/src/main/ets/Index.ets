@@ -61,6 +61,7 @@ export { ImageHeroState, connectImageHero, heroIdForUrl } from './state/ImageHer
 export { ThemeDisplayState, connectThemeDisplay } from './state/ThemeDisplayState'
 export { ThemeColorState, connectThemeColor } from './state/ThemeColorState'
 export { ReplyDisplayState, connectReplyDisplay } from './state/ReplyDisplayState'
+export { HotReplySettingsState, connectHotReplySettings } from './state/HotReplySettingsState'
 export { LanguageState, connectLanguageState } from './state/LanguageState'
 export {
   MotionReplyAlignmentState,
@@ -277,6 +278,8 @@ export type { ReadingSettingsSnapshot } from './settings/ReadingSettings'
 export { Base64DecodeUtils } from './utils/Base64DecodeUtils'
 export type { Base64DecodeResult } from './utils/Base64DecodeUtils'
 export { ReplyDisplaySettings } from './settings/ReplyDisplaySettings'
+export { HotReplySettings } from './settings/HotReplySettings'
+export type { HotReplySettingsSnapshot } from './settings/HotReplySettings'
 export { ReplyCardStyleSettings } from './settings/ReplyCardStyleSettings'
 export { AvatarAppearanceSettings } from './settings/AvatarAppearanceSettings'
 export { ReplyActionAlignmentSettings } from './settings/ReplyActionAlignmentSettings'

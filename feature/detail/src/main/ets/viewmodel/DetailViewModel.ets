@@ -12,9 +12,11 @@ import {
   translateApiError,
   CacheMergeCoordinator,
   ReplyFingerprint,
+  HotReplySettings,
 } from 'shared'
 import type { V2exTopicWebRepliesPage, V2exTopicWebRepliesAllResult, TopicDetailActionOverlay } from 'shared'
 import { ReplyDataSource } from '../model/DetailModels'
+import { HotReplyCoordinator } from '../model/HotReplyCoordinator'
 import { ReplyThreadCoordinator } from '../model/ReplyThreadCoordinator'
 
 export interface ReplyThankSnapshot {
@@ -44,6 +46,7 @@ export class DetailViewModel {
   @Trace repliesHasMore: boolean = false
   @Trace isRepliesLoadingMore: boolean = false
   @Trace repliesLoaded: number = 0
+  @Trace hotReplyCandidates: V2exReply[] = []
   @Trace repliesLoadMoreState: string = 'endReached'
   loadMoreErrorMessage: string = ''
   isBottomRefreshing: boolean = false
@@ -118,8 +121,8 @@ export class DetailViewModel {
    * Called after load() completes. Checks if thread mode needs preloading
    * and either auto-preloads or sets needsPreloadConfirm for the UI to show a dialog.
    */
-  triggerThreadPreloadIfNeeded(): void {
-    if (!this.isThreadMode() || !this.repliesHasMore || this.allRepliesLoaded) {
+  triggerThreadPreloadIfNeeded(hotRepliesEnabled: boolean = false): void {
+    if ((!this.isThreadMode() && !hotRepliesEnabled) || !this.repliesHasMore || this.allRepliesLoaded) {
       this.flushHeldRepliesPublish()
       return
     }
@@ -171,6 +174,13 @@ export class DetailViewModel {
 
   getLoadedRepliesSnapshot(): V2exReply[] {
     return this.replies.slice()
+  }
+
+  getHotReplies(enabled: boolean, maxCount: number, minThanks: number): V2exReply[] {
+    if (!enabled) {
+      return []
+    }
+    return HotReplyCoordinator.filterCandidates(this.hotReplyCandidates, maxCount, minThanks)
   }
 
   optimisticallyMarkReplyThanked(replyId: number): ReplyThankSnapshot | null {
@@ -703,6 +713,13 @@ export class DetailViewModel {
     this.publishedReplies = this.replies
     this.replyDataSource.setData(this.getVisibleReplies())
     this.repliesLoaded = this.replies.length
+    this.hotReplyCandidates = HotReplyCoordinator.select(
+      this.replies,
+      this.topic,
+      true,
+      HotReplySettings.MAX_MAX_COUNT,
+      HotReplySettings.MIN_THANKS,
+    )
   }
 
   // Safety net: if a held page-1 publish never got superseded by a preload publish (preload

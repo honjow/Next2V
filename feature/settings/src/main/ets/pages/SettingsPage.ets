@@ -12,6 +12,7 @@ import {
   connectCloudSync,
   connectAvatarAppearance,
   connectHomeTabAutoHide,
+  connectHotReplySettings,
   connectImageUpload,
   connectLanguageState,
   connectMediaSettings,
@@ -27,6 +28,8 @@ import {
   ConciseListRow,
   GroupedListSection,
   HomeTabSettings,
+  HotReplySettings,
+  HotReplySettingsState,
   HttpClient,
   ImageUploadState,
   NetworkProxySettings,
@@ -70,6 +73,7 @@ export struct SettingsPage {
   private domain: ApiDomainState = connectApiDomain();
   private avatar: AvatarAppearanceState = connectAvatarAppearance();
   private replyCardStyleState: ReplyCardStyleState = connectReplyCardStyle();
+  private hotReplies: HotReplySettingsState = connectHotReplySettings();
   private topicReplyButton: TopicDetailReplyButtonState = connectTopicDetailReplyButton();
   private reading: ReadingSettingsState = connectReadingSettings();
   private proxy: NetworkProxyState = connectNetworkProxy();
@@ -98,6 +102,8 @@ export struct SettingsPage {
   @Local private replyDisplayMenuShown: boolean = false;
   @Local private replyCardStyleMenuShown: boolean = false;
   @Local private replyActionAlignmentMenuShown: boolean = false;
+  @Local private hotReplyMaxCountMenuShown: boolean = false;
+  @Local private hotReplyMinThanksMenuShown: boolean = false;
   @Local private base64ModeMenuShown: boolean = false;
   private http: HttpClient = HttpClient.getInstance();
 
@@ -502,6 +508,45 @@ export struct SettingsPage {
         })
 
       this.SettingsDivider()
+      this.TogglePreferenceRow(
+        $r('app.string.hot_replies'),
+        this.hotReplies.enabled,
+        (value: boolean) => {
+          this.updateHotRepliesEnabled(value)
+        },
+      )
+
+      this.SettingsDivider()
+      SettingsDropdownRow({
+        title: $r('app.string.hot_replies_count'),
+        trailingText: SettingsPageCoordinator.hotReplyCountLabel(this.hotReplies.maxCount),
+        openAction: () => {
+          this.showHotReplyMaxCountMenu()
+        },
+      })
+        .bindMenu(this.hotReplyMaxCountMenuShown, this.HotReplyMaxCountMenu, {
+          placement: Placement.BottomRight,
+          aboutToDisappear: () => {
+            this.hotReplyMaxCountMenuShown = false
+          },
+        })
+
+      this.SettingsDivider()
+      SettingsDropdownRow({
+        title: $r('app.string.hot_replies_min_thanks'),
+        trailingText: SettingsPageCoordinator.hotReplyMinThanksLabel(this.hotReplies.minThanks),
+        openAction: () => {
+          this.showHotReplyMinThanksMenu()
+        },
+      })
+        .bindMenu(this.hotReplyMinThanksMenuShown, this.HotReplyMinThanksMenu, {
+          placement: Placement.BottomRight,
+          aboutToDisappear: () => {
+            this.hotReplyMinThanksMenuShown = false
+          },
+        })
+
+      this.SettingsDivider()
 
       this.TogglePreferenceRow(
         $r('app.string.remember_read_position'),
@@ -629,6 +674,32 @@ export struct SettingsPage {
   }
 
   @Builder
+  HotReplyMaxCountMenu() {
+    Menu() {
+      ForEach(
+        SettingsPageCoordinator.hotReplyMaxCountOptions(),
+        (option: SettingsOption) => {
+          this.HotReplyMaxCountMenuItem(option)
+        },
+        (option: SettingsOption) => option.value,
+      )
+    }
+  }
+
+  @Builder
+  HotReplyMinThanksMenu() {
+    Menu() {
+      ForEach(
+        SettingsPageCoordinator.hotReplyMinThanksOptions(),
+        (option: SettingsOption) => {
+          this.HotReplyMinThanksMenuItem(option)
+        },
+        (option: SettingsOption) => option.value,
+      )
+    }
+  }
+
+  @Builder
   Base64ModeMenu() {
     Menu() {
       ForEach(
@@ -685,6 +756,32 @@ export struct SettingsPage {
         ) === option.value,
       selectAction: () => {
         this.updateReplyActionAlignmentMode(option.value)
+      },
+    })
+  }
+
+  @Builder
+  HotReplyMaxCountMenuItem(option: SettingsOption) {
+    SettingsCheckedMenuItem({
+      label: option.label,
+      selected:
+        this.hotReplies.maxCount ===
+        HotReplySettings.normalizeMaxCount(Number.parseInt(option.value)),
+      selectAction: () => {
+        this.updateHotReplyMaxCount(option.value)
+      },
+    })
+  }
+
+  @Builder
+  HotReplyMinThanksMenuItem(option: SettingsOption) {
+    SettingsCheckedMenuItem({
+      label: option.label,
+      selected:
+        this.hotReplies.minThanks ===
+        HotReplySettings.normalizeMinThanks(Number.parseInt(option.value)),
+      selectAction: () => {
+        this.updateHotReplyMinThanks(option.value)
       },
     })
   }
@@ -781,6 +878,20 @@ export struct SettingsPage {
     this.replyActionAlignmentMenuShown = false
     setTimeout(() => {
       this.replyActionAlignmentMenuShown = true
+    }, SettingsPageCoordinator.MENU_OPEN_DELAY_MS)
+  }
+
+  private showHotReplyMaxCountMenu(): void {
+    this.hotReplyMaxCountMenuShown = false
+    setTimeout(() => {
+      this.hotReplyMaxCountMenuShown = true
+    }, SettingsPageCoordinator.MENU_OPEN_DELAY_MS)
+  }
+
+  private showHotReplyMinThanksMenu(): void {
+    this.hotReplyMinThanksMenuShown = false
+    setTimeout(() => {
+      this.hotReplyMinThanksMenuShown = true
     }, SettingsPageCoordinator.MENU_OPEN_DELAY_MS)
   }
 
@@ -908,6 +1019,40 @@ export struct SettingsPage {
     SettingsSaveCoordinator.applyReplyActionAlignmentMode(effective)
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     SettingsSaveCoordinator.saveReplyActionAlignmentMode(context, normalized)
+  }
+
+  private updateHotRepliesEnabled(enabled: boolean): void {
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    SettingsSaveCoordinator.saveHotReplies(
+      context,
+      enabled,
+      this.hotReplies.maxCount,
+      this.hotReplies.minThanks,
+    )
+  }
+
+  private updateHotReplyMaxCount(value: string): void {
+    this.hotReplyMaxCountMenuShown = false
+    const normalized = HotReplySettings.normalizeMaxCount(Number.parseInt(value))
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    SettingsSaveCoordinator.saveHotReplies(
+      context,
+      this.hotReplies.enabled,
+      normalized,
+      this.hotReplies.minThanks,
+    )
+  }
+
+  private updateHotReplyMinThanks(value: string): void {
+    this.hotReplyMinThanksMenuShown = false
+    const normalized = HotReplySettings.normalizeMinThanks(Number.parseInt(value))
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    SettingsSaveCoordinator.saveHotReplies(
+      context,
+      this.hotReplies.enabled,
+      this.hotReplies.maxCount,
+      normalized,
+    )
   }
 
   private base64DecodeModeLabel(): ResourceStr {

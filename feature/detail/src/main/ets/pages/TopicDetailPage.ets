@@ -88,8 +88,10 @@ import {
   CacheOwnerResolver,
   TopicDetailActionOverlaySettings,
   BlockedListSettings,
+  connectHotReplySettings,
   connectBlockedListStorage,
   BlockedListStorageState,
+  HotReplySettingsState,
   DiagnosticLogger,
   connectNavStack,
   connectLayoutSafeArea,
@@ -107,6 +109,7 @@ import {
 } from 'shared'
 import type { V2exTopicThankAction, CacheScope, TopicDetailActionOverlay } from 'shared'
 import type { V2exReplyModerationAction, V2exTopicModerationAction } from 'shared'
+import { HotRepliesPanel } from '../components/HotRepliesPanel'
 @ComponentV2
 export struct TopicDetailPage {
   @Param topicId: number = 0;
@@ -122,6 +125,7 @@ export struct TopicDetailPage {
   private layout: LayoutSafeAreaState = connectLayoutSafeArea();
   private reading: ReadingSettingsState = connectReadingSettings();
   private authState: AuthCookieState = connectAuthCookie();
+  @Local private hotReplies: HotReplySettingsState = connectHotReplySettings();
   // @Monitor sources for the motion-hand edge + reply-button auto-hide preferences (see @Monitor below).
   @Local private motion: MotionHandEdgeState = connectMotionHandEdge();
   @Local private replyButton: TopicDetailReplyButtonState = connectTopicDetailReplyButton();
@@ -148,6 +152,7 @@ export struct TopicDetailPage {
   @Local private isModerationActionLoading: boolean = false;
   @Local private jumpFloorText: string = '';
   @Local private contextReply: V2exReply | null = null;
+  @Local private hotRepliesExpanded: boolean = true;
   @Local private contextItems: ReplyContextItem[] = [];
   @Local private contextSheetVisible: boolean = false;
   @Local private replyDisplayMenuShown: boolean = false;
@@ -312,10 +317,7 @@ export struct TopicDetailPage {
               // Arm the thread preload BEFORE the floor-targeting restore: ensureRepliesLoaded's
               // loadMore loop must see isPreloadingAll and join the in-flight preload instead of
               // racing it with a duplicate page fetch whose publish would collapse a held thread.
-              this.v.triggerThreadPreloadIfNeeded()
-              if (this.v.needsPreloadConfirm) {
-                this.showPreloadConfirmDialog()
-              }
+              this.triggerReplyPreloadIfNeeded()
               this.restoreInitialPosition()
               this.publishOwnership(context)
             })
@@ -811,6 +813,11 @@ export struct TopicDetailPage {
     this.applyReplyButtonAutoHideBinding()
   }
 
+  @Monitor('hotReplies.enabled', 'hotReplies.maxCount', 'hotReplies.minThanks')
+  private onHotReplySettingsChanged(): void {
+    this.triggerReplyPreloadIfNeeded()
+  }
+
   // TOPIC_DETAIL_ACTION command bus (was the V1 TopicDetailActionListener child). Filter by topicId so a
   // command targeting another stacked page is ignored — preventing duplicate dialogs on underneath pages.
   @Monitor('topicAction.command')
@@ -973,7 +980,7 @@ export struct TopicDetailPage {
       scrollEnabled: this.listScrollEnabled,
       onRefresh: async () => {
         await this.v.load()
-        this.v.triggerThreadPreloadIfNeeded()
+        this.triggerReplyPreloadIfNeeded()
       },
       onScrollEnableChange: (enabled: boolean) => {
         this.listScrollEnabled = enabled
@@ -999,6 +1006,10 @@ export struct TopicDetailPage {
     }) {
       ListItem() {
         this.TopicCard()
+      }
+
+      ListItem() {
+        this.HotRepliesPreview(this.hotReplyItems())
       }
 
       // Reply divider
@@ -1326,6 +1337,7 @@ export struct TopicDetailPage {
           (block: TopicSupplementBlock) => block.key,
         )
       }
+
     }
     .padding(this.topicCardPadding())
     .width('100%')
@@ -1341,6 +1353,67 @@ export struct TopicDetailPage {
     return TopicDetailContentCoordinator.topicSupplementBlocks(
       this.v.topic?.topicSupplementMarkdown || '',
     )
+  }
+
+  private hotReplyItems(): V2exReply[] {
+    return this.v.getHotReplies(
+      this.hotReplies.enabled,
+      this.hotReplies.maxCount,
+      this.hotReplies.minThanks,
+    )
+  }
+
+  @Builder HotRepliesPreview(items: V2exReply[]) {
+    if (items.length > 0) {
+      HotRepliesPanel({
+        replies: items,
+        minThanks: this.hotReplies.minThanks,
+        opMemberId: this.v.topic?.member.id || 0,
+        expanded: this.hotRepliesExpanded,
+        onExpandedChange: (expanded: boolean) => {
+          this.hotRepliesExpanded = expanded
+        },
+        onJumpClick: (reply: V2exReply) => {
+          this.jumpToLoadedReplyFloor(reply.floor || 0)
+        },
+        onUserClick: (username: string) => {
+          this.openUserProfile(username)
+        },
+        onContextClick: (reply: V2exReply) => {
+          this.openReplyContext(reply)
+        },
+        onReplyClick: (reply: V2exReply) => {
+          this.openReplyEditor(this.getReplyMentionText(reply, Math.max(0, (reply.floor || 1) - 1)))
+        },
+        onThankClick: (reply: V2exReply) => {
+          this.prepareReplyThank(reply)
+        },
+        onIgnoreClick: (reply: V2exReply) => {
+          this.prepareReplyIgnore(reply)
+        },
+        onReportClick: (reply: V2exReply) => {
+          this.prepareReplyReport(reply)
+        },
+        onCopyUserClick: (reply: V2exReply) => {
+          this.copyToClipboard(reply.member.username || '')
+        },
+        onCopyContentClick: (reply: V2exReply) => {
+          this.copyToClipboard(reply.content || '')
+        },
+        isReplyThanked: (reply: V2exReply) => {
+          return this.isReplyThanked(reply)
+        },
+        isReplyThankPending: (reply: V2exReply) => {
+          return this.isReplyThankPending(reply.id)
+        },
+        onImageClick: (url: string) => {
+          this.openImagePreview(url)
+        },
+        onLinkClick: (url: string) => {
+          this.openContentLink(url)
+        },
+      })
+    }
   }
 
   @Builder ReplyDivider() {
@@ -1500,11 +1573,15 @@ export struct TopicDetailPage {
   // afterwards, mirroring the initial-load path including its >limit confirm dialog.
   private reloadTopicWithThreadPreload(): Promise<void> {
     return this.v.load().then(() => {
-      this.v.triggerThreadPreloadIfNeeded()
-      if (this.v.needsPreloadConfirm) {
-        this.showPreloadConfirmDialog()
-      }
+      this.triggerReplyPreloadIfNeeded()
     })
+  }
+
+  private triggerReplyPreloadIfNeeded(): void {
+    this.v.triggerThreadPreloadIfNeeded(this.hotReplies.enabled)
+    if (this.v.needsPreloadConfirm) {
+      this.showPreloadConfirmDialog()
+    }
   }
 
   private loadMoreReplies(): void {

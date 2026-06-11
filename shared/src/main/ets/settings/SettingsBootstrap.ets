@@ -9,6 +9,7 @@ import { AccountSessionCoordinator } from './AccountSessionCoordinator'
 import { DiagnosticsSettings } from './DiagnosticsSettings'
 import { FeedTabSettings } from './FeedTabSettings'
 import { HomeTabSettings } from './HomeTabSettings'
+import { HotReplySettings } from './HotReplySettings'
 import { TopicDetailReplyActionSettings } from './TopicDetailReplyActionSettings'
 import { LanguageSettings } from './LanguageSettings'
 import { MediaSettings } from './MediaSettings'
@@ -50,6 +51,7 @@ export class SettingsBootstrap {
     await SettingsBootstrap.restoreIgnoredNodes(context)
     await SettingsBootstrap.restoreNetworkProxy(context, settingsStore)
     await SettingsBootstrap.restoreReplyDisplay(context, settingsStore)
+    await SettingsBootstrap.restoreHotReplies(context, settingsStore)
     await SettingsBootstrap.restoreReading(context, settingsStore)
     await SettingsBootstrap.restoreHomeTabs(context, settingsStore)
     await SettingsBootstrap.restoreTopicDetailReplyAction(context, settingsStore)
@@ -91,6 +93,7 @@ export class SettingsBootstrap {
     await SettingsBootstrap.restoreRecentStickers(context)
     await SettingsBootstrap.restoreIgnoredNodes(context)
     await SettingsBootstrap.restoreReplyDisplay(context, settingsStore)
+    await SettingsBootstrap.restoreHotReplies(context, settingsStore)
     await SettingsBootstrap.restoreReading(context, settingsStore)
     await SettingsBootstrap.restoreHomeTabs(context, settingsStore)
     await SettingsBootstrap.restoreTopicDetailReplyAction(context, settingsStore)
@@ -256,6 +259,24 @@ export class SettingsBootstrap {
     ).catch((error: Error) => {
       console.error('restore reply display settings failed: ' + error.message)
       ReplyDisplaySettings.apply(ReplyDisplaySettings.MODE_THREAD)
+    })
+  }
+
+  private static async restoreHotReplies(
+    context: common.UIAbilityContext,
+    settingsStore?: SettingsPreferencesStore,
+  ): Promise<void> {
+    await (
+      settingsStore
+        ? HotReplySettings.loadFromStore(settingsStore)
+        : HotReplySettings.load(context)
+    ).catch((error: Error) => {
+      console.error('restore hot reply settings failed: ' + error.message)
+      HotReplySettings.apply(
+        HotReplySettings.DEFAULT_ENABLED,
+        HotReplySettings.DEFAULT_MAX_COUNT,
+        HotReplySettings.DEFAULT_MIN_THANKS,
+      )
     })
   }
 

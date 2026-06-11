@@ -593,6 +593,38 @@
       "value": "回复按钮对齐"
     },
     {
+      "name": "hot_replies",
+      "value": "高赞回复"
+    },
+    {
+      "name": "hot_replies_count",
+      "value": "最多显示"
+    },
+    {
+      "name": "hot_replies_min_thanks",
+      "value": "高赞门槛"
+    },
+    {
+      "name": "hot_replies_count_format",
+      "value": "{0} 条高赞"
+    },
+    {
+      "name": "hot_replies_min_thanks_format",
+      "value": "{0} 赞"
+    },
+    {
+      "name": "hot_replies_header_format",
+      "value": "高赞回复 · {0}"
+    },
+    {
+      "name": "hot_replies_threshold_format",
+      "value": "≥ {0} 赞"
+    },
+    {
+      "name": "hot_replies_jump_format",
+      "value": "跳到 #{0}"
+    },
+    {
       "name": "remember_read_position",
       "value": "记住阅读位置"
     },

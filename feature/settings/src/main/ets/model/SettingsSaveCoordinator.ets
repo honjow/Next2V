@@ -6,6 +6,7 @@ import {
   CookieJarSettings,
   DiagnosticsSettings,
   HomeTabSettings,
+  HotReplySettings,
   HttpClient,
   LanguageSettings,
   MediaSettings,
@@ -111,6 +112,17 @@ export class SettingsSaveCoordinator {
   static saveReplyActionAlignmentMode(context: common.UIAbilityContext, mode: string): void {
     ReplyActionAlignmentSettings.save(context, mode).catch((error: Error) => {
       console.error('save reply action alignment mode failed: ' + error.message)
+    })
+  }
+
+  static saveHotReplies(
+    context: common.UIAbilityContext,
+    enabled: boolean,
+    maxCount: number,
+    minThanks: number,
+  ): void {
+    HotReplySettings.save(context, enabled, maxCount, minThanks).catch((error: Error) => {
+      console.error('save hot reply settings failed: ' + error.message)
     })
   }
 

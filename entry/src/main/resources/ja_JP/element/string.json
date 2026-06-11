@@ -593,6 +593,38 @@
       "value": "返信ボタン配置"
     },
     {
+      "name": "hot_replies",
+      "value": "人気返信"
+    },
+    {
+      "name": "hot_replies_count",
+      "value": "最大表示数"
+    },
+    {
+      "name": "hot_replies_min_thanks",
+      "value": "判定ライン"
+    },
+    {
+      "name": "hot_replies_count_format",
+      "value": "人気返信 {0} 件"
+    },
+    {
+      "name": "hot_replies_min_thanks_format",
+      "value": "{0} いいね"
+    },
+    {
+      "name": "hot_replies_header_format",
+      "value": "人気返信 · {0}"
+    },
+    {
+      "name": "hot_replies_threshold_format",
+      "value": "{0} いいね以上"
+    },
+    {
+      "name": "hot_replies_jump_format",
+      "value": "#{0} へ"
+    },
+    {
       "name": "remember_read_position",
       "value": "閲覧位置を記憶"
     },
