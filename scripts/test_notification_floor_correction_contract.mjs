@@ -29,6 +29,7 @@ function normalize(value) {
   let s = value || ''
   s = s.replace(/<[^>]+>/g, ' ')
   s = decodeHtmlEntities(s)
+  s = s.replace(/^\s*@\s*[0-9A-Za-z_]+\s*#\s*\d+\s*/i, ' ')
   s = s.replace(/!\[[^\]]*\]\([^)]*\)/g, ' ')
   s = s.replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
   s = s.replace(/https?:\/\/[^\s)]+/gi, ' ')
@@ -66,6 +67,7 @@ function verifiedFloor(targetFloor, verifyReplyText, replies) {
 // compactText form V2EX hands us (mention rendered as "@ Justin13", trailing image -> "图片").
 const MY_REPLY_MD = '@Justin13 #3 AI 用久了把 ai 当成自己的能力了 ![](https://i.imgur.com/x.png)'
 const NOTIF_REPLY_TEXT = '@ Justin13 #3 AI 用久了把 ai 当成自己的能力了 图片'
+const USER_REPLY_PREVIEW_TEXT = '@pz886 #9 换个说法，就是谷歌的那个验证码 '
 const replies = [
   { floor: 3, content: '上面的两个人答非所问啊\n别人问难不难？' },
   { floor: 26, content: MY_REPLY_MD },
@@ -80,7 +82,10 @@ const cases = [
   { name: 'no verify text -> anchor untouched', target: 32, verify: '', expect: 32 },
   { name: 'unmatched text -> falls back to anchor', target: 9, verify: '完全不相关的别的回复内容xyz', expect: 9 },
   { name: 'anchor floor not loaded but content present -> relocates', target: 99, verify: NOTIF_REPLY_TEXT, expect: 26 },
+  { name: 'no anchor but content present -> locates by text', target: 0, verify: NOTIF_REPLY_TEXT, expect: 26 },
+  { name: 'user reply preview prefix is ignored when locating own reply', target: 9, verify: USER_REPLY_PREVIEW_TEXT, expect: 47 },
 ]
+replies.push({ floor: 47, content: '换个说法，就是谷歌的那个验证码' })
 for (const c of cases) {
   const got = verifiedFloor(c.target, c.verify, replies)
   if (got !== c.expect) {
@@ -111,8 +116,11 @@ function assertContains(file, needle, label) {
 assertContains('shared/src/main/ets/model/RouteParams.ets', 'verifyReplyText?: string', 'TopicDetailParams.verifyReplyText')
 assertContains('entry/src/main/ets/model/NotificationPageCoordinator.ets', 'verifyReplyText: verify', 'notification routeParams carries verifyReplyText')
 assertContains('entry/src/main/ets/model/IndexRouteCoordinator.ets', "stringParam(param, 'verifyReplyText')", 'descriptor rebuild keeps verifyReplyText')
+assertContains('entry/src/main/ets/model/IndexRouteCoordinator.ets', 'if (verifyReplyText.trim().length > 0)', 'descriptor rebuild keeps text-only reply targets')
 assertContains('entry/src/main/ets/pages/Index.ets', 'verifyReplyText: descriptor.topicDetailParams.verifyReplyText', 'TopicDetailPage receives verifyReplyText')
 assertContains('feature/detail/src/main/ets/model/TopicDetailScrollCoordinator.ets', 'static verifiedFloor(', 'verifiedFloor exists')
 assertContains('feature/detail/src/main/ets/pages/TopicDetailPage.ets', 'TopicDetailScrollCoordinator.verifiedFloor(', 'jumpToTargetFloor uses verifiedFloor')
+assertContains('feature/detail/src/main/ets/pages/TopicDetailPage.ets', 'private jumpToTargetReplyText()', 'text-only reply targets are located by content')
+assertContains('shared/src/main/ets/utils/ReplyFingerprint.ets', "replace(/^\\s*@\\s*[0-9A-Za-z_]+\\s*#\\s*\\d+\\s*/i", 'reply fingerprint strips leading user-reply reference prefixes')
 
-console.log(`PASS: ${cases.length} verifiedFloor cases + fingerprint match/anti-match + 6 production wiring assertions`)
+console.log(`PASS: ${cases.length} verifiedFloor cases + fingerprint match/anti-match + 9 production wiring assertions`)

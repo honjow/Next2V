@@ -27,6 +27,7 @@ export struct ReplyCard {
   @Param childAvatarVisible: boolean = true;
   @Param childRepliesExpandable: boolean = false;
   @Param childRepliesExpanded: boolean = true;
+  @Param scrollTargetFloor: number = 0;
   @Local private cardWidth: number = 0;
   @Local private threadGuideHeights: Record<string, number> = {};
   @Local private childRepliesExpandedState: boolean = true;
@@ -47,6 +48,7 @@ export struct ReplyCard {
   @Event onLinkClick?: (url: string) => void;
   @Event onMentionUserClick?: (username: string) => void;
   @Event onChildRepliesExpandedChange?: (reply: V2exReply, expanded: boolean) => void;
+  @Event onTargetFloorAreaChange?: (floor: number, top: number, height: number) => void;
   // V2 mirror of REPLY_CARD_STYLE; ReplyCardStyleSettings.apply() dual-writes this @Trace
   // field alongside the legacy AppStorage key still read by the V1 SettingsPage.
   private replyStyleState: ReplyCardStyleState = connectReplyCardStyle();
@@ -290,6 +292,28 @@ export struct ReplyCard {
     this.threadGuideHeights = next
   }
 
+  private areaNumber(value: Length | undefined): number {
+    if (typeof value === 'number') {
+      return value
+    }
+    if (typeof value === 'string') {
+      const parsed = Number.parseFloat(value)
+      return Number.isNaN(parsed) ? 0 : parsed
+    }
+    return 0
+  }
+
+  private reportTargetFloorArea(area: Area): void {
+    if (!this.onTargetFloorAreaChange || this.scrollTargetFloor <= 0 || this.floor !== this.scrollTargetFloor) {
+      return
+    }
+    this.onTargetFloorAreaChange(
+      this.floor,
+      this.areaNumber(area.globalPosition?.y),
+      this.areaNumber(area.height),
+    )
+  }
+
   private cardBackground(): ResourceColor | Color {
     if (this.embedded) {
       return Color.Transparent
@@ -406,6 +430,7 @@ export struct ReplyCard {
                         showAvatar: this.childAvatarVisible,
                         childAvatarVisible: this.childAvatarVisible,
                         childRepliesExpandable: false,
+                        scrollTargetFloor: this.scrollTargetFloor,
                         isWrongReference: !!child.isWrongReference,
                         isDuplicateThreadItem: !!child.isDuplicateThreadItem,
                         onUserClick: this.onUserClick,
@@ -424,6 +449,7 @@ export struct ReplyCard {
                         onImageClick: this.onImageClick,
                         onLinkClick: this.onLinkClick,
                         onMentionUserClick: this.onMentionUserClick,
+                        onTargetFloorAreaChange: this.onTargetFloorAreaChange,
                       })
                       if (this.childReplyBottomGap(index) > 0) {
                         Blank()
@@ -465,6 +491,7 @@ export struct ReplyCard {
         const parsed = Number.parseFloat(newValue.width)
         this.cardWidth = Number.isNaN(parsed) ? 0 : parsed
       }
+      this.reportTargetFloorArea(newValue)
     })
   }
 }

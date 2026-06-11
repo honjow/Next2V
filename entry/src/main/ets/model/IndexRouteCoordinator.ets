@@ -164,11 +164,14 @@ export class IndexRouteCoordinator {
   static topicDetailRouteParams(param: Object): TopicDetailParams {
     const topicId = IndexRouteCoordinator.numberParam(param, 'topicId')
     const targetFloor = IndexRouteCoordinator.numberParam(param, 'targetFloor')
+    const verifyReplyText = IndexRouteCoordinator.stringParam(param, 'verifyReplyText')
     if (targetFloor > 0) {
       // verifyReplyText rides alongside targetFloor so the detail page can repair a wrong
       // V2EX #reply anchor by matching the reply text (see TopicDetailScrollCoordinator.verifiedFloor).
-      const verifyReplyText = IndexRouteCoordinator.stringParam(param, 'verifyReplyText')
       return { topicId, targetFloor, verifyReplyText }
+    }
+    if (verifyReplyText.trim().length > 0) {
+      return { topicId, verifyReplyText }
     }
     return { topicId }
   }

@@ -70,9 +70,10 @@ export struct UserRepliesPage {
     if (!reply || reply.topic_id <= 0) {
       return
     }
+    const verifyReplyText = (reply.content_rendered || reply.content || '').trim()
     const p: TopicDetailParams = reply.target_floor && reply.target_floor > 0
-      ? { topicId: reply.topic_id, targetFloor: reply.target_floor }
-      : { topicId: reply.topic_id }
+      ? { topicId: reply.topic_id, targetFloor: reply.target_floor, verifyReplyText: verifyReplyText }
+      : { topicId: reply.topic_id, verifyReplyText: verifyReplyText }
     this.stack.pushPathByName('TopicDetail', p as Object)
   }
 

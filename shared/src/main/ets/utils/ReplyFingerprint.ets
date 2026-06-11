@@ -16,6 +16,7 @@ export class ReplyFingerprint {
     let s = value || ''
     s = s.replace(/<[^>]+>/g, ' ')
     s = HtmlEntityUtils.decode(s)
+    s = s.replace(/^\s*@\s*[0-9A-Za-z_]+\s*#\s*\d+\s*/i, ' ')
     s = s.replace(/!\[[^\]]*\]\([^)]*\)/g, ' ') // markdown image -> gone
     s = s.replace(/\[([^\]]*)\]\([^)]*\)/g, '$1') // markdown link -> its label
     s = s.replace(/https?:\/\/[^\s)]+/gi, ' ') // bare urls -> gone

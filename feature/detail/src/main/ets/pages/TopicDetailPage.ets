@@ -171,6 +171,7 @@ export struct TopicDetailPage {
   @Local private titleContentBottom: number = 0;
   @Local private currentScrollOffset: number = 0;
   @Local private isTitleCoveredByAppbar: boolean = false;
+  @Local private scrollTargetReplyFloor: number = 0;
   // IT-Home-style "resume reading" affordance: on entry we no longer auto-scroll to the saved
   // floor; instead this flag surfaces a small floating button (above the reply FAB) that the user
   // taps to jump. It is consumed (set false) on tap, or auto-dismissed once the user scrolls the
@@ -183,6 +184,8 @@ export struct TopicDetailPage {
   private readonly TOPIC_DETAIL_REPLY_BUTTON_ACTIVITY_PADDING: number = ThemeConstants.SPACE_LG;
   private readonly TOPIC_DETAIL_REPLY_BUTTON_BOTTOM_CLEARANCE: number = ThemeConstants.SPACE_LG;
   private readonly TOPIC_DETAIL_REPLY_BUTTON_SCROLL_DELTA_PX: number = 6;
+  private readonly TARGET_REPLY_SCROLL_TOLERANCE: number = 4;
+  private readonly TARGET_REPLY_SCROLL_MAX_ATTEMPTS: number = 3;
   // Treat the saved floor as "reached" once the viewport center is within this many floors of it,
   // so the resume button dismisses a touch early rather than requiring an exact landing.
   private readonly RESUME_BUTTON_FLOOR_PROXIMITY: number = 1;
@@ -190,6 +193,8 @@ export struct TopicDetailPage {
   private readonly FOLLOW_OPERATION_VERTICAL_SCROLL_THRESHOLD: number = 24;
   private readonly FOLLOW_OPERATION_VERTICAL_DOMINANCE_RATIO: number = 1.2;
   private readonly titleVisibilityHysteresis: number = 4;
+  private targetReplyScrollAttempts: number = 0;
+  private targetReplyScrollToken: number = 0;
   private api: ApiService = new ApiService();
   // Node-move flow: 移动主题 sets movePending then pushes NodePickerPage; the pick comes back on the shared
   // node-pick command bus. The bus is shared with the create editor, and this detail page outlives the
@@ -1038,6 +1043,7 @@ export struct TopicDetailPage {
               childReplies: this.replyCardDisplayState(reply, index).childReplies,
               opMemberId: this.replyCardDisplayState(reply, index).opMemberId,
               hideLeadingMention: this.replyCardDisplayState(reply, index).hideLeadingMention,
+              scrollTargetFloor: this.scrollTargetReplyFloor,
               isReplyThanked: (target: V2exReply) => {
                 return this.isReplyThanked(target)
               },
@@ -1082,6 +1088,9 @@ export struct TopicDetailPage {
               },
               onMentionUserClick: (username: string) => {
                 this.openUserProfile(username)
+              },
+              onTargetFloorAreaChange: (floor: number, top: number, height: number) => {
+                this.handleTargetFloorAreaChange(floor, top, height)
               },
             })
           }
@@ -1531,17 +1540,71 @@ export struct TopicDetailPage {
     return ReplyContextCoordinator.snippet(content)
   }
 
-  private jumpToLoadedReplyFloor(floor: number): void {
+  private jumpToLoadedReplyFloor(floor: number, refineTargetArea: boolean = false): void {
     if (floor <= 0) {
       return
     }
     if (this.v.onlyOp) {
       this.v.setOnlyOp(false)
     }
+    if (refineTargetArea) {
+      this.armTargetReplyAreaAdjustment(floor)
+    } else {
+      this.clearTargetReplyAreaAdjustment()
+    }
     // Defer a tick so an onlyOp toggle re-publishes the data source before we resolve the floor's row.
     setTimeout(() => {
       this.jumpToFloorIndex(floor)
     }, 0)
+  }
+
+  private armTargetReplyAreaAdjustment(floor: number): void {
+    if (floor <= 0) {
+      return
+    }
+    this.scrollTargetReplyFloor = floor
+    this.targetReplyScrollAttempts = 0
+    this.targetReplyScrollToken += 1
+    const token = this.targetReplyScrollToken
+    setTimeout(() => {
+      if (this.targetReplyScrollToken === token) {
+        this.scrollTargetReplyFloor = 0
+      }
+    }, 1800)
+  }
+
+  private clearTargetReplyAreaAdjustment(): void {
+    this.targetReplyScrollToken += 1
+    this.targetReplyScrollAttempts = 0
+    this.scrollTargetReplyFloor = 0
+  }
+
+  private targetReplyPreferredTop(): number {
+    return Math.max(
+      ThemeConstants.SPACE_LG,
+      this.layout.topAvoidHeight + ThemeConstants.TITLE_BAR_HEIGHT + ThemeConstants.SPACE_SM,
+    )
+  }
+
+  private handleTargetFloorAreaChange(floor: number, top: number, height: number): void {
+    if (floor <= 0 || floor !== this.scrollTargetReplyFloor || height <= 0) {
+      return
+    }
+    const delta = top - this.targetReplyPreferredTop()
+    if (Math.abs(delta) <= this.TARGET_REPLY_SCROLL_TOLERANCE) {
+      this.clearTargetReplyAreaAdjustment()
+      return
+    }
+    if (this.targetReplyScrollAttempts >= this.TARGET_REPLY_SCROLL_MAX_ATTEMPTS) {
+      this.clearTargetReplyAreaAdjustment()
+      return
+    }
+    this.targetReplyScrollAttempts += 1
+    try {
+      this.scroller.scrollBy(0, delta)
+    } catch (_e) {
+      this.clearTargetReplyAreaAdjustment()
+    }
   }
 
   // Resolve a floor to its ACTUAL displayed row and scroll there. Under 楼中楼 reordering a nested reply
@@ -1863,6 +1926,10 @@ export struct TopicDetailPage {
       this.jumpToTargetFloor(target)
       return
     }
+    if ((this.verifyReplyText || '').trim().length > 0) {
+      this.jumpToTargetReplyText()
+      return
+    }
     if (!this.reading.restorePosition) {
       return
     }
@@ -1885,7 +1952,30 @@ export struct TopicDetailPage {
           this.verifyReplyText,
           this.v.getLoadedRepliesSnapshot(),
         )
-        this.jumpToLoadedReplyFloor(resolved)
+        this.jumpToLoadedReplyFloor(resolved, (this.verifyReplyText || '').trim().length > 0)
+      })
+      .catch((_error: Error) => {
+        // ignore
+      })
+  }
+
+  private jumpToTargetReplyText(): void {
+    if (this.hasJumpedToTargetFloor) {
+      return
+    }
+    const verify = (this.verifyReplyText || '').trim()
+    if (!verify) {
+      return
+    }
+    this.hasJumpedToTargetFloor = true
+    this.v.loadUntilReplyContent(verify)
+      .then(() => {
+        const resolved = TopicDetailScrollCoordinator.verifiedFloor(
+          0,
+          verify,
+          this.v.getLoadedRepliesSnapshot(),
+        )
+        this.jumpToLoadedReplyFloor(resolved, true)
       })
       .catch((_error: Error) => {
         // ignore
