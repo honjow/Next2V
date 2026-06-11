@@ -92,6 +92,15 @@ assert.match(replyCard, /!this\.isCompact\(\) \|\| this\.childReplies\.length ==
 assert.match(replyCard, /ReplyCardLayoutPolicy\.COMPACT_CHILD_REPLY_GAP/)
 assert.match(replyCard, /Blank\(\)[\s\S]*\.height\(this\.childReplyBottomGap\(index\)\)/)
 assert.match(replyCard, /\.margin\(\{ top: this\.childReplyListTopGap\(\) \}\)/)
+assert.match(replyCard, /private childRepliesTotalCount\(\): number/, 'child-reply toggle count must use a helper')
+assert.match(replyCard, /private countRepliesRecursive\(replies: V2exReply\[\]\): number/, 'child-reply count must recurse through nested replies')
+assert.match(replyCard, /const children = reply\.threadChildren \|\| \[\][\s\S]*total \+= this\.countRepliesRecursive\(children\)/, 'child-reply count must include all descendants')
+assert.match(replyCard, /\[`\$\{this\.childRepliesTotalCount\(\)\}`\]/, 'child-reply toggle label must show recursive total count')
+assert.match(
+  replyCard,
+  /if \(this\.childRepliesExpandable && this\.isCompact\(\)\) \{[\s\S]*this\.ChildRepliesToggle\(\)[\s\S]*\.justifyContent\(FlexAlign\.Start\)/,
+  'compact child-reply toggle must align left',
+)
 
 // Menu labels are i18n resources (AppStrings.text fallbacks / $r keys), not hardcoded Chinese.
 for (const label of [
@@ -121,6 +130,13 @@ assert.doesNotMatch(actions, /\.(?:enabled|opacity)\([^)]*isThankPending[^)]*\)/
 assert.match(actions, /this\.onThankClick && !this\.isThankPending/)
 assert.match(actions, /if \(this\.menuHasItems\(\)\)/)
 assert.match(actions, /else if \(this\.onActionsClick\)/)
+assert.match(actions, /@Param actionButtonSize: number = ThemeConstants\.TOUCH_TARGET_SM;/, 'actions must keep default touch target size configurable')
+assert.match(actions, /\.height\(this\.actionButtonSize\)/, 'actions must size button containers from actionButtonSize')
+assert.match(actions, /\.width\(this\.actionButtonSize\)/, 'icon-only actions must size button containers from actionButtonSize')
+assert.match(actions, /SymbolGlyph\(\$r\('sys\.symbol\.arrowshape_turn_up_left'\)\)[\s\S]*\.fontSize\(ThemeConstants\.FONT_SIZE_TITLE\)/, 'reply icon size must stay unchanged')
+assert.match(actions, /SymbolGlyph\(\$r\('sys\.symbol\.dot_grid_2x2'\)\)[\s\S]*\.fontSize\(ThemeConstants\.FONT_SIZE_TITLE\)/, 'more icon size must stay unchanged')
+assert.match(header, /@Param actionButtonSize: number = ThemeConstants\.TOUCH_TARGET_SM;/, 'header must accept an action button container size')
+assert.match(header, /actionButtonSize:\s*this\.actionButtonSize/, 'header must pass action button container size to actions')
 
 // Adaptive compact header: the header stacks the timestamp under the username and collapses the three
 // inline action buttons into a single overflow menu (thank + reply prepended so nothing is lost) ONLY
@@ -133,17 +149,24 @@ assert.match(layout, /availableWidth: number,/, 'fit check takes the available w
 assert.match(layout, /floor: number,/, 'fit check accounts for floor label width')
 assert.match(layout, /showAvatar: boolean,/, 'fit check accounts for avatar presence')
 assert.match(layout, /thanks: number,/, 'fit check accounts for thank-count width')
+assert.match(layout, /actionButtonSize: number,/, 'fit check accounts for actual action button container size')
+assert.match(layout, /COMPACT_EMBEDDED_ACTION_BUTTON_VP: number = 28/, 'embedded compact replies must use a tighter action button container')
+assert.match(layout, /static actionButtonSize\(embedded: boolean, compact: boolean, showAvatar: boolean\): number/, 'layout must centralize compact embedded action sizing')
+assert.match(layout, /embedded && compact && !showAvatar/, 'only avatarless embedded compact replies should use tighter action containers')
 assert.match(layout, /HEADER_MIN_META_VP/, 'fit check must preserve a usable compact meta column')
-assert.match(layout, /thankButtonExtraWidth\(thanks: number\)/, 'fit check must estimate extra thank-count width')
+assert.match(layout, /thankButtonExtraWidth\(thanks: number, actionButtonSize: number\)/, 'fit check must estimate extra thank-count width')
 assert.doesNotMatch(layout, /HEADER_INLINE_FIXED_VP/, 'fit check must not use the old over-conservative fixed budget')
 assert.doesNotMatch(layout, /HEADER_USERNAME_FONT_VP/, 'fit check must not force collapse from username length')
 assert.match(replyCard, /private isHeaderNarrow\(\): boolean/, 'ReplyCard must compute isHeaderNarrow()')
 assert.match(replyCard, /private headerAvailableWidth\(\): number/, 'ReplyCard must compute the header available width')
+assert.match(replyCard, /private actionButtonSize\(\): number/, 'ReplyCard must compute contextual action button container size')
+assert.match(replyCard, /ReplyCardLayoutPolicy\.actionButtonSize\(this\.embedded,\s*this\.isCompact\(\),\s*this\.showAvatar\)/, 'ReplyCard must tighten action containers only for avatarless embedded compact replies')
 assert.match(
   replyCard,
-  /compactHeaderStacked\(\s*this\.headerAvailableWidth\(\),\s*this\.floor,\s*this\.showAvatar,\s*this\.reply\.thanks \|\| 0,/,
+  /compactHeaderStacked\(\s*this\.headerAvailableWidth\(\),\s*this\.floor,\s*this\.showAvatar,\s*this\.reply\.thanks \|\| 0,\s*this\.actionButtonSize\(\),/,
   'isHeaderNarrow must pass measured width plus real fixed chrome inputs into the fit check',
 )
+assert.match(replyCard, /actionButtonSize:\s*this\.actionButtonSize\(\)/, 'ReplyCard must pass contextual action button size into reply actions')
 assert.match(replyCard, /isNarrow:\s*this\.isHeaderNarrow\(\)/, 'ReplyCard must pass isNarrow into the header')
 assert.match(header, /@Param isNarrow: boolean/, 'header must accept isNarrow')
 // The compact header stacks the timestamp under the username by wrapping the meta row (FlexWrap.Wrap

@@ -20,6 +20,7 @@ export struct ReplyCardHeader {
   @Param isNarrow: boolean = false;
   @Param isThanked: boolean = false;
   @Param isThankPending: boolean = false;
+  @Param actionButtonSize: number = ThemeConstants.TOUCH_TARGET_SM;
   @Event onUserClick?: (reply: V2exReply) => void;
   @Event onActionsClick?: (reply: V2exReply) => void;
   @Event onContextClick?: (reply: V2exReply) => void;
@@ -111,6 +112,7 @@ export struct ReplyCardHeader {
       isThanked: this.isThanked,
       isThankPending: this.isThankPending,
       collapsed: this.isNarrow,
+      actionButtonSize: this.actionButtonSize,
       onActionsClick: this.onActionsClick,
       onContextClick: this.onContextClick,
       onReplyClick: this.onReplyClick,

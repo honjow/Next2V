@@ -11,6 +11,7 @@ export struct ReplyCardActions {
   // When the header is too narrow, the three inline buttons (thank / reply / more) collapse into a
   // single overflow menu; thank and reply are then prepended as menu items so nothing is lost.
   @Param collapsed: boolean = false;
+  @Param actionButtonSize: number = ThemeConstants.TOUCH_TARGET_SM;
   @Event onActionsClick?: (reply: V2exReply) => void;
   @Event onContextClick?: (reply: V2exReply) => void;
   @Event onReplyClick?: (reply: V2exReply) => void;
@@ -153,8 +154,8 @@ export struct ReplyCardActions {
         }.alignItems(VerticalAlign.Center)
       }
       .type(ButtonType.Normal)
-      .constraintSize({ minWidth: ThemeConstants.TOUCH_TARGET_SM })
-      .height(ThemeConstants.TOUCH_TARGET_SM)
+      .constraintSize({ minWidth: this.actionButtonSize })
+      .height(this.actionButtonSize)
       .padding({ left: ThemeConstants.SPACE_XS, right: ThemeConstants.SPACE_XS })
       .borderRadius(ThemeConstants.RADIUS_ROUND)
       .backgroundColor(Color.Transparent)
@@ -175,8 +176,8 @@ export struct ReplyCardActions {
           .fontColor([$r('sys.color.font_secondary')])
       }
       .type(ButtonType.Normal)
-      .width(ThemeConstants.TOUCH_TARGET_SM)
-      .height(ThemeConstants.TOUCH_TARGET_SM)
+      .width(this.actionButtonSize)
+      .height(this.actionButtonSize)
       .borderRadius(ThemeConstants.RADIUS_ROUND)
       .backgroundColor(Color.Transparent)
       .onClick(() => {
@@ -196,8 +197,8 @@ export struct ReplyCardActions {
           .fontColor([$r('sys.color.font_secondary')])
       }
       .type(ButtonType.Normal)
-      .width(ThemeConstants.TOUCH_TARGET_SM)
-      .height(ThemeConstants.TOUCH_TARGET_SM)
+      .width(this.actionButtonSize)
+      .height(this.actionButtonSize)
       .borderRadius(ThemeConstants.RADIUS_ROUND)
       .backgroundColor(Color.Transparent)
       .onClick(() => {
@@ -216,8 +217,8 @@ export struct ReplyCardActions {
           .fontColor([$r('sys.color.font_secondary')])
       }
       .type(ButtonType.Normal)
-      .width(ThemeConstants.TOUCH_TARGET_SM)
-      .height(ThemeConstants.TOUCH_TARGET_SM)
+      .width(this.actionButtonSize)
+      .height(this.actionButtonSize)
       .borderRadius(ThemeConstants.RADIUS_ROUND)
       .backgroundColor(Color.Transparent)
       .onClick(() => {

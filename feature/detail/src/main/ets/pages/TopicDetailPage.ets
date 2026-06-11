@@ -52,6 +52,7 @@ import {
   type TopicDetailReplyCardDisplayState,
 } from '../model/TopicDetailReplyDisplayCoordinator'
 import { TopicDetailScrollCoordinator } from '../model/TopicDetailScrollCoordinator'
+import { HotReplyChildRepliesExpandCache } from '../model/HotReplyChildRepliesExpandCache'
 import { common, Want } from '@kit.AbilityKit'
 import { CustomContentDialog, KeyboardAvoidMode, LoadingDialog, promptAction } from '@kit.ArkUI'
 import { HdsAnimationMode, HdsTabsController } from '@kit.UIDesignKit'
@@ -153,6 +154,7 @@ export struct TopicDetailPage {
   @Local private jumpFloorText: string = '';
   @Local private contextReply: V2exReply | null = null;
   @Local private hotRepliesExpanded: boolean = true;
+  @Local private hotReplyChildRepliesExpandedByKey: Record<string, boolean> = {};
   @Local private contextItems: ReplyContextItem[] = [];
   @Local private contextSheetVisible: boolean = false;
   @Local private replyDisplayMenuShown: boolean = false;
@@ -264,6 +266,8 @@ export struct TopicDetailPage {
     this.currentScrollOffset = 0
     this.replyButtonLastScrollOffset = 0
     this.replyButtonVisibleByScroll = true
+    this.hotRepliesExpanded = HotReplyChildRepliesExpandCache.loadPanelExpanded(this.topicId)
+    this.hotReplyChildRepliesExpandedByKey = HotReplyChildRepliesExpandCache.load(this.topicId)
     this.clearReplyButtonAnimationGuardTimer()
     this.applyReplyButtonAutoHideBinding()
     this.titleContentBottom = 0
@@ -1363,14 +1367,35 @@ export struct TopicDetailPage {
     )
   }
 
+  private setHotRepliesExpanded(expanded: boolean): void {
+    this.hotRepliesExpanded = HotReplyChildRepliesExpandCache.setPanelExpanded(
+      this.topicId,
+      expanded,
+    )
+  }
+
+  private setHotReplyChildRepliesExpanded(reply: V2exReply, expanded: boolean): void {
+    this.hotReplyChildRepliesExpandedByKey =
+      HotReplyChildRepliesExpandCache.setReplyExpanded(
+        this.topicId,
+        this.hotReplyChildRepliesExpandedByKey,
+        reply,
+        expanded,
+      )
+  }
+
   @Builder HotRepliesPreview(items: V2exReply[]) {
     if (items.length > 0) {
       HotRepliesPanel({
         replies: items,
         opMemberId: this.v.topic?.member.id || 0,
         expanded: this.hotRepliesExpanded,
+        childRepliesExpandedByKey: this.hotReplyChildRepliesExpandedByKey,
         onExpandedChange: (expanded: boolean) => {
-          this.hotRepliesExpanded = expanded
+          this.setHotRepliesExpanded(expanded)
+        },
+        onChildRepliesExpandedChange: (reply: V2exReply, expanded: boolean) => {
+          this.setHotReplyChildRepliesExpanded(reply, expanded)
         },
         onJumpClick: (reply: V2exReply) => {
           this.jumpToLoadedReplyFloor(reply.floor || 0)

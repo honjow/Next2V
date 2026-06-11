@@ -21,6 +21,7 @@ export class ReplyCardLayoutPolicy {
   // shrink/ellipsis, so long names should not by themselves force all actions into the overflow menu.
   // Fold only when the measured header cannot fit the fixed chrome plus a usable meta column.
   static readonly HEADER_ACTION_BUTTON_VP: number = 36;
+  static readonly COMPACT_EMBEDDED_ACTION_BUTTON_VP: number = 28;
   static readonly HEADER_AVATAR_VP: number = 32;
   static readonly HEADER_ROW_GAP_VP: number = 8;
   static readonly HEADER_MIN_META_VP: number = 96;
@@ -42,7 +43,13 @@ export class ReplyCardLayoutPolicy {
     return width
   }
 
-  static thankButtonExtraWidth(thanks: number): number {
+  static actionButtonSize(embedded: boolean, compact: boolean, showAvatar: boolean): number {
+    return embedded && compact && !showAvatar
+      ? ReplyCardLayoutPolicy.COMPACT_EMBEDDED_ACTION_BUTTON_VP
+      : ReplyCardLayoutPolicy.HEADER_ACTION_BUTTON_VP
+  }
+
+  static thankButtonExtraWidth(thanks: number, actionButtonSize: number): number {
     if (thanks <= 0) {
       return 0
     }
@@ -51,7 +58,7 @@ export class ReplyCardLayoutPolicy {
       ReplyCardLayoutPolicy.HEADER_THANK_ICON_TEXT_GAP_VP +
       ReplyCardLayoutPolicy.estTextWidth(`${thanks}`, ReplyCardLayoutPolicy.HEADER_THANK_TEXT_FONT_VP) +
       ReplyCardLayoutPolicy.HEADER_THANK_BUTTON_PADDING_VP
-    return Math.max(0, rendered - ReplyCardLayoutPolicy.HEADER_ACTION_BUTTON_VP)
+    return Math.max(0, rendered - actionButtonSize)
   }
 
   static compactHeaderStacked(
@@ -59,6 +66,7 @@ export class ReplyCardLayoutPolicy {
     floor: number,
     showAvatar: boolean,
     thanks: number,
+    actionButtonSize: number,
   ): boolean {
     if (availableWidth <= 0) {
       return false
@@ -68,8 +76,8 @@ export class ReplyCardLayoutPolicy {
       (showAvatar ? ReplyCardLayoutPolicy.HEADER_AVATAR_VP : 0) +
       (visibleColumns - 1) * ReplyCardLayoutPolicy.HEADER_ROW_GAP_VP +
       ReplyCardLayoutPolicy.HEADER_MIN_META_VP +
-      ReplyCardLayoutPolicy.HEADER_ACTION_BUTTON_VP * 3 +
-      ReplyCardLayoutPolicy.thankButtonExtraWidth(thanks) +
+      actionButtonSize * 3 +
+      ReplyCardLayoutPolicy.thankButtonExtraWidth(thanks, actionButtonSize) +
       ReplyCardLayoutPolicy.estTextWidth(`#${floor}`, ReplyCardLayoutPolicy.HEADER_FLOOR_FONT_VP) +
       ReplyCardLayoutPolicy.HEADER_INLINE_SAFETY_VP
     return required > availableWidth

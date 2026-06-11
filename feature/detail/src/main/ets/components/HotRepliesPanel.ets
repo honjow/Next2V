@@ -10,8 +10,9 @@ export struct HotRepliesPanel {
   @Param replies: V2exReply[] = [];
   @Param opMemberId: number = 0;
   @Param expanded: boolean = true;
-  @Local private childRepliesExpandedByKey: Record<string, boolean> = {};
+  @Param childRepliesExpandedByKey: Record<string, boolean> = {};
   @Event onExpandedChange?: (expanded: boolean) => void;
+  @Event onChildRepliesExpandedChange?: (reply: V2exReply, expanded: boolean) => void;
   @Event onJumpClick?: (reply: V2exReply) => void;
   @Event onContextClick?: (reply: V2exReply) => void;
   @Event onReplyClick?: (reply: V2exReply) => void;
@@ -45,19 +46,22 @@ export struct HotRepliesPanel {
     return reply.renderKey || reply.id.toString()
   }
 
+  private childRepliesStateKey(reply: V2exReply): string {
+    if (reply.id > 0) {
+      return reply.id.toString()
+    }
+    return this.replyKey(reply)
+  }
+
   private isChildRepliesExpanded(reply: V2exReply): boolean {
-    const cached = this.childRepliesExpandedByKey[this.replyKey(reply)]
+    const cached = this.childRepliesExpandedByKey[this.childRepliesStateKey(reply)]
     return cached !== false
   }
 
   private setChildRepliesExpanded(reply: V2exReply, expanded: boolean): void {
-    const next: Record<string, boolean> = {}
-    const keys: string[] = Object.keys(this.childRepliesExpandedByKey)
-    for (const key of keys) {
-      next[key] = this.childRepliesExpandedByKey[key]
+    if (this.onChildRepliesExpandedChange) {
+      this.onChildRepliesExpandedChange(reply, expanded)
     }
-    next[this.replyKey(reply)] = expanded
-    this.childRepliesExpandedByKey = next
   }
 
   private toggleExpanded(): void {

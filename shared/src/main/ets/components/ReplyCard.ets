@@ -86,11 +86,16 @@ export struct ReplyCard {
       this.floor,
       this.showAvatar,
       this.reply.thanks || 0,
+      this.actionButtonSize(),
     )
   }
 
   private threadIndent(): number {
     return ReplyCardLayoutPolicy.threadIndent(this.threadLevel, this.cardWidth)
+  }
+
+  private actionButtonSize(): number {
+    return ReplyCardLayoutPolicy.actionButtonSize(this.embedded, this.isCompact(), this.showAvatar)
   }
 
   private contentSource(): string {
@@ -206,10 +211,26 @@ export struct ReplyCard {
     return !this.childRepliesExpandable || this.childRepliesExpandedState
   }
 
+  private childRepliesTotalCount(): number {
+    return this.countRepliesRecursive(this.childReplies)
+  }
+
+  private countRepliesRecursive(replies: V2exReply[]): number {
+    let total = 0
+    for (const reply of replies) {
+      total += 1
+      const children = reply.threadChildren || []
+      if (children.length > 0) {
+        total += this.countRepliesRecursive(children)
+      }
+    }
+    return total
+  }
+
   private childRepliesToggleLabel(): string {
     return AppStrings.format(
       AppStrings.text($r('app.string.topic_replies_count'), '{0} replies'),
-      [`${this.childReplies.length}`],
+      [`${this.childRepliesTotalCount()}`],
     )
   }
 
@@ -289,6 +310,7 @@ export struct ReplyCard {
           showAvatar: this.showAvatar,
           isThanked: this.isThanked,
           isThankPending: this.isThankPending,
+          actionButtonSize: this.actionButtonSize(),
           onUserClick: this.onUserClick,
           onActionsClick: this.onActionsClick,
           onContextClick: this.onContextClick,
@@ -324,6 +346,7 @@ export struct ReplyCard {
               reply: this.reply,
               isThanked: this.isThanked,
               isThankPending: this.isThankPending,
+              actionButtonSize: this.actionButtonSize(),
               onActionsClick: this.onActionsClick,
               onContextClick: this.onContextClick,
               onReplyClick: this.onReplyClick,
@@ -345,7 +368,7 @@ export struct ReplyCard {
               this.ChildRepliesToggle()
             }
             .width('100%')
-            .justifyContent(FlexAlign.End)
+            .justifyContent(FlexAlign.Start)
             .margin({ top: ReplyCardLayoutPolicy.CONTENT_GAP })
           }
           if (this.childRepliesVisible()) {
