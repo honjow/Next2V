@@ -36,6 +36,7 @@ export struct ReplyCard {
   @Event onCopyContentClick?: (reply: V2exReply) => void;
   @Event isReplyThanked?: (reply: V2exReply) => boolean;
   @Event isReplyThankPending?: (reply: V2exReply) => boolean;
+  @Event onFloorClick?: (reply: V2exReply) => void;
   @Event onImageClick?: (url: string) => void;
   @Event onLinkClick?: (url: string) => void;
   @Event onMentionUserClick?: (username: string) => void;
@@ -233,6 +234,7 @@ export struct ReplyCard {
           onReportClick: this.onReportClick,
           onCopyUserClick: this.onCopyUserClick,
           onCopyContentClick: this.onCopyContentClick,
+          onFloorClick: this.onFloorClick,
         })
 
         if (this.contentSource()) {
@@ -314,6 +316,7 @@ export struct ReplyCard {
                       onReportClick: this.onReportClick,
                       onCopyUserClick: this.onCopyUserClick,
                       onCopyContentClick: this.onCopyContentClick,
+                      onFloorClick: this.onFloorClick,
                       isReplyThanked: this.isReplyThanked,
                       isReplyThankPending: this.isReplyThankPending,
                       onImageClick: this.onImageClick,

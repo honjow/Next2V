@@ -617,10 +617,6 @@
       "value": "人気返信 · {0}"
     },
     {
-      "name": "hot_replies_jump_format",
-      "value": "#{0} へ"
-    },
-    {
       "name": "remember_read_position",
       "value": "閲覧位置を記憶"
     },

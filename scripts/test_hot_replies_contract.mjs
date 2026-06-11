@@ -15,6 +15,8 @@ const detailPage = read('feature/detail/src/main/ets/pages/TopicDetailPage.ets')
 const viewModel = read('feature/detail/src/main/ets/viewmodel/DetailViewModel.ets')
 const selector = read('feature/detail/src/main/ets/model/HotReplyCoordinator.ets')
 const panel = read('feature/detail/src/main/ets/components/HotRepliesPanel.ets')
+const replyCard = read('shared/src/main/ets/components/ReplyCard.ets')
+const replyCardHeader = read('shared/src/main/ets/components/reply/ReplyCardHeader.ets')
 
 function mustInclude(source, needle, label) {
   assert.ok(source.includes(needle), label)
@@ -73,18 +75,31 @@ mustInclude(selector, 'result.length < normalizedMaxCount', 'selector must enfor
 mustInclude(panel, 'ReplyCard({', 'top hot replies must use the full shared ReplyCard')
 mustInclude(panel, 'childReplies: []', 'top hot reply cards must not recursively render child replies')
 mustInclude(panel, 'embedded: true', 'top hot reply content must render inside the panel-owned card so simplified nested replies stay in the same card')
+mustInclude(panel, 'onFloorClick: (target: V2exReply) => {', 'top hot replies must reuse the floor label for jump')
+mustInclude(panel, 'this.jumpToReply(target)', 'top hot reply floor label must jump to the original reply')
+assert.ok(!panel.includes('jumpText'), 'panel must not keep a separate floor jump text row')
+assert.ok(!panel.includes('hot_replies_jump_format'), 'panel must not keep a separate jump label resource')
 mustInclude(panel, 'Column({ space: ThemeConstants.SPACE_SM - 2 })', 'hot reply cards must use the same vertical gap as the normal reply list')
 mustAppearInOrder(
   panel,
-  ['ReplyCard({', 'this.ChildReplyGroup(reply)', 'Text(this.jumpText(reply))'],
-  'simplified nested replies and floor jump must stay inside the hot reply card frame',
+  ['ReplyCard({', 'onFloorClick: (target: V2exReply) => {', 'this.ChildReplyGroup(reply)'],
+  'top floor jump and simplified nested replies must stay inside the hot reply card frame',
 )
 mustInclude(panel, 'showUserMarks: false', 'nested hot replies must omit user marks to save space')
 mustInclude(panel, 'reply.threadChildren || []', 'panel must render simplified nested replies')
+mustInclude(panel, '@Local private childGuideHeights: Record<string, number> = {};', 'nested hot reply guides must track measured row heights')
+mustInclude(panel, 'private childGuideHeight(reply: V2exReply, isLast: boolean): number', 'nested hot reply guides must derive their height from row measurements')
+mustInclude(panel, '.height(this.childGuideHeight(reply, isLast))', 'nested hot reply guides must render measured continuous guide lines')
+mustInclude(panel, 'this.updateChildGuideHeight(reply, newValue)', 'nested hot replies must update guide height from onAreaChange')
+assert.ok(!panel.includes('.height(ThemeConstants.SPACE_XL)'), 'nested hot reply guide lines must not use a fixed short height')
 mustInclude(panel, "$r('app.string.hot_replies_header_format')", 'panel title must use i18n resource')
 assert.ok(!panel.includes('thresholdText'), 'panel header must not show the high-reply threshold')
 assert.ok(!panel.includes('hot_replies_threshold_format'), 'panel must not keep a threshold label resource')
-mustInclude(panel, "$r('app.string.hot_replies_jump_format')", 'panel jump text must use i18n resource')
+
+mustInclude(replyCard, '@Event onFloorClick?: (reply: V2exReply) => void;', 'ReplyCard must expose an optional floor click event')
+mustInclude(replyCard, 'onFloorClick: this.onFloorClick', 'ReplyCard must pass floor clicks to its header')
+mustInclude(replyCardHeader, '@Event onFloorClick?: (reply: V2exReply) => void;', 'ReplyCardHeader must expose an optional floor click event')
+mustInclude(replyCardHeader, 'this.onFloorClick(this.reply)', 'ReplyCardHeader floor text must call the optional floor click event')
 
 for (const locale of ['base', 'en_US', 'zh_CN', 'zh_TW', 'zh_HK', 'ja_JP', 'ko_KR']) {
   const strings = read(`entry/src/main/resources/${locale}/element/string.json`)
@@ -95,7 +110,6 @@ for (const locale of ['base', 'en_US', 'zh_CN', 'zh_TW', 'zh_HK', 'ja_JP', 'ko_K
     'hot_replies_count_format',
     'hot_replies_min_thanks_format',
     'hot_replies_header_format',
-    'hot_replies_jump_format',
   ]) {
     mustInclude(strings, `"name": "${key}"`, `${locale} must define ${key}`)
   }

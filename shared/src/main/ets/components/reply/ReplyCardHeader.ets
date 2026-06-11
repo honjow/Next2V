@@ -28,6 +28,7 @@ export struct ReplyCardHeader {
   @Event onReportClick?: (reply: V2exReply) => void;
   @Event onCopyUserClick?: (reply: V2exReply) => void;
   @Event onCopyContentClick?: (reply: V2exReply) => void;
+  @Event onFloorClick?: (reply: V2exReply) => void;
 
   @Builder
   Username() {
@@ -156,6 +157,11 @@ export struct ReplyCardHeader {
       Text(`#${this.floor}`)
         .fontSize(ThemeConstants.FONT_SIZE_TAG)
         .fontColor($r('sys.color.font_secondary'))
+        .onClick(() => {
+          if (this.onFloorClick) {
+            this.onFloorClick(this.reply)
+          }
+        })
     }
     .width('100%')
     .alignItems(VerticalAlign.Center)
