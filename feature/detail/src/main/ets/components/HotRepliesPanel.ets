@@ -10,7 +10,6 @@ import {
 @ComponentV2
 export struct HotRepliesPanel {
   @Param replies: V2exReply[] = [];
-  @Param minThanks: number = 3;
   @Param opMemberId: number = 0;
   @Param expanded: boolean = true;
   @Event onExpandedChange?: (expanded: boolean) => void;
@@ -32,13 +31,6 @@ export struct HotRepliesPanel {
     return AppStrings.format(
       AppStrings.text($r('app.string.hot_replies_header_format'), 'Top replies · {0}'),
       [`${this.replies.length}`],
-    )
-  }
-
-  private thresholdText(): string {
-    return AppStrings.format(
-      AppStrings.text($r('app.string.hot_replies_threshold_format'), '≥ {0} likes'),
-      [`${this.minThanks}`],
     )
   }
 
@@ -138,9 +130,6 @@ export struct HotRepliesPanel {
         .fontSize(ThemeConstants.FONT_SIZE_BODY)
         .fontWeight(FontWeight.Medium)
         .fontColor($r('sys.color.font_primary'))
-      Text(this.thresholdText())
-        .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-        .fontColor($r('sys.color.font_secondary'))
       Blank()
       SymbolGlyph(
         this.expanded
@@ -344,7 +333,7 @@ export struct HotRepliesPanel {
       Column({ space: ThemeConstants.SPACE_SM }) {
         this.Header()
         if (this.expanded) {
-          Column({ space: ThemeConstants.SPACE_MD }) {
+          Column({ space: ThemeConstants.SPACE_SM - 2 }) {
             ForEach(
               this.replies,
               (reply: V2exReply) => {

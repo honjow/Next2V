@@ -1367,7 +1367,6 @@ export struct TopicDetailPage {
     if (items.length > 0) {
       HotRepliesPanel({
         replies: items,
-        minThanks: this.hotReplies.minThanks,
         opMemberId: this.v.topic?.member.id || 0,
         expanded: this.hotRepliesExpanded,
         onExpandedChange: (expanded: boolean) => {

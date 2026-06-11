@@ -617,10 +617,6 @@
       "value": "인기 답글 · {0}"
     },
     {
-      "name": "hot_replies_threshold_format",
-      "value": "좋아요 {0}개 이상"
-    },
-    {
       "name": "hot_replies_jump_format",
       "value": "#{0}로 이동"
     },

@@ -617,10 +617,6 @@
       "value": "高讚回覆 · {0}"
     },
     {
-      "name": "hot_replies_threshold_format",
-      "value": "≥ {0} 讚"
-    },
-    {
       "name": "hot_replies_jump_format",
       "value": "跳到 #{0}"
     },

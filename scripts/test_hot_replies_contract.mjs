@@ -73,6 +73,7 @@ mustInclude(selector, 'result.length < normalizedMaxCount', 'selector must enfor
 mustInclude(panel, 'ReplyCard({', 'top hot replies must use the full shared ReplyCard')
 mustInclude(panel, 'childReplies: []', 'top hot reply cards must not recursively render child replies')
 mustInclude(panel, 'embedded: true', 'top hot reply content must render inside the panel-owned card so simplified nested replies stay in the same card')
+mustInclude(panel, 'Column({ space: ThemeConstants.SPACE_SM - 2 })', 'hot reply cards must use the same vertical gap as the normal reply list')
 mustAppearInOrder(
   panel,
   ['ReplyCard({', 'this.ChildReplyGroup(reply)', 'Text(this.jumpText(reply))'],
@@ -81,7 +82,8 @@ mustAppearInOrder(
 mustInclude(panel, 'showUserMarks: false', 'nested hot replies must omit user marks to save space')
 mustInclude(panel, 'reply.threadChildren || []', 'panel must render simplified nested replies')
 mustInclude(panel, "$r('app.string.hot_replies_header_format')", 'panel title must use i18n resource')
-mustInclude(panel, "$r('app.string.hot_replies_threshold_format')", 'panel threshold must use i18n resource')
+assert.ok(!panel.includes('thresholdText'), 'panel header must not show the high-reply threshold')
+assert.ok(!panel.includes('hot_replies_threshold_format'), 'panel must not keep a threshold label resource')
 mustInclude(panel, "$r('app.string.hot_replies_jump_format')", 'panel jump text must use i18n resource')
 
 for (const locale of ['base', 'en_US', 'zh_CN', 'zh_TW', 'zh_HK', 'ja_JP', 'ko_KR']) {
@@ -93,7 +95,6 @@ for (const locale of ['base', 'en_US', 'zh_CN', 'zh_TW', 'zh_HK', 'ja_JP', 'ko_K
     'hot_replies_count_format',
     'hot_replies_min_thanks_format',
     'hot_replies_header_format',
-    'hot_replies_threshold_format',
     'hot_replies_jump_format',
   ]) {
     mustInclude(strings, `"name": "${key}"`, `${locale} must define ${key}`)

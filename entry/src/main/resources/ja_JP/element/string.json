@@ -617,10 +617,6 @@
       "value": "人気返信 · {0}"
     },
     {
-      "name": "hot_replies_threshold_format",
-      "value": "{0} いいね以上"
-    },
-    {
       "name": "hot_replies_jump_format",
       "value": "#{0} へ"
     },

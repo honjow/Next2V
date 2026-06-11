@@ -617,10 +617,6 @@
       "value": "Top replies · {0}"
     },
     {
-      "name": "hot_replies_threshold_format",
-      "value": "≥ {0} likes"
-    },
-    {
       "name": "hot_replies_jump_format",
       "value": "Go to #{0}"
     },
