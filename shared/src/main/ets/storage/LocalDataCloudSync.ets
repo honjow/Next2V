@@ -90,6 +90,7 @@ export class LocalDataCloudSync {
             if (progress.schedule === relationalStore.Progress.SYNC_FINISH) {
               LocalDataCloudSync.logTableDetails('cloud_sync_auto_table_detail', progress)
               LocalDataCloudSync.refreshAfterDownload(context, progress)
+              LocalDataCloudSync.recordAutoSyncFinish(context, progress)
             }
           })
         }
@@ -192,6 +193,20 @@ export class LocalDataCloudSync {
     }
   }
 
+  // Scheduler path for local-write/foreground follow-up syncs. Re-marking is idempotent and keeps the
+  // scheduled path robust after process restart, feature-toggle changes, or a missed startup mark.
+  static async runScheduledSync(
+    context: common.UIAbilityContext,
+    reason: string,
+  ): Promise<boolean> {
+    const marked = await LocalDataCloudSync.markDistributedTables(context)
+    if (!marked) {
+      DiagnosticLogger.info('cloud_sync', 'cloud_sync_scheduled_mark_skipped', { reason: reason })
+      return false
+    }
+    return await LocalDataCloudSync.cloudSyncNow(context)
+  }
+
   // Per-table cloud-sync stats from progress.details (keyed by LOCAL table name), logged at SYNC_FINISH.
   // The round's progressCode does NOT reflect per-table outcomes: a table can silently fail to upload
   // (upFail>0, e.g. its AGC cloud data type is missing/mismapped) or never be processed (present:false,
@@ -219,6 +234,22 @@ export class LocalDataCloudSync {
         downOk: td.download.successful,
         downFail: td.download.failed,
       })
+    })
+  }
+
+  private static recordAutoSyncFinish(
+    context: common.UIAbilityContext,
+    progress: relationalStore.ProgressDetails,
+  ): void {
+    const ok: boolean = progress.code === 0
+    const cloudDisabled: boolean = progress.code === 3
+    CloudSyncSettings.recordLastSync(context, ok, cloudDisabled).catch((error: Error) => {
+      DiagnosticLogger.warn(
+        'cloud_sync',
+        'cloud_sync_auto_record_error',
+        { message: error.message || '' },
+        error,
+      )
     })
   }
 

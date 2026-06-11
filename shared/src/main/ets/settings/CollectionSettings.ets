@@ -3,6 +3,7 @@ import { relationalStore } from '@kit.ArkData'
 import type { BackupCollectionsSection } from '../backup/BackupTypes'
 import { V2exTopic } from '../network/NetworkTypes'
 import { LocalDataStore } from '../storage/LocalDataStore'
+import { CloudSyncScheduler } from '../storage/CloudSyncScheduler'
 import {
   MAX_READ_POSITIONS,
   MAX_READ_STATES,
@@ -134,6 +135,7 @@ export class CollectionSettings {
       await CollectionSettings.publishSavedTopicCount(store)
       LocalDataPublisher.touchLocalData()
       CollectionSettings.deleteLegacyCollectionKeysBestEffort(context, [KEY_SAVED_TOPICS])
+      CloudSyncScheduler.requestAfterLocalWrite(context, 'collection_saved_topics')
       return await CollectionSettings.loadSavedTopics(context)
     } catch (error) {
       const e = error as Error
@@ -152,6 +154,7 @@ export class CollectionSettings {
       await CollectionSettings.publishSavedTopicCount(store)
       LocalDataPublisher.touchLocalData()
       CollectionSettings.deleteLegacyCollectionKeysBestEffort(context, [KEY_SAVED_TOPICS])
+      CloudSyncScheduler.requestAfterLocalWrite(context, 'collection_saved_topics')
       return await CollectionSettings.loadSavedTopics(context)
     } catch (error) {
       const e = error as Error
@@ -201,6 +204,7 @@ export class CollectionSettings {
       await CollectionSettings.publishSavedNodeCount(store)
       LocalDataPublisher.touchLocalData()
       CollectionSettings.deleteLegacyCollectionKeysBestEffort(context, [KEY_SAVED_NODES])
+      CloudSyncScheduler.requestAfterLocalWrite(context, 'collection_saved_nodes')
       return await CollectionSettings.loadSavedNodes(context)
     } catch (error) {
       const e = error as Error
@@ -219,6 +223,7 @@ export class CollectionSettings {
       await CollectionSettings.publishSavedNodeCount(store)
       LocalDataPublisher.touchLocalData()
       CollectionSettings.deleteLegacyCollectionKeysBestEffort(context, [KEY_SAVED_NODES])
+      CloudSyncScheduler.requestAfterLocalWrite(context, 'collection_saved_nodes')
       return await CollectionSettings.loadSavedNodes(context)
     } catch (error) {
       const e = error as Error
@@ -359,6 +364,7 @@ export class CollectionSettings {
       await CollectionSettings.publishViewedTopicCount(store)
       LocalDataPublisher.touchLocalData()
       CollectionSettings.deleteLegacyCollectionKeysBestEffort(context, [KEY_VIEWED_TOPICS])
+      CloudSyncScheduler.requestAfterLocalWrite(context, 'collection_viewed_topics')
       return await CollectionSettings.loadViewedTopics(context)
     } catch (error) {
       const e = error as Error
@@ -377,6 +383,7 @@ export class CollectionSettings {
       await CollectionSettings.publishViewedTopicCount(store)
       LocalDataPublisher.touchLocalData()
       CollectionSettings.deleteLegacyCollectionKeysBestEffort(context, [KEY_VIEWED_TOPICS])
+      CloudSyncScheduler.requestAfterLocalWrite(context, 'collection_viewed_topics')
       return await CollectionSettings.loadViewedTopics(context)
     } catch (error) {
       const e = error as Error
@@ -429,6 +436,7 @@ export class CollectionSettings {
         await store.executeSql(SQL_DELETE_TOPIC_READ_POSITION, args)
       }
       CollectionSettings.deleteLegacyCollectionKeysBestEffort(context, [KEY_TOPIC_READ_POSITIONS])
+      CloudSyncScheduler.requestAfterLocalWrite(context, 'collection_topic_read_positions')
       return await CollectionSettings.loadTopicReadPositions(context)
     } catch (error) {
       const e = error as Error
@@ -482,6 +490,7 @@ export class CollectionSettings {
       CollectionSettings.deleteLegacyCollectionKeysBestEffort(context, [KEY_TOPIC_READ_STATES])
       const next = await CollectionSettings.loadTopicReadStates(context)
       LocalDataPublisher.publishTopicReadStates(next)
+      CloudSyncScheduler.requestAfterLocalWrite(context, 'collection_topic_read_states')
       return next
     } catch (error) {
       const e = error as Error
@@ -522,6 +531,7 @@ export class CollectionSettings {
         KEY_TOPIC_READ_POSITIONS,
         KEY_TOPIC_READ_STATES,
       ])
+      CloudSyncScheduler.requestAfterLocalWrite(context, 'collection_clear_all')
     } catch (error) {
       const e = error as Error
       throw new Error(
@@ -578,6 +588,7 @@ export class CollectionSettings {
         KEY_TOPIC_READ_POSITIONS,
         KEY_TOPIC_READ_STATES,
       ])
+      CloudSyncScheduler.requestAfterLocalWrite(context, 'collection_restore_backup')
     } catch (error) {
       const e = error as Error
       throw new Error(e.message || 'Failed to restore local collection and reading records')
@@ -599,6 +610,7 @@ export class CollectionSettings {
       await CollectionSettings.publishSavedNodeCount(store)
       LocalDataPublisher.touchLocalData()
       CollectionSettings.deleteLegacyCollectionKeysBestEffort(context, [KEY_SAVED_NODES])
+      CloudSyncScheduler.requestAfterLocalWrite(context, 'collection_saved_nodes')
     } catch (error) {
       const e = error as Error
       throw new Error(e.message || 'Failed to save followed nodes')

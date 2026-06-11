@@ -1,10 +1,11 @@
-import { UIAbility, Want, AbilityConstant, EnvironmentCallback } from '@kit.AbilityKit'
+import { UIAbility, Want, AbilityConstant, EnvironmentCallback, common } from '@kit.AbilityKit'
 import { Configuration } from '@ohos.app.ability.Configuration'
 import { window } from '@kit.ArkUI'
 import { webview } from '@kit.ArkWeb'
 import {
   AppStrings,
   CloudSyncSettings,
+  CloudSyncScheduler,
   DiagnosticLogger,
   FoldScreenUtil,
   LanguageSettings,
@@ -29,8 +30,13 @@ export default class EntryAbility extends UIAbility {
   private windowSizeChangeCallback: ((size: window.Size) => void) | null = null
   private safeAreaRefreshTimerId: number = 0
   private environmentCallbackId: number = -1
+  private lastStartupSyncKickoffAt: number = 0
 
   onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
+    CloudSyncScheduler.bindExecutor((context: common.UIAbilityContext, reason: string) => {
+      return LocalDataCloudSync.runScheduledSync(context, reason)
+    })
+    CloudSyncScheduler.rememberContext(this.context)
     // Must snapshot the real system colorMode into AppStorage BEFORE any
     // setColorMode or SettingsBootstrap, otherwise the app override masks
     // the real system value (auto mode detection breaks).
@@ -104,6 +110,18 @@ export default class EntryAbility extends UIAbility {
     ThemeSettings.refreshEffectiveDark(this.context, newConfig.colorMode)
   }
 
+  onForeground(): void {
+    CloudSyncScheduler.rememberContext(this.context)
+    if (!CloudSyncSettings.isEnabled()) {
+      return
+    }
+    const sinceStartupSyncMs: number = Date.now() - this.lastStartupSyncKickoffAt
+    if (this.lastStartupSyncKickoffAt > 0 && sinceStartupSyncMs < 60000) {
+      return
+    }
+    CloudSyncScheduler.requestAfterForeground(this.context, 'foreground')
+  }
+
   private loadContent(windowStage: window.WindowStage, win: window.Window | null): void {
     windowStage.loadContent(ENTRY_PAGE, (err) => {
       if (err.code) {
@@ -127,6 +145,7 @@ export default class EntryAbility extends UIAbility {
       // setting is restored by SettingsBootstrap.loadAll, which has run before this callback). Best-effort,
       // after content loads (required for the DISTRIBUTED_DATASYNC user-grant dialog); never affects launch.
       if (CloudSyncSettings.isEnabled()) {
+        this.lastStartupSyncKickoffAt = Date.now()
         LocalDataCloudSync.tryEnableAndSync(this.context).catch((_error: Error) => {})
       }
     })

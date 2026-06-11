@@ -1,6 +1,7 @@
 import { common } from '@kit.AbilityKit'
 import { relationalStore } from '@kit.ArkData'
 import { LocalDataStore } from '../storage/LocalDataStore'
+import { CloudSyncScheduler } from '../storage/CloudSyncScheduler'
 import { deleteKeysAndFlush, withPreferencesStore } from './SettingsStorage'
 import { STORE_NAME_SEARCH } from './SettingsStores'
 
@@ -38,6 +39,7 @@ export class SearchSettings {
       await store.executeSql(SQL_UPSERT_HISTORY, args)
       await store.executeSql(SQL_PRUNE_HISTORY)
       SearchSettings.deleteLegacyHistoryBestEffort(context)
+      CloudSyncScheduler.requestAfterLocalWrite(context, 'search_history')
       return await SearchSettings.loadHistory(context)
     } catch (error) {
       const e = error as Error
@@ -49,6 +51,7 @@ export class SearchSettings {
     try {
       const store = await LocalDataStore.open(context)
       await store.executeSql(SQL_CLEAR_HISTORY)
+      CloudSyncScheduler.requestAfterLocalWrite(context, 'search_history_clear')
     } catch (error) {
       const e = error as Error
       throw new Error(e.message || 'Failed to clear search history')

@@ -2,6 +2,7 @@ import { common } from '@kit.AbilityKit'
 import { relationalStore } from '@kit.ArkData'
 import type { BackupCollectionsSection } from '../backup/BackupTypes'
 import { LocalDataStore } from '../storage/LocalDataStore'
+import { CloudSyncScheduler } from '../storage/CloudSyncScheduler'
 import { connectUserMarks } from '../state/UserMarkState'
 import { LocalDataPublisher } from './LocalDataPublisher'
 import { withPreferencesStore } from './SettingsStorage'
@@ -125,6 +126,7 @@ export class UserMarkSettings {
       updatedAt: now,
     })
     LocalDataPublisher.touchLocalData()
+    CloudSyncScheduler.requestAfterLocalWrite(context, 'user_marks')
     return await UserMarkSettings.load(context)
   }
 
@@ -149,6 +151,7 @@ export class UserMarkSettings {
       updatedAt: now,
     })
     LocalDataPublisher.touchLocalData()
+    CloudSyncScheduler.requestAfterLocalWrite(context, 'user_mark_assignments')
     return await UserMarkSettings.load(context)
   }
 
@@ -166,6 +169,7 @@ export class UserMarkSettings {
     const args: relationalStore.ValueType[] = [usernameKey, cleanLabelId]
     await store.executeSql(SQL_DELETE_ASSIGNMENT, args)
     LocalDataPublisher.touchLocalData()
+    CloudSyncScheduler.requestAfterLocalWrite(context, 'user_mark_assignments')
     return await UserMarkSettings.load(context)
   }
 
@@ -182,6 +186,7 @@ export class UserMarkSettings {
     await store.executeSql(SQL_DELETE_ASSIGNMENTS_BY_LABEL, args)
     await store.executeSql(SQL_DELETE_LABEL, args)
     LocalDataPublisher.touchLocalData()
+    CloudSyncScheduler.requestAfterLocalWrite(context, 'user_marks')
     return await UserMarkSettings.load(context)
   }
 
@@ -239,6 +244,7 @@ export class UserMarkSettings {
       prefs.flushSync()
     })
     LocalDataPublisher.touchLocalData()
+    CloudSyncScheduler.requestAfterLocalWrite(context, 'user_marks_restore_backup')
     await UserMarkSettings.load(context)
   }
 
@@ -260,6 +266,7 @@ export class UserMarkSettings {
     }
     UserMarkSettings.apply(snapshot)
     LocalDataPublisher.touchLocalData()
+    CloudSyncScheduler.requestAfterLocalWrite(context, 'user_marks_clear_all')
   }
 
   static apply(snapshot: UserMarkSnapshot): void {

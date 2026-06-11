@@ -1,6 +1,7 @@
 import { common } from '@kit.AbilityKit'
 import { relationalStore } from '@kit.ArkData'
 import { LocalDataStore } from './LocalDataStore'
+import { CloudSyncScheduler } from './CloudSyncScheduler'
 
 // Generic cloud-syncable key-value "catch-all" over the synced_kv table. Lets any feature persist a few
 // scattered values that ride the device-cloud (端云协同) sync WITHOUT adding a new local table or a new
@@ -41,6 +42,7 @@ export class SyncedKv {
       Date.now(),
     ]
     await store.executeSql(SQL_PUT, args)
+    CloudSyncScheduler.requestAfterLocalWrite(context, 'synced_kv')
   }
 
   // Read one value, or null if absent. Reads degrade to null on error so a missing flag never throws.
@@ -107,5 +109,6 @@ export class SyncedKv {
     const store = await LocalDataStore.open(context)
     const args: relationalStore.ValueType[] = [SyncedKv.composeKey(namespace, key)]
     await store.executeSql(SQL_DELETE, args)
+    CloudSyncScheduler.requestAfterLocalWrite(context, 'synced_kv')
   }
 }

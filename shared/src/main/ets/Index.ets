@@ -336,6 +336,8 @@ export {
   LOCAL_DATA_SCHEMA_VERSION,
 } from './storage/LocalDataStore'
 export { LocalDataCloudSync } from './storage/LocalDataCloudSync'
+export { CloudSyncScheduler } from './storage/CloudSyncScheduler'
+export type { CloudSyncExecutor } from './storage/CloudSyncScheduler'
 export { CloudSyncFeature, CLOUD_SYNC_FEATURES } from './storage/CloudSyncFeatures'
 export type { CloudSyncFeatureDef } from './storage/CloudSyncFeatures'
 export { SyncedKv } from './storage/SyncedKv'
