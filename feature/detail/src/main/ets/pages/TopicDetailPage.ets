@@ -1155,7 +1155,7 @@ export struct TopicDetailPage {
         this.clearReplyDraftAfterSuccess()
         // The posted reply lands on the LAST replies page; the wrapper re-preloads the thread
         // tail after the page-1 reload so the new reply is actually fetched and shown.
-        this.reloadTopicWithThreadPreload()
+        return this.reloadTopicWithThreadPreload()
       })
       .catch((error: Error) => {
         // Keep the draft and surface the (translated) error. Do NOT auto-reopen the composer:

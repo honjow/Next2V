@@ -65,6 +65,12 @@ mustInclude(viewModel, '@Trace hotReplyCandidates: V2exReply[] = []', 'ViewModel
 mustInclude(viewModel, 'HotReplyCoordinator.select(', 'ViewModel must refresh high-reply candidates when replies publish')
 mustInclude(viewModel, 'getHotReplies(enabled: boolean, maxCount: number, minThanks: number): V2exReply[]', 'ViewModel must expose selected hot replies')
 mustInclude(viewModel, 'HotReplyCoordinator.filterCandidates(this.hotReplyCandidates, maxCount, minThanks)', 'ViewModel must filter existing candidates by settings')
+mustAppearInOrder(
+  viewModel,
+  ['const visibleReplies = this.getVisibleReplies()', 'this.hotReplyCandidates = HotReplyCoordinator.select(', 'this.replyDataSource.setData(visibleReplies)'],
+  'publishing replies must refresh hot reply candidates before notifying the normal reply data source',
+)
+mustInclude(detailPage, 'return this.reloadTopicWithThreadPreload()', 'reply submit must keep the success chain open until the post-reply reload/preload completes')
 
 mustInclude(selector, 'ReplyDisplaySettings.MODE_THREAD', 'selector must reuse threaded reply grouping')
 mustInclude(selector, 'static filterCandidates(', 'selector must support settings-only filtering without rebuilding replies')
@@ -76,6 +82,13 @@ mustInclude(panel, 'ReplyCard({', 'top hot replies must use the full shared Repl
 mustInclude(panel, 'childReplies: reply.threadChildren || []', 'top hot reply cards must reuse the shared ReplyCard thread renderer')
 mustInclude(panel, 'embedded: true', 'top hot reply content must render inside the panel-owned card so simplified nested replies stay in the same card')
 mustInclude(panel, 'childAvatarVisible: false', 'hot reply nested replies must use ReplyCard simplification instead of a custom renderer')
+mustInclude(panel, 'childRepliesExpandable: true', 'top hot reply cards must allow collapsing their nested replies')
+mustInclude(panel, '@Local private childRepliesExpandedByKey: Record<string, boolean> = {};', 'hot reply child-reply collapse state must be cached by the panel')
+mustInclude(panel, 'childRepliesExpanded: this.isChildRepliesExpanded(reply)', 'top hot reply cards must receive cached child-reply expanded state')
+mustInclude(panel, 'onChildRepliesExpandedChange: (target: V2exReply, expanded: boolean) => {', 'top hot reply cards must report child-reply expand changes')
+mustInclude(panel, 'this.setChildRepliesExpanded(target, expanded)', 'hot reply panel must update the cached child-reply expand state')
+mustInclude(panel, 'this.getUIContext().animateTo(', 'hot replies section expand/collapse must animate the state change')
+mustInclude(panel, '.transition(TransitionEffect.OPACITY)', 'hot replies section body must fade during expand/collapse')
 mustInclude(panel, 'onFloorClick: (target: V2exReply) => {', 'top hot replies must reuse the floor label for jump')
 mustInclude(panel, 'this.jumpToReply(target)', 'top hot reply floor label must jump to the original reply')
 assert.ok(!panel.includes('jumpText'), 'panel must not keep a separate floor jump text row')
@@ -102,6 +115,21 @@ mustInclude(replyCard, '@Event onFloorClick?: (reply: V2exReply) => void;', 'Rep
 mustInclude(replyCard, 'onFloorClick: this.onFloorClick', 'ReplyCard must pass floor clicks to its header')
 mustInclude(replyCard, '@Param childAvatarVisible: boolean = true;', 'ReplyCard must own child avatar simplification as a reusable thread option')
 mustInclude(replyCard, 'showAvatar: this.childAvatarVisible', 'ReplyCard must apply child avatar visibility to nested reply headers')
+mustInclude(replyCard, '@Param childRepliesExpandable: boolean = false;', 'ReplyCard must expose optional child-reply collapse controls without changing normal replies')
+mustInclude(replyCard, '@Param childRepliesExpanded: boolean = true;', 'ReplyCard must accept externally cached child-reply expanded state')
+mustInclude(replyCard, '@Local private childRepliesExpandedState: boolean = true;', 'ReplyCard must mirror child-reply expanded state locally for animation')
+mustInclude(replyCard, "@Monitor('childRepliesExpanded')", 'ReplyCard must react when cached child-reply expanded state changes')
+mustInclude(replyCard, '@Event onChildRepliesExpandedChange?: (reply: V2exReply, expanded: boolean) => void;', 'ReplyCard must expose child-reply expanded changes to its owner')
+mustInclude(replyCard, 'private toggleChildReplies(): void', 'ReplyCard must own child-reply collapse state')
+mustInclude(replyCard, '@Builder\n  private ChildRepliesToggle()', 'ReplyCard must render child-reply collapse through a reusable builder')
+mustAppearInOrder(
+  replyCard,
+  ['TimeAgo({ timestamp: this.reply.created })', 'this.ChildRepliesToggle()', 'Blank()'],
+  'non-compact child-reply toggle must sit on the action row after the timestamp',
+)
+mustInclude(replyCard, 'if (this.childRepliesExpandable && this.isCompact())', 'compact child-reply toggle may stay on its own row')
+mustInclude(replyCard, 'childRepliesExpandable: false', 'nested ReplyCards must not show their own child-reply collapse controls')
+mustInclude(replyCard, "$r('app.string.topic_replies_count')", 'child-reply toggle must reuse existing i18n reply-count text')
 mustInclude(replyCardHeader, '@Event onFloorClick?: (reply: V2exReply) => void;', 'ReplyCardHeader must expose an optional floor click event')
 mustInclude(replyCardHeader, 'this.onFloorClick(this.reply)', 'ReplyCardHeader floor text must call the optional floor click event')
 mustInclude(replyCardHeader, '@Param showAvatar: boolean = true;', 'ReplyCardHeader must support hiding avatars without custom header forks')

@@ -711,8 +711,7 @@ export class DetailViewModel {
   private publishVisibleReplies(): void {
     this.heldRepliesPublish = false
     this.publishedReplies = this.replies
-    this.replyDataSource.setData(this.getVisibleReplies())
-    this.repliesLoaded = this.replies.length
+    const visibleReplies = this.getVisibleReplies()
     this.hotReplyCandidates = HotReplyCoordinator.select(
       this.replies,
       this.topic,
@@ -720,6 +719,8 @@ export class DetailViewModel {
       HotReplySettings.MAX_MAX_COUNT,
       HotReplySettings.MIN_THANKS,
     )
+    this.replyDataSource.setData(visibleReplies)
+    this.repliesLoaded = this.replies.length
   }
 
   // Safety net: if a held page-1 publish never got superseded by a preload publish (preload

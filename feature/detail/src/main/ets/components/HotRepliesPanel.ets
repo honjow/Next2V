@@ -10,6 +10,7 @@ export struct HotRepliesPanel {
   @Param replies: V2exReply[] = [];
   @Param opMemberId: number = 0;
   @Param expanded: boolean = true;
+  @Local private childRepliesExpandedByKey: Record<string, boolean> = {};
   @Event onExpandedChange?: (expanded: boolean) => void;
   @Event onJumpClick?: (reply: V2exReply) => void;
   @Event onContextClick?: (reply: V2exReply) => void;
@@ -44,10 +45,32 @@ export struct HotRepliesPanel {
     return reply.renderKey || reply.id.toString()
   }
 
+  private isChildRepliesExpanded(reply: V2exReply): boolean {
+    const cached = this.childRepliesExpandedByKey[this.replyKey(reply)]
+    return cached !== false
+  }
+
+  private setChildRepliesExpanded(reply: V2exReply, expanded: boolean): void {
+    const next: Record<string, boolean> = {}
+    const keys: string[] = Object.keys(this.childRepliesExpandedByKey)
+    for (const key of keys) {
+      next[key] = this.childRepliesExpandedByKey[key]
+    }
+    next[this.replyKey(reply)] = expanded
+    this.childRepliesExpandedByKey = next
+  }
+
   private toggleExpanded(): void {
     const next = !this.expanded
     if (this.onExpandedChange) {
-      this.onExpandedChange(next)
+      this.getUIContext().animateTo(
+        { duration: ThemeConstants.ANIM_DURATION, curve: Curve.EaseOut },
+        () => {
+          if (this.onExpandedChange) {
+            this.onExpandedChange(next)
+          }
+        },
+      )
     }
   }
 
@@ -148,6 +171,11 @@ export struct HotRepliesPanel {
         opMemberId: this.opMemberId,
         hideLeadingMention: true,
         childAvatarVisible: false,
+        childRepliesExpandable: true,
+        childRepliesExpanded: this.isChildRepliesExpanded(reply),
+        onChildRepliesExpandedChange: (target: V2exReply, expanded: boolean) => {
+          this.setChildRepliesExpanded(target, expanded)
+        },
         isWrongReference: !!reply.isWrongReference,
         isDuplicateThreadItem: false,
         onUserClick: (target: V2exReply) => {
@@ -224,6 +252,7 @@ export struct HotRepliesPanel {
             )
           }
           .width('100%')
+          .transition(TransitionEffect.OPACITY)
         }
       }
       .width('100%')

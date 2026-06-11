@@ -1,6 +1,7 @@
 import { V2exReply } from '../network/NetworkTypes'
 import { ReplyCardStyleState, connectReplyCardStyle } from '../state/ReplyCardStyleState'
 import { ThemeConstants } from '../theme/ThemeConstants'
+import { AppStrings } from '../i18n/AppStrings'
 import { TimeAgo } from './TimeAgo'
 import { MarkdownContent } from './MarkdownContent'
 import { ReplyCardActions } from './reply/ReplyCardActions'
@@ -24,8 +25,11 @@ export struct ReplyCard {
   @Param hideLeadingMention: boolean = false;
   @Param showAvatar: boolean = true;
   @Param childAvatarVisible: boolean = true;
+  @Param childRepliesExpandable: boolean = false;
+  @Param childRepliesExpanded: boolean = true;
   @Local private cardWidth: number = 0;
   @Local private threadGuideHeights: Record<string, number> = {};
+  @Local private childRepliesExpandedState: boolean = true;
   @Event onUserClick?: (reply: V2exReply) => void;
   @Event onActionsClick?: (reply: V2exReply) => void;
   @Event onContextClick?: (reply: V2exReply) => void;
@@ -42,12 +46,24 @@ export struct ReplyCard {
   @Event onImageClick?: (url: string) => void;
   @Event onLinkClick?: (url: string) => void;
   @Event onMentionUserClick?: (username: string) => void;
+  @Event onChildRepliesExpandedChange?: (reply: V2exReply, expanded: boolean) => void;
   // V2 mirror of REPLY_CARD_STYLE; ReplyCardStyleSettings.apply() dual-writes this @Trace
   // field alongside the legacy AppStorage key still read by the V1 SettingsPage.
   private replyStyleState: ReplyCardStyleState = connectReplyCardStyle();
 
   private isCompact(): boolean {
     return this.replyStyleState.replyCardStyle === 'compact'
+  }
+
+  aboutToAppear(): void {
+    this.childRepliesExpandedState = this.childRepliesExpanded
+  }
+
+  @Monitor('childRepliesExpanded')
+  onChildRepliesExpandedChanged(): void {
+    if (this.childRepliesExpandedState !== this.childRepliesExpanded) {
+      this.childRepliesExpandedState = this.childRepliesExpanded
+    }
   }
 
   // Width actually available to the header row = measured card width minus this card's own padding.
@@ -188,6 +204,53 @@ export struct ReplyCard {
     return ReplyCardLayoutPolicy.COMPACT_CHILD_REPLY_GAP
   }
 
+  private childRepliesVisible(): boolean {
+    return !this.childRepliesExpandable || this.childRepliesExpandedState
+  }
+
+  private childRepliesToggleLabel(): string {
+    return AppStrings.format(
+      AppStrings.text($r('app.string.topic_replies_count'), '{0} replies'),
+      [`${this.childReplies.length}`],
+    )
+  }
+
+  private toggleChildReplies(): void {
+    if (!this.childRepliesExpandable || this.childReplies.length === 0) {
+      return
+    }
+    const next = !this.childRepliesExpandedState
+    this.getUIContext().animateTo(
+      { duration: ThemeConstants.ANIM_DURATION, curve: Curve.EaseOut },
+      () => {
+        this.childRepliesExpandedState = next
+        if (this.onChildRepliesExpandedChange) {
+          this.onChildRepliesExpandedChange(this.reply, next)
+        }
+      },
+    )
+  }
+
+  @Builder
+  private ChildRepliesToggle() {
+    Row({ space: ThemeConstants.SPACE_XS }) {
+      Text(this.childRepliesToggleLabel())
+        .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+        .fontColor($r('sys.color.font_secondary'))
+      SymbolGlyph(
+        this.childRepliesExpandedState
+          ? $r('sys.symbol.arrowtriangle_up_fill')
+          : $r('sys.symbol.arrowtriangle_down_fill'),
+      )
+        .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+        .fontColor([$r('sys.color.font_tertiary')])
+    }
+    .alignItems(VerticalAlign.Center)
+    .onClick(() => {
+      this.toggleChildReplies()
+    })
+  }
+
   private updateChildGuideHeight(reply: V2exReply, area: Area): void {
     const height = typeof area.height === 'number'
       ? area.height
@@ -253,8 +316,11 @@ export struct ReplyCard {
         }
 
         if (!this.isCompact()) {
-          Row() {
+          Row({ space: ThemeConstants.SPACE_SM }) {
             TimeAgo({ timestamp: this.reply.created })
+            if (this.childRepliesExpandable && this.childReplies.length > 0) {
+              this.ChildRepliesToggle()
+            }
             Blank()
             ReplyCardActions({
               reply: this.reply,
@@ -276,76 +342,88 @@ export struct ReplyCard {
         }
 
         if (this.childReplies.length > 0) {
-          Column() {
-            ForEach(
-              this.childReplies,
-              (child: V2exReply, index: number) => {
-                Row() {
-                  if (this.childGuideHeight(child, index) > 0) {
-                    Divider()
-                      .vertical(true)
-                      .strokeWidth(ReplyCardLayoutPolicy.THREAD_GUIDE_LINE_WIDTH)
-                      .color($r('sys.color.ohos_id_color_list_separator'))
-                      .height(this.childGuideHeight(child, index))
-                      .margin({ right: ReplyCardLayoutPolicy.THREAD_GUIDE_CONTENT_GAP })
-                  } else {
-                    Column()
-                      .width(ReplyCardLayoutPolicy.THREAD_GUIDE_LINE_WIDTH)
-                      .margin({ right: ReplyCardLayoutPolicy.THREAD_GUIDE_CONTENT_GAP })
-                  }
-                  Column() {
-                    ReplyCard({
-                      reply: child,
-                      floor: child.floor || 0,
-                      isOp: this.opMemberId > 0 && child.member.id === this.opMemberId,
-                      isThanked: this.childIsThanked(child),
-                      isThankPending: this.childIsThankPending(child),
-                      threadLevel: child.threadLevel || 0,
-                      relationLabel: '',
-                      displayContent: this.childDisplayContent(child),
-                      childReplies: child.threadChildren || [],
-                      embedded: true,
-                      opMemberId: this.opMemberId,
-                      hideLeadingMention: this.hideLeadingMention,
-                      showAvatar: this.childAvatarVisible,
-                      childAvatarVisible: this.childAvatarVisible,
-                      isWrongReference: !!child.isWrongReference,
-                      isDuplicateThreadItem: !!child.isDuplicateThreadItem,
-                      onUserClick: this.onUserClick,
-                      onActionsClick: this.onActionsClick,
-                      onContextClick: this.onContextClick,
-                      onMentionClick: this.onMentionClick,
-                      onReplyClick: this.onReplyClick,
-                      onThankClick: this.onThankClick,
-                      onIgnoreClick: this.onIgnoreClick,
-                      onReportClick: this.onReportClick,
-                      onCopyUserClick: this.onCopyUserClick,
-                      onCopyContentClick: this.onCopyContentClick,
-                      onFloorClick: this.onFloorClick,
-                      isReplyThanked: this.isReplyThanked,
-                      isReplyThankPending: this.isReplyThankPending,
-                      onImageClick: this.onImageClick,
-                      onLinkClick: this.onLinkClick,
-                      onMentionUserClick: this.onMentionUserClick,
-                    })
-                    if (this.childReplyBottomGap(index) > 0) {
-                      Blank()
-                        .height(this.childReplyBottomGap(index))
-                    }
-                  }
-                  .layoutWeight(1)
-                  .onAreaChange((_oldValue: Area, newValue: Area) => {
-                    this.updateChildGuideHeight(child, newValue)
-                  })
-                }
-                .width('100%')
-                .alignItems(VerticalAlign.Top)
-              },
-              (child: V2exReply) => this.childKey(child),
-            )
+          if (this.childRepliesExpandable && this.isCompact()) {
+            Row() {
+              this.ChildRepliesToggle()
+            }
+            .width('100%')
+            .justifyContent(FlexAlign.End)
+            .margin({ top: ReplyCardLayoutPolicy.CONTENT_GAP })
           }
-          .width('100%')
-          .margin({ top: this.childReplyListTopGap() })
+          if (this.childRepliesVisible()) {
+            Column() {
+              ForEach(
+                this.childReplies,
+                (child: V2exReply, index: number) => {
+                  Row() {
+                    if (this.childGuideHeight(child, index) > 0) {
+                      Divider()
+                        .vertical(true)
+                        .strokeWidth(ReplyCardLayoutPolicy.THREAD_GUIDE_LINE_WIDTH)
+                        .color($r('sys.color.ohos_id_color_list_separator'))
+                        .height(this.childGuideHeight(child, index))
+                        .margin({ right: ReplyCardLayoutPolicy.THREAD_GUIDE_CONTENT_GAP })
+                    } else {
+                      Column()
+                        .width(ReplyCardLayoutPolicy.THREAD_GUIDE_LINE_WIDTH)
+                        .margin({ right: ReplyCardLayoutPolicy.THREAD_GUIDE_CONTENT_GAP })
+                    }
+                    Column() {
+                      ReplyCard({
+                        reply: child,
+                        floor: child.floor || 0,
+                        isOp: this.opMemberId > 0 && child.member.id === this.opMemberId,
+                        isThanked: this.childIsThanked(child),
+                        isThankPending: this.childIsThankPending(child),
+                        threadLevel: child.threadLevel || 0,
+                        relationLabel: '',
+                        displayContent: this.childDisplayContent(child),
+                        childReplies: child.threadChildren || [],
+                        embedded: true,
+                        opMemberId: this.opMemberId,
+                        hideLeadingMention: this.hideLeadingMention,
+                        showAvatar: this.childAvatarVisible,
+                        childAvatarVisible: this.childAvatarVisible,
+                        childRepliesExpandable: false,
+                        isWrongReference: !!child.isWrongReference,
+                        isDuplicateThreadItem: !!child.isDuplicateThreadItem,
+                        onUserClick: this.onUserClick,
+                        onActionsClick: this.onActionsClick,
+                        onContextClick: this.onContextClick,
+                        onMentionClick: this.onMentionClick,
+                        onReplyClick: this.onReplyClick,
+                        onThankClick: this.onThankClick,
+                        onIgnoreClick: this.onIgnoreClick,
+                        onReportClick: this.onReportClick,
+                        onCopyUserClick: this.onCopyUserClick,
+                        onCopyContentClick: this.onCopyContentClick,
+                        onFloorClick: this.onFloorClick,
+                        isReplyThanked: this.isReplyThanked,
+                        isReplyThankPending: this.isReplyThankPending,
+                        onImageClick: this.onImageClick,
+                        onLinkClick: this.onLinkClick,
+                        onMentionUserClick: this.onMentionUserClick,
+                      })
+                      if (this.childReplyBottomGap(index) > 0) {
+                        Blank()
+                          .height(this.childReplyBottomGap(index))
+                      }
+                    }
+                    .layoutWeight(1)
+                    .onAreaChange((_oldValue: Area, newValue: Area) => {
+                      this.updateChildGuideHeight(child, newValue)
+                    })
+                  }
+                  .width('100%')
+                  .alignItems(VerticalAlign.Top)
+                },
+                (child: V2exReply) => this.childKey(child),
+              )
+            }
+            .width('100%')
+            .margin({ top: this.childReplyListTopGap() })
+            .transition(TransitionEffect.OPACITY)
+          }
         }
       }
       .padding({
