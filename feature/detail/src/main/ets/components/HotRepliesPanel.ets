@@ -1,22 +1,15 @@
 import {
   AppStrings,
-  MarkdownContent,
   ReplyCard,
   ThemeConstants,
-  UserName,
   V2exReply,
 } from 'shared'
-
-const HOT_REPLY_THREAD_GUIDE_LINE_WIDTH: number = 0.5
-const HOT_REPLY_THREAD_GUIDE_CONTENT_GAP: number = 6
-const HOT_REPLY_THREAD_GUIDE_END_INSET: number = 8
 
 @ComponentV2
 export struct HotRepliesPanel {
   @Param replies: V2exReply[] = [];
   @Param opMemberId: number = 0;
   @Param expanded: boolean = true;
-  @Local private childGuideHeights: Record<string, number> = {};
   @Event onExpandedChange?: (expanded: boolean) => void;
   @Event onJumpClick?: (reply: V2exReply) => void;
   @Event onContextClick?: (reply: V2exReply) => void;
@@ -47,51 +40,8 @@ export struct HotRepliesPanel {
     return reply.content || ''
   }
 
-  private childContentSource(reply: V2exReply): string {
-    const hiddenRendered = (reply.hiddenLeadingMentionRenderedContent || '').trim()
-    if (hiddenRendered.length > 0) {
-      return reply.hiddenLeadingMentionRenderedContent || ''
-    }
-    const hidden = (reply.hiddenLeadingMentionContent || '').trim()
-    if (hidden.length > 0) {
-      return reply.hiddenLeadingMentionContent || ''
-    }
-    return this.contentSource(reply)
-  }
-
   private replyKey(reply: V2exReply): string {
     return reply.renderKey || reply.id.toString()
-  }
-
-  private childMeasuredHeight(reply: V2exReply): number {
-    return this.childGuideHeights[this.replyKey(reply)] || 0
-  }
-
-  private childGuideHeight(reply: V2exReply, isLast: boolean): number {
-    const height = this.childMeasuredHeight(reply)
-    if (height <= 0) {
-      return 0
-    }
-    if (isLast) {
-      return Math.max(0, height - HOT_REPLY_THREAD_GUIDE_END_INSET)
-    }
-    return height
-  }
-
-  private updateChildGuideHeight(reply: V2exReply, area: Area): void {
-    const height = typeof area.height === 'number'
-      ? area.height
-      : Number.parseFloat(area.height as string)
-    if (Number.isNaN(height) || Math.abs(height - this.childMeasuredHeight(reply)) < 0.5) {
-      return
-    }
-    const next: Record<string, number> = {}
-    const existingKeys: string[] = Object.keys(this.childGuideHeights)
-    for (const existingKey of existingKeys) {
-      next[existingKey] = this.childGuideHeights[existingKey]
-    }
-    next[this.replyKey(reply)] = height
-    this.childGuideHeights = next
   }
 
   private toggleExpanded(): void {
@@ -193,10 +143,11 @@ export struct HotRepliesPanel {
         threadLevel: 0,
         relationLabel: '',
         displayContent: '',
-        childReplies: [],
+        childReplies: reply.threadChildren || [],
         embedded: true,
         opMemberId: this.opMemberId,
         hideLeadingMention: true,
+        childAvatarVisible: false,
         isWrongReference: !!reply.isWrongReference,
         isDuplicateThreadItem: false,
         onUserClick: (target: V2exReply) => {
@@ -246,9 +197,6 @@ export struct HotRepliesPanel {
         },
       })
 
-      if ((reply.threadChildren || []).length > 0) {
-        this.ChildReplyGroup(reply)
-      }
     }
     .width('100%')
     .padding({
@@ -259,106 +207,6 @@ export struct HotRepliesPanel {
     })
     .borderRadius(ThemeConstants.RADIUS_CARD)
     .backgroundColor($r('app.color.card_background'))
-  }
-
-  @Builder
-  private ChildReplyGroup(reply: V2exReply) {
-    Column() {
-      ForEach(
-        reply.threadChildren || [],
-        (child: V2exReply, index: number) => {
-          this.ChildReply(child, 1, index >= (reply.threadChildren || []).length - 1)
-        },
-        (child: V2exReply) => this.replyKey(child),
-      )
-    }
-    .width('100%')
-    .padding({
-      left: ThemeConstants.SPACE_MD,
-      right: 0,
-      top: ThemeConstants.SPACE_SM,
-      bottom: 0,
-    })
-  }
-
-  @Builder
-  private ChildReply(reply: V2exReply, level: number, isLast: boolean) {
-    Row() {
-      if (this.childGuideHeight(reply, isLast) > 0) {
-        Divider()
-          .vertical(true)
-          .strokeWidth(HOT_REPLY_THREAD_GUIDE_LINE_WIDTH)
-          .color($r('sys.color.ohos_id_color_list_separator'))
-          .height(this.childGuideHeight(reply, isLast))
-          .margin({ right: HOT_REPLY_THREAD_GUIDE_CONTENT_GAP })
-      } else {
-        Column()
-          .width(HOT_REPLY_THREAD_GUIDE_LINE_WIDTH)
-          .margin({ right: HOT_REPLY_THREAD_GUIDE_CONTENT_GAP })
-      }
-      Column({ space: ThemeConstants.SPACE_XS }) {
-        Row({ space: ThemeConstants.SPACE_SM }) {
-          UserName({
-            username: reply.member.username,
-            fontSize: ThemeConstants.FONT_SIZE_META,
-            fontWeight: FontWeight.Medium,
-            isPro: (reply.member.pro || 0) > 0,
-            isMod: (reply.member.mod || 0) > 0,
-            showUserMarks: false,
-            onUserClick: () => {
-              this.openUser(reply.member.username)
-            },
-          })
-            .layoutWeight(1)
-          Text(`#${reply.floor || 0}`)
-            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-            .fontColor($r('sys.color.font_secondary'))
-            .onClick(() => {
-              this.jumpToReply(reply)
-            })
-        }
-        .width('100%')
-        .alignItems(VerticalAlign.Center)
-
-        if (this.childContentSource(reply).length > 0) {
-          MarkdownContent({
-            source: this.childContentSource(reply),
-            topMargin: 0,
-            onImageClick: (url: string) => {
-              this.openImage(url)
-            },
-            onLinkClick: (url: string) => {
-              this.openLink(url)
-            },
-            onMentionClick: (username: string) => {
-              this.openUser(username)
-            },
-          })
-        }
-
-        if ((reply.threadChildren || []).length > 0) {
-          Column() {
-            ForEach(
-              reply.threadChildren || [],
-              (child: V2exReply, index: number) => {
-                this.ChildReply(child, level + 1, index >= (reply.threadChildren || []).length - 1)
-              },
-              (child: V2exReply) => this.replyKey(child),
-            )
-          }
-          .width('100%')
-        }
-      }
-      .layoutWeight(1)
-    }
-    .width('100%')
-    .padding({
-      left: Math.min(level, 3) * ThemeConstants.SPACE_SM,
-      bottom: isLast ? 0 : ThemeConstants.SPACE_SM,
-    })
-    .onAreaChange((_oldValue: Area, newValue: Area) => {
-      this.updateChildGuideHeight(reply, newValue)
-    })
   }
 
   build() {

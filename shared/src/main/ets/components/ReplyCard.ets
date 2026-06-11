@@ -22,6 +22,8 @@ export struct ReplyCard {
   @Param embedded: boolean = false;
   @Param opMemberId: number = 0;
   @Param hideLeadingMention: boolean = false;
+  @Param showAvatar: boolean = true;
+  @Param childAvatarVisible: boolean = true;
   @Local private cardWidth: number = 0;
   @Local private threadGuideHeights: Record<string, number> = {};
   @Event onUserClick?: (reply: V2exReply) => void;
@@ -223,6 +225,7 @@ export struct ReplyCard {
           isDuplicateThreadItem: this.isDuplicateThreadItem,
           isCompact: this.isCompact(),
           isNarrow: this.isHeaderNarrow(),
+          showAvatar: this.showAvatar,
           isThanked: this.isThanked,
           isThankPending: this.isThankPending,
           onUserClick: this.onUserClick,
@@ -304,6 +307,8 @@ export struct ReplyCard {
                       embedded: true,
                       opMemberId: this.opMemberId,
                       hideLeadingMention: this.hideLeadingMention,
+                      showAvatar: this.childAvatarVisible,
+                      childAvatarVisible: this.childAvatarVisible,
                       isWrongReference: !!child.isWrongReference,
                       isDuplicateThreadItem: !!child.isDuplicateThreadItem,
                       onUserClick: this.onUserClick,

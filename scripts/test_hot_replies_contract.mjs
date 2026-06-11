@@ -73,8 +73,9 @@ mustInclude(selector, 'right.thanks', 'selector must sort by higher thanks first
 mustInclude(selector, 'result.length < normalizedMaxCount', 'selector must enforce max count')
 
 mustInclude(panel, 'ReplyCard({', 'top hot replies must use the full shared ReplyCard')
-mustInclude(panel, 'childReplies: []', 'top hot reply cards must not recursively render child replies')
+mustInclude(panel, 'childReplies: reply.threadChildren || []', 'top hot reply cards must reuse the shared ReplyCard thread renderer')
 mustInclude(panel, 'embedded: true', 'top hot reply content must render inside the panel-owned card so simplified nested replies stay in the same card')
+mustInclude(panel, 'childAvatarVisible: false', 'hot reply nested replies must use ReplyCard simplification instead of a custom renderer')
 mustInclude(panel, 'onFloorClick: (target: V2exReply) => {', 'top hot replies must reuse the floor label for jump')
 mustInclude(panel, 'this.jumpToReply(target)', 'top hot reply floor label must jump to the original reply')
 assert.ok(!panel.includes('jumpText'), 'panel must not keep a separate floor jump text row')
@@ -82,15 +83,16 @@ assert.ok(!panel.includes('hot_replies_jump_format'), 'panel must not keep a sep
 mustInclude(panel, 'Column({ space: ThemeConstants.SPACE_SM - 2 })', 'hot reply cards must use the same vertical gap as the normal reply list')
 mustAppearInOrder(
   panel,
-  ['ReplyCard({', 'onFloorClick: (target: V2exReply) => {', 'this.ChildReplyGroup(reply)'],
+  ['ReplyCard({', 'childReplies: reply.threadChildren || []', 'onFloorClick: (target: V2exReply) => {'],
   'top floor jump and simplified nested replies must stay inside the hot reply card frame',
 )
-mustInclude(panel, 'showUserMarks: false', 'nested hot replies must omit user marks to save space')
-mustInclude(panel, 'reply.threadChildren || []', 'panel must render simplified nested replies')
-mustInclude(panel, '@Local private childGuideHeights: Record<string, number> = {};', 'nested hot reply guides must track measured row heights')
-mustInclude(panel, 'private childGuideHeight(reply: V2exReply, isLast: boolean): number', 'nested hot reply guides must derive their height from row measurements')
-mustInclude(panel, '.height(this.childGuideHeight(reply, isLast))', 'nested hot reply guides must render measured continuous guide lines')
-mustInclude(panel, 'this.updateChildGuideHeight(reply, newValue)', 'nested hot replies must update guide height from onAreaChange')
+mustInclude(panel, 'reply.threadChildren || []', 'panel must pass nested replies to the shared ReplyCard renderer')
+assert.ok(!panel.includes('@Builder\n  private ChildReply'), 'panel must not define a custom nested reply renderer')
+assert.ok(!panel.includes('showUserMarks: false'), 'panel must not fork UserName rendering for nested hot replies')
+assert.ok(!panel.includes('MarkdownContent({'), 'panel must not fork Markdown rendering for nested hot replies')
+assert.ok(!panel.includes('@Local private childGuideHeights'), 'nested hot reply guides must not store measured heights')
+assert.ok(!panel.includes('childGuideHeight('), 'nested hot reply guides must not feed measured heights back into layout')
+assert.ok(!panel.includes('updateChildGuideHeight'), 'nested hot reply guides must not use onAreaChange height feedback')
 assert.ok(!panel.includes('.height(ThemeConstants.SPACE_XL)'), 'nested hot reply guide lines must not use a fixed short height')
 mustInclude(panel, "$r('app.string.hot_replies_header_format')", 'panel title must use i18n resource')
 assert.ok(!panel.includes('thresholdText'), 'panel header must not show the high-reply threshold')
@@ -98,8 +100,12 @@ assert.ok(!panel.includes('hot_replies_threshold_format'), 'panel must not keep 
 
 mustInclude(replyCard, '@Event onFloorClick?: (reply: V2exReply) => void;', 'ReplyCard must expose an optional floor click event')
 mustInclude(replyCard, 'onFloorClick: this.onFloorClick', 'ReplyCard must pass floor clicks to its header')
+mustInclude(replyCard, '@Param childAvatarVisible: boolean = true;', 'ReplyCard must own child avatar simplification as a reusable thread option')
+mustInclude(replyCard, 'showAvatar: this.childAvatarVisible', 'ReplyCard must apply child avatar visibility to nested reply headers')
 mustInclude(replyCardHeader, '@Event onFloorClick?: (reply: V2exReply) => void;', 'ReplyCardHeader must expose an optional floor click event')
 mustInclude(replyCardHeader, 'this.onFloorClick(this.reply)', 'ReplyCardHeader floor text must call the optional floor click event')
+mustInclude(replyCardHeader, '@Param showAvatar: boolean = true;', 'ReplyCardHeader must support hiding avatars without custom header forks')
+mustInclude(replyCardHeader, 'if (this.showAvatar) {', 'ReplyCardHeader must guard only the avatar region')
 
 for (const locale of ['base', 'en_US', 'zh_CN', 'zh_TW', 'zh_HK', 'ja_JP', 'ko_KR']) {
   const strings = read(`entry/src/main/resources/${locale}/element/string.json`)

@@ -14,6 +14,7 @@ export struct ReplyCardHeader {
   @Param isOp: boolean = false;
   @Param isDuplicateThreadItem: boolean = false;
   @Param isCompact: boolean = false;
+  @Param showAvatar: boolean = true;
   // When the compact header is too narrow for the full action cluster, collapse actions into a
   // single overflow menu. The author marks/timestamp live in a wrapping meta row below.
   @Param isNarrow: boolean = false;
@@ -123,15 +124,17 @@ export struct ReplyCardHeader {
 
   build() {
     Row({ space: ThemeConstants.SPACE_SM }) {
-      Avatar({
-        url: ImageUtils.memberAvatarUrl(this.reply.member),
-        avatarSize: ThemeConstants.AVATAR_SIZE_REPLY,
-      })
-        .onClick(() => {
-          if (this.onUserClick) {
-            this.onUserClick(this.reply)
-          }
+      if (this.showAvatar) {
+        Avatar({
+          url: ImageUtils.memberAvatarUrl(this.reply.member),
+          avatarSize: ThemeConstants.AVATAR_SIZE_REPLY,
         })
+          .onClick(() => {
+            if (this.onUserClick) {
+              this.onUserClick(this.reply)
+            }
+          })
+      }
 
       if (this.isCompact) {
         Column() {
