@@ -17,17 +17,19 @@ export class ReplyCardLayoutPolicy {
   static readonly THREAD_GUIDE_CONTENT_GAP: number = 6;
   static readonly THREAD_GUIDE_END_INSET: number = 8;
 
-  // Inline-compact-header fit budget. The header stacks the timestamp under the username + folds the
-  // actions into a menu ONLY when its single row would not actually fit — decided from THIS reply's
-  // content, not a fixed width threshold (a fixed cut is really a phone/tablet switch: every phone
-  // card is "narrow", every tablet card is "wide", which is not adaptive). The dominant variable is
-  // the username length, so estimate the row's required width from it and compare to the measured
-  // space; a short-name reply stays inline even on a phone, a long-name / genuinely-narrow card folds.
-  static readonly HEADER_INLINE_FIXED_VP: number = 280; // avatar + timestamp + 3 buttons + floor + gaps
-  static readonly HEADER_OP_BADGE_VP: number = 28;
-  static readonly HEADER_DUP_BADGE_VP: number = 34;
-  static readonly HEADER_THANKS_EXTRA_VP: number = 18;
-  static readonly HEADER_USERNAME_FONT_VP: number = 13; // mirrors ThemeConstants.FONT_SIZE_META
+  // Inline-compact-header fit budget. The compact meta column already wraps and its username can
+  // shrink/ellipsis, so long names should not by themselves force all actions into the overflow menu.
+  // Fold only when the measured header cannot fit the fixed chrome plus a usable meta column.
+  static readonly HEADER_ACTION_BUTTON_VP: number = 36;
+  static readonly HEADER_AVATAR_VP: number = 32;
+  static readonly HEADER_ROW_GAP_VP: number = 8;
+  static readonly HEADER_MIN_META_VP: number = 96;
+  static readonly HEADER_INLINE_SAFETY_VP: number = 8;
+  static readonly HEADER_THANK_ICON_VP: number = 16;
+  static readonly HEADER_THANK_BUTTON_PADDING_VP: number = 8;
+  static readonly HEADER_THANK_ICON_TEXT_GAP_VP: number = 4;
+  static readonly HEADER_THANK_TEXT_FONT_VP: number = 12;
+  static readonly HEADER_FLOOR_FONT_VP: number = 11;
 
   // Rough rendered width of a string: CJK / full-width glyphs ~= the font size, Latin/ASCII ~= 0.56x.
   // Approximate by design — it only needs to decide a layout fit, and the username's
@@ -40,22 +42,36 @@ export class ReplyCardLayoutPolicy {
     return width
   }
 
+  static thankButtonExtraWidth(thanks: number): number {
+    if (thanks <= 0) {
+      return 0
+    }
+    const rendered =
+      ReplyCardLayoutPolicy.HEADER_THANK_ICON_VP +
+      ReplyCardLayoutPolicy.HEADER_THANK_ICON_TEXT_GAP_VP +
+      ReplyCardLayoutPolicy.estTextWidth(`${thanks}`, ReplyCardLayoutPolicy.HEADER_THANK_TEXT_FONT_VP) +
+      ReplyCardLayoutPolicy.HEADER_THANK_BUTTON_PADDING_VP
+    return Math.max(0, rendered - ReplyCardLayoutPolicy.HEADER_ACTION_BUTTON_VP)
+  }
+
   static compactHeaderStacked(
     availableWidth: number,
-    username: string,
-    isOp: boolean,
-    isDuplicate: boolean,
-    hasThanks: boolean,
+    floor: number,
+    showAvatar: boolean,
+    thanks: number,
   ): boolean {
     if (availableWidth <= 0) {
       return false
     }
+    const visibleColumns = showAvatar ? 4 : 3
     const required =
-      ReplyCardLayoutPolicy.HEADER_INLINE_FIXED_VP +
-      ReplyCardLayoutPolicy.estTextWidth(username, ReplyCardLayoutPolicy.HEADER_USERNAME_FONT_VP) +
-      (isOp ? ReplyCardLayoutPolicy.HEADER_OP_BADGE_VP : 0) +
-      (isDuplicate ? ReplyCardLayoutPolicy.HEADER_DUP_BADGE_VP : 0) +
-      (hasThanks ? ReplyCardLayoutPolicy.HEADER_THANKS_EXTRA_VP : 0)
+      (showAvatar ? ReplyCardLayoutPolicy.HEADER_AVATAR_VP : 0) +
+      (visibleColumns - 1) * ReplyCardLayoutPolicy.HEADER_ROW_GAP_VP +
+      ReplyCardLayoutPolicy.HEADER_MIN_META_VP +
+      ReplyCardLayoutPolicy.HEADER_ACTION_BUTTON_VP * 3 +
+      ReplyCardLayoutPolicy.thankButtonExtraWidth(thanks) +
+      ReplyCardLayoutPolicy.estTextWidth(`#${floor}`, ReplyCardLayoutPolicy.HEADER_FLOOR_FONT_VP) +
+      ReplyCardLayoutPolicy.HEADER_INLINE_SAFETY_VP
     return required > availableWidth
   }
 

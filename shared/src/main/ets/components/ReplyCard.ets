@@ -75,19 +75,17 @@ export struct ReplyCard {
     )
   }
 
-  // Compact mode packs the timestamp + action buttons into the header row. Stack the timestamp under
-  // the username and fold the buttons into a menu only when that row would not actually fit THIS
-  // reply's content (mainly its username length) — adaptive per card, not a fixed width threshold.
+  // Compact mode keeps the meta column flexible and only folds action buttons when the measured
+  // header cannot fit the fixed chrome (avatar/actions/floor) plus a usable meta column.
   private isHeaderNarrow(): boolean {
     if (!this.isCompact() || this.cardWidth <= 0) {
       return false
     }
     return ReplyCardLayoutPolicy.compactHeaderStacked(
       this.headerAvailableWidth(),
-      this.reply.member.username,
-      this.isOp,
-      this.isDuplicateThreadItem,
-      this.reply.thanks > 0,
+      this.floor,
+      this.showAvatar,
+      this.reply.thanks || 0,
     )
   }
 
