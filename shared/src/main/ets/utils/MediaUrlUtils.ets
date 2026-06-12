@@ -12,6 +12,8 @@ const VIMEO_ID_REGEX: RegExp = /vimeo\.com\/(?:.*\/)?([0-9]{6,})/i
 const YOUTUBE_EMBED_SRC_REGEX: RegExp = /youtube(?:-nocookie)?\.com\/(?:embed|v)\/([A-Za-z0-9_-]{6,})/i
 const VIMEO_PLAYER_SRC_REGEX: RegExp = /player\.vimeo\.com\/video\/([0-9]+)/i
 const GIST_REGEX: RegExp = /gist\.github\.com\/([^/?#]+)\/([A-Za-z0-9]+)/i
+const GITHUB_FILE_IMAGE_PAGE_REGEX: RegExp =
+  /^https?:\/\/(?:www\.)?github\.com\/([^/?#]+)\/([^/?#]+)\/(?:blob|raw)\/([^?#]+)(?:[?#].*)?$/i
 const IMGUR_SINGLE_IMAGE_PAGE_REGEX: RegExp = /^https?:\/\/(?:www\.)?imgur\.com\/([A-Za-z0-9]{5,12})(?:[?#].*)?$/i
 const IMGUR_COLLECTION_PAGE_REGEX: RegExp = /^https?:\/\/(?:www\.)?imgur\.com\/(?:gallery|a)\//i
 
@@ -121,6 +123,10 @@ export class MediaUrlUtils {
     }
     if (VIDEO_EXT_REGEX.test(normalizedUrl) || MediaUrlUtils.videoExtensionFromUrl(normalizedUrl)) {
       return MediaUrlUtils.result(originalUrl, normalizedUrl, normalizedUrl, 'directVideo', false, true, false)
+    }
+    const githubImageDirect = MediaUrlUtils.resolveGithubImagePage(normalizedUrl)
+    if (githubImageDirect) {
+      return MediaUrlUtils.result(originalUrl, normalizedUrl, githubImageDirect, 'imageHostPageResolved', true, false, false)
     }
     if (IMAGE_EXT_REGEX.test(normalizedUrl) || MediaUrlUtils.imageExtensionFromUrl(normalizedUrl)) {
       return MediaUrlUtils.result(originalUrl, normalizedUrl, normalizedUrl, 'directImage', true, false, false)
@@ -431,6 +437,18 @@ export class MediaUrlUtils {
       return ''
     }
     return `https://i.imgur.com/${match[1]}.png`
+  }
+
+  private static resolveGithubImagePage(url: string): string {
+    const match = url.match(GITHUB_FILE_IMAGE_PAGE_REGEX)
+    if (!match || !match[1] || !match[2] || !match[3]) {
+      return ''
+    }
+    const filePath = match[3]
+    if (!MediaUrlUtils.imageExtensionFromUrl(filePath)) {
+      return ''
+    }
+    return `https://raw.githubusercontent.com/${match[1]}/${match[2]}/${filePath}`
   }
 
   private static isProbeCandidate(url: string): boolean {

@@ -3,6 +3,7 @@
 const IMAGE_EXT_REGEX = /\.(jpe?g|png|gif|webp|bmp|svg|avif|heic|heif)(?:[?#].*)?$/i;
 const VIDEO_EXT_REGEX = /\.(mp4|webm|mov|m4v|m3u8)(?:[?#].*)?$/i;
 const MEDIA_QUERY_EXT_REGEX = /[?&](?:format|fm|ext|type|output)=([a-z0-9/]+)/i;
+const GITHUB_FILE_IMAGE_PAGE_REGEX = /^https?:\/\/(?:www\.)?github\.com\/([^/?#]+)\/([^/?#]+)\/(?:blob|raw)\/([^?#]+)(?:[?#].*)?$/i;
 const IMGUR_SINGLE_IMAGE_PAGE_REGEX = /^https?:\/\/(?:www\.)?imgur\.com\/([A-Za-z0-9]{5,12})(?:[?#].*)?$/i;
 const IMGUR_COLLECTION_PAGE_REGEX = /^https?:\/\/(?:www\.)?imgur\.com\/(?:gallery|a)\//i;
 
@@ -103,6 +104,18 @@ function resolveImgurSingleImagePage(url) {
   return match?.[1] ? `https://i.imgur.com/${match[1]}.png` : '';
 }
 
+function resolveGithubImagePage(url) {
+  const match = url.match(GITHUB_FILE_IMAGE_PAGE_REGEX);
+  if (!match?.[1] || !match?.[2] || !match?.[3]) {
+    return '';
+  }
+  const filePath = match[3];
+  if (!imageExtensionFromUrl(filePath)) {
+    return '';
+  }
+  return `https://raw.githubusercontent.com/${match[1]}/${match[2]}/${filePath}`;
+}
+
 function isProbeCandidate(url) {
   const host = hostFromUrl(url);
   return Boolean(host) &&
@@ -122,6 +135,10 @@ function resolveMediaUrl(raw) {
   }
   if (VIDEO_EXT_REGEX.test(normalizedUrl) || videoExtensionFromUrl(normalizedUrl)) {
     return { kind: 'directVideo', renderUrl: normalizedUrl, isImage: false, isVideo: true, shouldProbe: false };
+  }
+  const githubImageDirect = resolveGithubImagePage(normalizedUrl);
+  if (githubImageDirect) {
+    return { kind: 'imageHostPageResolved', renderUrl: githubImageDirect, isImage: true, isVideo: false, shouldProbe: false };
   }
   if (IMAGE_EXT_REGEX.test(normalizedUrl) || imageExtensionFromUrl(normalizedUrl)) {
     return { kind: 'directImage', renderUrl: normalizedUrl, isImage: true, isVideo: false, shouldProbe: false };
@@ -151,6 +168,9 @@ const cases = [
   ['https://imgur.com/abc123', 'imageHostPageResolved', 'https://i.imgur.com/abc123.png', true, false, false],
   ['https://imgur.com/a/abc123', 'nonImageLink', 'https://imgur.com/a/abc123', false, false, false],
   ['https://github.com/org/repo', 'nonImageLink', 'https://github.com/org/repo', false, false, false],
+  ['https://github.com/alfredxw/nova/blob/master/img/ide.png', 'imageHostPageResolved', 'https://raw.githubusercontent.com/alfredxw/nova/master/img/ide.png', true, false, false],
+  ['https://github.com/org/repo/raw/main/assets/pic.webp?raw=1', 'imageHostPageResolved', 'https://raw.githubusercontent.com/org/repo/main/assets/pic.webp', true, false, false],
+  ['https://github.com/org/repo/blob/main/README.md', 'nonImageLink', 'https://github.com/org/repo/blob/main/README.md', false, false, false],
   ['https://raw.githubusercontent.com/org/repo/main/image', 'knownImageHostDirect', 'https://raw.githubusercontent.com/org/repo/main/image', true, false, false],
   ['https://example.com/download/123', 'probeRequired', 'https://example.com/download/123', false, false, true],
 ];

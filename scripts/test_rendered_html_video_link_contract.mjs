@@ -40,6 +40,7 @@ if (/Video\(\{[\s\S]*?\.width\('100%'\)[\s\S]*?\.height\(220\)/.test(videoPlayer
 const IMAGE_EXT_REGEX = /\.(jpe?g|png|gif|webp|bmp|svg|avif|heic|heif)(?:[?#].*)?$/i;
 const VIDEO_EXT_REGEX = /\.(mp4|webm|mov|m4v|m3u8)(?:[?#].*)?$/i;
 const MEDIA_QUERY_EXT_REGEX = /[?&](?:format|fm|ext|type|output)=([a-z0-9/]+)/i;
+const GITHUB_FILE_IMAGE_PAGE_REGEX = /^https?:\/\/(?:www\.)?github\.com\/([^/?#]+)\/([^/?#]+)\/(?:blob|raw)\/([^?#]+)(?:[?#].*)?$/i;
 const IMAGE_HOST_PREFIXES = [
   'https://i.imgur.com/',
   'http://i.imgur.com/',
@@ -97,6 +98,14 @@ function videoExtensionFromUrl(raw) {
   return normalizeVideoExtension(match?.[1] || '');
 }
 
+function resolveGithubImagePage(url) {
+  const match = url.match(GITHUB_FILE_IMAGE_PAGE_REGEX);
+  if (!match?.[1] || !match?.[2] || !match?.[3]) return '';
+  const filePath = match[3];
+  if (!imageExtensionFromUrl(filePath)) return '';
+  return `https://raw.githubusercontent.com/${match[1]}/${match[2]}/${filePath}`;
+}
+
 function videoUrlForRender(raw) {
   const url = normalizeUrl(raw);
   if (!/^https?:\/\//i.test(url)) return '';
@@ -108,6 +117,8 @@ function imageUrlForRender(raw) {
   const url = normalizeUrl(raw);
   if (!/^https?:\/\//i.test(url)) return '';
   if (VIDEO_EXT_REGEX.test(url) || videoExtensionFromUrl(url)) return '';
+  const githubImageDirect = resolveGithubImagePage(url);
+  if (githubImageDirect) return githubImageDirect;
   if (IMAGE_EXT_REGEX.test(url) || imageExtensionFromUrl(url)) return url;
   if (IMAGE_HOST_PREFIXES.some((prefix) => url.startsWith(prefix))) return url;
   return '';
@@ -184,6 +195,15 @@ if (jpgNoExtKnownHost.type !== 'image' || jpgNoExtKnownHost.href !== 'https://i.
   process.exit(1);
 }
 
+const githubBlobImageLink = rewriteInlineMediaLinks([
+  htmlAnchorToToken('<a href="https://github.com/alfredxw/nova/blob/master/img/ide.png">https://github.com/alfredxw/nova/blob/master/img/ide.png</a>')
+])[0];
+if (githubBlobImageLink.type !== 'image' || githubBlobImageLink.href !== 'https://raw.githubusercontent.com/alfredxw/nova/master/img/ide.png') {
+  console.error('FAIL github blob image link must render through raw.githubusercontent.com');
+  console.error(githubBlobImageLink);
+  process.exit(1);
+}
+
 const normalLink = rewriteInlineMediaLinks([htmlAnchorToToken('<a href="https://example.com/post/42">example</a>')])[0];
 if (normalLink.type !== 'link' || normalLink.href !== 'https://example.com/post/42') {
   console.error('FAIL normal text link must remain clickable');
@@ -191,4 +211,4 @@ if (normalLink.type !== 'link' || normalLink.href !== 'https://example.com/post/
   process.exit(1);
 }
 
-console.log('Rendered HTML video/image/link contract OK (4 cases)');
+console.log('Rendered HTML video/image/link contract OK (5 cases)');

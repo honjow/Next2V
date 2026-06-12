@@ -2,6 +2,7 @@
 
 const IMAGE_BLOCK_MONO = 'customImageBlock'
 const INLINE_IMAGE_PROP = 'inlineImage'
+const GITHUB_FILE_IMAGE_PAGE_REGEX = /^https?:\/\/(?:www\.)?github\.com\/([^/?#]+)\/([^/?#]+)\/(?:blob|raw)\/([^?#]+)(?:[?#].*)?$/i
 
 function normalizeMarkdownSource(md) {
   return (md || '')
@@ -13,8 +14,18 @@ function normalizeMarkdownSource(md) {
 function imageUrlForRender(raw) {
   const url = (raw || '').trim()
   if (!/^https?:\/\//i.test(url)) return ''
+  const githubDirect = resolveGithubImagePage(url)
+  if (githubDirect) return githubDirect
   if (/\.(jpe?g|png|gif|webp|bmp|svg|avif|heic|heif)(?:[?#].*)?$/i.test(url)) return url
   return ''
+}
+
+function resolveGithubImagePage(url) {
+  const match = url.match(GITHUB_FILE_IMAGE_PAGE_REGEX)
+  if (!match?.[1] || !match?.[2] || !match?.[3]) return ''
+  const filePath = match[3]
+  if (!/\.(jpe?g|png|gif|webp|bmp|svg|avif|heic|heif)$/i.test(filePath)) return ''
+  return `https://raw.githubusercontent.com/${match[1]}/${match[2]}/${filePath}`
 }
 
 function buildTextToken(text) {
@@ -304,6 +315,22 @@ const bareSplit = splitParagraphByImages(inlineBareImageParagraph)
 if (bareSplit.length !== 0 || inlineBareImageParagraph.tokens.length !== 2 || inlineBareImageParagraph.tokens[1].type !== 'image' || inlineBareImageParagraph.tokens[1][INLINE_IMAGE_PROP] !== true || inlineBareImageParagraph.tokens[1].href !== 'https://i.imgur.com/huX6coX.png') {
   console.error('FAIL inline bare image URL should remain inline in mixed text paragraph')
   console.error(JSON.stringify({ bareSplit, paragraph: inlineBareImageParagraph }, null, 2))
+  process.exit(1)
+}
+
+const githubBareImageParagraph = {
+  type: 'paragraph',
+  tokens: [
+    { type: 'text', raw: '预览 https://github.com/alfredxw/nova/blob/master/img/ide.png', text: '预览 https://github.com/alfredxw/nova/blob/master/img/ide.png' }
+  ]
+}
+rewriteParagraphInlineImages(githubBareImageParagraph)
+if (githubBareImageParagraph.tokens.length !== 2 ||
+  githubBareImageParagraph.tokens[1].type !== 'image' ||
+  githubBareImageParagraph.tokens[1][INLINE_IMAGE_PROP] !== true ||
+  githubBareImageParagraph.tokens[1].href !== 'https://raw.githubusercontent.com/alfredxw/nova/master/img/ide.png') {
+  console.error('FAIL github blob image URL should render through raw.githubusercontent.com as an inline image candidate')
+  console.error(JSON.stringify(githubBareImageParagraph, null, 2))
   process.exit(1)
 }
 
