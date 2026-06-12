@@ -1,4 +1,9 @@
 import { hdsMaterial, HdsTabs, HdsTabsController, HdsTabsFloatingStyle } from '@kit.UIDesignKit'
+import {
+  connectImmersiveMaterialSettings,
+  ImmersiveMaterialSettings,
+  ImmersiveMaterialSettingsState,
+} from 'shared'
 
 /**
  * Project-owned HDS Tabs mini button wrapper.
@@ -15,11 +20,10 @@ export struct HdsMiniBarButton {
   @Param controller: HdsTabsController = new HdsTabsController();
   @Param maskColor: ResourceColor = Color.Transparent;
   @Param barBottomMargin: number = 8;
-  @Param materialType: hdsMaterial.MaterialType = hdsMaterial.MaterialType.IMMERSIVE;
-  @Param materialLevel: hdsMaterial.MaterialLevel = hdsMaterial.MaterialLevel.ADAPTIVE;
   @Param barPosition: BarPosition = BarPosition.End;
   @Param barOverlap: boolean = true;
   @Event onButtonClick?: () => void;
+  private immersiveMaterial: ImmersiveMaterialSettingsState = connectImmersiveMaterialSettings();
 
   @BuilderParam buttonContent: () => void = this.defaultButtonBuilder;
 
@@ -37,6 +41,14 @@ export struct HdsMiniBarButton {
     return this.barHeight + this.activityPadding * 2
   }
 
+  private currentMaterialType(): hdsMaterial.MaterialType {
+    return ImmersiveMaterialSettings.effect(this.immersiveMaterial.level).materialType
+  }
+
+  private currentMaterialLevel(): hdsMaterial.MaterialLevel {
+    return ImmersiveMaterialSettings.effect(this.immersiveMaterial.level).materialLevel
+  }
+
   build() {
     Stack() {
       HdsTabs({ controller: this.controller }) {
@@ -52,8 +64,8 @@ export struct HdsMiniBarButton {
         },
         barBottomMargin: this.barBottomMargin,
         systemMaterialEffect: {
-          materialType: this.materialType,
-          materialLevel: this.materialLevel,
+          materialType: this.currentMaterialType(),
+          materialLevel: this.currentMaterialLevel(),
         },
       } as HdsTabsFloatingStyle)
       .onTabBarClick(() => {

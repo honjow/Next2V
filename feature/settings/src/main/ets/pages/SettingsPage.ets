@@ -13,6 +13,7 @@ import {
   connectAvatarAppearance,
   connectHomeTabAutoHide,
   connectHotReplySettings,
+  connectImmersiveMaterialSettings,
   connectImageUpload,
   connectLanguageState,
   connectMediaSettings,
@@ -30,6 +31,8 @@ import {
   HomeTabSettings,
   HotReplySettingsState,
   HttpClient,
+  ImmersiveMaterialSettings,
+  ImmersiveMaterialSettingsState,
   ImageUploadState,
   NetworkProxySettings,
   NetworkProxyState,
@@ -46,6 +49,7 @@ import {
   ReplyCardStyleState,
   TopicDetailReplyButtonState,
   type CacheStats,
+  type ImmersiveMaterialOption,
   type ThemeColorOption,
 } from 'shared'
 import {
@@ -78,6 +82,7 @@ export struct SettingsPage {
   private proxy: NetworkProxyState = connectNetworkProxy();
   private image: ImageUploadState = connectImageUpload();
   private themeColor: ThemeColorState = connectThemeColor();
+  private immersiveMaterial: ImmersiveMaterialSettingsState = connectImmersiveMaterialSettings();
   // Cloud-sync master-enabled state, read only to show the on/off status on the "云同步" entry row. The
   // full cloud-sync UI lives in the pushed CloudSyncSettingsPage; this is just a reactive @Trace read.
   private cloudSync: CloudSyncState = connectCloudSync();
@@ -96,6 +101,7 @@ export struct SettingsPage {
   @Local private cacheStats: CacheStats = { topicListCount: 0, topicDetailCount: 0, updatedAt: 0 };
   @Local private themeColorMenuShown: boolean = false;
   @Local private themeMenuShown: boolean = false;
+  @Local private immersiveMaterialMenuShown: boolean = false;
   @Local private languageMenuShown: boolean = false;
   @Local private avatarAppearanceMenuShown: boolean = false;
   @Local private replyDisplayMenuShown: boolean = false;
@@ -422,6 +428,21 @@ export struct SettingsPage {
 
       this.SettingsDivider()
       SettingsDropdownRow({
+        title: $r('app.string.immersive_material'),
+        trailingText: SettingsPageCoordinator.immersiveMaterialLabel(this.immersiveMaterial.level),
+        openAction: () => {
+          this.showImmersiveMaterialMenu()
+        },
+      })
+        .bindMenu(this.immersiveMaterialMenuShown, this.ImmersiveMaterialMenu, {
+          placement: Placement.BottomRight,
+          aboutToDisappear: () => {
+            this.immersiveMaterialMenuShown = false
+          },
+        })
+
+      this.SettingsDivider()
+      SettingsDropdownRow({
         title: $r('app.string.avatar_appearance'),
         trailingText: SettingsPageCoordinator.avatarAppearanceLabel(this.avatar.appearance),
         openAction: () => {
@@ -591,6 +612,19 @@ export struct SettingsPage {
   }
 
   @Builder
+  ImmersiveMaterialMenu() {
+    Menu() {
+      ForEach(
+        SettingsPageCoordinator.immersiveMaterialOptions(),
+        (option: ImmersiveMaterialOption) => {
+          this.ImmersiveMaterialMenuItem(option)
+        },
+        (option: ImmersiveMaterialOption) => option.value,
+      )
+    }
+  }
+
+  @Builder
   AvatarAppearanceMenu() {
     Menu() {
       ForEach(
@@ -739,6 +773,17 @@ export struct SettingsPage {
   }
 
   @Builder
+  ImmersiveMaterialMenuItem(option: ImmersiveMaterialOption) {
+    SettingsCheckedMenuItem({
+      label: option.label,
+      selected: ImmersiveMaterialSettings.normalizeLevel(this.immersiveMaterial.level) === option.value,
+      selectAction: () => {
+        this.updateImmersiveMaterial(option.value)
+      },
+    })
+  }
+
+  @Builder
   ReplyDisplayModeMenuItem(option: SettingsOption) {
     SettingsCheckedMenuItem({
       label: option.label,
@@ -767,6 +812,13 @@ export struct SettingsPage {
     this.themeColorMenuShown = false
     setTimeout(() => {
       this.themeColorMenuShown = true
+    }, SettingsPageCoordinator.MENU_OPEN_DELAY_MS)
+  }
+
+  private showImmersiveMaterialMenu(): void {
+    this.immersiveMaterialMenuShown = false
+    setTimeout(() => {
+      this.immersiveMaterialMenuShown = true
     }, SettingsPageCoordinator.MENU_OPEN_DELAY_MS)
   }
 
@@ -895,6 +947,16 @@ export struct SettingsPage {
     }
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     SettingsSaveCoordinator.saveThemeColor(context, normalized)
+  }
+
+  private updateImmersiveMaterial(level: string): void {
+    const normalized = ImmersiveMaterialSettings.normalizeLevel(level)
+    this.immersiveMaterialMenuShown = false
+    if (normalized === ImmersiveMaterialSettings.normalizeLevel(this.immersiveMaterial.level)) {
+      return
+    }
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    SettingsSaveCoordinator.saveImmersiveMaterial(context, normalized)
   }
 
   private updateReplyDisplayMode(mode: string): void {

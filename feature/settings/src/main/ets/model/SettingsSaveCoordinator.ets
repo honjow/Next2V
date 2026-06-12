@@ -7,6 +7,7 @@ import {
   DiagnosticsSettings,
   HomeTabSettings,
   HotReplySettings,
+  ImmersiveMaterialSettings,
   HttpClient,
   LanguageSettings,
   MediaSettings,
@@ -94,6 +95,12 @@ export class SettingsSaveCoordinator {
   static saveThemeColor(context: common.UIAbilityContext, color: string): void {
     ThemeColorSettings.save(context, color).catch((error: Error) => {
       console.error('save theme color setting failed: ' + error.message)
+    })
+  }
+
+  static saveImmersiveMaterial(context: common.UIAbilityContext, level: string): void {
+    ImmersiveMaterialSettings.save(context, level).catch((error: Error) => {
+      console.error('save immersive material setting failed: ' + error.message)
     })
   }
 

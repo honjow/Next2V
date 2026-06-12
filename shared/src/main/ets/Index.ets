@@ -60,6 +60,10 @@ export { MediaSettingsState, connectMediaSettings } from './state/MediaSettingsS
 export { ImageHeroState, connectImageHero, heroIdForUrl } from './state/ImageHeroState'
 export { ThemeDisplayState, connectThemeDisplay } from './state/ThemeDisplayState'
 export { ThemeColorState, connectThemeColor } from './state/ThemeColorState'
+export {
+  ImmersiveMaterialSettingsState,
+  connectImmersiveMaterialSettings,
+} from './state/ImmersiveMaterialSettingsState'
 export { ReplyDisplayState, connectReplyDisplay } from './state/ReplyDisplayState'
 export { HotReplySettingsState, connectHotReplySettings } from './state/HotReplySettingsState'
 export { LanguageState, connectLanguageState } from './state/LanguageState'
@@ -226,6 +230,12 @@ export type { TopicDetailReplyActionSettingsSnapshot } from './settings/TopicDet
 export { ThemeSettings } from './settings/ThemeSettings'
 export { ThemeColorSettings } from './settings/ThemeColorSettings'
 export type { ThemeColorOption, ThemeColorSettingsSnapshot } from './settings/ThemeColorSettings'
+export { ImmersiveMaterialSettings } from './settings/ImmersiveMaterialSettings'
+export type {
+  ImmersiveMaterialEffect,
+  ImmersiveMaterialOption,
+  ImmersiveMaterialSettingsSnapshot,
+} from './settings/ImmersiveMaterialSettings'
 export { LanguageSettings } from './settings/LanguageSettings'
 export type { LanguageSettingsSnapshot } from './settings/LanguageSettings'
 export { AuthSettings } from './settings/AuthSettings'

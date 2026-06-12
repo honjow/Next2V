@@ -10,6 +10,7 @@ import { DiagnosticsSettings } from './DiagnosticsSettings'
 import { FeedTabSettings } from './FeedTabSettings'
 import { HomeTabSettings } from './HomeTabSettings'
 import { HotReplySettings } from './HotReplySettings'
+import { ImmersiveMaterialSettings } from './ImmersiveMaterialSettings'
 import { TopicDetailReplyActionSettings } from './TopicDetailReplyActionSettings'
 import { LanguageSettings } from './LanguageSettings'
 import { MediaSettings } from './MediaSettings'
@@ -43,6 +44,7 @@ export class SettingsBootstrap {
     await SettingsBootstrap.restoreApiDomain(context, settingsStore)
     await SettingsBootstrap.restoreLanguage(context, settingsStore)
     await SettingsBootstrap.restoreThemeColor(context, settingsStore)
+    await SettingsBootstrap.restoreImmersiveMaterial(context, settingsStore)
     await SettingsBootstrap.restoreTheme(context, settingsStore)
     await SettingsBootstrap.restoreAvatarAppearance(context, settingsStore)
     await SettingsBootstrap.restoreMedia(context, settingsStore)
@@ -86,6 +88,7 @@ export class SettingsBootstrap {
     await SettingsBootstrap.restoreApiDomain(context, settingsStore)
     await SettingsBootstrap.restoreLanguage(context, settingsStore)
     await SettingsBootstrap.restoreThemeColor(context, settingsStore)
+    await SettingsBootstrap.restoreImmersiveMaterial(context, settingsStore)
     await SettingsBootstrap.restoreTheme(context, settingsStore)
     await SettingsBootstrap.restoreAvatarAppearance(context, settingsStore)
     await SettingsBootstrap.restoreMedia(context, settingsStore)
@@ -179,6 +182,20 @@ export class SettingsBootstrap {
     ).catch((error: Error) => {
       console.error('restore theme color settings failed: ' + error.message)
       ThemeColorSettings.apply(ThemeColorSettings.DEFAULT_COLOR)
+    })
+  }
+
+  private static async restoreImmersiveMaterial(
+    context: common.UIAbilityContext,
+    settingsStore?: SettingsPreferencesStore,
+  ): Promise<void> {
+    await (
+      settingsStore
+        ? ImmersiveMaterialSettings.loadFromStore(settingsStore)
+        : ImmersiveMaterialSettings.load(context)
+    ).catch((error: Error) => {
+      console.error('restore immersive material settings failed: ' + error.message)
+      ImmersiveMaterialSettings.apply(ImmersiveMaterialSettings.DEFAULT_LEVEL)
     })
   }
 

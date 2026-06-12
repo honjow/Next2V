@@ -2,6 +2,7 @@ import {
   AppStrings,
   AvatarAppearanceSettings,
   HotReplySettings,
+  ImmersiveMaterialSettings,
   LanguageSettings,
   ReadingSettings,
   ReplyActionAlignmentSettings,
@@ -10,6 +11,7 @@ import {
   ThemeColorSettings,
   ThemeSettings,
   ApiDomainSettings,
+  type ImmersiveMaterialOption,
   type ThemeColorOption,
 } from 'shared'
 
@@ -43,6 +45,10 @@ export class SettingsPageCoordinator {
 
   static themeColorOptions(): ThemeColorOption[] {
     return ThemeColorSettings.options()
+  }
+
+  static immersiveMaterialOptions(): ImmersiveMaterialOption[] {
+    return ImmersiveMaterialSettings.options()
   }
 
   static avatarAppearanceOptions(): SettingsOption[] {
@@ -156,6 +162,10 @@ export class SettingsPageCoordinator {
 
   static themeColorValue(color: string): ResourceColor {
     return ThemeColorSettings.colorValue(color)
+  }
+
+  static immersiveMaterialLabel(level: string): ResourceStr {
+    return ImmersiveMaterialSettings.label(level)
   }
 
   static avatarAppearanceLabel(appearance: string): ResourceStr {

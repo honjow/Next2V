@@ -541,6 +541,22 @@
       "value": "深色模式"
     },
     {
+      "name": "immersive_material",
+      "value": "沉浸光感材質"
+    },
+    {
+      "name": "immersive_material_exquisite",
+      "value": "沉浸 · 精美"
+    },
+    {
+      "name": "immersive_material_gentle",
+      "value": "沉浸 · 輕柔"
+    },
+    {
+      "name": "immersive_material_smooth",
+      "value": "沉浸 · 流暢"
+    },
+    {
       "name": "theme_color_galaxy_blue",
       "value": "銀河藍"
     },

@@ -541,6 +541,22 @@
       "value": "다크 모드"
     },
     {
+      "name": "immersive_material",
+      "value": "몰입형 머티리얼"
+    },
+    {
+      "name": "immersive_material_exquisite",
+      "value": "몰입 · 정교"
+    },
+    {
+      "name": "immersive_material_gentle",
+      "value": "몰입 · 부드러움"
+    },
+    {
+      "name": "immersive_material_smooth",
+      "value": "몰입 · 매끄러움"
+    },
+    {
       "name": "theme_color_galaxy_blue",
       "value": "은하 블루"
     },

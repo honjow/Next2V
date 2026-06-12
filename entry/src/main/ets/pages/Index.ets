@@ -2,7 +2,6 @@ import {
   BlurStrategy,
   BottomBuilderShowType,
   DynamicHideParams,
-  hdsMaterial,
   HdsNavDestination,
   HdsNavigation,
   HdsNavigationTitleMode,
@@ -25,6 +24,7 @@ import {
   connectAccountWebViewUrl,
   connectAuthSessionSignal,
   connectHomeTabAutoHide,
+  connectImmersiveMaterialSettings,
   connectImageHero,
   connectThemeDisplay,
   connectImagePreviewAction,
@@ -69,6 +69,8 @@ import {
   FoldScreenUtil,
   HttpClient,
   HomeTabSettings,
+  ImmersiveMaterialSettings,
+  ImmersiveMaterialSettingsState,
   MotionHandStateService,
   ThemeConstants,
   towFASheetOptions,
@@ -181,6 +183,7 @@ struct Index {
   private notificationUnread: NotificationUnreadState = connectNotificationUnread();
   private language: LanguageState = connectLanguageState();
   private homeTab: HomeTabAutoHideState = connectHomeTabAutoHide();
+  private immersiveMaterial: ImmersiveMaterialSettingsState = connectImmersiveMaterialSettings();
   private authSession: AuthSessionSignalState = connectAuthSessionSignal();
   private twoFactor: TwoFactorState = connectTwoFactor();
   private accountWebView: AccountWebViewUrlState = connectAccountWebViewUrl();
@@ -615,10 +618,7 @@ struct Index {
         .barFloatingStyle({
           barBottomMargin: ThemeConstants.SPACE_XL,
           adaptToHandedness: true,
-          systemMaterialEffect: {
-            materialType: hdsMaterial.MaterialType.ADAPTIVE,
-            materialLevel: hdsMaterial.MaterialLevel.ADAPTIVE,
-          },
+          systemMaterialEffect: this.currentMaterialEffect(),
         } as HdsTabsFloatingStyle)
         .onAppear(() => {
           this.applyHomeTabAutoHide()
@@ -870,6 +870,14 @@ struct Index {
       .catch((_error: Error) => {})
   }
 
+  private currentMaterialEffect(): Record<string, Object> {
+    const effect = ImmersiveMaterialSettings.effect(this.immersiveMaterial.level)
+    return {
+      'materialType': effect.materialType,
+      'materialLevel': effect.materialLevel,
+    }
+  }
+
   private navDestTitleBarOpts<T extends Object>(
     title?: ResourceStr,
     menu?: Record<string, Object>,
@@ -878,10 +886,7 @@ struct Index {
     stackBuilderComponent?: ComponentContent<T>,
     titleAccessibilityText?: string,
   ): Record<string, Object> {
-    let mat: Record<string, Object> = {
-      'materialType': hdsMaterial.MaterialType.ADAPTIVE,
-      'materialLevel': hdsMaterial.MaterialLevel.ADAPTIVE,
-    }
+    let mat: Record<string, Object> = this.currentMaterialEffect()
     let scrollOpts: Record<string, Object> = {
       'enableScrollEffect': true,
       'scrollEffectType': ScrollEffectType.GRADIENT_BLUR,
@@ -1368,10 +1373,7 @@ struct Index {
     } else {
       content['menu'] = IndexTitleBarCoordinator.emptyMenu()
     }
-    let mat: Record<string, Object> = {
-      'materialType': hdsMaterial.MaterialType.ADAPTIVE,
-      'materialLevel': hdsMaterial.MaterialLevel.ADAPTIVE,
-    }
+    let mat: Record<string, Object> = this.currentMaterialEffect()
     let scrollOpts: Record<string, Object> = {
       'enableScrollEffect': true,
       'scrollEffectType': ScrollEffectType.GRADIENT_BLUR,

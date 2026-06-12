@@ -29,6 +29,7 @@ export class StorageKeys {
   static readonly HOT_REPLIES_CHILD_REPLIES_EXPANDED: string = 'hotRepliesChildRepliesExpanded'
   static readonly AVATAR_APPEARANCE: string = 'avatarAppearance'
   static readonly THEME_COLOR: string = 'themeColor'
+  static readonly IMMERSIVE_MATERIAL_LEVEL: string = 'immersiveMaterialLevel'
   static readonly THEME_MODE: string = 'themeMode'
   static readonly THEME_EFFECTIVE_DARK: string = 'themeEffectiveDark'
   static readonly SYSTEM_COLOR_MODE: string = 'systemColorMode'
