@@ -3,6 +3,7 @@ import {
   PrefixCustomBuilder,
   PrefixImage,
   SuffixCustomBuilder,
+  SuffixSwitch,
   SuffixText,
   SuffixTextAndArrow
 } from '@kit.UIDesignKit'
@@ -89,7 +90,7 @@ export struct ConciseListRow {
     .padding({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM })
   }
 
-  private suffixItem(): SuffixTextAndArrow | SuffixText | SuffixCustomBuilder | undefined {
+  private suffixItem(): SuffixTextAndArrow | SuffixText | SuffixCustomBuilder | SuffixSwitch | undefined {
     if (this.suffixBuilderParam) {
       return new SuffixCustomBuilder(() => {
         this.WrappedSuffixBuilder()
@@ -97,8 +98,15 @@ export struct ConciseListRow {
     }
 
     if (this.hasSwitch) {
-      return new SuffixCustomBuilder(() => {
-        this.SwitchSuffix()
+      return new SuffixSwitch({
+        isCheck: this.checked,
+        selectColor: ThemeConstants.BRAND_PRIMARY,
+        enable: this.isEnabled,
+        onChange: (value: boolean) => {
+          if (this.isEnabled && this.switchAction) {
+            this.switchAction(value)
+          }
+        }
       })
     }
     if (this.hasCounter) {
@@ -130,27 +138,6 @@ export struct ConciseListRow {
       return new SuffixTextAndArrow({ text: `` }, { color: Color.Gray })
     }
     return undefined
-  }
-
-  @Builder
-  private SwitchSuffix() {
-    Row() {
-      Toggle({ type: ToggleType.Switch, isOn: this.checked })
-        .selectedColor(ThemeConstants.BRAND_PRIMARY)
-        .enabled(this.isEnabled)
-        .opacity(this.isEnabled ? 1.0 : 0.65)
-        .onChange((value: boolean) => {
-          if (!this.isEnabled) {
-            return
-          }
-          if (this.switchAction) {
-            this.switchAction(value)
-          }
-        })
-    }
-    .height(this.cardHeight())
-    .padding({ right: ThemeConstants.SPACE_MD })
-    .alignItems(VerticalAlign.Center)
   }
 
   @Builder
