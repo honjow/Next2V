@@ -2,7 +2,7 @@ import { AppStrings } from '../i18n/AppStrings'
 
 const IMAGE_EXT_REGEX: RegExp = /\.(jpe?g|png|gif|webp|bmp|svg|avif|heic|heif)(?:[?#].*)?$/i
 const VIDEO_EXT_REGEX: RegExp = /\.(mp4|webm|mov|m4v|m3u8)(?:[?#].*)?$/i
-const MEDIA_QUERY_EXT_REGEX: RegExp = /[?&](?:format|fm|ext|type|output)=([a-z0-9/]+)/i
+const MEDIA_QUERY_EXT_REGEX: RegExp = /(?:[?&]|&amp;)(?:format|fm|ext|type|output|wx_fmt)=([a-z0-9/]+)/i
 const ILLEGAL_TITLE_CHARS: RegExp = /[\\/:*?"<>|]/g
 const YOUTUBE_ID_REGEX: RegExp = /(?:youtube\.com\/(?:watch\?[^#]*v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{6,})/i
 const VIMEO_ID_REGEX: RegExp = /vimeo\.com\/(?:.*\/)?([0-9]{6,})/i

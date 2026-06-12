@@ -39,7 +39,7 @@ if (/Video\(\{[\s\S]*?\.width\('100%'\)[\s\S]*?\.height\(220\)/.test(videoPlayer
 
 const IMAGE_EXT_REGEX = /\.(jpe?g|png|gif|webp|bmp|svg|avif|heic|heif)(?:[?#].*)?$/i;
 const VIDEO_EXT_REGEX = /\.(mp4|webm|mov|m4v|m3u8)(?:[?#].*)?$/i;
-const MEDIA_QUERY_EXT_REGEX = /[?&](?:format|fm|ext|type|output)=([a-z0-9/]+)/i;
+const MEDIA_QUERY_EXT_REGEX = /(?:[?&]|&amp;)(?:format|fm|ext|type|output|wx_fmt)=([a-z0-9/]+)/i;
 const GITHUB_FILE_IMAGE_PAGE_REGEX = /^https?:\/\/(?:www\.)?github\.com\/([^/?#]+)\/([^/?#]+)\/(?:blob|raw)\/([^?#]+)(?:[?#].*)?$/i;
 const IMAGE_HOST_PREFIXES = [
   'https://i.imgur.com/',
@@ -204,6 +204,16 @@ if (githubBlobImageLink.type !== 'image' || githubBlobImageLink.href !== 'https:
   process.exit(1);
 }
 
+const mmbizWxFmtImageLink = rewriteInlineMediaLinks([
+  htmlAnchorToToken('<a href="https://mmbiz.qpic.cn/sz_mmbiz_png/Z6sTV0qrAlQob38vhxI4MHRbnrf4xETXAk2WYMCBBqSQWGRdPl8EibUuict4YfKzFcekQAZjiasMDhGVUICSb6WvcBnRG1AQdibXLSiaA3dPcd0s/0?wx_fmt=png&amp;from=appmsg">https://mmbiz.qpic.cn/sz_mmbiz_png/Z6sTV0qrAlQob38vhxI4MHRbnrf4xETXAk2WYMCBBqSQWGRdPl8EibUuict4YfKzFcekQAZjiasMDhGVUICSb6WvcBnRG1AQdibXLSiaA3dPcd0s/0?wx_fmt=png&amp;from=appmsg</a>')
+])[0];
+if (mmbizWxFmtImageLink.type !== 'image' ||
+  mmbizWxFmtImageLink.href !== 'https://mmbiz.qpic.cn/sz_mmbiz_png/Z6sTV0qrAlQob38vhxI4MHRbnrf4xETXAk2WYMCBBqSQWGRdPl8EibUuict4YfKzFcekQAZjiasMDhGVUICSb6WvcBnRG1AQdibXLSiaA3dPcd0s/0?wx_fmt=png&amp;from=appmsg') {
+  console.error('FAIL mmbiz wx_fmt image links must become images even without a path extension');
+  console.error(mmbizWxFmtImageLink);
+  process.exit(1);
+}
+
 const normalLink = rewriteInlineMediaLinks([htmlAnchorToToken('<a href="https://example.com/post/42">example</a>')])[0];
 if (normalLink.type !== 'link' || normalLink.href !== 'https://example.com/post/42') {
   console.error('FAIL normal text link must remain clickable');
@@ -211,4 +221,4 @@ if (normalLink.type !== 'link' || normalLink.href !== 'https://example.com/post/
   process.exit(1);
 }
 
-console.log('Rendered HTML video/image/link contract OK (5 cases)');
+console.log('Rendered HTML video/image/link contract OK (6 cases)');

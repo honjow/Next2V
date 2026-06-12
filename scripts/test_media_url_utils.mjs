@@ -2,7 +2,7 @@
 
 const IMAGE_EXT_REGEX = /\.(jpe?g|png|gif|webp|bmp|svg|avif|heic|heif)(?:[?#].*)?$/i;
 const VIDEO_EXT_REGEX = /\.(mp4|webm|mov|m4v|m3u8)(?:[?#].*)?$/i;
-const MEDIA_QUERY_EXT_REGEX = /[?&](?:format|fm|ext|type|output)=([a-z0-9/]+)/i;
+const MEDIA_QUERY_EXT_REGEX = /(?:[?&]|&amp;)(?:format|fm|ext|type|output|wx_fmt)=([a-z0-9/]+)/i;
 const GITHUB_FILE_IMAGE_PAGE_REGEX = /^https?:\/\/(?:www\.)?github\.com\/([^/?#]+)\/([^/?#]+)\/(?:blob|raw)\/([^?#]+)(?:[?#].*)?$/i;
 const IMGUR_SINGLE_IMAGE_PAGE_REGEX = /^https?:\/\/(?:www\.)?imgur\.com\/([A-Za-z0-9]{5,12})(?:[?#].*)?$/i;
 const IMGUR_COLLECTION_PAGE_REGEX = /^https?:\/\/(?:www\.)?imgur\.com\/(?:gallery|a)\//i;
@@ -164,6 +164,8 @@ const cases = [
   ['https://example.com/cdn?id=7&type=video/mp4', 'directVideo', 'https://example.com/cdn?id=7&type=video/mp4', false, true, false],
   ['https://example.com/a.jpg', 'directImage', 'https://example.com/a.jpg', true, false, false],
   ['https://example.com/a?format=webp', 'directImage', 'https://example.com/a?format=webp', true, false, false],
+  ['https://mmbiz.qpic.cn/sz_mmbiz_png/Z6sTV0qrAlQob38vhxI4MHRbnrf4xETXAk2WYMCBBqSQWGRdPl8EibUuict4YfKzFcekQAZjiasMDhGVUICSb6WvcBnRG1AQdibXLSiaA3dPcd0s/0?wx_fmt=png&from=appmsg', 'directImage', 'https://mmbiz.qpic.cn/sz_mmbiz_png/Z6sTV0qrAlQob38vhxI4MHRbnrf4xETXAk2WYMCBBqSQWGRdPl8EibUuict4YfKzFcekQAZjiasMDhGVUICSb6WvcBnRG1AQdibXLSiaA3dPcd0s/0?wx_fmt=png&from=appmsg', true, false, false],
+  ['https://mmbiz.qpic.cn/mmbiz_png/Z6sTV0qrAlSeIu71LpLFfVVeXHckHXWicQJg4SggDGRzXRLDVFibYjxQtXEOFTh0P3XtCRf6qvy5ibG1ibKFZ4WmS6LuCua0p37530Vhufg6how/0?from=appmsg&amp;wx_fmt=png', 'directImage', 'https://mmbiz.qpic.cn/mmbiz_png/Z6sTV0qrAlSeIu71LpLFfVVeXHckHXWicQJg4SggDGRzXRLDVFibYjxQtXEOFTh0P3XtCRf6qvy5ibG1ibKFZ4WmS6LuCua0p37530Vhufg6how/0?from=appmsg&amp;wx_fmt=png', true, false, false],
   ['https://i.imgur.com/abc123.jpg', 'directImage', 'https://i.imgur.com/abc123.jpg', true, false, false],
   ['https://imgur.com/abc123', 'imageHostPageResolved', 'https://i.imgur.com/abc123.png', true, false, false],
   ['https://imgur.com/a/abc123', 'nonImageLink', 'https://imgur.com/a/abc123', false, false, false],

@@ -2,6 +2,7 @@
 
 const IMAGE_BLOCK_MONO = 'customImageBlock'
 const INLINE_IMAGE_PROP = 'inlineImage'
+const MEDIA_QUERY_EXT_REGEX = /(?:[?&]|&amp;)(?:format|fm|ext|type|output|wx_fmt)=([a-z0-9/]+)/i
 const GITHUB_FILE_IMAGE_PAGE_REGEX = /^https?:\/\/(?:www\.)?github\.com\/([^/?#]+)\/([^/?#]+)\/(?:blob|raw)\/([^?#]+)(?:[?#].*)?$/i
 
 function normalizeMarkdownSource(md) {
@@ -16,15 +17,31 @@ function imageUrlForRender(raw) {
   if (!/^https?:\/\//i.test(url)) return ''
   const githubDirect = resolveGithubImagePage(url)
   if (githubDirect) return githubDirect
-  if (/\.(jpe?g|png|gif|webp|bmp|svg|avif|heic|heif)(?:[?#].*)?$/i.test(url)) return url
+  if (/\.(jpe?g|png|gif|webp|bmp|svg|avif|heic|heif)(?:[?#].*)?$/i.test(url) || imageExtensionFromUrl(url)) return url
   return ''
+}
+
+function normalizeImageExtension(raw) {
+  let ext = (raw || '').toLowerCase().trim()
+  if (ext.includes('/')) ext = ext.split('/').pop() || ''
+  if (ext === 'jpeg' || ext === 'jpg') return 'jpg'
+  return ['png', 'gif', 'webp', 'bmp', 'svg', 'avif', 'heic', 'heif'].includes(ext) ? ext : ''
+}
+
+function imageExtensionFromUrl(raw) {
+  const clean = (raw || '').trim().split('#')[0]
+  const queryMatch = clean.match(MEDIA_QUERY_EXT_REGEX)
+  const queryExt = normalizeImageExtension(queryMatch?.[1] || '')
+  if (queryExt) return queryExt
+  const match = clean.split('?')[0].match(/\.([a-z0-9]+)$/i)
+  return normalizeImageExtension(match?.[1] || '')
 }
 
 function resolveGithubImagePage(url) {
   const match = url.match(GITHUB_FILE_IMAGE_PAGE_REGEX)
   if (!match?.[1] || !match?.[2] || !match?.[3]) return ''
   const filePath = match[3]
-  if (!/\.(jpe?g|png|gif|webp|bmp|svg|avif|heic|heif)$/i.test(filePath)) return ''
+  if (!imageExtensionFromUrl(filePath)) return ''
   return `https://raw.githubusercontent.com/${match[1]}/${match[2]}/${filePath}`
 }
 
@@ -245,7 +262,8 @@ const fixture = [
   'normal text should stay unchanged',
   '![already_ok](https://example.com/a.png)',
   '我一个完全不懂 css 的后端，现在都开始写大屏了 <a target="_blank" href="https://i.imgur.com/huX6coX.png" rel="nofollow noopener"><img src="https://i.imgur.com/huX6coX.png" class="embedded_image" rel="noreferrer"></a>',
-  '<img src="https://example.com/standalone.png" class="embedded_image">'
+  '<img src="https://example.com/standalone.png" class="embedded_image">',
+  '<img src="https://mmbiz.qpic.cn/sz_mmbiz_png/Z6sTV0qrAlQob38vhxI4MHRbnrf4xETXAk2WYMCBBqSQWGRdPl8EibUuict4YfKzFcekQAZjiasMDhGVUICSb6WvcBnRG1AQdibXLSiaA3dPcd0s/0?wx_fmt=png&amp;from=appmsg" class="embedded_image">'
 ].join('\n')
 
 const actual = normalizeMarkdownSource(fixture)
@@ -257,7 +275,8 @@ const expected = [
   'normal text should stay unchanged',
   '![already_ok](https://example.com/a.png)',
   '我一个完全不懂 css 的后端，现在都开始写大屏了 https://i.imgur.com/huX6coX.png',
-  'https://example.com/standalone.png'
+  'https://example.com/standalone.png',
+  'https://mmbiz.qpic.cn/sz_mmbiz_png/Z6sTV0qrAlQob38vhxI4MHRbnrf4xETXAk2WYMCBBqSQWGRdPl8EibUuict4YfKzFcekQAZjiasMDhGVUICSb6WvcBnRG1AQdibXLSiaA3dPcd0s/0?wx_fmt=png&amp;from=appmsg'
 ].join('\n')
 
 if (actual !== expected) {
@@ -331,6 +350,22 @@ if (githubBareImageParagraph.tokens.length !== 2 ||
   githubBareImageParagraph.tokens[1].href !== 'https://raw.githubusercontent.com/alfredxw/nova/master/img/ide.png') {
   console.error('FAIL github blob image URL should render through raw.githubusercontent.com as an inline image candidate')
   console.error(JSON.stringify(githubBareImageParagraph, null, 2))
+  process.exit(1)
+}
+
+const mmbizBareImageParagraph = {
+  type: 'paragraph',
+  tokens: [
+    { type: 'text', raw: '图片 https://mmbiz.qpic.cn/mmbiz_png/Z6sTV0qrAlSeIu71LpLFfVVeXHckHXWicQJg4SggDGRzXRLDVFibYjxQtXEOFTh0P3XtCRf6qvy5ibG1ibKFZ4WmS6LuCua0p37530Vhufg6how/0?from=appmsg&amp;wx_fmt=png', text: '图片 https://mmbiz.qpic.cn/mmbiz_png/Z6sTV0qrAlSeIu71LpLFfVVeXHckHXWicQJg4SggDGRzXRLDVFibYjxQtXEOFTh0P3XtCRf6qvy5ibG1ibKFZ4WmS6LuCua0p37530Vhufg6how/0?from=appmsg&amp;wx_fmt=png' }
+  ]
+}
+rewriteParagraphInlineImages(mmbizBareImageParagraph)
+if (mmbizBareImageParagraph.tokens.length !== 2 ||
+  mmbizBareImageParagraph.tokens[1].type !== 'image' ||
+  mmbizBareImageParagraph.tokens[1][INLINE_IMAGE_PROP] !== true ||
+  mmbizBareImageParagraph.tokens[1].href !== 'https://mmbiz.qpic.cn/mmbiz_png/Z6sTV0qrAlSeIu71LpLFfVVeXHckHXWicQJg4SggDGRzXRLDVFibYjxQtXEOFTh0P3XtCRf6qvy5ibG1ibKFZ4WmS6LuCua0p37530Vhufg6how/0?from=appmsg&amp;wx_fmt=png') {
+  console.error('FAIL mmbiz wx_fmt image URLs should render as inline image candidates')
+  console.error(JSON.stringify(mmbizBareImageParagraph, null, 2))
   process.exit(1)
 }
 
