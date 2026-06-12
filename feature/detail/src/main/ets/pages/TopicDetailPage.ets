@@ -1399,6 +1399,7 @@ export struct TopicDetailPage {
         replies: items,
         opMemberId: this.v.topic?.member.id || 0,
         expanded: this.hotRepliesExpanded,
+        childRepliesDefaultExpanded: this.hotReplies.childRepliesExpanded,
         childRepliesExpandedByKey: this.hotReplyChildRepliesExpandedByKey,
         onExpandedChange: (expanded: boolean) => {
           this.setHotRepliesExpanded(expanded)

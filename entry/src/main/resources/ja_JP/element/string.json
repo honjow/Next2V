@@ -597,6 +597,10 @@
       "value": "人気返信"
     },
     {
+      "name": "hot_replies_child_replies_expanded",
+      "value": "子返信を展開"
+    },
+    {
       "name": "hot_replies_count",
       "value": "最大表示数"
     },

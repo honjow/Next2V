@@ -276,6 +276,7 @@ export class SettingsBootstrap {
         HotReplySettings.DEFAULT_ENABLED,
         HotReplySettings.DEFAULT_MAX_COUNT,
         HotReplySettings.DEFAULT_MIN_THANKS,
+        HotReplySettings.DEFAULT_CHILD_REPLIES_EXPANDED,
       )
     })
   }

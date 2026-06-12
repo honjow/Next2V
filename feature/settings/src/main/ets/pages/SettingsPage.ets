@@ -517,6 +517,15 @@ export struct SettingsPage {
       )
 
       this.SettingsDivider()
+      this.TogglePreferenceRow(
+        $r('app.string.hot_replies_child_replies_expanded'),
+        this.hotReplies.childRepliesExpanded,
+        (value: boolean) => {
+          this.updateHotReplyChildRepliesExpanded(value)
+        },
+      )
+
+      this.SettingsDivider()
       SettingsDropdownRow({
         title: $r('app.string.hot_replies_count'),
         trailingText: SettingsPageCoordinator.hotReplyCountLabel(this.hotReplies.maxCount),
@@ -1028,6 +1037,18 @@ export struct SettingsPage {
       enabled,
       this.hotReplies.maxCount,
       this.hotReplies.minThanks,
+      this.hotReplies.childRepliesExpanded,
+    )
+  }
+
+  private updateHotReplyChildRepliesExpanded(expanded: boolean): void {
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    SettingsSaveCoordinator.saveHotReplies(
+      context,
+      this.hotReplies.enabled,
+      this.hotReplies.maxCount,
+      this.hotReplies.minThanks,
+      expanded,
     )
   }
 
@@ -1040,6 +1061,7 @@ export struct SettingsPage {
       this.hotReplies.enabled,
       normalized,
       this.hotReplies.minThanks,
+      this.hotReplies.childRepliesExpanded,
     )
   }
 
@@ -1052,6 +1074,7 @@ export struct SettingsPage {
       this.hotReplies.enabled,
       this.hotReplies.maxCount,
       normalized,
+      this.hotReplies.childRepliesExpanded,
     )
   }
 

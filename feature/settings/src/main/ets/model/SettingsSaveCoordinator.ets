@@ -120,10 +120,12 @@ export class SettingsSaveCoordinator {
     enabled: boolean,
     maxCount: number,
     minThanks: number,
+    childRepliesExpanded: boolean,
   ): void {
-    HotReplySettings.save(context, enabled, maxCount, minThanks).catch((error: Error) => {
-      console.error('save hot reply settings failed: ' + error.message)
-    })
+    HotReplySettings.save(context, enabled, maxCount, minThanks, childRepliesExpanded)
+      .catch((error: Error) => {
+        console.error('save hot reply settings failed: ' + error.message)
+      })
   }
 
   static saveBase64DecodeMode(context: common.UIAbilityContext, mode: string): void {

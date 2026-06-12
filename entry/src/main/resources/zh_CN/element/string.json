@@ -597,6 +597,10 @@
       "value": "高赞回复"
     },
     {
+      "name": "hot_replies_child_replies_expanded",
+      "value": "展开楼中楼"
+    },
+    {
       "name": "hot_replies_count",
       "value": "最多显示"
     },

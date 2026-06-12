@@ -36,6 +36,7 @@ for (const key of [
   'HOT_REPLIES_ENABLED',
   'HOT_REPLIES_MAX_COUNT',
   'HOT_REPLIES_MIN_THANKS',
+  'HOT_REPLIES_CHILD_REPLIES_EXPANDED',
 ]) {
   mustInclude(storageKeys, key, `StorageKeys must define ${key}`)
 }
@@ -43,13 +44,19 @@ for (const key of [
 mustInclude(settings, 'static readonly DEFAULT_ENABLED: boolean = true', 'hot replies default must be enabled')
 mustInclude(settings, 'static readonly DEFAULT_MAX_COUNT: number = 5', 'hot replies default count must stay bounded')
 mustInclude(settings, 'static readonly DEFAULT_MIN_THANKS: number = 3', 'hot replies default threshold must be explicit')
+mustInclude(settings, 'static readonly DEFAULT_CHILD_REPLIES_EXPANDED: boolean = false', 'hot reply nested replies must default collapsed')
+mustInclude(settings, 'store.putSync(KEY_CHILD_REPLIES_EXPANDED, normalized.childRepliesExpanded)', 'hot reply nested default must be persisted')
 mustInclude(state, '@Trace enabled: boolean = true', 'V2 mirror must default enabled')
+mustInclude(state, '@Trace childRepliesExpanded: boolean = false', 'V2 mirror must default hot reply nested replies collapsed')
 mustInclude(bootstrap, 'restoreHotReplies', 'SettingsBootstrap must restore hot replies')
 
 mustInclude(settingsPage, "$r('app.string.hot_replies')", 'SettingsPage must expose hot replies switch')
+mustInclude(settingsPage, "$r('app.string.hot_replies_child_replies_expanded')", 'SettingsPage must expose hot reply nested reply expansion switch')
 mustInclude(settingsPage, "$r('app.string.hot_replies_count')", 'SettingsPage must expose max count setting')
 mustInclude(settingsPage, "$r('app.string.hot_replies_min_thanks')", 'SettingsPage must expose threshold setting')
+mustInclude(settingsPage, 'this.updateHotReplyChildRepliesExpanded(value)', 'SettingsPage must route nested expansion toggles through the hot reply saver')
 mustInclude(saveCoordinator, 'static saveHotReplies(', 'SettingsSaveCoordinator must persist hot replies')
+mustInclude(saveCoordinator, 'childRepliesExpanded: boolean', 'SettingsSaveCoordinator must persist hot reply nested expansion')
 
 mustInclude(detailPage, '@Local private hotReplies: HotReplySettingsState = connectHotReplySettings();', 'TopicDetailPage must read V2 hot reply settings as a monitorable state source')
 mustInclude(detailPage, '@Local private hotReplyChildRepliesExpandedByKey: Record<string, boolean> = {};', 'TopicDetailPage must own hot-reply child expand cache state')
@@ -89,10 +96,16 @@ mustInclude(panel, 'childReplies: reply.threadChildren || []', 'top hot reply ca
 mustInclude(panel, 'embedded: true', 'top hot reply content must render inside the panel-owned card so simplified nested replies stay in the same card')
 mustInclude(panel, 'childAvatarVisible: false', 'hot reply nested replies must use ReplyCard simplification instead of a custom renderer')
 mustInclude(panel, 'childRepliesExpandable: true', 'top hot reply cards must allow collapsing their nested replies')
+mustInclude(panel, '@Param childRepliesDefaultExpanded: boolean = false;', 'hot reply child replies must default collapsed when no per-topic cache exists')
 mustInclude(panel, '@Param childRepliesExpandedByKey: Record<string, boolean> = {};', 'hot reply child-reply collapse state must be provided by the page cache')
 mustInclude(panel, '@Event onChildRepliesExpandedChange?: (reply: V2exReply, expanded: boolean) => void;', 'hot reply panel must report child expand changes to the page cache owner')
 mustInclude(panel, 'private childRepliesStateKey(reply: V2exReply): string', 'hot reply child expand state must use a stable reply id key')
 mustInclude(panel, 'childRepliesExpanded: this.isChildRepliesExpanded(reply)', 'top hot reply cards must receive cached child-reply expanded state')
+mustAppearInOrder(
+  panel,
+  ['if (cached === true || cached === false)', 'return this.childRepliesDefaultExpanded'],
+  'hot reply child-reply cache must override the global default',
+)
 mustInclude(panel, 'onChildRepliesExpandedChange: (target: V2exReply, expanded: boolean) => {', 'top hot reply cards must report child-reply expand changes')
 mustInclude(panel, 'this.setChildRepliesExpanded(target, expanded)', 'hot reply panel must update the cached child-reply expand state')
 mustInclude(childReplyExpandCache, 'MAX_TOPICS: number = 40', 'hot reply child expand cache must stay bounded')
@@ -153,6 +166,7 @@ for (const locale of ['base', 'en_US', 'zh_CN', 'zh_TW', 'zh_HK', 'ja_JP', 'ko_K
   const strings = read(`entry/src/main/resources/${locale}/element/string.json`)
   for (const key of [
     'hot_replies',
+    'hot_replies_child_replies_expanded',
     'hot_replies_count',
     'hot_replies_min_thanks',
     'hot_replies_count_format',

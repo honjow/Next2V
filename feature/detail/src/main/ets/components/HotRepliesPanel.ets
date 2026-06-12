@@ -10,6 +10,7 @@ export struct HotRepliesPanel {
   @Param replies: V2exReply[] = [];
   @Param opMemberId: number = 0;
   @Param expanded: boolean = true;
+  @Param childRepliesDefaultExpanded: boolean = false;
   @Param childRepliesExpandedByKey: Record<string, boolean> = {};
   @Event onExpandedChange?: (expanded: boolean) => void;
   @Event onChildRepliesExpandedChange?: (reply: V2exReply, expanded: boolean) => void;
@@ -55,7 +56,10 @@ export struct HotRepliesPanel {
 
   private isChildRepliesExpanded(reply: V2exReply): boolean {
     const cached = this.childRepliesExpandedByKey[this.childRepliesStateKey(reply)]
-    return cached !== false
+    if (cached === true || cached === false) {
+      return cached
+    }
+    return this.childRepliesDefaultExpanded
   }
 
   private setChildRepliesExpanded(reply: V2exReply, expanded: boolean): void {

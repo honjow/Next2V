@@ -597,6 +597,10 @@
       "value": "Top replies"
     },
     {
+      "name": "hot_replies_child_replies_expanded",
+      "value": "Expand nested replies"
+    },
+    {
       "name": "hot_replies_count",
       "value": "Max shown"
     },

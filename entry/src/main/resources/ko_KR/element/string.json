@@ -597,6 +597,10 @@
       "value": "인기 답글"
     },
     {
+      "name": "hot_replies_child_replies_expanded",
+      "value": "대댓글 펼치기"
+    },
+    {
       "name": "hot_replies_count",
       "value": "최대 표시"
     },

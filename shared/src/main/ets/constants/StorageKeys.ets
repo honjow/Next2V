@@ -26,6 +26,7 @@ export class StorageKeys {
   static readonly HOT_REPLIES_ENABLED: string = 'hotRepliesEnabled'
   static readonly HOT_REPLIES_MAX_COUNT: string = 'hotRepliesMaxCount'
   static readonly HOT_REPLIES_MIN_THANKS: string = 'hotRepliesMinThanks'
+  static readonly HOT_REPLIES_CHILD_REPLIES_EXPANDED: string = 'hotRepliesChildRepliesExpanded'
   static readonly AVATAR_APPEARANCE: string = 'avatarAppearance'
   static readonly THEME_COLOR: string = 'themeColor'
   static readonly THEME_MODE: string = 'themeMode'
