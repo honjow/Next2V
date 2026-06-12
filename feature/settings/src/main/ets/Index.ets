@@ -1,6 +1,7 @@
 export { SettingsPage } from './pages/SettingsPage'
 export { StorageSettingsPage } from './pages/StorageSettingsPage'
 export { ReadingSettingsPage } from './pages/ReadingSettingsPage'
+export { HotReplySettingsPage } from './pages/HotReplySettingsPage'
 export { HomeNodeSettingsPage } from './pages/HomeNodeSettingsPage'
 export { DiagnosticsLogPage } from './pages/DiagnosticsLogPage'
 export { NetworkProxySettingsPage } from './pages/NetworkProxySettingsPage'

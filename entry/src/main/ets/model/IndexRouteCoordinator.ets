@@ -21,6 +21,7 @@ export type IndexDestinationFamily =
   'diagnosticsLog' |
   'homeNodeSettings' |
   'readingSettings' |
+  'hotReplySettings' |
   'networkProxySettings' |
   'imageUploadSettings' |
   'domainSettings' |
@@ -64,6 +65,7 @@ export class IndexRouteCoordinator {
     'DiagnosticsLog': 'diagnosticsLog',
     'HomeNodeSettings': 'homeNodeSettings',
     'ReadingSettings': 'readingSettings',
+    'HotReplySettings': 'hotReplySettings',
     'NetworkProxySettings': 'networkProxySettings',
     'ImageUploadSettings': 'imageUploadSettings',
     'DomainSettings': 'domainSettings',
@@ -98,6 +100,7 @@ export class IndexRouteCoordinator {
       'diagnosticsLog': $r('app.string.nav_diagnostics'),
       'homeNodeSettings': $r('app.string.nav_home_nodes'),
       'readingSettings': $r('app.string.nav_reading'),
+      'hotReplySettings': $r('app.string.hot_replies'),
       'networkProxySettings': $r('app.string.nav_network_proxy'),
       'imageUploadSettings': $r('app.string.image_upload_settings_title'),
       'domainSettings': $r('app.string.api_domain'),
@@ -128,6 +131,7 @@ export class IndexRouteCoordinator {
     'diagnosticsLog': true,
     'homeNodeSettings': true,
     'readingSettings': true,
+    'hotReplySettings': true,
     'networkProxySettings': true,
     'imageUploadSettings': true,
     'domainSettings': true,

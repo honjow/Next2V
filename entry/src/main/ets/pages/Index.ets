@@ -85,6 +85,7 @@ import {
   StorageSettingsPage,
   DiagnosticsLogPage,
   ReadingSettingsPage,
+  HotReplySettingsPage,
   HomeNodeSettingsPage,
   NetworkProxySettingsPage,
   ImageUploadSettingsPage,
@@ -497,6 +498,9 @@ struct Index {
     }
     if (descriptor.family === 'readingSettings') {
       ReadingSettingsPage()
+    }
+    if (descriptor.family === 'hotReplySettings') {
+      HotReplySettingsPage()
     }
     if (descriptor.family === 'networkProxySettings') {
       NetworkProxySettingsPage()
