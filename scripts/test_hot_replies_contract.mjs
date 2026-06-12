@@ -103,7 +103,8 @@ mustInclude(viewModel, 'triggerThreadPreloadIfNeeded(hotRepliesEnabled: boolean 
 mustInclude(viewModel, '@Trace hotReplyCandidates: V2exReply[] = []', 'ViewModel must keep semantic high-reply candidates instead of a render counter')
 mustInclude(viewModel, 'HotReplyCoordinator.select(', 'ViewModel must refresh high-reply candidates when replies publish')
 mustInclude(viewModel, 'getHotReplies(enabled: boolean, maxCount: number, minThanks: number): V2exReply[]', 'ViewModel must expose selected hot replies')
-mustInclude(viewModel, 'HotReplyCoordinator.filterCandidates(this.hotReplyCandidates, maxCount, minThanks)', 'ViewModel must filter existing candidates by settings')
+mustInclude(viewModel, 'const sourceReplies = this.publishedReplies.length > 0 ? this.publishedReplies : this.replies', 'ViewModel must hydrate hot replies from the same published snapshot as the normal list')
+mustInclude(viewModel, 'HotReplyCoordinator.filterCandidatesFromReplies(', 'ViewModel must hydrate existing candidates from current threaded replies before rendering')
 mustInclude(viewModel, 'private refreshHotReplyCandidates(): void', 'ViewModel must expose one hot-reply candidate refresh chokepoint')
 mustInclude(viewModel, 'private syncHotReplyCandidateFromLoadedReply(replyId: number): void', 'ViewModel must sync hot-reply clones when a held publish cannot rebuild the full list')
 mustAppearInOrder(
@@ -115,6 +116,9 @@ mustInclude(detailPage, 'return this.reloadTopicWithThreadPreload()', 'reply sub
 
 mustInclude(selector, 'ReplyDisplaySettings.MODE_THREAD', 'selector must reuse threaded reply grouping')
 mustInclude(selector, 'static filterCandidates(', 'selector must support settings-only filtering without rebuilding replies')
+mustInclude(selector, 'static filterCandidatesFromReplies(', 'selector must hydrate hot reply candidates from latest threaded replies')
+mustInclude(selector, 'HotReplyCoordinator.collectById(latestThreaded, latestById)', 'selector must index the latest threaded reply tree by reply id')
+mustInclude(selector, 'const reply = HotReplyCoordinator.cloneReply(source)', 'selector must clone hydrated hot replies before mutating render fields')
 mustInclude(selector, 'Math.max(0, reply.thanks || 0) >= minThanks', 'selector must use thanks threshold')
 mustInclude(selector, 'right.thanks', 'selector must sort by higher thanks first')
 mustInclude(selector, 'result.length < normalizedMaxCount', 'selector must enforce max count')

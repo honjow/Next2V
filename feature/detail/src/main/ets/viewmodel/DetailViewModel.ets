@@ -83,6 +83,7 @@ export class DetailViewModel {
   // mid-hold and then frozen into reused LazyForEach nodes by the final publish (renderKey carries
   // no floor). Outside the held window this is the same array reference as this.replies.
   private publishedReplies: V2exReply[] = []
+  private hotReplyCandidateSourceCount: number = 0
   // In-flight preload-all, exposed so a racing loadMoreReplies/load() can join it instead of
   // fetching duplicate pages or publishing partial state underneath it.
   private preloadAllPromise: Promise<void> | null = null
@@ -180,7 +181,17 @@ export class DetailViewModel {
     if (!enabled) {
       return []
     }
-    return HotReplyCoordinator.filterCandidates(this.hotReplyCandidates, maxCount, minThanks)
+    const sourceReplies = this.publishedReplies.length > 0 ? this.publishedReplies : this.replies
+    if (sourceReplies.length === this.hotReplyCandidateSourceCount) {
+      return HotReplyCoordinator.filterCandidates(this.hotReplyCandidates, maxCount, minThanks)
+    }
+    return HotReplyCoordinator.filterCandidatesFromReplies(
+      this.hotReplyCandidates,
+      sourceReplies,
+      this.topic,
+      maxCount,
+      minThanks,
+    )
   }
 
   optimisticallyMarkReplyThanked(replyId: number): ReplyThankSnapshot | null {
@@ -810,6 +821,7 @@ export class DetailViewModel {
       HotReplySettings.MAX_MAX_COUNT,
       HotReplySettings.MIN_THANKS,
     )
+    this.hotReplyCandidateSourceCount = this.replies.length
   }
 
   // Safety net: if a held page-1 publish never got superseded by a preload publish (preload

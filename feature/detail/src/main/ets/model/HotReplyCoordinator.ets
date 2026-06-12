@@ -34,9 +34,7 @@ export class HotReplyCoordinator {
     const result: V2exReply[] = []
     for (let i = 0; i < candidates.length && result.length < normalizedMaxCount; i++) {
       const reply = candidates[i]
-      reply.threadLevel = 0
-      reply.isDuplicateThreadItem = false
-      reply.renderKey = `hot-${reply.renderKey || reply.id.toString()}-${reply.thanks || 0}`
+      HotReplyCoordinator.prepareHotReply(reply)
       result.push(reply)
     }
     return result
@@ -59,6 +57,52 @@ export class HotReplyCoordinator {
     return result
   }
 
+  static filterCandidatesFromReplies(
+    candidates: V2exReply[],
+    replies: V2exReply[],
+    topic: V2exTopic | null,
+    maxCount: number,
+    minThanks: number,
+  ): V2exReply[] {
+    if (!candidates || candidates.length === 0) {
+      return HotReplyCoordinator.select(replies, topic, true, maxCount, minThanks)
+    }
+    if (!replies || replies.length === 0) {
+      return HotReplyCoordinator.filterCandidates(candidates, maxCount, minThanks)
+    }
+    const normalizedMaxCount = HotReplySettings.normalizeMaxCount(maxCount)
+    const normalizedMinThanks = HotReplySettings.normalizeMinThanks(minThanks)
+    const latestThreaded = ReplyThreadCoordinator.visibleReplies({
+      displayMode: ReplyDisplaySettings.MODE_THREAD,
+      onlyOp: false,
+      preloadFallbackToFlat: false,
+      topic: topic,
+      replies: HotReplyCoordinator.cloneReplies(replies),
+    })
+    const latestById = new Map<number, V2exReply>()
+    HotReplyCoordinator.collectById(latestThreaded, latestById)
+
+    const result: V2exReply[] = []
+    for (let i = 0; i < candidates.length && result.length < normalizedMaxCount; i++) {
+      const candidate = candidates[i]
+      if (!candidate) {
+        continue
+      }
+      let source = candidate
+      const latest = latestById.get(candidate.id)
+      if (latest) {
+        source = latest
+      }
+      if (Math.max(0, source.thanks || 0) < normalizedMinThanks) {
+        continue
+      }
+      const reply = HotReplyCoordinator.cloneReply(source)
+      HotReplyCoordinator.prepareHotReply(reply)
+      result.push(reply)
+    }
+    return result
+  }
+
   private static collectCandidates(
     replies: V2exReply[],
     minThanks: number,
@@ -73,10 +117,30 @@ export class HotReplyCoordinator {
     }
   }
 
+  private static collectById(replies: V2exReply[], output: Map<number, V2exReply>): void {
+    for (let i = 0; i < replies.length; i++) {
+      const reply = replies[i]
+      if (reply && reply.id > 0) {
+        output.set(reply.id, reply)
+      }
+      HotReplyCoordinator.collectById(reply.threadChildren || [], output)
+    }
+  }
+
+  private static prepareHotReply(reply: V2exReply): void {
+    reply.threadLevel = 0
+    reply.isDuplicateThreadItem = false
+    reply.renderKey = `hot-${reply.renderKey || reply.id.toString()}-${reply.thanks || 0}`
+  }
+
+  private static cloneReply(reply: V2exReply): V2exReply {
+    return JSON.parse(JSON.stringify(reply)) as V2exReply
+  }
+
   private static cloneReplies(replies: V2exReply[]): V2exReply[] {
     const result: V2exReply[] = []
     for (let i = 0; i < replies.length; i++) {
-      result.push(JSON.parse(JSON.stringify(replies[i])) as V2exReply)
+      result.push(HotReplyCoordinator.cloneReply(replies[i]))
     }
     return result
   }
