@@ -78,9 +78,11 @@ mustInclude(viewModel, '@Trace hotReplyCandidates: V2exReply[] = []', 'ViewModel
 mustInclude(viewModel, 'HotReplyCoordinator.select(', 'ViewModel must refresh high-reply candidates when replies publish')
 mustInclude(viewModel, 'getHotReplies(enabled: boolean, maxCount: number, minThanks: number): V2exReply[]', 'ViewModel must expose selected hot replies')
 mustInclude(viewModel, 'HotReplyCoordinator.filterCandidates(this.hotReplyCandidates, maxCount, minThanks)', 'ViewModel must filter existing candidates by settings')
+mustInclude(viewModel, 'private refreshHotReplyCandidates(): void', 'ViewModel must expose one hot-reply candidate refresh chokepoint')
+mustInclude(viewModel, 'private syncHotReplyCandidateFromLoadedReply(replyId: number): void', 'ViewModel must sync hot-reply clones when a held publish cannot rebuild the full list')
 mustAppearInOrder(
   viewModel,
-  ['const visibleReplies = this.getVisibleReplies()', 'this.hotReplyCandidates = HotReplyCoordinator.select(', 'this.replyDataSource.setData(visibleReplies)'],
+  ['const visibleReplies = this.getVisibleReplies()', 'this.refreshHotReplyCandidates()', 'this.replyDataSource.setData(visibleReplies)'],
   'publishing replies must refresh hot reply candidates before notifying the normal reply data source',
 )
 mustInclude(detailPage, 'return this.reloadTopicWithThreadPreload()', 'reply submit must keep the success chain open until the post-reply reload/preload completes')

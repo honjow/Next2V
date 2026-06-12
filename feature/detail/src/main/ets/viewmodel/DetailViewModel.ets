@@ -209,8 +209,11 @@ export class DetailViewModel {
     // this.replies is the fresh page-1 — pushing it here would collapse the list. Mutate internal
     // state only; the preload's final publish (which re-merges the action overlay) carries the
     // thank state out, and the page-level highlight covers the interim frames.
-    if (snapshot !== null && !this.heldRepliesPublish) {
-      this.publishVisibleReplies()
+    if (snapshot !== null) {
+      this.syncHotReplyCandidateFromLoadedReply(replyId)
+      if (!this.heldRepliesPublish) {
+        this.publishVisibleReplies()
+      }
     }
     return snapshot
   }
@@ -228,9 +231,88 @@ export class DetailViewModel {
         changed = true
       }
     })
-    if (changed && !this.heldRepliesPublish) {
-      this.publishVisibleReplies()
+    if (changed) {
+      this.syncHotReplyCandidateSnapshot(snapshot)
+      if (!this.heldRepliesPublish) {
+        this.publishVisibleReplies()
+      }
     }
+  }
+
+  private syncHotReplyCandidateFromLoadedReply(replyId: number): void {
+    const reply = this.findLoadedReply(replyId)
+    if (reply) {
+      this.syncHotReplyCandidateValues(reply.id, reply.thanks || 0, !!reply.thanked, reply.renderKey)
+    }
+  }
+
+  private syncHotReplyCandidateSnapshot(snapshot: ReplyThankSnapshot): void {
+    this.syncHotReplyCandidateValues(
+      snapshot.replyId,
+      snapshot.previousThanks,
+      snapshot.wasThanked,
+      snapshot.previousRenderKey,
+    )
+  }
+
+  private findLoadedReply(replyId: number): V2exReply | null {
+    if (replyId <= 0) {
+      return null
+    }
+    for (let i = 0; i < this.replies.length; i++) {
+      const reply = this.replies[i]
+      if (reply && reply.id === replyId) {
+        return reply
+      }
+    }
+    return null
+  }
+
+  private syncHotReplyCandidateValues(
+    replyId: number,
+    thanks: number,
+    thanked: boolean,
+    renderKey?: string,
+  ): void {
+    if (replyId <= 0 || this.hotReplyCandidates.length === 0) {
+      return
+    }
+    const next: V2exReply[] = []
+    let changed = false
+    for (let i = 0; i < this.hotReplyCandidates.length; i++) {
+      const candidate = JSON.parse(JSON.stringify(this.hotReplyCandidates[i])) as V2exReply
+      if (this.syncHotReplyCandidateTree(candidate, replyId, thanks, thanked, renderKey)) {
+        changed = true
+      }
+      next.push(candidate)
+    }
+    if (changed) {
+      this.hotReplyCandidates = next
+    }
+  }
+
+  private syncHotReplyCandidateTree(
+    reply: V2exReply,
+    replyId: number,
+    thanks: number,
+    thanked: boolean,
+    renderKey?: string,
+  ): boolean {
+    let changed = false
+    if (reply && reply.id === replyId) {
+      reply.thanks = Math.max(0, thanks || 0)
+      reply.thanked = thanked
+      const baseRenderKey = renderKey || reply.renderKey || reply.id.toString()
+      reply.renderKey = `${baseRenderKey}-hot-thanks-${reply.thanks}`
+      changed = true
+    }
+    const children = reply.threadChildren || []
+    for (let i = 0; i < children.length; i++) {
+      if (this.syncHotReplyCandidateTree(children[i], replyId, thanks, thanked, renderKey)) {
+        changed = true
+      }
+    }
+    return changed
   }
 
   markReplyThanked(replyId: number): void {
@@ -248,8 +330,11 @@ export class DetailViewModel {
         changed = true
       }
     })
-    if (changed && !this.heldRepliesPublish) {
-      this.publishVisibleReplies()
+    if (changed) {
+      this.syncHotReplyCandidateFromLoadedReply(replyId)
+      if (!this.heldRepliesPublish) {
+        this.publishVisibleReplies()
+      }
     }
   }
 
@@ -712,6 +797,12 @@ export class DetailViewModel {
     this.heldRepliesPublish = false
     this.publishedReplies = this.replies
     const visibleReplies = this.getVisibleReplies()
+    this.refreshHotReplyCandidates()
+    this.replyDataSource.setData(visibleReplies)
+    this.repliesLoaded = this.replies.length
+  }
+
+  private refreshHotReplyCandidates(): void {
     this.hotReplyCandidates = HotReplyCoordinator.select(
       this.replies,
       this.topic,
@@ -719,8 +810,6 @@ export class DetailViewModel {
       HotReplySettings.MAX_MAX_COUNT,
       HotReplySettings.MIN_THANKS,
     )
-    this.replyDataSource.setData(visibleReplies)
-    this.repliesLoaded = this.replies.length
   }
 
   // Safety net: if a held page-1 publish never got superseded by a preload publish (preload

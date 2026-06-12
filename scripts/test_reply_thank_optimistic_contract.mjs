@@ -64,11 +64,12 @@ assert.match(optimisticBody, /previousThanks:\s*Math\.max\(0,\s*reply\.thanks \|
 assert.match(optimisticBody, /wasThanked:\s*!!reply\.thanked/)
 assert.match(optimisticBody, /if \(!reply\.thanked\)\s*\{[\s\S]*reply\.thanks = Math\.max\(0,\s*reply\.thanks \|\| 0\) \+ 1[\s\S]*\}/)
 assert.match(optimisticBody, /reply\.thanked = true/)
-// Optimistic apply publishes through the single chokepoint, and is suppressed while a reload holds
-// the page-1 publish (heldRepliesPublish) so it cannot collapse the on-screen full thread mid-hold.
+// Optimistic apply first updates the hot-reply clone that may already be on screen, then publishes
+// through the single chokepoint when no reload is holding the page-1 publish. The held path keeps the
+// normal list stable but still fixes the high-reply count for the changed reply.
 assert.match(
   optimisticBody,
-  /if \(snapshot !== null && !this\.heldRepliesPublish\)\s*\{[\s\S]*this\.publishVisibleReplies\(\)/,
+  /if \(snapshot !== null\)\s*\{[\s\S]*this\.syncHotReplyCandidateFromLoadedReply\(replyId\)[\s\S]*if \(!this\.heldRepliesPublish\)\s*\{[\s\S]*this\.publishVisibleReplies\(\)/,
 )
 
 const rollbackBody = methodBody(viewModel, 'rollbackReplyThank')
@@ -77,7 +78,16 @@ assert.match(rollbackBody, /reply\.thanked = snapshot\.wasThanked/)
 assert.match(rollbackBody, /reply\.renderKey = snapshot\.previousRenderKey/)
 assert.match(
   rollbackBody,
-  /if \(changed && !this\.heldRepliesPublish\)\s*\{[\s\S]*this\.publishVisibleReplies\(\)/,
+  /if \(changed\)\s*\{[\s\S]*this\.syncHotReplyCandidateSnapshot\(snapshot\)[\s\S]*if \(!this\.heldRepliesPublish\)\s*\{[\s\S]*this\.publishVisibleReplies\(\)/,
+)
+
+assert.match(
+  viewModel,
+  /private syncHotReplyCandidateValues\([\s\S]*?const next: V2exReply\[\] = \[\][\s\S]*?JSON\.parse\(JSON\.stringify\(this\.hotReplyCandidates\[i\]\)\) as V2exReply[\s\S]*?this\.hotReplyCandidates = next/,
+)
+assert.match(
+  viewModel,
+  /private syncHotReplyCandidateTree\([\s\S]*?reply\.thanks = Math\.max\(0,\s*thanks \|\| 0\)[\s\S]*?reply\.thanked = thanked[\s\S]*?reply\.threadChildren \|\| \[\]/,
 )
 
 // The chokepoint is the only place that pushes the visible list to the data source: it keeps the
@@ -86,7 +96,7 @@ assert.match(
 // so a name-based body scan would grab a call site instead of the method body.
 assert.match(
   viewModel,
-  /private publishVisibleReplies\(\): void \{[\s\S]*?this\.publishedReplies = this\.replies[\s\S]*?this\.replyDataSource\.setData\(this\.getVisibleReplies\(\)\)[\s\S]*?this\.repliesLoaded = this\.replies\.length/,
+  /private publishVisibleReplies\(\): void \{[\s\S]*?this\.publishedReplies = this\.replies[\s\S]*?const visibleReplies = this\.getVisibleReplies\(\)[\s\S]*?this\.refreshHotReplyCandidates\(\)[\s\S]*?this\.replyDataSource\.setData\(visibleReplies\)[\s\S]*?this\.repliesLoaded = this\.replies\.length/,
 )
 
 assert.match(coordinator, /export interface ReplyThankedIdsSnapshot/)
