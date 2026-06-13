@@ -1,5 +1,5 @@
+import { AppPrompt } from 'shared'
 import { common } from '@kit.AbilityKit'
-import { promptAction } from '@kit.ArkUI'
 import {
   ApiDomainState,
   AppStrings,
@@ -916,8 +916,7 @@ export struct SettingsPage {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     LanguageSettings.applyLanguage(context, normalizedMode).catch((error: Error) => {
       console.error('switch app language failed: ' + error.message)
-      promptAction
-        .openToast({
+      AppPrompt.openToast({
           message: AppStrings.text($r('app.string.common_save_failed'), 'Save failed'),
         })
         .catch((_toastError: Error) => {})

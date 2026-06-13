@@ -1,5 +1,5 @@
+import { AppPrompt } from 'shared'
 import { common } from '@kit.AbilityKit'
-import { promptAction } from '@kit.ArkUI'
 import {
   CollectionSettings,
   AppStrings,
@@ -92,8 +92,7 @@ export struct ViewedTopicsPage {
       .catch((error: Error) => {
         console.error('remove viewed topic failed: ' + error.message)
         this.loadTopics()
-        promptAction
-          .openToast({ message: AppStrings.text($r('app.string.common_delete_failed'), 'Delete failed') })
+        AppPrompt.openToast({ message: AppStrings.text($r('app.string.common_delete_failed'), 'Delete failed') })
           .catch((_e: Error) => {})
       })
   }

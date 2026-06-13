@@ -1,5 +1,5 @@
+import { AppPrompt } from 'shared'
 import { common } from '@kit.AbilityKit'
-import { promptAction } from '@kit.ArkUI'
 import {
   ApiDomainSettings,
   ApiDomainState,
@@ -150,11 +150,11 @@ export struct DomainSettingsPage {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     ApiDomainSettings.save(context, normalized)
       .then(() => {
-        promptAction.openToast({ message: AppStrings.text($r('app.string.domain_switched'), 'V2EX site switched') }).catch((_error: Error) => {})
+        AppPrompt.openToast({ message: AppStrings.text($r('app.string.domain_switched'), 'V2EX site switched') }).catch((_error: Error) => {})
       })
       .catch((error: Error) => {
         console.error('save V2EX site failed: ' + error.message)
-        promptAction.openToast({ message: AppStrings.text($r('app.string.common_save_failed'), 'Save failed') }).catch((_toastError: Error) => {})
+        AppPrompt.openToast({ message: AppStrings.text($r('app.string.common_save_failed'), 'Save failed') }).catch((_toastError: Error) => {})
       })
   }
 }

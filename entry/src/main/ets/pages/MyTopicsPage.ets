@@ -1,4 +1,4 @@
-import { promptAction } from '@kit.ArkUI'
+import { AppPrompt } from 'shared'
 import {
   ApiService, AppStrings,
   AuthSessionSignalState,
@@ -128,7 +128,7 @@ export struct MyTopicsPage {
         this.topics = []
         this.hasMore = false
         if (!force) {
-          promptAction.openToast({ message: this.errorMessage }).catch((_error: Error) => {
+          AppPrompt.openToast({ message: this.errorMessage }).catch((_error: Error) => {
           })
         }
       })
@@ -173,7 +173,7 @@ export struct MyTopicsPage {
           this.openTwoFactorFromCookie()
           return
         }
-        promptAction.openToast({ message: translateApiError(error) }).catch((_error: Error) => {
+        AppPrompt.openToast({ message: translateApiError(error) }).catch((_error: Error) => {
         })
       })
       .finally(() => {

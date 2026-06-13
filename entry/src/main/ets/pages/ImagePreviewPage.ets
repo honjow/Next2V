@@ -1,5 +1,6 @@
+import { AppPrompt } from 'shared'
 import { common } from '@kit.AbilityKit'
-import { curves, promptAction } from '@kit.ArkUI'
+import { curves } from '@kit.ArkUI'
 import { fileIo } from '@kit.CoreFileKit'
 import { photoAccessHelper } from '@kit.MediaLibraryKit'
 import { http } from '@kit.NetworkKit'
@@ -225,7 +226,7 @@ export struct ImagePreviewPage {
   }
 
   private showToast(message: string): void {
-    promptAction.openToast({ message: message }).catch((_error: Error) => {})
+    AppPrompt.openToast({ message: message }).catch((_error: Error) => {})
   }
 
   private async saveImage(): Promise<void> {

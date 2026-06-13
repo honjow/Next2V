@@ -1,5 +1,5 @@
+import { AppPrompt } from 'shared'
 import { common } from '@kit.AbilityKit'
-import { promptAction } from '@kit.ArkUI'
 import {
   ApiService,
   ApiV2Service,
@@ -432,7 +432,7 @@ export struct NotificationPage {
   private deleteNotification(item: V2exNotification): void {
     const notificationId = item.id || 0
     if (!this.authIdentity.tokenConfigured || !this.authToken || notificationId <= 0) {
-      promptAction.openToast({ message: AppStrings.text($r('app.string.notification_delete_requires_api_auth'), 'Delete notification requires V2 API authorization') }).catch((_error: Error) => {
+      AppPrompt.openToast({ message: AppStrings.text($r('app.string.notification_delete_requires_api_auth'), 'Delete notification requires V2 API authorization') }).catch((_error: Error) => {
       })
       return
     }
@@ -454,7 +454,7 @@ export struct NotificationPage {
     const once = this.notificationVm.webDeleteOnce(item)
     const verifyPage = this.notificationPageForItem(item)
     if (!cookie || notificationId <= 0 || !once) {
-      promptAction.openToast({ message: AppStrings.text($r('app.string.notification_delete_requires_web_session'), 'Delete notification requires web session') }).catch((_error: Error) => {
+      AppPrompt.openToast({ message: AppStrings.text($r('app.string.notification_delete_requires_web_session'), 'Delete notification requires web session') }).catch((_error: Error) => {
       })
       return
     }
@@ -506,7 +506,7 @@ export struct NotificationPage {
     }
     this.pendingNotificationDeletes.add(notificationId)
     this.afterOptimisticDeleteFrame(() => {
-      promptAction.openToast({ message: $r('app.string.common_deleted') }).catch((_error: Error) => {
+      AppPrompt.openToast({ message: $r('app.string.common_deleted') }).catch((_error: Error) => {
       })
       this.saveNotificationCache()
       this.retryDeleteNotificationRequest(request, 0)
@@ -516,7 +516,7 @@ export struct NotificationPage {
         .catch((error: Error) => {
           DiagnosticLogger.warn('notification', 'notification_delete_error', { id: notificationId, restored: true }, error)
           this.restoreNotificationAfterDeleteFailure(item, originalIndex)
-          promptAction.openToast({ message: error.message || 'Delete failed; restored' }).catch((_toastError: Error) => {
+          AppPrompt.openToast({ message: error.message || 'Delete failed; restored' }).catch((_toastError: Error) => {
           })
         })
         .finally(() => {

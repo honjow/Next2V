@@ -1,4 +1,4 @@
-import { promptAction } from '@kit.ArkUI'
+import { AppPrompt } from 'shared'
 import {
   AppStrings,
   AccountMemberRow,
@@ -109,7 +109,7 @@ export struct AccountFollowingPage {
     } finally {
       this.isLoading = false
       if (!force && this.errorMessage) {
-        promptAction.openToast({ message: this.errorMessage }).catch((_error: Error) => { })
+        AppPrompt.openToast({ message: this.errorMessage }).catch((_error: Error) => { })
       }
     }
   }

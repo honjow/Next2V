@@ -1,3 +1,4 @@
+import { AppPrompt } from 'shared'
 import { NodeViewModel } from '../viewmodel/NodeViewModel'
 import {
   AuthSettings,
@@ -46,7 +47,6 @@ import {
 } from 'shared'
 import type { TopicReadState } from 'shared'
 import { common, Want } from '@kit.AbilityKit'
-import { promptAction } from '@kit.ArkUI'
 import { NodeInfoCard } from '../components/NodeInfoCard'
 import { NodeTopicPageCoordinator } from '../model/NodeTopicPageCoordinator'
 @ComponentV2
@@ -370,8 +370,7 @@ export struct NodeTopicPage {
     }
     const cookie = CookieJarSettings.getCurrentCookie()
     if (!cookie) {
-      promptAction
-        .openToast({
+      AppPrompt.openToast({
           message: AppStrings.text($r('app.string.api_error_auth_required'), 'Please sign in'),
         })
         .catch((_error: Error) => {})
@@ -379,8 +378,7 @@ export struct NodeTopicPage {
     }
     const cleanName = (this.nodeName || '').trim()
     if (!cleanName) {
-      promptAction
-        .openToast({
+      AppPrompt.openToast({
           message: AppStrings.text($r('app.string.node_info_missing'), 'Node info missing'),
         })
         .catch((_error: Error) => {})
@@ -395,7 +393,7 @@ export struct NodeTopicPage {
         this.confirmSiteNodeFavoriteToggle(cookie, cleanName, toggle)
       })
       .catch((error: Error) => {
-        promptAction.openToast({ message: translateApiError(error) }).catch((_error: Error) => {})
+        AppPrompt.openToast({ message: translateApiError(error) }).catch((_error: Error) => {})
       })
       .finally(() => {
         this.isSiteNodeFavoriteLoading = false
@@ -446,14 +444,13 @@ export struct NodeTopicPage {
       .then((favorited: boolean) => {
         this.isSiteNodeFavorited = favorited
         publishNodeTopicSiteFavorited(favorited)
-        promptAction
-          .openToast({
+        AppPrompt.openToast({
             message: favorited ? $r('app.string.favorited') : $r('app.string.unfavorited'),
           })
           .catch((_error: Error) => {})
       })
       .catch((error: Error) => {
-        promptAction.openToast({ message: translateApiError(error) }).catch((_error: Error) => {})
+        AppPrompt.openToast({ message: translateApiError(error) }).catch((_error: Error) => {})
       })
       .finally(() => {
         this.isSiteNodeFavoriteLoading = false
@@ -583,8 +580,7 @@ export struct NodeTopicPage {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     const nodeName = this.currentNodeName()
     if (!nodeName) {
-      promptAction
-        .openToast({
+      AppPrompt.openToast({
           message: AppStrings.text($r('app.string.node_info_missing'), 'Node info missing'),
         })
         .catch((_error: Error) => {})
@@ -722,8 +718,7 @@ export struct NodeTopicPage {
     }
     const nodeName = this.currentNodeName()
     if (!nodeName) {
-      promptAction
-        .openToast({
+      AppPrompt.openToast({
           message: AppStrings.text($r('app.string.node_info_missing'), 'Node info missing'),
         })
         .catch((_error: Error) => {})
@@ -748,7 +743,7 @@ export struct NodeTopicPage {
         this.toastIgnoreResult(ignored)
       })
       .catch((error: Error) => {
-        promptAction.openToast({ message: translateApiError(error) }).catch((_error: Error) => {})
+        AppPrompt.openToast({ message: translateApiError(error) }).catch((_error: Error) => {})
       })
       .finally(() => {
         this.isNodeIgnoreLoading = false
@@ -756,8 +751,7 @@ export struct NodeTopicPage {
   }
 
   private toastIgnoreResult(ignored: boolean): void {
-    promptAction
-      .openToast({
+    AppPrompt.openToast({
         message: ignored ? $r('app.string.node_ignored_toast') : $r('app.string.node_unignored_toast'),
       })
       .catch((_error: Error) => {})

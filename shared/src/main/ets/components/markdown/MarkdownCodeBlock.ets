@@ -1,5 +1,5 @@
+import { AppPrompt } from '../../utils/AppPrompt'
 import { pasteboard } from "@kit.BasicServicesKit";
-import { promptAction } from "@kit.ArkUI";
 import { ReadingSettings } from "../../settings/ReadingSettings";
 import { connectReadingSettings, ReadingSettingsState } from "../../state/ReadingSettingsState";
 import { ThemeConstants } from "../../theme/ThemeConstants";
@@ -45,11 +45,11 @@ export struct MarkdownCodeBlock {
         this.codeText(),
       );
       pasteboard.getSystemPasteboard().setDataSync(data);
-      promptAction.openToast({ message: $r('app.string.common_copy_code') }).catch((error: Error) => {
+      AppPrompt.openToast({ message: $r('app.string.common_copy_code') }).catch((error: Error) => {
         console.error(`openToast failed: ${error.message}`);
       });
     } catch (error) {
-      promptAction.openToast({
+      AppPrompt.openToast({
         message: (error as Error).message || AppStrings.text($r('app.string.common_copy_failed'), 'Copy failed')
       }).catch((_error: Error) => { });
     }

@@ -1,5 +1,5 @@
+import { AppPrompt } from 'shared'
 import { common } from '@kit.AbilityKit'
-import { promptAction } from '@kit.ArkUI'
 import {
   AccountSessionCoordinator,
   ApiService,
@@ -126,7 +126,7 @@ export struct V2exTwoFactorPrompt {
         this.code = ''
         this.errorMessage = ''
         this.onVisibleChange?.(false)
-        promptAction.openToast({ message: $r('app.string.two_factor_completed') }).catch((_error: Error) => { })
+        AppPrompt.openToast({ message: $r('app.string.two_factor_completed') }).catch((_error: Error) => { })
         if (this.onSuccess) {
           this.onSuccess()
         }

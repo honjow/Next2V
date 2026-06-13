@@ -1,4 +1,4 @@
-import { promptAction } from '@kit.ArkUI'
+import { AppPrompt } from 'shared'
 import {
   ApiService,
   AppStrings,
@@ -102,7 +102,7 @@ export struct MyNodesPage {
         this.loadNodesWithIcons(nodes, () => {
           this.isLoading = false
           if (!force && this.errorMessage) {
-            promptAction.openToast({ message: this.errorMessage }).catch((_error: Error) => {
+            AppPrompt.openToast({ message: this.errorMessage }).catch((_error: Error) => {
             })
           }
         })
@@ -112,7 +112,7 @@ export struct MyNodesPage {
         this.nodes = []
         this.isLoading = false
         if (!force && this.errorMessage) {
-          promptAction.openToast({ message: this.errorMessage }).catch((_error: Error) => {
+          AppPrompt.openToast({ message: this.errorMessage }).catch((_error: Error) => {
           })
         }
       })

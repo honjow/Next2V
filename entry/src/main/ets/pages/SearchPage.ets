@@ -1,5 +1,5 @@
+import { AppPrompt } from 'shared'
 import { common, Want } from '@kit.AbilityKit'
-import { promptAction } from '@kit.ArkUI'
 import {
   ApiService,
   AppStrings,
@@ -580,7 +580,7 @@ export struct SearchPage {
     const url = SearchPageStateCoordinator.buildExternalTopicSearchUrl(q)
     const want: Want = { action: 'ohos.want.action.viewData', uri: url }
     context.startAbility(want).catch((error: Error) => {
-      promptAction.openToast({ message: translateApiError(error) }).catch((_error: Error) => {})
+      AppPrompt.openToast({ message: translateApiError(error) }).catch((_error: Error) => {})
     })
   }
 

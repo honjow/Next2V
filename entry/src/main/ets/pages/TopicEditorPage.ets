@@ -1,6 +1,7 @@
+import { AppPrompt } from 'shared'
 import { common } from '@kit.AbilityKit'
 import { photoAccessHelper } from '@kit.MediaLibraryKit'
-import { KeyboardAvoidMode, LoadingDialog, promptAction, SymbolGlyphModifier } from '@kit.ArkUI'
+import { KeyboardAvoidMode, LoadingDialog, SymbolGlyphModifier } from '@kit.ArkUI'
 import {
   ApiService, AppStrings, connectAccountMeta, connectLayoutSafeArea, connectNavStack, connectNodePickAction, connectTopicComposeTarget, connectTopicEditorAction, CookieJarSettings, DateUtils, DraftSettings, ImageBytesUtils, ImageUploadErrorCode, ImageUploadService, ImageUploadSettings, LayoutSafeAreaState, MarkdownContent, MarkdownToolbar,
   NodePickActionState, publishTopicEditorSubmitEnabled, ThemeConstants, TopicDetailParams, TopicEditorActionState, translateApiError, type ComposeDraft, type ImageBytes
@@ -541,7 +542,7 @@ export struct TopicEditorPage {
   }
 
   private showToast(message: string): void {
-    promptAction.openToast({ message }).catch((_error: Error) => { })
+    AppPrompt.openToast({ message }).catch((_error: Error) => { })
   }
 
   private insertLinePrefix(prefix: string): void {
@@ -645,11 +646,11 @@ export struct TopicEditorPage {
   // current balance — V2EX charges on submit with no preview, so warn before the irreversible post.
   private confirmAppendSubmit(): void {
     if (this.content.trim().length === 0) {
-      promptAction.openToast({ message: AppStrings.text($r('app.string.api_error_append_body_required'), 'Append content cannot be empty') }).catch((_error: Error) => { })
+      AppPrompt.openToast({ message: AppStrings.text($r('app.string.api_error_append_body_required'), 'Append content cannot be empty') }).catch((_error: Error) => { })
       return
     }
     if (!CookieJarSettings.getCurrentCookie()) {
-      promptAction.openToast({ message: AppStrings.text($r('app.string.api_error_auth_required'), 'Please sign in') }).catch((_error: Error) => { })
+      AppPrompt.openToast({ message: AppStrings.text($r('app.string.api_error_auth_required'), 'Please sign in') }).catch((_error: Error) => { })
       return
     }
     const balance = connectAccountMeta().balance
@@ -671,7 +672,7 @@ export struct TopicEditorPage {
       return
     }
     if (this.hasUploadInFlight()) {
-      promptAction.openToast({ message: AppStrings.text($r('app.string.image_upload_wait'), 'Wait for the image to finish uploading') }).catch((_error: Error) => { })
+      AppPrompt.openToast({ message: AppStrings.text($r('app.string.image_upload_wait'), 'Wait for the image to finish uploading') }).catch((_error: Error) => { })
       return
     }
     if (this.mode === 'append') {
@@ -681,34 +682,34 @@ export struct TopicEditorPage {
     // Edit is free (no 铜币) and body+title only — validate and submit directly, no cost dialog.
     if (this.mode === 'edit') {
       if (!this.title.trim()) {
-        promptAction.openToast({ message: AppStrings.text($r('app.string.api_error_title_required'), 'Please enter a title') }).catch((_error: Error) => { })
+        AppPrompt.openToast({ message: AppStrings.text($r('app.string.api_error_title_required'), 'Please enter a title') }).catch((_error: Error) => { })
         return
       }
       if (this.content.trim().length === 0) {
-        promptAction.openToast({ message: AppStrings.text($r('app.string.api_error_body_required'), 'Please enter the body') }).catch((_error: Error) => { })
+        AppPrompt.openToast({ message: AppStrings.text($r('app.string.api_error_body_required'), 'Please enter the body') }).catch((_error: Error) => { })
         return
       }
       if (!CookieJarSettings.getCurrentCookie()) {
-        promptAction.openToast({ message: AppStrings.text($r('app.string.api_error_auth_required'), 'Please sign in') }).catch((_error: Error) => { })
+        AppPrompt.openToast({ message: AppStrings.text($r('app.string.api_error_auth_required'), 'Please sign in') }).catch((_error: Error) => { })
         return
       }
       this.submit()
       return
     }
     if (!this.nodeName.trim()) {
-      promptAction.openToast({ message: AppStrings.text($r('app.string.api_error_node_required'), 'Please choose a node') }).catch((_error: Error) => { })
+      AppPrompt.openToast({ message: AppStrings.text($r('app.string.api_error_node_required'), 'Please choose a node') }).catch((_error: Error) => { })
       return
     }
     if (!this.title.trim()) {
-      promptAction.openToast({ message: AppStrings.text($r('app.string.api_error_title_required'), 'Please enter a title') }).catch((_error: Error) => { })
+      AppPrompt.openToast({ message: AppStrings.text($r('app.string.api_error_title_required'), 'Please enter a title') }).catch((_error: Error) => { })
       return
     }
     if (this.content.trim().length === 0) {
-      promptAction.openToast({ message: AppStrings.text($r('app.string.api_error_body_required'), 'Please enter the body') }).catch((_error: Error) => { })
+      AppPrompt.openToast({ message: AppStrings.text($r('app.string.api_error_body_required'), 'Please enter the body') }).catch((_error: Error) => { })
       return
     }
     if (!CookieJarSettings.getCurrentCookie()) {
-      promptAction.openToast({ message: AppStrings.text($r('app.string.api_error_auth_required'), 'Please sign in') }).catch((_error: Error) => { })
+      AppPrompt.openToast({ message: AppStrings.text($r('app.string.api_error_auth_required'), 'Please sign in') }).catch((_error: Error) => { })
       return
     }
     const cleanNode = this.nodeName.trim()
@@ -728,7 +729,7 @@ export struct TopicEditorPage {
     }
     const cookie = CookieJarSettings.getCurrentCookie()
     if (!cookie) {
-      promptAction.openToast({ message: AppStrings.text($r('app.string.api_error_auth_required'), 'Please sign in') }).catch((_error: Error) => { })
+      AppPrompt.openToast({ message: AppStrings.text($r('app.string.api_error_auth_required'), 'Please sign in') }).catch((_error: Error) => { })
       return
     }
     this.isSubmitting = true
@@ -750,7 +751,7 @@ export struct TopicEditorPage {
         this.hasSubmitted = true
         const context = this.getUIContext().getHostContext() as common.UIAbilityContext
         DraftSettings.clearTopicDraft(context).catch((_error: Error) => { })
-        promptAction.openToast({ message: topicId > 0 ? AppStrings.format(AppStrings.text($r('app.string.posted_topic_format'), 'Posted: {0}'), [`${topicId}`]) : $r('app.string.posted_topic') }).catch((_error: Error) => { })
+        AppPrompt.openToast({ message: topicId > 0 ? AppStrings.format(AppStrings.text($r('app.string.posted_topic_format'), 'Posted: {0}'), [`${topicId}`]) : $r('app.string.posted_topic') }).catch((_error: Error) => { })
         if (topicId > 0) {
           // Auto-open the freshly posted topic (replace the editor in the stack) instead of just
           // popping back to where compose started — going straight to your new topic is less
@@ -763,7 +764,7 @@ export struct TopicEditorPage {
       })
       .catch((error: Error) => {
         this.errorMessage = translateApiError(error)
-        promptAction.openToast({ message: this.errorMessage }).catch((_error2: Error) => { })
+        AppPrompt.openToast({ message: this.errorMessage }).catch((_error2: Error) => { })
       })
       .finally(() => {
         this.submitLoadingDialogController.close()
@@ -778,13 +779,13 @@ export struct TopicEditorPage {
       .then(() => {
         this.hasSubmitted = true
         this.clearComposeDraft()
-        promptAction.openToast({ message: AppStrings.text($r('app.string.editor_append_posted'), 'Supplement posted') }).catch((_error: Error) => { })
+        AppPrompt.openToast({ message: AppStrings.text($r('app.string.editor_append_posted'), 'Supplement posted') }).catch((_error: Error) => { })
         const p: TopicDetailParams = { topicId: this.targetTopicId }
         this.stack.replacePathByName('TopicDetail', p as Object)
       })
       .catch((error: Error) => {
         this.errorMessage = translateApiError(error)
-        promptAction.openToast({ message: this.errorMessage }).catch((_error2: Error) => { })
+        AppPrompt.openToast({ message: this.errorMessage }).catch((_error2: Error) => { })
       })
       .finally(() => {
         this.submitLoadingDialogController.close()
@@ -817,7 +818,7 @@ export struct TopicEditorPage {
       })
       .catch((error: Error) => {
         this.errorMessage = translateApiError(error)
-        promptAction.openToast({ message: this.errorMessage }).catch((_error2: Error) => { })
+        AppPrompt.openToast({ message: this.errorMessage }).catch((_error2: Error) => { })
         this.stack.pop()
       })
   }
@@ -868,13 +869,13 @@ export struct TopicEditorPage {
       .then((topicId: number) => {
         this.hasSubmitted = true
         this.clearComposeDraft()
-        promptAction.openToast({ message: AppStrings.text($r('app.string.editor_edit_saved'), 'Changes saved') }).catch((_error: Error) => { })
+        AppPrompt.openToast({ message: AppStrings.text($r('app.string.editor_edit_saved'), 'Changes saved') }).catch((_error: Error) => { })
         const p: TopicDetailParams = { topicId: topicId > 0 ? topicId : this.targetTopicId }
         this.stack.replacePathByName('TopicDetail', p as Object)
       })
       .catch((error: Error) => {
         this.errorMessage = translateApiError(error)
-        promptAction.openToast({ message: this.errorMessage }).catch((_error2: Error) => { })
+        AppPrompt.openToast({ message: this.errorMessage }).catch((_error2: Error) => { })
       })
       .finally(() => {
         this.submitLoadingDialogController.close()

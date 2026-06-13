@@ -1,5 +1,5 @@
+import { AppPrompt } from 'shared'
 import { bundleManager, common, Want } from '@kit.AbilityKit'
-import { promptAction } from '@kit.ArkUI'
 import {
   AppStrings,
   ConciseListRow,
@@ -220,7 +220,7 @@ export struct AboutPage {
     const want: Want = { action: 'ohos.want.action.viewData', uri: target }
     context.startAbility(want)
       .catch((error: Error) => {
-        promptAction.openToast({ message: translateApiError(error) }).catch((_error: Error) => {
+        AppPrompt.openToast({ message: translateApiError(error) }).catch((_error: Error) => {
         })
       })
   }

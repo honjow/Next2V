@@ -1,5 +1,5 @@
+import { AppPrompt } from 'shared'
 import { common } from '@kit.AbilityKit'
-import { promptAction } from '@kit.ArkUI'
 import { NodeIndexViewModel } from '../viewmodel/NodeIndexViewModel'
 import { AppStrings, connectNavStack, publishNodePick, DraftSettings, V2exNode, SecondaryListScaffold, translateApiError } from 'shared'
 import {
@@ -109,7 +109,7 @@ export struct NodePickerPage {
         // display only; name is the submit value. The timestamp-stamp lives in publishNodePick so
         // this @ComponentV2 leaf stays free of the Date.now() key-churn token.
         publishNodePick(clean, nodeTitle)
-        promptAction.openToast({ message: AppStrings.format(AppStrings.text($r('app.string.node_selected_format'), 'Selected node: {0}'), [clean]) }).catch((_error: Error) => { })
+        AppPrompt.openToast({ message: AppStrings.format(AppStrings.text($r('app.string.node_selected_format'), 'Selected node: {0}'), [clean]) }).catch((_error: Error) => { })
         this.stack.pop()
       })
       .catch((error: Error) => {
@@ -135,7 +135,7 @@ export struct NodePickerPage {
       })
       .then(() => {
         this.selectedNodeName = ''
-        promptAction.openToast({ message: $r('app.string.node_cleared') }).catch((_error: Error) => { })
+        AppPrompt.openToast({ message: $r('app.string.node_cleared') }).catch((_error: Error) => { })
       })
       .catch((error: Error) => {
         this.errorMessage = translateApiError(error)

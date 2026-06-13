@@ -1,5 +1,5 @@
+import { AppPrompt } from 'shared'
 import { common } from '@kit.AbilityKit'
-import { promptAction } from '@kit.ArkUI'
 import { webview } from '@kit.ArkWeb'
 import {
   ApiService,
@@ -281,7 +281,7 @@ export struct V2exWebLoginPage {
         }
         this.isSaved = true
         this.cancelAutoSave()
-        promptAction.openToast({ message: $r('app.string.login_saved') }).catch((error: Error) => {
+        AppPrompt.openToast({ message: $r('app.string.login_saved') }).catch((error: Error) => {
           DiagnosticLogger.exception('ui_lifecycle', 'web_login_saved_toast_exception', error)
           console.error('openToast failed: ' + error.message)
         })

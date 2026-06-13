@@ -1,5 +1,5 @@
+import { AppPrompt } from 'shared'
 import { common, Want } from '@kit.AbilityKit'
-import { promptAction } from '@kit.ArkUI'
 import {
   AppStrings,
   CloudSyncFeature,
@@ -100,7 +100,7 @@ export struct CloudSyncSettingsPage {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     const want: Want = { action: 'ohos.want.action.viewData', uri: HUAWEI_CLOUD_DEEP_LINK }
     context.startAbility(want).catch((error: Error) => {
-      promptAction.openToast({ message: translateApiError(error) }).catch((_error: Error) => {})
+      AppPrompt.openToast({ message: translateApiError(error) }).catch((_error: Error) => {})
     })
   }
 

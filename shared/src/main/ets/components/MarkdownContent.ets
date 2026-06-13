@@ -1,10 +1,10 @@
+import { AppPrompt } from '../utils/AppPrompt'
 import { common, Want } from "@kit.AbilityKit";
 import { BusinessError, pasteboard } from "@kit.BasicServicesKit";
 import { webview } from "@kit.ArkWeb";
 import { systemShare } from "@kit.ShareKit";
 import { uniformTypeDescriptor as utd } from "@kit.ArkData";
 import { connection } from "@kit.NetworkKit";
-import { promptAction } from "@kit.ArkUI";
 import { AppStrings } from "../i18n/AppStrings";
 import { ReadingSettings } from "../settings/ReadingSettings";
 import { connectReadingSettings, ReadingSettingsState } from "../state/ReadingSettingsState";
@@ -518,9 +518,9 @@ function _copyDecodedBase64Text(decoded: string): void {
       decoded,
     );
     pasteboard.getSystemPasteboard().setDataSync(data);
-    promptAction.openToast({ message: $r('app.string.common_copy_decoded_text') }).catch((_error: Error) => { });
+    AppPrompt.openToast({ message: $r('app.string.common_copy_decoded_text') }).catch((_error: Error) => { });
   } catch (error) {
-    promptAction.openToast({
+    AppPrompt.openToast({
       message: (error as Error).message || AppStrings.text($r('app.string.common_copy_failed'), 'Copy failed')
     }).catch((_error: Error) => { });
   }
@@ -2840,12 +2840,12 @@ export struct MarkdownContent {
       const want: Want = { action: "ohos.want.action.viewData", uri: normalized };
       context.startAbility(want)
         .catch((error: Error) => {
-          promptAction.openToast({
+          AppPrompt.openToast({
             message: error.message || AppStrings.text($r('app.string.common_open_failed'), 'Open failed')
           }).catch((_error: Error) => { });
         });
     } catch (error) {
-      promptAction.openToast({
+      AppPrompt.openToast({
         message: (error as Error).message || AppStrings.text($r('app.string.common_open_failed'), 'Open failed')
       }).catch((_error: Error) => { });
     }

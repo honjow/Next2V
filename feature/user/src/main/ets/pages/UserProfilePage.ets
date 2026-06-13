@@ -1,3 +1,4 @@
+import { AppPrompt } from 'shared'
 import { UserViewModel } from '../viewmodel/UserViewModel'
 import { connectImageHero, heroIdForUrl, MediaUrlUtils } from 'shared'
 import {
@@ -44,7 +45,6 @@ import {
   UserMarkState,
 } from 'shared'
 import type { TopicReadState, UserMarkLabel } from 'shared'
-import { promptAction } from '@kit.ArkUI'
 import { common, Want } from '@kit.AbilityKit'
 import {
   UserProfileAllActivityButton,
@@ -956,7 +956,7 @@ export struct UserProfilePage {
   }
 
   private showActionToast(message: string): void {
-    promptAction.openToast({ message: message }).catch((_e: Error) => {})
+    AppPrompt.openToast({ message: message }).catch((_e: Error) => {})
   }
 
   private actionFailureToast(error: Error): string {

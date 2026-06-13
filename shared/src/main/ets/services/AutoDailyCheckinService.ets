@@ -1,5 +1,5 @@
+import { AppPrompt } from '../utils/AppPrompt'
 import { common } from '@kit.AbilityKit'
-import { promptAction } from '@kit.ArkUI'
 import { AutoDailyCheckinSettings } from '../settings/AutoDailyCheckinSettings'
 import { DiagnosticLogger } from '../diagnostics/DiagnosticLogger'
 import { ApiService } from '../network/ApiService'
@@ -242,7 +242,7 @@ export class AutoDailyCheckinService {
   // consent only happens while foreground (it needs a window), bootstrapping future background results.
   private static surface(context: common.UIAbilityContext, text: string): void {
     if (connectAppForeground().foreground) {
-      promptAction.openToast({ message: text }).catch((_error: Error) => {})
+      AppPrompt.openToast({ message: text }).catch((_error: Error) => {})
       CheckinNotifier.ensureEnabled(context)
     } else {
       const title = AppStrings.text($r('app.string.daily_checkin_notify_title'), 'Daily check-in')

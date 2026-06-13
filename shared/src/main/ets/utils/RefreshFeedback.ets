@@ -1,4 +1,4 @@
-import { promptAction } from '@kit.ArkUI'
+import { AppPrompt } from './AppPrompt'
 import { AppStrings } from '../i18n/AppStrings'
 
 /**
@@ -12,8 +12,7 @@ import { AppStrings } from '../i18n/AppStrings'
  */
 export class RefreshFeedback {
   static notifyRefreshFailed(): void {
-    promptAction
-      .openToast({ message: AppStrings.text($r('app.string.common_refresh_failed'), 'Refresh failed') })
+    AppPrompt.openToast({ message: AppStrings.text($r('app.string.common_refresh_failed'), 'Refresh failed') })
       .catch((_error: Error) => {})
   }
 }

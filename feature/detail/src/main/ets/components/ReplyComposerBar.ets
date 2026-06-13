@@ -1,6 +1,6 @@
+import { AppPrompt } from 'shared'
 import { common } from '@kit.AbilityKit'
 import { photoAccessHelper } from '@kit.MediaLibraryKit'
-import { promptAction } from '@kit.ArkUI'
 import { ReplyComposerCoordinator } from '../model/ReplyComposerCoordinator'
 import {
   ReplyComposerDraftCoordinator,
@@ -541,7 +541,7 @@ export struct ReplyComposerBar {
   }
 
   private showToast(message: string): void {
-    promptAction.openToast({ message }).catch((_error: Error) => {})
+    AppPrompt.openToast({ message }).catch((_error: Error) => {})
   }
 
   private handleUploadError(error: Error): void {
@@ -619,7 +619,7 @@ export struct ReplyComposerBar {
     }
     if (check.reason === 'empty') {
       this.errorMessage = check.message
-      promptAction.openToast({ message: check.message }).catch((_error: Error) => {})
+      AppPrompt.openToast({ message: check.message }).catch((_error: Error) => {})
       return
     }
     if (check.reason === 'loginRequired') {

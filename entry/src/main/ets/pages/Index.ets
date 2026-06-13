@@ -1,3 +1,4 @@
+import { AppPrompt } from 'shared'
 import {
   BlurStrategy,
   BottomBuilderShowType,
@@ -94,7 +95,7 @@ import {
   DomainSettingsPage,
   CloudSyncSettingsPage,
 } from 'settings'
-import { ComponentContent, promptAction, SymbolGlyphModifier, window } from '@kit.ArkUI'
+import { ComponentContent, SymbolGlyphModifier, window } from '@kit.ArkUI'
 import { V2exWebLoginPage } from './V2exWebLoginPage'
 import { V2exNativeLoginPage } from './V2exNativeLoginPage'
 import { ImagePreviewPage } from './ImagePreviewPage'
@@ -1306,7 +1307,7 @@ struct Index {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     const want: Want = { action: 'ohos.want.action.viewData', uri: target }
     context.startAbility(want).catch((error: Error) => {
-      promptAction.openToast({ message: translateApiError(error) }).catch((_error: Error) => {})
+      AppPrompt.openToast({ message: translateApiError(error) }).catch((_error: Error) => {})
     })
   }
 

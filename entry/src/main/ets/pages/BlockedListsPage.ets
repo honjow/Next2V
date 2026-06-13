@@ -1,5 +1,5 @@
+import { AppPrompt } from 'shared'
 import { common } from '@kit.AbilityKit'
-import { promptAction } from '@kit.ArkUI'
 import {
   ApiService,
   AppStrings,
@@ -593,8 +593,7 @@ export struct BlockedListsPage {
     }
     const cookie = CookieJarSettings.getCurrentCookie()
     if (!cookie) {
-      promptAction
-        .openToast({ message: AppStrings.text($r('app.string.login_required_continue'), 'Login required') })
+      AppPrompt.openToast({ message: AppStrings.text($r('app.string.login_required_continue'), 'Login required') })
         .catch((_e: Error) => {})
       return
     }
@@ -618,7 +617,7 @@ export struct BlockedListsPage {
       })
       .catch((error: Error) => {
         this.restoreTopicAt(index, removed)
-        promptAction.openToast({ message: translateApiError(error) }).catch((_e: Error) => {})
+        AppPrompt.openToast({ message: translateApiError(error) }).catch((_e: Error) => {})
       })
       .finally(() => {
         this.pendingUnignore.delete(topicId)
@@ -631,8 +630,7 @@ export struct BlockedListsPage {
     }
     const cookie = CookieJarSettings.getCurrentCookie()
     if (!cookie) {
-      promptAction
-        .openToast({ message: AppStrings.text($r('app.string.login_required_continue'), 'Login required') })
+      AppPrompt.openToast({ message: AppStrings.text($r('app.string.login_required_continue'), 'Login required') })
         .catch((_e: Error) => {})
       return
     }
@@ -656,7 +654,7 @@ export struct BlockedListsPage {
       })
       .catch((error: Error) => {
         this.restoreMemberAt(index, removed)
-        promptAction.openToast({ message: translateApiError(error) }).catch((_e: Error) => {})
+        AppPrompt.openToast({ message: translateApiError(error) }).catch((_e: Error) => {})
       })
       .finally(() => {
         this.pendingUnblock.delete(memberId)

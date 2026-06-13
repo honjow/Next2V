@@ -1,3 +1,4 @@
+import { AppPrompt } from 'shared'
 import { AppStrings } from 'shared'
 import { connectImageHero, heroIdForUrl, MediaUrlUtils } from 'shared'
 import {
@@ -54,7 +55,7 @@ import {
 import { TopicDetailScrollCoordinator } from '../model/TopicDetailScrollCoordinator'
 import { HotReplyChildRepliesExpandCache } from '../model/HotReplyChildRepliesExpandCache'
 import { common, Want } from '@kit.AbilityKit'
-import { CustomContentDialog, KeyboardAvoidMode, LoadingDialog, promptAction } from '@kit.ArkUI'
+import { CustomContentDialog, KeyboardAvoidMode, LoadingDialog } from '@kit.ArkUI'
 import { HdsAnimationMode, HdsTabsController } from '@kit.UIDesignKit'
 import { HdsMiniBarButton } from '../components/HdsMiniBarButton'
 import { uniformTypeDescriptor as utd } from '@kit.ArkData'
@@ -546,11 +547,11 @@ export struct TopicDetailPage {
     }
     this.api.moveTopicNodeWithCookie(cookie, this.topicId, node)
       .then(() => {
-        promptAction.openToast({ message: AppStrings.text($r('app.string.topic_move_done'), 'Topic moved') }).catch((_e: Error) => { })
+        AppPrompt.openToast({ message: AppStrings.text($r('app.string.topic_move_done'), 'Topic moved') }).catch((_e: Error) => { })
         this.reloadTopicWithThreadPreload()
       })
       .catch((error: Error) => {
-        promptAction.openToast({ message: translateApiError(error) }).catch((_e: Error) => { })
+        AppPrompt.openToast({ message: translateApiError(error) }).catch((_e: Error) => { })
       })
   }
 
@@ -1147,8 +1148,7 @@ export struct TopicDetailPage {
     }
     const cookie = CookieJarSettings.getCurrentCookie()
     if (!cookie) {
-      promptAction
-        .openToast({
+      AppPrompt.openToast({
           message: AppStrings.text($r('app.string.reply_login_required'), 'Log in first'),
         })
         .catch((_error: Error) => {})
@@ -1174,7 +1174,7 @@ export struct TopicDetailPage {
         // Keep the draft and surface the (translated) error. Do NOT auto-reopen the composer:
         // the sheet's TextArea auto-focuses on open and would re-trigger the keyboard the user
         // was trying to avoid; they can tap reply manually to resume from the saved draft.
-        promptAction.openToast({ message: translateApiError(error) }).catch((_error: Error) => {})
+        AppPrompt.openToast({ message: translateApiError(error) }).catch((_error: Error) => {})
       })
       .finally(() => {
         this.replySubmitLoadingDialogController.close()
@@ -1685,8 +1685,7 @@ export struct TopicDetailPage {
       .refreshLastRepliesPage()
       .then(() => {})
       .catch((error: Error) => {
-        promptAction
-          .openToast({ message: translateApiError(error) })
+        AppPrompt.openToast({ message: translateApiError(error) })
           .catch((_toastError: Error) => {})
       })
   }
@@ -1828,7 +1827,7 @@ export struct TopicDetailPage {
     const maxFloor = this.v.topic !== null ? this.v.topic!.replies : 0
     const result = TopicDetailScrollCoordinator.parseJumpFloor(value, maxFloor)
     if (!result.valid) {
-      promptAction.openToast({ message: result.message }).catch((_error: Error) => {})
+      AppPrompt.openToast({ message: result.message }).catch((_error: Error) => {})
       return
     }
     this.ensureRepliesLoaded(result.floor)
@@ -2051,8 +2050,7 @@ export struct TopicDetailPage {
 
   private handleTopicAction(action: string): void {
     if (this.v.topic === null) {
-      promptAction
-        .openToast({
+      AppPrompt.openToast({
           message: AppStrings.text($r('app.string.topic_still_loading'), 'Topic is still loading'),
         })
         .catch((_error: Error) => {})
@@ -2118,8 +2116,7 @@ export struct TopicDetailPage {
     }
     const cookie = CookieJarSettings.getCurrentCookie()
     if (!cookie) {
-      promptAction
-        .openToast({
+      AppPrompt.openToast({
           message: AppStrings.text($r('app.string.api_error_auth_required'), 'Please sign in'),
         })
         .catch((_error: Error) => {})
@@ -2142,7 +2139,7 @@ export struct TopicDetailPage {
         // account state never overwrites the server-confirmed cache with a failed mutation.
         this.isSiteFavorited = previousIsSiteFavorited
         publishTopicDetailSiteFavorited(previousIsSiteFavorited)
-        promptAction.openToast({ message: translateApiError(error) }).catch((_error: Error) => {})
+        AppPrompt.openToast({ message: translateApiError(error) }).catch((_error: Error) => {})
       })
       .finally(() => {
         this.isSiteFavoriteLoading = false
@@ -2240,7 +2237,7 @@ export struct TopicDetailPage {
     })
     if (!guard.allowed) {
       if (guard.message) {
-        promptAction.openToast({ message: guard.message }).catch((_error: Error) => {})
+        AppPrompt.openToast({ message: guard.message }).catch((_error: Error) => {})
       }
       return
     }
@@ -2285,7 +2282,7 @@ export struct TopicDetailPage {
       .catch((error: Error) => {
         this.isTopicThanked = previousIsTopicThanked
         publishTopicDetailThanked(previousIsTopicThanked)
-        promptAction.openToast({ message: translateApiError(error) }).catch((_error: Error) => {})
+        AppPrompt.openToast({ message: translateApiError(error) }).catch((_error: Error) => {})
       })
       .finally(() => {
         this.isTopicThankLoading = false
@@ -2321,7 +2318,7 @@ export struct TopicDetailPage {
     })
     if (!guard.allowed) {
       if (guard.message) {
-        promptAction.openToast({ message: guard.message }).catch((_error: Error) => {})
+        AppPrompt.openToast({ message: guard.message }).catch((_error: Error) => {})
       }
       return
     }
@@ -2370,7 +2367,7 @@ export struct TopicDetailPage {
           thankedIdsSnapshot,
           this.thankedReplyIdsJson,
         )
-        promptAction.openToast({ message: translateApiError(error) }).catch((_error: Error) => {})
+        AppPrompt.openToast({ message: translateApiError(error) }).catch((_error: Error) => {})
       })
       .finally(() => {
         this.isReplyThankLoading = false
@@ -2475,7 +2472,7 @@ export struct TopicDetailPage {
     })
     if (!preflight.guard.allowed) {
       if (preflight.guard.message) {
-        promptAction.openToast({ message: preflight.guard.message }).catch((_error: Error) => {})
+        AppPrompt.openToast({ message: preflight.guard.message }).catch((_error: Error) => {})
       }
       return
     }
@@ -2485,8 +2482,7 @@ export struct TopicDetailPage {
         this.confirmTopicModeration(title, verb, preflight.cookie, action, executeAction)
       })
       .catch((error: Error) => {
-        promptAction
-          .openToast({
+        AppPrompt.openToast({
             message: error.message || TopicDetailActionCoordinator.parseActionFailureMessage(verb),
           })
           .catch((_error: Error) => {})
@@ -2534,8 +2530,7 @@ export struct TopicDetailPage {
     executeAction(cookie, action)
       .then(() => {
         this.applyTopicIgnoreDeltaAfterSuccess(action)
-        promptAction
-          .openToast({
+        AppPrompt.openToast({
             message: AppStrings.format(
               AppStrings.text($r('app.string.action_done_format'), '{0} done'),
               [verb],
@@ -2545,7 +2540,7 @@ export struct TopicDetailPage {
         this.reloadTopicWithThreadPreload()
       })
       .catch((error: Error) => {
-        promptAction.openToast({ message: translateApiError(error) }).catch((_error: Error) => {})
+        AppPrompt.openToast({ message: translateApiError(error) }).catch((_error: Error) => {})
       })
       .finally(() => {
         this.isModerationActionLoading = false
@@ -2601,7 +2596,7 @@ export struct TopicDetailPage {
     })
     if (!preflight.guard.allowed) {
       if (preflight.guard.message) {
-        promptAction.openToast({ message: preflight.guard.message }).catch((_error: Error) => {})
+        AppPrompt.openToast({ message: preflight.guard.message }).catch((_error: Error) => {})
       }
       return
     }
@@ -2611,8 +2606,7 @@ export struct TopicDetailPage {
         this.confirmReplyModeration(reply, title, verb, preflight.cookie, action, executeAction)
       })
       .catch((error: Error) => {
-        promptAction
-          .openToast({
+        AppPrompt.openToast({
             message: error.message || TopicDetailActionCoordinator.parseActionFailureMessage(verb),
           })
           .catch((_error: Error) => {})
@@ -2656,8 +2650,7 @@ export struct TopicDetailPage {
     this.isModerationActionLoading = true
     executeAction(cookie, action)
       .then(() => {
-        promptAction
-          .openToast({
+        AppPrompt.openToast({
             message: AppStrings.format(
               AppStrings.text($r('app.string.action_done_format'), '{0} done'),
               [verb],
@@ -2667,7 +2660,7 @@ export struct TopicDetailPage {
         this.reloadTopicWithThreadPreload()
       })
       .catch((error: Error) => {
-        promptAction.openToast({ message: translateApiError(error) }).catch((_error: Error) => {})
+        AppPrompt.openToast({ message: translateApiError(error) }).catch((_error: Error) => {})
       })
       .finally(() => {
         this.isModerationActionLoading = false
@@ -2682,11 +2675,10 @@ export struct TopicDetailPage {
     try {
       let data = pasteboard.createData(pasteboard.MIMETYPE_TEXT_PLAIN, content)
       pasteboard.getSystemPasteboard().setDataSync(data)
-      promptAction
-        .openToast({ message: $r('app.string.common_copied') })
+      AppPrompt.openToast({ message: $r('app.string.common_copied') })
         .catch((_error: Error) => {})
     } catch (error) {
-      promptAction.openToast({ message: translateApiError(error) }).catch((_error: Error) => {})
+      AppPrompt.openToast({ message: translateApiError(error) }).catch((_error: Error) => {})
     }
   }
 
@@ -2702,7 +2694,7 @@ export struct TopicDetailPage {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     const want: Want = { action: 'ohos.want.action.viewData', uri: target }
     context.startAbility(want).catch((error: Error) => {
-      promptAction.openToast({ message: translateApiError(error) }).catch((_error: Error) => {})
+      AppPrompt.openToast({ message: translateApiError(error) }).catch((_error: Error) => {})
     })
   }
 
@@ -2739,7 +2731,7 @@ export struct TopicDetailPage {
         previewMode: systemShare.SharePreviewMode.DEFAULT,
       })
       .catch((error: Error) => {
-        promptAction.openToast({ message: translateApiError(error) }).catch((_error: Error) => {})
+        AppPrompt.openToast({ message: translateApiError(error) }).catch((_error: Error) => {})
       })
   }
 

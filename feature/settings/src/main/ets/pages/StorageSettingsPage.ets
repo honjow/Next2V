@@ -1,5 +1,5 @@
+import { AppPrompt } from 'shared'
 import { common } from '@kit.AbilityKit'
-import { promptAction } from '@kit.ArkUI'
 import type {
   BackupEnvelopeV1,
   BackupExportOptions,
@@ -770,7 +770,7 @@ export struct StorageSettingsPage {
   // Import outcomes are shown as a toast, not the export-row subtitle: the user tapped 导入备份, so
   // the result shouldn't land under the unrelated 导出备份 row (export still uses backupMessage there).
   private showBackupToast(message: string): void {
-    promptAction.openToast({ message: message }).catch((_error: Error) => {})
+    AppPrompt.openToast({ message: message }).catch((_error: Error) => {})
   }
 
   private hostContext(): common.UIAbilityContext {

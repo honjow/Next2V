@@ -1,5 +1,5 @@
+import { AppPrompt } from 'shared'
 import { common } from '@kit.AbilityKit'
-import { promptAction } from '@kit.ArkUI'
 import { AccountDetailHeaderCard } from '../components/AccountDashboardComponents'
 import {
   AccountStore,
@@ -462,8 +462,7 @@ export struct AccountDetailPage {
       return
     }
     if (!this.dailyMission || !this.dailyMission.canRedeem || !this.dailyMission.redeemPath) {
-      promptAction
-        .openToast({
+      AppPrompt.openToast({
           message: AppStrings.text(
             $r('app.string.already_checked_in_today'),
             'Already checked in today',
@@ -485,13 +484,13 @@ export struct AccountDetailPage {
                 [`${redeemed.rewardCoins}`],
               )
             : AppStrings.text($r('app.string.checkin_completed'), 'Check-in completed')
-        promptAction.openToast({ message: toastMessage }).catch((_error: Error) => {})
+        AppPrompt.openToast({ message: toastMessage }).catch((_error: Error) => {})
         this.loadAccountMeta()
       })
       .catch((error: Error) => {
         const message = translateApiError(error)
         this.accountMetaError = message
-        promptAction.openToast({ message: message }).catch((_error: Error) => {})
+        AppPrompt.openToast({ message: message }).catch((_error: Error) => {})
       })
       .finally(() => {
         this.isDailyRedeeming = false
@@ -542,7 +541,7 @@ export struct AccountDetailPage {
       })
       .catch((error: Error) => {
         console.error('AccountDetailPage logout failed: ' + error.message)
-        promptAction.openToast({ message: translateApiError(error) }).catch((_error: Error) => {})
+        AppPrompt.openToast({ message: translateApiError(error) }).catch((_error: Error) => {})
       })
       .finally(() => {
         this.isLoggingOut = false

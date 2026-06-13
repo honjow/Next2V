@@ -1,5 +1,5 @@
+import { AppPrompt } from 'shared'
 import { common } from '@kit.AbilityKit'
-import { promptAction } from '@kit.ArkUI'
 import {
   ApiService,
   AppStrings,
@@ -373,7 +373,7 @@ export struct V2exNativeLoginPage {
       return
     }
     this.password = ''
-    promptAction.openToast({ message: $r('app.string.login_success') }).catch((error: Error) => {
+    AppPrompt.openToast({ message: $r('app.string.login_success') }).catch((error: Error) => {
       console.error('openToast failed: ' + error.message)
     })
     try {

@@ -1,3 +1,4 @@
+import { AppPrompt } from 'shared'
 import { common } from '@kit.AbilityKit'
 import type { TabItem } from 'shared'
 import {
@@ -13,7 +14,6 @@ import {
   SecondaryListScaffold,
   ThemeConstants
 } from 'shared'
-import { promptAction } from '@kit.ArkUI'
 import {
   HomeNodeVisibilityButton,
   SettingsDivider,
@@ -176,13 +176,13 @@ export struct HomeNodeSettingsPage {
   private addNodeFeedTab(): void {
     const cleanName = FeedTabSettings.normalizeNodeName(this.nodeTabName)
     if (!cleanName) {
-      promptAction.openToast({ message: AppStrings.text($r('app.string.invalid_node_name'), 'Enter a valid node name') }).catch((_error: Error) => {
+      AppPrompt.openToast({ message: AppStrings.text($r('app.string.invalid_node_name'), 'Enter a valid node name') }).catch((_error: Error) => {
       })
       return
     }
     const nextKeys = FeedTabSettings.addNode(this.feedTabState.feedTabKeys, cleanName)
     if (nextKeys === this.feedTabState.feedTabKeys) {
-      promptAction.openToast({ message: AppStrings.text($r('app.string.node_column_exists'), 'Node column already exists') }).catch((_error: Error) => {
+      AppPrompt.openToast({ message: AppStrings.text($r('app.string.node_column_exists'), 'Node column already exists') }).catch((_error: Error) => {
       })
       return
     }

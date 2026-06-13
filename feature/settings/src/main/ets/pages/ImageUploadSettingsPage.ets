@@ -1,5 +1,5 @@
+import { AppPrompt } from 'shared'
 import { common, Want } from '@kit.AbilityKit'
-import { promptAction } from '@kit.ArkUI'
 import {
   AppStrings,
   AppTextField,
@@ -263,6 +263,6 @@ export struct ImageUploadSettingsPage {
   }
 
   private showToast(message: string): void {
-    promptAction.openToast({ message }).catch((_error: Error) => {})
+    AppPrompt.openToast({ message }).catch((_error: Error) => {})
   }
 }

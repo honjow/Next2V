@@ -1,5 +1,5 @@
+import { AppPrompt } from 'shared'
 import { common } from '@kit.AbilityKit'
-import { promptAction } from '@kit.ArkUI'
 import {
   AppStrings,
   AppModalScaffold,
@@ -898,6 +898,6 @@ export struct NetworkProxySettingsPage {
   }
 
   private showToast(message: string): void {
-    promptAction.openToast({ message }).catch((_error: Error) => {})
+    AppPrompt.openToast({ message }).catch((_error: Error) => {})
   }
 }

@@ -1,7 +1,7 @@
+import { AppPrompt } from 'shared'
 import { common } from '@kit.AbilityKit'
 import { uniformTypeDescriptor as utd } from '@kit.ArkData'
 import { pasteboard } from '@kit.BasicServicesKit'
-import { promptAction } from '@kit.ArkUI'
 import { systemShare } from '@kit.ShareKit'
 import {
   AppStrings,
@@ -221,17 +221,17 @@ export struct DiagnosticsLogPage {
       const data = pasteboard.createData(pasteboard.MIMETYPE_TEXT_PLAIN, text)
       pasteboard.getSystemPasteboard().setDataSync(data)
       DiagnosticLogger.info('diagnostics', 'diagnostics_log_copy_success', { textLength: text.length })
-      promptAction.openToast({ message: successMessage }).catch((_error: Error) => {})
+      AppPrompt.openToast({ message: successMessage }).catch((_error: Error) => {})
     } catch (error) {
       DiagnosticLogger.warn('diagnostics', 'diagnostics_log_copy_error', {}, error as Error)
-      promptAction.openToast({ message: failureMessage }).catch((_toastError: Error) => {})
+      AppPrompt.openToast({ message: failureMessage }).catch((_toastError: Error) => {})
     }
   }
 
   private clearDiagnosticsText(): void {
     DiagnosticsSettings.clearLogs()
     this.refreshLogState()
-    promptAction.openToast({ message: AppStrings.text($r('app.string.boot_records_cleared'), 'This launch record has been cleared') }).catch((_error: Error) => {})
+    AppPrompt.openToast({ message: AppStrings.text($r('app.string.boot_records_cleared'), 'This launch record has been cleared') }).catch((_error: Error) => {})
   }
 
   private logFileTitle(file: DiagnosticsLogFileInfo): ResourceStr {

@@ -1,5 +1,5 @@
+import { AppPrompt } from 'shared'
 import { common } from '@kit.AbilityKit'
-import { promptAction } from '@kit.ArkUI'
 import {
   AccountRateLimitSummary,
   AccountSignedInCard,
@@ -1030,8 +1030,7 @@ export struct AccountDashboardPage {
     }
     if (!this.dailyMission || !this.dailyMission.canRedeem) {
       DiagnosticLogger.info('account', 'account_daily_redeem_skip', { reason: 'not_redeemable' })
-      promptAction
-        .openToast({
+      AppPrompt.openToast({
           message: AppStrings.text(
             $r('app.string.already_checked_in_today'),
             'Already checked in today',
@@ -1063,11 +1062,10 @@ export struct AccountDashboardPage {
               [`${rewardCoins}`],
             )
           : AppStrings.text($r('app.string.checkin_completed'), 'Check-in completed')
-      promptAction.openToast({ message: toastMessage }).catch((_error: Error) => {})
+      AppPrompt.openToast({ message: toastMessage }).catch((_error: Error) => {})
       this.loadAccountMeta(true)
     } else if (status === 'already') {
-      promptAction
-        .openToast({
+      AppPrompt.openToast({
           message: AppStrings.text(
             $r('app.string.already_checked_in_today'),
             'Already checked in today',
@@ -1076,8 +1074,7 @@ export struct AccountDashboardPage {
         .catch((_error: Error) => {})
       this.loadAccountMeta(true)
     } else {
-      promptAction
-        .openToast({
+      AppPrompt.openToast({
           message: AppStrings.text(
             $r('app.string.api_error_checkin_not_available'),
             'Check-in unavailable',

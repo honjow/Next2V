@@ -1,6 +1,6 @@
+import { AppPrompt } from 'shared'
 import { AppStrings } from 'shared'
 import { common } from '@kit.AbilityKit'
-import { promptAction } from '@kit.ArkUI'
 import {
   ApiService,
   CollectionSettings,
@@ -148,8 +148,7 @@ export struct SavedNodesPage {
       .catch((error: Error) => {
         console.error('remove saved node failed: ' + error.message)
         this.loadNodes()
-        promptAction
-          .openToast({ message: AppStrings.text($r('app.string.common_delete_failed'), 'Delete failed') })
+        AppPrompt.openToast({ message: AppStrings.text($r('app.string.common_delete_failed'), 'Delete failed') })
           .catch((_e: Error) => {})
       })
   }
