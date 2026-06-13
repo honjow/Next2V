@@ -600,6 +600,7 @@ struct Base64PopupBadge {
     .bindPopup(this.isPopupVisible, {
       builder: this.Base64PopupContent,
       placement: Placement.Bottom,
+      systemMaterial: AppPrompt.surfaceSystemMaterial(),
       autoCancel: true,
       mask: false,
       enableArrow: true,

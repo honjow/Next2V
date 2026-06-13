@@ -1,4 +1,5 @@
 import { ThemeConstants } from '../theme/ThemeConstants'
+import { AppPrompt } from '../utils/AppPrompt'
 import { LengthMetrics, SegmentButtonV2Items, SymbolGlyphModifier, TabSegmentButtonV2 } from '@kit.ArkUI'
 
 @ComponentV2
@@ -132,6 +133,7 @@ export struct MarkdownToolbar {
     .onClick(() => { this.showImageMenu() })
     .bindMenu(this.imageMenuShown, this.ImageMenu, {
       placement: Placement.BottomLeft,
+      systemMaterial: AppPrompt.surfaceSystemMaterial(),
       aboutToDisappear: () => { this.imageMenuShown = false },
     })
   }

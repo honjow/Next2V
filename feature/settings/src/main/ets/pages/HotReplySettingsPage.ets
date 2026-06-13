@@ -1,5 +1,6 @@
 import { common } from '@kit.AbilityKit'
 import {
+  AppPrompt,
   connectHotReplySettings,
   GroupedListSection,
   HotReplySettings,
@@ -73,6 +74,7 @@ export struct HotReplySettingsPage {
       })
         .bindMenu(this.hotReplyMaxCountMenuShown, this.HotReplyMaxCountMenu, {
           placement: Placement.BottomRight,
+          systemMaterial: AppPrompt.surfaceSystemMaterial(),
           aboutToDisappear: () => {
             this.hotReplyMaxCountMenuShown = false
           },
@@ -88,6 +90,7 @@ export struct HotReplySettingsPage {
       })
         .bindMenu(this.hotReplyMinThanksMenuShown, this.HotReplyMinThanksMenu, {
           placement: Placement.BottomRight,
+          systemMaterial: AppPrompt.surfaceSystemMaterial(),
           aboutToDisappear: () => {
             this.hotReplyMinThanksMenuShown = false
           },

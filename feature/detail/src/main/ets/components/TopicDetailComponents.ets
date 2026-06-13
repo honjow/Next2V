@@ -1,5 +1,6 @@
 import {
   AppModalScaffold,
+  AppPrompt,
   AppStrings,
   Avatar,
   connectLanguageState,
@@ -190,6 +191,7 @@ export struct TopicDetailReplyDivider {
       })
       .bindMenu(this.replyDisplayMenuShown, this.DisplayModeMenu, {
         placement: Placement.BottomRight,
+        systemMaterial: AppPrompt.surfaceSystemMaterial(),
         aboutToDisappear: () => {
           if (this.onReplyDisplayMenuShownChange) {
             this.onReplyDisplayMenuShownChange(false)

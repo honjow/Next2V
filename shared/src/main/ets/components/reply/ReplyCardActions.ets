@@ -2,6 +2,7 @@ import { V2exReply } from '../../network/NetworkTypes'
 import { ThemeConstants } from '../../theme/ThemeConstants'
 import { SymbolGlyphModifier } from '@kit.ArkUI'
 import { AppStrings } from '../../i18n/AppStrings'
+import { AppPrompt } from '../../utils/AppPrompt'
 
 @ComponentV2
 export struct ReplyCardActions {
@@ -206,6 +207,7 @@ export struct ReplyCardActions {
       })
       .bindContextMenu(this.actionsMenuShown, this.ReplyActionMenu, {
         placement: Placement.TopRight,
+        systemMaterial: AppPrompt.surfaceSystemMaterial(),
         aboutToDisappear: () => {
           this.actionsMenuShown = false
         },

@@ -403,9 +403,10 @@ export struct SettingsPage {
         openAction: () => {
           this.showThemeColorMenu()
         },
-      })
+        })
         .bindMenu(this.themeColorMenuShown, this.ThemeColorMenu, {
           placement: Placement.BottomRight,
+          systemMaterial: AppPrompt.surfaceSystemMaterial(),
           aboutToDisappear: () => {
             this.themeColorMenuShown = false
           },
@@ -418,9 +419,10 @@ export struct SettingsPage {
         openAction: () => {
           this.showThemeMenu()
         },
-      })
+        })
         .bindMenu(this.themeMenuShown, this.ThemeModeMenu, {
           placement: Placement.BottomRight,
+          systemMaterial: AppPrompt.surfaceSystemMaterial(),
           aboutToDisappear: () => {
             this.themeMenuShown = false
           },
@@ -433,9 +435,10 @@ export struct SettingsPage {
         openAction: () => {
           this.showImmersiveMaterialMenu()
         },
-      })
+        })
         .bindMenu(this.immersiveMaterialMenuShown, this.ImmersiveMaterialMenu, {
           placement: Placement.BottomRight,
+          systemMaterial: AppPrompt.surfaceSystemMaterial(),
           aboutToDisappear: () => {
             this.immersiveMaterialMenuShown = false
           },
@@ -448,9 +451,10 @@ export struct SettingsPage {
         openAction: () => {
           this.showAvatarAppearanceMenu()
         },
-      })
+        })
         .bindMenu(this.avatarAppearanceMenuShown, this.AvatarAppearanceMenu, {
           placement: Placement.BottomRight,
+          systemMaterial: AppPrompt.surfaceSystemMaterial(),
           aboutToDisappear: () => {
             this.avatarAppearanceMenuShown = false
           },
@@ -463,9 +467,10 @@ export struct SettingsPage {
         openAction: () => {
           this.showLanguageMenu()
         },
-      })
+        })
         .bindMenu(this.languageMenuShown, this.LanguageModeMenu, {
           placement: Placement.BottomRight,
+          systemMaterial: AppPrompt.surfaceSystemMaterial(),
           aboutToDisappear: () => {
             this.languageMenuShown = false
           },
@@ -482,9 +487,10 @@ export struct SettingsPage {
         openAction: () => {
           this.showReplyDisplayMenu()
         },
-      })
+        })
         .bindMenu(this.replyDisplayMenuShown, this.ReplyDisplayModeMenu, {
           placement: Placement.BottomRight,
+          systemMaterial: AppPrompt.surfaceSystemMaterial(),
           aboutToDisappear: () => {
             this.replyDisplayMenuShown = false
           },
@@ -499,9 +505,10 @@ export struct SettingsPage {
         openAction: () => {
           this.showReplyCardStyleMenu()
         },
-      })
+        })
         .bindMenu(this.replyCardStyleMenuShown, this.ReplyCardStyleMenu, {
           placement: Placement.BottomRight,
+          systemMaterial: AppPrompt.surfaceSystemMaterial(),
           aboutToDisappear: () => {
             this.replyCardStyleMenuShown = false
           },
@@ -517,9 +524,10 @@ export struct SettingsPage {
         openAction: () => {
           this.showReplyActionAlignmentMenu()
         },
-      })
+        })
         .bindMenu(this.replyActionAlignmentMenuShown, this.ReplyActionAlignmentMenu, {
           placement: Placement.BottomRight,
+          systemMaterial: AppPrompt.surfaceSystemMaterial(),
           aboutToDisappear: () => {
             this.replyActionAlignmentMenuShown = false
           },
@@ -554,9 +562,10 @@ export struct SettingsPage {
         openAction: () => {
           this.showBase64ModeMenu()
         },
-      })
+        })
         .bindMenu(this.base64ModeMenuShown, this.Base64ModeMenu, {
           placement: Placement.BottomRight,
+          systemMaterial: AppPrompt.surfaceSystemMaterial(),
           aboutToDisappear: () => {
             this.base64ModeMenuShown = false
           },
