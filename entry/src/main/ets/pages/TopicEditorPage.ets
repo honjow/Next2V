@@ -64,7 +64,8 @@ export struct TopicEditorPage {
     builder: LoadingDialog({ content: $r('app.string.editor_submitting') }),
     autoCancel: false,
     alignment: DialogAlignment.Center,
-    customStyle: false
+    customStyle: false,
+    systemMaterial: AppPrompt.dialogSystemMaterial()
   })
 
   // Fill the node field the moment the picker pops back (aboutToAppear does not re-run on pop).

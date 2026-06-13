@@ -15,13 +15,17 @@ export class AppPrompt {
     uiContext: UIContext,
     options: AlertDialogParamWithConfirm | AlertDialogParamWithButtons | AlertDialogParamWithOptions,
   ): void {
-    if (deviceInfo.apiAvailable('26.0.0')) {
-      options.systemMaterial = AppPrompt.dialogMaterial()
+    const material = AppPrompt.dialogSystemMaterial()
+    if (material !== undefined) {
+      options.systemMaterial = material
     }
     uiContext.showAlertDialog(options)
   }
 
-  private static toastMaterial(): uiMaterial.Material | undefined {
+  static dialogSystemMaterial(): uiMaterial.Material | undefined {
+    if (!deviceInfo.apiAvailable('26.0.0')) {
+      return undefined
+    }
     return ImmersiveMaterialSettings.systemMaterial(
       connectImmersiveMaterialSettings().level,
       uiMaterial.ImmersiveStyle.REGULAR,
@@ -29,7 +33,7 @@ export class AppPrompt {
     )
   }
 
-  private static dialogMaterial(): uiMaterial.Material | undefined {
+  private static toastMaterial(): uiMaterial.Material | undefined {
     return ImmersiveMaterialSettings.systemMaterial(
       connectImmersiveMaterialSettings().level,
       uiMaterial.ImmersiveStyle.REGULAR,

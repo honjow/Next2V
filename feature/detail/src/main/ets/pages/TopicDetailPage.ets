@@ -214,6 +214,7 @@ export struct TopicDetailPage {
     autoCancel: false,
     alignment: DialogAlignment.Center,
     customStyle: false,
+    systemMaterial: AppPrompt.dialogSystemMaterial(),
   });
   private jumpFloorDialogController: CustomDialogController = new CustomDialogController({
     builder: CustomContentDialog({
@@ -243,6 +244,7 @@ export struct TopicDetailPage {
     autoCancel: true,
     alignment: DialogAlignment.Center,
     customStyle: false,
+    systemMaterial: AppPrompt.dialogSystemMaterial(),
   });
   private lastReadFloor: number = 0;
   private hasRestoredReadPosition: boolean = false;
