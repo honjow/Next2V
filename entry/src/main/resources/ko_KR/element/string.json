@@ -3229,6 +3229,14 @@
       "value": "출석 완료, 동전 +{0}"
     },
     {
+      "name": "daily_checkin_notify_title",
+      "value": "출석 체크"
+    },
+    {
+      "name": "daily_checkin_failed_toast",
+      "value": "오늘 자동 출석 체크에 실패했습니다. 앱을 열어 직접 체크인하세요"
+    },
+    {
       "name": "common_refresh_failed",
       "value": "새로고침 실패"
     },

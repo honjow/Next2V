@@ -3229,6 +3229,14 @@
       "value": "签到成功，获得 {0} 铜币"
     },
     {
+      "name": "daily_checkin_notify_title",
+      "value": "每日签到"
+    },
+    {
+      "name": "daily_checkin_failed_toast",
+      "value": "今日自动签到未成功,请打开应用手动签到"
+    },
+    {
       "name": "common_refresh_failed",
       "value": "刷新失败"
     },

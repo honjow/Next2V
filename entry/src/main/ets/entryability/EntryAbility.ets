@@ -11,6 +11,7 @@ import {
   LanguageSettings,
   LayoutSafeAreaBridge,
   LocalDataCloudSync,
+  publishAppForeground,
   publishPendingV2exUrl,
   SettingsBootstrap,
   StorageKeys,
@@ -111,6 +112,8 @@ export default class EntryAbility extends UIAbility {
   }
 
   onForeground(): void {
+    // Drives how AutoDailyCheckinService surfaces a result (foreground toast vs background notification).
+    publishAppForeground(true)
     CloudSyncScheduler.rememberContext(this.context)
     if (!CloudSyncSettings.isEnabled()) {
       return
@@ -120,6 +123,10 @@ export default class EntryAbility extends UIAbility {
       return
     }
     CloudSyncScheduler.requestAfterForeground(this.context, 'foreground')
+  }
+
+  onBackground(): void {
+    publishAppForeground(false)
   }
 
   private loadContent(windowStage: window.WindowStage, win: window.Window | null): void {
@@ -197,7 +204,11 @@ export default class EntryAbility extends UIAbility {
     }
   }
 
-  private safeAreaTopHeight(win: window.Window, uiCtx: UIContext, type: window.AvoidAreaType): number {
+  private safeAreaTopHeight(
+    win: window.Window,
+    uiCtx: UIContext,
+    type: window.AvoidAreaType,
+  ): number {
     try {
       return uiCtx.px2vp(win.getWindowAvoidArea(type).topRect.height)
     } catch (_error) {
@@ -205,7 +216,11 @@ export default class EntryAbility extends UIAbility {
     }
   }
 
-  private safeAreaBottomHeight(win: window.Window, uiCtx: UIContext, type: window.AvoidAreaType): number {
+  private safeAreaBottomHeight(
+    win: window.Window,
+    uiCtx: UIContext,
+    type: window.AvoidAreaType,
+  ): number {
     try {
       return uiCtx.px2vp(win.getWindowAvoidArea(type).bottomRect.height)
     } catch (_error) {

@@ -26,6 +26,15 @@ check(!/href=\['"\\]*\[^'"\]\*\\\/mission\\\/daily/.test(parser) && !/href=\['"\
 check(/\\\/mission\\\/daily\\\/redeem\\\?once=\\d\+/.test(parser), 'extractRedeemPath matches the redeem URL pattern anywhere')
 check(/extractLatestDailyReward/.test(parser), 'parser exposes extractLatestDailyReward (for the coin toast)')
 
+// ── parser: already-done detection is STRUCTURAL, not loose substrings ──────────
+// 2026-06-13 false-success: a degraded 200 /mission/daily read carrying neither the redeem token nor the
+// claimed markers was classified already_done off a bare 明天/已完成 substring, so auto check-in persisted
+// success without redeeming and silently burned the streak. Lock the strict claimed-page markers and the
+// absence of the loose tests (scoped to the `const done =` expression so the rationale comment is exempt).
+const doneExpr = parser.match(/const done =[^\n]*/)?.[0] || ''
+check(/每日登录奖励已领取/.test(doneExpr) && /查看我的账户余额/.test(doneExpr), 'already-done detection keys off the structural claimed-page markers')
+check(doneExpr.length > 0 && !/明天/.test(doneExpr) && !/已完成/.test(doneExpr), 'already-done no longer trusts the loose 明天/已完成 substrings (2026-06-13 false-success guard)')
+
 // ── logic: replicate the redeem-path regex and assert it matches the onclick form ──
 function extractRedeemPath(html) {
   const m = html.match(/\/mission\/daily\/redeem\?once=\d+/i)
@@ -68,7 +77,9 @@ check(/interface V2exDailyRedeemResult/.test(types) && /rewardCoins:\s*number/.t
 const api = read('shared/src/main/ets/network/ApiService.ets')
 check(/extractLatestDailyReward/.test(api) && /Promise<V2exDailyRedeemResult>/.test(api), 'redeem fetches /balance reward and returns V2exDailyRedeemResult')
 const auto = read('shared/src/main/ets/services/AutoDailyCheckinService.ets')
-check(/showRewardToast/.test(auto) && /app\.string\.daily_checkin_reward_toast/.test(auto), 'auto check-in toasts the coin reward on success')
+check(/surfaceSuccess/.test(auto) && /app\.string\.daily_checkin_reward_toast/.test(auto), 'auto check-in surfaces the coin reward on success')
+check(/surfaceFailure/.test(auto) && /app\.string\.daily_checkin_failed_toast/.test(auto), 'auto check-in surfaces a manual-checkin prompt when the redeem is blocked (status failed)')
+check(/promptAction\.openToast/.test(auto) && /CheckinNotifier/.test(auto), 'auto check-in surfaces foreground via toast and background via system notification')
 const acc = read('entry/src/main/ets/pages/AccountPage.ets')
 check(/app\.string\.daily_checkin_reward_toast/.test(acc), 'manual check-in (AccountPage) toasts the coin reward')
 const detail = read('entry/src/main/ets/pages/AccountDetailPage.ets')
@@ -76,7 +87,9 @@ check(/app\.string\.daily_checkin_reward_toast/.test(detail), 'manual check-in (
 // i18n key present in all 7 locales
 for (const loc of ['base', 'en_US', 'zh_CN', 'zh_HK', 'zh_TW', 'ja_JP', 'ko_KR']) {
   const json = JSON.parse(read(`entry/src/main/resources/${loc}/element/string.json`))
-  check(json.string.some((s) => s.name === 'daily_checkin_reward_toast'), `i18n: daily_checkin_reward_toast in ${loc}`)
+  for (const key of ['daily_checkin_reward_toast', 'daily_checkin_failed_toast', 'daily_checkin_notify_title']) {
+    check(json.string.some((s) => s.name === key), `i18n: ${key} in ${loc}`)
+  }
 }
 
 // ── redeem goes through a real ArkWeb engine; a headless HTTP redeem cannot pass ──

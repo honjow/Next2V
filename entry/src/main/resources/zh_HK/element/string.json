@@ -3229,6 +3229,14 @@
       "value": "簽到成功，獲得 {0} 銅幣"
     },
     {
+      "name": "daily_checkin_notify_title",
+      "value": "每日簽到"
+    },
+    {
+      "name": "daily_checkin_failed_toast",
+      "value": "今日自動簽到未成功,請開啟應用程式手動簽到"
+    },
+    {
       "name": "common_refresh_failed",
       "value": "刷新失敗"
     },

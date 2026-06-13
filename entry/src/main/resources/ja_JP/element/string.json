@@ -3229,6 +3229,14 @@
       "value": "チェックイン完了、銅貨 +{0}"
     },
     {
+      "name": "daily_checkin_notify_title",
+      "value": "デイリーチェックイン"
+    },
+    {
+      "name": "daily_checkin_failed_toast",
+      "value": "本日の自動チェックインに失敗しました。アプリを開いて手動でチェックインしてください"
+    },
+    {
       "name": "common_refresh_failed",
       "value": "更新に失敗しました"
     },

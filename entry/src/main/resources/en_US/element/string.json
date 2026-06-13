@@ -3229,6 +3229,14 @@
       "value": "Checked in! +{0} bronze"
     },
     {
+      "name": "daily_checkin_notify_title",
+      "value": "Daily check-in"
+    },
+    {
+      "name": "daily_checkin_failed_toast",
+      "value": "Today's auto check-in didn't go through — open the app to check in manually"
+    },
+    {
       "name": "common_refresh_failed",
       "value": "Refresh failed"
     },

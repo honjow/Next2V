@@ -61,8 +61,14 @@ export class V2exAccountParser {
       return { canRedeem: true, redeemPath, message: 'daily_checkin_available' }
     }
     const text = V2exAccountParser.compactText(html)
-    const done =
-      text.indexOf('已领取') >= 0 || text.indexOf('已完成') >= 0 || text.indexOf('明天') >= 0
+    // STRICT already-done detection. A genuine claimed /mission/daily renders the specific "每日登录奖励已领取"
+    // line and a "查看我的账户余额" CTA, and carries no redeem?once= URL. The old loose test (已领取/已完成/明天)
+    // also fired on degraded/anti-bot 200 pages that merely contained one of those words while lacking the
+    // redeem token — so auto check-in wrote a false "already done" success and burned the whole day
+    // (observed 2026-06-13 03:17: a degraded read with neither the redeem token nor the claimed markers was
+    // classified already_done). Anything that is neither claimable nor a structurally-confirmed claimed page
+    // stays 'daily_checkin_unavailable' (transient → retried, never persisted as success).
+    const done = text.indexOf('每日登录奖励已领取') >= 0 || text.indexOf('查看我的账户余额') >= 0
     return {
       canRedeem: false,
       redeemPath: '',
