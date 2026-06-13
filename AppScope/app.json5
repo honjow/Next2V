@@ -6,9 +6,9 @@
     "versionName": "1.0.6",
     "icon": "$media:app_icon_layered",
     "label": "$string:app_name",
-    "targetAPIVersion": 24,
+    "targetAPIVersion": 26,
     "minAPIVersion": 12,
-    "apiReleaseType": "Release24",
+    "apiReleaseType": "Release26",
     "cloudStructuredDataSyncEnabled": true
   }
 }

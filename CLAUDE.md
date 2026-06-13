@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Next2V (repo dir `V2Next`) is a native **HarmonyOS NEXT** third-party V2EX client written in **ArkTS/ArkUI**. It browses, reads, replies to, and manages a V2EX account, parsing V2EX's web pages and JSON APIs into native models.
 
-- SDK: `6.1.1(24)` (HarmonyOS, API 24). DevEco Studio 6.1.1 or compatible.
+- SDK: `26.0.0` (HarmonyOS 26.0.0 Beta1, API 26 Beta1). DevEco command-line tools 26.0.0.461 or compatible.
 - Multi-module Hvigor workspace. Package manager: `ohpm`.
 - This is a HarmonyOS project: **consult the `harmony-next` skill / references for any ArkTS/ArkUI/NDK API, DevEco, `hdc`/`uitest`/`hilog` task** rather than guessing API shapes.
 
