@@ -15,14 +15,14 @@ export class AppPrompt {
     uiContext: UIContext,
     options: AlertDialogParamWithConfirm | AlertDialogParamWithButtons | AlertDialogParamWithOptions,
   ): void {
-    const material = AppPrompt.dialogSystemMaterial()
+    const material = AppPrompt.surfaceSystemMaterial()
     if (material !== undefined) {
       options.systemMaterial = material
     }
     uiContext.showAlertDialog(options)
   }
 
-  static dialogSystemMaterial(): uiMaterial.Material | undefined {
+  static surfaceSystemMaterial(): uiMaterial.Material | undefined {
     if (!deviceInfo.apiAvailable('26.0.0')) {
       return undefined
     }

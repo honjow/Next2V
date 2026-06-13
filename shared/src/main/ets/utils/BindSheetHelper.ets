@@ -1,3 +1,5 @@
+import { AppPrompt } from './AppPrompt'
+
 type SheetDetents = [(SheetSize | Length), (SheetSize | Length)?, (SheetSize | Length)?]
 
 export function defaultSheetOptions(height: SheetSize, onDisappear: () => void, detents?: SheetDetents): SheetOptions {
@@ -9,6 +11,7 @@ export function defaultSheetOptions(height: SheetSize, onDisappear: () => void, 
     blurStyle: BlurStyle.Thick,
     onDisappear: onDisappear,
     keyboardAvoidMode: SheetKeyboardAvoidMode.TRANSLATE_AND_RESIZE,
+    systemMaterial: AppPrompt.surfaceSystemMaterial(),
   }
 }
 
@@ -20,6 +23,7 @@ export function towFASheetOptions(height: SheetSize, onDisappear: () => void): S
     showClose: false,
     blurStyle: BlurStyle.Thick,
     onDisappear: onDisappear,
+    systemMaterial: AppPrompt.surfaceSystemMaterial(),
     // keyboardAvoidMode: SheetKeyboardAvoidMode.TRANSLATE_AND_RESIZE,
   }
 }
