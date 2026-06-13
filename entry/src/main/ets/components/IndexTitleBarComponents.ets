@@ -415,6 +415,7 @@ struct SearchTitleField {
         // System-style trailing "搜索" button (Search's own searchButton property) so SOV2EX can be run
         // without the IME enter key. Tapping it fires onSubmit, same as pressing enter.
         searchButtonText: this.localeAwareText($r('app.string.nav_search'), 'Search'),
+        useSystemMaterial: true,
         onTextChange: (value: string) => {
           // Write-only — must NOT be read back in build() (see fieldText), or every keystroke re-renders here.
           this.actionState.keyword = value

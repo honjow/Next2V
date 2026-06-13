@@ -1,5 +1,7 @@
 import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
+import { uiMaterial } from '@kit.ArkUI'
+import { deviceInfo } from '@kit.BasicServicesKit'
 import { hdsMaterial } from '@kit.UIDesignKit'
 import { StorageKeys } from '../constants/StorageKeys'
 import { connectImmersiveMaterialSettings } from '../state/ImmersiveMaterialSettingsState'
@@ -152,5 +154,38 @@ export class ImmersiveMaterialSettings {
       materialType: hdsMaterial.MaterialType.ADAPTIVE,
       materialLevel: hdsMaterial.MaterialLevel.ADAPTIVE,
     }
+  }
+
+  static systemMaterial(
+    level: string,
+    adaptiveStyle: uiMaterial.ImmersiveStyle,
+    interactive: boolean,
+  ): uiMaterial.Material | undefined {
+    if (!deviceInfo.apiAvailable('26.0.0')) {
+      return undefined
+    }
+    return new uiMaterial.ImmersiveMaterial({
+      style: ImmersiveMaterialSettings.systemMaterialStyle(level, adaptiveStyle),
+      colorInvert: true,
+      applyShadow: true,
+      interactive: interactive,
+    })
+  }
+
+  private static systemMaterialStyle(
+    level: string,
+    adaptiveStyle: uiMaterial.ImmersiveStyle,
+  ): uiMaterial.ImmersiveStyle {
+    const normalized = ImmersiveMaterialSettings.normalizeLevel(level)
+    if (normalized === LEVEL_EXQUISITE) {
+      return uiMaterial.ImmersiveStyle.THIN
+    }
+    if (normalized === LEVEL_GENTLE) {
+      return uiMaterial.ImmersiveStyle.REGULAR
+    }
+    if (normalized === LEVEL_SMOOTH) {
+      return uiMaterial.ImmersiveStyle.THICK
+    }
+    return adaptiveStyle
   }
 }
