@@ -3,6 +3,7 @@ import {
   AccountSessionCoordinator,
   AccountStore,
   AppStrings,
+  AppPrompt,
   ConciseListRow,
   connectNavStack,
   GroupedListSection,
@@ -149,7 +150,7 @@ export struct AccountManagementPage {
   }
 
   private confirmRemoveAccount(record: AccountRecord): void {
-    this.getUIContext().showAlertDialog({
+    AppPrompt.showAlertDialog(this.getUIContext(), {
       title: AccountPageCoordinator.REMOVE_ACCOUNT_TITLE,
       message: AccountPageCoordinator.removeAccountMessage(record.username),
       primaryButton: {

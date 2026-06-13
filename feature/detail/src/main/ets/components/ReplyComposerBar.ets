@@ -579,7 +579,7 @@ export struct ReplyComposerBar {
   }
 
   private promptConfigureHost(): void {
-    this.getUIContext().showAlertDialog({
+    AppPrompt.showAlertDialog(this.getUIContext(), {
       message: AppStrings.text(
         $r('app.string.image_upload_no_clientid'),
         'Configure an image host first',

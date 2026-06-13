@@ -529,7 +529,7 @@ export struct TopicDetailPage {
       return
     }
     const nodeLabel = (this.nodePick.title || '').trim() || node
-    this.getUIContext().showAlertDialog({
+    AppPrompt.showAlertDialog(this.getUIContext(), {
       title: AppStrings.text($r('app.string.topic_action_move'), 'Move topic'),
       message: AppStrings.format(AppStrings.text($r('app.string.topic_move_confirm_format'), 'Move this topic to node「{0}」?'), [nodeLabel]),
       primaryButton: { value: AppStrings.text($r('app.string.common_cancel'), 'Cancel'), action: () => { } },
@@ -2202,7 +2202,7 @@ export struct TopicDetailPage {
 
   private showPreloadConfirmDialog(): void {
     const total = this.v.topic?.replies || 0
-    this.getUIContext().showAlertDialog({
+    AppPrompt.showAlertDialog(this.getUIContext(), {
       title: AppStrings.text($r('app.string.topic_many_replies_title'), 'Many replies'),
       message: AppStrings.format(
         AppStrings.text(
@@ -2246,7 +2246,7 @@ export struct TopicDetailPage {
   }
 
   private confirmTopicThank(cookie: string): void {
-    this.getUIContext().showAlertDialog({
+    AppPrompt.showAlertDialog(this.getUIContext(), {
       title: AppStrings.text($r('app.string.topic_action_thank_topic'), 'Thank topic'),
       message: TopicDetailActionCoordinator.topicThankMessage(this.v.topic?.title || ''),
       autoCancel: false,
@@ -2329,7 +2329,7 @@ export struct TopicDetailPage {
   }
 
   private confirmReplyThank(cookie: string, reply: V2exReply): void {
-    this.getUIContext().showAlertDialog({
+    AppPrompt.showAlertDialog(this.getUIContext(), {
       title: AppStrings.text($r('app.string.reply_thank_title'), 'Thank reply'),
       message: TopicDetailActionCoordinator.replyThankMessage(reply.member.username),
       autoCancel: false,
@@ -2504,7 +2504,7 @@ export struct TopicDetailPage {
       verb,
       this.v.topic?.title || '',
     )
-    this.getUIContext().showAlertDialog({
+    AppPrompt.showAlertDialog(this.getUIContext(), {
       title: dialog.title,
       message: dialog.message,
       primaryButton: { value: dialog.cancelLabel, action: () => {} },
@@ -2625,7 +2625,7 @@ export struct TopicDetailPage {
     executeAction: (cookie: string, action: V2exReplyModerationAction) => Promise<void>,
   ): void {
     const dialog = TopicDetailActionCoordinator.replyModerationConfirmDialog(title, verb, reply)
-    this.getUIContext().showAlertDialog({
+    AppPrompt.showAlertDialog(this.getUIContext(), {
       title: dialog.title,
       message: dialog.message,
       primaryButton: { value: dialog.cancelLabel, action: () => {} },

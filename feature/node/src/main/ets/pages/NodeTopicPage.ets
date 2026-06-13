@@ -409,7 +409,7 @@ export struct NodeTopicPage {
     const verb = this.isSiteNodeFavorited
       ? AppStrings.text($r('app.string.site_favorite_action_unfavorite'), 'Unfavorite')
       : AppStrings.text($r('app.string.site_favorite_action_favorite'), 'Favorite')
-    this.getUIContext().showAlertDialog({
+    AppPrompt.showAlertDialog(this.getUIContext(), {
       title: AppStrings.text($r('app.string.site_favorite_title'), 'Site Favorite'),
       message: title
         ? AppStrings.format(

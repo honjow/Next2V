@@ -616,7 +616,7 @@ export struct UserProfilePage {
     if (!label.id || this.userMarkBusy()) {
       return
     }
-    this.getUIContext().showAlertDialog({
+    AppPrompt.showAlertDialog(this.getUIContext(), {
       title: AppStrings.text($r('app.string.common_delete'), 'Delete'),
       message: AppStrings.format(
         AppStrings.text($r('app.string.confirm_delete_proxy_message'), 'Delete "{0}"?'),

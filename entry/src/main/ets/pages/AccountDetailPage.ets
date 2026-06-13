@@ -502,7 +502,7 @@ export struct AccountDetailPage {
       return
     }
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    this.getUIContext().showAlertDialog({
+    AppPrompt.showAlertDialog(this.getUIContext(), {
       title: AccountPageCoordinator.LOGOUT_TITLE,
       message: AppStrings.text(
         $r('app.string.account_remove_message_arg'),

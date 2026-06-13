@@ -536,7 +536,7 @@ export struct StorageSettingsPage {
 
   private confirmClearCache(): void {
     const copy: StorageConfirmDialogCopy = StorageSettingsCoordinator.clearCacheDialogCopy()
-    this.getUIContext().showAlertDialog({
+    AppPrompt.showAlertDialog(this.getUIContext(), {
       title: copy.title,
       message: copy.message,
       primaryButton: {
@@ -567,7 +567,7 @@ export struct StorageSettingsPage {
 
   private confirmClearLocalData(): void {
     const copy: StorageConfirmDialogCopy = StorageSettingsCoordinator.clearLocalDataDialogCopy()
-    this.getUIContext().showAlertDialog({
+    AppPrompt.showAlertDialog(this.getUIContext(), {
       title: copy.title,
       message: copy.message,
       primaryButton: {
@@ -717,7 +717,7 @@ export struct StorageSettingsPage {
     const preview = BackupService.preview(envelope)
     const copy: StorageConfirmDialogCopy =
       StorageSettingsCoordinator.backupImportPreviewCopy(preview)
-    this.getUIContext().showAlertDialog({
+    AppPrompt.showAlertDialog(this.getUIContext(), {
       title: copy.title,
       message: copy.message,
       primaryButton: { value: copy.cancelValue, action: () => {} },
@@ -737,7 +737,7 @@ export struct StorageSettingsPage {
     const preview = BackupService.preview(this.pendingBackupEnvelope)
     const copy: StorageConfirmDialogCopy =
       StorageSettingsCoordinator.backupImportConfirmDialogCopy(preview)
-    this.getUIContext().showAlertDialog({
+    AppPrompt.showAlertDialog(this.getUIContext(), {
       title: copy.title,
       message: copy.message,
       primaryButton: { value: copy.cancelValue, action: () => {} },

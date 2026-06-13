@@ -531,7 +531,7 @@ export struct TopicEditorPage {
   }
 
   private promptConfigureClientId(): void {
-    this.getUIContext().showAlertDialog({
+    AppPrompt.showAlertDialog(this.getUIContext(), {
       message: AppStrings.text($r('app.string.image_upload_no_clientid'), 'Configure an image host first'),
       primaryButton: { value: AppStrings.text($r('app.string.common_cancel'), 'Cancel'), action: () => { } },
       secondaryButton: {
@@ -659,7 +659,7 @@ export struct TopicEditorPage {
       AppStrings.text($r('app.string.editor_confirm_append_format'), 'Posting a supplement costs at least 20 copper coins (grows with length).\n\nBalance: {0}'),
       [balanceText],
     )
-    this.getUIContext().showAlertDialog({
+    AppPrompt.showAlertDialog(this.getUIContext(), {
       title: AppStrings.text($r('app.string.editor_confirm_append_title'), 'Confirm supplement'),
       message: message,
       primaryButton: { value: AppStrings.text($r('app.string.common_cancel'), 'Cancel'), action: () => { } },
@@ -715,7 +715,7 @@ export struct TopicEditorPage {
     const cleanNode = this.nodeName.trim()
     const cleanTitle = this.title.trim()
     const message = AppStrings.format(AppStrings.text($r('app.string.editor_confirm_post_format'), 'Post《{1}》in node「{0}」?\n\nV2EX posting usually costs at least 20 copper coins and will change your account state.'), [cleanNode, cleanTitle])
-    this.getUIContext().showAlertDialog({
+    AppPrompt.showAlertDialog(this.getUIContext(), {
       title: AppStrings.text($r('app.string.editor_confirm_post_title'), 'Confirm post'),
       message: message,
       primaryButton: { value: AppStrings.text($r('app.string.common_cancel'), 'Cancel'), action: () => { } },

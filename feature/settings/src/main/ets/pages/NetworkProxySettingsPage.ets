@@ -753,7 +753,7 @@ export struct NetworkProxySettingsPage {
     if (!profile) {
       return
     }
-    this.getUIContext().showAlertDialog({
+    AppPrompt.showAlertDialog(this.getUIContext(), {
       title: AppStrings.text($r('app.string.delete_proxy'), 'Delete proxy'),
       message: AppStrings.format(AppStrings.text($r('app.string.confirm_delete_proxy_message'), 'Delete “{0}”?'), [this.profileTitle(profile)]),
       primaryButton: { value: AppStrings.text($r('app.string.common_cancel'), 'Cancel'), action: () => { } },

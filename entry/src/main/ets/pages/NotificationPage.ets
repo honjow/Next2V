@@ -396,7 +396,7 @@ export struct NotificationPage {
     if (id <= 0 || this.pendingNotificationDeletes.has(id)) {
       return
     }
-    this.getUIContext().showAlertDialog({
+    AppPrompt.showAlertDialog(this.getUIContext(), {
       title: AppStrings.text($r('app.string.notification_delete_title'), 'Delete notification'),
       message: AppStrings.text($r('app.string.notification_delete_confirm'), 'Delete this notification?'),
       primaryButton: {

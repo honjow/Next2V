@@ -1,6 +1,7 @@
 import { common } from '@kit.AbilityKit'
 import {
   AppStrings,
+  AppPrompt,
   connectReadingSettings,
   ReadingSettings,
   ReadingSettingsState,
@@ -72,7 +73,7 @@ export struct ReadingSettingsPage {
   }
 
   private confirmResetReadingSettings(): void {
-    this.getUIContext().showAlertDialog({
+    AppPrompt.showAlertDialog(this.getUIContext(), {
       title: AppStrings.text($r('app.string.restore_reading_scale_title'), 'Restore default reading text scale'),
       message: AppStrings.text($r('app.string.restore_reading_scale_message'), 'Restore text scale to the default value. Continue?'),
       primaryButton: {
