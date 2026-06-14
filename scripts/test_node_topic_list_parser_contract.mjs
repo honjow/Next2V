@@ -161,5 +161,20 @@ assert.match(
   /shouldShowLastReplyUser\(\)/,
   'TopicCard must only render the last-reply username when real last_reply_by data exists',
 )
+assert.match(
+  topicCardSource,
+  /private metaTime\(\): number[\s\S]*if \(this\.item\.replies > 0\)[\s\S]*return this\.item\.created > 0 \? this\.item\.created : \(this\.item\.last_touched > 0 \? this\.item\.last_touched : this\.item\.last_modified\)/,
+  'TopicCard must use the topic created time for zero-reply topics instead of leaving the meta time blank',
+)
+assert.match(
+  topicCardSource,
+  /private shouldShowMetaLabel\(\): boolean[\s\S]*return this\.metaTimestamp > 0 \|\| this\.item\.replies > 0/,
+  'TopicCard must not label zero-reply topic creation time as a last reply',
+)
+assert.match(
+  topicCardSource,
+  /private shouldShowLastReplyUser\(\): boolean[\s\S]*this\.item\.replies > 0[\s\S]*this\.lastReplyUsername\(\)\.length > 0/,
+  'TopicCard must not render a last-reply user for zero-reply topics',
+)
 
 console.log('node topic list parser contract passed')

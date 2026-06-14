@@ -69,10 +69,12 @@ export struct TopicCard {
       .width('100%')
 
       Row({ space: ThemeConstants.SPACE_XS }) {
-        if (this.item.replies > 0 || this.metaTimestamp > 0) {
-          Text(this.localeAwareResource(this.metaLabel))
-            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
-            .fontColor($r('sys.color.font_secondary'))
+        if (this.shouldShowMeta()) {
+          if (this.shouldShowMetaLabel()) {
+            Text(this.localeAwareResource(this.metaLabel))
+              .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+              .fontColor($r('sys.color.font_secondary'))
+          }
           if (this.shouldShowLastReplyUser()) {
             Text(this.lastReplyUsername())
               .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
@@ -83,7 +85,7 @@ export struct TopicCard {
               .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
               .fontColor($r('sys.color.font_secondary'))
           }
-          TimeAgo({ timestamp: this.metaTimestamp > 0 ? this.metaTimestamp : this.item.last_touched })
+          TimeAgo({ timestamp: this.metaTime() })
           if (this.showReplyCount) {
             Text('·')
               .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
@@ -130,8 +132,26 @@ export struct TopicCard {
     return (this.item.last_reply_by || '').trim()
   }
 
+  private metaTime(): number {
+    if (this.metaTimestamp > 0) {
+      return this.metaTimestamp
+    }
+    if (this.item.replies > 0) {
+      return this.item.last_touched > 0 ? this.item.last_touched : (this.item.last_modified > 0 ? this.item.last_modified : this.item.created)
+    }
+    return this.item.created > 0 ? this.item.created : (this.item.last_touched > 0 ? this.item.last_touched : this.item.last_modified)
+  }
+
+  private shouldShowMeta(): boolean {
+    return this.metaTime() > 0
+  }
+
+  private shouldShowMetaLabel(): boolean {
+    return this.metaTimestamp > 0 || this.item.replies > 0
+  }
+
   private shouldShowLastReplyUser(): boolean {
-    return this.metaTimestamp <= 0 && this.lastReplyUsername().length > 0
+    return this.metaTimestamp <= 0 && this.item.replies > 0 && this.lastReplyUsername().length > 0
   }
 
   @Builder
