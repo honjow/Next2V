@@ -2,7 +2,11 @@ import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
 import { StorageKeys } from '../constants/StorageKeys'
 import { DiagnosticLogger } from '../diagnostics/DiagnosticLogger'
-import { STORE_NAME_SETTINGS, SettingsPreferencesStore, setAppStorageValue } from './SettingsStorage'
+import {
+  STORE_NAME_SETTINGS,
+  SettingsPreferencesStore,
+  setAppStorageValue,
+} from './SettingsStorage'
 import { connectAutoDailyCheckin } from '../state/AutoDailyCheckinState'
 
 const STORE_NAME: string = STORE_NAME_SETTINGS
@@ -26,9 +30,18 @@ export class AutoDailyCheckinSettings {
     lastSuccessDate: string = '',
   ): void {
     setAppStorageValue<boolean>(StorageKeys.AUTO_DAILY_CHECKIN_ENABLED, enabled)
-    setAppStorageValue<string>(StorageKeys.AUTO_DAILY_CHECKIN_LAST_ATTEMPT_DATE, lastAttemptDate || '')
-    setAppStorageValue<string>(StorageKeys.AUTO_DAILY_CHECKIN_LAST_ATTEMPT_IDENTITY, lastAttemptIdentity || '')
-    setAppStorageValue<string>(StorageKeys.AUTO_DAILY_CHECKIN_LAST_SUCCESS_DATE, lastSuccessDate || '')
+    setAppStorageValue<string>(
+      StorageKeys.AUTO_DAILY_CHECKIN_LAST_ATTEMPT_DATE,
+      lastAttemptDate || '',
+    )
+    setAppStorageValue<string>(
+      StorageKeys.AUTO_DAILY_CHECKIN_LAST_ATTEMPT_IDENTITY,
+      lastAttemptIdentity || '',
+    )
+    setAppStorageValue<string>(
+      StorageKeys.AUTO_DAILY_CHECKIN_LAST_SUCCESS_DATE,
+      lastSuccessDate || '',
+    )
     // V2 mirror dual-write from this single chokepoint; the getters below read the mirror.
     const state = connectAutoDailyCheckin()
     state.enabled = enabled
@@ -64,7 +77,9 @@ export class AutoDailyCheckinSettings {
     }
   }
 
-  static async loadFromStore(store: SettingsPreferencesStore): Promise<AutoDailyCheckinSettingsSnapshot> {
+  static async loadFromStore(
+    store: SettingsPreferencesStore,
+  ): Promise<AutoDailyCheckinSettingsSnapshot> {
     const enabled = store.getSync(KEY_ENABLED, true) as boolean
     const lastAttemptDate = store.getSync(KEY_LAST_ATTEMPT_DATE, '') as string
     const lastAttemptIdentity = store.getSync(KEY_LAST_ATTEMPT_IDENTITY, '') as string
@@ -73,7 +88,7 @@ export class AutoDailyCheckinSettings {
     DiagnosticLogger.info('auto_daily_checkin', 'auto_daily_setting_loaded', {
       enabled: enabled,
       hasLastAttempt: !!lastAttemptDate,
-      hasLastSuccess: !!lastSuccessDate
+      hasLastSuccess: !!lastSuccessDate,
     })
     return {
       enabled: enabled,
@@ -98,7 +113,12 @@ export class AutoDailyCheckinSettings {
       DiagnosticLogger.info('auto_daily_checkin', 'auto_daily_setting_saved', { enabled: enabled })
     } catch (error) {
       const e = error as Error
-      DiagnosticLogger.warn('auto_daily_checkin', 'auto_daily_setting_error', { operation: 'save' }, e)
+      DiagnosticLogger.warn(
+        'auto_daily_checkin',
+        'auto_daily_setting_error',
+        { operation: 'save' },
+        e,
+      )
       throw new Error(e.message || 'Failed to save auto check-in settings')
     }
   }
@@ -120,30 +140,48 @@ export class AutoDailyCheckinSettings {
       store.flushSync()
       DiagnosticLogger.info('auto_daily_checkin', 'auto_daily_attempt_state_saved', {
         date: localDate,
-        hasIdentityFingerprint: !!lastAttemptIdentity
+        hasIdentityFingerprint: !!lastAttemptIdentity,
       })
     } catch (error) {
       const e = error as Error
-      DiagnosticLogger.warn('auto_daily_checkin', 'auto_daily_setting_error', { operation: 'saveLastAttemptDate' }, e)
+      DiagnosticLogger.warn(
+        'auto_daily_checkin',
+        'auto_daily_setting_error',
+        { operation: 'saveLastAttemptDate' },
+        e,
+      )
       throw new Error(e.message || 'Failed to save auto check-in state')
     }
   }
 
-  static async saveLastSuccessDate(context: common.UIAbilityContext, localDate: string): Promise<void> {
+  // Records a confirmed sign-in: the success date AND the account identity that signed (the gate reads both,
+  // so a different account's success on the same day does not suppress this one). lastAttemptDate mirrors
+  // the date for back-compat; the gate no longer reads it.
+  static async saveLastSuccessDate(
+    context: common.UIAbilityContext,
+    localDate: string,
+    identity: string,
+  ): Promise<void> {
     const enabled = AutoDailyCheckinSettings.isEnabled()
-    const lastAttemptIdentity = AutoDailyCheckinSettings.getLastAttemptIdentity()
-    AutoDailyCheckinSettings.apply(enabled, localDate, lastAttemptIdentity, localDate)
+    AutoDailyCheckinSettings.apply(enabled, localDate, identity, localDate)
     try {
       const store = await preferences.getPreferences(context, STORE_NAME)
       store.putSync(KEY_ENABLED, enabled)
       store.putSync(KEY_LAST_ATTEMPT_DATE, localDate)
-      store.putSync(KEY_LAST_ATTEMPT_IDENTITY, lastAttemptIdentity)
+      store.putSync(KEY_LAST_ATTEMPT_IDENTITY, identity)
       store.putSync(KEY_LAST_SUCCESS_DATE, localDate)
       store.flushSync()
-      DiagnosticLogger.info('auto_daily_checkin', 'auto_daily_success_state_saved', { date: localDate })
+      DiagnosticLogger.info('auto_daily_checkin', 'auto_daily_success_state_saved', {
+        date: localDate,
+      })
     } catch (error) {
       const e = error as Error
-      DiagnosticLogger.warn('auto_daily_checkin', 'auto_daily_setting_error', { operation: 'saveLastSuccessDate' }, e)
+      DiagnosticLogger.warn(
+        'auto_daily_checkin',
+        'auto_daily_setting_error',
+        { operation: 'saveLastSuccessDate' },
+        e,
+      )
       throw new Error(e.message || 'Failed to save auto check-in state')
     }
   }
