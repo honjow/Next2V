@@ -79,7 +79,10 @@ check(/extractLatestDailyReward/.test(api) && /Promise<V2exDailyRedeemResult>/.t
 const auto = read('shared/src/main/ets/services/AutoDailyCheckinService.ets')
 check(/surfaceSuccess/.test(auto) && /app\.string\.daily_checkin_reward_toast/.test(auto), 'auto check-in surfaces the coin reward on success')
 check(/surfaceFailure/.test(auto) && /app\.string\.daily_checkin_failed_toast/.test(auto), 'auto check-in surfaces a manual-checkin prompt when the redeem is blocked (status failed)')
-check(/AppPrompt\.openToast/.test(auto) && /CheckinNotifier\.publish/.test(auto), 'auto check-in shows a foreground toast and posts a notification for the actionable (failed) case')
+// The foreground toast moved OUT of the service to the nav shell (Index), which has a reliable UIContext
+// PromptAction — a service-global toast did not render from the nav-shell context (the "no success toast in
+// the foreground" bug). The service now only posts the background notification.
+check(!/AppPrompt\.openToast/.test(auto) && /CheckinNotifier\.publish/.test(auto), 'auto check-in posts the result as a background notification from the service (no service-rendered toast)')
 const acc = read('entry/src/main/ets/pages/AccountPage.ets')
 check(/app\.string\.daily_checkin_reward_toast/.test(acc), 'manual check-in (AccountPage) toasts the coin reward')
 const detail = read('entry/src/main/ets/pages/AccountDetailPage.ets')
@@ -113,6 +116,16 @@ check(fs.existsSync(path.join(REPO, 'shared/src/main/ets/state/WebCheckinRunnerS
 const index = read('entry/src/main/ets/pages/Index.ets')
 check(/DailyCheckinWebRunner/.test(index) && /connectWebCheckinRunner/.test(index),
   'Index mounts the hidden web runner for auto check-in')
+// The nav shell renders the auto check-in result toast through its own UIContext PromptAction (reliable
+// foreground render — fixes "no success toast even in the foreground").
+check(/showAutoCheckinResultToast/.test(index) && /getPromptAction\(\)\s*\.showToast/.test(index),
+  'Index renders the auto check-in result toast via its UIContext PromptAction')
+// After a confirmed auto redeem (success/already), the SERVICE syncs the shared accountMeta to 已签到 so the
+// 我的 card updates without an app restart (the WebView redeem never touches the HTTP-layer cache): an
+// instant holder flip plus an authoritative re-fetch that also refreshes the persisted cache (covers 我的
+// opened AFTER the redeem).
+check(/AccountMetaPublisher\.markDailyRedeemed/.test(auto) && /refreshAccountMetaAfterRedeem/.test(auto) && /AccountMetaPublisher\.publishFetched/.test(auto),
+  'auto service syncs accountMeta to 已签到 after a confirmed redeem (holder flip + authoritative re-fetch)')
 
 for (const f of failures) console.error(`FAIL  ${f}`)
 console.log(`\ndaily check-in contract: ${ok.length} checks passed, ${failures.length} failure(s)`)

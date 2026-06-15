@@ -709,13 +709,49 @@ struct Index {
 
   private onAutoCheckinWebResult(status: string, rewardCoins: number): void {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    // Foreground toast from THIS nav-shell's UIContext (the reliable path the "签到中" toast already uses).
+    this.showAutoCheckinResultToast(status, rewardCoins)
+    // Background notification + the accountMeta 已签到 state sync (so the 我的 card updates without a restart)
+    // are owned by the service.
     AutoDailyCheckinService.handleWebResult(context, status, rewardCoins).catch(
       (_error: Error) => {},
     )
-    if (status === 'success' || status === 'already') {
-      // Refresh the account card so the freshly-claimed balance / 已签到 state shows.
-      this.accountRefreshKey++
+  }
+
+  // Renders the auto check-in outcome as a toast bound to the nav shell's UIContext. A toast posted from the
+  // service's global PromptAction did not reliably render from this context, so the success toast was never
+  // seen even in the foreground. When the app is backgrounded showToast simply no-ops (caught) and the
+  // service's notification carries the result instead.
+  private showAutoCheckinResultToast(status: string, rewardCoins: number): void {
+    let message: string = ''
+    if (status === 'success') {
+      message =
+        rewardCoins > 0
+          ? AppStrings.format(
+              AppStrings.text(
+                $r('app.string.daily_checkin_reward_toast'),
+                'Checked in: +{0} bronze',
+              ),
+              [`${rewardCoins}`],
+            )
+          : AppStrings.text($r('app.string.checkin_completed'), 'Check-in completed')
+    } else if (status === 'already') {
+      message = AppStrings.text(
+        $r('app.string.already_checked_in_today'),
+        'Already checked in today',
+      )
+    } else if (status === 'failed') {
+      message = AppStrings.text(
+        $r('app.string.daily_checkin_failed_toast'),
+        "Today's auto check-in didn't go through — open the app to check in manually",
+      )
     }
+    if (!message) {
+      return
+    }
+    try {
+      this.getUIContext().getPromptAction().showToast({ message: message })
+    } catch (_error) {}
   }
 
   @Builder

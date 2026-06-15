@@ -60,12 +60,16 @@ assert.doesNotMatch(service, /saveLastSuccessDate|saveLastAttemptDate/, 'service
 // HTTP redeem); not redeemable → do nothing.
 assert.match(service, /mission\.canRedeem\s*&&\s*mission\.redeemPath[\s\S]{0,400}?requestWebRedeem\(\)/, 'redeemable → requestWebRedeem')
 assert.match(service, /requestWebRedeem\(\)[\s\S]*?connectWebCheckinRunner\(\)[\s\S]*?requestId\s*=\s*runner\.requestId\s*\+\s*1/, 'requestWebRedeem bumps the runner command bus (requestId)')
-// handleWebResult: success → reward toast; failed → manual-checkin prompt. Neither persists anything.
-assert.match(service, /static async handleWebResult\([\s\S]*?status\s*===\s*'success'[\s\S]{0,200}?surfaceSuccess/, 'handleWebResult shows the reward toast on success')
+// handleWebResult: success → surfaceSuccess (notify if backgrounded); failed → surfaceFailure (always
+// notify). The FOREGROUND toast is rendered by the nav shell (Index) via its own UIContext PromptAction —
+// a toast posted from the service's global PromptAction did not reliably render from the nav-shell context
+// (that was the "no success toast even in the foreground" bug). Neither path persists anything.
+assert.match(service, /static async handleWebResult\([\s\S]*?status\s*===\s*'success'[\s\S]{0,200}?surfaceSuccess/, 'handleWebResult surfaces success on a successful redeem')
 assert.match(service, /status\s*===\s*'failed'[\s\S]{0,160}?surfaceFailure/, 'handleWebResult prompts the user on a failed/walled redeem')
 assert.doesNotMatch(service, /redeemDailyMissionWithCookie/, 'auto service must NOT redeem over HTTP (the anti-bot blocks a headless redeem)')
 assert.match(service, /clean\.length[\s\S]*hash\.toString\(16\)/, 'cookie identity is a length+hash fingerprint, not raw cookie storage')
-assert.match(service, /AppPrompt\.openToast/, 'auto service surfaces a non-blocking reward toast on a successful auto check-in')
+assert.doesNotMatch(service, /AppPrompt\.openToast/, 'auto service no longer renders the toast itself — the nav shell (Index) owns the foreground toast via its UIContext PromptAction; the service only reaches a backgrounded user')
+assert.match(service, /CheckinNotifier\.publish/, 'auto service posts a background notification so a result that lands after the user left the app still surfaces')
 assert.doesNotMatch(service, /AlertDialog\.show/, 'auto service must not block with a dialog')
 
 const startupOrder = [

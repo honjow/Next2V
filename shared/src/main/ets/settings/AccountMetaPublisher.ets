@@ -72,6 +72,33 @@ export class AccountMetaPublisher {
     AccountMetaPublisher.applyToHolder(ownerKey, balance, holder.dailyMission)
   }
 
+  // After a confirmed daily check-in performed by the hidden ArkWeb runner (which redeems through a real Web
+  // engine and so NEVER touches the HTTP-layer accountMeta), flip the live holder's dailyMission to the
+  // claimed state so the 我的 card + 账号 detail page show 已签到 immediately — without a forced re-fetch or
+  // an app restart. Only mutates the holder when it already describes the active account (ownerKey set +
+  // cookie matches); otherwise the holder is empty/foreign and the next authoritative fetch loads the fresh
+  // server state anyway. Balance is left as-is (the just-earned reward refreshes on the next harvest/fetch).
+  static markDailyRedeemed(cookie: string): void {
+    const clean = (cookie || '').trim()
+    if (!clean) {
+      return
+    }
+    const holder = connectAccountMeta()
+    if (!holder.ownerKey || holder.ownerCookieHash !== AccountMetaPublisher.cookieHash(clean)) {
+      return
+    }
+    const mission = holder.dailyMission
+    if (mission && !mission.canRedeem && mission.message === 'already_checked_in_today') {
+      return
+    }
+    const claimed: V2exDailyMission = {
+      canRedeem: false,
+      redeemPath: '',
+      message: 'already_checked_in_today',
+    }
+    AccountMetaPublisher.applyToHolder(holder.ownerKey, holder.balance, claimed)
+  }
+
   private static applyToHolder(
     ownerKey: string,
     balance: V2exBalance | null,
