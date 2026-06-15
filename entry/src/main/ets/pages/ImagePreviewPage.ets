@@ -1,16 +1,19 @@
 import { AppPrompt } from 'shared'
 import { common } from '@kit.AbilityKit'
-import { curves } from '@kit.ArkUI'
+import { curves, uiMaterial } from '@kit.ArkUI'
+import { deviceInfo } from '@kit.BasicServicesKit'
 import { fileIo } from '@kit.CoreFileKit'
 import { photoAccessHelper } from '@kit.MediaLibraryKit'
 import { http } from '@kit.NetworkKit'
 import {
   AppStrings,
   connectImagePreviewAction,
+  connectImmersiveMaterialSettings,
   connectLayoutSafeArea,
   connectNavStack,
   heroIdForUrl,
   ImagePreviewActionState,
+  ImmersiveMaterialSettings,
   LayoutSafeAreaState,
   MediaUrlUtils,
   NetworkProxyRequest,
@@ -553,11 +556,47 @@ export struct ImagePreviewPage {
       // no hit-test passthrough is needed. No explicit back button: swipe-down-to-dismiss and the system back
       // gesture both pop this page. Sibling of the transformed image, so it never pans or zooms with it.
       if (this.normalizedUrl()) {
-        Button({ type: ButtonType.Circle }) {
-          SymbolGlyph($r('sys.symbol.arrow_down_to_line'))
-            .fontSize(22)
-            .fontColor([Color.White])
-        }
+        this.SaveImageButton()
+      }
+    }
+    .width('100%')
+    .height('100%')
+    .backgroundColor(this.backdropColor())
+    .onAreaChange((_oldValue: Area, newValue: Area) => {
+      this.viewportWidth = (newValue?.width as number) || 0
+      this.viewportHeight = (newValue?.height as number) || 0
+    })
+  }
+
+  // The HDS title bar is hidden on this route, so this 40x40 bottom-right control is the only chrome over the
+  // image. .systemMaterial() is an API-26 attribute, so its CALL SITE must sit inside an apiAvailable guard —
+  // an unguarded call risks a crash on the API-23/24 devices this build still targets (compatibleSdkVersion
+  // 6.1.0). Two variants mirror AppSearchField: API 26 → transparent + THIN immersive material (the per-surface
+  // tier for a bottom-floating button, legible over ANY image); pre-26 → the dark translucent circle that kept
+  // the white glyph readable.
+  @Builder
+  SaveImageButton() {
+    if (deviceInfo.apiAvailable('26.0.0')) {
+      Button({ type: ButtonType.Circle }) {
+        this.SaveImageGlyph()
+      }
+        .width(40)
+        .height(40)
+        .backgroundColor(Color.Transparent)
+        .systemMaterial(this.saveButtonMaterial())
+        .enabled(!this.isSaving)
+        .accessibilityText(AppStrings.text($r('app.string.nav_save_image'), 'Save image'))
+        .position({
+          right: ThemeConstants.SPACE_MD,
+          bottom: this.layout.bottomAvoidHeight + ThemeConstants.SPACE_MD,
+        })
+        .onClick(() => {
+          this.saveImage()
+        })
+    } else {
+      Button({ type: ButtonType.Circle }) {
+        this.SaveImageGlyph()
+      }
         .width(40)
         .height(40)
         .backgroundColor('#66000000')
@@ -570,14 +609,24 @@ export struct ImagePreviewPage {
         .onClick(() => {
           this.saveImage()
         })
-      }
     }
-    .width('100%')
-    .height('100%')
-    .backgroundColor(this.backdropColor())
-    .onAreaChange((_oldValue: Area, newValue: Area) => {
-      this.viewportWidth = (newValue?.width as number) || 0
-      this.viewportHeight = (newValue?.height as number) || 0
-    })
+  }
+
+  @Builder
+  SaveImageGlyph() {
+    SymbolGlyph($r('sys.symbol.arrow_down_to_line'))
+      .fontSize(22)
+      .fontColor([Color.White])
+  }
+
+  private saveButtonMaterial(): uiMaterial.Material | undefined {
+    if (deviceInfo.apiAvailable('26.0.0')) {
+      return ImmersiveMaterialSettings.systemMaterial(
+        connectImmersiveMaterialSettings().level,
+        uiMaterial.ImmersiveStyle.THIN,
+        true,
+      )
+    }
+    return undefined
   }
 }
