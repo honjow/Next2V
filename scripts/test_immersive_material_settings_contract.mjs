@@ -40,6 +40,20 @@ assert.match(miniButton, /connectImmersiveMaterialSettings\(\)/, 'HdsMiniBarButt
 assert.match(miniButton, /ImmersiveMaterialSettings\.effect\(this\.immersiveMaterial\.level\)/, 'HdsMiniBarButton material effect comes from setting')
 assert.doesNotMatch(miniButton, /MaterialLevel\.ADAPTIVE/, 'HdsMiniBarButton must not hard-code adaptive material level')
 
+// Per-surface immersive-material tiers follow the HarmonyOS guidance: top-floating search → ULTRA_THIN,
+// arbitrary-position menus/popups → THICK, dialog boxes + semi-modal sheets → ULTRA_THICK. (Dialogs/sheets
+// were REGULAR and read as "too transparent" once API 26 began rendering the material.)
+const appPrompt = read('shared/src/main/ets/utils/AppPrompt.ets')
+const bindSheetHelper = read('shared/src/main/ets/utils/BindSheetHelper.ets')
+const searchField = read('shared/src/main/ets/components/AppSearchField.ets')
+assert.match(appPrompt, /static surfaceSystemMaterial\(\)[\s\S]*?ImmersiveStyle\.THICK/, 'AppPrompt: menu/popup material uses THICK')
+assert.match(appPrompt, /static modalSystemMaterial\(\)[\s\S]*?ImmersiveStyle\.ULTRA_THICK/, 'AppPrompt: dialog/sheet material uses ULTRA_THICK')
+assert.match(appPrompt, /showAlertDialog[\s\S]*?AppPrompt\.modalSystemMaterial\(\)/, 'AppPrompt: alert dialog reads the ULTRA_THICK modal material')
+assert.match(appPrompt, /toastMaterial\(\)[\s\S]*?ImmersiveStyle\.REGULAR/, 'AppPrompt: toast keeps REGULAR')
+assert.match(bindSheetHelper, /AppPrompt\.modalSystemMaterial\(\)/, 'BindSheetHelper: semi-modal sheets read the ULTRA_THICK modal material')
+assert.doesNotMatch(bindSheetHelper, /AppPrompt\.surfaceSystemMaterial\(\)/, 'BindSheetHelper: sheets no longer use the thinner menu material')
+assert.match(searchField, /ImmersiveStyle\.ULTRA_THIN/, 'AppSearchField: top-floating search keeps ULTRA_THIN')
+
 for (const locale of ['base', 'en_US', 'zh_CN', 'zh_HK', 'zh_TW', 'ja_JP', 'ko_KR']) {
   const strings = read(`entry/src/main/resources/${locale}/element/string.json`)
   assert.match(strings, /"name":\s*"immersive_material"/, `${locale}: has immersive material title`)

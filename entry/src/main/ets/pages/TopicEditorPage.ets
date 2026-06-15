@@ -65,7 +65,7 @@ export struct TopicEditorPage {
     autoCancel: false,
     alignment: DialogAlignment.Center,
     customStyle: false,
-    systemMaterial: AppPrompt.surfaceSystemMaterial()
+    systemMaterial: AppPrompt.modalSystemMaterial()
   })
 
   // Fill the node field the moment the picker pops back (aboutToAppear does not re-run on pop).
