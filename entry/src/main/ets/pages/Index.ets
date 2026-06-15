@@ -262,14 +262,16 @@ struct Index {
     this.twoFactorVisible = this.twoFactor.visible
   }
 
-  // Auto check-in just started its web redeem (the service bumped requestId). Pop an immediate "签到中"
-  // toast from HERE — the mounted nav shell with a ready UI window — not from the service, which runs during
-  // startup bootstrap before loadContent, when openToast has no window and silently no-ops.
-  @Monitor('webCheckin.requestId')
-  onAutoCheckinStarted(): void {
-    AppPrompt.openToast({
-      message: AppStrings.text($r('app.string.daily_checking_in'), 'Checking in…'),
-    }).catch((_error: Error) => {})
+  // Pop the "签到中" toast the moment the auto check-in's hidden runner actually starts a run — fired via the
+  // runner's onRunStart (below). The runner reliably starts (its aboutToAppear picks up a trigger bumped
+  // before this shell mounted), and by then a UI window is ready, so this does NOT race the requestId
+  // @Monitor against subscription timing. Bound to this component's UIContext so it renders.
+  private showAutoCheckinToast(): void {
+    try {
+      this.getUIContext()
+        .getPromptAction()
+        .showToast({ message: AppStrings.text($r('app.string.daily_checking_in'), 'Checking in…') })
+    } catch (_error) {}
   }
 
   private setHomeTabScroller(index: number, scroller: Scroller): void {
@@ -693,6 +695,9 @@ struct Index {
       DailyCheckinWebRunner({
         trigger: this.webCheckin.requestId,
         baseUrl: this.webCheckin.baseUrl,
+        onRunStart: () => {
+          this.showAutoCheckinToast()
+        },
         onRunResult: (status: string, rewardCoins: number) => {
           this.onAutoCheckinWebResult(status, rewardCoins)
         },

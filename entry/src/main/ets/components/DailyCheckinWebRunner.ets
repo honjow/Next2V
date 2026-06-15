@@ -16,6 +16,9 @@ export struct DailyCheckinWebRunner {
   @Param baseUrl: string = 'https://www.v2ex.com';
   // status: 'success' (rewardCoins set) | 'already' (already checked in) | 'failed'.
   @Event onRunResult?: (status: string, rewardCoins: number) => void;
+  // Fired the moment a run actually starts (used by the auto path to show the "签到中" toast from the
+  // mounted nav shell, where a UI window is ready).
+  @Event onRunStart?: () => void;
 
   private controller: webview.WebviewController = new webview.WebviewController();
   @Local private active: boolean = false;
@@ -23,13 +26,28 @@ export struct DailyCheckinWebRunner {
   @Local private step: string = 'idle';
   private timeoutId: number = -1;
 
+  aboutToAppear(): void {
+    // The caller may bump `trigger` BEFORE this runner mounts — the auto check-in hands off the redeem
+    // during pre-UI startup, which can land before loadContent. @Monitor('trigger') only fires on a change
+    // AFTER mount, so it would miss that initial value and the redeem (and toast) would never run. Start
+    // from the current value here too.
+    this.maybeStartRun()
+  }
+
   @Monitor('trigger')
   onTriggerChange(): void {
+    this.maybeStartRun()
+  }
+
+  private maybeStartRun(): void {
     if (this.trigger <= 0 || this.active) {
       return
     }
     this.active = true
     this.step = 'pending'
+    if (this.onRunStart) {
+      this.onRunStart()
+    }
     this.armTimeout()
   }
 
