@@ -454,7 +454,7 @@
     },
     {
       "name": "domain_session_hint",
-      "value": "官方鏡像共用登入；自訂域名獨立會話。"
+      "value": "V2EX 域名共用登入；其他自訂域名獨立會話。"
     },
     {
       "name": "domain_required",

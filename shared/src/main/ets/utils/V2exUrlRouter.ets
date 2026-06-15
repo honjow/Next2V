@@ -1,3 +1,5 @@
+import { V2exDomainUtils } from './V2exDomainUtils'
+
 export type V2exRouteKind = 'topic' | 'member' | 'node' | 'search'
 
 export interface V2exRoute {
@@ -104,19 +106,7 @@ export class V2exUrlRouter {
   }
 
   private static isV2exSiteHost(host: string): boolean {
-    if (host === 'v2ex.com' || host === 'www.v2ex.com' || host === 'v2ex.co' || host === 'www.v2ex.co') {
-      return true
-    }
-    const v2exComMirrors = [
-      'edge.v2ex.com',
-      'global.v2ex.com',
-      'fast.v2ex.com',
-      'cn.v2ex.com',
-      'us.v2ex.com',
-      'jp.v2ex.com',
-      'hk.v2ex.com',
-    ]
-    return v2exComMirrors.includes(host)
+    return V2exDomainUtils.isV2exOwnedHost(host)
   }
 
   private static isSitePath(pathWithQueryAndHash: string): boolean {

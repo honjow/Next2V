@@ -1,13 +1,19 @@
 import { common } from '@kit.AbilityKit'
 import { preferences } from '@kit.ArkData'
-import { ApiConstants } from '../constants/ApiConstants'
+import { ApiConstants, type ApiDomainOption } from '../constants/ApiConstants'
 import { StorageKeys } from '../constants/StorageKeys'
 import { HttpClient } from '../network/HttpClient'
-import { STORE_NAME_SETTINGS, SettingsPreferencesStore, setAppStorageValue } from './SettingsStorage'
+import {
+  readJsonArray,
+  STORE_NAME_SETTINGS,
+  SettingsPreferencesStore,
+  setAppStorageValue
+} from './SettingsStorage'
 import { connectApiDomain } from '../state/ApiDomainState'
 
 const STORE_NAME: string = STORE_NAME_SETTINGS
 const KEY_SELECTED_BASE_URL: string = StorageKeys.SELECTED_BASE_URL
+const KEY_CUSTOM_BASE_URLS: string = StorageKeys.CUSTOM_BASE_URLS
 const KEY_USE_CO_DOMAIN: string = StorageKeys.USE_CO_DOMAIN
 
 export interface ApiDomainSnapshot {
@@ -48,6 +54,11 @@ export class ApiDomainSettings {
     return withoutTrailingSlash
   }
 
+  static isPresetBaseUrl(baseUrl: string): boolean {
+    const normalized = ApiDomainSettings.normalizeBaseUrl(baseUrl).toLowerCase()
+    return ApiConstants.PRESET_DOMAINS.some((option: ApiDomainOption) => option.baseUrl.toLowerCase() === normalized)
+  }
+
   static apply(baseUrl: string): void {
     const normalized = ApiDomainSettings.normalizeBaseUrl(baseUrl)
     HttpClient.getInstance().setBaseUrl(normalized)
@@ -71,6 +82,7 @@ export class ApiDomainSettings {
     const selected = store.getSync(KEY_SELECTED_BASE_URL, '') as string
     if (selected) {
       const normalized = ApiDomainSettings.normalizeBaseUrl(selected)
+      ApiDomainSettings.persistCustomBaseUrlInStore(store, normalized)
       ApiDomainSettings.apply(normalized)
       return normalized
     }
@@ -99,10 +111,86 @@ export class ApiDomainSettings {
       const store = await preferences.getPreferences(context, STORE_NAME)
       store.putSync(KEY_SELECTED_BASE_URL, normalized)
       store.deleteSync(KEY_USE_CO_DOMAIN)
+      ApiDomainSettings.persistCustomBaseUrlInStore(store, normalized, false)
       store.flushSync()
     } catch (error) {
       const e = error as Error
       throw new Error(e.message || 'Failed to save V2EX site settings')
     }
+  }
+
+  static async loadCustomBaseUrls(context: common.UIAbilityContext): Promise<string[]> {
+    try {
+      const store = await preferences.getPreferences(context, STORE_NAME)
+      const selected = store.getSync(KEY_SELECTED_BASE_URL, '') as string
+      return ApiDomainSettings.customBaseUrlsFromStore(store, selected)
+    } catch (error) {
+      const e = error as Error
+      throw new Error(e.message || 'Failed to read custom V2EX site settings')
+    }
+  }
+
+  static async saveCustomBaseUrl(context: common.UIAbilityContext, baseUrl: string): Promise<string[]> {
+    const normalized = ApiDomainSettings.normalizeBaseUrl(baseUrl)
+    try {
+      const store = await preferences.getPreferences(context, STORE_NAME)
+      const urls = ApiDomainSettings.persistCustomBaseUrlInStore(store, normalized, false)
+      store.flushSync()
+      return urls
+    } catch (error) {
+      const e = error as Error
+      throw new Error(e.message || 'Failed to save custom V2EX site settings')
+    }
+  }
+
+  static customBaseUrlsFromStore(store: SettingsPreferencesStore, selectedBaseUrl: string = ''): string[] {
+    const urls = ApiDomainSettings.normalizeCustomBaseUrls(readJsonArray<string>(store, KEY_CUSTOM_BASE_URLS, []))
+    const selected = ApiDomainSettings.normalizeBaseUrl(selectedBaseUrl)
+    if (selected && !ApiDomainSettings.isPresetBaseUrl(selected)) {
+      return ApiDomainSettings.ensureCustomBaseUrl(urls, selected)
+    }
+    return urls
+  }
+
+  private static persistCustomBaseUrlInStore(
+    store: SettingsPreferencesStore,
+    baseUrl: string,
+    flush: boolean = true
+  ): string[] {
+    const normalized = ApiDomainSettings.normalizeBaseUrl(baseUrl)
+    const urls = ApiDomainSettings.customBaseUrlsFromStore(store)
+    if (ApiDomainSettings.isPresetBaseUrl(normalized)) {
+      return urls
+    }
+    const next = ApiDomainSettings.ensureCustomBaseUrl(urls, normalized)
+    store.putSync(KEY_CUSTOM_BASE_URLS, JSON.stringify(next))
+    if (flush) {
+      store.flushSync()
+    }
+    return next
+  }
+
+  private static ensureCustomBaseUrl(source: string[], baseUrl: string): string[] {
+    const normalized = ApiDomainSettings.normalizeBaseUrl(baseUrl)
+    const result = ApiDomainSettings.normalizeCustomBaseUrls(source)
+    if (!normalized || ApiDomainSettings.isPresetBaseUrl(normalized)) {
+      return result
+    }
+    if (!result.includes(normalized)) {
+      result.push(normalized)
+    }
+    return result
+  }
+
+  private static normalizeCustomBaseUrls(source: string[]): string[] {
+    const result: string[] = []
+    for (const item of source) {
+      const normalized = ApiDomainSettings.normalizeBaseUrl(item)
+      if (!normalized || ApiDomainSettings.isPresetBaseUrl(normalized) || result.includes(normalized)) {
+        continue
+      }
+      result.push(normalized)
+    }
+    return result
   }
 }

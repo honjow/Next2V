@@ -454,7 +454,7 @@
     },
     {
       "name": "domain_session_hint",
-      "value": "官方鏡像共用登入；自訂網域獨立工作階段。"
+      "value": "V2EX 網域共用登入；其他自訂網域獨立工作階段。"
     },
     {
       "name": "domain_required",

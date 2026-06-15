@@ -286,7 +286,7 @@ export struct V2exNativeLoginPage {
     this.errorMessage = ''
 
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    const baseUrl = this.http.getBaseUrl()
+    const baseUrl = challenge.baseUrl || this.http.getBaseUrl()
 
     this.auth
       .loginWithChallenge(challenge, cleanUsername, pwd, captchaCode)

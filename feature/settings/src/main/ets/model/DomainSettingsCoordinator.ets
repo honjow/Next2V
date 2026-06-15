@@ -6,6 +6,7 @@ import {
   CookieJarSettings,
   HttpClient,
   NetworkProxyRequest,
+  V2exDomainUtils,
   type ApiDomainOption,
   type DomainValidationResult,
 } from 'shared'
@@ -16,8 +17,7 @@ export class DomainSettingsCoordinator {
   }
 
   static hostname(baseUrl: string): string {
-    const normalized = ApiDomainSettings.normalizeBaseUrl(baseUrl)
-    return normalized.replace(/^https:\/\//, '')
+    return V2exDomainUtils.hostForBaseUrl(ApiDomainSettings.normalizeBaseUrl(baseUrl))
   }
 
   static normalizeCustomBaseUrl(input: string): DomainValidationResult {
@@ -41,8 +41,7 @@ export class DomainSettingsCoordinator {
   }
 
   static isV2exOwnedHost(baseUrl: string): boolean {
-    const host = DomainSettingsCoordinator.hostname(baseUrl).toLowerCase()
-    return host === 'v2ex.com' || host.endsWith('.v2ex.com')
+    return V2exDomainUtils.isV2exOwnedHost(DomainSettingsCoordinator.hostname(baseUrl))
   }
 
   static async validateCustomDomain(input: string): Promise<DomainValidationResult> {

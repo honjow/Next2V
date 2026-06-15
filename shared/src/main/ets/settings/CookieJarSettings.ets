@@ -5,6 +5,7 @@ import { ApiConstants } from '../constants/ApiConstants'
 import { DiagnosticLogger } from '../diagnostics/DiagnosticLogger'
 import { StorageKeys } from '../constants/StorageKeys'
 import { HttpClient } from '../network/HttpClient'
+import { V2exDomainUtils } from '../utils/V2exDomainUtils'
 import { ApiDomainSettings } from './ApiDomainSettings'
 import { setAppStorageValue } from './SettingsStorage'
 import { STORE_NAME_COOKIEJAR } from './SettingsStores'
@@ -57,7 +58,7 @@ export class CookieJarSettings {
   static credentialScopeKey(baseUrl: string): string {
     const normalized = CookieJarSettings.normalizeBaseUrl(baseUrl)
     const host = CookieJarSettings.hostForBaseUrl(normalized)
-    if (CookieJarSettings.isV2exOwnedHost(host)) {
+    if (V2exDomainUtils.isV2exOwnedHost(host)) {
       // V2EX mirrors are first-party surfaces for the same account, so they share one
       // auth namespace; custom/non-V2EX hosts stay exact-baseUrl scoped to avoid
       // sending V2EX credentials to arbitrary user-entered servers.
@@ -236,13 +237,7 @@ export class CookieJarSettings {
   }
 
   private static hostForBaseUrl(baseUrl: string): string {
-    const normalized = CookieJarSettings.normalizeBaseUrl(baseUrl)
-    const match = normalized.match(/^https?:\/\/([^\/\s?#]+)/i)
-    return match ? (match[1] || '').toLowerCase() : ''
-  }
-
-  private static isV2exOwnedHost(host: string): boolean {
-    return host === 'v2ex.com' || host.endsWith('.v2ex.com')
+    return V2exDomainUtils.hostForBaseUrl(CookieJarSettings.normalizeBaseUrl(baseUrl))
   }
 
   private static cloneCookieMap(source: Record<string, string>): Record<string, string> {

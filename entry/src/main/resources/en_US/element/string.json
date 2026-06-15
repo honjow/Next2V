@@ -454,7 +454,7 @@
     },
     {
       "name": "domain_session_hint",
-      "value": "Official mirrors share login; custom domains use separate sessions."
+      "value": "V2EX domains share login; other custom domains use separate sessions."
     },
     {
       "name": "domain_required",

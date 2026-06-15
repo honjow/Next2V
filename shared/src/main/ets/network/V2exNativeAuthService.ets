@@ -33,6 +33,7 @@ export interface NativeLoginSnapshot {
 }
 
 export interface NativeLoginChallenge {
+  baseUrl: string
   cookie: string
   usernameField: string
   passwordField: string
@@ -83,6 +84,7 @@ export class V2exNativeAuthService {
     }
 
     return {
+      baseUrl: baseUrl,
       cookie: V2exNativeAuthService.mergeCookieHeader('', getRes.setCookie),
       usernameField: form.usernameField,
       passwordField: form.passwordField,
@@ -107,7 +109,7 @@ export class V2exNativeAuthService {
     password: string,
     captchaCode: string
   ): Promise<NativeLoginSnapshot> {
-    const baseUrl = this.httpClient.getBaseUrl()
+    const baseUrl = challenge.baseUrl || this.httpClient.getBaseUrl()
     const signinUrl = `${baseUrl}/signin`
 
     const pairs: FormPair[] = [
@@ -259,7 +261,8 @@ export class V2exNativeAuthService {
     if (!challenge.captchaUrl) {
       return ''
     }
-    const captchaUrl = V2exNativeAuthService.absoluteUrl(this.httpClient.getBaseUrl(), challenge.captchaUrl)
+    const baseUrl = challenge.baseUrl || this.httpClient.getBaseUrl()
+    const captchaUrl = V2exNativeAuthService.absoluteUrl(baseUrl, challenge.captchaUrl)
     try {
       const response = await NetworkProxyRequest.request(captchaUrl, {
         method: http.RequestMethod.GET,
@@ -267,7 +270,7 @@ export class V2exNativeAuthService {
           'Accept': 'image/avif,image/webp,image/png,image/svg+xml,image/*,*/*;q=0.8',
           'Accept-Encoding': 'gzip',
           'Cookie': challenge.cookie,
-          'Referer': `${this.httpClient.getBaseUrl()}/signin`,
+          'Referer': `${baseUrl}/signin`,
           'User-Agent': 'Mozilla/5.0'
         },
         connectTimeout: CONNECT_TIMEOUT_MS,

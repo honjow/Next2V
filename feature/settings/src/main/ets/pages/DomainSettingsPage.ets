@@ -25,7 +25,11 @@ export struct DomainSettingsPage {
   @Local private customText: string = ''
   @Local private validationMessage: string = ''
   @Local private validating: boolean = false
-  @Local private validatedCustomBaseUrl: string = ''
+  @Local private customBaseUrls: string[] = []
+
+  aboutToAppear(): void {
+    this.loadCustomDomains()
+  }
 
   build() {
     Column() {
@@ -89,7 +93,6 @@ export struct DomainSettingsPage {
           placeholder: 'https://edge.v2ex.com',
           onTextChange: (value: string) => {
             this.customText = value
-            this.validatedCustomBaseUrl = ''
             this.validationMessage = ''
           }
         })
@@ -109,18 +112,23 @@ export struct DomainSettingsPage {
           .fontSize(ThemeConstants.FONT_SIZE_BODY)
           .fontColor(ThemeConstants.BRAND_PRIMARY)
           .onClick(() => { this.validateCustomDomain() })
-        if (this.validatedCustomBaseUrl) {
-          ConciseListRow({
-            title: this.validatedCustomBaseUrl,
-            subtitle: $r('app.string.domain_session_hint'),
-            showChevron: false,
-            prefixBuilderParam: (): void => this.DomainRadio(this.validatedCustomBaseUrl),
-            action: () => { this.selectBaseUrl(this.validatedCustomBaseUrl) },
-          })
-        }
+        ForEach(this.customBaseUrls, (baseUrl: string) => {
+          this.CustomDomainRow(baseUrl)
+        }, (baseUrl: string) => baseUrl)
       }
       .width('100%')
     }
+  }
+
+  @Builder
+  CustomDomainRow(baseUrl: string) {
+    ConciseListRow({
+      title: baseUrl,
+      subtitle: $r('app.string.domain_session_hint'),
+      showChevron: false,
+      prefixBuilderParam: (): void => this.DomainRadio(baseUrl),
+      action: () => { this.selectBaseUrl(baseUrl) },
+    })
   }
 
   private validateCustomDomain(): void {
@@ -133,11 +141,17 @@ export struct DomainSettingsPage {
       .then((result: DomainValidationResult) => {
         this.validating = false
         this.validationMessage = result.message
-        this.validatedCustomBaseUrl = result.ok ? result.baseUrl : ''
+        if (!result.ok) {
+          return Promise.resolve<void>(undefined)
+        }
+        const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+        return ApiDomainSettings.saveCustomBaseUrl(context, result.baseUrl)
+          .then((urls: string[]) => {
+            this.customBaseUrls = urls
+          })
       })
       .catch((error: Error) => {
         this.validating = false
-        this.validatedCustomBaseUrl = ''
         this.validationMessage = error.message || AppStrings.text($r('app.string.domain_validate_failed'), 'Validation failed')
       })
   }
@@ -155,6 +169,17 @@ export struct DomainSettingsPage {
       .catch((error: Error) => {
         console.error('save V2EX site failed: ' + error.message)
         AppPrompt.openToast({ message: AppStrings.text($r('app.string.common_save_failed'), 'Save failed') }).catch((_toastError: Error) => {})
+      })
+  }
+
+  private loadCustomDomains(): void {
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    ApiDomainSettings.loadCustomBaseUrls(context)
+      .then((urls: string[]) => {
+        this.customBaseUrls = urls
+      })
+      .catch((error: Error) => {
+        console.error('load custom V2EX sites failed: ' + error.message)
       })
   }
 }

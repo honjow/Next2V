@@ -454,7 +454,7 @@
     },
     {
       "name": "domain_session_hint",
-      "value": "公式ミラーはログイン共有、カスタムドメインは別セッションです。"
+      "value": "V2EX ドメインはログイン共有、その他のカスタムドメインは別セッションです。"
     },
     {
       "name": "domain_required",

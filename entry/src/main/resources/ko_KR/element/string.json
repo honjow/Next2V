@@ -454,7 +454,7 @@
     },
     {
       "name": "domain_session_hint",
-      "value": "공식 미러는 로그인을 공유하고, 사용자 지정 도메인은 별도 세션을 씁니다."
+      "value": "V2EX 도메인은 로그인을 공유하고, 그 외 사용자 지정 도메인은 별도 세션을 씁니다."
     },
     {
       "name": "domain_required",
