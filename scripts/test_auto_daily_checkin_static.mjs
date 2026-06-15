@@ -63,7 +63,7 @@ assert.doesNotMatch(service, /redeemDailyMissionWithCookie/, 'auto service must 
 assert.match(service, /cookie\.length[\s\S]*hash\.toString\(16\)/, 'cookie identity should be a length+hash fingerprint, not raw cookie storage')
 assert.doesNotMatch(service, /saveLastAttemptDate\(context,\s*today,\s*cleanCookie\)/, 'service must not store the full cookie as the attempt identity')
 assert.match(service, /if\s*\(!mission\.canRedeem\s*\|\|\s*!mission\.redeemPath\)\s*{[\s\S]*?'not-redeemable'/, 'service must not redeem when mission cannot redeem')
-assert.match(service, /promptAction\.openToast/, 'auto service surfaces a non-blocking reward toast on a successful auto check-in')
+assert.match(service, /AppPrompt\.openToast/, 'auto service surfaces a non-blocking reward toast on a successful auto check-in')
 assert.doesNotMatch(service, /AlertDialog\.show/, 'auto service must not block with a dialog')
 
 const startupOrder = [

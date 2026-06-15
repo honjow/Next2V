@@ -79,7 +79,7 @@ check(/extractLatestDailyReward/.test(api) && /Promise<V2exDailyRedeemResult>/.t
 const auto = read('shared/src/main/ets/services/AutoDailyCheckinService.ets')
 check(/surfaceSuccess/.test(auto) && /app\.string\.daily_checkin_reward_toast/.test(auto), 'auto check-in surfaces the coin reward on success')
 check(/surfaceFailure/.test(auto) && /app\.string\.daily_checkin_failed_toast/.test(auto), 'auto check-in surfaces a manual-checkin prompt when the redeem is blocked (status failed)')
-check(/promptAction\.openToast/.test(auto) && /CheckinNotifier/.test(auto), 'auto check-in surfaces foreground via toast and background via system notification')
+check(/AppPrompt\.openToast/.test(auto) && /CheckinNotifier\.publish/.test(auto), 'auto check-in shows a foreground toast and posts a notification for the actionable (failed) case')
 const acc = read('entry/src/main/ets/pages/AccountPage.ets')
 check(/app\.string\.daily_checkin_reward_toast/.test(acc), 'manual check-in (AccountPage) toasts the coin reward')
 const detail = read('entry/src/main/ets/pages/AccountDetailPage.ets')

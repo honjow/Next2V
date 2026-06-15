@@ -214,9 +214,15 @@ export class AutoDailyCheckinService {
     }
   }
 
-  // User-facing feedback for a successful AUTO check-in (it runs post-login with no UI caller that would
-  // otherwise surface it). Shows the 铜币 reward when known, else a plain success.
+  // SUCCESS is the non-actionable case: the day is signed, the account page already shows 已签到, and the
+  // user does not need to act. So we DON'T nag with a notification — just a light foreground toast when
+  // they happen to be looking. (We still bootstrap notification consent here, while foreground, so a later
+  // FAILURE can reach them.) Background success surfaces nothing; the settled 已签到 state is the record.
   private static surfaceSuccess(context: common.UIAbilityContext, rewardCoins: number): void {
+    CheckinNotifier.ensureEnabled(context)
+    if (!connectAppForeground().foreground) {
+      return
+    }
     const text =
       rewardCoins > 0
         ? AppStrings.format(
@@ -224,29 +230,24 @@ export class AutoDailyCheckinService {
             [`${rewardCoins}`],
           )
         : AppStrings.text($r('app.string.checkin_completed'), 'Check-in completed')
-    AutoDailyCheckinService.surface(context, text)
+    AppPrompt.openToast({ message: text }).catch((_error: Error) => {})
   }
 
-  // The redeem was attempted but did not claim (anti-bot wall / nothing claimable). Tell the user so a
-  // silently-broken streak does not go unnoticed; they can open the app and check in manually.
+  // FAILURE is the actionable case: the redeem was attempted but did NOT claim (anti-bot wall / nothing
+  // claimable), so today is still unsigned and the streak is at risk. This must reach the user even if the
+  // app is already backgrounded — so ALWAYS post a persistent, tap-to-open notification (not just a
+  // transient toast). A foreground toast is added on top for immediacy. The notification no-ops only if the
+  // user has denied notification consent.
   private static surfaceFailure(context: common.UIAbilityContext): void {
+    const title = AppStrings.text($r('app.string.daily_checkin_notify_title'), 'Daily check-in')
     const text = AppStrings.text(
       $r('app.string.daily_checkin_failed_toast'),
       "Today's auto check-in didn't go through — open the app to check in manually",
     )
-    AutoDailyCheckinService.surface(context, text)
-  }
-
-  // Foreground → transient toast. Background → system notification (the auto redeem finishes ~10-15s after
-  // launch, often after the user has left, when a toast would never be seen). Requesting notification
-  // consent only happens while foreground (it needs a window), bootstrapping future background results.
-  private static surface(context: common.UIAbilityContext, text: string): void {
+    CheckinNotifier.ensureEnabled(context)
+    CheckinNotifier.publish(title, text)
     if (connectAppForeground().foreground) {
       AppPrompt.openToast({ message: text }).catch((_error: Error) => {})
-      CheckinNotifier.ensureEnabled(context)
-    } else {
-      const title = AppStrings.text($r('app.string.daily_checkin_notify_title'), 'Daily check-in')
-      CheckinNotifier.publish(title, text)
     }
   }
 
