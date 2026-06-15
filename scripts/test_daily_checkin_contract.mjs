@@ -96,12 +96,13 @@ for (const loc of ['base', 'en_US', 'zh_CN', 'zh_HK', 'zh_TW', 'ja_JP', 'ko_KR']
 // V2EX's "请用一个干净安装的浏览器重试" gate blocks a headless HTTP redeem, but a real ArkWeb engine passes
 // it (verified on-device, and by the user checking in one-shot via the in-app WebView while an HTTP redeem
 // kept failing). So AUTO check-in and the AccountPage manual button redeem through the hidden
-// DailyCheckinWebRunner; AccountDetailPage keeps its long-standing HTTP redeem. The day breadcrumb is
-// persisted only on a confirmed claim (handleWebResult), so a failed run retries on the next app open.
+// DailyCheckinWebRunner; AccountDetailPage keeps its long-standing HTTP redeem. The service keeps NO local
+// "signed today" state — V2EX's canRedeem is the source of truth — so a failed/walled run retries next open.
 check(/requestWebRedeem/.test(auto) && /connectWebCheckinRunner/.test(auto),
   'auto check-in hands the redeem off to the hidden web runner')
-check(/handleWebResult/.test(auto), 'auto check-in persists the result via the runner callback (handleWebResult)')
-check(/saveLastSuccessDate/.test(auto), 'auto check-in persists the success breadcrumb on a confirmed claim')
+check(/handleWebResult/.test(auto), 'auto check-in reports the result via the runner callback (handleWebResult)')
+check(!/saveLastSuccessDate/.test(auto) && !/saveLastAttemptDate/.test(auto),
+  'auto check-in persists NO local "signed today" state (V2EX/canRedeem is the source of truth; a walled run retries)')
 check(/checkinTrigger/.test(acc) && /DailyCheckinWebRunner/.test(acc),
   'manual check-in (AccountPage) drives its own hidden web runner')
 check(/redeemDailyMissionWithCookie/.test(detail), 'manual check-in (AccountDetailPage) redeems over HTTP')

@@ -1,7 +1,6 @@
 import { AppPrompt } from '../utils/AppPrompt'
 import { common } from '@kit.AbilityKit'
 import { AutoDailyCheckinSettings } from '../settings/AutoDailyCheckinSettings'
-import { CookieJarSettings } from '../settings/CookieJarSettings'
 import { DiagnosticLogger } from '../diagnostics/DiagnosticLogger'
 import { ApiService } from '../network/ApiService'
 import { HttpClient } from '../network/HttpClient'
@@ -19,14 +18,12 @@ export interface AutoDailyCheckinResult {
 }
 
 /**
- * Auto daily check-in, built around ONE piece of state: "has THIS account already succeeded today?"
- * (lastSuccessDate + identity). The rules:
- *   - Skip only when today is already signed for this account.
- *   - Otherwise actually try: load /mission/daily; if redeemable, hand the redeem to the hidden ArkWeb
- *     runner (V2EX's anti-bot rejects a headless HTTP redeem); record success only when the runner confirms
- *     a real claim (handleWebResult).
- *   - A failed / anti-bot-walled attempt records NOTHING — so the next app open simply tries again (the
- *     wall is intermittent). No "attempted" breadcrumb that could burn the day on a transient failure.
+ * Auto daily check-in. There is NO local "signed today" state — V2EX's /mission/daily is the only source of
+ * truth. Each run just asks it: if it shows a 领取 button (canRedeem) → redeem; otherwise (already signed /
+ * unavailable) → do nothing. A failed / anti-bot-walled redeem records nothing, so the next app open simply
+ * tries again (the wall is intermittent). Persisting a local "signed today" flag was the source of a whole
+ * class of bugs — a stale/false record would block the entire day even while V2EX still said the check-in
+ * was available — and it never belonged here: the server already knows.
  */
 export class AutoDailyCheckinService {
   private static inFlight: boolean = false
@@ -38,8 +35,6 @@ export class AutoDailyCheckinService {
     source: string = 'unknown',
   ): Promise<AutoDailyCheckinResult> {
     const cleanCookie = (cookie || '').trim()
-    const today = AutoDailyCheckinService.localDateString()
-    const identity = AutoDailyCheckinService.cookieAttemptIdentity(cleanCookie)
 
     if (!AutoDailyCheckinSettings.isEnabled()) {
       DiagnosticLogger.info('auto_daily_checkin', 'auto_daily_checkin_skip_disabled', {
@@ -59,22 +54,11 @@ export class AutoDailyCheckinService {
       })
       return AutoDailyCheckinService.result(false, false, 'in-flight', '')
     }
-    // The ONE gate: already signed today for this account → nothing to do. (A failed attempt recorded
-    // nothing, so it is NOT skipped — it retries.)
-    if (AutoDailyCheckinService.isSignedToday(today, identity)) {
-      DiagnosticLogger.info('auto_daily_checkin', 'auto_daily_checkin_skip_signed', {
-        source: source,
-        date: today,
-        identityFingerprint: identity,
-      })
-      return AutoDailyCheckinService.result(false, false, 'already-signed', '')
-    }
 
     AutoDailyCheckinService.inFlight = true
     DiagnosticLogger.info('auto_daily_checkin', 'auto_daily_checkin_attempt_start', {
       source: source,
-      date: today,
-      identityFingerprint: identity,
+      identityFingerprint: AutoDailyCheckinService.cookieAttemptIdentity(cleanCookie),
     })
     try {
       const mission = await AutoDailyCheckinService.api.getDailyMissionWithCookie(cleanCookie)
@@ -86,8 +70,8 @@ export class AutoDailyCheckinService {
       })
 
       if (mission.canRedeem && mission.redeemPath) {
-        // Hand off to the hidden ArkWeb runner. Persist NOTHING here — success is recorded only when
-        // handleWebResult confirms a real claim, so a walled redeem leaves today open for a retry.
+        // V2EX shows a claimable 领取 button → redeem. Hand off to the hidden ArkWeb runner (the anti-bot
+        // rejects a headless HTTP redeem). The runner reports back through handleWebResult.
         DiagnosticLogger.info('auto_daily_checkin', 'auto_daily_checkin_redeem_request', {
           source: source,
         })
@@ -95,23 +79,14 @@ export class AutoDailyCheckinService {
         return AutoDailyCheckinService.result(true, false, 'redeem-requested', mission.message)
       }
 
-      // Not redeemable. Only a DEFINITIVE already-done counts as signed; a degraded / 'unavailable' read
-      // records nothing and retries on the next open.
-      if (AutoDailyCheckinService.isAlreadyDoneMessage(mission.message)) {
-        await AutoDailyCheckinService.markSignedToday(context, today, identity)
-        DiagnosticLogger.info('auto_daily_checkin', 'auto_daily_checkin_not_redeemable', {
-          source: source,
-          alreadyDone: true,
-          messageCode: AutoDailyCheckinService.messageCode(mission.message),
-        })
-        return AutoDailyCheckinService.result(true, false, 'already-signed', mission.message)
-      }
+      // Not claimable — already signed today (done) or a degraded/unavailable read. Either way there is
+      // nothing to do and nothing to persist; the next open re-checks against the server.
       DiagnosticLogger.info('auto_daily_checkin', 'auto_daily_checkin_not_redeemable', {
         source: source,
-        alreadyDone: false,
+        alreadyDone: AutoDailyCheckinService.isAlreadyDoneMessage(mission.message),
         messageCode: AutoDailyCheckinService.messageCode(mission.message),
       })
-      return AutoDailyCheckinService.result(true, false, 'unavailable', mission.message)
+      return AutoDailyCheckinService.result(true, false, 'not-redeemable', mission.message)
     } catch (error) {
       const e = error as Error
       DiagnosticLogger.warn(
@@ -135,8 +110,8 @@ export class AutoDailyCheckinService {
   }
 
   // Called by the nav-shell runner when the hidden Web check-in finishes.
-  //   success / already → record "signed today" (success also shows the reward toast).
-  //   failed            → record NOTHING (so the next open retries the intermittent wall) + tell the user.
+  //   success → show the reward toast.   failed → tell the user (so they can step in; next open retries).
+  //   already → nothing (no toast). Nothing is persisted in any case — the server stays the source of truth.
   static async handleWebResult(
     context: common.UIAbilityContext,
     status: string,
@@ -146,48 +121,11 @@ export class AutoDailyCheckinService {
       status: status,
       rewardCoins: rewardCoins,
     })
-    if (status === 'success' || status === 'already') {
-      const today = AutoDailyCheckinService.localDateString()
-      const identity = AutoDailyCheckinService.cookieAttemptIdentity(
-        CookieJarSettings.getCurrentCookie(),
-      )
-      try {
-        await AutoDailyCheckinService.markSignedToday(context, today, identity)
-      } catch (error) {
-        const e = error as Error
-        DiagnosticLogger.warn(
-          'auto_daily_checkin',
-          'auto_daily_checkin_web_persist_error',
-          { errorKind: e.name || 'Error' },
-          e,
-        )
-      }
-      // Only a real claim ('success') is worth announcing; 'already' fires on every reopen and would be noise.
-      if (status === 'success') {
-        AutoDailyCheckinService.surfaceSuccess(context, rewardCoins)
-      }
-      return
+    if (status === 'success') {
+      AutoDailyCheckinService.surfaceSuccess(context, rewardCoins)
+    } else if (status === 'failed') {
+      AutoDailyCheckinService.surfaceFailure(context)
     }
-    // 'failed' = the Web runner hit V2EX's anti-bot wall / found nothing to claim. Persist nothing; surface
-    // it so the user can step in.
-    AutoDailyCheckinService.surfaceFailure(context)
-  }
-
-  // The single source of truth for "this account is done for today".
-  private static isSignedToday(today: string, identity: string): boolean {
-    return (
-      AutoDailyCheckinSettings.getLastSuccessDate() === today &&
-      AutoDailyCheckinSettings.getLastAttemptIdentity() === identity
-    )
-  }
-
-  // Record a confirmed sign-in for this account today — the ONLY state this service persists.
-  private static async markSignedToday(
-    context: common.UIAbilityContext,
-    today: string,
-    identity: string,
-  ): Promise<void> {
-    await AutoDailyCheckinSettings.saveLastSuccessDate(context, today, identity)
   }
 
   private static isAlreadyDoneMessage(message: string): boolean {
@@ -263,6 +201,7 @@ export class AutoDailyCheckinService {
     }
   }
 
+  // A length+hash fingerprint of the cookie — for the diagnostic log only (never persisted as state).
   private static cookieAttemptIdentity(cookie: string): string {
     const clean = (cookie || '').trim()
     let hash = 2166136261
@@ -271,12 +210,5 @@ export class AutoDailyCheckinService {
       hash = Math.imul(hash, 16777619) >>> 0
     }
     return `${clean.length}:${hash.toString(16)}`
-  }
-
-  private static localDateString(): string {
-    const d = new Date()
-    const month = `${d.getMonth() + 1}`.padStart(2, '0')
-    const day = `${d.getDate()}`.padStart(2, '0')
-    return `${d.getFullYear()}-${month}-${day}`
   }
 }

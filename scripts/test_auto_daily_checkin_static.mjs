@@ -27,10 +27,10 @@ assert.match(settings, /const STORE_NAME:\s*string\s*=\s*STORE_NAME_SETTINGS/, '
 assert.match(settings, /const KEY_ENABLED:\s*string\s*=\s*StorageKeys\.AUTO_DAILY_CHECKIN_ENABLED/, 'helper must persist with the AppStorage key name')
 assert.match(settings, /store\.getSync\(KEY_ENABLED,\s*true\)/, 'setting must default to true when absent')
 assert.match(settings, /setAppStorageValue<boolean>\(StorageKeys\.AUTO_DAILY_CHECKIN_ENABLED,\s*enabled\)/, 'helper must mirror enabled into AppStorage')
-assert.match(settings, /KEY_LAST_ATTEMPT_IDENTITY:\s*string\s*=\s*StorageKeys\.AUTO_DAILY_CHECKIN_LAST_ATTEMPT_IDENTITY/, 'helper must persist a non-cookie attempt identity')
-assert.match(settings, /setAppStorageValue<string>\(\s*StorageKeys\.AUTO_DAILY_CHECKIN_LAST_ATTEMPT_IDENTITY\s*,\s*lastAttemptIdentity\s*\|\|\s*''\s*,?\s*\)/, 'helper must mirror last attempt identity into AppStorage')
-assert.match(settings, /saveLastAttemptDate\(\s*context:\s*common\.UIAbilityContext,\s*localDate:\s*string,\s*lastAttemptIdentity:\s*string,?\s*\)/, 'attempt persistence must include identity')
-assert.match(settings, /store\.putSync\(KEY_LAST_ATTEMPT_IDENTITY,\s*lastAttemptIdentity\)/, 'attempt identity must be persisted')
+// No local "signed today" / "last attempt" state: the settings helper persists ONLY the on/off toggle.
+// V2EX's /mission/daily (canRedeem) is the source of truth, so a stale/false breadcrumb can't block the day.
+assert.doesNotMatch(settings, /saveLastSuccessDate|saveLastAttemptDate/, 'settings must NOT persist any signed-today / last-attempt breadcrumb')
+assert.doesNotMatch(settings, /getLastSuccessDate|getLastAttemptDate|getLastAttemptIdentity/, 'settings must expose no last-attempt / last-success getters')
 assert.match(index, /AutoDailyCheckinSettings/, 'shared barrel must export the settings helper')
 assert.match(index, /AutoDailyCheckinService/, 'shared barrel must export the auto check-in service')
 
@@ -50,24 +50,21 @@ assert.match(settingsPage, /SettingsSaveCoordinator\.saveAutoDailyCheckin\(conte
 assert.match(service, /if\s*\(!AutoDailyCheckinSettings\.isEnabled\(\)\)\s*{[\s\S]*?'disabled'/, 'service must skip when disabled')
 assert.match(service, /if\s*\(!cleanCookie\)\s*{[\s\S]*?'no-cookie'/, 'service must skip without cookie')
 assert.match(service, /if\s*\(AutoDailyCheckinService\.inFlight\)\s*{[\s\S]*?'in-flight'/, 'service must guard concurrent runs')
-assert.match(service, /const\s+identity\s*=\s*AutoDailyCheckinService\.cookieAttemptIdentity\(cleanCookie\)/, 'service must derive a non-cookie identity for the current cookie')
-// The ONE gate: skip ONLY when THIS account already SUCCEEDED today (lastSuccessDate + identity). A
-// failed/anti-bot-walled attempt records nothing, so it is NOT skipped — it retries on the next open.
-assert.match(service, /getLastSuccessDate\(\)\s*===\s*today\s*&&[\s\S]{0,120}?getLastAttemptIdentity\(\)\s*===\s*identity/, 'gate keys off lastSuccessDate + identity (signed today), not an attempt breadcrumb')
-assert.match(service, /isSignedToday\([\s\S]{0,400}?'already-signed'/, 'a signed-today account returns already-signed (no re-attempt)')
-assert.doesNotMatch(service, /saveLastAttemptDate\(/, 'service must NOT write an "attempted" breadcrumb — a walled/failed redeem must not burn the day')
-// Redeemable → hand off to the hidden ArkWeb runner (anti-bot blocks a headless HTTP redeem). Persist
-// NOTHING here; success is recorded only when handleWebResult confirms a real claim, so a walled redeem
-// leaves today open for the next retry.
-assert.match(service, /mission\.canRedeem\s*&&\s*mission\.redeemPath[\s\S]{0,400}?requestWebRedeem\(\)/, 'redeemable → requestWebRedeem (no persistence before the claim)')
+assert.match(service, /cookieAttemptIdentity\(cleanCookie\)/, 'service fingerprints the cookie for the diagnostic log (never persisted as state)')
+// NO local "signed today" gate — the only skips are disabled / no-cookie / in-flight. V2EX's /mission/daily
+// (canRedeem) is asked live each run, so a stale/false local record can no longer block the day. This is
+// the fix for the whole class of "false success persisted -> day blocked" bugs.
+assert.doesNotMatch(service, /getLastSuccessDate|getLastAttemptDate|getLastAttemptIdentity|isSignedToday|markSignedToday/, 'service keeps NO local signed-today state (no date gate, no breadcrumb)')
+assert.doesNotMatch(service, /saveLastSuccessDate|saveLastAttemptDate/, 'service persists NOTHING — a failed/walled redeem must not burn the day')
+// Redeemable (V2EX shows a 领取 button) → hand off to the hidden ArkWeb runner (anti-bot blocks a headless
+// HTTP redeem); not redeemable → do nothing.
+assert.match(service, /mission\.canRedeem\s*&&\s*mission\.redeemPath[\s\S]{0,400}?requestWebRedeem\(\)/, 'redeemable → requestWebRedeem')
 assert.match(service, /requestWebRedeem\(\)[\s\S]*?connectWebCheckinRunner\(\)[\s\S]*?requestId\s*=\s*runner\.requestId\s*\+\s*1/, 'requestWebRedeem bumps the runner command bus (requestId)')
-assert.match(service, /static async handleWebResult\([\s\S]*?status\s*===\s*'success'\s*\|\|\s*status\s*===\s*'already'[\s\S]*?markSignedToday/, 'handleWebResult records signed only on a confirmed claim (success/already)')
-assert.match(service, /markSignedToday\([\s\S]{0,200}?saveLastSuccessDate/, 'markSignedToday persists via saveLastSuccessDate(date, identity)')
-assert.match(service, /handleWebResult\([\s\S]*?surfaceFailure/, "handleWebResult surfaces the actionable failure ('failed') path")
+// handleWebResult: success → reward toast; failed → manual-checkin prompt. Neither persists anything.
+assert.match(service, /static async handleWebResult\([\s\S]*?status\s*===\s*'success'[\s\S]{0,200}?surfaceSuccess/, 'handleWebResult shows the reward toast on success')
+assert.match(service, /status\s*===\s*'failed'[\s\S]{0,160}?surfaceFailure/, 'handleWebResult prompts the user on a failed/walled redeem')
 assert.doesNotMatch(service, /redeemDailyMissionWithCookie/, 'auto service must NOT redeem over HTTP (the anti-bot blocks a headless redeem)')
-assert.match(service, /clean\.length[\s\S]*hash\.toString\(16\)/, 'cookie identity should be a length+hash fingerprint, not raw cookie storage')
-assert.doesNotMatch(service, /saveLastSuccessDate\(context,\s*today,\s*cleanCookie\)/, 'service must not store the full cookie as the identity')
-assert.match(service, /'unavailable'/, 'a degraded/unavailable mission read records nothing (retries next open)')
+assert.match(service, /clean\.length[\s\S]*hash\.toString\(16\)/, 'cookie identity is a length+hash fingerprint, not raw cookie storage')
 assert.match(service, /AppPrompt\.openToast/, 'auto service surfaces a non-blocking reward toast on a successful auto check-in')
 assert.doesNotMatch(service, /AlertDialog\.show/, 'auto service must not block with a dialog')
 
