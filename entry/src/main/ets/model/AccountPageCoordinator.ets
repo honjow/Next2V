@@ -217,7 +217,10 @@ export class AccountPageCoordinator {
     if (isDailyRedeeming) {
       return $r('app.string.daily_checking_in')
     }
-    if (dailyMission && !dailyMission.canRedeem) {
+    // "已签到" ONLY for a CONFIRMED already-done. A degraded/walled read parses as
+    // 'daily_checkin_unavailable' (also canRedeem=false) — keying off !canRedeem made that masquerade as
+    // signed, flipping the button 签到<->已签到 as harvests churned. Such reads now read as 签到.
+    if (dailyMission && dailyMission.message === 'already_checked_in_today') {
       return $r('app.string.daily_checked_in')
     }
     return $r('app.string.daily_checkin')

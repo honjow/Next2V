@@ -853,8 +853,16 @@ export struct AccountDashboardPage {
       return false
     }
     this.accountBalance = this.accountMeta.balance
-    if (this.accountMeta.dailyMission) {
-      this.dailyMission = this.accountMeta.dailyMission
+    const incomingMission = this.accountMeta.dailyMission
+    // A degraded/walled /mission/daily harvest parses as 'daily_checkin_unavailable' (canRedeem=false).
+    // Don't let it overwrite a known-good mission state — that churned the 签到 button (the startup auto
+    // check-in re-harvests /mission/daily several times, some good, some degraded). Keep the last
+    // definitive value; 'daily_checkin_available' / 'already_checked_in_today' still apply.
+    if (
+      incomingMission &&
+      !(incomingMission.message === 'daily_checkin_unavailable' && this.dailyMission)
+    ) {
+      this.dailyMission = incomingMission
     }
     return true
   }
@@ -1031,12 +1039,11 @@ export struct AccountDashboardPage {
     if (!this.dailyMission || !this.dailyMission.canRedeem) {
       DiagnosticLogger.info('account', 'account_daily_redeem_skip', { reason: 'not_redeemable' })
       AppPrompt.openToast({
-          message: AppStrings.text(
-            $r('app.string.already_checked_in_today'),
-            'Already checked in today',
-          ),
-        })
-        .catch((_error: Error) => {})
+        message: AppStrings.text(
+          $r('app.string.already_checked_in_today'),
+          'Already checked in today',
+        ),
+      }).catch((_error: Error) => {})
       return
     }
     // V2EX's anti-bot blocks a headless HTTP redeem (verified on device and by the user: a real Web engine
@@ -1058,7 +1065,10 @@ export struct AccountDashboardPage {
       const toastMessage =
         rewardCoins > 0
           ? AppStrings.format(
-              AppStrings.text($r('app.string.daily_checkin_reward_toast'), 'Checked in: +{0} bronze'),
+              AppStrings.text(
+                $r('app.string.daily_checkin_reward_toast'),
+                'Checked in: +{0} bronze',
+              ),
               [`${rewardCoins}`],
             )
           : AppStrings.text($r('app.string.checkin_completed'), 'Check-in completed')
@@ -1066,21 +1076,19 @@ export struct AccountDashboardPage {
       this.loadAccountMeta(true)
     } else if (status === 'already') {
       AppPrompt.openToast({
-          message: AppStrings.text(
-            $r('app.string.already_checked_in_today'),
-            'Already checked in today',
-          ),
-        })
-        .catch((_error: Error) => {})
+        message: AppStrings.text(
+          $r('app.string.already_checked_in_today'),
+          'Already checked in today',
+        ),
+      }).catch((_error: Error) => {})
       this.loadAccountMeta(true)
     } else {
       AppPrompt.openToast({
-          message: AppStrings.text(
-            $r('app.string.api_error_checkin_not_available'),
-            'Check-in unavailable',
-          ),
-        })
-        .catch((_error: Error) => {})
+        message: AppStrings.text(
+          $r('app.string.api_error_checkin_not_available'),
+          'Check-in unavailable',
+        ),
+      }).catch((_error: Error) => {})
     }
   }
 
