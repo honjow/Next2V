@@ -262,6 +262,16 @@ struct Index {
     this.twoFactorVisible = this.twoFactor.visible
   }
 
+  // Auto check-in just started its web redeem (the service bumped requestId). Pop an immediate "签到中"
+  // toast from HERE — the mounted nav shell with a ready UI window — not from the service, which runs during
+  // startup bootstrap before loadContent, when openToast has no window and silently no-ops.
+  @Monitor('webCheckin.requestId')
+  onAutoCheckinStarted(): void {
+    AppPrompt.openToast({
+      message: AppStrings.text($r('app.string.daily_checking_in'), 'Checking in…'),
+    }).catch((_error: Error) => {})
+  }
+
   private setHomeTabScroller(index: number, scroller: Scroller): void {
     const oldScroller = this.homeTabScrollers[index]
     if (oldScroller === scroller) {
@@ -972,8 +982,7 @@ struct Index {
       .filter((descriptor: TopicDetailTitleActionDescriptor) =>
         this.isTopicActionVisible(descriptor.action, topicId),
       )
-      .map(
-      (descriptor: TopicDetailTitleActionDescriptor) =>
+      .map((descriptor: TopicDetailTitleActionDescriptor) =>
         this.topicActionItem(
           this.topicDetailTitleActionLabel(descriptor, topicId),
           this.topicDetailTitleActionIcon(descriptor.action, topicId),
@@ -981,7 +990,7 @@ struct Index {
             this.sendTopicAction(topicId, descriptor.action)
           },
         ),
-    )
+      )
     let menu: Record<string, Object> = {
       'value': items,
       'maxCount': TopicDetailTitleBarCoordinator.MENU_MAX_COUNT,
@@ -1047,7 +1056,9 @@ struct Index {
   // and the topic is in the append window (>=1800s). Everything else is always visible.
   private isTopicActionVisible(action: TopicDetailTitleAction, topicId: number): boolean {
     if (action === 'appendTopic') {
-      return this.topicDetailOwnership.routeTopicId === topicId && this.topicDetailOwnership.canAppend
+      return (
+        this.topicDetailOwnership.routeTopicId === topicId && this.topicDetailOwnership.canAppend
+      )
     }
     if (action === 'editTopic' || action === 'moveTopic') {
       // Move shares the edit window (author, <600s) — V2EX allows moving a topic's node for 10 min.
@@ -1342,7 +1353,9 @@ struct Index {
   }
 
   private titleBarOptions(): Record<string, Object> {
-    let titleInfo: Record<string, Object> = { 'mainTitle': this.localeAwareResource(this.tabTitles[this.ct]) }
+    let titleInfo: Record<string, Object> = {
+      'mainTitle': this.localeAwareResource(this.tabTitles[this.ct]),
+    }
     let content: Record<string, Object>
     if (this.ct === 0) {
       if (!this.pillBarContent) {
