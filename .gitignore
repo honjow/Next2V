@@ -15,3 +15,7 @@ __pycache__/
 .appanalyzer/
 pet-runs
 .hermes-artifacts
+# Local DevEco/Harmony build profile; may contain signing paths/passwords.
+build-profile.local.json5
+# Legacy migration backup; public config is build-profile.json5.
+build-profile.json5.github
