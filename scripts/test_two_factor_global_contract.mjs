@@ -69,20 +69,33 @@ for (const token of [
   assert(index.includes(token), `Index global 2FA contract missing ${token}`)
 }
 
+const apiService = read('shared/src/main/ets/network/ApiService.ets')
+for (const token of [
+  'assertNoTwoFactorChallenge',
+  'requestTwoFactorChallenge',
+  'TwoFactorChallengeService.request(cleanCookie, path)',
+  "ApiService.isLocationPath(location, '/2fa')",
+  'V2exSigninParser.extractTwoFactorForm(text)',
+  'validateSessionWithCookie',
+]) {
+  assert(apiService.includes(token), `ApiService global 2FA trigger contract missing ${token}`)
+}
+
 for (const rel of [
   'entry/src/main/ets/pages/AccountPage.ets',
   'entry/src/main/ets/pages/MyTopicsPage.ets',
-  'entry/src/main/ets/pages/V2exNativeLoginPage.ets',
+  'entry/src/main/ets/pages/NotificationPage.ets',
 ]) {
   const text = read(rel)
   assert(!text.includes('V2exTwoFactorPrompt'), `${rel} must not own a local 2FA sheet`)
   assert(!text.includes('twoFactorVisible'), `${rel} must not own local twoFactorVisible state`)
   assert(!text.includes('twoFactorCookie'), `${rel} must not own local twoFactorCookie state`)
-  assert(text.includes('TwoFactorChallengeService.request'), `${rel} must publish global 2FA challenge`)
+  assert(!text.includes('TwoFactorChallengeService.request'), `${rel} must not publish 2FA directly; cookie HTML requests trigger globally in ApiService`)
+  assert(text.includes('V2exCookieTwoFactorRequiredError'), `${rel} must still identify cookie 2FA errors for local loading/error state`)
 }
 
-const notificationPage = read('entry/src/main/ets/pages/NotificationPage.ets')
-assert(notificationPage.includes('TwoFactorChallengeService.request'), 'NotificationPage must publish global 2FA challenge')
-assert(notificationPage.includes('V2exCookieTwoFactorRequiredError'), 'NotificationPage must detect cookie 2FA errors')
+const nativeLoginPage = read('entry/src/main/ets/pages/V2exNativeLoginPage.ets')
+assert(!nativeLoginPage.includes('V2exTwoFactorPrompt'), 'native login must not own a local 2FA sheet')
+assert(nativeLoginPage.includes('TwoFactorChallengeService.request'), 'native login may publish the non-cookie-login 2FA challenge')
 
 console.log('global 2fa contract ok')

@@ -72,8 +72,8 @@ export class BackupService {
       schemaVersion: BACKUP_SCHEMA_VERSION,
       minSupportedSchemaVersion: BACKUP_MIN_SUPPORTED_SCHEMA_VERSION,
       createdAt: new Date().toISOString(),
-      appVersion: metadata?.versionName || '1.0.7',
-      appVersionCode: metadata?.versionCode || 20,
+      appVersion: metadata?.versionName || '1.0.9',
+      appVersionCode: metadata?.versionCode || 22,
       sections: sections,
       counts: {
         preferences: BackupPreferencesAdapter.count(preferences),

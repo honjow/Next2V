@@ -58,6 +58,7 @@ import { BlockedListSettings, type BlockedListCaptureSource } from '../settings/
 import { CookieJarSettings } from '../settings/CookieJarSettings'
 import { connectBlockedListStorage } from '../state/BlockedListState'
 import { connectIgnoredNodes } from '../state/IgnoredNodesState'
+import { TwoFactorChallengeService } from '../services/TwoFactorChallengeService'
 
 interface CookieHtmlResponse {
   statusCode: number
@@ -777,6 +778,10 @@ export class ApiService {
       return []
     }
     return this.getTopicsByIds(ids)
+  }
+
+  async validateSessionWithCookie(cookie: string): Promise<string> {
+    return this.getSessionUsernameWithCookie(cookie)
   }
 
   private async getSessionUsernameWithCookie(cookie: string): Promise<string> {
@@ -1826,7 +1831,7 @@ export class ApiService {
       })
     }
     const res = await this.http.getTextResponseWithHeaders(endpoint, requestHeaders)
-    this.assertNoTwoFactorChallenge(endpoint, res.text, res.location)
+    this.assertNoTwoFactorChallenge(endpoint, cookie, res.text, res.location)
     // Real-time balance sync: every signed-in V2EX page carries the top-right #money / balance_area widget,
     // so harvest it here (the one chokepoint for authed HTML) — a feed refresh / opening a topic keeps the
     // account surfaces fresh without a dedicated /balance fetch. Guarded + strict inside the publisher.
@@ -1861,13 +1866,26 @@ export class ApiService {
     return clean.startsWith('/') ? clean : `/${clean}`
   }
 
-  private assertNoTwoFactorChallenge(path: string, text: string, location: string): void {
+  private assertNoTwoFactorChallenge(path: string, cookie: string, text: string, location: string): void {
     if (
       ApiService.isLocationPath(location, '/2fa') ||
       V2exSigninParser.extractTwoFactorForm(text)
     ) {
+      this.requestTwoFactorChallenge(path, cookie, location)
       throw new V2exCookieTwoFactorRequiredError(path)
     }
+  }
+
+  private requestTwoFactorChallenge(path: string, cookie: string, location: string): void {
+    const cleanCookie = (cookie || '').trim()
+    if (!cleanCookie) {
+      return
+    }
+    DiagnosticLogger.warn('network', 'cookie_two_factor_required', {
+      path: path,
+      location: location,
+    })
+    TwoFactorChallengeService.request(cleanCookie, path)
   }
 
   private static isLocationPath(location: string, path: string): boolean {
@@ -1937,6 +1955,7 @@ export class ApiService {
         hasCookie: true,
       })
       if (ApiService.isLocationPath(location, '/2fa')) {
+        this.requestTwoFactorChallenge(clean, cookie, location)
         throw new V2exCookieTwoFactorRequiredError(clean)
       }
       if (statusCode < 200 || statusCode >= 400) {
@@ -2027,7 +2046,7 @@ export class ApiService {
         hasCookie: true,
         bodyLength: text.length,
       })
-      this.assertNoTwoFactorChallenge(clean, text, location)
+      this.assertNoTwoFactorChallenge(clean, cookie, text, location)
       if (statusCode < 200 || statusCode >= 400) {
         // A redirect-driven success (see allowErrorWithLocation): hand the Location back so the
         // caller can extract the created resource instead of mistaking the post for a failure.

@@ -25,7 +25,6 @@ import {
   PullRefreshController,
   PullRefreshListScaffold,
   ThemeConstants,
-  TwoFactorChallengeService,
   V2exCookieTwoFactorRequiredError,
   V2exNotification,
   translateApiError
@@ -655,7 +654,7 @@ export struct NotificationPage {
       const message = err.message || AppStrings.text($r('app.string.notification_load_failed'), 'Notifications load failed')
       this.notificationError = message
       this.notificationHasMore = false
-      this.handleTwoFactorChallenge(err)
+      this.applyTwoFactorError(err)
       this.handleExpiredCookieSession(message)
       this.notificationInitialSettled = true
       throw err
@@ -715,7 +714,7 @@ export struct NotificationPage {
         const message = translateApiError(error)
         this.notificationError = message
         this.notificationHasMore = false
-        this.handleTwoFactorChallenge(error)
+        this.applyTwoFactorError(error)
         this.handleExpiredCookieSession(message)
       })
       .finally(() => {
@@ -943,17 +942,12 @@ export struct NotificationPage {
     }
   }
 
-  private handleTwoFactorChallenge(error: Error): void {
+  private applyTwoFactorError(error: Error): void {
     if (!(error instanceof V2exCookieTwoFactorRequiredError)) {
-      return
-    }
-    const cookie = CookieJarSettings.getCurrentCookie()
-    if (!cookie) {
       return
     }
     this.notificationError = AppStrings.text($r('app.string.two_factor_required'), 'V2EX requires two-factor verification')
     DiagnosticLogger.warn('notification', 'notification_two_factor_required', { source: this.notificationVm.sourceKeyFor(this.notificationAuthContext()) })
-    TwoFactorChallengeService.request(cookie, 'notification')
   }
 
   private handleExpiredCookieSession(message: string): void {

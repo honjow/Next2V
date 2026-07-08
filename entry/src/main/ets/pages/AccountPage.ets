@@ -16,7 +16,6 @@ import {
   translateApiError,
   ApiError,
   ApiErrorCode,
-  ApiErrors,
   isApiError,
 } from 'shared'
 import { AccountStore } from 'shared'
@@ -55,11 +54,8 @@ import {
   SecondaryListScaffold,
   SectionHeader as SharedSectionHeader,
   ThemeConstants,
-  TwoFactorChallengeService,
   UserProfileParams,
   V2exCookieTwoFactorRequiredError,
-  V2exSessionParser,
-  V2exSigninParser,
 } from 'shared'
 import { AccountLocalContentCoordinator } from '../model/AccountLocalContentCoordinator'
 import { AccountPageCoordinator } from '../model/AccountPageCoordinator'
@@ -673,17 +669,9 @@ export struct AccountDashboardPage {
       force: force,
       usernameHash: DiagnosticLogger.ownerHash(this.currentUsername()),
     })
-    const headers: Record<string, string> = { 'Cookie': cookie }
-    this.http
-      .getTextResponseWithHeaders('/settings', headers)
-      .then((res) => {
-        if (res.location.indexOf('/2fa') >= 0 || V2exSigninParser.extractTwoFactorForm(res.text)) {
-          throw new V2exCookieTwoFactorRequiredError('/settings')
-        }
-        const username = V2exSessionParser.extractUsername(res.text)
-        if (!username) {
-          throw ApiErrors.webSessionExpired()
-        }
+    this.api
+      .validateSessionWithCookie(cookie)
+      .then((username: string) => {
         return this.api.getMember(username).then((profile) => {
           const context = this.getUIContext().getHostContext() as common.UIAbilityContext
           return AuthSessionSettings.save(context, {
@@ -703,7 +691,7 @@ export struct AccountDashboardPage {
       })
       .catch((error: Error) => {
         if (error instanceof V2exCookieTwoFactorRequiredError) {
-          this.openTwoFactorFromCookie()
+          this.applyTwoFactorSessionError()
           return
         }
         DiagnosticLogger.warn(
@@ -738,16 +726,8 @@ export struct AccountDashboardPage {
       })
   }
 
-  private openTwoFactorFromCookie(): void {
-    const cookie = CookieJarSettings.getCurrentCookie()
+  private applyTwoFactorSessionError(): void {
     DiagnosticLogger.warn('account', 'account_session_two_factor_required', {})
-    if (!cookie) {
-      this.sessionError = AppStrings.text(
-        $r('app.string.two_factor_relogin_required'),
-        'V2EX requires two-factor verification. Please sign in again',
-      )
-      return
-    }
     this.sessionError = AppStrings.text(
       $r('app.string.two_factor_required'),
       'V2EX requires two-factor verification',
@@ -756,7 +736,6 @@ export struct AccountDashboardPage {
       $r('app.string.two_factor_required'),
       'V2EX requires two-factor verification',
     )
-    TwoFactorChallengeService.request(cookie, 'account')
   }
 
   private refreshAuthProfile(token: string): void {
@@ -1015,7 +994,7 @@ export struct AccountDashboardPage {
           return
         }
         if (error instanceof V2exCookieTwoFactorRequiredError) {
-          this.openTwoFactorFromCookie()
+          this.applyTwoFactorSessionError()
           return
         }
         DiagnosticLogger.warn('account', 'account_meta_fetch_error', { force: force }, error)

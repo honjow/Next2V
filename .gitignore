@@ -9,6 +9,7 @@ __pycache__/
 *.signed.hap
 .env.local
 .claude/
+.codex
 .cursor/skills/
 .opencode/
 .idea/

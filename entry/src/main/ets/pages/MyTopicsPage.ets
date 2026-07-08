@@ -8,7 +8,6 @@ import {
   PageLoginRequiredState,
   PagedListScaffold,
   TopicCard,
-  TwoFactorChallengeService,
   translateApiError,
   type TopicDetailParams,
   type V2exTopic,
@@ -121,7 +120,9 @@ export struct MyTopicsPage {
       })
       .catch((error: Error) => {
         if (error instanceof V2exCookieTwoFactorRequiredError) {
-          this.openTwoFactorFromCookie()
+          this.errorMessage = AppStrings.text($r('app.string.two_factor_required'), 'V2EX requires two-factor verification')
+          this.topics = []
+          this.hasMore = false
           return
         }
         this.errorMessage = translateApiError(error)
@@ -136,16 +137,6 @@ export struct MyTopicsPage {
         this.isLoading = false
         this.refreshGuard = false
       })
-  }
-
-  private openTwoFactorFromCookie(): void {
-    const cookie = CookieJarSettings.getCurrentCookie()
-    if (!cookie) {
-      this.errorMessage = AppStrings.text($r('app.string.two_factor_relogin_required'), 'V2EX requires two-factor verification. Please sign in again')
-      return
-    }
-    this.errorMessage = AppStrings.text($r('app.string.two_factor_required'), 'V2EX requires two-factor verification')
-    TwoFactorChallengeService.request(cookie, 'myTopics')
   }
 
   private loadMore(): void {
@@ -170,7 +161,7 @@ export struct MyTopicsPage {
       .catch((error: Error) => {
         this.hasMore = false
         if (error instanceof V2exCookieTwoFactorRequiredError) {
-          this.openTwoFactorFromCookie()
+          this.errorMessage = AppStrings.text($r('app.string.two_factor_required'), 'V2EX requires two-factor verification')
           return
         }
         AppPrompt.openToast({ message: translateApiError(error) }).catch((_error: Error) => {
