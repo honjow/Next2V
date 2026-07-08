@@ -1,14 +1,17 @@
 import { http } from '@kit.NetworkKit'
 import util from '@ohos.util'
+import { ApiConstants } from '../constants/ApiConstants'
 import { HttpClient } from './HttpClient'
 import { NetworkProxyRequest } from './NetworkProxyRequest'
 import { V2exSigninParser } from '../parser/V2exSigninParser'
 import { V2exSessionParser } from '../parser/V2exSessionParser'
 import { ApiErrors } from './ApiError'
+import { V2exDomainUtils } from '../utils/V2exDomainUtils'
 
 const CONNECT_TIMEOUT_MS: number = 10000
 const READ_TIMEOUT_MS: number = 15000
 const DEBUG_SKIP_LOGIN_2FA: boolean = false
+const BROWSER_USER_AGENT: string = 'Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36'
 
 interface TextWithSetCookie {
   text: string
@@ -64,9 +67,10 @@ export class V2exNativeAuthService {
   private httpClient: HttpClient = HttpClient.getInstance()
   private static readonly TWO_FACTOR_PATH: string = '/2fa'
   private static readonly SETTINGS_PATH: string = '/settings'
+  private static readonly TWO_FACTOR_VERIFY_PATH: string = '/balance'
 
   async prepareLogin(): Promise<NativeLoginChallenge> {
-    const baseUrl = this.httpClient.getBaseUrl()
+    const baseUrl = V2exNativeAuthService.authBaseUrlFor(this.httpClient.getBaseUrl())
     const signinUrl = `${baseUrl}/signin`
 
     const getRes = await this.requestText(signinUrl, http.RequestMethod.GET, '')
@@ -196,23 +200,26 @@ export class V2exNativeAuthService {
     if (!cleanCookie) {
       throw ApiErrors.loginSessionMissing()
     }
-    const twoFactorUrl = `${this.httpClient.getBaseUrl()}${V2exNativeAuthService.TWO_FACTOR_PATH}`
+    const cleanCode = V2exNativeAuthService.normalizeTwoFactorCode(code)
+    const authBaseUrl = V2exNativeAuthService.authBaseUrlFor(this.httpClient.getBaseUrl())
+    const twoFactorUrl = `${authBaseUrl}${V2exNativeAuthService.TWO_FACTOR_PATH}`
     const getRes = await this.requestText(twoFactorUrl, http.RequestMethod.GET, cleanCookie)
     const cookieAfterGet = V2exNativeAuthService.mergeCookieHeader(cleanCookie, getRes.setCookie)
     const challenge = V2exNativeAuthService.twoFactorChallengeFromHtml(cookieAfterGet, getRes.text) ||
       V2exNativeAuthService.fixedTwoFactorChallenge(cookieAfterGet)
-    return this.completeTwoFactor(challenge, code)
+    return this.completeTwoFactor(challenge, cleanCode)
   }
 
   async completeTwoFactor(challenge: NativeTwoFactorChallenge, code: string): Promise<NativeLoginSnapshot> {
-    const cleanCode = code.trim()
-    if (!cleanCode) {
+    const cleanCode = V2exNativeAuthService.normalizeTwoFactorCode(code)
+    if (!cleanCode || cleanCode.length !== 6) {
       throw ApiErrors.twoFactorCodeRequired()
     }
     const pairs = V2exNativeAuthService.twoFactorFormPairs(challenge, cleanCode)
 
-    const actionUrl = V2exNativeAuthService.absoluteUrl(
-      this.httpClient.getBaseUrl(),
+    const authBaseUrl = V2exNativeAuthService.authBaseUrlFor(this.httpClient.getBaseUrl())
+    const actionUrl = V2exNativeAuthService.authActionUrl(
+      authBaseUrl,
       challenge.action || V2exNativeAuthService.TWO_FACTOR_PATH
     )
     const postRes = await this.requestText(
@@ -222,6 +229,8 @@ export class V2exNativeAuthService {
       V2exNativeAuthService.encodeFormPairs(pairs)
     )
     const cookieAfterPost = V2exNativeAuthService.mergeCookieHeader(challenge.cookie, postRes.setCookie)
+    const postChallenge = V2exNativeAuthService.twoFactorChallengeFromHtml(cookieAfterPost, postRes.text)
+    const loginError = V2exSigninParser.extractProblemMessage(postRes.text)
     if (V2exNativeAuthService.isLocationPath(postRes.location, V2exNativeAuthService.TWO_FACTOR_PATH)) {
       throw new NativeTwoFactorRequiredError(
         V2exNativeAuthService.fixedTwoFactorChallenge(cookieAfterPost, challenge.hiddenFields),
@@ -229,32 +238,41 @@ export class V2exNativeAuthService {
       )
     }
 
-    const loginError = V2exSigninParser.extractProblemMessage(postRes.text)
     if (loginError) {
-      const nextChallenge = V2exNativeAuthService.twoFactorChallengeFromHtml(cookieAfterPost, postRes.text)
-      if (nextChallenge) {
-        throw new NativeTwoFactorRequiredError(nextChallenge, `Two-factor failed: ${loginError}`)
+      if (postChallenge) {
+        throw new NativeTwoFactorRequiredError(postChallenge, `Two-factor failed: ${loginError}`)
       }
       throw ApiErrors.twoFactorFailedDetail(loginError)
     }
 
-    const settingsRes = await this.requestText(`${this.httpClient.getBaseUrl()}${V2exNativeAuthService.SETTINGS_PATH}`, http.RequestMethod.GET, cookieAfterPost)
+    const verifyRes = await this.requestText(`${authBaseUrl}${V2exNativeAuthService.TWO_FACTOR_VERIFY_PATH}`, http.RequestMethod.GET, cookieAfterPost)
+    const cookieAfterVerify = V2exNativeAuthService.mergeCookieHeader(cookieAfterPost, verifyRes.setCookie)
+    const verifyChallenge = V2exNativeAuthService.twoFactorChallengeFromHtml(cookieAfterVerify, verifyRes.text)
+    if (V2exNativeAuthService.isLocationPath(verifyRes.location, V2exNativeAuthService.TWO_FACTOR_PATH) || verifyChallenge) {
+      throw new NativeTwoFactorRequiredError(
+        verifyChallenge || V2exNativeAuthService.fixedTwoFactorChallenge(cookieAfterVerify, challenge.hiddenFields),
+        'Two-factor failed, please check the code'
+      )
+    }
+
+    const settingsRes = await this.requestText(`${authBaseUrl}${V2exNativeAuthService.SETTINGS_PATH}`, http.RequestMethod.GET, cookieAfterVerify)
+    const cookieAfterSettings = V2exNativeAuthService.mergeCookieHeader(cookieAfterVerify, settingsRes.setCookie)
     const signedInUser = V2exSessionParser.extractUsername(settingsRes.text)
+    const settingsChallenge = V2exNativeAuthService.twoFactorChallengeFromHtml(cookieAfterSettings, settingsRes.text)
     if (!signedInUser) {
       if (V2exNativeAuthService.isLocationPath(settingsRes.location, V2exNativeAuthService.TWO_FACTOR_PATH)) {
         throw new NativeTwoFactorRequiredError(
-          V2exNativeAuthService.fixedTwoFactorChallenge(cookieAfterPost, challenge.hiddenFields),
+          V2exNativeAuthService.fixedTwoFactorChallenge(cookieAfterSettings, challenge.hiddenFields),
           'Two-factor failed, please check the code'
         )
       }
-      const nextChallenge = V2exNativeAuthService.twoFactorChallengeFromHtml(cookieAfterPost, postRes.text) ||
-        V2exNativeAuthService.twoFactorChallengeFromHtml(cookieAfterPost, settingsRes.text)
+      const nextChallenge = postChallenge || verifyChallenge || settingsChallenge
       if (nextChallenge) {
         throw new NativeTwoFactorRequiredError(nextChallenge, 'Two-factor failed, please check the code')
       }
       throw ApiErrors.twoFactorFailed()
     }
-    return { cookie: cookieAfterPost, username: signedInUser }
+    return { cookie: cookieAfterSettings, username: signedInUser }
   }
 
   async fetchCaptchaDataUrl(challenge: NativeLoginChallenge): Promise<string> {
@@ -302,9 +320,10 @@ export class V2exNativeAuthService {
     try {
       const reqHeaders: Record<string, string> = {
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
         'Accept-Encoding': 'gzip',
         'Content-Type': method === http.RequestMethod.POST ? 'application/x-www-form-urlencoded' : 'text/html; charset=utf-8',
-        'User-Agent': 'Mozilla/5.0'
+        'User-Agent': BROWSER_USER_AGENT
       }
       if (cookieHeader) {
         reqHeaders['Cookie'] = cookieHeader
@@ -359,6 +378,27 @@ export class V2exNativeAuthService {
     return `${baseUrl}${path}`
   }
 
+  private static authBaseUrlFor(baseUrl: string): string {
+    const cleanBaseUrl = (baseUrl || ApiConstants.BASE_URL_COM).trim()
+    const host = V2exDomainUtils.hostForBaseUrl(cleanBaseUrl)
+    if (V2exDomainUtils.isV2exOwnedHost(host)) {
+      return ApiConstants.BASE_URL_COM
+    }
+    return cleanBaseUrl.endsWith('/') ? cleanBaseUrl.slice(0, cleanBaseUrl.length - 1) : cleanBaseUrl
+  }
+
+  private static authActionUrl(baseUrl: string, action: string): string {
+    const cleanAction = (action || V2exNativeAuthService.TWO_FACTOR_PATH).trim()
+    if (cleanAction.indexOf('http://') === 0 || cleanAction.indexOf('https://') === 0) {
+      const host = V2exDomainUtils.hostForBaseUrl(cleanAction)
+      if (!V2exDomainUtils.isV2exOwnedHost(host)) {
+        return `${baseUrl}${V2exNativeAuthService.TWO_FACTOR_PATH}`
+      }
+      return `${baseUrl}${V2exNativeAuthService.locationPath(cleanAction)}`
+    }
+    return V2exNativeAuthService.absoluteUrl(baseUrl, cleanAction)
+  }
+
   private static twoFactorChallengeFromHtml(cookie: string, html: string): NativeTwoFactorChallenge | null {
     const twoFactor = V2exSigninParser.extractTwoFactorForm(html)
     if (!twoFactor) {
@@ -382,17 +422,25 @@ export class V2exNativeAuthService {
   }
 
   private static twoFactorFormPairs(challenge: NativeTwoFactorChallenge, cleanCode: string): FormPair[] {
-    const pairs: FormPair[] = []
-    const hiddenFields = challenge.hiddenFields
-    const keys = Object.keys(hiddenFields)
-    for (const key of keys) {
-      if (!key || key === challenge.codeField) {
-        continue
+    // V2EX 2FA matches browser/native clients: POST /2fa with only the one-time
+    // code field. Replaying submit/button inputs from the page can make the
+    // origin treat the form as a failed challenge.
+    return [{ key: challenge.codeField || 'code', value: cleanCode }]
+  }
+
+  private static normalizeTwoFactorCode(value: string): string {
+    const raw = value || ''
+    let result = ''
+    for (let i = 0; i < raw.length; i += 1) {
+      const ch = raw.charAt(i)
+      const codeUnit = raw.charCodeAt(i)
+      if (codeUnit >= 48 && codeUnit <= 57) {
+        result += ch
+      } else if (codeUnit >= 65296 && codeUnit <= 65305) {
+        result += String.fromCharCode(codeUnit - 65248)
       }
-      pairs.push({ key, value: hiddenFields[key] })
     }
-    pairs.push({ key: challenge.codeField || 'code', value: cleanCode })
-    return pairs
+    return result
   }
 
   private static isLocationPath(location: string, path: string): boolean {

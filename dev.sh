@@ -1,6 +1,9 @@
 #!/bin/bash
 # dev.sh - Next2V 鸿蒙开发一键脚本
 #
+# 注意: 本脚本只用于 Linux lane/worker 环境。macOS/Darwin 本地构建请使用:
+#   hvigorw assembleHap --mode module -p product=default -p buildMode=debug --no-daemon
+#
 # 用法:
 #   bash dev.sh                   # debug 构建 + 签名 + 安装到缓存/选择的设备
 #   bash dev.sh --build-only      # debug 仅构建 + 签名，不安装到设备
@@ -21,6 +24,13 @@
 
 set -e
 PROJ="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+if [ "$(uname -s)" = "Darwin" ]; then
+  echo "ERROR: dev.sh is Linux lane/worker tooling and must not be used on macOS/Darwin." >&2
+  echo "Use: hvigorw assembleHap --mode module -p product=default -p buildMode=debug --no-daemon" >&2
+  exit 1
+fi
+
 # 加载共享 env（HarmonyOS 调试签名物料路径等）
 if [ -f "$PROJ/scripts/dev.env" ]; then
   # shellcheck disable=SC1091

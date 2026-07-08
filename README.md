@@ -70,18 +70,25 @@ Next2V 是一个面向 HarmonyOS 的原生 V2EX 第三方客户端。
 
 ## 构建
 
+### macOS / DevEco 本地构建
+
+macOS/Darwin 环境不要使用 `dev.sh`。该脚本只面向 Linux lane/worker 环境，会假设 `/home/gamer/...` 下的工具链和签名材料路径。
+
 仅执行 HAP 构建：
 
 ```bash
 hvigorw assembleHap --mode module -p product=default -p buildMode=debug --no-daemon
 ```
 
+### Linux lane/worker 脚本
+
+以下 `dev.sh` 命令仅用于 Linux lane/worker 环境，不用于 macOS 本地构建。
+
 使用项目脚本构建并签名：
 
 ```bash
 bash dev.sh --build-only
 ```
-
 构建、签名并安装到设备：
 
 ```bash
@@ -96,6 +103,7 @@ bash dev.sh --help
 
 ## 开发说明
 
+- `dev.sh` 是 Linux lane/worker 脚本；macOS/Darwin 本地构建请使用 `hvigorw assembleHap --mode module -p product=default -p buildMode=debug --no-daemon`。
 - `dev.sh` 会调用项目的签名脚本，签名材料和登录态属于本地开发环境，不应提交。
 - 项目包含对 V2EX 网页结构的解析逻辑，相关页面结构变化可能导致部分功能失效。
 - UI 主要围绕 HarmonyOS 原生组件和 HDS 组件构建，新增界面应尽量复用 `shared` 中已有组件和主题常量。

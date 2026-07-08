@@ -56,6 +56,8 @@ The Review/QA/Integrate quality gates still apply in direct-worker mode; replace
 
 ## Worktree Setup Preflight
 
+`dev.sh` references in this section are Linux lane/worker only. On macOS/Darwin, do not run `dev.sh`; use `hvigorw assembleHap --mode module -p product=default -p buildMode=debug --no-daemon` for local build validation.
+
 Every lane wrapper script that will call `bash dev.sh`, `python3 scripts/sign.py`, or any device-control command **must** source `scripts/lane-preflight.sh` from the main V2Next repo before invoking `hermes`. The wrapper must have `cd`'d into the worktree first.
 
 ```bash
@@ -86,4 +88,4 @@ The preflight handles these things atomically:
 
 Cert is **account-scoped** to avoid burning AGC debug-cert quota across multiple OH projects — every project uses the same `debug.p12` / `debug.csr` / `<name>.cer`. Profiles are bundleId-scoped (per project), but AGC does not quota-limit profiles.
 
-`bash dev.sh --build-only`, `bash dev.sh --no-build`, and worker QA signing runs default to non-interactive local signing. Interactive AGC/Profile regeneration is allowed only through explicit refresh/recovery commands, never as a hidden fallback in normal worker gates.
+On Linux lane/workers, `bash dev.sh --build-only`, `bash dev.sh --no-build`, and worker QA signing runs default to non-interactive local signing. Interactive AGC/Profile regeneration is allowed only through explicit refresh/recovery commands, never as a hidden fallback in normal worker gates.

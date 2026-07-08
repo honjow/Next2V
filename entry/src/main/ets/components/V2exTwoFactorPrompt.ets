@@ -105,12 +105,15 @@ export struct V2exTwoFactorPrompt {
       return
     }
     const cleanCookie = (this.cookie || '').trim()
-    const cleanCode = this.code.trim()
+    const cleanCode = this.normalizeTwoFactorCode(this.code)
+    if (this.code !== cleanCode) {
+      this.code = cleanCode
+    }
     if (!cleanCookie) {
       this.errorMessage = AppStrings.text($r('app.string.api_error_login_session_missing'), 'Missing login session, please sign in again')
       return
     }
-    if (!cleanCode) {
+    if (!cleanCode || cleanCode.length !== 6) {
       this.errorMessage = AppStrings.text($r('app.string.api_error_two_factor_code_required'), 'Please enter the two-factor code')
       return
     }
@@ -142,6 +145,21 @@ export struct V2exTwoFactorPrompt {
       .finally(() => {
         this.isSubmitting = false
       })
+  }
+
+  private normalizeTwoFactorCode(value: string): string {
+    const raw = value || ''
+    let result = ''
+    for (let i = 0; i < raw.length; i += 1) {
+      const ch = raw.charAt(i)
+      const codeUnit = raw.charCodeAt(i)
+      if (codeUnit >= 48 && codeUnit <= 57) {
+        result += ch
+      } else if (codeUnit >= 65296 && codeUnit <= 65305) {
+        result += String.fromCharCode(codeUnit - 65248)
+      }
+    }
+    return result
   }
 
   private async persistSnapshot(

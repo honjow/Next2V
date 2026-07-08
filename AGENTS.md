@@ -4,6 +4,18 @@ Index plus hard-stop constraints. Open the relevant guide for the current task.
 
 Worktree copies under `/home/gamer/v2next-worktrees/*/AGENTS.md` must mirror this file unless a lane prompt declares a temporary override.
 
+## Hard Stop: macOS Must Not Use `dev.sh`
+
+On macOS/Darwin, do not run `bash dev.sh`, `bash dev.sh --build-only`, `bash dev.sh --no-build`, or any `dev.sh` mode. That script is for the Linux lane/worker environment with `/home/gamer/...` signing/toolchain paths.
+
+macOS already uses the project-local DevEco/Hvigor configuration and signing material. For local macOS build validation, use:
+
+```bash
+hvigorw assembleHap --mode module -p product=default -p buildMode=debug --no-daemon
+```
+
+If a macOS task appears to require `dev.sh`, stop and return `BLOCKED` with the requested command and the macOS-safe alternative above.
+
 ## Hard Stop: State Management V2 Only
 
 State Management V1 is retired in this project. New development must not introduce or restore V1 component/state decorators in `entry/`, `feature/`, or `shared/` code.

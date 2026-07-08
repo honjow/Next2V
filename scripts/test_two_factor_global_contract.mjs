@@ -81,6 +81,38 @@ for (const token of [
   assert(apiService.includes(token), `ApiService global 2FA trigger contract missing ${token}`)
 }
 
+const nativeAuthService = read('shared/src/main/ets/network/V2exNativeAuthService.ets')
+for (const token of [
+  'normalizeTwoFactorCode',
+  'String.fromCharCode(codeUnit - 65248)',
+  'cleanCode.length !== 6',
+  "private static readonly TWO_FACTOR_VERIFY_PATH: string = '/balance'",
+  'authBaseUrlFor',
+  'authActionUrl',
+  "return [{ key: challenge.codeField || 'code', value: cleanCode }]",
+]) {
+  assert(nativeAuthService.includes(token), `Native auth 2FA safety contract missing ${token}`)
+}
+assert(!nativeAuthService.includes('const cleanCode = code.trim()'), 'Native 2FA completion must normalize copied codes, not only trim them')
+assert(!nativeAuthService.includes('pairs.push({ key, value: hiddenFields[key] })'), 'Native 2FA POST must not replay hidden/button fields')
+assert(!nativeAuthService.includes("DiagnosticLogger.info('two_factor'"), 'Native 2FA path must not keep temporary diagnostic info logs')
+assert(!nativeAuthService.includes("DiagnosticLogger.warn('two_factor'"), 'Native 2FA path must not keep temporary diagnostic warning logs')
+assert(
+  nativeAuthService.indexOf('TWO_FACTOR_VERIFY_PATH') < nativeAuthService.indexOf('SETTINGS_PATH}`, http.RequestMethod.GET, cookieAfterVerify'),
+  'Native 2FA completion must verify a gated endpoint before using /settings for username extraction',
+)
+
+const twoFactorPrompt = read('entry/src/main/ets/components/V2exTwoFactorPrompt.ets')
+for (const token of [
+  'const cleanCode = this.normalizeTwoFactorCode(this.code)',
+  'this.code = cleanCode',
+  'cleanCode.length !== 6',
+  'String.fromCharCode(codeUnit - 65248)',
+]) {
+  assert(twoFactorPrompt.includes(token), `V2exTwoFactorPrompt copied-code normalization missing ${token}`)
+}
+assert(!twoFactorPrompt.includes('const cleanCode = this.code.trim()'), 'V2exTwoFactorPrompt must normalize copied codes, not only trim them')
+
 for (const rel of [
   'entry/src/main/ets/pages/AccountPage.ets',
   'entry/src/main/ets/pages/MyTopicsPage.ets',

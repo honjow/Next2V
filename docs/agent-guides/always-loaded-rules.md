@@ -60,6 +60,18 @@ Avoid decorative comments that paraphrase identifiers or obvious control flow. I
 
 ## Worktree Signing Preflight
 
+### macOS hard stop
+
+On macOS/Darwin, never run `bash dev.sh`, `bash dev.sh --build-only`, `bash dev.sh --no-build`, or any other `dev.sh` mode. `dev.sh` is Linux lane/worker tooling and assumes `/home/gamer/...` signing/toolchain paths.
+
+macOS builds must use the project-local DevEco/Hvigor configuration:
+
+```bash
+hvigorw assembleHap --mode module -p product=default -p buildMode=debug --no-daemon
+```
+
+If a macOS task appears to require `dev.sh`, stop and report `BLOCKED` with the command that would have been run and the Hvigor command above as the safe alternative.
+
 Signing/profile material lookup must be anchored to the real user home, not to a Kanban/profile worker's sandbox `HOME`. For V2Next the stable material root is `/home/gamer/.config/harmony/debug-signing` unless `V2NEXT_REAL_HOME` is explicitly changed for a real account-home migration.
 
 Before any agent or subagent builds, signs, installs, or device-tests a V2Next lane worktree under `/home/gamer/v2next-worktrees/`, run `scripts/lane-preflight.sh` from the main repo. The preflight must set `NEXT2V_SIGN_NONINTERACTIVE=1` and verify that `debug.p12`, the debug certificate, and `profiles/com.honjow.next2v.p7b` resolve under `/home/gamer/.config/harmony/debug-signing`.
