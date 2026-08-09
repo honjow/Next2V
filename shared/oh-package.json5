@@ -1,6 +1,6 @@
 {
   "name": "shared",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "description": "Next2V shared library - common components, network, utils",
   "main": "src/main/ets/Index.ets",
   "dependencies": {}
