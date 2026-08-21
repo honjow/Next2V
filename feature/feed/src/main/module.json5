@@ -2,6 +2,6 @@
   "module": {
     "name": "feed",
     "type": "har",
-    "deviceTypes": ["phone"]
+    "deviceTypes": ["phone", "2in1"]
   }
 }
