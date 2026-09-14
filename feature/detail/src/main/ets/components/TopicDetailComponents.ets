@@ -4,8 +4,11 @@ import {
   AppStrings,
   Avatar,
   connectLanguageState,
+  connectReadingSettings,
   ImageUtils,
   LanguageState,
+  ReadingSettings,
+  ReadingSettingsState,
   ThemeConstants,
   TimeAgo,
   UserName,
@@ -24,6 +27,7 @@ export struct TopicDetailHeader {
   @Event onUserClick?: () => void
   @Event onNodeClick?: () => void
   @Event onTitleAreaChange?: (oldValue: Area, newValue: Area) => void
+  private reading: ReadingSettingsState = connectReadingSettings()
 
   build() {
     Column() {
@@ -76,10 +80,10 @@ export struct TopicDetailHeader {
       .width('100%')
       .alignItems(VerticalAlign.Center)
       Text(this.topic.title)
-        .fontSize(ThemeConstants.FONT_SIZE_HEADING)
+        .fontSize(this.titleFontSize())
         .fontWeight(FontWeight.Medium)
         .fontColor($r('sys.color.font_primary'))
-        .lineHeight(28)
+        .lineHeight(this.titleLineHeight())
         .width('100%')
         .margin({ top: ThemeConstants.SPACE_MD })
         .onAreaChange((oldValue: Area, newValue: Area) => {
@@ -89,6 +93,17 @@ export struct TopicDetailHeader {
         })
     }
     .width('100%')
+  }
+
+  private titleFontSize(): number {
+    return ReadingSettings.scaleTypographyToken(
+      ThemeConstants.FONT_SIZE_HEADING,
+      this.reading.textScale,
+    )
+  }
+
+  private titleLineHeight(): number {
+    return ReadingSettings.scaleTypographyToken(28, this.reading.textScale)
   }
 }
 

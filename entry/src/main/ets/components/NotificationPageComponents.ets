@@ -1,7 +1,10 @@
 import {
   Avatar,
+  connectReadingSettings,
   DateUtils,
   MarkdownContent,
+  ReadingSettings,
+  ReadingSettingsState,
   ThemeConstants,
   V2exNotification
 } from 'shared'
@@ -73,6 +76,7 @@ export struct NotificationCard {
   @Param replyRenderedContent: string = ''
   @Param memberName: string = ''
   @Param avatarUrl: string = ''
+  private reading: ReadingSettingsState = connectReadingSettings()
 
   build() {
     Row({ space: ThemeConstants.SPACE_MD }) {
@@ -108,7 +112,7 @@ export struct NotificationCard {
         .justifyContent(FlexAlign.Start)
 
         Text(this.titleText)
-          .fontSize(ThemeConstants.FONT_SIZE_BODY)
+          .fontSize(this.titleFontSize())
           .fontWeight(FontWeight.Medium)
           .fontColor($r('sys.color.font_primary'))
           .maxLines(2)
@@ -118,7 +122,7 @@ export struct NotificationCard {
           this.ReplyPreview()
         } else if (this.bodyText) {
           Text(this.bodyText)
-            .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+            .fontSize(this.previewFontSize())
             .fontColor($r('sys.color.font_secondary'))
             .maxLines(3)
             .textOverflow({ overflow: TextOverflow.Ellipsis })
@@ -162,6 +166,20 @@ export struct NotificationCard {
 
   private replyPreviewSource(): string {
     return this.replyRenderedContent || this.replyContent
+  }
+
+  private titleFontSize(): number {
+    return ReadingSettings.scaleTypographyToken(
+      ThemeConstants.FONT_SIZE_BODY,
+      this.reading.textScale,
+    )
+  }
+
+  private previewFontSize(): number {
+    return ReadingSettings.scaleTypographyToken(
+      ThemeConstants.FONT_SIZE_CAPTION,
+      this.reading.textScale,
+    )
   }
 
   private kindTagDisplay(code: string): string {

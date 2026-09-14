@@ -28,9 +28,15 @@ export interface ReadingSettingsSnapshot {
 }
 
 export class ReadingSettings {
-  static readonly TEXT_SCALE_DEFAULT: number = 1.0
-  static readonly TEXT_SCALE_MIN: number = 12 / ThemeConstants.FONT_SIZE_BODY
-  static readonly TEXT_SCALE_MAX: number = 18 / ThemeConstants.FONT_SIZE_BODY
+  static readonly TEXT_SCALE_SMALL: number = 12 / ThemeConstants.FONT_SIZE_BODY
+  static readonly TEXT_SCALE_STANDARD: number = 1.0
+  static readonly TEXT_SCALE_LARGE: number = 16 / ThemeConstants.FONT_SIZE_BODY
+  static readonly TEXT_SCALE_EXTRA_LARGE: number = 17 / ThemeConstants.FONT_SIZE_BODY
+  static readonly TEXT_SCALE_LARGEST: number = 18 / ThemeConstants.FONT_SIZE_BODY
+  static readonly TEXT_SCALE_PRESET_COUNT: number = 5
+  static readonly TEXT_SCALE_DEFAULT: number = ReadingSettings.TEXT_SCALE_STANDARD
+  static readonly TEXT_SCALE_MIN: number = ReadingSettings.TEXT_SCALE_SMALL
+  static readonly TEXT_SCALE_MAX: number = ReadingSettings.TEXT_SCALE_LARGEST
   static readonly LINE_HEIGHT_MIN: number = 18
   static readonly LINE_HEIGHT_MAX: number = 30
   static readonly DENSITY_COMPACT: string = DENSITY_COMPACT
@@ -160,14 +166,58 @@ export class ReadingSettings {
     if (!Number.isFinite(numeric)) {
       return ReadingSettings.TEXT_SCALE_DEFAULT
     }
-    const scale = numeric
-    if (scale < ReadingSettings.TEXT_SCALE_MIN) {
-      return ReadingSettings.TEXT_SCALE_MIN
+    // Keep the persisted numeric key backward compatible: old continuous values migrate to the
+    // nearest visible preset instead of silently changing the user's perceived text size.
+    return ReadingSettings.textScaleForPresetIndex(
+      ReadingSettings.presetIndexForTextScale(numeric),
+    )
+  }
+
+  static presetIndexForTextScale(value: number): number {
+    const numeric = Number(value)
+    if (!Number.isFinite(numeric)) {
+      return 1
     }
-    if (scale > ReadingSettings.TEXT_SCALE_MAX) {
-      return ReadingSettings.TEXT_SCALE_MAX
+    const presets: number[] = [
+      ReadingSettings.TEXT_SCALE_SMALL,
+      ReadingSettings.TEXT_SCALE_STANDARD,
+      ReadingSettings.TEXT_SCALE_LARGE,
+      ReadingSettings.TEXT_SCALE_EXTRA_LARGE,
+      ReadingSettings.TEXT_SCALE_LARGEST,
+    ]
+    let nearestIndex: number = 0
+    let nearestDistance: number = Math.abs(numeric - presets[0])
+    for (let index: number = 1; index < presets.length; index += 1) {
+      const distance: number = Math.abs(numeric - presets[index])
+      if (distance < nearestDistance) {
+        nearestIndex = index
+        nearestDistance = distance
+      }
     }
-    return Math.round(scale * 100) / 100
+    return nearestIndex
+  }
+
+  static textScaleForPresetIndex(value: number): number {
+    const numeric: number = Number(value)
+    if (!Number.isFinite(numeric)) {
+      return ReadingSettings.TEXT_SCALE_STANDARD
+    }
+    const index: number = Math.min(
+      ReadingSettings.TEXT_SCALE_PRESET_COUNT - 1,
+      Math.max(0, Math.round(numeric)),
+    )
+    switch (index) {
+      case 0:
+        return ReadingSettings.TEXT_SCALE_SMALL
+      case 2:
+        return ReadingSettings.TEXT_SCALE_LARGE
+      case 3:
+        return ReadingSettings.TEXT_SCALE_EXTRA_LARGE
+      case 4:
+        return ReadingSettings.TEXT_SCALE_LARGEST
+      default:
+        return ReadingSettings.TEXT_SCALE_STANDARD
+    }
   }
 
   static scaleTypographyToken(baseValue: number, textScaleSource: number): number {

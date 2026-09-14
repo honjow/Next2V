@@ -7,6 +7,8 @@ import { NodeTag } from './NodeTag'
 import { ImageUtils } from '../utils/ImageUtils'
 import { AppStrings } from '../i18n/AppStrings'
 import { connectLanguageState, LanguageState } from '../state/LanguageState'
+import { ReadingSettings } from '../settings/ReadingSettings'
+import { connectReadingSettings, ReadingSettingsState } from '../state/ReadingSettingsState'
 
 @ComponentV2
 export struct TopicCard {
@@ -19,6 +21,7 @@ export struct TopicCard {
   @Event onUserClick?: () => void
   @Event onNodeClick?: () => void
   private language: LanguageState = connectLanguageState()
+  private reading: ReadingSettingsState = connectReadingSettings()
 
   build() {
     Column({ space: ThemeConstants.SPACE_XS }) {
@@ -59,9 +62,9 @@ export struct TopicCard {
 
       Row({ space: 6 }) {
         Text(this.item.title)
-          .fontSize(ThemeConstants.FONT_SIZE_BODY)
+          .fontSize(this.titleFontSize())
           .fontColor($r('sys.color.font_primary'))
-          .lineHeight(ThemeConstants.LINE_HEIGHT_TITLE)
+          .lineHeight(this.titleLineHeight())
           .maxLines(2)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
           .layoutWeight(1)
@@ -118,6 +121,20 @@ export struct TopicCard {
 
   private isMemberPro(): boolean {
     return (this.item.member.pro || 0) > 0
+  }
+
+  private titleFontSize(): number {
+    return ReadingSettings.scaleTypographyToken(
+      ThemeConstants.FONT_SIZE_BODY,
+      this.reading.textScale,
+    )
+  }
+
+  private titleLineHeight(): number {
+    return ReadingSettings.scaleTypographyToken(
+      ThemeConstants.LINE_HEIGHT_TITLE,
+      this.reading.textScale,
+    )
   }
 
   private isMemberMod(): boolean {

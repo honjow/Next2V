@@ -1,4 +1,13 @@
-import { AppStrings, FilterChip, ThemeConstants, V2exNode, V2exTopic } from 'shared'
+import {
+  AppStrings,
+  connectReadingSettings,
+  FilterChip,
+  ReadingSettings,
+  ReadingSettingsState,
+  ThemeConstants,
+  V2exNode,
+  V2exTopic
+} from 'shared'
 import type { SavedNode } from 'shared'
 
 export type DiscoverTopicMode = 'hot' | 'latest' | 'recent'
@@ -72,12 +81,13 @@ export struct DiscoverHotTopicRow {
     last_touched: 0
   }
   @Event openAction?: () => void
+  private reading: ReadingSettingsState = connectReadingSettings()
 
   build() {
     Row({ space: ThemeConstants.SPACE_SM }) {
       Column({ space: ThemeConstants.SPACE_XS }) {
         Text(this.topic.title)
-          .fontSize(ThemeConstants.FONT_SIZE_BODY)
+          .fontSize(this.titleFontSize())
           .fontWeight(FontWeight.Medium)
           .fontColor($r('sys.color.font_primary'))
           .maxLines(2)
@@ -117,6 +127,13 @@ export struct DiscoverHotTopicRow {
         this.openAction()
       }
     })
+  }
+
+  private titleFontSize(): number {
+    return ReadingSettings.scaleTypographyToken(
+      ThemeConstants.FONT_SIZE_BODY,
+      this.reading.textScale,
+    )
   }
 }
 

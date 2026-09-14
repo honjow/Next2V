@@ -12,6 +12,7 @@ import {
   BUILTIN_STICKER_GROUPS,
   connectLayoutSafeArea,
   connectNavStack,
+  connectReadingSettings,
   CookieJarSettings,
   ImageBytesUtils,
   ImageUploadErrorCode,
@@ -22,6 +23,8 @@ import {
   connectRecentStickers,
   RecentStickerSettings,
   RecentStickerState,
+  ReadingSettings,
+  ReadingSettingsState,
   ReplyStickerPanelState,
   StickerPickerPanel,
   ThemeConstants,
@@ -73,6 +76,7 @@ export struct ReplyComposerBar {
   // Recently-used stickers (most-recent-first); passed to the picker so it can show a "recent" tray on top.
   // Read live, but the picker snapshots it at open so a pick doesn't reshuffle the grid mid-session.
   @Local private recentStickers: RecentStickerState = connectRecentStickers();
+  private reading: ReadingSettingsState = connectReadingSettings();
 
   private contentController: TextAreaController = new TextAreaController();
   private saveTimerId: number = 0;
@@ -90,6 +94,13 @@ export struct ReplyComposerBar {
   private static readonly INPUT_ID: string = 'replyComposerBarInput';
   // Shared height for the input field (single line) and the send button so the row lines up flush.
   private static readonly REPLY_BAR_CONTROL_SIZE: number = 40;
+
+  private contentFontSize(): number {
+    return ReadingSettings.scaleTypographyToken(
+      ThemeConstants.FONT_SIZE_BODY,
+      this.reading.textScale,
+    )
+  }
 
   aboutToAppear(): void {
     this.panelBus.open = false
@@ -169,14 +180,14 @@ export struct ReplyComposerBar {
           .id(ReplyComposerBar.INPUT_ID)
           .width('100%')
           .constraintSize({ maxHeight: 148 })
-          .fontSize(ThemeConstants.FONT_SIZE_BODY)
+          .fontSize(this.contentFontSize())
           .padding({
             top: ThemeConstants.SPACE_MD,
             bottom: ThemeConstants.SPACE_MD,
             left: ThemeConstants.SPACE_MD + ThemeConstants.SPACE_XS,
             right: ThemeConstants.SPACE_MD + ThemeConstants.SPACE_XS,
           })
-          .placeholderFont({ size: ThemeConstants.FONT_SIZE_BODY, weight: FontWeight.Normal })
+          .placeholderFont({ size: this.contentFontSize(), weight: FontWeight.Normal })
           .borderRadius(ThemeConstants.RADIUS_MD)
           .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
           .defaultFocus(true)

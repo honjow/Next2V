@@ -232,23 +232,29 @@ export struct ReadingScaleControlSection {
               .maxLines(1)
               .textOverflow({ overflow: TextOverflow.Ellipsis })
             Blank()
+            Text(this.presetLabel())
+              .fontSize(ThemeConstants.FONT_SIZE_META)
+              .fontColor(ThemeConstants.BRAND_PRIMARY)
+              .maxLines(1)
           }
           .width('100%')
           .height(32)
 
           Slider({
-            value: this.textScale,
-            min: ReadingSettings.TEXT_SCALE_MIN,
-            max: ReadingSettings.TEXT_SCALE_MAX,
-            step: 0.01,
+            value: ReadingSettings.presetIndexForTextScale(this.textScale),
+            min: 0,
+            max: ReadingSettings.TEXT_SCALE_PRESET_COUNT - 1,
+            step: 1,
             style: SliderStyle.InSet
           })
             .width('100%')
             .selectedColor(ThemeConstants.BRAND_PRIMARY)
-            .showTips(false)
-            .onChange((nextValue: number, _mode: SliderChangeMode) => {
+            .showSteps(true)
+            .showTips(true, this.presetLabel())
+            .enableHapticFeedback(true)
+            .onChange((nextIndex: number, _mode: SliderChangeMode) => {
               if (this.changeAction) {
-                this.changeAction(nextValue)
+                this.changeAction(ReadingSettings.textScaleForPresetIndex(nextIndex))
               }
             })
         }
@@ -272,6 +278,21 @@ export struct ReadingScaleControlSection {
         })
       }
       .width('100%')
+    }
+  }
+
+  private presetLabel(): ResourceStr {
+    switch (ReadingSettings.presetIndexForTextScale(this.textScale)) {
+      case 0:
+        return $r('app.string.reading_text_size_small')
+      case 2:
+        return $r('app.string.reading_text_size_large')
+      case 3:
+        return $r('app.string.reading_text_size_extra_large')
+      case 4:
+        return $r('app.string.reading_text_size_largest')
+      default:
+        return $r('app.string.reading_text_size_standard')
     }
   }
 }

@@ -3,8 +3,8 @@ import { common } from '@kit.AbilityKit'
 import { photoAccessHelper } from '@kit.MediaLibraryKit'
 import { KeyboardAvoidMode, LoadingDialog, SymbolGlyphModifier } from '@kit.ArkUI'
 import {
-  ApiService, AppStrings, connectAccountMeta, connectLayoutSafeArea, connectNavStack, connectNodePickAction, connectTopicComposeTarget, connectTopicEditorAction, CookieJarSettings, DateUtils, DraftSettings, ImageBytesUtils, ImageUploadErrorCode, ImageUploadService, ImageUploadSettings, LayoutSafeAreaState, MarkdownContent, MarkdownToolbar,
-  NodePickActionState, publishTopicEditorSubmitEnabled, ThemeConstants, TopicDetailParams, TopicEditorActionState, translateApiError, type ComposeDraft, type ImageBytes
+  ApiService, AppStrings, connectAccountMeta, connectLayoutSafeArea, connectNavStack, connectNodePickAction, connectReadingSettings, connectTopicComposeTarget, connectTopicEditorAction, CookieJarSettings, DateUtils, DraftSettings, ImageBytesUtils, ImageUploadErrorCode, ImageUploadService, ImageUploadSettings, LayoutSafeAreaState, MarkdownContent, MarkdownToolbar,
+  NodePickActionState, publishTopicEditorSubmitEnabled, ReadingSettings, ReadingSettingsState, ThemeConstants, TopicDetailParams, TopicEditorActionState, translateApiError, type ComposeDraft, type ImageBytes
 } from 'shared'
 
 // Body TextArea id, used to move focus into it after a toolbar insert.
@@ -42,6 +42,7 @@ export struct TopicEditorPage {
   // Safe-area / keyboard metrics published by EntryAbility; drives the manual keyboard avoidance
   // now that the editor is a fixed-height column (no scroll scaffold).
   layout: LayoutSafeAreaState = connectLayoutSafeArea()
+  private reading: ReadingSettingsState = connectReadingSettings()
   // xmark-in-circle icon for the title's native clear button, matching the body overlay ✕.
   private titleClearIcon: SymbolGlyphModifier = new SymbolGlyphModifier($r('sys.symbol.xmark_circle_fill'))
     .fontColor([$r('sys.color.font_secondary')])
@@ -56,6 +57,13 @@ export struct TopicEditorPage {
   // Set true in aboutToDisappear so an image upload that finishes after the editor is popped drops its
   // result instead of writing to a torn-down component.
   private disposed: boolean = false
+
+  private contentFontSize(): number {
+    return ReadingSettings.scaleTypographyToken(
+      ThemeConstants.FONT_SIZE_BODY,
+      this.reading.textScale,
+    )
+  }
   // Modal loading overlay held open while the post request is in flight. autoCancel:false makes it block
   // touches, so the still-mounted body TextArea can't re-grab focus / re-pop the keyboard mid-submit and
   // the user can't mis-tap the form. Mirrors the reply composer's submit guard (close-before-request →
@@ -208,9 +216,9 @@ export struct TopicEditorPage {
         if (this.mode !== 'append') {
           TextInput({ placeholder: AppStrings.text($r('app.string.topic_editor_title_placeholder'), 'Title'), text: this.title })
             .height(44)
-            .fontSize(ThemeConstants.FONT_SIZE_BODY)
+            .fontSize(this.contentFontSize())
             // Match the placeholder to the input/node font; otherwise it falls back to a larger default.
-            .placeholderFont({ size: ThemeConstants.FONT_SIZE_BODY })
+            .placeholderFont({ size: this.contentFontSize() })
             .backgroundColor($r('sys.color.ohos_id_color_background'))
             .borderRadius(ThemeConstants.RADIUS_MD)
             // Native clear ✕ on the right, shown only while the field is non-empty (INPUT style).
@@ -249,8 +257,8 @@ export struct TopicEditorPage {
           Stack({ alignContent: Alignment.TopEnd }) {
             TextArea({ placeholder: AppStrings.text($r('app.string.editor_body_placeholder'), 'Body (Markdown)'), text: this.content, controller: this.contentController })
               .id(BODY_INPUT_ID)
-              .fontSize(ThemeConstants.FONT_SIZE_BODY)
-              .placeholderFont({ size: ThemeConstants.FONT_SIZE_BODY })
+              .fontSize(this.contentFontSize())
+              .placeholderFont({ size: this.contentFontSize() })
               .width('100%')
               .height('100%')
               .backgroundColor($r('sys.color.ohos_id_color_background'))

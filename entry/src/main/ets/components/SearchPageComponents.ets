@@ -1,4 +1,11 @@
-import { AppActionButton, AppStrings, ThemeConstants } from 'shared'
+import {
+  AppActionButton,
+  AppStrings,
+  connectReadingSettings,
+  ReadingSettings,
+  ReadingSettingsState,
+  ThemeConstants
+} from 'shared'
 
 export type SearchResultFilter = 'all' | 'topics' | 'nodes'
 export type RemoteDateRange = 'all' | 'day' | 'week' | 'month' | 'year'
@@ -132,11 +139,12 @@ export struct SearchTopicRow {
     source: '',
     updatedAt: 0,
   };
+  private reading: ReadingSettingsState = connectReadingSettings()
 
   build() {
     Column({ space: ThemeConstants.SPACE_XS }) {
       Text(this.item.title)
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
+        .fontSize(this.titleFontSize())
         .fontColor($r('sys.color.font_primary'))
         .maxLines(2)
         .textOverflow({ overflow: TextOverflow.Ellipsis })
@@ -158,6 +166,13 @@ export struct SearchTopicRow {
     .alignItems(HorizontalAlign.Start)
     .borderRadius(ThemeConstants.RADIUS_MD)
     .backgroundColor($r('app.color.card_background'))
+  }
+
+  private titleFontSize(): number {
+    return ReadingSettings.scaleTypographyToken(
+      ThemeConstants.FONT_SIZE_BODY,
+      this.reading.textScale,
+    )
   }
 }
 @ComponentV2
@@ -216,11 +231,12 @@ export struct RemoteTopicRow {
     nodeId: 0,
   };
   @Event openUserAction?: (username: string) => void;
+  private reading: ReadingSettingsState = connectReadingSettings()
 
   build() {
     Column({ space: ThemeConstants.SPACE_XS }) {
       Text(this.item.title)
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
+        .fontSize(this.titleFontSize())
         .fontWeight(FontWeight.Medium)
         .fontColor($r('sys.color.font_primary'))
         .maxLines(2)
@@ -228,7 +244,7 @@ export struct RemoteTopicRow {
         .width('100%')
       if (this.item.content) {
         Text(this.item.content)
-          .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+          .fontSize(this.previewFontSize())
           .fontColor($r('sys.color.font_secondary'))
           .maxLines(2)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
@@ -256,5 +272,19 @@ export struct RemoteTopicRow {
     .alignItems(HorizontalAlign.Start)
     .borderRadius(ThemeConstants.RADIUS_MD)
     .backgroundColor($r('app.color.card_background'))
+  }
+
+  private titleFontSize(): number {
+    return ReadingSettings.scaleTypographyToken(
+      ThemeConstants.FONT_SIZE_BODY,
+      this.reading.textScale,
+    )
+  }
+
+  private previewFontSize(): number {
+    return ReadingSettings.scaleTypographyToken(
+      ThemeConstants.FONT_SIZE_CAPTION,
+      this.reading.textScale,
+    )
   }
 }

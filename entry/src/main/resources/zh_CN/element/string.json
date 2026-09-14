@@ -90,7 +90,7 @@
     },
     {
       "name": "nav_reading",
-      "value": "阅读设置"
+      "value": "字体设置"
     },
     {
       "name": "nav_network_proxy",
@@ -719,6 +719,26 @@
     {
       "name": "text_scale",
       "value": "文字缩放"
+    },
+    {
+      "name": "reading_text_size_small",
+      "value": "小"
+    },
+    {
+      "name": "reading_text_size_standard",
+      "value": "标准"
+    },
+    {
+      "name": "reading_text_size_large",
+      "value": "大"
+    },
+    {
+      "name": "reading_text_size_extra_large",
+      "value": "超大"
+    },
+    {
+      "name": "reading_text_size_largest",
+      "value": "特大"
     },
     {
       "name": "restore_default",

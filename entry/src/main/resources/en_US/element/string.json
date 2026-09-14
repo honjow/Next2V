@@ -90,7 +90,7 @@
     },
     {
       "name": "nav_reading",
-      "value": "Reading settings"
+      "value": "Font settings"
     },
     {
       "name": "nav_network_proxy",
@@ -719,6 +719,26 @@
     {
       "name": "text_scale",
       "value": "Text scale"
+    },
+    {
+      "name": "reading_text_size_small",
+      "value": "Small"
+    },
+    {
+      "name": "reading_text_size_standard",
+      "value": "Standard"
+    },
+    {
+      "name": "reading_text_size_large",
+      "value": "Large"
+    },
+    {
+      "name": "reading_text_size_extra_large",
+      "value": "Extra large"
+    },
+    {
+      "name": "reading_text_size_largest",
+      "value": "Largest"
     },
     {
       "name": "restore_default",

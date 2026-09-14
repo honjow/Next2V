@@ -90,7 +90,7 @@
     },
     {
       "name": "nav_reading",
-      "value": "읽기 설정"
+      "value": "글꼴 설정"
     },
     {
       "name": "nav_network_proxy",
@@ -719,6 +719,26 @@
     {
       "name": "text_scale",
       "value": "텍스트 배율"
+    },
+    {
+      "name": "reading_text_size_small",
+      "value": "작게"
+    },
+    {
+      "name": "reading_text_size_standard",
+      "value": "표준"
+    },
+    {
+      "name": "reading_text_size_large",
+      "value": "크게"
+    },
+    {
+      "name": "reading_text_size_extra_large",
+      "value": "매우 크게"
+    },
+    {
+      "name": "reading_text_size_largest",
+      "value": "최대"
     },
     {
       "name": "restore_default",

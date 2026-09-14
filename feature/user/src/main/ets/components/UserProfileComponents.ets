@@ -1,8 +1,11 @@
 import {
   Avatar,
   AppStrings,
+  connectReadingSettings,
   DateUtils,
   MarkdownContent,
+  ReadingSettings,
+  ReadingSettingsState,
   ThemeConstants,
   UserMarkBadgeRow,
   V2exMemberProfile,
@@ -251,6 +254,7 @@ export struct UserProfileReplyCard {
   @Event openMention?: (username: string) => void
   private inlineActionInFlight: boolean = false
   private primaryActionInFlight: boolean = false
+  private reading: ReadingSettingsState = connectReadingSettings()
 
   private replyBodySource(): string {
     const rendered = (this.reply.content_rendered || '').trim()
@@ -313,7 +317,7 @@ export struct UserProfileReplyCard {
       }
       .width('100%')
       Text(this.reply.topic_title)
-        .fontSize(ThemeConstants.FONT_SIZE_BODY)
+        .fontSize(this.titleFontSize())
         .fontWeight(FontWeight.Medium)
         .fontColor($r('sys.color.font_primary'))
         .maxLines(2)
@@ -371,5 +375,12 @@ export struct UserProfileReplyCard {
     .onClick(() => {
       this.openPrimaryTopic()
     })
+  }
+
+  private titleFontSize(): number {
+    return ReadingSettings.scaleTypographyToken(
+      ThemeConstants.FONT_SIZE_BODY,
+      this.reading.textScale,
+    )
   }
 }
