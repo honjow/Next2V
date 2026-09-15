@@ -43,6 +43,12 @@ export struct DailyCheckinWebRunner {
     if (this.trigger <= 0 || this.active) {
       return
     }
+    // The visible web-login page deliberately owns the shared ArkWeb cookie
+    // jar. Starting a hidden mission page here could replace its fresh signin
+    // session with the persisted account session before form submission.
+    if (CookieJarSettings.isWebLoginCookieIsolationActive()) {
+      return
+    }
     this.active = true
     this.step = 'pending'
     if (this.onRunStart) {
@@ -79,13 +85,31 @@ export struct DailyCheckinWebRunner {
     if (this.step !== 'pending') {
       return
     }
+    if (CookieJarSettings.isWebLoginCookieIsolationActive()) {
+      this.step = 'idle'
+      this.active = false
+      this.clearTimer()
+      return
+    }
     this.step = 'mission'
     // Make sure the WebView cookie jar carries the active account's session before loading.
     CookieJarSettings.restoreCurrentToWebCookieManager()
       .then(() => {
+        if (CookieJarSettings.isWebLoginCookieIsolationActive()) {
+          this.step = 'idle'
+          this.active = false
+          this.clearTimer()
+          return
+        }
         this.safeLoad(`${this.baseUrl}/mission/daily`)
       })
       .catch(() => {
+        if (CookieJarSettings.isWebLoginCookieIsolationActive()) {
+          this.step = 'idle'
+          this.active = false
+          this.clearTimer()
+          return
+        }
         this.safeLoad(`${this.baseUrl}/mission/daily`)
       })
   }

@@ -51,6 +51,11 @@ export default class EntryAbility extends UIAbility {
     DiagnosticLogger.info('app', 'diagnostics_session_start', { source: 'EntryAbility.onCreate' })
     try {
       webview.WebviewController.initializeWebEngine()
+      // Keep the ArkWeb session usable across the sign-in render and form
+      // submission. The V2EX password flow needs first-party PB3_SESSION,
+      // while Google OAuth may set cookies from a cross-origin context.
+      webview.WebCookieManager.putAcceptCookieEnabled(true)
+      webview.WebCookieManager.putAcceptThirdPartyCookieEnabled(true)
     } catch (error) {
       const e = error as Error
       console.error('initialize web engine failed: ' + e.message)

@@ -35,6 +35,24 @@ interface CookieScopeLookup {
 export class CookieJarSettings {
   private static cookiesByBaseUrl: Record<string, string> = {}
   private static updatedAt: number = 0
+  private static webLoginCookieIsolationActive: boolean = false
+
+  /**
+   * A password/OAuth page owns ArkWeb's process-wide cookie jar until it is
+   * dismissed. Restoring a persisted account cookie during that window can
+   * replace the fresh /signin PB3_SESSION after V2EX has generated its `once`.
+   */
+  static beginWebLoginCookieIsolation(): void {
+    CookieJarSettings.webLoginCookieIsolationActive = true
+  }
+
+  static endWebLoginCookieIsolation(): void {
+    CookieJarSettings.webLoginCookieIsolationActive = false
+  }
+
+  static isWebLoginCookieIsolationActive(): boolean {
+    return CookieJarSettings.webLoginCookieIsolationActive
+  }
 
   static getCookieForBaseUrl(baseUrl: string): string {
     const scopeKey = CookieJarSettings.credentialScopeKey(baseUrl)
@@ -219,6 +237,16 @@ export class CookieJarSettings {
     const cleanBaseUrl = CookieJarSettings.normalizeBaseUrl(baseUrl)
     const previousCookie = CookieJarSettings.getCookieForBaseUrl(cleanBaseUrl)
     CookieJarSettings.expireWebCookiesForBaseUrl(cleanBaseUrl, previousCookie)
+    // Web login needs a truly clean WebView cookie jar so the server mints a
+    // fresh PB3_SESSION + once pair that stays consistent between the /signin
+    // render and the form submit. Stale PB3_SESSION (from DailyCheckinWebRunner,
+    // app-startup restore, or a prior login) differs from the new once, and the
+    // server rejects the submit with "CSRF失效".
+    try {
+      await webview.WebCookieManager.clearAllCookies()
+    } catch (allError) {
+      DiagnosticLogger.exception('webview', 'clear_web_all_cookies_exception', allError as Error, { baseUrl: cleanBaseUrl })
+    }
     try {
       webview.WebCookieManager.saveCookieSync()
     } catch (error) {
@@ -296,6 +324,9 @@ export class CookieJarSettings {
   }
 
   private static async restoreToWebCookieManager(): Promise<void> {
+    if (CookieJarSettings.webLoginCookieIsolationActive) {
+      return
+    }
     const baseUrl = HttpClient.getInstance().getBaseUrl()
     const cookieHeader = CookieJarSettings.getCookieForBaseUrl(baseUrl)
     if (!cookieHeader) {

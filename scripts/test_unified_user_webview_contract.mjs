@@ -22,8 +22,11 @@ function assertNotIncludes(name, text, needle) {
 
 const webView = read('shared/src/main/ets/components/V2exWebView.ets')
 const sharedIndex = read('shared/src/main/ets/Index.ets')
+const entryAbility = read('entry/src/main/ets/entryability/EntryAbility.ets')
 const webLogin = read('entry/src/main/ets/pages/V2exWebLoginPage.ets')
 const accountWebView = read('entry/src/main/ets/pages/AccountWebViewPage.ets')
+const cookieJar = read('shared/src/main/ets/settings/CookieJarSettings.ets')
+const dailyCheckinRunner = read('entry/src/main/ets/components/DailyCheckinWebRunner.ets')
 
 assertIncludes('shared V2exWebView', webView, "Web({ src: '', controller: this.controller })")
 for (const commonConfig of [
@@ -45,6 +48,8 @@ for (const commonConfig of [
   assertIncludes('shared V2exWebView common config', webView, commonConfig)
 }
 assertIncludes('shared barrel export', sharedIndex, "export { V2exWebView } from './components/V2exWebView'")
+assertIncludes('EntryAbility WebCookieManager policy', entryAbility, 'webview.WebCookieManager.putAcceptCookieEnabled(true)')
+assertIncludes('EntryAbility third-party WebCookieManager policy', entryAbility, 'webview.WebCookieManager.putAcceptThirdPartyCookieEnabled(true)')
 
 for (const [name, text] of [
   ['V2exWebLoginPage', webLogin],
@@ -60,9 +65,18 @@ for (const [name, text] of [
 assertIncludes('V2exWebLoginPage scaffold', webLogin, 'V2exWebViewScaffold({')
 assertIncludes('V2exWebLoginPage status max lines', webLogin, 'statusMaxLines: 1')
 assertIncludes('V2exWebLoginPage cookie clear', webLogin, 'CookieJarSettings.clearWebCookiesForBaseUrl(this.baseUrl)')
+assertIncludes('V2exWebLoginPage cookie isolation begin', webLogin, 'CookieJarSettings.beginWebLoginCookieIsolation()')
+assertIncludes('V2exWebLoginPage cookie isolation end', webLogin, 'CookieJarSettings.endWebLoginCookieIsolation()')
 assertIncludes('V2exWebLoginPage auto-save begin', webLogin, 'this.scheduleAutoSave()')
+assertIncludes('V2exWebLoginPage auto-save transition guard', webLogin, 'this.isLoginTransitionUrl()')
+assertIncludes('V2exWebLoginPage sign-in transition guard', webLogin, "path === '/signin'")
+assertIncludes('V2exWebLoginPage 2FA transition guard', webLogin, "path === '/2fa'")
+assertNotIncludes('V2exWebLoginPage PB3 auth cookie heuristic', webLogin, "names.indexOf('PB3_SESSION') >= 0")
 assertIncludes('V2exWebLoginPage lastUrl tracking', webLogin, 'this.lastUrl = event.url')
 assertIncludes('V2exWebLoginPage load finished callback', webLogin, 'onLoadFinished: (event?: PageEndEvent)')
+assertIncludes('CookieJarSettings web login isolation state', cookieJar, 'webLoginCookieIsolationActive')
+assertIncludes('CookieJarSettings isolation restore guard', cookieJar, 'if (CookieJarSettings.webLoginCookieIsolationActive)')
+assertIncludes('DailyCheckinWebRunner isolation start guard', dailyCheckinRunner, 'CookieJarSettings.isWebLoginCookieIsolationActive()')
 
 assertIncludes('AccountWebViewPage scaffold', accountWebView, 'V2exWebViewScaffold({')
 assertIncludes('AccountWebViewPage status max lines', accountWebView, 'statusMaxLines: 2')

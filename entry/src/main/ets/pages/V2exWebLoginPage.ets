@@ -72,6 +72,7 @@ export struct V2exWebLoginPage {
 
   aboutToAppear(): void {
     this.isPageActive = true
+    CookieJarSettings.beginWebLoginCookieIsolation()
     if (!this.pageMessage) {
       this.pageMessage = this.localeAwareText($r('app.string.web_login_opening'), 'Opening web login...')
     }
@@ -79,6 +80,7 @@ export struct V2exWebLoginPage {
 
   aboutToDisappear(): void {
     this.isPageActive = false
+    CookieJarSettings.endWebLoginCookieIsolation()
     this.saveRequestId++
     this.cancelAutoSave()
     this.isSaving = false
@@ -200,13 +202,14 @@ export struct V2exWebLoginPage {
         this.controller.loadUrl(url)
       })
       .catch((error: Error) => {
+        CookieJarSettings.endWebLoginCookieIsolation()
         DiagnosticLogger.exception('webview', 'web_login_load_signin_exception', error, { url: url })
         this.errorMessage = `${translateApiError(error)}: ${url}`
       })
   }
 
   private scheduleAutoSave(delay: number = 900): void {
-    if (!this.isPageActive || this.isSaving || this.isAutoSaving || this.isSaved) {
+    if (!this.isPageActive || this.isSaving || this.isAutoSaving || this.isSaved || this.isLoginTransitionUrl()) {
       return
     }
     this.cancelAutoSave()
@@ -225,6 +228,29 @@ export struct V2exWebLoginPage {
       clearTimeout(this.autoSaveTimerId)
       this.autoSaveTimerId = 0
     }
+  }
+
+  /**
+   * PB3_SESSION belongs to the anonymous sign-in document and binds its
+   * transient `once` field. Probing /settings while sign-in, 2FA, or OAuth is
+   * in progress can invalidate that pair before the browser form is posted.
+   */
+  private isLoginTransitionUrl(): boolean {
+    const rawUrl = (this.lastUrl || this.currentSigninUrl()).trim()
+    const schemeIndex = rawUrl.indexOf('://')
+    const pathStart = schemeIndex >= 0 ? rawUrl.indexOf('/', schemeIndex + 3) : rawUrl.indexOf('/')
+    const pathAndSuffix = pathStart >= 0 ? rawUrl.slice(pathStart) : '/'
+    const queryIndex = pathAndSuffix.indexOf('?')
+    const fragmentIndex = pathAndSuffix.indexOf('#')
+    let pathEnd = pathAndSuffix.length
+    if (queryIndex >= 0 && queryIndex < pathEnd) {
+      pathEnd = queryIndex
+    }
+    if (fragmentIndex >= 0 && fragmentIndex < pathEnd) {
+      pathEnd = fragmentIndex
+    }
+    const path = pathAndSuffix.slice(0, pathEnd).toLowerCase()
+    return path === '/signin' || path === '/2fa' || path.indexOf('/2fa/') === 0 || path.indexOf('/auth/') === 0
   }
 
   private saveLogin(silent: boolean, autoAttempt: number = 0): void {
@@ -431,7 +457,6 @@ export struct V2exWebLoginPage {
       names.push(part.slice(0, idx).trim().toUpperCase())
     }
     return names.indexOf('A2') >= 0 ||
-      names.indexOf('PB3_SESSION') >= 0 ||
       names.indexOf('PB3_AUTH') >= 0 ||
       names.indexOf('V2EX_SESSION') >= 0
   }
