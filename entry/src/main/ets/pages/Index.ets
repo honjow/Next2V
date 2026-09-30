@@ -944,6 +944,7 @@ struct Index {
       'scrollEffectType': ScrollEffectType.GRADIENT_BLUR,
     }
     let style: Record<string, Object> = {
+      'blurStrategy': BlurStrategy.ENABLE,
       'systemMaterialEffect': mat,
       'scrollEffectOpts': scrollOpts,
     }
@@ -956,7 +957,6 @@ struct Index {
         return {
           'avoidLayoutSafeArea': true,
           'enableComponentSafeArea': false,
-          'blurStrategy': BlurStrategy.ENABLE,
           'content': content,
           'style': style,
         }
@@ -978,7 +978,6 @@ struct Index {
       return {
         'avoidLayoutSafeArea': true,
         'enableComponentSafeArea': false,
-        'blurStrategy': BlurStrategy.ENABLE,
         'content': content,
         'style': style,
       }
@@ -986,7 +985,6 @@ struct Index {
     return {
       'avoidLayoutSafeArea': true,
       'enableComponentSafeArea': false,
-      'blurStrategy': BlurStrategy.ENABLE,
       'style': style,
     }
   }
@@ -1434,13 +1432,13 @@ struct Index {
       'scrollEffectType': ScrollEffectType.GRADIENT_BLUR,
     }
     let style: Record<string, Object> = {
+      'blurStrategy': BlurStrategy.ENABLE,
       'systemMaterialEffect': mat,
       'scrollEffectOpts': scrollOpts,
     }
     return {
       'avoidLayoutSafeArea': true,
       'enableComponentSafeArea': false,
-      'blurStrategy': BlurStrategy.ENABLE,
       'content': content,
       'style': style,
     }
