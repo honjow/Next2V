@@ -1,4 +1,6 @@
 import { http } from '@kit.NetworkKit'
+import { V2exCookieHeaders } from './V2exCookieHeaders'
+import { TwoFactorTrace } from '../diagnostics/TwoFactorTrace'
 import { HttpClient } from './HttpClient'
 import { NetworkProxyRequest } from './NetworkProxyRequest'
 import { FeedTabSettings } from '../settings/FeedTabSettings'
@@ -1831,7 +1833,7 @@ export class ApiService {
       })
     }
     const res = await this.http.getTextResponseWithHeaders(endpoint, requestHeaders)
-    this.assertNoTwoFactorChallenge(endpoint, cookie, res.text, res.location)
+    this.assertNoTwoFactorChallenge(endpoint, cookie, res.text, res.location, res.setCookie, res.statusCode)
     // Real-time balance sync: every signed-in V2EX page carries the top-right #money / balance_area widget,
     // so harvest it here (the one chokepoint for authed HTML) — a feed refresh / opening a topic keeps the
     // account surfaces fresh without a dedicated /balance fetch. Guarded + strict inside the publisher.
@@ -1866,12 +1868,25 @@ export class ApiService {
     return clean.startsWith('/') ? clean : `/${clean}`
   }
 
-  private assertNoTwoFactorChallenge(path: string, cookie: string, text: string, location: string): void {
+  private assertNoTwoFactorChallenge(path: string, cookie: string, text: string, location: string, setCookie: string[] = [], statusCode: number = 0): void {
     if (
       ApiService.isLocationPath(location, '/2fa') ||
       V2exSigninParser.extractTwoFactorForm(text)
     ) {
-      this.requestTwoFactorChallenge(path, cookie, location)
+      // A delayed response from a previously selected account cannot open a challenge
+      // bound to the new account. Compare the request snapshot before applying updates.
+      if (cookie.trim() !== CookieJarSettings.getCookieForBaseUrl(this.http.getBaseUrl()).trim()) {
+        const staleTrace = new TwoFactorTrace()
+        staleTrace.record('challenge_ignored_stale_session', { route: TwoFactorTrace.route(path), statusCode }, true)
+        throw new V2exCookieTwoFactorRequiredError(path)
+      }
+      const latestCookie = V2exCookieHeaders.merge(cookie, setCookie)
+      this.requestTwoFactorChallenge(path, latestCookie, location)
+      TwoFactorChallengeService.currentTrace()?.record('challenge_response', {
+        route: TwoFactorTrace.route(path), redirectRoute: TwoFactorTrace.route(location),
+        statusCode, responseUpdates: setCookie.length, sessionChanged: latestCookie !== cookie,
+        formPresent: !!V2exSigninParser.extractTwoFactorForm(text),
+      })
       throw new V2exCookieTwoFactorRequiredError(path)
     }
   }
@@ -1993,6 +2008,8 @@ export class ApiService {
     const refererUrl = urls.refererUrl
 
     let headerBag: Object | null = null
+    const receivedSetCookie: string[] = []
+    let receivedLocation: string = ''
     try {
       const requestHeaders: Record<string, string> = {
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
@@ -2032,11 +2049,14 @@ export class ApiService {
         extraData: method === http.RequestMethod.POST ? extraData : '',
         onHeadersReceive: (headers: Object) => {
           headerBag = headers
+          receivedSetCookie.push(...V2exCookieHeaders.extract(headers))
+          receivedLocation = ApiService.extractHeaderValue(headers, 'location') || receivedLocation
         },
       })
       const statusCode = response.responseCode as number
       const text = (response.result as string) || ''
-      const location = ApiService.extractHeaderValue(headerBag || response.header, 'location')
+      const location = ApiService.extractHeaderValue(headerBag || response.header, 'location') || receivedLocation
+      const setCookie = receivedSetCookie.concat(V2exCookieHeaders.extract(response.header))
       DiagnosticLogger.info('network', 'cookie_html_request_status', {
         method: method === http.RequestMethod.POST ? 'POST' : 'GET',
         url: url,
@@ -2046,7 +2066,7 @@ export class ApiService {
         hasCookie: true,
         bodyLength: text.length,
       })
-      this.assertNoTwoFactorChallenge(clean, cookie, text, location)
+      this.assertNoTwoFactorChallenge(clean, cookie, text, location, setCookie, statusCode)
       if (statusCode < 200 || statusCode >= 400) {
         // A redirect-driven success (see allowErrorWithLocation): hand the Location back so the
         // caller can extract the created resource instead of mistaking the post for a failure.

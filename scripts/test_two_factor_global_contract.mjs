@@ -89,14 +89,15 @@ for (const token of [
   "private static readonly TWO_FACTOR_VERIFY_PATH: string = '/balance'",
   'authBaseUrlFor',
   'authActionUrl',
-  "return [{ key: challenge.codeField || 'code', value: cleanCode }]",
+  "const once = challenge.hiddenFields['once']",
+  "pairs.push({ key: 'once', value: once })",
 ]) {
   assert(nativeAuthService.includes(token), `Native auth 2FA safety contract missing ${token}`)
 }
 assert(!nativeAuthService.includes('const cleanCode = code.trim()'), 'Native 2FA completion must normalize copied codes, not only trim them')
 assert(!nativeAuthService.includes('pairs.push({ key, value: hiddenFields[key] })'), 'Native 2FA POST must not replay hidden/button fields')
-assert(!nativeAuthService.includes("DiagnosticLogger.info('two_factor'"), 'Native 2FA path must not keep temporary diagnostic info logs')
-assert(!nativeAuthService.includes("DiagnosticLogger.warn('two_factor'"), 'Native 2FA path must not keep temporary diagnostic warning logs')
+assert(nativeAuthService.includes("trace.record('form_ready'"), 'Native 2FA must retain redacted form metadata')
+assert(nativeAuthService.includes("trace.record('response_received'"), 'Native 2FA must retain redacted response metadata')
 assert(
   nativeAuthService.indexOf('TWO_FACTOR_VERIFY_PATH') < nativeAuthService.indexOf('SETTINGS_PATH}`, http.RequestMethod.GET, cookieAfterVerify'),
   'Native 2FA completion must verify a gated endpoint before using /settings for username extraction',

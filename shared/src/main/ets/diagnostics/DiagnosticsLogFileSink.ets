@@ -9,6 +9,11 @@ export const DIAGNOSTICS_LOG_SUFFIX: string = '.txt'
 export const DIAGNOSTICS_LOG_KEEP_COUNT: number = 10
 export const DIAGNOSTICS_LOG_MAX_AGE_DAYS: number = 14
 export const DIAGNOSTICS_LOG_MAX_TOTAL_BYTES: number = 5 * 1024 * 1024
+export const TWO_FACTOR_LOG_PREFIX: string = 'next2v-2fa-'
+export const TWO_FACTOR_LOG_KEEP_COUNT: number = 20
+export const TWO_FACTOR_LOG_MAX_AGE_DAYS: number = 30
+export const TWO_FACTOR_LOG_MAX_TOTAL_BYTES: number = 2 * 1024 * 1024
+const TWO_FACTOR_LOG_MAX_FILE_BYTES: number = 256 * 1024
 
 export interface DiagnosticsLogFileInfo {
   fileName: string
@@ -26,6 +31,9 @@ export class DiagnosticsLogFileSink {
   private static currentFilePath: string = ''
   private static disabled: boolean = false
   private static initialized: boolean = false
+  private static incidentFlowId: string = ''
+  private static incidentFileName: string = ''
+  private static incidentBytes: number = 0
 
   static initialize(context: common.UIAbilityContext): void {
     try {
@@ -41,6 +49,9 @@ export class DiagnosticsLogFileSink {
       DiagnosticsLogFileSink.writeTextFile(DiagnosticsLogFileSink.currentFilePath, '', true)
       DiagnosticsLogFileSink.initialized = true
       DiagnosticsLogFileSink.disabled = false
+      DiagnosticsLogFileSink.incidentFlowId = ''
+      DiagnosticsLogFileSink.incidentFileName = ''
+      DiagnosticsLogFileSink.incidentBytes = 0
       DiagnosticsLogFileSink.pruneRetainedLogs()
     } catch (error) {
       DiagnosticsLogFileSink.disableMemoryOnly()
@@ -54,6 +65,11 @@ export class DiagnosticsLogFileSink {
         return
       }
       const safeEntry = DiagnosticsRedactor.sanitizeEvent(entry)
+      // Keep a separate, bounded journal so normal traffic/restarts cannot evict
+      // the authentication incident before the user can export it after re-login.
+      if (safeEntry.category === 'two_factor') {
+        DiagnosticsLogFileSink.appendIncident(safeEntry)
+      }
       DiagnosticsLogFileSink.writeTextFile(
         DiagnosticsLogFileSink.currentFilePath,
         DiagnosticsLogFormatter.formatEntry(safeEntry) + '\n',
@@ -148,13 +164,14 @@ export class DiagnosticsLogFileSink {
   }
 
   static isDiagnosticsLogFileName(fileName: string): boolean {
-    if (!fileName.startsWith(DIAGNOSTICS_LOG_PREFIX) || !fileName.endsWith(DIAGNOSTICS_LOG_SUFFIX)) {
+    const prefix = fileName.startsWith(TWO_FACTOR_LOG_PREFIX) ? TWO_FACTOR_LOG_PREFIX : DIAGNOSTICS_LOG_PREFIX
+    if (!fileName.startsWith(prefix) || !fileName.endsWith(DIAGNOSTICS_LOG_SUFFIX)) {
       return false
     }
     if (fileName.includes('/') || fileName.includes('\\') || fileName.includes('..')) {
       return false
     }
-    const middle = fileName.substring(DIAGNOSTICS_LOG_PREFIX.length, fileName.length - DIAGNOSTICS_LOG_SUFFIX.length)
+    const middle = fileName.substring(prefix.length, fileName.length - DIAGNOSTICS_LOG_SUFFIX.length)
     const baseLength = 'YYYYMMDD-HHMMSS'.length
     if (middle.length !== baseLength && (middle.length <= baseLength + 1 || middle.charAt(baseLength) !== '-')) {
       return false
@@ -193,22 +210,50 @@ export class DiagnosticsLogFileSink {
     if (DiagnosticsLogFileSink.directory.length <= 0) {
       return
     }
-    const names = DiagnosticsLogFileSink.listSafeLogNames().sort().reverse()
+    DiagnosticsLogFileSink.pruneGroup(DIAGNOSTICS_LOG_PREFIX, DIAGNOSTICS_LOG_KEEP_COUNT,
+      DIAGNOSTICS_LOG_MAX_AGE_DAYS, DIAGNOSTICS_LOG_MAX_TOTAL_BYTES)
+    DiagnosticsLogFileSink.pruneGroup(TWO_FACTOR_LOG_PREFIX, TWO_FACTOR_LOG_KEEP_COUNT,
+      TWO_FACTOR_LOG_MAX_AGE_DAYS, TWO_FACTOR_LOG_MAX_TOTAL_BYTES - TWO_FACTOR_LOG_MAX_FILE_BYTES)
+  }
+
+  private static pruneGroup(prefix: string, keepCount: number, maxAgeDays: number, maxBytes: number): void {
+    const names = DiagnosticsLogFileSink.listSafeLogNames().filter((name: string) => name.startsWith(prefix)).sort().reverse()
     const now = Date.now()
     let totalBytes = 0
     names.forEach((name: string, index: number) => {
       const path = DiagnosticsLogFileSink.directory + '/' + name
-      const protectedCurrent = name === DiagnosticsLogFileSink.currentFileName
-      const ageExpired = DiagnosticsLogFileSink.fileAgeMs(name, now) > DIAGNOSTICS_LOG_MAX_AGE_DAYS * 24 * 60 * 60 * 1000
+      const protectedCurrent = name === DiagnosticsLogFileSink.currentFileName || name === DiagnosticsLogFileSink.incidentFileName
+      const ageExpired = DiagnosticsLogFileSink.fileAgeMs(name, now) > maxAgeDays * 24 * 60 * 60 * 1000
       const size = DiagnosticsLogFileSink.approxFileBytes(path)
       totalBytes += size
       if (protectedCurrent) {
         return
       }
-      if (index >= DIAGNOSTICS_LOG_KEEP_COUNT || ageExpired || totalBytes > DIAGNOSTICS_LOG_MAX_TOTAL_BYTES) {
+      if (index >= keepCount || ageExpired || totalBytes > maxBytes) {
         DiagnosticsLogFileSink.unlinkBestEffort(path)
       }
     })
+  }
+
+  private static appendIncident(entry: DiagnosticLogEntry): void {
+    try {
+      const flowId = entry.context?.flowId as string || 'unassigned'
+      const line = DiagnosticsLogFormatter.formatEntry(entry) + '\n'
+      const bytes = DiagnosticsLogFileSink.byteLength(line)
+      if (DiagnosticsLogFileSink.incidentFlowId !== flowId || !DiagnosticsLogFileSink.incidentFileName ||
+        DiagnosticsLogFileSink.incidentBytes + bytes > TWO_FACTOR_LOG_MAX_FILE_BYTES) {
+        DiagnosticsLogFileSink.incidentFlowId = flowId
+        DiagnosticsLogFileSink.incidentFileName = DiagnosticsLogFileSink.createUniqueFileName(
+          DiagnosticsLogFileSink.directory, new Date(), TWO_FACTOR_LOG_PREFIX)
+        DiagnosticsLogFileSink.incidentBytes = 0
+        DiagnosticsLogFileSink.writeTextFile(DiagnosticsLogFileSink.directory + '/' + DiagnosticsLogFileSink.incidentFileName, '', true)
+        DiagnosticsLogFileSink.pruneRetainedLogs()
+      }
+      DiagnosticsLogFileSink.writeTextFile(DiagnosticsLogFileSink.directory + '/' + DiagnosticsLogFileSink.incidentFileName, line, false)
+      DiagnosticsLogFileSink.incidentBytes += bytes
+    } catch (error) {
+      DiagnosticsLogFileSink.consoleFailure('two_factor_journal', error as Error)
+    }
   }
 
   private static listSafeLogNames(): string[] {
@@ -220,16 +265,16 @@ export class DiagnosticsLogFileSink {
     }
   }
 
-  private static createUniqueFileName(directory: string, date: Date): string {
+  private static createUniqueFileName(directory: string, date: Date, prefix: string = DIAGNOSTICS_LOG_PREFIX): string {
     const stem = DiagnosticsLogFileSink.timestampStem(date)
     for (let attempt = 0; attempt < 100; attempt += 1) {
       const suffix = attempt === 0 ? '' : '-' + attempt.toString().padStart(2, '0')
-      const candidate = DIAGNOSTICS_LOG_PREFIX + stem + suffix + DIAGNOSTICS_LOG_SUFFIX
+      const candidate = prefix + stem + suffix + DIAGNOSTICS_LOG_SUFFIX
       if (!DiagnosticsLogFileSink.fileExists(directory + '/' + candidate)) {
         return candidate
       }
     }
-    return DIAGNOSTICS_LOG_PREFIX + stem + '-' + Date.now().toString() + DIAGNOSTICS_LOG_SUFFIX
+    return prefix + stem + '-' + Date.now().toString() + DIAGNOSTICS_LOG_SUFFIX
   }
 
   private static timestampStem(date: Date): string {
@@ -252,7 +297,8 @@ export class DiagnosticsLogFileSink {
 
   private static createdAtMsFromFileName(fileName: string): number {
     try {
-      const middle = fileName.substring(DIAGNOSTICS_LOG_PREFIX.length, DIAGNOSTICS_LOG_PREFIX.length + 'YYYYMMDD-HHMMSS'.length)
+      const prefix = fileName.startsWith(TWO_FACTOR_LOG_PREFIX) ? TWO_FACTOR_LOG_PREFIX : DIAGNOSTICS_LOG_PREFIX
+      const middle = fileName.substring(prefix.length, prefix.length + 'YYYYMMDD-HHMMSS'.length)
       const year = Number(middle.substring(0, 4))
       const month = Number(middle.substring(4, 6)) - 1
       const day = Number(middle.substring(6, 8))

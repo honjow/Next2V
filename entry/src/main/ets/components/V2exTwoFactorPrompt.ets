@@ -3,6 +3,7 @@ import { common } from '@kit.AbilityKit'
 import {
   AccountSessionCoordinator,
   ApiService,
+  ApiErrors,
   AppActionButton,
   AppModalScaffold,
   AppStrings,
@@ -15,6 +16,8 @@ import {
   LanguageState,
   NativeTwoFactorRequiredError,
   ThemeConstants,
+  TwoFactorChallengeService,
+  TwoFactorTrace,
   V2exNativeAuthService,
   translateApiError
 } from 'shared'
@@ -104,7 +107,7 @@ export struct V2exTwoFactorPrompt {
     if (this.isSubmitting) {
       return
     }
-    const cleanCookie = (this.cookie || '').trim()
+    const cleanCookie = TwoFactorChallengeService.retryCookie(this.cookie).trim()
     const cleanCode = this.normalizeTwoFactorCode(this.code)
     if (this.code !== cleanCode) {
       this.code = cleanCode
@@ -120,11 +123,21 @@ export struct V2exTwoFactorPrompt {
 
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     const baseUrl = this.http.getBaseUrl()
+    const activeCookieAtStart = CookieJarSettings.getCookieForBaseUrl(baseUrl)
+    const trace = TwoFactorChallengeService.currentTrace()
+    if (!trace || !TwoFactorChallengeService.matchesContext(trace)) {
+      trace?.record('attempt_rejected_stale_session', {}, true)
+      this.errorMessage = translateApiError(ApiErrors.loginStateUnconfirmed())
+      return
+    }
+    trace.attempt += 1
+    trace.stage = 'input'
+    trace.record('attempt_started')
     this.isSubmitting = true
     this.errorMessage = ''
 
-    this.auth.completeTwoFactorWithCookie(cleanCookie, cleanCode)
-      .then((snapshot: NativeLoginSnapshot) => this.persistSnapshot(context, baseUrl, snapshot))
+    this.auth.completeTwoFactorWithCookie(cleanCookie, cleanCode, trace)
+      .then((snapshot: NativeLoginSnapshot) => this.persistSnapshot(context, baseUrl, snapshot, trace, activeCookieAtStart))
       .then(() => {
         this.code = ''
         this.errorMessage = ''
@@ -136,6 +149,10 @@ export struct V2exTwoFactorPrompt {
       })
       .catch((error: Error) => {
         this.code = ''
+        trace.record('attempt_failed', { retryableChallenge: error instanceof NativeTwoFactorRequiredError }, true)
+        const retryCookie = error instanceof NativeTwoFactorRequiredError ?
+          error.challenge.cookie : this.auth.getTwoFactorRetryCookie()
+        TwoFactorChallengeService.updateRetry(trace, retryCookie)
         if (error instanceof NativeTwoFactorRequiredError) {
           this.errorMessage = error.message || AppStrings.text($r('app.string.api_error_two_factor_failed'), 'Two-factor failed')
           return
@@ -165,8 +182,12 @@ export struct V2exTwoFactorPrompt {
   private async persistSnapshot(
     context: common.UIAbilityContext,
     baseUrl: string,
-    snapshot: NativeLoginSnapshot
+    snapshot: NativeLoginSnapshot,
+    trace: TwoFactorTrace,
+    activeCookieAtStart: string
   ): Promise<void> {
+    trace.stage = 'persist'
+    trace.record('persist_started')
     let avatar = ''
     try {
       const profile = await this.api.getMember(snapshot.username)
@@ -174,7 +195,17 @@ export struct V2exTwoFactorPrompt {
     } catch (_error) {
       avatar = ''
     }
-    await CookieJarSettings.saveForBaseUrl(context, baseUrl, snapshot.cookie)
+    // A completed request from a dismissed flow must not replace a newly selected account.
+    if (!TwoFactorChallengeService.matchesContext(trace) || this.http.getBaseUrl() !== baseUrl ||
+      CookieJarSettings.getCookieForBaseUrl(baseUrl) !== activeCookieAtStart) {
+      trace.record('persist_rejected_stale_session', {}, true)
+      throw ApiErrors.loginStateUnconfirmed()
+    }
+    try {
+      await CookieJarSettings.saveForBaseUrl(context, baseUrl, snapshot.cookie)
+    } finally {
+      TwoFactorChallengeService.acceptPersistedSession(trace, snapshot.cookie)
+    }
     await AuthSessionSettings.save(context, {
       loginMode: 'cookie',
       username: snapshot.username,
@@ -182,6 +213,7 @@ export struct V2exTwoFactorPrompt {
       validatedAt: Date.now()
     })
     await AccountSessionCoordinator.registerCurrentSession(context, snapshot.username, avatar, 'cookie')
+    trace.record('persist_completed')
     AutoDailyCheckinService.tryCheckin(context, snapshot.cookie, 'two-factor-login').catch((error: Error) => {
       console.info('auto daily check-in two-factor-login trigger failed: ' + error.message)
     })

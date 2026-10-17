@@ -2,6 +2,7 @@ import { http } from '@kit.NetworkKit'
 import { ApiConstants } from '../constants/ApiConstants'
 import { HttpJsonParseError, HttpRetryPolicy, HttpStatusError } from './HttpRetryPolicy'
 import { NetworkProxyRequest } from './NetworkProxyRequest'
+import { V2exCookieHeaders } from './V2exCookieHeaders'
 import { DiagnosticLogger } from '../diagnostics/DiagnosticLogger'
 
 const MAX_RETRIES: number = 3
@@ -10,6 +11,7 @@ const READ_TIMEOUT_MS: number = 15000
 const BACKOFF_BASE_MS: number = 1000
 
 export interface TextResponseWithHeaders {
+  setCookie: string[]
   statusCode: number
   text: string
   location: string
@@ -203,6 +205,7 @@ export class HttpClient {
     const reqMethod = method || http.RequestMethod.GET
     let headerBag: Object | null = null
     let receivedLocation: string = ''
+    const receivedSetCookie: string[] = []
     let requestHeaders: Record<string, string> = {
       'Content-Type': 'text/html; charset=utf-8',
       'Accept-Encoding': 'gzip'
@@ -222,6 +225,7 @@ export class HttpClient {
         usingCache: usingCache ?? !HttpClient.hasAuthHeader(requestHeaders),
         onHeadersReceive: (received: Object) => {
           headerBag = received
+          receivedSetCookie.push(...V2exCookieHeaders.extract(received))
           const location = HttpClient.extractSingleHeader(received, 'location')
           if (location) {
             receivedLocation = location
@@ -230,6 +234,7 @@ export class HttpClient {
       })
 
       const statusCode = response.responseCode as number
+      const setCookie = receivedSetCookie.concat(V2exCookieHeaders.extract(response.header))
       const responseHeaders = headerBag || response.header
       const location = HttpClient.extractSingleHeader(responseHeaders, 'location') || receivedLocation
       if (statusCode >= 400) {
@@ -254,12 +259,12 @@ export class HttpClient {
         })
       }
       if (statusCode >= 300 && statusCode < 400) {
-        return { statusCode, text: (response.result as string) || '', location }
+        return { statusCode, text: (response.result as string) || '', location, setCookie }
       }
       if (statusCode < 200 || statusCode >= 400) {
         throw new HttpStatusError(statusCode, url)
       }
-      return { statusCode, text: (response.result as string) || '', location }
+      return { statusCode, text: (response.result as string) || '', location, setCookie }
     } catch (error) {
       const e = error as Error
       DiagnosticLogger.exception('network', 'http_text_response_request_exception', e, {

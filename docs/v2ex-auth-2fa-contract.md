@@ -1,40 +1,57 @@
 # V2EX Auth / 2FA Contract
 
-Status: draft, derived from project discussion and reference-client research.
+Updated: 2026-10-17. Covers initial login and periodic verification of an existing session.
 
-## Key behavior
+## Session continuation
 
-For accounts with V2EX two-factor authentication enabled, after password/CAPTCHA login succeeds but before 2FA is completed, V2EX can redirect **any authenticated page request** to `/2fa`.
+- Authenticated HTML requests recognize `/2fa` redirects or a real 2FA form. Merge received `Set-Cookie` in response order **before** publishing the challenge. Delayed responses whose request Cookie no longer matches the active account must not open a challenge.
+- One global challenge owns the pending session. Concurrent business requests must not overwrite it. Explicit native login may start a new flow; cancel/failure must not clear the previously active account.
+- Each submission fetches `/2fa` using the latest pending Cookie, then submits the parsed code field and the page's `once` when present. Do not replay unrelated hidden/button/submit fields. Keep the `/2fa` Referer and disable HTTP caching.
+- Cookie merging supports `Max-Age` deletion, expired `Expires`, and `Max-Age` precedence. Preserve ordered updates, including A → B → A; never globally deduplicate header lines. This remains the existing first-party header transport, not a general domain/path CookieJar.
+- Failed attempts retain the newest session, including updates received with an HTTP error. Clear the user's code input, retain the challenge, and fetch a fresh form on retry. Do not automatically resend the one-time code.
+- Success requires `/balance` returning HTTP 200 with a signed-in identity and no login/2FA form, followed by `/settings` confirming the same identity. A redirect alone, HTTP 200 alone, or an anti-bot page is insufficient.
+- If a prior POST succeeded but verification was interrupted, `/2fa` may no longer provide a form. In that case, run the same `/balance` and `/settings` checks without posting blindly.
+- Persist only a verified result whose challenge/account/domain context remains current. A partial local save may be retried by the same flow. Existing account persistence spans multiple asynchronous writes; this patch does not make account switching and persistence transactional.
+- Keep the existing global sheet and success refresh behavior. Do not automatically replay non-idempotent business writes.
 
-Therefore `/2fa` handling is not only a native-login-page step. It must be treated as a session/global auth state.
+## Durable diagnostics and collection
 
-## Required design implication
+Use Settings → diagnostic logs (existing screen). Logging is enabled at `info` by default; disabling diagnostics or raising its minimum level can omit events. No new controls or visible workflow are introduced.
 
-- Any network request or page fetch that follows authenticated redirects must detect `Location: /2fa` or equivalent `/2fa` final URL.
-- Detection should trigger a single shared 2FA challenge state.
-- The app should not mark login/session as fully authenticated until 2FA is submitted and a private page proof succeeds.
-- Submitting the challenge should use the V2EX-compatible contract observed in reference clients:
-  - endpoint: `/2fa`
-  - method: POST
-  - body field: `code`
-  - referer: `/2fa`
-  - cookie: current login/session cookie
-- After successful 2FA, the originally blocked request may be retried or the affected page refreshed.
-- If a code is wrong or expired, keep the 2FA challenge active and only clear the 2FA code input.
+Each flow receives an independent `flowId`; `attempt` separates submissions and `stage` identifies the failed step. Events cover challenge detection/coalescing, form GET, verification POST, gated-page check, identity check, retry state, persistence, completion and cancellation. Request records include method, host without user-info, transport mode, and protocol version. Response records include status, route categories, duration, response length, header-update count, session-change/presence flags, form/identity/once-presence flags, server problem category, and server Date offset when provided. Transport failures retain numeric platform error codes. The server clock delta is an observation, not proof that the authenticator clock is wrong.
 
-## Reference evidence
+Never log actual Cookie values or hashes, verification codes, `once` values, request bodies, raw HTML, usernames, or arbitrary server/exception text in the 2FA journal. Server problem messages are classified into bounded categories. `challengeFieldPresent` means a page `once` was present; it does not contain its value. `responseUpdates` counts collected header entries (a final header can also appear in a callback), not distinct cookie names.
 
-See:
+2FA events are written synchronously to the normal log and a separate `next2v-2fa-YYYYMMDD-HHMMSS[-NN].txt` journal in the app's `filesDir/diagnostics_logs` directory. Each write closes its handle. Journals appear in the existing file list and use the existing share/copy fallback. Logging failures never fail authentication.
 
-- `.hermes-artifacts/20260511-auth-reference-research/research.md`
-- `.hermes-artifacts/20260511-auth-reference-research/contract-and-patch-plan.md`
+Retention is independent of normal launch logs:
 
-Reference client behavior confirmed in `CzBiX/v2ex-android`:
+| Files | Count cap | Age cap | Total size cap | Segment cap |
+| --- | ---: | ---: | ---: | ---: |
+| Normal launch logs | 10 | 14 days | 5 MiB (existing policy) | Existing behavior |
+| 2FA journals | 20 | 30 days | 2 MiB | 256 KiB |
 
-- redirect `/2fa` means two-factor required;
-- submit `POST /2fa` with `code`;
-- verify login after redirect/session continuation.
+These are upper bounds, not guaranteed retention periods: many incidents or size pressure can remove older segments sooner. Rotation reserves space for the next segment. Restarting or signing in again does not by itself clear the 2FA journals. OS/app data deletion and failed storage remain outside this guarantee.
 
-## Current patch review note
+If the issue recurs:
 
-The current uncommitted auth patch may still be too login-flow-local. Before committing, review whether `/2fa` redirect detection exists at the shared request/session layer or only inside `V2exNativeAuthService.login/completeTwoFactor`.
+1. Note the approximate failure time and whether it was a first attempt or retry. Do not record the code.
+2. Export the matching `next2v-2fa-…txt` file(s) from Settings → diagnostic logs → log files; if already signed in again, the earlier files remain subject to the independent retention limits.
+3. Include the ordinary launch log covering that time for app lifecycle/build context. The generic “export current log” action does not automatically bundle every retained journal.
+4. Follow `flowId` and `attempt` through `fetch_form`, `submit`, `verify_gate`, `verify_identity`, and `persist`; compare response flags and the terminal event. No terminal event may indicate process termination rather than a server rejection.
+
+## Verification
+
+- `node scripts/test_two_factor_session_behavior.mjs`: production ETS logic with synthetic responses; Cookie rotation/deletion/order, response handoff, once submission, retry, already-verified recovery, false success rejection, stale-account responses, prompt catch wiring and secret exclusion.
+- `node scripts/test_two_factor_log_retention.mjs`: production sink with an in-memory filesystem; reading/exporting journals, 15 restart cycles, independent count/age/size limits and redaction.
+- Existing global 2FA, parser fixture, login V2, node false-positive, multi-account and V1 inventory contracts remain required.
+- macOS build: `hvigorw assembleHap --mode module -p product=default -p buildMode=debug --no-daemon`.
+- These checks do not prove the real V2EX periodic challenge path. Final runtime acceptance requires an actual existing session being challenged and successfully continued without signing in again. The user's earlier challenge was cleared by re-login; no replacement login test may be reported as that acceptance.
+
+## Reference implementations
+
+- [R2V global prompt and retry state](https://github.com/kucial/v2ex-react-native/blob/main/src/containers/AuthWatcher/components/TwoFAModal.tsx)
+- [V2Compose account repository](https://github.com/cooaer/v2compose/blob/master/shared/src/commonMain/kotlin/io/github/v2compose/repository/def/DefaultAccountRepository.kt)
+- [v2ex-simple global 2FA manager](https://github.com/fan123199/v2ex-simple/blob/main/app/src/main/java/im/fdx/v2ex/ui/main/TwoFAManager.kt)
+
+The expanded investigation found `once + code` in seven of eight inspected repositories, including related Flutter implementations; these are not eight independent runtime proofs. CzBiX/v2ex-android used code alone. Missing `once` remains a protocol discrepancy, not a proven sole cause of the user's historical failure.
