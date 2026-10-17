@@ -11,16 +11,24 @@
  * Run: node scripts/test_version_consistency_contract.mjs
  */
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 
 const read = (p) => readFileSync(p, 'utf8')
 const app = read('AppScope/app.json5')
 const versionName = (app.match(/"versionName"\s*:\s*"([^"]+)"/) || [])[1]
 const versionCode = Number((app.match(/"versionCode"\s*:\s*(\d+)/) || [])[1])
-assert.ok(versionName, 'AppScope/app.json5 must declare versionName')
-assert.ok(Number.isFinite(versionCode), 'AppScope/app.json5 must declare versionCode')
+assert.match(versionName ?? '', /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/, 'AppScope/app.json5 must declare a release version')
+assert.ok(Number.isSafeInteger(versionCode) && versionCode > 0, 'AppScope/app.json5 must declare a positive versionCode')
 
 const failures = []
+const notesPath = `changelog/v${versionName}.md`
+if (!existsSync(notesPath) || read(notesPath).trim().length === 0) {
+  failures.push(`${notesPath} must exist and be non-empty`)
+}
+const releaseRef = process.env.GITHUB_REF ?? ''
+if (releaseRef.startsWith('refs/tags/') && releaseRef !== `refs/tags/v${versionName}`) {
+  failures.push(`release tag ${releaseRef} must match v${versionName}`)
+}
 const expectName = (file, actual) => {
   if (actual !== versionName) failures.push(`${file}: "${actual}" !== app versionName "${versionName}"`)
 }

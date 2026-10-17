@@ -37,11 +37,12 @@ jobs:
         shell: bash
         run: |
           node scripts/test_version_consistency_contract.mjs
+          node scripts/test_release_notes_contract.mjs
 
       - name: Get app version
         shell: bash
         run: |
-          version=$(node -e "const fs=require('fs'); const m=fs.readFileSync('oh-package.json5','utf8').match(/\"version\"\\s*:\\s*\"([^\"]+)\"/); console.log(m ? m[1] : '0.0.0')")
+          version=$(node -e "const fs=require('fs'); const m=fs.readFileSync('AppScope/app.json5','utf8').match(/\"versionName\"\\s*:\\s*\"([^\"]+)\"/); if (!m) process.exit(1); console.log(m[1])")
           echo "APP_VERSION=$version" >> "$GITHUB_ENV"
 
       - name: Install OHPM dependencies
@@ -141,6 +142,16 @@ jobs:
     permissions:
       contents: write
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify release metadata
+        shell: bash
+        run: |
+          node scripts/test_version_consistency_contract.mjs
+          version=$(node -e "const fs=require('fs'); const m=fs.readFileSync('AppScope/app.json5','utf8').match(/\"versionName\"\\s*:\\s*\"([^\"]+)\"/); if (!m) process.exit(1); console.log(m[1])")
+          echo "APP_VERSION=$version" >> "$GITHUB_ENV"
+
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
@@ -161,4 +172,4 @@ jobs:
           allowUpdates: true
           artifactErrorsFailBuild: true
           replacesArtifacts: true
-          generateReleaseNotes: true
+          bodyFile: changelog/v${{ env.APP_VERSION }}.md

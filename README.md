@@ -103,6 +103,8 @@ bash dev.sh --help
 
 ## 开发说明
 
+- 版本更新说明保存在 [`changelog/`](changelog/)，发布步骤见[版本日志发布流程](changelog/README.md)。
+
 - `dev.sh` 是 Linux lane/worker 脚本；macOS/Darwin 本地构建请使用 `hvigorw assembleHap --mode module -p product=default -p buildMode=debug --no-daemon`。
 - `dev.sh` 会调用项目的签名脚本，签名材料和登录态属于本地开发环境，不应提交。
 - 项目包含对 V2EX 网页结构的解析逻辑，相关页面结构变化可能导致部分功能失效。
