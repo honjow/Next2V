@@ -23,6 +23,8 @@ import { ReplyActionAlignmentSettings } from './ReplyActionAlignmentSettings'
 import { ReplyCardStyleSettings } from './ReplyCardStyleSettings'
 import { ReplyDisplaySettings } from './ReplyDisplaySettings'
 import { STORE_NAME_SETTINGS, SettingsPreferencesStore } from './SettingsStorage'
+import { SubTabStyleSettings } from './SubTabStyleSettings'
+import { SUBTAB_STYLE_DEFAULT } from '../state/SubTabStyleState'
 import { ThemeSettings } from './ThemeSettings'
 import { ThemeColorSettings } from './ThemeColorSettings'
 import { AutoDailyCheckinService } from '../services/AutoDailyCheckinService'
@@ -46,6 +48,7 @@ export class SettingsBootstrap {
     await SettingsBootstrap.restoreThemeColor(context, settingsStore)
     await SettingsBootstrap.restoreImmersiveMaterial(context, settingsStore)
     await SettingsBootstrap.restoreTheme(context, settingsStore)
+    await SettingsBootstrap.restoreSubTabStyle(context, settingsStore)
     await SettingsBootstrap.restoreAvatarAppearance(context, settingsStore)
     await SettingsBootstrap.restoreMedia(context, settingsStore)
     await SettingsBootstrap.restoreImageUpload(context, settingsStore)
@@ -90,6 +93,7 @@ export class SettingsBootstrap {
     await SettingsBootstrap.restoreThemeColor(context, settingsStore)
     await SettingsBootstrap.restoreImmersiveMaterial(context, settingsStore)
     await SettingsBootstrap.restoreTheme(context, settingsStore)
+    await SettingsBootstrap.restoreSubTabStyle(context, settingsStore)
     await SettingsBootstrap.restoreAvatarAppearance(context, settingsStore)
     await SettingsBootstrap.restoreMedia(context, settingsStore)
     await SettingsBootstrap.restoreImageUpload(context, settingsStore)
@@ -196,6 +200,22 @@ export class SettingsBootstrap {
     ).catch((error: Error) => {
       console.error('restore immersive material settings failed: ' + error.message)
       ImmersiveMaterialSettings.apply(ImmersiveMaterialSettings.DEFAULT_LEVEL)
+    })
+  }
+
+  // Restores the shared sub-tab style (underline/capsule). A saved preference — underline OR capsule —
+  // must survive startup; only users with no saved value see the default (V2Next default: capsule).
+  private static async restoreSubTabStyle(
+    context: common.UIAbilityContext,
+    settingsStore?: SettingsPreferencesStore,
+  ): Promise<void> {
+    await (
+      settingsStore
+        ? Promise.resolve(SubTabStyleSettings.loadFromStore(settingsStore))
+        : SubTabStyleSettings.load(context)
+    ).catch((error: Error) => {
+      console.error('restore sub-tab style settings failed: ' + error.message)
+      SubTabStyleSettings.apply(SUBTAB_STYLE_DEFAULT)
     })
   }
 

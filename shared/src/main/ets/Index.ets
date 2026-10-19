@@ -66,6 +66,19 @@ export { ImageHeroState, connectImageHero, heroIdForUrl } from './state/ImageHer
 export { ThemeDisplayState, connectThemeDisplay } from './state/ThemeDisplayState'
 export { ThemeColorState, connectThemeColor } from './state/ThemeColorState'
 export {
+  SubTabStyleState,
+  connectSubTabStyle,
+  SUBTAB_STYLE_DEFAULT,
+  SUBTAB_STYLE_UNDERLINE,
+  SUBTAB_STYLE_CAPSULE,
+} from './state/SubTabStyleState'
+export {
+  SubtabTransitionState,
+  SubtabTransitionBridge,
+  connectSubtabTransition,
+  SUBTAB_TRANSITION_SCOPE_HOME,
+} from './state/SubtabTransitionState'
+export {
   ImmersiveMaterialSettingsState,
   connectImmersiveMaterialSettings,
 } from './state/ImmersiveMaterialSettingsState'
@@ -233,6 +246,8 @@ export type { ApiDomainSnapshot, DomainValidationResult } from './settings/ApiDo
 export { FeedTabSettings } from './settings/FeedTabSettings'
 export { HomeTabSettings } from './settings/HomeTabSettings'
 export type { HomeTabSettingsSnapshot } from './settings/HomeTabSettings'
+export { SubTabStyleSettings } from './settings/SubTabStyleSettings'
+export type { SubTabStyleOption } from './settings/SubTabStyleSettings'
 export { NotificationSeenSettings } from './settings/NotificationSeenSettings'
 export { TopicDetailReplyActionSettings } from './settings/TopicDetailReplyActionSettings'
 export type { TopicDetailReplyActionSettingsSnapshot } from './settings/TopicDetailReplyActionSettings'
@@ -488,6 +503,7 @@ export { SectionHeader } from './components/SectionHeader'
 export { ListDivider } from './components/ListDivider'
 export { ConciseListRow } from './components/ConciseListRow'
 export { GroupedListSection } from './components/GroupedListSection'
+export { SubTabBar } from './components/SubTabBar'
 export { EmptyState } from './components/EmptyState'
 export { AccountMemberRow } from './components/AccountMemberRow'
 export {

@@ -557,6 +557,18 @@
       "value": "Immersive · Smooth"
     },
     {
+      "name": "settings_subtab_style",
+      "value": "Sub-tab style"
+    },
+    {
+      "name": "subtab_style_underline",
+      "value": "Underline"
+    },
+    {
+      "name": "subtab_style_capsule",
+      "value": "Capsule"
+    },
+    {
       "name": "theme_color_galaxy_blue",
       "value": "Galaxy blue"
     },

@@ -16,6 +16,7 @@ import {
   ReplyActionAlignmentSettings,
   ReplyCardStyleSettings,
   ReplyDisplaySettings,
+  SubTabStyleSettings,
   ThemeColorSettings,
   ThemeSettings,
   TopicDetailReplyActionSettings,
@@ -101,6 +102,12 @@ export class SettingsSaveCoordinator {
   static saveImmersiveMaterial(context: common.UIAbilityContext, level: string): void {
     ImmersiveMaterialSettings.save(context, level).catch((error: Error) => {
       console.error('save immersive material setting failed: ' + error.message)
+    })
+  }
+
+  static saveSubTabStyle(context: common.UIAbilityContext, style: string): void {
+    SubTabStyleSettings.save(context, style).catch((error: Error) => {
+      console.error('save sub-tab style setting failed: ' + error.message)
     })
   }
 

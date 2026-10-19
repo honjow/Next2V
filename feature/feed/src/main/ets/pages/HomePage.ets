@@ -4,7 +4,8 @@ import {
   PullRefreshListScaffold, ApiConstants, TabItem, ApiService, NodeTopicListParams,
   UserProfileParams, CacheSettings, FeedTabSettings, CollectionSettings,
   connectNavStack, connectFeedTab, FeedTabBridge, connectListScroll, connectTopicReadStates,
-  FeedTabState, ListScrollState, PullRefreshController, TopicReadStatesState
+  FeedTabState, ListScrollState, PullRefreshController, TopicReadStatesState,
+  connectSubtabTransition, SubtabTransitionState, SUBTAB_TRANSITION_SCOPE_HOME
 } from 'shared'
 import type { TopicReadState } from 'shared'
 import { common } from '@kit.AbilityKit'
@@ -16,6 +17,16 @@ export struct HomePage {
   @Local private feedTabState: FeedTabState = connectFeedTab()
   @Local private currentTabIndex: number = 0
   @Local private swiperWidth: number = 0
+  // The Swiper's controlled page index. It follows the SETTLED page (onAnimationEnd / onChange) and the
+  // restore seed ONLY. The pre-fix binding was .index(tabKeyToIndex(feedTab)), i.e. the shared selection
+  // bus: a title-bar tab tap wrote feedTab, so the controlled .index() settled the page instantly and
+  // changeIndex's animation was moot - the click-jump. Clicks now travel through the one-shot
+  // SubtabTransition request (NextE RetainedSubtabHost pattern), so .index() never leads the animation.
+  @Local private swiperIndex: number = 0
+  // One-shot click intent from FeedPills (title-bar ComponentContent; separate tree from this page).
+  // @Local (not a plain private field) so @Monitor can observe the @ObservedV2 holder's @Trace
+  // requestSeq (matches NextE RetainedSubtabHost, which carries the same holder via @Param).
+  @Local private subtabTransition: SubtabTransitionState = connectSubtabTransition()
   private swiperController: SwiperController = new SwiperController()
   private horizontalPan: PanGestureOptions = new PanGestureOptions({
     direction: PanDirection.Horizontal,
@@ -38,6 +49,7 @@ export struct HomePage {
       return
     }
     this.currentTabIndex = nextIndex
+    this.swiperIndex = nextIndex
     this.setVisualTabIndex(nextIndex)
     this.notifyMainScrollerReady()
     this.notifyRootRefreshReady()
@@ -124,11 +136,6 @@ export struct HomePage {
     return idx
   }
 
-  private feedTabIndexOrFallback(): number {
-    const index = this.tabKeyToIndex(this.feedTabState.feedTab)
-    return index < 0 ? 0 : index
-  }
-
   private correctFeedTabIfNeeded(): boolean {
     const tabs = this.visibleTabs()
     if (tabs.length <= 0 || this.tabKeyToIndex(this.feedTabState.feedTab) >= 0) {
@@ -156,6 +163,22 @@ export struct HomePage {
     this.swiperController.changeIndex(nextIndex, true)
   }
 
+  // A title-bar tab-tap request: start the NATIVE swiper animation toward the target key without
+  // touching feedTab. The settled page publishes the key via onChange -> publishSelectedKey (persist +
+  // indicator commit), exactly like a finger swipe. Mirrors NextE RetainedSubtabHost.onTransitionRequest.
+  @Monitor('subtabTransition.requestSeq')
+  onSubtabTransitionRequest(): void {
+    if (this.subtabTransition.scope !== SUBTAB_TRANSITION_SCOPE_HOME) {
+      return
+    }
+    const target = this.tabKeyToIndex(this.subtabTransition.targetKey)
+    if (target < 0 || target === this.swiperIndex) {
+      return
+    }
+    this.animateVisualTabIndex(target)
+    this.swiperController.changeIndex(target, true)
+  }
+
   private persistSelectedTab(key: string): void {
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     FeedTabSettings.saveSelectedKey(context, key).catch((error: Error) => {
@@ -173,6 +196,7 @@ export struct HomePage {
       return
     }
     this.currentTabIndex = nextIndex
+    this.swiperIndex = nextIndex
     this.setVisualTabIndex(nextIndex)
     this.notifyMainScrollerReady()
     this.notifyRootRefreshReady()
@@ -237,7 +261,7 @@ export struct HomePage {
           })
         }, (tab: TabItem) => tab.key)
       }
-      .index(this.feedTabIndexOrFallback())
+      .index(this.swiperIndex)
       .cachedCount(1)
       .nestedScroll(SwiperNestedScrollMode.SELF_ONLY)
       .indicator(false)
@@ -251,6 +275,7 @@ export struct HomePage {
       })
       .onAnimationEnd((index: number, extraInfo: SwiperAnimationEvent) => {
         this.setListScrollEnabled(true)
+        this.swiperIndex = index
         this.setVisualTabIndex(index)
       })
       .onChange((i: number) => {
@@ -259,6 +284,7 @@ export struct HomePage {
           return
         }
         const key = tab.key
+        this.swiperIndex = i
         this.currentTabIndex = i
         this.setVisualTabIndex(i)
         if (key !== this.feedTabState.feedTab) {

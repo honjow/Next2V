@@ -8,7 +8,6 @@ import {
   connectFeedTab,
   connectSearchAction,
   connectLanguageState,
-  connectThemeDisplay,
   FeedTabBridge,
   FeedTabSettings,
   FeedTabState,
@@ -16,9 +15,9 @@ import {
   FeedVisualIndexState,
   LanguageState,
   SearchActionState,
+  SubTabBar,
   TabItem,
   ThemeConstants,
-  ThemeDisplayState,
 } from 'shared'
 import { BlockedListsTabsSegment } from './BlockedListsTabsSegment'
 
@@ -67,272 +66,71 @@ export function BlockedListsTabsCCBuilder() {
   BlockedListsTabs()
 }
 
-// FeedPills is @ComponentV2: it reads the V2 FeedTabState mirror (feedTab / feedTabKeys) plus the dedicated
-// FeedVisualIndexState holder (per-frame indicator/highlight), and recenters its horizontal pill bar from
-// @Monitor('feedState.feedTab'). Three things make the recenter device-verifiably bounded to ~1 scrollToIndex
-// per discrete tab change (V1-equivalent), instead of the ~244x storm a naive V2 port produced:
-//   1. Its host ComponentContent is created ONCE and cached in Index (Index.pillBarContent), never re-`new`-ed
-//      in build(). Re-creating it every Index.build() re-mounts this @ComponentV2 and, because it reads the
-//      per-frame visual index, ties Index.build to that signal -> ~400 re-mounts/s during a swipe, each
-//      re-centering. Caching keeps the per-frame re-render inside FeedPills.
-//   2. The per-frame visual index lives in its OWN @ObservedV2 holder (FeedVisualIndexState), isolated from
-//      the @Monitor-ed FeedTabState so its high-frequency churn cannot perturb the feedTab observers.
-//   3. The `centeredTarget` REQUEST-TIME coalescing guard (below): a new target arms it and drives one
-//      centerTab; repeat fires for the same target short-circuit even while an off-screen center is deferred,
-//      so the over-fire/deferred-retry can never storm. centerTab/updateTabLayout stay byte-identical to V1
-//      (pendingCenterIndex cleared before scrolling) so a deferred center completes exactly once.
-// The per-frame visualIndex re-render (highlight + sliding indicator) is preserved unchanged. Tab taps still
-// route through FeedTabBridge.publishSelectedKey (AppStorage + the V2 mirror HomePage reads).
+// FeedPills is @ComponentV2: the pinned home feed-tab bar hosted in the HDS title-bar bottomBuilder.
+// It hosts the shared SubTabBar, which owns the horizontal List, the sliding underline / capsule
+// styling, per-tab layout measurement, and the centeredTarget REQUEST-TIME recenter coalescing guard
+// (device-verified ~1 scrollToIndex per discrete tab change, vs the ~244x storm a naive V2 port made).
+// The structural guards that keep the recenter bounded are preserved through the shared component:
+//   1. Its host ComponentContent is created ONCE and cached in Index (Index.pillBarContent), never
+//      re-created in build(). Re-creating it every Index.build() re-mounts this @ComponentV2 and,
+//      because it reads the per-frame visual index, ties Index.build to that signal -> ~400
+//      re-mounts/s during a swipe. Caching keeps the per-frame re-render inside the SubTabBar subtree.
+//   2. The per-frame visual index lives in its OWN @ObservedV2 holder (FeedVisualIndexState), isolated
+//      from the @Monitor-ed FeedTabState so its high-frequency churn cannot perturb feedTab observers.
+//   3. SubTabBar's centeredTarget guard arms at request time, drives one centerTab per NEW target and
+//      short-circuits repeat fires, so a deferred off-screen center can never storm.
+// Tab taps route through FeedTabBridge.requestTransition (the NextE SubtabTransitionBridge pattern):
+// the tap asks the HomePage swiper for a NATIVE page animation WITHOUT writing feedTab first. Writing
+// feedTab before the animation is the pre-fix click-jump root cause (the controlled Swiper .index()
+// binding settled the page + indicator instantly). The settled key flows back via the swiper onChange
+// -> publishSelectedKey path, which also persists the selection.
 @ComponentV2
 struct FeedPills {
   @Local private feedState: FeedTabState = connectFeedTab();
   @Local private visualIndexState: FeedVisualIndexState = connectFeedVisualIndex();
-  @Local private themeDisplay: ThemeDisplayState = connectThemeDisplay();
   @Local private language: LanguageState = connectLanguageState();
-  @Local private tabLefts: number[] = [];
-  @Local private tabWidths: number[] = [];
-  @Local private containerGlobalLeft: number = 0;
-  private pendingCenterIndex: number = -1;
-  private pendingCenterSmooth: boolean = true;
-  // Request-time recenter coalescing: the tab index we are currently driving a recenter toward. Armed the
-  // instant a NEW target is observed (before any deferral), so the ~32x monitor burst collapses to one
-  // effective recenter and the off-screen deferred-retry cannot storm. Reset on a keys change (reorder).
-  private centeredTarget: number = -1;
-  private scroller: Scroller = new Scroller();
-
-  aboutToAppear(): void {
-    const index = this.selectedTabIndex()
-    // Idempotent vs re-attach: the host ComponentContent can re-attach this same instance many times during
-    // a swipe; only (re)center when the selected target actually differs from what we last centered toward,
-    // so a re-attach with an unchanged selection does not re-issue scrollToIndex. Real changes are driven by
-    // @Monitor('feedState.feedTab') below; this only seeds/repairs the initial + post-reorder centering.
-    if (index === this.centeredTarget) {
-      return
-    }
-    this.centeredTarget = index
-    if (index > 0) {
-      this.centerTab(index, false)
-    }
-  }
 
   build() {
-    Stack({ alignContent: Alignment.TopStart }) {
-      List({ space: ThemeConstants.SPACE_XS, scroller: this.scroller }) {
-        ForEach(this.visibleTabs(), (tab: TabItem, index: number) => {
-          ListItem() {
-            Column({ space: 1 }) {
-              Text(tab.label)
-                .fontSize(ThemeConstants.FONT_SIZE_BODY)
-                .fontColor(this.tabTextColor(index))
-                .fontWeight(
-                  this.visualSelectedIndex() === index ? FontWeight.Medium : FontWeight.Regular,
-                )
-                .padding({
-                  left: ThemeConstants.SPACE_MD,
-                  right: ThemeConstants.SPACE_MD,
-                  top: ThemeConstants.SPACE_XS,
-                })
-              Blank()
-                .height(2)
-                .width(18)
-            }
-            .alignItems(HorizontalAlign.Center)
-            .padding({ bottom: 0 })
-            .onClick(() => {
-              // Route through the bridge (AppStorage + V2 mirror) so the @ComponentV2 HomePage reacts; the
-              // shared feedState.feedTab @Trace updates from the mirror half and fires our @Monitor for centering.
-              FeedTabBridge.publishSelectedKey(tab.key)
-            })
-            .onAreaChange((_oldValue: Area, newValue: Area) => {
-              this.updateTabLayout(index, newValue)
-            })
-          }
-        })
-      }
-      .scrollBar(BarState.Off)
-      .listDirection(Axis.Horizontal)
-      .padding({ left: ThemeConstants.SPACE_SM, right: ThemeConstants.SPACE_SM })
-      .width('100%')
-      .height('100%')
-      Row()
-        .width(this.indicatorWidth())
-        .height(3)
-        .backgroundColor(ThemeConstants.BRAND_PRIMARY)
-        .borderRadius(1.5)
-        .position({ x: this.indicatorLeft(), y: ApiConstants.TAB_BAR_HEIGHT - 14 })
-        .hitTestBehavior(HitTestMode.None)
-    }
-    .width('100%')
-    .height('100%')
-    .onAreaChange((_oldValue: Area, newValue: Area) => {
-      this.containerGlobalLeft = this.areaX(newValue?.globalPosition?.x)
+    SubTabBar({
+      tabs: this.tabKeys(),
+      labels: this.tabLabels(),
+      barHeight: ApiConstants.TAB_BAR_HEIGHT,
+      visualIndex: this.visualIndexState.value,
+      selectedIndex: this.selectedTabIndex(),
+      onSelect: (index: number) => {
+        const keys: string[] = this.tabKeys()
+        if (index >= 0 && index < keys.length && keys[index] !== this.feedState.feedTab) {
+          FeedTabBridge.requestTransition(keys[index])
+        }
+      },
     })
   }
 
-  @Monitor('feedState.feedTab')
-  onFeedTabChanged(): void {
-    const index = this.selectedTabIndex()
-    if (index < 0) {
-      return
-    }
-    // Coalesce the ~32x monitor burst for ONE discrete change: only a genuinely new target drives a
-    // recenter; repeated fires for the same target are no-ops. Arm at request time so an off-screen
-    // (deferred) target still short-circuits the rest of the burst.
-    if (index === this.centeredTarget) {
-      return
-    }
-    this.centeredTarget = index
-    this.centerTab(index, true)
+  private tabKeys(): string[] {
+    return FeedTabSettings.tabsFromKeysJson(this.feedState.feedTabKeys).map((tab: TabItem) => tab.key)
   }
 
-  @Monitor('feedState.feedTabKeys')
-  onFeedTabKeysChanged(): void {
-    this.tabLefts = []
-    this.tabWidths = []
-    this.pendingCenterIndex = -1
-    // Layout/order changed: drop the recenter guard so the next feedTab change recenters against the new
-    // layout (e.g. HomePage.correctFeedTabIfNeeded re-selecting tab 0 after a reorder).
-    this.centeredTarget = -1
-  }
-
-  private visibleTabs(): TabItem[] {
-    if (this.language.effectiveLocale.length >= 0) {
-      return FeedTabSettings.tabsFromKeysJson(this.feedState.feedTabKeys)
-    }
-    return FeedTabSettings.tabsFromKeysJson(this.feedState.feedTabKeys)
+  // AppStrings-resolved plain labels for the shared SubTabBar (a HAR cannot reference the app's $r
+  // keys). AppStrings.text() reads the V2 locale signal; the explicit locale read below makes this
+  // build re-run on a language switch so the cached bar re-keys with freshly resolved labels.
+  private tabLabels(): string[] {
+    const locale = this.language.effectiveLocale
+    return FeedTabSettings.tabsFromKeysJson(this.feedState.feedTabKeys).map((tab: TabItem) => {
+      if (typeof tab.label === 'string') {
+        return tab.label
+      }
+      if (locale.length >= 0) {
+        return AppStrings.text(tab.label, '')
+      }
+      return AppStrings.text(tab.label, '')
+    })
   }
 
   private selectedTabIndex(): number {
-    const index = this.visibleTabs().findIndex((tab: TabItem) => tab.key === this.feedState.feedTab)
-    return index
-  }
-
-  private visualSelectedIndex(): number {
-    const count = this.visibleTabs().length
-    if (count <= 0) {
-      return 0
-    }
-    return Math.max(0, Math.min(count - 1, Math.round(this.visualIndexState.value)))
-  }
-
-  private tabTextColor(index: number): ResourceColor {
-    const color =
-      this.visualSelectedIndex() === index
-        ? ThemeConstants.BRAND_PRIMARY
-        : ThemeConstants.TEXT_SECONDARY
-    return this.themeTrackedColor(color)
-  }
-
-  private themeTrackedColor(color: ResourceColor): ResourceColor {
-    // FeedPills is hosted in a cached ComponentContent, so it must read the V2 theme signal itself;
-    // the color token stays semantic/system-owned, while this dependency triggers immediate repaint.
-    if (this.themeDisplay.effectiveDark) {
-      return color
-    }
-    return color
-  }
-
-  private updateTabLayout(index: number, area: Area): void {
-    const width = (area?.width as number) || 0
-    const left = this.areaX(area?.globalPosition?.x) - this.containerGlobalLeft
-    if (width <= 0) {
-      return
-    }
-    const nextLefts = this.tabLefts.slice()
-    const nextWidths = this.tabWidths.slice()
-    nextLefts[index] = left
-    nextWidths[index] = width
-    this.tabLefts = nextLefts
-    this.tabWidths = nextWidths
-    if (this.pendingCenterIndex === index) {
-      this.centerTab(index, this.pendingCenterSmooth)
-    }
-  }
-
-  private indicatorWidth(): number {
-    return 18
-  }
-
-  private indicatorLeft(): number {
-    const count = this.visibleTabs().length
-    if (count <= 0) {
-      return ThemeConstants.SPACE_SM
-    }
-    const visualIndex = Math.max(0, Math.min(count - 1, this.visualIndexState.value))
-    const fromIndex = Math.floor(visualIndex)
-    const toIndex = Math.min(count - 1, fromIndex + 1)
-    const fraction = visualIndex - fromIndex
-    const fromCenter = this.tabCenter(fromIndex)
-    const toCenter = this.tabCenter(toIndex)
-    return fromCenter + (toCenter - fromCenter) * fraction - this.indicatorWidth() / 2
-  }
-
-  private tabCenter(index: number): number {
-    const left = this.tabLefts[index]
-    const width = this.tabWidths[index]
-    if (left !== undefined && width !== undefined && width > 0) {
-      return left + width / 2
-    }
-    return this.estimatedTabCenter(index)
-  }
-
-  private averageMeasuredTabWidth(): number {
-    let total = 0
-    let count = 0
-    for (let i = 0; i < this.tabWidths.length; i++) {
-      const width = this.tabWidths[i]
-      if (width !== undefined && width > 0) {
-        total += width
-        count++
-      }
-    }
-    return count > 0 ? total / count : 48
-  }
-
-  private estimatedTabCenter(index: number): number {
-    const step = this.averageMeasuredTabWidth() + ThemeConstants.SPACE_XS
-    for (let prev = index - 1; prev >= 0; prev--) {
-      const left = this.tabLefts[prev]
-      const width = this.tabWidths[prev]
-      if (left !== undefined && width !== undefined && width > 0) {
-        return left + width / 2 + (index - prev) * step
-      }
-    }
-    for (let next = index + 1; next < this.visibleTabs().length; next++) {
-      const left = this.tabLefts[next]
-      const width = this.tabWidths[next]
-      if (left !== undefined && width !== undefined && width > 0) {
-        return left + width / 2 - (next - index) * step
-      }
-    }
-    return ThemeConstants.SPACE_SM + this.averageMeasuredTabWidth() / 2 + index * step
-  }
-
-  private areaX(value: Length | undefined): number {
-    if (typeof value === 'number') {
-      return value
-    }
-    if (typeof value === 'string') {
-      const parsed = Number.parseFloat(value)
-      return Number.isNaN(parsed) ? 0 : parsed
-    }
-    return 0
-  }
-
-  private centerTab(index: number, smooth: boolean): void {
-    if (index < 0 || index >= this.visibleTabs().length) {
-      return
-    }
-    const width = this.tabWidths[index]
-    if (width === undefined || width <= 0) {
-      this.pendingCenterIndex = index
-      this.pendingCenterSmooth = smooth
-      return
-    }
-    this.pendingCenterIndex = -1
-    this.scroller.scrollToIndex(index, smooth, ScrollAlign.CENTER)
+    return this.tabKeys().findIndex((key: string) => key === this.feedState.feedTab)
   }
 }
+
 @Builder
 export function PillCCBuilder(_params: Object) {
   FeedPills()

@@ -557,6 +557,18 @@
       "value": "沉浸 · 流暢"
     },
     {
+      "name": "settings_subtab_style",
+      "value": "分頁樣式"
+    },
+    {
+      "name": "subtab_style_underline",
+      "value": "底線"
+    },
+    {
+      "name": "subtab_style_capsule",
+      "value": "膠囊"
+    },
+    {
       "name": "theme_color_galaxy_blue",
       "value": "銀河藍"
     },

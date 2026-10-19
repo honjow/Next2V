@@ -557,6 +557,18 @@
       "value": "イマーシブ · スムーズ"
     },
     {
+      "name": "settings_subtab_style",
+      "value": "サブタブのスタイル"
+    },
+    {
+      "name": "subtab_style_underline",
+      "value": "下線"
+    },
+    {
+      "name": "subtab_style_capsule",
+      "value": "カプセル"
+    },
+    {
       "name": "theme_color_galaxy_blue",
       "value": "ギャラクシーブルー"
     },

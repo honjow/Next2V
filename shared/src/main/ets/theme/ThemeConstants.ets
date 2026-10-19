@@ -14,6 +14,12 @@ export class ThemeConstants {
   // Text colors (semantic aliases for system tokens, avoiding repeated $r calls)
   static readonly TEXT_PRIMARY: ResourceColor = $r('sys.color.font_primary')
   static readonly TEXT_SECONDARY: ResourceColor = $r('sys.color.font_secondary')
+  // Readable text on a saturated/brand-colored fill (capsule sub-tabs). White in both themes.
+  static readonly TEXT_ON_BRAND: ResourceColor = $r('app.color.text_on_brand')
+  // Readable text on a LIGHT accent fill: the light theme colors (e.g. grass green) wash out white,
+  // so the capsule bar picks this near-black text when the fill's luminance is high. Fixed in both
+  // themes because it sits on a fixed accent fill, not a themed surface.
+  static readonly TEXT_ON_LIGHT_ACCENT: ResourceColor = $r('app.color.text_on_light_accent')
   static get TEXT_LINK(): ResourceColor { return ThemeColorSettings.currentColor() }
   static readonly BG_SUB: ResourceColor = $r('sys.color.ohos_id_color_sub_background')
 

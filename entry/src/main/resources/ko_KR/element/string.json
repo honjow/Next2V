@@ -557,6 +557,18 @@
       "value": "몰입 · 매끄러움"
     },
     {
+      "name": "settings_subtab_style",
+      "value": "탭 스타일"
+    },
+    {
+      "name": "subtab_style_underline",
+      "value": "밑줄"
+    },
+    {
+      "name": "subtab_style_capsule",
+      "value": "캡슐"
+    },
+    {
       "name": "theme_color_galaxy_blue",
       "value": "은하 블루"
     },

@@ -1,5 +1,9 @@
 import { AppStorageV2 } from '@kit.ArkUI'
 import { ApiConstants, TabItem } from '../constants/ApiConstants'
+import {
+  SubtabTransitionBridge,
+  SUBTAB_TRANSITION_SCOPE_HOME,
+} from './SubtabTransitionState'
 
 /**
  * V2 mirror of the feed-tab group: which feed tab is selected, the visible-tab key list, and the
@@ -52,6 +56,15 @@ export function connectFeedTab(): FeedTabState {
 export class FeedTabBridge {
   static publishSelectedKey(key: string): void {
     connectFeedTab().feedTab = key
+  }
+
+  // Request an ANIMATED swiper page switch from a title-bar tab tap WITHOUT touching the shared
+  // selection state first. The controlled Swiper .index() binding (fed by the settled onChange ->
+  // publishSelectedKey path) must stay a one-way follower: writing feedTab before the animation makes
+  // the page and the indicator settle instantly, which is the pre-fix click-jump root cause. Mirrors
+  // the NextE SubtabTransitionBridge (shared/src/main/ets/state/SubtabTransitionState.ets).
+  static requestTransition(targetKey: string): void {
+    SubtabTransitionBridge.request(SUBTAB_TRANSITION_SCOPE_HOME, targetKey)
   }
 
   static publishKeys(keysJson: string): void {

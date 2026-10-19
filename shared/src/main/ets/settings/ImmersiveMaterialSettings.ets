@@ -160,6 +160,12 @@ export class ImmersiveMaterialSettings {
     level: string,
     adaptiveStyle: uiMaterial.ImmersiveStyle,
     interactive: boolean,
+    // applyShadow defaults true (all pre-existing call sites unchanged). The shared SubTabBar's
+    // inactive capsules pass false: the NextE source (ImmersiveMaterialSettings.systemMaterial +
+    // SubTabBar.inactiveMaterial) disables the material shadow on sub-tab pills; the V2Next port
+    // dropped that fourth argument and every capsule picked up a visible material shadow edge
+    // (device 237 review, 2026-10-19).
+    applyShadow: boolean = true,
   ): uiMaterial.Material | undefined {
     if (!deviceInfo.apiAvailable('26.0.0')) {
       return undefined
@@ -167,7 +173,7 @@ export class ImmersiveMaterialSettings {
     return new uiMaterial.ImmersiveMaterial({
       style: ImmersiveMaterialSettings.systemMaterialStyle(level, adaptiveStyle),
       colorInvert: true,
-      applyShadow: true,
+      applyShadow: applyShadow,
       interactive: interactive,
     })
   }

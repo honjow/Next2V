@@ -11,6 +11,8 @@
     { "name": "color_divider",     "value": "#E5E5E5" },
     { "name": "color_reply_count", "value": "#778087" },
     { "name": "color_node_tag",    "value": "#E5F3FF" },
-    { "name": "color_node_tag_text","value": "#334455" }
+    { "name": "color_node_tag_text","value": "#334455" },
+    { "name": "text_on_brand",      "value": "#FFFFFF" },
+    { "name": "text_on_light_accent", "value": "#E6000000" }
   ]
 }

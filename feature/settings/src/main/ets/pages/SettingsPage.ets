@@ -51,6 +51,10 @@ import {
   type CacheStats,
   type ImmersiveMaterialOption,
   type ThemeColorOption,
+  SubTabStyleSettings,
+  SubTabStyleState,
+  connectSubTabStyle,
+  type SubTabStyleOption,
 } from 'shared'
 import {
   SettingsCheckedMenuItem,
@@ -83,6 +87,9 @@ export struct SettingsPage {
   private image: ImageUploadState = connectImageUpload();
   private themeColor: ThemeColorState = connectThemeColor();
   private immersiveMaterial: ImmersiveMaterialSettingsState = connectImmersiveMaterialSettings();
+  // Shared sub-tab style (underline/capsule). Read from its V2 mirror: the save() chokepoint applies
+  // synchronously, so the row label and every SubTabBar repaint the moment the style changes.
+  private subTabStyle: SubTabStyleState = connectSubTabStyle();
   // Cloud-sync master-enabled state, read only to show the on/off status on the "云同步" entry row. The
   // full cloud-sync UI lives in the pushed CloudSyncSettingsPage; this is just a reactive @Trace read.
   private cloudSync: CloudSyncState = connectCloudSync();
@@ -102,6 +109,7 @@ export struct SettingsPage {
   @Local private themeColorMenuShown: boolean = false;
   @Local private themeMenuShown: boolean = false;
   @Local private immersiveMaterialMenuShown: boolean = false;
+  @Local private subTabStyleMenuShown: boolean = false;
   @Local private languageMenuShown: boolean = false;
   @Local private avatarAppearanceMenuShown: boolean = false;
   @Local private replyDisplayMenuShown: boolean = false;
@@ -446,6 +454,22 @@ export struct SettingsPage {
 
       this.SettingsDivider()
       SettingsDropdownRow({
+        title: $r('app.string.settings_subtab_style'),
+        trailingText: SubTabStyleSettings.label(this.subTabStyle.style),
+        openAction: () => {
+          this.showSubTabStyleMenu()
+        },
+        })
+        .bindMenu(this.subTabStyleMenuShown, this.SubTabStyleMenu, {
+          placement: Placement.BottomRight,
+          systemMaterial: AppPrompt.surfaceSystemMaterial(),
+          aboutToDisappear: () => {
+            this.subTabStyleMenuShown = false
+          },
+        })
+
+      this.SettingsDivider()
+      SettingsDropdownRow({
         title: $r('app.string.avatar_appearance'),
         trailingText: SettingsPageCoordinator.avatarAppearanceLabel(this.avatar.appearance),
         openAction: () => {
@@ -634,6 +658,19 @@ export struct SettingsPage {
   }
 
   @Builder
+  SubTabStyleMenu() {
+    Menu() {
+      ForEach(
+        SubTabStyleSettings.options(),
+        (option: SubTabStyleOption) => {
+          this.SubTabStyleMenuItem(option)
+        },
+        (option: SubTabStyleOption) => option.style,
+      )
+    }
+  }
+
+  @Builder
   AvatarAppearanceMenu() {
     Menu() {
       ForEach(
@@ -793,6 +830,17 @@ export struct SettingsPage {
   }
 
   @Builder
+  SubTabStyleMenuItem(option: SubTabStyleOption) {
+    SettingsCheckedMenuItem({
+      label: option.label,
+      selected: SubTabStyleSettings.normalizeStyle(this.subTabStyle.style) === option.style,
+      selectAction: () => {
+        this.updateSubTabStyle(option.style)
+      },
+    })
+  }
+
+  @Builder
   ReplyDisplayModeMenuItem(option: SettingsOption) {
     SettingsCheckedMenuItem({
       label: option.label,
@@ -828,6 +876,13 @@ export struct SettingsPage {
     this.immersiveMaterialMenuShown = false
     setTimeout(() => {
       this.immersiveMaterialMenuShown = true
+    }, SettingsPageCoordinator.MENU_OPEN_DELAY_MS)
+  }
+
+  private showSubTabStyleMenu(): void {
+    this.subTabStyleMenuShown = false
+    setTimeout(() => {
+      this.subTabStyleMenuShown = true
     }, SettingsPageCoordinator.MENU_OPEN_DELAY_MS)
   }
 
@@ -965,6 +1020,16 @@ export struct SettingsPage {
     }
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     SettingsSaveCoordinator.saveImmersiveMaterial(context, normalized)
+  }
+
+  private updateSubTabStyle(style: string): void {
+    const normalized = SubTabStyleSettings.normalizeStyle(style)
+    this.subTabStyleMenuShown = false
+    if (normalized === SubTabStyleSettings.normalizeStyle(this.subTabStyle.style)) {
+      return
+    }
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    SettingsSaveCoordinator.saveSubTabStyle(context, normalized)
   }
 
   private updateReplyDisplayMode(mode: string): void {
