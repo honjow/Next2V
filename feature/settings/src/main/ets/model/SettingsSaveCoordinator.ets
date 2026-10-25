@@ -1,6 +1,7 @@
 import { common } from '@kit.AbilityKit'
 import {
   ApiDomainSettings,
+  AppIconSettings,
   AutoDailyCheckinSettings,
   AvatarAppearanceSettings,
   CookieJarSettings,
@@ -108,6 +109,15 @@ export class SettingsSaveCoordinator {
   static saveSubTabStyle(context: common.UIAbilityContext, style: string): void {
     SubTabStyleSettings.save(context, style).catch((error: Error) => {
       console.error('save sub-tab style setting failed: ' + error.message)
+    })
+  }
+
+  // Returns the promise so the page can surface a failure toast: the system icon switch can reject
+  // on a device/build that exposes API 26 but does not accept alternate icons.
+  static saveAppIcon(name: string): Promise<void> {
+    return AppIconSettings.set(name).catch((error: Error) => {
+      console.error('save app icon setting failed: ' + error.message)
+      throw error
     })
   }
 

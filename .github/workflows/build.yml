@@ -113,8 +113,11 @@ jobs:
           if os.environ.get('GITHUB_REF', '').startswith('refs/tags/'):
               required = {
                   'resources/base/media/app_icon_layered.json',
+                  'resources/base/media/app_icon.png',
                   'resources/base/media/app_icon_sunset_solid_background.png',
                   'resources/base/media/app_icon_sunset_solid_foreground.png',
+                  'resources/base/media/app_icon_sunset_solid.png',
+                  'resources/base/media/app_icon_black_solid.png',
                   'resources/base/media/startup_foreground.png',
               }
               missing = sorted(required - set(names))

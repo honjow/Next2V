@@ -24,6 +24,7 @@ export type IndexDestinationFamily =
   'hotReplySettings' |
   'networkProxySettings' |
   'imageUploadSettings' |
+  'appIconSettings' |
   'domainSettings' |
   'cloudSyncSettings' |
   'account' |
@@ -68,6 +69,7 @@ export class IndexRouteCoordinator {
     'HotReplySettings': 'hotReplySettings',
     'NetworkProxySettings': 'networkProxySettings',
     'ImageUploadSettings': 'imageUploadSettings',
+    'AppIconSettings': 'appIconSettings',
     'DomainSettings': 'domainSettings',
     'CloudSyncSettings': 'cloudSyncSettings',
     'Account': 'account',
@@ -103,6 +105,7 @@ export class IndexRouteCoordinator {
       'hotReplySettings': $r('app.string.hot_replies'),
       'networkProxySettings': $r('app.string.nav_network_proxy'),
       'imageUploadSettings': $r('app.string.image_upload_settings_title'),
+      'appIconSettings': $r('app.string.settings_app_icon'),
       'domainSettings': $r('app.string.api_domain'),
       'cloudSyncSettings': $r('app.string.cloud_sync'),
       'account': $r('app.string.account_management'),
@@ -134,6 +137,7 @@ export class IndexRouteCoordinator {
     'hotReplySettings': true,
     'networkProxySettings': true,
     'imageUploadSettings': true,
+    'appIconSettings': true,
     'domainSettings': true,
     'cloudSyncSettings': true,
     'account': true,

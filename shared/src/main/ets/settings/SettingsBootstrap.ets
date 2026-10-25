@@ -8,6 +8,7 @@ import { AccountStore } from './AccountStore'
 import { AccountSessionCoordinator } from './AccountSessionCoordinator'
 import { DiagnosticsSettings } from './DiagnosticsSettings'
 import { FeedTabSettings } from './FeedTabSettings'
+import { HomeSplitSettings } from './HomeSplitSettings'
 import { HomeTabSettings } from './HomeTabSettings'
 import { HotReplySettings } from './HotReplySettings'
 import { ImmersiveMaterialSettings } from './ImmersiveMaterialSettings'
@@ -46,6 +47,7 @@ export class SettingsBootstrap {
     await SettingsBootstrap.restoreApiDomain(context, settingsStore)
     await SettingsBootstrap.restoreLanguage(context, settingsStore)
     await SettingsBootstrap.restoreThemeColor(context, settingsStore)
+    await SettingsBootstrap.restoreHomeSplit(context, settingsStore)
     await SettingsBootstrap.restoreImmersiveMaterial(context, settingsStore)
     await SettingsBootstrap.restoreTheme(context, settingsStore)
     await SettingsBootstrap.restoreSubTabStyle(context, settingsStore)
@@ -91,6 +93,7 @@ export class SettingsBootstrap {
     await SettingsBootstrap.restoreApiDomain(context, settingsStore)
     await SettingsBootstrap.restoreLanguage(context, settingsStore)
     await SettingsBootstrap.restoreThemeColor(context, settingsStore)
+    await SettingsBootstrap.restoreHomeSplit(context, settingsStore)
     await SettingsBootstrap.restoreImmersiveMaterial(context, settingsStore)
     await SettingsBootstrap.restoreTheme(context, settingsStore)
     await SettingsBootstrap.restoreSubTabStyle(context, settingsStore)
@@ -186,6 +189,20 @@ export class SettingsBootstrap {
     ).catch((error: Error) => {
       console.error('restore theme color settings failed: ' + error.message)
       ThemeColorSettings.apply(ThemeColorSettings.DEFAULT_COLOR)
+    })
+  }
+
+  private static async restoreHomeSplit(
+    context: common.UIAbilityContext,
+    settingsStore?: SettingsPreferencesStore,
+  ): Promise<void> {
+    await (
+      settingsStore
+        ? HomeSplitSettings.loadFromStore(settingsStore)
+        : HomeSplitSettings.load(context)
+    ).catch((error: Error) => {
+      console.error('restore home split settings failed: ' + error.message)
+      HomeSplitSettings.apply(HomeSplitSettings.UNSET_RATIO)
     })
   }
 
