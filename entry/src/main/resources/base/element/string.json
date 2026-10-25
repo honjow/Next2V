@@ -365,6 +365,66 @@
       "value": "Appearance"
     },
     {
+      "name": "settings_app_icon",
+      "value": "App icon"
+    },
+    {
+      "name": "app_icon_default",
+      "value": "Default"
+    },
+    {
+      "name": "app_icon_sunset_solid",
+      "value": "Classic orange"
+    },
+    {
+      "name": "app_icon_sunset_glass",
+      "value": "Sunset glass"
+    },
+    {
+      "name": "app_icon_coral_solid",
+      "value": "Coral"
+    },
+    {
+      "name": "app_icon_coral_glass",
+      "value": "Coral glass"
+    },
+    {
+      "name": "app_icon_emerald_solid",
+      "value": "Emerald"
+    },
+    {
+      "name": "app_icon_emerald_glass",
+      "value": "Emerald glass"
+    },
+    {
+      "name": "app_icon_azure_solid",
+      "value": "Azure"
+    },
+    {
+      "name": "app_icon_azure_glass",
+      "value": "Azure glass"
+    },
+    {
+      "name": "app_icon_cyan_solid",
+      "value": "Cyan"
+    },
+    {
+      "name": "app_icon_cyan_glass",
+      "value": "Cyan glass"
+    },
+    {
+      "name": "app_icon_slate_solid",
+      "value": "Slate"
+    },
+    {
+      "name": "app_icon_slate_glass",
+      "value": "Slate glass"
+    },
+    {
+      "name": "app_icon_black",
+      "value": "Obsidian black"
+    },
+    {
       "name": "settings_home",
       "value": "Home"
     },
@@ -2163,6 +2223,14 @@
     {
       "name": "common_loading",
       "value": "Loading…"
+    },
+    {
+      "name": "split_placeholder_title",
+      "value": "Select an item"
+    },
+    {
+      "name": "split_placeholder_desc",
+      "value": "Tap an item on the left to view it here"
     },
     {
       "name": "media_youtube_video",

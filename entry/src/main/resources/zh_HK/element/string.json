@@ -365,6 +365,66 @@
       "value": "介面"
     },
     {
+      "name": "settings_app_icon",
+      "value": "應用圖標"
+    },
+    {
+      "name": "app_icon_default",
+      "value": "預設"
+    },
+    {
+      "name": "app_icon_sunset_solid",
+      "value": "經典橙"
+    },
+    {
+      "name": "app_icon_sunset_glass",
+      "value": "日落玻璃"
+    },
+    {
+      "name": "app_icon_coral_solid",
+      "value": "珊瑚紅"
+    },
+    {
+      "name": "app_icon_coral_glass",
+      "value": "珊瑚玻璃"
+    },
+    {
+      "name": "app_icon_emerald_solid",
+      "value": "翠綠"
+    },
+    {
+      "name": "app_icon_emerald_glass",
+      "value": "翠綠玻璃"
+    },
+    {
+      "name": "app_icon_azure_solid",
+      "value": "天藍"
+    },
+    {
+      "name": "app_icon_azure_glass",
+      "value": "天藍玻璃"
+    },
+    {
+      "name": "app_icon_cyan_solid",
+      "value": "青色"
+    },
+    {
+      "name": "app_icon_cyan_glass",
+      "value": "青色玻璃"
+    },
+    {
+      "name": "app_icon_slate_solid",
+      "value": "石板灰"
+    },
+    {
+      "name": "app_icon_slate_glass",
+      "value": "石板玻璃"
+    },
+    {
+      "name": "app_icon_black",
+      "value": "曜石黑"
+    },
+    {
       "name": "settings_home",
       "value": "首頁"
     },
@@ -2163,6 +2223,14 @@
     {
       "name": "common_loading",
       "value": "載入中…"
+    },
+    {
+      "name": "split_placeholder_title",
+      "value": "選擇一個項目"
+    },
+    {
+      "name": "split_placeholder_desc",
+      "value": "點擊左側內容，在這裡查看"
     },
     {
       "name": "media_youtube_video",

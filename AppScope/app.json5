@@ -5,6 +5,60 @@
     "versionCode": 25,
     "versionName": "1.0.12",
     "icon": "$media:app_icon_layered",
+    "alternateIcons": [
+      {
+        "name": "sunset_solid",
+        "icon": "$media:app_icon_sunset_solid_layered"
+      },
+      {
+        "name": "sunset_glass",
+        "icon": "$media:app_icon_sunset_glass_layered"
+      },
+      {
+        "name": "coral_solid",
+        "icon": "$media:app_icon_coral_solid_layered"
+      },
+      {
+        "name": "coral_glass",
+        "icon": "$media:app_icon_coral_glass_layered"
+      },
+      {
+        "name": "emerald_solid",
+        "icon": "$media:app_icon_emerald_solid_layered"
+      },
+      {
+        "name": "emerald_glass",
+        "icon": "$media:app_icon_emerald_glass_layered"
+      },
+      {
+        "name": "azure_solid",
+        "icon": "$media:app_icon_azure_solid_layered"
+      },
+      {
+        "name": "azure_glass",
+        "icon": "$media:app_icon_azure_glass_layered"
+      },
+      {
+        "name": "cyan_solid",
+        "icon": "$media:app_icon_cyan_solid_layered"
+      },
+      {
+        "name": "cyan_glass",
+        "icon": "$media:app_icon_cyan_glass_layered"
+      },
+      {
+        "name": "slate_solid",
+        "icon": "$media:app_icon_slate_solid_layered"
+      },
+      {
+        "name": "slate_glass",
+        "icon": "$media:app_icon_slate_glass_layered"
+      },
+      {
+        "name": "black_solid",
+        "icon": "$media:app_icon_black_solid_layered"
+      }
+    ],
     "label": "$string:app_name",
     "targetAPIVersion": 26,
     "minAPIVersion": 12,

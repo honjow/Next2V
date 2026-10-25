@@ -365,6 +365,66 @@
       "value": "外観"
     },
     {
+      "name": "settings_app_icon",
+      "value": "アプリアイコン"
+    },
+    {
+      "name": "app_icon_default",
+      "value": "デフォルト"
+    },
+    {
+      "name": "app_icon_sunset_solid",
+      "value": "クラシックオレンジ"
+    },
+    {
+      "name": "app_icon_sunset_glass",
+      "value": "サンセットガラス"
+    },
+    {
+      "name": "app_icon_coral_solid",
+      "value": "コーラル"
+    },
+    {
+      "name": "app_icon_coral_glass",
+      "value": "コーラルガラス"
+    },
+    {
+      "name": "app_icon_emerald_solid",
+      "value": "エメラルド"
+    },
+    {
+      "name": "app_icon_emerald_glass",
+      "value": "エメラルドガラス"
+    },
+    {
+      "name": "app_icon_azure_solid",
+      "value": "アジュール"
+    },
+    {
+      "name": "app_icon_azure_glass",
+      "value": "アジュールガラス"
+    },
+    {
+      "name": "app_icon_cyan_solid",
+      "value": "シアン"
+    },
+    {
+      "name": "app_icon_cyan_glass",
+      "value": "シアンガラス"
+    },
+    {
+      "name": "app_icon_slate_solid",
+      "value": "スレート"
+    },
+    {
+      "name": "app_icon_slate_glass",
+      "value": "スレートガラス"
+    },
+    {
+      "name": "app_icon_black",
+      "value": "オブシディアンブラック"
+    },
+    {
       "name": "settings_home",
       "value": "ホーム"
     },
@@ -2163,6 +2223,14 @@
     {
       "name": "common_loading",
       "value": "読み込み中…"
+    },
+    {
+      "name": "split_placeholder_title",
+      "value": "項目を選択"
+    },
+    {
+      "name": "split_placeholder_desc",
+      "value": "左の項目を選ぶと、ここに内容が表示されます"
     },
     {
       "name": "media_youtube_video",
