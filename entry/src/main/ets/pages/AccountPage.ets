@@ -145,6 +145,7 @@ export struct AccountDashboardPage {
 
   @Monitor('session.updatedAt')
   onAuthSessionUpdated(): void {
+    this.isDailyRedeeming = false
     const cookie = CookieJarSettings.getCurrentCookie()
     this.loadAccounts()
     if (!cookie) {
@@ -160,6 +161,8 @@ export struct AccountDashboardPage {
 
   @Monitor('activeAccount.id')
   onActiveAccountChanged(): void {
+    // The runner discards the old account's result; release only this page's busy state.
+    this.isDailyRedeeming = false
     this.loadAccounts()
     this.resetAccountMeta()
     this.loadAccountMetaCache()

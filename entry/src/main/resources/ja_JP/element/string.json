@@ -3335,6 +3335,18 @@
     {
       "name": "cloud_sync_open_cloud_space",
       "value": "Huawei クラウドを開く"
+    },
+    {
+      "name": "checkin_verification_title",
+      "value": "チェックイン認証"
+    },
+    {
+      "name": "checkin_verification_message",
+      "value": "サイトで手動認証が必要です。認証後にチェックインを続行します。"
+    },
+    {
+      "name": "checkin_verify_action",
+      "value": "認証する"
     }
   ]
 }

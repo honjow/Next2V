@@ -3335,6 +3335,18 @@
     {
       "name": "cloud_sync_open_cloud_space",
       "value": "Open Huawei Cloud"
+    },
+    {
+      "name": "checkin_verification_title",
+      "value": "Check-in verification"
+    },
+    {
+      "name": "checkin_verification_message",
+      "value": "The site requires manual verification. Check-in will continue after verification."
+    },
+    {
+      "name": "checkin_verify_action",
+      "value": "Verify"
     }
   ]
 }

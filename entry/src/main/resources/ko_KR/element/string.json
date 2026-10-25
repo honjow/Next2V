@@ -3335,6 +3335,18 @@
     {
       "name": "cloud_sync_open_cloud_space",
       "value": "Huawei 클라우드 열기"
+    },
+    {
+      "name": "checkin_verification_title",
+      "value": "출석 인증"
+    },
+    {
+      "name": "checkin_verification_message",
+      "value": "사이트에서 수동 인증을 요구합니다. 인증 후 출석을 계속합니다."
+    },
+    {
+      "name": "checkin_verify_action",
+      "value": "인증하기"
     }
   ]
 }

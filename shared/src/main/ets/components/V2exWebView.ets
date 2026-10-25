@@ -2,6 +2,7 @@ import { webview } from '@kit.ArkWeb'
 @ComponentV2
 export struct V2exWebView {
   @Param controller: webview.WebviewController = new webview.WebviewController();
+  @Param documentStartScripts: ScriptItem[] = [];
   @Event onControllerAttached?: () => void;
   @Event onPageBegin?: (event?: OnPageBeginEvent) => void;
   @Event onPageEnd?: (event?: OnPageEndEvent) => void;
@@ -20,6 +21,7 @@ export struct V2exWebView {
         .darkMode(WebDarkMode.Off)
         .backgroundColor(Color.White)
         .javaScriptAccess(true)
+        .javaScriptOnDocumentStart(this.documentStartScripts)
         .domStorageAccess(true)
         .onlineImageAccess(true)
         .width('100%')

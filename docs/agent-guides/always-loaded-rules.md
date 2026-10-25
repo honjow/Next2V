@@ -54,6 +54,23 @@ Do not turn a task-specific boundary failure into a permanent file ban or a mech
 
 ## Code Comment Intent
 
+### Daily check-in result boundary
+
+`DailyCheckinWebRunner` owns the browser claim result. Once the server positively confirms the claim,
+the optional `/balance` lookup may enrich the coin amount but must never turn that claim into failure
+on timeout or navigation error. Unconfirmed pages and anti-bot walls remain failures; no local
+"signed today" persistence may replace the server's mission state. Async callbacks from a finished or
+unmounted run must not navigate or complete a subsequent run. Keep these boundaries when changing
+timeouts, retries, or the runner lifecycle; see the rationale beside `finish()` in the implementation.
+
+Cloudflare challenge pages must remain alive for automatic verification without replaying the claim.
+Only an authenticated child-frame `interactiveBegin` signal may offer manual verification; elapsed time,
+iframe presence and missing claim buttons do not prove a checkbox is required (user decision 2026-10-25).
+The message observer is a compatibility adapter for Cloudflare's current implementation, not a public
+Challenge Page API. Unknown signals fail conservatively. A visible verification restarts from the mission
+page, never a saved redeem URL, and positive server claim confirmation remains required.
+
+
 Comments should document why a non-obvious decision exists, not restate what the code mechanically does. Add or preserve concise rationale comments for product constraints, platform quirks, state-machine invariants, rollback/atomicity boundaries, security/privacy exclusions, destructive-write safeguards, and any implementation that looks indirect because it preserves user-visible semantics.
 
 Avoid decorative comments that paraphrase identifiers or obvious control flow. If a future maintainer could safely remove or "simplify" the code without knowing the hidden reason, the reason belongs in a comment near the invariant or branch.

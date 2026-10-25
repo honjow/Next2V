@@ -3335,6 +3335,18 @@
     {
       "name": "cloud_sync_open_cloud_space",
       "value": "Open Huawei Cloud"
+    },
+    {
+      "name": "checkin_verification_title",
+      "value": "签到验证"
+    },
+    {
+      "name": "checkin_verification_message",
+      "value": "网站要求手动验证，完成后将继续签到。"
+    },
+    {
+      "name": "checkin_verify_action",
+      "value": "去验证"
     }
   ]
 }
