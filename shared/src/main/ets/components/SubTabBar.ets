@@ -127,9 +127,12 @@ export struct SubTabBar {
   private inactiveMaterial(): uiMaterial.Material | undefined {
     // applyShadow=false mirrors NextE SubTabBar.inactiveMaterial: the sub-tab pills carry no material
     // shadow (it reads as a hard border line under the title-bar strip).
-    return ImmersiveMaterialSettings.systemMaterial(
-      this.immersiveMaterial.level, uiMaterial.ImmersiveStyle.ULTRA_THIN, false, false,
-    )
+    if (deviceInfo.apiAvailable('26.0.0')) {
+      return ImmersiveMaterialSettings.systemMaterial(
+        this.immersiveMaterial.level, uiMaterial.ImmersiveStyle.ULTRA_THIN, false, false,
+      )
+    }
+    return undefined
   }
 
   private tabFill(i: number): ResourceColor {
