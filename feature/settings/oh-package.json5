@@ -1,6 +1,6 @@
 {
   "name": "settings",
-  "version": "1.0.12",
+  "version": "1.0.13",
   "description": "Next2V settings module",
   "main": "src/main/ets/Index.ets",
   "dependencies": {
