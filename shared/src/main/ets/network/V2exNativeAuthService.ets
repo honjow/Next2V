@@ -247,7 +247,8 @@ export class V2exNativeAuthService {
       http.RequestMethod.POST,
       challenge.cookie,
       V2exNativeAuthService.encodeFormPairs(pairs),
-      trace
+      trace,
+      false
     )
     const cookieAfterPost = V2exNativeAuthService.mergeCookieHeader(challenge.cookie, postRes.setCookie)
     const postChallenge = V2exNativeAuthService.twoFactorChallengeFromHtml(cookieAfterPost, postRes.text)
@@ -360,7 +361,8 @@ export class V2exNativeAuthService {
     method: http.RequestMethod,
     cookieHeader: string,
     extraData: string = '',
-    trace?: TwoFactorTrace
+    trace?: TwoFactorTrace,
+    followRedirects: boolean = true
   ): Promise<TextWithSetCookie> {
     let headerBag: Object | null = null
     const startedAt = Date.now()
@@ -371,6 +373,7 @@ export class V2exNativeAuthService {
     })
     const receivedSetCookieLines: string[] = []
     let receivedLocation: string = ''
+    let responseProcessed: boolean = false
 
     try {
       const reqHeaders: Record<string, string> = {
@@ -399,6 +402,7 @@ export class V2exNativeAuthService {
       }
       const response = await NetworkProxyRequest.request(url, {
         method: method,
+        followRedirects: followRedirects,
         header: reqHeaders,
         connectTimeout: CONNECT_TIMEOUT_MS,
         readTimeout: READ_TIMEOUT_MS,
@@ -414,14 +418,17 @@ export class V2exNativeAuthService {
 
       const text = (response.result as string) || ''
       const headers = headerBag || response.header
-      const setCookie = receivedSetCookieLines.concat(V2exCookieHeaders.extract(response.header))
+      const setCookie = response.unfollowedRedirect ?
+        receivedSetCookieLines : receivedSetCookieLines.concat(V2exCookieHeaders.extract(response.header))
       const location = V2exNativeAuthService.extractSingleHeader(headers, 'location') || receivedLocation
       if (trace) {
         this.retryCookie = V2exCookieHeaders.merge(cookieHeader, setCookie)
+        responseProcessed = true
         const form = V2exSigninParser.extractTwoFactorForm(text)
         const serverDate = Date.parse(V2exNativeAuthService.extractSingleHeader(response.header, 'date'))
         trace.record('response_received', {
-          statusCode: response.responseCode, elapsedMs: Date.now() - startedAt,
+          statusCode: response.unfollowedRedirect ? 0 : response.responseCode,
+          redirectUnfollowed: !!response.unfollowedRedirect, elapsedMs: Date.now() - startedAt,
           route: TwoFactorTrace.route(url), redirectRoute: TwoFactorTrace.route(location),
           effectiveRoute: TwoFactorTrace.route(response.effectiveUrl),
           responseUpdates: setCookie.length, sessionChanged: this.retryCookie !== cookieHeader,
@@ -438,6 +445,11 @@ export class V2exNativeAuthService {
       }
       return { text, setCookie, statusCode: response.responseCode as number, location }
     } catch (error) {
+      // A failed transport can still have delivered session updates before failing. Keep them
+      // only in the pending challenge for a user-initiated retry; never replay the code.
+      if (trace && !responseProcessed && receivedSetCookieLines.length > 0) {
+        this.retryCookie = V2exCookieHeaders.merge(cookieHeader, receivedSetCookieLines)
+      }
       const transportError = error as AuthTransportError
       trace?.record('request_failed', {
         elapsedMs: Date.now() - startedAt, httpFailure: error instanceof HttpStatusError,

@@ -52,8 +52,8 @@ const NetworkProxyRequest = { request: async (url, options) => {
   requests.push({ url, ...options })
   const response = responses.shift()
   assert.ok(response, `unexpected request ${url}`)
-  if (response.throw) throw response.throw
   for (const headers of response.hops || [response.header]) options.onHeadersReceive?.(headers)
+  if (response.throw) throw response.throw
   return response
 } }
 const { HttpClient } = load(network + 'HttpClient.ets', ['HttpClient'], {
@@ -113,6 +113,14 @@ assert.equal(requests.at(-3).extraData, 'code=123456&once=nonce-three-secret')
 assert.equal(requests.at(-2).header.Cookie, 'A2=verified-secret')
 assert.equal(result.cookie, 'A2=verified-secret')
 assert.equal(result.username, 'testuser')
+
+// Headers received before a transport failure rotate only the pending retry session.
+responses = [
+  response(200, form('nonce-failure-secret')),
+  { throw: new Error('synthetic transport failure'), header: { 'set-cookie': 'A2=after-error-secret' } },
+]
+await assert.rejects(auth.completeTwoFactorWithCookie('A2=before-error-secret', '123456', trace))
+assert.equal(auth.getTwoFactorRetryCookie(), 'A2=after-error-secret')
 
 // An intermediate /2fa redirect is not the final response after NetworkKit follows redirects.
 // The final page must still pass both authenticated identity checks.
