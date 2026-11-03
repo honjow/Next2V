@@ -24,6 +24,13 @@ interface AppIconVariant {
  * this class only maps the app.json5 names to settings labels and previews.
  */
 export class AppIconSettings {
+  private static operation: Promise<void> = Promise.resolve()
+
+  private static enqueue(action: () => Promise<void>): Promise<void> {
+    const next = AppIconSettings.operation.then(action)
+    AppIconSettings.operation = next.catch((_error: Error) => {})
+    return next
+  }
   static isSupported(): boolean {
     return deviceInfo.apiAvailable('26.0.0')
   }
@@ -142,7 +149,11 @@ export class AppIconSettings {
     connectAppIcon().name = AppIconSettings.normalizeName(name)
   }
 
-  static async load(): Promise<void> {
+  static load(): Promise<void> {
+    return AppIconSettings.enqueue(() => AppIconSettings.refresh())
+  }
+
+  private static async refresh(): Promise<void> {
     if (!AppIconSettings.isSupported()) {
       AppIconSettings.apply(APP_ICON_DEFAULT)
       return
@@ -159,11 +170,19 @@ export class AppIconSettings {
   }
 
   /** Switches the launcher icon. Default is applied by cancelling the alternate icon (''). */
-  static async set(name: string): Promise<void> {
+  static set(name: string): Promise<void> {
+    // Compare against the confirmed icon when this request runs, after any earlier switch.
+    const normalized = AppIconSettings.normalizeName(name)
+    return AppIconSettings.enqueue(() => AppIconSettings.applySelection(normalized))
+  }
+
+  private static async applySelection(normalized: string): Promise<void> {
     if (!AppIconSettings.isSupported()) {
       throw new Error('Alternate app icons require API 26')
     }
-    const normalized = AppIconSettings.normalizeName(name)
+    if (normalized === connectAppIcon().name) {
+      return
+    }
     await bundleManager.setAlternateIcon(normalized === APP_ICON_DEFAULT ? '' : normalized)
     AppIconSettings.apply(normalized)
   }

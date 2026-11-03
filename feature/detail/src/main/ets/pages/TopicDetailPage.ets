@@ -18,8 +18,6 @@ import {
   publishTopicDetailTopicIgnored,
   publishTopicDetailOwnership,
   clearTopicDetailOwnership,
-  selectHomeSplitTopic,
-  releaseHomeSplitTopic,
   publishTopicComposeTarget,
   connectNodePickAction,
   NodePickActionState,
@@ -264,9 +262,6 @@ export struct TopicDetailPage {
     TopicDetailFloatingActionCoordinator.initialTouchState();
 
   aboutToAppear(): void {
-    // Confirm the split's selected card (the feed also sets this optimistically on tap, so a repeat
-    // tap is ignored immediately instead of re-pushing this destination and flashing the pane).
-    selectHomeSplitTopic(this.topicId)
     this.v = new DetailViewModel(this.topicId)
     this.v.setReplyDisplayMode(this.currentReplyDisplayMode())
     this.lastReadFloor = 0
@@ -301,9 +296,6 @@ export struct TopicDetailPage {
   }
 
   aboutToDisappear(): void {
-    // Clearing only while this page still owns the selection keeps topic-to-topic switches safe
-    // regardless of the disappear/appear order.
-    releaseHomeSplitTopic(this.topicId)
     this.persistReadPosition()
     this.replySubmitLoadingDialogController.close()
     this.replyButtonController.unbindScroller(this.scroller)

@@ -71,6 +71,7 @@ import {
   HttpClient,
   HomeSplitSettings,
   clearHomeSplitSelection,
+  selectHomeSplitTopic,
   HomeTabSettings,
   ImmersiveMaterialSettings,
   ImmersiveMaterialSettingsState,
@@ -284,10 +285,7 @@ struct Index {
     // Unregister foldable screen state change callback
     FoldScreenUtil.getInstance().unregisterCallback(this.foldScreenCallback)
     this.clearHomeTabAnimationGuardTimer()
-    if (this.splitPaneWidthTimerId !== -1) {
-      clearTimeout(this.splitPaneWidthTimerId)
-      this.splitPaneWidthTimerId = -1
-    }
+    this.cancelSplitPaneWidthWriteBack()
   }
 
   @Monitor('pendingUrl.command')
@@ -474,6 +472,13 @@ struct Index {
     this.splitNavBarWidth = this.clampSplitNavBarWidth(remembered, width)
   }
 
+  private cancelSplitPaneWidthWriteBack(): void {
+    if (this.splitPaneWidthTimerId !== -1) {
+      clearTimeout(this.splitPaneWidthTimerId)
+      this.splitPaneWidthTimerId = -1
+    }
+  }
+
   // HdsNavigation's navBarWidth has no two-way binding, so a divider drag is observed through the
   // feed pane's measured width and written back into splitNavBarWidth. Without that, a later
   // re-render that re-applies navBarWidth would snap the divider back to the default third.
@@ -481,9 +486,7 @@ struct Index {
     if (width <= 0 || !this.isSplitLayout()) {
       return
     }
-    if (this.splitPaneWidthTimerId !== -1) {
-      clearTimeout(this.splitPaneWidthTimerId)
-    }
+    this.cancelSplitPaneWidthWriteBack()
     this.splitPaneWidthTimerId = setTimeout((): void => {
       this.splitPaneWidthTimerId = -1
       // A tab switch inside the debounce window can re-measure the feed full-width; only a report
@@ -930,6 +933,8 @@ struct Index {
       if (width === this.rootWidthVp && height === this.rootHeightVp) {
         return
       }
+      // Measurements pending from the old window cannot be used to save the new window ratio.
+      this.cancelSplitPaneWidthWriteBack()
       this.rootWidthVp = width
       this.rootHeightVp = height
       this.syncSplitNavBarWidth(width, height)
@@ -1102,6 +1107,12 @@ struct Index {
   }
 
   private onDestinationShown(descriptor: IndexDestinationDescriptor): void {
+    // Hidden destinations may stay mounted. The transparent preview leaves its underlying page visible.
+    if (descriptor.family === 'topicDetail') {
+      selectHomeSplitTopic(descriptor.topicDetailParams.topicId)
+    } else if (descriptor.family !== 'imagePreview') {
+      clearHomeSplitSelection()
+    }
     if (descriptor.family === 'userProfile') {
       this.notifyUserProfileShown(descriptor.userProfileParams.username)
     }
@@ -1126,6 +1137,9 @@ struct Index {
   }
 
   private onDestinationHidden(descriptor: IndexDestinationDescriptor): void {
+    if (this.ns.size() === 0) {
+      clearHomeSplitSelection()
+    }
     // Clear the shared-element (Hero) binding only AFTER the preview is fully hidden (onHidden = after the back
     // morph completes), so the source thumbnail stays bound through the whole close morph, then returns to idle.
     if (descriptor.family === 'imagePreview') {

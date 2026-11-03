@@ -28,13 +28,6 @@ export function selectHomeSplitTopic(topicId: number): void {
 }
 
 /** Clears only when the given topic is still the selected one (a newer selection wins). */
-export function releaseHomeSplitTopic(topicId: number): void {
-  const state = connectHomeSplitSelection()
-  if (state.selectedTopicId === topicId) {
-    state.selectedTopicId = 0
-  }
-}
-
 export function clearHomeSplitSelection(): void {
   connectHomeSplitSelection().selectedTopicId = 0
 }

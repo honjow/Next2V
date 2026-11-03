@@ -90,9 +90,6 @@ export struct AppIconSettingsPage {
 
   private select(value: string): void {
     const normalized = AppIconSettings.normalizeName(value)
-    if (normalized === AppIconSettings.normalizeName(this.appIcon.name)) {
-      return
-    }
     SettingsSaveCoordinator.saveAppIcon(normalized).catch((error: Error) => {
       console.error('switch app icon failed: ' + error.message)
       AppPrompt.openToast({

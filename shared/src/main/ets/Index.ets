@@ -206,7 +206,6 @@ export {
   HomeSplitSelectionState,
   connectHomeSplitSelection,
   selectHomeSplitTopic,
-  releaseHomeSplitTopic,
   clearHomeSplitSelection,
 } from './state/HomeSplitSelectionState'
 export {
