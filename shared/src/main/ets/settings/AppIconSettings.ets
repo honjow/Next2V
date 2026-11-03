@@ -177,13 +177,13 @@ export class AppIconSettings {
   }
 
   private static async applySelection(normalized: string): Promise<void> {
-    if (!AppIconSettings.isSupported()) {
-      throw new Error('Alternate app icons require API 26')
-    }
-    if (normalized === connectAppIcon().name) {
+    if (deviceInfo.apiAvailable('26.0.0')) {
+      if (normalized !== connectAppIcon().name) {
+        await bundleManager.setAlternateIcon(normalized === APP_ICON_DEFAULT ? '' : normalized)
+        AppIconSettings.apply(normalized)
+      }
       return
     }
-    await bundleManager.setAlternateIcon(normalized === APP_ICON_DEFAULT ? '' : normalized)
-    AppIconSettings.apply(normalized)
+    throw new Error('Alternate app icons require API 26')
   }
 }
