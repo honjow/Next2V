@@ -2,6 +2,8 @@ import { AppPrompt } from 'shared'
 import { common } from '@kit.AbilityKit'
 import {
   ApiDomainState,
+  AppIconSettings,
+  AppIconState,
   AppStrings,
   AvatarAppearanceSettings,
   AvatarAppearanceState,
@@ -10,6 +12,7 @@ import {
   connectApiDomain,
   connectAutoDailyCheckin,
   connectCloudSync,
+  connectAppIcon,
   connectAvatarAppearance,
   connectHomeTabAutoHide,
   connectHotReplySettings,
@@ -87,6 +90,9 @@ export struct SettingsPage {
   private image: ImageUploadState = connectImageUpload();
   private themeColor: ThemeColorState = connectThemeColor();
   private immersiveMaterial: ImmersiveMaterialSettingsState = connectImmersiveMaterialSettings();
+  // Launcher app-icon selection. The system alternate-icon state is the persisted source of truth;
+  // this mirror is hydrated on page entry by AppIconSettings.load().
+  private appIcon: AppIconState = connectAppIcon();
   // Shared sub-tab style (underline/capsule). Read from its V2 mirror: the save() chokepoint applies
   // synchronously, so the row label and every SubTabBar repaint the moment the style changes.
   private subTabStyle: SubTabStyleState = connectSubTabStyle();
@@ -121,6 +127,7 @@ export struct SettingsPage {
   aboutToAppear(): void {
     this.hydratePreferences()
     this.loadCacheStats()
+    this.refreshAppIcon()
   }
 
   // Hydrate the @Local self-toggled preferences from their durable V2 holders (seeded by each setting's
@@ -451,6 +458,17 @@ export struct SettingsPage {
             this.immersiveMaterialMenuShown = false
           },
         })
+
+      if (AppIconSettings.isSupported()) {
+        this.SettingsDivider()
+        ConciseListRow({
+          title: $r('app.string.settings_app_icon'),
+          trailingText: SettingsPageCoordinator.appIconLabel(this.appIcon.name),
+          action: () => {
+            this.stack.pushPathByName('AppIconSettings', null)
+          },
+        })
+      }
 
       this.SettingsDivider()
       SettingsDropdownRow({
@@ -1020,6 +1038,12 @@ export struct SettingsPage {
     }
     const context = this.getUIContext().getHostContext() as common.UIAbilityContext
     SettingsSaveCoordinator.saveImmersiveMaterial(context, normalized)
+  }
+
+  private refreshAppIcon(): void {
+    AppIconSettings.load().catch((error: Error) => {
+      console.error('refresh app icon state failed: ' + error.message)
+    })
   }
 
   private updateSubTabStyle(style: string): void {

@@ -32,6 +32,14 @@ REFERENCE_FILES = [
 PRUNE_PREFIXES = ("app_icon", "startup_foreground")
 RESOURCE_EXTENSIONS = (".json", ".png", ".webp", ".jpg", ".jpeg", ".svg")
 MEDIA_REF_RE = re.compile(r"\$media:([A-Za-z0-9_]+)")
+# Code can reference media with $r('app.media.x') (e.g. the app-icon picker previews and the launch
+# splash). Those resources must survive the release prune even though no JSON file mentions them.
+CODE_MEDIA_DIRS = [
+    ROOT / "entry/src/main/ets",
+    ROOT / "shared/src/main/ets",
+    ROOT / "feature",
+]
+MEDIA_R_REF_RE = re.compile(r"app\.media\.([A-Za-z0-9_]+)")
 
 
 def rel(path: Path) -> str:
@@ -67,6 +75,13 @@ def discover_initial_media_refs() -> set[str]:
     for path in REFERENCE_FILES:
         if path.exists():
             refs.update(MEDIA_REF_RE.findall(read_text(path)))
+    for code_dir in CODE_MEDIA_DIRS:
+        if not code_dir.exists():
+            continue
+        for path in code_dir.rglob("*.ets"):
+            if "/build/" in path.as_posix():
+                continue
+            refs.update(MEDIA_R_REF_RE.findall(read_text(path)))
     return refs
 
 

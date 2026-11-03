@@ -69,6 +69,8 @@ import {
   CookieJarSettings,
   FoldScreenUtil,
   HttpClient,
+  HomeSplitSettings,
+  clearHomeSplitSelection,
   HomeTabSettings,
   ImmersiveMaterialSettings,
   ImmersiveMaterialSettingsState,
@@ -85,6 +87,7 @@ import { DiscoverPage, NodePickerPage, NodeTopicPage } from 'node'
 import { UserProfilePage, UserRepliesPage, UserTopicsPage } from 'user'
 import {
   SettingsPage,
+  AppIconSettingsPage,
   StorageSettingsPage,
   DiagnosticsLogPage,
   ReadingSettingsPage,
@@ -141,6 +144,18 @@ import { NotificationCenterViewModel } from '../viewmodel/NotificationCenterView
 import type { IndexDestinationDescriptor } from '../model/IndexRouteCoordinator'
 import { IndexRouteCoordinator } from '../model/IndexRouteCoordinator'
 
+// Large-screen split needs a big window (short side) AND either a landscape shape or a nearly
+// square one. Measured on device: Pura X Max is 665x940 in portrait (w/h = 0.71 -> single column)
+// and 940x665 in landscape (1.41 -> split), while X7 unfolded is 707x773 (0.91 -> split) and
+// 773x707 (1.09 -> split). Phones and the folded outer screens never reach the short-side floor.
+const HOME_SPLIT_MIN_SHORT_SIDE_VP: number = 520
+const HOME_SPLIT_MIN_WIDTH_HEIGHT_RATIO: number = 0.85
+// Preferred readable feed width; on narrow split windows it may drop to the system navigation
+// bar default, and the detail pane always keeps HOME_SPLIT_CONTENT_MIN_VP when there is room.
+const HOME_SPLIT_FEED_MIN_VP: number = 280
+const HOME_SPLIT_FEED_FLOOR_VP: number = 240
+const HOME_SPLIT_CONTENT_MIN_VP: number = 360
+
 @Entry
 @ComponentV2
 struct Index {
@@ -150,6 +165,7 @@ struct Index {
   private ns: NavPathStack = connectNavStack().stack;
   private readonly HOME_TAB_SCROLL_DELTA_PX: number = 6;
   private readonly HOME_TAB_ANIMATION_GUARD_MS: number = 180;
+  private readonly SPLIT_PANE_WIDTH_WRITE_BACK_MS: number = 180;
   private tc: HdsTabsController = new HdsTabsController();
   private homeTabScrollers: Scroller[] = [
     new Scroller(),
@@ -167,6 +183,27 @@ struct Index {
   private homeTabVisibleByScroll: boolean = true;
   private homeTabAnimationGuardTimerId: number = -1;
   @Local ct: number = 0;
+  // Root size in vp, measured by the outer Stack's onAreaChange. Drives the large-screen
+  // two-pane home layout (feed in the left pane, topic detail in the right pane).
+  @Local private rootWidthVp: number = 0;
+  @Local private rootHeightVp: number = 0;
+  // Two-way bound to HdsNavigation.navBarWidth: the divider drag writes the user's chosen
+  // feed width back here, so later Index re-renders don't snap it back to the default third.
+  @Local private splitNavBarWidth: number = 0;
+  // Resets the divider to the default ratio only when the window newly becomes large enough
+  // (e.g. unfolding), not on every layout pass or tab switch.
+  private hadSplitSizedWindow: boolean = false;
+  // Debounces the feed pane's measured width (HomePage.onPaneWidthChange) so a divider drag only
+  // writes back once it settles, instead of fighting the drag frame by frame.
+  private splitPaneWidthTimerId: number = -1;
+  // Remembered feed-pane ratio from the previous session (0 = never dragged). Seeded by
+  // SettingsBootstrap before this page loads, so the split reopens at the same proportion.
+  private storedSplitRatio: number = 0;
+  // Split-mode empty-state pane, created once per effective locale (same rationale as pillBarContent: a
+  // per-build ComponentContent would re-mount the placeholder on every Index re-render), re-created when
+  // the app language changes.
+  private splitPlaceholderContent: ComponentContent<Object> | undefined = undefined;
+  private splitPlaceholderLocale: string = '';
   // The single scroller the shared HdsNavigation title binds to for scroll-driven hide/show. Always the
   // ACTIVE sub-tab's live scroller: updated on tab switch (onChange) and when HomePage hands up its real
   // per-category scroller (setHomeTabScroller). Binding only one scroller keeps a single source driving
@@ -182,7 +219,9 @@ struct Index {
   private nodeTopicAppbar: NodeTopicAppbarState = connectNodeTopicAppbar();
   private userProfileAppbar: UserProfileAppbarState = connectUserProfileAppbar();
   private notificationUnread: NotificationUnreadState = connectNotificationUnread();
-  private language: LanguageState = connectLanguageState();
+  // @Local (not a plain field) so a hot language switch re-renders this shell: the split placeholder is a
+  // cached ComponentContent, and only a build that re-issues .splitPlaceholder() can swap in the new locale.
+  @Local private language: LanguageState = connectLanguageState();
   private homeTab: HomeTabAutoHideState = connectHomeTabAutoHide();
   private immersiveMaterial: ImmersiveMaterialSettingsState = connectImmersiveMaterialSettings();
   private authSession: AuthSessionSignalState = connectAuthSessionSignal();
@@ -222,6 +261,7 @@ struct Index {
 
   aboutToAppear(): void {
     MotionHandStateService.start()
+    this.storedSplitRatio = HomeSplitSettings.ratio()
     // Create the home feed-pill ComponentContent ONCE here (outside build()), so startup/feed-load
     // re-renders cannot recreate it and re-mount the @ComponentV2 FeedPills (which would churn its recenter).
     if (!this.pillBarContent) {
@@ -244,6 +284,10 @@ struct Index {
     // Unregister foldable screen state change callback
     FoldScreenUtil.getInstance().unregisterCallback(this.foldScreenCallback)
     this.clearHomeTabAnimationGuardTimer()
+    if (this.splitPaneWidthTimerId !== -1) {
+      clearTimeout(this.splitPaneWidthTimerId)
+      this.splitPaneWidthTimerId = -1
+    }
   }
 
   @Monitor('pendingUrl.command')
@@ -350,6 +394,140 @@ struct Index {
       this.tc.applyHideAnimation(HdsAnimationMode.SCROLL_ANIMATION)
     }
     this.startHomeTabAnimationGuardTimer()
+  }
+
+  // Large-screen home becomes a two-pane split only for a large window that is landscape-shaped or
+  // near-square: the feed is the HdsNavigation navBar (left) and the pushed TopicDetail renders
+  // beside it (right). A tall window (Pura X Max portrait 665x940) keeps a full-width feed.
+  private splitSizeEligible(width: number, height: number): boolean {
+    if (width <= 0 || height <= 0) {
+      return false
+    }
+    if (Math.min(width, height) < HOME_SPLIT_MIN_SHORT_SIDE_VP) {
+      return false
+    }
+    return width / height >= HOME_SPLIT_MIN_WIDTH_HEIGHT_RATIO
+  }
+
+  // Split layout is available on every bottom tab: the tab content lives in the navBar (left) and any
+  // destination it pushes renders beside it (right) — feed→topic, discover→topic/node, notification→
+  // topic, me→settings/account/... .
+  private isSplitLayout(): boolean {
+    return this.splitSizeEligible(this.rootWidthVp, this.rootHeightVp)
+  }
+
+  // Feed-pane bounds for the current window. The detail pane keeps HOME_SPLIT_CONTENT_MIN_VP when
+  // the window is wide enough; on a narrow split window (rotated √2:1 foldable, ~560-610vp) the
+  // feed gives way down to the system navigation bar default instead of overflowing.
+  private splitNavBarMinWidth(width: number): number {
+    const readable = Math.max(HOME_SPLIT_FEED_MIN_VP, Math.floor(width * 0.28))
+    const available = Math.max(HOME_SPLIT_FEED_FLOOR_VP, width - HOME_SPLIT_CONTENT_MIN_VP)
+    return Math.min(readable, available)
+  }
+
+  private splitNavBarMaxWidth(width: number): number {
+    return Math.max(
+      this.splitNavBarMinWidth(width),
+      Math.min(Math.floor(width * 0.5), Math.max(0, width - HOME_SPLIT_CONTENT_MIN_VP)),
+    )
+  }
+
+  private clampSplitNavBarWidth(value: number, width: number): number {
+    const min = this.splitNavBarMinWidth(width)
+    const max = this.splitNavBarMaxWidth(width)
+    return Math.max(min, Math.min(max, value))
+  }
+
+  // Default feed width: one third, but never below the readable feed floor. On a wide large screen
+  // this stays exactly 1/3; on near-square foldables it settles near 40%; on a rotated narrow
+  // foldable window it drops to the feed floor so the detail pane still gets its minimum.
+  private defaultSplitNavBarWidth(width: number): number {
+    if (width <= 0) {
+      return 0
+    }
+    return this.clampSplitNavBarWidth(Math.floor(width / 3), width)
+  }
+
+  // Called by the root area change. The default is re-seeded only when the window newly
+  // becomes large enough (fold/unfold, rotation into a large shape); otherwise the user's
+  // dragged width is preserved and merely clamped into the new bounds.
+  private syncSplitNavBarWidth(width: number, height: number): void {
+    const eligible = this.splitSizeEligible(width, height)
+    if (!eligible) {
+      this.hadSplitSizedWindow = false
+      return
+    }
+    if (!this.hadSplitSizedWindow || this.splitNavBarWidth <= 0) {
+      this.hadSplitSizedWindow = true
+      // Reopen at the remembered proportion; fall back to the default third before the first drag.
+      const seeded = this.storedSplitRatio > 0
+        ? Math.round(this.storedSplitRatio * width)
+        : this.defaultSplitNavBarWidth(width)
+      this.splitNavBarWidth = this.clampSplitNavBarWidth(seeded, width)
+      return
+    }
+    // A rotated/folded window keeps the remembered proportion rather than the old vp width, which
+    // would mean a different ratio on the new shape.
+    const remembered = this.storedSplitRatio > 0
+      ? Math.round(this.storedSplitRatio * width)
+      : this.splitNavBarWidth
+    this.splitNavBarWidth = this.clampSplitNavBarWidth(remembered, width)
+  }
+
+  // HdsNavigation's navBarWidth has no two-way binding, so a divider drag is observed through the
+  // feed pane's measured width and written back into splitNavBarWidth. Without that, a later
+  // re-render that re-applies navBarWidth would snap the divider back to the default third.
+  private onHomeFeedPaneWidthChanged(width: number): void {
+    if (width <= 0 || !this.isSplitLayout()) {
+      return
+    }
+    if (this.splitPaneWidthTimerId !== -1) {
+      clearTimeout(this.splitPaneWidthTimerId)
+    }
+    this.splitPaneWidthTimerId = setTimeout((): void => {
+      this.splitPaneWidthTimerId = -1
+      // A tab switch inside the debounce window can re-measure the feed full-width; only a report
+      // that still fits the split range came from the divider.
+      if (width > this.splitNavBarMaxWidth(this.rootWidthVp) + 2) {
+        return
+      }
+      const target = this.clampSplitNavBarWidth(Math.round(width), this.rootWidthVp)
+      if (Math.abs(target - this.splitNavBarWidth) < 2) {
+        return
+      }
+      this.splitNavBarWidth = target
+      this.persistSplitRatio(target)
+    }, this.SPLIT_PANE_WIDTH_WRITE_BACK_MS)
+  }
+
+  // Stores the dragged pane as a ratio of the window width, so the next launch reopens the split at
+  // the same proportion (and does so on the other orientation's window shape too).
+  private persistSplitRatio(navBarWidth: number): void {
+    if (this.rootWidthVp <= 0) {
+      return
+    }
+    const ratio = navBarWidth / this.rootWidthVp
+    this.storedSplitRatio = ratio
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
+    HomeSplitSettings.save(context, ratio).catch((error: Error) => {
+      console.error('save home split ratio failed: ' + error.message)
+    })
+  }
+
+  private ensureSplitPlaceholder(): ComponentContent<Object> {
+    // The placeholder is hosted by Hds as a ComponentContent, i.e. OUTSIDE this page's build tree, so it is
+    // never re-rendered by an in-app language switch and keeps whatever locale it mounted with. Rebuild it
+    // when the effective locale changes so the empty state follows the app language like every other label.
+    const locale = this.language.effectiveLocale
+    if (!this.splitPlaceholderContent || this.splitPlaceholderLocale !== locale) {
+      this.splitPlaceholderContent = new ComponentContent<Object>(
+        this.getUIContext(),
+        wrapBuilder<[Object]>(SplitPlaceholderCCBuilder),
+        new Object(),
+      )
+      this.splitPlaceholderLocale = locale
+    }
+    return this.splitPlaceholderContent
   }
 
   private onHomeTabDidScroll(index: number, offset: number, state: ScrollState): void {
@@ -459,6 +637,19 @@ struct Index {
           connectReplyStickerPanel().open = false
           return true
         }
+        // Split mode: the destination is a side pane, and Hds does not run its default pop for the last
+        // entry (back would bubble up and close the app instead). Close the pane ourselves: step back one
+        // route, or clear the pane to the placeholder when it is the last one. Keep the animated default
+        // (true) — an un-animated pop made the right pane snap away with no transition.
+        if (this.isSplitLayout()) {
+          if (this.ns.size() > 1) {
+            this.ns.pop()
+          } else {
+            this.ns.clear()
+            clearHomeSplitSelection()
+          }
+          return true
+        }
         return false
       })
     }
@@ -524,6 +715,9 @@ struct Index {
     if (descriptor.family === 'imageUploadSettings') {
       ImageUploadSettingsPage()
     }
+    if (descriptor.family === 'appIconSettings') {
+      AppIconSettingsPage()
+    }
     if (descriptor.family === 'domainSettings') {
       DomainSettingsPage()
     }
@@ -586,6 +780,9 @@ struct Index {
               onDidScroll: (offset: number, state: ScrollState) => {
                 this.onHomeTabDidScroll(0, offset, state)
               },
+              onPaneWidthChange: (width: number) => {
+                this.onHomeFeedPaneWidthChanged(width)
+              },
             })
           }.tabBar(this.TabIcon($r('app.string.settings_home'), 0))
           TabContent() {
@@ -637,6 +834,12 @@ struct Index {
           this.applyHomeTabAutoHide()
         })
         .onChange((i: number) => {
+          // Switching tabs while split: the pushed destination belongs to the tab being left, so drop
+          // it and the selected-card tint instead of showing a stale page beside the new tab.
+          if (i !== this.ct && this.isSplitLayout() && this.ns.size() > 0) {
+            this.ns.clear(false)
+            clearHomeSplitSelection()
+          }
           this.ct = i
           // Rebind the shared title to the newly-active tab's scroller (tabs 1-3 use the stable
           // Index-owned scrollers; tab 0 uses whatever HomePage last handed up).
@@ -677,7 +880,23 @@ struct Index {
       )
       .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
       .navDestination(this.pm)
-      .mode(NavigationMode.Stack)
+      // Large screen: split into tab content (left pane) + the pushed destination (right pane). The
+      // active tab stays the navBar so taps push normally; the destination renders beside it.
+      // The divider is draggable, bounded so the left pane stays readable and the right pane keeps
+      // HOME_SPLIT_CONTENT_MIN_VP. Switching tabs clears the right pane instead of carrying a page
+      // from another tab across.
+      .mode(this.isSplitLayout() ? NavigationMode.Split : NavigationMode.Stack)
+      // HdsNavigation has no two-way width binding: a dragged width comes back through
+      // HomePage.onPaneWidthChange (debounced) and is re-applied here on later re-renders.
+      .navBarWidth(this.splitNavBarWidth)
+      .navBarWidthRange({
+        minWidth: this.splitNavBarMinWidth(this.rootWidthVp),
+        maxWidth: this.splitNavBarMaxWidth(this.rootWidthVp),
+      })
+      .minContentWidth(HOME_SPLIT_CONTENT_MIN_VP)
+      .splitPlaceholder(this.ensureSplitPlaceholder())
+      .enableDragBar(true)
+      .enableModeChangeAnimation(false)
       .width('100%')
       .height('100%')
       .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
@@ -703,6 +922,18 @@ struct Index {
         },
       })
     }
+    .onAreaChange((_oldValue: Area, newValue: Area) => {
+      // Window-size source for the wide-landscape split decision; Area reports vp for a
+      // percentage-sized container. Only write on change so rotation/fold reflows don't churn.
+      const width = (newValue?.width as number) || 0
+      const height = (newValue?.height as number) || 0
+      if (width === this.rootWidthVp && height === this.rootHeightVp) {
+        return
+      }
+      this.rootWidthVp = width
+      this.rootHeightVp = height
+      this.syncSplitNavBarWidth(width, height)
+    })
     .width('100%')
     .height('100%')
   }
@@ -1649,4 +1880,35 @@ struct Index {
     }
     return resource
   }
+}
+
+@Builder
+function SplitPlaceholderCCBuilder(_params: Object) {
+  SplitPlaceholderPane()
+}
+
+// Right-pane empty state shown while the split home tab has no topic selected.
+@Builder
+function SplitPlaceholderPane() {
+  Column({ space: ThemeConstants.SPACE_SM }) {
+    SymbolGlyph($r('sys.symbol.doc_plaintext'))
+      .fontSize(ThemeConstants.ICON_SIZE_PLACEHOLDER)
+      .fontColor([ThemeConstants.TEXT_SECONDARY])
+    Text(AppStrings.text($r('app.string.split_placeholder_title'), 'Select an item'))
+      .fontSize(ThemeConstants.FONT_SIZE_TITLE)
+      .fontColor(ThemeConstants.TEXT_PRIMARY)
+      .textAlign(TextAlign.Center)
+    Text(AppStrings.text($r('app.string.split_placeholder_desc'), 'Tap an item on the left to view it here'))
+      .fontSize(ThemeConstants.FONT_SIZE_BODY)
+      .fontColor(ThemeConstants.TEXT_SECONDARY)
+      .textAlign(TextAlign.Center)
+  }
+  .width('100%')
+  .height('100%')
+  .padding({
+    left: ThemeConstants.SPACE_XL,
+    right: ThemeConstants.SPACE_XL,
+  })
+  .justifyContent(FlexAlign.Center)
+  .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
 }

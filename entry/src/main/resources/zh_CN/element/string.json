@@ -365,6 +365,66 @@
       "value": "界面"
     },
     {
+      "name": "settings_app_icon",
+      "value": "应用图标"
+    },
+    {
+      "name": "app_icon_default",
+      "value": "默认"
+    },
+    {
+      "name": "app_icon_sunset_solid",
+      "value": "经典橙"
+    },
+    {
+      "name": "app_icon_sunset_glass",
+      "value": "日落玻璃"
+    },
+    {
+      "name": "app_icon_coral_solid",
+      "value": "珊瑚红"
+    },
+    {
+      "name": "app_icon_coral_glass",
+      "value": "珊瑚玻璃"
+    },
+    {
+      "name": "app_icon_emerald_solid",
+      "value": "翠绿"
+    },
+    {
+      "name": "app_icon_emerald_glass",
+      "value": "翠绿玻璃"
+    },
+    {
+      "name": "app_icon_azure_solid",
+      "value": "天蓝"
+    },
+    {
+      "name": "app_icon_azure_glass",
+      "value": "天蓝玻璃"
+    },
+    {
+      "name": "app_icon_cyan_solid",
+      "value": "青色"
+    },
+    {
+      "name": "app_icon_cyan_glass",
+      "value": "青色玻璃"
+    },
+    {
+      "name": "app_icon_slate_solid",
+      "value": "石板灰"
+    },
+    {
+      "name": "app_icon_slate_glass",
+      "value": "石板玻璃"
+    },
+    {
+      "name": "app_icon_black",
+      "value": "曜石黑"
+    },
+    {
       "name": "settings_home",
       "value": "首页"
     },
@@ -2163,6 +2223,14 @@
     {
       "name": "common_loading",
       "value": "加载中…"
+    },
+    {
+      "name": "split_placeholder_title",
+      "value": "选择一个条目"
+    },
+    {
+      "name": "split_placeholder_desc",
+      "value": "点击左侧内容，在这里查看"
     },
     {
       "name": "media_youtube_video",

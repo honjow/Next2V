@@ -365,6 +365,66 @@
       "value": "모양"
     },
     {
+      "name": "settings_app_icon",
+      "value": "앱 아이콘"
+    },
+    {
+      "name": "app_icon_default",
+      "value": "기본"
+    },
+    {
+      "name": "app_icon_sunset_solid",
+      "value": "클래식 오렌지"
+    },
+    {
+      "name": "app_icon_sunset_glass",
+      "value": "선셋 글래스"
+    },
+    {
+      "name": "app_icon_coral_solid",
+      "value": "코랄"
+    },
+    {
+      "name": "app_icon_coral_glass",
+      "value": "코랄 글래스"
+    },
+    {
+      "name": "app_icon_emerald_solid",
+      "value": "에메랄드"
+    },
+    {
+      "name": "app_icon_emerald_glass",
+      "value": "에메랄드 글래스"
+    },
+    {
+      "name": "app_icon_azure_solid",
+      "value": "애저"
+    },
+    {
+      "name": "app_icon_azure_glass",
+      "value": "애저 글래스"
+    },
+    {
+      "name": "app_icon_cyan_solid",
+      "value": "시안"
+    },
+    {
+      "name": "app_icon_cyan_glass",
+      "value": "시안 글래스"
+    },
+    {
+      "name": "app_icon_slate_solid",
+      "value": "슬레이트"
+    },
+    {
+      "name": "app_icon_slate_glass",
+      "value": "슬레이트 글래스"
+    },
+    {
+      "name": "app_icon_black",
+      "value": "옵시디언 블랙"
+    },
+    {
       "name": "settings_home",
       "value": "홈"
     },
@@ -2163,6 +2223,14 @@
     {
       "name": "common_loading",
       "value": "로드 중…"
+    },
+    {
+      "name": "split_placeholder_title",
+      "value": "항목 선택"
+    },
+    {
+      "name": "split_placeholder_desc",
+      "value": "왼쪽 항목을 선택하면 여기에 내용이 표시됩니다"
     },
     {
       "name": "media_youtube_video",

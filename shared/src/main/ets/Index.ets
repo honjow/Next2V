@@ -73,6 +73,12 @@ export {
   SUBTAB_STYLE_CAPSULE,
 } from './state/SubTabStyleState'
 export {
+  AppIconState,
+  connectAppIcon,
+  APP_ICON_DEFAULT,
+  APP_ICON_BLACK,
+} from './state/AppIconState'
+export {
   SubtabTransitionState,
   SubtabTransitionBridge,
   connectSubtabTransition,
@@ -197,6 +203,13 @@ export {
 } from './state/NotificationUnreadState'
 export { HomeTabAutoHideState, connectHomeTabAutoHide } from './state/HomeTabAutoHideState'
 export {
+  HomeSplitSelectionState,
+  connectHomeSplitSelection,
+  selectHomeSplitTopic,
+  releaseHomeSplitTopic,
+  clearHomeSplitSelection,
+} from './state/HomeSplitSelectionState'
+export {
   AccountWebViewUrlState,
   connectAccountWebViewUrl,
   publishAccountWebViewUrl,
@@ -244,10 +257,13 @@ export type { AppLanguageMode } from './i18n/AppStrings'
 export { ApiDomainSettings } from './settings/ApiDomainSettings'
 export type { ApiDomainSnapshot, DomainValidationResult } from './settings/ApiDomainSettings'
 export { FeedTabSettings } from './settings/FeedTabSettings'
+export { HomeSplitSettings } from './settings/HomeSplitSettings'
 export { HomeTabSettings } from './settings/HomeTabSettings'
 export type { HomeTabSettingsSnapshot } from './settings/HomeTabSettings'
 export { SubTabStyleSettings } from './settings/SubTabStyleSettings'
 export type { SubTabStyleOption } from './settings/SubTabStyleSettings'
+export { AppIconSettings } from './settings/AppIconSettings'
+export type { AppIconOption } from './settings/AppIconSettings'
 export { NotificationSeenSettings } from './settings/NotificationSeenSettings'
 export { TopicDetailReplyActionSettings } from './settings/TopicDetailReplyActionSettings'
 export type { TopicDetailReplyActionSettingsSnapshot } from './settings/TopicDetailReplyActionSettings'

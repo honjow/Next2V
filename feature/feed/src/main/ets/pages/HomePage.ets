@@ -5,6 +5,7 @@ import {
   UserProfileParams, CacheSettings, FeedTabSettings, CollectionSettings,
   connectNavStack, connectFeedTab, FeedTabBridge, connectListScroll, connectTopicReadStates,
   FeedTabState, ListScrollState, PullRefreshController, TopicReadStatesState,
+  HomeSplitSelectionState, connectHomeSplitSelection, selectHomeSplitTopic,
   connectSubtabTransition, SubtabTransitionState, SUBTAB_TRANSITION_SCOPE_HOME
 } from 'shared'
 import type { TopicReadState } from 'shared'
@@ -40,6 +41,9 @@ export struct HomePage {
   @Event onRootRefreshReady?: (action: () => void) => void
   @Event onScrollerReady?: (scroller: Scroller) => void
   @Event onDidScroll?: (offset: number, state: ScrollState) => void
+  // Reports the feed pane's measured width. In the large-screen split layout this is the
+  // HdsNavigation navBar width, which the divider drag changes without any callback of its own.
+  @Event onPaneWidthChange?: (width: number) => void
 
   aboutToAppear(): void {
     this.listScroll.enabled = true
@@ -294,7 +298,11 @@ export struct HomePage {
         this.persistSelectedTab(key)
       })
       .onAreaChange((_oldValue: Area, newValue: Area) => {
-        this.swiperWidth = (newValue?.width as number) || 0
+        const width = (newValue?.width as number) || 0
+        this.swiperWidth = width
+        if (this.onPaneWidthChange) {
+          this.onPaneWidthChange(width)
+        }
       })
       .layoutWeight(1)
     }
@@ -327,6 +335,8 @@ struct FeedListPage {
   private listScroll: ListScrollState = connectListScroll()
   // Per-topic read-state ledger (V2 mirror; LocalDataPublisher dual-writes). Read in build() (unread dot).
   private readStates: TopicReadStatesState = connectTopicReadStates()
+  // Topic currently open in the split's right pane; reads tint the card and block a repeat push.
+  private splitSelection: HomeSplitSelectionState = connectHomeSplitSelection()
   @Param tabKey: string = 'tech'
   @Local vm: FeedViewModel = new FeedViewModel()
   private readonly FLOAT_H: number = ThemeConstants.FLOAT_BAR_HEIGHT
@@ -396,6 +406,7 @@ struct FeedListPage {
                   TopicCard({
                     item: item,
                     isUnread: this.isTopicUnread(item),
+                    isSelected: this.splitSelection.selectedTopicId === item.id,
                     onUserClick: () => {
                       let p: UserProfileParams = { username: item.member.username }
                       this.ns.pushPathByName('UserProfile', p as Object)
@@ -407,6 +418,12 @@ struct FeedListPage {
                   })
                 }
                   .onClick(() => {
+                    // The split already shows this topic: a second push would re-mount the detail in
+                    // the right pane (visible flash) for no reason.
+                    if (this.splitSelection.selectedTopicId === item.id) {
+                      return
+                    }
+                    selectHomeSplitTopic(item.id)
                     let p: TopicDetailParams = { topicId: item.id }
                     this.ns.pushPathByName('TopicDetail', p as Object)
                   })
