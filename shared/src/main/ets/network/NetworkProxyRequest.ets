@@ -1,10 +1,13 @@
 import { connection, http } from '@kit.NetworkKit'
+import { BusinessError } from '@kit.BasicServicesKit'
 import { rcp } from '@kit.RemoteCommunicationKit'
 import { ApiConstants } from '../constants/ApiConstants'
 import { NetworkProxySettings, type NetworkProxySettingsSnapshot } from '../settings/NetworkProxySettings'
 import { Socks5HttpClient } from './Socks5HttpClient'
 
 export interface NetworkProxyRequestOptions {
+  // Authentication submits must expose the first redirect before session cookies can be merged.
+  followRedirects?: boolean
   method: http.RequestMethod
   header?: Record<string, string>
   // string for form/urlencoded bodies; ArrayBuffer for binary multipart (image upload). All three
@@ -23,6 +26,7 @@ export interface NetworkProxyResponse {
   result: string | ArrayBuffer
   header: Object
   effectiveUrl: string
+  unfollowedRedirect?: boolean
 }
 
 export class NetworkProxyRequest {
@@ -80,8 +84,12 @@ export class NetworkProxyRequest {
     settings: NetworkProxySettingsSnapshot,
   ): Promise<NetworkProxyResponse> {
     let httpRequest = http.createHttp()
-    if (options.onHeadersReceive) {
-      httpRequest.on('headersReceive', options.onHeadersReceive)
+    let redirectHeaders: Object | null = null
+    if (options.onHeadersReceive || options.followRedirects === false) {
+      httpRequest.on('headersReceive', (headers: Object) => {
+        redirectHeaders = headers
+        options.onHeadersReceive?.(headers)
+      })
     }
     try {
       const requestHeaders: Record<string, string> = options.header || {}
@@ -96,6 +104,9 @@ export class NetworkProxyRequest {
       if (options.extraData) {
         httpOptions.extraData = options.extraData
       }
+      if (options.followRedirects === false) {
+        httpOptions.maxRedirects = 0
+      }
       const proxy = NetworkProxyRequest.networkKitProxyOption(settings)
       if (proxy !== undefined) {
         httpOptions.usingProxy = proxy
@@ -107,6 +118,22 @@ export class NetworkProxyRequest {
         header: response.header,
         effectiveUrl: '',
       }
+    } catch (error) {
+      const e = error as BusinessError
+      if (options.followRedirects === false && e.code === 2300047 && redirectHeaders) {
+        const headers = redirectHeaders as Record<string, Object>
+        const location = Object.keys(headers).find((key: string) => key.toLowerCase() === 'location')
+        const value = location ? headers[location] : ''
+        const strings: string[] = Array.isArray(value) ?
+          value.filter((item: Object) => typeof item === 'string') as string[] : []
+        const target = typeof value === 'string' ? value.trim() : (strings.length > 0 ? strings[0].trim() : '')
+        if (target) {
+          // NetworkKit reports the redirect limit as an error and omits its status code. Use the
+          // 3xx class only to preserve the first-hop headers; callers must verify the final state.
+          return { responseCode: 300, result: '', header: redirectHeaders, effectiveUrl: '', unfollowedRedirect: true }
+        }
+      }
+      throw error as Error
     } finally {
       httpRequest.destroy()
     }
@@ -127,6 +154,7 @@ export class NetworkProxyRequest {
         requestConfiguration: {
           proxy: NetworkProxyRequest.rcpProxy(settings),
           transfer: {
+            autoRedirect: options.followRedirects !== false,
             timeout: {
               connectMs: options.connectTimeout || 10000,
               transferMs: options.readTimeout || 15000,

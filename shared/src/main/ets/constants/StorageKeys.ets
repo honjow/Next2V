@@ -25,6 +25,8 @@ export class StorageKeys {
   static readonly REPLY_CARD_STYLE: string = 'replyCardStyle'
   static readonly REPLY_ACTION_ALIGNMENT_MODE: string = 'replyActionAlignmentMode'
   static readonly SUBTAB_STYLE: string = 'subTabStyle' // underline/capsule (shared SubTabBar style)
+  // Large-screen home split: remembered feed-pane ratio (navBarWidth / window width).
+  static readonly HOME_SPLIT_RATIO: string = 'homeSplitRatio'
   static readonly HOT_REPLIES_ENABLED: string = 'hotRepliesEnabled'
   static readonly HOT_REPLIES_MAX_COUNT: string = 'hotRepliesMaxCount'
   static readonly HOT_REPLIES_MIN_THANKS: string = 'hotRepliesMinThanks'

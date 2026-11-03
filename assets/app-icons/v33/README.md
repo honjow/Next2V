@@ -11,6 +11,7 @@ Variants:
 - `sunset_solid`, `sunset_glass`
 - `coral_solid`, `coral_glass`
 - `slate_solid`, `slate_glass`
+- `black_solid` (user-selectable alternate launcher icon: black background, white mark)
 
 Files:
 - `*_1024.png`: 1024×1024 square PNG source for app-store/AGC style assets.

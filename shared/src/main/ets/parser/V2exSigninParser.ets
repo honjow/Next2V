@@ -91,6 +91,28 @@ export class V2exSigninParser {
       V2exSigninParser.extractForm(html) !== null
   }
 
+  // Authentication responses can contain a challenge even if its code input has an unfamiliar name.
+  // Match an actual form action, not page text, so unrelated content cannot trigger this guard.
+  static hasTwoFactorActionForm(html: string): boolean {
+    return V2exSigninParser.extractForms(html).some((form: string) => {
+      const tag = form.match(/<form\b[^>]*>/i)
+      if (!tag) {
+        return false
+      }
+      // Walk complete attributes so text inside another quoted attribute cannot be mistaken for action.
+      const attributes = /\s([^\s=/>]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>]+)))?/g
+      let attribute = attributes.exec(tag[0])
+      while (attribute) {
+        if (attribute[1].toLowerCase() === 'action') {
+          const path = V2exSigninParser.locationPath(attribute[2] || attribute[3] || attribute[4] || '').split('#')[0]
+          return path === '/2fa' || path.indexOf('/2fa?') === 0
+        }
+        attribute = attributes.exec(tag[0])
+      }
+      return false
+    })
+  }
+
   static extractTwoFactorForm(html: string): V2exTwoFactorForm | null {
     if (!html) {
       return null

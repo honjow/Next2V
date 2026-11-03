@@ -10,6 +10,12 @@ import { connectLanguageState, LanguageState } from '../state/LanguageState'
 import { ReadingSettings } from '../settings/ReadingSettings'
 import { connectReadingSettings, ReadingSettingsState } from '../state/ReadingSettingsState'
 
+// A split feed pane is 240-347vp (a 216-323vp card once the list's 12vp insets are removed), while
+// a 360vp phone column gives a 336vp card. This threshold sits just above the narrow split cards,
+// so a narrow split pane uses the compact meta line (time + reply count) and the "Last reply
+// <user>" prefix can no longer overflow and clip the reply count, while phones keep the full line.
+const COMPACT_META_MAX_WIDTH_VP: number = 330
+
 @ComponentV2
 export struct TopicCard {
   @Require @Param item: V2exTopic
@@ -18,8 +24,14 @@ export struct TopicCard {
   @Param metaTimestamp: number = 0
   @Param showReplyCount: boolean = true
   @Param showNodeTag: boolean = true
+  // Large-screen split: the topic currently shown in the right pane is tinted so a repeat tap is
+  // visibly pointless (the list also refuses to re-push it).
+  @Param isSelected: boolean = false
   @Event onUserClick?: () => void
   @Event onNodeClick?: () => void
+  // Self-measured width drives the compact meta line, so every embedder (phone column, split
+  // feed pane, node list) degrades on its own without passing a flag down.
+  @Local private cardWidthVp: number = 0
   private language: LanguageState = connectLanguageState()
   private reading: ReadingSettingsState = connectReadingSettings()
 
@@ -73,12 +85,14 @@ export struct TopicCard {
 
       Row({ space: ThemeConstants.SPACE_XS }) {
         if (this.shouldShowMeta()) {
-          if (this.shouldShowMetaLabel()) {
+          if (this.shouldShowMetaLabel() && !this.isCompactMeta()) {
             Text(this.localeAwareResource(this.metaLabel))
               .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
               .fontColor($r('sys.color.font_secondary'))
+              .maxLines(1)
+              .flexShrink(0)
           }
-          if (this.shouldShowLastReplyUser()) {
+          if (this.shouldShowLastReplyUser() && !this.isCompactMeta()) {
             Text(this.lastReplyUsername())
               .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
               .fontColor($r('sys.color.font_secondary'))
@@ -115,8 +129,22 @@ export struct TopicCard {
       bottom: ThemeConstants.SPACE_SM + 2
     })
     .borderRadius(ThemeConstants.RADIUS_CARD)
-    .backgroundColor($r('app.color.card_background'))
+    .backgroundColor(
+      this.isSelected
+        ? $r('app.color.topic_card_selected_background')
+        : $r('app.color.card_background'),
+    )
     .width('100%')
+    .onAreaChange((_oldValue: Area, newValue: Area) => {
+      const width = (newValue?.width as number) || 0
+      if (width !== this.cardWidthVp) {
+        this.cardWidthVp = width
+      }
+    })
+  }
+
+  private isCompactMeta(): boolean {
+    return this.cardWidthVp > 0 && this.cardWidthVp < COMPACT_META_MAX_WIDTH_VP
   }
 
   private isMemberPro(): boolean {

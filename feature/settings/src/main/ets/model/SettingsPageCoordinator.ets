@@ -1,5 +1,6 @@
 import {
   AppStrings,
+  AppIconSettings,
   AvatarAppearanceSettings,
   HotReplySettings,
   ImmersiveMaterialSettings,
@@ -173,6 +174,10 @@ export class SettingsPageCoordinator {
       return $r('app.string.avatar_appearance_soft')
     }
     return $r('app.string.avatar_appearance_circle')
+  }
+
+  static appIconLabel(name: string): ResourceStr {
+    return AppIconSettings.label(name)
   }
 
   static replyDisplayModeLabel(mode: string): ResourceStr {
