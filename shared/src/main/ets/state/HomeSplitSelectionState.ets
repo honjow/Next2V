@@ -5,8 +5,9 @@ import { AppStorageV2 } from '@kit.ArkUI'
  * selected card and to ignore a repeat tap on that same topic: every tap pushes a new TopicDetail
  * destination, so tapping the already-open topic re-mounted the detail and made the right pane flash.
  *
- * Writers: the feed tap (optimistic, before the push) and TopicDetailPage (confirm on appear, release
- * on disappear only while it still owns the selection, so switching topics is order-safe).
+ * The feed selects optimistically before pushing. The root navigation updates this state when a
+ * destination is shown, since hidden destinations can remain mounted in the navigation stack.
+ * The transparent image preview preserves the selection of the visible page underneath.
  */
 @ObservedV2
 export class HomeSplitSelectionState {
@@ -27,7 +28,6 @@ export function selectHomeSplitTopic(topicId: number): void {
   connectHomeSplitSelection().selectedTopicId = topicId
 }
 
-/** Clears only when the given topic is still the selected one (a newer selection wins). */
 export function clearHomeSplitSelection(): void {
   connectHomeSplitSelection().selectedTopicId = 0
 }
