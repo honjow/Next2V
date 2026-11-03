@@ -114,6 +114,80 @@ assert.equal(requests.at(-2).header.Cookie, 'A2=verified-secret')
 assert.equal(result.cookie, 'A2=verified-secret')
 assert.equal(result.username, 'testuser')
 
+// An intermediate /2fa redirect is not the final response after NetworkKit follows redirects.
+// The final page must still pass both authenticated identity checks.
+responses = [
+  response(200, form('nonce-redirect-secret')),
+  response(200, loggedIn, {}, [{ location: '/2fa' }]),
+  response(200, loggedIn), response(200, loggedIn),
+]
+const beforeRedirectRecovery = requests.length
+assert.equal((await auth.completeTwoFactorWithCookie('A2=old-secret', '123456', trace)).username, 'testuser')
+assert.equal(requests.length - beforeRedirectRecovery, 4)
+
+// Stale intermediate challenge locations on either identity GET must not replace the final page.
+for (const redirectOnSettings of [false, true]) {
+  responses = [
+    response(200, form('nonce-identity-secret')),
+    response(302, '', { location: '/' }),
+    response(200, loggedIn, {}, redirectOnSettings ? [] : [{ location: '/2fa' }]),
+    response(200, loggedIn, {}, redirectOnSettings ? [{ location: '/2fa' }] : []),
+  ]
+  assert.equal((await auth.completeTwoFactorWithCookie('A2=old-secret', '123456', trace)).username, 'testuser')
+}
+
+// A direct redirect or a final challenge form on either identity GET is still rejected.
+for (const challengeOnSettings of [false, true]) {
+  for (const challengeResponse of [response(302, '', { location: '/2fa' }), response(200, form('nonce-still-required'))]) {
+    responses = [
+      response(200, form('nonce-identity-secret')),
+      response(302, '', { location: '/' }),
+    ]
+    if (challengeOnSettings) { responses.push(response(200, loggedIn)) }
+    responses.push(challengeResponse)
+    await assert.rejects(auth.completeTwoFactorWithCookie('A2=old-secret', '123456', trace), NativeTwoFactorRequiredError)
+  }
+}
+
+// An actual /2fa form remains a challenge even if its input name is unfamiliar.
+const unfamiliarForm = '<form action="/2fa"><input name="verification" type="text"></form>' + loggedIn
+assert.equal(parser.V2exSigninParser.extractTwoFactorForm(unfamiliarForm), null)
+assert.equal(parser.V2exSigninParser.hasTwoFactorActionForm('<form action=/2fa><input name=verification></form>'), true)
+assert.equal(parser.V2exSigninParser.hasTwoFactorActionForm("<form action='/2fa'><input name='verification'></form>"), true)
+assert.equal(parser.V2exSigninParser.hasTwoFactorActionForm('<form data-action="/2fa" action="/settings"></form>'), false)
+assert.equal(parser.V2exSigninParser.hasTwoFactorActionForm('<form formaction="/2fa"></form>'), false)
+assert.equal(parser.V2exSigninParser.hasTwoFactorActionForm('<form action="/2fa#verify"></form>'), true)
+assert.equal(parser.V2exSigninParser.hasTwoFactorActionForm('<form title="sample action=/2fa" action="/settings"></form>'), false)
+for (const challengeForm of [unfamiliarForm, '<form action=/2fa><input name=verification></form>' + loggedIn]) {
+  for (const stage of ['fetch', 'post', 'balance', 'settings']) {
+    responses = []
+    if (stage !== 'fetch') { responses.push(response(200, form('nonce-unfamiliar-secret'))) }
+    if (stage === 'balance' || stage === 'settings') { responses.push(response(302, '', { location: '/' })) }
+    if (stage === 'settings') { responses.push(response(200, loggedIn)) }
+    responses.push(response(200, challengeForm))
+    await assert.rejects(auth.completeTwoFactorWithCookie('A2=old-secret', '123456', trace), NativeTwoFactorRequiredError)
+  }
+}
+
+// An identity page with a verification problem is not proof of successful verification.
+for (const problemOnSettings of [false, true]) {
+  responses = [
+    response(200, form('nonce-problem-secret')),
+    response(302, '', { location: '/' }),
+  ]
+  if (problemOnSettings) { responses.push(response(200, loggedIn)) }
+  responses.push(response(200, '<div class="problem"><ul><li>验证码无效，请重新验证</li></ul></div>' + loggedIn,
+    {}, [{ location: '/2fa' }]))
+  await assert.rejects(auth.completeTwoFactorWithCookie('A2=old-secret', '123456', trace), NativeTwoFactorRequiredError)
+}
+
+// A transport returning an actual redirect to /2fa still reports an outstanding challenge.
+responses = [
+  response(200, form('nonce-direct-secret')),
+  response(302, '', { location: '/2fa' }),
+]
+await assert.rejects(auth.completeTwoFactorWithCookie('A2=old-secret', '123456', trace), NativeTwoFactorRequiredError)
+
 // A login page/anti-bot response is not an empty 2FA form to POST blindly.
 responses = [response(200, '<html>anti-bot</html>'), response(503, 'unavailable')]
 await assert.rejects(auth.completeTwoFactorWithCookie('A2=old-secret', '123456', trace))

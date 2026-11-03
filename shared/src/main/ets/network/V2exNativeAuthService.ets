@@ -216,6 +216,9 @@ export class V2exNativeAuthService {
     const cookieAfterGet = V2exNativeAuthService.mergeCookieHeader(cleanCookie, getRes.setCookie)
     const challenge = V2exNativeAuthService.twoFactorChallengeFromHtml(cookieAfterGet, getRes.text)
     if (!challenge) {
+      if (V2exSigninParser.hasTwoFactorActionForm(getRes.text)) {
+        throw new NativeTwoFactorRequiredError(V2exNativeAuthService.fixedTwoFactorChallenge(cookieAfterGet))
+      }
       trace.record('challenge_form_absent')
       // A previous POST may have succeeded before verification/persistence failed.
       // Recover only through the same gated-page and identity checks; never send a blind POST.
@@ -249,7 +252,9 @@ export class V2exNativeAuthService {
     const cookieAfterPost = V2exNativeAuthService.mergeCookieHeader(challenge.cookie, postRes.setCookie)
     const postChallenge = V2exNativeAuthService.twoFactorChallengeFromHtml(cookieAfterPost, postRes.text)
     const loginError = V2exSigninParser.extractProblemMessage(postRes.text)
-    if (V2exNativeAuthService.isLocationPath(postRes.location, V2exNativeAuthService.TWO_FACTOR_PATH)) {
+    // A Location captured during automatic redirects may belong to an earlier response. Only an
+    // actual redirect response is conclusive here; a final page is judged by its form and problem text.
+    if (V2exNativeAuthService.isDirectRedirectTo(postRes, V2exNativeAuthService.TWO_FACTOR_PATH)) {
       throw new NativeTwoFactorRequiredError(
         V2exNativeAuthService.fixedTwoFactorChallenge(cookieAfterPost, challenge.hiddenFields),
         'Two-factor failed, please check the code'
@@ -262,10 +267,11 @@ export class V2exNativeAuthService {
       }
       throw ApiErrors.twoFactorFailedDetail(loginError)
     }
-    if (postChallenge) {
-      throw new NativeTwoFactorRequiredError(postChallenge)
+    if (postChallenge || V2exSigninParser.hasTwoFactorActionForm(postRes.text)) {
+      throw new NativeTwoFactorRequiredError(postChallenge ||
+        V2exNativeAuthService.fixedTwoFactorChallenge(cookieAfterPost, challenge.hiddenFields))
     }
-    if (V2exNativeAuthService.isSigninResponse(postRes)) {
+    if (V2exNativeAuthService.isFinalSigninResponse(postRes)) {
       throw ApiErrors.loginSessionMissing()
     }
 
@@ -282,14 +288,16 @@ export class V2exNativeAuthService {
     const verifyRes = await this.requestText(`${authBaseUrl}${V2exNativeAuthService.TWO_FACTOR_VERIFY_PATH}`, http.RequestMethod.GET, cookie, '', trace)
     const cookieAfterVerify = V2exNativeAuthService.mergeCookieHeader(cookie, verifyRes.setCookie)
     const verifyChallenge = V2exNativeAuthService.twoFactorChallengeFromHtml(cookieAfterVerify, verifyRes.text)
-    if (V2exNativeAuthService.isLocationPath(verifyRes.location, V2exNativeAuthService.TWO_FACTOR_PATH) || verifyChallenge) {
+    if (V2exNativeAuthService.isDirectRedirectTo(verifyRes, V2exNativeAuthService.TWO_FACTOR_PATH) ||
+      verifyChallenge || V2exSigninParser.hasTwoFactorActionForm(verifyRes.text) ||
+      V2exSigninParser.extractProblemMessage(verifyRes.text)) {
       throw new NativeTwoFactorRequiredError(
         verifyChallenge || V2exNativeAuthService.fixedTwoFactorChallenge(cookieAfterVerify, hiddenFields),
         'Two-factor failed, please check the code'
       )
     }
     const gatedUser = V2exSessionParser.extractUsername(verifyRes.text)
-    if (verifyRes.statusCode !== 200 || !gatedUser || V2exNativeAuthService.isSigninResponse(verifyRes)) {
+    if (verifyRes.statusCode !== 200 || !gatedUser || V2exNativeAuthService.isFinalSigninResponse(verifyRes)) {
       trace.record('gate_unconfirmed', {}, true)
       throw ApiErrors.twoFactorFailed()
     }
@@ -299,10 +307,12 @@ export class V2exNativeAuthService {
     const cookieAfterSettings = V2exNativeAuthService.mergeCookieHeader(cookieAfterVerify, settingsRes.setCookie)
     const signedInUser = V2exSessionParser.extractUsername(settingsRes.text)
     const settingsChallenge = V2exNativeAuthService.twoFactorChallengeFromHtml(cookieAfterSettings, settingsRes.text)
-    if (settingsChallenge || V2exNativeAuthService.isLocationPath(settingsRes.location, V2exNativeAuthService.TWO_FACTOR_PATH)) {
+    if (settingsChallenge || V2exSigninParser.hasTwoFactorActionForm(settingsRes.text) ||
+      V2exSigninParser.extractProblemMessage(settingsRes.text) ||
+      V2exNativeAuthService.isDirectRedirectTo(settingsRes, V2exNativeAuthService.TWO_FACTOR_PATH)) {
       throw new NativeTwoFactorRequiredError(settingsChallenge || V2exNativeAuthService.fixedTwoFactorChallenge(cookieAfterSettings))
     }
-    if (settingsRes.statusCode !== 200 || V2exNativeAuthService.isSigninResponse(settingsRes)) {
+    if (settingsRes.statusCode !== 200 || V2exNativeAuthService.isFinalSigninResponse(settingsRes)) {
       throw ApiErrors.twoFactorFailed()
     }
     if (!signedInUser || signedInUser !== gatedUser) {
@@ -519,6 +529,15 @@ export class V2exNativeAuthService {
     }
     const normalized = V2exNativeAuthService.locationPath(location)
     return normalized === path || normalized.indexOf(`${path}?`) === 0
+  }
+
+  private static isDirectRedirectTo(res: TextWithSetCookie, path: string): boolean {
+    return res.statusCode >= 300 && res.statusCode < 400 &&
+      V2exNativeAuthService.isLocationPath(res.location, path)
+  }
+
+  private static isFinalSigninResponse(res: TextWithSetCookie): boolean {
+    return V2exNativeAuthService.isDirectRedirectTo(res, '/signin') || V2exSigninParser.hasSigninForm(res.text)
   }
 
   private static isSigninResponse(res: TextWithSetCookie): boolean {
