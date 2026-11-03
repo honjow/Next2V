@@ -111,7 +111,8 @@ export struct SettingsThemeColorDropdownRow {
       SymbolGlyph($r('sys.symbol.arrowtriangle_down_fill'))
         .fontSize(ThemeConstants.FONT_SIZE_TITLE)
         .fontColor([$r('sys.color.font_tertiary')])
-        .padding({ left: 4, right: 12 })
+        // ConciseListRow already supplies the trailing inset for custom suffixes.
+        .padding({ left: 4 })
     }
     .alignItems(VerticalAlign.Center)
   }
