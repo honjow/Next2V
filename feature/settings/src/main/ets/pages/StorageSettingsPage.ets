@@ -637,7 +637,7 @@ export struct StorageSettingsPage {
   private runExportBackup(options?: BackupExportOptions): void {
     BackupFilePickerCoordinator.exportBackup(
       this.hostContext(),
-      { versionName: '1.0.13', versionCode: 26 },
+      { versionName: '1.0.14', versionCode: 27 },
       options,
     )
       .then((_uri: string) => {
